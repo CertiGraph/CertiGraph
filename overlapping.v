@@ -1,27 +1,21 @@
 Require Import msl.msl_classical.
+Require Import ramify_tactics.
 
 Program Definition ovrlapcon {A: Type}{JA: Join A}{PA: Perm_alg A}{AG: ageable A}{XA: Age_alg A} (p q:pred A) : pred A :=
   fun h:A => exists h1 h2 h3 h12 h23, join h1 h2 h12 /\ join h2 h3 h23 /\ join h12 h3 h /\ p h12 /\ q h23.
 Next Obligation.
-  Ltac getEq h1 h2 := unfold age in h1, h2; rewrite h1 in h2; injection h2; intro.
   destruct H0 as [h1 [h2 [h3 [h12 [h23 [? [? [? [? ?]]]]]]]]].
-  destruct (join_assoc H0 H2) as [h23' [? ?]].
-  generalize (join_eq H1 H5); intro.
-  rewrite <- H7 in H6.
-  clear h23' H5 H7.
+  try_join h2 h3 h23'; equate_join h23 h23'.
   destruct (age1_join2 _ H2 H) as [w12 [w3 [? [? ?]]]].
   destruct (age1_join2 _ H0 H7) as [w1 [w2 [? [? ?]]]].
-  destruct (join_assoc H9 H5) as [w23 [? ?]].
+  try_join w2 w3 w23.
   exists w1, w2, w3, w12, w23.
   repeat split; auto.
   apply pred_hereditary with h12; auto.
   apply pred_hereditary with h23; auto.
   destruct (age1_join2 _ H6 H) as [w1' [w23' [? [? ?]]]].
   destruct (age1_join2 _ H1 H16) as [w2' [w3' [? [? ?]]]].
-  getEq H11 H18; getEq H8 H19.
-  rewrite H20, H21 in H12.
-  generalize (join_eq H12 H17); intro.
-  rewrite H22; trivial.
+  equate_age w2 w2'; equate_age w3 w3'; equate_join w23 w23'; trivial.
 Qed.
 
 Notation "P ⊗ Q" := (ovrlapcon P Q) (at level 40, left associativity) : pred.
@@ -31,15 +25,9 @@ Lemma overlapping_emp {A}{JA: Join A}{PA: Perm_alg A}{SA: Sep_alg A}{CA: Canc_al
 Proof.
   intros; apply pred_ext; hnf; intros; simpl in *; intros.
   destruct H as [h1 [h2 [h3 [h12 [h23 [? [? [? [? ?]]]]]]]]].
-  unfold identity in H3.
-  destruct (join_assoc H H1) as [h23' [? ?]].
-  generalize (join_eq H0 H4); intro.
-  rewrite <- H6 in H5.
-  apply join_comm in H5.
-  apply H3 in H5.
-  rewrite H5 in H.
-  generalize (join_positivity H H1); intro.
-  rewrite H7; trivial.
+  try_join h2 h3 h23'; equate_join h23 h23'.
+  rewrite (H3 _ _ (join_comm H5)) in H.
+  generalize (join_positivity H H1); intro; rewrite H4; trivial.
   exists a, (core a), (core a), a, (core a).
   generalize (core_unit a); intro.
   unfold unit_for in H0.
@@ -150,15 +138,9 @@ Lemma cross_rev {A}{JA: Join A}{PA: Perm_alg A}: forall h1 h2 h3 h4
   h12 h34 h13 h24 h1234, join h1 h2 h12 -> join h1 h3 h13 -> join h3 h4
   h34 -> join h2 h4 h24 -> join h12 h34 h1234 -> join h13 h24 h1234.
 Proof.
-  intros.
-  destruct (join_assoc H H3) as [h234 [? ?]].
-  destruct (join_assoc H1 (join_comm H4)) as [h24' [? ?]];
-  generalize (join_eq H2 (join_comm H6)); intro;
-  rewrite <- H8 in H7; clear h24' H6 H8.
-  destruct (join_assoc (join_comm H7) (join_comm H5)) as [h13' [? ?]].
-  generalize (join_eq H0 (join_comm H6)); intro.
-  rewrite <- H9 in H8.
-  apply join_comm; trivial.
+  intros; try_join h2 h34 h234;
+  try_join h2 h4 h24'; equate_join h24 h24';
+  try_join h1 h3 h13'; equate_join h13 h13'; auto.
 Qed.
 
 Lemma overlapping_assoc {A}{JA: Join A}{PA: Perm_alg A}{CA: Cross_alg A}{AG: ageable A}{XA: Age_alg A}:
@@ -244,37 +226,6 @@ Proof.
   apply H0, H1.
 Qed.
 
-Ltac try_join h1 h2 h1h2 :=
-  let helper m1 m2 m1m2 :=
-      match goal with
-        | [H1: join _ m1 ?X, H2: join ?X m2 _ |- _] => destruct (join_assoc H1 H2) as [m1m2 [? ?]]
-        | [H1: join m1 _ ?X, H2: join ?X m2 _ |- _] => destruct (join_assoc (join_comm H1) H2) as [m1m2 [? ?]]
-        | [H1: join _ m1 ?X, H2: join m2 ?X _ |- _] => destruct (join_assoc H1 (join_comm H2)) as [m1m2 [? ?]]
-        | [H1: join m1 _ ?X, H2: join m2 ?X _ |- _] => destruct (join_assoc (join_comm H1) (join_comm H2)) as [m1m2 [? ?]]
-      end
-  in helper h1 h2 h1h2 || helper h2 h1 h1h2.
-
-Ltac try_join_through X h1 h2 h1h2 :=
-  let helper m1 m2 m1m2 :=
-      match goal with
-        | [H1: join _ m1 X, H2: join X m2 _ |- _] => destruct (join_assoc H1 H2) as [m1m2 [? ?]]
-        | [H1: join m1 _ X, H2: join X m2 _ |- _] => destruct (join_assoc (join_comm H1) H2) as [m1m2 [? ?]]
-        | [H1: join _ m1 X, H2: join m2 X _ |- _] => destruct (join_assoc H1 (join_comm H2)) as [m1m2 [? ?]]
-        | [H1: join m1 _ X, H2: join m2 X _ |- _] => destruct (join_assoc (join_comm H1) (join_comm H2)) as [m1m2 [? ?]]
-      end
-  in helper h1 h2 h1h2 || helper h2 h1 h1h2.
-
-Ltac equate_join x1 x2 :=
-  let Heq := fresh "Heq" in
-  match goal with
-    |[H1: join ?a ?b x1, H2: join ?b ?a x2 |- _] => apply join_comm in H2
-    | _ => idtac
-  end;
-  match goal with
-    |[H1: join ?a ?b x1, H2: join ?a ?b x2 |- _] =>
-     generalize (join_eq H2 H1); intro Heq;
-     rewrite Heq in *; clear H2 Heq x2
-  end.
 
 Lemma later_sepcon1 {A} {JA: Join A}{PA: Perm_alg A}{SA: Sep_alg A}{AG: ageable A}{XA: Age_alg A} : forall P Q,
   (|>(P * Q) = |>P * |>Q)%pred.
@@ -315,7 +266,6 @@ Proof.
   exists w'; exists v'; intuition.
 Qed.
 
-
 Lemma later_overlapping {A}{JA: Join A}{PA: Perm_alg A}{SA: Sep_alg A}{AG: ageable A}{XA: Age_alg A}:
   forall P Q, ((|> (P ⊗ Q)) = |> Q ⊗ |> P)%pred.
 Proof.
@@ -329,13 +279,13 @@ Proof.
   exists x3, x2, x1, x23, x12; repeat (split; auto).
   intro h23; intros.
   assert (age x23 h23'); destruct (age1_join2 _ H13 H0) as [w1 [w23 [? [? ?]]]].
-  destruct (age1_join2 _ H12 H17) as [w2 [w3 [? [? ?]]]]; getEq H19 H11; getEq H20 H8;
-  rewrite H21, H22 in H18; equate_join h23' w23; auto.
+  destruct (age1_join2 _ H12 H17) as [w2 [w3 [? [? ?]]]]; equate_age h2' w2; equate_age h3' w3. 
+  equate_join h23' w23; auto.
   generalize (age_later_nec x23 h23' h23 H15 H14); intro; apply pred_nec_hereditary with h23'; auto.
   intro h12; intros.
   assert (age x12 h12'); try_join x1 x2 x12'; equate_join x12 x12'.
   destruct (age1_join2 _ H16 H0) as [w3 [w12 [? [? ?]]]].
-  destruct (age1_join2 _ H9 H18) as [w1 [w2 [? [? ?]]]]; getEq H20 H10; getEq H21 H11; rewrite H22, H23 in H19;
+  destruct (age1_join2 _ H9 H18) as [w1 [w2 [? [? ?]]]]; equate_age h1' w1; equate_age h2' w2;
   equate_join h12' w12; auto.
   generalize (age_later_nec x12 h12' h12 H15 H14); intro; apply pred_nec_hereditary with h12'; auto.
   exists (core a), a, (core a), a, a. repeat split.
@@ -352,7 +302,7 @@ Proof.
   assert (age x23 h23). try_join x2 x3 x23'; equate_join x23 x23'.
   destruct (age1_join2 _ H14 H4) as [w1 [w23 [? [? ?]]]].
   destruct (age1_join2 _ H0 H16) as [w2 [w3 [? [? ?]]]].
-  getEq H18 H10; getEq H19 H7; rewrite H21, H20 in H17; equate_join h23 w23; auto. auto.
+  equate_age h2 w2; equate_age h3 w3; equate_join h23 w23; auto. auto.
 Qed.
 
 (* Require Import msl.cjoins. *)

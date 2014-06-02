@@ -1,40 +1,9 @@
 Require Import msl.msl_classical.
 Require Import overlapping.
+Require Import ramify_tactics.
 
 Definition ramify {A: Type}{JA: Join A}{PA: Perm_alg A}{AG: ageable A}{XA: Age_alg A}
            (R P Q R' : pred A) := R |-- P * (Q -* R').
-
-Ltac assertSub a c Hsub :=
-  match goal with
-    | [_: join a ?b c |- _] => assert (Hsub: join_sub a c) by (exists b; auto)
-    | [H: join ?b a c |- _] => assert (Hsub: join_sub a c) by (exists b; apply join_comm; auto)
-  end.
-
-Ltac equate_precise x1 x2 :=
-  let Sub1 := fresh "Sub1" in
-  let Sub2 := fresh "Sub2" in
-  let Heq := fresh "Heq" in
-  match goal with
-    | [_ : join x1 _ ?c, _: join x2 _ ?c |- _] => assertSub x1 c Sub1; assertSub x2 c Sub2
-    | [_ : join _ x1 ?c, _: join x2 _ ?c |- _] => assertSub x1 c Sub1; assertSub x2 c Sub2
-    | [_ : join x1 _ ?c, _: join _ x2 ?c |- _] => assertSub x1 c Sub1; assertSub x2 c Sub2
-    | [_ : join _ x1 ?c, _: join _ x2 ?c |- _] => assertSub x1 c Sub1; assertSub x2 c Sub2
-  end;
-  match goal with
-    | [H1: precise _, H2: ?P x1, H3: ?P x2, H4: join_sub x1 ?w, H5: join_sub x2 ?w |- _] =>
-      generalize (H1 w x2 x1 H3 H2 H5 H4); intro Heq;
-      rewrite Heq in *; clear H3 H4 H5 Heq x2
-  end.
-
-Ltac equate_canc x1 x2 :=
-  let Heq := fresh "Heq" in
-  let helper M1 M2 M3 := generalize (join_canc M2 M1); intro Heq; rewrite Heq in *; clear M3 Heq x2 in
-    match goal with
-      | [H1: join x1 ?b ?c, H2: join x2 ?b ?c |- _] => helper H1 H2 H2
-      | [H1: join ?b x1 ?c, H2: join x2 ?b ?c |- _] => helper (join_comm H1) H2 H2
-      | [H1: join x1 ?b ?c, H2: join ?b x2 ?c |- _] => helper H1 (join_comm H2) H2
-      | [H1: join ?b x1 ?c, H2: join ?b x2 ?c |- _] => helper (join_comm H1) (join_comm H2) H2
-    end.
 
 Lemma overlapping_ramification {A: Type}{JA: Join A}{PA: Perm_alg A}{CA: Cross_alg A}{CAA: Canc_alg A}{SA: Sep_alg A}{AG: ageable A}{XA: Age_alg A}:
   forall P Q R R' F, precise P -> precise Q -> ramify (P ⊗ R) P Q (Q ⊗ R') ->
