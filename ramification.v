@@ -55,6 +55,29 @@ Proof.
   split; auto; exists m, z'; repeat split; auto; apply pred_nec_hereditary with z; auto.
 Qed.
 
-(* Lemma exact_frame_ramification {A: Type}{JA: Join A}{PA: Perm_alg A}{CA: Cross_alg A}{CAA: Canc_alg A}{SA: Sep_alg A}{AG: ageable A}{XA: Age_alg A}: *)
-(*   forall P Q R R' F, precise P -> (R |-- P * F * TT) ->  *)
+Lemma disjoint_ramificatin {A: Type}{JA: Join A}{PA: Perm_alg A}{CA: Cross_alg A}{CAA: Canc_alg A}{SA: Sep_alg A}{AG: ageable A}{XA: Age_alg A}:
+  forall R P P' R' S Q Q' S', ramify R P P' R' -> ramify S Q Q' S' -> ramify (R * S) (P * Q) (P' * Q') (R' * S').
+Proof.
+  intros; hnf; intro ab; intros; destruct H1 as [a [b [? [? ?]]]].
+  specialize (H a H2); specialize (H0 b H3).
+  destruct H as [a1 [a2 [? [? ?]]]]; destruct H0 as [b1 [b2 [? [? ?]]]].
+  try_join a1 b a1b; try_join a1 b1 a1b1; try_join a2 b2 a2b2.
+  exists a1b1, a2b2; repeat split; auto. exists a1, b1; repeat split; auto.
+  intros a2'b2' s1s2 w1w2; intros.
+  destruct H16 as [s1 [s2 [? [? ?]]]]; destruct (nec_join2 H12 H14) as [b2' [a2' [? [? ?]]]].
+  try_join a2' s1s2 a2's1s2; try_join a2' s1 a2's1; try_join b2' s2 b2's2.
+  assert (R' a2's1) by (apply (H5 a2' s1); auto); assert (S' b2's2) by (apply (H7 b2' s2); auto).
+  exists a2's1, b2's2; repeat split; auto.
+Qed.
 
+Lemma exact_frame_ramification {A: Type}{JA: Join A}{PA: Perm_alg A}{CA: Cross_alg A}{CAA: Canc_alg A}{SA: Sep_alg A}{AG: ageable A}{XA: Age_alg A}:
+  forall P Q R R' F, precise P -> (R |-- P * F * TT) -> (F -⊛ R' |-- F -* R') -> ramify R P Q R' -> ramify R (P * F) (Q * F) R'.
+Proof.
+  intros; hnf; intros; specialize (H0 a H3); specialize (H2 a H3).
+  destruct H0 as [y [z [? [[y1 [y2 [? [? ?]]]] ?]]]]; destruct H2 as [y1' [y2z [? [? ?]]]].
+  try_join y2 z y2z'; equate_precise y1 y1'; equate_canc y2z y2z'.
+  exists y, z; repeat split; auto. exists y1, y2; repeat split; auto.
+  intros z' m' z'm'; intros. destruct H12 as [m1' [m2' [? [? ?]]]].
+  try_join m2' z' m2'z'; specialize (H9 m2'z' m1' z'm'); apply H9; auto.
+  admit.
+Qed.
