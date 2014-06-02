@@ -70,6 +70,40 @@ Proof.
   exists a2's1, b2's2; repeat split; auto.
 Qed.
 
+Lemma overlapping_piecewise_ramification {A: Type}{JA: Join A}{PA: Perm_alg A}{CA: Cross_alg A}{CAA: Canc_alg A}{SA: Sep_alg A}{AG: ageable A}{XA: Age_alg A}:
+  forall P P' Q1 Q2 Q1' Q2', precise P -> precise P' -> ramify (P ⊗ Q1) P P' (P' ⊗ Q1') -> ramify (P ⊗ Q2) P P' (P' ⊗ Q2')
+                             -> ramify (P ⊗ Q1 ⊗ Q2) P P' (P' ⊗ Q1' ⊗ Q2').
+Proof.
+  intros; hnf; intros.
+  destruct H3 as [h124 [h567 [h3 [h124567 [h3567 [? [? [? [[h15 [h47 [h26 [h1457 [h2467 [? [? [? [? ?]]]]]]]]] ?]]]]]]]]].
+  destruct (cross_split _ _ _ _ _ H3 H8) as [[[[h14 h2] h57] h6] [? [? [? ?]]]].
+  destruct (cross_split _ _ _ _ _ H6 H14) as [[[[h1 h5] h4] h7] [? [? [? ?]]]].
+  try_join h26 h3 h236; exists h1457, h236; repeat split; auto.
+  assert (HPQ1: (P ⊗ Q1)%pred h124567) by (exists h15, h47, h26, h1457, h2467; repeat split; auto).
+  specialize (H1 h124567 HPQ1); destruct H1 as [h1457' [h26' [? [? ?]]]]; equate_precise h1457 h1457'; equate_canc h26 h26'.
+  assert (join h14 h57 h1457) by (apply (cross_rev h1 h5 h4 h7 h15 h47); auto).
+  try_join h3 h6 h36; try_join h36 h1457 h134567; try_join h14 h36 h1346.
+  try_join_through h1346 h14 h57 h1457'; equate_join h1457 h1457'.
+  try_join h3 h57 h357; try_join_through h357 h3 h6 h36'; equate_join h36 h36'.
+  assert (HPQ2: (P ⊗ Q2)%pred h134567) by (exists h14, h57, h36, h1457, h3567; repeat split; auto).
+  specialize (H2 h134567 HPQ2); destruct H2 as [h1457' [h36' [? [? ?]]]]; equate_precise h1457 h1457'; equate_canc h36 h36'.
+  intros h236' h1457' a'; intros.
+  destruct (nec_join2 H20 H2) as [h26' [h3' [? [? ?]]]]; destruct (nec_join2 H15 H37) as [h2' [h6' [? [? ?]]]].
+  try_join h3' h6' h36'; assert (necR h36 h36') by (apply (join_necR h3 h6 _ h3' h6' _); auto).
+  try_join h26' h1457' h124567'; try_join h36' h1457' h134567'.
+  assert (HPQ1': (P' ⊗ Q1')%pred h124567') by (apply (H23 h26' h1457'); auto).
+  assert (HPQ2': (P' ⊗ Q2')%pred h134567') by (apply (H34 h36' h1457'); auto).
+  destruct HPQ1' as [h15' [h47' [h26'' [h1457'' [h2467' [? [? [? [? ?]]]]]]]]].
+  equate_precise h1457' h1457''; equate_canc h26' h26''.
+  destruct HPQ2' as [h14' [h57' [h36'' [h1457'' [h3567' [? [? [? [? ?]]]]]]]]].
+  equate_precise h1457' h1457''; equate_canc h36' h36''.
+  destruct (cross_split _ _ _ _ _ H49 H51) as [[[[h1' h5'] h4'] h7'] [? [? [? ?]]]].
+  try_join h6' h57' h567'; try_join h2' h1457' h12457'; try_join h14' h2' h124'.
+  try_join h124' h6' h1246'; try_join_through h1246' h6' h57' h567''; equate_join h567' h567''.
+  exists h124', h567', h3', h124567', h3567'; repeat split; auto.
+  exists h15', h47', h26', h1457', h2467'; repeat split; auto.
+Qed.
+
 Lemma exact_frame_ramification {A: Type}{JA: Join A}{PA: Perm_alg A}{CA: Cross_alg A}{CAA: Canc_alg A}{SA: Sep_alg A}{AG: ageable A}{XA: Age_alg A}:
   forall P Q R R' F, precise P -> (R |-- P * F * TT) -> (F -⊛ R' |-- F -* R') -> ramify R P Q R' -> ramify R (P * F) (Q * F) R'.
 Proof.
@@ -81,3 +115,4 @@ Proof.
   try_join m2' z' m2'z'; specialize (H9 m2'z' m1' z'm'); apply H9; auto.
   admit.
 Qed.
+
