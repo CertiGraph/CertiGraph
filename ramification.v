@@ -55,7 +55,7 @@ Proof.
   split; auto; exists m, z'; repeat split; auto; apply pred_nec_hereditary with z; auto.
 Qed.
 
-Lemma disjoint_ramificatin {A: Type}{JA: Join A}{PA: Perm_alg A}{CA: Cross_alg A}{CAA: Canc_alg A}{SA: Sep_alg A}{AG: ageable A}{XA: Age_alg A}:
+Lemma disjoint_ramificatin {A: Type}{JA: Join A}{PA: Perm_alg A}{AG: ageable A}{XA: Age_alg A}:
   forall R P P' R' S Q Q' S', ramify R P P' R' -> ramify S Q Q' S' -> ramify (R * S) (P * Q) (P' * Q') (R' * S').
 Proof.
   intros; hnf; intro ab; intros; destruct H1 as [a [b [? [? ?]]]].
