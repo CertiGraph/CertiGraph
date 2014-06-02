@@ -1,6 +1,13 @@
 Require Import msl.msl_classical.
 Require Import ramify_tactics.
 
+Lemma join_age {A}{JA: Join A}{PA: Perm_alg A}{AG: ageable A}{XA: Age_alg A}:
+  forall h1 h2 h12 h1' h2' h12', join h1 h2 h12 -> join h1' h2' h12' -> age h1 h1' -> age h2 h2' -> age h12 h12'.
+Proof.
+  intros; destruct (age1_join _ H H1) as [w2 [w12 [? [? ?]]]];
+  equate_age h2' w2; equate_join h12' w12; auto.
+Qed.
+
 Program Definition ovrlapcon {A: Type}{JA: Join A}{PA: Perm_alg A}{AG: ageable A}{XA: Age_alg A} (p q:pred A) : pred A :=
   fun h:A => exists h1 h2 h3 h12 h23, join h1 h2 h12 /\ join h2 h3 h23 /\ join h12 h3 h /\ p h12 /\ q h23.
 Next Obligation.
@@ -13,9 +20,7 @@ Next Obligation.
   repeat split; auto.
   apply pred_hereditary with h12; auto.
   apply pred_hereditary with h23; auto.
-  destruct (age1_join2 _ H6 H) as [w1' [w23' [? [? ?]]]].
-  destruct (age1_join2 _ H1 H16) as [w2' [w3' [? [? ?]]]].
-  equate_age w2 w2'; equate_age w3 w3'; equate_join w23 w23'; trivial.
+  apply (join_age h2 h3 _ w2 w3 _); auto.
 Qed.
 
 Notation "P ⊗ Q" := (ovrlapcon P Q) (at level 40, left associativity) : pred.
@@ -75,52 +80,31 @@ Proof.
   repeat split; auto.
 Qed.
 
+
+Lemma join_necR {A}{JA: Join A}{PA: Perm_alg A}{AG: ageable A}{XA: Age_alg A}:
+  forall h1 h2 h12 h1' h2' h12', join h1 h2 h12 -> join h1' h2' h12' -> necR h1 h1' -> necR h2 h2' -> necR h12 h12'.
+Proof.
+  intros; destruct (nec_join H H1) as [w2 [w12 [? [? ?]]]];
+  destruct (join_level _ _ _ H3); rewrite <- H7 in H6;
+  destruct (join_level _ _ _ H0); rewrite <- H9 in H8;
+  rewrite H8 in H6; generalize (necR_linear' H2 H4 H6); intro;
+  rewrite <- H10 in H3; equate_join h12' w12; auto.
+Qed.
+
 Lemma overlapping_wand {A}{JA: Join A}{PA: Perm_alg A}{AG: ageable A}{XA: Age_alg A}:
   forall P Q, (P ⊗ Q = EX R : pred A, (R -* P) * (R -* Q) * R)%pred.
 Proof.
   intros; apply pred_ext; hnf; intros; simpl in *.
   destruct H as [h1 [h2 [h3 [h12 [h23 [? [? [? [? ?]]]]]]]]].
-  destruct (join_assoc H H1) as [h23' [H5 H4]].
-  generalize (join_eq H0 H5); intro.
-  rewrite <- H6 in H4; clear h23' H5 H6.
-  destruct (join_assoc H0 (join_comm H4)) as [h13 [? ?]].
-  apply join_comm in H5. apply join_comm in H6.
-  exists (exactly h2), h13, h2.
-  repeat split; simpl; auto.
-  exists h1, h3.
-  repeat split; auto.
-
-  intros h1' h2' h12'; intros;
-  apply (pred_nec_hereditary P h12); auto;
-  destruct (nec_join H H7) as [w2 [w12 [? [? ?]]]];
-  destruct (join_level h1' h2' h12' H8); rewrite <- H14 in H13; clear H14;
-  destruct (join_level h1' w2 w12 H10); rewrite <- H15 in H14; clear H15;
-  rewrite H14 in H13; clear H14;
-  generalize (necR_linear' H11 H9 H13); intro;
-  rewrite H14 in H10;
-  generalize (join_eq H10 H8); intro;
-  rewrite H15 in H12; auto.
-
-  intros h3' h2' h23'; intros;
-  apply (pred_nec_hereditary Q h23); auto;
-  apply join_comm in H0;
-  destruct (nec_join H0 H7) as [w2 [w23 [? [? ?]]]];
-  destruct (join_level h3' h2' h23' H8); rewrite <- H14 in H13; clear H14;
-  destruct (join_level h3' w2 w23 H10); rewrite <- H15 in H14; clear H15;
-  rewrite H14 in H13; clear H14;
-  generalize (necR_linear' H11 H9 H13); intro;
-  rewrite H14 in H10;
-  generalize (join_eq H10 H8); intro;
-  rewrite H15 in H12; auto.
-
+  try_join h2 h3 h23'; equate_join h23 h23'; try_join h1 h3 h13.
+  exists (exactly h2), h13, h2; repeat split; simpl; auto; exists h1, h3; repeat split; auto.
+  intros h1' h2' h12'; intros; apply (pred_nec_hereditary P h12); auto; apply (join_necR h1 h2 _ h1' h2' _); auto.
+  intros h3' h2' h23'; intros; apply (pred_nec_hereditary Q h23); auto; apply (join_necR h2 h3 _ h2' h3' _); auto.
   (* another direction *)
-  destruct H as [R [w13 [w2 [H132a [[w1 [w3 [H13 [HP HQ]]]] HR]]]]].
-  destruct (join_assoc H13 H132a) as [w23 [H23 H123a]].
-  destruct (join_assoc H23 (join_comm H123a)) as [w12 [H2112 H312a]].
-  exists w1, w2, w3, w12, w23.
-  repeat split; auto.
-  apply (HP w1 w2); auto.
-  apply (HQ w3 w2); auto.
+  destruct H as [R [w13 [w2 [? [[w1 [w3 [? [HP HQ]]]] HR]]]]].
+  try_join w2 w3 w23; try_join w1 w2 w12.
+  exists w1, w2, w3, w12, w23; repeat split; auto.
+  apply (HP w1 w2); auto. apply (HQ w3 w2); auto.
 Qed.
 
 Lemma overlapping_comm {A}{JA: Join A}{PA: Perm_alg A}{AG: ageable A}{XA: Age_alg A}:
@@ -129,9 +113,7 @@ Proof.
   intros; apply pred_ext; hnf; intros; simpl in *; intros;
   destruct H as [h1 [h2 [h3 [h12 [h23 [? [? [? [? ?]]]]]]]]];
   exists h3, h2, h1, h23, h12;
-  repeat split; auto; destruct (join_assoc H H1) as [h23' [? ?]];
-  generalize (join_eq H0 H4); intro;
-  rewrite <- H6 in H5; apply join_comm in H5; trivial.
+  repeat split; auto; try_join h2 h3 h23'; equate_join h23 h23'; auto.
 Qed.
 
 Lemma cross_rev {A}{JA: Join A}{PA: Perm_alg A}: forall h1 h2 h3 h4
@@ -147,42 +129,24 @@ Lemma overlapping_assoc {A}{JA: Join A}{PA: Perm_alg A}{CA: Cross_alg A}{AG: age
   forall P Q R: pred A, (P ⊗ Q ⊗ R = P ⊗ (Q ⊗ R))%pred.
 Proof.
   intros; apply pred_ext; hnf; intros; simpl in *; intros.
-  destruct H as [w124 [w567 [w3 [w124567 [w3567 [H124_567 [H567_3 [H124567_3 [[w15 [w47 [w26 [w1457 [w2467 [H15_47 [H47_26 [H1457_26 [Pw1457 Qw2467]]]]]]]]] Rw3567]]]]]]]]].
-  destruct (cross_split w124 w567 w1457 w26 w124567 H124_567 H1457_26) as [[[[w14 w2] w57] w6] [H14_2 [H57_6 [H14_57 H2_6]]]].
-  destruct (cross_split w15 w47 w14 w57 w1457 H15_47 H14_57) as [[[[w1 w5] w4] w7] [H1_5 [H4_7 [H1_4 H5_7]]]].
-  destruct (join_assoc H1_5 H15_47) as [w457 [H5_47 H1_457]].
-  destruct (join_assoc H1457_26 H124567_3) as [w236 [H26_3 H1457_236]].
-  destruct (join_assoc H1_457 H1457_236) as [w234567 [H457_236 H1_234567]].
-  exists w1, w457, w236, w1457, w234567.
-  repeat split; auto.
-  destruct (join_assoc H1_4 H14_2) as [w24 [H4_2 H1_24]].
-  destruct (join_assoc H5_7 H57_6) as [w67 [H7_6 H5_67]].
-  destruct (join_assoc (join_comm H5_67) H567_3) as [w35 [H5_3 H67_35]].
-  exists w24, w67, w35, w2467, w3567.
-  repeat split; auto.
-  apply (cross_rev w2 w6 w4 w7 w26 w47); auto.
-  apply (cross_rev w47 w5 w26 w3 w457 w236); auto.
-
+  destruct H as [w124 [w567 [w3 [w124567 [w3567 [? [? [? [[w15 [w47 [w26 [w1457 [w2467 [? [? [? [? ?]]]]]]]]] ?]]]]]]]]].
+  destruct (cross_split _ _ _ _ _ H H4) as [[[[w14 w2] w57] w6] [? [? [? ?]]]].
+  destruct (cross_split _ _ _ _ _ H2 H10) as [[[[w1 w5] w4] w7] [? [? [? ?]]]].
+  try_join w5 w47 w457; try_join w3 w26 w236; try_join w236 w457 w234567.
+  exists w1, w457, w236, w1457, w234567; repeat split; auto.
+  try_join w2 w4 w24; try_join w6 w7 w67; try_join w3 w5 w35.
+  exists w24, w67, w35, w2467, w3567; repeat split; auto.
+  apply (cross_rev w2 w6 w4 w7 w26 w47); auto. apply (cross_rev w47 w5 w26 w3 w457 w236); auto.
   (* another direction *)
-  destruct H as [w1 [w457 [w236 [w1457 [w234567 [H1_457 [H457_236 [H1457_236 [Pw1457 [w24 [w67 [w35 [w2467 [w3567 [H24_67 [H67_35 [H2467_35 [Qw2467 Rw3567]]]]]]]]]]]]]]]]]].
-  destruct (cross_split w457 w236 w2467 w35 w234567 H457_236 H2467_35) as [[[[w47 w5] w26] w3] [H47_5 [H26_3 [H47_26 H5_3]]]].
-  destruct (cross_split w24 w67 w47 w26 w2467 H24_67 H47_26) as [[[[w4 w2] w7] w6] [H4_2 [H7_6 [H4_7 H2_6]]]].
-  destruct (join_assoc (join_comm H26_3) (join_comm H1457_236)) as [w124567 [H26_1457 H3_124567]].
-  destruct (join_assoc (join_comm H5_3) (join_comm H67_35)) as [w567 [H5_67 H3_567]].
-
-  destruct (join_assoc H4_7 H47_5) as [w57 [H7_5 H4_57]].
-  destruct (join_assoc (join_comm H4_57) (join_comm H1_457)) as [w14 [H4_1 H57_14]].
-  destruct (join_assoc H57_14 (join_comm H26_1457)) as [w1246 [H14_26 H57_1246]].
-  destruct (join_assoc (join_comm H2_6) (join_comm H14_26)) as [w124 [H2_14 H6_124]].
-
-  exists w124, w567, w3, w124567, w3567.
-  repeat split; auto.
-  apply join_comm.
-  apply (cross_rev w6 w2 w57 w14 w26 w1457); auto.
-  destruct (join_assoc (join_comm H7_6) (join_comm H5_67)) as [w57' [Ht H6_57]];
-  generalize (join_eq Ht H7_5); intro Ht2; rewrite Ht2 in H6_57; clear w57' Ht Ht2; trivial.
-  destruct (join_assoc H47_5 (join_comm H1_457)) as [w15 [H5_1 H47_15]].
-  exists w15, w47, w26, w1457, w2467.
+  destruct H as [w1 [w457 [w236 [w1457 [w234567 [? [? [? [? [w24 [w67 [w35 [w2467 [w3567 [? [? [? [? ?]]]]]]]]]]]]]]]]]].
+  destruct (cross_split _ _ _ _ _ H0 H5) as [[[[w47 w5] w26] w3] [? [? [? ?]]]].
+  destruct (cross_split _ _ _ _ _ H3 H10) as [[[[w4 w2] w7] w6] [? [? [? ?]]]].
+  try_join w26 w1457 w124567; try_join w5 w67 w567; try_join w5 w7 w57; try_join w1 w4 w14;
+  try_join w14 w26 w1246; try_join w2 w14 w124.
+  exists w124, w567, w3, w124567, w3567; repeat split; auto.
+  apply join_comm; apply (cross_rev w6 w2 w57 w14 w26 w1457); auto.
+  try_join_through w67 w5 w7 w57'; equate_join w57 w57'; auto.
+  try_join w1 w5 w15; exists w15, w47, w26, w1457, w2467;
   repeat split; auto.
 Qed.
 
@@ -226,83 +190,27 @@ Proof.
   apply H0, H1.
 Qed.
 
-
-Lemma later_sepcon1 {A} {JA: Join A}{PA: Perm_alg A}{SA: Sep_alg A}{AG: ageable A}{XA: Age_alg A} : forall P Q,
-  (|>(P * Q) = |>P * |>Q)%pred.
-Proof.
-  pose (H:=True).
-  intros.
-  repeat rewrite later_age.
-  apply pred_ext; hnf; intros.
-  simpl in H0.
-  case_eq (age1 a); intros.
-  destruct (H0 a0) as [w [v [? [? ?]]]]; auto.
-  destruct (unage_join2 _ H2 H1) as [w' [v' [? [? ?]]]].
-  exists w'; exists v'; intuition.
-  simpl; intros.
-  replace a' with w; auto.
-  unfold age in *; congruence.
-  simpl; intros.
-  replace a' with v; auto.
-  unfold age in *; congruence.
-  destruct (join_ex_units a).
-  exists x; exists a.
-  intuition.
-  hnf; intros.
-  red in u.
-  simpl in H2.
-  destruct (age1_join _ u H2) as [s [t [? [? ?]]]].
-  unfold age in H5.
-  rewrite H1 in H5; discriminate.
-  hnf; intros.
-  simpl in H2.
-  unfold age in H2.
-  rewrite H1 in H2; discriminate.
-
-  destruct H0 as [w [v [? [? ?]]]].
-  hnf; intros.
-  simpl in H3.
-  destruct (age1_join2 _ H0 H3) as [w' [v' [? [? ?]]]].
-  exists w'; exists v'; intuition.
-Qed.
-
 Lemma later_overlapping {A}{JA: Join A}{PA: Perm_alg A}{SA: Sep_alg A}{AG: ageable A}{XA: Age_alg A}:
   forall P Q, ((|> (P ⊗ Q)) = |> Q ⊗ |> P)%pred.
 Proof.
-  intros; apply pred_ext. hnf; intros; simpl in *.
+  intros; repeat rewrite later_age; apply pred_ext; hnf; intros; simpl in *.
   case_eq (age1 a); intros.
-  destruct (H a0) as [h1' [h2' [h3' [h12' [h23' [? [? [? [? ?]]]]]]]]].
-  apply t_step; apply H0.
+  destruct (H a0) as [h1' [h2' [h3' [h12' [h23' [? [? [? [? ?]]]]]]]]]; auto.
   destruct (unage_join2 _ H3 H0) as [x12 [x3 [? [? ?]]]].
   destruct (unage_join2 _ H1 H7) as [x1 [x2 [? [? ?]]]].
-  try_join x2 x3 x23.
-  exists x3, x2, x1, x23, x12; repeat (split; auto).
-  intro h23; intros.
-  assert (age x23 h23'); destruct (age1_join2 _ H13 H0) as [w1 [w23 [? [? ?]]]].
-  destruct (age1_join2 _ H12 H17) as [w2 [w3 [? [? ?]]]]; equate_age h2' w2; equate_age h3' w3. 
-  equate_join h23' w23; auto.
-  generalize (age_later_nec x23 h23' h23 H15 H14); intro; apply pred_nec_hereditary with h23'; auto.
-  intro h12; intros.
-  assert (age x12 h12'); try_join x1 x2 x12'; equate_join x12 x12'.
-  destruct (age1_join2 _ H16 H0) as [w3 [w12 [? [? ?]]]].
-  destruct (age1_join2 _ H9 H18) as [w1 [w2 [? [? ?]]]]; equate_age h1' w1; equate_age h2' w2;
-  equate_join h12' w12; auto.
-  generalize (age_later_nec x12 h12' h12 H15 H14); intro; apply pred_nec_hereditary with h12'; auto.
+  try_join x2 x3 x23; exists x3, x2, x1, x23, x12; repeat (split; auto).
+  assert (age x23 h23') by (apply (join_age x2 x3 _ h2' h3' _); auto); intro h23; intros; equate_age h23' h23; auto.
+  assert (age x12 h12') by (apply (join_age x1 x2 _ h1' h2' _); auto); intro h12; intros; equate_age h12' h12; auto.
   exists (core a), a, (core a), a, a. repeat split.
   apply core_unit. apply join_comm, core_unit. apply join_comm, core_unit.
-  intros; rewrite age1_level0 in H0; apply laterR_level in H1; exfalso; intuition.
-  intros; rewrite age1_level0 in H0; apply laterR_level in H1; exfalso; intuition.
-  (* * *)
-  repeat rewrite later_age; hnf; intros.
+  intros; unfold age in H1; rewrite H0 in H1; discriminate H1.
+  intros; unfold age in H1; rewrite H0 in H1; discriminate H1.
+  (* another direction *)
   destruct H as [x1 [x2 [x3 [x12 [x23 [? [? [? [? ?]]]]]]]]]; intros.
-  hnf; intros. simpl in H2, H3, H4.
   destruct (age1_join2 _ H1 H4) as [h12 [h3 [? [? ?]]]].
   destruct (age1_join2 _ H H6) as [h1 [h2 [? [? ?]]]].
   try_join h2 h3 h23; exists h3, h2, h1, h23, h12; repeat (split; auto).
-  assert (age x23 h23). try_join x2 x3 x23'; equate_join x23 x23'.
-  destruct (age1_join2 _ H14 H4) as [w1 [w23 [? [? ?]]]].
-  destruct (age1_join2 _ H0 H16) as [w2 [w3 [? [? ?]]]].
-  equate_age h2 w2; equate_age h3 w3; equate_join h23 w23; auto. auto.
+  apply H3; apply (join_age x2 x3 _ h2 h3 _); auto.
 Qed.
 
 (* Require Import msl.cjoins. *)
