@@ -1,11 +1,12 @@
 Require Import msl.msl_classical.
 Require Import overlapping.
 Require Import ramify_tactics.
+Require Import msl.sepalg_list.
 
 Definition ramify {A: Type}{JA: Join A}{PA: Perm_alg A}{AG: ageable A}{XA: Age_alg A}
            (R P Q R' : pred A) := R |-- P * (Q -* R').
 
-Lemma overlapping_ramification {A: Type}{JA: Join A}{PA: Perm_alg A}{CA: Cross_alg A}{CAA: Canc_alg A}{SA: Sep_alg A}{AG: ageable A}{XA: Age_alg A}:
+Lemma ocon_ramification {A: Type}{JA: Join A}{PA: Perm_alg A}{CA: Cross_alg A}{CAA: Canc_alg A}{SA: Sep_alg A}{AG: ageable A}{XA: Age_alg A}:
   forall P Q R R' F, precise P -> precise Q -> ramify (P ⊗ R) P Q (Q ⊗ R') ->
                      ramify ((P * F) ⊗ R) P Q ((Q * F) ⊗ R').
 Proof.
@@ -70,7 +71,7 @@ Proof.
   exists a2's1, b2's2; repeat split; auto.
 Qed.
 
-Lemma overlapping_piecewise_ramification {A: Type}{JA: Join A}{PA: Perm_alg A}{CA: Cross_alg A}{CAA: Canc_alg A}{SA: Sep_alg A}{AG: ageable A}{XA: Age_alg A}:
+Lemma ocon_piecewise_ramification {A: Type}{JA: Join A}{PA: Perm_alg A}{CA: Cross_alg A}{CAA: Canc_alg A}{SA: Sep_alg A}{AG: ageable A}{XA: Age_alg A}:
   forall P P' Q1 Q2 Q1' Q2', precise P -> precise P' -> ramify (P ⊗ Q1) P P' (P' ⊗ Q1') -> ramify (P ⊗ Q2) P P' (P' ⊗ Q2')
                              -> ramify (P ⊗ Q1 ⊗ Q2) P P' (P' ⊗ Q1' ⊗ Q2').
 Proof.
@@ -104,15 +105,26 @@ Proof.
   exists h15', h47', h26', h1457', h2467'; repeat split; auto.
 Qed.
 
-Lemma exact_frame_ramification {A: Type}{JA: Join A}{PA: Perm_alg A}{CA: Cross_alg A}{CAA: Canc_alg A}{SA: Sep_alg A}{AG: ageable A}{XA: Age_alg A}:
-  forall P Q R R' F, precise P -> (R |-- P * F * TT) -> (F -⊛ R' |-- F -* R') -> ramify R P Q R' -> ramify R (P * F) (Q * F) R'.
-Proof.
-  intros; hnf; intros; specialize (H0 a H3); specialize (H2 a H3).
-  destruct H0 as [y [z [? [[y1 [y2 [? [? ?]]]] ?]]]]; destruct H2 as [y1' [y2z [? [? ?]]]].
-  try_join y2 z y2z'; equate_precise y1 y1'; equate_canc y2z y2z'.
-  exists y, z; repeat split; auto. exists y1, y2; repeat split; auto.
-  intros z' m' z'm'; intros. destruct H12 as [m1' [m2' [? [? ?]]]].
-  try_join m2' z' m2'z'; specialize (H9 m2'z' m1' z'm'); apply H9; auto.
-  admit.
-Qed.
+(* Lemma exact_frame_ramification {A: Type}{JA: Join A}{PA: Perm_alg A}{CA: Cross_alg A}{CAA: Canc_alg A}{SA: Sep_alg A}{AG: ageable A}{XA: Age_alg A}: *)
+(*   forall P Q R R' F, precise P -> (R |-- P * F * TT) -> (F -⊛ R' |-- F -* R') -> ramify R P Q R' -> ramify R (P * F) (Q * F) R'. *)
+(* Proof. *)
+(*   intros; hnf; intros; specialize (H0 a H3); specialize (H2 a H3). *)
+(*   destruct H0 as [y [z [? [[y1 [y2 [? [? ?]]]] ?]]]]; destruct H2 as [y1' [y2z [? [? ?]]]]. *)
+(*   try_join y2 z y2z'; equate_precise y1 y1'; equate_canc y2z y2z'. *)
+(*   exists y, z; repeat split; auto. exists y1, y2; repeat split; auto. *)
+(*   (* clear H5 H. *) *)
+(*   replace (((Q * F) -* R')%pred) with ((Q -* (F -* R'))%pred). *)
+(*   intros z' m' z'm' ? ? ?. apply H1. *)
+(*   (* intros z' m' z'm'; intros; destruct H12 as [m1' [m2' [? [? ?]]]]. *) *)
+(*   destruct (nec_join (join_comm H10) H8) as [y2' [y2z' [? [? ?]]]]. *)
+(*   (* destruct (nec_join (join_comm H2) H17) as [y1' [a' [? [? ?]]]]. *) *)
+(*   destruct (nec_join3 H11 H8) as [m [zm [? [? ?]]]]. *)
+(*   destruct (nec_join4 _ _ _ _ H12 H22) as [m1 [m2 [? [? ?]]]]. *)
+(*   simpl in H9; hnf in H1; simpl in H1. *)
+(*   (* try_join m2' z' m2'z'; specialize (H9 m2'z' m1' z'm'); apply H9; auto. *) *)
+(*   specialize (H9 y2z' y1' a' H17 H18). *)
+(*   generalize (pred_nec_hereditary _ _ _ H16 H6); intro. *)
+(*   admit. *)
+(* Qed. *)
+
 

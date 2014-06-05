@@ -8,7 +8,7 @@ Proof.
   equate_age h2' w2; equate_join h12' w12; auto.
 Qed.
 
-Program Definition ovrlapcon {A: Type}{JA: Join A}{PA: Perm_alg A}{AG: ageable A}{XA: Age_alg A} (p q:pred A) : pred A :=
+Program Definition ocon {A: Type}{JA: Join A}{PA: Perm_alg A}{AG: ageable A}{XA: Age_alg A} (p q:pred A) : pred A :=
   fun h:A => exists h1 h2 h3 h12 h23, join h1 h2 h12 /\ join h2 h3 h23 /\ join h12 h3 h /\ p h12 /\ q h23.
 Next Obligation.
   destruct H0 as [h1 [h2 [h3 [h12 [h23 [? [? [? [? ?]]]]]]]]].
@@ -23,9 +23,9 @@ Next Obligation.
   apply (join_age h2 h3 _ w2 w3 _); auto.
 Qed.
 
-Notation "P ⊗ Q" := (ovrlapcon P Q) (at level 40, left associativity) : pred.
+Notation "P ⊗ Q" := (ocon P Q) (at level 40, left associativity) : pred.
 
-Lemma overlapping_emp {A}{JA: Join A}{PA: Perm_alg A}{SA: Sep_alg A}{CA: Canc_alg A}{AG: ageable A}{XA: Age_alg A}:
+Lemma ocon_emp {A}{JA: Join A}{PA: Perm_alg A}{SA: Sep_alg A}{CA: Canc_alg A}{AG: ageable A}{XA: Age_alg A}:
   forall P: pred A, (P ⊗ emp = P)%pred.
 Proof.
   intros; apply pred_ext; hnf; intros; simpl in *; intros.
@@ -41,7 +41,7 @@ Proof.
   apply core_identity.
 Qed.
 
-Lemma andp_overlapping {A}{JA: Join A}{PA: Perm_alg A}{SA: Sep_alg A}{AG: ageable A}{XA: Age_alg A}:
+Lemma andp_ocon {A}{JA: Join A}{PA: Perm_alg A}{SA: Sep_alg A}{AG: ageable A}{XA: Age_alg A}:
   forall P Q, P && Q |-- P ⊗ Q.
 Proof.
   intros.
@@ -54,7 +54,7 @@ Proof.
   apply join_comm; apply core_unit.
 Qed.
 
-Lemma sepcon_overlapping {A}{JA: Join A}{PA: Perm_alg A}{SA: Sep_alg A}{AG: ageable A}{XA: Age_alg A}:
+Lemma sepcon_ocon {A}{JA: Join A}{PA: Perm_alg A}{SA: Sep_alg A}{AG: ageable A}{XA: Age_alg A}:
   forall P Q, P * Q |-- P ⊗ Q.
 Proof.
   intros; hnf; intros; simpl in *; intros.
@@ -71,7 +71,7 @@ Proof.
   rewrite Hequ. apply core_unit.
 Qed.
 
-Lemma overlapping_sep_true {A}{JA: Join A}{PA: Perm_alg A}{AG: ageable A}{XA: Age_alg A}:
+Lemma ocon_sep_true {A}{JA: Join A}{PA: Perm_alg A}{AG: ageable A}{XA: Age_alg A}:
   forall P Q, P ⊗ Q |-- P * TT.
 Proof.
   intros; hnf; intros; simpl in *; intros.
@@ -91,7 +91,7 @@ Proof.
   rewrite <- H10 in H3; equate_join h12' w12; auto.
 Qed.
 
-Lemma overlapping_wand {A}{JA: Join A}{PA: Perm_alg A}{AG: ageable A}{XA: Age_alg A}:
+Lemma ocon_wand {A}{JA: Join A}{PA: Perm_alg A}{AG: ageable A}{XA: Age_alg A}:
   forall P Q, (P ⊗ Q = EX R : pred A, (R -* P) * (R -* Q) * R)%pred.
 Proof.
   intros; apply pred_ext; hnf; intros; simpl in *.
@@ -107,7 +107,7 @@ Proof.
   apply (HP w1 w2); auto. apply (HQ w3 w2); auto.
 Qed.
 
-Lemma overlapping_comm {A}{JA: Join A}{PA: Perm_alg A}{AG: ageable A}{XA: Age_alg A}:
+Lemma ocon_comm {A}{JA: Join A}{PA: Perm_alg A}{AG: ageable A}{XA: Age_alg A}:
   forall P Q, (P ⊗ Q = Q ⊗ P)%pred.
 Proof.
   intros; apply pred_ext; hnf; intros; simpl in *; intros;
@@ -125,7 +125,7 @@ Proof.
   try_join h1 h3 h13'; equate_join h13 h13'; auto.
 Qed.
 
-Lemma overlapping_assoc {A}{JA: Join A}{PA: Perm_alg A}{CA: Cross_alg A}{AG: ageable A}{XA: Age_alg A}:
+Lemma ocon_assoc {A}{JA: Join A}{PA: Perm_alg A}{CA: Cross_alg A}{AG: ageable A}{XA: Age_alg A}:
   forall P Q R: pred A, (P ⊗ Q ⊗ R = P ⊗ (Q ⊗ R))%pred.
 Proof.
   intros; apply pred_ext; hnf; intros; simpl in *; intros.
@@ -153,7 +153,7 @@ Qed.
 Definition covariant {B A : Type} {AG: ageable A} (F: (B -> pred A) -> (B -> pred A)) : Prop :=
 forall (P Q: B -> pred A), (forall x, P x |-- Q x) -> (forall x, F P x |-- F Q x).
 
-Lemma overlapping_derives {A} {JA: Join A}{PA: Perm_alg A}{AG: ageable A}{XA: Age_alg A}:
+Lemma ocon_derives {A} {JA: Join A}{PA: Perm_alg A}{AG: ageable A}{XA: Age_alg A}:
   forall p q p' q', (p |-- p') -> (q |-- q') -> (p ⊗ q |-- p' ⊗ q').
 Proof.
   repeat (intros; hnf).
@@ -163,14 +163,14 @@ Proof.
   repeat split; auto.
 Qed.
 
-Lemma covariant_overlapping {B}{A} {JA: Join A}{PA: Perm_alg A}{AG: ageable A}{XA: Age_alg A}:
+Lemma covariant_ocon {B}{A} {JA: Join A}{PA: Perm_alg A}{AG: ageable A}{XA: Age_alg A}:
    forall F1 F2 : (B -> pred A) -> (B -> pred A),
     covariant F1 -> covariant F2 ->
     covariant (fun (x : B -> pred A) b => F1 x b ⊗ F2 x b)%pred.
 Proof.
   intros; hnf.
   intros P Q ? ?.
-  eapply overlapping_derives.
+  eapply ocon_derives.
   apply H, H1.
   apply H0, H1.
 Qed.
@@ -178,19 +178,19 @@ Qed.
 Definition contravariant {B A : Type} {AG: ageable A} (F: (B -> pred A) -> (B -> pred A)) : Prop :=
 forall (P Q: B -> pred A), (forall x, P x |-- Q x) -> (forall x, F Q x |-- F P x).
 
-Lemma contravariant_overlapping {B}{A} {JA: Join A}{PA: Perm_alg A}{AG: ageable A}{XA: Age_alg A}:
+Lemma contravariant_ocon {B}{A} {JA: Join A}{PA: Perm_alg A}{AG: ageable A}{XA: Age_alg A}:
    forall F1 F2 : (B -> pred A) -> (B -> pred A),
     contravariant F1 -> contravariant F2 ->
     contravariant (fun (x : B -> pred A) b => F1 x b ⊗ F2 x b)%pred.
 Proof.
   intros; hnf.
   intros P Q ? ?.
-  eapply overlapping_derives.
+  eapply ocon_derives.
   apply H, H1.
   apply H0, H1.
 Qed.
 
-Lemma later_overlapping {A}{JA: Join A}{PA: Perm_alg A}{SA: Sep_alg A}{AG: ageable A}{XA: Age_alg A}:
+Lemma later_ocon {A}{JA: Join A}{PA: Perm_alg A}{SA: Sep_alg A}{AG: ageable A}{XA: Age_alg A}:
   forall P Q, ((|> (P ⊗ Q)) = |> Q ⊗ |> P)%pred.
 Proof.
   intros; repeat rewrite later_age; apply pred_ext; hnf; intros; simpl in *.
@@ -213,10 +213,24 @@ Proof.
   apply H3; apply (join_age x2 x3 _ h2 h3 _); auto.
 Qed.
 
+Lemma subp_ocon {A} {JA : Join A} {PA : Perm_alg A} {SA: Sep_alg A} {AG: ageable A} {XA: Age_alg A} :
+  forall G P P' Q Q',
+    G |-- P >=> P' ->
+    G |-- Q >=> Q' ->
+    G |-- P ⊗ Q >=> P' ⊗ Q'.
+Proof.
+  repeat intro.
+  destruct H4 as [x0 [x1 [x2 [x3 [x4 [? [? [? [? ?]]]]]]]]].
+  destruct (join_level _ _ _ H5); destruct (join_level _ _ _ H6); apply necR_level in H3.
+  exists x0, x1, x2, x3, x4; repeat (split; auto);
+  [specialize (H a H1 x3); apply H | specialize (H0 a H1 x4); apply H0]; intuition.
+Qed.
+
+
 (* Require Import msl.cjoins. *)
 (* Require Import msl.cross_split. *)
 
-(* Lemma assoc_overlapping_cross {A}{JA: Join A}{PA: Perm_alg A}{AG: ageable A}{XA: Age_alg A}: *)
+(* Lemma assoc_ocon_cross {A}{JA: Join A}{PA: Perm_alg A}{AG: ageable A}{XA: Age_alg A}: *)
 (*   (forall P Q R: pred A, (P ⊗ Q ⊗ R = P ⊗ (Q ⊗ R))%pred) -> sa_distributive A. *)
 (* Proof. *)
 (*   intros; hnf; intros. *)
