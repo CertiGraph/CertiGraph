@@ -73,7 +73,8 @@ Proof. intros; hnf in *; intuition; apply sublist_app; trivial. Qed.
 
 Definition structurally_identical {V D1 D2 : Type} {EV: EqDec V} {VV1 VV2 : Valid V}
            (G1 : @PreGraph V D1 EV VV1) (G2 : @PreGraph V D2 EV VV2) : Prop :=
-  forall v : V, (@edge_func V D1 EV VV1 G1 v) ~= (@edge_func V D2 EV VV2 G2 v).
+  forall v : V, (@edge_func V D1 EV VV1 G1 v) ~= (@edge_func V D2 EV VV2 G2 v) /\
+                (@valid V EV VV1 v) = (@valid V EV VV2 v).
 
 Notation "g1 '~=~' g2" := (structurally_identical g1 g2) (at level 1).
 
@@ -82,8 +83,11 @@ Proof. repeat (intros; hnf); split; reflexivity. Qed.
 
 Lemma si_sym: forall (V D1 D2 : Type) (EV: EqDec V) (VV1 VV2 : Valid V) (G1 : @PreGraph V D1 EV VV1)
                      (G2 : @PreGraph V D2 EV VV2), G1 ~=~ G2 -> G2 ~=~ G1.
-Proof. intros; hnf in *; intros; apply eq_as_set_sym; apply H. Qed.
+Proof. intros; hnf in *; intros; specialize (H v); intuition. Qed.
 
 Lemma si_trans: forall (V D1 D2 D3 : Type) (EV : EqDec V) (VV1 VV2 VV3 : Valid V) (G1 : @PreGraph V D1 EV VV1)
                        (G2 : @PreGraph V D2 EV VV2) (G3 : @PreGraph V D3 EV VV3), G1 ~=~ G2 -> G2 ~=~ G3 -> G1 ~=~ G3.
-Proof. intros; hnf in *; intros; transitivity (@edge_func V D2 EV VV2 G2 v); trivial. Qed.
+Proof. 
+  intros; hnf in *; intros; specialize (H v); specialize (H0 v); intuition;
+  [transitivity (@edge_func V D2 EV VV2 G2 v) | transitivity (@valid V EV VV2 v)]; trivial.
+Qed.
