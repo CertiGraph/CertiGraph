@@ -71,23 +71,35 @@ Add Parametric Relation {A} : (list A) eq_as_set
 Lemma eq_as_set_app: forall A (L1 L2 L3 L4: list A), L1 ~= L2 -> L3 ~= L4 -> (L1 ++ L3) ~= (L2 ++ L4).
 Proof. intros; hnf in *; intuition; apply sublist_app; trivial. Qed.
 
+Definition removeInvalid {A} {EDT: EqDec A} (VT: Valid A) := filter valid.
+
 Definition structurally_identical {V D1 D2 : Type} {EV: EqDec V} {VV1 VV2 : Valid V}
            (G1 : @PreGraph V D1 EV VV1) (G2 : @PreGraph V D2 EV VV2) : Prop :=
-  forall v : V, (@edge_func V D1 EV VV1 G1 v) ~= (@edge_func V D2 EV VV2 G2 v) /\
-                (@valid V EV VV1 v) = (@valid V EV VV2 v).
+  forall v : V, (@valid V EV VV1 v) = (@valid V EV VV2 v) /\
+                (((@valid V EV VV1 v) = true /\ (@edge_func V D1 EV VV1 G1 v) ~= (@edge_func V D2 EV VV2 G2 v)) \/
+                 ((@valid V EV VV1 v) = false /\ (removeInvalid VV1 (@edge_func V D1 EV VV1 G1 v)) ~=
+                                                (removeInvalid VV2 (@edge_func V D2 EV VV2 G2 v)))).
 
 Notation "g1 '~=~' g2" := (structurally_identical g1 g2) (at level 1).
 
 Lemma si_refl: forall (V D : Type) (EV : EqDec V) (VV : Valid V) (G : PreGraph V D), G ~=~ G.
-Proof. repeat (intros; hnf); split; reflexivity. Qed.
+Proof. intros; hnf; intros; split; [reflexivity | destruct (valid v); [left | right]; split; reflexivity]. Qed.
 
 Lemma si_sym: forall (V D1 D2 : Type) (EV: EqDec V) (VV1 VV2 : Valid V) (G1 : @PreGraph V D1 EV VV1)
                      (G2 : @PreGraph V D2 EV VV2), G1 ~=~ G2 -> G2 ~=~ G1.
-Proof. intros; hnf in *; intros; specialize (H v); intuition. Qed.
+Proof.
+  intros; hnf in *; intros; specialize (H v); destruct H; split; auto; destruct H0;
+  [left; intuition; rewrite <- H; assumption | right; intuition; rewrite <- H; assumption].
+Qed.
 
 Lemma si_trans: forall (V D1 D2 D3 : Type) (EV : EqDec V) (VV1 VV2 VV3 : Valid V) (G1 : @PreGraph V D1 EV VV1)
                        (G2 : @PreGraph V D2 EV VV2) (G3 : @PreGraph V D3 EV VV3), G1 ~=~ G2 -> G2 ~=~ G3 -> G1 ~=~ G3.
-Proof. 
-  intros; hnf in *; intros; specialize (H v); specialize (H0 v); intuition;
-  [transitivity (@edge_func V D2 EV VV2 G2 v) | transitivity (@valid V EV VV2 v)]; trivial.
+Proof.
+  intros; hnf in *; intros; specialize (H v); specialize (H0 v); destruct H, H0; split;
+  [transitivity (@valid V EV VV2 v); auto |
+   destruct H1, H2; destruct H1, H2;
+   [left; split; auto; transitivity (@edge_func V D2 EV VV2 G2 v); trivial |
+    rewrite H in H1; rewrite H2 in H1; discriminate H1 |
+    rewrite H in H1; rewrite H2 in H1; discriminate H1 |
+    right; split; auto; transitivity (@removeInvalid V EV VV2 (@edge_func V D2 EV VV2 G2 v)); trivial]].
 Qed.
