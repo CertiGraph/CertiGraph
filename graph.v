@@ -156,6 +156,13 @@ Qed.
 Lemma foot_in {A}: forall (a : A) L, foot L = Some a -> In a L.
 Proof. induction L. inversion 1. icase L. simpl. inversion 1. auto. rewrite foot_simpl. right. auto. Qed.
 
+Fixpoint valid_path {A D : Type} {EV: EqDec A} {VV: Valid A} (g: PreGraph A D) (p : list A) : Prop :=
+  match p with
+    | nil => True
+    | n :: nil => valid n = true
+    | n1 :: ((n2 :: _) as p') => g |= n1 ~> n2 /\ valid_path g p'
+  end.
+
 Section GraphPath.
   Variable N : Type.
   Variable D : Type.
@@ -192,7 +199,7 @@ Section GraphPath.
   Proof.
     unfold path_glue. simpl. intro. rewrite app_nil_r. trivial.
   Qed.
-  
+
   Lemma path_glue_assoc: forall p1 p2 p3 : path,
     paths_meet p1 p2 -> paths_meet p2 p3 -> (p1 +++ p2) +++ p3 = p1 +++ (p2 +++ p3).
   Proof.
@@ -208,7 +215,7 @@ Section GraphPath.
   Proof.
     unfold path_glue. intros. rewrite app_comm_cons. trivial.
   Qed.
-  
+
   Lemma path_endpoints_glue: forall n1 n2 n3 p1 p2,
     path_endpoints p1 n1 n2 -> path_endpoints p2 n2 n3 -> path_endpoints (p1 +++ p2) n1 n3.
   Proof.
@@ -218,20 +225,13 @@ Section GraphPath.
     rewrite foot_app; disc. apply H2.
   Qed.
 
-  Fixpoint valid_path (g : Gph) (p : path) : Prop :=
-    match p with
-     | nil => True
-     | n :: nil => valid n = true
-     | n1 :: ((n2 :: _) as p') => g |= n1 ~> n2 /\ valid_path g p'
-    end.
-
-  Lemma valid_path_tail: forall g p, valid_path g p -> valid_path g (tail p).
+  Lemma valid_path_tail: forall (g : Gph) p, valid_path g p -> valid_path g (tail p).
   Proof.
     destruct p; auto. simpl. destruct p; auto.
     intro; simpl; auto. intros [? ?]; auto.
   Qed.
 
-  Lemma valid_path_split: forall g p1 p2, valid_path g (p1 ++ p2) -> valid_path g p1 /\ valid_path g p2.
+  Lemma valid_path_split: forall (g : Gph) p1 p2, valid_path g (p1 ++ p2) -> valid_path g p1 /\ valid_path g p2.
   Proof.
     induction p1. simpl. tauto.
     intros. rewrite <- app_comm_cons in H.
@@ -245,7 +245,8 @@ Section GraphPath.
     rewrite <- app_comm_cons in H. inv H. tauto.
   Qed.
 
-  Lemma valid_path_merge: forall g p1 p2, paths_meet p1 p2 -> valid_path g p1 -> valid_path g p2 -> valid_path g (p1 +++ p2).
+  Lemma valid_path_merge: forall (g : Gph) p1 p2,
+                            paths_meet p1 p2 -> valid_path g p1 -> valid_path g p2 -> valid_path g (p1 +++ p2).
   Proof.
     induction p1. simpl. intros. apply valid_path_tail. trivial.
     intros. rewrite <- path_glue_comm_cons.
@@ -265,16 +266,15 @@ Section GraphPath.
     change (n0 :: p1) with (tail (a :: n0 :: p1)). apply valid_path_tail; auto.
   Qed.
 
-End GraphPath.
+  Lemma valid_path_si {V D1 D2 : Type} {EV: EqDec V} {VV1 VV2 : Valid V}:
+    forall (g1 : @PreGraph V D1 EV VV1) (g2 : @PreGraph V D2 EV VV2),
+      structurally_identical g1 g2 -> forall p, valid_path g1 p -> valid_path g2 p.
+  Proof.
+    induction p; simpl; auto.
+    icase p.
+    intro; destruct (H a); rewrite <- H1; auto.
+    intros [? ?]. split; auto.
+    apply (edge_si g1 g2 a v H H0).
+  Qed.
 
-Lemma valid_path_si {V D1 D2 : Type} {EV: EqDec V} {VV1 VV2 : Valid V}:
-  forall (g1 : @PreGraph V D1 EV VV1) (g2 : @PreGraph V D2 EV VV2),
-    structurally_identical g1 g2 -> forall p, valid_path V D1 EV VV1 g1 p -> valid_path V D2 EV VV2 g2 p.
-Proof.
-  Set Printing Implicit.
-  induction p; simpl; auto.
-  icase p.
-  intro; destruct (H a); rewrite <- H1; auto.
-  intros [? ?]. split; auto.
-  apply (edge_si g1 g2 a v H H0).
-Qed.
+End GraphPath.
