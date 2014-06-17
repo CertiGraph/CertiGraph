@@ -12,6 +12,28 @@ Definition sameValid (T : Type) (b: bool) {EDT: EqDec T} : Valid T := fun _ => b
 Definition modifyValid (T : Type) (t : T) (b : bool) {EDT: EqDec T} {V : Valid T} : Valid T :=
   fun (x : T) => if (t_eq_dec x t) then b else V x.
 
+Fixpoint judgeNoDup {A} {EA : EqDec A} (l : list A) : bool :=
+  match l with
+    | nil => true
+    | s :: ls => if in_dec t_eq_dec s ls then false else judgeNoDup ls
+  end.
+
+Lemma judgeNoDup_ok {A} {EA : EqDec A}: forall (l : list A), judgeNoDup l = true <-> NoDup l.
+Proof.
+  induction l; intros; split; intros. apply NoDup_nil. simpl; auto.
+  simpl in H; destruct (in_dec t_eq_dec a l); [discriminate H | apply NoDup_cons; auto; rewrite <- IHl; auto].
+  simpl; destruct (in_dec t_eq_dec a l).
+  change (a :: l) with (nil ++ a :: l) in H; apply NoDup_remove_2 in H; simpl in H; contradiction.
+  change (a :: l) with (nil ++ a :: l) in H; apply NoDup_remove_1 in H; simpl in H; rewrite IHl; auto.
+Qed.
+
+Lemma nodup_dec {A} {EA : EqDec A}: forall (l : list A), {NoDup l} + {~ NoDup l}.
+Proof.
+  intros; destruct (judgeNoDup l) eqn : Hnodup;
+  [left; rewrite judgeNoDup_ok in Hnodup; assumption |
+   right; intro H; rewrite <- judgeNoDup_ok in H; rewrite Hnodup in H; discriminate H].
+Qed.
+
 Class PreGraph (Vertex: Type) Data {EV: EqDec Vertex} {VV : Valid Vertex}:=
   {
     node_label : Vertex -> Data;
@@ -33,6 +55,20 @@ Defined.
 Definition gamma (Vertex : Type) Data (v: Vertex) {EV: EqDec Vertex} {VV: Valid Vertex}
            {PG: PreGraph Vertex Data} {BG: BiGraph Vertex Data} : Data * Vertex * Vertex :=
   let (v1, v2) := biEdge Vertex Data v in (node_label v, v1, v2).
+
+Definition Dup {A} (L : list A) : Prop := ~ NoDup L.
+Lemma Dup_unfold {A} {EA : EqDec A}: forall (a : A) (L : list A), Dup (a :: L) -> In a L \/ Dup L.
+Proof.
+  intros; destruct (in_dec t_eq_dec a L);
+  [left; trivial | right; intro; apply H; constructor; auto].
+Qed.
+
+Lemma Dup_cyclic {A} {EA : EqDec A} : forall (L : list A), Dup L -> exists a L1 L2 L3, L = L1 ++ (a :: L2) ++ (a :: L3).
+Proof.
+  induction L. destruct 1. constructor. intros. apply Dup_unfold in H. destruct H. apply in_split in H.
+  destruct H as [L1 [L2 ?]]. exists a. exists nil. exists L1. exists L2. rewrite H. simpl. trivial.
+  destruct (IHL H) as [a' [L1 [L2 [L3 ?]]]]. rewrite H0. exists a'. exists (a :: L1). exists L2. exists L3. trivial.
+Qed.
 
 Definition sublist {A} (L1 L2 : list A) : Prop := forall a, In a L1 -> In a L2.
 
@@ -141,6 +177,9 @@ Proof.
   intro. apply app_eq_nil in H0. destruct H0. contradiction. intros. rewrite <- H0. apply IHL1. trivial.
 Qed.
 
+Tactic Notation "spec" hyp(H) :=
+  match type of H with ?a -> _ =>
+    let H1 := fresh in (assert (H1: a); [|generalize (H H1); clear H H1; intro H]) end.
 Tactic Notation "disc" := (try discriminate).
 Tactic Notation "contr" := (try contradiction).
 Tactic Notation "congr" := (try congruence).
@@ -275,6 +314,43 @@ Section GraphPath.
     intro; destruct (H a); rewrite <- H1; auto.
     intros [? ?]. split; auto.
     apply (edge_si g1 g2 a v H H0).
+  Qed.
+
+  Lemma valid_path_acyclic:
+    forall (g : Gph) (p : path) n1 n2,
+      path_endpoints p n1 n2 -> valid_path g p ->
+      exists p', sublist p' p /\ path_endpoints p' n1 n2 /\ NoDup p' /\ valid_path g p'.
+  Proof.
+        intros until p.
+    remember (length p).
+    assert (length p <= n) by omega. clear Heqn.
+    revert p H. induction n; intros.
+    icase p; icase H0. inv H0. inv H.
+    destruct (nodup_dec p) as [H2 | H2].
+    exists p. split. reflexivity. tauto.
+    apply Dup_cyclic in H2.
+    destruct H2 as [a [L1 [L2 [L3 ?]]]]. subst p.
+    specialize (IHn (L1 ++ a :: L3)).
+    spec IHn.
+      do 2 rewrite app_length in H.
+      rewrite app_length. simpl in *. omega.
+    specialize (IHn n1 n2).
+    spec IHn.
+      destruct H0.
+      split. icase L1.
+      repeat (rewrite foot_app in *; disc). trivial.
+    spec IHn.
+      change (L1 ++ a :: L3) with (L1 ++ (a :: nil) ++ tail (a :: L3)).
+      rewrite app_assoc. change (a :: L2) with ((a :: nil) ++ L2) in H1.
+      do 2 rewrite app_assoc in H1. apply valid_path_split in H1. destruct H1.
+      apply valid_path_merge; auto. apply paths_foot_head_meet.
+      apply valid_path_split in H1. tauto.
+    destruct IHn as [p' [? [? [? ?]]]].
+    exists p'. split. 2: tauto.
+    transitivity (L1 ++ a :: L3); auto.
+    apply sublist_app. reflexivity.
+    pattern (a :: L3) at 1. rewrite <- (app_nil_l (a :: L3)).
+    apply sublist_app. apply sublist_nil. reflexivity.
   Qed.
 
 End GraphPath.
