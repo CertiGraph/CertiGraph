@@ -700,5 +700,15 @@ Section GraphPath.
     destruct H2 as [? [_ ?]]. rewrite H9; auto.
     destruct H3 as [? [_ ?]]. rewrite H10; auto.
   Qed.
-
+    
+  Lemma mark_unreachable: forall g1 root g2,
+    mark g1 root g2 ->
+    forall n, ~ (reachable g1 root n) -> @node_label _ _ _ _ g1 n = @node_label _ _ _ _ g2 n.
+  Proof.
+    intros. destruct H as [? [? ?]].
+    apply H2.
+    intro. apply H0.
+    generalize (reachable_by_subset_reachable g1 root unmarked n); intro.
+    intuition.
+  Qed.
 End GraphPath.
