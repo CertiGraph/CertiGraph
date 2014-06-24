@@ -7,7 +7,7 @@ Class EqDec (T: Type) := {t_eq_dec: forall t1 t2 : T, {t1 = t2} + {t1 <> t2}}.
 
 Class Valid (T: Type) {EDT: EqDec T} := valid: T -> Prop.
 
-Definition sameValid (T : Type) {EDT: EqDec T} : Valid T := fun _ => True.
+Definition allValid (T : Type) {EDT: EqDec T} : Valid T := fun _ => True.
 
 Definition modifyValid (T : Type) (t : T) (P : T -> Prop) {EDT: EqDec T} {V : Valid T} : Valid T :=
   fun (x : T) => if (t_eq_dec x t) then P x else V x.
@@ -699,9 +699,22 @@ Section GraphPath.
   Qed.
 End GraphPath.
 
-Definition reachable_set {A D : Type} {EV: EqDec A} {VV: Valid A} (g: PreGraph A D) (S : list A) : set A:=
+Definition reachable_through_set {A D : Type} {EV: EqDec A} {VV: Valid A} (g: PreGraph A D) (S : list A) : set A:=
   fun n => exists s, In s S /\ reachable g s n.
 
 Lemma reachable_set_eq {A D : Type} {EV: EqDec A} {VV: Valid A} (g: PreGraph A D) (S1 S2 : list A):
-  S1 ~= S2 -> subset (reachable_set g S1) (reachable_set g S2) /\ subset (reachable_set g S2) (reachable_set g S1).
+  S1 ~= S2 -> subset (reachable_through_set g S1) (reachable_through_set g S2) /\
+              subset (reachable_through_set g S2) (reachable_through_set g S1).
 Proof. intros; destruct H; split; repeat intro; destruct H1 as [x [HIn Hrch]]; exists x; split; auto. Qed.
+
+Definition reachable_valid {A D : Type} {EV: EqDec A} {VV: Valid A} (g: PreGraph A D) (S : list A) : Valid A :=
+  fun n => valid n /\ reachable_through_set g S n.
+
+Definition reachable_subgraph {A D : Type} {EV: EqDec A} {VV: Valid A} (g: PreGraph A D) (S : list A) :=
+  Build_PreGraph A D EV (reachable_valid g S) node_label edge_func.
+
+Definition unreachable_valid {A D : Type} {EV: EqDec A} {VV: Valid A} (g: PreGraph A D) (S : list A) : Valid A :=
+  fun n => valid n /\ ~ reachable_through_set g S n.
+
+Definition unreachable_subgraph {A D : Type} {EV: EqDec A} {VV: Valid A} (g: PreGraph A D) (S : list A) :=
+  Build_PreGraph A D EV (unreachable_valid g S) node_label edge_func.
