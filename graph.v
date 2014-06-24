@@ -40,21 +40,21 @@ Class PreGraph (Vertex: Type) Data {EV: EqDec Vertex} {VV : Valid Vertex}:=
     edge_func : Vertex -> list Vertex
   }.
 
-Class BiGraph (Vertex: Type) Data {EV: EqDec Vertex} {VV: Valid Vertex} {PG: PreGraph Vertex Data} :=
+Class BiGraph {Vertex Data: Type} {EV: EqDec Vertex} {VV: Valid Vertex} (PG: PreGraph Vertex Data) :=
   {
     length_limit: forall v : Vertex, length (edge_func v) = 2
   }.
 
-Definition biEdge (Vertex : Type) Data (v: Vertex) {EV: EqDec Vertex} {VV: Valid Vertex}
-           {PG: PreGraph Vertex Data} {BG: BiGraph Vertex Data} : Vertex * Vertex.
+Definition biEdge {Vertex Data : Type} {EV: EqDec Vertex} {VV: Valid Vertex}
+           {PG: PreGraph Vertex Data} (BG: BiGraph PG) (v: Vertex) : Vertex * Vertex.
   specialize (length_limit v); intro Hlen;
   destruct (edge_func v); [simpl in Hlen; exfalso; intuition |
                            destruct l; [simpl in Hlen; exfalso; intuition | apply (v0, v1)]].
 Defined.
 
-Definition gamma (Vertex : Type) Data (v: Vertex) {EV: EqDec Vertex} {VV: Valid Vertex}
-           {PG: PreGraph Vertex Data} {BG: BiGraph Vertex Data} : Data * Vertex * Vertex :=
-  let (v1, v2) := biEdge Vertex Data v in (node_label v, v1, v2).
+Definition gamma {Vertex Data: Type} {EV: EqDec Vertex} {VV: Valid Vertex}
+           {PG: PreGraph Vertex Data} (BG: BiGraph PG) (v: Vertex) : Data * Vertex * Vertex :=
+  let (v1, v2) := biEdge BG v in (node_label v, v1, v2).
 
 Definition Dup {A} (L : list A) : Prop := ~ NoDup L.
 Lemma Dup_unfold {A} {EA : EqDec A}: forall (a : A) (L : list A), Dup (a :: L) -> In a L \/ Dup L.
