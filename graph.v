@@ -5,12 +5,12 @@ Require Import Setoid.
 
 Class EqDec (T: Type) := {t_eq_dec: forall t1 t2 : T, {t1 = t2} + {t1 <> t2}}.
 
-Class Valid (T: Type) {EDT: EqDec T} := valid: T -> bool.
+Class Valid (T: Type) {EDT: EqDec T} := valid: T -> Prop.
 
-Definition sameValid (T : Type) (b: bool) {EDT: EqDec T} : Valid T := fun _ => b.
+Definition sameValid (T : Type) {EDT: EqDec T} : Valid T := fun _ => True.
 
-Definition modifyValid (T : Type) (t : T) (b : bool) {EDT: EqDec T} {V : Valid T} : Valid T :=
-  fun (x : T) => if (t_eq_dec x t) then b else V x.
+Definition modifyValid (T : Type) (t : T) (P : T -> Prop) {EDT: EqDec T} {V : Valid T} : Valid T :=
+  fun (x : T) => if (t_eq_dec x t) then P x else V x.
 
 Fixpoint judgeNoDup {A} {EA : EqDec A} (l : list A) : bool :=
   match l with
@@ -42,7 +42,7 @@ Class PreGraph (Vertex: Type) Data {EV: EqDec Vertex} {VV : Valid Vertex}:=
 
 Class BiGraph (Vertex: Type) Data {EV: EqDec Vertex} {VV: Valid Vertex} {PG: PreGraph Vertex Data} :=
   {
-    length_limit: forall v : Vertex, length (edge_func v) >= 2
+    length_limit: forall v : Vertex, length (edge_func v) = 2
   }.
 
 Definition biEdge (Vertex : Type) Data (v: Vertex) {EV: EqDec Vertex} {VV: Valid Vertex}
@@ -110,41 +110,29 @@ Add Parametric Relation {A} : (list A) eq_as_set
 Lemma eq_as_set_app: forall A (L1 L2 L3 L4: list A), L1 ~= L2 -> L3 ~= L4 -> (L1 ++ L3) ~= (L2 ++ L4).
 Proof. intros; hnf in *; intuition; apply sublist_app; trivial. Qed.
 
-Definition removeInvalid {A} {EDT: EqDec A} (VT: Valid A) := filter valid.
-
 Definition structurally_identical {V D1 D2 : Type} {EV: EqDec V} {VV1 VV2 : Valid V}
            (G1 : @PreGraph V D1 EV VV1) (G2 : @PreGraph V D2 EV VV2) : Prop :=
-  forall v : V, (@valid V EV VV1 v) = (@valid V EV VV2 v) /\
-                (((@valid V EV VV1 v) = true /\ (@edge_func V D1 EV VV1 G1 v) ~= (@edge_func V D2 EV VV2 G2 v)) \/
-                 ((@valid V EV VV1 v) = false /\ (removeInvalid VV1 (@edge_func V D1 EV VV1 G1 v)) ~=
-                                                (removeInvalid VV2 (@edge_func V D2 EV VV2 G2 v)))).
+  forall v : V, (@valid V EV VV1 v <-> @valid V EV VV2 v) /\
+                (@edge_func V D1 EV VV1 G1 v) ~= (@edge_func V D2 EV VV2 G2 v).
 
 Notation "g1 '~=~' g2" := (structurally_identical g1 g2) (at level 1).
 
 Lemma si_refl: forall (V D : Type) (EV : EqDec V) (VV : Valid V) (G : PreGraph V D), G ~=~ G.
-Proof. intros; hnf; intros; split; [reflexivity | destruct (valid v); [left | right]; split; reflexivity]. Qed.
+Proof. intros; intro; split; reflexivity. Qed.
 
 Lemma si_sym: forall (V D1 D2 : Type) (EV: EqDec V) (VV1 VV2 : Valid V) (G1 : @PreGraph V D1 EV VV1)
                      (G2 : @PreGraph V D2 EV VV2), G1 ~=~ G2 -> G2 ~=~ G1.
-Proof.
-  intros; hnf in *; intros; specialize (H v); destruct H; split; auto; destruct H0;
-  [left; intuition; rewrite <- H; assumption | right; intuition; rewrite <- H; assumption].
-Qed.
+Proof. intros; intro; specialize (H v); destruct H; split; [split; intuition | destruct H0; split; auto]. Qed.
 
 Lemma si_trans: forall {V D1 D2 D3 : Type} {EV : EqDec V} {VV1 VV2 VV3 : Valid V} {G1 : @PreGraph V D1 EV VV1}
                        {G2 : @PreGraph V D2 EV VV2} {G3 : @PreGraph V D3 EV VV3}, G1 ~=~ G2 -> G2 ~=~ G3 -> G1 ~=~ G3.
 Proof.
-  intros; hnf in *; intros; specialize (H v); specialize (H0 v); destruct H, H0; split;
-  [transitivity (@valid V EV VV2 v); auto |
-   destruct H1, H2; destruct H1, H2;
-   [left; split; auto; transitivity (@edge_func V D2 EV VV2 G2 v); trivial |
-    rewrite H in H1; rewrite H2 in H1; discriminate H1 |
-    rewrite H in H1; rewrite H2 in H1; discriminate H1 |
-    right; split; auto; transitivity (@removeInvalid V EV VV2 (@edge_func V D2 EV VV2 G2 v)); trivial]].
+  intros; intro; specialize (H v); specialize (H0 v); destruct H, H0; split;
+  [intuition | transitivity (@edge_func V D2 EV VV2 G2 v); trivial].
 Qed.
 
 Definition edge {V D : Type} {EV : EqDec V} {VV : Valid V} (G : PreGraph V D) (n n' : V) : Prop :=
-  valid n = true /\ valid n' = true /\ In n' (edge_func n).
+  valid n /\ valid n' /\ In n' (edge_func n).
 
 Notation " g |= n1 ~> n2 " := (edge g n1 n2) (at level 1).
 
@@ -152,10 +140,7 @@ Lemma edge_si {V D1 D2 : Type} {EV: EqDec V} {VV1 VV2 : Valid V}:
   forall (g1 : @PreGraph V D1 EV VV1) (g2 : @PreGraph V D2 EV VV2) (n n' : V), g1 ~=~ g2 -> g1 |= n ~> n' -> g2 |= n ~> n'.
 Proof.
   intros; hnf in *; generalize (H n); intro; specialize (H n'); destruct H, H1; clear H2; destruct H0 as [? [? ?]];
-  destruct H3; destruct H3;
-  [split; auto; [rewrite H1 in H3; assumption |
-                 split; [rewrite H in H2; assumption | destruct H5; specialize (H5 n'); apply H5; assumption]] |
-   rewrite H0 in H3; discriminate H3].
+  destruct H3; split; intuition.
 Qed.
 
 Notation "a '+::' b" := (a ++ (b :: nil)) (at level 19).
@@ -202,38 +187,39 @@ Proof. induction L. inversion 1. icase L. simpl. inversion 1. auto. rewrite foot
 Fixpoint valid_path {A D : Type} {EV: EqDec A} {VV: Valid A} (g: PreGraph A D) (p : list A) : Prop :=
   match p with
     | nil => True
-    | n :: nil => valid n = true
+    | n :: nil => valid n
     | n1 :: ((n2 :: _) as p') => g |= n1 ~> n2 /\ valid_path g p'
   end.
 
-Definition node_prop {A D : Type} {EV: EqDec A} {VV: Valid A} (g: PreGraph A D) (P : D -> Prop) : A -> Prop :=
+Definition set (A : Type) : Type := A -> Prop.
+Definition subset {A} (S1 S2 : A -> Prop) : Prop := forall a, S1 a -> S2 a.
+
+Definition node_prop {A D : Type} {EV: EqDec A} {VV: Valid A} (g: PreGraph A D) (P : set D) : set A :=
   fun n => P (node_label n).
 
-Definition path_prop {A D : Type} {EV: EqDec A} {VV: Valid A} (g: PreGraph A D) (P : D -> Prop) : (list A -> Prop) :=
+Definition path_prop {A D : Type} {EV: EqDec A} {VV: Valid A} (g: PreGraph A D) (P : set D) : (list A -> Prop) :=
   fun p => forall n, In n p -> node_prop g P n.
 
-Definition good_path {A D : Type} {EV: EqDec A} {VV: Valid A} (g: PreGraph A D) (P : D -> Prop) : (list A -> Prop) :=
+Definition good_path {A D : Type} {EV: EqDec A} {VV: Valid A} (g: PreGraph A D) (P : set D) : (list A -> Prop) :=
     fun p => valid_path g p /\ path_prop g P p.
 
 Definition path_endpoints {N} (p : list N) (n1 n2 : N) : Prop := head p = Some n1 /\ foot p = Some n2.
 
 Definition reachable_by_path {A D : Type} {EV: EqDec A} {VV: Valid A} (g: PreGraph A D) (p : list A)
-           (n : A) (P : D -> Prop) : A -> Prop := fun n' => path_endpoints p n n' /\ good_path g P p.
+           (n : A) (P : set D) : set A := fun n' => path_endpoints p n n' /\ good_path g P p.
 Notation " g '|=' p 'is' n1 '~o~>' n2 'satisfying' P" := (reachable_by_path g p n1 P n2) (at level 1).
 
-Definition reachable_by {A D : Type} {EV: EqDec A} {VV: Valid A} (g: PreGraph A D) (n : A) (P : D -> Prop) : A -> Prop :=
+Definition reachable_by {A D : Type} {EV: EqDec A} {VV: Valid A} (g: PreGraph A D) (n : A) (P : set D) : set A :=
   fun n' => exists p, g |= p is n ~o~> n' satisfying P.
 Notation " g '|=' n1 '~o~>' n2 'satisfying' P " := (reachable_by g n1 P n2) (at level 1).
 
 Definition reachable_by_acyclic {A D : Type} {EV: EqDec A} {VV: Valid A}
-           (g: PreGraph A D) (n : A) (P : D -> Prop) : A -> Prop :=
+           (g: PreGraph A D) (n : A) (P : set D) : set A :=
   fun n' => exists p, NoDup p /\ g |= p is n ~o~> n' satisfying P.
 Notation " g '|=' n1 '~~>' n2 'satisfying' P " := (reachable_by_acyclic g n1 P n2) (at level 1).
 
-Definition reachable {A D : Type} {EV: EqDec A} {VV: Valid A} (g: PreGraph A D) (n : A) : A -> Prop:=
+Definition reachable {A D : Type} {EV: EqDec A} {VV: Valid A} (g: PreGraph A D) (n : A) : set A:=
   reachable_by g n (fun _ => True).
-
-Definition subset {A} (S1 S2 : A -> Prop) : Prop := forall a, S1 a -> S2 a.
 
 Section GraphPath.
   Variable N : Type.
@@ -371,10 +357,10 @@ Section GraphPath.
     @node_label _ D _ _ g1 n = @node_label _ _ _ _ g2 n -> node_prop g1 P n -> node_prop g2 P n.
   Proof. intros; hnf in *; rewrite <- H; trivial.  Qed.
 
-  Lemma node_prop_weaken: forall g (P1 P2 : D -> Prop) n, (forall d, P1 d -> P2 d) -> node_prop g P1 n -> node_prop g P2 n.
+  Lemma node_prop_weaken: forall g (P1 P2 : set D) n, (forall d, P1 d -> P2 d) -> node_prop g P1 n -> node_prop g P2 n.
   Proof. intros; hnf in *; auto. Qed.
 
-  Lemma path_prop_weaken: forall g (P1 P2 : D -> Prop) p,
+  Lemma path_prop_weaken: forall g (P1 P2 : set D) p,
     (forall d, P1 d -> P2 d) -> path_prop g P1 p -> path_prop g P2 p.
   Proof. intros; hnf in *; intros; hnf in *; apply H; apply H0; auto. Qed.
 
@@ -396,7 +382,7 @@ Section GraphPath.
     unfold path_glue in H4. apply in_app_or in H4. destruct H4. auto. apply H3. apply In_tail; auto.
   Qed.
 
-  Lemma good_path_weaken: forall (g: Gph) p (P1 P2 : D -> Prop),
+  Lemma good_path_weaken: forall (g: Gph) p (P1 P2 : set D),
                             (forall d, P1 d -> P2 d) -> good_path g P1 p -> good_path g P2 p.
   Proof.
     split; destruct H0; auto.
@@ -470,7 +456,7 @@ Section GraphPath.
     g |= p is n1 ~o~> n2 satisfying P -> In n p -> node_prop g P n.
   Proof. intros. destruct H as [_ [_ ?]]. apply H. trivial. Qed.
 
-  Lemma reachable_by_reflexive: forall (g : Gph) n P, valid n = true /\ node_prop g P n -> g |= n ~o~> n satisfying P.
+  Lemma reachable_by_reflexive: forall (g : Gph) n P, valid n /\ node_prop g P n -> g |= n ~o~> n satisfying P.
   Proof.
     intros.
     exists (n :: nil). split. compute. auto.
@@ -533,11 +519,11 @@ Section GraphPath.
   Qed.
 
   (* START OF MARK *)
-  Variable marked : D -> Prop.
+  Variable marked : set D.
   Definition unmarked (d : D) : Prop := ~ marked d.
 
   Definition mark1 (g1 : Gph) (n : N) (g2 : Gph) : Prop :=
-    structurally_identical g1 g2 /\ valid n = true /\
+    structurally_identical g1 g2 /\ valid n /\
     node_prop g2 marked n /\
     forall n', n <> n' -> @node_label _ _ _ _ g1 n' = @node_label _ _ _ _ g2 n'.
 
@@ -712,3 +698,10 @@ Section GraphPath.
     intuition.
   Qed.
 End GraphPath.
+
+Definition reachable_set {A D : Type} {EV: EqDec A} {VV: Valid A} (g: PreGraph A D) (S : list A) : set A:=
+  fun n => exists s, In s S /\ reachable g s n.
+
+Lemma reachable_set_eq {A D : Type} {EV: EqDec A} {VV: Valid A} (g: PreGraph A D) (S1 S2 : list A):
+  S1 ~= S2 -> subset (reachable_set g S1) (reachable_set g S2) /\ subset (reachable_set g S2) (reachable_set g S1).
+Proof. intros; destruct H; split; repeat intro; destruct H1 as [x [HIn Hrch]]; exists x; split; auto. Qed.
