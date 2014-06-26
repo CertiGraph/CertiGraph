@@ -191,6 +191,9 @@ Fixpoint valid_path {A D : Type} {EV: EqDec A} {VV: Valid A} (g: PreGraph A D) (
     | n1 :: ((n2 :: _) as p') => g |= n1 ~> n2 /\ valid_path g p'
   end.
 
+Definition graph_is_acyclic {A D : Type} {EV: EqDec A} {VV: Valid A} (g: PreGraph A D) : Prop :=
+  forall p : list A, valid_path g p -> NoDup p.
+
 Definition set (A : Type) : Type := A -> Prop.
 Definition subset {A} (S1 S2 : A -> Prop) : Prop := forall a, S1 a -> S2 a.
 

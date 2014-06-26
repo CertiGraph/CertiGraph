@@ -66,4 +66,9 @@ Section SpatialGraph.
     intros. unfold dag at 1. rewrite HORec_fold_unfold. trivial. apply dag_fun_HOcontractive.
   Qed.
 
+  Lemma dag_eq_graph: forall x, dag x |-- graph x && !!(graph_is_acyclic (reachable_subgraph pg (x :: nil))).
+  Proof.
+    admit.
+  Qed.
+
 End SpatialGraph.
