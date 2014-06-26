@@ -3,7 +3,7 @@ Require Import msl.corec.
 Require Import overlapping.
 Require Import heap_model.
 
-Open Local Scope pred.
+Local Open Scope pred.
 
 Definition dagnode x d l r :=
   (mapsto x d) * (mapsto (x+1) l) * (mapsto (x+2) r).
