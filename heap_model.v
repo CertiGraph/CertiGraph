@@ -50,9 +50,15 @@ Instance Join_world: Join world :=
                (adr -> option adr) (Join_fun adr (option adr) (Join_lower (Join_discrete adr)))).
 
 Instance Perm_world : Perm_alg world := _.
-Instance Sep_world : Perm_alg world := _.
-Instance Canc_world : Perm_alg world := _.
-Instance Disj_world : Perm_alg world := _.
+Instance Sep_world : Sep_alg world := _.
+Instance Canc_world : Canc_alg world.
+apply Canc_prod; [apply Canc_equiv |
+                  apply Canc_prod; [apply Canc_equiv | apply Canc_fun, Canc_lower; [intuition | repeat intro; inversion H]]].
+Defined.
+Instance Disj_world : Disj_alg world.
+apply Disj_prod; [apply Disj_equiv |
+                  apply Disj_prod; [apply Disj_equiv | apply Disj_fun, Disj_lower; repeat intro; inversion H]].
+Defined.
 
 Definition age_world (w: world) : option world :=
   match fst w with S n => Some (n, snd w) | O => None end.
@@ -136,4 +142,3 @@ Definition nonfreevars (P: pred world) (x: var) : Prop :=
 
 Definition subset (S1 S2: var -> Prop) :=
   forall x, S1 x -> S2 x.
-
