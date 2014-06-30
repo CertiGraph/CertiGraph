@@ -226,6 +226,36 @@ Proof.
   [specialize (H a H1 x3); apply H | specialize (H0 a H1 x4); apply H0]; intuition.
 Qed.
 
+Lemma precise_ocon {A} {JA : Join A} {PA : Perm_alg A} {SA: Sep_alg A} {AG: ageable A} {XA: Age_alg A} {CA : Cross_alg A}
+      {DA : Disj_alg A} {CAA : Canc_alg A}:
+  forall P Q, precise P -> precise Q -> precise (P ⊗ Q).
+Proof.
+  intros; intro; intros.
+  destruct H1 as [h1 [h2 [h3 [h12 [h23 [? [? [? [? ?]]]]]]]]].
+  destruct H2 as [i1 [i2 [i3 [i12 [i23 [? [? [? [? ?]]]]]]]]].
+  generalize (join_join_sub H6); intro; generalize (join_sub_trans H13 H3); intro.
+  generalize (join_join_sub H10); intro; generalize (join_sub_trans H15 H4); intro.
+  generalize (H w h12 i12 H7 H11 H14 H16); intro.
+  try_join h2 h3 h23'; equate_join h23 h23'; try_join i2 i3 i23'; equate_join i23 i23'.
+  generalize (join_join_sub' H19); intro; generalize (join_sub_trans H18 H3); intro.
+  generalize (join_join_sub' H20); intro; generalize (join_sub_trans H22 H4); intro.
+  generalize (H0 w h23 i23 H8 H12 H21 H23); intro.
+  rewrite H17 in *; rewrite H24 in *. clear h12 h23 H7 H8 H11 H12 H13 H14 H15 H16 H17 H18 H21 H22 H23 H24.
+
+  destruct (cross_split h1 h2 i1 i2 i12 H1 H2) as [[[[h1i1 h1i2] h2i1] h2i2] [? [? [? ?]]]].
+  try_join h1i2 i3 i3'; try_join i3 h2i2 i23'; try_join h1i2 h1 h1'; try_join h1i2 h1i2 x4;
+  generalize (join_self H21); intro Heq; rewrite <- Heq in *; clear Heq x4;
+  assert (Hid1: unit_for h1i2 h1i2) by apply H21; rewrite <- identity_unit_equiv in Hid1.
+
+  try_join h2i1 h3 h3'; try_join h3 h2i2 h23; try_join h2i1 i1 i1'; try_join h2i1 h2i1 x4;
+  generalize (join_self H29); intro Heq; rewrite <- Heq in *; clear Heq x4;
+  assert (Hid2: unit_for h2i1 h2i1) by apply H29; rewrite <- identity_unit_equiv in Hid2.
+  repeat match goal with
+           | [H1: identity ?X, H2: join ?X _ _ |- _] => apply H1 in H2; rewrite H2 in *; clear H2
+           | [H1: identity ?X, H2: join _ ?X _ |- _] => apply join_comm in H2; apply H1 in H2; rewrite H2 in *; clear H2
+         end.
+  equate_join w1 w2; apply eq_refl.
+Qed.
 
 (* Require Import msl.cjoins. *)
 (* Require Import msl.cross_split. *)

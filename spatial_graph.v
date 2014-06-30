@@ -66,9 +66,26 @@ Section SpatialGraph.
     intros. unfold dag at 1. rewrite HORec_fold_unfold. trivial. apply dag_fun_HOcontractive.
   Qed.
 
-  Lemma dag_eq_graph: forall x, dag x |-- graph x && !!(graph_is_acyclic (reachable_subgraph pg (x :: nil))).
-  Proof.
-    admit.
-  Qed.
+  (* Lemma dag_eq_graph: forall x, dag x |-- graph x && !!(graph_is_acyclic (reachable_subgraph pg (x :: nil))). *)
+  (* Proof. *)
+  (*   admit. *)
+  (* Qed. *)
 
+  Fixpoint graphs (l : list var) :=
+    match l with
+      | nil => emp
+      | v :: l' => graph v ⊗ graphs l'
+    end.
+
+    Fixpoint dags (l : list var) :=
+    match l with
+      | nil => emp
+      | v :: l' => dag v ⊗ dags l'
+    end.
+
+    Lemma graphs_precise: forall S, precise (graphs S).
+    Proof.
+      intros.
+    Qed.
+    
 End SpatialGraph.
