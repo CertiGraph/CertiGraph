@@ -60,6 +60,60 @@ apply Disj_prod; [apply Disj_equiv |
                   apply Disj_prod; [apply Disj_equiv | apply Disj_fun, Disj_lower; repeat intro; inversion H]].
 Defined.
 
+Instance Cross_opt_adr : @Cross_alg (option adr) (@Join_lower adr (Join_discrete adr)).
+repeat intro.
+assert (X : @Cross_alg adr (Join_discrete adr)) by (repeat intro; inv H1).
+icase a; icase b; icase z; icase c; icase d;
+let Heq := fresh "Heq" in
+repeat match goal with
+         | [H : join (Some _) (Some _) None |- _] => exfalso; inv H
+         | [H : join (Some _) None None |- _] => exfalso; inv H
+         | [H : join None None (Some _) |- _] => exfalso; inv H
+         | [H : join None (Some _) None |- _] => exfalso; inv H
+         | [H : join (Some ?Xa) (Some ?Ya) (Some ?Za) |- _] => assert (join Xa Ya Za) by (inv H; trivial); clear H
+         | [H : join (Some ?Xa) None (Some ?Ya) |- _] =>
+           assert (Heq: Xa = Ya) by (inv H; trivial); clear H; rewrite Heq in *; clear Heq Xa
+         | [H : join None (Some ?Xa) (Some ?Ya) |- _] =>
+           assert (Heq: Xa = Ya) by (inv H; trivial); clear H; rewrite Heq in *; clear Heq Xa
+       end.
+Ltac solve_lower :=
+  repeat split;
+  match goal with
+    | [|- join (Some ?Xa) None (Some ?Xa)] => apply lower_None2
+    | [|- join None (Some ?Xa) (Some ?Xa)] => apply lower_None1
+    | [|- join None None None] => apply lower_None1
+    | [H: join ?Xa ?Ya ?Za |- join (Some ?Xa) (Some ?Ya) (Some ?Za)] => apply lower_Some; apply H
+  end.
+destruct (X a a0 a2 a3 a1 H0 H1) as [[[[ac ad] bc] bd] [? [? [? ?]]]];
+  exists (Some ac, Some ad, Some bc, Some bd); solve_lower.
+exists (Some a, None, Some a0, None); solve_lower.
+exists (None, Some a, None, Some a0); solve_lower.
+exists (Some a1, Some a2, None, None); solve_lower.
+exists (Some a0, None, None, None); solve_lower.
+exists (None, Some a0, None, None); solve_lower.
+exists (None, None, Some a1, Some a2); solve_lower.
+exists (None, None, Some a0, None); solve_lower.
+exists (None, None, None, Some a0); solve_lower.
+exists (None, None, None, None); solve_lower.
+Defined.
+
+Instance Cross_world : Cross_alg world.
+apply Cross_prod.
+apply Cross_equiv.
+apply Cross_prod.
+apply Cross_equiv.
+repeat intro.
+pose (f (x: adr) := projT1 (Cross_opt_adr (a x) (b x) (c x) (d x) (z x) (H x) (H0 x))).
+pose (g (x: adr) := projT2 (Cross_opt_adr (a x) (b x) (c x) (d x) (z x) (H x) (H0 x))).
+pose (ac (x: adr) := fst (fst (fst (f x)))).
+pose (ad (x: adr) := snd (fst (fst (f x)))).
+pose (bc (x: adr) := snd (fst (f x))).
+pose (bd (x: adr) := snd (f x)).
+exists (ac,ad,bc,bd); unfold ac, ad, bc, bd, f; clear ac ad bc bd f.
+repeat split; intro x; simpl; generalize (g x);
+destruct (projT1 (Cross_opt_adr (a x) (b x) (c x) (d x) (z x) (H x) (H0 x))) as [[[? ?] ?] ?]; simpl; intuition.
+Defined.
+
 Definition age_world (w: world) : option world :=
   match fst w with S n => Some (n, snd w) | O => None end.
 
