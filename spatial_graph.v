@@ -77,15 +77,18 @@ Section SpatialGraph.
       | v :: l' => graph v ⊗ graphs l'
     end.
 
-    Fixpoint dags (l : list var) :=
+  Fixpoint dags (l : list var) :=
     match l with
       | nil => emp
       | v :: l' => dag v ⊗ dags l'
     end.
 
-    Lemma graphs_precise: forall S, precise (graphs S).
-    Proof.
-      intros.
-    Qed.
+  Lemma graph_precise: forall x, precise (graph x).
+  Proof.
+    intros; admit.
+  Qed.
+
+  Lemma graphs_precise: forall S, precise (graphs S).
+  Proof. induction S; simpl; [apply precise_emp | apply precise_ocon; [apply graph_precise | trivial]]. Qed.
     
 End SpatialGraph.
