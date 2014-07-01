@@ -83,9 +83,19 @@ Section SpatialGraph.
       | v :: l' => dag v ⊗ dags l'
     end.
 
+  Lemma graph_precise_eq: (forall x, precise (graph x)) <-> (TT |-- ALL x : adr, !!(precise (graph x))).
+  Proof.
+    split; intros;
+    [hnf; simpl; intros; apply H |
+     hnf in H; simpl in H; apply H; auto; apply (0, (fun (x : var) => Some x, fun (y : adr) => Some y))].
+  Qed.
+
   Lemma graph_precise: forall x, precise (graph x).
   Proof.
-    intros; admit.
+    rewrite graph_precise_eq; apply loeb; rewrite later_allp; apply allp_derives; intro.
+    intro; intros; simpl in *.
+    rewrite graph_unfold.
+    admit.
   Qed.
 
   Lemma graphs_precise: forall S, precise (graphs S).
