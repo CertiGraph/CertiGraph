@@ -173,12 +173,14 @@ Next Obligation.
 Qed.
 
 Program Definition mapsto (x y: var) : pred world :=
-  fun w =>
+  fun w => x <> 0 /\
     exists ax, fst (snd w) x = Some ax /\
                exists ay, fst (snd w) y = Some ay /\
-                          forall a, if eq_dec a ax then snd (snd w) a = Some ay else snd (snd w) a = None.
+                          forall a, a <> ax -> snd (snd w) a = None /\ snd (snd w) a = Some ay.
+                          (* forall a, if eq_dec a ax then snd (snd w) a = Some ay else snd (snd w) a = None. *)
 Next Obligation.
-  intros. intro; intros.
+  intros. intro; intros. destruct H0.
+  split; auto.
   unfold age in H;  destruct a; destruct a'; simpl in H. destruct n; inv H.
   simpl in *. auto.
 Qed.
