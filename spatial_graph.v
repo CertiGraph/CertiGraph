@@ -100,6 +100,17 @@ Section SpatialGraph.
     repeat intro; destruct H0 as [[? ?] [d [l [r [h1 [h2 [h3 [h12 [h23 [? [? [? [? ?]]]]]]]]]]]]];
     destruct H5 as [x1 [x2 [x3 [x12 [x13 [? [? [? [[? ?] ?]]]]]]]]]; destruct H10 as [y1 [y2 [? [[y11 [y12 [? [? ?]]]] ?]]]];
     destruct H13; simpl in H0; rewrite H0 in H13; apply H13; auto.
+    apply precise_exp.
+    admit. intros.
+    apply precise_exp.
+    admit. intros.
+    apply precise_exp.
+    admit. intros.
+    apply precise_ocon.
+    apply precise_ocon.
+    apply precise_andp_right.
+    repeat apply precise_sepcon; apply precise_mapsto.
+    admit.
     admit.
     apply precise_andp_right, precise_emp.
   Qed.

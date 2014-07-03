@@ -1,16 +1,13 @@
 Require Import msl.msl_classical.
+Require Import FunctionalExtensionality.
 
-  Instance Join_discrete (A : Type): Join A := fun a1 a2 a3 : A => False.
+Instance Join_discrete (A : Type): Join A := fun a1 a2 a3 : A => False.
 
-  Instance Perm_discrete (A: Type)  : @Perm_alg A (Join_discrete A).
-  Proof. constructor; intros; inv H.
-  Qed.
+Instance Perm_discrete (A: Type)  : @Perm_alg A (Join_discrete A).
+Proof. constructor; intros; inv H. Qed.
 
-  Instance psa_discrete (A: Type) :  @Pos_alg A  (Join_discrete A).
-  Proof.
-    repeat intro. inv H.
-  Qed.
-
+Instance psa_discrete (A: Type) :  @Pos_alg A  (Join_discrete A).
+Proof. repeat intro. inv H. Qed.
 
 Definition table (A B : Type) := list (A*B).
 
@@ -176,13 +173,31 @@ Program Definition mapsto (x y: var) : pred world :=
   fun w => x <> 0 /\
     exists ax, fst (snd w) x = Some ax /\
                exists ay, fst (snd w) y = Some ay /\
-                          forall a, a <> ax -> snd (snd w) a = None /\ snd (snd w) ax = Some ay.
+                          (forall a, a <> ax -> snd (snd w) a = None) /\ snd (snd w) ax = Some ay.
                           (* forall a, if eq_dec a ax then snd (snd w) a = Some ay else snd (snd w) a = None. *)
 Next Obligation.
   intros. intro; intros. destruct H0.
   split; auto.
   unfold age in H;  destruct a; destruct a'; simpl in H. destruct n; inv H.
   simpl in *. auto.
+Qed.
+
+Lemma precise_mapsto: forall x y, precise(mapsto x y).
+Proof.
+  repeat intro; destruct w1 as [n1 [rho1 m1]]; destruct w2 as [n2 [rho2 m2]]; destruct w as [n [rho m]];
+  destruct H1; destruct x0 as [nx [rhox mx]]; destruct H1; destruct H1;
+  destruct H2; destruct x0 as [ny [rhoy my]]; destruct H2; destruct H2; simpl in H1, H2, H3, H4, H5, H6.
+  assert (n1 = n2). rewrite H1 in *; rewrite H4 in *; rewrite H2 in *; rewrite H6 in *; trivial. clear H1 H2 H4 H6 nx ny n.
+  destruct H3, H5; destruct H1, H3; simpl in H1, H2, H3, H4, H5, H6.
+  assert (rho1 = rho2). rewrite H1 in *; rewrite H5 in *; rewrite H3 in *; rewrite H6 in *; trivial.
+  clear H1 H5 H3 H6 rhox rhoy rho.
+  destruct H as [? [ax1 [? [ay1 [? ?]]]]]; simpl in H1, H3, H5; destruct H0 as [? [ax2 [? [ay2 [? ?]]]]]. simpl in H6, H9, H10.
+  rewrite H8 in * |-. rewrite H1 in H6. injection H6; intro. rewrite H11 in *.
+  rewrite H3 in H9; injection H9; intro; rewrite H12 in *. destruct H5, H10.
+  assert (m1 = m2).
+  extensionality mm; destruct (eq_dec mm ax2);
+  [rewrite e in *; rewrite H13, H14; auto | specialize (H5 mm n); specialize (H10 mm n); rewrite H5, H10; auto].
+  repeat f_equal; trivial.
 Qed.
 
 Program Definition equal (x y: var) : pred world :=
