@@ -91,7 +91,7 @@ Section SpatialGraph.
      hnf in H; simpl in H; apply H; auto; apply (0, (fun (x : var) => Some x, fun (y : adr) => Some y))].
   Qed.
 
-  Lemma precise_ex_mapsto: forall x, precise (EX d : adr, mapsto x d).
+  Lemma precise_exp_mapsto: forall x, precise (EX d : adr, mapsto x d).
   Proof.
     repeat intro. destruct H as [d1 [? [ax1 [? [ay1 [? [? ?]]]]]]], H0 as [d2 [? [ax2 [? [ay2 [? [? ?]]]]]]].
     destruct w1 as [n1 [r1 m1]], w2 as [n2 [r2 m2]]. simpl in *.

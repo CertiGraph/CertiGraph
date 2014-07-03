@@ -38,3 +38,18 @@ Lemma precise_exp {A} {JA : Join A} {PA : Perm_alg A} {SA: Sep_alg A} {AG: ageab
 Proof.
   repeat intro; destruct H1, H2; specialize (H x w1 w2 H1); specialize (H0 x); generalize (H0 w w1 w2 H1 H H3 H4); tauto.
 Qed.
+
+Lemma precise_exp_sepcon {A} {JA : Join A} {PA : Perm_alg A} {SA: Sep_alg A} {AG: ageable A} {XA: Age_alg A} B:
+  forall P Q: B -> pred A, precise (exp P) -> precise (exp Q) -> precise (EX x : B, P x * Q x).
+Proof.
+  repeat intro.
+  destruct H1 as [x [w11 [w12 [? [? ?]]]]]; destruct H2 as [y [w21 [w22 [? [? ?]]]]].
+  specialize (H w w11 w21); specialize (H0 w w12 w22).
+  assert (w11 = w21) by (apply H; [exists x; auto | exists y; auto |
+                                   apply join_sub_trans with (b := w1); apply join_join_sub in H1; auto |
+                                   apply join_sub_trans with (b := w2); apply join_join_sub in H2; auto]).
+  assert (w12 = w22) by (apply H0; [exists x; auto | exists y; auto |
+                                    apply join_sub_trans with (b := w1); apply join_join_sub' in H1; auto |
+                                    apply join_sub_trans with (b := w2); apply join_join_sub' in H2; auto]).
+  rewrite H9 in *; rewrite H10 in *; equate_join w1 w2; auto.
+Qed.
