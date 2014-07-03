@@ -16,7 +16,7 @@ Section SpatialGraph.
   Variable VV : Valid nat.
   Variable pg : @PreGraph nat nat natEqDec VV.
   Variable bi : BiGraph pg.
-  
+
   Definition graph_fun (Q: adr -> pred world) (x: adr) :=
     (!!(x = 0) && emp) ||
     (EX d:adr, EX l:adr, EX r:adr, !!(gamma bi x = (d, l, r)) && trinode x d l r ⊗ (|> Q l) ⊗ (|> Q r)).
@@ -46,7 +46,7 @@ Section SpatialGraph.
   Definition dag_fun (Q: adr -> pred world) (x: adr) :=
     (!!(x = 0) && emp) ||
     (EX d:adr, EX l:adr, EX r:adr, !!(gamma bi x = (d, l, r)) && trinode x d l r * ((|> Q l) ⊗ (|> Q r))).
-                                                                                                        
+
   Lemma dag_fun_HOcontractive : HOcontractive dag_fun.
   Proof.
     apply prove_HOcontractive. intros.
@@ -90,7 +90,7 @@ Section SpatialGraph.
     [hnf; simpl; intros; apply H |
      hnf in H; simpl in H; apply H; auto; apply (0, (fun (x : var) => Some x, fun (y : adr) => Some y))].
   Qed.
-  
+
   Lemma graph_precise: forall x, precise (graph x).
   Proof.
     rewrite graph_precise_eq; apply loeb; rewrite later_allp; apply allp_derives; intro.
@@ -117,5 +117,5 @@ Section SpatialGraph.
 
   Lemma graphs_precise: forall S, precise (graphs S).
   Proof. induction S; simpl; [apply precise_emp | apply precise_ocon; [apply graph_precise | trivial]]. Qed.
-    
+
 End SpatialGraph.
