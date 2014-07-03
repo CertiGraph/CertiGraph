@@ -91,6 +91,37 @@ Section SpatialGraph.
      hnf in H; simpl in H; apply H; auto; apply (0, (fun (x : var) => Some x, fun (y : adr) => Some y))].
   Qed.
 
+  Lemma precise_ex_mapsto: forall x, precise (EX d : adr, mapsto x d).
+  Proof.
+    repeat intro. destruct H as [d1 [? [ax1 [? [ay1 [? [? ?]]]]]]], H0 as [d2 [? [ax2 [? [ay2 [? [? ?]]]]]]].
+    destruct w1 as [n1 [r1 m1]], w2 as [n2 [r2 m2]]. simpl in *.
+    destruct w as [n [r m]].
+    destruct H1. destruct x0 as [nx [rx mx]].
+    destruct H2. destruct x0 as [ny [ry my]].
+    destruct H1 as [? [? ?]]. destruct H2 as [? [? ?]].
+    simpl in *.
+    destruct H1, H2.
+    assert (n1 = n2) by intuition.
+    destruct H11, H13.
+    assert (r1 = r2) by (rewrite H11, H18, H13, H19; auto).
+    rewrite H17 in *; rewrite H20 in *.
+    rewrite H3 in H7; injection H7; intro; rewrite H21 in *.
+    assert (m1 = m2). extensionality mm.
+    specialize (H12 mm); specialize (H14 mm).
+    destruct (eq_dec mm ax2). rewrite e in *. rewrite H6 in *. rewrite H10 in *.
+    destruct (mx ax2); destruct(my ax2); destruct (m ax2).
+    inversion H12; hnf in H25; exfalso; auto.
+    inversion H12.
+    inversion H12; hnf in H25; exfalso; auto.
+    inversion H12.
+    inversion H14; hnf in H25; exfalso; auto.
+    inversion H12.
+    inversion H12; inversion H14; auto.
+    inversion H12.
+    specialize (H5 mm n0); specialize (H9 mm n0); rewrite H5, H9; auto.
+    repeat f_equal; trivial.
+  Qed.
+  
   Lemma graph_precise: forall x, precise (graph x).
   Proof.
     rewrite graph_precise_eq; apply loeb; rewrite later_allp; apply allp_derives; intro.
