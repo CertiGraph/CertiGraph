@@ -94,17 +94,15 @@ Section SpatialGraph.
   Lemma graph_precise: forall x, precise (graph x).
   Proof.
     rewrite graph_precise_eq; apply loeb; rewrite later_allp; apply allp_derives; intro.
-    intro; intros; simpl in *.
-    rewrite graph_unfold.
-    apply precise_orp.
+    intro; intros; simpl in *; rewrite graph_unfold; apply precise_orp.
     repeat intro; destruct H0 as [[? ?] [d [l [r [h1 [h2 [h3 [h12 [h23 [? [? [? [? ?]]]]]]]]]]]]];
     destruct H5 as [x1 [x2 [x3 [x12 [x13 [? [? [? [[? ?] ?]]]]]]]]]; destruct H10 as [y1 [y2 [? [[y11 [y12 [? [? ?]]]] ?]]]];
     destruct H13; simpl in H0; rewrite H0 in H13; apply H13; auto.
+    apply precise_andp_right, precise_emp.
     apply precise_tri_exp_ocon.
     apply precise_tri_exp_andp_right; apply precise_tri_exp_sepcon; apply precise_exp_mapsto.
     admit.
     admit.
-    apply precise_andp_right, precise_emp.
   Qed.
 
   Lemma graphs_precise: forall S, precise (graphs S).
