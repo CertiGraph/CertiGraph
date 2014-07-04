@@ -44,8 +44,23 @@ Ltac equate_join x1 x2 :=
 
 Ltac assertSub a c Hsub :=
   match goal with
-    | [_: join a ?b c |- _] => assert (Hsub: join_sub a c) by (exists b; auto)
-    | [H: join ?b a c |- _] => assert (Hsub: join_sub a c) by (exists b; apply join_comm; auto)
+    | [H: join a _ c |- _] => assert (Hsub: join_sub a c) by (apply join_join_sub in H; auto)
+    | [H: join _ a c |- _] => assert (Hsub: join_sub a c) by (apply join_join_sub' in H; auto)
+    | [H1: join_sub a ?x, H2: join_sub ?x c |- _] => assert (Hsub: join_sub a c) by (apply join_sub_trans with (b := x); auto)
+    | [H1: join _ a ?x, H2: join_sub ?x c |- _] => let H := fresh "H" in assertSub a x H; assertSub a c Hsub; clear H
+    | [H1: join a _ ?x, H2: join_sub ?x c |- _] => let H := fresh "H" in assertSub a x H; assertSub a c Hsub; clear H
+    | [H1: join a _ ?x, H2: join ?x _ c |- _] => let H := fresh "H" in assertSub x c H; assertSub a c Hsub; clear H
+    | [H1: join a _ ?x, H2: join _ ?x c |- _] => let H := fresh "H" in assertSub x c H; assertSub a c Hsub; clear H
+    | [H1: join _ a ?x, H2: join ?x _ c |- _] => let H := fresh "H" in assertSub x c H; assertSub a c Hsub; clear H
+    | [H1: join _ a ?x, H2: join _ ?x c |- _] => let H := fresh "H" in assertSub x c H; assertSub a c Hsub; clear H
+    | [H1: join a _ ?x, H2: join ?x _ ?y, H3: join_sub ?y c |- _] =>
+      let H := fresh "H" in assertSub x c H; assertSub a c Hsub; clear H
+    | [H1: join a _ ?x, H2: join _ ?x ?y, H3: join_sub ?y c |- _] =>
+      let H := fresh "H" in assertSub x c H; assertSub a c Hsub; clear H
+    | [H1: join _ a ?x, H2: join ?x _ ?y, H3: join_sub ?y c |- _] =>
+      let H := fresh "H" in assertSub x c H; assertSub a c Hsub; clear H
+    | [H1: join _ a ?x, H2: join _ ?x ?y, H3: join_sub ?y c |- _] =>
+      let H := fresh "H" in assertSub x c H; assertSub a c Hsub; clear H
   end.
 
 Ltac equate_precise x1 x2 :=

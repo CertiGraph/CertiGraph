@@ -1,5 +1,6 @@
 Require Import msl.msl_classical.
 Require Import ramify_tactics.
+Require Import msl_ext.
 
 Lemma join_age {A}{JA: Join A}{PA: Perm_alg A}{AG: ageable A}{XA: Age_alg A}:
   forall h1 h2 h12 h1' h2' h12', join h1 h2 h12 -> join h1' h2' h12' -> age h1 h1' -> age h2 h2' -> age h12 h12'.
@@ -226,8 +227,8 @@ Proof.
   [specialize (H a H1 x3); apply H | specialize (H0 a H1 x4); apply H0]; intuition.
 Qed.
 
-Lemma precise_ocon {A} {JA : Join A} {PA : Perm_alg A} {SA: Sep_alg A} {AG: ageable A} {XA: Age_alg A} {CA : Cross_alg A}
-      {DA : Disj_alg A} {CAA : Canc_alg A}:
+Lemma precise_ocon {A} {JA : Join A} {PA : Perm_alg A} {SA: Sep_alg A} {AG: ageable A} {XA: Age_alg A} {CaA : Canc_alg A}
+      {CrA : Cross_alg A} {DA : Disj_alg A} :
   forall P Q, precise P -> precise Q -> precise (P ⊗ Q).
 Proof.
   intros; intro; intros.
@@ -241,20 +242,28 @@ Proof.
   generalize (join_join_sub' H20); intro; generalize (join_sub_trans H22 H4); intro.
   generalize (H0 w h23 i23 H8 H12 H21 H23); intro.
   rewrite H17 in *; rewrite H24 in *. clear h12 h23 H7 H8 H11 H12 H13 H14 H15 H16 H17 H18 H21 H22 H23 H24.
+  apply (overlapping_eq h1 h2 h3 i1 i2 i3 i12 i23); trivial.
+Qed.
 
-  destruct (cross_split h1 h2 i1 i2 i12 H1 H2) as [[[[h1i1 h1i2] h2i1] h2i2] [? [? [? ?]]]].
-  try_join h1i2 i3 i3'; try_join i3 h2i2 i23'; try_join h1i2 h1 h1'; try_join h1i2 h1i2 x4;
-  generalize (join_self H21); intro Heq; rewrite <- Heq in *; clear Heq x4;
-  assert (Hid1: unit_for h1i2 h1i2) by apply H21; rewrite <- identity_unit_equiv in Hid1.
-
-  try_join h2i1 h3 h3'; try_join h3 h2i2 h23; try_join h2i1 i1 i1'; try_join h2i1 h2i1 x4;
-  generalize (join_self H29); intro Heq; rewrite <- Heq in *; clear Heq x4;
-  assert (Hid2: unit_for h2i1 h2i1) by apply H29; rewrite <- identity_unit_equiv in Hid2.
-  repeat match goal with
-           | [H1: identity ?X, H2: join ?X _ _ |- _] => apply H1 in H2; rewrite H2 in *; clear H2
-           | [H1: identity ?X, H2: join _ ?X _ |- _] => apply join_comm in H2; apply H1 in H2; rewrite H2 in *; clear H2
-         end.
-  equate_join w1 w2; apply eq_refl.
+Lemma precise_tri_exp_ocon {A} {JA : Join A} {PA : Perm_alg A} {SA: Sep_alg A} {AG: ageable A} {XA: Age_alg A}
+      {CaA : Canc_alg A} {CrA : Cross_alg A} {DA : Disj_alg A} B:
+  forall (P : B -> B -> B -> pred A) (Q R: B -> pred A),
+    precise (EX x : B, EX y : B, EX z : B, P x y z) -> precise (exp Q) -> precise (exp R) ->
+    precise (EX x : B, EX y : B, EX z : B, P x y z ⊗ Q y ⊗ R z).
+Proof.
+  repeat intro;
+  destruct H2 as [x1 [y1 [z1 [h1 [h2 [h3 [h12 [h23 [? [? [? [[j1 [j2 [j3 [j12 [j23 [? [? [? [? ?]]]]]]]]] ?]]]]]]]]]]]];
+  destruct H3 as [x2 [y2 [z2 [i1 [i2 [i3 [i12 [i23 [? [? [? [[k1 [k2 [k3 [k12 [k23 [? [? [? [? ?]]]]]]]]] ?]]]]]]]]]]]].
+  assert (j12 = k12) by (hnf in H; apply H with (w := w);
+                         [exists x1, y1, z1 | exists x2, y2, z2 | assertSub j12 w Hsub | assertSub k12 w Hsub]; auto).
+  assert (j23 = k23) by (hnf in H0; apply H0 with (w := w);
+                         [exists y1 | exists y2 | try_join j2 j3 j23'; equate_join j23 j23'; assertSub j23 w Hsub |
+                                 try_join k2 k3 k23'; equate_join k23 k23'; assertSub k23 w Hsub]; auto).
+  rewrite H22 in *; rewrite H23 in *; assert (h12 = i12) by (apply (overlapping_eq j1 j2 j3 k1 k2 k3 k12 k23); trivial).
+  assert (h23 = i23) by (hnf in H1; apply H1 with (w := w);
+                         [exists z1 | exists z2 | try_join h2 h3 h23'; equate_join h23 h23'; assertSub h23 w Hsub |
+                                 try_join i2 i3 i23'; equate_join i23 i23'; assertSub i23 w Hsub]; auto).
+  rewrite H24 in *; rewrite H25 in *; apply (overlapping_eq h1 h2 h3 i1 i2 i3 i12 i23); trivial.
 Qed.
 
 (* Require Import msl.cjoins. *)
