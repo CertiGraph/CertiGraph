@@ -266,6 +266,24 @@ Proof.
   rewrite H24 in *; rewrite H25 in *; apply (overlapping_eq h1 h2 h3 i1 i2 i3 i12 i23); trivial.
 Qed.
 
+Lemma extract_andp_ocon_ocon_left {A} {JA : Join A} {PA : Perm_alg A} {SA: Sep_alg A} {AG: ageable A} {XA: Age_alg A} :
+  forall (w : A) P Q R S, (P && Q ⊗ R ⊗ S)%pred w -> exists w', P w'.
+Proof.
+  repeat intro; destruct H as [? [? [? [? [? [? [? [? [[? [? [? [? [? [? [? [? [[? ?] ?]]]]]]]]] ?]]]]]]]]]; exists x7; trivial.
+Qed.
+
+Lemma mprecise_ocon {A} {JA : Join A} {PA : Perm_alg A} {SA: Sep_alg A} {AG: ageable A} {XA: Age_alg A} {CaA : Canc_alg A}
+      {CrA : Cross_alg A} {DA : Disj_alg A} :
+  forall w P Q, (mprecise P) w -> (mprecise Q) w -> (mprecise (P ⊗ Q)) w.
+Proof.
+  repeat intro; simpl in H, H0.
+  destruct H2 as [h1 [h2 [h3 [h12 [h23 [? [? [? [? ?]]]]]]]]]; destruct H3 as [i1 [i2 [i3 [i12 [i23 [? [? [? [? ?]]]]]]]]].
+  assert (h12 = i12) by (apply H with w'; trivial; [assertSub h12 w' X | assertSub i12 w' X]; trivial).
+  rewrite H14 in *; clear H14 h12; try_join h2 h3 h23'; equate_join h23 h23'; try_join i2 i3 i23'; equate_join i23 i23'.
+  assert (h23 = i23) by (apply H0 with w'; trivial; [assertSub h23 w' X | assertSub i23 w' X]; trivial); rewrite H14 in *.
+  apply (overlapping_eq h1 h2 h3 i1 i2 i3 i12 i23); trivial.
+Qed.
+  
 (* Require Import msl.cjoins. *)
 (* Require Import msl.cross_split. *)
 

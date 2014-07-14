@@ -101,3 +101,65 @@ Proof.
                        [exists z1 | exists z2; auto | assertSub h2 w Hsub | assertSub j2 w Hsub]; auto).
   rewrite H10 in *; equate_join w1 w2; auto.
 Qed.
+
+Program Definition mprecise {A} {JA: Join A}{AG: ageable A} (P: pred A) : pred A :=
+  fun w => forall w' w1 w2, necR w w' -> P w1 -> P w2 -> join_sub w1 w' -> join_sub w2 w' -> w1 = w2.
+Next Obligation.
+apply H0 with w'; trivial; apply rt_trans with a'; auto; apply rt_step; auto.
+Qed.
+
+Lemma mprecise_eq {A} {JA: Join A}{PA: Perm_alg A}{SA: Sep_alg A}{AG: ageable A}{XA: Age_alg A} {B} (P: B -> pred A):
+    (forall x, precise (P x)) <-> (TT |-- ALL x : B, mprecise (P x)).
+Proof.
+  split; intros; repeat intro;
+  [specialize (H b); hnf in H; apply H with w'; trivial | specialize (H w I x w w1 w2); apply H; trivial].
+Qed.
+
+Lemma mprecise_orp {A} {JA : Join A} {PA : Perm_alg A} {SA: Sep_alg A} {AG: ageable A} {XA: Age_alg A}:
+  forall w (P Q : pred A), (forall w1 w2: A, ~ (P w1 /\ Q w2)) -> (mprecise P) w ->
+                (mprecise Q) w -> (mprecise (P || Q)) w.
+Proof.
+  intros w P Q Hfalse H H0; intro; intros.
+  destruct H2; destruct H3. generalize (H w' w1 w2 H1 H2 H3 H4 H5); tauto.
+  specialize (Hfalse w1 w2); destruct Hfalse; intuition.
+  specialize (Hfalse w2 w1); destruct Hfalse; intuition.
+  generalize (H0 w' w1 w2 H1 H2 H3 H4 H5); tauto.
+Qed.
+
+Lemma mprecise_andp_right {A} {JA : Join A} {PA : Perm_alg A} {SA: Sep_alg A} {AG: ageable A} {XA: Age_alg A}:
+  forall w P Q, (mprecise Q) w -> mprecise (P && Q) w.
+Proof. intros; intro; intros; destruct H1; destruct H2; generalize (H w' w1 w2 H0 H5 H6 H3 H4); tauto. Qed.
+
+Lemma mprecise_emp {A} {JA: Join A}{PA: Perm_alg A}{SA: Sep_alg A}{CA: Canc_alg A}{AG: ageable A}{XA: Age_alg A}:
+  forall w, (mprecise emp) w.
+Proof.
+  assert ((TT |-- ALL  _ : nat , mprecise emp) <-> forall w, (mprecise emp) w).
+  split; intros; [apply H; trivial; apply 0 | do 3 intro; apply H].
+  generalize (mprecise_eq (fun _ : nat => emp)); intro; simpl allp in H.
+  rewrite <- H. rewrite <- H0. intro. apply precise_emp.
+Qed.
+
+Lemma mprecise_exp {A} {JA: Join A}{PA: Perm_alg A}{SA: Sep_alg A}{CA: Canc_alg A}{AG: ageable A}{XA: Age_alg A} {B}:
+  forall w (P : B -> pred A), (forall x y : B, (x = y) \/ (x <> y)) -> (forall x y w1 w2, x <> y -> ~ (P x w1 /\ P y w2)) ->
+                              (forall x, (mprecise (P x)) w) -> (mprecise (exp P)) w. 
+Proof.
+  intros w P X H H0.
+  repeat intro.
+  simpl in H0.
+  destruct H2.
+  apply (H0 x) with w'; trivial.
+  destruct H3 as [y ?].
+  destruct (X x y) as [e | n].
+  rewrite e; trivial.
+  specialize (H x y w1 w2).
+  apply H in n; destruct n; split; auto.
+Qed.
+
+Lemma mprecise_sepcon {A} {JA : Join A} {PA : Perm_alg A} {SA: Sep_alg A} {AG: ageable A} {XA: Age_alg A}:
+  forall w P Q, (mprecise P) w -> (mprecise Q) w -> (mprecise (P * Q)) w.
+Proof.
+  repeat intro; simpl in H, H0; destruct H2 as [h1 [h2 [? [? ?]]]]; destruct H3 as [i1 [i2 [? [? ?]]]].
+  assert (h1 = i1) by (apply H with w'; trivial; [assertSub h1 w' X | assertSub i1 w' X]; trivial).
+  assert (h2 = i2) by (apply H0 with w'; trivial; [assertSub h2 w' X | assertSub i2 w' X]; trivial).
+  rewrite H10 in *; rewrite H11 in *; equate_join w1 w2; trivial.
+Qed.

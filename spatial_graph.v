@@ -93,14 +93,28 @@ Section SpatialGraph.
 
   Lemma graph_precise: forall x, precise (graph x).
   Proof.
-    rewrite graph_precise_eq; apply loeb; rewrite later_allp; apply allp_derives; intro.
-    intro; intros; simpl in *; rewrite graph_unfold; apply precise_orp.
+    rewrite mprecise_eq. apply loeb. rewrite later_allp. apply forallI. intro.
+    intro w; intros.
+    rewrite graph_unfold. apply mprecise_orp.
     repeat intro; destruct H0 as [[? ?] [d [l [r [h1 [h2 [h3 [h12 [h23 [? [? [? [? ?]]]]]]]]]]]]];
     destruct H5 as [x1 [x2 [x3 [x12 [x13 [? [? [? [[? ?] ?]]]]]]]]]; destruct H10 as [y1 [y2 [? [[y11 [y12 [? [? ?]]]] ?]]]];
     destruct H13; simpl in H0; rewrite H0 in H13; apply H13; auto.
-    apply precise_andp_right, precise_emp.
-    apply precise_tri_exp_ocon.
-    apply precise_tri_exp_andp_right; apply precise_tri_exp_sepcon; apply precise_exp_mapsto.
+    apply mprecise_andp_right, mprecise_emp.
+    assert (forall y1 y2 : adr, y1 = y2 \/ y1 <> y2) by (intros; destruct (nat_eq_dec y1 y2); [left | right]; trivial).
+    apply mprecise_exp; trivial.
+    intros y1 y2 w1 w2; repeat intro; destruct H2; destruct H2 as [l1 [r1 ?]]; destruct H3 as [l2 [r2 ?]];
+    destruct (extract_andp_ocon_ocon_left _ _ _ _ _ H2); destruct (extract_andp_ocon_ocon_left _ _ _ _ _ H3);
+    simpl in H4, H5; rewrite H4 in H5; inversion H5; rewrite H7 in *; tauto.
+    intro d; apply mprecise_exp; trivial.
+    intros y1 y2 w1 w2; repeat intro; destruct H2; destruct H2 as [l1 ?]; destruct H3 as [l2 ?];
+    destruct (extract_andp_ocon_ocon_left _ _ _ _ _ H2); destruct (extract_andp_ocon_ocon_left _ _ _ _ _ H3).
+    simpl in H4, H5; rewrite H4 in H5; inversion H5; rewrite H7 in *; tauto.
+    intro l; apply mprecise_exp; trivial.
+    intros y1 y2 w1 w2; repeat intro; destruct H2.
+    destruct (extract_andp_ocon_ocon_left _ _ _ _ _ H2); destruct (extract_andp_ocon_ocon_left _ _ _ _ _ H3).
+    simpl in H4, H5; rewrite H4 in H5; inversion H5; rewrite H7 in *; tauto.
+    intro r; repeat apply mprecise_ocon.
+    apply mprecise_andp_right; repeat apply mprecise_sepcon; apply mprecise_mapsto.
     admit.
     admit.
   Qed.

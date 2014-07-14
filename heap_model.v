@@ -1,5 +1,6 @@
 Require Import msl.msl_classical.
 Require Import FunctionalExtensionality.
+Require Import msl_ext.
 
 Instance Join_discrete (A : Type): Join A := fun a1 a2 a3 : A => False.
 
@@ -220,6 +221,25 @@ Proof.
     | _ =>  inversion H12; inversion H14; auto
   end.
   specialize (H5 mm n0); specialize (H9 mm n0); rewrite H5, H9; auto.
+  repeat f_equal; trivial.
+Qed.
+
+Lemma mprecise_mapsto: forall w x y, (mprecise (mapsto x y)) w.
+Proof.
+  intros w x y w' w1 w2 X H H0 H1 H2; clear X.
+  destruct w1 as [n1 [rho1 m1]]; destruct w2 as [n2 [rho2 m2]]; destruct w as [n [rho m]].
+  destruct H1; destruct x0 as [nx [rhox mx]]; destruct H1; destruct H1;
+  destruct H2; destruct x0 as [ny [rhoy my]]; destruct H2; destruct H2; simpl in H1, H2, H3, H4, H5, H6.
+  assert (n1 = n2). rewrite H1 in *; rewrite H4 in *; rewrite H2 in *; rewrite H6 in *; trivial. clear H1 H2 H4 H6 nx ny n.
+  destruct H3, H5; destruct H1, H3; simpl in H1, H2, H3, H4, H5, H6.
+  assert (rho1 = rho2). rewrite H1 in *; rewrite H5 in *; rewrite H3 in *; rewrite H6 in *; trivial.
+  clear H1 H5 H3 H6 rhox rhoy rho.
+  destruct H as [? [ax1 [? [ay1 [? ?]]]]]; simpl in H1, H3, H5; destruct H0 as [? [ax2 [? [ay2 [? ?]]]]]. simpl in H6, H9, H10.
+  rewrite H8 in * |-. rewrite H1 in H6. injection H6; intro. rewrite H11 in *.
+  rewrite H3 in H9; injection H9; intro; rewrite H12 in *. destruct H5, H10.
+  assert (m1 = m2).
+  extensionality mm; destruct (eq_dec mm ax2);
+  [rewrite e in *; rewrite H13, H14; auto | specialize (H5 mm n); specialize (H10 mm n); rewrite H5, H10; auto].
   repeat f_equal; trivial.
 Qed.
 
