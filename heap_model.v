@@ -254,5 +254,3 @@ Qed.
 Definition nonfreevars (P: pred world) (x: var) : Prop :=
   forall lev stk hp v, P (lev, (stk,hp)) -> P (lev, (fun_set stk x v, hp)).
 
-Definition subset (S1 S2: var -> Prop) :=
-  forall x, S1 x -> S2 x.

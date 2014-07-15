@@ -19,7 +19,7 @@ Section SpatialGraph.
 
   Definition graph_fun (Q: adr -> pred world) (x: adr) :=
     (!!(x = 0) && emp) ||
-    (EX d:adr, EX l:adr, EX r:adr, !!(gamma bi x = (d, l, r)) && trinode x d l r ⊗ (|> Q l) ⊗ (|> Q r)).
+    (EX d:adr, EX l:adr, EX r:adr, !!(gamma bi x = (d, l, r) /\ valid x) && trinode x d l r ⊗ (|> Q l) ⊗ (|> Q r)).
 
   Lemma graph_fun_HOcontractive : HOcontractive graph_fun.
   Proof.
@@ -37,7 +37,7 @@ Section SpatialGraph.
   Lemma graph_unfold:
     forall x,
       graph x = (!!(x = 0) && emp) ||
-                (EX d:adr, EX l:adr, EX r:adr, !!(gamma bi x = (d, l, r)) && trinode x d l r ⊗
+                (EX d:adr, EX l:adr, EX r:adr, !!(gamma bi x = (d, l, r) /\ valid x) && trinode x d l r ⊗
                                                  (|> graph l) ⊗ (|> graph r)).
   Proof.
     intros. unfold graph at 1. rewrite HORec_fold_unfold. trivial. apply graph_fun_HOcontractive.
@@ -45,7 +45,7 @@ Section SpatialGraph.
 
   Definition dag_fun (Q: adr -> pred world) (x: adr) :=
     (!!(x = 0) && emp) ||
-    (EX d:adr, EX l:adr, EX r:adr, !!(gamma bi x = (d, l, r)) && trinode x d l r * ((|> Q l) ⊗ (|> Q r))).
+    (EX d:adr, EX l:adr, EX r:adr, !!(gamma bi x = (d, l, r) /\ valid x) && trinode x d l r * ((|> Q l) ⊗ (|> Q r))).
 
   Lemma dag_fun_HOcontractive : HOcontractive dag_fun.
   Proof.
@@ -62,7 +62,7 @@ Section SpatialGraph.
   Lemma dag_unfold:
     forall x,
       dag x = (!!(x = 0) && emp) ||
-              (EX d:adr, EX l:adr, EX r:adr, !!(gamma bi x = (d, l, r)) && trinode x d l r * ((|> dag l) ⊗ (|> dag r))).
+              (EX d:adr, EX l:adr, EX r:adr, !!(gamma bi x = (d, l, r) /\ valid x) && trinode x d l r * ((|> dag l) ⊗ (|> dag r))).
   Proof.
     intros. unfold dag at 1. rewrite HORec_fold_unfold. trivial. apply dag_fun_HOcontractive.
   Qed.
@@ -104,15 +104,15 @@ Section SpatialGraph.
     apply mprecise_exp; trivial.
     intros y1 y2 w1 w2; repeat intro; destruct H2; destruct H2 as [l1 [r1 ?]]; destruct H3 as [l2 [r2 ?]];
     destruct (extract_andp_ocon_ocon_left _ _ _ _ _ H2); destruct (extract_andp_ocon_ocon_left _ _ _ _ _ H3);
-    simpl in H4, H5; rewrite H4 in H5; inversion H5; rewrite H7 in *; tauto.
+    simpl in H4, H5; destruct H4, H5; rewrite H4 in H5; inversion H5; rewrite H9 in *; tauto.
     intro d; apply mprecise_exp; trivial.
     intros y1 y2 w1 w2; repeat intro; destruct H2; destruct H2 as [l1 ?]; destruct H3 as [l2 ?];
-    destruct (extract_andp_ocon_ocon_left _ _ _ _ _ H2); destruct (extract_andp_ocon_ocon_left _ _ _ _ _ H3).
-    simpl in H4, H5; rewrite H4 in H5; inversion H5; rewrite H7 in *; tauto.
+    destruct (extract_andp_ocon_ocon_left _ _ _ _ _ H2); destruct (extract_andp_ocon_ocon_left _ _ _ _ _ H3);
+    simpl in H4, H5; destruct H4, H5; rewrite H4 in H5; inversion H5; rewrite H9 in *; tauto.
     intro l; apply mprecise_exp; trivial.
     intros y1 y2 w1 w2; repeat intro; destruct H2.
-    destruct (extract_andp_ocon_ocon_left _ _ _ _ _ H2); destruct (extract_andp_ocon_ocon_left _ _ _ _ _ H3).
-    simpl in H4, H5; rewrite H4 in H5; inversion H5; rewrite H7 in *; tauto.
+    destruct (extract_andp_ocon_ocon_left _ _ _ _ _ H2); destruct (extract_andp_ocon_ocon_left _ _ _ _ _ H3);
+    simpl in H4, H5; destruct H4, H5; rewrite H4 in H5; inversion H5; rewrite H9 in *; tauto.
     intro r; repeat apply mprecise_ocon.
     apply mprecise_andp_right; repeat apply mprecise_sepcon; apply mprecise_mapsto.
     admit.
@@ -122,4 +122,18 @@ Section SpatialGraph.
   Lemma graphs_precise: forall S, precise (graphs S).
   Proof. induction S; simpl; [apply precise_emp | apply precise_ocon; [apply graph_precise | trivial]]. Qed.
 
+  Lemma reach_eq_graph_eq: forall S1 S2, set_eq (reachable_through_set pg S1) (reachable_through_set pg S2)
+                                         -> graphs S1 = graphs S2.
+  Proof.
+    intros; apply pred_ext; repeat intro.
+    induction S1.
+    generalize (reachable_through_empty pg); intro.
+    rewrite H1 in H.
+    simpl in *. symmetry in H. apply reachable_through_empty_eq in H. destruct H.
+    rewrite H; simpl; trivial.
+    admit.
+    admit.
+    admit.
+  Qed.
+  
 End SpatialGraph.

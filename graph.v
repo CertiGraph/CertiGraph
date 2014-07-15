@@ -196,6 +196,20 @@ Definition graph_is_acyclic {A D : Type} {EV: EqDec A} {VV: Valid A} (g: PreGrap
 
 Definition set (A : Type) : Type := A -> Prop.
 Definition subset {A} (S1 S2 : A -> Prop) : Prop := forall a, S1 a -> S2 a.
+Definition set_eq {A} (S1 S2 : A -> Prop) : Prop := subset S1 S2 /\ subset S2 S1.
+Definition empty_set (A : Type) : set A := fun _ => False.
+
+Lemma set_eq_refl: forall A (S : set A), set_eq S S. Proof. intros; split; intro; tauto. Qed.
+
+Lemma set_eq_sym: forall A (S1 S2 : set A), set_eq S1 S2 -> set_eq S2 S1. Proof. intros; destruct H; split; auto. Qed.
+
+Lemma set_eq_trans: forall A (S1 S2 S3: set A), set_eq S1 S2 -> set_eq S2 S3 -> set_eq S1 S3.
+Proof. intros; destruct H, H0; split; repeat intro; [apply H0, H, H3 | apply H1, H2, H3]. Qed.
+
+Add Parametric Relation {A} : (set A) set_eq
+    reflexivity proved by (set_eq_refl A)
+    symmetry proved by (set_eq_sym A)
+    transitivity proved by (set_eq_trans A) as set_eq_rel.
 
 Definition node_prop {A D : Type} {EV: EqDec A} {VV: Valid A} (g: PreGraph A D) (P : set D) : set A :=
   fun n => P (node_label n).
@@ -706,8 +720,7 @@ Definition reachable_through_set {A D : Type} {EV: EqDec A} {VV: Valid A} (g: Pr
   fun n => exists s, In s S /\ reachable g s n.
 
 Lemma reachable_set_eq {A D : Type} {EV: EqDec A} {VV: Valid A} (g: PreGraph A D) (S1 S2 : list A):
-  S1 ~= S2 -> subset (reachable_through_set g S1) (reachable_through_set g S2) /\
-              subset (reachable_through_set g S2) (reachable_through_set g S1).
+  S1 ~= S2 -> set_eq (reachable_through_set g S1) (reachable_through_set g S2).
 Proof. intros; destruct H; split; repeat intro; destruct H1 as [x [HIn Hrch]]; exists x; split; auto. Qed.
 
 Definition reachable_valid {A D : Type} {EV: EqDec A} {VV: Valid A} (g: PreGraph A D) (S : list A) : Valid A :=
@@ -721,3 +734,45 @@ Definition unreachable_valid {A D : Type} {EV: EqDec A} {VV: Valid A} (g: PreGra
 
 Definition unreachable_subgraph {A D : Type} {EV: EqDec A} {VV: Valid A} (g: PreGraph A D) (S : list A) :=
   Build_PreGraph A D EV (unreachable_valid g S) node_label edge_func.
+
+Lemma reachable_through_empty {A D : Type} {EV: EqDec A} {VV: Valid A} (g: PreGraph A D):
+  set_eq (reachable_through_set g nil) (empty_set A).
+Proof.
+  split; repeat intro.
+  destruct H; destruct H; apply in_nil in H; tauto.
+  hnf in H; tauto.
+Qed.
+
+Tactic Notation "LEM" constr(v) := (destruct (classic v); auto).
+
+Lemma reachable_through_set_invalid {A D : Type} {EV: EqDec A} {VV: Valid A} (g: PreGraph A D) (S : list A) (a : A) :
+  ~ valid a -> set_eq (reachable_through_set g (a :: S)) (reachable_through_set g S). 
+Proof.
+  intros; split; intro x; intro; unfold reachable_through_set in *; destruct H0 as [s [? ?]].
+  destruct (in_inv H0).
+  rewrite H2 in *.
+  destruct H1 as [? [? [? ?]]].
+  destruct x0. destruct H1. discriminate H1.
+  destruct H1. inversion H1. rewrite H7 in *. clear H7 a0. simpl in H3. destruct x0.
+  exfalso; tauto. destruct H3. destruct H3. exfalso; tauto.
+  exists s. split; auto.
+  exists s. split; auto.
+  apply in_cons; auto.
+Qed.
+
+Lemma reachable_through_empty_eq {A D : Type} {EV: EqDec A} {VV: Valid A} (g: PreGraph A D) (S : list A):
+  set_eq (reachable_through_set g S) (empty_set A) -> S = nil \/ forall y, In y S -> ~ valid y.
+Proof.
+  induction S; intros. left; trivial.
+  right.
+  LEM (valid a).
+  exfalso. unfold subset, empty_set in H. destruct H. apply (H a).
+  exists a. split. apply in_eq.
+  unfold reachable. apply reachable_by_reflexive. split; hnf; auto.
+  intros.
+  apply in_inv in H1. destruct H1. rewrite H1 in H0; trivial.
+  assert (set_eq (reachable_through_set g S) (empty_set A)).
+  apply (reachable_through_set_invalid g S) in H0.
+  rewrite H0 in H; trivial.
+  specialize (IHS H2); destruct IHS; [rewrite H3 in H1; inversion H1 | apply H3; trivial].
+Qed.
