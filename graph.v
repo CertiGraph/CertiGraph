@@ -743,36 +743,30 @@ Proof.
   hnf in H; tauto.
 Qed.
 
+Lemma reachable_is_valid {A D : Type} {EV: EqDec A} {VV: Valid A} (g: PreGraph A D):
+  forall a x, reachable g x a -> valid x.
+Proof.
+  intros. destruct H as [l [? [? ?]]].
+  destruct l. destruct H; discriminate H.
+  destruct H; inversion H; rewrite H4 in *; clear H4 H2 a0;
+  simpl in H0; destruct l; trivial; destruct H0 as [[? _] _]; trivial.
+Qed.
+  
 Tactic Notation "LEM" constr(v) := (destruct (classic v); auto).
 
-Lemma reachable_through_set_invalid {A D : Type} {EV: EqDec A} {VV: Valid A} (g: PreGraph A D) (S : list A) (a : A) :
-  ~ valid a -> set_eq (reachable_through_set g (a :: S)) (reachable_through_set g S). 
+Lemma reachable_through_empty_eq {A D : Type} {EV: EqDec A} {VV: Valid A} (g: PreGraph A D):
+  forall S, set_eq (reachable_through_set g S) (empty_set A) <-> S = nil \/ forall y, In y S -> ~ valid y.
 Proof.
-  intros; split; intro x; intro; unfold reachable_through_set in *; destruct H0 as [s [? ?]].
-  destruct (in_inv H0).
-  rewrite H2 in *.
-  destruct H1 as [? [? [? ?]]].
-  destruct x0. destruct H1. discriminate H1.
-  destruct H1. inversion H1. rewrite H7 in *. clear H7 a0. simpl in H3. destruct x0.
-  exfalso; tauto. destruct H3. destruct H3. exfalso; tauto.
-  exists s. split; auto.
-  exists s. split; auto.
-  apply in_cons; auto.
-Qed.
+  intros; split.
+  induction S; intros. left; trivial. right; intros; LEM (valid a).
+  destruct H. exfalso; apply (H a); exists a; split; [apply in_eq | apply reachable_by_reflexive; split;[|hnf]; trivial].
+  destruct (in_inv H0). rewrite H2 in H1; trivial.
+  assert (set_eq (reachable_through_set g (a :: S)) (reachable_through_set g S)).
+  split; intro x; intro; destruct H3 as [s [? ?]]. destruct (in_inv H3). rewrite H5 in *; clear H5 a.
+  apply reachable_is_valid in H4; tauto. exists s; split; trivial.
+  exists s; split; trivial; apply in_cons; trivial. rewrite <- H3 in IHS. destruct (IHS H).
+  rewrite H4 in *; inversion H0. rewrite H5 in H1. trivial. inversion H5. apply H4; trivial.
 
-Lemma reachable_through_empty_eq {A D : Type} {EV: EqDec A} {VV: Valid A} (g: PreGraph A D) (S : list A):
-  set_eq (reachable_through_set g S) (empty_set A) -> S = nil \/ forall y, In y S -> ~ valid y.
-Proof.
-  induction S; intros. left; trivial.
-  right.
-  LEM (valid a).
-  exfalso. unfold subset, empty_set in H. destruct H. apply (H a).
-  exists a. split. apply in_eq.
-  unfold reachable. apply reachable_by_reflexive. split; hnf; auto.
-  intros.
-  apply in_inv in H1. destruct H1. rewrite H1 in H0; trivial.
-  assert (set_eq (reachable_through_set g S) (empty_set A)).
-  apply (reachable_through_set_invalid g S) in H0.
-  rewrite H0 in H; trivial.
-  specialize (IHS H2); destruct IHS; [rewrite H3 in H1; inversion H1 | apply H3; trivial].
+  intros; destruct H. rewrite H. apply reachable_through_empty. split; repeat intro.
+  destruct H0 as [x [? ?]]. apply H in H0. apply reachable_is_valid in H1; tauto. hnf in H0; tauto.
 Qed.

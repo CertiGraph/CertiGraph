@@ -129,8 +129,17 @@ Section SpatialGraph.
     induction S1.
     generalize (reachable_through_empty pg); intro.
     rewrite H1 in H.
-    simpl in *. symmetry in H. apply reachable_through_empty_eq in H. destruct H.
-    rewrite H; simpl; trivial.
+    symmetry in H. apply reachable_through_empty_eq in H. destruct H.
+    rewrite H; simpl; trivial. simpl in H0. revert H0. revert a.
+    induction S2; intro w; intros; trivial.
+    assert (~ valid a) by (apply H, in_eq).
+    assert (graph a = emp). apply pred_ext; intro w2; intros.
+    rewrite graph_unfold in H3. destruct H3.
+    simpl in H3. simpl. tauto.
+    destruct H3 as [d [l [r [? [? [? [? [? [? [? [? [[? [? [? [? [? [? [? [? [[[? ?] ?] ?]]]]]]]]] ?]]]]]]]]]]]].
+    exfalso; tauto.
+    rewrite graph_unfold. left.
+    admit.
     admit.
     admit.
     admit.
