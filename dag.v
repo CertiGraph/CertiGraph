@@ -1,7 +1,7 @@
 Require Import msl.msl_classical.
 Require Import msl.corec.
 Require Import overlapping.
-Require Import heap_model_contractive.
+Require Import heap_model.
 
 Local Open Scope pred.
 
