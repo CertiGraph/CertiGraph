@@ -1,5 +1,4 @@
-Require Import msl.msl_classical.
-Require Import msl.corec.
+Require Import msl.msl_direct.
 Require Import overlapping.
 Require Import heap_model.
 Require Import graph.
@@ -19,52 +18,53 @@ Section SpatialGraph.
 
   Definition graph_fun (Q: adr -> pred world) (x: adr) :=
     (!!(x = 0) && emp) ||
-    (EX d:adr, EX l:adr, EX r:adr, !!(gamma bi x = (d, l, r) /\ valid x) && trinode x d l r ⊗ (|> Q l) ⊗ (|> Q r)).
+    (EX d:adr, EX l:adr, EX r:adr, !!(gamma bi x = (d, l, r) /\ valid x) && trinode x d l r ⊗ (Q l) ⊗ (Q r)).
 
-  Lemma graph_fun_HOcontractive : HOcontractive graph_fun.
+  Lemma graph_fun_covariant : covariant graph_fun.
   Proof.
-    apply prove_HOcontractive. intros.
-    unfold graph_fun.
-    apply subp_orp. apply subp_refl.
-    apply subp_exp. intro d. apply subp_exp. intro l. apply subp_exp. intro r.
-    apply subp_ocon. apply subp_ocon. apply subp_refl.
-    apply eqp_subp; eapply allp_left; eauto.
-    apply eqp_subp; eapply allp_left; eauto.
+    unfold graph_fun. apply covariant_orp.
+    apply covariant_const.
+    apply covariant_exp; intro d.
+    apply covariant_exp; intro l.
+    apply covariant_exp; intro r.
+    repeat apply covariant_ocon.
+    apply covariant_andp. apply covariant_const.
+    repeat apply covariant_sepcon; apply covariant_const.
+    apply covariant_const'. apply covariant_const'.
   Qed.
 
-  Definition graph := HORec graph_fun.
+  Definition graph := corec graph_fun.
 
   Lemma graph_unfold:
     forall x,
       graph x = (!!(x = 0) && emp) ||
                 (EX d:adr, EX l:adr, EX r:adr, !!(gamma bi x = (d, l, r) /\ valid x) && trinode x d l r ⊗
-                                                 (|> graph l) ⊗ (|> graph r)).
+                                                 (graph l) ⊗ (graph r)).
   Proof.
-    intros. unfold graph at 1. rewrite HORec_fold_unfold. trivial. apply graph_fun_HOcontractive.
+    intros. unfold graph at 1. rewrite corec_fold_unfold. trivial. apply graph_fun_covariant.
   Qed.
 
   Definition dag_fun (Q: adr -> pred world) (x: adr) :=
     (!!(x = 0) && emp) ||
-    (EX d:adr, EX l:adr, EX r:adr, !!(gamma bi x = (d, l, r) /\ valid x) && trinode x d l r * ((|> Q l) ⊗ (|> Q r))).
+    (EX d:adr, EX l:adr, EX r:adr, !!(gamma bi x = (d, l, r) /\ valid x) && trinode x d l r * ((Q l) ⊗ (Q r))).
 
-  Lemma dag_fun_HOcontractive : HOcontractive dag_fun.
+  Lemma dag_fun_covariant : covariant dag_fun.
   Proof.
-    apply prove_HOcontractive. intros.
     unfold dag_fun.
-    apply subp_orp. apply subp_refl.
-    apply subp_exp. intro d. apply subp_exp. intro l. apply subp_exp. intro r.
-    apply subp_sepcon. apply subp_refl.
-    apply subp_ocon; apply eqp_subp; eapply allp_left; eauto.
+    apply covariant_orp. apply covariant_const.
+    apply covariant_exp. intro d. apply covariant_exp. intro l. apply covariant_exp. intro r.
+    apply covariant_sepcon. apply covariant_const.
+    apply covariant_ocon; apply covariant_const'. 
   Qed.
 
-  Definition dag := HORec dag_fun.
+  Definition dag := corec dag_fun.
 
   Lemma dag_unfold:
     forall x,
       dag x = (!!(x = 0) && emp) ||
-              (EX d:adr, EX l:adr, EX r:adr, !!(gamma bi x = (d, l, r) /\ valid x) && trinode x d l r * ((|> dag l) ⊗ (|> dag r))).
+              (EX d:adr, EX l:adr, EX r:adr, !!(gamma bi x = (d, l, r) /\ valid x) && trinode x d l r * ((dag l) ⊗ (dag r))).
   Proof.
-    intros. unfold dag at 1. rewrite HORec_fold_unfold. trivial. apply dag_fun_HOcontractive.
+    intros. unfold dag at 1. rewrite corec_fold_unfold. trivial. apply dag_fun_covariant.
   Qed.
 
   (* Lemma dag_eq_graph: forall x, dag x |-- graph x && !!(graph_is_acyclic (reachable_subgraph pg (x :: nil))). *)
@@ -83,66 +83,4 @@ Section SpatialGraph.
       | nil => emp
       | v :: l' => dag v ⊗ dags l'
     end.
-
-  Lemma graph_precise_eq: (forall x, precise (graph x)) <-> (TT |-- ALL x : adr, !!(precise (graph x))).
-  Proof.
-    split; intros;
-    [hnf; simpl; intros; apply H |
-     hnf in H; simpl in H; apply H; auto; apply (0, (fun (x : var) => Some x, fun (y : adr) => Some y))].
-  Qed.
-
-  Lemma graph_precise: forall x, precise (graph x).
-  Proof.
-    rewrite mprecise_eq. apply loeb. rewrite later_allp. apply forallI. intro.
-    intro w; intros.
-    rewrite graph_unfold. apply mprecise_orp.
-    repeat intro; destruct H0 as [[? ?] [d [l [r [h1 [h2 [h3 [h12 [h23 [? [? [? [? ?]]]]]]]]]]]]];
-    destruct H5 as [x1 [x2 [x3 [x12 [x13 [? [? [? [[? ?] ?]]]]]]]]]; destruct H10 as [y1 [y2 [? [[y11 [y12 [? [? ?]]]] ?]]]];
-    destruct H13; simpl in H0; rewrite H0 in H13; apply H13; auto.
-    apply mprecise_andp_right, mprecise_emp.
-    assert (forall y1 y2 : adr, y1 = y2 \/ y1 <> y2) by (intros; destruct (nat_eq_dec y1 y2); [left | right]; trivial).
-    apply mprecise_exp; trivial.
-    intros y1 y2 w1 w2; repeat intro; destruct H2; destruct H2 as [l1 [r1 ?]]; destruct H3 as [l2 [r2 ?]];
-    destruct (extract_andp_ocon_ocon_left _ _ _ _ _ H2); destruct (extract_andp_ocon_ocon_left _ _ _ _ _ H3);
-    simpl in H4, H5; destruct H4, H5; rewrite H4 in H5; inversion H5; rewrite H9 in *; tauto.
-    intro d; apply mprecise_exp; trivial.
-    intros y1 y2 w1 w2; repeat intro; destruct H2; destruct H2 as [l1 ?]; destruct H3 as [l2 ?];
-    destruct (extract_andp_ocon_ocon_left _ _ _ _ _ H2); destruct (extract_andp_ocon_ocon_left _ _ _ _ _ H3);
-    simpl in H4, H5; destruct H4, H5; rewrite H4 in H5; inversion H5; rewrite H9 in *; tauto.
-    intro l; apply mprecise_exp; trivial.
-    intros y1 y2 w1 w2; repeat intro; destruct H2.
-    destruct (extract_andp_ocon_ocon_left _ _ _ _ _ H2); destruct (extract_andp_ocon_ocon_left _ _ _ _ _ H3);
-    simpl in H4, H5; destruct H4, H5; rewrite H4 in H5; inversion H5; rewrite H9 in *; tauto.
-    intro r; repeat apply mprecise_ocon.
-    apply mprecise_andp_right; repeat apply mprecise_sepcon; apply mprecise_mapsto.
-    admit.
-    admit.
-  Qed.
-
-  Lemma graphs_precise: forall S, precise (graphs S).
-  Proof. induction S; simpl; [apply precise_emp | apply precise_ocon; [apply graph_precise | trivial]]. Qed.
-
-  Lemma reach_eq_graph_eq: forall S1 S2, set_eq (reachable_through_set pg S1) (reachable_through_set pg S2)
-                                         -> graphs S1 = graphs S2.
-  Proof.
-    intros; apply pred_ext; repeat intro.
-    induction S1.
-    generalize (reachable_through_empty pg); intro.
-    rewrite H1 in H.
-    symmetry in H. apply reachable_through_empty_eq in H. destruct H.
-    rewrite H; simpl; trivial. simpl in H0. revert H0. revert a.
-    induction S2; intro w; intros; trivial.
-    assert (~ valid a) by (apply H, in_eq).
-    assert (graph a = emp). apply pred_ext; intro w2; intros.
-    rewrite graph_unfold in H3. destruct H3.
-    simpl in H3. simpl. tauto.
-    destruct H3 as [d [l [r [? [? [? [? [? [? [? [? [[? [? [? [? [? [? [? [? [[[? ?] ?] ?]]]]]]]]] ?]]]]]]]]]]]].
-    exfalso; tauto.
-    rewrite graph_unfold. left.
-    admit.
-    admit.
-    admit.
-    admit.
-  Qed.
-  
 End SpatialGraph.
