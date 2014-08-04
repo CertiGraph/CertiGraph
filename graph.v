@@ -195,9 +195,10 @@ Definition graph_is_acyclic {A D : Type} {EV: EqDec A} {VV: Valid A} (g: PreGrap
   forall p : list A, valid_path g p -> NoDup p.
 
 Definition set (A : Type) : Type := A -> Prop.
-Definition subset {A} (S1 S2 : A -> Prop) : Prop := forall a, S1 a -> S2 a.
-Definition set_eq {A} (S1 S2 : A -> Prop) : Prop := subset S1 S2 /\ subset S2 S1.
+Definition subset {A} (S1 S2 : set A) : Prop := forall a, S1 a -> S2 a.
+Definition set_eq {A} (S1 S2 : set A) : Prop := subset S1 S2 /\ subset S2 S1.
 Definition empty_set (A : Type) : set A := fun _ => False.
+Definition set_finite {A} (S : set A) : Prop := exists l : list A, forall x : A, (In x l -> S x) /\ (~ In x l -> ~ S x).
 
 Lemma set_eq_refl: forall A (S : set A), set_eq S S. Proof. intros; split; intro; tauto. Qed.
 

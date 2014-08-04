@@ -54,7 +54,7 @@ Section SpatialGraph.
     apply covariant_orp. apply covariant_const.
     apply covariant_exp. intro d. apply covariant_exp. intro l. apply covariant_exp. intro r.
     apply covariant_sepcon. apply covariant_const.
-    apply covariant_ocon; apply covariant_const'. 
+    apply covariant_ocon; apply covariant_const'.
   Qed.
 
   Definition dag := corec dag_fun.
@@ -83,4 +83,11 @@ Section SpatialGraph.
       | nil => emp
       | v :: l' => dag v ⊗ dags l'
     end.
+
+  Lemma graph_reachable_finite: forall x, graph x |-- !!(set_finite (reachable pg x)).
+  Proof.
+    repeat intro; hnf; remember (reachable pg x) as R.
+    admit.
+  Qed.
+
 End SpatialGraph.
