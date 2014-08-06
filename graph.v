@@ -42,15 +42,26 @@ Class PreGraph (Vertex: Type) Data {EV: EqDec Vertex} {VV : Valid Vertex}:=
 
 Class BiGraph {Vertex Data: Type} {EV: EqDec Vertex} {VV: Valid Vertex} (PG: PreGraph Vertex Data) :=
   {
-    length_limit: forall v : Vertex, length (edge_func v) = 2
+    only_two_neighbours : forall v : Vertex, {v1 : Vertex & {v2 : Vertex | edge_func v = v1 :: v2 :: nil}}
   }.
 
 Definition biEdge {Vertex Data : Type} {EV: EqDec Vertex} {VV: Valid Vertex}
            {PG: PreGraph Vertex Data} (BG: BiGraph PG) (v: Vertex) : Vertex * Vertex.
-  specialize (length_limit v); intro Hlen;
-  destruct (edge_func v); [simpl in Hlen; exfalso; intuition |
-                           destruct l; [simpl in Hlen; exfalso; intuition | apply (v0, v1)]].
+  specialize (only_two_neighbours v); intro.
+  destruct X as [v1 [v2 ?]].
+  apply (v1, v2).
 Defined.
+
+Lemma biEdge_only2 {Vertex Data : Type} {EV: EqDec Vertex} {VV: Valid Vertex}
+      {PG: PreGraph Vertex Data} (BG: BiGraph PG) :
+  forall v v1 v2 n, biEdge BG v = (v1 ,v2) -> In n (edge_func v) -> n = v1 \/ n = v2.
+Proof.
+  intros; unfold biEdge in H.
+  revert H; case_eq (only_two_neighbours v); intro x1; intros.
+  revert H1; case_eq s; intro x2; intros. inversion H2. subst.
+  rewrite e in *. clear -H0. apply in_inv in H0. destruct H0. left; auto.
+  right. apply in_inv in H. destruct H; auto. apply in_nil in H. exfalso; trivial.
+Qed.
 
 Definition gamma {Vertex Data: Type} {EV: EqDec Vertex} {VV: Valid Vertex}
            {PG: PreGraph Vertex Data} (BG: BiGraph PG) (v: Vertex) : Data * Vertex * Vertex :=
