@@ -1,5 +1,6 @@
 Require Import msl.msl_direct.
 Require Import FunctionalExtensionality.
+Require Import ramify_tactics.
 
 Instance Join_discrete (A : Type): Join A := fun a1 a2 a3 : A => False.
 
@@ -75,6 +76,11 @@ Definition mapsto (x y: var) : pred world :=
     exists ax, fst w x = Some ax /\
                exists ay, fst w y = Some ay /\
                           (forall a, a <> ax -> lookup_fpm (snd w) a = None) /\ lookup_fpm (snd w) ax = Some ay.
+
+Lemma join_sub_mapsto: forall w1 w2 x y, join_sub w1 w2 -> (mapsto x y * TT)%pred w1 -> (mapsto x y * TT)%pred w2.
+Proof.
+  intros. destruct_sepcon H0 h. destruct H as [w3 ?]. try_join h2 w3 m. exists h1, m. split; auto.
+Qed.
 
 Lemma precise_mapsto: forall x y, precise (mapsto x y).
 Proof.

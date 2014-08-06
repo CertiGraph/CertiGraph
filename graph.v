@@ -715,7 +715,7 @@ Section GraphPath.
     destruct H2 as [? [_ ?]]. rewrite H9; auto.
     destruct H3 as [? [_ ?]]. rewrite H10; auto.
   Qed.
-    
+
   Lemma mark_unreachable: forall g1 root g2,
     mark g1 root g2 ->
     forall n, ~ (reachable g1 root n) -> @node_label _ _ _ _ g1 n = @node_label _ _ _ _ g2 n.
@@ -763,7 +763,7 @@ Proof.
   destruct H; inversion H; rewrite H4 in *; clear H4 H2 a0;
   simpl in H0; destruct l; trivial; destruct H0 as [[? _] _]; trivial.
 Qed.
-  
+
 Tactic Notation "LEM" constr(v) := (destruct (classic v); auto).
 
 Lemma reachable_through_empty_eq {A D : Type} {EV: EqDec A} {VV: Valid A} (g: PreGraph A D):
