@@ -38,44 +38,40 @@ Definition stack := table var adr.
 Definition heap := table adr adr.
 Definition state := (stack * heap)%type.
 
-Definition world := ((var -> option adr)*(fpm adr adr))%type.
+Definition world := (fpm adr adr).
 
-Instance Join_world: Join world :=
-  Join_prod
-    (var -> option adr) (Join_equiv _)
-    (fpm adr adr) (Join_fpm (Join_discrete adr)).
+Instance Join_world: Join world := Join_fpm (Join_discrete adr).
 
 Instance Perm_world : Perm_alg world.
-apply Perm_prod; [apply Perm_equiv | apply Perm_fpm; apply Perm_discrete].
+apply Perm_fpm; apply Perm_discrete.
 Qed.
 
 Instance Sep_world : Sep_alg world.
-apply Sep_prod. apply Sep_equiv. apply Sep_fpm.
+apply Sep_fpm.
 Qed.
 
 Instance Canc_world : Canc_alg world.
-apply Canc_prod; [apply Canc_equiv | apply Canc_fpm; [intuition | repeat intro; inversion H]].
+apply Canc_fpm; [intuition | repeat intro; inversion H].
 Qed.
 
 Instance Disj_world : Disj_alg world.
-apply Disj_prod; [apply Disj_equiv | apply Disj_fpm; repeat intro; inversion H].
+apply Disj_fpm; repeat intro; inversion H.
 Qed.
 
 Instance Cross_world : Cross_alg world.
-apply Cross_prod; [apply Cross_equiv | apply Cross_fpm; [apply Perm_discrete | apply psa_discrete | repeat intro; inv H]].
+apply Cross_fpm; [apply Perm_discrete | apply psa_discrete | repeat intro; inv H].
 Qed.
 
-Definition fun_set (f: nat -> option nat) (x: nat) (y: option nat) :=
-  fun i => if eq_dec i x then y else f i.
+(* Definition fun_set (f: nat -> option nat) (x: nat) (y: option nat) := *)
+(*   fun i => if eq_dec i x then y else f i. *)
 
-Definition subst (x y: var) (P: pred world) : pred world :=
-  fun w => P (fun_set (fst w) x (fst w y), snd w).
+(* Definition subst (x y: var) (P: pred world) : pred world := *)
+(*   fun w => P (fun_set (fst w) x (fst w y), snd w). *)
 
-Definition mapsto (x y: var) : pred world :=
+Definition mapsto (x y: adr) : pred world :=
   fun w => x <> 0 /\
-    exists ax, fst w x = Some ax /\
-               exists ay, fst w y = Some ay /\
-                          (forall a, a <> ax -> lookup_fpm (snd w) a = None) /\ lookup_fpm (snd w) ax = Some ay.
+    (forall a, a <> x -> lookup_fpm w a = None) /\
+    lookup_fpm w x = Some y.
 
 Lemma join_sub_mapsto: forall w1 w2 x y, join_sub w1 w2 -> (mapsto x y * TT)%pred w1 -> (mapsto x y * TT)%pred w2.
 Proof.
@@ -84,18 +80,40 @@ Qed.
 
 Lemma precise_mapsto: forall x y, precise (mapsto x y).
 Proof.
-  repeat intro; destruct w1 as [r1 m1]; destruct w2 as [r2 m2]; destruct w as [r m].
-  destruct H1 as [[rx mx] [[? ?] ?]]; destruct H2 as [[ry my] [[? ?] ?]]; simpl in H1, H2, H3, H4, H5, H6.
-  assert (r1 = r2) by (rewrite H1 in *; rewrite H3 in *; rewrite H2 in *; rewrite H5 in *; trivial); clear H1 H2 H3 H5 rx ry r.
-  destruct H as [? [ax1 [? [ay1 [? [? ?]]]]]]; simpl in H1, H2, H3, H5.
-  destruct H0 as [? [ax2 [? [ay2 [? [? ?]]]]]]; simpl in H8, H9, H10, H11.
-  rewrite H7 in *; clear H7 r1. rewrite H1 in H8; inversion H8. rewrite H12 in *; clear H12 ax1.
-  rewrite H2 in H9; inversion H9; rewrite H12 in *; clear H12 ay1.
-  destruct m1 as [x1 f1]; destruct m2 as [x2 f2]; simpl in *.
-  f_equal; trivial. apply exist_ext.
-  extensionality mm; destruct (eq_dec mm ax2).
-  rewrite e in *. rewrite H5, H11; trivial.
-  specialize(H3 mm n); specialize (H10 mm n); rewrite H3, H10; trivial.
+  repeat intro. clear H1 H2 w. destruct H0 as [? [? ?]]. destruct H as [? [? ?]].
+  destruct w1 as [x1 f1]; destruct w2 as [x2 f2]; simpl in *.
+  apply exist_ext. extensionality mm; destruct (eq_dec mm x).
+  rewrite e in *. rewrite H4, H2; trivial.
+  specialize (H1 mm n); specialize (H3 mm n); rewrite H1, H3; trivial.
 Qed.
 
-Definition equal (x y: var) : pred world := fun w => fst w x = fst w y.
+Fixpoint extractSome (f : adr -> option adr) (li : list adr) : list adr :=
+  match li with
+    | nil => nil
+    | x :: lx => match f x with
+                   | Some _ => x :: extractSome f lx
+                   | None => extractSome f lx
+                 end
+  end.
+
+Lemma world_finite: forall w: world, exists l: list adr, forall a:adr, (In a l -> lookup_fpm w a <> None) /\
+                                                                       (~ In a l -> lookup_fpm w a = None).
+Proof.
+  intro. destruct w as [f [li H]]. simpl. exists (extractSome f li).
+  split; intros.
+  clear H.
+  induction li; simpl in H0. auto.
+  destruct (f a0) eqn: ?.
+  destruct (in_inv H0). rewrite <- H, Heqo. intro HH; inversion HH.
+  apply IHli; auto. apply IHli; auto.
+  destruct (in_dec nat_eq_dec a li).
+  clear H. induction li. simpl in *; exfalso; auto.
+  simpl in H0. destruct (f a0) eqn : ?.
+  apply IHli.
+  intro; apply H0. apply in_cons; auto.
+  destruct (in_inv i). rewrite H in H0. exfalso; apply H0, in_eq. auto.
+  destruct (in_inv i). rewrite H in Heqo; auto. apply IHli; auto.
+  apply H; auto.
+Qed.
+
+(* Definition equal (x y: var) : pred world := fun w => fst w x = fst w y. *)
