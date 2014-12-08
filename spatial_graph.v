@@ -129,23 +129,112 @@ Section SpatialGraph.
   Lemma graph_reachable_in: forall x y, reachable pg x y -> graph x |-- EX v : adr, (mapsto y v * TT).
   Proof. intros; destruct H; apply graph_path_in in H; trivial. Qed.
 
-  Definition explode (x : adr) (w : world) (H : (graph x * TT)%pred w) :
-    {l : adr & {r : adr | biEdge bi x = (l, r) /\ valid x /\ (graph l * TT)%pred w /\ (graph r * TT)%pred w}} + {x = 0}.
-    destruct (eq_nat_dec x 0). right; auto. left.
-    rewrite graph_unfold in H.
-    assert (S : ((EX  d : adr,
-                         (EX  l : adr,
-                                  (EX  r : adr,
-                                           !!(gamma bi x = (d, l, r) /\ valid x) && trinode x d l r
-                                             ⊗ graph l ⊗ graph r))) * TT)%pred w).
-    destruct_sepcon H h. hnf in H0. destruct H0. destruct H0. hnf in H0. exfalso; auto.
-    exists h1, h2; split; auto. clear H. remember (gamma bi x). destruct p as [[d l] r]. exists l, r.
-    destruct_sepcon S h. destruct H0 as [dd [ll [rr ?]]]. destruct_ocon H0 i. destruct_ocon H4 j.
-    destruct H8 as [[? ?] ?]. injection H8; intros; subst; clear H8. unfold gamma in Heqp. destruct (biEdge bi x).
-    injection Heqp; intros; subst; clear Heqp. repeat split; auto.
-    try_join j2 j3 j23'. equate_join j23 j23'. try_join j1 i3 j1i3. try_join j1i3 h2 j1i3h2. exists j23, j1i3h2.
-    repeat split; auto. try_join i2 i3 i23'; equate_join i23 i23'. try_join i1 h2 i1h2. exists i23, i1h2. repeat split; auto.
-  Defined.
+  Section ConstructReachable.
+
+    Definition explode (x : adr) (w : world) (H : (graph x * TT)%pred w) :
+      {l : adr & {r : adr | biEdge bi x = (l, r) /\ valid x /\ (graph l * TT)%pred w /\ (graph r * TT)%pred w}} + {x = 0}.
+      destruct (eq_nat_dec x 0). right; auto. left.
+      rewrite graph_unfold in H.
+      assert (S : ((EX  d : adr, (EX  l : adr, (EX  r : adr,
+                                                        !!(gamma bi x = (d, l, r) /\ valid x) && trinode x d l r
+                                                          ⊗ graph l ⊗ graph r))) * TT)%pred w).
+      destruct_sepcon H h. hnf in H0. destruct H0. destruct H0. hnf in H0. exfalso; auto.
+      exists h1, h2; split; auto. clear H. remember (gamma bi x). destruct p as [[d l] r]. exists l, r.
+      destruct_sepcon S h. destruct H0 as [dd [ll [rr ?]]]. destruct_ocon H0 i. destruct_ocon H4 j.
+      destruct H8 as [[? ?] ?]. injection H8; intros; subst; clear H8. unfold gamma in Heqp. destruct (biEdge bi x).
+      injection Heqp; intros; subst; clear Heqp. repeat split; auto. try_join j2 j3 j23'. equate_join j23 j23'.
+      try_join j1 i3 j1i3. try_join j1i3 h2 j1i3h2. exists j23, j1i3h2. repeat split; auto.
+      try_join i2 i3 i23'; equate_join i23 i23'. try_join i1 h2 i1h2. exists i23, i1h2. repeat split; auto.
+    Defined.
+
+    Definition leftTree (x : adr) (w : world)
+               (m : {l : adr & {r : adr | biEdge bi x = (l, r) /\ valid x /\ (graph l * TT)%pred w /\
+                                          (graph r * TT)%pred w}}) : {t : adr | (graph t * TT)%pred w }.
+    destruct m as [l [r [? [? [? ?]]]]]; exists l; apply H1.
+    Defined.
+
+    Definition rightTree (x : adr) (w : world)
+               (m : {l : adr & {r : adr | biEdge bi x = (l, r) /\ valid x /\ (graph l * TT)%pred w /\
+                                          (graph r * TT)%pred w}}) : {t : adr | (graph t * TT)%pred w }.
+    destruct m as [l [r [? [? [? ?]]]]]; exists r; apply H2.
+    Defined.
+
+    Definition reach_input := {w : world & (nat * list {t : adr | (graph t * TT)%pred w} * list adr )%type}.
+
+    Definition rch1 (i : reach_input) := match projT2 i with (n, _, _) => n end.
+    
+    Definition rch2 (i : reach_input) := match projT2 i with (_, l, _) => l end.
+    
+    Definition rch3 (i: reach_input) := match projT2 i with (_, _, result) => result end.
+
+    Fixpoint removeTree (w : world) (x : adr) (l : list {t : adr | (graph t * TT)%pred w}) :=
+      match l with
+        | nil => nil
+        | y :: ttl => if eq_nat_dec x (proj1_sig y) then removeTree w x ttl else y :: removeTree w x ttl
+      end.
+    
+    Fixpoint removeList (w : world) (la : list {t : adr | (graph t * TT)%pred w}) (lb : list adr) :=
+      match lb with
+        | nil => la
+        | x :: l => removeList w (removeTree w x la) l
+      end.
+
+    Definition lengthInput (i : reach_input) :=
+      match projT2 i with
+        | (len, pr, re) => len + length pr - 2 * (length re)
+      end.
+
+    Definition inputOrder (i1 i2 : reach_input) := lengthInput i1 < lengthInput i2.
+  
+    Lemma inputOrder_wf': forall len i, lengthInput i <= len -> Acc inputOrder i.
+    Proof.
+      induction len; intros; constructor; intros; unfold inputOrder in * |-; [exfalso | apply IHlen]; intuition.
+    Qed.
+
+    Lemma inputOrder_wf : well_founded inputOrder.
+    Proof. red; intro; eapply inputOrder_wf'; eauto. Defined.
+
+    Definition nil_dec: forall l : list adr, {l = nil} + {l <> nil}.
+      intros. destruct l; [left | right]; intuition; inversion H.
+    Defined.
+
+    (* Definition extractReach : reach_input -> list adr. *)
+    (*   refine ( *)
+    (*       Fix inputOrder_wf (fun _ => list adr) *)
+    (*           (fun (inp : reach_input) (funcR : forall inp2, inputOrder inp2 inp -> list adr) => *)
+    (*              let w := projT1 inp in *)
+    (*              let len := rch1 inp in *)
+    (*              let ll := rch2 inp in *)
+    (*              let r := rch3 inp in *)
+    (*              let g := hd 0 ll in *)
+    (*              let l := tl ll in *)
+    (*              if nil_dec ll *)
+    (*              then r *)
+    (*              else if le_dec len (length r) *)
+    (*                   then r *)
+    (*                   else  *)
+                 
+
+
+                 
+    (*              match m with *)
+    (*                | (_, nil, r) => r *)
+    (*                | (len, g :: l, r) => *)
+    (*                  if le_dec len (length r) *)
+    (*                  then r *)
+    (*                  else let x := proj1_sig g in *)
+    (*                       let gx := proj2_sig g in *)
+    (*                       match explode x w gx with *)
+    (*                         | inleft hasNodes => let lT := leftTree x w hasNodes in *)
+    (*                                              let rT := rightTree x w hasNodes in *)
+    (*                                              let realAdd := removeList w (lT :: rT :: nil) r in *)
+    (*                                              nil *)
+    (*                                              (* funcR (existT _ w (len, l ++ realAdd, x :: r)) _ *) *)
+    (*                         | inright _ => r (* funcR (existT _ w (len, l, r)) _ *) *)
+    (*                       end *)
+    (*              end)). *)
+
+  End ConstructReachable.
     
   Lemma graph_reachable_finite: forall x w, x <> 0 -> graph x w -> set_finite (reachable pg x).
   Proof.
