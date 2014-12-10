@@ -132,7 +132,8 @@ Section SpatialGraph.
   Section ConstructReachable.
 
     Definition explode (x : adr) (w : world) (H : (graph x * TT)%pred w) :
-      {l : adr & {r : adr | biEdge bi x = (l, r) /\ valid x /\ (graph l * TT)%pred w /\ (graph r * TT)%pred w}} + {x = 0}.
+      {l : adr & {r : adr | biEdge bi x = (l, r) /\ x <> 0 /\ valid x /\ (graph l * TT)%pred w /\ (graph r * TT)%pred w}} +
+      {x = 0}.
       destruct (eq_nat_dec x 0). right; auto. left.
       rewrite graph_unfold in H.
       assert (S : ((EX  d : adr, (EX  l : adr, (EX  r : adr,
@@ -148,11 +149,11 @@ Section SpatialGraph.
     Defined.
 
     Definition twoSubTrees (x : adr) (w : world)
-               (m : {l : adr & {r : adr | biEdge bi x = (l, r) /\ valid x /\ (graph l * TT)%pred w /\
+               (m : {l : adr & {r : adr | biEdge bi x = (l, r) /\ x <> 0 /\ valid x /\ (graph l * TT)%pred w /\
                                           (graph r * TT)%pred w}}) : list {t : adr | (graph t * TT)%pred w }.
-      destruct m as [l [r [? [? [? ?]]]]].
-      remember (exist (fun t => (graph t * TT)%pred w) l H1) as sl.
-      remember (exist (fun t => (graph t * TT)%pred w) r H2) as sr.
+      destruct m as [l [r [? [? [? [? ?]]]]]].
+      remember (exist (fun t => (graph t * TT)%pred w) l H2) as sl.
+      remember (exist (fun t => (graph t * TT)%pred w) r H3) as sr.
       remember (sl :: sr :: nil) as lt; apply lt.
     Defined.
 
@@ -189,6 +190,21 @@ Section SpatialGraph.
       induction lb; intros; simpl. rewrite app_length; trivial.
       apply le_trans with (length lc + length (removeTree w a la)). apply IHlb.
       apply plus_le_compat_l, remove_tree_len_le.
+    Qed.
+
+    Definition Sublist {A : Type} (l1 l2 : list A) := forall x, In x l1 -> In x l2.
+
+    Lemma remove_tree_sublist: forall w x l, Sublist (removeTree w x l) l.
+    Proof.
+      induction l; hnf; intros; simpl in *; auto. destruct a as [t Ht]; simpl in H. destruct (eq_nat_dec x t).
+      subst. right. apply IHl; auto. destruct (in_inv H); [left | right]. auto. apply IHl; auto.
+    Qed.
+
+    Lemma remove_list_sublist: forall w lb lc la, Sublist (appRemoveList w lc la lb) (lc ++ la).
+    Proof.
+      induction lb; intros; hnf; intros; simpl in *; auto. specialize (IHlb lc (removeTree w a la) x H).
+      destruct (in_app_or _ _ _ IHlb); apply in_or_app; [left | right]. auto.
+      generalize (remove_tree_sublist w a la); intro Hr; hnf in Hr; apply Hr; auto.
     Qed.
       
     Definition lengthInput (i : reach_input) :=
@@ -234,7 +250,7 @@ Section SpatialGraph.
                            end)).
       destruct inp as [ww [[llen lll] result]]. unfold rch1, rch2, rch3 in *. simpl in *.
       unfold w, len, ll, r in *. destruct lll. exfalso; apply _H; auto. simpl in *. unfold g, l in *.
-      destruct hasNodes as [leftT [rightT [? [? [? ?]]]]]. unfold twoSubTrees in *. unfold combinNatAdr in *.
+      destruct hasNodes as [leftT [rightT [? [? [? [? ?]]]]]]. unfold twoSubTrees in *. unfold combinNatAdr in *.
       unfold lt, realAdd, newR, inputOrder, lengthInput. simpl. generalize (remove_list_len_le ww result lll lt); intro.
       repeat rewrite <- plus_n_O.
       apply le_lt_trans with (llen + llen + length lll + length lt - S (length result + S (length result))). omega.
@@ -266,16 +282,58 @@ Section SpatialGraph.
       intros. destruct i as [ww [[n prs] rslt]]. unfold extractReach at 1; rewrite Fix_eq.
       destruct prs; simpl. unfold rch3. simpl. auto. unfold rch1, rch2, rch3. simpl.
       destruct (le_dec n (length rslt)). auto. destruct s as [t H]. simpl. destruct (explode t ww H).
-      destruct s as [? [? [? [? [? ?]]]]]. unfold combinNatAdr; simpl. unfold extractReach; auto.
+      destruct s as [? [? [? [? [? [? ?]]]]]]. unfold combinNatAdr; simpl. unfold extractReach; auto.
       unfold extractReach; auto. intros. assert (HFunEq: f = g) by (extensionality y; extensionality p; auto); subst; auto.
     Qed.
 
-    Definition list_reachable (l : list adr) (x : adr) := forall y, In y l -> reachable pg x y.
+    Lemma Forall_app: forall {A : Type} (P : A -> Prop) (l1 l2 : list A), Forall P l1 -> Forall P l2 -> Forall P (l1 ++ l2).
+    Proof.
+      induction l1; intros. rewrite app_nil_l; auto. generalize (Forall_inv H); intros.
+      rewrite <- app_comm_cons. apply Forall_cons; auto. apply IHl1; auto. rewrite Forall_forall.
+      rewrite Forall_forall in H. intros. apply H. apply in_cons; auto.
+    Qed.
+
+    Lemma Forall_sublist: forall {A : Type} (P : A -> Prop) (l1 l2 : list A), Sublist l1 l2 -> Forall P l2 -> Forall P l1.
+    Proof. intros; hnf in *. rewrite Forall_forall in *; intro y; intros. apply H0, H; auto. Qed.
     
+    Definition reach_input_fun := fun ww => (nat * list {f : adr | (graph f * TT)%pred ww} * list adr)%type.
+
+    Definition graph_sig_fun (w : world) := fun f => (graph f * TT)%pred w.
+
+    Lemma extractReach_reachable:
+      forall (x : adr) (i : reach_input),
+        Forall (reachable pg x) (rch3 i) ->
+        Forall (fun y => reachable pg x y \/ y = 0) (map (@proj1_sig _ (graph_sig_fun (projT1 i))) (rch2 i)) ->
+        Forall (reachable pg x) (extractReach i).
+    Proof.
+      intros x i; remember (lengthInput i); assert (lengthInput i <= n) by omega; clear Heqn; revert H x; revert i.
+      induction n; intros; intros; remember (extractReach i) as result;
+      rename Heqresult into H3; destruct i as [w [[len pr] rslt]]; unfold rch2, rch3, lengthInput in *;
+      simpl in *; rewrite extractReach_unfold in H3; destruct pr; simpl in H3. subst; apply H0; auto.
+      destruct (le_dec len (length rslt)). subst; apply H0; auto. exfalso; omega.
+      
+      subst; apply H0; auto. destruct (le_dec len (length rslt)). subst; apply H0; auto.
+      destruct s as [t Ht]; simpl in *. destruct (explode t w Ht). remember (twoSubTrees t w s) as subT.
+      destruct s as [l [r [? [? [? [Gl Gr]]]]]]. simpl in HeqsubT. rewrite H3; apply IHn; simpl.
+      apply le_trans with (len + (len + 0) + length pr + length subT - S (length rslt + S (length rslt + 0))).
+      generalize (remove_list_len_le w rslt pr subT); intros; omega. rewrite HeqsubT; simpl; omega.
+      apply Forall_cons; auto. apply Forall_inv in H1. destruct H1; auto. exfalso; apply n1; auto.
+      assert (Sublist (appRemoveList w pr subT rslt) (pr ++ subT)) by apply remove_list_sublist.
+      admit.
+      admit.
+    Qed.
+
   End ConstructReachable.
     
   Lemma graph_reachable_finite: forall x w, x <> 0 -> graph x w -> set_finite (reachable pg x).
   Proof.
+    intros. hnf. destruct (world_finite w) as [l ?].
+    generalize (core_unit w); intros. unfold unit_for in H2. apply join_comm in H2.
+    assert ((graph x * TT)%pred w) by (exists w, (core w); repeat split; auto).
+    remember (exist (graph_sig_fun w) x H3) as g.
+    remember (existT reach_input_fun w (length l, (g::nil), nil)).
+    exists (extractReach s). intros y; split; intros.
+    admit.
     admit.
   Qed.
 
