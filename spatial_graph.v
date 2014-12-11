@@ -24,9 +24,11 @@ Section SpatialGraph.
 
   Definition nodesFrom (x : adr) : list adr := @edge_func adr adr natEqDec GV pg x.
 
+  Definition gValid (x : adr) : Prop := @valid nat natEqDec GV x.
+
   Definition graph_fun (Q: adr -> pred world) (x: adr) :=
     (!!(x = 0) && emp) ||
-    (EX d:adr, EX l:adr, EX r:adr, !!(gamma bi x = (d, l, r) /\ valid x) && trinode x d l r ⊗ (Q l) ⊗ (Q r)).
+    (EX d:adr, EX l:adr, EX r:adr, !!(gamma bi x = (d, l, r) /\ gValid x) && trinode x d l r ⊗ (Q l) ⊗ (Q r)).
 
   Lemma graph_fun_covariant : covariant graph_fun.
   Proof.
@@ -46,7 +48,7 @@ Section SpatialGraph.
   Lemma graph_unfold:
     forall x,
       graph x = (!!(x = 0) && emp) ||
-                (EX d:adr, EX l:adr, EX r:adr, !!(gamma bi x = (d, l, r) /\ valid x) && trinode x d l r ⊗
+                (EX d:adr, EX l:adr, EX r:adr, !!(gamma bi x = (d, l, r) /\ gValid x) && trinode x d l r ⊗
                                                  (graph l) ⊗ (graph r)).
   Proof.
     intros. unfold graph at 1. rewrite corec_fold_unfold. trivial. apply graph_fun_covariant.
@@ -54,7 +56,7 @@ Section SpatialGraph.
 
   Definition dag_fun (Q: adr -> pred world) (x: adr) :=
     (!!(x = 0) && emp) ||
-    (EX d:adr, EX l:adr, EX r:adr, !!(gamma bi x = (d, l, r) /\ valid x) && trinode x d l r * ((Q l) ⊗ (Q r))).
+    (EX d:adr, EX l:adr, EX r:adr, !!(gamma bi x = (d, l, r) /\ gValid x) && trinode x d l r * ((Q l) ⊗ (Q r))).
 
   Lemma dag_fun_covariant : covariant dag_fun.
   Proof.
@@ -70,7 +72,7 @@ Section SpatialGraph.
   Lemma dag_unfold:
     forall x,
       dag x = (!!(x = 0) && emp) ||
-              (EX d:adr, EX l:adr, EX r:adr, !!(gamma bi x = (d, l, r) /\ valid x) && trinode x d l r * ((dag l) ⊗ (dag r))).
+              (EX d:adr, EX l:adr, EX r:adr, !!(gamma bi x = (d, l, r) /\ gValid x) && trinode x d l r * ((dag l) ⊗ (dag r))).
   Proof.
     intros. unfold dag at 1. rewrite corec_fold_unfold. trivial. apply dag_fun_covariant.
   Qed.
@@ -132,28 +134,27 @@ Section SpatialGraph.
   Section ConstructReachable.
 
     Definition explode (x : adr) (w : world) (H : (graph x * TT)%pred w) :
-      {l : adr & {r : adr | biEdge bi x = (l, r) /\ x <> 0 /\ valid x /\ (graph l * TT)%pred w /\ (graph r * TT)%pred w}} +
-      {x = 0}.
+      {l : adr & {r : adr | biEdge bi x = (l, r) /\ gValid x /\ (graph l * TT)%pred w /\ (graph r * TT)%pred w}} + {x = 0}.
       destruct (eq_nat_dec x 0). right; auto. left.
       rewrite graph_unfold in H.
-      assert (S : ((EX  d : adr, (EX  l : adr, (EX  r : adr,
-                                                        !!(gamma bi x = (d, l, r) /\ valid x) && trinode x d l r
-                                                          ⊗ graph l ⊗ graph r))) * TT)%pred w).
+      assert (((EX  d : adr, (EX  l : adr, (EX  r : adr,
+                                                    !!(gamma bi x = (d, l, r) /\ gValid x) && trinode x d l r
+                                                      ⊗ graph l ⊗ graph r))) * TT)%pred w) as S.
       destruct_sepcon H h. hnf in H0. destruct H0. destruct H0. hnf in H0. exfalso; auto.
       exists h1, h2; split; auto. clear H. remember (gamma bi x). destruct p as [[d l] r]. exists l, r.
       destruct_sepcon S h. destruct H0 as [dd [ll [rr ?]]]. destruct_ocon H0 i. destruct_ocon H4 j.
       destruct H8 as [[? ?] ?]. injection H8; intros; subst; clear H8. unfold gamma in Heqp. destruct (biEdge bi x).
-      injection Heqp; intros; subst; clear Heqp. repeat split; auto. try_join j2 j3 j23'. equate_join j23 j23'.
-      try_join j1 i3 j1i3. try_join j1i3 h2 j1i3h2. exists j23, j1i3h2. repeat split; auto.
+      injection Heqp; intros; subst; clear Heqp. repeat split; auto. destruct H10. auto. try_join j2 j3 j23'.
+      equate_join j23 j23'. try_join j1 i3 j1i3. try_join j1i3 h2 j1i3h2. exists j23, j1i3h2. repeat split; auto.
       try_join i2 i3 i23'; equate_join i23 i23'. try_join i1 h2 i1h2. exists i23, i1h2. repeat split; auto.
     Defined.
 
     Definition twoSubTrees (x : adr) (w : world)
-               (m : {l : adr & {r : adr | biEdge bi x = (l, r) /\ x <> 0 /\ valid x /\ (graph l * TT)%pred w /\
+               (m : {l : adr & {r : adr | biEdge bi x = (l, r) /\ gValid x /\ (graph l * TT)%pred w /\
                                           (graph r * TT)%pred w}}) : list {t : adr | (graph t * TT)%pred w }.
-      destruct m as [l [r [? [? [? [? ?]]]]]].
-      remember (exist (fun t => (graph t * TT)%pred w) l H2) as sl.
-      remember (exist (fun t => (graph t * TT)%pred w) r H3) as sr.
+      destruct m as [l [r [? [? [? ?]]]]].
+      remember (exist (fun t => (graph t * TT)%pred w) l H1) as sl.
+      remember (exist (fun t => (graph t * TT)%pred w) r H2) as sr.
       remember (sl :: sr :: nil) as lt; apply lt.
     Defined.
 
@@ -282,15 +283,17 @@ Section SpatialGraph.
       intros. destruct i as [ww [[n prs] rslt]]. unfold extractReach at 1; rewrite Fix_eq.
       destruct prs; simpl. unfold rch3. simpl. auto. unfold rch1, rch2, rch3. simpl.
       destruct (le_dec n (length rslt)). auto. destruct s as [t H]. simpl. destruct (explode t ww H).
-      destruct s as [? [? [? [? [? [? ?]]]]]]. unfold combinNatAdr; simpl. unfold extractReach; auto.
+      destruct s as [? [? [? [? [? ?]]]]]. unfold combinNatAdr; simpl. unfold extractReach; auto.
       unfold extractReach; auto. intros. assert (HFunEq: f = g) by (extensionality y; extensionality p; auto); subst; auto.
     Qed.
+
+    Lemma Forall_tl: forall {A : Type} (P : A -> Prop) (x : A) (l : list A), Forall P (x :: l) -> Forall P l.
+    Proof. intros; rewrite Forall_forall in *; intros. apply H, in_cons; auto. Qed.
 
     Lemma Forall_app: forall {A : Type} (P : A -> Prop) (l1 l2 : list A), Forall P l1 -> Forall P l2 -> Forall P (l1 ++ l2).
     Proof.
       induction l1; intros. rewrite app_nil_l; auto. generalize (Forall_inv H); intros.
-      rewrite <- app_comm_cons. apply Forall_cons; auto. apply IHl1; auto. rewrite Forall_forall.
-      rewrite Forall_forall in H. intros. apply H. apply in_cons; auto.
+      rewrite <- app_comm_cons. apply Forall_cons; auto. apply IHl1; auto. apply Forall_tl with a; auto.
     Qed.
 
     Lemma Forall_sublist: forall {A : Type} (P : A -> Prop) (l1 l2 : list A), Sublist l1 l2 -> Forall P l2 -> Forall P l1.
@@ -299,6 +302,9 @@ Section SpatialGraph.
     Definition reach_input_fun := fun ww => (nat * list {f : adr | (graph f * TT)%pred ww} * list adr)%type.
 
     Definition graph_sig_fun (w : world) := fun f => (graph f * TT)%pred w.
+
+    Lemma map_sublist: forall (A B : Type) (f : A -> B) (l1 l2 : list A), Sublist l1 l2 -> Sublist (map f l1) (map f l2).
+    Proof. intros; hnf in *; intros. rewrite in_map_iff in *. destruct H0 as [y [? ?]]. exists y; split; auto. Qed.
 
     Lemma extractReach_reachable:
       forall (x : adr) (i : reach_input),
@@ -314,26 +320,55 @@ Section SpatialGraph.
       
       subst; apply H0; auto. destruct (le_dec len (length rslt)). subst; apply H0; auto.
       destruct s as [t Ht]; simpl in *. destruct (explode t w Ht). remember (twoSubTrees t w s) as subT.
-      destruct s as [l [r [? [? [? [Gl Gr]]]]]]. simpl in HeqsubT. rewrite H3; apply IHn; simpl.
+      destruct s as [l [r [? [? [Gl Gr]]]]]. simpl in HeqsubT. assert (reachable pg x t) as HRt.
+      destruct (Forall_inv H1); auto. destruct g; exfalso; auto. rewrite H3; apply IHn; simpl.
       apply le_trans with (len + (len + 0) + length pr + length subT - S (length rslt + S (length rslt + 0))).
       generalize (remove_list_len_le w rslt pr subT); intros; omega. rewrite HeqsubT; simpl; omega.
-      apply Forall_cons; auto. apply Forall_inv in H1. destruct H1; auto. exfalso; apply n1; auto.
-      assert (Sublist (appRemoveList w pr subT rslt) (pr ++ subT)) by apply remove_list_sublist.
-      admit.
-      admit.
+      apply Forall_cons; auto. assert (Sublist (appRemoveList w pr subT rslt) (pr ++ subT)) by apply remove_list_sublist.
+      generalize (map_sublist _ _ (proj1_sig (P:=graph_sig_fun w)) _ _ H2); intros; clear H2. rewrite map_app in H4.
+      apply (Forall_sublist _ _ _ H4); clear H4. apply Forall_app. apply Forall_tl in H1; auto.
+      rewrite HeqsubT; simpl. rewrite Forall_forall. intro y; intros.
+
+      destruct (in_inv H2). subst. destruct Gl as [wl [_ [_ [? _]]]]. rewrite graph_unfold in H3.
+      destruct H3 as [[? ?] | [dd [ll [rr ?]]]]; [right; auto| left]. destruct_ocon H3 h. destruct_ocon H6 j.
+      destruct H10 as [[? ?] ?]. apply reachable_by_merge with t. auto. exists (t :: y :: nil). hnf.
+      split; split; simpl; auto. split. unfold biEdge in e. split. apply reachable_foot_valid in HRt. auto. split.
+      apply H12. destruct (@only_two_neighbours nat nat natEqDec GV pg bi t) as [v1 [v2 HHH]]. inversion e; subst; clear e.
+      rewrite HHH. apply in_eq. auto. repeat intro. hnf. auto. clear H2.
+
+      destruct (in_inv H4). subst. destruct Gr as [wr [_ [_ [? _]]]]. rewrite graph_unfold in H2.
+      destruct H2 as [[? ?] | [dd [ll [rr ?]]]]; [right; auto| left]. destruct_ocon H2 h. destruct_ocon H6 j.
+      destruct H10 as [[? ?] ?]. apply reachable_by_merge with t. auto. exists (t :: y :: nil). hnf.
+      split; split; simpl; auto. split. unfold biEdge in e. split. apply reachable_foot_valid in HRt. auto. split.
+      apply H12. destruct (@only_two_neighbours nat nat natEqDec GV pg bi t) as [v1 [v2 HHH]]. inversion e; subst; clear e.
+      rewrite HHH. apply in_cons, in_eq. auto. repeat intro. hnf. auto. inversion H2.
+
+      rewrite H3; apply IHn; simpl; clear IHn H3 result; auto. omega. rewrite Forall_forall in H1. rewrite Forall_forall.
+      intros. apply H1. apply in_cons; auto.
     Qed.
 
   End ConstructReachable.
     
-  Lemma graph_reachable_finite: forall x w, x <> 0 -> graph x w -> set_finite (reachable pg x).
+  Lemma graph_reachable_finite: forall x w, graph x w -> set_finite (reachable pg x).
   Proof.
     intros. hnf. destruct (world_finite w) as [l ?].
-    generalize (core_unit w); intros. unfold unit_for in H2. apply join_comm in H2.
+    generalize (core_unit w); intros. unfold unit_for in H1. apply join_comm in H1.
     assert ((graph x * TT)%pred w) by (exists w, (core w); repeat split; auto).
-    remember (exist (graph_sig_fun w) x H3) as g.
+    remember (exist (graph_sig_fun w) x H2) as g.
     remember (existT reach_input_fun w (length l, (g::nil), nil)).
+    assert (Forall (reachable pg x) (extractReach s)). apply extractReach_reachable.
+    unfold rch3; rewrite Heqs; simpl; apply Forall_nil. unfold rch2; rewrite Heqs; rewrite Heqg; simpl.
+    apply Forall_forall; intros. apply in_inv in H3; destruct H3. subst. assert (graph x0 w) by auto.
+    rewrite graph_unfold in H. destruct H as [[? ?] | [dd [ll [rr ?]]]]. hnf in H; right; auto. left.
+    apply reachable_by_reflexive. split. destruct_ocon H h. destruct_ocon H6 j. destruct H10 as [[? ?] ?].
+    apply H12. hnf; auto. inversion H3.
     exists (extractReach s). intros y; split; intros.
-    admit.
+    
+    rewrite Forall_forall in H3. apply H3. auto.
+
+    destruct (classic (reachable pg x y)); [exfalso | auto]. apply H4.
+    generalize (graph_reachable_in _ _ H5). intros. specialize (H6 w H). hnf in H6. destruct H6 as [b ?].
+    unfold reachable in H5. rewrite reachable_acyclic in H5.
     admit.
   Qed.
 

@@ -547,6 +547,18 @@ Section GraphPath.
     split; trivial. apply path_prop_weaken with P; auto.
   Qed.
 
+  Lemma valid_path_valid: forall (g : Gph) p, valid_path g p -> Forall valid p.
+  Proof.
+    induction p; intros; simpl in *. apply Forall_nil.
+    destruct p; constructor; auto; destruct H as [[? ?] ?]; [| apply IHp]; auto.
+  Qed.
+
+  Lemma reachable_foot_valid: forall (g : Gph) n1 n2, reachable g n1 n2 -> valid n2.
+  Proof.
+    repeat intro. destruct H as [l [[? ?] [? ?]]]. apply foot_in in H0. apply valid_path_valid in H1.
+    rewrite Forall_forall in H1. apply H1. auto.
+  Qed.
+
   (* START OF MARK *)
   Variable marked : set D.
   Definition unmarked (d : D) : Prop := ~ marked d.
