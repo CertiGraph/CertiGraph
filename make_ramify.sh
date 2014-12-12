@@ -1,3 +1,4 @@
+coqc utilities.v
 coqc graph.v
 coqc ramify_tactics.v
 coqc msl_ext.v

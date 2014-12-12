@@ -8,6 +8,7 @@ Require Import FunctionalExtensionality.
 Require Import NPeano.
 Require Import List.
 Require Import Classical.
+Require Import utilities.
 
 Local Open Scope pred.
 
@@ -193,8 +194,6 @@ Section SpatialGraph.
       apply plus_le_compat_l, remove_tree_len_le.
     Qed.
 
-    Definition Sublist {A : Type} (l1 l2 : list A) := forall x, In x l1 -> In x l2.
-
     Lemma remove_tree_sublist: forall w x l, Sublist (removeTree w x l) l.
     Proof.
       induction l; hnf; intros; simpl in *; auto. destruct a as [t Ht]; simpl in H. destruct (eq_nat_dec x t).
@@ -203,7 +202,7 @@ Section SpatialGraph.
 
     Lemma remove_list_sublist: forall w lb lc la, Sublist (appRemoveList w lc la lb) (lc ++ la).
     Proof.
-      induction lb; intros; hnf; intros; simpl in *; auto. specialize (IHlb lc (removeTree w a la) x H).
+      induction lb; intros; hnf; intros; simpl in *; auto. specialize (IHlb lc (removeTree w a la) a0 H).
       destruct (in_app_or _ _ _ IHlb); apply in_or_app; [left | right]. auto.
       generalize (remove_tree_sublist w a la); intro Hr; hnf in Hr; apply Hr; auto.
     Qed.
@@ -286,18 +285,6 @@ Section SpatialGraph.
       destruct s as [? [? [? [? [? ?]]]]]. unfold combinNatAdr; simpl. unfold extractReach; auto.
       unfold extractReach; auto. intros. assert (HFunEq: f = g) by (extensionality y; extensionality p; auto); subst; auto.
     Qed.
-
-    Lemma Forall_tl: forall {A : Type} (P : A -> Prop) (x : A) (l : list A), Forall P (x :: l) -> Forall P l.
-    Proof. intros; rewrite Forall_forall in *; intros. apply H, in_cons; auto. Qed.
-
-    Lemma Forall_app: forall {A : Type} (P : A -> Prop) (l1 l2 : list A), Forall P l1 -> Forall P l2 -> Forall P (l1 ++ l2).
-    Proof.
-      induction l1; intros. rewrite app_nil_l; auto. generalize (Forall_inv H); intros.
-      rewrite <- app_comm_cons. apply Forall_cons; auto. apply IHl1; auto. apply Forall_tl with a; auto.
-    Qed.
-
-    Lemma Forall_sublist: forall {A : Type} (P : A -> Prop) (l1 l2 : list A), Sublist l1 l2 -> Forall P l2 -> Forall P l1.
-    Proof. intros; hnf in *. rewrite Forall_forall in *; intro y; intros. apply H0, H; auto. Qed.
     
     Definition reach_input_fun := fun ww => (nat * list {f : adr | (graph f * TT)%pred ww} * list adr)%type.
 
@@ -313,7 +300,7 @@ Section SpatialGraph.
         Forall (reachable pg x) (extractReach i).
     Proof.
       intros x i; remember (lengthInput i); assert (lengthInput i <= n) by omega; clear Heqn; revert H x; revert i.
-      induction n; intros; intros; remember (extractReach i) as result;
+      induction n; intros; remember (extractReach i) as result;
       rename Heqresult into H3; destruct i as [w [[len pr] rslt]]; unfold rch2, rch3, lengthInput in *;
       simpl in *; rewrite extractReach_unfold in H3; destruct pr; simpl in H3. subst; apply H0; auto.
       destruct (le_dec len (length rslt)). subst; apply H0; auto. exfalso; omega.
@@ -345,6 +332,16 @@ Section SpatialGraph.
 
       rewrite H3; apply IHn; simpl; clear IHn H3 result; auto. omega. rewrite Forall_forall in H1. rewrite Forall_forall.
       intros. apply H1. apply in_cons; auto.
+    Qed.
+
+    Lemma extractReach_nodup: forall i, NoDup (rch3 i) -> NoDup (extractReach i).
+    Proof.
+      intro i; remember (lengthInput i); assert (lengthInput i <= n) by omega; clear Heqn; revert H. revert i.
+      induction n; intros; remember (extractReach i) as result; rename Heqresult into H1;
+      destruct i as [w [[len pr] rslt]]; unfold rch3, lengthInput in *;
+      simpl in *; rewrite extractReach_unfold in H1; destruct pr; simpl in H1. subst; auto.
+      destruct (le_dec len (length rslt)). subst; auto. exfalso; omega. subst; auto.
+      admit.
     Qed.
 
   End ConstructReachable.
