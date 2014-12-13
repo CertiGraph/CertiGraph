@@ -180,19 +180,6 @@ Section SpatialGraph.
 
     Lemma remove_tree_len_le: forall w x l, length (removeTree w x l) <= length l.
     Proof. induction l; simpl. trivial. destruct (eq_nat_dec x (proj1_sig a)); simpl; omega. Qed.
-    
-    Fixpoint appRemoveList (w : world) (lc la : list {t : adr | (graph t * TT)%pred w}) (lb : list adr) :=
-      match lb with
-        | nil => lc ++ la 
-        | x :: l => appRemoveList w lc (removeTree w x la) l
-      end.
-
-    Lemma remove_list_len_le: forall w lb lc la, length (appRemoveList w lc la lb) <= length lc + length la.
-    Proof.
-      induction lb; intros; simpl. rewrite app_length; trivial.
-      apply le_trans with (length lc + length (removeTree w a la)). apply IHlb.
-      apply plus_le_compat_l, remove_tree_len_le.
-    Qed.
 
     Lemma remove_tree_sublist: forall w x l, Sublist (removeTree w x l) l.
     Proof.
@@ -200,9 +187,86 @@ Section SpatialGraph.
       subst. right. apply IHl; auto. destruct (in_inv H); [left | right]. auto. apply IHl; auto.
     Qed.
 
+    Definition reach_input_fun := fun ww => (nat * list {f : adr | (graph f * TT)%pred ww} * list adr)%type.
+
+    Definition graph_sig_fun (w : world) := fun f => (graph f * TT)%pred w.
+
+    Definition nil_dec: forall (w : world) (l : list {t : adr | (graph t * TT)%pred w}), {l = nil} + {l <> nil}.
+      intros. destruct l; [left | right]; intuition; inversion H.
+    Defined.
+
+    Definition dup_input (w : world) := list {t : adr | (graph t * TT)%pred w}.
+
+    Definition dupLength (w : world) (i : dup_input w) := length i.
+
+    Definition dupOrder (w : world) (i1 i2 : dup_input w) := dupLength w i1 < dupLength w i2.
+  
+    Lemma dupOrder_wf': forall w len i, dupLength w i <= len -> Acc (dupOrder w) i.
+    Proof.
+      induction len; intros; constructor; intros; unfold dupOrder in * |-; [exfalso | apply IHlen]; intuition.
+    Qed.
+
+    Lemma dupOrder_wf (w : world) : well_founded (dupOrder w).
+    Proof. red; intro; eapply dupOrder_wf'; eauto. Defined.
+
+    Definition removeDup (w : world) : dup_input w -> dup_input w.
+      refine (
+            Fix (dupOrder_wf w) (fun _ => dup_input w)
+                (fun (inp : dup_input w) =>
+                   match inp return ((forall inp2 : dup_input w, (dupOrder w) inp2 inp -> (dup_input w)) -> dup_input w) with
+                     | nil => fun _ => nil
+                     | x :: l => fun f => x :: (f (removeTree w (proj1_sig x) l) _)
+                   end)).
+        apply le_lt_trans with (dupLength w l). apply remove_tree_len_le. simpl; apply lt_n_Sn.
+    Defined.
+
+    Lemma removeDup_unfold:
+      forall w i,
+        removeDup w i = match i with
+                          | nil => nil
+                          | x :: l => x :: removeDup w (removeTree w (proj1_sig x) l)
+                        end.
+    Proof.
+      intros. unfold removeDup at 1; rewrite Fix_eq. destruct i; auto. intros.
+      assert (f = g) by (extensionality y; extensionality p; auto); subst; auto.
+    Qed.
+
+    Lemma remove_dup_len_le: forall w l, length (removeDup w l) <= length l.
+    Proof.
+      intros w l. remember (length l). assert (length l <= n) by omega. clear Heqn. revert H. revert l.
+      induction n; intros; rewrite removeDup_unfold; destruct l; auto. inversion H.
+      simpl. apply le_n_S. apply IHn. simpl in H; apply le_S_n in H. apply le_trans with (length l).
+      apply remove_tree_len_le. auto.
+    Qed.
+
+    Lemma remove_dup_sublist: forall w l1 l2, Sublist l1 l2 -> Sublist (removeDup w l1) l2.
+    Proof.
+      intros w l1. remember (length l1). assert (length l1 <= n) by omega. clear Heqn. revert H. revert l1.
+      induction n; intros; rewrite removeDup_unfold; destruct l1. apply Sublist_nil. inversion H. apply Sublist_nil.
+      rewrite <- (app_nil_l (removeDup w (removeTree w (proj1_sig s) l1))). rewrite app_comm_cons. apply Sublist_app_2.
+      repeat intro. apply in_inv in H1. destruct H1. subst. specialize (H0 a). apply H0. apply in_eq. inversion H1.
+      apply IHn. simpl in H. apply le_trans with (length l1). apply remove_tree_len_le. apply le_S_n. apply H.
+      apply Sublist_trans with l1. apply remove_tree_sublist. repeat intro. apply H0. apply in_cons. apply H1.
+    Qed.
+    
+    Fixpoint appRemoveList (w : world) (lc la : list {t : adr | (graph t * TT)%pred w}) (lb : list adr) :=
+      match lb with
+        | nil => removeDup w (lc ++ la) 
+        | x :: l => appRemoveList w lc (removeTree w x la) l
+      end.
+
+    Lemma remove_list_len_le: forall w lb lc la, length (appRemoveList w lc la lb) <= length lc + length la.
+    Proof.
+      induction lb; intros; simpl. apply le_trans with (length (lc ++ la)). apply remove_dup_len_le.
+      rewrite app_length; trivial.
+      apply le_trans with (length lc + length (removeTree w a la)). apply IHlb.
+      apply plus_le_compat_l, remove_tree_len_le.
+    Qed.
+
     Lemma remove_list_sublist: forall w lb lc la, Sublist (appRemoveList w lc la lb) (lc ++ la).
     Proof.
-      induction lb; intros; hnf; intros; simpl in *; auto. specialize (IHlb lc (removeTree w a la) a0 H).
+      induction lb; intros; hnf; intros; simpl in *; auto. apply (remove_dup_sublist w (lc ++ la) (lc ++ la)).
+      apply Sublist_refl. apply H. specialize (IHlb lc (removeTree w a la) a0 H).
       destruct (in_app_or _ _ _ IHlb); apply in_or_app; [left | right]. auto.
       generalize (remove_tree_sublist w a la); intro Hr; hnf in Hr; apply Hr; auto.
     Qed.
@@ -221,10 +285,6 @@ Section SpatialGraph.
 
     Lemma inputOrder_wf : well_founded inputOrder.
     Proof. red; intro; eapply inputOrder_wf'; eauto. Defined.
-
-    Definition nil_dec: forall (w : world) (l : list {t : adr | (graph t * TT)%pred w}), {l = nil} + {l <> nil}.
-      intros. destruct l; [left | right]; intuition; inversion H.
-    Defined.
 
     Definition combinNatAdr (x : nat) (l : list adr) : list adr := cons x l.
 
@@ -284,14 +344,7 @@ Section SpatialGraph.
       destruct (le_dec n (length rslt)). auto. destruct s as [t H]. simpl. destruct (explode t ww H).
       destruct s as [? [? [? [? [? ?]]]]]. unfold combinNatAdr; simpl. unfold extractReach; auto.
       unfold extractReach; auto. intros. assert (HFunEq: f = g) by (extensionality y; extensionality p; auto); subst; auto.
-    Qed.
-    
-    Definition reach_input_fun := fun ww => (nat * list {f : adr | (graph f * TT)%pred ww} * list adr)%type.
-
-    Definition graph_sig_fun (w : world) := fun f => (graph f * TT)%pred w.
-
-    Lemma map_sublist: forall (A B : Type) (f : A -> B) (l1 l2 : list A), Sublist l1 l2 -> Sublist (map f l1) (map f l2).
-    Proof. intros; hnf in *; intros. rewrite in_map_iff in *. destruct H0 as [y [? ?]]. exists y; split; auto. Qed.
+    Qed.    
 
     Lemma extractReach_reachable:
       forall (x : adr) (i : reach_input),
@@ -341,6 +394,7 @@ Section SpatialGraph.
       destruct i as [w [[len pr] rslt]]; unfold rch3, lengthInput in *;
       simpl in *; rewrite extractReach_unfold in H1; destruct pr; simpl in H1. subst; auto.
       destruct (le_dec len (length rslt)). subst; auto. exfalso; omega. subst; auto.
+      destruct (le_dec len (length rslt)). subst; auto. destruct s as [t Ht].
       admit.
     Qed.
 
