@@ -159,19 +159,6 @@ Section SpatialGraph.
       remember (sl :: sr :: nil) as lt; apply lt.
     Defined.
 
-    Definition reach_input := {w : world & (nat * list {t : adr | (graph t * TT)%pred w} * list adr )%type}.
-
-    Definition graph_zero : forall (w : world), (graph 0 * TT)%pred w.
-      intros. exists (core w), w; repeat split. apply core_unit. rewrite graph_unfold.
-      left; hnf. split; auto. apply core_identity.
-    Defined.
-
-    Definition rch1 (i : reach_input) := match projT2 i with (n, _, _) => n end.
-    
-    Definition rch2 (i : reach_input) := match projT2 i with (_, l, _) => l end.
-    
-    Definition rch3 (i: reach_input) := match projT2 i with (_, _, result) => result end.
-
     Fixpoint removeTree (w : world) (x : adr) (l : list {t : adr | (graph t * TT)%pred w}) :=
       match l with
         | nil => nil
@@ -270,91 +257,88 @@ Section SpatialGraph.
       destruct (in_app_or _ _ _ IHlb); apply in_or_app; [left | right]. auto.
       generalize (remove_tree_sublist w a la); intro Hr; hnf in Hr; apply Hr; auto.
     Qed.
+
+    Definition graph_zero : forall (w : world), (graph 0 * TT)%pred w.
+      intros. exists (core w), w; repeat split. apply core_unit. rewrite graph_unfold.
+      left; hnf. split; auto. apply core_identity.
+    Defined.
+    
+    Definition reach_input (w : world) := (nat * list {t : adr | (graph t * TT)%pred w} * list adr )%type.
       
-    Definition lengthInput (i : reach_input) :=
-      match projT2 i with
+    Definition lengthInput (w : world) (i : reach_input w) :=
+      match i with
         | (len, pr, re) => 2 * len + length pr - 2 * length re
       end.
 
-    Definition inputOrder (i1 i2 : reach_input) := lengthInput i1 < lengthInput i2.
+    Definition inputOrder (w : world) (i1 i2 : reach_input w) := lengthInput w i1 < lengthInput w i2.
   
-    Lemma inputOrder_wf': forall len i, lengthInput i <= len -> Acc inputOrder i.
+    Lemma inputOrder_wf': forall w len i, lengthInput w i <= len -> Acc (inputOrder w) i.
     Proof.
       induction len; intros; constructor; intros; unfold inputOrder in * |-; [exfalso | apply IHlen]; intuition.
     Qed.
 
-    Lemma inputOrder_wf : well_founded inputOrder.
-    Proof. red; intro; eapply inputOrder_wf'; eauto. Defined.
+    Lemma inputOrder_wf (w : world) : well_founded (inputOrder w).
+    Proof. red; intro; eapply (inputOrder_wf' w); eauto. Defined.
 
-    Definition combinNatAdr (x : nat) (l : list adr) : list adr := cons x l.
-
-    Definition extractReach : reach_input -> list adr.
+    Definition extractReach (w : world) : reach_input w -> list adr.
       refine (
-          Fix inputOrder_wf (fun _ => list adr)
-              (fun (inp : reach_input) (funcR : forall inp2, inputOrder inp2 inp -> list adr) =>
-                 let w := projT1 inp in
-                 let len := rch1 inp in
-                 let ll := rch2 inp in
-                 let r := rch3 inp in
-                 let g := hd (exist _ 0 (graph_zero w)) ll in
-                 let l := tl ll in
-                 let x := proj1_sig g in
-                 let gx := proj2_sig g in
-                 if nil_dec w ll
-                 then r
-                 else if le_dec len (length r)
-                      then r
-                      else match explode x w gx with
-                             | inleft hasNodes => let lt := twoSubTrees x w hasNodes in let realAdd := appRemoveList w l lt r in let newR := combinNatAdr x r in funcR (existT _ w (len, realAdd, newR)) _
-                             | inright _ => funcR (existT _ w (len, l, r)) _
-                           end)).
-      destruct inp as [ww [[llen lll] result]]. unfold rch1, rch2, rch3 in *. simpl in *.
-      unfold w, len, ll, r in *. destruct lll. exfalso; apply _H; auto. simpl in *. unfold g, l in *.
-      destruct hasNodes as [leftT [rightT [? [? [? [? ?]]]]]]. unfold twoSubTrees in *. unfold combinNatAdr in *.
-      unfold lt, realAdd, newR, inputOrder, lengthInput. simpl. generalize (remove_list_len_le ww result lll lt); intro.
+          Fix (inputOrder_wf w) (fun _ => list adr)
+              (fun (inp : reach_input w) =>
+                 match inp return ((forall inp2, inputOrder w inp2 inp -> list adr) -> list adr) with
+                   | (_, nil, r) => fun _ => r
+                   | (len, g :: l, r) => fun f =>
+                                           if le_dec len (length r)
+                                           then r
+                                           else match explode (proj1_sig g) w (proj2_sig g) with
+                                                  | inleft hasNodes => let subT := twoSubTrees (proj1_sig g) w hasNodes in
+                                                                       let newL := appRemoveList w l subT r in
+                                                                       f (len, newL, (proj1_sig g) :: r) _
+                                                  | inright _ => f (len, l, r) _
+                                                end
+                 end)).
+      destruct hasNodes as [leftT [rightT [? [? [? ?]]]]]. destruct g as [x ?]. simpl in *.
+      unfold newL, inputOrder, lengthInput; simpl. generalize (remove_list_len_le w r l subT); intro.
       repeat rewrite <- plus_n_O.
-      apply le_lt_trans with (llen + llen + length lll + length lt - S (length result + S (length result))). omega.
-      simpl; omega.
-      destruct inp as [ww [[llen lll] result]]. unfold rch1, rch2, rch3 in *. simpl in *.
-      unfold w, len, ll, r in *. destruct lll. exfalso; apply _H; auto. simpl in *. unfold g, l in *.
-      unfold inputOrder, lengthInput. simpl. omega.
-    Defined.
+      apply le_lt_trans with (len + len + length l + length subT - S (length r + S (length r))). omega. simpl. omega.
+      unfold inputOrder, lengthInput; simpl; repeat rewrite <- plus_n_O. omega.
+    Defined.    
 
     Lemma extractReach_unfold:
-      forall i : reach_input,
-        extractReach i = let w := projT1 i in
-                         let m := projT2 i in
-                         match m with
-                           | (_, nil, r) => r
-                           | (len, g :: l, r) =>
-                             if le_dec len (length r)
-                             then r
-                             else let x := proj1_sig g in
-                                  let gx := proj2_sig g in
-                                  match explode x w gx with
-                                    | inleft hasNodes => let subT := twoSubTrees x w hasNodes in
-                                                         let newL := appRemoveList w l subT r in
-                                                         extractReach (existT _ w (len, newL, x :: r))
-                                    | inright _ => extractReach (existT _ w (len, l, r))
-                                  end
-                         end.
+      forall w i,
+        extractReach w i = match i with
+                             | (_, nil, r) => r
+                             | (len, g :: l, r) =>
+                               if le_dec len (length r)
+                               then r
+                               else match explode (proj1_sig g) w (proj2_sig g) with
+                                      | inleft hasNodes => let subT := twoSubTrees (proj1_sig g) w hasNodes in
+                                                           let newL := appRemoveList w l subT r in
+                                                           extractReach w (len, newL, (proj1_sig g) :: r)
+                                      | inright _ => extractReach w (len, l, r)
+                                    end
+                           end.
     Proof.
-      intros. destruct i as [ww [[n prs] rslt]]. unfold extractReach at 1; rewrite Fix_eq.
-      destruct prs; simpl. unfold rch3. simpl. auto. unfold rch1, rch2, rch3. simpl.
-      destruct (le_dec n (length rslt)). auto. destruct s as [t H]. simpl. destruct (explode t ww H).
-      destruct s as [? [? [? [? [? ?]]]]]. unfold combinNatAdr; simpl. unfold extractReach; auto.
-      unfold extractReach; auto. intros. assert (HFunEq: f = g) by (extensionality y; extensionality p; auto); subst; auto.
+      intros. destruct i as [[n prs] rslt]. unfold extractReach at 1; rewrite Fix_eq.
+      destruct prs; simpl. auto. destruct (le_dec n (length rslt)). auto.
+      destruct (explode (proj1_sig s) w (proj2_sig s)); unfold extractReach; auto.
+      intros; assert (f = g) by (extensionality y; extensionality p; auto); subst; auto.
     Qed.    
 
+    Definition rch1 w (i : reach_input w) := match i with (n, _, _) => n end.
+    
+    Definition rch2 w (i : reach_input w) := match i with (_, l, _) => l end.
+    
+    Definition rch3 w (i: reach_input w) := match i with (_, _, result) => result end.
+
     Lemma extractReach_reachable:
-      forall (x : adr) (i : reach_input),
-        Forall (reachable pg x) (rch3 i) ->
-        Forall (fun y => reachable pg x y \/ y = 0) (map (@proj1_sig _ (graph_sig_fun (projT1 i))) (rch2 i)) ->
-        Forall (reachable pg x) (extractReach i).
+      forall w (i : reach_input w) (x : adr),
+        Forall (reachable pg x) (rch3 w i) ->
+        Forall (fun y => reachable pg x y \/ y = 0) (map (@proj1_sig _ (graph_sig_fun w)) (rch2 w i)) ->
+        Forall (reachable pg x) (extractReach w i).
     Proof.
-      intros x i; remember (lengthInput i); assert (lengthInput i <= n) by omega; clear Heqn; revert H x; revert i.
-      induction n; intros; remember (extractReach i) as result;
-      rename Heqresult into H3; destruct i as [w [[len pr] rslt]]; unfold rch2, rch3, lengthInput in *;
+      intros w i x; remember (lengthInput w i); assert (lengthInput w i <= n) by omega; clear Heqn; revert H x; revert i.
+      induction n; intros; remember (extractReach w i) as result;
+      rename Heqresult into H3; destruct i as [[len pr] rslt]; unfold rch2, rch3, lengthInput in *;
       simpl in *; rewrite extractReach_unfold in H3; destruct pr; simpl in H3. subst; apply H0; auto.
       destruct (le_dec len (length rslt)). subst; apply H0; auto. exfalso; omega.
       
@@ -387,11 +371,11 @@ Section SpatialGraph.
       intros. apply H1. apply in_cons; auto.
     Qed.
 
-    Lemma extractReach_nodup: forall i, NoDup (rch3 i) -> NoDup (extractReach i).
+    Lemma extractReach_nodup: forall w i, NoDup (rch3 w i) -> NoDup (extractReach w i).
     Proof.
-      intro i; remember (lengthInput i); assert (lengthInput i <= n) by omega; clear Heqn; revert H. revert i.
-      induction n; intros; remember (extractReach i) as result; rename Heqresult into H1;
-      destruct i as [w [[len pr] rslt]]; unfold rch3, lengthInput in *;
+      intros w i; remember (lengthInput w i); assert (lengthInput w i <= n) by omega; clear Heqn; revert H. revert i.
+      induction n; intros; remember (extractReach w i) as result; rename Heqresult into H1;
+      destruct i as [[len pr] rslt]; unfold rch3, lengthInput in *;
       simpl in *; rewrite extractReach_unfold in H1; destruct pr; simpl in H1. subst; auto.
       destruct (le_dec len (length rslt)). subst; auto. exfalso; omega. subst; auto.
       destruct (le_dec len (length rslt)). subst; auto. destruct s as [t Ht].
@@ -406,14 +390,14 @@ Section SpatialGraph.
     generalize (core_unit w); intros. unfold unit_for in H1. apply join_comm in H1.
     assert ((graph x * TT)%pred w) by (exists w, (core w); repeat split; auto).
     remember (exist (graph_sig_fun w) x H2) as g.
-    remember (existT reach_input_fun w (length l, (g::nil), nil)).
-    assert (Forall (reachable pg x) (extractReach s)). apply extractReach_reachable.
+    remember (length l, (g::nil), nil : list adr) as s.
+    assert (Forall (reachable pg x) (extractReach w s)). apply extractReach_reachable.
     unfold rch3; rewrite Heqs; simpl; apply Forall_nil. unfold rch2; rewrite Heqs; rewrite Heqg; simpl.
     apply Forall_forall; intros. apply in_inv in H3; destruct H3. subst. assert (graph x0 w) by auto.
     rewrite graph_unfold in H. destruct H as [[? ?] | [dd [ll [rr ?]]]]. hnf in H; right; auto. left.
     apply reachable_by_reflexive. split. destruct_ocon H h. destruct_ocon H6 j. destruct H10 as [[? ?] ?].
     apply H12. hnf; auto. inversion H3.
-    exists (extractReach s). intros y; split; intros.
+    exists (extractReach w s). intros y; split; intros.
     
     rewrite Forall_forall in H3. apply H3. auto.
 
