@@ -75,3 +75,41 @@ Proof.
   destruct H1. left; auto. apply in_inv in H0. right; destruct H0. subst. rewrite <- app_nil_l in H.
   apply NoDup_remove_2 in H. rewrite app_nil_l in H. exfalso; intuition. auto. auto.
 Qed.
+
+Lemma NoDup_cons_1 : forall (A : Type) (x : A) (l : list A), NoDup (x :: l) -> NoDup l.
+Proof. intros. rewrite <- (app_nil_l (x :: l)) in H. apply NoDup_remove_1 in H. rewrite app_nil_l in H. auto. Qed.
+
+Lemma NoDup_cons_2 : forall (A : Type) (x : A) (l : list A), NoDup (x :: l) -> ~ In x l.
+Proof. intros. rewrite <- (app_nil_l (x :: l)) in H. apply NoDup_remove_2 in H. rewrite app_nil_l in H. auto. Qed.
+
+Lemma NoDup_app_r: forall (A : Type) (l1 l2 : list A), NoDup (l1 ++ l2) -> NoDup l2.
+Proof. induction l1; simpl; intros; auto. apply NoDup_cons_1 in H. apply IHl1. auto. Qed.
+
+Lemma NoDup_app_l: forall (A : Type) (l1 l2 : list A), NoDup (l1 ++ l2) -> NoDup l1.
+Proof.
+  intros A l1 l2. revert l1. induction l2; intros. rewrite app_nil_r in H. apply H.
+  apply NoDup_remove_1 in H. apply IHl2. apply H.
+Qed.
+
+Lemma NoDup_app_not_in: forall (A : Type) (l1 l2 : list A), NoDup (l1 ++ l2) -> forall y, In y l1 -> ~ In y l2.
+Proof.
+  induction l1; intros. inversion H0. rewrite <- app_comm_cons in H. 
+  apply in_inv in H0. destruct H0. subst. apply NoDup_cons_2 in H. intro. apply H.
+  apply in_or_app. right. apply H0. apply NoDup_cons_1 in H. apply IHl1; auto.
+Qed.
+
+Lemma NoDup_app_inv: forall (A : Type) (l1 l2 : list A),
+                       NoDup l1 -> NoDup l2 -> (forall x, In x l1 -> ~ In x l2) -> NoDup (l1 ++ l2).
+Proof.
+  induction l1; intros. rewrite app_nil_l. auto. rewrite <- app_comm_cons. apply NoDup_cons.
+  intro. apply in_app_or in H2. destruct H2. apply NoDup_cons_2 in H. auto.
+  apply (H1 a). apply in_eq. auto. apply IHl1. apply NoDup_cons_1 in H. auto.
+  auto. intro y; intros. apply H1. apply in_cons. auto.
+Qed.
+
+Lemma NoDup_app_eq: forall (A : Type) (l1 l2 : list A),
+                      NoDup (l1 ++ l2) <-> NoDup l1 /\ NoDup l2 /\ (forall x, In x l1 -> ~ In x l2).
+Proof.
+  intros. split; intros. split. apply NoDup_app_l with l2. auto. split. apply NoDup_app_r with l1; auto.
+  apply NoDup_app_not_in; auto. destruct H as [? [? ?]]. apply NoDup_app_inv; auto.
+Qed.

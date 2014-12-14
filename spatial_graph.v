@@ -159,6 +159,10 @@ Section SpatialGraph.
       remember (sl :: sr :: nil) as lt; apply lt.
     Defined.
 
+    Definition graph_sig_fun (w : world) := fun f => (graph f * TT)%pred w.
+
+    Definition fetch (w : world) := proj1_sig (P := graph_sig_fun w).
+
     Fixpoint removeTree (w : world) (x : adr) (l : list {t : adr | (graph t * TT)%pred w}) :=
       match l with
         | nil => nil
@@ -174,13 +178,11 @@ Section SpatialGraph.
       subst. right. apply IHl; auto. destruct (in_inv H); [left | right]. auto. apply IHl; auto.
     Qed.
 
-    Definition reach_input_fun := fun ww => (nat * list {f : adr | (graph f * TT)%pred ww} * list adr)%type.
-
-    Definition graph_sig_fun (w : world) := fun f => (graph f * TT)%pred w.
-
-    Definition nil_dec: forall (w : world) (l : list {t : adr | (graph t * TT)%pred w}), {l = nil} + {l <> nil}.
-      intros. destruct l; [left | right]; intuition; inversion H.
-    Defined.
+    Lemma remove_tree_not_in: forall w x l, ~ In x (map (fetch w) (removeTree w x l)).
+    Proof.
+      induction l; intro; simpl in * |-. apply H. destruct (eq_nat_dec x (proj1_sig a)). subst.
+      apply IHl; auto. simpl in H. destruct H. intuition. apply IHl; auto.
+    Qed.
 
     Definition dup_input (w : world) := list {t : adr | (graph t * TT)%pred w}.
 
@@ -235,6 +237,17 @@ Section SpatialGraph.
       apply IHn. simpl in H. apply le_trans with (length l1). apply remove_tree_len_le. apply le_S_n. apply H.
       apply Sublist_trans with l1. apply remove_tree_sublist. repeat intro. apply H0. apply in_cons. apply H1.
     Qed.
+
+    Lemma remove_dup_nodup: forall w l, NoDup (map (fetch w) (removeDup w l)).
+    Proof.
+      intros w l. remember (length l). assert (length l <= n) by omega. clear Heqn. revert H. revert l.
+      induction n; intros; rewrite removeDup_unfold; destruct l; simpl. apply NoDup_nil. inversion H. apply NoDup_nil.
+      apply NoDup_cons. generalize (remove_tree_not_in w (proj1_sig s) l); intro. intro; apply H0; clear H0.
+      apply (map_sublist _ _ (fetch w)
+                         (removeDup w (removeTree w (proj1_sig s) l)) (removeTree w (proj1_sig s) l)).
+      apply remove_dup_sublist. apply Sublist_refl. auto.
+      apply IHn. simpl in H. apply le_trans with (length l). apply remove_tree_len_le. apply le_S_n. apply H.
+    Qed.
     
     Fixpoint appRemoveList (w : world) (lc la : list {t : adr | (graph t * TT)%pred w}) (lb : list adr) :=
       match lb with
@@ -256,6 +269,19 @@ Section SpatialGraph.
       apply Sublist_refl. apply H. specialize (IHlb lc (removeTree w a la) a0 H).
       destruct (in_app_or _ _ _ IHlb); apply in_or_app; [left | right]. auto.
       generalize (remove_tree_sublist w a la); intro Hr; hnf in Hr; apply Hr; auto.
+    Qed.
+
+    Lemma remove_list_no_dup: forall w lb lc la, NoDup (map (fetch w) (appRemoveList w lc la lb)).
+    Proof. induction lb; intros; simpl. apply remove_dup_nodup. apply IHlb. Qed.
+
+    Lemma remove_list_not_in: forall w lb lc la, exists ld, (appRemoveList w lc la lb = removeDup w (lc ++ ld)) /\
+                                                            Sublist ld la /\ forall x, In x lb -> ~ In x (map (fetch w) ld).
+    Proof.
+      induction lb; intros; simpl. exists la. repeat split. apply Sublist_refl. intros. auto.
+      destruct (IHlb lc (removeTree w a la)) as [ld [? [? ?]]]. exists ld. repeat split; auto.
+      apply Sublist_trans with (removeTree w a la). auto. apply remove_tree_sublist. intro y; intros.
+      destruct H2; auto. subst. apply map_sublist with (f := fetch w) in H0. intro.
+      specialize (H0 y H2). apply remove_tree_not_in in H0. auto.
     Qed.
 
     Definition graph_zero : forall (w : world), (graph 0 * TT)%pred w.
@@ -290,16 +316,15 @@ Section SpatialGraph.
                                            if le_dec len (length r)
                                            then r
                                            else match explode (proj1_sig g) w (proj2_sig g) with
-                                                  | inleft hasNodes => let subT := twoSubTrees (proj1_sig g) w hasNodes in
-                                                                       let newL := appRemoveList w l subT r in
-                                                                       f (len, newL, (proj1_sig g) :: r) _
+                                                  | inleft hasNodes =>
+                                                    let subT := twoSubTrees (proj1_sig g) w hasNodes in let m := (proj1_sig g) :: r in let newL := appRemoveList w l subT m in f (len, newL, m) _
                                                   | inright _ => f (len, l, r) _
                                                 end
                  end)).
-      destruct hasNodes as [leftT [rightT [? [? [? ?]]]]]. destruct g as [x ?]. simpl in *.
-      unfold newL, inputOrder, lengthInput; simpl. generalize (remove_list_len_le w r l subT); intro.
-      repeat rewrite <- plus_n_O.
-      apply le_lt_trans with (len + len + length l + length subT - S (length r + S (length r))). omega. simpl. omega.
+      destruct hasNodes as [leftT [rightT [? [? [? ?]]]]]. destruct g as [x ?]. simpl in subT.
+      unfold newL, inputOrder, lengthInput. generalize (remove_list_len_le w m l subT); intro. 
+      apply le_lt_trans with (len + len + length l + length subT - S (length r + S (length r))).
+      unfold m at 2. simpl length at 2. omega. simpl. omega.
       unfold inputOrder, lengthInput; simpl; repeat rewrite <- plus_n_O. omega.
     Defined.    
 
@@ -312,7 +337,7 @@ Section SpatialGraph.
                                then r
                                else match explode (proj1_sig g) w (proj2_sig g) with
                                       | inleft hasNodes => let subT := twoSubTrees (proj1_sig g) w hasNodes in
-                                                           let newL := appRemoveList w l subT r in
+                                                           let newL := appRemoveList w l subT (proj1_sig g :: r) in
                                                            extractReach w (len, newL, (proj1_sig g) :: r)
                                       | inright _ => extractReach w (len, l, r)
                                     end
@@ -333,7 +358,7 @@ Section SpatialGraph.
     Lemma extractReach_reachable:
       forall w (i : reach_input w) (x : adr),
         Forall (reachable pg x) (rch3 w i) ->
-        Forall (fun y => reachable pg x y \/ y = 0) (map (@proj1_sig _ (graph_sig_fun w)) (rch2 w i)) ->
+        Forall (fun y => reachable pg x y \/ y = 0) (map (fetch w) (rch2 w i)) ->
         Forall (reachable pg x) (extractReach w i).
     Proof.
       intros w i x; remember (lengthInput w i); assert (lengthInput w i <= n) by omega; clear Heqn; revert H x; revert i.
@@ -346,10 +371,14 @@ Section SpatialGraph.
       destruct s as [t Ht]; simpl in *. destruct (explode t w Ht). remember (twoSubTrees t w s) as subT.
       destruct s as [l [r [? [? [Gl Gr]]]]]. simpl in HeqsubT. assert (reachable pg x t) as HRt.
       destruct (Forall_inv H1); auto. destruct g; exfalso; auto. rewrite H3; apply IHn; simpl.
-      apply le_trans with (len + (len + 0) + length pr + length subT - S (length rslt + S (length rslt + 0))).
-      generalize (remove_list_len_le w rslt pr subT); intros; omega. rewrite HeqsubT; simpl; omega.
-      apply Forall_cons; auto. assert (Sublist (appRemoveList w pr subT rslt) (pr ++ subT)) by apply remove_list_sublist.
-      generalize (map_sublist _ _ (proj1_sig (P:=graph_sig_fun w)) _ _ H2); intros; clear H2. rewrite map_app in H4.
+      apply le_trans with (len + (len + 0) + length pr + length (removeTree w t subT) - S (length rslt + S (length rslt + 0))).
+      generalize (remove_list_len_le w rslt pr (removeTree w t subT)); intros. omega.
+      generalize (remove_tree_len_le w t subT); intros. rewrite HeqsubT in H2 at 2. simpl in H2. omega.
+      apply Forall_cons; auto.
+      assert (Sublist (appRemoveList w pr (removeTree w t subT) rslt) (pr ++ subT)).
+      apply Sublist_trans with (pr ++ (removeTree w t subT)). apply remove_list_sublist.
+      apply Sublist_app. apply Sublist_refl. apply remove_tree_sublist.
+      generalize (map_sublist _ _ (fetch w) _ _ H2); intros; clear H2. rewrite map_app in H4.
       apply (Forall_sublist _ _ _ H4); clear H4. apply Forall_app. apply Forall_tl in H1; auto.
       rewrite HeqsubT; simpl. rewrite Forall_forall. intro y; intros.
 
@@ -371,15 +400,29 @@ Section SpatialGraph.
       intros. apply H1. apply in_cons; auto.
     Qed.
 
-    Lemma extractReach_nodup: forall w i, NoDup (rch3 w i) -> NoDup (extractReach w i).
+    Lemma extractReach_nodup: forall w i, NoDup ((map (fetch w) (rch2 w i)) ++ (rch3 w i)) -> NoDup (extractReach w i).
     Proof.
       intros w i; remember (lengthInput w i); assert (lengthInput w i <= n) by omega; clear Heqn; revert H. revert i.
       induction n; intros; remember (extractReach w i) as result; rename Heqresult into H1;
       destruct i as [[len pr] rslt]; unfold rch3, lengthInput in *;
       simpl in *; rewrite extractReach_unfold in H1; destruct pr; simpl in H1. subst; auto.
-      destruct (le_dec len (length rslt)). subst; auto. exfalso; omega. subst; auto.
-      destruct (le_dec len (length rslt)). subst; auto. destruct s as [t Ht].
-      admit.
+      destruct (le_dec len (length rslt)). subst; apply NoDup_app_r in H0; auto. simpl in H; exfalso; omega. subst; auto.
+      destruct (le_dec len (length rslt)). subst; apply NoDup_app_r in H0; auto. destruct s as [t Ht]. simpl in *.
+      destruct (explode t w Ht). subst; apply IHn. simpl. repeat rewrite <- plus_n_O.
+      apply le_trans with (len + len + length pr + length (twoSubTrees t w s) - S (length rslt + S (length rslt))).
+      generalize (remove_list_len_le w rslt pr (removeTree w t (twoSubTrees t w s))); intro;
+      generalize (remove_tree_len_le w t (twoSubTrees t w s)); intro; omega.
+      destruct s as [leftT [rightT [? [? [? ?]]]]]; simpl; omega. simpl. generalize (NoDup_cons_1 _ _ _ H0); intro.
+      apply NoDup_cons_2 in H0. rewrite NoDup_app_eq in H1. destruct H1 as [? [? ?]]. apply NoDup_app_inv.
+      apply remove_list_no_dup. apply NoDup_cons. intro; apply H0. apply in_or_app. right; auto. auto.
+      intros. destruct (remove_list_not_in w rslt pr (removeTree w t (twoSubTrees t w s))) as [la [? [? ?]]].
+      rewrite H5 in H4; clear H5. assert (Sublist (removeDup w (pr ++ la)) (pr ++ la)). apply remove_dup_sublist.
+      apply Sublist_refl. apply map_sublist with (f := fetch w) in H5. specialize (H5 x H4). clear H4. rewrite map_app in H5.
+      apply in_app_or in H5. intro. apply in_inv in H4. destruct H5, H4. subst. apply H0. apply in_or_app. left; auto.
+      specialize (H3 x H5). apply H3; auto. subst. apply map_sublist with (f := fetch w) in H6. specialize (H6 x H5).
+      generalize (remove_tree_not_in w x (twoSubTrees x w s)); intro. apply H4; auto. specialize (H7 x H4). auto.
+      subst; apply IHn. omega. simpl. rewrite <- (app_nil_l ((map (fetch w) pr) ++ rslt)) in H0. rewrite app_comm_cons in H0.
+      apply NoDup_app_r in H0. auto.
     Qed.
 
   End ConstructReachable.
@@ -401,7 +444,9 @@ Section SpatialGraph.
     
     rewrite Forall_forall in H3. apply H3. auto.
 
-    destruct (classic (reachable pg x y)); [exfalso | auto]. apply H4.
+    destruct (classic (reachable pg x y)); [exfalso | auto].
+    assert (NoDup (extractReach w s)) as Hn. apply extractReach_nodup. rewrite Heqs. simpl. apply NoDup_cons. auto.
+    apply NoDup_nil. apply H4.
     generalize (graph_reachable_in _ _ H5). intros. specialize (H6 w H). hnf in H6. destruct H6 as [b ?].
     unfold reachable in H5. rewrite reachable_acyclic in H5.
     admit.
