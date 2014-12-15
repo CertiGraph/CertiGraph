@@ -425,6 +425,29 @@ Section SpatialGraph.
       apply NoDup_app_r in H0. auto.
     Qed.
 
+    Definition NotNone (w : world) (e : adr) : Prop := lookup_fpm w e <> None.
+
+    Lemma extractReach_all_not_none: forall w i, Forall (NotNone w) (rch3 w i) -> Forall (NotNone w) (extractReach w i).
+    Proof.
+      intros w i; remember (lengthInput w i); assert (lengthInput w i <= n) by omega; clear Heqn; revert H. revert i.
+      induction n; intros; remember (extractReach w i) as result;
+      rename Heqresult into H3; destruct i as [[len pr] rslt]; unfold rch2, rch3, lengthInput in *;
+      simpl in *; rewrite extractReach_unfold in H3; destruct pr; simpl in H3. subst; apply H0; auto.
+      destruct (le_dec len (length rslt)). subst; auto. exfalso; omega. subst; auto.
+      destruct (le_dec len (length rslt)). subst; auto. destruct s as [t Ht]. simpl in *.
+      destruct (explode t w Ht). rewrite H3. apply IHn. repeat rewrite <- plus_n_O. simpl.
+      apply le_trans with (len + len + length pr + length (twoSubTrees t w s) - S (length rslt + S (length rslt))).
+      generalize (remove_list_len_le w rslt pr (removeTree w t (twoSubTrees t w s))); intro;
+      generalize (remove_tree_len_le w t (twoSubTrees t w s)); intro; omega.
+      destruct s as [leftT [rightT [? [? [? ?]]]]]; simpl; omega. constructor. clear H3.
+      destruct s as [leftT [rightT [? [? [? ?]]]]]. destruct H2. destruct_sepcon Ht w. rewrite graph_unfold in H7.
+      destruct H7 as [[? ?] | [dd [ll [rr ?]]]]. exfalso; intuition. destruct_ocon H7 h. destruct_ocon H11 j.
+      destruct H15. destruct_sepcon H17 k. destruct_sepcon H18 l. destruct H20 as [? [? ?]].
+      apply lookup_fpm_join_sub with l1. try_join l2 k2 l2k2. try_join l2k2 j3 l2k2j3. try_join l2k2j3 h3 l2k2j3h3.
+      try_join l2k2j3h3 w2 l2k2j3h3w2. exists l2k2j3h3w2. auto. rewrite H23. intro S; inversion S. auto.
+      rewrite H3. apply IHn. omega. auto.
+    Qed.
+
   End ConstructReachable.
     
   Lemma graph_reachable_finite: forall x w, graph x w -> set_finite (reachable pg x).
@@ -432,23 +455,24 @@ Section SpatialGraph.
     intros. hnf. destruct (world_finite w) as [l ?].
     generalize (core_unit w); intros. unfold unit_for in H1. apply join_comm in H1.
     assert ((graph x * TT)%pred w) by (exists w, (core w); repeat split; auto).
-    remember (exist (graph_sig_fun w) x H2) as g.
-    remember (length l, (g::nil), nil : list adr) as s.
+    remember (exist (graph_sig_fun w) x H2) as g. remember (length l, (g::nil), nil : list adr) as s.
     assert (Forall (reachable pg x) (extractReach w s)). apply extractReach_reachable.
     unfold rch3; rewrite Heqs; simpl; apply Forall_nil. unfold rch2; rewrite Heqs; rewrite Heqg; simpl.
     apply Forall_forall; intros. apply in_inv in H3; destruct H3. subst. assert (graph x0 w) by auto.
     rewrite graph_unfold in H. destruct H as [[? ?] | [dd [ll [rr ?]]]]. hnf in H; right; auto. left.
     apply reachable_by_reflexive. split. destruct_ocon H h. destruct_ocon H6 j. destruct H10 as [[? ?] ?].
-    apply H12. hnf; auto. inversion H3.
-    exists (extractReach w s). intros y; split; intros.
-    
+    apply H12. hnf; auto. inversion H3. exists (extractReach w s). intros y; split; intros.
     rewrite Forall_forall in H3. apply H3. auto.
 
-    destruct (classic (reachable pg x y)); [exfalso | auto].
-    assert (NoDup (extractReach w s)) as Hn. apply extractReach_nodup. rewrite Heqs. simpl. apply NoDup_cons. auto.
-    apply NoDup_nil. apply H4.
-    generalize (graph_reachable_in _ _ H5). intros. specialize (H6 w H). hnf in H6. destruct H6 as [b ?].
-    unfold reachable in H5. rewrite reachable_acyclic in H5.
+    destruct (classic (reachable pg x y)); [exfalso | auto]. assert (NoDup (extractReach w s)) as Hn.
+    apply extractReach_nodup. rewrite Heqs. simpl. apply NoDup_cons. auto. apply NoDup_nil.
+    assert (Sublist (extractReach w s) l) as Hs. assert (Forall (NotNone w) (extractReach w s)).
+    apply extractReach_all_not_none; rewrite Heqs; simpl; apply Forall_nil.
+    rewrite Forall_forall in H6. unfold NotNone in H6. intro z; intros. rewrite H0. apply H6. auto.
+    assert (In y l) as Hy. generalize (graph_reachable_in _ _ H5). intros. specialize (H6 w H). hnf in H6. destruct H6 as [b ?].
+    destruct_sepcon H6 h. destruct H7 as [? [? ?]]. assert (lookup_fpm w y <> None).
+    apply lookup_fpm_join_sub with h1. exists h2; auto. rewrite H10. intro S; inversion S. rewrite <- H0 in H11. auto.
+    apply H4.
     admit.
   Qed.
 
