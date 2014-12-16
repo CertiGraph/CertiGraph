@@ -1,13 +1,26 @@
-Require Import msl.msl_classical.
+Require Import msl.msl_direct.
 
-Ltac equate_age a1 a2 :=
-  let Heq := fresh "Heq" in
-  let Heq1 := fresh "Heq1" in
-  let Heq2 := fresh "Heq2" in
+Ltac destruct_ocon H h :=
+  let h1 := fresh h "1" in
+  let h2 := fresh h "2" in
+  let h3 := fresh h "3" in
+  let h12 := fresh h "12" in
+  let h23 := fresh h "23" in
+  destruct H as [h1 [h2 [h3 [h12 [h23 [? [? [? [? ?]]]]]]]]].
+
+Ltac destruct_sepcon H h :=
+  let h1 := fresh h "1" in
+  let h2 := fresh h "2" in
+  destruct H as [h1 [h2 [? [? ?]]]].
+
+Ltac destruct_cross h :=
   match goal with
-    | [H1: age ?X a1, H2: age ?X a2 |- _] =>
-      assert (Heq1: age1 X = Some a1) by auto; assert (Heq2: age1 X = Some a2) by auto;
-      rewrite Heq2 in Heq1; injection Heq1; intro Heq; rewrite Heq in *; clear Heq1 Heq2 H2 Heq
+    | [H1: join ?h1 ?h2 h, H2: join ?x1 ?x2 h |- _] =>
+      let h1x1 := fresh h1 x1 in
+      let h1x2 := fresh h1 x2 in
+      let h2x1 := fresh h2 x1 in
+      let h2x2 := fresh h2 x2 in
+      destruct (cross_split h1 h2 x1 x2 h H1 H2) as [[[[h1x1 h1x2] h2x1] h2x2] [? [? [? ?]]]]
   end.
 
 Ltac try_join h1 h2 h1h2 :=

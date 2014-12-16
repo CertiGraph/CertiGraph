@@ -1,6 +1,6 @@
-Require Import msl.msl_classical.
+Require Import msl.msl_direct.
 Require Import FunctionalExtensionality.
-Require Import msl_ext.
+Require Import ramify_tactics.
 
 Instance Join_discrete (A : Type): Join A := fun a1 a2 a3 : A => False.
 
@@ -38,219 +38,80 @@ Definition stack := table var adr.
 Definition heap := table adr adr.
 Definition state := (stack * heap)%type.
 
-Definition world := (nat * ((var -> option adr)*(adr -> option adr)))%type.
+Definition world := (fpm adr adr).
 
-Instance Join_world: Join world :=
-  Join_prod nat (Join_equiv nat)
-            _
-            (Join_prod
-               (var -> option adr) (Join_equiv _)
-               (adr -> option adr) (Join_fun adr (option adr) (Join_lower (Join_discrete adr)))).
+Instance Join_world: Join world := Join_fpm (Join_discrete adr).
 
-Instance Perm_world : Perm_alg world := _.
-Instance Sep_world : Sep_alg world := _.
+Instance Perm_world : Perm_alg world.
+apply Perm_fpm; apply Perm_discrete.
+Qed.
+
+Instance Sep_world : Sep_alg world.
+apply Sep_fpm.
+Qed.
+
 Instance Canc_world : Canc_alg world.
-apply Canc_prod; [apply Canc_equiv |
-                  apply Canc_prod; [apply Canc_equiv | apply Canc_fun, Canc_lower; [intuition | repeat intro; inversion H]]].
-Defined.
-Instance Disj_world : Disj_alg world.
-apply Disj_prod; [apply Disj_equiv |
-                  apply Disj_prod; [apply Disj_equiv | apply Disj_fun, Disj_lower; repeat intro; inversion H]].
-Defined.
+apply Canc_fpm; [intuition | repeat intro; inversion H].
+Qed.
 
-Instance Cross_opt_adr : @Cross_alg (option adr) (@Join_lower adr (Join_discrete adr)).
-repeat intro.
-assert (X : @Cross_alg adr (Join_discrete adr)) by (repeat intro; inv H1).
-icase a; icase b; icase z; icase c; icase d;
-let Heq := fresh "Heq" in
-repeat match goal with
-         | [H : join (Some _) (Some _) None |- _] => exfalso; inv H
-         | [H : join (Some _) None None |- _] => exfalso; inv H
-         | [H : join None None (Some _) |- _] => exfalso; inv H
-         | [H : join None (Some _) None |- _] => exfalso; inv H
-         | [H : join (Some ?Xa) (Some ?Ya) (Some ?Za) |- _] => assert (join Xa Ya Za) by (inv H; trivial); clear H
-         | [H : join (Some ?Xa) None (Some ?Ya) |- _] =>
-           assert (Heq: Xa = Ya) by (inv H; trivial); clear H; rewrite Heq in *; clear Heq Xa
-         | [H : join None (Some ?Xa) (Some ?Ya) |- _] =>
-           assert (Heq: Xa = Ya) by (inv H; trivial); clear H; rewrite Heq in *; clear Heq Xa
-       end.
-Ltac solve_lower :=
-  repeat split;
-  match goal with
-    | [|- join (Some ?Xa) None (Some ?Xa)] => apply lower_None2
-    | [|- join None (Some ?Xa) (Some ?Xa)] => apply lower_None1
-    | [|- join None None None] => apply lower_None1
-    | [H: join ?Xa ?Ya ?Za |- join (Some ?Xa) (Some ?Ya) (Some ?Za)] => apply lower_Some; apply H
-  end.
-destruct (X a a0 a2 a3 a1 H0 H1) as [[[[ac ad] bc] bd] [? [? [? ?]]]];
-  exists (Some ac, Some ad, Some bc, Some bd); solve_lower.
-exists (Some a, None, Some a0, None); solve_lower.
-exists (None, Some a, None, Some a0); solve_lower.
-exists (Some a1, Some a2, None, None); solve_lower.
-exists (Some a0, None, None, None); solve_lower.
-exists (None, Some a0, None, None); solve_lower.
-exists (None, None, Some a1, Some a2); solve_lower.
-exists (None, None, Some a0, None); solve_lower.
-exists (None, None, None, Some a0); solve_lower.
-exists (None, None, None, None); solve_lower.
-Defined.
+Instance Disj_world : Disj_alg world.
+apply Disj_fpm; repeat intro; inversion H.
+Qed.
 
 Instance Cross_world : Cross_alg world.
-apply Cross_prod.
-apply Cross_equiv.
-apply Cross_prod.
-apply Cross_equiv.
-repeat intro.
-pose (f (x: adr) := projT1 (Cross_opt_adr (a x) (b x) (c x) (d x) (z x) (H x) (H0 x))).
-pose (g (x: adr) := projT2 (Cross_opt_adr (a x) (b x) (c x) (d x) (z x) (H x) (H0 x))).
-pose (ac (x: adr) := fst (fst (fst (f x)))).
-pose (ad (x: adr) := snd (fst (fst (f x)))).
-pose (bc (x: adr) := snd (fst (f x))).
-pose (bd (x: adr) := snd (f x)).
-exists (ac,ad,bc,bd); unfold ac, ad, bc, bd, f; clear ac ad bc bd f.
-repeat split; intro x; simpl; generalize (g x);
-destruct (projT1 (Cross_opt_adr (a x) (b x) (c x) (d x) (z x) (H x) (H0 x))) as [[[? ?] ?] ?]; simpl; intuition.
-Defined.
-
-Definition age_world (w: world) : option world :=
-  match fst w with S n => Some (n, snd w) | O => None end.
-
-Definition level_world (w: world) : nat := fst w.
-
-Lemma af_world: ageable_facts _ level_world age_world.
-Proof.
-  constructor.
-  intros [n x]; exists (S n, x); simpl; auto.
-  intros [n x]; unfold age_world; destruct n; simpl; intuition discriminate.
-  intros. destruct x as [n x]; destruct n; inv H; simpl; auto.
+apply Cross_fpm; [apply Perm_discrete | apply psa_discrete | repeat intro; inv H].
 Qed.
 
-Instance ag_world: ageable world := mkAgeable _ _ _ af_world.
-Instance Age_world : Age_alg world.
-constructor.
-intros [nx x] [ny y] [nz z] [nx' x'] [? ?] ?; simpl in *. destruct H; subst.
-unfold age in H1. simpl in H1. unfold age_world in H1. simpl in H1.
-destruct nz; inv H1. unfold age; simpl. unfold age_world; simpl.
-exists (nx', y); exists (nx', z); split; auto; split; auto.
-intros [nx x] [ny y] [nz z] [nz' z'] [? ?] ?; simpl in *. destruct H; subst.
-unfold age in H1. simpl in H1. unfold age_world in H1. simpl in H1.
-destruct nz; inv H1. unfold age; simpl. unfold age_world; simpl.
-exists (nz', x); exists (nz', y); split; auto; split; auto.
-intros [nx x] [nx' x'] [ny' y'] [nz' z'] [? ?] ?; simpl in *. destruct H; subst.
-unfold age in H1. simpl in H1. unfold age_world in H1. simpl in H1.
-destruct nx; inv H1. unfold age; simpl. unfold age_world; simpl.
-exists (S nz', y'); exists (S nz', z'); split; auto; split; auto.
-intros [nz z] [nx' x'] [ny' y'] [nz' z'] [? ?] ?; simpl in *. destruct H; subst.
-unfold age in H1. simpl in H1. unfold age_world in H1. simpl in H1.
-destruct nz; inv H1. unfold age; simpl. unfold age_world; simpl.
-exists (S nz', x'); exists (S nz', y'); split; auto; split; auto.
-Qed.
+(* Definition fun_set (f: nat -> option nat) (x: nat) (y: option nat) := *)
+(*   fun i => if eq_dec i x then y else f i. *)
 
-Definition den (lev: nat) (s: state) : world := (lev, (table_get (fst s), table_get (snd s))).
+(* Definition subst (x y: var) (P: pred world) : pred world := *)
+(*   fun w => P (fun_set (fst w) x (fst w y), snd w). *)
 
-Obligation Tactic := (try solve [repeat intro; match goal with H: age _ _ |- _ => inv H end]).
-
-Program Definition defined (y: var) : pred world :=
-  fun w => exists v, fst (snd w) y = Some v.
-Next Obligation.
-  intros. intro; intros.
-  unfold age in H;  destruct a; destruct a'; simpl in H. destruct n; inv H.
-  auto.
-Qed.
-
-Definition fun_set (f: nat -> option nat) (x: nat) (y: option nat) :=
-  fun i => if eq_dec i x then y else f i.
-
-Program Definition subst (x y: var) (P: pred world) : pred world :=
-  fun w => P (fst w, (fun_set (fst (snd w)) x (fst (snd w) y), snd (snd w))).
-Next Obligation.
-  intros. intro; intros.
-  unfold age in H;  destruct a; destruct a'; simpl in H. destruct n; inv H.
-  simpl in *. eapply pred_hereditary; eauto.
-  unfold age; simpl. unfold age_world; simpl. auto.
-Qed.
-
-Program Definition mapsto (x y: var) : pred world :=
+Definition mapsto (x y: adr) : pred world :=
   fun w => x <> 0 /\
-    exists ax, fst (snd w) x = Some ax /\
-               exists ay, fst (snd w) y = Some ay /\
-                          (forall a, a <> ax -> snd (snd w) a = None) /\ snd (snd w) ax = Some ay.
-                          (* forall a, if eq_dec a ax then snd (snd w) a = Some ay else snd (snd w) a = None. *)
-Next Obligation.
-  intros. intro; intros. destruct H0.
-  split; auto.
-  unfold age in H;  destruct a; destruct a'; simpl in H. destruct n; inv H.
-  simpl in *. auto.
+    (forall a, a <> x -> lookup_fpm w a = None) /\
+    lookup_fpm w x = Some y.
+
+Lemma join_sub_mapsto: forall w1 w2 x y, join_sub w1 w2 -> (mapsto x y * TT)%pred w1 -> (mapsto x y * TT)%pred w2.
+Proof.
+  intros. destruct_sepcon H0 h. destruct H as [w3 ?]. try_join h2 w3 m. exists h1, m. split; auto.
 Qed.
 
-Lemma precise_mapsto: forall x y, precise(mapsto x y).
+Lemma precise_mapsto: forall x y, precise (mapsto x y).
 Proof.
-  repeat intro; destruct w1 as [n1 [rho1 m1]]; destruct w2 as [n2 [rho2 m2]]; destruct w as [n [rho m]];
-  destruct H1; destruct x0 as [nx [rhox mx]]; destruct H1; destruct H1;
-  destruct H2; destruct x0 as [ny [rhoy my]]; destruct H2; destruct H2; simpl in H1, H2, H3, H4, H5, H6.
-  assert (n1 = n2). rewrite H1 in *; rewrite H4 in *; rewrite H2 in *; rewrite H6 in *; trivial. clear H1 H2 H4 H6 nx ny n.
-  destruct H3, H5; destruct H1, H3; simpl in H1, H2, H3, H4, H5, H6.
-  assert (rho1 = rho2). rewrite H1 in *; rewrite H5 in *; rewrite H3 in *; rewrite H6 in *; trivial.
-  clear H1 H5 H3 H6 rhox rhoy rho.
-  destruct H as [? [ax1 [? [ay1 [? ?]]]]]; simpl in H1, H3, H5; destruct H0 as [? [ax2 [? [ay2 [? ?]]]]]. simpl in H6, H9, H10.
-  rewrite H8 in * |-. rewrite H1 in H6. injection H6; intro. rewrite H11 in *.
-  rewrite H3 in H9; injection H9; intro; rewrite H12 in *. destruct H5, H10.
-  assert (m1 = m2).
-  extensionality mm; destruct (eq_dec mm ax2);
-  [rewrite e in *; rewrite H13, H14; auto | specialize (H5 mm n); specialize (H10 mm n); rewrite H5, H10; auto].
-  repeat f_equal; trivial.
+  repeat intro. clear H1 H2 w. destruct H0 as [? [? ?]]. destruct H as [? [? ?]].
+  destruct w1 as [x1 f1]; destruct w2 as [x2 f2]; simpl in *.
+  apply exist_ext. extensionality mm; destruct (eq_dec mm x).
+  rewrite e in *. rewrite H4, H2; trivial.
+  specialize (H1 mm n); specialize (H3 mm n); rewrite H1, H3; trivial.
 Qed.
 
-Lemma precise_exp_mapsto: forall x, precise (exp (mapsto x)).
-Proof.
-  repeat intro; destruct H as [d1 [? [ax1 [? [ay1 [? [? ?]]]]]]], H0 as [d2 [? [ax2 [? [ay2 [? [? ?]]]]]]];
-  destruct w1 as [n1 [r1 m1]], w2 as [n2 [r2 m2]]; simpl in *;
-  destruct w as [n [r m]]; destruct H1; destruct x0 as [nx [rx mx]]; destruct H2; destruct x0 as [ny [ry my]];
-  destruct H1 as [? [? ?]], H2 as [? [? ?]]; simpl in *.
-  destruct H1, H2; assert (n1 = n2) by intuition.
-  destruct H11, H13; assert (r1 = r2) by (rewrite H11, H18, H13, H19; auto).
-  rewrite H17 in *; rewrite H20 in *; rewrite H3 in H7; injection H7; intro; rewrite H21 in *.
-  assert (m1 = m2).
-  extensionality mm; specialize (H12 mm); specialize (H14 mm); destruct (eq_dec mm ax2).
-  rewrite e in *; rewrite H6 in *; rewrite H10 in *; destruct (mx ax2); destruct(my ax2); destruct (m ax2);
-  let HH := fresh "HH" in
-  match goal with
-    | [H: join (Some _) (Some _) (Some _) |- _] => inversion H as [? | ? | ? ? ? HH]; inversion HH
-    | [H: join (Some _) (Some _) None |- _] => inversion H
-    | [H: join (Some _) None None |- _] => inversion H
-    | _ =>  inversion H12; inversion H14; auto
+Fixpoint extractSome (f : adr -> option adr) (li : list adr) : list adr :=
+  match li with
+    | nil => nil
+    | x :: lx => match f x with
+                   | Some _ => x :: extractSome f lx
+                   | None => extractSome f lx
+                 end
   end.
-  specialize (H5 mm n0); specialize (H9 mm n0); rewrite H5, H9; auto.
-  repeat f_equal; trivial.
-Qed.
 
-Lemma mprecise_mapsto: forall w x y, (mprecise (mapsto x y)) w.
+Lemma world_finite: forall w: world, exists l: list adr, forall a:adr, In a l <-> lookup_fpm w a <> None.
 Proof.
-  intros w x y w' w1 w2 X H H0 H1 H2; clear X.
-  destruct w1 as [n1 [rho1 m1]]; destruct w2 as [n2 [rho2 m2]]; destruct w as [n [rho m]].
-  destruct H1; destruct x0 as [nx [rhox mx]]; destruct H1; destruct H1;
-  destruct H2; destruct x0 as [ny [rhoy my]]; destruct H2; destruct H2; simpl in H1, H2, H3, H4, H5, H6.
-  assert (n1 = n2). rewrite H1 in *; rewrite H4 in *; rewrite H2 in *; rewrite H6 in *; trivial. clear H1 H2 H4 H6 nx ny n.
-  destruct H3, H5; destruct H1, H3; simpl in H1, H2, H3, H4, H5, H6.
-  assert (rho1 = rho2). rewrite H1 in *; rewrite H5 in *; rewrite H3 in *; rewrite H6 in *; trivial.
-  clear H1 H5 H3 H6 rhox rhoy rho.
-  destruct H as [? [ax1 [? [ay1 [? ?]]]]]; simpl in H1, H3, H5; destruct H0 as [? [ax2 [? [ay2 [? ?]]]]]. simpl in H6, H9, H10.
-  rewrite H8 in * |-. rewrite H1 in H6. injection H6; intro. rewrite H11 in *.
-  rewrite H3 in H9; injection H9; intro; rewrite H12 in *. destruct H5, H10.
-  assert (m1 = m2).
-  extensionality mm; destruct (eq_dec mm ax2);
-  [rewrite e in *; rewrite H13, H14; auto | specialize (H5 mm n); specialize (H10 mm n); rewrite H5, H10; auto].
-  repeat f_equal; trivial.
+  intro; destruct w as [f [li ?]]; simpl; exists (extractSome f li); split; intros.
+  clear e; induction li; simpl in H; auto.
+  destruct (f a0) eqn: ?. destruct (in_inv H). subst. rewrite Heqo. intro. inversion H0.
+  apply IHli; auto. apply IHli; auto. destruct (in_dec nat_eq_dec a li). clear e.
+  induction li; simpl in *; auto. destruct (f a0) eqn : ?. destruct i. subst. apply in_eq.
+  apply in_cons. apply IHli; auto. destruct i. subst. exfalso; auto. apply IHli; auto.
+  specialize (e a n). exfalso; auto.
 Qed.
 
-Program Definition equal (x y: var) : pred world :=
-  fun w => fst (snd w) x = fst (snd w) y.
-Next Obligation.
-  intros. intro; intros.
-  unfold age in H;  destruct a; destruct a'; simpl in H. destruct n; inv H.
-  simpl in *. auto.
+Lemma lookup_fpm_join_sub: forall (w1 w2 : world) x, join_sub w1 w2 -> lookup_fpm w1 x <> None -> lookup_fpm w2 x <> None.
+Proof.
+  intros. destruct H as [w3 ?].
+  destruct w1 as [f1 [l1 ?]]. destruct w2 as [f2 [l2 ?]]. destruct w3 as [f3 [l3 ?]]. hnf in H; simpl in *.
+  specialize (H x). inversion H. exfalso; auto. auto. auto.
 Qed.
 
-Definition nonfreevars (P: pred world) (x: var) : Prop :=
-  forall lev stk hp v, P (lev, (stk,hp)) -> P (lev, (fun_set stk x v, hp)).
-
+(* Definition equal (x y: var) : pred world := fun w => fst w x = fst w y. *)
