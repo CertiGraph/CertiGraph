@@ -79,9 +79,6 @@ Section SpatialGraph.
   Qed.
 
   (* Lemma dag_eq_graph: forall x, dag x |-- graph x && !!(graph_is_acyclic (reachable_subgraph pg (x :: nil))). *)
-  (* Proof. *)
-  (*   admit. *)
-  (* Qed. *)
 
   Fixpoint graphs (l : list adr) :=
     match l with
@@ -184,6 +181,13 @@ Section SpatialGraph.
       apply IHl; auto. simpl in H. destruct H. intuition. apply IHl; auto.
     Qed.
 
+    Lemma remove_tree_in: forall w x l y, y <> x -> In y (map (fetch w) l) -> In y (map (fetch w) (removeTree w x l)).
+    Proof.
+      induction l; intros; simpl in *. apply H0. destruct a as [a ?]. simpl in *. destruct (eq_nat_dec x a).
+      destruct H0. subst. exfalso; apply H; auto. apply IHl; auto. simpl in *. destruct H0. left; auto.
+      right. apply IHl; auto.
+    Qed.
+    
     Definition dup_input (w : world) := list {t : adr | (graph t * TT)%pred w}.
 
     Definition dupLength (w : world) (i : dup_input w) := length i.
@@ -238,6 +242,14 @@ Section SpatialGraph.
       apply Sublist_trans with l1. apply remove_tree_sublist. repeat intro. apply H0. apply in_cons. apply H1.
     Qed.
 
+    Lemma remove_dup_in_inv: forall w x l, In x (map (fetch w) l) -> In x (map (fetch w) (removeDup w l)).
+    Proof.
+      intros w x l. remember (length l). assert (length l <= n) by omega. clear Heqn. revert l H.
+      induction n; intros; rewrite removeDup_unfold; destruct l; auto. simpl in H. omega. destruct s as [s ?].
+      simpl in *. destruct (eq_nat_dec x s); destruct H0. left; auto. left; auto. exfalso; apply n0; auto.
+      right. apply IHn. apply le_trans with (length l). apply remove_tree_len_le. omega. apply remove_tree_in; auto.
+    Qed.
+
     Lemma remove_dup_nodup: forall w l, NoDup (map (fetch w) (removeDup w l)).
     Proof.
       intros w l. remember (length l). assert (length l <= n) by omega. clear Heqn. revert H. revert l.
@@ -282,6 +294,19 @@ Section SpatialGraph.
       apply Sublist_trans with (removeTree w a la). auto. apply remove_tree_sublist. intro y; intros.
       destruct H2; auto. subst. apply map_sublist with (f := fetch w) in H0. intro.
       specialize (H0 y H2). apply remove_tree_not_in in H0. auto.
+    Qed.
+
+    Lemma remove_list_in: forall w lb lc la a x, x <> a -> (~ In x lb) -> In x (map (fetch w) la) ->
+                                                 In x (map (fetch w) (appRemoveList w lc (removeTree w a la) lb)).
+    Proof.
+      induction lb; intros; simpl. assert (In x (map (fetch w) (lc ++ removeTree w a la))). rewrite map_app.
+      apply in_or_app; right. apply remove_tree_in; auto. apply remove_dup_in_inv. auto. apply IHlb.
+      intro; apply H0; subst; apply in_eq. intro; apply H0; apply in_cons; auto. apply remove_tree_in; auto.
+    Qed.
+
+    Lemma remove_list_in_2: forall w lb lc la x, In x (map (fetch w) lc) -> In x (map (fetch w) (appRemoveList w lc la lb)).
+    Proof.
+      induction lb; intros; simpl. apply remove_dup_in_inv. rewrite map_app. apply in_or_app. left; auto. apply IHlb. auto.
     Qed.
 
     Definition graph_zero : forall (w : world), (graph 0 * TT)%pred w.
@@ -448,6 +473,171 @@ Section SpatialGraph.
       rewrite H3. apply IHn. omega. auto.
     Qed.
 
+    Lemma extractReach_length_bound: forall w i, length (rch3 w i) <= rch1 w i -> length (extractReach w i) <= rch1 w i.
+    Proof.
+      intros w i; remember (lengthInput w i); assert (lengthInput w i <= n) by omega; clear Heqn; revert H. revert i.
+      induction n; intros; remember (extractReach w i) as result;
+      rename Heqresult into H3; destruct i as [[len pr] rslt]; unfold rch3, lengthInput in *;
+      simpl in *; rewrite extractReach_unfold in H3; destruct pr; simpl in H3. subst; auto. simpl in H; exfalso; omega.
+      subst; auto. destruct (le_dec len (length rslt)). subst; auto. destruct s as [t Ht]. simpl in *.
+      destruct (explode t w Ht).
+      specialize (IHn (len, appRemoveList w pr (removeTree w t (twoSubTrees t w s)) rslt, t :: rslt)). simpl in IHn.
+      rewrite H3. apply IHn. repeat rewrite <- plus_n_O in *.
+      apply le_trans with (len + len + length pr + length (twoSubTrees t w s) - S (length rslt + S (length rslt))).
+      generalize (remove_list_len_le w rslt pr (removeTree w t (twoSubTrees t w s))); intro;
+      generalize (remove_tree_len_le w t (twoSubTrees t w s)); intro; omega.
+      destruct s as [leftT [rightT [? [? [? ?]]]]]; simpl; omega. omega. rewrite H3; apply IHn. omega. unfold rch1. omega.
+    Qed.
+
+    Lemma extractReach_sublist: forall w i, Sublist (rch3 w i) (extractReach w i).
+    Proof.
+      intros w i; remember (lengthInput w i); assert (lengthInput w i <= n) by omega; clear Heqn; revert H. revert i.
+      induction n; intros; remember (extractReach w i) as result;
+      rename Heqresult into H3; destruct i as [[len pr] rslt]; unfold rch3, lengthInput in *;
+      simpl in *; rewrite extractReach_unfold in H3; destruct pr; simpl in H3. subst; apply Sublist_refl.
+      destruct (le_dec len (length rslt)). subst. apply Sublist_refl. simpl in H; omega. subst; apply Sublist_refl.
+      destruct (le_dec len (length rslt)). subst. apply Sublist_refl. destruct s as [t Ht]; simpl in *.
+      destruct (explode t w Ht). 
+      specialize (IHn (len, appRemoveList w pr (removeTree w t (twoSubTrees t w s)) rslt, t :: rslt)). simpl in IHn.
+      assert (Sublist (t :: rslt) (extractReach w (len, appRemoveList w pr (removeTree w t (twoSubTrees t w s)) rslt,
+                                                   t :: rslt))).
+      apply IHn. repeat rewrite <- plus_n_O in *.
+      apply le_trans with (len + len + length pr + length (twoSubTrees t w s) - S (length rslt + S (length rslt))).
+      generalize (remove_list_len_le w rslt pr (removeTree w t (twoSubTrees t w s))); intro;
+      generalize (remove_tree_len_le w t (twoSubTrees t w s)); intro; omega.
+      destruct s as [leftT [rightT [? [? [? ?]]]]]; simpl; omega. rewrite <- H3 in H0. intro y; intros.
+      apply (H0 y). apply in_cons; auto. specialize (IHn (len, pr, rslt)); simpl in IHn. rewrite H3. apply IHn.
+      simpl in H; omega.
+    Qed.      
+
+    Definition ProcessingInResult (l1 l2 : list adr) : Prop := forall x y, In x l1 -> reachable pg x y -> In y l2.
+
+    Lemma PIR_cons: forall a l1 l2, (forall y, reachable pg a y -> In y l2) -> ProcessingInResult l1 l2 ->
+                                    ProcessingInResult (a :: l1) l2.
+    Proof. repeat intro; apply in_inv in H1; destruct H1. subst. apply H; auto. apply (H0 x); auto. Qed.
+
+    Lemma PIR_sublist: forall l1 l2 l3, Sublist l1 l2 -> ProcessingInResult l2 l3 -> ProcessingInResult l1 l3.
+    Proof. repeat intro. specialize (H x H1). apply (H0 x y); auto. Qed.
+
+    Definition ResultInProcessing (l1 l2 : list adr) : Prop := forall x y, In x l1 -> edge pg x y -> In y l1 \/ In y l2.
+
+    Lemma neg_eq_in_neq_nin: forall a (l : list adr) x, ~ (a = x \/ In x l) -> x <> a /\ ~ In x l.
+    Proof. intros; split. destruct (eq_nat_dec x a); auto. destruct (in_dec eq_nat_dec x l); auto. Qed.
+
+    Fixpoint findNotIn (l1 l2 l3: list adr) : (option adr * (list adr * list adr)) :=
+      match l1 with
+        | nil => (None, (nil, nil))
+        | x :: l => if (in_dec eq_nat_dec x l2) then findNotIn l l2 (x :: l3) else (Some x, (rev l3, l))
+      end.
+
+    Lemma find_not_in_none: forall l1 l2 l3, fst (findNotIn l1 l2 l3) = None -> Forall (fun m => In m l2) l1.
+    Proof.
+      induction l1; intros. apply Forall_nil. simpl in H. destruct (in_dec eq_nat_dec a l2).
+      apply Forall_cons. auto. apply IHl1 with (a :: l3); auto. inversion H.
+    Qed.
+
+    Lemma find_not_in_some_explicit:
+      forall l1 l2 l3 x li1 li2,
+        findNotIn l1 l2 l3 = (Some x, (li1, li2)) -> (Forall (fun m => In m l2) l3) ->
+        (~ In x li1) /\ (~ In x l2) /\ exists l4, li1 = rev l3 ++ l4 /\ Forall (fun m => In m l2) l4 /\ l1 = l4 ++ x :: li2.
+    Proof.
+      induction l1; intros; simpl in H. inversion H. destruct (in_dec eq_nat_dec a l2).
+      assert (Forall (fun m : adr => In m l2) (a :: l3)) by (apply Forall_cons; auto).
+      specialize (IHl1 l2 (a :: l3) x li1 li2 H H1). destruct IHl1 as [? [? [l4 [? [? ?]]]]]. split; auto. split; auto.
+      exists (a :: l4). repeat split; auto. simpl in H4. rewrite <- app_assoc in H4. rewrite <- app_comm_cons in H4.
+      rewrite app_nil_l in H4. auto. rewrite H6; apply app_comm_cons. inversion H. split. intro; apply n. 
+      rewrite Forall_forall in H0. apply (H0 a). rewrite H2. rewrite in_rev. auto. split. rewrite <- H2. auto.
+      exists nil. repeat split; auto. rewrite app_nil_r. auto.
+    Qed.
+
+    Lemma find_not_in_some:
+      forall l1 l2 x li1 li2,
+        findNotIn l1 l2 nil = (Some x, (li1, li2)) ->
+        Forall (fun m => In m l2) li1 /\ l1 = li1 ++ x :: li2 /\ ~ In x li1 /\ ~ In x l2.
+    Proof.
+      intros. assert (Forall (fun m : adr => In m l2) nil) by apply Forall_nil.
+      destruct (find_not_in_some_explicit l1 l2 nil x li1 li2 H H0). destruct H2 as [? [l4 [? [? ?]]]].
+      simpl in H3. rewrite H3 in *. repeat split; auto.
+    Qed.
+
+    Lemma foot_none_nil: forall (l : list adr), foot l = None -> l = nil.
+    Proof. induction l; intros; auto. simpl in H. destruct l. inversion H. specialize (IHl H). inversion IHl. Qed.
+
+    Lemma reachable_by_path_split_dec:
+      forall p a b P rslt,
+        pg |= p is a ~o~> b satisfying P -> {Forall (fun m => In m (a :: rslt)) p} +
+                                            {exists l1 l2 e1 s2, Forall (fun m => In m (a :: rslt)) l1 /\
+                                                                 pg |= l1 is a ~o~> e1 satisfying P /\
+                                                                 pg |= l2 is s2 ~o~> b satisfying P /\
+                                                                 edge pg e1 s2 /\ ~ In s2 (a::rslt) /\ p = l1 ++ l2 /\
+                                                                 ~ In s2 l1}.
+    Proof.
+      intros. remember (findNotIn p (a :: rslt) nil) as f. destruct f as [n [l1 l2]]. destruct n. right.
+      apply eq_sym in Heqf. destruct (find_not_in_some _ _ _ _ _ Heqf) as [? [? [? ?]]]. exists l1, (a0 :: l2).
+      rewrite Forall_forall in H0. destruct l1. rewrite app_nil_l in H1.
+      generalize (reachable_by_path_head _ _ _ _ _ _ _ _ _ H); intro. rewrite H1 in *. simpl in H4. inversion H4.
+      rewrite H6 in *. exfalso; apply H3; apply in_eq.
+      generalize (reachable_by_path_head _ _ _ _ _ _ _ _ _ H); intro.
+      rewrite <- app_comm_cons in H1. rewrite H1 in H4. simpl in H4. inversion H4. rewrite H6 in *. clear H4 H6 a1.
+      remember (foot (a :: l1)). destruct o. exists n, a0. split. rewrite Forall_forall; auto.
+      assert (paths_meet_at adr (a :: l1) (n :: a0 :: l2) n) by (repeat split; auto).
+      assert (pg |= path_glue adr (a :: l1) (n :: a0 :: l2) is a ~o~> b satisfying P). unfold path_glue. simpl.
+      rewrite <- H1. auto. destruct (reachable_by_path_split_glue _ _ _ _ _ _ _ _ _ _ _ H4 H5). clear H4 H5. split; auto.
+      assert (paths_meet_at adr (n :: a0 :: nil) (a0 :: l2) a0) by repeat split.
+      assert (pg |= path_glue adr (n :: a0 :: nil) (a0 :: l2) is n ~o~> b satisfying P). unfold path_glue. simpl. auto.
+      destruct (reachable_by_path_split_glue _ _ _ _ _ _ _ _ _ _ _ H4 H5). clear H4 H5 H6 H7. split; auto.
+      split. destruct H8. destruct H5. destruct H5. auto. split. auto. split; simpl; auto.
+      apply eq_sym in Heqo. generalize (foot_none_nil (a :: l1) Heqo); intros. inversion H4.
+      assert (fst (findNotIn p (a :: rslt) nil) = None) by (rewrite <- Heqf; simpl; auto). left.
+      apply find_not_in_none with nil. auto.
+    Qed.
+      
+    Lemma extractReach_contains_all:
+      forall w i, ResultInProcessing (rch3 w i) (map (fetch w) (rch2 w i)) -> length (extractReach w i) < rch1 w i ->
+                  ProcessingInResult (map (fetch w) (rch2 w i)) (extractReach w i).
+    Proof.
+      intros w i; remember (lengthInput w i); assert (lengthInput w i <= n) by omega; clear Heqn; revert H. revert i.
+      induction n; intros; remember (extractReach w i) as result; rename Heqresult into H3;
+      destruct i as [[len pr] rslt]; unfold rch1, rch2, rch3, lengthInput in *; simpl in *; rewrite extractReach_unfold in H3;
+      destruct pr; simpl in *. subst; omega. destruct (le_dec len (length rslt)). subst; omega. omega.
+      repeat intro; inversion H2. destruct (le_dec len (length rslt)). subst. omega. destruct s as [t Ht]. simpl in *.
+      destruct (explode t w Ht).
+      assert (ProcessingInResult (map (fetch w) (appRemoveList w pr (removeTree w t (twoSubTrees t w s)) rslt)) result).
+      specialize (IHn (len, appRemoveList w pr (removeTree w t (twoSubTrees t w s)) rslt, t :: rslt)). simpl in IHn.
+      rewrite H3; apply IHn; clear IHn.
+      apply le_trans with (len + len + length pr + length (twoSubTrees t w s) - S (length rslt + S (length rslt))).
+      generalize (remove_list_len_le w rslt pr (removeTree w t (twoSubTrees t w s))); intro;
+      generalize (remove_tree_len_le w t (twoSubTrees t w s)); intro; omega.
+      destruct s as [leftT [rightT [? [? [? ?]]]]]; simpl; omega. repeat intro; destruct (in_dec eq_nat_dec y (t :: rslt)).
+      left; auto. right. remember (twoSubTrees t w s) as subT. apply neg_eq_in_neq_nin in n1. destruct n1.
+      apply in_inv in H2. destruct H2. rewrite <- H2 in *. clear H2.
+      destruct H4 as [? [? ?]]. destruct s as [lT [rT [? [? [? ?]]]]]. simpl in *. unfold biEdge in e.
+      destruct (@only_two_neighbours nat nat natEqDec GV pg bi t) as [v1 [v2 HHH]]. inversion e. rewrite H9 in *.
+      rewrite H10 in *. clear H9 H10 v1 v2. rewrite HHH in H7.
+      assert (In y (map (fetch w) subT)) by (rewrite HeqsubT; simpl in *; apply H7). apply remove_list_in; auto.
+      specialize (H0 x y H2 H4). destruct H0. exfalso; apply H6; auto. apply in_inv in H0. destruct H0. exfalso.
+      apply H5; auto. apply remove_list_in_2. auto. rewrite H3 in H1; auto.
+
+      apply PIR_cons. intros. unfold reachable in H4. destruct H4 as [p ?].
+      destruct (reachable_by_path_split_dec _ _ _ _ rslt H4). rewrite Forall_forall in f. apply reachable_by_path_foot in H4.
+      apply foot_in in H4. specialize (f _ H4). rewrite H3. apply (extractReach_sublist _ _ y). simpl. simpl in f. auto.
+      destruct e as [l1 [l2 [e1 [s1 [? [? [? [? [? [? ?]]]]]]]]]]. rewrite Forall_forall in H5.
+      destruct (eq_nat_dec e1 t). rewrite e in *; clear e e1. destruct H8 as [? [? ?]]. remember (twoSubTrees t w s) as subT.
+      destruct s as [lT [rT [? [? [? ?]]]]]. simpl in *. unfold biEdge in e.
+      destruct (@only_two_neighbours nat nat natEqDec GV pg bi t) as [v1 [v2 HHH]]. inversion e. rewrite H15 in *.
+      rewrite H16 in *. clear H15 H16 v1 v2. rewrite HHH in H13. assert (In s1 (map (fetch w) subT)). rewrite HeqsubT.
+      simpl map. auto. apply (H2 s1 y). apply neg_eq_in_neq_nin in H9. destruct H9. apply remove_list_in; auto.
+      exists l2. auto. apply reachable_by_path_foot in H6. apply foot_in in H6. specialize (H5 e1 H6). apply in_inv in H5.
+      destruct H5. exfalso; auto. specialize (H0 e1 s1 H5 H8). simpl in H9. apply neg_eq_in_neq_nin in H9; destruct H9.
+      destruct H0. exfalso; auto. apply in_inv in H0. destruct H0. exfalso; auto. apply (H2 s1 y). apply remove_list_in_2.
+      auto. exists l2. auto.
+      apply PIR_sublist with (map (fetch w) (appRemoveList w pr (removeTree w t (twoSubTrees t w s)) rslt)); auto.
+      intro y; intros. apply remove_list_in_2; auto. apply PIR_cons. intros. apply reachable_is_valid in H2.
+      destruct H2. omega. rewrite H3. specialize (IHn (len, pr, rslt)). simpl in IHn. apply IHn. omega.
+      repeat intro. specialize (H0 x y H2 H4). destruct H0; [left | right]. auto. apply in_inv in H0. destruct H0.
+      subst. destruct H4 as [? [? ?]]. destruct H3. omega. auto. rewrite H3 in H1. auto.
+    Qed.
+    
   End ConstructReachable.
     
   Lemma graph_reachable_finite: forall x w, graph x w -> set_finite (reachable pg x).
@@ -472,8 +662,12 @@ Section SpatialGraph.
     assert (In y l) as Hy. generalize (graph_reachable_in _ _ H5). intros. specialize (H6 w H). hnf in H6. destruct H6 as [b ?].
     destruct_sepcon H6 h. destruct H7 as [? [? ?]]. assert (lookup_fpm w y <> None).
     apply lookup_fpm_join_sub with h1. exists h2; auto. rewrite H10. intro S; inversion S. rewrite <- H0 in H11. auto.
-    apply H4.
-    admit.
+    apply H4. generalize (extractReach_length_bound w s); intro. rewrite Heqs in H6 at 1 2; simpl in H6.
+    assert (0 <= length l) as S by omega; specialize (H6 S); clear S. apply le_lt_eq_dec in H6. destruct H6.
+    assert (ResultInProcessing (rch3 w s) (map (fetch w) (rch2 w s))). rewrite Heqs; simpl. repeat intro. inversion H6.
+    generalize (extractReach_contains_all w s H6 l0); intro. rewrite Heqs in H7 at 1. rewrite Heqg in H7. simpl in H7.
+    apply (H7 x y); auto. apply in_eq. rewrite Heqs in e at 2; simpl in e.
+    apply (sublist_reverse eq_nat_dec (extractReach w s) l Hn e Hs y Hy).
   Qed.
 
 End SpatialGraph.
