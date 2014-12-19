@@ -7,7 +7,6 @@ Require Import ramify_tactics.
 Require Import FunctionalExtensionality.
 Require Import NPeano.
 Require Import List.
-Require Import Classical.
 Require Import utilities.
 
 Local Open Scope pred.
@@ -654,15 +653,14 @@ Section SpatialGraph.
     apply H12. hnf; auto. inversion H3. exists (extractReach w s). intros y; split; intros.
     rewrite Forall_forall in H3. apply H3. auto.
 
-    destruct (classic (reachable pg x y)); [exfalso | auto]. assert (NoDup (extractReach w s)) as Hn.
-    apply extractReach_nodup. rewrite Heqs. simpl. apply NoDup_cons. auto. apply NoDup_nil.
-    assert (Sublist (extractReach w s) l) as Hs. assert (Forall (NotNone w) (extractReach w s)).
-    apply extractReach_all_not_none; rewrite Heqs; simpl; apply Forall_nil.
-    rewrite Forall_forall in H6. unfold NotNone in H6. intro z; intros. rewrite H0. apply H6. auto.
-    assert (In y l) as Hy. generalize (graph_reachable_in _ _ H5). intros. specialize (H6 w H). hnf in H6. destruct H6 as [b ?].
-    destruct_sepcon H6 h. destruct H7 as [? [? ?]]. assert (lookup_fpm w y <> None).
-    apply lookup_fpm_join_sub with h1. exists h2; auto. rewrite H10. intro S; inversion S. rewrite <- H0 in H11. auto.
-    apply H4. generalize (extractReach_length_bound w s); intro. rewrite Heqs in H6 at 1 2; simpl in H6.
+    intro. assert (NoDup (extractReach w s)) as Hn. apply extractReach_nodup. rewrite Heqs. simpl. apply NoDup_cons.
+    auto. apply NoDup_nil. assert (Sublist (extractReach w s) l) as Hs. assert (Forall (NotNone w) (extractReach w s)).
+    apply extractReach_all_not_none; rewrite Heqs; simpl; apply Forall_nil. rewrite Forall_forall in H6.
+    unfold NotNone in H6. intro z; intros. rewrite H0. apply H6. auto. assert (In y l) as Hy.
+    generalize (graph_reachable_in _ _ H5). intros. specialize (H6 w H). hnf in H6. destruct H6 as [b ?].
+    destruct_sepcon H6 h. destruct H7 as [? [? ?]]. assert (lookup_fpm w y <> None). apply lookup_fpm_join_sub with h1.
+    exists h2; auto. rewrite H10. intro S; inversion S. rewrite <- H0 in H11. auto. apply H4.
+    generalize (extractReach_length_bound w s); intro. rewrite Heqs in H6 at 1 2; simpl in H6.
     assert (0 <= length l) as S by omega; specialize (H6 S); clear S. apply le_lt_eq_dec in H6. destruct H6.
     assert (ResultInProcessing (rch3 w s) (map (fetch w) (rch2 w s))). rewrite Heqs; simpl. repeat intro. inversion H6.
     generalize (extractReach_contains_all w s H6 l0); intro. rewrite Heqs in H7 at 1. rewrite Heqg in H7. simpl in H7.
