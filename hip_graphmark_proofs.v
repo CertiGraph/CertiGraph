@@ -36,8 +36,8 @@ Module GraphMark <: Mgraphmark.
     @node_label _ _ _ _ g' n = d /\
     @edge_func _ _ _ _ g' n = l :: r :: nil.
   
-  Definition marked (g : A) (n : node) : formula :=
-    @node_label _ _ _ _ g n = 1%Z.
+  Definition marked (g : A) (d : Z) : formula :=
+    d = 1%Z.
   
   Lemma lookup_update_mark1: forall g n d l r g',
     lookup g n d l r ->
@@ -47,10 +47,20 @@ Module GraphMark <: Mgraphmark.
     intros. split. 
     red. intros. split. tauto.
     destruct H as [? ?]. destruct H0 as [? [? ?]].
-    case (t_eq_dec v n). intros. subst n. rewrite H1, H3. apply eq_as_set_refl.
+    case (t_eq_dec v n). intros. subst n. unfold node in *. rewrite H1,H3. apply eq_as_set_refl.
     intro. destruct (H0 v). auto.
-    rewrite H5. apply eq_as_set_refl.
-    split. red.
+    unfold node in *. rewrite H5. apply eq_as_set_refl.
+    split. red. admit. (* need valid proof *)
+    split. red. red. 
+    destruct H0 as [? [? ?]]. apply H1.
+    intros. destruct H0 as [? [? ?]].
+    destruct (H0 n'); auto.
+  Qed.
+ rewrite H1. reflexivity.
+
+ trivial.
+
+ unfold node_label. hnf. 
  apply sublist_refl.
     
 
