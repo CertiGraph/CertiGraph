@@ -638,8 +638,10 @@ Section SpatialGraph.
     Qed.
     
   End ConstructReachable.
-    
-  Lemma graph_reachable_finite: forall x w, graph x w -> set_finite (reachable pg x).
+
+  Lemma graph_reachable_finite:
+    forall x w, graph x w -> exists (l : list adr), NoDup l /\ forall y, (In y l -> reachable pg x y) /\
+                                                                         (~ In y l -> ~ reachable pg x y).
   Proof.
     intros. hnf. destruct (world_finite w) as [l ?].
     generalize (core_unit w); intros. unfold unit_for in H1. apply join_comm in H1.
@@ -650,11 +652,11 @@ Section SpatialGraph.
     apply Forall_forall; intros. apply in_inv in H3; destruct H3. subst. assert (graph x0 w) by auto.
     rewrite graph_unfold in H. destruct H as [[? ?] | [dd [ll [rr ?]]]]. hnf in H; right; auto. left.
     apply reachable_by_reflexive. split. destruct_ocon H h. destruct_ocon H6 j. destruct H10 as [[? ?] ?].
-    apply H12. hnf; auto. inversion H3. exists (extractReach w s). intros y; split; intros.
-    rewrite Forall_forall in H3. apply H3. auto.
+    apply H12. hnf; auto. inversion H3. exists (extractReach w s). assert (NoDup (extractReach w s)) as Hn.
+    apply extractReach_nodup. rewrite Heqs. simpl. apply NoDup_cons. auto. apply NoDup_nil. split. auto.
+    intros y; split; intros. rewrite Forall_forall in H3. apply H3. auto.
 
-    intro. assert (NoDup (extractReach w s)) as Hn. apply extractReach_nodup. rewrite Heqs. simpl. apply NoDup_cons.
-    auto. apply NoDup_nil. assert (Sublist (extractReach w s) l) as Hs. assert (Forall (NotNone w) (extractReach w s)).
+    intro. assert (Sublist (extractReach w s) l) as Hs. assert (Forall (NotNone w) (extractReach w s)).
     apply extractReach_all_not_none; rewrite Heqs; simpl; apply Forall_nil. rewrite Forall_forall in H6.
     unfold NotNone in H6. intro z; intros. rewrite H0. apply H6. auto. assert (In y l) as Hy.
     generalize (graph_reachable_in _ _ H5). intros. specialize (H6 w H). hnf in H6. destruct H6 as [b ?].
