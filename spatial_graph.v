@@ -91,38 +91,34 @@ Section SpatialGraph.
       | v :: l' => dag v ⊗ dags l'
     end.
 
-  Lemma graph_path_in: forall p x y P, pg |= p is x ~o~> y satisfying P -> graph x |-- EX v : adr, (mapsto y v * TT).
-  Proof.
-    induction p; intros; destruct H as [[? ?] [? ?]].
-    inversion H.
-    simpl in H; inversion H; subst.
-    destruct p. simpl in H0; inversion H0; subst. repeat intro.
-    rewrite graph_unfold in H3. destruct H3. destruct H3. hnf in H3; destruct H1; intuition.
-    destruct H3 as [d [l [r ?]]]. destruct_ocon H3 h. destruct_ocon H6 i.
-    destruct H10. destruct_sepcon H12 j. destruct_sepcon H13 k. exists d.
-    try_join k2 j2 m1; try_join m1 i3 m2; try_join m2 h3 m3. exists k1, m3; split; auto.
+  Definition graph_maps (v : adr) : pred world := let (dl, r) := gamma bi v in let (d, l) := dl in trinode v d l r.
 
-    assert (pg |= n :: p is n ~o~> y satisfying P).
+  Lemma graph_path_tri_in: forall p x y P, pg |= p is x ~o~> y satisfying P -> graph x |-- graph_maps y * TT.
+  Proof.
+    induction p; intros; destruct H as [[? ?] [? ?]]. inversion H. simpl in H; inversion H; subst. clear H. destruct p.
+    simpl in H0; inversion H0; subst; clear H0. repeat intro. rewrite graph_unfold in H. destruct H as [[? ?] | ?].
+    hnf in H; destruct H1; intuition. destruct H as [d [l [r ?]]]. destruct_ocon H h. destruct_ocon H4 i. destruct H8.
+    destruct H8. try_join i3 h3 i3h3. exists i12, i3h3. split; auto. split; auto. hnf. destruct (gamma bi y) as [dl rr].
+    destruct dl as [dd ll]. inversion H8; auto. assert (pg |= n :: p is n ~o~> y satisfying P).
     split; [split; [simpl; auto | auto] | split; [destruct H1; auto | repeat intro; apply H2; apply in_cons; auto]].
 
-    repeat intro; hnf.
-    rewrite graph_unfold in H4. destruct H4. destruct H4; hnf in H4; destruct H1; destruct H1; destruct H1; intuition.
-    destruct H4 as [d [l [r ?]]].
-    destruct_ocon H4 h. destruct_ocon H7 i. destruct H11 as [[? ?] ?].
-    unfold gamma in H11.
-    destruct_sepcon H14 j. destruct_sepcon H15 k. destruct H1 as [[? [? ?]] ?].
-    revert H11. case_eq (biEdge bi x); intros.
-    inversion H22; subst.
-    generalize (biEdge_only2 bi _ _ _ _ H11 H20); intros.
-    destruct H23; subst.
-    specialize (IHp _ _ _ H3 _ H12). hnf in IHp. simpl in IHp.
-    destruct IHp as [bb ?]. exists bb. apply join_sub_mapsto with i23; auto.
-    try_join i2 i3 i23'; equate_join i23 i23'.
-    assertSub i23 a S3; trivial.
-    specialize (IHp _ _ _ H3 _ H8). hnf in IHp. simpl in IHp.
-    destruct IHp as [bb ?]. exists bb. apply join_sub_mapsto with h23; auto.
-    try_join h2 h3 h23'; equate_join h23 h23'.
-    assertSub h23 a S1; trivial.
+    repeat intro. rewrite graph_unfold in H3. destruct H3 as [[? ?] | [d [l [r ?]]]]. hnf in H3. destruct H1 as [[[? ?] ?] ?].
+    intuition. destruct_ocon H3 h. destruct_ocon H6 i. destruct H10 as [[? ?] ?]. unfold gamma in H10. destruct_sepcon H13 j.
+    destruct_sepcon H14 k. destruct H1 as [[? [? ?]] ?]. revert H10. case_eq (biEdge bi x); intros. inversion H21; subst.
+    generalize (biEdge_only2 bi _ _ _ _ H10 H19); intros. destruct H22; subst. specialize (IHp _ _ _ H _ H11).
+    destruct IHp as [l1 [l2 [? [? ?]]]]. try_join i2 i3 i23'. equate_join i23 i23'. try_join l2 i1 l2i1.
+    try_join l2i1 h3 l2i1h3. exists l1, l2i1h3. split; auto. specialize (IHp _ _ _ H _ H7). destruct IHp as [l1 [l2 [? [? ?]]]].
+    try_join h2 h3 h23'. equate_join h23 h23'. try_join l2 h1 l2h1. exists l1, l2h1. split; auto.
+  Qed.
+
+  Lemma graph_reachable_tri_in: forall x y, reachable pg x y -> graph x |-- graph_maps y * TT.
+  Proof. intros; destruct H; apply graph_path_tri_in in H; trivial. Qed.
+
+  Lemma graph_path_in: forall p x y P, pg |= p is x ~o~> y satisfying P -> graph x |-- EX v : adr, (mapsto y v * TT).
+  Proof.
+    intros. generalize (graph_path_tri_in _ _ _ _ H). intros. repeat intro. specialize (H0 a H1). destruct_sepcon H0 i.
+    hnf in H2. destruct (gamma bi y) as [dl r] in H2. destruct dl as [d l]. destruct_sepcon H2 j. destruct_sepcon H4 k.
+    try_join k2 j2 k2j2. try_join k2j2 i2 k2j2i2. exists d, k1, k2j2i2. split; auto.
   Qed.
 
   Lemma graph_reachable_in: forall x y, reachable pg x y -> graph x |-- EX v : adr, (mapsto y v * TT).
@@ -669,5 +665,20 @@ Section SpatialGraph.
     apply (H7 x y); auto. apply in_eq. rewrite Heqs in e at 2; simpl in e.
     apply (sublist_reverse eq_nat_dec (extractReach w s) l Hn e Hs y Hy).
   Qed.
+
+  Lemma graph_sepcon:
+    forall w x, graph x w -> exists (l : list adr),
+                               NoDup l /\
+                               (forall y, (In y l -> reachable pg x y) /\ (~ In y l -> ~ reachable pg x y)) /\
+                               iter_sepcon l graph_maps w.
+  Proof.
+    intros. destruct (graph_reachable_finite x w H) as [l [? ?]]. exists l. split. auto. split. auto.
+    induction l. simpl. rewrite graph_unfold in H. destruct H. destruct H. auto. destruct H as [dd [ll [rr ?]]].
+    destruct_ocon H h. destruct_ocon H4 h. destruct H8 as [[? ?] ?]. destruct (H1 x).
+    assert (~ In x nil) by apply in_nil. specialize (H13 H14). clear H14. assert (reachable pg x x).
+    apply reachable_by_reflexive. split; auto. hnf. auto. exfalso; apply H13. apply H14. simpl.
+    admit.
+  Qed.
+
 
 End SpatialGraph.

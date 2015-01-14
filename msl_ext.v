@@ -102,6 +102,12 @@ Proof.
   rewrite H10 in *; equate_join w1 w2; auto.
 Qed.
 
+Fixpoint iter_sepcon {A : Type} {JA : Join A} {B : Type} (l : list B) (p : B -> pred A) : pred A :=
+  match l with
+    | nil => emp
+    | x :: xl => (p x * iter_sepcon xl p)%pred
+  end.
+
 (* Program Definition mprecise {A} {JA: Join A}{AG: ageable A} (P: pred A) : pred A := *)
 (*   fun w => forall w' w1 w2, necR w w' -> P w1 -> P w2 -> join_sub w1 w' -> join_sub w2 w' -> w1 = w2. *)
 (* Next Obligation. *)
