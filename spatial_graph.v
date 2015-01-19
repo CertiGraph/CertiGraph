@@ -17,14 +17,13 @@ Definition trinode x d l r :=
   (mapsto x d) * (mapsto (x+1) l) * (mapsto (x+2) r).
 
 Section SpatialGraph.
-  Variable VV : Valid nat.
-  Definition GV : Valid nat := fun x => VV x /\ x <> 0.
-  Variable pg : @PreGraph nat nat natEqDec GV.
+
+  Variable pg : @PreGraph nat nat natEqDec.
   Variable bi : BiGraph pg.
 
-  Definition nodesFrom (x : adr) : list adr := @edge_func adr adr natEqDec GV pg x.
+  Axiom valid_not_zero: forall x, @valid nat nat natEqDec pg x -> x <> 0.
 
-  Definition gValid (x : adr) : Prop := @valid nat natEqDec GV x.
+  Definition gValid (x : adr) : Prop := @valid nat nat natEqDec pg x.
 
   Definition graph_fun (Q: adr -> pred world) (x: adr) :=
     (!!(x = 0) && emp) ||
@@ -127,12 +126,14 @@ Section SpatialGraph.
   Proof.
     induction p; intros; destruct H as [[? ?] [? ?]]. inversion H. simpl in H; inversion H; subst. clear H. destruct p.
     simpl in H0; inversion H0; subst; clear H0. repeat intro. rewrite graph_unfold in H. destruct H as [[? ?] | ?].
-    hnf in H; destruct H1; intuition. destruct H as [d [l [r ?]]]. destruct_ocon H h. destruct_ocon H4 i. destruct H8.
-    destruct H8. try_join i3 h3 i3h3. exists i12, i3h3. split; auto. split; auto. hnf. destruct (gamma bi y) as [dl rr].
+    hnf in H; apply valid_not_zero in H1; intuition. destruct H as [d [l [r ?]]]. destruct_ocon H h. destruct_ocon H4 i.
+    destruct H8 as [[? ?] ?]. try_join i3 h3 i3h3. exists i12, i3h3. split; auto. split; auto. hnf.
+    destruct (gamma bi y) as [dl rr].
     destruct dl as [dd ll]. inversion H8; auto. assert (pg |= n :: p is n ~o~> y satisfying P).
     split; [split; [simpl; auto | auto] | split; [destruct H1; auto | repeat intro; apply H2; apply in_cons; auto]].
 
-    repeat intro. rewrite graph_unfold in H3. destruct H3 as [[? ?] | [d [l [r ?]]]]. hnf in H3. destruct H1 as [[[? ?] ?] ?].
+    repeat intro. rewrite graph_unfold in H3. destruct H3 as [[? ?] | [d [l [r ?]]]]. hnf in H3. destruct H1 as [[? ?] ?].
+    apply valid_not_zero in H1.
     intuition. destruct_ocon H3 h. destruct_ocon H6 i. destruct H10 as [[? ?] ?]. unfold gamma in H10. destruct_sepcon H13 j.
     destruct_sepcon H14 k. destruct H1 as [[? [? ?]] ?]. revert H10. case_eq (biEdge bi x); intros. inversion H21; subst.
     generalize (biEdge_only2 bi _ _ _ _ H10 H19); intros. destruct H22; subst. specialize (IHp _ _ _ H _ H11).
@@ -167,7 +168,7 @@ Section SpatialGraph.
       exists h1, h2; split; auto. clear H. remember (gamma bi x). destruct p as [[d l] r]. exists l, r.
       destruct_sepcon S h. destruct H0 as [dd [ll [rr ?]]]. destruct_ocon H0 i. destruct_ocon H4 j.
       destruct H8 as [[? ?] ?]. injection H8; intros; subst; clear H8. unfold gamma in Heqp. destruct (biEdge bi x).
-      injection Heqp; intros; subst; clear Heqp. repeat split; auto. destruct H10. auto. try_join j2 j3 j23'.
+      injection Heqp; intros; subst; clear Heqp. repeat split; auto. apply valid_not_zero in H10. try_join j2 j3 j23'.
       equate_join j23 j23'. try_join j1 i3 j1i3. try_join j1i3 h2 j1i3h2. exists j23, j1i3h2. repeat split; auto.
       try_join i2 i3 i23'; equate_join i23 i23'. try_join i1 h2 i1h2. exists i23, i1h2. repeat split; auto.
     Defined.
@@ -420,7 +421,7 @@ Section SpatialGraph.
       subst; apply H0; auto. destruct (le_dec len (length rslt)). subst; apply H0; auto.
       destruct s as [t Ht]; simpl in *. destruct (explode t w Ht). remember (twoSubTrees t w s) as subT.
       destruct s as [l [r [? [? [Gl Gr]]]]]. simpl in HeqsubT. assert (reachable pg x t) as HRt.
-      destruct (Forall_inv H1); auto. destruct g; exfalso; auto. rewrite H3; apply IHn; simpl.
+      destruct (Forall_inv H1); auto. apply valid_not_zero in g; exfalso; auto. rewrite H3; apply IHn; simpl.
       apply le_trans with (len + (len + 0) + length pr + length (removeTree w t subT) - S (length rslt + S (length rslt + 0))).
       generalize (remove_list_len_le w rslt pr (removeTree w t subT)); intros. omega.
       generalize (remove_tree_len_le w t subT); intros. rewrite HeqsubT in H2 at 2. simpl in H2. omega.
@@ -436,14 +437,14 @@ Section SpatialGraph.
       destruct H3 as [[? ?] | [dd [ll [rr ?]]]]; [right; auto| left]. destruct_ocon H3 h. destruct_ocon H6 j.
       destruct H10 as [[? ?] ?]. apply reachable_by_merge with t. auto. exists (t :: y :: nil). hnf.
       split; split; simpl; auto. split. unfold biEdge in e. split. apply reachable_foot_valid in HRt. auto. split.
-      apply H12. destruct (@only_two_neighbours nat nat natEqDec GV pg bi t) as [v1 [v2 HHH]]. inversion e; subst; clear e.
+      apply H12. destruct (@only_two_neighbours nat nat natEqDec pg bi t) as [v1 [v2 HHH]]. inversion e; subst; clear e.
       rewrite HHH. apply in_eq. auto. repeat intro. hnf. auto. clear H2.
 
       destruct (in_inv H4). subst. destruct Gr as [wr [_ [_ [? _]]]]. rewrite graph_unfold in H2.
       destruct H2 as [[? ?] | [dd [ll [rr ?]]]]; [right; auto| left]. destruct_ocon H2 h. destruct_ocon H6 j.
       destruct H10 as [[? ?] ?]. apply reachable_by_merge with t. auto. exists (t :: y :: nil). hnf.
       split; split; simpl; auto. split. unfold biEdge in e. split. apply reachable_foot_valid in HRt. auto. split.
-      apply H12. destruct (@only_two_neighbours nat nat natEqDec GV pg bi t) as [v1 [v2 HHH]]. inversion e; subst; clear e.
+      apply H12. destruct (@only_two_neighbours nat nat natEqDec pg bi t) as [v1 [v2 HHH]]. inversion e; subst; clear e.
       rewrite HHH. apply in_cons, in_eq. auto. repeat intro. hnf. auto. inversion H2.
 
       rewrite H3; apply IHn; simpl; clear IHn H3 result; auto. omega. rewrite Forall_forall in H1. rewrite Forall_forall.
@@ -490,7 +491,8 @@ Section SpatialGraph.
       generalize (remove_list_len_le w rslt pr (removeTree w t (twoSubTrees t w s))); intro;
       generalize (remove_tree_len_le w t (twoSubTrees t w s)); intro; omega.
       destruct s as [leftT [rightT [? [? [? ?]]]]]; simpl; omega. constructor. clear H3.
-      destruct s as [leftT [rightT [? [? [? ?]]]]]. destruct H2. destruct_sepcon Ht w. rewrite graph_unfold in H7.
+      destruct s as [leftT [rightT [? [? [? ?]]]]]. generalize (valid_not_zero _ H2); intro. destruct_sepcon Ht w.
+      rewrite graph_unfold in H7.
       destruct H7 as [[? ?] | [dd [ll [rr ?]]]]. exfalso; intuition. destruct_ocon H7 h. destruct_ocon H11 j.
       destruct H15. destruct_sepcon H17 k. destruct_sepcon H18 l. destruct H20 as [? [? ?]].
       apply lookup_fpm_join_sub with l1. try_join l2 k2 l2k2. try_join l2k2 j3 l2k2j3. try_join l2k2j3 h3 l2k2j3h3.
@@ -600,17 +602,17 @@ Section SpatialGraph.
       intros. remember (findNotIn p (a :: rslt) nil) as f. destruct f as [n [l1 l2]]. destruct n. right.
       apply eq_sym in Heqf. destruct (find_not_in_some _ _ _ _ _ Heqf) as [? [? [? ?]]]. exists l1, (a0 :: l2).
       rewrite Forall_forall in H0. destruct l1. rewrite app_nil_l in H1.
-      generalize (reachable_by_path_head _ _ _ _ _ _ _ _ _ H); intro. rewrite H1 in *. simpl in H4. inversion H4.
+      generalize (reachable_by_path_head _ _ _ _ _ _ _ _ H); intro. rewrite H1 in *. simpl in H4. inversion H4.
       rewrite H6 in *. exfalso; apply H3; apply in_eq.
-      generalize (reachable_by_path_head _ _ _ _ _ _ _ _ _ H); intro.
+      generalize (reachable_by_path_head _ _ _ _ _ _ _ _ H); intro.
       rewrite <- app_comm_cons in H1. rewrite H1 in H4. simpl in H4. inversion H4. rewrite H6 in *. clear H4 H6 a1.
       remember (foot (a :: l1)). destruct o. exists n, a0. split. rewrite Forall_forall; auto.
       assert (paths_meet_at adr (a :: l1) (n :: a0 :: l2) n) by (repeat split; auto).
       assert (pg |= path_glue adr (a :: l1) (n :: a0 :: l2) is a ~o~> b satisfying P). unfold path_glue. simpl.
-      rewrite <- H1. auto. destruct (reachable_by_path_split_glue _ _ _ _ _ _ _ _ _ _ _ H4 H5). clear H4 H5. split; auto.
+      rewrite <- H1. auto. destruct (reachable_by_path_split_glue _ _ _ _ _ _ _ _ _ _ H4 H5). clear H4 H5. split; auto.
       assert (paths_meet_at adr (n :: a0 :: nil) (a0 :: l2) a0) by repeat split.
       assert (pg |= path_glue adr (n :: a0 :: nil) (a0 :: l2) is n ~o~> b satisfying P). unfold path_glue. simpl. auto.
-      destruct (reachable_by_path_split_glue _ _ _ _ _ _ _ _ _ _ _ H4 H5). clear H4 H5 H6 H7. split; auto.
+      destruct (reachable_by_path_split_glue _ _ _ _ _ _ _ _ _ _ H4 H5). clear H4 H5 H6 H7. split; auto.
       split. destruct H8. destruct H5. destruct H5. auto. split. auto. split; simpl; auto.
       apply eq_sym in Heqo. generalize (foot_none_nil (a :: l1) Heqo); intros. inversion H4.
       assert (fst (findNotIn p (a :: rslt) nil) = None) by (rewrite <- Heqf; simpl; auto). left.
@@ -637,7 +639,7 @@ Section SpatialGraph.
       left; auto. right. remember (twoSubTrees t w s) as subT. apply neg_eq_in_neq_nin in n1. destruct n1.
       apply in_inv in H2. destruct H2. rewrite <- H2 in *. clear H2.
       destruct H4 as [? [? ?]]. destruct s as [lT [rT [? [? [? ?]]]]]. simpl in *. unfold biEdge in e.
-      destruct (@only_two_neighbours nat nat natEqDec GV pg bi t) as [v1 [v2 HHH]]. inversion e. rewrite H9 in *.
+      destruct (@only_two_neighbours nat nat natEqDec pg bi t) as [v1 [v2 HHH]]. inversion e. rewrite H9 in *.
       rewrite H10 in *. clear H9 H10 v1 v2. rewrite HHH in H7.
       assert (In y (map (fetch w) subT)) by (rewrite HeqsubT; simpl in *; apply H7). apply remove_list_in; auto.
       specialize (H0 x y H2 H4). destruct H0. exfalso; apply H6; auto. apply in_inv in H0. destruct H0. exfalso.
@@ -649,7 +651,7 @@ Section SpatialGraph.
       destruct e as [l1 [l2 [e1 [s1 [? [? [? [? [? [? ?]]]]]]]]]]. rewrite Forall_forall in H5.
       destruct (eq_nat_dec e1 t). rewrite e in *; clear e e1. destruct H8 as [? [? ?]]. remember (twoSubTrees t w s) as subT.
       destruct s as [lT [rT [? [? [? ?]]]]]. simpl in *. unfold biEdge in e.
-      destruct (@only_two_neighbours nat nat natEqDec GV pg bi t) as [v1 [v2 HHH]]. inversion e. rewrite H15 in *.
+      destruct (@only_two_neighbours nat nat natEqDec pg bi t) as [v1 [v2 HHH]]. inversion e. rewrite H15 in *.
       rewrite H16 in *. clear H15 H16 v1 v2. rewrite HHH in H13. assert (In s1 (map (fetch w) subT)). rewrite HeqsubT.
       simpl map. auto. apply (H2 s1 y). apply neg_eq_in_neq_nin in H9. destruct H9. apply remove_list_in; auto.
       exists l2. auto. apply reachable_by_path_foot in H6. apply foot_in in H6. specialize (H5 e1 H6). apply in_inv in H5.
@@ -658,9 +660,9 @@ Section SpatialGraph.
       auto. exists l2. auto.
       apply PIR_sublist with (map (fetch w) (appRemoveList w pr (removeTree w t (twoSubTrees t w s)) rslt)); auto.
       intro y; intros. apply remove_list_in_2; auto. apply PIR_cons. intros. apply reachable_is_valid in H2.
-      destruct H2. omega. rewrite H3. specialize (IHn (len, pr, rslt)). simpl in IHn. apply IHn. omega.
+      apply valid_not_zero in H2. omega. rewrite H3. specialize (IHn (len, pr, rslt)). simpl in IHn. apply IHn. omega.
       repeat intro. specialize (H0 x y H2 H4). destruct H0; [left | right]. auto. apply in_inv in H0. destruct H0.
-      subst. destruct H4 as [? [? ?]]. destruct H3. omega. auto. rewrite H3 in H1. auto.
+      subst. destruct H4 as [? [? ?]]. apply valid_not_zero in H3. omega. auto. rewrite H3 in H1. auto.
     Qed.
     
   End ConstructReachable.
