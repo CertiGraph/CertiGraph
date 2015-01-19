@@ -93,6 +93,36 @@ Section SpatialGraph.
 
   Definition graph_maps (v : adr) : pred world := let (dl, r) := gamma bi v in let (d, l) := dl in trinode v d l r.
 
+  Lemma precise_graph_maps: forall v, precise (graph_maps v).
+  Proof.
+    intro. unfold graph_maps. destruct (gamma bi v) as [dl r]. destruct dl as [d l]. unfold trinode. apply precise_sepcon.
+    apply precise_mapsto. apply precise_sepcon; apply precise_mapsto.
+  Qed.
+
+  Lemma diff_mapsto_same_world:
+    forall w x y a b, x <> y -> (mapsto x a * TT)%pred w -> (mapsto y b * TT)%pred w -> (mapsto x a * mapsto y b * TT)%pred w.
+  Proof.
+    intros. destruct H0 as [p [q [? [? ?]]]]. generalize H2; intro Hmap1. destruct p as [fp xp] eqn:? .
+    destruct H1 as [m [n [? [? ?]]]]. generalize H4; intro Hmap2. destruct m as [fm xm] eqn:? .  hnf in H2. simpl in H2.
+    hnf in H4. simpl in H4. destruct H2 as [? [? ?]]. destruct H4 as [? [? ?]].
+    remember (fun xx : adr => if eq_nat_dec xx x then Some a else (if eq_nat_dec xx y then Some b else None)) as f.
+    assert (finMap f). exists (x :: y :: nil). intro z. intros. rewrite Heqf. destruct (eq_nat_dec z x). rewrite e in *.
+    exfalso. apply H10. apply in_eq. destruct (eq_nat_dec z y). rewrite e in *. exfalso. apply H10. apply in_cons. apply in_eq.
+    trivial. remember (exist (finMap (B:=adr)) f H10) as ff. assert (join p m ff). rewrite Heqw0, Heqw1, Heqff.
+    hnf; simpl. intro z. destruct (eq_nat_dec z x). rewrite e in *.  rewrite H7.
+    generalize (H8 x H); intro HS. rewrite HS. rewrite Heqf. destruct (eq_nat_dec x x).
+    apply lower_None2. exfalso; auto. destruct (eq_nat_dec z y). rewrite e in *. rewrite H9.
+    generalize (H6 y n0); intro HS. rewrite HS. rewrite Heqf. destruct (eq_nat_dec y x). intuition.
+    destruct (eq_nat_dec y y). apply lower_None1. intuition. specialize (H6 z n0). specialize (H8 z n1). rewrite H6, H8.
+    rewrite Heqf. destruct (eq_nat_dec z x). intuition. destruct (eq_nat_dec z y). intuition. apply lower_None1.
+    rewrite <- Heqw0 in *. rewrite <- Heqw1 in *. destruct_cross w. try_join pm m pmm. try_join pm pm pmpm.
+    apply join_self in H18. rewrite <- H18 in *; clear H18. apply join_comm in H16.
+    generalize (join_canc H19 H16); intro. rewrite H18 in *; clear H18. equate_join m pmm. clear H19.
+    apply unit_identity in H14. apply (join_unit1_e pn p H14) in H12. rewrite H12 in *; clear H14 H12 H17 pmpm.
+    try_join p m ff'. equate_join ff ff'. apply join_comm in H14. exists ff, qn. split; auto. split; auto.
+    exists p, m. split; auto.
+  Qed.
+
   Lemma graph_path_tri_in: forall p x y P, pg |= p is x ~o~> y satisfying P -> graph x |-- graph_maps y * TT.
   Proof.
     induction p; intros; destruct H as [[? ?] [? ?]]. inversion H. simpl in H; inversion H; subst. clear H. destruct p.

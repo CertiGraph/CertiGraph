@@ -108,6 +108,33 @@ Fixpoint iter_sepcon {A : Type} {JA : Join A} {B : Type} (l : list B) (p : B -> 
     | x :: xl => (p x * iter_sepcon xl p)%pred
   end.
 
+Definition joinable {A : Type} {JA : Join A} {B : Type} (p : B -> pred A) (w : A) :=
+  forall (x y : B), x <> y -> (p x * TT)%pred w -> (p y * TT)%pred w -> (p x * p y * TT)%pred w.
+
+(* Lemma iter_sepcon_joinable {A : Type} {JA : Join A} {PA : Perm_alg A} {SA: Sep_alg A} {CA : Canc_alg A} {B : Type}: *)
+(*   forall (p : B -> pred A) (l : list B) (w : A) (x : B), *)
+(*     joinable p w -> (~ In x l) -> (p x * TT)%pred w -> (iter_sepcon l p * TT)%pred w -> (p x * iter_sepcon l p * TT)%pred w. *)
+(* Proof. *)
+(*   intros; induction l. simpl. rewrite sepcon_emp. auto. assert (x <> a). intro. apply H0. rewrite H3. apply in_eq. *)
+(*   assert (~ In x l). intro; apply H0. apply in_cons. auto. specialize (IHl H4). simpl in H2. destruct H2 as [w1 [w2 [? [? ?]]]]. *)
+(*   destruct H5 as [w3 [w4 [? [? ?]]]]. assert ((p a * TT)%pred w). try_join w4 w2 w24. exists w3, w24. split; auto. *)
+(*   assert ((iter_sepcon l p * TT)%pred w). try_join w3 w2 w23. exists w4, w23; split; auto. specialize (IHl H10). *)
+(*   simpl. *)
+
+(*   admit. *)
+(* Qed. *)
+
+(* Lemma join_iter {A : Type} {JA : Join A} {PA : Perm_alg A} {SA: Sep_alg A} {CA : Canc_alg A} {B : Type}: *)
+(*   forall (w : A) (p : B -> pred A) (l : list B), NoDup l -> (forall y, In y l -> (p y * TT)%pred w) -> joinable p w -> *)
+(*                                                  (iter_sepcon l p * TT)%pred w. *)
+(* Proof. *)
+(*   induction l; intros. simpl. rewrite sepcon_comm, sepcon_emp. auto. simpl. assert (In a (a :: l)) by apply in_eq. *)
+(*   generalize (H0 a H2); clear H2; intro. destruct H2 as [w1 [r1 [? [? ?]]]]. rewrite <- app_nil_l in H. *)
+(*   assert (NoDup l). apply NoDup_remove_1 in H. rewrite app_nil_l in H. auto. assert (forall y : B, In y l -> (p y * TT)%pred w). *)
+(*   intros. apply H0. apply in_cons. auto. specialize (IHl H5 H6 H1). apply iter_sepcon_joinable; auto. apply NoDup_remove_2 in H. *)
+(*   rewrite app_nil_l in H. auto. apply H0. apply in_eq. *)
+(* Qed. *)
+
 (* Program Definition mprecise {A} {JA: Join A}{AG: ageable A} (P: pred A) : pred A := *)
 (*   fun w => forall w' w1 w2, necR w w' -> P w1 -> P w2 -> join_sub w1 w' -> join_sub w2 w' -> w1 = w2. *)
 (* Next Obligation. *)
