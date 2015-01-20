@@ -108,32 +108,48 @@ Fixpoint iter_sepcon {A : Type} {JA : Join A} {B : Type} (l : list B) (p : B -> 
     | x :: xl => (p x * iter_sepcon xl p)%pred
   end.
 
+Lemma iter_sepcon_precise {A : Type} {JA : Join A} {PA : Perm_alg A} {SA: Sep_alg A} {CA : Canc_alg A} {B : Type}:
+  forall (p : B -> pred A), (forall z, precise (p z)) -> forall (l : list B), precise (iter_sepcon l p).
+Proof. intros; induction l; simpl. apply precise_emp. apply precise_sepcon; auto. Qed.
+
 Definition joinable {A : Type} {JA : Join A} {B : Type} (p : B -> pred A) (w : A) :=
   forall (x y : B), x <> y -> (p x * TT)%pred w -> (p y * TT)%pred w -> (p x * p y * TT)%pred w.
 
-(* Lemma iter_sepcon_joinable {A : Type} {JA : Join A} {PA : Perm_alg A} {SA: Sep_alg A} {CA : Canc_alg A} {B : Type}: *)
-(*   forall (p : B -> pred A) (l : list B) (w : A) (x : B), *)
-(*     joinable p w -> (~ In x l) -> (p x * TT)%pred w -> (iter_sepcon l p * TT)%pred w -> (p x * iter_sepcon l p * TT)%pred w. *)
-(* Proof. *)
-(*   intros; induction l. simpl. rewrite sepcon_emp. auto. assert (x <> a). intro. apply H0. rewrite H3. apply in_eq. *)
-(*   assert (~ In x l). intro; apply H0. apply in_cons. auto. specialize (IHl H4). simpl in H2. destruct H2 as [w1 [w2 [? [? ?]]]]. *)
-(*   destruct H5 as [w3 [w4 [? [? ?]]]]. assert ((p a * TT)%pred w). try_join w4 w2 w24. exists w3, w24. split; auto. *)
-(*   assert ((iter_sepcon l p * TT)%pred w). try_join w3 w2 w23. exists w4, w23; split; auto. specialize (IHl H10). *)
-(*   simpl. *)
+Lemma iter_sepcon_joinable {A : Type} {JA : Join A} {PA : Perm_alg A} {SA: Sep_alg A} {CA : Canc_alg A}
+      {C: Cross_alg A} {DA : Disj_alg A} {B : Type}:
+  forall (p : B -> pred A) (l : list B) (w : A) (x : B),
+    joinable p w -> (forall z, precise (p z)) -> (~ In x l) -> (p x * TT)%pred w ->
+    (iter_sepcon l p * TT)%pred w -> (p x * iter_sepcon l p * TT)%pred w.
+Proof.
+  intros; induction l. simpl. rewrite sepcon_emp. auto. assert (x <> a). intro. apply H1. rewrite H4. apply in_eq.
+  assert (~ In x l). intro; apply H1. apply in_cons. auto. specialize (IHl H5). simpl in H3. destruct H3 as [w1 [w2 [? [? ?]]]].
+  destruct H6 as [w3 [w4 [? [? ?]]]]. assert ((p a * TT)%pred w). try_join w4 w2 w24. exists w3, w24. split; auto.
+  assert ((iter_sepcon l p * TT)%pred w). try_join w3 w2 w23. exists w4, w23; split; auto. specialize (IHl H11).
+  simpl. generalize H2; intro. destruct_sepcon H2 w. destruct_sepcon IHl w. destruct_sepcon H16 w. try_join w7 w9 w79.
+  assertSub w0 w Sub1. assertSub w8 w Sub2. generalize (H0 x w w0 w8 H13 H18 Sub1 Sub2); intro. clear Sub1 Sub2. subst.
+  clear H13. equate_canc w5 w79. specialize (H x a H4 H12 H10). specialize (iter_sepcon_precise p H0 l); intro.
+  assertSub w4 w Sub1. assertSub w9 w Sub2. specialize (H13 w w4 w9 H9 H19 Sub1 Sub2). clear Sub1 Sub2. subst. clear H9.
+  destruct_sepcon H w. destruct_sepcon H9 w. assertSub w10 w Sub1. assertSub w8 w Sub2.
+  generalize (H0 x w w10 w8 H21 H18 Sub1 Sub2); intro; subst. clear Sub1 Sub2. assertSub w11 w Sub1. assertSub w3 w Sub2.
+  generalize (H0 a w w11 w3 H22 H8 Sub1 Sub2); intro; subst. clear Sub1 Sub2 H21 H22. try_join w3 w4 w34. equate_canc w5 w34.
+  destruct_cross w5. try_join w9w3 w3 w9w3w3. try_join w9w3 w9w3 ww. apply join_self in H28. rewrite H28 in *; clear H28.
+  apply join_comm in H26. generalize (join_canc H29 H26); intro. rewrite H28 in *. clear H28.
+  equate_join w3 w9w3w3. apply unit_identity in H24. apply (join_unit1_e w9w4 w9 H24) in H22. rewrite H22 in *; clear H22.
+  try_join_through w7 w3 w9 w39. try_join w8 w39 w839. apply join_comm in H30. exists w839, w7w4. split; auto.
+  split; auto. apply join_comm in H28. exists w8, w39. split; auto. split; auto. exists w3, w9. split; auto.
+Qed.
 
-(*   admit. *)
-(* Qed. *)
-
-(* Lemma join_iter {A : Type} {JA : Join A} {PA : Perm_alg A} {SA: Sep_alg A} {CA : Canc_alg A} {B : Type}: *)
-(*   forall (w : A) (p : B -> pred A) (l : list B), NoDup l -> (forall y, In y l -> (p y * TT)%pred w) -> joinable p w -> *)
-(*                                                  (iter_sepcon l p * TT)%pred w. *)
-(* Proof. *)
-(*   induction l; intros. simpl. rewrite sepcon_comm, sepcon_emp. auto. simpl. assert (In a (a :: l)) by apply in_eq. *)
-(*   generalize (H0 a H2); clear H2; intro. destruct H2 as [w1 [r1 [? [? ?]]]]. rewrite <- app_nil_l in H. *)
-(*   assert (NoDup l). apply NoDup_remove_1 in H. rewrite app_nil_l in H. auto. assert (forall y : B, In y l -> (p y * TT)%pred w). *)
-(*   intros. apply H0. apply in_cons. auto. specialize (IHl H5 H6 H1). apply iter_sepcon_joinable; auto. apply NoDup_remove_2 in H. *)
-(*   rewrite app_nil_l in H. auto. apply H0. apply in_eq. *)
-(* Qed. *)
+Lemma join_iter {A : Type} {JA : Join A} {PA : Perm_alg A} {SA: Sep_alg A} {CA : Canc_alg A}
+      {C: Cross_alg A} {DA : Disj_alg A} {B : Type}:
+  forall (w : A) (p : B -> pred A) (l : list B), NoDup l -> (forall y, In y l -> (p y * TT)%pred w) -> joinable p w ->
+                                                 (forall z, precise (p z)) -> (iter_sepcon l p * TT)%pred w.
+Proof.
+  induction l; intros. simpl. rewrite sepcon_comm, sepcon_emp. auto. simpl. assert (In a (a :: l)) by apply in_eq.
+  generalize (H0 a H3); clear H3; intro. destruct H3 as [w1 [r1 [? [? ?]]]]. rewrite <- app_nil_l in H.
+  assert (NoDup l). apply NoDup_remove_1 in H. rewrite app_nil_l in H. auto. assert (forall y : B, In y l -> (p y * TT)%pred w).
+  intros. apply H0. apply in_cons. auto. specialize (IHl H6 H7 H1). apply iter_sepcon_joinable; auto. apply NoDup_remove_2 in H.
+  rewrite app_nil_l in H. auto. apply H0. apply in_eq.
+Qed.
 
 (* Program Definition mprecise {A} {JA: Join A}{AG: ageable A} (P: pred A) : pred A := *)
 (*   fun w => forall w' w1 w2, necR w w' -> P w1 -> P w2 -> join_sub w1 w' -> join_sub w2 w' -> w1 = w2. *)
