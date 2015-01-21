@@ -13,8 +13,7 @@ Local Open Scope pred.
 
 Instance natEqDec : EqDec nat := { t_eq_dec := eq_nat_dec }.
 
-Definition trinode x d l r :=
-  (mapsto x d) * (mapsto (x+1) l) * (mapsto (x+2) r).
+Definition trinode x d l r := !!(3 | x) && (mapsto x d) * (mapsto (x+1) l) * (mapsto (x+2) r).
 
 Section SpatialGraph.
 
@@ -95,10 +94,10 @@ Section SpatialGraph.
   Lemma precise_graph_maps: forall v, precise (graph_maps v).
   Proof.
     intro. unfold graph_maps. destruct (gamma bi v) as [dl r]. destruct dl as [d l]. unfold trinode. apply precise_sepcon.
-    apply precise_mapsto. apply precise_sepcon; apply precise_mapsto.
+    apply precise_mapsto. apply precise_sepcon. apply precise_mapsto. apply precise_andp_right. apply precise_mapsto.
   Qed.
 
-  Lemma diff_mapsto_same_world:
+  Lemma joinable_mapsto:
     forall w x y a b, x <> y -> (mapsto x a * TT)%pred w -> (mapsto y b * TT)%pred w -> (mapsto x a * mapsto y b * TT)%pred w.
   Proof.
     intros. destruct H0 as [p [q [? [? ?]]]]. generalize H2; intro Hmap1. destruct p as [fp xp] eqn:? .
@@ -108,18 +107,22 @@ Section SpatialGraph.
     assert (finMap f). exists (x :: y :: nil). intro z. intros. rewrite Heqf. destruct (eq_nat_dec z x). rewrite e in *.
     exfalso. apply H10. apply in_eq. destruct (eq_nat_dec z y). rewrite e in *. exfalso. apply H10. apply in_cons. apply in_eq.
     trivial. remember (exist (finMap (B:=adr)) f H10) as ff. assert (join p m ff). rewrite Heqw0, Heqw1, Heqff.
-    hnf; simpl. intro z. destruct (eq_nat_dec z x). rewrite e in *.  rewrite H7.
-    generalize (H8 x H); intro HS. rewrite HS. rewrite Heqf. destruct (eq_nat_dec x x).
-    apply lower_None2. exfalso; auto. destruct (eq_nat_dec z y). rewrite e in *. rewrite H9.
-    generalize (H6 y n0); intro HS. rewrite HS. rewrite Heqf. destruct (eq_nat_dec y x). intuition.
+    hnf; simpl. intro z. destruct (eq_nat_dec z x). rewrite e in *. rewrite H7. generalize (H8 x H); intro HS. rewrite HS.
+    rewrite Heqf. destruct (eq_nat_dec x x). apply lower_None2. exfalso; auto. destruct (eq_nat_dec z y). rewrite e in *.
+    rewrite H9. generalize (H6 y n0); intro HS. rewrite HS. rewrite Heqf. destruct (eq_nat_dec y x). intuition.
     destruct (eq_nat_dec y y). apply lower_None1. intuition. specialize (H6 z n0). specialize (H8 z n1). rewrite H6, H8.
     rewrite Heqf. destruct (eq_nat_dec z x). intuition. destruct (eq_nat_dec z y). intuition. apply lower_None1.
-    rewrite <- Heqw0 in *. rewrite <- Heqw1 in *. destruct_cross w. try_join pm m pmm. try_join pm pm pmpm.
-    apply join_self in H18. rewrite <- H18 in *; clear H18. apply join_comm in H16.
-    generalize (join_canc H19 H16); intro. rewrite H18 in *; clear H18. equate_join m pmm. clear H19.
-    apply unit_identity in H14. apply (join_unit1_e pn p H14) in H12. rewrite H12 in *; clear H14 H12 H17 pmpm.
-    try_join p m ff'. equate_join ff ff'. apply join_comm in H14. exists ff, qn. split; auto. split; auto.
-    exists p, m. split; auto.
+    rewrite <- Heqw0 in *. rewrite <- Heqw1 in *. destruct (join_together H0 H1 H11) as [qn ?]. exists ff, qn.
+    repeat split; auto. exists p, m. split; auto.
+  Qed.
+
+  Lemma joinable_graph_maps: forall w, joinable graph_maps w.
+  Proof.
+    repeat intro. destruct_sepcon H0 p. destruct_sepcon H1 q. unfold graph_maps in *. destruct (gamma bi x) as [[dx lx] rx].
+    destruct (gamma bi y) as [[dy ly] ry]. unfold trinode in *. destruct_sepcon H2 h. destruct_sepcon H4 i.
+    destruct_sepcon H6 h. destruct H10. destruct_sepcon H8 i. destruct H13. hnf in H10, H13. assert (x + 2 <> y + 2). intro.
+    apply H. rewrite Nat.add_cancel_r in H16. auto. assertSub h2 w Sub1. assertSub i2 w Sub2.
+    admit.
   Qed.
 
   Lemma graph_path_tri_in: forall p x y P, pg |= p is x ~o~> y satisfying P -> graph x |-- graph_maps y * TT.
@@ -149,7 +152,7 @@ Section SpatialGraph.
   Proof.
     intros. generalize (graph_path_tri_in _ _ _ _ H). intros. repeat intro. specialize (H0 a H1). destruct_sepcon H0 i.
     hnf in H2. destruct (gamma bi y) as [dl r] in H2. destruct dl as [d l]. destruct_sepcon H2 j. destruct_sepcon H4 k.
-    try_join k2 j2 k2j2. try_join k2j2 i2 k2j2i2. exists d, k1, k2j2i2. split; auto.
+    destruct H6. try_join k2 j2 k2j2. try_join k2j2 i2 k2j2i2. exists d, k1, k2j2i2. split; auto.
   Qed.
 
   Lemma graph_reachable_in: forall x y, reachable pg x y -> graph x |-- EX v : adr, (mapsto y v * TT).
@@ -494,7 +497,7 @@ Section SpatialGraph.
       destruct s as [leftT [rightT [? [? [? ?]]]]]. generalize (valid_not_zero _ H2); intro. destruct_sepcon Ht w.
       rewrite graph_unfold in H7.
       destruct H7 as [[? ?] | [dd [ll [rr ?]]]]. exfalso; intuition. destruct_ocon H7 h. destruct_ocon H11 j.
-      destruct H15. destruct_sepcon H17 k. destruct_sepcon H18 l. destruct H20 as [? [? ?]].
+      destruct H15. destruct_sepcon H17 k. destruct_sepcon H18 l. destruct H20 as [Hd [? [? ?]]].
       apply lookup_fpm_join_sub with l1. try_join l2 k2 l2k2. try_join l2k2 j3 l2k2j3. try_join l2k2j3 h3 l2k2j3h3.
       try_join l2k2j3h3 w2 l2k2j3h3w2. exists l2k2j3h3w2. auto. rewrite H23. intro S; inversion S. auto.
       rewrite H3. apply IHn. omega. auto.

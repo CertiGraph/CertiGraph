@@ -102,6 +102,17 @@ Proof.
   rewrite H10 in *; equate_join w1 w2; auto.
 Qed.
 
+Lemma join_together {A} {JA : Join A} {PA : Perm_alg A} {SA: Sep_alg A} 
+      {CaA : Canc_alg A} {CrA : Cross_alg A} {DA : Disj_alg A}:
+  forall p q m n w i, join p q w -> join m n w -> join p m i -> exists j, join i j w.
+Proof.
+  intros; destruct_cross w. try_join pm m pmm. try_join pm pm pmpm. apply join_self in H8. subst. apply join_comm in H6.
+  generalize (join_canc H9 H6); intro. subst. equate_join m pmm. apply unit_identity in H4. apply (join_unit1_e pn p H4) in H2.
+  subst. try_join p m i'. equate_join i i'. apply join_comm in H8. exists qn. auto.
+Qed.
+
+Arguments join_together [A] [JA] [PA] [SA] [CaA] [CrA] [DA] [p] [q] [m] [n] [w] [i] _ _ _.
+
 Fixpoint iter_sepcon {A : Type} {JA : Join A} {B : Type} (l : list B) (p : B -> pred A) : pred A :=
   match l with
     | nil => emp
@@ -132,11 +143,8 @@ Proof.
   destruct_sepcon H w. destruct_sepcon H9 w. assertSub w10 w Sub1. assertSub w8 w Sub2.
   generalize (H0 x w w10 w8 H21 H18 Sub1 Sub2); intro; subst. clear Sub1 Sub2. assertSub w11 w Sub1. assertSub w3 w Sub2.
   generalize (H0 a w w11 w3 H22 H8 Sub1 Sub2); intro; subst. clear Sub1 Sub2 H21 H22. try_join w3 w4 w34. equate_canc w5 w34.
-  destruct_cross w5. try_join w9w3 w3 w9w3w3. try_join w9w3 w9w3 ww. apply join_self in H28. rewrite H28 in *; clear H28.
-  apply join_comm in H26. generalize (join_canc H29 H26); intro. rewrite H28 in *. clear H28.
-  equate_join w3 w9w3w3. apply unit_identity in H24. apply (join_unit1_e w9w4 w9 H24) in H22. rewrite H22 in *; clear H22.
-  try_join_through w7 w3 w9 w39. try_join w8 w39 w839. apply join_comm in H30. exists w839, w7w4. split; auto.
-  split; auto. apply join_comm in H28. exists w8, w39. split; auto. split; auto. exists w3, w9. split; auto.
+  destruct (join_together H21 H20 H6) as [w10 ?]. try_join w1 w8 w18. apply join_comm in H24. exists w18, w10.
+  repeat split; auto. apply join_comm in H23. exists w8, w1. repeat split; auto. exists w3, w9. repeat split; auto.
 Qed.
 
 Lemma join_iter {A : Type} {JA : Join A} {PA : Perm_alg A} {SA: Sep_alg A} {CA : Canc_alg A}
