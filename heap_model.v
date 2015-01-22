@@ -114,4 +114,11 @@ Proof.
   specialize (H x). inversion H. exfalso; auto. auto. auto.
 Qed.
 
+Lemma mapsto_unique: forall x a b w, ~ (mapsto x a * mapsto x b)%pred w.
+Proof.
+  repeat intro. destruct_sepcon H h. destruct H0 as [? [? ?]]. destruct H1 as [? [? ?]]. destruct h1 as [f1 m1].
+  destruct h2 as [f2 m2]. destruct w as [fw mw]. hnf in *. simpl in *. specialize (H x). rewrite H3 in *. rewrite H5 in *.
+  inversion H. inversion H9.
+Qed.
+
 (* Definition equal (x y: var) : pred world := fun w => fst w x = fst w y. *)

@@ -113,11 +113,37 @@ Qed.
 
 Arguments join_together [A] [JA] [PA] [SA] [CaA] [CrA] [DA] [p] [q] [m] [n] [w] [i] _ _ _.
 
+Definition sepcon_unique {A : Type} {JA : Join A} {B : Type} (p : B -> pred A) : Prop := forall x w, ~ (p x * p x)%pred w.
+
 Fixpoint iter_sepcon {A : Type} {JA : Join A} {B : Type} (l : list B) (p : B -> pred A) : pred A :=
   match l with
     | nil => emp
     | x :: xl => (p x * iter_sepcon xl p)%pred
   end.
+
+Lemma iter_sepcon_app_sepcon {A : Type} {JA : Join A} {B : Type} {PA : Perm_alg A} {SA : Sep_alg A} {CA : Canc_alg A}:
+  forall (l1 l2 : list B) (p : B -> pred A), iter_sepcon (l1 ++ l2) p = (iter_sepcon l1 p * iter_sepcon l2 p)%pred.
+Proof.  
+  induction l1; intros; apply pred_ext; intro w; intros. rewrite app_nil_l in H. simpl. rewrite emp_sepcon. auto.
+  simpl in H. rewrite emp_sepcon in H. rewrite app_nil_l. auto. rewrite <- app_comm_cons in H. simpl in H. destruct_sepcon H h.
+  rewrite (IHl1 l2 p) in H1. destruct_sepcon H1 i. try_join h1 i1 h1i1. apply join_comm in H5. exists h1i1, i2.
+  do 2 (split; auto). apply join_comm in H4. exists h1, i1. split; auto. rewrite <- app_comm_cons. simpl. destruct_sepcon H h.
+  simpl in H0. destruct_sepcon H0 i. try_join i2 h2 i2h2. exists i1, i2h2. do 2 (split; auto). rewrite (IHl1 l2 p).
+  exists i2, h2. split; auto.
+Qed.
+
+Lemma iter_sepcon_app_comm {A : Type} {JA : Join A} {B : Type} {PA : Perm_alg A} {SA : Sep_alg A} {CA : Canc_alg A}:
+  forall (l1 l2 : list B) (p : B -> pred A), iter_sepcon (l1 ++ l2) p = iter_sepcon (l2 ++ l1) p.
+Proof. intros. do 2 rewrite iter_sepcon_app_sepcon. rewrite sepcon_comm. auto. Qed.
+
+Lemma iter_sepcon_unique_nodup {A : Type} {JA : Join A} {PA : Perm_alg A} {SA : Sep_alg A} {CA : Canc_alg A}
+      {B : Type} {p : B -> pred A} {w : A} {l : list B}: sepcon_unique p -> iter_sepcon l p w -> NoDup l.
+Proof.
+  intro. revert w;  induction l; intros. apply NoDup_nil. simpl in H0. destruct_sepcon H0 w. apply NoDup_cons.
+  intro. destruct (in_split a l H3) as [l1 [l2 ?]]. rewrite H4 in H2. rewrite iter_sepcon_app_comm in H2.
+  rewrite <- app_comm_cons in H2. simpl in H2. destruct_sepcon H2 h. try_join w1 h1 w1h1. assert ((p a * p a)%pred w1h1).
+  exists h1, w1; split; auto. apply H in H9. auto. apply (IHl w2); auto.
+Qed.
 
 Lemma iter_sepcon_precise {A : Type} {JA : Join A} {PA : Perm_alg A} {SA: Sep_alg A} {CA : Canc_alg A} {B : Type}:
   forall (p : B -> pred A), (forall z, precise (p z)) -> forall (l : list B), precise (iter_sepcon l p).
