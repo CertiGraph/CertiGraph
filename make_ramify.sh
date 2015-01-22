@@ -6,4 +6,4 @@ coqc overlapping.v
 coqc ramification.v
 coqc heap_model.v
 # coqc dag.v
-coqc spatial_graph.v
+coqc covariant_graph.v
