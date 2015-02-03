@@ -35,20 +35,33 @@ Class PreGraph (Vertex: Type) Data {EV: EqDec Vertex} :=
     edge_func : Vertex -> list Vertex
   }.
 
-Class BiGraph {Vertex Data: Type} {EV: EqDec Vertex} (PG: PreGraph Vertex Data) :=
+Class MathGraph (Vertex : Type) Data (nV : Vertex) {EV: EqDec Vertex} :=
   {
+    m_pg :> PreGraph Vertex Data;
+    valid_graph: forall x, valid x -> forall y, In y (edge_func x) -> y = nV \/ valid y;
+    valid_not_null: forall x, valid x -> x <> nV
+  }.
+
+Class BiGraph (Vertex Data: Type) {EV: EqDec Vertex} :=
+  {
+    b_pg :> PreGraph Vertex Data;
     only_two_neighbours : forall v : Vertex, {v1 : Vertex & {v2 : Vertex | edge_func v = v1 :: v2 :: nil}}
   }.
 
-Definition biEdge {Vertex Data : Type} {EV: EqDec Vertex} {PG: PreGraph Vertex Data}
-           (BG: BiGraph PG) (v: Vertex) : Vertex * Vertex.
+Class BiMathGraph (Vertex Data : Type) (nV : Vertex) {EV: EqDec Vertex} :=
+  {
+    bm_bi :> BiGraph Vertex Data;
+    bm_ma :> MathGraph Vertex Data nV;
+    pg_the_same: m_pg = b_pg      
+  }.
+
+Definition biEdge {Vertex Data : Type} {EV: EqDec Vertex} (BG: BiGraph Vertex Data) (v: Vertex) : Vertex * Vertex.
   specialize (only_two_neighbours v); intro.
   destruct X as [v1 [v2 ?]].
   apply (v1, v2).
 Defined.
 
-Lemma biEdge_only2 {Vertex Data : Type} {EV: EqDec Vertex}
-      {PG: PreGraph Vertex Data} (BG: BiGraph PG) :
+Lemma biEdge_only2 {Vertex Data : Type} {EV: EqDec Vertex} (BG: BiGraph Vertex Data) :
   forall v v1 v2 n, biEdge BG v = (v1 ,v2) -> In n (edge_func v) -> n = v1 \/ n = v2.
 Proof.
   intros; unfold biEdge in H.
@@ -58,8 +71,7 @@ Proof.
   right. apply in_inv in H. destruct H; auto. apply in_nil in H. exfalso; trivial.
 Qed.
 
-Definition gamma {Vertex Data: Type} {EV: EqDec Vertex} {PG: PreGraph Vertex Data}
-           (BG: BiGraph PG) (v: Vertex) : Data * Vertex * Vertex :=
+Definition gamma {Vertex Data: Type} {EV: EqDec Vertex} (BG: BiGraph Vertex Data) (v: Vertex) : Data * Vertex * Vertex :=
   let (v1, v2) := biEdge BG v in (node_label v, v1, v2).
 
 Definition Dup {A} (L : list A) : Prop := ~ NoDup L.

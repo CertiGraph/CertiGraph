@@ -1,5 +1,6 @@
 Require Import List.
 Require Import Omega.
+Require Import FunctionalExtensionality.
 
 Definition Sublist {A} (L1 L2 : list A) : Prop := forall a, In a L1 -> In a L2.
 
@@ -114,6 +115,12 @@ Proof.
   apply NoDup_app_not_in; auto. destruct H as [? [? ?]]. apply NoDup_app_inv; auto.
 Qed.
 
+Lemma not_in_app: forall {A} (eq_dec : forall x y : A, {x = y} + {x <> y}) x a (l : list A),
+                    (~ In x (a :: l)) -> x <> a /\ ~ In x l.
+Proof.
+  intros; split. destruct (eq_dec x a); auto. subst; intro; apply H. apply in_eq. intro. apply H; apply in_cons; auto.
+Qed.
+
 Lemma Sublist_cons_in: forall (A : Type) (a : A) (l1 l2 : list A), In a l2 -> Sublist l1 l2 -> Sublist (a :: l1) l2.
 Proof. intros. intro y; intros. apply in_inv in H1. destruct H1. subst; auto. specialize (H0 y). apply H0; auto. Qed.
 
@@ -134,3 +141,68 @@ Proof.
   apply IHl; auto. subst. right; apply in_eq. specialize (IHl x y H). destruct IHl. left; auto.
   right; apply in_cons. auto.
 Qed.
+
+Lemma remove_len_le: forall  (A : Type) (eq_dec : forall x y : A, {x = y} + {x <> y}) (l : list A) (x : A),
+                       length (remove eq_dec x l) <= length l.
+Proof. induction l; intros; simpl in *. auto. destruct (eq_dec x a). intuition. simpl. intuition. Qed.
+
+Definition dupOrder {A} (i1 i2 : list A) := length i1 < length i2.
+  
+Lemma dupOrder_wf' A : forall len (i: list A), length i <= len -> Acc dupOrder i.
+Proof.
+  induction len; intros; constructor; intros; unfold dupOrder in * |-; [exfalso | apply IHlen]; intuition.
+Qed.
+
+Lemma dupOrder_wf A : well_founded (@dupOrder A).
+Proof. red; intro; eapply dupOrder_wf'; eauto. Defined.
+
+Definition remove_dup {A} (eq_dec : forall x y : A, {x = y} + {x <> y}) : list A -> list A.
+  refine (
+      Fix (dupOrder_wf A) (fun _ => list A)
+          (fun (inp : list A) =>
+             match inp return ((forall inp2 : list A, dupOrder inp2 inp -> list A) -> list A) with
+               | nil => fun _ => nil
+               | x :: l => fun f => x :: (f (remove eq_dec x l) _)
+             end)).
+  apply le_lt_trans with (length l). apply remove_len_le. simpl; apply lt_n_Sn.
+Defined.
+
+Lemma remove_dup_unfold:
+  forall {A} (eq_dec : forall x y : A, {x = y} + {x <> y}) (i : list A),
+    remove_dup eq_dec i = match i with
+                            | nil => nil
+                            | x :: l => x :: remove_dup eq_dec (remove eq_dec x l)
+                          end.
+Proof.
+  intros. unfold remove_dup at 1; rewrite Fix_eq. destruct i; auto. intros.
+  assert (f = g) by (extensionality y; extensionality p; auto); subst; auto.
+Qed.
+
+Lemma remove_dup_len_le: forall {A} (eq_dec : forall x y : A, {x = y} + {x <> y}) (l : list A),
+                           length (remove_dup eq_dec l) <= length l.
+Proof.
+  intros. remember (length l). assert (length l <= n) by omega. clear Heqn. revert H. revert l.
+  induction n; intros; rewrite remove_dup_unfold; destruct l; auto. inversion H. simpl. apply le_n_S. apply IHn.
+  simpl in H; apply le_S_n in H. apply le_trans with (length l). apply remove_len_le. auto.
+Qed.
+
+Lemma remove_dup_in_inv: forall {A} (eq_dec : forall x y : A, {x = y} + {x <> y}) (x : A) l,
+                           In x l <-> In x (remove_dup eq_dec l).
+Proof.
+  intros. remember (length l). assert (length l <= n) by omega. clear Heqn. revert l H.
+  induction n; intros; rewrite remove_dup_unfold; destruct l; auto. split; auto. simpl in H. omega. split; auto.
+  destruct (eq_dec a x). subst. split; intro; apply in_eq. assert (length (remove eq_dec a l) <= n).
+  apply le_trans with (length l). apply remove_len_le. simpl in H. omega. specialize (IHn _ H0). clear H0.
+  split; intro; simpl in H0; destruct H0. exfalso; intuition. right. rewrite <- IHn. destruct (remove_in_2 A eq_dec l x a H0).
+  exfalso; intuition. auto. exfalso; intuition. right. rewrite <- IHn in H0. generalize (remove_sublist A eq_dec l a x H0).
+  intro; auto.
+Qed.
+
+Lemma remove_dup_nodup: forall {A} (eq_dec : forall x y : A, {x = y} + {x <> y}) l, NoDup (remove_dup eq_dec l).
+Proof.
+  intros. remember (length l). assert (length l <= n) by omega. clear Heqn. revert H. revert l.
+  induction n; intros; rewrite remove_dup_unfold; destruct l; simpl. apply NoDup_nil. inversion H. apply NoDup_nil.
+  apply NoDup_cons. generalize (remove_In eq_dec l a); intro. intro; apply H0; clear H0. rewrite <- remove_dup_in_inv in H1.
+  apply H1. apply IHn. simpl in H. apply le_trans with (length l). apply remove_len_le. apply le_S_n. apply H.
+Qed.
+
