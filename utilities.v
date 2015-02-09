@@ -1,6 +1,7 @@
 Require Import List.
 Require Import Omega.
 Require Import FunctionalExtensionality.
+Require Import Permutation.
 
 Definition Sublist {A} (L1 L2 : list A) : Prop := forall a, In a L1 -> In a L2.
 
@@ -44,6 +45,9 @@ Add Parametric Relation {A} : (list A) eq_as_set
 
 Lemma eq_as_set_app: forall A (L1 L2 L3 L4: list A), L1 ~= L2 -> L3 ~= L4 -> (L1 ++ L3) ~= (L2 ++ L4).
 Proof. intros; hnf in *; intuition; apply Sublist_app; trivial. Qed.
+
+Lemma eq_as_set_nil: forall {A} (l : list A), nil ~= l -> l = nil.
+Proof. intros; destruct l; auto. destruct H. assert (In a (a :: l)) by apply in_eq. specialize (H0 a H1). inversion H0. Qed.
 
 Lemma Forall_tl: forall {A : Type} (P : A -> Prop) (x : A) (l : list A), Forall P (x :: l) -> Forall P l.
 Proof. intros; rewrite Forall_forall in *; intros. apply H, in_cons; auto. Qed.
@@ -206,3 +210,26 @@ Proof.
   apply H1. apply IHn. simpl in H. apply le_trans with (length l). apply remove_len_le. apply le_S_n. apply H.
 Qed.
 
+Lemma eq_as_set_permutation: forall {A : Type} (eq_dec : forall x y : A, {x = y} + {x <> y}) (l1 l2 : list A),
+                               NoDup l1 -> NoDup l2 -> l1 ~= l2 -> Permutation l1 l2.
+Proof.
+  induction l1; intros. destruct l2. constructor. destruct H1. assert (In a (a :: l2)) by apply in_eq. specialize (H2 a H3).
+  inversion H2. destruct H1. assert (In a l2). apply H1, in_eq. apply in_split in H3. destruct H3 as [ll1 [ll2 ?]]. subst.
+  generalize (NoDup_remove_1 _ _ _ H0); intro. generalize (NoDup_remove_2 _ _ _ H0); intro.
+  assert (Permutation l1 (ll1 ++ ll2)). apply IHl1. apply NoDup_cons_1 in H; auto. auto. split; intro x; intros.
+  destruct (eq_dec x a). subst. apply NoDup_cons_2 in H. exfalso; intuition. assert (In x (a :: l1)). apply in_cons; auto.
+  specialize (H1 x H6). apply in_app_or in H1. apply in_or_app. destruct H1; [left | right]. auto. apply in_inv in H1.
+  destruct H1. exfalso; intuition. auto. destruct (eq_dec x a). subst. intuition. assert (In x (a :: l1)). apply H2.
+  apply in_app_or in H5. apply in_or_app. destruct H5; [left | right]. auto. apply in_cons. auto. apply in_inv in H6.
+  destruct H6. exfalso; intuition. auto. assert (Permutation l1 (ll2 ++ ll1)). apply Permutation_trans with (ll1 ++ ll2).
+  auto. apply Permutation_app_comm. apply (Permutation_cons a) in H6. apply Permutation_trans with (a :: ll2 ++ ll1). auto.
+  rewrite app_comm_cons. apply Permutation_app_comm.
+Qed.
+
+Fixpoint intersect {A: Type} (eq_dec : forall x y : A, {x = y} + {x <> y}) (l1 l2 : list A) : list A :=
+  match l1 with
+    | nil => nil
+    | e :: l => if (in_dec eq_dec e l2)
+                then e :: intersect eq_dec l l2
+                else intersect eq_dec l l2
+  end.

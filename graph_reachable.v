@@ -288,27 +288,53 @@ Section GraphReachable.
     apply remove_list_in_2; auto. rewrite Forall_forall in H0. apply H0. apply in_cons. auto.
   Qed.
 
- Lemma compute_reachable: forall (mg : MathGraph V D null) x L,
+  Lemma compute_reachable: forall (mg : MathGraph V D null) x L,
                              reachable_list m_pg x L -> forall y, reachable m_pg x y ->
-                                                                  exists L', reachable_list m_pg y L'.
+                                                                  exists L', reachable_list m_pg y L' /\ NoDup L'.
   Proof.
     intros. remember (length L, y :: nil, nil(A := V)) as i. remember (construct_reachable m_pg i). exists l.
     assert (Forall (reachable m_pg y) l). rewrite Forall_forall. intro z. intros. assert (Forall (reachable m_pg y) (rch3 i)).
     rewrite Heqi. simpl. apply Forall_nil. assert (Forall (reachable m_pg y) (rch2 i)). rewrite Heqi. simpl. apply Forall_cons.
     apply reachable_foot_valid in H0. apply reachable_by_reflexive. split; auto. hnf; auto. apply Forall_nil.
     generalize (construct_reachable_reachable mg i y H2 H3); intro. rewrite Forall_forall in H4. rewrite <- Heql in H4.
-    specialize (H4 z H1). auto. split. apply reachable_foot_valid with x. auto. intro z. split; intros.
-    rewrite Forall_forall in H1. apply H1. auto. assert (Sublist l L). intro w. intros. destruct H. rewrite H4.
-    rewrite Forall_forall in H1. specialize (H1 w H3). apply reachable_by_merge with y; auto. assert (length l <= length L).
+    specialize (H4 z H1). auto. assert (NoDup l) as HS. specialize (construct_reachable_nodup m_pg i); intros. rewrite Heql.
+    apply H2. rewrite Heqi. simpl. apply NoDup_cons. apply in_nil. apply NoDup_nil. split. split.
+    apply reachable_foot_valid with x. auto. intro z. split; intros. rewrite Forall_forall in H1. apply H1. auto.
+    assert (Sublist l L). intro w. intros. destruct H. rewrite H4. rewrite Forall_forall in H1. specialize (H1 w H3).
+    apply reachable_by_merge with y; auto. assert (length l <= length L).
     specialize (construct_reachable_length_bound m_pg i); rewrite Heqi; simpl; intros. rewrite Heql, Heqi. apply H4. omega.
     apply le_lt_or_eq in H4. destruct H4. assert (ProcessingInResult m_pg (rch2 i) (construct_reachable m_pg i)).
     apply construct_reachable_contains_all_reachable. rewrite Forall_forall. rewrite Heqi. simpl. intros. destruct H5; auto.
     rewrite <- H5 in *. apply reachable_foot_valid in H0. apply valid_not_null in H0. auto. rewrite Heqi; hnf; simpl. intros.
     auto. rewrite Heql in H4. rewrite Heqi at 2. simpl. auto. specialize (H5 y z). rewrite Heql; apply H5; auto.
-    rewrite Heqi; simpl. left; auto. assert (NoDup l). specialize (construct_reachable_nodup m_pg i); intros. rewrite Heql.
-    apply H5. rewrite Heqi. simpl. apply NoDup_cons. apply in_nil. apply NoDup_nil.
-    generalize (sublist_reverse t_eq_dec l L H5 H4 H3 z); intros; apply H6. destruct H. rewrite H7.
-    apply reachable_by_merge with y; auto.
+    rewrite Heqi; simpl. left; auto. generalize (sublist_reverse t_eq_dec l L HS H4 H3 z); intros; apply H5. destruct H.
+    rewrite H6. apply reachable_by_merge with y; auto. auto.
+  Qed.
+
+  Lemma reachable_from_children:
+    forall (pg : PreGraph V D) x y, reachable pg x y -> y = x \/ exists z, pg |= x ~> z /\ reachable pg z y.
+  Proof.
+    intros. destruct H as [p ?]. destruct p. destruct H. destruct H. inversion H. destruct H as [[? ?] [? ?]].
+    simpl in H. inversion H. subst. destruct p. simpl in H0. inversion H0. left; auto. right. hnf in H1. destruct H1.
+    exists v. split; auto. destruct H1 as [? [? ?]]. exists (v :: p). split; split. simpl. auto. simpl in H0. simpl. apply H0.
+    auto. hnf. intros. hnf. auto.
+  Qed.
+
+  Lemma reachable_all_zero:
+    forall (mg: MathGraph V D null) x l, reachable_list m_pg x l -> NoDup l ->
+                                         Forall (fun m => m = null) (edge_func x) -> l = x :: nil.
+  Proof.
+    intros. destruct H. rewrite Forall_forall in H1. assert (reachable m_pg x x). apply reachable_by_reflexive. split; auto.
+    hnf; auto. rewrite <- H2 in H3. apply in_split in H3. destruct H3 as [l1 [l2 ?]]. destruct l1, l2. simpl in H3; auto.
+    simpl in H3. assert (In v l). rewrite H3. apply in_cons. apply in_eq. rewrite (H2 v) in H4.
+    apply reachable_from_children in H4. destruct H4. subst. apply NoDup_cons_2 in H0. exfalso; apply H0. apply in_eq.
+    destruct H4 as [z [[? [? ?]] ?]]. specialize (H1 _ H6). apply valid_not_null in H5. exfalso; intuition.
+    simpl in H3. assert (In v l). rewrite H3. apply in_eq. rewrite (H2 v) in H4. apply reachable_from_children in H4.
+    destruct H4. subst. apply NoDup_cons_2 in H0. exfalso; apply H0. apply in_or_app. right; apply in_eq.
+    destruct H4 as [z [[? [? ?]] ?]]. specialize (H1 _ H6). apply valid_not_null in H5. exfalso; intuition.
+    simpl in H3. assert (In v l). rewrite H3. apply in_eq. rewrite (H2 v) in H4. apply reachable_from_children in H4.
+    destruct H4. subst. apply NoDup_cons_2 in H0. exfalso; apply H0. apply in_or_app. right; apply in_eq.
+    destruct H4 as [z [[? [? ?]] ?]]. specialize (H1 _ H6). apply valid_not_null in H5. exfalso; intuition. 
   Qed.
   
 End GraphReachable.

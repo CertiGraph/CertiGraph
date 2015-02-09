@@ -1,5 +1,7 @@
 Require Import msl.msl_direct.
 Require Import ramify_tactics.
+Require Import utilities.
+Require Import Permutation.
 
 Lemma overlapping_eq {A} {JA : Join A} {PA : Perm_alg A} {SA: Sep_alg A} 
       {CaA : Canc_alg A} {CrA : Cross_alg A} {DA : Disj_alg A}:
@@ -52,6 +54,9 @@ Proof.
                          hnf in H; apply H with (w := w); trivial).
   rewrite H9 in *; rewrite H10 in *; equate_join w1 w2; auto.
 Qed.
+
+Lemma sepcon_combine {A} {JA : Join A}: forall p q r s : pred A, p = q -> r = s -> (p * r)%pred = (q * s)%pred.
+Proof. intros. subst. auto. Qed.
 
 Lemma precise_exp_sepcon {A} {JA : Join A} {PA : Perm_alg A} {SA: Sep_alg A}  B:
   forall P Q: B -> pred A, precise (exp P) -> precise (exp Q) -> precise (EX x : B, P x * Q x).
@@ -135,6 +140,19 @@ Qed.
 Lemma iter_sepcon_app_comm {A : Type} {JA : Join A} {B : Type} {PA : Perm_alg A} {SA : Sep_alg A} {CA : Canc_alg A}:
   forall (l1 l2 : list B) (p : B -> pred A), iter_sepcon (l1 ++ l2) p = iter_sepcon (l2 ++ l1) p.
 Proof. intros. do 2 rewrite iter_sepcon_app_sepcon. rewrite sepcon_comm. auto. Qed.
+
+Lemma iter_sepcon_the_same {A : Type} {JA : Join A} {B : Type} {PA : Perm_alg A} {SA : Sep_alg A} {CA : Canc_alg A}:
+  forall  (l1 l2 : list B) (p : B -> pred A), Permutation l1 l2 -> iter_sepcon l1 p = iter_sepcon l2 p.
+Proof.
+  intro l1. remember (length l1). assert (length l1 <= n) by intuition. clear Heqn. revert l1 H. induction n; intros.
+  destruct l1. apply Permutation_nil in H0. subst; auto. simpl in H; inversion H. destruct l1. apply Permutation_nil in H0.
+  subst; auto. assert (In b l2) by (apply Permutation_in with (b :: l1); [auto | apply in_eq]). apply in_split in H1.
+  destruct H1 as [ll1 [ll2 ?]]. subst. generalize (Permutation_middle ll1 ll2 b); intro. apply Permutation_sym in H1.
+  generalize (Permutation_trans H0 H1); intro. apply Permutation_cons_inv in H2.
+  assert (iter_sepcon l1 p = iter_sepcon (ll1 ++ ll2) p). apply IHn. simpl in H; intuition. auto.
+  assert (iter_sepcon (ll1 ++ b :: ll2) p = iter_sepcon (b :: ll2 ++ ll1) p). rewrite iter_sepcon_app_comm.
+  rewrite app_comm_cons. auto. rewrite H4. simpl. apply sepcon_combine. auto. rewrite iter_sepcon_app_comm. auto.
+Qed.
 
 Lemma iter_sepcon_unique_nodup {A : Type} {JA : Join A} {PA : Perm_alg A} {SA : Sep_alg A} {CA : Canc_alg A}
       {B : Type} {p : B -> pred A} {w : A} {l : list B}: sepcon_unique p -> iter_sepcon l p w -> NoDup l.
