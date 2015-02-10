@@ -125,12 +125,61 @@ Module SpatialGraph.
     right. exists listL. split. rewrite <- pg_the_same. split; auto. auto. left; split. auto. apply core_identity.
 
     (* Both are valid *)
+    assert (forall y, In y li -> x = y \/ reachable b_pg l y \/ reachable b_pg r y). intros. rewrite H0 in H8.
+    apply (reachable_from_children b_pg) in H8. destruct H8 as [? | [z [[? [? ?]] ?]]]; [left | right]. auto. rewrite e in H10.
+    apply in_inv in H10. destruct H10. subst; left; auto. apply in_inv in H10; destruct H10. subst; right; auto. inversion H10.
+    assert (reachable m_pg x l). exists (x :: l :: nil). split; split; simpl; auto. split; auto. split; auto. repeat intro. hnf.
+    auto. assert (reachable m_pg x r). exists (x :: r :: nil). split; split; simpl; auto. split; auto. split; auto.
+    repeat intro. hnf. auto. destruct (compute_reachable bm_ma x li H2 l H9) as [listL [? Hn2]]. destruct H11.
+    destruct (compute_reachable bm_ma x li H2 r H10) as [listR [? Hn3]]. destruct H13.
+    assert (forall y : adr, In y li -> x = y \/ In y listL \/ In y listR). intros. apply H8 in H15.
+    destruct H15 as [? | [? | ?]]; [left | right; left | right; right ]; auto. rewrite H12. rewrite pg_the_same; auto.
+    rewrite H14; rewrite pg_the_same; auto. destruct (in_dec t_eq_dec x listL).
 
-    admit.
-    (* destruct H. unfold graph. left; auto. *)
-    (* destruct H as [d [l [r [[? ?] ?]]]]. destruct_ocon H1 h. destruct_ocon H4 i. unfold graph in H9, H5. *)
-    (* destruct H9; destruct H5. right. exists (x :: nil). split. split. trivial. intro. split; intros. *)
-    (* apply in_inv in H10. destruct H10. subst. apply reachable_by_reflexive. split; auto. hnf; auto. inversion H10. admit. *)
+    (* In x listL *)
+    assert (li ~= (listL ++ listR)). split; intro y; intros. specialize (H15 y H16). apply in_or_app.
+    destruct H15 as [? | [? | ?]]; [left | left | right]; auto. subst; auto. apply in_app_or in H16. destruct H16.
+    rewrite H12 in H16. rewrite H0. rewrite <- pg_the_same. apply reachable_by_merge with l; auto.
+    rewrite H14 in H16. rewrite H0. rewrite <- pg_the_same. apply reachable_by_merge with r; auto.
+    destruct (tri_list_split t_eq_dec Hn1 Hn2 Hn3 H16) as [li1 [li2 [li3 [? [? ?]]]]].
+    rewrite (iter_sepcon_the_same _ _ (graph_cell bm_bi) H19) in H1. do 2 rewrite iter_sepcon_app_sepcon in H1.
+    destruct_sepcon H1 w. destruct_sepcon H21 w. rename w2 into w23. rename w0 into w2. try_join w1 w2 w12.
+    exists w1, w2, w3, w12, w23. do 3 (split; auto). split. assert (iter_sepcon listL (graph_cell bm_bi) w12).
+    rewrite (iter_sepcon_the_same _ _ (graph_cell bm_bi) H17). rewrite iter_sepcon_app_sepcon. exists w1, w2. split; auto.
+    generalize H26; intro. apply in_split in i. destruct i as [ll1 [ll2 ?]]. rewrite H28 in H26.
+    generalize (Permutation_middle ll1 ll2 x); intro. rewrite <- (iter_sepcon_the_same _ _ (graph_cell bm_bi) H29) in H26.
+    clear H29. simpl in H26. destruct_sepcon H26 h. exists (core h1), h1, h2, h1, w12. split. apply core_unit.
+    do 2 (split; auto). split. apply graph_cell_trinode; auto. right. exists listL. split; auto. rewrite <- pg_the_same.
+    split; auto. right; exists listR; split. rewrite <- pg_the_same; split; auto.
+    rewrite (iter_sepcon_the_same _ _ (graph_cell bm_bi) H18). rewrite iter_sepcon_app_sepcon. exists w2, w3. split; auto.
+
+    (* ~ In x listL *)
+    assert (NoDup (x :: listL)). apply NoDup_cons; auto. assert (li ~= ((x :: listL) ++ listR)). split; intro y; intros.
+    specialize (H15 y H17). apply in_or_app. destruct H15 as [? | [? | ?]]. subst. left; apply in_eq. left; apply in_cons; auto.
+    right; auto. apply in_app_or in H17. destruct H17. apply in_inv in H17. destruct H17. rewrite <- H17 in *. clear H17 y.
+    rewrite H0. apply reachable_by_reflexive. rewrite <- pg_the_same. split. auto. hnf; auto. rewrite H12 in H17. rewrite H0.
+    rewrite <- pg_the_same; apply reachable_by_merge with l; auto. rewrite H14 in H17. rewrite H0. rewrite <- pg_the_same.
+    apply reachable_by_merge with r; auto. destruct (tri_list_split t_eq_dec Hn1 H16 Hn3 H17) as [li1 [li2 [li3 [? [? ?]]]]].
+    rewrite (iter_sepcon_the_same _ _ (graph_cell bm_bi) H20) in H1. do 2 rewrite iter_sepcon_app_sepcon in H1.
+    destruct_sepcon H1 w. destruct_sepcon H22 w. rename w2 into w23. rename w0 into w2. try_join w1 w2 w12.
+    exists w1, w2, w3, w12, w23. do 3 (split; auto). split. assert (iter_sepcon (x :: listL) (graph_cell bm_bi) w12).
+    rewrite (iter_sepcon_the_same _ _ (graph_cell bm_bi) H18). rewrite iter_sepcon_app_sepcon. exists w1, w2. split; auto.
+    simpl in H27. destruct_sepcon H27 h. apply sepcon_ocon. exists h1, h2. split; auto. split. apply graph_cell_trinode; auto.
+    right. exists listL. split; auto. rewrite <- pg_the_same. split; auto. right; exists listR; split. rewrite <- pg_the_same.
+    split; auto. rewrite (iter_sepcon_the_same _ _ (graph_cell bm_bi) H19). rewrite iter_sepcon_app_sepcon. exists w2, w3.
+    split; auto.
+
+    (* <- direction *)
+    
+    destruct H. left; auto. destruct H as [d [l [r [[? ?] ?]]]]. destruct_ocon H1 h. destruct_ocon H4 i. unfold graph in H9, H5.
+    destruct H9; destruct H5. right. exists (x :: nil). unfold gamma in H. destruct (biEdge bm_bi x) as [v1 v2] eqn:? .
+    unfold biEdge in Heqp. inversion H. subst. destruct (only_two_neighbours x) as [v1 [v2 ?]]. inversion Heqp. subst.
+    clear Heqp. destruct H9, H5. hnf in H9, H5. subst. clear H. split. split. trivial. intro. split; intros.
+    apply in_inv in H. destruct H. subst. apply reachable_by_reflexive. split; auto. hnf; auto. inversion H.
+    apply (reachable_from_children b_pg) in H. destruct H. subst; apply in_eq. destruct H as [z [[? [? ?]] ?]]. rewrite e in H9.
+    rewrite <- pg_the_same in H5. apply valid_not_null in H5. exfalso. apply in_inv in H9; destruct H9. intuition.
+    apply in_inv in H9; destruct H9. intuition. inversion H9. simpl.
+    admit. admit. admit.
     (* simpl. rewrite sepcon_comm, emp_sepcon. unfold graph_cell. rewrite H. admit. admit. admit. *)
     (* destruct H9 as [ll ?], H5 as [lr ?]. right. assert (NoDup (x :: ll ++ lr)) by admit. exists (x :: ll ++ lr). *)
     (* destruct H9, H5. split. split. trivial. intro y. destruct H9, H5. split; intro. apply in_inv in H15. destruct H15. *)

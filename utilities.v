@@ -233,3 +233,100 @@ Fixpoint intersect {A: Type} (eq_dec : forall x y : A, {x = y} + {x <> y}) (l1 l
                 then e :: intersect eq_dec l l2
                 else intersect eq_dec l l2
   end.
+
+Lemma intersect_property {A: Type} (eq_dec : forall x y : A, {x = y} + {x <> y}):
+  forall l1 l2 x, (In x l1 /\ In x l2) <-> In x (intersect eq_dec l1 l2).
+Proof.
+  induction l1; intros; simpl. intuition. destruct (in_dec eq_dec a l2). split; intros. destruct H as [[? | ?] ?]. subst.
+  apply in_eq. apply in_cons. rewrite <- IHl1. split; auto. split. apply in_inv in H. destruct H; [left | right]; auto.
+  rewrite <- IHl1 in H. destruct H; auto. apply in_inv in H; destruct H. subst; auto. rewrite <- IHl1 in H; destruct H; auto.
+  rewrite <- IHl1. intuition. subst; intuition.
+Qed.
+
+Lemma intersect_nodup {A: Type} (eq_dec : forall x y : A, {x = y} + {x <> y}):
+  forall (l1 l2 : list A), NoDup l1 -> NoDup (intersect eq_dec l1 l2).
+Proof.
+  induction l1; intros; simpl; auto. destruct (in_dec eq_dec a l2). apply NoDup_cons. apply NoDup_cons_2 in H. intro; apply H.
+  rewrite <- intersect_property in H0. destruct H0; auto. apply IHl1. apply NoDup_cons_1 in H; auto. apply IHl1.
+  apply NoDup_cons_1 in H. auto.
+Qed.
+
+Fixpoint subtract {A: Type} (eq_dec : forall x y : A, {x = y} + {x <> y}) (l1 l2 : list A) : list A :=
+  match l2 with
+    | nil => l1
+    | e :: l => subtract eq_dec (remove eq_dec e l1) l
+  end.
+
+Lemma remove_app {A: Type} (eq_dec : forall x y : A, {x = y} + {x <> y}):
+  forall l1 l2 a, remove eq_dec a (l1 ++ l2) = remove eq_dec a l1 ++ remove eq_dec a l2.
+Proof.
+  induction l1; intros; simpl; auto. destruct (eq_dec a0 a). subst. apply IHl1. rewrite <- app_comm_cons. f_equal. apply IHl1.
+Qed.
+
+Lemma remove_not_in {A: Type} (eq_dec : forall x y : A, {x = y} + {x <> y}): forall l x, ~ In x l -> remove eq_dec x l = l.
+Proof.
+  induction l; intros; simpl; auto. destruct (eq_dec x a). subst. exfalso; apply H, in_eq. f_equal. apply IHl. intro; apply H.
+  apply in_cons. auto.
+Qed.
+
+Lemma remove_middle {A: Type} (eq_dec : forall x y : A, {x = y} + {x <> y}):
+  forall l1 l2 a, NoDup (l1 ++ a :: l2) -> remove eq_dec a (l1 ++ a :: l2) = l1 ++ l2.
+Proof.
+  intros. rewrite (remove_app eq_dec). f_equal. apply NoDup_remove_2 in H. apply remove_not_in. intro; apply H, in_or_app; left.
+  auto. simpl. destruct (eq_dec a a). apply remove_not_in. apply NoDup_remove_2 in H. intro; apply H, in_or_app; right; auto.
+  exfalso; apply n; auto.
+Qed.
+
+Lemma subtract_permutation {A: Type} (eq_dec : forall x y : A, {x = y} + {x <> y}):
+  forall (l1 l2 : list A), NoDup l1 -> NoDup l2 -> Sublist l2 l1 -> Permutation l1 (subtract eq_dec l1 l2 ++ l2).
+Proof.
+  intros l1 l2; revert l1; induction l2; intros; simpl. rewrite app_nil_r. apply Permutation_refl.
+  assert (In a (a :: l2)) by apply in_eq. generalize (H1 a H2); intros. apply in_split in H3. destruct H3 as [ll1 [ll2 ?]].
+  subst. assert (Sublist l2 (ll1 ++ ll2)). intro y; intros. apply in_or_app. assert (In y (a :: l2)) by (apply in_cons; auto).
+  specialize (H1 y H4). apply in_app_or in H1. destruct H1; [left | right]; auto. apply in_inv in H1. destruct H1. subst.
+  apply NoDup_cons_2 in H0. intuition. auto. apply Permutation_trans with (a :: ll1 ++ ll2). apply Permutation_sym.
+  apply Permutation_middle. apply Permutation_cons_app. rewrite (remove_middle eq_dec); auto. apply IHl2.
+  apply NoDup_remove_1 in H. auto. apply NoDup_remove_1 in H. apply NoDup_cons_1 in H0. auto. auto.
+Qed.
+
+Lemma subtract_nodup {A: Type} (eq_dec : forall x y : A, {x = y} + {x <> y}):
+  forall (l1 l2 : list A), NoDup l1 -> NoDup (subtract eq_dec l1 l2).
+Proof.
+  intros l1 l2; revert l1; induction l2; intros; simpl; auto. apply IHl2. destruct (in_dec eq_dec a l1). apply in_split in i.
+  destruct i as [ll1 [ll2 ?]]. subst. rewrite remove_app. assert (~ In a ll1 /\ ~ In a ll2). apply NoDup_remove_2 in H.
+  split; intro; apply H, in_or_app; [left | right] ; auto. destruct H0. rewrite (remove_not_in eq_dec _ _ H0). simpl.
+  destruct (eq_dec a a). rewrite (remove_not_in eq_dec _ _ H1). apply NoDup_remove_1 in H. auto. exfalso; intuition.
+  rewrite (remove_not_in eq_dec _ _ n). auto.
+Qed.
+
+Lemma subtract_property {A: Type} (eq_dec : forall x y : A, {x = y} + {x <> y}):
+  forall l1 l2 x, (In x l1 /\ ~ In x l2) <-> In x (subtract eq_dec l1 l2).
+Proof.
+  intros l1 l2; revert l1; induction l2; intros. simpl; auto; intuition. split; intros. destruct H.
+  apply (not_in_app eq_dec) in H0. destruct H0. simpl. rewrite <- IHl2. split; auto. apply (remove_in_2 _ eq_dec _ _ a) in H.
+  destruct H; intuition. simpl in H. rewrite <- IHl2 in H. destruct H. split. apply (remove_sublist _ eq_dec l1 a x); auto.
+  intro. apply in_inv in H1. destruct H1. subst. apply remove_In in H. auto. apply H0; auto.
+Qed.
+
+Lemma tri_list_split {A : Type} (eq_dec : forall x y : A, {x = y} + {x <> y}):
+  forall (l l1 l2 : list A), NoDup l -> NoDup l1 -> NoDup l2 -> l ~= (l1 ++ l2) ->
+                             exists i1 i2 i3, Permutation l1 (i1 ++ i2) /\ Permutation l2 (i2 ++ i3) /\
+                                              Permutation l (i1 ++ i2 ++ i3).
+Proof.
+  intros. remember (intersect eq_dec l1 l2) as j2. remember (subtract eq_dec l1 j2) as j1.
+  remember (subtract eq_dec l2 j2) as j3. exists j1, j2, j3. assert (Permutation l1 (j1 ++ j2)). rewrite Heqj1.
+  apply subtract_permutation. auto. rewrite Heqj2. apply intersect_nodup. auto. intro y; intros. rewrite Heqj2 in H3.
+  rewrite <- intersect_property in H3. intuition. split. auto. assert (Permutation l2 (j2 ++ j3)). rewrite Heqj3.
+  apply Permutation_trans with (subtract eq_dec l2 j2 ++ j2). apply subtract_permutation. auto. rewrite Heqj2.
+  apply intersect_nodup. auto. intro y; intros. rewrite Heqj2 in H4. rewrite <- intersect_property in H4.
+  intuition. apply Permutation_app_comm. split; auto. remember (subtract eq_dec l l2) as j4.
+  apply Permutation_trans with (j4 ++ l2). rewrite Heqj4. apply subtract_permutation; auto. destruct H2. repeat intro.
+  apply (H5 a). apply in_or_app; right; auto. apply Permutation_app. apply (eq_as_set_permutation eq_dec). rewrite Heqj4.
+  apply subtract_nodup; auto. rewrite Heqj1. apply subtract_nodup; auto. rewrite Heqj1, Heqj4. destruct H2. hnf in H2, H5.
+  split; intro x; intros; rewrite <- subtract_property in H6; destruct H6; rewrite <- subtract_property; split. apply H2 in H6.
+  apply in_app_or in H6. destruct H6; intuition. rewrite Heqj2. intro; apply H7. rewrite <- intersect_property in H8.
+  destruct H8; auto. apply H5. apply in_or_app; left; auto. intro; apply H7. rewrite Heqj2. rewrite <- intersect_property.
+  split; auto. auto.
+Qed.
+
+Arguments tri_list_split [A] _ [l] [l1] [l2] _ _ _ _.
