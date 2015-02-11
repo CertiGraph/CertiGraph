@@ -24,6 +24,15 @@ Proof.
   equate_join w1 w2; apply eq_refl.
 Qed.
 
+Lemma overlapping_join_eq {A} {JA : Join A} {PA : Perm_alg A} {SA: Sep_alg A} {CaA : Canc_alg A} {DA : Disj_alg A}:
+  forall h1 h2 h3 h4 h12 h23 w, join h1 h2 h12 -> join h2 h3 h23 -> join h12 h3 w -> join h12 h4 h23 -> h23 = w.
+Proof.
+  intros. try_join h2 h3 h23'; equate_join h23 h23'. assertSub h1 h23 HS. assert (emp h1).
+  apply join_sub_joins_identity with h23; auto. exists w; auto. apply join_unit1_e with h1; auto.
+Qed.
+
+Arguments overlapping_join_eq [A] [JA] [PA] [SA] [CaA] [DA] [h1] [h2] [h3] [h4] [h12] [h23] [w] _ _ _ _.
+
 Lemma precise_andp_left {A} {JA : Join A} {PA : Perm_alg A} {SA: Sep_alg A} :
   forall P Q, precise P -> precise (P && Q).
 Proof. intros; intro; intros; destruct H0; destruct H1; generalize (H w w1 w2 H0 H1 H2 H3); tauto. Qed.
