@@ -330,3 +330,37 @@ Proof.
 Qed.
 
 Arguments tri_list_split [A] _ [l] [l1] [l2] _ _ _ _.
+
+Lemma Permutation_NoDup (A : Type) : forall (l1 l2 : list A), Permutation l1 l2 -> NoDup l1 -> NoDup l2.
+Proof.
+  induction l1; intros. apply Permutation_nil in H. subst; auto. assert (In a l2). apply (Permutation_in _ H). apply in_eq.
+  apply in_split in H1. destruct H1 as [ll1 [ll2 ?]]. subst. generalize H; intro. apply Permutation_cons_app_inv in H.
+  generalize (NoDup_cons_1 _ _ _ H0); intro. specialize (IHl1 _ H H2). assert (In a l1 <-> In a (ll1 ++ ll2)).
+  split; apply (Permutation_in a); auto. apply Permutation_sym; auto. apply NoDup_app_inv. apply NoDup_app_l with ll2; auto.
+  apply NoDup_cons. apply NoDup_cons_2 in H0. intro. apply H0. rewrite H3. apply in_or_app. right; auto.
+  apply NoDup_app_r in IHl1. auto. intros. intro. apply in_inv in H5. destruct H5. subst. assert (In x (ll1 ++ ll2)).
+  apply in_or_app. left; auto. rewrite <- H3 in H5. apply NoDup_cons_2 in H0. auto.
+  apply NoDup_app_not_in with (y := x) in IHl1. apply IHl1. auto. auto.
+Qed.
+
+Arguments Permutation_NoDup [A] [l1] [l2] _ _.
+
+Lemma double_list_split {A : Type} (eq_dec : forall x y : A, {x = y} + {x <> y}):
+  forall (l1 l2 : list A), NoDup l1 -> NoDup l2 -> exists i1 i2 i3, Permutation l1 (i1 ++ i2) /\ Permutation l2 (i2 ++ i3) /\
+                                                                    NoDup (i1 ++ i2 ++ i3).
+Proof.
+  intros. remember (intersect eq_dec l1 l2) as j2. remember (subtract eq_dec l1 j2) as j1.
+  remember (subtract eq_dec l2 j2) as j3. exists j1, j2, j3. assert (Permutation l1 (j1 ++ j2)). rewrite Heqj1.
+  apply subtract_permutation. auto. rewrite Heqj2. apply intersect_nodup. auto. intro y; intros. rewrite Heqj2 in H1.
+  rewrite <- intersect_property in H1. intuition. split. auto. assert (Permutation l2 (j2 ++ j3)). rewrite Heqj3.
+  apply Permutation_trans with (subtract eq_dec l2 j2 ++ j2). apply subtract_permutation. auto. rewrite Heqj2.
+  apply intersect_nodup. auto. intro y; intros. rewrite Heqj2 in H2. rewrite <- intersect_property in H2. intuition.
+  apply Permutation_app_comm. split; auto. apply NoDup_app_inv. rewrite Heqj1. apply subtract_nodup; auto. apply NoDup_app_inv.
+  rewrite Heqj2. apply intersect_nodup; auto. rewrite Heqj3. apply subtract_nodup; auto. intros. rewrite Heqj3. intro.
+  rewrite <- subtract_property in H4. destruct H4. auto. intros. rewrite Heqj1 in H3. rewrite <- subtract_property in H3.
+  destruct H3. intro. apply in_app_or in H5. destruct H5. auto. apply H4; clear H4. rewrite Heqj3 in H5.
+  rewrite <- subtract_property in H5. destruct H5 as [? _]. assert (In x l1 /\ In x l2) by intuition.
+  rewrite intersect_property in H5. rewrite Heqj2. apply H5.
+Qed.
+
+Arguments double_list_split [A] _ [l1] [l2] _ _.

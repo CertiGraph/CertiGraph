@@ -200,6 +200,20 @@ Proof.
   repeat split; auto. apply join_comm in H23. exists w8, w1. repeat split; auto. exists w3, w9. repeat split; auto.
 Qed.
 
+Lemma iter_sepcon_app_joinable {A : Type} {JA : Join A} {PA : Perm_alg A} {SA: Sep_alg A} {CA : Canc_alg A} {C: Cross_alg A}
+      {DA : Disj_alg A} {B : Type}: forall (p : B -> pred A) (l1 l2 : list B) (w : A),
+                                      joinable p w -> (forall z, precise (p z)) -> (forall x, In x l1 -> ~ In x l2) ->
+                                      NoDup l1 -> (iter_sepcon l1 p * TT)%pred w -> (iter_sepcon l2 p * TT)%pred w ->
+                                      (iter_sepcon (l1 ++ l2) p * TT)%pred w.
+Proof.
+  intros; induction l1; simpl; auto. simpl in H3. destruct_sepcon H3 h. rename h1 into h12; rename h2 into h3.
+  destruct_sepcon H5 h. try_join h2 h3 h23. try_join h1 h3 h13. assert (forall x : B, In x l1 -> ~ In x l2).
+  intros; apply H1. apply in_cons; auto. assert ((iter_sepcon l1 p * TT)%pred w). exists h2, h13. split; auto.
+  assert (NoDup l1). apply NoDup_cons_1 in H2. auto. specialize (IHl1 H13 H15 H14). apply iter_sepcon_joinable; auto.
+  intro. apply in_app_or in H16. destruct H16. apply NoDup_cons_2 in H2. auto. revert H16. apply H1. apply in_eq.
+  exists h1, h23. split; auto.
+Qed.
+
 Lemma join_iter {A : Type} {JA : Join A} {PA : Perm_alg A} {SA: Sep_alg A} {CA : Canc_alg A}
       {C: Cross_alg A} {DA : Disj_alg A} {B : Type}:
   forall (w : A) (p : B -> pred A) (l : list B), NoDup l -> (forall y, In y l -> (p y * TT)%pred w) -> joinable p w ->
