@@ -150,7 +150,7 @@ Lemma iter_sepcon_app_comm {A : Type} {JA : Join A} {B : Type} {PA : Perm_alg A}
   forall (l1 l2 : list B) (p : B -> pred A), iter_sepcon (l1 ++ l2) p = iter_sepcon (l2 ++ l1) p.
 Proof. intros. do 2 rewrite iter_sepcon_app_sepcon. rewrite sepcon_comm. auto. Qed.
 
-Lemma iter_sepcon_the_same {A : Type} {JA : Join A} {B : Type} {PA : Perm_alg A} {SA : Sep_alg A} {CA : Canc_alg A}:
+Lemma iter_sepcon_permutation {A : Type} {JA : Join A} {B : Type} {PA : Perm_alg A} {SA : Sep_alg A} {CA : Canc_alg A}:
   forall  (l1 l2 : list B) (p : B -> pred A), Permutation l1 l2 -> iter_sepcon l1 p = iter_sepcon l2 p.
 Proof.
   intro l1. remember (length l1). assert (length l1 <= n) by intuition. clear Heqn. revert l1 H. induction n; intros.
@@ -172,7 +172,7 @@ Proof.
   exists h1, w1; split; auto. apply H in H9. auto. apply (IHl w2); auto.
 Qed.
 
-Lemma iter_sepcon_precise {A : Type} {JA : Join A} {PA : Perm_alg A} {SA: Sep_alg A} {CA : Canc_alg A} {B : Type}:
+Lemma precise_iter_sepcon {A : Type} {JA : Join A} {PA : Perm_alg A} {SA: Sep_alg A} {CA : Canc_alg A} {B : Type}:
   forall (p : B -> pred A), (forall z, precise (p z)) -> forall (l : list B), precise (iter_sepcon l p).
 Proof. intros; induction l; simpl. apply precise_emp. apply precise_sepcon; auto. Qed.
 
@@ -191,7 +191,7 @@ Proof.
   assert ((iter_sepcon l p * TT)%pred w). try_join w3 w2 w23. exists w4, w23; split; auto. specialize (IHl H11).
   simpl. generalize H2; intro. destruct_sepcon H2 w. destruct_sepcon IHl w. destruct_sepcon H16 w. try_join w7 w9 w79.
   assertSub w0 w Sub1. assertSub w8 w Sub2. generalize (H0 x w w0 w8 H13 H18 Sub1 Sub2); intro. clear Sub1 Sub2. subst.
-  clear H13. equate_canc w5 w79. specialize (H x a H4 H12 H10). specialize (iter_sepcon_precise p H0 l); intro.
+  clear H13. equate_canc w5 w79. specialize (H x a H4 H12 H10). specialize (precise_iter_sepcon p H0 l); intro.
   assertSub w4 w Sub1. assertSub w9 w Sub2. specialize (H13 w w4 w9 H9 H19 Sub1 Sub2). clear Sub1 Sub2. subst. clear H9.
   destruct_sepcon H w. destruct_sepcon H9 w. assertSub w10 w Sub1. assertSub w8 w Sub2.
   generalize (H0 x w w10 w8 H21 H18 Sub1 Sub2); intro; subst. clear Sub1 Sub2. assertSub w11 w Sub1. assertSub w3 w Sub2.

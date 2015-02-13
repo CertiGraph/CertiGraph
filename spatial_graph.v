@@ -16,7 +16,7 @@ Instance natEqDec : EqDec nat := { t_eq_dec := eq_nat_dec }.
 
 Definition trinode x d l r := !!(3 | x) && ((mapsto x d) * (mapsto (x+1) l) * (mapsto (x+2) r)).
 
-Module SpatialGraph.
+Section SpatialGraph.
 
   Definition graph_cell (bi : @BiGraph adr nat natEqDec) (v : adr) : pred world :=
     let (dl, r) := gamma bi v in let (d, l) := dl in trinode v d l r.
@@ -123,9 +123,9 @@ Module SpatialGraph.
     exists h2, h3. split; auto. split. exists lx; auto. exists h3, (core h3). split. apply join_comm, core_unit. split.
     exists rx; auto. apply core_identity. destruct_sepcon H23 w. rename w1 into w12; rename w2 into w3. destruct_sepcon H25 w.
     assertSub w1 w HS1. assertSub p1 w HS2. assert (precise (iter_sepcon (x :: x + 1 :: x + 2 :: nil) emapsto)).
-    apply iter_sepcon_precise; auto. equate_precise_through (iter_sepcon (x :: x + 1 :: x + 2 :: nil) emapsto) p1 w1.
+    apply precise_iter_sepcon; auto. equate_precise_through (iter_sepcon (x :: x + 1 :: x + 2 :: nil) emapsto) p1 w1.
     assertSub w2 w HS1. assertSub q1 w HS2. assert (precise (iter_sepcon (y :: y + 1 :: y + 2 :: nil) emapsto)).
-    apply iter_sepcon_precise; auto. equate_precise_through (iter_sepcon (y :: y + 1 :: y + 2 :: nil) emapsto) q1 w2.
+    apply precise_iter_sepcon; auto. equate_precise_through (iter_sepcon (y :: y + 1 :: y + 2 :: nil) emapsto) q1 w2.
     clear H29 H27. exists w12, w3. do 2 (split; auto). exists p1, q1. split; auto. split; split. exists xd; auto.
     rewrite sepcon_assoc. simpl in H24. rewrite sepcon_emp in H24. destruct_sepcon H24 j. assert_emapsto x.
     assertSub j1 p1 HS1. assertSub h1 p1 HS2. assert (precise (emapsto x)). apply H19. equate_precise_through (emapsto x) h1 j1.
@@ -182,7 +182,7 @@ Module SpatialGraph.
     split; repeat intro. apply H10 in H11. destruct H11. subst; auto. auto. apply H9 in H11. assert (reachable b_pg x a).
     rewrite <- pg_the_same. apply reachable_by_cons with r. split; auto. hnf; auto. apply H11. rewrite <- H0 in H12. auto.
     assert (Permutation li listR). apply (eq_as_set_permutation t_eq_dec); auto.
-    apply iter_sepcon_the_same with (p := graph_cell bm_bi) in H12. assert (iter_sepcon listR (graph_cell bm_bi) w).
+    apply iter_sepcon_permutation with (p := graph_cell bm_bi) in H12. assert (iter_sepcon listR (graph_cell bm_bi) w).
     rewrite <- H12; auto. clear H12. apply in_split in i. destruct i as [ll1 [ll2 ?]]. generalize H13; intro.
     rewrite H12 in H14. rewrite iter_sepcon_app_comm in H14. rewrite <- app_comm_cons in H14. simpl in H14.
     destruct_sepcon H14 w. exists (core w1), w1, w2, w1, w. split. apply core_unit. do 2 (split; auto). split.
@@ -192,7 +192,7 @@ Module SpatialGraph.
     specialize (H10 y H12). destruct H10. subst. apply in_eq. apply in_cons. auto. apply in_inv in H12. destruct H12. subst.
     auto. rewrite (H9 y) in H12. assert (reachable b_pg x y). rewrite <- pg_the_same. apply reachable_by_merge with r. apply H5.
     apply H12. rewrite <- H0 in H13. auto. assert (Permutation li (x :: listR)). apply (eq_as_set_permutation t_eq_dec); auto.
-    apply iter_sepcon_the_same with (p := graph_cell bm_bi) in H13. assert (iter_sepcon (x :: listR) (graph_cell bm_bi) w).
+    apply iter_sepcon_permutation with (p := graph_cell bm_bi) in H13. assert (iter_sepcon (x :: listR) (graph_cell bm_bi) w).
     rewrite <- H13; auto. clear H13. simpl in H14. destruct_sepcon H14 w. apply sepcon_ocon. exists w1, w2. split; auto.
     split. apply sepcon_ocon. exists w1, (core w1). split. apply join_comm, core_unit. split. apply graph_cell_trinode; auto.
     left; split. auto. apply core_identity. right. exists listR. split. rewrite <- pg_the_same. split; auto. auto.
@@ -209,7 +209,7 @@ Module SpatialGraph.
     split; repeat intro. apply H10 in H11. destruct H11. subst; auto. auto. apply H9 in H11. assert (reachable b_pg x a).
     rewrite <- pg_the_same. apply reachable_by_cons with l. split; auto. hnf; auto. apply H11. rewrite <- H0 in H12. auto.
     assert (Permutation li listL). apply (eq_as_set_permutation t_eq_dec); auto.
-    apply iter_sepcon_the_same with (p := graph_cell bm_bi) in H12. assert (iter_sepcon listL (graph_cell bm_bi) w).
+    apply iter_sepcon_permutation with (p := graph_cell bm_bi) in H12. assert (iter_sepcon listL (graph_cell bm_bi) w).
     rewrite <- H12; auto. clear H12. apply in_split in i. destruct i as [ll1 [ll2 ?]]. generalize H13; intro.
     rewrite H12 in H14. rewrite iter_sepcon_app_comm in H14. rewrite <- app_comm_cons in H14. simpl in H14.
     destruct_sepcon H14 w. apply sepcon_ocon. exists w, (core w). split. apply join_comm, core_unit. split.
@@ -219,7 +219,7 @@ Module SpatialGraph.
     specialize (H10 y H12). destruct H10. subst. apply in_eq. apply in_cons. auto. apply in_inv in H12. destruct H12. subst.
     auto. rewrite (H9 y) in H12. assert (reachable b_pg x y). rewrite <- pg_the_same. apply reachable_by_merge with l. apply H6.
     apply H12. rewrite <- H0 in H13. auto. assert (Permutation li (x :: listL)). apply (eq_as_set_permutation t_eq_dec); auto.
-    apply iter_sepcon_the_same with (p := graph_cell bm_bi) in H13. assert (iter_sepcon (x :: listL) (graph_cell bm_bi) w).
+    apply iter_sepcon_permutation with (p := graph_cell bm_bi) in H13. assert (iter_sepcon (x :: listL) (graph_cell bm_bi) w).
     rewrite <- H13; auto. clear H13. simpl in H14. destruct_sepcon H14 w. apply sepcon_ocon. exists w, (core w). split.
     apply join_comm, core_unit. split. apply sepcon_ocon. exists w1, w2. split; auto. split. apply graph_cell_trinode; auto.
     right. exists listL. split. rewrite <- pg_the_same. split; auto. auto. left; split. auto. apply core_identity.
@@ -242,16 +242,16 @@ Module SpatialGraph.
     rewrite H12 in H16. rewrite H0. rewrite <- pg_the_same. apply reachable_by_merge with l; auto.
     rewrite H14 in H16. rewrite H0. rewrite <- pg_the_same. apply reachable_by_merge with r; auto.
     destruct (tri_list_split t_eq_dec Hn1 Hn2 Hn3 H16) as [li1 [li2 [li3 [? [? ?]]]]].
-    rewrite (iter_sepcon_the_same _ _ (graph_cell bm_bi) H19) in H1. do 2 rewrite iter_sepcon_app_sepcon in H1.
+    rewrite (iter_sepcon_permutation _ _ (graph_cell bm_bi) H19) in H1. do 2 rewrite iter_sepcon_app_sepcon in H1.
     destruct_sepcon H1 w. destruct_sepcon H21 w. rename w2 into w23. rename w0 into w2. try_join w1 w2 w12.
     exists w1, w2, w3, w12, w23. do 3 (split; auto). split. assert (iter_sepcon listL (graph_cell bm_bi) w12).
-    rewrite (iter_sepcon_the_same _ _ (graph_cell bm_bi) H17). rewrite iter_sepcon_app_sepcon. exists w1, w2. split; auto.
+    rewrite (iter_sepcon_permutation _ _ (graph_cell bm_bi) H17). rewrite iter_sepcon_app_sepcon. exists w1, w2. split; auto.
     generalize H26; intro. apply in_split in i. destruct i as [ll1 [ll2 ?]]. rewrite H28 in H26.
-    generalize (Permutation_middle ll1 ll2 x); intro. rewrite <- (iter_sepcon_the_same _ _ (graph_cell bm_bi) H29) in H26.
+    generalize (Permutation_middle ll1 ll2 x); intro. rewrite <- (iter_sepcon_permutation _ _ (graph_cell bm_bi) H29) in H26.
     clear H29. simpl in H26. destruct_sepcon H26 h. exists (core h1), h1, h2, h1, w12. split. apply core_unit.
     do 2 (split; auto). split. apply graph_cell_trinode; auto. right. exists listL. split; auto. rewrite <- pg_the_same.
     split; auto. right; exists listR; split. rewrite <- pg_the_same; split; auto.
-    rewrite (iter_sepcon_the_same _ _ (graph_cell bm_bi) H18). rewrite iter_sepcon_app_sepcon. exists w2, w3. split; auto.
+    rewrite (iter_sepcon_permutation _ _ (graph_cell bm_bi) H18). rewrite iter_sepcon_app_sepcon. exists w2, w3. split; auto.
 
     (* ~ In x listL *)
     assert (NoDup (x :: listL)). apply NoDup_cons; auto. assert (li ~= ((x :: listL) ++ listR)). split; intro y; intros.
@@ -260,13 +260,13 @@ Module SpatialGraph.
     rewrite H0. apply reachable_by_reflexive. rewrite <- pg_the_same. split. auto. hnf; auto. rewrite H12 in H17. rewrite H0.
     rewrite <- pg_the_same; apply reachable_by_merge with l; auto. rewrite H14 in H17. rewrite H0. rewrite <- pg_the_same.
     apply reachable_by_merge with r; auto. destruct (tri_list_split t_eq_dec Hn1 H16 Hn3 H17) as [li1 [li2 [li3 [? [? ?]]]]].
-    rewrite (iter_sepcon_the_same _ _ (graph_cell bm_bi) H20) in H1. do 2 rewrite iter_sepcon_app_sepcon in H1.
+    rewrite (iter_sepcon_permutation _ _ (graph_cell bm_bi) H20) in H1. do 2 rewrite iter_sepcon_app_sepcon in H1.
     destruct_sepcon H1 w. destruct_sepcon H22 w. rename w2 into w23. rename w0 into w2. try_join w1 w2 w12.
     exists w1, w2, w3, w12, w23. do 3 (split; auto). split. assert (iter_sepcon (x :: listL) (graph_cell bm_bi) w12).
-    rewrite (iter_sepcon_the_same _ _ (graph_cell bm_bi) H18). rewrite iter_sepcon_app_sepcon. exists w1, w2. split; auto.
+    rewrite (iter_sepcon_permutation _ _ (graph_cell bm_bi) H18). rewrite iter_sepcon_app_sepcon. exists w1, w2. split; auto.
     simpl in H27. destruct_sepcon H27 h. apply sepcon_ocon. exists h1, h2. split; auto. split. apply graph_cell_trinode; auto.
     right. exists listL. split; auto. rewrite <- pg_the_same. split; auto. right; exists listR; split. rewrite <- pg_the_same.
-    split; auto. rewrite (iter_sepcon_the_same _ _ (graph_cell bm_bi) H19). rewrite iter_sepcon_app_sepcon. exists w2, w3.
+    split; auto. rewrite (iter_sepcon_permutation _ _ (graph_cell bm_bi) H19). rewrite iter_sepcon_app_sepcon. exists w2, w3.
     split; auto.
 
     (* <- direction *)
@@ -298,7 +298,7 @@ Module SpatialGraph.
     assert (join i2 i1 i1). apply identity_unit. apply (split_identity i2 i3 H6). auto. exists i12. auto. equate_join i1 i12.
     assert (join i3 i1 i1). apply identity_unit. apply join_comm in H6. apply (split_identity i3 i2 H6). auto. exists h12.
     auto. equate_join i1 h12. assert (join_sub i1 h23). apply in_split in i. destruct i as [ll1 [ll2 ?]]. subst.
-    rewrite iter_sepcon_the_same with (l2 := x :: ll1 ++ ll2) in H10. simpl in H10. destruct_sepcon H10 j.
+    rewrite iter_sepcon_permutation with (l2 := x :: ll1 ++ ll2) in H10. simpl in H10. destruct_sepcon H10 j.
     apply (trinode_graph_cell _ _ _ _ e) in H8. try_join h2 h3 h23'; equate_join h23 h23'. assertSub j1 w Sub1.
     assertSub i1 w Sub2. assert (precise (graph_cell bm_bi x)) by apply precise_graph_cell.
     equate_precise_through (graph_cell bm_bi x) i1 j1. exists j2; auto. apply Permutation_sym, Permutation_middle.
@@ -318,7 +318,7 @@ Module SpatialGraph.
     split; auto. simpl in H4. destruct_sepcon H4 k. rename k1 into k12; rename k2 into k3. destruct_sepcon H6 k.
     assert (precise (graph_cell bm_bi x)) by apply precise_graph_cell. assertSub k1 w HS1. assertSub h12 w HS2.
     equate_precise_through (graph_cell bm_bi x) h12 k1. assert (precise (iter_sepcon listR (graph_cell bm_bi))).
-    apply iter_sepcon_precise. apply precise_graph_cell. try_join h2 h3 h23'; equate_join h23 h23'. assertSub h23 w HS1.
+    apply precise_iter_sepcon. apply precise_graph_cell. try_join h2 h3 h23'; equate_join h23 h23'. assertSub h23 w HS1.
     assertSub k2 w HS2. equate_precise_through (iter_sepcon listR (graph_cell bm_bi)) h23 k2. try_join h2 h23 ht.
     assert (emp h2). apply join_sub_joins_identity with h23. exists h3; auto. exists ht; auto.
     assert (join h2 h1 h1). apply identity_unit; auto. exists h12; auto. equate_join h1 h12. assert (join h2 h3 h3).
@@ -335,7 +335,7 @@ Module SpatialGraph.
     assert (join h2 h1 h1). apply identity_unit. apply (split_identity h2 h3 H2). auto. exists h12. auto. equate_join h1 h12.
     assert (join h3 h1 h1). apply identity_unit. apply join_comm in H2. apply (split_identity h3 h2 H2). auto. exists w.
     auto. equate_join w h1. assert (join_sub i12 i23). apply in_split in i. destruct i as [ll1 [ll2 ?]]. subst.
-    rewrite iter_sepcon_the_same with (l2 := x :: ll1 ++ ll2) in H10. simpl in H10. destruct_sepcon H10 j.
+    rewrite iter_sepcon_permutation with (l2 := x :: ll1 ++ ll2) in H10. simpl in H10. destruct_sepcon H10 j.
     apply (trinode_graph_cell _ _ _ _ e) in H8. try_join i2 i3 i23'; equate_join i23 i23'. assertSub j1 w Sub1.
     assertSub i12 w Sub2. assert (precise (graph_cell bm_bi x)) by apply precise_graph_cell.
     equate_precise_through (graph_cell bm_bi x) i12 j1. exists j2; auto. apply Permutation_sym, Permutation_middle.
@@ -355,7 +355,7 @@ Module SpatialGraph.
     split; auto. simpl in H1. destruct_sepcon H1 k. rename k1 into k12; rename k2 into k3. destruct_sepcon H2 k.
     assert (precise (graph_cell bm_bi x)) by apply precise_graph_cell. assertSub k1 w HS1. assertSub i12 w HS2.
     equate_precise_through (graph_cell bm_bi x) i12 k1. assert (precise (iter_sepcon listL (graph_cell bm_bi))).
-    apply iter_sepcon_precise. apply precise_graph_cell. try_join i2 i3 i23'; equate_join i23 i23'. assertSub i23 w HS1.
+    apply precise_iter_sepcon. apply precise_graph_cell. try_join i2 i3 i23'; equate_join i23 i23'. assertSub i23 w HS1.
     assertSub k2 w HS2. equate_precise_through (iter_sepcon listL (graph_cell bm_bi)) i23 k2. try_join i2 i23 ht.
     assert (emp i2). apply join_sub_joins_identity with i23. exists i3; auto. exists ht; auto. assert (join i2 i1 i1).
     apply identity_unit; auto. exists i12; auto. equate_join i1 i12. assert (join i2 i3 i3). apply identity_unit; auto.
@@ -380,24 +380,24 @@ Module SpatialGraph.
     apply (Permutation_in y H16 H22). apply in_inv in H21; destruct H21. subst. rewrite <- H11 in H22. apply in_or_app; right.
     apply (Permutation_in y H17 H22). inversion H21. assert ((iter_sepcon (l1 ++ l2 ++ l3) (graph_cell bm_bi) * TT)%pred w).
     apply iter_sepcon_app_joinable. apply joinable_graph_cell. apply precise_graph_cell. apply NoDup_app_not_in; auto.
-    apply NoDup_app_l in H18; auto. rewrite (iter_sepcon_the_same _ _ _ H16) in H10. rewrite iter_sepcon_app_sepcon in H10.
+    apply NoDup_app_l in H18; auto. rewrite (iter_sepcon_permutation _ _ _ H16) in H10. rewrite iter_sepcon_app_sepcon in H10.
     destruct_sepcon H10 h. try_join i2 i3 i23'; equate_join i23 i23'. assertSub h0 i23 HS1. assertSub i23 w HS2.
-    assertSub h0 w HS3. destruct HS3. exists h0, x0. split; auto. rewrite (iter_sepcon_the_same _ _ _ H17) in H12.
+    assertSub h0 w HS3. destruct HS3. exists h0, x0. split; auto. rewrite (iter_sepcon_permutation _ _ _ H17) in H12.
     try_join h2 h3 h23'; equate_join h23 h23'. exists h23, h1. split; auto. destruct_sepcon H19 w. rename w1 into w123.
     rename w2 into w4. apply trinode_graph_cell in H8. assert (join_sub i12 i23). apply in_split in i.
-    destruct i as [ll1 [ll2 ?]]. rewrite H22 in H10. rewrite (iter_sepcon_the_same _ (x :: ll1 ++ ll2) _) in H10.
+    destruct i as [ll1 [ll2 ?]]. rewrite H22 in H10. rewrite (iter_sepcon_permutation _ (x :: ll1 ++ ll2) _) in H10.
     simpl in H10. destruct_sepcon H10 t. assert (precise (graph_cell bm_bi x)). apply precise_graph_cell.
     try_join i2 i3 i23'; equate_join i23 i23'. assertSub t1 h12 HS1. assertSub i12 h12 HS2.
     generalize (H25 h12 t1 i12 H23 H8 HS1 HS2); intro Heq. rewrite Heq in *. clear Heq. exists t2. auto. apply Permutation_sym.
     apply Permutation_middle. destruct H22 as [i4 ?]. generalize (overlapping_join_eq H4 H6 H7 H22). intro. rewrite H23 in *.
-    clear H23 i23. rewrite (iter_sepcon_the_same _ _ _ H16) in H10. rewrite (iter_sepcon_the_same _ _ _ H17) in H12.
+    clear H23 i23. rewrite (iter_sepcon_permutation _ _ _ H16) in H10. rewrite (iter_sepcon_permutation _ _ _ H17) in H12.
     rewrite iter_sepcon_app_sepcon in H10, H12. destruct_sepcon H10 j. destruct_sepcon H12 j. rename j0 into j2'.
     try_join h2 h3 h23'; equate_join h23 h23'. assert (precise (iter_sepcon l2 (graph_cell bm_bi))).
-    apply iter_sepcon_precise, precise_graph_cell. assertSub j2 w HS1. assertSub j2' w HS2.
+    apply precise_iter_sepcon, precise_graph_cell. assertSub j2 w HS1. assertSub j2' w HS2.
     equate_precise_through (iter_sepcon l2 (graph_cell bm_bi)) j2 j2'. rewrite iter_sepcon_app_sepcon in H20.
     destruct_sepcon H20 w. rename w2 into w23. rewrite iter_sepcon_app_sepcon in H29. destruct_sepcon H29 w.
-    rename w2 into w3; rename w0 into w2. assert (precise (iter_sepcon l1 (graph_cell bm_bi))). apply iter_sepcon_precise.
-    apply precise_graph_cell. assert (precise (iter_sepcon l3 (graph_cell bm_bi))). apply iter_sepcon_precise.
+    rename w2 into w3; rename w0 into w2. assert (precise (iter_sepcon l1 (graph_cell bm_bi))). apply precise_iter_sepcon.
+    apply precise_graph_cell. assert (precise (iter_sepcon l3 (graph_cell bm_bi))). apply precise_iter_sepcon.
     apply precise_graph_cell. assertSub j1 w HS1. assertSub w1 w HS2.
     equate_precise_through (iter_sepcon l1 (graph_cell bm_bi)) j1 w1. assertSub j2 w HS1. assertSub w2 w123 HS2.
     assertSub w123 w HS3. assertSub w2 w HS4. clear HS2 HS3. equate_precise_through (iter_sepcon l2 (graph_cell bm_bi)) j2 w2.
@@ -409,7 +409,85 @@ Module SpatialGraph.
 
     (* ~ In x listL *)
 
-    admit.
+    assert (NoDup (x :: listL)). apply NoDup_cons; auto.
+    destruct (double_list_split t_eq_dec H16 H15) as [l1 [l2 [l3 [? [? ?]]]]]. exists (l1 ++ l2 ++ l3). split. split. auto.
+    intro; split; intros. apply in_app_or in H20. destruct H20. assert (In y (x :: listL)). apply Permutation_in with (l1++l2).
+    apply Permutation_sym; auto. apply in_or_app. left; auto. apply in_inv in H21. destruct H21. subst.
+    apply reachable_by_reflexive. do 2 (split; auto). apply H9 in H21. apply reachable_by_merge with l.
+    exists (x :: l :: nil). split; split; simpl; auto. do 3 (split; auto). rewrite e. apply in_eq. repeat intro; hnf; auto.
+    apply H21. assert (In y listR). apply Permutation_in with (l2 ++ l3). apply Permutation_sym; auto. auto. apply H11 in H21.
+    apply reachable_by_merge with r. exists (x :: r :: nil). split; split; simpl; auto. do 3 (split; auto). rewrite e.
+    apply in_cons, in_eq. repeat intro; hnf; auto. apply H21. apply (reachable_from_children b_pg) in H20. destruct H20. subst.
+    apply (Permutation_in x) in H17. rewrite app_assoc. apply in_or_app. left;auto. apply in_eq. destruct H20 as [z[[?[? ?]]?]].
+    rewrite e in H22. apply in_inv in H22; destruct H22. subst. rewrite <- H9 in H23. rewrite app_assoc. apply in_or_app; left.
+    assert (In y (x :: listL)). apply in_cons; auto. apply (Permutation_in y H17 H22). apply in_inv in H22; destruct H22. subst.
+    rewrite <- H11 in H23. apply in_or_app; right. apply (Permutation_in y H18 H23). inversion H22. try_join h2 h3 h23'.
+    equate_join h23 h23'. try_join i2 i3 i23'; equate_join i23 i23'. apply trinode_graph_cell in H8; auto.
+    assert (iter_sepcon (x::listL) (graph_cell bm_bi) h12). assert ((iter_sepcon (x::listL) (graph_cell bm_bi) * TT)%pred h12).
+    apply iter_sepcon_joinable. apply joinable_graph_cell. apply precise_graph_cell. auto. assertSub i12 h12 HS. destruct HS.
+    exists i12, x0. split; auto. assertSub i23 h12 HS. destruct HS. exists i23, x0. split; auto. destruct_sepcon H20 j.
+    rename j2 into je; rename j1 into j12. simpl in H23. destruct_sepcon H23 j. assert (precise (graph_cell bm_bi x)).
+    apply precise_graph_cell. assertSub i12 h12 HS1. assertSub j1 h12 HS2. generalize (H27 h12 j1 i12 H25 H8 HS2 HS1); intro.
+    rewrite H28 in *; clear H25 HS2 HS1 H28 j1. assert (precise (iter_sepcon listL (graph_cell bm_bi))).
+    apply precise_iter_sepcon, precise_graph_cell. assertSub i23 h12 HS1. assertSub j2 h12 HS2.
+    equate_precise_through (iter_sepcon listL (graph_cell bm_bi)) i23 j2. try_join i2 i23 i2i23. assert (emp i2).
+    apply join_sub_joins_identity with i23. exists i3; auto. exists i2i23; auto. apply join_unit2_e in H4; auto. subst.
+    apply join_unit1_e in H6;auto. subst. simpl. exists i12, i23. split;auto. rewrite (iter_sepcon_permutation _ _ _ H17) in H20.
+    rewrite iter_sepcon_app_sepcon in H20. destruct_sepcon H20 j. rewrite (iter_sepcon_permutation _ _ _ H18) in H12.
+    assert ((iter_sepcon (l1 ++ l2 ++ l3) (graph_cell bm_bi) * TT)%pred w). apply iter_sepcon_app_joinable.
+    apply joinable_graph_cell. apply precise_graph_cell. apply NoDup_app_not_in; auto. apply NoDup_app_l in H19; auto.
+    assertSub j1 w HS. destruct HS. exists j1, x0. split; auto. assertSub h23 w HS. destruct HS. exists h23, x0. split; auto.
+    rewrite iter_sepcon_app_sepcon in H12. destruct_sepcon H12 t. rename t1 into j2'; rename t2 into j3.
+    assert (precise (iter_sepcon l2 (graph_cell bm_bi))). apply precise_iter_sepcon, precise_graph_cell. assertSub j2 w HS1.
+    assertSub j2' w HS2. equate_precise_through (iter_sepcon l2 (graph_cell bm_bi)) j2 j2'.
+    rewrite iter_sepcon_app_sepcon in H25. destruct_sepcon H25 w. rename w2 into w4. rename w1 into w123.
+    destruct_sepcon H26 w. rename w2 into w23. rewrite iter_sepcon_app_sepcon in H31. destruct_sepcon H31 w.
+    rename w2 into w3; rename w0 into w2. assert (precise (iter_sepcon l1 (graph_cell bm_bi))). apply precise_iter_sepcon.
+    apply precise_graph_cell. assert (precise (iter_sepcon l3 (graph_cell bm_bi))). apply precise_iter_sepcon.
+    apply precise_graph_cell. assertSub j1 w HS1. assertSub w1 w HS2.
+    equate_precise_through (iter_sepcon l1 (graph_cell bm_bi)) j1 w1. assertSub j2 w HS1. assertSub w2 w123 HS2.
+    assertSub w123 w HS3. assertSub w2 w HS4. clear HS2 HS3. equate_precise_through (iter_sepcon l2 (graph_cell bm_bi)) j2 w2.
+    assertSub j3 w HS1. assertSub w3 w123 HS2. assertSub w123 w HS3. assertSub w3 w HS4. clear HS2 HS3.
+    equate_precise_through (iter_sepcon l3 (graph_cell bm_bi)) j3 w3. equate_join h23 w23. try_join j1 j2 j12.
+    equate_join h12 j12. apply join_comm in H31. assert (w123 = w). apply (overlapping_eq j1 j2 j3 h1 h2 h3 h12 h23); trivial.
+    subst. rewrite iter_sepcon_app_sepcon. exists j1, h23. do 2 (split; auto). rewrite iter_sepcon_app_sepcon. exists j2, j3.
+    split; auto. 
+  Qed.
+
+  Lemma precise_graph: forall x bimg, precise (graph x bimg).
+  Proof.
+    intros. apply precise_orp. repeat intro. destruct H as [[? ?] [l [[? ?] ?]]]. hnf in H. rewrite <- pg_the_same in H1.
+    apply valid_not_null in H1. auto. apply precise_andp_right, precise_emp. repeat intro. destruct H as [l1 [? ?]].
+    destruct H0 as [l2 [? ?]]. destruct H, H0. assert (sepcon_unique (graph_cell bm_bi)). apply graph_cell_sepcon_unique.
+    assert (Permutation l1 l2). apply NoDup_Permutation. apply (iter_sepcon_unique_nodup H7 H3).
+    apply (iter_sepcon_unique_nodup H7 H4). intros; split; intro. rewrite H5 in H8. rewrite H6. auto. rewrite H6 in H8.
+    rewrite H5; auto. rewrite (iter_sepcon_permutation _ _ _ H8) in H3. assert (precise (iter_sepcon l2 (graph_cell bm_bi))).
+    apply precise_iter_sepcon, precise_graph_cell. equate_precise_through (iter_sepcon l2 (graph_cell bm_bi)) w1 w2. auto.
+  Qed.
+
+  Fixpoint graphs (l : list adr) bimg :=
+    match l with
+      | nil => emp
+      | v :: l' => graph v bimg ⊗ graphs l' bimg
+    end.
+
+  Lemma precise_graphs: forall S bimg, precise (graphs S bimg).
+  Proof. intros; induction S; simpl. apply precise_emp. apply precise_ocon; auto. apply precise_graph. Qed.
+
+  Lemma graphs_list_null_or_valid: forall S bimg w x, graphs S bimg w -> In x S -> x = 0 \/ valid x.
+  Proof.
+    induction S; intros. inversion H0. apply in_inv in H0. simpl in H. destruct_ocon H w. destruct H0. subst. 
+    unfold graph in H3. destruct H3; [left | right]. hnf in H0; auto. destruct H0; hnf in H0; auto.
+    destruct H0 as [l [[? ?] ?]]. auto. apply IHS with w23; auto.
+  Qed.
+
+  Lemma reachable_eq_graphs_eq:
+    forall S S' bimg, set_eq (reachable_through_set b_pg S) (reachable_through_set b_pg S') -> graphs S bimg = graphs S' bimg.
+  Proof.
+    induction S. intros. assert (set_eq (reachable_through_set b_pg S') (empty_set adr)).
+    transitivity (reachable_through_set b_pg nil). symmetry; auto. apply reachable_through_empty. unfold empty_set in H0.
+    destruct H0. assert (forall x, ~ reachable_through_set b_pg S' x). intro x. specialize (H0 x). simpl in H0. hnf. apply H0.
+    simpl. admit. admit.
   Qed.
 
 End SpatialGraph.
