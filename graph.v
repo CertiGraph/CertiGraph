@@ -742,6 +742,9 @@ Proof.
   simpl in H0; destruct l; trivial; destruct H0 as [[? _] _]; trivial.
 Qed.
 
+Definition well_defined_list {A D : Type} {EV : EqDec A} {null : A} (mg : MathGraph A D null) (l : list A) :=
+  forall x, In x l -> x = null \/ valid x.
+
 Tactic Notation "LEM" constr(v) := (destruct (classic v); auto).
 
 Lemma reachable_through_empty_eq {A D : Type} {EV: EqDec A} (g: PreGraph A D):

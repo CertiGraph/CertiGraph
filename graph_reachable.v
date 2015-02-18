@@ -3,6 +3,7 @@ Require Import Arith.
 Require Import List.
 Require Import utilities.
 Require Import FunctionalExtensionality.
+Require Import Permutation.
 
 Section GraphReachable.
 
@@ -336,5 +337,59 @@ Section GraphReachable.
     destruct H4. subst. apply NoDup_cons_2 in H0. exfalso; apply H0. apply in_or_app. right; apply in_eq.
     destruct H4 as [z [[? [? ?]] ?]]. specialize (H1 _ H6). apply valid_not_null in H5. exfalso; intuition. 
   Qed.
-  
+
+  Lemma reachable_through_set_eq:
+    forall (pg : PreGraph V D) a S x, reachable_through_set pg (a :: S) x <-> reachable pg a x \/ reachable_through_set pg S x.
+  Proof.
+    intros; split; intros. destruct H as [s [? ?]]. apply in_inv in H. destruct H. subst. left; auto. right. exists s.
+    split; auto. destruct H. exists a. split. apply in_eq. auto. destruct H as [s [? ?]]. exists s. split. apply in_cons. auto.
+    auto.
+  Qed.
+
+  Definition reachable_set_list (pg : PreGraph V D) (S : list V) (l : list V) : Prop :=
+    forall x : V, reachable_through_set pg S x <-> In x l.
+
+  Lemma reachable_through_single_reachable:
+    forall (mg : MathGraph V D null) S l, reachable_set_list m_pg S l ->
+      forall s, In s S -> valid s -> exists l' : list V, reachable_list m_pg s l' /\ NoDup l'.
+  Proof.
+    intros. remember (length l, s :: nil, nil(A := V)) as i. remember (construct_reachable m_pg i) as l'. exists l'.
+    assert (Forall (reachable m_pg s) l'). rewrite Forall_forall. intro z. intros. assert (Forall (reachable m_pg s) (rch3 i)).
+    rewrite Heqi. simpl. apply Forall_nil. assert (Forall (reachable m_pg s) (rch2 i)). rewrite Heqi. simpl. apply Forall_cons.
+    apply reachable_by_reflexive. split; auto. hnf; auto. apply Forall_nil.
+    generalize (construct_reachable_reachable mg i s H3 H4); intro. rewrite Forall_forall in H5. rewrite <- Heql' in H5.
+    specialize (H5 z H2). auto. assert (NoDup l') as HS. specialize (construct_reachable_nodup m_pg i); intros. rewrite Heql'.
+    apply H3. rewrite Heqi. simpl. apply NoDup_cons. apply in_nil. apply NoDup_nil. split. split. auto. intro z. split; intros.
+    rewrite Forall_forall in H2. apply H2. auto. assert (Sublist l' l). intro w. intros. apply H. exists s. split. auto.
+    rewrite Forall_forall in H2. apply H2. auto. assert (length l' <= length l).
+    specialize (construct_reachable_length_bound m_pg i). rewrite Heqi; simpl; intros. rewrite Heql', Heqi. apply H5. omega.
+    apply le_lt_or_eq in H5. destruct H5. assert (ProcessingInResult m_pg (rch2 i) (construct_reachable m_pg i)).
+    apply construct_reachable_contains_all_reachable. rewrite Forall_forall. rewrite Heqi. simpl. intros. destruct H6; auto.
+    rewrite <- H6 in *. apply valid_not_null in H1. auto. rewrite Heqi; hnf; simpl. intros. auto. rewrite Heql' in H5.
+    rewrite Heqi at 2. simpl. auto. specialize (H6 s z). rewrite Heql'; apply H6; auto. rewrite Heqi; simpl. left; auto.
+    generalize (sublist_reverse t_eq_dec l' l HS H5 H4 z); intros; apply H6. apply H. exists s. split; auto. auto.
+  Qed.
+
+  Lemma reachable_through_sublist_reachable:
+    forall (mg : MathGraph V D null) S l, reachable_set_list m_pg S l ->
+      forall s, Sublist s S -> well_defined_list mg s -> exists l' : list V, reachable_set_list m_pg s l' /\ NoDup l'.
+  Proof.
+    do 5 intro; induction s; intros. exists nil. split. intro. split; intros. destruct H2 as [ll [? ?]]. inversion H2.
+    inversion H2. apply NoDup_nil. assert (Sublist s S). repeat intro. apply (H0 a0). apply in_cons; auto.
+    assert (well_defined_list mg s). repeat intro. apply (H1 x). apply in_cons; auto. specialize (IHs H2 H3). clear H2 H3.
+    destruct IHs as [l2 [? ?]]. assert (In a (a :: s)). apply in_eq. specialize (H1 a H4). destruct H1. subst. exists l2.
+    split; auto. intro. split; intro. apply (H2 x). destruct H1 as [m [? ?]]. exists m. split; auto. apply in_inv in H1.
+    destruct H1. apply eq_sym in H1. subst. destruct H5 as [p [[? ?] [? ?]]]. destruct p; inversion H1. subst. simpl in H6.
+    destruct p. apply valid_not_null in H6. exfalso; auto. destruct H6 as [[? [? ?]] ?]. apply valid_not_null in H6. exfalso.
+    auto. auto. apply (H2 x) in H1. destruct H1 as [m [? ?]]. exists m. split; auto. apply in_cons; auto. assert (In a S).
+    apply H0; auto. destruct (reachable_through_single_reachable mg S l H a H5 H1) as [l1 [? ?]].
+    destruct (double_list_split t_eq_dec H7 H3) as [i1 [i2 [i3 [? [? ?]]]]]. exists (i1 ++ i2 ++ i3); split; auto. intro.
+    split; intro. rewrite reachable_through_set_eq in H11. destruct H11. rewrite app_assoc. apply in_or_app. left.
+    apply (Permutation_in x H8). destruct H6. rewrite H12. auto. apply in_or_app. right. apply (Permutation_in x H9).
+    apply H2. auto. apply in_app_or in H11. destruct H11. assert (In x (i1 ++ i2)). apply in_or_app. left; auto.
+    rewrite reachable_through_set_eq. left. apply Permutation_sym in H8. apply (Permutation_in x H8) in H12. destruct H6.
+    apply H13; auto. apply Permutation_sym in H9. apply (Permutation_in x H9) in H11. rewrite reachable_through_set_eq. right.
+    rewrite (H2 x). auto.
+  Qed.
+
 End GraphReachable.
