@@ -121,7 +121,6 @@ Proof.
   destruct H3; split; intuition.
 Qed.
 
-Notation "a '+::' b" := (a ++ (b :: nil)) (at level 19).
 Fixpoint foot {A} (L : list A) : option A :=
   match L with
     | nil => None
@@ -763,3 +762,79 @@ Proof.
   intros; destruct H. rewrite H. apply reachable_through_empty. split; repeat intro.
   destruct H0 as [x [? ?]]. apply H in H0. apply reachable_is_valid in H1; tauto. hnf in H0; tauto.
 Qed.
+
+Definition change_valid {A D: Type} {EV: EqDec A} (g: PreGraph A D) (v: A): A -> Prop :=
+  fun n => valid n \/ n = v.
+
+Definition change_node_label {A D: Type} {EV: EqDec A} (g: PreGraph A D) (v: A) (d: D): A -> D :=
+  fun n => if t_eq_dec n v then d else node_label n.
+
+Definition change_edge_func {A D: Type} {EV: EqDec A} (g: PreGraph A D) (v l r: A): A -> list A :=
+  fun n => if t_eq_dec n v then (l:: r:: nil) else edge_func n.
+
+Definition update_PreGraph {A D: Type} {EV: EqDec A} (g: PreGraph A D) v d l r :=
+  Build_PreGraph A D EV (change_valid g v) (change_node_label g v d) (change_edge_func g v l r).
+
+Definition update_BiGraph {A D: Type} {EV: EqDec A} (g: BiGraph A D) (v: A) (d: D) (l r: A): BiGraph A D.
+  refine (Build_BiGraph A D EV (update_PreGraph b_pg v d l r) _).
+  intro n. destruct (t_eq_dec n v). exists l, r. subst. simpl. unfold change_edge_func. destruct (t_eq_dec v v).
+  auto. exfalso. auto. destruct (only_two_neighbours n) as [vv1 [vv2 ?]]. exists vv1, vv2. simpl. unfold change_edge_func.
+  destruct (t_eq_dec n v). exfalso; auto. auto.
+Defined.
+
+Definition in_math {A D: Type} {nV: A} {EV: EqDec A} (g: MathGraph A D nV) (v: A) (l r: A) : Prop :=
+  forall e, In e (l :: r :: nil) -> valid e \/ e = v \/ e = nV.
+
+Definition update_MathGraph {A D: Type} {nV: A} {EV: EqDec A} (g: MathGraph A D nV)
+           (v: A) (d: D) (l r: A) (Hi: in_math g v l r) (Hn: v <> nV): MathGraph A D nV.
+  refine (Build_MathGraph A D nV EV (update_PreGraph m_pg v d l r) _ _).
+  intros. simpl in H0. unfold change_edge_func in H0. simpl in H; simpl. unfold change_valid in *. destruct (t_eq_dec x v).
+  subst. specialize (Hi y H0). destruct Hi as [? | [? | ?]]; [right; left | right; right | left]; auto.
+  destruct H. apply (valid_graph x H y) in H0. destruct H0; [left | right; left]; auto. exfalso; auto.
+  intros. simpl in H. unfold change_valid in H. destruct H; [apply valid_not_null | subst]; auto.
+Defined.
+
+Definition update_graph {A D: Type} {nV: A} {EV: EqDec A} (g: BiMathGraph A D nV)
+           (v: A) (d: D) (l r: A) (Hi: in_math bm_ma v l r) (Hn: v <> nV): BiMathGraph A D nV.
+  refine (Build_BiMathGraph A D nV EV (update_BiGraph bm_bi v d l r) (update_MathGraph bm_ma v d l r Hi Hn) _).
+  simpl. rewrite pg_the_same. auto.
+Defined.
+
+Definition single_PreGraph {A D: Type} (EV: EqDec A) (v : A) (d : D) (l r : A) : PreGraph A D :=
+  Build_PreGraph A D EV (fun n => n = v) (fun n => d) (fun n => (l :: r :: nil)).
+
+Definition single_BiGraph {A D: Type} (EV: EqDec A) (v: A) (d: D) (l r : A) : BiGraph A D.
+  refine (Build_BiGraph A D EV (single_PreGraph EV v d l r) _).
+  intros. exists l, r. simpl. auto.
+Defined.
+
+Definition single_MathGraph_double {A D: Type} (nV: A) (EV: EqDec A) (v: A) (d: D) (Hn: v <> nV): MathGraph A D nV.
+  refine (Build_MathGraph A D nV EV (single_PreGraph EV v d v v) _ _).
+  intros. simpl in H. subst. simpl in H0. simpl. destruct H0 as [? | [? | ?]]; [right | right | exfalso]; auto.
+  intros. simpl in H. subst. auto.
+Defined.
+
+Definition single_MathGraph_left {A D: Type} (nV: A) (EV: EqDec A) (v: A) (d: D) (Hn: v <> nV): MathGraph A D nV.
+  refine (Build_MathGraph A D nV EV (single_PreGraph EV v d v nV) _ _).
+  intros. simpl in H. subst. simpl in H0. simpl. destruct H0 as [? | [? | ?]]; [right | left | exfalso]; auto.
+  intros. simpl in H. subst. auto.
+Defined.
+
+Definition single_MathGraph_right {A D: Type} (nV: A) (EV: EqDec A) (v: A) (d: D) (Hn: v <> nV): MathGraph A D nV.
+  refine (Build_MathGraph A D nV EV (single_PreGraph EV v d nV v) _ _).
+  intros. simpl in H. subst. simpl in H0. simpl. destruct H0 as [? | [? | ?]]; [left | right | exfalso]; auto.
+  intros. simpl in H. subst. auto.
+Defined.
+
+
+Definition single_graph_double {A D: Type} (nV: A) (EV: EqDec A) (v: A) (d: D) (Hn: v <> nV): BiMathGraph A D nV.
+  refine (Build_BiMathGraph A D nV EV (single_BiGraph EV v d v v) (single_MathGraph_double nV EV v d Hn) _); simpl; auto.
+Defined.
+
+Definition single_graph_left {A D: Type} (nV: A) (EV: EqDec A) (v: A) (d: D) (Hn: v <> nV): BiMathGraph A D nV.
+  refine (Build_BiMathGraph A D nV EV (single_BiGraph EV v d v nV) (single_MathGraph_left nV EV v d Hn) _); simpl; auto.
+Defined.
+
+Definition single_graph_right {A D: Type} (nV: A) (EV: EqDec A) (v: A) (d: D) (Hn: v <> nV): BiMathGraph A D nV.
+  refine (Build_BiMathGraph A D nV EV (single_BiGraph EV v d nV v) (single_MathGraph_right nV EV v d Hn) _); simpl; auto.
+Defined.

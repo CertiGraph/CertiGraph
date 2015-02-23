@@ -364,3 +364,8 @@ Proof.
 Qed.
 
 Arguments double_list_split [A] _ [l1] [l2] _ _.
+
+Notation "a '+::' b" := (a ++ (b :: nil)) (at level 19).
+
+Lemma app_cons_assoc: forall {A} (l1 l2 : list A) x, l1 ++ x :: l2 = l1 +:: x ++ l2.
+Proof. intros. induction l1. simpl. auto. rewrite <- app_comm_cons. rewrite IHl1. do 2 rewrite <- app_comm_cons. auto. Qed.
