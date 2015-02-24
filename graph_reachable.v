@@ -108,11 +108,11 @@ Section GraphReachable.
   Qed.
 
   Definition rch1 (i : reach_input) := match i with (n, _, _) => n end.
-  
+
   Definition rch2 (i : reach_input) := match i with (_, l, _) => l end.
-  
+
   Definition rch3 (i: reach_input) := match i with (_, _, result) => result end.
-  
+
   Lemma construct_reachable_reachable:
     forall (mg : MathGraph V D null) (i : reach_input) x, Forall (reachable m_pg x) (rch3 i) ->
                                                           Forall (reachable m_pg x) (rch2 i) ->
@@ -131,7 +131,7 @@ Section GraphReachable.
     intuition. apply reachable_foot_valid in H1. destruct (valid_graph v H1 y H4). intuition. split; auto. split; auto.
     intro; intros. hnf; auto.
   Qed.
-  
+
   Lemma construct_reachable_nodup:
     forall (pg : PreGraph V D) (i : reach_input), NoDup (rch2 i ++ rch3 i) -> NoDup (construct_reachable pg i).
   Proof.
@@ -148,7 +148,7 @@ Section GraphReachable.
     revert H6; apply H1. apply in_cons. auto. intro. apply in_inv in H6. destruct H6. subst. specialize (H4 x H3).
     revert H4; apply remove_In. revert H3; apply H5. auto.
   Qed.
-  
+
   Lemma construct_reachable_length_bound:
     forall (pg : PreGraph V D) (i : reach_input), length (rch3 i) <= rch1 i -> length (construct_reachable pg i) <= rch1 i.
   Proof.
@@ -171,7 +171,7 @@ Section GraphReachable.
     simpl in *. assert (len -S (length rslt) <= n) as S by omega. specialize (IHn S); clear S. repeat intro. rewrite Heqr.
     apply (IHn a). apply in_cons. auto.
   Qed.
-  
+
   Definition ProcessingInResult (pg : PreGraph V D) (l1 l2 : list V) : Prop :=
     forall x y, In x l1 -> reachable pg x y -> In y l2.
 
@@ -192,7 +192,7 @@ Section GraphReachable.
       | nil => (None, (nil, nil))
       | x :: l => if (in_dec t_eq_dec x l2) then findNotIn l l2 (x :: l3) else (Some x, (rev l3, l))
     end.
-  
+
   Lemma find_not_in_none: forall l1 l2 l3, fst (findNotIn l1 l2 l3) = None -> Forall (fun m => In m l2) l1.
   Proof.
     induction l1; intros. apply Forall_nil. simpl in H. destruct (in_dec t_eq_dec a l2).
@@ -208,7 +208,7 @@ Section GraphReachable.
     assert (Forall (fun m : V => In m l2) (a :: l3)) by (apply Forall_cons; auto).
     specialize (IHl1 l2 (a :: l3) x li1 li2 H H1). destruct IHl1 as [? [? [l4 [? [? ?]]]]]. split; auto. split; auto.
     exists (a :: l4). repeat split; auto. simpl in H4. rewrite <- app_assoc in H4. rewrite <- app_comm_cons in H4.
-    rewrite app_nil_l in H4. auto. rewrite H6; apply app_comm_cons. inversion H. split. intro; apply n. 
+    rewrite app_nil_l in H4. auto. rewrite H6; apply app_comm_cons. inversion H. split. intro; apply n.
     rewrite Forall_forall in H0. apply (H0 a). rewrite H2. rewrite in_rev. auto. split. rewrite <- H2. auto.
     exists nil. repeat split; auto. rewrite app_nil_r. auto.
   Qed.
@@ -335,7 +335,7 @@ Section GraphReachable.
     destruct H4 as [z [[? [? ?]] ?]]. specialize (H1 _ H6). apply valid_not_null in H5. exfalso; intuition.
     simpl in H3. assert (In v l). rewrite H3. apply in_eq. rewrite (H2 v) in H4. apply reachable_from_children in H4.
     destruct H4. subst. apply NoDup_cons_2 in H0. exfalso; apply H0. apply in_or_app. right; apply in_eq.
-    destruct H4 as [z [[? [? ?]] ?]]. specialize (H1 _ H6). apply valid_not_null in H5. exfalso; intuition. 
+    destruct H4 as [z [[? [? ?]] ?]]. specialize (H1 _ H6). apply valid_not_null in H5. exfalso; intuition.
   Qed.
 
   Lemma reachable_through_set_eq:
@@ -390,6 +390,64 @@ Section GraphReachable.
     rewrite reachable_through_set_eq. left. apply Permutation_sym in H8. apply (Permutation_in x H8) in H12. destruct H6.
     apply H13; auto. apply Permutation_sym in H9. apply (Permutation_in x H9) in H11. rewrite reachable_through_set_eq. right.
     rewrite (H2 x). auto.
+  Qed.
+
+  Lemma reachable_path_in:
+    forall (pg: PreGraph V D) (p: list V) (l y : V), pg |= p is l ~o~> y satisfying (fun _ : D => True) ->
+                                                     forall z, In z p -> reachable pg l z.
+  Proof.
+    intros. destruct H as [[? ?] [? ?]]. apply in_split in H0. destruct H0 as [l1 [l2 ?]]. exists (l1 +:: z). subst. split.
+    split. destruct l1; simpl; simpl in H; auto. rewrite foot_last. auto. split. rewrite app_cons_assoc in H2.
+    apply valid_path_split in H2. destruct H2. auto. repeat intro; hnf; auto.
+  Qed.
+
+  Lemma update_reachable_path_in:
+    forall {g : BiMathGraph V D null} {x : V} {d : D}  {l r: V} {p: list V} {h y: V},
+      x <> null -> h <> x -> (update_PreGraph b_pg x d l r) |= p is h ~o~> y satisfying (fun _: D => True) ->
+      In x p -> reachable b_pg h x.
+  Proof.
+    intros. generalize (reachable_path_in _ p h y H1 x H2). intro. unfold reachable in H3. rewrite reachable_acyclic in H3.
+    destruct H3 as [path [? ?]]. destruct H4 as [[? ?] [? ?]]. apply foot_explicit in H5. destruct H5 as [p' ?]. destruct p'.
+    subst. simpl in H4. inversion H4. exfalso; auto. subst. simpl in H4. inversion H4. subst. remember (foot (h :: p')).
+    destruct o. apply eq_sym in Heqo. apply foot_explicit in Heqo. destruct Heqo as [pt ?]. generalize H6; intro Hv.
+    rewrite H5 in *. rewrite <- app_cons_assoc in H3, H6. clear H7. apply valid_path_split in H6. destruct H6. simpl in H7.
+    destruct H7. destruct H7 as [? [? ?]]. simpl in H10. unfold change_edge_func in H10. simpl in H10. generalize H3; intro Hnd.
+    apply NoDup_app_r in H3. apply NoDup_cons_2 in H3. apply (not_in_app t_eq_dec) in H3. destruct H3. simpl in H7.
+    unfold change_valid in H7. destruct H7. destruct (t_eq_dec v x). exfalso; auto. rewrite <- pg_the_same in H7.
+    rewrite <- pg_the_same in H10. destruct (valid_graph v H7 x H10). exfalso; auto. rewrite <- H5 in Hv.
+    exists ((h :: p') +:: x). split. split. simpl. auto. rewrite foot_last. auto. split. rewrite H5 in *. clear H5 p'.
+    rewrite <- app_cons_assoc in Hv. rewrite <- app_cons_assoc. clear H6. induction pt. simpl in Hv. simpl.
+    rewrite pg_the_same in H12, H7, H10. split; auto. destruct Hv as [[? [? ?]] ?]. split; auto. rewrite <- app_comm_cons.
+    simpl. destruct (pt ++ v :: x :: nil) eqn:? . destruct pt; inversion Heql0. rewrite <- app_comm_cons in Hnd, Hv.
+    rewrite Heql0 in Hnd, Hv. split. assert (a <> x). apply NoDup_cons_2 in Hnd. rewrite <- Heql0 in Hnd. intro. subst.
+    apply Hnd. apply in_or_app. right. apply in_cons, in_eq. assert (v0 <> x). destruct pt. simpl in Heql0. inversion Heql0.
+    subst. apply NoDup_cons_1 in Hnd. apply NoDup_cons_2 in Hnd. intro. subst. apply Hnd. apply in_eq.
+    rewrite <- app_comm_cons in Heql0. inversion Heql0. subst. apply NoDup_cons_1 in Hnd. apply NoDup_cons_2 in Hnd.
+    intro; subst; apply Hnd. apply in_or_app. right; apply in_cons, in_eq. rewrite <- (app_nil_l l0) in Hv.
+    do 2 rewrite app_comm_cons in Hv. apply valid_path_split in Hv. destruct Hv. simpl in H13. destruct H13 as [[? [? ?]] _].
+    simpl in H13, H15, H16. unfold change_valid in H13, H15. unfold change_edge_func in H16. simpl in H16. destruct H13.
+    destruct H15. destruct (t_eq_dec a x). exfalso; auto. split; auto. exfalso; auto. exfalso; auto. apply IHpt.
+    apply valid_path_tail in Hv. unfold tl in Hv. apply Hv. apply NoDup_cons_1 in Hnd. auto. repeat intro; hnf; auto.
+    exfalso; auto. apply eq_sym in Heqo. apply foot_none_nil in Heqo. inversion Heqo.
+  Qed.
+
+  Lemma update_reachable_tail_reachable:
+    forall {pg: PreGraph V D} {x h: V} {p: list V} {d: D} {l r y: V},
+      NoDup (x :: h :: p) -> (update_PreGraph pg x d l r) |= x :: h :: p is x ~o~> y satisfying (fun _ : D => True) ->
+      reachable pg h y.
+  Proof.
+    intros. assert ((update_PreGraph pg x d l r) |= (h :: p) is h ~o~> y satisfying (fun _ : D => True)). split; split.
+    simpl. auto. destruct H0 as [[_ ?] _]. rewrite <- (app_nil_l (h :: p)) in H0. rewrite app_comm_cons in H0.
+    rewrite foot_app in H0. auto. intro; inversion H1. destruct H0 as [_ [? _]]. rewrite <- (app_nil_l (h :: p)) in H0.
+    rewrite app_comm_cons in H0. apply valid_path_split in H0. destruct H0. auto. repeat intro; hnf; auto. exists (h :: p).
+    clear H0. split; split. simpl. auto. destruct H1 as [[_ ?] _]. auto. destruct H1 as [_ [? _]]. remember (h :: p) as pa.
+    clear Heqpa. induction pa. simpl. auto. simpl in H0. simpl. destruct pa. unfold change_valid in H0. destruct H0; auto.
+    subst. apply NoDup_cons_2 in H. exfalso; apply H, in_eq. destruct H0 as [[? [? ?]] ?]. split. assert (a <> x). intro. subst.
+    apply NoDup_cons_2 in H. apply H, in_eq. split. simpl in H0. unfold change_valid in H0. destruct H0; auto. exfalso; auto.
+    split. simpl in H1. unfold change_valid in H1. destruct H1; auto. subst. apply NoDup_cons_2 in H; exfalso.
+    apply H, in_cons, in_eq. simpl in H2. unfold change_edge_func in H2. simpl in H2. destruct (t_eq_dec a x). exfalso; auto.
+    auto. apply IHpa. apply NoDup_cons. apply NoDup_cons_2 in H. intro; apply H, in_cons; auto. do 2 apply NoDup_cons_1 in H.
+    auto. auto. repeat intro; hnf; auto.
   Qed.
 
 End GraphReachable.
