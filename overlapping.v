@@ -188,3 +188,12 @@ Qed.
 Lemma extract_andp_ocon_ocon_left {A} {JA : Join A} {PA : Perm_alg A} {SA: Sep_alg A}:
   forall (w : A) P Q R S, (P && Q ⊗ R ⊗ S)%pred w -> exists w', P w'.
 Proof. repeat intro; destruct_ocon H h; destruct_ocon H2 i; destruct H6; exists i12; trivial. Qed.
+
+Lemma ocon_precise_elim  {A}{JA: Join A}{PA: Perm_alg A}{SA: Sep_alg A}{CA: Canc_alg A}{DA : Disj_alg A}:
+  forall P : pred A, precise P -> (P ⊗ P = P)%pred.
+Proof.
+  intros; apply pred_ext; intro w; intro. destruct_ocon H0 h. try_join h2 h3 h23'; equate_join h23 h23'. equate_precise h12 h23.
+  assert (emp h1). assertSub h1 h12 HS. assert (joins h1 h12). exists w; auto. apply (join_sub_joins_identity HS H4).
+  equate_canc h1 h3. apply (join_unit1_e _ _ H4) in H6. subst. auto. hnf. exists (core w), w, (core w), w, w. split.
+  apply core_unit. split. apply join_comm, core_unit. split. apply join_comm, core_unit. split; auto.
+Qed.

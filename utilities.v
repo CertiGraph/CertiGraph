@@ -98,7 +98,7 @@ Qed.
 
 Lemma NoDup_app_not_in: forall (A : Type) (l1 l2 : list A), NoDup (l1 ++ l2) -> forall y, In y l1 -> ~ In y l2.
 Proof.
-  induction l1; intros. inversion H0. rewrite <- app_comm_cons in H. 
+  induction l1; intros. inversion H0. rewrite <- app_comm_cons in H.
   apply in_inv in H0. destruct H0. subst. apply NoDup_cons_2 in H. intro. apply H.
   apply in_or_app. right. apply H0. apply NoDup_cons_1 in H. apply IHl1; auto.
 Qed.
@@ -151,7 +151,7 @@ Lemma remove_len_le: forall  (A : Type) (eq_dec : forall x y : A, {x = y} + {x <
 Proof. induction l; intros; simpl in *. auto. destruct (eq_dec x a). intuition. simpl. intuition. Qed.
 
 Definition dupOrder {A} (i1 i2 : list A) := length i1 < length i2.
-  
+
 Lemma dupOrder_wf' A : forall len (i: list A), length i <= len -> Acc dupOrder i.
 Proof.
   induction len; intros; constructor; intros; unfold dupOrder in * |-; [exfalso | apply IHlen]; intuition.

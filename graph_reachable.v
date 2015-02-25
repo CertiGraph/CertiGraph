@@ -450,4 +450,24 @@ Section GraphReachable.
     auto. auto. repeat intro; hnf; auto.
   Qed.
 
+  Lemma update_reachable_by_path_not_in:
+    forall {pg: PreGraph V D} {x: V} {p: list V} {d: D} {l r h y: V} {P : set D},
+      ~ In x p -> ((update_PreGraph pg x d l r) |= p is h ~o~> y satisfying P <-> pg |= p is h ~o~> y satisfying P).
+  Proof.
+    intros; split; intro; split; split. apply reachable_by_path_head in H0; auto. apply reachable_by_path_foot in H0; auto.
+    destruct H0 as [_ [? _]]. induction p. simpl; auto. simpl. simpl in H0. destruct p. hnf in H0. destruct H0. auto. subst.
+    exfalso; apply H, in_eq. destruct H0. split. destruct H0 as [? [? ?]]. hnf in H0, H2, H3. split. destruct H0. auto. subst.
+    exfalso; apply H, in_eq. split. destruct H2. auto. subst. exfalso; apply H, in_cons, in_eq. simpl in H3.
+    unfold change_edge_func in H3. destruct (t_eq_dec a x). subst. exfalso; apply H, in_eq. auto. apply IHp. intro. apply H.
+    apply in_cons. auto. auto. destruct H0 as [_ [_ ?]]. repeat intro; hnf. specialize (H0 n H1). hnf in H0. simpl in H0.
+    unfold change_node_label in H0. destruct (t_eq_dec n x). subst. exfalso; auto. auto.
+
+    apply reachable_by_path_head in H0; auto. apply reachable_by_path_foot in H0; auto.
+    destruct H0 as [_ [? _]]. induction p. simpl; auto. simpl. simpl in H0. destruct p. hnf. left. auto. split. destruct H0.
+    destruct H0 as [? [? ?]]. split. left; auto. split. left; auto. simpl. unfold change_edge_func. destruct (t_eq_dec a x).
+    subst. exfalso; apply H, in_eq. auto. apply IHp. intro. apply H. apply in_cons. auto. destruct H0. auto.
+    destruct H0 as [_ [_ ?]]. repeat intro; hnf. specialize (H0 n H1). hnf in H0. simpl. unfold change_node_label.
+    destruct (t_eq_dec n x). subst. exfalso; auto. auto.
+  Qed.
+
 End GraphReachable.

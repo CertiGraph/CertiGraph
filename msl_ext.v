@@ -3,7 +3,7 @@ Require Import ramify_tactics.
 Require Import utilities.
 Require Import Permutation.
 
-Lemma overlapping_eq {A} {JA : Join A} {PA : Perm_alg A} {SA: Sep_alg A} 
+Lemma overlapping_eq {A} {JA : Join A} {PA : Perm_alg A} {SA: Sep_alg A}
       {CaA : Canc_alg A} {CrA : Cross_alg A} {DA : Disj_alg A}:
   forall h1 h2 h3 i1 i2 i3 i12 i23 w1 w2,
     join h1 h2 i12 -> join h2 h3 i23 -> join i12 h3 w1 -> join i1 i2 i12 -> join i2 i3 i23 -> join i12 i3 w2 -> w1 = w2.
@@ -116,7 +116,7 @@ Proof.
   rewrite H10 in *; equate_join w1 w2; auto.
 Qed.
 
-Lemma join_together {A} {JA : Join A} {PA : Perm_alg A} {SA: Sep_alg A} 
+Lemma join_together {A} {JA : Join A} {PA : Perm_alg A} {SA: Sep_alg A}
       {CaA : Canc_alg A} {CrA : Cross_alg A} {DA : Disj_alg A}:
   forall p q m n w i, join p q w -> join m n w -> join p m i -> exists j, join i j w.
 Proof.
@@ -137,7 +137,7 @@ Fixpoint iter_sepcon {A : Type} {JA : Join A} {B : Type} (l : list B) (p : B -> 
 
 Lemma iter_sepcon_app_sepcon {A : Type} {JA : Join A} {B : Type} {PA : Perm_alg A} {SA : Sep_alg A} {CA : Canc_alg A}:
   forall (l1 l2 : list B) (p : B -> pred A), iter_sepcon (l1 ++ l2) p = (iter_sepcon l1 p * iter_sepcon l2 p)%pred.
-Proof.  
+Proof.
   induction l1; intros; apply pred_ext; intro w; intros. rewrite app_nil_l in H. simpl. rewrite emp_sepcon. auto.
   simpl in H. rewrite emp_sepcon in H. rewrite app_nil_l. auto. rewrite <- app_comm_cons in H. simpl in H. destruct_sepcon H h.
   rewrite (IHl1 l2 p) in H1. destruct_sepcon H1 i. try_join h1 i1 h1i1. apply join_comm in H5. exists h1i1, i2.

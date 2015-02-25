@@ -52,7 +52,7 @@ Class BiMathGraph (Vertex Data : Type) (nV : Vertex) {EV: EqDec Vertex} :=
   {
     bm_bi :> BiGraph Vertex Data;
     bm_ma :> MathGraph Vertex Data nV;
-    pg_the_same: m_pg = b_pg      
+    pg_the_same: m_pg = b_pg
   }.
 
 Definition biEdge {Vertex Data : Type} {EV: EqDec Vertex} (BG: BiGraph Vertex Data) (v: Vertex) : Vertex * Vertex.

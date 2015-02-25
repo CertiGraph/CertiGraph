@@ -810,6 +810,27 @@ Section SpatialGraph.
     destruct (eq_nat_dec a x). exfalso; auto. apply H1. simpl in IHll. apply IHll. auto. intros. apply H3. apply in_cons; auto.
   Qed.
 
+  Lemma iter_sepcon_not_in_eq:
+    forall {g : BiGraph adr nat} {x : adr} {li : list adr} {d: nat} {l r : adr},
+      ~ In x li -> iter_sepcon li (graph_cell (update_BiGraph g x d l r)) = iter_sepcon li (graph_cell g).
+  Proof.
+    intros; apply pred_ext; intro w; intro; revert w H0; induction li; intros; simpl; simpl in H0; auto;
+    assert (a <> x) by (intro; subst; apply H, in_eq); destruct_sepcon H0 w; exists w1, w2; split; auto; split.
+    unfold graph_cell, gamma, biEdge in H2; unfold graph_cell, gamma, biEdge.
+    destruct (@only_two_neighbours adr nat natEqDec g a) as [v1 [v2 ?]].
+    destruct (@only_two_neighbours adr nat natEqDec (@update_BiGraph adr nat natEqDec g x d l r) a) as [u1 [u2 ?]].
+    simpl in e0. unfold change_edge_func in e0. destruct (t_eq_dec a x). exfalso; auto. rewrite e in e0. inversion e0. subst.
+    simpl in H2. unfold change_node_label in H2. destruct (t_eq_dec a x). exfalso; auto. auto. apply IHli. intro; apply H.
+    apply in_cons; auto. auto.
+
+    unfold graph_cell, gamma, biEdge in H2; unfold graph_cell, gamma, biEdge.
+    destruct (@only_two_neighbours adr nat natEqDec g a) as [v1 [v2 ?]].
+    destruct (@only_two_neighbours adr nat natEqDec (@update_BiGraph adr nat natEqDec g x d l r) a) as [u1 [u2 ?]].
+    simpl in e0. unfold change_edge_func in e0. destruct (t_eq_dec a x). exfalso; auto. rewrite e in e0. inversion e0. subst.
+    simpl. unfold change_node_label. destruct (t_eq_dec a x). exfalso; auto. auto. apply IHli. intro; apply H; apply in_cons.
+    auto. auto.
+  Qed.
+
   Lemma single_graph_node_update_1:
     forall (g: BiMathGraph adr nat 0) (x: adr) (d: nat) (l r: adr) (d': nat) (l' r': adr) (g': BiMathGraph adr nat 0)
            (Hn: x <> 0) (Hi: in_math bm_ma x l' r') S,
@@ -821,38 +842,243 @@ Section SpatialGraph.
     rewrite graph_unfold in H4. destruct H4 as [[? ?] | ?]. hnf in H4. exfalso; auto. destruct H4 as [dd [ll [rr [[? ?] ?]]]].
     rewrite H in H4. apply eq_sym in H4. inversion H4. subst. clear H4.
     assert (((trinode x d l r ⊗ graph l g ⊗ graph r g) ⊗ graphs (l' :: r' :: S) g) w). exists h1, h2, h3, h12, h23. split; auto.
-    simpl in H0. do 2 rewrite ocon_assoc in H0. simpl. auto. rewrite Heqnx in Heqli. clear Heqnx. destruct_ocon H1 h.
-    try_join h2 h3 h23'; equate_join h23 h23'. rewrite graphs_unfold in H6. destruct H6. hnf in H6. destruct H7 as [ll [? ?]].
-    destruct (in_dec eq_nat_dec x ll). assert (NoDup ll). assert (sepcon_unique (graph_cell (@bm_bi adr nat O natEqDec g))).
-    apply graph_cell_sepcon_unique. apply (iter_sepcon_unique_nodup H10 H9). apply in_split in i. destruct i as [l1 [l2 ?]].
-    rewrite H11 in *. clear H11 ll. generalize (Permutation_middle l1 l2 x); intro. apply Permutation_sym in H11.
-    rewrite (iter_sepcon_permutation _ _ _ H11) in H9. clear H11. simpl in H9. destruct_sepcon H9 t. unfold graph_cell in H11.
-    rewrite H in H11. assert (precise (trinode x d l r)). apply precise_trinode. assertSub h12 w HS1. assertSub t1 w HS2.
-    equate_precise_through (trinode x d l r) h12 t1. assert (emp h1). assertSub h1 h23 HS. assert (joins h1 h23). exists w.
-    auto. apply (join_sub_joins_identity HS H11). apply (join_unit1_e _ _ H11) in H1. rewrite <- H1 in *. clear H1 h12.
-    apply (join_unit1_e _ _ H11) in H8. rewrite H8 in *. clear H8 h23 H11 h1. apply join_comm in H4. apply join_comm in H9.
-    generalize (join_canc H9 H4); intro. rewrite H1 in *; clear H1 t2 H4 H9 H13. exists h2, h3. do 2 (split; auto).
-    intros h2' w'; intros. rewrite graphs_unfold. split. hnf. intro y; intros. simpl in H8. destruct H8. subst. right. simpl.
-    unfold change_valid. right; auto. destruct H8. subst. simpl. unfold change_valid. assert (In y (y :: r :: l' :: r' :: S)).
-    apply in_eq. specialize (H6 _ H0). destruct H6; [left | right; left]; auto. destruct H8. subst. simpl. unfold change_valid.
+    simpl in H0. do 2 rewrite ocon_assoc in H0. simpl. auto. rewrite Heqnx in Heqli. clear Heqnx. clear H2; generalize H1.
+    intro. destruct_ocon H1 h. try_join h2 h3 h23'; equate_join h23 h23'. rewrite graphs_unfold in H6. destruct H6. hnf in H6.
+    destruct H7 as [ll [? ?]]. assert (NoDup ll). assert (sepcon_unique (graph_cell (@bm_bi adr nat O natEqDec g))).
+    apply graph_cell_sepcon_unique. apply (iter_sepcon_unique_nodup H10 H9). destruct (in_dec eq_nat_dec x ll).
+
+    (* In x ll *)
+
+    (* make heap clear *)
+    apply in_split in i. destruct i as [l1 [l2 ?]]. rewrite H11 in *. clear H11 ll. generalize (Permutation_middle l1 l2 x).
+    intro. apply Permutation_sym in H11. rewrite (iter_sepcon_permutation _ _ _ H11) in H9. clear H11. simpl in H9.
+    destruct_sepcon H9 t. unfold graph_cell in H11. rewrite H in H11. assert (precise (trinode x d l r)). apply precise_trinode.
+    assertSub h12 w HS1. assertSub t1 w HS2. equate_precise_through (trinode x d l r) h12 t1. assert (emp h1).
+    assertSub h1 h23 HS. assert (joins h1 h23). exists w. auto. apply (join_sub_joins_identity HS H11).
+    apply (join_unit1_e _ _ H11) in H1. rewrite <- H1 in *. clear H1 h12. apply (join_unit1_e _ _ H11) in H8. rewrite H8 in *.
+    clear H8 h23 H11 h1. apply join_comm in H4. apply join_comm in H9. generalize (join_canc H9 H4); intro. rewrite H1 in *.
+    clear H1 t2 H4 H9 H13. exists h2, h3. do 2 (split; auto). intros h2' w'; intros. rewrite graphs_unfold. split.
+
+    (* well_defined_list part *)
+    hnf. intro y; intros. simpl in H8. destruct H8. subst. right. simpl. unfold change_valid. right; auto. destruct H8. subst.
+    simpl. unfold change_valid. assert (In y (y :: r :: l' :: r' :: S)). apply in_eq. specialize (H6 _ H0).
+    destruct H6; [left | right; left]; auto. destruct H8. subst. simpl. unfold change_valid.
     assert (In y (l :: y :: l' :: r' :: S)). apply in_cons, in_eq. specialize (H6 _ H0). destruct H6; [left|right; left]; auto.
     subst; simpl; unfold change_valid. assert (In y (l :: r :: l' :: r' :: S)). do 4 apply in_cons. auto. specialize (H6 _ H0).
-    destruct H6; [left | right; left]; auto. exists (x :: l1 ++ l2). subst. hnf in H7. split. hnf. intro y.
-    assert (In y (x :: l1 ++ l2) <-> In y (l1 ++ x :: l2)). generalize (Permutation_middle l1 l2 x); intro. split; intros.
-    apply (Permutation_in y H0 H8). apply Permutation_sym in H0. apply (Permutation_in y H0 H8). split; intros.
-    destruct (eq_nat_dec y x). subst. apply in_eq. simpl in H8. rewrite H0. rewrite <- (H7 y). destruct H8 as [s [? ?]].
-    unfold reachable_through_set. apply in_inv in H8. destruct H8. rewrite <- H8 in *. clear H8 s.
-    apply reachable_acyclic in H9. destruct H9 as [p [? ?]]. destruct p. destruct H9 as [[? _] _]. inversion H9. assert (a = x).
-    destruct H9 as [[? _] _]. simpl in H9. inversion H9. auto. subst. destruct p. destruct H9 as [[_ ?] _]. inversion H9.
-    exfalso; auto. assert (a = l' \/ a = r'). destruct H9 as [_ [? _]]. rewrite <- (app_nil_l p) in H9.
-    do 2 rewrite app_comm_cons in H9. apply valid_path_split in H9. destruct H9. simpl in H9. destruct H9 as [[_ [_ ?]] _].
-    simpl in H9. unfold change_edge_func in H9. simpl in H9. destruct (eq_nat_dec x x). simpl in H9. destruct H9. left; auto.
-    destruct H9. right; auto. exfalso; auto. exfalso; auto. destruct H11. subst. exists l'. split. do 2 apply in_cons.
-    apply in_eq. apply (update_reachable_tail_reachable H8 H9). subst. exists r'. split. do 3 apply in_cons. apply in_eq.
-    apply (update_reachable_tail_reachable H8 H9). assert (valid x). assert (In x (l1 ++ x :: l2)). apply in_or_app. right.
-    apply in_eq. rewrite <- (H7 x) in H11. destruct H11 as [t [? ?]]. apply reachable_foot_valid in H13. auto.
+    destruct H6; [left | right; left]; auto.
 
-    admit. admit. admit. admit.
+    exists (x :: l1 ++ l2). subst. hnf in H7. split.
+
+    (* reachable_set_list part *)
+    hnf. intro y. assert (In y (x :: l1 ++ l2) <-> In y (l1 ++ x :: l2)). generalize (Permutation_middle l1 l2 x); intro.
+    split; intros. apply (Permutation_in y H0 H8). apply Permutation_sym in H0. apply (Permutation_in y H0 H8). split; intros.
+
+    (* -> direction *)
+    destruct (eq_nat_dec y x). subst. apply in_eq. simpl in H8. rewrite H0. rewrite <- (H7 y). destruct H8 as [s [? ?]].
+    unfold reachable_through_set. apply reachable_acyclic in H9. destruct H9 as [p [? ?]]. destruct (in_dec t_eq_dec x p).
+    destruct (reachable_by_path_split_in _ _ _ _ _ _ _ _ _ H11 i) as [p1 [p2 [? [? ?]]]]. apply reachable_by_path_foot in H14.
+    apply foot_explicit in H14. destruct H14 as [p1h ?]. rewrite H14 in *; clear H14 p1; rename p1h into p1.
+    generalize H15; intro; apply reachable_by_path_head in H14. unfold path_glue in H13. destruct p2. inversion H14.
+    inversion H14. rewrite H17 in *; clear H17 a H14. simpl in H13. rewrite <- app_cons_assoc in H13. subst.
+    apply NoDup_app_r in H9. clear H11 i p1. destruct p2. apply reachable_by_path_foot in H15. inversion H15. exfalso; auto.
+    assert (a = l' \/ a = r'). destruct H15 as [_ [? _]]. rewrite <- (app_nil_l p2) in H11. do 2 rewrite app_comm_cons in H11.
+    apply valid_path_split in H11. destruct H11. simpl in H11. destruct H11 as [[_ [_ ?]] _].
+    simpl in H11. unfold change_edge_func in H11. simpl in H11. destruct (eq_nat_dec x x). simpl in H11. destruct H11.
+    left; auto. destruct H11. right; auto. exfalso; auto. exfalso; auto. destruct H11. subst. exists l'. split.
+    do 2 apply in_cons. apply in_eq. apply (update_reachable_tail_reachable H9 H15). subst. exists r'. split.
+    do 3 apply in_cons. apply in_eq. apply (update_reachable_tail_reachable H9 H15). apply in_inv in H8. destruct H8.
+    apply eq_sym in H8. subst. destruct p. apply reachable_by_path_foot in H11. inversion H11.
+    apply reachable_by_path_head in H11. simpl in H11. inversion H11. subst. exfalso; apply n0, in_eq. exists s. split.
+    simpl in H8. destruct H8 as [? | [? | ?]]; subst. apply in_eq. apply in_cons, in_eq. do 4 apply in_cons. auto.
+    exists p. rewrite (update_reachable_by_path_not_in n0) in H11. auto.
+
+    (* <- direction *)
+    destruct (eq_nat_dec y x). subst. exists x. split. simpl. left; auto. apply reachable_by_reflexive. split. simpl.
+    unfold change_valid. right; auto. repeat intro; hnf; auto. simpl. rewrite H0 in H8. rewrite <- (H7 y) in H8.
+    destruct H8 as [s [? ?]]. apply reachable_acyclic in H9. destruct H9 as [p [? ?]]. destruct (in_dec t_eq_dec x p).
+
+    (* In x p *)
+    destruct (reachable_by_path_split_in _ _ _ _ _ _ _ _ _ H11 i) as [p1 [p2 [? [? ?]]]]. apply reachable_by_path_foot in H14.
+    apply foot_explicit in H14. destruct H14 as [p1h ?]. rewrite H14 in *; clear H14 p1; rename p1h into p1.
+    generalize H15; intro; apply reachable_by_path_head in H14. unfold path_glue in H13. destruct p2. inversion H14.
+    inversion H14. rewrite H17 in *; clear H17 a H14. simpl in H13. rewrite <- app_cons_assoc in H13. subst.
+    apply NoDup_app_r in H9. clear H11 i p1. destruct p2. apply reachable_by_path_foot in H15. inversion H15. exfalso; auto.
+    assert (a = l \/ a = r). destruct H15 as [_ [? _]]. rewrite <- (app_nil_l p2) in H11. do 2 rewrite app_comm_cons in H11.
+    apply valid_path_split in H11. destruct H11. simpl in H11. destruct H11 as [[_ [_ ?]] _]. unfold gamma, biEdge in H.
+    destruct (only_two_neighbours x) as [v1 [v2 ?]]. inversion H. subst. rewrite e in H11. simpl in H11. destruct H11.
+    left; auto. destruct H11. right; auto. exfalso; auto. destruct H11. subst. exists l. split. apply in_cons, in_eq.
+    assert (paths_meet_at _ (x :: l :: nil) (l :: p2) l). unfold paths_meet_at. split; simpl; auto.
+    assert (x :: l :: p2 = path_glue _ (x :: l :: nil) (l :: p2)). unfold path_glue. simpl. auto. rewrite H13 in H15.
+    destruct (reachable_by_path_split_glue _ _ _ _ _ _ _ _ _ _ H11 H15). exists (l :: p2). apply NoDup_cons_2 in H9.
+    rewrite (update_reachable_by_path_not_in H9). auto. subst. exists r. split. do 2 apply in_cons. apply in_eq.
+    assert (paths_meet_at _ (x :: r :: nil) (r :: p2) r). unfold paths_meet_at. split; simpl; auto.
+    assert (x :: r :: p2 = path_glue _ (x :: r :: nil) (r :: p2)). unfold path_glue. simpl. auto. rewrite H13 in H15.
+    destruct (reachable_by_path_split_glue _ _ _ _ _ _ _ _ _ _ H11 H15). exists (r :: p2). apply NoDup_cons_2 in H9.
+    rewrite (update_reachable_by_path_not_in H9). auto.
+
+    (* In l' p *)
+    destruct (in_dec t_eq_dec l' p). destruct (reachable_by_path_split_in _ _ _ _ _ _ _ _ _ H11 i) as [p1 [p2 [? [? ?]]]].
+    apply reachable_by_path_foot in H14. apply foot_explicit in H14. destruct H14 as [p1h ?]. rewrite H14 in *; clear H14 p1.
+    rename p1h into p1. generalize H15; intro; apply reachable_by_path_head in H14. unfold path_glue in H13. destruct p2.
+    inversion H14. inversion H14. rewrite H17 in *; clear H17 a H14. simpl in H13. rewrite <- app_cons_assoc in H13. subst.
+    apply NoDup_app_r in H9. assert (~ In x (l' :: p2)). intro; apply n0; apply in_or_app; right; auto. clear H11 i n0 p1.
+    exists x. split. apply in_eq. apply reachable_by_merge with l'. exists (x :: l' :: nil). split; split. simpl; auto.
+    simpl; auto. simpl. assert (valid l'). destruct H15 as [_ [? _]]. simpl in H11. destruct p2. auto. destruct H11 as [[? _]_].
+    auto. split. split. simpl; unfold change_valid; right; auto. split. simpl. unfold change_valid. left; auto. simpl.
+    unfold change_edge_func. destruct (t_eq_dec x x). apply in_eq. exfalso; auto. unfold change_valid. left; auto. repeat intro.
+    hnf; auto. exists (l' :: p2). rewrite (update_reachable_by_path_not_in H13). auto.
+
+    (* In r' p *)
+    destruct (in_dec t_eq_dec r' p). destruct (reachable_by_path_split_in _ _ _ _ _ _ _ _ _ H11 i) as [p1 [p2 [? [? ?]]]].
+    apply reachable_by_path_foot in H14. apply foot_explicit in H14. destruct H14 as [p1h ?]. rewrite H14 in *; clear H14 p1.
+    rename p1h into p1. generalize H15; intro; apply reachable_by_path_head in H14. unfold path_glue in H13. destruct p2.
+    inversion H14. inversion H14. rewrite H17 in *; clear H17 a H14. simpl in H13. rewrite <- app_cons_assoc in H13. subst.
+    apply NoDup_app_r in H9. assert (~ In x (r' :: p2)). intro; apply n0; apply in_or_app; right; auto. clear H11 i n0 n1 p1.
+    exists x. split. apply in_eq. apply reachable_by_merge with r'. exists (x :: r' :: nil). split; split. simpl; auto.
+    simpl; auto. simpl. assert (valid r'). destruct H15 as [_ [? _]]. simpl in H11. destruct p2. auto. destruct H11 as [[? _]_].
+    auto. split. split. simpl; unfold change_valid; right; auto. split. simpl. unfold change_valid. left; auto. simpl.
+    unfold change_edge_func. destruct (t_eq_dec x x). apply in_cons, in_eq. exfalso; auto. unfold change_valid. left; auto.
+    repeat intro; hnf; auto. exists (r' :: p2). rewrite (update_reachable_by_path_not_in H13). auto.
+
+    (* other cases *)
+    assert (In s (l :: r :: S)). simpl in H8. simpl. destruct H8 as [? | [? | [? | [? | ?]]]]. left; auto. right; left; auto.
+    rewrite <- H8 in *. destruct p; apply reachable_by_path_head in H11. inversion H11. simpl in H11. inversion H11. subst.
+    exfalso; apply n1, in_eq. rewrite <- H8 in *. destruct p; apply reachable_by_path_head in H11. inversion H11. simpl in H11.
+    inversion H11. subst. exfalso; apply n2, in_eq. right; right; auto. exists s. split. apply in_cons; auto. exists p.
+    rewrite (update_reachable_by_path_not_in n0). auto.
+
+    (* iter_sepcon_part *)
+    simpl. exists h2', h3. split; auto. split. apply (trinode_graph_cell l' r'). simpl. unfold change_edge_func.
+    destruct (t_eq_dec x x). auto. exfalso; auto. simpl. unfold change_node_label. destruct (t_eq_dec x x). auto. exfalso; auto.
+    generalize (Permutation_middle l1 l2 x); intro. apply Permutation_sym in H0. apply (Permutation_NoDup H0) in H10.
+    apply NoDup_cons_2 in H10. rewrite (iter_sepcon_not_in_eq H10). auto.
+
+    (* ~ In x ll *)
+
+    (* make heap clear *)
+    assert (graph_cell (@bm_bi adr nat O natEqDec g) x h12). unfold gamma, biEdge in H.
+    destruct (only_two_neighbours x) as [v1 [v2 ?]]. inversion H. subst.  apply (trinode_graph_cell l r). auto. auto.
+    assert ((graph_cell(@bm_bi adr nat 0 natEqDec g) x * iter_sepcon ll (graph_cell(@bm_bi adr nat 0 natEqDec g)) * TT)%pred w).
+    apply iter_sepcon_joinable. apply joinable_graph_cell. apply precise_graph_cell. auto. exists h12, h3. split; auto.
+    exists h23, h1. split; auto. destruct_sepcon H12 t. destruct_sepcon H13 t. assertSub h12 w HS1. assertSub t0 w HS2.
+    assert (precise (graph_cell (@bm_bi adr nat O natEqDec g) x)). apply precise_graph_cell.
+    equate_precise_through (graph_cell (@bm_bi adr nat O natEqDec g) x) h12 t0. clear H17. assertSub h23 w HS1.
+    assertSub t3 w HS2. assert (precise (iter_sepcon ll (graph_cell(@bm_bi adr nat 0 natEqDec g)))). apply precise_iter_sepcon.
+    apply precise_graph_cell. equate_precise_through (iter_sepcon ll (graph_cell(@bm_bi adr nat 0 natEqDec g))) h23 t3.
+    assert (emp h2). assertSub h2 h12 HS. assert (joins h2 h12). try_join h2 h12 ht. exists ht. auto.
+    apply (join_sub_joins_identity HS H16). clear H12 H13 H14 H15 t1 t2. apply (join_unit2_e _ _ H16) in H1. rewrite <- H1 in *.
+    clear H1 h12. apply (join_unit1_e _ _ H16) in H3. rewrite <- H3 in *. clear H3 h23 H16 h2 H8. exists h1, h3.
+    do 2 (split; auto). intros h1' w'; intros. rewrite graphs_unfold. split.
+
+    (* well_defined_list part *)
+    hnf. intro y; intros. simpl in H8. destruct H8. subst. right. simpl. unfold change_valid. right; auto. destruct H8. subst.
+    simpl. unfold change_valid. assert (In y (y :: r :: l' :: r' :: S)). apply in_eq. specialize (H6 _ H0).
+    destruct H6; [left | right; left]; auto. destruct H8. subst. simpl. unfold change_valid.
+    assert (In y (l :: y :: l' :: r' :: S)). apply in_cons, in_eq. specialize (H6 _ H0). destruct H6; [left|right; left]; auto.
+    subst; simpl; unfold change_valid. assert (In y (l :: r :: l' :: r' :: S)). do 4 apply in_cons. auto. specialize (H6 _ H0).
+    destruct H6; [left | right; left]; auto.
+
+    exists (x :: ll). subst. hnf in H7. split.
+
+    (* reachable_set_list part *)
+    hnf. intro y. split; intros.
+
+    (* -> direction *)
+    destruct (eq_nat_dec y x). subst. apply in_eq. hnf in H0. right. rewrite <- (H7 y). destruct H0 as [s [? ?]].
+    do 3 rewrite <- app_comm_cons in H0. rewrite app_nil_l in H0. simpl in H8. unfold reachable_through_set.
+    apply reachable_acyclic in H8. destruct H8 as [p [? ?]]. destruct (in_dec t_eq_dec x p).
+    destruct (reachable_by_path_split_in _ _ _ _ _ _ _ _ _ H12 i) as [p1 [p2 [? [? ?]]]]. apply reachable_by_path_foot in H14.
+    apply foot_explicit in H14. destruct H14 as [p1h ?]. rewrite H14 in *; clear H14 p1; rename p1h into p1.
+    generalize H15; intro; apply reachable_by_path_head in H14. unfold path_glue in H13. destruct p2. inversion H14.
+    inversion H14. rewrite H17 in *; clear H17 a H14. simpl in H13. rewrite <- app_cons_assoc in H13. subst.
+    apply NoDup_app_r in H8. clear H12 i p1. destruct p2. apply reachable_by_path_foot in H15. inversion H15. exfalso; auto.
+    assert (a = l' \/ a = r'). destruct H15 as [_ [? _]]. rewrite <- (app_nil_l p2) in H12. do 2 rewrite app_comm_cons in H12.
+    apply valid_path_split in H12. destruct H12. simpl in H12. destruct H12 as [[_ [_ ?]] _].
+    simpl in H12. unfold change_edge_func in H12. simpl in H12. destruct (eq_nat_dec x x). simpl in H12. destruct H12.
+    left; auto. destruct H12. right; auto. exfalso; auto. exfalso; auto. destruct H12. subst. exists l'. split.
+    do 2 apply in_cons. apply in_eq. apply (update_reachable_tail_reachable H8 H15). subst. exists r'. split.
+    do 3 apply in_cons. apply in_eq. apply (update_reachable_tail_reachable H8 H15). apply in_inv in H0. destruct H0.
+    apply eq_sym in H0. subst. destruct p. apply reachable_by_path_foot in H12. inversion H12.
+    apply reachable_by_path_head in H12. simpl in H12. inversion H12. subst. exfalso; apply n1, in_eq. exists s. split.
+    simpl in H0. destruct H0 as [? | [? | ?]]; subst. apply in_eq. apply in_cons, in_eq. do 4 apply in_cons. auto.
+    exists p. rewrite (update_reachable_by_path_not_in n1) in H12. auto.
+
+
+    (* <- direction *)
+    destruct (eq_nat_dec y x). subst. exists x. split. simpl. left; auto. apply reachable_by_reflexive. split. simpl.
+    unfold change_valid. right; auto. repeat intro; hnf; auto. simpl. simpl in H0. destruct H0. exfalso; auto.
+    rewrite <- (H7 y) in H0. destruct H0 as [s [? ?]]. apply reachable_acyclic in H8. destruct H8 as [p [? ?]].
+    assert (~ In x p). intro. apply (reachable_path_in b_pg p s y H12 x) in H13. assert (In x ll). rewrite <- (H7 x). exists s.
+    split; auto. auto.
+
+    (* In l' p *)
+    destruct (in_dec t_eq_dec l' p). destruct (reachable_by_path_split_in _ _ _ _ _ _ _ _ _ H12 i) as [p1 [p2 [? [? ?]]]].
+    apply reachable_by_path_foot in H15. apply foot_explicit in H15. destruct H15 as [p1h ?]. rewrite H15 in *; clear H15 p1.
+    rename p1h into p1. generalize H16; intro; apply reachable_by_path_head in H15. unfold path_glue in H14. destruct p2.
+    inversion H15. inversion H15. rewrite H18 in *; clear H18 a H15. simpl in H14. rewrite <- app_cons_assoc in H14. subst.
+    apply NoDup_app_r in H8. assert (~ In x (l' :: p2)). intro; apply H13; apply in_or_app; right; auto. clear H12 H13 i p1.
+    exists x. split. apply in_eq. apply reachable_by_merge with l'. exists (x :: l' :: nil). split; split. simpl; auto.
+    simpl; auto. simpl. assert (valid l'). destruct H16 as [_ [? _]]. simpl in H11. destruct p2. auto. destruct H12 as [[? _]_].
+    auto. split. split. simpl; unfold change_valid; right; auto. split. simpl. unfold change_valid. left; auto. simpl.
+    unfold change_edge_func. destruct (t_eq_dec x x). apply in_eq. exfalso; auto. unfold change_valid. left; auto. repeat intro.
+    hnf; auto. exists (l' :: p2). rewrite (update_reachable_by_path_not_in H14). auto.
+
+    (* In r' p *)
+    destruct (in_dec t_eq_dec r' p). destruct (reachable_by_path_split_in _ _ _ _ _ _ _ _ _ H12 i) as [p1 [p2 [? [? ?]]]].
+    apply reachable_by_path_foot in H15. apply foot_explicit in H15. destruct H15 as [p1h ?]. rewrite H15 in *; clear H15 p1.
+    rename p1h into p1. generalize H16; intro; apply reachable_by_path_head in H15. unfold path_glue in H14. destruct p2.
+    inversion H15. inversion H15. rewrite H18 in *; clear H18 a H15. simpl in H14. rewrite <- app_cons_assoc in H14. subst.
+    apply NoDup_app_r in H8. assert (~ In x (r' :: p2)). intro; apply H13; apply in_or_app; right; auto. clear H12 H13 n1 i p1.
+    exists x. split. apply in_eq. apply reachable_by_merge with r'. exists (x :: r' :: nil). split; split. simpl; auto.
+    simpl; auto. simpl. assert (valid r'). destruct H16 as [_ [? _]]. simpl in H11. destruct p2. auto. destruct H12 as [[? _]_].
+    auto. split. split. simpl; unfold change_valid; right; auto. split. simpl. unfold change_valid. left; auto. simpl.
+    unfold change_edge_func. destruct (t_eq_dec x x). apply in_cons, in_eq. exfalso; auto. unfold change_valid. left; auto.
+    repeat intro; hnf; auto. exists (r' :: p2). rewrite (update_reachable_by_path_not_in H14). auto.
+
+    (* other cases *)
+    assert (In s (l :: r :: S)). simpl in H0. simpl. destruct H0 as [? | [? | [? | [? | ?]]]]. left; auto. right; left; auto.
+    rewrite <- H0 in *. destruct p; apply reachable_by_path_head in H12. inversion H12. simpl in H12. inversion H12. subst.
+    exfalso; apply n1, in_eq. rewrite <- H0 in *. destruct p; apply reachable_by_path_head in H12. inversion H12. simpl in H12.
+    inversion H12. subst. exfalso; apply n2, in_eq. right; right; auto. exists s. split. apply in_cons; auto. exists p.
+    rewrite (update_reachable_by_path_not_in H13). auto.
+
+    (* iter_sepcon part *)
+    simpl. exists h1', h3. split; auto. split. apply (trinode_graph_cell l' r'). simpl. unfold change_edge_func.
+    destruct (t_eq_dec x x). auto. exfalso; auto. simpl. unfold change_node_label. destruct (t_eq_dec x x). auto. exfalso; auto.
+    rewrite (iter_sepcon_not_in_eq n). auto.
+  Qed.
+
+  Lemma graphs_eq_graph: forall (g: BiMathGraph adr nat 0) (x: adr) (d: nat) (l r: adr),
+                           gamma bm_bi x = (d, l, r) -> x <> 0 -> graphs (x :: l :: r :: nil) g = graph x g.
+  Proof.
+    intros; apply pred_ext; intro w; intro. simpl in H1. destruct_ocon H1 h. rewrite ocon_emp in H5.
+    rewrite graph_unfold in H4. destruct H4. destruct H4. hnf in H4. exfalso; auto. destruct H4 as [dd [ll [rr [[? ?] ?]]]].
+    rewrite H4 in H. inversion H. subst. assert (((trinode x d l r ⊗ graph l g ⊗ graph r g) ⊗ (graph l g ⊗ graph r g)) w).
+    exists h1, h2, h3, h12, h23. split; auto. rewrite <- ocon_assoc in H8.
+    rewrite (ocon_assoc (trinode x d l r ⊗ graph l g) (graph r g) (graph l g)) in H8.
+    rewrite (ocon_comm (graph r g) (graph l g)) in H8. rewrite <- ocon_assoc in H8.
+    rewrite (ocon_assoc (trinode x d l r) (graph l g) (graph l g)) in H8. assert (precise (graph l g)). apply precise_graph.
+    rewrite (ocon_precise_elim _ H9) in H8. rewrite (ocon_assoc (trinode x d l r ⊗ graph l g) (graph r g) (graph r g)) in H8.
+    assert (precise (graph r g)). apply precise_graph. rewrite (ocon_precise_elim _ H10) in H8. clear H1 H2 H3 H5 H7 H9 H10.
+    clear h1 h2 h3 h12 h23 H. rewrite graph_unfold. right. exists d, l, r. split. split; auto. auto. simpl. rewrite ocon_emp.
+    generalize H1; intro. rewrite graph_unfold in H2. destruct H2 as [[? _] | ?]. hnf in H2. exfalso; auto.
+    destruct H2 as [dd [ll [rr [[? ?] ?]]]]. rewrite H2 in H. inversion H. subst. rewrite ocon_assoc in H4.
+    destruct_ocon H4 h. try_join h2 h3 h23'; equate_join h23 h23'. hnf. exists h1, h23, (core h23), w, h23. split; auto. split.
+    apply join_comm, core_unit. split. apply join_comm in H10. rewrite (join_core H10). apply join_comm, core_unit. split; auto.
+  Qed.
+
+  Lemma single_graph_node_update_2:
+    forall (g: BiMathGraph adr nat 0) (x: adr) (d: nat) (l r: adr) (d': nat) (g': BiMathGraph adr nat 0)
+           (Hn: x <> 0) (Hi: in_math bm_ma x l r),
+      @gamma adr nat natEqDec (@bm_bi adr nat O natEqDec g) x = (d, l, r) -> g' = update_graph g x d' l r Hi Hn ->
+      graph x g |-- trinode x d l r * (trinode x d' l r -* graph x g').
+  Proof.
+    intros. generalize (single_graph_node_update_1 g x d l r d' l r g' Hn Hi nil H H0); intro. rewrite app_nil_r in H1.
+    rewrite (graphs_eq_graph g x d l r H Hn) in H1.
+    assert (@gamma adr nat natEqDec (@bm_bi adr nat O natEqDec g') x = (d', l, r)). unfold gamma, biEdge.
+    destruct (@only_two_neighbours adr nat natEqDec (@bm_bi adr nat O natEqDec g') x) as [v1 [v2 ?]].
+    rewrite H0 in e. simpl in e. unfold change_edge_func in e. rewrite H0. simpl. unfold change_node_label.
+    destruct (t_eq_dec x x). inversion e. subst. auto. exfalso; auto. rewrite (graphs_eq_graph g' x d' l r H2 Hn) in H1. auto.
   Qed.
 
 End SpatialGraph.
