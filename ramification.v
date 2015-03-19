@@ -116,4 +116,16 @@ Qed.
 (*   admit. *)
 (* Qed. *)
 
+Lemma wand_ewand {A: Type}{JA: Join A}{PA: Perm_alg A}{CAA: Canc_alg A}:
+  forall R P Q R', precise P -> R |-- P * (Q -* R') -> Q * (P -⊛ R) |-- R'.
+Proof.
+  intros. intro w. intros. destruct_sepcon H1 h. destruct H3 as [h3 [h4 [? [? ?]]]]. specialize (H0 h4 H5).
+  destruct_sepcon H0 h. equate_precise h3 h0. equate_canc h2 h5. apply (H7 h1); auto.
+Qed.
 
+Lemma ewand_wand {A: Type}{JA: Join A}{PA: Perm_alg A}{CAA: Canc_alg A}:
+  forall R P Q R', R |-- P * TT -> Q * (P -⊛ R) |-- R' -> R |-- P * (Q -* R').
+Proof.
+  intros. intro w. intros. specialize (H w H1). destruct_sepcon H h. exists h1, h2. do 2 (split; auto). intros w1 w2; intros.
+  apply (H0 w2). exists w1, h2. do 2 (split; auto). exists h1, w. split; auto.
+Qed.
