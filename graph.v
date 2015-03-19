@@ -91,7 +91,7 @@ Qed.
 Definition structurally_identical {V D1 D2 : Type} {EV: EqDec V}
            (G1 : @PreGraph V D1 EV) (G2 : @PreGraph V D2 EV) : Prop :=
   forall v : V, (@valid V D1 EV G1 v <-> @valid V D2 EV G2 v) /\
-                (@edge_func V D1 EV G1 v) ~= (@edge_func V D2 EV G2 v).
+                (@edge_func V D1 EV G1 v) = (@edge_func V D2 EV G2 v).
 
 Notation "g1 '~=~' g2" := (structurally_identical g1 g2) (at level 1).
 

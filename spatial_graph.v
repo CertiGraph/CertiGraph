@@ -9,6 +9,7 @@ Require Import NPeano.
 Require Import List.
 Require Import utilities.
 Require Import Permutation.
+Require Import ramification.
 
 Local Open Scope pred.
 
@@ -1081,6 +1082,13 @@ Section SpatialGraph.
     destruct (t_eq_dec x x). inversion e. subst. auto. exfalso; auto. rewrite (graphs_eq_graph g' x d' l r H2 Hn) in H1. auto.
   Qed.
 
+  Lemma single_graph_node_update_2_ewand:
+    forall (g: BiMathGraph adr nat 0) (x: adr) (d: nat) (l r: adr) (d': nat) (g': BiMathGraph adr nat 0)
+           (Hn: x <> 0) (Hi: in_math bm_ma x l r),
+      @gamma adr nat natEqDec (@bm_bi adr nat O natEqDec g) x = (d, l, r) -> g' = update_graph g x d' l r Hi Hn ->
+      trinode x d' l r * (trinode x d l r -⊛ graph x g) |-- graph x g'.
+  Proof. intros. apply wand_ewand. apply precise_trinode. apply single_graph_node_update_2 with (Hn:= Hn) (Hi := Hi); auto. Qed.
+  
   Lemma iter_sepcon_graph_cell_refine:
     forall (g: BiGraph adr nat) (l: list adr) w,
       iter_sepcon l (graph_cell g) w -> exists li, iter_sepcon li emapsto w /\
@@ -1256,6 +1264,13 @@ Section SpatialGraph.
 
     (* reach the final goal *)
     exists w1', w2', w3, w12', w23'. split; auto.
-   Qed.
+  Qed.
+
+  Lemma subgraph_update_ewand:
+    forall (g g': BiMathGraph adr nat 0) (S1 S1' S2: list adr),
+      subset (reachable_through_set (b_pg_g g) S1) (reachable_through_set (b_pg_g g') S1') ->
+      (unreachable_subgraph (b_pg_g g) S1) -=- (unreachable_subgraph (b_pg_g g') S1') ->
+      graphs S1' g' * (graphs S1 g -⊛ graphs S1 g ⊗ graphs S2 g) |-- graphs S1' g' ⊗ graphs S2 g'.
+  Proof. intros. apply wand_ewand. apply precise_graphs. apply subgraph_update; auto. Qed.
 
 End SpatialGraph.
