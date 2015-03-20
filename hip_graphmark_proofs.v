@@ -82,13 +82,38 @@ Module GraphMark <: Mgraphmark.
   Qed.
 
   Lemma axiom_7 : forall v G x G1 y v1 l r, valid (imp (and (mark G x G1) (lookup G y v l r)) (and (subset_reach G x G1) (and (eq_notreach G x G1) (lookup G1 y v1 l r)))).
-  Proof. admit. Qed.
+  Proof.
+    intros. intro w. unfold and. hnf. intros. destruct H. unfold mark in H. split. unfold subset_reach.
+    apply mark_reachable with (marked := fun d => d = 1). auto. split. unfold eq_notreach. split. intro t. generalize H; intro.
+    destruct H1 as [? _]. specialize (H1 t). destruct H1. simpl. unfold unreachable_valid. split; intro; destruct H3; split.
+    rewrite <- H1. apply H3.
+
+    admit.
+
+    rewrite H1. apply H3. unfold reachable_through_set in *. intro; apply H4; clear H4. destruct H5 as [s [? ?]]. exists s.
+    split; auto. apply mark_reachable in H. specialize (H t). apply in_inv in H4. destruct H4. subst. apply H. auto.
+    inversion H4.
+
+    admit.
+
+    admit.
+
+  Qed.
 
   Lemma axiom_8 : forall l r x G, valid (imp (lookup G x 1 l r) (mark G x G)).
-  Proof. admit. Qed.
+  Proof.
+    intros. intro. hnf. intros. destruct H as [?[? [? [? ?]]]]. split. apply si_refl. split; intros. hnf. unfold unmarked in H4.
+    destruct H4 as [p [[? ?] [? ?]]]. unfold path_prop in H7. specialize (H7 x). assert (In x p). destruct p. simpl in H4.
+    inversion H4. simpl in H4. inversion H4. subst. apply in_eq. specialize (H7 H8). hnf in H7. exfalso; auto. auto.
+  Qed.
 
   Lemma axiom_9 : forall G, valid (mark G null_node G).
-  Proof. admit. Qed.
+  Proof.
+    intros. intro w. unfold null_node. split; clear w. apply si_refl. split; intros. hnf. unfold unmarked in H.
+    destruct H as [p [[? ?] [? ?]]]. destruct p. inversion H. simpl in H. inversion H. subst. simpl in H1. destruct p.
+    unfold b_pg_g in H1. rewrite <- pg_the_same in H1. apply valid_not_null in H1. exfalso; auto. destruct H1 as [[? _] _].
+    unfold b_pg_g in H1. rewrite <- pg_the_same in H1. apply valid_not_null in H1. exfalso; auto. auto.
+  Qed.
 
   Lemma lookup_graph_unfold: forall G v x l r w,
                                lookup G x v l r w -> (graph x G = trinode x v l r ⊗ graph l G ⊗ graph r G)%pred.

@@ -216,6 +216,25 @@ Notation " g '|=' n1 '~~>' n2 'satisfying' P " := (reachable_by_acyclic g n1 P n
 Definition reachable {A D : Type} {EV: EqDec A} (g: PreGraph A D) (n : A) : set A:=
   reachable_by g n (fun _ => True).
 
+Definition reachable_through_set {A D : Type} {EV: EqDec A} (g: PreGraph A D) (S : list A) : set A:=
+  fun n => exists s, In s S /\ reachable g s n.
+
+Lemma reachable_set_eq {A D : Type} {EV: EqDec A} (g: PreGraph A D) (S1 S2 : list A):
+  S1 ~= S2 -> set_eq (reachable_through_set g S1) (reachable_through_set g S2).
+Proof. intros; destruct H; split; repeat intro; destruct H1 as [x [HIn Hrch]]; exists x; split; auto. Qed.
+
+Definition reachable_valid {A D : Type} {EV: EqDec A} (g: PreGraph A D) (S : list A) : A -> Prop :=
+  fun n => @valid _ _ _ _ n /\ reachable_through_set g S n.
+
+Definition reachable_subgraph {A D : Type} {EV: EqDec A} (g: PreGraph A D) (S : list A) :=
+  Build_PreGraph A D EV (reachable_valid g S) node_label edge_func.
+
+Definition unreachable_valid {A D : Type} {EV: EqDec A} (g: PreGraph A D) (S : list A) : A -> Prop :=
+  fun n => @valid _ _ _ _ n /\ ~ reachable_through_set g S n.
+
+Definition unreachable_subgraph {A D : Type} {EV: EqDec A} (g: PreGraph A D) (S : list A) :=
+  Build_PreGraph A D EV (unreachable_valid g S) node_label edge_func.
+
 Section GraphPath.
   Variable N : Type.
   Variable D : Type.
@@ -710,25 +729,6 @@ Section GraphPath.
     intuition.
   Qed.
 End GraphPath.
-
-Definition reachable_through_set {A D : Type} {EV: EqDec A} (g: PreGraph A D) (S : list A) : set A:=
-  fun n => exists s, In s S /\ reachable g s n.
-
-Lemma reachable_set_eq {A D : Type} {EV: EqDec A} (g: PreGraph A D) (S1 S2 : list A):
-  S1 ~= S2 -> set_eq (reachable_through_set g S1) (reachable_through_set g S2).
-Proof. intros; destruct H; split; repeat intro; destruct H1 as [x [HIn Hrch]]; exists x; split; auto. Qed.
-
-Definition reachable_valid {A D : Type} {EV: EqDec A} (g: PreGraph A D) (S : list A) : A -> Prop :=
-  fun n => @valid _ _ _ _ n /\ reachable_through_set g S n.
-
-Definition reachable_subgraph {A D : Type} {EV: EqDec A} (g: PreGraph A D) (S : list A) :=
-  Build_PreGraph A D EV (reachable_valid g S) node_label edge_func.
-
-Definition unreachable_valid {A D : Type} {EV: EqDec A} (g: PreGraph A D) (S : list A) : A -> Prop :=
-  fun n => @valid _ _ _ _ n /\ ~ reachable_through_set g S n.
-
-Definition unreachable_subgraph {A D : Type} {EV: EqDec A} (g: PreGraph A D) (S : list A) :=
-  Build_PreGraph A D EV (unreachable_valid g S) node_label edge_func.
 
 Lemma reachable_through_empty {A D : Type} {EV: EqDec A} (g: PreGraph A D):
   set_eq (reachable_through_set g nil) (empty_set A).
