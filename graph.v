@@ -235,6 +235,28 @@ Definition unreachable_valid {A D : Type} {EV: EqDec A} (g: PreGraph A D) (S : l
 Definition unreachable_subgraph {A D : Type} {EV: EqDec A} (g: PreGraph A D) (S : list A) :=
   Build_PreGraph A D EV (unreachable_valid g S) node_label edge_func.
 
+Definition validly_identical {V D: Type} {EV: EqDec V} (G1 G2: @PreGraph V D EV) : Prop :=
+  (forall v : V, @valid V D EV G1 v <-> @valid V D EV G2 v) /\
+  (forall v : V, @valid V D EV G1 v -> @node_label V D EV G1 v = @node_label V D EV G2 v) /\
+  (forall v : V, @valid V D EV G1 v -> @edge_func V D EV G1 v = @edge_func V D EV G2 v).
+
+Notation "g1 '-=-' g2" := (validly_identical g1 g2) (at level 1).
+
+Lemma vi_refl: forall {V D : Type} {EV : EqDec V} (G : PreGraph V D), G -=- G.
+Proof. intros; split; [| split]; intros; intuition. Qed.
+
+Lemma vi_sym: forall {V D : Type} {EV: EqDec V} (G1 G2 : PreGraph V D), G1 -=- G2 -> G2 -=- G1.
+Proof.
+  intros; split; [| split]; intros; destruct H as [? [? ?]];
+  [rewrite <- H  | rewrite <- H in H0; rewrite <- (H1 v H0) | rewrite <- H in H0; rewrite <- (H2 v H0)]; intuition.
+Qed.
+
+Lemma vi_trans: forall {V D : Type} {EV : EqDec V} (G1 G2 G3 : PreGraph V D), G1 -=- G2 -> G2 -=- G3 -> G1 -=- G3.
+Proof.
+  intros; split; [| split]; intros; destruct H as [? [? ?]]; destruct H0 as [? [? ?]]. rewrite H; rewrite <- H0. intuition.
+  rewrite (H2 v H1); rewrite H in H1; apply H4; auto. rewrite (H3 v H1); rewrite H in H1; apply H5; auto.
+Qed.
+
 Section GraphPath.
   Variable N : Type.
   Variable D : Type.
@@ -728,6 +750,28 @@ Section GraphPath.
     generalize (reachable_by_subset_reachable g1 root unmarked n); intro.
     intuition.
   Qed.
+
+  Lemma si_reachable: forall (g1 g2: Gph) n,  g1 ~=~ g2 -> subset (reachable g1 n) (reachable g2 n).
+  Proof.
+    intros. intro t. intros. destruct H0 as [p ?]. destruct H0. exists p. split. auto. destruct H1. split. clear - H H1.
+    induction p. simpl. auto. simpl. simpl in H1. destruct p. destruct (H a). rewrite <- H0. auto. destruct H1. split.
+    destruct H0 as [? [? ?]]. split. destruct (H a). rewrite <- H4. auto. split. destruct (H n). rewrite <- H4. auto.
+    destruct (H a). rewrite <- H5. auto. apply IHp. auto. repeat intro; hnf; auto.
+  Qed.
+
+  Lemma mark_unreachable_subgraph:
+    forall g1 root g2, mark g1 root g2 -> (unreachable_subgraph g1 (root :: nil)) -=- (unreachable_subgraph g2 (root :: nil)).
+  Proof.
+    intros. generalize H; intro. split; [|split]; intros; destruct H as [? [? ?]]; specialize (H v); destruct H. simpl.
+    unfold unreachable_valid. split; intros; destruct H4; split. rewrite <- H. apply H4. intro; apply H5; clear H5.
+    unfold reachable_through_set in *. destruct H6 as [s [? ?]]. exists s. split; auto. apply in_inv in H5. destruct H5. subst.
+    destruct H0 as [? _]. apply si_sym in H0. apply (si_reachable _ _ s H0). auto. inversion H5. rewrite H. auto.
+    intro; apply H5; clear H5. destruct H6 as [s [? ?]]. exists s. split; auto. apply in_inv in H5. destruct H5. subst.
+    destruct H0 as [? _]. apply (si_reachable _ _ s H0). auto. inversion H5. simpl in H1. hnf in H1. destruct H1.
+    assert (~ (reachable g1 root v)). intro; apply H5; clear H5. exists root. split. apply in_eq. auto.
+    apply (mark_unreachable _ _ _ H0 v H6). auto.    
+  Qed.
+  
 End GraphPath.
 
 Lemma reachable_through_empty {A D : Type} {EV: EqDec A} (g: PreGraph A D):
@@ -832,7 +876,6 @@ Definition single_MathGraph_right {A D: Type} (nV: A) (EV: EqDec A) (v: A) (d: D
   intros. simpl in H. subst. auto.
 Defined.
 
-
 Definition single_graph_double {A D: Type} (nV: A) (EV: EqDec A) (v: A) (d: D) (Hn: v <> nV): BiMathGraph A D nV.
   refine (Build_BiMathGraph A D nV EV (single_BiGraph EV v d v v) (single_MathGraph_double nV EV v d Hn) _); simpl; auto.
 Defined.
@@ -844,26 +887,3 @@ Defined.
 Definition single_graph_right {A D: Type} (nV: A) (EV: EqDec A) (v: A) (d: D) (Hn: v <> nV): BiMathGraph A D nV.
   refine (Build_BiMathGraph A D nV EV (single_BiGraph EV v d nV v) (single_MathGraph_right nV EV v d Hn) _); simpl; auto.
 Defined.
-
-Definition validly_identical {V D: Type} {EV: EqDec V} (G1 G2: @PreGraph V D EV) : Prop :=
-  (forall v : V, @valid V D EV G1 v <-> @valid V D EV G2 v) /\
-  (forall v : V, @valid V D EV G1 v -> @node_label V D EV G1 v = @node_label V D EV G2 v) /\
-  (forall v : V, @valid V D EV G1 v -> @edge_func V D EV G1 v = @edge_func V D EV G2 v).
-
-Notation "g1 '-=-' g2" := (validly_identical g1 g2) (at level 1).
-
-Lemma vi_refl: forall {V D : Type} {EV : EqDec V} (G : PreGraph V D), G -=- G.
-Proof. intros; split; [| split]; intros; intuition. Qed.
-
-Lemma vi_sym: forall {V D : Type} {EV: EqDec V} (G1 G2 : PreGraph V D), G1 -=- G2 -> G2 -=- G1.
-Proof.
-  intros; split; [| split]; intros; destruct H as [? [? ?]];
-  [rewrite <- H  | rewrite <- H in H0; rewrite <- (H1 v H0) | rewrite <- H in H0; rewrite <- (H2 v H0)]; intuition.
-Qed.
-
-Lemma vi_trans: forall {V D : Type} {EV : EqDec V} (G1 G2 G3 : PreGraph V D), G1 -=- G2 -> G2 -=- G3 -> G1 -=- G3.
-Proof.
-  intros; split; [| split]; intros; destruct H as [? [? ?]]; destruct H0 as [? [? ?]]. rewrite H; rewrite <- H0. intuition.
-  rewrite (H2 v H1); rewrite H in H1; apply H4; auto. rewrite (H3 v H1); rewrite H in H1; apply H5; auto.
-Qed.
-

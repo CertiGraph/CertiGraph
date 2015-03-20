@@ -84,20 +84,8 @@ Module GraphMark <: Mgraphmark.
   Lemma axiom_7 : forall v G x G1 y v1 l r, valid (imp (and (mark G x G1) (lookup G y v l r)) (and (subset_reach G x G1) (and (eq_notreach G x G1) (lookup G1 y v1 l r)))).
   Proof.
     intros. intro w. unfold and. hnf. intros. destruct H. unfold mark in H. split. unfold subset_reach.
-    apply mark_reachable with (marked := fun d => d = 1). auto. split. unfold eq_notreach. split. intro t. generalize H; intro.
-    destruct H1 as [? _]. specialize (H1 t). destruct H1. simpl. unfold unreachable_valid. split; intro; destruct H3; split.
-    rewrite <- H1. apply H3.
-
-    admit.
-
-    rewrite H1. apply H3. unfold reachable_through_set in *. intro; apply H4; clear H4. destruct H5 as [s [? ?]]. exists s.
-    split; auto. apply mark_reachable in H. specialize (H t). apply in_inv in H4. destruct H4. subst. apply H. auto.
-    inversion H4.
-
-    admit.
-
-    admit.
-
+    apply mark_reachable with (marked := fun d => d = 1). auto. split. unfold eq_notreach.
+    apply (mark_unreachable_subgraph _ _ _ (fun d => d = 1)). auto. admit.
   Qed.
 
   Lemma axiom_8 : forall l r x G, valid (imp (lookup G x 1 l r) (mark G x G)).
