@@ -2,7 +2,7 @@ Require Import msl.msl_direct.
 Require Import ramify_tactics.
 Require Import msl_ext.
 
-Definition ocon {A: Type}{JA: Join A}{PA: Perm_alg A} (p q:pred A) : pred A :=
+Definition ocon {A: Type}{JA: Join A} (p q:pred A) : pred A :=
   fun h:A => exists h1 h2 h3 h12 h23, join h1 h2 h12 /\ join h2 h3 h23 /\ join h12 h3 h /\ p h12 /\ q h23.
 
 Notation "P ⊗ Q" := (ocon P Q) (at level 40, left associativity) : pred.

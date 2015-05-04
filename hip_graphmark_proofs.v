@@ -23,6 +23,7 @@ Module GraphMark <: Mgraphmark.
   Definition star : formula -> formula -> formula := sepcon.
   Definition and : formula -> formula -> formula := andp.
   Definition imp : formula -> formula -> formula := imp.
+  Definition ext : (nat -> formula) -> formula := exp.
   Definition not : formula -> formula := fun f w => ~ f w.
   Definition eq : node -> node -> formula := fun a b w => a = b.
   Definition mwand : formula -> formula -> formula := ewand.
@@ -81,11 +82,17 @@ Module GraphMark <: Mgraphmark.
     destruct (H13 r). rewrite <- H14; auto. specialize (H13 x). destruct H13. rewrite <- H14. auto.
   Qed.
 
-  Lemma axiom_7 : forall v G x G1 y v1 l r, valid (imp (and (mark G x G1) (lookup G y v l r)) (and (subset_reach G x G1) (and (eq_notreach G x G1) (lookup G1 y v1 l r)))).
+  Lemma axiom_7 : forall v G x G1 y l r, valid (imp (and (mark G x G1) (lookup G y v l r)) (and (subset_reach G x G1) (and (eq_notreach G x G1) (ext (fun Anon_15 => (lookup G1 y Anon_15 l r)))))).
   Proof.
     intros. intro w. unfold and. hnf. intros. destruct H. unfold mark in H. split. unfold subset_reach.
     apply mark_reachable with (marked := fun d => d = 1). auto. split. unfold eq_notreach.
-    apply (mark_unreachable_subgraph _ _ _ (fun d => d = 1)). auto. admit.
+    apply (mark_unreachable_subgraph _ _ _ (fun d => d = 1)). auto.
+
+    unfold ext. destruct H0 as [? [? [? [? ?]]]]. destruct H as [? [? ?]]. destruct (H y). hnf. unfold lookup.
+    specialize (H5 y). specialize (H6 y). LEM ((b_pg_g G) |= x ~o~> y satisfying (unmarked nat (fun d : nat => d = 1))).
+    specialize (H5 H9). hnf in H5. exists 1. split; auto. split. apply H7. auto. split. destruct (H l). apply H10. auto.
+    split. destruct (H r). apply H10; auto. rewrite <- H8. auto. specialize (H6 H9). exists v. split. rewrite <- H6. auto.
+    split. apply H7. auto. split. destruct (H l). apply H10; auto. split. destruct (H r). apply H10; auto. rewrite <- H8. auto.
   Qed.
 
   Lemma axiom_8 : forall l r x G, valid (imp (lookup G x 1 l r) (mark G x G)).
