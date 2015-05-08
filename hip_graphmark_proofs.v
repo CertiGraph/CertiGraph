@@ -66,7 +66,7 @@ Module GraphMark <: Mgraphmark.
     subst. rewrite H7. auto. auto. split. auto. split. hnf. simpl. unfold change_node_label.
     destruct (@t_eq_dec adr natEqDec x x). auto. exfalso; auto. intros. simpl. unfold change_node_label.
     destruct (t_eq_dec n' x). exfalso; auto. auto. split.
-    apply (mark_mark_mark1 _ _ _ _ (b_pg_g G) (b_pg_g G1) (b_pg_g G2) (b_pg_g G3) x l r). hnf; simpl. rewrite H. auto.
+    apply (mark_root_left_right _ _ _ _ (b_pg_g G) (b_pg_g G1) (b_pg_g G2) (b_pg_g G3) x l r). hnf; simpl. rewrite H. auto.
     split. do 2 (split; auto). rewrite H7. apply in_eq. split. do 2 (split; auto). rewrite H7. apply in_cons, in_eq.
     intros. destruct H9 as [?[? ?]]. rewrite H7 in H11. apply in_inv in H11; destruct H11. left; auto. apply in_inv in H11.
     destruct H11. right; auto. inversion H11. auto. apply H2. apply H3.
