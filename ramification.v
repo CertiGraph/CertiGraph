@@ -2,6 +2,7 @@ Require Import msl.msl_direct.
 Require Import overlapping.
 Require Import ramify_tactics.
 Require Import msl.sepalg_list.
+Require Import msl_ext.
 
 Definition ramify {A: Type}{JA: Join A}{PA: Perm_alg A}
            (R P Q R' : pred A) := R |-- P * (Q -* R').
@@ -128,4 +129,16 @@ Lemma ewand_wand {A: Type}{JA: Join A}{PA: Perm_alg A}{CAA: Canc_alg A}:
 Proof.
   intros. intro w. intros. specialize (H w H1). destruct_sepcon H h. exists h1, h2. do 2 (split; auto). intros w1 w2; intros.
   apply (H0 w2). exists w1, h2. do 2 (split; auto). exists h1, w. split; auto.
+Qed.
+
+Definition alignable {A : Type} {JA : Join A} {B : Type} (p : B -> pred A) :=
+  forall (x y : B), p x ⊗ p y |-- (p x && !!(x = y)) || ((p x * p y) && !!(x <> y)).
+
+Lemma alignable_joinable {A : Type} {JA : Join A} {PA: Perm_alg A} {CA: Cross_alg A} {B : Type}:
+  forall (p : B -> pred A) (w : A), alignable p -> joinable p w.
+Proof.
+  repeat intro. specialize (H x y). assert ((p x ⊗ p y * TT)%pred w). destruct_sepcon H1 w. destruct_sepcon H2 w.
+  rename w3 into w4. rename w0 into w3. destruct_cross w. try_join w1 w2w3 wxy. exists wxy, w2w4. do 2 (split; auto).
+  exists w1w4, w1w3, w2w3, w1, w3. split; auto. destruct_sepcon H3 w. specialize (H w1 H4). destruct H as [[? ?] | [? ?]].
+  exfalso; auto. exists w1, w2. split; auto.
 Qed.

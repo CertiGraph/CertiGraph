@@ -89,6 +89,30 @@ Section SpatialGraph.
     hnf in H1. inversion H1. subst. inversion H13. specialize (H3 mm n). specialize (H5 mm n). rewrite H3, H5. auto.
   Qed.
 
+  Lemma alignable_emapsto: alignable emapsto.
+  Proof.
+    intros x y w; intros. destruct (eq_nat_dec x y). left; split; auto. subst. destruct_ocon H w. assert (precise (emapsto y)).
+    apply precise_emapsto. assertSub w12 w HS1. try_join w2 w3 w23'; equate_join w23 w23'. assertSub w23 w HS2.
+    equate_precise_through (emapsto y) w12 w23. assert (emp w1). apply join_sub_joins_identity with w12. exists w2; auto.
+    exists w; auto. apply (join_unit1_e _ _ H3) in H. subst. assert (emp w3). apply unit_identity with w12. auto.
+    apply (join_unit2_e _ _ H) in H1. subst. auto. right; split; auto. destruct_ocon H w. generalize H2; intro Hx.
+    generalize H3; intro Hy. destruct H2 as [vx ?]. destruct H3 as [vy ?].  destruct w12 as [f12 x12] eqn:? .
+    destruct w23 as [f23 x23] eqn:? . hnf in H2. simpl in H2. destruct H2 as [? [? ?]]. hnf in H3. simpl in H3.
+    destruct H3 as [? [? ?]].
+    remember (fun xx : adr => if eq_nat_dec xx x then Some vx else (if eq_nat_dec xx y then Some vy else None)) as f.
+    assert (finMap f). exists (x :: y :: nil). intro z. intros. rewrite Heqf. destruct (eq_nat_dec z x). subst.
+    exfalso. apply H8. apply in_eq. destruct (eq_nat_dec z y). subst. exfalso. apply H8. apply in_cons, in_eq.
+    trivial. remember (exist (finMap (B:=adr)) f H8) as ff. assert (join w12 w23 ff). rewrite Heqw0, Heqw1, Heqff.
+    hnf; simpl. intro z. destruct (eq_nat_dec z x). rewrite e in *. rewrite H5. generalize (H6 x n); intro HS. rewrite HS.
+    rewrite Heqf. destruct (eq_nat_dec x x). apply lower_None2. exfalso; auto. destruct (eq_nat_dec z y). rewrite e in *.
+    rewrite H7. generalize (H4 y n0); intro HS. rewrite HS. rewrite Heqf. destruct (eq_nat_dec y x). intuition.
+    destruct (eq_nat_dec y y). apply lower_None1. intuition. specialize (H4 z n0). specialize (H6 z n1). rewrite H4, H6.
+    rewrite Heqf. destruct (eq_nat_dec z x). intuition. destruct (eq_nat_dec z y). intuition. apply lower_None1.
+    rewrite <- Heqw0 in *. rewrite <- Heqw1 in *. assert (emp w2). apply join_sub_joins_identity with w23. exists w3; auto.
+    try_join w2 w23 t. exists t; auto. apply (join_unit2_e _ _ H10) in H. rewrite <- H in * |-. clear H w12.
+    apply (join_unit1_e _ _ H10) in H0. rewrite <- H0 in *. clear H0 w23. equate_join w ff. exists w1, w3. split; auto.
+  Qed.
+
   Lemma joinable_emapsto: forall w, joinable emapsto w.
   Proof.
     repeat intro. unfold emapsto in * |-. destruct_sepcon H0 p. destruct H2 as [v1 ?]. destruct_sepcon H1 q.
@@ -98,7 +122,7 @@ Section SpatialGraph.
     exists h1, h2. split; auto. split. exists v1; auto. exists v2; auto.
   Qed.
 
-  Lemma emapsto_mapsto: forall x y w, mapsto x y w -> emapsto x w. Proof. intros. exists y; auto. Qed.
+  Lemma emapsto_mapsto: forall x y, mapsto x y |-- emapsto x. Proof. repeat intro. exists y; auto. Qed.
 
   Ltac assert_emapsto x := match goal with | [H: mapsto x ?b ?w |- _] => generalize (emapsto_mapsto x b w H); intro end.
 
