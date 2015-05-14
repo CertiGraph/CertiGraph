@@ -22,11 +22,47 @@ Section SpatialGraph.
   Definition graph_cell (bi : @BiGraph adr nat natEqDec) (v : adr) : pred world :=
     let (dl, r) := gamma bi v in let (d, l) := dl in trinode v d l r.
 
-  Lemma precise_graph_cell: forall bi v, precise (graph_cell bi v).
+  Fixpoint consecutive_mapsto l x : pred world :=
+    match l with
+      | nil => emp
+      | v :: l' => (mapsto x v) * consecutive_mapsto l' (x + 1)
+    end.
+
+  Definition algn_consec_mapsto l x : pred world := !!(length l | x) && consecutive_mapsto l x.
+
+  Definition pregraph_cell (pg : @PreGraph adr nat natEqDec) (x : adr) : pred world :=
+    algn_consec_mapsto (node_label x :: edge_func x) x.
+
+  Lemma cells_are_the_same: forall (bi : @BiGraph adr nat natEqDec) (x : adr), graph_cell bi x = pregraph_cell b_pg x.
   Proof.
-    intros. unfold graph_cell. destruct (gamma bi v) as [dl r]. destruct dl as [d l]. unfold trinode. apply precise_andp_right.
-    apply precise_sepcon. apply precise_mapsto. apply precise_sepcon. apply precise_mapsto. apply precise_mapsto.
+    intros; apply pred_ext; hnf; intro w; intros; unfold graph_cell in *; unfold pregraph_cell in *;
+    unfold algn_consec_mapsto in *; unfold gamma in *; unfold biEdge in *; destruct (only_two_neighbours x) as [l [r He]] in *;
+    unfold trinode in *; destruct H; rewrite He in *; simpl in *; split; auto; assert (1 + 1 = 2) by intuition.
+    rewrite <- plus_assoc. rewrite H1. rewrite sepcon_emp. rewrite <- sepcon_assoc. auto. rewrite <- plus_assoc in H0.
+    rewrite H1 in H0. rewrite <- sepcon_assoc in H0. rewrite sepcon_emp in H0. auto.
   Qed.
+
+  Lemma precise_algn_consec_mapsto: forall l x, precise (algn_consec_mapsto l x).
+  Proof.
+    intros; unfold algn_consec_mapsto. apply precise_andp_right. revert x. induction l; intro; simpl. apply precise_emp.
+    apply precise_sepcon. apply IHl. apply precise_mapsto.
+  Qed.
+
+  Lemma precise_pregraph_cell: forall pg v, precise (pregraph_cell pg v).
+  Proof. intros. unfold pregraph_cell. apply precise_algn_consec_mapsto. Qed.
+
+  Lemma precise_graph_cell: forall bi v, precise (graph_cell bi v).
+  Proof. intros. rewrite cells_are_the_same. apply precise_pregraph_cell. Qed.
+
+  (* Lemma alignable_algn_consec_mapsto: forall l, alignable (algn_consec_mapsto l). *)
+  (* Proof. *)
+  (*   intros l x y w; intros. destruct (eq_nat_dec x y); [left | right]; split; auto; destruct_ocon H w. subst. destruct H2, H3. *)
+  (*   split. destruct H3 as [z ?]. exists z; auto. clear H2 H3. revert y w w1 w2 w3 w12 w23 H H0 H1 H5 H4. induction l; intros. *)
+  (*   simpl in *. apply (split_identity _ _ (join_comm H0)) in H5. apply (join_unit2_e _ _ H5) in H1. subst; auto. simpl in *. *)
+  (*   destruct_sepcon H5 h. destruct_sepcon H4 h. assertSub h0 w HS1. try_join w2 w3 w23'; equate_join w23 w23'. *)
+  (*   assertSub h1 w HS2. assert (precise (mapsto y a)). apply precise_mapsto. equate_precise_through (mapsto y a) h1 h0. *)
+  (*   try_join h2 w1 h4. exists h1, h4. do 2 (split; auto). destruct_cross w12. destruct_cross w23. assert (emp w1h1). *)
+  (* Qed. *)
 
   Lemma precise_trinode: forall x d l r, precise (trinode x d l r).
   Proof.
@@ -56,25 +92,6 @@ Section SpatialGraph.
   Proof.
     intros. unfold graph_cell. destruct (gamma g x) as [[dd ll] rr] eqn:? . unfold gamma in Heqp. unfold biEdge in Heqp.
     destruct (only_two_neighbours x) as [v1 [v2 ?]]. inversion Heqp. subst. rewrite H in e. inversion e. subst. auto.
-  Qed.
-
-  Lemma joinable_mapsto:
-    forall w x y a b, x <> y -> (mapsto x a * TT)%pred w -> (mapsto y b * TT)%pred w -> (mapsto x a * mapsto y b * TT)%pred w.
-  Proof.
-    intros. destruct H0 as [p [q [? [? ?]]]]. generalize H2; intro Hmap1. destruct p as [fp xp] eqn:? .
-    destruct H1 as [m [n [? [? ?]]]]. generalize H4; intro Hmap2. destruct m as [fm xm] eqn:? .  hnf in H2. simpl in H2.
-    hnf in H4. simpl in H4. destruct H2 as [? [? ?]]. destruct H4 as [? [? ?]].
-    remember (fun xx : adr => if eq_nat_dec xx x then Some a else (if eq_nat_dec xx y then Some b else None)) as f.
-    assert (finMap f). exists (x :: y :: nil). intro z. intros. rewrite Heqf. destruct (eq_nat_dec z x). rewrite e in *.
-    exfalso. apply H10. apply in_eq. destruct (eq_nat_dec z y). rewrite e in *. exfalso. apply H10. apply in_cons. apply in_eq.
-    trivial. remember (exist (finMap (B:=adr)) f H10) as ff. assert (join p m ff). rewrite Heqw0, Heqw1, Heqff.
-    hnf; simpl. intro z. destruct (eq_nat_dec z x). rewrite e in *. rewrite H7. generalize (H8 x H); intro HS. rewrite HS.
-    rewrite Heqf. destruct (eq_nat_dec x x). apply lower_None2. exfalso; auto. destruct (eq_nat_dec z y). rewrite e in *.
-    rewrite H9. generalize (H6 y n0); intro HS. rewrite HS. rewrite Heqf. destruct (eq_nat_dec y x). intuition.
-    destruct (eq_nat_dec y y). apply lower_None1. intuition. specialize (H6 z n0). specialize (H8 z n1). rewrite H6, H8.
-    rewrite Heqf. destruct (eq_nat_dec z x). intuition. destruct (eq_nat_dec z y). intuition. apply lower_None1.
-    rewrite <- Heqw0 in *. rewrite <- Heqw1 in *. destruct (join_together H0 H1 H11) as [qn ?]. exists ff, qn.
-    repeat split; auto. exists p, m. split; auto.
   Qed.
 
   Definition emapsto (x : adr) : pred world := EX v : nat, mapsto x v.
@@ -113,14 +130,7 @@ Section SpatialGraph.
     apply (join_unit1_e _ _ H10) in H0. rewrite <- H0 in *. clear H0 w23. equate_join w ff. exists w1, w3. split; auto.
   Qed.
 
-  Lemma joinable_emapsto: forall w, joinable emapsto w.
-  Proof.
-    repeat intro. unfold emapsto in * |-. destruct_sepcon H0 p. destruct H2 as [v1 ?]. destruct_sepcon H1 q.
-    destruct H4 as [v2 ?]. assert ((mapsto x v1 * TT)%pred w). exists p1, p2; split; auto. assert ((mapsto y v2 * TT)%pred w).
-    exists q1, q2. split; auto. assert ((mapsto x v1 * mapsto y v2 * TT)%pred w). apply joinable_mapsto; auto.
-    destruct_sepcon H8 h. rename h1 into h1h2; rename h2 into h3. destruct_sepcon H9 h. exists h1h2, h3. do 2 (split; auto).
-    exists h1, h2. split; auto. split. exists v1; auto. exists v2; auto.
-  Qed.
+  Lemma joinable_emapsto: forall w, joinable emapsto w. Proof. intros. apply alignable_joinable, alignable_emapsto. Qed.
 
   Lemma emapsto_mapsto: forall x y, mapsto x y |-- emapsto x. Proof. repeat intro. exists y; auto. Qed.
 
