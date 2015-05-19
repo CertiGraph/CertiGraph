@@ -134,6 +134,12 @@ Qed.
 Definition alignable {A : Type} {JA : Join A} {B : Type} (p : B -> pred A) :=
   forall (x y : B), p x ⊗ p y |-- (p x && !!(x = y)) || ((p x * p y) && !!(x <> y)).
 
+Lemma alignable_emp {A : Type} {JA : Join A} {PA: Perm_alg A} {SA : Sep_alg A} {CA : Canc_alg A}: emp ⊗ emp |-- emp.
+Proof.
+  intro w; intros. destruct_ocon H w. apply (split_identity _ _ (join_comm H0)) in H3.
+  apply (join_unit2_e _ _ H3) in H1. subst; auto.
+Qed.
+
 Lemma alignable_joinable {A : Type} {JA : Join A} {PA: Perm_alg A} {CA: Cross_alg A} {B : Type}:
   forall (p : B -> pred A) (w : A), alignable p -> joinable p w.
 Proof.
