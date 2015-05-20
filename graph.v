@@ -3,6 +3,7 @@ Require Import List.
 Require Import Omega.
 Require Import Setoid.
 Require Import utilities.
+Require Import ProofIrrelevance.
 
 Class EqDec (T: Type) := {t_eq_dec: forall t1 t2 : T, {t1 = t2} + {t1 <> t2}}.
 
@@ -47,6 +48,32 @@ Class BiGraph (Vertex Data: Type) {EV: EqDec Vertex} :=
     b_pg :> PreGraph Vertex Data;
     only_two_neighbours : forall v : Vertex, {v1 : Vertex & {v2 : Vertex | edge_func v = v1 :: v2 :: nil}}
   }.
+
+Class NGraph (Vertex Data: Type) (n : nat) {EV : EqDec Vertex} :=
+  {
+    n_pg :> PreGraph Vertex Data;
+    n_neighbours: forall v : Vertex, length (edge_func v) = n
+  }.
+
+Definition bigraph_to_ngraph {V D : Type} {EV : EqDec V} (bg : BiGraph V D) : NGraph V D 2.
+  refine (Build_NGraph V D 2 EV b_pg _). intros. destruct (only_two_neighbours v) as [v1 [v2 ?]]. rewrite e. simpl. auto.
+Defined.
+
+Definition ngraph_to_bigraph {V D : Type} {EV : EqDec V} (ng : NGraph V D 2) : BiGraph V D.
+  refine (Build_BiGraph V D EV n_pg _). intros. generalize (n_neighbours v); intro. destruct (edge_func v) eqn:? .
+  simpl in H. inversion H. destruct l. simpl in H. inversion H. destruct l. exists v0, v1. auto. simpl in H. inversion H.
+Defined.
+
+Lemma bigraph_eq_ngraph {V D : Type} {EV : EqDec V}:
+  forall (bg : BiGraph V D) (ng : NGraph V D 2), b_pg = n_pg -> bigraph_to_ngraph bg = ng.
+Proof. intros. unfold bigraph_to_ngraph. destruct bg. destruct ng. simpl in *. subst. f_equal. apply proof_irrelevance. Qed.
+
+Lemma ngraph_eq_bigraph {V D : Type} {EV : EqDec V}:
+  forall (ng : NGraph V D 2) (bg : BiGraph V D), n_pg = b_pg -> ngraph_to_bigraph ng = bg.
+Proof.
+  intros. destruct ng. destruct bg. simpl in *. subst. unfold ngraph_to_bigraph. simpl. f_equal. extensionality v.
+  admit.
+Qed.  
 
 Class BiMathGraph (Vertex Data : Type) (nV : Vertex) {EV: EqDec Vertex} :=
   {
