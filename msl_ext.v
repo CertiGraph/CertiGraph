@@ -33,6 +33,14 @@ Qed.
 
 Arguments overlapping_join_eq [A] [JA] [PA] [SA] [CaA] [DA] [h1] [h2] [h3] [h4] [h12] [h23] [w] _ _ _ _.
 
+Lemma overlapping_precise_emp {A} {JA : Join A} {PA : Perm_alg A} {SA : Sep_alg A} {CA : Canc_alg A} {DA : Disj_alg A}:
+  forall w1 w2 w3 w12 w23 w (P Q : pred A),
+    join w1 w2 w12 -> join w2 w3 w23 -> join w12 w3 w -> P w12 -> Q w23 -> precise P -> precise Q -> (P * Q)%pred w -> emp w2.
+Proof.
+  intros. destruct_sepcon H6 k. try_join w2 w3 w23'; equate_join w23 w23'. equate_precise w12 k1. equate_precise w23 k2.
+  apply join_sub_joins_identity with w23. exists w3; auto. try_join w2 w23 w223; exists w223; auto.
+Qed.
+
 Lemma precise_andp_left {A} {JA : Join A} {PA : Perm_alg A} {SA: Sep_alg A} :
   forall P Q, precise P -> precise (P && Q).
 Proof. intros; intro; intros; destruct H0; destruct H1; generalize (H w w1 w2 H0 H1 H2 H3); tauto. Qed.

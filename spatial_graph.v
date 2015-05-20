@@ -117,21 +117,13 @@ Section SpatialGraph.
     induction l; intros; intro w; intros; simpl in *. rewrite sepcon_emp. rewrite ocon_emp in H0. auto. destruct_ocon H0 w.
     destruct_sepcon H4 h. destruct_cross w23. rename w2h1 into i1; rename w3h1 into i2; rename w3h2 into i3; rename w2h2 into i4.
     try_join w1 i4 w1i4. try_join w12 i2 w12i2. assert ((mapsto x v ⊗ mapsto y a) w12i2). exists w1i4, i1, i2, w12, h1.
-    split; auto. apply alignable_mapsto in H15. destruct H15 as [[? [? ?]] | [? ?]]. exfalso; intuition. destruct_sepcon H15 k.
-    assertSub w12 w12i2 HS1. assertSub k1 w12i2 HS2. assert (precise (mapsto x v)). apply precise_mapsto.
-    equate_precise_through (mapsto x v) w12 k1. try_join i1 i2 h1'. equate_join h1 h1'. assertSub h1 w12i2 HS1.
-    assertSub k2 w12i2 HS2. assert (precise (mapsto y a)). apply precise_mapsto. equate_precise_through (mapsto y a) h1 k2.
-    clear H17. assert (emp i1). apply join_sub_joins_identity with h1. exists i2; auto. try_join i1 h1 i1h1. exists i1h1; auto.
-    apply join_unit1_e in H7; auto. subst. apply join_unit1_e in H9; auto. subst. apply join_unit1_e in H12; auto. subst.
-    clear H17 i1. try_join w12 i3 w12i3. assert ((mapsto x v ⊗ consecutive_mapsto l (y + 1)) w12i3). exists w1, w2, i3, w12, h2.
-    split; auto. apply IHl in H12. destruct_sepcon H12 k. assertSub w12 w12i3 HS1. assertSub k1 w12i3 HS2.
-    equate_precise_through (mapsto x v) w12 k1. try_join w2 i3 h2'. equate_join h2 h2'. assertSub h2 w12i3 HS1.
-    assertSub k2 w12i3 HS2. assert (precise (consecutive_mapsto l (y + 1))). apply precise_consecutive_mapsto.
-    equate_precise_through (consecutive_mapsto l (y + 1)) h2 k2. clear H17 H19. assert (emp w2).
-    apply join_sub_joins_identity with h2. exists i3; auto. try_join w2 h2 w2h2. exists w2h2. auto.
-    apply join_unit2_e in H0; auto. apply eq_sym in H0. subst. apply join_unit1_e in H1; auto. apply eq_sym in H1. subst.
-    apply join_unit1_e in H10; auto. subst. clear H11 H17 w2. exists w1, w3. do 2 (split; auto). exists h1, h2. split; auto.
-    intuition.
+    split; auto. apply alignable_mapsto in H15. destruct H15 as [[? [? ?]] | [? ?]]. exfalso; intuition. assert (emp i1).
+    apply (overlapping_precise_emp w1i4 i1 i2 w12 h1 w12i2 (mapsto x v) (mapsto y a)); auto. apply precise_mapsto.
+    apply precise_mapsto. elim_emp. clear H17 i1. try_join w12 i3 w12i3.
+    assert ((mapsto x v ⊗ consecutive_mapsto l (y + 1)) w12i3). exists w1, w2, i3, w12, h2. split; auto. apply IHl in H12.
+    assert (emp w2). apply (overlapping_precise_emp w1 w2 i3 w12 h2 w12i3 (mapsto x v) (consecutive_mapsto l (y + 1))); auto.
+    apply precise_mapsto. apply precise_consecutive_mapsto. elim_emp. exists w12, w23. do 2 (split; auto). exists h1, h2.
+    split; auto. intuition.
   Qed.
 
   Lemma alignable_consecutive_mapsto:
@@ -154,21 +146,13 @@ Section SpatialGraph.
     destruct H43 as [[? [? ?]] | [? ?]]. exfalso; intuition. split. rewrite sepcon_comm; auto. apply IHl. intuition. intuition.
     assert (emp i2). try_join i1 i5 i15. try_join_through i36 i3 i8 i38'. equate_join i38 i38'. try_join i125 i368 i123568.
     try_join i125 i38 i12358. assert ((mapsto x a ⊗ consecutive_mapsto l (y + 1)) i12358). exists i15, i2, i38, i125, hyl.
-    split; auto. apply disjoint_mapsto_consec in H52. destruct_sepcon H52 k. assertSub i125 i12358 HS1. assertSub k1 i12358 HS2.
-    assert (precise (mapsto x a)). apply precise_mapsto. equate_precise_through (mapsto x a) i125 k1. clear H55.
-    try_join i2 i38 hyl'. equate_join hyl hyl'. assertSub hyl i12358 HS1. assertSub k2 i12358 HS2.
-    assert (precise (consecutive_mapsto l (y + 1))). apply precise_consecutive_mapsto.
-    equate_precise_through (consecutive_mapsto l (y + 1)) hyl k2. apply join_sub_joins_identity with hyl. exists i38; auto.
-    try_join i2 hyl i2hyl; exists i2hyl; auto. intuition. apply join_unit1_e in H30; auto. apply eq_sym in H30. subst.
-    apply join_unit1_e in H22; auto. apply eq_sym in H22. subst. clear H29. assert (emp i4). try_join i1 i7 i17.
+    split; auto. apply disjoint_mapsto_consec in H52; [|intuition].
+    apply (overlapping_precise_emp i15 i2 i38 i125 hyl i12358 (mapsto x a) (consecutive_mapsto l (y+1))); auto.
+    apply precise_mapsto. apply precise_consecutive_mapsto. elim_emp. clear H45 i2. assert (emp i4). try_join i12 i7 i17.
     try_join i147 i36 i13467. assert ((mapsto y a ⊗ consecutive_mapsto l (x + 1)) i13467). exists i17, i4, i36, i147, hxl.
-    split; auto. apply disjoint_mapsto_consec in H47. destruct_sepcon H47 k. assertSub i147 i13467 HS1. assertSub k1 i13467 HS2.
-    assert (precise (mapsto y a)). apply precise_mapsto. equate_precise_through (mapsto y a) i147 k1. clear H50.
-    try_join i4 i36 hxl'. equate_join hxl hxl'. assertSub hxl i13467 HS1. assertSub k2 i13467 HS2.
-    assert (precise (consecutive_mapsto l (x + 1))). apply precise_consecutive_mapsto.
-    equate_precise_through (consecutive_mapsto l (x + 1)) hxl k2. apply join_sub_joins_identity with hxl. exists i36; auto.
-    try_join i4 hxl i4hxl; exists i4hxl; auto. intuition. apply join_unit1_e in H28; auto. apply eq_sym in H28; subst.
-    apply join_unit1_e in H20; auto. apply eq_sym in H20; subst. exists i6, i3, i8, i36, i38. split; auto.
+    split; auto. apply disjoint_mapsto_consec in H45; [|intuition].
+    apply (overlapping_precise_emp i17 i4 i36 i147 hxl i13467 (mapsto y a) (consecutive_mapsto l (x + 1))); auto.
+    apply precise_mapsto. apply precise_consecutive_mapsto. elim_emp. exists i6, i34, i8, hxl, hyl. split; auto.
   Qed.
 
   Lemma alignable_algn_consec_mapsto: forall l, alignable (algn_consec_mapsto l).

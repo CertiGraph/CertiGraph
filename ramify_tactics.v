@@ -108,3 +108,9 @@ Ltac equate_canc x1 x2 :=
       | [H1: join x1 ?b ?c, H2: join ?b x2 ?c |- _] => helper H1 (join_comm H2) H2
       | [H1: join ?b x1 ?c, H2: join ?b x2 ?c |- _] => helper (join_comm H1) (join_comm H2) H2
     end.
+
+  Ltac elim_emp :=
+    repeat match goal with
+             | [H1: join ?x ?y _, H2: emp ?x |- _] => apply (join_unit1_e _ _ H2) in H1; rewrite H1 in *; clear H1 y
+             | [H1: join ?y ?x _, H2: emp ?x |- _] => apply (join_unit2_e _ _ H2) in H1; rewrite H1 in *; clear H1 y
+           end.
