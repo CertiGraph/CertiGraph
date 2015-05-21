@@ -71,8 +71,11 @@ Proof. intros. unfold bigraph_to_ngraph. destruct bg. destruct ng. simpl in *. s
 Lemma ngraph_eq_bigraph {V D : Type} {EV : EqDec V}:
   forall (ng : NGraph V D 2) (bg : BiGraph V D), n_pg = b_pg -> ngraph_to_bigraph ng = bg.
 Proof.
-  intros. destruct ng. destruct bg. simpl in *. subst. unfold ngraph_to_bigraph. simpl. f_equal. extensionality v.
-  admit.
+  intros. destruct (ngraph_to_bigraph ng) eqn:? . destruct bg. destruct ng. simpl in *. subst.
+  assert (b_pg0 = b_pg1). unfold ngraph_to_bigraph in Heqb. simpl in Heqb. inversion Heqb. subst. auto. clear Heqb.
+  subst. f_equal. extensionality v. destruct (only_two_neighbours0 v) as [v1 [v2 ?]]. 
+  destruct (only_two_neighbours1 v) as [v3 [v4 ?]]. assert (v1 = v3 /\ v2 = v4). rewrite e in e0. inversion e0. auto.
+  destruct H. subst. f_equal. f_equal. apply proof_irrelevance.
 Qed.  
 
 Class BiMathGraph (Vertex Data : Type) (nV : Vertex) {EV: EqDec Vertex} :=

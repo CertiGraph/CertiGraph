@@ -126,58 +126,64 @@ Section SpatialGraph.
     split; auto. intuition.
   Qed.
 
-  Lemma alignable_consecutive_mapsto:
-    forall l x y, x > y -> x - y >= length l ->
-                  (consecutive_mapsto l x ⊗ consecutive_mapsto l y) |-- (consecutive_mapsto l x * consecutive_mapsto l y).
+  Lemma disjoint_consecutive_mapsto:
+    forall l1 l2 x y,
+      length l1 = length l2 -> x > y -> x - y >= length l2 ->
+      (consecutive_mapsto l1 x ⊗ consecutive_mapsto l2 y) |-- (consecutive_mapsto l1 x * consecutive_mapsto l2 y).
   Proof.
-    induction l; intros; intro w; intros; simpl in H0; destruct_ocon H1 w; simpl in H4, H5; simpl. rewrite sepcon_emp.
-    apply alignable_emp. exists w1, w2, w3, w12, w23. split; auto. try_join w2 w3 w23'; equate_join w23 w23'.
-    destruct_sepcon H4 h. rename h1 into hx. rename h2 into hxl. destruct_sepcon H5 h. rename h1 into hy; rename h2 into hyl.
-    destruct_cross w12. destruct_cross w23. destruct_cross w2. rename w2hxw2hy into i1. rename w2hxw2hyl into i2.
-    rename w2hxlw2hyl into i3. rename w2hxlw2hy into i4. rename w1hx into i5. rename w1hxl into i6. rename w3hy into i7.
-    rename w3hyl into i8. rename w2hy into i14. rename w2hx into i12. rename w2hxl into i34. rename w2hyl into i23.
-    try_join i2 i5 i25. try_join i4 i7 i47. rename hx into i125. rename hy into i147. try_join i3 i6 i36. try_join i3 i8 i38.
-    try_join hxl w3 i34678. try_join i1 i34678 i134678. try_join hxl i8 i3468. try_join i36 i8 i368.
-    try_join_through i3468 i4 i7 i47'. equate_join i47 i47'. try_join i1 i47 i147'. equate_join i147 i147'.
-    try_join i25 i147 i12457. rewrite <- sepcon_assoc. rewrite (sepcon_assoc (mapsto x a)).
-    rewrite (sepcon_comm (consecutive_mapsto l (x + 1))). rewrite <- (sepcon_assoc (mapsto x a)).
-    rewrite (sepcon_assoc (mapsto x a * mapsto y a)). exists i12457, i368. split; auto.
-    assert ((mapsto y a ⊗ mapsto x a)%pred i12457). exists i47, i1, i25, i147, i125. split; auto. apply alignable_mapsto in H43.
-    destruct H43 as [[? [? ?]] | [? ?]]. exfalso; intuition. split. rewrite sepcon_comm; auto. apply IHl. intuition. intuition.
+    induction l1; intros; intro w; intros; simpl in H; destruct_ocon H2 w; rewrite <- H in *; destruct l2; simpl in *.
+    rewrite sepcon_emp. apply alignable_emp. exists w1, w2, w3, w12, w23. split; auto. inversion H. inversion H.
+    try_join w2 w3 w23'; equate_join w23 w23'. destruct_sepcon H5 h. rename h1 into hx. rename h2 into hxl.
+    destruct_sepcon H6 h. rename h1 into hy; rename h2 into hyl. destruct_cross w12. destruct_cross w23. destruct_cross w2.
+    rename w2hxw2hy into i1. rename w2hxw2hyl into i2. rename w2hxlw2hyl into i3. rename w2hxlw2hy into i4. rename w1hx into i5.
+    rename w1hxl into i6. rename w3hy into i7. rename w3hyl into i8. rename w2hy into i14. rename w2hx into i12.
+    rename w2hxl into i34. rename w2hyl into i23. try_join i2 i5 i25. try_join i4 i7 i47. rename hx into i125.
+    rename hy into i147. try_join i3 i6 i36. try_join i3 i8 i38. try_join hxl w3 i34678. try_join i1 i34678 i134678.
+    try_join hxl i8 i3468. try_join i36 i8 i368. try_join_through i3468 i4 i7 i47'. equate_join i47 i47'. try_join i1 i47 i147'.
+    equate_join i147 i147'. try_join i25 i147 i12457. rewrite <- sepcon_assoc. rewrite (sepcon_assoc (mapsto x a)).
+    rewrite (sepcon_comm (consecutive_mapsto l1 (x + 1))). rewrite <- (sepcon_assoc (mapsto x a)).
+    rewrite (sepcon_assoc (mapsto x a * mapsto y a0)). exists i12457, i368. split; auto.
+    assert ((mapsto y a0 ⊗ mapsto x a) i12457). exists i47, i1, i25, i147, i125. split; auto. apply alignable_mapsto in H44.
+    destruct H44 as [[? [? ?]] | [? ?]]. exfalso; intuition. split. rewrite sepcon_comm; auto. apply IHl1; intuition. 
     assert (emp i2). try_join i1 i5 i15. try_join_through i36 i3 i8 i38'. equate_join i38 i38'. try_join i125 i368 i123568.
-    try_join i125 i38 i12358. assert ((mapsto x a ⊗ consecutive_mapsto l (y + 1)) i12358). exists i15, i2, i38, i125, hyl.
-    split; auto. apply disjoint_mapsto_consec in H52; [|intuition].
-    apply (overlapping_precise_emp i15 i2 i38 i125 hyl i12358 (mapsto x a) (consecutive_mapsto l (y+1))); auto.
-    apply precise_mapsto. apply precise_consecutive_mapsto. elim_emp. clear H45 i2. assert (emp i4). try_join i12 i7 i17.
-    try_join i147 i36 i13467. assert ((mapsto y a ⊗ consecutive_mapsto l (x + 1)) i13467). exists i17, i4, i36, i147, hxl.
-    split; auto. apply disjoint_mapsto_consec in H45; [|intuition].
-    apply (overlapping_precise_emp i17 i4 i36 i147 hxl i13467 (mapsto y a) (consecutive_mapsto l (x + 1))); auto.
+    try_join i125 i38 i12358. assert ((mapsto x a ⊗ consecutive_mapsto l2 (y + 1)) i12358). exists i15, i2, i38, i125, hyl.
+    split; auto. apply disjoint_mapsto_consec in H53; [|intuition].
+    apply (overlapping_precise_emp i15 i2 i38 i125 hyl i12358 (mapsto x a) (consecutive_mapsto l2 (y+1))); auto.
+    apply precise_mapsto. apply precise_consecutive_mapsto. elim_emp. clear H46 i2. assert (emp i4). try_join i12 i7 i17.
+    try_join i147 i36 i13467. assert ((mapsto y a0 ⊗ consecutive_mapsto l1 (x + 1)) i13467). exists i17, i4, i36, i147, hxl.
+    split; auto. apply disjoint_mapsto_consec in H46; [|intuition].
+    apply (overlapping_precise_emp i17 i4 i36 i147 hxl i13467 (mapsto y a0) (consecutive_mapsto l1 (x + 1))); auto.
     apply precise_mapsto. apply precise_consecutive_mapsto. elim_emp. exists i6, i34, i8, hxl, hyl. split; auto.
   Qed.
 
-  Lemma alignable_algn_consec_mapsto: forall l, alignable (algn_consec_mapsto l).
+  Lemma merge_consecutive_mapsto: forall l x, consecutive_mapsto l x ⊗ consecutive_mapsto l x |-- consecutive_mapsto l x.
   Proof.
-    intros l x y w; intros. destruct (eq_nat_dec x y); [left | right]; split; auto; destruct_ocon H w. subst. destruct H2, H3.
-    split. destruct H3 as [z ?]. exists z; auto. clear H2 H3. revert y w w1 w2 w3 w12 w23 H H0 H1 H5 H4. induction l; intros.
-    simpl in *. apply alignable_emp. exists w1, w2, w3, w12, w23. split; auto. simpl in *.
-    destruct_sepcon H5 h. destruct_sepcon H4 h. assertSub h0 w HS1. try_join w2 w3 w23'; equate_join w23 w23'.
-    assertSub h1 w HS2. assert (precise (mapsto y a)). apply precise_mapsto. equate_precise_through (mapsto y a) h1 h0.
-    try_join h2 w1 h4. exists h1, h4. do 2 (split; auto). destruct_cross w12. destruct_cross w23. assert (emp w1h1).
-    apply join_sub_joins_identity with h1. exists w2h1; auto. try_join w1h1 w23 t1. try_join w1h1 h1 t2. exists t2; auto.
-    apply (join_unit1_e _ _ H19) in H11. apply (join_unit1_e _ _ H19) in H13. subst. clear H19 w1h1. assert (emp w3h1).
+    intros; intro w; intros. destruct_ocon H w. revert x w w1 w2 w3 w12 w23 H H0 H1 H2 H3. induction l; intros. simpl in *.
+    apply alignable_emp. exists w1, w2, w3, w12, w23. split; auto. simpl in *. destruct_sepcon H3 h. destruct_sepcon H2 h.
+    assertSub h0 w HS1. try_join w2 w3 w23'; equate_join w23 w23'. assertSub h1 w HS2. assert (precise (mapsto x a)).
+    apply precise_mapsto. equate_precise_through (mapsto x a) h1 h0. try_join h2 w1 h4. exists h1, h4. do 2 (split; auto).
+    destruct_cross w12. destruct_cross w23. assert (emp w1h1). apply join_sub_joins_identity with h1. exists w2h1; auto.
+    try_join w1h1 w23 t1. try_join w1h1 h1 t2. exists t2; auto. elim_emp. clear H19 w1h1. assert (emp w3h1).
     apply join_sub_joins_identity with h1. exists w2h0; auto. try_join w3h1 w12 t1. try_join w3h1 h1 t2. exists t2; auto.
-    apply (join_unit1_e _ _ H11) in H16. apply (join_unit2_e _ _ H11) in H17. subst. clear H11 w3h1. equate_canc w2h3 w2h2.
-    rename w2h3 into hm. try_join hm w1 h3'. equate_join h3 h3'. specialize (IHl (y+1) h4 w3 hm w1 h2 h3). apply IHl; auto.
-
-    destruct H2, H3. unfold algn_consec_mapsto. rewrite sepcon_andp_prop. split; auto. rewrite sepcon_comm, sepcon_andp_prop.
-    split; auto. unfold prop in H2, H3. apply not_eq in n. try_join w2 w3 w23'; equate_join w23 w23'. destruct n.
-    assert (y - x >= length l). apply divisible_distance; auto. apply alignable_consecutive_mapsto; auto.
-    exists w3, w2, w1, w23, w12. split; auto. assert (x - y >= length l). apply divisible_distance; auto. rewrite sepcon_comm.
-    apply alignable_consecutive_mapsto; auto. exists w1, w2, w3, w12, w23. split; auto.
+    elim_emp. clear H11 w3h1. equate_canc w2h3 w2h2. try_join w2h3 w1 h3'. equate_join h3 h3'.
+    specialize (IHl (x + 1) h4 w3 w2h3 w1 h2 h3). apply IHl; auto.
   Qed.
 
-  Lemma alignable_pregraph_cell: forall pg, alignable (pregraph_cell pg).
-  Proof. intros. unfold pregraph_cell. admit. Qed.
+  Lemma alignable_acmapsto: forall n f, (forall x, length (f x) = n) -> alignable (fun x => algn_consec_mapsto (f x) x).
+  Proof.
+    intros; intros x y w; intros. destruct (eq_nat_dec x y); [left | right]; split; auto; destruct_ocon H0 w. subst.
+    destruct H3, H4. split; auto. apply merge_consecutive_mapsto. exists w1, w2, w3, w12, w23. split; auto.
+
+    destruct H3, H4. unfold algn_consec_mapsto. rewrite sepcon_andp_prop. split; auto. rewrite sepcon_comm, sepcon_andp_prop.
+    split; auto. unfold prop in H3, H4. apply not_eq in n0. try_join w2 w3 w23'; equate_join w23 w23'. destruct n0.
+    assert (y - x >= length (f x)). rewrite (H x) in *. rewrite (H y) in *. apply divisible_distance; auto.
+    apply disjoint_consecutive_mapsto; auto. do 2 rewrite H; auto. exists w3, w2, w1, w23, w12. split; auto.
+    assert (x - y >= length (f y)). rewrite (H x) in *. rewrite (H y) in *. apply divisible_distance; auto. rewrite sepcon_comm.
+    apply disjoint_consecutive_mapsto; auto. do 2 rewrite H; auto. exists w1, w2, w3, w12, w23. split; auto.
+  Qed.
+
+  Lemma alignable_pregraph_cell: forall n (ng : NGraph adr nat n), alignable (pregraph_cell n_pg).
+  Proof. intros. unfold pregraph_cell. apply (alignable_acmapsto (n + 1)). intros. simpl. rewrite n_neighbours. intuition. Qed.
 
   Lemma precise_trinode: forall x d l r, precise (trinode x d l r).
   Proof.
