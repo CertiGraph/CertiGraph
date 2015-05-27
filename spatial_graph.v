@@ -185,6 +185,13 @@ Section SpatialGraph.
   Lemma alignable_pregraph_cell: forall n (ng : NGraph adr nat n), alignable (pregraph_cell n_pg).
   Proof. intros. unfold pregraph_cell. apply (alignable_acmapsto (n + 1)). intros. simpl. rewrite n_neighbours. intuition. Qed.
 
+  Lemma alignable_graph_cell: forall bg, alignable (graph_cell bg).
+  Proof.
+    intros. remember (bigraph_to_ngraph bg) as g3. assert (graph_cell bg = pregraph_cell b_pg). extensionality x.
+    apply cells_are_the_same. rewrite H. assert ((@b_pg adr nat natEqDec bg) = n_pg). subst. simpl. auto. rewrite H0.
+    apply alignable_pregraph_cell.
+  Qed.
+
   Lemma precise_trinode: forall x d l r, precise (trinode x d l r).
   Proof.
     intros. unfold trinode. apply precise_andp_right. apply precise_sepcon. apply precise_mapsto. apply precise_sepcon.
@@ -222,52 +229,7 @@ Section SpatialGraph.
   Ltac assert_emapsto x := match goal with | [H: mapsto x ?b ?w |- _] => generalize (emapsto_mapsto x b w H); intro end.
 
   Lemma joinable_graph_cell: forall bg w, joinable (graph_cell bg) w.
-  Proof.
-    repeat intro. destruct_sepcon H0 p. destruct_sepcon H1 q. unfold graph_cell in *. destruct (gamma bg x) as [[dx lx] rx].
-    destruct (gamma bg y) as [[dy ly] ry]. unfold trinode in *. destruct H2, H4. unfold prop in H2, H4. destruct_sepcon H6 h.
-    rename h1 into h12. rename h2 into h3. destruct_sepcon H8 h. destruct_sepcon H7 i. rename i1 into i12. rename i2 into i3.
-    destruct_sepcon H12 i. try_join i2 i3 i23. destruct H4 as [yd ?]. destruct H2 as [xd ?]. generalize (joinable_emapsto w).
-    intro. assert (forall t, precise (emapsto t)). apply precise_emapsto.
-    assert (iter_sepcon (y :: y + 1 :: y + 2 :: nil) emapsto q1). simpl. exists i1, i23. split; auto. split. exists dy; auto.
-    exists i2, i3. split; auto. split. exists ly; auto. exists i3, (core i3). split. apply join_comm, core_unit. split.
-    exists ry; auto. apply core_identity. remember (y :: y + 1 :: y + 2 :: nil) as l3.
-    assert ((iter_sepcon (x + 2 :: l3) emapsto * TT)%pred w). apply iter_sepcon_joinable; auto. rewrite Heql3. simpl. intro.
-    destruct H21 as [? | [? | [ ? | ?]]]. omega. omega. apply H. rewrite (plus_comm y) in H21. rewrite (plus_comm x) in H21.
-    apply plus_reg_l in H21. auto. auto. assertSub h3 p1 HS1. assertSub p1 w HS2. assertSub h3 w HS3. destruct HS3 as [ht ?].
-    exists h3, ht. do 2 (split; auto). exists rx; auto. assertSub q1 w HS. destruct HS as [ht ?]. exists q1, ht.
-    do 2 (split; auto). remember (x + 2 :: l3) as l4. assert ((iter_sepcon (x + 1 :: l4) emapsto * TT)%pred w).
-    apply iter_sepcon_joinable; auto. rewrite Heql4, Heql3. simpl; intro. destruct H22 as [? | [? | [? | [? | ?]]]]; try omega.
-    apply H. rewrite (plus_comm y) in H22. rewrite (plus_comm x) in H22. apply plus_reg_l in H22. auto. assertSub h2 p1 HS1.
-    assertSub p1 w HS2. assertSub h2 w HS3. destruct HS3 as [ht ?]. exists h2, ht. do 2 (split; auto). exists lx; auto.
-    remember (x + 1 :: l4) as l5. assert ((iter_sepcon (x :: l5) emapsto * TT)%pred w). apply iter_sepcon_joinable; auto.
-    rewrite Heql5, Heql4, Heql3. simpl; intro. destruct H23 as [?|[?|[?|[?|[?|?]]]]]; try omega. intuition. assertSub h1 p1 HS1.
-    assertSub p1 w HS2. assertSub h1 w HS3. destruct HS3 as [ht ?]. exists h1, ht. do 2 (split; auto). exists dx; auto.
-    rewrite Heql3, Heql4, Heql5 in *. clear Heql3 Heql4 Heql5 l3 l4 l5 H21 H22.
-    assert (x :: x + 1 :: x + 2 :: y :: y + 1 :: y + 2 :: nil = (x :: x + 1 :: x + 2 :: nil) ++ (y :: y + 1 :: y + 2 :: nil)).
-    intuition. rewrite H21 in H23. clear H21. rewrite iter_sepcon_app_sepcon in H23. try_join h2 h3 h23.
-    assert (iter_sepcon (x :: x + 1 :: x + 2 :: nil) emapsto p1). simpl. exists h1, h23. split; auto. split. exists dx; auto.
-    exists h2, h3. split; auto. split. exists lx; auto. exists h3, (core h3). split. apply join_comm, core_unit. split.
-    exists rx; auto. apply core_identity. destruct_sepcon H23 w. rename w1 into w12; rename w2 into w3. destruct_sepcon H25 w.
-    assertSub w1 w HS1. assertSub p1 w HS2. assert (precise (iter_sepcon (x :: x + 1 :: x + 2 :: nil) emapsto)).
-    apply precise_iter_sepcon; auto. equate_precise_through (iter_sepcon (x :: x + 1 :: x + 2 :: nil) emapsto) p1 w1.
-    assertSub w2 w HS1. assertSub q1 w HS2. assert (precise (iter_sepcon (y :: y + 1 :: y + 2 :: nil) emapsto)).
-    apply precise_iter_sepcon; auto. equate_precise_through (iter_sepcon (y :: y + 1 :: y + 2 :: nil) emapsto) q1 w2.
-    clear H29 H27. exists w12, w3. do 2 (split; auto). exists p1, q1. split; auto. split; split. exists xd; auto.
-    rewrite sepcon_assoc. simpl in H24. rewrite sepcon_emp in H24. destruct_sepcon H24 j. assert_emapsto x.
-    assertSub j1 p1 HS1. assertSub h1 p1 HS2. assert (precise (emapsto x)). apply H19. equate_precise_through (emapsto x) h1 j1.
-    exists h1, j2. do 2 (split; auto). clear H29 H30. rename j2 into j23. destruct_sepcon H28 j. rename j2 into j3.
-    rename j1 into j2. assert_emapsto (x + 1). assertSub j2 p1 HS1. assertSub h2 p1 HS2. assert (precise (emapsto (x + 1))).
-    apply H19. equate_precise_through (emapsto (x + 1)) h2 j2. exists h2, j3. do 2 (split; auto). clear H30 H31.
-    assert_emapsto (x + 2). assertSub j3 p1 HS1. assertSub h3 p1 HS2. assert (precise (emapsto (x + 2))). apply H19.
-    equate_precise_through (emapsto (x + 2)) h3 j3. auto. exists yd; auto. clear H21 H22 H24. rewrite sepcon_assoc.
-    simpl in H20. rewrite sepcon_emp in H20. destruct_sepcon H20 j. assert_emapsto y. assertSub j1 q1 HS1. assertSub i1 q1 HS2.
-    assert (precise (emapsto y)). apply H19. equate_precise_through (emapsto y) i1 j1. exists i1, j2. do 2 (split; auto).
-    clear H24 H27 h23 H26. rename j2 into j23. destruct_sepcon H22 j. rename j2 into j3; rename j1 into j2.
-    assert_emapsto (y + 1). assertSub j2 q1 HS1. assertSub i2 q1 HS2. assert (precise (emapsto (y + 1))). apply H19.
-    equate_precise_through (emapsto (y + 1)) i2 j2. exists i2, j3. do 2 (split; auto). clear H26 H27. assert_emapsto (y + 2).
-    assertSub j3 q1 HS1. assertSub i3 q1 HS2. assert (precise (emapsto (y + 2))). apply H19.
-    equate_precise_through (emapsto (y + 2)) i3 j3. auto.
-  Qed.
+  Proof. intros. apply alignable_joinable, alignable_graph_cell. Qed.
 
   Definition graph (x : adr) (bimg : @BiMathGraph adr nat 0 natEqDec): pred world :=
     (!!(x = 0) && emp) || EX l : list adr, !!reachable_list b_pg x l && iter_sepcon l (graph_cell bm_bi).

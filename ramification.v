@@ -3,6 +3,10 @@ Require Import overlapping.
 Require Import ramify_tactics.
 Require Import msl.sepalg_list.
 Require Import msl_ext.
+Require Import Classical.
+Require Import Permutation.
+
+Tactic Notation "LEM" constr(v) := (destruct (classic v); auto).
 
 Definition ramify {A: Type}{JA: Join A}{PA: Perm_alg A}
            (R P Q R' : pred A) := R |-- P * (Q -* R').
@@ -148,3 +152,38 @@ Proof.
   exists w1w4, w1w3, w2w3, w1, w3. split; auto. destruct_sepcon H3 w. specialize (H w1 H4). destruct H as [[? ?] | [? ?]].
   exfalso; auto. exists w1, w2. split; auto.
 Qed.
+
+Lemma alignable_iter_sepcon {A : Type} {JA : Join A} {PA : Perm_alg A} {SA: Sep_alg A} {CA : Canc_alg A}
+      {C: Cross_alg A} {DA : Disj_alg A} {B : Type}:
+  forall (p : B -> pred A) (l : list B) (x : B),
+    alignable p -> (forall z, precise (p z)) -> p x ⊗ iter_sepcon l p |--
+                                                  (iter_sepcon l p && !!(In x l)) || ((p x * iter_sepcon l p) && !!(~ In x l)).
+Proof.
+  intros. intro w. intros. destruct_ocon H1 w. try_join w2 w3 w23'; equate_join w23 w23'.
+  LEM (In x l); [left | right]; split; auto. apply in_split in H6. destruct H6 as [l1 [l2 ?]]. subst.
+  assert (Permutation (l1 ++ x :: l2) (x :: (l2 ++ l1))). rewrite app_comm_cons. apply Permutation_app_comm.
+  generalize (iter_sepcon_permutation _ _ p H6); intro. rewrite H8 in *. clear H6 H8. simpl in H5. destruct_sepcon H5 h.
+  destruct_cross w23. assertSub w12 w HS1. assertSub h1 w HS2. generalize (H0 x); intro. equate_precise_through (p x) w12 h1.
+  clear H13. assert (emp w1). apply join_sub_joins_identity with w23. try_join w1 h2 t1. assertSub w1 w23 HS. auto.
+  exists w. auto. elim_emp. simpl. exists w12, h2. split; auto.
+
+  clear H7. revert w w1 w2 w3 w12 w23 H1 H2 H3 H4 H5 H6.
+  induction l; intros; simpl in *; try_join w2 w3 w23'; equate_join w23 w23'. rewrite sepcon_emp. apply join_comm in H2.
+  apply split_identity in H2; auto. elim_emp. auto. assert (a <> x). intro. apply H6. left; auto. assert (~ In x l). intro.
+  apply H6. right; auto. clear H6. destruct_sepcon H5 h. destruct_cross w23. rename w2h1 into i1. rename w3h1 into i2.
+  rename w2h2 into i4. rename w3h2 into i3. try_join w1 i4 w1i4. try_join h1 i4 h1i4. try_join w12 i2 w12h1.
+  assert ((p x ⊗ p a)%pred w12h1). exists w1i4, i1, i2, w12, h1. split; auto. apply H in H21. destruct H21 as [[? ?] | [? ?]].
+  exfalso; auto. assert (emp i1). apply (overlapping_precise_emp w1i4 i1 i2 w12 h1 w12h1 (p x) (p a)); auto. elim_emp.
+  clear H23 i1. try_join h2 w1 w1h2. rewrite <- sepcon_assoc. rewrite (sepcon_comm (p x)). rewrite sepcon_assoc.
+  exists h1, w1h2. do 2 (split; auto). try_join w12 i3 w1h2'. equate_canc w1h2 w1h2'. apply (IHl _ w1 w2 i3 w12 h2); auto.
+Qed.                                                 
+
+(* Lemma alignable_unique {A : Type} {JA : Join A} {PA: Perm_alg A} {SA : Sep_alg A} {B : Type}: *)
+(*   forall (p : B -> pred A), alignable p -> sepcon_unique p. *)
+(* Proof. *)
+(*   intros. intros x w. intro. destruct_sepcon H0 w. assert ((p x ⊗ p x)%pred w). remember (core w) as cw. *)
+(*   exists w1, cw, w2, w1, w2. split. apply join_core in H0. subst. rewrite <- H0. apply join_comm, core_unit. split. *)
+(*   apply join_comm in H0. apply join_core in H0. subst. rewrite <- H0. apply core_unit. split; auto. specialize (H x x w H3). *)
+(*   destruct H as [[? ?] | [? ?]]. clear H3 H4. admit. intuition. *)
+(* Qed. *)
+  
