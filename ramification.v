@@ -176,7 +176,23 @@ Proof.
   exfalso; auto. assert (emp i1). apply (overlapping_precise_emp w1i4 i1 i2 w12 h1 w12h1 (p x) (p a)); auto. elim_emp.
   clear H23 i1. try_join h2 w1 w1h2. rewrite <- sepcon_assoc. rewrite (sepcon_comm (p x)). rewrite sepcon_assoc.
   exists h1, w1h2. do 2 (split; auto). try_join w12 i3 w1h2'. equate_canc w1h2 w1h2'. apply (IHl _ w1 w2 i3 w12 h2); auto.
-Qed.                                                 
+Qed.
+
+Lemma disjoint_iter_sepcon_app {A : Type} {JA : Join A} {PA : Perm_alg A} {SA: Sep_alg A} {CA : Canc_alg A} {C: Cross_alg A}
+      {DA : Disj_alg A} {B : Type}:
+  forall (p : B -> pred A) (l1 l2 : list B), alignable p -> (forall z, precise (p z)) -> (forall x, In x l1 -> ~ In x l2) ->
+                                             iter_sepcon l1 p ⊗ iter_sepcon l2 p |-- iter_sepcon l1 p * iter_sepcon l2 p.
+Proof.
+  intros. induction l1; intro w; intros. simpl in *. rewrite ocon_comm, ocon_emp in H2. rewrite sepcon_comm, sepcon_emp. auto.
+  simpl in *. destruct_ocon H2 w. destruct_sepcon H5 h. destruct_cross w12. rename w1h1 into i1. rename w2h1 into i2.
+  rename w1h2 into i3. rename w2h2 into i4. try_join w2 w3 w23'; equate_join w23 w23'. try_join i4 w3 i4w3.
+  try_join w23 i1 w23h1. try_join i1 i2 h1'. equate_join h1 h1'. assert ((p a ⊗ iter_sepcon l2 p)%pred w23h1).
+  exists i1, i2, i4w3, h1, w23. split; auto. apply alignable_iter_sepcon in H18; auto. destruct H18 as [[? ?] | [? ?]].
+  simpl in H20. exfalso. specialize (H1 a). apply H1; [left|]; auto. assert (emp i2).
+  apply (overlapping_precise_emp i1 i2 i4w3 h1 w23 w23h1 (p a) (iter_sepcon l2 p)); auto. apply precise_iter_sepcon. auto.
+  elim_emp. clear H21 i2. try_join h2 w3 h2w3. rewrite sepcon_assoc. exists h1, h2w3. do 2 (split; auto). apply IHl1. intros.
+  apply H1. right; auto. exists i3, w2, w3, h2, w23. split; auto.
+Qed.
 
 (* Lemma alignable_unique {A : Type} {JA : Join A} {PA: Perm_alg A} {SA : Sep_alg A} {B : Type}: *)
 (*   forall (p : B -> pred A), alignable p -> sepcon_unique p. *)
@@ -186,4 +202,4 @@ Qed.
 (*   apply join_comm in H0. apply join_core in H0. subst. rewrite <- H0. apply core_unit. split; auto. specialize (H x x w H3). *)
 (*   destruct H as [[? ?] | [? ?]]. clear H3 H4. admit. intuition. *)
 (* Qed. *)
-  
+
