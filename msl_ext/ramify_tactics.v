@@ -1,4 +1,4 @@
-Require Import msl.msl_direct.
+Require Import VST.msl.msl_standard.
 
 Ltac destruct_ocon H h :=
   let h1 := fresh h "1" in

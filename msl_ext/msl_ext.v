@@ -1,7 +1,7 @@
-Require Import msl.msl_direct.
-Require Import ramify_tactics.
-Require Import utilities.
-Require Import Permutation.
+Require Import VST.msl.msl_standard.
+Require Import RamifyCoq.msl_ext.ramify_tactics.
+Require Import RamifyCoq.Coqlib.
+Require Import Coq.Sorting.Permutation.
 
 Lemma overlapping_eq {A} {JA : Join A} {PA : Perm_alg A} {SA: Sep_alg A}
       {CaA : Canc_alg A} {CrA : Cross_alg A} {DA : Disj_alg A}:
@@ -24,16 +24,16 @@ Proof.
   equate_join w1 w2; apply eq_refl.
 Qed.
 
-Lemma overlapping_join_eq {A} {JA : Join A} {PA : Perm_alg A} {SA: Sep_alg A} {CaA : Canc_alg A} {DA : Disj_alg A}:
+Lemma overlapping_join_eq {A} {JA : Join A} {PA : Perm_alg A} {SA: Sep_alg A} {CaA : Canc_alg A} {DA : Disj_alg A} {AG : ageable A} {AA: Age_alg A} :
   forall h1 h2 h3 h4 h12 h23 w, join h1 h2 h12 -> join h2 h3 h23 -> join h12 h3 w -> join h12 h4 h23 -> h23 = w.
 Proof.
   intros. try_join h2 h3 h23'; equate_join h23 h23'. assertSub h1 h23 HS. assert (emp h1).
   apply join_sub_joins_identity with h23; auto. exists w; auto. apply join_unit1_e with h1; auto.
 Qed.
 
-Arguments overlapping_join_eq [A] [JA] [PA] [SA] [CaA] [DA] [h1] [h2] [h3] [h4] [h12] [h23] [w] _ _ _ _.
+Arguments overlapping_join_eq [A] [JA] [PA] [SA] [CaA] [DA] [AG] [AA] [h1] [h2] [h3] [h4] [h12] [h23] [w] _ _ _ _.
 
-Lemma overlapping_precise_emp {A} {JA : Join A} {PA : Perm_alg A} {SA : Sep_alg A} {CA : Canc_alg A} {DA : Disj_alg A}:
+Lemma overlapping_precise_emp {A} {JA : Join A} {PA : Perm_alg A} {SA : Sep_alg A} {CA : Canc_alg A} {DA : Disj_alg A} {AG : ageable A} {AA: Age_alg A}:
   forall w1 w2 w3 w12 w23 w (P Q : pred A),
     join w1 w2 w12 -> join w2 w3 w23 -> join w12 w3 w -> P w12 -> Q w23 -> precise P -> precise Q -> (P * Q)%pred w -> emp w2.
 Proof.
@@ -41,16 +41,16 @@ Proof.
   apply join_sub_joins_identity with w23. exists w3; auto. try_join w2 w23 w223; exists w223; auto.
 Qed.
 
-Lemma precise_andp_left {A} {JA : Join A} {PA : Perm_alg A} {SA: Sep_alg A} :
+Lemma precise_andp_left {A} {JA : Join A} {PA : Perm_alg A} {SA: Sep_alg A} {AG : ageable A} {AA: Age_alg A} :
   forall P Q, precise P -> precise (P && Q).
 Proof. intros; intro; intros; destruct H0; destruct H1; generalize (H w w1 w2 H0 H1 H2 H3); tauto. Qed.
 
-Lemma precise_andp_right {A} {JA : Join A} {PA : Perm_alg A} {SA: Sep_alg A} :
+Lemma precise_andp_right {A} {JA : Join A} {PA : Perm_alg A} {SA: Sep_alg A} {AG : ageable A} {AA: Age_alg A} :
   forall P Q, precise Q -> precise (P && Q).
 Proof. intros; intro; intros; destruct H0; destruct H1; generalize (H w w1 w2 H4 H5 H2 H3); tauto. Qed.
 
-Lemma precise_orp {A} {JA : Join A} {PA : Perm_alg A} {SA: Sep_alg A} :
-  forall P Q, (forall w1 w2: A, ~ (P w1 /\ Q w2)) -> precise P -> precise Q -> precise (P || Q).
+Lemma precise_orp {A} {JA : Join A} {PA : Perm_alg A} {SA: Sep_alg A} {AG : ageable A} {AA: Age_alg A} :
+  forall (P Q: pred A), (forall w1 w2: A, ~ (P w1 /\ Q w2)) -> (precise P) -> precise Q -> precise (P || Q).
 Proof.
   intros P Q Hfalse H H0; intro; intros.
   destruct H1; destruct H2. generalize (H w w1 w2 H1 H2 H3 H4); tauto.
@@ -59,7 +59,7 @@ Proof.
   generalize (H0 w w1 w2 H1 H2 H3 H4); tauto.
 Qed.
 
-Lemma precise_sepcon {A} {JA : Join A} {PA : Perm_alg A} {SA: Sep_alg A} :
+Lemma precise_sepcon {A} {JA : Join A} {PA : Perm_alg A} {SA: Sep_alg A} {AG : ageable A} {AA: Age_alg A} :
   forall P Q, precise Q -> precise P -> precise (P * Q).
 Proof.
   repeat intro; destruct H1 as [w11 [w12 [? [? ?]]]], H2 as [w21 [w22 [? [? ?]]]].
@@ -72,10 +72,11 @@ Proof.
   rewrite H9 in *; rewrite H10 in *; equate_join w1 w2; auto.
 Qed.
 
+(*
 Lemma sepcon_combine {A} {JA : Join A}: forall p q r s : pred A, p = q -> r = s -> (p * r)%pred = (q * s)%pred.
 Proof. intros. subst. auto. Qed.
-
-Lemma precise_exp_sepcon {A} {JA : Join A} {PA : Perm_alg A} {SA: Sep_alg A}  B:
+*)
+Lemma precise_exp_sepcon {A} {JA : Join A} {PA : Perm_alg A} {SA: Sep_alg A} {AG : ageable A} {AA: Age_alg A} B:
   forall P Q: B -> pred A, precise (exp P) -> precise (exp Q) -> precise (EX x : B, P x * Q x).
 Proof.
   repeat intro.
@@ -90,7 +91,7 @@ Proof.
   rewrite H9 in *; rewrite H10 in *; equate_join w1 w2; auto.
 Qed.
 
-Lemma precise_tri_exp_andp_right {A} {JA : Join A} {PA : Perm_alg A} {SA: Sep_alg A}  B:
+Lemma precise_tri_exp_andp_right {A} {JA : Join A} {PA : Perm_alg A} {SA: Sep_alg A} {AG : ageable A} {AA: Age_alg A} B:
   forall (P Q: B -> B -> B -> pred A),
     precise (EX x : B, EX y : B, EX z : B, Q x y z) ->
     precise (EX x : B, EX y : B, EX z : B, P x y z && Q x y z).
@@ -99,7 +100,7 @@ Proof.
   hnf in H; apply H with (w := w); [exists x1, y1, z1 | exists x2, y2, z2 | | ]; auto.
 Qed.
 
-Lemma precise_tri_exp_andp_left {A} {JA : Join A} {PA : Perm_alg A} {SA: Sep_alg A}  B:
+Lemma precise_tri_exp_andp_left {A} {JA : Join A} {PA : Perm_alg A} {SA: Sep_alg A} {AG : ageable A} {AA: Age_alg A} B:
   forall (P Q: B -> B -> B -> pred A),
     precise (EX x : B, EX y : B, EX z : B, P x y z) ->
     precise (EX x : B, EX y : B, EX z : B, P x y z && Q x y z).
@@ -108,7 +109,7 @@ Proof.
   hnf in H; apply H with (w := w); [exists x1, y1, z1 | exists x2, y2, z2 | | ]; auto.
 Qed.
 
-Lemma precise_tri_exp_sepcon {A} {JA : Join A} {PA : Perm_alg A} {SA: Sep_alg A}  B:
+Lemma precise_tri_exp_sepcon {A} {JA : Join A} {PA : Perm_alg A} {SA: Sep_alg A} {AG : ageable A} {AA: Age_alg A} B:
   forall (P Q R: B -> pred A),
     precise (exp P) -> precise (exp Q) -> precise (exp R) -> precise (EX x : B, EX y : B, EX z : B, P x * Q y * R z).
 Proof.
@@ -135,30 +136,32 @@ Qed.
 
 Arguments join_together [A] [JA] [PA] [SA] [CaA] [CrA] [DA] [p] [q] [m] [n] [w] [i] _ _ _.
 
-Definition sepcon_unique {A : Type} {JA : Join A} {B : Type} (p : B -> pred A) : Prop := forall x w, ~ (p x * p x)%pred w.
+Definition sepcon_unique {A : Type} {JA : Join A} {PA: Perm_alg A} {B : Type} {AG : ageable A} {AA: Age_alg A} (p : B -> pred A) : Prop := forall x w, ~ (p x * p x)%pred w.
 
-Fixpoint iter_sepcon {A : Type} {JA : Join A} {B : Type} (l : list B) (p : B -> pred A) : pred A :=
+Fixpoint iter_sepcon {A : Type} {JA : Join A} {PA: Perm_alg A} {SA: Sep_alg A} {B : Type} {AG : ageable A} {AA: Age_alg A} (l : list B) (p : B -> pred A) : pred A :=
   match l with
     | nil => emp
     | x :: xl => (p x * iter_sepcon xl p)%pred
   end.
 
-Lemma iter_sepcon_app_sepcon {A : Type} {JA : Join A} {B : Type} {PA : Perm_alg A} {SA : Sep_alg A} {CA : Canc_alg A}:
+Lemma iter_sepcon_app_sepcon {A : Type} {JA : Join A} {B : Type} {PA : Perm_alg A} {SA : Sep_alg A} {CA : Canc_alg A} {AG : ageable A} {AA: Age_alg A}:
   forall (l1 l2 : list B) (p : B -> pred A), iter_sepcon (l1 ++ l2) p = (iter_sepcon l1 p * iter_sepcon l2 p)%pred.
 Proof.
+Opaque emp sepcon.
   induction l1; intros; apply pred_ext; intro w; intros. rewrite app_nil_l in H. simpl. rewrite emp_sepcon. auto.
   simpl in H. rewrite emp_sepcon in H. rewrite app_nil_l. auto. rewrite <- app_comm_cons in H. simpl in H. destruct_sepcon H h.
   rewrite (IHl1 l2 p) in H1. destruct_sepcon H1 i. try_join h1 i1 h1i1. apply join_comm in H5. exists h1i1, i2.
   do 2 (split; auto). apply join_comm in H4. exists h1, i1. split; auto. rewrite <- app_comm_cons. simpl. destruct_sepcon H h.
   simpl in H0. destruct_sepcon H0 i. try_join i2 h2 i2h2. exists i1, i2h2. do 2 (split; auto). rewrite (IHl1 l2 p).
   exists i2, h2. split; auto.
+Transparent emp sepcon.
 Qed.
 
-Lemma iter_sepcon_app_comm {A : Type} {JA : Join A} {B : Type} {PA : Perm_alg A} {SA : Sep_alg A} {CA : Canc_alg A}:
+Lemma iter_sepcon_app_comm {A : Type} {JA : Join A} {B : Type} {PA : Perm_alg A} {SA : Sep_alg A} {CA : Canc_alg A} {AG : ageable A} {AA: Age_alg A}:
   forall (l1 l2 : list B) (p : B -> pred A), iter_sepcon (l1 ++ l2) p = iter_sepcon (l2 ++ l1) p.
 Proof. intros. do 2 rewrite iter_sepcon_app_sepcon. rewrite sepcon_comm. auto. Qed.
 
-Lemma iter_sepcon_permutation {A : Type} {JA : Join A} {B : Type} {PA : Perm_alg A} {SA : Sep_alg A} {CA : Canc_alg A}:
+Lemma iter_sepcon_permutation {A : Type} {JA : Join A} {B : Type} {PA : Perm_alg A} {SA : Sep_alg A} {CA : Canc_alg A} {AG : ageable A} {AA: Age_alg A}:
   forall  (l1 l2 : list B) (p : B -> pred A), Permutation l1 l2 -> iter_sepcon l1 p = iter_sepcon l2 p.
 Proof.
   intro l1. remember (length l1). assert (length l1 <= n) by intuition. clear Heqn. revert l1 H. induction n; intros.
@@ -168,10 +171,10 @@ Proof.
   generalize (Permutation_trans H0 H1); intro. apply Permutation_cons_inv in H2.
   assert (iter_sepcon l1 p = iter_sepcon (ll1 ++ ll2) p). apply IHn. simpl in H; intuition. auto.
   assert (iter_sepcon (ll1 ++ b :: ll2) p = iter_sepcon (b :: ll2 ++ ll1) p). rewrite iter_sepcon_app_comm.
-  rewrite app_comm_cons. auto. rewrite H4. simpl. apply sepcon_combine. auto. rewrite iter_sepcon_app_comm. auto.
+  rewrite app_comm_cons. auto. rewrite H4. simpl. f_equal. rewrite iter_sepcon_app_comm. auto.
 Qed.
 
-Lemma iter_sepcon_unique_nodup {A : Type} {JA : Join A} {PA : Perm_alg A} {SA : Sep_alg A} {CA : Canc_alg A}
+Lemma iter_sepcon_unique_nodup {A : Type} {JA : Join A} {PA : Perm_alg A} {SA : Sep_alg A} {CA : Canc_alg A} {AG : ageable A} {AA: Age_alg A}
       {B : Type} {p : B -> pred A} {w : A} {l : list B}: sepcon_unique p -> iter_sepcon l p w -> NoDup l.
 Proof.
   intro. revert w;  induction l; intros. apply NoDup_nil. simpl in H0. destruct_sepcon H0 w. apply NoDup_cons.
@@ -180,19 +183,20 @@ Proof.
   exists h1, w1; split; auto. apply H in H9. auto. apply (IHl w2); auto.
 Qed.
 
-Lemma precise_iter_sepcon {A : Type} {JA : Join A} {PA : Perm_alg A} {SA: Sep_alg A} {CA : Canc_alg A} {B : Type}:
+Lemma precise_iter_sepcon {A : Type} {JA : Join A} {PA : Perm_alg A} {SA: Sep_alg A} {CA : Canc_alg A} {AG : ageable A} {AA: Age_alg A} {B : Type}:
   forall (p : B -> pred A), (forall z, precise (p z)) -> forall (l : list B), precise (iter_sepcon l p).
 Proof. intros; induction l; simpl. apply precise_emp. apply precise_sepcon; auto. Qed.
 
-Definition joinable {A : Type} {JA : Join A} {B : Type} (p : B -> pred A) (w : A) :=
+Definition joinable {A : Type} {JA : Join A} {PA : Perm_alg A} {SA: Sep_alg A} {AG : ageable A} {AA: Age_alg A} {B : Type} (p : B -> pred A) (w : A) :=
   forall (x y : B), x <> y -> (p x * TT)%pred w -> (p y * TT)%pred w -> (p x * p y * TT)%pred w.
 
 Lemma iter_sepcon_joinable {A : Type} {JA : Join A} {PA : Perm_alg A} {SA: Sep_alg A} {CA : Canc_alg A}
-      {C: Cross_alg A} {DA : Disj_alg A} {B : Type}:
+      {C: Cross_alg A} {DA : Disj_alg A} {AG : ageable A} {AA: Age_alg A} {B : Type}:
   forall (p : B -> pred A) (l : list B) (w : A) (x : B),
     joinable p w -> (forall z, precise (p z)) -> (~ In x l) -> (p x * TT)%pred w ->
     (iter_sepcon l p * TT)%pred w -> (p x * iter_sepcon l p * TT)%pred w.
 Proof.
+Opaque emp sepcon.
   intros; induction l. simpl. rewrite sepcon_emp. auto. assert (x <> a). intro. apply H1. rewrite H4. apply in_eq.
   assert (~ In x l). intro; apply H1. apply in_cons. auto. specialize (IHl H5). simpl in H3. destruct H3 as [w1 [w2 [? [? ?]]]].
   destruct H6 as [w3 [w4 [? [? ?]]]]. assert ((p a * TT)%pred w). try_join w4 w2 w24. exists w3, w24. split; auto.
@@ -206,10 +210,11 @@ Proof.
   generalize (H0 a w w11 w3 H22 H8 Sub1 Sub2); intro; subst. clear Sub1 Sub2 H21 H22. try_join w3 w4 w34. equate_canc w5 w34.
   destruct (join_together H21 H20 H6) as [w10 ?]. try_join w1 w8 w18. apply join_comm in H24. exists w18, w10.
   repeat split; auto. apply join_comm in H23. exists w8, w1. repeat split; auto. exists w3, w9. repeat split; auto.
+Transparent emp sepcon.
 Qed.
 
 Lemma iter_sepcon_app_joinable {A : Type} {JA : Join A} {PA : Perm_alg A} {SA: Sep_alg A} {CA : Canc_alg A} {C: Cross_alg A}
-      {DA : Disj_alg A} {B : Type}: forall (p : B -> pred A) (l1 l2 : list B) (w : A),
+      {DA : Disj_alg A} {AG : ageable A} {AA: Age_alg A} {B : Type}: forall (p : B -> pred A) (l1 l2 : list B) (w : A),
                                       joinable p w -> (forall z, precise (p z)) -> (forall x, In x l1 -> ~ In x l2) ->
                                       NoDup l1 -> (iter_sepcon l1 p * TT)%pred w -> (iter_sepcon l2 p * TT)%pred w ->
                                       (iter_sepcon (l1 ++ l2) p * TT)%pred w.
@@ -223,15 +228,17 @@ Proof.
 Qed.
 
 Lemma join_iter {A : Type} {JA : Join A} {PA : Perm_alg A} {SA: Sep_alg A} {CA : Canc_alg A}
-      {C: Cross_alg A} {DA : Disj_alg A} {B : Type}:
+      {C: Cross_alg A} {DA : Disj_alg A} {AG : ageable A} {AA: Age_alg A} {B : Type}:
   forall (w : A) (p : B -> pred A) (l : list B), NoDup l -> (forall y, In y l -> (p y * TT)%pred w) -> joinable p w ->
                                                  (forall z, precise (p z)) -> (iter_sepcon l p * TT)%pred w.
 Proof.
+Opaque emp sepcon.
   induction l; intros. simpl. rewrite sepcon_comm, sepcon_emp. auto. simpl. assert (In a (a :: l)) by apply in_eq.
   generalize (H0 a H3); clear H3; intro. destruct H3 as [w1 [r1 [? [? ?]]]]. rewrite <- app_nil_l in H.
   assert (NoDup l). apply NoDup_remove_1 in H. rewrite app_nil_l in H. auto. assert (forall y : B, In y l -> (p y * TT)%pred w).
   intros. apply H0. apply in_cons. auto. specialize (IHl H6 H7 H1). apply iter_sepcon_joinable; auto. apply NoDup_remove_2 in H.
   rewrite app_nil_l in H. auto. apply H0. apply in_eq.
+Transparent emp sepcon.
 Qed.
 
 (* Program Definition mprecise {A} {JA: Join A}{AG: ageable A} (P: pred A) : pred A := *)
