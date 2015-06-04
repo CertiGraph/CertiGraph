@@ -2,6 +2,8 @@ Require Import VST.msl.msl_standard.
 Require Import RamifyCoq.msl_ext.ramify_tactics.
 Require Import RamifyCoq.msl_ext.msl_ext.
 
+Local Open Scope pred.
+
 Lemma join_age {A}{JA: Join A}{PA: Perm_alg A}{AG: ageable A}{XA: Age_alg A}:
   forall h1 h2 h12 h1' h2' h12', join h1 h2 h12 -> join h1' h2' h12' -> age h1 h1' -> age h2 h2' -> age h12 h12'.
 Proof.
@@ -38,6 +40,20 @@ Proof.
   repeat split; auto.
   apply core_duplicable.
   apply core_identity.
+Qed.
+
+Lemma ocon_TT {A}{JA: Join A}{PA: Perm_alg A}{SA: Sep_alg A}{CA: Canc_alg A}{AG : ageable A} {AA : Age_alg A}: forall P: pred A, (P ⊗ TT = P * TT)%pred.
+Proof.
+  intros; apply pred_ext; hnf; intros; simpl in *; intros.
+  + destruct_ocon H h.
+    exists h12, h3; auto.
+  + destruct H as [? [? [? [? ?]]]].
+    exists x, (core x), x0, x, x0.
+    repeat split; auto.
+    - apply join_comm, core_unit.
+    - apply join_core2 in H.
+      rewrite H.
+      apply core_unit.
 Qed.
 
 Lemma andp_ocon {A}{JA: Join A}{PA: Perm_alg A}{SA: Sep_alg A}{AG : ageable A} {AA : Age_alg A}: forall P Q, P && Q |-- P ⊗ Q.
