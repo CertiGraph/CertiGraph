@@ -1,5 +1,15 @@
 Require Import VST.msl.msl_standard.
 
+Ltac equate_age a1 a2 :=
+  let Heq := fresh "Heq" in
+  let Heq1 := fresh "Heq1" in
+  let Heq2 := fresh "Heq2" in
+  match goal with
+    | [H1: age ?X a1, H2: age ?X a2 |- _] =>
+      assert (Heq1: age1 X = Some a1) by auto; assert (Heq2: age1 X = Some a2) by auto;
+      rewrite Heq2 in Heq1; injection Heq1; intro Heq; rewrite Heq in *; clear Heq1 Heq2 H2 Heq
+  end.
+
 Ltac destruct_ocon H h :=
   let h1 := fresh h "1" in
   let h2 := fresh h "2" in

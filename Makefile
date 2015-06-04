@@ -15,4 +15,4 @@ Coqlib.vo: Coqlib.v
 	@echo COQC Coqlib.v
 	@$(COQC) -R "." -as RamifyCoq Coqlib.v
 
-all: Coqlib.vo msl_ext/seplog.vo msl_ext/log_normalize.vo msl_ext/ramify_tactics.vo msl_ext/msl_ext.vo
+all: Coqlib.vo msl_ext/seplog.vo msl_ext/log_normalize.vo msl_ext/ramify_tactics.vo msl_ext/msl_ext.vo msl_ext/overlapping.vo

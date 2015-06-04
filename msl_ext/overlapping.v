@@ -1,13 +1,32 @@
-Require Import msl.msl_direct.
-Require Import ramify_tactics.
-Require Import msl_ext.
+Require Import VST.msl.msl_standard.
+Require Import RamifyCoq.msl_ext.ramify_tactics.
+Require Import RamifyCoq.msl_ext.msl_ext.
 
-Definition ocon {A: Type}{JA: Join A} (p q:pred A) : pred A :=
+Lemma join_age {A}{JA: Join A}{PA: Perm_alg A}{AG: ageable A}{XA: Age_alg A}:
+  forall h1 h2 h12 h1' h2' h12', join h1 h2 h12 -> join h1' h2' h12' -> age h1 h1' -> age h2 h2' -> age h12 h12'.
+Proof.
+  intros; destruct (age1_join _ H H1) as [w2 [w12 [? [? ?]]]];
+  equate_age h2' w2; equate_join h12' w12; auto.
+Qed.
+
+Program Definition ocon {A: Type}{JA: Join A}{PA : Perm_alg A}{AG : ageable A} {AA : Age_alg A} (p q:pred A) : pred A :=
   fun h:A => exists h1 h2 h3 h12 h23, join h1 h2 h12 /\ join h2 h3 h23 /\ join h12 h3 h /\ p h12 /\ q h23.
+Next Obligation.
+  destruct H0 as [h1 [h2 [h3 [h12 [h23 [? [? [? [? ?]]]]]]]]].
+  try_join h2 h3 h23'; equate_join h23 h23'.
+  destruct (age1_join2 _ H2 H) as [w12 [w3 [? [? ?]]]].
+  destruct (age1_join2 _ H0 H7) as [w1 [w2 [? [? ?]]]].
+  try_join w2 w3 w23.
+  exists w1, w2, w3, w12, w23.
+  repeat split; auto.
+  apply pred_hereditary with h12; auto.
+  apply pred_hereditary with h23; auto.
+  apply (join_age h2 h3 _ w2 w3 _); auto.
+Qed.
 
 Notation "P ⊗ Q" := (ocon P Q) (at level 40, left associativity) : pred.
 
-Lemma ocon_emp {A}{JA: Join A}{PA: Perm_alg A}{SA: Sep_alg A}{CA: Canc_alg A}: forall P: pred A, (P ⊗ emp = P)%pred.
+Lemma ocon_emp {A}{JA: Join A}{PA: Perm_alg A}{SA: Sep_alg A}{CA: Canc_alg A}{AG : ageable A} {AA : Age_alg A}: forall P: pred A, (P ⊗ emp = P)%pred.
 Proof.
   intros; apply pred_ext; hnf; intros; simpl in *; intros.
   destruct_ocon H h; try_join h2 h3 h23'; equate_join h23 h23'.
@@ -21,7 +40,7 @@ Proof.
   apply core_identity.
 Qed.
 
-Lemma andp_ocon {A}{JA: Join A}{PA: Perm_alg A}{SA: Sep_alg A}: forall P Q, P && Q |-- P ⊗ Q.
+Lemma andp_ocon {A}{JA: Join A}{PA: Perm_alg A}{SA: Sep_alg A}{AG : ageable A} {AA : Age_alg A}: forall P Q, P && Q |-- P ⊗ Q.
 Proof.
   intros.
   hnf; intros; simpl in *; intros.
@@ -33,7 +52,7 @@ Proof.
   apply join_comm; apply core_unit.
 Qed.
 
-Lemma sepcon_ocon {A}{JA: Join A}{PA: Perm_alg A}{SA: Sep_alg A}: forall P Q, P * Q |-- P ⊗ Q.
+Lemma sepcon_ocon {A}{JA: Join A}{PA: Perm_alg A}{SA: Sep_alg A}{AG : ageable A} {AA : Age_alg A}: forall P Q, P * Q |-- P ⊗ Q.
 Proof.
   intros; hnf; intros; simpl in *; intros.
   destruct H as [y [z [? [? ?]]]].
@@ -49,36 +68,39 @@ Proof.
   rewrite Hequ. apply core_unit.
 Qed.
 
-Lemma ocon_sep_true {A}{JA: Join A}{PA: Perm_alg A}: forall P Q, P ⊗ Q |-- P * TT.
+Lemma join_necR {A}{JA: Join A}{PA: Perm_alg A}{AG: ageable A}{XA: Age_alg A}:
+  forall h1 h2 h12 h1' h2' h12', join h1 h2 h12 -> join h1' h2' h12' -> necR h1 h1' -> necR h2 h2' -> necR h12 h12'.
 Proof.
-  intros; hnf; intros; simpl in *; intros.
-  destruct_ocon H h.
-  exists h12, h3.
-  repeat split; auto.
+  intros; destruct (nec_join H H1) as [w2 [w12 [? [? ?]]]];
+  destruct (join_level _ _ _ H3); rewrite <- H7 in H6;
+  destruct (join_level _ _ _ H0); rewrite <- H9 in H8;
+  rewrite H8 in H6; generalize (necR_linear' H2 H4 H6); intro;
+  rewrite <- H10 in H3; equate_join h12' w12; auto.
 Qed.
 
-Lemma ocon_wand {A}{JA: Join A}{PA: Perm_alg A}: forall P Q, (P ⊗ Q = EX R : pred A, (R -* P) * (R -* Q) * R)%pred.
+Lemma ocon_wand {A}{JA: Join A}{PA: Perm_alg A}{AG : ageable A} {AA : Age_alg A}: forall P Q, (P ⊗ Q = EX R : pred A, (R -* P) * (R -* Q) * R)%pred.
 Proof.
   intros; apply pred_ext; hnf; intros; simpl in *.
-  destruct_ocon H h; try_join h2 h3 h23'; equate_join h23 h23'; try_join h1 h3 h13.
+  destruct H as [h1 [h2 [h3 [h12 [h23 [? [? [? [? ?]]]]]]]]].
+  try_join h2 h3 h23'; equate_join h23 h23'; try_join h1 h3 h13.
   exists (exactly h2), h13, h2; repeat split; simpl; auto; exists h1, h3; repeat split; auto.
-  intros h2' h12'; intros; rewrite H8 in *; equate_join h12 h12'; trivial.
-  intros h2' h23'; intros; rewrite H8 in *; equate_join h23 h23'; trivial.
+  intros h1' h2' h12'; intros; apply (pred_nec_hereditary P h12); auto; apply (join_necR h1 h2 _ h1' h2' _); auto.
+  intros h3' h2' h23'; intros; apply (pred_nec_hereditary Q h23); auto; apply (join_necR h2 h3 _ h2' h3' _); auto.
   (* another direction *)
   destruct H as [R [w13 [w2 [? [[w1 [w3 [? [HP HQ]]]] HR]]]]].
   try_join w2 w3 w23; try_join w1 w2 w12.
   exists w1, w2, w3, w12, w23; repeat split; auto.
-  apply (HP w2 w12). auto. trivial. apply (HQ w2 w23); auto.
+  apply (HP w1 w2); auto. apply (HQ w3 w2); auto.
 Qed.
 
-Lemma ocon_comm {A}{JA: Join A}{PA: Perm_alg A}: forall P Q, (P ⊗ Q = Q ⊗ P)%pred.
+Lemma ocon_comm {A}{JA: Join A}{PA: Perm_alg A}{AG : ageable A} {AA : Age_alg A}: forall P Q, (P ⊗ Q = Q ⊗ P)%pred.
 Proof.
   intros; apply pred_ext; hnf; intros; simpl in *; intros;
   destruct_ocon H h; exists h3, h2, h1, h23, h12;
   repeat split; auto; try_join h2 h3 h23'; equate_join h23 h23'; auto.
 Qed.
 
-Lemma cross_rev {A}{JA: Join A}{PA: Perm_alg A}: forall h1 h2 h3 h4
+Lemma cross_rev {A}{JA: Join A}{PA: Perm_alg A}{AG : ageable A} {AA : Age_alg A}: forall h1 h2 h3 h4
   h12 h34 h13 h24 h1234, join h1 h2 h12 -> join h1 h3 h13 -> join h3 h4
   h34 -> join h2 h4 h24 -> join h12 h34 h1234 -> join h13 h24 h1234.
 Proof.
@@ -87,7 +109,7 @@ Proof.
   try_join h1 h3 h13'; equate_join h13 h13'; auto.
 Qed.
 
-Lemma ocon_assoc {A}{JA: Join A}{PA: Perm_alg A}{CA: Cross_alg A}:
+Lemma ocon_assoc {A}{JA: Join A}{PA: Perm_alg A}{CA: Cross_alg A}{AG : ageable A} {AA : Age_alg A}:
   forall P Q R: pred A, (P ⊗ Q ⊗ R = P ⊗ (Q ⊗ R))%pred.
 Proof.
   intros; apply pred_ext; hnf; intros; simpl in *; intros.
@@ -112,7 +134,7 @@ Proof.
   repeat split; auto.
 Qed.
 
-Lemma ocon_derives {A} {JA: Join A}{PA: Perm_alg A}: forall p q p' q', (p |-- p') -> (q |-- q') -> (p ⊗ q |-- p' ⊗ q').
+Lemma ocon_derives {A} {JA: Join A}{PA: Perm_alg A}{AG : ageable A} {AA : Age_alg A}: forall p q p' q', (p |-- p') -> (q |-- q') -> (p ⊗ q |-- p' ⊗ q').
 Proof.
   repeat (intros; hnf).
   simpl in H1.
@@ -121,7 +143,10 @@ Proof.
   repeat split; auto.
 Qed.
 
-Lemma covariant_ocon {B}{A} {JA: Join A}{PA: Perm_alg A}:
+Definition covariant {B A : Type} {AG: ageable A} (F: (B -> pred A) -> (B -> pred A)) : Prop :=
+forall (P Q: B -> pred A), (forall x, P x |-- Q x) -> (forall x, F P x |-- F Q x).
+
+Lemma covariant_ocon {B}{A} {JA: Join A}{PA: Perm_alg A}{AG : ageable A} {AA : Age_alg A}:
    forall F1 F2 : (B -> pred A) -> (B -> pred A),
     covariant F1 -> covariant F2 ->
     covariant (fun (x : B -> pred A) b => F1 x b ⊗ F2 x b)%pred.
@@ -133,10 +158,10 @@ Proof.
   apply H0, H1.
 Qed.
 
-Definition contravariant {B A : Type} (F: (B -> pred A) -> (B -> pred A)) : Prop :=
+Definition contravariant {B A : Type} {AG: ageable A} (F: (B -> pred A) -> (B -> pred A)) : Prop :=
 forall (P Q: B -> pred A), (forall x, P x |-- Q x) -> (forall x, F Q x |-- F P x).
 
-Lemma contravariant_ocon {B}{A} {JA: Join A}{PA: Perm_alg A}:
+Lemma contravariant_ocon {B}{A} {JA: Join A}{PA: Perm_alg A}{AG : ageable A} {AA : Age_alg A}:
    forall F1 F2 : (B -> pred A) -> (B -> pred A),
     contravariant F1 -> contravariant F2 ->
     contravariant (fun (x : B -> pred A) b => F1 x b ⊗ F2 x b)%pred.
@@ -148,7 +173,30 @@ Proof.
   apply H0, H1.
 Qed.
 
-Lemma precise_ocon {A} {JA : Join A} {PA : Perm_alg A} {SA: Sep_alg A}{CaA : Canc_alg A}{CrA : Cross_alg A}{DA : Disj_alg A} :
+Lemma later_ocon {A}{JA: Join A}{PA: Perm_alg A}{SA: Sep_alg A}{AG: ageable A}{XA: Age_alg A}:
+  forall P Q, ((|> (P ⊗ Q)) = |> Q ⊗ |> P)%pred.
+Proof.
+  intros; repeat rewrite later_age; apply pred_ext; hnf; intros; simpl in *.
+  case_eq (age1 a); intros.
+  destruct (H a0) as [h1' [h2' [h3' [h12' [h23' [? [? [? [? ?]]]]]]]]]; auto.
+  destruct (unage_join2 _ H3 H0) as [x12 [x3 [? [? ?]]]].
+  destruct (unage_join2 _ H1 H7) as [x1 [x2 [? [? ?]]]].
+  try_join x2 x3 x23; exists x3, x2, x1, x23, x12; repeat (split; auto).
+  assert (age x23 h23') by (apply (join_age x2 x3 _ h2' h3' _); auto); intro h23; intros; equate_age h23' h23; auto.
+  assert (age x12 h12') by (apply (join_age x1 x2 _ h1' h2' _); auto); intro h12; intros; equate_age h12' h12; auto.
+  exists (core a), a, (core a), a, a. repeat split.
+  apply core_unit. apply join_comm, core_unit. apply join_comm, core_unit.
+  intros; unfold age in H1; rewrite H0 in H1; discriminate H1.
+  intros; unfold age in H1; rewrite H0 in H1; discriminate H1.
+  (* another direction *)
+  destruct H as [x1 [x2 [x3 [x12 [x23 [? [? [? [? ?]]]]]]]]]; intros.
+  destruct (age1_join2 _ H1 H4) as [h12 [h3 [? [? ?]]]].
+  destruct (age1_join2 _ H H6) as [h1 [h2 [? [? ?]]]].
+  try_join h2 h3 h23; exists h3, h2, h1, h23, h12; repeat (split; auto).
+  apply H3; apply (join_age x2 x3 _ h2 h3 _); auto.
+Qed.
+
+Lemma precise_ocon {A} {JA : Join A} {PA : Perm_alg A} {SA: Sep_alg A}{CaA : Canc_alg A}{CrA : Cross_alg A}{DA : Disj_alg A}{AG : ageable A} {AA : Age_alg A} :
   forall P Q, precise P -> precise Q -> precise (P ⊗ Q).
 Proof.
   intros; intro; intros.
@@ -165,7 +213,7 @@ Proof.
 Qed.
 
 Lemma precise_tri_exp_ocon {A} {JA : Join A} {PA : Perm_alg A} {SA: Sep_alg A} {CaA : Canc_alg A}
-      {CrA : Cross_alg A} {DA : Disj_alg A} B:
+      {CrA : Cross_alg A} {DA : Disj_alg A}{AG : ageable A} {AA : Age_alg A} B:
   forall (P : B -> B -> B -> pred A) (Q R: B -> pred A),
     precise (EX x : B, EX y : B, EX z : B, P x y z) -> precise (exp Q) -> precise (exp R) ->
     precise (EX x : B, EX y : B, EX z : B, P x y z ⊗ Q y ⊗ R z).
@@ -185,11 +233,11 @@ Proof.
   rewrite H24 in *; rewrite H25 in *; apply (overlapping_eq h1 h2 h3 i1 i2 i3 i12 i23); trivial.
 Qed.
 
-Lemma extract_andp_ocon_ocon_left {A} {JA : Join A} {PA : Perm_alg A} {SA: Sep_alg A}:
+Lemma extract_andp_ocon_ocon_left {A} {JA : Join A} {PA : Perm_alg A} {SA: Sep_alg A}{AG : ageable A} {AA : Age_alg A}:
   forall (w : A) P Q R S, (P && Q ⊗ R ⊗ S)%pred w -> exists w', P w'.
 Proof. repeat intro; destruct_ocon H h; destruct_ocon H2 i; destruct H6; exists i12; trivial. Qed.
 
-Lemma ocon_precise_elim  {A}{JA: Join A}{PA: Perm_alg A}{SA: Sep_alg A}{CA: Canc_alg A}{DA : Disj_alg A}:
+Lemma ocon_precise_elim  {A}{JA: Join A}{PA: Perm_alg A}{SA: Sep_alg A}{CA: Canc_alg A}{DA : Disj_alg A}{AG : ageable A} {AA : Age_alg A}:
   forall P : pred A, precise P -> (P ⊗ P = P)%pred.
 Proof.
   intros; apply pred_ext; intro w; intro. destruct_ocon H0 h. try_join h2 h3 h23'; equate_join h23 h23'. equate_precise h12 h23.
