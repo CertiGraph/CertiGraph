@@ -38,14 +38,52 @@ Section SepAlgPack.
       | x :: l' => exists j', iter_joinable l' u j' /\ join x j' j
     end.
 
-  Definition legal (f : Forest) (u : A) : Prop := decreaseForest f /\ exists l j, flattenRForest f l /\ iter_joinable l u j.
+  Definition Legal (f : Forest) (u : A) : Prop := decreaseForest f /\ exists l j, flattenRForest f l /\ iter_joinable l u j.
 
-  Record NodeOfSA := mkNodeOfSA {
+  Lemma Legal_nil: forall u, Legal nil u.
+  Proof.
+    intros.
+    split.
+    + constructor.
+    + exists nil, u.
+      split.
+      - constructor.
+      - simpl; auto.
+  Defined.
+
+  Record PackNode := mkNodeOfSA {
                          f : Forest;
                          u : A;
-                         H : legal f u
+                         legal : Legal f u
                        }.
 
+  Definition mergeR (F1 F2 F: Forest) := forall T, In T F <-> (In T F1 \/ In T F2).
+
+  Inductive join_Pack: PackNode -> PackNode -> PackNode -> Prop :=
+  | join_Pack_constr: forall fx fy fz u lx ly lz,
+     mergeR fx fy fz ->
+     join_Pack (mkNodeOfSA fx u lx) (mkNodeOfSA fy u ly) (mkNodeOfSA fz u lz).
+
+  Definition core_Pack (x: PackNode) : PackNode :=
+    match x with
+    | mkNodeOfSA f u legal => mkNodeOfSA nil u (Legal_nil u)
+    end.
+
+  Instance Join_Pack: Join PackNode := join_Pack.
+
+  Instance Perm_Pack: Perm_alg PackNode.
+  Proof.
+    constructor.
+
+    (* join_eq *)
+    intros.
+    unfold join, Join_Pack in *.
+    destruct x, y, z, z'.
+    inversion H; clear H;
+    inversion H0; clear H0.
+    subst; subst u3.
+    f_equal.
+  Abort.
 End SepAlgPack.
 
 
