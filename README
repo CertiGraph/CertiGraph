@@ -1,0 +1,39 @@
+HOW TO SET UP YOUR ENVIRMENT
+
+1. Download and Unpack
+1.1. Download CompCert of commit b3bf3a0cc6431322903beeee5bdd918f5178adea and unpack it into your CompCert folder.
+1.2. Download VST of branch new_compcert and unpack it into your VST folder.
+1.3. Download RamifyCoq and unpack it into your Ramify folder.
+1.4. It is not necessary for your folder names to be CompCert, VST and/or Ramify, you can feel free to name them in your own way.
+
+2. Build CompCert
+2.1. Run "./configure" in your CompCert folder.
+2.2. Run "make all" and "make clightgen" in your CompCert folder.
+
+2. Build VST
+2.1. Copy the file VST-Makefile in your RamifyCoq folder into your VST folder and replace the Makefile there, i.e. do "cp [Your RamifyCoq Folder]/VST-Makefile [Your VST Folder]/Makefile".
+2.2. Create a file CONFIGURE in your VST folder with this text in it: "COMPCERT=[Your CompCert Folder]".
+2.3. If this is the first time you use VST, you can ignore this line. Do "make clean" in your VST folder.
+2.4. Run "make -kj3" or "make -kj7" to build VST. There will be some error. That would be fine, don't worry.
+
+3. Build RamifyCoq
+3.1. Create a file CONFIGURE in your RamifyCoq folder with these two lines in it:
+       COMPCERT_DIR=[Your CompCert Folder]
+       VST_DIR=[Your VST Folder]
+3.2. Run "make all" in your RamifyCoq folder.
+
+4. Set up your ProofGeneral Environment.
+4.1. Install ProofGeneral in your computer.
+4.2. Add ProofGeneral into your emacs setting files.
+4.3. Add these two paragragh into your emacs setting files.
+
+(custom-set-variables '(coq-prog-args '(
+"-R" "[Your CompCert Folder]" "-as" "compcert" 
+"-R" "[Your VST Folder]" "-as" "VST" 
+"-R" "[Your RamifyCoq Folder]" "-as" "RamifyCoq"))) 
+
+(setq coq-load-path '(("[Your CompCert Folder]" "compcert")
+                      ("[Your VST Folder]" "VST")
+                      ("[Your RamifyCoq Folder]" "RamifyCoq")))
+
+5. Done. You can play with RamifyCoq now.
