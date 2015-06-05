@@ -29,3 +29,4 @@ depend:
 clean:
 	@rm *.vo */*.vo *.glob */*.glob
 
+.DEFAULT_GOAL := all

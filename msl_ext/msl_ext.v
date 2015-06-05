@@ -24,14 +24,14 @@ Proof.
   equate_join w1 w2; apply eq_refl.
 Qed.
 
-Lemma overlapping_join_eq {A} {JA : Join A} {PA : Perm_alg A} {SA: Sep_alg A} {CaA : Canc_alg A} {DA : Disj_alg A} {AG : ageable A} {AA: Age_alg A} :
+Lemma overlapping_join_eq {A} {JA : Join A} {PA : Perm_alg A} {SA: Sep_alg A} {CaA : Canc_alg A} {DA : Disj_alg A}:
   forall h1 h2 h3 h4 h12 h23 w, join h1 h2 h12 -> join h2 h3 h23 -> join h12 h3 w -> join h12 h4 h23 -> h23 = w.
 Proof.
-  intros. try_join h2 h3 h23'; equate_join h23 h23'. assertSub h1 h23 HS. assert (emp h1).
+  intros. try_join h2 h3 h23'; equate_join h23 h23'. assertSub h1 h23 HS. assert (identity h1).
   apply join_sub_joins_identity with h23; auto. exists w; auto. apply join_unit1_e with h1; auto.
 Qed.
 
-Arguments overlapping_join_eq [A] [JA] [PA] [SA] [CaA] [DA] [AG] [AA] [h1] [h2] [h3] [h4] [h12] [h23] [w] _ _ _ _.
+Arguments overlapping_join_eq [A] [JA] [PA] [SA] [CaA] [DA] [h1] [h2] [h3] [h4] [h12] [h23] [w] _ _ _ _.
 
 Lemma overlapping_precise_emp {A} {JA : Join A} {PA : Perm_alg A} {SA : Sep_alg A} {CA : Canc_alg A} {DA : Disj_alg A} {AG : ageable A} {AA: Age_alg A}:
   forall w1 w2 w3 w12 w23 w (P Q : pred A),
