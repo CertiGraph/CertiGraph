@@ -12,3 +12,14 @@ Proof.
   + rewrite ocon_TT.
     apply derives_refl.
 Qed.
+
+Lemma exp_allp: forall {A: Type} {ND: NatDed A} (S T: Type) (P: S -> T -> A),
+    exp (fun s => allp (P s)) |-- allp (fun t => exp (fun s => P s t)).
+Proof.
+  intros.
+  apply exp_left; intro s.
+  apply allp_right; intro t.
+  apply (exp_right s).
+  eapply allp_left.
+  apply derives_refl.
+Qed.
