@@ -4,3 +4,4 @@ msl/*
 compcert/*
 *.vo
 *.glob
+.depend
