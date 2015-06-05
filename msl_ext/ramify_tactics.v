@@ -86,6 +86,7 @@ Ltac assertSub a c Hsub :=
       let H := fresh "H" in assertSub x c H; assertSub a c Hsub; clear H
   end.
 
+(* For standard precise *)
 Ltac equate_precise x1 x2 :=
   let Sub1 := fresh "Sub1" in
   let Sub2 := fresh "Sub2" in
@@ -119,8 +120,28 @@ Ltac equate_canc x1 x2 :=
       | [H1: join ?b x1 ?c, H2: join ?b x2 ?c |- _] => helper (join_comm H1) (join_comm H2) H2
     end.
 
-  Ltac elim_emp :=
-    repeat match goal with
-             | [H1: join ?x ?y _, H2: emp ?x |- _] => apply (join_unit1_e _ _ H2) in H1; rewrite H1 in *; clear H1 y
-             | [H1: join ?y ?x _, H2: emp ?x |- _] => apply (join_unit2_e _ _ H2) in H1; rewrite H1 in *; clear H1 y
-           end.
+Ltac elim_emp :=
+  repeat match goal with
+           | [H1: join ?x ?y _, H2: emp ?x |- _] => apply (join_unit1_e _ _ H2) in H1; rewrite H1 in *; clear H1 y
+           | [H1: join ?y ?x _, H2: emp ?x |- _] => apply (join_unit2_e _ _ H2) in H1; rewrite H1 in *; clear H1 y
+         end.
+
+Require Import VST.msl.msl_direct.
+
+(* For direct precise *)
+
+Ltac equate_precise_direct x1 x2 :=
+  let Sub1 := fresh "Sub1" in
+  let Sub2 := fresh "Sub2" in
+  let Heq := fresh "Heq" in
+  match goal with
+    | [_ : join x1 _ ?c, _: join x2 _ ?c |- _] => assertSub x1 c Sub1; assertSub x2 c Sub2
+    | [_ : join _ x1 ?c, _: join x2 _ ?c |- _] => assertSub x1 c Sub1; assertSub x2 c Sub2
+    | [_ : join x1 _ ?c, _: join _ x2 ?c |- _] => assertSub x1 c Sub1; assertSub x2 c Sub2
+    | [_ : join _ x1 ?c, _: join _ x2 ?c |- _] => assertSub x1 c Sub1; assertSub x2 c Sub2
+  end;
+  match goal with
+    | [H1: precise _, H2: ?P x1, H3: ?P x2, H4: join_sub x1 ?w, H5: join_sub x2 ?w |- _] =>
+      generalize (H1 w x2 x1 H3 H2 H5 H4); intro Heq;
+      rewrite Heq in *; clear H3 H4 H5 Heq x2
+  end.
