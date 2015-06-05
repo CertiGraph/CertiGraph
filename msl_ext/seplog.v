@@ -50,6 +50,12 @@ Class HONatDed (A: Type) {ND: NatDed A} := mkHONatDed {
     exp (fun s => allp (P s)) |-- allp (fun t => exp (fun s => P s t))
 }.
 
+Class PreciseSepLog (A: Type) {ND: NatDed A} {SL: SepLog A} := mkPreciseSepLog {
+  precise: A -> Prop;
+  precise_spec: forall P Q R, precise P -> (P * Q) && (P * R) |-- P * (Q && R);
+  derives_precise: forall P Q, (P |-- Q) -> precise Q -> precise P
+}.
+
 Class MapstoSepLog (Adr Val A: Type) {ND: NatDed A} {SL: SepLog A} := mkMapstoSepLog {
   mapsto: Adr -> Val -> A;
   mapsto_conflict: forall a b b', mapsto a b * mapsto a b' |-- FF
