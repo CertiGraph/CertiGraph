@@ -14,11 +14,14 @@ COQFLAG = $(INCLUDE_RAMIFYCOQ) $(INCLUDE_VST) $(INCLUDE_COMPCERT)
 msl_ext/%.vo: msl_ext/%.v
 	@echo COQC msl_ext/$*.v
 	@$(COQC) $(COQFLAG) msl_ext/$*.v
+graph/%.vo: graph/%.v
+	@echo COQC graph/$*.v
+	@$(COQC) $(COQFLAG) graph/$*.v
 Coqlib.vo: Coqlib.v
 	@echo COQC Coqlib.v
 	@$(COQC) -R "." -as RamifyCoq Coqlib.v
 
-all: Coqlib.vo msl_ext/seplog.vo msl_ext/log_normalize.vo msl_ext/ramify_tactics.vo msl_ext/msl_ext.vo msl_ext/overlapping.vo msl_ext/alg_seplog.vo
+all: Coqlib.vo msl_ext/seplog.vo msl_ext/log_normalize.vo msl_ext/ramify_tactics.vo msl_ext/msl_ext.vo msl_ext/overlapping.vo msl_ext/alg_seplog.vo graph/graph.vo graph/graph_reachable.vo
 
 depend:	
 	@$(COQDEP) $(COQFLAG) Coqlib.v */*.v > .depend
