@@ -1,7 +1,10 @@
 Require Import VST.msl.Extensionality.
 Require Import VST.msl.seplog.
+Require Import RamifyCoq.msl_ext.abs_addr.
 
 Local Open Scope logic.
+
+Set Implicit Arguments.
 
 Class HONatDed (A: Type) {ND: NatDed A} := mkHONatDed {
   allp_uncurry: forall (S T: Type) (P: S -> T -> A),
@@ -21,22 +24,41 @@ Class HONatDed (A: Type) {ND: NatDed A} := mkHONatDed {
 Class PreciseSepLog (A: Type) {ND: NatDed A} {SL: SepLog A} := mkPreciseSepLog {
   precise: A -> Prop;
   precise_sepcon_andp_sepcon: forall P Q R, precise P -> (P * Q) && (P * R) |-- P * (Q && R);
-  precise_sepcon_cancel: forall P Q R, precise P -> P * Q |-- P * R -> Q |-- R;
+  precise_sepcon_cancel_left: forall P Q R, precise P -> P * Q |-- P * R -> Q |-- R;
   derives_precise: forall P Q, (P |-- Q) -> precise Q -> precise P;
   precise_emp: precise emp;
   precise_sepcon: forall P Q, precise Q -> precise P -> precise (P * Q)
 }.
 
-Class MapstoSepLog (Adr Val A: Type) {ND: NatDed A} {SL: SepLog A} {PSL: PreciseSepLog A} := mkMapstoSepLog {
-  mapsto: Adr -> Val -> A;
-  mapsto_conflict: forall a b b', mapsto a b * mapsto a b' |-- FF;
-  mapsto_precise: forall a b, precise (mapsto a b);
-  mapsto__precise: forall a, precise (EX b: Val, mapsto a b)
+Implicit Arguments PreciseSepLog [[ND] [SL]].
+Implicit Arguments mkPreciseSepLog [[A] [ND] [SL]].
+
+Instance LiftPreciseSepLog (A B: Type) {ND: NatDed B} {SL: SepLog B} {PSL: PreciseSepLog B} : PreciseSepLog (A -> B).
+  apply (mkPreciseSepLog (fun P => forall a, precise (P a))); simpl; intros.
+  + apply precise_sepcon_andp_sepcon; auto.
+  + eapply precise_sepcon_cancel_left; eauto.
+  + eapply derives_precise; eauto.
+  + apply precise_emp.
+  + apply precise_sepcon; auto.
+Defined.
+
+Class MapstoSepLog (AV: AbsAddr) (A: Type) {ND: NatDed A} {SL: SepLog A} {PSL: PreciseSepLog A} := mkMapstoSepLog {
+  mapsto: Addr -> Val -> A;
+  mapsto_: Addr -> A := fun p => EX v: Val, mapsto p v;
+  mapsto__precise: forall p, precise (mapsto_ p);
+  mapsto_conflict: forall p1 p2 v1 v2, addr_conflict p1 p2 = true -> mapsto p1 v1 * mapsto p2 v2 |-- FF
 }.
 
-Definition mapsto_ {Adr Val A: Type} {ND: NatDed A} {SL: SepLog A} {PSL: PreciseSepLog A} {MSL: MapstoSepLog Adr Val A} (a: Adr): A := EX b: Val, mapsto a b.
+Implicit Arguments MapstoSepLog [[ND] [SL] [PSL]].
+Implicit Arguments mkMapstoSepLog [[AV] [A] [ND] [SL] [PSL]].
 
-Class OverlapSL (A: Type) {ND: NatDed A} {SL: SepLog A} := mkOverlapSL {
+(*
+Class NonEmpMapstoSL (AV: AbsAddr) (A: Type) {ND: NatDed A} {SL: SepLog A} {PSL: PreciseSepLog A} {MSL: MapstoSepLog AV A} :=
+  mapsto_non_emp: forall a b, mapsto a b && emp |-- FF.
+
+We should just say that, if an address is empty, we cannot load or store on it.
+*)
+Class OverlapSepLog (A: Type) {ND: NatDed A} {SL: SepLog A} {PSL: PreciseSepLog A}:= mkOverlapSepLog {
   ocon: A -> A -> A;
   ocon_emp: forall P, ocon P emp = P;
   ocon_TT: forall P, ocon P TT = P * TT;
@@ -45,23 +67,41 @@ Class OverlapSL (A: Type) {ND: NatDed A} {SL: SepLog A} := mkOverlapSL {
   ocon_wand: forall P Q R, (R -* P) * (R -* Q) * R |-- ocon P Q;
   ocon_comm: forall P Q, ocon P Q = ocon Q P;
   ocon_assoc: forall P Q R, ocon (ocon P Q) R = ocon P (ocon Q R);
-  ocon_derives: forall P Q P' Q', (P |-- P') -> (Q |-- Q') -> ocon P Q |-- ocon P' Q'
+  ocon_derives: forall P Q P' Q', (P |-- P') -> (Q |-- Q') -> ocon P Q |-- ocon P' Q';
+  precise_ocon_self: forall P, precise P -> ocon P P = P;
+  disjointed: A -> A -> Prop := fun P Q => ocon P Q |-- P * Q;
+  disj_comm: forall P Q, disjointed P Q -> disjointed Q P;
+  disj_ocon_right: forall P Q R, precise P -> disjointed P Q -> disjointed P R -> disjointed P (ocon Q R);
+  disj_sepcon_right: forall P Q R, precise P -> disjointed P Q -> disjointed P R -> disjointed P (sepcon Q R)
 }.
 
-Class ImpredicativeOverlapSL (A: Type) {ND: NatDed A} {SL: SepLog A} {OSL: OverlapSL A} := mkImpredicativeOverlapSL {
-  strong_ocon_wand: forall P Q, ocon P Q = EX R : A, (R -* P) * (R -* Q) * R
-}.
+Implicit Arguments OverlapSepLog [[ND] [SL] [PSL]].
+Implicit Arguments mkOverlapSepLog [[A] [ND] [SL] [PSL]].
 
-Instance LiftOverlapSL (A B: Type) {ND: NatDed B} {SL: SepLog B} {OSL: OverlapSL B}: OverlapSL (A -> B).
-  apply (mkOverlapSL (A -> B) _ _ (fun P Q x => ocon (P x) (Q x))).
-  + simpl; intros. extensionality x. apply ocon_emp.
-  + simpl; intros. extensionality x. apply ocon_TT.
-  + simpl; intros. apply andp_ocon.
-  + simpl; intros. apply sepcon_ocon.
-  + simpl; intros. apply ocon_wand.
-  + simpl; intros. extensionality x. apply ocon_comm.
-  + simpl; intros. extensionality x. apply ocon_assoc.
-  + simpl; intros. apply ocon_derives; auto.
+Class MapstoOverlapSepLog (AV: AbsAddr) (A: Type) {ND: NatDed A} {SL: SepLog A} {PSL: PreciseSepLog A} {MSL: MapstoSepLog AV A} {OSL: OverlapSepLog A} :=
+  disj_mapsto: forall p1 p2 v1 v2, addr_conflict p1 p2 = false -> disjointed (mapsto p1 v1) (mapsto p2 v2).
+
+Class ImpredicativeOSL (A: Type) {ND: NatDed A} {SL: SepLog A} {PSL: PreciseSepLog A} {OSL: OverlapSepLog A} :=
+  strong_ocon_wand: forall P Q, ocon P Q = EX R : A, (R -* P) * (R -* Q) * R.
+
+Instance LiftOverlapSepLog (A B: Type) {ND: NatDed B} {SL: SepLog B} {PSL: PreciseSepLog B} {OSL: OverlapSepLog B}: OverlapSepLog (A -> B).
+  apply (mkOverlapSepLog (fun P Q x => ocon (P x) (Q x))); simpl; intros.
+  + extensionality x. apply ocon_emp.
+  + extensionality x. apply ocon_TT.
+  + apply andp_ocon.
+  + apply sepcon_ocon.
+  + apply ocon_wand.
+  + extensionality x. apply ocon_comm.
+  + extensionality x. apply ocon_assoc.
+  + apply ocon_derives; auto.
+  + extensionality x. apply precise_ocon_self; auto.
+  + apply disj_comm. apply H.
+  + apply disj_ocon_right; auto.
+    apply H0.
+    apply H1.
+  + apply disj_sepcon_right; auto.
+    apply H0.
+    apply H1.
 Defined.
 
 Module OconNotation.
