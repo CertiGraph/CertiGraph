@@ -7,6 +7,9 @@ Definition ocon {A: Type}{JA: Join A} (p q:pred A) : pred A :=
 
 Notation "P ⊗ Q" := (ocon P Q) (at level 40, left associativity) : pred.
 
+Program Definition owand {A: Type}{JA: Join A} (p q:pred A) : pred A :=
+  fun h23:A => forall h1 h2 h3 h12 h123, join h1 h2 h12 -> join h2 h3 h23 -> join h12 h3 h123 -> p h12 -> q h123.
+
 Lemma ocon_emp {A}{JA: Join A}{PA: Perm_alg A}{SA: Sep_alg A}{CA: Canc_alg A}: forall P: pred A, (P ⊗ emp = P)%pred.
 Proof.
   intros; apply pred_ext; hnf; intros; simpl in *; intros.
@@ -119,6 +122,22 @@ Proof.
   destruct_ocon H1 w.
   exists w1,w2,w3,w12,w23.
   repeat split; auto.
+Qed.
+
+Lemma owand_ocon_adjoint {A} {JA: Join A}{PA: Perm_alg A}: forall P Q R, ocon P Q |-- R <-> P |-- owand Q R.
+Proof.
+  intros.
+  rewrite ocon_comm.
+  unfold ocon, owand, derives.
+  simpl.
+  split; intros.
+  + apply H.
+    exists h1, h2, h3, h12, a.
+    repeat split; auto.
+  + destruct H0 as [h1 [h2 [h3 [h12 [h23 [? [? [? [? ?]]]]]]]]].
+    specialize (H h23 H4).
+    specialize (H h1 h2 h3 h12 a).
+    apply H; auto.
 Qed.
 
 Lemma covariant_ocon {B}{A} {JA: Join A}{PA: Perm_alg A}:
