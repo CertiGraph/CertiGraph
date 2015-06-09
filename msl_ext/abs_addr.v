@@ -1,14 +1,9 @@
 Class AbsAddr : Type := mkAbsAddr {
   Addr: Type;
   Val: Type;
-  addr_conflict: Addr -> Addr -> bool
+  addr_conflict: Addr -> Addr -> bool;
+  addr_empty: Addr -> Prop := fun p => addr_conflict p p = false;
+  addr_conflict_comm: forall p1 p2, addr_conflict p1 p2 = addr_conflict p2 p1;
+  empty_non_conflict: forall p1 p2, addr_empty p1 -> addr_conflict p1 p2 = false
 }.
 
-Class Alignable (AV: AbsAddr) :=
-  addr_alignable: forall p q, p = q \/ addr_conflict p q = true.
-
-Class AddrNonEmpty (AV: AbsAddr) :=
-  addr_non_empty: forall p, addr_conflict p p = true.
-
-Implicit Arguments Alignable [].
-Implicit Arguments AddrNonEmpty [].

@@ -60,6 +60,7 @@ We should just say that, if an address is empty, we cannot load or store on it.
 *)
 Class OverlapSepLog (A: Type) {ND: NatDed A} {SL: SepLog A} {PSL: PreciseSepLog A}:= mkOverlapSepLog {
   ocon: A -> A -> A;
+  owand: A -> A -> A;
   ocon_emp: forall P, ocon P emp = P;
   ocon_TT: forall P, ocon P TT = P * TT;
   andp_ocon: forall P Q, P && Q |-- ocon P Q;
@@ -68,6 +69,7 @@ Class OverlapSepLog (A: Type) {ND: NatDed A} {SL: SepLog A} {PSL: PreciseSepLog 
   ocon_comm: forall P Q, ocon P Q = ocon Q P;
   ocon_assoc: forall P Q R, ocon (ocon P Q) R = ocon P (ocon Q R);
   ocon_derives: forall P Q P' Q', (P |-- P') -> (Q |-- Q') -> ocon P Q |-- ocon P' Q';
+  owand_ocon_adjoint: forall P Q R, (ocon P Q |-- R) <-> (P |-- owand Q R);
   precise_ocon_self: forall P, precise P -> ocon P P = P;
   disjointed: A -> A -> Prop := fun P Q => ocon P Q |-- P * Q;
   disj_comm: forall P Q, disjointed P Q -> disjointed Q P;
@@ -81,11 +83,13 @@ Implicit Arguments mkOverlapSepLog [[A] [ND] [SL] [PSL]].
 Class MapstoOverlapSepLog (AV: AbsAddr) (A: Type) {ND: NatDed A} {SL: SepLog A} {PSL: PreciseSepLog A} {MSL: MapstoSepLog AV A} {OSL: OverlapSepLog A} :=
   disj_mapsto: forall p1 p2 v1 v2, addr_conflict p1 p2 = false -> disjointed (mapsto p1 v1) (mapsto p2 v2).
 
+Implicit Arguments MapstoOverlapSepLog [[ND] [SL] [PSL] [MSL] [OSL]].
+
 Class ImpredicativeOSL (A: Type) {ND: NatDed A} {SL: SepLog A} {PSL: PreciseSepLog A} {OSL: OverlapSepLog A} :=
   strong_ocon_wand: forall P Q, ocon P Q = EX R : A, (R -* P) * (R -* Q) * R.
 
 Instance LiftOverlapSepLog (A B: Type) {ND: NatDed B} {SL: SepLog B} {PSL: PreciseSepLog B} {OSL: OverlapSepLog B}: OverlapSepLog (A -> B).
-  apply (mkOverlapSepLog (fun P Q x => ocon (P x) (Q x))); simpl; intros.
+  apply (mkOverlapSepLog (fun P Q x => ocon (P x) (Q x)) (fun P Q x => owand (P x) (Q x))); simpl; intros.
   + extensionality x. apply ocon_emp.
   + extensionality x. apply ocon_TT.
   + apply andp_ocon.
@@ -94,6 +98,7 @@ Instance LiftOverlapSepLog (A B: Type) {ND: NatDed B} {SL: SepLog B} {PSL: Preci
   + extensionality x. apply ocon_comm.
   + extensionality x. apply ocon_assoc.
   + apply ocon_derives; auto.
+  + split; intros; apply owand_ocon_adjoint; auto.
   + extensionality x. apply precise_ocon_self; auto.
   + apply disj_comm. apply H.
   + apply disj_ocon_right; auto.

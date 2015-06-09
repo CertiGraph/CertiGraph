@@ -10,7 +10,8 @@ Require Import RamifyCoq.msl_ext.seplog.
 Require Import RamifyCoq.msl_ext.overlapping.
 Local Open Scope logic.
 
-Instance algOverlapSL {A: Type} {JA: Join A} {PA : Perm_alg A} {SA: Sep_alg A} {CA: Canc_alg A} {CA: Cross_alg A} {AG : ageable A} {AA : Age_alg A} : OverlapSL (pred A).
+(*
+Instance algOverlapSepLog {A: Type} {JA: Join A} {PA : Perm_alg A} {SA: Sep_alg A} {CA: Canc_alg A} {CA: Cross_alg A} {AG : ageable A} {AA : Age_alg A} : OverlapSepLog (pred A).
   apply (mkOverlapSL (pred A) _ _ ocon); unfold algNatDed, algSepLog.
   + apply ocon_emp.
   + apply ocon_TT.
@@ -23,3 +24,4 @@ Instance algOverlapSL {A: Type} {JA: Join A} {PA : Perm_alg A} {SA: Sep_alg A} {
   + apply ocon_assoc.
   + apply ocon_derives.
 Defined.
+*)
