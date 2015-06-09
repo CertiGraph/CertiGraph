@@ -1,4 +1,7 @@
+Require Import RamifyCoq.msl_ext.abs_addr.
 Require Import RamifyCoq.msl_ext.seplog.
+Require Import VST.msl.Extensionality.
+Require Import VST.msl.simple_CCC.
 Require Import VST.msl.seplog.
 Require Import VST.msl.log_normalize.
 
@@ -92,3 +95,15 @@ Proof.
   apply derives_refl.
 Qed.
 
+Lemma disj_mapsto_: forall {AV A} {ND: NatDed A} {SL: SepLog A} {PSL: PreciseSepLog A} {OSL: OverlapSepLog A} {MSL: MapstoSepLog AV A} {MOSL: MapstoOverlapSepLog AV A} p1 p2, addr_conflict p1 p2 = false -> disjointed (mapsto_ p1) (mapsto_ p2).
+Proof.
+  intros.
+  unfold disjointed.
+Abort.
+
+Lemma empty_mapsto_: forall {AV A} {ND: NatDed A} {SL: SepLog A} {PSL: PreciseSepLog A} {OSL: OverlapSepLog A} {MSL: MapstoSepLog AV A} {MOSL: MapstoOverlapSepLog AV A} p, addr_empty p -> mapsto_ p |-- emp.
+Proof.
+  intros.
+  unfold addr_empty in H.
+  eapply disj_mapsto in H.
+Abort.
