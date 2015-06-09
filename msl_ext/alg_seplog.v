@@ -24,4 +24,8 @@ Instance algOverlapSepLog {A: Type} {JA: Join A} {PA : Perm_alg A} {SA: Sep_alg 
   + apply ocon_assoc.
   + apply ocon_derives.
 Defined.
-*)
+ *)
+
+Instance algPreciseSepLog {A : Type} {JA : Join A} {PA : Perm_alg A} {SA: Sep_alg A} {AG : ageable A} {AA: Age_alg A}:
+  PreciseSepLog (pred A).
+Abort.
