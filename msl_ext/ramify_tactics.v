@@ -92,10 +92,15 @@ Ltac equate_precise x1 x2 :=
   let Sub2 := fresh "Sub2" in
   let Heq := fresh "Heq" in
   match goal with
-    | [_ : join x1 _ ?c, _: join x2 _ ?c |- _] => assertSub x1 c Sub1; assertSub x2 c Sub2
-    | [_ : join _ x1 ?c, _: join x2 _ ?c |- _] => assertSub x1 c Sub1; assertSub x2 c Sub2
-    | [_ : join x1 _ ?c, _: join _ x2 ?c |- _] => assertSub x1 c Sub1; assertSub x2 c Sub2
-    | [_ : join _ x1 ?c, _: join _ x2 ?c |- _] => assertSub x1 c Sub1; assertSub x2 c Sub2
+    | [_ : join x1 _ ?c,   _: join x2 _ ?c |- _] => assertSub x1 c Sub1; assertSub x2 c Sub2
+    | [_ : join _ x1 ?c,   _: join x2 _ ?c |- _] => assertSub x1 c Sub1; assertSub x2 c Sub2
+    | [_ : join_sub x1 ?c, _: join x2 _ ?c |- _] => assertSub x2 c Sub2
+    | [_ : join x1 _ ?c,   _: join_sub x2 ?c |- _] => assertSub x1 c Sub1
+    | [_ : join _ x1 ?c,   _: join_sub x2 ?c |- _] => assertSub x1 c Sub1 
+    | [_ : join_sub x1 ?c, _: join_sub x2 ?c |- _] => idtac 
+    | [_ : join x1 _ ?c,   _: join _ x2 ?c |- _] => assertSub x1 c Sub1; assertSub x2 c Sub2
+    | [_ : join _ x1 ?c,   _: join _ x2 ?c |- _] => assertSub x1 c Sub1; assertSub x2 c Sub2
+    | [_ : join_sub x1 ?c, _: join _ x2 ?c |- _] => assertSub x2 c Sub2
   end;
   match goal with
     | [H1: precise _, H2: ?P x1, H3: ?P x2, H4: join_sub x1 ?w, H5: join_sub x2 ?w |- _] =>
