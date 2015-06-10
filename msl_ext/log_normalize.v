@@ -7,28 +7,19 @@ Require Import VST.msl.log_normalize.
 
 Local Open Scope logic.
 
-Lemma add_andp: forall {A: Type} `{NatDed A} (P Q: A), P |-- Q -> P = P && Q.
+Lemma sepcon_left1_corable_right: forall {A} `{CorableSepLog A} P Q R, corable R -> P |-- R -> P * Q |-- R.
 Proof.
   intros.
-  apply pred_ext.
-  + apply andp_right; normalize.
-  + apply andp_left1; apply derives_refl.
+  rewrite (add_andp _ _ H1).
+  rewrite corable_andp_sepcon2 by auto.
+  apply andp_left1; auto.
 Qed.
 
-Lemma sepcon_left1_prop_right: forall {A} `{SepLog A} (P Q: A) R, P |-- !! R -> P * Q |-- !! R.
-Proof.
-  intros.
-  rewrite (add_andp _ _ H0).
-  rewrite andp_comm.
-  rewrite sepcon_andp_prop'.
-  normalize.
-Qed.
-
-Lemma sepcon_left2_prop_right: forall {A} `{SepLog A} (P Q: A) R, Q |-- !! R -> P * Q |-- !! R.
+Lemma sepcon_left2_corable_right: forall {A} `{CorableSepLog A} P Q R, corable R -> Q |-- R -> P * Q |-- R.
 Proof.
   intros.
   rewrite sepcon_comm.
-  apply sepcon_left1_prop_right; auto.
+  apply sepcon_left1_corable_right; auto.
 Qed.
 
 Lemma ocon_sep_true: forall {A} `{OverlapSepLog A} (P Q: A), ocon P Q |-- P * TT.
