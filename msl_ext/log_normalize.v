@@ -7,6 +7,23 @@ Require Import VST.msl.log_normalize.
 
 Local Open Scope logic.
 
+Lemma add_andp: forall {A: Type} `{NatDed A} (P Q: A), P |-- Q -> P = P && Q.
+Proof.
+  intros.
+  apply pred_ext.
+  + apply andp_right; normalize.
+  + apply andp_left1; apply derives_refl.
+Qed.
+
+Lemma sepcon_left1_prop_right: forall {A} `{SepLog A} (P Q: A) R, P |-- !! R -> P * Q |-- !! R.
+Proof.
+  intros.
+  rewrite (add_andp _ _ H0).
+  rewrite andp_comm.
+  rewrite sepcon_andp_prop'.
+  normalize.
+Qed.
+
 Lemma ocon_sep_true: forall {A} `{OverlapSepLog A} (P Q: A), ocon P Q |-- P * TT.
 Proof.
   intros.
@@ -57,6 +74,35 @@ Proof.
   + apply precise_sepcon; auto.
 Qed.
 
+Lemma ocon_self: forall {A} {ND: NatDed A} {SL: SepLog A} {CLS: ClassicalSep A} {PSL: PreciseSepLog A} {OSL: OverlapSepLog A} {DSL: DisjointedSepLog A} P, P |-- ocon P P.
+Proof.
+  intros.
+  apply ocon_contain.
+  apply sepcon_TT.
+Qed.
+
+Lemma precise_ocon_self: forall {A} {ND: NatDed A} {SL: SepLog A} {CLS: ClassicalSep A} {PSL: PreciseSepLog A} {OSL: OverlapSepLog A} {DSL: DisjointedSepLog A} P, precise P -> P = ocon P P.
+Proof.
+  intros.
+  apply precise_ocon_contain; auto.
+Qed.
+
+Lemma ocon_sepcon_cancel: forall {A} {ND: NatDed A} {SL: SepLog A} {PSL: PreciseSepLog A} {OSL: OverlapSepLog A} {DSL: DisjointedSepLog A} P Q, P * Q |-- ocon P (P * Q).
+Proof.
+  intros.
+  apply ocon_contain.
+  apply sepcon_derives; auto.
+  apply TT_right.
+Qed.
+
+Lemma precise_ocon_sepcon_cancel: forall {A} {ND: NatDed A} {SL: SepLog A} {PSL: PreciseSepLog A} {OSL: OverlapSepLog A} {DSL: DisjointedSepLog A} P Q, precise P -> P * Q = ocon P (P * Q).
+Proof.
+  intros.
+  apply precise_ocon_contain; auto.
+  apply sepcon_derives; auto.
+  apply TT_right.
+Qed.
+
 Lemma mapsto_precise: forall {AV} {A} `{PreciseSepLog A} {MSL: MapstoSepLog AV A} p v , precise (mapsto p v).
 Proof.
   intros.
@@ -65,15 +111,10 @@ Proof.
   apply derives_refl.
 Qed.
 
-Lemma disj_mapsto_: forall {AV A} {ND: NatDed A} {SL: SepLog A} {PSL: PreciseSepLog A} {OSL: OverlapSepLog A} {MSL: MapstoSepLog AV A} {MOSL: MapstoOverlapSepLog AV A} p1 p2, addr_conflict p1 p2 = false -> disjointed (mapsto_ p1) (mapsto_ p2).
+Lemma disj_mapsto: forall {AV A} {ND: NatDed A} {SL: SepLog A} {PSL: PreciseSepLog A} {OSL: OverlapSepLog A} {MSL: MapstoSepLog AV A} {DSL: DisjointedSepLog A} {SMSL: StaticMapstoSepLog AV A} p1 p2 v1 v2, addr_conflict p1 p2 = false -> disjointed (mapsto p1 v1) (mapsto p2 v2).
 Proof.
   intros.
-  unfold disjointed.
-Abort.
-
-Lemma empty_mapsto_: forall {AV A} {ND: NatDed A} {SL: SepLog A} {PSL: PreciseSepLog A} {OSL: OverlapSepLog A} {MSL: MapstoSepLog AV A} {MOSL: MapstoOverlapSepLog AV A} p, addr_empty p -> mapsto_ p |-- emp.
-Proof.
-  intros.
-  unfold addr_empty in H.
-  eapply disj_mapsto in H.
-Abort.
+  eapply disj_derives; [| | apply disj_mapsto_]; eauto.
+  + apply (exp_right v1). apply derives_refl.
+  + apply (exp_right v2). apply derives_refl.
+Qed.

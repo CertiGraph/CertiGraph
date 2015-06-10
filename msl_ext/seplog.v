@@ -61,13 +61,12 @@ Class OverlapSepLog (A: Type) {ND: NatDed A} {SL: SepLog A} {PSL: PreciseSepLog 
   ocon_assoc: forall P Q R, ocon (ocon P Q) R = ocon P (ocon Q R);
   ocon_derives: forall P Q P' Q', (P |-- P') -> (Q |-- Q') -> ocon P Q |-- ocon P' Q';
   owand_ocon_adjoint: forall P Q R, (ocon P Q |-- R) <-> (P |-- owand Q R);
-  precise_ocon_self: forall P, precise P -> ocon P P = P
+  ocon_contain: forall P Q, Q |-- P * TT -> Q |-- ocon P Q;
+  precise_ocon_contain: forall P Q, precise P -> Q |-- P * TT -> Q = ocon P Q
 }.
 
 Implicit Arguments OverlapSepLog [[ND] [SL] [PSL]].
 Implicit Arguments mkOverlapSepLog [[A] [ND] [SL] [PSL]].
-
-(* P |-- ocon P P ? *)
 
 Instance LiftOverlapSepLog (A B: Type) {ND: NatDed B} {SL: SepLog B} {PSL: PreciseSepLog B} {OSL: OverlapSepLog B}: OverlapSepLog (A -> B).
   apply (mkOverlapSepLog (fun P Q x => ocon (P x) (Q x)) (fun P Q x => owand (P x) (Q x))); simpl; intros.
@@ -80,13 +79,15 @@ Instance LiftOverlapSepLog (A B: Type) {ND: NatDed B} {SL: SepLog B} {PSL: Preci
   + extensionality x. apply ocon_assoc.
   + apply ocon_derives; auto.
   + split; intros; apply owand_ocon_adjoint; auto.
-  + extensionality x. apply precise_ocon_self; auto.
+  + apply ocon_contain; auto.
+  + extensionality x. apply precise_ocon_contain; auto.
 Defined.
 
 Class DisjointedSepLog (A: Type) {ND: NatDed A} {SL: SepLog A} {PSL: PreciseSepLog A} {OSL: OverlapSepLog A} := mkDisjointedSepLog {
   disjointed: A -> A -> Prop;
   ocon_sepcon: forall P Q, disjointed P Q -> ocon P Q |-- P * Q;
   disj_comm: forall P Q, disjointed P Q -> disjointed Q P;
+  disj_derives: forall P P' Q Q', P |-- P' -> Q |-- Q' -> disjointed P' Q' -> disjointed P Q;
   disj_ocon_right: forall P Q R, precise P -> disjointed P Q -> disjointed P R -> disjointed P (ocon Q R);
   disj_sepcon_right: forall P Q R, precise P -> disjointed P Q -> disjointed P R -> disjointed P (sepcon Q R)
 }.
@@ -98,6 +99,7 @@ Instance LiftDisjointedSepLog (A B: Type) {ND: NatDed B} {SL: SepLog B} {PSL: Pr
   apply (mkDisjointedSepLog (fun P Q => forall x, disjointed (P x) (Q x))); simpl; intros.
   + apply ocon_sepcon; auto.
   + apply disj_comm. apply H.
+  + eapply disj_derives; eauto.
   + apply disj_ocon_right; auto.
   + apply disj_sepcon_right; auto.
 Defined.
@@ -105,7 +107,7 @@ Defined.
 Class StaticMapstoSepLog (AV: AbsAddr) (A: Type) {ND: NatDed A} {SL: SepLog A} {PSL: PreciseSepLog A} {MSL: MapstoSepLog AV A} {OSL: OverlapSepLog A} {DSL: DisjointedSepLog A} := mkStaticMapstoSepLogc{
   empty_mapsto_emp: forall p v, addr_empty p -> mapsto p v |-- emp;
   mapsto_conflict: forall p1 p2 v1 v2, addr_conflict p1 p2 = true -> mapsto p1 v1 * mapsto p2 v2 |-- FF;
-  disj_mapsto: forall p1 p2 v1 v2, addr_conflict p1 p2 = false -> disjointed (mapsto p1 v1) (mapsto p2 v2)
+  disj_mapsto_: forall p1 p2, addr_conflict p1 p2 = false -> disjointed (mapsto_ p1) (mapsto_ p2)
 }.
 
 Implicit Arguments StaticMapstoSepLog [[ND] [SL] [PSL] [MSL] [OSL] [DSL]].
