@@ -24,6 +24,13 @@ Proof.
   normalize.
 Qed.
 
+Lemma sepcon_left2_prop_right: forall {A} `{SepLog A} (P Q: A) R, Q |-- !! R -> P * Q |-- !! R.
+Proof.
+  intros.
+  rewrite sepcon_comm.
+  apply sepcon_left1_prop_right; auto.
+Qed.
+
 Lemma ocon_sep_true: forall {A} `{OverlapSepLog A} (P Q: A), ocon P Q |-- P * TT.
 Proof.
   intros.

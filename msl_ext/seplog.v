@@ -86,6 +86,7 @@ Defined.
 Class DisjointedSepLog (A: Type) {ND: NatDed A} {SL: SepLog A} {PSL: PreciseSepLog A} {OSL: OverlapSepLog A} := mkDisjointedSepLog {
   disjointed: A -> A -> Prop;
   ocon_sepcon: forall P Q, disjointed P Q -> ocon P Q |-- P * Q;
+  disj_emp: forall P, disjointed P emp;
   disj_comm: forall P Q, disjointed P Q -> disjointed Q P;
   disj_derives: forall P P' Q Q', P |-- P' -> Q |-- Q' -> disjointed P' Q' -> disjointed P Q;
   disj_ocon_right: forall P Q R, precise P -> disjointed P Q -> disjointed P R -> disjointed P (ocon Q R);
@@ -98,6 +99,7 @@ Implicit Arguments mkDisjointedSepLog [[A] [ND] [SL] [PSL] [OSL]].
 Instance LiftDisjointedSepLog (A B: Type) {ND: NatDed B} {SL: SepLog B} {PSL: PreciseSepLog B} {OSL: OverlapSepLog B} {DSL: DisjointedSepLog B}: DisjointedSepLog (A -> B).
   apply (mkDisjointedSepLog (fun P Q => forall x, disjointed (P x) (Q x))); simpl; intros.
   + apply ocon_sepcon; auto.
+  + apply disj_emp.
   + apply disj_comm. apply H.
   + eapply disj_derives; eauto.
   + apply disj_ocon_right; auto.
