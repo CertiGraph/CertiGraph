@@ -89,8 +89,7 @@ Class DisjointedSepLog (A: Type) {ND: NatDed A} {SL: SepLog A} {PSL: PreciseSepL
   disj_emp: forall P, disjointed P emp;
   disj_comm: forall P Q, disjointed P Q -> disjointed Q P;
   disj_derives: forall P P' Q Q', P |-- P' -> Q |-- Q' -> disjointed P' Q' -> disjointed P Q;
-  disj_ocon_right: forall P Q R, precise P -> disjointed P Q -> disjointed P R -> disjointed P (ocon Q R);
-  disj_sepcon_right: forall P Q R, precise P -> disjointed P Q -> disjointed P R -> disjointed P (sepcon Q R)
+  disj_ocon_right: forall P Q R, precise P -> disjointed P Q -> disjointed P R -> disjointed P (ocon Q R)
 }.
 
 Implicit Arguments DisjointedSepLog [[ND] [SL] [PSL] [OSL]].
@@ -103,7 +102,6 @@ Instance LiftDisjointedSepLog (A B: Type) {ND: NatDed B} {SL: SepLog B} {PSL: Pr
   + apply disj_comm. apply H.
   + eapply disj_derives; eauto.
   + apply disj_ocon_right; auto.
-  + apply disj_sepcon_right; auto.
 Defined.
 
 Class StaticMapstoSepLog (AV: AbsAddr) (A: Type) {ND: NatDed A} {SL: SepLog A} {PSL: PreciseSepLog A} {MSL: MapstoSepLog AV A} {OSL: OverlapSepLog A} {DSL: DisjointedSepLog A} := mkStaticMapstoSepLogc{

@@ -19,7 +19,7 @@ Instance algPreciseSepLog {A : Type} {JA : Join A} {PA : Perm_alg A} {SA: Sep_al
   + apply precise_sepcon; auto.
 Defined.
 
-Instance algOverlapSepLog {A: Type} {JA: Join A} {PA : Perm_alg A} {SA: Sep_alg A} {CA: Canc_alg A} {DA: Disj_alg A} {CrA: Cross_alg A} {AG : ageable A} {AA : Age_alg A} : OverlapSepLog (pred A).
+Instance algOverlapSepLog {A: Type} {JA: Join A} {SA: Sep_alg A} {PA : Perm_alg A} {CA: Canc_alg A} {DA: Disj_alg A} {CrA: Cross_alg A} {AG : ageable A} {AA : Age_alg A} : OverlapSepLog (pred A).
   apply (mkOverlapSepLog ocon owand); unfold algNatDed, algSepLog, algPreciseSepLog; simpl.
   + apply ocon_emp.
   + apply ocon_TT.
@@ -35,3 +35,12 @@ Instance algOverlapSepLog {A: Type} {JA: Join A} {PA : Perm_alg A} {SA: Sep_alg 
   + apply ocon_contain.
   + apply precise_ocon_contain.
 Defined.
+
+Instance algDisjointedSepLog {A: Type} {JA: Join A} {PA : Perm_alg A} {SA: Sep_alg A} {CA: Canc_alg A} {DA: Disj_alg A} {CrA: Cross_alg A} {AG : ageable A} {AA : Age_alg A} : DisjointedSepLog (pred A).
+  apply (mkDisjointedSepLog disjointed); unfold algNatDed, algSepLog, algPreciseSepLog; simpl.
+  + apply ocon_sepcon.
+  + apply disj_emp.
+  + apply disj_comm.
+  + apply disj_derives.
+  + apply disj_ocon_right.
+Qed.
