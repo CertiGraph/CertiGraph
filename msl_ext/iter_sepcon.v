@@ -49,7 +49,7 @@ Qed.
 
 Definition sepcon_unique {A : Type} {B : Type} {ND : NatDed A} {SL : SepLog A} (p : B -> A) :Prop := forall x, p x * p x |-- FF.
 
-Lemma iter_sepcon_unique_nodup {A : Type} {B : Type} {ND : NatDed A} {SL : SepLog A} {CS: ClassicalSep A}:
+Lemma iter_sepcon_unique_nodup {A : Type} {B : Type} {ND : NatDed A} {SL : SepLog A} {CLS: ClassicalSep A} {CSL: CorableSepLog A}:
   forall (p : B -> A) (l : list B), sepcon_unique p -> iter_sepcon l p |-- !!(NoDup l).
 Proof.
   intros. induction l.
@@ -64,7 +64,7 @@ Proof.
         apply sepcon_derives; auto. rewrite sepcon_comm, sepcon_FF. apply derives_refl.
     }
   apply derives_trans with (!!(NoDup l) && !!(~ In a l)).
-  - apply andp_right; auto. rewrite sepcon_comm. apply sepcon_left1_prop_right. auto.
+  - apply andp_right; auto. apply sepcon_left2_corable_right; auto with norm.
   - normalize. constructor; auto.
 Qed.
 
