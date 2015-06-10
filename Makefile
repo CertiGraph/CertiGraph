@@ -21,7 +21,7 @@ Coqlib.vo: Coqlib.v
 	@echo COQC Coqlib.v
 	@$(COQC) -R "." -as RamifyCoq Coqlib.v
 
-all: Coqlib.vo msl_ext/abs_addr.vo msl_ext/seplog.vo msl_ext/log_normalize.vo msl_ext/ramify_tactics.vo msl_ext/msl_ext.vo msl_ext/overlapping.vo msl_ext/alg_seplog.vo graph/graph.vo graph/graph_reachable.vo msl_ext/heap_model_direct.vo msl_ext/mapsto_direct.vo msl_ext/overlapping_direct.vo msl_ext/precise.vo
+all: Coqlib.vo msl_ext/abs_addr.vo msl_ext/seplog.vo msl_ext/log_normalize.vo msl_ext/ramify_tactics.vo msl_ext/msl_ext.vo msl_ext/overlapping.vo msl_ext/alg_seplog.vo graph/graph.vo graph/graph_reachable.vo msl_ext/heap_model_direct.vo msl_ext/mapsto_direct.vo msl_ext/overlapping_direct.vo msl_ext/precise.vo msl_ext/iter_sepcon.vo
 
 depend:	
 	@$(COQDEP) $(COQFLAG) Coqlib.v */*.v > .depend
