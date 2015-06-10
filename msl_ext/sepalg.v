@@ -1,8 +1,22 @@
 Require Import VST.msl.Extensionality.
 Require Import VST.msl.sepalg.
 Require Import RamifyCoq.msl_ext.abs_addr.
+Require Import RamifyCoq.msl_ext.ramify_tactics.
 
 Set Implicit Arguments.
+
+Lemma join_identity{A} {JA: Join A}{PA: Perm_alg A}{SA: Sep_alg A}{CA: Canc_alg A}:
+  forall a b c, join a b c -> identity a -> identity b -> identity c.
+Proof.
+  intros.
+  hnf; intros x y ?.
+  try_join b x bx.
+  apply H1 in H3.
+  apply H0 in H4.
+  subst; auto.
+Qed.
+
+(*
 
 Class Mem_alg (AV: AbsAddr) (A: Type) {J: Join A} {SA: Sep_alg A} := mkMem_alg { 
   exact_mem: A -> Addr -> Val -> Prop;
@@ -27,3 +41,4 @@ Lemma exact_mem_alignable: forall (AV: AbsAddr) {Al: Alignable AV} (A: Type) {J:
 Proof.
   intros.
   
+*)
