@@ -1,7 +1,37 @@
 Require Import VST.msl.msl_standard.
 Require Import RamifyCoq.msl_ext.ramify_tactics.
+Require Import RamifyCoq.msl_ext.overlapping.
 Require Import RamifyCoq.Coqlib.
 
+Lemma precise_sepcon_andp_sepcon {A} {JA : Join A} {PA : Perm_alg A} {SA: Sep_alg A} {CA : Canc_alg A} {AG : ageable A} {AA: Age_alg A}:
+  forall P Q R, precise P -> (P * Q) && (P * R) |-- P * (Q && R).
+Proof.
+  intros.
+  unfold sepcon, andp, derives; simpl.
+  intros.
+  destruct H0 as [[?y [?z [? [? ?]]]] [?y [?z [? [? ?]]]]].
+  exists y, z.
+  equate_precise y y0.
+  equate_canc z z0.
+  repeat split; auto.
+Qed.
+
+(* derives_precise, precise_emp is in predicates_sl.v. *)
+
+Lemma precise_sepcon {A} {JA : Join A} {PA : Perm_alg A} {SA: Sep_alg A} {AG : ageable A} {AA: Age_alg A} :
+  forall P Q, precise Q -> precise P -> precise (P * Q).
+Proof.
+  repeat intro; destruct H1 as [w11 [w12 [? [? ?]]]], H2 as [w21 [w22 [? [? ?]]]].
+  assert (w11 = w21) by (apply join_join_sub in H1; generalize (join_sub_trans H1 H3); intro;
+                         apply join_join_sub in H2; generalize (join_sub_trans H2 H4); intro;
+                         hnf in H0; apply H0 with (w := w); trivial).
+  assert (w12 = w22) by (apply join_join_sub' in H1; generalize (join_sub_trans H1 H3); intro;
+                         apply join_join_sub' in H2; generalize (join_sub_trans H2 H4); intro;
+                         hnf in H; apply H with (w := w); trivial).
+  rewrite H9 in *; rewrite H10 in *; equate_join w1 w2; auto.
+Qed.
+
+(*
 Lemma overlapping_precise_emp {A} {JA : Join A} {PA : Perm_alg A} {SA : Sep_alg A} {CA : Canc_alg A} {DA : Disj_alg A} {AG : ageable A} {AA: Age_alg A}:
   forall w1 w2 w3 w12 w23 w (P Q : pred A),
     join w1 w2 w12 -> join w2 w3 w23 -> join w12 w3 w -> P w12 -> Q w23 -> precise P -> precise Q -> (P * Q)%pred w -> emp w2.
@@ -17,20 +47,9 @@ Proof. intros; intro; intros; destruct H0; destruct H1; generalize (H w w1 w2 H0
 Lemma precise_andp_right {A} {JA : Join A} {PA : Perm_alg A} {SA: Sep_alg A} {AG : ageable A} {AA: Age_alg A} :
   forall P Q, precise Q -> precise (P && Q).
 Proof. intros; intro; intros; destruct H0; destruct H1; generalize (H w w1 w2 H4 H5 H2 H3); tauto. Qed.
+*)
 
-Lemma precise_sepcon {A} {JA : Join A} {PA : Perm_alg A} {SA: Sep_alg A} {AG : ageable A} {AA: Age_alg A} :
-  forall P Q, precise Q -> precise P -> precise (P * Q).
-Proof.
-  repeat intro; destruct H1 as [w11 [w12 [? [? ?]]]], H2 as [w21 [w22 [? [? ?]]]].
-  assert (w11 = w21) by (apply join_join_sub in H1; generalize (join_sub_trans H1 H3); intro;
-                         apply join_join_sub in H2; generalize (join_sub_trans H2 H4); intro;
-                         hnf in H0; apply H0 with (w := w); trivial).
-  assert (w12 = w22) by (apply join_join_sub' in H1; generalize (join_sub_trans H1 H3); intro;
-                         apply join_join_sub' in H2; generalize (join_sub_trans H2 H4); intro;
-                         hnf in H; apply H with (w := w); trivial).
-  rewrite H9 in *; rewrite H10 in *; equate_join w1 w2; auto.
-Qed.
-
+(*
 Lemma precise_exp_sepcon {A} {JA : Join A} {PA : Perm_alg A} {SA: Sep_alg A} {AG : ageable A} {AA: Age_alg A} B:
   forall P Q: B -> pred A, precise (exp P) -> precise (exp Q) -> precise (EX x : B, P x * Q x).
 Proof.
@@ -79,3 +98,4 @@ Proof.
                        [exists z1 | exists z2; auto | assertSub h2 w Hsub | assertSub j2 w Hsub]; auto).
   rewrite H10 in *; equate_join w1 w2; auto.
 Qed.
+*)
