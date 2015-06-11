@@ -9,7 +9,9 @@ DIRS = msl_ext graph heap_model_direct
 INCLUDE_COMPCERT = -R $(COMPCERT_DIR) -as compcert
 INCLUDE_VST = -R $(VST_DIR) -as VST
 INCLUDE_RAMIFYCOQ = $(foreach d, $(DIRS), -R $(d) -as RamifyCoq.$(d)) -R "." -as RamifyCoq
-COQFLAG = $(INCLUDE_RAMIFYCOQ) $(INCLUDE_VST) $(INCLUDE_COMPCERT)
+COQ_BASED_FLAG = $(INCLUDE_RAMIFYCOQ)
+CLIGHT_FLAG = $(INCLUDE_COMPCERT) 
+VST_BASED_FLAG = $(INCLUDE_COMPCERT) $(INCLUDE_VST) $(INCLUDE_RAMIFYCOQ)
 
 MSL_EXT_FILES = \
   abs_addr.v seplog.v log_normalize.v ramify_tactics.v msl_ext.v iter_sepcon.v \
@@ -23,28 +25,39 @@ HEAP_MODEL_DIRECT_FILES = \
 GRAPH_FILES = \
   graph.v graph_reachable.v 
 
-C_FILES = mark.c
+COQ_BASED_FILES = \
+  Coqlib.v \
+  $(GRAPH_FILES:%.v=graph/%.v)
 
-C_LIGHT_FILES = mark.v
+CLIGHT_FILES = sample_mark/mark.v
 
-heap_model_direct/%.vo: heap_model_direct/%.v
-	@echo COQC heap_model_direct/$*.v
-	@$(COQC) $(COQFLAG) heap_model_direct/$*.v
-msl_ext/%.vo: msl_ext/%.v
-	@echo COQC msl_ext/$*.v
-	@$(COQC) $(COQFLAG) msl_ext/$*.v
-graph/%.vo: graph/%.v
-	@echo COQC graph/$*.v
-	@$(COQC) $(COQFLAG) graph/$*.v
-Coqlib.vo: Coqlib.v
-	@echo COQC Coqlib.v
-	@$(COQC) -R "." -as RamifyCoq Coqlib.v
+C_FILES = $(CLIGHT_FILES:%.v=%.c)
 
-all: Coqlib.vo $(MSL_EXT_FILES:%.v=msl_ext/%.vo) $(GRAPH_FILES:%.v=graph/%.vo) $(HEAP_MODEL_DIRECT_FILES:%.v=heap_model_direct/%.vo)
+VST_BASED_FILES = \
+  $(MSL_EXT_FILES:%.v=msl_ext/%.v) \
+  $(HEAP_MODEL_DIRECT_FILES:%.v=heap_model_direct/%.v)
+
+$(COQ_BASED_FILES:%.v=%.vo): %.vo: %.v
+	@echo COQC $*.v
+	@$(COQC) $(COQ_BASED_FLAG) $*.v
+
+$(CLIGHT_FILES:%.v=%.vo): %.vo: %.v
+	@echo COQC $*.v
+	@$(COQC) $(CLIGHT_FLAG) $*.v
+
+$(VST_BASED_FILES:%.v=%.vo): %.vo: %.v
+	@echo COQC $*.v
+	@$(COQC) $(VST_BASED_FLAG) $*.v
+
+all: \
+  $(COQ_BASED_FILES:%.v=%.vo) \
+  $(CLIGHT_FILES:%.v=%.vo) \
+  $(VST_BASED_FILES:%.v=%.vo)
 
 depend:
-	@$(COQDEP) $(COQFLAG) Coqlib.v $(MSL_EXT_FILES:%.v=msl_ext/%.v) $(GRAPH_FILES:%.v=graph/%.v) $(HEAP_MODEL_DIRECT_FILES:%.v=heap_model_direct/%.v) > .depend
-	@$(COQDEP) $(INCLUDE_COMPCERT) $(C_LIGHT_FILES:%.v=sample_mark/%.v) >> .depend
+	@$(COQDEP) $(COQ_BASED_FLAG) $(COQ_BASED_FILES) > .depend
+	@$(COQDEP) $(CLIGHT_FLAG) $(CLIGHT_FILES) >> .depend
+	@$(COQDEP) $(VST_BASED_FLAG) $(VST_BASED_FILES) >> .depend
 
 clean:
 	@rm *.vo */*.vo *.glob */*.glob
