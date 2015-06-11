@@ -1,7 +1,7 @@
 Require Import VST.msl.msl_direct.
 Require Import FunctionalExtensionality.
 Require Import RamifyCoq.msl_ext.ramify_tactics.
-Require Import RamifyCoq.msl_ext.heap_model_direct.
+Require Import RamifyCoq.heap_model_direct.SeparationAlgebra.
 
 Definition mapsto (x y: adr) : pred world :=
   fun w => x <> 0 /\
