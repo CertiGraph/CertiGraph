@@ -12,7 +12,10 @@ INCLUDE_RAMIFYCOQ = $(foreach d, $(DIRS), -R $(d) -as RamifyCoq.$(d)) -R "." -as
 COQFLAG = $(INCLUDE_RAMIFYCOQ) $(INCLUDE_VST) $(INCLUDE_COMPCERT)
 
 MSL_EXT_FILES = \
-  abs_addr.v seplog.v log_normalize.v ramify_tactics.v msl_ext.v overlapping.v alg_seplog.v overlapping_direct.v precise.v iter_sepcon.v sepalg.v
+  abs_addr.v seplog.v log_normalize.v ramify_tactics.v msl_ext.v iter_sepcon.v \
+  sepalg.v \
+  overlapping.v precise.v alg_seplog.v \
+  overlapping_direct.v precise_direct.v alg_seplog_direct.v
 
 HEAP_MODEL_DIRECT_FILES = \
   SeparationAlgebra.v mapsto.v
