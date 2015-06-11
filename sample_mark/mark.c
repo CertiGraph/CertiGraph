@@ -1,11 +1,11 @@
-struct __NODE {
+struct Node {
   int m;
-  struct __NODE _Alignas(16) * l;
-  struct __NODE _Alignas(16) * r;
+  struct Node _Alignas(16) * l;
+  struct Node _Alignas(16) * r;
 };
 
-void mark(struct __NODE * x) {
-  struct __NODE _Alignas(16) * l, * r;
+void mark(struct Node * x) {
+  struct Node _Alignas(16) * l, * r;
   int root_mark;
   if (x == 0)
     return;
@@ -19,8 +19,8 @@ void mark(struct __NODE * x) {
   mark(r);
 }
 
-struct __NODE _Alignas(16) * hd;
-struct __NODE _Alignas(16) n;
+struct Node _Alignas(16) * hd;
+struct Node _Alignas(16) n;
 
 int main()
 {
