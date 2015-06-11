@@ -222,8 +222,8 @@ Proof.
 Qed.
 
 Definition disjointed {A: Type} {JA: Join A} {AG : ageable A} (P Q: pred A):=
-  forall h1 h2 h3 h12 h23 h,
-  join h1 h2 h12 -> join h2 h3 h23 -> join h12 h3 h -> P h12 -> Q h23 -> identity h2.
+  forall h1 h2 h3 h12 h23,
+  join h1 h2 h12 -> join h2 h3 h23 -> P h12 -> Q h23 -> identity h2 /\ joins h1 h3.
 
 Lemma ocon_sepcon {A: Type} {JA: Join A} {SA: Sep_alg A} {PA : Perm_alg A} {AG : ageable A} {AA : Age_alg A}:
   forall P Q, disjointed P Q -> ocon P Q |-- P * Q.
@@ -231,10 +231,10 @@ Proof.
   unfold ocon, sepcon, disjointed, derives; simpl.
   intros.
   destruct H0 as [h1 [h2 [h3 [h12 [h23 [? [? [? [? ?]]]]]]]]].
-  specialize (H h1 h2 h3 h12 h23 a H0 H1 H2 H3 H4).
+  destruct (H h1 h2 h3 h12 h23 H0 H1 H3 H4) as [? ?].
   apply join_comm in H0.
-  apply H in H0.
-  apply H in H1.
+  apply H5 in H0.
+  apply H5 in H1.
   subst.
   exists h12, h23.
   auto.
@@ -244,58 +244,99 @@ Lemma disj_emp {A: Type} {JA: Join A} {SA: Sep_alg A} {PA : Perm_alg A} {CA: Can
 Proof.
   intros.
   unfold disjointed, emp; simpl; intros.
-  eapply split_identity; eauto.
+  pose proof split_identity _ _ H0 H2.
+  pose proof split_identity _ _ (join_comm H0) H2.
+  pose proof identities_unique H3 H4 (ex_intro _ h23 H0).
+  subst.
+  split; eauto.
 Qed.
 
 Lemma disj_comm {A: Type} {JA: Join A} {PA: Perm_alg A} {AG : ageable A}: forall P Q, disjointed P Q -> disjointed Q P.
 Proof.
   unfold disjointed; intros.
-  apply H with h3 h1 h23 h12 h; try apply join_comm; auto.
-  destruct (join_assoc H0 H2) as [h23' [? ?]].
-  equate_join h23 h23'.
-  auto.
-Qed.  
+  specialize (H h3 h2 h1 h23 h12).
+  do 2 (spec H; [apply join_comm; auto |]).
+  do 2 (spec H; [auto |]).
+  destruct H; split; auto.
+  apply joins_comm; auto.
+Qed.
 
 Lemma disj_derives {A: Type} {JA: Join A} {PA: Perm_alg A} {AG : ageable A}:
   forall P P' Q Q', P |-- P' -> Q |-- Q' -> disjointed P' Q' -> disjointed P Q.
 Proof.
   unfold derives, disjointed.
   intros.
-  apply H1 with h1 h3 h12 h23 h; auto.
+  apply H1 with h12 h23; auto.
 Qed.
 
-Lemma disj_ocon_right {A: Type} {JA: Join A} {SA: Sep_alg A} {PA : Perm_alg A} {CA: Canc_alg A} {CrA: Cross_alg A} {AG : ageable A} {AA : Age_alg A}:
-  forall P Q R, precise P -> disjointed P Q -> disjointed P R -> disjointed P (ocon Q R).
+(**************************************************************************
+
+
+
+          |------------------------------------------|
+          |                                          | 
+          |                                          | 
+          |                                          | 
+          |                     P                    | 
+          |                                          | 
+          |                                          | 
+|---------|----------|-----------------------|-------|------------|
+|         |          |                       |       |            |
+|         |    p1    |         p2            |   p3  |            |
+|         |          |                       |       |            |
+|         |------------------------------------------|            |
+|                    |                       |                    |
+|                    |                       |                    |
+|        r1          |          r2           |         r3         |
+|                    |                       |                    |
+|                    |                       |                    |
+|                    |                       |                    |
+|--------------------|-----------------------|--------------------|
+
+
+
+
+**************************************************************************)
+
+Lemma disj_ocon_right {A: Type} {JA: Join A} {SA: Sep_alg A} {PA : Perm_alg A} {CA: Canc_alg A} {CrA: Cross_alg A} {TA: Trip_alg A} {AG : ageable A} {AA : Age_alg A}:
+  forall P Q R, disjointed P Q -> disjointed P R -> disjointed P (ocon Q R).
 Proof.
   unfold ocon, disjointed, precise; simpl.
-  intros P Q R ? ? ? hP hp1p2p3 hr1r2r3 hPp h123 h.
+  intros P Q R ? ? hP hp1p2p3 hr1r2r3 hPp h123.
   intros.
-  destruct H6 as [h1 [h2 [h3 [h12 [h23 [? [? [? [? ?]]]]]]]]].
-  destruct (join_assoc H6 H8) as [h23' [? ?]]; equate_join h23 h23'.
-  destruct (join_assoc H2 H4) as [h123' [? ?]]; equate_join h123 h123'.
-  destruct (cross_split _ _ _ _ _ H12 H3) as [[[[hp1 hr1] hp2p3] hr2r3] [? [? [? ?]]]].
-  destruct (cross_split _ _ _ _ _ H7 H14) as [[[[hp2 hr2] hp3] hr3] [? [? [? ?]]]].
+  destruct H4 as [h1 [h2 [h3 [h12 [h23 [? [? [? [? ?]]]]]]]]].
+  destruct (join_assoc H4 H6) as [h23' [? ?]]; equate_join h23 h23'.
+  destruct (cross_split _ _ _ _ _ H10 H2) as [[[[hp1 hr1] hp2p3] hr2r3] [? [? [? ?]]]].
+  destruct (cross_split _ _ _ _ _ H5 H11) as [[[[hp2 hr2] hp3] hr3] [? [? [? ?]]]].
   try_join hp1 hp2 hp1p2.
   try_join hr1 hr2 hr1r2.
   assert (join hp1p2 hr1r2 h12).
   Focus 1. {
     try_join hp1 h2 hp1p2r2.
-    destruct (join_assoc (join_comm H17) (join_comm H25)) as [hp1p2' [? ?]].
+    destruct (join_assoc (join_comm H14) (join_comm H22)) as [hp1p2' [? ?]].
     equate_join hp1p2 hp1p2'.
-    destruct (join_assoc (join_comm H28) (join_comm H26)) as [hr1r2' [? ?]].
+    destruct (join_assoc (join_comm H25) (join_comm H23)) as [hr1r2' [? ?]].
     equate_join hr1r2 hr1r2'.
     auto.
   } Unfocus.
 
   try_join hP hp3 hPp3.
-  try_join hPp hr1r2 h_merge_P_12.
-  assert (identity hp1p2) by (apply H0 with hPp3 hr1r2 hPp h12 h_merge_P_12; auto).
+  assert (identity hp1p2 /\ joins hPp3 hr1r2) as [? ?] by (apply H with hPp h12; auto).
   try_join hP hp1 hPp1.
-  try_join hPp hr2r3 h_merge_P_23.
-  assert (identity hp2p3) by (apply H1 with hPp1 hr2r3 hPp h23 h_merge_P_23; auto).
+  assert (identity hp2p3 /\ joins hPp1 hr2r3) as [? ?] by (apply H0 with hPp h23; auto).
 
   assert (identity hp1) by (apply split_identity with hp2 hp1p2; auto).
-  apply join_identity with hp1 hp2p3; auto.
+  assert (identity hp3) by (apply split_identity with hp2 hp2p3; auto).
+  split.
+  + apply join_identity with hp1 hp2p3; auto.
+  + apply H31 in H27.
+    apply H32 in H23.
+    subst hPp1 hPp3.
+    destruct H26 as [hPr1r2 ?].
+    destruct H30 as [hPr1r3 ?].
+    destruct (join_assoc H20 (join_comm H23)) as [hPr1 [? ?]].
+    destruct (triple_join_exists _ _ _ _ _ _ H13 (join_comm H26) H27) as [hPr1r2r3 ?H].
+    apply joins_comm; eauto.
 Qed.
 
 Definition covariant {B A : Type} {AG: ageable A} (F: (B -> pred A) -> (B -> pred A)) : Prop :=

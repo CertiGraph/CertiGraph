@@ -89,7 +89,7 @@ Class DisjointedSepLog (A: Type) {ND: NatDed A} {SL: SepLog A} {PSL: PreciseSepL
   disj_emp: forall P, disjointed P emp;
   disj_comm: forall P Q, disjointed P Q -> disjointed Q P;
   disj_derives: forall P P' Q Q', P |-- P' -> Q |-- Q' -> disjointed P' Q' -> disjointed P Q;
-  disj_ocon_right: forall P Q R, precise P -> disjointed P Q -> disjointed P R -> disjointed P (ocon Q R)
+  disj_ocon_right: forall P Q R, disjointed P Q -> disjointed P R -> disjointed P (ocon Q R)
 }.
 
 Implicit Arguments DisjointedSepLog [[ND] [SL] [PSL] [OSL]].

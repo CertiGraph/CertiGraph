@@ -73,10 +73,11 @@ Definition joinable {A: Type} {ND: NatDed A} {SL: SepLog A} {PSL: PreciseSepLog 
 
 Lemma iter_sepcon_joinable {A: Type} {ND: NatDed A} {SL: SepLog A} {PSL: PreciseSepLog A} {OSL: OverlapSepLog A}
       {DSL : DisjointedSepLog A} {B : Type}:
-  forall (p : B -> A) (l : list B) (x : B), joinable p -> precise p -> (~ In x l) -> disjointed (p x) (iter_sepcon l p).
+  forall (p : B -> A) (l : list B) (x : B), joinable p -> (~ In x l) -> disjointed (p x) (iter_sepcon l p).
 Proof.
   intros. induction l; simpl.
   + apply disj_emp.
-  + apply disj_sepcon_right. apply H0. apply H. intro. apply H1. subst. apply in_eq.
-    apply IHl. intro; apply H1. apply in_cons; auto.
+  + apply disj_sepcon_right.
+    - apply H. intro. apply H0. subst. apply in_eq.
+    - apply IHl. intro; apply H0. apply in_cons; auto.
 Qed.
