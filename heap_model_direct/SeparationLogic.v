@@ -11,7 +11,7 @@ Require Import VST.msl.predicates_sa.
 Instance Ndirect : NatDed (pred world) := algNatDed world.
 Instance Sdirect : SepLog (pred world) := algSepLog world.
 Instance Cldirect : ClassicalSep (pred world) := algClassicalSep world.
-(* Instance CSLdirect : CorableSepLog (pred world) := algCorableSepLog world. *)
+Instance CSLdirect : CorableSepLog (pred world) := algCorableSepLog world.
 Instance PSLdirect : PreciseSepLog (pred world) := algPreciseSepLog world.
 Instance OSLdirect : OverlapSepLog (pred world) := algOverlapSepLog world.
 Instance DSLdirect : DisjointedSepLog (pred world) := algDisjointedSepLog world.
