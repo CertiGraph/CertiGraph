@@ -116,6 +116,8 @@ Class NormalMapstoSeplog (AV: AbsAddr) (A: Type) {ND: NatDed A} {SL: SepLog A} {
   mapsto_inj: forall p v1 v2, mapsto p v1 && mapsto p v2 |-- !! (v1 = v2)
 }.
 
+Implicit Arguments NormalMapstoSeplog [[ND] [SL] [PSL] [MSL] [OSL] [DSL]].
+
 Class ImpredicativeOSL (A: Type) {ND: NatDed A} {SL: SepLog A} {PSL: PreciseSepLog A} {OSL: OverlapSepLog A} :=
   strong_ocon_wand: forall P Q, ocon P Q = EX R : A, (R -* P) * (R -* Q) * R.
 
