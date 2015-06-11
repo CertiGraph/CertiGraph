@@ -2,80 +2,129 @@ Require Import Clightdefs.
 
 Local Open Scope Z_scope.
 
-Definition ___builtin_bswap32 : ident := 40%positive.
-Definition ___i64_sdiv : ident := 32%positive.
-Definition ___builtin_annot : ident := 16%positive.
-Definition ___i64_sar : ident := 38%positive.
-Definition ___builtin_fmin : ident := 46%positive.
+Definition ___builtin_ctz : ident := 40%positive.
+Definition ___i64_umod : ident := 32%positive.
+Definition ___builtin_va_start : ident := 16%positive.
+Definition ___builtin_bswap16 : ident := 38%positive.
+Definition ___builtin_fnmadd : ident := 46%positive.
 Definition _n : ident := 54%positive.
-Definition ___compcert_va_int64 : ident := 24%positive.
-Definition ___builtin_va_end : ident := 22%positive.
-Definition ___builtin_annot_intval : ident := 17%positive.
-Definition _Node : ident := 8%positive.
+Definition ___i64_dtou : ident := 24%positive.
+Definition ___compcert_va_float64 : ident := 22%positive.
+Definition ___builtin_va_arg : ident := 17%positive.
+Definition ___NODE : ident := 8%positive.
 Definition ___builtin_subl : ident := 5%positive.
-Definition ___builtin_fnmsub : ident := 50%positive.
-Definition ___builtin_ctz : ident := 43%positive.
-Definition _i : ident := 12%positive.
-Definition _m : ident := 53%positive.
-Definition ___builtin_fmadd : ident := 47%positive.
+Definition _x : ident := 50%positive.
+Definition ___builtin_fmin : ident := 43%positive.
+Definition ___builtin_memcpy_aligned : ident := 12%positive.
+Definition _hd : ident := 53%positive.
+Definition ___builtin_fnmsub : ident := 47%positive.
 Definition _r : ident := 10%positive.
-Definition ___builtin_fsqrt : ident := 44%positive.
+Definition ___builtin_fmadd : ident := 44%positive.
 Definition ___builtin_negl : ident := 3%positive.
 Definition ___builtin_write32_reversed : ident := 2%positive.
 Definition ___builtin_write16_reversed : ident := 1%positive.
-Definition ___i64_shl : ident := 36%positive.
-Definition ___i64_utof : ident := 31%positive.
-Definition ___builtin_fabs : ident := 14%positive.
+Definition ___builtin_bswap : ident := 36%positive.
+Definition ___i64_smod : ident := 31%positive.
+Definition ___builtin_annot_intval : ident := 14%positive.
 Definition ___builtin_mull : ident := 6%positive.
-Definition ___i64_dtos : ident := 26%positive.
-Definition ___builtin_va_start : ident := 19%positive.
-Definition ___builtin_bswap : ident := 39%positive.
-Definition _s : ident := 11%positive.
-Definition ___builtin_fnmadd : ident := 49%positive.
-Definition ___i64_shr : ident := 37%positive.
+Definition ___i64_utod : ident := 26%positive.
+Definition ___builtin_va_end : ident := 19%positive.
+Definition ___builtin_clz : ident := 39%positive.
+Definition ___builtin_fabs : ident := 11%positive.
+Definition ___builtin_read32_reversed : ident := 49%positive.
+Definition ___builtin_bswap32 : ident := 37%positive.
 Definition ___builtin_addl : ident := 4%positive.
-Definition ___i64_stod : ident := 28%positive.
-Definition _data : ident := 7%positive.
-Definition ___builtin_clz : ident := 42%positive.
-Definition ___builtin_va_copy : ident := 21%positive.
-Definition ___builtin_membar : ident := 18%positive.
+Definition ___i64_utof : ident := 28%positive.
+Definition _m : ident := 7%positive.
+Definition ___builtin_fmax : ident := 42%positive.
+Definition ___compcert_va_int64 : ident := 21%positive.
+Definition ___builtin_va_copy : ident := 18%positive.
 Definition _l : ident := 9%positive.
-Definition ___builtin_read32_reversed : ident := 52%positive.
-Definition ___builtin_fmax : ident := 45%positive.
-Definition ___builtin_bswap16 : ident := 41%positive.
-Definition _s2 : ident := 13%positive.
-Definition ___i64_dtou : ident := 27%positive.
-Definition ___i64_udiv : ident := 33%positive.
-Definition _main : ident := 56%positive.
-Definition ___compcert_va_float64 : ident := 25%positive.
-Definition ___builtin_memcpy_aligned : ident := 15%positive.
-Definition ___i64_smod : ident := 34%positive.
-Definition ___i64_utod : ident := 29%positive.
-Definition _p : ident := 55%positive.
-Definition ___i64_umod : ident := 35%positive.
-Definition ___i64_stof : ident := 30%positive.
-Definition ___compcert_va_int32 : ident := 23%positive.
-Definition ___builtin_read16_reversed : ident := 51%positive.
-Definition ___builtin_fmsub : ident := 48%positive.
-Definition ___builtin_va_arg : ident := 20%positive.
+Definition _mark : ident := 52%positive.
+Definition ___builtin_fmsub : ident := 45%positive.
+Definition ___builtin_fsqrt : ident := 41%positive.
+Definition ___builtin_annot : ident := 13%positive.
+Definition ___i64_stof : ident := 27%positive.
+Definition ___i64_shl : ident := 33%positive.
+Definition ___i64_stod : ident := 25%positive.
+Definition ___builtin_membar : ident := 15%positive.
+Definition ___i64_shr : ident := 34%positive.
+Definition ___i64_sdiv : ident := 29%positive.
+Definition _main : ident := 55%positive.
+Definition ___i64_sar : ident := 35%positive.
+Definition ___i64_udiv : ident := 30%positive.
+Definition ___i64_dtos : ident := 23%positive.
+Definition _root_mark : ident := 51%positive.
+Definition ___builtin_read16_reversed : ident := 48%positive.
+Definition ___compcert_va_int32 : ident := 20%positive.
 
-Definition v_m := {|
-  gvar_info := (talignas 3%N (Tstruct _Node noattr));
-  gvar_init := (Init_space 12 :: nil);
+Definition f_mark := {|
+  fn_return := tvoid;
+  fn_callconv := cc_default;
+  fn_params := ((_x, (tptr (Tstruct ___NODE noattr))) :: nil);
+  fn_vars := nil;
+  fn_temps := ((_l, (tptr (talignas 4%N (Tstruct ___NODE noattr)))) ::
+               (_r, (tptr (talignas 4%N (Tstruct ___NODE noattr)))) ::
+               (_root_mark, tint) :: nil);
+  fn_body :=
+(Ssequence
+  (Sifthenelse (Ebinop Oeq (Etempvar _x (tptr (Tstruct ___NODE noattr)))
+                 (Ecast (Econst_int (Int.repr 0) tint) (tptr tvoid)) tint)
+    (Sreturn None)
+    Sskip)
+  (Ssequence
+    (Sset _root_mark
+      (Efield
+        (Ederef (Etempvar _x (tptr (Tstruct ___NODE noattr)))
+          (Tstruct ___NODE noattr)) _m tint))
+    (Ssequence
+      (Sifthenelse (Ebinop Oeq (Etempvar _root_mark tint)
+                     (Econst_int (Int.repr 1) tint) tint)
+        (Sreturn None)
+        Sskip)
+      (Ssequence
+        (Sset _l
+          (Efield
+            (Ederef (Etempvar _x (tptr (Tstruct ___NODE noattr)))
+              (Tstruct ___NODE noattr)) _l
+            (tptr (talignas 4%N (Tstruct ___NODE noattr)))))
+        (Ssequence
+          (Sset _r
+            (Efield
+              (Ederef (Etempvar _x (tptr (Tstruct ___NODE noattr)))
+                (Tstruct ___NODE noattr)) _r
+              (tptr (talignas 4%N (Tstruct ___NODE noattr)))))
+          (Ssequence
+            (Sassign
+              (Efield
+                (Ederef (Etempvar _x (tptr (Tstruct ___NODE noattr)))
+                  (Tstruct ___NODE noattr)) _m tint)
+              (Econst_int (Int.repr 1) tint))
+            (Ssequence
+              (Scall None
+                (Evar _mark (Tfunction
+                              (Tcons (tptr (Tstruct ___NODE noattr)) Tnil)
+                              tvoid cc_default))
+                ((Etempvar _l (tptr (talignas 4%N (Tstruct ___NODE noattr)))) ::
+                 nil))
+              (Scall None
+                (Evar _mark (Tfunction
+                              (Tcons (tptr (Tstruct ___NODE noattr)) Tnil)
+                              tvoid cc_default))
+                ((Etempvar _r (tptr (talignas 4%N (Tstruct ___NODE noattr)))) ::
+                 nil)))))))))
+|}.
+
+Definition v_hd := {|
+  gvar_info := (tptr (talignas 4%N (Tstruct ___NODE noattr)));
+  gvar_init := (Init_space 4 :: nil);
   gvar_readonly := false;
   gvar_volatile := false
 |}.
 
 Definition v_n := {|
-  gvar_info := (Tstruct _s2 noattr);
-  gvar_init := (Init_space 8 :: nil);
-  gvar_readonly := false;
-  gvar_volatile := false
-|}.
-
-Definition v_p := {|
-  gvar_info := (tptr (Tstruct _s2 noattr));
-  gvar_init := (Init_space 4 :: nil);
+  gvar_info := (talignas 4%N (Tstruct ___NODE noattr));
+  gvar_init := (Init_space 12 :: nil);
   gvar_readonly := false;
   gvar_volatile := false
 |}.
@@ -88,18 +137,34 @@ Definition f_main := {|
   fn_temps := nil;
   fn_body :=
 (Ssequence
-  (Sassign (Evar _p (tptr (Tstruct _s2 noattr)))
-    (Econst_int (Int.repr 0) tint))
-  (Sassign (Evar _p (tptr (Tstruct _s2 noattr)))
-    (Eaddrof (Evar _n (Tstruct _s2 noattr)) (tptr (Tstruct _s2 noattr)))))
+  (Sassign (Evar _hd (tptr (talignas 4%N (Tstruct ___NODE noattr))))
+    (Eaddrof (Evar _n (talignas 4%N (Tstruct ___NODE noattr)))
+      (tptr (talignas 4%N (Tstruct ___NODE noattr)))))
+  (Ssequence
+    (Sassign
+      (Efield (Evar _n (talignas 4%N (Tstruct ___NODE noattr))) _m tint)
+      (Econst_int (Int.repr 0) tint))
+    (Ssequence
+      (Sassign
+        (Efield (Evar _n (talignas 4%N (Tstruct ___NODE noattr))) _l
+          (tptr (talignas 4%N (Tstruct ___NODE noattr))))
+        (Evar _hd (tptr (talignas 4%N (Tstruct ___NODE noattr)))))
+      (Ssequence
+        (Sassign
+          (Efield (Evar _n (talignas 4%N (Tstruct ___NODE noattr))) _r
+            (tptr (talignas 4%N (Tstruct ___NODE noattr))))
+          (Econst_int (Int.repr 0) tint))
+        (Scall None
+          (Evar _mark (Tfunction (Tcons (tptr (Tstruct ___NODE noattr)) Tnil)
+                        tvoid cc_default))
+          ((Evar _hd (tptr (talignas 4%N (Tstruct ___NODE noattr)))) :: nil))))))
 |}.
 
 Definition composites : list composite_definition :=
-(Composite _Node Struct
-   ((_data, tint) :: (_l, (tptr (Tstruct _Node noattr))) ::
-    (_r, (tptr (Tstruct _Node noattr))) :: nil)
-   noattr ::
- Composite _s2 Struct ((_s, tshort) :: (_i, tint) :: nil) noattr :: nil).
+(Composite ___NODE Struct
+   ((_m, tint) :: (_l, (tptr (talignas 4%N (Tstruct ___NODE noattr)))) ::
+    (_r, (tptr (talignas 4%N (Tstruct ___NODE noattr)))) :: nil)
+   noattr :: nil).
 
 Definition prog : Clight.program := {|
 prog_defs :=
@@ -299,10 +364,10 @@ prog_defs :=
    Gfun(External (EF_builtin ___builtin_write32_reversed
                    (mksignature (AST.Tint :: AST.Tint :: nil) None
                      cc_default)) (Tcons (tptr tuint) (Tcons tuint Tnil))
-     tvoid cc_default)) :: (_m, Gvar v_m) :: (_n, Gvar v_n) ::
- (_p, Gvar v_p) :: (_main, Gfun(Internal f_main)) :: nil);
+     tvoid cc_default)) :: (_mark, Gfun(Internal f_mark)) ::
+ (_hd, Gvar v_hd) :: (_n, Gvar v_n) :: (_main, Gfun(Internal f_main)) :: nil);
 prog_public :=
-(_main :: _p :: _n :: _m :: ___builtin_write32_reversed ::
+(_main :: _n :: _hd :: _mark :: ___builtin_write32_reversed ::
  ___builtin_write16_reversed :: ___builtin_read32_reversed ::
  ___builtin_read16_reversed :: ___builtin_fnmsub :: ___builtin_fnmadd ::
  ___builtin_fmsub :: ___builtin_fmadd :: ___builtin_fmin ::

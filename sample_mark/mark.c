@@ -1,21 +1,32 @@
-struct Node {
-  int data;
-  struct Node * l;
-  struct Node  * r;
+struct __NODE {
+  int m;
+  struct __NODE _Alignas(16) * l;
+  struct __NODE _Alignas(16) * r;
 };
 
-struct Node _Alignas(8) m;
+void mark(struct __NODE * x) {
+  struct __NODE _Alignas(16) * l, * r;
+  int root_mark;
+  if (x == 0)
+    return;
+  root_mark = x -> m;
+  if (root_mark == 1)
+    return;
+  l = x -> l;
+  r = x -> r;
+  x -> m = 1;
+  mark(l);
+  mark(r);
+}
 
-struct __attribute__((packed(4,16,1))) s2 {
-          short s;          // at offset 0; byte-swap at access
-          int i;            // at offset 4 (because 4-aligned); byte-swap at access
-        };   
-
-struct s2 n;
-struct s2 * p;
+struct __NODE _Alignas(16) * hd;
+struct __NODE _Alignas(16) n;
 
 int main()
 {
-  p = 0;
-  p = & n;
+  hd = & n;
+  n.m = 0;
+  n.l = hd;
+  n.r = 0;
+  mark(hd);
 }
