@@ -155,3 +155,9 @@ Ltac equate_precise_direct x1 x2 :=
       generalize (H1 w x2 x1 H3 H2 H5 H4); intro Heq;
       rewrite Heq in *; clear H3 H4 H5 Heq x2
   end.
+
+Ltac elim_emp_direct :=
+  repeat match goal with
+           | [H1: join ?x ?y _, H2: emp ?x |- _] => apply (join_unit1_e _ _ H2) in H1; rewrite H1 in *; clear H1 y
+           | [H1: join ?y ?x _, H2: emp ?x |- _] => apply (join_unit2_e _ _ H2) in H1; rewrite H1 in *; clear H1 y
+         end.

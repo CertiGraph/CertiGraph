@@ -13,15 +13,6 @@ Proof.
   intros. destruct_sepcon H0 h. destruct H as [w3 ?]. try_join h2 w3 m. exists h1, m. split; auto.
 Qed.
 
-Lemma precise_mapsto: forall x y, precise (mapsto x y).
-Proof.
-  repeat intro. clear H1 H2 w. destruct H0 as [? [? ?]]. destruct H as [? [? ?]].
-  destruct w1 as [x1 f1]; destruct w2 as [x2 f2]; simpl in *.
-  apply exist_ext. extensionality mm; destruct (eq_dec mm x).
-  rewrite e in *. rewrite H4, H2; trivial.
-  specialize (H1 mm n); specialize (H3 mm n); rewrite H1, H3; trivial.
-Qed.
-
 Lemma mapsto_unique: forall x a b w, ~ (mapsto x a * mapsto x b)%pred w.
 Proof.
   repeat intro. destruct_sepcon H h. destruct H0 as [? [? ?]]. destruct H1 as [? [? ?]]. destruct h1 as [f1 m1].
