@@ -25,6 +25,20 @@ Proof.
   apply core_identity.
 Qed.
 
+Lemma ocon_TT {A}{JA: Join A}{PA: Perm_alg A}{SA: Sep_alg A}{CA: Canc_alg A}: forall P: pred A, (P ⊗ TT = P * TT)%pred.
+Proof.
+  intros; apply pred_ext; hnf; intros; simpl in *; intros.
+  + destruct_ocon H h.
+    exists h12, h3; auto.
+  + destruct H as [? [? [? [? ?]]]].
+    exists x, (core x), x0, x, x0.
+    repeat split; auto.
+    - apply join_comm, core_unit.
+    - apply join_core2 in H.
+      rewrite H.
+      apply core_unit.
+Qed.
+
 Lemma andp_ocon {A}{JA: Join A}{PA: Perm_alg A}{SA: Sep_alg A}: forall P Q, P && Q |-- P ⊗ Q.
 Proof.
   intros.
@@ -139,6 +153,37 @@ Proof.
     specialize (H h23 H4).
     specialize (H h1 h2 h3 h12 a).
     apply H; auto.
+Qed.
+
+Lemma ocon_contain {A} {JA: Join A} {PA: Perm_alg A} {SA: Sep_alg A}: forall P Q, Q |-- P * TT -> Q |-- ocon P Q.
+Proof.
+  unfold ocon, owand, derives; simpl; intros.
+  destruct (H a H0) as [y [z [? [? ?]]]].
+  exists (core y), y, z, y, a.
+  repeat split; auto.
+  apply core_unit.
+Qed.
+
+Lemma precise_ocon_contain {A} {JA: Join A} {PA: Perm_alg A} {SA: Sep_alg A} {CA: Canc_alg A} {DA: Disj_alg A} : forall P Q, precise P -> Q |-- P * TT -> Q = ocon P Q.
+Proof.
+  intros; apply pred_ext; [apply ocon_contain; auto |].
+  unfold ocon, owand, derives in *; simpl in *.
+  intros.
+  destruct H1 as [h1 [h2 [h3 [h12 [h23 [? [? [? [? ?]]]]]]]]].
+  destruct (H0 _ H5) as [y [z [? [? ?]]]].
+  try_join h2 h3 h23'. equate_join h23 h23'. assertSub y a HS1.
+  equate_precise_direct y h12.
+  try_join z h1 h3'. equate_canc h3 h3'.
+  assert (identity h1).
+  Focus 1. {
+    try_join h1 h3 h_temp.
+    assertSub h1 h3 H12.
+    eapply join_sub_joins_identity; eauto.
+  } Unfocus.
+  apply join_comm in H4.
+  apply H9 in H10; apply H9 in H4.
+  subst.
+  auto.
 Qed.
 
 Definition disjointed {A: Type} {JA: Join A} (P Q: pred A):=
