@@ -1,6 +1,5 @@
 Require Import VST.msl.msl_direct.
-Require Import FunctionalExtensionality.
-Require Import RamifyCoq.msl_ext.ramify_tactics.
+Require Import RamifyCoq.msl_ext.abs_addr.
 
 Instance Join_discrete (A : Type): Join A := fun a1 a2 a3 : A => False.
 
@@ -10,7 +9,7 @@ Proof. constructor; intros; inv H. Qed.
 Instance psa_discrete (A: Type) :  @Pos_alg A  (Join_discrete A).
 Proof. repeat intro. inv H. Qed.
 
-Definition var := nat.
+(* Definition var := nat. *)
 Definition adr := nat.
 
 Definition world := (fpm adr adr).
@@ -26,6 +25,47 @@ Instance Canc_world : Canc_alg world. apply Canc_fpm; [intuition | repeat intro;
 Instance Disj_world : Disj_alg world. apply Disj_fpm; repeat intro; inversion H. Qed.
 
 Instance Cross_world : Cross_alg world. apply Cross_fpm; [apply Perm_discrete | apply psa_discrete | repeat intro; inv H]. Qed.
+
+Instance Trip_world : @Trip_alg world Join_world.
+Proof.
+  repeat intro.
+  destruct ab as [fab Hab]. destruct c as [fc Hc].
+  remember (fun x => match (fab x) with
+                       | Some v => Some v
+                       | None => match (fc x) with
+                                   | Some v' => Some v'
+                                   | None => None
+                                 end
+                     end) as fabc.
+  assert (finMap fabc). {
+    hnf in Hab, Hc. destruct Hab as [lab ?]. destruct Hc as [lc ?].
+    exists (lab ++ lc). intro z; intros.
+    assert (~ In z lab). intro. apply H2. apply in_or_app. left; auto.
+    assert (~ In z lc). intro. apply H2. apply in_or_app. right; auto.
+    hnf in *. simpl in *. specialize (e0 z H4). specialize (e z H3).
+    rewrite Heqfabc. destruct (fab z) eqn:? . inv e. destruct (fc z) eqn:? . inv e0. auto.
+  } exists (exist (finMap (B:=adr)) fabc H2).
+  hnf. simpl. intros. rewrite Heqfabc. destruct (fab x) eqn:? .
+  + destruct (fc x) eqn:? .
+    - destruct a as [fa ?]. destruct b as [fb ?]. hnf in *. simpl in *.
+      specialize (H x). rewrite Heqo in *. inversion H.
+      * specialize (H0 x). rewrite H6, Heqo0 in *. inversion H0. inversion H9.
+      * specialize (H1 x). rewrite H6, Heqo0 in *. inversion H1. inversion H9.
+      * inversion H6.
+    - constructor.
+  + destruct (fc x) eqn:? .
+    - constructor.
+    - constructor.
+Defined.
+
+Definition adr_conflict (a1 a2 : adr) : bool := if (eq_nat_dec a1 a2) then true else false.
+
+Instance AbsAddr_world : AbsAddr.
+  apply (mkAbsAddr adr adr adr_conflict); intros; unfold adr_conflict in *.
+  + destruct (eq_nat_dec p1 p2). subst. destruct (eq_nat_dec p2 p2); auto. exfalso; tauto.
+    destruct (eq_nat_dec p2 p1). subst. exfalso; tauto. trivial.
+  + destruct (eq_nat_dec p1 p1). inversion H. exfalso; tauto.
+Defined.
 
 Fixpoint extractSome (f : adr -> option adr) (li : list adr) : list adr :=
   match li with
