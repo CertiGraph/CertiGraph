@@ -11,7 +11,7 @@ Require Import RamifyCoq.msl_ext.overlapping.
 Require Import VST.msl.predicates_sl.
 Local Open Scope logic.
 
-Instance algPreciseSepLog {A : Type} {JA : Join A} {PA : Perm_alg A} {SA: Sep_alg A} {CA: Canc_alg A} {AG : ageable A} {AA: Age_alg A}: PreciseSepLog (pred A).
+Instance algPreciseSepLog (A : Type) {JA : Join A} {PA : Perm_alg A} {SA: Sep_alg A} {CA: Canc_alg A} {AG : ageable A} {AA: Age_alg A}: PreciseSepLog (pred A).
   apply (mkPreciseSepLog precise); simpl; intros.
   + apply precise_sepcon_andp_sepcon; auto.
   + eapply derives_precise; eauto.
@@ -19,7 +19,7 @@ Instance algPreciseSepLog {A : Type} {JA : Join A} {PA : Perm_alg A} {SA: Sep_al
   + apply precise_sepcon; auto.
 Defined.
 
-Instance algOverlapSepLog {A: Type} {JA: Join A} {SA: Sep_alg A} {PA : Perm_alg A} {CA: Canc_alg A} {DA: Disj_alg A} {CrA: Cross_alg A} {AG : ageable A} {AA : Age_alg A} : OverlapSepLog (pred A).
+Instance algOverlapSepLog (A: Type) {JA: Join A} {SA: Sep_alg A} {PA : Perm_alg A} {CA: Canc_alg A} {DA: Disj_alg A} {CrA: Cross_alg A} {AG : ageable A} {AA : Age_alg A} : OverlapSepLog (pred A).
   apply (mkOverlapSepLog ocon owand); unfold algNatDed, algSepLog, algPreciseSepLog; simpl.
   + apply ocon_emp.
   + apply ocon_TT.
@@ -36,7 +36,7 @@ Instance algOverlapSepLog {A: Type} {JA: Join A} {SA: Sep_alg A} {PA : Perm_alg 
   + apply precise_ocon_contain.
 Defined.
 
-Instance algDisjointedSepLog {A: Type} {JA: Join A} {PA : Perm_alg A} {SA: Sep_alg A} {CA: Canc_alg A} {DA: Disj_alg A} {TA: Trip_alg A} {CrA: Cross_alg A} {AG : ageable A} {AA : Age_alg A} : DisjointedSepLog (pred A).
+Instance algDisjointedSepLog (A: Type) {JA: Join A} {PA : Perm_alg A} {SA: Sep_alg A} {CA: Canc_alg A} {DA: Disj_alg A} {TA: Trip_alg A} {CrA: Cross_alg A} {AG : ageable A} {AA : Age_alg A} : DisjointedSepLog (pred A).
   apply (mkDisjointedSepLog disjointed); unfold algNatDed, algSepLog, algPreciseSepLog; simpl.
   + apply ocon_sepcon.
   + apply disj_emp.
