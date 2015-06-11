@@ -101,11 +101,11 @@ Proof.
   apply TT_right.
 Qed.
 
-Lemma disj_sepcon_right: forall {A} {ND: NatDed A} {SL: SepLog A} {PSL: PreciseSepLog A} {OSL: OverlapSepLog A} {DSL: DisjointedSepLog A} P Q R, precise P -> disjointed P Q -> disjointed P R -> disjointed P (Q * R).
+Lemma disj_sepcon_right: forall {A} {ND: NatDed A} {SL: SepLog A} {PSL: PreciseSepLog A} {OSL: OverlapSepLog A} {DSL: DisjointedSepLog A} P Q R, disjointed P Q -> disjointed P R -> disjointed P (Q * R).
 Proof.
   intros.
-  pose proof disj_ocon_right _ _ _ H H0 H1.
-  eapply disj_derives; [apply derives_refl | | exact H2].
+  pose proof disj_ocon_right _ _ _ H H0.
+  eapply disj_derives; [apply derives_refl | | exact H1].
   apply sepcon_ocon.
 Qed.
 
