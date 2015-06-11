@@ -11,7 +11,7 @@ Definition _n : ident := 54%positive.
 Definition ___i64_dtou : ident := 24%positive.
 Definition ___compcert_va_float64 : ident := 22%positive.
 Definition ___builtin_va_arg : ident := 17%positive.
-Definition ___NODE : ident := 8%positive.
+Definition _Node : ident := 8%positive.
 Definition ___builtin_subl : ident := 5%positive.
 Definition _x : ident := 50%positive.
 Definition ___builtin_fmin : ident := 43%positive.
@@ -61,22 +61,22 @@ Definition ___compcert_va_int32 : ident := 20%positive.
 Definition f_mark := {|
   fn_return := tvoid;
   fn_callconv := cc_default;
-  fn_params := ((_x, (tptr (Tstruct ___NODE noattr))) :: nil);
+  fn_params := ((_x, (tptr (Tstruct _Node noattr))) :: nil);
   fn_vars := nil;
-  fn_temps := ((_l, (tptr (talignas 4%N (Tstruct ___NODE noattr)))) ::
-               (_r, (tptr (talignas 4%N (Tstruct ___NODE noattr)))) ::
+  fn_temps := ((_l, (tptr (talignas 4%N (Tstruct _Node noattr)))) ::
+               (_r, (tptr (talignas 4%N (Tstruct _Node noattr)))) ::
                (_root_mark, tint) :: nil);
   fn_body :=
 (Ssequence
-  (Sifthenelse (Ebinop Oeq (Etempvar _x (tptr (Tstruct ___NODE noattr)))
+  (Sifthenelse (Ebinop Oeq (Etempvar _x (tptr (Tstruct _Node noattr)))
                  (Ecast (Econst_int (Int.repr 0) tint) (tptr tvoid)) tint)
     (Sreturn None)
     Sskip)
   (Ssequence
     (Sset _root_mark
       (Efield
-        (Ederef (Etempvar _x (tptr (Tstruct ___NODE noattr)))
-          (Tstruct ___NODE noattr)) _m tint))
+        (Ederef (Etempvar _x (tptr (Tstruct _Node noattr)))
+          (Tstruct _Node noattr)) _m tint))
     (Ssequence
       (Sifthenelse (Ebinop Oeq (Etempvar _root_mark tint)
                      (Econst_int (Int.repr 1) tint) tint)
@@ -85,45 +85,45 @@ Definition f_mark := {|
       (Ssequence
         (Sset _l
           (Efield
-            (Ederef (Etempvar _x (tptr (Tstruct ___NODE noattr)))
-              (Tstruct ___NODE noattr)) _l
-            (tptr (talignas 4%N (Tstruct ___NODE noattr)))))
+            (Ederef (Etempvar _x (tptr (Tstruct _Node noattr)))
+              (Tstruct _Node noattr)) _l
+            (tptr (talignas 4%N (Tstruct _Node noattr)))))
         (Ssequence
           (Sset _r
             (Efield
-              (Ederef (Etempvar _x (tptr (Tstruct ___NODE noattr)))
-                (Tstruct ___NODE noattr)) _r
-              (tptr (talignas 4%N (Tstruct ___NODE noattr)))))
+              (Ederef (Etempvar _x (tptr (Tstruct _Node noattr)))
+                (Tstruct _Node noattr)) _r
+              (tptr (talignas 4%N (Tstruct _Node noattr)))))
           (Ssequence
             (Sassign
               (Efield
-                (Ederef (Etempvar _x (tptr (Tstruct ___NODE noattr)))
-                  (Tstruct ___NODE noattr)) _m tint)
+                (Ederef (Etempvar _x (tptr (Tstruct _Node noattr)))
+                  (Tstruct _Node noattr)) _m tint)
               (Econst_int (Int.repr 1) tint))
             (Ssequence
               (Scall None
                 (Evar _mark (Tfunction
-                              (Tcons (tptr (Tstruct ___NODE noattr)) Tnil)
+                              (Tcons (tptr (Tstruct _Node noattr)) Tnil)
                               tvoid cc_default))
-                ((Etempvar _l (tptr (talignas 4%N (Tstruct ___NODE noattr)))) ::
+                ((Etempvar _l (tptr (talignas 4%N (Tstruct _Node noattr)))) ::
                  nil))
               (Scall None
                 (Evar _mark (Tfunction
-                              (Tcons (tptr (Tstruct ___NODE noattr)) Tnil)
+                              (Tcons (tptr (Tstruct _Node noattr)) Tnil)
                               tvoid cc_default))
-                ((Etempvar _r (tptr (talignas 4%N (Tstruct ___NODE noattr)))) ::
+                ((Etempvar _r (tptr (talignas 4%N (Tstruct _Node noattr)))) ::
                  nil)))))))))
 |}.
 
 Definition v_hd := {|
-  gvar_info := (tptr (talignas 4%N (Tstruct ___NODE noattr)));
+  gvar_info := (tptr (talignas 4%N (Tstruct _Node noattr)));
   gvar_init := (Init_space 4 :: nil);
   gvar_readonly := false;
   gvar_volatile := false
 |}.
 
 Definition v_n := {|
-  gvar_info := (talignas 4%N (Tstruct ___NODE noattr));
+  gvar_info := (talignas 4%N (Tstruct _Node noattr));
   gvar_init := (Init_space 12 :: nil);
   gvar_readonly := false;
   gvar_volatile := false
@@ -137,33 +137,32 @@ Definition f_main := {|
   fn_temps := nil;
   fn_body :=
 (Ssequence
-  (Sassign (Evar _hd (tptr (talignas 4%N (Tstruct ___NODE noattr))))
-    (Eaddrof (Evar _n (talignas 4%N (Tstruct ___NODE noattr)))
-      (tptr (talignas 4%N (Tstruct ___NODE noattr)))))
+  (Sassign (Evar _hd (tptr (talignas 4%N (Tstruct _Node noattr))))
+    (Eaddrof (Evar _n (talignas 4%N (Tstruct _Node noattr)))
+      (tptr (talignas 4%N (Tstruct _Node noattr)))))
   (Ssequence
-    (Sassign
-      (Efield (Evar _n (talignas 4%N (Tstruct ___NODE noattr))) _m tint)
+    (Sassign (Efield (Evar _n (talignas 4%N (Tstruct _Node noattr))) _m tint)
       (Econst_int (Int.repr 0) tint))
     (Ssequence
       (Sassign
-        (Efield (Evar _n (talignas 4%N (Tstruct ___NODE noattr))) _l
-          (tptr (talignas 4%N (Tstruct ___NODE noattr))))
-        (Evar _hd (tptr (talignas 4%N (Tstruct ___NODE noattr)))))
+        (Efield (Evar _n (talignas 4%N (Tstruct _Node noattr))) _l
+          (tptr (talignas 4%N (Tstruct _Node noattr))))
+        (Evar _hd (tptr (talignas 4%N (Tstruct _Node noattr)))))
       (Ssequence
         (Sassign
-          (Efield (Evar _n (talignas 4%N (Tstruct ___NODE noattr))) _r
-            (tptr (talignas 4%N (Tstruct ___NODE noattr))))
+          (Efield (Evar _n (talignas 4%N (Tstruct _Node noattr))) _r
+            (tptr (talignas 4%N (Tstruct _Node noattr))))
           (Econst_int (Int.repr 0) tint))
         (Scall None
-          (Evar _mark (Tfunction (Tcons (tptr (Tstruct ___NODE noattr)) Tnil)
+          (Evar _mark (Tfunction (Tcons (tptr (Tstruct _Node noattr)) Tnil)
                         tvoid cc_default))
-          ((Evar _hd (tptr (talignas 4%N (Tstruct ___NODE noattr)))) :: nil))))))
+          ((Evar _hd (tptr (talignas 4%N (Tstruct _Node noattr)))) :: nil))))))
 |}.
 
 Definition composites : list composite_definition :=
-(Composite ___NODE Struct
-   ((_m, tint) :: (_l, (tptr (talignas 4%N (Tstruct ___NODE noattr)))) ::
-    (_r, (tptr (talignas 4%N (Tstruct ___NODE noattr)))) :: nil)
+(Composite _Node Struct
+   ((_m, tint) :: (_l, (tptr (talignas 4%N (Tstruct _Node noattr)))) ::
+    (_r, (tptr (talignas 4%N (Tstruct _Node noattr)))) :: nil)
    noattr :: nil).
 
 Definition prog : Clight.program := {|
