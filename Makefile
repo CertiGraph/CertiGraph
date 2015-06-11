@@ -22,7 +22,7 @@ MSL_EXT_FILES = \
 VERIC_EXT_FILES = SeparationLogic.v
 
 HEAP_MODEL_DIRECT_FILES = \
-  SeparationAlgebra.v mapsto.v
+  SeparationAlgebra.v mapsto.v SeparationLogic.v
 
 GRAPH_FILES = \
   graph.v graph_reachable.v 
