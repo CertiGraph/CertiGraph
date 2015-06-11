@@ -19,6 +19,8 @@ MSL_EXT_FILES = \
   overlapping.v precise.v alg_seplog.v \
   overlapping_direct.v precise_direct.v alg_seplog_direct.v
 
+VERIC_EXT_FILES = SeparationLogic.v
+
 HEAP_MODEL_DIRECT_FILES = \
   SeparationAlgebra.v mapsto.v
 
@@ -35,6 +37,7 @@ C_FILES = $(CLIGHT_FILES:%.v=%.c)
 
 VST_BASED_FILES = \
   $(MSL_EXT_FILES:%.v=msl_ext/%.v) \
+  $(VERIC_EXT_FILES:%.v=veric_ext/%.v) \
   $(HEAP_MODEL_DIRECT_FILES:%.v=heap_model_direct/%.v)
 
 $(COQ_BASED_FILES:%.v=%.vo): %.vo: %.v
