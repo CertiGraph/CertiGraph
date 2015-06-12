@@ -2,14 +2,14 @@ Require Import VST.msl.seplog.
 Require Import RamifyCoq.msl_ext.abs_addr.
 Require Import RamifyCoq.msl_ext.seplog.
 
-Class SPATIAL_GRAPH_SET_UP: Type := {
+Class SpatialGraphSetting: Type := {
   Data: Type;
   addr: Type;
   addr_eq_dec: forall x y: addr, {x = y} + {x <> y};
   addr_eqb: addr -> addr -> bool := fun x y => if addr_eq_dec x y then true else false
 }.
 
-Instance AV_SGraph `{SPATIAL_GRAPH_SET_UP} : AbsAddr.
+Instance AV_SGraph `{SpatialGraphSetting} : AbsAddr.
   apply (mkAbsAddr addr (Data * addr * addr) (fun x y => addr_eqb x y)); simpl; intros.
   + unfold addr_eqb.
     destruct (addr_eq_dec p1 p2), (addr_eq_dec p2 p1); try congruence.
@@ -17,24 +17,34 @@ Instance AV_SGraph `{SPATIAL_GRAPH_SET_UP} : AbsAddr.
     destruct (addr_eq_dec p1 p1); congruence.
 Defined.
 
-Section SPATIAL_GRAPH.
+Class SpatialGraphAssum: Type := {
+  SGA_Pred: Type;
+  SGA_ND: NatDed SGA_Pred;
+  SGA_SL : SepLog SGA_Pred;
+  SGA_ClSL: ClassicalSep SGA_Pred;
+  SGA_PSL : PreciseSepLog SGA_Pred;
+  SGA_CoSL: CorableSepLog SGA_Pred;
+  SGA_OSL: OverlapSepLog SGA_Pred;
+  SGA_DSL : DisjointedSepLog SGA_Pred;
 
-Variable A: Type.
-Variable ND: NatDed A.
-Variable SL : SepLog A.
-Variable ClSL: ClassicalSep A.
-Variable PSL : PreciseSepLog A.
-Variable CoSL: CorableSepLog A.
-Variable OSL: OverlapSepLog A.
-Variable DSL : DisjointedSepLog A.
+  SG_Setting: SpatialGraphSetting;
+  trinode : Addr -> Val -> SGA_Pred;
+  SGA_MSL: MapstoSepLog AV_SGraph trinode;
+  SGA_sMSL: StaticMapstoSepLog AV_SGraph trinode;
+  SGA_nMSL: NormalMapstoSepLog AV_SGraph trinode
+}.
 
-Variable spatial_graph_set_up: SPATIAL_GRAPH_SET_UP.
-Variable trinode : addr -> (Data * addr * addr) -> A.
-Variable MSL: MapstoSepLog AV_SGraph trinode.
-Variable sMSL: StaticMapstoSepLog AV_SGraph trinode.
-Variable nMSL: NormalMapstoSepLog AV_SGraph trinode.
+Global Existing Instances SGA_ND SGA_SL SGA_ClSL SGA_PSL SGA_CoSL SGA_OSL SGA_DSL SG_Setting SGA_MSL SGA_sMSL SGA_nMSL.
 
-(* Now start proof here. *)
+Hint Resolve SGA_ND SGA_SL SGA_ClSL SGA_PSL SGA_CoSL SGA_OSL SGA_DSL SG_Setting SGA_MSL SGA_sMSL SGA_nMSL.
 
-End SPATIAL_GRAPH.
+Local Open Scope logic.
 
+Lemma foo: forall `{SpatialGraphAssum} p v, trinode p v * trinode p v |-- FF.
+Proof.
+  intros.
+  apply mapsto_conflict.
+  simpl.
+  unfold addr_eqb.
+  destruct addr_eq_dec; congruence.
+Qed.
