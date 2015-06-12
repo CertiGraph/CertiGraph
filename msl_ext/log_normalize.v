@@ -108,7 +108,6 @@ Proof.
   eapply disj_derives; [apply derives_refl | | exact H1].
   apply sepcon_ocon.
 Qed.
-Print MapstoSepLog.
 
 Lemma mapsto_precise: forall {AV: AbsAddr} {A} {mapsto: Addr -> Val -> A} {ND: NatDed A} {SL: SepLog A} {PSL: PreciseSepLog A} {MSL: MapstoSepLog AV mapsto} p v , precise (mapsto p v).
 Proof.
