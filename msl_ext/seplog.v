@@ -40,14 +40,13 @@ Instance LiftPreciseSepLog (A B: Type) {ND: NatDed B} {SL: SepLog B} {PSL: Preci
   + apply precise_sepcon; auto.
 Defined.
 
-Class MapstoSepLog (AV: AbsAddr) (A: Type) {ND: NatDed A} {SL: SepLog A} {PSL: PreciseSepLog A} := mkMapstoSepLog {
-  mapsto: Addr -> Val -> A;
+Class MapstoSepLog (AV: AbsAddr) {A: Type} (mapsto: Addr -> Val -> A) {ND: NatDed A} {SL: SepLog A} {PSL: PreciseSepLog A} := mkMapstoSepLog {
   mapsto_: Addr -> A := fun p => EX v: Val, mapsto p v;
   mapsto__precise: forall p, precise (mapsto_ p)
 }.
 
-Implicit Arguments MapstoSepLog [[ND] [SL] [PSL]].
-Implicit Arguments mkMapstoSepLog [[AV] [A] [ND] [SL] [PSL]].
+Implicit Arguments MapstoSepLog [[A] [ND] [SL] [PSL]].
+Implicit Arguments mkMapstoSepLog [[A] [mapsto] [ND] [SL] [PSL]].
 
 Class OverlapSepLog (A: Type) {ND: NatDed A} {SL: SepLog A} {PSL: PreciseSepLog A}:= mkOverlapSepLog {
   ocon: A -> A -> A;
@@ -104,19 +103,21 @@ Instance LiftDisjointedSepLog (A B: Type) {ND: NatDed B} {SL: SepLog B} {PSL: Pr
   + apply disj_ocon_right; auto.
 Defined.
 
-Class StaticMapstoSepLog (AV: AbsAddr) (A: Type) {ND: NatDed A} {SL: SepLog A} {PSL: PreciseSepLog A} {MSL: MapstoSepLog AV A} {OSL: OverlapSepLog A} {DSL: DisjointedSepLog A} := mkStaticMapstoSepLogc{
+Class StaticMapstoSepLog (AV: AbsAddr) {A: Type} (mapsto: Addr -> Val -> A) {ND: NatDed A} {SL: SepLog A} {PSL: PreciseSepLog A} {MSL: MapstoSepLog AV mapsto} {OSL: OverlapSepLog A} {DSL: DisjointedSepLog A} := mkStaticMapstoSepLog {
   empty_mapsto_emp: forall p v, addr_empty p -> mapsto p v |-- emp;
   mapsto_conflict: forall p1 p2 v1 v2, addr_conflict p1 p2 = true -> mapsto p1 v1 * mapsto p2 v2 |-- FF;
   disj_mapsto_: forall p1 p2, addr_conflict p1 p2 = false -> disjointed (mapsto_ p1) (mapsto_ p2)
 }.
 
-Implicit Arguments StaticMapstoSepLog [[ND] [SL] [PSL] [MSL] [OSL] [DSL]].
+Implicit Arguments StaticMapstoSepLog [[A] [ND] [SL] [PSL] [MSL] [OSL] [DSL]].
+Implicit Arguments mkStaticMapstoSepLog [[A] [mapsto] [ND] [SL] [PSL] [MSL] [OSL] [DSL]].
 
-Class NormalMapstoSeplog (AV: AbsAddr) (A: Type) {ND: NatDed A} {SL: SepLog A} {PSL: PreciseSepLog A} {MSL: MapstoSepLog AV A} {OSL: OverlapSepLog A} {DSL: DisjointedSepLog A} := mkNomalMapstoSepLogc{
+Class NormalMapstoSepLog (AV: AbsAddr) {A: Type} (mapsto: Addr -> Val -> A) {ND: NatDed A} {SL: SepLog A} {PSL: PreciseSepLog A} {MSL: MapstoSepLog AV mapsto} {OSL: OverlapSepLog A} {DSL: DisjointedSepLog A} := mkNormalMapstoSepLog {
   mapsto_inj: forall p v1 v2, mapsto p v1 && mapsto p v2 |-- !! (v1 = v2)
 }.
 
-Implicit Arguments NormalMapstoSeplog [[ND] [SL] [PSL] [MSL] [OSL] [DSL]].
+Implicit Arguments NormalMapstoSepLog [[A] [ND] [SL] [PSL] [MSL] [OSL] [DSL]].
+Implicit Arguments mkNormalMapstoSepLog [[A] [mapsto] [ND] [SL] [PSL] [MSL] [OSL] [DSL]].
 
 Class ImpredicativeOSL (A: Type) {ND: NatDed A} {SL: SepLog A} {PSL: PreciseSepLog A} {OSL: OverlapSepLog A} :=
   strong_ocon_wand: forall P Q, ocon P Q = EX R : A, (R -* P) * (R -* Q) * R.

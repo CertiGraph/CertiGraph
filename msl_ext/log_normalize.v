@@ -108,8 +108,9 @@ Proof.
   eapply disj_derives; [apply derives_refl | | exact H1].
   apply sepcon_ocon.
 Qed.
+Print MapstoSepLog.
 
-Lemma mapsto_precise: forall {AV} {A} `{PreciseSepLog A} {MSL: MapstoSepLog AV A} p v , precise (mapsto p v).
+Lemma mapsto_precise: forall {AV: AbsAddr} {A} {mapsto: Addr -> Val -> A} {ND: NatDed A} {SL: SepLog A} {PSL: PreciseSepLog A} {MSL: MapstoSepLog AV mapsto} p v , precise (mapsto p v).
 Proof.
   intros.
   eapply derives_precise; [| apply mapsto__precise].
@@ -117,7 +118,7 @@ Proof.
   apply derives_refl.
 Qed.
 
-Lemma disj_mapsto: forall {AV A} {ND: NatDed A} {SL: SepLog A} {PSL: PreciseSepLog A} {OSL: OverlapSepLog A} {MSL: MapstoSepLog AV A} {DSL: DisjointedSepLog A} {SMSL: StaticMapstoSepLog AV A} p1 p2 v1 v2, addr_conflict p1 p2 = false -> disjointed (mapsto p1 v1) (mapsto p2 v2).
+Lemma disj_mapsto: forall {AV: AbsAddr} {A} {mapsto: Addr -> Val -> A} {ND: NatDed A} {SL: SepLog A} {PSL: PreciseSepLog A} {OSL: OverlapSepLog A} {MSL: MapstoSepLog AV mapsto} {DSL: DisjointedSepLog A} {SMSL: StaticMapstoSepLog AV mapsto} p1 p2 v1 v2, addr_conflict p1 p2 = false -> disjointed (mapsto p1 v1) (mapsto p2 v2).
 Proof.
   intros.
   eapply disj_derives; [| | apply disj_mapsto_]; eauto.

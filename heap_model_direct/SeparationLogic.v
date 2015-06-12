@@ -18,9 +18,9 @@ Instance CSLdirect : CorableSepLog (pred world) := algCorableSepLog world.
 Instance PSLdirect : PreciseSepLog (pred world) := algPreciseSepLog world.
 Instance OSLdirect : OverlapSepLog (pred world) := algOverlapSepLog world.
 Instance DSLdirect : DisjointedSepLog (pred world) := algDisjointedSepLog world.
-Instance MSLdirect : MapstoSepLog AbsAddr_world (pred world).
+Instance MSLdirect : MapstoSepLog AbsAddr_world mapsto.
 Proof.
-  apply (mkMapstoSepLog mapsto). repeat intro.
+  apply mkMapstoSepLog. repeat intro.
   destruct H1 as [w3 ?], H2 as [w4 ?]; destruct H as [? [? [? ?]]], H0 as [? [? [? ?]]].
   destruct w1 as [v1 f1]; destruct w2 as [v2 f2]; destruct w3 as [v3 f3]; destruct w4 as [v4 f4]; destruct w as [v f].
   hnf in H1, H2; simpl in *. apply exist_ext. extensionality mm. destruct (eq_dec mm p).
@@ -32,9 +32,9 @@ Proof.
   + specialize (H3 mm n). specialize (H5 mm n). rewrite H3, H5. auto.
 Defined.
 
-Instance sMSLdirect : StaticMapstoSepLog AbsAddr_world (pred world).
+Instance sMSLdirect : StaticMapstoSepLog AbsAddr_world mapsto.
 Proof.
-  apply mkStaticMapstoSepLogc; simpl; intros.
+  apply mkStaticMapstoSepLog; simpl; intros.
   + hnf in H. simpl in H. unfold adr_conflict in H. destruct (eq_nat_dec p p).
     - inversion H.
     - exfalso; tauto.
@@ -70,9 +70,9 @@ Proof.
       split; auto. exists ff; auto.
 Defined.
 
-Instance nMSLdirect : NormalMapstoSeplog AbsAddr_world (pred world).
+Instance nMSLdirect : NormalMapstoSepLog AbsAddr_world mapsto.
 Proof.
-  apply mkNomalMapstoSepLogc. intros; simpl; intro w; intros. destruct H.
+  apply mkNormalMapstoSepLog. intros; simpl; intro w; intros. destruct H.
   destruct H as [? [? ?]]. destruct H0 as [? [? ?]]. rewrite H2 in H4.
   inversion H4. subst; auto.
 Defined.
