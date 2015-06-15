@@ -14,7 +14,7 @@ Local Open Scope logic.
 
 Instance algPreciseSepLog (A : Type) {JA : Join A} {PA : Perm_alg A} {SA: Sep_alg A} {CA: Canc_alg A} {AG : ageable A} {AA: Age_alg A}: PreciseSepLog (pred A).
   apply (mkPreciseSepLog precise); simpl; intros.
-  + apply precise_sepcon_andp_sepcon; auto.
+  + eapply precise_left_sepcon_andp_distr; eauto.
   + eapply derives_precise; eauto.
   + apply precise_emp.
   + apply precise_sepcon; auto.

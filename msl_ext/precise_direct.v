@@ -3,14 +3,16 @@ Require Import RamifyCoq.msl_ext.ramify_tactics.
 Require Import RamifyCoq.msl_ext.overlapping_direct.
 Require Import RamifyCoq.Coqlib.
 
-Lemma precise_sepcon_andp_sepcon {A} {JA : Join A} {PA : Perm_alg A} {SA: Sep_alg A} {CA : Canc_alg A}:
-  forall P Q R, precise P -> (P * Q) && (P * R) |-- P * (Q && R).
+Lemma precise_left_sepcon_andp_distr {A} {JA : Join A} {PA : Perm_alg A} {SA: Sep_alg A} {CA : Canc_alg A}:
+  forall P P1 P2 Q R, precise P -> P1 |-- P -> P2 |-- P -> (P1 * Q) && (P2 * R) |-- (P1 && P2) * (Q && R).
 Proof.
   intros.
   unfold sepcon, andp, derives; simpl.
   intros.
-  destruct H0 as [[?y [?z [? [? ?]]]] [?y [?z [? [? ?]]]]].
+  destruct H2 as [[?y [?z [? [? ?]]]] [?y [?z [? [? ?]]]]].
   exists y, z.
+  assert (P y) by auto.
+  assert (P y0) by auto.
   equate_precise_direct y y0.
   equate_canc z z0.
   repeat split; auto.
