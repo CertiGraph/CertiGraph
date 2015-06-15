@@ -141,7 +141,14 @@ Proof.
   + apply precise_sepcon; auto.
 Qed.
 
-Lemma ocon_self: forall {A} {ND: NatDed A} {SL: SepLog A} {CLS: ClassicalSep A} {PSL: PreciseSepLog A} {OSL: OverlapSepLog A} {DSL: DisjointedSepLog A} P, P |-- ocon P P.
+Lemma emp_ocon: forall {A} `{OverlapSepLog A} P, ocon emp P = P.
+Proof.
+  intros.
+  rewrite ocon_comm.
+  apply ocon_emp.
+Qed.
+
+Lemma ocon_self: forall {A} {ND: NatDed A} {SL: SepLog A} {CLS: ClassicalSep A} {PSL: PreciseSepLog A} {OSL: OverlapSepLog A} P, P |-- ocon P P.
 Proof.
   intros.
   apply ocon_contain.

@@ -365,6 +365,14 @@ Qed.
 
 Arguments double_list_split [A] _ [l1] [l2] _ _.
 
+Lemma eq_as_set_spec: forall {A} (l1 l2: list A),
+  (forall x, In x l1 <-> In x l2) ->
+  l1 ~= l2.
+Proof.
+  intros.
+  split; intro x; intros; specialize (H x); tauto.
+Qed.
+
 Notation "a '+::' b" := (a ++ (b :: nil)) (at level 19).
 
 Lemma app_cons_assoc: forall {A} (l1 l2 : list A) x, l1 ++ x :: l2 = l1 +:: x ++ l2.
