@@ -72,3 +72,10 @@ Proof.
   } elim_emp_direct.
   split; auto. exists ff; auto.
 Qed.
+
+Lemma mapsto_inj: forall p v1 v2, mapsto p v1 && mapsto p v2 |-- !! (v1 = v2).
+Proof.
+  intros; simpl; intro w; intros. destruct H.
+  destruct H as [? [? ?]]. destruct H0 as [? [? ?]]. rewrite H2 in H4.
+  inversion H4. subst; auto.
+Qed.

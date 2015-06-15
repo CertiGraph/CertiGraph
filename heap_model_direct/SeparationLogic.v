@@ -42,7 +42,6 @@ Defined.
 
 Instance nMSLdirect : NormalMapstoSepLog AbsAddr_world mapsto.
 Proof.
-  apply mkNormalMapstoSepLog. intros; simpl; intro w; intros. destruct H.
-  destruct H as [? [? ?]]. destruct H0 as [? [? ?]]. rewrite H2 in H4.
-  inversion H4. subst; auto.
+  apply mkNormalMapstoSepLog.
+  apply mapsto_inj.
 Defined.
