@@ -11,6 +11,8 @@ Import RamifyCoq.msl_ext.seplog.OconNotation.
 
 Local Open Scope logic.
 
+Set Implicit Arguments.
+
 Section IterSepCon.
   
   Variable A : Type.
@@ -113,3 +115,6 @@ Proof.
 Qed. 
 
 End IterSepCon.
+
+Implicit Arguments sepcon_unique [[A] [B] [ND] [SL]].
+Implicit Arguments iter_sepcon [[A] [B] [ND] [SL]].
