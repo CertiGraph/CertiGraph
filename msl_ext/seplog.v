@@ -119,6 +119,21 @@ Class NormalMapstoSepLog (AV: AbsAddr) {A: Type} (mapsto: Addr -> Val -> A) {ND:
 Implicit Arguments NormalMapstoSepLog [[A] [ND] [SL] [PSL] [MSL] [OSL] [DSL]].
 Implicit Arguments mkNormalMapstoSepLog [[A] [mapsto] [ND] [SL] [PSL] [MSL] [OSL] [DSL]].
 
+Class CorableOverlapSepLog (A: Type) {ND: NatDed A}{SL: SepLog A}{PSL: PreciseSepLog A}{OSL: OverlapSepLog A}{CoSL: CorableSepLog A} := mkCorableOverlapSepLog {
+  corable_ocon: forall P Q, corable P -> corable Q -> corable (ocon P Q);
+  corable_andp_ocon1: forall P Q R, corable P -> ocon (P && Q) R = P && (ocon Q R)
+}.
+
+Implicit Arguments CorableOverlapSepLog [[ND] [SL] [PSL] [OSL] [CoSL]].
+Implicit Arguments mkCorableOverlapSepLog [[A] [ND] [SL] [PSL] [OSL] [CoSL]].
+
+Instance LiftCorableOverlapSepLog (A: Type) (B: Type) {NB: NatDed B} {SB: SepLog B} {PSL: PreciseSepLog B} {OSL: OverlapSepLog B} {CoSL: CorableSepLog B} {COSL: CorableOverlapSepLog B}: CorableOverlapSepLog (A -> B).
+  apply mkCorableOverlapSepLog; simpl; intros.
+  + apply corable_ocon; auto.
+  + extensionality x.
+    apply corable_andp_ocon1; auto.
+Defined.
+
 Class ImpredicativeOSL (A: Type) {ND: NatDed A} {SL: SepLog A} {PSL: PreciseSepLog A} {OSL: OverlapSepLog A} :=
   strong_ocon_wand: forall P Q, ocon P Q = EX R : A, (R -* P) * (R -* Q) * R.
 

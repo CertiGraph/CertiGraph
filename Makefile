@@ -27,6 +27,9 @@ HEAP_MODEL_DIRECT_FILES = \
 GRAPH_FILES = \
   graph.v graph_reachable.v 
 
+DATA_STRUCTURE_FILES = \
+  spatial_graph.v spatial_graph_HMD.v
+
 COQ_BASED_FILES = \
   Coqlib.v \
   $(GRAPH_FILES:%.v=graph/%.v)
@@ -38,7 +41,8 @@ C_FILES = $(CLIGHT_FILES:%.v=%.c)
 VST_BASED_FILES = \
   $(MSL_EXT_FILES:%.v=msl_ext/%.v) \
   $(VERIC_EXT_FILES:%.v=veric_ext/%.v) \
-  $(HEAP_MODEL_DIRECT_FILES:%.v=heap_model_direct/%.v)
+  $(HEAP_MODEL_DIRECT_FILES:%.v=heap_model_direct/%.v) \
+  $(DATA_STRUCTURE_FILES:%.v=data_structure/%.v)
 
 $(COQ_BASED_FILES:%.v=%.vo): %.vo: %.v
 	@echo COQC $*.v
