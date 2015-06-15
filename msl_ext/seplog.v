@@ -6,24 +6,9 @@ Local Open Scope logic.
 
 Set Implicit Arguments.
 
-Class HONatDed (A: Type) {ND: NatDed A} := mkHONatDed {
-  allp_uncurry: forall (S T: Type) (P: S -> T -> A),
-    allp (fun s => allp (P s)) = allp (fun st => P (fst st) (snd st));
-  allp_curry: forall (S T: Type) (P: S * T -> A),
-    allp P = allp (fun s => allp (fun t => P (s, t)));
-  exp_uncurry: forall (S T: Type) (P: S -> T -> A),
-    exp (fun s => exp (P s)) = exp (fun st => P (fst st) (snd st));
-  exp_curry: forall (S T: Type) (P: S * T -> A),
-    exp P = exp (fun s => exp (fun t => P (s, t)));
-  allp_exp: forall (S T: Type) (P: S -> T -> A),
-    allp (fun s => exp (P s)) = exp (fun t: S -> T => allp (fun s => P s (t s)));
-  exp_allp: forall (S T: Type) (P: S -> T -> A),
-    exp (fun s => allp (P s)) |-- allp (fun t => exp (fun s => P s t))
-}.
-
 Class PreciseSepLog (A: Type) {ND: NatDed A} {SL: SepLog A} := mkPreciseSepLog {
   precise: A -> Prop;
-  precise_sepcon_andp_sepcon: forall P Q R, precise P -> (P * Q) && (P * R) |-- P * (Q && R);
+  precise_left_sepcon_andp_distr: forall P P1 P2 Q R, precise P -> P1 |-- P -> P2 |-- P -> (P1 * Q) && (P2 * R) |-- (P1 && P2) * (Q && R);
   derives_precise: forall P Q, (P |-- Q) -> precise Q -> precise P;
   precise_emp: precise emp;
   precise_sepcon: forall P Q, precise Q -> precise P -> precise (P * Q)
@@ -34,7 +19,7 @@ Implicit Arguments mkPreciseSepLog [[A] [ND] [SL]].
 
 Instance LiftPreciseSepLog (A B: Type) {ND: NatDed B} {SL: SepLog B} {PSL: PreciseSepLog B} : PreciseSepLog (A -> B).
   apply (mkPreciseSepLog (fun P => forall a, precise (P a))); simpl; intros.
-  + apply precise_sepcon_andp_sepcon; auto.
+  + eapply precise_left_sepcon_andp_distr; eauto.
   + eapply derives_precise; eauto.
   + apply precise_emp.
   + apply precise_sepcon; auto.
