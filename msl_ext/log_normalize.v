@@ -252,3 +252,68 @@ Proof.
   + apply (exp_right v1). apply derives_refl.
   + apply (exp_right v2). apply derives_refl.
 Qed.
+
+Lemma corable_andp_ocon2 {A} `{CorableOverlapSepLog A}:
+   forall P Q R : A, corable P -> ocon (Q && P) R = P && (ocon Q R).
+Proof.
+intros. rewrite andp_comm. apply corable_andp_ocon1. auto.
+Qed.
+
+Lemma corable_ocon_andp1 {A} `{CorableOverlapSepLog A}:
+   forall P Q R : A, corable P -> ocon Q (P && R) = P && (ocon Q R).
+Proof.
+intros. rewrite ocon_comm. rewrite corable_andp_ocon1; auto. rewrite ocon_comm; auto.
+Qed.
+
+Lemma corable_ocon_andp2  {A} `{CorableOverlapSepLog A}:
+   forall P Q R : A, corable P -> ocon Q (R && P) = P && (ocon Q R).
+Proof.
+intros. rewrite ocon_comm. rewrite andp_comm. rewrite corable_andp_ocon1; auto. rewrite ocon_comm; auto.
+Qed.
+
+Instance ocon_owand_CCC: forall A `{OverlapSepLog A}, CCCviaNatDed A ocon owand.
+Proof.
+  intros.
+  constructor.
+  apply ocon_comm.
+  apply ocon_assoc.
+  apply owand_ocon_adjoint.
+  intros; apply ocon_derives; auto.
+Defined.
+
+Lemma exp_ocon1 {A} `{OverlapSepLog A}: forall B (p: B -> A) q, ocon (exp p) q = (exp (fun x => ocon (p x) q)).
+Proof.
+  eapply CCC_exp_prod1.
+  apply ocon_owand_CCC.
+Qed.
+
+Lemma exp_ocon2 {A} `{OverlapSepLog A}: forall B (p: A) (q: B -> A) , ocon p (exp q) = exp (fun x => ocon p (q x)).
+Proof.
+  eapply CCC_exp_prod2.
+  apply ocon_owand_CCC.
+Qed.
+
+Ltac normalize_overlap :=
+  repeat
+  match goal with
+     | |- context [ocon (?P && ?Q) ?R] => rewrite (corable_andp_ocon1 P Q R) by (auto with norm)
+     | |- context [ocon ?Q (?P && ?R)] => rewrite (corable_ocon_andp1 P Q R) by (auto with norm)
+     | |- context [ocon (?Q && ?P) ?R] => rewrite (corable_andp_ocon2 P Q R) by (auto with norm)
+     | |- context [ocon ?Q (?R && ?P)] => rewrite (corable_ocon_andp2 P Q R) by (auto with norm)
+     | |- context [ocon (exp ?P) ?Q] => rewrite (exp_ocon1 _ P Q)
+     | |- context [ocon ?P (exp ?Q)] => rewrite (exp_ocon2 _ P Q)
+     | |- _ => eauto with typeclass
+  end;
+  repeat rewrite <- andp_assoc.
+
+Goal forall {A} `{CorableOverlapSepLog A} P (Q R: A), ocon (!! P && !! P  && Q) R = ocon (!! P && Q && !! P) (!! P && R && !! P).
+intros.
+normalize_overlap.
+Abort.
+
+Goal forall {A} `{CorableOverlapSepLog A} P R (Q: A), FF |-- ocon (ocon (EX x: nat, P x) Q) (EX x: nat, R x).
+intros.
+normalize_overlap.
+apply (exp_right 0).
+normalize_overlap.
+Abort.
