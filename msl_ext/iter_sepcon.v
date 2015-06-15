@@ -1,6 +1,7 @@
 Require Import RamifyCoq.msl_ext.abs_addr.
 Require Import RamifyCoq.msl_ext.seplog.
 Require Import RamifyCoq.msl_ext.log_normalize.
+Require Import RamifyCoq.Coqlib.
 Require Import VST.msl.Extensionality.
 Require Import VST.msl.simple_CCC.
 Require Import VST.msl.seplog.
@@ -14,7 +15,7 @@ Local Open Scope logic.
 Set Implicit Arguments.
 
 Section IterSepCon.
-  
+
   Variable A : Type.
   Variable B : Type.
   Variable ND : NatDed A.
@@ -112,7 +113,26 @@ Proof.
   induction l; intro; simpl.
   + apply derives_refl.
   + apply sepcon_ocon.
-Qed. 
+Qed.
+
+Lemma iter_sepcon_merge (eq_dec: forall x y : B, {x = y} + {x <> y}):
+  forall l l1 l2 p, NoDup l -> NoDup l1 -> NoDup l2 ->
+                    (forall x, In x l <-> In x l1 \/ In x l2) ->
+                    iter_sepcon l p = iter_sepcon l1 p ⊗ iter_sepcon l2 p.
+Proof.
+  intros. assert (l ~= (l1 ++ l2)). {
+    split; intro x; intros.
+    + rewrite H2 in H3. apply in_or_app; auto.
+    + apply in_app_or in H3. rewrite <- H2 in H3. auto.
+  } apply pred_ext.
+  + destruct (tri_list_split eq_dec H H0 H1 H3) as [i1 [i2 [i3 [? [? ?]]]]].
+    rewrite (iter_sepcon_permutation _ H4).
+    rewrite (iter_sepcon_permutation _ H5).
+    rewrite (iter_sepcon_permutation _ H6).
+    rewrite !iter_sepcon_app_sepcon. rewrite <- sepcon_assoc.
+    admit.
+  + admit.
+Qed.
 
 End IterSepCon.
 
