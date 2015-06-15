@@ -85,18 +85,29 @@ Section SpatialGraph.
         * apply derives_refl.
   Qed.
 
+  (* To be removed *)
+  Lemma prop_and {A} {NA: NatDed A}: 
+    forall P Q: Prop, prop (P /\ Q) = (prop P && prop Q).
+  Proof. intros. apply pred_ext. apply prop_left. intros [? ?]; normalize.
+         normalize.
+  Qed.
+
   Lemma graph_unfold_valid:
     forall x bimg d l r, valid x -> gamma bm_bi x = (d, l, r) ->
                          graph x bimg = trinode x (d, l, r) ⊗ graph l bimg ⊗ graph r bimg.
   Proof.
     intros. apply pred_ext.
-    + unfold graph. apply andp_left2, exp_left. intro li.
-      normalize_overlap.
-(*
- apply derives_extract_prop; intro. rewrite <- pg_the_same in H1.
-      unfold gamma in H0. unfold biEdge in H0. destruct (only_two_neighbours x) as [v1 [v2 ?]]. inversion H0; subst. clear H0.
-      (* generalize (compute_reachable bm_ma x li H1 l). *)
-*)
+    + unfold graph. apply andp_left2, exp_left. intro li. normalize_overlap.
+      unfold gamma in H0. unfold biEdge in H0. destruct (only_two_neighbours x) as [v1 [v2 ?]].
+      inversion H0; subst. clear H0. rewrite <- pg_the_same in H, H1.
+      assert (In l (edge_func x)). rewrite e. apply in_eq. rewrite <- pg_the_same in H0.
+      destruct (compute_neighbor bm_ma x li H H1 l H0) as [leftL [? ?]].
+      assert (In r (edge_func x)). rewrite e. apply in_cons, in_eq. rewrite <- pg_the_same in H4.
+      destruct (compute_neighbor bm_ma x li H H1 r H4) as [rightL [? ?]].
+      apply (exp_right rightL). normalize_overlap. apply (exp_right leftL). normalize_overlap. apply andp_right.
+      - rewrite <- !prop_and. apply prop_right. rewrite <- pg_the_same in *. do 2 (split; auto).
+        split; apply (valid_graph x); auto.
+      -
   Abort.
 
 End SpatialGraph.
