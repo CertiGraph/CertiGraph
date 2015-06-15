@@ -20,13 +20,18 @@ Require Import Coq.ZArith.Znumtheory.
 Local Open Scope nat.
 Local Open Scope pred.
 
+Instance SGS_HMD: SpatialGraphSetting.
+  apply (Build_SpatialGraphSetting adr adr 0 eq_nat_dec).
+Defined.
+
+(*
 Instance AbsAddr_tri: AbsAddr.
   apply (mkAbsAddr adr (adr * adr * adr) adr_conflict); intros; unfold adr_conflict in *.
   + destruct (eq_nat_dec p1 p2). subst. destruct (eq_nat_dec p2 p2); auto. exfalso; tauto.
     destruct (eq_nat_dec p2 p1). subst. exfalso; tauto. trivial.
   + destruct (eq_nat_dec p1 p1). inversion H. exfalso; tauto.
 Defined.
-
+*)
 Definition trinode x dlr :=
   match dlr with
   | (d, l, r) => !! Z.divide 3 (Z.of_nat x) && ((mapsto x d) * (mapsto (x+1) l) * (mapsto (x+2) r))
@@ -159,35 +164,74 @@ Proof.
   apply disj_mapsto_; omega.
 Qed.
 
-Instance MSLdirect : MapstoSepLog AbsAddr_tri trinode.
+Lemma trinode_inj: forall p v1 v2, trinode p v1 && trinode p v2 |-- !! (v1 = v2).
+Proof.
+  intros.
+  unfold trinode.
+  destruct v1 as [[d1 l1] r1].
+  destruct v2 as [[d2 l2] r2].
+  eapply derives_trans.
+  + apply andp_derives;
+    (apply andp_derives;
+    [apply (@TT_right _ Ndirect) | apply derives_refl]).
+  + pose proof TT_andp.
+    simpl in H; rewrite !H; clear H.
+    rewrite !sepcon_assoc.
+    eapply derives_trans.
+    apply precise_left_sepcon_andp_distr with (exp (mapsto p)).
+    1: apply mapsto__precise.
+    1: apply (exp_right d1); auto.
+    1: apply (exp_right d2); auto.
+    
+    eapply derives_trans; [apply sepcon_derives |].
+    1: apply mapsto_inj.
+
+    eapply derives_trans.
+    apply precise_left_sepcon_andp_distr with (exp (mapsto (p + 1))).
+    1: apply mapsto__precise.
+    1: apply (exp_right l1); auto.
+    1: apply (exp_right l2); auto.
+        
+    eapply derives_trans; [apply sepcon_derives |].
+    1: apply mapsto_inj.
+    1: apply mapsto_inj.
+    1: apply derives_refl.
+    
+    pose proof sepcon_prop_prop.
+    simpl in H; rewrite !H; clear H.
+
+    intro; simpl in *; intros.
+    unfold prop in *.
+    destruct H as [? [? ?]]; congruence.
+Qed.
+
+Instance MSLdirect : MapstoSepLog AV_SGraph trinode.
 Proof.
   apply mkMapstoSepLog.
   apply trinode__precise.
 Defined.
 
-Instance sMSLdirect : StaticMapstoSepLog AbsAddr_tri trinode.
+Instance sMSLdirect : StaticMapstoSepLog AV_SGraph trinode.
 Proof.
   apply mkStaticMapstoSepLog; simpl; intros.
-  + hnf in H. simpl in H. unfold adr_conflict in H. destruct (eq_nat_dec p p).
+  + hnf in H. simpl in H. unfold addr_eqb in H. simpl in H.
+    destruct eq_nat_dec.
     - inversion H.
     - exfalso; tauto.
   + apply trinode_conflict.
-    unfold adr_conflict in H.
+    unfold addr_eqb in H; simpl in H.
     destruct (eq_nat_dec p1 p2); congruence.
   + apply disj_trinode_.
-    unfold adr_conflict in H.
+    unfold addr_eqb in H; simpl in H.
     destruct (eq_nat_dec p1 p2); congruence.
 Defined.
 
-(*
-Instance nMSLdirect : NormalMapstoSepLog AbsAddr_tri trinode.
+Instance nMSLdirect : NormalMapstoSepLog AV_SGraph trinode.
 Proof.
-  
-
-Instance SGS_HMD: SpatialGraphSetting.
-  apply (Build_SpatialGraphSetting adr _ eq_nat_dec).
+  apply mkNormalMapstoSepLog.
+  apply trinode_inj.
 Defined.
 
 Instance SGA_HMD: SpatialGraphAssum.
-  apply (Build_SpatialGraphAssum (pred world) _ _ _ _ _ _ _ _ trinode _ _ _).
-*)
+  apply (Build_SpatialGraphAssum (pred world) _ _ _ _ _ _ _ _ SGS_HMD trinode _ _ nMSLdirect).
+Defined.

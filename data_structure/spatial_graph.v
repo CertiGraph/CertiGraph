@@ -85,13 +85,6 @@ Section SpatialGraph.
         * apply derives_refl.
   Qed.
 
-  (* To be removed *)
-  Lemma prop_and {A} {NA: NatDed A}: 
-    forall P Q: Prop, prop (P /\ Q) = (prop P && prop Q).
-  Proof. intros. apply pred_ext. apply prop_left. intros [? ?]; normalize.
-         normalize.
-  Qed.
-
   Lemma graph_unfold_valid:
     forall x bimg d l r, valid x -> gamma bm_bi x = (d, l, r) ->
                          graph x bimg = trinode x (d, l, r) ⊗ graph l bimg ⊗ graph r bimg.
