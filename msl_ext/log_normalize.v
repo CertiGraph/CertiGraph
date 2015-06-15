@@ -304,14 +304,15 @@ Ltac normalize_overlap :=
      | |- context [ocon ?P (exp ?Q)] => rewrite (exp_ocon2 _ P Q)
      | |- _ => eauto with typeclass
   end;
-  repeat rewrite <- andp_assoc.
+  repeat rewrite <- andp_assoc;
+  try normalize.
 
 Goal forall {A} `{CorableOverlapSepLog A} P (Q R: A), ocon (!! P && !! P  && Q) R = ocon (!! P && Q && !! P) (!! P && R && !! P).
 intros.
 normalize_overlap.
 Abort.
 
-Goal forall {A} `{CorableOverlapSepLog A} P R (Q: A), FF |-- ocon (ocon (EX x: nat, P x) Q) (EX x: nat, R x).
+Goal forall {A} `{CorableOverlapSepLog A} P R (Q: A), Q |-- ocon (ocon (EX x: nat, P x) Q) (EX x: nat, R x).
 intros.
 normalize_overlap.
 apply (exp_right 0).

@@ -36,6 +36,7 @@ Class SpatialGraphAssum: Type := {
   SGA_CoSL: CorableSepLog SGA_Pred;
   SGA_OSL: OverlapSepLog SGA_Pred;
   SGA_DSL : DisjointedSepLog SGA_Pred;
+  SGA_COSL: CorableOverlapSepLog SGA_Pred;
 
   SG_Setting: SpatialGraphSetting;
   trinode : Addr -> Val -> SGA_Pred;
@@ -44,9 +45,9 @@ Class SpatialGraphAssum: Type := {
   SGA_nMSL: NormalMapstoSepLog AV_SGraph trinode
 }.
 
-Global Existing Instances SGA_ND SGA_SL SGA_ClSL SGA_PSL SGA_CoSL SGA_OSL SGA_DSL SG_Setting SGA_MSL SGA_sMSL SGA_nMSL.
+Global Existing Instances SGA_ND SGA_SL SGA_ClSL SGA_PSL SGA_CoSL SGA_OSL SGA_DSL SGA_COSL SG_Setting SGA_MSL SGA_sMSL SGA_nMSL.
 
-Hint Resolve SGA_ND SGA_SL SGA_ClSL SGA_PSL SGA_CoSL SGA_OSL SGA_DSL SG_Setting SGA_MSL SGA_sMSL SGA_nMSL.
+Hint Resolve SGA_ND SGA_SL SGA_ClSL SGA_PSL SGA_CoSL SGA_OSL SGA_DSL SGA_COSL SG_Setting SGA_MSL SGA_sMSL SGA_nMSL.
 
 Local Open Scope logic.
 
@@ -89,10 +90,13 @@ Section SpatialGraph.
                          graph x bimg = trinode x (d, l, r) ⊗ graph l bimg ⊗ graph r bimg.
   Proof.
     intros. apply pred_ext.
-    + unfold graph. apply andp_left2, exp_left. intro li. apply derives_extract_prop; intro. rewrite <- pg_the_same in H1.
+    + unfold graph. apply andp_left2, exp_left. intro li.
+      normalize_overlap.
+(*
+ apply derives_extract_prop; intro. rewrite <- pg_the_same in H1.
       unfold gamma in H0. unfold biEdge in H0. destruct (only_two_neighbours x) as [v1 [v2 ?]]. inversion H0; subst. clear H0.
       (* generalize (compute_reachable bm_ma x li H1 l). *)
-
+*)
   Abort.
 
 End SpatialGraph.
