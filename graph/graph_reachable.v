@@ -10,8 +10,7 @@ Section GraphReachable.
 
   Context {V : Type} {D : Type} {EDV : EqDec V} {null : V}.
 
-  Definition reachable_list (pg : PreGraph V D) (x : V) (L : list V) : Prop :=
-    valid x /\ forall y, In y L <-> reachable pg x y.
+  Definition reachable_list (pg : PreGraph V D) (x : V) (L : list V) : Prop := forall y, In y L <-> reachable pg x y.
 
   Definition reach_input := (nat * list V * list V)%type.
 
@@ -300,15 +299,16 @@ Section GraphReachable.
     apply reachable_by_reflexive. split; auto. hnf; auto. apply Forall_nil.
     generalize (construct_reachable_reachable mg i x H2 H3); intro. rewrite Forall_forall in H4. rewrite <- Heql' in H4.
     specialize (H4 z H1). auto. assert (NoDup l') as HS. specialize (construct_reachable_nodup m_pg i); intros. rewrite Heql'.
-    apply H2. rewrite Heqi. simpl. apply NoDup_cons. apply in_nil. apply NoDup_nil. split. split. auto. intro z. split; intros.
-    rewrite Forall_forall in H1. apply H1. auto. assert (Sublist l' l). intro w. intros. apply H0. rewrite Forall_forall in H1.
-    apply H1. auto. assert (length l'<=length l). specialize (construct_reachable_length_bound m_pg i); rewrite Heqi; simpl.
+    apply H2. rewrite Heqi. simpl. apply NoDup_cons. apply in_nil. apply NoDup_nil. split. split. auto.
+    intros. rewrite Forall_forall in H1. apply H1. auto. intros. assert (Sublist l' l). intro w. intros. apply H0.
+    rewrite Forall_forall in H1. apply H1. auto. assert (length l'<=length l).
+    specialize (construct_reachable_length_bound m_pg i); rewrite Heqi; simpl.
     intros. rewrite Heql', Heqi. apply H4. omega. apply le_lt_or_eq in H4. destruct H4.
     assert (ProcessingInResult m_pg (rch2 i) (construct_reachable m_pg i)). apply construct_reachable_contains_all_reachable.
     rewrite Forall_forall. rewrite Heqi. simpl. intros. destruct H5; auto. rewrite <- H5 in *. rewrite H5 in *.
     apply reachable_head_valid in H2. apply valid_not_null in H2. auto. rewrite Heqi; hnf; simpl. intros. auto.
-    rewrite Heql' in H4. rewrite Heqi at 2. simpl. auto. specialize (H5 x z). rewrite Heql'; apply H5; auto. rewrite Heqi.
-    simpl. left; auto. generalize (sublist_reverse t_eq_dec l' l HS H4 H3 z); intros; apply H5. apply H0. auto. auto.
+    rewrite Heql' in H4. rewrite Heqi at 2. simpl. auto. specialize (H5 x y). rewrite Heql'; apply H5; auto. rewrite Heqi.
+    simpl. left; auto. generalize (sublist_reverse t_eq_dec l' l HS H4 H3 y); intros; apply H5. apply H0. auto. auto.
   Qed.
 
   Lemma compute_reachable: forall (mg : MathGraph V D null) x L,
@@ -316,8 +316,23 @@ Section GraphReachable.
                                                                   exists L', reachable_list m_pg y L' /\ NoDup L'.
   Proof.
     intros. assert (valid y). apply reachable_foot_valid in H0; auto. assert (forall z, reachable m_pg y z -> In z L). intros.
-    assert (reachable m_pg x z). apply reachable_by_merge with y; auto. destruct H. rewrite (H4 z). auto.
+    assert (reachable m_pg x z). apply reachable_by_merge with y; auto. rewrite (H z). auto.
     destruct (finite_reachable_computable mg y L H1 H2) as [l' [? ?]]. exists l'; split; auto.
+  Qed.
+
+  Lemma compute_neighbor: forall (mg : MathGraph V D null) x l,
+                            valid x -> reachable_list m_pg x l -> forall y, In y (edge_func x) -> 
+                                                                            exists l', reachable_list m_pg y l' /\ NoDup l'.
+  Proof.
+    intros. destruct (valid_graph x H y H1).
+    + subst. exists nil. split.
+      - intro. split; intro. inversion H2. apply reachable_head_valid in H2. apply valid_not_null in H2. exfalso; auto.
+      - apply NoDup_nil.
+    + apply (compute_reachable _ x l).
+      - auto.
+      - exists (x :: y :: nil). split; split; simpl; auto.
+        * split; auto. split; auto.
+        * hnf; intros; hnf; auto.
   Qed.
 
   Lemma reachable_from_children:
@@ -330,20 +345,20 @@ Section GraphReachable.
   Qed.
 
   Lemma reachable_all_zero:
-    forall (mg: MathGraph V D null) x l, reachable_list m_pg x l -> NoDup l ->
+    forall (mg: MathGraph V D null) x l, valid x -> reachable_list m_pg x l -> NoDup l ->
                                          Forall (fun m => m = null) (edge_func x) -> l = x :: nil.
   Proof.
-    intros. destruct H. rewrite Forall_forall in H1. assert (reachable m_pg x x). apply reachable_by_reflexive. split; auto.
-    hnf; auto. rewrite <- H2 in H3. apply in_split in H3. destruct H3 as [l1 [l2 ?]]. destruct l1, l2. simpl in H3; auto.
-    simpl in H3. assert (In v l). rewrite H3. apply in_cons. apply in_eq. rewrite (H2 v) in H4.
-    apply reachable_from_children in H4. destruct H4. subst. apply NoDup_cons_2 in H0. exfalso; apply H0. apply in_eq.
-    destruct H4 as [z [[? [? ?]] ?]]. specialize (H1 _ H6). apply valid_not_null in H5. exfalso; intuition.
-    simpl in H3. assert (In v l). rewrite H3. apply in_eq. rewrite (H2 v) in H4. apply reachable_from_children in H4.
-    destruct H4. subst. apply NoDup_cons_2 in H0. exfalso; apply H0. apply in_or_app. right; apply in_eq.
-    destruct H4 as [z [[? [? ?]] ?]]. specialize (H1 _ H6). apply valid_not_null in H5. exfalso; intuition.
-    simpl in H3. assert (In v l). rewrite H3. apply in_eq. rewrite (H2 v) in H4. apply reachable_from_children in H4.
-    destruct H4. subst. apply NoDup_cons_2 in H0. exfalso; apply H0. apply in_or_app. right; apply in_eq.
-    destruct H4 as [z [[? [? ?]] ?]]. specialize (H1 _ H6). apply valid_not_null in H5. exfalso; intuition.
+    intros. rewrite Forall_forall in H2. assert (reachable m_pg x x). apply reachable_by_reflexive. split; auto.
+    hnf; auto. rewrite <- (H0 x) in H3. apply in_split in H3. destruct H3 as [l1 [l2 ?]]. destruct l1, l2. simpl in H3; auto.
+    simpl in H3. assert (In v l). rewrite H3. apply in_cons. apply in_eq. rewrite (H0 v) in H4.
+    apply reachable_from_children in H4. destruct H4. subst. apply NoDup_cons_2 in H1. exfalso; apply H1. apply in_eq.
+    destruct H4 as [z [[? [? ?]] ?]]. specialize (H2 _ H6). apply valid_not_null in H5. exfalso; intuition.
+    simpl in H3. assert (In v l). rewrite H3. apply in_eq. rewrite (H0 v) in H4. apply reachable_from_children in H4.
+    destruct H4. subst. apply NoDup_cons_2 in H1. exfalso; apply H1. apply in_or_app. right; apply in_eq.
+    destruct H4 as [z [[? [? ?]] ?]]. specialize (H2 _ H6). apply valid_not_null in H5. exfalso; intuition.
+    simpl in H3. assert (In v l). rewrite H3. apply in_eq. rewrite (H0 v) in H4. apply reachable_from_children in H4.
+    destruct H4. subst. apply NoDup_cons_2 in H1. exfalso; apply H1. apply in_or_app. right; apply in_eq.
+    destruct H4 as [z [[? [? ?]] ?]]. specialize (H2 _ H6). apply valid_not_null in H5. exfalso; intuition.
   Qed.
 
   Lemma reachable_through_set_eq:
@@ -390,11 +405,11 @@ Section GraphReachable.
     apply H0; auto. destruct (finite_reachable_set_single mg S l H a H5 H1) as [l1 [? ?]].
     destruct (double_list_split t_eq_dec H7 H3) as [i1 [i2 [i3 [? [? ?]]]]]. exists (i1 ++ i2 ++ i3); split; auto. intro.
     split; intro. rewrite reachable_through_set_eq in H11. destruct H11. rewrite app_assoc. apply in_or_app. left.
-    apply (Permutation_in x H8). destruct H6. rewrite H12. auto. apply in_or_app. right. apply (Permutation_in x H9).
-    apply H2. auto. apply in_app_or in H11. destruct H11. assert (In x (i1 ++ i2)). apply in_or_app. left; auto.
-    rewrite reachable_through_set_eq. left. apply Permutation_sym in H8. apply (Permutation_in x H8) in H12. destruct H6.
-    apply H13; auto. apply Permutation_sym in H9. apply (Permutation_in x H9) in H11. rewrite reachable_through_set_eq. right.
-    rewrite (H2 x). auto.
+    apply (Permutation_in x H8). rewrite (H6 x). auto. apply in_or_app. right. apply (Permutation_in x H9). apply H2. auto.
+    apply in_app_or in H11. destruct H11. assert (In x (i1 ++ i2)). apply in_or_app. left; auto.
+    rewrite reachable_through_set_eq. left. apply Permutation_sym in H8. apply (Permutation_in x H8) in H12. apply (H6 x); auto.
+    apply Permutation_sym in H9. apply (Permutation_in x H9) in H11. rewrite reachable_through_set_eq. right. rewrite (H2 x).
+    auto.
   Qed.
 
   Lemma reachable_through_sublist_reachable:
