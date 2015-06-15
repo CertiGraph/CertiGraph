@@ -9,6 +9,7 @@ Require Import RamifyCoq.msl_ext.seplog.
 Require Import RamifyCoq.msl_ext.precise.
 Require Import RamifyCoq.msl_ext.overlapping.
 Require Import VST.msl.predicates_sl.
+Require Import VST.msl.corable.
 Local Open Scope logic.
 
 Instance algPreciseSepLog (A : Type) {JA : Join A} {PA : Perm_alg A} {SA: Sep_alg A} {CA: Canc_alg A} {AG : ageable A} {AA: Age_alg A}: PreciseSepLog (pred A).
@@ -43,4 +44,10 @@ Instance algDisjointedSepLog (A: Type) {JA: Join A} {PA : Perm_alg A} {SA: Sep_a
   + apply disj_comm.
   + apply disj_derives.
   + apply disj_ocon_right.
+Defined.
+
+Instance algCorableOverlapSepLog (A: Type) {JA: Join A} {PA : Perm_alg A} {SA: Sep_alg A} {CA: Canc_alg A} {DA: Disj_alg A} {TA: Trip_alg A} {CrA: Cross_alg A} {AG : ageable A} {AA : Age_alg A} : CorableOverlapSepLog (pred A).
+  apply mkCorableOverlapSepLog; unfold algNatDed, algSepLog, algPreciseSepLog; simpl; intros.
+  + apply corable_ocon; auto.
+  + apply corable_andp_ocon1; auto.
 Defined.

@@ -41,3 +41,9 @@ Instance algDisjointedSepLog (A: Type) {JA: Join A} {PA : Perm_alg A} {SA: Sep_a
   + apply disj_derives.
   + apply disj_ocon_right.
 Defined.
+
+Instance algCorableOverlapSepLog (A: Type) {JA: Join A} {PA : Perm_alg A} {SA: Sep_alg A} {CA: Canc_alg A} {DA: Disj_alg A} {TA: Trip_alg A} {CrA: Cross_alg A} : CorableOverlapSepLog (pred A).
+  apply mkCorableOverlapSepLog; unfold algNatDed, algSepLog, algPreciseSepLog; simpl; intros.
+  + apply corable_ocon; auto.
+  + apply corable_andp_ocon1; auto.
+Defined.

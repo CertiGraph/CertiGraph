@@ -1,4 +1,5 @@
 Require Import VST.msl.msl_standard.
+Require Import VST.msl.corable.
 Require Import RamifyCoq.msl_ext.ramify_tactics.
 Require Import RamifyCoq.msl_ext.msl_ext.
 Require Import RamifyCoq.msl_ext.sepalg.
@@ -41,7 +42,7 @@ Next Obligation.
   exists h23'; auto.
 Qed.
 
-Lemma ocon_emp {A}{JA: Join A}{PA: Perm_alg A}{SA: Sep_alg A}{CA: Canc_alg A}{AG : ageable A} {AA : Age_alg A}: forall P: pred A, (P ⊗ emp = P)%pred.
+Lemma ocon_emp {A}{JA: Join A}{PA: Perm_alg A}{SA: Sep_alg A}{CA: Canc_alg A}{AG : ageable A} {AA : Age_alg A}: forall P: pred A, P ⊗ emp = P.
 Proof.
   intros; apply pred_ext; hnf; intros; simpl in *; intros.
   destruct_ocon H h; try_join h2 h3 h23'; equate_join h23 h23'.
@@ -55,7 +56,7 @@ Proof.
   apply core_identity.
 Qed.
 
-Lemma ocon_TT {A}{JA: Join A}{PA: Perm_alg A}{SA: Sep_alg A}{CA: Canc_alg A}{AG : ageable A} {AA : Age_alg A}: forall P: pred A, (P ⊗ TT = P * TT)%pred.
+Lemma ocon_TT {A}{JA: Join A}{PA: Perm_alg A}{SA: Sep_alg A}{CA: Canc_alg A}{AG : ageable A} {AA : Age_alg A}: forall P: pred A, P ⊗ TT = P * TT.
 Proof.
   intros; apply pred_ext; hnf; intros; simpl in *; intros.
   + destruct_ocon H h.
@@ -107,7 +108,7 @@ Proof.
   rewrite <- H10 in H3; equate_join h12' w12; auto.
 Qed.
 
-Lemma ocon_wand {A}{JA: Join A}{PA: Perm_alg A}{AG : ageable A} {AA : Age_alg A}: forall P Q, (P ⊗ Q = EX R : pred A, (R -* P) * (R -* Q) * R)%pred.
+Lemma ocon_wand {A}{JA: Join A}{PA: Perm_alg A}{AG : ageable A} {AA : Age_alg A}: forall P Q, P ⊗ Q = EX R : pred A, (R -* P) * (R -* Q) * R.
 Proof.
   intros; apply pred_ext; hnf; intros; simpl in *.
   destruct H as [h1 [h2 [h3 [h12 [h23 [? [? [? [? ?]]]]]]]]].
@@ -122,7 +123,7 @@ Proof.
   apply (HP w1 w2); auto. apply (HQ w3 w2); auto.
 Qed.
 
-Lemma ocon_comm {A}{JA: Join A}{PA: Perm_alg A}{AG : ageable A} {AA : Age_alg A}: forall P Q, (P ⊗ Q = Q ⊗ P)%pred.
+Lemma ocon_comm {A}{JA: Join A}{PA: Perm_alg A}{AG : ageable A} {AA : Age_alg A}: forall P Q, P ⊗ Q = Q ⊗ P.
 Proof.
   intros; apply pred_ext; hnf; intros; simpl in *; intros;
   destruct_ocon H h; exists h3, h2, h1, h23, h12;
@@ -139,7 +140,7 @@ Proof.
 Qed.
 
 Lemma ocon_assoc {A}{JA: Join A}{PA: Perm_alg A}{CA: Cross_alg A}{AG : ageable A} {AA : Age_alg A}:
-  forall P Q R: pred A, (P ⊗ Q ⊗ R = P ⊗ (Q ⊗ R))%pred.
+  forall P Q R: pred A, P ⊗ Q ⊗ R = P ⊗ (Q ⊗ R).
 Proof.
   intros; apply pred_ext; hnf; intros; simpl in *; intros.
   destruct H as [w124 [w567 [w3 [w124567 [w3567 [? [? [? [[w15 [w47 [w26 [w1457 [w2467 [? [? [? [? ?]]]]]]]]] ?]]]]]]]]].
@@ -345,7 +346,7 @@ forall (P Q: B -> pred A), (forall x, P x |-- Q x) -> (forall x, F P x |-- F Q x
 Lemma covariant_ocon {B}{A} {JA: Join A}{PA: Perm_alg A}{AG : ageable A} {AA : Age_alg A}:
    forall F1 F2 : (B -> pred A) -> (B -> pred A),
     covariant F1 -> covariant F2 ->
-    covariant (fun (x : B -> pred A) b => F1 x b ⊗ F2 x b)%pred.
+    covariant (fun (x : B -> pred A) b => F1 x b ⊗ F2 x b).
 Proof.
   intros; hnf.
   intros P Q ? ?.
@@ -360,7 +361,7 @@ forall (P Q: B -> pred A), (forall x, P x |-- Q x) -> (forall x, F Q x |-- F P x
 Lemma contravariant_ocon {B}{A} {JA: Join A}{PA: Perm_alg A}{AG : ageable A} {AA : Age_alg A}:
    forall F1 F2 : (B -> pred A) -> (B -> pred A),
     contravariant F1 -> contravariant F2 ->
-    contravariant (fun (x : B -> pred A) b => F1 x b ⊗ F2 x b)%pred.
+    contravariant (fun (x : B -> pred A) b => F1 x b ⊗ F2 x b).
 Proof.
   intros; hnf.
   intros P Q ? ?.
@@ -370,7 +371,7 @@ Proof.
 Qed.
 
 Lemma later_ocon {A}{JA: Join A}{PA: Perm_alg A}{SA: Sep_alg A}{AG: ageable A}{XA: Age_alg A}:
-  forall P Q, ((|> (P ⊗ Q)) = |> Q ⊗ |> P)%pred.
+  forall P Q, ((|> (P ⊗ Q)) = |> Q ⊗ |> P).
 Proof.
   intros; repeat rewrite later_age; apply pred_ext; hnf; intros; simpl in *.
   case_eq (age1 a); intros.
@@ -430,14 +431,62 @@ Proof.
 Qed.
 
 Lemma extract_andp_ocon_ocon_left {A} {JA : Join A} {PA : Perm_alg A} {SA: Sep_alg A}{AG : ageable A} {AA : Age_alg A}:
-  forall (w : A) P Q R S, (P && Q ⊗ R ⊗ S)%pred w -> exists w', P w'.
+  forall (w : A) P Q R S, (P && Q ⊗ R ⊗ S) w -> exists w', P w'.
 Proof. repeat intro; destruct_ocon H h; destruct_ocon H2 i; destruct H6; exists i12; trivial. Qed.
 
 Lemma ocon_precise_elim  {A}{JA: Join A}{PA: Perm_alg A}{SA: Sep_alg A}{CA: Canc_alg A}{DA : Disj_alg A}{AG : ageable A} {AA : Age_alg A}:
-  forall P : pred A, precise P -> (P ⊗ P = P)%pred.
+  forall P : pred A, precise P -> P ⊗ P = P.
 Proof.
   intros; apply pred_ext; intro w; intro. destruct_ocon H0 h. try_join h2 h3 h23'; equate_join h23 h23'. equate_precise h12 h23.
   assert (emp h1). assertSub h1 h12 HS. assert (joins h1 h12). exists w; auto. apply (join_sub_joins_identity HS H4).
   equate_canc h1 h3. apply (join_unit1_e _ _ H4) in H6. subst. auto. hnf. exists (core w), w, (core w), w, w. split.
   apply core_unit. split. apply join_comm, core_unit. split. apply join_comm, core_unit. split; auto.
 Qed.
+
+Lemma corable_ocon: forall {A}{JA: Join A}{PA: Perm_alg A}{SA: Sep_alg A}{AG : ageable A} {AA : Age_alg A} P Q, corable P -> corable Q -> corable (ocon P Q).
+Proof.
+  intros.
+  rewrite corable_spec in H, H0 |- *.
+  unfold ocon.
+  intros.
+  simpl in H2 |- *.
+  destruct H2 as [h1 [h2 [h3 [h12 [h23 [? [? [? [? ?]]]]]]]]].
+  exists (core y), (core y), y, (core y), y.
+  pose proof join_core H2.
+  pose proof join_core (join_comm H2).
+  pose proof join_core H3.
+  pose proof join_core (join_comm H3).
+  pose proof join_core H4.
+  pose proof join_core (join_comm H4).
+  repeat split.
+  + rewrite <- core_idem at 1.
+    apply core_unit.
+  + apply core_unit.
+  + apply core_unit.
+  + apply H with h12; auto.
+    rewrite core_idem.
+    congruence.
+  + apply H0 with h23; auto.
+    congruence.
+Qed.
+
+Lemma corable_andp_ocon1{A} {JA: Join A}{PA: Perm_alg A}{SA: Sep_alg A}{agA: ageable A}{AgeA: Age_alg A}:
+   forall P Q R, corable P ->  ocon (P && Q) R = P && (ocon Q R).
+Proof.
+  intros.
+  apply pred_ext.
+  + intros h [h1 [h2 [h3 [h12 [h23 [? [? [? [[? ?] ?]]]]]]]]].
+    split.
+    - apply join_core in H2.
+      rewrite corable_spec in H.
+      apply H with h12; [congruence | auto].
+    - exists h1, h2, h3, h12, h23.
+      tauto.
+  + intros h [? [h1 [h2 [h3 [h12 [h23 [? [? [? [? ?]]]]]]]]]].
+    exists h1, h2, h3, h12, h23.
+    rewrite corable_spec in H.
+    repeat split; auto.
+    apply join_core in H3.
+    apply H with h; [congruence | auto].
+Qed.
+
