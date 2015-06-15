@@ -1,10 +1,12 @@
 Require Import VST.msl.seplog.
+Require Import VST.msl.log_normalize.
 Require Import RamifyCoq.msl_ext.abs_addr.
 Require Import RamifyCoq.msl_ext.seplog.
 Require Import RamifyCoq.msl_ext.log_normalize.
 Require Import RamifyCoq.msl_ext.iter_sepcon.
 Require Import RamifyCoq.graph.graph.
 Require Import RamifyCoq.graph.graph_reachable.
+Require Import Coq.Lists.List.
 Import RamifyCoq.msl_ext.seplog.OconNotation.
 
 Class SpatialGraphSetting: Type := {
@@ -64,19 +66,33 @@ Section SpatialGraph.
   Qed.
 
   Definition graph (x : Addr) (bimg : BiMathGraph Addr Data null): SGA_Pred :=
-    (!!(x = null) && emp) || EX l : list Addr, !!reachable_list b_pg x l && iter_sepcon l (graph_cell bm_bi).
+    !!(x = null \/ valid x) && EX l : list Addr, !!reachable_list b_pg x l && iter_sepcon l (graph_cell bm_bi).
 
-  Lemma graph_unfold:
-    forall x bimg,
-      graph x bimg = (!!(x = null) && emp) ||
-                     EX d:Data, EX l:Addr, EX r:Addr, !!(gamma bm_bi x = (d, l, r) /\ valid x) &&
-                                                        (trinode x (d, l, r) ⊗ graph l bimg ⊗ graph r bimg).
+  Lemma graph_unfold_null: forall bimg, graph null bimg = emp.
+  Proof.
+    intros. apply pred_ext; unfold graph.
+    + apply andp_left2, exp_left. intros. apply derives_extract_prop. intro. destruct x.
+      - simpl. apply derives_refl.
+      - exfalso. assert (In a (a :: x)). apply in_eq. rewrite (H a) in H0. apply reachable_head_valid in H0.
+        rewrite <- pg_the_same in H0.
+        apply valid_not_null in H0. auto.
+    + apply andp_right.
+      - apply prop_right. left; auto.
+      - apply (exp_right nil). simpl. apply andp_right.
+        * apply prop_right. intro. split; intro. inversion H. apply reachable_head_valid in H.
+          rewrite <- pg_the_same in H. apply valid_not_null in H. exfalso; auto.
+        * apply derives_refl.
+  Qed.
+
+  Lemma graph_unfold_valid:
+    forall x bimg d l r, valid x -> gamma bm_bi x = (d, l, r) ->
+                         graph x bimg = trinode x (d, l, r) ⊗ graph l bimg ⊗ graph r bimg.
   Proof.
     intros. apply pred_ext.
-    + unfold graph at 1. apply orp_left.
-      - apply orp_right1. apply derives_refl.
-      - apply orp_right2. apply exp_left; intro l.
-        destruct (gamma bm_bi x) as [[dd ll] rr]. apply (exp_right dd), (exp_right ll), (exp_right rr).
+    + unfold graph. apply andp_left2, exp_left. intro li. apply derives_extract_prop; intro. rewrite <- pg_the_same in H1.
+      unfold gamma in H0. unfold biEdge in H0. destruct (only_two_neighbours x) as [v1 [v2 ?]]. inversion H0; subst. clear H0.
+      (* generalize (compute_reachable bm_ma x li H1 l). *)
+
   Abort.
 
 End SpatialGraph.
