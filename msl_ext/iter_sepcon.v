@@ -102,36 +102,77 @@ Proof.
     - apply disj_comm, IHl1. intros; apply H0, in_cons; auto.
 Qed.
 
+(*
 Fixpoint iter_ocon (l : list B) (p : B -> A) : A :=
   match l with
     | nil => emp
-    | x :: xl => p x ⊗ iter_sepcon xl p
+    | x :: xl => p x ⊗ iter_ocon xl p
   end.
 
 Lemma iter_sepcon_iter_ocon: forall l p, iter_sepcon l p |-- iter_ocon l p.
 Proof.
   induction l; intro; simpl.
   + apply derives_refl.
-  + apply sepcon_ocon.
+  + eapply derives_trans; [| apply sepcon_ocon].
+    apply sepcon_derives; [apply derives_refl | apply IHl].
 Qed.
 
-Lemma iter_sepcon_merge (eq_dec: forall x y : B, {x = y} + {x <> y}):
-  forall l l1 l2 p, NoDup l -> NoDup l1 -> NoDup l2 ->
-                    (forall x, In x l <-> In x l1 \/ In x l2) ->
-                    iter_sepcon l p = iter_sepcon l1 p ⊗ iter_sepcon l2 p.
+Lemma iter_ocon_app_ocon:
+  forall (l1 l2 : list B) (p : B -> A), iter_ocon (l1 ++ l2) p = ocon (iter_ocon l1 p) (iter_ocon l2 p).
 Proof.
-  intros. assert (l ~= (l1 ++ l2)). {
-    split; intro x; intros.
-    + rewrite H2 in H3. apply in_or_app; auto.
-    + apply in_app_or in H3. rewrite <- H2 in H3. auto.
-  } apply pred_ext.
-  + destruct (tri_list_split eq_dec H H0 H1 H3) as [i1 [i2 [i3 [? [? ?]]]]].
-    rewrite (iter_sepcon_permutation _ H4).
-    rewrite (iter_sepcon_permutation _ H5).
-    rewrite (iter_sepcon_permutation _ H6).
+  induction l1; intros; simpl. rewrite emp_ocon; auto. rewrite (IHl1 l2). rewrite ocon_assoc. auto.
+Qed.
+*)
+
+Lemma iter_sepcon_ocon (eq_dec: forall x y : B, {x = y} + {x <> y}):
+  forall l l1 l2 p,
+    NoDup l -> NoDup l1 -> NoDup l2 ->
+    (forall x, precise (p x)) ->
+    (forall x, In x l <-> In x l1 \/ In x l2) ->
+    iter_sepcon l p = iter_sepcon l1 p ⊗ iter_sepcon l2 p.
+Proof.
+  intros until p.
+  intros NoDupl NoDupl1 NoDupl2 PRECISE EQUIV.
+  assert (l ~= (l1 ++ l2)) by (apply eq_as_set_spec; intros; rewrite in_app_iff; auto).
+  apply pred_ext.
+  + destruct (tri_list_split eq_dec NoDupl NoDupl1 NoDupl2 H) as [i1 [i2 [i3 [? [? ?]]]]].
+    rewrite (iter_sepcon_permutation _ H0).
+    rewrite (iter_sepcon_permutation _ H1).
+    rewrite (iter_sepcon_permutation _ H2).
     rewrite !iter_sepcon_app_sepcon. rewrite <- sepcon_assoc.
-    admit.
-  + admit.
+    apply tri_sepcon_ocon.
+  + destruct (double_list_split eq_dec NoDupl1 NoDupl2) as [i1 [i2 [i3 [? [? ?]]]]].
+    rewrite (iter_sepcon_permutation _ H0).
+    rewrite (iter_sepcon_permutation _ H1).
+    rewrite !iter_sepcon_app_sepcon.
+    eapply derives_trans; [apply ocon_derives; apply sepcon_ocon |].
+    rewrite ocon_assoc.
+    rewrite <- (ocon_assoc (iter_sepcon i2 p)).
+    rewrite <- precise_ocon_self by (apply precise_iter_sepcon; auto).
+    assert (Permutation l (i1 ++ i2 ++ i3)).
+    Focus 1. {
+      apply eq_as_set_permutation; auto.
+      rewrite H.
+      apply eq_as_set_spec; intro x.
+      unfold eq_as_set, Sublist.
+      pose proof (Permutation_in x H0).
+      pose proof (Permutation_in x H1).
+      pose proof (Permutation_in x (Permutation_sym H0)).
+      pose proof (Permutation_in x (Permutation_sym H1)).
+      pose proof (in_app_iff i1 i2 x).
+      pose proof (in_app_iff i2 i3 x).
+      pose proof (in_app_iff i1 (i2 ++ i3) x).
+      pose proof (in_app_iff l1 l2 x).
+      tauto.
+    } Unfocus.
+    rewrite (iter_sepcon_permutation _ H3).
+    rewrite !iter_sepcon_app_sepcon.
+    eapply derives_trans;
+    [ apply ocon_sepcon; apply disj_ocon_right
+    | apply sepcon_derives; [auto | apply ocon_sepcon]].
+    - admit.
+    - admit.
+    - admit.
 Qed.
 
 End IterSepCon.
