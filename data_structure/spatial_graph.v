@@ -146,4 +146,26 @@ Section SpatialGraph.
         * apply joinable_graph_cell.
   Qed.
 
+  Lemma graph_unfold:
+    forall x bimg, graph x bimg = (!!(x = null) && emp) ||
+                                  EX d:Data, EX l:Addr, EX r:Addr, !!(gamma bm_bi x = (d, l, r) /\ valid x) &&
+                                                                     (trinode x (d, l, r) ⊗ graph l bimg ⊗ graph r bimg).
+  Proof.
+    intros. apply pred_ext.
+    + destruct (t_eq_dec x null).
+      - subst. apply orp_right1. rewrite graph_unfold_null. normalize.
+      - apply orp_right2. destruct (gamma bm_bi x) as [[dd ll] rr] eqn:? .
+        apply (exp_right dd), (exp_right ll), (exp_right rr).
+        assert (graph x bimg |-- !!(valid x)). {
+          unfold graph. apply andp_left1, prop_left. intros. destruct H.
+          + exfalso; auto.
+          + apply TT_prop_right. auto.
+        } apply andp_right; rewrite (add_andp _ _ H).
+        * apply andp_left2, prop_left; intros. apply TT_prop_right. split; auto.
+        * normalize. rewrite (graph_unfold_valid _ _ dd ll rr); auto.
+    + apply orp_left.
+      - normalize. rewrite graph_unfold_null. auto.
+      - normalize. intros d l r [? ?]. rewrite <- (graph_unfold_valid _ _ d l r); auto.
+  Qed.
+
 End SpatialGraph.
