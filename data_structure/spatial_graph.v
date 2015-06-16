@@ -26,6 +26,7 @@ Instance AV_SGraph `{SpatialGraphSetting} : AbsAddr.
 Defined.
 
 Instance AddrDec `{SpatialGraphSetting}: EqDec Addr. apply Build_EqDec. intros. apply (addr_eq_dec t1 t2). Defined.
+Opaque AddrDec.
 
 Class SpatialGraphAssum: Type := {
   SGA_Pred: Type;
@@ -89,7 +90,9 @@ Section SpatialGraph.
     forall x bimg d l r, valid x -> gamma bm_bi x = (d, l, r) ->
                          graph x bimg = trinode x (d, l, r) ⊗ graph l bimg ⊗ graph r bimg.
   Proof.
-    intros. apply pred_ext.
+    intros. apply pred_ext. assert (TRI: trinode x (d, l, r) = iter_sepcon (x :: nil) (graph_cell bm_bi)). {
+      unfold iter_sepcon. rewrite sepcon_comm, emp_sepcon. unfold graph_cell. rewrite H0. auto.
+    }
     + unfold graph. apply andp_left2, exp_left. intro li. normalize_overlap.
       unfold gamma in H0. unfold biEdge in H0. destruct (only_two_neighbours x) as [v1 [v2 ?]].
       inversion H0; subst. clear H0. rewrite <- pg_the_same in H, H1.
@@ -100,7 +103,7 @@ Section SpatialGraph.
       apply (exp_right rightL). normalize_overlap. apply (exp_right leftL). normalize_overlap. apply andp_right.
       - rewrite <- !prop_and. apply prop_right. rewrite <- pg_the_same in *. do 2 (split; auto).
         split; apply (valid_graph x); auto.
-      -
+      - rewrite TRI.
   Abort.
 
 End SpatialGraph.

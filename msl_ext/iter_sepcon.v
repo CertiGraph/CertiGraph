@@ -127,12 +127,12 @@ Qed.
 Lemma iter_sepcon_ocon (eq_dec: forall x y : B, {x = y} + {x <> y}):
   forall l l1 l2 p,
     NoDup l -> NoDup l1 -> NoDup l2 ->
-    (forall x, precise (p x)) ->
+    (forall x, precise (p x)) -> joinable p ->
     (forall x, In x l <-> In x l1 \/ In x l2) ->
     iter_sepcon l p = iter_sepcon l1 p ⊗ iter_sepcon l2 p.
 Proof.
   intros until p.
-  intros NoDupl NoDupl1 NoDupl2 PRECISE EQUIV.
+  intros NoDupl NoDupl1 NoDupl2 PRECISE EQUIV JOINABLE.
   assert (l ~= (l1 ++ l2)) by (apply eq_as_set_spec; intros; rewrite in_app_iff; auto).
   apply pred_ext.
   + destruct (tri_list_split eq_dec NoDupl NoDupl1 NoDupl2 H) as [i1 [i2 [i3 [? [? ?]]]]].
@@ -169,10 +169,11 @@ Proof.
     rewrite !iter_sepcon_app_sepcon.
     eapply derives_trans;
     [ apply ocon_sepcon; apply disj_ocon_right
-    | apply sepcon_derives; [auto | apply ocon_sepcon]].
-    - admit.
-    - admit.
-    - admit.
+    | apply sepcon_derives; [auto | apply ocon_sepcon]];
+    apply iter_sepcon_app_joinable; auto; intros;
+    apply NoDup_app_eq in H2; destruct H2 as [? [? ?]];
+    generalize (NoDup_app_not_in _ _ _  H5 x); intro; specialize (H6 x); auto;
+    specialize (H6 H4); intro; apply H6; apply in_or_app; auto.
 Qed.
 
 End IterSepCon.
