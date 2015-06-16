@@ -124,7 +124,7 @@ Proof.
 Qed.
 *)
 
-Lemma iter_sepcon_ocon (eq_dec: forall x y : B, {x = y} + {x <> y}):
+Lemma iter_sepcon_ocon' (eq_dec: forall x y : B, {x = y} + {x <> y}):
   forall l l1 l2 p,
     NoDup l -> NoDup l1 -> NoDup l2 ->
     (forall x, precise (p x)) -> joinable p ->
@@ -174,6 +174,21 @@ Proof.
     apply NoDup_app_eq in H2; destruct H2 as [? [? ?]];
     generalize (NoDup_app_not_in _ _ _  H5 x); intro; specialize (H6 x); auto;
     specialize (H6 H4); intro; apply H6; apply in_or_app; auto.
+Qed.
+
+Lemma iter_sepcon_ocon (eq_dec: forall x y : B, {x = y} + {x <> y}):
+  forall l1 l2 p,
+    NoDup l1 -> NoDup l2 ->
+    (forall x, precise (p x)) -> joinable p ->
+    iter_sepcon l1 p ⊗ iter_sepcon l2 p = iter_sepcon (remove_dup eq_dec (l1 ++ l2)) p.
+Proof.
+  intros.
+  symmetry; apply iter_sepcon_ocon'; auto.
+  + apply remove_dup_nodup; auto.
+  + intros.
+    rewrite <- remove_dup_in_inv.
+    rewrite in_app_iff.
+    tauto.
 Qed.
 
 End IterSepCon.
