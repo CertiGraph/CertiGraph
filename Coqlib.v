@@ -1,7 +1,7 @@
-Require Import List.
-Require Import Omega.
-Require Import FunctionalExtensionality.
-Require Import Permutation.
+Require Export Coq.Lists.List.
+Require Export Coq.omega.Omega.
+Require Export Coq.Logic.FunctionalExtensionality.
+Require Export Coq.Sorting.Permutation.
 
 Definition Sublist {A} (L1 L2 : list A) : Prop := forall a, In a L1 -> In a L2.
 

@@ -16,15 +16,15 @@ Set Implicit Arguments.
 
 Section IterSepCon.
 
-  Variable A : Type.
-  Variable B : Type.
-  Variable ND : NatDed A.
-  Variable SL : SepLog A.
-  Variable ClS: ClassicalSep A.
-  Variable PSL : PreciseSepLog A.
-  Variable CoSL: CorableSepLog A.
-  Variable OSL: OverlapSepLog A.
-  Variable DSL : DisjointedSepLog A.
+  Context {A : Type}.
+  Context {B : Type}.
+  Context {ND : NatDed A}.
+  Context {SL : SepLog A}.
+  Context {ClS: ClassicalSep A}.
+  Context {PSL : PreciseSepLog A}.
+  Context {CoSL: CorableSepLog A}.
+  Context {OSL: OverlapSepLog A}.
+  Context {DSL : DisjointedSepLog A}.
 
 Fixpoint iter_sepcon (l : list B) (p : B -> A) : A :=
   match l with
@@ -192,6 +192,3 @@ Proof.
 Qed.
 
 End IterSepCon.
-
-Implicit Arguments sepcon_unique [[A] [B] [ND] [SL]].
-Implicit Arguments iter_sepcon [[A] [B] [ND] [SL]].

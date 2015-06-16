@@ -1,12 +1,12 @@
 Require Import VST.msl.seplog.
 Require Import VST.msl.log_normalize.
+Require Import RamifyCoq.Coqlib.
 Require Import RamifyCoq.msl_ext.abs_addr.
 Require Import RamifyCoq.msl_ext.seplog.
 Require Import RamifyCoq.msl_ext.log_normalize.
 Require Import RamifyCoq.msl_ext.iter_sepcon.
 Require Import RamifyCoq.graph.graph.
 Require Import RamifyCoq.graph.graph_reachable.
-Require Import Coq.Lists.List.
 Import RamifyCoq.msl_ext.seplog.OconNotation.
 
 Class SpatialGraphSetting: Type := {
@@ -67,6 +67,12 @@ Section SpatialGraph.
     simpl. unfold addr_eqb. destruct (addr_eq_dec x x); auto.
   Qed.
 
+  Lemma joinable_graph_cell : forall bi, joinable (graph_cell bi).
+  Proof.
+    intros. unfold joinable; intros. unfold graph_cell. apply disj_mapsto.
+    simpl. unfold addr_eqb. destruct (addr_eq_dec x y); tauto.
+  Qed.
+
   Definition graph (x : Addr) (bimg : BiMathGraph Addr Data null): SGA_Pred :=
     !!(x = null \/ valid x) && EX l : list Addr, !!reachable_list b_pg x l && iter_sepcon l (graph_cell bm_bi).
 
@@ -90,10 +96,12 @@ Section SpatialGraph.
     forall x bimg d l r, valid x -> gamma bm_bi x = (d, l, r) ->
                          graph x bimg = trinode x (d, l, r) ⊗ graph l bimg ⊗ graph r bimg.
   Proof.
-    intros. apply pred_ext. assert (TRI: trinode x (d, l, r) = iter_sepcon (x :: nil) (graph_cell bm_bi)). {
+    intros. assert (TRI: trinode x (d, l, r) = iter_sepcon (x :: nil) (graph_cell bm_bi)). {
       unfold iter_sepcon. rewrite sepcon_comm, emp_sepcon. unfold graph_cell. rewrite H0. auto.
-    }
-    + unfold graph. apply andp_left2, exp_left. intro li. normalize_overlap.
+    } apply pred_ext.
+    + unfold graph. apply andp_left2, exp_left. intro li.
+      rewrite (add_andp _ _ (iter_sepcon_unique_nodup li (sepcon_unique_graph_cell bm_bi))). normalize_overlap.
+      rename H2 into NODUPLi.
       unfold gamma in H0. unfold biEdge in H0. destruct (only_two_neighbours x) as [v1 [v2 ?]].
       inversion H0; subst. clear H0. rewrite <- pg_the_same in H, H1.
       assert (In l (edge_func x)). rewrite e. apply in_eq. rewrite <- pg_the_same in H0.
@@ -103,7 +111,39 @@ Section SpatialGraph.
       apply (exp_right rightL). normalize_overlap. apply (exp_right leftL). normalize_overlap. apply andp_right.
       - rewrite <- !prop_and. apply prop_right. rewrite <- pg_the_same in *. do 2 (split; auto).
         split; apply (valid_graph x); auto.
-      - rewrite TRI.
-  Abort.
+      - rewrite TRI, ocon_assoc.
+        rewrite !(iter_sepcon_ocon t_eq_dec); auto.
+        2: repeat constructor; simpl; tauto.
+        2: apply remove_dup_nodup.
+        2: apply precise_graph_cell.
+        2: apply joinable_graph_cell.
+        2: apply precise_graph_cell.
+        2: apply joinable_graph_cell.
+        rewrite iter_sepcon_permutation with (l2 := remove_dup t_eq_dec ((x :: nil) ++ remove_dup t_eq_dec (leftL ++ rightL))).
+        * apply derives_refl.
+        * apply (eq_as_set_permutation t_eq_dec); auto.
+          apply remove_dup_nodup. apply eq_as_set_spec. intro y.
+          rewrite <- remove_dup_in_inv. simpl.
+          rewrite <- remove_dup_in_inv.
+          rewrite in_app_iff. rewrite (H1 y).
+          apply (reachable_list_bigraph_in l r); auto. rewrite pg_the_same; auto.
+    + unfold graph. normalize_overlap. intro rightL. normalize_overlap. intro leftL. normalize_overlap.
+      apply (exp_right (remove_dup t_eq_dec ((x :: nil) ++ remove_dup t_eq_dec (leftL ++ rightL)))). rewrite <- andp_assoc.
+      rewrite <- prop_and. rewrite TRI.
+      rewrite (add_andp _ _ (iter_sepcon_unique_nodup leftL (sepcon_unique_graph_cell bm_bi))).
+      rewrite (add_andp _ _ (iter_sepcon_unique_nodup rightL (sepcon_unique_graph_cell bm_bi))).
+      normalize_overlap. apply andp_right.
+      - apply prop_right. split. right; auto. intro.
+        rewrite <- remove_dup_in_inv. simpl. rewrite <- remove_dup_in_inv.
+        rewrite in_app_iff. symmetry. apply (reachable_list_bigraph_in l r); auto.
+        unfold gamma in H0. unfold biEdge in H0. destruct (only_two_neighbours x) as [? [? ?]]. inversion H0. subst. auto.
+      - rewrite ocon_assoc. rewrite !(iter_sepcon_ocon t_eq_dec); auto.
+        * repeat constructor; simpl; tauto.
+        * apply remove_dup_nodup.
+        * apply precise_graph_cell.
+        * apply joinable_graph_cell.
+        * apply precise_graph_cell.
+        * apply joinable_graph_cell.
+  Qed.
 
 End SpatialGraph.
