@@ -19,7 +19,8 @@ MSL_EXT_FILES = \
   overlapping.v precise.v alg_seplog.v \
   overlapping_direct.v precise_direct.v alg_seplog_direct.v
 
-VERIC_EXT_FILES = SeparationLogic.v
+VERIC_EXT_FILES = \
+  res_predicates.v seplog.v SeparationLogic.v
 
 HEAP_MODEL_DIRECT_FILES = \
   SeparationAlgebra.v mapsto.v SeparationLogic.v
@@ -28,7 +29,10 @@ GRAPH_FILES = \
   graph.v graph_reachable.v 
 
 DATA_STRUCTURE_FILES = \
-  spatial_graph.v spatial_graph_HMD.v
+  spatial_graph.v spatial_graph_HMD.v spatial_graph_VST.v
+
+SAMPLE_MARK_FILES = \
+  env_mark.v verif_mark.v 
 
 COQ_BASED_FILES = \
   Coqlib.v \
@@ -42,7 +46,8 @@ VST_BASED_FILES = \
   $(MSL_EXT_FILES:%.v=msl_ext/%.v) \
   $(VERIC_EXT_FILES:%.v=veric_ext/%.v) \
   $(HEAP_MODEL_DIRECT_FILES:%.v=heap_model_direct/%.v) \
-  $(DATA_STRUCTURE_FILES:%.v=data_structure/%.v)
+  $(DATA_STRUCTURE_FILES:%.v=data_structure/%.v) \
+  $(SAMPLE_MARK_FILES:%.v=sample_mark/%.v)
 
 $(COQ_BASED_FILES:%.v=%.vo): %.vo: %.v
 	@echo COQC $*.v

@@ -31,6 +31,7 @@ Instance algOverlapSepLog (A: Type) {JA: Join A} {SA: Sep_alg A} {PA : Perm_alg 
   + apply owand_ocon_adjoint.
   + apply ocon_contain.
   + apply precise_ocon_contain.
+  + apply precise_ocon.
 Defined.
 
 Instance algDisjointedSepLog (A: Type) {JA: Join A} {PA : Perm_alg A} {SA: Sep_alg A} {CA: Canc_alg A} {DA: Disj_alg A} {TA: Trip_alg A} {CrA: Cross_alg A}: DisjointedSepLog (pred A).

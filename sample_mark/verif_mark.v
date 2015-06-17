@@ -1,11 +1,6 @@
-Require Import VST.floyd.proofauto.
-Require Import RamifyCoq.sample_mark.mark.
+Require Import RamifyCoq.sample_mark.env_mark.
 
 Local Open Scope logic.
-
-Instance CompSpecs : compspecs := compspecs_program prog.
-Instance CS_legal : compspecs_legal CompSpecs.
-Proof. prove_CS_legal. Qed.
 
 Variable BiMathGraph: Type.
 Variable graph: val -> BiMathGraph -> mpred.
