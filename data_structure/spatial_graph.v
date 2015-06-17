@@ -7,6 +7,7 @@ Require Import RamifyCoq.msl_ext.log_normalize.
 Require Import RamifyCoq.msl_ext.iter_sepcon.
 Require Import RamifyCoq.graph.graph.
 Require Import RamifyCoq.graph.graph_reachable.
+Require Import Coq.Logic.Classical.
 Import RamifyCoq.msl_ext.seplog.OconNotation.
 
 Class SpatialGraphSetting: Type := {
@@ -146,7 +147,10 @@ Section SpatialGraph.
         * apply joinable_graph_cell.
   Qed.
 
-  Lemma graph_unfold:
+  Lemma graph_root_nv: forall x bimg, graph x bimg |-- !!(x = null \/ valid x).
+  Proof. intros. unfold graph. apply andp_left1, prop_left. intros. apply TT_prop_right; auto. Qed.
+
+  Lemma graph_unfold':
     forall x bimg, graph x bimg = (!!(x = null) && emp) ||
                                   EX d:Data, EX l:Addr, EX r:Addr, !!(gamma bm_bi x = (d, l, r) /\ valid x) &&
                                                                      (trinode x (d, l, r) ⊗ graph l bimg ⊗ graph r bimg).
@@ -156,16 +160,120 @@ Section SpatialGraph.
       - subst. apply orp_right1. rewrite graph_unfold_null. normalize.
       - apply orp_right2. destruct (gamma bm_bi x) as [[dd ll] rr] eqn:? .
         apply (exp_right dd), (exp_right ll), (exp_right rr).
-        assert (graph x bimg |-- !!(valid x)). {
-          unfold graph. apply andp_left1, prop_left. intros. destruct H.
-          + exfalso; auto.
-          + apply TT_prop_right. auto.
-        } apply andp_right; rewrite (add_andp _ _ H).
-        * apply andp_left2, prop_left; intros. apply TT_prop_right. split; auto.
-        * normalize. rewrite (graph_unfold_valid _ _ dd ll rr); auto.
+        rewrite (add_andp _ _ (graph_root_nv x bimg)). apply andp_right.
+        * apply andp_left2, prop_left; intros. apply TT_prop_right. destruct H. tauto. split; auto.
+        * normalize. destruct H; [tauto | rewrite (graph_unfold_valid _ _ dd ll rr); auto].
     + apply orp_left.
       - normalize. rewrite graph_unfold_null. auto.
       - normalize. intros d l r [? ?]. rewrite <- (graph_unfold_valid _ _ d l r); auto.
+  Qed.
+
+  Lemma graph_unfold:
+    forall x bimg d l r, gamma bm_bi x = (d, l, r) ->
+                         graph x bimg = !!(x = null) && emp ||
+                                        !!(valid x) && (trinode x (d, l, r) ⊗ graph l bimg ⊗ graph r bimg).
+  Proof.
+    intros. apply pred_ext.
+    + rewrite (add_andp _ _ (graph_root_nv x bimg)). normalize. destruct H0.
+      - subst. rewrite graph_unfold_null. apply orp_right1. normalize.
+      - apply orp_right2. rewrite (graph_unfold_valid _ _ d l r H0 H). normalize.
+    + apply orp_left.
+      - normalize. rewrite graph_unfold_null. auto.
+      - normalize. rewrite (graph_unfold_valid _ _ d l r H0 H). auto.
+  Qed.
+
+  Lemma precise_graph: forall x bimg, precise (graph x bimg).
+  Proof.
+    intros. apply precise_andp_right. apply precise_exp_iter_sepcon.
+    + apply sepcon_unique_graph_cell.
+    + apply classic.
+    + apply precise_graph_cell.
+    + apply reachable_list_permutation.
+  Qed.
+
+  Fixpoint graphs (l : list Addr) bimg :=
+    match l with
+      | nil => emp
+      | v :: l' => graph v bimg ⊗ graphs l' bimg
+    end.
+
+  Lemma precise_graphs: forall S bimg, precise (graphs S bimg).
+  Proof. intros; induction S; simpl. apply precise_emp. apply precise_ocon. apply precise_graph. apply IHS. Qed.
+
+  Lemma graphs_list_well_defined: forall S bimg, graphs S bimg |-- !!well_defined_list bm_ma S.
+  Proof.
+    induction S; intros; unfold well_defined_list in *; simpl.
+    + apply prop_right. intros; tauto.
+    + unfold graph.
+      rewrite (add_andp _ _ (IHS _)).
+      normalize_overlap.
+      apply prop_right.
+      intro y; intros. destruct H1.
+      - subst. rewrite pg_the_same; auto.
+      - specialize (H0 _ H1). apply H0.
+  Qed.
+
+  Lemma graphs_unfold: forall S bimg, graphs S bimg =
+                                      !!(well_defined_list bm_ma S) &&
+                                      EX l: list Addr, !!reachable_set_list b_pg S l &&
+                                                       iter_sepcon l (graph_cell bm_bi).
+  Proof.
+    induction S; intros.
+    + unfold graphs. apply pred_ext.
+      - apply andp_right.
+        * apply prop_right. hnf. intros. inversion H.
+        * apply (exp_right nil). simpl. apply andp_right; auto. apply prop_right. hnf.
+          intros. split; intros. unfold reachable_through_set in H. destruct H as [s [? _]]. inversion H. inversion H.
+      - normalize. destruct l. simpl; auto. hnf in H0. specialize (H0 a).
+        assert (In a (a :: l)) by apply in_eq.
+        rewrite <- H0 in H1. unfold reachable_through_set in H1. destruct H1 as [? [? _]]. inversion H1.
+    + unfold graphs. fold graphs. rewrite IHS. unfold graph. apply pred_ext. clear IHS.
+      - normalize_overlap. rename x into la.
+        normalize_overlap. rename x into lS.
+        normalize_overlap.
+        rewrite (add_andp _ _ (iter_sepcon_unique_nodup la (sepcon_unique_graph_cell bm_bi))).
+        rewrite (add_andp _ _ (iter_sepcon_unique_nodup lS (sepcon_unique_graph_cell bm_bi))).
+        normalize_overlap.
+        rewrite (iter_sepcon_ocon t_eq_dec); auto. apply (exp_right (remove_dup t_eq_dec (la ++ lS))).
+        rewrite <- andp_assoc, <- prop_and. apply andp_right.
+        * apply prop_right. split.
+          Focus 1. {
+            unfold well_defined_list in *. intros. simpl in H5.
+            destruct H5; [subst; rewrite pg_the_same | apply H0]; auto. } Unfocus.
+          Focus 1. {
+            unfold reachable_set_list in *.
+            unfold reachable_list in *. intros.
+            rewrite <- remove_dup_in_inv.
+            rewrite reachable_through_set_eq.
+            specialize (H1 x). specialize (H2 x).
+            split; intro; [apply in_or_app | apply in_app_or in H5];
+            destruct H5; [left | right | left | right]; tauto.
+          } Unfocus.
+        * auto.
+        * apply precise_graph_cell.
+        * apply joinable_graph_cell.
+      - normalize.
+        assert (In a (a :: S)) by apply in_eq.
+        assert (a = null \/ valid a) by (rewrite <- pg_the_same; unfold well_defined_list in H; apply (H a); auto).
+        rewrite <- pg_the_same in H0, H2.
+        destruct (reachable_through_single_reachable bm_ma _ _ H0 a H1 H2) as [la [? ?]].
+        normalize_overlap. apply (exp_right la).
+        assert (Sublist S (a :: S)) by (intro s; intros; apply in_cons; auto).
+        assert (well_defined_list bm_ma S) by (unfold well_defined_list in *; intros; apply H; apply in_cons; auto).
+        destruct (reachable_through_sublist_reachable _ _ _ H0 _ H5 H6) as [lS [? ?]].
+        normalize_overlap. apply (exp_right lS). normalize_overlap.
+        rewrite <- !prop_and. apply andp_right.
+        * rewrite <- pg_the_same in *. apply prop_right. auto.
+        * rewrite (add_andp _ _ (iter_sepcon_unique_nodup l (sepcon_unique_graph_cell bm_bi))).
+          normalize.
+          rewrite (iter_sepcon_ocon t_eq_dec); auto.
+          2: apply precise_graph_cell.
+          2: apply joinable_graph_cell.
+          rewrite iter_sepcon_permutation with (l2 := remove_dup t_eq_dec (la ++ lS)); auto.
+          apply NoDup_Permutation; auto. apply remove_dup_nodup.
+          intros. rewrite <- remove_dup_in_inv. clear -H7 H3 H0.
+          specialize (H0 x). specialize (H7 x). specialize (H3 x). rewrite <- H0.
+          rewrite reachable_through_set_eq. rewrite in_app_iff. tauto.
   Qed.
 
 End SpatialGraph.

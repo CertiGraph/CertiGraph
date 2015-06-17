@@ -381,12 +381,26 @@ Section GraphReachable.
   Definition reachable_set_list (pg : PreGraph V D) (S : list V) (l : list V) : Prop :=
     forall x : V, reachable_through_set pg S x <-> In x l.
 
-  Lemma reachable_through_single_reachable:
+  Lemma reachable_through_single_reachable':
     forall (mg : MathGraph V D null) S l, reachable_set_list m_pg S l ->
       forall s, In s S -> valid s -> exists l' : list V, reachable_list m_pg s l' /\ NoDup l'.
   Proof.
     intros. assert (forall x, reachable_through_set m_pg S x -> In x l). intros. rewrite <- (H x). auto.
     destruct (finite_reachable_set_single mg S l H2 s H0 H1) as [l' [? ?]]. exists l'; split; auto.
+  Qed.
+
+  Lemma reachable_through_single_reachable:
+    forall (mg : MathGraph V D null) S l, reachable_set_list m_pg S l ->
+      forall s, In s S -> (s = null \/ valid s) -> exists l' : list V, reachable_list m_pg s l' /\ NoDup l'.
+  Proof.
+    intros. assert (forall x, reachable_through_set m_pg S x -> In x l). intros. rewrite <- (H x). auto.
+    destruct H1.
+    + subst. exists nil. split.
+      - unfold reachable_list. intro. split; intros.
+        * inversion H1.
+        * apply reachable_head_valid in H1. apply valid_not_null in H1. exfalso; auto.
+      - apply NoDup_nil.
+    + destruct (finite_reachable_set_single mg S l H2 s H0 H1) as [l' [? ?]]. exists l'; split; auto.
   Qed.
 
   Lemma finite_reachable_set_sublist:
@@ -574,5 +588,10 @@ Section GraphReachable.
         * hnf; auto.
         * apply H3.
   Qed.
+
+  Lemma reachable_list_permutation:
+    forall {g : PreGraph V D} x l1 l2,
+      reachable_list g x l1 -> reachable_list g x l2 -> NoDup l1 -> NoDup l2 -> Permutation l1 l2.
+  Proof. intros. apply NoDup_Permutation; auto. intro y. rewrite (H y), (H0 y). tauto. Qed.
 
 End GraphReachable.
