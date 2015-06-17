@@ -46,7 +46,8 @@ Class OverlapSepLog (A: Type) {ND: NatDed A} {SL: SepLog A} {PSL: PreciseSepLog 
   ocon_derives: forall P Q P' Q', (P |-- P') -> (Q |-- Q') -> ocon P Q |-- ocon P' Q';
   owand_ocon_adjoint: forall P Q R, (ocon P Q |-- R) <-> (P |-- owand Q R);
   ocon_contain: forall P Q, Q |-- P * TT -> Q |-- ocon P Q;
-  precise_ocon_contain: forall P Q, precise P -> Q |-- P * TT -> Q = ocon P Q
+  precise_ocon_contain: forall P Q, precise P -> Q |-- P * TT -> Q = ocon P Q;
+  precise_ocon: forall P Q, precise P -> precise Q -> precise (ocon P Q)
 }.
 
 Implicit Arguments OverlapSepLog [[ND] [SL] [PSL]].
@@ -65,6 +66,7 @@ Instance LiftOverlapSepLog (A B: Type) {ND: NatDed B} {SL: SepLog B} {PSL: Preci
   + split; intros; apply owand_ocon_adjoint; auto.
   + apply ocon_contain; auto.
   + extensionality x. apply precise_ocon_contain; auto.
+  + apply precise_ocon; auto.
 Defined.
 
 Class DisjointedSepLog (A: Type) {ND: NatDed A} {SL: SepLog A} {PSL: PreciseSepLog A} {OSL: OverlapSepLog A} := mkDisjointedSepLog {

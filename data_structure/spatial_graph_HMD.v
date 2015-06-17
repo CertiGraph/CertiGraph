@@ -24,14 +24,6 @@ Instance SGS_HMD: SpatialGraphSetting.
   apply (Build_SpatialGraphSetting adr adr 0 eq_nat_dec).
 Defined.
 
-(*
-Instance AbsAddr_tri: AbsAddr.
-  apply (mkAbsAddr adr (adr * adr * adr) adr_conflict); intros; unfold adr_conflict in *.
-  + destruct (eq_nat_dec p1 p2). subst. destruct (eq_nat_dec p2 p2); auto. exfalso; tauto.
-    destruct (eq_nat_dec p2 p1). subst. exfalso; tauto. trivial.
-  + destruct (eq_nat_dec p1 p1). inversion H. exfalso; tauto.
-Defined.
-*)
 Definition trinode x dlr :=
   match dlr with
   | (d, l, r) => !! Z.divide 3 (Z.of_nat x) && ((mapsto x d) * (mapsto (x+1) l) * (mapsto (x+2) r))
