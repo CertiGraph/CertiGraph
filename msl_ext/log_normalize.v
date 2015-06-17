@@ -67,6 +67,13 @@ Proof.
     apply derives_refl.
 Qed.
 
+Lemma exp_FF: forall {A B} `{NatDed A}, (EX x: B, FF) = FF.
+Proof.
+  intros.
+  apply pred_ext; [| apply FF_left].
+  apply exp_left; intros; auto.
+Qed.
+
 Lemma sepcon_left1_corable_right: forall {A} `{CorableSepLog A} P Q R, corable R -> P |-- R -> P * Q |-- R.
 Proof.
   intros.
@@ -114,6 +121,59 @@ Proof.
   intros.
   apply derives_precise with Q; auto.
   apply andp_left2; auto.
+Qed.
+
+Lemma precise_exp_andp_left: forall {A B} `{PreciseSepLog A} (P Q: B -> A), precise (exp P) -> precise (exp (P && Q)).
+Proof.
+  intros.
+  apply derives_precise with (exp P); auto.
+  apply exp_left; intro b; apply (exp_right b).
+  simpl.
+  apply andp_left1; auto.
+Qed.
+
+Lemma precise_exp_andp_right: forall {A B} `{PreciseSepLog A} (P Q: B -> A), precise (exp Q) -> precise (exp (P && Q)).
+Proof.
+  intros.
+  apply derives_precise with (exp Q); auto.
+  apply exp_left; intro b; apply (exp_right b).
+  simpl.
+  apply andp_left2; auto.
+Qed.
+
+Lemma FF_precise: forall {A} `{PreciseSepLog A}, precise FF.
+Proof.
+  intros.
+  apply derives_precise with emp.
+  + apply FF_left.
+  + apply precise_emp.
+Qed.
+
+Lemma exp_FF_precise: forall {A B} `{PreciseSepLog A}, precise (EX x: B, FF).
+Proof.
+  intros.
+  rewrite exp_FF.
+  apply FF_precise.
+Qed.
+
+Lemma precise_exp_prop_andp: forall {A B} `{PreciseSepLog A} (P: B -> Prop) (Q: B -> A),
+  ((exists x, P x) \/ (~ exists x, P x)) ->
+  (forall x, precise (Q x)) ->
+  (forall x y, P x -> P y -> Q x = Q y) ->
+  precise (EX x: B, !! P x && Q x).
+Proof.
+  intros.
+  destruct H0 as [[x ?] | ?].
+  + apply derives_precise with (Q x).
+    - apply exp_left; intro y.
+      normalize.
+      pose proof H2 _ _ H0 H3.
+      rewrite H4; auto.
+    - apply H1.
+  + apply derives_precise with FF.
+    - normalize; intros x ?.
+      specialize (H0 (ex_intro _ x H3)); tauto.
+    - apply FF_precise.
 Qed.
 
 Lemma exp_sepcon: forall {A} `{SepLog A} {B} (P Q: B -> A), exp (P * Q) |-- exp P * exp Q.

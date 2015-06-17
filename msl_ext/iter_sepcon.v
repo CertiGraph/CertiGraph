@@ -191,4 +191,29 @@ Proof.
     tauto.
 Qed.
 
+Lemma precise_exp_iter_sepcon: forall (P : B -> A) (Q: list B -> Prop),
+  sepcon_unique P ->
+  (exists x : list B, Q x /\ NoDup x) \/ ~ (exists x : list B, Q x /\ NoDup x) ->
+  (forall l, precise (P l)) ->
+  (forall l l', Q l -> Q l' -> NoDup l -> NoDup l' -> Permutation l l') ->
+  precise (EX l: list B, !! (Q l) && iter_sepcon l P).
+Proof.
+  intros.
+  replace (EX  l : list B, !!Q l && iter_sepcon l P) with (EX  l : list B, !! (Q l /\ NoDup l) && iter_sepcon l P).
+  Focus 2. {
+    f_equal.
+    extensionality l.
+    rewrite (add_andp _ _ (iter_sepcon_unique_nodup l H)) at 2.
+    rewrite (andp_comm _ (!! NoDup l)), <- andp_assoc, prop_and.
+    reflexivity.
+  } Unfocus.
+  apply precise_exp_prop_andp.
+  1: assumption.
+  1: apply precise_iter_sepcon; auto.
+  intros l l'. specialize (H2 l l').
+  intros.
+  apply iter_sepcon_permutation.
+  tauto.
+Qed.
+
 End IterSepCon.
