@@ -20,7 +20,7 @@ Require Import RamifyCoq.veric_ext.res_predicates.
 
 Local Open Scope pred.
 
-Lemma exp_maspto_precise: forall sh t p, precise (EX v: val, mapsto sh t p v).
+Lemma exp_mapsto_precise: forall sh t p, precise (EX v: val, mapsto sh t p v).
 Proof.
   intros.
   unfold mapsto.
@@ -39,6 +39,29 @@ Qed.
 
 Definition pointer_range_overlap p n p' n' :=
   exists l l', val2adr p l /\ val2adr p' l' /\ range_overlap l n l' n'.
+
+Definition BV_sizeof t :=
+  match access_mode t with
+  | By_value m => size_chunk m
+  | _ => 0
+  end.
+
+Lemma BV_sizeof_size_chunk: forall t m,
+  access_mode t = By_value m -> BV_sizeof t = size_chunk m.
+Proof.
+  intros.
+  unfold BV_sizeof.
+  rewrite H.
+  reflexivity.
+Qed.
+
+Lemma BV_sizeof_sizeof: forall env t m,
+  access_mode t = By_value m -> BV_sizeof t = sizeof env t.
+Proof.
+  intros.
+  erewrite BV_sizeof_size_chunk by eauto.
+  apply eq_sym, Clight_lemmas.size_chunk_sizeof; auto.
+Qed.
 
 Lemma disj_mapsto_: forall sh env t1 t2 p1 p2,
   ~ pointer_range_overlap p1 (sizeof env t1) p2 (sizeof env t2) ->
@@ -111,4 +134,163 @@ Proof.
     inversion H0; subst.
     erewrite !Clight_lemmas.size_chunk_sizeof in H1 by eauto.
     apply address_mapsto_conflict; auto.
+Qed.
+
+Lemma range_overlap_comm: forall l1 n1 l2 n2, range_overlap l1 n1 l2 n2 -> range_overlap l2 n2 l1 n1.
+Proof.
+  unfold range_overlap.
+  intros.
+  destruct H as [l ?].
+  exists l.
+  tauto.
+Qed.
+
+Lemma range_overlap_non_zero: forall l1 n1 l2 n2, range_overlap l1 n1 l2 n2 -> n1 > 0 /\ n2 > 0.
+Proof.
+  unfold range_overlap.
+  intros.
+  destruct H as [l [? ?]].
+  apply adr_range_non_zero in H.
+  apply adr_range_non_zero in H0.
+  auto.
+Qed.
+
+Lemma pointer_range_overlap_dec: forall p1 n1 p2 n2, {pointer_range_overlap p1 n1 p2 n2} + {~ pointer_range_overlap p1 n1 p2 n2}.
+Proof.
+  unfold pointer_range_overlap.
+  intros.
+  destruct p1;
+  try solve
+   [right;
+    intros [[? ?] [[? ?] [HH [_ _]]]];
+    inversion HH].
+  destruct p2;
+  try solve
+   [right;
+    intros [[? ?] [[? ?] [_ [HH _]]]];
+    inversion HH].
+  destruct (zlt 0 n1); [| right; intros [[? ?] [[? ?] [_ [_ HH]]]]; apply range_overlap_non_zero in HH; omega].
+  destruct (zlt 0 n2); [| right; intros [[? ?] [[? ?] [_ [_ HH]]]]; apply range_overlap_non_zero in HH; omega].
+  destruct (Clight_lemmas.block_eq_dec b b0).
+  + subst b0.
+    unfold val2adr.
+    forget (Int.unsigned i) as i1; 
+    forget (Int.unsigned i0) as i2;
+    clear i i0.
+    destruct (range_dec i1 i2 (i1 + n1)); [| destruct (range_dec i2 i1 (i2 + n2))].
+    - left.
+      exists (b, i1), (b, i2); repeat split; auto.
+      apply range_overlap_spec; try omega.
+      left; simpl; auto.
+    - left.
+      exists (b, i1), (b, i2); repeat split; auto.
+      apply range_overlap_spec; try omega.
+      right; simpl; auto.
+    - right.
+      intros [[? ?] [[? ?] [? [? HH]]]].
+      inversion H; inversion H0; subst.
+      apply range_overlap_spec in HH; [| omega | omega].
+      simpl in HH; omega.
+  + right.
+    intros [[? ?] [[? ?] [? [? HH]]]].
+    simpl in H, H0.
+    inversion H; inversion H0; subst.
+    apply range_overlap_spec in HH; [| omega | omega].
+    simpl in HH.
+    pose proof @eq_sym _ b0 b.
+    tauto.
+Qed.    
+
+Lemma pointer_range_overlap_refl: forall p n1 n2,
+  isptr p ->
+  n1 > 0 -> 
+  n2 > 0 ->
+  pointer_range_overlap p n1 p n2.
+Proof.
+  intros.
+  destruct p; try inversion H.
+  exists (b, Int.unsigned i), (b, Int.unsigned i).
+  repeat split; auto.
+  apply range_overlap_spec; auto.
+  left.
+  simpl.
+  split; auto; omega.
+Qed.
+
+Lemma pointer_range_overlap_comm: forall p1 n1 p2 n2,
+  pointer_range_overlap p1 n1 p2 n2 <->
+  pointer_range_overlap p2 n2 p1 n1.
+Proof.
+  cut (forall p1 n1 p2 n2,
+         pointer_range_overlap p1 n1 p2 n2 ->
+         pointer_range_overlap p2 n2 p1 n1).
+  Focus 1. {
+    intros.
+    pose proof H p1 n1 p2 n2.
+    pose proof H p2 n2 p1 n1.
+    tauto.
+  } Unfocus.
+  unfold pointer_range_overlap.
+  intros.
+  destruct H as [l [l' [? [? ?]]]].
+  exists l', l.
+  repeat split; auto.
+  apply range_overlap_comm.
+  auto.
+Qed.
+
+Lemma pointer_range_overlap_non_zero: forall p1 n1 p2 n2,
+  pointer_range_overlap p1 n1 p2 n2 -> n1 > 0 /\ n2 > 0.
+Proof.
+  intros.
+  destruct H as [? [? [? [? ?]]]].
+  eapply range_overlap_non_zero; eauto.
+Qed.
+
+Lemma pointer_range_overlap_isptr: forall p1 n1 p2 n2,
+  pointer_range_overlap p1 n1 p2 n2 -> isptr p1 /\ isptr p2.
+Proof.
+  intros.
+  destruct H as [? [? [? [? ?]]]].
+  destruct p1, p2; try solve [inversion H | inversion H0].
+  simpl; auto.
+Qed.
+
+Lemma BV_sizeof_pos: forall t m, access_mode t = By_value m -> BV_sizeof t > 0.
+Proof.
+  intros.
+  erewrite BV_sizeof_size_chunk by eauto.
+  apply size_chunk_pos.
+Qed.
+
+Lemma pointer_range_overlap_BV_sizeof: forall env p1 p2 t1 t2,
+  pointer_range_overlap p1 (BV_sizeof t1) p2 (BV_sizeof t2) ->
+  pointer_range_overlap p1 (sizeof env t1) p2 (sizeof env t2).
+Proof.
+  intros.
+  pose proof pointer_range_overlap_non_zero _ _ _ _ H.
+  unfold BV_sizeof in H0.
+  destruct (access_mode t1) eqn:?H, (access_mode t2) eqn:?H; try omega.
+  erewrite !BV_sizeof_sizeof in H by eauto.
+  eauto.
+Qed.
+
+Lemma pointer_range_overlap_sizeof: forall sh env p1 p2 t1 t2,
+  pointer_range_overlap p1 (sizeof env t1) p2 (sizeof env t2) ->
+  pointer_range_overlap p1 (BV_sizeof t1) p2 (BV_sizeof t2) \/
+  (EX v: val, mapsto sh t1 p1 v |-- FF) \/
+  (EX v: val, mapsto sh t2 p2 v |-- FF).
+Proof.
+  pose proof (@exp_FF mpred val _) as EXP_FF.
+  change (@seplog.exp _ _ val) with (@exp _ _ val) in EXP_FF.
+  change seplog.FF with FF in EXP_FF.
+
+  intros.
+  unfold BV_sizeof.
+  unfold mapsto.
+  destruct (access_mode t1) eqn:?H; try solve [right; left; rewrite EXP_FF; auto].
+  destruct (access_mode t2) eqn:?H; try solve [right; right; rewrite EXP_FF; auto].
+  left.
+  erewrite !Clight_lemmas.size_chunk_sizeof in H by eauto.
+  auto.
 Qed.

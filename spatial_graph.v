@@ -11,7 +11,6 @@ Require Import utilities.
 Require Import Permutation.
 Require Import ramification.
 
-
 Local Open Scope pred.
 
 Instance natEqDec : EqDec nat := { t_eq_dec := eq_nat_dec }.
