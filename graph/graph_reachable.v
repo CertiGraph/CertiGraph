@@ -594,4 +594,78 @@ Section GraphReachable.
       reachable_list g x l1 -> reachable_list g x l2 -> NoDup l1 -> NoDup l2 -> Permutation l1 l2.
   Proof. intros. apply NoDup_Permutation; auto. intro y. rewrite (H y), (H0 y). tauto. Qed.
 
+  Lemma reachable_valid_and_through_single:
+    forall {g : PreGraph V D} {x y}, reachable g x y -> (valid y /\ reachable_through_set g (x :: nil) y).
+  Proof.
+    intros. split.
+    + apply reachable_foot_valid in H; auto.
+    + exists x. split.
+      - apply in_eq.
+      - auto.         
+  Qed.
+
+  Lemma unreachable_node_add_graph_eq:
+    forall (g : BiMathGraph V D null) x y d l r (Hn: x <> null) (Hi: in_math bm_ma x l r),
+      In y (l :: r :: nil) -> (~ reachable b_pg y x) -> y <> x ->
+      ((reachable_subgraph (b_pg_g g) (y :: nil)) -=-
+       (reachable_subgraph (b_pg_g (update_graph g x d l r Hi Hn)) (y :: nil))).
+  Proof.
+    Implicit Arguments valid [[Vertex] [Data] [EV]].
+    Implicit Arguments b_pg [[Vertex] [Data] [EV]].
+    Implicit Arguments bm_bi [[Vertex] [Data] [nV] [EV]].
+    Implicit Arguments node_label [[Vertex] [Data] [EV]].
+    Implicit Arguments edge_func [[Vertex] [Data] [EV]].
+    unfold b_pg_g in *. intros until Hi. intro Hin. intros. hnf.
+    assert (forall v : V, valid (reachable_subgraph (b_pg (bm_bi g)) (y :: nil)) v <->
+                          valid (reachable_subgraph (b_pg (bm_bi (update_graph g x d l r Hi Hn))) (y :: nil)) v). {
+      split; intros; destruct H1 as [? [s [? ?]]]; simpl in H2; destruct H2; try tauto; subst.
+      - hnf. simpl. unfold change_valid. split; auto. exists s. split.
+        * apply in_eq.
+        * destruct H3 as [p ?]. exists p.
+          rewrite update_reachable_by_path_not_in. auto.
+          intro. apply H. apply (reachable_path_in _ p _ v); auto.
+      - hnf in H1. destruct H1.
+        * hnf. split; auto. exists s. split. apply in_eq.
+          unfold reachable in H3. generalize H3; intro Hv.
+          rewrite reachable_acyclic in H3.
+          destruct H3 as [p [? ?]]. destruct p.
+          Focus 1. { destruct H3 as [[? ?] _]. inversion H3. } Unfocus.
+          Focus 1. {
+            generalize H3; intro Hr. destruct Hr as [[? _] _].
+
+            simpl in H4. inversion H4. subst. clear H4.
+            apply (@update_reachable_tail_reachable _ x _ p d l r _).
+            constructor; auto. intro. simpl in H4. destruct H4. auto.
+            apply H. apply (@update_reachable_path_in g x d l r (s :: p) s v); auto.
+            apply in_cons; auto.
+            assert (x :: s :: p = path_glue _ (x :: s :: nil) (s :: p)) by (unfold path_glue; simpl; auto).
+            rewrite H4. apply reachable_by_path_merge with s; auto. split.
+            + split; simpl; auto.
+            + split. 2: hnf; intros; hnf; auto.
+              simpl. split. hnf. split; simpl. unfold change_valid. right; auto.
+              split. apply reachable_head_valid in Hv. simpl in Hv. auto.
+              unfold change_edge_func. destruct (t_eq_dec x x). auto. tauto.
+              apply reachable_head_valid in Hv. simpl in Hv. auto.
+          } Unfocus.
+        * subst. exfalso. apply H.
+          destruct H3 as [p ?].
+          apply (@update_reachable_path_in g x d l r p s x); auto.
+          destruct H1 as [[? ?] _]. apply foot_in; auto.
+    } assert (~ valid (reachable_subgraph (b_pg (bm_bi g)) (y :: nil)) x). {
+      intro. rewrite H1 in H2. clear H1. simpl in H2. unfold reachable_valid in H2. simpl in H2.
+      destruct H2 as [_ ?]. destruct H1 as [? [? ?]]. simpl in H1. destruct H1. 2: tauto.
+      apply eq_sym in H1. subst. apply H. destruct H2 as [p ?].
+      apply (@update_reachable_path_in g x d l r p y x); auto.
+      destruct H1 as [[? ?] _]. apply foot_in; auto.
+    } split; [|split]; intros.
+    + apply H1.
+    + simpl. unfold change_node_label. destruct (t_eq_dec v x). 2: auto. subst. tauto. 
+    + simpl. unfold change_edge_func. destruct (t_eq_dec v x). 2: auto. subst. tauto.
+    Implicit Arguments valid [[Vertex] [Data] [EV] [PreGraph]].
+    Implicit Arguments b_pg [[Vertex] [Data] [EV] [BiGraph]].
+    Implicit Arguments bm_bi [[Vertex] [Data] [nV] [EV] [BiMathGraph]].
+    Implicit Arguments node_label [[Vertex] [Data] [EV] [PreGraph]].
+    Implicit Arguments edge_func [[Vertex] [Data] [EV] [PreGraph]].
+  Qed.
+
 End GraphReachable.

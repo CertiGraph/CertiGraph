@@ -43,13 +43,13 @@ Class SpatialGraphAssum: Type := {
   SG_Setting: SpatialGraphSetting;
   trinode : Addr -> Val -> SGA_Pred;
   SGA_MSL: MapstoSepLog AV_SGraph trinode;
-  SGA_sMSL: StaticMapstoSepLog AV_SGraph trinode;
-  SGA_nMSL: NormalMapstoSepLog AV_SGraph trinode
+  SGA_sMSL: StaticMapstoSepLog AV_SGraph trinode(* ; *)
+  (* SGA_nMSL: NormalMapstoSepLog AV_SGraph trinode *)
 }.
 
-Global Existing Instances SGA_ND SGA_SL SGA_ClSL SGA_PSL SGA_CoSL SGA_OSL SGA_DSL SGA_COSL SG_Setting SGA_MSL SGA_sMSL SGA_nMSL.
+Global Existing Instances SGA_ND SGA_SL SGA_ClSL SGA_PSL SGA_CoSL SGA_OSL SGA_DSL SGA_COSL SG_Setting SGA_MSL SGA_sMSL (* SGA_nMSL *).
 
-Hint Resolve SGA_ND SGA_SL SGA_ClSL SGA_PSL SGA_CoSL SGA_OSL SGA_DSL SGA_COSL SG_Setting SGA_MSL SGA_sMSL SGA_nMSL.
+Hint Resolve SGA_ND SGA_SL SGA_ClSL SGA_PSL SGA_CoSL SGA_OSL SGA_DSL SGA_COSL SG_Setting SGA_MSL SGA_sMSL (* SGA_nMSL *).
 
 Local Open Scope logic.
 
@@ -275,5 +275,201 @@ Section SpatialGraph.
           specialize (H0 x). specialize (H7 x). specialize (H3 x). rewrite <- H0.
           rewrite reachable_through_set_eq. rewrite in_app_iff. tauto.
   Qed.
+
+  Lemma reachable_eq_graphs_eq:
+    forall S S' bimg, set_eq (reachable_through_set b_pg S) (reachable_through_set b_pg S') ->
+                      well_defined_list bm_ma S -> well_defined_list bm_ma S' ->  graphs S bimg = graphs S' bimg.
+  Proof.
+    intros; apply pred_ext; rewrite !graphs_unfold; normalize; apply (exp_right l);
+    normalize; apply andp_right; auto; apply prop_right; unfold reachable_set_list in *;
+    destruct H; unfold subset in * |- ; intros; rewrite <- H2; split; auto.
+  Qed.
+
+  Lemma single_graph_growth_double:
+    forall x d (H: x <> null), trinode x (d, x, x) |-- graph x (single_graph_double null AddrDec x d H).
+  Proof.
+    intros. unfold graph. apply andp_right.
+    + apply prop_right. right. hnf; auto.
+    + apply (exp_right (x :: nil)). apply andp_right.
+      - apply prop_right. hnf. intros. split; intros.
+        * simpl in H0. destruct H0; try tauto. subst.
+          apply reachable_by_reflexive. split; hnf; auto.
+        * apply reachable_foot_valid in H0. hnf in H0. subst. apply in_eq.
+      - unfold iter_sepcon. unfold graph_cell. rewrite sepcon_emp.
+        unfold gamma. unfold biEdge. unfold only_two_neighbours. simpl. auto.
+  Qed.
+
+  Lemma single_graph_growth_left:
+    forall x d (H: x <> null), trinode x (d, x, null) |-- graph x (single_graph_left null AddrDec x d H).
+  Proof.
+    intros. unfold graph. apply andp_right.
+    + apply prop_right. right. hnf; auto.
+    + apply (exp_right (x :: nil)). apply andp_right.
+      - apply prop_right. hnf. intros. split; intros.
+        * simpl in H0. destruct H0; try tauto. subst.
+          apply reachable_by_reflexive. split; hnf; auto.
+        * apply reachable_foot_valid in H0. hnf in H0. subst. apply in_eq.
+      - unfold iter_sepcon. unfold graph_cell. rewrite sepcon_emp.
+        unfold gamma. unfold biEdge. unfold only_two_neighbours. simpl. auto.
+  Qed.
+
+  Lemma single_graph_growth_right:
+    forall x d (H: x <> null), trinode x (d, null, x) |-- graph x (single_graph_right null AddrDec x d H).
+  Proof.
+    intros. unfold graph. apply andp_right.
+    + apply prop_right. right. hnf; auto.
+    + apply (exp_right (x :: nil)). apply andp_right.
+      - apply prop_right. hnf. intros. split; intros.
+        * simpl in H0. destruct H0; try tauto. subst.
+          apply reachable_by_reflexive. split; hnf; auto.
+        * apply reachable_foot_valid in H0. hnf in H0. subst. apply in_eq.
+      - unfold iter_sepcon. unfold graph_cell. rewrite sepcon_emp.
+        unfold gamma. unfold biEdge. unfold only_two_neighbours. simpl. auto.
+  Qed.
+
+  Lemma trinode_iter_sepcon_not_in:
+    forall x d l r li g, trinode x (d, l, r) * iter_sepcon li (graph_cell g) |-- !!(~ In x li).
+  Proof.
+    intros; induction li.
+    + apply prop_right. auto.
+    + unfold iter_sepcon. fold (iter_sepcon li (graph_cell g)).
+      rewrite <- sepcon_assoc. rewrite (sepcon_comm (trinode x (d, l, r))). rewrite sepcon_assoc.
+      rewrite (add_andp _ _ IHli). normalize. rewrite <- sepcon_assoc. unfold graph_cell at 1.
+      destruct (t_eq_dec a x).
+      - subst.
+        assert (trinode x (gamma g x) * trinode x (d, l, r) |-- FF). {
+          apply mapsto_conflict. simpl. unfold addr_eqb. destruct (addr_eq_dec x x); auto.
+        } rewrite (add_andp _ _ H0). normalize.
+      - apply prop_right. simpl. intro. destruct H0; auto.
+  Qed.
+
+  Lemma trinode_graphs_unreachable:
+    forall x d l r S g, x <> null ->
+                        trinode x (d, l, r) * graphs S g |-- !!(forall s, In s S -> ~ reachable b_pg s x /\ s <> x).
+  Proof.
+    intros. rewrite graphs_unfold. normalize. intro li; intros.
+    rewrite (add_andp _ _ (trinode_iter_sepcon_not_in _ _ _ _ _ _)).
+    normalize. apply prop_right. intros. split.
+    + intro; apply H2. clear H2. specialize (H1 x). rewrite <- H1. exists s. split; auto.
+    + intro. subst. unfold reachable_set_list in H1. unfold reachable_through_set in H1.
+      apply H2. rewrite <- H1. exists x. split; auto.
+      apply reachable_by_reflexive. specialize (H0 x). apply H0 in H3. split.
+      - destruct H3. tauto. rewrite <- pg_the_same. auto.
+      - hnf; auto.
+  Qed.
+
+  Lemma reachable_subgraph_derives:
+    forall (g1 g2 : BiMathGraph Addr Data null) x,
+      ((reachable_subgraph (b_pg_g g1) (x :: nil)) -=- (reachable_subgraph (b_pg_g g2) (x :: nil))) ->
+      graph x g1 |-- graph x g2.
+  Proof.
+    Implicit Arguments valid [[Vertex] [Data] [EV]].
+    Implicit Arguments b_pg [[Vertex] [Data] [EV]].
+    Implicit Arguments bm_bi [[Vertex] [Data] [nV] [EV]].
+    Implicit Arguments only_two_neighbours [[Vertex] [Data] [EV]].
+    unfold b_pg_g in *. intros. destruct H as [? [? ?]]. rewrite (add_andp _ _ (graph_root_nv _ _)).
+    normalize. destruct H2.
+    + subst. rewrite !graph_unfold_null; auto.
+    + unfold graph. normalize. apply (exp_right l).
+      rewrite <- andp_assoc, <- prop_and. apply andp_right.
+      - apply prop_right. simpl in H. unfold reachable_valid in H. split.
+        * right. specialize (H x).
+          assert (valid (b_pg (bm_bi g1)) x /\ reachable_through_set (b_pg (bm_bi g1)) (x :: nil) x). {
+            split. auto. exists x. split.
+            + apply in_eq.
+            + apply reachable_by_reflexive. split; auto. hnf; auto.
+          } rewrite H in H4. tauto.
+        * unfold reachable_list in *. intros. specialize (H3 y).
+          specialize (H y). rewrite H3. split; intros.
+          Focus 1. {
+            apply reachable_valid_and_through_single in H4.
+            rewrite H in H4. destruct H4. destruct H5 as [s [? ?]].
+            simpl in H5. destruct H5. subst; auto. tauto.
+          } Unfocus.
+          Focus 1. {
+            apply reachable_valid_and_through_single in H4.
+            rewrite <- H in H4. destruct H4. destruct H5 as [s [? ?]].
+            simpl in H5. destruct H5. subst; auto. tauto.
+          } Unfocus.
+      - assert (forall z, In z l -> valid (reachable_subgraph (b_pg (bm_bi g1)) (x :: nil)) z). {
+          intros. simpl. hnf. hnf in H3. rewrite H3 in H4. split.
+          + apply reachable_foot_valid in H4; auto.
+          + exists x. split. apply in_eq. auto.
+        } clear H3. induction l. simpl. auto.
+        unfold iter_sepcon.
+        fold (iter_sepcon l (graph_cell (bm_bi g1))).
+        fold (iter_sepcon l (graph_cell (bm_bi g2))).
+        apply derives_trans with (graph_cell (bm_bi g1) a * iter_sepcon l (graph_cell (bm_bi g2)));
+          apply sepcon_derives; auto.
+        * apply IHl. intros. apply H4. apply in_cons; auto.
+        * unfold graph_cell. unfold gamma. unfold biEdge.
+          destruct (only_two_neighbours (bm_bi g1) a) as [? [? ?]].
+          destruct (only_two_neighbours (bm_bi g2) a) as [? [? ?]].
+          assert (In a (a :: l)) by apply in_eq. specialize (H4 a H3).
+          specialize (H0 a H4). specialize (H1 a H4).
+          simpl in *. simpl. rewrite H0. rewrite H1 in e.
+          rewrite e in e0. inversion e0. subst. auto.
+    Implicit Arguments valid [[Vertex] [Data] [EV] [PreGraph]].
+    Implicit Arguments b_pg [[Vertex] [Data] [EV] [BiGraph]].
+    Implicit Arguments bm_bi [[Vertex] [Data] [nV] [EV] [BiMathGraph]].
+    Implicit Arguments only_two_neighbours [[Vertex] [Data] [EV] [BiGraph]].
+  Qed.
+
+  Lemma reachable_subgraph_eq:
+    forall (g1 g2 : BiMathGraph Addr Data null) x,
+      ((reachable_subgraph (b_pg_g g1) (x :: nil)) -=- (reachable_subgraph (b_pg_g g2) (x :: nil))) -> graph x g1 = graph x g2.
+  Proof.
+    intros. apply pred_ext.
+    + apply reachable_subgraph_derives; auto.
+    + apply reachable_subgraph_derives; apply vi_sym; auto.
+  Qed.
+  
+  Lemma graphs_growth: forall x d l r (Hn: x <> null) (g: BiMathGraph Addr Data null) (Hi: in_math bm_ma x l r),
+                         trinode x (d, l, r) * graphs (l :: r :: nil) g |-- graph x (update_graph g x d l r Hi Hn).
+  Proof.
+    intros. rewrite (graph_unfold _ _ d l r).
+    2 : apply update_bigraph_gamma.
+    apply orp_right2, andp_right. apply prop_right; hnf; tauto.
+    rewrite (add_andp _ _ (trinode_graphs_unreachable _ _ _ _ _ _ Hn)). normalize. 
+    apply derives_trans with (trinode x (d, l, r) *
+                              (graph l (update_graph g x d l r Hi Hn) ⊗ graph r (update_graph g x d l r Hi Hn))).
+    2: rewrite ocon_assoc; apply sepcon_ocon.
+    apply sepcon_derives; auto. unfold graphs. rewrite ocon_emp.
+    apply ocon_derives; apply reachable_subgraph_derives.
+    + assert (In l (l :: r :: nil)) by apply in_eq. destruct (H l H0).
+      apply unreachable_node_add_graph_eq; auto.
+    + assert (In r (l :: r :: nil)) by apply in_cons, in_eq. destruct (H r H0).
+      apply unreachable_node_add_graph_eq; auto.
+  Qed.
+
+  Lemma graph_growth_right: forall x d r (Hn: x <> null)
+                                   (g: BiMathGraph Addr Data null) (Hi: in_math bm_ma x x r),
+                              trinode x (d, x, r) * graph r g |-- graph x (update_graph g x d x r Hi Hn).
+  Proof.
+    Implicit Arguments valid [[Vertex] [Data] [EV]].
+    Implicit Arguments b_pg [[Vertex] [Data] [EV]].
+    Implicit Arguments bm_bi [[Vertex] [Data] [nV] [EV]].
+
+    intros. rewrite (add_andp _ _ (graph_root_nv _ _)). normalize. destruct H.
+    + subst. rewrite graph_unfold_null. rewrite sepcon_emp.
+      unfold graph. normalize. apply (exp_right (x :: nil)). rewrite <- andp_assoc, <- prop_and. apply andp_right.
+      - apply prop_right. split.
+        * right. hnf. right; auto.
+        * unfold reachable_list. intros. split; intros.
+          Focus 1. {
+            simpl in H. destruct H. 2: tauto.
+            subst. apply reachable_by_reflexive. simpl. unfold change_valid. split.
+            + right; auto.
+            + hnf. auto.
+          } Unfocus.
+          Focus 1. {
+            simpl in H. unfold reachable in H. rewrite reachable_acyclic in H. destruct H as [p [? ?]].
+            destruct p. destruct H0 as [[? ?] ?]. inversion H0.
+            generalize H0; intro Hh. destruct H0 as [[? ?] ?]. simpl in H0. inversion H0. subst.
+            destruct p. simpl in H1. inversion H1. apply in_eq.
+            destruct H2. simpl in H2. destruct H2. clear H4. destruct H2 as [_ [_ ?]].
+            simpl in H2. unfold change_edge_func in H2. destruct (t_eq_dec x x).
+
+  Abort.
 
 End SpatialGraph.

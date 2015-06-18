@@ -225,5 +225,5 @@ Proof.
 Defined.
 
 Instance SGA_HMD: SpatialGraphAssum.
-  apply (Build_SpatialGraphAssum (pred world) _ _ _ _ _ _ _ _ SGS_HMD trinode _ _ nMSLdirect).
+  apply (Build_SpatialGraphAssum (pred world) _ _ _ _ _ _ _ _ SGS_HMD trinode _ _ (* nMSLdirect *)).
 Defined.
