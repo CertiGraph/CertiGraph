@@ -442,34 +442,81 @@ Section SpatialGraph.
       apply unreachable_node_add_graph_eq; auto.
   Qed.
 
+  Lemma update_graph_single: forall x d l r (Hn: x <> null) (g: BiMathGraph Addr Data null) (Hi: in_math bm_ma x l r),
+                               trinode x (d, l, r) |-- graph_cell (bm_bi_g (update_graph g x d l r Hi Hn)) x.
+  Proof.
+    Implicit Arguments bm_bi [[Vertex] [Data] [nV] [EV]].
+    Implicit Arguments only_two_neighbours [[Vertex] [Data] [EV]].
+    unfold bm_bi_g. intros. unfold graph_cell. unfold gamma. unfold biEdge.
+    destruct (only_two_neighbours (bm_bi (update_graph g x d l r Hi Hn)) x) as [v1 [v2 ?]].
+    simpl in e. unfold change_edge_func in e. simpl. unfold change_node_label.
+    destruct (t_eq_dec x x). 2: tauto.
+    inversion e. subst. auto.
+    Implicit Arguments bm_bi [[Vertex] [Data] [nV] [EV] [BiMathGraph]].
+    Implicit Arguments only_two_neighbours [[Vertex] [Data] [EV] [BiGraph]].
+  Qed.
+
+  Lemma update_graph_iter_sepcon:
+    forall x d l r li (Hn: x <> null) (g: BiMathGraph Addr Data null) (Hi: in_math bm_ma x l r),
+      ~ In x li -> iter_sepcon li (graph_cell bm_bi) |-- iter_sepcon li (graph_cell (bm_bi_g (update_graph g x d l r Hi Hn))).
+  Proof.
+    Implicit Arguments bm_bi [[Vertex] [Data] [nV] [EV]].
+    Implicit Arguments only_two_neighbours [[Vertex] [Data] [EV]].
+    unfold bm_bi_g. intros.
+    induction li. simpl. auto.
+    unfold iter_sepcon.
+    fold (iter_sepcon li (graph_cell (bm_bi g))).
+    fold (iter_sepcon li (graph_cell (bm_bi (update_graph g x d l r Hi Hn)))).
+    apply sepcon_derives.
+    + unfold graph_cell. unfold gamma. unfold biEdge.
+      destruct (only_two_neighbours (bm_bi (update_graph g x d l r Hi Hn)) a) as [v1 [v2 ?]].
+      destruct (only_two_neighbours (bm_bi g) a) as [v3 [v4 ?]].
+      assert (x <> a) by (intro; apply H; subst; apply in_eq). simpl in e. simpl. change addr with Addr in *.
+      unfold change_node_label. unfold change_edge_func in e.
+      destruct (t_eq_dec a x). exfalso; auto. rewrite e in e0. inversion e0. subst. auto.
+    + apply IHli. intro. apply H. apply in_cons; auto.
+    Implicit Arguments bm_bi [[Vertex] [Data] [nV] [EV] [BiMathGraph]].
+    Implicit Arguments only_two_neighbours [[Vertex] [Data] [EV] [BiGraph]].
+  Qed.
+
   Lemma graph_growth_right: forall x d r (Hn: x <> null)
                                    (g: BiMathGraph Addr Data null) (Hi: in_math bm_ma x x r),
                               trinode x (d, x, r) * graph r g |-- graph x (update_graph g x d x r Hi Hn).
   Proof.
-    Implicit Arguments valid [[Vertex] [Data] [EV]].
-    Implicit Arguments b_pg [[Vertex] [Data] [EV]].
     Implicit Arguments bm_bi [[Vertex] [Data] [nV] [EV]].
+    Implicit Arguments only_two_neighbours [[Vertex] [Data] [EV]].
+    intros. unfold graph. normalize.
+    rewrite (add_andp _ _ (trinode_iter_sepcon_not_in _ _ _ _ _ _)). normalize.
+    apply (exp_right (x :: l)). rewrite <- andp_assoc, <- prop_and. apply andp_right.
+    + apply prop_right. split.
+      - simpl. unfold change_valid. right; right; auto.
+      - apply (reachable_list_update_graph_right g x d r Hn Hi l); auto.
+    + unfold iter_sepcon at 2. fold (iter_sepcon l (graph_cell (bm_bi (update_graph g x d x r Hi Hn)))).
+      apply sepcon_derives.
+      - apply (update_graph_single x d x r Hn g Hi).
+      - apply (update_graph_iter_sepcon x d x r l Hn g Hi H1).
+    Implicit Arguments bm_bi [[Vertex] [Data] [nV] [EV] [BiMathGraph]].
+    Implicit Arguments only_two_neighbours [[Vertex] [Data] [EV] [BiGraph]].
+  Qed.
 
-    intros. rewrite (add_andp _ _ (graph_root_nv _ _)). normalize. destruct H.
-    + subst. rewrite graph_unfold_null. rewrite sepcon_emp.
-      unfold graph. normalize. apply (exp_right (x :: nil)). rewrite <- andp_assoc, <- prop_and. apply andp_right.
-      - apply prop_right. split.
-        * right. hnf. right; auto.
-        * unfold reachable_list. intros. split; intros.
-          Focus 1. {
-            simpl in H. destruct H. 2: tauto.
-            subst. apply reachable_by_reflexive. simpl. unfold change_valid. split.
-            + right; auto.
-            + hnf. auto.
-          } Unfocus.
-          Focus 1. {
-            simpl in H. unfold reachable in H. rewrite reachable_acyclic in H. destruct H as [p [? ?]].
-            destruct p. destruct H0 as [[? ?] ?]. inversion H0.
-            generalize H0; intro Hh. destruct H0 as [[? ?] ?]. simpl in H0. inversion H0. subst.
-            destruct p. simpl in H1. inversion H1. apply in_eq.
-            destruct H2. simpl in H2. destruct H2. clear H4. destruct H2 as [_ [_ ?]].
-            simpl in H2. unfold change_edge_func in H2. destruct (t_eq_dec x x).
-
-  Abort.
+  Lemma graph_growth_left: forall x d l (Hn: x <> null)
+                                  (g: BiMathGraph Addr Data null) (Hi: in_math bm_ma x l x),
+                             trinode x (d, l, x) * graph l g |-- graph x (update_graph g x d l x Hi Hn).
+  Proof.
+    Implicit Arguments bm_bi [[Vertex] [Data] [nV] [EV]].
+    Implicit Arguments only_two_neighbours [[Vertex] [Data] [EV]].
+    intros. unfold graph. normalize. intro li; intros.
+    rewrite (add_andp _ _ (trinode_iter_sepcon_not_in _ _ _ _ _ _)). normalize.
+    apply (exp_right (x :: li)). rewrite <- andp_assoc, <- prop_and. apply andp_right.
+    + apply prop_right. split.
+      - simpl. unfold change_valid. right; right; auto.
+      - apply (reachable_list_update_graph_left g x d l Hn Hi li); auto.
+    + unfold iter_sepcon at 2. fold (iter_sepcon li (graph_cell (bm_bi (update_graph g x d l x Hi Hn)))).
+      apply sepcon_derives.
+      - apply (update_graph_single x d l x Hn g Hi).
+      - apply (update_graph_iter_sepcon x d l x li Hn g Hi H1).
+    Implicit Arguments bm_bi [[Vertex] [Data] [nV] [EV] [BiMathGraph]].
+    Implicit Arguments only_two_neighbours [[Vertex] [Data] [EV] [BiGraph]].
+  Qed.
 
 End SpatialGraph.
