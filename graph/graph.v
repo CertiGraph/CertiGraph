@@ -969,6 +969,15 @@ Definition update_BiGraph {A D: Type} {EV: EqDec A} (g: BiGraph A D) (v: A) (d: 
   destruct (t_eq_dec n v). exfalso; auto. auto.
 Defined.
 
+Lemma update_bigraph_gamma {A D: Type} {EV: EqDec A} :
+  forall (g: BiGraph A D) (v: A) (d: D) (l r: A), gamma (update_BiGraph g v d l r) v = (d, l, r).
+Proof.
+  intros. unfold gamma, biEdge. destruct (@only_two_neighbours A D EV (@update_BiGraph A D EV g v d l r) v) as [v1 [v2 ?]].
+  simpl in *. unfold change_edge_func, change_node_label in *. destruct (t_eq_dec v v).
+  + inversion e. subst; auto.
+  + exfalso; auto.
+Qed.
+
 Definition in_math {A D: Type} {nV: A} {EV: EqDec A} (g: MathGraph A D nV) (v: A) (l r: A) : Prop :=
   forall e, In e (l :: r :: nil) -> valid e \/ e = v \/ e = nV.
 
