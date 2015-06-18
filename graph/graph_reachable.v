@@ -668,4 +668,72 @@ Section GraphReachable.
     Implicit Arguments edge_func [[Vertex] [Data] [EV] [PreGraph]].
   Qed.
 
+  Lemma reachable_list_update_graph_right:
+    forall (g : BiMathGraph V D null) x d r (Hn: x <> null) (Hi: in_math bm_ma x x r) li,
+      ~ In x li -> reachable_list (b_pg_g g) r li ->
+      reachable_list (b_pg_g (update_graph g x d x r Hi Hn)) x (x :: li).
+  Proof.
+    unfold b_pg_g in *. intros. unfold reachable_list in *.
+    intros. split; intros.
+    + simpl in H1. destruct H1.
+      - subst. apply reachable_by_reflexive. split.
+        * simpl. unfold change_valid. right; auto.
+        * hnf; auto.
+      - rewrite H0 in H1. simpl. apply reachable_by_cons with r.
+        * hnf. simpl. unfold change_valid.
+          split. right; auto.
+          split. left. apply reachable_head_valid in H1. auto.
+          unfold change_edge_func. destruct (t_eq_dec x x). apply in_cons, in_eq. tauto.
+        * hnf. auto.
+        * destruct H1 as [p ?]. exists p.
+          rewrite update_reachable_by_path_not_in. auto.
+          intro. apply H. rewrite H0.
+          destruct (reachable_by_path_split_in _ _ _ _ _ _ _ _ _ H1 H2) as [p1 [p2 [? [? ?]]]].
+          exists p1; auto.
+    + intros. destruct (t_eq_dec y x). subst. apply in_eq. simpl. right. rewrite H0. simpl in H1.
+      unfold reachable in H1. rewrite reachable_acyclic in H1. destruct H1 as [p [? ?]].
+      generalize H2; intro Hr. destruct H2 as [[? ?] ?].
+      destruct p. inversion H2. simpl in H2. inversion H2. subst.
+      destruct p. simpl in H3. inversion H3. subst. tauto.
+      destruct H4. simpl in H4. destruct H4 as [? _]. destruct H4 as [? [? ?]]. simpl in H7.
+      unfold change_edge_func in H7. destruct (t_eq_dec). 2: tauto. simpl in H7. destruct H7 as [? | [? | ?]].
+      - subst. apply NoDup_cons_2 in H1. exfalso; apply H1, in_eq.
+      - subst. apply (update_reachable_tail_reachable H1 Hr).
+      - tauto.
+  Qed.
+
+  Lemma reachable_list_update_graph_left:
+    forall (g : BiMathGraph V D null) x d l (Hn: x <> null) (Hi: in_math bm_ma x l x) li,
+      ~ In x li -> reachable_list (b_pg_g g) l li ->
+      reachable_list (b_pg_g (update_graph g x d l x Hi Hn)) x (x :: li).
+  Proof.
+    unfold b_pg_g in *. intros. unfold reachable_list in *.
+    intros. split; intros.
+    + simpl in H1. destruct H1.
+      - subst. apply reachable_by_reflexive. split.
+        * simpl. unfold change_valid. right; auto.
+        * hnf; auto.
+      - rewrite H0 in H1. simpl. apply reachable_by_cons with l.
+        * hnf. simpl. unfold change_valid.
+          split. right; auto.
+          split. left. apply reachable_head_valid in H1. auto.
+          unfold change_edge_func. destruct (t_eq_dec x x). apply in_eq. tauto.
+        * hnf. auto.
+        * destruct H1 as [p ?]. exists p.
+          rewrite update_reachable_by_path_not_in. auto.
+          intro. apply H. rewrite H0.
+          destruct (reachable_by_path_split_in _ _ _ _ _ _ _ _ _ H1 H2) as [p1 [p2 [? [? ?]]]].
+          exists p1; auto.
+    + intros. destruct (t_eq_dec y x). subst. apply in_eq. simpl. right. rewrite H0. simpl in H1.
+      unfold reachable in H1. rewrite reachable_acyclic in H1. destruct H1 as [p [? ?]].
+      generalize H2; intro Hr. destruct H2 as [[? ?] ?].
+      destruct p. inversion H2. simpl in H2. inversion H2. subst.
+      destruct p. simpl in H3. inversion H3. subst. tauto.
+      destruct H4. simpl in H4. destruct H4 as [? _]. destruct H4 as [? [? ?]]. simpl in H7.
+      unfold change_edge_func in H7. destruct (t_eq_dec). 2: tauto. simpl in H7. destruct H7 as [? | [? | ?]].
+      - subst. apply (update_reachable_tail_reachable H1 Hr).
+      - subst. apply NoDup_cons_2 in H1. exfalso; apply H1, in_eq.
+      - tauto.
+  Qed.
+  
 End GraphReachable.
