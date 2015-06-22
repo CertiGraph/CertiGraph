@@ -105,3 +105,5 @@ Transparent LiftNatDed' LiftSepLog'.
     apply semax_frame; auto.
     inversion H1; subst; auto.
 Qed.
+
+End SEMAX.
