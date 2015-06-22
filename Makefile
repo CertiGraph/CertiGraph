@@ -22,6 +22,9 @@ MSL_EXT_FILES = \
 VERIC_EXT_FILES = \
   res_predicates.v seplog.v SeparationLogic.v
 
+FLOYD_EXT_FILES = \
+  MapstoSL.v DataatSL.v
+
 HEAP_MODEL_DIRECT_FILES = \
   SeparationAlgebra.v mapsto.v SeparationLogic.v
 
@@ -45,6 +48,7 @@ C_FILES = $(CLIGHT_FILES:%.v=%.c)
 VST_BASED_FILES = \
   $(MSL_EXT_FILES:%.v=msl_ext/%.v) \
   $(VERIC_EXT_FILES:%.v=veric_ext/%.v) \
+  $(FLOYD_EXT_FILES:%.v=floyd_ext/%.v) \
   $(HEAP_MODEL_DIRECT_FILES:%.v=heap_model_direct/%.v) \
   $(DATA_STRUCTURE_FILES:%.v=data_structure/%.v) \
   $(SAMPLE_MARK_FILES:%.v=sample_mark/%.v)

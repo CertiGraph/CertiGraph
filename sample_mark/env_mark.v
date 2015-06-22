@@ -9,3 +9,5 @@ Proof. prove_CS_legal. Qed.
 
 Global Existing Instance CompSpecs.
 Global Existing Instance CS_legal.
+
+Definition node_type := Tstruct _Node noattr.
