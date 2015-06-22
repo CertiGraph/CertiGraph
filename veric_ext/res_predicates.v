@@ -93,6 +93,38 @@ Proof.
     - exists (b, z). repeat split; auto; omega.
 Qed.
 
+Lemma range_overlap_comm: forall l1 n1 l2 n2, range_overlap l1 n1 l2 n2 -> range_overlap l2 n2 l1 n1.
+Proof.
+  unfold range_overlap.
+  intros.
+  destruct H as [l ?].
+  exists l.
+  tauto.
+Qed.
+
+Lemma range_overlap_non_zero: forall l1 n1 l2 n2, range_overlap l1 n1 l2 n2 -> n1 > 0 /\ n2 > 0.
+Proof.
+  unfold range_overlap.
+  intros.
+  destruct H as [l [? ?]].
+  apply adr_range_non_zero in H.
+  apply adr_range_non_zero in H0.
+  auto.
+Qed.
+
+Lemma VALspec_range_conflict: forall rsh sh l1 n1 l2 n2,
+  range_overlap l1 n1 l2 n2 ->
+  VALspec_range n1 rsh sh l1 * VALspec_range n2 rsh sh l2 |-- FF.
+Proof.
+  intros.
+  pose proof range_overlap_non_zero _ _ _ _ H.
+  apply range_overlap_spec in H; try tauto.
+  destruct H.
+  + apply VALspec_range_overlap; tauto.
+  + rewrite sepcon_comm.
+    apply VALspec_range_overlap; tauto.
+Qed.
+
 Lemma address_mapsto_conflict: forall rsh sh l1 ch1 v1 l2 ch2 v2,
   range_overlap l1 (size_chunk ch1) l2 (size_chunk ch2) ->
   address_mapsto ch1 v1 rsh sh l1 * address_mapsto ch2 v2 rsh sh l2 |-- FF.

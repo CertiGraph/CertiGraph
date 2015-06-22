@@ -7,6 +7,28 @@ Require Import VST.msl.log_normalize.
 
 Local Open Scope logic.
 
+Lemma exp_unit: forall {A} `{NatDed A} (P: unit -> A),
+  exp P = P tt.
+Proof.
+  intros.
+  apply pred_ext.
+  + apply exp_left; intro x.
+    destruct x.
+    auto.
+  + apply (exp_right tt); auto.
+Qed.
+
+Lemma allp_unit: forall {A} `{NatDed A} (P: unit -> A),
+  allp P = P tt.
+Proof.
+  intros.
+  apply pred_ext.
+  + apply (allp_left _ tt); auto.
+  + apply allp_right; intro x.
+    destruct x.
+    auto.
+Qed.
+
 Lemma allp_uncurry: forall {A} `{NatDed A} (S T: Type) (P: S -> T -> A),
   allp (fun s => allp (P s)) = allp (fun st => P (fst st) (snd st)).
 Proof.
@@ -154,6 +176,17 @@ Proof.
   intros.
   rewrite exp_FF.
   apply FF_precise.
+Qed.
+
+Lemma precise_prop_andp: forall {A} `{PreciseSepLog A} P Q, (P \/ ~ P) -> (P -> precise Q) -> precise (!!P && Q).
+Proof.
+  intros.
+  destruct H0.
+  + apply precise_andp_right.
+    auto.
+  + apply precise_andp_left.
+    apply derives_precise with FF; [| apply FF_precise].
+    apply prop_derives; auto.
 Qed.
 
 Lemma precise_exp_prop_andp: forall {A B} `{PreciseSepLog A} (P: B -> Prop) (Q: B -> A),
