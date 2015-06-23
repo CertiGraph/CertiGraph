@@ -1,4 +1,5 @@
 Require Export VST.floyd.proofauto.
+Require Export RamifyCoq.floyd_ext.semax_ram_lemmas.
 Require Export RamifyCoq.sample_mark.mark.
 
 Local Open Scope logic.
