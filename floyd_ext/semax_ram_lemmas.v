@@ -110,6 +110,40 @@ Transparent LiftNatDed' LiftSepLog'.
   auto.
 Qed.
 
+Lemma semax_ram_unlocalize': forall Delta l g s F P0 P c Q P'
+  (frame_sound: g |-- l * (P -* P'))
+  (frame_closed: Forall (fun s => closed_wrt_modvars s (P -* P')) s),
+  corable P0 ->
+  semax_ram Delta F (P0 && P') c Q ->
+  semax_ram Delta
+   (RAM_FRAME.Build_SingleFrame l g s
+     (RAM_FRAME.Build_SingleFrame' (P -* P') frame_sound frame_closed) :: F) (P0 && P) c Q.
+Proof.
+  intros.
+Opaque LiftNatDed' LiftSepLog'.
+  simpl.
+Transparent LiftNatDed' LiftSepLog'.
+  eapply semax_ram_pre; [| eauto].
+  rewrite corable_andp_sepcon1 by auto.
+  apply andp_derives; [auto |].
+  rewrite sepcon_comm.
+  apply wand_sepcon_adjoint.
+  auto.
+Qed.
+
+Lemma semax_ram_unlocalize'_PROP_LOCAL_SEP: forall Delta l g s F P Q R c Ret P' Q' R'
+  (frame_sound: g |-- l * (SEPx R -* SEPx R'))
+  (frame_closed: Forall (fun s => closed_wrt_modvars s (SEPx R -* SEPx R')) s)
+  (pure_sound: PROPx P (LOCALx Q (SEPx R)) |-- PROPx P' (LOCALx Q' TT)),
+  semax_ram Delta F (PROPx P' (LOCALx Q' (SEPx R'))) c Ret ->
+  semax_ram Delta
+   (RAM_FRAME.Build_SingleFrame l g s
+     (RAM_FRAME.Build_SingleFrame' (SEPx R -* SEPx R') frame_sound frame_closed) :: F)
+   (PROPx P (LOCALx Q (SEPx R))) c Ret.
+Proof.
+  intros.
+Abort.
+
 Lemma semax_ram_abduction: forall Delta l g s F P c Q F0
   (frame_sound: g |-- l * F0)
   (frame_closed: Forall (fun s => closed_wrt_modvars s F0) s),
