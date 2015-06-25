@@ -131,7 +131,31 @@ Transparent LiftNatDed' LiftSepLog'.
   auto.
 Qed.
 
-Lemma semax_ram_unlocalize'_PROP_LOCAL_SEP: forall Delta l g s F P Q R c Ret P' Q' R'
+Lemma SEPx_sepcon: forall P Q R, PROPx P (LOCALx Q (SEPx R)) = PROPx P (LOCALx Q TT) && SEPx R.
+Proof.
+  intros.
+  unfold PROPx, LOCALx.
+  rewrite andp_TT.
+  rewrite andp_assoc.
+  auto.
+Qed.
+
+Lemma corable_PROP_LOCAL: forall P Q R, corable R -> corable (PROPx P (LOCALx Q R)).
+Proof.
+Opaque LiftNatDed' LiftSepLog' LiftCorableSepLog'.
+  intros.
+  unfold PROPx, LOCALx.
+  apply corable_andp; auto.
+  unfold local, lift1.
+  apply corable_andp; auto.
+  unfold_lift.
+Transparent LiftNatDed' LiftSepLog' LiftCorableSepLog'.
+  simpl.
+  intros.
+  auto.
+Qed.
+
+Lemma semax_ram_unlocalize_PROP_LOCAL_SEP: forall Delta l g s F P Q R c Ret P' Q' R'
   (frame_sound: g |-- l * (SEPx R -* SEPx R'))
   (frame_closed: Forall (fun s => closed_wrt_modvars s (SEPx R -* SEPx R')) s)
   (pure_sound: PROPx P (LOCALx Q (SEPx R)) |-- PROPx P' (LOCALx Q' TT)),
@@ -142,7 +166,13 @@ Lemma semax_ram_unlocalize'_PROP_LOCAL_SEP: forall Delta l g s F P Q R c Ret P' 
    (PROPx P (LOCALx Q (SEPx R))) c Ret.
 Proof.
   intros.
-Abort.
+  eapply semax_ram_pre with (PROPx P' (LOCALx Q' (SEPx R))).
+  1: rewrite SEPx_sepcon with (P := P'); apply andp_right;
+       [eauto | rewrite SEPx_sepcon; apply andp_left2; auto].
+  rewrite SEPx_sepcon in H |- *.
+  apply semax_ram_unlocalize'; [| auto].
+  apply corable_PROP_LOCAL; simpl; auto.
+Qed.
 
 Lemma semax_ram_abduction: forall Delta l g s F P c Q F0
   (frame_sound: g |-- l * F0)
