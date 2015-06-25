@@ -7,19 +7,52 @@ Local Open Scope logic.
 
 Arguments SingleFrame' {l} {g} {s}.
 
-Variable mark: forall {N} {D} {null} {DEC}, @BiMathGraph N D null DEC -> N -> @BiMathGraph N D null DEC -> Prop.
-
-Hypothesis mark_null: forall {N} {D} {null} {DEC} (g g': @BiMathGraph N D null DEC) , mark g null g' -> g = g'.
-
 Definition Graph := @BiMathGraph pointer_val int NullPointer (@AddrDec SGS_VST).
 
 Definition graph sh x (g: Graph): mpred := @graph (SGA_VST sh) x g.
+
+Definition mark {N} {D} {null} {DEC} marked (g: @BiMathGraph N D null DEC) (x: N) (g': @BiMathGraph N D null DEC): Prop :=
+  mark _ _ _ marked (@m_pg _ _ _ _ (@bm_ma _ _ _ _ g)) x (@m_pg _ _ _ _ (@bm_ma _ _ _ _ g')).
+
+Definition mark1 {N} {D} {null} {DEC} marked (g: @BiMathGraph N D null DEC) (x: N) (g': @BiMathGraph N D null DEC): Prop :=
+  mark1 _ _ _ marked (@m_pg _ _ _ _ (@bm_ma _ _ _ _ g)) x (@m_pg _ _ _ _ (@bm_ma _ _ _ _ g')).
+
+Hypothesis mark_null: forall {N} {D} {null} {DEC} marked (g g': @BiMathGraph N D null DEC), mark marked g null g' -> g = g'.
+
+Hypothesis mark_marked: forall {N} {D} {null} {DEC} (marked: set D) (g g': @BiMathGraph N D null DEC) x d l r,
+  gamma (@bm_bi _ _ _ _ g) x = (d, l, r) ->
+  marked d ->
+  mark marked g x g' -> g = g'.
+
+Hypothesis mark1_exists: forall {N} {D} {null} {DEC} (marked: set D) (g: @BiMathGraph N D null DEC) x,
+  exists g', mark1 marked g x g'.
+
+Definition is_one := fun i: int => i = Int.repr 1.
+
+Hypothesis graph_ramify_aux0: forall sh x g d l r,
+  gamma (@bm_bi _ _ _ _ g) x = (d, l, r) ->
+  graph sh x g
+   |-- data_at sh node_type (Vint d, (pointer_val_val l, pointer_val_val r))
+         (pointer_val_val x) *
+       (data_at sh node_type (Vint d, (pointer_val_val l, pointer_val_val r))
+          (pointer_val_val x) -* graph sh x g).
+
+Hypothesis graph_ramify_aux1: forall sh x d l r g g1,
+  gamma (@bm_bi _ _ _ _ g) x = (d, l, r) ->
+  mark1 is_one g x g1 ->
+  ~ is_one d ->
+  graph sh x g
+   |-- data_at sh node_type (Vint d, (pointer_val_val l, pointer_val_val r))
+         (pointer_val_val x) *
+       (data_at sh node_type
+          (Vint (Int.repr 1), (pointer_val_val l, pointer_val_val r))
+          (pointer_val_val x) -* graph sh x g1).
 
 Definition mark_spec :=
  DECLARE _mark
   WITH sh: share, g: Graph, g': Graph, x: pointer_val
   PRE [ _x OF (tptr (Tstruct _Node noattr))]
-          PROP  (mark g x g')
+          PROP  (writable_share sh; mark is_one g x g')
           LOCAL (temp _x (pointer_val_val x))
           SEP   (`(graph sh x g))
   POST [ tint ]
@@ -40,10 +73,11 @@ Definition Gprog : funspecs := mark_spec :: main_spec::nil.
 Lemma destruct_pointer_val_VP: forall x,
   pointer_val_val x <> nullval \/
   isptr (pointer_val_val x) ->
-  exists b i, x = ValidPointer b i.
+  isptr (pointer_val_val x) /\ exists b i, x = ValidPointer b i.
 Proof.
   intros.
   destruct x; try simpl in H; try tauto.
+  split; simpl; auto.
   exists b, i; auto.
 Qed.
 
@@ -61,8 +95,8 @@ Qed.
 Ltac destruct_pointer_val x :=
   first [
     let H := fresh "H" in
-    assert (exists b i, x = ValidPointer b i) by (apply (destruct_pointer_val_VP x); tauto);
-    destruct H as [?b [?i ?H]]
+    assert (isptr (pointer_val_val x) /\ exists b i, x = ValidPointer b i) by (apply (destruct_pointer_val_VP x); tauto);
+    destruct H as [?H [?b [?i ?H]]]
   | assert (x = NullPointer) by (apply (destruct_pointer_val_NP x); tauto)].
 
 Ltac ram_simplify_Delta :=
@@ -139,14 +173,26 @@ Ltac localize P :=
          abbreviate_RamFrame
   end.
 
-Ltac unlocalize P' :=
+Ltac unlocalize Pre' :=
   match goal with
   | RamFrame := @abbreviate _ (RAM_FRAME.Build_SingleFrame ?l ?g ?s _ :: ?F) |-
-    semax_ram ?Delta _ ?P ?c ?Q =>
+    semax_ram ?Delta _ (PROPx ?P (LOCALx ?Q (SEPx ?R))) ?c ?Ret =>
     clear_RamFrame_abbr;
-    apply (semax_ram_unlocalize Delta l g s F P c Q P');
-    gather_current_goal_with_evar
+    match Pre' with
+    | PROPx ?P' (LOCALx ?Q' (SEPx ?R')) =>
+        eapply (semax_ram_unlocalize_PROP_LOCAL_SEP Delta l g s F P Q R c Ret P' Q' R');
+        gather_current_goal_with_evar
+    end
   end.
+
+Lemma pointer_val_val_is_pointer_or_null: forall x,
+  is_pointer_or_null (pointer_val_val x).
+Proof.
+  intros.
+  destruct x; simpl; auto.
+Qed.
+
+Hint Resolve pointer_val_val_is_pointer_or_null.
 
 Lemma body_mark: semax_body Vprog Gprog f_mark mark_spec.
 Proof.
@@ -155,7 +201,7 @@ Proof.
     (PROP  (pointer_val_val x <> nullval)  LOCAL  (temp _x (pointer_val_val x))  SEP  (`(graph sh x g))); try destruct_pointer_val x.
   Focus 1. { (* if-then branch *)
     forward. (* return *)
-    rewrite (mark_null g g') by auto.
+    rewrite (mark_null is_one g g') by auto.
     auto.
   } Unfocus.
   Focus 1. { (* if-else branch *)
@@ -163,7 +209,7 @@ Proof.
     entailer!.
   } Unfocus.
   normalize.
-  destruct_pointer_val x; clear H0.
+  destruct_pointer_val x; clear H1.
 
   remember (gamma (@bm_bi _ _ _ _ g) x) as dlr eqn:?H.
   destruct dlr as [[d l] r].
@@ -172,18 +218,89 @@ Proof.
     LOCAL (temp _x (pointer_val_val x))
     SEP   (`(data_at sh node_type (Vint d, (pointer_val_val l, pointer_val_val r))
               (pointer_val_val x)))).
+  (* localize *)
 
   apply -> ram_seq_assoc. 
   eapply semax_ram_seq;
     [ repeat apply eexists_add_stats_cons; constructor
     | new_load_tac 
     | abbreviate_semax_ram].
-  (* root_mark = x -> m; *)
-  
   apply ram_extract_exists_pre.
   intro root_mark_old; autorewrite with subst; clear root_mark_old.
-  unlocalize (PROP  (pointer_val_val x <> nullval)  LOCAL  (temp _root_mark (Vint d); temp _x (pointer_val_val x))  SEP  (`(graph sh x g))).
+  (* root_mark = x -> m; *)
 
+  unlocalize (PROP  ()  LOCAL  (temp _root_mark (Vint d); temp _x (pointer_val_val x))  SEP  (`(graph sh x g))).
   Grab Existential Variables.
+  Focus 2. { entailer!. } Unfocus.
+  Focus 2. { repeat constructor; auto with closed. } Unfocus.
+  Focus 2. { entailer!. apply graph_ramify_aux0; auto. } Unfocus.
+  (* unlocalize *)
+
+  unfold semax_ram.
+  forward_if_tac  (* if (root_mark == 1) *)
+    (PROP  (~ is_one d)
+      LOCAL  (temp _root_mark (Vint d); temp _x (pointer_val_val x))
+      SEP  (`(graph sh x g))).
+  Focus 1. { (* if-then branch *)
+    forward. (* return *)
+    erewrite (mark_marked is_one g g') by (try unfold is_one; eauto).
+    auto.
+  } Unfocus.
+  Focus 1. { (* if-else branch *)
+    forward. (* skip; *)
+    entailer!.
+  } Unfocus.
+
+  destruct (mark1_exists is_one g x) as [g1 ?H].
+  normalize.
+  localize
+   (PROP  ()
+    LOCAL (temp _root_mark (Vint d); temp _x (pointer_val_val x))
+    SEP   (`(data_at sh node_type (Vint d, (pointer_val_val l, pointer_val_val r))
+              (pointer_val_val x)))).
+  (* localize *)
+
+  apply -> ram_seq_assoc. 
+  eapply semax_ram_seq;
+    [ repeat apply eexists_add_stats_cons; constructor
+    | new_load_tac 
+    | abbreviate_semax_ram].
+  apply ram_extract_exists_pre.
+  intro l_old; autorewrite with subst; clear l_old.
+  (* l = x -> l; *)
+
+  apply -> ram_seq_assoc. 
+  eapply semax_ram_seq;
+    [ repeat apply eexists_add_stats_cons; constructor
+    | new_load_tac 
+    | abbreviate_semax_ram].
+  apply ram_extract_exists_pre.
+  intro r_old; autorewrite with subst; clear r_old.
+  (* r = x -> r; *)
+
+  apply -> ram_seq_assoc.
+  eapply semax_ram_seq;
+    [ repeat apply eexists_add_stats_cons; constructor
+    | new_store_tac
+    | abbreviate_semax_ram].
+  cbv beta zeta iota delta [replace_nth].
+  change (@field_at CompSpecs CS_legal sh node_type []
+           (Vint (Int.repr 1), (pointer_val_val l, pointer_val_val r))) with
+         (@data_at CompSpecs CS_legal sh node_type
+           (Vint (Int.repr 1), (pointer_val_val l, pointer_val_val r))).
+  (* x -> d = 1; *)
+
+  unlocalize
+   (PROP  ()
+    LOCAL (temp _r (pointer_val_val r);
+           temp _l (pointer_val_val l);
+           temp _root_mark (Vint d);
+           temp _x (pointer_val_val x))
+    SEP (`(graph sh x g1))).
+  Grab Existential Variables.
+  Focus 2. { entailer!. } Unfocus.
+  Focus 2. { repeat constructor; auto with closed. } Unfocus.
+  Focus 2. { entailer!. apply graph_ramify_aux1; auto. } Unfocus.
+  (* unlocalize *)
 
 Abort.
