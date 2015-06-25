@@ -139,6 +139,15 @@ Ltac localize P :=
          abbreviate_RamFrame
   end.
 
+Ltac unlocalize P' :=
+  match goal with
+  | RamFrame := @abbreviate _ (RAM_FRAME.Build_SingleFrame ?l ?g ?s _ :: ?F) |-
+    semax_ram ?Delta _ ?P ?c ?Q =>
+    clear_RamFrame_abbr;
+    apply (semax_ram_unlocalize Delta l g s F P c Q P');
+    gather_current_goal_with_evar
+  end.
+
 Lemma body_mark: semax_body Vprog Gprog f_mark mark_spec.
 Proof.
   start_function.
@@ -173,5 +182,8 @@ Proof.
   
   apply ram_extract_exists_pre.
   intro root_mark_old; autorewrite with subst; clear root_mark_old.
+  unlocalize (PROP  (pointer_val_val x <> nullval)  LOCAL  (temp _root_mark (Vint d); temp _x (pointer_val_val x))  SEP  (`(graph sh x g))).
+
+  Grab Existential Variables.
 
 Abort.
