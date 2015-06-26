@@ -3,6 +3,7 @@ Require Import VST.floyd.base.
 Require Import VST.floyd.canon.
 Require Import VST.floyd.assert_lemmas.
 Require Import VST.floyd.client_lemmas.
+Require Import VST.floyd.closed_lemmas.
 
 Local Open Scope logic.
 
@@ -110,14 +111,15 @@ Transparent LiftNatDed' LiftSepLog'.
   auto.
 Qed.
 
-Lemma semax_ram_unlocalize': forall Delta l g s F P0 P c Q P'
-  (frame_sound: g |-- l * (P -* P'))
-  (frame_closed: Forall (fun s => closed_wrt_modvars s (P -* P')) s),
+Lemma semax_ram_unlocalize': forall Delta l g s F P0 P1 P c Q P'
+  (frame_sound: g |-- l * (P1 && (P -* P')))
+  (frame_closed: Forall (fun s => closed_wrt_modvars s (P1 && (P -* P'))) s),
   corable P0 ->
-  semax_ram Delta F (P0 && P') c Q ->
+  corable P1 ->
+  semax_ram Delta F (P0 && P1 && P') c Q ->
   semax_ram Delta
    (RAM_FRAME.Build_SingleFrame l g s
-     (RAM_FRAME.Build_SingleFrame' (P -* P') frame_sound frame_closed) :: F) (P0 && P) c Q.
+     (RAM_FRAME.Build_SingleFrame' (P1 && (P -* P')) frame_sound frame_closed) :: F) (P0 && P) c Q.
 Proof.
   intros.
 Opaque LiftNatDed' LiftSepLog'.
@@ -125,6 +127,9 @@ Opaque LiftNatDed' LiftSepLog'.
 Transparent LiftNatDed' LiftSepLog'.
   eapply semax_ram_pre; [| eauto].
   rewrite corable_andp_sepcon1 by auto.
+  rewrite andp_assoc.
+  apply andp_derives; [auto |].
+  rewrite corable_sepcon_andp1 by auto. 
   apply andp_derives; [auto |].
   rewrite sepcon_comm.
   apply wand_sepcon_adjoint.
@@ -155,23 +160,105 @@ Transparent LiftNatDed' LiftSepLog' LiftCorableSepLog'.
   auto.
 Qed.
 
-Lemma semax_ram_unlocalize_PROP_LOCAL_SEP: forall Delta l g s F P Q R c Ret P' Q' R'
-  (frame_sound: g |-- l * (SEPx R -* SEPx R'))
-  (frame_closed: Forall (fun s => closed_wrt_modvars s (SEPx R -* SEPx R')) s)
-  (pure_sound: PROPx P (LOCALx Q (SEPx R)) |-- PROPx P' (LOCALx Q' TT)),
+Inductive split_by_closed:
+ list statement -> list (environ -> Prop) -> list (environ -> Prop) -> list (environ -> Prop) -> Prop :=
+ | split_by_closed_nil: forall s, split_by_closed s nil nil nil
+ | split_by_closed_cons_closed: forall s q Q Q1 Q2,
+     Forall (fun s => closed_wrt_modvars s (local q)) s ->
+     split_by_closed s Q Q1 Q2 ->
+     split_by_closed s (q :: Q) (q :: Q1) Q2
+ | split_by_closed_cons_unclosed: forall s q Q Q1 Q2,
+     split_by_closed s Q Q1 Q2 ->
+     split_by_closed s (q :: Q) Q1 (q :: Q2).
+
+Lemma insert_local': forall Q1 P Q R,
+  local Q1 && (PROPx P (LOCALx Q R)) = (PROPx P (LOCALx (Q1 :: Q) R)).
+Proof.
+intros. extensionality rho.
+unfold PROPx, LOCALx, local; super_unfold_lift. simpl.
+apply pred_ext; autorewrite with gather_prop; normalize;
+decompose [and] H; clear H.
+Qed.
+
+Lemma split_by_closed_spec: forall s P Q Q1 Q2,
+  split_by_closed s Q Q1 Q2 ->
+  Forall (fun s => closed_wrt_modvars s (PROPx P (LOCALx Q1 TT))) s /\
+  PROPx P (LOCALx Q TT) = PROPx P (LOCALx Q1 TT) && PROPx nil (LOCALx Q2 TT).
+Proof.
+  intros.
+  split.
+  + rewrite Forall_forall; intros.
+    induction H.
+    - auto with closed.
+    - spec IHsplit_by_closed; auto.
+      rewrite Forall_forall in H; specialize (H x H0).
+      rewrite <- insert_local'.
+      auto with closed.
+    - auto.
+  + induction H.
+    - apply add_andp.
+      change (PROP  ()  LOCAL ()  TT) with (TT && (local (`True) && TT)).
+      unfold local, lift1; unfold_lift; simpl; intros.
+      normalize.
+    - rewrite <- !insert_local'.
+      rewrite IHsplit_by_closed.
+      rewrite andp_assoc; auto.
+    - rewrite <- !insert_local'.
+      rewrite IHsplit_by_closed.
+      rewrite <- !andp_assoc.
+      rewrite (andp_comm (local q)); auto.
+Qed.
+
+Lemma frame_sound_aux: forall g l R P' Q1' R',
+  g |-- PROPx P' (LOCALx Q1' TT) ->
+  g |-- l * (SEPx R -* SEPx R') ->
+  g |-- l * (PROPx P' (LOCALx Q1' TT) && (SEPx R -* SEPx R')).
+Proof.
+  intros.
+  rewrite corable_sepcon_andp1 by (apply corable_PROP_LOCAL; simpl; auto).
+  apply andp_right; auto.
+Qed.
+
+Lemma frame_closed_aux: forall s R P' Q' Q1' Q2' R',
+  split_by_closed s Q' Q1' Q2' ->
+  Forall (fun s => closed_wrt_modvars s (SEPx R -* SEPx R')) s ->
+  Forall (fun s => closed_wrt_modvars s (PROPx P' (LOCALx Q1' TT) && (SEPx R -* SEPx R'))) s.
+Proof.
+  intros.
+  apply split_by_closed_spec with (P := P') in H.
+  destruct H as [? _].
+  rewrite Forall_forall in *.
+  intros x HH; specialize (H x HH); specialize (H0 x HH).
+  auto with closed.
+Qed.
+
+Lemma semax_ram_unlocalize_PROP_LOCAL_SEP: forall Delta l g s F P Q R c Ret P' Q' Q1' Q2' R'
+  (SPLIT: split_by_closed s Q' Q1' Q2')
+  (SEP_frame_sound: g |-- l * (SEPx R -* SEPx R'))
+  (SEP_frame_closed: Forall (fun s => closed_wrt_modvars s (SEPx R -* SEPx R')) s)
+  (PURE_frame_sound: g |-- PROPx P' (LOCALx Q1' TT)),
+  PROPx P (LOCALx Q (SEPx R)) |-- PROPx nil (LOCALx Q2' TT) ->
   semax_ram Delta F (PROPx P' (LOCALx Q' (SEPx R'))) c Ret ->
   semax_ram Delta
    (RAM_FRAME.Build_SingleFrame l g s
-     (RAM_FRAME.Build_SingleFrame' (SEPx R -* SEPx R') frame_sound frame_closed) :: F)
+     (RAM_FRAME.Build_SingleFrame'
+       (PROPx P' (LOCALx Q1' TT) && (SEPx R -* SEPx R'))
+       (frame_sound_aux _ _ _ _ _ _ PURE_frame_sound SEP_frame_sound)
+       (frame_closed_aux _ _ _ _ _ _ _ SPLIT SEP_frame_closed)) :: F)
    (PROPx P (LOCALx Q (SEPx R))) c Ret.
 Proof.
   intros.
-  eapply semax_ram_pre with (PROPx P' (LOCALx Q' (SEPx R))).
-  1: rewrite SEPx_sepcon with (P := P'); apply andp_right;
+  eapply semax_ram_pre with (PROPx nil (LOCALx Q2' (SEPx R))).
+  1: rewrite SEPx_sepcon with (Q := Q2'); apply andp_right;
        [eauto | rewrite SEPx_sepcon; apply andp_left2; auto].
   rewrite SEPx_sepcon in H |- *.
-  apply semax_ram_unlocalize'; [| auto].
-  apply corable_PROP_LOCAL; simpl; auto.
+  apply semax_ram_unlocalize';
+   [ apply corable_PROP_LOCAL; simpl; auto
+   | apply corable_PROP_LOCAL; simpl; auto
+   |].
+  apply split_by_closed_spec with (P := P') in SPLIT.
+  rewrite (andp_comm (PROP  ()  (LOCALx Q2' TT))), <- (proj2 SPLIT).
+  rewrite SEPx_sepcon in H0; auto.
 Qed.
 
 Lemma semax_ram_abduction: forall Delta l g s F P c Q F0
