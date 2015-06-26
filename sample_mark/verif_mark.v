@@ -17,6 +17,11 @@ Definition mark {N} {D} {null} {DEC} marked (g: @BiMathGraph N D null DEC) (x: N
 Definition mark1 {N} {D} {null} {DEC} marked (g: @BiMathGraph N D null DEC) (x: N) (g': @BiMathGraph N D null DEC): Prop :=
   mark1 _ _ _ marked (@m_pg _ _ _ _ (@bm_ma _ _ _ _ g)) x (@m_pg _ _ _ _ (@bm_ma _ _ _ _ g')).
 
+Definition subgraph {N} {D} {null} {DEC} (g: @BiMathGraph N D null DEC) (x: N) (g': @BiMathGraph N D null DEC) : Prop :=
+  reachable_subgraph (@m_pg _ _ _ _ (@bm_ma _ _ _ _ g)) (x :: nil) = (@m_pg _ _ _ _ (@bm_ma _ _ _ _ g')).
+
+Definition is_one := fun i: int => i = Int.repr 1.
+
 Hypothesis mark_null: forall {N} {D} {null} {DEC} marked (g g': @BiMathGraph N D null DEC), mark marked g null g' -> g = g'.
 
 Hypothesis mark_marked: forall {N} {D} {null} {DEC} (marked: set D) (g g': @BiMathGraph N D null DEC) x d l r,
@@ -24,10 +29,32 @@ Hypothesis mark_marked: forall {N} {D} {null} {DEC} (marked: set D) (g g': @BiMa
   marked d ->
   mark marked g x g' -> g = g'.
 
+Hypothesis mark_exists: forall {N} {D} {null} {DEC} (marked: set D) (g: @BiMathGraph N D null DEC) x,
+  exists g', mark marked g x g'.
+
 Hypothesis mark1_exists: forall {N} {D} {null} {DEC} (marked: set D) (g: @BiMathGraph N D null DEC) x,
   exists g', mark1 marked g x g'.
 
-Definition is_one := fun i: int => i = Int.repr 1.
+Hypothesis subgraph_exists: forall {N} {D} {null} {DEC} (marked: set D) (g: @BiMathGraph N D null DEC) x,
+  exists g', subgraph g x g'.
+
+Hypothesis reachable_mark1: forall {N} {D} {null} {DEC} (marked: set D) (g g': @BiMathGraph N D null DEC) x y z,
+  mark1 marked g x g' -> (reachable (@m_pg _ _ _ _ (@bm_ma _ _ _ _ g)) y z <-> reachable (@m_pg _ _ _ _ (@bm_ma _ _ _ _ g')) y z).
+
+Hypothesis reachable_mark: forall {N} {D} {null} {DEC} (marked: set D) (g g': @BiMathGraph N D null DEC) x y z,
+  mark marked g x g' -> (reachable (@m_pg _ _ _ _ (@bm_ma _ _ _ _ g)) y z <-> reachable (@m_pg _ _ _ _ (@bm_ma _ _ _ _ g')) y z).
+
+Hypothesis gamma_reachable: forall {N} {D} {null} {DEC} (g: @BiMathGraph N D null DEC) d x y z,
+  gamma (@bm_bi _ _ _ _ g) x = (d, y, z) \/ gamma (@bm_bi _ _ _ _ g) x = (d, z, y) ->
+  reachable (@m_pg _ _ _ _ (@bm_ma _ _ _ _ g)) x y.
+
+Hypothesis mark1_mark_left_mark_right: forall {N} {D} {null} {DEC} marked (g: @BiMathGraph N D null DEC) g1 g2 g3 g' x d l r,
+  gamma (@bm_bi _ _ _ _ g) x = (d, l, r) ->
+  mark1 marked g x g1 ->
+  mark marked g1 l g2 ->
+  mark marked g2 r g3 ->
+  mark marked g x g' ->
+  g' = g3.
 
 Hypothesis graph_ramify_aux0: forall sh x g d l r,
   gamma (@bm_bi _ _ _ _ g) x = (d, l, r) ->
@@ -48,6 +75,13 @@ Hypothesis graph_ramify_aux1: forall sh x d l r g g1,
           (Vint (Int.repr 1), (pointer_val_val l, pointer_val_val r))
           (pointer_val_val x) -* graph sh x g1).
 
+Hypothesis graph_ramify_aux2: forall sh x y g g1 sg sg1,
+  reachable (@m_pg _ _ _ _ (@bm_ma _ _ _ _ g)) x y ->
+  mark is_one g y g1 ->
+  mark is_one sg y sg1 ->
+  subgraph g y sg ->
+  graph sh x g |-- graph sh y sg * (graph sh y sg1 -* graph sh x g1).
+
 Definition mark_spec :=
  DECLARE _mark
   WITH sh: share, g: Graph, g': Graph, x: pointer_val
@@ -55,7 +89,7 @@ Definition mark_spec :=
           PROP  (writable_share sh; mark is_one g x g')
           LOCAL (temp _x (pointer_val_val x))
           SEP   (`(graph sh x g))
-  POST [ tint ]
+  POST [ Tvoid ]
         PROP ()
         LOCAL()
         SEP (`(graph sh x g')).
@@ -160,11 +194,18 @@ Ltac abbreviate_semax_ram :=
   clear_abbrevs;
   simpl typeof.
 
+Ltac solve_split_by_closed :=
+  repeat first
+    [ apply split_by_closed_nil
+    | apply split_by_closed_cons_closed; solve [repeat constructor; auto with closed]
+    | apply split_by_closed_cons_unclosed].
+
 Ltac localize P :=
   match goal with
   | |- semax ?Delta ?Pre ?c ?Post =>
          change (semax Delta Pre c Post) with (semax_ram Delta nil Pre c Post);
          abbreviate_RamFrame
+  | |- semax_ram ?Delta _ ?Pre ?c ?Post => idtac
   end;
   match goal with
   | RamFrame := @abbreviate (list SingleFrame) ?F |-
@@ -180,8 +221,7 @@ Ltac unlocalize Pre' :=
     clear_RamFrame_abbr;
     match Pre' with
     | PROPx ?P' (LOCALx ?Q' (SEPx ?R')) =>
-        eapply (semax_ram_unlocalize_PROP_LOCAL_SEP Delta l g s F P Q R c Ret P' Q' R');
-        gather_current_goal_with_evar
+        eapply (fun Q1' Q2' => semax_ram_unlocalize_PROP_LOCAL_SEP Delta l g s F P Q R c Ret P' Q' Q1' Q2' R'); gather_current_goal_with_evar
     end
   end.
 
@@ -231,8 +271,10 @@ Proof.
 
   unlocalize (PROP  ()  LOCAL  (temp _root_mark (Vint d); temp _x (pointer_val_val x))  SEP  (`(graph sh x g))).
   Grab Existential Variables.
+  Focus 6. { solve_split_by_closed. } Unfocus.
   Focus 2. { entailer!. } Unfocus.
-  Focus 2. { repeat constructor; auto with closed. } Unfocus.
+  Focus 3. { entailer!. } Unfocus.
+  Focus 3. { repeat constructor; auto with closed. } Unfocus.
   Focus 2. { entailer!. apply graph_ramify_aux0; auto. } Unfocus.
   (* unlocalize *)
 
@@ -269,7 +311,7 @@ Proof.
   intro l_old; autorewrite with subst; clear l_old.
   (* l = x -> l; *)
 
-  apply -> ram_seq_assoc. 
+  apply -> ram_seq_assoc.
   eapply semax_ram_seq;
     [ repeat apply eexists_add_stats_cons; constructor
     | new_load_tac 
@@ -298,9 +340,90 @@ Proof.
            temp _x (pointer_val_val x))
     SEP (`(graph sh x g1))).
   Grab Existential Variables.
+  Focus 6. { solve_split_by_closed. } Unfocus.
   Focus 2. { entailer!. } Unfocus.
-  Focus 2. { repeat constructor; auto with closed. } Unfocus.
+  Focus 3. { entailer!. } Unfocus.
+  Focus 3. { repeat constructor; auto with closed. } Unfocus.
   Focus 2. { entailer!. apply graph_ramify_aux1; auto. } Unfocus.
   (* unlocalize *)
 
-Abort.
+  unfold semax_ram. (* should not need this *)
+  destruct (subgraph_exists is_one g1 l) as [sg1 ?H].
+  destruct (mark_exists is_one g1 l) as [g2 ?H].
+  destruct (mark_exists is_one sg1 l) as [sg2 ?H].
+  localize
+   (PROP  ()
+    LOCAL (temp _l (pointer_val_val l))
+    SEP   (`(graph sh l sg1))).
+  (* localize *)
+  
+  apply -> ram_seq_assoc.
+  eapply semax_ram_seq;
+  [ repeat apply eexists_add_stats_cons; constructor
+  | forward_call' (sh, sg1, sg2, l); apply derives_refl
+  | abbreviate_semax_ram].
+  (* mark(l); *)
+
+  unlocalize
+   (PROP  ()
+    LOCAL (temp _r (pointer_val_val r);
+           temp _l (pointer_val_val l);
+           temp _root_mark (Vint d);
+           temp _x (pointer_val_val x))
+    SEP (`(graph sh x g2))).
+  Grab Existential Variables.
+  Focus 6. { solve_split_by_closed. } Unfocus.
+  Focus 2. { entailer!. } Unfocus.
+  Focus 3. { entailer!. } Unfocus.
+  Focus 3. { repeat constructor; auto with closed. } Unfocus.
+  Focus 2. {
+    entailer!. eapply graph_ramify_aux2; auto.
+    eapply (reachable_mark1 is_one g g1 _ _ _ H4).
+    eauto.
+    eapply gamma_reachable; left; symmetry; eauto.
+  } Unfocus.
+  (* unlocalize *)
+
+  clear sg1 sg2 H6 H8.
+  unfold semax_ram. (* should not need this *)
+  destruct (subgraph_exists is_one g2 r) as [sg2 ?H].
+  destruct (mark_exists is_one g2 r) as [g3 ?H].
+  destruct (mark_exists is_one sg2 r) as [sg3 ?H].
+  localize
+   (PROP  ()
+    LOCAL (temp _r (pointer_val_val r))
+    SEP   (`(graph sh r sg2))).
+  (* localize *)
+  
+  eapply semax_ram_seq;
+  [ repeat apply eexists_add_stats_cons; constructor
+  | forward_call' (sh, sg2, sg3, r); apply derives_refl
+  | abbreviate_semax_ram].
+  (* mark(r); *)
+
+  unlocalize
+   (PROP  ()
+    LOCAL (temp _r (pointer_val_val r);
+           temp _l (pointer_val_val l);
+           temp _root_mark (Vint d);
+           temp _x (pointer_val_val x))
+    SEP (`(graph sh x g3))).
+  Grab Existential Variables.
+  Focus 6. { solve_split_by_closed. } Unfocus.
+  Focus 2. { entailer!. } Unfocus.
+  Focus 3. { entailer!. } Unfocus.
+  Focus 3. { repeat constructor; auto with closed. } Unfocus.
+  Focus 2. {
+    entailer!. eapply graph_ramify_aux2; auto.
+    eapply (reachable_mark is_one g1 g2 _ _ _ H7).
+    eapply (reachable_mark1 is_one g g1 _ _ _ H4).
+    eauto.
+    eapply gamma_reachable; right; symmetry; eauto.
+  } Unfocus.
+  (* unlocalize *)
+
+  clear sg2 sg3 H6 H9.
+  unfold semax_ram.
+  rewrite <- (mark1_mark_left_mark_right is_one g g1 g2 g3 g' x d l r) by auto.
+  forward. (* ( return; ) *)
+Qed.
