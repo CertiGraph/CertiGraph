@@ -216,4 +216,19 @@ Proof.
   tauto.
 Qed.
 
+Lemma iter_sepcon_ramification: forall P g g' l l',
+  (exists f, Permutation g (l ++ f) /\ Permutation g' (l' ++ f)) ->
+  iter_sepcon g P |-- iter_sepcon l P * (iter_sepcon l' P -* iter_sepcon g' P).
+Proof.
+  intros.
+  destruct H as [f [? ?]].
+  rewrite (iter_sepcon_permutation _ H).
+  rewrite (iter_sepcon_permutation _ H0).
+  rewrite !iter_sepcon_app_sepcon.
+  apply sepcon_derives; auto.
+  apply wand_sepcon_adjoint.
+  rewrite sepcon_comm.
+  auto.
+Qed.
+
 End IterSepCon.
