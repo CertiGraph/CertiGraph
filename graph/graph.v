@@ -38,10 +38,29 @@ Class PreGraph (Vertex: Type) Data {EV: EqDec Vertex} :=
     edge_func : Vertex -> list Vertex
   }.
 
+Definition weak_valid {Vertex Data EV} `{@PreGraph Vertex Data EV} nV p :=
+  if t_eq_dec p nV then True else valid p.
+
+Lemma weak_valid_spec: forall {Vertex Data EV} `{@PreGraph Vertex Data EV} nV p,
+  {p = nV} + {valid p} -> weak_valid nV p.
+Proof.
+  intros.
+  unfold weak_valid.
+  destruct (t_eq_dec p nV); tauto.
+Qed.
+
+Lemma weak_valid_complete: forall {Vertex Data EV} `{@PreGraph Vertex Data EV} nV p,
+  weak_valid nV p -> {p = nV} + {valid p}.
+Proof.
+  intros.
+  unfold weak_valid in H0.
+  destruct (t_eq_dec p nV); tauto.
+Qed.
+
 Class MathGraph (Vertex : Type) Data (nV : Vertex) {EV: EqDec Vertex} :=
   {
     m_pg :> PreGraph Vertex Data;
-    valid_graph: forall x, valid x -> forall y, In y (edge_func x) -> y = nV \/ valid y;
+    valid_graph: forall x, valid x -> forall y, In y (edge_func x) -> weak_valid nV y;
     valid_not_null: forall x, valid x -> x <> nV
   }.
 
@@ -974,15 +993,15 @@ Proof.
   + exfalso; auto.
 Qed.
 
-Definition in_math {A D: Type} {nV: A} {EV: EqDec A} (g: MathGraph A D nV) (v: A) (l r: A) : Prop :=
-  forall e, In e (l :: r :: nil) -> valid e \/ e = v \/ e = nV.
+Definition in_math {A D: Type} {nV: A} {EV: EqDec A} (g: MathGraph A D nV) (v: A) (l r: A) : Type :=
+  forall e, In e (l :: r :: nil) -> {valid e} + {e = v} + {e = nV}.
 
 Definition update_MathGraph {A D: Type} {nV: A} {EV: EqDec A} (g: MathGraph A D nV)
            (v: A) (d: D) (l r: A) (Hi: in_math g v l r) (Hn: v <> nV): MathGraph A D nV.
   refine (Build_MathGraph A D nV EV (update_PreGraph m_pg v d l r) _ _).
   intros. simpl in H0. unfold change_edge_func in H0. simpl in H; simpl. unfold change_valid in *. destruct (t_eq_dec x v).
-  subst. specialize (Hi y H0). destruct Hi as [? | [? | ?]]; [right; left | right; right | left]; auto.
-  destruct H. apply (valid_graph x H y) in H0. destruct H0; [left | right; left]; auto. exfalso; auto.
+  subst. specialize (Hi y H0). destruct Hi as [[? | ?] | ?]; apply weak_valid_spec; [right; left | right; right | left]; auto.
+  destruct H. apply (valid_graph x H y) in H0. apply weak_valid_complete in H0; apply weak_valid_spec. destruct H0; [left | right; left]; auto. exfalso; auto.
   intros. simpl in H. unfold change_valid in H. destruct H; [apply valid_not_null | subst]; auto.
 Defined.
 
@@ -1002,19 +1021,26 @@ Defined.
 
 Definition single_MathGraph_double {A D: Type} (nV: A) (EV: EqDec A) (v: A) (d: D) (Hn: v <> nV): MathGraph A D nV.
   refine (Build_MathGraph A D nV EV (single_PreGraph EV v d v v) _ _).
-  intros. simpl in H. subst. simpl in H0. simpl. destruct H0 as [? | [? | ?]]; [right | right | exfalso]; auto.
+  intros. simpl in H. subst. simpl in H0. simpl.
+  apply weak_valid_spec; destruct (t_eq_dec v y); [right | tauto]. simpl; auto.
   intros. simpl in H. subst. auto.
 Defined.
 
 Definition single_MathGraph_left {A D: Type} (nV: A) (EV: EqDec A) (v: A) (d: D) (Hn: v <> nV): MathGraph A D nV.
   refine (Build_MathGraph A D nV EV (single_PreGraph EV v d v nV) _ _).
-  intros. simpl in H. subst. simpl in H0. simpl. destruct H0 as [? | [? | ?]]; [right | left | exfalso]; auto.
+  intros. simpl in H. subst. simpl in H0. simpl.
+  apply weak_valid_spec.
+  destruct (t_eq_dec nV y); [left; auto | ].
+  destruct (t_eq_dec v y); [right | tauto]. simpl; auto.
   intros. simpl in H. subst. auto.
 Defined.
 
 Definition single_MathGraph_right {A D: Type} (nV: A) (EV: EqDec A) (v: A) (d: D) (Hn: v <> nV): MathGraph A D nV.
   refine (Build_MathGraph A D nV EV (single_PreGraph EV v d nV v) _ _).
-  intros. simpl in H. subst. simpl in H0. simpl. destruct H0 as [? | [? | ?]]; [left | right | exfalso]; auto.
+  intros. simpl in H. subst. simpl in H0. simpl.
+  apply weak_valid_spec.
+  destruct (t_eq_dec nV y); [left; auto | ].
+  destruct (t_eq_dec v y); [right | tauto]. simpl; auto.
   intros. simpl in H. subst. auto.
 Defined.
 
