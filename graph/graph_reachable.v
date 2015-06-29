@@ -115,13 +115,17 @@ Section GraphReachable.
 
   Definition rch3 (i: reach_input) := match i with (_, _, result) => result end.
 
+  Section UniquePreGraph.
+
+  Context {pg : PreGraph V D}.
+
   Lemma construct_reachable_reachable:
-    forall (mg : MathGraph V D null) (i : reach_input) x, Forall (reachable m_pg x) (rch3 i) ->
-                                                          Forall (reachable m_pg x) (rch2 i) ->
-                                                          Forall (reachable m_pg x) (construct_reachable m_pg i).
+    forall (mg : MathGraph pg null) (i : reach_input) x, Forall (reachable pg x) (rch3 i) ->
+                                                         Forall (reachable pg x) (rch2 i) ->
+                                                         Forall (reachable pg x) (construct_reachable pg i).
   Proof.
     intros mg i. remember (lengthInput i). assert (lengthInput i <= n) by omega. clear Heqn. revert i H.
-    induction n; intros; remember (construct_reachable m_pg i) as r; destruct i as [[len pr] rslt]; simpl in *;
+    induction n; intros; remember (construct_reachable pg i) as r; destruct i as [[len pr] rslt]; simpl in *;
     rewrite construct_reachable_unfold in Heqr; destruct pr; simpl in Heqr. subst; auto. destruct (le_dec len (length rslt)).
     subst; auto. exfalso; omega. subst; auto. destruct (le_dec len (length rslt)). subst; auto. rewrite Heqr. apply IHn; simpl.
     omega. apply Forall_cons. apply Forall_inv in H1. auto. auto. rewrite Forall_forall in *. intro y; intros.
@@ -135,9 +139,9 @@ Section GraphReachable.
   Qed.
 
   Lemma construct_reachable_nodup:
-    forall (pg : PreGraph V D) (i : reach_input), NoDup (rch2 i ++ rch3 i) -> NoDup (construct_reachable pg i).
+    forall (i : reach_input), NoDup (rch2 i ++ rch3 i) -> NoDup (construct_reachable pg i).
   Proof.
-    intros pg i. remember (lengthInput i). assert (lengthInput i <= n) by omega. clear Heqn. revert i H.
+    intro i. remember (lengthInput i). assert (lengthInput i <= n) by omega. clear Heqn. revert i H.
     induction n; intros; remember (construct_reachable pg i) as r; destruct i as [[len pr] rslt]; simpl in *;
     rewrite construct_reachable_unfold in Heqr; destruct pr. subst. rewrite app_nil_l in H0. auto.
     destruct (le_dec len (length rslt)). subst; apply NoDup_app_r in H0; auto. exfalso; intuition. subst.
@@ -152,9 +156,9 @@ Section GraphReachable.
   Qed.
 
   Lemma construct_reachable_length_bound:
-    forall (pg : PreGraph V D) (i : reach_input), length (rch3 i) <= rch1 i -> length (construct_reachable pg i) <= rch1 i.
+    forall (i : reach_input), length (rch3 i) <= rch1 i -> length (construct_reachable pg i) <= rch1 i.
   Proof.
-    intros pg i. remember (lengthInput i). assert (lengthInput i <= n) by omega. clear Heqn. revert i H.
+    intro i. remember (lengthInput i). assert (lengthInput i <= n) by omega. clear Heqn. revert i H.
     induction n; intros; remember (construct_reachable pg i) as r; destruct i as [[len pr] rslt]; simpl in *;
     rewrite construct_reachable_unfold in Heqr; destruct pr. subst; auto. destruct (le_dec len (length rslt)). subst; auto.
     exfalso; intuition. subst; auto. destruct (le_dec len (length rslt)). subst; auto. simpl in Heqr.
@@ -163,9 +167,9 @@ Section GraphReachable.
   Qed.
 
   Lemma construct_reachable_sublist:
-    forall (pg : PreGraph V D) (i : reach_input), Sublist (rch3 i) (construct_reachable pg i).
+    forall (i : reach_input), Sublist (rch3 i) (construct_reachable pg i).
   Proof.
-    intros pg i. remember (lengthInput i). assert (lengthInput i <= n) by omega. clear Heqn. revert i H.
+    intros i. remember (lengthInput i). assert (lengthInput i <= n) by omega. clear Heqn. revert i H.
     induction n; intros; remember (construct_reachable pg i) as r; destruct i as [[len pr] rslt]; simpl in *;
     rewrite construct_reachable_unfold in Heqr; destruct pr. subst; apply Sublist_refl. destruct (le_dec len (length rslt)).
     subst; apply Sublist_refl. exfalso; intuition. subst; apply Sublist_refl. destruct (le_dec len (length rslt)).
@@ -174,19 +178,19 @@ Section GraphReachable.
     apply (IHn a). apply in_cons. auto.
   Qed.
 
-  Definition ProcessingInResult (pg : PreGraph V D) (l1 l2 : list V) : Prop :=
+  Definition ProcessingInResult (l1 l2 : list V) : Prop :=
     forall x y, In x l1 -> reachable pg x y -> In y l2.
 
-  Lemma PIR_cons: forall (pg : PreGraph V D) x l1 l2,
+  Lemma PIR_cons: forall x l1 l2,
                     (forall y, reachable pg x y -> In y l2) ->
-                    ProcessingInResult pg l1 l2 -> ProcessingInResult pg (x :: l1) l2.
+                    ProcessingInResult l1 l2 -> ProcessingInResult (x :: l1) l2.
   Proof. repeat intro; apply in_inv in H1; destruct H1. subst. apply H; auto. apply (H0 x0); auto. Qed.
 
-  Lemma PIR_sublist: forall (pg : PreGraph V D) l1 l2 l3,
-                       Sublist l1 l2 -> ProcessingInResult pg l2 l3 -> ProcessingInResult pg l1 l3.
+  Lemma PIR_sublist: forall l1 l2 l3,
+                       Sublist l1 l2 -> ProcessingInResult l2 l3 -> ProcessingInResult l1 l3.
   Proof. repeat intro. specialize (H x H1). apply (H0 x y); auto. Qed.
 
-  Definition ResultInProcessing (pg : PreGraph V D) (l1 l2 : list V) : Prop :=
+  Definition ResultInProcessing (l1 l2 : list V) : Prop :=
     forall x y, In x l1 -> edge pg x y -> In y l1 \/ In y l2.
 
   Fixpoint findNotIn (l1 l2 l3: list V) : (option V * (list V * list V)) :=
@@ -229,7 +233,7 @@ Section GraphReachable.
   Proof. induction l; intros; auto. simpl in H. destruct l. inversion H. specialize (IHl H). inversion IHl. Qed.
 
   Lemma reachable_by_path_split_dec:
-    forall (pg : PreGraph V D) p a b P rslt,
+    forall p a b P rslt,
       pg |= p is a ~o~> b satisfying P -> {Forall (fun m => In m (a :: rslt)) p} +
                                           {exists l1 l2 e1 s2, Forall (fun m => In m (a :: rslt)) l1 /\
                                                                pg |= l1 is a ~o~> e1 satisfying P /\
@@ -258,16 +262,16 @@ Section GraphReachable.
   Qed.
 
   Lemma construct_reachable_contains_all_reachable:
-    forall (mg : MathGraph V D null) i,
+    forall (mg : MathGraph pg null) i,
       (Forall (fun m => m <> null) (rch2 i)) ->
-      ResultInProcessing m_pg (rch3 i) (rch2 i) -> length (construct_reachable m_pg i) < rch1 i ->
-      ProcessingInResult m_pg (rch2 i) (construct_reachable m_pg i).
+      ResultInProcessing (rch3 i) (rch2 i) -> length (construct_reachable pg i) < rch1 i ->
+      ProcessingInResult (rch2 i) (construct_reachable pg i).
   Proof.
     intros mg i. remember (lengthInput i). assert (lengthInput i <= n) by omega. clear Heqn. revert i H.
-    induction n; intros; remember (construct_reachable m_pg i) as r; destruct i as [[len pr] rslt]; simpl in *;
+    induction n; intros; remember (construct_reachable pg i) as r; destruct i as [[len pr] rslt]; simpl in *;
     rewrite construct_reachable_unfold in Heqr; destruct pr. subst; omega. destruct (le_dec len (length rslt)). subst; omega.
     exfalso; intuition. subst. repeat intro. inversion H3. destruct (le_dec len (length rslt)). subst; omega. simpl in Heqr.
-    assert (ProcessingInResult m_pg (remove_list pr (remove t_eq_dec v (edge_func v)) rslt) r).
+    assert (ProcessingInResult (remove_list pr (remove t_eq_dec v (edge_func v)) rslt) r).
     specialize (IHn (len, remove_list pr (remove t_eq_dec v (edge_func v)) rslt, v :: rslt)); simpl in IHn.
     rewrite <- Heqr in IHn. apply IHn; auto. omega. apply Forall_forall. intros.
     generalize (remove_list_null_not_in pr (remove t_eq_dec v (edge_func v)) rslt); intro. intro. rewrite H5 in H3. intuition.
@@ -276,9 +280,9 @@ Section GraphReachable.
     apply valid_not_null in H8. apply in_inv in H3. destruct H3. rewrite <- H3 in *; clear H3. apply remove_list_in; auto.
     apply (remove_in_2 _ t_eq_dec _ _ v) in H9. destruct H9; intuition. apply remove_list_in_2; auto. specialize (H1 x y H3 H7).
     destruct H1. intuition. apply in_inv in H1. destruct H1. exfalso; intuition. auto. apply PIR_cons. intros.
-    unfold reachable in H4. destruct H4 as [p ?]. destruct (reachable_by_path_split_dec _ _ _ _ _ rslt H4).
+    unfold reachable in H4. destruct H4 as [p ?]. destruct (reachable_by_path_split_dec _ _ _ _ rslt H4).
     rewrite Forall_forall in f. apply reachable_by_path_foot in H4. apply foot_in in H4. specialize (f _ H4). rewrite Heqr.
-    apply (construct_reachable_sublist _ _ y). simpl. apply in_inv in f. auto.
+    apply (construct_reachable_sublist _ y). simpl. apply in_inv in f. auto.
     destruct e as [l1 [l2 [e1 [s1 [? [? [? [? [? [? ?]]]]]]]]]]. rewrite Forall_forall in H5. destruct (t_eq_dec e1 v).
     rewrite e in *; clear e e1. destruct H8 as [? [? ?]]. apply not_in_app in H9. destruct H9.
     assert (In s1 (remove t_eq_dec v (edge_func v))). destruct (remove_in_2 _ t_eq_dec _ _ v H13); intuition.
@@ -292,39 +296,39 @@ Section GraphReachable.
   Qed.
 
   Lemma finite_reachable_computable:
-    forall (mg : MathGraph V D null) x l, valid x -> (forall y, reachable m_pg x y -> In y l) ->
-                                          {l': list V | reachable_list m_pg x l' /\ NoDup l'}.
+    forall (mg : MathGraph pg null) x l, valid x -> (forall y, reachable pg x y -> In y l) ->
+                                          {l': list V | reachable_list pg x l' /\ NoDup l'}.
   Proof.
-    intros. remember (length l, x :: nil, @nil V) as i. remember (construct_reachable m_pg i) as l'. exists l'.
-    assert (Forall (reachable m_pg x) l'). rewrite Forall_forall. intro z. intros. assert (Forall (reachable m_pg x) (rch3 i)).
-    rewrite Heqi. simpl. apply Forall_nil. assert (Forall (reachable m_pg x) (rch2 i)). rewrite Heqi. simpl. apply Forall_cons.
+    intros. remember (length l, x :: nil, @nil V) as i. remember (construct_reachable pg i) as l'. exists l'.
+    assert (Forall (reachable pg x) l'). rewrite Forall_forall. intro z. intros. assert (Forall (reachable pg x) (rch3 i)).
+    rewrite Heqi. simpl. apply Forall_nil. assert (Forall (reachable pg x) (rch2 i)). rewrite Heqi. simpl. apply Forall_cons.
     apply reachable_by_reflexive. split; auto. hnf; auto. apply Forall_nil.
     generalize (construct_reachable_reachable mg i x H2 H3); intro. rewrite Forall_forall in H4. rewrite <- Heql' in H4.
-    specialize (H4 z H1). auto. assert (NoDup l') as HS. specialize (construct_reachable_nodup m_pg i); intros. rewrite Heql'.
+    specialize (H4 z H1). auto. assert (NoDup l') as HS. specialize (construct_reachable_nodup i); intros. rewrite Heql'.
     apply H2. rewrite Heqi. simpl. apply NoDup_cons. apply in_nil. apply NoDup_nil. split. split. auto.
     intros. rewrite Forall_forall in H1. apply H1. auto. intros. assert (Sublist l' l). intro w. intros. apply H0.
     rewrite Forall_forall in H1. apply H1. auto. assert (length l'<=length l).
-    specialize (construct_reachable_length_bound m_pg i); rewrite Heqi; simpl.
+    specialize (construct_reachable_length_bound i); rewrite Heqi; simpl.
     intros. rewrite Heql', Heqi. apply H4. omega. apply le_lt_or_eq in H4. destruct H4.
-    assert (ProcessingInResult m_pg (rch2 i) (construct_reachable m_pg i)). apply construct_reachable_contains_all_reachable.
-    rewrite Forall_forall. rewrite Heqi. simpl. intros. destruct H5; auto. rewrite <- H5 in *. rewrite H5 in *.
+    assert (ProcessingInResult (rch2 i) (construct_reachable pg i)). apply construct_reachable_contains_all_reachable.
+    exact mg. rewrite Forall_forall. rewrite Heqi. simpl. intros. destruct H5; auto. rewrite <- H5 in *. rewrite H5 in *.
     apply reachable_head_valid in H2. apply valid_not_null in H2. auto. rewrite Heqi; hnf; simpl. intros. auto.
     rewrite Heql' in H4. rewrite Heqi at 2. simpl. auto. specialize (H5 x y). rewrite Heql'; apply H5; auto. rewrite Heqi.
     simpl. left; auto. generalize (sublist_reverse t_eq_dec l' l HS H4 H3 y); intros; apply H5. apply H0. auto. auto.
   Qed.
 
-  Lemma compute_reachable: forall (mg : MathGraph V D null) x L,
-                             reachable_list m_pg x L -> forall y, reachable m_pg x y ->
-                                                                  {L' : list V | reachable_list m_pg y L' /\ NoDup L'}.
+  Lemma compute_reachable: forall (mg : MathGraph pg null) x L,
+                             reachable_list pg x L -> forall y, reachable pg x y ->
+                                                                {L' : list V | reachable_list pg y L' /\ NoDup L'}.
   Proof.
-    intros. assert (valid y). apply reachable_foot_valid in H0; auto. assert (forall z, reachable m_pg y z -> In z L). intros.
-    assert (reachable m_pg x z). apply reachable_by_merge with y; auto. rewrite (H z). auto.
+    intros. assert (valid y). apply reachable_foot_valid in H0; auto. assert (forall z, reachable pg y z -> In z L). intros.
+    assert (reachable pg x z). apply reachable_by_merge with y; auto. rewrite (H z). auto.
     destruct (finite_reachable_computable mg y L H1 H2) as [l' [? ?]]. exists l'; split; auto.
   Qed.
 
-  Lemma compute_neighbor: forall (mg : MathGraph V D null) x l,
-                            valid x -> reachable_list m_pg x l -> forall y, In y (edge_func x) -> 
-                                                                            {l' | reachable_list m_pg y l' /\ NoDup l'}.
+  Lemma compute_neighbor: forall (mg : MathGraph pg null) x l,
+                            valid x -> reachable_list pg x l -> forall y, In y (edge_func x) -> 
+                                                                          {l' | reachable_list pg y l' /\ NoDup l'}.
   Proof.
     intros. destruct (weak_valid_complete _ _ (valid_graph x H y H1)).
     + subst. exists nil. split.
@@ -338,7 +342,7 @@ Section GraphReachable.
   Qed.
 
   Lemma reachable_from_children:
-    forall (pg : PreGraph V D) x y, reachable pg x y -> y = x \/ exists z, pg |= x ~> z /\ reachable pg z y.
+    forall x y, reachable pg x y -> y = x \/ exists z, pg |= x ~> z /\ reachable pg z y.
   Proof.
     intros. destruct H as [p ?]. destruct p. destruct H. destruct H. inversion H. destruct H as [[? ?] [? ?]].
     simpl in H. inversion H. subst. destruct p. simpl in H0. inversion H0. left; auto. right. hnf in H1. destruct H1.
@@ -347,10 +351,10 @@ Section GraphReachable.
   Qed.
 
   Lemma reachable_all_zero:
-    forall (mg: MathGraph V D null) x l, valid x -> reachable_list m_pg x l -> NoDup l ->
+    forall (mg: MathGraph pg null) x l, valid x -> reachable_list pg x l -> NoDup l ->
                                          Forall (fun m => m = null) (edge_func x) -> l = x :: nil.
   Proof.
-    intros. rewrite Forall_forall in H2. assert (reachable m_pg x x). apply reachable_by_reflexive. split; auto.
+    intros. rewrite Forall_forall in H2. assert (reachable pg x x). apply reachable_by_reflexive. split; auto.
     hnf; auto. rewrite <- (H0 x) in H3. apply in_split in H3. destruct H3 as [l1 [l2 ?]]. destruct l1, l2. simpl in H3; auto.
     simpl in H3. assert (In v l). rewrite H3. apply in_cons. apply in_eq. rewrite (H0 v) in H4.
     apply reachable_from_children in H4. destruct H4. subst. apply NoDup_cons_2 in H1. exfalso; apply H1. apply in_eq.
@@ -364,7 +368,7 @@ Section GraphReachable.
   Qed.
 
   Lemma reachable_through_set_eq:
-    forall (pg : PreGraph V D) a S x, reachable_through_set pg (a :: S) x <-> reachable pg a x \/ reachable_through_set pg S x.
+    forall a S x, reachable_through_set pg (a :: S) x <-> reachable pg a x \/ reachable_through_set pg S x.
   Proof.
     intros; split; intros. destruct H as [s [? ?]]. apply in_inv in H. destruct H. subst. left; auto. right. exists s.
     split; auto. destruct H. exists a. split. apply in_eq. auto. destruct H as [s [? ?]]. exists s. split. apply in_cons. auto.
@@ -372,30 +376,30 @@ Section GraphReachable.
   Qed.
 
   Lemma finite_reachable_set_single:
-    forall (mg : MathGraph V D null) S l, (forall x, reachable_through_set m_pg S x -> In x l) ->
+    forall (mg : MathGraph pg null) S l, (forall x, reachable_through_set pg S x -> In x l) ->
                                           forall s, In s S -> valid s ->
-                                                    {l' : list V | reachable_list m_pg s l' /\ NoDup l'}.
+                                                    {l' : list V | reachable_list pg s l' /\ NoDup l'}.
   Proof.
-    intros. assert (forall y, reachable m_pg s y -> In y l). intros. apply H. exists s; split; auto.
+    intros. assert (forall y, reachable pg s y -> In y l). intros. apply H. exists s; split; auto.
     destruct (finite_reachable_computable mg s l H1 H2) as [l' [? ?]]. exists l'; split; auto.
   Qed.
 
-  Definition reachable_set_list (pg : PreGraph V D) (S : list V) (l : list V) : Prop :=
+  Definition reachable_set_list (S : list V) (l : list V) : Prop :=
     forall x : V, reachable_through_set pg S x <-> In x l.
 
   Lemma reachable_through_single_reachable':
-    forall (mg : MathGraph V D null) S l, reachable_set_list m_pg S l ->
-      forall s, In s S -> valid s -> {l' : list V | reachable_list m_pg s l' /\ NoDup l'}.
+    forall (mg : MathGraph pg null) S l, reachable_set_list S l ->
+      forall s, In s S -> valid s -> {l' : list V | reachable_list pg s l' /\ NoDup l'}.
   Proof.
-    intros. assert (forall x, reachable_through_set m_pg S x -> In x l). intros. rewrite <- (H x). auto.
+    intros. assert (forall x, reachable_through_set pg S x -> In x l). intros. rewrite <- (H x). auto.
     destruct (finite_reachable_set_single mg S l H2 s H0 H1) as [l' [? ?]]. exists l'; split; auto.
   Qed.
 
   Lemma reachable_through_single_reachable:
-    forall (mg : MathGraph V D null) S l, reachable_set_list m_pg S l ->
-      forall s, In s S -> weak_valid null s -> {l' : list V | reachable_list m_pg s l' /\ NoDup l'}.
+    forall (mg : MathGraph pg null) S l, reachable_set_list S l ->
+      forall s, In s S -> weak_valid null s -> {l' : list V | reachable_list pg s l' /\ NoDup l'}.
   Proof.
-    intros. assert (forall x, reachable_through_set m_pg S x -> In x l). intros. rewrite <- (H x). auto.
+    intros. assert (forall x, reachable_through_set pg S x -> In x l). intros. rewrite <- (H x). auto.
     destruct (weak_valid_complete _ _ H1).
     + subst. exists nil. split.
       - unfold reachable_list. intro. split; intros.
@@ -406,8 +410,8 @@ Section GraphReachable.
   Qed.
 
   Lemma reachable_through_sublist_reachable:
-    forall (mg : MathGraph V D null) S l, reachable_set_list m_pg S l ->
-      forall s, Sublist s S -> well_defined_list mg s -> exists l' : list V, reachable_set_list m_pg s l' /\ NoDup l'.
+    forall (mg : MathGraph pg null) S l, reachable_set_list S l ->
+      forall s, Sublist s S -> well_defined_list mg s -> exists l' : list V, reachable_set_list s l' /\ NoDup l'.
   Proof.
     intros.
     induction s.
@@ -442,8 +446,8 @@ Section GraphReachable.
   Qed.
 
   Lemma reachable_path_in:
-    forall (pg: PreGraph V D) (p: list V) (l y : V), pg |= p is l ~o~> y satisfying (fun _ : D => True) ->
-                                                     forall z, In z p -> reachable pg l z.
+    forall (prg: PreGraph V D) (p: list V) (l y : V), prg |= p is l ~o~> y satisfying (fun _ : D => True) ->
+                                                     forall z, In z p -> reachable prg l z.
   Proof.
     intros. destruct H as [[? ?] [? ?]]. apply in_split in H0. destruct H0 as [l1 [l2 ?]]. exists (l1 +:: z). subst. split.
     split. destruct l1; simpl; simpl in H; auto. rewrite foot_last. auto. split. rewrite app_cons_assoc in H2.
@@ -451,9 +455,9 @@ Section GraphReachable.
   Qed.
 
   Lemma update_reachable_path_in:
-    forall {g : BiMathGraph V D null} {x : V} {d : D}  {l r: V} {p: list V} {h y: V},
-      x <> null -> h <> x -> (update_PreGraph b_pg x d l r) |= p is h ~o~> y satisfying (fun _: D => True) ->
-      In x p -> reachable b_pg h x.
+    forall {g : BiMathGraph pg null} {x : V} {d : D}  {l r: V} {p: list V} {h y: V},
+      x <> null -> h <> x -> (update_PreGraph pg x d l r) |= p is h ~o~> y satisfying (fun _: D => True) ->
+      In x p -> reachable pg h x.
   Proof.
     intros. generalize (reachable_path_in _ p h y H1 x H2). intro. unfold reachable in H3. rewrite reachable_acyclic in H3.
     destruct H3 as [path [? ?]]. destruct H4 as [[? ?] [? ?]]. apply foot_explicit in H5. destruct H5 as [p' ?]. destruct p'.
@@ -462,11 +466,11 @@ Section GraphReachable.
     rewrite H5 in *. rewrite <- app_cons_assoc in H3, H6. clear H7. apply valid_path_split in H6. destruct H6. simpl in H7.
     destruct H7. destruct H7 as [? [? ?]]. simpl in H10. unfold change_edge_func in H10. simpl in H10. generalize H3; intro Hnd.
     apply NoDup_app_r in H3. apply NoDup_cons_2 in H3. apply (not_in_app t_eq_dec) in H3. destruct H3. simpl in H7.
-    unfold change_valid in H7. destruct H7. destruct (t_eq_dec v x). exfalso; auto. rewrite <- pg_the_same in H7.
-    rewrite <- pg_the_same in H10. destruct (weak_valid_complete _ _ (valid_graph v H7 x H10)) as [?H | ?H]. exfalso; auto. rewrite <- H5 in Hv.
+    unfold change_valid in H7. destruct H7. destruct (t_eq_dec v x). exfalso; auto.
+    destruct (weak_valid_complete _ _ (valid_graph v H7 x H10)) as [?H | ?H]. exfalso; auto. rewrite <- H5 in Hv.
     exists ((h :: p') +:: x). split. split. simpl. auto. rewrite foot_last. auto. split. rewrite H5 in *. clear H5 p'.
     rewrite <- app_cons_assoc in Hv. rewrite <- app_cons_assoc. clear H6. induction pt. simpl in Hv. simpl.
-    rewrite pg_the_same in H12, H7, H10. split; auto. destruct Hv as [[? [? ?]] ?]. split; auto. rewrite <- app_comm_cons.
+    split; auto. destruct Hv as [[? [? ?]] ?]. split; auto. rewrite <- app_comm_cons.
     simpl. destruct (pt ++ v :: x :: nil) eqn:? . destruct pt; inversion Heql0. rewrite <- app_comm_cons in Hnd, Hv.
     rewrite Heql0 in Hnd, Hv. split. assert (a <> x). apply NoDup_cons_2 in Hnd. rewrite <- Heql0 in Hnd. intro. subst.
     apply Hnd. apply in_or_app. right. apply in_cons, in_eq. assert (v0 <> x). destruct pt. simpl in Heql0. inversion Heql0.
@@ -481,7 +485,7 @@ Section GraphReachable.
   Qed.
 
   Lemma update_reachable_tail_reachable:
-    forall {pg: PreGraph V D} {x h: V} {p: list V} {d: D} {l r y: V},
+    forall {x h: V} {p: list V} {d: D} {l r y: V},
       NoDup (x :: h :: p) -> (update_PreGraph pg x d l r) |= x :: h :: p is x ~o~> y satisfying (fun _ : D => True) ->
       reachable pg h y.
   Proof.
@@ -500,7 +504,7 @@ Section GraphReachable.
   Qed.
 
   Lemma update_reachable_by_path_not_in:
-    forall {pg: PreGraph V D} {x: V} {p: list V} {d: D} {l r h y: V} {P : Ensemble D},
+    forall {x: V} {p: list V} {d: D} {l r h y: V} {P : Ensemble D},
       ~ In x p -> ((update_PreGraph pg x d l r) |= p is h ~o~> y satisfying P <-> pg |= p is h ~o~> y satisfying P).
   Proof.
     intros; split; intro; split; split. apply reachable_by_path_head in H0; auto. apply reachable_by_path_foot in H0; auto.
@@ -519,51 +523,53 @@ Section GraphReachable.
     destruct (t_eq_dec n x). subst. exfalso; auto. auto.
   Qed.
 
-  Definition b_pg_g (g: BiMathGraph V D null) : PreGraph V D := @b_pg V D EDV (@bm_bi V D null EDV g).
+  End UniquePreGraph.
 
-  Definition m_pg_g (g: BiMathGraph V D null) : PreGraph V D := @m_pg V D null EDV (@bm_ma V D null EDV g).
+  (* Definition b_pg_g (g: BiMathGraph V D null) : PreGraph V D := @b_pg V D EDV (@bm_bi V D null EDV g). *)
 
-  Definition bm_bi_g (g: BiMathGraph V D null) : BiGraph V D := @bm_bi V D null EDV g.
+  (* Definition pg_g (g: BiMathGraph V D null) : PreGraph V D := @pg V D null EDV (@bm_ma V D null EDV g). *)
 
-  Definition bm_ma_g (g: BiMathGraph V D null) : MathGraph V D null := @bm_ma V D null EDV g.
+  (* Definition bm_bi_g (g: BiMathGraph V D null) : BiGraph V D := @bm_bi V D null EDV g. *)
 
-  Definition valid_g (g: BiMathGraph V D null) : V -> Prop := @valid V D EDV (@b_pg V D EDV (@bm_bi V D null EDV g)).
+  (* Definition bm_ma_g (g: BiMathGraph V D null) : MathGraph V D null := @bm_ma V D null EDV g. *)
+
+  Definition valid_g (g: PreGraph V D) : V -> Prop := @valid V D EDV g.
 
   Lemma unreachable_sub_eq_belong_to:
-    forall (g g': BiMathGraph V D null) (S1 S1': list V),
-      (unreachable_subgraph (b_pg_g g) S1) -=- (unreachable_subgraph (b_pg_g g') S1') ->
-      forall x S2, ~ reachable_through_set (b_pg_g g) S1 x /\ reachable_through_set (b_pg_g g) S2 x ->
-                   ~ reachable_through_set (b_pg_g g') S1' x /\ reachable_through_set (b_pg_g g') S2 x.
+    forall {pg pg' : PreGraph V D} (g : BiMathGraph pg null) (g' : BiMathGraph pg' null) (S1 S1': list V),
+      (unreachable_subgraph pg S1) -=- (unreachable_subgraph pg' S1') ->
+      forall x S2, ~ reachable_through_set pg S1 x /\ reachable_through_set pg S2 x ->
+                   ~ reachable_through_set pg' S1' x /\ reachable_through_set pg' S2 x.
   Proof.
     intros. destruct H as [? [? ?]]. destruct H0. simpl in H, H1, H2. unfold unreachable_valid in H, H1, H2.
-    assert (valid_g g x /\ ~ reachable_through_set (b_pg_g g) S1 x). split; auto. destruct H3 as [s [? ?]].
+    assert (valid_g pg x /\ ~ reachable_through_set pg S1 x). split; auto. destruct H3 as [s [? ?]].
     apply reachable_foot_valid in H4. apply H4. unfold valid_g in H4. rewrite (H x) in H4. split. destruct H4; auto.
-    assert (forall s, reachable_through_set (b_pg_g g) S1 s -> reachable_through_set (b_pg_g g) S2 s ->
-                      forall y, reachable (b_pg_g g) s y -> reachable_through_set (b_pg_g g) S1 y /\
-                                                            reachable_through_set (b_pg_g g) S2 y). intros; split.
+    assert (forall s, reachable_through_set pg S1 s -> reachable_through_set pg S2 s ->
+                      forall y, reachable pg s y -> reachable_through_set pg S1 y /\
+                                                            reachable_through_set pg S2 y). intros; split.
     destruct H5 as [ss [? ?]]. exists ss. split; auto. apply reachable_by_merge with s; auto.
     destruct H6 as [ss [? ?]]. exists ss. split; auto. apply reachable_by_merge with s; auto.
     destruct H3 as [s [? ?]]. destruct H6 as [p ?].
-    assert (forall z, In z p -> valid_g g z /\ ~ reachable_through_set (b_pg_g g) S1 z). intros.
-    assert (reachable_through_set (b_pg_g g) S2 z). generalize (reachable_path_in (b_pg_g g) p s x H6 z H7); intro. exists s.
+    assert (forall z, In z p -> valid_g pg z /\ ~ reachable_through_set pg S1 z). intros.
+    assert (reachable_through_set pg S2 z). generalize (reachable_path_in pg p s x H6 z H7); intro. exists s.
     split; auto. split. destruct H8 as [ss [? ?]]. apply reachable_foot_valid in H9. apply H9.
-    assert (reachable (b_pg_g g) z x). destruct (reachable_by_path_split_in _ _ _ _ _ _ _ _ _ H6 H7) as [p1 [p2 [? [? ?]]]].
+    assert (reachable pg z x). destruct (reachable_by_path_split_in _ _ _ _ _ _ _ _ _ H6 H7) as [p1 [p2 [? [? ?]]]].
     exists p2. auto. intro. specialize (H5 z H10 H8 x H9). destruct H5. auto.
 
     exists s. split; auto. exists p. destruct H6 as [[? ?] [? _]]. split; split; auto. clear H4 H5 H6 H8. induction p.
-    simpl; auto. unfold valid_g in H7. unfold b_pg_g in H7. assert (valid_g g' a). assert (In a (a :: p)). apply in_eq.
+    simpl; auto. unfold valid_g in H7. assert (valid_g pg' a). assert (In a (a :: p)). apply in_eq.
     specialize (H7 _ H4). rewrite H in H7. destruct H7. apply H5. simpl. simpl in H9. destruct p. apply H4. split. split.
     apply H4. split. assert (In v (a :: v :: p)). apply in_cons, in_eq. specialize (H7 _ H5). rewrite H in H7. destruct H7.
     apply H6. destruct H9 as [[_ [_ ?]] _]. assert (In a (a :: v :: p)). apply in_eq. specialize (H7 _ H6).
-    specialize (H2 a H7). rewrite <- H2. auto. apply IHp. destruct H9; auto. intros. unfold valid_g, b_pg_g. apply H7.
+    specialize (H2 a H7). rewrite <- H2. auto. apply IHp. destruct H9; auto. intros. unfold valid_g. apply H7.
     apply in_cons. auto. repeat intro; hnf; auto.
   Qed.
 
   Lemma unreachable_sub_eq_unrch_rch_eq:
-    forall {g g': BiMathGraph V D null} {S1 S1': list V},
-      (unreachable_subgraph (b_pg_g g) S1) -=- (unreachable_subgraph (b_pg_g g') S1') ->
-      forall x S2, ~ reachable_through_set (b_pg_g g) S1 x /\ reachable_through_set (b_pg_g g) S2 x <->
-                   ~ reachable_through_set (b_pg_g g') S1' x /\ reachable_through_set (b_pg_g g') S2 x.
+    forall {pg pg' : PreGraph V D} {g : BiMathGraph pg null} {g' : BiMathGraph pg' null} {S1 S1': list V},
+      (unreachable_subgraph pg S1) -=- (unreachable_subgraph pg' S1') ->
+      forall x S2, ~ reachable_through_set pg S1 x /\ reachable_through_set pg S2 x <->
+                   ~ reachable_through_set pg' S1' x /\ reachable_through_set pg' S2 x.
   Proof.
     intros. split.
     apply (unreachable_sub_eq_belong_to _ _ _ _ H x S2). apply vi_sym in H.
@@ -612,19 +618,17 @@ Section GraphReachable.
   Qed.
 
   Lemma unreachable_node_add_graph_eq:
-    forall (g : BiMathGraph V D null) x y d l r (Hn: x <> null) (Hi: in_math bm_ma x l r),
-      In y (l :: r :: nil) -> (~ reachable b_pg y x) -> y <> x ->
-      ((reachable_subgraph (b_pg_g g) (y :: nil)) -=-
-       (reachable_subgraph (b_pg_g (update_graph g x d l r Hi Hn)) (y :: nil))).
+    forall (pg : PreGraph V D) (g : BiMathGraph pg null) x y d l r,
+      In y (l :: r :: nil) -> (~ reachable pg y x) -> y <> x ->
+      ((reachable_subgraph pg (y :: nil)) -=-
+       (reachable_subgraph (update_PreGraph pg x d l r) (y :: nil))).
   Proof.
     Implicit Arguments valid [[Vertex] [Data] [EV]].
-    Implicit Arguments b_pg [[Vertex] [Data] [EV]].
-    Implicit Arguments bm_bi [[Vertex] [Data] [nV] [EV]].
     Implicit Arguments node_label [[Vertex] [Data] [EV]].
     Implicit Arguments edge_func [[Vertex] [Data] [EV]].
-    unfold b_pg_g in *. intros until Hi. intro Hin. intros. hnf.
-    assert (forall v : V, valid (reachable_subgraph (b_pg (bm_bi g)) (y :: nil)) v <->
-                          valid (reachable_subgraph (b_pg (bm_bi (update_graph g x d l r Hi Hn))) (y :: nil)) v). {
+    intros until r. intro Hin. intros. hnf.
+    assert (forall v : V, valid (reachable_subgraph pg (y :: nil)) v <->
+                          valid (reachable_subgraph (update_PreGraph pg x d l r) (y :: nil)) v). {
       split; intros; destruct H1 as [? [s [? ?]]]; simpl in H2; destruct H2; try tauto; subst.
       - hnf. simpl. unfold change_valid. split; auto. exists s. split.
         * apply in_eq.
@@ -643,7 +647,7 @@ Section GraphReachable.
             simpl in H4. inversion H4. subst. clear H4.
             apply (@update_reachable_tail_reachable _ x _ p d l r _).
             constructor; auto. intro. simpl in H4. destruct H4. auto.
-            apply H. apply (@update_reachable_path_in g x d l r (s :: p) s v); auto.
+            apply H. apply (@update_reachable_path_in pg g x d l r (s :: p) s v); auto.
             apply in_cons; auto.
             assert (x :: s :: p = path_glue _ (x :: s :: nil) (s :: p)) by (unfold path_glue; simpl; auto).
             rewrite H4. apply reachable_by_path_merge with s; auto. split.
@@ -677,7 +681,7 @@ Section GraphReachable.
 
   Lemma reachable_list_update_graph_right:
     forall (g : BiMathGraph V D null) x d r (Hn: x <> null) (Hi: in_math bm_ma x x r) li,
-      ~ In x li -> reachable_list (b_pg_g g) r li ->
+      ~ In x li -> reachable_list pg r li ->
       reachable_list (b_pg_g (update_graph g x d x r Hi Hn)) x (x :: li).
   Proof.
     unfold b_pg_g in *. intros. unfold reachable_list in *.
@@ -711,7 +715,7 @@ Section GraphReachable.
 
   Lemma reachable_list_update_graph_left:
     forall (g : BiMathGraph V D null) x d l (Hn: x <> null) (Hi: in_math bm_ma x l x) li,
-      ~ In x li -> reachable_list (b_pg_g g) l li ->
+      ~ In x li -> reachable_list pg l li ->
       reachable_list (b_pg_g (update_graph g x d l x Hi Hn)) x (x :: li).
   Proof.
     unfold b_pg_g in *. intros. unfold reachable_list in *.
@@ -744,3 +748,6 @@ Section GraphReachable.
   Qed.
   
 End GraphReachable.
+
+
+
