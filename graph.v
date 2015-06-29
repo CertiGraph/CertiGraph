@@ -2,10 +2,12 @@ Require Import FunctionalExtensionality.
 Require Import List.
 Require Import Omega.
 Require Import Setoid.
-Require Import utilities.
+Require Import Coqlib.
 Require Import ProofIrrelevance.
 
 Class EqDec (T: Type) := {t_eq_dec: forall t1 t2 : T, {t1 = t2} + {t1 <> t2}}.
+
+
 
 Fixpoint judgeNoDup {A} {EA : EqDec A} (l : list A) : bool :=
   match l with

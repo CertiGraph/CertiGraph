@@ -1,3 +1,5 @@
+Require Import Coq.Sets.Ensembles.
+Require Import Coq.Sets.Finite_sets.
 Require Import VST.msl.seplog.
 Require Import VST.msl.log_normalize.
 Require Import RamifyCoq.Coqlib.
@@ -277,12 +279,12 @@ Section SpatialGraph.
   Qed.
 
   Lemma reachable_eq_graphs_eq:
-    forall S S' bimg, set_eq (reachable_through_set b_pg S) (reachable_through_set b_pg S') ->
+    forall S S' bimg, Same_set (reachable_through_set b_pg S) (reachable_through_set b_pg S') ->
                       well_defined_list bm_ma S -> well_defined_list bm_ma S' ->  graphs S bimg = graphs S' bimg.
   Proof.
     intros; apply pred_ext; rewrite !graphs_unfold; normalize; apply (exp_right l);
     normalize; apply andp_right; auto; apply prop_right; unfold reachable_set_list in *;
-    destruct H; unfold subset in * |- ; intros; rewrite <- H2; split; auto.
+    destruct H; unfold Included in * |- ; intros; rewrite <- H2; split; unfold Ensembles.In in *; auto.
   Qed.
 
   Lemma single_graph_growth_double:

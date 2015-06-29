@@ -1,4 +1,6 @@
 Require Import Coq.Logic.FunctionalExtensionality.
+Require Import Coq.Sets.Ensembles.
+Require Import Coq.Sets.Finite_sets.
 Require Import Coq.Lists.List.
 Require Import Coq.omega.Omega.
 Require Import Coq.Setoids.Setoid.
@@ -201,57 +203,54 @@ Fixpoint valid_path {A D : Type} {EV: EqDec A} (g: PreGraph A D) (p : list A) : 
 Definition graph_is_acyclic {A D : Type} {EV: EqDec A} (g: PreGraph A D) : Prop :=
   forall p : list A, valid_path g p -> NoDup p.
 
-Definition set (A : Type) : Type := A -> Prop.
-Definition subset {A} (S1 S2 : set A) : Prop := forall a, S1 a -> S2 a.
-Definition set_eq {A} (S1 S2 : set A) : Prop := subset S1 S2 /\ subset S2 S1.
-Definition empty_set (A : Type) : set A := fun _ => False.
-Definition set_finite {A} (S : set A) : Prop := exists l : list A, forall x : A, (In x l -> S x) /\ (~ In x l -> ~ S x).
+Arguments Included {U} B C.
+Arguments Same_set {U} B C.
 
-Lemma set_eq_refl: forall A (S : set A), set_eq S S. Proof. intros; split; intro; tauto. Qed.
+Lemma Same_set_refl: forall A (S : Ensemble A), Same_set S S. Proof. intros; split; intro; tauto. Qed.
 
-Lemma set_eq_sym: forall A (S1 S2 : set A), set_eq S1 S2 -> set_eq S2 S1. Proof. intros; destruct H; split; auto. Qed.
+Lemma Same_set_sym: forall A (S1 S2 : Ensemble A), Same_set S1 S2 -> Same_set S2 S1. Proof. intros; destruct H; split; auto. Qed.
 
-Lemma set_eq_trans: forall A (S1 S2 S3: set A), set_eq S1 S2 -> set_eq S2 S3 -> set_eq S1 S3.
+Lemma Same_set_trans: forall A (S1 S2 S3: Ensemble A), Same_set S1 S2 -> Same_set S2 S3 -> Same_set S1 S3.
 Proof. intros; destruct H, H0; split; repeat intro; [apply H0, H, H3 | apply H1, H2, H3]. Qed.
 
-Add Parametric Relation {A} : (set A) set_eq
-    reflexivity proved by (set_eq_refl A)
-    symmetry proved by (set_eq_sym A)
-    transitivity proved by (set_eq_trans A) as set_eq_rel.
+Add Parametric Relation {A} : (Ensemble A) Same_set
+    reflexivity proved by (Same_set_refl A)
+    symmetry proved by (Same_set_sym A)
+    transitivity proved by (Same_set_trans A) as Same_set_rel.
 
-Definition node_prop {A D : Type} {EV: EqDec A} (g: PreGraph A D) (P : set D) : set A :=
+Definition node_prop {A D : Type} {EV: EqDec A} (g: PreGraph A D) (P : Ensemble D) : Ensemble A :=
   fun n => P (node_label n).
 
-Definition path_prop {A D : Type} {EV: EqDec A} (g: PreGraph A D) (P : set D) : (list A -> Prop) :=
+Definition path_prop {A D : Type} {EV: EqDec A} (g: PreGraph A D) (P : Ensemble D) : (list A -> Prop) :=
   fun p => forall n, In n p -> node_prop g P n.
 
-Definition good_path {A D : Type} {EV: EqDec A} (g: PreGraph A D) (P : set D) : (list A -> Prop) :=
+Definition good_path {A D : Type} {EV: EqDec A} (g: PreGraph A D) (P : Ensemble D) : (list A -> Prop) :=
     fun p => valid_path g p /\ path_prop g P p.
 
 Definition path_endpoints {N} (p : list N) (n1 n2 : N) : Prop := head p = Some n1 /\ foot p = Some n2.
 
 Definition reachable_by_path {A D : Type} {EV: EqDec A} (g: PreGraph A D) (p : list A)
-           (n : A) (P : set D) : set A := fun n' => path_endpoints p n n' /\ good_path g P p.
+           (n : A) (P : Ensemble D) : Ensemble A := fun n' => path_endpoints p n n' /\ good_path g P p.
 Notation " g '|=' p 'is' n1 '~o~>' n2 'satisfying' P" := (reachable_by_path g p n1 P n2) (at level 1).
 
-Definition reachable_by {A D : Type} {EV: EqDec A} (g: PreGraph A D) (n : A) (P : set D) : set A :=
+Definition reachable_by {A D : Type} {EV: EqDec A} (g: PreGraph A D) (n : A) (P : Ensemble D) : Ensemble A :=
   fun n' => exists p, g |= p is n ~o~> n' satisfying P.
 Notation " g '|=' n1 '~o~>' n2 'satisfying' P " := (reachable_by g n1 P n2) (at level 1).
 
 Definition reachable_by_acyclic {A D : Type} {EV: EqDec A}
-           (g: PreGraph A D) (n : A) (P : set D) : set A :=
+           (g: PreGraph A D) (n : A) (P : Ensemble D) : Ensemble A :=
   fun n' => exists p, NoDup p /\ g |= p is n ~o~> n' satisfying P.
 Notation " g '|=' n1 '~~>' n2 'satisfying' P " := (reachable_by_acyclic g n1 P n2) (at level 1).
 
-Definition reachable {A D : Type} {EV: EqDec A} (g: PreGraph A D) (n : A) : set A:=
+Definition reachable {A D : Type} {EV: EqDec A} (g: PreGraph A D) (n : A) : Ensemble A:=
   reachable_by g n (fun _ => True).
 
-Definition reachable_through_set {A D : Type} {EV: EqDec A} (g: PreGraph A D) (S : list A) : set A:=
+Definition reachable_through_set {A D : Type} {EV: EqDec A} (g: PreGraph A D) (S : list A) : Ensemble A:=
   fun n => exists s, In s S /\ reachable g s n.
 
-Lemma reachable_set_eq {A D : Type} {EV: EqDec A} (g: PreGraph A D) (S1 S2 : list A):
-  S1 ~= S2 -> set_eq (reachable_through_set g S1) (reachable_through_set g S2).
-Proof. intros; destruct H; split; repeat intro; destruct H1 as [x [HIn Hrch]]; exists x; split; auto. Qed.
+Lemma reachable_Same_set {A D : Type} {EV: EqDec A} (g: PreGraph A D) (S1 S2 : list A):
+  S1 ~= S2 -> Same_set (reachable_through_set g S1) (reachable_through_set g S2).
+Proof. intros; destruct H; split; repeat intro; destruct H1 as [y [HIn Hrch]]; exists y; split; auto. Qed.
 
 Definition reachable_valid {A D : Type} {EV: EqDec A} (g: PreGraph A D) (S : list A) : A -> Prop :=
   fun n => @valid _ _ _ _ n /\ reachable_through_set g S n.
@@ -422,10 +421,10 @@ Section GraphPath.
     @node_label _ D _ g1 n = @node_label _ _ _ g2 n -> node_prop g1 P n -> node_prop g2 P n.
   Proof. intros; hnf in *; rewrite <- H; trivial.  Qed.
 
-  Lemma node_prop_weaken: forall g (P1 P2 : set D) n, (forall d, P1 d -> P2 d) -> node_prop g P1 n -> node_prop g P2 n.
+  Lemma node_prop_weaken: forall g (P1 P2 : Ensemble D) n, (forall d, P1 d -> P2 d) -> node_prop g P1 n -> node_prop g P2 n.
   Proof. intros; hnf in *; auto. Qed.
 
-  Lemma path_prop_weaken: forall g (P1 P2 : set D) p,
+  Lemma path_prop_weaken: forall g (P1 P2 : Ensemble D) p,
     (forall d, P1 d -> P2 d) -> path_prop g P1 p -> path_prop g P2 p.
   Proof. intros; hnf in *; intros; hnf in *; apply H; apply H0; auto. Qed.
 
@@ -447,7 +446,7 @@ Section GraphPath.
     unfold path_glue in H4. apply in_app_or in H4. destruct H4. auto. apply H3. apply In_tail; auto.
   Qed.
 
-  Lemma good_path_weaken: forall (g: Gph) p (P1 P2 : set D),
+  Lemma good_path_weaken: forall (g: Gph) p (P1 P2 : Ensemble D),
                             (forall d, P1 d -> P2 d) -> good_path g P1 p -> good_path g P2 p.
   Proof.
     split; destruct H0; auto.
@@ -575,7 +574,7 @@ Section GraphPath.
   Qed.
 
   Lemma reachable_by_subset_reachable: forall (g: Gph) n P,
-    subset (reachable_by g n P) (reachable g n).
+    Included (reachable_by g n P) (reachable g n).
   Proof.
     repeat intro. unfold reachable.
     destruct H as [p [? [? ?]]]. exists p.
@@ -602,21 +601,20 @@ Section GraphPath.
   Qed.
 
   (* START OF MARK *)
-  Variable marked : set D.
+  Variable marked : Ensemble D.
   Definition unmarked (d : D) : Prop := ~ marked d.
 
   Definition mark1 (g1 : Gph) (n : N) (g2 : Gph) : Prop :=
     structurally_identical g1 g2 /\ @valid _ _ _ g1 n /\ node_prop g2 marked n /\
     forall n', n <> n' -> @node_label _ _ _ g1 n' = @node_label _ _ _ g2 n'.
 
-  Require Import Classical.
-  Tactic Notation "LEM" constr(v) := (destruct (classic v); auto).
-
   Lemma mark1_marked: forall g1 root g2,
                         mark1 g1 root g2 ->
                         forall n, node_prop g1 marked n-> node_prop g2 marked n.
   Proof.
-    intros. destruct H as [? [? [? ?]]]. LEM (root = n). subst. auto. specialize (H3 n H4). hnf in *. rewrite <- H3. auto.
+    intros. destruct H as [? [? [? ?]]].
+    destruct (t_eq_dec root n).
+    subst. auto. specialize (H3 n n0). hnf in *. rewrite <- H3. auto.
   Qed.
 
   (* The first subtle lemma *)
@@ -668,18 +666,15 @@ Section GraphPath.
     (forall n, ~g1 |= root ~o~> n satisfying unmarked -> @node_label _ _ _ g1 n = @node_label _ _ _ g2 n).
 
   (* Sanity condition 1 *)
-  Lemma mark_reachable: forall g1 root g2, mark g1 root g2 -> subset (reachable g1 root) (reachable g2 root).
+  Lemma mark_reachable: forall g1 root g2, mark g1 root g2 -> Included (reachable g1 root) (reachable g2 root).
   Proof.
     repeat intro. destruct H as [? [? ?]].
-    destruct H0 as [p ?]. destruct H0.
-    exists p. split. tauto.
-    destruct H3. split. eapply valid_path_si; eauto.
-    clear -H1 H2 H4. induction p; repeat intro. inv H. simpl in H. destruct H. subst a.
-    LEM (g1 |= root ~o~> n satisfying unmarked).
-    specialize (H1 n H). apply node_prop_weaken with marked; auto.
-    specialize (H2 n H). eapply node_prop_label_eq; eauto. apply H4. left. trivial.
-    apply IHp; auto. intros ? ?. apply H4. right. trivial.
+    hnf in H0 |- *.
+    destruct H0 as [p [? [? ?]]]; exists p. split; auto. split; auto. eapply valid_path_si; eauto.
   Qed.
+
+  Require Import Classical.
+  Tactic Notation "LEM" constr(v) := (destruct (classic v); auto).
 
   (* The second subtle lemma.  Maybe needs a better name? *)
   Lemma mark_unmarked: forall g1 root g2 n1 n2,
@@ -888,7 +883,7 @@ Section GraphPath.
     intuition.
   Qed.
 
-  Lemma si_reachable: forall (g1 g2: Gph) n,  g1 ~=~ g2 -> subset (reachable g1 n) (reachable g2 n).
+  Lemma si_reachable: forall (g1 g2: Gph) n,  g1 ~=~ g2 -> Included (reachable g1 n) (reachable g2 n).
   Proof.
     intros. intro t. intros. destruct H0 as [p ?]. destruct H0. exists p. split. auto. destruct H1. split. clear - H H1.
     induction p. simpl. auto. simpl. simpl in H1. destruct p. destruct (H a). rewrite <- H0. auto. destruct H1. split.
@@ -912,7 +907,7 @@ Section GraphPath.
 End GraphPath.
 
 Lemma reachable_through_empty {A D : Type} {EV: EqDec A} (g: PreGraph A D):
-  set_eq (reachable_through_set g nil) (empty_set A).
+  Same_set (reachable_through_set g nil) (Empty_set A).
 Proof.
   split; repeat intro.
   destruct H; destruct H; apply in_nil in H; tauto.
@@ -934,20 +929,21 @@ Definition well_defined_list {A D : Type} {EV : EqDec A} {null : A} (mg : MathGr
 Tactic Notation "LEM" constr(v) := (destruct (classic v); auto).
 
 Lemma reachable_through_empty_eq {A D : Type} {EV: EqDec A} (g: PreGraph A D):
-  forall S, set_eq (reachable_through_set g S) (empty_set A) <-> S = nil \/ forall y, In y S -> ~ valid y.
+  forall S, Same_set (reachable_through_set g S) (Empty_set A) <-> S = nil \/ forall y, In y S -> ~ valid y.
 Proof.
   intros; split.
   induction S; intros. left; trivial. right; intros; LEM (valid a).
-  destruct H. exfalso; apply (H a); exists a; split; [apply in_eq | apply reachable_by_reflexive; split;[|hnf]; trivial].
+  destruct H. specialize (H a). spec H. unfold Ensembles.In . exists a; split; [apply in_eq | apply reachable_by_reflexive; split;[|hnf]; trivial]; inversion H.
+  inversion H.
   destruct (in_inv H0). rewrite H2 in H1; trivial.
-  assert (set_eq (reachable_through_set g (a :: S)) (reachable_through_set g S)).
+  assert (Same_set (reachable_through_set g (a :: S)) (reachable_through_set g S)).
   split; intro x; intro; destruct H3 as [s [? ?]]. destruct (in_inv H3). rewrite H5 in *; clear H5 a.
   apply reachable_is_valid in H4; tauto. exists s; split; trivial.
   exists s; split; trivial; apply in_cons; trivial. rewrite <- H3 in IHS. destruct (IHS H).
   rewrite H4 in *; inversion H0. rewrite H5 in H1. trivial. inversion H5. apply H4; trivial.
 
   intros; destruct H. rewrite H. apply reachable_through_empty. split; repeat intro.
-  destruct H0 as [x [? ?]]. apply H in H0. apply reachable_is_valid in H1; tauto. hnf in H0; tauto.
+  destruct H0 as [y [? ?]]. apply H in H0. apply reachable_is_valid in H1; tauto. hnf in H0; tauto.
 Qed.
 
 Definition change_valid {A D: Type} {EV: EqDec A} (g: PreGraph A D) (v: A): A -> Prop :=

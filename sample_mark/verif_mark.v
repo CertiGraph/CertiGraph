@@ -1,3 +1,5 @@
+Require Import Coq.Sets.Ensembles.
+Require Import Coq.Sets.Finite_sets.
 Require Import RamifyCoq.sample_mark.env_mark.
 Require Import RamifyCoq.graph.graph.
 Require Import RamifyCoq.data_structure.spatial_graph.
@@ -24,24 +26,24 @@ Definition is_one := fun i: int => i = Int.repr 1.
 
 Hypothesis mark_null: forall {N} {D} {null} {DEC} marked (g g': @BiMathGraph N D null DEC), mark marked g null g' -> g = g'.
 
-Hypothesis mark_marked: forall {N} {D} {null} {DEC} (marked: set D) (g g': @BiMathGraph N D null DEC) x d l r,
+Hypothesis mark_marked: forall {N} {D} {null} {DEC} (marked: Ensemble D) (g g': @BiMathGraph N D null DEC) x d l r,
   gamma (@bm_bi _ _ _ _ g) x = (d, l, r) ->
   marked d ->
   mark marked g x g' -> g = g'.
 
-Hypothesis mark_exists: forall {N} {D} {null} {DEC} (marked: set D) (g: @BiMathGraph N D null DEC) x,
+Hypothesis mark_exists: forall {N} {D} {null} {DEC} (marked: Ensemble D) (g: @BiMathGraph N D null DEC) x,
   exists g', mark marked g x g'.
 
-Hypothesis mark1_exists: forall {N} {D} {null} {DEC} (marked: set D) (g: @BiMathGraph N D null DEC) x,
+Hypothesis mark1_exists: forall {N} {D} {null} {DEC} (marked: Ensemble D) (g: @BiMathGraph N D null DEC) x,
   exists g', mark1 marked g x g'.
 
-Hypothesis subgraph_exists: forall {N} {D} {null} {DEC} (marked: set D) (g: @BiMathGraph N D null DEC) x,
+Hypothesis subgraph_exists: forall {N} {D} {null} {DEC} (marked: Ensemble D) (g: @BiMathGraph N D null DEC) x,
   exists g', subgraph g x g'.
 
-Hypothesis reachable_mark1: forall {N} {D} {null} {DEC} (marked: set D) (g g': @BiMathGraph N D null DEC) x y z,
+Hypothesis reachable_mark1: forall {N} {D} {null} {DEC} (marked: Ensemble D) (g g': @BiMathGraph N D null DEC) x y z,
   mark1 marked g x g' -> (reachable (@m_pg _ _ _ _ (@bm_ma _ _ _ _ g)) y z <-> reachable (@m_pg _ _ _ _ (@bm_ma _ _ _ _ g')) y z).
 
-Hypothesis reachable_mark: forall {N} {D} {null} {DEC} (marked: set D) (g g': @BiMathGraph N D null DEC) x y z,
+Hypothesis reachable_mark: forall {N} {D} {null} {DEC} (marked: Ensemble D) (g g': @BiMathGraph N D null DEC) x y z,
   mark marked g x g' -> (reachable (@m_pg _ _ _ _ (@bm_ma _ _ _ _ g)) y z <-> reachable (@m_pg _ _ _ _ (@bm_ma _ _ _ _ g')) y z).
 
 Hypothesis gamma_reachable: forall {N} {D} {null} {DEC} (g: @BiMathGraph N D null DEC) d x y z,
