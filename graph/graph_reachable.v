@@ -618,7 +618,7 @@ Section GraphReachable.
   Qed.
 
   Lemma unreachable_node_add_graph_eq:
-    forall (pg : PreGraph V D) (g : BiMathGraph pg null) x y d l r,
+    forall (pg : PreGraph V D) (g : BiMathGraph pg null) x y d l r (Hn: x <> null) (Hi: in_math bm_ma x l r),
       In y (l :: r :: nil) -> (~ reachable pg y x) -> y <> x ->
       ((reachable_subgraph pg (y :: nil)) -=-
        (reachable_subgraph (update_PreGraph pg x d l r) (y :: nil))).
@@ -626,7 +626,7 @@ Section GraphReachable.
     Implicit Arguments valid [[Vertex] [Data] [EV]].
     Implicit Arguments node_label [[Vertex] [Data] [EV]].
     Implicit Arguments edge_func [[Vertex] [Data] [EV]].
-    intros until r. intro Hin. intros. hnf.
+    intros until r. intros ? ? Hin. intros. hnf.
     assert (forall v : V, valid (reachable_subgraph pg (y :: nil)) v <->
                           valid (reachable_subgraph (update_PreGraph pg x d l r) (y :: nil)) v). {
       split; intros; destruct H1 as [? [s [? ?]]]; simpl in H2; destruct H2; try tauto; subst.
@@ -660,31 +660,29 @@ Section GraphReachable.
           } Unfocus.
         * subst. exfalso. apply H.
           destruct H3 as [p ?].
-          apply (@update_reachable_path_in g x d l r p s x); auto.
+          apply (@update_reachable_path_in pg g x d l r p s x); auto.
           destruct H1 as [[? ?] _]. apply foot_in; auto.
-    } assert (~ valid (reachable_subgraph (b_pg (bm_bi g)) (y :: nil)) x). {
+    } assert (~ valid (reachable_subgraph pg (y :: nil)) x). {
       intro. rewrite H1 in H2. clear H1. simpl in H2. unfold reachable_valid in H2. simpl in H2.
       destruct H2 as [_ ?]. destruct H1 as [? [? ?]]. simpl in H1. destruct H1. 2: tauto.
       apply eq_sym in H1. subst. apply H. destruct H2 as [p ?].
-      apply (@update_reachable_path_in g x d l r p y x); auto.
+      apply (@update_reachable_path_in pg g x d l r p y x); auto.
       destruct H1 as [[? ?] _]. apply foot_in; auto.
     } split; [|split]; intros.
     + apply H1.
     + simpl. unfold change_node_label. destruct (t_eq_dec v x). 2: auto. subst. tauto. 
     + simpl. unfold change_edge_func. destruct (t_eq_dec v x). 2: auto. subst. tauto.
     Implicit Arguments valid [[Vertex] [Data] [EV] [PreGraph]].
-    Implicit Arguments b_pg [[Vertex] [Data] [EV] [BiGraph]].
-    Implicit Arguments bm_bi [[Vertex] [Data] [nV] [EV] [BiMathGraph]].
     Implicit Arguments node_label [[Vertex] [Data] [EV] [PreGraph]].
     Implicit Arguments edge_func [[Vertex] [Data] [EV] [PreGraph]].
   Qed.
 
   Lemma reachable_list_update_graph_right:
-    forall (g : BiMathGraph V D null) x d r (Hn: x <> null) (Hi: in_math bm_ma x x r) li,
+    forall pg (g : BiMathGraph pg null) x d r (Hn: x <> null) (Hi: in_math bm_ma x x r) li,
       ~ In x li -> reachable_list pg r li ->
-      reachable_list (b_pg_g (update_graph g x d x r Hi Hn)) x (x :: li).
+      reachable_list (update_PreGraph pg x d x r) x (x :: li).
   Proof.
-    unfold b_pg_g in *. intros. unfold reachable_list in *.
+    intros. unfold reachable_list in *.
     intros. split; intros.
     + simpl in H1. destruct H1.
       - subst. apply reachable_by_reflexive. split.
@@ -714,11 +712,11 @@ Section GraphReachable.
   Qed.
 
   Lemma reachable_list_update_graph_left:
-    forall (g : BiMathGraph V D null) x d l (Hn: x <> null) (Hi: in_math bm_ma x l x) li,
+    forall pg (g : BiMathGraph pg null) x d l (Hn: x <> null) (Hi: in_math bm_ma x l x) li,
       ~ In x li -> reachable_list pg l li ->
-      reachable_list (b_pg_g (update_graph g x d l x Hi Hn)) x (x :: li).
+      reachable_list (update_PreGraph pg x d l x) x (x :: li).
   Proof.
-    unfold b_pg_g in *. intros. unfold reachable_list in *.
+    intros. unfold reachable_list in *.
     intros. split; intros.
     + simpl in H1. destruct H1.
       - subst. apply reachable_by_reflexive. split.
@@ -749,5 +747,5 @@ Section GraphReachable.
   
 End GraphReachable.
 
-
+Arguments reachable_set_list {V} {D} {EDV} pg S l.
 
