@@ -113,7 +113,9 @@ Section SpatialGraph.
       destruct (compute_neighbor bm_ma x li H H1 r H4) as [rightL [? ?]].
       apply (exp_right rightL). normalize_overlap. apply (exp_right leftL). normalize_overlap. apply andp_right.
       - rewrite <- !prop_and. apply prop_right. rewrite <- pg_the_same in *. do 2 (split; auto).
-        split; apply (valid_graph x); auto.
+        split.
+        * destruct (weak_valid_complete _ _ (valid_graph x H r H4)); auto.
+        * destruct (weak_valid_complete _ _ (valid_graph x H l H0)); auto.
       - rewrite TRI, ocon_assoc.
         rewrite !(iter_sepcon_ocon t_eq_dec); auto.
         2: repeat constructor; simpl; tauto.
@@ -256,8 +258,12 @@ Section SpatialGraph.
         * apply joinable_graph_cell.
       - normalize.
         assert (In a (a :: S)) by apply in_eq.
-        assert (a = null \/ valid a) by (rewrite <- pg_the_same; unfold well_defined_list in H; apply (H a); auto).
-        rewrite <- pg_the_same in H0, H2.
+        assert (@weak_valid _ _ _ (@m_pg _ _ _ _ (@bm_ma _ _ _ _ bimg)) null a). Focus 1. {
+          unfold well_defined_list in H.
+          specialize (H a).
+          destruct (H H1); apply weak_valid_spec; [left | right]; auto.
+        } Unfocus.
+        rewrite <- pg_the_same in H0.
         destruct (reachable_through_single_reachable bm_ma _ _ H0 a H1 H2) as [la [? ?]].
         normalize_overlap. apply (exp_right la).
         assert (Sublist S (a :: S)) by (intro s; intros; apply in_cons; auto).
