@@ -293,7 +293,7 @@ Section GraphReachable.
 
   Lemma finite_reachable_computable:
     forall (mg : MathGraph V D null) x l, valid x -> (forall y, reachable m_pg x y -> In y l) ->
-                                          exists l', reachable_list m_pg x l' /\ NoDup l'.
+                                          {l': list V | reachable_list m_pg x l' /\ NoDup l'}.
   Proof.
     intros. remember (length l, x :: nil, @nil V) as i. remember (construct_reachable m_pg i) as l'. exists l'.
     assert (Forall (reachable m_pg x) l'). rewrite Forall_forall. intro z. intros. assert (Forall (reachable m_pg x) (rch3 i)).
@@ -315,7 +315,7 @@ Section GraphReachable.
 
   Lemma compute_reachable: forall (mg : MathGraph V D null) x L,
                              reachable_list m_pg x L -> forall y, reachable m_pg x y ->
-                                                                  exists L', reachable_list m_pg y L' /\ NoDup L'.
+                                                                  {L' : list V | reachable_list m_pg y L' /\ NoDup L'}.
   Proof.
     intros. assert (valid y). apply reachable_foot_valid in H0; auto. assert (forall z, reachable m_pg y z -> In z L). intros.
     assert (reachable m_pg x z). apply reachable_by_merge with y; auto. rewrite (H z). auto.
