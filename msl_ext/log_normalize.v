@@ -407,6 +407,47 @@ Proof.
   apply ocon_owand_CCC.
 Qed.
 
+(* Can be moved into VST/msl/log_normalize. *)
+Lemma CCC_expo_expo_comm': forall A prod expo {ND: NatDed A} {CCC: CCCviaNatDed A prod expo},
+  forall P Q R, (expo P (expo Q R)) |-- (expo Q (expo P R)).
+Proof.
+  intros.
+  apply (proj1 (@CartesianClosedCat.adjoint _ _ _ _ _ CCC _ _ _)).
+  apply (proj1 (@CartesianClosedCat.adjoint _ _ _ _ _ CCC _ _ _)).
+  rewrite CartesianClosedCat.assoc by eauto.
+  rewrite (@CartesianClosedCat.comm _ _ _ _ _ CCC Q P).
+  rewrite <- CartesianClosedCat.assoc by eauto.
+  apply (proj2 (@CartesianClosedCat.adjoint _ _ _ _ _ CCC _ _ _)).
+  apply (proj2 (@CartesianClosedCat.adjoint _ _ _ _ _ CCC _ _ _)).
+  apply derives_refl.
+Qed.
+
+Lemma CCC_expo_expo_comm: forall A prod expo {ND: NatDed A} {CCC: CCCviaNatDed A prod expo},
+  forall P Q R, expo P (expo Q R) = expo Q (expo P R).
+Proof.
+  intros; apply pred_ext; eapply CCC_expo_expo_comm'; eauto.
+Qed.
+
+Lemma wand_wand_comm: forall {A} `{SepLog A}, forall P Q R, P -* (Q -* R) = Q -* (P -* R).
+Proof.
+  intros.
+  eapply CCC_expo_expo_comm.
+  exact (sepcon_wand_CCC _).
+Qed.
+
+Lemma ramify_frame: forall {A} `{SepLog A} g l g' l' F, g |-- l * (l' -* g') -> g * F |-- l * (l' -* g' * F).
+Proof.
+  intros.
+  eapply derives_trans; [apply sepcon_derives; [apply H0 | apply derives_refl] |].
+  rewrite sepcon_assoc.
+  apply sepcon_derives; auto.
+  apply wand_sepcon_adjoint.
+  rewrite wand_wand_comm.
+  apply wand_derives; auto.
+  apply wand_sepcon_adjoint.
+  auto.
+Qed.
+
 Ltac normalize_overlap :=
   repeat
   match goal with
