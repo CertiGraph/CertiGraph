@@ -1,3 +1,5 @@
+Require Import Coq.Sets.Ensembles.
+Require Import Coq.Sets.Finite_sets.
 Require Import Coq.Arith.Arith.
 Require Import Coq.Lists.List.
 Require Import Coq.Logic.ProofIrrelevance.
@@ -493,7 +495,7 @@ Section GraphReachable.
   Qed.
 
   Lemma update_reachable_by_path_not_in:
-    forall {pg: PreGraph V D} {x: V} {p: list V} {d: D} {l r h y: V} {P : set D},
+    forall {pg: PreGraph V D} {x: V} {p: list V} {d: D} {l r h y: V} {P : Ensemble D},
       ~ In x p -> ((update_PreGraph pg x d l r) |= p is h ~o~> y satisfying P <-> pg |= p is h ~o~> y satisfying P).
   Proof.
     intros; split; intro; split; split. apply reachable_by_path_head in H0; auto. apply reachable_by_path_foot in H0; auto.
