@@ -12,6 +12,17 @@ Require Import RamifyCoq.graph.graph_reachable.
 Require Import Coq.Logic.Classical.
 Import RamifyCoq.msl_ext.seplog.OconNotation.
 
+Definition gamma {Vertex Data} {EV: EqDec Vertex} {PG : PreGraph Vertex Data} (BG: BiGraph PG) (v: Vertex) : Data * Vertex * Vertex := let (v1, v2) := biEdge BG v in (node_label v, v1, v2).
+
+Lemma update_bigraph_gamma {A D: Type} {EV: EqDec A} {PG : PreGraph A D}:
+  forall (g: BiGraph PG) (v: A) (d: D) (l r: A), gamma (update_BiGraph g v d l r) v = (d, l, r).
+Proof.
+  intros. unfold gamma, biEdge. destruct (@only_two_neighbours A D EV _ (@update_BiGraph A D EV PG g v d l r) v) as [v1 [v2 ?]].
+  simpl in *. unfold change_edge_func, change_node_label in *. destruct (t_eq_dec v v).
+  + inversion e. subst; auto.
+  + exfalso; auto.
+Qed.
+
 Class SpatialGraphSetting: Type := {
   Data: Type;
   addr: Type;
@@ -30,6 +41,38 @@ Defined.
 
 Instance AddrDec `{SpatialGraphSetting}: EqDec Addr. apply Build_EqDec. intros. apply (addr_eq_dec t1 t2). Defined.
 Opaque AddrDec.
+
+Definition Null {SGS: SpatialGraphSetting} : (@Addr AV_SGraph) := null.
+
+Class Graph {SGS: SpatialGraphSetting} : Type := {
+  pg: PreGraph Addr Data;
+  bi: BiGraph pg;
+  ma: MathGraph pg Null
+}.
+ 
+Coercion pg : Graph >-> PreGraph.
+ 
+Coercion bi : Graph >-> BiGraph.
+ 
+Coercion ma : Graph >-> MathGraph.
+ 
+Instance single_graph_double {SGS: SpatialGraphSetting} v d (Hn: v <> Null): Graph := {
+  pg := single_PreGraph _ v d v v;
+  bi := single_BiGraph _ v d v v;
+  ma := single_MathGraph_double _ _ v d Hn
+}.
+ 
+Instance single_graph_left {SGS: SpatialGraphSetting} v d (Hn: v <> Null): Graph := {
+  pg := single_PreGraph _ v d v Null;
+  bi := single_BiGraph _ v d v Null;
+  ma := single_MathGraph_left _ _ v d Hn
+}.
+ 
+Instance single_graph_right {SGS: SpatialGraphSetting} v d (Hn: v <> Null): Graph := {
+  pg := single_PreGraph _ v d Null v;
+  bi := single_BiGraph _ v d Null v;
+  ma := single_MathGraph_right _ _ v d Hn
+}.
 
 Class SpatialGraphAssum: Type := {
   SGA_Pred: Type;
@@ -59,37 +102,6 @@ Section SpatialGraph.
 
   Context {SGA : SpatialGraphAssum}.
 
-  Definition Null : (@Addr AV_SGraph) := null.
-
-  Class Graph: Type := {
-    pg: PreGraph Addr Data;
-    bi: BiGraph pg;
-    ma: MathGraph pg Null
-  }.
-
-  Coercion pg : Graph >-> PreGraph.
-
-  Coercion bi : Graph >-> BiGraph.
-
-  Coercion ma : Graph >-> MathGraph.
-
-  Instance single_graph_double v d (Hn: v <> Null): Graph := {
-    pg := single_PreGraph _ v d v v;
-    bi := single_BiGraph _ v d v v;
-    ma := single_MathGraph_double _ _ v d Hn
-  }.
-
-  Instance single_graph_left v d (Hn: v <> Null): Graph := {
-    pg := single_PreGraph _ v d v Null;
-    bi := single_BiGraph _ v d v Null;
-    ma := single_MathGraph_left _ _ v d Hn
-  }.
-
-  Instance single_graph_right v d (Hn: v <> Null): Graph := {
-    pg := single_PreGraph _ v d Null v;
-    bi := single_BiGraph _ v d Null v;
-    ma := single_MathGraph_right _ _ v d Hn
-  }.
   Definition graph_cell (g: Graph) (v : Addr) : SGA_Pred := trinode v (gamma g v).
 
   Lemma precise_graph_cell: forall g v, precise (graph_cell g v).
