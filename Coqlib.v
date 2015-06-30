@@ -377,3 +377,61 @@ Notation "a '+::' b" := (a ++ (b :: nil)) (at level 19).
 
 Lemma app_cons_assoc: forall {A} (l1 l2 : list A) x, l1 ++ x :: l2 = l1 +:: x ++ l2.
 Proof. intros. induction l1. simpl. auto. rewrite <- app_comm_cons. rewrite IHl1. do 2 rewrite <- app_comm_cons. auto. Qed.
+
+Class EqDec (T: Type) := {t_eq_dec: forall t1 t2 : T, {t1 = t2} + {t1 <> t2}}.
+
+Definition Dup {A} (L : list A) : Prop := ~ NoDup L.
+
+Lemma Dup_unfold {A} {EA : EqDec A}: forall (a : A) (L : list A), Dup (a :: L) -> In a L \/ Dup L.
+Proof.
+  intros; destruct (in_dec t_eq_dec a L);
+  [left; trivial | right; intro; apply H; constructor; auto].
+Qed.
+
+Lemma Dup_cyclic {A} {EA : EqDec A} : forall (L : list A), Dup L -> exists a L1 L2 L3, L = L1 ++ (a :: L2) ++ (a :: L3).
+Proof.
+  induction L. destruct 1. constructor. intros. apply Dup_unfold in H. destruct H. apply in_split in H.
+  destruct H as [L1 [L2 ?]]. exists a. exists nil. exists L1. exists L2. rewrite H. simpl. trivial.
+  destruct (IHL H) as [a' [L1 [L2 [L3 ?]]]]. rewrite H0. exists a'. exists (a :: L1). exists L2. exists L3. trivial.
+Qed.
+
+Fixpoint foot {A} (L : list A) : option A :=
+  match L with
+    | nil => None
+    | a :: nil => Some a
+    | a :: L' => foot L'
+  end.
+
+Lemma foot_simpl: forall A (a1 a2 : A) (L : list A), foot (a1 :: a2 :: L) = foot (a2 :: L).
+Proof. intros. simpl. destruct L; auto. Qed.
+
+Lemma foot_last: forall A (L : list A) (a : A), foot (L +:: a) = Some a.
+Proof.
+  induction L; auto; intros; destruct L; auto; rewrite <- (IHL a0); simpl; destruct (L +:: a0); simpl; auto.
+Qed.
+
+Lemma foot_app: forall A (L1 L2 : list A), L2 <> nil -> foot (L1 ++ L2) = foot L2.
+Proof.
+  induction L1. auto. intros. rewrite <- app_comm_cons. simpl. case_eq (L1 ++ L2).
+  intro. apply app_eq_nil in H0. destruct H0. contradiction. intros. rewrite <- H0. apply IHL1. trivial.
+Qed.
+
+Tactic Notation "spec" hyp(H) :=
+  match type of H with ?a -> _ =>
+    let H1 := fresh in (assert (H1: a); [|generalize (H H1); clear H H1; intro H]) end.
+Tactic Notation "disc" := (try discriminate).
+Tactic Notation "contr" := (try contradiction).
+Tactic Notation "congr" := (try congruence).
+Tactic Notation "inv" hyp(H) := inversion H; clear H; subst.
+Tactic Notation  "icase" constr(v) := (destruct v; disc; contr; auto).
+Tactic Notation "copy" hyp(H) := (generalize H; intro).
+
+Lemma foot_explicit {A}: forall L (a : A), foot L = Some a -> exists L', L = L' +:: a.
+Proof.
+  induction L. inversion 1. intros. simpl in H. icase L. inv H. exists nil. trivial.
+  specialize (IHL a0 H). destruct IHL. exists (a :: x). rewrite <- app_comm_cons. congr.
+Qed.
+
+Lemma foot_in {A}: forall (a : A) L, foot L = Some a -> In a L.
+Proof. induction L. inversion 1. icase L. simpl. inversion 1. auto. rewrite foot_simpl. right. auto. Qed.
+

@@ -9,66 +9,86 @@ Local Open Scope logic.
 
 Arguments SingleFrame' {l} {g} {s}.
 
+Existing Instance SGS_VST.
+
+Check Graph.
+
+Definition graph sh x (g: PreGraph _ _) {bi: BiGraph g} {ma: MathGraph g Null}: mpred :=
+  @graph (SGA_VST sh) x (Build_Graph _ g bi ma).
+
+(*
 Definition Graph := @BiMathGraph pointer_val int NullPointer (@AddrDec SGS_VST).
 
 Definition graph sh x (g: Graph): mpred := @graph (SGA_VST sh) x g.
-
-Definition mark {N} {D} {null} {DEC} marked (g: @BiMathGraph N D null DEC) (x: N) (g': @BiMathGraph N D null DEC): Prop :=
-  mark _ _ _ marked (@m_pg _ _ _ _ (@bm_ma _ _ _ _ g)) x (@m_pg _ _ _ _ (@bm_ma _ _ _ _ g')).
+*)
+(*
+Definition mark {N} {D} {null} {DEC} marked (g: Graph) (x: N) (g': Graph): Prop :=
+  mark _ _ _ marked g x g'.
 
 Definition mark1 {N} {D} {null} {DEC} marked (g: @BiMathGraph N D null DEC) (x: N) (g': @BiMathGraph N D null DEC): Prop :=
   mark1 _ _ _ marked (@m_pg _ _ _ _ (@bm_ma _ _ _ _ g)) x (@m_pg _ _ _ _ (@bm_ma _ _ _ _ g')).
+*)
 
-Definition subgraph {N} {D} {null} {DEC} (g: @BiMathGraph N D null DEC) (x: N) (g': @BiMathGraph N D null DEC) : Prop :=
-  reachable_subgraph (@m_pg _ _ _ _ (@bm_ma _ _ _ _ g)) (x :: nil) = (@m_pg _ _ _ _ (@bm_ma _ _ _ _ g')).
+Definition subgraph {N} {D} {DEC} (g: @PreGraph N D DEC) (x: N) (g': @PreGraph N D DEC) : Prop :=
+  reachable_subgraph g (x :: nil) = g'.
 
-Definition is_one := fun i: int => i = Int.repr 1.
+Definition is_one: Ensemble Data := fun i: int => i = Int.repr 1.
 
-Hypothesis mark_null: forall {N} {D} {null} {DEC} marked (g g': @BiMathGraph N D null DEC), mark marked g null g' -> g = g'.
+Arguments mark {N} {D} {EDN} _ _ _ _.
+Arguments mark1 {N} {D} {EDN} _ _ _ _.
 
-Hypothesis mark_marked: forall {N} {D} {null} {DEC} (marked: Ensemble D) (g g': @BiMathGraph N D null DEC) x d l r,
-  gamma (@bm_bi _ _ _ _ g) x = (d, l, r) ->
+Hypothesis mark_null: forall {N} {D} {DEC} marked (g g': @PreGraph N D DEC) x, ~ valid x -> mark marked g x g' -> g = g'.
+
+Hypothesis mark_marked: forall {N} {D} {DEC} (marked: Ensemble D) (g g': @PreGraph N D DEC) {bg: BiGraph g} {bg': BiGraph g'} x d l r,
+  gamma bg x = (d, l, r) ->
   marked d ->
   mark marked g x g' -> g = g'.
 
-Hypothesis mark_exists: forall {N} {D} {null} {DEC} (marked: Ensemble D) (g: @BiMathGraph N D null DEC) x,
+Hypothesis mark_exists: forall {N} {D} {DEC} (marked: Ensemble D) (g: @PreGraph N D DEC) x,
   exists g', mark marked g x g'.
 
-Hypothesis mark1_exists: forall {N} {D} {null} {DEC} (marked: Ensemble D) (g: @BiMathGraph N D null DEC) x,
+Hypothesis mark1_exists: forall {N} {D} {DEC} (marked: Ensemble D) (g: @PreGraph N D DEC) x,
   exists g', mark1 marked g x g'.
 
-Hypothesis subgraph_exists: forall {N} {D} {null} {DEC} (marked: Ensemble D) (g: @BiMathGraph N D null DEC) x,
+Lemma subgraph_exists: forall {N} {D} {DEC} (marked: Ensemble D) (g: @PreGraph N D DEC) x,
   exists g', subgraph g x g'.
+Proof.
+  intros.
+  exists (reachable_subgraph g (x :: nil)).
+  reflexivity.
+Qed.
 
-Hypothesis reachable_mark1: forall {N} {D} {null} {DEC} (marked: Ensemble D) (g g': @BiMathGraph N D null DEC) x y z,
-  mark1 marked g x g' -> (reachable (@m_pg _ _ _ _ (@bm_ma _ _ _ _ g)) y z <-> reachable (@m_pg _ _ _ _ (@bm_ma _ _ _ _ g')) y z).
+Hypothesis reachable_mark1: forall {N} {D} {DEC} (marked: Ensemble D) (g g': @PreGraph N D DEC) x y z,
+  mark1 marked g x g' -> (reachable g y z <-> reachable g y z).
 
-Hypothesis reachable_mark: forall {N} {D} {null} {DEC} (marked: Ensemble D) (g g': @BiMathGraph N D null DEC) x y z,
-  mark marked g x g' -> (reachable (@m_pg _ _ _ _ (@bm_ma _ _ _ _ g)) y z <-> reachable (@m_pg _ _ _ _ (@bm_ma _ _ _ _ g')) y z).
+Hypothesis reachable_mark: forall {N} {D} {DEC} (marked: Ensemble D) (g g':  @PreGraph N D DEC) x y z,
+  mark marked g x g' -> (reachable g y z <-> reachable g' y z).
 
-Hypothesis gamma_reachable: forall {N} {D} {null} {DEC} (g: @BiMathGraph N D null DEC) d x y z,
-  gamma (@bm_bi _ _ _ _ g) x = (d, y, z) \/ gamma (@bm_bi _ _ _ _ g) x = (d, z, y) ->
-  reachable (@m_pg _ _ _ _ (@bm_ma _ _ _ _ g)) x y.
+Hypothesis gamma_reachable: forall {N} {D} {DEC} (g:  @PreGraph N D DEC) {bg: BiGraph g} d x y z,
+  gamma bg x = (d, y, z) \/ gamma bg x = (d, z, y) ->
+  reachable g x y.
 
-Hypothesis mark1_mark_left_mark_right: forall {N} {D} {null} {DEC} marked (g: @BiMathGraph N D null DEC) g1 g2 g3 g' x d l r,
-  gamma (@bm_bi _ _ _ _ g) x = (d, l, r) ->
+Hypothesis mark1_mark_left_mark_right: forall {N} {D} {DEC} marked (g: @PreGraph N D DEC) {bg: BiGraph g} g1 g2 g3 g' x d l r,
+  gamma bg x = (d, l, r) ->
   mark1 marked g x g1 ->
   mark marked g1 l g2 ->
   mark marked g2 r g3 ->
   mark marked g x g' ->
   g' = g3.
 
-Hypothesis graph_ramify_aux0: forall sh x g d l r,
-  gamma (@bm_bi _ _ _ _ g) x = (d, l, r) ->
+Definition graph sh x (g: Graph): mpred := @graph (SGA_VST sh) x g.
+
+Hypothesis graph_ramify_aux0: forall sh x (g: Graph) d l r,
+  gamma g x = (d, l, r) ->
   graph sh x g
    |-- data_at sh node_type (Vint d, (pointer_val_val l, pointer_val_val r))
          (pointer_val_val x) *
        (data_at sh node_type (Vint d, (pointer_val_val l, pointer_val_val r))
           (pointer_val_val x) -* graph sh x g).
 
-Hypothesis graph_ramify_aux1: forall sh x d l r g g1,
-  gamma (@bm_bi _ _ _ _ g) x = (d, l, r) ->
-  mark1 is_one g x g1 ->
+Hypothesis graph_ramify_aux1: forall sh (x: abs_addr.Addr) d l r (g g1: Graph),
+  gamma g x = (d, l, r) ->
+  mark1 is_one (@pg (SGA_VST sh) g) x g1 ->
   ~ is_one d ->
   graph sh x g
    |-- data_at sh node_type (Vint d, (pointer_val_val l, pointer_val_val r))
@@ -77,7 +97,8 @@ Hypothesis graph_ramify_aux1: forall sh x d l r g g1,
           (Vint (Int.repr 1), (pointer_val_val l, pointer_val_val r))
           (pointer_val_val x) -* graph sh x g1).
 
-Hypothesis graph_ramify_aux2: forall sh x y g g1 sg sg1,
+
+Hypothesis graph_ramify_aux2: forall sh x y (g g1: @Graph (SGA_VST sh)) sg sg1,
   reachable (@m_pg _ _ _ _ (@bm_ma _ _ _ _ g)) x y ->
   mark is_one g y g1 ->
   mark is_one sg y sg1 ->
