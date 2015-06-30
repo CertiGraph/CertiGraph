@@ -276,6 +276,11 @@ Proof.
   rewrite (H2 v H1); rewrite H in H1; apply H4; auto. rewrite (H3 v H1); rewrite H in H1; apply H5; auto.
 Qed.
 
+Add Parametric Relation {V D : Type} {EV : EqDec V} : (PreGraph V D) validly_identical
+    reflexivity proved by vi_refl
+    symmetry proved by vi_sym
+    transitivity proved by vi_trans as vi_equal.
+
 Section GraphPath.
   Variable N : Type.
   Variable D : Type.
