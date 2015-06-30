@@ -749,3 +749,37 @@ End GraphReachable.
 
 Arguments reachable_set_list {V} {D} {EDV} pg S l.
 
+Definition subgraph {N} {D} {DEC} (g: @PreGraph N D DEC) (x: N) (g': @PreGraph N D DEC) : Prop :=
+  reachable_subgraph g (x :: nil) = g'.
+
+Arguments mark {N} {D} {EDN} _ _ _ _.
+Arguments mark1 {N} {D} {EDN} _ _ _ _.
+
+Lemma mark_null:
+  forall {N} {D} {DEC} marked (g g': @PreGraph N D DEC) x, ~ @valid N D DEC g x -> mark marked g x g' -> g -=- g'.
+Proof.
+  intros. destruct H0 as [? [? ?]]. split; [|split]; intros.
+  + destruct (H0 v); auto.
+  + apply H2. intro. destruct H4 as [l [[? ?] [? ?]]].
+    apply valid_path_valid in H6. rewrite Forall_forall in H6.
+    apply H. apply H6. destruct l.
+    - inversion H4.
+    - simpl in H4. inversion H4. apply in_eq.
+  + destruct (H0 v); auto.
+Qed.
+
+Lemma mark_marked_eq: forall {N} {D} {DEC} (marked: Ensemble D) (g g': @PreGraph N D DEC) x,
+  marked (@node_label N D DEC g x) ->
+  mark marked g x g' -> g -=- g'.
+Proof.
+  intros. destruct H0 as [? [? ?]]. split; [|split]; intros.
+  + destruct (H0 v); auto.
+  + apply H2. intro. apply reachable_by_head_prop in H4.
+    hnf in H4. tauto.
+  + destruct (H0 v); auto.
+Qed.
+
+(* Lemma mark_exists: forall {N} {D} {DEC} (marked: Ensemble D) (g: @PreGraph N D DEC) x v, *)
+(*                    marked v -> exists g', mark marked g x g'. *)
+(* Proof. *)
+(* Qed. *)
