@@ -61,27 +61,58 @@ Section SpatialGraph.
 
   Definition Null : (@Addr AV_SGraph) := null.
 
-  Definition graph_cell (pg: PreGraph Addr Data) {bi : BiGraph pg} (v : Addr) : SGA_Pred := trinode v (gamma bi v).
+  Class Graph: Type := {
+    pg: PreGraph Addr Data;
+    bi: BiGraph pg;
+    ma: MathGraph pg Null
+  }.
 
-  Lemma precise_graph_cell: forall pg {bi: BiGraph pg} v, precise (graph_cell pg v).
+  Coercion pg : Graph >-> PreGraph.
+
+  Coercion bi : Graph >-> BiGraph.
+
+  Coercion ma : Graph >-> MathGraph.
+
+  Instance single_graph_double v d (Hn: v <> Null): Graph := {
+    pg := single_PreGraph _ v d v v;
+    bi := single_BiGraph _ v d v v;
+    ma := single_MathGraph_double _ _ v d Hn
+  }.
+
+  Instance single_graph_left v d (Hn: v <> Null): Graph := {
+    pg := single_PreGraph _ v d v Null;
+    bi := single_BiGraph _ v d v Null;
+    ma := single_MathGraph_left _ _ v d Hn
+  }.
+
+  Instance single_graph_right v d (Hn: v <> Null): Graph := {
+    pg := single_PreGraph _ v d Null v;
+    bi := single_BiGraph _ v d Null v;
+    ma := single_MathGraph_right _ _ v d Hn
+  }.
+  Definition graph_cell (g: Graph) (v : Addr) : SGA_Pred := trinode v (gamma g v).
+
+  Lemma precise_graph_cell: forall g v, precise (graph_cell g v).
   Proof. intros. unfold graph_cell. destruct (gamma bi v) as [[? ?] ?]. apply mapsto_precise. Qed.
 
-  Lemma sepcon_unique_graph_cell: forall pg {bi: BiGraph pg}, sepcon_unique (graph_cell pg).
+  Lemma sepcon_unique_graph_cell: forall g, sepcon_unique (graph_cell g).
   Proof.
     repeat intro. unfold graph_cell. destruct (gamma bi x) as [[? ?] ?]. apply mapsto_conflict.
     simpl. unfold addr_eqb. destruct (addr_eq_dec x x); auto.
   Qed.
 
-  Lemma joinable_graph_cell : forall pg {bi: BiGraph pg}, joinable (graph_cell pg).
+  Lemma joinable_graph_cell : forall g, joinable (graph_cell g).
   Proof.
     intros. unfold joinable; intros. unfold graph_cell. apply disj_mapsto.
     simpl. unfold addr_eqb. destruct (addr_eq_dec x y); tauto.
   Qed.
 
-  Definition graph (x : Addr) pg {bimg : BiMathGraph pg Null}: SGA_Pred :=
-    !!(x = Null \/ valid x) && EX l : list Addr, !!reachable_list pg x l && iter_sepcon l (graph_cell pg).
+  Existing Instances pg bi ma.
 
-  Lemma graph_unfold_Null: forall pg {bimg : BiMathGraph pg Null}, graph Null pg = emp.
+  Definition graph (x : Addr) (g: Graph) : SGA_Pred :=
+    !!(x = Null \/ valid x) && EX l : list Addr, !!reachable_list pg x l && iter_sepcon l (graph_cell g).
+
+  Lemma graph_unfold_Null: forall (g: Graph), graph Null g = emp.
   Proof.
     intros. apply pred_ext; unfold graph.
     + apply andp_left2, exp_left. intros. apply derives_extract_prop. intro. destruct x.
@@ -97,26 +128,26 @@ Section SpatialGraph.
   Qed.
 
   Lemma graph_unfold_valid:
-    forall x pg {bimg : BiMathGraph pg Null} d l r, valid x -> gamma bimg x = (d, l, r) ->
-                         graph x pg = trinode x (d, l, r) ⊗ graph l pg ⊗ graph r pg.
+    forall x (g: Graph) d l r, valid x -> gamma g x = (d, l, r) ->
+                         graph x g = trinode x (d, l, r) ⊗ graph l g ⊗ graph r g.
   Proof.
-    intros. assert (TRI: trinode x (d, l, r) = iter_sepcon (x :: nil) (graph_cell pg)). {
+    intros. assert (TRI: trinode x (d, l, r) = iter_sepcon (x :: nil) (graph_cell g)). {
       unfold iter_sepcon. rewrite sepcon_comm, emp_sepcon. unfold graph_cell. rewrite H0. auto.
     } apply pred_ext.
     + unfold graph. apply andp_left2, exp_left. intro li.
-      rewrite (add_andp _ _ (iter_sepcon_unique_nodup li (sepcon_unique_graph_cell pg))). normalize_overlap.
+      rewrite (add_andp _ _ (iter_sepcon_unique_nodup li (sepcon_unique_graph_cell g))). normalize_overlap.
       rename H2 into NODUPLi.
       unfold gamma in H0. unfold biEdge in H0. destruct (only_two_neighbours x) as [v1 [v2 ?]].
       inversion H0; subst. clear H0.
       assert (In l (edge_func x)). rewrite e. apply in_eq.
-      destruct (compute_neighbor bm_ma x li H H1 l H0) as [leftL [? ?]].
+      destruct (compute_neighbor g x li H H1 l H0) as [leftL [? ?]].
       assert (In r (edge_func x)). rewrite e. apply in_cons, in_eq.
-      destruct (compute_neighbor bm_ma x li H H1 r H4) as [rightL [? ?]].
+      destruct (compute_neighbor g x li H H1 r H4) as [rightL [? ?]].
       apply (exp_right rightL). normalize_overlap. apply (exp_right leftL). normalize_overlap. apply andp_right.
       - rewrite <- !prop_and. apply prop_right. do 2 (split; auto).
         split.
-        * destruct (weak_valid_complete _ _ (valid_graph x H r H4)); auto.
-        * destruct (weak_valid_complete _ _ (valid_graph x H l H0)); auto.
+        * destruct (weak_valid_complete _ (valid_graph x H r H4)); auto.
+        * destruct (weak_valid_complete _ (valid_graph x H l H0)); auto.
       - rewrite TRI, ocon_assoc.
         rewrite !(iter_sepcon_ocon t_eq_dec); auto.
         2: repeat constructor; simpl; tauto.
@@ -136,8 +167,8 @@ Section SpatialGraph.
     + unfold graph. normalize_overlap. intro rightL. normalize_overlap. intro leftL. normalize_overlap.
       apply (exp_right (remove_dup t_eq_dec ((x :: nil) ++ remove_dup t_eq_dec (leftL ++ rightL)))). rewrite <- andp_assoc.
       rewrite <- prop_and. rewrite TRI.
-      rewrite (add_andp _ _ (iter_sepcon_unique_nodup leftL (sepcon_unique_graph_cell pg))).
-      rewrite (add_andp _ _ (iter_sepcon_unique_nodup rightL (sepcon_unique_graph_cell pg))).
+      rewrite (add_andp _ _ (iter_sepcon_unique_nodup leftL (sepcon_unique_graph_cell g))).
+      rewrite (add_andp _ _ (iter_sepcon_unique_nodup rightL (sepcon_unique_graph_cell g))).
       normalize_overlap. apply andp_right.
       - apply prop_right. split. right; auto. intro.
         rewrite <- remove_dup_in_inv. simpl. rewrite <- remove_dup_in_inv.
@@ -152,21 +183,21 @@ Section SpatialGraph.
         * apply joinable_graph_cell.
   Qed.
 
-  Lemma graph_root_nv: forall x pg {bimg : BiMathGraph pg Null}, graph x pg |-- !!(x = Null \/ valid x).
+  Lemma graph_root_nv: forall x g, graph x g |-- !!(x = Null \/ valid x).
   Proof. intros. unfold graph. apply andp_left1, prop_left. intros. apply TT_prop_right; auto. Qed.
 
   Lemma graph_unfold':
-    forall x pg {bimg : BiMathGraph pg Null},
-      graph x pg = (!!(x = Null) && emp) ||
-          EX d:Data, EX l:Addr, EX r:Addr, !!(gamma bm_bi x = (d, l, r) /\ valid x) &&
-                                                        (trinode x (d, l, r) ⊗ graph l pg ⊗ graph r pg).
+    forall x g,
+      graph x g = (!!(x = Null) && emp) ||
+          EX d:Data, EX l:Addr, EX r:Addr, !!(gamma g x = (d, l, r) /\ valid x) &&
+                                                        (trinode x (d, l, r) ⊗ graph l g ⊗ graph r g).
   Proof.
     intros. apply pred_ext.
     + destruct (t_eq_dec x Null).
       - subst. apply orp_right1. rewrite graph_unfold_Null. normalize.
-      - apply orp_right2. destruct (gamma bm_bi x) as [[dd ll] rr] eqn:? .
+      - apply orp_right2. destruct (gamma g x) as [[dd ll] rr] eqn:? .
         apply (exp_right dd), (exp_right ll), (exp_right rr).
-        rewrite (add_andp _ _ (graph_root_nv x pg)). apply andp_right.
+        rewrite (add_andp _ _ (graph_root_nv x g)). apply andp_right.
         * apply andp_left2, prop_left; intros. apply TT_prop_right. destruct H. tauto. split; auto.
         * normalize. destruct H; [tauto | rewrite (graph_unfold_valid _ _ dd ll rr); auto].
     + apply orp_left.
@@ -175,12 +206,12 @@ Section SpatialGraph.
   Qed.
 
   Lemma graph_unfold:
-    forall x pg {bimg : BiMathGraph pg Null} d l r, gamma bm_bi x = (d, l, r) ->
-                         graph x pg = !!(x = Null) && emp ||
-                                        !!(valid x) && (trinode x (d, l, r) ⊗ graph l pg ⊗ graph r pg).
+    forall x (g: Graph) d l r, gamma g x = (d, l, r) ->
+                         graph x g = !!(x = Null) && emp ||
+                                        !!(valid x) && (trinode x (d, l, r) ⊗ graph l g ⊗ graph r g).
   Proof.
     intros. apply pred_ext.
-    + rewrite (add_andp _ _ (graph_root_nv x pg)). normalize. destruct H0.
+    + rewrite (add_andp _ _ (graph_root_nv x g)). normalize. destruct H0.
       - subst. rewrite graph_unfold_Null. apply orp_right1. normalize.
       - apply orp_right2. rewrite (graph_unfold_valid _ _ d l r H0 H). normalize.
     + apply orp_left.
@@ -188,7 +219,7 @@ Section SpatialGraph.
       - normalize. rewrite (graph_unfold_valid _ _ d l r H0 H). auto.
   Qed.
 
-  Lemma precise_graph: forall x pg {bimg : BiMathGraph pg Null}, precise (graph x pg).
+  Lemma precise_graph: forall x g, precise (graph x g).
   Proof.
     intros. apply precise_andp_right. apply precise_exp_iter_sepcon.
     + apply sepcon_unique_graph_cell.
@@ -197,21 +228,21 @@ Section SpatialGraph.
     + apply reachable_list_permutation.
   Qed.
 
-  Fixpoint graphs (l : list Addr) pg {bimg : BiMathGraph pg Null} :=
+  Fixpoint graphs (l : list Addr) g :=
     match l with
       | nil => emp
-      | v :: l' => graph v pg ⊗ graphs l' pg
+      | v :: l' => graph v g ⊗ graphs l' g
     end.
 
-  Lemma precise_graphs: forall S pg {bimg : BiMathGraph pg Null}, precise (graphs S pg).
+  Lemma precise_graphs: forall S g, precise (graphs S g).
   Proof. intros; induction S; simpl. apply precise_emp. apply precise_ocon. apply precise_graph. apply IHS. Qed.
 
-  Lemma graphs_list_well_defined: forall S pg {bimg : BiMathGraph pg Null}, graphs S pg |-- !!well_defined_list bm_ma S.
+  Lemma graphs_list_well_defined: forall S g, graphs S g |-- !!well_defined_list g S.
   Proof.
     induction S; intros; unfold well_defined_list in *; simpl.
     + apply prop_right. intros; tauto.
     + unfold graph.
-      rewrite (add_andp _ _ (IHS _ _)).
+      rewrite (add_andp _ _ (IHS _)).
       normalize_overlap.
       apply prop_right.
       intro y; intros. destruct H1.
@@ -219,10 +250,10 @@ Section SpatialGraph.
       - specialize (H0 _ H1). apply H0.
   Qed.
 
-  Lemma graphs_unfold: forall S pg {bimg : BiMathGraph pg Null} , graphs S pg =
-                                      !!(well_defined_list bm_ma S) &&
+  Lemma graphs_unfold: forall S g, graphs S g =
+                                      !!(well_defined_list g S) &&
                                       EX l: list Addr, !!reachable_set_list pg S l &&
-                                                       iter_sepcon l (graph_cell pg).
+                                                       iter_sepcon l (graph_cell g).
   Proof.
     induction S; intros.
     + unfold graphs. apply pred_ext.
@@ -237,8 +268,8 @@ Section SpatialGraph.
       - normalize_overlap. rename x into la.
         normalize_overlap. rename x into lS.
         normalize_overlap.
-        rewrite (add_andp _ _ (iter_sepcon_unique_nodup la (sepcon_unique_graph_cell pg))).
-        rewrite (add_andp _ _ (iter_sepcon_unique_nodup lS (sepcon_unique_graph_cell pg))).
+        rewrite (add_andp _ _ (iter_sepcon_unique_nodup la (sepcon_unique_graph_cell g))).
+        rewrite (add_andp _ _ (iter_sepcon_unique_nodup lS (sepcon_unique_graph_cell g))).
         normalize_overlap.
         rewrite (iter_sepcon_ocon t_eq_dec); auto. apply (exp_right (remove_dup t_eq_dec (la ++ lS))).
         rewrite <- andp_assoc, <- prop_and. apply andp_right.
@@ -260,20 +291,20 @@ Section SpatialGraph.
         * apply joinable_graph_cell.
       - normalize.
         assert (In a (a :: S)) by apply in_eq.
-        assert (@weak_valid _ _ _ pg Null a). Focus 1. {
+        assert (weak_valid a). Focus 1. {
           unfold well_defined_list in H.
           specialize (H a).
           destruct (H H1); apply weak_valid_spec; [left | right]; auto.
         } Unfocus.
-        destruct (reachable_through_single_reachable bm_ma _ _ H0 a H1 H2) as [la [? ?]].
+        destruct (reachable_through_single_reachable g _ _ H0 a H1 H2) as [la [? ?]].
         normalize_overlap. apply (exp_right la).
         assert (Sublist S (a :: S)) by (intro s; intros; apply in_cons; auto).
-        assert (well_defined_list bm_ma S) by (unfold well_defined_list in *; intros; apply H; apply in_cons; auto).
+        assert (well_defined_list g S) by (unfold well_defined_list in *; intros; apply H; apply in_cons; auto).
         destruct (reachable_through_sublist_reachable _ _ _ H0 _ H5 H6) as [lS [? ?]].
         normalize_overlap. apply (exp_right lS). normalize_overlap.
         rewrite <- !prop_and. apply andp_right.
         * apply prop_right. auto.
-        * rewrite (add_andp _ _ (iter_sepcon_unique_nodup l (sepcon_unique_graph_cell pg))).
+        * rewrite (add_andp _ _ (iter_sepcon_unique_nodup l (sepcon_unique_graph_cell g))).
           normalize.
           rewrite (iter_sepcon_ocon t_eq_dec); auto.
           2: apply precise_graph_cell.
@@ -286,8 +317,8 @@ Section SpatialGraph.
   Qed.
 
   Lemma reachable_eq_graphs_eq:
-    forall S S' pg {bimg: BiMathGraph pg Null}, Same_set (reachable_through_set pg S) (reachable_through_set pg S') ->
-                      well_defined_list bm_ma S -> well_defined_list bm_ma S' ->  graphs S pg = graphs S' pg.
+    forall S S' (g: Graph), Same_set (reachable_through_set pg S) (reachable_through_set pg S') ->
+                      well_defined_list g S -> well_defined_list g S' ->  graphs S g = graphs S' g.
   Proof.
     intros; apply pred_ext; rewrite !graphs_unfold; normalize; apply (exp_right l);
     normalize; apply andp_right; auto; apply prop_right; unfold reachable_set_list in *;
@@ -295,7 +326,7 @@ Section SpatialGraph.
   Qed.
 
   Lemma single_graph_growth_double:
-    forall x d (H: x <> Null), trinode x (d, x, x) |-- @graph x (single_PreGraph AddrDec x d x x) (single_graph_double Null AddrDec x d H).
+    forall x d (H: x <> Null), trinode x (d, x, x) |-- graph x (single_graph_double x d H).
   Proof.
     intros. unfold graph. apply andp_right.
     + apply prop_right. right. hnf; auto.
@@ -309,7 +340,7 @@ Section SpatialGraph.
   Qed.
 
   Lemma single_graph_growth_left:
-    forall x d (H: x <> Null), trinode x (d, x, Null) |-- graph x (single_graph_left Null AddrDec x d H).
+    forall x d (H: x <> Null), trinode x (d, x, Null) |-- graph x (single_graph_left x d H).
   Proof.
     intros. unfold graph. apply andp_right.
     + apply prop_right. right. hnf; auto.
@@ -323,7 +354,7 @@ Section SpatialGraph.
   Qed.
 
   Lemma single_graph_growth_right:
-    forall x d (H: x <> Null), trinode x (d, Null, x) |-- graph x (single_graph_right Null AddrDec x d H).
+    forall x d (H: x <> Null), trinode x (d, Null, x) |-- graph x (single_graph_right x d H).
   Proof.
     intros. unfold graph. apply andp_right.
     + apply prop_right. right. hnf; auto.
@@ -354,7 +385,7 @@ Section SpatialGraph.
 
   Lemma trinode_graphs_unreachable:
     forall x d l r S g, x <> Null ->
-                        trinode x (d, l, r) * graphs S g |-- !!(forall s, In s S -> ~ reachable b_pg s x /\ s <> x).
+                        trinode x (d, l, r) * graphs S g |-- !!(forall s, In s S -> ~ reachable g s x /\ s <> x).
   Proof.
     intros. rewrite graphs_unfold. normalize. intro li; intros.
     rewrite (add_andp _ _ (trinode_iter_sepcon_not_in _ _ _ _ _ _)).
@@ -363,27 +394,25 @@ Section SpatialGraph.
     + intro. subst. unfold reachable_set_list in H1. unfold reachable_through_set in H1.
       apply H2. rewrite <- H1. exists x. split; auto.
       apply reachable_by_reflexive. specialize (H0 x). apply H0 in H3. split.
-      - destruct H3. tauto. rewrite <- pg_the_same. auto.
+      - destruct H3. tauto. auto.
       - hnf; auto.
   Qed.
 
   Lemma reachable_subgraph_derives:
-    forall (g1 g2 : BiMathGraph Addr Data Null) x,
-      ((reachable_subgraph (b_pg_g g1) (x :: nil)) -=- (reachable_subgraph (b_pg_g g2) (x :: nil))) ->
+    forall (g1 g2: Graph) x,
+      ((reachable_subgraph g1 (x :: nil)) -=- (reachable_subgraph g2 (x :: nil))) ->
       graph x g1 |-- graph x g2.
   Proof.
     Implicit Arguments valid [[Vertex] [Data] [EV]].
-    Implicit Arguments b_pg [[Vertex] [Data] [EV]].
-    Implicit Arguments bm_bi [[Vertex] [Data] [nV] [EV]].
     Implicit Arguments only_two_neighbours [[Vertex] [Data] [EV]].
-    unfold b_pg_g in *. intros. destruct H as [? [? ?]]. rewrite (add_andp _ _ (graph_root_nv _ _)).
+    intros. destruct H as [? [? ?]]. rewrite (add_andp _ _ (graph_root_nv _ _)).
     normalize. destruct H2.
     + subst. rewrite !graph_unfold_Null; auto.
     + unfold graph. normalize. apply (exp_right l).
       rewrite <- andp_assoc, <- prop_and. apply andp_right.
       - apply prop_right. simpl in H. unfold reachable_valid in H. split.
         * right. specialize (H x).
-          assert (valid (b_pg (bm_bi g1)) x /\ reachable_through_set (b_pg (bm_bi g1)) (x :: nil) x). {
+          assert (valid g1 x /\ reachable_through_set g1 (x :: nil) x). {
             split. auto. exists x. split.
             + apply in_eq.
             + apply reachable_by_reflexive. split; auto. hnf; auto.
@@ -400,40 +429,44 @@ Section SpatialGraph.
             rewrite <- H in H4. destruct H4. destruct H5 as [s [? ?]].
             simpl in H5. destruct H5. subst; auto. tauto.
           } Unfocus.
-      - assert (forall z, In z l -> valid (reachable_subgraph (b_pg (bm_bi g1)) (x :: nil)) z). {
+      - assert (forall z, In z l -> valid (reachable_subgraph g1 (x :: nil)) z). {
           intros. simpl. hnf. hnf in H3. rewrite H3 in H4. split.
           + apply reachable_foot_valid in H4; auto.
           + exists x. split. apply in_eq. auto.
         } clear H3. induction l. simpl. auto.
         unfold iter_sepcon.
-        fold (iter_sepcon l (graph_cell (bm_bi g1))).
-        fold (iter_sepcon l (graph_cell (bm_bi g2))).
-        apply derives_trans with (graph_cell (bm_bi g1) a * iter_sepcon l (graph_cell (bm_bi g2)));
+        fold (iter_sepcon l (graph_cell g1)).
+        fold (iter_sepcon l (graph_cell g2)).
+        apply derives_trans with (graph_cell g1 a * iter_sepcon l (graph_cell g2));
           apply sepcon_derives; auto.
         * apply IHl. intros. apply H4. apply in_cons; auto.
         * unfold graph_cell. unfold gamma. unfold biEdge.
-          destruct (only_two_neighbours (bm_bi g1) a) as [? [? ?]].
-          destruct (only_two_neighbours (bm_bi g2) a) as [? [? ?]].
+          destruct (only_two_neighbours g1 g1 a) as [? [? ?]].
+          destruct (only_two_neighbours g2 g2 a) as [? [? ?]].
           assert (In a (a :: l)) by apply in_eq. specialize (H4 a H3).
           specialize (H0 a H4). specialize (H1 a H4).
           simpl in *. simpl. rewrite H0. rewrite H1 in e.
           rewrite e in e0. inversion e0. subst. auto.
     Implicit Arguments valid [[Vertex] [Data] [EV] [PreGraph]].
-    Implicit Arguments b_pg [[Vertex] [Data] [EV] [BiGraph]].
-    Implicit Arguments bm_bi [[Vertex] [Data] [nV] [EV] [BiMathGraph]].
     Implicit Arguments only_two_neighbours [[Vertex] [Data] [EV] [BiGraph]].
   Qed.
 
   Lemma reachable_subgraph_eq:
-    forall (g1 g2 : BiMathGraph Addr Data Null) x,
-      ((reachable_subgraph (b_pg_g g1) (x :: nil)) -=- (reachable_subgraph (b_pg_g g2) (x :: nil))) -> graph x g1 = graph x g2.
+    forall (g1 g2 : Graph) x,
+      ((reachable_subgraph g1 (x :: nil)) -=- (reachable_subgraph g2 (x :: nil))) -> graph x g1 = graph x g2.
   Proof.
     intros. apply pred_ext.
     + apply reachable_subgraph_derives; auto.
     + apply reachable_subgraph_derives; apply vi_sym; auto.
   Qed.
   
-  Lemma graphs_growth: forall x d l r (Hn: x <> Null) (g: BiMathGraph Addr Data Null) (Hi: in_math bm_ma x l r),
+Instance update_graph (g: Graph) v d l r (Hi: in_math g v l r) (Hn: v <> Null): Graph := {
+  pg := update_PreGraph _ v d l r;
+  bi := update_BiGraph g v d l r;
+  ma := update_MathGraph g v d l r Hi Hn
+}.
+
+  Lemma graphs_growth: forall x d l r (Hn: x <> Null) (g: Graph) (Hi: in_math g x l r),
                          trinode x (d, l, r) * graphs (l :: r :: nil) g |-- graph x (update_graph g x d l r Hi Hn).
   Proof.
     intros. rewrite (graph_unfold _ _ d l r).
@@ -446,53 +479,48 @@ Section SpatialGraph.
     apply sepcon_derives; auto. unfold graphs. rewrite ocon_emp.
     apply ocon_derives; apply reachable_subgraph_derives.
     + assert (In l (l :: r :: nil)) by apply in_eq. destruct (H l H0).
-      apply unreachable_node_add_graph_eq; auto.
+      apply unreachable_node_add_graph_eq with g; eauto. exact g.
     + assert (In r (l :: r :: nil)) by apply in_cons, in_eq. destruct (H r H0).
-      apply unreachable_node_add_graph_eq; auto.
+      apply unreachable_node_add_graph_eq with g; auto. exact g.
   Qed.
 
-  Lemma update_graph_single: forall x d l r (Hn: x <> Null) (g: BiMathGraph Addr Data Null) (Hi: in_math bm_ma x l r),
-                               trinode x (d, l, r) |-- graph_cell (bm_bi_g (update_graph g x d l r Hi Hn)) x.
+  Lemma update_graph_single: forall x d l r (Hn: x <> Null) (g: Graph) (Hi: in_math g x l r),
+                               trinode x (d, l, r) |-- graph_cell (update_graph g x d l r Hi Hn) x.
   Proof.
-    Implicit Arguments bm_bi [[Vertex] [Data] [nV] [EV]].
     Implicit Arguments only_two_neighbours [[Vertex] [Data] [EV]].
-    unfold bm_bi_g. intros. unfold graph_cell. unfold gamma. unfold biEdge.
-    destruct (only_two_neighbours (bm_bi (update_graph g x d l r Hi Hn)) x) as [v1 [v2 ?]].
+    intros. unfold graph_cell. unfold gamma. unfold biEdge.
+    destruct (only_two_neighbours _ (update_graph g x d l r Hi Hn) x) as [v1 [v2 ?]].
     simpl in e. unfold change_edge_func in e. simpl. unfold change_node_label.
-    destruct (t_eq_dec x x). 2: tauto.
+    destruct (@t_eq_dec (@addr (@SG_Setting SGA)) (@AddrDec (@SG_Setting SGA)) x x). 2: tauto.
     inversion e. subst. auto.
-    Implicit Arguments bm_bi [[Vertex] [Data] [nV] [EV] [BiMathGraph]].
     Implicit Arguments only_two_neighbours [[Vertex] [Data] [EV] [BiGraph]].
   Qed.
 
   Lemma update_graph_iter_sepcon:
-    forall x d l r li (Hn: x <> Null) (g: BiMathGraph Addr Data Null) (Hi: in_math bm_ma x l r),
-      ~ In x li -> iter_sepcon li (graph_cell bm_bi) |-- iter_sepcon li (graph_cell (bm_bi_g (update_graph g x d l r Hi Hn))).
+    forall x d l r li (Hn: x <> Null) (g: Graph) (Hi: in_math g x l r),
+      ~ In x li -> iter_sepcon li (graph_cell g) |-- iter_sepcon li (graph_cell (update_graph g x d l r Hi Hn)).
   Proof.
-    Implicit Arguments bm_bi [[Vertex] [Data] [nV] [EV]].
     Implicit Arguments only_two_neighbours [[Vertex] [Data] [EV]].
-    unfold bm_bi_g. intros.
+    intros.
     induction li. simpl. auto.
     unfold iter_sepcon.
-    fold (iter_sepcon li (graph_cell (bm_bi g))).
-    fold (iter_sepcon li (graph_cell (bm_bi (update_graph g x d l r Hi Hn)))).
+    fold (iter_sepcon li (graph_cell g)).
+    fold (iter_sepcon li (graph_cell (update_graph g x d l r Hi Hn))).
     apply sepcon_derives.
     + unfold graph_cell. unfold gamma. unfold biEdge.
-      destruct (only_two_neighbours (bm_bi (update_graph g x d l r Hi Hn)) a) as [v1 [v2 ?]].
-      destruct (only_two_neighbours (bm_bi g) a) as [v3 [v4 ?]].
+      destruct (only_two_neighbours _ (update_graph g x d l r Hi Hn) a) as [v1 [v2 ?]].
+      destruct (only_two_neighbours _ g a) as [v3 [v4 ?]].
       assert (x <> a) by (intro; apply H; subst; apply in_eq). simpl in e. simpl. change addr with Addr in *.
       unfold change_node_label. unfold change_edge_func in e.
       destruct (t_eq_dec a x). exfalso; auto. rewrite e in e0. inversion e0. subst. auto.
     + apply IHli. intro. apply H. apply in_cons; auto.
-    Implicit Arguments bm_bi [[Vertex] [Data] [nV] [EV] [BiMathGraph]].
     Implicit Arguments only_two_neighbours [[Vertex] [Data] [EV] [BiGraph]].
   Qed.
 
   Lemma graph_growth_right: forall x d r (Hn: x <> Null)
-                                   (g: BiMathGraph Addr Data Null) (Hi: in_math bm_ma x x r),
+                                   (g: Graph) (Hi: in_math g x x r),
                               trinode x (d, x, r) * graph r g |-- graph x (update_graph g x d x r Hi Hn).
   Proof.
-    Implicit Arguments bm_bi [[Vertex] [Data] [nV] [EV]].
     Implicit Arguments only_two_neighbours [[Vertex] [Data] [EV]].
     intros. unfold graph. normalize.
     rewrite (add_andp _ _ (trinode_iter_sepcon_not_in _ _ _ _ _ _)). normalize.
@@ -500,19 +528,17 @@ Section SpatialGraph.
     + apply prop_right. split.
       - simpl. unfold change_valid. right; right; auto.
       - apply (reachable_list_update_graph_right g x d r Hn Hi l); auto.
-    + unfold iter_sepcon at 2. fold (iter_sepcon l (graph_cell (bm_bi (update_graph g x d x r Hi Hn)))).
+    + unfold iter_sepcon at 2. fold (iter_sepcon l (graph_cell (update_graph g x d x r Hi Hn))).
       apply sepcon_derives.
       - apply (update_graph_single x d x r Hn g Hi).
       - apply (update_graph_iter_sepcon x d x r l Hn g Hi H1).
-    Implicit Arguments bm_bi [[Vertex] [Data] [nV] [EV] [BiMathGraph]].
     Implicit Arguments only_two_neighbours [[Vertex] [Data] [EV] [BiGraph]].
   Qed.
 
   Lemma graph_growth_left: forall x d l (Hn: x <> Null)
-                                  (g: BiMathGraph Addr Data Null) (Hi: in_math bm_ma x l x),
+                                 (g: Graph) (Hi: in_math g x l x),
                              trinode x (d, l, x) * graph l g |-- graph x (update_graph g x d l x Hi Hn).
   Proof.
-    Implicit Arguments bm_bi [[Vertex] [Data] [nV] [EV]].
     Implicit Arguments only_two_neighbours [[Vertex] [Data] [EV]].
     intros. unfold graph. normalize. intro li; intros.
     rewrite (add_andp _ _ (trinode_iter_sepcon_not_in _ _ _ _ _ _)). normalize.
@@ -520,11 +546,10 @@ Section SpatialGraph.
     + apply prop_right. split.
       - simpl. unfold change_valid. right; right; auto.
       - apply (reachable_list_update_graph_left g x d l Hn Hi li); auto.
-    + unfold iter_sepcon at 2. fold (iter_sepcon li (graph_cell (bm_bi (update_graph g x d l x Hi Hn)))).
+    + unfold iter_sepcon at 2. fold (iter_sepcon li (graph_cell (update_graph g x d l x Hi Hn))).
       apply sepcon_derives.
       - apply (update_graph_single x d l x Hn g Hi).
       - apply (update_graph_iter_sepcon x d l x li Hn g Hi H1).
-    Implicit Arguments bm_bi [[Vertex] [Data] [nV] [EV] [BiMathGraph]].
     Implicit Arguments only_two_neighbours [[Vertex] [Data] [EV] [BiGraph]].
   Qed.
 
