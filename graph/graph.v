@@ -7,28 +7,6 @@ Require Import Coq.Setoids.Setoid.
 Require Import Coq.Logic.ProofIrrelevance.
 Require Import RamifyCoq.Coqlib.
 
-Fixpoint judgeNoDup {A} {EA : EqDec A} (l : list A) : bool :=
-  match l with
-    | nil => true
-    | s :: ls => if in_dec t_eq_dec s ls then false else judgeNoDup ls
-  end.
-
-Lemma judgeNoDup_ok {A} {EA : EqDec A}: forall (l : list A), judgeNoDup l = true <-> NoDup l.
-Proof.
-  induction l; intros; split; intros. apply NoDup_nil. simpl; auto.
-  simpl in H; destruct (in_dec t_eq_dec a l); [discriminate H | apply NoDup_cons; auto; rewrite <- IHl; auto].
-  simpl; destruct (in_dec t_eq_dec a l).
-  change (a :: l) with (nil ++ a :: l) in H; apply NoDup_remove_2 in H; simpl in H; contradiction.
-  change (a :: l) with (nil ++ a :: l) in H; apply NoDup_remove_1 in H; simpl in H; rewrite IHl; auto.
-Qed.
-
-Lemma nodup_dec {A} {EA : EqDec A}: forall (l : list A), {NoDup l} + {~ NoDup l}.
-Proof.
-  intros; destruct (judgeNoDup l) eqn : Hnodup;
-  [left; rewrite judgeNoDup_ok in Hnodup; assumption |
-   right; intro H; rewrite <- judgeNoDup_ok in H; rewrite Hnodup in H; discriminate H].
-Qed.
-
 Class PreGraph (Vertex: Type) Data {EV: EqDec Vertex} :=
   {
     valid : Vertex -> Prop;
@@ -134,21 +112,6 @@ Fixpoint valid_path {A D : Type} {EV: EqDec A} (g: PreGraph A D) (p : list A) : 
 
 Definition graph_is_acyclic {A D : Type} {EV: EqDec A} (g: PreGraph A D) : Prop :=
   forall p : list A, valid_path g p -> NoDup p.
-
-Arguments Included {U} B C.
-Arguments Same_set {U} B C.
-
-Lemma Same_set_refl: forall A (S : Ensemble A), Same_set S S. Proof. intros; split; intro; tauto. Qed.
-
-Lemma Same_set_sym: forall A (S1 S2 : Ensemble A), Same_set S1 S2 -> Same_set S2 S1. Proof. intros; destruct H; split; auto. Qed.
-
-Lemma Same_set_trans: forall A (S1 S2 S3: Ensemble A), Same_set S1 S2 -> Same_set S2 S3 -> Same_set S1 S3.
-Proof. intros; destruct H, H0; split; repeat intro; [apply H0, H, H3 | apply H1, H2, H3]. Qed.
-
-Add Parametric Relation {A} : (Ensemble A) Same_set
-    reflexivity proved by (Same_set_refl A)
-    symmetry proved by (Same_set_sym A)
-    transitivity proved by (Same_set_trans A) as Same_set_rel.
 
 Definition node_prop {A D : Type} {EV: EqDec A} (g: PreGraph A D) (P : Ensemble D) : Ensemble A :=
   fun n => P (node_label n).
