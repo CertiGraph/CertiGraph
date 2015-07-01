@@ -86,6 +86,33 @@ Proof.
         apply IHpath. simpl in *. destruct H0. apply H0.
 Qed.
 
+Lemma reachable_decidable {N D DEC} {g : @PreGraph N D DEC}:
+  forall (null : N) (mg : MathGraph g null) x l, valid x -> (forall y, reachable g x y -> In y l) ->
+                                                 forall y, {reachable g x y} + {~ reachable g x y}.
+Proof.
+  intros. destruct (finite_reachable_computable mg x l H H0) as [l' [? ?]]. specialize (H1 y).
+  destruct (in_dec t_eq_dec y l').
+  + rewrite H1 in i. left; auto.
+  + rewrite H1 in n. right; auto.
+Qed.
+
+Lemma reachable_by_decidable {N D DEC} {g : @PreGraph N D DEC}:
+  forall (null : N) (mg : MathGraph g null) (p : GraphPredicate g) x l ,
+    valid x -> (forall y, reachable g x y -> In y l) -> p (node_label x) ->
+    forall y, {g |= x ~o~> y satisfying p} + {~ g |= x ~o~> y satisfying p}.
+Proof.
+  intros. remember (predicate_subgraph g p) as pdg.
+  assert (@valid _ _ _ pdg x) by (subst; split; auto).
+  assert (forall y, reachable pdg x y -> In y l). {
+    subst. intro z. intros. apply H0.
+    rewrite <- reachable_by_eq_subgraph_reachable in H3.
+    apply reachable_by_is_reachable in H3. auto.
+  } subst.
+  destruct (reachable_decidable null (predicate_sub_mathgraph mg p) x l H2 H3 y).
+  rewrite <- reachable_by_eq_subgraph_reachable in r. left; auto.
+  rewrite <- reachable_by_eq_subgraph_reachable in n. right; auto.
+Qed.
+
 Lemma mark_exists: forall {N} {D} {DEC} (marked: Ensemble D) (g: @PreGraph N D DEC) x v,
                    marked v -> exists g', mark marked g x g'.
 Proof.
