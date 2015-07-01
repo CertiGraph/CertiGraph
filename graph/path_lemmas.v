@@ -3,252 +3,11 @@ Require Import Coq.Sets.Ensembles.
 Require Import Coq.Sets.Finite_sets.
 Require Import Coq.Lists.List.
 Require Import RamifyCoq.Coqlib.
-
-Lemma Union_iff: forall U A B x, Ensembles.In U (Union U A B) x <-> Ensembles.In U A x \/ Ensembles.In U B x.
-Proof.
-  intros; split; intros.
-  + apply Constructive_sets.Union_inv; auto.
-  + destruct H; [apply Union_introl | apply Union_intror]; auto.
-Qed.
-
-Lemma Empty_set_iff: forall U x, Ensembles.In U (Empty_set U) x <-> False.
-Proof.
-  intros; split; intro; inversion H.
-Qed.
-
-Lemma Singleton_iff: forall U x y, Ensembles.In U (Singleton U x) y <-> x = y.
-Proof.
-  intros; split; intro.
-  + inversion H; auto.
-  + subst; constructor.
-Qed.
-
-Lemma Finite_spec: forall A U, Finite A U <-> exists l, NoDup l /\ forall x, In x l <-> Ensembles.In A U x.
-Proof.
-  intros.
-  split; intros.
-  + induction H.
-    - exists nil.
-      split; [constructor |].
-      intros.
-      rewrite Empty_set_iff; simpl; tauto.
-    - destruct IHFinite as [l [? ?]].
-      exists (x :: l).
-      split; [constructor; auto; rewrite H2; auto |]. 
-      intros x0; specialize (H2 x0).
-      simpl.
-      unfold Add.
-      rewrite Union_iff, Singleton_iff.
-      tauto.
-  + destruct H as [l [? ?]].
-    revert U H0; induction l; intros.
-    - replace U with (Empty_set A); [apply Empty_is_finite |].
-      apply Extensionality_Ensembles.
-      split; intros x ?; specialize (H0 x); simpl in *; repeat rewrite Empty_set_iff in *; tauto.
-    - replace U with (Add A (Subtract A U a) a);
-      [apply Union_is_finite | apply Extensionality_Ensembles].
-      * inversion H; subst.
-        apply IHl; [auto |].
-        intros x; specialize (H0 x).
-        unfold Subtract, Setminus; unfold Ensembles.In at 1.
-        simpl in H0.
-        rewrite Singleton_iff.
-        assert (a = x -> ~ In x l) by (intro; subst; auto).
-        tauto.
-      * unfold Subtract, Setminus; unfold Ensembles.In at 1.
-        rewrite Singleton_iff.
-        tauto.
-      * unfold Add, Subtract, Setminus.
-        split; intros ?; rewrite Union_iff;
-          [unfold Ensembles.In at 1 | unfold Ensembles.In at 2];
-          rewrite  Singleton_iff; intro;
-          specialize (H0 x); simpl in H0; [tauto |].
-        inversion H; subst.
-        assert (a = x -> ~ In x l) by (intro; subst; auto).
-        tauto.
-Qed.
-
-Definition Enumerable U (A: Ensemble U) := {l: list U | NoDup l /\ forall x, In x l <-> Ensembles.In U A x}.
-
-Definition EnumCovered U (A: Ensemble U) := {l: list U | NoDup l /\ forall x, Ensembles.In U A x -> In x l}.
+Require Import RamifyCoq.graph.graph_model.
 
 (******************************************
 
-Graph Definitions
-
-******************************************)
-
-Class PreGraph (Vertex Edge: Type) := {
-  EV: EqDec Vertex;
-  EE: EqDec Edge;
-  vvalid : Ensemble Vertex;
-  evalid : Ensemble Edge;
-  src : Edge -> Vertex;
-  dst : Edge -> Vertex
-}.
-
-Global Existing Instances EV EE.
-
-Inductive step {Vertex Edge: Type} (pg: PreGraph Vertex Edge): Vertex -> Vertex -> Prop :=
-  | step_intro: forall e x y, evalid e -> src e = x -> dst e = y -> step pg x y.
-
-Definition out_edges {Vertex Edge: Type} (pg: PreGraph Vertex Edge) x: Ensemble Edge := fun e => evalid e /\ src e = x.
-
-Definition in_edges {Vertex Edge: Type} (pg: PreGraph Vertex Edge) x: Ensemble Edge := fun e => evalid e /\ dst e = x.
-
-Class MathGraph {Vertex Edge: Type} (pg: PreGraph Vertex Edge) := {
-  is_null: Ensemble Vertex;
-  is_null_dec: forall p, {is_null p} + {~ is_null p};
-  weak_valid: Vertex -> Prop := fun p => is_null p \/ vvalid p;
-  valid_graph: forall e, evalid e -> vvalid (src e) /\ weak_valid (dst e);
-  valid_not_null: forall x, vvalid x -> is_null x -> False
-}.
-
-Class FiniteGraph {Vertex Edge: Type} (pg: PreGraph Vertex Edge) :=
-{
-  finiteV: Enumerable Vertex vvalid;
-  finiteE: Enumerable Edge evalid
-}.
-
-Class LocalFiniteGraph {Vertex Edge: Type} (pg: PreGraph Vertex Edge) :=
-{
-  local_enumerable: forall x, Enumerable Edge (out_edges pg x)
-}.
-
-Definition GraphMark {Vertex Edge: Type} (pg: PreGraph Vertex Edge) := 
-  sigT (fun marked : Vertex -> Prop => forall x, vvalid x -> {marked x} + {~ marked x}).
-
-Definition app_graph_mark {Vertex Edge: Type} {pg: PreGraph Vertex Edge} (marked: GraphMark pg) (x: Vertex) :=
-  projT1 marked x.
-
-Coercion app_graph_mark : GraphMark >-> Funclass.
-
-Definition edge_func {Vertex Edge: Type} (pg: PreGraph Vertex Edge) {lfg: LocalFiniteGraph pg} x := projT1 (local_enumerable x).
-
-Class BiGraph {Vertex Edge: Type} (pg: PreGraph Vertex Edge) {lfg: LocalFiniteGraph pg} :=
-{
-  only_two_neighbours : forall (v : Vertex), {e1 : Edge & {e2 : Edge | edge_func pg v = e1 :: e2 :: nil}}
-}.
-
-(******************************************
-
-Properties
-
-******************************************)
-
-Lemma step_spec: forall {Vertex Edge: Type} (pg: PreGraph Vertex Edge) x y, step pg x y <-> exists e, evalid e /\ src e = x /\ dst e = y.
-Proof.
-  intros; split; intro.
-  + inversion H; eauto.
-  + destruct H as [? [? [? ?]]]; econstructor; eauto.
-Qed.
-
-Lemma edge_func_spec: forall {Vertex Edge} {PG : PreGraph Vertex Edge} {LFG: LocalFiniteGraph PG} e x,
-  In e (edge_func PG x) <-> evalid e /\ src e = x.
-Proof.
-  intros.
-  unfold edge_func.
-  destruct (local_enumerable x) as [? [?H ?H]]; simpl.
-  specialize (H0 e).
-  rewrite H0; unfold out_edges.
-  unfold Ensembles.In; tauto.
-Qed.
-
-Lemma edge_func_step: forall {Vertex Edge} {PG : PreGraph Vertex Edge} {LFG: LocalFiniteGraph PG} x y,
-  step PG x y <-> In y (map dst (edge_func PG x)).
-Proof.
-  intros.
-  rewrite step_spec.
-  rewrite in_map_iff.
-  apply Morphisms_Prop.ex_iff_morphism.
-  hnf; cbv beta; intro e.
-  rewrite edge_func_spec.
-  tauto.
-Qed.
-
-Lemma null_or_valid: forall {Vertex Edge: Type} (pg: PreGraph Vertex Edge) {mg: MathGraph pg} x,
-  weak_valid x -> {is_null x} + {vvalid x}.
-Proof.
-  intros.
-  destruct (is_null_dec x); [left | right]; auto.
-  unfold weak_valid in H.
-  tauto.
-Qed.
-
-Definition biEdge {Vertex Edge} {PG : PreGraph Vertex Edge} {LFG: LocalFiniteGraph PG} (BG: BiGraph PG) (v: Vertex) : Vertex * Vertex.
-  specialize (only_two_neighbours v); intro.
-  destruct X as [e1 [e2 ?]].
-  exact (dst e1, dst e2).
-Defined.
-
-Lemma biEdge_only2 {Vertex Edge} {PG : PreGraph Vertex Edge} {LFG: LocalFiniteGraph PG} (BG: BiGraph PG) :
-  forall v v1 v2 n, biEdge BG v = (v1 ,v2) -> step PG v n -> n = v1 \/ n = v2.
-Proof.
-  intros; unfold biEdge in H.
-  revert H; case_eq (only_two_neighbours v); intro x1; intros.
-  revert H1; case_eq s; intro x2; intros. inversion H2. subst.
-  rewrite edge_func_step in H0; rewrite e in H0.
-  simpl in H0.
-  destruct H0 as [? | [? | ?]]; [left | right | right]; symmetry; tauto.
-Qed.
-
-Definition structurally_identical {V E: Type} (G1 G2: PreGraph V E): Prop :=
-  (forall v : V, (@vvalid V E G1 v <-> @vvalid V E G2 v)) /\
-  (forall e : E, (@evalid V E G1 e <-> @evalid V E G2 e)) /\
-  (forall e : E, @src V E G1 e = @src V E G2 e) /\
-  (forall e : E, @dst V E G1 e = @dst V E G2 e).
-
-Notation "g1 '~=~' g2" := (structurally_identical g1 g2) (at level 1).
-
-Lemma si_refl: forall {V E : Type} (G : PreGraph V E), G ~=~ G.
-Proof. intros; repeat split; auto. Qed.
-
-Lemma si_sym: forall {V E : Type} (G1 G2: PreGraph V E), G1 ~=~ G2 -> G2 ~=~ G1.
-Proof. intros; destruct H as [? [? [? ?]]]; split; [| split; [| split]]; auto; firstorder. Qed.
-
-Lemma si_trans: forall {V E : Type} (G1 G2 G3: PreGraph V E), G1 ~=~ G2 -> G2 ~=~ G3 -> G1 ~=~ G3.
-Proof.
-  intros; destruct H as [? [? [? ?]]], H0 as [? [? [? ?]]].
-  split; [| split; [| split]]; auto; firstorder;
-  specialize (H2 e); specialize (H3 e); specialize (H4 e); specialize (H5 e); congruence.
-Qed.
-
-Add Parametric Relation {V E : Type} : (PreGraph V E) structurally_identical
-    reflexivity proved by si_refl
-    symmetry proved by si_sym
-    transitivity proved by si_trans as si_equal.
-
-Definition edge {V E : Type} (G : PreGraph V E) (n n' : V) : Prop :=
-  vvalid n /\ vvalid n' /\ step G n n'.
-
-Notation " g |= n1 ~> n2 " := (edge g n1 n2) (at level 1).
-
-Lemma step_si {V E : Type}:
-  forall (g1 g2 : PreGraph V E) (n n' : V), g1 ~=~ g2 -> step g1 n n' -> step g2 n n'.
-Proof.
-  intros.
-  rewrite step_spec in H0 |- *.
-  destruct H as [? [? [? ?]]].
-  destruct H0 as [e [? [? ?]]]; exists e.
-  rewrite <- H1, <- H2, <- H3.
-  auto.
-Qed.
-
-Lemma edge_si {V E : Type}:
-  forall (g1 g2 : PreGraph V E) (n n' : V), g1 ~=~ g2 -> g1 |= n ~> n' -> g2 |= n ~> n'.
-Proof.
-  intros; unfold edge in *.
-  pose proof H.
-  destruct H as [? [? [? ?]]].
-  rewrite <- !H.
-  split; [| split]; try tauto.
-  apply (step_si g1 g2); auto.
-  tauto.
-Qed.
-
-(******************************************
-
-Paths
+Definitions
 
 ******************************************)
 
@@ -270,12 +29,6 @@ Definition good_path {V E : Type} (g: PreGraph V E) (P : Ensemble V) : (list V -
 
 Definition path_endpoints {N} (p : list N) (n1 n2 : N) : Prop := head p = Some n1 /\ foot p = Some n2.
 
-(******************************************
-
-Reachable
-
-******************************************)
-
 Definition reachable_by_path {V E : Type} (g: PreGraph V E) (p : list V)
            (n : V) (P : Ensemble V) : Ensemble V := fun n' => path_endpoints p n n' /\ good_path g P p.
 Notation " g '|=' p 'is' n1 '~o~>' n2 'satisfying' P" := (reachable_by_path g p n1 P n2) (at level 1).
@@ -294,10 +47,6 @@ Definition reachable {V E : Type} (g: PreGraph V E) (n : V): Ensemble V:=
 Definition reachable_through_set {V E : Type} (g: PreGraph V E) (S : list V) : Ensemble V:=
   fun n => exists s, In s S /\ reachable g s n.
 
-Lemma reachable_Same_set  {V E : Type} (g: PreGraph V E) (S1 S2 : list V):
-  S1 ~= S2 -> Same_set (reachable_through_set g S1) (reachable_through_set g S2).
-Proof. intros; destruct H; split; repeat intro; destruct H1 as [y [HIn Hrch]]; exists y; split; auto. Qed.
-
 Definition reachable_valid {V E : Type} (g: PreGraph V E) (S : list V) : V -> Prop :=
   fun n => @vvalid _ _ _ n /\ reachable_through_set g S n.
 
@@ -310,59 +59,6 @@ Definition unreachable_valid {V E : Type} (g: PreGraph V E) (S : list V) : V -> 
 Definition unreachable_subgraph {V E : Type} (g: PreGraph V E) (S : list V) :=
   Build_PreGraph  V E EV EE (unreachable_valid g S) evalid.
 
-(******************************************
-
-Marked Graph
-
-******************************************)
-
-Module MARKED_GRAPH.
-
-Definition marked_coincide {V E : Type} {g1 g2: PreGraph V E} (m1: GraphMark g1) (m2: GraphMark g2) :=
-  forall x, @vvalid _ _ g1 x -> @vvalid _ _ g2 x -> (m1 x <-> m2 x).
-
-Class MarkedGraph (Vertex Edge: Type) := {
-  pg: PreGraph Vertex Edge;
-  marked: GraphMark pg
-}.
-
-Local Coercion pg : MarkedGraph >-> PreGraph.
-Local Coercion marked : MarkedGraph >-> GraphMark.
-
-Definition validly_identical {V E: Type} (g1 g2: MarkedGraph V E) : Prop :=
-  g1 ~=~ g2 /\ marked_coincide g1 g2.
-
-Notation "g1 '-=-' g2" := (validly_identical g1 g2) (at level 1).
-
-Lemma vi_refl: forall {V E : Type} (G : MarkedGraph V E), G -=- G.
-Proof. intros; split; [reflexivity |]. repeat intro. reflexivity. Qed.
-
-Lemma vi_sym: forall {V E : Type} (G1 G2 : MarkedGraph V E), G1 -=- G2 -> G2 -=- G1.
-Proof.
-  intros; destruct H; split; [symmetry; auto |].
-  repeat intro.
-  symmetry; apply H0; auto.
-Qed.
-
-Lemma vi_trans: forall {V E : Type} (G1 G2 G3 : MarkedGraph V E), G1 -=- G2 -> G2 -=- G3 -> G1 -=- G3.
-Proof.
-Arguments vvalid {_} {_} _ _.
-  intros; destruct H, H0; split; [rewrite H; auto |].
-  repeat intro.
-  assert (vvalid G2 x) by (rewrite (proj1 H) in H3; auto).
-  rewrite (H1 _ H3 H5).
-  auto.
-Qed.
-
-Add Parametric Relation {V E : Type} : (MarkedGraph V E) validly_identical
-    reflexivity proved by vi_refl
-    symmetry proved by vi_sym
-    transitivity proved by vi_trans as vi_equal.
-
-End MARKED_GRAPH.
-
-Print MARKED_GRAPH.
-
 Section GraphPath.
   Variable V : Type.
   Variable E : Type.
@@ -371,6 +67,12 @@ Section GraphPath.
   Definition path : Type := list V.
   Definition paths_meet_at (p1 p2 : path) := fun n => foot p1 = Some n /\ head p2 = Some n.
   Definition paths_meet (p1 p2 : path) : Prop := exists n, paths_meet_at p1 p2 n.
+
+  (******************************************
+   
+  Path Lemmas
+   
+  ******************************************)
 
   Lemma path_endpoints_meet: forall p1 p2 n1 n2 n3,
     path_endpoints p1 n1 n2 ->
@@ -543,6 +245,10 @@ Section GraphPath.
     split; trivial. apply path_prop_sublist with p; trivial.
   Qed.
 
+  Lemma reachable_Same_set (g: Gph) (S1 S2 : list V):
+    S1 ~= S2 -> Same_set (reachable_through_set g S1) (reachable_through_set g S2).
+  Proof. intros; destruct H; split; repeat intro; destruct H1 as [y [HIn Hrch]]; exists y; split; auto. Qed.
+
   Lemma reachable_by_path_nil: forall (g : Gph) n1 n2 P, ~ g |= nil is n1 ~o~> n2 satisfying P.
   Proof. repeat intro. destruct H as [[? _] _]. disc. Qed.
 
@@ -685,4 +391,59 @@ Section GraphPath.
     destruct l. auto. destruct H1 as [[? _] _]. auto.
   Qed.
 
+  Lemma reachable_through_empty (g: Gph):
+    Same_set (reachable_through_set g nil) (Empty_set V).
+  Proof.
+    split; repeat intro.
+    destruct H; destruct H; apply in_nil in H; tauto.
+    hnf in H; tauto.
+  Qed.
+   
+  Lemma reachable_is_valid (g: Gph):
+    forall a x, reachable g x a -> vvalid x.
+  Proof.
+    intros. destruct H as [l [? [? ?]]].
+    destruct l. destruct H; discriminate H.
+    destruct H; inversion H; rewrite H4 in *; clear H4 H2 v;
+    simpl in H0; destruct l; trivial; destruct H0 as [[? _] _]; trivial.
+  Qed.
+   
+  Lemma reachable_through_empty_eq (g: Gph):
+    forall S, Same_set (reachable_through_set g S) (Empty_set V) <-> forall y, In y S -> ~ vvalid y.
+  Proof.
+    intros; split.
+    + induction S; intros; [unfold In; intros; tauto |].
+      intros.
+      destruct (in_inv H0).
+      - subst a; intro.
+        destruct H. specialize (H y).
+        spec H; [| inversion H].
+        unfold Ensembles.In. exists y.
+        split; [apply in_eq | apply reachable_by_reflexive; split;[|hnf]; trivial].
+      - assert (Same_set (reachable_through_set g (a :: S)) (reachable_through_set g S)).
+        Focus 1. {
+          split.
+          + apply Extensionality_Ensembles in H; rewrite H.
+            intro x; intro. inversion H2.
+          + intro; intros. destruct H2 as [s [? ?]]. 
+            exists s; split; trivial; apply in_cons; trivial.
+        } Unfocus.
+        rewrite <- H2 in IHS. pose proof (IHS H y).
+        apply H3; trivial.
+    + intros. split; repeat intro.
+      destruct H0 as [y [? ?]]. apply H in H0. apply reachable_is_valid in H1; tauto. hnf in H0; tauto.
+  Qed.
+
 End GraphPath.
+
+  Require Import Classical.
+  Tactic Notation "LEM" constr(v) := (destruct (classic v); auto).
+   
+
+
+
+Arguments path_glue {_} _ _.
+
+Module PathNotation.
+Notation "p1 '+++' p2" := (path_glue p1 p2) (at level 20, left associativity).
+End PathNotation.
