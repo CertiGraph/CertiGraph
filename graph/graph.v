@@ -140,6 +140,21 @@ Notation " g '|=' n1 '~~>' n2 'satisfying' P " := (reachable_by_acyclic g n1 P n
 Definition reachable {A D : Type} {EV: EqDec A} (g: PreGraph A D) (n : A) : Ensemble A:=
   reachable_by g n (fun _ => True).
 
+Lemma reachable_by_is_reachable {A D : Type} {EV: EqDec A} (g: PreGraph A D):
+  forall n1 n2 P, g |= n1 ~o~> n2 satisfying P -> reachable g n1 n2.
+Proof.
+  intros. unfold reachable. destruct H as [l [? [? ?]]]. exists l.
+  split; auto. split. auto. hnf. intros. hnf. auto.
+Qed.
+
+Lemma reachable_by_path_is_reachable_by {A D : Type} {EV: EqDec A} (g: PreGraph A D):
+  forall p n1 n2 P, g |= p is n1 ~o~> n2 satisfying P -> g |= n1 ~o~> n2 satisfying P.
+Proof. intros. exists p; auto. Qed.
+
+Lemma reachable_by_path_is_reachable {A D : Type} {EV: EqDec A} (g: PreGraph A D):
+  forall p n1 n2 P, g |= p is n1 ~o~> n2 satisfying P -> reachable g n1 n2.
+Proof. intros. apply reachable_by_path_is_reachable_by in H. apply reachable_by_is_reachable with P. auto. Qed.
+
 Definition reachable_through_set {A D : Type} {EV: EqDec A} (g: PreGraph A D) (S : list A) : Ensemble A:=
   fun n => exists s, In s S /\ reachable g s n.
 
