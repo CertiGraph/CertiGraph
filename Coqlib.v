@@ -458,6 +458,9 @@ Qed.
 Lemma foot_in {A}: forall (a : A) L, foot L = Some a -> In a L.
 Proof. induction L. inversion 1. icase L. simpl. inversion 1. auto. rewrite foot_simpl. right. auto. Qed.
 
+Lemma foot_none_nil {A}: forall (l : list A), foot l = None -> l = nil.
+Proof. induction l; intros; auto. simpl in H. destruct l. inversion H. specialize (IHl H). inversion IHl. Qed.
+
 Arguments Included {U} B C.
 Arguments Same_set {U} B C.
 

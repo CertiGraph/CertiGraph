@@ -229,9 +229,6 @@ Section GraphReachable.
     simpl in H3. rewrite H3 in *. repeat split; auto.
   Qed.
 
-  Lemma foot_none_nil: forall (l : list V), foot l = None -> l = nil.
-  Proof. induction l; intros; auto. simpl in H. destruct l. inversion H. specialize (IHl H). inversion IHl. Qed.
-
   Lemma reachable_by_path_split_dec:
     forall p a b P rslt,
       pg |= p is a ~o~> b satisfying P -> {Forall (fun m => In m (a :: rslt)) p} +
