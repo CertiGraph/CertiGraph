@@ -9,17 +9,35 @@ Require Import RamifyCoq.graph.graph.
 Require Import RamifyCoq.graph.graph_reachable.
 
 Definition GraphPredicate {N D DEC} (g : @PreGraph N D DEC) :=
-  {p : Ensemble D & forall x, {Ensembles.In D p (node_label x)} + {~ Ensembles.In D p (node_label x)}}.
+  {p : Ensemble D & forall x, {Ensembles.In D p x} + {~ Ensembles.In D p x}}.
+
+Definition negateP {N D DEC} {g: @PreGraph N D DEC} (p : GraphPredicate g) : GraphPredicate g.
+Proof.
+  exists (Complement D (projT1 p)).
+  intros. destruct p. simpl in *. unfold Complement.
+  destruct (s x); [right | left]; auto.
+Defined.
 
 Definition app_graph_predicate {N D DEC} (g : @PreGraph N D DEC) (p : GraphPredicate g) (v : D) := projT1 p v.
 
 Coercion app_graph_predicate : GraphPredicate >-> Funclass.
 
+Lemma negateP_spec {N D DEC} {g : @PreGraph N D DEC}: forall (p: GraphPredicate g) (x : D), (negateP p) x <-> ~ p x.
+Proof. intros; unfold negateP; simpl; unfold Complement; tauto. Qed.
+
+Lemma negateP_spec_d {N D DEC} {g : @PreGraph N D DEC}:
+  forall (p: GraphPredicate g) (x : D), ~ Ensembles.In D (projT1 (negateP p)) x <-> p x.
+Proof.
+  intros. unfold negateP. simpl. unfold Complement. 
+  destruct p; simpl. split; intros; destruct (s x); try tauto.
+  intro. hnf in H0. tauto.
+Qed.
+
 Definition predicate_valid {N D DEC} (g : @PreGraph N D DEC) (p : GraphPredicate g) : N -> Prop :=
   fun n => valid n /\ p (node_label n).
 
 Definition predicate_edge_func {N D DEC} (g : @PreGraph N D DEC) (p : GraphPredicate g) (x: N) : list N :=
-  filter (fun s => if ((projT2 p) s) then true else false) (edge_func x).
+  filter (fun s => if ((projT2 p) (node_label s)) then true else false) (edge_func x).
 
 Definition predicate_subgraph {N D DEC} (g : @PreGraph N D DEC) (p : GraphPredicate g) : PreGraph N D :=
   Build_PreGraph N D DEC (predicate_valid g p) node_label (predicate_edge_func g p).
@@ -34,7 +52,7 @@ Proof.
       unfold predicate_subgraph in H0.
       unfold predicate_edge_func in H0.
       rewrite filter_In in H0. destruct H0.
-      destruct (projT2 p y) eqn:? . 2: inversion H1.
+      destruct (projT2 p (node_label y)) eqn:? . 2: inversion H1.
       destruct H. split.
       * apply (valid_graph x H y) in H0. hnf in H0. destruct (t_eq_dec y nV). exfalso; auto. auto.
       * hnf in i. hnf. auto.
@@ -61,7 +79,7 @@ Proof.
         hnf in H1. unfold node_prop in H1.
         split. split; auto. apply H1. apply in_eq.
         split. split; auto. apply H1. apply in_cons, in_eq.
-        rewrite filter_In. split; auto. destruct (projT2 p a). auto.
+        rewrite filter_In. split; auto. destruct (projT2 p (node_label a)). auto.
         exfalso; apply n0. hnf. apply H1. apply in_cons, in_eq.
       * apply IHpath. apply H0. hnf in H1. hnf; intros. apply H1.
         apply in_cons. auto.
@@ -113,7 +131,38 @@ Proof.
   rewrite <- reachable_by_eq_subgraph_reachable in n. right; auto.
 Qed.
 
-Lemma mark_exists: forall {N} {D} {DEC} (marked: Ensemble D) (g: @PreGraph N D DEC) x v,
-                   marked v -> exists g', mark marked g x g'.
+Lemma mark_exists: forall {N D DEC} (g: @PreGraph N D DEC) (marked: GraphPredicate g) (null: N) (mg: MathGraph g null) x v l,
+                   valid x -> (forall y, reachable g x y -> In y l) -> marked v -> exists g', mark marked g x g'.
 Proof.
-Abort.
+  intros. destruct ((projT2 (negateP marked)) (node_label x)).
+  + remember (fun (n : N) => if (reachable_by_decidable null mg (negateP marked) x l H H0 i n) then v else (node_label n)) as f.
+    exists (Build_PreGraph N D DEC valid f edge_func). split.
+    - split; tauto.
+    - split; intros; subst; hnf; unfold node_label;
+      destruct (reachable_by_decidable null mg (negateP marked) x l H H0 i n); tauto.
+  + rewrite negateP_spec_d in n. exists g. split. reflexivity. split; intros.
+    - destruct H2 as [path ?]. apply (reachable_by_path_In_prop _ _ _ _ _ _ _ _ x) in H2.
+      hnf in H2. tauto. destruct H2 as [[? _] _]. destruct path; simpl in H2; inversion H2. apply in_eq.
+    - auto.
+Qed.
+
+Lemma mark1_exists: forall {N D DEC} (g: @PreGraph N D DEC) (marked: GraphPredicate g) x v,
+                      marked v -> valid x -> exists g', mark1 marked g x g'.
+Proof.
+  intros. destruct ((projT2 marked) (node_label x)).
+  + exists g. split. reflexivity. auto.
+  + remember (fun (t : N) => if (t_eq_dec t x) then v else (node_label t)) as f.
+    exists (Build_PreGraph N D DEC valid f edge_func). split.
+    * split; tauto.
+    * subst. split; auto. split; intros; hnf; unfold node_label.
+      destruct (t_eq_dec x x). auto. tauto.
+      destruct (t_eq_dec n' x). exfalso; intuition. auto.
+Qed.
+
+Lemma subgraph_exists: forall {N} {D} {DEC} (marked: Ensemble D) (g: @PreGraph N D DEC) x,
+  exists g', subgraph g x g'.
+Proof.
+  intros.
+  exists (reachable_subgraph g (x :: nil)).
+  reflexivity.
+Qed.

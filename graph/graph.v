@@ -91,6 +91,11 @@ Proof.
   [intuition | transitivity (@edge_func V D2 EV G2 v); trivial].
 Qed.
 
+Add Parametric Relation {V D : Type} {EV : EqDec V} : (PreGraph V D) structurally_identical
+    reflexivity proved by (si_refl V D EV)
+    symmetry proved by (si_sym V D D EV)
+    transitivity proved by (@si_trans V D D D EV) as si_equal.
+
 Definition edge {V D : Type} {EV : EqDec V} (G : PreGraph V D) (n n' : V) : Prop :=
   valid n /\ valid n' /\ In n' (edge_func n).
 
