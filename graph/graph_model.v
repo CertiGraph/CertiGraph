@@ -92,6 +92,11 @@ Global Existing Instances EV EE.
 Inductive step {Vertex Edge: Type} (pg: PreGraph Vertex Edge): Vertex -> Vertex -> Prop :=
   | step_intro: forall e x y, evalid e -> src e = x -> dst e = y -> step pg x y.
 
+Definition edge {V E : Type} (G : PreGraph V E) (n n' : V) : Prop :=
+  vvalid n /\ vvalid n' /\ step G n n'.
+
+Notation " g |= n1 ~> n2 " := (edge g n1 n2) (at level 1).
+
 Definition out_edges {Vertex Edge: Type} (pg: PreGraph Vertex Edge) x: Ensemble Edge := fun e => evalid e /\ src e = x.
 
 Definition in_edges {Vertex Edge: Type} (pg: PreGraph Vertex Edge) x: Ensemble Edge := fun e => evalid e /\ dst e = x.
@@ -104,7 +109,7 @@ Class MathGraph {Vertex Edge: Type} (pg: PreGraph Vertex Edge) := {
   valid_not_null: forall x, vvalid x -> is_null x -> False
 }.
 
-Definition well_defined_list {Vertex Edge: Type} {pg: PreGraph Vertex Edge} (ma : MathGraph pg) (l : list Vertex) :=
+Definition well_defined_list {Vertex Edge: Type} (pg: PreGraph Vertex Edge) {ma : MathGraph pg} (l : list Vertex) :=
   forall x, In x l -> weak_valid x.
 
 Class FiniteGraph {Vertex Edge: Type} (pg: PreGraph Vertex Edge) :=
@@ -119,7 +124,7 @@ Class LocalFiniteGraph {Vertex Edge: Type} (pg: PreGraph Vertex Edge) :=
 }.
 
 Definition NodePred {Vertex Edge: Type} (pg: PreGraph Vertex Edge) := 
-  {P : Vertex -> Prop & forall x, vvalid x -> {P x} + {~ P x}}.
+  {P : Vertex -> Prop & forall x, {P x} + {~ P x}}.
 
 Definition app_node_pred {Vertex Edge: Type} {pg: PreGraph Vertex Edge} (P: NodePred pg) (x: Vertex) :=
   projT1 P x.
@@ -128,11 +133,24 @@ Coercion app_node_pred : NodePred >-> Funclass.
 
 Definition edge_func {Vertex Edge: Type} (pg: PreGraph Vertex Edge) {lfg: LocalFiniteGraph pg} x := projT1 (local_enumerable x).
 
-Class BiGraph {Vertex Edge: Type} (pg: PreGraph Vertex Edge) {lfg: LocalFiniteGraph pg} :=
+Class BiGraph {Vertex Edge: Type} (pg: PreGraph Vertex Edge) :=
 {
-  only_two_neighbours : forall (v : Vertex), {e1 : Edge & {e2 : Edge | edge_func pg v = e1 :: e2 :: nil}}
+  left_out_edge: Vertex -> Edge;
+  right_out_edge: Vertex -> Edge;
+  left_sound: forall x, src (left_out_edge x) = x;
+  right_sound: forall x, src (right_out_edge x) = x;
+  bi_consist: forall x, left_out_edge x <> right_out_edge x;
+  only_two_edges: forall x e, src e = x <-> e = left_out_edge x \/ e = right_out_edge x
+(*  only_two_neighbours : forall (v : Vertex), edge_func pg v = left_out_edge v :: left_out_edge v :: nil *)
 }.
 
+Lemma left_or_right {Vertex Edge: Type} (pg: PreGraph Vertex Edge) (bi: BiGraph pg): forall x e, src e = x -> {e = left_out_edge x} + {e = right_out_edge x}.
+Proof.
+  intros.
+  pose proof only_two_edges x e.
+  destruct (t_eq_dec e (left_out_edge x)); [left | right]; tauto.
+Qed.
+  
 (******************************************
 
 Properties
@@ -144,6 +162,15 @@ Proof.
   intros; split; intro.
   + inversion H; eauto.
   + destruct H as [? [? [? ?]]]; econstructor; eauto.
+Qed.
+
+Lemma valid_step: forall {Vertex Edge: Type} (PG: PreGraph Vertex Edge) {MA: MathGraph PG} x y, step PG x y -> vvalid x /\ weak_valid y.
+Proof.
+  intros.
+  rewrite step_spec in H.
+  destruct H as [? [? [? ?]]].
+  subst.
+  apply valid_graph; auto.
 Qed.
 
 Lemma edge_func_spec: forall {Vertex Edge} {PG : PreGraph Vertex Edge} {LFG: LocalFiniteGraph PG} e x,
@@ -178,21 +205,16 @@ Proof.
   tauto.
 Qed.
 
-Definition biEdge {Vertex Edge} {PG : PreGraph Vertex Edge} {LFG: LocalFiniteGraph PG} (BG: BiGraph PG) (v: Vertex) : Vertex * Vertex.
-  specialize (only_two_neighbours v); intro.
-  destruct X as [e1 [e2 ?]].
-  exact (dst e1, dst e2).
-Defined.
+Definition biEdge {Vertex Edge} {PG : PreGraph Vertex Edge} (BG: BiGraph PG) (v: Vertex) : Vertex * Vertex := (dst (left_out_edge v), dst (right_out_edge v)).
 
-Lemma biEdge_only2 {Vertex Edge} {PG : PreGraph Vertex Edge} {LFG: LocalFiniteGraph PG} (BG: BiGraph PG) :
+Lemma biEdge_only2 {Vertex Edge} {PG : PreGraph Vertex Edge} (BG: BiGraph PG) :
   forall v v1 v2 n, biEdge BG v = (v1 ,v2) -> step PG v n -> n = v1 \/ n = v2.
 Proof.
   intros; unfold biEdge in H.
-  revert H; case_eq (only_two_neighbours v); intro x1; intros.
-  revert H1; case_eq s; intro x2; intros. inversion H2. subst.
-  rewrite edge_func_step in H0; rewrite e in H0.
-  simpl in H0.
-  destruct H0 as [? | [? | ?]]; [left | right | right]; symmetry; tauto.
+  inversion H0; subst.
+  inversion H; subst.
+  assert (e = left_out_edge (src e) \/ e = right_out_edge (src e)) by (apply only_two_edges; auto).
+  destruct H2; rewrite <- H2; auto.
 Qed.
 
 Definition structurally_identical {V E: Type} (G1 G2: PreGraph V E): Prop :=
@@ -221,11 +243,6 @@ Add Parametric Relation {V E : Type} : (PreGraph V E) structurally_identical
     symmetry proved by si_sym
     transitivity proved by si_trans as si_equal.
 
-Definition edge {V E : Type} (G : PreGraph V E) (n n' : V) : Prop :=
-  vvalid n /\ vvalid n' /\ step G n n'.
-
-Notation " g |= n1 ~> n2 " := (edge g n1 n2) (at level 1).
-
 Lemma step_si {V E : Type}:
   forall (g1 g2 : PreGraph V E) (n n' : V), g1 ~=~ g2 -> step g1 n n' -> step g2 n n'.
 Proof.
@@ -248,4 +265,23 @@ Proof.
   apply (step_si g1 g2); auto.
   tauto.
 Qed.
+
+Definition negateP {V E} {g: PreGraph V E} (p : NodePred g) : NodePred g.
+Proof.
+  exists (Complement V (projT1 p)).
+  intros. destruct p. simpl in *. unfold Complement.
+  destruct (s x); [right | left]; auto.
+Defined.
+
+Lemma negateP_spec {V E} {g: PreGraph V E}: forall (p : NodePred g) (x : V), (negateP p) x <-> ~ p x.
+Proof. intros; unfold negateP; simpl; unfold Complement; tauto. Qed.
+
+Lemma negateP_spec_d {V E} {g: PreGraph V E}:
+  forall (p: NodePred g) (x : V), ~ Ensembles.In V (projT1 (negateP p)) x <-> p x.
+Proof.
+  intros. unfold negateP. simpl. unfold Complement. 
+  destruct p; simpl. split; intros; destruct (s x); try tauto.
+  intro. hnf in H0. tauto.
+Qed.
+
 

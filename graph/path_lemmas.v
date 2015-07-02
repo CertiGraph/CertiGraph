@@ -4,6 +4,7 @@ Require Import Coq.Sets.Finite_sets.
 Require Import Coq.Lists.List.
 Require Import RamifyCoq.Coqlib.
 Require Import RamifyCoq.graph.graph_model.
+Require Import RamifyCoq.graph.find_not_in.
 
 (******************************************
 
@@ -44,8 +45,13 @@ Notation " g '|=' n1 '~~>' n2 'satisfying' P " := (reachable_by_acyclic g n1 P n
 Definition reachable {V E : Type} (g: PreGraph V E) (n : V): Ensemble V:=
   reachable_by g n (fun _ => True).
 
+Definition reachable_list {V E : Type} (g: PreGraph V E) (x : V) (L : list V) : Prop := forall y, In y L <-> reachable g x y.
+
 Definition reachable_through_set {V E : Type} (g: PreGraph V E) (S : list V) : Ensemble V:=
   fun n => exists s, In s S /\ reachable g s n.
+
+Definition reachable_set_list {V E : Type} (g: PreGraph V E) (S : list V) (l : list V) : Prop :=
+  forall x : V, reachable_through_set g S x <-> In x l.
 
 Definition reachable_valid {V E : Type} (g: PreGraph V E) (S : list V) : V -> Prop :=
   fun n => @vvalid _ _ _ n /\ reachable_through_set g S n.
@@ -245,6 +251,21 @@ Section GraphPath.
     split; trivial. apply path_prop_sublist with p; trivial.
   Qed.
 
+  Lemma reachable_by_is_reachable (g: Gph):
+    forall n1 n2 P, g |= n1 ~o~> n2 satisfying P -> reachable g n1 n2.
+  Proof.
+    intros. unfold reachable. destruct H as [l [? [? ?]]]. exists l.
+    split; auto. split. auto. hnf. rewrite Forall_forall; intros; auto.
+  Qed.
+   
+  Lemma reachable_by_path_is_reachable_by (g: Gph):
+    forall p n1 n2 P, g |= p is n1 ~o~> n2 satisfying P -> g |= n1 ~o~> n2 satisfying P.
+  Proof. intros. exists p; auto. Qed.
+   
+  Lemma reachable_by_path_is_reachable (g: Gph):
+    forall p n1 n2 P, g |= p is n1 ~o~> n2 satisfying P -> reachable g n1 n2.
+  Proof. intros. apply reachable_by_path_is_reachable_by in H. apply reachable_by_is_reachable with P. auto. Qed.
+
   Lemma reachable_Same_set (g: Gph) (S1 S2 : list V):
     S1 ~= S2 -> Same_set (reachable_through_set g S1) (reachable_through_set g S2).
   Proof. intros; destruct H; split; repeat intro; destruct H1 as [y [HIn Hrch]]; exists y; split; auto. Qed.
@@ -379,13 +400,14 @@ Section GraphPath.
     destruct p; constructor; auto; destruct H as [[? ?] ?]; [| apply IHp]; auto.
   Qed.
 
-  Lemma reachable_foot_valid: forall (g : Gph) n1 n2, reachable g n1 n2 -> @vvalid _ _ g n2.
+  Lemma reachable_foot_valid: forall (g : Gph) n1 n2, reachable g n1 n2 -> vvalid n2.
   Proof.
     repeat intro. destruct H as [l [[? ?] [? ?]]]. apply foot_in in H0. apply valid_path_valid in H1.
     rewrite Forall_forall in H1. apply H1. auto.
   Qed.
 
-  Lemma reachable_head_valid: forall (g : Gph) n1 n2, reachable g n1 n2 -> @vvalid _ _ g n1.
+  (* Also called reachable_is_valid *)
+  Lemma reachable_head_valid: forall (g : Gph) n1 n2, reachable g n1 n2 -> vvalid n1.
   Proof.
     repeat intro. destruct H as [l [[? ?] [? ?]]]. destruct l. inversion H. simpl in H. inversion H. subst. simpl in H1.
     destruct l. auto. destruct H1 as [[? _] _]. auto.
@@ -398,16 +420,7 @@ Section GraphPath.
     destruct H; destruct H; apply in_nil in H; tauto.
     hnf in H; tauto.
   Qed.
-   
-  Lemma reachable_is_valid (g: Gph):
-    forall a x, reachable g x a -> vvalid x.
-  Proof.
-    intros. destruct H as [l [? [? ?]]].
-    destruct l. destruct H; discriminate H.
-    destruct H; inversion H; rewrite H4 in *; clear H4 H2 v;
-    simpl in H0; destruct l; trivial; destruct H0 as [[? _] _]; trivial.
-  Qed.
-   
+  
   Lemma reachable_through_empty_eq (g: Gph):
     forall S, Same_set (reachable_through_set g S) (Empty_set V) <-> forall y, In y S -> ~ vvalid y.
   Proof.
@@ -431,16 +444,57 @@ Section GraphPath.
         rewrite <- H2 in IHS. pose proof (IHS H y).
         apply H3; trivial.
     + intros. split; repeat intro.
-      destruct H0 as [y [? ?]]. apply H in H0. apply reachable_is_valid in H1; tauto. hnf in H0; tauto.
+      destruct H0 as [y [? ?]]. apply H in H0. apply reachable_head_valid in H1; tauto. hnf in H0; tauto.
+  Qed.
+
+  Lemma reachable_by_path_split_dec:
+    forall (g: Gph) p a b P rslt,
+      g |= p is a ~o~> b satisfying P -> {Forall (fun m => In m (a :: rslt)) p} +
+                                         {exists l1 l2 e1 s2, Forall (fun m => In m (a :: rslt)) l1 /\
+                                                              g |= l1 is a ~o~> e1 satisfying P /\
+                                                              g |= l2 is s2 ~o~> b satisfying P /\
+                                                              edge g e1 s2 /\
+                                                              ~ In s2 (a::rslt) /\ p = l1 ++ l2 /\
+                                                              ~ In s2 l1}.
+  Proof.
+    intros. remember (findNotIn p (a :: rslt) nil) as f. destruct f as [n [l1 l2]]. destruct n. right.
+    apply eq_sym in Heqf. destruct (find_not_in_some _ _ _ _ _ Heqf) as [? [? [? ?]]]. exists l1, (v :: l2).
+    rewrite Forall_forall in H0. destruct l1. rewrite app_nil_l in H1.
+    generalize (reachable_by_path_head _ _ _ _ _ H); intro. rewrite H1 in *. simpl in H4. inversion H4.
+    rewrite H6 in *. exfalso; apply H3; apply in_eq.
+    generalize (reachable_by_path_head _ _ _ _ _ H); intro.
+    rewrite <- app_comm_cons in H1. rewrite H1 in H4. simpl in H4. inversion H4. rewrite H6 in *. clear H4 H6 v0.
+    remember (foot (a :: l1)). destruct o. exists v0, v. split. rewrite Forall_forall; auto.
+    assert (paths_meet_at (a :: l1) (v0 :: v :: l2) v0) by (repeat split; auto).
+    assert (g |= path_glue (a :: l1) (v0 :: v :: l2) is a ~o~> b satisfying P). unfold path_glue. simpl.
+    rewrite <- H1. auto. destruct (reachable_by_path_split_glue _ _ _ _ _ _ _ H4 H5). clear H4 H5. split; auto.
+    assert (paths_meet_at (v0 :: v :: nil) (v :: l2) v) by repeat split.
+    assert (g |= path_glue (v0 :: v :: nil) (v :: l2) is v0 ~o~> b satisfying P). unfold path_glue. simpl. auto.
+    destruct (reachable_by_path_split_glue _ _ _ _ _ _ _ H4 H5). clear H4 H5 H6 H7. split; auto.
+    split. destruct H8. destruct H5. destruct H5. auto. split. auto. split; simpl; auto.
+    apply eq_sym in Heqo. generalize (foot_none_nil (a :: l1) Heqo); intros. inversion H4.
+    assert (fst (findNotIn p (a :: rslt) nil) = None) by (rewrite <- Heqf; simpl; auto). left.
+    apply find_not_in_none with nil. auto.
+  Qed.
+
+  Lemma reachable_through_set_eq (g: Gph):
+    forall a S x, reachable_through_set g (a :: S) x <-> reachable g a x \/ reachable_through_set g S x.
+  Proof.
+    intros; split; intros. destruct H as [s [? ?]]. apply in_inv in H. destruct H. subst. left; auto. right. exists s.
+    split; auto. destruct H. exists a. split. apply in_eq. auto. destruct H as [s [? ?]]. exists s. split. apply in_cons. auto.
+    auto.
+  Qed.
+
+  Lemma reachable_path_in:
+    forall (g: Gph) (p: list V) (l y : V), g |= p is l ~o~> y satisfying (fun _ : V => True) ->
+                                                     forall z, In z p -> reachable g l z.
+  Proof.
+    intros. destruct H as [[? ?] [? ?]]. apply in_split in H0. destruct H0 as [l1 [l2 ?]]. exists (l1 +:: z). subst. split.
+    split. destruct l1; simpl; simpl in H; auto. rewrite foot_last. auto. split. rewrite app_cons_assoc in H2.
+    apply valid_path_split in H2. destruct H2. auto. hnf. rewrite Forall_forall; intros; auto.
   Qed.
 
 End GraphPath.
-
-  Require Import Classical.
-  Tactic Notation "LEM" constr(v) := (destruct (classic v); auto).
-   
-
-
 
 Arguments path_glue {_} _ _.
 
