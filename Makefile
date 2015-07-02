@@ -29,7 +29,7 @@ HEAP_MODEL_DIRECT_FILES = \
   SeparationAlgebra.v mapsto.v SeparationLogic.v
 
 GRAPH_FILES = \
-  graph.v graph_reachable.v graph_model.v path_lemmas.v marked_graph.v graph_gen.v reachable_computable.v subgraph.v
+  graph.v graph_reachable.v graph_model.v path_lemmas.v marked_graph.v graph_gen.v reachable_computable.v subgraph.v find_not_in.v reachable_ind.v subgraph2.v
 
 DATA_STRUCTURE_FILES = \
   spatial_graph.v spatial_graph_HMD.v spatial_graph_VST.v
@@ -38,8 +38,7 @@ SAMPLE_MARK_FILES = \
   env_mark.v verif_mark.v 
 
 COQ_BASED_FILES = \
-  Coqlib.v \
-  $(GRAPH_FILES:%.v=graph/%.v)
+  ./Coqlib.v
 
 CLIGHT_FILES = sample_mark/mark.v
 
@@ -51,7 +50,8 @@ VST_BASED_FILES = \
   $(FLOYD_EXT_FILES:%.v=floyd_ext/%.v) \
   $(HEAP_MODEL_DIRECT_FILES:%.v=heap_model_direct/%.v) \
   $(DATA_STRUCTURE_FILES:%.v=data_structure/%.v) \
-  $(SAMPLE_MARK_FILES:%.v=sample_mark/%.v)
+  $(SAMPLE_MARK_FILES:%.v=sample_mark/%.v) \
+  $(GRAPH_FILES:%.v=graph/%.v)
 
 $(COQ_BASED_FILES:%.v=%.vo): %.vo: %.v
 	@echo COQC $*.v

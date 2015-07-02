@@ -59,6 +59,19 @@ Proof.
   rewrite <- app_comm_cons. apply Forall_cons; auto. apply IHl1; auto. apply Forall_tl with a; auto.
 Qed.
 
+Lemma Forall_app_iff: forall {A : Type} (P : A -> Prop) (l1 l2 : list A), Forall P (l1 ++ l2) <-> Forall P l1 /\ Forall P l2.
+Proof.
+  intros; induction l1; intros.
+  + simpl.
+    assert (Forall P nil) by constructor; tauto.
+  + simpl; split; intros.
+    - inversion H; subst; split; try tauto.
+      constructor; auto; tauto.
+    - destruct H.
+      inversion H; subst.
+      constructor; auto; tauto.
+Qed.
+
 Lemma Forall_sublist: forall {A : Type} (P : A -> Prop) (l1 l2 : list A), Sublist l1 l2 -> Forall P l2 -> Forall P l1.
 Proof. intros; hnf in *. rewrite Forall_forall in *; intro y; intros. apply H0, H; auto. Qed.
 
@@ -120,6 +133,24 @@ Proof.
   apply NoDup_app_not_in; auto. destruct H as [? [? ?]]. apply NoDup_app_inv; auto.
 Qed.
 
+Lemma In_remove_length: forall {A: Type} (eq_dec : forall x y : A, {x = y} + {x <> y}) (l: list A) x,
+  In x l -> length (remove eq_dec x l) < length l.
+Proof.
+  intros ? ? l x.
+  apply (@proj1 _ (length (remove eq_dec x l) <= length l)).
+  induction l.
+  + split; [intro H; inversion H | reflexivity].
+  + simpl.
+    destruct (eq_dec x a).
+    - split; [intros; omega | omega].
+    - split.
+      * intros. simpl.
+        destruct IHl.
+        destruct H; [congruence | apply H0 in H].
+        omega.
+      * simpl; omega.
+Qed.
+
 Lemma not_in_app: forall {A} (eq_dec : forall x y : A, {x = y} + {x <> y}) x a (l : list A),
                     (~ In x (a :: l)) -> x <> a /\ ~ In x l.
 Proof.
@@ -145,6 +176,44 @@ Proof.
   induction l; intros; simpl in *. right; auto. destruct (eq_dec y a); destruct H. subst. left; auto.
   apply IHl; auto. subst. right; apply in_eq. specialize (IHl x y H). destruct IHl. left; auto.
   right; apply in_cons. auto.
+Qed.
+
+Lemma remove_in_3: forall (A : Type) (eq_dec : forall x y : A, {x = y} + {x <> y}) (l : list A) (x y : A),
+                     In x (remove eq_dec y l) <-> In x l /\ x <> y.
+Proof.
+  induction l; intros; simpl in *.
+  + tauto.
+  + destruct (eq_dec y a).
+    - specialize (IHl x y).
+      assert (a = x <-> x = y) by (split; congruence).
+      tauto.
+    - simpl.
+      specialize (IHl x y).
+      assert (a = x -> x <> y) by (intros; congruence).
+      tauto.
+Qed.
+
+Lemma NoDup_Sublist_length: forall {A: Type} (eq_dec : forall x y : A, {x = y} + {x <> y}) (l1 l2 : list A),
+  Sublist l1 l2 -> NoDup l1 -> length l1 <= length l2.
+Proof.
+  intros.
+  revert l2 H; induction H0; intros.
+  + simpl; omega.
+  + simpl.
+    specialize (IHNoDup (remove eq_dec x l2)).
+    assert (Sublist l (remove eq_dec x l2)).
+    Focus 1. {
+      unfold Sublist in *; intros y; specialize (H1 y).
+      rewrite remove_in_3.
+      destruct (eq_dec x y); [subst; tauto |].
+      simpl in H1.
+      assert (y = x <-> x = y) by (split; congruence).
+      tauto.
+    } Unfocus.
+    apply IHNoDup in H2.
+    specialize (H1 x (or_introl eq_refl)).
+    pose proof In_remove_length eq_dec l2 x H1.
+    omega.
 Qed.
 
 Lemma remove_len_le: forall  (A : Type) (eq_dec : forall x y : A, {x = y} + {x <> y}) (l : list A) (x : A),
@@ -460,6 +529,26 @@ Proof. induction L. inversion 1. icase L. simpl. inversion 1. auto. rewrite foot
 
 Lemma foot_none_nil {A}: forall (l : list A), foot l = None -> l = nil.
 Proof. induction l; intros; auto. simpl in H. destruct l. inversion H. specialize (IHl H). inversion IHl. Qed.
+
+Lemma filter_sublist: forall A f (l: list A), Sublist (filter f l) l.
+Proof.
+  unfold Sublist; intros.
+  induction l; simpl; auto.
+  simpl in H.
+  destruct (f a0); auto.
+  simpl in H; tauto.
+Qed.
+
+Lemma NoDup_filter: forall A f (l: list A), NoDup l -> NoDup (filter f l).
+Proof.
+  intros.
+  induction l.
+  + simpl; constructor.
+  + inversion H; subst.
+    simpl; destruct (f a) eqn:?; [constructor |]; auto.
+    rewrite filter_In.
+    tauto.
+Qed.
 
 Arguments Included {U} B C.
 Arguments Same_set {U} B C.
