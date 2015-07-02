@@ -159,10 +159,18 @@ Proof.
       destruct (t_eq_dec n' x). exfalso; intuition. auto.
 Qed.
 
-Lemma subgraph_exists: forall {N} {D} {DEC} (marked: Ensemble D) (g: @PreGraph N D DEC) x,
+Lemma subgraph_exists: forall {N D DEC} (marked: Ensemble D) (g: @PreGraph N D DEC) x,
   exists g', subgraph g x g'.
 Proof.
   intros.
   exists (reachable_subgraph g (x :: nil)).
   reflexivity.
 Qed.
+
+Lemma reachable_mark1: forall {N D DEC} (marked: Ensemble D) (g g': @PreGraph N D DEC) x y z,
+                         mark1 marked g x g' -> (reachable g y z <-> reachable g' y z).
+Proof. intros. destruct H as [? _]. split; [| symmetry in H ]; apply si_reachable with (n := y) in H; apply H. Qed.
+
+Lemma reachable_mark: forall {N} {D} {DEC} (marked: Ensemble D) (g g':  @PreGraph N D DEC) x y z,
+                        mark marked g x g' -> (reachable g y z <-> reachable g' y z).
+Proof. intros. destruct H as [? _]. split; [| symmetry in H ]; apply si_reachable with (n := y) in H; apply H. Qed.
