@@ -12,6 +12,7 @@ Require Import RamifyCoq.graph.path_lemmas.
 Require Import RamifyCoq.graph.reachable_computable.
 Require Import RamifyCoq.graph.reachable_ind.
 Require Import RamifyCoq.graph.marked_graph.
+Require Import RamifyCoq.graph.graph_gen.
 Require Import Coq.Logic.Classical.
 Import RamifyCoq.msl_ext.seplog.OconNotation.
 
@@ -538,7 +539,7 @@ Section SpatialGraph.
     + apply reachable_subgraph_derives; auto.
     + apply reachable_subgraph_derives; apply vi_sym; auto.
   Qed.
-
+(*
   Instance update_graph (g: Graph) v d l r (Hi: in_math g v l r) (Hn: v <> null): Graph := {
   pg := update_PreGraph _ v d l r;
   bi := update_BiGraph g v d l r;
@@ -631,5 +632,5 @@ Section SpatialGraph.
       - apply (update_graph_iter_sepcon x d l x li Hn g Hi H1).
     Implicit Arguments only_two_neighbours [[Vertex] [Data] [EV] [BiGraph]].
   Qed.
-
+*)
 End SpatialGraph.

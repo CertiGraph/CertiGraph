@@ -1,4 +1,4 @@
-Require Import RamifyCoq.data_structure.spatial_graph.
+Require Import RamifyCoq.data_structure.spatial_graph2.
 Require Import RamifyCoq.msl_ext.abs_addr.
 Require Import RamifyCoq.msl_ext.seplog.
 Require Import VST.veric.SeparationLogic.
@@ -11,12 +11,12 @@ Require Import RamifyCoq.floyd_ext.DataatSL.
 Local Open Scope logic.
 
 Instance SGS_VST: SpatialGraphSetting.
-  apply (Build_SpatialGraphSetting int pointer_val NullPointer PV_eq_dec).
+  apply (Build_SpatialGraphSetting pointer_val NullPointer PV_eq_dec).
 Defined.
 
 Definition trinode (sh: share) (p: Addr) (dlr: Val): mpred :=
   match dlr with
-  | (d, l, r) => data_at sh node_type (repinj node_type (d, (l, r))) (pointer_val_val p)
+  | (d, l, r) => data_at sh node_type (repinj node_type (Int.repr (if d then 1 else 0), (l, r))) (pointer_val_val p)
   end.
 
 Instance MSLstandard sh : MapstoSepLog AV_SGraph (trinode sh).
@@ -56,11 +56,11 @@ Proof.
      (!! field_compatible node_type [] (pointer_val_val p2) &&
         EX v: reptype node_type, data_at sh node_type v (pointer_val_val p2)).
     - apply exp_left; intros [[d l] r]; normalize.
-      apply (exp_right (repinj node_type (d, (l, r)))).
+      apply (exp_right (repinj node_type (Int.repr (if d then 1 else 0), (l, r)))).
       rewrite andp_comm, <- (add_andp _ _ (data_at_compatible _ _ _ _)).
       apply derives_refl.
     - apply exp_left; intros [[d l] r]; normalize.
-      apply (exp_right (repinj node_type (d, (l, r)))).
+      apply (exp_right (repinj node_type (Int.repr (if d then 1 else 0), (l, r)))).
       rewrite andp_comm, <- (add_andp _ _ (data_at_compatible _ _ _ _)).
       apply derives_refl.
     - apply disj_prop_andp_left; [apply field_compatible_dec | intro].
