@@ -105,4 +105,29 @@ Proof.
   rewrite reachable_ind_reachable; apply ind.reachable_nil; auto.
 Qed.
 
+Lemma reachable_list_bigraph_in:
+  forall {l1 l2 x} l r,
+    vvalid x ->
+    reachable_list G l l1 ->
+    reachable_list G r l2 ->
+    (forall y, step G x y <-> y = l \/ y = r) ->
+    forall y, reachable G x y <-> x = y \/ In y l1 \/ In y l2.
+Proof.
+  intros. specialize (H0 y). specialize (H1 y). split; intro.
+  + apply reachable_ind in H3. destruct H3 as [? | [z [[? [? ?]] ?]]]; auto.
+    rewrite H2 in *. destruct H5.
+    - subst. rewrite <- H0 in H6. auto.
+    - subst. rewrite <- H1 in H6. auto.
+  + destruct H3 as [? | [? | ?]].
+    - subst. apply reachable_by_reflexive. split; auto.
+    - rewrite H0 in H3. apply reachable_by_cons with l.
+      * split; auto. split. apply reachable_head_valid in H3; auto. rewrite H2; auto.
+      * auto.
+      * apply H3.
+    - rewrite H1 in H3. apply reachable_by_cons with r.
+      * split; auto. split. apply reachable_head_valid in H3; auto. rewrite H2; auto.
+      * hnf; auto.
+      * apply H3.
+Qed.
+
 End ind_reachable.

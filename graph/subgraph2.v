@@ -117,47 +117,5 @@ End SubGraph.
 
 (*
 
-Lemma mark_exists: forall {N D DEC} (g: @PreGraph N D DEC) (marked: GraphPredicate g) (null: N) (mg: MathGraph g null) x v l,
-                   valid x -> (forall y, reachable g x y -> In y l) -> marked v -> exists g', mark marked g x g'.
-Proof.
-  intros. destruct ((projT2 (negateP marked)) (node_label x)).
-  + remember (fun (n : N) => if (reachable_by_decidable null mg (negateP marked) x l H H0 i n) then v else (node_label n)) as f.
-    exists (Build_PreGraph N D DEC valid f edge_func). split.
-    - split; tauto.
-    - split; intros; subst; hnf; unfold node_label;
-      destruct (reachable_by_decidable null mg (negateP marked) x l H H0 i n); tauto.
-  + rewrite negateP_spec_d in n. exists g. split. reflexivity. split; intros.
-    - destruct H2 as [path ?]. apply (reachable_by_path_In_prop _ _ _ _ _ _ _ _ x) in H2.
-      hnf in H2. tauto. destruct H2 as [[? _] _]. destruct path; simpl in H2; inversion H2. apply in_eq.
-    - auto.
-Qed.
 
-Lemma mark1_exists: forall {N D DEC} (g: @PreGraph N D DEC) (marked: GraphPredicate g) x v,
-                      marked v -> valid x -> exists g', mark1 marked g x g'.
-Proof.
-  intros. destruct ((projT2 marked) (node_label x)).
-  + exists g. split. reflexivity. auto.
-  + remember (fun (t : N) => if (t_eq_dec t x) then v else (node_label t)) as f.
-    exists (Build_PreGraph N D DEC valid f edge_func). split.
-    * split; tauto.
-    * subst. split; auto. split; intros; hnf; unfold node_label.
-      destruct (t_eq_dec x x). auto. tauto.
-      destruct (t_eq_dec n' x). exfalso; intuition. auto.
-Qed.
-
-Lemma subgraph_exists: forall {N D DEC} (marked: Ensemble D) (g: @PreGraph N D DEC) x,
-  exists g', subgraph g x g'.
-Proof.
-  intros.
-  exists (reachable_subgraph g (x :: nil)).
-  reflexivity.
-Qed.
-
-Lemma reachable_mark1: forall {N D DEC} (marked: Ensemble D) (g g': @PreGraph N D DEC) x y z,
-                         mark1 marked g x g' -> (reachable g y z <-> reachable g' y z).
-Proof. intros. destruct H as [? _]. split; [| symmetry in H ]; apply si_reachable with (n := y) in H; apply H. Qed.
-
-Lemma reachable_mark: forall {N} {D} {DEC} (marked: Ensemble D) (g g':  @PreGraph N D DEC) x y z,
-                        mark marked g x g' -> (reachable g y z <-> reachable g' y z).
-Proof. intros. destruct H as [? _]. split; [| symmetry in H ]; apply si_reachable with (n := y) in H; apply H. Qed.
 *)

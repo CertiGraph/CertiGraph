@@ -56,14 +56,14 @@ Definition reachable_set_list {V E : Type} (g: PreGraph V E) (S : list V) (l : l
 Definition reachable_valid {V E : Type} (g: PreGraph V E) (S : list V) : V -> Prop :=
   fun n => @vvalid _ _ _ n /\ reachable_through_set g S n.
 
-Definition reachable_subgraph {V E : Type} (g: PreGraph V E) (S : list V) :=
-  Build_PreGraph V E EV EE (reachable_valid g S) evalid.
+Definition reachable_subgraph {V E : Type} (g: PreGraph V E) (S : list V): PreGraph V E :=
+  Build_PreGraph V E EV EE (reachable_valid g S) evalid src dst.
 
 Definition unreachable_valid {V E : Type} (g: PreGraph V E) (S : list V) : V -> Prop :=
   fun n => @vvalid _ _ _ n /\ ~ reachable_through_set g S n.
 
-Definition unreachable_subgraph {V E : Type} (g: PreGraph V E) (S : list V) :=
-  Build_PreGraph  V E EV EE (unreachable_valid g S) evalid.
+Definition unreachable_subgraph {V E : Type} (g: PreGraph V E) (S : list V): PreGraph V E :=
+  Build_PreGraph  V E EV EE (unreachable_valid g S) evalid src dst .
 
 Section GraphPath.
   Variable V : Type.
@@ -492,6 +492,21 @@ Section GraphPath.
     intros. destruct H as [[? ?] [? ?]]. apply in_split in H0. destruct H0 as [l1 [l2 ?]]. exists (l1 +:: z). subst. split.
     split. destruct l1; simpl; simpl in H; auto. rewrite foot_last. auto. split. rewrite app_cons_assoc in H2.
     apply valid_path_split in H2. destruct H2. auto. hnf. rewrite Forall_forall; intros; auto.
+  Qed.
+
+  Lemma reachable_list_permutation:
+    forall (g: Gph) x l1 l2,
+      reachable_list g x l1 -> reachable_list g x l2 -> NoDup l1 -> NoDup l2 -> Permutation l1 l2.
+  Proof. intros. apply NoDup_Permutation; auto. intro y. rewrite (H y), (H0 y). tauto. Qed.
+
+  Lemma reachable_valid_and_through_single:
+    forall (g: Gph) {x y}, reachable g x y -> (vvalid y /\ reachable_through_set g (x :: nil) y).
+  Proof.
+    intros. split.
+    + apply reachable_foot_valid in H; auto.
+    + exists x. split.
+      - apply in_eq.
+      - auto.         
   Qed.
 
 End GraphPath.

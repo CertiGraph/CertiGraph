@@ -40,11 +40,23 @@ Definition update_PreGraph v l r : Gph :=
   Build_PreGraph V E EV EE (change_vvalid v) (change_evalid v) src (change_dst v l r).
 
 Definition update_BiGraph v l r: BiGraph (update_PreGraph v l r).
-  refine (Build_BiGraph V E _ left_out_edge right_out_edge _ _ _ _).
-  unfold update_PreGraph; simpl; apply left_sound.
-  unfold update_PreGraph; simpl; apply right_sound.
-  unfold update_PreGraph; simpl; apply bi_consist.
-  unfold update_PreGraph; simpl; apply only_two_edges.
+  refine (Build_BiGraph V E _ left_out_edge right_out_edge _ _ _ _ _ _).
+  + unfold update_PreGraph; simpl; apply left_sound.
+  + unfold update_PreGraph; simpl; apply right_sound.
+  + unfold update_PreGraph; simpl.
+    unfold change_vvalid, change_evalid.
+    intros.
+    rewrite left_sound.
+    pose proof left_valid x.
+    tauto.
+  + unfold update_PreGraph; simpl.
+    unfold change_vvalid, change_evalid.
+    intros.
+    rewrite right_sound.
+    pose proof right_valid x.
+    tauto.
+  + unfold update_PreGraph; simpl; apply bi_consist.
+  + unfold update_PreGraph; simpl; apply only_two_edges.
 Defined.
 
 Definition in_math (v l r: V) : Type :=
