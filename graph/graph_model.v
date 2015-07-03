@@ -139,6 +139,8 @@ Class BiGraph {Vertex Edge: Type} (pg: PreGraph Vertex Edge) :=
   right_out_edge: Vertex -> Edge;
   left_sound: forall x, src (left_out_edge x) = x;
   right_sound: forall x, src (right_out_edge x) = x;
+  left_valid: forall x, vvalid x -> evalid (left_out_edge x);
+  right_valid: forall x, vvalid x -> evalid (right_out_edge x);
   bi_consist: forall x, left_out_edge x <> right_out_edge x;
   only_two_edges: forall x e, src e = x <-> e = left_out_edge x \/ e = right_out_edge x
 (*  only_two_neighbours : forall (v : Vertex), edge_func pg v = left_out_edge v :: left_out_edge v :: nil *)

@@ -3,9 +3,10 @@ Require Import Coq.Sets.Ensembles.
 Require Import Coq.Sets.Finite_sets.
 Require Import Coq.Lists.List.
 Require Import RamifyCoq.Coqlib.
+Require Import VST.msl.Coqlib2.
 Require Import RamifyCoq.graph.graph_model.
-Require Import RamifyCoq.graph.path_lemmas.
-Import RamifyCoq.graph.path_lemmas.PathNotation.
+Require Import RamifyCoq.graph.path_lemmas. Import RamifyCoq.graph.path_lemmas.PathNotation.
+Require Import RamifyCoq.graph.reachable_computable.
 
 (******************************************
 
@@ -26,8 +27,8 @@ Arguments marked {_} {_} _.
 
 Section MARKED_GRAPH.
 
-  Variable V : Type.
-  Variable E : Type.
+  Context {V : Type}.
+  Context {E : Type}.
   Notation Gph := (MarkedGraph V E).
 
   Definition marked_coincide {g1 g2: PreGraph V E} (m1: NodePred g1) (m2: NodePred g2) :=
@@ -63,6 +64,9 @@ Section MARKED_GRAPH.
       reflexivity proved by vi_refl
       symmetry proved by vi_sym
       transitivity proved by vi_trans as vi_equal.
+
+  Definition reachable_sub_markedgraph (G: Gph) x: Gph :=
+    Build_MarkedGraph _ _ (reachable_subgraph G x) (marked G).
 
   Definition unmarked (g: Gph) (n: V) : Prop := ~ marked g n.
 
@@ -139,7 +143,81 @@ Section MARKED_GRAPH.
     destruct H0 as [p [? [? ?]]]; exists p. split; auto. split; auto. eapply (valid_path_si _ _ g1 g2); eauto.
   Qed.
 
+  Lemma negateP_marked_unmarked: forall (g: Gph), ((negateP (marked g)): V -> Prop) = unmarked g.
+  Proof.
+    intros.
+    extensionality.
+    apply prop_ext.
+    rewrite negateP_spec.
+    unfold unmarked.
+    tauto.
+  Qed.
+
+  Lemma mark_exists: forall (g: Gph) {_: MathGraph g} {_: LocalFiniteGraph g} x l,
+    vvalid x -> (forall y, reachable g x y -> In y l) -> exists g', mark g x g'.
+  Proof.
+    intros. destruct ((projT2 (negateP (marked g))) x);
+    change (projT1 (negateP (marked g)) x) with ((negateP (marked g)) x) in *.
+    + assert (forall y, {g |= x ~o~> y satisfying (negateP (marked g)) \/ marked g y} +
+         {~ (g |= x ~o~> y satisfying (negateP (marked g)) \/ marked g y)}).
+      Focus 1. {
+        intros.
+        apply sumbool_dec_or.
+        + apply (reachable_by_decidable g (negateP (marked g)) x l H H0 p).
+        + apply (projT2 (marked g)).
+      } Unfocus.
+   
+      exists (Build_MarkedGraph _ _ g (existT _ (fun y => g |= x ~o~> y satisfying (negateP (marked g)) \/ (marked g) y) X1)). split; [| split].
+      - simpl. reflexivity.
+      - intros; subst; hnf.
+        destruct (reachable_by_decidable g (negateP (marked g)) x l H H0 p n);
+        try rewrite negateP_marked_unmarked in *; try tauto.
+      - split; intros; subst; simpl in *;
+        try rewrite negateP_marked_unmarked in *; tauto.
+    + rewrite negateP_marked_unmarked in n. exists g. split. reflexivity. split; intros.
+      - destruct H1 as [path ?]. apply (reachable_by_path_In _ _ _ _ _ _ _ x) in H1.
+        hnf in H1. tauto. destruct H1 as [[? _] _]. destruct path; simpl in H1; inversion H1. apply in_eq.
+      - reflexivity.
+  Qed.
+   
+  Lemma mark1_exists: forall (g: Gph) {_: MathGraph g} {_: LocalFiniteGraph g} x,
+                       vvalid x -> exists g', mark1 g x g'.
+  Proof.
+    intros. destruct ((projT2 (marked g)) x).
+    + exists g. split. reflexivity. split; auto. split; [exact p |]. intros; reflexivity.
+    + assert (forall y, {y = x \/ marked g y} + {~ (y = x \/ marked g y)}).
+      Focus 1. {
+        intros.
+        apply sumbool_dec_or.
+        + apply t_eq_dec.
+        + apply (projT2 (marked g)).
+      } Unfocus.
+      exists (Build_MarkedGraph _ _ g (existT _ (fun y => y = x \/ marked g y) X1)). split; [| split].
+      * simpl; reflexivity.
+      * auto.
+      * split; [simpl; auto |].
+        intros; simpl.
+        assert (n' <> x) by congruence. tauto.
+  Qed.
+
 (*
+
+Lemma subgraph_exists: forall {N D DEC} (marked: Ensemble D) (g: @PreGraph N D DEC) x,
+  exists g', subgraph g x g'.
+Proof.
+  intros.
+  exists (reachable_subgraph g (x :: nil)).
+  reflexivity.
+Qed.
+
+Lemma reachable_mark1: forall {N D DEC} (marked: Ensemble D) (g g': @PreGraph N D DEC) x y z,
+                         mark1 marked g x g' -> (reachable g y z <-> reachable g' y z).
+Proof. intros. destruct H as [? _]. split; [| symmetry in H ]; apply si_reachable with (n := y) in H; apply H. Qed.
+
+Lemma reachable_mark: forall {N} {D} {DEC} (marked: Ensemble D) (g g':  @PreGraph N D DEC) x y z,
+                        mark marked g x g' -> (reachable g y z <-> reachable g' y z).
+Proof. intros. destruct H as [? _]. split; [| symmetry in H ]; apply si_reachable with (n := y) in H; apply H. Qed.
+
   (* The second subtle lemma.  Maybe needs a better name? *)
   Lemma mark_unmarked: forall g1 root g2 n1 n2,
                          mark g1 root g2 ->
@@ -375,4 +453,4 @@ Section MARKED_GRAPH.
 *)
 End MARKED_GRAPH.
 
-
+Notation "g1 '-=-' g2" := (validly_identical g1 g2) (at level 1).

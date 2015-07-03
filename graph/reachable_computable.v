@@ -681,47 +681,6 @@ Section REACHABLE_COMPUTABLE.
     apply (unreachable_sub_eq_belong_to _ _ H x S2).
   Qed.
 
-  Lemma reachable_list_bigraph_in:
-    forall {pg : PreGraph V D} {l1 l2 x} l r,
-      valid x ->
-      reachable_list pg l l1 ->
-      reachable_list pg r l2 ->
-      edge_func x = l :: r :: nil ->
-      forall y, reachable pg x y <-> x = y \/ In y l1 \/ In y l2.
-  Proof.
-    intros. specialize (H0 y). specialize (H1 y). split; intro.
-    + apply reachable_from_children in H3. destruct H3 as [? | [z [[? [? ?]] ?]]]; auto.
-      rewrite H2 in *. simpl in H5. destruct H5 as [? | [? | ?]].
-      - subst. rewrite <- H0 in H6. auto.
-      - subst. rewrite <- H1 in H6. auto.
-      - tauto.
-    + destruct H3 as [? | [? | ?]].
-      - subst. apply reachable_by_reflexive. split; auto. hnf; auto.
-      - rewrite H0 in H3. apply reachable_by_cons with l.
-        * split; auto. split. apply reachable_head_valid in H3; auto. rewrite H2; apply in_eq.
-        * hnf; auto.
-        * apply H3.
-      - rewrite H1 in H3. apply reachable_by_cons with r.
-        * split; auto. split. apply reachable_head_valid in H3; auto. rewrite H2; apply in_cons, in_eq.
-        * hnf; auto.
-        * apply H3.
-  Qed.
-
-  Lemma reachable_list_permutation:
-    forall {pg : PreGraph V D} x l1 l2,
-      reachable_list pg x l1 -> reachable_list pg x l2 -> NoDup l1 -> NoDup l2 -> Permutation l1 l2.
-  Proof. intros. apply NoDup_Permutation; auto. intro y. rewrite (H y), (H0 y). tauto. Qed.
-
-  Lemma reachable_valid_and_through_single:
-    forall {pg : PreGraph V D} {x y}, reachable pg x y -> (valid y /\ reachable_through_set pg (x :: nil) y).
-  Proof.
-    intros. split.
-    + apply reachable_foot_valid in H; auto.
-    + exists x. split.
-      - apply in_eq.
-      - auto.         
-  Qed.
-
   Lemma unreachable_node_add_graph_eq:
     forall (pg : PreGraph V D) {bi : BiGraph pg} {ma : MathGraph pg null} x y d l r (Hn: x <> null) (Hi: in_math ma x l r),
       In y (l :: r :: nil) -> (~ reachable pg y x) -> y <> x ->
