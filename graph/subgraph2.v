@@ -23,11 +23,6 @@ Definition predicate_vvalid : Ensemble V :=
 Definition predicate_evalid : Ensemble E :=
   fun e => evalid e /\ p (src e) /\ p (dst e).
 
-(*
-Definition predicate_edge_func {N D DEC} (g : @PreGraph N D DEC) (p : GraphPredicate g) (x: N) : list N :=
-  filter (fun s => if ((projT2 p) (node_label s)) then true else false) (edge_func x).
-*)
-
 Definition predicate_subgraph : PreGraph V E :=
   Build_PreGraph V E EV EE predicate_vvalid predicate_evalid src dst.
 
@@ -47,7 +42,7 @@ Definition predicate_sub_localfinitegraph : LocalFiniteGraph predicate_subgraph.
 Proof.
   refine (Build_LocalFiniteGraph V E _ _).
   intros.
-  exists (filter (fun e => if (sumbool_dec_and (projT2 p (src e)) (projT2 p (dst e))) then true else false) (edge_func g x)).
+  exists (filter (fun e => if (sumbool_dec_and (node_pred_dec p (src e)) (node_pred_dec p (dst e))) then true else false) (edge_func g x)).
   split.
   + apply NoDup_filter.
     unfold edge_func.
@@ -57,9 +52,7 @@ Proof.
     unfold predicate_subgraph, predicate_vvalid, predicate_evalid; simpl; intros.
     rewrite filter_In.
     rewrite edge_func_spec.
-    destruct (sumbool_dec_and (projT2 p (src x0)) (projT2 p (dst x0)));
-    change (projT1 p (src x0)) with (p (src x0)) in *;
-    change (projT1 p (dst x0)) with (p (dst x0)) in *.
+    destruct (sumbool_dec_and (node_pred_dec p (src x0)) (node_pred_dec p (dst x0))).
     - unfold out_edges, Ensembles.In in *; simpl.
       assert (true = true) by auto; tauto.
     - unfold out_edges, Ensembles.In in *; simpl.

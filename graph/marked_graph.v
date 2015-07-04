@@ -7,6 +7,7 @@ Require Import VST.msl.Coqlib2.
 Require Import RamifyCoq.graph.graph_model.
 Require Import RamifyCoq.graph.path_lemmas. Import RamifyCoq.graph.path_lemmas.PathNotation.
 Require Import RamifyCoq.graph.reachable_computable.
+Require Import RamifyCoq.graph.reachable_ind.
 
 (******************************************
 
@@ -68,7 +69,10 @@ Section MARKED_GRAPH.
   Definition reachable_sub_markedgraph (G: Gph) x: Gph :=
     Build_MarkedGraph _ _ (reachable_subgraph G x) (marked G).
 
-  Definition unmarked (g: Gph) (n: V) : Prop := ~ marked g n.
+  Definition unmarked (g: Gph): NodePred g := negateP (marked g).
+
+  Lemma unmarked_spec (g: Gph): forall x, (unmarked g) x <-> ~ (marked g) x.
+  Proof. apply negateP_spec. Qed.
 
   Definition mark1 (g1 : Gph) (n : V) (g2 : Gph) : Prop :=
     structurally_identical g1 g2 /\ @vvalid _ _ g1 n /\ marked g2 n /\
@@ -100,7 +104,7 @@ Section MARKED_GRAPH.
     change (root :: v :: p) with (path_glue (root :: v :: nil) (v :: p)) in H1.
     apply reachable_by_path_split_glue with (n := v) in H1. 2: red; auto. destruct H1.
     split. destruct H1 as [_ [? _]]. apply valid_path_si with (g2 := g2) in H1. 2: destruct H; trivial.
-    simpl in H1. destruct H. apply si_sym in H. apply edge_si with g2; tauto.
+    simpl in H1. destruct H. rewrite (edge_si g1 g2); tauto.
     exists (v :: p). destruct H2 as [? [? ?]].
     split; trivial.
     destruct H as [? [_ ?]]. split. apply (valid_path_si _ _ g1 g2); auto.
@@ -110,7 +114,7 @@ Section MARKED_GRAPH.
     (* Hammertime! *)
     assert (root <> x). intro. inversion H0. subst. contr.
     destruct H5.
-    specialize (H8 x H7). unfold unmarked in *; tauto.
+    specialize (H8 x H7). rewrite unmarked_spec in *. tauto.
   Qed.
 
   (* Not the best name in the world... *)
@@ -122,12 +126,12 @@ Section MARKED_GRAPH.
   Proof.
     intros. destruct H0 as [p [? ?]]. exists p. split; trivial.
     destruct H1. destruct H as [? [? ?]].
-    split. eapply valid_path_si; eauto. apply si_sym; trivial. (* clear -H3 H0 H2. *)
+    split. rewrite (valid_path_si _ _ g1 g2) by eauto. auto.
     unfold path_prop in H2 |- *.
     rewrite Forall_forall in H2 |- *.
     intros ? ?. specialize (H2 x H5). destruct H4. specialize (H6 x).
     spec H6. intro. subst x. hnf in H3. hnf in H2. apply H2; auto.
-    unfold unmarked in *; tauto.
+    rewrite unmarked_spec in *; tauto.
   Qed.
 
   Definition mark (g1 : Gph) (root : V) (g2 : Gph) : Prop :=
@@ -143,54 +147,40 @@ Section MARKED_GRAPH.
     destruct H0 as [p [? [? ?]]]; exists p. split; auto. split; auto. eapply (valid_path_si _ _ g1 g2); eauto.
   Qed.
 
-  Lemma negateP_marked_unmarked: forall (g: Gph), ((negateP (marked g)): V -> Prop) = unmarked g.
+  Lemma mark_exists: forall (g: Gph) {_: MathGraph g} {_: LocalFiniteGraph g} x,
+    vvalid x -> (EnumCovered V (reachable g x)) -> {g': Gph | mark g x g'}.
   Proof.
-    intros.
-    extensionality.
-    apply prop_ext.
-    rewrite negateP_spec.
-    unfold unmarked.
-    tauto.
-  Qed.
-
-  Lemma mark_exists: forall (g: Gph) {_: MathGraph g} {_: LocalFiniteGraph g} x l,
-    vvalid x -> (forall y, reachable g x y -> In y l) -> exists g', mark g x g'.
-  Proof.
-    intros. destruct ((projT2 (negateP (marked g))) x);
-    change (projT1 (negateP (marked g)) x) with ((negateP (marked g)) x) in *.
-    + assert (forall y, {g |= x ~o~> y satisfying (negateP (marked g)) \/ marked g y} +
-         {~ (g |= x ~o~> y satisfying (negateP (marked g)) \/ marked g y)}).
+    intros. destruct ((node_pred_dec (unmarked g)) x).
+    + assert (forall y, {g |= x ~o~> y satisfying (unmarked g) \/ marked g y} +
+         {~ (g |= x ~o~> y satisfying (unmarked g) \/ marked g y)}).
       Focus 1. {
         intros.
         apply sumbool_dec_or.
-        + apply (reachable_by_decidable g (negateP (marked g)) x l H H0 p).
-        + apply (projT2 (marked g)).
+        + apply reachable_by_decidable; auto.
+        + apply node_pred_dec.
       } Unfocus.
    
-      exists (Build_MarkedGraph _ _ g (existT _ (fun y => g |= x ~o~> y satisfying (negateP (marked g)) \/ (marked g) y) X1)). split; [| split].
+      exists (Build_MarkedGraph _ _ g (existT _ (fun y => g |= x ~o~> y satisfying (unmarked g) \/ (marked g) y) X2)). split; [| split].
       - simpl. reflexivity.
-      - intros; subst; hnf.
-        destruct (reachable_by_decidable g (negateP (marked g)) x l H H0 p n);
-        try rewrite negateP_marked_unmarked in *; try tauto.
-      - split; intros; subst; simpl in *;
-        try rewrite negateP_marked_unmarked in *; tauto.
-    + rewrite negateP_marked_unmarked in n. exists g. split. reflexivity. split; intros.
-      - destruct H1 as [path ?]. apply (reachable_by_path_In _ _ _ _ _ _ _ x) in H1.
-        hnf in H1. tauto. destruct H1 as [[? _] _]. destruct path; simpl in H1; inversion H1. apply in_eq.
+      - intros; subst; hnf. auto.
+      - split; intros; subst; simpl in *; tauto.
+    + exists g. split. reflexivity. split; intros.
+      - destruct H0 as [path ?]. apply (reachable_by_path_In _ _ _ _ _ _ _ x) in H0.
+        hnf in H0. tauto. destruct H0 as [[? _] _]. destruct path; simpl in H0; inversion H0. apply in_eq.
       - reflexivity.
   Qed.
    
   Lemma mark1_exists: forall (g: Gph) {_: MathGraph g} {_: LocalFiniteGraph g} x,
-                       vvalid x -> exists g', mark1 g x g'.
+                       vvalid x -> {g': Gph | mark1 g x g'}.
   Proof.
-    intros. destruct ((projT2 (marked g)) x).
-    + exists g. split. reflexivity. split; auto. split; [exact p |]. intros; reflexivity.
+    intros. destruct ((node_pred_dec (marked g)) x).
+    + exists g. split. reflexivity. split; auto. split; [exact a |]. intros; reflexivity.
     + assert (forall y, {y = x \/ marked g y} + {~ (y = x \/ marked g y)}).
       Focus 1. {
         intros.
         apply sumbool_dec_or.
         + apply t_eq_dec.
-        + apply (projT2 (marked g)).
+        + apply node_pred_dec.
       } Unfocus.
       exists (Build_MarkedGraph _ _ g (existT _ (fun y => y = x \/ marked g y) X1)). split; [| split].
       * simpl; reflexivity.
@@ -200,70 +190,69 @@ Section MARKED_GRAPH.
         assert (n' <> x) by congruence. tauto.
   Qed.
 
-(*
-
-Lemma subgraph_exists: forall {N D DEC} (marked: Ensemble D) (g: @PreGraph N D DEC) x,
-  exists g', subgraph g x g'.
-Proof.
-  intros.
-  exists (reachable_subgraph g (x :: nil)).
-  reflexivity.
-Qed.
-
-Lemma reachable_mark1: forall {N D DEC} (marked: Ensemble D) (g g': @PreGraph N D DEC) x y z,
-                         mark1 marked g x g' -> (reachable g y z <-> reachable g' y z).
-Proof. intros. destruct H as [? _]. split; [| symmetry in H ]; apply si_reachable with (n := y) in H; apply H. Qed.
-
-Lemma reachable_mark: forall {N} {D} {DEC} (marked: Ensemble D) (g g':  @PreGraph N D DEC) x y z,
-                        mark marked g x g' -> (reachable g y z <-> reachable g' y z).
-Proof. intros. destruct H as [? _]. split; [| symmetry in H ]; apply si_reachable with (n := y) in H; apply H. Qed.
+  Lemma reachable_mark1: forall (g g': Gph) x y z,
+                           mark1 g x g' -> (reachable g y z <-> reachable g' y z).
+  Proof. intros. destruct H as [? _]. apply (si_reachable _ _ y) in H. destruct H. specialize (H z). specialize (H0 z). tauto. Qed.
+   
+  Lemma reachable_mark: forall (g g': Gph) x y z,
+                          mark g x g' -> (reachable g y z <-> reachable g' y z).
+  Proof. intros. destruct H as [? _]. apply (si_reachable _ _ y) in H. destruct H. specialize (H z). specialize (H0 z). tauto. Qed.
 
   (* The second subtle lemma.  Maybe needs a better name? *)
-  Lemma mark_unmarked: forall g1 root g2 n1 n2,
+  Lemma mark_unmarked: forall (g1: Gph) root g2 n1 n2 {MA: MathGraph g1} {_: LocalFiniteGraph g1},
+                         @vvalid _ _ g1 root ->
+                         (EnumCovered V (reachable g1 root)) ->
                          mark g1 root g2 ->
-                         g1 |= n1 ~o~> n2 satisfying unmarked ->
-                         (g2 |= n1 ~o~> n2 satisfying unmarked) \/ (node_prop g2 marked n2).
+                         g1 |= n1 ~o~> n2 satisfying (unmarked g1) ->
+                         (g2 |= n1 ~o~> n2 satisfying (unmarked g1)) \/ (marked g2 n2).
   Proof.
-    intros. destruct H0 as [p ?].
-    (* This is a very handy LEM. *)
-    LEM (exists n, In n p /\ g1 |= root ~o~> n satisfying unmarked).
-    right. destruct H as [_ [? _]]. apply H.
-    destruct H1 as [n [? ?]]. apply reachable_by_merge with n; trivial.
-    destruct (reachable_by_path_split_in _ _ _ _ _ _ H0 H1) as [p1 [p2 [? [? ?]]]].
-    exists p2. trivial.
-    left. exists p. destruct H0. split; trivial. clear H0.
-    destruct H2. destruct H as [? [_ ?]]. split. eapply valid_path_si; eauto.
-    intros ? ?. specialize (H2 n H4). specialize (H3 n).
-    spec H3. intro. apply H1. exists n. tauto.
-    eapply node_prop_label_eq; eauto.
+    intros until n2. intros MA LFG HH ENUMC; intros; destruct H0 as [p ?].
+    (* This was a very handy LEM. *)
+    destruct (exists_list_dec _ p (fun n => g1 |= root ~o~> n satisfying (unmarked g1))) as [?H | ?H].
+    1: apply reachable_by_decidable; auto.
+    + right. destruct H as [_ [? _]]. apply H.
+      destruct H1 as [n [? ?]]. apply reachable_by_merge with n; trivial.
+      destruct (reachable_by_path_split_in _ _ _ _ _ _ _ _ H0 H1) as [p1 [p2 [? [? ?]]]].
+      exists p2. trivial.
+    + left. exists p. destruct H0. split; trivial. clear H0.
+      destruct H2. destruct H as [? [_ ?]]. split.
+      rewrite <- (valid_path_si _ _ g1 g2); auto.
+      unfold path_prop in *; rewrite Forall_forall in *.
+      intros ? ?. specialize (H2 x H4). specialize (H3 x).
+      spec H3. intro. apply H1. exists x. tauto.
+      rewrite unmarked_spec in *; tauto.
   Qed.
 
   Require Import Classical.
   Tactic Notation "LEM" constr(v) := (destruct (classic v); auto).
 
-
   Lemma mark_marked: forall g1 root g2,
                        mark g1 root g2 ->
-                       forall n, node_prop g1 marked n-> node_prop g2 marked n.
+                       forall n, marked g1 n-> marked g2 n.
   Proof.
-    intros. destruct H as [_ [? ?]]. LEM (g1 |= root ~o~> n satisfying unmarked).
-    specialize (H1 n H2). eapply node_prop_label_eq; eauto.
+    intros. destruct H as [_ [? ?]]. LEM (g1 |= root ~o~> n satisfying (unmarked g1)).
+    specialize (H1 n H2). tauto.
   Qed.
 
   (* Maybe a better name? *)
   Lemma mark_reverse_unmarked: forall g1 root g2,
                                  mark g1 root g2 ->
-                                 forall n1 n2, g2 |= n1 ~o~> n2 satisfying unmarked -> g1 |= n1 ~o~> n2 satisfying unmarked.
+                                 forall n1 n2, g2 |= n1 ~o~> n2 satisfying (unmarked g2) -> g1 |= n1 ~o~> n2 satisfying (unmarked g1).
   Proof.
     intros. destruct H0 as [p [? ?]]. exists p. split; trivial. clear H0.
     destruct H as [? [? ?]]. destruct H1.
-    split. eapply valid_path_si; eauto. apply si_sym; trivial. clear -H3 H0 H2.
-    intros ? ?. specialize (H3 n H). specialize (H0 n). specialize (H2 n).
-    LEM (g1 |= root ~o~> n satisfying unmarked).
+    split. rewrite (valid_path_si _ _ g1 g2); eauto. clear -H3 H0 H2.
+    unfold path_prop in *; rewrite Forall_forall in *.
+    intros ? ?. specialize (H3 x H). specialize (H0 x). specialize (H2 x).
+    LEM (g1 |= root ~o~> x satisfying (unmarked g1)).
     specialize (H0 H1). clear H2 H1. exfalso.
     hnf in H3. hnf in H0. apply H3. auto.
-    specialize (H2 H1). apply node_prop_label_eq with g2; auto.
+    specialize (H2 H1).
+    rewrite unmarked_spec in *; tauto.
   Qed.
+
+
+(*
 
   (* Here is where we specialize to bigraphs, at least at root *)
   Definition node_connected_two (g : Gph) (root left right : N) : Prop :=
@@ -428,14 +417,6 @@ Proof. intros. destruct H as [? _]. split; [| symmetry in H ]; apply si_reachabl
     intro. apply H0.
     generalize (reachable_by_subset_reachable g1 root unmarked n); intro.
     intuition.
-  Qed.
-
-  Lemma si_reachable: forall (g1 g2: Gph) n,  g1 ~=~ g2 -> Included (reachable g1 n) (reachable g2 n).
-  Proof.
-    intros. intro t. intros. destruct H0 as [p ?]. destruct H0. exists p. split. auto. destruct H1. split. clear - H H1.
-    induction p. simpl. auto. simpl. simpl in H1. destruct p. destruct (H a). rewrite <- H0. auto. destruct H1. split.
-    destruct H0 as [? [? ?]]. split. destruct (H a). rewrite <- H4. auto. split. destruct (H n). rewrite <- H4. auto.
-    destruct (H a). rewrite <- H5. auto. apply IHp. auto. repeat intro; hnf; auto.
   Qed.
 
   Lemma mark_unreachable_subgraph:

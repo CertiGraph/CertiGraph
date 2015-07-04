@@ -172,13 +172,15 @@ Section GraphPath.
   Qed.
 
   Lemma valid_path_si: forall (g1 g2: Gph),
-      structurally_identical g1 g2 -> forall p, valid_path g1 p -> valid_path g2 p.
+      structurally_identical g1 g2 -> forall p, valid_path g1 p <-> valid_path g2 p.
   Proof.
+    cut (forall g1 g2 : Gph, g1 ~=~ g2 -> forall p : list V, valid_path g1 p -> valid_path g2 p).
+    1: intros; split; apply H; [| symmetry]; auto.
     induction p; simpl; auto.
     icase p.
     + pose proof (proj1 H a); tauto.
     + intros [? ?]. split; auto.
-      apply (edge_si g1 g2 a v H H0).
+      rewrite (edge_si g1 g2) in H0; auto.
   Qed.
 
   Lemma valid_path_acyclic:
@@ -507,6 +509,32 @@ Section GraphPath.
     + exists x. split.
       - apply in_eq.
       - auto.         
+  Qed.
+
+  Lemma reachable_list_EnumCovered: forall (g: Gph) x l, reachable_list g x l -> EnumCovered V (reachable g x).
+  Proof.
+    unfold reachable_list, EnumCovered, Ensembles.In.
+    intros.
+    exists (remove_dup t_eq_dec l).
+    split.
+    + apply remove_dup_nodup.
+    + intros y ?.
+      specialize (H y).
+      rewrite <- remove_dup_in_inv.
+      tauto.
+  Qed.
+
+  Lemma reachable_set_list_EnumCovered: forall (g: Gph) S l, reachable_set_list g S l -> EnumCovered V (reachable_through_set g S).
+  Proof.
+    unfold reachable_set_list, EnumCovered, Ensembles.In.
+    intros.
+    exists (remove_dup t_eq_dec l).
+    split.
+    + apply remove_dup_nodup.
+    + intros y ?.
+      specialize (H y).
+      rewrite <- remove_dup_in_inv.
+      tauto.
   Qed.
 
 End GraphPath.

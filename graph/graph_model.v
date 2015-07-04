@@ -72,6 +72,18 @@ Definition Enumerable U (A: Ensemble U) := {l: list U | NoDup l /\ forall x, In 
 
 Definition EnumCovered U (A: Ensemble U) := {l: list U | NoDup l /\ forall x, Ensembles.In U A x -> In x l}.
 
+Lemma EnumCovered_strengthen: forall U A B,
+  Included A B -> EnumCovered U B -> EnumCovered U A.
+Proof.
+  intros.
+  destruct X as [x ?H].
+  exists x.
+  split; [tauto |].
+  intros.
+  apply H in H1.
+  firstorder.
+Qed.
+
 (******************************************
 
 Graph Definitions
@@ -130,6 +142,8 @@ Definition app_node_pred {Vertex Edge: Type} {pg: PreGraph Vertex Edge} (P: Node
   projT1 P x.
 
 Coercion app_node_pred : NodePred >-> Funclass.
+
+Definition node_pred_dec {Vertex Edge: Type} {pg: PreGraph Vertex Edge} (P: NodePred pg) (x: Vertex): {P x} + {~ P x} := projT2 P x.
 
 Definition edge_func {Vertex Edge: Type} (pg: PreGraph Vertex Edge) {lfg: LocalFiniteGraph pg} x := projT1 (local_enumerable x).
 
@@ -246,8 +260,10 @@ Add Parametric Relation {V E : Type} : (PreGraph V E) structurally_identical
     transitivity proved by si_trans as si_equal.
 
 Lemma step_si {V E : Type}:
-  forall (g1 g2 : PreGraph V E) (n n' : V), g1 ~=~ g2 -> step g1 n n' -> step g2 n n'.
+  forall (g1 g2 : PreGraph V E) (n n' : V), g1 ~=~ g2 -> (step g1 n n' <-> step g2 n n').
 Proof.
+  cut (forall (g1 g2 : PreGraph V E) (n n' : V), g1 ~=~ g2 -> step g1 n n' -> step g2 n n').
+  1: intros; split; apply H; [eauto | symmetry; auto].
   intros.
   rewrite step_spec in H0 |- *.
   destruct H as [? [? [? ?]]].
@@ -257,14 +273,12 @@ Proof.
 Qed.
 
 Lemma edge_si {V E : Type}:
-  forall (g1 g2 : PreGraph V E) (n n' : V), g1 ~=~ g2 -> g1 |= n ~> n' -> g2 |= n ~> n'.
+  forall (g1 g2 : PreGraph V E) (n n' : V), g1 ~=~ g2 -> (g1 |= n ~> n' <-> g2 |= n ~> n').
 Proof.
   intros; unfold edge in *.
-  pose proof H.
-  destruct H as [? [? [? ?]]].
-  rewrite <- !H.
-  split; [| split]; try tauto.
-  apply (step_si g1 g2); auto.
+  pose proof proj1 H n.
+  pose proof proj1 H n'.
+  pose proof step_si _ _ n n' H.
   tauto.
 Qed.
 
