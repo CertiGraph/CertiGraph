@@ -131,3 +131,18 @@ Proof.
 Qed.
 
 End ind_reachable.
+
+Lemma si_reachable: forall {V E} (g1 g2: PreGraph V E) n,  g1 ~=~ g2 -> Same_set (reachable g1 n) (reachable g2 n).
+Proof.
+  intros V E.
+  cut (forall (g1 g2 : PreGraph V E) (n : V), g1 ~=~ g2 -> Included (reachable g1 n) (reachable g2 n)).
+  1: intros; split; intros; apply H; [auto | symmetry; auto].
+  intros; intro; intros; unfold Ensembles.In in *;
+  rewrite reachable_ind_reachable in H0;
+  rewrite reachable_ind_reachable.
+  induction H0.
+  + constructor. rewrite (proj1 H) in H0; auto.
+  + rewrite (edge_si g1 g2) in H0 by auto.
+    apply ind.reachable_cons with y; auto.
+Qed.
+

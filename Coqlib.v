@@ -550,6 +550,26 @@ Proof.
     tauto.
 Qed.
 
+Lemma exists_list_dec: forall A (l: list A) P,
+  (forall x, {P x} + {~ P x}) ->
+  ({exists x, In x l /\ P x} + {~ exists x, In x l /\ P x}).
+Proof.
+  intros.
+  induction l.
+  + right; intros [x [? ?]].
+    inversion H.
+  + destruct (X a); [| destruct IHl]; [left | left | right].
+    - exists a; split; auto.
+      left; auto.
+    - destruct e as [? [? ?]].
+      exists x; split; auto.
+      right; auto.
+    - intros [? [? ?]].
+      destruct H; [subst; tauto |].
+      apply n0; exists x.
+      tauto.
+Qed.
+
 Arguments Included {U} B C.
 Arguments Same_set {U} B C.
 
