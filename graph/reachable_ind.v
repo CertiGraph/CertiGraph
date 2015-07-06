@@ -79,12 +79,17 @@ Proof.
   unfold edge. tauto.
 Qed.
  
-Lemma reachable_ind: forall x y, reachable G x y -> x = y \/ exists z, edge G x z /\ reachable G z y.
+Lemma reachable_ind: forall x y, reachable G x y -> x = y \/ exists z, edge G x z /\ x <> z /\ reachable G z y.
 Proof.
   intros.
-  rewrite reachable_ind_reachable in *.
-  destruct H; [left | right]; auto.
-  exists y. rewrite reachable_ind_reachable in *; auto.
+  rewrite reachable_ind_reachable in H.
+  induction H.
+  + left; auto.
+  + destruct (t_eq_dec x y).
+    - subst y.
+      apply IHreachable.
+    - right.
+      exists y. rewrite reachable_ind_reachable in *; auto.
 Qed.
 
 Lemma closed_edge_closed_reachable: forall l,
@@ -114,10 +119,10 @@ Lemma reachable_list_bigraph_in:
     forall y, reachable G x y <-> x = y \/ In y l1 \/ In y l2.
 Proof.
   intros. specialize (H0 y). specialize (H1 y). split; intro.
-  + apply reachable_ind in H3. destruct H3 as [? | [z [[? [? ?]] ?]]]; auto.
+  + apply reachable_ind in H3. destruct H3 as [? | [z [[? [? ?]] [? ?]]]]; auto.
     rewrite H2 in *. destruct H5.
-    - subst. rewrite <- H0 in H6. auto.
-    - subst. rewrite <- H1 in H6. auto.
+    - subst. rewrite <- H0 in H7. auto.
+    - subst. rewrite <- H1 in H7. auto.
   + destruct H3 as [? | [? | ?]].
     - subst. apply reachable_by_reflexive. split; auto.
     - rewrite H0 in H3. apply reachable_by_cons with l.

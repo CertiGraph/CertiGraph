@@ -109,6 +109,8 @@ Definition edge {V E : Type} (G : PreGraph V E) (n n' : V) : Prop :=
 
 Notation " g |= n1 ~> n2 " := (edge g n1 n2) (at level 1).
 
+Definition edge_list {V E : Type} (G : PreGraph V E) n l : Prop := forall n', In n' l <-> edge G n n'.
+
 Definition out_edges {Vertex Edge: Type} (pg: PreGraph Vertex Edge) x: Ensemble Edge := fun e => evalid e /\ src e = x.
 
 Definition in_edges {Vertex Edge: Type} (pg: PreGraph Vertex Edge) x: Ensemble Edge := fun e => evalid e /\ dst e = x.
