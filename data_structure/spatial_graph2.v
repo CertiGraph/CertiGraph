@@ -61,7 +61,7 @@ Coercion ma : Graph >-> MathGraph.
 Existing Instances pg bi ma fin.
 
 Definition gamma {SGS: SpatialGraphSetting} (G : Graph) (v: Addr) : bool * Addr * Addr := 
-  (if projT2 (marked G) v then true else false, dst (left_out_edge v), dst (right_out_edge v)).
+  (if node_pred_dec (marked G) v then true else false, dst (left_out_edge v), dst (right_out_edge v)).
 
 (*
 Lemma update_bigraph_gamma {A D: Type} {EV: EqDec A} {PG : PreGraph A D}:
@@ -533,9 +533,7 @@ Section SpatialGraph.
           f_equal.
           change (marked (reachable_sub_markedgraph g1 (x :: nil)) a) with (marked g1 a) in H0.
           change (marked (reachable_sub_markedgraph g2 (x :: nil)) a) with (marked g2 a) in H0.
-          destruct (projT2 (marked g2) a), (projT2 (marked g1) a);
-          change (projT1 (marked g1) a) with (marked g1 a) in *;
-          change (projT1 (marked g2) a) with (marked g2 a) in *; tauto.
+          destruct (node_pred_dec (marked g2) a), (node_pred_dec (marked g1) a); tauto.
     Implicit Arguments vvalid [[Vertex] [Edge] [PreGraph]].
   Qed.
 

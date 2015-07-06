@@ -262,6 +262,16 @@ Qed.
 
 Hint Resolve pointer_val_val_is_pointer_or_null.
 
+Ltac rewrite_vi_graph g1 g2 H :=
+  let HH := fresh "H" in
+  assert (g1 -=- g2) as HH; [eapply H |
+    match goal with
+    | |- appcontext [graph ?sh ?x g1] =>
+           change (graph sh x g1) with (@spatial_graph2.graph (SGA_VST sh) x g1);
+           erewrite (fun x => @reachable_vi_eq (SGA_VST _) g1 g2 x HH);
+           change (@spatial_graph2.graph (SGA_VST sh) x g2) with (graph sh x g2)
+    end].
+
 Lemma body_mark: semax_body Vprog Gprog f_mark mark_spec.
 Proof.
   start_function.
@@ -271,28 +281,30 @@ Proof.
   forward_if_tac  (* if (x == 0) *)
     (PROP  (pointer_val_val x <> nullval)
      LOCAL (temp _x (pointer_val_val x))
-     SEP   (`(data_at sh node_type (repinj node_type (Int.repr (if d then 1 else 0), (l, r))) (pointer_val_val x)))).
+     SEP   (`(graph sh x g))).
   admit. (* type checking for pointer comparable. *)
   Focus 1. { (* if-then branch *)
     destruct_pointer_val x.
     forward. (* return *)
-SearchAbout mark.
-    rewrite (mark_null is_one g g') by auto.
-    auto.
+    rewrite_vi_graph g g' @mark_invalid; [| eauto |].
+    + intro.
+      apply valid_not_null in H3; auto.
+      unfold MG_Graph; simpl marked_graph.pg.
+      rewrite is_null_def.
+      auto.
+    + auto.
   } Unfocus.
   Focus 1. { (* if-else branch *)
     forward. (* skip; *)
     entailer!.
   } Unfocus.
   normalize.
-  destruct_pointer_val x; clear H1.
+  destruct_pointer_val x; clear H2.
 
-  remember (gamma (@bm_bi _ _ _ _ g) x) as dlr eqn:?H.
-  destruct dlr as [[d l] r].
   localize
    (PROP  ()
     LOCAL (temp _x (pointer_val_val x))
-    SEP   (`(data_at sh node_type (Vint d, (pointer_val_val l, pointer_val_val r))
+    SEP   (`(data_at sh node_type (Vint (Int.repr (if d then 1 else 0)), (pointer_val_val l, pointer_val_val r))
               (pointer_val_val x)))).
   (* localize *)
 
@@ -305,31 +317,39 @@ SearchAbout mark.
   intro root_mark_old; autorewrite with subst; clear root_mark_old.
   (* root_mark = x -> m; *)
 
-  unlocalize (PROP  ()  LOCAL  (temp _root_mark (Vint d); temp _x (pointer_val_val x))  SEP  (`(graph sh x g))).
+  unlocalize (PROP  ()  LOCAL  (temp _root_mark (Vint (Int.repr (if d then 1 else 0))); temp _x (pointer_val_val x))  SEP  (`(graph sh x g))).
   Grab Existential Variables.
   Focus 6. { solve_split_by_closed. } Unfocus.
   Focus 2. { entailer!. } Unfocus.
   Focus 3. { entailer!. } Unfocus.
   Focus 3. { repeat constructor; auto with closed. } Unfocus.
-  Focus 2. { entailer!. apply graph_ramify_aux0; auto. } Unfocus.
+  Focus 2. { entailer!. admit. (* apply graph_ramify_aux0; auto.*) } Unfocus.
   (* unlocalize *)
 
   unfold semax_ram.
   forward_if_tac  (* if (root_mark == 1) *)
-    (PROP  (~ is_one d)
-      LOCAL  (temp _root_mark (Vint d); temp _x (pointer_val_val x))
+    (PROP  (d = false)
+      LOCAL  (temp _root_mark (Vint (Int.repr (if d then 1 else 0))); temp _x (pointer_val_val x))
       SEP  (`(graph sh x g))).
   Focus 1. { (* if-then branch *)
     forward. (* return *)
-    erewrite (mark_marked is_one g g') by (try unfold is_one; eauto).
-    auto.
+    rewrite_vi_graph g g' @mark_marked_root; [| eauto |].
+    + clear - H1 H2.
+      unfold gamma in H1.
+      destruct d; [| inversion H2].
+      destruct (node_pred_dec (marked g) (ValidPointer b i)); [| inversion H1].
+      auto.
+    + auto.
   } Unfocus.
   Focus 1. { (* if-else branch *)
     forward. (* skip; *)
     entailer!.
+    destruct d; congruence.
   } Unfocus.
 
-  destruct (mark1_exists is_one g x) as [g1 ?H].
+  normalize.
+  subst d.
+  destruct (mark1_exists g x) as [g1 ?H].
   normalize.
   localize
    (PROP  ()
