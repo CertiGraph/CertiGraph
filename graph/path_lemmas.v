@@ -537,6 +537,18 @@ Section GraphPath.
       tauto.
   Qed.
 
+  Lemma FiniteGraph_EnumCovered: forall (g: Gph) (fin: FiniteGraph g) x, EnumCovered V (reachable g x).
+  Proof.
+    intros.
+    destruct fin as [[xs [? ?]] _].
+    exists xs.
+    split; auto.
+    intros y ?.
+    apply reachable_foot_valid in H1.
+    rewrite H0.
+    exact H1.
+  Qed.
+
 End GraphPath.
 
 Arguments path_glue {_} _ _.
