@@ -9,12 +9,12 @@ Require Import RamifyCoq.data_structure.spatial_graph_VST.
 Local Open Scope logic.
 
 Arguments SingleFrame' {l} {g} {s}.
+Arguments weak_valid {_} {_} _ {_} _.
+Arguments vvalid {_} {_} _ _.
 
 Existing Instance SGS_VST.
 
-Check Graph.
-
-Definition graph sh x (g: Graph): mpred := @graph (SGA_VST sh) x g.
+Notation graph sh x g := (@graph (SGA_VST sh) x g).
 
 Hypothesis graph_data_at_TT: forall sh x g d l r,
   gamma g x = (d, l, r) ->
@@ -277,6 +277,10 @@ Proof.
   start_function.
   remember (gamma g x) as dlr eqn:?H.
   destruct dlr as [[d l] r].
+  rewrite (add_andp _ _ (@graph_root_nv (SGA_VST _) _ _)).
+  normalize.
+  rename H1 into H_GAMMA; symmetry in H_GAMMA.
+  rename H2 into H_weak_valid.
 
   forward_if_tac  (* if (x == 0) *)
     (PROP  (pointer_val_val x <> nullval)
@@ -288,7 +292,7 @@ Proof.
     forward. (* return *)
     rewrite_vi_graph g g' @mark_invalid; [| eauto |].
     + intro.
-      apply valid_not_null in H3; auto.
+      apply valid_not_null in H2; auto.
       unfold MG_Graph; simpl marked_graph.pg.
       rewrite is_null_def.
       auto.
@@ -299,7 +303,16 @@ Proof.
     entailer!.
   } Unfocus.
   normalize.
-  destruct_pointer_val x; clear H2.
+  assert (vvalid g x) as H_vvalid.
+  Focus 1. {
+    destruct H_weak_valid; [| auto].
+    subst x; simpl in H1.
+    exfalso.
+    apply H1. auto.
+  } Unfocus.
+  destruct_pointer_val x. clear H1 H_weak_valid.
+  assert (H_l_weak_valid: weak_valid g l) by (eapply gamma_left_weak_valid; eauto).
+  assert (H_r_weak_valid: weak_valid g r) by (eapply gamma_right_weak_valid; eauto).
 
   localize
    (PROP  ()
@@ -317,7 +330,7 @@ Proof.
   intro root_mark_old; autorewrite with subst; clear root_mark_old.
   (* root_mark = x -> m; *)
 
-  unlocalize (PROP  ()  LOCAL  (temp _root_mark (Vint (Int.repr (if d then 1 else 0))); temp _x (pointer_val_val x))  SEP  (`(graph sh x g))).
+  unlocalize (PROP ()  LOCAL  (temp _root_mark (Vint (Int.repr (if d then 1 else 0))); temp _x (pointer_val_val x))  SEP  (`(graph sh x g))).
   Grab Existential Variables.
   Focus 6. { solve_split_by_closed. } Unfocus.
   Focus 2. { entailer!. } Unfocus.
@@ -328,16 +341,16 @@ Proof.
 
   unfold semax_ram.
   forward_if_tac  (* if (root_mark == 1) *)
-    (PROP  (d = false)
-      LOCAL  (temp _root_mark (Vint (Int.repr (if d then 1 else 0))); temp _x (pointer_val_val x))
-      SEP  (`(graph sh x g))).
+    (PROP   (d = false)
+      LOCAL (temp _x (pointer_val_val x))
+      SEP   (`(graph sh x g))).
   Focus 1. { (* if-then branch *)
     forward. (* return *)
     rewrite_vi_graph g g' @mark_marked_root; [| eauto |].
-    + clear - H1 H2.
-      unfold gamma in H1.
-      destruct d; [| inversion H2].
-      destruct (node_pred_dec (marked g) (ValidPointer b i)); [| inversion H1].
+    + clear - H1 H_GAMMA.
+      unfold gamma in H_GAMMA.
+      destruct d; [| inversion H1].
+      destruct (node_pred_dec (marked g) (ValidPointer b i)); [| inversion H_GAMMA].
       auto.
     + auto.
   } Unfocus.
@@ -349,12 +362,14 @@ Proof.
 
   normalize.
   subst d.
-  destruct (mark1_exists g x) as [g1 ?H].
-  normalize.
+  destruct (@mark1_exists (SGA_VST sh) g x H_vvalid) as [g1 ?H].
+  rewrite (weak_valid_si g g1 _ (proj1 H1)) in H_l_weak_valid.
+  rewrite (weak_valid_si g g1 _ (proj1 H1)) in H_r_weak_valid.
+  
   localize
    (PROP  ()
-    LOCAL (temp _root_mark (Vint d); temp _x (pointer_val_val x))
-    SEP   (`(data_at sh node_type (Vint d, (pointer_val_val l, pointer_val_val r))
+    LOCAL (temp _x (pointer_val_val x))
+    SEP   (`(data_at sh node_type (Vint (Int.repr 0), (pointer_val_val l, pointer_val_val r))
               (pointer_val_val x)))).
   (* localize *)
 
@@ -392,7 +407,6 @@ Proof.
    (PROP  ()
     LOCAL (temp _r (pointer_val_val r);
            temp _l (pointer_val_val l);
-           temp _root_mark (Vint d);
            temp _x (pointer_val_val x))
     SEP (`(graph sh x g1))).
   Grab Existential Variables.
@@ -400,23 +414,24 @@ Proof.
   Focus 2. { entailer!. } Unfocus.
   Focus 3. { entailer!. } Unfocus.
   Focus 3. { repeat constructor; auto with closed. } Unfocus.
-  Focus 2. { entailer!. apply graph_ramify_aux1; auto. } Unfocus.
+  Focus 2. { entailer!. admit. (* apply graph_ramify_aux1; auto. *) } Unfocus.
   (* unlocalize *)
 
   unfold semax_ram. (* should not need this *)
-  destruct (subgraph_exists is_one g1 l) as [sg1 ?H].
-  destruct (mark_exists is_one g1 l) as [g2 ?H].
-  destruct (mark_exists is_one sg1 l) as [sg2 ?H].
+  destruct (mark_exists' g1 l H_l_weak_valid) as [g2 ?H].
+  clear H_l_weak_valid.
+  rewrite (weak_valid_si g1 g2 _ (proj1 H4)) in H_r_weak_valid.
+
   localize
    (PROP  ()
     LOCAL (temp _l (pointer_val_val l))
-    SEP   (`(graph sh l sg1))).
+    SEP   (`(graph sh l g1))).
   (* localize *)
   
   apply -> ram_seq_assoc.
   eapply semax_ram_seq;
   [ repeat apply eexists_add_stats_cons; constructor
-  | forward_call' (sh, sg1, sg2, l); apply derives_refl
+  | forward_call' (sh, g1, g2, l); apply derives_refl
   | abbreviate_semax_ram].
   (* mark(l); *)
 
@@ -424,7 +439,6 @@ Proof.
    (PROP  ()
     LOCAL (temp _r (pointer_val_val r);
            temp _l (pointer_val_val l);
-           temp _root_mark (Vint d);
            temp _x (pointer_val_val x))
     SEP (`(graph sh x g2))).
   Grab Existential Variables.
@@ -433,27 +447,23 @@ Proof.
   Focus 3. { entailer!. } Unfocus.
   Focus 3. { repeat constructor; auto with closed. } Unfocus.
   Focus 2. {
-    entailer!. eapply graph_ramify_aux2; auto.
-    eapply (reachable_mark1 is_one g g1 _ _ _ H4).
-    eauto.
-    eapply gamma_reachable; left; symmetry; eauto.
+    entailer!.
+    admit. (* eapply graph_ramify_aux2; auto. *)
   } Unfocus.
   (* unlocalize *)
 
-  clear sg1 sg2 H6 H8.
   unfold semax_ram. (* should not need this *)
-  destruct (subgraph_exists is_one g2 r) as [sg2 ?H].
-  destruct (mark_exists is_one g2 r) as [g3 ?H].
-  destruct (mark_exists is_one sg2 r) as [sg3 ?H].
+  destruct (mark_exists' g2 r H_r_weak_valid) as [g3 ?H].
+  clear H_r_weak_valid.
   localize
    (PROP  ()
     LOCAL (temp _r (pointer_val_val r))
-    SEP   (`(graph sh r sg2))).
+    SEP   (`(graph sh r g2))).
   (* localize *)
   
   eapply semax_ram_seq;
   [ repeat apply eexists_add_stats_cons; constructor
-  | forward_call' (sh, sg2, sg3, r); apply derives_refl
+  | forward_call' (sh, g2, g3, r); apply derives_refl
   | abbreviate_semax_ram].
   (* mark(r); *)
 
@@ -461,7 +471,6 @@ Proof.
    (PROP  ()
     LOCAL (temp _r (pointer_val_val r);
            temp _l (pointer_val_val l);
-           temp _root_mark (Vint d);
            temp _x (pointer_val_val x))
     SEP (`(graph sh x g3))).
   Grab Existential Variables.
@@ -470,16 +479,16 @@ Proof.
   Focus 3. { entailer!. } Unfocus.
   Focus 3. { repeat constructor; auto with closed. } Unfocus.
   Focus 2. {
-    entailer!. eapply graph_ramify_aux2; auto.
-    eapply (reachable_mark is_one g1 g2 _ _ _ H7).
-    eapply (reachable_mark1 is_one g g1 _ _ _ H4).
-    eauto.
-    eapply gamma_reachable; right; symmetry; eauto.
+    entailer!.
+    admit. (* eapply graph_ramify_aux2; auto. *)
   } Unfocus.
   (* unlocalize *)
 
-  clear sg2 sg3 H6 H9.
   unfold semax_ram.
+Abort.
+(*
+  rewrite_vi_graph g3 g' @mark_mark1_mark.
   rewrite <- (mark1_mark_left_mark_right is_one g g1 g2 g3 g' x d l r) by auto.
   forward. (* ( return; ) *)
 Qed.
+*)
