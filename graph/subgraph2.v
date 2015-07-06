@@ -8,6 +8,7 @@ Require Import RamifyCoq.Coqlib.
 Require Import VST.msl.Coqlib2.
 Require Import RamifyCoq.graph.graph_model.
 Require Import RamifyCoq.graph.path_lemmas.
+Require Import RamifyCoq.graph.reachable_ind.
 
 Section SubGraph.
 
@@ -104,6 +105,25 @@ Proof.
         inversion H0.
         unfold edge, predicate_subgraph, predicate_vvalid in H; simpl in H.
         constructor; [tauto | auto].
+Qed.
+
+Lemma predicate_subgraph_reachable_included: 
+  forall (n: V), Included (reachable predicate_subgraph n) (reachable g n).
+Proof.
+  intros.
+  intro; intros.
+  unfold Ensembles.In in *.
+  rewrite reachable_ind_reachable.
+  rewrite reachable_ind_reachable in H.
+  induction H.
+  + constructor. destruct H; auto.
+  + apply ind.reachable_cons with y; auto.
+    destruct H as [[? ?] [[? ?] ?]].
+    rewrite step_spec in H4.
+    destruct H4 as [e [[? ?] [? ?]]].
+    split; [| split]; auto.
+    rewrite step_spec.
+    exists e; auto.
 Qed.
 
 End SubGraph.

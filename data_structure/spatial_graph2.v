@@ -42,7 +42,7 @@ Class Graph {SGS: SpatialGraphSetting} : Type := {
   pg: PreGraph Addr (Addr * LR);
   bi: BiGraph pg;
   ma: MathGraph pg;
-  lf: LocalFiniteGraph pg;
+  fin: FiniteGraph pg;
   mk: NodePred pg;
   is_null_def: forall x: Addr, is_null x = (x = null);
   left_out_edge_def: forall x: Addr, left_out_edge x = (x, L);
@@ -58,7 +58,7 @@ Coercion MG_Graph: Graph >-> MarkedGraph.
 Coercion pg : Graph >-> PreGraph.
 Coercion bi : Graph >-> BiGraph. 
 Coercion ma : Graph >-> MathGraph.
-Existing Instances pg bi ma lf.
+Existing Instances pg bi ma fin.
 
 Definition gamma {SGS: SpatialGraphSetting} (G : Graph) (v: Addr) : bool * Addr * Addr := 
   (if projT2 (marked G) v then true else false, dst (left_out_edge v), dst (right_out_edge v)).
@@ -158,6 +158,14 @@ Section SpatialGraph.
 
   Definition graph (x : Addr) (g: Graph) : SGA_Pred :=
     !!(x = null \/ vvalid x) && EX l : list Addr, !!reachable_list pg x l && iter_sepcon l (graph_cell g).
+
+  Lemma graph_pure: forall x g, graph x g |-- !!(x = null \/ vvalid x).
+  Proof.
+    intros.
+    unfold graph.
+    apply andp_left1.
+    auto.
+  Qed.
 
   Lemma graph_unfold_null: forall (g: Graph), graph null g = emp.
   Proof.

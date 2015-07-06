@@ -302,4 +302,19 @@ Proof.
   intro. hnf in H0. tauto.
 Qed.
 
-
+Instance LocalFiniteGraph_FiniteGraph {V E: Type} (G: PreGraph V E) {_: FiniteGraph G}: LocalFiniteGraph G.
+Proof.
+  intros.
+  destruct X as [[vs [?H ?H]] [es [?H ?H]]].
+  constructor.
+  intros.
+  exists (filter (fun e => if t_eq_dec (src e) x then true else false) es).
+  split.
+  + apply NoDup_filter; auto.
+  + intro e.
+    rewrite filter_In.
+    rewrite H2.
+    unfold Ensembles.In, out_edges.
+    destruct (t_eq_dec (src e) x); [tauto |].
+    assert (~ false = true) by congruence; tauto.
+Defined.
