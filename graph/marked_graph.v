@@ -148,20 +148,14 @@ Section MARKED_GRAPH.
     destruct H0 as [p [? [? ?]]]; exists p. split; auto. split; auto. eapply (valid_path_si _ _ g1 g2); eauto.
   Qed.
 
-  Lemma mark_exists: forall (g: Gph) {_: MathGraph g} {_: LocalFiniteGraph g} x,
-    vvalid x -> (EnumCovered V (reachable g x)) -> {g': Gph | mark g x g'}.
+  Lemma mark_exists: forall (g: Gph) x,
+    vvalid x ->
+    (forall y, {g |= x ~o~> y satisfying (unmarked g) \/ marked g y} +
+               {~ (g |= x ~o~> y satisfying (unmarked g) \/ marked g y)}) ->
+    {g': Gph | mark g x g'}.
   Proof.
     intros. destruct ((node_pred_dec (unmarked g)) x).
-    + assert (forall y, {g |= x ~o~> y satisfying (unmarked g) \/ marked g y} +
-         {~ (g |= x ~o~> y satisfying (unmarked g) \/ marked g y)}).
-      Focus 1. {
-        intros.
-        apply sumbool_dec_or.
-        + apply reachable_by_decidable; auto.
-        + apply node_pred_dec.
-      } Unfocus.
-   
-      exists (Build_MarkedGraph _ _ g (existT _ (fun y => g |= x ~o~> y satisfying (unmarked g) \/ (marked g) y) X2)). split; [| split].
+    + exists (Build_MarkedGraph _ _ g (existT _ (fun y => g |= x ~o~> y satisfying (unmarked g) \/ (marked g) y) X)). split; [| split].
       - simpl. reflexivity.
       - intros; subst; hnf. auto.
       - split; intros; subst; simpl in *; tauto.
@@ -171,7 +165,7 @@ Section MARKED_GRAPH.
       - reflexivity.
   Qed.
    
-  Lemma mark1_exists: forall (g: Gph) {_: MathGraph g} {_: LocalFiniteGraph g} x,
+  Lemma mark1_exists: forall (g: Gph) x,
                        vvalid x -> {g': Gph | mark1 g x g'}.
   Proof.
     intros. destruct ((node_pred_dec (marked g)) x).
@@ -183,7 +177,7 @@ Section MARKED_GRAPH.
         + apply t_eq_dec.
         + apply node_pred_dec.
       } Unfocus.
-      exists (Build_MarkedGraph _ _ g (existT _ (fun y => y = x \/ marked g y) X1)). split; [| split].
+      exists (Build_MarkedGraph _ _ g (existT _ (fun y => y = x \/ marked g y) X)). split; [| split].
       * simpl; reflexivity.
       * auto.
       * split; [simpl; auto |].
