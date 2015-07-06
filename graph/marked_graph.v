@@ -300,16 +300,26 @@ Section MARKED_GRAPH.
     + transitivity g2.
       - destruct H2; auto.
       - clear H0 H1 R_DEC H H2. induction H3. reflexivity. rewrite <- IHmark_list. destruct H. auto.
-    + admit.
+    + apply reachable_by_step in H4. destruct H4.
+      - subst n. destruct H2 as [_ [_ [? _]]].
+        clear R_DEC H H1. induction H3. auto.
+        apply IHmark_list. apply (mark_marked g v); auto.
+      - destruct H4 as [z [? ?]]. admit.
     + assert ((marked g1) n <-> (marked g2) n). {
         destruct H2 as [? [? [? ?]]].
         apply H7. intro. apply H4. subst. exists (n :: nil).
         split; split; simpl; auto.
         hnf. apply Forall_cons. auto. apply Forall_nil.
       } rewrite H5.
-      clear R_DEC H H1 H2 H5. induction H3. tauto. rewrite <- IHmark_list.
-      destruct H as [? [? ?]]. apply H2.
-  Admitted.
+      assert (forall x, In x l -> ~ g2 |= x ~o~> n satisfying (unmarked g2)). {
+        intros. intro. apply (mark1_reverse_unmark g1 root) in H7; auto.
+        apply H4. apply H1 in H6. apply reachable_by_cons with x; auto.
+      } clear R_DEC H H1 H2 H4 H5.
+      induction H3. tauto. rename g into g1', g2 into g3, g0 into g2. rewrite <- IHmark_list.
+      - clear IHmark_list. destruct H as [? [? ?]]. apply H2. apply H6. apply in_eq.
+      - intros. intro. eapply H6. apply in_cons. eauto.
+        apply (mark_reverse_unmarked _ v g2); auto.
+  Qed.
 
   Lemma mark_func: forall g root g1 g2,
     vvalid root ->
