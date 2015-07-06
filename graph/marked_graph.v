@@ -200,17 +200,18 @@ Section MARKED_GRAPH.
   Proof. intros. destruct H as [? _]. apply (si_reachable _ _ y) in H. destruct H. specialize (H z). specialize (H0 z). tauto. Qed.
 
   (* The second subtle lemma.  Maybe needs a better name? *)
-  Lemma mark_unmarked: forall (g1: Gph) root g2 n1 n2 {MA: MathGraph g1} {_: LocalFiniteGraph g1},
+  Lemma mark_unmarked: forall (g1: Gph) root g2 n1 n2,
                          @vvalid _ _ g1 root ->
-                         (EnumCovered V (reachable g1 root)) ->
+                         (forall y, {g1 |= root ~o~> y satisfying (unmarked g1)} +
+                                    {~ g1 |= root ~o~> y satisfying (unmarked g1)}) ->
                          mark g1 root g2 ->
                          g1 |= n1 ~o~> n2 satisfying (unmarked g1) ->
                          (g2 |= n1 ~o~> n2 satisfying (unmarked g1)) \/ (marked g2 n2).
   Proof.
-    intros until n2. intros MA LFG HH ENUMC; intros; destruct H0 as [p ?].
+    intros until n2. intros HH ENUMC; intros; destruct H0 as [p ?].
     (* This was a very handy LEM. *)
     destruct (exists_list_dec _ p (fun n => g1 |= root ~o~> n satisfying (unmarked g1))) as [?H | ?H].
-    1: apply reachable_by_decidable; auto.
+    1: apply ENUMC.
     + right. destruct H as [_ [? _]]. apply H.
       destruct H1 as [n [? ?]]. apply reachable_by_merge with n; trivial.
       destruct (reachable_by_path_split_in _ _ _ _ _ _ _ _ H0 H1) as [p1 [p2 [? [? ?]]]].
@@ -257,12 +258,14 @@ Section MARKED_GRAPH.
   | mark_list_cons: forall g g0 g1 v vs, mark g v g0 -> mark_list g0 vs g1 -> mark_list g (v :: vs) g1
   .
 
-  Lemma mark_mark1_mark: forall (g1: Gph) {LFG: LocalFiniteGraph g1} root l g2 g3,
-    vvalid root ->
-    edge_list g1 root l ->
-    mark1 g1 root g2 ->
-    mark_list g2 l g3 ->
-    mark g1 root g3.
+  Lemma mark_mark1_mark: forall (g1: Gph) root l g2 g3
+                           (R_DEC: forall x, In x l -> forall y, {g1 |= x ~o~> y satisfying (unmarked g1)} +
+                                                                 {~ g1 |= x ~o~> y satisfying (unmarked g1)}),
+                           vvalid root ->
+                           edge_list g1 root l ->
+                           mark1 g1 root g2 ->
+                           mark_list g2 l g3 ->
+                           mark g1 root g3.
   Proof.
     intros.
     split; [admit (* easy *) | split]; intros.
