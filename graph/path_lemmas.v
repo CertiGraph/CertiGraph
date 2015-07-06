@@ -549,6 +549,33 @@ Section GraphPath.
     exact H1.
   Qed.
 
+  Lemma reachable_by_step: forall (g: Gph) x y P,
+                             g |= x ~o~> y satisfying P -> x = y \/
+                                                           exists z, g |= x ~> z /\
+                                                                     g |= z ~o~> y satisfying (fun n => P n /\ n <> x).
+  Proof.
+    intros. rewrite reachable_acyclic in H. destruct (t_eq_dec x y). left; auto. right.
+    destruct H as [path [? [[? ?] [? ?]]]]. destruct path; inversion H0. subst.
+    destruct path0. inversion H1. exfalso; auto. exists v. simpl in H2. destruct H2. split; auto.
+    exists (v :: path0). simpl in H1. split; split; simpl; auto.
+    hnf in H3. hnf. rewrite Forall_forall in *. intros; split.
+    + apply H3. apply in_cons; auto.
+    + apply NoDup_cons_2 in H. intro. subst. apply H; auto.
+  Qed.
+
+  Lemma reachable_by_eq: forall (g: Gph) x y P Q,
+                                    (forall z, P z <-> Q z) ->
+                                    (g |= x ~o~> y satisfying P <-> g |= x ~o~> y satisfying Q).
+  Proof.
+    intros until y.
+    cut (forall P Q, (forall z, P z <-> Q z) ->
+                     (g |= x ~o~> y satisfying P -> g |= x ~o~> y satisfying Q)).
+    1: intros; split; apply H; firstorder.
+    intros. destruct H0 as [p [? [? ?]]].
+    exists p. do 2 (split; auto). hnf in *.
+    rewrite Forall_forall in *. intros. apply H. apply H2. auto.
+  Qed.
+
 End GraphPath.
 
 Arguments path_glue {_} _ _.
