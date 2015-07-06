@@ -547,6 +547,25 @@ Section SpatialGraph.
     + apply reachable_subgraph_derives; auto.
     + apply reachable_subgraph_derives; apply vi_sym; auto.
   Qed.
+
+  Lemma reachable_vi_eq:
+    forall (g1 g2 : Graph) x, g1 -=- g2 -> graph x g1 = graph x g2.
+  Proof.
+  Arguments vvalid {_} {_} _ _.
+    intros.
+    apply reachable_subgraph_eq.
+    destruct H.
+    split.
+    + simpl.
+      apply si_reachable_subgraph.
+      auto.
+    + intro; intros.
+      apply H0.
+      - destruct H1; tauto.
+      - destruct H2; tauto.
+  Arguments vvalid {_} {_} {_} _.
+  Qed.
+
 (*
   Instance update_graph (g: Graph) v d l r (Hi: in_math g v l r) (Hn: v <> null): Graph := {
   pg := update_PreGraph _ v d l r;
