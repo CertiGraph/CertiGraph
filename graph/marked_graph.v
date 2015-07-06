@@ -219,6 +219,41 @@ Section MARKED_GRAPH.
       rewrite unmarked_spec in *; tauto.
   Qed.
 
+  Lemma mark_invalid: forall (g1: Gph) root g2,
+                         ~ @vvalid _ _ g1 root ->
+                         mark g1 root g2 ->
+                         g1 -=- g2.
+  Proof.
+    intros.
+    destruct H0 as [? [? ?]].
+    split; [auto |].
+    intro; intros.
+    apply H2.
+    intro.
+    apply reachable_by_is_reachable in H5.
+    apply reachable_head_valid in H5.
+    tauto.
+  Qed.
+
+  Lemma mark_marked_root: forall (g1: Gph) root g2,
+                         marked g1 root ->
+                         mark g1 root g2 ->
+                         g1 -=- g2.
+  Proof.
+    intros.
+    destruct H0 as [? [? ?]].
+    split; [auto |].
+    intro; intros.
+    apply H2.
+    intro.
+    rewrite reachable_by_eq_subgraph_reachable in H5.
+    apply reachable_head_valid in H5.
+    simpl in H5.
+    unfold predicate_vvalid in H5.
+    rewrite unmarked_spec in H5.
+    tauto.
+  Qed.
+
   Require Import Classical.
   Tactic Notation "LEM" constr(v) := (destruct (classic v); auto).
 
