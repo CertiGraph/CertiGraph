@@ -290,18 +290,26 @@ Section MARKED_GRAPH.
   Lemma mark_mark1_mark: forall (g1: Gph) root l g2 g3
                            (R_DEC: forall x, In x l -> forall y, {g1 |= x ~o~> y satisfying (unmarked g1)} +
                                                                  {~ g1 |= x ~o~> y satisfying (unmarked g1)}),
-                           vvalid root ->
+                           vvalid root -> (unmarked g1) root ->
                            edge_list g1 root l ->
                            mark1 g1 root g2 ->
                            mark_list g2 l g3 ->
                            mark g1 root g3.
   Proof.
-    intros.
-    split; [admit (* easy *) | split]; intros.
-    + rewrite reachable_by_eq_subgraph_reachable in H3.
-      admit.
+    intros. split; [|split]; intros.
+    + transitivity g2.
+      - destruct H2; auto.
+      - clear H0 H1 R_DEC H H2. induction H3. reflexivity. rewrite <- IHmark_list. destruct H. auto.
     + admit.
-  Qed.
+    + assert ((marked g1) n <-> (marked g2) n). {
+        destruct H2 as [? [? [? ?]]].
+        apply H7. intro. apply H4. subst. exists (n :: nil).
+        split; split; simpl; auto.
+        hnf. apply Forall_cons. auto. apply Forall_nil.
+      } rewrite H5.
+      clear R_DEC H H1 H2 H5. induction H3. tauto. rewrite <- IHmark_list.
+      destruct H as [? [? ?]]. apply H2.
+  Admitted.
 
   Lemma mark_func: forall g root g1 g2,
     vvalid root ->
