@@ -1,8 +1,9 @@
 Require Import Coq.Sets.Ensembles.
 Require Import Coq.Sets.Finite_sets.
 Require Import RamifyCoq.sample_mark.env_mark.
-Require Import RamifyCoq.graph.graph.
-Require Import RamifyCoq.data_structure.spatial_graph.
+Require Import RamifyCoq.graph.graph_model.
+Require Import RamifyCoq.graph.marked_graph.
+Require Import RamifyCoq.data_structure.spatial_graph2.
 Require Import RamifyCoq.data_structure.spatial_graph_VST.
 
 Local Open Scope logic.
@@ -13,9 +14,11 @@ Existing Instance SGS_VST.
 
 Check Graph.
 
-Definition graph sh x (g: PreGraph _ _) {bi: BiGraph g} {ma: MathGraph g Null}: mpred :=
-  @graph (SGA_VST sh) x (Build_Graph _ g bi ma).
+Definition graph sh x (g: Graph): mpred := @graph (SGA_VST sh) x g.
 
+Hypothesis graph_data_at_TT: forall sh x g d l r,
+  gamma g x = (d, l, r) ->
+ graph sh x g |-- data_at sh node_type (repinj node_type (Int.repr (if d then 1 else 0), (l, r))) (pointer_val_val x) * TT.
 (*
 Definition Graph := @BiMathGraph pointer_val int NullPointer (@AddrDec SGS_VST).
 
@@ -27,16 +30,17 @@ Definition mark {N} {D} {null} {DEC} marked (g: Graph) (x: N) (g': Graph): Prop 
 
 Definition mark1 {N} {D} {null} {DEC} marked (g: @BiMathGraph N D null DEC) (x: N) (g': @BiMathGraph N D null DEC): Prop :=
   mark1 _ _ _ marked (@m_pg _ _ _ _ (@bm_ma _ _ _ _ g)) x (@m_pg _ _ _ _ (@bm_ma _ _ _ _ g')).
-*)
 
 Definition subgraph {N} {D} {DEC} (g: @PreGraph N D DEC) (x: N) (g': @PreGraph N D DEC) : Prop :=
   reachable_subgraph g (x :: nil) = g'.
 
 Definition is_one: Ensemble Data := fun i: int => i = Int.repr 1.
+*)
 
-Arguments mark {N} {D} {EDN} _ _ _ _.
-Arguments mark1 {N} {D} {EDN} _ _ _ _.
+Arguments mark {V} {E} _ _ _.
+Arguments mark1 {V} {E} _ _ _.
 
+(*
 Hypothesis mark_null: forall {N} {D} {DEC} marked (g g': @PreGraph N D DEC) x, ~ valid x -> mark marked g x g' -> g = g'.
 
 Hypothesis mark_marked: forall {N} {D} {DEC} (marked: Ensemble D) (g g': @PreGraph N D DEC) {bg: BiGraph g} {bg': BiGraph g'} x d l r,
@@ -104,12 +108,13 @@ Hypothesis graph_ramify_aux2: forall sh x y (g g1: @Graph (SGA_VST sh)) sg sg1,
   mark is_one sg y sg1 ->
   subgraph g y sg ->
   graph sh x g |-- graph sh y sg * (graph sh y sg1 -* graph sh x g1).
+*)
 
 Definition mark_spec :=
  DECLARE _mark
   WITH sh: share, g: Graph, g': Graph, x: pointer_val
   PRE [ _x OF (tptr (Tstruct _Node noattr))]
-          PROP  (writable_share sh; mark is_one g x g')
+          PROP  (writable_share sh; mark g x g')
           LOCAL (temp _x (pointer_val_val x))
           SEP   (`(graph sh x g))
   POST [ Tvoid ]
@@ -260,10 +265,18 @@ Hint Resolve pointer_val_val_is_pointer_or_null.
 Lemma body_mark: semax_body Vprog Gprog f_mark mark_spec.
 Proof.
   start_function.
+  remember (gamma g x) as dlr eqn:?H.
+  destruct dlr as [[d l] r].
+
   forward_if_tac  (* if (x == 0) *)
-    (PROP  (pointer_val_val x <> nullval)  LOCAL  (temp _x (pointer_val_val x))  SEP  (`(graph sh x g))); try destruct_pointer_val x.
+    (PROP  (pointer_val_val x <> nullval)
+     LOCAL (temp _x (pointer_val_val x))
+     SEP   (`(data_at sh node_type (repinj node_type (Int.repr (if d then 1 else 0), (l, r))) (pointer_val_val x)))).
+  admit. (* type checking for pointer comparable. *)
   Focus 1. { (* if-then branch *)
+    destruct_pointer_val x.
     forward. (* return *)
+SearchAbout mark.
     rewrite (mark_null is_one g g') by auto.
     auto.
   } Unfocus.

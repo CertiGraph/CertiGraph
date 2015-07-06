@@ -8,6 +8,7 @@ Require Import RamifyCoq.graph.graph_model.
 Require Import RamifyCoq.graph.path_lemmas. Import RamifyCoq.graph.path_lemmas.PathNotation.
 Require Import RamifyCoq.graph.reachable_computable.
 Require Import RamifyCoq.graph.reachable_ind.
+Require Import RamifyCoq.graph.subgraph2.
 
 (******************************************
 
@@ -251,41 +252,76 @@ Section MARKED_GRAPH.
     rewrite unmarked_spec in *; tauto.
   Qed.
 
+  Inductive mark_list: Gph -> list V -> Gph -> Prop :=
+  | mark_list_nil: forall g, mark_list g nil g
+  | mark_list_cons: forall g g0 g1 v vs, mark g v g0 -> mark_list g0 vs g1 -> mark_list g (v :: vs) g1
+  .
+
+  Lemma mark_mark1_mark: forall (g1: Gph) {LFG: LocalFiniteGraph g1} root l g2 g3,
+    vvalid root ->
+    edge_list g1 root l ->
+    mark1 g1 root g2 ->
+    mark_list g2 l g3 ->
+    mark g1 root g3.
+  Proof.
+    intros.
+    split; [admit (* easy *) | split]; intros.
+    + rewrite reachable_by_eq_subgraph_reachable in H3.
+      admit.
+    + admit.
+  Qed.
+
+  Lemma mark_func: forall g root g1 g2,
+    vvalid root ->
+    mark g root g1 ->
+    mark g root g2 ->
+    g1 -=- g2.
+  Proof.
+    intros.
+    split.
+    + destruct H0, H1.
+      rewrite <- H0; auto.
+    + intro; intros.
+  Abort.
 
 (*
-
   (* Here is where we specialize to bigraphs, at least at root *)
-  Definition node_connected_two (g : Gph) (root left right : N) : Prop :=
+  Definition node_connected_two (g : Gph) (root left right : V) : Prop :=
     edge g root left /\ edge g root right /\ forall n', edge g root n' -> n' = left \/ n' = right.
 
   Lemma node_connected_two_eq:
     forall (g1 g2 : Gph) root l r, g1 ~=~ g2 -> node_connected_two g1 root l r -> node_connected_two g2 root l r.
   Proof.
-    intros. destruct (H root). destruct H0 as [[? [? ?]] [[? [? ?]] ?]]. split. split. tauto. split. destruct (H l); tauto.
-    rewrite <- H2. auto. split. split. tauto. split. destruct (H r); tauto. rewrite <- H2; auto. intros.
-    destruct H9 as [? [? ?]]. assert (g1 |= root ~> n'). split. tauto. split. destruct (H n'). tauto. rewrite H2. auto.
-    specialize (H8 n' H12). auto.
+    intros. pose proof H; destruct H. pose proof (H root); pose proof (H l); pose proof (H r).
+    destruct H0 as [? [? ?]].
+    split; [| split].
+    + rewrite <- (edge_si g1 g2) by auto; auto.
+    + rewrite <- (edge_si g1 g2) by auto; auto.
+    + intros.
+      rewrite <- (edge_si g1 g2) in H8; auto.
   Qed.
 
-  Ltac break_unmark := match goal with
-                              | [H1: mark1 ?g1 ?root _, H2: ?g1 |= ?root ~o~> _ satisfying unmarked |- _] =>
-                                destruct (mark1_unmarked _ _ _ _ H1 H2)
-                              | [H1: mark ?g1 _ _, H2: ?g1 |= _ ~o~> _ satisfying unmarked |- _] =>
-                                destruct (mark_unmarked _ _ _ _ _ H1 H2)
-                       end.
+  Ltac break_unmark :=
+    match goal with
+    | [H1: mark1 ?g1 ?root _, H2: (@pg _ _ ?g1) |= ?root ~o~> _ satisfying (app_node_pred (unmarked _)) |- _] =>
+      destruct (mark1_unmarked _ _ _ _ H1 H2)
+    | [H1: mark ?g1 _ _, H2: (@pg _ _ ?g1) |= _ ~o~> _ satisfying (app_node_pred (unmarked _)) |- _] =>
+      destruct (mark_unmarked _ _ _ _ _ H1 H2)
+    end.
 
-  Lemma root_neq: forall g1 g2 root n, mark1 g1 root g2 -> node_prop g1 unmarked root ->
-                                       (~ g1 |= root ~o~> n satisfying unmarked) -> root <> n.
+
+  Lemma root_neq: forall g1 g2 root n, mark1 g1 root g2 -> unmarked g1 root ->
+                                       (~ g1 |= root ~o~> n satisfying (unmarked g1)) -> root <> n.
   Proof. repeat intro; subst; apply H1. apply reachable_by_reflexive; split; auto. destruct H as [? [? [? ?]]]; auto. Qed.
 
   Ltac structure_id_3 :=
     match goal with
-      | [H1 : mark1 ?g1 _ ?g2, H2 : mark ?g2 _ ?g3, H3 : mark ?g3 _ ?g4 |- ?g1 ~=~ ?g4]
-        => destruct H1, H2, H3; apply (si_trans H1); apply (si_trans H2); auto
-      | [H1 : mark ?g1 _ ?g2, H2 : mark1 ?g2 _ ?g3, H3 : mark ?g3 _ ?g4 |- ?g1 ~=~ ?g4]
-        => destruct H1, H2, H3; apply (si_trans H1); apply (si_trans H2); auto
-      | [H1 : mark ?g1 _ ?g2, H2 : mark ?g2 _ ?g3, H3 : mark1 ?g3 _ ?g4 |- ?g1 ~=~ ?g4]
-        => destruct H1, H2, H3; apply (si_trans H1); apply (si_trans H2); auto
+      | [H1 : mark1 ?g1 _ ?g2, H2 : mark ?g2 _ ?g3, H3 : mark ?g3 _ ?g4 |- (@pg _ _ ?g1) ~=~ (@pg _ _ ?g4)]
+        => destruct H1, H2, H3; apply (si_trans _ _ _ H1); apply (si_trans _ _ _ H2); auto
+      | [H1 : mark ?g1 _ ?g2, H2 : mark1 ?g2 _ ?g3, H3 : mark ?g3 _ ?g4 |- @pg _ _ ?g1 ~=~ @pg _ _ ?g4]
+        => destruct H1, H2, H3; apply (si_trans _ _ _ H1); apply (si_trans _ _ _ H2); auto
+      | [H1 : mark ?g1 _ ?g2, H2 : mark ?g2 _ ?g3, H3 : mark1 ?g3 _ ?g4 |- @pg _ _ ?g1 ~=~ @pg _ _ ?g4]
+        => destruct H1, H2, H3; apply (si_trans _ _ _ H1); apply (si_trans _ _ _ H2); auto
     end.
 
   Ltac reverse_unmark :=
@@ -298,17 +334,29 @@ Section MARKED_GRAPH.
 
   Ltac node_mark :=
     match goal with
-      | [H : mark1 _ _ ?g |- node_prop ?g marked _] => eapply mark1_marked; eauto
-      | [H : mark _ _ ?g |- node_prop ?g marked _] => eapply mark_marked; eauto
+      | [H : mark1 ?g' _ ?g |- app_node_pred (marked ?g) _] => eapply (mark1_marked g' _ g H); eauto
+      | [H : mark ?g' _ ?g |- app_node_pred (marked ?g) _] => apply (mark_marked g' _ g H); eauto
     end.
 
   Lemma mark_root_left_right: forall g1 g2 g3 g4 root left right,
-                                node_prop g1 unmarked root -> node_connected_two g1 root left right ->
+                                unmarked g1 root -> node_connected_two g1 root left right ->
                                 mark1 g1 root g2 -> mark g2 left g3 -> mark g3 right g4 -> mark g1 root g4.
   Proof.
-    split. structure_id_3. split; intros.
-    break_unmark. subst. do 2 node_mark. hnf in H1. tauto. destruct H5 as [x [? ?]]. destruct H0 as [? [? ?]].
-    apply H8 in H5. destruct H5; subst. node_mark. destruct H2 as [? [? ?]]. auto. clear H4; break_unmark.
+    split; [structure_id_3 |].
+    split; intros.
+    + break_unmark.
+      - subst. do 2 node_mark. hnf in H1. tauto.
+      - destruct H5 as [x [? ?]]. destruct H0 as [? [? ?]].
+        apply H8 in H5. destruct H5; subst.
+        * node_mark. destruct H2 as [? [? ?]]. auto.
+        * clear H4.
+Print mark_unmarked.
+match goal with
+   | [H1: mark ?g1 _ _, H2: (@pg _ _ ?g1) |= _ ~o~> _ satisfying (app_node_pred (unmarked _)) |- _] =>
+      destruct (mark_unmarked _ _ _ _ _ H1 H2)
+end.
+
+ break_unmark.
     destruct H3 as [? [? ?]]. auto. node_mark. assert (root <> n) by (apply (root_neq g1 g2); auto).
     assert (~ g2 |= left ~o~> n satisfying unmarked). intro; apply H4. destruct H0. reverse_unmark.
     apply reachable_by_cons with left; auto. assert (~ g3 |= right ~o~> n satisfying unmarked). intro. apply H4.
