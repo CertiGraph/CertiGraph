@@ -63,6 +63,56 @@ Existing Instances pg bi ma fin.
 Definition gamma {SGS: SpatialGraphSetting} (G : Graph) (v: Addr) : bool * Addr * Addr := 
   (if node_pred_dec (marked G) v then true else false, dst (left_out_edge v), dst (right_out_edge v)).
 
+Lemma weak_valid_si: forall {SGS: SpatialGraphSetting} (g1 g2: Graph) n, g1 ~=~ g2 -> (@weak_valid _ _ g1 _ n <-> @weak_valid _ _ g2 _ n).
+Proof.
+  intros.
+  unfold weak_valid.
+  rewrite !is_null_def.
+  destruct H as [? _].
+  rewrite H.
+  reflexivity.
+Qed.
+
+Lemma gamma_step: forall {SGS: SpatialGraphSetting} (g : Graph) x d l r, vvalid x -> gamma g x = (d, l, r) -> forall y, step g x y <-> y = l \/ y = r.
+Proof.
+  intros. unfold gamma in H0; inversion H0; subst.
+  rewrite step_spec; split; intros.
+  + destruct H1 as [? [? [? ?]]].
+    rewrite only_two_edges in H2.
+    destruct H2; subst; auto.
+  + destruct H1.
+    - exists (left_out_edge x).
+      apply left_valid in H.
+      rewrite left_sound; auto.
+    - exists (right_out_edge x).
+      apply right_valid in H.
+      rewrite right_sound; auto.
+Qed.
+
+Lemma gamma_left_weak_valid: forall {SGS: SpatialGraphSetting} (g : Graph) x d l r, vvalid x -> gamma g x = (d, l, r) -> weak_valid l.
+Proof.
+  intros.
+  assert (snd (fst (gamma g x)) = l) by (rewrite H0; auto).
+  clear H0.
+  unfold gamma in H1; simpl in H1.
+  pose proof valid_graph (left_out_edge x).
+  spec H0; [apply left_valid; auto |].
+  rewrite <- H1.
+  simpl in H0; tauto.
+Qed.
+
+Lemma gamma_right_weak_valid: forall {SGS: SpatialGraphSetting} (g : Graph) x d l r, vvalid x -> gamma g x = (d, l, r) -> weak_valid r.
+Proof.
+  intros.
+  assert (snd (gamma g x) = r) by (rewrite H0; auto).
+  clear H0.
+  unfold gamma in H1; simpl in H1.
+  pose proof valid_graph (right_out_edge x).
+  spec H0; [apply right_valid; auto |].
+  rewrite <- H1.
+  simpl in H0; tauto.
+Qed.
+
 (*
 Lemma update_bigraph_gamma {A D: Type} {EV: EqDec A} {PG : PreGraph A D}:
   forall (g: BiGraph PG) (v: A) (d: D) (l r: A), gamma (update_BiGraph g v d l r) v = (d, l, r).
@@ -123,22 +173,6 @@ Section SpatialGraph.
 
   Context {SGA : SpatialGraphAssum}.
 
-  Lemma gamma_step: forall g x d l r, vvalid x -> gamma g x = (d, l, r) -> forall y, step g x y <-> y = l \/ y = r.
-  Proof.
-    intros. unfold gamma in H0; inversion H0; subst.
-    rewrite step_spec; split; intros.
-    + destruct H1 as [? [? [? ?]]].
-      rewrite only_two_edges in H2.
-      destruct H2; subst; auto.
-    + destruct H1.
-      - exists (left_out_edge x).
-        apply left_valid in H.
-        rewrite left_sound; auto.
-      - exists (right_out_edge x).
-        apply right_valid in H.
-        rewrite right_sound; auto.
-  Qed.
-
   Definition graph_cell (g: Graph) (v : Addr) : SGA_Pred := trinode v (gamma g v).
 
   Lemma precise_graph_cell: forall g v, precise (graph_cell g v).
@@ -158,14 +192,6 @@ Section SpatialGraph.
 
   Definition graph (x : Addr) (g: Graph) : SGA_Pred :=
     !!(x = null \/ vvalid x) && EX l : list Addr, !!reachable_list pg x l && iter_sepcon l (graph_cell g).
-
-  Lemma graph_pure: forall x g, graph x g |-- !!(x = null \/ vvalid x).
-  Proof.
-    intros.
-    unfold graph.
-    apply andp_left1.
-    auto.
-  Qed.
 
   Lemma graph_unfold_null: forall (g: Graph), graph null g = emp.
   Proof.
@@ -562,6 +588,40 @@ Section SpatialGraph.
       - destruct H1; tauto.
       - destruct H2; tauto.
   Arguments vvalid {_} {_} {_} _.
+  Qed.
+
+  Lemma mark1_exists: forall (g: Graph) x, vvalid x -> {g': Graph | mark1 g x g'}.
+  Proof.
+    intros.
+    destruct (mark1_exists g x H) as [marked' ?].
+    exists (Build_Graph SG_Setting pg bi ma fin marked' is_null_def left_out_edge_def right_out_edge_def).
+    exact m.
+  Qed.
+
+  Lemma mark_exists: forall (g: Graph) x, vvalid x -> {g': Graph | mark g x g'}.
+  Proof.
+    intros.
+    destruct (mark_exists g x H) as [marked' ?].
+    + intros; apply reachable_by_decidable.
+      - exact ma.
+      - apply LocalFiniteGraph_FiniteGraph.
+        exact fin.
+      - auto.
+      - apply FiniteGraph_EnumCovered.
+        exact fin.
+    + exists (Build_Graph SG_Setting pg bi ma fin marked' is_null_def left_out_edge_def right_out_edge_def).
+      exact m.
+  Qed.
+
+  Lemma mark_exists': forall (g: Graph) x, weak_valid x -> {g': Graph | mark g x g'}.
+  Proof.
+    intros.
+    apply null_or_valid in H.
+    destruct H.
+    + exists g.
+      apply mark_invalid_refl.
+      intro; eapply valid_not_null; eauto.
+    + apply mark_exists; auto.
   Qed.
 
 (*

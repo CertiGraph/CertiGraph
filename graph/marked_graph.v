@@ -150,26 +150,31 @@ Section MARKED_GRAPH.
 
   Lemma mark_exists: forall (g: Gph) x,
     vvalid x ->
-    (forall y, {g |= x ~o~> y satisfying (unmarked g) \/ marked g y} +
-               {~ (g |= x ~o~> y satisfying (unmarked g) \/ marked g y)}) ->
-    {g': Gph | mark g x g'}.
+    (forall y, {g |= x ~o~> y satisfying (unmarked g)} +
+               {~ (g |= x ~o~> y satisfying (unmarked g))}) ->
+    {marked': NodePred pg | mark g x (Build_MarkedGraph _ _ pg marked')}.
   Proof.
     intros. destruct ((node_pred_dec (unmarked g)) x).
-    + exists (Build_MarkedGraph _ _ g (existT _ (fun y => g |= x ~o~> y satisfying (unmarked g) \/ (marked g) y) X)). split; [| split].
+Print sumbool_dec_or.
+Print NodePred.
+    + exists (existT (fun P => forall x, {P x} + {~ P x})
+                     (fun y => g |= x ~o~> y satisfying (unmarked g) \/ (marked g) y)
+                     (fun y => sumbool_dec_or (X y) (node_pred_dec (marked g) y))).
+      split; [| split].
       - simpl. reflexivity.
       - intros; subst; hnf. auto.
       - split; intros; subst; simpl in *; tauto.
-    + exists g. split. reflexivity. split; intros.
+    + exists (marked g). split. reflexivity. split; intros.
       - destruct H0 as [path ?]. apply (reachable_by_path_In _ _ _ _ _ _ _ x) in H0.
         hnf in H0. tauto. destruct H0 as [[? _] _]. destruct path; simpl in H0; inversion H0. apply in_eq.
       - reflexivity.
   Qed.
    
   Lemma mark1_exists: forall (g: Gph) x,
-                       vvalid x -> {g': Gph | mark1 g x g'}.
+                       vvalid x -> {marked': NodePred pg | mark1 g x (Build_MarkedGraph _ _ pg marked')}.
   Proof.
     intros. destruct ((node_pred_dec (marked g)) x).
-    + exists g. split. reflexivity. split; auto. split; [exact a |]. intros; reflexivity.
+    + exists (marked g). split. reflexivity. split; auto. split; [exact a |]. intros; reflexivity.
     + assert (forall y, {y = x \/ marked g y} + {~ (y = x \/ marked g y)}).
       Focus 1. {
         intros.
@@ -177,7 +182,7 @@ Section MARKED_GRAPH.
         + apply t_eq_dec.
         + apply node_pred_dec.
       } Unfocus.
-      exists (Build_MarkedGraph _ _ g (existT _ (fun y => y = x \/ marked g y) X)). split; [| split].
+      exists (existT _ (fun y => y = x \/ marked g y) X). split; [| split].
       * simpl; reflexivity.
       * auto.
       * split; [simpl; auto |].
@@ -233,6 +238,21 @@ Section MARKED_GRAPH.
     apply reachable_by_is_reachable in H5.
     apply reachable_head_valid in H5.
     tauto.
+  Qed.
+
+  Lemma mark_invalid_refl: forall (g: Gph) root,
+                         ~ @vvalid _ _ g root ->
+                         mark g root g.
+  Proof.
+    intros.
+    split; [reflexivity |].
+    split.
+    + intros.
+      apply reachable_by_is_reachable in H0.
+      apply reachable_head_valid in H0.
+      tauto.
+    + intros.
+      reflexivity.
   Qed.
 
   Lemma mark_marked_root: forall (g1: Gph) root g2,
