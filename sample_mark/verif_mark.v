@@ -492,3 +492,56 @@ Abort.
   forward. (* ( return; ) *)
 Qed.
 *)
+
+
+
+(*
+
+  Lemma mark_unmarked: forall (g1: Gph) root g2 n1 n2,
+                         @vvalid _ _ g1 root ->
+                         (forall y, {g1 |= root ~o~> y satisfying (unmarked g1)} +
+                                    {~ g1 |= root ~o~> y satisfying (unmarked g1)}) ->
+                         mark g1 root g2 ->
+                         g1 |= n1 ~o~> n2 satisfying (unmarked g1) ->
+                         (g2 |= n1 ~o~> n2 satisfying (unmarked g2)) \/ (marked g2 n2).
+  Proof.
+    intros until n2. intros HH ENUMC; intros. destruct H0 as [p ?].
+    (* This was a very handy LEM. *)
+    destruct (exists_list_dec _ p (fun n => g1 |= root ~o~> n satisfying (unmarked g1))) as [?H | ?H].
+    1: apply ENUMC.
+    + right. destruct H as [_ [? _]]. apply H.
+      destruct H1 as [n [? ?]]. apply reachable_by_merge with n; trivial.
+      destruct (reachable_by_path_split_in _ _ _ _ _ _ _ _ H0 H1) as [p1 [p2 [? [? ?]]]].
+      exists p2. trivial.
+    + left. exists p. destruct H0. split; trivial. clear H0.
+      destruct H2. destruct H as [? [_ ?]]. split.
+      rewrite <- (valid_path_si _ _ g1 g2); auto.
+      unfold path_prop in *; rewrite Forall_forall in *.
+      intros ? ?. specialize (H2 x H4). specialize (H3 x).
+      spec H3. intro. apply H1. exists x. tauto.
+      rewrite unmarked_spec in *; tauto.
+  Qed.
+
+  Lemma mark_unmarked_strong: forall (g1: Gph) root g2 n1 n2,
+                         @vvalid _ _ g1 root ->
+                         (forall y, {g1 |= root ~o~> y satisfying (unmarked g1)} +
+                                    {~ g1 |= root ~o~> y satisfying (unmarked g1)}) ->
+                         mark g1 root g2 ->
+                         g1 |= n1 ~o~> n2 satisfying (unmarked g1) ->
+                         {g2 |= n1 ~o~> n2 satisfying (unmarked g2)} +
+                         {~ g2 |= n1 ~o~> n2 satisfying (unmarked g2)}.
+  Proof.
+    intros.
+    pose proof mark_unmarked _ _ _ _ _ H X H0 H1.
+    destruct (node_pred_dec (marked g2) n2); [| left; tauto].
+    right.
+    intro.
+    rewrite reachable_by_eq_subgraph_reachable in H3.
+    apply reachable_foot_valid in H3.
+    simpl in H3.
+    destruct H3.
+    rewrite unmarked_spec in H4; tauto.
+  Qed.     
+
+
+*)
