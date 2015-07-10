@@ -2,6 +2,8 @@ Require Import Coq.Logic.ProofIrrelevance.
 Require Import Coq.Sets.Ensembles.
 Require Import Coq.Sets.Finite_sets.
 Require Import Coq.Lists.List.
+Require Import Coq.Classes.RelationClasses.
+
 Require Import RamifyCoq.Coqlib.
 
 Lemma Union_iff: forall U A B x, Ensembles.In U (Union U A B) x <-> Ensembles.In U A x \/ Ensembles.In U B x.
@@ -168,7 +170,7 @@ Proof.
   pose proof only_two_edges x e.
   destruct (t_eq_dec e (left_out_edge x)); [left | right]; tauto.
 Qed.
-  
+
 (******************************************
 
 Properties
@@ -235,55 +237,6 @@ Proof.
   destruct H2; rewrite <- H2; auto.
 Qed.
 
-Definition structurally_identical {V E: Type} (G1 G2: PreGraph V E): Prop :=
-  (forall v : V, (@vvalid V E G1 v <-> @vvalid V E G2 v)) /\
-  (forall e : E, (@evalid V E G1 e <-> @evalid V E G2 e)) /\
-  (forall e : E, @src V E G1 e = @src V E G2 e) /\
-  (forall e : E, @dst V E G1 e = @dst V E G2 e).
-
-Notation "g1 '~=~' g2" := (structurally_identical g1 g2) (at level 1).
-
-Lemma si_refl: forall {V E : Type} (G : PreGraph V E), G ~=~ G.
-Proof. intros; repeat split; auto. Qed.
-
-Lemma si_sym: forall {V E : Type} (G1 G2: PreGraph V E), G1 ~=~ G2 -> G2 ~=~ G1.
-Proof. intros; destruct H as [? [? [? ?]]]; split; [| split; [| split]]; auto; firstorder. Qed.
-
-Lemma si_trans: forall {V E : Type} (G1 G2 G3: PreGraph V E), G1 ~=~ G2 -> G2 ~=~ G3 -> G1 ~=~ G3.
-Proof.
-  intros; destruct H as [? [? [? ?]]], H0 as [? [? [? ?]]].
-  split; [| split; [| split]]; auto; firstorder;
-  specialize (H2 e); specialize (H3 e); specialize (H4 e); specialize (H5 e); congruence.
-Qed.
-
-Add Parametric Relation {V E : Type} : (PreGraph V E) structurally_identical
-    reflexivity proved by si_refl
-    symmetry proved by si_sym
-    transitivity proved by si_trans as si_equal.
-
-Lemma step_si {V E : Type}:
-  forall (g1 g2 : PreGraph V E) (n n' : V), g1 ~=~ g2 -> (step g1 n n' <-> step g2 n n').
-Proof.
-  cut (forall (g1 g2 : PreGraph V E) (n n' : V), g1 ~=~ g2 -> step g1 n n' -> step g2 n n').
-  1: intros; split; apply H; [eauto | symmetry; auto].
-  intros.
-  rewrite step_spec in H0 |- *.
-  destruct H as [? [? [? ?]]].
-  destruct H0 as [e [? [? ?]]]; exists e.
-  rewrite <- H1, <- H2, <- H3.
-  auto.
-Qed.
-
-Lemma edge_si {V E : Type}:
-  forall (g1 g2 : PreGraph V E) (n n' : V), g1 ~=~ g2 -> (g1 |= n ~> n' <-> g2 |= n ~> n').
-Proof.
-  intros; unfold edge in *.
-  pose proof proj1 H n.
-  pose proof proj1 H n'.
-  pose proof step_si _ _ n n' H.
-  tauto.
-Qed.
-
 Definition negateP {V E} {g: PreGraph V E} (p : NodePred g) : NodePred g.
 Proof.
   exists (Complement V (projT1 p)).
@@ -318,3 +271,74 @@ Proof.
     destruct (t_eq_dec (src e) x); [tauto |].
     assert (~ false = true) by congruence; tauto.
 Defined.
+
+(******************************************
+
+Lemmas about structurally identical
+
+******************************************)
+
+Section StructurallyIdentical.
+
+Local Arguments vvalid {_} {_} _ _.
+Local Arguments evalid {_} {_} _ _.
+Local Arguments src {_} {_} _ _.
+Local Arguments dst {_} {_} _ _.
+Local Arguments is_null {_} {_} _ {_} _.
+
+Definition structurally_identical {V E: Type} (G1 G2: PreGraph V E): Prop :=
+  (forall v : V, (vvalid G1 v <-> vvalid G2 v)) /\
+  (forall e : E, (evalid G1 e <-> evalid G2 e)) /\
+  (forall e : E, src G1 e = src G2 e) /\
+  (forall e : E, dst G1 e = dst G2 e).
+
+Notation "g1 '~=~' g2" := (structurally_identical g1 g2) (at level 1).
+
+Lemma si_refl: forall {V E : Type} (G : PreGraph V E), G ~=~ G.
+Proof. intros; repeat split; auto. Qed.
+
+Lemma si_sym: forall {V E : Type} (G1 G2: PreGraph V E), G1 ~=~ G2 -> G2 ~=~ G1.
+Proof. intros; destruct H as [? [? [? ?]]]; split; [| split; [| split]]; auto; firstorder. Qed.
+
+Lemma si_trans: forall {V E : Type} (G1 G2 G3: PreGraph V E), G1 ~=~ G2 -> G2 ~=~ G3 -> G1 ~=~ G3.
+Proof.
+  intros; destruct H as [? [? [? ?]]], H0 as [? [? [? ?]]].
+  split; [| split; [| split]]; auto; firstorder;
+  specialize (H2 e); specialize (H3 e); specialize (H4 e); specialize (H5 e); congruence.
+Qed.
+
+Instance si_Equiv {V E : Type}: Equivalence (@structurally_identical V E).
+Proof.
+  split.
+  + intro; apply si_refl.
+  + intro; apply si_sym.
+  + intro; apply si_trans.
+Defined.
+
+Lemma step_si {V E : Type}:
+  forall (g1 g2 : PreGraph V E) (n n' : V), g1 ~=~ g2 -> (step g1 n n' <-> step g2 n n').
+Proof.
+  cut (forall (g1 g2 : PreGraph V E) (n n' : V), g1 ~=~ g2 -> step g1 n n' -> step g2 n n').
+  1: intros; split; apply H; [eauto | symmetry; auto].
+  intros.
+  rewrite step_spec in H0 |- *.
+  destruct H as [? [? [? ?]]].
+  destruct H0 as [e [? [? ?]]]; exists e.
+  rewrite <- H1, <- H2, <- H3.
+  auto.
+Qed.
+
+Lemma edge_si {V E : Type}:
+  forall (g1 g2 : PreGraph V E) (n n' : V), g1 ~=~ g2 -> (g1 |= n ~> n' <-> g2 |= n ~> n').
+Proof.
+  intros; unfold edge in *.
+  pose proof proj1 H n.
+  pose proof proj1 H n'.
+  pose proof step_si _ _ n n' H.
+  tauto.
+Qed.
+
+End StructurallyIdentical.
+
+Notation "g1 '~=~' g2" := (structurally_identical g1 g2) (at level 1).
+Global Existing Instance si_Equiv.

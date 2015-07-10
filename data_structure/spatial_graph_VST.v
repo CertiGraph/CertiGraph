@@ -16,7 +16,9 @@ Defined.
 
 Definition trinode (sh: share) (p: Addr) (dlr: Val): mpred :=
   match dlr with
-  | (d, l, r) => data_at sh node_type (repinj node_type (Int.repr (if d then 1 else 0), (l, r))) (pointer_val_val p)
+  | (d, l, r) => data_at sh node_type
+                  (Vint (Int.repr (if d then 1 else 0)), (pointer_val_val l, pointer_val_val r))
+                    (pointer_val_val p)
   end.
 
 Instance MSLstandard sh : MapstoSepLog AV_SGraph (trinode sh).
@@ -39,8 +41,8 @@ Proof.
   + unfold trinode.
     destruct v1 as [[d1 l1] r1].
     destruct v2 as [[d2 l2] r2].
-    rewrite (add_andp _ _ (data_at_compatible _ _ _ (pointer_val_val p1))).
-    rewrite (add_andp _ _ (data_at_compatible _ _ _ (pointer_val_val p2))).
+    rewrite (add_andp _ _ (@data_at_compatible CompSpecs CS_legal _ node_type _ (pointer_val_val p1))).
+    rewrite (add_andp _ _ (@data_at_compatible CompSpecs CS_legal _ node_type _ (pointer_val_val p2))).
     normalize.
     apply data_at_conflict.
     change (sizeof cenv_cs node_type) with 16.
@@ -56,11 +58,11 @@ Proof.
      (!! field_compatible node_type [] (pointer_val_val p2) &&
         EX v: reptype node_type, data_at sh node_type v (pointer_val_val p2)).
     - apply exp_left; intros [[d l] r]; normalize.
-      apply (exp_right (repinj node_type (Int.repr (if d then 1 else 0), (l, r)))).
+      apply (exp_right (Vint (Int.repr (if d then 1 else 0)), (pointer_val_val l, pointer_val_val r))).
       rewrite andp_comm, <- (add_andp _ _ (data_at_compatible _ _ _ _)).
       apply derives_refl.
     - apply exp_left; intros [[d l] r]; normalize.
-      apply (exp_right (repinj node_type (Int.repr (if d then 1 else 0), (l, r)))).
+      apply (exp_right (Vint (Int.repr (if d then 1 else 0)), (pointer_val_val l, pointer_val_val r))).
       rewrite andp_comm, <- (add_andp _ _ (data_at_compatible _ _ _ _)).
       apply derives_refl.
     - apply disj_prop_andp_left; [apply field_compatible_dec | intro].
