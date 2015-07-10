@@ -137,18 +137,29 @@ Qed.
 
 End ind_reachable.
 
-Lemma si_reachable: forall {V E} (g1 g2: PreGraph V E) n,  g1 ~=~ g2 -> Same_set (reachable g1 n) (reachable g2 n).
+Lemma edge_equiv_reachable_equiv: forall {V E} (g1 g2: PreGraph V E),
+  (forall x, @vvalid _ _ g1 x <-> @vvalid _ _ g2 x) ->
+  (forall x y, edge g1 x y <-> edge g2 x y) -> forall n, Same_set (reachable g1 n) (reachable g2 n).
 Proof.
   intros V E.
-  cut (forall (g1 g2 : PreGraph V E) (n : V), g1 ~=~ g2 -> Included (reachable g1 n) (reachable g2 n)).
-  1: intros; split; intros; apply H; [auto | symmetry; auto].
-  intros; intro; intros; unfold Ensembles.In in *;
-  rewrite reachable_ind_reachable in H0;
-  rewrite reachable_ind_reachable.
-  induction H0.
-  + constructor. rewrite (proj1 H) in H0; auto.
-  + rewrite (edge_si g1 g2) in H0 by auto.
+  cut (forall (g1 g2 : PreGraph V E), (forall x, @vvalid _ _ g1 x <-> @vvalid _ _ g2 x) -> (forall x y, edge g1 x y <-> edge g2 x y) -> forall n, Included (reachable g1 n) (reachable g2 n)).
+  1: intros; split; intros; apply H; [auto | auto | symmetry; auto | symmetry; auto].
+  intros; intro; intros.
+  unfold Ensembles.In in *.
+  rewrite @reachable_ind_reachable in *.
+  induction H1.
+  + constructor. rewrite H in H1; auto.
+  + rewrite H0 in H1.
     apply ind.reachable_cons with y; auto.
+Qed.
+
+Lemma si_reachable: forall {V E} (g1 g2: PreGraph V E) n,  g1 ~=~ g2 -> Same_set (reachable g1 n) (reachable g2 n).
+Proof.
+  intros.
+  apply edge_equiv_reachable_equiv.
+  + destruct H; auto.
+  + intros; apply edge_si.
+    auto.
 Qed.
 
 Lemma si_reachable_through_set: forall {V E} (g1 g2: PreGraph V E) S n, g1 ~=~ g2 -> (reachable_through_set g1 S n <-> reachable_through_set g2 S n).
