@@ -113,6 +113,22 @@ Proof.
   simpl in H0; tauto.
 Qed.
 
+Lemma gamma_marks: forall {SGS: SpatialGraphSetting} (g g' : Graph) (x: Addr) l r, mark1 g x g' -> gamma g x = (false, l, r) -> gamma g' x = (true, l, r).
+Proof.
+Opaque AV_SGraph.
+  intros.
+  unfold gamma in *.
+  destruct (node_pred_dec (marked g) x); [inversion H0 |].
+  inversion H0. subst.
+  destruct H.
+  destruct (node_pred_dec (marked g') x); [| tauto].
+  rewrite !@left_out_edge_def.
+  rewrite !@right_out_edge_def.
+  destruct H as [_ [_ [? ?]]].
+  rewrite !H2; auto.
+Transparent AV_SGraph.
+Qed.
+
 (*
 Lemma update_bigraph_gamma {A D: Type} {EV: EqDec A} {PG : PreGraph A D}:
   forall (g: BiGraph PG) (v: A) (d: D) (l r: A), gamma (update_BiGraph g v d l r) v = (d, l, r).
@@ -663,8 +679,9 @@ Section SpatialGraph.
       - rewrite <- iter_sepcon_map. rewrite (iter_sepcon_func _ _ (graph_cell g)); auto.
   Qed.
 
-  Lemma remove_perm: forall (g: Graph) x l, vvalid x -> reachable_list g x l -> NoDup l ->
-                                            Permutation (map (Gamma g) l) (Gamma g x :: map (Gamma g) (remove t_eq_dec x l)).
+  Lemma reachable_remove_perm:
+    forall (g: Graph) x l, vvalid x -> reachable_list g x l -> NoDup l ->
+                           Permutation (map (Gamma g) l) (Gamma g x :: map (Gamma g) (remove t_eq_dec x l)).
   Proof.
     intros. change (Gamma g x :: map (Gamma g) (remove t_eq_dec x l)) with (map (Gamma g) (x :: (remove t_eq_dec x l))).
     apply Permutation_map. assert (In x l) by (rewrite (H0 x); apply reachable_by_reflexive; auto).
@@ -681,7 +698,7 @@ Section SpatialGraph.
     replace (trinode x (gamma g x)) with (iter_sepcon (Gamma g x :: nil) Graph_cell) by (simpl; rewrite sepcon_emp; auto).
     apply iter_sepcon_ramification. exists (map (Gamma g) (remove t_eq_dec x f)).
     assert (Permutation (map (Gamma g) f) ((Gamma g x :: nil) ++ map (Gamma g) (remove t_eq_dec x f))); [|tauto].
-    rewrite <- app_comm_cons, app_nil_l. apply remove_perm; auto.
+    rewrite <- app_comm_cons, app_nil_l. apply reachable_remove_perm; auto.
   Qed.
 
   Lemma graph_ramify_aux1: forall (g g': Graph) x,
@@ -699,10 +716,10 @@ Section SpatialGraph.
     replace (trinode x (gamma g' x)) with (iter_sepcon (Gamma g' x :: nil) Graph_cell) by (simpl; rewrite sepcon_emp; auto).
     apply iter_sepcon_ramification. exists (map (Gamma g) (remove t_eq_dec x lg)).
     rewrite <- !app_comm_cons, !app_nil_l. split.
-    + apply remove_perm; auto.
+    + apply reachable_remove_perm; auto.
     + rewrite (compcert.lib.Coqlib.list_map_exten (Gamma g') (Gamma g) (remove t_eq_dec x lg)).
       - apply perm_trans with (Gamma g' x :: map (Gamma g') (remove t_eq_dec x lg')).
-        * apply remove_perm; auto.
+        * apply reachable_remove_perm; auto.
         * change (Gamma g' x :: map (Gamma g') (remove t_eq_dec x lg')) with (map (Gamma g') (x :: (remove t_eq_dec x lg'))).
           change (Gamma g' x :: map (Gamma g') (remove t_eq_dec x lg)) with (map (Gamma g') (x :: (remove t_eq_dec x lg))).
           apply Permutation_map.
@@ -721,6 +738,69 @@ Section SpatialGraph.
         * rewrite !right_out_edge_def. rewrite H9. auto.
   Qed.
 
+  Lemma reachable_subtract_perm:
+    forall (g: Graph) x l l1 l2, reachable g x l -> reachable_list g x l1 -> NoDup l1 -> reachable_list g l l2 -> NoDup l2 ->
+                                 Permutation (map (Gamma g) l1) (map (Gamma g) l2 ++ map (Gamma g) (subtract t_eq_dec l1 l2)).
+  Proof.
+    intros. rewrite <- (compcert.lib.Coqlib.list_append_map (Gamma g)).
+    apply Permutation_map. apply perm_trans with (subtract t_eq_dec l1 l2 ++ l2).
+    + apply subtract_permutation; auto.
+      intro y. rewrite (H0 y). rewrite (H2 y). intros.
+      apply reachable_by_merge with l; auto.
+    + apply Permutation_app_comm.
+  Qed.
+
+  Lemma graph_ramify_aux2: forall (g1 g2: Graph) x l,
+                             reachable g1 x l -> mark g1 l g2 -> graph x g1 |-- graph l g1 * (graph l g2 -* graph x g2).
+  Proof.
+    intros.
+    assert (Vg1x: @vvalid _ _ g1 x) by (apply reachable_head_valid in H; auto).
+    assert (Vg1l: @vvalid _ _ g1 l) by (apply reachable_foot_valid in H; auto).
+    assert (Vg2x: @vvalid _ _ g2 x) by (destruct H0 as [[? _] _]; rewrite <- H0; auto).
+    assert (Vg2l: @vvalid _ _ g2 l) by (destruct H0 as [[? _] _]; rewrite <- H0; auto).
+    assert (Hg1x: x = null \/ @vvalid _ _ g1 x) by auto.
+    assert (Hg1l: l = null \/ @vvalid _ _ g1 l) by auto.
+    assert (Hg2x: x = null \/ @vvalid _ _ g2 x) by auto.
+    assert (Hg2l: l = null \/ @vvalid _ _ g2 l) by auto.
+    rewrite (graph_eq x g1 Hg1x).
+    rewrite (graph_eq l g1 Hg1l).
+    rewrite (graph_eq x g2 Hg2x).
+    rewrite (graph_eq l g2 Hg2l).
+    destruct (graph_reachable_list g1 x Hg1x) as [lg1x [?H ?H]].
+    destruct (graph_reachable_list g1 l Hg1l) as [lg1l [?H ?H]].
+    destruct (graph_reachable_list g2 x Hg2x) as [lg2x [?H ?H]].
+    destruct (graph_reachable_list g2 l Hg2l) as [lg2l [?H ?H]].
+    unfold proj1_sig. clear Hg1x Hg1l Hg2x Hg2l.
+    apply iter_sepcon_ramification.
+    exists (map (Gamma g1) (subtract t_eq_dec lg1x lg1l)). split.
+    + apply (reachable_subtract_perm g1 x l); auto.
+    + assert (reachable g2 x l) by (destruct H0 as [? _]; generalize (si_reachable g1 g2 x H0);
+                                    intro; destruct H9; apply (H9 l); auto).
+      assert (Sublist lg1l lg1x) by (intro y; rewrite (H1 y); rewrite (H3 y); intros; apply reachable_by_merge with l; auto).
+      assert (Sublist lg2l lg2x) by (intro y; rewrite (H5 y); rewrite (H7 y); intros; apply reachable_by_merge with l; auto).
+      apply perm_trans with (map (Gamma g2) lg2l ++ map (Gamma g2) (subtract t_eq_dec lg2x lg2l)).
+      - apply (reachable_subtract_perm g2 x l); auto.
+      - apply Permutation_app_head. apply perm_trans with (map (Gamma g2) (subtract t_eq_dec lg1x lg1l)).
+        * apply Permutation_map. apply Permutation_app_inv_r with lg1l.
+          apply perm_trans with lg1x. 2: apply subtract_permutation; auto.
+          apply perm_trans with (subtract t_eq_dec lg2x lg2l ++ lg2l).
+          apply Permutation_app_head. apply NoDup_Permutation; auto.
+          intro y. rewrite (H3 y). rewrite (H7 y). apply si_reachable_direct. destruct H0; auto.
+          apply perm_trans with lg2x. apply Permutation_sym. apply subtract_permutation; auto.
+          apply NoDup_Permutation; auto. intro y. rewrite (H1 y). rewrite (H5 y). apply si_reachable_direct.
+          symmetry. destruct H0; auto.
+        * rewrite (compcert.lib.Coqlib.list_map_exten (Gamma g2) (Gamma g1)).
+          apply Permutation_refl. intro y; intros.
+          rewrite <- subtract_property in H12. destruct H12.
+          unfold Gamma. f_equal. unfold gamma. rewrite !left_out_edge_def, !right_out_edge_def.
+          destruct H0 as [[? [? [? ?]]] [? ?]]. rewrite !H16. f_equal. f_equal.
+          assert (~ g1 |= l ~o~> y satisfying (unmarked g1)). {
+                   intro. apply H13. rewrite (H3 y).
+                   apply reachable_by_is_reachable in H19; auto.
+          } specialize (H18 _ H19).
+          destruct (node_pred_dec (marked g2) y), (node_pred_dec (marked g1) y); tauto.
+  Qed.
+  
 (*
   Instance update_graph (g: Graph) v d l r (Hi: in_math g v l r) (Hn: v <> null): Graph := {
   pg := update_PreGraph _ v d l r;

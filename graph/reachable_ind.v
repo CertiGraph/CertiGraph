@@ -162,6 +162,13 @@ Proof.
     auto.
 Qed.
 
+Lemma si_reachable_direct: forall {V E} (g1 g2: PreGraph V E) x y,  g1 ~=~ g2 -> (reachable g1 x y <-> reachable g2 x y).
+Proof.
+  intros. apply (si_reachable _ _ x) in H. destruct H. split; intros.
+  + apply (H y); auto.
+  + apply (H0 y); auto.
+Qed.
+
 Lemma si_reachable_through_set: forall {V E} (g1 g2: PreGraph V E) S n, g1 ~=~ g2 -> (reachable_through_set g1 S n <-> reachable_through_set g2 S n).
 Proof.
   intros V E.
