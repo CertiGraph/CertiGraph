@@ -414,7 +414,21 @@ Proof.
   Focus 2. { entailer!. } Unfocus.
   Focus 3. { entailer!. } Unfocus.
   Focus 3. { repeat constructor; auto with closed. } Unfocus.
-  Focus 2. { entailer!. admit. (* apply graph_ramify_aux1; auto. *) } Unfocus.
+  Focus 2. {
+    entailer!.
+    change (@data_at CompSpecs CS_legal sh node_type
+            (Vint (Int.repr 0), (pointer_val_val l, pointer_val_val r))
+            (pointer_val_val x)) with 
+           (@spatial_graph2.trinode (SGA_VST sh) x (false, l, r)).
+    change (@data_at CompSpecs CS_legal sh node_type
+            (Vint (Int.repr 1), (pointer_val_val l, pointer_val_val r))
+            (pointer_val_val x)) with 
+           (@spatial_graph2.trinode (SGA_VST sh) x (true, l, r)).
+    assert (gamma g1 x = (true, l, r)). admit.
+    rewrite <- H_GAMMA, <- H4.
+    apply (@graph_ramify_aux1 (SGA_VST sh) g g1).
+    auto.
+  } Unfocus.
   (* unlocalize *)
 
   unfold semax_ram. (* should not need this *)
@@ -494,3 +508,24 @@ Qed.
 *)
 
 
+(*
+
+(* Add behind  gamma_right_weak_valid *)
+
+Lemma gamma_marks: forall {SGS: SpatialGraphSetting} (g g' : Graph) (x: Addr) l r, mark1 g x g' -> gamma g x = (false, l, r) -> gamma g' x = (true, l, r).
+Proof.
+Opaque AV_SGraph.
+  intros.
+  unfold gamma in *.
+  destruct (node_pred_dec (marked g) x); [inversion H0 |].
+  inversion H0. subst.
+  destruct H.
+  destruct (node_pred_dec (marked g') x); [| tauto].
+  rewrite !@left_out_edge_def.
+  rewrite !@right_out_edge_def.
+  destruct H as [_ [_ [? ?]]].
+  rewrite !H2; auto.
+Transparent AV_SGraph.
+Qed.
+
+*)
