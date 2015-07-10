@@ -583,3 +583,4 @@ Arguments path_glue {_} _ _.
 Module PathNotation.
 Notation "p1 '+++' p2" := (path_glue p1 p2) (at level 20, left associativity).
 End PathNotation.
+
