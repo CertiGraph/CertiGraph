@@ -231,4 +231,11 @@ Proof.
   auto.
 Qed.
 
+Lemma iter_sepcon_func: forall l P Q, (forall x, P x = Q x) -> iter_sepcon l P = iter_sepcon l Q.
+Proof. intros. induction l; simpl; [|f_equal]; auto. Qed.
+
 End IterSepCon.
+
+Lemma iter_sepcon_map: forall {A B C: Type} {ND : NatDed A} {SL : SepLog A} (l : list C) (f : B -> A) (g: C -> B),
+                         iter_sepcon l (fun x : C => f (g x)) = iter_sepcon (map g l) f.
+Proof. intros. induction l; simpl; [|f_equal]; auto. Qed.

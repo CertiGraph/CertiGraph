@@ -624,6 +624,64 @@ Section SpatialGraph.
     + apply mark_exists; auto.
   Qed.
 
+  Definition Gamma (g: Graph) x := (x, gamma g x).
+
+  Definition Graph_cell (p : Addr * (bool * Addr * Addr)) := trinode (fst p) (snd p).
+
+  Lemma graph_reachable_list: forall (g: Graph) (x : Addr), x = null \/ vvalid x ->
+                                                            {l : list Addr | reachable_list g x l /\ NoDup l}.
+  Proof.
+    intros. destruct (t_eq_dec x null).
+    + exists nil. split.
+      - intro; split; intros.
+        * inversion H0.
+        * apply reachable_head_valid in H0.
+          pose proof valid_not_null x. rewrite is_null_def in H1. tauto.
+      - apply NoDup_nil.
+    + assert (vvalid x) by tauto.
+      apply finite_reachable_computable; auto.
+      - exact ma.
+      - apply LocalFiniteGraph_FiniteGraph. exact fin.
+      - apply FiniteGraph_EnumCovered. exact fin.
+  Qed.
+
+  Lemma graph_eq: forall x (g: Graph) (H: x = null \/ vvalid x),
+                    graph x g = iter_sepcon (map (Gamma g) (proj1_sig (graph_reachable_list g x H))) Graph_cell.
+  Proof.
+    intros. apply pred_ext.
+    + unfold graph. normalize.
+      destruct (graph_reachable_list g x H) as [l' [?H ?H]]. unfold proj1_sig.
+      rewrite <- iter_sepcon_map. rewrite (iter_sepcon_func l' _ (graph_cell g)).
+      - rewrite (add_andp _ _ (iter_sepcon_unique_nodup l (sepcon_unique_graph_cell g))).
+        normalize. rewrite (@iter_sepcon_permutation _ _ _ _ l l'); auto.
+        apply NoDup_Permutation; auto. intro y. specialize (H0 y). specialize (H1 y). tauto.
+      - intros. unfold Gamma. unfold Graph_cell. unfold graph_cell. simpl. auto.
+    + unfold graph. normalize. apply (exp_right (proj1_sig (graph_reachable_list g x H))).
+      normalize. destruct (graph_reachable_list g x H) as [l [?H ?H]].
+      unfold proj1_sig. apply andp_right.
+      - apply prop_right; auto.
+      - rewrite <- iter_sepcon_map. rewrite (iter_sepcon_func _ _ (graph_cell g)); auto.
+  Qed.
+
+  Lemma graph_ramify_aux0: forall (g: Graph) x d l r,
+                             vvalid x -> gamma g x = (d, l, r) ->
+                             graph x g |-- trinode x (d, l, r) * (trinode x (d, l, r) -* graph x g).
+  Proof.
+    intros. assert (x = null \/ vvalid x) by auto.
+    rewrite (graph_eq x g H1). destruct (graph_reachable_list g x H1) as [f [?H ?H]]. unfold proj1_sig.
+    clear H1. rewrite <- H0.
+    replace (trinode x (gamma g x)) with (iter_sepcon (Gamma g x :: nil) Graph_cell) by (simpl; rewrite sepcon_emp; auto).
+    apply iter_sepcon_ramification. exists (map (Gamma g) (remove t_eq_dec x f)).
+    assert (Permutation (map (Gamma g) f) ((Gamma g x :: nil) ++ map (Gamma g) (remove t_eq_dec x f))); [|tauto].
+    rewrite <- app_comm_cons, app_nil_l.
+    change (Gamma g x :: map (Gamma g) (remove t_eq_dec x f)) with (map (Gamma g) (x :: (remove t_eq_dec x f))).
+    apply Permutation_map.
+    assert (In x f) by (rewrite (H2 x); apply reachable_by_reflexive; auto).
+    apply in_split in H1. destruct H1 as [l1 [l2 ?]]. subst.
+    rewrite (remove_middle t_eq_dec _ _ _ H3). rewrite app_cons_assoc. 
+    apply (@Permutation_app_tail _ _ (x :: l1) l2), Permutation_sym, Permutation_cons_append.
+  Qed.
+
 (*
   Instance update_graph (g: Graph) v d l r (Hi: in_math g v l r) (Hn: v <> null): Graph := {
   pg := update_PreGraph _ v d l r;
