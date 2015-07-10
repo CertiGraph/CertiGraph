@@ -663,6 +663,14 @@ Section SpatialGraph.
       - rewrite <- iter_sepcon_map. rewrite (iter_sepcon_func _ _ (graph_cell g)); auto.
   Qed.
 
+  Lemma remove_perm: forall (g: Graph) x l, vvalid x -> reachable_list g x l -> NoDup l ->
+                                            Permutation (map (Gamma g) l) (Gamma g x :: map (Gamma g) (remove t_eq_dec x l)).
+  Proof.
+    intros. change (Gamma g x :: map (Gamma g) (remove t_eq_dec x l)) with (map (Gamma g) (x :: (remove t_eq_dec x l))).
+    apply Permutation_map. assert (In x l) by (rewrite (H0 x); apply reachable_by_reflexive; auto).
+    apply nodup_remove_perm; auto.
+  Qed.
+
   Lemma graph_ramify_aux0: forall (g: Graph) x d l r,
                              vvalid x -> gamma g x = (d, l, r) ->
                              graph x g |-- trinode x (d, l, r) * (trinode x (d, l, r) -* graph x g).
@@ -673,13 +681,44 @@ Section SpatialGraph.
     replace (trinode x (gamma g x)) with (iter_sepcon (Gamma g x :: nil) Graph_cell) by (simpl; rewrite sepcon_emp; auto).
     apply iter_sepcon_ramification. exists (map (Gamma g) (remove t_eq_dec x f)).
     assert (Permutation (map (Gamma g) f) ((Gamma g x :: nil) ++ map (Gamma g) (remove t_eq_dec x f))); [|tauto].
-    rewrite <- app_comm_cons, app_nil_l.
-    change (Gamma g x :: map (Gamma g) (remove t_eq_dec x f)) with (map (Gamma g) (x :: (remove t_eq_dec x f))).
-    apply Permutation_map.
-    assert (In x f) by (rewrite (H2 x); apply reachable_by_reflexive; auto).
-    apply in_split in H1. destruct H1 as [l1 [l2 ?]]. subst.
-    rewrite (remove_middle t_eq_dec _ _ _ H3). rewrite app_cons_assoc. 
-    apply (@Permutation_app_tail _ _ (x :: l1) l2), Permutation_sym, Permutation_cons_append.
+    rewrite <- app_comm_cons, app_nil_l. apply remove_perm; auto.
+  Qed.
+
+  Lemma graph_ramify_aux1: forall (g g': Graph) x,
+                             mark1 g x g' -> graph x g |-- trinode x (gamma g x) * (trinode x (gamma g' x) -* graph x g').
+  Proof.
+    intros. assert (@vvalid _ _ g x) by (destruct H as [_ [? _]]; auto).
+    assert (x = null \/ @vvalid _ _ g x) by auto.
+    assert (@vvalid _ _ g' x) by (destruct H as [[? _] _]; rewrite <- H; auto).
+    assert (x = null \/ @vvalid _ _ g' x) by auto.
+    rewrite (graph_eq x g H1). rewrite (graph_eq x g' H3).
+    destruct (graph_reachable_list g x H1) as [lg [?H ?H]].
+    destruct (graph_reachable_list g' x H3) as [lg' [?H ?H]].
+    unfold proj1_sig. clear H1 H3.
+    replace (trinode x (gamma g x)) with (iter_sepcon (Gamma g x :: nil) Graph_cell) by (simpl; rewrite sepcon_emp; auto).
+    replace (trinode x (gamma g' x)) with (iter_sepcon (Gamma g' x :: nil) Graph_cell) by (simpl; rewrite sepcon_emp; auto).
+    apply iter_sepcon_ramification. exists (map (Gamma g) (remove t_eq_dec x lg)).
+    rewrite <- !app_comm_cons, !app_nil_l. split.
+    + apply remove_perm; auto.
+    + rewrite (compcert.lib.Coqlib.list_map_exten (Gamma g') (Gamma g) (remove t_eq_dec x lg)).
+      - apply perm_trans with (Gamma g' x :: map (Gamma g') (remove t_eq_dec x lg')).
+        * apply remove_perm; auto.
+        * change (Gamma g' x :: map (Gamma g') (remove t_eq_dec x lg')) with (map (Gamma g') (x :: (remove t_eq_dec x lg'))).
+          change (Gamma g' x :: map (Gamma g') (remove t_eq_dec x lg)) with (map (Gamma g') (x :: (remove t_eq_dec x lg))).
+          apply Permutation_map.
+          assert (In x lg) by (rewrite (H4 x); apply reachable_by_reflexive; auto).
+          assert (In x lg') by (rewrite (H6 x); apply reachable_by_reflexive; auto).
+          apply perm_trans with lg'. apply Permutation_sym, nodup_remove_perm; auto.
+          apply perm_trans with lg. apply NoDup_Permutation; auto.
+          intro y; intros. rewrite (H4 y). rewrite (H6 y). symmetry. apply (reachable_mark1 g g' x); auto.
+          apply nodup_remove_perm; auto.
+      - intro y; intros. unfold Gamma. f_equal. unfold gamma.
+        destruct H as [[? [? [? ?]]] [? [? ?]]].
+        assert (x <> y) by (intro; subst; apply (remove_In t_eq_dec lg y); auto).
+        specialize (H12 y H13). f_equal; [f_equal | ].
+        * destruct (node_pred_dec (marked g')); destruct (node_pred_dec (marked g)); tauto.
+        * rewrite !left_out_edge_def. rewrite H9. auto.
+        * rewrite !right_out_edge_def. rewrite H9. auto.
   Qed.
 
 (*
