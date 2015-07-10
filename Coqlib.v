@@ -605,3 +605,10 @@ Add Parametric Relation {A} : (Ensemble A) Same_set
     symmetry proved by (Same_set_sym A)
     transitivity proved by (Same_set_trans A) as Same_set_rel.
 
+Lemma nodup_remove_perm: forall {A : Type} (eq_dec : forall x y : A, {x = y} + {x <> y}) (l : list A) (x : A),
+                           NoDup l -> In x l -> Permutation l (x :: remove eq_dec x l).
+Proof.
+  intros. apply in_split in H0. destruct H0 as [l1 [l2 ?]]. subst.
+  rewrite (remove_middle eq_dec _ _ _ H). rewrite app_cons_assoc. 
+  apply (@Permutation_app_tail _ _ (x :: l1) l2), Permutation_sym, Permutation_cons_append.
+Qed.
