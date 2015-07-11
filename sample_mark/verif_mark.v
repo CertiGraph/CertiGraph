@@ -3,6 +3,7 @@ Require Import Coq.Sets.Finite_sets.
 Require Import RamifyCoq.sample_mark.env_mark.
 Require Import RamifyCoq.graph.graph_model.
 Require Import RamifyCoq.graph.marked_graph.
+Require Import RamifyCoq.graph.path_lemmas.
 Require Import RamifyCoq.data_structure.spatial_graph2.
 Require Import RamifyCoq.data_structure.spatial_graph_VST.
 
@@ -424,7 +425,7 @@ Proof.
             (Vint (Int.repr 1), (pointer_val_val l, pointer_val_val r))
             (pointer_val_val x)) with 
            (@spatial_graph2.trinode (SGA_VST sh) x (true, l, r)).
-    assert (gamma g1 x = (true, l, r)). admit.
+    assert (gamma g1 x = (true, l, r)) by (apply gamma_marks with g; auto).
     rewrite <- H_GAMMA, <- H4.
     apply (@graph_ramify_aux1 (SGA_VST sh) g g1).
     auto.
@@ -462,6 +463,7 @@ Proof.
   Focus 3. { repeat constructor; auto with closed. } Unfocus.
   Focus 2. {
     entailer!.
+    apply (@graph_ramify_aux2  (SGA_VST sh) g1 g2); auto.
     admit. (* eapply graph_ramify_aux2; auto. *)
   } Unfocus.
   (* unlocalize *)

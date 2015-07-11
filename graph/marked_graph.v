@@ -75,6 +75,51 @@ Section MARKED_GRAPH.
   Lemma unmarked_spec (g: Gph): forall x, (unmarked g) x <-> ~ (marked g) x.
   Proof. apply negateP_spec. Qed.
 
+  Lemma vi_reachable_by_unmarked_equiv: forall (g1 : Gph) (g2 : Gph) x y,
+    g1 -=- g2 ->
+    (g1 |= x ~o~> y satisfying (unmarked g1) <-> g2 |= x ~o~> y satisfying (unmarked g2)).
+  Proof.
+  Local Arguments vvalid {_} {_} _ _.
+  Local Arguments evalid {_} {_} _ _.
+  Local Arguments src {_} {_} _ _.
+  Local Arguments dst {_} {_} _ _.
+
+    cut (forall (g1 g2 : Gph) (x y : V),
+           g1 -=- g2 ->
+           g1 |= x ~o~> y satisfying (unmarked g1) ->
+           g2 |= x ~o~> y satisfying (unmarked g2)).
+    1: intros; split; apply H; [| symmetry]; auto.
+    intros.
+    rewrite reachable_by_eq_subgraph_reachable in H0 |- *.
+    assert (forall x, vvalid (predicate_subgraph g1 (unmarked g1)) x <-> vvalid (predicate_subgraph g2 (unmarked g2)) x).
+    Focus 1. {
+      intros; simpl; unfold predicate_vvalid.
+      destruct H as [[? _] ?].
+      specialize (H x0).
+      specialize (H1 x0).
+      rewrite !unmarked_spec.
+      tauto.
+    } Unfocus.
+    assert (forall x y, edge (predicate_subgraph g1 (unmarked g1)) x y <-> edge (predicate_subgraph g2 (unmarked g2)) x y).
+    Focus 1. {
+      apply si_subgraph_edge.
+      + destruct H; auto.
+      + destruct H.
+        intros.
+        rewrite !unmarked_spec.
+        specialize (H2 x0).
+        tauto.
+    } Unfocus.
+    pose proof (edge_equiv_reachable_equiv (predicate_subgraph g1 (unmarked g1)) (predicate_subgraph g2 (unmarked g2)) H1 H2).
+    destruct (H3 x) as [? _].
+    apply H4.
+    auto.
+  Local Arguments vvalid {_} {_} {_} _.
+  Local Arguments evalid {_} {_} {_} _.
+  Local Arguments src {_} {_} {_} _.
+  Local Arguments dst {_} {_} {_} _.
+  Qed.
+
   Definition mark1 (g1 : Gph) (n : V) (g2 : Gph) : Prop :=
     structurally_identical g1 g2 /\ @vvalid _ _ g1 n /\ marked g2 n /\
     forall n', n <> n' -> (marked g1 n' <-> marked g2 n').
@@ -227,6 +272,17 @@ Section MARKED_GRAPH.
   Definition ReachDecidable (g: Gph) (x : V) (P : NodePred g) :=
     forall y, Decidable (g |= x ~o~> y satisfying P).
 
+  Lemma ReachDecidable_vi: forall (g1 g2: Gph) x,
+    g1 -=- g2 ->
+    ReachDecidable g1 x (unmarked g1) -> ReachDecidable g2 x (unmarked g2).
+  Proof.
+    intros.
+    intro y; specialize (X y).
+    destruct X; [left | right].
+    + rewrite (vi_reachable_by_unmarked_equiv g1 g2) in r by auto; auto.
+    + rewrite (vi_reachable_by_unmarked_equiv g1 g2) in n by auto; auto.
+  Qed.
+
   Lemma mark_unmarked_strong: forall (g1: Gph) root g2 n1 n2,
                                 @vvalid _ _ g1 root ->
                                 ReachDecidable g1 root (unmarked g1) ->
@@ -373,7 +429,14 @@ Section MARKED_GRAPH.
         * assert (In v (v :: vs)) by apply in_eq. destruct (V_DEC v H1).
           Focus 2. {
             apply (mark_invalid _ _ _ n0) in H.
-            admit. (* Qinxiang said he would prove it. *)
+            apply IHmark_list; auto.
+            + intros. apply (ReachDecidable_vi g g0); auto.
+              apply R_DEC.
+              right; auto.
+            + intros. 
+              pose proof V_DEC x (or_intror H2).
+              destruct H4 as [H4 | H4]; [left | right]; rewrite (proj1 (proj1 H) x) in H4; auto.
+            + rewrite (vi_reachable_by_unmarked_equiv g g0) in H5; auto.
           } Unfocus.
           Focus 1. {
             apply (mark_unmarked _ v g0) in H5; auto.
