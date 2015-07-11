@@ -128,7 +128,36 @@ Qed.
 
 End SubGraph.
 
-(*
+Lemma si_subgraph_edge: forall {V E} (g1 g2: PreGraph V E) (p1: NodePred g1) (p2: NodePred g2), 
+  g1 ~=~ g2 ->
+  (forall x, @vvalid _ _ g1 x -> @vvalid _ _ g2 x -> (p1 x <-> p2 x)) ->
+  (forall x y, edge (predicate_subgraph g1 p1) x y <-> edge (predicate_subgraph g2 p2) x y).
+Proof.
+  intros V E.
+  cut (forall (g1 g2: PreGraph V E) (p1: NodePred g1) (p2: NodePred g2), 
+    g1 ~=~ g2 ->
+    (forall x, @vvalid _ _ g1 x -> @vvalid _ _ g2 x -> (p1 x <-> p2 x)) ->
+    (forall x y, edge (predicate_subgraph g1 p1) x y -> edge (predicate_subgraph g2 p2) x y)).
+  1: intros; split; apply H; auto; symmetry; auto.
+  intros.
+  unfold edge in *; rewrite !@step_spec in *.
+  destruct H1 as [? [? [e [? [? ?]]]]].
+  simpl in *.
+  unfold predicate_vvalid, predicate_evalid in *.
+  destruct H as [? [? [? ?]]].
+  pose proof H0 x.
+  pose proof H0 y.
+  pose proof H x.
+  pose proof H y.
+  split; [tauto |].
+  split; [tauto |].
+  exists e.
+  rewrite <- !H6.
+  rewrite <- !H7.
+  rewrite <- !H8.
+  subst.
+  repeat split; auto; tauto.
+Qed.
 
 
-*)
+
