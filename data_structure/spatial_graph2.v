@@ -113,6 +113,22 @@ Proof.
   simpl in H0; tauto.
 Qed.
 
+Lemma gamma_left_reachable_included: forall {SGS: SpatialGraphSetting} (g: Graph) x d l r,
+                                       vvalid x -> gamma g x = (d, l, r) -> Included (reachable g l) (reachable g x).
+Proof.
+  intros. intro y; intros. apply reachable_by_cons with l; auto. split; auto. split.
+  + apply reachable_head_valid in H1; auto.
+  + rewrite (gamma_step _ _ _ _ _ H H0). auto.
+Qed.
+
+Lemma gamma_right_reachable_included: forall {SGS: SpatialGraphSetting} (g: Graph) x d l r,
+                                        vvalid x -> gamma g x = (d, l, r) -> Included (reachable g r) (reachable g x).
+Proof.
+  intros. intro y; intros. apply reachable_by_cons with r; auto. split; auto. split.
+  + apply reachable_head_valid in H1; auto.
+  + rewrite (gamma_step _ _ _ _ _ H H0). auto.
+Qed.
+
 Lemma gamma_marks: forall {SGS: SpatialGraphSetting} (g g' : Graph) (x: Addr) l r, mark1 g x g' -> gamma g x = (false, l, r) -> gamma g' x = (true, l, r).
 Proof.
 Opaque AV_SGraph.
@@ -739,29 +755,31 @@ Section SpatialGraph.
   Qed.
 
   Lemma reachable_subtract_perm:
-    forall (g: Graph) x l l1 l2, reachable g x l -> reachable_list g x l1 -> NoDup l1 -> reachable_list g l l2 -> NoDup l2 ->
+    forall (g: Graph) x l l1 l2, Included (reachable g l) (reachable g x) ->
+                                 reachable_list g x l1 -> NoDup l1 -> reachable_list g l l2 -> NoDup l2 ->
                                  Permutation (map (Gamma g) l1) (map (Gamma g) l2 ++ map (Gamma g) (subtract t_eq_dec l1 l2)).
   Proof.
     intros. rewrite <- (compcert.lib.Coqlib.list_append_map (Gamma g)).
     apply Permutation_map. apply perm_trans with (subtract t_eq_dec l1 l2 ++ l2).
     + apply subtract_permutation; auto.
-      intro y. rewrite (H0 y). rewrite (H2 y). intros.
-      apply reachable_by_merge with l; auto.
+      intro y. rewrite (H0 y). rewrite (H2 y). 
+      specialize (H y). auto.
     + apply Permutation_app_comm.
   Qed.
 
   Lemma graph_ramify_aux2: forall (g1 g2: Graph) x l,
-                             reachable g1 x l -> mark g1 l g2 -> graph x g1 |-- graph l g1 * (graph l g2 -* graph x g2).
+                             @vvalid _ _ g1 x -> (l = null \/ @vvalid _ _ g1 l) ->
+                             Included (reachable g1 l) (reachable g1 x) ->
+                             mark g1 l g2 -> graph x g1 |-- graph l g1 * (graph l g2 -* graph x g2).
   Proof.
     intros.
-    assert (Vg1x: @vvalid _ _ g1 x) by (apply reachable_head_valid in H; auto).
-    assert (Vg1l: @vvalid _ _ g1 l) by (apply reachable_foot_valid in H; auto).
-    assert (Vg2x: @vvalid _ _ g2 x) by (destruct H0 as [[? _] _]; rewrite <- H0; auto).
-    assert (Vg2l: @vvalid _ _ g2 l) by (destruct H0 as [[? _] _]; rewrite <- H0; auto).
+    rename H into Vg1x.
+    assert (Vg2x: @vvalid _ _ g2 x) by (destruct H2 as [[? _] _]; rewrite <- H; auto).
     assert (Hg1x: x = null \/ @vvalid _ _ g1 x) by auto.
-    assert (Hg1l: l = null \/ @vvalid _ _ g1 l) by auto.
+    rename H0 into Hg1l.
     assert (Hg2x: x = null \/ @vvalid _ _ g2 x) by auto.
-    assert (Hg2l: l = null \/ @vvalid _ _ g2 l) by auto.
+    assert (Hg2l: l = null \/ @vvalid _ _ g2 l) by
+        (destruct Hg1l; [left | right]; auto; destruct H2 as [[? _] _]; rewrite <- H0; auto).
     rewrite (graph_eq x g1 Hg1x).
     rewrite (graph_eq l g1 Hg1l).
     rewrite (graph_eq x g2 Hg2x).
@@ -770,14 +788,15 @@ Section SpatialGraph.
     destruct (graph_reachable_list g1 l Hg1l) as [lg1l [?H ?H]].
     destruct (graph_reachable_list g2 x Hg2x) as [lg2x [?H ?H]].
     destruct (graph_reachable_list g2 l Hg2l) as [lg2l [?H ?H]].
-    unfold proj1_sig. clear Hg1x Hg1l Hg2x Hg2l.
+    unfold proj1_sig. clear Hg1x Hg2x.
     apply iter_sepcon_ramification.
     exists (map (Gamma g1) (subtract t_eq_dec lg1x lg1l)). split.
     + apply (reachable_subtract_perm g1 x l); auto.
-    + assert (reachable g2 x l) by (destruct H0 as [? _]; generalize (si_reachable g1 g2 x H0);
-                                    intro; destruct H9; apply (H9 l); auto).
-      assert (Sublist lg1l lg1x) by (intro y; rewrite (H1 y); rewrite (H3 y); intros; apply reachable_by_merge with l; auto).
-      assert (Sublist lg2l lg2x) by (intro y; rewrite (H5 y); rewrite (H7 y); intros; apply reachable_by_merge with l; auto).
+    + assert (Included (reachable g2 l) (reachable g2 x)) by
+          (intro y; intros; destruct H2 as [? _]; generalize (si_reachable_direct g1 g2 x y H2); intro;
+           rewrite <- H10; apply H1; generalize (si_reachable_direct g1 g2 l y H2); intro; intuition).
+      assert (Sublist lg1l lg1x) by (intro y; rewrite (H y); rewrite (H3 y); apply H1).
+      assert (Sublist lg2l lg2x) by (intro y; rewrite (H5 y); rewrite (H7 y); apply H9).
       apply perm_trans with (map (Gamma g2) lg2l ++ map (Gamma g2) (subtract t_eq_dec lg2x lg2l)).
       - apply (reachable_subtract_perm g2 x l); auto.
       - apply Permutation_app_head. apply perm_trans with (map (Gamma g2) (subtract t_eq_dec lg1x lg1l)).
@@ -785,15 +804,15 @@ Section SpatialGraph.
           apply perm_trans with lg1x. 2: apply subtract_permutation; auto.
           apply perm_trans with (subtract t_eq_dec lg2x lg2l ++ lg2l).
           apply Permutation_app_head. apply NoDup_Permutation; auto.
-          intro y. rewrite (H3 y). rewrite (H7 y). apply si_reachable_direct. destruct H0; auto.
+          intro y. rewrite (H3 y). rewrite (H7 y). apply si_reachable_direct. destruct H2; auto.
           apply perm_trans with lg2x. apply Permutation_sym. apply subtract_permutation; auto.
-          apply NoDup_Permutation; auto. intro y. rewrite (H1 y). rewrite (H5 y). apply si_reachable_direct.
-          symmetry. destruct H0; auto.
+          apply NoDup_Permutation; auto. intro y. rewrite (H y). rewrite (H5 y). apply si_reachable_direct.
+          symmetry. destruct H2; auto.
         * rewrite (compcert.lib.Coqlib.list_map_exten (Gamma g2) (Gamma g1)).
           apply Permutation_refl. intro y; intros.
           rewrite <- subtract_property in H12. destruct H12.
           unfold Gamma. f_equal. unfold gamma. rewrite !left_out_edge_def, !right_out_edge_def.
-          destruct H0 as [[? [? [? ?]]] [? ?]]. rewrite !H16. f_equal. f_equal.
+          destruct H2 as [[? [? [? ?]]] [? ?]]. rewrite !H16. f_equal. f_equal.
           assert (~ g1 |= l ~o~> y satisfying (unmarked g1)). {
                    intro. apply H13. rewrite (H3 y).
                    apply reachable_by_is_reachable in H19; auto.
