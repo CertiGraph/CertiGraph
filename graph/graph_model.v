@@ -111,7 +111,7 @@ Definition edge {V E : Type} (G : PreGraph V E) (n n' : V) : Prop :=
 
 Notation " g |= n1 ~> n2 " := (edge g n1 n2) (at level 1).
 
-Definition edge_list {V E : Type} (G : PreGraph V E) n l : Prop := forall n', In n' l <-> edge G n n'.
+Definition step_list {V E : Type} (G : PreGraph V E) n l : Prop := forall n', In n' l <-> step G n n'.
 
 Definition out_edges {Vertex Edge: Type} (pg: PreGraph Vertex Edge) x: Ensemble Edge := fun e => evalid e /\ src e = x.
 
@@ -228,13 +228,18 @@ Qed.
 Definition biEdge {Vertex Edge} {PG : PreGraph Vertex Edge} (BG: BiGraph PG) (v: Vertex) : Vertex * Vertex := (dst (left_out_edge v), dst (right_out_edge v)).
 
 Lemma biEdge_only2 {Vertex Edge} {PG : PreGraph Vertex Edge} (BG: BiGraph PG) :
-  forall v v1 v2 n, biEdge BG v = (v1 ,v2) -> step PG v n -> n = v1 \/ n = v2.
+  forall v v1 v2 n, vvalid v -> biEdge BG v = (v1 ,v2) -> (step PG v n <-> n = v1 \/ n = v2).
 Proof.
   intros; unfold biEdge in H.
-  inversion H0; subst.
-  inversion H; subst.
-  assert (e = left_out_edge (src e) \/ e = right_out_edge (src e)) by (apply only_two_edges; auto).
-  destruct H2; rewrite <- H2; auto.
+  split; intros.
+  + inversion H1; subst.
+    inversion H0; subst.
+    assert (e = left_out_edge (src e) \/ e = right_out_edge (src e)) by (apply only_two_edges; auto).
+    destruct H3; rewrite <- H3; auto.
+  + rewrite step_spec; inversion H0; subst.
+    destruct H1; [exists (left_out_edge v) | exists (right_out_edge v)]; subst.
+    - split; [| split]; [apply left_valid | rewrite left_sound |]; auto.
+    - split; [| split]; [apply right_valid | rewrite right_sound |]; auto.
 Qed.
 
 Definition negateP {V E} {g: PreGraph V E} (p : NodePred g) : NodePred g.
