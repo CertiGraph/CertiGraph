@@ -16,6 +16,12 @@ Marked Graph
 
 ******************************************)
 
+Arguments vvalid {_} {_} _ _.
+Arguments evalid {_} {_} _ _.
+Arguments src {_} {_} _ _.
+Arguments dst {_} {_} _ _.
+Arguments is_null {_} {_} _ {_} _.
+
 Class MarkedGraph (Vertex Edge: Type) := {
   pg: PreGraph Vertex Edge;
   marked: NodePred pg
@@ -53,13 +59,11 @@ Section MARKED_GRAPH.
    
   Lemma vi_trans: forall (G1 G2 G3 : Gph), G1 -=- G2 -> G2 -=- G3 -> G1 -=- G3.
   Proof.
-  Arguments vvalid {_} {_} _ _.
     intros; destruct H, H0; split; [rewrite H; auto |].
     repeat intro.
     assert (vvalid G2 x) by (rewrite (proj1 H) in H3; auto).
     rewrite (H1 _ H3 H5).
     auto.
-  Arguments vvalid {_} {_} {_} _.
   Qed.
    
   Add Parametric Relation : Gph validly_identical
@@ -79,11 +83,6 @@ Section MARKED_GRAPH.
     g1 -=- g2 ->
     (g1 |= x ~o~> y satisfying (unmarked g1) <-> g2 |= x ~o~> y satisfying (unmarked g2)).
   Proof.
-  Local Arguments vvalid {_} {_} _ _.
-  Local Arguments evalid {_} {_} _ _.
-  Local Arguments src {_} {_} _ _.
-  Local Arguments dst {_} {_} _ _.
-
     cut (forall (g1 g2 : Gph) (x y : V),
            g1 -=- g2 ->
            g1 |= x ~o~> y satisfying (unmarked g1) ->
@@ -114,14 +113,10 @@ Section MARKED_GRAPH.
     destruct (H3 x) as [? _].
     apply H4.
     auto.
-  Local Arguments vvalid {_} {_} {_} _.
-  Local Arguments evalid {_} {_} {_} _.
-  Local Arguments src {_} {_} {_} _.
-  Local Arguments dst {_} {_} {_} _.
   Qed.
 
   Definition mark1 (g1 : Gph) (n : V) (g2 : Gph) : Prop :=
-    structurally_identical g1 g2 /\ @vvalid _ _ g1 n /\ marked g2 n /\
+    structurally_identical g1 g2 /\ vvalid g1 n /\ marked g2 n /\
     forall n', n <> n' -> (marked g1 n' <-> marked g2 n').
 
   Lemma mark1_marked: forall g1 root g2,
@@ -194,7 +189,7 @@ Section MARKED_GRAPH.
   Qed.
 
   Lemma mark_exists: forall (g: Gph) x,
-    vvalid x ->
+    vvalid g x ->
     (forall y, {g |= x ~o~> y satisfying (unmarked g)} +
                {~ (g |= x ~o~> y satisfying (unmarked g))}) ->
     {marked': NodePred pg | mark g x (Build_MarkedGraph _ _ pg marked')}.
@@ -214,7 +209,7 @@ Section MARKED_GRAPH.
   Qed.
    
   Lemma mark1_exists: forall (g: Gph) x,
-                       vvalid x -> {marked': NodePred pg | mark1 g x (Build_MarkedGraph _ _ pg marked')}.
+                       vvalid g x -> {marked': NodePred pg | mark1 g x (Build_MarkedGraph _ _ pg marked')}.
   Proof.
     intros. destruct ((node_pred_dec (marked g)) x).
     + exists (marked g). split. reflexivity. split; auto. split; [exact a |]. intros; reflexivity.
@@ -243,7 +238,7 @@ Section MARKED_GRAPH.
 
   (* The second subtle lemma.  Maybe needs a better name? *)
   Lemma mark_unmarked: forall (g1: Gph) root g2 n1 n2,
-                         @vvalid _ _ g1 root ->
+                         vvalid g1 root ->
                          (forall y, {g1 |= root ~o~> y satisfying (unmarked g1)} +
                                     {~ g1 |= root ~o~> y satisfying (unmarked g1)}) ->
                          mark g1 root g2 ->
@@ -284,7 +279,7 @@ Section MARKED_GRAPH.
   Qed.
 
   Lemma mark_unmarked_strong: forall (g1: Gph) root g2 n1 n2,
-                                @vvalid _ _ g1 root ->
+                                vvalid g1 root ->
                                 ReachDecidable g1 root (unmarked g1) ->
                                 mark g1 root g2 ->
                                 g1 |= n1 ~o~> n2 satisfying (unmarked g1) ->
@@ -303,7 +298,7 @@ Section MARKED_GRAPH.
   Qed. 
 
   Lemma mark_invalid: forall (g1: Gph) root g2,
-                         ~ @vvalid _ _ g1 root ->
+                         ~ vvalid g1 root ->
                          mark g1 root g2 ->
                          g1 -=- g2.
   Proof.
@@ -319,7 +314,7 @@ Section MARKED_GRAPH.
   Qed.
 
   Lemma mark_invalid_refl: forall (g: Gph) root,
-                         ~ @vvalid _ _ g root ->
+                         ~ vvalid g root ->
                          mark g root g.
   Proof.
     intros.
@@ -394,7 +389,7 @@ Section MARKED_GRAPH.
   Qed.
   
   Lemma mark_preserved_reach_decidable:
-    forall (g1 g2: Gph) root x, @vvalid _ _ g1 root -> ReachDecidable g1 x (unmarked g1) ->
+    forall (g1 g2: Gph) root x, vvalid g1 root -> ReachDecidable g1 x (unmarked g1) ->
                                 ReachDecidable g1 root (unmarked g1) ->
                                 mark g1 root g2 -> ReachDecidable g2 x (unmarked g2).
   Proof.
@@ -406,9 +401,9 @@ Section MARKED_GRAPH.
   Lemma mark_mark1_mark: forall (g1: Gph) root l g2 g3
                                 (R_DEC: forall x, In x l ->
                                                   ReachDecidable g2 x (unmarked g2))
-                                (V_DEC: forall x, In x l -> Decidable (@vvalid _ _ g2 x)),
-                                vvalid root -> (unmarked g1) root ->
-                                edge_list g1 root l ->
+                                (V_DEC: forall x, In x l -> Decidable (vvalid g1 x)),
+                                vvalid g1 root -> (unmarked g1) root ->
+                                step_list g1 root l ->
                                 mark1 g1 root g2 ->
                                 mark_list g2 l g3 ->
                                 mark g1 root g3.
@@ -421,22 +416,28 @@ Section MARKED_GRAPH.
       - subst n. destruct H2 as [_ [_ [? _]]].
         clear R_DEC V_DEC H H1. induction H3. auto.
         apply IHmark_list. apply (mark_marked g v); auto.
-      - destruct H4 as [z [? ?]]. rewrite <- (H1 z) in H4.
-        clear root H H0 H1 H2. induction H3. inversion H4.
+      - destruct H4 as [z [? ?]]. unfold edge in H4; rewrite <- (H1 z) in H4. destruct H4 as [_ [_ ?]].
+        assert (forall x : V, In x l -> Decidable (vvalid g2 x)).
+        Focus 1. {
+          intros.
+          destruct (V_DEC x H6) as [HH | HH]; rewrite (proj1 (proj1 H2)) in HH; [left | right]; auto.
+        } Unfocus.
+        clear g1 root H H0 H1 H2 V_DEC. rename X into V_DEC; induction H3. inversion H4.
         destruct H4.
         * subst z. apply (mark_list_marked g0 vs); auto.
           destruct H as [_ [? _]]. apply H; auto.
         * assert (In v (v :: vs)) by apply in_eq. destruct (V_DEC v H1).
           Focus 2. {
+            
             apply (mark_invalid _ _ _ n0) in H.
             apply IHmark_list; auto.
             + intros. apply (ReachDecidable_vi g g0); auto.
               apply R_DEC.
               right; auto.
-            + intros. 
+            + rewrite (vi_reachable_by_unmarked_equiv g g0) in H5; auto.
+            + intros.
               pose proof V_DEC x (or_intror H2).
               destruct H4 as [H4 | H4]; [left | right]; rewrite (proj1 (proj1 H) x) in H4; auto.
-            + rewrite (vi_reachable_by_unmarked_equiv g g0) in H5; auto.
           } Unfocus.
           Focus 1. {
             apply (mark_unmarked _ v g0) in H5; auto.
@@ -457,8 +458,15 @@ Section MARKED_GRAPH.
         hnf. apply Forall_cons. auto. apply Forall_nil.
       } rewrite H5.
       assert (forall x, In x l -> ~ g2 |= x ~o~> n satisfying (unmarked g2)). {
-        intros. intro. apply (mark1_reverse_unmark g1 root) in H7; auto.
-        apply H4. apply H1 in H6. apply reachable_by_cons with x; auto.
+        intros. intro.
+        destruct (V_DEC x H6).
+        + apply (mark1_reverse_unmark g1 root) in H7; auto.
+          apply H4. apply H1 in H6.
+          apply reachable_by_cons with x; auto.
+          unfold edge; auto.
+        + rewrite (proj1 (proj1 H2)) in n0.
+          apply reachable_by_is_reachable in H7.
+          apply reachable_head_valid in H7; tauto.
       } clear V_DEC R_DEC H H1 H2 H4 H5.
       induction H3. tauto. rename g into g1', g2 into g3, g0 into g2. rewrite <- IHmark_list.
       - clear IHmark_list. destruct H as [? [? ?]]. apply H2. apply H6. apply in_eq.
@@ -485,10 +493,10 @@ Section MARKED_GRAPH.
   Lemma mark1_mark_list_vi: forall (g1: Gph) root l g2 g4 g3
                                    (R_DEC: forall x, In x l ->
                                                      ReachDecidable g2 x (unmarked g2))
-                                   (V_DEC: forall x, In x l -> Decidable (@vvalid _ _ g2 x))
+                                   (V_DEC: forall x, In x l -> Decidable (vvalid g1 x))
                                    (R_DEC': ReachDecidable g1 root (unmarked g1)),
-                              vvalid root -> (unmarked g1) root ->
-                              edge_list g1 root l ->
+                              vvalid g1 root -> (unmarked g1) root ->
+                              step_list g1 root l ->
                               mark1 g1 root g2 ->
                               mark_list g2 l g3 ->
                               mark g1 root g4 ->
@@ -698,3 +706,9 @@ end.
 End MARKED_GRAPH.
 
 Notation "g1 '-=-' g2" := (validly_identical g1 g2) (at level 1).
+
+Arguments vvalid {_} {_} {_} _.
+Arguments evalid {_} {_} {_} _.
+Arguments src {_} {_} {_} _.
+Arguments dst {_} {_} {_} _.
+Arguments is_null {_} {_} {_} {_} _.

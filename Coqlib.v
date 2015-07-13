@@ -612,3 +612,21 @@ Proof.
   rewrite (remove_middle eq_dec _ _ _ H). rewrite app_cons_assoc. 
   apply (@Permutation_app_tail _ _ (x :: l1) l2), Permutation_sym, Permutation_cons_append.
 Qed.
+
+Lemma demorgan_weak: forall P Q: Prop, P \/ ~ P -> (~ (P /\ Q) <-> ~ P \/ ~ Q).
+Proof.
+  intros.
+  destruct H; tauto.
+Qed.
+
+Lemma demorgan_weak': forall P Q: Prop, P \/ ~ P -> (~ (~ P /\ Q) <-> P \/ ~ Q).
+Proof.
+  intros.
+  destruct H; tauto.
+Qed.
+
+Lemma eq_sym_iff: forall {A} (x y: A), x = y <-> y = x.
+Proof.
+  intros.
+  split; intro; congruence.
+Qed.

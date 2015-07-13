@@ -60,6 +60,21 @@ Coercion bi : Graph >-> BiGraph.
 Coercion ma : Graph >-> MathGraph.
 Existing Instances pg bi ma fin.
 
+Lemma weak_valid_vvalid_dec: forall {SGS: SpatialGraphSetting} (G : Graph) (x: Addr),
+  weak_valid x -> {vvalid x} + {~ vvalid x}.
+Proof.
+  intros.
+  apply null_or_valid in H.
+  destruct H; [right | left]; auto.
+  pose proof valid_not_null x; tauto.
+Qed.
+
+Hint Extern 5 (MathGraph (@pg _ ?g)) => apply (@ma _ g): GraphLib.
+Hint Extern 5 (LocalFiniteGraph (@pg _ ?g)) => apply (@LocalFiniteGraph_FiniteGraph _ _ g): GraphLib.
+Hint Extern 5 (FiniteGraph (@pg _ ?g)) => apply (@fin _ g): GraphLib.
+Hint Extern 5 (EnumCovered _ (reachable (@pg _ ?g) _)) => apply (@FiniteGraph_EnumCovered _ _ g): GraphLib.
+Hint Extern 5 ({vvalid ?x} + {~ vvalid ?x}) => apply (@weak_valid_vvalid_dec _ _ x): GraphLib.
+
 Definition gamma {SGS: SpatialGraphSetting} (G : Graph) (v: Addr) : bool * Addr * Addr := 
   (if node_pred_dec (marked G) v then true else false, dst (left_out_edge v), dst (right_out_edge v)).
 
@@ -634,13 +649,7 @@ Section SpatialGraph.
   Proof.
     intros.
     destruct (mark_exists g x H) as [marked' ?].
-    + intros; apply reachable_by_decidable.
-      - exact ma.
-      - apply LocalFiniteGraph_FiniteGraph.
-        exact fin.
-      - auto.
-      - apply FiniteGraph_EnumCovered.
-        exact fin.
+    + intros; apply reachable_by_decidable; simpl; auto with GraphLib.
     + exists (Build_Graph SG_Setting pg bi ma fin marked' is_null_def left_out_edge_def right_out_edge_def).
       exact m.
   Qed.
@@ -671,10 +680,7 @@ Section SpatialGraph.
           pose proof valid_not_null x. rewrite is_null_def in H1. tauto.
       - apply NoDup_nil.
     + assert (vvalid x) by tauto.
-      apply finite_reachable_computable; auto.
-      - exact ma.
-      - apply LocalFiniteGraph_FiniteGraph. exact fin.
-      - apply FiniteGraph_EnumCovered. exact fin.
+      apply finite_reachable_computable; auto with GraphLib.
   Qed.
 
   Lemma graph_eq: forall x (g: Graph) (H: x = null \/ vvalid x),
@@ -768,12 +774,14 @@ Section SpatialGraph.
   Qed.
 
   Lemma graph_ramify_aux2: forall (g1 g2: Graph) x l,
-                             @vvalid _ _ g1 x -> (l = null \/ @vvalid _ _ g1 l) ->
+                             @vvalid _ _ g1 x -> @weak_valid _ _ g1 _ l ->
                              Included (reachable g1 l) (reachable g1 x) ->
                              mark g1 l g2 -> graph x g1 |-- graph l g1 * (graph l g2 -* graph x g2).
   Proof.
     intros.
     rename H into Vg1x.
+    unfold weak_valid in H0.
+    rewrite is_null_def in H0.
     assert (Vg2x: @vvalid _ _ g2 x) by (destruct H2 as [[? _] _]; rewrite <- H; auto).
     assert (Hg1x: x = null \/ @vvalid _ _ g1 x) by auto.
     rename H0 into Hg1l.

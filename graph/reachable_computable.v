@@ -536,7 +536,7 @@ Section REACHABLE_COMPUTABLE.
         split; [right|]; tauto.
   Qed.
 
-  Lemma reachable_decidable:
+  Lemma reachable_decidable_prime:
     forall x,
       vvalid x ->
       EnumCovered V (reachable G x) ->
@@ -549,14 +549,37 @@ Section REACHABLE_COMPUTABLE.
     + rewrite H0 in n. right; auto.
   Qed.
 
+  Lemma reachable_decidable:
+    forall x,
+      {vvalid x} + {~ vvalid x} ->
+      EnumCovered V (reachable G x) ->
+      forall y, {reachable G x y} + {~ reachable G x y}.
+  Proof.
+    intros.
+    destruct H as [H | H].
+    + apply reachable_decidable_prime; auto.
+    + right.
+      intro.
+      apply reachable_head_valid in H0.
+      tauto.
+  Qed. 
+
   End UniquePreGraph.
 
   Lemma reachable_by_decidable (G: PreGraph V E) {MA: MathGraph G} {LF: LocalFiniteGraph G}:
     forall (p : NodePred G) x ,
-      vvalid x -> EnumCovered V (reachable G x) ->
+      {vvalid x} + {~ vvalid x} ->
+      EnumCovered V (reachable G x) ->
       forall y, {G |= x ~o~> y satisfying p} + {~ G |= x ~o~> y satisfying p}.
   Proof.
-    intros. remember (predicate_subgraph G p) as pdg.
+    intros.
+    destruct H as [H | H].
+    Focus 2. {
+      right.
+      intro; apply reachable_by_is_reachable in H0.
+      apply reachable_head_valid in H0; tauto.
+    } Unfocus.
+    remember (predicate_subgraph G p) as pdg.
     destruct (node_pred_dec p x).
     + assert (@vvalid _ _ pdg x) by (subst; split; auto).
       assert (EnumCovered V (reachable pdg x)). {
@@ -564,7 +587,7 @@ Section REACHABLE_COMPUTABLE.
         apply EnumCovered_strengthen with (reachable G x); auto.
         apply predicate_subgraph_reachable_included.
       } subst.
-      destruct (@reachable_decidable _ (predicate_sub_mathgraph _ p) (predicate_sub_localfinitegraph _ p) x H0 X0 y).
+      destruct (@reachable_decidable_prime _ (predicate_sub_mathgraph _ p) (predicate_sub_localfinitegraph _ p) x H0 X0 y).
       - rewrite <- reachable_by_eq_subgraph_reachable in r. left; auto.
       - rewrite <- reachable_by_eq_subgraph_reachable in n. right; auto.
     + right.
