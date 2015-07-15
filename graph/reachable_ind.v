@@ -18,8 +18,40 @@ Inductive reachable: V -> V -> Prop :=
   | reachable_nil: forall x, vvalid x -> reachable x x
   | reachable_cons: forall x y z, edge G x y -> reachable y z -> reachable x z.
 
+Lemma reachable_trans: forall x y z,
+  reachable x y -> reachable y z -> reachable x z.
+Proof.
+  intros.
+  induction H.
+  + auto.
+  + apply reachable_cons with y; auto.
+Qed.
+    
 End ind.
 End ind.
+
+Module ind2.
+Section ind2.
+
+Context {V : Type}.
+Context {E : Type}.
+Variable G : PreGraph V E.
+
+Inductive reachable: V -> V -> Prop :=
+  | reachable_nil: forall x, vvalid x -> reachable x x
+  | reachable_cons: forall x y z, reachable x y -> edge G y z -> reachable x z.
+
+Lemma reachable_trans: forall x y z,
+  reachable x y -> reachable y z -> reachable x z.
+Proof.
+  intros.
+  induction H0.
+  + auto.
+  + apply reachable_cons with y; auto.
+Qed.
+
+End ind2.
+End ind2.
 
 Section ind_reachable.
 
@@ -57,6 +89,25 @@ Proof.
       * destruct H2; split.
         1: destruct p; inversion H1; inversion H4; simpl in H2 |- *; subst; tauto.
         1: unfold path_prop; rewrite Forall_forall; intros; auto.
+Qed.
+
+Lemma reachable_ind2_reachable: forall x y, reachable G x y <-> ind2.reachable G x y.
+Proof.
+  intros.
+  rewrite reachable_ind_reachable.
+  split; intros.
+  + induction H.
+    - apply ind2.reachable_nil; auto.
+    - apply ind2.reachable_trans with y; auto.
+      apply ind2.reachable_cons with x; auto.
+      apply ind2.reachable_nil.
+      destruct H; tauto.
+  + induction H.
+    - apply ind.reachable_nil; auto.
+    - apply ind.reachable_trans with y; auto.
+      apply ind.reachable_cons with z; auto.
+      apply ind.reachable_nil.
+      destruct H0; tauto.
 Qed.
 
 Lemma reachable_edge:

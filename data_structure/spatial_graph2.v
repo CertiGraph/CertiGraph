@@ -46,7 +46,7 @@ Class Graph {SGS: SpatialGraphSetting} : Type := {
   mk: NodePred pg;
   is_null_def: forall x: Addr, is_null x = (x = null);
   left_out_edge_def: forall x: Addr, left_out_edge x = (x, L);
-  right_out_edge_def: forall x: Addr, right_out_edge x = (x, L)
+  right_out_edge_def: forall x: Addr, right_out_edge x = (x, R)
 }.
 
 Instance MG_Graph {SGS: SpatialGraphSetting} (G: Graph) : MarkedGraph Addr (Addr * LR) := {

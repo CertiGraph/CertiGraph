@@ -1,3 +1,4 @@
-1. WTF Bitbucket does not have an issue system.
-2. Well, maybe I just have not found it.
-3. Real issue. msl_ext/msl_ext.v is "standard" version, but direct version of overlapping works fine with it. Clean the proof there.
+1. Prove aux2 using fold_unfold.
+2. Generalize to dag Dag
+3. General graph with dynamic structures.
+
