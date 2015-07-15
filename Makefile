@@ -29,10 +29,10 @@ HEAP_MODEL_DIRECT_FILES = \
   SeparationAlgebra.v mapsto.v SeparationLogic.v
 
 GRAPH_FILES = \
-  graph.v graph_reachable.v graph_model.v path_lemmas.v marked_graph.v graph_gen.v reachable_computable.v subgraph.v find_not_in.v reachable_ind.v subgraph2.v
+  graph_model.v path_lemmas.v marked_graph.v graph_gen.v reachable_computable.v find_not_in.v reachable_ind.v subgraph2.v
 
 DATA_STRUCTURE_FILES = \
-  spatial_graph.v spatial_graph2.v spatial_graph_HMD.v spatial_graph_VST.v
+  spatial_graph2.v spatial_graph_HMD.v spatial_graph_VST.v
 
 SAMPLE_MARK_FILES = \
   env_mark.v verif_mark.v 

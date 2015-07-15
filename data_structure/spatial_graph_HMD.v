@@ -1,4 +1,4 @@
-Require Import RamifyCoq.data_structure.spatial_graph.
+Require Import RamifyCoq.data_structure.spatial_graph2.
 Require Import VST.msl.seplog.
 Require Import VST.msl.log_normalize.
 Require Import VST.msl.alg_seplog_direct.
@@ -21,36 +21,36 @@ Local Open Scope nat.
 Local Open Scope pred.
 
 Instance SGS_HMD: SpatialGraphSetting.
-  apply (Build_SpatialGraphSetting adr adr 0 eq_nat_dec).
+  apply (Build_SpatialGraphSetting adr 0 eq_nat_dec).
 Defined.
 
-Definition trinode x dlr :=
+Definition trinode x (dlr: bool * nat * nat) :=
   match dlr with
-  | (d, l, r) => !! Z.divide 3 (Z.of_nat x) && ((mapsto x d) * (mapsto (x+1) l) * (mapsto (x+2) r))
+  | (d, l, r) => !! Z.divide 3 (Z.of_nat x) && ((mapsto x (if d then 1 else 0)) * (mapsto (x+1) l) * (mapsto (x+2) r))
   end.
 
-Lemma trinode_unfold: forall x, exp (trinode x) = !! Z.divide 3 (Z.of_nat x) && ((exp (mapsto x)) * (exp (mapsto (x + 1))) * (exp (mapsto (x + 2)))).
+Lemma trinode_unfold: forall x, exp (trinode x) = !! Z.divide 3 (Z.of_nat x) && ((EX d: bool, (mapsto x (if d then 1 else 0))) * (exp (mapsto (x + 1))) * (exp (mapsto (x + 2)))).
 Proof.
   intros.
   replace (exp (trinode x) =
-   !! Z.divide 3 (Z.of_nat x) && (exp (mapsto x) * exp (mapsto (x + 1)) * exp (mapsto (x + 2)))) with
-    ((EX dlr : adr * adr * adr,
+   !! Z.divide 3 (Z.of_nat x) && ((EX d: bool, (mapsto x (if d then 1 else 0))) * exp (mapsto (x + 1)) * exp (mapsto (x + 2)))) with
+    ((EX dlr : bool * adr * adr,
       !! Z.divide 3 (Z.of_nat x) &&
-      (mapsto x (fst (fst dlr)) * mapsto (x + 1) (snd (fst dlr)) *
+      (mapsto x (if (fst (fst dlr)) then 1 else 0) * mapsto (x + 1) (snd (fst dlr)) *
        mapsto (x + 2) (snd dlr))) =
-   !! Z.divide 3 (Z.of_nat x) && (seplog.exp (mapsto x) * seplog.exp (mapsto (x + 1)) * seplog.exp (mapsto (x + 2))))%logic.
+   !! Z.divide 3 (Z.of_nat x) && ((EX d: bool, (mapsto x (if d then 1 else 0))) * seplog.exp (mapsto (x + 1)) * seplog.exp (mapsto (x + 2))))%logic.
   Focus 2. {
     f_equal.
     simpl.
     f_equal.
-    extensionality dlr; destruct dlr as [[? ?] ?]; reflexivity.
+    extensionality dlr; destruct dlr as [[? ?] ?]. reflexivity.
   } Unfocus.
   rewrite <- log_normalize.exp_andp2.
   f_equal.
   repeat rewrite exp_curry; simpl fst; simpl snd.
   rewrite seplog.sepcon_assoc.
   rewrite log_normalize.exp_sepcon1.
-  f_equal; extensionality s.
+  f_equal. extensionality s.
   rewrite log_normalize.exp_sepcon1.
   rewrite log_normalize.exp_sepcon2.
   f_equal; extensionality l.
@@ -60,6 +60,13 @@ Proof.
   reflexivity.
 Qed.
 
+Lemma mapsto_derives_aux: forall x, EX  d : bool, mapsto x (if d then 1 else 0) |-- exp (mapsto x).
+Proof.
+  intros.
+  apply exp_left; intro d.
+  apply (exp_right (if d then 1 else 0)); auto.
+Qed.
+
 Lemma trinode__precise: forall x, precise (exp (trinode x)).
 Proof.
   intros.
@@ -67,7 +74,9 @@ Proof.
   pose proof (@precise_andp_right _ _ _ PSLdirect).
   simpl in H.
   apply H.
-  repeat apply precise_sepcon; apply mapsto__precise.
+  repeat apply precise_sepcon; try apply mapsto__precise.
+  apply derives_precise with (exp (mapsto x)); [| apply mapsto__precise].
+  apply mapsto_derives_aux.
 Qed.
 
 Lemma trinode_conflict: forall p1 p2 v1 v2, p1 = p2 -> trinode p1 v1 * trinode p2 v2 |-- FF.
@@ -76,8 +85,8 @@ Proof.
   destruct v1 as [[d1 l1] r1].
   destruct v2 as [[d2 l2] r2].
   change (trinode p1 (d1, l1, r1) * trinode p2 (d2, l2, r2) |-- FF) with
-   (seplog.derives (!! Z.divide 3 (Z.of_nat p1) && (mapsto p1 d1 * mapsto (p1 + 1) l1 * mapsto (p1 + 2) r1) *
-   (!! Z.divide 3 (Z.of_nat p2) && (mapsto p2 d2 * mapsto (p2 + 1) l2 * mapsto (p2 + 2) r2)))
+   (seplog.derives (!! Z.divide 3 (Z.of_nat p1) && (mapsto p1 (if d1 then 1 else 0) * mapsto (p1 + 1) l1 * mapsto (p1 + 2) r1) *
+   (!! Z.divide 3 (Z.of_nat p2) && (mapsto p2 (if d2 then 1 else 0) * mapsto (p2 + 1) l2 * mapsto (p2 + 2) r2)))
     FF)%logic.
   eapply seplog.derives_trans.
   + apply seplog.sepcon_derives;
@@ -138,12 +147,12 @@ Proof.
     omega.
 Qed.
 
-Lemma disj_trinode_: forall p1 p2, p1 <> p2 -> disjointed (EX  v : adr * adr * adr, trinode p1 v)
-  (EX  v : adr * adr * adr, trinode p2 v).
+Lemma disj_trinode_: forall p1 p2, p1 <> p2 -> disjointed (EX  v : bool * adr * adr, trinode p1 v)
+  (EX  v : bool * adr * adr, trinode p2 v).
 Proof.
   intros.
-  change (EX  v : adr * adr * adr, trinode p1 v) with (exp (trinode p1)).
-  change (EX  v : adr * adr * adr, trinode p2 v) with (exp (trinode p2)).
+  change (EX  v : bool * adr * adr, trinode p1 v) with (exp (trinode p1)).
+  change (EX  v : bool * adr * adr, trinode p2 v) with (exp (trinode p2)).
   rewrite !trinode_unfold.
   pose proof disj_prop_andp_left as HH; simpl in HH; apply HH; clear HH; [apply Zdivide_dec |].
   intros.
@@ -153,7 +162,10 @@ Proof.
   apply align_3_aux in H1; destruct H1 as [k2 ?].
   pose proof disj_sepcon_right as HH; simpl in HH.
   repeat apply HH; apply disj_comm; repeat apply HH;
-  apply disj_mapsto_; omega.
+  try (eapply disj_derives;
+         [ first [apply mapsto_derives_aux | apply derives_refl]
+         | first [apply mapsto_derives_aux | apply derives_refl]
+         | apply disj_mapsto_]; omega).
 Qed.
 
 Lemma trinode_inj: forall p v1 v2, trinode p v1 && trinode p v2 |-- !! (v1 = v2).
@@ -172,8 +184,8 @@ Proof.
     eapply derives_trans.
     apply precise_left_sepcon_andp_distr with (exp (mapsto p)).
     1: apply mapsto__precise.
-    1: apply (exp_right d1); auto.
-    1: apply (exp_right d2); auto.
+    1: apply (exp_right (if d1 then 1 else 0)); auto.
+    1: apply (exp_right (if d2 then 1 else 0)); auto.
     
     eapply derives_trans; [apply sepcon_derives |].
     1: apply mapsto_inj.
@@ -194,7 +206,8 @@ Proof.
 
     intro; simpl in *; intros.
     unfold prop in *.
-    destruct H as [? [? ?]]; congruence.
+    
+    destruct d1, d2; destruct H as [? [? ?]]; congruence.
 Qed.
 
 Instance MSLdirect : MapstoSepLog AV_SGraph trinode.
