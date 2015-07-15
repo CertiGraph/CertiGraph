@@ -710,6 +710,27 @@ Section SpatialGraph.
     apply nodup_remove_perm; auto.
   Qed.
 
+  Lemma reachable_subtract_perm:
+    forall (g: Graph) x l l1 l2, Included (reachable g l) (reachable g x) ->
+                                 reachable_list g x l1 -> NoDup l1 -> reachable_list g l l2 -> NoDup l2 ->
+                                 Permutation (map (Gamma g) l1) (map (Gamma g) l2 ++ map (Gamma g) (subtract t_eq_dec l1 l2)).
+  Proof.
+    intros. rewrite <- (compcert.lib.Coqlib.list_append_map (Gamma g)).
+    apply Permutation_map. apply perm_trans with (subtract t_eq_dec l1 l2 ++ l2).
+    + apply subtract_permutation; auto.
+      intro y. rewrite (H0 y). rewrite (H2 y). 
+      specialize (H y). auto.
+    + apply Permutation_app_comm.
+  Qed.
+
+  Lemma subgraph_update:
+    forall (g g': Graph) (S1 S1' S2: list Addr),
+      Included (reachable_through_set g S1) (reachable_through_set g' S1') ->
+      (unreachable_subgraph g S1) ~=~ (unreachable_subgraph g' S1') ->
+      graphs S1 g ⊗ graphs S2 g |-- graphs S1 g * (graphs S1' g' -* graphs S1' g' ⊗ graphs S2 g').
+  Proof.
+  Abort.
+  
   Lemma graph_ramify_aux0: forall (g: Graph) x d l r,
                              vvalid x -> gamma g x = (d, l, r) ->
                              graph x g |-- trinode x (d, l, r) * (trinode x (d, l, r) -* graph x g).
@@ -758,19 +779,6 @@ Section SpatialGraph.
         * destruct (node_pred_dec (marked g')); destruct (node_pred_dec (marked g)); tauto.
         * rewrite !left_out_edge_def. rewrite H9. auto.
         * rewrite !right_out_edge_def. rewrite H9. auto.
-  Qed.
-
-  Lemma reachable_subtract_perm:
-    forall (g: Graph) x l l1 l2, Included (reachable g l) (reachable g x) ->
-                                 reachable_list g x l1 -> NoDup l1 -> reachable_list g l l2 -> NoDup l2 ->
-                                 Permutation (map (Gamma g) l1) (map (Gamma g) l2 ++ map (Gamma g) (subtract t_eq_dec l1 l2)).
-  Proof.
-    intros. rewrite <- (compcert.lib.Coqlib.list_append_map (Gamma g)).
-    apply Permutation_map. apply perm_trans with (subtract t_eq_dec l1 l2 ++ l2).
-    + apply subtract_permutation; auto.
-      intro y. rewrite (H0 y). rewrite (H2 y). 
-      specialize (H y). auto.
-    + apply Permutation_app_comm.
   Qed.
 
   Lemma graph_ramify_aux2: forall (g1 g2: Graph) x l,
