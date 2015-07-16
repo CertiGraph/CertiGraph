@@ -20,7 +20,7 @@ Definition adr_conflict (a1 a2 : val * type) : bool :=
     if (pointer_range_overlap_dec p1 (BV_sizeof t1) p2 (BV_sizeof t2)) then true else false
   end.
 
-Instance AA : AbsAddr.
+Instance AA : AbsAddr (val * type) val.
   apply (mkAbsAddr (val * type) val adr_conflict); intros; unfold adr_conflict in *; destruct p1, p2.
   + destruct (pointer_range_overlap_dec v (BV_sizeof t) v0 (BV_sizeof t0)); subst;
     destruct (pointer_range_overlap_dec v0 (BV_sizeof t0) v (BV_sizeof t)); subst; auto;
@@ -90,7 +90,7 @@ Definition adr_conflict (a1 a2 : val * Z) : bool :=
     if (pointer_range_overlap_dec p1 n1 p2 n2) then true else false
   end.
 
-Instance AA : AbsAddr.
+Instance AA : AbsAddr (val * Z) unit.
   apply (mkAbsAddr (val * Z) unit adr_conflict); intros; unfold adr_conflict in *; destruct p1, p2.
   + destruct (pointer_range_overlap_dec v z v0 z0); subst;
     destruct (pointer_range_overlap_dec v0 z0 v z); subst; auto;
