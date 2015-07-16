@@ -337,7 +337,7 @@ Proof.
   intros; apply disj_comm; auto.
 Qed.
 
-Lemma mapsto_precise: forall {AV: AbsAddr} {A} {mapsto: Addr -> Val -> A} {ND: NatDed A} {SL: SepLog A} {PSL: PreciseSepLog A} {MSL: MapstoSepLog AV mapsto} p v , precise (mapsto p v).
+Lemma mapsto_precise: forall {Addr Val: Type} {AV: AbsAddr Addr Val} {A} {mapsto: Addr -> Val -> A} {ND: NatDed A} {SL: SepLog A} {PSL: PreciseSepLog A} {MSL: MapstoSepLog AV mapsto} p v , precise (mapsto p v).
 Proof.
   intros.
   eapply derives_precise; [| apply mapsto__precise].
@@ -345,7 +345,7 @@ Proof.
   apply derives_refl.
 Qed.
 
-Lemma disj_mapsto: forall {AV: AbsAddr} {A} {mapsto: Addr -> Val -> A} {ND: NatDed A} {SL: SepLog A} {PSL: PreciseSepLog A} {OSL: OverlapSepLog A} {MSL: MapstoSepLog AV mapsto} {DSL: DisjointedSepLog A} {SMSL: StaticMapstoSepLog AV mapsto} p1 p2 v1 v2, addr_conflict p1 p2 = false -> disjointed (mapsto p1 v1) (mapsto p2 v2).
+Lemma disj_mapsto: forall {Addr Val: Type} {AV: AbsAddr Addr Val} {A} {mapsto: Addr -> Val -> A} {ND: NatDed A} {SL: SepLog A} {PSL: PreciseSepLog A} {OSL: OverlapSepLog A} {MSL: MapstoSepLog AV mapsto} {DSL: DisjointedSepLog A} {SMSL: StaticMapstoSepLog AV mapsto} p1 p2 v1 v2, addr_conflict p1 p2 = false -> disjointed (mapsto p1 v1) (mapsto p2 v2).
 Proof.
   intros.
   eapply disj_derives; [| | apply disj_mapsto_]; eauto.
