@@ -64,12 +64,51 @@ Section SpatialGraph.
 
   Context {V E DV DE Pred: Type}.
   Context {SGP: SpatialGraphPred V E DV DE Pred}.
-  Context {SGA: SpatialGraphAssum SGP}.
+  (* Context {SGA: SpatialGraphAssum SGP}. *)
+  Context {SGSA: SpatialGraphStrongAssum SGP}.
   Notation Graph := (SpatialGraph V E DV DE).
 
   Definition graph_cell (g: Graph) (v : V) : Pred := vertex_at v (vgamma g v).
 
+  Lemma sepcon_unique_graph_cell: forall g, sepcon_unique (graph_cell g).
+  Proof.
+    repeat intro. unfold graph_cell.
+    apply (@mapsto_conflict _ _ _ _ _ _ _ _ _ _ _ VP_sMSL).
+    (* unfold addr_conflict. unfold addr_eqb. destruct (addr_eq_dec x x); auto. *)
+  Abort.
+  
   Definition graph (x : V) (g: Graph) : Pred :=
     EX l : list V, !!reachable_list g x l && iter_sepcon l (graph_cell g).
+
+  Fixpoint graphs (l : list V) (g: Graph) :=
+    match l with
+      | nil => emp
+      | v :: l' => graph v g ⊗ graphs l' g
+    end.
+
+  Definition graphs' (S : list V) (g : Graph) :=
+    EX l: list V, !!reachable_set_list pg S l &&
+                    iter_sepcon l (graph_cell g).
+
+  Lemma graphs_unfold: forall S g, graphs S g = graphs' S g.
+  Proof.
+    induction S; intros.
+    + unfold graphs. unfold graphs'. apply pred_ext.
+      - apply (exp_right nil). simpl. apply andp_right; auto.
+        apply prop_right. intro x. split; intros.
+        * unfold reachable_through_set in H. destruct H as [s [? _]]. inversion H.
+        * inversion H.
+      - normalize. intro l; intros. destruct l; simpl; auto.
+        specialize (H v). assert (In v (v :: l)) by apply in_eq.
+        rewrite <- H in H0. unfold reachable_through_set in H0.
+        destruct H0 as [s [? _]]. inversion H0.
+    + unfold graphs. fold graphs. rewrite IHS.
+      unfold graphs'. unfold graph. clear IHS. apply pred_ext.
+      - normalize_overlap. intros. rename x into la.
+        normalize_overlap. rename x into lS. normalize_overlap.
+        (* rewrite (add_andp _ _ (iter_sepcon_unique_nodup la (sepcon_unique_graph_cell g))). *)
+        (* rewrite (add_andp _ _ (iter_sepcon_unique_nodup lS (sepcon_unique_graph_cell g))). *)
+        (* normalize_overlap. *)
+  Abort.
 
 End SpatialGraph.

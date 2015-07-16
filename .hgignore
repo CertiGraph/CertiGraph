@@ -5,3 +5,4 @@ compcert/*
 *.vo
 *.glob
 .depend
+_CoqProject
