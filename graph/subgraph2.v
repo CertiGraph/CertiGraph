@@ -16,18 +16,17 @@ Context {V E: Type}.
 Context (g: PreGraph V E).
 Context {MA: MathGraph g}.
 Context {LF: LocalFiniteGraph g}.
-Context (p: NodePred g).
 
-Definition predicate_vvalid : Ensemble V :=
+Definition predicate_vvalid (p: V -> Prop): Ensemble V :=
   fun n => vvalid n /\ p n.
 
-Definition predicate_evalid : Ensemble E :=
+Definition predicate_evalid (p: V -> Prop): Ensemble E :=
   fun e => evalid e /\ p (src e) /\ p (dst e).
 
-Definition predicate_subgraph : PreGraph V E :=
-  Build_PreGraph V E EV EE predicate_vvalid predicate_evalid src dst.
+Definition predicate_subgraph (p: V -> Prop): PreGraph V E :=
+  Build_PreGraph V E EV EE (predicate_vvalid p) (predicate_evalid p) src dst.
 
-Definition predicate_sub_mathgraph : MathGraph predicate_subgraph.
+Definition predicate_sub_mathgraph (p: V -> Prop): MathGraph (predicate_subgraph p).
 Proof.
   refine (Build_MathGraph V E _ is_null is_null_dec _ _).
   + unfold predicate_subgraph, predicate_vvalid, predicate_evalid; simpl; intros.
@@ -39,7 +38,7 @@ Proof.
     tauto.
 Defined.
 
-Definition predicate_sub_localfinitegraph : LocalFiniteGraph predicate_subgraph.
+Definition predicate_sub_localfinitegraph (p: NodePred g) : LocalFiniteGraph (predicate_subgraph p).
 Proof.
   refine (Build_LocalFiniteGraph V E _ _).
   intros.
@@ -60,9 +59,9 @@ Proof.
       assert (~ false = true) by congruence; tauto.
 Defined.
 
-Lemma reachable_by_eq_subgraph_reachable:
+Lemma reachable_by_eq_subgraph_reachable (p: V -> Prop):
   forall (n1 n2: V),
-    g |= n1 ~o~> n2 satisfying p <-> reachable predicate_subgraph n1 n2.
+    g |= n1 ~o~> n2 satisfying p <-> reachable (predicate_subgraph p) n1 n2.
 Proof.
   intros; split; intros; destruct H as [path [? [? ?]]]; exists path.
   + split; auto. split. 2: repeat intro; hnf; auto.
@@ -107,8 +106,8 @@ Proof.
         constructor; [tauto | auto].
 Qed.
 
-Lemma predicate_subgraph_reachable_included: 
-  forall (n: V), Included (reachable predicate_subgraph n) (reachable g n).
+Lemma predicate_subgraph_reachable_included (p: V -> Prop): 
+  forall (n: V), Included (reachable (predicate_subgraph p) n) (reachable g n).
 Proof.
   intros.
   intro; intros.
@@ -159,5 +158,29 @@ Proof.
   repeat split; auto; tauto.
 Qed.
 
+Definition reachable_subgraph {V E} (g: PreGraph V E) (S : list V): PreGraph V E :=
+  predicate_subgraph g (reachable_through_set g S).
 
+Definition unreachable_subgraph {V E} (g: PreGraph V E) (S : list V): PreGraph V E :=
+  predicate_subgraph g (fun n => ~ reachable_through_set g S n).
+
+Lemma si_reachable_subgraph: forall {V E} (g1 g2: PreGraph V E) S, g1 ~=~ g2 -> (reachable_subgraph g1 S) ~=~ (reachable_subgraph g2 S).
+Proof.
+Arguments vvalid {_} {_} _ _.
+Arguments evalid {_} {_} _ _.
+  intros.
+  pose proof (fun x => si_reachable_through_set g1 g2 S x H).
+  destruct H as [? [? [? ?]]].
+  split; [| split; [| split]]; simpl; auto.
+  + intros.
+    unfold predicate_vvalid.
+    rewrite (H0 v), H.
+    tauto.
+  + intros.
+    unfold predicate_evalid.
+    rewrite (H0 (src e)), (H0 (dst e)), H1, H2, H3.
+    tauto.
+Arguments evalid {_} {_} {_} _.
+Arguments vvalid {_} {_} {_} _.
+Qed.
 

@@ -233,19 +233,4 @@ Proof.
   destruct (si_reachable g1 g2 s H).
   apply H2; auto.
 Qed.
- 
-Lemma si_reachable_subgraph: forall {V E} (g1 g2: PreGraph V E) S, g1 ~=~ g2 -> (reachable_subgraph g1 S) ~=~ (reachable_subgraph g2 S).
-Proof.
-Arguments vvalid {_} {_} _ _.
-  intros.
-  pose proof (fun x => si_reachable_through_set g1 g2 S x H).
-  destruct H as [? [? [? ?]]].
-  split; [| split; [| split]]; auto.
-  intros.
-  simpl.
-  unfold reachable_valid.
-  rewrite (H0 v), H.
-  tauto.
-Arguments vvalid {_} {_} {_} _.
-Qed.
 

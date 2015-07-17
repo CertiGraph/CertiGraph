@@ -53,18 +53,6 @@ Definition reachable_through_set {V E : Type} (g: PreGraph V E) (S : list V) : E
 Definition reachable_set_list {V E : Type} (g: PreGraph V E) (S : list V) (l : list V) : Prop :=
   forall x : V, reachable_through_set g S x <-> In x l.
 
-Definition reachable_valid {V E : Type} (g: PreGraph V E) (S : list V) : V -> Prop :=
-  fun n => @vvalid _ _ _ n /\ reachable_through_set g S n.
-
-Definition reachable_subgraph {V E : Type} (g: PreGraph V E) (S : list V): PreGraph V E :=
-  Build_PreGraph V E EV EE (reachable_valid g S) evalid src dst.
-
-Definition unreachable_valid {V E : Type} (g: PreGraph V E) (S : list V) : V -> Prop :=
-  fun n => @vvalid _ _ _ n /\ ~ reachable_through_set g S n.
-
-Definition unreachable_subgraph {V E : Type} (g: PreGraph V E) (S : list V): PreGraph V E :=
-  Build_PreGraph  V E EV EE (unreachable_valid g S) evalid src dst .
-
 Section GraphPath.
   Variable V : Type.
   Variable E : Type.
