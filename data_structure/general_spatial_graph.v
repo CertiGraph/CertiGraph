@@ -12,6 +12,7 @@ Require Import RamifyCoq.graph.path_lemmas.
 Require Import RamifyCoq.graph.reachable_computable.
 Require Import RamifyCoq.graph.reachable_ind.
 Require Import RamifyCoq.graph.marked_graph.
+Require Import RamifyCoq.graph.subgraph2.
 Require Import RamifyCoq.graph.graph_gen.
 Require Import Coq.Logic.Classical.
 Import RamifyCoq.msl_ext.seplog.OconNotation.
@@ -26,6 +27,11 @@ Class SpatialGraph (V E DV DE: Type): Type := {
 
 Arguments vgamma {V E DV DE} _ _.
 Arguments egamma {V E DV DE} _ _.
+
+Coercion pg : SpatialGraph >-> PreGraph.
+
+Definition predicate_sub_spatialgraph {V E DV DE: Type} (g: SpatialGraph V E DV DE: Type) (p: V -> Prop) :=
+  Build_SpatialGraph V E DV DE (predicate_subgraph g p) (vgamma g) (egamma g).
 
 Class SpatialGraphPred (V E DV DE Pred: Type): Type := {
   vertex_at: V -> DV -> Pred;
@@ -57,8 +63,6 @@ Class SpatialGraphStrongAssum {V E DV DE Pred: Type} (SGP: SpatialGraphPred V E 
 }.
 
 Existing Instances SGA SGP_PSL SGP_OSL SGP_DSL SGP_COSL VP_MSL VP_sMSL EP_MSL EP_sMSL.
-
-Coercion pg : SpatialGraph >-> PreGraph.
 
 Section SpatialGraph.
 
