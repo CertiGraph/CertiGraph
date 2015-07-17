@@ -30,6 +30,13 @@ Arguments egamma {V E DV DE} _ _.
 
 Coercion pg : SpatialGraph >-> PreGraph.
 
+Definition validly_identical {V E DV DE} (g1 g2: SpatialGraph V E DV DE) : Prop :=
+  g1 ~=~ g2 /\
+  (forall v, @vvalid _ _ g1 v -> @vvalid _ _ g2 v -> vgamma g1 v = vgamma g2 v) /\
+  (forall e, @evalid _ _ g1 e -> @evalid _ _ g2 e -> egamma g1 e = egamma g2 e).
+
+Notation "g1 '-=-' g2" := (validly_identical g1 g2) (at level 1).
+
 Definition predicate_sub_spatialgraph {V E DV DE: Type} (g: SpatialGraph V E DV DE: Type) (p: V -> Prop) :=
   Build_SpatialGraph V E DV DE (predicate_subgraph g p) (vgamma g) (egamma g).
 
