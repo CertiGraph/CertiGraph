@@ -60,6 +60,11 @@ Definition reachable_through_set (g: Gph) (S : list V) : Ensemble V:= fun n => e
 
 Definition reachable_set_list (g: Gph) (S : list V) (l : list V) : Prop := forall x : V, reachable_through_set g S x <-> In x l.
 
+Definition Decidable (P: Prop) := {P} + {~ P}.
+ 
+Definition ReachDecidable (g: Gph) (x : V) (P : V -> Prop) :=
+  forall y, Decidable (g |= x ~o~> y satisfying P).
+
 (******************************************
  
 Path Lemmas
@@ -552,6 +557,10 @@ Proof.
   exists p. do 2 (split; auto). hnf in *.
   rewrite Forall_forall in *. intros. apply H. apply H2. auto.
 Qed.
+
+Class ReachableFiniteGraph (pg: PreGraph V E) := {
+  finiteR: forall x, vvalid pg x -> Enumerable V (reachable pg x)
+}.
 
 End PATH_LEM.
 

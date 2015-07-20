@@ -223,4 +223,16 @@ Proof.
   auto.
 Qed.
 
+Lemma ReachDecidable_si: forall (g1 g2: PreGraph V E) (p1 p2: V -> Prop) x,
+  g1 ~=~ g2 ->
+  vertex_prop_coincide g1 g2 p1 p2 ->
+  ReachDecidable g1 x p1 -> ReachDecidable g2 x p2.
+Proof.
+  intros.
+  intro y; specialize (X y).
+  destruct X; [left | right].
+  + rewrite (si_reachable_by g1 g2 p1 p2) in r by auto; auto.
+  + rewrite (si_reachable_by g1 g2 p1 p2) in n by auto; auto.
+Qed.
+
 End SI_EQUIV.
