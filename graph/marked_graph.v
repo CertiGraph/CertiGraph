@@ -276,9 +276,11 @@ Section SIMPLE_MARK_GRAPH.
     (forall m, P m nil m) ->
     (forall m v m' l m'',
       P m' l m'' ->
+      ReachDecidable g v (negateP m) ->
+      Decidable (vvalid g v) ->
       forall 
-        (R_DEC: forall x, In x (v :: l) -> ReachDecidable g x (negateP m))
-        (V_DEC: forall x, In x (v :: l) -> Decidable (vvalid g x)),
+        (R_DEC: forall x, In x l -> ReachDecidable g x (negateP m))
+        (V_DEC: forall x, In x l -> Decidable (vvalid g x)),
       mark m v m' ->
       mark_list m' l m'' ->
       P m (v :: l) m'') ->
@@ -305,6 +307,10 @@ Section SIMPLE_MARK_GRAPH.
           intros; specialize (H2 x); do 2 (spec H2; [auto |]).
           rewrite !negateP_spec; tauto.
       - intros; apply V_DEC; right; auto.
+      - apply R_DEC; left; auto.
+      - apply V_DEC; left; auto.
+      - intros; apply R_DEC; right; auto.
+      - intros; apply V_DEC; right; auto.
   Qed.
 
   Lemma mark_list_marked: forall m1 l m2
@@ -318,9 +324,29 @@ Section SIMPLE_MARK_GRAPH.
     + intros.
       apply H.
       apply (mark_marked m v m'); auto.
-      apply R_DEC; left; auto.
   Qed.
   
+  Lemma mark_list_get_marked: forall m1 l m2
+    (R_DEC: forall x, In x l -> ReachDecidable g x (negateP m1))
+    (V_DEC: forall x, In x l -> Decidable (vvalid g x)),
+    mark_list m1 l m2 ->
+    forall z n,
+    In z l ->
+    g |= z ~o~> n satisfying (negateP m1) ->
+    m2 n.
+  Proof.
+    apply (ind_RV_DEC (fun m1 l m2 =>
+            forall z n : V, In z l -> g |= z ~o~> n satisfying (negateP m1) -> m2 n)).
+    + intros.
+      inversion H.
+    + intros.
+      destruct H3.
+      - subst z. apply (mark_list_marked m' l m''); auto.
+        * intros.
+
+ apply 
+        destruct H as [_ [? _]]. apply H; auto.
+
   Lemma mark_mark1_mark: forall m1 root l m2 m3
     (R_DEC: forall x, In x l -> ReachDecidable g x (negateP m2))
     (V_DEC: forall x, In x l -> Decidable (vvalid g x)),
