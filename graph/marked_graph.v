@@ -10,17 +10,14 @@ Require Import RamifyCoq.graph.reachable_computable.
 Require Import RamifyCoq.graph.reachable_ind.
 Require Import RamifyCoq.graph.subgraph2.
 
-(******************************************
+Section MARK_GRAPH.
 
-Marked Graph
+  Context {V : Type}.
+  Context {E : Type}.
+  Context {EV: EqDec V eq}.
+  Context {EE: EqDec E eq}.
 
-******************************************)
-
-Arguments vvalid {_} {_} _ _.
-Arguments evalid {_} {_} _ _.
-Arguments src {_} {_} _ _.
-Arguments dst {_} {_} _ _.
-Arguments is_null {_} {_} _ {_} _.
+Class MarkGraphSetting 
 
 Class MarkedGraph (Vertex Edge: Type) := {
   pg: PreGraph Vertex Edge;
@@ -33,13 +30,10 @@ Existing Instances pg.
 Arguments marked {_} {_} _.
 
 
-Section MARKED_GRAPH.
-
-  Context {V : Type}.
-  Context {E : Type}.
   Notation Gph := (MarkedGraph V E).
 
-  Definition marked_coincide {g1 g2: PreGraph V E} (m1: NodePred g1) (m2: NodePred g2) :=
+(*
+  Definition marked_coincide {g1 g2: PreGraph V E} (m1 m2: V -> Prop) :=
     forall x, @vvalid _ _ g1 x -> @vvalid _ _ g2 x -> (m1 x <-> m2 x).
 
   Definition validly_identical (g1 g2: Gph) : Prop :=
@@ -70,7 +64,7 @@ Section MARKED_GRAPH.
       reflexivity proved by vi_refl
       symmetry proved by vi_sym
       transitivity proved by vi_trans as vi_equal.
-
+*)
   Definition reachable_sub_markedgraph (G: Gph) x: Gph :=
     Build_MarkedGraph _ _ (reachable_subgraph G x) (marked G).
 
@@ -78,42 +72,6 @@ Section MARKED_GRAPH.
 
   Lemma unmarked_spec (g: Gph): forall x, (unmarked g) x <-> ~ (marked g) x.
   Proof. apply negateP_spec. Qed.
-
-  Lemma vi_reachable_by_unmarked_equiv: forall (g1 : Gph) (g2 : Gph) x y,
-    g1 -=- g2 ->
-    (g1 |= x ~o~> y satisfying (unmarked g1) <-> g2 |= x ~o~> y satisfying (unmarked g2)).
-  Proof.
-    cut (forall (g1 g2 : Gph) (x y : V),
-           g1 -=- g2 ->
-           g1 |= x ~o~> y satisfying (unmarked g1) ->
-           g2 |= x ~o~> y satisfying (unmarked g2)).
-    1: intros; split; apply H; [| symmetry]; auto.
-    intros.
-    rewrite reachable_by_eq_subgraph_reachable in H0 |- *.
-    assert (forall x, vvalid (predicate_subgraph g1 (unmarked g1)) x <-> vvalid (predicate_subgraph g2 (unmarked g2)) x).
-    Focus 1. {
-      intros; simpl; unfold predicate_vvalid.
-      destruct H as [[? _] ?].
-      specialize (H x0).
-      specialize (H1 x0).
-      rewrite !unmarked_spec.
-      tauto.
-    } Unfocus.
-    assert (forall x y, edge (predicate_subgraph g1 (unmarked g1)) x y <-> edge (predicate_subgraph g2 (unmarked g2)) x y).
-    Focus 1. {
-      apply si_subgraph_edge.
-      + destruct H; auto.
-      + destruct H.
-        intros.
-        rewrite !unmarked_spec.
-        specialize (H2 x0).
-        tauto.
-    } Unfocus.
-    pose proof (edge_equiv_reachable_equiv (predicate_subgraph g1 (unmarked g1)) (predicate_subgraph g2 (unmarked g2)) H1 H2).
-    destruct (H3 x) as [? _].
-    apply H4.
-    auto.
-  Qed.
 
   Definition mark1 (g1 : Gph) (n : V) (g2 : Gph) : Prop :=
     structurally_identical g1 g2 /\ vvalid g1 n /\ marked g2 n /\
@@ -264,18 +222,19 @@ Section MARKED_GRAPH.
 
   Definition Decidable (P: Prop) := {P} + {~ P}.
 
-  Definition ReachDecidable (g: Gph) (x : V) (P : NodePred g) :=
+  Definition ReachDecidable (g: Gph) (x : V) (P : V -> Prop) :=
     forall y, Decidable (g |= x ~o~> y satisfying P).
 
-  Lemma ReachDecidable_vi: forall (g1 g2: Gph) x,
-    g1 -=- g2 ->
-    ReachDecidable g1 x (unmarked g1) -> ReachDecidable g2 x (unmarked g2).
+  Lemma ReachDecidable_vi: forall (g1 g2: Gph) (p1 p2: V -> Prop) x,
+    g1 ~=~ g2 ->
+    vertex_prop_coincide g1 g2 p1 p2 ->
+    ReachDecidable g1 x p1 -> ReachDecidable g2 x p2.
   Proof.
     intros.
     intro y; specialize (X y).
     destruct X; [left | right].
-    + rewrite (vi_reachable_by_unmarked_equiv g1 g2) in r by auto; auto.
-    + rewrite (vi_reachable_by_unmarked_equiv g1 g2) in n by auto; auto.
+    + rewrite (si_reachable_by g1 g2 p1 p2) in r by auto; auto.
+    + rewrite (si_reachable_by g1 g2 p1 p2) in n by auto; auto.
   Qed.
 
   Lemma mark_unmarked_strong: forall (g1: Gph) root g2 n1 n2,
@@ -295,7 +254,7 @@ Section MARKED_GRAPH.
     simpl in H3.
     destruct H3.
     rewrite unmarked_spec in H4; tauto.
-  Qed. 
+  Qed.
 
   Lemma mark_invalid: forall (g1: Gph) root g2,
                          ~ vvalid g1 root ->
@@ -706,9 +665,3 @@ end.
 End MARKED_GRAPH.
 
 Notation "g1 '-=-' g2" := (validly_identical g1 g2) (at level 1).
-
-Arguments vvalid {_} {_} {_} _.
-Arguments evalid {_} {_} {_} _.
-Arguments src {_} {_} {_} _.
-Arguments dst {_} {_} {_} _.
-Arguments is_null {_} {_} {_} {_} _.

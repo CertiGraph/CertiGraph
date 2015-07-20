@@ -13,36 +13,44 @@ Require Import RamifyCoq.graph.reachable_ind.
 Section SubGraph.
 
 Context {V E: Type}.
+Context {EV: EqDec V eq}.
+Context {EE: EqDec E eq}.
 Context (g: PreGraph V E).
 Context {MA: MathGraph g}.
 Context {LF: LocalFiniteGraph g}.
 
 Definition predicate_vvalid (p: V -> Prop): Ensemble V :=
-  fun n => vvalid n /\ p n.
+  fun n => vvalid g n /\ p n.
 
 Definition predicate_evalid (p: V -> Prop): Ensemble E :=
-  fun e => evalid e /\ p (src e) /\ p (dst e).
+  fun e => evalid g e /\ p (src g e) /\ p (dst g e).
 
 Definition predicate_subgraph (p: V -> Prop): PreGraph V E :=
-  Build_PreGraph V E EV EE (predicate_vvalid p) (predicate_evalid p) src dst.
+  Build_PreGraph EV EE (predicate_vvalid p) (predicate_evalid p) (src g) (dst g).
+
+Definition reachable_subgraph (S : list V): PreGraph V E :=
+  predicate_subgraph (reachable_through_set g S).
+
+Definition unreachable_subgraph (S : list V): PreGraph V E :=
+  predicate_subgraph (fun n => ~ reachable_through_set g S n).
 
 Definition predicate_sub_mathgraph (p: V -> Prop): MathGraph (predicate_subgraph p).
 Proof.
-  refine (Build_MathGraph V E _ is_null is_null_dec _ _).
+  refine (Build_MathGraph _ (is_null g) (is_null_dec g) _ _).
   + unfold predicate_subgraph, predicate_vvalid, predicate_evalid; simpl; intros.
-    pose proof valid_graph e.
+    pose proof valid_graph g e.
     unfold weak_valid in H0.
     tauto.
   + unfold predicate_subgraph, predicate_vvalid, predicate_evalid; simpl; intros.
-    pose proof valid_not_null x.
+    pose proof valid_not_null g x.
     tauto.
 Defined.
 
-Definition predicate_sub_localfinitegraph (p: NodePred g) : LocalFiniteGraph (predicate_subgraph p).
+Definition predicate_sub_localfinitegraph (p: NodePred V) : LocalFiniteGraph (predicate_subgraph p).
 Proof.
-  refine (Build_LocalFiniteGraph V E _ _).
+  refine (Build_LocalFiniteGraph _ _).
   intros.
-  exists (filter (fun e => if (sumbool_dec_and (node_pred_dec p (src e)) (node_pred_dec p (dst e))) then true else false) (edge_func g x)).
+  exists (filter (fun e => if (sumbool_dec_and (node_pred_dec p (src g e)) (node_pred_dec p (dst g e))) then true else false) (edge_func g x)).
   split.
   + apply NoDup_filter.
     unfold edge_func.
@@ -52,7 +60,7 @@ Proof.
     unfold predicate_subgraph, predicate_vvalid, predicate_evalid; simpl; intros.
     rewrite filter_In.
     rewrite edge_func_spec.
-    destruct (sumbool_dec_and (node_pred_dec p (src x0)) (node_pred_dec p (dst x0))).
+    destruct (sumbool_dec_and (node_pred_dec p (src g x0)) (node_pred_dec p (dst g x0))).
     - unfold out_edges, Ensembles.In in *; simpl.
       assert (true = true) by auto; tauto.
     - unfold out_edges, Ensembles.In in *; simpl.
@@ -127,15 +135,20 @@ Qed.
 
 End SubGraph.
 
-Lemma si_subgraph_edge: forall {V E} (g1 g2: PreGraph V E) (p1: NodePred g1) (p2: NodePred g2), 
+Section SI_EQUIV.
+
+Context {V E: Type}.
+Context {EV: EqDec V eq}.
+Context {EE: EqDec E eq}.
+
+Lemma si_subgraph_edge: forall (g1 g2: PreGraph V E) (p1 p2: V -> Prop),
   g1 ~=~ g2 ->
-  (forall x, @vvalid _ _ g1 x -> @vvalid _ _ g2 x -> (p1 x <-> p2 x)) ->
+  (forall x, vvalid g1 x -> vvalid g2 x -> (p1 x <-> p2 x)) ->
   (forall x y, edge (predicate_subgraph g1 p1) x y <-> edge (predicate_subgraph g2 p2) x y).
 Proof.
-  intros V E.
-  cut (forall (g1 g2: PreGraph V E) (p1: NodePred g1) (p2: NodePred g2), 
+  cut (forall (g1 g2: PreGraph V E) (p1 p2: V -> Prop),
     g1 ~=~ g2 ->
-    (forall x, @vvalid _ _ g1 x -> @vvalid _ _ g2 x -> (p1 x <-> p2 x)) ->
+    (forall x, vvalid g1 x -> vvalid g2 x -> (p1 x <-> p2 x)) ->
     (forall x y, edge (predicate_subgraph g1 p1) x y -> edge (predicate_subgraph g2 p2) x y)).
   1: intros; split; apply H; auto; symmetry; auto.
   intros.
@@ -158,16 +171,8 @@ Proof.
   repeat split; auto; tauto.
 Qed.
 
-Definition reachable_subgraph {V E} (g: PreGraph V E) (S : list V): PreGraph V E :=
-  predicate_subgraph g (reachable_through_set g S).
-
-Definition unreachable_subgraph {V E} (g: PreGraph V E) (S : list V): PreGraph V E :=
-  predicate_subgraph g (fun n => ~ reachable_through_set g S n).
-
-Lemma si_reachable_subgraph: forall {V E} (g1 g2: PreGraph V E) S, g1 ~=~ g2 -> (reachable_subgraph g1 S) ~=~ (reachable_subgraph g2 S).
+Lemma si_reachable_subgraph: forall (g1 g2: PreGraph V E) S, g1 ~=~ g2 -> (reachable_subgraph g1 S) ~=~ (reachable_subgraph g2 S).
 Proof.
-Arguments vvalid {_} {_} _ _.
-Arguments evalid {_} {_} _ _.
   intros.
   pose proof (fun x => si_reachable_through_set g1 g2 S x H).
   destruct H as [? [? [? ?]]].
@@ -178,9 +183,44 @@ Arguments evalid {_} {_} _ _.
     tauto.
   + intros.
     unfold predicate_evalid.
-    rewrite (H0 (src e)), (H0 (dst e)), H1, H2, H3.
+    rewrite (H0 (src g1 e)), (H0 (dst g1 e)), H1, H2, H3.
     tauto.
-Arguments evalid {_} {_} {_} _.
-Arguments vvalid {_} {_} {_} _.
 Qed.
 
+Lemma si_reachable_by: forall (g1 g2: PreGraph V E) (p1 p2: V -> Prop) x y,
+  g1 ~=~ g2 ->
+  vertex_prop_coincide g1 g2 p1 p2 ->
+  (g1 |= x ~o~> y satisfying p1 <-> g2 |= x ~o~> y satisfying p2).
+Proof.
+  cut (forall (g1 g2: PreGraph V E) p1 p2 (x y : V),
+         g1 ~=~ g2 ->
+         vertex_prop_coincide g1 g2 p1 p2 ->
+         g1 |= x ~o~> y satisfying p1 ->
+         g2 |= x ~o~> y satisfying p2).
+  1: intros; split; apply H; [| | symmetry | apply vertex_prop_coincide_sym]; auto.
+  intros.
+  rewrite reachable_by_eq_subgraph_reachable in H1 |- *.
+  assert (forall x, vvalid (predicate_subgraph g1 p1) x <-> vvalid (predicate_subgraph g2 p2) x).
+  Focus 1. {
+    intros; simpl; unfold predicate_vvalid.
+    destruct H as [? _].
+    specialize (H x0).
+    specialize (H0 x0).
+    hnf in H0.
+    tauto.
+  } Unfocus.
+  assert (forall x y, edge (predicate_subgraph g1 p1) x y <-> edge (predicate_subgraph g2 p2) x y).
+  Focus 1. {
+    apply si_subgraph_edge.
+    + auto.
+    + intros.
+      specialize (H0 x0).
+      tauto.
+  } Unfocus.
+  pose proof (edge_equiv_reachable_equiv (predicate_subgraph g1 p1) (predicate_subgraph g2 p2) H2 H3).
+  destruct (H4 x) as [? _].
+  apply H5.
+  auto.
+Qed.
+
+End SI_EQUIV.
