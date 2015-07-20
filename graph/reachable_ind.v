@@ -12,10 +12,13 @@ Section ind.
 
 Context {V : Type}.
 Context {E : Type}.
+Context {EV: EqDec V eq}.
+Context {EE: EqDec E eq}.
+
 Variable G : PreGraph V E.
 
 Inductive reachable: V -> V -> Prop :=
-  | reachable_nil: forall x, vvalid x -> reachable x x
+  | reachable_nil: forall x, vvalid G x -> reachable x x
   | reachable_cons: forall x y z, edge G x y -> reachable y z -> reachable x z.
 
 Lemma reachable_trans: forall x y z,
@@ -35,10 +38,12 @@ Section ind2.
 
 Context {V : Type}.
 Context {E : Type}.
+Context {EV: EqDec V eq}.
+Context {EE: EqDec E eq}.
 Variable G : PreGraph V E.
 
 Inductive reachable: V -> V -> Prop :=
-  | reachable_nil: forall x, vvalid x -> reachable x x
+  | reachable_nil: forall x, vvalid G x -> reachable x x
   | reachable_cons: forall x y z, reachable x y -> edge G y z -> reachable x z.
 
 Lemma reachable_trans: forall x y z,
@@ -57,6 +62,8 @@ Section ind_reachable.
 
 Context {V : Type}.
 Context {E : Type}.
+Context {EV: EqDec V eq}.
+Context {EE: EqDec E eq}.
 Context {G : PreGraph V E}.
 
 Lemma reachable_ind_reachable: forall x y, reachable G x y <-> ind.reachable G x y.
@@ -120,23 +127,23 @@ Proof.
     apply ind.reachable_nil; unfold edge in H0; tauto.
   + apply ind.reachable_cons with y; auto.
 Qed.
- 
+
 Lemma reachable_step:
-  forall x y z, reachable G x y -> step G y z -> vvalid z -> reachable G x z.
+  forall x y z, reachable G x y -> step G y z -> vvalid G z -> reachable G x z.
 Proof.
   intros.
-  pose proof reachable_foot_valid V E G _ _ H.
+  pose proof reachable_foot_valid G _ _ H.
   apply reachable_edge with y; auto.
   unfold edge. tauto.
 Qed.
- 
+
 Lemma reachable_ind: forall x y, reachable G x y -> x = y \/ exists z, edge G x z /\ x <> z /\ reachable G z y.
 Proof.
   intros.
   rewrite reachable_ind_reachable in H.
   induction H.
   + left; auto.
-  + destruct (t_eq_dec x y).
+  + destruct_eq_dec x y.
     - subst y.
       apply IHreachable.
     - right.
@@ -155,7 +162,7 @@ Proof.
     apply H with x; auto.
 Qed.
 
-Lemma reachable_refl: forall x, vvalid x -> reachable G x x.
+Lemma reachable_refl: forall x, vvalid G x -> reachable G x x.
 Proof.
   intros.
   rewrite reachable_ind_reachable; apply ind.reachable_nil; auto.
@@ -163,7 +170,7 @@ Qed.
 
 Lemma reachable_list_bigraph_in:
   forall {l1 l2 x} l r,
-    vvalid x ->
+    vvalid G x ->
     reachable_list G l l1 ->
     reachable_list G r l2 ->
     (forall y, step G x y <-> y = l \/ y = r) ->
@@ -188,12 +195,18 @@ Qed.
 
 End ind_reachable.
 
-Lemma edge_equiv_reachable_equiv: forall {V E} (g1 g2: PreGraph V E),
-  (forall x, @vvalid _ _ g1 x <-> @vvalid _ _ g2 x) ->
+Section EQUIV.
+
+Context {V : Type}.
+Context {E : Type}.
+Context {EV: EqDec V eq}.
+Context {EE: EqDec E eq}.
+
+Lemma edge_equiv_reachable_equiv: forall (g1 g2: PreGraph V E),
+  (forall x, vvalid g1 x <-> vvalid g2 x) ->
   (forall x y, edge g1 x y <-> edge g2 x y) -> forall n, Same_set (reachable g1 n) (reachable g2 n).
 Proof.
-  intros V E.
-  cut (forall (g1 g2 : PreGraph V E), (forall x, @vvalid _ _ g1 x <-> @vvalid _ _ g2 x) -> (forall x y, edge g1 x y <-> edge g2 x y) -> forall n, Included (reachable g1 n) (reachable g2 n)).
+  cut (forall (g1 g2 : PreGraph V E), (forall x, vvalid g1 x <-> vvalid g2 x) -> (forall x y, edge g1 x y <-> edge g2 x y) -> forall n, Included (reachable g1 n) (reachable g2 n)).
   1: intros; split; intros; apply H; [auto | auto | symmetry; auto | symmetry; auto].
   intros; intro; intros.
   unfold Ensembles.In in *.
@@ -204,7 +217,7 @@ Proof.
     apply ind.reachable_cons with y; auto.
 Qed.
 
-Lemma si_reachable: forall {V E} (g1 g2: PreGraph V E) n,  g1 ~=~ g2 -> Same_set (reachable g1 n) (reachable g2 n).
+Lemma si_reachable: forall (g1 g2: PreGraph V E) n,  g1 ~=~ g2 -> Same_set (reachable g1 n) (reachable g2 n).
 Proof.
   intros.
   apply edge_equiv_reachable_equiv.
@@ -213,16 +226,15 @@ Proof.
     auto.
 Qed.
 
-Lemma si_reachable_direct: forall {V E} (g1 g2: PreGraph V E) x y,  g1 ~=~ g2 -> (reachable g1 x y <-> reachable g2 x y).
+Lemma si_reachable_direct: forall (g1 g2: PreGraph V E) x y,  g1 ~=~ g2 -> (reachable g1 x y <-> reachable g2 x y).
 Proof.
   intros. apply (si_reachable _ _ x) in H. destruct H. split; intros.
   + apply (H y); auto.
   + apply (H0 y); auto.
 Qed.
 
-Lemma si_reachable_through_set: forall {V E} (g1 g2: PreGraph V E) S n, g1 ~=~ g2 -> (reachable_through_set g1 S n <-> reachable_through_set g2 S n).
+Lemma si_reachable_through_set: forall (g1 g2: PreGraph V E) S n, g1 ~=~ g2 -> (reachable_through_set g1 S n <-> reachable_through_set g2 S n).
 Proof.
-  intros V E.
   cut (forall (g1 g2 : PreGraph V E) (S : list V) (n : V), g1 ~=~ g2 ->
          (reachable_through_set g1 S n -> reachable_through_set g2 S n)).
   1: intros; split; apply H; [| symmetry]; auto.
@@ -234,3 +246,4 @@ Proof.
   apply H2; auto.
 Qed.
 
+End EQUIV.

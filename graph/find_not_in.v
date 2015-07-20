@@ -2,17 +2,17 @@ Require Import RamifyCoq.Coqlib.
 
 Section FIND_NOT_IN.
 Context {V: Type}.
-Context {EDV: EqDec V}.
+Context {EDV: EqDec V eq}.
  
 Fixpoint findNotIn (l1 l2 l3: list V) : (option V * (list V * list V)) :=
   match l1 with
     | nil => (None, (nil, nil))
-    | x :: l => if (in_dec t_eq_dec x l2) then findNotIn l l2 (x :: l3) else (Some x, (rev l3, l))
+    | x :: l => if (in_dec equiv_dec x l2) then findNotIn l l2 (x :: l3) else (Some x, (rev l3, l))
   end.
  
 Lemma find_not_in_none: forall l1 l2 l3, fst (findNotIn l1 l2 l3) = None -> Forall (fun m => In m l2) l1.
 Proof.
-  induction l1; intros. apply Forall_nil. simpl in H. destruct (in_dec t_eq_dec a l2).
+  induction l1; intros. apply Forall_nil. simpl in H. destruct (in_dec equiv_dec a l2).
   apply Forall_cons. auto. apply IHl1 with (a :: l3); auto. inversion H.
 Qed.
  
@@ -21,7 +21,7 @@ Lemma find_not_in_some_explicit:
     findNotIn l1 l2 l3 = (Some x, (li1, li2)) -> (Forall (fun m => In m l2) l3) ->
     (~ In x li1) /\ (~ In x l2) /\ exists l4, li1 = rev l3 ++ l4 /\ Forall (fun m => In m l2) l4 /\ l1 = l4 ++ x :: li2.
 Proof.
-  induction l1; intros; simpl in H. inversion H. destruct (in_dec t_eq_dec a l2).
+  induction l1; intros; simpl in H. inversion H. destruct (in_dec equiv_dec a l2).
   assert (Forall (fun m : V => In m l2) (a :: l3)) by (apply Forall_cons; auto).
   specialize (IHl1 l2 (a :: l3) x li1 li2 H H1). destruct IHl1 as [? [? [l4 [? [? ?]]]]]. split; auto. split; auto.
   exists (a :: l4). repeat split; auto. simpl in H4. rewrite <- app_assoc in H4. rewrite <- app_comm_cons in H4.

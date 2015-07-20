@@ -9,61 +9,62 @@ Section GRAPH_GEN.
 
 Variable V : Type.
 Variable E : Type.
+Context {EV: EqDec V eq}.
+Context {EE: EqDec E eq}.
 Notation Gph := (PreGraph V E).
 
 Variable g: Gph.
-Context {BI: BiGraph g}.
+Variable left_out_edge right_out_edge: V -> E.
+Context {BI: BiGraph g left_out_edge right_out_edge}.
 Context {MA: MathGraph g}.
 
 Definition change_vvalid (v: V): Ensemble V :=
-  fun n => vvalid n \/ n = v.
+  fun n => vvalid g n \/ n = v.
 
-Definition change_node_pred (P: NodePred g) (v: V) (Pv: {Pv : Prop & {Pv} + {~ Pv}}) : NodePred g.
+Definition change_node_pred (P: NodePred V) (v: V) (Pv: {Pv : Prop & {Pv} + {~ Pv}}) : NodePred V.
   intros.
-  exists (fun n: V => (if t_eq_dec n v then projT1 Pv else P n)).
+  exists (fun n: V => (if equiv_dec n v then projT1 Pv else P n)).
   intros.
-  destruct (t_eq_dec x v).
+  destruct_eq_dec x v.
   + destruct Pv; auto.
   + destruct P; simpl; auto.
 Defined.
 
 Definition change_evalid v : Ensemble E :=
-  fun e => evalid e \/ src e = v.
+  fun e => evalid g e \/ src g e = v.
 
 Definition change_dst (v l r: V) : E -> V.
   intro e.
-  refine (if t_eq_dec (src e) v then _ else dst e).
+  refine (if equiv_dec (src g e) v then _ else dst g e).
   exact (if left_or_right _ _ v e _H then l else r).
 Defined.
 
 Definition update_PreGraph v l r : Gph :=
-  Build_PreGraph V E EV EE (change_vvalid v) (change_evalid v) src (change_dst v l r).
+  Build_PreGraph EV EE (change_vvalid v) (change_evalid v) (src g) (change_dst v l r).
 
-Definition update_BiGraph v l r: BiGraph (update_PreGraph v l r).
-  refine (Build_BiGraph V E _ left_out_edge right_out_edge _ _ _ _ _ _).
-  + unfold update_PreGraph; simpl; apply left_sound.
-  + unfold update_PreGraph; simpl; apply right_sound.
+Definition update_BiGraph v l r: BiGraph (update_PreGraph v l r) left_out_edge right_out_edge.
+  refine (Build_BiGraph _ _ _ _ _ _ _).
   + unfold update_PreGraph; simpl.
     unfold change_vvalid, change_evalid.
     intros.
-    rewrite left_sound.
-    pose proof left_valid x.
+    rewrite (left_sound g).
+    pose proof left_valid g x.
     tauto.
   + unfold update_PreGraph; simpl.
     unfold change_vvalid, change_evalid.
     intros.
-    rewrite right_sound.
-    pose proof right_valid x.
+    rewrite (right_sound g).
+    pose proof right_valid g x.
     tauto.
-  + unfold update_PreGraph; simpl; apply bi_consist.
-  + unfold update_PreGraph; simpl; apply only_two_edges.
+  + unfold update_PreGraph; simpl; apply (bi_consist g).
+  + unfold update_PreGraph; simpl; apply (only_two_edges g).
 Defined.
 
 Definition in_math (v l r: V) : Type :=
-  forall y, In y (l :: r :: nil) -> {vvalid y} + {y = v} + {is_null y}.
+  forall y, In y (l :: r :: nil) -> {vvalid g y} + {y = v} + {is_null g y}.
 
-Definition update_MathGraph v l r (Hi: in_math v l r) (Hn: ~ is_null v): MathGraph (update_PreGraph v l r).
-  refine (Build_MathGraph V E _ is_null is_null_dec _ _).
+Definition update_MathGraph v l r (Hi: in_math v l r) (Hn: ~ is_null g v): MathGraph (update_PreGraph v l r).
+  refine (Build_MathGraph _ (is_null g) (is_null_dec g) _ _).
   + unfold update_PreGraph, change_vvalid, change_evalid, change_dst; simpl.
     intros.
     destruct (t_eq_dec (src e) v).

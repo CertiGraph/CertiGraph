@@ -3,6 +3,7 @@ Require Export Coq.Lists.List.
 Require Export Coq.omega.Omega.
 Require Export Coq.Logic.FunctionalExtensionality.
 Require Export Coq.Sorting.Permutation.
+Require Export Coq.Classes.EquivDec.
 
 Definition Sublist {A} (L1 L2 : list A) : Prop := forall a, In a L1 -> In a L2.
 
@@ -448,24 +449,24 @@ Notation "a '+::' b" := (a ++ (b :: nil)) (at level 19).
 Lemma app_cons_assoc: forall {A} (l1 l2 : list A) x, l1 ++ x :: l2 = l1 +:: x ++ l2.
 Proof. intros. induction l1. simpl. auto. rewrite <- app_comm_cons. rewrite IHl1. do 2 rewrite <- app_comm_cons. auto. Qed.
 
-Class EqDec (T: Type) := {t_eq_dec: forall t1 t2 : T, {t1 = t2} + {t1 <> t2}}.
+(* Class EqDec (T: Type) := {t_eq_dec: forall t1 t2 : T, {t1 = t2} + {t1 <> t2}}. *)
 
-Fixpoint judgeNoDup {A} {EA : EqDec A} (l : list A) : bool :=
+Fixpoint judgeNoDup {A} {EA : EqDec A eq} (l : list A) : bool :=
   match l with
     | nil => true
-    | s :: ls => if in_dec t_eq_dec s ls then false else judgeNoDup ls
+    | s :: ls => if in_dec equiv_dec s ls then false else judgeNoDup ls
   end.
 
-Lemma judgeNoDup_ok {A} {EA : EqDec A}: forall (l : list A), judgeNoDup l = true <-> NoDup l.
+Lemma judgeNoDup_ok {A} {EA : EqDec A eq}: forall (l : list A), judgeNoDup l = true <-> NoDup l.
 Proof.
   induction l; intros; split; intros. apply NoDup_nil. simpl; auto.
-  simpl in H; destruct (in_dec t_eq_dec a l); [discriminate H | apply NoDup_cons; auto; rewrite <- IHl; auto].
-  simpl; destruct (in_dec t_eq_dec a l).
+  simpl in H; destruct (in_dec equiv_dec a l); [discriminate H | apply NoDup_cons; auto; rewrite <- IHl; auto].
+  simpl; destruct (in_dec equiv_dec a l).
   change (a :: l) with (nil ++ a :: l) in H; apply NoDup_remove_2 in H; simpl in H; contradiction.
   change (a :: l) with (nil ++ a :: l) in H; apply NoDup_remove_1 in H; simpl in H; rewrite IHl; auto.
 Qed.
 
-Lemma nodup_dec {A} {EA : EqDec A}: forall (l : list A), {NoDup l} + {~ NoDup l}.
+Lemma nodup_dec {A} {EA : EqDec A eq}: forall (l : list A), {NoDup l} + {~ NoDup l}.
 Proof.
   intros; destruct (judgeNoDup l) eqn : Hnodup;
   [left; rewrite judgeNoDup_ok in Hnodup; assumption |
@@ -474,13 +475,13 @@ Qed.
 
 Definition Dup {A} (L : list A) : Prop := ~ NoDup L.
 
-Lemma Dup_unfold {A} {EA : EqDec A}: forall (a : A) (L : list A), Dup (a :: L) -> In a L \/ Dup L.
+Lemma Dup_unfold {A} {EA : EqDec A eq}: forall (a : A) (L : list A), Dup (a :: L) -> In a L \/ Dup L.
 Proof.
-  intros; destruct (in_dec t_eq_dec a L);
+  intros; destruct (in_dec equiv_dec a L);
   [left; trivial | right; intro; apply H; constructor; auto].
 Qed.
 
-Lemma Dup_cyclic {A} {EA : EqDec A} : forall (L : list A), Dup L -> exists a L1 L2 L3, L = L1 ++ (a :: L2) ++ (a :: L3).
+Lemma Dup_cyclic {A} {EA : EqDec A eq} : forall (L : list A), Dup L -> exists a L1 L2 L3, L = L1 ++ (a :: L2) ++ (a :: L3).
 Proof.
   induction L. destruct 1. constructor. intros. apply Dup_unfold in H. destruct H. apply in_split in H.
   destruct H as [L1 [L2 ?]]. exists a. exists nil. exists L1. exists L2. rewrite H. simpl. trivial.
@@ -630,3 +631,8 @@ Proof.
   intros.
   split; intro; congruence.
 Qed.
+
+Ltac destruct_eq_dec a b :=
+  let H := fresh "H" in
+  destruct (@equiv_dec _ eq _ _ a b) as [H | H]; unfold complement, eq_equivalence, equiv in H.
+

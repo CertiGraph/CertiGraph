@@ -92,84 +92,94 @@ Graph Definitions
 
 ******************************************)
 
-Class PreGraph (Vertex Edge: Type) := {
-  EV: EqDec Vertex;
-  EE: EqDec Edge;
+Section GRAPH_DEF.
+
+Context {Vertex Edge: Type}.
+
+Record PreGraph {EV: EqDec Vertex eq} {EE: EqDec Edge eq} := {
   vvalid : Ensemble Vertex;
   evalid : Ensemble Edge;
   src : Edge -> Vertex;
   dst : Edge -> Vertex
 }.
 
-Global Existing Instances EV EE.
+Context {EV: EqDec Vertex eq}.
+Context {EE: EqDec Edge eq}.
 
-Inductive step {Vertex Edge: Type} (pg: PreGraph Vertex Edge): Vertex -> Vertex -> Prop :=
-  | step_intro: forall e x y, evalid e -> src e = x -> dst e = y -> step pg x y.
-
-Definition edge {V E : Type} (G : PreGraph V E) (n n' : V) : Prop :=
-  vvalid n /\ vvalid n' /\ step G n n'.
-
-Notation " g |= n1 ~> n2 " := (edge g n1 n2) (at level 1).
-
-Definition step_list {V E : Type} (G : PreGraph V E) n l : Prop := forall n', In n' l <-> step G n n'.
-
-Definition out_edges {Vertex Edge: Type} (pg: PreGraph Vertex Edge) x: Ensemble Edge := fun e => evalid e /\ src e = x.
-
-Definition in_edges {Vertex Edge: Type} (pg: PreGraph Vertex Edge) x: Ensemble Edge := fun e => evalid e /\ dst e = x.
-
-Class MathGraph {Vertex Edge: Type} (pg: PreGraph Vertex Edge) := {
-  is_null: Ensemble Vertex;
-  is_null_dec: forall p, {is_null p} + {~ is_null p};
-  weak_valid: Vertex -> Prop := fun p => is_null p \/ vvalid p;
-  valid_graph: forall e, evalid e -> vvalid (src e) /\ weak_valid (dst e);
-  valid_not_null: forall x, vvalid x -> is_null x -> False
+Record LabeledGraph (DV DE: Type) := {
+  pg_lg: PreGraph;
+  vlabel: Vertex -> DV;
+  elabel: Edge -> DE
 }.
 
-Definition well_defined_list {Vertex Edge: Type} (pg: PreGraph Vertex Edge) {ma : MathGraph pg} (l : list Vertex) :=
-  forall x, In x l -> weak_valid x.
+Inductive step (pg: PreGraph): Vertex -> Vertex -> Prop :=
+  | step_intro: forall e x y, evalid pg e -> src pg e = x -> dst pg e = y -> step pg x y.
 
-Class FiniteGraph {Vertex Edge: Type} (pg: PreGraph Vertex Edge) :=
+Definition edge (pg : PreGraph) (n n' : Vertex) : Prop :=
+  vvalid pg n /\ vvalid pg n' /\ step pg n n'.
+
+Notation " pg |= n1 ~> n2 " := (edge pg n1 n2) (at level 1).
+
+Definition step_list (pg : PreGraph) n l : Prop := forall n', In n' l <-> step pg n n'.
+
+Definition out_edges (pg : PreGraph) x: Ensemble Edge := fun e => evalid pg e /\ src pg e = x.
+
+Definition in_edges (pg : PreGraph) x: Ensemble Edge := fun e => evalid pg e /\ dst pg e = x.
+
+Definition NodePred := {P : Vertex -> Prop & forall x, {P x} + {~ P x}}.
+
+Definition app_node_pred (P: NodePred) (x: Vertex) := projT1 P x.
+
+Coercion app_node_pred : NodePred >-> Funclass.
+
+Definition node_pred_dec (P: NodePred) (x: Vertex): {P x} + {~ P x} := projT2 P x.
+
+Class MathGraph (pg: PreGraph) := {
+  is_null: Vertex -> Prop;
+  is_null_dec: forall x, {is_null x} + {~ is_null x};
+  weak_valid: Vertex -> Prop := fun p => is_null p \/ vvalid pg p;
+  valid_graph: forall e, evalid pg e -> vvalid pg (src pg e) /\ weak_valid (dst pg e);
+  valid_not_null: forall x, vvalid pg x -> is_null x -> False
+}.
+
+Definition well_defined_list (pg: PreGraph) {ma: MathGraph pg} (l : list Vertex) := forall x, In x l -> weak_valid x.
+
+Class FiniteGraph (pg: PreGraph) :=
 {
-  finiteV: Enumerable Vertex vvalid;
-  finiteE: Enumerable Edge evalid
+  finiteV: Enumerable Vertex (vvalid pg);
+  finiteE: Enumerable Edge (evalid pg)
 }.
 
-Class LocalFiniteGraph {Vertex Edge: Type} (pg: PreGraph Vertex Edge) :=
+Class LocalFiniteGraph (pg: PreGraph) :=
 {
   local_enumerable: forall x, Enumerable Edge (out_edges pg x)
 }.
 
-Definition NodePred {Vertex Edge: Type} (pg: PreGraph Vertex Edge) := 
-  {P : Vertex -> Prop & forall x, {P x} + {~ P x}}.
+Definition edge_func (pg: PreGraph) {lfg: LocalFiniteGraph pg} x := projT1 (local_enumerable x).
 
-Definition app_node_pred {Vertex Edge: Type} {pg: PreGraph Vertex Edge} (P: NodePred pg) (x: Vertex) :=
-  projT1 P x.
-
-Coercion app_node_pred : NodePred >-> Funclass.
-
-Definition node_pred_dec {Vertex Edge: Type} {pg: PreGraph Vertex Edge} (P: NodePred pg) (x: Vertex): {P x} + {~ P x} := projT2 P x.
-
-Definition edge_func {Vertex Edge: Type} (pg: PreGraph Vertex Edge) {lfg: LocalFiniteGraph pg} x := projT1 (local_enumerable x).
-
-Class BiGraph {Vertex Edge: Type} (pg: PreGraph Vertex Edge) :=
+Class BiGraph (pg: PreGraph) (left_out_edge right_out_edge: Vertex -> Edge) :=
 {
-  left_out_edge: Vertex -> Edge;
-  right_out_edge: Vertex -> Edge;
-  left_sound: forall x, src (left_out_edge x) = x;
-  right_sound: forall x, src (right_out_edge x) = x;
-  left_valid: forall x, vvalid x -> evalid (left_out_edge x);
-  right_valid: forall x, vvalid x -> evalid (right_out_edge x);
+  left_valid: forall x, vvalid pg x -> evalid pg (left_out_edge x);
+  right_valid: forall x, vvalid pg x -> evalid pg (right_out_edge x);
   bi_consist: forall x, left_out_edge x <> right_out_edge x;
-  only_two_edges: forall x e, src e = x <-> e = left_out_edge x \/ e = right_out_edge x
-(*  only_two_neighbours : forall (v : Vertex), edge_func pg v = left_out_edge v :: left_out_edge v :: nil *)
+  only_two_edges: forall x e, src pg e = x <-> e = left_out_edge x \/ e = right_out_edge x
 }.
 
-Lemma left_or_right {Vertex Edge: Type} (pg: PreGraph Vertex Edge) (bi: BiGraph pg): forall x e, src e = x -> {e = left_out_edge x} + {e = right_out_edge x}.
-Proof.
-  intros.
-  pose proof only_two_edges x e.
-  destruct (t_eq_dec e (left_out_edge x)); [left | right]; tauto.
-Qed.
+End GRAPH_DEF.
+
+Arguments PreGraph _ _ {_} {_}.
+Arguments NodePred : clear implicits.
+Arguments is_null {_} {_} {_} {_} _ {_} _.
+Arguments is_null_dec {_} {_} {_} {_} _ {_} _.
+Arguments weak_valid {_} {_} {_} {_} _ {_} _.
+Arguments valid_graph {_} {_} {_} {_} _ {_} _ _.
+Arguments valid_not_null {_} {_} {_} {_} _ {_} _ _ _. 
+Arguments left_valid {_} {_} {_} {_} _ {_} {_} {_} _ _.
+Arguments right_valid {_} {_} {_} {_} _ {_} {_} {_} _ _.
+Arguments bi_consist {_} {_} {_} {_} _ {_} {_} {_} _ _.
+Arguments only_two_edges {_} {_} {_} {_} _ {_} {_} {_} _ _.
+
+Notation " pg |= n1 ~> n2 " := (edge pg n1 n2) (at level 1).
 
 (******************************************
 
@@ -177,14 +187,20 @@ Properties
 
 ******************************************)
 
-Lemma step_spec: forall {Vertex Edge: Type} (pg: PreGraph Vertex Edge) x y, step pg x y <-> exists e, evalid e /\ src e = x /\ dst e = y.
+Section GRAPH_BASIC_LEM.
+
+Context {Vertex Edge: Type}.
+Context {EV: EqDec Vertex eq}.
+Context {EE: EqDec Edge eq}.
+
+Lemma step_spec: forall (pg: PreGraph Vertex Edge) x y, step pg x y <-> exists e, evalid pg e /\ src pg e = x /\ dst pg e = y.
 Proof.
   intros; split; intro.
   + inversion H; eauto.
   + destruct H as [? [? [? ?]]]; econstructor; eauto.
 Qed.
 
-Lemma valid_step: forall {Vertex Edge: Type} (PG: PreGraph Vertex Edge) {MA: MathGraph PG} x y, step PG x y -> vvalid x /\ weak_valid y.
+Lemma valid_step: forall (pg: PreGraph Vertex Edge) {ma: MathGraph pg} x y, step pg x y -> vvalid pg x /\ weak_valid pg y.
 Proof.
   intros.
   rewrite step_spec in H.
@@ -193,19 +209,20 @@ Proof.
   apply valid_graph; auto.
 Qed.
 
-Lemma edge_func_spec: forall {Vertex Edge} {PG : PreGraph Vertex Edge} {LFG: LocalFiniteGraph PG} e x,
-  In e (edge_func PG x) <-> evalid e /\ src e = x.
+Lemma edge_func_spec: forall {pg : PreGraph Vertex Edge} {lfg: LocalFiniteGraph pg} e x,
+  In e (edge_func pg x) <-> evalid pg e /\ src pg e = x.
 Proof.
   intros.
   unfold edge_func.
   destruct (local_enumerable x) as [? [?H ?H]]; simpl.
   specialize (H0 e).
   rewrite H0; unfold out_edges.
+  clear - H0.
   unfold Ensembles.In; tauto.
 Qed.
 
-Lemma edge_func_step: forall {Vertex Edge} {PG : PreGraph Vertex Edge} {LFG: LocalFiniteGraph PG} x y,
-  step PG x y <-> In y (map dst (edge_func PG x)).
+Lemma edge_func_step: forall {pg : PreGraph Vertex Edge} {lfg: LocalFiniteGraph pg} x y,
+  step pg x y <-> In y (map (dst pg) (edge_func pg x)).
 Proof.
   intros.
   rewrite step_spec.
@@ -213,69 +230,113 @@ Proof.
   apply Morphisms_Prop.ex_iff_morphism.
   hnf; cbv beta; intro e.
   rewrite edge_func_spec.
+  clear - e.
   tauto.
 Qed.
 
-Lemma null_or_valid: forall {Vertex Edge: Type} (pg: PreGraph Vertex Edge) {mg: MathGraph pg} x,
-  weak_valid x -> {is_null x} + {vvalid x}.
+Lemma null_or_valid: forall (pg: PreGraph Vertex Edge) {ma: MathGraph pg} x,
+  weak_valid pg x -> {is_null pg x} + {vvalid pg x}.
 Proof.
   intros.
-  destruct (is_null_dec x); [left | right]; auto.
+  destruct (is_null_dec pg x); [left | right]; auto.
   unfold weak_valid in H.
   tauto.
 Qed.
 
-Definition biEdge {Vertex Edge} {PG : PreGraph Vertex Edge} (BG: BiGraph PG) (v: Vertex) : Vertex * Vertex := (dst (left_out_edge v), dst (right_out_edge v)).
-
-Lemma biEdge_only2 {Vertex Edge} {PG : PreGraph Vertex Edge} (BG: BiGraph PG) :
-  forall v v1 v2 n, vvalid v -> biEdge BG v = (v1 ,v2) -> (step PG v n <-> n = v1 \/ n = v2).
+Definition negateP (p : NodePred Vertex) : NodePred Vertex.
 Proof.
-  intros; unfold biEdge in H.
-  split; intros.
-  + inversion H1; subst.
-    inversion H0; subst.
-    assert (e = left_out_edge (src e) \/ e = right_out_edge (src e)) by (apply only_two_edges; auto).
-    destruct H3; rewrite <- H3; auto.
-  + rewrite step_spec; inversion H0; subst.
-    destruct H1; [exists (left_out_edge v) | exists (right_out_edge v)]; subst.
-    - split; [| split]; [apply left_valid | rewrite left_sound |]; auto.
-    - split; [| split]; [apply right_valid | rewrite right_sound |]; auto.
-Qed.
-
-Definition negateP {V E} {g: PreGraph V E} (p : NodePred g) : NodePred g.
-Proof.
-  exists (Complement V (projT1 p)).
+  exists (Complement Vertex (projT1 p)).
   intros. destruct p. simpl in *. unfold Complement.
   destruct (s x); [right | left]; auto.
 Defined.
 
-Lemma negateP_spec {V E} {g: PreGraph V E}: forall (p : NodePred g) (x : V), (negateP p) x <-> ~ p x.
+Lemma negateP_spec: forall (p : NodePred Vertex) (x : Vertex), (negateP p) x <-> ~ p x.
 Proof. intros; unfold negateP; simpl; unfold Complement; tauto. Qed.
 
-Lemma negateP_spec_d {V E} {g: PreGraph V E}:
-  forall (p: NodePred g) (x : V), ~ Ensembles.In V (projT1 (negateP p)) x <-> p x.
+Lemma negateP_spec_d: forall (p: NodePred Vertex) (x : Vertex), ~ Ensembles.In Vertex (negateP p) x <-> p x.
 Proof.
   intros. unfold negateP. simpl. unfold Complement. 
   destruct p; simpl. split; intros; destruct (s x); try tauto.
   intro. hnf in H0. tauto.
 Qed.
 
-Instance LocalFiniteGraph_FiniteGraph {V E: Type} (G: PreGraph V E) {_: FiniteGraph G}: LocalFiniteGraph G.
+Instance LocalFiniteGraph_FiniteGraph (g: PreGraph Vertex Edge) (fg: FiniteGraph g): LocalFiniteGraph g.
 Proof.
   intros.
-  destruct X as [[vs [?H ?H]] [es [?H ?H]]].
+  destruct fg as [[vs [?H ?H]] [es [?H ?H]]].
   constructor.
   intros.
-  exists (filter (fun e => if t_eq_dec (src e) x then true else false) es).
+  exists (filter (fun e => if equiv_dec (src g e) x then true else false) es).
   split.
   + apply NoDup_filter; auto.
   + intro e.
     rewrite filter_In.
     rewrite H2.
     unfold Ensembles.In, out_edges.
-    destruct (t_eq_dec (src e) x); [tauto |].
+    destruct_eq_dec (src g e) x; [tauto |].
     assert (~ false = true) by congruence; tauto.
 Defined.
+
+Definition vertex_prop_coincide (g1 g2: PreGraph Vertex Edge) (p1 p2: Vertex -> Prop) := forall x, vvalid g1 x -> vvalid g2 x -> (p1 x <-> p2 x).
+
+Lemma vertex_prop_coincide_refl: forall (g: PreGraph Vertex Edge) (p: Vertex -> Prop), vertex_prop_coincide g g p p.
+Proof.
+  intros.
+  hnf; intros.
+  reflexivity.
+Qed.
+
+Lemma vertex_prop_coincide_sym: forall (g1 g2: PreGraph Vertex Edge) (p1 p2: Vertex -> Prop), vertex_prop_coincide g1 g2 p1 p2 -> vertex_prop_coincide g2 g1 p2 p1.
+Proof.
+  unfold vertex_prop_coincide.
+  intros.
+  symmetry.
+  auto.
+Qed.
+
+Section BIGRAPH_LEM.
+
+Context {left_out_edge right_out_edge: Vertex -> Edge}.
+
+Lemma left_sound (pg: PreGraph Vertex Edge) {bi: BiGraph pg left_out_edge right_out_edge}: forall x, src pg (left_out_edge x) = x.
+Proof.
+  intros.
+  pose proof only_two_edges pg x (left_out_edge x).
+  tauto.
+Qed.
+
+Lemma right_sound (pg: PreGraph Vertex Edge) {bi: BiGraph pg left_out_edge right_out_edge}: forall x, src pg (right_out_edge x) = x.
+Proof.
+  intros.
+  pose proof only_two_edges pg x (right_out_edge x).
+  tauto.
+Qed.
+
+Lemma left_or_right (pg: PreGraph Vertex Edge) (bi: BiGraph pg left_out_edge right_out_edge): forall x e, src pg e = x -> {e = left_out_edge x} + {e = right_out_edge x}.
+Proof.
+  intros.
+  pose proof only_two_edges pg x e.
+  destruct_eq_dec e (left_out_edge x); [left | right]; tauto.
+Qed.
+
+Definition biEdge (pg : PreGraph Vertex Edge) {bi: BiGraph pg left_out_edge right_out_edge} (v: Vertex) : Vertex * Vertex := (dst pg (left_out_edge v), dst pg (right_out_edge v)).
+
+Lemma biEdge_only2 (pg : PreGraph Vertex Edge) {bi: BiGraph pg left_out_edge right_out_edge} :
+  forall v v1 v2 n, vvalid pg v -> biEdge pg v = (v1 ,v2) -> (step pg v n <-> n = v1 \/ n = v2).
+Proof.
+  intros; unfold biEdge in H.
+  split; intros.
+  + inversion H1; subst.
+    inversion H0; subst.
+    assert (e = left_out_edge (src pg e) \/ e = right_out_edge (src pg e)) by (rewrite <- only_two_edges; eauto).
+    destruct H3; rewrite <- H3; auto.
+  + rewrite step_spec; inversion H0; subst.
+    destruct H1; [exists (left_out_edge v) | exists (right_out_edge v)]; subst.
+    - split; [| split]; [eapply left_valid | rewrite left_sound |]; eauto.
+    - split; [| split]; [eapply right_valid | rewrite right_sound |]; eauto.
+Qed.
+
+End BIGRAPH_LEM.
 
 (******************************************
 
@@ -283,36 +344,28 @@ Lemmas about structurally identical
 
 ******************************************)
 
-Section StructurallyIdentical.
-
-Local Arguments vvalid {_} {_} _ _.
-Local Arguments evalid {_} {_} _ _.
-Local Arguments src {_} {_} _ _.
-Local Arguments dst {_} {_} _ _.
-Local Arguments is_null {_} {_} _ {_} _.
-
-Definition structurally_identical {V E: Type} (G1 G2: PreGraph V E): Prop :=
-  (forall v : V, (vvalid G1 v <-> vvalid G2 v)) /\
-  (forall e : E, (evalid G1 e <-> evalid G2 e)) /\
-  (forall e : E, src G1 e = src G2 e) /\
-  (forall e : E, dst G1 e = dst G2 e).
+Definition structurally_identical (g1 g2: PreGraph Vertex Edge): Prop :=
+  (forall v : Vertex, (vvalid g1 v <-> vvalid g2 v)) /\
+  (forall e : Edge, (evalid g1 e <-> evalid g2 e)) /\
+  (forall e : Edge, src g1 e = src g2 e) /\
+  (forall e : Edge, dst g1 e = dst g2 e).
 
 Notation "g1 '~=~' g2" := (structurally_identical g1 g2) (at level 1).
 
-Lemma si_refl: forall {V E : Type} (G : PreGraph V E), G ~=~ G.
+Lemma si_refl: forall (G : PreGraph Vertex Edge), G ~=~ G.
 Proof. intros; repeat split; auto. Qed.
 
-Lemma si_sym: forall {V E : Type} (G1 G2: PreGraph V E), G1 ~=~ G2 -> G2 ~=~ G1.
+Lemma si_sym: forall (G1 G2: PreGraph Vertex Edge), G1 ~=~ G2 -> G2 ~=~ G1.
 Proof. intros; destruct H as [? [? [? ?]]]; split; [| split; [| split]]; auto; firstorder. Qed.
 
-Lemma si_trans: forall {V E : Type} (G1 G2 G3: PreGraph V E), G1 ~=~ G2 -> G2 ~=~ G3 -> G1 ~=~ G3.
+Lemma si_trans: forall (G1 G2 G3: PreGraph Vertex Edge), G1 ~=~ G2 -> G2 ~=~ G3 -> G1 ~=~ G3.
 Proof.
   intros; destruct H as [? [? [? ?]]], H0 as [? [? [? ?]]].
   split; [| split; [| split]]; auto; firstorder;
   specialize (H2 e); specialize (H3 e); specialize (H4 e); specialize (H5 e); congruence.
 Qed.
 
-Instance si_Equiv {V E : Type}: Equivalence (@structurally_identical V E).
+Instance si_Equiv: Equivalence (structurally_identical).
 Proof.
   split.
   + intro; apply si_refl.
@@ -320,10 +373,9 @@ Proof.
   + intro; apply si_trans.
 Defined.
 
-Lemma step_si {V E : Type}:
-  forall (g1 g2 : PreGraph V E) (n n' : V), g1 ~=~ g2 -> (step g1 n n' <-> step g2 n n').
+Lemma step_si: forall (g1 g2 : PreGraph Vertex Edge) (n n' : Vertex), g1 ~=~ g2 -> (step g1 n n' <-> step g2 n n').
 Proof.
-  cut (forall (g1 g2 : PreGraph V E) (n n' : V), g1 ~=~ g2 -> step g1 n n' -> step g2 n n').
+  cut (forall (g1 g2 : PreGraph Vertex Edge) (n n' : Vertex), g1 ~=~ g2 -> step g1 n n' -> step g2 n n').
   1: intros; split; apply H; [eauto | symmetry; auto].
   intros.
   rewrite step_spec in H0 |- *.
@@ -333,17 +385,18 @@ Proof.
   auto.
 Qed.
 
-Lemma edge_si {V E : Type}:
-  forall (g1 g2 : PreGraph V E) (n n' : V), g1 ~=~ g2 -> (g1 |= n ~> n' <-> g2 |= n ~> n').
+Lemma edge_si:
+  forall (g1 g2 : PreGraph Vertex Edge) (n n' : Vertex), g1 ~=~ g2 -> (g1 |= n ~> n' <-> g2 |= n ~> n').
 Proof.
   intros; unfold edge in *.
   pose proof proj1 H n.
   pose proof proj1 H n'.
   pose proof step_si _ _ n n' H.
+  clear - H0 H1 H2.
   tauto.
 Qed.
 
-End StructurallyIdentical.
+End GRAPH_BASIC_LEM.
 
 Notation "g1 '~=~' g2" := (structurally_identical g1 g2) (at level 1).
 Global Existing Instance si_Equiv.
