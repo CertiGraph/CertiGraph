@@ -562,6 +562,27 @@ Class ReachableFiniteGraph (pg: PreGraph V E) := {
   finiteR: forall x, vvalid pg x -> Enumerable V (reachable pg x)
 }.
 
+Lemma contruct_reachable_list: forall (g: Gph) {rfg: ReachableFiniteGraph g} x, Decidable (vvalid g x) -> {l: list V | NoDup l /\ reachable_list g x l}.
+Proof.
+  intros.
+  destruct H.
+  + destruct (finiteR x v) as [l ?H].
+    exists l.
+    unfold reachable_list; auto.
+  + exists nil.
+    split; [constructor |].
+    intro; simpl.
+    pose proof reachable_head_valid g x y.
+    tauto.
+Qed.
+
+Lemma contruct_reachable_set_list: forall (g: Gph) {rfg: ReachableFiniteGraph g} S
+  (V_DEC: forall x, In x S -> Decidable (vvalid g x)),
+  {l: list V | NoDup l /\ reachable_set_list g S l}.
+Proof.
+  intros.
+Admitted.
+
 End PATH_LEM.
 
 Arguments path_glue {_} _ _.
