@@ -581,7 +581,32 @@ Lemma contruct_reachable_set_list: forall (g: Gph) {rfg: ReachableFiniteGraph g}
   {l: list V | NoDup l /\ reachable_set_list g S l}.
 Proof.
   intros.
-Admitted.
+  induction S.
+  + exists nil.
+    split; [constructor |].
+    intro.
+    pose proof reachable_through_empty g.
+    pose proof Empty_set_iff V.
+    unfold Same_set, Included, Ensembles.In in *.
+    simpl.
+    firstorder.
+  + spec IHS.
+    - intros; apply V_DEC.
+      right; auto.
+    - destruct IHS as [l2 ?H].
+      destruct (contruct_reachable_list g a (V_DEC a (or_introl eq_refl))) as [l1 ?H].
+      exists (remove_dup equiv_dec (l1 ++ l2)).
+      split; [apply remove_dup_nodup |].
+      destruct H as [_ ?].
+      destruct H0 as [_ ?].
+      unfold reachable_set_list, reachable_list in *.
+      intros.
+      rewrite <- remove_dup_in_inv.
+      rewrite in_app_iff, reachable_through_set_eq.
+      specialize (H x).
+      specialize (H0 x).
+      tauto.
+Qed.
 
 End PATH_LEM.
 

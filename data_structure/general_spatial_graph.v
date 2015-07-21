@@ -167,9 +167,9 @@ Section SpatialGraph.
     admit.
   Qed.
   
-  Lemma graphs_graphs': forall S g, single_reachable_contructable S g -> graphs S g = graphs' S g.
+  Lemma graphs_graphs': forall S (g: Graph) {rfg: ReachableFiniteGraph g}, single_reachable_contructable S g -> graphs S g = graphs' S g.
   Proof.
-    induction S; intros until g. intro Hs.
+    induction S; intros until g; intros rfg Hs.
     + unfold graphs. unfold graphs'. apply pred_ext.
       - apply (exp_right nil). simpl. apply andp_right; auto.
         apply prop_right. intro x. split; intros.
@@ -179,7 +179,7 @@ Section SpatialGraph.
         specialize (H v). assert (In v (v :: l)) by apply in_eq.
         rewrite <- H in H0. unfold reachable_through_set in H0.
         destruct H0 as [s [? _]]. inversion H0.
-    + intro Hs. unfold graphs. fold graphs. rewrite (IHS _ (single_reachable_contructable_cons _ _ _ Hs)).
+    + unfold graphs. fold graphs. rewrite (IHS _ rfg (single_reachable_contructable_cons _ _ _ Hs)).
       unfold graphs'. unfold graph. clear IHS. apply pred_ext.
       - normalize_overlap. intros. rename x into la.
         normalize_overlap. rename x into lS. normalize_overlap.
@@ -216,11 +216,18 @@ Section SpatialGraph.
         rewrite reachable_through_set_eq. rewrite in_app_iff. tauto.
   Qed.
 
+  Lemma subgraph_update':
+    forall (g g': Graph) {rfg: ReachableFiniteGraph g} {rfg': ReachableFiniteGraph g'} (S1 S1' S2: list V),
+      (unreachable_sub_spatialgraph g S1) -=- (unreachable_sub_spatialgraph g' S1') ->
+      graphs' (S1 ++ S2) g |-- graphs' S1 g * (graphs' S1' g' -* graphs' (S1' ++ S2) g').
+  Proof.
+  Abort.
+
   Lemma subgraph_update:
-    forall (g g': Graph) (S1 S1' S2: list V),
+    forall (g g': Graph) {rfg: ReachableFiniteGraph g} {rfg': ReachableFiniteGraph g'} (S1 S1' S2: list V),
       Included (reachable_through_set g S1) (reachable_through_set g' S1') ->
       (unreachable_sub_spatialgraph g S1) -=- (unreachable_sub_spatialgraph g' S1') ->
-      graphs' S1 g ⊗ graphs' S2 g |-- graphs' S1 g * (graphs' S1' g' -* graphs' S1' g' ⊗ graphs' S2 g').
+      graphs S1 g ⊗ graphs S2 g |-- graphs S1 g * (graphs S1' g' -* graphs S1' g' ⊗ graphs S2 g').
   Proof.
   Abort.
 
