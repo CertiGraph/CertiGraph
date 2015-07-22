@@ -121,11 +121,8 @@ Lemma reachable_edge:
   forall x y z, reachable G x y -> edge G y z -> reachable G x z.
 Proof.
   intros.
-  rewrite reachable_ind_reachable in *.
-  induction H.
-  + apply ind.reachable_cons with z; auto.
-    apply ind.reachable_nil; unfold edge in H0; tauto.
-  + apply ind.reachable_cons with y; auto.
+  rewrite reachable_ind2_reachable in *.
+  apply ind2.reachable_cons with y; auto.
 Qed.
 
 Lemma reachable_step:
@@ -148,6 +145,14 @@ Proof.
       apply IHreachable.
     - right.
       exists y. rewrite reachable_ind_reachable in *; auto.
+Qed.
+
+Lemma edge_reachable:
+  forall x y z, reachable G y z -> edge G x y -> reachable G x z.
+Proof.
+  intros.
+  rewrite reachable_ind_reachable in *.
+  apply ind.reachable_cons with y; auto.
 Qed.
 
 Lemma closed_edge_closed_reachable: forall l,

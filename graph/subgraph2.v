@@ -25,8 +25,14 @@ Definition predicate_vvalid (p: V -> Prop): Ensemble V :=
 Definition predicate_evalid (p: V -> Prop): Ensemble E :=
   fun e => evalid g e /\ p (src g e) /\ p (dst g e).
 
+Definition predicate_weak_evalid (p: V -> Prop): Ensemble E :=
+  fun e => evalid g e /\ p (src g e) /\ p (dst g e).
+
 Definition predicate_subgraph (p: V -> Prop): PreGraph V E :=
   Build_PreGraph EV EE (predicate_vvalid p) (predicate_evalid p) (src g) (dst g).
+
+Definition predicate_partial_graph (p: V -> Prop): PreGraph V E :=
+  Build_PreGraph EV EE (predicate_vvalid p) (predicate_weak_evalid p) (src g) (dst g).
 
 Definition reachable_subgraph (S : list V): PreGraph V E :=
   predicate_subgraph (reachable_through_set g S).
