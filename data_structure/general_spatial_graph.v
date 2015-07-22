@@ -256,6 +256,32 @@ Section SpatialGraph.
     + apply Permutation_app_comm.
   Qed.
 
+  Lemma subgraph_edge: forall (g: PreGraph V E) (p: V -> Prop) x y,
+      edge g x y -> p x -> p y -> edge (predicate_subgraph g p) x y.
+  Proof.
+    intros.
+    destruct H as [? [? ?]].
+    unfold edge.
+    simpl.
+    unfold predicate_vvalid.
+    do 2 (split; [tauto |]).
+    rewrite step_spec in H3 |- *.
+    destruct H3 as [e [? [? ?]]].
+    exists e.
+    split; [| split; simpl; auto].
+    simpl.
+    unfold predicate_evalid.
+    rewrite H4, H5.
+    auto.
+  Qed.
+
+  Lemma reachable_trans: forall (g : PreGraph V E) x y z,
+      reachable g x y -> reachable g y z -> reachable g x z.
+  Proof.
+    intros. rewrite reachable_ind_reachable in H, H0 |- *.
+    apply ind.reachable_trans with y; auto.
+  Qed.
+
   Lemma unreachable_eq: forall (g : Graph) (S1 S2 l12 l1 : list V),
       reachable_set_list g (S1 ++ S2) l12 -> reachable_set_list g S1 l1 ->
       forall x, In x l12 /\ ~ In x l1 <-> reachable_through_set (unreachable_sub_spatialgraph g S1) S2 x.
@@ -266,10 +292,24 @@ Section SpatialGraph.
       destruct H1 as [s [? ?]]. exists s. split.
       - apply in_app_or in H1. destruct H1; auto.
         exfalso. apply H3. exists s. auto.
-      - rewrite reachable_ind_reachable in H4.
+      - rewrite reachable_ind_reachable in H4. clear -H4 H3.
         induction H4.
         * apply reachable_refl. simpl. hnf. simpl. auto.
-        * apply reachable_edge with y.
+        * apply edge_reachable with y. apply IHreachable; auto.
+          rewrite <- reachable_ind_reachable in H4.
+          assert (~ reachable_through_set g S1 y). {
+            intro. apply H3.
+            destruct H0 as [s [? ?]]. exists s. split; auto.
+            apply reachable_trans with y; auto.
+          }
+          assert (~ reachable_through_set g S1 x). {
+            intro. apply H0.
+            destruct H1 as [s [? ?]]. exists s. split; auto.
+            apply reachable_edge with x; auto.
+          }
+          apply subgraph_edge; auto.
+    + destruct H1 as [s [? ?]]. split.
+      - rewrite <- (H x). exists s. split. 1: apply in_or_app; auto.
   Abort.
 
   Lemma subgraph_update':
