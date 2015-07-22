@@ -2,6 +2,7 @@ Require Import Coq.Logic.ProofIrrelevance.
 Require Import Coq.Sets.Ensembles.
 Require Import Coq.Sets.Finite_sets.
 Require Import Coq.Lists.List.
+Require Import Coq.Classes.Morphisms.
 Require Import RamifyCoq.Coqlib.
 Require Import VST.msl.Coqlib2.
 Require Import RamifyCoq.graph.graph_model.
@@ -10,12 +11,16 @@ Require Import RamifyCoq.graph.reachable_computable.
 Require Import RamifyCoq.graph.reachable_ind.
 Require Import RamifyCoq.graph.subgraph2.
 
+Module SIMPLE_MARK_GRAPH.
 Section SIMPLE_MARK_GRAPH.
 
   Context {V : Type}.
   Context {E : Type}.
   Context {EV: EqDec V eq}.
   Context {EE: EqDec E eq}.
+
+  Section SINGLE_GRAPH_LEM.
+
   Context (g: PreGraph V E).
 
 (*
@@ -30,9 +35,18 @@ Section SIMPLE_MARK_GRAPH.
   Definition mark1 (m1 : NodePred V) (n : V) (m2 : NodePred V) : Prop :=
     vvalid g n /\ m2 n /\ forall n', n <> n' -> (m1 n' <-> m2 n').
 
+  Definition mark (m1 : NodePred V) (root : V) (m2 : NodePred V) : Prop :=
+    (forall n,  g |= root ~o~> n satisfying (negateP m1) -> m2 n) /\
+    (forall n, ~g |= root ~o~> n satisfying (negateP m1) -> (m1 n <-> m2 n)).
+
+  Inductive mark_list: NodePred V -> list V -> NodePred V -> Prop :=
+  | mark_list_nil: forall m m0, (m ~=~ m0)%NodePred -> mark_list m nil m0
+  | mark_list_cons: forall m m0 m1 v vs, mark m v m0 -> mark_list m0 vs m1 -> mark_list m (v :: vs) m1
+  .
+
   Lemma mark1_marked: forall m1 root m2,
                         mark1 m1 root m2 ->
-                        forall n, m1 n-> m2 n.
+                        forall n, m1 n -> m2 n.
   Proof.
     intros. destruct H as [? [? ?]].
     destruct_eq_dec root n.
@@ -85,14 +99,9 @@ Section SIMPLE_MARK_GRAPH.
     rewrite negateP_spec in H2 |- *; tauto.
   Qed.
 
-  Definition mark (m1 : NodePred V) (root : V) (m2 : NodePred V) : Prop :=
-    (forall n,  g |= root ~o~> n satisfying (negateP m1) -> m2 n) /\
-    (forall n, ~g |= root ~o~> n satisfying (negateP m1) -> (m1 n <-> m2 n)).
-
   Lemma mark_exists: forall m x,
     vvalid g x ->
-    (forall y, {g |= x ~o~> y satisfying (negateP m)} +
-               {~ (g |= x ~o~> y satisfying (negateP m))}) ->
+    ReachDecidable g x (negateP m) ->
     {m': NodePred V | mark m x m'}.
   Proof.
     intros. destruct ((node_pred_dec (negateP m)) x).
@@ -130,8 +139,7 @@ Section SIMPLE_MARK_GRAPH.
   (* The second subtle lemma.  Maybe needs a better name? *)
   Lemma mark_unmarked: forall m1 root m2 n1 n2,
                          vvalid g root ->
-                         (forall y, {g |= root ~o~> y satisfying (negateP m1)} +
-                                    {~ g |= root ~o~> y satisfying (negateP m1)}) ->
+                         ReachDecidable g root (negateP m1)->
                          mark m1 root m2 ->
                          g |= n1 ~o~> n2 satisfying (negateP m1) ->
                          (g |= n1 ~o~> n2 satisfying (negateP m2)) \/ (m2 n2).
@@ -174,15 +182,15 @@ Section SIMPLE_MARK_GRAPH.
   Lemma mark_invalid: forall m1 root m2,
                          ~ vvalid g root ->
                          mark m1 root m2 ->
-                         vertex_prop_coincide g g m1 m2.
+                         (m1 ~=~ m2)%NodePred.
   Proof.
     intros.
     destruct H0 as [? ?].
     intro; intros.
     apply H1.
     intro.
-    apply reachable_by_is_reachable in H4.
-    apply reachable_head_valid in H4.
+    apply reachable_by_is_reachable in H2.
+    apply reachable_head_valid in H2.
     tauto.
   Qed.
 
@@ -203,18 +211,18 @@ Section SIMPLE_MARK_GRAPH.
   Lemma mark_marked_root: forall (m1: NodePred V) root m2,
                          m1 root ->
                          mark m1 root m2 ->
-                         vertex_prop_coincide g g m1 m2.
+                         (m1 ~=~ m2)%NodePred.
   Proof.
     intros.
     destruct H0 as [? ?].
     intro; intros.
     apply H1.
     intro.
-    rewrite reachable_by_eq_subgraph_reachable in H4.
-    apply reachable_head_valid in H4.
-    simpl in H4.
-    unfold predicate_vvalid in H4.
-    rewrite negateP_spec in H4.
+    rewrite reachable_by_eq_subgraph_reachable in H2.
+    apply reachable_head_valid in H2.
+    simpl in H2.
+    unfold predicate_vvalid in H2.
+    rewrite negateP_spec in H2.
     tauto.
   Qed.
 
@@ -255,11 +263,6 @@ Section SIMPLE_MARK_GRAPH.
       rewrite negateP_spec in H3 |- *; tauto.
   Qed.
 
-  Inductive mark_list: NodePred V -> list V -> NodePred V -> Prop :=
-  | mark_list_nil: forall m, mark_list m nil m
-  | mark_list_cons: forall m m0 m1 v vs, mark m v m0 -> mark_list m0 vs m1 -> mark_list m (v :: vs) m1
-  .
-
   Lemma mark_preserved_reach_decidable: forall m1 root m2 x,
     vvalid g root ->
     ReachDecidable g x (negateP m1) ->
@@ -273,7 +276,7 @@ Section SIMPLE_MARK_GRAPH.
   Qed.
 
   Lemma ind_RV_DEC: forall (P: NodePred V -> list V -> NodePred V -> Prop),
-    (forall m, P m nil m) ->
+    (forall m m', (m ~=~ m')%NodePred -> P m nil m') ->
     (forall m v m' l m'',
       P m' l m'' ->
       forall 
@@ -290,7 +293,7 @@ Section SIMPLE_MARK_GRAPH.
   Proof.
     intros P H_nil IH m l m' R_DEC V_DEC ?.
     induction H.
-    + apply H_nil.
+    + apply H_nil; auto.
     + apply (IH m v m0 vs m1); auto.
       apply IHmark_list.
       - destruct (V_DEC v (or_introl eq_refl)) as [?H | ?H].
@@ -301,8 +304,8 @@ Section SIMPLE_MARK_GRAPH.
         * pose proof mark_invalid m v m0 H1 H.
           intros.
           apply (ReachDecidable_si g g (negateP m)); [reflexivity | | apply R_DEC; right; auto].
-          unfold vertex_prop_coincide in *; clear - H2.
-          intros; specialize (H2 x); do 2 (spec H2; [auto |]).
+          hnf in H2 |- *; clear - H2.
+          intros; specialize (H2 x).
           rewrite !negateP_spec; tauto.
       - intros; apply V_DEC; right; auto.
   Qed.
@@ -314,7 +317,9 @@ Section SIMPLE_MARK_GRAPH.
     forall n : V, m1 n -> m2 n.
   Proof.
     apply (ind_RV_DEC (fun m1 l m2 => forall n : V, m1 n -> m2 n)).
-    + intros; auto.
+    + intros.
+      rewrite <- (H n).
+      auto.
     + intros.
       apply H.
       apply (mark_marked m v m'); auto.
@@ -333,7 +338,7 @@ Section SIMPLE_MARK_GRAPH.
     apply (ind_RV_DEC (fun m1 l m2 =>
             forall z n : V, In z l -> g |= z ~o~> n satisfying (negateP m1) -> m2 n)).
     + intros.
-      inversion H.
+      inversion H0.
     + intros.
       destruct H2.
       - subst z. apply (mark_list_marked m' l m''); auto.
@@ -360,9 +365,9 @@ Section SIMPLE_MARK_GRAPH.
           pose proof (mark_invalid m v m' n0 H0).
           apply (H z); auto.
           erewrite si_reachable_by in H3; [exact H3 | reflexivity |].
-          unfold vertex_prop_coincide in *; clear - H4.
+          hnf in H4 |- *; clear - H4.
           intros.
-          specialize (H4 x); do 2 (spec H4; [auto |]).
+          specialize (H4 x).
           rewrite !negateP_spec.
           tauto.
         } Unfocus.
@@ -380,7 +385,7 @@ Section SIMPLE_MARK_GRAPH.
             forall n,
            (forall x, In x l -> ~ g |= x ~o~> n satisfying (negateP m1)) ->
            (m1 n <-> m2 n))).
-    + intros; reflexivity.
+    + intros. apply H.
     + intros.
       rewrite <- H.
       - destruct H0 as [_ ?].
@@ -430,15 +435,15 @@ Section SIMPLE_MARK_GRAPH.
   Lemma mark_func: forall m root m1 m2 (R_DEC: ReachDecidable g root (negateP m)),
                      mark m root m1 ->
                      mark m root m2 ->
-                     vertex_prop_coincide g g m1 m2.
+                     (m1 ~=~ m2)%NodePred.
   Proof.
     intros.
     intro; intros.
     destruct H as [? ?].
     destruct H0 as [? ?].
-    destruct (R_DEC x).
-    - specialize (H x r). specialize (H0 x r). tauto.
-    - specialize (H3 x n). specialize (H4 x n). tauto.
+    destruct (R_DEC n).
+    - specialize (H n r). specialize (H0 n r). tauto.
+    - specialize (H2 n n0). specialize (H1 n n0). tauto.
   Qed.
 
   Lemma mark1_mark_list_vi: forall m1 root l m2 m3 m4
@@ -450,7 +455,7 @@ Section SIMPLE_MARK_GRAPH.
                               mark1 m1 root m2 ->
                               mark_list m2 l m3 ->
                               mark m1 root m4 ->
-                              vertex_prop_coincide g g m3 m4.
+                              (m3 ~=~ m4)%NodePred.
   Proof.
     intros. assert (mark m1 root m3).
     apply (mark_mark1_mark _ _ l m2); auto.
@@ -484,27 +489,252 @@ Section SIMPLE_MARK_GRAPH.
   Qed.
 
 *)
+
+  End SINGLE_GRAPH_LEM.
+
+  Instance mark1_proper: Proper (structurally_identical ==> node_pred_equiv ==> eq ==> node_pred_equiv ==> iff) mark1.
+  Proof.
+    hnf; intros g1 g2 Hg.
+    do 3 (hnf; intros).
+    subst.
+    revert g1 g2 x y x1 y1 Hg H H1.
+    assert (forall g1 g2 x y x1 y1, g1 ~=~ g2 -> x ~=~ y%NodePred -> x1 ~=~ y1%NodePred -> mark1 g1 x y0 x1 -> mark1 g2 y y0 y1);
+      [| intros; split; apply H; auto; symmetry; auto].
+    unfold mark1.
+    intros.
+    rewrite (H1 y0) in H2.
+    rewrite (proj1 H) in H2.
+    split; [| split]; try tauto.
+    destruct H2 as [_ [_ ?]].
+    intros; specialize (H2 n').
+    rewrite (H0 n'), (H1 n') in H2.
+    tauto.
+  Qed.
+
+  Instance mark_proper: Proper (structurally_identical ==> node_pred_equiv ==> eq ==> node_pred_equiv ==> iff) mark.
+  Proof.
+    hnf; intros g1 g2 Hg.
+    do 3 (hnf; intros).
+    subst.
+    revert g1 g2 x y x1 y1 Hg H H1.
+    assert (forall g1 g2 x y x1 y1, g1 ~=~ g2 -> x ~=~ y%NodePred -> x1 ~=~ y1%NodePred -> mark g1 x y0 x1 -> mark g2 y y0 y1);
+      [| intros; split; apply H; auto; symmetry; auto].
+    unfold mark.
+    intros; destruct H2.
+    split.
+    + intros.
+      rewrite <- (H1 n); apply H2; auto.
+      rewrite si_reachable_by; [exact H4 | auto |].
+      hnf; intros.
+      rewrite !negateP_spec; specialize (H0 x0); tauto.
+    + intros.
+      rewrite <- (H0 n), <- (H1 n); apply H3; auto.
+      rewrite si_reachable_by; [exact H4 | auto |].
+      hnf; intros.
+      rewrite !negateP_spec; specialize (H0 x0); tauto.
+  Qed.
+
+  Instance mark_list_proper: Proper (structurally_identical ==> node_pred_equiv ==> eq ==> node_pred_equiv ==> iff) mark_list.
+  Proof.
+    hnf; intros g1 g2 Hg.
+    do 3 (hnf; intros).
+    subst.
+    revert g1 g2 x y x1 y1 Hg H H1.
+    assert (forall g1 g2 x y x1 y1, g1 ~=~ g2 -> x ~=~ y%NodePred -> x1 ~=~ y1%NodePred -> mark_list g1 x y0 x1 -> mark_list g2 y y0 y1);
+      [| intros; split; apply H; auto; symmetry; auto].
+    intros; subst.
+    revert g2 y y1 H H0 H1; induction H2; intros.
+    + apply mark_list_nil.
+      rewrite <- H1, <- H2, H; reflexivity.
+    + apply mark_list_cons with m0.
+      - rewrite <- H0, <- H1; auto.
+      - apply IHmark_list; [auto | reflexivity | auto].
+  Qed.
+
 End SIMPLE_MARK_GRAPH.
+End SIMPLE_MARK_GRAPH.
+
+Existing Instances SIMPLE_MARK_GRAPH.mark1_proper SIMPLE_MARK_GRAPH.mark_proper SIMPLE_MARK_GRAPH.mark_list_proper.
 
 Module MarkGraph.
 
-Section MarkGraph.
-
-Context {V : Type}.
-Context {E : Type}.
-Context {EV: EqDec V eq}.
-Context {EE: EqDec E eq}.
-
-Class MarkGraphSetting 
-
-Class MarkedGraph (Vertex Edge: Type) := {
-  pg: PreGraph Vertex Edge;
-  marked: NodePred pg
+Class MarkGraphSetting (DV: Type) := {
+  label_marked: DV -> Prop;
+  marked_dec: forall x, {label_marked x} + {~ label_marked x};
+  label_mark: DV -> DV;
+  label_unmark: DV -> DV;
+  label_mark_sound: forall x, ~ label_marked x -> label_marked (label_mark x);
+  label_unmark_sound: forall x, label_marked x -> ~ label_marked (label_unmark x);
+  label_mark_id: forall x, label_unmark (label_mark x) = x;
+  label_unmark_id: forall x, label_mark (label_unmark x) = x
 }.
 
-Local Coercion pg : MarkedGraph >-> PreGraph.
+Section MarkGraph.
 
-Existing Instances pg.
-Arguments marked {_} {_} _.
+Context {V E: Type}.
+Context {EV: EqDec V eq}.
+Context {EE: EqDec E eq}.
+Context {DV DE: Type}.
+Context {MGS: MarkGraphSetting DV}.
 
+Notation Graph := (LabeledGraph V E DV DE).
 
+Definition marked (g: Graph) (v: V) : Prop := label_marked (vlabel g v).
+Definition unmarked (g: Graph) (v: V) : Prop := ~ label_marked (vlabel g v).
+
+Definition mark1 (g1 : Graph) (n : V) (g2 : Graph) : Prop :=
+  g1 ~=~ g2 /\
+  vvalid g1 n /\
+  marked g2 n /\
+  forall n', n <> n' -> (marked g1 n' <-> marked g2 n').
+
+Definition mark (g1 : Graph) (root : V) (g2 : Graph) : Prop :=
+  g1 ~=~ g2 /\
+  (forall n, g1 |= root ~o~> n satisfying (unmarked g1) -> marked g2 n) /\
+  (forall n, ~ g1 |= root ~o~> n satisfying (unmarked g1) -> (marked g1 n <-> marked g2 n)).
+
+Inductive mark_list: Graph -> list V -> Graph -> Prop :=
+| mark_list_nil: forall g g0, (g ~=~ g0)%LabeledGraph -> mark_list g nil g0
+| mark_list_cons: forall g g0 g1 v vs, mark g v g0 -> mark_list g0 vs g1 -> mark_list g (v :: vs) g1
+.
+
+Definition inj (g: Graph): NodePred V.
+  exists (fun v => label_marked (vlabel g v)).
+  intros; apply marked_dec.
+Defined.
+
+Definition surj (g0: Graph) (m: NodePred V): Graph.
+  refine (@Build_LabeledGraph V E _ _ DV DE g0 _ (elabel g0)).
+  intro v.
+  destruct (marked_dec (vlabel g0 v)), (node_pred_dec m v).
+  + exact (vlabel g0 v).
+  + exact (label_unmark (vlabel g0 v)).
+  + exact (label_mark (vlabel g0 v)).
+  + exact (vlabel g0 v).
+Defined.
+
+Instance inj_proper: Proper (labeled_graph_equiv ==> node_pred_equiv) inj.
+Proof.
+  hnf; intros.
+  intro; simpl.
+  destruct H as [_ [? _]].
+  rewrite H.
+  tauto.
+Defined.
+
+Lemma surj_inj: forall (m: NodePred V) (g: Graph), ((inj g) ~=~ m)%NodePred -> ((surj g m) ~=~ g)%LabeledGraph.
+Proof.
+  unfold labeled_graph_equiv, node_pred_equiv in *; intros.
+  simpl in H |- *.
+  split; [reflexivity |].
+  split; [| intros; reflexivity].
+  intros.
+  specialize (H v).
+  destruct (marked_dec (vlabel g v)), (node_pred_dec m v); auto; tauto.
+Qed.
+
+Lemma inj_surj: forall (m: NodePred V) (g0 g: Graph), ((surj g0 m) ~=~ g)%LabeledGraph -> ((inj g) ~=~ m)%NodePred.
+Proof.
+  unfold labeled_graph_equiv, node_pred_equiv in *; intros.
+  simpl in H |- *.
+  destruct H as [_ [? _]].
+  intros.
+  specialize (H n).
+  destruct (marked_dec (vlabel g0 n)), (node_pred_dec m n).
+  - rewrite H in l; tauto.
+  - pose proof label_unmark_sound (vlabel g0 n).
+    rewrite H in H0.
+    tauto.
+  - pose proof label_mark_sound (vlabel g0 n).
+    rewrite H in H0.
+    tauto.
+  - rewrite H in n0; tauto.
+Qed.
+
+Lemma surj_si: forall (g0: Graph) m, g0 ~=~ (surj g0 m).
+Proof.
+  intros.
+  simpl.
+  reflexivity.
+Qed.
+
+Lemma mark1_inj: forall (g1 g2: Graph) (v: V), mark1 g1 v g2 <-> (g1 ~=~ g2 /\ SIMPLE_MARK_GRAPH.mark1 g1 (inj g1) v (inj g2)).
+Proof.
+  intros.
+  unfold mark1, SIMPLE_MARK_GRAPH.mark1.
+  simpl.
+  unfold marked.
+  tauto.
+Qed.
+
+Lemma mark_inj: forall (g1 g2: Graph) (v: V), mark g1 v g2 <-> (g1 ~=~ g2 /\ SIMPLE_MARK_GRAPH.mark g1 (inj g1) v (inj g2)).
+Proof.
+  intros.
+  unfold mark, SIMPLE_MARK_GRAPH.mark.
+  simpl.
+  unfold marked.
+  tauto.
+Qed.
+
+Lemma mark_list_inj: forall (g1 g2: Graph) (vs: list V), mark_list g1 vs g2 -> (g1 ~=~ g2 /\ SIMPLE_MARK_GRAPH.mark_list g1 (inj g1) vs (inj g2)).
+Proof.
+  intros.
+  induction H.
+  - split; [destruct H; auto |].
+    constructor.
+    apply inj_proper; auto.
+  - rewrite mark_inj in H.
+    split; [transitivity g0; tauto |].
+    apply SIMPLE_MARK_GRAPH.mark_list_cons with (inj g0); [tauto |].
+    rewrite (proj1 H); tauto.
+Qed.
+
+Lemma mark1_exists: forall (g: Graph) x, vvalid g x -> {g': Graph | mark1 g x g'}.
+Proof.
+  intros.
+  destruct (SIMPLE_MARK_GRAPH.mark1_exists g (inj g) x H) as [m' ?H].
+  exists (surj g m').
+  assert ((inj (surj g m')) ~=~ m')%NodePred by (apply inj_surj with g; reflexivity).
+  rewrite <- H1 in H0.
+  apply mark1_inj.
+  split; [apply surj_si | auto].
+Qed.
+
+Lemma mark_exists: forall (g: Graph) x, vvalid g x -> ReachDecidable g x (unmarked g) -> {g': Graph | mark g x g'}.
+Proof.
+  intros.
+  destruct (SIMPLE_MARK_GRAPH.mark_exists g (inj g) x H X) as [m' ?H].
+  exists (surj g m').
+  assert ((inj (surj g m')) ~=~ m')%NodePred by (apply inj_surj with g; reflexivity).
+  rewrite <- H1 in H0.
+  apply mark_inj.
+  split; [apply surj_si | auto].
+Qed.
+
+Lemma mark1_mark_list_mark: forall (g1: Graph) root l (g2 g3 g4: Graph)
+  (R_DEC: forall x, In x l -> ReachDecidable g2 x (unmarked g2))
+  (V_DEC: forall x, In x l -> Decidable (vvalid g1 x))
+  (R_DEC': ReachDecidable g1 root (unmarked g1)),
+  vvalid g1 root ->
+  (unmarked g1) root ->
+  step_list g1 root l ->
+  mark1 g1 root g2 ->
+  mark_list g2 l g3 ->
+  mark g1 root g3.
+Proof.
+  intros.
+  rewrite mark1_inj in H2.
+  apply mark_list_inj in H3.
+  rewrite mark_inj.
+  split; [transitivity g2; tauto |].
+  apply SIMPLE_MARK_GRAPH.mark_mark1_mark with l (inj g2); auto.
+  + intros.
+    eapply ReachDecidable_si; [symmetry; exact (proj1 H2) | | eauto].
+    intro; intros.
+    unfold unmarked; rewrite negateP_spec; simpl.
+    reflexivity.
+  + tauto.
+  + rewrite <- (proj1 H2) in H3 at 2; tauto.
+Qed.
+  
+End MarkGraph.
