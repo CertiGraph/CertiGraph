@@ -216,12 +216,113 @@ Section SpatialGraph.
         rewrite reachable_through_set_eq. rewrite in_app_iff. tauto.
   Qed.
 
+  Definition Gamma (g: Graph) x := (x, vgamma g x).
+
+  Definition Graph_cell (p : V * DV) := vertex_at (fst p) (snd p).
+
+  Lemma Gamma_injective: forall g x y, Gamma g x = Gamma g y -> x = y.
+  Proof. intros. unfold Gamma in H. inversion H. auto. Qed.
+
+  Definition graphs'_eq: forall (g : Graph) (S : list V) (H1: ReachableFiniteGraph g)
+                                (H2: (forall x : V, In x S -> Decidable (vvalid g x))),
+      graphs' S g = iter_sepcon (map (Gamma g) (proj1_sig (construct_reachable_set_list g S H2))) Graph_cell.
+  Proof.
+    intros. apply pred_ext.
+    + unfold graphs'. normalize. intro l; intros.
+      destruct (construct_reachable_set_list g S H2) as [l' [?H ?H]]. unfold proj1_sig.
+      rewrite <- iter_sepcon_map. rewrite (iter_sepcon_func l' _ (graph_cell g)).
+      - rewrite (add_andp _ _ (iter_sepcon_unique_nodup l (sepcon_unique_graph_cell g))).
+        normalize. rewrite (@iter_sepcon_permutation _ _ _ _ l l'); auto.
+        apply NoDup_Permutation; auto. intro y. specialize (H y). specialize (H3 y). tauto.
+      - intros. unfold Gamma. unfold Graph_cell. unfold graph_cell. simpl. auto.
+    + unfold graphs'. apply (exp_right (proj1_sig (construct_reachable_set_list g S H2))).
+      normalize. destruct (construct_reachable_set_list g S H2) as [l [?H ?H]].
+      unfold proj1_sig. apply andp_right.
+      - apply prop_right; auto.
+      - rewrite <- iter_sepcon_map. rewrite (iter_sepcon_func _ _ (graph_cell g)); auto.
+  Qed.
+
+  Lemma reachable_subtract_perm:
+    forall (g: Graph) (S1 S2 l1 l2 : list V),
+      Included (reachable_through_set g S2) (reachable_through_set g S1) ->
+      reachable_set_list g S1 l1 -> NoDup l1 -> reachable_set_list g S2 l2 -> NoDup l2 ->
+      Permutation (map (Gamma g) l1) (map (Gamma g) l2 ++ map (Gamma g) (subtract equiv_dec l1 l2)).
+  Proof.
+    intros. rewrite <- (compcert.lib.Coqlib.list_append_map (Gamma g)).
+    apply Permutation_map. apply perm_trans with (subtract equiv_dec l1 l2 ++ l2).
+    + apply subtract_permutation; auto.
+      intro y. rewrite <- (H0 y). rewrite <- (H2 y).
+      specialize (H y). auto.
+    + apply Permutation_app_comm.
+  Qed.
+
+  Lemma unreachable_eq: forall (g : Graph) (S1 S2 l12 l1 : list V),
+      reachable_set_list g (S1 ++ S2) l12 -> reachable_set_list g S1 l1 ->
+      forall x, In x l12 /\ ~ In x l1 <-> reachable_through_set (unreachable_sub_spatialgraph g S1) S2 x.
+  Proof.
+    intros. split; intro.
+    + destruct H1. rewrite <- (H x) in H1.
+      assert (~ reachable_through_set g S1 x) by (intro; apply H2; rewrite <- (H0 x); auto).
+      destruct H1 as [s [? ?]]. exists s. split.
+      - apply in_app_or in H1. destruct H1; auto.
+        exfalso. apply H3. exists s. auto.
+      - rewrite reachable_ind_reachable in H4.
+        induction H4.
+        * apply reachable_refl. simpl. hnf. simpl. auto.
+        * apply reachable_edge with y.
+  Abort.
+
   Lemma subgraph_update':
     forall (g g': Graph) {rfg: ReachableFiniteGraph g} {rfg': ReachableFiniteGraph g'} (S1 S1' S2: list V),
       (unreachable_sub_spatialgraph g S1) -=- (unreachable_sub_spatialgraph g' S1') ->
+      (forall x : V, In x (S1 ++ S2) -> Decidable (vvalid g x)) ->
+      (forall x : V, In x (S1' ++ S2) -> Decidable (vvalid g' x)) ->
       graphs' (S1 ++ S2) g |-- graphs' S1 g * (graphs' S1' g' -* graphs' (S1' ++ S2) g').
   Proof.
-  Abort.
+    intros.
+    assert (forall x : V, In x S1 -> Decidable (vvalid g x)) by (intros; apply X; apply in_or_app; left; auto).
+    assert (forall x : V, In x S1' -> Decidable (vvalid g' x)) by (intros; apply X0; apply in_or_app; left; auto).
+    rewrite (graphs'_eq _ _ rfg X).
+    rewrite (graphs'_eq _ _ rfg' X0).
+    rewrite (graphs'_eq _ _ rfg X1).
+    rewrite (graphs'_eq _ _ rfg' X2).
+    destruct (construct_reachable_set_list g (S1 ++ S2) X) as [lgS12 [?H ?H]].
+    destruct (construct_reachable_set_list g S1 X1) as [lgS1 [?H ?H]].
+    destruct (construct_reachable_set_list g' S1' X2) as [lg'S1' [?H ?H]].
+    destruct (construct_reachable_set_list g' (S1' ++ S2) X0) as [lg'S1'S2 [?H ?H]].
+    unfold proj1_sig. apply iter_sepcon_ramification.
+    exists (map (Gamma g) (subtract equiv_dec lgS12 lgS1)). split.
+    + apply (reachable_subtract_perm _ (S1 ++ S2) S1); auto.
+      intro y. unfold reachable_through_set. intros. destruct H8 as [s [? ?]].
+      exists s. split; auto. apply in_or_app. auto.
+    + assert (Sublist lgS1 lgS12). {
+        intro y. rewrite <- (H1 y). rewrite <- (H3 y).
+        unfold reachable_through_set. intros. destruct H8 as [s [? ?]]. exists s. split; auto.
+        apply in_or_app; auto. }
+      apply perm_trans with (map (Gamma g') lg'S1' ++ map (Gamma g') (subtract equiv_dec lg'S1'S2 lg'S1')).
+      - apply (reachable_subtract_perm _ (S1' ++ S2) S1'); auto.
+        intro y. unfold reachable_through_set. intros. destruct H9 as [s [? ?]].
+        exists s. split; auto. apply in_or_app. auto.
+      - apply Permutation_app_head. apply perm_trans with (map (Gamma g') (subtract equiv_dec lgS12 lgS1)).
+        * apply Permutation_map. apply NoDup_Permutation.
+          apply subtract_nodup; auto. apply subtract_nodup; auto.
+          intros. rewrite <- !subtract_property. {
+            split; intro; destruct H9.
+            + assert (reachable_through_set g' (S1' ++ S2) x) by (apply H7; auto).
+              assert (~ reachable_through_set g' S1' x) by (intro; apply H10; rewrite <- (H5 x); auto).
+              admit.
+            + admit.
+          }
+        * rewrite (compcert.lib.Coqlib.list_map_exten (Gamma g') (Gamma g)). apply Permutation_refl.
+          intros. unfold Gamma. f_equal.
+          rewrite <- subtract_property in H9. destruct H9.
+          rewrite <- (H1 x) in H9.
+          assert (~ reachable_through_set g S1 x) by (intro; apply H10; rewrite <- (H3 x); auto).
+          assert (vvalid (unreachable_sub_spatialgraph g S1) x). simpl. unfold predicate_vvalid.
+          split; auto. destruct H9 as [? [? ?]]. apply reachable_foot_valid in H12. auto.
+          destruct H as [? [? _]]. specialize (H13 _ H12). destruct H as [? [? [? ?]]].
+          simpl in H15, H16. rewrite H in H12. specialize (H13 H12). simpl in H13. auto.
+  Qed.
 
   Lemma subgraph_update:
     forall (g g': Graph) {rfg: ReachableFiniteGraph g} {rfg': ReachableFiniteGraph g'} (S1 S1' S2: list V),
@@ -232,3 +333,5 @@ Section SpatialGraph.
   Abort.
 
 End SpatialGraph.
+
+End GENERAL_SPATIAL_GRAPH.
