@@ -562,7 +562,7 @@ Class ReachableFiniteGraph (pg: PreGraph V E) := {
   finiteR: forall x, vvalid pg x -> Enumerable V (reachable pg x)
 }.
 
-Lemma contruct_reachable_list: forall (g: Gph) {rfg: ReachableFiniteGraph g} x, Decidable (vvalid g x) -> {l: list V | NoDup l /\ reachable_list g x l}.
+Lemma construct_reachable_list: forall (g: Gph) {rfg: ReachableFiniteGraph g} x, Decidable (vvalid g x) -> {l: list V | NoDup l /\ reachable_list g x l}.
 Proof.
   intros.
   destruct H.
@@ -576,7 +576,7 @@ Proof.
     tauto.
 Qed.
 
-Lemma contruct_reachable_set_list: forall (g: Gph) {rfg: ReachableFiniteGraph g} S
+Lemma construct_reachable_set_list: forall (g: Gph) {rfg: ReachableFiniteGraph g} S
   (V_DEC: forall x, In x S -> Decidable (vvalid g x)),
   {l: list V | NoDup l /\ reachable_set_list g S l}.
 Proof.
@@ -594,7 +594,7 @@ Proof.
     - intros; apply V_DEC.
       right; auto.
     - destruct IHS as [l2 ?H].
-      destruct (contruct_reachable_list g a (V_DEC a (or_introl eq_refl))) as [l1 ?H].
+      destruct (construct_reachable_list g a (V_DEC a (or_introl eq_refl))) as [l1 ?H].
       exists (remove_dup equiv_dec (l1 ++ l2)).
       split; [apply remove_dup_nodup |].
       destruct H as [_ ?].
