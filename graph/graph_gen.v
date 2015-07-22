@@ -67,16 +67,17 @@ Definition update_MathGraph v l r (Hi: in_math v l r) (Hn: ~ is_null g v): MathG
   refine (Build_MathGraph _ (is_null g) (is_null_dec g) _ _).
   + unfold update_PreGraph, change_vvalid, change_evalid, change_dst; simpl.
     intros.
-    destruct (t_eq_dec (src e) v).
+    destruct_eq_dec (src g e) v.
     - split; [right; auto |].
-      destruct (left_or_right g BI v e e0); [destruct (Hi l) | destruct (Hi r)]; simpl; tauto.
-    - assert (evalid e) by tauto.
-      apply valid_graph in H0; unfold weak_valid in H0.
+      destruct (left_or_right g BI v e H0); [destruct (Hi l) | destruct (Hi r)]; simpl; tauto.
+    - assert (evalid g e) by tauto.
+      apply (valid_graph g) in H1.
+      unfold weak_valid in H1.
       tauto.
   + unfold update_PreGraph, change_vvalid; simpl.
     intros.
     destruct H; [| subst]; auto.
-    apply valid_not_null with x; tauto.
+    apply (valid_not_null g) with x; tauto.
 Defined.
 
 End GRAPH_GEN.
