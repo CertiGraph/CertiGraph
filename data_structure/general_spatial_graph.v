@@ -147,6 +147,13 @@ Section SpatialGraph.
       | v :: l' => graph v g ⊗ graphs l' g
     end.
 
+  Lemma graphs_app: forall (g : Graph) S1 S2, graphs (S1 ++ S2) g = graphs S1 g ⊗ graphs S2 g.
+  Proof.
+    intros. induction S1; simpl.
+    + rewrite ocon_comm, ocon_emp. auto.
+    + rewrite IHS1. rewrite ocon_assoc. auto.
+  Qed.
+
   Definition graphs' (S : list V) (g : Graph) :=
     EX l: list V, !!reachable_set_list pg S l &&
                     iter_sepcon l (graph_cell g).
@@ -287,7 +294,10 @@ Section SpatialGraph.
           apply subgraph_edge; auto.
     + destruct H1 as [s [? ?]]. split.
       - rewrite <- (H x). exists s. split. 1: apply in_or_app; auto.
-  Abort.
+        revert H2. apply (predicate_subgraph_reachable_included g _ s x).
+      - intro. rewrite <- (H0 x) in H3. apply reachable_foot_valid in H2.
+        hnf in H2. simpl in H2. destruct H2. auto.
+  Qed.
 
   Lemma subgraph_update':
     forall (g g': Graph) {rfg: ReachableFiniteGraph g} {rfg': ReachableFiniteGraph g'} (S1 S1' S2: list V),
@@ -323,13 +333,11 @@ Section SpatialGraph.
       - apply Permutation_app_head. apply perm_trans with (map (Gamma g') (subtract equiv_dec lgS12 lgS1)).
         * apply Permutation_map. apply NoDup_Permutation.
           apply subtract_nodup; auto. apply subtract_nodup; auto.
-          intros. rewrite <- !subtract_property. {
-            split; intro; destruct H9.
-            + assert (reachable_through_set g' (S1' ++ S2) x) by (apply H7; auto).
-              assert (~ reachable_through_set g' S1' x) by (intro; apply H10; rewrite <- (H5 x); auto).
-              admit.
-            + admit.
-          }
+          intros. rewrite <- !subtract_property.
+          rewrite (unreachable_eq g' _ _ _ _ H7 H5 x).
+          rewrite (unreachable_eq g _ _ _ _ H1 H3 x).
+          destruct H as [? _].
+          apply si_reachable_through_set. symmetry. auto.
         * rewrite (compcert.lib.Coqlib.list_map_exten (Gamma g') (Gamma g)). apply Permutation_refl.
           intros. unfold Gamma. f_equal.
           rewrite <- subtract_property in H9. destruct H9.
@@ -343,11 +351,20 @@ Section SpatialGraph.
 
   Lemma subgraph_update:
     forall (g g': Graph) {rfg: ReachableFiniteGraph g} {rfg': ReachableFiniteGraph g'} (S1 S1' S2: list V),
-      Included (reachable_through_set g S1) (reachable_through_set g' S1') ->
+      (forall x : V, In x (S1 ++ S2) -> Decidable (vvalid g x)) ->
+      (forall x : V, In x (S1' ++ S2) -> Decidable (vvalid g' x)) ->
       (unreachable_sub_spatialgraph g S1) -=- (unreachable_sub_spatialgraph g' S1') ->
       graphs S1 g ⊗ graphs S2 g |-- graphs S1 g * (graphs S1' g' -* graphs S1' g' ⊗ graphs S2 g').
   Proof.
-  Abort.
+    intros. rewrite <- !graphs_app. rewrite !graphs_graphs'; auto.
+    apply subgraph_update'; auto.
+    + repeat intro. specialize (X0 _ H0). destruct (construct_reachable_list _ _ X0) as [l [? ?]]. exists l; auto.
+    + repeat intro. assert (In s (S1' ++ S2)) by (apply in_or_app; auto). specialize (X0 _ H1).
+      destruct (construct_reachable_list _ _ X0) as [l [? ?]]. exists l; auto.
+    + repeat intro. assert (In s (S1 ++ S2)) by (apply in_or_app; auto). specialize (X _ H1).
+      destruct (construct_reachable_list _ _ X) as [l [? ?]]. exists l; auto.
+    + repeat intro. specialize (X _ H0). destruct (construct_reachable_list _ _ X) as [l [? ?]]. exists l; auto.
+  Qed.
 
 End SpatialGraph.
 
