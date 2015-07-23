@@ -77,8 +77,8 @@ Definition predicate_sub_spatialgraph  (g: SpatialGraph V E DV DE: Type) (p: V -
 Definition predicate_partial_spatialgraph  (g: SpatialGraph V E DV DE: Type) (p: V -> Prop) :=
   Build_SpatialGraph V E _ _ DV DE (predicate_partialgraph g p) (vgamma g) (egamma g).
 
-Definition unreachable_sub_spatialgraph (g: SpatialGraph V E DV DE: Type) (S : list V) : SpatialGraph V E DV DE :=
-  predicate_sub_spatialgraph g (fun n => ~ reachable_through_set g S n).
+Definition unreachable_partial_spatialgraph (g: SpatialGraph V E DV DE: Type) (S : list V) : SpatialGraph V E DV DE :=
+  predicate_partial_spatialgraph g (fun n => ~ reachable_through_set g S n).
 
 Class SpatialGraphPred (V E DV DE Pred: Type): Type := {
   vertex_at: V -> DV -> Pred;
@@ -158,28 +158,11 @@ Section SpatialGraph.
     EX l: list V, !!reachable_set_list pg S l &&
                     iter_sepcon l (graph_cell g).
 
-  Definition single_reachable_contructable (S : list V) (g : Graph) : Prop :=
-    forall s, In s S -> exists l, reachable_list g s l /\ NoDup l.
-
-  Lemma single_reachable_contructable_cons: forall a S g,
-      single_reachable_contructable (a :: S) g -> single_reachable_contructable S g.
+  Lemma graphs_graphs': forall S (g: Graph) {rfg: ReachableFiniteGraph g}
+    (V_DEC: forall x : V, In x S -> Decidable (vvalid g x)),
+    graphs S g = graphs' S g.
   Proof.
-    intros. unfold single_reachable_contructable in *. intros.
-    assert (In s (a :: S)) by (apply in_cons; auto).
-    specialize (H _ H1). auto.
-  Qed.
-
-  Definition set_reachable_contructable (S : list V) (g : Graph) : Prop :=
-    forall s, Sublist s S -> exists l, reachable_set_list g s l /\ NoDup l.
-
-  Lemma single_set_reachble_constructable: forall S g, single_reachable_contructable S g -> set_reachable_contructable S g.
-  Proof.
-    admit.
-  Qed.
-  
-  Lemma graphs_graphs': forall S (g: Graph) {rfg: ReachableFiniteGraph g}, single_reachable_contructable S g -> graphs S g = graphs' S g.
-  Proof.
-    induction S; intros until g; intros rfg Hs.
+    induction S; intros until g; intros rfg V_DEC.
     + unfold graphs. unfold graphs'. apply pred_ext.
       - apply (exp_right nil). simpl. apply andp_right; auto.
         apply prop_right. intro x. split; intros.
@@ -189,7 +172,7 @@ Section SpatialGraph.
         specialize (H v). assert (In v (v :: l)) by apply in_eq.
         rewrite <- H in H0. unfold reachable_through_set in H0.
         destruct H0 as [s [? _]]. inversion H0.
-    + unfold graphs. fold graphs. rewrite (IHS _ rfg (single_reachable_contructable_cons _ _ _ Hs)).
+    + unfold graphs. fold graphs. rewrite IHS; [| auto | intros; apply V_DEC; right; auto].
       unfold graphs'. unfold graph. clear IHS. apply pred_ext.
       - normalize_overlap. intros. rename x into la.
         normalize_overlap. rename x into lS. normalize_overlap.
@@ -210,10 +193,9 @@ Section SpatialGraph.
         * apply precise_graph_cell.
         * apply joinable_graph_cell.
       - normalize. intro l; intros. assert (In a (a :: S)) by apply in_eq.
-        destruct (Hs _ H0) as [la [? ?]].
+        destruct (construct_reachable_list _ a) as [la [? ?]]; [apply V_DEC; left; auto |].
         normalize_overlap. apply (exp_right la).
-        assert (Sublist S (a :: S)) by (intro s; intros; apply in_cons; auto).
-        destruct ((single_set_reachble_constructable _ _ Hs) _ H3) as [lS [? ?]].
+        destruct (construct_reachable_set_list _ S) as [lS [? ?]]; [intros; apply V_DEC; right; auto |].
         normalize_overlap. apply (exp_right lS). normalize_overlap.
         rewrite (add_andp _ _ (iter_sepcon_unique_nodup l (sepcon_unique_graph_cell g))).
         normalize. rewrite (iter_sepcon_ocon equiv_dec); auto.
@@ -221,8 +203,8 @@ Section SpatialGraph.
         2: apply joinable_graph_cell.
         rewrite iter_sepcon_permutation with (l2 := remove_dup equiv_dec (la ++ lS)); auto.
         apply NoDup_Permutation; auto. apply remove_dup_nodup.
-        intros. rewrite <- remove_dup_in_inv. clear -H H1 H4.
-        specialize (H x). specialize (H1 x). specialize (H4 x). rewrite <- H.
+        intros. rewrite <- remove_dup_in_inv. clear -H H2 H4.
+        specialize (H x). specialize (H2 x). specialize (H4 x). rewrite <- H.
         rewrite reachable_through_set_eq. rewrite in_app_iff. tauto.
   Qed.
 
@@ -268,7 +250,7 @@ Section SpatialGraph.
 
   Lemma unreachable_eq: forall (g : Graph) (S1 S2 l12 l1 : list V),
       reachable_set_list g (S1 ++ S2) l12 -> reachable_set_list g S1 l1 ->
-      forall x, In x l12 /\ ~ In x l1 <-> reachable_through_set (unreachable_sub_spatialgraph g S1) S2 x.
+      forall x, In x l12 /\ ~ In x l1 <-> reachable_through_set (unreachable_partial_spatialgraph g S1) S2 x.
   Proof.
     intros. split; intro.
     + destruct H1. rewrite <- (H x) in H1.
@@ -291,17 +273,17 @@ Section SpatialGraph.
             destruct H1 as [s [? ?]]. exists s. split; auto.
             apply reachable_edge with x; auto.
           }
-          apply subgraph_edge; auto.
+          apply partialgraph_edge; auto.
     + destruct H1 as [s [? ?]]. split.
       - rewrite <- (H x). exists s. split. 1: apply in_or_app; auto.
-        revert H2. apply (predicate_subgraph_reachable_included g _ s x).
+        revert H2. apply (predicate_partialgraph_reachable_included g _ s x).
       - intro. rewrite <- (H0 x) in H3. apply reachable_foot_valid in H2.
         hnf in H2. simpl in H2. destruct H2. auto.
   Qed.
 
   Lemma subgraph_update':
     forall (g g': Graph) {rfg: ReachableFiniteGraph g} {rfg': ReachableFiniteGraph g'} (S1 S1' S2: list V),
-      (unreachable_sub_spatialgraph g S1) -=- (unreachable_sub_spatialgraph g' S1') ->
+      (unreachable_partial_spatialgraph g S1) -=- (unreachable_partial_spatialgraph g' S1') ->
       (forall x : V, In x (S1 ++ S2) -> Decidable (vvalid g x)) ->
       (forall x : V, In x (S1' ++ S2) -> Decidable (vvalid g' x)) ->
       graphs' (S1 ++ S2) g |-- graphs' S1 g * (graphs' S1' g' -* graphs' (S1' ++ S2) g').
@@ -343,7 +325,7 @@ Section SpatialGraph.
           rewrite <- subtract_property in H9. destruct H9.
           rewrite <- (H1 x) in H9.
           assert (~ reachable_through_set g S1 x) by (intro; apply H10; rewrite <- (H3 x); auto).
-          assert (vvalid (unreachable_sub_spatialgraph g S1) x). simpl. unfold predicate_vvalid.
+          assert (vvalid (unreachable_partial_spatialgraph g S1) x). simpl. unfold predicate_vvalid.
           split; auto. destruct H9 as [? [? ?]]. apply reachable_foot_valid in H12. auto.
           destruct H as [? [? _]]. specialize (H13 _ H12). destruct H as [? [? [? ?]]].
           simpl in H15, H16. rewrite H in H12. specialize (H13 H12). simpl in H13. auto.
@@ -353,17 +335,14 @@ Section SpatialGraph.
     forall (g g': Graph) {rfg: ReachableFiniteGraph g} {rfg': ReachableFiniteGraph g'} (S1 S1' S2: list V),
       (forall x : V, In x (S1 ++ S2) -> Decidable (vvalid g x)) ->
       (forall x : V, In x (S1' ++ S2) -> Decidable (vvalid g' x)) ->
-      (unreachable_sub_spatialgraph g S1) -=- (unreachable_sub_spatialgraph g' S1') ->
+      (unreachable_partial_spatialgraph g S1) -=- (unreachable_partial_spatialgraph g' S1') ->
       graphs S1 g ⊗ graphs S2 g |-- graphs S1 g * (graphs S1' g' -* graphs S1' g' ⊗ graphs S2 g').
   Proof.
-    intros. rewrite <- !graphs_app. rewrite !graphs_graphs'; auto.
+    intros. rewrite <- !graphs_app.
+    rewrite !graphs_graphs'; auto.
+    2: intros; apply X0; rewrite in_app_iff; left; auto.
+    2: intros; apply X; rewrite in_app_iff; left; auto.
     apply subgraph_update'; auto.
-    + repeat intro. specialize (X0 _ H0). destruct (construct_reachable_list _ _ X0) as [l [? ?]]. exists l; auto.
-    + repeat intro. assert (In s (S1' ++ S2)) by (apply in_or_app; auto). specialize (X0 _ H1).
-      destruct (construct_reachable_list _ _ X0) as [l [? ?]]. exists l; auto.
-    + repeat intro. assert (In s (S1 ++ S2)) by (apply in_or_app; auto). specialize (X _ H1).
-      destruct (construct_reachable_list _ _ X) as [l [? ?]]. exists l; auto.
-    + repeat intro. specialize (X _ H0). destruct (construct_reachable_list _ _ X) as [l [? ?]]. exists l; auto.
   Qed.
 
 End SpatialGraph.
