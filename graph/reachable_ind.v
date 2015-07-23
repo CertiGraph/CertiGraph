@@ -198,6 +198,13 @@ Proof.
       * apply H3.
 Qed.
 
+Lemma reachable_trans: forall x y z,
+    reachable G x y -> reachable G y z -> reachable G x z.
+Proof.
+  intros. rewrite reachable_ind_reachable in H, H0 |- *.
+  apply ind.reachable_trans with y; auto.
+Qed.
+
 End ind_reachable.
 
 Section EQUIV.

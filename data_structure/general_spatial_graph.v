@@ -74,6 +74,9 @@ Add Parametric Relation : (SpatialGraph V E DV DE) validly_identical
 Definition predicate_sub_spatialgraph  (g: SpatialGraph V E DV DE: Type) (p: V -> Prop) :=
   Build_SpatialGraph V E _ _ DV DE (predicate_subgraph g p) (vgamma g) (egamma g).
 
+Definition predicate_partial_spatialgraph  (g: SpatialGraph V E DV DE: Type) (p: V -> Prop) :=
+  Build_SpatialGraph V E _ _ DV DE (predicate_partialgraph g p) (vgamma g) (egamma g).
+
 Definition unreachable_sub_spatialgraph (g: SpatialGraph V E DV DE: Type) (S : list V) : SpatialGraph V E DV DE :=
   predicate_sub_spatialgraph g (fun n => ~ reachable_through_set g S n).
 
@@ -254,32 +257,6 @@ Section SpatialGraph.
       intro y. rewrite <- (H0 y). rewrite <- (H2 y).
       specialize (H y). auto.
     + apply Permutation_app_comm.
-  Qed.
-
-  Lemma subgraph_edge: forall (g: PreGraph V E) (p: V -> Prop) x y,
-      edge g x y -> p x -> p y -> edge (predicate_subgraph g p) x y.
-  Proof.
-    intros.
-    destruct H as [? [? ?]].
-    unfold edge.
-    simpl.
-    unfold predicate_vvalid.
-    do 2 (split; [tauto |]).
-    rewrite step_spec in H3 |- *.
-    destruct H3 as [e [? [? ?]]].
-    exists e.
-    split; [| split; simpl; auto].
-    simpl.
-    unfold predicate_evalid.
-    rewrite H4, H5.
-    auto.
-  Qed.
-
-  Lemma reachable_trans: forall (g : PreGraph V E) x y z,
-      reachable g x y -> reachable g y z -> reachable g x z.
-  Proof.
-    intros. rewrite reachable_ind_reachable in H, H0 |- *.
-    apply ind.reachable_trans with y; auto.
   Qed.
 
   Lemma unreachable_eq: forall (g : Graph) (S1 S2 l12 l1 : list V),
