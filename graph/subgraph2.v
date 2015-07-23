@@ -26,7 +26,7 @@ Definition predicate_evalid (p: V -> Prop): Ensemble E :=
   fun e => evalid g e /\ p (src g e) /\ p (dst g e).
 
 Definition predicate_weak_evalid (p: V -> Prop): Ensemble E :=
-  fun e => evalid g e /\ p (src g e) /\ p (dst g e).
+  fun e => evalid g e /\ p (src g e).
 
 Definition predicate_subgraph (p: V -> Prop): PreGraph V E :=
   Build_PreGraph EV EE (predicate_vvalid p) (predicate_evalid p) (src g) (dst g).
@@ -77,7 +77,7 @@ Definition predicate_partial_localfinitegraph (p: NodePred V) : LocalFiniteGraph
 Proof.
   refine (Build_LocalFiniteGraph _ _).
   intros.
-  exists (filter (fun e => if (sumbool_dec_and (node_pred_dec p (src g e)) (node_pred_dec p (dst g e))) then true else false) (edge_func g x)).
+  exists (filter (fun e => if (node_pred_dec p (src g e)) then true else false) (edge_func g x)).
   split.
   + apply NoDup_filter.
     unfold edge_func.
@@ -87,7 +87,7 @@ Proof.
     unfold predicate_partialgraph, predicate_vvalid, predicate_weak_evalid; simpl; intros.
     rewrite filter_In.
     rewrite edge_func_spec.
-    destruct (sumbool_dec_and (node_pred_dec p (src g x0)) (node_pred_dec p (dst g x0))).
+    destruct (node_pred_dec p (src g x0)).
     - unfold out_edges, Ensembles.In in *; simpl.
       assert (true = true) by auto; tauto.
     - unfold out_edges, Ensembles.In in *; simpl.
@@ -160,6 +160,25 @@ Proof.
     exists e; auto.
 Qed.
 
+Lemma predicate_partialgraph_reachable_included (p: V -> Prop): 
+  forall (n: V), Included (reachable (predicate_partialgraph p) n) (reachable g n).
+Proof.
+  intros.
+  intro; intros.
+  unfold Ensembles.In in *.
+  rewrite reachable_ind_reachable.
+  rewrite reachable_ind_reachable in H.
+  induction H.
+  + constructor. destruct H; auto.
+  + apply ind.reachable_cons with y; auto.
+    destruct H as [[? ?] [[? ?] ?]].
+    rewrite step_spec in H4.
+    destruct H4 as [e [[? ?] [? ?]]].
+    split; [| split]; auto.
+    rewrite step_spec.
+    exists e; auto.
+Qed.
+
 Lemma subgraph_edge: forall (p: V -> Prop) x y,
     edge g x y -> p x -> p y -> edge (predicate_subgraph p) x y.
 Proof.
@@ -194,7 +213,7 @@ Proof.
   split; [| split; simpl; auto].
   simpl.
   unfold predicate_weak_evalid.
-  rewrite H4, H5.
+  rewrite H4.
   auto.
 Qed.
 
