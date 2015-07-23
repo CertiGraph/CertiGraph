@@ -31,14 +31,14 @@ Definition predicate_weak_evalid (p: V -> Prop): Ensemble E :=
 Definition predicate_subgraph (p: V -> Prop): PreGraph V E :=
   Build_PreGraph EV EE (predicate_vvalid p) (predicate_evalid p) (src g) (dst g).
 
-Definition predicate_partial_graph (p: V -> Prop): PreGraph V E :=
+Definition predicate_partialgraph (p: V -> Prop): PreGraph V E :=
   Build_PreGraph EV EE (predicate_vvalid p) (predicate_weak_evalid p) (src g) (dst g).
 
 Definition reachable_subgraph (S : list V): PreGraph V E :=
   predicate_subgraph (reachable_through_set g S).
 
-Definition unreachable_subgraph (S : list V): PreGraph V E :=
-  predicate_subgraph (fun n => ~ reachable_through_set g S n).
+Definition unreachable_partialgraph (S : list V): PreGraph V E :=
+  predicate_partialgraph (fun n => ~ reachable_through_set g S n).
 
 Definition predicate_sub_mathgraph (p: V -> Prop): MathGraph (predicate_subgraph p).
 Proof.
@@ -64,6 +64,27 @@ Proof.
     tauto.
   + intros.
     unfold predicate_subgraph, predicate_vvalid, predicate_evalid; simpl; intros.
+    rewrite filter_In.
+    rewrite edge_func_spec.
+    destruct (sumbool_dec_and (node_pred_dec p (src g x0)) (node_pred_dec p (dst g x0))).
+    - unfold out_edges, Ensembles.In in *; simpl.
+      assert (true = true) by auto; tauto.
+    - unfold out_edges, Ensembles.In in *; simpl.
+      assert (~ false = true) by congruence; tauto.
+Defined.
+
+Definition predicate_partial_localfinitegraph (p: NodePred V) : LocalFiniteGraph (predicate_partialgraph p).
+Proof.
+  refine (Build_LocalFiniteGraph _ _).
+  intros.
+  exists (filter (fun e => if (sumbool_dec_and (node_pred_dec p (src g e)) (node_pred_dec p (dst g e))) then true else false) (edge_func g x)).
+  split.
+  + apply NoDup_filter.
+    unfold edge_func.
+    destruct (local_enumerable x); simpl.
+    tauto.
+  + intros.
+    unfold predicate_partialgraph, predicate_vvalid, predicate_weak_evalid; simpl; intros.
     rewrite filter_In.
     rewrite edge_func_spec.
     destruct (sumbool_dec_and (node_pred_dec p (src g x0)) (node_pred_dec p (dst g x0))).
@@ -137,6 +158,25 @@ Proof.
     split; [| split]; auto.
     rewrite step_spec.
     exists e; auto.
+Qed.
+
+Lemma subgraph_edge: forall (p: V -> Prop) x y,
+    edge g x y -> p x -> p y -> edge (predicate_subgraph p) x y.
+Proof.
+  intros.
+  destruct H as [? [? ?]].
+  unfold edge.
+  simpl.
+  unfold predicate_vvalid.
+  do 2 (split; [tauto |]).
+  rewrite step_spec in H3 |- *.
+  destruct H3 as [e [? [? ?]]].
+  exists e.
+  split; [| split; simpl; auto].
+  simpl.
+  unfold predicate_evalid.
+  rewrite H4, H5.
+  auto.
 Qed.
 
 End SubGraph.
