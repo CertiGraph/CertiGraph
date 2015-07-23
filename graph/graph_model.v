@@ -106,13 +106,14 @@ Record PreGraph {EV: EqDec Vertex eq} {EE: EqDec Edge eq} := {
 Context {EV: EqDec Vertex eq}.
 Context {EE: EqDec Edge eq}.
 
-Record LabeledGraph {DV DE: Type} := {
-  pg_lg: PreGraph;
+Record GeneralGraph {DV DE: Type} {P: PreGraph -> (Vertex -> DV) -> (Edge -> DE) -> Prop} := {
+  pg_gg: PreGraph;
   vlabel: Vertex -> DV;
-  elabel: Edge -> DE
+  elabel: Edge -> DE;
+  sound_gg: P pg_gg vlabel elabel
 }.
 
-Coercion pg_lg: LabeledGraph >-> PreGraph.
+Coercion pg_gg: GeneralGraph >-> PreGraph.
 
 Inductive step (pg: PreGraph): Vertex -> Vertex -> Prop :=
   | step_intro: forall e x y, evalid pg e -> src pg e = x -> dst pg e = y -> step pg x y.
@@ -170,7 +171,7 @@ Class BiGraph (pg: PreGraph) (left_out_edge right_out_edge: Vertex -> Edge) :=
 End GRAPH_DEF.
 
 Arguments PreGraph _ _ {_} {_}.
-Arguments LabeledGraph _ _ {_} {_} _ _.
+Arguments GeneralGraph _ _ {_} {_} _ _ _.
 Arguments NodePred : clear implicits.
 Arguments is_null {_} {_} {_} {_} _ {_} _.
 Arguments is_null_dec {_} {_} {_} {_} _ {_} _.
@@ -418,23 +419,24 @@ Proof.
   tauto.
 Qed.
 
-Section LABELED_GRAPH_EQUIV.
+Section GENERAL_GRAPH_EQUIV.
 
 Context {DV DE: Type}.
-Notation Graph := (@LabeledGraph Vertex Edge EV EE DV DE).
+Context {P: PreGraph Vertex Edge -> (Vertex -> DV) -> (Edge -> DE) -> Prop}.
+Notation Graph := (@GeneralGraph Vertex Edge EV EE DV DE P).
 
-Definition labeled_graph_equiv (g1 g2: Graph) :=
+Definition general_graph_equiv (g1 g2: Graph) :=
   g1 ~=~ g2 /\
   (forall v, vlabel g1 v = vlabel g2 v) /\
   (forall e, elabel g1 e = elabel g2 e).
 
-Lemma lge_refl: forall (G : Graph), labeled_graph_equiv G G.
+Lemma gge_refl: forall (G : Graph), general_graph_equiv G G.
 Proof. intros; repeat split; auto. Qed.
 
-Lemma lge_sym: forall (G1 G2: Graph), labeled_graph_equiv G1 G2 -> labeled_graph_equiv G2 G1.
+Lemma gge_sym: forall (G1 G2: Graph), general_graph_equiv G1 G2 -> general_graph_equiv G2 G1.
 Proof. intros; destruct H as [? [? ?]]; split; [| split]; auto. symmetry; auto. Qed.
 
-Lemma lge_trans: forall (G1 G2 G3: Graph), labeled_graph_equiv G1 G2 -> labeled_graph_equiv G2 G3 -> labeled_graph_equiv G1 G3.
+Lemma gge_trans: forall (G1 G2 G3: Graph), general_graph_equiv G1 G2 -> general_graph_equiv G2 G3 -> general_graph_equiv G1 G3.
 Proof.
   intros; destruct H as [? [? ?]], H0 as [? [? ?]].
   split; [| split].
@@ -443,21 +445,21 @@ Proof.
   + intros. specialize (H2 e); specialize (H4 e); congruence.
 Qed.
 
-Instance lge_Equiv: Equivalence (labeled_graph_equiv).
+Instance gge_Equiv: Equivalence (general_graph_equiv).
 Proof.
   split.
-  + intro; apply lge_refl.
-  + intro; apply lge_sym.
-  + intro; apply lge_trans.
+  + intro; apply gge_refl.
+  + intro; apply gge_sym.
+  + intro; apply gge_trans.
 Defined.
 
-End LABELED_GRAPH_EQUIV.
+End GENERAL_GRAPH_EQUIV.
 
 End GRAPH_BASIC_LEM.
 
 Notation "g1 '~=~' g2" := (structurally_identical g1 g2) (at level 1): PreGraph.
 Notation "m1 '~=~' m2" := (node_pred_equiv m1 m2) (at level 1) : NodePred.
-Notation "g1 '~=~' g2" := (labeled_graph_equiv g1 g2) (at level 1) : LabeledGraph.
+Notation "g1 '~=~' g2" := (general_graph_equiv g1 g2) (at level 1) : LabeledGraph.
 Delimit Scope PreGraph with PreGraph.
 Delimit Scope NodePred with NodePred.
 Delimit Scope LabeledGraph with LabeledGraph.
@@ -465,4 +467,4 @@ Delimit Scope LabeledGraph with LabeledGraph.
 Open Scope PreGraph.
 Global Existing Instance npe_Equiv.
 Global Existing Instance si_Equiv.
-Global Existing Instance lge_Equiv.
+Global Existing Instance gge_Equiv.

@@ -18,73 +18,6 @@ Import RamifyCoq.msl_ext.seplog.OconNotation.
 
 Local Open Scope logic.
 
-Class SpatialGraph (V E DV DE: Type): Type := {
-  pg: PreGraph V E;
-  vgamma: V -> DV;
-  egamma: E -> DE
-}.
-
-Arguments vgamma {V E DV DE} _ _.
-Arguments egamma {V E DV DE} _ _.
-
-Class SpatialGraphPred (V E DV DE Pred: Type): Type := {
-  vertex_at: V -> DV -> Pred;
-  edge_at: E -> DE -> Pred
-}.
-
-Class SpatialGraphAssum {V E DV DE Pred: Type} (SGP: SpatialGraphPred V E DV DE Pred) := {
-  SGP_ND: NatDed Pred;
-  SGP_SL : SepLog Pred;
-  SGP_ClSL: ClassicalSep Pred;
-  SGP_CoSL: CorableSepLog Pred
-}.
-
-Existing Instances SGP_ND SGP_SL SGP_ClSL SGP_CoSL.
-
-Class SpatialGraphStrongAssum {V E DV DE Pred: Type} (SGP: SpatialGraphPred V E DV DE Pred) := {
-  SGA: SpatialGraphAssum SGP;
-  SGP_PSL: PreciseSepLog Pred;
-  SGP_OSL: OverlapSepLog Pred;
-  SGP_DSL: DisjointedSepLog Pred;
-  SGP_COSL: CorableOverlapSepLog Pred;
-
-  AAV: AbsAddr V DV;
-  AAE: AbsAddr E DE;
-  VP_MSL: MapstoSepLog AAV vertex_at;
-  VP_sMSL: StaticMapstoSepLog AAV vertex_at;
-  EP_MSL: MapstoSepLog AAE edge_at;
-  EP_sMSL: StaticMapstoSepLog AAE edge_at
-}.
-
-Existing Instances SGA SGP_PSL SGP_OSL SGP_DSL SGP_COSL VP_MSL VP_sMSL EP_MSL EP_sMSL.
-
-Coercion pg : SpatialGraph >-> PreGraph.
-
-Section SpatialGraph.
-
-  Context {V E DV DE Pred: Type}.
-  Context {SGP: SpatialGraphPred V E DV DE Pred}.
-  Context {SGA: SpatialGraphAssum SGP}.
-  Notation Graph := (SpatialGraph V E DV DE).
-
-  Definition graph_cell (g: Graph) (v : V) : Pred := vertex_at v (vgamma g v).
-
-  Definition graph (x : V) (g: Graph) : Pred :=
-    EX l : list V, !!reachable_list g x l && iter_sepcon l (graph_cell g).
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 Class SpatialGraphSetting: Type := {
   addr: Type;
   null: addr;
@@ -92,7 +25,7 @@ Class SpatialGraphSetting: Type := {
   addr_eqb: addr -> addr -> bool := fun x y => if addr_eq_dec x y then true else false
 }.
 
-Instance AV_SGraph `{SpatialGraphSetting} : AbsAddr.
+Instance AV_SGraph `{SpatialGraphSetting} : AbsAddr addr (bool * addr * addr).
   apply (mkAbsAddr addr (bool * addr * addr) (fun x y => addr_eqb x y)); simpl; intros.
   + unfold addr_eqb.
     destruct (addr_eq_dec p1 p2), (addr_eq_dec p2 p1); try congruence.
@@ -100,22 +33,31 @@ Instance AV_SGraph `{SpatialGraphSetting} : AbsAddr.
     destruct (addr_eq_dec p1 p1); congruence.
 Defined.
 
-Instance AddrDec `{SpatialGraphSetting}: EqDec Addr. apply Build_EqDec. intros. apply (addr_eq_dec t1 t2). Defined.
-Opaque AddrDec.
-
 Inductive LR :=
   | L
   | R.
 
+Instance AddrDec `{SpatialGraphSetting}: EqDec addr eq.
+  unfold EqDec.
+  intros. apply (addr_eq_dec x y).
+Defined.
+
+Instance AddrLRDec `{SpatialGraphSetting}: EqDec (addr * LR) eq.
+  unfold EqDec.
+  intros.
+  destruct x as [? [|]], y as [? [|]]; [| right; congruence | right; congruence |].
+  + destruct(addr_eq_dec a a0); [left | right]; congruence.
+  + destruct(addr_eq_dec a a0); [left | right]; congruence.
+Defined.
+
+Opaque AddrDec AddrLRDec.
+
 Class Graph {SGS: SpatialGraphSetting} : Type := {
-  pg: PreGraph Addr (Addr * LR);
-  bi: BiGraph pg;
-  ma: MathGraph pg;
-  fin: FiniteGraph pg;
-  mk: NodePred pg;
-  is_null_def: forall x: Addr, is_null x = (x = null);
-  left_out_edge_def: forall x: Addr, left_out_edge x = (x, L);
-  right_out_edge_def: forall x: Addr, right_out_edge x = (x, R)
+  lg: LabeledGraph addr (addr * LR) (NodePred addr) unit;
+  bi: BiGraph lg (fun x => (x, L)) (fun x => (x, R));
+  ma: MathGraph lg;
+  fin: FiniteGraph lg;
+  is_null_def: forall x: addr, is_null lg x = (x = null)
 }.
 
 Instance MG_Graph {SGS: SpatialGraphSetting} (G: Graph) : MarkedGraph Addr (Addr * LR) := {
