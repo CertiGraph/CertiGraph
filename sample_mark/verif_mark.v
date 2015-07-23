@@ -3,35 +3,30 @@ Require Import Coq.Sets.Finite_sets.
 Require Import RamifyCoq.Coqlib.
 Require Import RamifyCoq.sample_mark.env_mark.
 Require Import RamifyCoq.graph.graph_model.
-Require Import RamifyCoq.graph.marked_graph.
+Require RamifyCoq.graph.marked_graph. Import RamifyCoq.graph.marked_graph.MarkGraph.
 Require Import RamifyCoq.graph.path_lemmas.
 Require Import RamifyCoq.graph.subgraph2.
 Require Import RamifyCoq.graph.reachable_computable.
-Require Import RamifyCoq.data_structure.spatial_graph2.
+Require Import RamifyCoq.data_structure.general_spatial_graph.
+Require Import RamifyCoq.data_structure.spatial_graph_mark.
 Require Import RamifyCoq.data_structure.spatial_graph_VST.
 
 Local Open Scope logic.
 
 Arguments SingleFrame' {l} {g} {s}.
-Arguments weak_valid {_} {_} _ {_} _.
-Arguments vvalid {_} {_} _ _.
-
-Existing Instance SGS_VST.
-
-Notation graph sh x g := (@graph (SGA_VST sh) x g).
-
-Arguments mark {V} {E} _ _ _.
-Arguments mark1 {V} {E} _ _ _.
+Notation graph sh x g := (@graph addr (addr * LR) (bool * addr * addr) unit mpred _ (SGP_VST sh) x g).
+Existing Instance MGS.
 
 Definition mark_spec :=
  DECLARE _mark
-  WITH sh: share, g: Graph, g': Graph, x: pointer_val
+  WITH sh: share, g: Graph, x: pointer_val
   PRE [ _x OF (tptr (Tstruct _Node noattr))]
-          PROP  (writable_share sh; mark g x g')
+          PROP  (writable_share sh)
           LOCAL (temp _x (pointer_val_val x))
           SEP   (`(graph sh x g))
   POST [ Tvoid ]
-        PROP ()
+        EX g': Graph, 
+        PROP (mark g x g')
         LOCAL()
         SEP (`(graph sh x g')).
 
@@ -174,7 +169,7 @@ Proof.
 Qed.
 
 Hint Resolve pointer_val_val_is_pointer_or_null.
-
+(*
 Ltac rewrite_vi_graph g1 g2 H :=
   let HH := fresh "H" in
   assert (g1 -=- g2) as HH; [eapply H |
@@ -184,11 +179,11 @@ Ltac rewrite_vi_graph g1 g2 H :=
            erewrite (fun x => @reachable_vi_eq (SGA_VST _) g1 g2 x HH);
            change (@spatial_graph2.graph (SGA_VST sh) x g2) with (graph sh x g2)
     end].
-
+*)
 Lemma body_mark: semax_body Vprog Gprog f_mark mark_spec.
 Proof.
   start_function.
-  remember (gamma g x) as dlr eqn:?H.
+  remember (vgamma g x) as dlr eqn:?H.
   destruct dlr as [[d l] r].
   rewrite (add_andp _ _ (@graph_root_nv (SGA_VST _) _ _)).
   normalize.

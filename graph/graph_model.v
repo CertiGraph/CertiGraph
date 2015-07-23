@@ -106,7 +106,7 @@ Record PreGraph {EV: EqDec Vertex eq} {EE: EqDec Edge eq} := {
 Context {EV: EqDec Vertex eq}.
 Context {EE: EqDec Edge eq}.
 
-Record GeneralGraph {DV DE: Type} {P: PreGraph -> (Vertex -> DV) -> (Edge -> DE) -> Prop} := {
+Record GeneralGraph {DV DE: Type} {P: PreGraph -> (Vertex -> DV) -> (Edge -> DE) -> Type (* Should be Prop *)} := {
   pg_gg: PreGraph;
   vlabel: Vertex -> DV;
   elabel: Edge -> DE;
@@ -422,7 +422,7 @@ Qed.
 Section GENERAL_GRAPH_EQUIV.
 
 Context {DV DE: Type}.
-Context {P: PreGraph Vertex Edge -> (Vertex -> DV) -> (Edge -> DE) -> Prop}.
+Context {P: PreGraph Vertex Edge -> (Vertex -> DV) -> (Edge -> DE) -> Type}.
 Notation Graph := (@GeneralGraph Vertex Edge EV EE DV DE P).
 
 Definition general_graph_equiv (g1 g2: Graph) :=

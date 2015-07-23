@@ -634,7 +634,7 @@ Qed.
 
 Ltac destruct_eq_dec a b :=
   let H := fresh "H" in
-  destruct (@equiv_dec _ eq _ _ a b) as [H | H]; unfold complement, eq_equivalence, equiv in H.
+  destruct (@EquivDec.equiv_dec _ eq _ _ a b) as [H | H]; unfold complement, eq_equivalence, equiv in H.
 
 Lemma map_nodup: forall {A} {B} (f : A -> B) (l : list A), (forall x y : A, f x = f y -> x = y) ->
                                                            NoDup l -> NoDup (map f l).

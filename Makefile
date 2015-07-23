@@ -32,7 +32,7 @@ GRAPH_FILES = \
   graph_model.v path_lemmas.v marked_graph.v graph_gen.v reachable_computable.v find_not_in.v reachable_ind.v subgraph2.v
 
 DATA_STRUCTURE_FILES = \
-  general_spatial_graph.v spatial_graph2.v spatial_graph_HMD.v spatial_graph_VST.v
+  general_spatial_graph.v spatial_graph_mark.v spatial_graph_HMD.v spatial_graph_VST.v
 
 SAMPLE_MARK_FILES = \
   env_mark.v verif_mark.v 

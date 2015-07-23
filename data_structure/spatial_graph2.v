@@ -13,10 +13,13 @@ Require Import RamifyCoq.graph.reachable_computable.
 Require Import RamifyCoq.graph.reachable_ind.
 Require Import RamifyCoq.graph.marked_graph.
 Require Import RamifyCoq.graph.graph_gen.
+Require Import RamifyCoq.data_structure.general_spatial_graph.
 Require Import Coq.Logic.Classical.
 Import RamifyCoq.msl_ext.seplog.OconNotation.
 
 Local Open Scope logic.
+
+
 
 Class SpatialGraphSetting: Type := {
   addr: Type;
@@ -25,24 +28,28 @@ Class SpatialGraphSetting: Type := {
   addr_eqb: addr -> addr -> bool := fun x y => if addr_eq_dec x y then true else false
 }.
 
-Instance AV_SGraph `{SpatialGraphSetting} : AbsAddr addr (bool * addr * addr).
-  apply (mkAbsAddr addr (bool * addr * addr) (fun x y => addr_eqb x y)); simpl; intros.
-  + unfold addr_eqb.
-    destruct (addr_eq_dec p1 p2), (addr_eq_dec p2 p1); try congruence.
-  + unfold addr_eqb in H0.
-    destruct (addr_eq_dec p1 p1); congruence.
-Defined.
-
 Inductive LR :=
   | L
   | R.
 
-Instance AddrDec `{SpatialGraphSetting}: EqDec addr eq.
+Section SpatialGraphForMark.
+
+Context {SGS: SpatialGraphSetting}.
+
+Instance AV_SGraph : AbsAddr addr (bool * addr * addr).
+  apply (mkAbsAddr addr (bool * addr * addr) (fun x y => addr_eqb x y)); simpl; intros.
+  + unfold addr_eqb.
+    destruct (addr_eq_dec p1 p2), (addr_eq_dec p2 p1); try congruence.
+  + unfold addr_eqb in H.
+    destruct (addr_eq_dec p1 p1); congruence.
+Defined.
+
+Instance AddrDec: EqDec addr eq.
   unfold EqDec.
   intros. apply (addr_eq_dec x y).
 Defined.
 
-Instance AddrLRDec `{SpatialGraphSetting}: EqDec (addr * LR) eq.
+Instance AddrLRDec: EqDec (addr * LR) eq.
   unfold EqDec.
   intros.
   destruct x as [? [|]], y as [? [|]]; [| right; congruence | right; congruence |].
@@ -52,44 +59,55 @@ Defined.
 
 Opaque AddrDec AddrLRDec.
 
-Class Graph {SGS: SpatialGraphSetting} : Type := {
-  lg: LabeledGraph addr (addr * LR) (NodePred addr) unit;
-  bi: BiGraph lg (fun x => (x, L)) (fun x => (x, R));
-  ma: MathGraph lg;
-  fin: FiniteGraph lg;
-  is_null_def: forall x: addr, is_null lg x = (x = null)
+Class BiMaFin (g: PreGraph addr (addr * LR)) := {
+  bi: BiGraph g (fun x => (x, L)) (fun x => (x, R));
+  ma: MathGraph g;
+  fin: FiniteGraph g;
+  is_null_def': forall x: addr, is_null g x = (x = null)
 }.
 
-Instance MG_Graph {SGS: SpatialGraphSetting} (G: Graph) : MarkedGraph Addr (Addr * LR) := {
-  pg := pg;
-  marked := mk
-}.
+Definition Graph := (GeneralGraph addr (addr * LR) bool unit (fun g _ _ => BiMaFin g)).
 
-Coercion MG_Graph: Graph >-> MarkedGraph.
-Coercion pg : Graph >-> PreGraph.
-Coercion bi : Graph >-> BiGraph. 
-Coercion ma : Graph >-> MathGraph.
-Existing Instances pg bi ma fin.
+Identity Coercion G_GG : Graph >-> GeneralGraph.
 
-Lemma weak_valid_vvalid_dec: forall {SGS: SpatialGraphSetting} (G : Graph) (x: Addr),
-  weak_valid x -> {vvalid x} + {~ vvalid x}.
+(* Notation Graph := (GeneralGraph addr (addr * LR) bool unit (fun g _ _ => BiMaFin g)). *)
+
+Definition gamma (G : Graph) (v: addr) : bool * addr * addr := 
+  (if vlabel G v then true else false, dst G (v, L), dst G (v, R)).
+
+Instance biGraph (G: Graph): BiGraph G (fun x => (x, L)) (fun x => (x, R)) :=
+  @bi G (@sound_gg _ _ _ _ _ _ _ G).
+
+Instance maGraph(G: Graph): MathGraph G :=
+  @ma G (@sound_gg _ _ _ _ _ _ _ G).
+
+Instance finGraph (G: Graph): FiniteGraph G :=
+  @fin G (@sound_gg _ _ _ _ _ _ _ G).
+
+Definition is_null_def (g: Graph): forall x: addr, is_null g x = (x = null) := is_null_def'.
+
+Definition Graph_SpatialGraph (G: Graph): SpatialGraph addr (addr * LR) (bool * addr * addr) unit := Build_SpatialGraph _ _ _ _ _ _ G (gamma G) (fun _ => tt).
+
+Coercion Graph_SpatialGraph: Graph >-> SpatialGraph.
+
+Lemma weak_valid_vvalid_dec: forall (g : Graph) (x: addr),
+  weak_valid g x -> {vvalid g x} + {~ vvalid g x}.
 Proof.
   intros.
   apply null_or_valid in H.
   destruct H; [right | left]; auto.
-  pose proof valid_not_null x; tauto.
+  pose proof valid_not_null g x; tauto.
 Qed.
 
+(*
 Hint Extern 5 (MathGraph (@pg _ ?g)) => apply (@ma _ g): GraphLib.
 Hint Extern 5 (LocalFiniteGraph (@pg _ ?g)) => apply (@LocalFiniteGraph_FiniteGraph _ _ g): GraphLib.
 Hint Extern 5 (FiniteGraph (@pg _ ?g)) => apply (@fin _ g): GraphLib.
 Hint Extern 5 (EnumCovered _ (reachable (@pg _ ?g) _)) => apply (@FiniteGraph_EnumCovered _ _ g): GraphLib.
 Hint Extern 5 ({vvalid ?x} + {~ vvalid ?x}) => apply (@weak_valid_vvalid_dec _ _ x): GraphLib.
+*)
 
-Definition gamma {SGS: SpatialGraphSetting} (G : Graph) (v: Addr) : bool * Addr * Addr := 
-  (if node_pred_dec (marked G) v then true else false, dst (left_out_edge v), dst (right_out_edge v)).
-
-Lemma weak_valid_si: forall {SGS: SpatialGraphSetting} (g1 g2: Graph) n, g1 ~=~ g2 -> (@weak_valid _ _ g1 _ n <-> @weak_valid _ _ g2 _ n).
+Lemma weak_valid_si: forall (g1 g2: Graph) n, g1 ~=~ g2 -> (weak_valid g1 n <-> weak_valid g2 n).
 Proof.
   intros.
   unfold weak_valid.
@@ -99,42 +117,51 @@ Proof.
   reflexivity.
 Qed.
 
-Lemma gamma_step: forall {SGS: SpatialGraphSetting} (g : Graph) x d l r, vvalid x -> gamma g x = (d, l, r) -> forall y, step g x y <-> y = l \/ y = r.
+Ltac s_rewrite p :=
+  let H := fresh "H" in
+  pose proof p as H;
+  simpl in H;
+  rewrite H;
+  clear H.
+
+Lemma gamma_step: forall (g : Graph) x (d: bool) (l r: addr), vvalid g x -> vgamma g x = (d, l, r) -> forall y, step g x y <-> y = l \/ y = r.
 Proof.
-  intros. unfold gamma in H0; inversion H0; subst.
+  intros. simpl in H0; unfold gamma in H0; inversion H0; subst.
   rewrite step_spec; split; intros.
   + destruct H1 as [? [? [? ?]]].
-    rewrite only_two_edges in H2.
+    rewrite (only_two_edges g) in H2.
     destruct H2; subst; auto.
   + destruct H1.
-    - exists (left_out_edge x).
-      apply left_valid in H.
-      rewrite left_sound; auto.
-    - exists (right_out_edge x).
-      apply right_valid in H.
-      rewrite right_sound; auto.
+    - exists (x, L).
+      apply (left_valid g) in H.
+      s_rewrite (left_sound g); auto.
+    - exists (x, R).
+      apply (right_valid g) in H.
+      s_rewrite (right_sound g); auto.
 Qed.
 
-Lemma gamma_left_weak_valid: forall {SGS: SpatialGraphSetting} (g : Graph) x d l r, vvalid x -> gamma g x = (d, l, r) -> weak_valid l.
+Lemma gamma_left_weak_valid: forall (g : Graph) x d l r, vvalid g x -> vgamma g x = (d, l, r) -> weak_valid g l.
 Proof.
   intros.
+  simpl in H0.
   assert (snd (fst (gamma g x)) = l) by (rewrite H0; auto).
   clear H0.
   unfold gamma in H1; simpl in H1.
-  pose proof valid_graph (left_out_edge x).
-  spec H0; [apply left_valid; auto |].
+  pose proof valid_graph g (x, L).
+  spec H0; [pose proof (left_valid g); auto |].
   rewrite <- H1.
   simpl in H0; tauto.
 Qed.
 
-Lemma gamma_right_weak_valid: forall {SGS: SpatialGraphSetting} (g : Graph) x d l r, vvalid x -> gamma g x = (d, l, r) -> weak_valid r.
+Lemma gamma_right_weak_valid: forall (g : Graph) x d l r, vvalid g x -> vgamma g x = (d, l, r) -> weak_valid g r.
 Proof.
   intros.
+  simpl in H0.
   assert (snd (gamma g x) = r) by (rewrite H0; auto).
   clear H0.
   unfold gamma in H1; simpl in H1.
-  pose proof valid_graph (right_out_edge x).
-  spec H0; [apply right_valid; auto |].
+  pose proof valid_graph g (x, R).
+  spec H0; [pose proof (right_valid g); auto |].
   rewrite <- H1.
   simpl in H0; tauto.
 Qed.
