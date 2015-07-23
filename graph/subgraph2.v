@@ -179,6 +179,25 @@ Proof.
   auto.
 Qed.
 
+Lemma partialgraph_edge: forall (p: V -> Prop) x y,
+    edge g x y -> p x -> p y -> edge (predicate_partialgraph p) x y.
+Proof.
+  intros.
+  destruct H as [? [? ?]].
+  unfold edge.
+  simpl.
+  unfold predicate_vvalid.
+  do 2 (split; [tauto |]).
+  rewrite step_spec in H3 |- *.
+  destruct H3 as [e [? [? ?]]].
+  exists e.
+  split; [| split; simpl; auto].
+  simpl.
+  unfold predicate_weak_evalid.
+  rewrite H4, H5.
+  auto.
+Qed.
+
 End SubGraph.
 
 Section SI_EQUIV.

@@ -567,6 +567,7 @@ Class MarkGraphSetting (DV: Type) := {
   label_unmark_sound: forall x, label_marked x -> ~ label_marked (label_unmark x);
   label_mark_id: forall x, label_unmark (label_mark x) = x;
   label_unmark_id: forall x, label_mark (label_unmark x) = x
+  
 }.
 
 Section MarkGraph.
@@ -576,8 +577,9 @@ Context {EV: EqDec V eq}.
 Context {EE: EqDec E eq}.
 Context {DV DE: Type}.
 Context {MGS: MarkGraphSetting DV}.
+Context {P: PreGraph V E -> (V -> DV) -> (E -> DE) -> Prop}.
 
-Notation Graph := (LabeledGraph V E DV DE).
+Notation Graph := (GeneralGraph V E DV DE P).
 
 Definition marked (g: Graph) (v: V) : Prop := label_marked (vlabel g v).
 Definition unmarked (g: Graph) (v: V) : Prop := ~ label_marked (vlabel g v).
@@ -603,17 +605,7 @@ Definition inj (g: Graph): NodePred V.
   intros; apply marked_dec.
 Defined.
 
-Definition surj (g0: Graph) (m: NodePred V): Graph.
-  refine (@Build_LabeledGraph V E _ _ DV DE g0 _ (elabel g0)).
-  intro v.
-  destruct (marked_dec (vlabel g0 v)), (node_pred_dec m v).
-  + exact (vlabel g0 v).
-  + exact (label_unmark (vlabel g0 v)).
-  + exact (label_mark (vlabel g0 v)).
-  + exact (vlabel g0 v).
-Defined.
-
-Instance inj_proper: Proper (labeled_graph_equiv ==> node_pred_equiv) inj.
+Instance inj_proper: Proper (general_graph_equiv ==> node_pred_equiv) inj.
 Proof.
   hnf; intros.
   intro; simpl.
@@ -621,42 +613,6 @@ Proof.
   rewrite H.
   tauto.
 Defined.
-
-Lemma surj_inj: forall (m: NodePred V) (g: Graph), ((inj g) ~=~ m)%NodePred -> ((surj g m) ~=~ g)%LabeledGraph.
-Proof.
-  unfold labeled_graph_equiv, node_pred_equiv in *; intros.
-  simpl in H |- *.
-  split; [reflexivity |].
-  split; [| intros; reflexivity].
-  intros.
-  specialize (H v).
-  destruct (marked_dec (vlabel g v)), (node_pred_dec m v); auto; tauto.
-Qed.
-
-Lemma inj_surj: forall (m: NodePred V) (g0 g: Graph), ((surj g0 m) ~=~ g)%LabeledGraph -> ((inj g) ~=~ m)%NodePred.
-Proof.
-  unfold labeled_graph_equiv, node_pred_equiv in *; intros.
-  simpl in H |- *.
-  destruct H as [_ [? _]].
-  intros.
-  specialize (H n).
-  destruct (marked_dec (vlabel g0 n)), (node_pred_dec m n).
-  - rewrite H in l; tauto.
-  - pose proof label_unmark_sound (vlabel g0 n).
-    rewrite H in H0.
-    tauto.
-  - pose proof label_mark_sound (vlabel g0 n).
-    rewrite H in H0.
-    tauto.
-  - rewrite H in n0; tauto.
-Qed.
-
-Lemma surj_si: forall (g0: Graph) m, g0 ~=~ (surj g0 m).
-Proof.
-  intros.
-  simpl.
-  reflexivity.
-Qed.
 
 Lemma mark1_inj: forall (g1 g2: Graph) (v: V), mark1 g1 v g2 <-> (g1 ~=~ g2 /\ SIMPLE_MARK_GRAPH.mark1 g1 (inj g1) v (inj g2)).
 Proof.
@@ -689,26 +645,25 @@ Proof.
     rewrite (proj1 H); tauto.
 Qed.
 
-Lemma mark1_exists: forall (g: Graph) x, vvalid g x -> {g': Graph | mark1 g x g'}.
+Lemma vertex_update_mark1: forall (g1: Graph) x (g2: Graph),
+  g1 ~=~ g2 ->
+  vvalid g1 x ->
+  unmarked g1 x ->
+  vlabel g2 x = label_mark (vlabel g1 x) ->
+  (forall y, x <> y -> vlabel g2 y = vlabel g1 y) ->
+  (forall e, elabel g2 e = elabel g1 e) ->
+  mark1 g1 x g2.
 Proof.
   intros.
-  destruct (SIMPLE_MARK_GRAPH.mark1_exists g (inj g) x H) as [m' ?H].
-  exists (surj g m').
-  assert ((inj (surj g m')) ~=~ m')%NodePred by (apply inj_surj with g; reflexivity).
-  rewrite <- H1 in H0.
-  apply mark1_inj.
-  split; [apply surj_si | auto].
-Qed.
-
-Lemma mark_exists: forall (g: Graph) x, vvalid g x -> ReachDecidable g x (unmarked g) -> {g': Graph | mark g x g'}.
-Proof.
-  intros.
-  destruct (SIMPLE_MARK_GRAPH.mark_exists g (inj g) x H X) as [m' ?H].
-  exists (surj g m').
-  assert ((inj (surj g m')) ~=~ m')%NodePred by (apply inj_surj with g; reflexivity).
-  rewrite <- H1 in H0.
-  apply mark_inj.
-  split; [apply surj_si | auto].
+  split; [| split; [| split]]; auto.
+  + unfold marked.
+    rewrite H2.
+    apply label_mark_sound.
+    apply H1.
+  + intros y HH; specialize (H3 y HH). clear - H3.
+    unfold marked.
+    rewrite H3.
+    reflexivity.
 Qed.
 
 Lemma mark1_mark_list_mark: forall (g1: Graph) root l (g2 g3 g4: Graph)
@@ -736,6 +691,6 @@ Proof.
   + tauto.
   + rewrite <- (proj1 H2) in H3 at 2; tauto.
 Qed.
-  
+
 End MarkGraph.
 End MarkGraph.
