@@ -560,14 +560,11 @@ Module MarkGraph.
 
 Class MarkGraphSetting (DV: Type) := {
   label_marked: DV -> Prop;
-  marked_dec: forall x, {label_marked x} + {~ label_marked x};
   label_mark: DV -> DV;
   label_unmark: DV -> DV;
+  marked_dec: forall x, {label_marked x} + {~ label_marked x};
   label_mark_sound: forall x, ~ label_marked x -> label_marked (label_mark x);
-  label_unmark_sound: forall x, label_marked x -> ~ label_marked (label_unmark x);
-  label_mark_id: forall x, label_unmark (label_mark x) = x;
-  label_unmark_id: forall x, label_mark (label_unmark x) = x
-  
+  label_unmark_sound: forall x, label_marked x -> ~ label_marked (label_unmark x)
 }.
 
 Section MarkGraph.
@@ -577,7 +574,7 @@ Context {EV: EqDec V eq}.
 Context {EE: EqDec E eq}.
 Context {DV DE: Type}.
 Context {MGS: MarkGraphSetting DV}.
-Context {P: PreGraph V E -> (V -> DV) -> (E -> DE) -> Prop}.
+Context {P: PreGraph V E -> (V -> DV) -> (E -> DE) -> Type}.
 
 Notation Graph := (GeneralGraph V E DV DE P).
 
