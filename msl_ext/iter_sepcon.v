@@ -8,6 +8,7 @@ Require Import VST.msl.seplog.
 Require Import VST.msl.log_normalize.
 Require Import Coq.Lists.List.
 Require Import Coq.Sorting.Permutation.
+Require Export Coq.Classes.Morphisms.
 Import RamifyCoq.msl_ext.seplog.OconNotation.
 
 Local Open Scope logic.
@@ -234,8 +235,13 @@ Qed.
 Lemma iter_sepcon_func: forall l P Q, (forall x, P x = Q x) -> iter_sepcon l P = iter_sepcon l Q.
 Proof. intros. induction l; simpl; [|f_equal]; auto. Qed.
 
+Instance iter_sepcon_permutation_proper : Proper ((@Permutation B) ==> eq ==> eq) iter_sepcon.
+Proof. repeat intro. subst. apply iter_sepcon_permutation. auto. Qed.
+
 End IterSepCon.
 
 Lemma iter_sepcon_map: forall {A B C: Type} {ND : NatDed A} {SL : SepLog A} (l : list C) (f : B -> A) (g: C -> B),
                          iter_sepcon l (fun x : C => f (g x)) = iter_sepcon (map g l) f.
 Proof. intros. induction l; simpl; [|f_equal]; auto. Qed.
+
+Global Existing Instance iter_sepcon_permutation_proper.
