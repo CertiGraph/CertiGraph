@@ -226,6 +226,20 @@ Section SIMPLE_MARK_GRAPH.
     tauto.
   Qed.
 
+  Lemma mark_marked_root_refl: forall (m: NodePred V) root,
+                         m root ->
+                         mark m root m.
+  Proof.
+    intros.
+    split.
+    + intros.
+      apply reachable_by_head_prop in H0.
+      rewrite negateP_spec in H0.
+      tauto.
+    + intros.
+      reflexivity.
+  Qed.
+
   Lemma mark_marked: forall m1 root m2,
                        mark m1 root m2 ->
                        ReachDecidable g root (negateP m1) ->
@@ -661,6 +675,22 @@ Proof.
     unfold marked.
     rewrite H3.
     reflexivity.
+Qed.
+
+Lemma mark_invalid_refl: forall (g: Graph) root, ~ vvalid g root -> mark g root g.
+Proof.
+  intros.
+  pose proof SIMPLE_MARK_GRAPH.mark_invalid_refl g (inj g) root H.
+  rewrite -> mark_inj.
+  split; [reflexivity | auto].
+Qed.
+ 
+Lemma mark_marked_root_refl: forall (g: Graph) root, marked g root -> mark g root g.
+Proof.
+  intros.
+  pose proof SIMPLE_MARK_GRAPH.mark_marked_root_refl g (inj g) root H.
+  rewrite -> mark_inj.
+  split; [reflexivity | auto].
 Qed.
 
 Lemma mark1_mark_list_mark: forall (g1: Graph) root l (g2 g3 g4: Graph)

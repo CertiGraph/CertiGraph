@@ -397,6 +397,13 @@ Proof.
   destruct l. auto. destruct H1 as [[? _] _]. auto.
 Qed.
 
+Lemma reachable_through_set_foot_valid: forall (g : Gph) S n, reachable_through_set g S n -> vvalid g n.
+Proof.
+  intros.
+  destruct H as [s ?].
+  apply reachable_foot_valid with s; tauto.
+Qed.
+
 Lemma reachable_through_empty (g: Gph):
   Same_set (reachable_through_set g nil) (Empty_set V).
 Proof.
@@ -556,6 +563,32 @@ Proof.
   intros. destruct H0 as [p [? [? ?]]].
   exists p. do 2 (split; auto). hnf in *.
   rewrite Forall_forall in *. intros. apply H. apply H2. auto.
+Qed.
+
+Lemma reachable_through_set_app: forall g S1 S2 x,
+  reachable_through_set g S1 x \/ reachable_through_set g S2 x <-> reachable_through_set g (S1 ++ S2) x.
+Proof.
+  intros; split; intros; [destruct H as [[s ?] | [s ?]] | destruct H as [s ?]].
+  + exists s; split; [| tauto].
+    rewrite in_app_iff; tauto.
+  + exists s; split; [| tauto].
+    rewrite in_app_iff; tauto.
+  + rewrite in_app_iff in H; destruct H as [[? | ?] ?]; [left | right];
+    exists s; tauto.
+Qed.
+
+Lemma reachable_through_set_app_left: forall g S1 S2 x,
+  reachable_through_set g S1 x -> reachable_through_set g (S1 ++ S2) x.
+Proof.
+  intros.
+  rewrite <- reachable_through_set_app; tauto.
+Qed.
+
+Lemma reachable_through_set_app_right: forall g S1 S2 x,
+  reachable_through_set g S2 x -> reachable_through_set g (S1 ++ S2) x.
+Proof.
+  intros.
+  rewrite <- reachable_through_set_app; tauto.
 Qed.
 
 Class ReachableFiniteGraph (pg: PreGraph V E) := {

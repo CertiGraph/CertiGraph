@@ -14,14 +14,14 @@ Require Import RamifyCoq.data_structure.spatial_graph_VST.
 Local Open Scope logic.
 
 Arguments SingleFrame' {l} {g} {s}.
-Notation graph sh x g := (@graph addr (addr * LR) (bool * addr * addr) unit mpred _ (SGP_VST sh) x g).
-Existing Instance MGS.
+Notation graph sh x g := (@graph _ _ _ _ _ _ (SGP_VST sh) x g).
+Existing Instances MGS biGraph maGraph finGraph.
 
 Definition mark_spec :=
  DECLARE _mark
   WITH sh: share, g: Graph, x: pointer_val
   PRE [ _x OF (tptr (Tstruct _Node noattr))]
-          PROP  (writable_share sh)
+          PROP  (writable_share sh; weak_valid (pg_gg g) x)
           LOCAL (temp _x (pointer_val_val x))
           SEP   (`(graph sh x g))
   POST [ Tvoid ]
@@ -185,10 +185,8 @@ Proof.
   start_function.
   remember (vgamma g x) as dlr eqn:?H.
   destruct dlr as [[d l] r].
-  rewrite (add_andp _ _ (@graph_root_nv (SGA_VST _) _ _)).
-  normalize.
   rename H1 into H_GAMMA_g; symmetry in H_GAMMA_g.
-  rename H2 into H_weak_valid.
+  rename H0 into H_weak_valid.
 
   forward_if_tac  (* if (x == 0) *)
     (PROP  (pointer_val_val x <> nullval)
@@ -198,13 +196,10 @@ Proof.
   Focus 1. { (* if-then branch *)
     destruct_pointer_val x.
     forward. (* return *)
-    rewrite_vi_graph g g' @mark_invalid; [| eauto |].
-    + intro.
-      apply valid_not_null in H2; auto.
-      unfold MG_Graph; simpl marked_graph.pg.
-      rewrite is_null_def.
-      auto.
-    + auto.
+    pose proof mark_invalid_refl g NullPointer.
+    spec H1;
+    [pose proof valid_not_null g NullPointer; rewrite is_null_def in H2; intro; apply H2; auto; congruence |].
+    apply (exp_right g); entailer!.
   } Unfocus.
   Focus 1. { (* if-else branch *)
     forward. (* skip; *)
@@ -214,9 +209,9 @@ Proof.
   assert (vvalid g x) as gx_vvalid.
   Focus 1. {
     destruct H_weak_valid; [| auto].
-    subst x; simpl in H1.
+    rewrite is_null_def in H1; subst x.
     exfalso.
-    apply H1. auto.
+    apply H0. auto.
   } Unfocus.
   destruct_pointer_val x. clear H1 H_weak_valid.
   assert (gl_weak_valid: weak_valid g l) by (eapply gamma_left_weak_valid; eauto).
