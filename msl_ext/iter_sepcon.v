@@ -235,8 +235,13 @@ Qed.
 Lemma iter_sepcon_func: forall l P Q, (forall x, P x = Q x) -> iter_sepcon l P = iter_sepcon l Q.
 Proof. intros. induction l; simpl; [|f_equal]; auto. Qed.
 
-Instance iter_sepcon_permutation_proper : Proper ((@Permutation B) ==> eq ==> eq) iter_sepcon.
-Proof. repeat intro. subst. apply iter_sepcon_permutation. auto. Qed.
+Instance iter_sepcon_permutation_proper : Proper ((@Permutation B) ==> (pointwise_relation B eq) ==> eq) iter_sepcon.
+Proof.
+  repeat intro. transitivity (iter_sepcon x y0).
+  + apply iter_sepcon_func.
+    exact H0.
+  + apply iter_sepcon_permutation. auto.
+Qed.
 
 End IterSepCon.
 

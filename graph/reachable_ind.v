@@ -2,6 +2,7 @@ Require Import Coq.Logic.ProofIrrelevance.
 Require Import Coq.Sets.Ensembles.
 Require Import Coq.Sets.Finite_sets.
 Require Import Coq.Lists.List.
+Require Import Coq.Classes.Morphisms.
 Require Import RamifyCoq.Coqlib.
 Require Import RamifyCoq.graph.graph_model.
 Require Import RamifyCoq.graph.find_not_in.
@@ -245,17 +246,47 @@ Proof.
   + apply (H0 y); auto.
 Qed.
 
-Lemma si_reachable_through_set: forall (g1 g2: PreGraph V E) S n, g1 ~=~ g2 -> (reachable_through_set g1 S n <-> reachable_through_set g2 S n).
+Lemma si_eq_as_set_reachable_through_set: forall (g1 g2: PreGraph V E) S1 S2 n, g1 ~=~ g2 -> eq_as_set S1 S2 -> (reachable_through_set g1 S1 n <-> reachable_through_set g2 S2 n).
 Proof.
-  cut (forall (g1 g2 : PreGraph V E) (S : list V) (n : V), g1 ~=~ g2 ->
-         (reachable_through_set g1 S n -> reachable_through_set g2 S n)).
-  1: intros; split; apply H; [| symmetry]; auto.
+  cut (forall (g1 g2 : PreGraph V E) S1 S2 (n : V), g1 ~=~ g2 -> eq_as_set S1 S2 ->
+         (reachable_through_set g1 S1 n -> reachable_through_set g2 S2 n)).
+  1: intros; split; apply H; [| | symmetry | symmetry]; auto.
+  intros.
   intros.
   unfold reachable_through_set in *.
-  destruct H0 as [s [? ?]].
-  exists s; split; auto.
-  destruct (si_reachable g1 g2 s H).
-  apply H2; auto.
+  destruct H1 as [s [? ?]].
+  exists s; split.
+  + pose proof proj1 H0 s.
+    auto.
+  + destruct (si_reachable g1 g2 s H).
+    apply H3; auto.
 Qed.
 
+Lemma si_reachable_through_set: forall (g1 g2: PreGraph V E) S n, g1 ~=~ g2 -> (reachable_through_set g1 S n <-> reachable_through_set g2 S n).
+Proof.
+  intros.
+  apply si_eq_as_set_reachable_through_set; auto.
+  reflexivity.
+Qed.
+
+Instance reachable_proper: Proper (structurally_identical ==> (@eq V) ==> (@eq V) ==> iff) reachable.
+Proof.
+  do 3 (hnf; intros); subst.
+  apply si_reachable_direct.
+  auto.
+Defined.
+
+Instance reachable_through_set_proper: Proper (structurally_identical ==> eq_as_set ==> (@eq V) ==> iff) reachable_through_set.
+Proof.
+  do 3 (hnf; intros); subst.
+  apply si_eq_as_set_reachable_through_set; auto.
+Defined.
+
+Instance reachable_through_set_proper': Proper (structurally_identical ==> eq_as_set ==> (pointwise_relation V iff)) reachable_through_set.
+  do 3 (hnf; intros); subst.
+  apply si_eq_as_set_reachable_through_set; auto.
+Defined.
+
 End EQUIV.
+
+Global Existing Instances reachable_proper reachable_through_set_proper reachable_through_set_proper'.

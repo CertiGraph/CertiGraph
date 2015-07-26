@@ -1,5 +1,6 @@
 Require Import Coq.Sets.Ensembles.
 Require Import Coq.Sets.Finite_sets.
+Require Import Coq.Logic.Classical.
 Require Import VST.msl.seplog.
 Require Import VST.msl.log_normalize.
 Require Import RamifyCoq.Coqlib.
@@ -12,7 +13,6 @@ Require Import RamifyCoq.graph.path_lemmas.
 Require Import RamifyCoq.graph.reachable_computable.
 Require Import RamifyCoq.graph.reachable_ind.
 Require Import RamifyCoq.graph.subgraph2.
-Require Import Coq.Logic.Classical.
 Import RamifyCoq.msl_ext.seplog.OconNotation.
 
 Local Open Scope logic.
@@ -125,9 +125,42 @@ Definition predicate_partial_spatialgraph  (g: SpatialGraph V E DV DE: Type) (p:
 Definition unreachable_partial_spatialgraph (g: SpatialGraph V E DV DE: Type) (S : list V) : SpatialGraph V E DV DE :=
   predicate_partial_spatialgraph g (fun n => ~ reachable_through_set g S n).
 
+Lemma vi_stronger_partial_spatialgraph: forall (g1 g2: SpatialGraph V E DV DE: Type) (p1 p2 p1' p2' p: V -> Prop),
+  (forall v, p1' v <-> p1 v /\ p v) ->
+  (forall v, p2' v <-> p2 v /\ p v) ->
+  (predicate_partial_spatialgraph g1 p1) -=- (predicate_partial_spatialgraph g2 p2) ->
+  (predicate_partial_spatialgraph g1 p1') -=- (predicate_partial_spatialgraph g2 p2').
+Proof.
+  intros.
+  split; [| split].
+  + eapply si_stronger_partialgraph; eauto.
+    exact (proj1 H1).
+  + destruct H1 as [_ [? _]].
+    intros.
+    apply H1; simpl in H2, H3 |- *; unfold predicate_vvalid in *; firstorder.
+  + destruct H1 as [_ [_ ?]].
+    intros.
+    apply H1; simpl in H2, H3 |- *; unfold predicate_evalid in *; firstorder.
+Qed.
+
+Instance partial_spatialgraph_proper: Proper (validly_identical ==> (pointwise_relation V iff) ==> validly_identical) predicate_partial_spatialgraph.
+  do 3 (hnf; intros).
+  destruct H as [? [? ?]].
+  split; [| split].
+  + simpl; rewrite H, H0; reflexivity.
+  + simpl; intros.
+    unfold predicate_vvalid in *.
+    firstorder.
+  + simpl; intros.
+    unfold predicate_vvalid in *.
+    firstorder.
+Defined.    
+
 End PURE_FACTS.
 
 Notation "g1 '-=-' g2" := (validly_identical g1 g2) (at level 1).
+Existing Instance vi_equal.
+Existing Instance partial_spatialgraph_proper.
 
 Section SPATIAL_FACTS.
 
@@ -258,7 +291,7 @@ Lemma reachable_subtract_perm:
     reachable_set_list g S1 l1 -> NoDup l1 -> reachable_set_list g S2 l2 -> NoDup l2 ->
     Permutation (map (Gamma g) l1) (map (Gamma g) l2 ++ map (Gamma g) (subtract equiv_dec l1 l2)).
 Proof.
-  intros. rewrite <- (compcert.lib.Coqlib.list_append_map (Gamma g)).
+  intros. rewrite <- (map_app (Gamma g)).
   apply Permutation_map. apply perm_trans with (subtract equiv_dec l1 l2 ++ l2).
   + apply subtract_permutation; auto.
     intro y. rewrite <- (H0 y). rewrite <- (H2 y).
@@ -299,7 +332,47 @@ Proof.
       hnf in H2. simpl in H2. destruct H2. auto.
 Qed.
 
-Lemma subgraph_update':
+Lemma partialgraph_update_prime:
+  forall (g g': Graph) (S1 S1' S2 S2': list V),
+    ((predicate_partial_spatialgraph g (fun x => In x S2 /\ ~ In x S1)) -=-
+     (predicate_partial_spatialgraph g' (fun x => In x S2' /\ ~ In x S1'))) ->
+   Sublist S1 S2 ->
+   Sublist S1' S2' ->
+    (forall x, In x S2 -> vvalid g x) ->
+    (forall x, In x S2' -> vvalid g' x) ->
+    NoDup S1 -> NoDup S1' -> NoDup S2 -> NoDup S2' ->
+    iter_sepcon (map (Gamma g) S2) Graph_cell |--
+      iter_sepcon (map (Gamma g) S1) Graph_cell * 
+       (iter_sepcon (map (Gamma g') S1') Graph_cell -* iter_sepcon (map (Gamma g') S2') Graph_cell).
+Proof.
+  intros.
+  apply iter_sepcon_ramification.
+  exists (map (Gamma g) (subtract equiv_dec S2 S1)).
+  split; [| apply perm_trans with (map (Gamma g') S1' ++ map (Gamma g') (subtract equiv_dec S2' S1'))].
+  + rewrite <- map_app.
+    apply Permutation_map.
+    rewrite Permutation_app_comm.
+    apply subtract_permutation; auto.
+  + rewrite <- map_app.
+    apply Permutation_map.
+    rewrite Permutation_app_comm.
+    apply subtract_permutation; auto.
+  + apply Permutation_app_head.
+    eapply perm_trans; [apply Permutation_map | rewrite (compcert.lib.Coqlib.list_map_exten (Gamma g') (Gamma g)); [apply Permutation_refl |]].
+    - apply NoDup_Permutation; try solve [apply subtract_nodup; auto].
+      intros. rewrite <- !subtract_property.
+      destruct H as [[? _] _].
+      specialize (H x); specialize (H2 x); specialize (H3 x).
+      simpl in H; unfold predicate_vvalid in H.
+      tauto.
+    - intros. unfold Gamma. f_equal.
+      rewrite <- subtract_property in H8. destruct H8.
+      destruct H as [[? _] [? _]].
+      specialize (H x); specialize (H10 x); simpl in H, H10; unfold predicate_vvalid in H, H10.
+      specialize (H2 x); specialize (H3 x); symmetry; tauto.
+Qed.
+
+Lemma partialgraph_update:
   forall (g g': Graph) {rfg: ReachableFiniteGraph g} {rfg': ReachableFiniteGraph g'} (S1 S1' S2: list V),
     (unreachable_partial_spatialgraph g S1) -=- (unreachable_partial_spatialgraph g' S1') ->
     (forall x : V, In x (S1 ++ S2) -> Decidable (vvalid g x)) ->
@@ -317,36 +390,36 @@ Proof.
   destruct (construct_reachable_set_list g S1 X1) as [lgS1 [?H ?H]].
   destruct (construct_reachable_set_list g' S1' X2) as [lg'S1' [?H ?H]].
   destruct (construct_reachable_set_list g' (S1' ++ S2) X0) as [lg'S1'S2 [?H ?H]].
-  unfold proj1_sig. apply iter_sepcon_ramification.
-  exists (map (Gamma g) (subtract equiv_dec lgS12 lgS1)). split.
-  + apply (reachable_subtract_perm _ (S1 ++ S2) S1); auto.
-    intro y. unfold reachable_through_set. intros. destruct H8 as [s [? ?]].
-    exists s. split; auto. apply in_or_app. auto.
-  + assert (Sublist lgS1 lgS12). {
-      intro y. rewrite <- (H1 y). rewrite <- (H3 y).
-      unfold reachable_through_set. intros. destruct H8 as [s [? ?]]. exists s. split; auto.
-      apply in_or_app; auto. }
-    apply perm_trans with (map (Gamma g') lg'S1' ++ map (Gamma g') (subtract equiv_dec lg'S1'S2 lg'S1')).
-    - apply (reachable_subtract_perm _ (S1' ++ S2) S1'); auto.
-      intro y. unfold reachable_through_set. intros. destruct H9 as [s [? ?]].
-      exists s. split; auto. apply in_or_app. auto.
-    - apply Permutation_app_head. apply perm_trans with (map (Gamma g') (subtract equiv_dec lgS12 lgS1)).
-      * apply Permutation_map. apply NoDup_Permutation.
-        apply subtract_nodup; auto. apply subtract_nodup; auto.
-        intros. rewrite <- !subtract_property.
-        rewrite (unreachable_eq g' _ _ _ _ H7 H5 x).
-        rewrite (unreachable_eq g _ _ _ _ H1 H3 x).
-        destruct H as [? _].
-        apply si_reachable_through_set. symmetry. auto.
-      * rewrite (compcert.lib.Coqlib.list_map_exten (Gamma g') (Gamma g)). apply Permutation_refl.
-        intros. unfold Gamma. f_equal.
-        rewrite <- subtract_property in H9. destruct H9.
-        rewrite <- (H1 x) in H9.
-        assert (~ reachable_through_set g S1 x) by (intro; apply H10; rewrite <- (H3 x); auto).
-        assert (vvalid (unreachable_partial_spatialgraph g S1) x). simpl. unfold predicate_vvalid.
-        split; auto. destruct H9 as [? [? ?]]. apply reachable_foot_valid in H12. auto.
-        destruct H as [? [? _]]. specialize (H13 _ H12). destruct H as [? [? [? ?]]].
-        simpl in H15, H16. rewrite H in H12. specialize (H13 H12). simpl in H13. auto.
+  unfold proj1_sig.
+  eapply partialgraph_update_prime; auto.
+  + assert ((pointwise_relation V iff) (fun x : V => In x lgS12 /\ ~ In x lgS1) (reachable_through_set (unreachable_partial_spatialgraph g S1) S2))
+    by (simpl; intro; apply unreachable_eq; auto).
+    assert ((pointwise_relation V iff) (fun x : V => In x lg'S1'S2 /\ ~ In x lg'S1') (reachable_through_set (unreachable_partial_spatialgraph g' S1') S2))
+    by (simpl; intro; apply unreachable_eq; auto).
+    rewrite H8, H9; clear H8 H9.
+    eapply (vi_stronger_partial_spatialgraph g g' _ _ _ _ (reachable_through_set (unreachable_partial_spatialgraph g' S1') S2));
+    [| | exact H | ..]; intros; cbv beta.
+    - rewrite <- (proj1 H).
+      pose proof reachable_through_set_foot_valid (unreachable_partial_spatialgraph g S1) S2 v.
+      simpl (vvalid (unreachable_partial_spatialgraph g S1) v) in H8.
+      unfold predicate_vvalid in H8.
+      tauto.
+    - pose proof reachable_through_set_foot_valid (unreachable_partial_spatialgraph g' S1') S2 v.
+      simpl (vvalid (unreachable_partial_spatialgraph g' S1') v) in H8.
+      unfold predicate_vvalid in H8.
+      tauto.
+  + intro v.
+    rewrite <- (H1 v), <- (H3 v).
+    apply reachable_through_set_app_left; auto.
+  + intro v.
+    rewrite <- (H5 v), <- (H7 v).
+    apply reachable_through_set_app_left; auto.
+  + intro v.
+    rewrite <- (H1 v).
+    apply reachable_through_set_foot_valid.
+  + intro v.
+    rewrite <- (H7 v).
+    apply reachable_through_set_foot_valid.
 Qed.
 
 Lemma subgraph_update:
@@ -360,8 +433,81 @@ Proof.
   rewrite !graphs_graphs'; auto.
   2: intros; apply X0; rewrite in_app_iff; left; auto.
   2: intros; apply X; rewrite in_app_iff; left; auto.
-  apply subgraph_update'; auto.
+  apply partialgraph_update; auto.
 Qed.
+
+Definition legal_partial_graph (g: Graph) (S1 S2: list V) : Prop :=
+  Sublist S1 S2 /\ NoDup S1 /\ NoDup S2 /\ (forall x, In x S2 -> vvalid g x).
+
+Lemma existential_partialgraph_update_prime:
+  forall (g: Graph) (S1 S2: list V) (PureF: Graph -> list V -> list V -> Prop),
+    legal_partial_graph g S1 S2 ->
+    (forall g' S1' S2', PureF g' S1' S2' ->
+      legal_partial_graph g' S1' S2' /\
+      ((predicate_partial_spatialgraph g (fun x => In x S2 /\ ~ In x S1)) -=-
+       (predicate_partial_spatialgraph g' (fun x => In x S2' /\ ~ In x S1')))) ->
+    iter_sepcon (map (Gamma g) S2) Graph_cell |--
+      iter_sepcon (map (Gamma g) S1) Graph_cell *
+       ((EX g': Graph, (EX S1': list V, (EX S2': list V,
+         !!PureF g' S1' S2' && iter_sepcon (map (Gamma g') S1') Graph_cell))) -*
+        (EX g': Graph, (EX S1': list V, (EX S2': list V,
+         !!PureF g' S1' S2' && iter_sepcon (map (Gamma g') S2') Graph_cell)))).
+Proof.
+  intros.
+  apply derives_trans with
+   (iter_sepcon (map (Gamma g) S1) Graph_cell *
+    iter_sepcon (map (Gamma g) (subtract equiv_dec S2 S1)) Graph_cell).
+  + clear - H; destruct H as [? [? [? ?]]].
+    rewrite <- iter_sepcon_app_sepcon, <- map_app.
+    erewrite iter_sepcon_permutation; [apply derives_refl |].
+    apply Permutation_map_aux.
+    apply eq_as_set_permutation; auto.
+    - apply equiv_dec.
+    - apply NoDup_app_inv; auto.
+      * apply subtract_nodup; auto.
+      * intros.
+        rewrite <- subtract_property.
+        specialize (H x).
+        tauto.
+    - apply eq_as_set_spec; intro x; rewrite in_app_iff, <- subtract_property.
+      specialize (H x).
+      tauto.
+  + apply sepcon_derives; auto.
+    apply wand_sepcon_adjoint.
+    normalize.
+    apply (exp_right g'); apply (exp_right S1'); apply (exp_right S2').
+    normalize.
+Abort.
+(*
+SearchAbout Permutation NoDup.
+  apply iter_sepcon_ramification.
+  exists (map (Gamma g) (subtract equiv_dec S2 S1)).
+  split; [| apply perm_trans with (map (Gamma g') S1' ++ map (Gamma g') (subtract equiv_dec S2' S1'))].
+  + rewrite <- map_app.
+    apply Permutation_map.
+    rewrite Permutation_app_comm.
+    apply subtract_permutation; auto.
+  + rewrite <- map_app.
+    apply Permutation_map.
+    rewrite Permutation_app_comm.
+    apply subtract_permutation; auto.
+  + apply Permutation_app_head.
+    eapply perm_trans; [apply Permutation_map | rewrite (compcert.lib.Coqlib.list_map_exten (Gamma g') (Gamma g)); [apply Permutation_refl |]].
+    - apply NoDup_Permutation; try solve [apply subtract_nodup; auto].
+      intros. rewrite <- !subtract_property.
+      destruct H as [[? _] _].
+      specialize (H x); specialize (H2 x); specialize (H3 x).
+      simpl in H; unfold predicate_vvalid in H.
+      tauto.
+    - intros. unfold Gamma. f_equal.
+      rewrite <- subtract_property in H8. destruct H8.
+      destruct H as [[? _] [? _]].
+      specialize (H x); specialize (H10 x); simpl in H, H10; unfold predicate_vvalid in H, H10.
+      specialize (H2 x); specialize (H3 x); symmetry; tauto.
+Qed.
+
+Lemma single_vertex_update:
+*)
 
 End SPATIAL_FACTS.
 

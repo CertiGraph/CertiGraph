@@ -4,6 +4,8 @@ Require Import Coq.Arith.Arith.
 Require Import Coq.Lists.List.
 Require Import Coq.Logic.ProofIrrelevance.
 Require Import Coq.Logic.FunctionalExtensionality.
+Require Import Coq.Classes.Morphisms.
+Require Import Coq.Classes.Equivalence.
 Require Import RamifyCoq.Coqlib.
 Require Import VST.msl.Coqlib2.
 Require Import RamifyCoq.graph.graph_model.
@@ -225,6 +227,43 @@ Context {V E: Type}.
 Context {EV: EqDec V eq}.
 Context {EE: EqDec E eq}.
 
+Lemma si_stronger_partialgraph: forall (g1 g2: PreGraph V E) (p1 p2 p1' p2' p: V -> Prop),
+  (forall v, p1' v <-> p1 v /\ p v) ->
+  (forall v, p2' v <-> p2 v /\ p v) ->
+  (predicate_partialgraph g1 p1) ~=~ (predicate_partialgraph g2 p2) ->
+  (predicate_partialgraph g1 p1') ~=~ (predicate_partialgraph g2 p2').
+Proof.
+  intros.
+  destruct H1 as [? [? [? ?]]].
+  split; [| split; [| split]].
+  + intro v; specialize (H1 v); specialize (H0 v); specialize (H v);
+    simpl in H1 |- *.
+    unfold predicate_vvalid in H1 |- *.
+    tauto.
+  + intro e; specialize (H2 e); specialize (H3 e); specialize (H (src g1 e)); specialize (H0 (src g1 e));
+    simpl in H2, H3 |- *.
+    unfold predicate_weak_evalid in H2 |- *.
+    rewrite <- H3 in *.
+    tauto.
+  + exact H3.
+  + exact H4.
+Qed.
+
+Instance partialgraph_proper: Proper (structurally_identical ==> (pointwise_relation V iff) ==> structurally_identical) predicate_partialgraph.
+Proof.
+  do 2 (hnf; intros).
+  destruct H as [? [? [? ?]]].
+  split; [| split; [| split]]; intros; simpl.
+  + unfold predicate_vvalid.
+    rewrite H0, H.
+    reflexivity.
+  + unfold predicate_weak_evalid.
+    rewrite H0, H1, H2.
+    reflexivity.
+  + auto.
+  + auto.
+Defined.
+
 Lemma si_subgraph_edge: forall (g1 g2: PreGraph V E) (p1 p2: V -> Prop),
   g1 ~=~ g2 ->
   (forall x, vvalid g1 x -> vvalid g2 x -> (p1 x <-> p2 x)) ->
@@ -320,3 +359,5 @@ Proof.
 Qed.
 
 End SI_EQUIV.
+
+Existing Instance partialgraph_proper.
