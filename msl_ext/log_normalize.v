@@ -7,6 +7,14 @@ Require Import VST.msl.log_normalize.
 
 Local Open Scope logic.
 
+Lemma exp_f_equal: forall {A B} `{NatDed A} (P Q: B -> A),
+  (forall x, P x = Q x) ->
+  exp P = exp Q.
+Proof.
+  intros.
+  apply pred_ext; normalize; intro x; apply (exp_right x); rewrite H0; auto.
+Qed.
+
 Lemma exp_unit: forall {A} `{NatDed A} (P: unit -> A),
   exp P = P tt.
 Proof.
