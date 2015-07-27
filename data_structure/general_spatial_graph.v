@@ -261,84 +261,65 @@ Proof.
       auto.
 Qed.
 
-  Lemma reachable_subgraph_derives:
-    forall (g1 g2: Graph) x,
-      ((reachable_sub_spatialgraph g1 (x :: nil)) -=- (reachable_sub_spatialgraph g2 (x :: nil))) ->
-      graph x g1 |-- graph x g2.
-  Proof.
-  Admitted.
-(*
-    Implicit Arguments vvalid [[Vertex] [Edge]].
-    intros. destruct H as [? ?]. rewrite (add_andp _ _ (graph_root_nv _ _)).
-    normalize. destruct H1.
-    + subst. rewrite !graph_unfold_null; auto.
-    + unfold graph. normalize. apply (exp_right l).
-      rewrite <- andp_assoc, <- prop_and. apply andp_right.
-      - apply prop_right. simpl in H. unfold reachable_valid in H. split.
-        * right. destruct H as [? _]. specialize (H x).
-          assert (vvalid g1 x /\ reachable_through_set g1 (x :: nil) x). {
-            split. auto. exists x. split.
-            + apply in_eq.
-            + apply reachable_by_reflexive. split; auto.
-          } rewrite H in H3. simpl in H3. unfold reachable_valid in H3. tauto.
-        * unfold reachable_list in *. intros. specialize (H2 y).
-          rewrite H2. split; intros.
-          Focus 1. {
-            apply reachable_valid_and_through_single in H3.
-            destruct H as [? _].
-            specialize (H y).
-            simpl in H.
-            unfold reachable_valid in H.
-            rewrite H in H3.
-            destruct H3. destruct H4 as [s [? ?]].
-            simpl in H4. destruct H4; [| tauto]. subst; auto.
-          } Unfocus.
-          Focus 1. {
-            apply reachable_valid_and_through_single in H3.
-            destruct H as [? _].
-            specialize (H y).
-            simpl in H.
-            unfold reachable_valid in H.
-            rewrite <- H in H3.
-            destruct H3. destruct H4 as [s [? ?]].
-            simpl in H4. destruct H4; [| tauto]. subst; auto.
-          } Unfocus.
-      - assert (forall z, In z l -> vvalid (reachable_subgraph g1 (x :: nil)) z). {
-          intros. simpl. hnf. hnf in H2. rewrite H2 in H3. split.
-          + apply reachable_foot_valid in H3; auto.
-          + exists x. split. apply in_eq. auto.
-        } clear H2. induction l. simpl. auto.
-        unfold iter_sepcon.
-        fold (iter_sepcon l (graph_cell g1)).
-        fold (iter_sepcon l (graph_cell g2)).
-        apply derives_trans with (graph_cell g1 a * iter_sepcon l (graph_cell g2));
-          apply sepcon_derives; auto.
-        * apply IHl. intros. apply H3. apply in_cons; auto.
-        * clear IHl.
-          specialize (H3 a).
-          spec H3; [left; auto |].
-          destruct H as [? [? [? ?]]].
-          pose proof (H a).
-          simpl in H6, H3.
-          pose proof H3; rewrite H6 in H3; clear H6.
-          unfold graph_cell. replace (gamma g1 a) with (gamma g2 a); [auto |].
-          unfold gamma.
-          specialize (H0 a H7 H3).
-          simpl in H5.
-          rewrite !H5.
-          rewrite !left_out_edge_def, !right_out_edge_def.
-          f_equal.
-          f_equal.
-          change (marked (reachable_sub_markedgraph g1 (x :: nil)) a) with (marked g1 a) in H0.
-          change (marked (reachable_sub_markedgraph g2 (x :: nil)) a) with (marked g2 a) in H0.
-          destruct (node_pred_dec (marked g2) a), (node_pred_dec (marked g1) a); tauto.
-    Implicit Arguments vvalid [[Vertex] [Edge] [PreGraph]].
-  Qed.
-*)
-  Lemma reachable_vi_eq:
-    forall (g1 g2 : Graph) x, g1 -=- g2 -> graph x g1 = graph x g2.
-  Proof.
-Admitted.
+Lemma reachable_subgraph_derives:
+  forall (g1 g2: Graph) x,
+    ((reachable_sub_spatialgraph g1 (x :: nil)) -=- (reachable_sub_spatialgraph g2 (x :: nil))) ->
+    graph x g1 |-- graph x g2.
+Proof.
+  intros. unfold graph. normalize. intro l; intros. destruct H as [? ?].
+  apply (exp_right l). apply andp_right.
+  + apply prop_right. unfold reachable_list in *. intros. specialize (H0 y).
+    rewrite H0. split; intros.
+    - apply reachable_valid_and_through_single in H2.
+      destruct H as [? _]. specialize (H y). simpl in H.
+      unfold predicate_vvalid in H. rewrite H in H2.
+      destruct H2 as [? [s [? ?]]]. simpl in H3.
+      destruct H3; [| tauto]. subst; auto.
+    - apply reachable_valid_and_through_single in H2.
+      destruct H as [? _]. specialize (H y). simpl in H.
+      unfold predicate_vvalid in H. rewrite <- H in H2.
+      destruct H2 as [? [s [? ?]]]. simpl in H3.
+      destruct H3; [| tauto]. subst; auto.
+  + assert (forall z, In z l -> vvalid (reachable_subgraph g1 (x :: nil)) z). {
+      intros. simpl. hnf. hnf in H0. rewrite H0 in H2. split.
+      + apply reachable_foot_valid in H2; auto.
+      + exists x. split. apply in_eq. auto.
+    } clear H0. induction l. simpl; auto.
+    unfold iter_sepcon.
+    fold (iter_sepcon l (graph_cell g1)).
+    fold (iter_sepcon l (graph_cell g2)).
+    apply derives_trans with (graph_cell g1 a * iter_sepcon l (graph_cell g2)); apply sepcon_derives; auto.
+    - apply IHl. intros. apply H2. apply in_cons; auto.
+    - clear IHl. specialize (H2 a). spec H2; [left; auto |].
+      destruct H1 as [? _]. specialize (H0 a H2).
+      destruct H as [? [? [? ?]]].
+      pose proof (H a).
+      simpl in H5, H2.
+      pose proof H2; rewrite H5 in H2; clear H5.
+      specialize (H0 H2). simpl in H0.
+      unfold graph_cell. replace (vgamma g1 a) with (vgamma g2 a).
+      auto.
+Qed.
+
+Lemma reachable_subgraph_eq:
+  forall (g1 g2 : Graph) x,
+    ((reachable_sub_spatialgraph g1 (x :: nil)) -=- (reachable_sub_spatialgraph g2 (x :: nil))) -> graph x g1 = graph x g2.
+Proof.
+  intros. apply pred_ext.
+  + apply reachable_subgraph_derives; auto.
+  + apply reachable_subgraph_derives; apply vi_sym; auto.
+Qed.
+  
+Lemma reachable_vi_eq: forall (g1 g2 : Graph) x, g1 -=- g2 -> graph x g1 = graph x g2.
+Proof.
+  intros. apply reachable_subgraph_eq.
+  destruct H as [? [? ?]]. split.
+  + apply si_reachable_subgraph. auto.
+  + split; intro; intros.
+    apply H0; [destruct H2 | destruct H3]; tauto.
+    apply H1; [destruct H2 | destruct H3]; tauto.
+Qed.
+    
 (*
   Arguments vvalid {_} {_} _ _.
     intros.
