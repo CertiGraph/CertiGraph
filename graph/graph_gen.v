@@ -5,6 +5,23 @@ Require Import Coq.Lists.List.
 Require Import RamifyCoq.Coqlib.
 Require Import RamifyCoq.graph.graph_model.
 
+Section GENERAL_GRAPH_GEN.
+
+Context {V E: Type}.
+Context {EV: EqDec V eq}.
+Context {EE: EqDec E eq}.
+Context {DV DE: Type}.
+Context {P: PreGraph V E -> (V -> DV) -> (E -> DE) -> Type}.
+
+Notation Graph := (GeneralGraph V E DV DE P).
+
+Definition update_vlabel (vlabel: V -> DV) (x: V) (d: DV) :=
+  fun v => if equiv_dec x v then d else vlabel v.
+
+Definition generalgraph_gen (g: Graph) (x: V) (d: DV) (sound': P g (update_vlabel (vlabel g) x d) (elabel g)): Graph := @Build_GeneralGraph V E EV EE DV DE P (pg_gg g) (update_vlabel (vlabel g) x d) (elabel g) sound'.
+
+End GENERAL_GRAPH_GEN.
+
 Section GRAPH_GEN.
 
 Variable V : Type.

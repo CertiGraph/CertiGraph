@@ -232,6 +232,30 @@ Proof.
   auto.
 Qed.
 
+Lemma exists_iter_sepcon_ramification:
+  forall (T: Type) (PureF: T -> Prop) P g l (g' l': T -> list B),
+  (exists f, Permutation g (l ++ f) /\
+     forall t, PureF t -> Permutation (g' t) ((l' t) ++ f)) ->
+  iter_sepcon g P |-- iter_sepcon l P *
+   ((EX t: T, !! PureF t && iter_sepcon (l' t) P) -*
+    (EX t: T, !! PureF t && iter_sepcon (g' t) P)).
+Proof.
+  intros.
+  destruct H as [f [? ?]].
+  rewrite (iter_sepcon_permutation _ H).
+  rewrite iter_sepcon_app_sepcon.
+  apply sepcon_derives; auto.
+  apply wand_sepcon_adjoint.
+  normalize.
+  apply (exp_right t).
+  normalize.
+  apply H0 in H1.
+  rewrite (iter_sepcon_permutation _ H1).
+  rewrite iter_sepcon_app_sepcon.  
+  rewrite sepcon_comm.
+  auto.
+Qed.
+
 Lemma iter_sepcon_func: forall l P Q, (forall x, P x = Q x) -> iter_sepcon l P = iter_sepcon l Q.
 Proof. intros. induction l; simpl; [|f_equal]; auto. Qed.
 
@@ -241,6 +265,39 @@ Proof.
   + apply iter_sepcon_func.
     exact H0.
   + apply iter_sepcon_permutation. auto.
+Qed.
+
+Lemma iter_sepcon_emp: forall (p : B -> A) (l l' : list B), (forall x, p x |-- emp) -> NoDup l' -> Sublist l' l -> iter_sepcon l p |-- iter_sepcon l' p.
+Proof.
+  intros.
+  revert l H1; induction l'; intros.
+  + simpl; clear H1.
+    induction l; simpl; auto.
+    rewrite <- (emp_sepcon emp).
+    apply sepcon_derives; auto.
+  + inversion H0; subst.
+    spec IHl'; [auto |].
+    assert (In a l) by (specialize (H1 a); simpl in H1; auto).
+    apply in_split in H2.
+    destruct H2 as [l1 [l2 ?]].
+    specialize (IHl' (l1 ++ l2)).
+    spec IHl'.
+    Focus 1. {
+      clear - H2 H1 H4.
+      intros x ?H.
+      specialize (H1 x).
+      spec H1; [simpl; auto |].
+      subst.
+      rewrite in_app_iff in H1; simpl in H1.
+      rewrite in_app_iff.
+      assert (a = x -> False) by (intros; subst; tauto).
+      tauto.
+    } Unfocus.
+    subst.
+    rewrite iter_sepcon_app_sepcon in *.
+    simpl.
+    rewrite (sepcon_comm (p a)), <- sepcon_assoc, (sepcon_comm _ (p a)).
+    apply sepcon_derives; auto.
 Qed.
 
 End IterSepCon.

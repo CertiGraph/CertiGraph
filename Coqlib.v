@@ -644,3 +644,5 @@ Proof.
     destruct H1 as [x [? ?]]. specialize (H _ _ H1). subst. auto.
   + apply NoDup_cons_1 in H0. apply IHl. auto.
 Qed.
+
+Existing Instance Permutation_app'_Proper.
