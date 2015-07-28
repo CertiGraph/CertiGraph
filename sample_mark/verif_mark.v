@@ -14,8 +14,18 @@ Require Import RamifyCoq.data_structure.spatial_graph_VST.
 Local Open Scope logic.
 
 Arguments SingleFrame' {l} {g} {s}.
-Notation graph sh x g := (@graph _ _ _ _ _ _ (SGP_VST sh) x g).
-Existing Instances MGS biGraph maGraph finGraph.
+
+Notation graph sh x g := (@graph _ _ _ _ _ _ (SGP_VST sh) _ x g).
+Existing Instances MGS biGraph maGraph finGraph RGF.
+
+Lemma exp_emp: forall {A} (P: A -> mpred), EX x:A, P x * emp = EX x: A, P x.
+Proof.
+  intros.
+  apply exp_congr.
+  intros.
+  rewrite sepcon_emp.
+  auto.
+Qed.
 
 Definition mark_spec :=
  DECLARE _mark
@@ -25,10 +35,9 @@ Definition mark_spec :=
           LOCAL (temp _x (pointer_val_val x))
           SEP   (`(graph sh x g))
   POST [ Tvoid ]
-        EX g': Graph, 
-        PROP (mark g x g')
+        PROP ()
         LOCAL()
-        SEP (`(graph sh x g')).
+        SEP (`(EX g': Graph, !! mark g x g' && graph sh x g')).
 
 Definition main_spec :=
  DECLARE _main
@@ -180,6 +189,17 @@ Ltac rewrite_vi_graph g1 g2 H :=
            change (@spatial_graph2.graph (SGA_VST sh) x g2) with (graph sh x g2)
     end].
 *)
+
+Ltac revert_exp_left_tac x :=
+  match goal with
+  | |- ?P |-- _ =>
+      let P0 := fresh "P" in
+      set (P0 := P);
+      pattern x in P0;
+      subst P0;
+      apply (revert_exists_left x); try clear x
+  end.
+
 Lemma body_mark: semax_body Vprog Gprog f_mark mark_spec.
 Proof.
   start_function.
@@ -239,7 +259,11 @@ Proof.
   Focus 2. { entailer!. } Unfocus.
   Focus 3. { entailer!. } Unfocus.
   Focus 3. { repeat constructor; auto with closed. } Unfocus.
-  Focus 2. { entailer!. apply (@graph_ramify_aux0 (SGA_VST sh) g x d l r); auto. } Unfocus.
+  Focus 2. {
+    entailer!. rewrite (update_self g x (d, l, r)) at 2 by auto.
+    pose proof (@graph_ramify_aux0 _ _ _ _ _ _ _ (SGA_VST sh) g _ x (d, l, r) (d, l, r)).
+    simpl in H2; auto.
+  } Unfocus.
   (* unlocalize *)
 
   unfold semax_ram.
@@ -249,13 +273,16 @@ Proof.
       SEP   (`(graph sh x g))).
   Focus 1. { (* if-then branch *)
     forward. (* return *)
-    rewrite_vi_graph g g' @mark_marked_root; [| eauto |].
-    + clear - H1 H_GAMMA_g.
-      unfold gamma in H_GAMMA_g.
-      destruct d; [| inversion H1].
-      destruct (node_pred_dec (marked g) (ValidPointer b i)); [| inversion H_GAMMA_g].
-      auto.
-    + auto.
+    apply (exp_right g).
+    assert (mark g (ValidPointer b i) g).
+    Focus 1. {
+      apply mark_marked_root_refl.
+      simpl.
+      inversion H_GAMMA_g.
+      if_tac in H3; auto.
+      destruct d; [auto | inversion H1].
+    } Unfocus.
+    normalize.
   } Unfocus.
   Focus 1. { (* if-else branch *)
     forward. (* skip; *)
@@ -265,6 +292,7 @@ Proof.
 
   normalize.
   subst d.
+(*
   destruct (@mark1_exists (SGA_VST sh) g x gx_vvalid) as [g1 ?H].
   assert (g1x_valid: vvalid g1 x) by (apply (proj1 (proj1 H1)); auto).
   assert (g1l_weak_valid: weak_valid g1 l) by (apply (weak_valid_si g g1 _ (proj1 H1)); auto).
@@ -303,7 +331,7 @@ Proof.
       constructor.
     + auto.
   } Unfocus.
-
+*)
   localize
    (PROP  ()
     LOCAL (temp _x (pointer_val_val x))
@@ -346,7 +374,7 @@ Proof.
     LOCAL (temp _r (pointer_val_val r);
            temp _l (pointer_val_val l);
            temp _x (pointer_val_val x))
-    SEP (`(graph sh x g1))).
+    SEP (`(graph sh x (Graph_gen g x true)))).
   Grab Existential Variables.
   Focus 6. { solve_split_by_closed. } Unfocus.
   Focus 2. { entailer!. } Unfocus.
@@ -354,21 +382,21 @@ Proof.
   Focus 3. { repeat constructor; auto with closed. } Unfocus.
   Focus 2. {
     entailer!.
-    change (@data_at CompSpecs CS_legal sh node_type
-            (Vint (Int.repr 0), (pointer_val_val l, pointer_val_val r))
-            (pointer_val_val x)) with 
-           (@spatial_graph2.trinode (SGA_VST sh) x (false, l, r)).
-    change (@data_at CompSpecs CS_legal sh node_type
-            (Vint (Int.repr 1), (pointer_val_val l, pointer_val_val r))
-            (pointer_val_val x)) with 
-           (@spatial_graph2.trinode (SGA_VST sh) x (true, l, r)).
-    rewrite <- H_GAMMA_g, <- H_GAMMA_g1.
-    apply (@graph_ramify_aux1 (SGA_VST sh) g g1).
-    auto.
+    rewrite Graph_gen_spatial_spec by eauto.
+    pose proof (@graph_ramify_aux0 _ _ _ _ _ _ _ (SGA_VST sh) g _ x (false, l, r) (true, l, r)).
+    simpl in H2; auto.
   } Unfocus.
   (* unlocalize *)
 
   unfold semax_ram. (* should not need this *)
+  pose proof Graph_gen_true_mark1 g x _ _ H_GAMMA_g gx_vvalid.
+  assert (H_GAMMA_g1: vgamma (Graph_gen g x true) x = (true, l, r)) by
+   (rewrite (proj1 (proj2 (Graph_gen_spatial_spec g x _ true _ _ H_GAMMA_g))) by assumption;
+    apply spacialgraph_gen_vgamma).
+  forget (Graph_gen g x true) as g1.  
+  assert (g1x_valid: vvalid g1 x) by (apply (proj1 (proj1 H1)); auto).
+  assert (g1l_weak_valid: weak_valid g1 l) by (apply (weak_valid_si g g1 _ (proj1 H1)); auto).
+  assert (g1r_weak_valid: weak_valid g1 r) by (apply (weak_valid_si g g1 _ (proj1 H1)); auto).
 
   localize
    (PROP  ()
@@ -376,26 +404,30 @@ Proof.
     SEP   (`(graph sh l g1))).
   (* localize *)
   
-  apply -> ram_seq_assoc.
+  rewrite <- ram_seq_assoc.
   eapply semax_ram_seq;
   [ repeat apply eexists_add_stats_cons; constructor
-  | forward_call' (sh, g1, g2, l); apply derives_refl
+  | forward_call' (sh, g1, l); apply derives_refl
   | abbreviate_semax_ram].
-  (* mark(l); *)
 
   unlocalize
    (PROP  ()
     LOCAL (temp _r (pointer_val_val r);
            temp _l (pointer_val_val l);
            temp _x (pointer_val_val x))
-    SEP (`(graph sh x g2))).
+    SEP (`((EX g2: Graph, !! mark g1 l g2 && graph sh x g2)))).
   Grab Existential Variables.
   Focus 6. { solve_split_by_closed. } Unfocus.
   Focus 2. { entailer!. } Unfocus.
   Focus 3. { entailer!. } Unfocus.
   Focus 3. { repeat constructor; auto with closed. } Unfocus.
   Focus 2. {
-    entailer!.
+    entailer.
+    rewrite !exp_emp.
+Transparent expp.
+    change expp with (@exp).
+
+    subst expp.
     apply (@graph_ramify_aux2 (SGA_VST sh) g1 g2); auto.
     eapply gamma_left_reachable_included; eauto.
   } Unfocus.

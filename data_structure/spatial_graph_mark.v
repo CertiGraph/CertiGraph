@@ -27,10 +27,10 @@ Class BasicMarkProgramSetting: Type := {
   addr: Type;
   null: addr;
   pred: Type;
-  SGA: SpatialGraphAssum addr (addr * LR) pred
+  SGBA: SpatialGraphBasicAssum addr (addr * LR)
 }.
 
-Existing Instance SGA.
+Existing Instance SGBA.
 
 Section SpatialGraphForMark.
 
@@ -94,6 +94,42 @@ Proof.
   apply null_or_valid in H.
   destruct H; [right | left]; auto.
   pose proof valid_not_null g x; tauto.
+Qed.
+
+Definition Graph_gen (G: Graph) (x: addr) (d: bool) : Graph :=
+  generalgraph_gen G x d (sound_gg G).
+
+Lemma Graph_gen_spatial_spec: forall (G: Graph) (x: addr) (d d': bool) l r,
+  vgamma G x = (d, l, r) ->
+  (Graph_gen G x d') -=- (spatialgraph_gen G x (d', l, r)).
+Proof.
+  intros.
+  split; [reflexivity | split; [| auto]].
+  simpl in *; intros.
+  unfold gamma in *; simpl in *; unfold update_vlabel.
+  destruct_eq_dec x v; subst.
+  + inversion H; subst; f_equal; f_equal.
+    destruct d'; auto.
+  + auto.
+Qed.
+
+Lemma Graph_gen_true_mark1: forall (G: Graph) (x: addr) l r,
+  vgamma G x = (false, l, r) ->
+  vvalid G x ->
+  mark1 G x (Graph_gen G x true).
+Proof.
+  intros.
+  split; [| split; [| split]].
+  + reflexivity.
+  + auto.
+  + simpl.
+    unfold update_vlabel; simpl.
+    destruct_eq_dec x x; congruence.
+  + intros.
+    simpl.
+    unfold update_vlabel; simpl.
+    destruct_eq_dec x n'; [congruence |].
+    reflexivity.
 Qed.
 
 (*
@@ -908,7 +944,8 @@ End SpatialGraphForMark.
 
 Class MarkProgramSetting: Type := {
   BMPS: BasicMarkProgramSetting;
-  SGP: SpatialGraphPred addr (addr * LR) (bool * addr * addr) unit pred
+  SGP: SpatialGraphPred addr (addr * LR) (bool * addr * addr) unit pred;
+  SGA: SpatialGraphAssum SGP
 }.
 
 Existing Instances BMPS SGP.

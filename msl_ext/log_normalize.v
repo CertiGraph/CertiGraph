@@ -7,7 +7,7 @@ Require Import VST.msl.log_normalize.
 
 Local Open Scope logic.
 
-Lemma exp_f_equal: forall {A B} `{NatDed A} (P Q: B -> A),
+Lemma exp_f_equal: forall {A B} `{NatDed A} (P Q: B -> A), (* same as exp_congr in floyd, can be removed *)
   (forall x, P x = Q x) ->
   exp P = exp Q.
 Proof.
