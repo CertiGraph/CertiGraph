@@ -316,5 +316,45 @@ Transparent LiftNatDed' LiftSepLog'.
     rewrite exp_sepcon1.
     apply IHF; auto.
 Qed.
+
+Lemma revert_exists_left: forall {A} (x : A) P (Q: environ -> mpred),
+  (EX  x : A, P x) |-- Q ->
+  (P x) |-- Q.
+Proof.
+  intros.
+  eapply derives_trans; [| eauto].
+  apply (exp_right x); auto.
+Qed.
+
+Lemma revert_prop_left: forall {PureF: Prop},
+  PureF -> 
+  forall P Q R Post,
+  PROPx (PureF :: P) (LOCALx Q (SEPx R)) |-- Post ->
+  PROPx P (LOCALx Q (SEPx R)) |-- Post.
+Proof.
+  intros.
+  eapply derives_trans; [| eauto].
+  unfold PROPx; simpl; intros; normalize.
+Qed.
+
+Lemma ram_revert_exists_pre: forall {A} (x : A) Delta F P c Q,
+  semax_ram Delta F (EX  x : A, P x) c Q ->
+  semax_ram Delta F (P x) c Q.
+Proof.
+  intros.
+  eapply semax_ram_pre; [| eauto].
+  apply (exp_right x); auto.
+Qed.
+
+Lemma ram_revert_prop_pre: forall {PureF: Prop},
+  PureF -> 
+  forall Delta F P c Q,
+  semax_ram Delta F (!! PureF && P) c Q ->
+  semax_ram Delta F P c Q.
+Proof.
+  intros.
+  eapply semax_ram_pre; [| eauto].
+  normalize.
+Qed.
   
 End SEMAX.

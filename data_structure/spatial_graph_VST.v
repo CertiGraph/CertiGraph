@@ -25,8 +25,8 @@ Instance PointerValLR_EqDec: EquivDec.EqDec (pointer_val * LR) eq.
   + destruct (PV_eq_dec p p0); [left | right]; congruence.
 Defined.
 
-Instance SGA_VST: SpatialGraphAssum pointer_val (pointer_val * LR) mpred.
-  refine (Build_SpatialGraphAssum pointer_val (pointer_val * LR) mpred _ _ _ _ _ _).
+Instance SGBA_VST: SpatialGraphBasicAssum pointer_val (pointer_val * LR).
+  refine (Build_SpatialGraphBasicAssum pointer_val (pointer_val * LR) _ _).
 Defined.
 
 Instance BMGS_VST: BasicMarkProgramSetting.
@@ -44,11 +44,7 @@ Instance SGP_VST (sh: share) : SpatialGraphPred addr (addr * LR) (bool * addr * 
   refine (Build_SpatialGraphPred _ _ _ _ _ (trinode sh) (fun _ _ => emp)).
 Defined.
 
-Instance MGS_VST (sh: share): MarkProgramSetting.
-  refine (Build_MarkProgramSetting BMGS_VST (SGP_VST sh)).
-Defined.
-
-Instance MSLstandard sh : MapstoSepLog (AAV _ _ _ (addr * LR) _) (trinode sh).
+Instance MSLstandard sh : MapstoSepLog (AAV (SGP_VST sh)) (trinode sh).
 Proof.
   intros.
   apply mkMapstoSepLog.
@@ -60,7 +56,7 @@ Proof.
   apply data_at_memory_block.
 Defined.
 
-Instance sMSLstandard sh : StaticMapstoSepLog (AAV _ _ _ (addr * LR) _) (trinode sh).
+Instance sMSLstandard sh : StaticMapstoSepLog (AAV (SGP_VST sh)) (trinode sh).
 Proof.
   apply mkStaticMapstoSepLog; simpl; intros.
   + hnf in H. simpl in H.
@@ -112,4 +108,17 @@ Proof.
       rewrite H1, <- (Int.repr_unsigned i), H0, Int.repr_unsigned; auto.
 Defined.
 
+Instance SGA_VST (sh: share) : SpatialGraphAssum (SGP_VST sh).
+  refine (Build_SpatialGraphAssum _ _ _ _ _ _ _ _ _ _ _ _ _).
+  + simpl; left.
+    intros; apply (@msl_ext.seplog.mapsto_conflict _ _ _ _ _ _ _ _ _ _ _ (sMSLstandard sh)).
+    simpl.
+    destruct_eq_dec x x; congruence.
+  + simpl; right.
+    intros; auto.
+Defined.
+
+Instance MGS_VST (sh: share): MarkProgramSetting.
+  refine (Build_MarkProgramSetting BMGS_VST (SGP_VST sh) (SGA_VST sh)).
+Defined.
 

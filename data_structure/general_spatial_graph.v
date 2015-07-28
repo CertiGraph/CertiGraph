@@ -35,9 +35,14 @@ Class SpatialGraphPred (V E DV DE Pred: Type): Type := {
 
 Definition spatialgraph_gen {V E VE EE DV DE} (g: @SpatialGraph V E VE EE DV DE) (x: V) (a: DV) : @SpatialGraph V E VE EE DV DE := Build_SpatialGraph _ _ _ _ _ _ pg (fun v => if (equiv_dec x v) then a else vgamma g v) (egamma g).
 
-Class SpatialGraphAssum {V E DV DE Pred: Type} (SGP: SpatialGraphPred V E DV DE Pred) := {
+Class SpatialGraphBasicAssum (V E: Type) := {
   VE: EqDec V eq;
-  EE: EqDec E eq;
+  EE: EqDec E eq
+}.
+
+Existing Instances VE EE.
+
+Class SpatialGraphAssum {V E DV DE Pred: Type} (SGP: SpatialGraphPred V E DV DE Pred) {SGBA: SpatialGraphBasicAssum V E}:= {
   SGP_ND: NatDed Pred;
   SGP_SL : SepLog Pred;
   SGP_ClSL: ClassicalSep Pred;
@@ -46,21 +51,21 @@ Class SpatialGraphAssum {V E DV DE Pred: Type} (SGP: SpatialGraphPred V E DV DE 
   edge_at_sep: (forall e d1 d2, edge_at e d1 * edge_at e d2 |-- FF) \/ (forall e d, edge_at e d |-- emp)
 }.
 
-Existing Instances VE EE SGP_ND SGP_SL SGP_ClSL SGP_CoSL.
+Existing Instances SGP_ND SGP_SL SGP_ClSL SGP_CoSL.
 
-Instance AAV {V E DV DE Pred: Type} (SGP: SpatialGraphPred V E DV DE Pred) {SGA: SpatialGraphAssum SGP} : AbsAddr V DV.
+Instance AAV {V E DV DE Pred: Type} (SGP: SpatialGraphPred V E DV DE Pred) {SGBA: SpatialGraphBasicAssum V E} : AbsAddr V DV.
   apply (mkAbsAddr V DV (fun x y => if equiv_dec x y then true else false)); simpl; intros.
   + destruct_eq_dec p1 p2; destruct_eq_dec p2 p1; congruence.
   + destruct_eq_dec p1 p1; destruct_eq_dec p1 p2; congruence.
 Defined.
 
-Instance AAE {V E DV DE Pred: Type} (SGP: SpatialGraphPred V E DV DE Pred) {SGA: SpatialGraphAssum SGP} : AbsAddr E DE.
+Instance AAE {V E DV DE Pred: Type} (SGP: SpatialGraphPred V E DV DE Pred) {SGBA: SpatialGraphBasicAssum V E} : AbsAddr E DE.
   apply (mkAbsAddr E DE (fun x y => if equiv_dec x y then true else false)); simpl; intros.
   + destruct_eq_dec p1 p2; destruct_eq_dec p2 p1; congruence.
   + destruct_eq_dec p1 p1; destruct_eq_dec p1 p2; congruence.
 Defined.
 
-Class SpatialGraphStrongAssum {V E DV DE Pred: Type} (SGP: SpatialGraphPred V E DV DE Pred) {SGA: SpatialGraphAssum SGP} := {
+Class SpatialGraphStrongAssum {V E DV DE Pred: Type} (SGP: SpatialGraphPred V E DV DE Pred) {SGBA: SpatialGraphBasicAssum V E} {SGA: SpatialGraphAssum SGP} := {
   SGP_PSL: PreciseSepLog Pred;
   SGP_OSL: OverlapSepLog Pred;
   SGP_DSL: DisjointedSepLog Pred;
@@ -81,11 +86,9 @@ Context {E : Type}.
 Context {DV : Type}.
 Context {DE : Type}.
 
+Context {SGBA: SpatialGraphBasicAssum V E}.
+
 Section PURE_FACTS.
-
-Context {EV: EqDec V eq}.
-Context {EE: EqDec E eq}.
-
 Definition validly_identical (g1 g2: SpatialGraph V E DV DE) : Prop :=
   g1 ~=~ g2 /\
   (forall v, vvalid g1 v -> vvalid g2 v -> vgamma g1 v = vgamma g2 v) /\
@@ -162,6 +165,23 @@ Instance partial_spatialgraph_proper: Proper (validly_identical ==> (pointwise_r
     unfold predicate_vvalid in *.
     firstorder.
 Defined.    
+
+Lemma update_self: forall (g: SpatialGraph V E DV DE) (x: V) (d: DV), vgamma g x = d -> g -=- (spatialgraph_gen g x d).
+Proof.
+  intros.
+  split; [reflexivity | split; [| auto]].
+  intros.
+  simpl.
+  destruct_eq_dec x v; subst; auto.
+Qed.
+
+Lemma spacialgraph_gen_vgamma: forall (g: SpatialGraph V E DV DE) (x: V) (d: DV), vgamma (spatialgraph_gen g x d) x = d.
+Proof.
+  intros.
+  simpl.
+  destruct_eq_dec x x; auto.
+  congruence.
+Qed.
 
 End PURE_FACTS.
 
@@ -310,7 +330,7 @@ Proof.
   + apply reachable_subgraph_derives; apply vi_sym; auto.
 Qed.
   
-Lemma reachable_vi_eq: forall (g1 g2 : Graph) x, g1 -=- g2 -> graph x g1 = graph x g2.
+Lemma graph_vi_eq: forall (g1 g2 : Graph) x, g1 -=- g2 -> graph x g1 = graph x g2.
 Proof.
   intros. apply reachable_subgraph_eq.
   destruct H as [? [? ?]]. split.
@@ -319,23 +339,13 @@ Proof.
     apply H0; [destruct H2 | destruct H3]; tauto.
     apply H1; [destruct H2 | destruct H3]; tauto.
 Qed.
-    
-(*
-  Arguments vvalid {_} {_} _ _.
-    intros.
-    apply reachable_subgraph_eq.
-    destruct H.
-    split.
-    + simpl.
-      apply si_reachable_subgraph.
-      auto.
-    + intro; intros.
-      apply H0.
-      - destruct H1; tauto.
-      - destruct H2; tauto.
-  Arguments vvalid {_} {_} {_} _.
-  Qed.
-*)
+
+Instance graph_proper: Proper (eq ==> validly_identical ==> eq) graph.
+Proof.
+  do 2 (hnf; intros); subst.
+  apply graph_vi_eq; auto.
+Defined.
+
 Lemma reachable_subtract_perm:
   forall (g: Graph) (S1 S2 l1 l2 : list V),
     Included (reachable_through_set g S2) (reachable_through_set g S1) ->
@@ -723,3 +733,8 @@ Qed.
 End SPATIAL_FACTS.
 
 End GENERAL_SPATIAL_GRAPH.
+
+Notation "g1 '-=-' g2" := (validly_identical g1 g2) (at level 1).
+Existing Instance vi_equal.
+Existing Instance partial_spatialgraph_proper.
+Existing Instance graph_proper.
