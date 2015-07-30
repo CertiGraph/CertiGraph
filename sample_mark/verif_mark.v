@@ -424,16 +424,12 @@ Proof.
   Focus 2. {
     entailer.
     rewrite !exp_emp.
-Transparent expp.
-    change expp with (@exp).
-
-    subst expp.
-    apply (@graph_ramify_aux2 (SGA_VST sh) g1 g2); auto.
-    eapply gamma_left_reachable_included; eauto.
+    eapply (@graph_ramify_aux1_left _ (SGP_VST sh) (SGA_VST sh) g1); eauto.
   } Unfocus.
   (* unlocalize *)
 
   unfold semax_ram. (* should not need this *)
+  normalize; intros g2; normalize.
   localize
    (PROP  ()
     LOCAL (temp _r (pointer_val_val r))
