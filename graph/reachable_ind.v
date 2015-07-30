@@ -276,6 +276,13 @@ Proof.
   auto.
 Defined.
 
+Instance reachable_proper': Proper (structurally_identical ==> (@eq V) ==> (pointwise_relation V iff)) reachable.
+Proof.
+  do 3 (hnf; intros); subst.
+  apply si_reachable_direct.
+  auto.
+Defined.
+
 Instance reachable_through_set_proper: Proper (structurally_identical ==> eq_as_set ==> (@eq V) ==> iff) reachable_through_set.
 Proof.
   do 3 (hnf; intros); subst.
@@ -289,4 +296,4 @@ Defined.
 
 End EQUIV.
 
-Global Existing Instances reachable_proper reachable_through_set_proper reachable_through_set_proper'.
+Global Existing Instances reachable_proper reachable_proper' reachable_through_set_proper reachable_through_set_proper'.

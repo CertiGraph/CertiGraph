@@ -490,6 +490,17 @@ Lemma reachable_list_permutation:
     reachable_list g x l1 -> reachable_list g x l2 -> NoDup l1 -> NoDup l2 -> Permutation l1 l2.
 Proof. intros. apply NoDup_Permutation; auto. intro y. rewrite (H y), (H0 y). tauto. Qed.
 
+Lemma reachable_through_set_single:
+  forall (g: Gph) x y, reachable_through_set g (x :: nil) y <-> reachable g x y.
+Proof.
+  intros.
+  unfold reachable_through_set; split; intros.
+  + destruct H as [? [[? | ?] ?]]; [subst; auto |].
+    inversion H.
+  + exists x; split; auto.
+    left; auto.
+Qed.
+
 Lemma reachable_valid_and_through_single:
   forall (g: Gph) {x y}, reachable g x y -> (vvalid g y /\ reachable_through_set g (x :: nil) y).
 Proof.
@@ -607,6 +618,23 @@ Proof.
     intro; simpl.
     pose proof reachable_head_valid g x y.
     tauto.
+Qed.
+
+Lemma RFG_reachable_decicable: forall (g: Gph) {rfg: ReachableFiniteGraph g} x y, vvalid g x -> Decidable (reachable g x y).
+Proof.
+  intros.
+  pose proof finiteR x H.
+  destruct X as [l [_ ?H]].
+  unfold Ensembles.In in H0.
+  destruct (in_dec equiv_dec y l); [left | right]; rewrite <- H0; auto.
+Qed.
+
+Lemma RFG_reachable_decicable': forall (g: Gph) {rfg: ReachableFiniteGraph g} x y, Decidable (vvalid g x) -> Decidable (reachable g x y).
+Proof.
+  intros.
+  destruct H; [apply RFG_reachable_decicable; auto | right].
+  intro.
+  apply reachable_head_valid in H; tauto.
 Qed.
 
 Lemma construct_reachable_set_list: forall (g: Gph) {rfg: ReachableFiniteGraph g} S

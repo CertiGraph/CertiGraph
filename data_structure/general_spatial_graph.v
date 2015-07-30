@@ -130,10 +130,10 @@ Definition predicate_partial_spatialgraph  (g: SpatialGraph V E DV DE: Type) (p:
   Build_SpatialGraph V E _ _ DV DE (predicate_partialgraph g p) (vgamma g) (egamma g).
 
 Definition reachable_sub_spatialgraph (g: SpatialGraph V E DV DE: Type) (S : list V) : SpatialGraph V E DV DE :=
-  predicate_sub_spatialgraph g (fun n => reachable_through_set g S n).
+  predicate_sub_spatialgraph g (reachable_through_set g S).
 
 Definition unreachable_partial_spatialgraph (g: SpatialGraph V E DV DE: Type) (S : list V) : SpatialGraph V E DV DE :=
-  predicate_partial_spatialgraph g (fun n => ~ reachable_through_set g S n).
+  predicate_partial_spatialgraph g (Complement _ (reachable_through_set g S)).
 
 Lemma vi_stronger_partial_spatialgraph: forall (g1 g2: SpatialGraph V E DV DE: Type) (p1 p2 p1' p2' p: V -> Prop),
   (forall v, p1' v <-> p1 v /\ p v) ->
@@ -198,6 +198,9 @@ Notation Graph := (SpatialGraph V E DV DE).
 
 Definition graph_cell (g: Graph) (v : V) : Pred := vertex_at v (vgamma g v).
 
+Definition vertexes_at (g: Graph) (P: V -> Prop): Pred :=
+  EX l: list V, !!(forall x, In x l <-> P x) && iter_sepcon l (graph_cell g).
+
 Definition graph (x : V) (g: Graph) : Pred :=
   EX l : list V, !!reachable_list g x l && iter_sepcon l (graph_cell g).
 
@@ -216,6 +219,41 @@ Proof.
   destruct vertex_at_sep; [left | right; unfold graph_cell]; auto.
   repeat intro. unfold graph_cell.
   apply H.
+Qed.
+
+Lemma vertexes_at_eq: forall (g: Graph) (P: V -> Prop),
+  vertexes_at g P = EX l: list V, !!(forall x, In x l <-> P x) && !! (NoDup l) && iter_sepcon (map (Gamma g) l) Graph_cell.
+Proof.
+  intros.
+  unfold vertexes_at.
+  unfold Gamma, Graph_cell, graph_cell.
+  apply pred_ext; [destruct vertex_at_sep |].
+  + apply exp_left; intro l; apply (exp_right l).
+    rewrite <- !iter_sepcon_map; simpl.
+    pose proof (@iter_sepcon_unique_nodup Pred _ _ _ _ _ (fun v : V => vertex_at v (vgamma g v)) l).
+    spec H0; [hnf; intros; simpl; apply H |].
+    rewrite (add_andp _ _ H0) at 1.
+    normalize.
+  + apply exp_left; intro l; apply (exp_right (remove_dup equiv_dec l)).
+    normalize.
+    assert (NoDup (remove_dup equiv_dec l)) by apply remove_dup_nodup.
+    assert (forall x, In x (remove_dup equiv_dec l) <-> P x) by (intros; rewrite <- remove_dup_in_inv; auto).
+    normalize.
+    rewrite <- iter_sepcon_map.
+    apply iter_sepcon_emp; auto.
+    intro x. rewrite H0, H2; auto.
+  + apply exp_left; intro l; apply (exp_right l).
+    rewrite <- iter_sepcon_map.
+    normalize.
+Qed.
+
+Lemma vertexes_at_eq': forall {A} (PureF: A -> Prop) (g: A -> Graph) (P: A -> V -> Prop),
+  EX a: A, !! PureF a && vertexes_at (g a) (P a) = EX a: A, !! PureF a && (EX l: list V, !!(forall x, In x l <-> P a x) && !! (NoDup l) && iter_sepcon (map (Gamma (g a)) l) Graph_cell).
+Proof.
+  intros.
+  apply exp_f_equal; intros a.
+  f_equal.
+  apply vertexes_at_eq.
 Qed.
 
 Definition graphs'_eq: forall (g : Graph) (S : list V) (H1: ReachableFiniteGraph g)
@@ -360,37 +398,44 @@ Proof.
   + apply Permutation_app_comm.
 Qed.
 
+Lemma unreachable_eq': forall (g : Graph) (S1 S2 : list V),
+    forall x, reachable_through_set g (S1 ++ S2) x /\ ~ reachable_through_set g S1 x <-> reachable_through_set (unreachable_partial_spatialgraph g S1) S2 x.
+Proof.
+  intros. split; intro.
+  + destruct H.
+    destruct H as [s [? ?]]. exists s. split.
+    - apply in_app_or in H. destruct H; auto.
+      exfalso. apply H0. exists s. auto.
+    - rewrite reachable_ind_reachable in H1. clear -H1 H0.
+      induction H1.
+      * apply reachable_refl. simpl. hnf. simpl. auto.
+      * apply edge_reachable with y. apply IHreachable; auto.
+        rewrite <- reachable_ind_reachable in H1.
+        assert (~ reachable_through_set g S1 y). {
+          intro. apply H0.
+          destruct H2 as [s [? ?]]. exists s. split; auto.
+          apply reachable_trans with y; auto.
+        }
+        assert (~ reachable_through_set g S1 x). {
+          intro. apply H2.
+          destruct H3 as [s [? ?]]. exists s. split; auto.
+          apply reachable_edge with x; auto.
+        }
+        apply partialgraph_edge; auto.
+  + destruct H as [s [? ?]]. split.
+    - exists s. split; [apply in_or_app; auto |].
+      revert H0. apply (predicate_partialgraph_reachable_included g _ s x).
+    - intro. apply reachable_foot_valid in H0.
+      hnf in H0. simpl in H0. destruct H0. auto.
+Qed.
+
 Lemma unreachable_eq: forall (g : Graph) (S1 S2 l12 l1 : list V),
     reachable_set_list g (S1 ++ S2) l12 -> reachable_set_list g S1 l1 ->
     forall x, In x l12 /\ ~ In x l1 <-> reachable_through_set (unreachable_partial_spatialgraph g S1) S2 x.
 Proof.
-  intros. split; intro.
-  + destruct H1. rewrite <- (H x) in H1.
-    assert (~ reachable_through_set g S1 x) by (intro; apply H2; rewrite <- (H0 x); auto).
-    destruct H1 as [s [? ?]]. exists s. split.
-    - apply in_app_or in H1. destruct H1; auto.
-      exfalso. apply H3. exists s. auto.
-    - rewrite reachable_ind_reachable in H4. clear -H4 H3.
-      induction H4.
-      * apply reachable_refl. simpl. hnf. simpl. auto.
-      * apply edge_reachable with y. apply IHreachable; auto.
-        rewrite <- reachable_ind_reachable in H4.
-        assert (~ reachable_through_set g S1 y). {
-          intro. apply H3.
-          destruct H0 as [s [? ?]]. exists s. split; auto.
-          apply reachable_trans with y; auto.
-        }
-        assert (~ reachable_through_set g S1 x). {
-          intro. apply H0.
-          destruct H1 as [s [? ?]]. exists s. split; auto.
-          apply reachable_edge with x; auto.
-        }
-        apply partialgraph_edge; auto.
-  + destruct H1 as [s [? ?]]. split.
-    - rewrite <- (H x). exists s. split. 1: apply in_or_app; auto.
-      revert H2. apply (predicate_partialgraph_reachable_included g _ s x).
-    - intro. rewrite <- (H0 x) in H3. apply reachable_foot_valid in H2.
-      hnf in H2. simpl in H2. destruct H2. auto.
+  intros.
+  rewrite <- (H x), <- (H0 x).
+  apply unreachable_eq'.
 Qed.
 
 Lemma partialgraph_update_prime:
@@ -483,9 +528,6 @@ Proof.
     apply reachable_through_set_foot_valid.
 Qed.
 
-Definition legal_partial_graph (g: Graph) (S1 S2: list V) : Prop :=
-  Sublist S1 S2 /\ NoDup S1 /\ NoDup S2 /\ (forall x, In x S2 -> vvalid g x).
-
 Lemma predicate_partialgraph_vi_spec: forall (g g': Graph) (P P': V -> Prop) (l l': list V),
   (predicate_partial_spatialgraph g P) -=- (predicate_partial_spatialgraph g' P') ->
   (forall x, In x l <-> vvalid g x /\ P x) ->
@@ -515,25 +557,50 @@ Proof.
 Qed.
 
 Lemma existential_partialgraph_update_prime:
-  forall (g: Graph) (S1 S2: list V) (PureF: Graph -> Prop) (S1' S2': Graph -> list V),
-    legal_partial_graph g S1 S2 ->
-    (forall g', PureF g' ->
-      legal_partial_graph g' (S1' g') (S2' g') /\
-      ((predicate_partial_spatialgraph g (fun x => In x S2 /\ ~ In x S1)) -=-
-       (predicate_partial_spatialgraph g' (fun x => In x (S2' g') /\ ~ In x (S1' g'))))) ->
-    iter_sepcon (map (Gamma g) S2) Graph_cell |--
-      iter_sepcon (map (Gamma g) S1) Graph_cell *
-       ((EX g': Graph,
-         !!PureF g' && iter_sepcon (map (Gamma g') (S1' g')) Graph_cell) -*
-        (EX g': Graph,
-         !!PureF g' && iter_sepcon (map (Gamma g') (S2' g')) Graph_cell)).
+  forall (g: Graph) (PureS1 PureS2: V -> Prop),
+  (forall x, PureS1 x -> PureS2 x) ->
+  (forall x, PureS2 x -> vvalid g x) ->
+  (forall x, Decidable (PureS1 x)) ->
+  forall {A: Type} (g': A -> Graph) (PureF: A -> Prop) (PureS1' PureS2': A -> V -> Prop),
+  (forall a x, PureF a -> PureS1' a x -> PureS2' a x) ->
+  (forall a x, PureF a -> Decidable (PureS2' a x)) ->
+  (forall a x, PureF a -> PureS2' a x -> vvalid (g' a) x) ->
+  (forall a, PureF a ->
+    ((predicate_partial_spatialgraph g (fun x => PureS2 x /\ ~ PureS1 x)) -=-
+     (predicate_partial_spatialgraph (g' a) (fun x => PureS2' a x /\ ~ PureS1' a x)))) ->
+ vertexes_at g PureS2 |-- vertexes_at g PureS1 *
+     ((EX a: A, !!PureF a && vertexes_at (g' a) (PureS1' a)) -*
+      (EX a: A, !!PureF a && vertexes_at (g' a) (PureS2' a))).
 Proof.
   intros.
-  apply exists_iter_sepcon_ramification.
-  exists (map (Gamma g) (subtract equiv_dec S2 S1)).
-  split.
-  + clear - H; destruct H as [? [? [? ?]]].
+  rewrite !vertexes_at_eq.
+  rewrite !vertexes_at_eq'.
+  apply exp_left; intros S2; normalize.
+  rename H4 into specS2.
+  rename H5 into NoDupS2.
+  set (S1 := filter (fun x => if X x then true else false) S2).
+  assert (specS1: forall x, In x S1 <-> PureS1 x).
+  Focus 1. {
+    intros; subst S1.
+    rewrite filter_In.
+    specialize (H x).
+    destruct (X x); [| assert (false <> true) by congruence; tauto].
+    rewrite specS2.
+    tauto.
+  } Unfocus.
+  assert (NoDupS1: NoDup S1) by (apply NoDup_filter; auto).
+  clearbody S1; clear X.
+  normalize.
+  apply (exp_right S1); normalize.
+  apply derives_trans with
+   (iter_sepcon (map (Gamma g) S1) Graph_cell * 
+    iter_sepcon (map (Gamma g) (subtract equiv_dec S2 S1)) Graph_cell).
+  + rewrite <- iter_sepcon_app_sepcon.
     rewrite <- map_app.
+    replace (iter_sepcon (map (Gamma g) S2) Graph_cell) with
+     (iter_sepcon (map (Gamma g) (S1 ++ subtract equiv_dec S2 S1)) Graph_cell); auto.
+    (* should use derives_refl' here *)
+    apply iter_sepcon_permutation.
     apply Permutation_map_aux.
     apply eq_as_set_permutation; auto.
     - apply equiv_dec.
@@ -545,41 +612,50 @@ Proof.
         tauto.
     - apply eq_as_set_spec; intro x; rewrite in_app_iff, <- subtract_property.
       specialize (H x).
+      rewrite specS1, specS2.
       tauto.
-  + intros g' ?H.
-    specialize (H0 g' H1).
-    assert (Permutation (map (Gamma g) (subtract equiv_dec S2 S1)) (map (Gamma g') (subtract equiv_dec (S2' g') (S1' g')))).
+  + apply sepcon_derives; [auto |].
+    apply wand_sepcon_adjoint.
+    normalize.
+    intros S1' specS1'.
+    normalize.
+    rename l into a, H4 into PureFact, H5 into NoDupS1'.
+    apply (exp_right a); normalize.
+    apply (exp_right (subtract equiv_dec S2 S1 ++ S1')); normalize.
+    specialize (H3 a PureFact).
+    assert (HH: forall x, In x (subtract equiv_dec S2 S1) <-> PureS2' a x /\ ~ PureS1' a x).
     Focus 1. {
-      destruct H0.
-      eapply predicate_partialgraph_vi_spec; [exact H2 | ..].
-      + intros.
-        rewrite <- subtract_property.
-        destruct H as [_ [_ [_ ?]]].
-        specialize (H x); tauto.
-      + intros.
-        rewrite <- subtract_property.
-        destruct H0 as [_ [_ [_ ?]]].
-        specialize (H0 x); tauto.
-      + apply subtract_nodup.
-        destruct H as [? [? [? ?]]]; auto.
-      + apply subtract_nodup.
-        destruct H0 as [? [? [? ?]]]; auto.
+      intros.
+      rewrite <- subtract_property.
+      rewrite specS1, specS2.
+      specialize (H2 _ x PureFact).
+      specialize (H0 x).
+      destruct H3 as [[? _] _].
+      specialize (H3 x); simpl in H3; unfold predicate_vvalid in H3.
+      tauto.
     } Unfocus.
-    rewrite H2.
-    destruct H0 as [? _]; clear - H0; destruct H0 as [? [? [? ?]]].
-    rewrite <- map_app.
-    apply Permutation_map_aux.
-    apply eq_as_set_permutation; auto.
-    - apply equiv_dec.
+    apply andp_right; [apply andp_right; apply prop_right |].
+    - intros; rewrite in_app_iff.
+      rewrite HH, specS1'.
+      specialize (H1 a x PureFact).
+      tauto.
     - apply NoDup_app_inv; auto.
       * apply subtract_nodup; auto.
-      * intros.
-        rewrite <- subtract_property.
-        specialize (H x).
+      * intro.
+        rewrite HH, specS1'.
         tauto.
-    - apply eq_as_set_spec; intro x; rewrite in_app_iff, <- subtract_property.
-      specialize (H x).
-      tauto.
+    - rewrite predicate_partialgraph_vi_spec; [| exact H3 | ..].
+      * rewrite <- iter_sepcon_app_sepcon.
+        rewrite <- map_app.
+        apply derives_refl.
+      * intros.
+        rewrite <- subtract_property, specS1, specS2; simpl.
+        specialize (H0 x); tauto.
+      * intros.
+        rewrite HH; simpl.
+        specialize (H2 _ x PureFact); tauto.
+      * apply subtract_nodup; auto.
+      * apply subtract_nodup; auto.
 Qed.
 
 Lemma graph_ramify_aux0: forall (g: Graph) {rfg: ReachableFiniteGraph g} x d d',
@@ -624,14 +700,78 @@ Proof.
   + auto.
   + auto.
 Qed.
-(*
-Lemma existential_partialgraph_update:
-  forall (g: Graph) {rfg: ReachableFiniteGraph g} {rfg': ReachableFiniteGraph g'} (S1 S1' S2: list V),
-    (unreachable_partial_spatialgraph g S1) -=- (unreachable_partial_spatialgraph g' S1') ->
-    (forall x : V, In x (S1 ++ S2) -> Decidable (vvalid g x)) ->
-    (forall x : V, In x (S1' ++ S2) -> Decidable (vvalid g' x)) ->
-    graphs' (S1 ++ S2) g |-- graphs' S1 g * (graphs' S1' g' -* graphs' (S1' ++ S2) g').
-*)
+
+Lemma graph_ramify_aux1: forall (g: Graph) x l {A: Type} (PureF: A -> Prop) (g': A -> Graph)
+  {rfg: ReachableFiniteGraph g}
+  {rfg': forall a, ReachableFiniteGraph (g' a)}
+  {V_DEC: Decidable (vvalid g l)},
+  vvalid g x ->
+  Included (reachable g l) (reachable g x) ->
+  (forall a, PureF a ->
+   (vvalid (g' a) x /\
+    Included (reachable (g' a) l) (reachable (g' a) x)) /\
+   (unreachable_partial_spatialgraph g (l :: nil)) -=-
+   (unreachable_partial_spatialgraph (g' a) (l :: nil))) ->
+  graph x g |-- graph l g *
+   ((EX a: A, !! PureF a && graph l (g' a)) -*
+    (EX a: A, !! PureF a && graph x (g' a))).
+Proof.
+  intros.
+  apply existential_partialgraph_update_prime; auto.
+  + intros; eapply reachable_foot_valid; eauto.
+  + intros; apply RFG_reachable_decicable'; auto.
+  + intros.
+    destruct (H1 a H2) as [[_ ?] _].
+    specialize (H4 x0); tauto.
+  + intros; apply RFG_reachable_decicable; auto.
+    destruct (H1 a H2) as [[? _] _]; auto.
+  + intros.
+    apply reachable_foot_valid in H3; auto.
+  + intros.
+    destruct (H1 a H2) as [[_ _] ?]; auto.
+    assert (pointwise_relation V iff 
+              (fun x0 : V => reachable g x x0 /\ ~ reachable g l x0)
+              (reachable (unreachable_partial_spatialgraph g (l :: nil)) x)).
+    Focus 1. {
+      intro y.
+      specialize (H0 y).
+      assert (reachable g x y <-> reachable g l y \/ reachable g x y) by tauto.
+      rewrite H4; clear H4.
+      rewrite <- (reachable_through_set_single g x), <- reachable_through_set_eq, <- !reachable_through_set_single.
+      apply (unreachable_eq' g (l :: nil) (x :: nil)).
+    } Unfocus.
+    assert (pointwise_relation V iff 
+              (fun x0 : V => reachable (g' a) x x0 /\ ~ reachable (g' a) l x0)
+              (reachable (unreachable_partial_spatialgraph (g' a) (l :: nil)) x)).
+    Focus 1. {
+      intro y.
+      destruct (H1 a H2) as [[_ ?] _].
+      specialize (H5 y).
+      assert (reachable (g' a) x y <-> reachable (g' a) l y \/ reachable (g' a) x y) by tauto.
+      rewrite H6; clear H6.
+      rewrite <- (reachable_through_set_single (g' a) x), <- reachable_through_set_eq, <- !reachable_through_set_single.
+      apply (unreachable_eq' (g' a) (l :: nil) (x :: nil)).
+    } Unfocus.
+    rewrite H4, H5; clear H4 H5.
+    eapply vi_stronger_partial_spatialgraph
+      with (p := reachable (unreachable_partial_spatialgraph g (l :: nil)) x); [| | exact H3].
+    - intros; simpl.
+      pose proof reachable_foot_valid
+       (predicate_partialgraph g (fun n : V => ~ reachable_through_set g (l :: nil) n)) x v.
+      simpl (vvalid
+         (predicate_partialgraph g
+            (fun n : V => ~ reachable_through_set g (l :: nil) n)) v) in H4; unfold predicate_vvalid in H4.
+      tauto.
+    - intros.
+      destruct H3 as [? _].
+      rewrite H3.
+      pose proof reachable_foot_valid
+       (predicate_partialgraph (g' a) (fun n : V => ~ reachable_through_set (g' a) (l :: nil) n)) x v.
+      simpl (vvalid
+         (predicate_partialgraph (g' a)
+            (fun n : V => ~ reachable_through_set (g' a) (l :: nil) n)) v) in H4; unfold predicate_vvalid in H4.
+      tauto.
+Qed.
 
 Context {SGSA: SpatialGraphStrongAssum SGP}.
 

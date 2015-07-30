@@ -11,6 +11,7 @@ Require Import RamifyCoq.graph.graph_model.
 Require Import RamifyCoq.graph.path_lemmas.
 Require Import RamifyCoq.graph.reachable_computable.
 Require Import RamifyCoq.graph.reachable_ind.
+Require Import RamifyCoq.graph.subgraph2.
 Require RamifyCoq.graph.marked_graph. Import RamifyCoq.graph.marked_graph.MarkGraph.
 Require Import RamifyCoq.graph.graph_gen.
 Require Import RamifyCoq.data_structure.general_spatial_graph.
@@ -199,22 +200,105 @@ Proof.
   simpl in H0; tauto.
 Qed.
 
-(*
-Lemma gamma_left_reachable_included: forall {SGS: SpatialGraphSetting} (g: Graph) x d l r,
-                                       vvalid x -> gamma g x = (d, l, r) -> Included (reachable g l) (reachable g x).
+Context {SGP: SpatialGraphPred addr (addr * LR) (bool * addr * addr) unit pred}.
+Context {SGA: SpatialGraphAssum SGP}.
+
+Local Open Scope logic.
+
+Instance complement_proper (V: Type): Proper ((pointwise_relation V iff) ==> (pointwise_relation V iff)) (Complement V).
+  hnf; intros.
+  hnf; intros.
+  unfold Complement, Ensembles.In.
+  specialize (H a).
+  tauto.
+Defined.
+
+Lemma graph_ramify_aux1: forall (g: Graph) (x l: addr)
+  {V_DEC: Decidable (vvalid g l)},
+  vvalid g x ->
+  Included (reachable g l) (reachable g x) ->
+  (graph x g: pred) |-- graph l g *
+   ((EX g': Graph, !! mark g l g' && graph l g') -*
+    (EX g': Graph, !! mark g l g' && graph x g')).
+Proof.
+  intros.
+  apply graph_ramify_aux1; auto.
+  + apply RGF.
+  + intros; apply RGF.
+  + intros g' ?.
+    split; [split |].
+    - destruct H1 as [[? _] _].
+      rewrite <- H1; auto.
+    - destruct H1 as [? _].
+      intro; unfold Ensembles.In; rewrite <- H1.
+      apply H0.
+    - split; [| split].
+      * destruct H1 as [H1 _].
+        unfold unreachable_partial_spatialgraph.
+        simpl; rewrite H1.
+        reflexivity.
+      * intros; simpl in *.
+        destruct H1 as [? [_ ?]].
+        specialize (H4 v).
+        destruct H2; unfold Complement, Ensembles.In in H5; rewrite reachable_through_set_single in H5.
+        spec H4; [intro HH; apply reachable_by_is_reachable in HH; auto |].
+        unfold gamma; unfold marked in H4.
+        destruct H1 as [? [? [? ?]]].
+        assert (true <> false) by congruence.
+        assert (false <> true) by congruence.
+        destruct (vlabel g v), (vlabel g' v); simpl in H4.
+        1: rewrite !H8; auto.
+        1: tauto.
+        1: tauto.
+        1: rewrite !H8; auto.
+      * intros; simpl; auto.
+Qed.        
+
+Lemma gamma_left_reachable_included: forall (g: Graph) x d l r,
+                                       vvalid g x -> vgamma g x = (d, l, r) -> Included (reachable g l) (reachable g x).
 Proof.
   intros. intro y; intros. apply reachable_by_cons with l; auto. split; auto. split.
   + apply reachable_head_valid in H1; auto.
   + rewrite (gamma_step _ _ _ _ _ H H0). auto.
 Qed.
 
-Lemma gamma_right_reachable_included: forall {SGS: SpatialGraphSetting} (g: Graph) x d l r,
-                                        vvalid x -> gamma g x = (d, l, r) -> Included (reachable g r) (reachable g x).
+Lemma gamma_right_reachable_included: forall (g: Graph) x d l r,
+                                        vvalid g x -> vgamma g x = (d, l, r) -> Included (reachable g r) (reachable g x).
 Proof.
   intros. intro y; intros. apply reachable_by_cons with r; auto. split; auto. split.
   + apply reachable_head_valid in H1; auto.
   + rewrite (gamma_step _ _ _ _ _ H H0). auto.
 Qed.
+
+Lemma graph_ramify_aux1_left: forall (g: Graph) x d l r,
+  vvalid g x ->
+  vgamma g x = (d, l, r) ->
+  (graph x g: pred) |-- graph l g *
+   ((EX g': Graph, !! mark g l g' && graph l g') -*
+    (EX g': Graph, !! mark g l g' && graph x g')).
+Proof.
+  intros.
+  apply graph_ramify_aux1; auto.
+  + pose proof (gamma_left_weak_valid g x d l r H H0).
+    apply weak_valid_vvalid_dec; auto.
+  + eapply gamma_left_reachable_included; eauto.
+Qed.
+
+Lemma graph_ramify_aux1_right: forall (g: Graph) x d l r,
+  vvalid g x ->
+  vgamma g x = (d, l, r) ->
+  (graph x g: pred) |-- graph r g *
+   ((EX g': Graph, !! mark g r g' && graph r g') -*
+    (EX g': Graph, !! mark g r g' && graph x g')).
+Proof.
+  intros.
+  apply graph_ramify_aux1; auto.
+  + pose proof (gamma_right_weak_valid g x d l r H H0).
+    apply weak_valid_vvalid_dec; auto.
+  + eapply gamma_right_reachable_included; eauto.
+Qed.
+
+(*
 
 Lemma gamma_marks: forall {SGS: SpatialGraphSetting} (g g' : Graph) (x: Addr) l r, mark1 g x g' -> gamma g x = (false, l, r) -> gamma g' x = (true, l, r).
 Proof.
