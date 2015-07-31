@@ -84,6 +84,16 @@ Instance RGF (G: Graph): ReachableFiniteGraph G.
   + apply (FiniteGraph_EnumCovered G), finGraph.
 Defined.
 
+Lemma Graph_reachable_by_unmarked_dec: forall (G: Graph) x, Decidable (vvalid G x) -> ReachDecidable G x (unmarked G).
+Proof.
+  intros.
+  intro y.
+  apply reachable_by_decidable; auto.
+  + apply maGraph.
+  + apply LocalFiniteGraph_FiniteGraph, finGraph.
+  + apply FiniteGraph_EnumCovered, finGraph.
+Qed.
+
 Definition Graph_SpatialGraph (G: Graph): SpatialGraph addr (addr * LR) (bool * addr * addr) unit := Build_SpatialGraph _ _ _ _ _ _ G (gamma G) (fun _ => tt).
 
 Coercion Graph_SpatialGraph: Graph >-> SpatialGraph.
@@ -200,6 +210,65 @@ Proof.
   simpl in H0; tauto.
 Qed.
 
+Lemma gamme_true_mark: forall (g g': Graph) x y l r, Decidable (vvalid g y) -> vgamma g x = (true, l, r) -> mark g y g' -> vgamma g' x = (true, l, r).
+Proof.
+  intros.
+  simpl in H0 |- *.
+  unfold gamma in H0 |- *.
+  inversion H0; subst.
+  pose proof mark_marked g y g' H1.
+  spec H2; [apply Graph_reachable_by_unmarked_dec; auto |].
+  specialize (H2 x).
+  simpl in H2.
+  destruct (vlabel g x); [| congruence].
+  spec H2; [auto |].
+  rewrite <- H2.
+  destruct H1 as [[_ [_ [_ ?]]] _].
+  rewrite !H1.
+  auto.
+Qed.
+
+Lemma mark1_mark_left_mark_right: forall (g1 g2 g3 g4: Graph) root l r,
+  vvalid g1 root ->
+  vvalid g2 root ->
+  vgamma g1 root = (false, l, r) ->
+  vgamma g2 root = (true, l, r) ->
+  vgamma g3 root = (true, l, r) ->
+  mark1 g1 root g2 ->
+  mark g2 l g3 ->
+  mark g3 r g4 ->
+  mark g1 root g4.
+Proof.
+  intros.
+  apply (mark1_mark_list_mark g1 root (l :: r :: nil) g2); auto.
+  + intros; apply Graph_reachable_by_unmarked_dec.
+    destruct_eq_dec x l; [| destruct_eq_dec x r; [| exfalso]].
+    - subst; eapply weak_valid_vvalid_dec, gamma_left_weak_valid; eauto.
+    - subst; eapply weak_valid_vvalid_dec, gamma_right_weak_valid; eauto.
+    - destruct H7 as [| [|]]; try congruence; inversion H7.
+  + intros.
+    destruct_eq_dec x l; [| destruct_eq_dec x r; [| exfalso]].
+    - subst; eapply weak_valid_vvalid_dec, gamma_left_weak_valid; eauto.
+    - subst; eapply weak_valid_vvalid_dec, gamma_right_weak_valid; eauto.
+    - destruct H7 as [| [|]]; try congruence; inversion H7.
+  + apply Graph_reachable_by_unmarked_dec.
+    left; auto.
+  + unfold unmarked; rewrite negateP_spec.
+    simpl in H1 |- *.
+    inversion H1.
+    destruct (vlabel g1 root); congruence.
+  + unfold step_list.
+    intros y.
+    rewrite gamma_step by eauto.
+    simpl.
+    pose proof (@eq_sym _ l y).
+    pose proof (@eq_sym _ r y).
+    pose proof (@eq_sym _ y l).
+    pose proof (@eq_sym _ y r).
+    tauto.
+  + repeat (econstructor; eauto).
+Qed.
+
 Context {SGP: SpatialGraphPred addr (addr * LR) (bool * addr * addr) unit pred}.
 Context {SGA: SpatialGraphAssum SGP}.
 
@@ -242,7 +311,7 @@ Proof.
         specialize (H4 v).
         destruct H2; unfold Complement, Ensembles.In in H5; rewrite reachable_through_set_single in H5.
         spec H4; [intro HH; apply reachable_by_is_reachable in HH; auto |].
-        unfold gamma; unfold marked in H4.
+        unfold gamma; simpl in H4.
         destruct H1 as [? [? [? ?]]].
         assert (true <> false) by congruence.
         assert (false <> true) by congruence.
@@ -252,7 +321,7 @@ Proof.
         1: tauto.
         1: rewrite !H8; auto.
       * intros; simpl; auto.
-Qed.        
+Qed.
 
 Lemma gamma_left_reachable_included: forall (g: Graph) x d l r,
                                        vvalid g x -> vgamma g x = (d, l, r) -> Included (reachable g l) (reachable g x).

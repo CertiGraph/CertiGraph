@@ -592,8 +592,13 @@ Context {P: PreGraph V E -> (V -> DV) -> (E -> DE) -> Type}.
 
 Notation Graph := (GeneralGraph V E DV DE P).
 
-Definition marked (g: Graph) (v: V) : Prop := label_marked (vlabel g v).
-Definition unmarked (g: Graph) (v: V) : Prop := ~ label_marked (vlabel g v).
+Definition marked (g: Graph) : NodePred V.
+  refine (existT _ (fun v => label_marked (vlabel g v)) _).
+  intros.
+  apply marked_dec.
+Defined.
+
+Definition unmarked (g: Graph) (v: V) : Prop := negateP (marked g) v.
 
 Definition mark1 (g1 : Graph) (n : V) (g2 : Graph) : Prop :=
   g1 ~=~ g2 /\
@@ -667,12 +672,12 @@ Lemma vertex_update_mark1: forall (g1: Graph) x (g2: Graph),
 Proof.
   intros.
   split; [| split; [| split]]; auto.
-  + unfold marked.
+  + simpl.
     rewrite H2.
     apply label_mark_sound.
     apply H1.
   + intros y HH; specialize (H3 y HH). clear - H3.
-    unfold marked.
+    simpl.
     rewrite H3.
     reflexivity.
 Qed.
@@ -693,7 +698,18 @@ Proof.
   split; [reflexivity | auto].
 Qed.
 
-Lemma mark1_mark_list_mark: forall (g1: Graph) root l (g2 g3 g4: Graph)
+Lemma mark_marked: forall (g1: Graph) root (g2: Graph),
+  mark g1 root g2 ->
+  ReachDecidable g1 root (unmarked g1) ->
+  forall n, marked g1 n -> marked g2 n.
+Proof.
+  intros.
+  rewrite mark_inj in H.
+  destruct H.
+  apply SIMPLE_MARK_GRAPH.mark_marked with (n0 := n) in H1; auto.
+Qed.
+
+Lemma mark1_mark_list_mark: forall (g1: Graph) root l (g2 g3: Graph)
   (R_DEC: forall x, In x l -> ReachDecidable g2 x (unmarked g2))
   (V_DEC: forall x, In x l -> Decidable (vvalid g1 x))
   (R_DEC': ReachDecidable g1 root (unmarked g1)),

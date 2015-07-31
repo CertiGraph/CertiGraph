@@ -430,6 +430,9 @@ Proof.
 
   unfold semax_ram. (* should not need this *)
   normalize; intros g2; normalize.
+  assert (g2x_valid: vvalid g2 x) by (apply (proj1 (proj1 H3)); auto).
+  assert (g2r_weak_valid: weak_valid g2 r) by (apply (weak_valid_si g1 g2 _ (proj1 H3)); auto).
+
   localize
    (PROP  ()
     LOCAL (temp _r (pointer_val_val r))
@@ -438,7 +441,7 @@ Proof.
   
   eapply semax_ram_seq;
   [ repeat apply eexists_add_stats_cons; constructor
-  | forward_call' (sh, g2, g3, r); apply derives_refl
+  | forward_call' (sh, g2, r); apply derives_refl
   | abbreviate_semax_ram].
   (* mark(r); *)
 
@@ -447,7 +450,7 @@ Proof.
     LOCAL (temp _r (pointer_val_val r);
            temp _l (pointer_val_val l);
            temp _x (pointer_val_val x))
-    SEP (`(graph sh x g3))).
+    SEP (`(EX g3: Graph, !!mark g2 r g3 && graph sh x g3))).
   Grab Existential Variables.
   Focus 6. { solve_split_by_closed. } Unfocus.
   Focus 2. { entailer!. } Unfocus.
@@ -455,14 +458,17 @@ Proof.
   Focus 3. { repeat constructor; auto with closed. } Unfocus.
   Focus 2. {
     entailer!.
-    apply (@graph_ramify_aux2 (SGA_VST sh) g2 g3); auto.
-    rewrite <- !(Extensionality_Ensembles _ _ _ (reachable_ind.si_reachable _ _ _ (proj1 H4))).
-    simpl.
-    eapply (gamma_right_reachable_included g1 _ _ _ _ g1x_valid H_GAMMA_g1); eauto.
+    rewrite !exp_emp.
+    eapply (@graph_ramify_aux1_right _ (SGP_VST sh) (SGA_VST sh) g2); eauto.
+    eapply gamme_true_mark; eauto.
+    apply weak_valid_vvalid_dec; auto.
   } Unfocus.
   (* Unlocalize *)
 
   unfold semax_ram.
-  rewrite_vi_graph g3 g' H6.
   forward. (* ( return; ) *)
+  apply (exp_right g3); entailer!.
+  apply (mark1_mark_left_mark_right g g1 g2 g3 (ValidPointer b i) l r); auto.
+  eapply gamme_true_mark; eauto.
+  apply weak_valid_vvalid_dec; auto.
 Time Qed. (* Takes 30 minuts. *)
