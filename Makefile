@@ -40,7 +40,7 @@ SAMPLE_MARK_FILES = \
 COQ_BASED_FILES = \
   ./Coqlib.v
 
-CLIGHT_FILES = sample_mark/mark.v
+CLIGHT_FILES = sample_mark/mark.v sample_mark/garbage_collector.v
 
 C_FILES = $(CLIGHT_FILES:%.v=%.c)
 
