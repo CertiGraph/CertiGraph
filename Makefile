@@ -23,7 +23,7 @@ VERIC_EXT_FILES = \
   res_predicates.v seplog.v SeparationLogic.v
 
 FLOYD_EXT_FILES = \
-  MapstoSL.v DataatSL.v semax_ram_lemmas.v exists_trick.v closed_lemmas.v comparable.v 
+  MapstoSL.v DataatSL.v semax_ram_lemmas.v semax_ram_tac.v exists_trick.v closed_lemmas.v comparable.v 
 
 HEAP_MODEL_DIRECT_FILES = \
   SeparationAlgebra.v mapsto.v SeparationLogic.v
@@ -36,7 +36,7 @@ DATA_STRUCTURE_FILES = \
   general_spatial_graph.v spatial_graph_mark.v spatial_graph_HMD.v spatial_graph_VST.v spatial_graph_dispose.v
 
 SAMPLE_MARK_FILES = \
-  env_mark.v verif_mark.v env_dispose.v verif_dispose.v
+  env_mark.v verif_mark.v env_garbage_collector.v env_dispose.v verif_dispose.v
 
 COQ_BASED_FILES = \
   ./Coqlib.v

@@ -47,7 +47,7 @@ Definition _forward : ident := 9%positive.
 Definition ___builtin_read32_reversed : ident := 52%positive.
 Definition ___builtin_fmax : ident := 45%positive.
 Definition ___builtin_bswap16 : ident := 41%positive.
-Definition _ContendNode : ident := 13%positive.
+Definition _ContentNode : ident := 13%positive.
 Definition ___i64_dtou : ident := 27%positive.
 Definition ___i64_udiv : ident := 33%positive.
 Definition _ct : ident := 56%positive.
@@ -77,7 +77,7 @@ Definition f_mark := {|
   fn_params := ((_x, tint) :: nil);
   fn_vars := nil;
   fn_temps := ((_hd, (tptr (Tstruct _HeadNode noattr))) ::
-               (_ct, (tptr (Tstruct _ContendNode noattr))) :: (_i, tint) ::
+               (_ct, (tptr (Tstruct _ContentNode noattr))) :: (_i, tint) ::
                (_sz, tint) :: (_root_mark, tint) :: (_node_flag, tint) ::
                nil);
   fn_body :=
@@ -109,11 +109,10 @@ Definition f_mark := {|
           (Ssequence
             (Sset _ct
               (Ecast
-                (Ebinop Oadd
-                  (Ebinop Oadd (Evar _heap (tarray tint 500000))
-                    (Etempvar _x tint) (tptr tint))
-                  (Esizeof (Tstruct _HeadNode noattr) tuint) (tptr tint))
-                (tptr (Tstruct _ContendNode noattr))))
+                (Ebinop Oadd (Evar _heap (tarray tint 500000))
+                  (Ebinop Oadd (Etempvar _x tint)
+                    (Econst_int (Int.repr 3) tint) tint) (tptr tint))
+                (tptr (Tstruct _ContentNode noattr))))
             (Ssequence
               (Sset _i (Econst_int (Int.repr 0) tint))
               (Sloop
@@ -127,10 +126,10 @@ Definition f_mark := {|
                       (Efield
                         (Ederef
                           (Ebinop Oadd
-                            (Etempvar _ct (tptr (Tstruct _ContendNode noattr)))
+                            (Etempvar _ct (tptr (Tstruct _ContentNode noattr)))
                             (Etempvar _i tint)
-                            (tptr (Tstruct _ContendNode noattr)))
-                          (Tstruct _ContendNode noattr)) _flag tint))
+                            (tptr (Tstruct _ContentNode noattr)))
+                          (Tstruct _ContentNode noattr)) _flag tint))
                     (Sifthenelse (Ebinop Oeq (Etempvar _node_flag tint)
                                    (Econst_int (Int.repr 0) tint) tint)
                       (Scall None
@@ -139,10 +138,10 @@ Definition f_mark := {|
                         ((Efield
                            (Ederef
                              (Ebinop Oadd
-                               (Etempvar _ct (tptr (Tstruct _ContendNode noattr)))
+                               (Etempvar _ct (tptr (Tstruct _ContentNode noattr)))
                                (Etempvar _i tint)
-                               (tptr (Tstruct _ContendNode noattr)))
-                             (Tstruct _ContendNode noattr)) _pointer_or_data
+                               (tptr (Tstruct _ContentNode noattr)))
+                             (Tstruct _ContentNode noattr)) _pointer_or_data
                            tint) :: nil))
                       Sskip)))
                 (Sset _i
@@ -164,7 +163,7 @@ Definition composites : list composite_definition :=
 (Composite _HeadNode Struct
    ((_size, tint) :: (_mark, tint) :: (_forward, tint) :: nil)
    noattr ::
- Composite _ContendNode Struct
+ Composite _ContentNode Struct
    ((_flag, tint) :: (_pointer_or_data, tint) :: nil)
    noattr :: nil).
 

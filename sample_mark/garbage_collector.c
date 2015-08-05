@@ -4,15 +4,10 @@ struct HeadNode {
   int forward;
 };
 
-struct ContendNode {
+struct ContentNode {
   int flag; /* 0 for pointer, 1 for data */
             /* To reduce memory overhead, this field can be embedded into pointer_or_data */
   int pointer_or_data;
-};
-
-union Node {
-  struct HeadNode h;
-  struct ContendNode c;
 };
 
 int heap[500000];
@@ -20,7 +15,7 @@ int heap[500000];
 void mark (int x)
 {
   struct HeadNode * hd;
-  struct ContendNode * ct;
+  struct ContentNode * ct;
   int i, sz, root_mark, node_flag;
   if (x == -1)
     return;
@@ -29,7 +24,7 @@ void mark (int x)
   if (root_mark == 1)
     return;
   sz = hd -> size;
-  ct = (struct ContendNode *) (heap + x + sizeof(struct HeadNode));
+  ct = (struct ContentNode *) (heap + (x + 3));
   for (i = 0; i < sz; ++ i) {
     node_flag = (ct + i) -> flag;
     if (node_flag == 0)
