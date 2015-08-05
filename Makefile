@@ -29,18 +29,19 @@ HEAP_MODEL_DIRECT_FILES = \
   SeparationAlgebra.v mapsto.v SeparationLogic.v
 
 GRAPH_FILES = \
-  graph_model.v path_lemmas.v marked_graph.v graph_gen.v reachable_computable.v find_not_in.v reachable_ind.v subgraph2.v
+  graph_model.v path_lemmas.v marked_graph.v graph_gen.v reachable_computable.v find_not_in.v reachable_ind.v subgraph2.v \
+  spanning_tree.v
 
 DATA_STRUCTURE_FILES = \
-  general_spatial_graph.v spatial_graph_mark.v spatial_graph_HMD.v spatial_graph_VST.v
+  general_spatial_graph.v spatial_graph_mark.v spatial_graph_HMD.v spatial_graph_VST.v spatial_graph_dispose.v
 
 SAMPLE_MARK_FILES = \
-  env_mark.v verif_mark.v 
+  env_mark.v verif_mark.v env_dispose.v verif_dispose.v
 
 COQ_BASED_FILES = \
   ./Coqlib.v
 
-CLIGHT_FILES = sample_mark/mark.v sample_mark/garbage_collector.v
+CLIGHT_FILES = sample_mark/mark.v sample_mark/garbage_collector.v sample_mark/dispose.v
 
 C_FILES = $(CLIGHT_FILES:%.v=%.c)
 
