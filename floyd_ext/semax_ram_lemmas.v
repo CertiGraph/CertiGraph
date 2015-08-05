@@ -358,3 +358,6 @@ Proof.
 Qed.
   
 End SEMAX.
+
+Arguments SingleFrame' {l} {g} {s}.
+
