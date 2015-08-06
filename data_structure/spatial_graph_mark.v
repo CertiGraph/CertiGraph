@@ -1093,6 +1093,16 @@ Section SpatialGraph.
 *)
 
 *)
+
+Lemma vgamma_is_true: forall (g : Graph) (x l r : addr), vgamma g x = (true, l, r) -> marked g x.
+Proof. intros. simpl in H. unfold gamma in H. simpl. destruct (vlabel g x) eqn:? . auto. inversion H. Qed.
+
+Lemma vgamma_is_false: forall (g : Graph) (x l r : addr), vgamma g x = (false, l, r) -> unmarked g x.
+Proof.
+  intros. simpl in H. unfold gamma in H. hnf. unfold Ensembles.In. simpl. intro.
+  destruct (vlabel g x) eqn:? . inversion H. simpl in H0. inversion H0.
+Qed.
+
 End SpatialGraphForMark.
 
 Class MarkProgramSetting: Type := {
@@ -1102,3 +1112,4 @@ Class MarkProgramSetting: Type := {
 }.
 
 Existing Instances BMPS SGP.
+
