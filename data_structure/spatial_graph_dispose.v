@@ -33,12 +33,13 @@ Instance BMGS_VST: BasicMarkProgramSetting.
   refine (Build_BasicMarkProgramSetting pointer_val NullPointer mpred _).
 Defined.
 
-Definition trinode (sh: share) (p: addr) (dlr: bool * addr * addr): mpred :=
+Definition vgamma2cdata (dlr : bool * addr * addr) : reptype node_type :=
   match dlr with
-  | (d, l, r) => data_at sh node_type
-                  (Vint (Int.repr (if d then 1 else 0)), (pointer_val_val l, pointer_val_val r))
-                    (pointer_val_val p)
+  | (d, l, r) => (Vint (Int.repr (if d then 1 else 0)), (pointer_val_val l, pointer_val_val r))
   end.
+
+Definition trinode (sh: share) (p: addr) (dlr: bool * addr * addr): mpred :=
+  data_at sh node_type (vgamma2cdata dlr) (pointer_val_val p).
 
 Instance SGP_VST (sh: share) : SpatialGraphPred addr (addr * LR) (bool * addr * addr) unit pred.
   refine (Build_SpatialGraphPred _ _ _ _ _ (trinode sh) (fun _ _ => emp)).
@@ -127,4 +128,3 @@ Defined.
 Instance MGS_VST (sh: share): MarkProgramSetting.
   refine (Build_MarkProgramSetting BMGS_VST (SGP_VST sh) (SGA_VST sh)).
 Defined.
-
