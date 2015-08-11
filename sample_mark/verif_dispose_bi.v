@@ -1,5 +1,5 @@
 Require Import VST.floyd.proofauto.
-Require Import RamifyCoq.sample_mark.env_dispose.
+Require Import RamifyCoq.sample_mark.env_dispose_bi.
 Require Import RamifyCoq.graph.graph_model.
 Require RamifyCoq.graph.marked_graph. Import RamifyCoq.graph.marked_graph.MarkGraph.
 Require Import RamifyCoq.graph.path_lemmas.

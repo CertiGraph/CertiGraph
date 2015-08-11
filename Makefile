@@ -36,12 +36,12 @@ DATA_STRUCTURE_FILES = \
   general_spatial_graph.v spatial_graph_mark.v spatial_graph_HMD.v spatial_graph_VST.v spatial_graph_dispose.v
 
 SAMPLE_MARK_FILES = \
-  env_mark.v verif_mark.v env_garbage_collector.v env_dispose.v verif_dispose.v
+  env_mark_bi.v verif_mark_bi.v env_garbage_collector.v env_dispose_bi.v verif_dispose_bi.v
 
 COQ_BASED_FILES = \
   ./Coqlib.v
 
-CLIGHT_FILES = sample_mark/mark.v sample_mark/garbage_collector.v sample_mark/dispose.v
+CLIGHT_FILES = sample_mark/mark_bi.v sample_mark/garbage_collector.v sample_mark/dispose_bi.v
 
 C_FILES = $(CLIGHT_FILES:%.v=%.c)
 

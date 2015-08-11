@@ -1,7 +1,7 @@
 Require Import Coq.Sets.Ensembles.
 Require Import Coq.Sets.Finite_sets.
 Require Import RamifyCoq.Coqlib.
-Require Import RamifyCoq.sample_mark.env_mark.
+Require Import RamifyCoq.sample_mark.env_mark_bi.
 Require Import RamifyCoq.graph.graph_model.
 Require RamifyCoq.graph.marked_graph. Import RamifyCoq.graph.marked_graph.MarkGraph.
 Require Import RamifyCoq.graph.path_lemmas.
