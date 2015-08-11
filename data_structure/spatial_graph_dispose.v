@@ -5,7 +5,7 @@ Require Import RamifyCoq.msl_ext.seplog.
 Require Import VST.veric.SeparationLogic.
 Require Import RamifyCoq.veric_ext.SeparationLogic.
 Require Import RamifyCoq.msl_ext.alg_seplog.
-Require Import RamifyCoq.sample_mark.env_dispose.
+Require Import RamifyCoq.sample_mark.env_dispose_bi.
 Require Import RamifyCoq.veric_ext.SeparationLogic.
 Require Import RamifyCoq.floyd_ext.DataatSL.
 Require Import RamifyCoq.Coqlib.
