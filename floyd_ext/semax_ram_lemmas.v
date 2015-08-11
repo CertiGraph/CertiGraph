@@ -276,6 +276,18 @@ Transparent LiftNatDed' LiftSepLog'.
   eapply semax_ram_pre; [| eauto]; auto.
 Qed.
 
+Lemma semax_ram_seq_skip:
+  forall Delta F P c Q,
+  semax_ram Delta F P c Q <-> semax_ram Delta F P (Ssequence c Sskip) Q.
+Proof.
+  intros.
+  revert P Q; induction F; intros.
+  + unfold semax_ram.
+    apply semax_seq_skip.
+  + destruct a; destruct real_frame; simpl.
+    apply IHF.
+Qed.
+  
 Lemma semax_ram_seq: forall Delta F F' P Q R c0 c1,
   add_stats c0 F F' ->
   semax Delta P c0 (normal_ret_assert Q) ->
@@ -291,6 +303,18 @@ Transparent LiftNatDed' LiftSepLog'.
     rewrite <- frame_normal.
     apply semax_frame; auto.
     inversion fc'; subst; auto.
+Qed.
+
+Lemma semax_ram_seq': forall Delta F F' P Q R c,
+  add_stats c F F' ->
+  semax Delta P c (normal_ret_assert Q) ->
+  semax_ram (update_tycon Delta c) F' Q Sskip R ->
+  semax_ram Delta F P c R.
+Proof.
+  intros.
+  rewrite semax_ram_seq_skip.
+  eapply semax_ram_seq;
+  eauto.
 Qed.
 
 Lemma ram_seq_assoc: forall Delta F P s1 s2 s3 R,
