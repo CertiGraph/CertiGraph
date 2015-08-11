@@ -138,12 +138,13 @@ Proof.
     apply spacialgraph_gen_vgamma).
   forget (Graph_gen g x true) as g1.
   unfold semax_ram.
+  
   forward_if_tac
     (PROP  ()
      LOCAL (temp _r (pointer_val_val r);
             temp _l (pointer_val_val l);
             temp _x (pointer_val_val x))
-     SEP (`(EX g2: Graph, !! spanning_tree g1 l g2 && graph sh x g2))).
+     SEP (`(EX g2: Graph, !! spanning_tree g1 l g2 && graph sh x g2))); [| gather_current_goal_with_evar ..].
 
   (* root_mark = l -> m; *)
   localize
@@ -173,6 +174,19 @@ Proof.
             temp _l (pointer_val_val l);
             temp _x (pointer_val_val x))
      SEP  (`(graph sh x g1))).
-  
+  Grab Existential Variables.
+  Focus 6. { solve_split_by_closed. } Unfocus.
+  Focus 2. { entailer!. } Unfocus.
+  Focus 3. { entailer!. } Unfocus.
+  Focus 3. { repeat constructor; auto with closed. } Unfocus.
+(*  Focus 2. {
+    
+    assert ((dd, ll, rr) = vgamma g1 l).
+    rewrite Heqdlr.
+    entailer!.
+    rewrite H5.
+    pose proof (@graph_ramify_aux0 _ _ _ _ _ _ _ (SGA_VST sh) g1 _ x). (false, l, r) (true, l, r)).
+    simpl in H4; auto.
+*)
   (* assert (isptr (pointer_val_val x)). admit. *)
 Abort.
