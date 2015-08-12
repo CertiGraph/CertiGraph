@@ -33,7 +33,7 @@ Definition spanning_spec :=
   DECLARE _spanning
   WITH sh: share, g: Graph, x: pointer_val
   PRE [ _x OF (tptr (Tstruct _Node noattr))]
-          PROP  (writable_share sh; vvalid (pg_gg g) x; unmarked g x)
+          PROP  (writable_share sh; vvalid (pg_gg g) x; fst (fst (vgamma g x)) = false)
           LOCAL (temp _x (pointer_val_val x))
           SEP   (`(graph sh x g))
   POST [ Tvoid ]
@@ -68,13 +68,9 @@ Proof.
   start_function.
   remember (vgamma g x) as dlr eqn:?H.
   destruct dlr as [[d l] r].
-  assert (d = false). {
-    hnf in H1. simpl in H1. unfold Ensembles.In in H1.
-    simpl in H2. unfold gamma in H2. destruct (vlabel g x) eqn:? .
-    symmetry in Heqb. specialize (H1 Heqb). exfalso; auto.
-    inversion H2. auto.
-  } subst.
-
+  assert (d = false) by (simpl in H1; auto).
+  subst.
+  assert (Hisptr: isptr (pointer_val_val x)). admit.
   localize
    (PROP  ()
     LOCAL (temp _x (pointer_val_val x))
@@ -179,14 +175,81 @@ Proof.
   Focus 2. { entailer!. } Unfocus.
   Focus 3. { entailer!. } Unfocus.
   Focus 3. { repeat constructor; auto with closed. } Unfocus.
-(*  Focus 2. {
-    
-    assert ((dd, ll, rr) = vgamma g1 l).
-    rewrite Heqdlr.
+  Focus 2. {
     entailer!.
-    rewrite H5.
-    pose proof (@graph_ramify_aux0 _ _ _ _ _ _ _ (SGA_VST sh) g1 _ x). (false, l, r) (true, l, r)).
-    simpl in H4; auto.
-*)
-  (* assert (isptr (pointer_val_val x)). admit. *)
+    admit.
+  } Unfocus.
+
+  unfold semax_ram.
+  apply semax_seq_skip.
+  Opaque node_pred_dec.
+  Opaque BMGS_VST.
+  (* remember (if node_pred_dec (marked g1) l then 1 else 0). *)
+  forward_if_tac
+    (PROP  ()
+     LOCAL (temp _r (pointer_val_val r);
+            temp _l (pointer_val_val l);
+            temp _x (pointer_val_val x))
+     SEP (`(EX g2: Graph, !! spanning_tree g1 l g2 && graph sh x g2))).
+  Transparent node_pred_dec.
+  Transparent BMGS_VST.
+  destruct (node_pred_dec (marked g1) l). inversion H5.
+  localize
+    (PROP ()
+     LOCAL (temp _l (pointer_val_val l))
+     SEP (`(graph sh l g1))).
+  assert (vvalid g1 l). clear. admit.
+  assert (fst (fst (vgamma g1 l)) = false). clear. admit.
+  eapply semax_ram_seq';
+  [ repeat apply eexists_add_stats_cons; constructor
+  | forward_call' (sh, g1, l); apply derives_refl
+  | abbreviate_semax_ram].
+  Focus 2. { gather_current_goal_with_evar. } Unfocus.
+  Focus 2. { gather_current_goal_with_evar. } Unfocus.
+  Focus 2. { gather_current_goal_with_evar. } Unfocus.
+  Focus 2. { gather_current_goal_with_evar. } Unfocus.
+  unlocalize
+    (PROP ()
+     LOCAL (temp _r (pointer_val_val r);
+            temp _l (pointer_val_val l);
+            temp _x (pointer_val_val x))
+     SEP (`(EX  g' : Graph, !!spanning_tree g1 l g' && graph sh x g');
+      `emp)
+    ).
+  Grab Existential Variables.
+  Focus 6. { solve_split_by_closed. } Unfocus.
+  Focus 2. { entailer!. } Unfocus.
+  Focus 3. { entailer!. } Unfocus.
+  Focus 3. { repeat constructor; auto with closed. } Unfocus.
+  Focus 2. {
+    entailer!.
+    admit.
+  } Unfocus.
+  unfold semax_ram.
+  forward.
+  entailer.
+  apply (exp_right g').
+  entailer.
+  gather_current_goal_with_evar.
+  gather_current_goal_with_evar.
+  gather_current_goal_with_evar.
+  destruct (node_pred_dec (marked g1) l). 2: exfalso; auto.
+  localize
+   (PROP  ()
+    LOCAL (temp _x (pointer_val_val x))
+    SEP   (`(data_at sh node_type (Vint (Int.repr 1), (pointer_val_val l, pointer_val_val r))
+                     (pointer_val_val x)))).
+  eapply semax_ram_seq';
+    [ repeat apply eexists_add_stats_cons; constructor
+    | new_store_tac 
+    | abbreviate_semax_ram].
+  cbv beta zeta iota delta [replace_nth].
+  change (@field_at CompSpecs CS_legal sh node_type []
+           (Vint (Int.repr 1), (Vint (Int.repr 0), pointer_val_val r))) with
+         (@data_at CompSpecs CS_legal sh node_type
+                   (Vint (Int.repr 1), (Vint (Int.repr 0), pointer_val_val r))).
+  (* unlocalize *)
+  (*   (PROP  () *)
+  (*    LOCAL (temp _x (pointer_val_val x)) *)
+  (*    SEP ) *)
 Abort.

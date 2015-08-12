@@ -34,7 +34,7 @@ void spanning(struct Node * x) {
     x -> m = 1;
     if (l) {
         root_mark = l -> m;
-        if (!root_mark) {
+        if (root_mark == 0) {
             spanning(l);
         } else {
             x -> l = 0;
@@ -42,7 +42,7 @@ void spanning(struct Node * x) {
     }
     if (r) {
         root_mark = r -> m;
-        if (!root_mark) {
+        if (root_mark == 0) {
             spanning(r);
         } else {
             x -> r = 0;
