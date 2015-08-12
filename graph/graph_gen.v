@@ -20,6 +20,45 @@ Definition update_vlabel (vlabel: V -> DV) (x: V) (d: DV) :=
 
 Definition generalgraph_gen (g: Graph) (x: V) (d: DV) (sound': P g (update_vlabel (vlabel g) x d) (elabel g)): Graph := @Build_GeneralGraph V E EV EE DV DE P (pg_gg g) (update_vlabel (vlabel g) x d) (elabel g) sound'.
 
+Definition update_dst (destination : E -> V) (e : E) (target: V) :=
+  fun v => if equiv_dec e v then target else destination v.
+
+Definition pregraph_gen_dst (g : PreGraph V E) (e : E) (t : V) :=
+  @Build_PreGraph V E EV EE (vvalid g) (evalid g) (src g) (update_dst (dst g) e t).
+
+Definition generalgraph_gen_dst (g: Graph) (e : E) (t : V)
+           (sound : P (pregraph_gen_dst g e t) (vlabel g) (elabel g)) : Graph :=
+  @Build_GeneralGraph V E EV EE DV DE P (pregraph_gen_dst g e t) (vlabel g) (elabel g) sound.
+
+Lemma gen_dst_preserve_bi: forall (g: PreGraph V E) e t left_edge right_edge,
+    BiGraph g left_edge right_edge -> BiGraph (pregraph_gen_dst g e t) left_edge right_edge.
+Proof.
+  intros. apply Build_BiGraph; intros.
+  + simpl in *. eapply left_valid; eauto.
+  + simpl in *. eapply right_valid; eauto.
+  + apply (bi_consist g).
+  + simpl. apply (only_two_edges g).
+Qed.
+
+Lemma gen_dst_preserve_math: forall (g: PreGraph V E) e t (M: MathGraph g),
+    weak_valid g t -> MathGraph (pregraph_gen_dst g e t).
+Proof.
+  intros. refine (Build_MathGraph (pregraph_gen_dst g e t) (is_null g) (is_null_dec g) _ (valid_not_null g)).
+  simpl. intros. apply (valid_graph g) in H0. destruct H0. split.
+  + auto.
+  + unfold update_dst.
+    destruct_eq_dec e e0.
+    - apply H.
+    - apply H1.
+Defined.
+
+Lemma gen_dst_preserve_finite: forall (g: PreGraph V E) e t, FiniteGraph g -> FiniteGraph (pregraph_gen_dst g e t).
+Proof.
+  intros. apply Build_FiniteGraph; simpl.
+  + apply finiteV.
+  + apply finiteE.
+Qed.
+
 End GENERAL_GRAPH_GEN.
 
 Section GRAPH_GEN.
