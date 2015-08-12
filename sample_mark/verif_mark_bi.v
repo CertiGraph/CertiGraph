@@ -17,9 +17,6 @@ Local Open Scope logic.
 Notation graph sh x g := (@graph _ _ _ _ _ _ (@SGP (SGG_VST sh)) _ x g).
 Existing Instances MGS biGraph maGraph finGraph RGF.
 
-Set Printing All.
-Check @MGS.
-Locate MGS.
 Lemma exp_emp: forall {A} (P: A -> mpred), EX x:A, P x * emp = EX x: A, P x.
 Proof.
   intros.
@@ -33,17 +30,13 @@ Definition mark_spec :=
  DECLARE _mark
   WITH sh: share, g: Graph, x: pointer_val
   PRE [ _x OF (tptr (Tstruct _Node noattr))]
-          PROP  (writable_share sh; weak_valid (pg_gg g) x)
+          PROP  (writable_share sh; weak_valid g x)
           LOCAL (temp _x (pointer_val_val x))
           SEP   (`(graph sh x g))
   POST [ Tvoid ]
         PROP ()
         LOCAL()
         SEP (`(EX g': Graph, !! mark g x g' && graph sh x g')).
-
-Set Printing All.
-
-Print mark_spec.
 
 Definition main_spec :=
  DECLARE _main
@@ -225,11 +218,6 @@ Proof.
   (* unlocalize *)
 
   unfold semax_ram. (* should not need this *)
-Check Graph_gen_true_mark1.
-Check @Graph_gen_true_mark1.
-Set Printing All.
-Check @Graph_gen_true_mark1.
-Check g.
 
   pose proof Graph_gen_true_mark1 g x _ _ H_GAMMA_g gx_vvalid.
   assert (H_GAMMA_g1: vgamma (Graph_gen g x true) x = (true, l, r)) by
@@ -266,7 +254,7 @@ Check g.
   Focus 2. {
     entailer.
     rewrite !exp_emp.
-    eapply (@graph_ramify_aux1_left _ (SGP_VST sh) (SGA_VST sh) g1); eauto.
+    eapply (@graph_ramify_aux1_left (SGG_VST sh) g1); eauto.
   } Unfocus.
   (* unlocalize *)
 
@@ -301,7 +289,7 @@ Check g.
   Focus 2. {
     entailer!.
     rewrite !exp_emp.
-    eapply (@graph_ramify_aux1_right _ (SGP_VST sh) (SGA_VST sh) g2); eauto.
+    eapply (@graph_ramify_aux1_right (SGG_VST sh)  g2); eauto.
     eapply gamme_true_mark; eauto.
     apply weak_valid_vvalid_dec; auto.
   } Unfocus.
