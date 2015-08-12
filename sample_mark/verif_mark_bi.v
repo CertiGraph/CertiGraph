@@ -8,14 +8,18 @@ Require Import RamifyCoq.graph.path_lemmas.
 Require Import RamifyCoq.graph.subgraph2.
 Require Import RamifyCoq.graph.reachable_computable.
 Require Import RamifyCoq.data_structure.general_spatial_graph.
-Require Import RamifyCoq.data_structure.spatial_graph_mark.
+Require Import RamifyCoq.data_structure.spatial_graph_bi.
+Require Import RamifyCoq.data_structure.spatial_graph_mark_bi.
 Require Import RamifyCoq.data_structure.spatial_graph_VST.
 
 Local Open Scope logic.
 
-Notation graph sh x g := (@graph _ _ _ _ _ _ (SGP_VST sh) _ x g).
+Notation graph sh x g := (@graph _ _ _ _ _ _ (@SGP (SGG_VST sh)) _ x g).
 Existing Instances MGS biGraph maGraph finGraph RGF.
 
+Set Printing All.
+Check @MGS.
+Locate MGS.
 Lemma exp_emp: forall {A} (P: A -> mpred), EX x:A, P x * emp = EX x: A, P x.
 Proof.
   intros.
@@ -36,6 +40,10 @@ Definition mark_spec :=
         PROP ()
         LOCAL()
         SEP (`(EX g': Graph, !! mark g x g' && graph sh x g')).
+
+Set Printing All.
+
+Print mark_spec.
 
 Definition main_spec :=
  DECLARE _main
@@ -148,7 +156,6 @@ Proof.
       apply mark_marked_root_refl.
       simpl.
       inversion H_GAMMA_g.
-      if_tac in H3; auto.
       destruct d; [auto | inversion H1].
     } Unfocus.
     normalize.
@@ -161,46 +168,6 @@ Proof.
 
   normalize.
   subst d.
-(*
-  destruct (@mark1_exists (SGA_VST sh) g x gx_vvalid) as [g1 ?H].
-  assert (g1x_valid: vvalid g1 x) by (apply (proj1 (proj1 H1)); auto).
-  assert (g1l_weak_valid: weak_valid g1 l) by (apply (weak_valid_si g g1 _ (proj1 H1)); auto).
-  assert (g1r_weak_valid: weak_valid g1 r) by (apply (weak_valid_si g g1 _ (proj1 H1)); auto).
-  assert (H_GAMMA_g1: gamma g1 x = (true, l, r)) by (apply gamma_marks with g; auto).
-
-  destruct (mark_exists' g1 l g1l_weak_valid) as [g2 ?H].
-  assert (g2x_valid: vvalid g2 x) by (apply (proj1 (proj1 H4)); auto).
-  assert (g2r_weak_valid: weak_valid g2 r) by (apply (weak_valid_si g1 g2 _ (proj1 H4)); auto).
-  
-  destruct (mark_exists' g2 r g2r_weak_valid) as [g3 ?H].
-
-  assert (g3 -=- g').
-  Focus 1. {
-    apply mark1_mark_list_vi with g x (l :: r :: nil) g1.
-    + intros.
-      destruct (Coqlib.t_eq_dec r x0); [| destruct (Coqlib.t_eq_dec l x0)]; [| | simpl in H6; exfalso; tauto]; subst x0.
-      - intro; apply reachable_by_decidable; simpl; auto with GraphLib.
-      - intro; apply reachable_by_decidable; simpl; auto with GraphLib.
-    + intros.
-      destruct (Coqlib.t_eq_dec r x0); [| destruct (Coqlib.t_eq_dec l x0)]; [| | simpl in H6; exfalso; tauto]; subst x0; unfold Decidable; auto with GraphLib.
-    + intro; apply reachable_by_decidable; simpl; auto with GraphLib.
-    + auto.
-    + unfold gamma in H_GAMMA_g.
-      destruct (node_pred_dec (marked g) x); try solve [inversion H_GAMMA_g].
-      rewrite unmarked_spec; auto.
-    + unfold gamma in H_GAMMA_g; inversion H_GAMMA_g; subst.
-      unfold step_list.
-      intros; simpl.
-      rewrite biEdge_only2; [| auto | reflexivity].
-      rewrite !(eq_sym_iff n').
-      tauto.
-    + auto.
-    + apply mark_list_cons with g2; auto.
-      apply mark_list_cons with g3; auto.
-      constructor.
-    + auto.
-  } Unfocus.
-*)
   localize
    (PROP  ()
     LOCAL (temp _x (pointer_val_val x))
@@ -258,6 +225,12 @@ Proof.
   (* unlocalize *)
 
   unfold semax_ram. (* should not need this *)
+Check Graph_gen_true_mark1.
+Check @Graph_gen_true_mark1.
+Set Printing All.
+Check @Graph_gen_true_mark1.
+Check g.
+
   pose proof Graph_gen_true_mark1 g x _ _ H_GAMMA_g gx_vvalid.
   assert (H_GAMMA_g1: vgamma (Graph_gen g x true) x = (true, l, r)) by
    (rewrite (proj1 (proj2 (Graph_gen_spatial_spec g x _ true _ _ H_GAMMA_g))) by assumption;
