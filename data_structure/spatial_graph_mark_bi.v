@@ -12,41 +12,16 @@ Require Import RamifyCoq.graph.path_lemmas.
 Require Import RamifyCoq.graph.reachable_computable.
 Require Import RamifyCoq.graph.reachable_ind.
 Require Import RamifyCoq.graph.subgraph2.
-Require RamifyCoq.graph.marked_graph. Import RamifyCoq.graph.marked_graph.MarkGraph.
 Require Import RamifyCoq.graph.graph_gen.
+Require RamifyCoq.graph.marked_graph. Import RamifyCoq.graph.marked_graph.MarkGraph.
 Require Import RamifyCoq.data_structure.general_spatial_graph.
+Require Import RamifyCoq.data_structure.spatial_graph_bi.
 Require Import Coq.Logic.Classical.
 Import RamifyCoq.msl_ext.seplog.OconNotation.
 
-Local Open Scope logic.
+Section SpatialGraph_Mark_Bi.
 
-Inductive LR :=
-  | L
-  | R.
-
-Class BasicMarkProgramSetting: Type := {
-  addr: Type;
-  null: addr;
-  pred: Type;
-  SGBA: SpatialGraphBasicAssum addr (addr * LR)
-}.
-
-Existing Instance SGBA.
-
-Section SpatialGraphForMark.
-
-Context {BMPS: BasicMarkProgramSetting}.
-
-Class BiMaFin (g: PreGraph addr (addr * LR)) := {
-  bi: BiGraph g (fun x => (x, L)) (fun x => (x, R));
-  ma: MathGraph g;
-  fin: FiniteGraph g;
-  is_null_def': forall x: addr, is_null g x = (x = null)
-}.
-
-Definition Graph := (GeneralGraph addr (addr * LR) bool unit (fun g _ _ => BiMaFin g)).
-
-Identity Coercion G_GG : Graph >-> GeneralGraph.
+Context {SGG_Bi: SpatialGraph_Graph_Bi}.
 
 Instance MGS: MarkGraphSetting bool.
   apply (Build_MarkGraphSetting bool
@@ -59,31 +34,6 @@ Instance MGS: MarkGraphSetting bool.
   + congruence.
 Defined.
 
-Definition gamma (G : Graph) (v: addr) : bool * addr * addr := 
-  (if vlabel G v then true else false, dst G (v, L), dst G (v, R)).
-
-Instance biGraph (G: Graph): BiGraph G (fun x => (x, L)) (fun x => (x, R)) :=
-  @bi G (@sound_gg _ _ _ _ _ _ _ G).
-
-Instance maGraph(G: Graph): MathGraph G :=
-  @ma G (@sound_gg _ _ _ _ _ _ _ G).
-
-Instance finGraph (G: Graph): FiniteGraph G :=
-  @fin G (@sound_gg _ _ _ _ _ _ _ G).
-
-Definition is_null_def (g: Graph): forall x: addr, is_null g x = (x = null) := is_null_def'.
-
-Instance RGF (G: Graph): ReachableFiniteGraph G.
-  apply Build_ReachableFiniteGraph.
-  intros.
-  apply finite_reachable_computable in H.
-  + destruct H as [l [? ?]].
-    exists l; auto.
-  + apply maGraph.
-  + apply (LocalFiniteGraph_FiniteGraph G), finGraph.
-  + apply (FiniteGraph_EnumCovered G), finGraph.
-Defined.
-
 Lemma Graph_reachable_by_unmarked_dec: forall (G: Graph) x, Decidable (vvalid G x) -> ReachDecidable G x (unmarked G).
 Proof.
   intros.
@@ -92,36 +42,6 @@ Proof.
   + apply maGraph.
   + apply LocalFiniteGraph_FiniteGraph, finGraph.
   + apply FiniteGraph_EnumCovered, finGraph.
-Qed.
-
-Definition Graph_SpatialGraph (G: Graph): SpatialGraph addr (addr * LR) (bool * addr * addr) unit := Build_SpatialGraph _ _ _ _ _ _ G (gamma G) (fun _ => tt).
-
-Coercion Graph_SpatialGraph: Graph >-> SpatialGraph.
-
-Lemma weak_valid_vvalid_dec: forall (g : Graph) (x: addr),
-  weak_valid g x -> {vvalid g x} + {~ vvalid g x}.
-Proof.
-  intros.
-  apply null_or_valid in H.
-  destruct H; [right | left]; auto.
-  pose proof valid_not_null g x; tauto.
-Qed.
-
-Definition Graph_gen (G: Graph) (x: addr) (d: bool) : Graph :=
-  generalgraph_gen G x d (sound_gg G).
-
-Lemma Graph_gen_spatial_spec: forall (G: Graph) (x: addr) (d d': bool) l r,
-  vgamma G x = (d, l, r) ->
-  (Graph_gen G x d') -=- (spatialgraph_gen G x (d', l, r)).
-Proof.
-  intros.
-  split; [reflexivity | split; [| auto]].
-  simpl in *; intros.
-  unfold gamma in *; simpl in *; unfold update_vlabel.
-  destruct_eq_dec x v; subst.
-  + inversion H; subst; f_equal; f_equal.
-    destruct d'; auto.
-  + auto.
 Qed.
 
 Lemma Graph_gen_true_mark1: forall (G: Graph) (x: addr) l r,
@@ -141,73 +61,6 @@ Proof.
     unfold update_vlabel; simpl.
     destruct_eq_dec x n'; [congruence |].
     reflexivity.
-Qed.
-
-(*
-Hint Extern 5 (MathGraph (@pg _ ?g)) => apply (@ma _ g): GraphLib.
-Hint Extern 5 (LocalFiniteGraph (@pg _ ?g)) => apply (@LocalFiniteGraph_FiniteGraph _ _ g): GraphLib.
-Hint Extern 5 (FiniteGraph (@pg _ ?g)) => apply (@fin _ g): GraphLib.
-Hint Extern 5 (EnumCovered _ (reachable (@pg _ ?g) _)) => apply (@FiniteGraph_EnumCovered _ _ g): GraphLib.
-Hint Extern 5 ({vvalid ?x} + {~ vvalid ?x}) => apply (@weak_valid_vvalid_dec _ _ x): GraphLib.
-*)
-
-Lemma weak_valid_si: forall (g1 g2: Graph) n, g1 ~=~ g2 -> (weak_valid g1 n <-> weak_valid g2 n).
-Proof.
-  intros.
-  unfold weak_valid.
-  rewrite !is_null_def.
-  destruct H as [? _].
-  rewrite H.
-  reflexivity.
-Qed.
-
-Ltac s_rewrite p :=
-  let H := fresh "H" in
-  pose proof p as H;
-  simpl in H;
-  rewrite H;
-  clear H.
-
-Lemma gamma_step: forall (g : Graph) x (d: bool) (l r: addr), vvalid g x -> vgamma g x = (d, l, r) -> forall y, step g x y <-> y = l \/ y = r.
-Proof.
-  intros. simpl in H0; unfold gamma in H0; inversion H0; subst.
-  rewrite step_spec; split; intros.
-  + destruct H1 as [? [? [? ?]]].
-    rewrite (only_two_edges g) in H2.
-    destruct H2; subst; auto.
-  + destruct H1.
-    - exists (x, L).
-      apply (left_valid g) in H.
-      s_rewrite (left_sound g); auto.
-    - exists (x, R).
-      apply (right_valid g) in H.
-      s_rewrite (right_sound g); auto.
-Qed.
-
-Lemma gamma_left_weak_valid: forall (g : Graph) x d l r, vvalid g x -> vgamma g x = (d, l, r) -> weak_valid g l.
-Proof.
-  intros.
-  simpl in H0.
-  assert (snd (fst (gamma g x)) = l) by (rewrite H0; auto).
-  clear H0.
-  unfold gamma in H1; simpl in H1.
-  pose proof valid_graph g (x, L).
-  spec H0; [pose proof (left_valid g); auto |].
-  rewrite <- H1.
-  simpl in H0; tauto.
-Qed.
-
-Lemma gamma_right_weak_valid: forall (g : Graph) x d l r, vvalid g x -> vgamma g x = (d, l, r) -> weak_valid g r.
-Proof.
-  intros.
-  simpl in H0.
-  assert (snd (gamma g x) = r) by (rewrite H0; auto).
-  clear H0.
-  unfold gamma in H1; simpl in H1.
-  pose proof valid_graph g (x, R).
-  spec H0; [pose proof (right_valid g); auto |].
-  rewrite <- H1.
-  simpl in H0; tauto.
 Qed.
 
 Lemma gamme_true_mark: forall (g g': Graph) x y l r, Decidable (vvalid g y) -> vgamma g x = (true, l, r) -> mark g y g' -> vgamma g' x = (true, l, r).
@@ -269,18 +122,7 @@ Proof.
   + repeat (econstructor; eauto).
 Qed.
 
-Context {SGP: SpatialGraphPred addr (addr * LR) (bool * addr * addr) unit pred}.
-Context {SGA: SpatialGraphAssum SGP}.
-
 Local Open Scope logic.
-
-Instance complement_proper (V: Type): Proper ((pointwise_relation V iff) ==> (pointwise_relation V iff)) (Complement V).
-  hnf; intros.
-  hnf; intros.
-  unfold Complement, Ensembles.In.
-  specialize (H a).
-  tauto.
-Defined.
 
 Lemma graph_ramify_aux1: forall (g: Graph) (x l: addr)
   {V_DEC: Decidable (vvalid g l)},
@@ -1103,13 +945,6 @@ Proof.
   destruct (vlabel g x) eqn:? . inversion H. simpl in H0. inversion H0.
 Qed.
 
-End SpatialGraphForMark.
+End SpatialGraph_Mark_Bi.
 
-Class MarkProgramSetting: Type := {
-  BMPS: BasicMarkProgramSetting;
-  SGP: SpatialGraphPred addr (addr * LR) (bool * addr * addr) unit pred;
-  SGA: SpatialGraphAssum SGP
-}.
-
-Existing Instances BMPS SGP.
 

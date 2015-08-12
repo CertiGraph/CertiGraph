@@ -1,5 +1,5 @@
 Require Import RamifyCoq.data_structure.general_spatial_graph.
-Require Import RamifyCoq.data_structure.spatial_graph_mark.
+Require Import RamifyCoq.data_structure.spatial_graph_bi.
 Require Import RamifyCoq.msl_ext.abs_addr.
 Require Import RamifyCoq.msl_ext.seplog.
 Require Import VST.veric.SeparationLogic.
@@ -29,8 +29,8 @@ Instance SGBA_VST: SpatialGraphBasicAssum pointer_val (pointer_val * LR).
   refine (Build_SpatialGraphBasicAssum pointer_val (pointer_val * LR) _ _).
 Defined.
 
-Instance BMGS_VST: BasicMarkProgramSetting.
-  refine (Build_BasicMarkProgramSetting pointer_val NullPointer mpred _).
+Instance SGGS_VST: SpatialGraph_Graph_Setting_Bi.
+  refine (Build_SpatialGraph_Graph_Setting_Bi pointer_val NullPointer mpred _).
 Defined.
 
 Definition vgamma2cdata (dlr : bool * addr * addr) : reptype node_type :=
@@ -125,6 +125,6 @@ Instance SGA_VST (sh: share) : SpatialGraphAssum (SGP_VST sh).
     intros; auto.
 Defined.
 
-Instance MGS_VST (sh: share): MarkProgramSetting.
-  refine (Build_MarkProgramSetting BMGS_VST (SGP_VST sh) (SGA_VST sh)).
+Instance SGG_VST (sh: share): SpatialGraph_Graph_Bi.
+  refine (Build_SpatialGraph_Graph_Bi SGGS_VST (SGP_VST sh) (SGA_VST sh)).
 Defined.
