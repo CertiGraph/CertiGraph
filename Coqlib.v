@@ -646,3 +646,15 @@ Proof.
 Qed.
 
 Existing Instance Permutation_app'_Proper.
+
+Require Import Coq.Classes.Morphisms.
+
+Instance complement_proper (V: Type): Proper ((pointwise_relation V iff) ==> (pointwise_relation V iff)) (Complement V).
+  hnf; intros.
+  hnf; intros.
+  unfold Complement, Ensembles.In.
+  specialize (H a).
+  tauto.
+Defined.
+
+Existing Instance complement_proper.

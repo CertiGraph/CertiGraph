@@ -33,7 +33,7 @@ GRAPH_FILES = \
   spanning_tree.v
 
 DATA_STRUCTURE_FILES = \
-  general_spatial_graph.v spatial_graph_mark.v spatial_graph_HMD.v spatial_graph_VST.v spatial_graph_dispose.v
+  general_spatial_graph.v spatial_graph_mark_bi.v spatial_graph_bi.v spatial_graph_HMD.v spatial_graph_VST.v spatial_graph_dispose.v
 
 SAMPLE_MARK_FILES = \
   env_mark_bi.v verif_mark_bi.v env_garbage_collector.v env_dispose_bi.v verif_dispose_bi.v
