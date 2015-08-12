@@ -145,7 +145,8 @@ Definition f_spanning := {|
               (Efield
                 (Ederef (Etempvar _l (tptr (Tstruct _Node noattr)))
                   (Tstruct _Node noattr)) _m tint))
-            (Sifthenelse (Eunop Onotbool (Etempvar _root_mark tint) tint)
+            (Sifthenelse (Ebinop Oeq (Etempvar _root_mark tint)
+                           (Econst_int (Int.repr 0) tint) tint)
               (Scall None
                 (Evar _spanning (Tfunction
                                   (Tcons (tptr (Tstruct _Node noattr)) Tnil)
@@ -163,7 +164,8 @@ Definition f_spanning := {|
               (Efield
                 (Ederef (Etempvar _r (tptr (Tstruct _Node noattr)))
                   (Tstruct _Node noattr)) _m tint))
-            (Sifthenelse (Eunop Onotbool (Etempvar _root_mark tint) tint)
+            (Sifthenelse (Ebinop Oeq (Etempvar _root_mark tint)
+                           (Econst_int (Int.repr 0) tint) tint)
               (Scall None
                 (Evar _spanning (Tfunction
                                   (Tcons (tptr (Tstruct _Node noattr)) Tnil)
