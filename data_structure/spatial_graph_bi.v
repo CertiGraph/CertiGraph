@@ -88,6 +88,26 @@ Qed.
 Definition Graph_gen (G: Graph) (x: addr) (d: bool) : Graph :=
   generalgraph_gen G x d (sound_gg G).
 
+Definition Graph_gen_left_null (G : Graph) (x : addr) : Graph.
+Proof.
+  refine (generalgraph_gen_dst G (x, L) null _).
+  assert (weak_valid G null) by (left; rewrite is_null_def; auto).
+  refine (Build_BiMaFin _ (gen_dst_preserve_bi G (x, L) null _ _ (biGraph G))
+                        (gen_dst_preserve_math G (x, L) null ma H)
+                        (gen_dst_preserve_finite G (x, L) null (finGraph G)) _).
+  intro y; intros. simpl. apply is_null_def.
+Defined.
+
+Definition Graph_gen_right_null (G : Graph) (x : addr) : Graph.
+Proof.
+  refine (generalgraph_gen_dst G (x, R) null _).
+  assert (weak_valid G null) by (left; rewrite is_null_def; auto).
+  refine (Build_BiMaFin _ (gen_dst_preserve_bi G (x, R) null _ _ (biGraph G))
+                        (gen_dst_preserve_math G (x, R) null ma H)
+                        (gen_dst_preserve_finite G (x, R) null (finGraph G)) _).
+  intro y; intros. simpl. apply is_null_def.
+Defined.
+
 Lemma Graph_gen_spatial_spec: forall (G: Graph) (x: addr) (d d': bool) l r,
   vgamma G x = (d, l, r) ->
   (Graph_gen G x d') -=- (spatialgraph_gen G x (d', l, r)).
