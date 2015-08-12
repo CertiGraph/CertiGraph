@@ -19,10 +19,6 @@ Require Import RamifyCoq.data_structure.spatial_graph_bi.
 Require Import Coq.Logic.Classical.
 Import RamifyCoq.msl_ext.seplog.OconNotation.
 
-Section SpatialGraph_Mark_Bi.
-
-Context {SGG_Bi: SpatialGraph_Graph_Bi}.
-
 Instance MGS: MarkGraphSetting bool.
   apply (Build_MarkGraphSetting bool
           (eq true)
@@ -33,6 +29,10 @@ Instance MGS: MarkGraphSetting bool.
   + auto.
   + congruence.
 Defined.
+
+Section pSpatialGraph_Mark_Bi.
+
+Context {SGGS_Bi: SpatialGraph_Graph_Setting_Bi}.
 
 Lemma Graph_reachable_by_unmarked_dec: forall (G: Graph) x, Decidable (vvalid G x) -> ReachDecidable G x (unmarked G).
 Proof.
@@ -122,7 +122,40 @@ Proof.
   + repeat (econstructor; eauto).
 Qed.
 
+Lemma gamma_left_reachable_included: forall (g: Graph) x d l r,
+                                       vvalid g x -> vgamma g x = (d, l, r) -> Included (reachable g l) (reachable g x).
+Proof.
+  intros. intro y; intros. apply reachable_by_cons with l; auto. split; auto. split.
+  + apply reachable_head_valid in H1; auto.
+  + rewrite (gamma_step _ _ _ _ _ H H0). auto.
+Qed.
+
+Lemma gamma_right_reachable_included: forall (g: Graph) x d l r,
+                                        vvalid g x -> vgamma g x = (d, l, r) -> Included (reachable g r) (reachable g x).
+Proof.
+  intros. intro y; intros. apply reachable_by_cons with r; auto. split; auto. split.
+  + apply reachable_head_valid in H1; auto.
+  + rewrite (gamma_step _ _ _ _ _ H H0). auto.
+Qed.
+
+Lemma vgamma_is_true: forall (g : Graph) (x l r : addr), vgamma g x = (true, l, r) -> marked g x.
+Proof. intros. simpl in H. unfold gamma in H. simpl. destruct (vlabel g x) eqn:? . auto. inversion H. Qed.
+
+Lemma vgamma_is_false: forall (g : Graph) (x l r : addr), vgamma g x = (false, l, r) -> unmarked g x.
+Proof.
+  intros. simpl in H. unfold gamma in H. hnf. unfold Ensembles.In. simpl. intro.
+  destruct (vlabel g x) eqn:? . inversion H. simpl in H0. inversion H0.
+Qed.
+
+End pSpatialGraph_Mark_Bi.
+
+Section SpatialGraph_Mark_Bi.
+
+Context {SGG_Bi: SpatialGraph_Graph_Bi}.
+
 Local Open Scope logic.
+
+Existing Instances SGGS_Bi SGP SGA.
 
 Lemma graph_ramify_aux1: forall (g: Graph) (x l: addr)
   {V_DEC: Decidable (vvalid g l)},
@@ -163,22 +196,6 @@ Proof.
         1: tauto.
         1: rewrite !H8; auto.
       * intros; simpl; auto.
-Qed.
-
-Lemma gamma_left_reachable_included: forall (g: Graph) x d l r,
-                                       vvalid g x -> vgamma g x = (d, l, r) -> Included (reachable g l) (reachable g x).
-Proof.
-  intros. intro y; intros. apply reachable_by_cons with l; auto. split; auto. split.
-  + apply reachable_head_valid in H1; auto.
-  + rewrite (gamma_step _ _ _ _ _ H H0). auto.
-Qed.
-
-Lemma gamma_right_reachable_included: forall (g: Graph) x d l r,
-                                        vvalid g x -> vgamma g x = (d, l, r) -> Included (reachable g r) (reachable g x).
-Proof.
-  intros. intro y; intros. apply reachable_by_cons with r; auto. split; auto. split.
-  + apply reachable_head_valid in H1; auto.
-  + rewrite (gamma_step _ _ _ _ _ H H0). auto.
 Qed.
 
 Lemma graph_ramify_aux1_left: forall (g: Graph) x d l r,
@@ -935,15 +952,6 @@ Section SpatialGraph.
 *)
 
 *)
-
-Lemma vgamma_is_true: forall (g : Graph) (x l r : addr), vgamma g x = (true, l, r) -> marked g x.
-Proof. intros. simpl in H. unfold gamma in H. simpl. destruct (vlabel g x) eqn:? . auto. inversion H. Qed.
-
-Lemma vgamma_is_false: forall (g : Graph) (x l r : addr), vgamma g x = (false, l, r) -> unmarked g x.
-Proof.
-  intros. simpl in H. unfold gamma in H. hnf. unfold Ensembles.In. simpl. intro.
-  destruct (vlabel g x) eqn:? . inversion H. simpl in H0. inversion H0.
-Qed.
 
 End SpatialGraph_Mark_Bi.
 
