@@ -281,7 +281,7 @@ Proof.
         apply NoDup_Permutation; auto. intro y. specialize (H y). specialize (H3 y). tauto.
       * apply iter_sepcon_emp; auto.
         intro x.
-        rewrite <- (H x), <- (H3 x).
+        rewrite (H x), (H3 x).
         auto.
     - intros. unfold Gamma. unfold Graph_cell. unfold graph_cell. simpl. auto.
   + unfold graphs'. apply (exp_right (proj1_sig (construct_reachable_set_list g S H2))).
@@ -308,7 +308,7 @@ Proof.
     f_equal.
     apply ND_prop_ext.
     unfold reachable_list, reachable_set_list.
-    split; intros HH y; [rewrite H | rewrite <- H]; symmetry; auto.
+    split; intros HH y; [rewrite H | rewrite <- H]; auto.
   + assert (forall x0, In x0 (x :: nil) -> Decidable (vvalid g x0)).
     Focus 1. {
       intros x0 HH.
@@ -326,7 +326,7 @@ Proof.
     - apply equiv_dec.
     - apply eq_as_set_spec; intros.
       destruct a as [_ ?H], a0 as [_ ?H].
-      rewrite <- (H0 x0), (H3 x0).
+      rewrite (H0 x0), (H3 x0).
       auto.
 Qed.
 
@@ -353,7 +353,7 @@ Proof.
   apply (exp_right l). apply andp_right.
   + apply prop_right.
     unfold reachable_set_list in *. intros. specialize (H0 x).
-    rewrite <- H0; clear H0.
+    rewrite H0; clear H0.
     simpl in H.
     destruct H as [? _]; clear H1 H2.
     specialize (H x); simpl in H.
@@ -362,7 +362,7 @@ Proof.
     pose proof reachable_through_set_foot_valid g2 S x.
     tauto.
   + assert (forall z, In z l -> vvalid (reachable_subgraph g1 S) z). {
-      intros. simpl. hnf. hnf in H0. rewrite <- H0 in H3. split.
+      intros. simpl. hnf. hnf in H0. rewrite H0 in H3. split.
       + apply reachable_through_set_foot_valid in H3; auto.
       + auto.
     } clear H0. induction l. simpl; auto.
@@ -450,7 +450,7 @@ Proof.
   intros. rewrite <- (map_app (Gamma g)).
   apply Permutation_map. apply perm_trans with (subtract equiv_dec l1 l2 ++ l2).
   + apply subtract_permutation; auto.
-    intro y. rewrite <- (H0 y). rewrite <- (H2 y).
+    intro y. rewrite (H0 y), (H2 y).
     specialize (H y). auto.
   + apply Permutation_app_comm.
 Qed.
@@ -491,7 +491,7 @@ Lemma unreachable_eq: forall (g : Graph) (S1 S2 l12 l1 : list V),
     forall x, In x l12 /\ ~ In x l1 <-> reachable_through_set (unreachable_partial_spatialgraph g S1) S2 x.
 Proof.
   intros.
-  rewrite <- (H x), <- (H0 x).
+  rewrite (H x), (H0 x).
   apply unreachable_eq'.
 Qed.
 
@@ -572,16 +572,16 @@ Proof.
       unfold predicate_vvalid in H8.
       tauto.
   + intro v.
-    rewrite <- (H1 v), <- (H3 v).
+    rewrite (H1 v), (H3 v).
     apply reachable_through_set_app_left; auto.
   + intro v.
-    rewrite <- (H5 v), <- (H7 v).
+    rewrite (H5 v), (H7 v).
     apply reachable_through_set_app_left; auto.
   + intro v.
-    rewrite <- (H1 v).
+    rewrite (H1 v).
     apply reachable_through_set_foot_valid.
   + intro v.
-    rewrite <- (H7 v).
+    rewrite (H7 v).
     apply reachable_through_set_foot_valid.
 Qed.
 
@@ -830,6 +830,29 @@ Proof.
       tauto.
 Qed.
 
+Lemma dag_graph_unfold: forall (g: Graph) x S, vvalid g x -> localDag g x -> step_list g x S -> graph x g = vertex_at x (vgamma g x) * graphs' S g.
+Proof.
+  intros.
+  change (graph x g) with (vertexes_at g (reachable g x)).
+  rewrite (vertexes_at_eq g (reachable g x)).
+(*
+  unfold graph, graphs'.
+  apply pred_ext.
+  + normalize.
+    apply (exp_right (remove equiv_dec x l)).
+    pose proof localDag_reachable_list_spec g x S l.
+    repeat (spec H3; [auto |]).
+    normalize.
+    match goal with
+    | |- _ |-- ?A => change A with (iter_sepcon (x :: remove equiv_dec x l) (graph_cell g))
+    end.
+    erewrite iter_sepcon_permutation; [apply derives_refl |].
+Print FiniteGraph.
+Print Enumerable.
+simpl in p.
+*)
+Abort.
+
 Context {SGSA: SpatialGraphStrongAssum SGP}.
 
 Lemma precise_graph_cell: forall g v, precise (graph_cell g v).
@@ -871,11 +894,11 @@ Proof.
   + unfold graphs. unfold graphs'. apply pred_ext.
     - apply (exp_right nil). simpl. apply andp_right; auto.
       apply prop_right. intro x. split; intros.
-      * unfold reachable_through_set in H. destruct H as [s [? _]]. inversion H.
       * inversion H.
+      * unfold reachable_through_set in H. destruct H as [s [? _]]. inversion H.
     - normalize. intro l; intros. destruct l; simpl; auto.
       specialize (H v). assert (In v (v :: l)) by apply in_eq.
-      rewrite <- H in H0. unfold reachable_through_set in H0.
+      rewrite H in H0. unfold reachable_through_set in H0.
       destruct H0 as [s [? _]]. inversion H0.
   + unfold graphs. fold graphs. rewrite IHS; [| auto | intros; apply V_DEC; right; auto].
     unfold graphs'. unfold graph. clear IHS. apply pred_ext.
@@ -892,7 +915,7 @@ Proof.
         rewrite <- remove_dup_in_inv.
         rewrite reachable_through_set_eq.
         specialize (H0 x). specialize (H x).
-        split; intro; [apply in_or_app | apply in_app_or in H3];
+        split; intro; [apply in_app_or in H3 | apply in_or_app];
         destruct H3; [left | right | left | right]; tauto.
       * auto.
       * apply precise_graph_cell.
@@ -909,7 +932,7 @@ Proof.
       rewrite iter_sepcon_permutation with (l2 := remove_dup equiv_dec (la ++ lS)); auto.
       apply NoDup_Permutation; auto. apply remove_dup_nodup.
       intros. rewrite <- remove_dup_in_inv. clear -H H2 H4.
-      specialize (H x). specialize (H2 x). specialize (H4 x). rewrite <- H.
+      specialize (H x). specialize (H2 x). specialize (H4 x). rewrite H.
       rewrite reachable_through_set_eq. rewrite in_app_iff. tauto.
 Qed.
 

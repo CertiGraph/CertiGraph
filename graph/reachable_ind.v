@@ -65,7 +65,7 @@ Context {V : Type}.
 Context {E : Type}.
 Context {EV: EqDec V eq}.
 Context {EE: EqDec E eq}.
-Context {G : PreGraph V E}.
+Context (G : PreGraph V E).
 
 Lemma reachable_ind_reachable: forall x y, reachable G x y <-> ind.reachable G x y.
 Proof.
@@ -148,12 +148,38 @@ Proof.
       exists y. rewrite reachable_ind_reachable in *; auto.
 Qed.
 
+Lemma reachable_refl: forall x, vvalid G x -> reachable G x x.
+Proof.
+  intros.
+  rewrite reachable_ind_reachable; apply ind.reachable_nil; auto.
+Qed.
+
 Lemma edge_reachable:
   forall x y z, reachable G y z -> edge G x y -> reachable G x z.
 Proof.
   intros.
   rewrite reachable_ind_reachable in *.
   apply ind.reachable_cons with y; auto.
+Qed.
+
+Lemma reachable_ind': forall x S y, vvalid G x -> step_list G x S -> (reachable G x y <-> x = y \/ reachable_through_set G S y).
+Proof.
+  intros.
+  unfold reachable_through_set.
+  split; intros.
+  + apply reachable_ind in H1.
+    destruct H1; [left; auto | right].
+    destruct H1 as [z ?]; exists z.
+    split; [| tauto].
+    rewrite (H0 z).
+    destruct H1 as [[? [? ?]] ?].
+    auto.
+  + destruct H1 as [? | [? [? ?]]].
+    - subst; apply reachable_refl; auto.
+    - rewrite (H0 x0) in H1.
+      apply edge_reachable with x0; auto.
+      split; [| split]; auto.
+      apply reachable_head_valid in H2; auto.
 Qed.
 
 Lemma closed_edge_closed_reachable: forall l,
@@ -166,12 +192,6 @@ Proof.
   + auto.
   + apply IHreachable.
     apply H with x; auto.
-Qed.
-
-Lemma reachable_refl: forall x, vvalid G x -> reachable G x x.
-Proof.
-  intros.
-  rewrite reachable_ind_reachable; apply ind.reachable_nil; auto.
 Qed.
 
 Lemma reachable_list_bigraph_in:

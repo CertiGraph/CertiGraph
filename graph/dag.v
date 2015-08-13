@@ -92,4 +92,44 @@ Proof.
   apply si_dag; auto.
 Defined.
 
+Lemma localDag_reachable_list_spec: forall g x S l,
+  vvalid g x ->
+  localDag g x ->
+  step_list g x S ->
+  reachable_list g x l ->
+  reachable_set_list g S (remove equiv_dec x l).
+Proof.
+  intros.
+  intro y.
+  specialize (H2 y).
+  rewrite remove_in_3.
+  rewrite H2.
+  rewrite (reachable_ind' g x S y H H1).
+  assert (x = y <-> y = x) by (split; intros; congruence).
+  assert (reachable_through_set g S y -> y <> x); [| tauto].
+  specialize (H0 x).
+  spec H0; [apply reachable_refl; auto |].
+  intros [z [? ?]] ?.
+  subst.
+  specialize (H0 z).
+  rewrite (H1 z) in H4.
+  apply H0; auto.
+  split; [| split]; auto.
+  apply reachable_head_valid in H5; auto.
+Qed.
+
+Lemma localDag_reachable_list_gen: forall g x S l,
+  vvalid g x ->
+  localDag g x ->
+  step_list g x S ->
+  reachable_set_list g S l ->
+  reachable_list g x (x :: l).
+Proof.
+  intros.
+  intro y; simpl.
+  rewrite (H2 y).
+  rewrite (reachable_ind' g x S y H H1).
+  tauto.
+Qed.
+
 End Dag.
