@@ -13,6 +13,7 @@ Require Import RamifyCoq.graph.path_lemmas.
 Require Import RamifyCoq.graph.reachable_computable.
 Require Import RamifyCoq.graph.reachable_ind.
 Require Import RamifyCoq.graph.subgraph2.
+Require Import RamifyCoq.graph.dag.
 Import RamifyCoq.msl_ext.seplog.OconNotation.
 
 Local Open Scope logic.
@@ -175,6 +176,16 @@ Proof.
   destruct_eq_dec x v; subst; auto.
 Qed.
 
+Lemma update_invalid: forall (g: SpatialGraph V E DV DE) (x: V) (d: DV), ~ vvalid g x -> g -=- (spatialgraph_gen g x d).
+Proof.
+  intros.
+  split; [reflexivity | split; [| auto]].
+  intros.
+  simpl.
+  destruct_eq_dec x v; subst; auto.
+  tauto.
+Qed.
+
 Lemma spacialgraph_gen_vgamma: forall (g: SpatialGraph V E DV DE) (x: V) (d: DV), vgamma (spatialgraph_gen g x d) x = d.
 Proof.
   intros.
@@ -319,58 +330,79 @@ Proof.
       auto.
 Qed.
 
-Lemma reachable_subgraph_derives:
-  forall (g1 g2: Graph) x,
-    ((reachable_sub_spatialgraph g1 (x :: nil)) -=- (reachable_sub_spatialgraph g2 (x :: nil))) ->
-    graph x g1 |-- graph x g2.
+Lemma graph_graphs: forall g x, graph x g = graphs' (x :: nil) g.
 Proof.
-  intros. unfold graph. normalize. intro l; intros. destruct H as [? ?].
+  intros.
+  unfold graph, graphs'.
+  apply exp_f_equal; intros S.
+  f_equal.
+  apply ND_prop_ext.
+  unfold reachable_list, reachable_set_list.
+  pose proof reachable_through_set_single g x.
+  remember (reachable g x); remember (reachable_through_set g (x :: nil)).
+  clear - H.
+  firstorder.
+Qed.
+
+Lemma graphs_reachable_subgraph_derives:
+  forall (g1 g2: Graph) S,
+    ((reachable_sub_spatialgraph g1 S) -=- (reachable_sub_spatialgraph g2 S)) ->
+    graphs' S g1 |-- graphs' S g2.
+Proof.
+  intros. unfold graphs'. normalize. intro l; intros. destruct H as [? [? ?]].
   apply (exp_right l). apply andp_right.
-  + apply prop_right. unfold reachable_list in *. intros. specialize (H0 y).
-    rewrite H0. split; intros.
-    - apply reachable_valid_and_through_single in H2.
-      destruct H as [? _]. specialize (H y). simpl in H.
-      unfold predicate_vvalid in H. rewrite H in H2.
-      destruct H2 as [? [s [? ?]]]. simpl in H3.
-      destruct H3; [| tauto]. subst; auto.
-    - apply reachable_valid_and_through_single in H2.
-      destruct H as [? _]. specialize (H y). simpl in H.
-      unfold predicate_vvalid in H. rewrite <- H in H2.
-      destruct H2 as [? [s [? ?]]]. simpl in H3.
-      destruct H3; [| tauto]. subst; auto.
-  + assert (forall z, In z l -> vvalid (reachable_subgraph g1 (x :: nil)) z). {
-      intros. simpl. hnf. hnf in H0. rewrite H0 in H2. split.
-      + apply reachable_foot_valid in H2; auto.
-      + exists x. split. apply in_eq. auto.
+  + apply prop_right.
+    unfold reachable_set_list in *. intros. specialize (H0 x).
+    rewrite <- H0; clear H0.
+    simpl in H.
+    destruct H as [? _]; clear H1 H2.
+    specialize (H x); simpl in H.
+    unfold predicate_vvalid in H.
+    pose proof reachable_through_set_foot_valid g1 S x.
+    pose proof reachable_through_set_foot_valid g2 S x.
+    tauto.
+  + assert (forall z, In z l -> vvalid (reachable_subgraph g1 S) z). {
+      intros. simpl. hnf. hnf in H0. rewrite <- H0 in H3. split.
+      + apply reachable_through_set_foot_valid in H3; auto.
+      + auto.
     } clear H0. induction l. simpl; auto.
     unfold iter_sepcon.
     fold (iter_sepcon l (graph_cell g1)).
     fold (iter_sepcon l (graph_cell g2)).
     apply derives_trans with (graph_cell g1 a * iter_sepcon l (graph_cell g2)); apply sepcon_derives; auto.
-    - apply IHl. intros. apply H2. apply in_cons; auto.
-    - clear IHl. specialize (H2 a). spec H2; [left; auto |].
-      destruct H1 as [? _]. specialize (H0 a H2).
-      destruct H as [? [? [? ?]]].
-      pose proof (H a).
-      simpl in H5, H2.
-      pose proof H2; rewrite H5 in H2; clear H5.
-      specialize (H0 H2). simpl in H0.
-      unfold graph_cell. replace (vgamma g1 a) with (vgamma g2 a).
-      auto.
+    - apply IHl. intros. apply H3. apply in_cons; auto.
+    - clear IHl. specialize (H3 a). spec H3; [left; auto |].
+      specialize (H1 a).
+      destruct H as [? _].
+      rewrite <- H in H1.
+      do 2 (spec H1; [auto |]).
+      simpl in H1.
+      unfold graph_cell.
+      rewrite H1; auto.
 Qed.
 
-Lemma reachable_subgraph_eq:
+Lemma graph_reachable_subgraph_derives:
+  forall (g1 g2: Graph) x,
+    ((reachable_sub_spatialgraph g1 (x :: nil)) -=- (reachable_sub_spatialgraph g2 (x :: nil))) ->
+    graph x g1 |-- graph x g2.
+Proof.
+  intros.
+  rewrite !graph_graphs.
+  apply graphs_reachable_subgraph_derives; auto.
+Qed.
+
+Lemma graph_reachable_subgraph_eq:
   forall (g1 g2 : Graph) x,
     ((reachable_sub_spatialgraph g1 (x :: nil)) -=- (reachable_sub_spatialgraph g2 (x :: nil))) -> graph x g1 = graph x g2.
 Proof.
   intros. apply pred_ext.
-  + apply reachable_subgraph_derives; auto.
-  + apply reachable_subgraph_derives; apply vi_sym; auto.
+  + apply graph_reachable_subgraph_derives; auto.
+  + apply graph_reachable_subgraph_derives; apply vi_sym; auto.
 Qed.
   
 Lemma graph_vi_eq: forall (g1 g2 : Graph) x, g1 -=- g2 -> graph x g1 = graph x g2.
 Proof.
-  intros. apply reachable_subgraph_eq.
+  intros. apply graph_reachable_subgraph_eq.
   destruct H as [? [? ?]]. split.
   + apply si_reachable_subgraph. auto.
   + split; intro; intros.
@@ -382,6 +414,31 @@ Instance graph_proper: Proper (eq ==> validly_identical ==> eq) graph.
 Proof.
   do 2 (hnf; intros); subst.
   apply graph_vi_eq; auto.
+Defined.
+
+Lemma graphs_reachable_subgraph_eq:
+  forall (g1 g2 : Graph) S,
+    ((reachable_sub_spatialgraph g1 S) -=- (reachable_sub_spatialgraph g2 S)) -> graphs' S g1 = graphs' S g2.
+Proof.
+  intros. apply pred_ext.
+  + apply graphs_reachable_subgraph_derives; auto.
+  + apply graphs_reachable_subgraph_derives; apply vi_sym; auto.
+Qed.
+  
+Lemma graphs_vi_eq: forall (g1 g2 : Graph) S, g1 -=- g2 -> graphs' S g1 = graphs' S g2.
+Proof.
+  intros. apply graphs_reachable_subgraph_eq.
+  destruct H as [? [? ?]]. split.
+  + apply si_reachable_subgraph. auto.
+  + split; intro; intros.
+    apply H0; [destruct H2 | destruct H3]; tauto.
+    apply H1; [destruct H2 | destruct H3]; tauto.
+Qed.
+
+Instance graphs_proper: Proper (eq ==> validly_identical ==> eq) graphs'.
+Proof.
+  do 2 (hnf; intros); subst.
+  apply graphs_vi_eq; auto.
 Defined.
 
 Lemma reachable_subtract_perm:
