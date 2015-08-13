@@ -1,3 +1,4 @@
+Require Export RamifyCoq.msl_ext.log_normalize.
 Require Export VST.floyd.proofauto.
 Require Export RamifyCoq.floyd_ext.semax_ram_lemmas.
 Require Export RamifyCoq.floyd_ext.exists_trick.

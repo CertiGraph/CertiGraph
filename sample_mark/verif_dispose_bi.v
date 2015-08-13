@@ -71,7 +71,11 @@ Proof.
   destruct dlr as [[d l] r].
   assert (d = false) by (simpl in H1; auto).
   subst.
-  assert (Hisptr: isptr (pointer_val_val x)). admit.
+  assert (Hisptr: isptr (pointer_val_val x)). {
+    destruct x. simpl. auto.
+    apply (valid_not_null g) in H0. exfalso; auto.
+    rewrite is_null_def. auto.
+  }
   localize
    (PROP  ()
     LOCAL (temp _x (pointer_val_val x))
@@ -178,13 +182,14 @@ Proof.
   Focus 3. { repeat constructor; auto with closed. } Unfocus.
   Focus 2. {
     entailer!.
+    (* graph_ramify_aux0 *)
     admit.
   } Unfocus.
 
   unfold semax_ram.
   apply semax_seq_skip.
   Opaque node_pred_dec.
-  Opaque BMGS_VST.
+  Opaque SGGS_VST.
   (* remember (if node_pred_dec (marked g1) l then 1 else 0). *)
   forward_if_tac
     (PROP  ()
@@ -193,14 +198,26 @@ Proof.
             temp _x (pointer_val_val x))
      SEP (`(EX g2: Graph, !! spanning_tree g1 l g2 && graph sh x g2))).
   Transparent node_pred_dec.
-  Transparent BMGS_VST.
+  Transparent SGGS_VST.
   destruct (node_pred_dec (marked g1) l). inversion H5.
   localize
     (PROP ()
      LOCAL (temp _l (pointer_val_val l))
      SEP (`(graph sh l g1))).
-  assert (vvalid g1 l). clear. admit.
-  assert (fst (fst (vgamma g1 l)) = false). clear. admit.
+  assert (vvalid g1 l). {
+    apply gamma_left_weak_valid in H2. 2: auto.
+    destruct H3.
+    rewrite (weak_valid_si _ _ _ H3) in H2.
+    destruct H2. 2: auto.
+    rewrite is_null_def in H2. subst l.
+    simpl in H4. exfalso; auto.
+  }
+  assert (fst (fst (vgamma g1 l)) = false). {
+    simpl in n.
+    simpl. destruct (vlabel g1 l) eqn:? .
+    + symmetry in Heqb. apply n in Heqb. inversion Heqb.
+    + auto.
+  }
   eapply semax_ram_seq';
   [ repeat apply eexists_add_stats_cons; constructor
   | forward_call' (sh, g1, l); apply derives_refl
@@ -214,8 +231,7 @@ Proof.
      LOCAL (temp _r (pointer_val_val r);
             temp _l (pointer_val_val l);
             temp _x (pointer_val_val x))
-     SEP (`(EX  g' : Graph, !!spanning_tree g1 l g' && graph sh x g');
-      `emp)
+     SEP (`(EX  g' : Graph, !!spanning_tree g1 l g' && graph sh x g'))
     ).
   Grab Existential Variables.
   Focus 6. { solve_split_by_closed. } Unfocus.
@@ -224,6 +240,10 @@ Proof.
   Focus 3. { repeat constructor; auto with closed. } Unfocus.
   Focus 2. {
     entailer!.
+    (* rewrite !exp_emp. *)
+
+    (*     graph_ramify_aux1 *)
+    (*       RamifyCoq.data_structure.general_spatial_graph.graph_ramify_aux1 *)
     admit.
   } Unfocus.
   unfold semax_ram.
@@ -249,8 +269,35 @@ Proof.
            (Vint (Int.repr 1), (Vint (Int.repr 0), pointer_val_val r))) with
          (@data_at CompSpecs CS_legal sh node_type
                    (Vint (Int.repr 1), (Vint (Int.repr 0), pointer_val_val r))).
-  (* unlocalize *)
-  (*   (PROP  () *)
-  (*    LOCAL (temp _x (pointer_val_val x)) *)
-  (*    SEP ) *)
+  unlocalize
+    (PROP ()
+     LOCAL (temp _r (pointer_val_val r);
+            temp _l (pointer_val_val l);
+            temp _x (pointer_val_val x))
+     SEP (`(graph sh x (Graph_gen_left_null g1 x)))).
+  Grab Existential Variables.
+  Focus 6. { solve_split_by_closed. } Unfocus.
+  Focus 2. { entailer!. } Unfocus.
+  Focus 3. { entailer!. } Unfocus.
+  Focus 3. { repeat constructor; auto with closed. } Unfocus.
+  Focus 2. {
+    entailer!.
+    admit.
+  } Unfocus.
+  unfold semax_ram. forward.
+  entailer.
+  apply (exp_right (Graph_gen_left_null g1 x)).
+  entailer!.
+  admit.
+  forward.
+  entailer.
+  apply (exp_right g2).
+  entailer!.
+  Focus 2. {
+    forward.
+    entailer.
+    apply (exp_right g1).
+    entailer!.
+    admit.
+  } Unfocus.
 Abort.

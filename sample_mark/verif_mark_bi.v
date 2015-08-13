@@ -17,15 +17,6 @@ Local Open Scope logic.
 Notation graph sh x g := (@graph _ _ _ _ _ _ (@SGP (SGG_VST sh)) _ x g).
 Existing Instances MGS biGraph maGraph finGraph RGF.
 
-Lemma exp_emp: forall {A} (P: A -> mpred), EX x:A, P x * emp = EX x: A, P x.
-Proof.
-  intros.
-  apply exp_congr.
-  intros.
-  rewrite sepcon_emp.
-  auto.
-Qed.
-
 Definition mark_spec :=
  DECLARE _mark
   WITH sh: share, g: Graph, x: pointer_val
@@ -253,7 +244,7 @@ Proof.
   Focus 3. { repeat constructor; auto with closed. } Unfocus.
   Focus 2. {
     entailer.
-    rewrite !exp_emp.
+    rewrite !log_normalize.exp_emp.
     eapply (@graph_ramify_aux1_left (SGG_VST sh) g1); eauto.
   } Unfocus.
   (* unlocalize *)

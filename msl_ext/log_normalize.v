@@ -470,6 +470,15 @@ Ltac normalize_overlap :=
   repeat rewrite <- andp_assoc;
   try normalize.
 
+Lemma exp_emp: forall {A B} `{ClassicalSep B} (P: A -> B), EX x:A, P x * emp = EX x: A, P x.
+Proof.
+  intros.
+  apply exp_f_equal.
+  intros.
+  rewrite sepcon_emp.
+  auto.
+Qed.
+
 Goal forall {A} `{CorableOverlapSepLog A} P (Q R: A), ocon (!! P && !! P  && Q) R = ocon (!! P && Q && !! P) (!! P && R && !! P).
 intros.
 normalize_overlap.
