@@ -232,6 +232,29 @@ Proof.
   apply H.
 Qed.
 
+Lemma vertexes_at_NoDup: forall (g: Graph) (P: V -> Prop),
+  vertexes_at g P = EX l: list V, !!(forall x, In x l <-> P x) && !! (NoDup l) && iter_sepcon l (graph_cell g).
+Proof.
+  intros.
+  unfold vertexes_at.
+  unfold graph_cell.
+  apply pred_ext; [destruct vertex_at_sep |].
+  + apply exp_left; intro l; apply (exp_right l).
+    pose proof (@iter_sepcon_unique_nodup Pred _ _ _ _ _ (fun v : V => vertex_at v (vgamma g v)) l).
+    spec H0; [hnf; intros; simpl; apply H |].
+    rewrite (add_andp _ _ H0) at 1.
+    normalize.
+  + apply exp_left; intro l; apply (exp_right (remove_dup equiv_dec l)).
+    normalize.
+    assert (NoDup (remove_dup equiv_dec l)) by apply remove_dup_nodup.
+    assert (forall x, In x (remove_dup equiv_dec l) <-> P x) by (intros; rewrite <- remove_dup_in_inv; auto).
+    normalize.
+    apply iter_sepcon_emp; auto.
+    intro x. rewrite H0, H2; auto.
+  + apply exp_left; intro l; apply (exp_right l).
+    normalize.
+Qed.
+   
 Lemma vertexes_at_eq: forall (g: Graph) (P: V -> Prop),
   vertexes_at g P = EX l: list V, !!(forall x, In x l <-> P x) && !! (NoDup l) && iter_sepcon (map (Gamma g) l) Graph_cell.
 Proof.
@@ -834,24 +857,55 @@ Lemma dag_graph_unfold: forall (g: Graph) x S, vvalid g x -> localDag g x -> ste
 Proof.
   intros.
   change (graph x g) with (vertexes_at g (reachable g x)).
-  rewrite (vertexes_at_eq g (reachable g x)).
-(*
-  unfold graph, graphs'.
+  change (graphs' S g) with (vertexes_at g (reachable_through_set g S)).
   apply pred_ext.
-  + normalize.
+  + rewrite (vertexes_at_NoDup g (reachable g x)).
+    unfold vertexes_at.
+    normalize.
     apply (exp_right (remove equiv_dec x l)).
+    fold (reachable_list g x l) in H2.
+    fold (reachable_set_list g S (remove equiv_dec x l)).
     pose proof localDag_reachable_list_spec g x S l.
-    repeat (spec H3; [auto |]).
+    repeat (spec H4; [auto |]).
     normalize.
     match goal with
     | |- _ |-- ?A => change A with (iter_sepcon (x :: remove equiv_dec x l) (graph_cell g))
     end.
     erewrite iter_sepcon_permutation; [apply derives_refl |].
-Print FiniteGraph.
-Print Enumerable.
-simpl in p.
-*)
-Abort.
+    apply nodup_remove_perm; auto.
+    rewrite (H2 x).
+    apply reachable_refl; auto.
+  + rewrite (vertexes_at_NoDup g (reachable_through_set g S)).
+    normalize.
+    match goal with
+    | |- ?A |-- _ => change A with (iter_sepcon (x :: l) (graph_cell g))
+    end.
+    unfold vertexes_at.
+    apply (exp_right (x :: l)).
+    fold (reachable_set_list g S l) in H2.
+    fold (reachable_list g x (x :: l)).
+    pose proof localDag_reachable_list_gen g x S l.
+    repeat (spec H4; [auto |]).
+    normalize.
+Qed.
+
+Lemma dag_graph_gen_step_list: forall (g: Graph) x S d, vvalid g x -> localDag g x -> step_list g x S -> graphs' S g = graphs' S (spatialgraph_gen g x d).
+Proof.
+  intros.
+  apply graphs_reachable_subgraph_eq.
+  split; [reflexivity | split; intros; [| reflexivity]].
+  simpl.
+  destruct_eq_dec x v; [exfalso | auto].
+  subst v.
+  simpl in H2; clear H3.
+  destruct H2 as [? [y [? ?]]].
+  specialize (H0 x).
+  spec H0; [apply reachable_refl; auto |].
+  apply (H0 y); auto.
+  rewrite (H1 y) in H3.
+  split; [| split]; auto.
+  apply reachable_head_valid in H4; auto.
+Qed.
 
 Context {SGSA: SpatialGraphStrongAssum SGP}.
 
