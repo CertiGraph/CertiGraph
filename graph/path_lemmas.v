@@ -58,7 +58,7 @@ Definition reachable_list (g: Gph) (x : V) (L : list V) : Prop := forall y, In y
 
 Definition reachable_through_set (g: Gph) (S : list V) : Ensemble V:= fun n => exists s, In s S /\ reachable g s n.
 
-Definition reachable_set_list (g: Gph) (S : list V) (l : list V) : Prop := forall x : V, reachable_through_set g S x <-> In x l.
+Definition reachable_set_list (g: Gph) (S : list V) (l : list V) : Prop := forall x : V, In x l <-> reachable_through_set g S x.
 
 Definition Decidable (P: Prop) := {P} + {~ P}.
  
