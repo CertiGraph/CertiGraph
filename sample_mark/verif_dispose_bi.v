@@ -9,7 +9,7 @@ Require Import RamifyCoq.graph.reachable_computable.
 Require Import RamifyCoq.data_structure.general_spatial_graph.
 Require Import RamifyCoq.data_structure.spatial_graph_mark_bi.
 Require Import RamifyCoq.data_structure.spatial_graph_bi.
-Require Import RamifyCoq.data_structure.spatial_graph_dispose.
+Require Import RamifyCoq.data_structure.spatial_graph_unaligned_bi_VST.
 
 Local Open Scope logic.
 
@@ -240,7 +240,7 @@ Proof.
   Focus 3. { repeat constructor; auto with closed. } Unfocus.
   Focus 2. {
     entailer!.
-    (* rewrite !exp_emp. *)
+    rewrite !exp_emp.
 
     (*     graph_ramify_aux1 *)
     (*       RamifyCoq.data_structure.general_spatial_graph.graph_ramify_aux1 *)
