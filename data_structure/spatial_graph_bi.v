@@ -23,7 +23,7 @@ Inductive LR :=
   | L
   | R.
 
-Class SpatialGraph_Graph_Setting_Bi: Type := {
+Class pSpatialGraph_Graph_Bi: Type := {
   addr: Type;
   null: addr;
   pred: Type;
@@ -32,9 +32,9 @@ Class SpatialGraph_Graph_Setting_Bi: Type := {
 
 Existing Instance SGBA.
 
-Section SpatialGraph_Graph_Bi.
+Section pSpatialGraph_Graph_Bi.
 
-Context {SGGS_Bi: SpatialGraph_Graph_Setting_Bi}.
+Context {pSGG_Bi: pSpatialGraph_Graph_Bi}.
 
 Class BiMaFin (g: PreGraph addr (addr * LR)) := {
   bi: BiGraph g (fun x => (x, L)) (fun x => (x, R));
@@ -180,12 +180,25 @@ Proof.
   simpl in H0; tauto.
 Qed.
 
-End SpatialGraph_Graph_Bi.
+Lemma gamma_step_list: forall (g : Graph) x d l r, vvalid g x -> vgamma g x = (d, l, r) -> step_list g x (l :: r :: nil).
+Proof.
+  intros.
+  unfold step_list.
+  intros y.
+  rewrite gamma_step by eauto.
+  simpl.
+  pose proof (@eq_sym _ l y).
+  pose proof (@eq_sym _ r y).
+  pose proof (@eq_sym _ y l).
+  pose proof (@eq_sym _ y r).
+  tauto.
+Qed.
 
-Class SpatialGraph_Graph_Bi: Type := {
-  SGGS_Bi: SpatialGraph_Graph_Setting_Bi;
+End pSpatialGraph_Graph_Bi.
+
+Class sSpatialGraph_Graph_Bi {pSGG_Bi: pSpatialGraph_Graph_Bi}: Type := {
   SGP: SpatialGraphPred addr (addr * LR) (bool * addr * addr) unit pred;
   SGA: SpatialGraphAssum SGP
 }.
 
-Existing Instances SGGS_Bi SGP SGA.
+Existing Instances SGP SGA.

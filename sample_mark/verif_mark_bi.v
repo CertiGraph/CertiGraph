@@ -14,7 +14,7 @@ Require Import RamifyCoq.data_structure.spatial_graph_aligned_bi_VST.
 
 Local Open Scope logic.
 
-Notation graph sh x g := (@graph _ _ _ _ _ _ (@SGP (SGG_VST sh)) _ x g).
+Notation graph sh x g := (@graph _ _ _ _ _ _ (@SGP pSGG_VST (sSGG_VST sh)) _ x g).
 Existing Instances MGS biGraph maGraph finGraph RGF.
 
 Definition mark_spec :=
@@ -38,18 +38,6 @@ Definition main_spec :=
 Definition Vprog : varspecs := (_hd, tptr (Tstruct _Node noattr))::(_n, (Tstruct _Node noattr))::nil.
 
 Definition Gprog : funspecs := mark_spec :: main_spec::nil.
-
-(*
-Ltac rewrite_vi_graph g1 g2 H :=
-  let HH := fresh "H" in
-  assert (g1 -=- g2) as HH; [eapply H |
-    match goal with
-    | |- appcontext [graph ?sh ?x g1] =>
-           change (graph sh x g1) with (@spatial_graph2.graph (SGA_VST sh) x g1);
-           erewrite (fun x => @reachable_vi_eq (SGA_VST _) g1 g2 x HH);
-           change (@spatial_graph2.graph (SGA_VST sh) x g2) with (graph sh x g2)
-    end].
-*)
 
 Ltac revert_exp_left_tac x :=
   match goal with
@@ -245,7 +233,7 @@ Proof.
   Focus 2. {
     entailer.
     rewrite !exp_emp.
-    eapply (@graph_ramify_aux1_left (SGG_VST sh) g1); eauto.
+    eapply (@graph_ramify_aux1_left _ (sSGG_VST sh) g1); eauto.
   } Unfocus.
   (* unlocalize *)
 
@@ -280,7 +268,7 @@ Proof.
   Focus 2. {
     entailer!.
     rewrite !exp_emp.
-    eapply (@graph_ramify_aux1_right (SGG_VST sh)  g2); eauto.
+    eapply (@graph_ramify_aux1_right _ (sSGG_VST sh) g2); eauto.
     eapply gamme_true_mark; eauto.
     apply weak_valid_vvalid_dec; auto.
   } Unfocus.
