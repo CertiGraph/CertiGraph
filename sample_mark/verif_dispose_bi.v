@@ -241,7 +241,6 @@ Proof.
   Focus 2. {
     entailer!.
     rewrite !exp_emp.
-
     (*     graph_ramify_aux1 *)
     (*       RamifyCoq.data_structure.general_spatial_graph.graph_ramify_aux1 *)
     admit.
