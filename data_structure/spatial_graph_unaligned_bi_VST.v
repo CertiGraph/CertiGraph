@@ -29,8 +29,8 @@ Instance SGBA_VST: SpatialGraphBasicAssum pointer_val (pointer_val * LR).
   refine (Build_SpatialGraphBasicAssum pointer_val (pointer_val * LR) _ _).
 Defined.
 
-Instance SGGS_VST: SpatialGraph_Graph_Setting_Bi.
-  refine (Build_SpatialGraph_Graph_Setting_Bi pointer_val NullPointer mpred _).
+Instance pSGG_VST: pSpatialGraph_Graph_Bi.
+  refine (Build_pSpatialGraph_Graph_Bi pointer_val NullPointer mpred _).
 Defined.
 
 Definition vgamma2cdata (dlr : bool * addr * addr) : reptype node_type :=
@@ -125,6 +125,6 @@ Instance SGA_VST (sh: share) : SpatialGraphAssum (SGP_VST sh).
     intros; auto.
 Defined.
 
-Instance SGG_VST (sh: share): SpatialGraph_Graph_Bi.
-  refine (Build_SpatialGraph_Graph_Bi SGGS_VST (SGP_VST sh) (SGA_VST sh)).
+Instance sSGG_VST (sh: share): @sSpatialGraph_Graph_Bi pSGG_VST.
+  refine (Build_sSpatialGraph_Graph_Bi pSGG_VST (SGP_VST sh) (SGA_VST sh)).
 Defined.

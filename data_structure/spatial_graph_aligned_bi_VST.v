@@ -12,6 +12,8 @@ Require Import RamifyCoq.Coqlib.
 
 Local Open Scope logic.
 
+Section pSGG_VST.
+
 Instance PointerVal_EqDec: EquivDec.EqDec pointer_val eq.
   hnf; intros.
   apply PV_eq_dec.
@@ -29,9 +31,13 @@ Instance SGBA_VST: SpatialGraphBasicAssum pointer_val (pointer_val * LR).
   refine (Build_SpatialGraphBasicAssum pointer_val (pointer_val * LR) _ _).
 Defined.
 
-Instance SGGS_VST: SpatialGraph_Graph_Setting_Bi.
-  refine (Build_SpatialGraph_Graph_Setting_Bi pointer_val NullPointer mpred _).
+End pSGG_VST.
+
+Instance pSGG_VST: pSpatialGraph_Graph_Bi.
+  refine (Build_pSpatialGraph_Graph_Bi pointer_val NullPointer mpred SGBA_VST).
 Defined.
+
+Section sSGG_VST.
 
 Definition trinode (sh: share) (p: addr) (dlr: bool * addr * addr): mpred :=
   match dlr with
@@ -118,7 +124,10 @@ Instance SGA_VST (sh: share) : SpatialGraphAssum (SGP_VST sh).
     intros; auto.
 Defined.
 
-Instance SGG_VST (sh: share): SpatialGraph_Graph_Bi.
-  refine (Build_SpatialGraph_Graph_Bi SGGS_VST (SGP_VST sh) (SGA_VST sh)).
+End sSGG_VST.
+
+Instance sSGG_VST (sh: share): @sSpatialGraph_Graph_Bi pSGG_VST.
+  refine (Build_sSpatialGraph_Graph_Bi pSGG_VST (SGP_VST sh) (SGA_VST sh)).
 Defined.
 
+Global Opaque pSGG_VST sSGG_VST.

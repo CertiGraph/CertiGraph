@@ -15,7 +15,7 @@ Local Open Scope logic.
 
 Arguments SingleFrame' {l} {g} {s}.
 
-Notation graph sh x g := (@graph _ _ _ _ _ _ (SGP_VST sh) _ x g).
+Notation graph sh x g := (@graph _ _ _ _ _ _ (@SGP pSGG_VST (sSGG_VST sh)) _ x g).
 Existing Instances MGS biGraph maGraph finGraph RGF.
 
 Definition mark_spec :=
@@ -189,7 +189,7 @@ Proof.
   unfold semax_ram.
   apply semax_seq_skip.
   Opaque node_pred_dec.
-  Opaque SGGS_VST.
+  Opaque pSGG_VST.
   (* remember (if node_pred_dec (marked g1) l then 1 else 0). *)
   forward_if_tac
     (PROP  ()
@@ -198,7 +198,7 @@ Proof.
             temp _x (pointer_val_val x))
      SEP (`(EX g2: Graph, !! spanning_tree g1 l g2 && graph sh x g2))).
   Transparent node_pred_dec.
-  Transparent SGGS_VST.
+  Transparent pSGG_VST.
   destruct (node_pred_dec (marked g1) l). inversion H5.
   localize
     (PROP ()
