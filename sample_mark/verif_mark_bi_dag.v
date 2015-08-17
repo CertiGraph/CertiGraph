@@ -290,4 +290,4 @@ Proof.
   + destruct H2 as [? _].
     rewrite <- H2.
     auto.
-Time Qed. (* Takes 30 minuts. *)
+Time Qed. (* Takes 4557 minuts. *)
