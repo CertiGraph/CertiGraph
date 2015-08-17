@@ -133,3 +133,5 @@ Proof.
 Qed.
 
 End Dag.
+
+Existing Instances local_dag_proper dag_proper.
