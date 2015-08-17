@@ -172,11 +172,20 @@ Proof.
     forget (Graph_gen g x true) as g1.
     entailer!.
   } Unfocus.
-  forget (Graph_gen g x true) as g1.  
 
+  assert (H_Dag_g1_x: localDag (Graph_gen g x true) x) by auto.
+  forget (Graph_gen g x true) as g1.
   assert (g1x_valid: vvalid g1 x) by (apply (proj1 (proj1 H1)); auto).
   assert (g1l_weak_valid: weak_valid g1 l) by (apply (weak_valid_si g g1 _ (proj1 H1)); auto).
   assert (g1r_weak_valid: weak_valid g1 r) by (apply (weak_valid_si g g1 _ (proj1 H1)); auto).
+  assert (H_Dag_g1_l: localDag g1 l).
+  Focus 1. {
+    apply local_dag_step with x; auto; [apply maGraph |].
+    assert (step_list g1 x (l :: r :: nil)).
+    eapply (gamma_step_list g1); eauto.
+    rewrite <- (H3 l).
+    simpl; tauto.
+  } Unfocus.
 
   localize
    (PROP  ()
@@ -189,6 +198,14 @@ Proof.
   [ repeat apply eexists_add_stats_cons; constructor
   | forward_call' (sh, g1, l); apply derives_refl
   | abbreviate_semax_ram].
+
+  apply semax_ram_pre with
+   (PROP  ()
+    LOCAL  (tc_environ Delta; temp _l (pointer_val_val l))
+    SEP 
+    (`(EX  g' : Graph, !!(mark g1 l g') && graph sh l g'))).
+  entailer!.
+  apply (exp_right g'); entailer!.
 
   unlocalize
    (PROP  ()
@@ -204,14 +221,29 @@ Proof.
   Focus 2. {
     entailer.
     rewrite !exp_emp.
-    eapply (@graph_ramify_aux1_left (SGG_VST sh) g1); eauto.
+    eapply (@graph_ramify_aux1_left _ (sSGG_VST sh) g1); eauto.
   } Unfocus.
   (* unlocalize *)
 
   unfold semax_ram. (* should not need this *)
   normalize; intros g2; normalize.
+  assert (H_GAMMA_g2: vgamma g2 x = (true, l, r)).
+  Focus 1. {
+    eapply gamme_true_mark; eauto.
+    apply weak_valid_vvalid_dec; auto.
+  } Unfocus.
   assert (g2x_valid: vvalid g2 x) by (apply (proj1 (proj1 H3)); auto).
   assert (g2r_weak_valid: weak_valid g2 r) by (apply (weak_valid_si g1 g2 _ (proj1 H3)); auto).
+
+  assert (H_Dag_g2_x: localDag g2 x) by (destruct H3 as [? _]; rewrite <- H3; auto).
+  assert (H_Dag_g2_r: localDag g2 r).
+  Focus 1. {
+    apply local_dag_step with x; auto; [apply maGraph |].
+    assert (step_list g2 x (l :: r :: nil)).
+    eapply (gamma_step_list g2); eauto.
+    rewrite <- (H4 r).
+    simpl; tauto.
+  } Unfocus.
 
   localize
    (PROP  ()
@@ -224,6 +256,14 @@ Proof.
   | forward_call' (sh, g2, r); apply derives_refl
   | abbreviate_semax_ram].
   (* mark(r); *)
+
+  apply semax_ram_pre with
+   (PROP  ()
+    LOCAL  (tc_environ Delta; temp _r (pointer_val_val r))
+    SEP 
+    (`(EX  g' : Graph, !!mark g2 r g' && graph sh r g'))).
+  entailer!.
+  apply (exp_right g'); entailer!.
 
   unlocalize
    (PROP  ()
@@ -239,16 +279,15 @@ Proof.
   Focus 2. {
     entailer!.
     rewrite !exp_emp.
-    eapply (@graph_ramify_aux1_right (SGG_VST sh)  g2); eauto.
-    eapply gamme_true_mark; eauto.
-    apply weak_valid_vvalid_dec; auto.
+    eapply (@graph_ramify_aux1_right _ (sSGG_VST sh)  g2); eauto.
   } Unfocus.
   (* Unlocalize *)
 
   unfold semax_ram.
   forward. (* ( return; ) *)
   apply (exp_right g3); entailer!.
-  apply (mark1_mark_left_mark_right g g1 g2 g3 (ValidPointer b i) l r); auto.
-  eapply gamme_true_mark; eauto.
-  apply weak_valid_vvalid_dec; auto.
+  + apply (mark1_mark_left_mark_right g g1 g2 g3 (ValidPointer b i) l r); auto.
+  + destruct H2 as [? _].
+    rewrite <- H2.
+    auto.
 Time Qed. (* Takes 30 minuts. *)
