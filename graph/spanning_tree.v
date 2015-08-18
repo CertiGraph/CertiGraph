@@ -28,5 +28,10 @@ Section SPANNING.
     (predicate_partialgraph g2 (fun n => ~ g1 |= root ~o~> n satisfying (unmarked g1))) /\
     (unmarked g1 root -> tree g2 root /\
                          forall n, g1 |= root ~o~> n satisfying (unmarked g1) -> reachable g2 root n).
+
+  Lemma spanning_tree_vvalid: forall (g1 : Graph) (root : V) (g2 : Graph) x,
+      ReachDecidable g1 x (unmarked g1) -> spanning_tree g1 root g2 -> (vvalid g1 x <-> vvalid g2 x).
+  Proof.
+  Admitted.
     
 End SPANNING.

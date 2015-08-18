@@ -15,6 +15,7 @@ Local Open Scope logic.
 
 Arguments SingleFrame' {l} {g} {s}.
 
+Notation vertices_at sh g P := (@vertices_at _ _ _ _ _ _ (@SGP pSGG_VST (sSGG_VST sh)) _ g P).
 Notation graph sh x g := (@graph _ _ _ _ _ _ (@SGP pSGG_VST (sSGG_VST sh)) _ x g).
 Existing Instances MGS biGraph maGraph finGraph RGF.
 
@@ -40,7 +41,7 @@ Definition spanning_spec :=
   POST [ Tvoid ]
         PROP ()
         LOCAL()
-        SEP (`(EX g': Graph, !! spanning_tree g x g' && graph sh x g')).
+        SEP (`(EX g': Graph, !! spanning_tree g x g' && vertices_at sh g' (reachable g x))).
 
 Definition dispose_spec :=
   DECLARE _dispose
