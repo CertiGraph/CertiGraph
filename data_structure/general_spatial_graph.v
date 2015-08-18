@@ -209,7 +209,7 @@ Notation Graph := (SpatialGraph V E DV DE).
 
 Definition graph_cell (g: Graph) (v : V) : Pred := vertex_at v (vgamma g v).
 
-Definition vertexes_at (g: Graph) (P: V -> Prop): Pred :=
+Definition vertices_at (g: Graph) (P: V -> Prop): Pred :=
   EX l: list V, !!(forall x, In x l <-> P x) && iter_sepcon l (graph_cell g).
 
 Definition graph (x : V) (g: Graph) : Pred :=
@@ -232,11 +232,11 @@ Proof.
   apply H.
 Qed.
 
-Lemma vertexes_at_NoDup: forall (g: Graph) (P: V -> Prop),
-  vertexes_at g P = EX l: list V, !!(forall x, In x l <-> P x) && !! (NoDup l) && iter_sepcon l (graph_cell g).
+Lemma vertices_at_NoDup: forall (g: Graph) (P: V -> Prop),
+  vertices_at g P = EX l: list V, !!(forall x, In x l <-> P x) && !! (NoDup l) && iter_sepcon l (graph_cell g).
 Proof.
   intros.
-  unfold vertexes_at.
+  unfold vertices_at.
   unfold graph_cell.
   apply pred_ext; [destruct vertex_at_sep |].
   + apply exp_left; intro l; apply (exp_right l).
@@ -255,11 +255,11 @@ Proof.
     normalize.
 Qed.
    
-Lemma vertexes_at_eq: forall (g: Graph) (P: V -> Prop),
-  vertexes_at g P = EX l: list V, !!(forall x, In x l <-> P x) && !! (NoDup l) && iter_sepcon (map (Gamma g) l) Graph_cell.
+Lemma vertices_at_eq: forall (g: Graph) (P: V -> Prop),
+  vertices_at g P = EX l: list V, !!(forall x, In x l <-> P x) && !! (NoDup l) && iter_sepcon (map (Gamma g) l) Graph_cell.
 Proof.
   intros.
-  unfold vertexes_at.
+  unfold vertices_at.
   unfold Gamma, Graph_cell, graph_cell.
   apply pred_ext; [destruct vertex_at_sep |].
   + apply exp_left; intro l; apply (exp_right l).
@@ -281,13 +281,13 @@ Proof.
     normalize.
 Qed.
 
-Lemma vertexes_at_eq': forall {A} (PureF: A -> Prop) (g: A -> Graph) (P: A -> V -> Prop),
-  EX a: A, !! PureF a && vertexes_at (g a) (P a) = EX a: A, !! PureF a && (EX l: list V, !!(forall x, In x l <-> P a x) && !! (NoDup l) && iter_sepcon (map (Gamma (g a)) l) Graph_cell).
+Lemma vertices_at_eq': forall {A} (PureF: A -> Prop) (g: A -> Graph) (P: A -> V -> Prop),
+  EX a: A, !! PureF a && vertices_at (g a) (P a) = EX a: A, !! PureF a && (EX l: list V, !!(forall x, In x l <-> P a x) && !! (NoDup l) && iter_sepcon (map (Gamma (g a)) l) Graph_cell).
 Proof.
   intros.
   apply exp_f_equal; intros a.
   f_equal.
-  apply vertexes_at_eq.
+  apply vertices_at_eq.
 Qed.
 
 Definition graphs'_eq: forall (g : Graph) (S : list V) (H1: ReachableFiniteGraph g)
@@ -648,13 +648,13 @@ Lemma existential_partialgraph_update_prime:
   (forall a, PureF a ->
     ((predicate_partial_spatialgraph g (fun x => PureS2 x /\ ~ PureS1 x)) -=-
      (predicate_partial_spatialgraph (g' a) (fun x => PureS2' a x /\ ~ PureS1' a x)))) ->
- vertexes_at g PureS2 |-- vertexes_at g PureS1 *
-     ((EX a: A, !!PureF a && vertexes_at (g' a) (PureS1' a)) -*
-      (EX a: A, !!PureF a && vertexes_at (g' a) (PureS2' a))).
+ vertices_at g PureS2 |-- vertices_at g PureS1 *
+     ((EX a: A, !!PureF a && vertices_at (g' a) (PureS1' a)) -*
+      (EX a: A, !!PureF a && vertices_at (g' a) (PureS2' a))).
 Proof.
   intros.
-  rewrite !vertexes_at_eq.
-  rewrite !vertexes_at_eq'.
+  rewrite !vertices_at_eq.
+  rewrite !vertices_at_eq'.
   apply exp_left; intros S2; normalize.
   rename H4 into specS2.
   rename H5 into NoDupS2.
@@ -856,11 +856,11 @@ Qed.
 Lemma dag_graph_unfold: forall (g: Graph) x S, vvalid g x -> localDag g x -> step_list g x S -> graph x g = vertex_at x (vgamma g x) * graphs' S g.
 Proof.
   intros.
-  change (graph x g) with (vertexes_at g (reachable g x)).
-  change (graphs' S g) with (vertexes_at g (reachable_through_set g S)).
+  change (graph x g) with (vertices_at g (reachable g x)).
+  change (graphs' S g) with (vertices_at g (reachable_through_set g S)).
   apply pred_ext.
-  + rewrite (vertexes_at_NoDup g (reachable g x)).
-    unfold vertexes_at.
+  + rewrite (vertices_at_NoDup g (reachable g x)).
+    unfold vertices_at.
     normalize.
     apply (exp_right (remove equiv_dec x l)).
     fold (reachable_list g x l) in H2.
@@ -875,12 +875,12 @@ Proof.
     apply nodup_remove_perm; auto.
     rewrite (H2 x).
     apply reachable_refl; auto.
-  + rewrite (vertexes_at_NoDup g (reachable_through_set g S)).
+  + rewrite (vertices_at_NoDup g (reachable_through_set g S)).
     normalize.
     match goal with
     | |- ?A |-- _ => change A with (iter_sepcon (x :: l) (graph_cell g))
     end.
-    unfold vertexes_at.
+    unfold vertices_at.
     apply (exp_right (x :: l)).
     fold (reachable_set_list g S l) in H2.
     fold (reachable_list g x (x :: l)).
