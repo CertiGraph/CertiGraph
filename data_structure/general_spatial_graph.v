@@ -643,7 +643,6 @@ Lemma existential_partialgraph_update_prime:
   (forall x, Decidable (PureS1 x)) ->
   forall {A: Type} (g': A -> Graph) (PureF: A -> Prop) (PureS1' PureS2': A -> V -> Prop),
   (forall a x, PureF a -> PureS1' a x -> PureS2' a x) ->
-  (forall a x, PureF a -> Decidable (PureS2' a x)) ->
   (forall a x, PureF a -> PureS2' a x -> vvalid (g' a) x) ->
   (forall a, PureF a ->
     ((predicate_partial_spatialgraph g (fun x => PureS2 x /\ ~ PureS1 x)) -=-
@@ -803,8 +802,6 @@ Proof.
   + intros.
     destruct (H1 a H2) as [[_ ?] _].
     specialize (H4 x0); tauto.
-  + intros; apply RFG_reachable_decicable; auto.
-    destruct (H1 a H2) as [[? _] _]; auto.
   + intros.
     apply reachable_foot_valid in H3; auto.
   + intros.
