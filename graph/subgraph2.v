@@ -249,6 +249,17 @@ Proof.
   + exact H4.
 Qed.
 
+Lemma si_stronger_partialgraph_simple: forall (g1 g2: PreGraph V E) (p p': V -> Prop),
+  Included p' p ->
+  (predicate_partialgraph g1 p) ~=~ (predicate_partialgraph g2 p) ->
+  (predicate_partialgraph g1 p') ~=~ (predicate_partialgraph g2 p').
+Proof.
+  intros.
+  eapply si_stronger_partialgraph with (p := p'); [| | exact H0].
+  + intro v; specialize (H v); simpl in H; tauto.
+  + intro v; specialize (H v); simpl in H; tauto.
+Qed.
+
 Instance partialgraph_proper: Proper (structurally_identical ==> (pointwise_relation V iff) ==> structurally_identical) predicate_partialgraph.
 Proof.
   do 2 (hnf; intros).
