@@ -573,7 +573,7 @@ Section REACHABLE_COMPUTABLE.
     forall (p : NodePred V) x ,
       {vvalid G x} + {~ vvalid G x} ->
       EnumCovered V (reachable G x) ->
-      forall y, {G |= x ~o~> y satisfying p} + {~ G |= x ~o~> y satisfying p}.
+      ReachDecidable G x p.
   Proof.
     intros.
     destruct H as [H | H].
@@ -590,6 +590,7 @@ Section REACHABLE_COMPUTABLE.
         apply EnumCovered_strengthen with (reachable G x); auto.
         apply predicate_subgraph_reachable_included.
       } subst.
+      intro y.
       destruct (@reachable_decidable_prime _ (predicate_sub_mathgraph _ p) (predicate_sub_localfinitegraph _ p) x H0 X0 y).
       - rewrite <- reachable_by_eq_subgraph_reachable in r. left; auto.
       - rewrite <- reachable_by_eq_subgraph_reachable in n. right; auto.

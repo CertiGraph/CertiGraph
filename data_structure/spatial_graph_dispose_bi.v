@@ -42,7 +42,26 @@ Section SPATIAL_GRAPH_DISPOSE_BI.
     + intros; apply H3. auto.
     + intros g' y ? ?. apply H4 in H6. unfold In in H6.
       admit.
-    + intros g' ?.
+    + intros g' ?. destruct H5 as [[? ?] [? ?]]. specialize (H8 H1).
+      destruct H8.
+      assert (forall v, vvalid g v <-> vvalid g' v). {
+        intro.
+        destruct (Graph_reachable_by_dec _ _ (negateP (marked g)) V_DEC v).
+        + specialize (H9 v r). split; intro.
+          - apply reachable_foot_valid in H9. auto.
+          - apply reachable_by_is_reachable in r.
+            apply reachable_foot_valid in r. auto.
+        + destruct H7 as [? _]. specialize (H7 v).
+          simpl in H7. unfold predicate_vvalid in H7. split; intro.
+          - assert (vvalid g v /\ ~ g |= l ~o~> v satisfying (unmarked g)) by (split; auto).
+            rewrite H7 in H11. tauto.
+          - assert (vvalid g' v /\ ~ g |= l ~o~> v satisfying (unmarked g)) by (split; auto).
+            rewrite <- H7 in H11. tauto.
+      } split; [|split].
+      - admit.
+      - intros. simpl.
+          
+      (* destruct (Graph_reachable_by_dec _ _ (negateP (marked g)) V_DEC). *)
   Abort.
 
   Lemma graph_ramify_aux1_left: forall (g: Graph) x d l r,

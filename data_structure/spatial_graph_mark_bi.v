@@ -36,16 +36,6 @@ Section SpatialGraph_Mark_Bi.
 Context {pSGG_Bi: pSpatialGraph_Graph_Bi}.
 Context {sSGG_Bi: sSpatialGraph_Graph_Bi}.
 
-Lemma Graph_reachable_by_unmarked_dec: forall (G: Graph) x, Decidable (vvalid G x) -> ReachDecidable G x (unmarked G).
-Proof.
-  intros.
-  intro y.
-  apply reachable_by_decidable; auto.
-  + apply maGraph.
-  + apply LocalFiniteGraph_FiniteGraph, finGraph.
-  + apply FiniteGraph_EnumCovered, finGraph.
-Qed.
-
 Lemma Graph_gen_true_mark1: forall (G: Graph) (x: addr) l r,
   vgamma G x = (false, l, r) ->
   vvalid G x ->
@@ -72,7 +62,7 @@ Proof.
   unfold gamma in H0 |- *.
   inversion H0; subst.
   pose proof mark_marked g y g' H1.
-  spec H2; [apply Graph_reachable_by_unmarked_dec; auto |].
+  spec H2; [apply Graph_reachable_by_dec; auto |].
   specialize (H2 x).
   simpl in H2.
   destruct (vlabel g x); [| congruence].
@@ -96,7 +86,7 @@ Lemma mark1_mark_left_mark_right: forall (g1 g2 g3 g4: Graph) root l r,
 Proof.
   intros.
   apply (mark1_mark_list_mark g1 root (l :: r :: nil) g2); auto.
-  + intros; apply Graph_reachable_by_unmarked_dec.
+  + intros; apply Graph_reachable_by_dec.
     destruct_eq_dec x l; [| destruct_eq_dec x r; [| exfalso]].
     - subst; eapply weak_valid_vvalid_dec, gamma_left_weak_valid; eauto.
     - subst; eapply weak_valid_vvalid_dec, gamma_right_weak_valid; eauto.
@@ -106,7 +96,7 @@ Proof.
     - subst; eapply weak_valid_vvalid_dec, gamma_left_weak_valid; eauto.
     - subst; eapply weak_valid_vvalid_dec, gamma_right_weak_valid; eauto.
     - destruct H7 as [| [|]]; try congruence; inversion H7.
-  + apply Graph_reachable_by_unmarked_dec.
+  + apply Graph_reachable_by_dec.
     left; auto.
   + unfold unmarked; rewrite negateP_spec.
     simpl in H1 |- *.

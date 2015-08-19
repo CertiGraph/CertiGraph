@@ -182,8 +182,12 @@ Proof.
   Focus 3. { entailer!. } Unfocus.
   Focus 3. { repeat constructor; auto with closed. } Unfocus.
   Focus 2. {
+    Opaque trinode.
+    Opaque gamma.
     entailer!.
-    (* graph_ramify_aux0 *)
+    rewrite (update_self g1 x (true, l, r)) at 2 by auto.
+    pose proof (@graph_ramify_aux0 _ _ _ _ _ _ _ (SGA_VST sh) g1 _ x (true, l, r) (true, l, r)).
+
     admit.
   } Unfocus.
 
