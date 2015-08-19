@@ -194,11 +194,24 @@ Proof.
   tauto.
 Qed.
 
+Lemma Graph_reachable_by_dec: forall (G: Graph) x (P: NodePred addr),
+    Decidable (vvalid G x) -> ReachDecidable G x P.
+Proof.
+  intros.
+  intro y.
+  apply reachable_by_decidable; auto.
+  + apply maGraph.
+  + apply LocalFiniteGraph_FiniteGraph, finGraph.
+  + apply FiniteGraph_EnumCovered, finGraph.
+Qed.
+
+
 End pSpatialGraph_Graph_Bi.
 
 Class sSpatialGraph_Graph_Bi {pSGG_Bi: pSpatialGraph_Graph_Bi}: Type := {
   SGP: SpatialGraphPred addr (addr * LR) (bool * addr * addr) unit pred;
   SGA: SpatialGraphAssum SGP
-}.
+                                                                       }.
+
 
 Existing Instances SGP SGA.
