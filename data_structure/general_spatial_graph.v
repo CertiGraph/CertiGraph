@@ -737,10 +737,11 @@ Proof.
       * apply subtract_nodup; auto.
 Qed.
 
-Lemma graph_ramify_aux0: forall (g: Graph) {rfg: ReachableFiniteGraph g} x d d',
-  vvalid g x -> vgamma g x = d ->
-  graph x g |-- vertex_at x d * (vertex_at x d' -* graph x (spatialgraph_gen g x d')).
+Lemma vertices_at_ramify: forall (g: Graph) {rfg: ReachableFiniteGraph g} (P: V -> Prop) x d d',
+  vvalid g x -> P x -> vgamma g x = d ->
+  vertices_at g P |-- vertex_at x d * (vertex_at x d' -* vertices_at (spatialgraph_gen g x d') P).
 Proof.
+  intros.
   intros.
   replace (@vertex_at _ _ _ _ _ SGP x d) with (iter_sepcon (map (Gamma g) (x :: nil)) Graph_cell).
   Focus 2. {
@@ -756,28 +757,46 @@ Proof.
     subst; rewrite sepcon_emp; auto.
   } Unfocus.
   assert (Decidable (vvalid g x)) by (left; auto).
-  rewrite (graph_eq g x rfg H1).
-  rewrite (graph_eq (spatialgraph_gen g x d') x rfg H1).
-  apply partialgraph_update_prime; simpl; destruct (construct_reachable_list g x H1) as [l [?H ?H]]; simpl.
-  + split; split; [| split; [| split] | |]; try (intros; reflexivity).
-    simpl; intros.
-    destruct_eq_dec x v; auto.
-    unfold predicate_vvalid in H5; simpl in H5; subst.
-    tauto.
-  + intros x0 HH; destruct HH; [subst x0 | tauto].
-    rewrite (H3 x).
-    apply reachable_refl; auto.
-  + intros x0 HH; destruct HH; [subst x0 | tauto].
-    rewrite (H3 x).
-    apply reachable_refl; auto.
-  + intros x0 HH. rewrite (H3 x0) in HH.
-    apply reachable_foot_valid in HH; auto.
-  + intros x0 HH. rewrite (H3 x0) in HH.
-    apply reachable_foot_valid in HH; auto.
-  + repeat constructor; simpl; auto.
-  + repeat constructor; simpl; auto.
-  + auto.
-  + auto.
+  rewrite !vertices_at_eq.
+  apply exp_left; intro l.
+  normalize.
+  assert (Permutation l (x :: remove equiv_dec x l))
+    by (apply nodup_remove_perm; auto; rewrite (H3 x); auto).
+  apply solve_ramify with (iter_sepcon (map (Gamma g) (remove equiv_dec x l)) Graph_cell).
+  + rewrite <- iter_sepcon_app_sepcon.
+    rewrite <- map_app.
+    simpl app.
+    erewrite iter_sepcon_permutation; [apply derives_refl |].
+    apply Permutation_map_aux; auto.
+  + apply (exp_right l).
+    normalize.
+    replace (map (Gamma g) (remove equiv_dec x l)) with
+      (map (Gamma (spatialgraph_gen g x d')) (remove equiv_dec x l)).
+    Focus 2. {
+      apply Coqlib.list_map_exten.
+      intros.
+      rewrite remove_in_3, (H3 x0) in H6.
+      unfold Gamma.
+      simpl.
+      destruct_eq_dec x x0; [destruct H6; congruence |].
+      auto.
+    } Unfocus.
+    rewrite sepcon_comm.
+    rewrite <- iter_sepcon_app_sepcon.
+    rewrite <- map_app.
+    simpl app.
+    erewrite iter_sepcon_permutation; [apply derives_refl |].
+    apply Permutation_map_aux.
+    symmetry; auto.
+Qed.
+
+Lemma graph_ramify_aux0: forall (g: Graph) {rfg: ReachableFiniteGraph g} x d d',
+  vvalid g x -> vgamma g x = d ->
+  graph x g |-- vertex_at x d * (vertex_at x d' -* graph x (spatialgraph_gen g x d')).
+Proof.
+  intros.
+  apply vertices_at_ramify; auto.
+  apply reachable_refl; auto.
 Qed.
 
 Lemma graph_ramify_aux1: forall (g: Graph) x l {A: Type} (PureF: A -> Prop) (g': A -> Graph)
