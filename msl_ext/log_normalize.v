@@ -456,6 +456,15 @@ Proof.
   auto.
 Qed.
 
+Lemma solve_ramify: forall {A} `{SepLog A} g l g' l' F, g |-- l * F -> F * l' |-- g' -> g |-- l * (l' -* g').
+Proof.
+  intros.
+  apply derives_trans with (l * F); auto.
+  apply sepcon_derives; auto.
+  apply wand_sepcon_adjoint.
+  auto.
+Qed.
+
 Ltac normalize_overlap :=
   repeat
   match goal with
