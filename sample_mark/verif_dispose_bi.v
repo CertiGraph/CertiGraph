@@ -8,6 +8,7 @@ Require Import RamifyCoq.graph.spanning_tree.
 Require Import RamifyCoq.graph.reachable_computable.
 Require Import RamifyCoq.data_structure.general_spatial_graph.
 Require Import RamifyCoq.data_structure.spatial_graph_mark_bi.
+Require Import RamifyCoq.data_structure.spatial_graph_dispose_bi.
 Require Import RamifyCoq.data_structure.spatial_graph_bi.
 Require Import RamifyCoq.data_structure.spatial_graph_unaligned_bi_VST.
 
@@ -74,7 +75,7 @@ Proof.
   subst.
   assert (Hisptr: isptr (pointer_val_val x)). {
     destruct x. simpl. auto.
-    apply (valid_not_null g) in H0. exfalso; auto.
+    apply (valid_not_null g) in H. exfalso; auto.
     rewrite is_null_def. auto.
   }
   localize
@@ -128,15 +129,15 @@ Proof.
     entailer!.
     rewrite Graph_gen_spatial_spec by eauto.
     pose proof (@graph_ramify_aux0 _ _ _ _ _ _ _ (SGA_VST sh) g _ x (false, l, r) (true, l, r)).
-    simpl in H4; auto.
+    simpl in H3; auto.
   } Unfocus.
 
   (* if (l) { *)
   apply -> ram_seq_assoc.
-  symmetry in H2.
-  pose proof Graph_gen_true_mark1 g x _ _ H2 H0.
+  symmetry in H1.
+  pose proof Graph_gen_true_mark1 g x _ _ H1 H.
   assert (H_GAMMA_g1: vgamma (Graph_gen g x true) x = (true, l, r)) by
-   (rewrite (proj1 (proj2 (Graph_gen_spatial_spec g x _ true _ _ H2))) by assumption;
+   (rewrite (proj1 (proj2 (Graph_gen_spatial_spec g x _ true _ _ H1))) by assumption;
     apply spacialgraph_gen_vgamma).
   forget (Graph_gen g x true) as g1.
   unfold semax_ram.
@@ -146,7 +147,7 @@ Proof.
      LOCAL (temp _r (pointer_val_val r);
             temp _l (pointer_val_val l);
             temp _x (pointer_val_val x))
-     SEP (`(EX g2: Graph, !! spanning_tree g1 l g2 && graph sh x g2))); [| gather_current_goal_with_evar ..].
+     SEP (`(EX g2: Graph, !! spanning_tree g1 l g2 && vertices_at sh g2 (reachable g1 x)))); [admit | | gather_current_goal_with_evar ..].
 
   (* root_mark = l -> m; *)
   localize
@@ -182,11 +183,15 @@ Proof.
   Focus 3. { entailer!. } Unfocus.
   Focus 3. { repeat constructor; auto with closed. } Unfocus.
   Focus 2. {
-    Opaque trinode.
+    (* Opaque trinode. *)
     Opaque gamma.
+    destruct (vgamma g1 l) as [[dd ll] rr] eqn:? .
     entailer!.
-    rewrite (update_self g1 x (true, l, r)) at 2 by auto.
-    pose proof (@graph_ramify_aux0 _ _ _ _ _ _ _ (SGA_VST sh) g1 _ x (true, l, r) (true, l, r)).
+
+    (* vertices_at_ramify *)
+    rewrite (update_self g1 l (dd, ll, rr)) at 2 by auto.
+    (* apply vertices_at_ramify. *)
+    (* pose proof (@graph_ramify_aux0 _ _ _ _ _ _ _ (SGA_VST sh) g1 _ x (true, l, r) (true, l, r)). *)
 
     admit.
   } Unfocus.
@@ -201,21 +206,21 @@ Proof.
      LOCAL (temp _r (pointer_val_val r);
             temp _l (pointer_val_val l);
             temp _x (pointer_val_val x))
-     SEP (`(EX g2: Graph, !! spanning_tree g1 l g2 && graph sh x g2))).
+     SEP (`(EX g2: Graph, !! spanning_tree g1 l g2 && vertices_at sh g2 (reachable g1 x)))).
   Transparent node_pred_dec.
   Transparent pSGG_VST.
-  destruct (node_pred_dec (marked g1) l). inversion H5.
+  destruct (node_pred_dec (marked g1) l). inversion H4.
   localize
     (PROP ()
      LOCAL (temp _l (pointer_val_val l))
      SEP (`(graph sh l g1))).
   assert (vvalid g1 l). {
-    apply gamma_left_weak_valid in H2. 2: auto.
-    destruct H3.
-    rewrite (weak_valid_si _ _ _ H3) in H2.
-    destruct H2. 2: auto.
-    rewrite is_null_def in H2. subst l.
-    simpl in H4. exfalso; auto.
+    apply gamma_left_weak_valid in H1. 2: auto.
+    destruct H2.
+    rewrite (weak_valid_si _ _ _ H2) in H1.
+    destruct H1. 2: auto.
+    rewrite is_null_def in H1. subst l.
+    simpl in H3. exfalso; auto.
   }
   assert (fst (fst (vgamma g1 l)) = false). {
     simpl in n.
@@ -236,7 +241,7 @@ Proof.
      LOCAL (temp _r (pointer_val_val r);
             temp _l (pointer_val_val l);
             temp _x (pointer_val_val x))
-     SEP (`(EX  g' : Graph, !!spanning_tree g1 l g' && graph sh x g'))
+     SEP (`(EX  g' : Graph, !!spanning_tree g1 l g' && vertices_at sh g' (reachable g1 x)))
     ).
   Grab Existential Variables.
   Focus 6. { solve_split_by_closed. } Unfocus.
@@ -246,8 +251,7 @@ Proof.
   Focus 2. {
     entailer!.
     rewrite !exp_emp.
-    (*     graph_ramify_aux1 *)
-    (*       RamifyCoq.data_structure.general_spatial_graph.graph_ramify_aux1 *)
+    apply (@graph_ramify_aux1_left _ (sSGG_VST sh) g1 x true l r); auto.
     admit.
   } Unfocus.
   unfold semax_ram.
@@ -292,6 +296,7 @@ Proof.
   entailer.
   apply (exp_right (Graph_gen_left_null g1 x)).
   entailer!.
+  admit.
   admit.
   forward.
   entailer.
