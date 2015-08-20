@@ -205,13 +205,30 @@ Proof.
   + apply FiniteGraph_EnumCovered, finGraph.
 Qed.
 
+Lemma Graph_partialgraph_vi_spec: forall (G G': Graph) (P P': addr -> Prop),
+  (predicate_partialgraph G P) ~=~ (predicate_partialgraph G' P') ->
+  (forall v, vvalid G v -> P v -> vvalid G' v -> P' v -> vlabel G v = vlabel G' v) ->
+  (predicate_partial_spatialgraph G P) -=- (predicate_partial_spatialgraph G' P').
+Proof.
+  intros.
+  split; [auto |].
+  split; [| intros; simpl; auto].
+  simpl; unfold predicate_vvalid.
+  intros.
+  unfold gamma.
+  f_equal; [f_equal |].
+  + apply H0; tauto.
+  + destruct H as [? [? [? ?]]].
+    apply H5.
+  + destruct H as [? [? [? ?]]].
+    apply H5.
+Qed.    
 
 End pSpatialGraph_Graph_Bi.
 
 Class sSpatialGraph_Graph_Bi {pSGG_Bi: pSpatialGraph_Graph_Bi}: Type := {
   SGP: SpatialGraphPred addr (addr * LR) (bool * addr * addr) unit pred;
   SGA: SpatialGraphAssum SGP
-                                                                       }.
-
+}.
 
 Existing Instances SGP SGA.
