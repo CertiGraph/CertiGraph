@@ -65,8 +65,8 @@ Proof.
   + unfold trinode.
     destruct v1 as [[d1 l1] r1].
     destruct v2 as [[d2 l2] r2].
-    rewrite (add_andp _ _ (@data_at_compatible CompSpecs CS_legal _ node_type _ (pointer_val_val p1))).
-    rewrite (add_andp _ _ (@data_at_compatible CompSpecs CS_legal _ node_type _ (pointer_val_val p2))).
+    rewrite (add_andp _ _ (@data_at_local_facts CompSpecs CS_legal _ node_type _ (pointer_val_val p1))).
+    rewrite (add_andp _ _ (@data_at_local_facts CompSpecs CS_legal _ node_type _ (pointer_val_val p2))).
     normalize.
     apply data_at_conflict.
     (* change (sizeof cenv_cs node_type) with 16. *)
@@ -115,8 +115,8 @@ Instance SGA_VST (sh: share) : SpatialGraphAssum (SGP_VST sh).
     intros. unfold trinode.
     destruct d1 as [[d1 l1] r1].
     destruct d2 as [[d2 l2] r2].
-    rewrite (add_andp _ _ (@data_at_compatible CompSpecs CS_legal _ node_type _ (pointer_val_val x))).
-    rewrite (add_andp _ _ (@data_at_compatible CompSpecs CS_legal _ node_type _ (pointer_val_val x))).
+    rewrite (add_andp _ _ (@data_at_local_facts CompSpecs CS_legal _ node_type _ (pointer_val_val x))).
+    rewrite (add_andp _ _ (@data_at_local_facts CompSpecs CS_legal _ node_type _ (pointer_val_val x))).
     normalize.
     apply data_at_conflict.
     apply pointer_range_overlap_refl; try (simpl; omega).

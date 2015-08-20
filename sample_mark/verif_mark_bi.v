@@ -54,8 +54,8 @@ Proof.
   start_function.
   remember (vgamma g x) as dlr eqn:?H.
   destruct dlr as [[d l] r].
-  rename H1 into H_GAMMA_g; symmetry in H_GAMMA_g.
-  rename H0 into H_weak_valid.
+  rename H0 into H_GAMMA_g; symmetry in H_GAMMA_g.
+  rename H into H_weak_valid.
 
   forward_if_tac  (* if (x == 0) *)
     (PROP  (pointer_val_val x <> nullval)
@@ -66,8 +66,8 @@ Proof.
     destruct_pointer_val x.
     forward. (* return *)
     pose proof mark_invalid_refl g NullPointer.
-    spec H1;
-    [pose proof valid_not_null g NullPointer; rewrite is_null_def in H2; intro; apply H2; auto; congruence |].
+    spec H0;
+    [pose proof valid_not_null g NullPointer; rewrite is_null_def in H1; intro; apply H1; auto; congruence |].
     apply (exp_right g); entailer!.
   } Unfocus.
   Focus 1. { (* if-else branch *)
@@ -78,11 +78,11 @@ Proof.
   assert (vvalid g x) as gx_vvalid.
   Focus 1. {
     destruct H_weak_valid; [| auto].
-    rewrite is_null_def in H1; subst x.
+    rewrite is_null_def in H0; subst x.
     exfalso.
-    apply H0. auto.
+    apply H. auto.
   } Unfocus.
-  destruct_pointer_val x. clear H1 H_weak_valid.
+  destruct_pointer_val x. clear H0 H_weak_valid.
   assert (gl_weak_valid: weak_valid g l) by (eapply gamma_left_weak_valid; eauto).
   assert (gr_weak_valid: weak_valid g r) by (eapply gamma_right_weak_valid; eauto).
 
@@ -111,7 +111,7 @@ Proof.
   Focus 2. {
     entailer!. rewrite (update_self g x (d, l, r)) at 2 by auto.
     pose proof (@graph_ramify_aux0 _ _ _ _ _ _ _ (SGA_VST sh) g _ x (d, l, r) (d, l, r)).
-    simpl in H2; auto.
+    simpl in H1; auto.
   } Unfocus.
   (* unlocalize *)
 
@@ -128,7 +128,7 @@ Proof.
       apply mark_marked_root_refl.
       simpl.
       inversion H_GAMMA_g.
-      destruct d; [auto | inversion H1].
+      destruct d; [auto | inversion H0].
     } Unfocus.
     normalize.
   } Unfocus.
@@ -192,7 +192,7 @@ Proof.
     entailer!.
     rewrite Graph_gen_spatial_spec by eauto.
     pose proof (@graph_ramify_aux0 _ _ _ _ _ _ _ (SGA_VST sh) g _ x (false, l, r) (true, l, r)).
-    simpl in H2; auto.
+    simpl in H1; auto.
   } Unfocus.
   (* unlocalize *)
 
@@ -203,9 +203,9 @@ Proof.
    (rewrite (proj1 (proj2 (Graph_gen_spatial_spec g x _ true _ _ H_GAMMA_g))) by assumption;
     apply spacialgraph_gen_vgamma).
   forget (Graph_gen g x true) as g1.  
-  assert (g1x_valid: vvalid g1 x) by (apply (proj1 (proj1 H1)); auto).
-  assert (g1l_weak_valid: weak_valid g1 l) by (apply (weak_valid_si g g1 _ (proj1 H1)); auto).
-  assert (g1r_weak_valid: weak_valid g1 r) by (apply (weak_valid_si g g1 _ (proj1 H1)); auto).
+  assert (g1x_valid: vvalid g1 x) by (apply (proj1 (proj1 H0)); auto).
+  assert (g1l_weak_valid: weak_valid g1 l) by (apply (weak_valid_si g g1 _ (proj1 H0)); auto).
+  assert (g1r_weak_valid: weak_valid g1 r) by (apply (weak_valid_si g g1 _ (proj1 H0)); auto).
 
   localize
    (PROP  ()
@@ -239,8 +239,8 @@ Proof.
 
   unfold semax_ram. (* should not need this *)
   normalize; intros g2; normalize.
-  assert (g2x_valid: vvalid g2 x) by (apply (proj1 (proj1 H3)); auto).
-  assert (g2r_weak_valid: weak_valid g2 r) by (apply (weak_valid_si g1 g2 _ (proj1 H3)); auto).
+  assert (g2x_valid: vvalid g2 x) by (apply (proj1 (proj1 H2)); auto).
+  assert (g2r_weak_valid: weak_valid g2 r) by (apply (weak_valid_si g1 g2 _ (proj1 H2)); auto).
 
   localize
    (PROP  ()

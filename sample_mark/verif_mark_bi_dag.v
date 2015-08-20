@@ -56,9 +56,9 @@ Proof.
   change pointer_val with addr in *.
   remember (vgamma g x) as dlr eqn:?H.
   destruct dlr as [[d l] r].
-  rename H1 into H_Dag.
-  rename H2 into H_GAMMA_g; symmetry in H_GAMMA_g.
-  rename H0 into H_weak_valid.
+  rename H0 into H_Dag.
+  rename H1 into H_GAMMA_g; symmetry in H_GAMMA_g.
+  rename H into H_weak_valid.
 
   forward_if_tac  (* if (x == 0) *)
     (PROP  (pointer_val_val x <> nullval)
@@ -69,8 +69,8 @@ Proof.
     destruct_pointer_val x.
     forward. (* return *)
     pose proof mark_invalid_refl g NullPointer.
-    spec H1;
-    [pose proof valid_not_null g NullPointer; rewrite is_null_def in H2; intro; apply H2; auto; congruence |].
+    spec H0;
+    [pose proof valid_not_null g NullPointer; rewrite is_null_def in H1; intro; apply H1; auto; congruence |].
     apply (exp_right g); entailer!.
   } Unfocus.
   Focus 1. { (* if-else branch *)
@@ -81,11 +81,11 @@ Proof.
   assert (vvalid g x) as gx_vvalid.
   Focus 1. {
     destruct H_weak_valid; [| auto].
-    rewrite is_null_def in H1; subst x.
+    rewrite is_null_def in H0; subst x.
     exfalso.
-    apply H0. auto.
+    apply H. auto.
   } Unfocus.
-  destruct_pointer_val x. clear H1 H_weak_valid.
+  destruct_pointer_val x. clear H0 H_weak_valid.
   assert (gl_weak_valid: weak_valid g l) by (eapply gamma_left_weak_valid; eauto).
   assert (gr_weak_valid: weak_valid g r) by (eapply gamma_right_weak_valid; eauto).
 
@@ -121,7 +121,7 @@ Proof.
       apply mark_marked_root_refl.
       simpl.
       inversion H_GAMMA_g.
-      destruct d; [auto | inversion H1].
+      destruct d; [auto | inversion H0].
     } Unfocus.
     normalize.
   } Unfocus.
@@ -166,24 +166,24 @@ Proof.
     rewrite dag_graph_gen_step_list with (x0 := x) (d := (true, l, r));
       [| auto | auto | eapply (gamma_step_list g); eauto].
     pose proof Graph_gen_spatial_spec g x false true l r H_GAMMA_g.
-    pose proof @graphs_vi_eq _ _ _ _ _ _ SGP (@SGA _ (sSGG_VST sh)) (Graph_gen g x true) (spatialgraph_gen g x (true, l, r)) (l :: r :: nil) H3.
+    pose proof @graphs_vi_eq _ _ _ _ _ _ SGP (@SGA _ (sSGG_VST sh)) (Graph_gen g x true) (spatialgraph_gen g x (true, l, r)) (l :: r :: nil) H2.
 
-    rewrite <- H4.
+    rewrite <- H3.
     forget (Graph_gen g x true) as g1.
     entailer!.
   } Unfocus.
 
   assert (H_Dag_g1_x: localDag (Graph_gen g x true) x) by auto.
   forget (Graph_gen g x true) as g1.
-  assert (g1x_valid: vvalid g1 x) by (apply (proj1 (proj1 H1)); auto).
-  assert (g1l_weak_valid: weak_valid g1 l) by (apply (weak_valid_si g g1 _ (proj1 H1)); auto).
-  assert (g1r_weak_valid: weak_valid g1 r) by (apply (weak_valid_si g g1 _ (proj1 H1)); auto).
+  assert (g1x_valid: vvalid g1 x) by (apply (proj1 (proj1 H0)); auto).
+  assert (g1l_weak_valid: weak_valid g1 l) by (apply (weak_valid_si g g1 _ (proj1 H0)); auto).
+  assert (g1r_weak_valid: weak_valid g1 r) by (apply (weak_valid_si g g1 _ (proj1 H0)); auto).
   assert (H_Dag_g1_l: localDag g1 l).
   Focus 1. {
     apply local_dag_step with x; auto; [apply maGraph |].
     assert (step_list g1 x (l :: r :: nil)).
     eapply (gamma_step_list g1); eauto.
-    rewrite <- (H3 l).
+    rewrite <- (H2 l).
     simpl; tauto.
   } Unfocus.
 
@@ -232,16 +232,16 @@ Proof.
     eapply gamme_true_mark; eauto.
     apply weak_valid_vvalid_dec; auto.
   } Unfocus.
-  assert (g2x_valid: vvalid g2 x) by (apply (proj1 (proj1 H3)); auto).
-  assert (g2r_weak_valid: weak_valid g2 r) by (apply (weak_valid_si g1 g2 _ (proj1 H3)); auto).
+  assert (g2x_valid: vvalid g2 x) by (apply (proj1 (proj1 H2)); auto).
+  assert (g2r_weak_valid: weak_valid g2 r) by (apply (weak_valid_si g1 g2 _ (proj1 H2)); auto).
 
-  assert (H_Dag_g2_x: localDag g2 x) by (destruct H3 as [? _]; rewrite <- H3; auto).
+  assert (H_Dag_g2_x: localDag g2 x) by (destruct H2 as [? _]; rewrite <- H2; auto).
   assert (H_Dag_g2_r: localDag g2 r).
   Focus 1. {
     apply local_dag_step with x; auto; [apply maGraph |].
     assert (step_list g2 x (l :: r :: nil)).
     eapply (gamma_step_list g2); eauto.
-    rewrite <- (H4 r).
+    rewrite <- (H3 r).
     simpl; tauto.
   } Unfocus.
 
@@ -287,7 +287,7 @@ Proof.
   forward. (* ( return; ) *)
   apply (exp_right g3); entailer!.
   + apply (mark1_mark_left_mark_right g g1 g2 g3 (ValidPointer b i) l r); auto.
-  + destruct H2 as [? _].
-    rewrite <- H2.
+  + destruct H1 as [? _].
+    rewrite <- H1.
     auto.
 Time Qed. (* Takes 4557 minuts. *)

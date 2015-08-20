@@ -259,6 +259,19 @@ Qed.
 Lemma iter_sepcon_func: forall l P Q, (forall x, P x = Q x) -> iter_sepcon l P = iter_sepcon l Q.
 Proof. intros. induction l; simpl; [|f_equal]; auto. Qed.
 
+Lemma iter_sepcon_func_strong: forall l P Q, (forall x, In x l -> P x = Q x) -> iter_sepcon l P = iter_sepcon l Q.
+Proof.
+  intros. induction l.
+  + reflexivity.
+  + simpl.
+    f_equal.
+    - apply H.
+      simpl; auto.
+    - apply IHl.
+      intros; apply H.
+      simpl; auto.
+Qed. 
+
 Instance iter_sepcon_permutation_proper : Proper ((@Permutation B) ==> (pointwise_relation B eq) ==> eq) iter_sepcon.
 Proof.
   repeat intro. transitivity (iter_sepcon x y0).
@@ -307,3 +320,75 @@ Lemma iter_sepcon_map: forall {A B C: Type} {ND : NatDed A} {SL : SepLog A} (l :
 Proof. intros. induction l; simpl; [|f_equal]; auto. Qed.
 
 Global Existing Instance iter_sepcon_permutation_proper.
+
+Section IterPredSepCon.
+
+  Context {A : Type}.
+  Context {B : Type}.
+  Context {ND : NatDed A}.
+  Context {SL : SepLog A}.
+  Context {ClS: ClassicalSep A}.
+
+Definition pred_sepcon (P: B -> Prop) (p: B -> A): A :=
+  EX l: list B, !! (forall x, In x l <-> P x) && !! NoDup l && iter_sepcon l p.
+
+Lemma pred_sepcon_ramify1: forall {EqB: EqDec B eq} (P1 P2: B -> Prop) p1 p2 x,
+  P1 x ->
+  (forall y, P1 y <-> P2 y) ->
+  (forall y, y <> x -> p1 y = p2 y) ->
+  pred_sepcon P1 p1 |-- p1 x * (p2 x -* pred_sepcon P2 p2).
+Proof.
+  intros.
+  unfold pred_sepcon.
+  normalize.
+  intros l ?.
+  normalize.
+  apply solve_ramify with (iter_sepcon (remove equiv_dec x l) p2);
+   [replace (iter_sepcon (remove equiv_dec x l) p2) with (iter_sepcon (remove equiv_dec x l) p1) |].
+  + change (p1 x * iter_sepcon (remove equiv_dec x l) p1) with
+      (iter_sepcon (x :: remove equiv_dec x l) p1).
+    erewrite iter_sepcon_permutation; [apply derives_refl |].
+    apply nodup_remove_perm; auto.
+    firstorder.
+  + apply iter_sepcon_func_strong.
+    intros.
+    rewrite remove_in_3 in H4.
+    apply H1; tauto.
+  + apply (exp_right l).
+    assert (forall x0 : B, In x0 l <-> P2 x0) by firstorder.
+    normalize.
+    rewrite sepcon_comm.
+    change (p2 x * iter_sepcon (remove equiv_dec x l) p2) with
+      (iter_sepcon (x :: remove equiv_dec x l) p2).
+    erewrite iter_sepcon_permutation; [apply derives_refl |].
+    symmetry.
+    apply nodup_remove_perm; auto.
+    firstorder.
+Qed.
+
+Lemma pred_sepcon_ramify1_simpl: forall {EqB: EqDec B eq} (P: B -> Prop) p1 p2 x,
+  P x ->
+  (forall y, y <> x -> p1 y = p2 y) ->
+  pred_sepcon P p1 |-- p1 x * (p2 x -* pred_sepcon P p2).
+Proof.
+  intros.
+  apply pred_sepcon_ramify1; auto.
+  intros; reflexivity.
+Qed.
+
+Lemma pred_sepcon_ramify_pred: forall (Pg1 Pl1 Pg2 Pl2: B -> Prop) p1 p2,
+  (forall x, {Pl1 x} + {~ Pl1 x}) ->
+  (forall x, Pl1 x -> Pg1 x) ->
+  (forall x, Pg2 x <-> (Pg1 x /\ ~ Pl1 x) \/ Pl2 x) ->
+  (forall x, Pg1 x /\ ~ Pl1 x -> p1 x = p2 x) ->
+  pred_sepcon Pg1 p1 |-- pred_sepcon Pl1 p1 * (pred_sepcon Pl2 p2 -* pred_sepcon Pg2 p2).
+Proof.
+  intros.
+  unfold pred_sepcon.
+  normalize.
+Admitted.
+(*
+  apply (exp_right (
+*)
+
+End IterPredSepCon.
