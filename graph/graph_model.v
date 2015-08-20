@@ -115,6 +115,9 @@ Record GeneralGraph {DV DE: Type} {P: PreGraph -> (Vertex -> DV) -> (Edge -> DE)
 
 Coercion pg_gg: GeneralGraph >-> PreGraph.
 
+Definition strong_evalid (pg: PreGraph) (e: Edge) : Prop :=
+  evalid pg e /\ vvalid pg (src pg e) /\ vvalid pg (dst pg e).
+
 Inductive step (pg: PreGraph): Vertex -> Vertex -> Prop :=
   | step_intro: forall e x y, evalid pg e -> src pg e = x -> dst pg e = y -> step pg x y.
 
@@ -418,6 +421,20 @@ Proof.
   clear - H0 H1 H2.
   tauto.
 Qed.
+
+Definition remove_edge (g1: PreGraph Vertex Edge) (e0: Edge) (g2: PreGraph Vertex Edge) :=
+  (forall v : Vertex, (vvalid g1 v <-> vvalid g2 v)) /\
+  (forall e : Edge, e <> e0 -> (evalid g1 e <-> evalid g2 e)) /\
+  (forall e : Edge, e <> e0 -> src g1 e = src g2 e) /\
+  (forall e : Edge, e <> e0 -> dst g1 e = dst g2 e) /\
+  ~ evalid g2 e0.
+
+Definition gremove_edge (g1: PreGraph Vertex Edge) (e0: Edge) (g2: PreGraph Vertex Edge) :=
+  (forall v : Vertex, (vvalid g1 v <-> vvalid g2 v)) /\
+  (forall e : Edge, e <> e0 -> (evalid g1 e <-> evalid g2 e)) /\
+  (forall e : Edge, e <> e0 -> src g1 e = src g2 e) /\
+  (forall e : Edge, e <> e0 -> dst g1 e = dst g2 e) /\
+  ~ strong_evalid g2 e0.
 
 Section GENERAL_GRAPH_EQUIV.
 

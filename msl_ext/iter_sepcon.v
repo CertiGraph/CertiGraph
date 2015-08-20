@@ -376,19 +376,81 @@ Proof.
   intros; reflexivity.
 Qed.
 
+(*
 Lemma pred_sepcon_ramify_pred: forall (Pg1 Pl1 Pg2 Pl2: B -> Prop) p1 p2,
   (forall x, {Pl1 x} + {~ Pl1 x}) ->
   (forall x, Pl1 x -> Pg1 x) ->
-  (forall x, Pg2 x <-> (Pg1 x /\ ~ Pl1 x) \/ Pl2 x) ->
+  (forall x, Pl2 x -> Pg2 x) ->
+  (forall x, Pg2 x /\ ~ Pl2 x <-> Pg1 x /\ ~ Pl1 x) ->
   (forall x, Pg1 x /\ ~ Pl1 x -> p1 x = p2 x) ->
   pred_sepcon Pg1 p1 |-- pred_sepcon Pl1 p1 * (pred_sepcon Pl2 p2 -* pred_sepcon Pg2 p2).
 Proof.
   intros.
+  pose (f := fun x => if X x then true else false).
+  assert (F_true: forall x, f x = true <-> Pl1 x).
+  Focus 1. {
+    intros.
+    subst f; simpl.
+    destruct (X x); [tauto |].
+    assert (~ false = true) by congruence; tauto.
+  } Unfocus.
   unfold pred_sepcon.
   normalize.
-Admitted.
-(*
-  apply (exp_right (
+  apply (exp_right (filter f l)).
+  assert (forall x, In x (filter f l) <-> Pl1 x).
+  Focus 1. {
+    intros.
+    rewrite filter_In.
+    rewrite F_true.
+    rewrite H3.
+    specialize (H x).
+    tauto.
+  } Unfocus.
+  assert (NoDup (filter f l)) by (apply NoDup_filter; auto).
+  normalize.
+  clear H5 H6.
+  apply solve_ramify with (iter_sepcon (filter (fun x => negb (f x)) l) p2);
+   [replace (iter_sepcon (filter (fun x => negb (f x)) l) p2)
+     with (iter_sepcon (filter (fun x => negb (f x)) l) p1) |].
+  + rewrite <- iter_sepcon_app_sepcon.
+    erewrite iter_sepcon_permutation; [apply derives_refl |].
+    apply filter_perm.
+    intros.
+    rewrite Bool.negb_involutive; auto.
+  + apply iter_sepcon_func_strong.
+    intros.
+    apply H2.
+    rewrite filter_In in H5.
+    rewrite H3 in H5.
+    rewrite Bool.negb_true_iff, <- Bool.not_true_iff_false, F_true in H5.
+    auto.
+  + normalize.
+    intros l' ?.
+    normalize.
+    apply (exp_right (filter (fun x => negb (f x)) l ++ l')).
+    assert ((forall x, In x (filter (fun x => negb (f x)) l ++ l') <-> Pg2 x)).
+    Focus 1. {
+      intros.
+      rewrite in_app_iff, filter_In.
+      rewrite Bool.negb_true_iff, <- Bool.not_true_iff_false, F_true.
+      rewrite H3, H5.
+      specialize (H x).
+      specialize (H0 x).
+      specialize (H1 x).
+Print step.
+      tauto.
+    } Unfocus.
+    assert (NoDup (filter (fun x : B => negb (f x)) l ++ l')).
+    Focus 1. {
+      apply NoDup_app_inv; [apply NoDup_filter; auto | auto |].
+      intros.
+      rewrite filter_In, H2 in H7.
+      rewrite Bool.negb_true_iff, <- Bool.not_true_iff_false, F_true in H7.
+      rewrite H4.
+SearchAbout app NoDup.
+SearchAbout sumbool bool.
+      rewrite 
+SearchAbout filter Permutation.
 *)
 
 End IterPredSepCon.

@@ -614,6 +614,21 @@ Proof.
   apply (@Permutation_app_tail _ _ (x :: l1) l2), Permutation_sym, Permutation_cons_append.
 Qed.
 
+Lemma filter_perm: forall {A: Type} (f g: A -> bool) l,
+  (forall x, In x l -> f x = negb (g x)) ->
+  Permutation l (filter f l ++ filter g l).
+Proof.
+  intros.
+  induction l.
+  + reflexivity.
+  + simpl.
+    pose proof (H a (or_introl eq_refl)).
+    spec IHl; [intros; apply H; simpl; auto |].
+    destruct (g a) eqn:?H; simpl in H0; rewrite H0.
+    - apply Permutation_cons_app; auto.
+    - apply Permutation_cons; auto.
+Qed.
+
 Lemma demorgan_weak: forall P Q: Prop, P \/ ~ P -> (~ (P /\ Q) <-> ~ P \/ ~ Q).
 Proof.
   intros.

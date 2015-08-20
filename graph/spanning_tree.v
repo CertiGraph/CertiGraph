@@ -29,6 +29,16 @@ Section SPANNING.
     (unmarked g1 root -> tree g2 root /\
                          forall n, g1 |= root ~o~> n satisfying (unmarked g1) -> reachable g2 root n).
 
+  Definition edge_spanning_tree (g1 : Graph) (e : E) (g2 : Graph) : Prop :=
+    if node_pred_dec (marked g1) (dst g1 e)
+    then spanning_tree g1 (dst g1 e) g2
+    else gremove_edge g1 e g2 /\ forall v, marked g1 v <-> marked g2 v.
+
+  Lemma edge_spanning_tree_invalid: forall (g: Graph) e,
+    ~ vvalid g (dst g e) ->
+    edge_spanning_tree g e g.
+  Admitted.
+
   Lemma spanning_tree_vvalid: forall (g1 : Graph) (root : V) (g2 : Graph) x,
       ReachDecidable g1 x (unmarked g1) -> spanning_tree g1 root g2 -> (vvalid g1 x <-> vvalid g2 x).
   Proof.
