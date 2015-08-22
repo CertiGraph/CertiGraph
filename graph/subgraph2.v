@@ -260,6 +260,23 @@ Proof.
   + intro v; specialize (H v); simpl in H; tauto.
 Qed.
 
+Instance subgraph_proper: Proper (structurally_identical ==> (pointwise_relation V iff) ==> structurally_identical) predicate_subgraph.
+Proof.
+  do 2 (hnf; intros).
+  destruct H as [? [? [? ?]]].
+  split; [| split; [| split]]; intros; simpl.
+  + unfold predicate_vvalid.
+    rewrite H0, H.
+    reflexivity.
+  + unfold predicate_evalid.
+    rewrite H0, H1, H2, H3.
+    reflexivity.
+  + auto.
+  + auto.
+Defined.
+
+Global Existing Instance subgraph_proper.
+
 Instance partialgraph_proper: Proper (structurally_identical ==> (pointwise_relation V iff) ==> structurally_identical) predicate_partialgraph.
 Proof.
   do 2 (hnf; intros).
@@ -274,6 +291,8 @@ Proof.
   + auto.
   + auto.
 Defined.
+
+Global Existing Instance partialgraph_proper.
 
 Lemma si_subgraph_edge: forall (g1 g2: PreGraph V E) (p1 p2: V -> Prop),
   g1 ~=~ g2 ->
@@ -371,4 +390,3 @@ Qed.
 
 End SI_EQUIV.
 
-Existing Instance partialgraph_proper.

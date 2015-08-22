@@ -673,3 +673,149 @@ Instance complement_proper (V: Type): Proper ((pointwise_relation V iff) ==> (po
 Defined.
 
 Existing Instance complement_proper.
+
+Definition Decidable (P: Prop) := {P} + {~ P}.
+
+Lemma sumbool_weaken_right: forall P Q Q': Prop, (Q -> Q') -> ({P} + {Q}) -> ({P} + {Q'}).
+Proof.
+  intros.
+  destruct H0; [left | right]; auto.
+Qed.
+
+Lemma sumbool_weaken_left: forall P P' Q: Prop, (P -> P') -> ({P} + {Q}) -> ({P'} + {Q}).
+Proof.
+  intros.
+  destruct H0; [left | right]; auto.
+Qed.
+
+Definition Enumerable U (A: Ensemble U) := {l: list U | NoDup l /\ forall x, In x l <-> Ensembles.In U A x}.
+
+Definition EnumCovered U (A: Ensemble U) := {l: list U | NoDup l /\ forall x, Ensembles.In U A x -> In x l}.
+
+Lemma EnumCovered_strengthen: forall U A B,
+  Included A B -> EnumCovered U B -> EnumCovered U A.
+Proof.
+  intros.
+  destruct X as [x ?H].
+  exists x.
+  split; [tauto |].
+  intros.
+  apply H in H1.
+  firstorder.
+Qed.
+
+Lemma EnumStrengthen: forall U (P Q: Ensemble U),
+  (forall x, P x -> Decidable (Q x)) ->
+  Included Q P ->
+  Enumerable U P -> 
+  Enumerable U Q.
+Proof.
+  intros.
+  destruct X0 as [l [? ?]].
+  unfold Included, Ensembles.In in H, H1.
+  assert (forall x : U, In x l -> Decidable (Q x)) by firstorder.
+  assert (forall x : U, Q x -> In x l) by firstorder.
+  clear X H H1 P.
+  assert ({l' | NoDup l' /\ (forall x, In x l' <-> Q x /\ In x l)}).
+  + clear H2.
+    induction l; intros.
+    - exists nil.
+      split; [constructor |].
+      intros x; simpl; tauto.
+    - spec IHl; [inversion H0; auto |].
+      spec IHl; [intros; apply X0; simpl; auto |].
+      destruct IHl as [l0 [? ?]].
+      destruct (X0 a (or_introl eq_refl)) as [?H | ?H]; [exists (a :: l0) | exists l0]; split.
+      * constructor; auto.
+        specialize (H1 a).
+        inversion H0; tauto.
+      * intros.
+        simpl.
+        specialize (H1 x).
+        assert (a = x -> Q x) by (intros; subst; auto).
+        tauto.
+      * auto.
+      * intros; simpl.
+        specialize (H1 x).
+        assert (a = x -> ~ Q x) by (intros; subst; auto).
+        tauto.
+  + destruct X as [l' [? ?]]; exists l'.
+    split; [auto |].
+    intros; unfold Ensembles.In; specialize (H1 x); specialize (H2 x).
+    tauto.
+Qed.
+
+Lemma EnumSplit: forall U (P Q R: Ensemble U),
+  (forall x, P x -> {Q x} + {R x}) ->
+  (forall x, P x <-> Q x \/ R x) ->
+  (forall x, Q x -> R x -> False) ->
+  Enumerable U P -> 
+  Enumerable U Q * Enumerable U R.
+Proof.
+  intros.
+  split.
+  + apply EnumStrengthen with P; auto.
+    - intros x HH; specialize (X x HH); specialize (H x); specialize (H0 x).
+      apply sumbool_weaken_right with (R x); auto.
+    - intros x; simpl; specialize (H x); tauto.
+  + apply EnumStrengthen with P; auto.
+    - intros x HH; specialize (X x HH); specialize (H x); specialize (H0 x).
+      apply swap_sumbool.
+      apply sumbool_weaken_left with (Q x); auto.
+    - intros x; simpl; specialize (H x); tauto.
+Qed.
+
+Lemma spec_list_split: forall {A} (l: list A) P Q,
+  NoDup l ->
+  (forall x, In x l <-> P x \/ Q x) ->
+  (forall x, P x -> Q x -> False) ->
+  exists lp lq,
+    NoDup lp /\
+    NoDup lq /\
+    (forall x, In x lp <-> P x) /\
+    (forall x, In x lq <-> Q x) /\
+    Permutation l (lp ++ lq).
+Proof.
+Ltac split5 := split; [| split; [| split; [| split]]].
+  intros.
+  assert (exists lp lq,
+     NoDup lp /\
+     NoDup lq /\     
+     (forall x, In x lp -> P x) /\
+     (forall x, In x lq -> Q x) /\
+     (forall x, In x l <-> In x lp \/ In x lq)).
+  + pose proof (fun x => proj1 (H0 x)).
+    clear H0.
+    induction l.
+    - exists nil, nil.
+      split5; [constructor | constructor |..]; intro x; simpl; tauto.
+    - spec IHl; [inversion H; auto |].
+      spec IHl; [intros; apply H2; simpl; auto |].
+      destruct IHl as [lp [lq [? [? [? [? ?]]]]]].
+      destruct (H2 a (or_introl eq_refl)); [exists (a :: lp), lq | exists lp, (a :: lq)];
+      split5; intros.
+      * constructor; auto.
+        inversion H; subst.
+        firstorder.
+      * auto.
+      * destruct H8; [subst |]; auto.
+      * auto.
+      * simpl; specialize (H6 x); tauto.
+      * auto.
+      * constructor; auto.
+        inversion H; subst.
+        firstorder.
+      * auto.
+      * destruct H8; [subst |]; auto.
+      * simpl; specialize (H6 x); tauto.
+  + destruct H2 as [lp [lq [? [? [? [? ?]]]]]].
+    exists lp, lq.
+    split5; auto.
+    - firstorder.
+    - firstorder.
+    - apply NoDup_Permutation; auto.
+      * apply NoDup_app_inv; auto.
+        firstorder.
+      * intro; rewrite in_app_iff.
+        firstorder.
+Qed.

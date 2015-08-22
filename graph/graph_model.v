@@ -70,22 +70,6 @@ Proof.
         tauto.
 Qed.
 
-Definition Enumerable U (A: Ensemble U) := {l: list U | NoDup l /\ forall x, In x l <-> Ensembles.In U A x}.
-
-Definition EnumCovered U (A: Ensemble U) := {l: list U | NoDup l /\ forall x, Ensembles.In U A x -> In x l}.
-
-Lemma EnumCovered_strengthen: forall U A B,
-  Included A B -> EnumCovered U B -> EnumCovered U A.
-Proof.
-  intros.
-  destruct X as [x ?H].
-  exists x.
-  split; [tauto |].
-  intros.
-  apply H in H1.
-  firstorder.
-Qed.
-
 (******************************************
 
 Graph Definitions
