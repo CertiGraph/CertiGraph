@@ -60,8 +60,6 @@ Definition reachable_through_set (g: Gph) (S : list V) : Ensemble V:= fun n => e
 
 Definition reachable_set_list (g: Gph) (S : list V) (l : list V) : Prop := forall x : V, In x l <-> reachable_through_set g S x.
 
-Definition Decidable (P: Prop) := {P} + {~ P}.
- 
 Definition ReachDecidable (g: Gph) (x : V) (P : V -> Prop) :=
   forall y, Decidable (g |= x ~o~> y satisfying P).
 
@@ -667,6 +665,13 @@ Proof.
       specialize (H x).
       specialize (H0 x).
       tauto.
+Qed.
+
+Lemma RFG_reachable_through_set_decicable: forall (g: Gph) {rfg: ReachableFiniteGraph g} S y, (forall x, In x S -> Decidable (vvalid g x)) -> Decidable (reachable_through_set g S y).
+Proof.
+  intros.
+  destruct (construct_reachable_set_list g S X) as [l [_ ?]].
+  destruct (in_dec equiv_dec y l); [left | right]; rewrite <- (H y); auto.
 Qed.
 
 End PATH_LEM.

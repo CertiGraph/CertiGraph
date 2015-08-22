@@ -92,6 +92,29 @@ Proof.
   apply si_dag; auto.
 Defined.
 
+Lemma localDag_reachable_spec: forall g x S,
+  vvalid g x ->
+  localDag g x ->
+  step_list g x S ->
+  (forall y, reachable g x y <-> reachable_through_set g S y \/ y = x) /\
+  (forall y, reachable_through_set g S y -> y <> x).
+Proof.
+  intros.
+  split; intros.
+  + rewrite (reachable_ind' g x S y H H1).
+    assert (x = y <-> y = x) by (split; congruence).
+    tauto.
+  + destruct H2 as [x0 [? ?]].
+    rewrite (H1 x0) in H2.
+    specialize (H0 x).
+    spec H0; [apply reachable_refl; auto |].
+    specialize (H0 x0).
+    assert (vvalid g x0) by (apply reachable_head_valid in H3; auto).
+    assert (edge g x x0) by (split; [| split]; auto).
+    spec H0; [auto |].
+    intro; subst; tauto.
+Qed.
+
 Lemma localDag_reachable_list_spec: forall g x S l,
   vvalid g x ->
   localDag g x ->
