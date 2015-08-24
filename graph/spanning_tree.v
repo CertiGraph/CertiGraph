@@ -48,8 +48,17 @@ Module SIMPLE_SPANNING_TREE.
     Lemma spanning_tree_vvalid: forall (g1 : Graph) (root : V) (P: V -> Prop) (g2 : Graph) x,
         ReachDecidable g1 root P -> spanning_tree g1 root P g2 -> (vvalid g1 x <-> vvalid g2 x).
     Proof.
-      intros. destruct H as [? [? ?]]. 
-    Abort.
+      intros. destruct H as [? [? ?]]. destruct (X x).
+      + split; intros.
+        - specialize (H1 _ r). apply reachable_foot_valid in H1. auto.
+        - apply reachable_by_is_reachable in r. apply reachable_foot_valid in r. auto.
+      + destruct H as [? _]. simpl in H. unfold predicate_vvalid in H.
+        specialize (H x). split; intros.
+        - assert (vvalid g1 x /\ ~ g1 |= root ~o~> x satisfying P) by (split; auto).
+          rewrite H in H3. tauto.
+        - assert (vvalid g2 x /\ ~ g1 |= root ~o~> x satisfying P) by (split; auto).
+          rewrite <- H in H3. tauto.
+    Qed.
 
     Lemma spanning_list_spanning_tree: forall (P: V -> Prop) g1 root g2 l,
         (forall e, In e l <-> out_edges g1 root e) ->
@@ -90,6 +99,15 @@ Section SPANNING.
     if node_pred_dec (marked g1) (dst g1 e)
     then gremove_edge g1 e g2 /\ forall v, marked g1 v <-> marked g2 v
     else spanning_tree g1 (dst g1 e) g2.
+
+  Lemma spanning_tree_inj: forall g1 root g2, spanning_tree g1 root g2 <->
+                                                      (marked_reachable g1 root g2 /\
+                                                       SIMPLE_SPANNING_TREE.spanning_tree g1 root (unmarked g1) g2).
+  Proof.
+    intros. split; intro; destruct H; split; auto.
+    + destruct H0. split; auto. destruct (node_pred_dec (marked g1) root).
+      2: apply H1; auto. split.
+  Abort.
 
   Lemma edge_spanning_tree_invalid: forall (g: Graph) e,
     ~ vvalid g (dst g e) ->
