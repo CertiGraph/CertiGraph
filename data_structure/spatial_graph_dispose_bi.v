@@ -2,6 +2,7 @@ Require Import Coq.Sets.Ensembles.
 Require Import VST.msl.seplog.
 Require Import VST.msl.log_normalize.
 Require RamifyCoq.graph.marked_graph. Import RamifyCoq.graph.marked_graph.MarkGraph.
+Require Import RamifyCoq.Coqlib.
 Require Import RamifyCoq.graph.graph_model.
 Require Import RamifyCoq.graph.path_lemmas.
 Require Import RamifyCoq.graph.subgraph2.
@@ -33,12 +34,12 @@ Section SPATIAL_GRAPH_DISPOSE_BI.
   Lemma graph_ramify_aux1': forall (g: Graph) (l: addr) (P : addr -> Prop) {V_DEC: Decidable (vvalid g l)},
       unmarked g l ->
       Included (reachable g l) P -> Included P (vvalid g) ->
-      (vertices_at g P : pred) |-- graph l g *
-      ((EX g': Graph, !! spanning_tree g l g' && vertices_at g' (reachable g l)) -*
-       (EX g': Graph, !! spanning_tree g l g' && vertices_at g' P)).
+      (vertices_at P g: pred) |-- graph l g *
+      ((EX g': Graph, !! spanning_tree g l g' && vertices_at (reachable g l) g') -*
+       (EX g': Graph, !! spanning_tree g l g' && vertices_at P g')).
   Proof.
     intros. apply existential_partialgraph_update_prime; auto.
-    + intro. apply RFG_reachable_decicable'. apply RGF. auto.
+    + intros. apply RFG_reachable_decicable'. apply RGF. auto.
     + intros. apply H0. auto.
     + intros g' y ? ?. apply H1 in H3. unfold In in H3.
       rewrite <- (spanning_tree_vvalid g l g'); auto.
@@ -61,8 +62,8 @@ Section SPATIAL_GRAPH_DISPOSE_BI.
       vvalid g x -> unmarked g l ->
       vgamma g x = (d, l, r) ->
       (graph x g: pred) |-- graph l g *
-      ((EX g': Graph, !! spanning_tree g l g' && vertices_at g' (reachable g l)) -*
-       (EX g': Graph, !! spanning_tree g l g' && vertices_at g' (reachable g x))).
+      ((EX g': Graph, !! spanning_tree g l g' && vertices_at (reachable g l) g') -*
+       (EX g': Graph, !! spanning_tree g l g' && vertices_at (reachable g x) g')).
   Proof.
     intros. apply graph_ramify_aux1'; auto.
     + apply weak_valid_vvalid_dec. apply (gamma_left_weak_valid g x d l r); auto.
