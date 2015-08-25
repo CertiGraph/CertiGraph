@@ -42,7 +42,7 @@ Definition spanning_spec :=
   POST [ Tvoid ]
         PROP ()
         LOCAL()
-        SEP (`(EX g': Graph, !! spanning_tree g x g' && vertices_at sh g' (reachable g x))).
+        SEP (`(EX g': Graph, !! spanning_tree g x g' && vertices_at sh (reachable g x) g')).
 
 Definition dispose_spec :=
   DECLARE _dispose
@@ -50,7 +50,7 @@ Definition dispose_spec :=
   PRE [ _x OF (tptr (Tstruct _Node noattr))]
           PROP  (writable_share sh; weak_valid (pg_gg g) x)
           LOCAL (temp _x (pointer_val_val x))
-          SEP   (`(!!tree g x && graph sh x g))
+          SEP   (`(!!is_tree g x && graph sh x g))
   POST [ Tvoid ]
         PROP ()
         LOCAL()
@@ -147,7 +147,7 @@ Proof.
      LOCAL (temp _r (pointer_val_val r);
             temp _l (pointer_val_val l);
             temp _x (pointer_val_val x))
-     SEP (`(EX g2: Graph, !! spanning_tree g1 l g2 && vertices_at sh g2 (reachable g1 x)))); [admit | | gather_current_goal_with_evar ..].
+     SEP (`(EX g2: Graph, !! spanning_tree g1 l g2 && vertices_at sh (reachable g1 x) g2))); [admit | | gather_current_goal_with_evar ..].
 
   (* root_mark = l -> m; *)
   localize
@@ -206,7 +206,7 @@ Proof.
      LOCAL (temp _r (pointer_val_val r);
             temp _l (pointer_val_val l);
             temp _x (pointer_val_val x))
-     SEP (`(EX g2: Graph, !! spanning_tree g1 l g2 && vertices_at sh g2 (reachable g1 x)))).
+     SEP (`(EX g2: Graph, !! spanning_tree g1 l g2 && vertices_at sh (reachable g1 x) g2))).
   Transparent node_pred_dec.
   Transparent pSGG_VST.
   destruct (node_pred_dec (marked g1) l). inversion H4.
@@ -241,7 +241,7 @@ Proof.
      LOCAL (temp _r (pointer_val_val r);
             temp _l (pointer_val_val l);
             temp _x (pointer_val_val x))
-     SEP (`(EX  g' : Graph, !!spanning_tree g1 l g' && vertices_at sh g' (reachable g1 x)))
+     SEP (`(EX  g' : Graph, !!spanning_tree g1 l g' && vertices_at sh (reachable g1 x) g'))
     ).
   Grab Existential Variables.
   Focus 6. { solve_split_by_closed. } Unfocus.
