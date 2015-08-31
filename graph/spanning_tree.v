@@ -62,11 +62,41 @@ Module SIMPLE_SPANNING_TREE.
 
     Lemma spanning_list_spanning_tree: forall (P: V -> Prop) g1 root g2 l,
         (forall e, In e l <-> out_edges g1 root e) ->
-        P root ->
+        vvalid g1 root -> P root ->
         spanning_list (fun x => P x /\ x <> root) g1 l g2 ->
         spanning_tree g1 root P g2.
     Proof.
-      intros.  
+      intros. split; [|split]; intros.
+      + remember (fun x : V => P x /\ x <> root).
+        remember (fun n : V => ~ g1 |= root ~o~> n satisfying P).
+        assert (Included P1 (fun n : V => ~ g1 |= root ~o~> n satisfying P)). {
+          intro. rewrite HeqP1. auto.
+        } clear HeqP1.
+        assert (forall e, In e l -> out_edges g1 root e). {
+          intros. apply H; auto.
+        } clear H.
+        induction H2. rewrite H. reflexivity. subst.
+        apply si_trans with (predicate_partialgraph g2 P1).
+        - clear IHspanning_list H2.
+          destruct H as [[[? ?] ?] | [? ?]].
+          * admit.
+          * apply si_stronger_partialgraph_simple with (fun n : V => ~ g1 |= root ~o~> n satisfying P); auto.
+            (* evalid e -> (vvalid g1 (src g1 e) \/ vvalid g2 (src g2 e)) -> src g1 e = src g2 e *)
+            destruct H2 as [? [? [? [? ?]]]]. split; [|split; [|split]]; intros; simpl.
+            Focus 1. {
+              unfold predicate_vvalid. specialize (H2 v). intuition.
+            } Unfocus.
+            Focus 1. {
+              unfold predicate_weak_evalid.
+              destruct (equiv_dec e0 e).
+              + admit.
+              + unfold equiv in c. specialize (H5 _ c). specialize (H6 _ c).
+                rewrite H5, H6. tauto.
+            } Unfocus.
+            Focus 1. {
+              destruct (equiv_dec e0 e).
+              + unfold equiv in e1. subst. clear H5 H6 H7.
+                exfalso; apply H8. hnf.
     Abort.
 
   End SIMPLE_SPANNING.

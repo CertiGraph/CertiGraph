@@ -240,13 +240,18 @@ Proof.
     simpl in H1 |- *.
     unfold predicate_vvalid in H1 |- *.
     tauto.
-  + intro e; specialize (H2 e); specialize (H3 e); specialize (H (src g1 e)); specialize (H0 (src g1 e));
+  + intro e; specialize (H2 e); specialize (H3 e); specialize (H (src g1 e)); specialize (H0 (src g2 e));
     simpl in H2, H3 |- *.
-    unfold predicate_weak_evalid in H2 |- *.
-    rewrite <- H3 in *.
-    tauto.
-  + exact H3.
-  + exact H4.
+    unfold predicate_weak_evalid in H2, H3 |- *. clear H4. split; intros; destruct H4.
+    - rewrite H in H5. destruct H5. assert (evalid g1 e /\ p1 (src g1 e)) by auto.
+      specialize (H3 H7). rewrite H2 in H7. specialize (H3 H7). rewrite <- H3 in *. tauto.
+    - rewrite H0 in H5. destruct H5. assert (evalid g2 e /\ p2 (src g2 e)) by auto.
+      assert (evalid g1 e /\ p1 (src g1 e)) by tauto. specialize (H3 H8 H7).
+      rewrite H3 in *. rewrite H. tauto.
+  + simpl in *. unfold predicate_weak_evalid in *. intros.
+    rewrite H in H5. rewrite H0 in H6. apply H3; tauto.
+  + simpl in *. unfold predicate_weak_evalid in *. intros.
+    rewrite H in H5. rewrite H0 in H6. apply H4; tauto.
 Qed.
 
 Lemma si_stronger_partialgraph_simple: forall (g1 g2: PreGraph V E) (p p': V -> Prop),
@@ -268,11 +273,10 @@ Proof.
   + unfold predicate_vvalid.
     rewrite H0, H.
     reflexivity.
-  + unfold predicate_evalid.
-    rewrite H0, H1, H2, H3.
-    reflexivity.
-  + auto.
-  + auto.
+  + unfold predicate_evalid. rewrite H0, H1. specialize (H1 e).
+    split; intros; destruct H4 as [? [? ?]]; [rewrite <- H2, <- H3 | rewrite H2, H3]; tauto.
+  + simpl in * |- . unfold predicate_evalid in * |- . apply H2; tauto.
+  + simpl in * |- . unfold predicate_evalid in * |- . apply H3; tauto.
 Defined.
 
 Global Existing Instance subgraph_proper.
@@ -285,11 +289,10 @@ Proof.
   + unfold predicate_vvalid.
     rewrite H0, H.
     reflexivity.
-  + unfold predicate_weak_evalid.
-    rewrite H0, H1, H2.
-    reflexivity.
-  + auto.
-  + auto.
+  + unfold predicate_weak_evalid. rewrite H0, H1. specialize (H1 e).
+    split; intro; intuition; [rewrite <- H2 | rewrite H2]; auto.
+  + simpl in * |- . unfold predicate_weak_evalid in * |- . apply H2; tauto.
+  + simpl in * |- . unfold predicate_weak_evalid in * |- . apply H3; tauto.
 Defined.
 
 Global Existing Instance partialgraph_proper.
@@ -314,6 +317,10 @@ Proof.
   pose proof H0 y.
   pose proof H x.
   pose proof H y.
+  destruct H3 as [? [? ?]].
+  specialize (H7 e H3). specialize (H8 e H3).
+  assert (evalid g2 e) by (rewrite <- H6; auto).
+  specialize (H7 H15). specialize (H8 H15).
   split; [tauto |].
   split; [tauto |].
   exists e.
@@ -321,7 +328,7 @@ Proof.
   rewrite <- !H7.
   rewrite <- !H8.
   subst.
-  repeat split; auto; tauto.
+  repeat split; auto; try tauto.
 Qed.
 
 Lemma si_reachable_subgraph: forall (g1 g2: PreGraph V E) S, g1 ~=~ g2 -> (reachable_subgraph g1 S) ~=~ (reachable_subgraph g2 S).
@@ -329,15 +336,12 @@ Proof.
   intros.
   pose proof (fun x => si_reachable_through_set g1 g2 S x H).
   destruct H as [? [? [? ?]]].
-  split; [| split; [| split]]; simpl; auto.
-  + intros.
-    unfold predicate_vvalid.
-    rewrite (H0 v), H.
-    tauto.
-  + intros.
-    unfold predicate_evalid.
-    rewrite (H0 (src g1 e)), (H0 (dst g1 e)), H1, H2, H3.
-    tauto.
+  split; [| split; [| split]]; simpl; unfold predicate_evalid, predicate_vvalid; simpl; intros; auto.
+  + rewrite (H0 v), H. tauto.
+  + rewrite (H0 (src g1 e)), (H0 (dst g1 e)), H1. specialize (H1 e).
+    split; intros; [rewrite <- H2, <- H3 | rewrite H2, H3]; intuition.
+  + apply H2; tauto.
+  + apply H3; tauto.
 Qed.
 
 Lemma si_reachable_by: forall (g1 g2: PreGraph V E) (p1 p2: V -> Prop) x y,
