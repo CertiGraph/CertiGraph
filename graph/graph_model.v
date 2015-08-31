@@ -3,7 +3,6 @@ Require Import Coq.Sets.Ensembles.
 Require Import Coq.Sets.Finite_sets.
 Require Import Coq.Lists.List.
 Require Import Coq.Classes.RelationClasses.
-
 Require Import RamifyCoq.Coqlib.
 
 Lemma Union_iff: forall U A B x, Ensembles.In U (Union U A B) x <-> Ensembles.In U A x \/ Ensembles.In U B x.
@@ -357,8 +356,8 @@ Lemmas about structurally identical
 Definition structurally_identical (g1 g2: PreGraph Vertex Edge): Prop :=
   (forall v : Vertex, (vvalid g1 v <-> vvalid g2 v)) /\
   (forall e : Edge, (evalid g1 e <-> evalid g2 e)) /\
-  (forall e : Edge, src g1 e = src g2 e) /\
-  (forall e : Edge, dst g1 e = dst g2 e).
+  (forall e : Edge, evalid g1 e -> evalid g2 e -> src g1 e = src g2 e) /\
+  (forall e : Edge, evalid g1 e -> evalid g2 e -> dst g1 e = dst g2 e).
 
 Notation "g1 '~=~' g2" := (structurally_identical g1 g2) (at level 1).
 
@@ -371,8 +370,11 @@ Proof. intros; destruct H as [? [? [? ?]]]; split; [| split; [| split]]; auto; f
 Lemma si_trans: forall (G1 G2 G3: PreGraph Vertex Edge), G1 ~=~ G2 -> G2 ~=~ G3 -> G1 ~=~ G3.
 Proof.
   intros; destruct H as [? [? [? ?]]], H0 as [? [? [? ?]]].
-  split; [| split; [| split]]; auto; firstorder;
-  specialize (H2 e); specialize (H3 e); specialize (H4 e); specialize (H5 e); congruence.
+  split; [| split; [| split]]; intros; [firstorder | firstorder | |];
+  specialize (H1 e); specialize (H2 e); specialize (H3 e);
+  specialize (H4 e); specialize (H5 e); specialize (H6 e);
+  assert (evalid G2 e) by (apply H1; auto); specialize (H2 H7 H9); specialize (H3 H7 H9);
+  specialize (H5 H9 H8); specialize (H6 H9 H8); congruence.
 Qed.
 
 Instance si_Equiv: Equivalence (structurally_identical).
@@ -391,8 +393,8 @@ Proof.
   rewrite step_spec in H0 |- *.
   destruct H as [? [? [? ?]]].
   destruct H0 as [e [? [? ?]]]; exists e.
-  rewrite <- H1, <- H2, <- H3.
-  auto.
+  specialize (H1 e).
+  rewrite <- H1, <- H2, <- H3; tauto.
 Qed.
 
 Lemma edge_si:

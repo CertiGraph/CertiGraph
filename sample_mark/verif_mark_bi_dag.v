@@ -229,8 +229,10 @@ Proof.
   normalize; intros g2; normalize.
   assert (H_GAMMA_g2: vgamma g2 x = (true, l, r)).
   Focus 1. {
-    eapply gamme_true_mark; eauto.
+    
+    eapply gamma_true_mark; eauto.
     apply weak_valid_vvalid_dec; auto.
+    destruct H2 as [[? _] _]. rewrite <- H2; auto.
   } Unfocus.
   assert (g2x_valid: vvalid g2 x) by (apply (proj1 (proj1 H2)); auto).
   assert (g2r_weak_valid: weak_valid g2 r) by (apply (weak_valid_si g1 g2 _ (proj1 H2)); auto).

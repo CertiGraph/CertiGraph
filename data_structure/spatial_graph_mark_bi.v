@@ -55,22 +55,24 @@ Proof.
     reflexivity.
 Qed.
 
-Lemma gamme_true_mark: forall (g g': Graph) x y l r, Decidable (vvalid g y) -> vgamma g x = (true, l, r) -> mark g y g' -> vgamma g' x = (true, l, r).
+Lemma gamma_true_mark: forall (g g': Graph) x y l r,
+    Decidable (vvalid g y) -> vgamma g x = (true, l, r) -> mark g y g' -> vvalid g' x-> vgamma g' x = (true, l, r).
 Proof.
   intros.
   simpl in H0 |- *.
   unfold gamma in H0 |- *.
   inversion H0; subst.
   pose proof mark_marked g y g' H1.
-  spec H2; [apply Graph_reachable_by_dec; auto |].
-  specialize (H2 x).
-  simpl in H2.
+  spec H3; [apply Graph_reachable_by_dec; auto |].
+  specialize (H3 x).
+  simpl in H3.
   destruct (vlabel g x); [| congruence].
-  spec H2; [auto |].
-  rewrite <- H2.
-  destruct H1 as [[_ [_ [_ ?]]] _].
-  rewrite !H1.
-  auto.
+  spec H3; [auto |].
+  rewrite <- H3.
+  destruct H1 as [[? [? [? ?]]] _].
+  f_equal; [f_equal |].
+  + apply (left_valid g') in H2. assert (evalid g (x, L)) by (rewrite <- H5 in H2; auto). symmetry; apply H7; auto.
+  + apply (right_valid g') in H2. assert (evalid g (x, R)) by (rewrite <- H5 in H2; auto). symmetry; apply H7; auto.
 Qed.
 
 Lemma mark1_mark_left_mark_right: forall (g1 g2 g3 g4: Graph) root l r,
@@ -166,11 +168,13 @@ Proof.
         destruct H1 as [? [? [? ?]]].
         assert (true <> false) by congruence.
         assert (false <> true) by congruence.
+        assert (dst g (v, L) = dst g' (v, L)) by (apply H8; apply (left_valid g) in H2; [| rewrite H6 in H2]; auto).
+        assert (dst g (v, R) = dst g' (v, R)) by (apply H8; apply (right_valid g) in H2; [| rewrite H6 in H2]; auto).
         destruct (vlabel g v), (vlabel g' v); simpl in H4.
-        1: rewrite !H8; auto.
+        1: rewrite H11, H12; auto.
         1: tauto.
         1: tauto.
-        1: rewrite !H8; auto.
+        1: rewrite H11, H12; auto.
       * intros; simpl; auto.
 Qed.
 
@@ -213,11 +217,11 @@ Proof.
     auto.
   + destruct H as [? _].
     destruct H as [_ [_ [_ ?]]].
-    rewrite H; auto.
+    rewrite H; auto; admit.
   + destruct H as [? _].
     destruct H as [_ [_ [_ ?]]].
     rewrite H; auto.
-Qed.
+Abort.
 
 (*
 Section SpatialGraph.

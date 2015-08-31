@@ -269,7 +269,7 @@ Proof.
     entailer!.
     rewrite !exp_emp.
     eapply (@graph_ramify_aux1_right _ (sSGG_VST sh) g2); eauto.
-    eapply gamme_true_mark; eauto.
+    eapply gamma_true_mark; eauto.
     apply weak_valid_vvalid_dec; auto.
   } Unfocus.
   (* Unlocalize *)
@@ -278,6 +278,6 @@ Proof.
   forward. (* ( return; ) *)
   apply (exp_right g3); entailer!.
   apply (mark1_mark_left_mark_right g g1 g2 g3 (ValidPointer b i) l r); auto.
-  eapply gamme_true_mark; eauto.
+  eapply gamma_true_mark; eauto.
   apply weak_valid_vvalid_dec; auto.
 Time Qed. (* Takes 30 minuts. *)

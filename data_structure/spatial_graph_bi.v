@@ -219,10 +219,10 @@ Proof.
   f_equal; [f_equal |].
   + apply H0; tauto.
   + destruct H as [? [? [? ?]]].
-    apply H5.
+    apply H5; admit.
   + destruct H as [? [? [? ?]]].
     apply H5.
-Qed.    
+Abort.
 
 End pSpatialGraph_Graph_Bi.
 
@@ -231,4 +231,4 @@ Class sSpatialGraph_Graph_Bi {pSGG_Bi: pSpatialGraph_Graph_Bi}: Type := {
   SGA: SpatialGraphAssum SGP
 }.
 
-Existing Instances SGP SGA.
+Existing Instances SGP SGA biGraph.
