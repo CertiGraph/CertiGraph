@@ -206,7 +206,8 @@ Proof.
   + eapply gamma_right_reachable_included; eauto.
 Qed.
 
-Lemma gamma_marks: forall (g g' : Graph) x l r, mark1 g x g' -> gamma g x = (false, l, r) -> gamma g' x = (true, l, r).
+Lemma gamma_marks: forall (g g' : Graph) x l r,
+    mark1 g x g' -> gamma g x = (false, l, r) -> vvalid g' x -> gamma g' x = (true, l, r).
 Proof.
   intros.
   unfold gamma in *.
@@ -216,12 +217,16 @@ Proof.
     simpl in H.
     auto.
   + destruct H as [? _].
-    destruct H as [_ [_ [_ ?]]].
-    rewrite H; auto; admit.
+    destruct H as [_ [? [_ ?]]].
+    apply (left_valid g') in H1.
+    assert (evalid g (x, L)) by (rewrite <- H in H1; auto).
+    symmetry; apply H2; auto.
   + destruct H as [? _].
-    destruct H as [_ [_ [_ ?]]].
-    rewrite H; auto.
-Abort.
+    destruct H as [_ [? [_ ?]]].
+    apply (right_valid g') in H1.
+    assert (evalid g (x, R)) by (rewrite <- H in H1; auto).
+    symmetry; apply H2; auto.
+Qed.
 
 (*
 Section SpatialGraph.

@@ -218,11 +218,19 @@ Proof.
   unfold gamma.
   f_equal; [f_equal |].
   + apply H0; tauto.
-  + destruct H as [? [? [? ?]]].
-    apply H5; admit.
-  + destruct H as [? [? [? ?]]].
-    apply H5.
-Abort.
+  + destruct H as [_ [_ [_ ?]]].
+    generalize (left_sound G v); intro.
+    generalize (left_sound G' v); intro.
+    apply H; simpl; unfold predicate_weak_evalid.
+    - destruct H1. apply (left_valid G) in H1. rewrite H3. auto.
+    - destruct H2. apply (left_valid G') in H2. rewrite H4. auto.
+  + destruct H as [_ [_ [_ ?]]].
+    generalize (right_sound G v); intro.
+    generalize (right_sound G' v); intro.
+    apply H; simpl; unfold predicate_weak_evalid.
+    - destruct H1. apply (right_valid G) in H1. rewrite H3. auto.
+    - destruct H2. apply (right_valid G') in H2. rewrite H4. auto.
+Qed.
 
 End pSpatialGraph_Graph_Bi.
 
