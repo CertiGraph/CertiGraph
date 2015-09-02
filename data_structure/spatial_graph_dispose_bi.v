@@ -27,9 +27,27 @@ Section SPATIAL_GRAPH_DISPOSE_BI.
   Context {pSGG_Bi: pSpatialGraph_Graph_Bi}.
   Context {sSGG_Bi: sSpatialGraph_Graph_Bi}.
 
-  Local Open Scope logic.
+  Existing Instance maGraph.
+
+  Local Open Scope logic.  
 
   (* Existing Instances SGP SGA. *)
+
+  Lemma edge_spanning_tree_left_null:
+    forall (g: Graph) x d l r, vgamma g x = (d, l, r) -> (marked g) l -> edge_spanning_tree g (x, L) (Graph_gen_left_null g x).
+  Proof.
+    intros. assert (l = dst g (x, L)) by (simpl in H; unfold gamma in H; inversion H; auto).
+    hnf. destruct (node_pred_dec (marked g) (dst g (x, L))). 2: subst l; exfalso; auto.
+    split.
+    + hnf. simpl. split; [| split; [|split; [| split]]]; [tauto | tauto | tauto | | ].
+      - intros. unfold graph_gen.update_dst.
+        destruct (equiv_dec (x, L) e); intuition.
+      - unfold strong_evalid. simpl. intro. destruct H2 as [? [? ?]].
+        unfold graph_gen.update_dst in H4.
+        destruct (equiv_dec (x, L) (x, L)); intuition.
+        apply (valid_not_null g) in H4; auto. rewrite is_null_def. auto.
+    + simpl. tauto.
+  Qed.
 
   Lemma graph_ramify_aux1': forall (g: Graph) (l: addr) (P : addr -> Prop) {V_DEC: Decidable (vvalid g l)},
       unmarked g l ->
