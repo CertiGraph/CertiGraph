@@ -254,7 +254,12 @@ Proof.
   Focus 2. {
     entailer!.
     rewrite !exp_emp.
-    (* apply (@graph_ramify_aux1_left _ (sSGG_VST sh) g1 x true l r); auto. *)
+    assert (l = dst g1 (x, L)) by (simpl in H_GAMMA_g1; unfold gamma in H_GAMMA_g1; inversion H_GAMMA_g1; auto).
+    assert (forall (gg : Graph), spanning_tree g1 l gg -> edge_spanning_tree g1 (x, L) gg). {
+      intros; unfold edge_spanning_tree.
+      destruct (node_pred_dec (marked g1) (dst g1 (x, L))); subst l; [exfalso |]; auto.
+    }
+    apply (@graph_ramify_aux1_left _ (sSGG_VST sh) g1 x true l r); auto.
     admit.
   } Unfocus.
   unfold semax_ram.
@@ -292,7 +297,7 @@ Proof.
   Focus 3. { entailer!. } Unfocus.
   Focus 3. { repeat constructor; auto with closed. } Unfocus.
   Focus 2. {
-    entailer!.
+    entailer!. 
     admit.
   } Unfocus.
   unfold semax_ram. forward.
