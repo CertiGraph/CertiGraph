@@ -632,26 +632,27 @@ Proof.
 Qed.
 *)
 
-Lemma existential_partialgraph_update_prime:
+Lemma existential_partialgraph_update_prime':
   forall (g: Graph) (PureS1 PureS2: V -> Prop),
   (forall x, PureS1 x -> PureS2 x) ->
   (forall x, PureS2 x -> vvalid g x) ->
   (forall x, PureS2 x -> Decidable (PureS1 x)) ->
-  forall {A: Type} (g': A -> Graph) (PureF: A -> Prop) (PureS1' PureS2': A -> V -> Prop),
+  forall {A: Type} (g': A -> Graph) (PureF PureF': A -> Prop) (PureS1' PureS2': A -> V -> Prop),
   (forall a x, PureF a -> PureS1' a x -> PureS2' a x) ->
   (forall a x, PureF a -> PureS2' a x -> vvalid (g' a) x) ->
   (forall a, PureF a ->
     ((predicate_partial_spatialgraph g (fun x => PureS2 x /\ ~ PureS1 x)) -=-
      (predicate_partial_spatialgraph (g' a) (fun x => PureS2' a x /\ ~ PureS1' a x)))) ->
+  (forall a, PureF a -> PureF' a) ->
   vertices_at PureS2 g |-- vertices_at PureS1 g *
      ((EX a: A, !!PureF a && vertices_at (PureS1' a) (g' a)) -*
-      (EX a: A, !!PureF a && vertices_at (PureS2' a) (g' a))).
+      (EX a: A, !!PureF' a && vertices_at (PureS2' a) (g' a))).
 Proof.
   intros.
   unfold vertices_at.
-  apply existential_pred_sepcon_ramify_pred with (PF := fun x => PureS2 x /\ ~ PureS1 x) (p2 := (fun a => graph_cell (g' a))).
+  apply existential_pred_sepcon_ramify_pred' with (PF := fun x => PureS2 x /\ ~ PureS1 x) (p2 := (fun a => graph_cell (g' a))).
   + intros.
-    destruct (X x H4); [left | right]; auto.
+    destruct (X x H5); [left | right]; auto.
   + intros; specialize (H x); tauto.
   + intros; tauto.
   + intros a x HH.
@@ -681,15 +682,32 @@ Proof.
     specialize (H0 x).
     specialize (H3 a HH).
     destruct H3 as [[? _] [? _]].
-    specialize (H3 x); simpl in H3, H5.
-    unfold predicate_vvalid in H3, H5.
-    specialize (H5 x).
-    spec H5; [tauto |].
-    spec H5; [tauto |].
+    specialize (H3 x); simpl in H3, H6.
+    unfold predicate_vvalid in H3, H6.
+    specialize (H6 x).
+    spec H6; [tauto |].
+    spec H6; [tauto |].
     unfold graph_cell.
     f_equal.
     auto.
+  + auto.
 Qed.
+
+Lemma existential_partialgraph_update_prime:
+  forall (g: Graph) (PureS1 PureS2: V -> Prop),
+  (forall x, PureS1 x -> PureS2 x) ->
+  (forall x, PureS2 x -> vvalid g x) ->
+  (forall x, PureS2 x -> Decidable (PureS1 x)) ->
+  forall {A: Type} (g': A -> Graph) (PureF PureF': A -> Prop) (PureS1' PureS2': A -> V -> Prop),
+  (forall a x, PureF a -> PureS1' a x -> PureS2' a x) ->
+  (forall a x, PureF a -> PureS2' a x -> vvalid (g' a) x) ->
+  (forall a, PureF a ->
+    ((predicate_partial_spatialgraph g (fun x => PureS2 x /\ ~ PureS1 x)) -=-
+     (predicate_partial_spatialgraph (g' a) (fun x => PureS2' a x /\ ~ PureS1' a x)))) ->
+  vertices_at PureS2 g |-- vertices_at PureS1 g *
+     ((EX a: A, !!PureF a && vertices_at (PureS1' a) (g' a)) -*
+      (EX a: A, !!PureF a && vertices_at (PureS2' a) (g' a))).
+Proof. intros. apply existential_partialgraph_update_prime'; auto. Qed.
 
 Lemma vertices_at_ramify: forall (g: Graph) {rfg: ReachableFiniteGraph g} (P: V -> Prop) x d d',
   vvalid g x -> P x -> vgamma g x = d ->

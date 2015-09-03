@@ -49,29 +49,40 @@ Section SPATIAL_GRAPH_DISPOSE_BI.
     + simpl. tauto.
   Qed.
 
-  Lemma graph_ramify_aux1': forall (g: Graph) (l: addr) (P : addr -> Prop) {V_DEC: Decidable (vvalid g l)},
-      unmarked g l ->
+   (*   general_spatial_graph.graph x g1 *)
+   (* |-- general_spatial_graph.graph l g1 * *)
+   (*     ((EX  x0 : Graph, *)
+   (*       !!spanning_tree g1 l x0 && *)
+   (*       general_spatial_graph.vertices_at (reachable g1 l) x0) -* *)
+   (*      (EX  x0 : Graph, *)
+   (*       !!edge_spanning_tree g1 (x, L) x0 && *)
+   (*       general_spatial_graph.vertices_at (reachable g1 x) x0)) *)
+
+
+  Lemma graph_ramify_aux1': forall (g: Graph) (l: addr) (e: addr * LR) (P : addr -> Prop) {V_DEC: Decidable (vvalid g l)},
+      unmarked g l -> l = dst g e ->
       Included (reachable g l) P -> Included P (vvalid g) ->
+      (forall gg, spanning_tree g l gg -> edge_spanning_tree g e gg) ->
       (vertices_at P g: pred) |-- graph l g *
       ((EX g': Graph, !! spanning_tree g l g' && vertices_at (reachable g l) g') -*
-       (EX g': Graph, !! spanning_tree g l g' && vertices_at P g')).
+       (EX g': Graph, !! edge_spanning_tree g e g' && vertices_at P g')).
   Proof.
-    intros. apply existential_partialgraph_update_prime; auto.
+    intros. apply existential_partialgraph_update_prime'; auto.
     + intros. apply RFG_reachable_decicable'. apply RGF. auto.
-    + intros. apply H0. auto.
-    + intros g' y ? ?. apply H1 in H3. unfold In in H3.
+    + intros. apply H1. auto.
+    + intros g' y ? ?. apply H2 in H5. unfold In in H5.
       rewrite <- (spanning_tree_vvalid g l g'); auto.
       apply Graph_reachable_by_dec; auto.
-    + intros g' ?. destruct H2 as [[? ?] [? ?]]. specialize (H5 H).
-      destruct H5. apply Graph_partialgraph_vi_spec.
+    + intros g' ?. destruct H4 as [[? ?] [? ?]]. specialize (H7 H).
+      destruct H7. apply Graph_partialgraph_vi_spec.
       - apply si_stronger_partialgraph_simple with (fun n : addr => ~ g |= l ~o~> n satisfying (unmarked g)); auto.
-        intro v. unfold In. intro. destruct H7.
-        intro. apply H8. apply reachable_by_is_reachable in H9. auto.
-      - intros. specialize (H3 v).
+        intro v. unfold In. intro. destruct H9.
+        intro. apply H10. apply reachable_by_is_reachable in H11. auto.
+      - intros. specialize (H5 v).
         assert (~ g |= l ~o~> v satisfying (unmarked g)). {
-          intro. destruct H10. apply H12.
-          apply reachable_by_is_reachable in H11. auto.
-        } specialize (H3 H11). simpl in H3.
+          intro. destruct H12. apply H14.
+          apply reachable_by_is_reachable in H13. auto.
+        } specialize (H5 H13). simpl in H5.
         destruct (vlabel g v), (vlabel g' v); try tauto.
         symmetry. tauto.
   Qed.
@@ -79,16 +90,18 @@ Section SPATIAL_GRAPH_DISPOSE_BI.
   Lemma graph_ramify_aux1_left: forall (g: Graph) x d l r,
       vvalid g x -> unmarked g l ->
       vgamma g x = (d, l, r) ->
+      (forall gg, spanning_tree g l gg -> edge_spanning_tree g (x, L) gg) ->
       (graph x g: pred) |-- graph l g *
       ((EX g': Graph, !! spanning_tree g l g' && vertices_at (reachable g l) g') -*
-       (EX g': Graph, !! spanning_tree g l g' && vertices_at (reachable g x) g')).
+       (EX g': Graph, !! edge_spanning_tree g (x, L) g' && vertices_at (reachable g x) g')).
   Proof.
     intros. apply graph_ramify_aux1'; auto.
     + apply weak_valid_vvalid_dec. apply (gamma_left_weak_valid g x d l r); auto.
+    + simpl in H1. unfold gamma in H1. inversion H1; auto.
     + intros v. unfold In. intro. apply edge_reachable with l; auto. split; [| split]; auto.
-      - apply reachable_head_valid in H2; auto.
+      - apply reachable_head_valid in H3; auto.
       - rewrite (gamma_step g x d l r); auto.
-    + intro v. unfold In. intro. apply reachable_foot_valid in H2. auto.
+    + intro v. unfold In. intro. apply reachable_foot_valid in H3. auto.
   Qed.
 
   (* Lemma graph_ramify_aux1_right: forall (g: Graph) x d l r, *)

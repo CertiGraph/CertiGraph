@@ -421,16 +421,18 @@ Proof.
     - rewrite <- iter_sepcon_app_sepcon; auto.
 Qed.
 
-Lemma existential_pred_sepcon_ramify_pred: forall {C: Type} (Pg1 Pl1 PF: B -> Prop) (PureF: C -> Prop) (Pg2 Pl2: C -> B -> Prop) (p1: B -> A) (p2: C -> B -> A),
+Lemma existential_pred_sepcon_ramify_pred': forall {C: Type} (Pg1 Pl1 PF: B -> Prop) (PureF PureF': C -> Prop)
+                                                   (Pg2 Pl2: C -> B -> Prop) (p1: B -> A) (p2: C -> B -> A),
   (forall x, Pg1 x -> {Pl1 x} + {PF x}) ->
   (forall x, Pg1 x <-> Pl1 x \/ PF x) ->
   (forall x, Pl1 x -> PF x -> False) ->
   (forall c x, PureF c -> (Pg2 c x <-> Pl2 c x \/ PF x)) ->
   (forall c x, PureF c -> Pl2 c x -> PF x -> False) ->
   (forall c x, PureF c -> PF x -> p1 x = p2 c x) ->
+  (forall c, PureF c -> PureF' c) ->
   pred_sepcon Pg1 p1 |-- pred_sepcon Pl1 p1 *
    ((EX c: C, !! PureF c && pred_sepcon (Pl2 c) (p2 c)) -*
-    (EX c: C, !! PureF c && pred_sepcon (Pg2 c) (p2 c))).
+    (EX c: C, !! PureF' c && pred_sepcon (Pg2 c) (p2 c))).
 Proof.
   intros.
   unfold pred_sepcon.
@@ -446,28 +448,41 @@ Proof.
     erewrite iter_sepcon_permutation; [apply derives_refl |].
     apply NoDup_Permutation; auto.
     - apply NoDup_app_inv; auto.
-      intro x; rewrite H7, H9.
+      intro x; rewrite H8, H10.
       exact (H0 x).
-    - intro x; rewrite in_app_iff, H4, H7, H9.
+    - intro x; rewrite in_app_iff, H5, H8, H10.
       apply H.
   + normalize.
     intros l' ?.
     normalize.
     apply (exp_right c); normalize.
-    apply (exp_right (lF ++ l')); normalize.
-    apply andp_right; [apply andp_right; apply prop_right |].
-    - intro x; rewrite in_app_iff, H9, H11.
-      specialize (H1 c x H10); tauto.
+    apply (exp_right (lF ++ l')); apply andp_right.
+    apply prop_right. apply H4; auto.
+    apply andp_right; [apply andp_right; apply prop_right|].
+    - intro x; rewrite in_app_iff, H10, H12.
+      specialize (H1 c x H11); tauto.
     - apply NoDup_app_inv; auto.
-      intro x; rewrite H9, H11.
-      specialize (H2 c x H10); tauto.
+      intro x; rewrite H10, H12.
+      specialize (H2 c x H11); tauto.
     - replace (iter_sepcon lF p1) with (iter_sepcon lF (p2 c)).
       * rewrite <- iter_sepcon_app_sepcon; auto.
       * apply iter_sepcon_func_strong.
         intros.
         symmetry; apply H3; auto.
-        rewrite <- H9; auto.
+        rewrite <- H10; auto.
 Qed.
+
+Lemma existential_pred_sepcon_ramify_pred: forall {C: Type} (Pg1 Pl1 PF: B -> Prop) (PureF: C -> Prop) (Pg2 Pl2: C -> B -> Prop) (p1: B -> A) (p2: C -> B -> A),
+  (forall x, Pg1 x -> {Pl1 x} + {PF x}) ->
+  (forall x, Pg1 x <-> Pl1 x \/ PF x) ->
+  (forall x, Pl1 x -> PF x -> False) ->
+  (forall c x, PureF c -> (Pg2 c x <-> Pl2 c x \/ PF x)) ->
+  (forall c x, PureF c -> Pl2 c x -> PF x -> False) ->
+  (forall c x, PureF c -> PF x -> p1 x = p2 c x) ->
+  pred_sepcon Pg1 p1 |-- pred_sepcon Pl1 p1 *
+   ((EX c: C, !! PureF c && pred_sepcon (Pl2 c) (p2 c)) -*
+    (EX c: C, !! PureF c && pred_sepcon (Pg2 c) (p2 c))).
+Proof. intros. eapply existential_pred_sepcon_ramify_pred'; eauto. Qed.
 
 Lemma pred_sepcon_or: forall (P Q: B -> Prop) p,
   (forall x, P x -> Q x -> False) ->
