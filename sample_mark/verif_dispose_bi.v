@@ -19,7 +19,7 @@ Arguments SingleFrame' {l} {g} {s}.
 Notation vertices_at sh g P := (@vertices_at _ _ _ _ _ _ (@SGP pSGG_VST (sSGG_VST sh)) _ g P).
 Notation graph sh x g := (@graph _ _ _ _ _ _ (@SGP pSGG_VST (sSGG_VST sh)) _ x g).
 Existing Instances MGS biGraph maGraph finGraph RGF.
-
+  
 Definition mark_spec :=
  DECLARE _mark
   WITH sh: share, g: Graph, x: pointer_val
@@ -297,8 +297,9 @@ Proof.
   Focus 3. { entailer!. } Unfocus.
   Focus 3. { repeat constructor; auto with closed. } Unfocus.
   Focus 2. {
-    entailer!. 
-    admit.
+    entailer!.
+    apply (@graph_gen_left_null_ramify _ (sSGG_VST sh) g1 x true l r); auto.
+    destruct H2 as [[? _] _]; apply H2; auto.
   } Unfocus.
   unfold semax_ram. forward.
   entailer.
