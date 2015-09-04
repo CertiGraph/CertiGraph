@@ -27,11 +27,11 @@ Section SPATIAL_GRAPH_DISPOSE_BI.
   Context {pSGG_Bi: pSpatialGraph_Graph_Bi}.
   Context {sSGG_Bi: sSpatialGraph_Graph_Bi}.
 
-  Existing Instance maGraph.
+  Existing Instances maGraph biGraph finGraph.
 
-  Local Open Scope logic.  
+  Local Open Scope logic.
 
-  (* Existing Instances SGP SGA. *)
+  (* Existing Instances SGP SGA SGBA. *)
 
   Lemma edge_spanning_tree_left_null:
     forall (g: Graph) x d l r, vgamma g x = (d, l, r) -> (marked g) l -> edge_spanning_tree g (x, L) (Graph_gen_left_null g x).
@@ -47,6 +47,35 @@ Section SPATIAL_GRAPH_DISPOSE_BI.
         destruct (equiv_dec (x, L) (x, L)); intuition.
         apply (valid_not_null g) in H4; auto. rewrite is_null_def. auto.
     + simpl. tauto.
+  Qed.
+
+  Lemma graph_gen_left_null_ramify:
+    forall (g: Graph) (x : addr) d (l r : addr),
+      vvalid g x -> vgamma g x = (d, l, r) ->
+      (graph x g : pred) |-- vertex_at x (d, l, r) * (vertex_at x (d, null, r) -* graph x (Graph_gen_left_null g x)).
+  Proof.
+    intros.
+    replace (@vertex_at _ _ _ _ _ SGP x (d, l, r)) with (graph_cell g x).
+    Focus 2. {
+      unfold graph_cell; simpl.
+      simpl in H0; rewrite H0; auto.
+    } Unfocus.
+    replace (@vertex_at _ _ _ _ _ SGP x (d, null, r)) with (graph_cell (Graph_gen_left_null g x) x).
+    Focus 2. {
+      unfold graph_cell; simpl.
+      unfold gamma. simpl.
+      unfold graph_gen.update_dst.
+      destruct_eq_dec (x, L) (x, L). 2: exfalso; auto.
+      destruct_eq_dec (x, L) (x, R). inversion H2.
+      simpl in H0; unfold gamma in H0. inversion H0; auto.
+    } Unfocus.
+    apply iter_sepcon.pred_sepcon_ramify1; auto.
+    + apply reachable_by_reflexive; auto.
+    + admit.
+    + intros. unfold graph_cell; simpl.
+      unfold gamma; simpl. unfold graph_gen.update_dst.
+      destruct_eq_dec (x, L) (y, L). inversion H2. exfalso; auto.
+      destruct_eq_dec (x, L) (y, R). inversion H3. auto.
   Qed.
 
    (*   general_spatial_graph.graph x g1 *)

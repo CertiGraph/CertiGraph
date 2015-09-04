@@ -121,6 +121,24 @@ Proof.
   + auto.
 Qed.
 
+Lemma Graph_gen_left_null_spatial_spec: forall (G: Graph) (x: addr) (d : bool) l r,
+    vgamma G x = (d, l, r) ->
+    (Graph_gen_left_null G x) -=- (spatialgraph_gen G x (d, null, r)).
+Proof.
+  intros.
+  split; [|split; [| auto]].
+  + split; [|split; [|split]]; intros; simpl; intuition.
+    unfold Graph_gen_left_null in H0. simpl in H0. unfold spatialgraph_gen in H1. simpl in H1.
+    unfold update_dst. destruct_eq_dec (x, L) e; auto. admit.
+  + intros. simpl. unfold Graph_gen_left_null. unfold generalgraph_gen_dst. unfold gamma. simpl.
+    unfold update_dst. destruct_eq_dec (x, L) (v, L).
+    - destruct_eq_dec (x, L) (v, R). inversion H3. inversion H2. destruct_eq_dec v v. 2: exfalso; auto.
+      simpl in H. unfold gamma in H. inversion H; subst; auto.
+    - destruct_eq_dec (x, L) (v, R). inversion H3. destruct_eq_dec x v.
+      * subst. exfalso; auto.
+      * auto.
+Qed.
+
 Lemma weak_valid_si: forall (g1 g2: Graph) n, g1 ~=~ g2 -> (weak_valid g1 n <-> weak_valid g2 n).
 Proof.
   intros.
