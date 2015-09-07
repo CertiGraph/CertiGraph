@@ -327,5 +327,68 @@ Proof.
       rewrite H6. apply H5.
     + rewrite is_null_def. apply (destruct_pointer_val_NP). left; auto.
   } Unfocus.
+
+  (* if (r) { *)
+
+  normalize.
+  intro g2.
+  normalize.
+
+  assert (vvalid g2 x) by (apply (edge_spanning_tree_left_valid g1 g2 x true l r); auto).
+
+  forward_if_tac
+    (PROP  ()
+     LOCAL (temp _r (pointer_val_val r);
+            temp _l (pointer_val_val l);
+            temp _x (pointer_val_val x))
+     SEP (`(EX g3: Graph, !! edge_spanning_tree g2 (x, R) g3 && vertices_at sh (reachable g1 x) g3))); [admit | | gather_current_goal_with_evar ..].
+
+  (* root_mark = r -> m; *)
+
+  localize
+    (PROP  ()
+     LOCAL  (temp _r (pointer_val_val r))
+     SEP  (`(data_at sh node_type (vgamma2cdata (vgamma g2 r)) (pointer_val_val r)))).
+  remember (vgamma g2 r) as dlr in |-*.
+  destruct dlr as [[dd ll] rr].
+  eapply semax_ram_seq;
+    [ repeat apply eexists_add_stats_cons; constructor
+    | new_load_tac 
+    | abbreviate_semax_ram].
+  apply ram_extract_exists_pre.
+  intro root_mark_old; autorewrite with subst; clear root_mark_old.
+  replace (if dd then 1 else 0) with (if node_pred_dec (marked g2) r then 1 else 0).
+  Focus 2. {
+    destruct (node_pred_dec (marked g2)); destruct dd; auto; symmetry in Heqdlr.
+    apply vgamma_is_false in Heqdlr. simpl in a. unfold unmarked in Heqdlr. hnf in Heqdlr.
+    unfold Ensembles.In in Heqdlr. simpl in Heqdlr. apply Heqdlr in a. exfalso; auto.
+    apply vgamma_is_true in Heqdlr. exfalso; auto.
+  } Unfocus.
+  rewrite Heqdlr.
+
+  unlocalize
+    (PROP  ()
+     LOCAL (temp _root_mark (Vint (Int.repr (if node_pred_dec (marked g2) r then 1 else 0)));
+            temp _r (pointer_val_val r);
+            temp _l (pointer_val_val l);
+            temp _x (pointer_val_val x))
+     SEP  (`(vertices_at sh (reachable g1 x) g2))).
+  Grab Existential Variables.
+  Focus 6. { solve_split_by_closed. } Unfocus.
+  Focus 2. { entailer!. } Unfocus.
+  Focus 3. { entailer!. } Unfocus.
+  Focus 3. { repeat constructor; auto with closed. } Unfocus.
+  Focus 2. {
+    Opaque gamma.
+    destruct (vgamma g2 r) as [[dd ll] rr] eqn:? .
+    entailer!.
+    pose proof (update_self g2 r (dd, ll, rr) Heqp).
+    
+    assert (vertices_at sh (reachable g1 x) g2 = vertices_at sh (reachable g1 x) (spatialgraph_gen g2 r (dd, ll, rr))). {
+      apply vertices_at_vi_eq; auto.
+      apply (edge_spanning_tree_left_reachable_vvalid g1 g2 x true l r); auto.
+    }
+    simpl in H11. rewrite H11 at 2.
+    apply (@vertices_at_ramify _ _ _ _ _ _ _ (SGA_VST sh) g2 _ (reachable g1 x) r (dd, ll, rr) (dd, ll, rr)); auto.
   
 Abort.
