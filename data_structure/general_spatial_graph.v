@@ -401,6 +401,14 @@ Proof.
     apply H1; tauto.
 Qed.
 
+Lemma vertices_at_vi_eq: forall (g1 g2 : Graph) (P : V -> Prop),
+    Included P (vvalid g1) -> g1 -=- g2 -> vertices_at P g1 = vertices_at P g2.
+Proof.
+  intros. apply vertices_at_subgraph_eq; auto.
+  + destruct H0 as [[? _] _]. intro y; unfold Ensembles.In; intros. apply H0. apply H. auto.
+  + rewrite H0. reflexivity.
+Qed.
+
 Lemma graph_reachable_subgraph_eq:
   forall (g1 g2 : Graph) x,
     ((reachable_sub_spatialgraph g1 (x :: nil)) -=- (reachable_sub_spatialgraph g2 (x :: nil))) -> graph x g1 = graph x g2.

@@ -133,6 +133,27 @@ Section SPATIAL_GRAPH_DISPOSE_BI.
     + intro v. unfold In. intro. apply reachable_foot_valid in H3. auto.
   Qed.
 
+  Lemma edge_spanning_tree_left_valid: forall (g1 g2: Graph) x d l r,
+      vvalid g1 x -> vgamma g1 x = (d, l, r) -> edge_spanning_tree g1 (x, L) g2 -> vvalid g2 x.
+  Proof.
+    intros. rewrite <- (edge_spanning_tree_vvalid g1 g2 (x, L) x); auto.
+    apply Graph_reachable_by_dec. apply weak_valid_vvalid_dec.
+    apply (gamma_left_weak_valid g1 x d _ r); auto.
+    assert (l = dst g1 (x, L)) by (simpl in H0; unfold gamma in H0; inversion H0; auto).
+    rewrite <- H2. auto.
+  Qed.
+
+  Lemma edge_spanning_tree_left_reachable_vvalid: forall (g1 g2: Graph) x d l r,
+      vvalid g1 x -> vgamma g1 x = (d, l, r) -> edge_spanning_tree g1 (x, L) g2 -> Included (reachable g1 x) (vvalid g2).
+  Proof.
+    intros. assert (x = src g1 (x, L)) by (symmetry; apply (@left_sound _ _ _ _ _ _ g1 (biGraph g1) x)).
+    rewrite H2. apply edge_spanning_tree_reachable_vvalid; auto.
+    apply Graph_reachable_by_dec. apply weak_valid_vvalid_dec.
+    apply (gamma_left_weak_valid g1 x d _ r); auto.
+    assert (l = dst g1 (x, L)) by (simpl in H0; unfold gamma in H0; inversion H0; auto).
+    rewrite <- H3. auto.
+  Qed.
+
   (* Lemma graph_ramify_aux1_right: forall (g: Graph) x d l r, *)
   (*     vvalid g x -> unmarked g r -> *)
   (*     vgamma g x = (d, l, r) -> *)
