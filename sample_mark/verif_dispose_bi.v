@@ -139,6 +139,7 @@ Proof.
   assert (H_GAMMA_g1: vgamma (Graph_gen g x true) x = (true, l, r)) by
    (rewrite (proj1 (proj2 (Graph_gen_spatial_spec g x _ true _ _ H1))) by assumption;
     apply spacialgraph_gen_vgamma).
+  assert (vvalid (Graph_gen g x true) x) by (destruct H2 as [[? _] _]; apply H2; auto).
   forget (Graph_gen g x true) as g1.
   unfold semax_ram.
   
@@ -188,16 +189,17 @@ Proof.
     destruct (vgamma g1 l) as [[dd ll] rr] eqn:? .
     entailer!.
     rewrite (update_self g1 l (dd, ll, rr)) at 2 by auto.
-    assert (vvalid g1 x) by (destruct H2 as [[? _] _]; apply H2; auto).
     assert (vvalid g1 l). {
       assert (weak_valid g1 l) by (eapply gamma_left_weak_valid; eauto).
       destruct H8; auto. rewrite is_null_def in H8. subst. exfalso; intuition.
     }
     apply (@vertices_at_ramify _ _ _ _ _ _ _ (SGA_VST sh) g1 _ (reachable g1 x) l (dd, ll, rr) (dd, ll, rr)); auto.
-    apply (gamma_left_reachable_included g1 _ _ _ _ H7 H_GAMMA_g1 l).
+    apply (gamma_left_reachable_included g1 _ _ _ _ H3 H_GAMMA_g1 l).
     apply reachable_by_reflexive; auto.
     Transparent gamma.
   } Unfocus.
+
+  (* if (root_mark == 0) { *)
 
   unfold semax_ram.
   apply semax_seq_skip.
@@ -210,9 +212,12 @@ Proof.
             temp _l (pointer_val_val l);
             temp _x (pointer_val_val x))
      SEP (`(EX g2: Graph, !! edge_spanning_tree g1 (x, L) g2 && vertices_at sh (reachable g1 x) g2))).
+
+  (* spanning(l); *)
+
   Transparent node_pred_dec.
   Transparent pSGG_VST.
-  destruct (node_pred_dec (marked g1) l). inversion H4.
+  destruct (node_pred_dec (marked g1) l). inversion H5.
   localize
     (PROP ()
      LOCAL (temp _l (pointer_val_val l))
@@ -260,7 +265,6 @@ Proof.
       destruct (node_pred_dec (marked g1) (dst g1 (x, L))); subst l; [exfalso |]; auto.
     }
     apply (@graph_ramify_aux1_left _ (sSGG_VST sh) g1 x true l r); auto.
-    admit.
   } Unfocus.
   unfold semax_ram.
   forward.
@@ -271,6 +275,9 @@ Proof.
   gather_current_goal_with_evar.
   gather_current_goal_with_evar.
   destruct (node_pred_dec (marked g1) l). 2: exfalso; auto.
+
+  (* x -> l = 0; *)
+
   localize
    (PROP  ()
     LOCAL (temp _x (pointer_val_val x))
@@ -290,7 +297,7 @@ Proof.
      LOCAL (temp _r (pointer_val_val r);
             temp _l (pointer_val_val l);
             temp _x (pointer_val_val x))
-     SEP (`(graph sh x (Graph_gen_left_null g1 x)))).
+     SEP (`(vertices_at sh (reachable g1 x) (Graph_gen_left_null g1 x)))).
   Grab Existential Variables.
   Focus 6. { solve_split_by_closed. } Unfocus.
   Focus 2. { entailer!. } Unfocus.
@@ -299,14 +306,12 @@ Proof.
   Focus 2. {
     entailer!.
     apply (@graph_gen_left_null_ramify _ (sSGG_VST sh) g1 x true l r); auto.
-    destruct H2 as [[? _] _]; apply H2; auto.
   } Unfocus.
   unfold semax_ram. forward.
   entailer.
   apply (exp_right (Graph_gen_left_null g1 x)).
   entailer!.
   apply (edge_spanning_tree_left_null g1 x true l r); auto.
-  admit.
   forward.
   entailer.
   apply (exp_right g2).
@@ -319,7 +324,8 @@ Proof.
     apply edge_spanning_tree_invalid.
     intro. apply (valid_not_null g1 l).
     + assert (l = dst g1 (x, L)) by (simpl in H_GAMMA_g1; unfold gamma in H_GAMMA_g1; inversion H_GAMMA_g1; auto).
-      rewrite H5. apply H4.
+      rewrite H6. apply H5.
     + rewrite is_null_def. apply (destruct_pointer_val_NP). left; auto.
   } Unfocus.
+  
 Abort.
