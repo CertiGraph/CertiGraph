@@ -52,7 +52,7 @@ Section SPATIAL_GRAPH_DISPOSE_BI.
   Lemma graph_gen_left_null_ramify:
     forall (g: Graph) (x : addr) d (l r : addr),
       vvalid g x -> vgamma g x = (d, l, r) ->
-      (graph x g : pred) |-- vertex_at x (d, l, r) * (vertex_at x (d, null, r) -* graph x (Graph_gen_left_null g x)).
+      (graph x g : pred) |-- vertex_at x (d, l, r) * (vertex_at x (d, null, r) -* vertices_at (reachable g x) (Graph_gen_left_null g x)).
   Proof.
     intros.
     replace (@vertex_at _ _ _ _ _ SGP x (d, l, r)) with (graph_cell g x).
@@ -71,7 +71,7 @@ Section SPATIAL_GRAPH_DISPOSE_BI.
     } Unfocus.
     apply iter_sepcon.pred_sepcon_ramify1; auto.
     + apply reachable_by_reflexive; auto.
-    + admit.
+    + intuition.
     + intros. unfold graph_cell; simpl.
       unfold gamma; simpl. unfold graph_gen.update_dst.
       destruct_eq_dec (x, L) (y, L). inversion H2. exfalso; auto.
