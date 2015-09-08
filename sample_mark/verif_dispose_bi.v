@@ -334,7 +334,7 @@ Proof.
   intro g2.
   normalize.
 
-  assert (vvalid g2 x) by (apply (edge_spanning_tree_left_valid g1 g2 x true l r); auto).
+  assert (vvalid g2 x) by (rewrite <- (edge_spanning_tree_left_vvalid g1 g2 x true l r x); auto).
 
   forward_if_tac
     (PROP  ()
@@ -389,6 +389,52 @@ Proof.
       apply (edge_spanning_tree_left_reachable_vvalid g1 g2 x true l r); auto.
     }
     simpl in H11. rewrite H11 at 2.
+    assert (vvalid g1 r). {
+      assert (weak_valid g1 r) by (eapply gamma_right_weak_valid; eauto).
+      destruct H12; auto. rewrite is_null_def in H12. subst. exfalso; intuition.
+    }
     apply (@vertices_at_ramify _ _ _ _ _ _ _ (SGA_VST sh) g2 _ (reachable g1 x) r (dd, ll, rr) (dd, ll, rr)); auto.
-  
+    rewrite <- (edge_spanning_tree_left_vvalid g1 g2 x true l r r); auto.
+    apply (gamma_right_reachable_included g1 _ _ _ _ H3 H_GAMMA_g1 r).
+    apply reachable_by_reflexive; auto.
+    Transparent gamma.
+  } Unfocus.
+
+  (* if (root_mark == 0) { *)
+
+  unfold semax_ram.
+  apply semax_seq_skip.
+  Opaque node_pred_dec.
+  Opaque pSGG_VST.
+
+  forward_if_tac
+    (PROP  ()
+     LOCAL (temp _r (pointer_val_val r);
+            temp _l (pointer_val_val l);
+            temp _x (pointer_val_val x))
+     SEP (`(EX g3: Graph, !! edge_spanning_tree g2 (x, R) g3 && vertices_at sh (reachable g1 x) g3))).
+
+  (* spanning(r); *)
+
+  Transparent node_pred_dec.
+  Transparent pSGG_VST.
+  destruct (node_pred_dec (marked g2) r). inversion H7.
+  localize
+    (PROP ()
+     LOCAL (temp _r (pointer_val_val r))
+     SEP (`(vertices_at sh (reachable g1 x) g2))).
+  assert (vvalid g1 r). {
+      assert (weak_valid g1 r) by (eapply gamma_right_weak_valid; eauto).
+      destruct H8; auto. rewrite is_null_def in H8. subst. exfalso; intuition.
+  }
+  assert (vvalid g2 r) by (rewrite <- (edge_spanning_tree_left_vvalid g1 g2 x true l r r); auto).
+  assert (fst (fst (vgamma g2 r)) = false). {
+    simpl in n |-* . destruct (vlabel g2 r) eqn:? .
+    + symmetry in Heqb. apply n in Heqb. exfalso; auto.
+    + auto.
+  }
+  (* eapply semax_ram_seq'; *)
+  (* [ repeat apply eexists_add_stats_cons; constructor *)
+  (* | forward_call' (sh, g2, r) *)
+  (* | abbreviate_semax_ram]. *)
 Abort.
