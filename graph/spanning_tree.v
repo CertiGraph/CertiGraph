@@ -3,6 +3,7 @@ Require Import RamifyCoq.Coqlib.
 Require Import RamifyCoq.graph.graph_model.
 Require Import RamifyCoq.graph.path_lemmas.
 Require Import RamifyCoq.graph.subgraph2.
+Require Import RamifyCoq.graph.reachable_ind.
 Require RamifyCoq.graph.marked_graph.
 Import RamifyCoq.graph.marked_graph.MarkGraph.
 
@@ -74,6 +75,27 @@ Module SIMPLE_SPANNING_TREE.
       intros. intro y; unfold Ensembles.In; intros. apply reachable_foot_valid in H0.
       rewrite <- edge_spanning_tree_vvalid; eauto.
     Qed.
+
+    Lemma spanning_tree_reachable: forall (g1 : Graph) (root : V) (P: V -> Prop) (g2 : Graph) x,
+        ReachDecidable g1 root P -> spanning_tree g1 root P g2 -> Included (reachable g2 x) (reachable g1 x).
+    Proof.
+      intros. intro y. unfold Ensembles.In; intro.
+      rewrite reachable_ind_reachable. rewrite reachable_ind_reachable in H0. induction H0.
+      + constructor. rewrite spanning_tree_vvalid; eauto.
+      + apply ind.reachable_cons with y; auto.
+        destruct H0 as [? [? ?]]. split; [|split].
+        - rewrite spanning_tree_vvalid; eauto.
+        - rewrite spanning_tree_vvalid; eauto.
+        - rewrite step_spec in H3. destruct H3 as [e [? [? ?]]].
+          destruct H as [[? [? [? ?]]] [_ ?]]. simpl in *. unfold predicate_vvalid in *.
+          unfold predicate_weak_evalid in *. destruct (X x).
+          * specialize (H9 x r). admit.
+          * rewrite <- H4 in n.
+            assert (evalid g2 e /\ ~ g1 |= root ~o~> src g2 e satisfying P) by auto.
+            assert (evalid g1 e /\ ~ g1 |= root ~o~> src g1 e satisfying P) by (rewrite H6; auto).
+            rewrite step_spec. exists e. specialize (H7 e H11 H10). specialize (H8 e H11 H10).
+            rewrite <- H4. clear H4. rewrite <- H5. clear H5. intuition.
+    Abort.
 
     Lemma spanning_list_spanning_tree: forall (P: V -> Prop) g1 root g2 l,
         (forall e, In e l <-> out_edges g1 root e) ->
