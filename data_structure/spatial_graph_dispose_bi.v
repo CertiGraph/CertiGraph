@@ -78,16 +78,6 @@ Section SPATIAL_GRAPH_DISPOSE_BI.
       destruct_eq_dec (x, L) (y, R). inversion H3. auto.
   Qed.
 
-   (*   general_spatial_graph.graph x g1 *)
-   (* |-- general_spatial_graph.graph l g1 * *)
-   (*     ((EX  x0 : Graph, *)
-   (*       !!spanning_tree g1 l x0 && *)
-   (*       general_spatial_graph.vertices_at (reachable g1 l) x0) -* *)
-   (*      (EX  x0 : Graph, *)
-   (*       !!edge_spanning_tree g1 (x, L) x0 && *)
-   (*       general_spatial_graph.vertices_at (reachable g1 x) x0)) *)
-
-
   Lemma graph_ramify_aux1': forall (g: Graph) (l: addr) (e: addr * LR) (P : addr -> Prop) {V_DEC: Decidable (vvalid g l)},
       unmarked g l -> l = dst g e ->
       Included (reachable g l) P -> Included P (vvalid g) ->
@@ -154,11 +144,64 @@ Section SPATIAL_GRAPH_DISPOSE_BI.
     rewrite <- H3. auto.
   Qed.
 
-  (* Lemma graph_ramify_aux1_right: forall (g: Graph) x d l r, *)
-  (*     vvalid g x -> unmarked g r -> *)
-  (*     vgamma g x = (d, l, r) -> *)
-  (*     (graph x g: pred) |-- graph l g * *)
-  (*     ((EX g': Graph, !! spanning_tree g l g' && vertices_at g' (reachable g l)) -* *)
-  (*      (EX g': Graph, !! spanning_tree g l g' && vertices_at g' (reachable g x))). *)
+  Lemma edge_spanning_tree_left_vgamma: forall (g1 g2: Graph) x l r,
+      vvalid g1 x -> vgamma g1 x = (true, l, r) -> edge_spanning_tree g1 (x, L) g2 -> exists l', vgamma g2 x = (true, l', r).
+  Proof.
+    intros. simpl. unfold gamma. exists (dst g2 (x, L)).
+    assert (Hvg2: vvalid g2 x) by (rewrite <- edge_spanning_tree_left_vvalid; eauto).
+    unfold edge_spanning_tree in H1. destruct (node_pred_dec (marked g1) (dst g1 (x, L))).
+    + destruct H1 as [[_ [_ [_ [? _]]]] ?]. simpl in H0, H2. unfold gamma in H0. inversion H0.
+      rewrite H4. symmetry in H4. rewrite H2 in H4. rewrite <- H4. f_equal. symmetry. apply H1. intro. inversion H3.
+    + destruct H1 as [[_ ?] [[_ [_ [_ ?]]] _]].
+      assert (marked g1 x) by (simpl in *; unfold gamma in H0; inversion H0; auto).
+      assert (~ g1 |= dst g1 (x, L) ~o~> x satisfying (unmarked g1)) by (intro HS; apply reachable_by_foot_prop in HS; auto).
+      assert (marked g2 x) by (rewrite <- H1; auto).
+      simpl in H5. rewrite <- H5. f_equal.
+      simpl in H2. unfold predicate_weak_evalid in H2.
+      simpl in H0. unfold gamma in H0. inversion H0. symmetry. apply H2; split.
+      - apply (@right_valid _ _ _ _ g1 _ _ (biGraph g1) x); auto.
+      - rewrite (@right_sound _ _ _ _ _ _ g1 (biGraph g1) x). auto.
+      - apply (@right_valid _ _ _ _ g2 _ _ (biGraph g2) x); auto.
+      - rewrite (@right_sound _ _ _ _ _ _ g2 (biGraph g2) x). auto.
+  Qed.
+
+  Lemma edge_spanning_tree_left_reachable:
+    forall (g1 g2: Graph) x l r, vvalid g1 x -> vvalid g1 r -> vgamma g1 x = (true, l, r) ->
+                                 edge_spanning_tree g1 (x, L) g2 -> Included (reachable g2 r) (reachable g1 x).
+  Proof.
+    intros. intro v. unfold Ensembles.In . intros. apply reachable_by_cons with r; auto.
+    + hnf. intuition. rewrite (gamma_step g1 x true l r H H1). right; auto.
+    + 
+  Abort.
+
+   (* General_spatial_graph.vertices_at (reachable g1 x) g2 *)
+   (* |-- general_spatial_graph.graph r g2 * *)
+   (*     ((EX  x0 : Graph, *)
+   (*       !!spanning_tree g2 r x0 && *)
+   (*       general_spatial_graph.vertices_at (reachable g2 r) x0) -* *)
+   (*      (EX  x0 : Graph, *)
+   (*       !!edge_spanning_tree g2 (x, R) x0 && *)
+   (*       general_spatial_graph.vertices_at (reachable g1 x) x0)) *)
+  
+
+  Lemma graph_ramify_aux1_right: forall (g1 g2: Graph) x l r,
+      vvalid g1 x -> vgamma g1 x = (true, l, r) ->
+      edge_spanning_tree g1 (x, L) g2 -> unmarked g2 r ->
+      (forall gg, spanning_tree g2 r gg -> edge_spanning_tree g2 (x, R) gg) ->
+      vvalid g1 r ->
+      (vertices_at (reachable g1 x) g2: pred) |-- graph r g2 *
+      ((EX g': Graph, !! spanning_tree g2 r g' && vertices_at (reachable g2 r) g') -*
+       (EX g': Graph, !! edge_spanning_tree g2 (x, R) g' && vertices_at (reachable g1 x) g')).
+  Proof.
+    intros. destruct (edge_spanning_tree_left_vgamma g1 g2 x l r H H0 H1) as [l' ?].
+    apply graph_ramify_aux1'; auto.
+    + apply weak_valid_vvalid_dec.
+      apply (gamma_right_weak_valid g2 x true l' r); auto.
+      rewrite <- (edge_spanning_tree_left_vvalid g1 g2 x true l r); eauto.
+    + simpl in H5. unfold gamma in H5. inversion H5; auto.
+    (* + apply (edge_spanning_tree_left_reachable g1 g2 x l r); auto. *)
+    (* + apply (edge_spanning_tree_left_reachable_vvalid g1 g2 x true l r); auto. *)
+  Abort.
+
   
 End SPATIAL_GRAPH_DISPOSE_BI.

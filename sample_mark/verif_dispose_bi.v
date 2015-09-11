@@ -335,6 +335,7 @@ Proof.
   normalize.
 
   assert (vvalid g2 x) by (rewrite <- (edge_spanning_tree_left_vvalid g1 g2 x true l r x); auto).
+  destruct (edge_spanning_tree_left_vgamma g1 g2 x l r H3 H_GAMMA_g1 H4) as [l' H_GAMMA_g2].
 
   forward_if_tac
     (PROP  ()
@@ -422,7 +423,7 @@ Proof.
   localize
     (PROP ()
      LOCAL (temp _r (pointer_val_val r))
-     SEP (`(vertices_at sh (reachable g1 x) g2))).
+     SEP (`(graph sh r g2))).
   assert (vvalid g1 r). {
       assert (weak_valid g1 r) by (eapply gamma_right_weak_valid; eauto).
       destruct H8; auto. rewrite is_null_def in H8. subst. exfalso; intuition.
@@ -433,8 +434,51 @@ Proof.
     + symmetry in Heqb. apply n in Heqb. exfalso; auto.
     + auto.
   }
-  (* eapply semax_ram_seq'; *)
-  (* [ repeat apply eexists_add_stats_cons; constructor *)
-  (* | forward_call' (sh, g2, r) *)
-  (* | abbreviate_semax_ram]. *)
+  eapply semax_ram_seq';
+  [ repeat apply eexists_add_stats_cons; constructor
+  | forward_call' (sh, g2, r); apply derives_refl
+  | abbreviate_semax_ram].
+  Focus 2. { gather_current_goal_with_evar. } Unfocus.
+  Focus 2. { gather_current_goal_with_evar. } Unfocus.
+  Focus 2. { gather_current_goal_with_evar. } Unfocus.
+  Focus 2. { gather_current_goal_with_evar. } Unfocus.
+  unlocalize
+    (PROP ()
+     LOCAL (temp _r (pointer_val_val r);
+            temp _l (pointer_val_val l);
+            temp _x (pointer_val_val x))
+     SEP (`(EX  g3 : Graph, !!edge_spanning_tree g2 (x, R) g3 && vertices_at sh (reachable g1 x) g3))
+    ).
+  Grab Existential Variables.
+  Focus 6. { solve_split_by_closed. } Unfocus.
+  Focus 2. { entailer!. } Unfocus.
+  Focus 3. { entailer!. } Unfocus.
+  Focus 3. { repeat constructor; auto with closed. } Unfocus.
+  Focus 2. {
+    entailer!.
+    rewrite !exp_emp.
+    assert (r = dst g2 (x, R)) by (simpl in H_GAMMA_g2; unfold gamma in H_GAMMA_g2; inversion H_GAMMA_g2; auto).
+    assert (forall (gg: Graph), spanning_tree g2 r gg -> edge_spanning_tree g2 (x, R) gg). {
+      intros; unfold edge_spanning_tree.
+      destruct (node_pred_dec (marked g2) (dst g2 (x, R))); subst r; [exfalso |]; auto.
+    }
+    assert (vvalid g1 r). {
+      assert (weak_valid g1 r) by (eapply gamma_right_weak_valid; eauto).
+      destruct H14; auto. rewrite is_null_def in H14. rewrite H14 in H6. exfalso; intuition.
+    }
+    assert (vvalid g2 r) by (rewrite <- (edge_spanning_tree_left_vvalid g1 g2 x true l r r); auto).
+    admit.
+  } Unfocus.
+  unfold semax_ram.
+  forward.
+  entailer.
+  apply (exp_right g3).
+  entailer.
+  gather_current_goal_with_evar.
+  gather_current_goal_with_evar.
+  gather_current_goal_with_evar.
+  destruct (node_pred_dec (marked g2) r). 2: exfalso; auto.
+
+  (* x -> r = 0; *)
+  
 Abort.
