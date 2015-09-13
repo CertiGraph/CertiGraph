@@ -1,0 +1,116 @@
+%
+% LaTeX template for prepartion of submissions to PLDI'15
+%
+% Requires temporary version of sigplanconf style file provided on
+% PLDI'15 web site.
+%
+\documentclass[pldi]{sigplanconf-pldi15}
+
+%
+% the following standard packages may be helpful, but are not required
+%
+\usepackage{SIunits}            % typset units correctly
+\usepackage{courier}            % standard fixed width font
+\usepackage[scaled]{helvet} % see www.ctan.org/get/macros/latex/required/psnfss/psnfss2e.pdf
+\usepackage{url}                  % format URLs
+\usepackage{listings}          % format code
+\usepackage{enumitem}      % adjust spacing in enums
+\usepackage[colorlinks=true,allcolors=blue,breaklinks,draft=false]{hyperref}   % hyperlinks, including DOIs and URLs in bibliography
+% known bug: http://tex.stackexchange.com/questions/1522/pdfendlink-ended-up-in-different-nesting-level-than-pdfstartlink
+\newcommand{\doi}[1]{doi:~\href{http://dx.doi.org/#1}{\Hurl{#1}}}   % print a hyperlinked DOI
+
+
+
+\begin{document}
+
+%
+% any author declaration will be ignored  when using 'plid' option (for double blind review)
+%
+
+\title{The Ramifications of Mechanizing Verification}
+\authorinfo{Shengyi Wang$^{*}$ \qquad Qinxiang Cao$^{+}$ \qquad Asankhaya Sharma$^{*}$ \qquad Aquinas Hobor$^{\dagger,*}$}
+{}
+{School of Computing$^{*}$ and Yale-NUS College$^{\dagger}$, National University of Singapore; Princeton University$^{+}$}
+
+\maketitle
+\begin{abstract}
+Blah blah blah
+\end{abstract}
+
+\newcommand\hide[1]{}
+
+\section{Introduction}
+Over the last fifteen years great strides have been made in automating verifications of programs that manipulate
+tree-like data structures using separation logic CITE CITE CITE.  Unfortunately, verifying programs that manipulate 
+graph-like data structures (e.g. structures with \emph{intrinsic sharing}) has been far more challenging.
+Indeed, verifying such programs was formidable enough that a number of the early landmark results in separation logic
+devoted substantial efforts to verify single examples such as Schorr-Waite CITE and XXX CITE with pen and 
+paper---avoiding entirely the additional challenges inherent in machine-assisted reasoning.
+
+In recent years, Hobor and Villard introduced the concept of \emph{ramification} as a kind of proof pattern or framework
+to verify graph-manipulating programs with pen and paper CITE, but left open the question of how such proofs could
+be incorporated in a machine-assisted setting.  In this paper, we show how this can be done, and demonstrate the
+value of our approach by adding ramification to two rather sizeable---albeit quite differently flavored---separation logic-based 
+verification tools: the Coq-based tactic system of the Verified Software Toolchain CITE and the more highly-automated HIP/SLEEK
+program verifier CITE.  Despite the substantial differences between these systems, the vast majority of our infrastructure is 
+shared between them, and since many of the other computer-assisted verification tools under development 
+today CITE CITE CITE CITE have much in common with at least one of these tools, we believe that our infrastructure will be 
+applicable to many other systems as well.
+
+Along the way we discover---and show how to fix---a rather surprising error in Hobor and Villard's framework; generalize their setting
+so that it can handle a substantially wider variety of data structures; 
+
+We use both systems to verify a number of different programs utilizing graph-manipulating structures,
+letting us understand the advantages and disadvantages of both.
+
+\hide{
+1. General purpose part
+1.1. A lot of important theorems about graph are proved.
+1.2. Iter_sepcon and pred_sepcon are defined. And related ramification rules are proved.
+1.3. The most general graph-spatial-predicate vertices_at are defined (for all possible styles of graphs). Related ramification rules are proved. Graph and graphs are defined as special cases of vertices at.
+1.4. Dag predicate has not been defined as a whole. It is not hard to get fixed.
+
+2. Bi-graph.
+2.1. BiMaFin is defined as one kind of general graph.
+2.2. pSpatialGraph_Graph_Bi defined in "spatial_graph_bi.v" is the premise type class for defining BiMaFin.
+2.3. sSpatialGraph_Graph_Bi defined in "spatial_graph_bi.v" is the premise type class for defining how a BiMaFin graph is stored in memory.
+2.4. VST instance of pSpatialGraph_Graph_Bi and sSpatialGraph_Graph_Bi are constructed in "spatial_graph_aligned_bi_VST.v" and "spatial_graph_unaligned_bi_VST.v".
+2.5. Heap-Model-Direct instances are broken now. They are not hard to get fixed. Previous proofs are in "spatial_graph_HMD.v".
+
+3. Embed ramification into VST.
+3.1. Ramification rule are proved sound in VST.
+3.2. A special ramification rule for VST's Sep-Local-Prop style pre/post condition is prove. The point is traditional ramification rule require the whole frame-like-wand-expression to be closed w.r.t. the modified variables. This special rule split closed and unclosed away.
+3.3. Localize and unlocalize are defined.
+3.3.1. Localize/unlocalize offer a user-friendly way of using ramification rule.
+3.3.2. Unlocalize tactic need "Grab Existential Variables" afterwards. It is not nice.
+3.3.3. Writing Ocaml plugin is one solution. But we need to develop for both mac and windows.
+3.3.4. Or we can see whether Coq's next version offers more tactics for existential variables.
+
+4. General Strategy for Verifying Programs
+4.1. Using relation. (Better for proof's code reuse). For example, spanning tree is mark together with some structural requirement.
+4.2. Using existential quantifier in post condition.
+
+5. Mark algorithm
+5.1. For Ramification-Paper-style proof
+5.1.1. Math land theorems for marking algorithm (general situation and bi-graph situation) are all proved. Mainly in "marked_graph.v" and "spatial_graph_mark_bi.v".
+5.1.2. Ramification rule for marking algorithm (bi-graph situation) are all proved in "spatial_graph_mark_bi.v".
+5.1.3. Combining 2.4 and 3.1.1 and 3.1.2, we have a end-to-end proof for marking-graph in VST.
+5.1.4. We have an end-to-end proof for marking-dag, but not defining dag predicate as a whole.
+5.1.5. The module type which will be generated by Hip/Slick should be instantiated by 2.2 and 2.5.
+5.2. An alternative way of verifying marking program is reasoning about the whole history of marking operations. The disadvantage of it is that it currently needs more work in a Hoare logic framework. The advantage of it is that its reasoning structure are more similar with the way we understand it in our first algorithm class.
+5.3. I take some effort on garbage collector like graph structural. Though it is only connecting this special structural with 5.1.1 and 1.3, it takes much time and it is not finished yet.
+
+6. Spanning tree algorithm
+6.1. We divide the spanning tree relation into structural part and marking part. They are both defined properly.
+6.2. Important pure facts and ramification rules are not proved yet.
+6.3. Shengyi has already known how to use VST to handle the C program of bigraph spanning tree.
+
+* Showing that neither traditional fixpoint method works
+* the DFS algorithm on math graphs
+* the connection to HIP/SLEEK
+
+1. Classification of various graphs: MathGraph, BiGraph and FinGraph. Though now we put them all in a BiMaFin, there are still many general theorems based on only one of them. The abstraction and classification is useful.
+2. A minor implementation trick. There are many tactics defined in msl_ext/ramify_tactics.v, which can manipulate low level heaps efficiently.
+}
+
+\end{document}
