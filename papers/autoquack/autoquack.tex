@@ -48,7 +48,7 @@ devoted substantial efforts to verify single examples such as Schorr-Waite CITE 
 paper---avoiding entirely the additional challenges inherent in machine-assisted reasoning.
 
 In recent years, Hobor and Villard introduced the concept of \emph{ramification} as a kind of proof pattern or framework
-to verify graph-manipulating programs with pen and paper CITE, but left open the question of how such proofs could
+to verify graph-manipulating programs with pen and paper \cite{hobor:ramification}, but left open the question of how such proofs could
 be incorporated in a machine-assisted setting.  In this paper, we show how this can be done, and demonstrate the
 value of our approach by adding ramification to two rather sizeable---albeit quite differently flavored---separation logic-based 
 verification tools: the Coq-based tactic system of the Verified Software Toolchain CITE and the more highly-automated HIP/SLEEK
@@ -57,8 +57,10 @@ shared between them, and since many of the other computer-assisted verification 
 today CITE CITE CITE CITE have much in common with at least one of these tools, we believe that our techniques will be 
 applicable to many other systems as well.
 
-Along the way we discover---and show how to fix---a rather surprising and tricky error in Hobor and Villard's presentation: 
-neither the Knaster-Tarski CITE nor the Appel-McAllester CITE method for solving recursive fixpoints is suitable for defining 
+
+
+Along the way we discover---and show how to fix---a rather subtle error in Hobor and Villard's presentation: neither the 
+Knaster-Tarski \cite{tarski:fixpoint} nor the Appel-McAllester \cite{appel:fixpoint} method for solving recursive fixpoints is suitable for defining
 recursive graph predicates in separation logic.
 
   We also develop a general framework for defining and reasoning about mathematical 
@@ -145,5 +147,8 @@ letting us understand the advantages and disadvantages of both.
 5.3. I take some effort on garbage collector like graph structural. Though it is only connecting this special structural with 5.1.1 and 1.3, it takes much time and it is not finished yet.
 
 \section{Conclusion}
+
+\bibliographystyle{abbrvnat}
+\bibliography{autoquack}
 
 \end{document}
