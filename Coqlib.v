@@ -5,6 +5,56 @@ Require Export Coq.Logic.FunctionalExtensionality.
 Require Export Coq.Sorting.Permutation.
 Require Export Coq.Classes.EquivDec.
 
+Lemma ex_iff: forall {A: Type} P Q, (forall x: A, P x <-> Q x) -> (ex P <-> ex Q).
+Proof.
+  intros.
+  split; intros [x ?]; exists x; firstorder.
+Qed.
+
+Lemma forall_iff: forall {A: Type} P Q, (forall x: A, P x <-> Q x) -> ((forall x, P x) <-> (forall x, Q x)).
+Proof. intros. firstorder. Qed.
+
+Lemma and_iff_split: forall A B C D : Prop, (A <-> B) -> (C <-> D) -> (A /\ C <-> B /\ D).
+Proof. intros. tauto. Qed.
+
+Lemma and_iff_compat_l_weak: forall A B C : Prop, (A -> (B <-> C)) -> (A /\ B <-> A /\ C).
+Proof. intros. tauto. Qed.
+
+Lemma and_iff_compat_r_weak: forall A B C : Prop, (A -> (B <-> C)) -> (B /\ A <-> C /\ A).
+Proof. intros. tauto. Qed.
+
+Lemma Intersection_spec: forall A (v: A) P Q, Intersection _ P Q v <-> P v /\ Q v.
+Proof.
+  intros.
+  split; intros.
+  + inversion H; auto.
+  + constructor; tauto.
+Qed.
+
+Lemma Union_spec: forall A (v: A) P Q, Union _ P Q v <-> P v \/ Q v.
+Proof.
+  intros.
+  split; intros.
+  + inversion H; auto.
+  + destruct H; [apply Union_introl | apply Union_intror]; auto.
+Qed.
+
+Lemma Intersection_Complement': forall A (P Q: Ensemble A),
+  Same_set A
+  (Intersection A (Complement A P) (Complement A Q))
+  (Complement A (Union A P Q)).
+Proof.
+  intros.
+  unfold Same_set, Included, Complement, Ensembles.In.
+  split; intros.
+  + rewrite Union_spec.
+    rewrite Intersection_spec in H.
+    tauto.
+  + rewrite Union_spec in H.
+    rewrite Intersection_spec.
+    tauto.
+Qed.
+
 Definition Sublist {A} (L1 L2 : list A) : Prop := forall a, In a L1 -> In a L2.
 
 Lemma Sublist_refl: forall A (L : list A), Sublist L L. Proof. repeat intro; auto. Qed.
@@ -664,6 +714,13 @@ Existing Instance Permutation_app'_Proper.
 
 Require Import Coq.Classes.Morphisms.
 
+Lemma Intersection_comm: forall A P Q, (pointwise_relation A iff) (Intersection A P Q) (Intersection A Q P).
+Proof.
+  repeat (hnf; intros).
+  rewrite !Intersection_spec.
+  tauto.
+Qed.
+
 Instance complement_proper (V: Type): Proper ((pointwise_relation V iff) ==> (pointwise_relation V iff)) (Complement V).
   hnf; intros.
   hnf; intros.
@@ -673,6 +730,34 @@ Instance complement_proper (V: Type): Proper ((pointwise_relation V iff) ==> (po
 Defined.
 
 Existing Instance complement_proper.
+
+Lemma Intersection_Complement: forall A (P Q: Ensemble A),
+  (pointwise_relation A iff)
+  (Intersection A (Complement A P) (Complement A Q))
+  (Complement A (Union A P Q)).
+Proof.
+  intros.
+  intro x.
+  rewrite Intersection_spec.
+  unfold Complement, Ensembles.In.
+  rewrite Union_spec.
+  tauto.
+Qed.
+
+Instance Included_proper (V: Type): Proper ((pointwise_relation V iff) ==> (pointwise_relation V iff) ==> iff) (@Included V).
+Proof.
+  hnf; intros.
+  hnf; intros.
+  unfold pointwise_relation, Included, Ensembles.In in *.
+  firstorder.
+Defined.
+
+Lemma Complement_Included_rev: forall (U: Type) P Q, Included P Q -> Included (Complement U Q) (Complement U P).
+Proof.
+  unfold Included, Complement, Ensembles.In.
+  intros.
+  firstorder.
+Qed.
 
 Definition Decidable (P: Prop) := {P} + {~ P}.
 
