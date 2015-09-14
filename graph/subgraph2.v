@@ -96,6 +96,43 @@ Proof.
       assert (~ false = true) by congruence; tauto.
 Defined.
 
+Lemma reachable_subgraph_partialgraph (p: V -> Prop):
+  forall (n1 n2: V),
+    reachable (predicate_subgraph p) n1 n2 <-> reachable (predicate_partialgraph p) n1 n2.
+Proof.
+  intros.
+  unfold reachable, reachable_by, reachable_by_path, good_path.
+  apply ex_iff.
+  intro l.
+  apply and_iff_compat_l.
+  apply and_iff_compat_r.
+  destruct l; [simpl; tauto |].
+  revert v; induction l; intros.
+  + simpl.
+    tauto.
+  + change (valid_path (predicate_subgraph p) (v :: a :: l)) with (edge (predicate_subgraph p) v a /\ valid_path (predicate_subgraph p) (a :: l)).
+    change (valid_path (predicate_partialgraph p) (v :: a :: l)) with (edge (predicate_partialgraph p) v a /\ valid_path (predicate_partialgraph p) (a :: l)).
+    rewrite IHl.
+    apply and_iff_compat_r_weak; intro.
+    assert (vvalid (predicate_partialgraph p) a).
+    Focus 1. {
+      apply valid_path_valid in H.
+      inversion H; subst; auto.
+    } Unfocus.
+    unfold edge; simpl.
+    rewrite !step_spec. simpl.
+    apply and_iff_compat_l.
+    apply and_iff_compat_l.
+    apply ex_iff.
+    intro.
+    apply and_iff_compat_r_weak; intros [? ?].
+    simpl in H0.
+    unfold predicate_evalid, predicate_weak_evalid.
+    unfold predicate_vvalid in H0.
+    subst.
+    tauto.
+Qed.
+
 Lemma reachable_by_eq_subgraph_reachable (p: V -> Prop):
   forall (n1 n2: V),
     g |= n1 ~o~> n2 satisfying p <-> reachable (predicate_subgraph p) n1 n2.
@@ -141,6 +178,15 @@ Proof.
         inversion H0.
         unfold edge, predicate_subgraph, predicate_vvalid in H; simpl in H.
         constructor; [tauto | auto].
+Qed.
+
+Lemma reachable_by_eq_partialgraph_reachable (p: V -> Prop):
+  forall (n1 n2: V),
+    g |= n1 ~o~> n2 satisfying p <-> reachable (predicate_partialgraph p) n1 n2.
+Proof.
+  intros.
+  rewrite reachable_by_eq_subgraph_reachable.
+  apply reachable_subgraph_partialgraph.
 Qed.
 
 Lemma predicate_subgraph_reachable_included (p: V -> Prop): 
@@ -227,6 +273,72 @@ Context {V E: Type}.
 Context {EV: EqDec V eq}.
 Context {EE: EqDec E eq}.
 
+Lemma partial_partialgraph: forall p1 p2 (g: PreGraph V E),
+  (predicate_partialgraph (predicate_partialgraph g p1) p2) ~=~ 
+  (predicate_partialgraph g (Intersection _ p1 p2)).
+Proof.
+  intros.
+  split; [| split; [| split]]; simpl; intros.
+  + unfold predicate_vvalid; simpl; unfold predicate_vvalid.
+    rewrite Intersection_spec.
+    tauto.
+  + unfold predicate_weak_evalid; simpl.
+    unfold predicate_weak_evalid.
+    rewrite Intersection_spec.
+    tauto.
+  + reflexivity.
+  + reflexivity.
+Qed.
+
+Lemma sub_subgraph: forall p1 p2 (g: PreGraph V E),
+  (predicate_subgraph (predicate_subgraph g p1) p2) ~=~ 
+  (predicate_subgraph g (Intersection _ p1 p2)).
+Proof.
+  intros.
+  split; [| split; [| split]]; simpl; intros.
+  + unfold predicate_vvalid; simpl; unfold predicate_vvalid.
+    rewrite Intersection_spec.
+    tauto.
+  + unfold predicate_evalid; simpl; unfold predicate_evalid; simpl.
+    rewrite !Intersection_spec.
+    tauto.
+  + reflexivity.
+  + reflexivity.
+Qed.
+
+Lemma partialgraph_si_node_prop: forall n (g1 g2: PreGraph V E) p1 p2,
+  (predicate_partialgraph g1 p1) ~=~ (predicate_partialgraph g2 p2) ->
+  Included p1 (vvalid g1) ->
+  Included p2 (vvalid g2) ->
+  (p1 n <-> p2 n).
+Proof.
+  intros.
+  destruct H as [? _].
+  specialize (H n).
+  specialize (H0 n).
+  specialize (H1 n).
+  simpl in *.
+  unfold predicate_vvalid in H.
+  tauto.
+Qed.
+
+Lemma subgraph_node_prop: forall n (g1 g2: PreGraph V E) p1 p2,
+  (predicate_subgraph g1 p1) ~=~ (predicate_subgraph g2 p2) ->
+  Included p1 (vvalid g1) ->
+  Included p2 (vvalid g2) ->
+  (p1 n <-> p2 n).
+Proof.
+  intros.
+  destruct H as [? _].
+  specialize (H n).
+  specialize (H0 n).
+  specialize (H1 n).
+  simpl in *.
+  unfold Ensembles.In in *.
+  unfold predicate_vvalid in H.
+  tauto.
+Qed.
+
 Lemma si_stronger_partialgraph: forall (g1 g2: PreGraph V E) (p1 p2 p1' p2' p: V -> Prop),
   (forall v, p1' v <-> p1 v /\ p v) ->
   (forall v, p2' v <-> p2 v /\ p v) ->
@@ -296,6 +408,96 @@ Proof.
 Defined.
 
 Global Existing Instance partialgraph_proper.
+
+Instance reachable_by_proper: Proper ((@structurally_identical V E _ _) ==> (@eq V) ==> (pointwise_relation V iff) ==> (@eq V) ==> iff) (@reachable_by V E _ _).
+Proof.
+  intros.
+  do 4 (hnf; intros); subst.
+  rewrite !reachable_by_eq_partialgraph_reachable.
+  rewrite H, H1.
+  reflexivity.
+Defined.
+
+Global Existing Instance reachable_by_proper.
+
+Instance reachable_by_proper': Proper ((@structurally_identical V E _ _) ==> (@eq V) ==> (pointwise_relation V iff) ==> (pointwise_relation V iff)) (@reachable_by V E _ _).
+Proof.
+  intros.
+  do 4 (hnf; intros); subst.
+  rewrite !reachable_by_eq_partialgraph_reachable.
+  rewrite H, H1.
+  reflexivity.
+Defined.
+
+Global Existing Instance reachable_by_proper'.
+
+Lemma predicate_partialgraph_reachable_by_included (g: PreGraph V E) (p p0: V -> Prop): 
+  forall (n: V), Included (reachable_by (predicate_partialgraph g p) n p0) (reachable_by g n p0).
+Proof.
+  intros.
+  intro; intros.
+  unfold Ensembles.In in *.
+  rewrite reachable_by_eq_partialgraph_reachable in H |- *.
+  rewrite partial_partialgraph in H.
+  rewrite Intersection_comm in H.
+  rewrite <- partial_partialgraph in H.
+  apply predicate_partialgraph_reachable_included in H.
+  auto.
+Qed.
+
+Lemma reachable_partialgraph_reachable (g: PreGraph V E): 
+  forall (n: V), Included (reachable g n) (reachable (predicate_partialgraph g (reachable g n)) n).
+Proof.
+  intros.
+  intro; intros.
+  unfold Ensembles.In in *.
+  rewrite reachable_ind2_reachable in H.
+  induction H.
+  + apply reachable_refl.
+    simpl; unfold predicate_vvalid.
+    split; auto.
+    apply reachable_refl; auto.
+  + apply reachable_edge with y; auto.
+    apply partialgraph_edge; auto.
+    rewrite reachable_ind2_reachable; auto.
+    apply reachable_edge with y; auto.
+    rewrite reachable_ind2_reachable; auto.
+Qed.
+
+Lemma reachable_partialgraph_reachable_equiv (g: PreGraph V E) (P: V -> Prop) (n: V):
+  Included (reachable g n) P ->
+  (pointwise_relation V iff) (reachable g n) (reachable (predicate_partialgraph g P) n).
+Proof.
+  intros.
+  intro.
+  split.
+  + intros.
+    apply reachable_partialgraph_reachable in H0.
+    unfold Ensembles.In in H0.
+    rewrite <- reachable_by_eq_partialgraph_reachable in H0 |- *.
+    eapply reachable_by_weaken; [| eauto].
+    auto.
+  + apply predicate_partialgraph_reachable_included.
+Qed.
+
+Lemma reachable_by_partialgraph_reachable_by_equiv (g: PreGraph V E) (P p0: V -> Prop) (n: V):
+  Included (reachable_by g n p0) P ->
+  (pointwise_relation V iff) (reachable_by g n p0) (reachable_by (predicate_partialgraph g P) n p0).
+Proof.
+  intros.
+  assert (pointwise_relation _ iff (reachable_by g n p0) (reachable (predicate_partialgraph g p0) n)).
+  Focus 1. {
+    hnf; intros.
+    apply reachable_by_eq_partialgraph_reachable; auto.
+  } Unfocus.
+  rewrite H0 in H |- *.
+  apply reachable_partialgraph_reachable_equiv in H.
+  rewrite H.
+  rewrite partial_partialgraph, Intersection_comm, <- partial_partialgraph.
+  intro.
+  rewrite reachable_by_eq_partialgraph_reachable.
+  reflexivity.
+Qed.
 
 Lemma si_subgraph_edge: forall (g1 g2: PreGraph V E) (p1 p2: V -> Prop),
   g1 ~=~ g2 ->

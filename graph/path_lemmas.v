@@ -35,9 +35,9 @@ Fixpoint valid_path (g: Gph) (p: path) : Prop :=
 Definition graph_is_acyclic (g: Gph) : Prop :=
   forall p : list V, valid_path g p -> NoDup p.
 
-Definition path_prop (g: Gph) (P : Ensemble V) : (list V -> Prop) := Forall P.
+Definition path_prop (P : Ensemble V) : (list V -> Prop) := Forall P.
 
-Definition good_path (g: Gph) (P : Ensemble V) : (list V -> Prop) := fun p => valid_path g p /\ path_prop g P p.
+Definition good_path (g: Gph) (P : Ensemble V) : (list V -> Prop) := fun p => valid_path g p /\ path_prop P p.
 
 Definition path_endpoints (p: path) (n1 n2 : V) : Prop := head p = Some n1 /\ foot p = Some n2.
 
@@ -55,6 +55,8 @@ Notation " g '|=' n1 '~~>' n2 'satisfying' P " := (reachable_by_acyclic g n1 P n
 Definition reachable (g: Gph) (n : V): Ensemble V:= reachable_by g n (fun _ => True).
 
 Definition reachable_list (g: Gph) (x : V) (L : list V) : Prop := forall y, In y L <-> reachable g x y.
+
+Definition reachable_by_through_set (g: Gph) (S : list V) (P : Ensemble V) : Ensemble V:= fun n => exists s, In s S /\ reachable_by g s P n.
 
 Definition reachable_through_set (g: Gph) (S : list V) : Ensemble V:= fun n => exists s, In s S /\ reachable g s n.
 
@@ -192,14 +194,14 @@ Proof.
   apply Sublist_app. apply Sublist_nil. reflexivity.
 Qed.
 
-Lemma path_prop_weaken: forall (g: Gph) (P1 P2 : Ensemble V) p,
-  (forall d, P1 d -> P2 d) -> path_prop g P1 p -> path_prop g P2 p.
+Lemma path_prop_weaken: forall (P1 P2 : Ensemble V) p,
+  (forall d, P1 d -> P2 d) -> path_prop P1 p -> path_prop P2 p.
 Proof. intros; hnf in *; intros; hnf in *; eapply Forall_impl; eauto. Qed.
 
-Lemma path_prop_sublist: forall (g: Gph) P p1 p2, Sublist p1 p2 -> path_prop g P p2 -> path_prop g P p1.
+Lemma path_prop_sublist: forall P p1 p2, Sublist p1 p2 -> path_prop P p2 -> path_prop P p1.
 Proof. repeat intro. eapply Forall_sublist; eauto. Qed.
 
-Lemma path_prop_tail: forall (g: Gph) P n p, path_prop g P (n :: p) -> path_prop g P p.
+Lemma path_prop_tail: forall P n p, path_prop P (n :: p) -> path_prop P p.
 Proof. repeat intro. inversion H; auto. Qed.
 
 Lemma good_path_split: forall (g: Gph) p1 p2 P, good_path g P (p1 ++ p2) -> (good_path g P p1) /\ (good_path g P p2).
@@ -561,17 +563,22 @@ Proof.
   + apply NoDup_cons_2 in H. intro. subst. apply H; auto.
 Qed.
 
+Lemma reachable_by_weaken: forall (g: Gph) x y P Q,
+                                  Included P Q ->
+                                  g |= x ~o~> y satisfying P ->
+                                  g |= x ~o~> y satisfying Q.
+Proof.
+  intros. destruct H0 as [p [? [? ?]]].
+  exists p. do 2 (split; auto). hnf in *.
+  rewrite Forall_forall in *. intros. apply H. apply H2. auto.
+Qed.
+
 Lemma reachable_by_eq: forall (g: Gph) x y P Q,
                                   (forall z, P z <-> Q z) ->
                                   (g |= x ~o~> y satisfying P <-> g |= x ~o~> y satisfying Q).
 Proof.
   intros until y.
-  cut (forall P Q, (forall z, P z <-> Q z) ->
-                   (g |= x ~o~> y satisfying P -> g |= x ~o~> y satisfying Q)).
-  1: intros; split; apply H; firstorder.
-  intros. destruct H0 as [p [? [? ?]]].
-  exists p. do 2 (split; auto). hnf in *.
-  rewrite Forall_forall in *. intros. apply H. apply H2. auto.
+  intros; split; apply reachable_by_weaken; firstorder.
 Qed.
 
 Lemma reachable_through_set_app: forall g S1 S2 x,
