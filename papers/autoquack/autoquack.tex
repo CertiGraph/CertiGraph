@@ -52,7 +52,7 @@ to verify graph-manipulating programs with pen and paper \cite{hobor:ramificatio
 be incorporated in a machine-assisted setting.  In this paper, we show how this can be done, and demonstrate the
 value of our approach by adding ramification to two rather sizeable---albeit quite differently flavored---separation logic-based 
 verification tools: the Coq-based tactic system of the Verified Software Toolchain CITE and the more highly-automated HIP/SLEEK
-program verifier CITE.  Despite the substantial differences between these systems, the vast majority of our infrastructure is 
+program verifier \cite{chin:hipsleek}.  Despite the substantial differences between these systems, the vast majority of our infrastructure is 
 shared between them, and since many of the other computer-assisted verification tools under development 
 today CITE CITE CITE CITE have much in common with at least one of these tools, we believe that our techniques will be 
 applicable to many other systems as well.
@@ -95,7 +95,35 @@ letting us understand the advantages and disadvantages of both.
 
 2.5. Heap-Model-Direct instances are broken now. They are not hard to get fixed. Previous proofs are in "\texttt{spatial\_graph\_HMD.v}".
 
-* Showing that neither traditional fixpoint method works
+\subsection{Traditional fixpoints fail}
+
+Hobor and Villard defined the separation logic graph predicate $\mathsf{graph}(x,\gamma)$ in direct analogy to the standard 
+separation logic definition of a tree as follows:
+\[
+\begin{array}{l}
+\mathsf{graph}(x,\gamma) ~~ \stackrel{\Delta}{=} ~~ ({x = 0} \wedge \mathsf{emp}) \vee \null \\
+~~~~ (\exists d,l,r.~ x \mapsto d,l,r, ** \mathsf{graph}(l,\gamma) ** \mathsf{graph}(r,\gamma))
+\end{array}
+\]
+
+%* Showing that neither traditional fixpoint method works
+
+Recursive/inductive predicates are ubiquitous in separation logic---so much so that when a person writes the definition of a 
+predicate as $P \stackrel{\textrm{``}\Delta\textrm{''}}{=} \ldots P \ldots$ no one raises an eyebrow, despite the dangers of circularity in
+mathematics.  Indeed, 95\% of the time there is no danger thanks to the magic of the Knaster/Tarski fixpoint $\mu_{\mathsf{T}}$ \cite{tarski:fixpoint}.
+Formally what is going on is instead of defining $P$ directly, one defines a functional 
+$F_P \stackrel{\Delta}{=} \lambda P.~ \ldots P \ldots$ and then defines $P$ itself as $P \stackrel{\Delta}{=} \mu_{\mathsf{T}} \, F_P$.  
+Assuming (as one typically does without comment) that $F_P$ is \emph{covariant}, i.e. $(P \vdash Q) \Rightarrow (F \, P \vdash F \, Q)$, 
+one then enjoys the fixpoint equation
+$P \Leftrightarrow \ldots P \ldots$, formally justifying typically written pseudodefinition ($\stackrel{\textrm{``}\Delta\textrm{''}}{=}$).
+
+
+
+
+
+Appel and McAllester developed an additional fixpoint \cite{appel:fixpoint} whose \cite{appel:vmm}
+
+\subsection{The iterated separating conjunction}
 1.2. \texttt{Iter\_sepcon} and \texttt{pred\_sepcon} are defined. And related ramification rules are proved.
 1.3. The most general graph-spatial-predicate \texttt{vertices\_at} are defined (for all possible styles of graphs). Related ramification rules are proved. Graph and graphs are defined as special cases of vertices at.
 
