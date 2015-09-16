@@ -7,12 +7,10 @@ Require Export RamifyCoq.sample_mark.garbage_collector.
 
 Local Open Scope logic.
 
-Instance CompSpecs : compspecs := compspecs_program prog.
-Instance CS_legal : compspecs_legal CompSpecs.
-Proof. prove_CS_legal. Qed.
+Instance CompSpecs : compspecs.
+Proof. make_compspecs prog. Defined.
 
 Global Existing Instance CompSpecs.
-Global Existing Instance CS_legal.
 
 Definition head_node_type := Tstruct _HeadNode noattr.
 Definition content_node_type := Tstruct _ContentNode noattr.

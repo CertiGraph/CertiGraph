@@ -32,6 +32,7 @@ Arguments RAM_FRAME.Build_SingleFrame' {l} {g} {s} frame frame_sound frame_close
 Section SEMAX.
 
 Context {Espec: OracleKind}.
+Context {cs: compspecs}.
 
 Inductive add_stats (s0: statement) : list SingleFrame -> list SingleFrame -> Prop :=
   | add_stats_nil : add_stats s0 nil nil

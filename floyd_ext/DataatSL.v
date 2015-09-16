@@ -15,7 +15,6 @@ Local Open Scope logic.
 Section DataAtMSL.
 
 Context {cs: compspecs}.
-Context {csl: compspecs_legal cs}.
 
 Lemma exp_data_at_precise: forall sh t p,
   precise (EX v: reptype t, data_at sh t v p).
