@@ -171,9 +171,9 @@ Proof.
     | new_store_tac
     | abbreviate_semax_ram].
   cbv beta zeta iota delta [replace_nth].
-  change (@field_at CompSpecs CS_legal sh node_type []
+  change (@field_at CompSpecs sh node_type []
            (Vint (Int.repr 1), (pointer_val_val l, pointer_val_val r))) with
-         (@data_at CompSpecs CS_legal sh node_type
+         (@data_at CompSpecs sh node_type
            (Vint (Int.repr 1), (pointer_val_val l, pointer_val_val r))).
   (* x -> d = 1; *)
 

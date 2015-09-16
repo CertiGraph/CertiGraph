@@ -149,7 +149,7 @@ PROGS_FILES= \
   verif_float.v verif_dotprod.v verif_ptr_compare.v \
   verif_nest3.v verif_nest2.v \
   logical_compare.v verif_logical_compare.v field_loadstore.v  verif_field_loadstore.v \
-  even.v verif_even.v odd.v verif_odd.v
+  even.v verif_even.v odd.v verif_odd.v nest2.v nest3.v ptr_compare.v dotprod.v float.v
 
 SHA_FILES= \
   general_lemmas.v SHA256.v common_lemmas.v pure_lemmas.v sha_lemmas.v functional_prog.v \

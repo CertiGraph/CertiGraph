@@ -1,0 +1,19 @@
+--- Ctypes.v	2015-06-12 04:10:12.000000000 -0400
++++ /home/appel/n/compcert/cfrontend/Ctypes.v	2015-09-14 13:28:45.359421800 -0400
+@@ -802,13 +802,13 @@
+ Next Obligation.
+   apply Zle_ge. eapply Zle_trans. eapply sizeof_composite_pos. 
+   apply align_le; apply alignof_composite_pos.
+-Qed.
++Defined.
+ Next Obligation.
+   apply align_attr_two_p. apply alignof_composite_two_p.
+-Qed.
++Defined.
+ Next Obligation.
+   apply align_divides. apply alignof_composite_pos.
+-Qed.
++Defined.
+ 
+ (** The composite environment for a program is obtained by entering
+   its composite definitions in sequence.  The definitions are assumed

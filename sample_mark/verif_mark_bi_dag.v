@@ -92,7 +92,7 @@ Proof.
   rewrite dag_graph_unfold with (S := l :: r :: nil); [| auto | auto | eapply gamma_step_list; eauto].
   rewrite H_GAMMA_g.
   change (vertex_at x (d, l, r)) with
-    (@data_at CompSpecs CS_legal sh node_type
+    (@data_at CompSpecs sh node_type
        (Vint (Int.repr (if d then 1 else 0)), (pointer_val_val l, pointer_val_val r)) (pointer_val_val x)).
   normalize.
   forward root_mark_old. (* root_mark = x -> m; *)
@@ -137,7 +137,7 @@ Proof.
   rewrite dag_graph_unfold with (S := l :: r :: nil); [| auto | auto | eapply gamma_step_list; eauto].
   rewrite H_GAMMA_g.
   change (vertex_at x (false, l, r)) with
-    (@data_at CompSpecs CS_legal sh node_type
+    (@data_at CompSpecs sh node_type
        (Vint (Int.repr 0), (pointer_val_val l, pointer_val_val r)) (pointer_val_val x)).
   normalize.
 
@@ -159,9 +159,9 @@ Proof.
   Focus 1. {
     rewrite dag_graph_unfold with (S := l :: r :: nil); [| auto | auto | eapply gamma_step_list; eauto].
     rewrite H_GAMMA_g1.
-    change (@field_at CompSpecs CS_legal sh node_type []
+    change (@field_at CompSpecs sh node_type []
              (Vint (Int.repr 1), (pointer_val_val l, pointer_val_val r))) with
-           (@data_at CompSpecs CS_legal sh node_type
+           (@data_at CompSpecs sh node_type
              (Vint (Int.repr 1), (pointer_val_val l, pointer_val_val r))).
     rewrite dag_graph_gen_step_list with (x0 := x) (d := (true, l, r));
       [| auto | auto | eapply (gamma_step_list g); eauto].
