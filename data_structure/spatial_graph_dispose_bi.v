@@ -92,16 +92,16 @@ Section SPATIAL_GRAPH_DISPOSE_BI.
     + intros g' y ? ?. apply H2 in H5. unfold In in H5.
       rewrite <- (spanning_tree_vvalid g l g'); auto.
       apply Graph_reachable_by_dec; auto.
-    + intros g' ?. destruct H4 as [[? ?] [? ?]]. specialize (H7 H).
+    + intros g' ?. destruct H4 as [[? ?] [? [? ?]]]. specialize (H7 H).
       destruct H7. apply Graph_partialgraph_vi_spec.
       - apply si_stronger_partialgraph_simple with (fun n : addr => ~ g |= l ~o~> n satisfying (unmarked g)); auto.
-        intro v. unfold In. intro. destruct H9.
-        intro. apply H10. apply reachable_by_is_reachable in H11. auto.
+        intro v. unfold In. intro. destruct H10.
+        intro. apply H11. apply reachable_by_is_reachable in H12. auto.
       - intros. specialize (H5 v).
         assert (~ g |= l ~o~> v satisfying (unmarked g)). {
-          intro. destruct H12. apply H14.
-          apply reachable_by_is_reachable in H13. auto.
-        } specialize (H5 H13). simpl in H5.
+          intro. destruct H13. apply H15.
+          apply reachable_by_is_reachable in H14. auto.
+        } specialize (H5 H14). simpl in H5.
         destruct (vlabel g v), (vlabel g' v); try tauto.
         symmetry. tauto.
   Qed.
@@ -165,14 +165,51 @@ Section SPATIAL_GRAPH_DISPOSE_BI.
       - rewrite (@right_sound _ _ _ _ _ _ g2 (biGraph g2) x). auto.
   Qed.
 
+  Lemma spanning_tree_left_reachable:
+    forall (g1 g2: Graph) x l r, vvalid g1 x -> vvalid g1 r -> vgamma g1 x = (true, l, r) ->
+                                 spanning_tree g1 l g2 -> Included (reachable g2 r) (reachable g1 x).
+  Proof.
+    intros. intro v. unfold Ensembles.In . intros.
+    assert (X: ReachDecidable g1 l (unmarked g1)). {
+      apply Graph_reachable_by_dec.
+      apply weak_valid_vvalid_dec.
+      apply (gamma_left_weak_valid g1 x true l r); auto.
+    } destruct (X v).
+    + apply reachable_by_is_reachable in r0. apply reachable_by_cons with l; auto. split; [|split]; auto.
+      - apply reachable_head_valid in r0. auto.
+      - simpl in H1. unfold gamma in H1. inversion H1. exists (x, L); auto.
+        * apply (@left_valid _ _ _ _ g1 _ _ (biGraph g1)); auto.
+        * apply (@left_sound _ _ _ _ _ _ g1 (biGraph g1)).
+    + apply reachable_by_cons with r; auto.
+      - split; [|split]; auto. rewrite (gamma_step g1 x true l r); auto.
+      - apply (spanning_tree_not_reachable g1 l g2 r v) in H3; auto.
+        rewrite reachable_by_eq_partialgraph_reachable in H3.
+        destruct H2 as [? [? ?]]. rewrite <- H4 in H3.
+        rewrite <- reachable_by_eq_partialgraph_reachable in H3.
+        apply reachable_by_is_reachable in H3. apply H3.
+  Qed.
+
   Lemma edge_spanning_tree_left_reachable:
     forall (g1 g2: Graph) x l r, vvalid g1 x -> vvalid g1 r -> vgamma g1 x = (true, l, r) ->
                                  edge_spanning_tree g1 (x, L) g2 -> Included (reachable g2 r) (reachable g1 x).
   Proof.
-    intros. intro v. unfold Ensembles.In . intros. apply reachable_by_cons with r; auto.
-    + hnf. intuition. rewrite (gamma_step g1 x true l r H H1). right; auto.
-    + 
-  Abort.
+    intros. hnf in H2.
+    assert (l = dst g1 (x, L)) by (simpl in H1; unfold gamma in H1; inversion H1; auto).
+    rewrite <- H3 in H2. destruct (node_pred_dec (marked g1) l).
+    + destruct H2 as [[? [? [? [? ?]]]] ?]. intro v. unfold Ensembles.In .
+      intros. apply reachable_by_cons with r; auto.
+      - split; [|split]; auto. rewrite (gamma_step g1 x true l r); auto.
+      - change (g1 |= r ~o~> v satisfying (fun _ : addr => True)) with (reachable g1 r v).
+        rewrite reachable_ind_reachable in H9. clear H1. induction H9.
+        * rewrite reachable_ind_reachable. constructor. rewrite H2; auto.
+        * destruct H1 as [? [? ?]]. apply edge_reachable with y. apply IHreachable. rewrite H2; auto.
+          split; [|split]; [rewrite H2; auto .. |]. rewrite step_spec in H11 |- *.
+          destruct H11 as [e [? [? ?]]]. exists e.
+          assert (e <> (x, L)) by (intro; apply H7; subst e; subst x0; subst y; split; auto).
+          specialize (H4 _ H14). specialize (H5 _ H14). specialize (H6 _ H14).
+          subst x0. subst y. intuition.
+    + apply (spanning_tree_left_reachable g1 g2 x l r); auto.
+  Qed.
 
    (* General_spatial_graph.vertices_at (reachable g1 x) g2 *)
    (* |-- general_spatial_graph.graph r g2 * *)
@@ -199,9 +236,8 @@ Section SPATIAL_GRAPH_DISPOSE_BI.
       apply (gamma_right_weak_valid g2 x true l' r); auto.
       rewrite <- (edge_spanning_tree_left_vvalid g1 g2 x true l r); eauto.
     + simpl in H5. unfold gamma in H5. inversion H5; auto.
-    (* + apply (edge_spanning_tree_left_reachable g1 g2 x l r); auto. *)
-    (* + apply (edge_spanning_tree_left_reachable_vvalid g1 g2 x true l r); auto. *)
-  Abort.
-
+    + apply (edge_spanning_tree_left_reachable g1 g2 x l r); auto.
+    + apply (edge_spanning_tree_left_reachable_vvalid g1 g2 x true l r); auto.
+  Qed.
   
 End SPATIAL_GRAPH_DISPOSE_BI.
