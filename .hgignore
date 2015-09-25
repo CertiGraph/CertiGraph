@@ -6,3 +6,9 @@ compcert/*
 *.glob
 .depend
 _CoqProject
+*.aux
+*.bbl
+*.blg
+*.log
+*.out
+*.pdf
