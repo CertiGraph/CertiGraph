@@ -409,6 +409,15 @@ Proof.
   + rewrite H0. reflexivity.
 Qed.
 
+Lemma vertices_at_P_Q_eq: forall (g : Graph) (P Q: V -> Prop),
+    Included P (vvalid g) -> (forall x, P x <-> Q x) -> vertices_at P g = vertices_at Q g.
+Proof.
+  intros. apply vertices_at_subgraph_eq; auto.
+  + intro v. intros. apply H. rewrite H0. auto.
+  + apply sub_spatialgraph_proper. reflexivity.
+    unfold pointwise_relation. apply H0.
+Qed.
+
 Lemma graph_reachable_subgraph_eq:
   forall (g1 g2 : Graph) x,
     ((reachable_sub_spatialgraph g1 (x :: nil)) -=- (reachable_sub_spatialgraph g2 (x :: nil))) -> graph x g1 = graph x g2.
