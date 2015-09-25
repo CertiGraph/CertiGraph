@@ -23,7 +23,7 @@ Instance MGS: MarkGraphSetting bool.
 Defined.
 
 Section SPATIAL_GRAPH_DISPOSE_BI.
-  
+
   Context {pSGG_Bi: pSpatialGraph_Graph_Bi}.
   Context {sSGG_Bi: sSpatialGraph_Graph_Bi}.
 
@@ -133,6 +133,16 @@ Section SPATIAL_GRAPH_DISPOSE_BI.
     rewrite <- H2. auto.
   Qed.
 
+  Lemma edge_spanning_tree_right_vvalid: forall (g1 g2: Graph) x d l r n,
+      vvalid g1 x -> vgamma g1 x = (d, l, r) -> edge_spanning_tree g1 (x, R) g2 -> (vvalid g1 n <-> vvalid g2 n).
+  Proof.
+    intros. apply (edge_spanning_tree_vvalid g1 g2 (x, R) n); auto.
+    apply Graph_reachable_by_dec. apply weak_valid_vvalid_dec.
+    apply (gamma_right_weak_valid g1 x d l _); auto.
+    assert (r = dst g1 (x, R)) by (simpl in H0; unfold gamma in H0; inversion H0; auto).
+    rewrite <- H2. auto.
+  Qed.
+
   Lemma edge_spanning_tree_left_reachable_vvalid: forall (g1 g2: Graph) x d l r,
       vvalid g1 x -> vgamma g1 x = (d, l, r) -> edge_spanning_tree g1 (x, L) g2 -> Included (reachable g1 x) (vvalid g2).
   Proof.
@@ -211,16 +221,6 @@ Section SPATIAL_GRAPH_DISPOSE_BI.
     + apply (spanning_tree_left_reachable g1 g2 x l r); auto.
   Qed.
 
-   (* General_spatial_graph.vertices_at (reachable g1 x) g2 *)
-   (* |-- general_spatial_graph.graph r g2 * *)
-   (*     ((EX  x0 : Graph, *)
-   (*       !!spanning_tree g2 r x0 && *)
-   (*       general_spatial_graph.vertices_at (reachable g2 r) x0) -* *)
-   (*      (EX  x0 : Graph, *)
-   (*       !!edge_spanning_tree g2 (x, R) x0 && *)
-   (*       general_spatial_graph.vertices_at (reachable g1 x) x0)) *)
-  
-
   Lemma graph_ramify_aux1_right: forall (g1 g2: Graph) x l r,
       vvalid g1 x -> vgamma g1 x = (true, l, r) ->
       edge_spanning_tree g1 (x, L) g2 -> unmarked g2 r ->
@@ -239,5 +239,50 @@ Section SPATIAL_GRAPH_DISPOSE_BI.
     + apply (edge_spanning_tree_left_reachable g1 g2 x l r); auto.
     + apply (edge_spanning_tree_left_reachable_vvalid g1 g2 x true l r); auto.
   Qed.
-  
+
+  Lemma graph_gen_right_null_ramify: forall (g1 g2: Graph) (x : addr) d (l r : addr),
+      vvalid g1 x -> vgamma g2 x = (d, l, r) ->
+      (vertices_at (reachable g1 x) g2 : pred) |--
+                  vertex_at x (d, l, r) * (vertex_at x (d, l, null) -* vertices_at (reachable g1 x) (Graph_gen_right_null g2 x)).
+  Proof.
+    intros.
+    replace (@vertex_at _ _ _ _ _ SGP x (d, l, r)) with (graph_cell g2 x).
+    Focus 2. {
+      unfold graph_cell; simpl.
+      simpl in H0; rewrite H0; auto.
+    } Unfocus.
+    replace (@vertex_at _ _ _ _ _ SGP x (d, l, null)) with (graph_cell (Graph_gen_right_null g2 x) x).
+    Focus 2. {
+      unfold graph_cell; simpl.
+      unfold gamma. simpl.
+      unfold graph_gen.update_dst.
+      destruct_eq_dec (x, R) (x, L). inversion H1.
+      destruct_eq_dec (x, R) (x, R). 2: exfalso; apply H2; auto.
+      simpl in H0; unfold gamma in H0. inversion H0; auto.
+    } Unfocus.
+    apply iter_sepcon.pred_sepcon_ramify1; auto.
+    + apply reachable_by_reflexive; auto.
+    + intuition.
+    + intros. unfold graph_cell; simpl.
+      unfold gamma; simpl. unfold graph_gen.update_dst.
+      destruct_eq_dec (x, R) (y, L). inversion H2. 
+      destruct_eq_dec (x, R) (y, R). inversion H3. exfalso; auto. auto.
+  Qed.
+
+  Lemma edge_spanning_tree_right_null:
+    forall (g: Graph) x d l r, vgamma g x = (d, l, r) -> (marked g) r -> edge_spanning_tree g (x, R) (Graph_gen_right_null g x).
+  Proof.
+    intros. assert (r = dst g (x, R)) by (simpl in H; unfold gamma in H; inversion H; auto).
+    hnf. destruct (node_pred_dec (marked g) (dst g (x, R))). 2: subst r; exfalso; auto.
+    split.
+    + hnf. simpl. split; [| split; [|split; [| split]]]; [tauto | tauto | tauto | | ].
+      - intros. unfold graph_gen.update_dst.
+        destruct (equiv_dec (x, R) e); intuition.
+      - unfold strong_evalid. simpl. intro. destruct H2 as [? [? ?]].
+        unfold graph_gen.update_dst in H4.
+        destruct (equiv_dec (x, R) (x, R)); intuition.
+        apply (valid_not_null g) in H4; auto. rewrite is_null_def. auto.
+    + simpl. tauto.
+  Qed.
+
 End SPATIAL_GRAPH_DISPOSE_BI.

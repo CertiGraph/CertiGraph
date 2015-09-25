@@ -180,7 +180,17 @@ Proof.
      SEP  (`(graph sh x g1))).
   Grab Existential Variables.
   Focus 6. { solve_split_by_closed. } Unfocus.
-  Focus 2. { entailer!. } Unfocus.
+  Focus 2. {
+    entailer!.
+    rewrite <- H5.
+    do 2 f_equal.
+    destruct (@vlabel pointer_val (pointer_val * LR) PointerVal_EqDec
+         PointerValLR_EqDec bool unit
+         (fun
+            (g0 : @PreGraph pointer_val (pointer_val * LR) PointerVal_EqDec
+                    PointerValLR_EqDec) (_ : pointer_val -> bool)
+            (_ : pointer_val * LR -> unit) => @BiMaFin pSGG_VST g0) g1 l); auto.
+  } Unfocus.
   Focus 3. { entailer!. } Unfocus.
   Focus 3. { repeat constructor; auto with closed. } Unfocus.
   Focus 2. {
@@ -376,7 +386,17 @@ Proof.
      SEP  (`(vertices_at sh (reachable g1 x) g2))).
   Grab Existential Variables.
   Focus 6. { solve_split_by_closed. } Unfocus.
-  Focus 2. { entailer!. } Unfocus.
+  Focus 2. {
+    entailer!.
+    rewrite <- H7.
+    do 2 f_equal.
+    destruct (@vlabel pointer_val (pointer_val * LR) PointerVal_EqDec
+         PointerValLR_EqDec bool unit
+         (fun
+            (g0 : @PreGraph pointer_val (pointer_val * LR) PointerVal_EqDec
+                    PointerValLR_EqDec) (_ : pointer_val -> bool)
+            (_ : pointer_val * LR -> unit) => @BiMaFin pSGG_VST g0) g2 r); auto.
+  } Unfocus.
   Focus 3. { entailer!. } Unfocus.
   Focus 3. { repeat constructor; auto with closed. } Unfocus.
   Focus 2. {
@@ -467,7 +487,7 @@ Proof.
       destruct H14; auto. rewrite is_null_def in H14. rewrite H14 in H6. exfalso; intuition.
     }
     assert (vvalid g2 r) by (rewrite <- (edge_spanning_tree_left_vvalid g1 g2 x true l r r); auto).
-    admit.
+    apply (@graph_ramify_aux1_right _ (sSGG_VST sh) g1 g2 x l r); auto.
   } Unfocus.
   unfold semax_ram.
   forward.
@@ -480,5 +500,70 @@ Proof.
   destruct (node_pred_dec (marked g2) r). 2: exfalso; auto.
 
   (* x -> r = 0; *)
+  
+  localize
+   (PROP  ()
+    LOCAL (temp _x (pointer_val_val x))
+    SEP   (`(data_at sh node_type (Vint (Int.repr 1), (pointer_val_val l', pointer_val_val r))
+                     (pointer_val_val x)))).
+  eapply semax_ram_seq';
+    [ repeat apply eexists_add_stats_cons; constructor
+    | new_store_tac 
+    | abbreviate_semax_ram].
+  cbv beta zeta iota delta [replace_nth].
+  change (@field_at CompSpecs sh node_type []
+           (Vint (Int.repr 1), (pointer_val_val l', Vint (Int.repr 0)))) with
+         (@data_at CompSpecs sh node_type
+                   (Vint (Int.repr 1), (pointer_val_val l', Vint (Int.repr 0)))).
+  unlocalize
+    (PROP ()
+     LOCAL (temp _r (pointer_val_val r);
+            temp _l (pointer_val_val l);
+            temp _x (pointer_val_val x))
+     SEP (`(vertices_at sh (reachable g1 x) (Graph_gen_right_null g2 x)))).
+  Grab Existential Variables.
+  Focus 6. { solve_split_by_closed. } Unfocus.
+  Focus 2. { entailer!. } Unfocus.
+  Focus 3. { entailer!. } Unfocus.
+  Focus 3. { repeat constructor; auto with closed. } Unfocus.
+  Focus 2. {
+    entailer!.
+    apply (@graph_gen_right_null_ramify _ (sSGG_VST sh) g1 g2 x true l' r); auto.
+  } Unfocus.
+  unfold semax_ram. forward.
+  entailer.
+  apply (exp_right (Graph_gen_right_null g2 x)).
+  entailer!.
+  apply (edge_spanning_tree_right_null g2 x true l' r); auto.
+  forward.
+  entailer.
+  apply (exp_right g3).
+  entailer!.
+  Focus 2. {
+    forward.
+    entailer.
+    apply (exp_right g2).
+    entailer!.
+    apply edge_spanning_tree_invalid.
+    intro. apply (valid_not_null g2 r).
+    + assert (r = dst g2 (x, R)) by (simpl in H_GAMMA_g2; unfold gamma in H_GAMMA_g2; inversion H_GAMMA_g2; auto).
+      rewrite H8. apply H7.
+    + rewrite is_null_def. apply (destruct_pointer_val_NP). left; auto.
+  } Unfocus.
+
+  (* return *)
+
+  forward.
+  apply (exp_right g3).
+  entailer!.
+  Focus 2. {
+    destruct H2.
+    rewrite (vertices_at_P_Q_eq g3 (reachable g1 x) (reachable g x)).
+    + apply derives_refl.
+    + intro v. unfold Ensembles.In; intros.
+      rewrite <- (edge_spanning_tree_right_vvalid g2 g3 x true l' r v); auto.
+      apply (edge_spanning_tree_left_reachable_vvalid g1 g2 x true l r H3 H_GAMMA_g1 H4 v); auto.
+    + intro v. rewrite H2. tauto.
+  } Unfocus.
   
 Abort.
