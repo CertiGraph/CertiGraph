@@ -1,0 +1,23 @@
+Since the fully functional correctness proof needs reasoning about
+pure facts about graphs, we formally built a proof framework for
+mathematical graphs and proved many useful theorems in graph
+theory. In mathematics, a (directed) graph is presented as an ordered
+pair $(V, E)$ where $V$ is a set of vertices or nodes and $E$ is a set
+of edges comprising a source vertex and a destination vertex. In our
+framework, we defined similar structures with a small augmentation: we
+attached ``valid'' property for each vertex and edge in case of
+presenting partial graph structures with dangling edges.
+
+
+
+* the DFS algorithm on math graphs
+
+1.1. A lot of important theorems about graph are proved.
+
+2. Bi-graph.
+2.1. BiMaFin is defined as one kind of general graph.
+2.2. \texttt{pSpatialGraph\_Graph\_Bi} defined in "\texttt{spatial\_graph\_bi.v}" is the premise type class for defining BiMaFin.
+
+1. Classification of various graphs: MathGraph, BiGraph and FinGraph. Though now we put them all in a BiMaFin, there are still many general theorems based on only one of them. The abstraction and classification is useful.
+
+1.4. Dag predicate has not been defined as a whole. It is not hard to get fixed.
