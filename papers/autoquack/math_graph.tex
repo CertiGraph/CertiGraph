@@ -1,14 +1,28 @@
 Since the fully functional correctness proof needs reasoning about
-pure facts about graphs, we formally built a proof framework for
+pure facts of graphs, we formally built a proof framework for
 mathematical graphs and proved many useful theorems in graph
-theory. In mathematics, a (directed) graph is presented as an ordered
-pair $(V, E)$ where $V$ is a set of vertices or nodes and $E$ is a set
-of edges comprising a source vertex and a destination vertex. In our
-framework, we defined similar structures with a small augmentation: we
-attached ``valid'' property for each vertex and edge in case of
-presenting partial graph structures with dangling edges.
+theory.
 
+In mathematics, a (directed) graph is presented as an ordered pair
+$(V, E)$ where $V$ is a set of vertices or nodes and $E$ is a set of
+edges comprising a source node and a destination node. In our
+framework, we defined a similar structure with a small augmentation:
+we attached ``validity'' property to each vertex and edge in case of
+presenting partial graph structures with dangling edges. We call this
+structure \textbf{PreGraph}. Many concepts such as subgraph,
+reachability and structural equivalence are defined based
+on \textbf{PreGraph} in our framework.
 
+However, there are still many useful and practical properties can not
+derived barely from \textbf{PreGraph}. For example, when we compute
+some properties of a graph, we always hope the graph is finite
+connected. When we are proving the correctness of graph algorithm, we
+need a spectial node which represents null pointer. In some cases, we
+have to specify a graph in which the outdegree of each nodes is 2. All
+these additional properties are abstracted as different property
+bundles. We proved quite many theorems for these property
+bundles. This abstraction made those theorems more flexible and
+general.
 
 * the DFS algorithm on math graphs
 
