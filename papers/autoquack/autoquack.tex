@@ -41,36 +41,36 @@ Blah blah blah
 
 \section{Introduction}
 Over the last fifteen years great strides have been made in automating verifications of programs that manipulate
-tree-like data structures using separation logic CITE CITE CITE.  Unfortunately, verifying programs that manipulate 
+tree-like data structures using separation logic CITE CITE CITE.  Unfortunately, verifying programs that manipulate
 graph-like data structures (e.g. structures with \emph{intrinsic sharing}) has been far more challenging.
 Indeed, verifying such programs was formidable enough that a number of the early landmark results in separation logic
-devoted substantial efforts to verify single examples such as Schorr-Waite \cite{hongseok:phd} and XXX CITE with pen and 
+devoted substantial efforts to verify single examples such as Schorr-Waite \cite{hongseok:phd} and XXX CITE with pen and
 paper---avoiding entirely the additional challenges inherent in machine-assisted reasoning.
 
 In recent years, Hobor and Villard introduced the concept of \emph{ramification} as a kind of proof pattern or framework
 to verify graph-manipulating programs with pen and paper \cite{hobor:ramification}, but left open the question of how such proofs could
 be incorporated in a machine-assisted setting.  In this paper, we show how this can be done, and demonstrate the
-value of our approach by adding ramification to two rather sizeable---albeit quite differently flavored---separation logic-based 
+value of our approach by adding ramification to two rather sizeable---albeit quite differently flavored---separation logic-based
 verification tools: the Coq-based tactic system of the Verified Software Toolchain CITE and the more highly-automated HIP/SLEEK
-program verifier \cite{chin:hipsleek}.  Despite the substantial differences between these systems, the vast majority of our infrastructure is 
-shared between them, and since many of the other computer-assisted verification tools under development 
-today CITE CITE CITE CITE have much in common with at least one of these tools, we believe that our techniques will be 
+program verifier \cite{chin:hipsleek}.  Despite the substantial differences between these systems, the vast majority of our infrastructure is
+shared between them, and since many of the other computer-assisted verification tools under development
+today CITE CITE CITE CITE have much in common with at least one of these tools, we believe that our techniques will be
 applicable to many other systems as well.
 
 
 
-Along the way we discover---and show how to fix---a rather subtle error in Hobor and Villard's presentation: neither the 
+Along the way we discover---and show how to fix---a rather subtle error in Hobor and Villard's presentation: neither the
 Knaster-Tarski \cite{tarski:fixpoint} nor the Appel-McAllester \cite{appel:fixpoint} method for solving recursive fixpoints is suitable for defining
 recursive graph predicates in separation logic.
 
-  We also develop a general framework for defining and reasoning about mathematical 
-graphs and 
+  We also develop a general framework for defining and reasoning about mathematical
+graphs and
 
 different kinds of mathematical
-graphs can be implemented in separation logic in a uniform way; 
+graphs can be implemented in separation logic in a uniform way;
 
 generalize their setting
-so that it can handle a wider variety of data structures; 
+so that it can handle a wider variety of data structures;
 
 We use both systems to verify a number of different programs utilizing graph-manipulating structures,
 letting us understand the advantages and disadvantages of both.
@@ -86,7 +86,7 @@ letting us understand the advantages and disadvantages of both.
 
 \subsection{Traditional fixpoints fail}
 
-Hobor and Villard defined the separation logic graph predicate $\mathsf{graph}(x,\gamma)$ in direct analogy to the standard 
+Hobor and Villard defined the separation logic graph predicate $\mathsf{graph}(x,\gamma)$ in direct analogy to the standard
 separation logic definition of a tree as follows:
 \[
 \begin{array}{l}
@@ -97,12 +97,12 @@ separation logic definition of a tree as follows:
 
 %* Showing that neither traditional fixpoint method works
 
-Recursive/inductive predicates are ubiquitous in separation logic---so much so that when a person writes the definition of a 
+Recursive/inductive predicates are ubiquitous in separation logic---so much so that when a person writes the definition of a
 predicate as $P \stackrel{\textrm{``}\Delta\textrm{''}}{=} \ldots P \ldots$ no one raises an eyebrow, despite the dangers of circularity in
 mathematics.  Indeed, 95\% of the time there is no danger thanks to the magic of the Knaster/Tarski fixpoint $\mu_{\mathsf{T}}$ \cite{tarski:fixpoint}.
-Formally what is going on is instead of defining $P$ directly, one defines a functional 
-$F_P \stackrel{\Delta}{=} \lambda P.~ \ldots P \ldots$ and then defines $P$ itself as $P \stackrel{\Delta}{=} \mu_{\mathsf{T}} \, F_P$.  
-Assuming (as one typically does without comment) that $F_P$ is \emph{covariant}, i.e. $(P \vdash Q) \Rightarrow (F \, P \vdash F \, Q)$, 
+Formally what is going on is instead of defining $P$ directly, one defines a functional
+$F_P \stackrel{\Delta}{=} \lambda P.~ \ldots P \ldots$ and then defines $P$ itself as $P \stackrel{\Delta}{=} \mu_{\mathsf{T}} \, F_P$.
+Assuming (as one typically does without comment) that $F_P$ is \emph{covariant}, i.e. $(P \vdash Q) \Rightarrow (F \, P \vdash F \, Q)$,
 one then enjoys the fixpoint equation
 $P \Leftrightarrow \ldots P \ldots$, formally justifying typically written pseudodefinition ($\stackrel{\textrm{``}\Delta\textrm{''}}{=}$).
 
@@ -136,15 +136,33 @@ AQUINAS, IS IT CORRECT TO USE PRESENT TENSE TO TALK ABOUT VST? SHALL I USE PAST 
 
 $$ \frac{\{ P \} c \{Q \} \quad FreeVar(F) \cap ModVar(c) = \emptyset } {\{P * F \} c \{ Q * F \}} $$
 
-$$ \frac{\{ L \} c \{L' \} \quad FreeVar(L' -* G') \cap ModVar(c) = \emptyset \quad G \vdash L * (L' -* G')} {\{G \} c \{ G' \}} $$
+\[
+\frac{
+\begin{array}{c}
+\{ L \} c \{L' \} \quad FreeVar(L' -* G') \cap ModVar(c) = \emptyset \\
+G \vdash L * (L' -* G')
+\end{array}
+}
+{\{G \} c \{ G' \}}
+\]
 
 EDITING FORMAT
 
 In this work we present, we establish the soundness of ramification rule based on frame rule. Noticing that local variables are stored in stack in C, expressing the property of a local variable's value is a pure fact rather than a spatial fact. So, we prove a pure-facts-related rule besides the primary one such that ramification is much easier to apply in VST.
 
-$$ \frac{\{ L \} c \{PureLocal \wedge L' \} \quad FreeVar(PureFrame \wedge (L' -* G')) \cap ModVar(c) = \emptyset \quad G \vdash L * (PureFrame \wedge (L' -* G'))} {\{G \} c \{ PureFrame \wedge PureLocal \wedge G' \}} $$
+\[
+\frac
+{
+\begin{array}{c}
+\{ L \} c \{PureLocal \wedge L' \} \\ 
+FreeVar(PureFrame \wedge (L' -* G')) \cap ModVar(c) = \emptyset \\
+G \vdash L * (PureFrame \wedge (L' -* G'))
+\end{array}
+} {\{G \} c \{ PureFrame \wedge PureLocal \wedge G' \}}
+\]
 
 EDITING FORMAT
+
 
 MORE TO WRITE: divide pure facts into frame and local based on VST's canonical form. Based on localize/unlocalize, compared with frame rule, ramification rule have better use on VST's automatic symbolic execution system.
 
