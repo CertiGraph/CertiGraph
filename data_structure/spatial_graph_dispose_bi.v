@@ -285,4 +285,16 @@ Section SPATIAL_GRAPH_DISPOSE_BI.
     + simpl. tauto.
   Qed.
 
+  Lemma edge_spanning_tree_spanning_tree: forall (g g1 g2 g3 : Graph) x l l' r,
+      vvalid g x -> vvalid g1 x -> vvalid g2 x ->
+      vgamma g x = (false, l, r) ->
+      vgamma g1 x = (true, l, r) ->
+      vgamma g2 x = (true, l', r) ->
+      mark1 g x g1 ->
+      edge_spanning_tree g1 (x, L) g2 ->
+      edge_spanning_tree g2 (x, R) g3 ->
+      spanning_tree g x g3.
+  Proof.
+  Abort.
+
 End SPATIAL_GRAPH_DISPOSE_BI.
