@@ -316,6 +316,15 @@ Lemma reachable_by_path_In: forall (g: Gph) p n1 n2 P n,
   g |= p is n1 ~o~> n2 satisfying P -> In n p -> P n.
 Proof. intros. pose proof reachable_by_path_Forall _ _ _ _ _ H. rewrite Forall_forall in H1; auto. Qed.
 
+Lemma reachable_by_path_si: forall (g1 g2: Gph) p n1 n2 P,
+    structurally_identical g1 g2 -> (g1 |= p is n1 ~o~> n2 satisfying P <-> g2 |= p is n1 ~o~> n2 satisfying P).
+Proof.
+  cut (forall g1 g2 p n1 n2 P, structurally_identical g1 g2 -> g1 |= p is n1 ~o~> n2 satisfying P ->
+                               g2 |= p is n1 ~o~> n2 satisfying P); intros.
+  + split; intros; [apply (H g1 g2) | apply (H g2 g1)]; auto. symmetry; auto.
+  + destruct H0 as [[? ?] [? ?]]. split; split; auto. rewrite <- (valid_path_si g1 g2 H); auto.
+Qed.
+
 Lemma reachable_by_reflexive: forall (g : Gph) n P, vvalid g n /\ P n -> g |= n ~o~> n satisfying P.
 Proof.
   intros.

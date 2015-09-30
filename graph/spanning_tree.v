@@ -1,4 +1,5 @@
 Require Import Coq.Sets.Ensembles.
+Require Import Coq.Classes.Morphisms.
 Require Import RamifyCoq.Coqlib.
 Require Import RamifyCoq.graph.graph_model.
 Require Import RamifyCoq.graph.path_lemmas.
@@ -19,6 +20,17 @@ Module SIMPLE_SPANNING_TREE.
 
     Definition is_tree (g : Graph) (x : V) : Prop :=
       forall y, reachable g x y -> exists !(p : path), g |= p is x ~o~> y satisfying (fun _ => True).
+
+    Instance is_tree_proper : Proper (structurally_identical ==> eq ==> iff) is_tree.
+    Proof.
+      cut (forall g1 g2 x y, g1 ~=~ g2 -> x = y -> is_tree g1 x -> is_tree g2 y); intros.
+      + constructor; intros; [apply (H x y x0) | apply (H y x y0)]; auto. symmetry; auto.
+      + subst. hnf. intro v; intros. rewrite <- H in H0. specialize (H1 v H0).
+        destruct H1 as [p [? ?]]. exists p.
+        pose proof (reachable_by_path_si g1 g2 p y v (fun _ : V => True) H); split.
+        - rewrite <- (reachable_by_path_si g1 g2); auto.
+        - intros. apply H2. rewrite (reachable_by_path_si g1 g2); auto.
+    Qed.
     
     Definition spanning_tree (g1 : Graph) (root : V) (P: V -> Prop) (g2: Graph) := 
       (predicate_partialgraph g1 (fun n => ~ g1 |= root ~o~> n satisfying P)) ~=~
@@ -29,12 +41,6 @@ Module SIMPLE_SPANNING_TREE.
 
     Definition edge_spanning_tree (g1 : Graph) (e : E) (P: V -> Prop) (g2 : Graph) : Prop :=
       (P (dst g1 e) /\ spanning_tree g1 (dst g1 e) P g2) \/ (~ P (dst g1 e) /\ gremove_edge g1 e g2).
-
-    Inductive spanning_list : (V -> Prop) -> Graph -> list E -> Graph -> Prop :=
-    | spanning_list_nil: forall P g1 g2, g1 ~=~ g2 -> spanning_list P g1 nil g2
-    | spanning_list_cons: forall P g1 g2 g3 e rest, edge_spanning_tree g1 e P g2 ->
-                                                    spanning_list (fun x => P x /\ ~ reachable g1 (dst g1 e) x) g2 rest g3 ->
-                                                    spanning_list P g1 (e :: rest) g3.
 
     Lemma edge_spanning_tree_invalid: forall (g: Graph) e (P: NodePred V),
         ~ vvalid g (dst g e) -> edge_spanning_tree g e P g.
@@ -91,6 +97,50 @@ Module SIMPLE_SPANNING_TREE.
         apply reachable_by_path_is_reachable in H8. intro.
         specialize (H4 _ _ H9 H0). auto.
     Qed.
+
+    Lemma spanning_tree_equiv: forall (P1 P2: V -> Prop) (g1: Graph) (v: V) (g2: Graph),
+        (forall x, P1 x <-> P2 x) -> (spanning_tree g1 v P1 g2 <-> spanning_tree g1 v P2 g2).
+    Proof.
+      cut (forall P1 P2 g1 v g2, (forall x, P1 x <-> P2 x) -> spanning_tree g1 v P1 g2 -> spanning_tree g1 v P2 g2); intros.
+      + split; intros; [apply (H P1 P2) | apply (H P2 P1)]; firstorder.
+      + destruct H0 as [? [? [? ?]]]. split; [|split; [|split]]; intros.
+        - apply (si_stronger_partialgraph _ _ (fun n : V => ~ g1 |= v ~o~> n satisfying P1)
+                                          (fun n : V => ~ g1 |= v ~o~> n satisfying P1) _ _ (fun _ => True)); auto;
+          intros; pose proof (reachable_by_eq g1 v v0 P1 P2 H); rewrite H4; intuition.
+        - rewrite <- H in H4. specialize (H1 H4).
+          assert
+            ((predicate_partialgraph g2 (reachable_by g1 v P1)) ~=~ (predicate_partialgraph g2 (reachable_by g1 v P2))). {
+            apply partialgraph_proper. reflexivity. hnf.
+            intros. apply reachable_by_eq. intuition.
+          } apply (is_tree_proper _ _ H5 v v); auto.
+        - apply H2. rewrite (reachable_by_eq _ _ _ P1 P2); auto.
+        - apply H3; rewrite (reachable_by_eq _ _ _ P1 P2); auto.
+    Qed.
+                                       
+    Lemma edge_spanning_tree_equiv: forall (P1 P2: V -> Prop) (g1: Graph) (e: E) (g2: Graph),
+        (forall x, P1 x <-> P2 x) -> (edge_spanning_tree g1 e P1 g2 <-> edge_spanning_tree g1 e P2 g2).
+    Proof.
+      cut (forall (P1 P2: V -> Prop) g1 e g2,
+              (forall x, P1 x <-> P2 x) -> edge_spanning_tree g1 e P1 g2 -> edge_spanning_tree g1 e P2 g2); intros.
+      + split; intros; [apply (H P1 P2) | apply (H P2 P1)]; firstorder.
+      + destruct H0; [left | right]; destruct H0.
+        - split. apply H; auto. rewrite <- (spanning_tree_equiv P1 P2); auto.
+        - split; auto. intro. apply H0. rewrite H; auto.
+    Qed.
+
+    Inductive spanning_list : (V -> Prop) -> Graph -> list E -> Graph -> Prop :=
+    | spanning_list_nil: forall P g1 g2, g1 ~=~ g2 -> spanning_list P g1 nil g2
+    | spanning_list_cons: forall P g1 g2 g3 e rest, edge_spanning_tree g1 e P g2 ->
+                                                    spanning_list (fun x => P x /\ ~ reachable g1 (dst g1 e) x) g2 rest g3 ->
+                                                    spanning_list P g1 (e :: rest) g3.
+
+    Lemma spanning_list_derive: forall (P1 P2: V -> Prop) (g1 g2 : Graph) e,
+        (forall x, P1 x <-> P2 x) -> spanning_list P1 g1 e g2 -> spanning_list P2 g1 e g2.
+    Proof.
+      intros. induction H0.
+      + constructor. auto.
+      + apply spanning_list_cons with g2. rewrite <- (edge_spanning_tree_equiv P P2); auto.
+    Abort.
 
     Lemma spanning_list_spanning_tree: forall (P: V -> Prop) g1 root g2 l,
         (forall e, In e l <-> out_edges g1 root e) ->
@@ -236,5 +286,50 @@ Section SPANNING.
     intros. rewrite spanning_tree_inj in H. destruct H.
     apply SIMPLE_SPANNING_TREE.spanning_tree_not_reachable; auto.
   Qed.
+
+  Lemma spanning_tree_unmarked_equiv: forall (g1 g2: Graph) (root: V),
+      ReachDecidable g1 root (unmarked g1) ->
+      spanning_tree g1 root g2 ->
+      forall x, (unmarked g1 x /\ ~ g1 |= root ~o~> x satisfying (unmarked g1)) <-> unmarked g2 x.
+  Proof.
+    intros. split; intros.
+    + destruct H as [[? ?] _]. destruct H0. intro. apply H0.
+      rewrite (H1 x). auto. intro. apply H2. auto.
+    + destruct H as [[? ?] _]. destruct (X x).
+      - specialize (H _ r). exfalso; auto.
+      - specialize (H1 _ n). split; auto. intro. apply H0. rewrite <- H1. auto.
+  Qed.
+
+  Lemma edge_spanning_tree_unmarked_equiv: forall (g1 g2: Graph) (e: E),
+      ReachDecidable g1 (dst g1 e) (unmarked g1) ->
+      edge_spanning_tree g1 e g2 ->
+      forall x, (unmarked g1 x /\ ~ g1 |= (dst g1 e) ~o~> x satisfying (unmarked g1)) <-> unmarked g2 x.
+  Proof.
+    intros. hnf in H. destruct (node_pred_dec (marked g1) (dst g1 e)).
+    + destruct H. split; intros.
+      - destruct H1. intro. apply H1. rewrite (H0 x). auto.
+      - split.
+        * intro. apply H1. rewrite <- (H0 x). auto.
+        * intro. apply reachable_by_head_prop in H2. auto.
+    + apply spanning_tree_unmarked_equiv; auto.
+  Qed.
+
+  Inductive spanning_list : Graph -> list E -> Graph -> Prop :=
+  | spanning_list_nil: forall (g1 g2 : Graph), g1 ~=~ g2%LabeledGraph -> spanning_list g1 nil g2
+  | spanning_list_cons:
+      forall g1 g2 g3 e rest, edge_spanning_tree g1 e g2 -> spanning_list g2 rest g3 -> spanning_list g1 (e :: rest) g3.
+
+  Lemma spanning_list_inj: forall (g1 g2 : Graph) (es : list E),
+      spanning_list g1 es g2 -> mark_list g1 (map (dst g1) es) g2 /\ SIMPLE_SPANNING_TREE.spanning_list (unmarked g1) g1 es g2.
+  Proof.
+    intros. induction H; split; simpl.
+    + constructor; auto.
+    + constructor; destruct H; auto.
+    + destruct IHspanning_list. apply mark_list_cons with g2; admit.
+    + destruct IHspanning_list. apply SIMPLE_SPANNING_TREE.spanning_list_cons with g2.
+      - rewrite edge_spanning_tree_inj in H. destruct H. auto.
+      -
+  Abort.
+
   
 End SPANNING.

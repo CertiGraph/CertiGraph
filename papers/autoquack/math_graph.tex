@@ -13,16 +13,28 @@ structure \textbf{PreGraph}. Many concepts such as subgraph,
 reachability and structural equivalence are defined based
 on \textbf{PreGraph} in our framework.
 
-However, there are still many useful and practical properties can not
+However, there are still many useful and practical theorems can not
 derived barely from \textbf{PreGraph}. For example, when we compute
 some properties of a graph, we always hope the graph is finite
 connected. When we are proving the correctness of graph algorithm, we
 need a spectial node which represents null pointer. In some cases, we
 have to specify a graph in which the outdegree of each nodes is 2. All
 these additional properties are abstracted as different property
-bundles. We proved quite many theorems for these property
-bundles. This abstraction made those theorems more flexible and
+bundles. We defined \textbf{LocalFiniteGraph}, \textbf{MathGraph}
+and \textbf{BiGraph} for the three requirements above
+respectively. These abstractions made theorems more flexible and
 general.
+
+We proved quite many property bundle specific theorems. One typical
+example of such theorems is the following one:
+\newtheorem{mythm}{Theorem}
+\begin{mythm}
+For any graph $g$ which is both \textbf{MathGraph}
+and \textbf{LocalFiniteGraph} and any node $x$ in $g$, if the number
+of nodes reachable from node $x$ is finite, then we can find a set
+which exactly contains the reachable nodes from $x$ in $g$.
+\end{mythm}
+
 
 * the DFS algorithm on math graphs
 
