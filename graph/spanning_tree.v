@@ -6,7 +6,7 @@ Require Import RamifyCoq.graph.path_lemmas.
 Require Import RamifyCoq.graph.subgraph2.
 Require Import RamifyCoq.graph.reachable_ind.
 Require RamifyCoq.graph.marked_graph.
-Import RamifyCoq.graph.marked_graph.MarkGraph.
+Import RamifyCoq.graph.marked_graph.WeakMarkGraph.
 
 Module SIMPLE_SPANNING_TREE.
 
@@ -130,17 +130,26 @@ Module SIMPLE_SPANNING_TREE.
 
     Inductive spanning_list : (V -> Prop) -> Graph -> list E -> Graph -> Prop :=
     | spanning_list_nil: forall P g1 g2, g1 ~=~ g2 -> spanning_list P g1 nil g2
-    | spanning_list_cons: forall P g1 g2 g3 e rest, edge_spanning_tree g1 e P g2 ->
-                                                    spanning_list (fun x => P x /\ ~ reachable g1 (dst g1 e) x) g2 rest g3 ->
-                                                    spanning_list P g1 (e :: rest) g3.
+    | spanning_list_cons:
+        forall P g1 g2 g3 e rest, edge_spanning_tree g1 e P g2 ->
+                                  spanning_list (fun x => P x /\ ~ g1 |= (dst g1 e) ~o~> x satisfying P) g2 rest g3 ->
+                                  spanning_list P g1 (e :: rest) g3.
 
     Lemma spanning_list_derive: forall (P1 P2: V -> Prop) (g1 g2 : Graph) e,
         (forall x, P1 x <-> P2 x) -> spanning_list P1 g1 e g2 -> spanning_list P2 g1 e g2.
     Proof.
-      intros. induction H0.
-      + constructor. auto.
-      + apply spanning_list_cons with g2. rewrite <- (edge_spanning_tree_equiv P P2); auto.
-    Abort.
+      intros. revert P1 P2 g1 H H0. induction e; intros.
+      + constructor. inversion H0. auto.
+      + inversion H0. subst. apply spanning_list_cons with g3.
+        - rewrite <- (edge_spanning_tree_equiv P1 P2); auto.
+        - apply (IHe (fun x : V => P1 x /\ ~ g1 |= dst g1 a ~o~> x satisfying P1)
+                     (fun x : V => P2 x /\ ~ g1 |= dst g1 a ~o~> x satisfying P2)); auto.
+          intros; split; intros; destruct H1; split.
+          * rewrite <- H; auto.
+          * rewrite <- (reachable_by_eq _ _ _ P1 P2); auto.
+          * rewrite H; auto.
+          * rewrite (reachable_by_eq _ _ _ P1 P2); auto.
+    Qed.
 
     Lemma spanning_list_spanning_tree: forall (P: V -> Prop) g1 root g2 l,
         (forall e, In e l <-> out_edges g1 root e) ->
@@ -328,8 +337,8 @@ Section SPANNING.
     + destruct IHspanning_list. apply mark_list_cons with g2; admit.
     + destruct IHspanning_list. apply SIMPLE_SPANNING_TREE.spanning_list_cons with g2.
       - rewrite edge_spanning_tree_inj in H. destruct H. auto.
-      -
+      - apply (SIMPLE_SPANNING_TREE.spanning_list_derive (unmarked g2)); auto.
+        intro. symmetry. apply edge_spanning_tree_unmarked_equiv; auto.
   Abort.
-
   
 End SPANNING.
