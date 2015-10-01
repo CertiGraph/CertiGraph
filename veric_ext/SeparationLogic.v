@@ -2,6 +2,7 @@ Require Export RamifyCoq.msl_ext.seplog.
 Require Export RamifyCoq.msl_ext.log_normalize.
 Require Export RamifyCoq.msl_ext.alg_seplog.
 Require Export RamifyCoq.veric_ext.seplog.
+Require Export VST.veric.address_conflict.
 Require Import VST.veric.SeparationLogic.
 
 Instance PSLveric: PreciseSepLog mpred := algPreciseSepLog compcert_rmaps.RML.R.rmap.
@@ -28,19 +29,10 @@ Lemma disj_mapsto_: forall sh env t1 t2 p1 p2,
   disjointed (EX v1: val, mapsto sh t1 p1 v1) (EX v2: val, mapsto sh t2 p2 v2).
 Proof. exact disj_mapsto_. Qed.
 
-Lemma mapsto_conflict: forall sh env t1 t2 p1 p2 v1 v2,
-  pointer_range_overlap p1 (sizeof env t1) p2 (sizeof env t2) ->
-  mapsto sh t1 p1 v1 * mapsto sh t2 p2 v2 |-- FF.
-Proof. exact mapsto_conflict. Qed.
-
 Lemma memory_block_precise: forall sh p n, precise (memory_block sh n p).
 Proof. exact memory_block_precise. Qed.
 
 Lemma disj_memory_block: forall sh p1 n1 p2 n2, ~ pointer_range_overlap p1 n1 p2 n2 -> disjointed (memory_block sh n1 p1) (memory_block sh n2 p2).
 Proof. exact disj_memory_block. Qed.
-
-Lemma memory_block_conflict: forall sh p1 n1 p2 n2, pointer_range_overlap p1 n1 p2 n2 -> memory_block sh n1 p1 * memory_block sh n2 p2 |-- FF.
-Proof. exact memory_block_conflict. Qed.
-
 
 

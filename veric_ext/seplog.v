@@ -11,6 +11,7 @@ Require Import veric.slice.
 Require Import veric.res_predicates.
 Require Import veric.tycontext.
 Require Import veric.expr.
+Require Import VST.veric.address_conflict.
 Require Import VST.veric.seplog.
 
 Require Import VST.msl.msl_standard.
@@ -27,18 +28,20 @@ Proof.
   destruct (access_mode t); try apply @exp_FF_precise with (H := algPreciseSepLog _).
   destruct (type_is_volatile t); try apply @exp_FF_precise with (H := algPreciseSepLog _).
   destruct p; try apply @exp_FF_precise with (H := algPreciseSepLog _).
-  apply derives_precise with (exp (fun v0 =>
-          address_mapsto m v0 (Share.unrel Share.Lsh sh)
-            (Share.unrel Share.Rsh sh) (b, Int.unsigned i))); [| apply address_mapsto__precise].
-  apply exp_left; intro v.
-  apply orp_left.
-  + apply andp_left2, (exp_right v).
-    auto.
-  + apply andp_left2; auto.
+  if_tac.
+  + apply derives_precise with (exp (fun v0 =>
+            address_mapsto m v0 (Share.unrel Share.Lsh sh)
+              (Share.unrel Share.Rsh sh) (b, Int.unsigned i))); [| apply address_mapsto__precise].
+    apply exp_left; intro v.
+    apply orp_left.
+    - apply andp_left2, (exp_right v).
+      auto.
+    - apply andp_left2; auto.
+  + apply derives_precise with (nonlock_permission_bytes sh (b, Int.unsigned i) (size_chunk m)).
+    - apply exp_left; intro.
+      auto.
+    - apply nonlock_permission_bytes_precise.
 Qed.
-
-Definition pointer_range_overlap p n p' n' :=
-  exists l l', val2adr p l /\ val2adr p' l' /\ range_overlap l n l' n'.
 
 Definition BV_sizeof t :=
   match access_mode t with
@@ -79,162 +82,31 @@ Proof.
   destruct (type_is_volatile t2); try (rewrite EXP_FF; apply (@disj_FF _ _ _ _ _ (algDisjointedSepLog _))).
   destruct p1; try (rewrite EXP_FF; apply (@FF_disj _ _ _ _ _ (algDisjointedSepLog _))).
   destruct p2; try (rewrite EXP_FF; apply (@disj_FF _ _ _ _ _ (algDisjointedSepLog _))).
-  eapply disj_derives; [| | apply disj_address_mapsto_]; simpl.
-  + apply exp_left; intro v.
-    apply orp_left.
-    - apply andp_left2, (exp_right v).
-      auto.
-    - apply andp_left2; auto.
-  + apply exp_left; intro v.
-    apply orp_left.
-    - apply andp_left2, (exp_right v).
-      auto.
-    - apply andp_left2; auto.
-  + erewrite !size_chunk_sizeof in H by eauto.
-    intro.
-    apply H.
-    exists (b, Int.unsigned i), (b0, Int.unsigned i0).
-    repeat split; auto.
-Qed.
-
-Lemma mapsto_conflict: forall sh env t1 t2 p1 p2 v1 v2,
-  pointer_range_overlap p1 (sizeof env t1) p2 (sizeof env t2) ->
-  mapsto sh t1 p1 v1 * mapsto sh t2 p2 v2 |-- FF.
-Proof.
-  intros.
-  unfold mapsto.
-  destruct (access_mode t1) eqn:AM1; try (rewrite FF_sepcon; auto).
-  destruct (access_mode t2) eqn:AM2; try (rewrite normalize.sepcon_FF; auto).
-  destruct (type_is_volatile t1); try (rewrite FF_sepcon; auto).
-  destruct (type_is_volatile t2); try (rewrite normalize.sepcon_FF; auto).
-  destruct p1; try (rewrite FF_sepcon; auto).
-  destruct p2; try (rewrite normalize.sepcon_FF; auto).
-  apply derives_trans with ((EX  v : val,
-        address_mapsto m v (Share.unrel Share.Lsh sh)
-          (Share.unrel Share.Rsh sh) (b, Int.unsigned i)) *
-    (EX  v : val,
-        address_mapsto m0 v (Share.unrel Share.Lsh sh)
-          (Share.unrel Share.Rsh sh) (b0, Int.unsigned i0))).
-  + apply sepcon_derives.
-    - apply orp_left.
-      * apply andp_left2, (exp_right v1).
+  if_tac.
+  + eapply disj_derives; [| | apply disj_address_mapsto_]; simpl.
+    - apply exp_left; intro v.
+      apply orp_left.
+      * apply andp_left2, (exp_right v).
         auto.
       * apply andp_left2; auto.
-    - apply orp_left.
-      * apply andp_left2, (exp_right v2).
+    - apply exp_left; intro v.
+      apply orp_left.
+      * apply andp_left2, (exp_right v).
         auto.
       * apply andp_left2; auto.
-  + clear v1 v2.
-    rewrite exp_sepcon1.
-    apply exp_left; intro v1.
-    rewrite exp_sepcon2.
-    apply exp_left; intro v2.
-    destruct H as [? [? [? [? ?]]]].
-    inversion H; subst.
-    inversion H0; subst.
-    erewrite !size_chunk_sizeof in H1 by eauto.
-    apply address_mapsto_conflict; auto.
-Qed.
-
-Lemma pointer_range_overlap_dec: forall p1 n1 p2 n2, {pointer_range_overlap p1 n1 p2 n2} + {~ pointer_range_overlap p1 n1 p2 n2}.
-Proof.
-  unfold pointer_range_overlap.
-  intros.
-  destruct p1;
-  try solve
-   [right;
-    intros [[? ?] [[? ?] [HH [_ _]]]];
-    inversion HH].
-  destruct p2;
-  try solve
-   [right;
-    intros [[? ?] [[? ?] [_ [HH _]]]];
-    inversion HH].
-  destruct (zlt 0 n1); [| right; intros [[? ?] [[? ?] [_ [_ HH]]]]; apply range_overlap_non_zero in HH; omega].
-  destruct (zlt 0 n2); [| right; intros [[? ?] [[? ?] [_ [_ HH]]]]; apply range_overlap_non_zero in HH; omega].
-  destruct (Clight_lemmas.block_eq_dec b b0).
-  + subst b0.
-    unfold val2adr.
-    forget (Int.unsigned i) as i1; 
-    forget (Int.unsigned i0) as i2;
-    clear i i0.
-    destruct (range_dec i1 i2 (i1 + n1)); [| destruct (range_dec i2 i1 (i2 + n2))].
-    - left.
-      exists (b, i1), (b, i2); repeat split; auto.
-      apply range_overlap_spec; try omega.
-      left; simpl; auto.
-    - left.
-      exists (b, i1), (b, i2); repeat split; auto.
-      apply range_overlap_spec; try omega.
-      right; simpl; auto.
-    - right.
-      intros [[? ?] [[? ?] [? [? HH]]]].
-      inversion H; inversion H0; subst.
-      apply range_overlap_spec in HH; [| omega | omega].
-      simpl in HH; omega.
-  + right.
-    intros [[? ?] [[? ?] [? [? HH]]]].
-    simpl in H, H0.
-    inversion H; inversion H0; subst.
-    apply range_overlap_spec in HH; [| omega | omega].
-    simpl in HH.
-    pose proof @eq_sym _ b0 b.
-    tauto.
-Qed.    
-
-Lemma pointer_range_overlap_refl: forall p n1 n2,
-  isptr p ->
-  n1 > 0 -> 
-  n2 > 0 ->
-  pointer_range_overlap p n1 p n2.
-Proof.
-  intros.
-  destruct p; try inversion H.
-  exists (b, Int.unsigned i), (b, Int.unsigned i).
-  repeat split; auto.
-  apply range_overlap_spec; auto.
-  left.
-  simpl.
-  split; auto; omega.
-Qed.
-
-Lemma pointer_range_overlap_comm: forall p1 n1 p2 n2,
-  pointer_range_overlap p1 n1 p2 n2 <->
-  pointer_range_overlap p2 n2 p1 n1.
-Proof.
-  cut (forall p1 n1 p2 n2,
-         pointer_range_overlap p1 n1 p2 n2 ->
-         pointer_range_overlap p2 n2 p1 n1).
-  Focus 1. {
-    intros.
-    pose proof H p1 n1 p2 n2.
-    pose proof H p2 n2 p1 n1.
-    tauto.
-  } Unfocus.
-  unfold pointer_range_overlap.
-  intros.
-  destruct H as [l [l' [? [? ?]]]].
-  exists l', l.
-  repeat split; auto.
-  apply range_overlap_comm.
-  auto.
-Qed.
-
-Lemma pointer_range_overlap_non_zero: forall p1 n1 p2 n2,
-  pointer_range_overlap p1 n1 p2 n2 -> n1 > 0 /\ n2 > 0.
-Proof.
-  intros.
-  destruct H as [? [? [? [? ?]]]].
-  eapply range_overlap_non_zero; eauto.
-Qed.
-
-Lemma pointer_range_overlap_isptr: forall p1 n1 p2 n2,
-  pointer_range_overlap p1 n1 p2 n2 -> isptr p1 /\ isptr p2.
-Proof.
-  intros.
-  destruct H as [? [? [? [? ?]]]].
-  destruct p1, p2; try solve [inversion H | inversion H0].
-  simpl; auto.
+    - erewrite !size_chunk_sizeof in H by eauto.
+      intro.
+      apply H.
+      exists (b, Int.unsigned i), (b0, Int.unsigned i0).
+      repeat split; auto.
+  + eapply disj_derives; [| | apply disj_nonlock_permission_bytes]; simpl.
+    - apply exp_left; intro; apply derives_refl.
+    - apply exp_left; intro; apply derives_refl.
+    - erewrite !size_chunk_sizeof in H by eauto.
+      intro.
+      apply H.
+      exists (b, Int.unsigned i), (b0, Int.unsigned i0).
+      repeat split; auto.
 Qed.
 
 Lemma BV_sizeof_pos: forall t m, access_mode t = By_value m -> BV_sizeof t > 0.
@@ -291,7 +163,7 @@ Transparent Z.le. (* A bug of Coq here ? *)
   unfold memory_block'_alt.
   if_tac.
   + apply VALspec_range_precise.
-  + admit.
+  + apply nonlock_permission_bytes_precise.
 Qed.
 
 Lemma disj_memory_block: forall sh p1 n1 p2 n2, ~ pointer_range_overlap p1 n1 p2 n2 -> disjointed (memory_block sh n1 p1) (memory_block sh n2 p2).
@@ -311,41 +183,25 @@ Transparent Z.le. (* A bug of Coq here ? *)
   rewrite memory_block'_eq; [| pose proof Int.unsigned_range i; omega | apply Clight_lemmas.Nat2Z_add_le; auto].
   rewrite memory_block'_eq; [| pose proof Int.unsigned_range i0; omega | apply Clight_lemmas.Nat2Z_add_le; auto].
   unfold memory_block'_alt.
-  admit.
-(*
-  apply disj_VALspec_range.
-  intro; apply H.
-  exists (b, Int.unsigned i), (b0, Int.unsigned i0); auto.
-  repeat split; auto.
-  pose proof range_overlap_non_zero _ _ _ _ H2.
-  destruct (zlt 0 n1); [| rewrite (nat_of_Z_neg n1) in H3 by omega; simpl in H3; omega].
-  destruct (zlt 0 n2); [| rewrite (nat_of_Z_neg n2) in H3 by omega; simpl in H3; omega].
-  rewrite !Coqlib.nat_of_Z_eq in H2 by omega.
-  auto.
-*)
-Qed.
-
-Lemma memory_block_conflict: forall sh p1 n1 p2 n2, pointer_range_overlap p1 n1 p2 n2 -> memory_block sh n1 p1 * memory_block sh n2 p2 |-- FF.
-Proof.
-  intros.
-  unfold memory_block.
-  destruct p1; try solve [rewrite FF_sepcon; auto].
-  destruct p2; try solve [rewrite normalize.sepcon_FF; auto].
-  rewrite sepcon_andp_prop1.
-  rewrite sepcon_andp_prop2.
-  apply normalize.derives_extract_prop; intros.
-  apply normalize.derives_extract_prop; intros.
-  rewrite memory_block'_eq; [| pose proof Int.unsigned_range i; omega | apply Clight_lemmas.Nat2Z_add_le; auto].
-  rewrite memory_block'_eq; [| pose proof Int.unsigned_range i0; omega | apply Clight_lemmas.Nat2Z_add_le; auto].
-  unfold memory_block'_alt.
-  admit.
-(*
-  apply VALspec_range_conflict.
-  pose proof pointer_range_overlap_non_zero _ _ _ _ H.
-  rewrite !Coqlib.nat_of_Z_eq by omega.
-  destruct H as [[? ?] [[? ?] [? [? ?]]]].
-  inversion H; inversion H3.
-  subst.
-  auto.
-*)
+  if_tac.
+  + clear H2.
+    apply disj_VALspec_range.
+    intro; apply H.
+    exists (b, Int.unsigned i), (b0, Int.unsigned i0); auto.
+    repeat split; auto.
+    pose proof range_overlap_non_zero _ _ _ _ H2.
+    destruct (zlt 0 n1); [| rewrite (nat_of_Z_neg n1) in H3 by omega; simpl in H3; omega].
+    destruct (zlt 0 n2); [| rewrite (nat_of_Z_neg n2) in H3 by omega; simpl in H3; omega].
+    rewrite !Coqlib.nat_of_Z_eq in H2 by omega.
+    auto.
+  + clear H2.
+    apply disj_nonlock_permission_bytes.
+    intro; apply H.
+    exists (b, Int.unsigned i), (b0, Int.unsigned i0); auto.
+    repeat split; auto.
+    pose proof range_overlap_non_zero _ _ _ _ H2.
+    destruct (zlt 0 n1); [| rewrite (nat_of_Z_neg n1) in H3 by omega; simpl in H3; omega].
+    destruct (zlt 0 n2); [| rewrite (nat_of_Z_neg n2) in H3 by omega; simpl in H3; omega].
+    rewrite !Coqlib.nat_of_Z_eq in H2 by omega.
+    auto.
 Qed.

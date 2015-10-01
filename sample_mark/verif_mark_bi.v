@@ -96,7 +96,7 @@ Proof.
   apply -> ram_seq_assoc. 
   eapply semax_ram_seq;
     [ repeat apply eexists_add_stats_cons; constructor
-    | new_load_tac 
+    | load_tac 
     | abbreviate_semax_ram].
   apply ram_extract_exists_pre.
   intro root_mark_old; autorewrite with subst; clear root_mark_old.
@@ -109,8 +109,8 @@ Proof.
   Focus 3. { entailer!. } Unfocus.
   Focus 3. { repeat constructor; auto with closed. } Unfocus.
   Focus 2. {
-    entailer!. rewrite (update_self g x (d, l, r)) at 2 by auto.
-    pose proof (@graph_ramify_aux0 _ _ _ _ _ _ _ (SGA_VST sh) g _ x (d, l, r) (d, l, r)).
+    entailer!. rewrite (update_self g (ValidPointer b i) (d, l, r)) at 2 by auto.
+    pose proof (@graph_ramify_aux0 _ _ _ _ _ _ _ (SGA_VST sh) g _ (ValidPointer b i) (d, l, r) (d, l, r)).
     simpl in H1; auto.
   } Unfocus.
   (* unlocalize *)
@@ -130,7 +130,7 @@ Proof.
       inversion H_GAMMA_g.
       destruct d; [auto | inversion H0].
     } Unfocus.
-    normalize.
+    entailer!.
   } Unfocus.
   Focus 1. { (* if-else branch *)
     forward. (* skip; *)
@@ -139,7 +139,6 @@ Proof.
   } Unfocus.
 
   normalize.
-  subst d.
   localize
    (PROP  ()
     LOCAL (temp _x (pointer_val_val x))
@@ -150,7 +149,7 @@ Proof.
   apply -> ram_seq_assoc. 
   eapply semax_ram_seq;
     [ repeat apply eexists_add_stats_cons; constructor
-    | new_load_tac 
+    | load_tac 
     | abbreviate_semax_ram].
   apply ram_extract_exists_pre.
   intro l_old; autorewrite with subst; clear l_old.
@@ -159,7 +158,7 @@ Proof.
   apply -> ram_seq_assoc.
   eapply semax_ram_seq;
     [ repeat apply eexists_add_stats_cons; constructor
-    | new_load_tac 
+    | load_tac 
     | abbreviate_semax_ram].
   apply ram_extract_exists_pre.
   intro r_old; autorewrite with subst; clear r_old.
@@ -168,7 +167,7 @@ Proof.
   apply -> ram_seq_assoc.
   eapply semax_ram_seq;
     [ repeat apply eexists_add_stats_cons; constructor
-    | new_store_tac
+    | store_tac
     | abbreviate_semax_ram].
   cbv beta zeta iota delta [replace_nth].
   change (@field_at CompSpecs sh node_type []
@@ -192,6 +191,7 @@ Proof.
     entailer!.
     rewrite Graph_gen_spatial_spec by eauto.
     pose proof (@graph_ramify_aux0 _ _ _ _ _ _ _ (SGA_VST sh) g _ x (false, l, r) (true, l, r)).
+    rewrite <- data_at_offset_zero.
     simpl in H1; auto.
   } Unfocus.
   (* unlocalize *)
@@ -216,7 +216,7 @@ Proof.
   rewrite <- ram_seq_assoc.
   eapply semax_ram_seq;
   [ repeat apply eexists_add_stats_cons; constructor
-  | forward_call' (sh, g1, l); apply derives_refl
+  | forward_call (sh, g1, l); apply derives_refl
   | abbreviate_semax_ram].
 
   unlocalize
@@ -250,7 +250,7 @@ Proof.
   
   eapply semax_ram_seq;
   [ repeat apply eexists_add_stats_cons; constructor
-  | forward_call' (sh, g2, r); apply derives_refl
+  | forward_call (sh, g2, r); apply derives_refl
   | abbreviate_semax_ram].
   (* mark(r); *)
 
@@ -280,4 +280,4 @@ Proof.
   apply (mark1_mark_left_mark_right g g1 g2 g3 (ValidPointer b i) l r); auto.
   eapply gamma_true_mark; eauto.
   apply weak_valid_vvalid_dec; auto.
-Time Qed. (* Takes 30 minuts. *)
+Time Qed. (* Takes 3 hours. *)

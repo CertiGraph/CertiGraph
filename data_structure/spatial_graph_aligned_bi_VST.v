@@ -62,6 +62,7 @@ Proof.
   apply data_at_memory_block.
 Defined.
 
+(*
 Instance sMSLstandard sh : StaticMapstoSepLog (AAV (SGP_VST sh)) (trinode sh).
 Proof.
   apply mkStaticMapstoSepLog; simpl; intros.
@@ -73,7 +74,7 @@ Proof.
     rewrite (add_andp _ _ (@data_at_local_facts CompSpecs _ node_type _ (pointer_val_val p1))).
     rewrite (add_andp _ _ (@data_at_local_facts CompSpecs _ node_type _ (pointer_val_val p2))).
     normalize.
-    apply data_at_conflict.
+    apply data_at_conflict; auto.
     change (sizeof cenv_cs node_type) with 16.
     destruct_eq_dec p1 p2; [| congruence].
     subst.
@@ -115,15 +116,9 @@ Proof.
       apply H2.
       rewrite H1, <- (Int.repr_unsigned i), H0, Int.repr_unsigned; auto.
 Defined.
-
+*)
 Instance SGA_VST (sh: share) : SpatialGraphAssum (SGP_VST sh).
-  refine (Build_SpatialGraphAssum _ _ _ _ _ _ _ _ _ _ _ _ _).
-  + simpl; left.
-    intros; apply (@msl_ext.seplog.mapsto_conflict _ _ _ _ _ _ _ _ _ _ _ (sMSLstandard sh)).
-    simpl.
-    destruct_eq_dec x x; congruence.
-  + simpl; right.
-    intros; auto.
+  refine (Build_SpatialGraphAssum _ _ _ _ _ _ _ _ _ _ _).
 Defined.
 
 End sSGG_VST.

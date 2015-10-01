@@ -88,7 +88,7 @@ Proof.
   apply -> ram_seq_assoc.
   eapply semax_ram_seq;
     [ repeat apply eexists_add_stats_cons; constructor
-    | new_load_tac 
+    | load_tac 
     | abbreviate_semax_ram].
   apply ram_extract_exists_pre.
   intro l_old; autorewrite with subst; clear l_old.
@@ -98,7 +98,7 @@ Proof.
   apply -> ram_seq_assoc.
   eapply semax_ram_seq;
     [ repeat apply eexists_add_stats_cons; constructor
-    | new_load_tac 
+    | load_tac 
     | abbreviate_semax_ram].
   apply ram_extract_exists_pre.
   intro r_old; autorewrite with subst; clear r_old.
@@ -108,7 +108,7 @@ Proof.
   apply -> ram_seq_assoc.
   eapply semax_ram_seq;
     [ repeat apply eexists_add_stats_cons; constructor
-    | new_store_tac
+    | store_tac
     | abbreviate_semax_ram].
   cbv beta zeta iota delta [replace_nth].
   change (@field_at CompSpecs sh node_type []
@@ -159,7 +159,7 @@ Proof.
   destruct dlr as [[dd ll] rr].
   eapply semax_ram_seq;
     [ repeat apply eexists_add_stats_cons; constructor
-    | new_load_tac 
+    | load_tac 
     | abbreviate_semax_ram].
   apply ram_extract_exists_pre.
   intro root_mark_old; autorewrite with subst; clear root_mark_old.
@@ -248,7 +248,7 @@ Proof.
   }
   eapply semax_ram_seq';
   [ repeat apply eexists_add_stats_cons; constructor
-  | forward_call' (sh, g1, l); apply derives_refl
+  | forward_call (sh, g1, l); apply derives_refl
   | abbreviate_semax_ram].
   Focus 2. { gather_current_goal_with_evar. } Unfocus.
   Focus 2. { gather_current_goal_with_evar. } Unfocus.
@@ -295,7 +295,7 @@ Proof.
                      (pointer_val_val x)))).
   eapply semax_ram_seq';
     [ repeat apply eexists_add_stats_cons; constructor
-    | new_store_tac 
+    | store_tac 
     | abbreviate_semax_ram].
   cbv beta zeta iota delta [replace_nth].
   change (@field_at CompSpecs sh node_type []
@@ -364,7 +364,7 @@ Proof.
   destruct dlr as [[dd ll] rr].
   eapply semax_ram_seq;
     [ repeat apply eexists_add_stats_cons; constructor
-    | new_load_tac 
+    | load_tac 
     | abbreviate_semax_ram].
   apply ram_extract_exists_pre.
   intro root_mark_old; autorewrite with subst; clear root_mark_old.
@@ -456,7 +456,7 @@ Proof.
   }
   eapply semax_ram_seq';
   [ repeat apply eexists_add_stats_cons; constructor
-  | forward_call' (sh, g2, r); apply derives_refl
+  | forward_call (sh, g2, r); apply derives_refl
   | abbreviate_semax_ram].
   Focus 2. { gather_current_goal_with_evar. } Unfocus.
   Focus 2. { gather_current_goal_with_evar. } Unfocus.
@@ -508,7 +508,7 @@ Proof.
                      (pointer_val_val x)))).
   eapply semax_ram_seq';
     [ repeat apply eexists_add_stats_cons; constructor
-    | new_store_tac 
+    | store_tac 
     | abbreviate_semax_ram].
   cbv beta zeta iota delta [replace_nth].
   change (@field_at CompSpecs sh node_type []

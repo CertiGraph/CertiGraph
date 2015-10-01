@@ -14,19 +14,22 @@ Local Open Scope logic.
 Module Mapsto.
 Section Mapsto.
 
-Definition adr_conflict (a1 a2 : val * type) : bool :=
-  match a1, a2 with
-  | (p1, t1), (p2, t2) => 
-    if (pointer_range_overlap_dec p1 (BV_sizeof t1) p2 (BV_sizeof t2)) then true else false
-  end.
+Definition adr_conflict (sh: share) : val * type -> val * type -> bool :=
+  fun a1 a2 =>
+  if (dec_share_nonunit sh)
+  then match a1, a2 with
+       | (p1, t1), (p2, t2) => 
+         if (pointer_range_overlap_dec p1 (BV_sizeof t1) p2 (BV_sizeof t2)) then true else false
+       end
+  else false.
 
-Instance AA : AbsAddr (val * type) val.
-  apply (mkAbsAddr (val * type) val adr_conflict); intros; unfold adr_conflict in *; destruct p1, p2.
+Instance AA (sh: share) : AbsAddr (val * type) val.
+  apply (mkAbsAddr (val * type) val (adr_conflict sh)); intros; unfold adr_conflict in *; destruct p1, p2.
   + destruct (pointer_range_overlap_dec v (BV_sizeof t) v0 (BV_sizeof t0)); subst;
     destruct (pointer_range_overlap_dec v0 (BV_sizeof t0) v (BV_sizeof t)); subst; auto;
     pose proof pointer_range_overlap_comm v (BV_sizeof t) v0 (BV_sizeof t0);
     tauto.
-  + destruct (pointer_range_overlap_dec v (BV_sizeof t) v0 (BV_sizeof t0)); auto.
+  + destruct (pointer_range_overlap_dec v (BV_sizeof t) v0 (BV_sizeof t0)); [| if_tac; auto].
     destruct (pointer_range_overlap_isptr _ _ _ _ p).
     destruct (zlt 0 (BV_sizeof t)).
     - assert (pointer_range_overlap v (BV_sizeof t) v (BV_sizeof t))
@@ -36,46 +39,60 @@ Instance AA : AbsAddr (val * type) val.
       omega.
 Defined.
 
-Instance MSL sh: MapstoSepLog AA (fun pt v => let (p, t) := pt in mapsto sh t p v).
+Instance MSL sh: MapstoSepLog (AA sh) (fun pt v => let (p, t) := pt in mapsto sh t p v).
 Proof.
   apply mkMapstoSepLog.
   intros [p t].
   apply exp_mapsto_precise.
 Defined.
 
-Instance sMSL sh: StaticMapstoSepLog AA (fun pt v => let (p, t) := pt in mapsto sh t p v).
+Instance sMSL (sh: share): StaticMapstoSepLog (AA sh) (fun pt v => let (p, t) := pt in mapsto sh t p v).
 Proof.
   apply mkStaticMapstoSepLog.
   + intros [p t] v ?.
-    unfold addr_empty in H; simpl in H.
-    destruct (pointer_range_overlap_dec p (BV_sizeof t) p (BV_sizeof t)); [congruence |].
-    unfold mapsto.
-    destruct (access_mode t) eqn:?H; try apply FF_left.
-    destruct (type_is_volatile t), p; try apply FF_left.
-    assert (pointer_range_overlap (Vptr b i) (BV_sizeof t) (Vptr b i) (BV_sizeof t)); [| tauto].
-    apply pointer_range_overlap_refl.
-    - simpl; tauto.
-    - eapply BV_sizeof_pos; eauto.
-    - eapply BV_sizeof_pos; eauto.
+    unfold addr_empty in H. simpl in H. unfold adr_conflict in H.
+    if_tac in H.
+    - destruct (pointer_range_overlap_dec p (BV_sizeof t) p (BV_sizeof t)); [congruence |].
+      unfold mapsto.
+      destruct (access_mode t) eqn:?H; try apply FF_left.
+      destruct (type_is_volatile t), p; try apply FF_left.
+      assert (pointer_range_overlap (Vptr b i) (BV_sizeof t) (Vptr b i) (BV_sizeof t)); [| tauto].
+      apply pointer_range_overlap_refl.
+      * simpl; tauto.
+      * eapply BV_sizeof_pos; eauto.
+      * eapply BV_sizeof_pos; eauto.
+    - apply seplog.mapsto_not_nonunit; auto.
   + intros [p1 t1] [p2 t2] v1 v2 ?.
-    apply mapsto_conflict with (PTree.empty _).
+    simpl in H; unfold adr_conflict in H.
+    if_tac in H; [| congruence].
+    apply seplog.mapsto_overlap with (PTree.empty _); auto.
     apply pointer_range_overlap_BV_sizeof.
-    simpl in H.
     destruct (pointer_range_overlap_dec p1 (BV_sizeof t1) p2 (BV_sizeof t2)); [auto | congruence].
   + intros [p1 t1] [p2 t2] ?.
-    simpl in H.
-    destruct (pointer_range_overlap_dec p1 (BV_sizeof t1) p2 (BV_sizeof t2)); [congruence |].
-    destruct (pointer_range_overlap_dec p1 (sizeof (PTree.empty _) t1) p2 (sizeof (PTree.empty _) t2)).
-    - apply pointer_range_overlap_sizeof with (sh := sh) in p.
-      destruct p as [? | [? | ?]].
-      * tauto.
-      * eapply disj_derives; [exact H0 | apply derives_refl |].
-        pose proof log_normalize.FF_disj.
-        simpl in H1; apply H1.
-      * eapply disj_derives; [apply derives_refl | exact H0 |].
-        pose proof log_normalize.disj_FF.
-        simpl in H1; apply H1.
-    - apply disj_mapsto_ with (PTree.empty _); auto.
+    simpl in H; unfold adr_conflict in H.
+    if_tac in H.
+    Focus 1. {
+     destruct (pointer_range_overlap_dec p1 (BV_sizeof t1) p2 (BV_sizeof t2)); [congruence |].
+     destruct (pointer_range_overlap_dec p1 (sizeof (PTree.empty _) t1) p2 (sizeof (PTree.empty _) t2)).
+      - apply pointer_range_overlap_sizeof with (sh := sh) in p.
+        destruct p as [? | [? | ?]].
+        * tauto.
+        * eapply disj_derives; [exact H1 | apply derives_refl |].
+          pose proof log_normalize.FF_disj.
+          simpl in H2; apply H2.
+        * eapply disj_derives; [apply derives_refl | exact H1 |].
+          pose proof log_normalize.disj_FF.
+          simpl in H2; apply H2.
+      - apply disj_mapsto_ with (PTree.empty _); auto.
+    } Unfocus.
+    Focus 1. {
+      unfold mapsto_.
+      simpl.
+      eapply disj_derives.
+      + apply exp_left; intro; apply seplog.mapsto_not_nonunit; auto.
+      + apply exp_left; intro; apply seplog.mapsto_not_nonunit; auto.
+      + apply (@emp_disj _ Nveric).
+    } Unfocus.
 Defined.
 
 End Mapsto.
@@ -114,7 +131,7 @@ Proof.
   apply memory_block_precise.
 Defined.
 
-Instance sMSL sh: StaticMapstoSepLog AA (fun pn v => let (p, n) := pn in memory_block sh n p).
+Instance sMSL (sh: share) (H_non_unit: sepalg.nonunit sh): StaticMapstoSepLog AA (fun pn v => let (p, n) := pn in memory_block sh n p).
 Proof.
   apply mkStaticMapstoSepLog.
   + intros [p n] v ?.
@@ -135,7 +152,7 @@ Proof.
         predicates_sl.emp) with (!! (Int.unsigned i + n <= Int.modulus) && emp)%logic.
       apply andp_left2; auto.
   + intros [p1 n1] [p2 n2] _ _ ?.
-    apply memory_block_conflict.
+    apply seplog.memory_block_overlap; auto.
     simpl in H.
     destruct (pointer_range_overlap_dec p1 n1 p2 n2); [auto | congruence].
   + intros [p1 n1] [p2 n2] ?.

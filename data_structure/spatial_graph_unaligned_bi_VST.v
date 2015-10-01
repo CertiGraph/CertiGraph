@@ -57,6 +57,7 @@ Proof.
   apply data_at_memory_block.
 Defined.
 
+(*
 Instance sMSLstandard sh : StaticMapstoSepLog (AAV (SGP_VST sh)) (trinode sh).
 Proof.
   apply mkStaticMapstoSepLog; simpl; intros.
@@ -108,21 +109,10 @@ Proof.
   (*     apply H2. *)
   (*     rewrite H1, <- (Int.repr_unsigned i), H0, Int.repr_unsigned; auto. *)
 Abort.
+*)
 
 Instance SGA_VST (sh: share) : SpatialGraphAssum (SGP_VST sh).
-  refine (Build_SpatialGraphAssum _ _ _ _ _ _ _ _ _ _ _ _ _).
-  + simpl; left.
-    intros. unfold trinode.
-    destruct d1 as [[d1 l1] r1].
-    destruct d2 as [[d2 l2] r2].
-    rewrite (add_andp _ _ (@data_at_local_facts CompSpecs _ node_type _ (pointer_val_val x))).
-    rewrite (add_andp _ _ (@data_at_local_facts CompSpecs _ node_type _ (pointer_val_val x))).
-    normalize.
-    apply data_at_conflict.
-    apply pointer_range_overlap_refl; try (simpl; omega).
-    destruct H; auto.
-  + simpl; right.
-    intros; auto.
+  refine (Build_SpatialGraphAssum _ _ _ _ _ _ _ _ _ _ _).
 Defined.
 
 Instance sSGG_VST (sh: share): @sSpatialGraph_Graph_Bi pSGG_VST.
