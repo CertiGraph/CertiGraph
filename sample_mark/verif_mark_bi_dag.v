@@ -123,7 +123,7 @@ Proof.
       inversion H_GAMMA_g.
       destruct d; [auto | inversion H0].
     } Unfocus.
-    normalize.
+    entailer!.
   } Unfocus.
   Focus 1. { (* if-else branch *)
     forward. (* skip; *)
@@ -132,7 +132,6 @@ Proof.
   } Unfocus.
 
   normalize.
-  subst d.
 
   rewrite dag_graph_unfold with (S := l :: r :: nil); [| auto | auto | eapply gamma_step_list; eauto].
   rewrite H_GAMMA_g.
@@ -196,7 +195,7 @@ Proof.
   rewrite <- ram_seq_assoc.
   eapply semax_ram_seq;
   [ repeat apply eexists_add_stats_cons; constructor
-  | forward_call' (sh, g1, l); apply derives_refl
+  | forward_call (sh, g1, l); apply derives_refl
   | abbreviate_semax_ram].
 
   apply semax_ram_pre with
@@ -255,7 +254,7 @@ Proof.
   
   eapply semax_ram_seq;
   [ repeat apply eexists_add_stats_cons; constructor
-  | forward_call' (sh, g2, r); apply derives_refl
+  | forward_call (sh, g2, r); apply derives_refl
   | abbreviate_semax_ram].
   (* mark(r); *)
 
@@ -287,7 +286,7 @@ Proof.
 
   unfold semax_ram.
   forward. (* ( return; ) *)
-  apply (exp_right g3); entailer!.
+  apply (exp_right g3); entailer!. split.
   + apply (mark1_mark_left_mark_right g g1 g2 g3 (ValidPointer b i) l r); auto.
   + destruct H1 as [? _].
     rewrite <- H1.

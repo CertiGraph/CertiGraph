@@ -200,7 +200,7 @@ Proof.
     - apply add_andp.
       change (PROP  ()  LOCAL ()  TT) with (TT && (local (`True) && TT)).
       unfold local, lift1; unfold_lift; simpl; intros.
-      normalize.
+      repeat apply andp_right; apply prop_right; auto.
     - rewrite <- !insert_local'.
       rewrite IHsplit_by_closed.
       rewrite andp_assoc; auto.

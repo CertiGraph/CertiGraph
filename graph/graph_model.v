@@ -89,6 +89,12 @@ Record PreGraph {EV: EqDec Vertex eq} {EE: EqDec Edge eq} := {
 Context {EV: EqDec Vertex eq}.
 Context {EE: EqDec Edge eq}.
 
+Record LabeledGraph {DV DE: Type} := {
+  pg_lg: PreGraph;
+  vlabel_lg: Vertex -> DV;
+  elabel_lg: Edge -> DE
+}.
+
 Record GeneralGraph {DV DE: Type} {P: PreGraph -> (Vertex -> DV) -> (Edge -> DE) -> Type (* Should be Prop *)} := {
   pg_gg: PreGraph;
   vlabel: Vertex -> DV;
@@ -96,6 +102,7 @@ Record GeneralGraph {DV DE: Type} {P: PreGraph -> (Vertex -> DV) -> (Edge -> DE)
   sound_gg: P pg_gg vlabel elabel
 }.
 
+Coercion pg_lg: LabeledGraph >-> PreGraph.
 Coercion pg_gg: GeneralGraph >-> PreGraph.
 
 Definition strong_evalid (pg: PreGraph) (e: Edge) : Prop :=
@@ -157,6 +164,7 @@ Class BiGraph (pg: PreGraph) (left_out_edge right_out_edge: Vertex -> Edge) :=
 End GRAPH_DEF.
 
 Arguments PreGraph _ _ {_} {_}.
+Arguments LabeledGraph _ _ {_} {_} _ _.
 Arguments GeneralGraph _ _ {_} {_} _ _ _.
 Arguments NodePred : clear implicits.
 Arguments is_null {_} {_} {_} {_} _ {_} _.

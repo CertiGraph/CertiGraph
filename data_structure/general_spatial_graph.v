@@ -47,9 +47,11 @@ Class SpatialGraphAssum {V E DV DE Pred: Type} (SGP: SpatialGraphPred V E DV DE 
   SGP_ND: NatDed Pred;
   SGP_SL : SepLog Pred;
   SGP_ClSL: ClassicalSep Pred;
-  SGP_CoSL: CorableSepLog Pred;
+  SGP_CoSL: CorableSepLog Pred
+(*;
   vertex_at_sep: (forall x d1 d2, vertex_at x d1 * vertex_at x d2 |-- FF) \/ (forall x d, vertex_at x d |-- emp);
   edge_at_sep: (forall e d1 d2, edge_at e d1 * edge_at e d2 |-- FF) \/ (forall e d, edge_at e d |-- emp)
+*)
 }.
 
 Existing Instances SGP_ND SGP_SL SGP_ClSL SGP_CoSL.
@@ -239,6 +241,7 @@ Definition Graph_cell (p : V * DV) := vertex_at (fst p) (snd p).
 Lemma Gamma_injective: forall g x y, Gamma g x = Gamma g y -> x = y.
 Proof. intros. unfold Gamma in H. inversion H. auto. Qed.
 
+(*
 Lemma weak_sepcon_unique_graph_cell: (forall g, sepcon_unique (graph_cell g)) \/ (forall x d, graph_cell x d |-- emp).
 Proof.
   destruct vertex_at_sep; [left | right; unfold graph_cell]; auto.
@@ -246,7 +249,6 @@ Proof.
   apply H.
 Qed.
 
-(*
 Lemma vertices_at_NoDup: forall (g: Graph) (P: V -> Prop),
   vertices_at g P = EX l: list V, !!(forall x, In x l <-> P x) && !! (NoDup l) && iter_sepcon l (graph_cell g).
 Proof.
