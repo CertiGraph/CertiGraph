@@ -800,7 +800,7 @@ Definition mark (g1 : Graph) (root : V) (g2 : Graph) : Prop :=
   (forall n, ~ g1 |= root ~o~> n satisfying (unmarked g1) -> (marked g1 n <-> marked g2 n)).
 
 Inductive mark_list: Graph -> list V -> Graph -> Prop :=
-| mark_list_nil: forall g g0, (g ~=~ g0)%LabeledGraph -> mark_list g nil g0
+| mark_list_nil: forall g g0, (g ~=~ g0)%GeneralGraph -> mark_list g nil g0
 | mark_list_cons: forall g g0 g1 v vs, mark g v g0 -> mark_list g0 vs g1 -> mark_list g (v :: vs) g1
 .
 
@@ -985,7 +985,7 @@ Definition mark (g1 : Graph) (root : V) (g2 : Graph) : Prop :=
   (forall n, ~ g1 |= root ~o~> n satisfying (unmarked g1) -> (marked g1 n <-> marked g2 n)).
 
 Inductive mark_list: Graph -> list V -> Graph -> Prop :=
-| mark_list_nil: forall g g0, (g ~=~ g0)%LabeledGraph -> mark_list g nil g0
+| mark_list_nil: forall g g0, (g ~=~ g0)%GeneralGraph -> mark_list g nil g0
 | mark_list_cons: forall g g0 g1 v vs, mark g v g0 -> mark_list g0 vs g1 -> mark_list g (v :: vs) g1
 .
 
@@ -1129,6 +1129,7 @@ Proof.
     * destruct IHmark_list.
       econstructor.
       1: destruct H as [_ H]; exact H.
+      erewrite SIMPLE_MARK_GRAPH.mark_list_proper_strong; [exact H2 | | | | |].
 Abort.      
 
 (*

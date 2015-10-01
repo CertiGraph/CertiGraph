@@ -430,6 +430,41 @@ Definition gremove_edge (g1: PreGraph Vertex Edge) (e0: Edge) (g2: PreGraph Vert
   (forall e : Edge, e <> e0 -> dst g1 e = dst g2 e) /\
   ~ strong_evalid g2 e0.
 
+Section LABELED_GRAPH_EQUIV.
+
+Context {DV DE: Type}.
+Notation Graph := (@LabeledGraph Vertex Edge EV EE DV DE).
+
+Definition labeled_graph_equiv (g1 g2: Graph) :=
+  g1 ~=~ g2 /\
+  (forall v, vlabel_lg g1 v = vlabel_lg g2 v) /\
+  (forall e, elabel_lg g1 e = elabel_lg g2 e).
+
+Lemma lge_refl: forall (G : Graph), labeled_graph_equiv G G.
+Proof. intros; repeat split; auto. Qed.
+
+Lemma lge_sym: forall (G1 G2: Graph), labeled_graph_equiv G1 G2 -> labeled_graph_equiv G2 G1.
+Proof. intros; destruct H as [? [? ?]]; split; [| split]; auto. symmetry; auto. Qed.
+
+Lemma lge_trans: forall (G1 G2 G3: Graph), labeled_graph_equiv G1 G2 -> labeled_graph_equiv G2 G3 -> labeled_graph_equiv G1 G3.
+Proof.
+  intros; destruct H as [? [? ?]], H0 as [? [? ?]].
+  split; [| split].
+  + transitivity G2; auto.
+  + intros. specialize (H1 v); specialize (H3 v); congruence.
+  + intros. specialize (H2 e); specialize (H4 e); congruence.
+Qed.
+
+Instance lge_Equiv: Equivalence (labeled_graph_equiv).
+Proof.
+  split.
+  + intro; apply lge_refl.
+  + intro; apply lge_sym.
+  + intro; apply lge_trans.
+Defined.
+
+End LABELED_GRAPH_EQUIV.
+
 Section GENERAL_GRAPH_EQUIV.
 
 Context {DV DE: Type}.
@@ -470,12 +505,15 @@ End GRAPH_BASIC_LEM.
 
 Notation "g1 '~=~' g2" := (structurally_identical g1 g2) (at level 1): PreGraph.
 Notation "m1 '~=~' m2" := (node_pred_equiv m1 m2) (at level 1) : NodePred.
-Notation "g1 '~=~' g2" := (general_graph_equiv g1 g2) (at level 1) : LabeledGraph.
+Notation "g1 '~=~' g2" := (labeled_graph_equiv g1 g2) (at level 1) : LabeledGraph.
+Notation "g1 '~=~' g2" := (general_graph_equiv g1 g2) (at level 1) : GeneralGraph.
 Delimit Scope PreGraph with PreGraph.
 Delimit Scope NodePred with NodePred.
 Delimit Scope LabeledGraph with LabeledGraph.
+Delimit Scope GeneralGraph with GeneralGraph.
 
 Open Scope PreGraph.
 Global Existing Instance npe_Equiv.
 Global Existing Instance si_Equiv.
+Global Existing Instance lge_Equiv.
 Global Existing Instance gge_Equiv.

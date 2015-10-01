@@ -324,7 +324,7 @@ Section SPANNING.
   Qed.
 
   Inductive spanning_list : Graph -> list E -> Graph -> Prop :=
-  | spanning_list_nil: forall (g1 g2 : Graph), g1 ~=~ g2%LabeledGraph -> spanning_list g1 nil g2
+  | spanning_list_nil: forall (g1 g2 : Graph), g1 ~=~ g2%GeneralGraph -> spanning_list g1 nil g2
   | spanning_list_cons:
       forall g1 g2 g3 e rest, edge_spanning_tree g1 e g2 -> spanning_list g2 rest g3 -> spanning_list g1 (e :: rest) g3.
 
