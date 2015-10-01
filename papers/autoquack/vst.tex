@@ -1,0 +1,52 @@
+WHY WE NEED RAMIFICATION BEFORE THIS SECTION?
+
+VST is a correctness-certified tool to prove functional correctness of C programs CITE. All Hoare rules are proved sound and users can use them to build modularized proof. At the same time, users can have all the convenience offered by separation logic. For example, frame rule is already proved sound as well. VST is fully developed in Coq and it uses the C semantics offered by ComCert. CITE
+
+AQUINAS, IS IT CORRECT TO USE PRESENT TENSE TO TALK ABOUT VST? SHALL I USE PAST TENSE?
+
+$$ \frac{\{ P \} c \{Q \} \quad FreeVar(F) \cap ModVar(c) = \emptyset } {\{P * F \} c \{ Q * F \}} $$
+
+\[
+\frac{
+\begin{array}{c}
+\{ L \} c \{L' \} \quad FreeVar(L' -* G') \cap ModVar(c) = \emptyset \\
+G \vdash L * (L' -* G')
+\end{array}
+}
+{\{G \} c \{ G' \}}
+\]
+
+EDITING FORMAT
+
+In this work we present, we establish the soundness of ramification rule based on frame rule. Noticing that local variables are stored in stack in C, expressing the property of a local variable's value is a pure fact rather than a spatial fact. So, we prove a pure-facts-related rule besides the primary one such that ramification is much easier to apply in VST.
+
+\[
+\frac
+{
+\begin{array}{c}
+\{ L \} c \{PureLocal \wedge L' \} \\ 
+FreeVar(PureFrame \wedge (L' -* G')) \cap ModVar(c) = \emptyset \\
+G \vdash L * (PureFrame \wedge (L' -* G'))
+\end{array}
+} {\{G \} c \{ PureFrame \wedge PureLocal \wedge G' \}}
+\]
+
+EDITING FORMAT
+
+
+MORE TO WRITE: divide pure facts into frame and local based on VST's canonical form. Based on localize/unlocalize, compared with frame rule, ramification rule have better use on VST's automatic symbolic execution system.
+
+
+
+
+
+2.4. VST instance of \texttt{pSpatialGraph\_Graph\_Bi} and \texttt{sSpatialGraph\_Graph\_Bi} are constructed in "\texttt{spatial\_graph\_aligned\_bi\_VST.v}" and "\texttt{spatial\_graph\_unaligned\_bi\_VST.v}".
+
+3. Embed ramification into VST.
+3.1. Ramification rule are proved sound in VST.
+3.2. A special ramification rule for VST's Sep-Local-Prop style pre/post condition is prove. The point is traditional ramification rule require the whole frame-like-wand-expression to be closed w.r.t. the modified variables. This special rule split closed and unclosed away.
+3.3. Localize and unlocalize are defined.
+3.3.1. Localize/unlocalize offer a user-friendly way of using ramification rule.
+3.3.2. Unlocalize tactic need "Grab Existential Variables" afterwards. It is not nice.
+3.3.3. Writing Ocaml plugin is one solution. But we need to develop for both mac and windows.
+3.3.4. Or we can see whether Coq's next version offers more tactics for existential variables.
