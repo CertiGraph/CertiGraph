@@ -1,4 +1,5 @@
 Require Import Coq.Sets.Ensembles.
+Require Import Coq.Relations.Relation_Definitions.
 Require Export Coq.Lists.List.
 Require Export Coq.omega.Omega.
 Require Export Coq.Logic.FunctionalExtensionality.
@@ -904,3 +905,21 @@ Ltac split5 := split; [| split; [| split; [| split]]].
       * intro; rewrite in_app_iff.
         firstorder.
 Qed.
+
+Inductive relation_list {A B: Type} {Req: relation A} {Req_Equiv: Equivalence Req} (R: B -> relation A): list B -> relation A :=
+  | relation_list_nil: forall x y, Req x y -> relation_list R nil x y
+  | relation_list_cons: forall x y z bs b, relation_list R bs x y -> R b y z -> relation_list R (bs ++ b :: nil) x z.
+
+Lemma relation_list_Intersection: forall {A B: Type} {Req: relation A} {Req_Equiv: Equivalence Req} (R1 R2 R3: B -> relation A) bs,
+  (forall b, same_relation _ (relation_conjunction (R1 b) (R2 b)) (R3 b)) ->
+  inclusion _ (relation_list R3 bs) (relation_conjunction (relation_list R1 bs) (relation_list R2 bs)).
+Proof.
+  intros.
+  hnf; intros.
+  induction H0.
+  - split; constructor; auto.
+  - apply (proj2 (H b)) in H1.
+    destruct H1, IHrelation_list.
+    split; econstructor; eauto.
+Qed.
+
