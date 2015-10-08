@@ -1,8 +1,4 @@
-DO WE NEED RAMIFICATION BEFORE THIS SECTION?
-
-VST is a correctness-certified tool to prove functional correctness of C programs CITE. All Hoare rules are proved sound and users can use them to build modularized proof. At the same time, users can have all the convenience offered by separation logic. For example, frame rule is already proved sound as well. VST is fully developed in Coq and it uses the C semantics offered by ComCert. CITE
-
-AQUINAS, IS IT CORRECT TO USE PRESENT TENSE TO TALK ABOUT VST? SHALL I USE PAST TENSE?
+ADD THIS INTO THE PREVIOUS SECTION
 
 $$ \frac{\{ P \} c \{Q \} \quad FreeVar(F) \cap ModVar(c) = \emptyset } {\{P * F \} c \{ Q * F \}} $$
 
@@ -16,22 +12,27 @@ G \vdash L * (L' -* G')
 {\{G \} c \{ G' \}}
 \]
 
-EDITING FORMAT
-
-In this work we present, we establish the soundness of ramification rule based on frame rule. Noticing that local variables are stored in stack in C, expressing the property of a local variable's value is a pure fact rather than a spatial fact. So, we prove a pure-facts-related rule besides the primary one such that ramification is much easier to apply in VST.
-
 \[
 \frac
 {
 \begin{array}{c}
 \{ L \} c \{PureLocal \wedge L' \} \\ 
 FreeVar(PureFrame \wedge (L' -* G')) \cap ModVar(c) = \emptyset \\
-G \vdash L * (PureFrame \wedge (L' -* G'))
+G \vdash PureFrame \wedge (L * (L' -* G'))
 \end{array}
 } {\{G \} c \{ PureFrame \wedge PureLocal \wedge G' \}}
 \]
 
-EDITING FORMAT
+
+Separation logic has been mechanized by many projects CITE CITE CITE. In many of them, like VST and Charge!, expressing the value of a local variable (a variable stored in stack) is a pure fact rather than a spatial fact. This setting makes ramification rule hard to use, because the ramification rule requires $(L' -* G')$ not to contain any modified local variables. In this work we present, we prove a pure-facts-related rule besides the primary one such that ramification will be much easier to apply in all these projects. Using this rule, pure facts in global post condition can inherit both pure facts from local post condition (${PureLocal}$) and from global precondition (${PureFram}$).
+
+
+
+VST is a correctness-certified tool to prove functional correctness of C programs CITE. All Hoare rules are proved sound and users can use them to build modularized proof. At the same time, users can have all the convenience offered by separation logic. For example, frame rule is already proved sound as well. VST is fully developed in Coq and it uses the C semantics offered by ComCert. CITE
+
+AQUINAS, IS IT CORRECT TO USE PRESENT TENSE TO TALK ABOUT VST? SHALL I USE PAST TENSE?
+
+In this work we present, we establish the soundness of primary ramification rule and pure-fact-related ramification rule based on frame rule. 	
 
 
 MORE TO WRITE: divide pure facts into frame and local based on VST's canonical form. Based on localize/unlocalize, compared with frame rule, ramification rule have better use on VST's automatic symbolic execution system.
