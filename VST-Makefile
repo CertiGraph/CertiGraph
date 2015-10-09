@@ -72,8 +72,7 @@ MSL_FILES = \
   predicates_sa.v \
   normalize.v \
   env.v corec.v Coqlib2.v sepalg_list.v rmaps.v rmaps_lemmas.v op_classes.v \
-  simple_CCC.v seplog.v alg_seplog.v log_normalize.v \
-  alg_seplog_direct.v corable_direct.v
+  simple_CCC.v seplog.v alg_seplog.v log_normalize.v
 
 SEPCOMP_FILES= \
   Address.v \
@@ -128,11 +127,13 @@ VERIC_FILES= \
   juicy_mem.v juicy_mem_lemmas.v local.v juicy_mem_ops.v juicy_safety.v juicy_extspec.v \
   semax.v semax_lemmas.v semax_call.v semax_straight.v semax_loop.v semax_congruence.v \
   initial_world.v initialize.v semax_prog.v semax_ext.v SeparationLogic.v SeparationLogicSoundness.v  \
-  NullExtension.v SequentialClight.v superprecise.v jstep.v
+  NullExtension.v SequentialClight.v superprecise.v jstep.v address_conflict.v coqlib4.v
 
 FLOYD_FILES= \
-   coqlib3.v base.v proofauto.v type_induction.v reptype_lemmas.v aggregate_type.v aggregate_pred.v \
+   coqlib3.v base.v proofauto.v computable_theorems.v \
+   type_induction.v reptype_lemmas.v aggregate_type.v aggregate_pred.v \
    nested_pred_lemmas.v compact_prod_sum.v zlist.v \
+   sublist.v smt_test.v extract_smt.v \
    client_lemmas.v canon.v canonicalize.v assert_lemmas.v closed_lemmas.v jmeq_lemmas.v \
    compare_lemmas.v sc_set_load_store.v \
    loadstore_mapsto.v loadstore_field_at.v nested_loadstore.v \
@@ -140,16 +141,18 @@ FLOYD_FILES= \
    entailer.v globals_lemmas.v local2ptree.v fieldlist.v mapsto_memory_block.v\
    nested_field_lemmas.v efield_lemmas.v proj_reptype_lemmas.v replace_refill_reptype_lemmas.v \
    data_at_lemmas.v field_at.v stronger.v \
-   for_lemmas.v semax_tactics.v expr_lemmas.v real_forward.v diagnosis.v computable_theorems.v sublist.v
+   for_lemmas.v semax_tactics.v expr_lemmas.v real_forward.v diagnosis.v ramification.v simple_reify.v simpl_reptype.v
 
 PROGS_FILES= \
-  list_dt.v verif_reverse.v verif_queue.v verif_sumarray.v verif_message.v \
+  list_dt.v verif_reverse.v verif_queue.v verif_sumarray.v \
   insertionsort.v reverse.v queue.v sumarray.v message.v string.v\
-  revarray.v verif_revarray.v insertionsort.v verif_insertion_sort.v \
-  verif_float.v verif_dotprod.v verif_ptr_compare.v \
+  revarray.v verif_revarray.v insertionsort.v \
+  verif_float.v verif_ptr_compare.v \
   verif_nest3.v verif_nest2.v \
   logical_compare.v verif_logical_compare.v field_loadstore.v  verif_field_loadstore.v \
-  even.v verif_even.v odd.v verif_odd.v nest2.v nest3.v ptr_compare.v dotprod.v float.v
+  even.v verif_even.v odd.v verif_odd.v \
+  merge.v verif_merge.v
+# verif_message.v verif_dotprod.v verif_insertion_sort.v 
 
 SHA_FILES= \
   general_lemmas.v SHA256.v common_lemmas.v pure_lemmas.v sha_lemmas.v functional_prog.v \
@@ -203,7 +206,15 @@ HMACEQUIV_FILES= \
   HMAC_spec_abstract.v HMAC_equivalence.v HMAC256_equivalence.v \
   HMAC_isPRF.v HMAC256_isPRF.v
 
-C_FILES = reverse.c queue.c sumarray.c message.c insertionsort.c float.c nest3.c nest2.c nest3.c dotprod.c string.c field_loadstore.c ptr_compare.c
+TWEETNACL_FILES = \
+  Salsa20.v Snuffle.v \
+  tweetNaclBase.v  verif_salsa_base.v tweetnaclVerifiableC.v spec_salsa.v \
+  verif_ld_st.v  verif_fcore_epilogue_htrue.v verif_fcore_epilogue_hfalse.v \
+  split_array_lemmas.v verif_fcore_loop1.v verif_fcore_loop2.v \
+  verif_fcore_jbody.v verif_fcore_loop3.v verif_fcore.v \
+  verif_crypto_core.v
+
+C_FILES = reverse.c queue.c sumarray.c message.c insertionsort.c float.c nest3.c nest2.c nest3.c dotprod.c string.c field_loadstore.c ptr_compare.c merge.c
 
 FILES = \
  $(MSL_FILES:%=msl/%) \

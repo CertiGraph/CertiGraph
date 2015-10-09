@@ -110,7 +110,7 @@ Defined.
 
 Lemma Graph_gen_spatial_spec: forall (G: Graph) (x: addr) (d d': bool) l r,
   vgamma G x = (d, l, r) ->
-  (Graph_gen G x d') -=- (spatialgraph_gen G x (d', l, r)).
+  (Graph_gen G x d') -=- (spatialgraph_vgen G x (d', l, r)).
 Proof.
   intros.
   split; [reflexivity | split; [| auto]].
@@ -123,12 +123,12 @@ Qed.
 
 Lemma Graph_gen_left_null_spatial_spec: forall (G: Graph) (x: addr) (d : bool) l r,
     vgamma G x = (d, l, r) ->
-    (Graph_gen_left_null G x) -=- (spatialgraph_gen G x (d, null, r)).
+    (Graph_gen_left_null G x) -=- (spatialgraph_vgen G x (d, null, r)).
 Proof.
   intros.
   split; [|split; [| auto]].
   + split; [|split; [|split]]; intros; simpl; intuition.
-    unfold Graph_gen_left_null in H0. simpl in H0. unfold spatialgraph_gen in H1. simpl in H1.
+    unfold Graph_gen_left_null in H0. simpl in H0. unfold spatialgraph_vgen in H1. simpl in H1.
     unfold update_dst. destruct_eq_dec (x, L) e; auto. admit.
   + intros. simpl. unfold Graph_gen_left_null. unfold generalgraph_gen_dst. unfold gamma. simpl.
     unfold update_dst. destruct_eq_dec (x, L) (v, L).

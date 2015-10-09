@@ -465,6 +465,19 @@ Proof.
   auto.
 Qed.
 
+Lemma solve_ramify_Q: forall {A B} `{SepLog A} g l g' l' F,
+  g |-- l * F ->
+  (forall x, F * l' x |-- g' x) ->
+  g |-- l * (ALL x: B, l' x -* g' x).
+Proof.
+  intros.
+  apply derives_trans with (l * F); auto.
+  apply sepcon_derives; auto.
+  apply allp_right; intro x.
+  apply wand_sepcon_adjoint.
+  auto.
+Qed.
+
 Ltac normalize_overlap :=
   repeat
   match goal with

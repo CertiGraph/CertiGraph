@@ -6,6 +6,7 @@ Require Import VST.msl.Extensionality.
 Require Import VST.msl.simple_CCC.
 Require Import VST.msl.seplog.
 Require Import VST.msl.log_normalize.
+Require VST.veric.coqlib4.
 Require Import Coq.Lists.List.
 Require Import Coq.Sorting.Permutation.
 Require Export Coq.Classes.Morphisms.
@@ -332,6 +333,121 @@ Section IterPredSepCon.
 Definition pred_sepcon (P: B -> Prop) (p: B -> A): A :=
   EX l: list B, !! (forall x, In x l <-> P x) && !! NoDup l && iter_sepcon l p.
 
+Lemma pred_sepcon_strong_proper: forall P1 P2 p1 p2,
+  (forall x, P1 x <-> P2 x) ->
+  (forall x, P1 x -> P2 x -> p1 x = p2 x) ->
+  pred_sepcon P1 p1 = pred_sepcon P2 p2.
+Proof.
+  assert (forall P1 P2 p1 p2,
+    (forall x, P1 x <-> P2 x) ->
+    (forall x, P1 x -> P2 x -> p1 x = p2 x) ->
+    pred_sepcon P1 p1 |-- pred_sepcon P2 p2).
+  2: intros; apply pred_ext; apply H; [auto | auto | symmetry; auto | symmetry; auto].
+  intros.
+  unfold pred_sepcon.
+  apply exp_left; intro l; apply (exp_right l).
+  normalize.
+  assert (forall x : B, In x l <-> P2 x) by (intros; rewrite H1, H; reflexivity).
+  normalize.
+  erewrite iter_sepcon_func_strong; [apply derives_refl |].
+  intros.
+  specialize (H1 x); specialize (H3 x).
+  apply H0; tauto.
+Qed.
+
+Instance pred_sepcon_proper: Proper (pointwise_relation B iff ==> pointwise_relation B eq ==> eq) pred_sepcon.
+Proof.
+  intros.
+  do 2 (hnf; intros).
+  apply pred_sepcon_strong_proper; intros; auto.
+Defined.
+
+Global Existing Instance pred_sepcon_proper.
+
+Lemma pred_sepcon1: forall p x0,
+  pred_sepcon (fun x => x = x0) p = p x0.
+Proof.
+  intros.
+  unfold pred_sepcon.
+  apply pred_ext.
+  + apply exp_left; intro l.
+    normalize.
+    destruct l as [| ? [|]].
+    - specialize (H x0); simpl in H.
+      tauto.
+    - specialize (H x0); simpl in H.
+      assert (b = x0) by tauto; subst b.
+      simpl.
+      rewrite sepcon_emp; auto.
+    - pose proof proj1 (H b) as HH; simpl in HH.
+      spec HH; [auto |].
+      subst b.
+      pose proof proj1 (H b0) as HH; simpl in HH.
+      spec HH; [auto |].
+      subst b0.
+      clear - H0.
+      inversion H0; subst.
+      simpl in H2; tauto.
+  + apply (exp_right (x0 :: nil)).
+    repeat apply andp_right.
+    - apply prop_right.
+      intros.
+      simpl.
+      split; [intros [? | ?]; [congruence | tauto] | left; congruence].
+    - apply prop_right.
+      constructor; [simpl; tauto | constructor].
+    - simpl.
+      rewrite sepcon_emp; auto.
+Qed.
+
+Lemma pred_sepcon_sepcon: forall (P Q R: B -> Prop) p,
+  coqlib4.Ensemble_join P Q R ->
+  pred_sepcon P p * pred_sepcon Q p = pred_sepcon R p.
+Proof.
+  intros.
+  destruct H.
+  unfold pred_sepcon; apply pred_ext.
+  + rewrite exp_sepcon1. apply exp_left; intro lP.
+    rewrite exp_sepcon2. apply exp_left; intro lQ.
+    normalize.
+    apply (exp_right (lP ++ lQ)).
+    apply andp_right; [apply andp_right |].
+    - apply prop_right.
+      intros.
+      rewrite in_app_iff.
+      firstorder.
+    - apply prop_right.
+      apply NoDup_app_inv; auto.
+      firstorder.
+    - rewrite <- iter_sepcon_app_sepcon; auto.
+  + apply exp_left; intro l.
+    rewrite andp_assoc.
+    do 2 (apply derives_extract_prop; intro).
+    destruct (spec_list_split l P Q R H2 H1 (conj H H0)) as [lp [lq [? [? [? [? ?]]]]]].
+    rewrite exp_sepcon1. apply (exp_right lp).
+    rewrite exp_sepcon2. apply (exp_right lq).
+    normalize.
+    rewrite H7, iter_sepcon_app_sepcon; auto.
+Qed.
+
+Lemma pred_sepcon_sepcon1: forall (P P': B -> Prop) p x0,
+  (forall x, P' x <-> P x \/ x = x0) ->
+  ~ P x0 ->
+  pred_sepcon P' p = p x0 * pred_sepcon P p.
+Proof.
+  intros.
+  rewrite <- pred_sepcon_sepcon with (P := fun x => x = x0) (Q := P).
+  + f_equal.
+    apply pred_sepcon1.
+  + split; intros.
+    - specialize (H a).
+      assert (a = x0 -> ~ P a) by (intro; subst; auto).
+      tauto.
+    - subst.
+      specialize (H x0).
+      tauto.
+Qed.    
+
 Lemma pred_sepcon_ramify1: forall {EqB: EqDec B eq} (P1 P2: B -> Prop) p1 p2 x,
   P1 x ->
   (forall y, P1 y <-> P2 y) ->
@@ -339,31 +455,22 @@ Lemma pred_sepcon_ramify1: forall {EqB: EqDec B eq} (P1 P2: B -> Prop) p1 p2 x,
   pred_sepcon P1 p1 |-- p1 x * (p2 x -* pred_sepcon P2 p2).
 Proof.
   intros.
-  unfold pred_sepcon.
-  normalize.
-  intros l ?.
-  normalize.
-  apply solve_ramify with (iter_sepcon (remove equiv_dec x l) p2);
-   [replace (iter_sepcon (remove equiv_dec x l) p2) with (iter_sepcon (remove equiv_dec x l) p1) |].
-  + change (p1 x * iter_sepcon (remove equiv_dec x l) p1) with
-      (iter_sepcon (x :: remove equiv_dec x l) p1).
-    erewrite iter_sepcon_permutation; [apply derives_refl |].
-    apply nodup_remove_perm; auto.
-    firstorder.
-  + apply iter_sepcon_func_strong.
+  apply solve_ramify with (pred_sepcon (fun u => P1 u /\ u <> x) p1).
+  + rewrite <- pred_sepcon_sepcon1 with (P' := P1); [auto | |tauto].
     intros.
-    rewrite remove_in_3 in H4.
-    apply H1; tauto.
-  + apply (exp_right l).
-    assert (forall x0 : B, In x0 l <-> P2 x0) by firstorder.
-    normalize.
-    rewrite sepcon_comm.
-    change (p2 x * iter_sepcon (remove equiv_dec x l) p2) with
-      (iter_sepcon (x :: remove equiv_dec x l) p2).
-    erewrite iter_sepcon_permutation; [apply derives_refl |].
-    symmetry.
-    apply nodup_remove_perm; auto.
-    firstorder.
+    destruct_eq_dec x0 x; try subst; tauto.
+  + replace (pred_sepcon (fun u : B => P1 u /\ u <> x) p1)
+      with (pred_sepcon (fun u : B => P1 u /\ u <> x) p2).
+    - assert (pointwise_relation _ iff P1 P2) by auto.
+      rewrite <- H2.
+      rewrite sepcon_comm, <- pred_sepcon_sepcon1 with (P' := P1); [auto | | tauto].
+      intros.
+      destruct_eq_dec x0 x; try subst; tauto.
+    - apply pred_sepcon_strong_proper.
+      * intros; reflexivity.
+      * intros.
+        symmetry; apply H1.
+        tauto.
 Qed.
 
 Lemma pred_sepcon_ramify1_simpl: forall {EqB: EqDec B eq} (P: B -> Prop) p1 p2 x,
@@ -377,48 +484,19 @@ Proof.
 Qed.
 
 Lemma pred_sepcon_ramify_pred: forall (Pg1 Pl1 Pg2 Pl2 PF: B -> Prop) p1 p2,
-  (forall x, Pg1 x -> {Pl1 x} + {PF x}) ->
-  (forall x, Pg1 x <-> Pl1 x \/ PF x) ->
-  (forall x, Pl1 x -> PF x -> False) ->
-  (forall x, Pg2 x <-> Pl2 x \/ PF x) ->
-  (forall x, Pl2 x -> PF x -> False) ->
+  coqlib4.Ensemble_join Pl1 PF Pg1 ->
+  coqlib4.Ensemble_join Pl2 PF Pg2 ->
   (forall x, PF x -> p1 x = p2 x) ->
   pred_sepcon Pg1 p1 |-- pred_sepcon Pl1 p1 * (pred_sepcon Pl2 p2 -* pred_sepcon Pg2 p2).
 Proof.
   intros.
-  unfold pred_sepcon.
-  normalize.
-  assert (Enumerable _ Pg1) by (exists l; auto).
-  pose proof EnumSplit _ Pg1 Pl1 PF.
-  do 4 (spec X1; [auto |]).
-  destruct X1 as [[l0 [? ?]] [lF [? ?]]]; clear X0; unfold Ensembles.In in *.
-  apply (exp_right l0).
-  normalize.
-  apply solve_ramify with (iter_sepcon lF p2);
-   [replace (iter_sepcon lF p2) with (iter_sepcon lF p1) |].
-  + rewrite <- iter_sepcon_app_sepcon.
-    erewrite iter_sepcon_permutation; [apply derives_refl |].
-    apply NoDup_Permutation; auto.
-    - apply NoDup_app_inv; auto.
-      intro x; rewrite H7, H9.
-      exact (H0 x).
-    - intro x; rewrite in_app_iff, H4, H7, H9.
-      apply H.
-  + apply iter_sepcon_func_strong.
-    intros.
-    apply H3.
-    rewrite <- H9; auto.
-  + normalize.
-    intros l' ?.
-    normalize.
-    apply (exp_right (lF ++ l')).
-    apply andp_right; [apply andp_right; apply prop_right |].
-    - intro x; rewrite in_app_iff, H9, H10.
-      specialize (H1 x); tauto.
-    - apply NoDup_app_inv; auto.
-      intro x; rewrite H9, H10.
-      specialize (H2 x); tauto.
-    - rewrite <- iter_sepcon_app_sepcon; auto.
+  apply solve_ramify with (pred_sepcon PF p1).
+  + rewrite pred_sepcon_sepcon with (R := Pg1); auto.
+  + replace (pred_sepcon PF p1) with (pred_sepcon PF p2).
+    - rewrite sepcon_comm, pred_sepcon_sepcon with (R := Pg2); auto.
+    - apply pred_sepcon_strong_proper.
+      * intros; reflexivity.
+      * intros; symmetry; apply H1; auto.
 Qed.
 
 Lemma existential_pred_sepcon_ramify_pred': forall {C: Type} (Pg1 Pl1 PF: B -> Prop) (PureF PureF': C -> Prop)
@@ -439,7 +517,9 @@ Proof.
   normalize.
   assert (Enumerable _ Pg1) by (exists l; auto).
   pose proof EnumSplit _ Pg1 Pl1 PF.
-  do 4 (spec X1; [auto |]).
+  spec X1; [auto |].
+  spec X1; [split; auto |].
+  spec X1; [auto |].
   destruct X1 as [[l0 [? ?]] [lF [? ?]]]; clear X0; unfold Ensembles.In in *.
   apply (exp_right l0).
   normalize.
@@ -483,102 +563,6 @@ Lemma existential_pred_sepcon_ramify_pred: forall {C: Type} (Pg1 Pl1 PF: B -> Pr
    ((EX c: C, !! PureF c && pred_sepcon (Pl2 c) (p2 c)) -*
     (EX c: C, !! PureF c && pred_sepcon (Pg2 c) (p2 c))).
 Proof. intros. eapply existential_pred_sepcon_ramify_pred'; eauto. Qed.
-
-Lemma pred_sepcon_or: forall (P Q: B -> Prop) p,
-  (forall x, P x -> Q x -> False) ->
-  pred_sepcon (fun x => P x \/ Q x) p = pred_sepcon P p * pred_sepcon Q p.
-Proof.
-  intros.
-  unfold pred_sepcon.
-  apply pred_ext; normalize.
-  + destruct (spec_list_split _ _ _ H1 H0 H) as [lp [lq [? [? [? [? ?]]]]]].
-    apply (exp_right lq).
-    normalize.
-    apply (exp_right lp).
-    normalize.
-    rewrite <- iter_sepcon_app_sepcon.
-    rewrite H6.
-    auto.
-  + rename l into lq.
-    intros lp ?.
-    apply (exp_right (lp ++ lq)).
-    normalize.
-    assert (forall x : B, In x (lp ++ lq) <-> P x \/ Q x) by (intros; rewrite in_app_iff; firstorder).
-    assert (NoDup (lp ++ lq)) by (apply NoDup_app_inv; auto; firstorder).
-    normalize.
-    rewrite <- iter_sepcon_app_sepcon.
-    auto.
-Qed.
-
-Lemma pred_sepcon_strong_proper: forall P1 P2 p1 p2,
-  (forall x, P1 x <-> P2 x) ->
-  (forall x, P1 x -> P2 x -> p1 x = p2 x) ->
-  pred_sepcon P1 p1 = pred_sepcon P2 p2.
-Proof.
-  assert (forall P1 P2 p1 p2,
-    (forall x, P1 x <-> P2 x) ->
-    (forall x, P1 x -> P2 x -> p1 x = p2 x) ->
-    pred_sepcon P1 p1 |-- pred_sepcon P2 p2).
-  2: intros; apply pred_ext; apply H; [auto | auto | symmetry; auto | symmetry; auto].
-  intros.
-  unfold pred_sepcon.
-  apply exp_left; intro l; apply (exp_right l).
-  normalize.
-  assert (forall x : B, In x l <-> P2 x) by (intros; rewrite H1, H; reflexivity).
-  normalize.
-  erewrite iter_sepcon_func_strong; [apply derives_refl |].
-  intros.
-  specialize (H1 x); specialize (H3 x).
-  apply H0; tauto.
-Qed.
-
-Instance pred_sepcon_proper: Proper (pointwise_relation B iff ==> pointwise_relation B eq ==> eq) pred_sepcon.
-Proof.
-  intros.
-  do 2 (hnf; intros).
-  apply pred_sepcon_strong_proper; intros; auto.
-Defined.
-
-Global Existing Instance pred_sepcon_proper.
-
-Lemma pred_sepcon_or1: forall (P Q: B -> Prop) p x0,
-  (forall x, P x -> x <> x0) ->
-  (forall x, Q x <-> P x \/ x = x0) ->
-  pred_sepcon Q p = p x0 * pred_sepcon P p.
-Proof.
-  intros.
-  replace (p x0) with (pred_sepcon (fun x => x = x0) p).
-  + assert (pointwise_relation _ iff Q (fun x => P x \/ x = x0)) by (hnf; firstorder).
-    rewrite H1, sepcon_comm.
-    apply pred_sepcon_or.
-    auto.
-  + apply pred_ext; unfold pred_sepcon; normalize.
-    - intros l ?.
-      normalize.
-      assert (l = x0 :: nil).
-      Focus 1. {
-        destruct l; [specialize (H1 x0); simpl in H1; tauto |].
-        assert (b = x0) by (specialize (H1 b); simpl in H1; tauto).
-        inversion H2; subst.
-        destruct l; [auto |].
-        assert (b <> x0) by (simpl in H6; tauto).
-        specialize (H1 b).
-        simpl in H1; tauto.
-      } Unfocus.
-      subst l.
-      simpl.
-      normalize.
-    - apply (exp_right (x0 :: nil)).
-      assert (forall x : B, In x (x0 :: nil) <-> x = x0).
-      Focus 1. {
-        intros.
-        assert (x = x0 <-> x0 = x) by (split; intros; congruence).
-        simpl; tauto.
-      } Unfocus.
-      assert (NoDup (x0:: nil)) by (repeat constructor; simpl; auto).
-      simpl.
-      normalize.
-Qed.     
 
 End IterPredSepCon.
 

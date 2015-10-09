@@ -98,8 +98,6 @@ Proof.
     [ repeat apply eexists_add_stats_cons; constructor
     | load_tac 
     | abbreviate_semax_ram].
-  apply ram_extract_exists_pre.
-  intro root_mark_old; autorewrite with subst; clear root_mark_old.
   (* root_mark = x -> m; *)
 
   unlocalize (PROP ()  LOCAL  (temp _root_mark (Vint (Int.repr (if d then 1 else 0))); temp _x (pointer_val_val x))  SEP  (`(graph sh x g))).
@@ -151,8 +149,6 @@ Proof.
     [ repeat apply eexists_add_stats_cons; constructor
     | load_tac 
     | abbreviate_semax_ram].
-  apply ram_extract_exists_pre.
-  intro l_old; autorewrite with subst; clear l_old.
   (* l = x -> l; *)
 
   apply -> ram_seq_assoc.
@@ -160,8 +156,6 @@ Proof.
     [ repeat apply eexists_add_stats_cons; constructor
     | load_tac 
     | abbreviate_semax_ram].
-  apply ram_extract_exists_pre.
-  intro r_old; autorewrite with subst; clear r_old.
   (* r = x -> r; *)
 
   apply -> ram_seq_assoc.
@@ -267,7 +261,6 @@ Proof.
   Focus 3. { repeat constructor; auto with closed. } Unfocus.
   Focus 2. {
     entailer!.
-    rewrite !exp_emp.
     eapply (@graph_ramify_aux1_right _ (sSGG_VST sh) g2); eauto.
     eapply gamma_true_mark; eauto.
     apply weak_valid_vvalid_dec; auto.

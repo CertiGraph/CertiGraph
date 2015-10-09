@@ -95,7 +95,7 @@ Proof.
     (@data_at CompSpecs sh node_type
        (Vint (Int.repr (if d then 1 else 0)), (pointer_val_val l, pointer_val_val r)) (pointer_val_val x)).
   normalize.
-  forward root_mark_old. (* root_mark = x -> m; *)
+  forward. (* root_mark = x -> m; *)
 
   eapply semax_pre with 
     (PROP  ()
@@ -140,8 +140,8 @@ Proof.
        (Vint (Int.repr 0), (pointer_val_val l, pointer_val_val r)) (pointer_val_val x)).
   normalize.
 
-  forward l_old. (* l = x -> l; *)
-  forward r_old. (* r = x -> r; *)
+  forward. (* l = x -> l; *)
+  forward. (* r = x -> r; *)
   forward. (* x -> d = 1; *)
 
   pose proof Graph_gen_true_mark1 g x _ _ H_GAMMA_g gx_vvalid.
@@ -165,11 +165,12 @@ Proof.
     rewrite dag_graph_gen_step_list with (x0 := x) (d := (true, l, r));
       [| auto | auto | eapply (gamma_step_list g); eauto].
     pose proof Graph_gen_spatial_spec g x false true l r H_GAMMA_g.
-    pose proof @graphs_vi_eq _ _ _ _ _ _ SGP (@SGA _ (sSGG_VST sh)) (Graph_gen g x true) (spatialgraph_gen g x (true, l, r)) (l :: r :: nil) H2.
+    pose proof @graphs_vi_eq _ _ _ _ _ _ SGP (@SGA _ (sSGG_VST sh)) (Graph_gen g x true) (spatialgraph_vgen g x (true, l, r)) (l :: r :: nil) H2.
 
     rewrite <- H3.
     forget (Graph_gen g x true) as g1.
     entailer!.
+    apply derives_refl.
   } Unfocus.
 
   assert (H_Dag_g1_x: localDag (Graph_gen g x true) x) by auto.
@@ -204,7 +205,7 @@ Proof.
     SEP 
     (`(EX  g' : Graph, !!(mark g1 l g') && graph sh l g'))).
   entailer!.
-  apply (exp_right g'); entailer!.
+  apply exp_left; intro g'; apply (exp_right g'); entailer!.
 
   unlocalize
    (PROP  ()
@@ -264,7 +265,7 @@ Proof.
     SEP 
     (`(EX  g' : Graph, !!mark g2 r g' && graph sh r g'))).
   entailer!.
-  apply (exp_right g'); entailer!.
+  apply exp_left; intro g'; apply (exp_right g'); entailer!.
 
   unlocalize
    (PROP  ()
@@ -279,7 +280,6 @@ Proof.
   Focus 3. { repeat constructor; auto with closed. } Unfocus.
   Focus 2. {
     entailer!.
-    rewrite !exp_emp.
     eapply (@graph_ramify_aux1_right _ (sSGG_VST sh)  g2); eauto.
   } Unfocus.
   (* Unlocalize *)

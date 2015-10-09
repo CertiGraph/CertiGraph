@@ -3,6 +3,7 @@ Require Import Coq.Sets.Ensembles.
 Require Import Coq.Sets.Finite_sets.
 Require Import Coq.Lists.List.
 Require Import Coq.Classes.Morphisms.
+Require Import Coq.Relations.Relation_Definitions.
 Require Import RamifyCoq.Coqlib.
 Require Import VST.msl.Coqlib2.
 Require Import RamifyCoq.graph.graph_model.
@@ -10,8 +11,6 @@ Require Import RamifyCoq.graph.path_lemmas. Import RamifyCoq.graph.path_lemmas.P
 Require Import RamifyCoq.graph.reachable_computable.
 Require Import RamifyCoq.graph.reachable_ind.
 Require Import RamifyCoq.graph.subgraph2.
-
-Definition relation_concat {A: Type} (P Q: Relation_Definitions.relation A): Relation_Definitions.relation A := fun x z => exists y, P x y /\ P y z.
 
 Section PartialLabeledGraph.
 
@@ -21,6 +20,8 @@ Context {EE: EqDec E eq}.
 Context {DV DE: Type}.
 
 Notation Graph := (LabeledGraph V E DV DE).
+
+Definition labeledgraph_vgen (g: Graph) (x: V) (a: DV) : Graph := Build_LabeledGraph _ _ g (fun v => if (equiv_dec x v) then a else vlabel_lg g v) (elabel_lg g).
 
 Definition predicate_sub_labeledgraph (g: Graph) (p: V -> Prop) :=
   Build_LabeledGraph _ _ (predicate_subgraph g p) (vlabel_lg g) (elabel_lg g).
@@ -59,20 +60,17 @@ Hypothesis R_DEC: forall (g: Graph) x, vvalid g x -> ReachDecidable g x (unmarke
 
 Definition mark1 (g1 : Graph) (n : V) (g2 : Graph) : Prop :=
   g1 ~=~ g2 /\
-  vvalid g1 n /\
   marked g2 n /\
-  forall n', n <> n' -> (marked g1 n' <-> marked g2 n').
+  (forall n', n <> n' -> vvalid g1 n' -> vvalid g2 n' -> vlabel_lg g1 n' = vlabel_lg g2 n') /\
+  (forall e, evalid g1 e -> evalid g2 e -> elabel_lg g1 e = elabel_lg g2 e).
 
 Definition mark (g1 : Graph) (root : V) (g2 : Graph) : Prop :=
-  (predicate_partialgraph g1 (Complement _ (reachable_by g1 root (unmarked g1)))) ~=~
-  (predicate_partialgraph g2 (Complement _ (reachable_by g1 root (unmarked g1)))) /\
+  (predicate_partialgraph g1 (unmarked g2)) ~=~
+  (predicate_partialgraph g2 (unmarked g2)) /\
   (forall n, g1 |= root ~o~> n satisfying (unmarked g1) -> marked g2 n) /\
   (forall n, ~ g1 |= root ~o~> n satisfying (unmarked g1) -> (marked g1 n <-> marked g2 n)).
 
-Inductive mark_list: Graph -> list V -> Graph -> Prop :=
-| mark_list_nil: forall g g0, (g ~=~ g0)%LabeledGraph -> mark_list g nil g0
-| mark_list_cons: forall g g0 g1 v vs, mark g v g0 -> mark_list g0 vs g1 -> mark_list g (v :: vs) g1
-.
+Definition mark_list g1 xs g2 := relation_list (fun x g1 g2 => mark g1 x g2) xs g1 g2.
 
 Lemma mark1_mark_list_mark: forall (g1: Graph) root l (g2 g3: Graph)
   (V_DEC: forall x, In x l -> Decidable (vvalid g1 x)),
@@ -84,15 +82,20 @@ Lemma mark1_mark_list_mark: forall (g1: Graph) root l (g2 g3: Graph)
   mark g1 root g3.
 Admitted.
 
-Lemma vertex_update_mark1: forall (g1: Graph) x (g2: Graph),
-  g1 ~=~ g2 ->
-  vvalid g1 x ->
-  unmarked g1 x ->
-  marked g2 x ->
-  (forall y, x <> y -> vlabel_lg g2 y = vlabel_lg g1 y) ->
-  (forall e, elabel_lg g2 e = elabel_lg g1 e) ->
-  mark1 g1 x g2.
-Admitted.
+Lemma vertex_update_mark1: forall (g: Graph) x lx,
+  label_marked lx ->
+  mark1 g x (labeledgraph_vgen g x lx).
+Proof.
+  intros.
+  split; [| split; [| split]].
+  + reflexivity.
+  + simpl.
+    destruct_eq_dec x x; [auto | congruence].
+  + simpl; intros.
+    destruct_eq_dec x n'; [tauto | auto].
+  + simpl; intros.
+    auto.
+Qed.
 
 End WeakMarkGraph.
 

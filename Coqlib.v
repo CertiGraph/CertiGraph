@@ -5,6 +5,7 @@ Require Export Coq.omega.Omega.
 Require Export Coq.Logic.FunctionalExtensionality.
 Require Export Coq.Sorting.Permutation.
 Require Export Coq.Classes.EquivDec.
+Require VST.veric.coqlib4.
 
 Lemma ex_iff: forall {A: Type} P Q, (forall x: A, P x <-> Q x) -> (ex P <-> ex Q).
 Proof.
@@ -833,12 +834,11 @@ Qed.
 
 Lemma EnumSplit: forall U (P Q R: Ensemble U),
   (forall x, P x -> {Q x} + {R x}) ->
-  (forall x, P x <-> Q x \/ R x) ->
-  (forall x, Q x -> R x -> False) ->
+  coqlib4.Ensemble_join Q R P ->
   Enumerable U P -> 
   Enumerable U Q * Enumerable U R.
 Proof.
-  intros.
+  intros U P Q R ? [? ?] ?.
   split.
   + apply EnumStrengthen with P; auto.
     - intros x HH; specialize (X x HH); specialize (H x); specialize (H0 x).
@@ -851,10 +851,10 @@ Proof.
     - intros x; simpl; specialize (H x); tauto.
 Qed.
 
-Lemma spec_list_split: forall {A} (l: list A) P Q,
+Lemma spec_list_split: forall {A} (l: list A) P Q R,
   NoDup l ->
-  (forall x, In x l <-> P x \/ Q x) ->
-  (forall x, P x -> Q x -> False) ->
+  (forall x, In x l <-> R x) ->
+  coqlib4.Ensemble_join P Q R ->
   exists lp lq,
     NoDup lp /\
     NoDup lq /\
@@ -863,7 +863,9 @@ Lemma spec_list_split: forall {A} (l: list A) P Q,
     Permutation l (lp ++ lq).
 Proof.
 Ltac split5 := split; [| split; [| split; [| split]]].
-  intros.
+  intros A l P Q R ? EQUIV [? ?].
+  assert (forall a, In a l <-> P a \/ Q a) by firstorder.
+  clear EQUIV H0 R; rename H2 into H0.
   assert (exists lp lq,
      NoDup lp /\
      NoDup lq /\     
@@ -923,3 +925,9 @@ Proof.
     split; econstructor; eauto.
 Qed.
 
+Lemma same_relation_spec: forall {A} a1 a2, same_relation A a1 a2 <-> pointwise_relation A (pointwise_relation A iff) a1 a2.
+Proof.
+  intros.
+  unfold same_relation, inclusion, pointwise_relation.
+  firstorder.
+Qed.

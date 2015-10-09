@@ -463,6 +463,14 @@ Proof.
   + intro; apply lge_trans.
 Defined.
 
+Lemma si_list: forall {A} (l: list A) (G1 G2: Graph), relation_list (fun _ (G1 G2: Graph) => G1 ~=~ G2) l G1 G2 -> G1 ~=~ G2.
+Proof.
+  intros.
+  induction H.
+  + destruct H; auto.
+  + transitivity y; auto.
+Qed.
+
 End LABELED_GRAPH_EQUIV.
 
 Section GENERAL_GRAPH_EQUIV.
