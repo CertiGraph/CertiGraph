@@ -34,8 +34,6 @@ Class SpatialGraphPred (V E DV DE Pred: Type): Type := {
   edge_at: E -> DE -> Pred
 }.
 
-Definition spatialgraph_gen {V E VE EE DV DE} (g: @SpatialGraph V E VE EE DV DE) (x: V) (a: DV) : @SpatialGraph V E VE EE DV DE := Build_SpatialGraph _ _ _ _ _ _ pg (fun v => if (equiv_dec x v) then a else vgamma g v) (egamma g).
-
 Class SpatialGraphBasicAssum (V E: Type) := {
   VE: EqDec V eq;
   EE: EqDec E eq
@@ -128,6 +126,8 @@ Add Parametric Relation : (SpatialGraph V E DV DE) validly_identical
 
 Global Existing Instance vi_equal.
 
+Definition spatialgraph_vgen (g: SpatialGraph V E DV DE) (x: V) (a: DV) : SpatialGraph V E DV DE := Build_SpatialGraph _ _ _ _ _ _ pg (fun v => if (equiv_dec x v) then a else vgamma g v) (egamma g).
+
 Definition predicate_sub_spatialgraph  (g: SpatialGraph V E DV DE: Type) (p: V -> Prop) :=
   Build_SpatialGraph V E _ _ DV DE (predicate_subgraph g p) (vgamma g) (egamma g).
 
@@ -188,7 +188,7 @@ Defined.
 
 Global Existing Instance partial_spatialgraph_proper.
 
-Lemma update_self: forall (g: SpatialGraph V E DV DE) (x: V) (d: DV), vgamma g x = d -> g -=- (spatialgraph_gen g x d).
+Lemma update_self: forall (g: SpatialGraph V E DV DE) (x: V) (d: DV), vgamma g x = d -> g -=- (spatialgraph_vgen g x d).
 Proof.
   intros.
   split; [reflexivity | split; [| auto]].
@@ -197,7 +197,7 @@ Proof.
   destruct_eq_dec x v; subst; auto.
 Qed.
 
-Lemma update_invalid: forall (g: SpatialGraph V E DV DE) (x: V) (d: DV), ~ vvalid g x -> g -=- (spatialgraph_gen g x d).
+Lemma update_invalid: forall (g: SpatialGraph V E DV DE) (x: V) (d: DV), ~ vvalid g x -> g -=- (spatialgraph_vgen g x d).
 Proof.
   intros.
   split; [reflexivity | split; [| auto]].
@@ -207,7 +207,7 @@ Proof.
   tauto.
 Qed.
 
-Lemma spacialgraph_gen_vgamma: forall (g: SpatialGraph V E DV DE) (x: V) (d: DV), vgamma (spatialgraph_gen g x d) x = d.
+Lemma spacialgraph_gen_vgamma: forall (g: SpatialGraph V E DV DE) (x: V) (d: DV), vgamma (spatialgraph_vgen g x d) x = d.
 Proof.
   intros.
   simpl.
@@ -586,25 +586,24 @@ Proof.
   assert (forall x : V, In x S1 -> Decidable (vvalid g x)) by (intros; apply X; apply in_or_app; left; auto).
   assert (forall x : V, In x S1' -> Decidable (vvalid g' x)) by (intros; apply X0; apply in_or_app; left; auto).
   apply pred_sepcon_ramify_pred with (reachable_through_set (unreachable_partialgraph g S1) S2).
-  + intros.
-    destruct (RFG_reachable_through_set_decicable g S1 x X1); [left; auto | right].
-    apply unreachable_eq'; auto.
-  + intros.
-    rewrite <- (unreachable_eq' g S1 S2).
-    rewrite <- reachable_through_set_app; tauto.
-  + intros.
-    rewrite <- (unreachable_eq' g S1 S2) in H1.
-    tauto.
-  + intros.
-    destruct H as [? _].
-    rewrite H.
-    rewrite <- (unreachable_eq' g' S1' S2).
-    rewrite <- reachable_through_set_app; tauto.
-  + intros.
-    destruct H as [? _].
-    rewrite H in H1.
-    rewrite <- (unreachable_eq' g' S1' S2) in H1.
-    tauto.
+  + split.
+    - intros.
+      rewrite <- (unreachable_eq' g S1 S2).
+      rewrite <- reachable_through_set_app; tauto.
+    - intros.
+      rewrite <- (unreachable_eq' g S1 S2) in H1.
+      tauto.
+  + split.
+    - intros.
+      destruct H as [? _].
+      rewrite H.
+      rewrite <- (unreachable_eq' g' S1' S2).
+      rewrite <- reachable_through_set_app; tauto.
+    - intros.
+      destruct H as [? _].
+      rewrite H in H1.
+      rewrite <- (unreachable_eq' g' S1' S2) in H1.
+      tauto.
   + intros.
     destruct H as [HH [? _]].
     simpl in H.
@@ -728,9 +727,9 @@ Lemma existential_partialgraph_update_prime:
       (EX a: A, !!PureF a && vertices_at (PureS2' a) (g' a))).
 Proof. intros. apply existential_partialgraph_update_prime'; auto. Qed.
 
-Lemma vertices_at_ramify: forall (g: Graph) {rfg: ReachableFiniteGraph g} (P: V -> Prop) x d d',
+Lemma vertices_at_ramify: forall (g: Graph) (P: V -> Prop) x d d',
   vvalid g x -> P x -> vgamma g x = d ->
-  vertices_at P g |-- vertex_at x d * (vertex_at x d' -* vertices_at P (spatialgraph_gen g x d')).
+  vertices_at P g |-- vertex_at x d * (vertex_at x d' -* vertices_at P (spatialgraph_vgen g x d')).
 Proof.
   intros.
   replace (@vertex_at _ _ _ _ _ SGP x d) with (graph_cell g x).
@@ -739,7 +738,7 @@ Proof.
     unfold graph_cell; simpl.
     rewrite H1; auto.
   } Unfocus.
-  replace (@vertex_at _ _ _ _ _ SGP x d') with (graph_cell (spatialgraph_gen g x d') x).
+  replace (@vertex_at _ _ _ _ _ SGP x d') with (graph_cell (spatialgraph_vgen g x d') x).
   Focus 2. {
     simpl.
     unfold graph_cell; simpl.
@@ -756,7 +755,7 @@ Qed.
 
 Lemma graph_ramify_aux0: forall (g: Graph) {rfg: ReachableFiniteGraph g} x d d',
   vvalid g x -> vgamma g x = d ->
-  graph x g |-- vertex_at x d * (vertex_at x d' -* graph x (spatialgraph_gen g x d')).
+  graph x g |-- vertex_at x d * (vertex_at x d' -* graph x (spatialgraph_vgen g x d')).
 Proof.
   intros.
   apply vertices_at_ramify; auto.
@@ -840,10 +839,11 @@ Proof.
   pose proof localDag_reachable_spec g x S.
   do 3 (spec H2; [auto |]).
   destruct H2.
-  apply pred_sepcon_or1; auto.
+  apply pred_sepcon_sepcon1; auto.
+  specialize (H3 x); tauto.
 Qed.
 
-Lemma dag_graph_gen_step_list: forall (g: Graph) x S d, vvalid g x -> localDag g x -> step_list g x S -> graphs' S g = graphs' S (spatialgraph_gen g x d).
+Lemma dag_graph_gen_step_list: forall (g: Graph) x S d, vvalid g x -> localDag g x -> step_list g x S -> graphs' S g = graphs' S (spatialgraph_vgen g x d).
 Proof.
   intros.
   apply graphs_reachable_subgraph_eq.

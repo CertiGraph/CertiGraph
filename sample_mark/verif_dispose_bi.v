@@ -90,8 +90,6 @@ Proof.
     [ repeat apply eexists_add_stats_cons; constructor
     | load_tac 
     | abbreviate_semax_ram].
-  apply ram_extract_exists_pre.
-  intro l_old; autorewrite with subst; clear l_old.
   (* end l = x -> l; *)
 
   (* begin r = x -> r; *)
@@ -100,8 +98,6 @@ Proof.
     [ repeat apply eexists_add_stats_cons; constructor
     | load_tac 
     | abbreviate_semax_ram].
-  apply ram_extract_exists_pre.
-  intro r_old; autorewrite with subst; clear r_old.
   (* end r = x -> r; *)
 
   (* begin x -> m = 1; *)
@@ -161,8 +157,6 @@ Proof.
     [ repeat apply eexists_add_stats_cons; constructor
     | load_tac 
     | abbreviate_semax_ram].
-  apply ram_extract_exists_pre.
-  intro root_mark_old; autorewrite with subst; clear root_mark_old.
   replace (if dd then 1 else 0) with (if node_pred_dec (marked g1) l then 1 else 0).
   Focus 2. {
     destruct (node_pred_dec (marked g1)); destruct dd; auto; symmetry in Heqdlr.
@@ -203,7 +197,7 @@ Proof.
       assert (weak_valid g1 l) by (eapply gamma_left_weak_valid; eauto).
       destruct H8; auto. rewrite is_null_def in H8. subst. exfalso; intuition.
     }
-    apply (@vertices_at_ramify _ _ _ _ _ _ _ (SGA_VST sh) g1 _ (reachable g1 x) l (dd, ll, rr) (dd, ll, rr)); auto.
+    apply (@vertices_at_ramify _ _ _ _ _ _ _ (SGA_VST sh) g1 (reachable g1 x) l (dd, ll, rr) (dd, ll, rr)); auto.
     apply (gamma_left_reachable_included g1 _ _ _ _ H3 H_GAMMA_g1 l).
     apply reachable_by_reflexive; auto.
     Transparent gamma.
@@ -268,7 +262,6 @@ Proof.
   Focus 3. { repeat constructor; auto with closed. } Unfocus.
   Focus 2. {
     entailer!.
-    rewrite !exp_emp.
     assert (l = dst g1 (x, L)) by (simpl in H_GAMMA_g1; unfold gamma in H_GAMMA_g1; inversion H_GAMMA_g1; auto).
     assert (forall (gg : Graph), spanning_tree g1 l gg -> edge_spanning_tree g1 (x, L) gg). {
       intros; unfold edge_spanning_tree.
@@ -366,8 +359,6 @@ Proof.
     [ repeat apply eexists_add_stats_cons; constructor
     | load_tac 
     | abbreviate_semax_ram].
-  apply ram_extract_exists_pre.
-  intro root_mark_old; autorewrite with subst; clear root_mark_old.
   replace (if dd then 1 else 0) with (if node_pred_dec (marked g2) r then 1 else 0).
   Focus 2. {
     destruct (node_pred_dec (marked g2)); destruct dd; auto; symmetry in Heqdlr.
@@ -405,7 +396,7 @@ Proof.
     entailer!.
     pose proof (update_self g2 r (dd, ll, rr) Heqp).
     
-    assert (vertices_at sh (reachable g1 x) g2 = vertices_at sh (reachable g1 x) (spatialgraph_gen g2 r (dd, ll, rr))). {
+    assert (vertices_at sh (reachable g1 x) g2 = vertices_at sh (reachable g1 x) (spatialgraph_vgen g2 r (dd, ll, rr))). {
       apply vertices_at_vi_eq; auto.
       apply (edge_spanning_tree_left_reachable_vvalid g1 g2 x true l r); auto.
     }
@@ -414,7 +405,7 @@ Proof.
       assert (weak_valid g1 r) by (eapply gamma_right_weak_valid; eauto).
       destruct H12; auto. rewrite is_null_def in H12. subst. exfalso; intuition.
     }
-    apply (@vertices_at_ramify _ _ _ _ _ _ _ (SGA_VST sh) g2 _ (reachable g1 x) r (dd, ll, rr) (dd, ll, rr)); auto.
+    apply (@vertices_at_ramify _ _ _ _ _ _ _ (SGA_VST sh) g2 (reachable g1 x) r (dd, ll, rr) (dd, ll, rr)); auto.
     rewrite <- (edge_spanning_tree_left_vvalid g1 g2 x true l r r); auto.
     apply (gamma_right_reachable_included g1 _ _ _ _ H3 H_GAMMA_g1 r).
     apply reachable_by_reflexive; auto.
@@ -476,7 +467,6 @@ Proof.
   Focus 3. { repeat constructor; auto with closed. } Unfocus.
   Focus 2. {
     entailer!.
-    rewrite !exp_emp.
     assert (r = dst g2 (x, R)) by (simpl in H_GAMMA_g2; unfold gamma in H_GAMMA_g2; inversion H_GAMMA_g2; auto).
     assert (forall (gg: Graph), spanning_tree g2 r gg -> edge_spanning_tree g2 (x, R) gg). {
       intros; unfold edge_spanning_tree.
