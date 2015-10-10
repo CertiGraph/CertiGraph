@@ -428,7 +428,7 @@ Definition gremove_edge (g1: PreGraph Vertex Edge) (e0: Edge) (g2: PreGraph Vert
   (forall e : Edge, e <> e0 -> (evalid g1 e <-> evalid g2 e)) /\
   (forall e : Edge, e <> e0 -> src g1 e = src g2 e) /\
   (forall e : Edge, e <> e0 -> dst g1 e = dst g2 e) /\
-  ~ strong_evalid g2 e0.
+  ((~ evalid g2 e0) \/ (~ vvalid g2 (dst g2 e0) /\ src g1 e0 = src g2 e0)).
 
 Section LABELED_GRAPH_EQUIV.
 
