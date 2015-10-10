@@ -31,7 +31,7 @@ Module SIMPLE_SPANNING_TREE.
         - rewrite <- (reachable_by_path_si g1 g2); auto.
         - intros. apply H2. rewrite (reachable_by_path_si g1 g2); auto.
     Qed.
-    
+
     Definition spanning_tree (g1 : Graph) (root : V) (P: V -> Prop) (g2: Graph) := 
       (predicate_partialgraph g1 (fun n => ~ g1 |= root ~o~> n satisfying P)) ~=~
       (predicate_partialgraph g2 (fun n => ~ g1 |= root ~o~> n satisfying P)) /\
@@ -52,7 +52,7 @@ Module SIMPLE_SPANNING_TREE.
         - intros. apply reachable_by_is_reachable in H0. apply reachable_head_valid in H0. exfalso; auto.
         - intros. apply reachable_by_is_reachable in H0. apply reachable_head_valid in H0. exfalso; auto.
       + split; [|split; [|split; [|split]]]; intros; [tauto | tauto | tauto |tauto |].
-        intro; apply H. destruct H0 as [_ [_ ?]]. auto.
+        right. split; auto.
     Qed.
 
     Lemma spanning_tree_vvalid: forall (g1 : Graph) (root : V) (P: V -> Prop) (g2 : Graph) x,
@@ -116,6 +116,23 @@ Module SIMPLE_SPANNING_TREE.
         - apply H2. rewrite (reachable_by_eq _ _ _ P1 P2); auto.
         - apply H3; rewrite (reachable_by_eq _ _ _ P1 P2); auto.
     Qed.
+
+    Lemma si_spanning_tree: forall (g1 g2 g3: Graph) (v: V) (P: V -> Prop),
+        g1 ~=~ g2 -> (spanning_tree g1 v P g3 <-> spanning_tree g2 v P g3).
+    Proof.
+      cut (forall g1 g2 g3 v P, g1 ~=~ g2 -> spanning_tree g1 v P g3 -> spanning_tree g2 v P g3); intros.
+      + split; intros; [apply H with g1 | apply H with g2]; auto. symmetry; auto.
+      + destruct H0 as [? [? [? ?]]]. split; [|split; [|split]]; intros.
+        - rewrite <- H. clear -H0 H. destruct H0 as [? [? [? ?]]]. hnf. simpl in *.
+          unfold predicate_vvalid in *. unfold predicate_weak_evalid in *. split; [|split;[|split]]; intros; rewrite <- H in *.
+          * specialize (H0 v0). intuition.
+          * specialize (H1 e). intuition.
+          * apply H2; auto.
+          * apply H3; auto.
+        - rewrite <- H. apply H1. auto.
+        - apply H2. rewrite H. auto.
+        - apply H3; rewrite H; auto.
+    Qed.
                                        
     Lemma edge_spanning_tree_equiv: forall (P1 P2: V -> Prop) (g1: Graph) (e: E) (g2: Graph),
         (forall x, P1 x <-> P2 x) -> (edge_spanning_tree g1 e P1 g2 <-> edge_spanning_tree g1 e P2 g2).
@@ -128,12 +145,93 @@ Module SIMPLE_SPANNING_TREE.
         - split; auto. intro. apply H0. rewrite H; auto.
     Qed.
 
+    Lemma gremove_predicate_partial_si: forall (g1 g2: Graph) (e: E) (root: V) (P: V -> Prop),
+        out_edges g1 root e -> vvalid g1 root -> P root -> gremove_edge g1 e g2 ->
+        (predicate_partialgraph g1 (fun n : V => ~ g1 |= root ~o~> n satisfying P)) ~=~
+        (predicate_partialgraph g2 (fun n : V => ~ g1 |= root ~o~> n satisfying P)).
+    Proof.
+      intros. destruct H2 as [? [? [? [? ?]]]]. 
+      assert (g1 |= root ~o~> src g1 e satisfying P). {
+        destruct H. rewrite H7.
+        apply reachable_by_reflexive; auto.
+      }
+      hnf. simpl. unfold predicate_vvalid. unfold predicate_weak_evalid.
+      split; [|split; [|split]]; intros.
+      - specialize (H2 v). intuition.
+      - destruct_eq_dec e0 e.
+        * subst. split; intro. destruct H8; exfalso; auto.
+          destruct H6. destruct H8. exfalso; auto.
+          destruct H6. rewrite H9. destruct H. destruct H8. intuition.
+        * specialize (H3 _ H8). specialize (H4 _ H8).
+          rewrite H3. rewrite H4. intuition.
+      - intros. destruct H8. apply H4. intro. subst. auto.
+      - intros. destruct H8. apply H5. intro. subst. auto.
+    Qed.
+
+    Lemma gremove_root_not_reachable_equiv: forall (g1 g2: Graph) (e: E) (root: V) (P: V -> Prop),
+        out_edges g1 root e -> vvalid g1 root -> P root -> gremove_edge g1 e g2 ->
+        (~ (P (dst g1 e) /\ dst g1 e <> root)) -> forall n,
+            (~ g1 |= root ~o~> n satisfying P <-> ~ g2 |= root ~o~> n satisfying P).
+    Proof.
+      intros. split; intros; intro; apply H4; clear H4; destruct H; destruct H2 as [? [? [? [? ?]]]].
+      + destruct H5 as [p [? [? ?]]]. exists p. split; [|split]; auto.
+        clear H5 H11. induction p; simpl; auto. simpl in H10. destruct p.
+        - rewrite H2; auto.
+        - destruct H10. split. 2: apply IHp; auto.
+          destruct H5 as [? [? ?]]. split; [|split]; [rewrite H2 ..|]; auto.
+          rewrite step_spec in H12 |-* . destruct H12 as [e' [? [? ?]]].
+          exists e'. destruct_eq_dec e' e.
+          * subst. exfalso. destruct H9. auto. destruct H4. auto.
+          * specialize (H6 _ H15). specialize (H7 _ H15). specialize (H8 _ H15). subst a. subst v. intuition.
+      + rewrite reachable_acyclic in H5. destruct H5 as [p [? ?]]. exists p.
+        destruct H10 as [? [? ?]]. split; [|split]; auto. destruct p. simpl; auto.
+        destruct H10. simpl in H10. inversion H10. subst v. clear H10 H13.
+        pose proof (NoDup_cons_2 _ _ _ H5). simpl in H11 |-* . destruct p. rewrite <- H2; auto.
+        destruct H11. split.
+        - destruct H11 as [? [? ?]]. split; [|split]; [rewrite <- H2 ..|]; auto.
+          rewrite step_spec in H15 |-* . destruct H15 as [e' [? [? ?]]]. exists e'. destruct_eq_dec e' e.
+          * exfalso. subst e'. apply H3. split.
+            Focus 1. {
+              unfold path_prop in H12. rewrite Forall_forall in H12.
+              assert (P v). apply H12. apply in_cons. apply in_eq. subst. auto.
+            } Unfocus.
+            Focus 1. {
+              rewrite H17 in *. clear H17. intro. apply H10.
+              subst v. apply in_eq.
+            } Unfocus.
+          * specialize (H6 _ H18). specialize (H7 _ H18). specialize (H8 _ H18).
+            rewrite <- H7, <- H8. intuition.
+        - clear H5 H11. assert (path_prop P (v :: p)). {
+            apply path_prop_sublist with (root :: v :: p); auto.
+            apply Sublist_cons; auto.
+          } clear H12.
+          revert v H13 H10 H5. induction p; intros.
+          1: simpl in *. rewrite <- H2; auto.
+          simpl in H13 |-* . destruct H13. split.
+          * clear H12. destruct H11 as [? [? ?]]. split; [|split]; [rewrite <- H2 ..|]; auto.
+            rewrite step_spec in H13 |-* . destruct H13 as [e' [? [? ?]]]. exists e'. destruct_eq_dec e' e.
+            Focus 1. {
+              exfalso. subst e'. apply H3. split.
+              + unfold path_prop in H5. rewrite Forall_forall in H5.
+                assert (P a). apply H5. apply in_cons, in_eq. subst; auto.
+              + rewrite H15. intro. apply H10. rewrite H16. apply in_cons, in_eq.
+            } Unfocus.
+            Focus 1. {
+              specialize (H6 _ H16). specialize (H7 _ H16). specialize (H8 _ H16).
+              rewrite <- H7, <- H8. intuition.
+            } Unfocus.
+          * apply IHp.
+            1: apply H12.
+            1: intro; apply H10; apply in_cons; auto.
+            1: apply path_prop_sublist with (v :: a :: p); auto; apply Sublist_cons; auto.
+    Qed.
+
     Inductive spanning_list : (V -> Prop) -> Graph -> list E -> Graph -> Prop :=
     | spanning_list_nil: forall P g1 g2, g1 ~=~ g2 -> spanning_list P g1 nil g2
     | spanning_list_cons:
-        forall P g1 g2 g3 e rest, edge_spanning_tree g1 e P g2 ->
-                                  spanning_list (fun x => P x /\ ~ g1 |= (dst g1 e) ~o~> x satisfying P) g2 rest g3 ->
-                                  spanning_list P g1 (e :: rest) g3.
+        forall P g1 g2 g3 e es, edge_spanning_tree g1 e P g2 ->
+                                spanning_list (fun x => P x /\ ~ g1 |= (dst g1 e) ~o~> x satisfying P) g2 es g3 ->
+                                spanning_list P g1 (e :: es) g3.
 
     Lemma spanning_list_derive: forall (P1 P2: V -> Prop) (g1 g2 : Graph) e,
         (forall x, P1 x <-> P2 x) -> spanning_list P1 g1 e g2 -> spanning_list P2 g1 e g2.
@@ -152,42 +250,20 @@ Module SIMPLE_SPANNING_TREE.
     Qed.
 
     Lemma spanning_list_spanning_tree: forall (P: V -> Prop) g1 root g2 l,
-        (forall e, In e l <-> out_edges g1 root e) ->
+        NoDup l -> (forall e, In e l <-> out_edges g1 root e) ->
         vvalid g1 root -> P root ->
         spanning_list (fun x => P x /\ x <> root) g1 l g2 ->
         spanning_tree g1 root P g2.
     Proof.
       intros. split; [|split]; intros.
-      + remember (fun x : V => P x /\ x <> root).
-        remember (fun n : V => ~ g1 |= root ~o~> n satisfying P).
-        assert (Included P1 (fun n : V => ~ g1 |= root ~o~> n satisfying P)). {
-          intro. rewrite HeqP1. auto.
-        } clear HeqP1.
-        assert (forall e, In e l -> out_edges g1 root e). {
-          intros. apply H; auto.
-        } clear H.
-        induction H2. rewrite H. reflexivity. subst.
-        apply si_trans with (predicate_partialgraph g2 P1).
-        - clear IHspanning_list H2.
-          destruct H as [[[? ?] ?] | [? ?]].
-          * admit.
-          * apply si_stronger_partialgraph_simple with (fun n : V => ~ g1 |= root ~o~> n satisfying P); auto.
-            (* evalid e -> (vvalid g1 (src g1 e) \/ vvalid g2 (src g2 e)) -> src g1 e = src g2 e *)
-            destruct H2 as [? [? [? [? ?]]]]. split; [|split; [|split]]; intros; simpl.
-            Focus 1. {
-              unfold predicate_vvalid. specialize (H2 v). intuition.
-            } Unfocus.
-            Focus 1. {
-              unfold predicate_weak_evalid.
-              destruct (equiv_dec e0 e).
-              + admit.
-              + unfold equiv in c. specialize (H5 _ c). specialize (H6 _ c).
-                rewrite H5, H6. tauto.
-            } Unfocus.
-            Focus 1. {
-              destruct (equiv_dec e0 e).
-              + unfold equiv in e1. subst. clear H5 H6 H7.
-                exfalso; apply H8. hnf.
+      + revert g1 g2 H0 H1 H3. induction l; intros; inversion H3; subst; clear H3.
+        rewrite H4; reflexivity. destruct H8 as [? | [? ?]].
+        - admit.
+        - assert (out_edges g1 root a) by (apply H0; apply in_eq).
+          pose proof (gremove_predicate_partial_si _ _ _ _ _ H5 H1 H2 H4).
+          rewrite H6. clear H6. 
+          pose proof (gremove_root_not_reachable_equiv _ _ _ _ _ H5 H1 H2 H4 H3).
+          
     Abort.
 
   End SIMPLE_SPANNING.
@@ -340,5 +416,6 @@ Section SPANNING.
       - apply (SIMPLE_SPANNING_TREE.spanning_list_derive (unmarked g2)); auto.
         intro. symmetry. apply edge_spanning_tree_unmarked_equiv; auto.
   Abort.
+
   
 End SPANNING.

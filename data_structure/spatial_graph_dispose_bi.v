@@ -42,10 +42,9 @@ Section SPATIAL_GRAPH_DISPOSE_BI.
     + hnf. simpl. split; [| split; [|split; [| split]]]; [tauto | tauto | tauto | | ].
       - intros. unfold graph_gen.update_dst.
         destruct (equiv_dec (x, L) e); intuition.
-      - unfold strong_evalid. simpl. intro. destruct H2 as [? [? ?]].
-        unfold graph_gen.update_dst in H4.
+      - right. unfold graph_gen.update_dst.
         destruct (equiv_dec (x, L) (x, L)); intuition.
-        apply (valid_not_null g) in H4; auto. rewrite is_null_def. auto.
+        apply (valid_not_null g) in H2; auto. rewrite is_null_def. auto.
     + simpl. tauto.
   Qed.
 
@@ -215,7 +214,7 @@ Section SPATIAL_GRAPH_DISPOSE_BI.
         * destruct H1 as [? [? ?]]. apply edge_reachable with y. apply IHreachable. rewrite H2; auto.
           split; [|split]; [rewrite H2; auto .. |]. rewrite step_spec in H11 |- *.
           destruct H11 as [e [? [? ?]]]. exists e.
-          assert (e <> (x, L)) by (intro; apply H7; subst e; subst x0; subst y; split; auto).
+          assert (e <> (x, L)) by (intro; subst; destruct H7; [|destruct H3]; auto).
           specialize (H4 _ H14). specialize (H5 _ H14). specialize (H6 _ H14).
           subst x0. subst y. intuition.
     + apply (spanning_tree_left_reachable g1 g2 x l r); auto.
@@ -278,10 +277,9 @@ Section SPATIAL_GRAPH_DISPOSE_BI.
     + hnf. simpl. split; [| split; [|split; [| split]]]; [tauto | tauto | tauto | | ].
       - intros. unfold graph_gen.update_dst.
         destruct (equiv_dec (x, R) e); intuition.
-      - unfold strong_evalid. simpl. intro. destruct H2 as [? [? ?]].
-        unfold graph_gen.update_dst in H4.
+      - right. split; auto. unfold graph_gen.update_dst.
         destruct (equiv_dec (x, R) (x, R)); intuition.
-        apply (valid_not_null g) in H4; auto. rewrite is_null_def. auto.
+        apply (valid_not_null g) in H2; auto. rewrite is_null_def. auto.
     + simpl. tauto.
   Qed.
 
