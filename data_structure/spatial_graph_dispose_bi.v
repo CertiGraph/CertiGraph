@@ -3,6 +3,7 @@ Require Import VST.msl.seplog.
 Require Import VST.msl.log_normalize.
 Require RamifyCoq.graph.marked_graph. Import RamifyCoq.graph.marked_graph.WeakMarkGraph.
 Require Import RamifyCoq.Coqlib.
+Require Import RamifyCoq.msl_ext.ramification_lemmas.
 Require Import RamifyCoq.graph.graph_model.
 Require Import RamifyCoq.graph.path_lemmas.
 Require Import RamifyCoq.graph.subgraph2.
@@ -68,7 +69,7 @@ Section SPATIAL_GRAPH_DISPOSE_BI.
       destruct_eq_dec (x, L) (x, R). inversion H2.
       simpl in H0; unfold gamma in H0. inversion H0; auto.
     } Unfocus.
-    apply iter_sepcon.pred_sepcon_ramify1; auto.
+    apply pred_sepcon_ramify1; auto.
     + apply reachable_by_reflexive; auto.
     + intuition.
     + intros. unfold graph_cell; simpl.
@@ -259,7 +260,7 @@ Section SPATIAL_GRAPH_DISPOSE_BI.
       destruct_eq_dec (x, R) (x, R). 2: exfalso; apply H2; auto.
       simpl in H0; unfold gamma in H0. inversion H0; auto.
     } Unfocus.
-    apply iter_sepcon.pred_sepcon_ramify1; auto.
+    apply pred_sepcon_ramify1; auto.
     + apply reachable_by_reflexive; auto.
     + intuition.
     + intros. unfold graph_cell; simpl.

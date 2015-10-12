@@ -443,41 +443,6 @@ Proof.
   exact (sepcon_wand_CCC _).
 Qed.
 
-Lemma ramify_frame: forall {A} `{SepLog A} g l g' l' F, g |-- l * (l' -* g') -> g * F |-- l * (l' -* g' * F).
-Proof.
-  intros.
-  eapply derives_trans; [apply sepcon_derives; [apply H0 | apply derives_refl] |].
-  rewrite sepcon_assoc.
-  apply sepcon_derives; auto.
-  apply wand_sepcon_adjoint.
-  rewrite wand_wand_comm.
-  apply wand_derives; auto.
-  apply wand_sepcon_adjoint.
-  auto.
-Qed.
-
-Lemma solve_ramify: forall {A} `{SepLog A} g l g' l' F, g |-- l * F -> F * l' |-- g' -> g |-- l * (l' -* g').
-Proof.
-  intros.
-  apply derives_trans with (l * F); auto.
-  apply sepcon_derives; auto.
-  apply wand_sepcon_adjoint.
-  auto.
-Qed.
-
-Lemma solve_ramify_Q: forall {A B} `{SepLog A} g l g' l' F,
-  g |-- l * F ->
-  (forall x, F * l' x |-- g' x) ->
-  g |-- l * (ALL x: B, l' x -* g' x).
-Proof.
-  intros.
-  apply derives_trans with (l * F); auto.
-  apply sepcon_derives; auto.
-  apply allp_right; intro x.
-  apply wand_sepcon_adjoint.
-  auto.
-Qed.
-
 Ltac normalize_overlap :=
   repeat
   match goal with
