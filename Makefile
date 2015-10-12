@@ -15,7 +15,7 @@ CLIGHT_FLAG = $(INCLUDE_COMPCERT) $(INCLUDE_RAMIFYCOQ)
 
 MSL_EXT_FILES = \
   abs_addr.v seplog.v log_normalize.v ramify_tactics.v msl_ext.v iter_sepcon.v \
-  sepalg.v \
+  sepalg.v ramification_lemmas.v \
   overlapping.v precise.v alg_seplog.v \
   overlapping_direct.v precise_direct.v alg_seplog_direct.v
 
@@ -33,7 +33,7 @@ GRAPH_FILES = \
   spanning_tree.v dag.v marked_graph.v weak_mark_lemmas.v
 
 DATA_STRUCTURE_FILES = \
-  general_spatial_graph.v spatial_graph_mark_bi.v spatial_graph_bi.v spatial_graph_HMD.v spatial_graph_aligned_bi_VST.v spatial_graph_unaligned_bi_VST.v spatial_graph_dispose_bi.v
+  general_spatial_graph.v spatial_graph_mark_bi.v spatial_graph_bi.v spatial_graph_HMD.v spatial_graph_aligned_bi_VST.v spatial_graph_unaligned_bi_VST.v spatial_graph_dispose_bi.v spatial_graph_mark.v
 
 SAMPLE_MARK_FILES = \
   env_mark_bi.v verif_mark_bi.v env_garbage_collector.v env_dispose_bi.v verif_dispose_bi.v verif_mark_bi_dag.v

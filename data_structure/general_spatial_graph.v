@@ -8,6 +8,7 @@ Require Import RamifyCoq.msl_ext.abs_addr.
 Require Import RamifyCoq.msl_ext.seplog.
 Require Import RamifyCoq.msl_ext.log_normalize.
 Require Import RamifyCoq.msl_ext.iter_sepcon.
+Require Import RamifyCoq.msl_ext.ramification_lemmas.
 Require Import RamifyCoq.graph.graph_model.
 Require Import RamifyCoq.graph.path_lemmas.
 Require Import RamifyCoq.graph.reachable_computable.

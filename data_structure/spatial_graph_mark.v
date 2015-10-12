@@ -159,9 +159,19 @@ Lemma mark_list_mark_ramify: forall {A} (g1 g2 g3: Graph) (g4: A -> Graph) x l y
   @derives Pred _
     (graph x (Graph_SpatialGraph g3))
     (graph y (Graph_SpatialGraph g3) *
-      (ALL a: A,
-        (!! mark g3 y (g4 a) && graph y (Graph_SpatialGraph (g4 a))) -*
-        (!! mark g3 y (g4 a) && graph x (Graph_SpatialGraph (g4 a))))).
+      (ALL a: A, !! mark g3 y (g4 a) -->
+        (graph y (Graph_SpatialGraph (g4 a)) -*
+         graph x (Graph_SpatialGraph (g4 a))))).
 Proof.
   intros.
+(*
+  apply pred_sepcon_ramify_pred_Q with
+    (PF := Intersection _ (reachable g3 x) (Complement _ (reachable g3 y))); auto.
+*)
+  + simpl.
 Abort.
+
+End SpatialGraph_Mark.
+
+
+

@@ -851,6 +851,18 @@ Proof.
     - intros x; simpl; specialize (H x); tauto.
 Qed.
 
+Lemma Ensemble_join_Intersection_Complement: forall {A} P Q,
+  Included Q P ->
+  (forall x, Q x \/ ~ Q x) ->
+  coqlib4.Ensemble_join Q (Intersection A P (Complement A Q)) P.
+Proof.
+  intros.
+  unfold coqlib4.Ensemble_join.
+  unfold Included, Ensembles.In in H.
+  split; intros x; specialize (H0 x); specialize (H x);
+  rewrite Intersection_spec; unfold Complement, Ensembles.In; try tauto.
+Qed.
+
 Lemma spec_list_split: forall {A} (l: list A) P Q R,
   NoDup l ->
   (forall x, In x l <-> R x) ->
