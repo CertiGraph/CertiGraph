@@ -471,6 +471,36 @@ Qed.
 
 End Ramification_P.
 
+Ltac solve_ramify_Q_with Fr :=
+  match goal with
+  | |- @derives ?Pred _ ?g (?l * @allp ?Pred _ ?T ?Func) =>
+      let p := fresh "p" in evar (p: T -> Pred);
+      let g' := fresh "g'" in evar (g': T -> Pred);
+      let l' := fresh "l'" in evar (l': T -> Pred);
+      let x := fresh "x" in
+      let H := fresh "H" in
+      assert (Func = p --> (l' -* g'));
+      [
+        extensionality x; cbv beta;
+        match goal with
+        | |- ?P --> (?L' -* ?G') = _ =>
+             let v := fresh "v" in
+             set (v := P ); pattern x in v; cbv beta in (type of v); subst v;
+             set (v := L'); pattern x in v; cbv beta in (type of v); subst v;
+             set (v := G'); pattern x in v; cbv beta in (type of v); subst v
+        end;
+        match goal with
+        | |- ?P _ --> (?L' _ -* ?G' _) = _ =>
+             instantiate (1 := P) in (Value of p);
+             instantiate (1 := L') in (Value of l');
+             instantiate (1 := G') in (Value of g')
+        end;
+        subst p g' l';
+        reflexivity
+      | subst p g' l'; rewrite H; clear H]
+  end;
+  apply solve_ramify_Q with Fr.
+
 Section Ramification_PredSepCon.
 
 Context {A : Type}.
@@ -580,12 +610,7 @@ Lemma pred_sepcon_ramify_pred_Q: forall {C: Type} (Pg1 Pl1 PF: B -> Prop) (PureF
        pred_sepcon (Pg2 c) (p2 c))).
 Proof.
   intros.
-   pose proof (solve_ramify_Q (pred_sepcon Pg1 p1) (pred_sepcon Pl1 p1)
-   (fun c => !! (PureF c))
-   (fun c => pred_sepcon (Pg2 c) (p2 c))
-   (fun c => pred_sepcon (Pl2 c) (p2 c))
-   (pred_sepcon PF p1)).
-  apply H2.
+  solve_ramify_Q_with (pred_sepcon PF p1).
   + intros; apply corable_prop.
   + rewrite pred_sepcon_sepcon with (R := Pg1); auto.
   + intro c.

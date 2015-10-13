@@ -189,8 +189,7 @@ Section SIMPLE_MARK_GRAPH.
     intro; intros.
     apply H1.
     intro.
-    apply reachable_by_is_reachable in H2.
-    apply reachable_head_valid in H2.
+    apply reachable_by_head_valid in H2.
     tauto.
   Qed.
 
@@ -201,8 +200,7 @@ Section SIMPLE_MARK_GRAPH.
     intros.
     split.
     + intros.
-      apply reachable_by_is_reachable in H0.
-      apply reachable_head_valid in H0.
+      apply reachable_by_head_valid in H0.
       tauto.
     + intros.
       reflexivity.
@@ -381,7 +379,7 @@ Section SIMPLE_MARK_GRAPH.
       - subst z. apply (mark_list_marked m' l m''); auto.
         * intros.
           apply (mark_preserved_reach_decidable m v m'); auto.
-          1: apply reachable_by_is_reachable in H3; apply reachable_head_valid in H3; auto.
+          1: apply reachable_by_head_valid in H3; auto.
           1: apply R_DEC; right; auto.
           1: apply R_DEC; left; auto.
         * intros; apply V_DEC; right; auto.
@@ -463,8 +461,7 @@ Section SIMPLE_MARK_GRAPH.
           apply H4. apply H1 in H6.
           apply reachable_by_cons with x; auto.
           unfold edge; auto.
-        + apply reachable_by_is_reachable in H7.
-          apply reachable_head_valid in H7; tauto.
+        + apply reachable_by_head_valid in H7; tauto.
       }
       eapply mark_list_preserve_marked; eauto.
   Qed.
@@ -595,15 +592,13 @@ Section SIMPLE_MARK_GRAPH.
       spec H3.
       Focus 1. {
         intros ? ?.
-        apply reachable_by_is_reachable in H4.
-        apply reachable_foot_valid in H4.
+        apply reachable_by_foot_valid in H4.
         auto.
       } Unfocus.
       spec H3.
       Focus 1. {
         intros ? ?.
-        apply reachable_by_is_reachable in H4.
-        apply reachable_foot_valid in H4.
+        apply reachable_by_foot_valid in H4.
         auto.
       } Unfocus.
       tauto.
@@ -612,15 +607,13 @@ Section SIMPLE_MARK_GRAPH.
       spec H3.
       Focus 1. {
         intros ? ?.
-        apply reachable_by_is_reachable in H4.
-        apply reachable_foot_valid in H4.
+        apply reachable_by_foot_valid in H4.
         auto.
       } Unfocus.
       spec H3.
       Focus 1. {
         intros ? ?.
-        apply reachable_by_is_reachable in H4.
-        apply reachable_foot_valid in H4.
+        apply reachable_by_foot_valid in H4.
         auto.
       } Unfocus.
       tauto.
@@ -966,8 +959,7 @@ Proof.
   + right.
     intro.
     apply n; split.
-    - apply reachable_by_is_reachable in H.
-      apply reachable_head_valid in H; auto.
+    - apply reachable_by_head_valid in H; auto.
     - apply reachable_by_head_prop in H.
       auto.
 Qed.

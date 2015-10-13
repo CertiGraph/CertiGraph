@@ -189,6 +189,28 @@ Proof.
   apply reachable_subgraph_partialgraph.
 Qed.
 
+Lemma reachable_by_head_valid (p: V -> Prop):
+  forall (n1 n2: V),
+    g |= n1 ~o~> n2 satisfying p -> vvalid g n1.
+Proof.
+  intros.
+  rewrite reachable_by_eq_partialgraph_reachable in H.
+  apply reachable_head_valid in H.
+  destruct H.
+  auto.
+Qed.
+
+Lemma reachable_by_foot_valid (p: V -> Prop):
+  forall (n1 n2: V),
+    g |= n1 ~o~> n2 satisfying p -> vvalid g n2.
+Proof.
+  intros.
+  rewrite reachable_by_eq_partialgraph_reachable in H.
+  apply reachable_foot_valid in H.
+  destruct H.
+  auto.
+Qed.
+
 Lemma predicate_subgraph_reachable_included (p: V -> Prop): 
   forall (n: V), Included (reachable (predicate_subgraph p) n) (reachable g n).
 Proof.
@@ -227,6 +249,20 @@ Proof.
     exists e; auto.
 Qed.
 
+Lemma subgraph_step: forall (p: V -> Prop) x y,
+  step g x y -> p x -> p y -> step (predicate_subgraph p) x y.
+Proof.
+  intros.
+  rewrite step_spec in H |- *.
+  destruct H as [e [? [? ?]]].
+  exists e.
+  split; [| split; simpl; auto].
+  simpl.
+  unfold predicate_evalid.
+  rewrite H2, H3.
+  auto.
+Qed.
+
 Lemma subgraph_edge: forall (p: V -> Prop) x y,
     edge g x y -> p x -> p y -> edge (predicate_subgraph p) x y.
 Proof.
@@ -236,13 +272,20 @@ Proof.
   simpl.
   unfold predicate_vvalid.
   do 2 (split; [tauto |]).
-  rewrite step_spec in H3 |- *.
-  destruct H3 as [e [? [? ?]]].
+  apply subgraph_step; auto.
+Qed.
+
+Lemma partialgraph_step: forall (p: V -> Prop) x y,
+  step g x y -> p x -> step (predicate_partialgraph p) x y.
+Proof.
+  intros.
+  rewrite step_spec in H |- *.
+  destruct H as [e [? [? ?]]].
   exists e.
   split; [| split; simpl; auto].
   simpl.
-  unfold predicate_evalid.
-  rewrite H4, H5.
+  unfold predicate_weak_evalid.
+  rewrite H1.
   auto.
 Qed.
 
@@ -255,14 +298,7 @@ Proof.
   simpl.
   unfold predicate_vvalid.
   do 2 (split; [tauto |]).
-  rewrite step_spec in H3 |- *.
-  destruct H3 as [e [? [? ?]]].
-  exists e.
-  split; [| split; simpl; auto].
-  simpl.
-  unfold predicate_weak_evalid.
-  rewrite H4.
-  auto.
+  apply partialgraph_step; auto.
 Qed.
 
 End SubGraph.
