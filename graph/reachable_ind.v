@@ -162,6 +162,15 @@ Proof.
   apply ind.reachable_cons with y; auto.
 Qed.
 
+Lemma step_reachable:
+  forall x y z, step G x y -> reachable G y z -> vvalid G x -> reachable G x z.
+Proof.
+  intros.
+  pose proof reachable_head_valid G _ _ H0.
+  apply edge_reachable with y; auto.
+  unfold edge. tauto.
+Qed.
+
 Lemma reachable_ind': forall x S y, vvalid G x -> step_list G x S -> (reachable G x y <-> x = y \/ reachable_through_set G S y).
 Proof.
   intros.

@@ -7,6 +7,7 @@ Require Import RamifyCoq.msl_ext.abs_addr.
 Require Import RamifyCoq.msl_ext.seplog.
 Require Import RamifyCoq.msl_ext.log_normalize.
 Require Import RamifyCoq.msl_ext.iter_sepcon.
+Require Import RamifyCoq.msl_ext.ramification_lemmas.
 Require Import RamifyCoq.graph.graph_model.
 Require Import RamifyCoq.graph.path_lemmas.
 Require Import RamifyCoq.graph.reachable_computable.
@@ -100,6 +101,25 @@ Definition mark (G1: Graph) x (G2: Graph) := WeakMarkGraph.mark G1 x G2 /\ G1 ~=
 
 Definition mark_list g1 xs g2 := relation_list (fun x g1 g2 => mark g1 x g2) xs g1 g2.
 
+(* This should be more trivial *)
+Lemma mark_list_eq: forall g1 xs g2,
+  mark_list g1 xs g2 -> WeakMarkGraph.mark_list g1 xs g2 /\ g1 ~=~ g2.
+Proof.
+  intros.
+  eapply relation_list_Intersection in H.
+  Focus 2. {
+    intros; rewrite same_relation_spec.
+    instantiate (1 := (fun _ => structurally_identical)).
+    instantiate (1 := (fun x g1 g2 => WeakMarkGraph.mark g1 x g2)).
+    do 2 (hnf; intros); unfold relation_conjunction, predicate_intersection;
+    simpl; reflexivity.
+  } Unfocus.
+  unfold relation_conjunction, predicate_intersection in H; simpl in H.
+  split; [tauto |].
+  eapply si_list.
+  exact (proj2 H).
+Qed.
+
 Lemma mark1_mark_list_mark: forall (g1: Graph) root l (g2 g3: Graph)
   (V_DEC: forall x, In x l -> Decidable (vvalid g1 x)),
   vvalid g1 root ->
@@ -110,40 +130,47 @@ Lemma mark1_mark_list_mark: forall (g1: Graph) root l (g2 g3: Graph)
   mark g1 root g3.
 Proof.
   intros.
-  eapply relation_list_Intersection in H3.
-  Focus 2. {
-    (* This should be more trivial *)
-    intros; rewrite same_relation_spec.
-    instantiate (1 := (fun _ => structurally_identical)).
-    instantiate (1 := (fun x g1 g2 => WeakMarkGraph.mark g1 x g2)).
-    do 2 (hnf; intros); unfold relation_conjunction, predicate_intersection; simpl; reflexivity.
-  } Unfocus.
+  apply mark_list_eq in H3.
   destruct H3; simpl in H3, H4.
   split.
   + eapply WeakMarkGraph.mark1_mark_list_mark; eauto.
-  + destruct H2.
-    rewrite H2.
-    eapply si_list. exact H4.
+  + destruct H2 as [? _].
+    rewrite H2; auto.
+Qed.
+
+Lemma DFS_acc_vvalid: forall (g: PreGraph V E) (P: V -> Prop) x,
+  Included (DFS_acc g P x) (vvalid g).
+Proof.
+  intros; hnf; unfold Ensembles.In; intros.
+  destruct H as [? | [? | ?]].
+  + destruct H; subst; auto.
+  + apply reachable_by_foot_valid in H; auto.
+  + destruct H as [? [_ [? [? ?]]]]; auto.
 Qed.
 
 Lemma vertex_update_ramify: forall (g: Graph) (x: V) (lx: DV) (gx: GV),
   vvalid g x ->
   gx = vgamma (Graph_SpatialGraph (labeledgraph_vgen g x lx)) x ->
   @derives Pred _
-    (graph x (Graph_SpatialGraph g))
+    (vertices_at (DFS_acc g (WeakMarkGraph.unmarked g) x) (Graph_SpatialGraph g))
     (vertex_at x (vgamma (Graph_SpatialGraph g) x) *
-      (vertex_at x gx -* graph x (Graph_SpatialGraph (labeledgraph_vgen g x lx)))).
+      (vertex_at x gx -* vertices_at (DFS_acc g (WeakMarkGraph.unmarked g) x) (Graph_SpatialGraph (labeledgraph_vgen g x lx)))).
 Proof.
   intros.
-  rewrite GSG_VGenPreserve by eassumption.
+
+  pose proof GSG_VGenPreserve _ _ _ _ H0.
+  rewrite (vertices_at_vi_eq _ _ _ (DFS_acc_vvalid _ _ _) H1).
+  clear H1.
+  (* (* should be *) rewrite GSG_VGenPreserve by eassumption. *)
+
   apply vertices_at_ramify; auto.
-  apply reachable_refl.
+  apply DFS_acc_self.
   simpl; auto.
 Qed.
 
-Lemma exists_mark1: forall (g: Graph) (x: V) (lx: DV),
+Lemma exp_mark1: forall (g: Graph) (x: V) (lx: DV),
   WeakMarkGraph.label_marked lx ->
-  @derives Pred _ (graph x (Graph_SpatialGraph (labeledgraph_vgen g x lx))) (EX g': Graph, !! (mark1 g x g') && graph x (Graph_SpatialGraph g')).
+  @derives Pred _ (vertices_at (DFS_acc g (WeakMarkGraph.unmarked g) x) (Graph_SpatialGraph (labeledgraph_vgen g x lx))) (EX g': Graph, !! (mark1 g x g') && vertices_at (DFS_acc g (WeakMarkGraph.unmarked g) x) (Graph_SpatialGraph g')).
 Proof.
   intros.
   apply (exp_right (labeledgraph_vgen g x lx)).
@@ -152,23 +179,26 @@ Proof.
 Qed.
 
 Lemma mark_list_mark_ramify: forall {A} (g1 g2 g3: Graph) (g4: A -> Graph) x l y l',
+  (forall (g: Graph) x y, reachable g x y \/ ~ reachable g x y) ->
   vvalid g1 x ->
   step_list g1 x (l ++ y :: l') ->
   mark1 g1 x g2 ->
   mark_list g2 l g3 ->
   @derives Pred _
-    (graph x (Graph_SpatialGraph g3))
-    (graph y (Graph_SpatialGraph g3) *
+    (vertices_at (DFS_acc g1 (WeakMarkGraph.unmarked g1) x) (Graph_SpatialGraph g3))
+    (vertices_at (DFS_acc g3 (WeakMarkGraph.unmarked g1) y) (Graph_SpatialGraph g3) *
       (ALL a: A, !! mark g3 y (g4 a) -->
-        (graph y (Graph_SpatialGraph (g4 a)) -*
-         graph x (Graph_SpatialGraph (g4 a))))).
+        (vertices_at (DFS_acc (g4 a) (WeakMarkGraph.unmarked g1) y) (Graph_SpatialGraph (g4 a)) -*
+         vertices_at (DFS_acc g1 (WeakMarkGraph.unmarked g1) x) (Graph_SpatialGraph (g4 a))))).
 Proof.
   intros.
-(*
   apply pred_sepcon_ramify_pred_Q with
-    (PF := Intersection _ (reachable g3 x) (Complement _ (reachable g3 y))); auto.
-*)
-  + simpl.
+    (PF := Intersection _
+            (DFS_acc g1 (WeakMarkGraph.unmarked g1) x)
+            (Complement _ (DFS_acc g3 (WeakMarkGraph.unmarked g1) y))); auto.
+  + apply Ensemble_join_Intersection_Complement; auto.
+
+
 Abort.
 
 End SpatialGraph_Mark.

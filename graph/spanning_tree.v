@@ -49,8 +49,8 @@ Module SIMPLE_SPANNING_TREE.
       + remember (dst g e) as v. split; [|split; [|split]].
         - reflexivity.
         - repeat intro. apply reachable_head_valid in H1. destruct H1. exfalso; auto.
-        - intros. apply reachable_by_is_reachable in H0. apply reachable_head_valid in H0. exfalso; auto.
-        - intros. apply reachable_by_is_reachable in H0. apply reachable_head_valid in H0. exfalso; auto.
+        - intros. apply reachable_by_head_valid in H0. exfalso; auto.
+        - intros. apply reachable_by_head_valid in H0. exfalso; auto.
       + split; [|split; [|split; [|split]]]; intros; [tauto | tauto | tauto |tauto |].
         right. split; auto.
     Qed.
@@ -61,7 +61,7 @@ Module SIMPLE_SPANNING_TREE.
       intros. destruct H as [? [? [? ?]]]. destruct (X x).
       + split; intros.
         - specialize (H1 _ r). apply reachable_foot_valid in H1. auto.
-        - apply reachable_by_is_reachable in r. apply reachable_foot_valid in r. auto.
+        - apply reachable_by_foot_valid in r. auto.
       + destruct H as [? _]. simpl in H. unfold predicate_vvalid in H.
         specialize (H x). split; intros.
         - assert (vvalid g1 x /\ ~ g1 |= root ~o~> x satisfying P) by (split; auto).
