@@ -42,8 +42,32 @@ Module SIMPLE_SPANNING_TREE.
     Definition edge_spanning_tree (g1 : Graph) (e : E) (P: V -> Prop) (g2 : Graph) : Prop :=
       (P (dst g1 e) /\ spanning_tree g1 (dst g1 e) P g2) \/ (~ P (dst g1 e) /\ gremove_edge g1 e g2).
 
+    Lemma gremove_edge_is_partial_graph: forall (g1 : Graph) (e : E) (g2 : Graph),
+        evalid g1 e -> gremove_edge g1 e g2 -> is_partial_graph g2 g1.
+    Proof.
+      intros. destruct H0 as [? [? [? [? ?]]]]. split; [|split; [|split]]; intros.
+      + rewrite H0; auto.
+      + destruct_eq_dec e0 e.
+        - subst. auto.
+        - specialize (H1 _ H6). intuition.
+      + destruct_eq_dec e0 e.
+        - subst. destruct H4.
+          * exfalso; auto.
+          * intuition.
+        - specialize (H1 _ H7). assert (evalid g1 e0) by intuition. symmetry. apply H2; auto.
+      + destruct_eq_dec e0 e.
+        - subst. exfalso. destruct H4 as [? | [? _]]; auto.
+        - specialize (H1 _ H7). assert (evalid g1 e0) by intuition. symmetry. apply H3; auto.
+    Qed.
+
+    Lemma spanning_tree_is_pratial_graph: forall (g1 : Graph) (root : V) (P: V -> Prop) (g2: Graph),
+        spanning_tree g1 root P g2 -> is_partial_graph g2 g1.
+    Proof.
+      intros. destruct H as [? [? [? ?]]].
+    Abort.
+
     Lemma edge_spanning_tree_invalid: forall (g: Graph) e (P: NodePred V),
-        Decidable (evalid g e) -> ~ vvalid g (dst g e) -> edge_spanning_tree g e P g.
+        evalid g e -> ~ vvalid g (dst g e) -> edge_spanning_tree g e P g.
     Proof.
       intros. hnf. destruct (node_pred_dec P (dst g e)); [left | right]; split; auto.
       + remember (dst g e) as v. split; [|split; [|split]].
@@ -52,7 +76,7 @@ Module SIMPLE_SPANNING_TREE.
         - intros. apply reachable_by_head_valid in H1. exfalso; auto.
         - intros. apply reachable_by_head_valid in H1. exfalso; auto.
       + split; [|split; [|split; [|split]]]; intros; [tauto | tauto | tauto |tauto |].
-        destruct H; [right | left]; auto.
+        right; auto.
     Qed.
 
     Lemma spanning_tree_vvalid: forall (g1 : Graph) (root : V) (P: V -> Prop) (g2 : Graph) x,
@@ -375,10 +399,12 @@ Module SIMPLE_SPANNING_TREE.
                             (fun x : V => P0 x /\ ~ reachable_by_through_set g1 (map (dst g1) es) P0 x)); auto.
             intro n. unfold Ensembles.In . do 2 intro. apply H10. clear H10. clear H9. subst P0. destruct H0.
             admit.
-          * assert ((predicate_partialgraph g2 (fun n : V => ~ g2 |= root ~o~> n satisfying P)) ~=~
-                    (predicate_partialgraph g3 (fun n : V => ~ g2 |= root ~o~> n satisfying P))) by admit.
+          * assert (out_edges g2 root e) by admit.
+            assert (vvalid g2 root) by admit.
+            pose proof (gremove_predicate_partial_si _ _ _ _ _ H9 H10 H2 H8).
             apply si_stronger_partialgraph_simple with (fun n : V => ~ g2 |= root ~o~> n satisfying P); auto.
-            intro n. unfold Ensembles.In . do 2 intro. apply H10. clear H10.
+            intro n. unfold Ensembles.In . do 2 intro. apply H12. clear H12.
+
     Abort.
 
   End SIMPLE_SPANNING.
@@ -450,7 +476,7 @@ Section SPANNING.
   Qed.
     
   Lemma edge_spanning_tree_invalid: forall (g: Graph) e,
-      Decidable (evalid g e) -> ~ vvalid g (dst g e) -> edge_spanning_tree g e g.
+      evalid g e -> ~ vvalid g (dst g e) -> edge_spanning_tree g e g.
   Proof.
     intros. rewrite edge_spanning_tree_inj. split.
     + split; intros. 2: tauto. apply reachable_by_head_valid in H1. exfalso; auto.
