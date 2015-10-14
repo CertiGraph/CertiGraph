@@ -35,9 +35,10 @@ Section SPATIAL_GRAPH_DISPOSE_BI.
   (* Existing Instances SGP SGA SGBA. *)
 
   Lemma edge_spanning_tree_left_null:
-    forall (g: Graph) x d l r, vgamma g x = (d, l, r) -> (marked g) l -> edge_spanning_tree g (x, L) (Graph_gen_left_null g x).
+    forall (g: Graph) x d l r, vvalid g x -> vgamma g x = (d, l, r) -> (marked g) l ->
+                               edge_spanning_tree g (x, L) (Graph_gen_left_null g x).
   Proof.
-    intros. assert (l = dst g (x, L)) by (simpl in H; unfold gamma in H; inversion H; auto).
+    intros. assert (l = dst g (x, L)) by (simpl in H0; unfold gamma in H0; inversion H0; auto).
     hnf. destruct (node_pred_dec (marked g) (dst g (x, L))). 2: subst l; exfalso; auto.
     split.
     + hnf. simpl. split; [| split; [|split; [| split]]]; [tauto | tauto | tauto | | ].
@@ -45,7 +46,8 @@ Section SPATIAL_GRAPH_DISPOSE_BI.
         destruct (equiv_dec (x, L) e); intuition.
       - right. unfold graph_gen.update_dst.
         destruct (equiv_dec (x, L) (x, L)); intuition.
-        apply (valid_not_null g) in H2; auto. rewrite is_null_def. auto.
+        * apply (valid_not_null g) in H3; auto. rewrite is_null_def. auto.
+        * apply (@left_valid _ _ _ _ g _ _ (biGraph g)) in H; auto.
     + simpl. tauto.
   Qed.
 
@@ -161,7 +163,10 @@ Section SPATIAL_GRAPH_DISPOSE_BI.
     assert (Hvg2: vvalid g2 x) by (rewrite <- edge_spanning_tree_left_vvalid; eauto).
     unfold edge_spanning_tree in H1. destruct (node_pred_dec (marked g1) (dst g1 (x, L))).
     + destruct H1 as [[_ [_ [_ [? _]]]] ?]. simpl in H0, H2. unfold gamma in H0. inversion H0.
-      rewrite H4. symmetry in H4. rewrite H2 in H4. rewrite <- H4. f_equal. symmetry. apply H1. intro. inversion H3.
+      rewrite H4. symmetry in H4. rewrite H2 in H4. rewrite <- H4. f_equal. symmetry. apply H1.
+      - intro. inversion H3.
+      - apply (@right_valid _ _ _ _ g1 _ _ (biGraph g1)) in H; auto.
+      - apply (@right_valid _ _ _ _ g2 _ _ (biGraph g2)) in Hvg2; auto.
     + destruct H1 as [[_ ?] [[_ [_ [_ ?]]] _]].
       assert (marked g1 x) by (simpl in *; unfold gamma in H0; inversion H0; auto).
       assert (~ g1 |= dst g1 (x, L) ~o~> x satisfying (unmarked g1)) by (intro HS; apply reachable_by_foot_prop in HS; auto).
@@ -270,9 +275,10 @@ Section SPATIAL_GRAPH_DISPOSE_BI.
   Qed.
 
   Lemma edge_spanning_tree_right_null:
-    forall (g: Graph) x d l r, vgamma g x = (d, l, r) -> (marked g) r -> edge_spanning_tree g (x, R) (Graph_gen_right_null g x).
+    forall (g: Graph) x d l r, vvalid g x -> vgamma g x = (d, l, r) -> (marked g) r ->
+                               edge_spanning_tree g (x, R) (Graph_gen_right_null g x).
   Proof.
-    intros. assert (r = dst g (x, R)) by (simpl in H; unfold gamma in H; inversion H; auto).
+    intros. assert (r = dst g (x, R)) by (simpl in H0; unfold gamma in H0; inversion H0; auto).
     hnf. destruct (node_pred_dec (marked g) (dst g (x, R))). 2: subst r; exfalso; auto.
     split.
     + hnf. simpl. split; [| split; [|split; [| split]]]; [tauto | tauto | tauto | | ].
@@ -280,7 +286,8 @@ Section SPATIAL_GRAPH_DISPOSE_BI.
         destruct (equiv_dec (x, R) e); intuition.
       - right. split; auto. unfold graph_gen.update_dst.
         destruct (equiv_dec (x, R) (x, R)); intuition.
-        apply (valid_not_null g) in H2; auto. rewrite is_null_def. auto.
+        * apply (valid_not_null g) in H3; auto. rewrite is_null_def. auto.
+        * split; auto. apply (@right_valid _ _ _ _ g _ _ (biGraph g)) in H; auto.
     + simpl. tauto.
   Qed.
 

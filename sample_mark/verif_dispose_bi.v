@@ -325,10 +325,11 @@ Proof.
     apply (exp_right g1).
     entailer!.
     apply edge_spanning_tree_invalid.
-    intro. apply (valid_not_null g1 l).
-    + assert (l = dst g1 (x, L)) by (simpl in H_GAMMA_g1; unfold gamma in H_GAMMA_g1; inversion H_GAMMA_g1; auto).
-      rewrite H6. apply H5.
-    + rewrite is_null_def. apply (destruct_pointer_val_NP). left; auto.
+    + apply (@left_valid _ _ _ _ g1 _ _ (biGraph g1)) in H3; auto.
+    + intro. apply (valid_not_null g1 l).
+      - assert (l = dst g1 (x, L)) by (simpl in H_GAMMA_g1; unfold gamma in H_GAMMA_g1; inversion H_GAMMA_g1; auto).
+        rewrite H6. apply H5.
+      - rewrite is_null_def. apply (destruct_pointer_val_NP). left; auto.
   } Unfocus.
 
   (* if (r) { *)
@@ -535,10 +536,11 @@ Proof.
     apply (exp_right g2).
     entailer!.
     apply edge_spanning_tree_invalid.
-    intro. apply (valid_not_null g2 r).
-    + assert (r = dst g2 (x, R)) by (simpl in H_GAMMA_g2; unfold gamma in H_GAMMA_g2; inversion H_GAMMA_g2; auto).
-      rewrite H8. apply H7.
-    + rewrite is_null_def. apply (destruct_pointer_val_NP). left; auto.
+    + apply (@right_valid _ _ _ _ g2 _ _ (biGraph g2)) in H5; auto.
+    + intro. apply (valid_not_null g2 r).
+      - assert (r = dst g2 (x, R)) by (simpl in H_GAMMA_g2; unfold gamma in H_GAMMA_g2; inversion H_GAMMA_g2; auto).
+        rewrite H8. apply H7.
+      - rewrite is_null_def. apply (destruct_pointer_val_NP). left; auto.
   } Unfocus.
 
   (* return *)

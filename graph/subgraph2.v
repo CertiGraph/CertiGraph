@@ -303,6 +303,42 @@ Qed.
 
 End SubGraph.
 
+Section IS_PARTIAL_GRAPH.
+
+  Context {V E: Type}.
+  Context {EV: EqDec V eq}.
+  Context {EE: EqDec E eq}.
+
+  Definition is_partial_graph (g1 g2: PreGraph V E) :=
+    (forall v : V, vvalid g1 v -> vvalid g2 v) /\
+    (forall e: E, evalid g1 e -> evalid g2 e) /\
+    (forall e: E, evalid g1 e -> vvalid g1 (src g1 e) -> src g1 e = src g2 e) /\
+    (forall e: E, evalid g1 e -> vvalid g1 (dst g1 e) -> dst g1 e = dst g2 e).
+
+  Lemma is_partial_graph_reachable_by_path: forall (g1 g2: PreGraph V E) (p: path) (n: V) (P: Ensemble V) (n': V),
+      is_partial_graph g1 g2 -> g1 |= p is n ~o~> n' satisfying P -> g2 |= p is n ~o~> n' satisfying P.
+  Proof.
+    intros. destruct H0 as [[? ?] [? ?]]. split; split; auto. clear H0 H1 H3. induction p; simpl; auto.
+    simpl in H2. destruct H as [? [? [? ?]]]. destruct p.
+    + apply H; auto.
+    + destruct H2. specialize (IHp H4). split; auto.
+      destruct H2 as [? [? ?]]. pose proof (H _ H2). pose proof (H _ H5). do 2 (split; auto).
+      rewrite step_spec in H6 |-* . destruct H6 as [e [? [? ?]]]. exists e. split; [|split].
+      - apply H0; auto.
+      - rewrite <- H9 in *. specialize (H1 _ H6 H2). auto.
+      - rewrite <- H10 in *. specialize (H3 _ H6 H5). auto.
+  Qed.
+
+  Lemma is_partial_graph_reachable_by: forall (g1 g2: PreGraph V E) (n: V) (P: Ensemble V) (n': V),
+      is_partial_graph g1 g2 -> g1 |= n ~o~> n' satisfying P -> g2 |= n ~o~> n' satisfying P.
+  Proof. intros. destruct H0 as [p ?]. exists p. apply is_partial_graph_reachable_by_path with g1; auto. Qed.
+
+  Lemma is_partial_graph_reachable: forall (g1 g2: PreGraph V E) (n: V) (n': V),
+      is_partial_graph g1 g2 -> reachable g1 n n' -> reachable g2 n n'.
+  Proof. intros. apply is_partial_graph_reachable_by with g1; auto. Qed.
+
+End IS_PARTIAL_GRAPH.
+
 Section SI_EQUIV.
 
 Context {V E: Type}.
@@ -629,7 +665,6 @@ Proof.
   + rewrite (si_reachable_by g1 g2 p1 p2) in r by auto; auto.
   + rewrite (si_reachable_by g1 g2 p1 p2) in n by auto; auto.
 Qed.
-
 
 Lemma si_reachable_by_through_set: forall (g1 g2: PreGraph V E) S p1 p2 n,
     g1 ~=~ g2 -> vertex_prop_coincide g1 g2 p1 p2 ->
