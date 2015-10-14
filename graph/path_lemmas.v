@@ -690,6 +690,13 @@ Proof.
   destruct (in_dec equiv_dec y l); [left | right]; rewrite <- (H y); auto.
 Qed.
 
+Lemma reachable_by_through_nil: forall g P n, reachable_by_through_set g nil P n <-> False.
+Proof.
+  intros; split; intro.
+  + destruct H as [s [? ?]]. inversion H.
+  + exfalso; auto.
+Qed.
+
 End PATH_LEM.
 
 Arguments path_glue {_} _ _.

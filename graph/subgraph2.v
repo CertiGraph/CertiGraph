@@ -630,5 +630,19 @@ Proof.
   + rewrite (si_reachable_by g1 g2 p1 p2) in n by auto; auto.
 Qed.
 
+
+Lemma si_reachable_by_through_set: forall (g1 g2: PreGraph V E) S p1 p2 n,
+    g1 ~=~ g2 -> vertex_prop_coincide g1 g2 p1 p2 ->
+    (reachable_by_through_set g1 S p1 n <-> reachable_by_through_set g2 S p2 n).
+Proof.
+  cut (forall (g1 g2: PreGraph V E) S p1 p2 n,
+          g1 ~=~ g2 -> vertex_prop_coincide g1 g2 p1 p2 ->
+          reachable_by_through_set g1 S p1 n -> reachable_by_through_set g2 S p2 n); intros.
+  + split; intro; [apply (H g1 g2 S p1 p2) | apply (H g2 g1 S p2 p1)]; auto.
+    - symmetry; auto.
+    - unfold vertex_prop_coincide in H1 |-* . intros. symmetry. apply H1; auto.
+  + destruct H1 as [s [? ?]]. exists s; split; auto. rewrite <- (si_reachable_by g1 g2 p1 p2); auto.
+Qed.
+
 End SI_EQUIV.
 
