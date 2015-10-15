@@ -163,6 +163,7 @@ Proof.
 Qed.
 
 Lemma EnvironBox_EnvironStable: forall P, EnvironStable (EnvironBox P).
+(* This lemma is the reason why EqM is required. *)
 Proof.
   intros.
   unfold EnvironBox, EnvironStable; intros.
