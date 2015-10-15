@@ -1,31 +1,72 @@
-ADD THIS INTO THE PREVIOUS SECTION
+\section{Ramification-P and Q}
 
-$$ \frac{\{ P \} c \{Q \} \quad FreeVar(F) \cap ModVar(c) = \emptyset } {\{P * F \} c \{ Q * F \}} $$
+\newcommand{\Rule}[3]{\[\text{#1}\frac{\begin{array}{c} #2 \end{array}}{#3}\]}
+\newcommand{\MV}{\text{ModVar}}
+\newcommand{\FV}{\text{FreeVar}}
 
-\[
-\frac{
-\begin{array}{c}
-\{ L \} c \{L' \} \quad FreeVar(L' -* G') \cap ModVar(c) = \emptyset \\
-G \vdash L * (L' -* G')
-\end{array}
-}
-{\{G \} c \{ G' \}}
-\]
+\Rule{Frame  }
+{\{ P \} c \{Q \} \\
+  F \text{ is stable w.r.t. } \MV(c)\\}
+ {\{P * F \} c \{ Q * F \}}
 
-\[
-\frac
-{
-\begin{array}{c}
-\{ L \} c \{PureLocal \wedge L' \} \\ 
-FreeVar(PureFrame \wedge (L' -* G')) \cap ModVar(c) = \emptyset \\
-G \vdash PureFrame \wedge (L * (L' -* G'))
-\end{array}
-} {\{G \} c \{ PureFrame \wedge PureLocal \wedge G' \}}
-\]
+\Rule{Ramification   }
+{\{ L \} c \{L' \} \\
+ G \vdash L * (L' -* G') \\
+ (L' -* G') \text{ is stable w.r.t. } \MV(c)\\}
+{\{ G \} c \{ G' \}}
+
+\Rule{Ramification-P }
+{\{ L \} c \{L' \} \\
+ G \vdash L * \Box^{\llbracket c \rrbracket} (L' -* G') \\}
+{\{ G \} c \{ G' \}}
+
+\Rule{Ramification-Q }
+{\{ L \} c \{ \exists x, L' (x) \} \\
+ G \vdash L * (\forall x, L' (x) -* G' (x)) \\
+ \forall x, (L'(x) -* G'(x)) \text{ is stable w.r.t. } \MV(c)\\}
+{\{ G \} c \{ \exists x, G' (x)\}}
+
+\Rule{Ramification-PQ}
+{\{ L \} c \{ \exists x, L' (x) \} \\
+ G \vdash L * \Box^{\llbracket c \rrbracket} (\forall x, L' (x) -* G' (x)) \\}
+{\{ G \} c \{ \exists x, G' (x)\}}
+
+Separation logic has been mechanized by many projects CITE CITE CITE.
+In many of them, like VST and Charge!, expressing the value of a local
+variable (a variable stored in stack) is a pure fact rather than a
+spatial fact. Because the side condition of ramification rule requires $(L' -* G')$ not
+to be stable w.r.t. modified local variables in $c$\footnote{In previous papers, the side conditions of Frame rule and ramification rule are usually expressed as ``$\FV(F) \cap \MV(c) = \emptyset$'' and ``$\FV(L' -* G') \cap \MV(c) = \emptyset$''. The side conditions used in this paper are equivalent with typical ones if the semantic interpretation of $\FV$ is used. All the previous mentioned projects takes semantic interpretation instead of syntactical interpretation.}, it is almost impossible to apply ramification rule in any practical situations in these systems. In this paper, we present a pure-facts-related rule (we will call it ramification-P rule, or just P rule in the rest this paper) such that it is sound and practical in the most general setting of separation logics.
+
+The primary ramification rule is essentially an application of frame rule using $(L' -* G')$ as frame.
+Thus, the key point of handling pure facts is to find a legal frame even if $(L' -* G')$ is not stable w.r.t. $\MV(c)$. This frame is $\Box^{\llbracket c \rrbracket} (L' -* G')$ in ramification-P rule.
+\begin{eqnarray*}
+m \models \Box^R P &  \Leftrightarrow  & \forall m', \text{ if } m\xrightarrow{R}m' \text{ then } m' \models P \\
+m \xrightarrow{\llbracket c \rrbracket} m' & \Leftrightarrow &   \text{$m$ and $m'$ coincide everywhere} \\
+&& \text{except $\MV(c)$} \\
+P \text{ is stable} &  \Leftrightarrow  & \forall m \ m',  \text{if $m$ and $m'$ coincide everywhere} \\
+\text{w.r.t. $S$} && \text{except $S$, then $m \models P$ iff $m' \models P$}
+\end{eqnarray*}
+
+Here, $\Box$ represents the necessity modal operator. The formula $\Box^{\llbracket c \rrbracket} (L' -* G')$ says, it is true on a state $m$ if and only if for any state $m'$, if $m$ and $m'$
+coincide everywhere except on the variables modified by $c$, then $(L' -* G')$ is true on $m'$. 
+
+Based on the combination frame rule, consequence rule and three basic facts below, we can immediate prove ramification-P rule.
+\begin{quotation}
+(1) $\Box^{\llbracket c \rrbracket} (L' -* G')$ is stable w.r.t. $\MV(c).$\footnote{This can be proved directly from the definition of $\llbracket c \rrbracket$ and stability.}
+
+(2) $G \vdash L * \Box^{\llbracket c \rrbracket} (L' -* G')$. (Assumption)
+
+(3) $L' *  \Box^{\llbracket c \rrbracket (L' -* G')} \vdash G'$. \footnote{When $R$ is reflexive, T-Axiom of modal logic is sound, i.e. for any $P$, $\Box^R P \vdash P$. As $\llbracket c \rrbracket$ is reflexive, we know the fact that $\Box^{\llbracket c \rrbracket} (L' -* G') \vdash L' -* G'$, which is immediate followed by $L' *  \Box^{\llbracket c \rrbracket (L' -* G')} \vdash G'$.}
+\end{quotation}
 
 
-Separation logic has been mechanized by many projects CITE CITE CITE. In many of them, like VST and Charge!, expressing the value of a local variable (a variable stored in stack) is a pure fact rather than a spatial fact. This setting makes ramification rule hard to use, because the ramification rule requires $(L' -* G')$ not to contain any modified local variables. In this work we present, we prove a pure-facts-related rule besides the primary one such that ramification will be much easier to apply in all these projects. Using this rule, pure facts in global post condition can inherit both pure facts from local post condition (${PureLocal}$) and from global precondition (${PureFram}$).
 
+
+
+
+
+
+\section{Ramification based on VST}
 
 
 VST is a correctness-certified tool to prove functional correctness of C programs CITE. All Hoare rules are proved sound and users can use them to build modularized proof. At the same time, users can have all the convenience offered by separation logic. For example, frame rule is already proved sound as well. VST is fully developed in Coq and it uses the C semantics offered by ComCert. CITE
