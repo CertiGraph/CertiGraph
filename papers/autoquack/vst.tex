@@ -1,4 +1,4 @@
-\section{Ramification-P and Q}
+\section{Ramification Rules}
 
 \newcommand{\Rule}[3]{\[\text{#1}\frac{\begin{array}{c} #2 \end{array}}{#3}\]}
 \newcommand{\MV}{\text{ModVar}}
@@ -31,6 +31,8 @@
  G \vdash L * \Box^{\llbracket c \rrbracket} (\forall x, L' (x) -* G' (x)) \\}
 {\{ G \} c \{ \exists x, G' (x)\}}
 
+\subsection{P for Pure Facts}
+
 Separation logic has been mechanized by many projects CITE CITE CITE.
 In many of them, like VST and Charge!, expressing the value of a local
 variable (a variable stored in stack) is a pure fact rather than a
@@ -52,21 +54,30 @@ coincide everywhere except on the variables modified by $c$, then $(L' -* G')$ i
 
 Based on the combination frame rule, consequence rule and three basic facts below, we can immediate prove ramification-P rule.
 \begin{quotation}
-(1) $\Box^{\llbracket c \rrbracket} (L' -* G')$ is stable w.r.t. $\MV(c).$\footnote{This can be proved directly from the definition of $\llbracket c \rrbracket$ and stability.}
+(a) $\Box^{\llbracket c \rrbracket} (L' -* G')$ is stable w.r.t. $\MV(c).$\footnote{This can be proved directly from the definition of $\llbracket c \rrbracket$ and stability, and the fact that $\llbracket c \rrbracket$ is an equivalence relation.}
 
-(2) $G \vdash L * \Box^{\llbracket c \rrbracket} (L' -* G')$. (Assumption)
+(b) $G \vdash L * \Box^{\llbracket c \rrbracket} (L' -* G')$. (Assumption)
 
-(3) $L' *  \Box^{\llbracket c \rrbracket (L' -* G')} \vdash G'$. \footnote{When $R$ is reflexive, T-Axiom of modal logic is sound, i.e. for any $P$, $\Box^R P \vdash P$. As $\llbracket c \rrbracket$ is reflexive, we know the fact that $\Box^{\llbracket c \rrbracket} (L' -* G') \vdash L' -* G'$, which is immediate followed by $L' *  \Box^{\llbracket c \rrbracket (L' -* G')} \vdash G'$.}
+(c) $L' *  \Box^{\llbracket c \rrbracket} (L' -* G') \vdash G'$. \footnote{When $R$ is reflexive, T-Axiom of modal logic is sound, i.e. for any $P$, $\Box^R P \vdash P$. As $\llbracket c \rrbracket$ is reflexive, we know the fact that $\Box^{\llbracket c \rrbracket} (L' -* G') \vdash L' -* G'$, which is immediate followed by $L' *  \Box^{\llbracket c \rrbracket (L' -* G')} \vdash G'$.}
 \end{quotation}
 
+\subsection{Establish the Assumption Entailment of P Rule}
 
+It is well-known that the proof theory with magic wand is already complicated, so generally speaking, it will not be a easy task to prove an entailment with magic wand together with modality. However, people need to prove an entailment with form
+\begin{equation}G \vdash  L * \Box^R (L' -* G') \label{eqn:Passu} \end{equation}
+at first when applying ramification-P rule. Luckily, this special form turns the task much easier.
 
+First of all, SOLVE-RAM-F rule can turn the proof goal into two wand-free and modality-free entailments. Specifically, people only need to find an $R$-stable predicate $F$, such that $G \vdash L * F$ and $F * L' \vdash G'$ are both true. 
 
+SOLVE-RAM-F alone is not a satisfactory proof theory because in that case using P rule would have no different from using frame rule directly. The key point here is that, an entailment with form \ref{Passu} can be proved in a modularized way. For primary ramification rule, CITE proposed two proof rule, RAM-FRAME and RAM-SPLIT, to divide an entailment with form $G \vdash L * (L' -* G')$ into small pieces. When it comes to ramification-P rule, two corresponding proof rules, RAM-P-FRAME and RAM-P-SPLIT are still sound.
 
+To conclude, if $L'$ and $G'$ are two separating conjunctions of a bunch of atomic predicates, RAM-P-FRAME and RAM-P-SPLIT can establish \ref{Passu} from entailments with the same form but smaller size. Atomic sized entailments can be proved using SOLVE-RAM-P. They are usually general purposed entailments and do not need to be proved for every single program. In section \ref{vst}, we will see examples of this approach for real programs.
 
+\subsection{Q for Quantifiers}
 
+For
 
-\section{Ramification based on VST}
+\section{Ramification based on VST}\label{vst}
 
 
 VST is a correctness-certified tool to prove functional correctness of C programs CITE. All Hoare rules are proved sound and users can use them to build modularized proof. At the same time, users can have all the convenience offered by separation logic. For example, frame rule is already proved sound as well. VST is fully developed in Coq and it uses the C semantics offered by ComCert. CITE
