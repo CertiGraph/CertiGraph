@@ -384,9 +384,8 @@ Module SIMPLE_SPANNING_TREE.
         spanning_list' (fun x => P x /\ x <> root) g1 l g2 ->
         spanning_tree g1 root P g2.
     Proof.
-      intros. split; [|split]; intros.
-      + remember (fun x : V => P x /\ x <> root) as P0.
-        assert (forall e : E, In e l -> out_edges g1 root e) by (intros; rewrite <- H0; auto).
+      intros. remember (fun x : V => P x /\ x <> root) as P0. split; [|split]; intros.
+      + assert (forall e : E, In e l -> out_edges g1 root e) by (intros; rewrite <- H0; auto).
         clear H0. induction H3.
         - rewrite H0. reflexivity.
         - assert (out_edges g1 root e) by (apply H4; apply in_or_app; right; apply in_eq).
@@ -404,7 +403,12 @@ Module SIMPLE_SPANNING_TREE.
             pose proof (gremove_predicate_partial_si _ _ _ _ _ H9 H10 H2 H8).
             apply si_stronger_partialgraph_simple with (fun n : V => ~ g2 |= root ~o~> n satisfying P); auto.
             intro n. unfold Ensembles.In . do 2 intro. apply H12. clear H12.
-
+            admit.
+      + induction H3.
+        - admit.
+        - destruct H5 as [[[? ?] [? [? [? ?]]]] | ?].
+          * assert (P0 (dst g2 e) /\ ~ reachable_by_through_set g1 (map (dst g1) es) P0 (dst g2 e)) by intuition.
+            specialize (H8 H11). clear H7 H9 H10 H11.
     Abort.
 
   End SIMPLE_SPANNING.
