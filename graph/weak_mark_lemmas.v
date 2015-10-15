@@ -32,6 +32,7 @@ Definition predicate_partial_labeledgraph (g: Graph) (p: V -> Prop) :=
 
 End PartialLabeledGraph.
 
+(*
 Definition DFS_acc {V E} {EV: EqDec V eq} {EE: EqDec E eq} (g: PreGraph V E) (P: V -> Prop) (x y: V) :=
   vvalid g x /\ x = y \/
   reachable_by g x P y \/
@@ -45,6 +46,21 @@ Proof.
   left.
   tauto.
 Qed.
+
+Lemma DFS_acc_vvalid: forall {V E} {EV: EqDec V eq} {EE: EqDec E eq} (g: PreGraph V E) (P: V -> Prop) x,
+  Included (DFS_acc g P x) (vvalid g).
+Proof.
+  intros; hnf; unfold Ensembles.In; intros.
+  destruct H as [? | [? | ?]].
+  + destruct H; subst; auto.
+  + apply reachable_by_foot_valid in H; auto.
+  + destruct H as [? [_ [? [? ?]]]]; auto.
+Qed.
+
+*)
+
+Definition compond_relation {A: Type} (R1 R2: relation A) : relation A :=
+  fun x z => exists y, R1 x y /\ R2 y z.
 
 Module WeakMarkGraph.
 
@@ -73,23 +89,31 @@ Definition unmarked (g: Graph) : NodePred V := negateP (marked g).
 
 Hypothesis R_DEC: forall (g: Graph) x, vvalid g x -> ReachDecidable g x (unmarked g).
 
-Definition mark1 (g1 : Graph) (n : V) (g2 : Graph) : Prop :=
+Definition nothing (n : V) (g1 : Graph) (g2 : Graph) : Prop :=
+  (predicate_partialgraph g1 (eq n)) ~=~
+  (predicate_partialgraph g2 (eq n)) /\
+  (forall n', vvalid g1 n' -> vvalid g2 n' -> vlabel_lg g1 n' = vlabel_lg g2 n') /\
+  (forall e, evalid g1 e -> evalid g2 e -> elabel_lg g1 e = elabel_lg g2 e).
+
+Definition mark1 (n : V) (g1 : Graph) (g2 : Graph) : Prop :=
   g1 ~=~ g2 /\
   marked g2 n /\
   (forall n', n <> n' -> vvalid g1 n' -> vvalid g2 n' -> vlabel_lg g1 n' = vlabel_lg g2 n') /\
   (forall e, evalid g1 e -> evalid g2 e -> elabel_lg g1 e = elabel_lg g2 e).
 
-Definition mark (g1 : Graph) (root : V) (g2 : Graph) : Prop :=
-  (predicate_partialgraph (dualgraph g1) (unmarked g2)) ~=~
-  (predicate_partialgraph (dualgraph g2) (unmarked g2)) /\
+Definition mark (root : V) (g1 : Graph) (g2 : Graph) : Prop :=
+  (predicate_partialgraph g1 (Complement _ (reachable_by g1 root (unmarked g1)))) ~=~
+  (predicate_partialgraph g2 (Complement _ (reachable_by g1 root (unmarked g1)))) /\
   (forall n, g1 |= root ~o~> n satisfying (unmarked g1) -> marked g2 n) /\
   (forall n, ~ g1 |= root ~o~> n satisfying (unmarked g1) -> (marked g1 n <-> marked g2 n)).
 
-Definition mark_list g1 xs g2 := relation_list (fun x g1 g2 => mark g1 x g2) xs g1 g2.
+Definition componded root R :=
+  compond_relation (compond_relation (nothing root) R) (nothing root).
 
-(*
+Definition mark_list root xs := relation_list (fun x => componded root (mark x)) xs.
+
 Lemma mark_marked: forall (g1: Graph) root (g2: Graph),
-  mark g1 root g2 ->
+  mark root g1 g2 ->
   forall n, marked g1 n -> marked g2 n.
 Proof.
   intros.
@@ -99,20 +123,28 @@ Proof.
   apply reachable_by_foot_prop in H1.
   unfold unmarked in H1; rewrite negateP_spec in H1; auto.
 Qed.
-*)
+
+Lemma lge_do_nothing: forall g1 g2 n, (g1 ~=~ g2)%LabeledGraph -> nothing n g1 g2.
+Proof.
+  intros.
+  destruct H as [? [? ?]].
+  split; auto.
+  rewrite H; reflexivity.
+Qed.
+
 Lemma mark1_mark_list_mark: forall (g1: Graph) root l (g2 g3: Graph)
   (V_DEC: forall x, In x l -> Decidable (vvalid g1 x)),
   vvalid g1 root ->
   (unmarked g1) root ->
   step_list g1 root l ->
-  mark1 g1 root g2 ->
-  mark_list g2 l g3 ->
-  mark g1 root g3.
+  componded root (mark1 root) g1 g2 ->
+  mark_list root l g2 g3 ->
+  mark root g1 g3.
 Admitted.
 
 Lemma vertex_update_mark1: forall (g: Graph) x lx,
   label_marked lx ->
-  mark1 g x (labeledgraph_vgen g x lx).
+  mark1 x g (labeledgraph_vgen g x lx).
 Proof.
   intros.
   split; [| split; [| split]].
@@ -131,7 +163,7 @@ Lemma step_list_reachable_included: forall (g1 g2 g3: Graph) x l y l',
   step_list g1 x (l ++ y :: l') ->
   mark1 g1 x g2 ->
   mark_list g2 l g3 ->
-  Included (reachable g3 y) (reachable g3 x).
+  Included (reachable g3 y) (reachable g1 x).
 Proof.
   intros.
   hnf; unfold Ensembles.In; intros.
@@ -179,6 +211,7 @@ SearchAbout reachable Proper.
 Locate reachable_proper.
 rewrite <- H1.
 *)
+
 End WeakMarkGraph.
 
 End WeakMarkGraph.
