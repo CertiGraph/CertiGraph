@@ -1,5 +1,5 @@
 Require Import Coq.Classes.Equivalence.
-Require Import RamifyCoq.Coqlib.
+Require Import Coq.Classes.EquivDec.
 Require Import VST.msl.Coqlib2.
 Require Import RamifyCoq.graph.graph_model.
 Require Import RamifyCoq.graph.path_lemmas.

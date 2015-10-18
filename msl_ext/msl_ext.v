@@ -1,6 +1,5 @@
 Require Import VST.msl.msl_standard.
 Require Import RamifyCoq.msl_ext.ramify_tactics.
-Require Import RamifyCoq.Coqlib.
 Require Import Coq.Sorting.Permutation.
 
 Lemma overlapping_eq {A} {JA : Join A} {PA : Perm_alg A} {SA: Sep_alg A}

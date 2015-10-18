@@ -1,61 +1,9 @@
-Require Import Coq.Sets.Ensembles.
-Require Import Coq.Relations.Relation_Definitions.
 Require Export Coq.Lists.List.
-Require Export Coq.omega.Omega.
-Require Export Coq.Logic.FunctionalExtensionality.
+Require Import Coq.omega.Omega.
 Require Export Coq.Sorting.Permutation.
-Require Export Coq.Classes.EquivDec.
-Require VST.veric.coqlib4.
-
-Lemma ex_iff: forall {A: Type} P Q, (forall x: A, P x <-> Q x) -> (ex P <-> ex Q).
-Proof.
-  intros.
-  split; intros [x ?]; exists x; firstorder.
-Qed.
-
-Lemma forall_iff: forall {A: Type} P Q, (forall x: A, P x <-> Q x) -> ((forall x, P x) <-> (forall x, Q x)).
-Proof. intros. firstorder. Qed.
-
-Lemma and_iff_split: forall A B C D : Prop, (A <-> B) -> (C <-> D) -> (A /\ C <-> B /\ D).
-Proof. intros. tauto. Qed.
-
-Lemma and_iff_compat_l_weak: forall A B C : Prop, (A -> (B <-> C)) -> (A /\ B <-> A /\ C).
-Proof. intros. tauto. Qed.
-
-Lemma and_iff_compat_r_weak: forall A B C : Prop, (A -> (B <-> C)) -> (B /\ A <-> C /\ A).
-Proof. intros. tauto. Qed.
-
-Lemma Intersection_spec: forall A (v: A) P Q, Intersection _ P Q v <-> P v /\ Q v.
-Proof.
-  intros.
-  split; intros.
-  + inversion H; auto.
-  + constructor; tauto.
-Qed.
-
-Lemma Union_spec: forall A (v: A) P Q, Union _ P Q v <-> P v \/ Q v.
-Proof.
-  intros.
-  split; intros.
-  + inversion H; auto.
-  + destruct H; [apply Union_introl | apply Union_intror]; auto.
-Qed.
-
-Lemma Intersection_Complement': forall A (P Q: Ensemble A),
-  Same_set A
-  (Intersection A (Complement A P) (Complement A Q))
-  (Complement A (Union A P Q)).
-Proof.
-  intros.
-  unfold Same_set, Included, Complement, Ensembles.In.
-  split; intros.
-  + rewrite Union_spec.
-    rewrite Intersection_spec in H.
-    tauto.
-  + rewrite Union_spec in H.
-    rewrite Intersection_spec.
-    tauto.
-Qed.
+Require Import Coq.Logic.FunctionalExtensionality.
+Require Import RamifyCoq.lib.Coqlib.
+Require Import RamifyCoq.lib.EquivDec_ext.
 
 Definition Sublist {A} (L1 L2 : list A) : Prop := forall a, In a L1 -> In a L2.
 
@@ -283,6 +231,15 @@ Qed.
 Lemma dupOrder_wf A : well_founded (@dupOrder A).
 Proof. red; intro; eapply dupOrder_wf'; eauto. Defined.
 
+(* This definition is not necessary. *)
+(* Change to the following definition some time. *)
+(*
+Fixpoint remove_dup {A} {EA: EqDec A eq} (l: list A) : list A :=
+  match l with
+  | nil => nil
+  | x :: l0 => remove equiv_dec x (remove_dup l0)
+  end.
+*)
 Definition remove_dup {A} (eq_dec : forall x y : A, {x = y} + {x <> y}) : list A -> list A.
   refine (
       Fix (dupOrder_wf A) (fun _ => list A)
@@ -501,8 +458,6 @@ Notation "a '+::' b" := (a ++ (b :: nil)) (at level 19).
 Lemma app_cons_assoc: forall {A} (l1 l2 : list A) x, l1 ++ x :: l2 = l1 +:: x ++ l2.
 Proof. intros. induction l1. simpl. auto. rewrite <- app_comm_cons. rewrite IHl1. do 2 rewrite <- app_comm_cons. auto. Qed.
 
-(* Class EqDec (T: Type) := {t_eq_dec: forall t1 t2 : T, {t1 = t2} + {t1 <> t2}}. *)
-
 Fixpoint judgeNoDup {A} {EA : EqDec A eq} (l : list A) : bool :=
   match l with
     | nil => true
@@ -560,16 +515,6 @@ Proof.
   induction L1. auto. intros. rewrite <- app_comm_cons. simpl. case_eq (L1 ++ L2).
   intro. apply app_eq_nil in H0. destruct H0. contradiction. intros. rewrite <- H0. apply IHL1. trivial.
 Qed.
-
-Tactic Notation "spec" hyp(H) :=
-  match type of H with ?a -> _ =>
-    let H1 := fresh in (assert (H1: a); [|generalize (H H1); clear H H1; intro H]) end.
-Tactic Notation "disc" := (try discriminate).
-Tactic Notation "contr" := (try contradiction).
-Tactic Notation "congr" := (try congruence).
-Tactic Notation "inv" hyp(H) := inversion H; clear H; subst.
-Tactic Notation  "icase" constr(v) := (destruct v; disc; contr; auto).
-Tactic Notation "copy" hyp(H) := (generalize H; intro).
 
 Lemma foot_explicit {A}: forall L (a : A), foot L = Some a -> exists L', L = L' +:: a.
 Proof.
@@ -643,21 +588,6 @@ Proof.
       tauto.
 Qed.
 
-Arguments Included {U} B C.
-Arguments Same_set {U} B C.
-
-Lemma Same_set_refl: forall A (S : Ensemble A), Same_set S S. Proof. intros; split; intro; tauto. Qed.
-
-Lemma Same_set_sym: forall A (S1 S2 : Ensemble A), Same_set S1 S2 -> Same_set S2 S1. Proof. intros; destruct H; split; auto. Qed.
-
-Lemma Same_set_trans: forall A (S1 S2 S3: Ensemble A), Same_set S1 S2 -> Same_set S2 S3 -> Same_set S1 S3.
-Proof. intros; destruct H, H0; split; repeat intro; [apply H0, H, H3 | apply H1, H2, H3]. Qed.
-
-Add Parametric Relation {A} : (Ensemble A) Same_set
-    reflexivity proved by (Same_set_refl A)
-    symmetry proved by (Same_set_sym A)
-    transitivity proved by (Same_set_trans A) as Same_set_rel.
-
 Lemma nodup_remove_perm: forall {A : Type} (eq_dec : forall x y : A, {x = y} + {x <> y}) (l : list A) (x : A),
                            NoDup l -> In x l -> Permutation l (x :: remove eq_dec x l).
 Proof.
@@ -681,30 +611,7 @@ Proof.
     - apply Permutation_cons; auto.
 Qed.
 
-Lemma demorgan_weak: forall P Q: Prop, P \/ ~ P -> (~ (P /\ Q) <-> ~ P \/ ~ Q).
-Proof.
-  intros.
-  destruct H; tauto.
-Qed.
-
-Lemma demorgan_weak': forall P Q: Prop, P \/ ~ P -> (~ (~ P /\ Q) <-> P \/ ~ Q).
-Proof.
-  intros.
-  destruct H; tauto.
-Qed.
-
-Lemma eq_sym_iff: forall {A} (x y: A), x = y <-> y = x.
-Proof.
-  intros.
-  split; intro; congruence.
-Qed.
-
-Ltac destruct_eq_dec a b :=
-  let H := fresh "H" in
-  destruct (@EquivDec.equiv_dec _ eq _ _ a b) as [H | H]; unfold complement, eq_equivalence, equiv in H.
-
-Lemma map_nodup: forall {A} {B} (f : A -> B) (l : list A), (forall x y : A, f x = f y -> x = y) ->
-                                                           NoDup l -> NoDup (map f l).
+Lemma map_nodup: forall {A} {B} (f : A -> B) (l : list A), (forall x y : A, f x = f y -> x = y) -> NoDup l -> NoDup (map f l).
 Proof.
   intros. induction l; simpl. apply NoDup_nil. apply NoDup_cons.
   + apply NoDup_cons_2 in H0. intro. apply H0. rewrite in_map_iff in H1.
@@ -714,159 +621,10 @@ Qed.
 
 Existing Instance Permutation_app'_Proper.
 
-Require Import Coq.Classes.Morphisms.
-
-Lemma Intersection_comm: forall A P Q, (pointwise_relation A iff) (Intersection A P Q) (Intersection A Q P).
-Proof.
-  repeat (hnf; intros).
-  rewrite !Intersection_spec.
-  tauto.
-Qed.
-
-Instance complement_proper (V: Type): Proper ((pointwise_relation V iff) ==> (pointwise_relation V iff)) (Complement V).
-  hnf; intros.
-  hnf; intros.
-  unfold Complement, Ensembles.In.
-  specialize (H a).
-  tauto.
-Defined.
-
-Existing Instance complement_proper.
-
-Lemma Intersection_Complement: forall A (P Q: Ensemble A),
-  (pointwise_relation A iff)
-  (Intersection A (Complement A P) (Complement A Q))
-  (Complement A (Union A P Q)).
-Proof.
-  intros.
-  intro x.
-  rewrite Intersection_spec.
-  unfold Complement, Ensembles.In.
-  rewrite Union_spec.
-  tauto.
-Qed.
-
-Instance Included_proper (V: Type): Proper ((pointwise_relation V iff) ==> (pointwise_relation V iff) ==> iff) (@Included V).
-Proof.
-  hnf; intros.
-  hnf; intros.
-  unfold pointwise_relation, Included, Ensembles.In in *.
-  firstorder.
-Defined.
-
-Lemma Complement_Included_rev: forall (U: Type) P Q, Included P Q -> Included (Complement U Q) (Complement U P).
-Proof.
-  unfold Included, Complement, Ensembles.In.
-  intros.
-  firstorder.
-Qed.
-
-Definition Decidable (P: Prop) := {P} + {~ P}.
-
-Lemma sumbool_weaken_right: forall P Q Q': Prop, (Q -> Q') -> ({P} + {Q}) -> ({P} + {Q'}).
-Proof.
-  intros.
-  destruct H0; [left | right]; auto.
-Qed.
-
-Lemma sumbool_weaken_left: forall P P' Q: Prop, (P -> P') -> ({P} + {Q}) -> ({P'} + {Q}).
-Proof.
-  intros.
-  destruct H0; [left | right]; auto.
-Qed.
-
-Definition Enumerable U (A: Ensemble U) := {l: list U | NoDup l /\ forall x, In x l <-> Ensembles.In U A x}.
-
-Definition EnumCovered U (A: Ensemble U) := {l: list U | NoDup l /\ forall x, Ensembles.In U A x -> In x l}.
-
-Lemma EnumCovered_strengthen: forall U A B,
-  Included A B -> EnumCovered U B -> EnumCovered U A.
-Proof.
-  intros.
-  destruct X as [x ?H].
-  exists x.
-  split; [tauto |].
-  intros.
-  apply H in H1.
-  firstorder.
-Qed.
-
-Lemma EnumStrengthen: forall U (P Q: Ensemble U),
-  (forall x, P x -> Decidable (Q x)) ->
-  Included Q P ->
-  Enumerable U P -> 
-  Enumerable U Q.
-Proof.
-  intros.
-  destruct X0 as [l [? ?]].
-  unfold Included, Ensembles.In in H, H1.
-  assert (forall x : U, In x l -> Decidable (Q x)) by firstorder.
-  assert (forall x : U, Q x -> In x l) by firstorder.
-  clear X H H1 P.
-  assert ({l' | NoDup l' /\ (forall x, In x l' <-> Q x /\ In x l)}).
-  + clear H2.
-    induction l; intros.
-    - exists nil.
-      split; [constructor |].
-      intros x; simpl; tauto.
-    - spec IHl; [inversion H0; auto |].
-      spec IHl; [intros; apply X0; simpl; auto |].
-      destruct IHl as [l0 [? ?]].
-      destruct (X0 a (or_introl eq_refl)) as [?H | ?H]; [exists (a :: l0) | exists l0]; split.
-      * constructor; auto.
-        specialize (H1 a).
-        inversion H0; tauto.
-      * intros.
-        simpl.
-        specialize (H1 x).
-        assert (a = x -> Q x) by (intros; subst; auto).
-        tauto.
-      * auto.
-      * intros; simpl.
-        specialize (H1 x).
-        assert (a = x -> ~ Q x) by (intros; subst; auto).
-        tauto.
-  + destruct X as [l' [? ?]]; exists l'.
-    split; [auto |].
-    intros; unfold Ensembles.In; specialize (H1 x); specialize (H2 x).
-    tauto.
-Qed.
-
-Lemma EnumSplit: forall U (P Q R: Ensemble U),
-  (forall x, P x -> {Q x} + {R x}) ->
-  coqlib4.Ensemble_join Q R P ->
-  Enumerable U P -> 
-  Enumerable U Q * Enumerable U R.
-Proof.
-  intros U P Q R ? [? ?] ?.
-  split.
-  + apply EnumStrengthen with P; auto.
-    - intros x HH; specialize (X x HH); specialize (H x); specialize (H0 x).
-      apply sumbool_weaken_right with (R x); auto.
-    - intros x; simpl; specialize (H x); tauto.
-  + apply EnumStrengthen with P; auto.
-    - intros x HH; specialize (X x HH); specialize (H x); specialize (H0 x).
-      apply swap_sumbool.
-      apply sumbool_weaken_left with (Q x); auto.
-    - intros x; simpl; specialize (H x); tauto.
-Qed.
-
-Lemma Ensemble_join_Intersection_Complement: forall {A} P Q,
-  Included Q P ->
-  (forall x, Q x \/ ~ Q x) ->
-  coqlib4.Ensemble_join Q (Intersection A P (Complement A Q)) P.
-Proof.
-  intros.
-  unfold coqlib4.Ensemble_join.
-  unfold Included, Ensembles.In in H.
-  split; intros x; specialize (H0 x); specialize (H x);
-  rewrite Intersection_spec; unfold Complement, Ensembles.In; try tauto.
-Qed.
-
 Lemma spec_list_split: forall {A} (l: list A) P Q R,
   NoDup l ->
   (forall x, In x l <-> R x) ->
-  coqlib4.Ensemble_join P Q R ->
+  Prop_join P Q R ->
   exists lp lq,
     NoDup lp /\
     NoDup lq /\
@@ -920,26 +678,3 @@ Ltac split5 := split; [| split; [| split; [| split]]].
         firstorder.
 Qed.
 
-Inductive relation_list {A B: Type} {Req: relation A} {Req_Equiv: Equivalence Req} (R: B -> relation A): list B -> relation A :=
-  | relation_list_nil: forall x y, Req x y -> relation_list R nil x y
-  | relation_list_cons: forall x y z bs b, relation_list R bs x y -> R b y z -> relation_list R (bs ++ b :: nil) x z.
-
-Lemma relation_list_Intersection: forall {A B: Type} {Req: relation A} {Req_Equiv: Equivalence Req} (R1 R2 R3: B -> relation A) bs,
-  (forall b, same_relation _ (relation_conjunction (R1 b) (R2 b)) (R3 b)) ->
-  inclusion _ (relation_list R3 bs) (relation_conjunction (relation_list R1 bs) (relation_list R2 bs)).
-Proof.
-  intros.
-  hnf; intros.
-  induction H0.
-  - split; constructor; auto.
-  - apply (proj2 (H b)) in H1.
-    destruct H1, IHrelation_list.
-    split; econstructor; eauto.
-Qed.
-
-Lemma same_relation_spec: forall {A} a1 a2, same_relation A a1 a2 <-> pointwise_relation A (pointwise_relation A iff) a1 a2.
-Proof.
-  intros.
-  unfold same_relation, inclusion, pointwise_relation.
-  firstorder.
-Qed.

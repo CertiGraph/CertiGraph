@@ -1,10 +1,10 @@
 Require Import Coq.Logic.ProofIrrelevance.
-Require Import Coq.Sets.Ensembles.
-Require Import Coq.Sets.Finite_sets.
-Require Import Coq.Lists.List.
-Require Import RamifyCoq.Coqlib.
+Require Import RamifyCoq.lib.Coqlib.
+Require Import RamifyCoq.lib.EnumEnsembles.
+Require Import RamifyCoq.lib.List_ext.
 Require Import RamifyCoq.graph.graph_model.
 Require Import RamifyCoq.graph.find_not_in.
+Require Import Coq.Lists.List.
 
 Section PATH_LEM.
 

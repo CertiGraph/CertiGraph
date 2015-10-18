@@ -1,8 +1,10 @@
-Require Import Coq.Sets.Ensembles.
 Require Import VST.msl.seplog.
 Require Import VST.msl.log_normalize.
 Require RamifyCoq.graph.marked_graph. Import RamifyCoq.graph.marked_graph.WeakMarkGraph.
-Require Import RamifyCoq.Coqlib.
+Require Import RamifyCoq.lib.Coqlib.
+Require Import RamifyCoq.lib.Ensembles_ext.
+Require Import RamifyCoq.lib.EquivDec_ext.
+Require Import Coq.Lists.List.
 Require Import RamifyCoq.msl_ext.ramification_lemmas.
 Require Import RamifyCoq.graph.graph_model.
 Require Import RamifyCoq.graph.path_lemmas.

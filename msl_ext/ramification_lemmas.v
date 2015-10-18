@@ -1,6 +1,9 @@
 Require Import RamifyCoq.msl_ext.log_normalize.
 Require Import RamifyCoq.msl_ext.iter_sepcon.
-Require Import RamifyCoq.Coqlib.
+Require Import RamifyCoq.lib.List_ext.
+Require Import RamifyCoq.lib.EquivDec_ext.
+Require Import RamifyCoq.lib.EnumEnsembles.
+Require Import VST.msl.base.
 Require Import VST.msl.simple_CCC.
 Require Import VST.msl.seplog.
 Require Import VST.msl.log_normalize.

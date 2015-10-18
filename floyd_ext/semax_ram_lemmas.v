@@ -1,4 +1,4 @@
-Require Import RamifyCoq.Coqlib.
+Require Import RamifyCoq.lib.List_ext.
 Require Import VST.floyd.base.
 Require Import VST.floyd.canon.
 Require Import VST.floyd.assert_lemmas.
@@ -45,7 +45,7 @@ Inductive add_stats (s0: statement) : list SingleFrame -> list SingleFrame -> Pr
 Definition SingleFrame'_inv {l g s0 s} (F: SingleFrame' l g (s0 :: s)) : SingleFrame' l g s :=
   match F with
   | RAM_FRAME.Build_SingleFrame' f fs fc =>
-      RAM_FRAME.Build_SingleFrame' f fs (Coqlib.Forall_tl _ _ _ fc)
+      RAM_FRAME.Build_SingleFrame' f fs (Forall_tl _ _ _ fc)
   end.
 
 Lemma eexists_add_stats_cons: forall s0 l g s (F0: SingleFrame' _ _ _) F F',

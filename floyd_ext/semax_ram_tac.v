@@ -1,6 +1,5 @@
 Require Import Coq.Sets.Ensembles.
 Require Import Coq.Sets.Finite_sets.
-Require Import RamifyCoq.Coqlib.
 Require Import VST.floyd.proofauto.
 Require Import RamifyCoq.floyd_ext.semax_ram_lemmas.
 Require Import RamifyCoq.floyd_ext.exists_trick.

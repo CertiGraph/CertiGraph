@@ -16,7 +16,6 @@ Qed.
 Program Definition ocon {A: Type}{JA: Join A}{PA : Perm_alg A}{AG : ageable A} {AA : Age_alg A} (p q:pred A) : pred A :=
   fun h:A => exists h1 h2 h3 h12 h23, join h1 h2 h12 /\ join h2 h3 h23 /\ join h12 h3 h /\ p h12 /\ q h23.
 Next Obligation.
-  intro; intros.
   destruct H0 as [h1 [h2 [h3 [h12 [h23 [? [? [? [? ?]]]]]]]]].
   try_join h2 h3 h23'; equate_join h23 h23'.
   destruct (age1_join2 _ H2 H) as [w12 [w3 [? [? ?]]]].
@@ -34,7 +33,6 @@ Notation "P ⊗ Q" := (ocon P Q) (at level 40, left associativity) : pred.
 Program Definition owand {A: Type}{JA: Join A}{PA : Perm_alg A}{AG : ageable A} {AA : Age_alg A} (p q:pred A) : pred A :=
   fun h23':A => forall h23 h1 h2 h3 h12 h123, necR h23' h23 -> join h1 h2 h12 -> join h2 h3 h23 -> join h12 h3 h123 -> p h12 -> q h123.
 Next Obligation.
-  intro; intros.
   rename a' into h23'.
   eapply (H0 h23 h1 h2 h3 h12 h123); eauto.
   apply necR_power_age.

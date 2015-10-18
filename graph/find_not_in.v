@@ -1,4 +1,5 @@
-Require Import RamifyCoq.Coqlib.
+Require Import Coq.Classes.EquivDec.
+Require Import RamifyCoq.lib.List_ext.
 
 Section FIND_NOT_IN.
 Context {V: Type}.
