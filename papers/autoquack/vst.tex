@@ -36,10 +36,9 @@
 Separation logic has been mechanized by many projects CITE CITE CITE.
 In many of them, like VST and Charge!, expressing the value of a local
 variable (a variable stored in stack) is a pure fact rather than a
-spatial fact. Because the side condition of ramification rule requires $(L' -* G')$ not
-to be stable w.r.t. modified local variables in $c$\footnote{In previous papers, the side conditions of Frame rule and ramification rule are usually expressed as ``$\FV(F) \cap \MV(c) = \emptyset$'' and ``$\FV(L' -* G') \cap \MV(c) = \emptyset$''. The side conditions used in this paper are equivalent with typical ones if the semantic interpretation of $\FV$ is used. All the previous mentioned projects takes semantic interpretation instead of syntactical interpretation.}, it is almost impossible to apply ramification rule in any practical situations in these systems. In this paper, we present a pure-facts-related rule (we will call it ramification-P rule, or just P rule in the rest this paper) such that it is sound and practical in the most general setting of separation logics.
+spatial fact. Because the side condition of ramification rule requires $(L' -* G')$ to be stable w.r.t. modified local variables in $c$\footnote{In previous papers, the side conditions of Frame rule and ramification rule are usually expressed as ``$\FV(F) \cap \MV(c) = \emptyset$'' and ``$\FV(L' -* G') \cap \MV(c) = \emptyset$''. The side conditions used in this paper are equivalent with typical ones if the semantic interpretation of $\FV$ is used. All the previous mentioned projects takes semantic interpretation instead of syntactical interpretation.}, it is almost impossible to apply ramification rule in any practical situations in these systems. In this paper, we present a pure-facts-related rule (we call it ramification-P rule, or just P rule, in the rest of this paper) such that it is sound and practical in the most general setting of separation logics.
 
-The primary ramification rule is essentially an application of frame rule using $(L' -* G')$ as frame.
+The primary ramification rule is essentially an application of the frame rule using $(L' -* G')$ as frame.
 Thus, the key point of handling pure facts is to find a legal frame even if $(L' -* G')$ is not stable w.r.t. $\MV(c)$. This frame is $\Box^{\llbracket c \rrbracket} (L' -* G')$ in ramification-P rule.
 \begin{eqnarray*}
 m \models \Box^R P &  \Leftrightarrow  & \forall m', \text{ if } m\xrightarrow{R}m' \text{ then } m' \models P \\
@@ -65,7 +64,7 @@ Based on the combination frame rule, consequence rule and three basic facts belo
 
 It is well-known that the proof theory with magic wand is already complicated, so generally speaking, it will not be a easy task to prove an entailment with magic wand together with modality. However, people need to prove an entailment with form
 \begin{equation}G \vdash  L * \Box^R (L' -* G') \label{eqn:Passu} \end{equation}
-at first when applying ramification-P rule. Luckily, this special form turns the task much easier.
+at first when applying ramification-P rule. Luckily, this special form makes the task simpler.
 
 First of all, SOLVE-RAM-F rule can turn the proof goal into two wand-free and modality-free entailments. Specifically, people only need to find an $R$-stable predicate $F$, such that $G \vdash L * F$ and $F * L' \vdash G'$ are both true. 
 

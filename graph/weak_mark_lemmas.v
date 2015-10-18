@@ -1,17 +1,22 @@
 Require Import Coq.Logic.ProofIrrelevance.
-Require Import Coq.Sets.Ensembles.
-Require Import Coq.Sets.Finite_sets.
-Require Import Coq.Lists.List.
 Require Import Coq.Classes.Morphisms.
-Require Import Coq.Relations.Relation_Definitions.
-Require Import RamifyCoq.Coqlib.
 Require Import VST.msl.Coqlib2.
+Require Import RamifyCoq.lib.Coqlib.
+Require Import RamifyCoq.lib.EquivDec_ext.
+Require Import RamifyCoq.lib.Relation_ext.
+Require Import RamifyCoq.lib.relation_list.
+Require Import RamifyCoq.lib.EnumEnsembles.
+Require Import RamifyCoq.lib.List_ext.
 Require Import RamifyCoq.graph.graph_model.
 Require Import RamifyCoq.graph.path_lemmas. Import RamifyCoq.graph.path_lemmas.PathNotation.
 Require Import RamifyCoq.graph.reachable_computable.
 Require Import RamifyCoq.graph.reachable_ind.
 Require Import RamifyCoq.graph.subgraph2.
 Require Import RamifyCoq.graph.dual_graph.
+Require Import Coq.Classes.SetoidClass.
+Require Import Coq.Classes.Morphisms.
+
+
 
 Section PartialLabeledGraph.
 
@@ -59,9 +64,6 @@ Qed.
 
 *)
 
-Definition compond_relation {A: Type} (R1 R2: relation A) : relation A :=
-  fun x z => exists y, R1 x y /\ R2 y z.
-
 Module WeakMarkGraph.
 
 Class MarkGraphSetting (DV: Type) := {
@@ -92,8 +94,7 @@ Hypothesis R_DEC: forall (g: Graph) x, vvalid g x -> ReachDecidable g x (unmarke
 Definition nothing (n : V) (g1 : Graph) (g2 : Graph) : Prop :=
   (predicate_partialgraph g1 (eq n)) ~=~
   (predicate_partialgraph g2 (eq n)) /\
-  (forall n', vvalid g1 n' -> vvalid g2 n' -> vlabel_lg g1 n' = vlabel_lg g2 n') /\
-  (forall e, evalid g1 e -> evalid g2 e -> elabel_lg g1 e = elabel_lg g2 e).
+  (forall v, marked g1 v <-> marked g2 v).
 
 Definition mark1 (n : V) (g1 : Graph) (g2 : Graph) : Prop :=
   g1 ~=~ g2 /\
@@ -110,7 +111,7 @@ Definition mark (root : V) (g1 : Graph) (g2 : Graph) : Prop :=
 Definition componded root R :=
   compond_relation (compond_relation (nothing root) R) (nothing root).
 
-Definition mark_list root xs := relation_list (fun x => componded root (mark x)) xs.
+Definition mark_list root xs := relation_list (map (fun x => componded root (mark x)) xs).
 
 Lemma mark_marked: forall (g1: Graph) root (g2: Graph),
   mark root g1 g2 ->
@@ -128,18 +129,22 @@ Lemma lge_do_nothing: forall g1 g2 n, (g1 ~=~ g2)%LabeledGraph -> nothing n g1 g
 Proof.
   intros.
   destruct H as [? [? ?]].
-  split; auto.
-  rewrite H; reflexivity.
+  split.
+  + rewrite H.
+    reflexivity.
+  + intros.
+    simpl.
+    rewrite H0.
+    reflexivity.
 Qed.
 
-Lemma mark1_mark_list_mark: forall (g1: Graph) root l (g2 g3: Graph)
+Lemma mark1_mark_list_mark: forall root l (g1 g2: Graph)
   (V_DEC: forall x, In x l -> Decidable (vvalid g1 x)),
   vvalid g1 root ->
   (unmarked g1) root ->
   step_list g1 root l ->
-  componded root (mark1 root) g1 g2 ->
-  mark_list root l g2 g3 ->
-  mark root g1 g3.
+  relation_list (nothing root :: mark1 root :: nothing root :: mark_list root l :: nothing root :: nil) g1 g2 ->
+  mark root g1 g2.
 Admitted.
 
 Lemma vertex_update_mark1: forall (g: Graph) x lx,

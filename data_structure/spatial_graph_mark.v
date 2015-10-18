@@ -1,8 +1,8 @@
-Require Import Coq.Sets.Ensembles.
-Require Import Coq.Sets.Finite_sets.
 Require Import VST.msl.seplog.
 Require Import VST.msl.log_normalize.
-Require Import RamifyCoq.Coqlib.
+Require Import RamifyCoq.lib.EquivDec_ext.
+Require Import RamifyCoq.lib.List_ext.
+Require Import RamifyCoq.lib.relation_list.
 Require Import RamifyCoq.msl_ext.abs_addr.
 Require Import RamifyCoq.msl_ext.seplog.
 Require Import RamifyCoq.msl_ext.log_normalize.
@@ -96,10 +96,10 @@ Proof.
     destruct H; auto.
 Qed.
 
-Definition mark1 (G1: Graph) x (G2: Graph) := WeakMarkGraph.mark1 x G1 G2.
-Definition mark (G1: Graph) x (G2: Graph) := WeakMarkGraph.mark x G1 G2 /\ G1 ~=~ G2.
+Definition mark1 x (G1: Graph) (G2: Graph) := WeakMarkGraph.mark1 x G1 G2.
+Definition mark x (G1: Graph) (G2: Graph) := WeakMarkGraph.mark x G1 G2 /\ G1 ~=~ G2.
 
-Definition mark_list g1 xs g2 := relation_list (fun x g1 g2 => mark g1 x g2) xs g1 g2.
+Definition mark_list g1 xs g2 := relation_list (map mark xs) g1 g2.
 
 (*
 (* This should be more trivial *)

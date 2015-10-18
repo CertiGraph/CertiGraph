@@ -6,12 +6,15 @@ CURRENT_DIR = $(shell pwd)
 COQC = coqc
 COQDEP=coqdep -slash
 
-DIRS = msl_ext graph heap_model_direct
+DIRS = lib msl_ext graph heap_model_direct
 INCLUDE_COMPCERT = -R $(COMPCERT_DIR) -as compcert
 INCLUDE_VST = -R $(VST_DIR) -as VST
 INCLUDE_RAMIFYCOQ = $(foreach d, $(DIRS), -R $(d) -as RamifyCoq.$(d)) -R "." -as RamifyCoq
 NORMAL_FLAG = $(INCLUDE_RAMIFYCOQ) $(INCLUDE_VST) $(INCLUDE_COMPCERT)
 CLIGHT_FLAG = $(INCLUDE_COMPCERT) $(INCLUDE_RAMIFYCOQ)
+
+LIB_FILES = \
+  Coqlib.v Equivalence_ext.v List_Func_ext.v Ensembles_ext.v List_ext.v EnumEnsembles.v Relation_ext.v relation_list.v EquivDec_ext.v
 
 MSL_EXT_FILES = \
   abs_addr.v seplog.v log_normalize.v ramify_tactics.v msl_ext.v iter_sepcon.v \
@@ -38,9 +41,6 @@ DATA_STRUCTURE_FILES = \
 SAMPLE_MARK_FILES = \
   env_mark_bi.v verif_mark_bi.v env_garbage_collector.v env_dispose_bi.v verif_dispose_bi.v verif_mark_bi_dag.v
 
-LIB_FILES = \
-  Coqlib.v
-
 CLIGHT_FILES = sample_mark/mark_bi.v sample_mark/garbage_collector.v sample_mark/dispose_bi.v
 
 C_FILES = $(CLIGHT_FILES:%.v=%.c)
@@ -53,7 +53,7 @@ NORMAL_FILES = \
   $(DATA_STRUCTURE_FILES:%.v=data_structure/%.v) \
   $(SAMPLE_MARK_FILES:%.v=sample_mark/%.v) \
   $(GRAPH_FILES:%.v=graph/%.v) \
-  $(LIB_FILES:%.v=%.v)
+  $(LIB_FILES:%.v=lib/%.v)
 
 $(NORMAL_FILES:%.v=%.vo): %.vo: %.v
 	@echo COQC $*.v

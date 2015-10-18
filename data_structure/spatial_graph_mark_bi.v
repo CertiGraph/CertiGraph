@@ -1,8 +1,9 @@
-Require Import Coq.Sets.Ensembles.
-Require Import Coq.Sets.Finite_sets.
+Require Import RamifyCoq.lib.Ensembles_ext.
+Require Import Coq.Lists.List.
 Require Import VST.msl.seplog.
 Require Import VST.msl.log_normalize.
-Require Import RamifyCoq.Coqlib.
+Require Import RamifyCoq.lib.Coqlib.
+Require Import RamifyCoq.lib.EquivDec_ext.
 Require Import RamifyCoq.msl_ext.abs_addr.
 Require Import RamifyCoq.msl_ext.seplog.
 Require Import RamifyCoq.msl_ext.log_normalize.

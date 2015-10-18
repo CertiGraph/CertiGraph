@@ -1,12 +1,14 @@
 Require Import Coq.Sets.Ensembles.
 Require Import Coq.Sets.Finite_sets.
 Require Import Coq.Arith.Arith.
+Require Import RamifyCoq.lib.Ensembles_ext.
 Require Import Coq.Lists.List.
 Require Import Coq.Logic.ProofIrrelevance.
 Require Import Coq.Logic.FunctionalExtensionality.
 Require Import Coq.Classes.Morphisms.
 Require Import Coq.Classes.Equivalence.
-Require Import RamifyCoq.Coqlib.
+Require Import RamifyCoq.lib.Coqlib.
+Require Import RamifyCoq.lib.List_ext.
 Require Import VST.msl.Coqlib2.
 Require Import RamifyCoq.graph.graph_model.
 Require Import RamifyCoq.graph.path_lemmas.

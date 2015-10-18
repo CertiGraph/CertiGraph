@@ -1,73 +1,13 @@
 Require Import Coq.Logic.ProofIrrelevance.
 Require Import Coq.Sets.Ensembles.
 Require Import Coq.Sets.Finite_sets.
-Require Import Coq.Lists.List.
 Require Import Coq.Classes.RelationClasses.
-Require Import RamifyCoq.Coqlib.
-
-Lemma Union_iff: forall U A B x, Ensembles.In U (Union U A B) x <-> Ensembles.In U A x \/ Ensembles.In U B x.
-Proof.
-  intros; split; intros.
-  + apply Constructive_sets.Union_inv; auto.
-  + destruct H; [apply Union_introl | apply Union_intror]; auto.
-Qed.
-
-Lemma Empty_set_iff: forall U x, Ensembles.In U (Empty_set U) x <-> False.
-Proof.
-  intros; split; intro; inversion H.
-Qed.
-
-Lemma Singleton_iff: forall U x y, Ensembles.In U (Singleton U x) y <-> x = y.
-Proof.
-  intros; split; intro.
-  + inversion H; auto.
-  + subst; constructor.
-Qed.
-
-Lemma Finite_spec: forall A U, Finite A U <-> exists l, NoDup l /\ forall x, In x l <-> Ensembles.In A U x.
-Proof.
-  intros.
-  split; intros.
-  + induction H.
-    - exists nil.
-      split; [constructor |].
-      intros.
-      rewrite Empty_set_iff; simpl; tauto.
-    - destruct IHFinite as [l [? ?]].
-      exists (x :: l).
-      split; [constructor; auto; rewrite H2; auto |]. 
-      intros x0; specialize (H2 x0).
-      simpl.
-      unfold Add.
-      rewrite Union_iff, Singleton_iff.
-      tauto.
-  + destruct H as [l [? ?]].
-    revert U H0; induction l; intros.
-    - replace U with (Empty_set A); [apply Empty_is_finite |].
-      apply Extensionality_Ensembles.
-      split; intros x ?; specialize (H0 x); simpl in *; repeat rewrite Empty_set_iff in *; tauto.
-    - replace U with (Add A (Subtract A U a) a);
-      [apply Union_is_finite | apply Extensionality_Ensembles].
-      * inversion H; subst.
-        apply IHl; [auto |].
-        intros x; specialize (H0 x).
-        unfold Subtract, Setminus; unfold Ensembles.In at 1.
-        simpl in H0.
-        rewrite Singleton_iff.
-        assert (a = x -> ~ In x l) by (intro; subst; auto).
-        tauto.
-      * unfold Subtract, Setminus; unfold Ensembles.In at 1.
-        rewrite Singleton_iff.
-        tauto.
-      * unfold Add, Subtract, Setminus.
-        split; intros ?; rewrite Union_iff;
-          [unfold Ensembles.In at 1 | unfold Ensembles.In at 2];
-          rewrite  Singleton_iff; intro;
-          specialize (H0 x); simpl in H0; [tauto |].
-        inversion H; subst.
-        assert (a = x -> ~ In x l) by (intro; subst; auto).
-        tauto.
-Qed.
+Require Export Coq.Classes.EquivDec.
+Require Import RamifyCoq.lib.EnumEnsembles.
+Require Import RamifyCoq.lib.EquivDec_ext.
+Require Import RamifyCoq.lib.List_ext.
+Require Import RamifyCoq.lib.relation_list.
+Require Import RamifyCoq.lib.Equivalence_ext.
 
 (******************************************
 
@@ -463,12 +403,11 @@ Proof.
   + intro; apply lge_trans.
 Defined.
 
-Lemma si_list: forall {A} (l: list A) (G1 G2: Graph), relation_list (fun _ (G1 G2: Graph) => G1 ~=~ G2) l G1 G2 -> G1 ~=~ G2.
+Lemma si_list: forall {A} (l: list A) (G1 G2: Graph), relation_list (map (fun _ (G1 G2: Graph) => G1 ~=~ G2) l) G1 G2 -> G1 ~=~ G2.
 Proof.
-  intros.
-  induction H.
-  + destruct H; auto.
-  + transitivity y; auto.
+  intros until l.
+  pose proof @resp_Equivalence Graph _ pg_lg structurally_identical.
+  apply eq_relation_list.
 Qed.
 
 End LABELED_GRAPH_EQUIV.

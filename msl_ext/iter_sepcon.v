@@ -1,7 +1,8 @@
 Require Import RamifyCoq.msl_ext.abs_addr.
 Require Import RamifyCoq.msl_ext.seplog.
 Require Import RamifyCoq.msl_ext.log_normalize.
-Require Import RamifyCoq.Coqlib.
+Require Import RamifyCoq.lib.Coqlib.
+Require Import RamifyCoq.lib.List_ext.
 Require Import VST.msl.Extensionality.
 Require Import VST.msl.simple_CCC.
 Require Import VST.msl.seplog.

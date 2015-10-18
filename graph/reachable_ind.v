@@ -3,7 +3,8 @@ Require Import Coq.Sets.Ensembles.
 Require Import Coq.Sets.Finite_sets.
 Require Import Coq.Lists.List.
 Require Import Coq.Classes.Morphisms.
-Require Import RamifyCoq.Coqlib.
+Require Import RamifyCoq.lib.EquivDec_ext.
+Require Import RamifyCoq.lib.List_ext.
 Require Import RamifyCoq.graph.graph_model.
 Require Import RamifyCoq.graph.find_not_in.
 Require Import RamifyCoq.graph.path_lemmas.

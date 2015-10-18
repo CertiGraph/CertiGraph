@@ -8,7 +8,6 @@ Require Import RamifyCoq.msl_ext.alg_seplog.
 Require Import RamifyCoq.sample_mark.env_mark_bi.
 Require Import RamifyCoq.veric_ext.SeparationLogic.
 Require Import RamifyCoq.floyd_ext.DataatSL.
-Require Import RamifyCoq.Coqlib.
 
 Local Open Scope logic.
 
