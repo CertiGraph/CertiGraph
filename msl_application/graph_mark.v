@@ -47,7 +47,7 @@ Hypothesis compute_vgamma_local: forall (G1 G2: Graph) (x: V),
 Hypothesis compute_egamma_local: forall (G1 G2: Graph) (e: E),
   evalid G1 e ->
   evalid G2 e ->
-  elabel_lg G1 e = elabel_lg G2 e ->
+  elabel G1 e = elabel G2 e ->
   src G1 e = src G2 e ->
   dst G1 e = dst G2 e ->
   compute_egamma G1 e = compute_egamma G2 e.
