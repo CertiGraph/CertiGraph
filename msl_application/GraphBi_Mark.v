@@ -2,6 +2,7 @@ Require Import RamifyCoq.lib.Ensembles_ext.
 Require Import Coq.Lists.List.
 Require Import VST.msl.seplog.
 Require Import VST.msl.log_normalize.
+Require Import VST.msl.Coqlib2.
 Require Import RamifyCoq.lib.Coqlib.
 Require Import RamifyCoq.lib.EquivDec_ext.
 Require Import RamifyCoq.msl_ext.abs_addr.
@@ -15,21 +16,18 @@ Require Import RamifyCoq.graph.reachable_ind.
 Require Import RamifyCoq.graph.subgraph2.
 Require Import RamifyCoq.graph.graph_gen.
 Require Import RamifyCoq.graph.dag.
-Require RamifyCoq.graph.marked_graph. Import RamifyCoq.graph.marked_graph.MarkGraph.
-Require Import RamifyCoq.msl_application.graph.
-Require Import RamifyCoq.data_structure.spatial_graph_bi.
+Require Import RamifyCoq.graph.weak_mark_lemmas.
+Require Import RamifyCoq.msl_application.Graph.
+Require Import RamifyCoq.msl_application.GraphBi.
+Require Import RamifyCoq.msl_application.Graph_Mark.
 Require Import Coq.Logic.Classical.
 Import RamifyCoq.msl_ext.seplog.OconNotation.
 
-Instance MGS: MarkGraphSetting bool.
-  apply (Build_MarkGraphSetting bool
-          (eq true)
-          (fun _ => true)
-          (fun _ => false));
+Instance MGS: WeakMarkGraph.MarkGraphSetting bool.
+  apply (WeakMarkGraph.Build_MarkGraphSetting bool
+          (eq true)).
   intros.
-  + destruct x; [left | right]; congruence.
-  + auto.
-  + congruence.
+  destruct x; [left | right]; congruence.
 Defined.
 
 Section SpatialGraph_Mark_Bi.
@@ -40,24 +38,25 @@ Context {sSGG_Bi: sSpatialGraph_Graph_Bi}.
 Lemma Graph_gen_true_mark1: forall (G: Graph) (x: addr) l r,
   vgamma G x = (false, l, r) ->
   vvalid G x ->
-  mark1 G x (Graph_gen G x true).
+  mark1 x (G: LabeledGraph _ _ _ _) (Graph_gen G x true: LabeledGraph _ _ _ _).
 Proof.
   intros.
   split; [| split; [| split]].
   + reflexivity.
-  + auto.
   + simpl.
-    unfold update_vlabel; simpl.
+    unfold update_vlabel.
     destruct_eq_dec x x; congruence.
   + intros.
     simpl.
     unfold update_vlabel; simpl.
     destruct_eq_dec x n'; [congruence |].
     reflexivity.
+  + intros.
+    reflexivity.
 Qed.
 
 Lemma gamma_true_mark: forall (g g': Graph) x y l r,
-    Decidable (vvalid g y) -> vgamma g x = (true, l, r) -> mark g y g' -> vvalid g' x-> vgamma g' x = (true, l, r).
+    Decidable (vvalid g y) -> vgamma g x = (true, l, r) -> mark y g g' -> vvalid g' x-> vgamma g' x = (true, l, r).
 Proof.
   intros.
   simpl in H0 |- *.

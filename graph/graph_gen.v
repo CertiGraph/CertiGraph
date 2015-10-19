@@ -2,8 +2,50 @@ Require Import Coq.Logic.ProofIrrelevance.
 Require Import Coq.Sets.Ensembles.
 Require Import Coq.Sets.Finite_sets.
 Require Import Coq.Lists.List.
+Require Import VST.msl.Coqlib2.
 Require Import RamifyCoq.lib.EquivDec_ext.
 Require Import RamifyCoq.graph.graph_model.
+Require Import RamifyCoq.graph.subgraph2.
+
+Section LABELED_GRAPH_GEN.
+
+Context {V E: Type}.
+Context {EV: EqDec V eq}.
+Context {EE: EqDec E eq}.
+Context {DV DE: Type}.
+
+Notation Graph := (LabeledGraph V E DV DE).
+
+Definition update_vlabel (vlabel: V -> DV) (x: V) (d: DV) :=
+  fun v => if equiv_dec x v then d else vlabel v.
+
+Definition update_dst (destination : E -> V) (e : E) (target: V) :=
+  fun v => if equiv_dec e v then target else destination v.
+
+Definition labeledgraph_vgen (g: Graph) (x: V) (a: DV) : Graph := Build_LabeledGraph _ _ g (update_vlabel (vlabel g) x a) (elabel g).
+
+Definition pregraph_gen_dst (g : PreGraph V E) (e : E) (t : V) :=
+  @Build_PreGraph V E EV EE (vvalid g) (evalid g) (src g) (update_dst (dst g) e t).
+
+Definition labeledgraph_gen_dst (g : Graph) (e : E) (t : V) :=
+  Build_LabeledGraph _ _ (pregraph_gen_dst g e t) (vlabel g) (elabel g).
+
+Lemma lg_vgen_stable: forall (g: Graph) (x: V) (d: DV),
+  (predicate_partial_labeledgraph (labeledgraph_vgen g x d) (fun y => x <> y)) ~=~
+   (predicate_partial_labeledgraph (labeledgraph_vgen g x d) (fun y => x <> y))%LabeledGraph.
+Proof.
+  intros.
+  split; [| split].
+  + simpl.
+    reflexivity.
+  + intros; simpl.
+    unfold update_vlabel.
+    if_tac; auto.
+  + intros; simpl.
+    reflexivity.
+Qed.
+
+End LABELED_GRAPH_GEN.
 
 Section GENERAL_GRAPH_GEN.
 
@@ -11,24 +53,15 @@ Context {V E: Type}.
 Context {EV: EqDec V eq}.
 Context {EE: EqDec E eq}.
 Context {DV DE: Type}.
-Context {P: PreGraph V E -> (V -> DV) -> (E -> DE) -> Type}.
+Context {P: LabeledGraph V E DV DE -> Type}.
 
 Notation Graph := (GeneralGraph V E DV DE P).
 
-Definition update_vlabel (vlabel: V -> DV) (x: V) (d: DV) :=
-  fun v => if equiv_dec x v then d else vlabel v.
-
-Definition generalgraph_gen (g: Graph) (x: V) (d: DV) (sound': P g (update_vlabel (vlabel g) x d) (elabel g)): Graph := @Build_GeneralGraph V E EV EE DV DE P (pg_gg g) (update_vlabel (vlabel g) x d) (elabel g) sound'.
-
-Definition update_dst (destination : E -> V) (e : E) (target: V) :=
-  fun v => if equiv_dec e v then target else destination v.
-
-Definition pregraph_gen_dst (g : PreGraph V E) (e : E) (t : V) :=
-  @Build_PreGraph V E EV EE (vvalid g) (evalid g) (src g) (update_dst (dst g) e t).
+Definition generalgraph_vgen (g: Graph) (x: V) (d: DV) (sound': P _): Graph := @Build_GeneralGraph V E EV EE DV DE P (labeledgraph_vgen g x d) sound'.
 
 Definition generalgraph_gen_dst (g: Graph) (e : E) (t : V)
-           (sound : P (pregraph_gen_dst g e t) (vlabel g) (elabel g)) : Graph :=
-  @Build_GeneralGraph V E EV EE DV DE P (pregraph_gen_dst g e t) (vlabel g) (elabel g) sound.
+           (sound' : P _) : Graph :=
+  @Build_GeneralGraph V E EV EE DV DE P (labeledgraph_gen_dst g e t) sound'.
 
 Lemma gen_dst_preserve_bi: forall (g: PreGraph V E) e t left_edge right_edge,
     BiGraph g left_edge right_edge -> BiGraph (pregraph_gen_dst g e t) left_edge right_edge.

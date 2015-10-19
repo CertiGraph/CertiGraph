@@ -18,7 +18,7 @@ Require Import RamifyCoq.graph.subgraph2.
 Require Import RamifyCoq.graph.graph_gen.
 Require Import RamifyCoq.graph.dag.
 Require Import RamifyCoq.graph.weak_mark_lemmas.
-Require Import RamifyCoq.msl_application.graph.
+Require Import RamifyCoq.msl_application.Graph.
 Require Import Coq.Logic.Classical.
 Import RamifyCoq.msl_ext.seplog.OconNotation.
 

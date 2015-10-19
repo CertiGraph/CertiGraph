@@ -11,6 +11,7 @@ Require Import RamifyCoq.graph.graph_model.
 Require Import RamifyCoq.graph.path_lemmas. Import RamifyCoq.graph.path_lemmas.PathNotation.
 Require Import RamifyCoq.graph.reachable_computable.
 Require Import RamifyCoq.graph.reachable_ind.
+Require Import RamifyCoq.graph.graph_gen.
 Require Import RamifyCoq.graph.subgraph2.
 Require Import RamifyCoq.graph.dual_graph.
 
@@ -59,7 +60,7 @@ Context {MGS: MarkGraphSetting DV}.
 Notation Graph := (LabeledGraph V E DV DE).
 
 Definition marked (g: Graph) : NodePred V.
-  refine (existT _ (fun v => label_marked (vlabel_lg g v)) _).
+  refine (existT _ (fun v => label_marked (vlabel g v)) _).
   intros.
   apply marked_dec.
 Defined.
@@ -76,8 +77,8 @@ Definition nothing (n : V) (g1 : Graph) (g2 : Graph) : Prop :=
 Definition mark1 (n : V) (g1 : Graph) (g2 : Graph) : Prop :=
   g1 ~=~ g2 /\
   marked g2 n /\
-  (forall n', n <> n' -> vvalid g1 n' -> vvalid g2 n' -> vlabel_lg g1 n' = vlabel_lg g2 n') /\
-  (forall e, evalid g1 e -> evalid g2 e -> elabel_lg g1 e = elabel_lg g2 e).
+  (forall n', n <> n' -> vvalid g1 n' -> vvalid g2 n' -> vlabel g1 n' = vlabel g2 n') /\
+  (forall e, evalid g1 e -> evalid g2 e -> elabel g1 e = elabel g2 e).
 
 Definition mark (root : V) (g1 : Graph) (g2 : Graph) : Prop :=
   (predicate_partialgraph g1 (Complement _ (reachable_by g1 root (unmarked g1)))) ~=~
@@ -155,8 +156,10 @@ Proof.
   split; [| split; [| split]].
   + reflexivity.
   + simpl.
+    unfold update_vlabel.
     destruct_eq_dec x x; [auto | congruence].
   + simpl; intros.
+    unfold update_vlabel.
     destruct_eq_dec x n'; [tauto | auto].
   + simpl; intros.
     auto.
