@@ -11,7 +11,7 @@ Require Import RamifyCoq.graph.path_lemmas.
 Require Import RamifyCoq.graph.subgraph2.
 Require Import RamifyCoq.graph.reachable_ind.
 Require Import RamifyCoq.graph.spanning_tree.
-Require Import RamifyCoq.data_structure.general_spatial_graph.
+Require Import RamifyCoq.msl_application.graph.
 Require Import RamifyCoq.data_structure.spatial_graph_bi.
 
 Instance MGS: MarkGraphSetting bool.

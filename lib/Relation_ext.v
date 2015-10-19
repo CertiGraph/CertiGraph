@@ -3,25 +3,6 @@ Require Import Coq.Classes.Morphisms.
 Require Export Coq.Classes.Equivalence.
 Require Coq.Setoids.Setoid.
 
-(*
-Inductive relation_list {A B: Type} {Req: relation A} {Req_Equiv: Equivalence Req} (R: B -> relation A): list B -> relation A :=
-  | relation_list_nil: forall x y, Req x y -> relation_list R nil x y
-  | relation_list_cons: forall x y z bs b, relation_list R bs x y -> R b y z -> relation_list R (bs ++ b :: nil) x z.
-
-Lemma relation_list_Intersection: forall {A B: Type} {Req: relation A} {Req_Equiv: Equivalence Req} (R1 R2 R3: B -> relation A) bs,
-  (forall b, same_relation _ (relation_conjunction (R1 b) (R2 b)) (R3 b)) ->
-  inclusion _ (relation_list R3 bs) (relation_conjunction (relation_list R1 bs) (relation_list R2 bs)).
-Proof.
-  intros.
-  hnf; intros.
-  induction H0.
-  - split; constructor; auto.
-  - apply (proj2 (H b)) in H1.
-    destruct H1, IHrelation_list.
-    split; econstructor; eauto.
-Qed.
-*)
-
 Lemma same_relation_spec: forall {A} a1 a2, same_relation A a1 a2 <-> pointwise_relation A (pointwise_relation A iff) a1 a2.
 Proof.
   intros.
@@ -77,14 +58,31 @@ Qed.
 Inductive compond_relation {A: Type} (R1 R2: relation A) : relation A :=
   | compond_intro: forall x y z, R1 x y -> R2 y z -> compond_relation R1 R2 x z.
 
+Lemma compond_relation_spec: forall {A} (R1 R2: relation A) x z,
+  compond_relation R1 R2 x z ->
+  exists y, R1 x y /\ R2 y z.
+Proof.
+  intros.
+  inversion H; subst.
+  eauto.
+Qed.
+
+Lemma compond_relation_inclusion: forall {A} (R1 R2 R3 R4: relation A),
+  inclusion _ R1 R2 ->
+  inclusion _ R3 R4 ->
+  inclusion _ (compond_relation R1 R3) (compond_relation R2 R4).
+Proof.
+  intros.
+  hnf; intros.
+  inversion H1; subst.
+  apply compond_intro with y0; auto.
+Qed.
+
 Instance compond_relation_proper {A: Type}: Proper (same_relation A ==> same_relation A ==> same_relation A) compond_relation.
 Proof.
   do 2 (hnf; intros).
-  rewrite same_relation_spec in H, H0 |- *.
-  unfold pointwise_relation in *.
-  intros; split; intro HH; inversion HH; subst.
-  + apply compond_intro with y1; firstorder.
-  + apply compond_intro with y1; firstorder.
+  destruct H, H0.
+  split; apply compond_relation_inclusion; auto.
 Defined.
 
 Lemma compond_assoc: forall {A: Type} (R1 R2 R3: relation A),
@@ -116,5 +114,23 @@ Proof.
     auto.
   + econstructor; eauto.
 Qed.
+
+Lemma relation_conjunction_inclusion: forall {A} (R1 R2 R3 R4: relation A),
+  inclusion _ R1 R2 ->
+  inclusion _ R3 R4 ->
+  inclusion _ (relation_conjunction R1 R3) (relation_conjunction R2 R4).
+Proof.
+  intros.
+  hnf; intros.
+  inversion H1; subst.
+  split; auto.
+Qed.
+
+Instance relation_conjunction_proper {A: Type}: Proper (same_relation A ==> same_relation A ==> same_relation A) relation_conjunction.
+Proof.
+  do 2 (hnf; intros).
+  destruct H, H0.
+  split; apply relation_conjunction_inclusion; auto.
+Defined.
 
 Definition respectful_relation {A B} (f: A -> B) (R: relation B): relation A := fun x y => R (f x) (f y).

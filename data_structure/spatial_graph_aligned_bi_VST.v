@@ -1,4 +1,4 @@
-Require Import RamifyCoq.data_structure.general_spatial_graph.
+Require Import RamifyCoq.msl_application.graph.
 Require Import RamifyCoq.data_structure.spatial_graph_bi.
 Require Import RamifyCoq.msl_ext.abs_addr.
 Require Import RamifyCoq.msl_ext.seplog.

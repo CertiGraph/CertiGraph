@@ -3,6 +3,7 @@ Require Import Coq.Classes.Morphisms.
 Require Export Coq.Classes.Equivalence.
 Require Export Coq.Sets.Ensembles.
 Require Import Coq.Sets.Constructive_sets.
+Require Import RamifyCoq.lib.Coqlib.
 
 Lemma Intersection_spec: forall A (v: A) P Q, Intersection _ P Q v <-> P v /\ Q v.
 Proof.
@@ -114,6 +115,34 @@ Proof.
   intros.
   firstorder.
 Qed.
+
+Lemma Ensemble_join_Intersection_Complement: forall {A} P Q,
+  Included Q P ->
+  (forall x, Q x \/ ~ Q x) ->
+  Prop_join Q (Intersection A P (Complement A Q)) P.
+Proof.
+  intros.
+  unfold Prop_join.
+  unfold Included, Ensembles.In in H.
+  split; intros x; specialize (H0 x); specialize (H x);
+  rewrite Intersection_spec; unfold Complement, Ensembles.In; try tauto.
+Qed.
+
+Instance Intersection_proper {A}: Proper ((pointwise_relation A iff) ==> (pointwise_relation A iff) ==> (pointwise_relation A iff)) (Intersection A).
+Proof.
+  do 2 (hnf; intros).
+  intro a; specialize (H0 a); specialize (H a).
+  rewrite !Intersection_spec.
+  tauto.
+Defined.
+
+Instance Prop_join_proper {A}: Proper ((pointwise_relation A iff) ==> (pointwise_relation A iff) ==> (pointwise_relation A iff) ==> iff) Prop_join.
+Proof.
+  intros.
+  do 3 (hnf; intros).
+  unfold pointwise_relation in *.
+  split; intros [? ?]; split; intro; firstorder.
+Defined.
 
 (*
 

@@ -7,7 +7,6 @@ Require Import VST.msl.Extensionality.
 Require Import VST.msl.simple_CCC.
 Require Import VST.msl.seplog.
 Require Import VST.msl.log_normalize.
-Require VST.veric.coqlib4.
 Require Import Coq.Lists.List.
 Require Import Coq.Sorting.Permutation.
 Require Export Coq.Classes.Morphisms.
@@ -363,7 +362,7 @@ Proof.
 Qed.
 
 Lemma pred_sepcon_sepcon: forall (P Q R: B -> Prop) p,
-  coqlib4.Ensemble_join P Q R ->
+  Prop_join P Q R ->
   pred_sepcon P p * pred_sepcon Q p = pred_sepcon R p.
 Proof.
   intros.

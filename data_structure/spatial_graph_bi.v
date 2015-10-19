@@ -13,7 +13,7 @@ Require Import RamifyCoq.graph.reachable_computable.
 Require Import RamifyCoq.graph.reachable_ind.
 Require Import RamifyCoq.graph.subgraph2.
 Require Import RamifyCoq.graph.graph_gen.
-Require Import RamifyCoq.data_structure.general_spatial_graph.
+Require Import RamifyCoq.msl_application.graph.
 Require Import Coq.Logic.Classical.
 Import RamifyCoq.msl_ext.seplog.OconNotation.
 

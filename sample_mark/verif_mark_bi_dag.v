@@ -6,7 +6,7 @@ Require Import RamifyCoq.graph.path_lemmas.
 Require Import RamifyCoq.graph.subgraph2.
 Require Import RamifyCoq.graph.dag.
 Require Import RamifyCoq.graph.reachable_computable.
-Require Import RamifyCoq.data_structure.general_spatial_graph.
+Require Import RamifyCoq.msl_application.graph.
 Require Import RamifyCoq.data_structure.spatial_graph_bi.
 Require Import RamifyCoq.data_structure.spatial_graph_mark_bi.
 Require Import RamifyCoq.data_structure.spatial_graph_aligned_bi_VST.
