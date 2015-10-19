@@ -1,14 +1,13 @@
 Require Import RamifyCoq.msl_ext.log_normalize.
 Require Import RamifyCoq.msl_ext.iter_sepcon.
-Require Import RamifyCoq.lib.List_ext.
+Require Import RamifyCoq.lib.Coqlib.
 Require Import RamifyCoq.lib.EquivDec_ext.
 Require Import RamifyCoq.lib.EnumEnsembles.
+Require Import RamifyCoq.lib.List_ext.
 Require Import VST.msl.base.
 Require Import VST.msl.simple_CCC.
 Require Import VST.msl.seplog.
 Require Import VST.msl.log_normalize.
-Require VST.veric.coqlib4.
-Require Import Coq.Lists.List.
 
 Local Open Scope logic.
 
@@ -589,8 +588,8 @@ Proof.
 Qed.
 
 Lemma pred_sepcon_ramify_pred: forall (Pg1 Pl1 Pg2 Pl2 PF: B -> Prop) p1 p2,
-  coqlib4.Ensemble_join Pl1 PF Pg1 ->
-  coqlib4.Ensemble_join Pl2 PF Pg2 ->
+  Prop_join Pl1 PF Pg1 ->
+  Prop_join Pl2 PF Pg2 ->
   (forall x, PF x -> p1 x = p2 x) ->
   pred_sepcon Pg1 p1 |-- pred_sepcon Pl1 p1 * (pred_sepcon Pl2 p2 -* pred_sepcon Pg2 p2).
 Proof.
@@ -605,8 +604,8 @@ Proof.
 Qed.
 
 Lemma pred_sepcon_ramify_pred_Q: forall {C: Type} (Pg1 Pl1 PF: B -> Prop) (PureF: C -> Prop) (Pg2 Pl2: C -> B -> Prop) (p1: B -> A) (p2: C -> B -> A),
-  coqlib4.Ensemble_join Pl1 PF Pg1 ->
-  (forall c, PureF c -> coqlib4.Ensemble_join (Pl2 c) PF (Pg2 c)) ->
+  Prop_join Pl1 PF Pg1 ->
+  (forall c, PureF c -> Prop_join (Pl2 c) PF (Pg2 c)) ->
   (forall c x, PureF c -> PF x -> p1 x = p2 c x) ->
   pred_sepcon Pg1 p1 |-- pred_sepcon Pl1 p1 * 
     (ALL c: C, !! PureF c -->

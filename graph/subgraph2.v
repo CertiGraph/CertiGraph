@@ -1,14 +1,12 @@
-Require Import Coq.Sets.Ensembles.
-Require Import Coq.Sets.Finite_sets.
 Require Import Coq.Arith.Arith.
-Require Import RamifyCoq.lib.Ensembles_ext.
-Require Import Coq.Lists.List.
 Require Import Coq.Logic.ProofIrrelevance.
 Require Import Coq.Logic.FunctionalExtensionality.
 Require Import Coq.Classes.Morphisms.
 Require Import Coq.Classes.Equivalence.
 Require Import RamifyCoq.lib.Coqlib.
+Require Import RamifyCoq.lib.Ensembles_ext.
 Require Import RamifyCoq.lib.List_ext.
+Require Import RamifyCoq.lib.EquivDec_ext.
 Require Import VST.msl.Coqlib2.
 Require Import RamifyCoq.graph.graph_model.
 Require Import RamifyCoq.graph.path_lemmas.
@@ -682,4 +680,69 @@ Proof.
 Qed.
 
 End SI_EQUIV.
+
+Section PartialLabeledGraph.
+
+Context {V E: Type}.
+Context {EV: EqDec V eq}.
+Context {EE: EqDec E eq}.
+Context {DV DE: Type}.
+
+Notation Graph := (LabeledGraph V E DV DE).
+
+Definition labeledgraph_vgen (g: Graph) (x: V) (a: DV) : Graph := Build_LabeledGraph _ _ g (fun v => if (equiv_dec x v) then a else vlabel_lg g v) (elabel_lg g).
+
+Definition predicate_sub_labeledgraph (g: Graph) (p: V -> Prop) :=
+  Build_LabeledGraph _ _ (predicate_subgraph g p) (vlabel_lg g) (elabel_lg g).
+
+Definition predicate_partial_labeledgraph (g: Graph) (p: V -> Prop) :=
+  Build_LabeledGraph _ _ (predicate_partialgraph g p) (vlabel_lg g) (elabel_lg g).
+
+Lemma lg_vgen_stable: forall (g: Graph) (x: V) (d: DV),
+  (predicate_partial_labeledgraph (labeledgraph_vgen g x d) (fun y => x <> y)) ~=~
+   (predicate_partial_labeledgraph (labeledgraph_vgen g x d) (fun y => x <> y))%LabeledGraph.
+Proof.
+  intros.
+  split; [| split].
+  + simpl.
+    reflexivity.
+  + intros; simpl.
+    if_tac; auto.
+  + intros; simpl.
+    reflexivity.
+Qed.
+
+Lemma si_stronger_partial_labeledgraph: forall (g1 g2: Graph) (p1 p2 p1' p2' p: V -> Prop),
+  (forall v, p1' v <-> p1 v /\ p v) ->
+  (forall v, p2' v <-> p2 v /\ p v) ->
+  (predicate_partial_labeledgraph g1 p1) ~=~ (predicate_partial_labeledgraph g2 p2)%LabeledGraph ->
+  (predicate_partial_labeledgraph g1 p1') ~=~ (predicate_partial_labeledgraph g2 p2')%LabeledGraph.
+Proof.
+  intros.
+  split; [| split].
+  + eapply si_stronger_partialgraph; eauto.
+    destruct H1 as [? _].
+    auto.
+  + intros.
+    simpl.
+    destruct H1 as [_ [? _]].
+    specialize (H1 v); simpl in H1; auto.
+  + intros.
+    simpl.
+    destruct H1 as [_ [_ ?]].
+    specialize (H1 e); simpl in H1; auto.
+Qed.
+
+Lemma si_stronger_partial_labeledgraph_simple: forall (g1 g2: Graph) (p p': V -> Prop),
+  Included p' p ->
+  (predicate_partial_labeledgraph g1 p) ~=~ (predicate_partial_labeledgraph g2 p)%LabeledGraph ->
+  (predicate_partial_labeledgraph g1 p') ~=~ (predicate_partial_labeledgraph g2 p')%LabeledGraph.
+Proof.
+  intros.
+  eapply si_stronger_partial_labeledgraph with (p := p'); [| | exact H0].
+  + intro v; specialize (H v); simpl in H; tauto.
+  + intro v; specialize (H v); simpl in H; tauto.
+Qed.
+
+End PartialLabeledGraph.
 

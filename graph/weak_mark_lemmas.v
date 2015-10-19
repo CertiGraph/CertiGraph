@@ -13,29 +13,6 @@ Require Import RamifyCoq.graph.reachable_computable.
 Require Import RamifyCoq.graph.reachable_ind.
 Require Import RamifyCoq.graph.subgraph2.
 Require Import RamifyCoq.graph.dual_graph.
-Require Import Coq.Classes.SetoidClass.
-Require Import Coq.Classes.Morphisms.
-
-
-
-Section PartialLabeledGraph.
-
-Context {V E: Type}.
-Context {EV: EqDec V eq}.
-Context {EE: EqDec E eq}.
-Context {DV DE: Type}.
-
-Notation Graph := (LabeledGraph V E DV DE).
-
-Definition labeledgraph_vgen (g: Graph) (x: V) (a: DV) : Graph := Build_LabeledGraph _ _ g (fun v => if (equiv_dec x v) then a else vlabel_lg g v) (elabel_lg g).
-
-Definition predicate_sub_labeledgraph (g: Graph) (p: V -> Prop) :=
-  Build_LabeledGraph _ _ (predicate_subgraph g p) (vlabel_lg g) (elabel_lg g).
-
-Definition predicate_partial_labeledgraph (g: Graph) (p: V -> Prop) :=
-  Build_LabeledGraph _ _ (predicate_partialgraph g p) (vlabel_lg g) (elabel_lg g).
-
-End PartialLabeledGraph.
 
 (*
 Definition DFS_acc {V E} {EV: EqDec V eq} {EE: EqDec E eq} (g: PreGraph V E) (P: V -> Prop) (x y: V) :=
@@ -125,9 +102,9 @@ Proof.
   unfold unmarked in H1; rewrite negateP_spec in H1; auto.
 Qed.
 
-Lemma lge_do_nothing: forall g1 g2 n, (g1 ~=~ g2)%LabeledGraph -> nothing n g1 g2.
+Lemma lge_do_nothing: forall n, inclusion _ labeled_graph_equiv (nothing n).
 Proof.
-  intros.
+  intros; hnf; intros.
   destruct H as [? [? ?]].
   split.
   + rewrite H.
@@ -136,6 +113,29 @@ Proof.
     simpl.
     rewrite H0.
     reflexivity.
+Qed.
+
+Lemma eq_do_nothing: forall n, inclusion _ eq (nothing n).
+Proof.
+  intros; hnf; intros.
+  destruct H as [? [? ?]].
+  split.
+  + reflexivity.
+  + intros.
+    reflexivity.
+Qed.
+
+Lemma mark_is_componded_mark: forall root x,
+  inclusion Graph (mark x) (componded root (mark x)).
+Proof.
+  intros.
+  unfold componded.
+  rewrite <- (compond_eq_right (mark x)) at 1.
+  rewrite <- (compond_eq_left (mark x)) at 1.
+  repeat apply compond_relation_inclusion.
+  + apply eq_do_nothing.
+  + hnf; auto.
+  + apply eq_do_nothing.
 Qed.
 
 Lemma mark1_mark_list_mark: forall root l (g1 g2: Graph)

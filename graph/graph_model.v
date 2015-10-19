@@ -1,8 +1,4 @@
 Require Import Coq.Logic.ProofIrrelevance.
-Require Import Coq.Sets.Ensembles.
-Require Import Coq.Sets.Finite_sets.
-Require Import Coq.Classes.RelationClasses.
-Require Export Coq.Classes.EquivDec.
 Require Import RamifyCoq.lib.EnumEnsembles.
 Require Import RamifyCoq.lib.EquivDec_ext.
 Require Import RamifyCoq.lib.List_ext.
@@ -464,3 +460,4 @@ Global Existing Instance npe_Equiv.
 Global Existing Instance si_Equiv.
 Global Existing Instance lge_Equiv.
 Global Existing Instance gge_Equiv.
+

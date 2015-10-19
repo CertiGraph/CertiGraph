@@ -6,7 +6,7 @@ CURRENT_DIR = $(shell pwd)
 COQC = coqc
 COQDEP=coqdep -slash
 
-DIRS = lib msl_ext graph heap_model_direct
+DIRS = lib msl_ext msl_application graph heap_model_direct
 INCLUDE_COMPCERT = -R $(COMPCERT_DIR) -as compcert
 INCLUDE_VST = -R $(VST_DIR) -as VST
 INCLUDE_RAMIFYCOQ = $(foreach d, $(DIRS), -R $(d) -as RamifyCoq.$(d)) -R "." -as RamifyCoq
@@ -22,6 +22,9 @@ MSL_EXT_FILES = \
   overlapping.v precise.v alg_seplog.v \
   overlapping_direct.v precise_direct.v alg_seplog_direct.v
 
+MSL_APPLICATION_FILES = \
+  graph.v graph_mark.v
+
 VERIC_EXT_FILES = \
   res_predicates.v seplog.v SeparationLogic.v
 
@@ -36,7 +39,7 @@ GRAPH_FILES = \
   spanning_tree.v dag.v marked_graph.v weak_mark_lemmas.v dual_graph.v 
 
 DATA_STRUCTURE_FILES = \
-  general_spatial_graph.v spatial_graph_mark_bi.v spatial_graph_bi.v spatial_graph_HMD.v spatial_graph_aligned_bi_VST.v spatial_graph_unaligned_bi_VST.v spatial_graph_dispose_bi.v spatial_graph_mark.v
+  spatial_graph_mark_bi.v spatial_graph_bi.v spatial_graph_HMD.v spatial_graph_aligned_bi_VST.v spatial_graph_unaligned_bi_VST.v spatial_graph_dispose_bi.v
 
 SAMPLE_MARK_FILES = \
   env_mark_bi.v verif_mark_bi.v env_garbage_collector.v env_dispose_bi.v verif_dispose_bi.v verif_mark_bi_dag.v
@@ -47,6 +50,7 @@ C_FILES = $(CLIGHT_FILES:%.v=%.c)
 
 NORMAL_FILES = \
   $(MSL_EXT_FILES:%.v=msl_ext/%.v) \
+  $(MSL_APPLICATION_FILES:%.v=msl_application/%.v) \
   $(VERIC_EXT_FILES:%.v=veric_ext/%.v) \
   $(FLOYD_EXT_FILES:%.v=floyd_ext/%.v) \
   $(HEAP_MODEL_DIRECT_FILES:%.v=heap_model_direct/%.v) \

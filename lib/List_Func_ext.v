@@ -3,7 +3,7 @@ Require Import RamifyCoq.lib.Relation_ext.
 Require Import RamifyCoq.lib.Equivalence_ext.
 Require Export Coq.Lists.List.
 
-Open Scope equiv_scope.
+Local Open Scope equiv_scope.
 
 Section ListFun2.
 
