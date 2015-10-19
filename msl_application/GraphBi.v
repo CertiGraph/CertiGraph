@@ -13,7 +13,7 @@ Require Import RamifyCoq.graph.reachable_computable.
 Require Import RamifyCoq.graph.reachable_ind.
 Require Import RamifyCoq.graph.subgraph2.
 Require Import RamifyCoq.graph.graph_gen.
-Require Import RamifyCoq.msl_application.graph.
+Require Import RamifyCoq.msl_application.Graph.
 Require Import Coq.Logic.Classical.
 Import RamifyCoq.msl_ext.seplog.OconNotation.
 
@@ -43,7 +43,7 @@ Class BiMaFin (g: PreGraph addr (addr * LR)) := {
   is_null_def': forall x: addr, is_null g x = (x = null)
 }.
 
-Definition Graph := (GeneralGraph addr (addr * LR) bool unit (fun g _ _ => BiMaFin g)).
+Definition Graph := (GeneralGraph addr (addr * LR) bool unit (fun g => BiMaFin g)).
 
 Identity Coercion G_GG : Graph >-> GeneralGraph.
 
@@ -86,7 +86,7 @@ Proof.
 Qed.
 
 Definition Graph_gen (G: Graph) (x: addr) (d: bool) : Graph :=
-  generalgraph_gen G x d (sound_gg G).
+  generalgraph_vgen G x d (sound_gg G).
 
 Definition Graph_gen_left_null (G : Graph) (x : addr) : Graph.
 Proof.
@@ -121,6 +121,7 @@ Proof.
   + auto.
 Qed.
 
+(* This lemma is not true. They are not even structural identical. *)
 Lemma Graph_gen_left_null_spatial_spec: forall (G: Graph) (x: addr) (d : bool) l r,
     vgamma G x = (d, l, r) ->
     (Graph_gen_left_null G x) -=- (spatialgraph_vgen G x (d, null, r)).

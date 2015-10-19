@@ -690,27 +690,11 @@ Context {DV DE: Type}.
 
 Notation Graph := (LabeledGraph V E DV DE).
 
-Definition labeledgraph_vgen (g: Graph) (x: V) (a: DV) : Graph := Build_LabeledGraph _ _ g (fun v => if (equiv_dec x v) then a else vlabel_lg g v) (elabel_lg g).
-
 Definition predicate_sub_labeledgraph (g: Graph) (p: V -> Prop) :=
-  Build_LabeledGraph _ _ (predicate_subgraph g p) (vlabel_lg g) (elabel_lg g).
+  Build_LabeledGraph _ _ (predicate_subgraph g p) (vlabel g) (elabel g).
 
 Definition predicate_partial_labeledgraph (g: Graph) (p: V -> Prop) :=
-  Build_LabeledGraph _ _ (predicate_partialgraph g p) (vlabel_lg g) (elabel_lg g).
-
-Lemma lg_vgen_stable: forall (g: Graph) (x: V) (d: DV),
-  (predicate_partial_labeledgraph (labeledgraph_vgen g x d) (fun y => x <> y)) ~=~
-   (predicate_partial_labeledgraph (labeledgraph_vgen g x d) (fun y => x <> y))%LabeledGraph.
-Proof.
-  intros.
-  split; [| split].
-  + simpl.
-    reflexivity.
-  + intros; simpl.
-    if_tac; auto.
-  + intros; simpl.
-    reflexivity.
-Qed.
+  Build_LabeledGraph _ _ (predicate_partialgraph g p) (vlabel g) (elabel g).
 
 Lemma si_stronger_partial_labeledgraph: forall (g1 g2: Graph) (p1 p2 p1' p2' p: V -> Prop),
   (forall v, p1' v <-> p1 v /\ p v) ->

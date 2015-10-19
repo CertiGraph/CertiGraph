@@ -23,7 +23,7 @@ MSL_EXT_FILES = \
   overlapping_direct.v precise_direct.v alg_seplog_direct.v
 
 MSL_APPLICATION_FILES = \
-  graph.v graph_mark.v
+  Graph.v Graph_Mark.v GraphBi.v GraphBi_Mark.v
 
 VERIC_EXT_FILES = \
   res_predicates.v seplog.v SeparationLogic.v
@@ -39,7 +39,7 @@ GRAPH_FILES = \
   spanning_tree.v dag.v marked_graph.v weak_mark_lemmas.v dual_graph.v 
 
 DATA_STRUCTURE_FILES = \
-  spatial_graph_mark_bi.v spatial_graph_bi.v spatial_graph_HMD.v spatial_graph_aligned_bi_VST.v spatial_graph_unaligned_bi_VST.v spatial_graph_dispose_bi.v
+  spatial_graph_HMD.v spatial_graph_aligned_bi_VST.v spatial_graph_unaligned_bi_VST.v spatial_graph_dispose_bi.v
 
 SAMPLE_MARK_FILES = \
   env_mark_bi.v verif_mark_bi.v env_garbage_collector.v env_dispose_bi.v verif_dispose_bi.v verif_mark_bi_dag.v
