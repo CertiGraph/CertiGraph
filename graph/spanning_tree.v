@@ -379,6 +379,24 @@ Module SIMPLE_SPANNING_TREE.
           * rewrite (reachable_by_eq _ _ _ P1 P2); auto.
     Qed.
 
+    Definition sub_is_tree (g1 g2: Graph) (P : V -> Prop) (es : list E) (e: E) :=
+      is_tree (predicate_partialgraph
+                 g2
+                 (reachable_by g1 (dst g1 e) (fun x : V => P x /\ ~ reachable_by_through_set g1 (map (dst g1) es) P x)))
+              (dst g1 e).
+
+    Inductive sub_is_tree_list: (V -> Prop) -> Graph -> list E -> Graph -> Prop :=
+    | sub_is_tree_list_nil: forall P g1 g2, g1 ~=~ g2 -> sub_is_tree_list P g1 nil g2
+    | sub_is_tree_list_cons: forall P g1 g2 e es, sub_is_tree g1 g2 P es e ->
+                                                     sub_is_tree_list P g1 es g2 -> sub_is_tree_list P g1 (es +:: e) g2.
+
+    Lemma sub_is_tree_list_is_tree: forall (P : V -> Prop) g1 root g2 l,
+        (forall e, In e l <-> out_edges g1 root e) -> P root ->
+        sub_is_tree_list (fun x => P x /\ x <> root) g1 l g2 ->
+        is_tree (predicate_partialgraph g2 (reachable_by g1 root P)) root.
+    Proof.
+    Admitted.
+      
     Lemma spanning_list_spanning_tree: forall (P: V -> Prop) g1 root g2 l,
         NoDup l -> (forall e, In e l <-> out_edges g1 root e) ->
         vvalid g1 root -> P root ->
@@ -405,11 +423,12 @@ Module SIMPLE_SPANNING_TREE.
             apply si_stronger_partialgraph_simple with (fun n : V => ~ g2 |= root ~o~> n satisfying P); auto.
             intro n. unfold Ensembles.In . do 2 intro. apply H12. clear H12.
             admit.
-      + induction H3.
-        - admit.
-        - destruct H5 as [[[? ?] [? [? [? ?]]]] | ?].
-          * assert (P0 (dst g2 e) /\ ~ reachable_by_through_set g1 (map (dst g1) es) P0 (dst g2 e)) by intuition.
-            specialize (H8 H11). clear H7 H9 H10 H11.
+      + apply sub_is_tree_list_is_tree with l; auto.
+        
+        induction H3. constructor. auto. apply sub_is_tree_list_cons.
+        - unfold sub_is_tree. destruct H5.
+          admit. admit.
+        -
     Abort.
 
   End SIMPLE_SPANNING.
