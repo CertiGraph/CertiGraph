@@ -103,6 +103,31 @@ Proof.
   unfold unmarked in H1; rewrite negateP_spec in H1; auto.
 Qed.
 
+Lemma mark_invalid_refl: forall (g: Graph) root, ~ vvalid g root -> mark root g g.
+Proof.
+  intros.
+  split; [| split].
+  + reflexivity.
+  + intros.
+    apply reachable_by_head_valid in H0.
+    tauto.
+  + intros.
+    reflexivity.
+Qed.
+
+Lemma mark_marked_root_refl: forall (g: Graph) root, marked g root -> mark root g g.
+Proof.
+  intros.
+  split; [| split].
+  + reflexivity.
+  + intros.
+    apply reachable_by_head_prop in H0.
+    unfold unmarked in H0; rewrite negateP_spec in H0.
+    tauto.
+  + intros.
+    reflexivity.
+Qed.
+
 Lemma lge_do_nothing: forall n, inclusion _ labeled_graph_equiv (nothing n).
 Proof.
   intros; hnf; intros.

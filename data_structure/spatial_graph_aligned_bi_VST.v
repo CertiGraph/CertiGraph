@@ -1,7 +1,7 @@
-Require Import RamifyCoq.msl_application.graph.
-Require Import RamifyCoq.data_structure.spatial_graph_bi.
 Require Import RamifyCoq.msl_ext.abs_addr.
 Require Import RamifyCoq.msl_ext.seplog.
+Require Import RamifyCoq.msl_application.Graph.
+Require Import RamifyCoq.msl_application.GraphBi.
 Require Import VST.veric.SeparationLogic.
 Require Import RamifyCoq.veric_ext.SeparationLogic.
 Require Import RamifyCoq.msl_ext.alg_seplog.

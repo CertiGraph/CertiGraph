@@ -35,6 +35,26 @@ Section SpatialGraph_Mark_Bi.
 Context {pSGG_Bi: pSpatialGraph_Graph_Bi}.
 Context {sSGG_Bi: sSpatialGraph_Graph_Bi}.
 
+Lemma mark_null_refl: forall (g: Graph), mark null g g.
+Proof.
+  intros.
+  apply mark_invalid_refl.
+  pose proof @valid_not_null _ _ _ _ g (maGraph g) null.
+  rewrite is_null_def in H.
+  tauto.
+Qed.
+
+Lemma mark_vgamma_true_refl: forall (g: Graph) root d l r, vgamma g root = (d, l, r) -> d = true -> mark root g g.
+Proof.
+  intros.
+  apply mark_marked_root_refl.
+  simpl in H.
+  unfold gamma in H.
+  inversion H.
+  simpl.
+  congruence.
+Qed.
+
 Lemma Graph_gen_true_mark1: forall (G: Graph) (x: addr) l r,
   vgamma G x = (false, l, r) ->
   vvalid G x ->
@@ -55,6 +75,33 @@ Proof.
     reflexivity.
 Qed.
 
+Lemma left_weak_valid: forall (G G1: Graph) (x l r: addr),
+  vgamma G x = (false, l, r) ->
+  vvalid G x ->
+  mark1 x G G1 ->
+  @weak_valid _ _ _ _ G1 (maGraph _) l.
+Proof.
+  intros.
+  destruct H1 as [? _].
+  eapply weak_valid_si; [symmetry; eauto |].
+  eapply gamma_left_weak_valid; eauto.
+Qed.
+
+Lemma right_weak_valid: forall (G G1 G2: Graph) (x l r: addr),
+  vgamma G x = (false, l, r) ->
+  vvalid G x ->
+  mark1 x G G1 ->
+  mark l G1 G2 ->
+  @weak_valid _ _ _ _ G2 (maGraph _) r.
+Proof.
+  intros.
+  destruct H1 as [? _].
+  destruct H2 as [_ ?].
+  eapply weak_valid_si; [symmetry; transitivity G1; eauto |].
+  eapply gamma_right_weak_valid; eauto.
+Qed.
+
+(*
 Lemma gamma_true_mark: forall (g g': Graph) x y l r,
     Decidable (vvalid g y) -> vgamma g x = (true, l, r) -> mark y g g' -> vvalid g' x-> vgamma g' x = (true, l, r).
 Proof.
@@ -766,7 +813,7 @@ Section SpatialGraph.
   Qed.
   
 *)
-
+*)
 End SpatialGraph_Mark_Bi.
 
 

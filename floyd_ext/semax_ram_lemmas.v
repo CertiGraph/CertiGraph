@@ -1,4 +1,8 @@
+Require Import RamifyCoq.lib.Ensembles_ext.
+Require Import RamifyCoq.lib.Relation_ext.
 Require Import RamifyCoq.lib.List_ext.
+Require Import RamifyCoq.veric_ext.SeparationLogic.
+Require Import RamifyCoq.floyd_ext.ramification.
 Require Import VST.floyd.base.
 Require Import VST.floyd.canon.
 Require Import VST.floyd.assert_lemmas.
@@ -7,18 +11,55 @@ Require Import VST.floyd.closed_lemmas.
 
 Local Open Scope logic.
 
+Lemma vars_relation_Included: forall P Q, Included P Q -> inclusion _ (vars_relation P) (vars_relation Q).
+Proof.
+  intros.
+  intros ? ? ?.
+  unfold vars_relation in *.
+  split.
+  + unfold Included, Ensembles.In in H.
+    destruct H0 as [? _].
+    firstorder.
+  + exact (proj2 H0).
+Qed.
+
+(*
+Definition ModsBox (s: list statement) :=
+  EnvironBox (vars_relation (fold_right (fun c P => Ensembles.Union _ (modifiedvars c) P) (Empty_set _) s)).
+
+Lemma ModsBox_cons: forall c s P,
+  ModsBox (c :: s) P |-- ModsBox s P.
+Proof.
+  intros.
+  unfold ModsBox.
+  apply EnvironBox_weaken.
+  apply vars_relation_Included.
+  simpl.
+  apply right_Included_Union.
+Qed.
+
+Lemma ModsBox_cons': forall {L G P c s},
+  G |-- L * ModsBox (c :: s) P ->
+  G |-- L * ModsBox s P.
+Proof.
+  intros.
+  eapply derives_trans; [exact H |].
+  apply sepcon_derives; auto.
+  apply ModsBox_cons.
+Qed.
+*)
 Module RAM_FRAME.
 
 Record SingleFrame' l g s: Type := {
   frame: environ -> mpred;
-  frame_sound: g |-- l * frame;
-  frame_closed: Forall (fun s => closed_wrt_modvars s frame) s
+  cont: statement;
+  frame_sound: g |-- l * ModBox (Ssequence s cont) frame
 }.
 
 Record SingleFrame: Type := {
   local_assert: environ -> mpred;
   global_assert: environ -> mpred;
-  stats: list statement;
+  stats: statement;
   real_frame: SingleFrame' local_assert global_assert stats
 }.
 
@@ -27,7 +68,7 @@ End RAM_FRAME.
 Definition SingleFrame' := RAM_FRAME.SingleFrame'.
 Definition SingleFrame := RAM_FRAME.SingleFrame.
 
-Arguments RAM_FRAME.Build_SingleFrame' {l} {g} {s} frame frame_sound frame_closed.
+Arguments RAM_FRAME.Build_SingleFrame' {l} {g} {s} frame cont frame_sound.
 
 Section SEMAX.
 
@@ -36,23 +77,25 @@ Context {cs: compspecs}.
 
 Inductive add_stats (s0: statement) : list SingleFrame -> list SingleFrame -> Prop :=
   | add_stats_nil : add_stats s0 nil nil
-  | add_stats_cons : forall l g s f fs fs' fc fc' F F', add_stats s0 F F' ->
+  | add_stats_cons : forall l g s cont f fs fs' F F', add_stats s0 F F' ->
       add_stats s0
-       (RAM_FRAME.Build_SingleFrame l g s (RAM_FRAME.Build_SingleFrame' f fs fc) :: F)
-       (RAM_FRAME.Build_SingleFrame l g (s0 :: s) (RAM_FRAME.Build_SingleFrame' f fs' fc') :: F')
+       (RAM_FRAME.Build_SingleFrame l g s (RAM_FRAME.Build_SingleFrame' f (Ssequence s0 cont) fs) :: F)
+       (RAM_FRAME.Build_SingleFrame l g (Ssequence s s0) (RAM_FRAME.Build_SingleFrame' f cont fs') :: F')
   .
 
-Definition SingleFrame'_inv {l g s0 s} (F: SingleFrame' l g (s0 :: s)) : SingleFrame' l g s :=
+Definition SingleFrame'_inv {l g s s0} (F: SingleFrame' l g (Ssequence s s0)) : SingleFrame' l g s :=
   match F with
-  | RAM_FRAME.Build_SingleFrame' f fs fc =>
-      RAM_FRAME.Build_SingleFrame' f fs (Forall_tl _ _ _ fc)
+  | RAM_FRAME.Build_SingleFrame' f cont fs =>
+      RAM_FRAME.Build_SingleFrame' f (Ssequence s0 cont) fs
   end.
+(* This use the fact that "modifiedvars (Ssequence (Ssequence s s0) cont)"
+and "modifiedvars (Ssequence s (Ssequence s0 cont))" are convertably equal. *)
 
 Lemma eexists_add_stats_cons: forall s0 l g s (F0: SingleFrame' _ _ _) F F',
   add_stats s0 F F' ->
   add_stats s0
    (RAM_FRAME.Build_SingleFrame l g s (SingleFrame'_inv F0) :: F)
-   (RAM_FRAME.Build_SingleFrame l g (s0 :: s) F0 :: F').
+   (RAM_FRAME.Build_SingleFrame l g (Ssequence s s0) F0 :: F').
 Proof.
   intros.
   destruct F0; unfold SingleFrame'_inv.
@@ -63,8 +106,8 @@ Qed.
 Fixpoint semax_ram (Delta: tycontext) (F: list SingleFrame) (P: environ -> mpred) (c: statement) (Q: ret_assert): Prop :=
   match F with
   | nil => semax Delta P c Q
-  | RAM_FRAME.Build_SingleFrame _ _ _ (RAM_FRAME.Build_SingleFrame' F0 _ _) :: F_tail =>
-      semax_ram Delta F_tail (P * F0) c Q
+  | RAM_FRAME.Build_SingleFrame _ _ s (RAM_FRAME.Build_SingleFrame' F0 cont _) :: F_tail =>
+      semax_ram Delta F_tail (P * ModBox (Ssequence s cont) F0) c Q
   end.
 
 Lemma semax_ram_pre: forall Delta F P P' c Q,
@@ -77,14 +120,14 @@ Opaque LiftNatDed' LiftSepLog'.
   revert P P' H0 H; induction F; intros; simpl in H0 |- *.
 Transparent LiftNatDed' LiftSepLog'.
   + eapply semax_pre0; eauto.
-  + destruct a as [l g s [F0 ? ?]].
+  + destruct a as [l g s [F0 cont ?]].
     eapply IHF; eauto.
     apply sepcon_derives; auto.
 Qed.
 
 Lemma semax_ram_localize: forall Delta F P c Q P',
-  (exists F0: SingleFrame' P' P nil,
-     semax_ram Delta (RAM_FRAME.Build_SingleFrame P' P nil F0 :: F) P' c Q) ->
+  (exists F0: SingleFrame' P' P Sskip,
+     semax_ram Delta (RAM_FRAME.Build_SingleFrame P' P Sskip F0 :: F) P' c Q) ->
   semax_ram Delta F P c Q.
 Proof.
   intros.
@@ -95,12 +138,11 @@ Proof.
 Qed.
 
 Lemma semax_ram_unlocalize: forall Delta l g s F P c Q P'
-  (frame_sound: g |-- l * (P -* P'))
-  (frame_closed: Forall (fun s => closed_wrt_modvars s (P -* P')) s),
+  (frame_sound: g |-- l * ModBox (Ssequence s Sskip) (P -* P')),
   semax_ram Delta F P' c Q ->
   semax_ram Delta
    (RAM_FRAME.Build_SingleFrame l g s
-     (RAM_FRAME.Build_SingleFrame' (P -* P') frame_sound frame_closed) :: F) P c Q.
+     (RAM_FRAME.Build_SingleFrame' (P -* P') Sskip frame_sound) :: F) P c Q.
 Proof.
   intros.
 Opaque LiftNatDed' LiftSepLog'.
@@ -109,9 +151,11 @@ Transparent LiftNatDed' LiftSepLog'.
   eapply semax_ram_pre; [| eauto].
   rewrite sepcon_comm.
   apply wand_sepcon_adjoint.
-  auto.
+  apply EnvironBox_T.
+  apply vars_relation_Equivalence.
 Qed.
 
+(*
 Lemma semax_ram_unlocalize': forall Delta l g s F P0 P1 P c Q P'
   (frame_sound: g |-- l * (P1 && (P -* P')))
   (frame_closed: Forall (fun s => closed_wrt_modvars s (P1 && (P -* P'))) s),
@@ -276,7 +320,7 @@ Opaque LiftNatDed' LiftSepLog'.
 Transparent LiftNatDed' LiftSepLog'.
   eapply semax_ram_pre; [| eauto]; auto.
 Qed.
-
+*)
 Lemma semax_ram_seq_skip:
   forall Delta F P c Q,
   semax_ram Delta F P c Q <-> semax_ram Delta F P (Ssequence c Sskip) Q.
@@ -288,7 +332,7 @@ Proof.
   + destruct a; destruct real_frame; simpl.
     apply IHF.
 Qed.
-  
+
 Lemma semax_ram_seq: forall Delta F F' P Q R c0 c1,
   add_stats c0 F F' ->
   semax Delta P c0 (normal_ret_assert Q) ->
@@ -303,7 +347,14 @@ Transparent LiftNatDed' LiftSepLog'.
   + eapply IHadd_stats; [| eauto].
     rewrite <- frame_normal.
     apply semax_frame; auto.
-    inversion fc'; subst; auto.
+    apply EnvironStable_var_relation_closed.
+    apply EnvironBox_EnvironStable_weaken; [apply vars_relation_Equivalence |].
+    apply vars_relation_Included.
+    hnf; unfold Ensembles.In, modifiedvars; simpl; intros.
+    rewrite modifiedvars'_union in H2 |- *.
+    rewrite (modifiedvars'_union _ c0).
+    rewrite (modifiedvars'_union _ cont).
+    tauto.
 Qed.
 
 Lemma semax_ram_seq': forall Delta F F' P Q R c,
