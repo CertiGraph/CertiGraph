@@ -1,4 +1,4 @@
-Require Import RamifyCoq.data_structure.genearl_spatial_graph.
+Require Import RamifyCoq.msl_application.Graph.
 Require Import VST.msl.seplog.
 Require Import VST.msl.log_normalize.
 Require Import VST.msl.alg_seplog_direct.

@@ -204,14 +204,25 @@ Proof.
   rewrite prop_imp by auto; auto.
 Qed.
 
-Lemma EnvironBox_andp: forall P Q, EnvironBox P && EnvironBox Q |-- EnvironBox (P && Q).
+Lemma EnvironBox_andp: forall P Q, EnvironBox (P && Q) = EnvironBox P && EnvironBox Q.
 Proof.
   intros.
-  unfold EnvironBox; simpl; intro rho.
-  apply allp_right; intro rho'.
-  apply -> imp_andp_adjoint; normalize.
-  apply andp_derives; apply (allp_left _ rho'); 
-  rewrite prop_imp by auto; auto.
+  unfold EnvironBox; apply pred_ext; simpl; intro rho.
+  + apply andp_right.
+    - apply allp_right; intro rho'.
+      apply -> imp_andp_adjoint; normalize.
+      apply (allp_left _ rho'); 
+      rewrite prop_imp by auto.
+      apply andp_left1; auto.
+    - apply allp_right; intro rho'.
+      apply -> imp_andp_adjoint; normalize.
+      apply (allp_left _ rho'); 
+      rewrite prop_imp by auto.
+      apply andp_left2; auto.
+  + apply allp_right; intro rho'.
+    apply -> imp_andp_adjoint; normalize.
+    apply andp_derives; apply (allp_left _ rho'); 
+    rewrite prop_imp by auto; auto.
 Qed.
 
 Lemma EnvironStable_EnvironBox: forall P, EnvironStable P -> EnvironBox P = P.
@@ -328,7 +339,7 @@ Proof.
   rewrite <- corable_sepcon_andp1 by auto.
   apply sepcon_derives; [auto |].
   rewrite <- (EnvironStable_EnvironBox g0) at 1 by auto.
-  eapply derives_trans; [apply EnvironBox_andp |].
+  rewrite <- EnvironBox_andp.
   apply EnvironBox_derives.
   apply allp_right; intro x.
   rewrite (andp_comm g0).
@@ -473,6 +484,26 @@ Proof.
 Qed.
   
 End Ramification_P.
+
+Lemma EnvironBox_allp: forall {A B Env : Type} {ND : NatDed A} (M: Env -> Env -> Prop) P, EnvironBox M (@allp _ _ B P) = ALL x: B, (EnvironBox M (P x)).
+Proof.
+  intros.
+  unfold EnvironBox; apply pred_ext; simpl; intro rho.
+  + apply allp_right; intro b.
+    apply allp_right; intro rho'.
+    apply imp_andp_adjoint; normalize.
+    apply (allp_left _ rho').
+    rewrite prop_imp by auto.
+    apply (allp_left _ b).
+    auto.
+  + apply allp_right; intro rho'.
+    apply imp_andp_adjoint; normalize.
+    apply allp_right; intro b.
+    apply (allp_left _ b).
+    apply (allp_left _ rho').
+    rewrite prop_imp by auto.
+    auto.
+Qed.
 
 Lemma EnvironBox_weaken: forall {A Env : Type} {ND : NatDed A} (M1 M2: Env -> Env -> Prop) P, inclusion _ M1 M2 -> EnvironBox M2 P |-- EnvironBox M1 P.
 Proof.
