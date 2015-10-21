@@ -73,13 +73,6 @@ Proof.
       apply H; simpl; auto.
 Qed.
 
-Lemma relation_conjunction_iff: forall {A} (R R': relation A) x y,
-  relation_conjunction R R' x y <-> R x y /\ R' x y.
-Proof.
-  intros.
-  reflexivity.
-Qed.
-
 Lemma relation_list_conjunction: forall {A B} (R R': B -> relation A) l,
   inclusion _ (relation_list (map (fun b => relation_conjunction (R b) (R' b)) l)) (relation_conjunction (relation_list (map R l)) (relation_list (map R' l))).
 Proof.

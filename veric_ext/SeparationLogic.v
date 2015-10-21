@@ -1,6 +1,7 @@
 Require Export RamifyCoq.msl_ext.seplog.
 Require Export RamifyCoq.msl_ext.log_normalize.
 Require Export RamifyCoq.msl_ext.alg_seplog.
+Require Export RamifyCoq.msl_ext.ramification_lemmas.
 Require Export RamifyCoq.veric_ext.seplog.
 Require Export VST.veric.address_conflict.
 Require Import VST.veric.SeparationLogic.

@@ -109,6 +109,22 @@ Proof.
   firstorder.
 Defined.
 
+Lemma left_Included_Union {A: Type}: forall P Q, Included P (Union A P Q).
+Proof.
+  intros.
+  intros ? ?.
+  rewrite Union_iff.
+  tauto.
+Qed.
+
+Lemma right_Included_Union {A: Type}: forall P Q, Included Q (Union A P Q).
+Proof.
+  intros.
+  intros ? ?.
+  rewrite Union_iff.
+  tauto.
+Qed.
+
 Lemma Complement_Included_rev: forall (U: Type) P Q, Included P Q -> Included (Complement U Q) (Complement U P).
 Proof.
   unfold Included, Complement, Ensembles.In.

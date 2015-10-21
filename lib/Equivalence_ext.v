@@ -1,6 +1,6 @@
 Require Import Coq.Classes.Morphisms.
 Require Import Coq.Lists.List.
-Require Import RamifyCoq.lib.Relation_ext.
+Require Export RamifyCoq.lib.Relation_ext.
 
 Instance list_Reflexive {A R} {EqA: @Equivalence A R}: Reflexive (Forall2 (@equiv A _ _)).
 Proof.

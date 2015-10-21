@@ -133,4 +133,37 @@ Proof.
   split; apply relation_conjunction_inclusion; auto.
 Defined.
 
+Lemma relation_conjunction_iff: forall {A} (R R': relation A) x y,
+  relation_conjunction R R' x y <-> R x y /\ R' x y.
+Proof.
+  intros.
+  reflexivity.
+Qed.
+
+Lemma relation_disjunction_iff: forall {A} (R R': relation A) x y,
+  relation_disjunction R R' x y <-> R x y \/ R' x y.
+Proof.
+  intros.
+  reflexivity.
+Qed.
+
+Lemma relation_disjunction_inclusion_left: forall {A} (R R': relation A),
+  inclusion _ R (relation_disjunction R R').
+Proof.
+  intros.
+  intros ? ? ?.
+  rewrite relation_disjunction_iff.
+  tauto.
+Qed.
+
+Lemma relation_disjunction_inclusion_right: forall {A} (R R': relation A),
+  inclusion _ R' (relation_disjunction R R').
+Proof.
+  intros.
+  intros ? ? ?.
+  rewrite relation_disjunction_iff.
+  tauto.
+Qed.
+
 Definition respectful_relation {A B} (f: A -> B) (R: relation B): relation A := fun x y => R (f x) (f y).
+

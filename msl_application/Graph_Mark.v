@@ -93,6 +93,22 @@ Definition mark x (G1: Graph) (G2: Graph) := WeakMarkGraph.mark x G1 G2 /\ G1 ~=
 
 Definition mark_list xs g1 g2 := relation_list (map mark xs) g1 g2.
 
+Lemma mark_invalid_refl: forall (g: Graph) root, ~ vvalid g root -> mark root g g.
+Proof.
+  intros.
+  split.
+  + apply WeakMarkGraph.mark_invalid_refl; auto.
+  + reflexivity.
+Qed.
+
+Lemma mark_marked_root_refl: forall (g: Graph) root, WeakMarkGraph.marked g root -> mark root g g.
+Proof.
+  intros.
+  split.
+  + apply WeakMarkGraph.mark_marked_root_refl; auto.
+  + reflexivity.
+Qed.
+
 (* This should be more trivial *)
 Lemma mark_list_eq: forall root g1 xs g2,
   mark_list xs g1 g2 ->

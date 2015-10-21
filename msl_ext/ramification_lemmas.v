@@ -471,8 +471,34 @@ Proof.
   apply andp_left1.
   auto.
 Qed.
-
+  
 End Ramification_P.
+
+Lemma EnvironBox_weaken: forall {A Env : Type} {ND : NatDed A} (M1 M2: Env -> Env -> Prop) P, inclusion _ M1 M2 -> EnvironBox M2 P |-- EnvironBox M1 P.
+Proof.
+  intros.
+  unfold EnvironBox.
+  intro rho.
+  apply allp_right; intro rho'.
+  apply (allp_left _ rho').
+  apply imp_andp_adjoint.
+  apply derives_extract_prop'; intro.
+  rewrite prop_imp by auto.
+  auto.
+Qed.
+
+Lemma EnvironBox_EnvironStable_weaken: forall {A Env : Type} {ND : NatDed A} (M1 M2: Env -> Env -> Prop) {EqM2: Equivalence M2} P, inclusion _ M1 M2 -> EnvironStable M1 (EnvironBox M2 P).
+(* This lemma is the reason why EqM is required. *)
+Proof.
+  intros.
+  unfold EnvironBox, EnvironStable; intros.
+  apply pred_ext; apply allp_right; intro rho''; apply (allp_left _ rho'');
+  apply imp_andp_adjoint; normalize; rewrite prop_imp; auto.
+  + apply H in H0.
+    rewrite H0; auto.
+  + apply H in H0.
+    rewrite <- H0; auto.
+Qed.
 
 Ltac solve_ramify_Q_with Fr :=
   match goal with
