@@ -6,9 +6,9 @@ Require Import RamifyCoq.graph.path_lemmas.
 Require Import RamifyCoq.graph.subgraph2.
 Require Import RamifyCoq.graph.dag.
 Require Import RamifyCoq.graph.reachable_computable.
-Require Import RamifyCoq.msl_application.graph.
-Require Import RamifyCoq.data_structure.spatial_graph_bi.
-Require Import RamifyCoq.data_structure.spatial_graph_mark_bi.
+Require Import RamifyCoq.msl_application.Graph.
+Require Import RamifyCoq.msl_application.GraphBi.
+Require Import RamifyCoq.msl_application.GraphBi_Mark.
 Require Import RamifyCoq.data_structure.spatial_graph_aligned_bi_VST.
 
 Local Open Scope logic.

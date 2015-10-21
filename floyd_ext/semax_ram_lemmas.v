@@ -23,31 +23,6 @@ Proof.
   + exact (proj2 H0).
 Qed.
 
-(*
-Definition ModsBox (s: list statement) :=
-  EnvironBox (vars_relation (fold_right (fun c P => Ensembles.Union _ (modifiedvars c) P) (Empty_set _) s)).
-
-Lemma ModsBox_cons: forall c s P,
-  ModsBox (c :: s) P |-- ModsBox s P.
-Proof.
-  intros.
-  unfold ModsBox.
-  apply EnvironBox_weaken.
-  apply vars_relation_Included.
-  simpl.
-  apply right_Included_Union.
-Qed.
-
-Lemma ModsBox_cons': forall {L G P c s},
-  G |-- L * ModsBox (c :: s) P ->
-  G |-- L * ModsBox s P.
-Proof.
-  intros.
-  eapply derives_trans; [exact H |].
-  apply sepcon_derives; auto.
-  apply ModsBox_cons.
-Qed.
-*)
 Module RAM_FRAME.
 
 Record SingleFrame' l g s: Type := {
