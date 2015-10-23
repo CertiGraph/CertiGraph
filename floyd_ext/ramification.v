@@ -108,6 +108,9 @@ Qed.
 
 Definition ModBox (c: statement) := EnvironBox (vars_relation (modifiedvars c)).
 
+Lemma go_lower_ModBox: forall c P rho, ModBox c P rho = ALL  rho' : environ , !!vars_relation (modifiedvars c) rho rho' --> P rho'.
+Proof. intros. reflexivity. Qed.
+
 Lemma semax_ramification_P: forall Delta c (G L L' G': environ -> mpred),
   G |-- L * ModBox c (L' -* G') ->
   semax Delta L c (normal_ret_assert L') ->

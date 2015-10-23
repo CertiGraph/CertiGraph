@@ -46,8 +46,8 @@ Proof.
   apply solve_ramify with ((l1' -* g1') * (l2' -* g2')).
   + rewrite (sepcon_assoc l1), <- (sepcon_assoc l2), (sepcon_comm l2), (sepcon_assoc _ l2), <- (sepcon_assoc l1).
     apply sepcon_derives; auto.
-  + rewrite <- (sepcon_assoc _ l1'), (sepcon_assoc _ _ l1'), (sepcon_comm _ l1'), <- (sepcon_assoc _ l1'), (sepcon_assoc _ _ l2').
-    apply sepcon_derives; rewrite sepcon_comm; apply modus_ponens_wand.
+  + eapply derives_trans; [apply sepcon_derives; [apply wand_sepcon_wand | apply derives_refl] |].
+    rewrite sepcon_comm; apply modus_ponens_wand.
 Qed.
 
 Lemma ramify_Q_reduce: forall {B} g l (g' l': B -> A),
@@ -236,6 +236,14 @@ Proof.
   auto.
 Qed.
 
+Lemma sepcon_EnvironBox_weaken: forall P Q R R', R |-- R' -> P |-- Q * EnvironBox R -> P |-- Q * EnvironBox R'.
+Proof.
+  intros.
+  eapply derives_trans; [apply H0 |].
+  apply sepcon_derives; auto.
+  apply EnvironBox_derives; auto.
+Qed.
+
 Lemma solve_ramify_P: forall (g l g' l' F: Env -> A),
   EnvironStable F ->
   g |-- l * F ->
@@ -282,8 +290,10 @@ Proof.
     apply EnvironBox_EnvironStable.
   + rewrite (sepcon_assoc l1), <- (sepcon_assoc l2), (sepcon_comm l2), (sepcon_assoc _ l2), <- (sepcon_assoc l1).
     apply sepcon_derives; auto.
-  + rewrite <- (sepcon_assoc _ l1'), (sepcon_assoc _ _ l1'), (sepcon_comm _ l1'), <- (sepcon_assoc _ l1'), (sepcon_assoc _ _ l2').
-    apply sepcon_derives; apply wand_sepcon_adjoint; apply EnvironBox_T.
+  + apply wand_sepcon_adjoint.
+    eapply derives_trans; [apply EnvironBox_sepcon |].
+    eapply derives_trans; [apply EnvironBox_T |].
+    apply wand_sepcon_wand.
 Qed.
 
 Lemma go_lower_ramify_P: forall (g l g' l': A),

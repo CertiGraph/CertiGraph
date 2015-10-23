@@ -85,6 +85,7 @@ Proof.
   assert (gl_weak_valid: weak_valid g l) by (eapply gamma_left_weak_valid; eauto).
   assert (gr_weak_valid: weak_valid g r) by (eapply gamma_right_weak_valid; eauto).
 *)
+
   localize
    (PROP  ()
     LOCAL (temp _x (pointer_val_val x))
@@ -99,14 +100,14 @@ Proof.
     | abbreviate_semax_ram].
   (* root_mark = x -> m; *)
 
-  unlocalize (PROP ()  LOCAL  (temp _root_mark (Vint (Int.repr (if d then 1 else 0))); temp _x (pointer_val_val x))  SEP  (`(graph sh x g))).
+  apply semax_ram_unlocalize with (P' := PROP ()  LOCAL  (temp _root_mark (Vint (Int.repr (if d then 1 else 0))); temp _x (pointer_val_val x))  SEP  (`(graph sh x g)));
+  gather_current_goal_with_evar.
   Grab Existential Variables.
-  Focus 6. { solve_split_by_closed. } Unfocus.
-  Focus 2. { entailer!. } Unfocus.
-  Focus 3. { entailer!. } Unfocus.
-  Focus 3. { repeat constructor; auto with closed. } Unfocus.
   Focus 2. {
-    entailer!. rewrite (update_self g (ValidPointer b i) (d, l, r)) at 2 by auto.
+    eapply canonical_ram_reduce0; [solve_split_by_closed | solve_LOCALx_entailer_tac | solve_LOCALx_entailer_tac | solve_LOCALx_entailer_tac | ].
+    eapply canonical_ram_reduce1; [repeat constructor | repeat constructor | repeat constructor | repeat constructor | unfold fold_right; entailer].
+
+    rewrite (update_self g (ValidPointer b i) (d, l, r)) at 2 by auto.
     apply (@graph_ramify_aux0 _ _ _ _ _ _ _ (SGA_VST sh) g _ (ValidPointer b i) (d, l, r) (d, l, r)); auto.
   } Unfocus.
   (* unlocalize *)
@@ -121,12 +122,12 @@ Proof.
     apply (exp_right g).
     entailer!.
     eapply (mark_vgamma_true_refl g); eauto.
-    destruct d; [auto | inversion H0].
+    clear - H0; destruct d; [auto | inversion H0].
   } Unfocus.
   Focus 1. { (* if-else branch *)
     forward. (* skip; *)
     entailer!.
-    destruct d; congruence.
+    clear - H0; destruct d; congruence.
   } Unfocus.
 
   normalize.
