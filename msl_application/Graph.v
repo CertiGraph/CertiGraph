@@ -304,7 +304,7 @@ Lemma vertices_at_eq': forall {A} (PureF: A -> Prop) (g: A -> Graph) (P: A -> V 
   EX a: A, !! PureF a && vertices_at (g a) (P a) = EX a: A, !! PureF a && (EX l: list V, !!(forall x, In x l <-> P a x) && !! (NoDup l) && iter_sepcon (map (Gamma (g a)) l) Graph_cell).
 Proof.
   intros.
-  apply exp_f_equal; intros a.
+  apply exp_congr; intros a.
   f_equal.
   apply vertices_at_eq.
 Qed.
@@ -346,7 +346,7 @@ Proof.
   } Unfocus.
   transitivity (graphs' (x :: nil) g).
   + unfold graph, graphs'.
-    apply exp_f_equal; intros l.
+    apply exp_congr; intros l.
     f_equal.
     apply ND_prop_ext.
     unfold reachable_list, reachable_set_list.

@@ -156,15 +156,6 @@ Transparent LiftNatDed' LiftSepLog'.
   auto.
 Qed.
 
-Lemma SEPx_sepcon: forall P Q R, PROPx P (LOCALx Q (SEPx R)) = PROPx P (LOCALx Q TT) && SEPx R.
-Proof.
-  intros.
-  unfold PROPx, LOCALx.
-  rewrite andp_TT.
-  rewrite andp_assoc.
-  auto.
-Qed.
-
 Lemma corable_PROP_LOCAL: forall P Q R, corable R -> corable (PROPx P (LOCALx Q R)).
 Proof.
 Opaque LiftNatDed' LiftSepLog' LiftCorableSepLog'.
@@ -178,55 +169,6 @@ Transparent LiftNatDed' LiftSepLog' LiftCorableSepLog'.
   simpl.
   intros.
   auto.
-Qed.
-
-Inductive split_by_closed:
- list statement -> list (environ -> Prop) -> list (environ -> Prop) -> list (environ -> Prop) -> Prop :=
- | split_by_closed_nil: forall s, split_by_closed s nil nil nil
- | split_by_closed_cons_closed: forall s q Q Q1 Q2,
-     Forall (fun s => closed_wrt_modvars s (local q)) s ->
-     split_by_closed s Q Q1 Q2 ->
-     split_by_closed s (q :: Q) (q :: Q1) Q2
- | split_by_closed_cons_unclosed: forall s q Q Q1 Q2,
-     split_by_closed s Q Q1 Q2 ->
-     split_by_closed s (q :: Q) Q1 (q :: Q2).
-
-Lemma insert_local': forall Q1 P Q R,
-  local Q1 && (PROPx P (LOCALx Q R)) = (PROPx P (LOCALx (Q1 :: Q) R)).
-Proof.
-intros. extensionality rho.
-unfold PROPx, LOCALx, local; super_unfold_lift. simpl.
-apply pred_ext; autorewrite with gather_prop; normalize;
-decompose [and] H; clear H.
-Qed.
-
-Lemma split_by_closed_spec: forall s P Q Q1 Q2,
-  split_by_closed s Q Q1 Q2 ->
-  Forall (fun s => closed_wrt_modvars s (PROPx P (LOCALx Q1 TT))) s /\
-  PROPx P (LOCALx Q TT) = PROPx P (LOCALx Q1 TT) && PROPx nil (LOCALx Q2 TT).
-Proof.
-  intros.
-  split.
-  + rewrite Forall_forall; intros.
-    induction H.
-    - auto with closed.
-    - spec IHsplit_by_closed; auto.
-      rewrite Forall_forall in H; specialize (H x H0).
-      rewrite <- insert_local'.
-      auto with closed.
-    - auto.
-  + induction H.
-    - apply add_andp.
-      change (PROP  ()  LOCAL ()  TT) with (TT && (local (`True) && TT)).
-      unfold local, lift1; unfold_lift; simpl; intros.
-      repeat apply andp_right; apply prop_right; auto.
-    - rewrite <- !insert_local'.
-      rewrite IHsplit_by_closed.
-      rewrite andp_assoc; auto.
-    - rewrite <- !insert_local'.
-      rewrite IHsplit_by_closed.
-      rewrite <- !andp_assoc.
-      rewrite (andp_comm (local q)); auto.
 Qed.
 
 Lemma frame_sound_aux: forall g l R P' Q1' R',

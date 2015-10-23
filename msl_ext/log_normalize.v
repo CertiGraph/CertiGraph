@@ -7,14 +7,6 @@ Require Import VST.msl.log_normalize.
 
 Local Open Scope logic.
 
-Lemma exp_f_equal: forall {A B} `{NatDed A} (P Q: B -> A), (* same as exp_congr in floyd, can be removed *)
-  (forall x, P x = Q x) ->
-  exp P = exp Q.
-Proof.
-  intros.
-  apply pred_ext; normalize; intro x; apply (exp_right x); rewrite H0; auto.
-Qed.
-
 Lemma exp_unit: forall {A} `{NatDed A} (P: unit -> A),
   exp P = P tt.
 Proof.
@@ -117,6 +109,54 @@ Proof.
   intros.
   rewrite sepcon_comm.
   apply sepcon_left1_corable_right; auto.
+Qed.
+
+Lemma corable_wand_corable: forall {A} {NA: NatDed A} {SA: SepLog A} {ClA: ClassicalSep A} {CoA: CorableSepLog A} (P Q: A),
+  corable P ->
+  corable Q -> 
+  P --> Q |-- P -* Q.
+Proof.
+  intros.
+  apply wand_sepcon_adjoint.
+  rewrite sepcon_corable_corable, andp_comm; auto.
+  apply modus_ponens.
+Qed.
+
+Lemma wand_sepcon_wand: forall {A} {NA: NatDed A} {SA: SepLog A} (P1 P2 Q1 Q2: A),
+  (P1 -* Q1) * (P2 -* Q2) |-- P1 * P2 -* Q1 * Q2.
+Proof.
+  intros.
+  rewrite <- wand_sepcon_adjoint.
+  rewrite (sepcon_comm P1), <- !sepcon_assoc, (sepcon_comm _ P1), (sepcon_assoc _ _ P2), <- (sepcon_assoc P1), (sepcon_comm _ P2).
+  apply sepcon_derives; apply modus_ponens_wand.
+Qed.
+
+Lemma corable_andp_wand_corable_andp: forall {A} {NA: NatDed A} {SA: SepLog A} {ClA: ClassicalSep A} {CoA: CorableSepLog A} (P1 P2 Q1 Q2: A),
+  corable P1 ->
+  corable Q1 -> 
+  (P1 --> Q1) && (P2 -* Q2) |-- P1 && P2 -* Q1 && Q2.
+Proof.
+  intros.
+  rewrite (andp_left_corable P1), (andp_left_corable Q1), (andp_left_corable (P1 --> Q1)) by auto.
+  eapply derives_trans; [| apply wand_sepcon_wand].
+  apply sepcon_derives; [| auto].
+  rewrite <- wand_sepcon_adjoint.
+  normalize.
+  rewrite <- andp_assoc.
+  apply andp_derives; [| auto].
+  rewrite andp_comm; apply modus_ponens.
+Qed.
+
+Lemma wand_corable_andp: forall {A} {NA: NatDed A} {SA: SepLog A} {CoA: CorableSepLog A} (P Q R: A),
+  corable Q ->
+  Q && (P -* R) |-- P -* Q && R.
+Proof.
+  intros.
+  apply wand_sepcon_adjoint.
+  normalize.
+  apply andp_derives; auto.
+  apply wand_sepcon_adjoint.
+  auto.
 Qed.
 
 Lemma ocon_sep_true: forall {A} `{OverlapSepLog A} (P Q: A), ocon P Q |-- P * TT.
@@ -460,7 +500,7 @@ Ltac normalize_overlap :=
 Lemma exp_emp: forall {A B} `{ClassicalSep B} (P: A -> B), EX x:A, P x * emp = EX x: A, P x.
 Proof.
   intros.
-  apply exp_f_equal.
+  apply exp_congr.
   intros.
   rewrite sepcon_emp.
   auto.
