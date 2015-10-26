@@ -1,5 +1,3 @@
-Require Import Coq.Sets.Ensembles.
-Require Import Coq.Sets.Finite_sets.
 Require Import VST.floyd.base.
 Require Import VST.floyd.canon.
 Require Import VST.floyd.assert_lemmas.
@@ -9,6 +7,7 @@ Require Import VST.floyd.semax_tactics.
 Require Import VST.floyd.local2ptree.
 Require Import VST.floyd.call_lemmas.
 Require Import VST.floyd.forward.
+Require Import RamifyCoq.lib.Coqlib.
 Require Import RamifyCoq.veric_ext.SeparationLogic.
 Require Import RamifyCoq.floyd_ext.ramification.
 Require Import RamifyCoq.floyd_ext.semax_ram_lemmas.
@@ -18,6 +17,71 @@ Require Import RamifyCoq.floyd_ext.comparable.
 
 Local Open Scope logic.
 
+Inductive RamAssu :=
+  | RamAssu_intro: forall A: Prop, A -> RamAssu.
+
+Inductive RamBind :=
+  | RamBind_intro: forall A: Type, A -> RamBind.
+
+Delimit Scope RamBind with RamBind.
+Delimit Scope RamAssu with RamAssu.
+Notation " [ ] " := (@nil RamAssu) : RamAssu.
+Notation " [ x ] " := (cons (RamAssu_intro _ x) nil) : RamAssu.
+Notation " [ x ; .. ; y ] " := (cons (RamAssu_intro _ x) .. (cons (RamAssu_intro _ y) nil) ..) : RamAssu.
+Notation " [ ] " := (@nil RamBind) : RamBind.
+Notation " [ x ] " := (cons (RamBind_intro _ x) nil) : RamBind.
+Notation " [ x ; .. ; y ] " := (cons (RamBind_intro _ x) .. (cons (RamBind_intro _ y) nil) ..) : RamBind.
+
+(* This is just a copy of fold_right. It is defined for more convenient unfolding. *)
+Definition fold_right' {A B} (f: B -> A -> A) (a0 : A): list B -> A :=
+  fix ff (l: list B) : A :=
+  match l with
+    | nil => a0
+    | cons b t => f b (ff t)
+  end.
+
+Definition Prop_of_RamAssu (p: RamAssu) :=
+  match p with
+  | RamAssu_intro A _ => A
+  end.
+
+Definition compute_frame (assu: list RamAssu) (P: environ -> mpred) :=
+  !! (fold_right' (fun b => and (Prop_of_RamAssu b)) True assu) --> P.
+
+Lemma compute_frame_sound: forall assu (P Q: environ -> mpred), P |-- compute_frame assu Q -> P |-- Q.
+Proof.
+  intros.
+  eapply derives_trans; [exact H |].
+  unfold compute_frame.
+  rewrite prop_imp; auto.
+  clear.
+  induction assu.
+  + simpl.
+    auto.
+  + simpl.
+    split; auto.
+    destruct a; simpl.
+    auto.
+Qed.
+
+(*
+Inductive NatDed_weaken : forall {A: Type} {NA: NatDed A} (P Q: A), Prop :=
+  | weaken_refl: forall {A: Type} {NA: NatDed A} (P: A), NatDed_weaken P P
+  | weaken_imp: forall {A: Type} {NA: NatDed A} (P Q: A) (R: Prop), R -> NatDed_weaken P Q -> NatDed_weaken (!! R --> P) Q
+  | weaken_allp: forall {A B: Type} {NA: NatDed A} (x: B) (P Q: B -> A), NatDed_weaken P Q -> NatDed_weaken (allp P) (Q x).
+
+Lemma NatDed_weaken_weaken: forall {A: Type} {NA: NatDed A} (P Q: A),
+  NatDed_weaken P Q -> P |-- Q.
+Proof.
+  intros.
+  induction H.
+  + auto.
+  + rewrite prop_imp by auto.
+    auto.
+  + apply allp_left'.
+    auto.
+Qed.
+*)
 Lemma PROPx_andp: forall P Q, PROPx P Q = PROPx P TT && Q.
 Proof.
   intros.
@@ -125,99 +189,158 @@ Proof.
   eapply check_specs_lemma'; eauto.
 Qed.
 
-(*
-Lemma canonical_ram_reduce00: forall (P0 Q0 P Q: env -> mpred),
-  corable P0 ->
-  corable Q0 ->
-  (P0 --> Q0) && (P0 
-*)
-Lemma canonical_ram_reduce0: forall QG RG QL RL s QL' RL' QG' QG1' QG2' RG',
-  split_by_closed s QG' QG1' QG2' ->
-  LOCALx QG TT |-- LOCALx QL TT ->
-  LOCALx QG TT |-- LOCALx QG1' TT ->
-  LOCALx QL' TT |-- LOCALx QG2' TT ->
-  SEPx RG |-- SEPx RL * ModBox s (SEPx RL' -* SEPx RG') ->
-  PROPx nil (LOCALx QG (SEPx RG)) |--
-  PROPx nil (LOCALx QL (SEPx RL)) *
-    ModBox s (PROPx nil (LOCALx QL' (SEPx RL')) -* 
-                PROPx nil (LOCALx QG' (SEPx RG'))).
+Lemma canonical_ram_reduce0: forall {A B C} {NA: NatDed A} (P Q: C -> B -> A),
+  allp Q |-- allp P ->
+  allp (fun x => Q (fst x) (snd x)) |-- allp (allp P).
 Proof.
   intros.
-  apply split_by_closed_spec in H.
-  destruct H.
+  eapply derives_trans; [| apply allp_derives; intro; apply H].
+  rewrite allp_uncurry.
+  apply derives_refl.
+Qed.
+
+Lemma canonical_ram_reduce1: forall {A} QG RG QL RL s QL' RL' QG' RG' (Pure: A -> Prop) QG1' QG2',
+  (forall a: A, exists TempG1 TempG2,
+    split_by_closed s (QG' a) TempG1 TempG2 /\
+    QG1' a = TempG1 /\
+    QG2' a = TempG2) ->
+  LOCALx QG TT |-- LOCALx QL TT ->
+  (forall a: A, LOCALx QG TT |-- LOCALx (QG1' a) TT) ->
+  (forall a: A, LOCALx (QL' a) TT |-- LOCALx (QG2' a) TT) ->
+  SEPx RG |-- SEPx RL *
+    ModBox s (ALL a: A, !! Pure a --> (SEPx (RL' a) -* SEPx (RG' a))) ->
+  PROPx nil (LOCALx QG (SEPx RG)) |--
+  PROPx nil (LOCALx QL (SEPx RL)) *
+    ModBox s (ALL a: A, !! Pure a -->
+               (PROPx nil (LOCALx (QL' a) (SEPx (RL' a))) -* 
+                  PROPx nil (LOCALx (QG' a) (SEPx (RG' a))))).
+Proof.
+  intros.
+  assert (forall a,
+            EnvironStable (vars_relation (modifiedvars s)) (LOCALx (QG1' a) TT) /\
+            LOCALx (QG' a) TT = LOCALx (QG1' a) TT && LOCALx (QG2' a) TT).
+  Focus 1. {
+    intro a; clear - H.
+    destruct (H a) as [? [? [? [? ?]]]].
+    subst.
+    apply split_by_closed_spec; auto.
+  } Unfocus.
+  pose proof (fun a => (proj1 (H4 a))).
+  pose proof (fun a => (proj2 (H4 a))).
+  clear H H4.
   rewrite !(PROPx_andp _ (LOCALx _ _)).
   rewrite !(LOCALx_andp _ (SEPx _)).
-  rewrite H4; clear H4 QG'.
 
   rewrite corable_andp_sepcon1 by apply corable_PROP.
   apply andp_derives; auto.
-
   rewrite corable_andp_sepcon1 by apply corable_LOCAL.
   apply andp_right; [apply andp_left1; auto |].
 
-  eapply sepcon_EnvironBox_weaken; [apply corable_andp_wand_corable_andp; try apply corable_PROP |].
-  eapply sepcon_EnvironBox_weaken; [apply andp_right; [| apply derives_refl]; apply imp_andp_adjoint; apply andp_left2; auto |].
+  eapply sepcon_EnvironBox_weaken with
+   (allp 
+     ((fun a: A => LOCALx (QG1' a) TT) && 
+      (fun a: A => LOCALx (QL' a) TT --> LOCALx (QG2' a) TT) && 
+      (fun a: A => 
+       (!!Pure a --> (SEPx (RL' a) -* SEPx (RG' a)))))).
+  Focus 1. {
+    apply allp_derives; intro a.
+    change
+     (((fun a0 : A => LOCALx (QG1' a0) TT) &&
+        (fun a0 : A => LOCALx (QL' a0) TT --> LOCALx (QG2' a0) TT) &&
+        (fun a0 : A => !!Pure a0 --> (SEPx (RL' a0) -* SEPx (RG' a0)))) a)
+    with
+     (LOCALx (QG1' a) TT &&
+      (LOCALx (QL' a) TT --> LOCALx (QG2' a) TT) &&
+      (!!Pure a --> (SEPx (RL' a) -* SEPx (RG' a)))).
+    rewrite !(PROPx_andp _ (LOCALx _ _)).
+    rewrite !(LOCALx_andp _ (SEPx _)).
+    rewrite H6.
+    unfold PROPx; simpl fold_right.
+    fold (@TT (environ -> mpred) _); rewrite !TT_andp.
+    rewrite <- imp_andp_adjoint.
+    apply derives_extract_prop'; intro; rewrite prop_imp by auto.
+    rewrite !andp_assoc.
+    eapply derives_trans; [| apply wand_corable_andp; apply corable_LOCAL].
+    apply andp_derives; auto.
+    apply corable_andp_wand_corable_andp; apply corable_LOCAL.
+  } Unfocus.
 
-  rewrite andp_assoc.  
-  eapply sepcon_EnvironBox_weaken; [apply wand_corable_andp; try apply corable_LOCAL |].
-  rewrite (EnvironBox_andp _ (LOCALx QG1' TT)).
-  rewrite (@EnvironStable_EnvironBox _ _ _ _ (vars_relation_Equivalence _) (LOCALx QG1' TT)) by auto.
-  rewrite corable_sepcon_andp1 by apply corable_LOCAL.
-  apply andp_derives; auto.
+  rewrite !allp_andp.
+  rewrite !@EnvironBox_andp.
+  rewrite andp_assoc, corable_sepcon_andp1
+    by (apply EnvironBox_corable, @corable_allp; intro; apply corable_LOCAL).
+  apply andp_derives.
+  Focus 1. {
+    rewrite @EnvironStable_EnvironBox.
+    + apply allp_right; intro a; auto.
+    + apply vars_relation_Equivalence.
+    + apply EnvironStable_allp; auto.
+  } Unfocus.
 
-  eapply sepcon_EnvironBox_weaken; [apply corable_andp_wand_corable_andp; try apply corable_LOCAL |].
-  eapply sepcon_EnvironBox_weaken; [apply andp_right; [| apply derives_refl]; apply imp_andp_adjoint; apply andp_left2; auto |].
-  auto.
+  rewrite corable_sepcon_andp1
+    by (apply EnvironBox_corable, @corable_allp; intro;
+        apply corable_imp; apply corable_LOCAL).
+  apply andp_right.
+  Focus 1. {
+    apply derives_trans with TT; [apply TT_right |].
+    rewrite <- (@EnvironBox_TT _ _ _ (vars_relation (modifiedvars s))) at 1.
+    apply EnvironBox_derives.
+    apply allp_right; intro a.
+    apply imp_andp_adjoint.
+    apply andp_left2; auto.
+   } Unfocus.      
+
+   auto.
 Qed.
 
-Lemma canonical_ram_reduce1: forall lG lL lL' lG' s G L L' G',
+Lemma canonical_ram_reduce2: forall {A: Type} lG lL lL' lG' s G L L' G' (Pure: A -> Prop),
   extract_trivial_liftx lG G ->
   extract_trivial_liftx lL L ->
-  extract_trivial_liftx lL' L' ->
-  extract_trivial_liftx lG' G' ->
-  fold_right sepcon emp G |--
-    fold_right sepcon emp L *
-     (fold_right sepcon emp L' -* fold_right sepcon emp G') ->
-  SEPx lG |-- SEPx lL * ModBox s (SEPx lL' -* SEPx lG').
+  (forall a: A, exists La', extract_trivial_liftx (lL' a) La' /\ L' a = La') ->
+  (forall a: A, exists Ga', extract_trivial_liftx (lG' a) Ga' /\ G' a = Ga') ->
+  fold_right' sepcon emp G |--
+    fold_right' sepcon emp L *
+     (ALL a: A, !! Pure a -->
+        (fold_right' sepcon emp (L' a) -* fold_right' sepcon emp (G' a))) ->
+  SEPx lG |-- SEPx lL * ModBox s (ALL a: A, !! Pure a --> (SEPx (lL' a) -* SEPx (lG' a))).
 Proof.
+  change @fold_right' with @fold_right.
   intros.
   apply extract_trivial_liftx_e in H.
   apply extract_trivial_liftx_e in H0.
-  apply extract_trivial_liftx_e in H1.
-  apply extract_trivial_liftx_e in H2.
   subst.
+
+  assert (forall a, lL' a = map liftx (L' a)).
+  Focus 1. {
+    intro a; destruct (H1 a) as [? [? ?]]; subst.
+    apply extract_trivial_liftx_e; auto.
+  } Unfocus.
+  assert (forall a, lG' a = map liftx (G' a)).
+  Focus 1. {
+    intro a; destruct (H2 a) as [? [? ?]]; subst.
+    apply extract_trivial_liftx_e; auto.
+  } Unfocus.
+
+  apply sepcon_EnvironBox_weaken with
+   (ALL  a : A , !!Pure a --> (SEPx (map liftx (L' a)) -* SEPx (map liftx (G' a)))).
+  Focus 1. {
+    apply allp_derives; intro a.
+    rewrite H, H0; auto.
+  } Unfocus.
+  clear - H3.
+
   intro rho; unfold SEPx at 1 2; simpl.
-  rewrite go_lower_ModBox.
+  fold (ModBox s); rewrite go_lower_ModBox.
   rewrite !fold_right_sepcon_liftx.
-  replace
-   (ALL  rho' : environ ,
-      !!vars_relation (modifiedvars s) rho rho' -->
-      (SEPx (map liftx L') rho' -* SEPx (map liftx G') rho')) with
-   (ALL  rho' : environ ,
-      !!vars_relation (modifiedvars s) rho rho' -->
-      (fold_right sepcon emp L' -* fold_right sepcon emp G'))
-  by (apply allp_congr; intro; unfold SEPx; simpl; rewrite !fold_right_sepcon_liftx; auto).
-  eapply derives_trans; [| apply sepcon_derives; [apply derives_refl | apply allp_derives; intro; apply imp_right2; apply derives_refl]].
-  erewrite (allp_forall _ _ rho) by (intros; simpl; reflexivity).
+
+  eapply derives_trans; [exact H3 |].
+  apply sepcon_derives; [apply derives_refl |].
+  apply allp_right; intro rho'.
+  apply imp_andp_adjoint; apply derives_extract_prop'; intro.
+  apply allp_derives; intro a.
+  rewrite !fold_right_sepcon_liftx.
   auto.
 Qed.
-
-(*
-
-Lemma canonical_ram_reduce0: forall PG QG RG PL QL RL s PL' QL' RL' PG' QG' QG1' QG2' RG',
-  split_by_closed s QG' QG1' QG2' ->
-  LOCALx QG TT |-- LOCALx QL TT ->
-  LOCALx QG TT |-- LOCALx QG1' TT ->
-  LOCALx QL' TT |-- LOCALx QG2' TT ->
-  PROPx PG (LOCALx nil (SEPx RG)) |--
-  PROPx PL (LOCALx nil (SEPx RL)) *
-    ModBox s (PROPx PL' (LOCALx nil (SEPx RL')) -* 
-                PROPx PG' (LOCALx nil (SEPx RG'))) ->
-  PROPx PG (LOCALx QG (SEPx RG)) |--
-  PROPx PL (LOCALx QL (SEPx RL)) *
-    ModBox s (PROPx PL' (LOCALx QL' (SEPx RL')) -* 
-                PROPx PG' (LOCALx QG' (SEPx RG'))).
-*)
 
 Lemma destruct_pointer_val_VP: forall x,
   pointer_val_val x <> nullval \/
@@ -348,18 +471,74 @@ Ltac solve_split_by_closed :=
     | apply split_by_closed_cons_closed; solve [repeat constructor; auto with closed]
     | apply split_by_closed_cons_unclosed].
 
-(*
-Ltac unlocalize Pre' :=
+Ltac super_solve_split :=
+  let a := fresh "a" in
+  intro a; eexists; eexists;
+  split; [solve_split_by_closed | split];
   match goal with
-  | RamFrame := @abbreviate _ (RAM_FRAME.Build_SingleFrame ?l ?g ?s _ :: ?F) |-
-    semax_ram ?Delta _ (PROPx ?P (LOCALx ?Q (SEPx ?R))) ?c ?Ret =>
-    clear_RamFrame_abbr;
-    match Pre' with
-    | PROPx ?P' (LOCALx ?Q' (SEPx ?R')) =>
-        eapply (fun Q1' Q2' => semax_ram_unlocalize_PROP_LOCAL_SEP Delta l g s F P Q R c Ret P' Q' Q1' Q2' R'); gather_current_goal_with_evar
-    end
+  | |- _ = ?r => super_pattern r a; apply eq_refl
   end.
+
+Inductive RamUnit: Type :=
+  | RamTT: RamUnit.
+
+Lemma allp_unit': forall {A: Type} {NA: NatDed A} (P: A), allp (fun _: RamUnit => P) |-- P.
+Proof.
+  intros.
+  (* rewrite allp_unit. *)
+  apply (allp_left _ RamTT).
+  apply derives_refl.
+Qed.
+
+Ltac construct_frame_bind bind :=
+  match bind with
+  | RamBind_intro _ ?x :: ?bind0 => 
+      match goal with
+      | |- _ |-- ?r =>
+          super_pattern r x;
+          apply (allp_left' x);
+          construct_frame_bind bind0
+      end
+  | nil =>
+      apply allp_unit'
+  end.
+
+(*
+   Solve this goal:
+   ? |--
+     PROPx nil (LOCALx QL' (SEPx RL')) -*
+       PROPx nil (LOCALx QG' (SEPx RG'))
 *)
+Ltac construct_frame assu bind :=
+  apply (compute_frame_sound assu);
+  unfold compute_frame, fold_right', Prop_of_RamAssu;
+  construct_frame_bind bind.
+      
+Ltac unlocalize' G' assu bind :=
+  clear_RamFrame_abbr;
+  match G' with
+  | PROPx ?PG' (LOCALx ?QG' (SEPx ?RG')) =>
+         pose_PROPx PG';
+         [ ..
+         | eapply semax_ram_unlocalize' with (P' := PROPx nil (LOCALx QG' (SEPx RG')));
+           [ construct_frame assu bind
+           | ]
+         ]
+  end;
+  gather_current_goal_with_evar.
+
+Tactic Notation "unlocalize" constr(G') "using" constr(assu) "binding" constr(bind) :=
+  unlocalize' G' assu bind.         
+                                    
+Tactic Notation "unlocalize" constr(G') "using" constr(assu) :=
+  unlocalize' G' assu []%RamBind.   
+                                    
+Tactic Notation "unlocalize" constr(G') "binding" constr(bind) :=
+  unlocalize' G' []%RamAssu bind.
+
+Tactic Notation "unlocalize" constr(G') :=
+  unlocalize' G' []%RamAssu []%RamBind.
+
 Lemma pointer_val_val_is_pointer_or_null: forall x,
   is_pointer_or_null (pointer_val_val x).
 Proof.

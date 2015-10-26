@@ -130,6 +130,25 @@ Transparent LiftNatDed' LiftSepLog'.
   apply vars_relation_Equivalence.
 Qed.
 
+Lemma semax_ram_unlocalize': forall Delta l g s F P c Q P' Frame
+  (frame_sound: g |-- l * ModBox (Ssequence s Sskip) Frame),
+  Frame |-- P -* P' ->
+  semax_ram Delta F P' c Q ->
+  semax_ram Delta
+   (RAM_FRAME.Build_SingleFrame l g s
+     (RAM_FRAME.Build_SingleFrame' Frame Sskip frame_sound) :: F) P c Q.
+Proof.
+  intros.
+Opaque LiftNatDed' LiftSepLog'.
+  simpl.
+Transparent LiftNatDed' LiftSepLog'.
+  eapply semax_ram_pre; [| eauto].
+  rewrite sepcon_comm.
+  apply wand_sepcon_adjoint.
+  eapply derives_trans; [| apply H].
+  apply EnvironBox_T; apply vars_relation_Equivalence.
+Qed.
+
 (*
 Lemma semax_ram_unlocalize': forall Delta l g s F P0 P1 P c Q P'
   (frame_sound: g |-- l * (P1 && (P -* P')))

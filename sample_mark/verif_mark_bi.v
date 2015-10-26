@@ -1,3 +1,4 @@
+Require Import RamifyCoq.lib.Coqlib.
 Require Import RamifyCoq.lib.EquivDec_ext.
 Require Import RamifyCoq.sample_mark.env_mark_bi.
 Require Import RamifyCoq.graph.graph_model.
@@ -81,10 +82,6 @@ Proof.
     apply H. auto.
   } Unfocus.
   destruct_pointer_val x. clear H0 H_weak_valid.
-(*
-  assert (gl_weak_valid: weak_valid g l) by (eapply gamma_left_weak_valid; eauto).
-  assert (gr_weak_valid: weak_valid g r) by (eapply gamma_right_weak_valid; eauto).
-*)
 
   localize
    (PROP  ()
@@ -100,12 +97,76 @@ Proof.
     | abbreviate_semax_ram].
   (* root_mark = x -> m; *)
 
-  apply semax_ram_unlocalize with (P' := PROP ()  LOCAL  (temp _root_mark (Vint (Int.repr (if d then 1 else 0))); temp _x (pointer_val_val x))  SEP  (`(graph sh x g)));
-  gather_current_goal_with_evar.
+  unlocalize (PROP ()  LOCAL  (temp _root_mark (Vint (Int.repr (if d then 1 else 0))); temp _x (pointer_val_val x))  SEP  (`(graph sh x g))).
+
   Grab Existential Variables.
   Focus 2. {
-    eapply canonical_ram_reduce0; [solve_split_by_closed | solve_LOCALx_entailer_tac | solve_LOCALx_entailer_tac | solve_LOCALx_entailer_tac | ].
-    eapply canonical_ram_reduce1; [repeat constructor | repeat constructor | repeat constructor | repeat constructor | unfold fold_right; entailer].
+    eapply sepcon_EnvironBox_weaken;
+      [ repeat first [apply canonical_ram_reduce0 | apply derives_refl]
+      | cbv beta ].
+
+match goal with
+| |- _ |-- _ * EnvironBox _ (allp ?Frame) =>
+  let a := fresh "a" in
+  let F := fresh "F" in
+    eapply @sepcon_EnvironBox_weaken; 
+    [ apply @allp_derives; intro a;
+      match goal with
+      | |- _ |-- !! ?Pure -->
+           (PROPx _ (LOCALx ?QL' (SEPx ?RL')) -*
+            PROPx _ (LOCALx ?QG' (SEPx ?RG'))) =>
+          try super_pattern Pure a;
+          try super_pattern QL' a;
+          try super_pattern QG' a;
+          try super_pattern RL' a;
+          try super_pattern RG' a
+      end;
+      match goal with
+      | |- _ |-- ?Right => super_pattern Right a; apply derives_refl
+      end
+    |]
+end.
+    eapply canonical_ram_reduce1;
+      [ super_solve_split
+      | solve_LOCALx_entailer_tac
+      | intro; solve_LOCALx_entailer_tac
+      | intro; solve_LOCALx_entailer_tac
+      | ].
+
+match goal with
+| |- _ |-- _ * ModBox _ (allp ?Frame) =>
+  let a := fresh "a" in
+  let F := fresh "F" in
+    eapply @sepcon_EnvironBox_weaken; 
+    [ apply @allp_derives; intro a;
+      match goal with
+      | |- _ |-- !! ?Pure --> (SEPx ?RL' -* SEPx ?RG') =>
+          try super_pattern Pure a;
+          try super_pattern RL' a;
+          try super_pattern RG' a
+      end;
+      match goal with
+      | |- _ |-- ?Right => super_pattern Right a; apply derives_refl
+      end
+    |]
+end.
+    eapply canonical_ram_reduce2;
+      [ repeat constructor
+      | repeat constructor
+      | let a := fresh "a" in
+        intro a;
+        eexists; split; [solve [repeat constructor] |];
+        match goal with
+        | |- _ = ?r => super_pattern r a; apply eq_refl
+        end
+      | let a := fresh "a" in
+        intro a;
+        eexists; split; [solve [repeat constructor] |];
+        match goal with
+        | |- _ = ?r => super_pattern r a; apply eq_refl
+        end
+      | unfold fold_right'].
+    rewrite !sepcon_emp.
 
     rewrite (update_self g (ValidPointer b i) (d, l, r)) at 2 by auto.
     apply (@graph_ramify_aux0 _ _ _ _ _ _ _ (SGA_VST sh) g _ (ValidPointer b i) (d, l, r) (d, l, r)); auto.

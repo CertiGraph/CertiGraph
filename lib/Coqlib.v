@@ -64,3 +64,9 @@ Tactic Notation "inv" hyp(H) := inversion H; clear H; subst.
 Tactic Notation  "icase" constr(v) := (destruct v; disc; contr; auto).
 Tactic Notation "copy" hyp(H) := (generalize H; intro).
 
+Ltac super_pattern t x :=
+  let t0 := fresh "t" in
+  set (t0 := t);
+  pattern x in t0;
+  cbv beta in (type of t0);
+  subst t0.
