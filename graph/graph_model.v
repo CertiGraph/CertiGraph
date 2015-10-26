@@ -350,6 +350,15 @@ Proof.
   tauto.
 Qed.
 
+Lemma out_edges_si: forall (g1 g2 : PreGraph Vertex Edge) (v: Vertex) (e : Edge),
+    g1 ~=~ g2 -> (out_edges g1 v e <-> out_edges g2 v e).
+Proof.
+  cut (forall (g1 g2: PreGraph Vertex Edge) v e, g1 ~=~ g2 -> out_edges g1 v e -> out_edges g2 v e).
+  + intros. split; intros; [apply (H g1) | apply (H g2)]; auto. symmetry; auto.
+  + intros. destruct H0. destruct H as [_ [? [? _]]].
+    specialize (H e). specialize (H2 e). split; [|rewrite <- H2]; intuition.
+Qed.
+
 Definition remove_edge (g1: PreGraph Vertex Edge) (e0: Edge) (g2: PreGraph Vertex Edge) :=
   (forall v : Vertex, (vvalid g1 v <-> vvalid g2 v)) /\
   (forall e : Edge, e <> e0 -> (evalid g1 e <-> evalid g2 e)) /\
