@@ -225,6 +225,27 @@ Proof.
     rewrite prop_imp by auto; auto.
 Qed.
 
+Lemma EnvironStable_allp: forall {T} P, (forall a: T, EnvironStable (P a)) -> EnvironStable (allp P).
+Proof.
+  intros.
+  unfold EnvironStable in *.
+  intros.
+  simpl.
+  apply allp_congr; intro a.
+  apply H; auto.
+Qed.
+
+Lemma EnvironBox_TT: EnvironBox TT = TT.
+Proof.
+  intros.
+  apply pred_ext.
+  + apply TT_right.
+  + unfold EnvironBox; intro rho.
+    apply allp_right; intro rho'.
+    apply imp_andp_adjoint.
+    simpl; apply TT_right.
+Qed.
+
 Lemma EnvironStable_EnvironBox: forall P, EnvironStable P -> EnvironBox P = P.
 Proof.
   intros.
@@ -242,6 +263,15 @@ Proof.
   eapply derives_trans; [apply H0 |].
   apply sepcon_derives; auto.
   apply EnvironBox_derives; auto.
+Qed.
+
+Lemma EnvironBox_corable: forall P, corable P -> corable (EnvironBox P).
+Proof.
+  intros.
+  simpl in H |- *.
+  intro.
+  unfold EnvironBox.
+  auto.
 Qed.
 
 Lemma solve_ramify_P: forall (g l g' l' F: Env -> A),
@@ -554,10 +584,7 @@ Ltac solve_ramify_Q_with Fr :=
         extensionality x; cbv beta;
         match goal with
         | |- ?P --> (?L' -* ?G') = _ =>
-             let v := fresh "v" in
-             set (v := P ); pattern x in v; cbv beta in (type of v); subst v;
-             set (v := L'); pattern x in v; cbv beta in (type of v); subst v;
-             set (v := G'); pattern x in v; cbv beta in (type of v); subst v
+             super_pattern P x; super_pattern L' x; super_pattern G' x
         end;
         match goal with
         | |- ?P _ --> (?L' _ -* ?G' _) = _ =>

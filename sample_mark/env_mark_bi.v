@@ -1,4 +1,4 @@
-Require Export RamifyCoq.msl_ext.log_normalize.
+Require Export RamifyCoq.veric_ext.SeparationLogic.
 Require Export VST.floyd.proofauto.
 Require Export RamifyCoq.floyd_ext.ramification.
 Require Export RamifyCoq.floyd_ext.semax_ram_lemmas.

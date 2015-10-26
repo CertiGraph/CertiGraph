@@ -30,16 +30,18 @@ Proof.
 Qed.
 
 Lemma allp_uncurry: forall {A} `{NatDed A} (S T: Type) (P: S -> T -> A),
-  allp (fun s => allp (P s)) = allp (fun st => P (fst st) (snd st)).
+  allp (allp P) = allp (fun st => P (fst st) (snd st)).
 Proof.
   intros.
   apply pred_ext.
   + apply allp_right; intros [s t].
-    apply (allp_left _ s).
+    simpl.
     apply (allp_left _ t).
+    apply (allp_left _ s).
     apply derives_refl.
-  + apply allp_right; intro s.
-    apply allp_right; intro t.
+  + apply allp_right; intro t.
+    simpl.
+    apply allp_right; intro s.
     apply (allp_left _ (s, t)).
     apply derives_refl.
 Qed.
@@ -177,6 +179,15 @@ Proof.
   apply (exp_right s).
   eapply allp_left.
   apply derives_refl.
+Qed.
+
+Lemma allp_left': forall {B A: Type} {NA: NatDed A} (x: B) (P Q: B -> A),
+  P |-- Q ->
+  allp P |-- Q x.
+Proof.
+  intros.
+  apply (allp_left _ x).
+  apply H.
 Qed.
 
 Lemma precise_andp_left: forall {A} `{PreciseSepLog A} P Q, precise P -> precise (P && Q).
