@@ -5,6 +5,7 @@ Require Import VST.msl.log_normalize.
 Require Import VST.msl.Coqlib2.
 Require Import RamifyCoq.lib.Coqlib.
 Require Import RamifyCoq.lib.EquivDec_ext.
+Require Import RamifyCoq.lib.relation_list.
 Require Import RamifyCoq.msl_ext.abs_addr.
 Require Import RamifyCoq.msl_ext.seplog.
 Require Import RamifyCoq.msl_ext.log_normalize.
@@ -23,6 +24,8 @@ Require Import RamifyCoq.msl_application.Graph_Mark.
 Require Import Coq.Logic.Classical.
 Import RamifyCoq.msl_ext.seplog.OconNotation.
 
+Open Scope logic.
+
 Instance MGS: WeakMarkGraph.MarkGraphSetting bool.
   apply (WeakMarkGraph.Build_MarkGraphSetting bool
           (eq true)).
@@ -35,24 +38,25 @@ Section SpatialGraph_Mark_Bi.
 Context {pSGG_Bi: pSpatialGraph_Graph_Bi}.
 Context {sSGG_Bi: sSpatialGraph_Graph_Bi}.
 
-Lemma mark_null_refl: forall (g: Graph), mark null g g.
+Lemma vlabel_eq: forall (g1 g2: Graph) x1 x2, (WeakMarkGraph.marked g1 x1 <-> WeakMarkGraph.marked g2 x2) -> vlabel g1 x1 = vlabel g2 x2.
 Proof.
   intros.
-  apply mark_invalid_refl.
-  pose proof @valid_not_null _ _ _ _ g (maGraph g) null.
-  rewrite is_null_def in H.
-  tauto.
+  simpl in H.
+  destruct H.
+  destruct (vlabel g1 x1), (vlabel g2 x2); try congruence.
+  + tauto.
+  + symmetry; tauto.
 Qed.
+
+Lemma mark_null_refl: forall (g: Graph), mark null g g.
+Proof. intros. apply mark_invalid_refl, invalid_null. Qed.
 
 Lemma mark_vgamma_true_refl: forall (g: Graph) root d l r, vgamma g root = (d, l, r) -> d = true -> mark root g g.
 Proof.
   intros.
   apply mark_marked_root_refl.
-  simpl in H.
-  unfold gamma in H.
   inversion H.
-  simpl.
-  congruence.
+  simpl; congruence.
 Qed.
 
 Lemma Graph_gen_true_mark1: forall (G: Graph) (x: addr) l r,
@@ -101,6 +105,111 @@ Proof.
   eapply gamma_right_weak_valid; eauto.
 Qed.
 
+Lemma graph_ramify_left: forall {RamUnit: Type} (g g1: Graph) x l r,
+  vvalid g x ->
+  vgamma g x = (false, l, r) ->
+  mark1 x g g1 ->
+  (graph x g1: pred) |-- graph l g1 *
+   (ALL a: RamUnit * Graph,
+     !! (mark l g1 (snd a)) -->
+     (graph l (snd a) -* graph x (snd a))).
+Proof.
+  intros.
+  destruct H1 as [? _].
+  eapply vertices_at_ramify_Q; auto.
+  + rewrite <- H1.
+    eapply Prop_join_reachable_left; eauto.
+  + intros.
+    destruct H2 as [_ ?].
+    rewrite <- H2, <- H1.
+    eapply Prop_join_reachable_left; eauto.
+  + intros ? [? ?] ? ?.
+    simpl; unfold gamma.
+    rewrite Intersection_spec in H4; unfold Complement, Ensembles.In in H4; destruct H4.
+    f_equal; [f_equal |].
+    - apply vlabel_eq.
+      apply (proj2 (proj2 H2)).
+      rewrite <- H1.
+      intro.
+      apply reachable_by_subset_reachable in H6; unfold Ensembles.In in H6.
+      tauto.
+    - apply dst_L_eq; auto.
+      rewrite H1 in H4.
+      apply reachable_foot_valid in H4; auto.
+    - apply dst_R_eq; auto.
+      rewrite H1 in H4.
+      apply reachable_foot_valid in H4; auto.
+Qed.
+
+Lemma graph_ramify_right: forall {RamUnit: Type} (g g1 g2: Graph) x l r,
+  vvalid g x ->
+  vgamma g x = (false, l, r) ->
+  mark1 x g g1 ->
+  mark l g1 g2 ->
+  (graph x g2: pred) |-- graph r g2 *
+   (ALL a: RamUnit * Graph,
+     !! (mark r g2 (snd a)) -->
+     (graph r (snd a) -* graph x (snd a))).
+Proof.
+  intros.
+  destruct H1 as [? _].
+  destruct H2 as [_ ?].
+  eapply vertices_at_ramify_Q; auto.
+  + rewrite <- H2, <- H1.
+    eapply Prop_join_reachable_right; eauto.
+  + intros.
+    destruct H3 as [_ ?].
+    rewrite <- H3, <- H2, <- H1.
+    eapply Prop_join_reachable_right; eauto.
+  + intros ? [? ?] ? ?.
+    simpl; unfold gamma.
+    rewrite Intersection_spec in H5; unfold Complement, Ensembles.In in H5; destruct H5.
+    f_equal; [f_equal |].
+    - apply vlabel_eq.
+      apply (proj2 (proj2 H3)).
+      rewrite <- H2, <- H1.
+      intro.
+      apply reachable_by_subset_reachable in H7; unfold Ensembles.In in H7.
+      tauto.
+    - apply dst_L_eq; auto.
+      rewrite H1, H2 in H5.
+      apply reachable_foot_valid in H5; auto.
+    - apply dst_R_eq; auto.
+      rewrite H1, H2 in H5.
+      apply reachable_foot_valid in H5; auto.
+Qed.
+
+Lemma mark1_mark_left_mark_right: forall (g1 g2 g3 g4: Graph) root l r,
+  vvalid g1 root ->
+  vgamma g1 root = (false, l, r) ->
+  mark1 root g1 g2 ->
+  mark l g2 g3 ->
+  mark r g3 g4 ->
+  mark root g1 g4.
+Proof.
+  intros.
+  apply (mark1_mark_list_mark root (l :: r :: nil)); auto.
+  + intros.
+    destruct_eq_dec x l; [| destruct_eq_dec x r; [| exfalso]].
+    - subst; eapply weak_valid_vvalid_dec, gamma_left_weak_valid; eauto.
+    - subst; eapply weak_valid_vvalid_dec, gamma_right_weak_valid; eauto.
+    - destruct H4 as [| [|]]; try congruence; inversion H4.
+  + intros; simpl.
+    inversion H0.
+    unfold Complement, Ensembles.In.
+    rewrite H5; congruence.
+  + hnf; intros.
+    apply gamma_step with (y := n') in H0; auto.
+    rewrite H0; simpl.
+    pose proof eq_sym_iff n' l.
+    pose proof eq_sym_iff n' r.
+    tauto.
+  + split_relation_list ((lg_gg g2) :: nil); eauto.
+    unfold mark_list.
+    simpl map.
+    split_relation_list ((lg_gg g3) :: nil); eauto.
+Qed.
+
 (*
 Lemma gamma_true_mark: forall (g g': Graph) x y l r,
     Decidable (vvalid g y) -> vgamma g x = (true, l, r) -> mark y g g' -> vvalid g' x-> vgamma g' x = (true, l, r).
@@ -120,55 +229,6 @@ Proof.
   f_equal; [f_equal |].
   + apply (left_valid g') in H2. assert (evalid g (x, L)) by (rewrite <- H5 in H2; auto). symmetry; apply H7; auto.
   + apply (right_valid g') in H2. assert (evalid g (x, R)) by (rewrite <- H5 in H2; auto). symmetry; apply H7; auto.
-Qed.
-
-Lemma mark1_mark_left_mark_right: forall (g1 g2 g3 g4: Graph) root l r,
-  vvalid g1 root ->
-  vvalid g2 root ->
-  vgamma g1 root = (false, l, r) ->
-  vgamma g2 root = (true, l, r) ->
-  vgamma g3 root = (true, l, r) ->
-  mark1 g1 root g2 ->
-  mark g2 l g3 ->
-  mark g3 r g4 ->
-  mark g1 root g4.
-Proof.
-  intros.
-  apply (mark1_mark_list_mark g1 root (l :: r :: nil) g2); auto.
-  + intros; apply Graph_reachable_by_dec.
-    destruct_eq_dec x l; [| destruct_eq_dec x r; [| exfalso]].
-    - subst; eapply weak_valid_vvalid_dec, gamma_left_weak_valid; eauto.
-    - subst; eapply weak_valid_vvalid_dec, gamma_right_weak_valid; eauto.
-    - destruct H7 as [| [|]]; try congruence; inversion H7.
-  + intros.
-    destruct_eq_dec x l; [| destruct_eq_dec x r; [| exfalso]].
-    - subst; eapply weak_valid_vvalid_dec, gamma_left_weak_valid; eauto.
-    - subst; eapply weak_valid_vvalid_dec, gamma_right_weak_valid; eauto.
-    - destruct H7 as [| [|]]; try congruence; inversion H7.
-  + apply Graph_reachable_by_dec.
-    left; auto.
-  + unfold unmarked; rewrite negateP_spec.
-    simpl in H1 |- *.
-    inversion H1.
-    destruct (vlabel g1 root); congruence.
-  + eapply gamma_step_list; eauto.
-  + repeat (econstructor; eauto).
-Qed.
-
-Lemma gamma_left_reachable_included: forall (g: Graph) x d l r,
-                                       vvalid g x -> vgamma g x = (d, l, r) -> Included (reachable g l) (reachable g x).
-Proof.
-  intros. intro y; intros. apply reachable_by_cons with l; auto. split; auto. split.
-  + apply reachable_head_valid in H1; auto.
-  + rewrite (gamma_step _ _ _ _ _ H H0). auto.
-Qed.
-
-Lemma gamma_right_reachable_included: forall (g: Graph) x d l r,
-                                        vvalid g x -> vgamma g x = (d, l, r) -> Included (reachable g r) (reachable g x).
-Proof.
-  intros. intro y; intros. apply reachable_by_cons with r; auto. split; auto. split.
-  + apply reachable_head_valid in H1; auto.
-  + rewrite (gamma_step _ _ _ _ _ H H0). auto.
 Qed.
 
 Lemma vgamma_is_true: forall (g : Graph) (x l r : addr), vgamma g x = (true, l, r) -> marked g x.

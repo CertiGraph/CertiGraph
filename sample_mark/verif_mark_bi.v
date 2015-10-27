@@ -101,73 +101,8 @@ Proof.
 
   Grab Existential Variables.
   Focus 2. {
-    eapply sepcon_EnvironBox_weaken;
-      [ repeat first [apply canonical_ram_reduce0 | apply derives_refl]
-      | cbv beta ].
-
-match goal with
-| |- _ |-- _ * EnvironBox _ (allp ?Frame) =>
-  let a := fresh "a" in
-  let F := fresh "F" in
-    eapply @sepcon_EnvironBox_weaken; 
-    [ apply @allp_derives; intro a;
-      match goal with
-      | |- _ |-- !! ?Pure -->
-           (PROPx _ (LOCALx ?QL' (SEPx ?RL')) -*
-            PROPx _ (LOCALx ?QG' (SEPx ?RG'))) =>
-          try super_pattern Pure a;
-          try super_pattern QL' a;
-          try super_pattern QG' a;
-          try super_pattern RL' a;
-          try super_pattern RG' a
-      end;
-      match goal with
-      | |- _ |-- ?Right => super_pattern Right a; apply derives_refl
-      end
-    |]
-end.
-    eapply canonical_ram_reduce1;
-      [ super_solve_split
-      | solve_LOCALx_entailer_tac
-      | intro; solve_LOCALx_entailer_tac
-      | intro; solve_LOCALx_entailer_tac
-      | ].
-
-match goal with
-| |- _ |-- _ * ModBox _ (allp ?Frame) =>
-  let a := fresh "a" in
-  let F := fresh "F" in
-    eapply @sepcon_EnvironBox_weaken; 
-    [ apply @allp_derives; intro a;
-      match goal with
-      | |- _ |-- !! ?Pure --> (SEPx ?RL' -* SEPx ?RG') =>
-          try super_pattern Pure a;
-          try super_pattern RL' a;
-          try super_pattern RG' a
-      end;
-      match goal with
-      | |- _ |-- ?Right => super_pattern Right a; apply derives_refl
-      end
-    |]
-end.
-    eapply canonical_ram_reduce2;
-      [ repeat constructor
-      | repeat constructor
-      | let a := fresh "a" in
-        intro a;
-        eexists; split; [solve [repeat constructor] |];
-        match goal with
-        | |- _ = ?r => super_pattern r a; apply eq_refl
-        end
-      | let a := fresh "a" in
-        intro a;
-        eexists; split; [solve [repeat constructor] |];
-        match goal with
-        | |- _ = ?r => super_pattern r a; apply eq_refl
-        end
-      | unfold fold_right'].
-    rewrite !sepcon_emp.
-
+    simplify_ramif.
+    subst.
     rewrite (update_self g (ValidPointer b i) (d, l, r)) at 2 by auto.
     apply (@graph_ramify_aux0 _ _ _ _ _ _ _ (SGA_VST sh) g _ (ValidPointer b i) (d, l, r) (d, l, r)); auto.
   } Unfocus.
@@ -232,12 +167,9 @@ end.
            temp _x (pointer_val_val x))
     SEP (`(graph sh x (Graph_gen g x true)))).
   Grab Existential Variables.
-  Focus 6. { solve_split_by_closed. } Unfocus.
-  Focus 2. { entailer!. } Unfocus.
-  Focus 3. { entailer!. } Unfocus.
-  Focus 3. { repeat constructor; auto with closed. } Unfocus.
   Focus 2. {
-    entailer!.
+    simplify_ramif.
+    subst.
     rewrite Graph_gen_spatial_spec by eauto.
     rewrite <- data_at_offset_zero.
     apply (@graph_ramify_aux0 _ _ _ _ _ _ _ (SGA_VST sh) g _ x (false, l, r) (true, l, r)); auto.
@@ -248,58 +180,50 @@ end.
 
   pose proof Graph_gen_true_mark1 g x _ _ H_GAMMA_g gx_vvalid.
   forget (Graph_gen g x true) as g1.
-(*
-  assert (g1x_valid: vvalid g1 x) by (apply (proj1 (proj1 H0)); auto).
-  assert (g1l_weak_valid: weak_valid g1 l) by (apply (weak_valid_si g g1 _ (proj1 H0)); auto).
-  assert (g1r_weak_valid: weak_valid g1 r) by (apply (weak_valid_si g g1 _ (proj1 H0)); auto).
-*)
+
   localize
    (PROP  (weak_valid g1 l)
     LOCAL (temp _l (pointer_val_val l))
     SEP   (`(graph sh l g1))).
+  1: eapply left_weak_valid; eauto.  
   (* localize *)
-  
+
   rewrite <- ram_seq_assoc.
   eapply semax_ram_seq;
   [ repeat apply eexists_add_stats_cons; constructor
-  | normalize; forward_call (sh, g1, l) g2; apply derives_refl
-  | abbreviate_semax_ram].
+  | semax_ram_call_body (sh, g1, l) 
+  | semax_ram_after_call; intros g2;
+    repeat (apply ram_extract_PROP; intro) ].
 
   unlocalize
    (PROP  ()
     LOCAL (temp _r (pointer_val_val r);
            temp _l (pointer_val_val l);
            temp _x (pointer_val_val x))
-    SEP (`((EX g2: Graph, !! mark l g1 g2 && graph sh x g2)))).
+    SEP (`(graph sh x g2)))
+  using [H3]%RamAssu
+  binding [g2]%RamBind.
   Grab Existential Variables.
-  Focus 6. { solve_split_by_closed. } Unfocus.
-  Focus 2. { entailer!. } Unfocus.
-  Focus 3. { entailer!. } Unfocus.
-  Focus 3. { repeat constructor; auto with closed. } Unfocus.
   Focus 2. {
-    entailer.
-    rewrite !exp_emp.
-    apply andp_right; [apply prop_right |].
-    + eapply left_weak_valid; eauto.
-    + eapply (@graph_ramify_aux1_left _ (sSGG_VST sh) g1); eauto.
+    simplify_ramif.
+    subst.
+    eapply (@graph_ramify_left _ (sSGG_VST sh) _ g); eauto.
   } Unfocus.
   (* unlocalize *)
 
   unfold semax_ram. (* should not need this *)
-  normalize; intros g2; normalize.
-  assert (g2x_valid: vvalid g2 x) by (apply (proj1 (proj1 H2)); auto).
-  assert (g2r_weak_valid: weak_valid g2 r) by (apply (weak_valid_si g1 g2 _ (proj1 H2)); auto).
-
   localize
-   (PROP  ()
+   (PROP  (weak_valid g2 r)
     LOCAL (temp _r (pointer_val_val r))
     SEP   (`(graph sh r g2))).
+  1: eapply right_weak_valid; eauto.  
   (* localize *)
   
   eapply semax_ram_seq;
   [ repeat apply eexists_add_stats_cons; constructor
-  | forward_call (sh, g2, r); apply derives_refl
-  | abbreviate_semax_ram].
+  | semax_ram_call_body (sh, g2, r) 
+  | semax_ram_after_call; intros g3;
+    repeat (apply ram_extract_PROP; intro) ].
   (* mark(r); *)
 
   unlocalize
@@ -307,17 +231,14 @@ end.
     LOCAL (temp _r (pointer_val_val r);
            temp _l (pointer_val_val l);
            temp _x (pointer_val_val x))
-    SEP (`(EX g3: Graph, !!mark g2 r g3 && graph sh x g3))).
+    SEP (`(graph sh x g3)))
+  using [H5]%RamAssu
+  binding [g3]%RamBind.
   Grab Existential Variables.
-  Focus 6. { solve_split_by_closed. } Unfocus.
-  Focus 2. { entailer!. } Unfocus.
-  Focus 3. { entailer!. } Unfocus.
-  Focus 3. { repeat constructor; auto with closed. } Unfocus.
   Focus 2. {
-    entailer!.
-    eapply (@graph_ramify_aux1_right _ (sSGG_VST sh) g2); eauto.
-    eapply gamma_true_mark; eauto.
-    apply weak_valid_vvalid_dec; auto.
+    simplify_ramif.
+    subst.
+    eapply (@graph_ramify_right _ (sSGG_VST sh) _ g); eauto.
   } Unfocus.
   (* Unlocalize *)
 
@@ -325,6 +246,4 @@ end.
   forward. (* ( return; ) *)
   apply (exp_right g3); entailer!.
   apply (mark1_mark_left_mark_right g g1 g2 g3 (ValidPointer b i) l r); auto.
-  eapply gamma_true_mark; eauto.
-  apply weak_valid_vvalid_dec; auto.
 Time Qed. (* Takes 3 hours. *)

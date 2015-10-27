@@ -329,6 +329,23 @@ Transparent LiftNatDed' LiftSepLog'.
     apply IHF; auto.
 Qed.
 
+Lemma ram_extract_PROP: forall Delta F (PP: Prop) (P: list Prop) QR c Post,
+  (PP -> semax_ram Delta F (PROPx P QR) c Post) ->
+  semax_ram Delta F (PROPx (PP :: P) QR) c Post.
+Proof.
+  intros.
+SearchAbout PROPx (@cons Prop).
+Opaque LiftNatDed' LiftSepLog'.
+  revert QR H; induction F; intros; simpl in H |- *.
+Transparent LiftNatDed' LiftSepLog'.
+  + apply semax_extract_PROP; auto.
+  + destruct a as [l g s [F0 ? ?]].
+    unfold PROPx in H |- *.
+    rewrite sepcon_andp_prop' in H |- *.
+    apply IHF.
+    auto.
+Qed.
+
 Lemma revert_exists_left: forall {A} (x : A) P (Q: environ -> mpred),
   (EX  x : A, P x) |-- Q ->
   (P x) |-- Q.

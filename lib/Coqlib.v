@@ -54,6 +54,12 @@ Definition Prop_join {A} (X Y Z: A -> Prop): Prop :=
 
 Definition Decidable (P: Prop) := {P} + {~ P}.
 
+Lemma decidable_prop_decidable: forall P: Prop, Decidable P -> P \/ ~ P.
+Proof.
+  intros.
+  destruct H; [left | right]; auto.
+Qed.
+
 Tactic Notation "spec" hyp(H) :=
   match type of H with ?a -> _ =>
     let H1 := fresh in (assert (H1: a); [|generalize (H H1); clear H H1; intro H]) end.
