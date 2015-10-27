@@ -494,6 +494,16 @@ Proof.
   exact (sepcon_wand_CCC _).
 Qed.
 
+Lemma sepcon_weaken: forall {A} {NA: NatDed A} {SA: SepLog A} (P Q R R': A),
+  R' |-- R ->
+  P |-- Q * R' ->
+  P |-- Q * R.
+Proof.
+  intros.
+  eapply derives_trans; eauto.
+  apply sepcon_derives; auto.
+Qed.
+
 Ltac normalize_overlap :=
   repeat
   match goal with

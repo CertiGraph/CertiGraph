@@ -1,3 +1,4 @@
+Require Import RamifyCoq.lib.Ensembles_ext.
 Require Import Coq.Lists.List.
 Require Import VST.msl.seplog.
 Require Import VST.msl.log_normalize.
@@ -76,17 +77,26 @@ Definition Graph_SpatialGraph (G: Graph): SpatialGraph addr (addr * LR) (bool * 
 
 Coercion Graph_SpatialGraph: Graph >-> SpatialGraph.
 
+Definition Graph_gen (G: Graph) (x: addr) (d: bool) : Graph :=
+  generalgraph_vgen G x d (sound_gg G).
+
 Lemma weak_valid_vvalid_dec: forall (g : Graph) (x: addr),
-  weak_valid g x -> {vvalid g x} + {~ vvalid g x}.
+  weak_valid g x -> Decidable (vvalid g x).
 Proof.
   intros.
   apply null_or_valid in H.
   destruct H; [right | left]; auto.
   pose proof valid_not_null g x; tauto.
 Qed.
+Hint Resolve weak_valid_vvalid_dec : GraphDec.
 
-Definition Graph_gen (G: Graph) (x: addr) (d: bool) : Graph :=
-  generalgraph_vgen G x d (sound_gg G).
+Lemma invalid_null: forall (g: Graph), ~ vvalid g null.
+Proof.
+  intros.
+  pose proof @valid_not_null _ _ _ _ g (maGraph g) null.
+  rewrite is_null_def in H.
+  tauto.
+Qed.
 
 Definition Graph_gen_left_null (G : Graph) (x : addr) : Graph.
 Proof.
@@ -185,6 +195,7 @@ Proof.
   rewrite <- H1.
   simpl in H0; tauto.
 Qed.
+Hint Resolve gamma_left_weak_valid : GraphDec.
 
 Lemma gamma_right_weak_valid: forall (g : Graph) x d l r, vvalid g x -> vgamma g x = (d, l, r) -> weak_valid g r.
 Proof.
@@ -198,6 +209,7 @@ Proof.
   rewrite <- H1.
   simpl in H0; tauto.
 Qed.
+Hint Resolve gamma_right_weak_valid : GraphDec.
 
 Lemma gamma_step_list: forall (g : Graph) x d l r, vvalid g x -> vgamma g x = (d, l, r) -> step_list g x (l :: r :: nil).
 Proof.
@@ -212,6 +224,17 @@ Proof.
   pose proof (@eq_sym _ y r).
   tauto.
 Qed.
+
+Lemma Graph_reachable_dec: forall (G: Graph) x,
+    Decidable (vvalid G x) -> forall y, Decidable (reachable G x y).
+Proof.
+  intros.
+  apply reachable_decidable; auto.
+  + apply maGraph.
+  + apply LocalFiniteGraph_FiniteGraph, finGraph.
+  + apply FiniteGraph_EnumCovered, finGraph.
+Qed.
+Hint Resolve Graph_reachable_dec : GraphDec.
 
 Lemma Graph_reachable_by_dec: forall (G: Graph) x (P: NodePred addr),
     Decidable (vvalid G x) -> ReachDecidable G x P.
@@ -249,6 +272,84 @@ Proof.
     apply H; simpl; unfold predicate_weak_evalid.
     - destruct H1. apply (right_valid G) in H1. rewrite H3. auto.
     - destruct H2. apply (right_valid G') in H2. rewrite H4. auto.
+Qed.
+
+Lemma gamma_left_reachable_included: forall (g: Graph) x d l r,
+                                       vvalid g x -> vgamma g x = (d, l, r) -> Included (reachable g l) (reachable g x).
+Proof.
+  intros. intro y; intros. apply reachable_by_cons with l; auto. split; auto. split.
+  + apply reachable_head_valid in H1; auto.
+  + rewrite (gamma_step _ _ _ _ _ H H0). auto.
+Qed.
+
+Lemma gamma_right_reachable_included: forall (g: Graph) x d l r,
+                                        vvalid g x -> vgamma g x = (d, l, r) -> Included (reachable g r) (reachable g x).
+Proof.
+  intros. intro y; intros. apply reachable_by_cons with r; auto. split; auto. split.
+  + apply reachable_head_valid in H1; auto.
+  + rewrite (gamma_step _ _ _ _ _ H H0). auto.
+Qed.
+
+Lemma Prop_join_reachable_left: forall (g: Graph) x d l r,
+  vvalid g x ->
+  vgamma g x = (d, l, r) ->
+  Prop_join
+    (reachable g l)
+    (Intersection _ (reachable g x) (Complement addr (reachable g l)))
+    (reachable g x).
+Proof.
+  intros.
+  apply Ensemble_join_Intersection_Complement.
+  - eapply gamma_left_reachable_included; eauto.
+  - intros.
+    apply gamma_left_weak_valid in H0; [| auto].
+    apply decidable_prop_decidable, Graph_reachable_dec, weak_valid_vvalid_dec; auto.
+Qed.
+
+Lemma Prop_join_reachable_right: forall (g: Graph) x d l r,
+  vvalid g x ->
+  vgamma g x = (d, l, r) ->
+  Prop_join
+    (reachable g r)
+    (Intersection _ (reachable g x) (Complement addr (reachable g r)))
+    (reachable g x).
+Proof.
+  intros.
+  apply Ensemble_join_Intersection_Complement.
+  - eapply gamma_right_reachable_included; eauto.
+  - intros.
+    apply gamma_right_weak_valid in H0; [| auto].
+    apply decidable_prop_decidable, Graph_reachable_dec, weak_valid_vvalid_dec; auto.
+Qed.
+
+Lemma dst_L_eq: forall (g1 g2: Graph) x,
+  vvalid g1 x ->
+  g1 ~=~ g2 ->
+  dst g1 (x, L) = dst g2 (x, L).
+Proof.
+  intros.
+  destruct H0 as [? [? [? ?]]].
+  assert (vvalid g2 x) by (clear - H H0; firstorder).
+  apply H3.
+  + eapply left_valid in H; [| apply biGraph].
+    auto.
+  + eapply left_valid in H4; [| apply biGraph].
+    auto.
+Qed.
+
+Lemma dst_R_eq: forall (g1 g2: Graph) x,
+  vvalid g1 x ->
+  g1 ~=~ g2 ->
+  dst g1 (x, R) = dst g2 (x, R).
+Proof.
+  intros.
+  destruct H0 as [? [? [? ?]]].
+  assert (vvalid g2 x) by (clear - H H0; firstorder).
+  apply H3.
+  + eapply right_valid in H; [| apply biGraph].
+    auto.
+  + eapply right_valid in H4; [| apply biGraph].
+    auto.
 Qed.
 
 End pSpatialGraph_Graph_Bi.

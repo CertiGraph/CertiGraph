@@ -164,7 +164,7 @@ Proof.
 
   rewrite GSG_VGenPreserve by eassumption.
 
-  apply vertices_at_ramify; auto.
+  apply vertices_at_ramify1; auto.
   apply reachable_refl.
   simpl; auto.
 Qed.

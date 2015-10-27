@@ -6,6 +6,7 @@ Require Import VST.floyd.reptype_lemmas. (* Related things should be moved to ot
 Require Import VST.floyd.semax_tactics.
 Require Import VST.floyd.local2ptree.
 Require Import VST.floyd.call_lemmas.
+Require Import VST.floyd.diagnosis.
 Require Import VST.floyd.forward.
 Require Import RamifyCoq.lib.Coqlib.
 Require Import RamifyCoq.veric_ext.SeparationLogic.
@@ -32,27 +33,69 @@ Notation " [ ] " := (@nil RamBind) : RamBind.
 Notation " [ x ] " := (cons (RamBind_intro _ x) nil) : RamBind.
 Notation " [ x ; .. ; y ] " := (cons (RamBind_intro _ x) .. (cons (RamBind_intro _ y) nil) ..) : RamBind.
 
-(* This is just a copy of fold_right. It is defined for more convenient unfolding. *)
-Definition fold_right' {A B} (f: B -> A -> A) (a0 : A): list B -> A :=
-  fix ff (l: list B) : A :=
-  match l with
-    | nil => a0
-    | cons b t => f b (ff t)
-  end.
-
 Definition Prop_of_RamAssu (p: RamAssu) :=
   match p with
   | RamAssu_intro A _ => A
   end.
 
+(* This is just two copy of fold_right and one copy of map.
+   They are defined for more convenient unfolding. *)
+Fixpoint fold_right_and_True_RamAssu (l: list RamAssu) :=
+  match l with
+  | nil => True
+  | P :: nil => Prop_of_RamAssu P
+  | P :: l0 => Prop_of_RamAssu P /\ fold_right_and_True_RamAssu l0
+  end.
+
+Fixpoint fold_right_sepcon_emp (l: list mpred) :=
+  match l with
+  | nil => emp
+  | P :: nil => P
+  | P :: l0 => P * fold_right_sepcon_emp l0
+  end.
+
+Lemma fold_right_and_True_spec: forall l,
+  @eq (environ -> mpred)
+    (!! fold_right_and_True_RamAssu l)
+    (!! fold_right and True (map Prop_of_RamAssu l)).
+Proof.
+  intros.
+  apply ND_prop_ext.
+  destruct l; [tauto |].
+  revert r; induction l; intros.
+  + simpl.
+    tauto.
+  + change (fold_right_and_True_RamAssu (r :: a :: l))
+      with (Prop_of_RamAssu r /\ fold_right_and_True_RamAssu (a :: l)).
+    change (fold_right and True (map Prop_of_RamAssu (r :: a :: l)))
+      with (Prop_of_RamAssu r /\ fold_right and True (map Prop_of_RamAssu (a :: l))).
+    specialize (IHl a).
+    tauto.
+Qed.
+
+Lemma fold_right_sepcon_emp_spec: forall l,
+  fold_right_sepcon_emp l = fold_right sepcon emp l.
+Proof.
+  intros.
+  destruct l; auto.
+  revert m; induction l; intros.
+  + simpl.
+    symmetry; apply sepcon_emp.
+  + change (fold_right_sepcon_emp (m :: a :: l)) with (m * fold_right_sepcon_emp (a::l)).
+    change (fold_right sepcon emp (m :: a :: l)) with (m * fold_right sepcon emp (a::l)).
+    specialize (IHl a).
+    rewrite IHl; auto.
+Qed.
+
 Definition compute_frame (assu: list RamAssu) (P: environ -> mpred) :=
-  !! (fold_right' (fun b => and (Prop_of_RamAssu b)) True assu) --> P.
+  !! (fold_right_and_True_RamAssu assu) --> P.
 
 Lemma compute_frame_sound: forall assu (P Q: environ -> mpred), P |-- compute_frame assu Q -> P |-- Q.
 Proof.
   intros.
   eapply derives_trans; [exact H |].
   unfold compute_frame.
+  rewrite fold_right_and_True_spec.
   rewrite prop_imp; auto.
   clear.
   induction assu.
@@ -298,13 +341,12 @@ Lemma canonical_ram_reduce2: forall {A: Type} lG lL lL' lG' s G L L' G' (Pure: A
   extract_trivial_liftx lL L ->
   (forall a: A, exists La', extract_trivial_liftx (lL' a) La' /\ L' a = La') ->
   (forall a: A, exists Ga', extract_trivial_liftx (lG' a) Ga' /\ G' a = Ga') ->
-  fold_right' sepcon emp G |--
-    fold_right' sepcon emp L *
+  fold_right_sepcon_emp G |--
+    fold_right_sepcon_emp L *
      (ALL a: A, !! Pure a -->
-        (fold_right' sepcon emp (L' a) -* fold_right' sepcon emp (G' a))) ->
+        (fold_right_sepcon_emp (L' a) -* fold_right_sepcon_emp (G' a))) ->
   SEPx lG |-- SEPx lL * ModBox s (ALL a: A, !! Pure a --> (SEPx (lL' a) -* SEPx (lG' a))).
 Proof.
-  change @fold_right' with @fold_right.
   intros.
   apply extract_trivial_liftx_e in H.
   apply extract_trivial_liftx_e in H0.
@@ -333,11 +375,13 @@ Proof.
   fold (ModBox s); rewrite go_lower_ModBox.
   rewrite !fold_right_sepcon_liftx.
 
+  rewrite !fold_right_sepcon_emp_spec in H3.
   eapply derives_trans; [exact H3 |].
   apply sepcon_derives; [apply derives_refl |].
   apply allp_right; intro rho'.
   apply imp_andp_adjoint; apply derives_extract_prop'; intro.
   apply allp_derives; intro a.
+  rewrite !fold_right_sepcon_emp_spec.
   rewrite !fold_right_sepcon_liftx.
   auto.
 Qed.
@@ -490,6 +534,13 @@ Proof.
   apply derives_refl.
 Qed.
 
+Lemma remove_allp_RamUnit: forall P Q R: mpred, P |-- Q * R -> P |-- Q * ALL _ : RamUnit, R.
+Proof.
+  intros.
+  eapply sepcon_weaken; [| eauto].
+  apply allp_right; auto.
+Qed.
+
 Ltac construct_frame_bind bind :=
   match bind with
   | RamBind_intro _ ?x :: ?bind0 => 
@@ -511,7 +562,7 @@ Ltac construct_frame_bind bind :=
 *)
 Ltac construct_frame assu bind :=
   apply (compute_frame_sound assu);
-  unfold compute_frame, fold_right', Prop_of_RamAssu;
+  unfold compute_frame, fold_right_and_True_RamAssu, Prop_of_RamAssu;
   construct_frame_bind bind.
       
 Ltac unlocalize' G' assu bind :=
@@ -538,6 +589,112 @@ Tactic Notation "unlocalize" constr(G') "binding" constr(bind) :=
 
 Tactic Notation "unlocalize" constr(G') :=
   unlocalize' G' []%RamAssu []%RamBind.
+
+Ltac simplify_ramif :=
+  eapply sepcon_EnvironBox_weaken;
+  [ repeat first [apply canonical_ram_reduce0 | apply derives_refl]
+  | cbv beta ];
+  
+  match goal with
+  | |- _ |-- _ * EnvironBox _ (allp ?Frame) =>
+    let a := fresh "a" in
+    let F := fresh "F" in
+      eapply @sepcon_EnvironBox_weaken; 
+      [ apply @allp_derives; intro a;
+        match goal with
+        | |- _ |-- !! ?Pure -->
+             (PROPx _ (LOCALx ?QL' (SEPx ?RL')) -*
+              PROPx _ (LOCALx ?QG' (SEPx ?RG'))) =>
+            try super_pattern Pure a;
+            try super_pattern QL' a;
+            try super_pattern QG' a;
+            try super_pattern RL' a;
+            try super_pattern RG' a
+        end;
+        match goal with
+        | |- _ |-- ?Right => super_pattern Right a; apply derives_refl
+        end
+      |]
+  end;
+
+  eapply canonical_ram_reduce1;
+    [ super_solve_split
+    | solve_LOCALx_entailer_tac
+    | intro; solve_LOCALx_entailer_tac
+    | intro; solve_LOCALx_entailer_tac
+    | ];
+
+  match goal with
+  | |- _ |-- _ * ModBox _ (allp ?Frame) =>
+    let a := fresh "a" in
+    let F := fresh "F" in
+      eapply @sepcon_EnvironBox_weaken; 
+      [ apply @allp_derives; intro a;
+        match goal with
+        | |- _ |-- !! ?Pure --> (SEPx ?RL' -* SEPx ?RG') =>
+            try super_pattern Pure a;
+            try super_pattern RL' a;
+            try super_pattern RG' a
+        end;
+        match goal with
+        | |- _ |-- ?Right => super_pattern Right a; apply derives_refl
+        end
+      |]
+  end;
+
+  eapply canonical_ram_reduce2;
+    [ repeat constructor
+    | repeat constructor
+    | let a := fresh "a" in
+      intro a;
+      eexists; split; [solve [repeat constructor] |];
+      match goal with
+      | |- _ = ?r => super_pattern r a; apply eq_refl
+      end
+    | let a := fresh "a" in
+      intro a;
+      eexists; split; [solve [repeat constructor] |];
+      match goal with
+      | |- _ = ?r => super_pattern r a; apply eq_refl
+      end
+    | unfold fold_right_sepcon_emp];
+
+  try
+   (let a := fresh "a" in
+    eapply @sepcon_weaken; 
+    [ apply @allp_derives; intro a;
+      match goal with
+      | |- ?Left |-- !! True --> ?F =>
+          let ll := fresh "l" in
+          set (ll := Left); rewrite (@prop_imp mpred _ True F I); subst ll;
+          super_pattern F a; apply derives_refl
+      end
+    |]);
+
+  try apply remove_allp_RamUnit.
+
+Ltac semax_ram_call_body witness :=
+  check_canonical_call;
+  check_Delta;
+  first [ forward_call_id1_wow witness
+        | forward_call_id1_x_wow witness
+        | forward_call_id1_y_wow witness
+        | forward_call_id01_wow witness 
+        | forward_call_id00_wow witness].
+
+Ltac semax_ram_after_call2 :=
+      cbv beta iota; 
+      try rewrite <- no_post_exists0;
+      unfold_map_liftx_etc;
+      fold (@map (lift_T (LiftEnviron mpred)) (LiftEnviron mpred) liftx); 
+      simpl_strong_cast;
+      abbreviate_semax_ram.
+
+Ltac semax_ram_after_call :=
+  first [apply ram_extract_exists_pre; 
+             let v := fresh "v" in intro v; semax_ram_after_call; revert v
+          | semax_ram_after_call2
+          ].
 
 Lemma pointer_val_val_is_pointer_or_null: forall x,
   is_pointer_or_null (pointer_val_val x).
