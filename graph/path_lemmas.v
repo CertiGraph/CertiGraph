@@ -495,6 +495,18 @@ Proof.
   apply valid_path_split in H2. destruct H2. auto. hnf. rewrite Forall_forall; intros; auto.
 Qed.
 
+Lemma reachable_path_in':
+  forall (g: Gph) (p: list V) (l y : V), g |= p is l ~o~> y satisfying (fun _ : V => True) ->
+                                         forall z, In z p -> reachable g z y.
+Proof.
+  intros. destruct H as [[? ?] [? ?]]. apply in_split in H0.
+  destruct H0 as [l1 [l2 ?]]. exists (z :: l2). subst. split; split.
+  + simpl. auto.
+  + rewrite foot_app in H1; auto. intro. inversion H0.
+  + apply valid_path_split in H2. intuition.
+  + hnf. rewrite Forall_forall; intros; auto.
+Qed.
+
 Lemma reachable_list_permutation:
   forall (g: Gph) x l1 l2,
     reachable_list g x l1 -> reachable_list g x l2 -> NoDup l1 -> NoDup l2 -> Permutation l1 l2.
