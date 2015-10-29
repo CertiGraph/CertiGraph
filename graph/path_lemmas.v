@@ -710,6 +710,14 @@ Proof.
   + exfalso; auto.
 Qed.
 
+Lemma reachable_by_through_singleton:
+  forall g P n1 n2, reachable_by_through_set g (n1 :: nil) P n2 <-> g |= n1 ~o~> n2 satisfying P.
+Proof.
+  intros. unfold reachable_by_through_set; split; intro.
+  + destruct H as [s [? ?]]. simpl in H. destruct H; [subst | exfalso]; auto.
+  + exists n1. split; [apply in_eq | auto].
+Qed.
+
 End PATH_LEM.
 
 Arguments path_glue {_} _ _.
