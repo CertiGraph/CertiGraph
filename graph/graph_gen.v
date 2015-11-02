@@ -47,6 +47,39 @@ Qed.
 
 End LABELED_GRAPH_GEN.
 
+(*
+Section LABELED_GRAPH_EXPAND.
+
+Context {V E: Type}.
+Context {EV: EqDec V eq}.
+Context {EE: EqDec E eq}.
+Context {DV DE: Type}.
+
+Notation Graph := (LabeledGraph V E DV DE).
+
+Definition expand_vvalid (g: PreGraph V E) (vs: list V) := fun v => vvalid g v \/ In v vs.
+
+Definition expand_evalid (g: PreGraph V E) (es: list E) := fun e => evalid g e \/ In e es.
+
+Definition expand_src (g: PreGraph V E) (es: list E) (src': E -> V) :=
+  fun e => if in_dec equiv_dec e es then src' e else src g e.
+
+Definition expand_dst (g: PreGraph V E) (es: list E) (dst': E -> V) :=
+  fun e => if in_dec equiv_dec e es then dst' e else dst g e.
+
+Definition expand_vlabel (g: Graph) (vs: list V) (src': E -> V) :=
+  fun e => if in_dec equiv_dec e es then src' e else src g e.
+
+Definition pregraph_expand (g: PreGraph V E) vs es src' dst' :=
+  @Build_PreGraph V E EV EE (expand_vvalid g vs) (expand_evalid g es)
+   (expand_src g es src') (expand_dst g es dst').
+
+Definition labeledgraph_expand (g: Graph) vs es src' dst' :=
+  @Build_PreGraph V E EV EE (expand_vvalid g vs) (expand_evalid g es)
+   (expand_src g es src') (expand_dst g es dst').
+
+End LABELED_GRAPH_EXPAND.
+*)
 Section GENERAL_GRAPH_GEN.
 
 Context {V E: Type}.
