@@ -39,6 +39,7 @@ Proof.
     - apply andp_left2; auto.
   + apply derives_precise with (nonlock_permission_bytes sh (b, Int.unsigned i) (size_chunk m)).
     - apply exp_left; intro.
+      apply andp_left2.
       auto.
     - apply nonlock_permission_bytes_precise.
 Qed.
@@ -100,8 +101,8 @@ Proof.
       exists (b, Int.unsigned i), (b0, Int.unsigned i0).
       repeat split; auto.
   + eapply disj_derives; [| | apply disj_nonlock_permission_bytes]; simpl.
-    - apply exp_left; intro; apply derives_refl.
-    - apply exp_left; intro; apply derives_refl.
+    - apply exp_left; intro; apply andp_left2; apply derives_refl.
+    - apply exp_left; intro; apply andp_left2; apply derives_refl.
     - erewrite !size_chunk_sizeof in H by eauto.
       intro.
       apply H.
