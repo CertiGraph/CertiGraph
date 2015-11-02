@@ -678,3 +678,9 @@ Ltac split5 := split; [| split; [| split; [| split]]].
         firstorder.
 Qed.
 
+Fixpoint prefixes {A: Type} (l: list A): list (list A) :=
+  match l with
+  | nil => nil
+  | a :: l0 => nil :: map (cons a) (prefixes l0)
+  end.
+

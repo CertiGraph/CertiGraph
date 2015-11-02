@@ -334,7 +334,6 @@ Lemma ram_extract_PROP: forall Delta F (PP: Prop) (P: list Prop) QR c Post,
   semax_ram Delta F (PROPx (PP :: P) QR) c Post.
 Proof.
   intros.
-SearchAbout PROPx (@cons Prop).
 Opaque LiftNatDed' LiftSepLog'.
   revert QR H; induction F; intros; simpl in H |- *.
 Transparent LiftNatDed' LiftSepLog'.

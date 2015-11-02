@@ -759,3 +759,22 @@ Qed.
 
 End PartialLabeledGraph.
 
+Section ExpandPartialGraph.
+
+Context {V E: Type}.
+Context {EV: EqDec V eq}.
+Context {EE: EqDec E eq}.
+
+Notation Graph := (PreGraph V E).
+
+Definition vertex_join (PV: V -> Prop) (G1 G2: Graph) : Prop :=
+  Prop_join (vvalid G1) PV (vvalid G2) /\
+  G1 ~=~ (predicate_partialgraph G2 (Complement _ PV)).
+
+Definition edge_union (PE: E -> Prop) (G1 G2: Graph) : Prop :=
+  (forall v : V, (vvalid G1 v <-> vvalid G2 v)) /\
+  (forall e : E, (evalid G1 e \/ PE e <-> evalid G2 e)) /\
+  (forall e : E, evalid G1 e -> evalid G2 e -> src G1 e = src G2 e) /\
+  (forall e : E, evalid G1 e -> evalid G2 e -> dst G1 e = dst G2 e).
+
+End ExpandPartialGraph.
