@@ -345,6 +345,35 @@ Context {V E: Type}.
 Context {EV: EqDec V eq}.
 Context {EE: EqDec E eq}.
 
+Lemma ppg_reachable_by_path_eq: forall (g1 g2 : PreGraph V E) (P Q: V -> Prop) (p: @path V) (a b: V),
+    (predicate_partialgraph g1 P) ~=~ (predicate_partialgraph g2 P) ->
+    (forall v, In v p -> P v) -> (g1 |= p is a ~o~> b satisfying Q <-> g2 |= p is a ~o~> b satisfying Q).
+Proof.
+  cut (forall (g1 g2 : PreGraph V E) (P Q: V -> Prop) (p: @path V) (a b: V),
+          (predicate_partialgraph g1 P) ~=~ (predicate_partialgraph g2 P) ->
+          (forall v, In v p -> P v) -> g1 |= p is a ~o~> b satisfying Q -> g2 |= p is a ~o~> b satisfying Q); intros.
+  + split; intro; [apply (H g1 g2 P) | apply (H g2 g1 P)]; auto. symmetry; auto.
+  + destruct H1 as [? [? ?]]. do 2 (split; auto). clear H1 H3. induction p; simpl; auto.
+    assert (vvalid g1 a0) by (simpl in H2; destruct p; [|destruct H2 as [[? _] _]]; auto).
+    assert (forall v, In v (a0 :: p) -> vvalid g2 v). {
+      intros. apply valid_path_valid in H2. rewrite Forall_forall in H2.
+      specialize (H0 _ H3). specialize (H2 _ H3). destruct H as [? _].
+      simpl in H. unfold predicate_vvalid in H. specialize (H v).
+      assert (vvalid g1 v /\ P v) by (split; auto; apply H0, in_eq).
+      rewrite H in H4. destruct H4; auto.
+    }
+    assert (vvalid g2 a0) by apply H3, in_eq.
+    destruct p; auto. destruct H2. split; [split; [|split]|]; auto.
+    - apply H3, in_cons, in_eq.
+    - destruct H2 as [_ [_ ?]]. rewrite step_spec in H2 |- * .
+      destruct H2 as [e [? [? ?]]]. exists e.
+      hnf in H. simpl in H. unfold predicate_weak_evalid in H. destruct H as [_ [? [? ?]]].
+      specialize (H e). specialize (H8 e). specialize (H9 e). rewrite H6 in *.
+      assert (evalid g1 e /\ P a0) by (split; auto; apply H0, in_eq).
+      rewrite <- H9; intuition.
+    - apply IHp; auto. intros. apply H0, in_cons; auto.
+Qed.
+
 Lemma partial_partialgraph: forall p1 p2 (g: PreGraph V E),
   (predicate_partialgraph (predicate_partialgraph g p1) p2) ~=~ 
   (predicate_partialgraph g (Intersection _ p1 p2)).
