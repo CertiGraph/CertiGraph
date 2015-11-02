@@ -495,6 +495,19 @@ Proof.
   apply valid_path_split in H2. destruct H2. auto. hnf. rewrite Forall_forall; intros; auto.
 Qed.
 
+Lemma reachable_by_path_in: forall (g: Gph) (p: list V) (l y : V) (P: V -> Prop),
+    g |= p is l ~o~> y satisfying P -> forall z, In z p -> g |= l ~o~> z satisfying P.
+Proof.
+  intros. destruct H as [[? ?] [? ?]]. apply in_split in H0. destruct H0 as [l1 [l2 ?]]. exists (l1 +:: z). subst.
+  split; split.
+  + destruct l1; simpl; simpl in H; auto.
+  + rewrite foot_last. auto.
+  + rewrite app_cons_assoc in H2. apply valid_path_split in H2. destruct H2. auto.
+  + unfold path_prop in H3 |-* . rewrite Forall_forall in H3 |-* . intros. apply H3.
+    rewrite in_app_iff in H0 |-* . destruct H0; [left | right]; auto. simpl in H0.
+    destruct H0. subst. apply in_eq. exfalso; auto.
+Qed.
+
 Lemma reachable_path_in':
   forall (g: Gph) (p: list V) (l y : V), g |= p is l ~o~> y satisfying (fun _ : V => True) ->
                                          forall z, In z p -> reachable g z y.
@@ -505,6 +518,18 @@ Proof.
   + rewrite foot_app in H1; auto. intro. inversion H0.
   + apply valid_path_split in H2. intuition.
   + hnf. rewrite Forall_forall; intros; auto.
+Qed.
+
+Lemma reachable_by_path_in': forall (g: Gph) (p: list V) (l y : V) (P: V -> Prop),
+    g |= p is l ~o~> y satisfying P -> forall z, In z p -> g |= z ~o~> y satisfying P.
+Proof.
+  intros. destruct H as [[? ?] [? ?]]. apply in_split in H0.
+  destruct H0 as [l1 [l2 ?]]. exists (z :: l2). subst. split; split.
+  + simpl. auto.
+  + rewrite foot_app in H1; auto. intro. inversion H0.
+  + apply valid_path_split in H2. intuition.
+  + unfold path_prop in H3 |-* . rewrite Forall_forall in H3 |-* . intros. apply H3.
+    rewrite in_app_iff. right; auto.
 Qed.
 
 Lemma reachable_list_permutation:
