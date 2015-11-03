@@ -769,7 +769,9 @@ Notation Graph := (PreGraph V E).
 
 Definition vertex_join (PV: V -> Prop) (G1 G2: Graph) : Prop :=
   Prop_join (vvalid G1) PV (vvalid G2) /\
-  G1 ~=~ (predicate_partialgraph G2 (Complement _ PV)).
+  (forall e : E, evalid G1 e <-> evalid G2 e /\ ~ PV (src G2 e)) /\
+  (forall e : E, evalid G1 e -> evalid G2 e -> src G1 e = src G2 e) /\
+  (forall e : E, evalid G1 e -> evalid G2 e -> dst G1 e = dst G2 e).
 
 Definition edge_union (PE: E -> Prop) (G1 G2: Graph) : Prop :=
   (forall v : V, (vvalid G1 v <-> vvalid G2 v)) /\

@@ -276,6 +276,15 @@ Proof.
   apply sepcon_derives; apply (exp_right x); apply derives_refl.
 Qed.
 
+Lemma sepcon_wand_wand_sepcon: forall {A} `{SepLog A} (P Q R: A), (P -* Q) * R |-- P -* Q * R.
+Proof.
+  intros.
+  rewrite <- wand_sepcon_adjoint.
+  rewrite (sepcon_comm _ P), <- sepcon_assoc.
+  apply sepcon_derives; auto.
+  apply modus_ponens_wand.
+Qed.
+
 Lemma precise_left_sepcon_andp_sepcon: forall {A} `{PreciseSepLog A} P Q R, precise P -> (P * Q) && (P * R) |-- P * (Q && R).
 Proof.
   intros.

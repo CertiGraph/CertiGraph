@@ -27,6 +27,27 @@ Proof.
   auto.
 Qed.
 
+Lemma ramify_trans: forall g m l g' m' l', g |-- m * (m' -* g') -> m |-- l * (l' -* m') -> g |-- l * (l' -* g').
+Proof.
+  intros.
+  apply solve_ramify with ((l' -* m') * (m' -* g')).
+  + eapply derives_trans; [exact H |].
+    eapply derives_trans; [apply sepcon_derives; [exact H0 | apply derives_refl] |].
+    rewrite sepcon_assoc; auto.
+  + rewrite (sepcon_comm _ l'), <- sepcon_assoc.
+    eapply derives_trans; [| apply modus_ponens_wand].
+    apply sepcon_derives; [| apply derives_refl].
+    apply modus_ponens_wand.
+Qed.
+
+Lemma self_ramify_spec: forall g l, g |-- l * (l -* g) -> g |-- l * TT.
+Proof.
+  intros.
+  eapply derives_trans; [exact H |].
+  apply sepcon_derives; auto.
+  apply TT_right.
+Qed.
+
 Lemma ramify_frame: forall g l g' l' F, g |-- l * (l' -* g') -> g * F |-- l * (l' -* g' * F).
 Proof.
   intros.

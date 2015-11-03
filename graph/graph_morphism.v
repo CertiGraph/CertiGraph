@@ -1,3 +1,4 @@
+Require Import RamifyCoq.lib.Coqlib.
 Require Import RamifyCoq.lib.Ensembles_ext.
 Require Import RamifyCoq.lib.EquivDec_ext.
 Require Import RamifyCoq.lib.relation_list.
@@ -11,12 +12,11 @@ Definition guarded_same_morphism {A B} (P: A -> Prop) (f g: A -> B) :=
 
 Definition same_morphism {A B} (f g: A -> B) := forall a, f a = g a.
 
-(*
-Definition update1_morphism {A B} a0 b0 (f g: A -> B) :=
-  forall a, (a = a0 /\ g a = b0) \/ (g a = f a /\ g a <> b0).
-*)
-
-Module GraphMorphism.
+Lemma same_morphism_guarded_same_morphism: forall {A B} P (f g: A -> B), same_morphism f g -> guarded_same_morphism P f g.
+Proof.
+  intros; hnf; intros.
+  apply H.
+Qed.
 
 Section GraphMophism0.
 
@@ -32,13 +32,13 @@ Definition is_homo (vmap: V1 -> V2) (emap: E1 -> E2) (G1: PreGraph V1 E1) (G2: P
   (forall e, vmap (src G1 e) = src G2 (emap e)) /\
   (forall e, vmap (dst G1 e) = dst G2 (emap e)).
 
-Definition is_inj (vmap: V1 -> V2) (emap: E1 -> E2) (G1: PreGraph V1 E1) (G2: PreGraph V2 E2): Prop :=
-  (forall v, vvalid G1 v <-> vvalid G2 (vmap v)) /\
-  (forall v v', v <> v' -> vmap v <> vmap v') /\
-  (forall e, evalid G1 e <-> evalid G2 (emap e)) /\
-  (forall e e', e <> e' -> emap e <> emap e') /\
-  (forall e, vmap (src G1 e) = src G2 (emap e)) /\
-  (forall e, vmap (dst G1 e) = dst G2 (emap e)).
+Definition guarded_inj (vmap: V1 -> V2) (emap: E1 -> E2) (PV: V1 -> Prop) (PE: E1 -> Prop) (G1: PreGraph V1 E1) (G2: PreGraph V2 E2): Prop :=
+  (forall v, PV v -> (vvalid G1 v <-> vvalid G2 (vmap v))) /\
+  (forall v v', PV v -> PV v' -> v <> v' -> vmap v <> vmap v') /\
+  (forall e, PE e -> (evalid G1 e <-> evalid G2 (emap e))) /\
+  (forall e e', PE e -> PE e' -> e <> e' -> emap e <> emap e') /\
+  (forall e, PE e -> vmap (src G1 e) = src G2 (emap e)) /\
+  (forall e, PE e -> vmap (dst G1 e) = dst G2 (emap e)).
 
 Definition Homo G1 G2: Type := {f: (V1 -> V2) * (E1 -> E2) | is_homo (fst f) (snd f) G1 G2}.
 
@@ -56,7 +56,9 @@ Definition Iso G1 G2: Type := (Homo G1 G2 * Homo G2 G1)%type.
 
 End GraphMophism1.
 
-Section GraphMorphism.
+Module CopyGraph.
+
+Section CopyGraph.
 
 Class GraphMorphismSetting (DV DE V' E': Type): Type := {
   co_vertex: DV -> V';
@@ -94,7 +96,7 @@ Definition vcopy1 x (p1 p2: Graph * Graph') :=
   g1 ~=~ g2 /\
   guarded_same_morphism (Complement _ (eq x)) (vmap g1) (vmap g2) /\
   same_morphism (emap g1) (emap g2) /\
-  vmap g2 x = y /\
+  y = vmap g2 x /\
   vertex_join (eq y) g1' g2'.
 
 Definition ecopy1 e (p1 p2: Graph * Graph') :=
@@ -113,17 +115,30 @@ Definition copy P (p1 p2: Graph * Graph') :=
   let (g1, g1') := p1 in
   let (g2, g2') := p2 in
   g1 ~=~ g2 /\
-  guarded_same_morphism P (vmap g1) (vmap g2) /\
-  guarded_same_morphism (fun e => P (src g1 e)) (emap g1) (emap g2) /\
-  (is_inj (vmap g1) (emap g1) g1 g1' -> is_inj (vmap g2) (emap g2) g2 g2').
+  guarded_same_morphism (Complement _ P) (vmap g1) (vmap g2) /\
+  guarded_same_morphism (Complement _ (std_edge_prop g1 P)) (emap g1) (emap g2) /\
+  (forall PV PE,
+     guarded_inj (vmap g1) (emap g1) PV PE g1 g1' ->
+     guarded_inj (vmap g2) (emap g2) (Union _ PV P) (Union _ PE (std_edge_prop g1 P)) g2 g2').
 
 Definition gcopy (PV: V -> Prop) (PE: E -> Prop) (p1 p2: Graph * Graph') :=
   let (g1, g1') := p1 in
   let (g2, g2') := p2 in
   g1 ~=~ g2 /\
-  guarded_same_morphism PV (vmap g1) (vmap g2) /\
-  guarded_same_morphism PE (emap g1) (emap g2) /\
-  (is_inj (vmap g1) (emap g1) g1 g1' -> is_inj (vmap g2) (emap g2) g2 g2').
+  guarded_same_morphism (Complement _ PV) (vmap g1) (vmap g2) /\
+  guarded_same_morphism (Complement _ PE) (emap g1) (emap g2) /\
+  (forall PV' PE',
+     guarded_inj (vmap g1) (emap g1) PV' PE' g1 g1' ->
+     guarded_inj (vmap g2) (emap g2) (Union _ PV' PV) (Union _ PE' PE) g2 g2').
+
+Definition edge_copy (g: Graph) (P: V -> Prop) (l: list E * E) :=
+  let (es, e) := l in
+  let P0 := Intersection _ (reachable_by g (dst g e) P)
+               (Complement _ (reachable_by_through_set g (map (dst g) es) P)) in
+  relation_list (nothing :: copy P0 :: nothing :: ecopy1 e :: nothing :: nil).
+
+Definition edge_copy_list (g: Graph) es (P: V -> Prop) :=
+  relation_list (map (edge_copy g P) (combine (prefixes es) es)).
 
 Lemma eq_do_nothing: inclusion _ eq nothing.
 Proof.
@@ -137,28 +152,47 @@ Proof.
   + reflexivity.
 Qed.
 
-Definition edge_copy (g: Graph) (P: V -> Prop) (l: list E * E) :=
-  let (es, e) := l in
-  let P0 := Intersection _ (reachable_by g (dst g e) P)
-               (Complement _ (reachable_by_through_set g (map (dst g) es) P)) in
-  relation_list (nothing :: copy P0 :: nothing :: ecopy1 e :: nothing :: nil).
+Lemma vcopy1_is_gcopy: forall x (p1 p2: Graph * Graph'),
+  let (g1, _) := p1 in
+  vcopy1 x p1 p2 ->
+  gcopy (eq x) (std_edge_prop g1 (eq x)) p1 p2.
+Proof.
+  intros.
+  destruct p1 as [g1 g1'], p2 as [g2 g2'].
+  intros.
+  destruct H as [y [? [? [? [? ?]]]]].
+  split; [| split; [| split]].
+  1: auto.
+  1: auto.
+  1: apply same_morphism_guarded_same_morphism; auto.
+  intros.
+  destruct H4 as [? [? [? [? [? ?]]]]].
+  destruct H as [? [? [? ?]]].
+  destruct H3 as [[? ?] [? [? ?]]].
+  split; [| split; [| split; [| split; [| split]]]]; intros.
+  + rewrite <- H, H3.
+    rewrite Union_spec in H17.
+    subst y.
+    destruct H17.
+    - rewrite H4 by auto.
+    subst y; tauto.
 
-Definition edge_copy_list es (P: V -> Prop) (p1 p2: Graph * Graph') :=
-  let (g1, g1') := p1 in
-  let (g2, g2') := p2 in
-  relation_list (map (edge_copy g1 P) (combine (prefixes es) es)) p1 p2.
 
 Lemma vcopy1_edge_copy_list_copy: forall root es (p1 p2: Graph * Graph') (P: V -> Prop),
-  let (g1, g1') := p1 in
-  let (g2, g2') := p2 in
+  let (g1, _) := p1 in
   vvalid g1 root ->
   P root ->
   (forall e, In e es <-> out_edges g1 root e) ->
-  relation_list (nothing :: vcopy1 root :: nothing :: edge_copy_list es (Intersection _ P (Complement _ (eq root))) :: nothing :: nil) p1 p2 ->
+  relation_list (nothing :: vcopy1 root :: nothing :: edge_copy_list g1 es (Intersection _ P (Complement _ (eq root))) :: nothing :: nil) p1 p2 ->
   copy (reachable_by g1 root P) p1 p2.
+Proof.
+  intros.
+  destruct p1 as [g1 g1'], p2 as [g2 g2'].
+  intros.
+  destruct_relation_list p3 p4 p5 p6 in H2.
 Admitted.
 
-End GraphMorphism.
+End CopyGraph.
 
-End GraphMorphism.
+End CopyGraph.
 

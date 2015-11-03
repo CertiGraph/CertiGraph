@@ -64,6 +64,8 @@ Coercion app_node_pred : NodePred >-> Funclass.
 
 Definition node_pred_dec (P: NodePred) (x: Vertex): {P x} + {~ P x} := projT2 P x.
 
+Definition std_edge_prop (g: PreGraph) (P: Vertex -> Prop): Edge -> Prop := fun e => P (src g e).
+
 Class MathGraph (pg: PreGraph) := {
   is_null: Vertex -> Prop;
   is_null_dec: forall x, {is_null x} + {~ is_null x};
