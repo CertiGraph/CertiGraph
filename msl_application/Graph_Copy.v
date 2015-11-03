@@ -34,7 +34,7 @@ Context {GV GE Pred: Type}.
 Context {SGP: SpatialGraphPred V E GV GE Pred}.
 Context {SGA: SpatialGraphAssum SGP}.
 Context {MGS: WeakMarkGraph.MarkGraphSetting DV}.
-Context {GMS: GraphMorphism.GraphMorphismSetting DV DE V E}.
+Context {GMS: CopyGraph.GraphMorphismSetting DV DE V E}.
 
 Notation Graph := (LabeledGraph V E DV DE).
 Notation SGraph := (SpatialGraph V E GV GE).
@@ -90,4 +90,35 @@ Proof.
     destruct H; auto.
 Qed.
 
+Definition vcopy1 x (p1 p2: Graph * Graph) :=
+  let (g1, g1') := p1 in
+  let (g2, g2') := p2 in
+  WeakMarkGraph.mark1 x g1 g2 /\
+  CopyGraph.vcopy1 x (g1, pg_lg g1') (g2, pg_lg g2').
+
+Definition ecopy1 e (p1 p2: Graph * Graph) :=
+  let (g1, g1') := p1 in
+  let (g2, g2') := p2 in
+  WeakMarkGraph.nothing (src g1 e) g1 g2 /\
+  CopyGraph.ecopy1 e (g1, pg_lg g1') (g2, pg_lg g2').
+
+Definition copy x (p1 p2: Graph * Graph) :=
+  let (g1, g1') := p1 in
+  let (g2, g2') := p2 in
+  WeakMarkGraph.mark x g1 g2 /\
+  CopyGraph.copy (reachable_by g1 x (WeakMarkGraph.unmarked g1)) (g1, pg_lg g1') (g2, pg_lg g2').
+
+Definition edge_copy g e := compond_relation (copy (dst g e)) (ecopy1 e).
+  
+Definition edge_copy_list g es := relation_list (map (edge_copy g) es).
+
+Lemma vcopy1_edge_copy_list_copy: forall root es (p1 p2: Graph * Graph),
+  let (g1, _) := p1 in
+  vvalid g1 root ->
+  WeakMarkGraph.unmarked g1 root ->
+  (forall e, In e es <-> out_edges g1 root e) ->
+  relation_list (vcopy1 root :: edge_copy_list g1 es :: nil) p1 p2 ->
+  copy root p1 p2.
+Admitted.
+ 
 End SpatialGraph_Copy.
