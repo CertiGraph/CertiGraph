@@ -783,6 +783,35 @@ Proof.
   apply resp_Equivalence.
   apply si_Equiv.
 Qed.
+Global Existing Instance guarded_si_Equivalence.
+
+Lemma guarded_si_spec: forall PV PE (G1 G2: Graph),
+  guarded_structurally_identical PV PE G1 G2 <->
+  ((forall v, PV v -> (vvalid G1 v <-> vvalid G2 v)) /\
+   (forall e, PE e -> (evalid G1 e <-> evalid G2 e)) /\
+   (forall e, PE e -> evalid G1 e -> evalid G2 e -> src G1 e = src G2 e) /\
+   (forall e, PE e -> evalid G1 e -> evalid G2 e -> dst G1 e = dst G2 e)).
+Proof.
+  intros.
+  split; intros; (destruct H as [? [? [? ?]]]; split; [| split; [| split]]); intros.
+  + specialize (H v); simpl in H.
+    rewrite !Intersection_spec in H.
+    tauto.
+  + specialize (H0 e); simpl in H0.
+    rewrite !Intersection_spec in H0.
+    tauto.
+  + apply H1; simpl; rewrite !Intersection_spec; auto.
+  + apply H2; simpl; rewrite !Intersection_spec; auto.
+  + specialize (H v); simpl.
+    rewrite !Intersection_spec.
+    tauto.
+  + specialize (H0 e); simpl.
+    rewrite !Intersection_spec.
+    tauto.
+  + apply H1; simpl in H3, H4; rewrite !Intersection_spec in H3, H4; tauto.
+  + apply H2; simpl in H3, H4; rewrite !Intersection_spec in H3, H4; tauto.
+Qed.
+    
 
 End GuardedStructurallyIdentical.
 
