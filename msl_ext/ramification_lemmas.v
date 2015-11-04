@@ -8,6 +8,7 @@ Require Import VST.msl.base.
 Require Import VST.msl.simple_CCC.
 Require Import VST.msl.seplog.
 Require Import VST.msl.log_normalize.
+Require Import VST.msl.ramification_lemmas.
 
 Local Open Scope logic.
 
@@ -17,59 +18,6 @@ Context {A : Type}.
 Context {ND : NatDed A}.
 Context {SL : SepLog A}.
 Context {CoSL: CorableSepLog A}.
-
-Lemma solve_ramify: forall g l g' l' F, g |-- l * F -> F * l' |-- g' -> g |-- l * (l' -* g').
-Proof.
-  intros.
-  apply derives_trans with (l * F); auto.
-  apply sepcon_derives; auto.
-  apply wand_sepcon_adjoint.
-  auto.
-Qed.
-
-Lemma ramify_trans: forall g m l g' m' l', g |-- m * (m' -* g') -> m |-- l * (l' -* m') -> g |-- l * (l' -* g').
-Proof.
-  intros.
-  apply solve_ramify with ((l' -* m') * (m' -* g')).
-  + eapply derives_trans; [exact H |].
-    eapply derives_trans; [apply sepcon_derives; [exact H0 | apply derives_refl] |].
-    rewrite sepcon_assoc; auto.
-  + rewrite (sepcon_comm _ l'), <- sepcon_assoc.
-    eapply derives_trans; [| apply modus_ponens_wand].
-    apply sepcon_derives; [| apply derives_refl].
-    apply modus_ponens_wand.
-Qed.
-
-Lemma self_ramify_spec: forall g l, g |-- l * (l -* g) -> g |-- l * TT.
-Proof.
-  intros.
-  eapply derives_trans; [exact H |].
-  apply sepcon_derives; auto.
-  apply TT_right.
-Qed.
-
-Lemma ramify_frame: forall g l g' l' F, g |-- l * (l' -* g') -> g * F |-- l * (l' -* g' * F).
-Proof.
-  intros.
-  apply solve_ramify with ((l' -* g') * F).
-  + rewrite <- sepcon_assoc.
-    apply sepcon_derives; auto.
-  + rewrite (sepcon_comm _ l'), <- sepcon_assoc.
-    apply sepcon_derives; [apply modus_ponens_wand | auto].
-Qed.
-
-Lemma split_ramify: forall g1 g2 l1 l2 g1' g2' l1' l2',
-  g1 |-- l1 * (l1' -* g1') ->
-  g2 |-- l2 * (l2' -* g2') ->
-  g1 * g2 |-- (l1 * l2) * (l1' * l2' -* g1' * g2').
-Proof.
-  intros.
-  apply solve_ramify with ((l1' -* g1') * (l2' -* g2')).
-  + rewrite (sepcon_assoc l1), <- (sepcon_assoc l2), (sepcon_comm l2), (sepcon_assoc _ l2), <- (sepcon_assoc l1).
-    apply sepcon_derives; auto.
-  + eapply derives_trans; [apply sepcon_derives; [apply wand_sepcon_wand | apply derives_refl] |].
-    rewrite sepcon_comm; apply modus_ponens_wand.
-Qed.
 
 Lemma ramify_Q_reduce: forall {B} g l (g' l': B -> A),
   g |-- l * (allp (l' -* g')) ->

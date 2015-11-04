@@ -6,6 +6,7 @@ Require Import Coq.Classes.Equivalence.
 Require Import RamifyCoq.lib.Coqlib.
 Require Import RamifyCoq.lib.Ensembles_ext.
 Require Import RamifyCoq.lib.List_ext.
+Require Import RamifyCoq.lib.Equivalence_ext.
 Require Import RamifyCoq.lib.EquivDec_ext.
 Require Import VST.msl.Coqlib2.
 Require Import RamifyCoq.graph.graph_model.
@@ -17,6 +18,14 @@ Section SubGraph.
 Context {V E: Type}.
 Context {EV: EqDec V eq}.
 Context {EE: EqDec E eq}.
+
+Definition strong_edge_prop (P: V -> Prop) (g: PreGraph V E): E -> Prop := fun e => P (src g e) /\ P (dst g e).
+
+Definition weak_edge_prop (P: V -> Prop) (g: PreGraph V E): E -> Prop := fun e => P (src g e).
+
+Definition gpredicate_subgraph (PV: V -> Prop) (PE: E -> Prop) (g: PreGraph V E): PreGraph V E :=
+  Build_PreGraph EV EE (Intersection _ (vvalid g) PV) (Intersection _ (evalid g) PE) (src g) (dst g).
+
 Context (g: PreGraph V E).
 Context {MA: MathGraph g}.
 Context {LF: LocalFiniteGraph g}.
@@ -758,6 +767,24 @@ Proof.
 Qed.
 
 End PartialLabeledGraph.
+
+Section GuardedStructurallyIdentical.
+
+Context {V E: Type}.
+Context {EV: EqDec V eq}.
+Context {EE: EqDec E eq}.
+
+Notation Graph := (PreGraph V E).
+
+Definition guarded_structurally_identical PV PE: relation Graph := respectful_relation (gpredicate_subgraph PV PE) structurally_identical.
+
+Instance guarded_si_Equivalence PV PE: Equivalence (guarded_structurally_identical PV PE).
+Proof.
+  apply resp_Equivalence.
+  apply si_Equiv.
+Qed.
+
+End GuardedStructurallyIdentical.
 
 Section ExpandPartialGraph.
 
