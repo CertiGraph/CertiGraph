@@ -1,6 +1,5 @@
 Require Import Coq.Logic.ProofIrrelevance.
-Require Import Coq.Sets.Ensembles.
-Require Import Coq.Sets.Finite_sets.
+Require Import RamifyCoq.lib.Ensembles_ext.
 Require Import Coq.Lists.List.
 Require Import Coq.Classes.Morphisms.
 Require Import RamifyCoq.lib.EquivDec_ext.
@@ -306,9 +305,11 @@ Proof.
   auto.
 Defined.
 
-Instance reachable_proper': Proper (structurally_identical ==> (@eq V) ==> (pointwise_relation V iff)) reachable.
+Instance reachable_proper': Proper (structurally_identical ==> (@eq V) ==> Same_set) reachable.
 Proof.
-  do 3 (hnf; intros); subst.
+  do 2 (hnf; intros); subst.
+  rewrite Same_set_spec in *.
+  hnf; intros.
   apply si_reachable_direct.
   auto.
 Defined.
@@ -319,8 +320,11 @@ Proof.
   apply si_eq_as_set_reachable_through_set; auto.
 Defined.
 
-Instance reachable_through_set_proper': Proper (structurally_identical ==> eq_as_set ==> (pointwise_relation V iff)) reachable_through_set.
-  do 3 (hnf; intros); subst.
+Instance reachable_through_set_proper': Proper (structurally_identical ==> eq_as_set ==> @Same_set V) reachable_through_set.
+Proof.
+  do 2 (hnf; intros); subst.
+  rewrite Same_set_spec in *.
+  hnf; intros.
   apply si_eq_as_set_reachable_through_set; auto.
 Defined.
 

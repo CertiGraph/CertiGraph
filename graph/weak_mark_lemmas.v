@@ -81,15 +81,17 @@ Definition mark1 (n : V) (g1 : Graph) (g2 : Graph) : Prop :=
   (forall e, evalid g1 e -> evalid g2 e -> elabel g1 e = elabel g2 e).
 
 Definition mark (root : V) (g1 : Graph) (g2 : Graph) : Prop :=
-  (predicate_partialgraph g1 (Complement _ (reachable_by g1 root (unmarked g1)))) ~=~
-  (predicate_partialgraph g2 (Complement _ (reachable_by g1 root (unmarked g1)))) /\
-  (forall n, g1 |= root ~o~> n satisfying (unmarked g1) -> marked g2 n) /\
-  (forall n, ~ g1 |= root ~o~> n satisfying (unmarked g1) -> (marked g1 n <-> marked g2 n)).
+  let PV := reachable_by g1 root (unmarked g1) in
+  guarded_structurally_identical (Complement _ PV) (weak_edge_prop (Complement _ PV) g1) g1 g2 /\
+  (forall n, PV n -> marked g2 n) /\
+  (forall n, ~ PV n -> (marked g1 n <-> marked g2 n)).
 
 Definition componded root R :=
   compond_relation (compond_relation (nothing root) R) (nothing root).
 
-Definition mark_list root xs := relation_list (map (fun x => componded root (mark x)) xs).
+Definition componded_mark_list root xs := relation_list (map (fun x => componded root (mark x)) xs).
+
+Definition mark_list xs := relation_list (map mark xs).
 
 Lemma mark_marked: forall (g1: Graph) root (g2: Graph),
   mark root g1 g2 ->
@@ -164,14 +166,54 @@ Proof.
   + apply eq_do_nothing.
 Qed.
 
+Lemma mark1_componded_mark_list_mark: forall root l (g1 g2: Graph)
+  (V_DEC: forall x, In x l -> Decidable (vvalid g1 x)),
+  vvalid g1 root ->
+  (unmarked g1) root ->
+  step_list g1 root l ->
+  relation_list (nothing root :: mark1 root :: nothing root :: componded_mark_list root l :: nothing root :: nil) g1 g2 ->
+  mark root g1 g2.
+Abort.
+
+Lemma triple1_mark: forall (g g1 g2: Graph) root l l_done son l_later,
+  vvalid g root ->
+  (unmarked g) root ->
+  let unmarked' := Intersection _ (unmarked g) (Complement _ (eq root)) in
+  step_list g root l ->
+  l = l_done ++ son :: l_later ->
+  let PV1 := reachable_by_through_set g l_done unmarked' in
+  guarded_structurally_identical (Complement _ PV1) (weak_edge_prop (Complement _ PV1) g) g g1 /\
+  Same_set (unmarked g1) (Intersection _ unmarked' (Complement _ PV1)) ->
+  mark son g1 g2 ->
+  let PV2 := reachable_by_through_set g (l_done ++ son :: nil) unmarked' in
+  guarded_structurally_identical (Complement _ PV2) (weak_edge_prop (Complement _ PV2) g) g g2.
+Proof.
+  intros.
+  destruct H3 as [PRE_gsi PRE_unm].
+  destruct H4 as [? _].
+  rewrite weak_edge_prop_Complement in PRE_gsi, H3 |- *.
+  eapply guarded_si_strong_trans'; [.. | eassumption | eassumption].
+  + intro; apply reachable_by_through_non_foot.
+  + admit.
+Abort.
+(*
+SearchAbout reachable_by Proper.
+SearchAbout Included Proper.
+ rewrite PRE_unm. apply reachable_by_through_foot.
+  + apply reachable_by_through_non_foot.
+  + apply reachable_by_through_foot.
+*)
+
 Lemma mark1_mark_list_mark: forall root l (g1 g2: Graph)
   (V_DEC: forall x, In x l -> Decidable (vvalid g1 x)),
   vvalid g1 root ->
   (unmarked g1) root ->
   step_list g1 root l ->
-  relation_list (nothing root :: mark1 root :: nothing root :: mark_list root l :: nothing root :: nil) g1 g2 ->
+  relation_list (mark1 root :: mark_list l :: nil) g1 g2 ->
   mark root g1 g2.
-Admitted.
+Proof.
+  intros.
+Abort.
 
 Lemma vertex_update_mark1: forall (g: Graph) x lx,
   label_marked lx ->

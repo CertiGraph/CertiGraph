@@ -756,6 +756,18 @@ Proof.
     rewrite in_app_iff; auto.
 Qed.
 
+Lemma reachable_by_through_non_foot: forall g P n l l0, reachable_by_through_set g l P n -> reachable_by_through_set g (l ++ l0 :: nil) P n.
+Proof.
+  intros.
+  rewrite reachable_by_through_app; tauto.
+Qed.
+
+Lemma reachable_by_through_foot: forall g P n l l0, reachable_by g l0 P n -> reachable_by_through_set g (l ++ l0 :: nil) P n.
+Proof.
+  intros.
+  rewrite reachable_by_through_app, reachable_by_through_singleton; tauto.
+Qed.
+
 End PATH_LEM.
 
 Arguments path_glue {_} _ _.
