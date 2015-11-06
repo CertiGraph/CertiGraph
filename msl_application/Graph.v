@@ -160,7 +160,7 @@ Proof.
     apply H1; simpl in H2, H3 |- *; unfold predicate_evalid in *; firstorder.
 Qed.
 
-Instance sub_spatialgraph_proper: Proper (validly_identical ==> (pointwise_relation V iff) ==> validly_identical) predicate_sub_spatialgraph.
+Instance sub_spatialgraph_proper: Proper (validly_identical ==> Same_set ==> validly_identical) predicate_sub_spatialgraph.
   do 3 (hnf; intros).
   destruct H as [? [? ?]].
   split; [| split].
@@ -175,7 +175,7 @@ Defined.
 
 Global Existing Instance sub_spatialgraph_proper.
 
-Instance partial_spatialgraph_proper: Proper (validly_identical ==> (pointwise_relation V iff) ==> validly_identical) predicate_partial_spatialgraph.
+Instance partial_spatialgraph_proper: Proper (validly_identical ==> Same_set ==> validly_identical) predicate_partial_spatialgraph.
   do 3 (hnf; intros).
   destruct H as [? [? ?]].
   split; [| split].
@@ -285,12 +285,12 @@ Proof.
 Qed.
 
 Lemma vertices_at_P_Q_eq: forall (g : Graph) (P Q: V -> Prop),
-    Included P (vvalid g) -> (forall x, P x <-> Q x) -> vertices_at P g = vertices_at Q g.
+    Included P (vvalid g) -> Same_set P Q -> vertices_at P g = vertices_at Q g.
 Proof.
   intros. apply vertices_at_subgraph_eq; auto.
-  + intro v. intros. apply H. rewrite H0. auto.
+  + rewrite <- H0; auto.
   + apply sub_spatialgraph_proper. reflexivity.
-    unfold pointwise_relation. apply H0.
+    auto.
 Qed.
 
 Lemma graph_reachable_subgraph_eq:
@@ -301,14 +301,14 @@ Proof.
   apply vertices_at_subgraph_eq; auto.
   + intros y ?; eapply reachable_foot_valid; eauto.
   + intros y ?; eapply reachable_foot_valid; eauto.
-  + assert (pointwise_relation V iff (reachable g1 x) (reachable_through_set g1 (x :: nil)))
-      by (symmetry; intro; apply reachable_through_set_single).
-    assert (pointwise_relation V iff (reachable g2 x) (reachable_through_set g2 (x :: nil)))
-      by (symmetry; intro; apply reachable_through_set_single).
+  + assert (Same_set (reachable g1 x) (reachable_through_set g1 (x :: nil)))
+      by (symmetry; rewrite Same_set_spec; intro; apply reachable_through_set_single).
+    assert (Same_set (reachable g2 x) (reachable_through_set g2 (x :: nil)))
+      by (symmetry; rewrite Same_set_spec; intro; apply reachable_through_set_single).
     rewrite H0, H1.
     apply H.
 Qed.
-  
+
 Lemma graph_vi_eq: forall (g1 g2 : Graph) x, g1 -=- g2 -> graph x g1 = graph x g2.
 Proof.
   intros. apply graph_reachable_subgraph_eq.
@@ -619,10 +619,11 @@ Proof.
     apply reachable_foot_valid in H3; auto.
   + intros.
     destruct (H1 a H2) as [[_ _] ?]; auto.
-    assert (pointwise_relation V iff 
+    assert (Same_set
               (fun x0 : V => reachable g x x0 /\ ~ reachable g l x0)
               (reachable (unreachable_partial_spatialgraph g (l :: nil)) x)).
     Focus 1. {
+      rewrite Same_set_spec.
       intro y.
       specialize (H0 y).
       assert (reachable g x y <-> reachable g l y \/ reachable g x y) by tauto.
@@ -630,10 +631,11 @@ Proof.
       rewrite <- (reachable_through_set_single g x), <- reachable_through_set_eq, <- !reachable_through_set_single.
       apply (unreachable_eq' g (l :: nil) (x :: nil)).
     } Unfocus.
-    assert (pointwise_relation V iff 
+    assert (Same_set
               (fun x0 : V => reachable (g' a) x x0 /\ ~ reachable (g' a) l x0)
               (reachable (unreachable_partial_spatialgraph (g' a) (l :: nil)) x)).
     Focus 1. {
+      rewrite Same_set_spec.
       intro y.
       destruct (H1 a H2) as [[_ ?] _].
       specialize (H5 y).

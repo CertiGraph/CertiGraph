@@ -688,7 +688,7 @@ Proof.
   + inversion H6.
 Qed.
 
-Lemma triple_copy: forall (g g1 g2: Graph) (g' g1' g2': Graph') (P: V -> Prop) root root' es es_done e0 es_later son',
+Lemma triple_copy: forall (g g1 g2: Graph) (g' g1' g2': Graph') (P: V -> Prop) root es es_done e0 es_later son',
   vvalid g root ->
   P root ->
   let P0 := Intersection _ P (Complement _ (eq root)) in
@@ -697,10 +697,8 @@ Lemma triple_copy: forall (g g1 g2: Graph) (g' g1' g2': Graph') (P: V -> Prop) r
   let PV1 := Union _ (eq root) (reachable_by_through_set g (map (dst g) es_done) P0) in
   let PE1 := Union _ (fun e => In e es_done) (weak_edge_prop (reachable_by_through_set g (map (dst g) es_done) P0) g) in
   forall PV1' PE1',
-  root' = vmap g1 root /\
   guarded_bij PV1 PE1 PV1' PE1' (vmap g1) (emap g1) g1 g1' /\
-  (forall e, PE1 e -> ~ PV1 (dst g e) -> dst g2' (emap g2 e) = vmap g1 (dst g e)) /\
-  pregraph_join PV1' PE1' g' g1' ->
+  (forall e, PE1 e -> ~ PV1 (dst g e) -> dst g2' (emap g2 e) = vmap g1 (dst g e)) ->
   let PV2 := Union _ (eq root) (reachable_by_through_set g (map (dst g) (es_done ++ e0 :: nil)) P0) in
   let PE2 := Union _ (fun e => In e es_done) (weak_edge_prop (reachable_by_through_set g (map (dst g) (es_done ++ e0 :: nil)) P0) g) in
   forall PV' PE',
@@ -708,16 +706,14 @@ Lemma triple_copy: forall (g g1 g2: Graph) (g' g1' g2': Graph') (P: V -> Prop) r
   let PE2' := Union _ PE1' PE' in
   copy P0 (dst g e0) son' PV' PE' (g1, g1') (g2, g2') ->
   disjointed_guard PV1' PV' PE1' PE' -> (* From spatial fact *)
-  root' = vmap g2 root /\
-  guarded_bij PV2 PE2 PV2' PE2' (vmap g2) (emap g2) g2 g2' /\
-  (forall e, PE2 e -> ~ PV2 (dst g e) -> dst g2' (emap g2 e) = vmap g1 (dst g e)) /\
-  pregraph_join PV2' PE2' g' g2'.
+  guarded_bij PV2 PE2 PV2' PE2' (vmap g2) (emap g2) g2 g2'.
 Proof.
   intros.
-  destruct H3 as [PRE_root [PRE_bij [PRE_consi PRE_shape]]].
+  destruct H3 as [PRE_bij PRE_consi].
   rename H5 into DISJ.
   destruct H4 as [? [? [? [? [? [? ?]]]]]].
 
+(*
   split; [| split; [| split]].
   + rewrite guarded_pointwise_relation_spec in H4.
     rewrite <- H4; [auto |].
@@ -726,29 +722,31 @@ Proof.
     apply reachable_by_foot_prop in H; unfold P0 in H.
     rewrite Intersection_spec in H; destruct H as [_ ?]; apply H.
     reflexivity.
-  + assert (Same_set PV2 (Union _ PV1 (reachable_by g (dst g e0) P0))).
-    Focus 1. {
-      unfold PV1, PV2; clear.
-      rewrite Same_set_spec; intros v.
-      rewrite !Union_spec.
-      rewrite map_app; simpl map.
-      rewrite reachable_by_through_app, reachable_by_through_singleton.
-      tauto.
-    } Unfocus.
-    assert (Same_set PE2 (Union _ PE1 (weak_edge_prop (reachable_by g (dst g e0) P0) g))).
-    Focus 1. {
-      unfold PE1, PE2; clear.
-      rewrite Same_set_spec; intros e; unfold weak_edge_prop.
-      rewrite !Union_spec.
-      rewrite map_app; simpl map.
-      rewrite reachable_by_through_app, reachable_by_through_singleton.
-      tauto.
-    } Unfocus.
-    rewrite H10, H11; clear H10 H11.
-
-    apply guarded_bij_disjointed_union; auto.
-    - eapply guarded_bij_proper_aux1; [.. | exact PRE_bij].
-      * eapply guarded_pointwise_relation_weaken; [| eassumption].
+*)
+  assert (Same_set PV2 (Union _ PV1 (reachable_by g (dst g e0) P0))).
+  Focus 1. {
+    unfold PV1, PV2; clear.
+    rewrite Same_set_spec; intros v.
+    rewrite !Union_spec.
+    rewrite map_app; simpl map.
+    rewrite reachable_by_through_app, reachable_by_through_singleton.
+    tauto.
+  } Unfocus.
+  assert (Same_set PE2 (Union _ PE1 (weak_edge_prop (reachable_by g (dst g e0) P0) g))).
+  Focus 1. {
+    unfold PE1, PE2; clear.
+    rewrite Same_set_spec; intros e; unfold weak_edge_prop.
+    rewrite !Union_spec.
+    rewrite map_app; simpl map.
+    rewrite reachable_by_through_app, reachable_by_through_singleton.
+    tauto.
+  } Unfocus.
+  rewrite H10, H11; clear H10 H11.
+   
+  apply guarded_bij_disjointed_union; auto.
+  + eapply guarded_bij_proper_aux1; [.. | exact PRE_bij].
+    * eapply guarded_pointwise_relation_weaken; [| eassumption].
+Locate "+::".
 (* We should add all these into graph lemmas. *)
 Abort.
 

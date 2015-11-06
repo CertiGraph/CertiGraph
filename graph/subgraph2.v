@@ -35,6 +35,15 @@ Proof.
   firstorder.
 Qed.
 
+Lemma weak_edge_prop_Complement: forall (P: V -> Prop) (g: PreGraph V E), Same_set (weak_edge_prop (Complement _ P) g) (Complement _ (weak_edge_prop P g)).
+Proof.
+  intros.
+  unfold weak_edge_prop, Complement, Ensembles.In.
+  rewrite Same_set_spec.
+  hnf; intros; simpl.
+  reflexivity.
+Qed.
+
 Definition gpredicate_subgraph (PV: V -> Prop) (PE: E -> Prop) (g: PreGraph V E): PreGraph V E :=
   Build_PreGraph EV EE (Intersection _ (vvalid g) PV) (Intersection _ (evalid g) PE) (src g) (dst g).
 
@@ -535,15 +544,16 @@ Proof.
   + intro v; specialize (H v); simpl in H; tauto.
 Qed.
 
-Instance subgraph_proper: Proper (structurally_identical ==> (pointwise_relation V iff) ==> structurally_identical) predicate_subgraph.
+Instance subgraph_proper: Proper (structurally_identical ==> @Same_set V ==> structurally_identical) predicate_subgraph.
 Proof.
   do 2 (hnf; intros).
   destruct H as [? [? [? ?]]].
+  rewrite Same_set_spec in H0; hnf in H0.
   split; [| split; [| split]]; intros; simpl.
   + unfold predicate_vvalid.
     rewrite H0, H.
     reflexivity.
-  + unfold predicate_evalid. rewrite H0, H1. specialize (H1 e).
+  + unfold predicate_evalid. rewrite !H0, !H1. specialize (H1 e).
     split; intros; destruct H4 as [? [? ?]]; [rewrite <- H2, <- H3 | rewrite H2, H3]; tauto.
   + simpl in * |- . unfold predicate_evalid in * |- . apply H2; tauto.
   + simpl in * |- . unfold predicate_evalid in * |- . apply H3; tauto.
@@ -551,15 +561,16 @@ Defined.
 
 Global Existing Instance subgraph_proper.
 
-Instance partialgraph_proper: Proper (structurally_identical ==> (pointwise_relation V iff) ==> structurally_identical) predicate_partialgraph.
+Instance partialgraph_proper: Proper (structurally_identical ==> @Same_set V ==> structurally_identical) predicate_partialgraph.
 Proof.
   do 2 (hnf; intros).
   destruct H as [? [? [? ?]]].
+  rewrite Same_set_spec in H0; hnf in H0.
   split; [| split; [| split]]; intros; simpl.
   + unfold predicate_vvalid.
     rewrite H0, H.
     reflexivity.
-  + unfold predicate_weak_evalid. rewrite H0, H1. specialize (H1 e).
+  + unfold predicate_weak_evalid. rewrite !H0, !H1. specialize (H1 e).
     split; intro; intuition; [rewrite <- H2 | rewrite H2]; auto.
   + simpl in * |- . unfold predicate_weak_evalid in * |- . apply H2; tauto.
   + simpl in * |- . unfold predicate_weak_evalid in * |- . apply H3; tauto.
@@ -567,7 +578,7 @@ Defined.
 
 Global Existing Instance partialgraph_proper.
 
-Instance reachable_by_proper: Proper ((@structurally_identical V E _ _) ==> (@eq V) ==> (pointwise_relation V iff) ==> (@eq V) ==> iff) (@reachable_by V E _ _).
+Instance reachable_by_proper: Proper ((@structurally_identical V E _ _) ==> (@eq V) ==> @Same_set V ==> (@eq V) ==> iff) (@reachable_by V E _ _).
 Proof.
   intros.
   do 4 (hnf; intros); subst.
@@ -578,15 +589,15 @@ Defined.
 
 Global Existing Instance reachable_by_proper.
 
-Instance reachable_by_proper': Proper ((@structurally_identical V E _ _) ==> (@eq V) ==> (pointwise_relation V iff) ==> (pointwise_relation V iff)) (@reachable_by V E _ _).
+Instance reachable_by_proper': Proper ((@structurally_identical V E _ _) ==> (@eq V) ==> @Same_set V ==> @Same_set V) (@reachable_by V E _ _).
 Proof.
   intros.
-  do 4 (hnf; intros); subst.
+  do 3 (hnf; intros); subst.
+  rewrite Same_set_spec; hnf; intros.
   rewrite !reachable_by_eq_partialgraph_reachable.
   rewrite H, H1.
   reflexivity.
 Defined.
-
 Global Existing Instance reachable_by_proper'.
 
 Lemma predicate_partialgraph_reachable_by_included (g: PreGraph V E) (p p0: V -> Prop): 
@@ -624,9 +635,10 @@ Qed.
 
 Lemma reachable_partialgraph_reachable_equiv (g: PreGraph V E) (P: V -> Prop) (n: V):
   Included (reachable g n) P ->
-  (pointwise_relation V iff) (reachable g n) (reachable (predicate_partialgraph g P) n).
+  Same_set (reachable g n) (reachable (predicate_partialgraph g P) n).
 Proof.
   intros.
+  rewrite Same_set_spec.
   intro.
   split.
   + intros.
@@ -640,11 +652,12 @@ Qed.
 
 Lemma reachable_by_partialgraph_reachable_by_equiv (g: PreGraph V E) (P p0: V -> Prop) (n: V):
   Included (reachable_by g n p0) P ->
-  (pointwise_relation V iff) (reachable_by g n p0) (reachable_by (predicate_partialgraph g P) n p0).
+  Same_set (reachable_by g n p0) (reachable_by (predicate_partialgraph g P) n p0).
 Proof.
   intros.
-  assert (pointwise_relation _ iff (reachable_by g n p0) (reachable (predicate_partialgraph g p0) n)).
+  assert (Same_set (reachable_by g n p0) (reachable (predicate_partialgraph g p0) n)).
   Focus 1. {
+    rewrite Same_set_spec.
     hnf; intros.
     apply reachable_by_eq_partialgraph_reachable; auto.
   } Unfocus.
@@ -652,7 +665,7 @@ Proof.
   apply reachable_partialgraph_reachable_equiv in H.
   rewrite H.
   rewrite partial_partialgraph, Intersection_comm, <- partial_partialgraph.
-  intro.
+  rewrite Same_set_spec; hnf; intros.
   rewrite reachable_by_eq_partialgraph_reachable.
   reflexivity.
 Qed.
@@ -860,6 +873,20 @@ Proof.
   + apply H2; simpl in H3, H4; rewrite !Intersection_spec in H3, H4; tauto.
 Qed.
 
+Instance guarded_si_proper: Proper (@Same_set V ==> @Same_set E ==> eq ==> eq ==> iff) guarded_structurally_identical.
+Proof.
+  intros.
+  hnf; intros PV1 PV2 ?.
+  hnf; intros PE1 PE2 ?.
+  hnf; intros g1 g1' ?; subst g1'.
+  hnf; intros g2 g2' ?; subst g2'.
+  rewrite !guarded_si_spec.
+  rewrite Same_set_spec in *.
+  unfold pointwise_relation in *.
+  firstorder.
+Defined.
+Global Existing Instance guarded_si_proper.
+
 Lemma si_is_guarded_si:
   same_relation Graph structurally_identical (guarded_structurally_identical (Full_set _) (Full_set _)).
 Proof.
@@ -892,6 +919,40 @@ Proof.
   intros.
   rewrite si_is_guarded_si.
   apply guarded_si_weaken; apply Included_Full_set.
+Qed.
+
+Lemma guarded_si_strong_trans: forall (PV1 PV2 PV: V -> Prop) (PE1 PE2 PE: E -> Prop) g1 g2 g3,
+  Included PV PV1 ->
+  Included PV PV2 ->
+  Included PE PE1 ->
+  Included PE PE2 ->
+  guarded_structurally_identical PV1 PE1 g1 g2 ->
+  guarded_structurally_identical PV2 PE2 g2 g3 ->
+  guarded_structurally_identical PV PE g1 g3.
+Proof.
+  intros.
+  transitivity g2.
+  + eapply guarded_si_weaken; [| | eauto]; eauto.
+  + eapply guarded_si_weaken; [| | eauto]; eauto.
+Qed.
+
+Lemma guarded_si_strong_trans': forall (PV1 PV2 PV: V -> Prop) (PE1 PE2 PE: E -> Prop) g1 g2 g3,
+  Included PV1 PV ->
+  Included PV2 PV ->
+  Included PE1 PE ->
+  Included PE2 PE ->
+  guarded_structurally_identical (Complement _ PV1) (Complement _ PE1) g1 g2 ->
+  guarded_structurally_identical (Complement _ PV2) (Complement _ PE2) g2 g3 ->
+  guarded_structurally_identical (Complement _ PV ) (Complement _ PE ) g1 g3.
+Proof.
+  intros.
+  eapply guarded_si_strong_trans.
+  + apply Complement_Included_rev, H.
+  + apply Complement_Included_rev, H0.
+  + apply Complement_Included_rev, H1.
+  + apply Complement_Included_rev, H2.
+  + eauto.
+  + eauto.
 Qed.
 
 End GuardedStructurallyIdentical.

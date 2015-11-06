@@ -46,7 +46,7 @@ Proof.
   apply Full_set_spec.
 Qed.
 
-Lemma Intersection_Complement': forall A (P Q: Ensemble A),
+Lemma Intersection_Complement: forall A (P Q: Ensemble A),
   Same_set A
   (Intersection A (Complement A P) (Complement A Q))
   (Complement A (Union A P Q)).
@@ -103,15 +103,26 @@ Proof.
   firstorder.
 Qed.
 
-Lemma Intersection_comm: forall A P Q, (pointwise_relation A iff) (Intersection A P Q) (Intersection A Q P).
+Lemma Intersection_comm: forall A P Q, Same_set (Intersection A P Q) (Intersection A Q P).
 Proof.
-  repeat (hnf; intros).
+  intros.
+  rewrite Same_set_spec; hnf; intros.
   rewrite !Intersection_spec.
   tauto.
 Qed.
 
-Instance complement_proper (V: Type): Proper ((pointwise_relation V iff) ==> (pointwise_relation V iff)) (Complement V).
+Instance Included_proper (V: Type): Proper (Same_set ==> Same_set ==> iff) (@Included V).
+Proof.
   hnf; intros.
+  hnf; intros.
+  rewrite Same_set_spec in *.
+  unfold pointwise_relation, Included, Ensembles.In in *.
+  firstorder.
+Defined.
+
+Instance complement_proper (V: Type): Proper (Same_set ==> Same_set) (Complement V).
+  hnf; intros.
+  rewrite Same_set_spec in *.
   hnf; intros.
   unfold Complement, Ensembles.In.
   specialize (H a).
@@ -120,26 +131,16 @@ Defined.
 
 Existing Instance complement_proper.
 
-Lemma Intersection_Complement: forall A (P Q: Ensemble A),
-  (pointwise_relation A iff)
-  (Intersection A (Complement A P) (Complement A Q))
-  (Complement A (Union A P Q)).
-Proof.
-  intros.
-  intro x.
-  rewrite Intersection_spec.
-  unfold Complement, Ensembles.In.
-  rewrite Union_spec.
-  tauto.
-Qed.
-
-Instance Included_proper (V: Type): Proper ((pointwise_relation V iff) ==> (pointwise_relation V iff) ==> iff) (@Included V).
-Proof.
+Instance Union_proper (V: Type): Proper (Same_set ==> Same_set ==> Same_set) (Union V).
   hnf; intros.
   hnf; intros.
-  unfold pointwise_relation, Included, Ensembles.In in *.
+  rewrite Same_set_spec in *.
+  unfold pointwise_relation in *; intros.
+  rewrite !Union_spec.
   firstorder.
 Defined.
+
+Existing Instance Union_proper.
 
 Lemma left_Included_Union {A: Type}: forall P Q, Included P (Union A P Q).
 Proof.
@@ -186,18 +187,20 @@ Proof.
   rewrite Intersection_spec; unfold Complement, Ensembles.In; try tauto.
 Qed.
 
-Instance Intersection_proper {A}: Proper ((pointwise_relation A iff) ==> (pointwise_relation A iff) ==> (pointwise_relation A iff)) (Intersection A).
+Instance Intersection_proper {A}: Proper (Same_set ==> Same_set ==> Same_set) (Intersection A).
 Proof.
   do 2 (hnf; intros).
+  rewrite Same_set_spec in *.
   intro a; specialize (H0 a); specialize (H a).
   rewrite !Intersection_spec.
   tauto.
 Defined.
 
-Instance Prop_join_proper {A}: Proper ((pointwise_relation A iff) ==> (pointwise_relation A iff) ==> (pointwise_relation A iff) ==> iff) Prop_join.
+Instance Prop_join_proper {A}: Proper (@Same_set A ==> Same_set ==> Same_set ==> iff) Prop_join.
 Proof.
   intros.
   do 3 (hnf; intros).
+  rewrite Same_set_spec in *.
   unfold pointwise_relation in *.
   split; intros [? ?]; split; intro; firstorder.
 Defined.

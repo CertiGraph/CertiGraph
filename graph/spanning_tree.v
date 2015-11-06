@@ -152,8 +152,9 @@ Module SIMPLE_SPANNING_TREE.
         - rewrite <- H in H4. specialize (H1 H4).
           assert
             ((predicate_partialgraph g2 (reachable_by g1 v P1)) ~=~ (predicate_partialgraph g2 (reachable_by g1 v P2))). {
-            apply partialgraph_proper. reflexivity. hnf.
-            intros. apply reachable_by_eq. intuition.
+            apply partialgraph_proper. reflexivity.
+            apply reachable_by_proper'; try reflexivity.
+            rewrite Same_set_spec; hnf; auto.
           } apply (is_tree_proper _ _ H5 v v); auto.
         - apply H2. rewrite (reachable_by_eq _ _ _ P1 P2); auto.
         - apply H3; rewrite (reachable_by_eq _ _ _ P1 P2); auto.

@@ -660,6 +660,7 @@ Section SIMPLE_MARK_GRAPH.
           rewrite H3 in H5.
           rewrite <- H5 in H6.
           clear H5.
+          rewrite Same_set_spec in H6.
           specialize (H6 v0).
           assert (g'0 |= v ~o~> v0 satisfying (negateP m) ->
             reachable_by_through_set g'0 (v :: l0) (negateP m) v0); [intro | tauto].
@@ -697,6 +698,7 @@ Section SIMPLE_MARK_GRAPH.
             } Unfocus.
             rewrite H3 in H5.
             rewrite <- H5 in H6.
+            rewrite Same_set_spec in H6.
             clear H5; apply H6.
           } Unfocus.
           assert (reachable_by_through_set g'0 l0 (negateP m') v0 ->
