@@ -743,6 +743,19 @@ Proof.
   + exists n1. split; [apply in_eq | auto].
 Qed.
 
+Lemma reachable_by_through_app: forall g P n l1 l2, reachable_by_through_set g (l1 ++ l2) P n <-> reachable_by_through_set g l1 P n \/ reachable_by_through_set g l2 P n.
+Proof.
+  intros.
+  unfold reachable_by_through_set.
+  split; [intros [s [? ?]] | intros [[s [? ?]] | [s [? ?]]]].
+  + rewrite in_app_iff in H.
+    destruct H; [left | right]; exists s; auto.
+  + exists s.
+    rewrite in_app_iff; auto.
+  + exists s.
+    rewrite in_app_iff; auto.
+Qed.
+
 End PATH_LEM.
 
 Arguments path_glue {_} _ _.

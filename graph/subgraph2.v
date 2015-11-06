@@ -893,6 +893,12 @@ Definition edge_union (PE: E -> Prop) (G1 G2: Graph) : Prop :=
   (forall e : E, evalid G1 e -> evalid G2 e -> src G1 e = src G2 e) /\
   (forall e : E, evalid G1 e -> evalid G2 e -> dst G1 e = dst G2 e).
 
+Definition pregraph_join (PV: V -> Prop) (PE: E -> Prop) (G1 G2: Graph) : Prop :=
+  Prop_join (vvalid G1) PV (vvalid G2) /\
+  Prop_join (evalid G1) PE (evalid G2) /\
+  (forall e : E, evalid G1 e -> evalid G2 e -> src G1 e = src G2 e) /\
+  (forall e : E, evalid G1 e -> evalid G2 e -> dst G1 e = dst G2 e).
+
 Lemma vertex_join_guarded_si: forall (PV: V -> Prop) (G1 G2: Graph),
   vertex_join PV G1 G2 ->
   guarded_structurally_identical (Complement _ PV) (Complement _ (weak_edge_prop PV G2)) G1 G2.
