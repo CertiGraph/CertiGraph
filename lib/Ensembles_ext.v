@@ -5,6 +5,12 @@ Require Export Coq.Sets.Ensembles.
 Require Import Coq.Sets.Constructive_sets.
 Require Import RamifyCoq.lib.Coqlib.
 
+Lemma Full_set_spec: forall A (v: A), Full_set A v.
+Proof.
+  intros.
+  constructor.
+Qed.
+
 Lemma Intersection_spec: forall A (v: A) P Q, Intersection _ P Q v <-> P v /\ Q v.
 Proof.
   intros.
@@ -19,6 +25,25 @@ Proof.
   split; intros.
   + inversion H; auto.
   + destruct H; [apply Union_introl | apply Union_intror]; auto.
+Qed.
+
+Lemma Disjoint_spec: forall A P Q, Disjoint A P Q <-> (forall x, P x -> Q x -> False).
+Proof.
+  intros; split; intros.
+  + inversion H.
+    eapply H2.
+    unfold In; rewrite Intersection_spec; split; eauto.
+  + constructor.
+    intros.
+    unfold In; rewrite Intersection_spec.
+    intro; apply H with x; tauto.
+Qed.
+
+Lemma Included_Full_set: forall A P, Included A P (Full_set A).
+Proof.
+  intros.
+  hnf; unfold In; intros.
+  apply Full_set_spec.
 Qed.
 
 Lemma Intersection_Complement': forall A (P Q: Ensemble A),
@@ -70,6 +95,13 @@ Add Parametric Relation {A} : (Ensemble A) Same_set
     reflexivity proved by (Same_set_refl A)
     symmetry proved by (Same_set_sym A)
     transitivity proved by (Same_set_trans A) as Same_set_rel.
+
+Lemma Same_set_spec: forall A P Q, Same_set P Q <-> (pointwise_relation A iff) P Q.
+Proof.
+  intros.
+  unfold Same_set, Included, In, pointwise_relation.
+  firstorder.
+Qed.
 
 Lemma Intersection_comm: forall A P Q, (pointwise_relation A iff) (Intersection A P Q) (Intersection A Q P).
 Proof.
@@ -125,6 +157,16 @@ Proof.
   tauto.
 Qed.
 
+Lemma Union_Empty_set {A: Type}: forall P, Same_set (Union _ P (Empty_set A)) P.
+Proof.
+  intros.
+  rewrite Same_set_spec.
+  hnf; intros.
+  rewrite Union_spec.
+  pose proof Noone_in_empty A a.
+  tauto.
+Qed.
+
 Lemma Complement_Included_rev: forall (U: Type) P Q, Included P Q -> Included (Complement U Q) (Complement U P).
 Proof.
   unfold Included, Complement, Ensembles.In.
@@ -159,6 +201,80 @@ Proof.
   unfold pointwise_relation in *.
   split; intros [? ?]; split; intro; firstorder.
 Defined.
+
+Lemma Included_Disjoint: forall A P Q P' Q',
+  Included P P' ->
+  Included Q Q' ->
+  Disjoint A P' Q' ->
+  Disjoint A P Q.
+Proof.
+  intros.
+  rewrite Disjoint_spec in H1 |- *.
+  intros; apply (H1 x).
+  + apply H; auto.
+  + apply H0; auto.
+Qed.
+
+Lemma Included_Complement_Disjoint: forall A P Q,
+  (Included P (Complement _ Q)) <-> Disjoint A P Q.
+Proof.
+  intros.
+  unfold Included, Complement, In.
+  rewrite Disjoint_spec.
+  firstorder.
+Qed.
+
+Lemma Disjoint_comm: forall A P Q,
+  Disjoint A P Q <-> Disjoint A Q P.
+Proof.
+  intros.
+  rewrite !Disjoint_spec.
+  firstorder.
+Qed.
+
+Lemma Disjoint_Empty_set_right: forall {A} (P: Ensemble A), Disjoint A P (Empty_set A).
+Proof.
+  intros.
+  rewrite Disjoint_comm.
+  apply Included_Complement_Disjoint.
+  apply Constructive_sets.Included_Empty.
+Qed.
+
+Lemma Disjoint_Empty_set_left: forall {A} (P: Ensemble A), Disjoint A (Empty_set A) P.
+Proof.
+  intros.
+  apply Included_Complement_Disjoint.
+  apply Constructive_sets.Included_Empty.
+Qed.
+
+Lemma Included_trans: forall {A} (P Q R: Ensemble A), Included P Q -> Included Q R -> Included P R.
+Proof.
+  unfold Included, Ensembles.In.
+  intros; firstorder.
+Qed.
+
+Lemma Intersection1_Included: forall {A} P Q R, Included P R -> Included (Intersection A P Q) R.
+Proof.
+  unfold Included, Ensembles.In.
+  intros.
+  rewrite Intersection_spec in H0.
+  firstorder.
+Qed.
+
+Lemma Intersection2_Included: forall {A} P Q R, Included Q R -> Included (Intersection A P Q) R.
+Proof.
+  unfold Included, Ensembles.In.
+  intros.
+  rewrite Intersection_spec in H0.
+  firstorder.
+Qed.
+
+Lemma Included_refl: forall A P, @Included A P P.
+Proof.
+  intros; hnf; auto.
+Qed.
+
+
 
 (*
 

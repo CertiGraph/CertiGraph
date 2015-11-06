@@ -34,7 +34,7 @@ Context {GV GE Pred: Type}.
 Context {SGP: SpatialGraphPred V E GV GE Pred}.
 Context {SGA: SpatialGraphAssum SGP}.
 Context {MGS: WeakMarkGraph.MarkGraphSetting DV}.
-Context {GMS: CopyGraph.GraphMorphismSetting DV DE V E}.
+Context {GMS: GraphMorphism.GraphMorphismSetting DV DE V E}.
 
 Notation Graph := (LabeledGraph V E DV DE).
 Notation SGraph := (SpatialGraph V E GV GE).
@@ -90,11 +90,14 @@ Proof.
     destruct H; auto.
 Qed.
 
+(*
 Definition vcopy1 x (p1 p2: Graph * Graph) :=
   let (g1, g1') := p1 in
   let (g2, g2') := p2 in
   WeakMarkGraph.mark1 x g1 g2 /\
-  CopyGraph.vcopy1 x (g1, pg_lg g1') (g2, pg_lg g2').
+  g1 ~=~ g2 /\
+  
+  
 
 Definition ecopy1 e (p1 p2: Graph * Graph) :=
   let (g1, g1') := p1 in
@@ -120,5 +123,5 @@ Lemma vcopy1_edge_copy_list_copy: forall root es (p1 p2: Graph * Graph),
   relation_list (vcopy1 root :: edge_copy_list g1 es :: nil) p1 p2 ->
   copy root p1 p2.
 Admitted.
- 
+*)
 End SpatialGraph_Copy.

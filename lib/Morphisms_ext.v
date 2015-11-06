@@ -1,5 +1,6 @@
 Require Import Coq.Relations.Relation_Definitions.
 Require Export Coq.Classes.Morphisms.
+Require Import RamifyCoq.lib.Ensembles_ext.
 Require Import RamifyCoq.lib.Relation_ext.
 Require Import RamifyCoq.lib.Equivalence_ext.
 
@@ -27,6 +28,15 @@ Proof.
     exact H.
 Qed.
 
+Lemma guarded_pointwise_relation_weaken: forall {A B : Type} (P1 P2: A -> Prop) (R : relation B), Included P2 P1 -> inclusion _ (guarded_pointwise_relation P1 R) (guarded_pointwise_relation P2 R).
+Proof.
+  intros.
+  hnf; intros.
+  rewrite guarded_pointwise_relation_spec in H0 |- *.
+  unfold Included, In in H.
+  firstorder.
+Qed.
+
 Lemma guarded_pointwise_relation_pointwise_relation: forall {A B : Type} (P: A -> Prop) (R : relation B), inclusion _ (pointwise_relation A R) (guarded_pointwise_relation P R).
 Proof.
   intros.
@@ -34,4 +44,30 @@ Proof.
   rewrite guarded_pointwise_relation_spec.
   intros.
   apply H.
+Qed.
+
+Lemma guarded_surj_Included: forall {X Y} (f: X -> Y) (PX: X -> Prop) (PY PY0: Y -> Prop),
+  (forall y, PY y -> exists x, PX x /\ f x = y) ->
+  (forall x, PX x -> PY0 (f x)) ->
+  Included PY PY0.
+Proof.
+  intros.
+  unfold Included, Ensembles.In.
+  intros y ?.
+  destruct (H _ H1) as [x [? ?]].
+  subst y.
+  apply (H0 x); auto.
+Qed.
+
+Lemma guarded_surj_Disjoint: forall {X Y} (f: X -> Y) (PX: X -> Prop) (PY PY0: Y -> Prop),
+  (forall y, PY y -> exists x, PX x /\ f x = y) ->
+  (forall x, PX x -> ~ PY0 (f x)) ->
+  Disjoint Y PY PY0.
+Proof.
+  intros.
+  rewrite Disjoint_spec.
+  intros y ? ?.
+  destruct (H _ H1) as [x [? ?]].
+  subst y.
+  apply (H0 x); auto.
 Qed.

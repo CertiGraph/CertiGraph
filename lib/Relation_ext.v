@@ -3,6 +3,16 @@ Require Import Coq.Classes.Morphisms.
 Require Export Coq.Classes.Equivalence.
 Require Coq.Setoids.Setoid.
 
+Definition full_relation {A} : relation A := fun _ _ => True.
+
+Lemma inclusion_full_relation: forall {A} P, inclusion A P full_relation.
+Proof.
+  intros.
+  hnf; intros.
+  hnf.
+  auto.
+Qed.
+
 Lemma same_relation_spec: forall {A} a1 a2, same_relation A a1 a2 <-> pointwise_relation A (pointwise_relation A iff) a1 a2.
 Proof.
   intros.
