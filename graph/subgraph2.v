@@ -23,6 +23,18 @@ Definition strong_edge_prop (P: V -> Prop) (g: PreGraph V E): E -> Prop := fun e
 
 Definition weak_edge_prop (P: V -> Prop) (g: PreGraph V E): E -> Prop := fun e => P (src g e).
 
+Definition weak'_edge_prop (P: V -> Prop) (g: PreGraph V E): E -> Prop := fun e => P (dst g e).
+
+Lemma weak_edge_prop_Disjoint: forall (P1 P2: V -> Prop) (g: PreGraph V E),
+  Disjoint _ P1 P2 ->
+  Disjoint _ (weak_edge_prop P1 g) (weak_edge_prop P2 g).
+Proof.
+  intros.
+  unfold weak_edge_prop.
+  rewrite Disjoint_spec in *.
+  firstorder.
+Qed.
+
 Definition gpredicate_subgraph (PV: V -> Prop) (PE: E -> Prop) (g: PreGraph V E): PreGraph V E :=
   Build_PreGraph EV EE (Intersection _ (vvalid g) PV) (Intersection _ (evalid g) PE) (src g) (dst g).
 
@@ -218,6 +230,19 @@ Proof.
   apply reachable_foot_valid in H.
   destruct H.
   auto.
+Qed.
+
+Lemma reachable_by_refl (p: V -> Prop):
+  forall n: V,
+    vvalid g n ->
+    p n ->
+    g |= n ~o~> n satisfying p.
+Proof.
+  intros.
+  rewrite reachable_by_eq_partialgraph_reachable.
+  apply reachable_refl.
+  simpl.
+  split; auto.
 Qed.
 
 Lemma predicate_subgraph_reachable_included (p: V -> Prop): 
@@ -811,7 +836,40 @@ Proof.
   + apply H1; simpl in H3, H4; rewrite !Intersection_spec in H3, H4; tauto.
   + apply H2; simpl in H3, H4; rewrite !Intersection_spec in H3, H4; tauto.
 Qed.
-    
+
+Lemma si_is_guarded_si:
+  same_relation Graph structurally_identical (guarded_structurally_identical (Full_set _) (Full_set _)).
+Proof.
+  intros.
+  rewrite same_relation_spec.
+  hnf; intros g1.
+  hnf; intros g2.
+  rewrite guarded_si_spec.
+  unfold structurally_identical.
+  pose proof Full_set_spec V.
+  pose proof Full_set_spec E.
+  firstorder.
+Qed.
+
+Lemma guarded_si_weaken: forall (PV1 PV2: V -> Prop) (PE1 PE2: E -> Prop),
+  Included PV2 PV1 ->
+  Included PE2 PE1 ->
+  inclusion Graph (guarded_structurally_identical PV1 PE1) (guarded_structurally_identical PV2 PE2).
+Proof.
+  intros.
+  hnf; intros.
+  rewrite guarded_si_spec in H1 |- *.
+  unfold Included, Ensembles.In in H, H0.
+  firstorder.
+Qed.
+
+Lemma si_guarded_si: forall PV PE,
+  inclusion Graph structurally_identical (guarded_structurally_identical PV PE).
+Proof.
+  intros.
+  rewrite si_is_guarded_si.
+  apply guarded_si_weaken; apply Included_Full_set.
+Qed.
 
 End GuardedStructurallyIdentical.
 
@@ -834,5 +892,37 @@ Definition edge_union (PE: E -> Prop) (G1 G2: Graph) : Prop :=
   (forall e : E, (evalid G1 e \/ PE e <-> evalid G2 e)) /\
   (forall e : E, evalid G1 e -> evalid G2 e -> src G1 e = src G2 e) /\
   (forall e : E, evalid G1 e -> evalid G2 e -> dst G1 e = dst G2 e).
+
+Lemma vertex_join_guarded_si: forall (PV: V -> Prop) (G1 G2: Graph),
+  vertex_join PV G1 G2 ->
+  guarded_structurally_identical (Complement _ PV) (Complement _ (weak_edge_prop PV G2)) G1 G2.
+Proof.
+  intros.
+  rewrite guarded_si_spec.
+  destruct H as [[? ?] [? [? ?]]].
+  unfold Complement, Ensembles.In, weak_edge_prop.
+  split; [| split; [| split]]; firstorder.
+Qed.
+
+Lemma vertex_join_DisjointV: forall (PV: V -> Prop) (G1 G2: Graph),
+  vertex_join PV G1 G2 ->
+  Disjoint V (vvalid G1) PV.
+Proof.
+  intros.
+  rewrite Disjoint_spec.
+  destruct H as [[? ?] _].
+  auto.
+Qed.
+
+Lemma vertex_join_DisjointE: forall (PV: V -> Prop) (G1 G2: Graph),
+  vertex_join PV G1 G2 ->
+  Disjoint E (evalid G1) (weak_edge_prop PV G2).
+Proof.
+  intros.
+  rewrite Disjoint_spec.
+  unfold weak_edge_prop.
+  destruct H as [_ [? _]].
+  firstorder.
+Qed.
 
 End ExpandPartialGraph.
