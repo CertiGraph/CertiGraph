@@ -117,29 +117,28 @@ Proof.
       assert (~ false = true) by congruence; tauto.
 Defined.
 
-Lemma reachable_subgraph_partialgraph (p: V -> Prop):
-  forall (n1 n2: V),
-    reachable (predicate_subgraph p) n1 n2 <-> reachable (predicate_partialgraph p) n1 n2.
+Lemma reachable_by_path_subgraph_partialgraph (p q: V -> Prop):
+  forall (n1 n2: V) (l: list V),
+    (predicate_subgraph p) |= l is n1 ~o~> n2 satisfying q <->
+    (predicate_partialgraph p) |= l is n1 ~o~> n2 satisfying q.
 Proof.
   intros.
-  unfold reachable, reachable_by, reachable_by_path, good_path.
-  apply ex_iff.
-  intro l.
+  unfold reachable_by_path, good_path.
   apply and_iff_compat_l.
   apply and_iff_compat_r.
   destruct l; [simpl; tauto |].
   revert v; induction l; intros.
-  + simpl.
-    tauto.
-  + change (valid_path (predicate_subgraph p) (v :: a :: l)) with (edge (predicate_subgraph p) v a /\ valid_path (predicate_subgraph p) (a :: l)).
-    change (valid_path (predicate_partialgraph p) (v :: a :: l)) with (edge (predicate_partialgraph p) v a /\ valid_path (predicate_partialgraph p) (a :: l)).
+  + simpl. tauto.
+  + change (valid_path (predicate_subgraph p) (v :: a :: l)) with
+    (edge (predicate_subgraph p) v a /\ valid_path (predicate_subgraph p) (a :: l)).
+    change (valid_path (predicate_partialgraph p) (v :: a :: l)) with
+    (edge (predicate_partialgraph p) v a /\ valid_path (predicate_partialgraph p) (a :: l)).
     rewrite IHl.
     apply and_iff_compat_r_weak; intro.
-    assert (vvalid (predicate_partialgraph p) a).
-    Focus 1. {
+    assert (vvalid (predicate_partialgraph p) a). {
       apply valid_path_valid in H.
       inversion H; subst; auto.
-    } Unfocus.
+    }
     unfold edge; simpl.
     rewrite !step_spec. simpl.
     apply and_iff_compat_l.
@@ -154,13 +153,20 @@ Proof.
     tauto.
 Qed.
 
-Lemma reachable_by_eq_subgraph_reachable (p: V -> Prop):
+Lemma reachable_subgraph_partialgraph (p: V -> Prop):
   forall (n1 n2: V),
-    g |= n1 ~o~> n2 satisfying p <-> reachable (predicate_subgraph p) n1 n2.
+    reachable (predicate_subgraph p) n1 n2 <-> reachable (predicate_partialgraph p) n1 n2.
 Proof.
-  intros; split; intros; destruct H as [path [? [? ?]]]; exists path.
+  intros. unfold reachable, reachable_by.
+  apply ex_iff, reachable_by_path_subgraph_partialgraph.
+Qed.
+
+Lemma reachable_by_path_eq_subgraph_reachable (p: V -> Prop):
+  forall (n1 n2: V) (path : list V),
+    g |= path is n1 ~o~> n2 satisfying p <-> (predicate_subgraph p) |= path is n1 ~o~> n2 satisfying (fun _ => True).
+Proof.
+  intros; split; intros; destruct H as [? [? ?]].
   + split; auto. split. 2: repeat intro; hnf; auto.
-    (* destruct path. simpl; auto. *)
     clear H.
     destruct path. simpl; auto.
     revert v H0 H1. induction path; intros.
@@ -199,6 +205,23 @@ Proof.
         inversion H0.
         unfold edge, predicate_subgraph, predicate_vvalid in H; simpl in H.
         constructor; [tauto | auto].
+Qed.
+
+Lemma reachable_by_eq_subgraph_reachable (p: V -> Prop):
+  forall (n1 n2: V),
+    g |= n1 ~o~> n2 satisfying p <-> reachable (predicate_subgraph p) n1 n2.
+Proof.
+  intros. unfold reachable, reachable_by. apply ex_iff; intros.
+  apply reachable_by_path_eq_subgraph_reachable.
+Qed.
+
+Lemma reachable_by_path_eq_partialgraph_reachable (p: V -> Prop):
+  forall (n1 n2: V) (l : list V),
+    g |= l is n1 ~o~> n2 satisfying p <->
+    (predicate_partialgraph p) |= l is n1 ~o~> n2 satisfying (fun _ => True).
+Proof.
+  intros. rewrite reachable_by_path_eq_subgraph_reachable.
+  apply reachable_by_path_subgraph_partialgraph.
 Qed.
 
 Lemma reachable_by_eq_partialgraph_reachable (p: V -> Prop):
