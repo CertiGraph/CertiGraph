@@ -109,10 +109,9 @@ Proof.
   + reflexivity.
 Qed.
 
-(* This should be more trivial *)
-Lemma mark_list_eq: forall root g1 xs g2,
+Lemma mark_list_eq: forall g1 xs g2,
   mark_list xs g1 g2 ->
-  WeakMarkGraph.mark_list root xs g1 g2 /\ g1 ~=~ g2.
+  WeakMarkGraph.mark_list xs g1 g2 /\ g1 ~=~ g2.
 Proof.
   intros.
   change (mark_list xs g1 g2) with
@@ -120,10 +119,7 @@ Proof.
   eapply relation_list_conjunction in H.
   rewrite relation_conjunction_iff in H.
   split.
-  + destruct H as [? _].
-    revert H; apply relation_list_inclusion.
-    intros.
-    apply WeakMarkGraph.mark_is_componded_mark.
+  + destruct H as [? _]. auto.
   + eapply si_list.
     exact (proj2 H).
 Qed.
@@ -138,16 +134,11 @@ Lemma mark1_mark_list_mark: forall root l (g g': Graph)
 Proof.
   intros.
   destruct_relation_list g0 in H2.
-  apply (mark_list_eq root) in H2.
+  apply mark_list_eq in H2.
   destruct H2; simpl in H2.
   split.
   + eapply WeakMarkGraph.mark1_mark_list_mark; eauto.
-    split_relation_list (g :: g0 :: g0 :: g' :: nil).
-    - apply WeakMarkGraph.eq_do_nothing; auto.
-    - auto.
-    - apply WeakMarkGraph.eq_do_nothing; auto.
-    - auto.
-    - apply WeakMarkGraph.eq_do_nothing; auto.
+    split_relation_list (g0 :: nil); auto.
   + destruct H3 as [? _].
     rewrite H3; auto.
 Qed.
@@ -203,7 +194,7 @@ Proof.
   } Unfocus.
   destruct_relation_list g1' in H2.
   destruct H4 as [? _].
-  apply (mark_list_eq x) in H2.
+  apply mark_list_eq in H2.
   destruct H2 as [_ ?].
   rewrite <- H4 in H2; clear g1' H4.
   apply pred_sepcon_ramify_pred_Q with
@@ -228,6 +219,4 @@ Proof.
 Qed.
 
 End SpatialGraph_Mark.
-
-
 

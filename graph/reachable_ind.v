@@ -235,6 +235,44 @@ Proof.
   apply ind.reachable_trans with y; auto.
 Qed.
 
+Lemma reachable_through_set_reachable: forall l x y,
+  reachable_through_set G l x -> reachable G x y -> reachable_through_set G l y.
+Proof.
+  intros.
+  destruct H as [s [? ?]]; exists s; split; auto.
+  apply reachable_trans with x; auto.
+Qed.
+
+Lemma edge_preserved_rev_foot: forall (P: V -> Prop),
+  (forall x y, reachable G x y -> P x -> P y) ->
+  forall x y, 
+  reachable G x y ->
+  ~ P y ->
+  reachable_by G x (Complement _ P) y.
+Proof.
+  intros.
+  rewrite reachable_ind_reachable in H0.
+  induction H0.
+  + apply reachable_by_reflexive; auto.
+  + apply reachable_by_cons with y; auto.
+    rewrite <- reachable_ind_reachable in H2.
+    intro.
+    apply (H x z) in H3; [auto |].
+    apply edge_reachable with y; auto.
+Qed.
+
+Lemma edge_preserved_rev_foot0: forall (P: V -> Prop),
+  (forall x y, reachable G x y -> P x -> P y) ->
+  forall l y, 
+  reachable_through_set G l y ->
+  ~ P y ->
+  reachable_by_through_set G l (Complement _ P) y.
+Proof.
+  intros.
+  destruct H0 as [s [? ?]]; exists s; split; auto.
+  apply edge_preserved_rev_foot; auto.
+Qed.
+
 End ind_reachable.
 
 Section EQUIV.

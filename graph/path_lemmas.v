@@ -243,6 +243,14 @@ Proof.
   split; auto. split. auto. hnf. rewrite Forall_forall; intros; auto.
 Qed.
 
+Lemma reachable_by_through_set_is_reachable_through_set (g: Gph):
+  forall l n P, reachable_by_through_set g l P n -> reachable_through_set g l n.
+Proof.
+  intros.
+  destruct H as [s [? ?]]; exists s; split; auto.
+  apply reachable_by_is_reachable in H0; auto.
+Qed.
+
 Lemma reachable_by_path_is_reachable_by (g: Gph):
   forall p n1 n2 P, g |= p is n1 ~o~> n2 satisfying P -> g |= n1 ~o~> n2 satisfying P.
 Proof. intros. exists p; auto. Qed.
@@ -743,6 +751,14 @@ Proof.
   + exists n1. split; [apply in_eq | auto].
 Qed.
 
+Lemma reachable_by_through_singleton':
+  forall g P n, Same_set (reachable_by_through_set g (n :: nil) P) (reachable_by g n P).
+Proof.
+  intros.
+  rewrite Same_set_spec; intro n'.
+  apply reachable_by_through_singleton.
+Qed.
+
 Lemma reachable_by_through_app: forall g P n l1 l2, reachable_by_through_set g (l1 ++ l2) P n <-> reachable_by_through_set g l1 P n \/ reachable_by_through_set g l2 P n.
 Proof.
   intros.
@@ -754,6 +770,16 @@ Proof.
     rewrite in_app_iff; auto.
   + exists s.
     rewrite in_app_iff; auto.
+Qed.
+
+Lemma reachable_by_through_app': forall g P l1 l2,
+  Same_set
+   (reachable_by_through_set g (l1 ++ l2) P)
+   (Union _ (reachable_by_through_set g l1 P) (reachable_by_through_set g l2 P)).
+Proof.
+  intros.
+  rewrite Same_set_spec; intro n; rewrite Union_spec.
+  apply reachable_by_through_app.
 Qed.
 
 Lemma reachable_by_through_non_foot: forall g P n l l0, reachable_by_through_set g l P n -> reachable_by_through_set g (l ++ l0 :: nil) P n.
