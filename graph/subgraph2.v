@@ -48,8 +48,6 @@ Definition gpredicate_subgraph (PV: V -> Prop) (PE: E -> Prop) (g: PreGraph V E)
   Build_PreGraph EV EE (Intersection _ (vvalid g) PV) (Intersection _ (evalid g) PE) (src g) (dst g).
 
 Context (g: PreGraph V E).
-Context {MA: MathGraph g}.
-Context {LF: LocalFiniteGraph g}.
 
 Definition predicate_vvalid (p: V -> Prop): Ensemble V :=
   fun n => vvalid g n /\ p n.
@@ -71,60 +69,6 @@ Definition reachable_subgraph (S : list V): PreGraph V E :=
 
 Definition unreachable_partialgraph (S : list V): PreGraph V E :=
   predicate_partialgraph (fun n => ~ reachable_through_set g S n).
-
-Definition predicate_sub_mathgraph (p: V -> Prop): MathGraph (predicate_subgraph p).
-Proof.
-  refine (Build_MathGraph _ (is_null g) (is_null_dec g) _ _).
-  + unfold predicate_subgraph, predicate_vvalid, predicate_evalid; simpl; intros.
-    pose proof valid_graph g e.
-    unfold weak_valid in H0.
-    tauto.
-  + unfold predicate_subgraph, predicate_vvalid, predicate_evalid; simpl; intros.
-    pose proof valid_not_null g x.
-    tauto.
-Defined.
-
-Definition predicate_sub_localfinitegraph (p: NodePred V) : LocalFiniteGraph (predicate_subgraph p).
-Proof.
-  refine (Build_LocalFiniteGraph _ _).
-  intros.
-  exists (filter (fun e => if (sumbool_dec_and (node_pred_dec p (src g e)) (node_pred_dec p (dst g e))) then true else false) (edge_func g x)).
-  split.
-  + apply NoDup_filter.
-    unfold edge_func.
-    destruct (local_enumerable x); simpl.
-    tauto.
-  + intros.
-    unfold predicate_subgraph, predicate_vvalid, predicate_evalid; simpl; intros.
-    rewrite filter_In.
-    rewrite edge_func_spec.
-    destruct (sumbool_dec_and (node_pred_dec p (src g x0)) (node_pred_dec p (dst g x0))).
-    - unfold out_edges, Ensembles.In in *; simpl.
-      assert (true = true) by auto; tauto.
-    - unfold out_edges, Ensembles.In in *; simpl.
-      assert (~ false = true) by congruence; tauto.
-Defined.
-
-Definition predicate_partial_localfinitegraph (p: NodePred V) : LocalFiniteGraph (predicate_partialgraph p).
-Proof.
-  refine (Build_LocalFiniteGraph _ _).
-  intros.
-  exists (filter (fun e => if (node_pred_dec p (src g e)) then true else false) (edge_func g x)).
-  split.
-  + apply NoDup_filter.
-    unfold edge_func.
-    destruct (local_enumerable x); simpl.
-    tauto.
-  + intros.
-    unfold predicate_partialgraph, predicate_vvalid, predicate_weak_evalid; simpl; intros.
-    rewrite filter_In.
-    rewrite edge_func_spec.
-    destruct (node_pred_dec p (src g x0)).
-    - unfold out_edges, Ensembles.In in *; simpl.
-      assert (true = true) by auto; tauto.
-    - unfold out_edges, Ensembles.In in *; simpl.
-      assert (~ false = true) by congruence; tauto.
-Defined.
 
 Lemma reachable_by_path_subgraph_partialgraph (p q: V -> Prop):
   forall (n1 n2: V) (l: list V),
@@ -242,6 +186,14 @@ Proof.
   apply reachable_subgraph_partialgraph.
 Qed.
 
+Lemma reachable_by_eq_partialgraph_reachable' (p: V -> Prop) n:
+  Same_set (reachable_by g n p) (reachable (predicate_partialgraph p) n).
+Proof.
+  intros.
+  rewrite Same_set_spec; intro n'.
+  apply reachable_by_eq_partialgraph_reachable.
+Qed.
+
 Lemma reachable_by_head_valid (p: V -> Prop):
   forall (n1 n2: V),
     g |= n1 ~o~> n2 satisfying p -> vvalid g n1.
@@ -262,6 +214,44 @@ Proof.
   apply reachable_foot_valid in H.
   destruct H.
   auto.
+Qed.
+
+Lemma reachable_by_through_set_eq_subgraph_reachable_through_set (p: V -> Prop):
+  forall l n,
+    reachable_by_through_set g l p n <-> reachable_through_set (predicate_subgraph p) l n.
+Proof.
+  intros.
+  unfold reachable_by_through_set, reachable_through_set.
+  pose proof (fun s => reachable_by_eq_subgraph_reachable p s n).
+  firstorder.
+Qed.
+
+Lemma reachable_by_through_set_eq_subgraph_reachable_through_set' (p: V -> Prop):
+  forall l,
+    Same_set (reachable_by_through_set g l p) (reachable_through_set (predicate_subgraph p) l).
+Proof.
+  intros.
+  rewrite Same_set_spec; intro n.
+  apply reachable_by_through_set_eq_subgraph_reachable_through_set.
+Qed.
+
+Lemma reachable_by_through_set_eq_partialgraph_reachable_through_set (p: V -> Prop):
+  forall l n,
+    reachable_by_through_set g l p n <-> reachable_through_set (predicate_partialgraph p) l n.
+Proof.
+  intros.
+  unfold reachable_by_through_set, reachable_through_set.
+  pose proof (fun s => reachable_by_eq_partialgraph_reachable p s n).
+  firstorder.
+Qed.
+
+Lemma reachable_by_through_set_eq_partialgraph_reachable_through_set' (p: V -> Prop):
+  forall l,
+    Same_set (reachable_by_through_set g l p) (reachable_through_set (predicate_partialgraph p) l).
+Proof.
+  intros.
+  rewrite Same_set_spec; intro n.
+  apply reachable_by_through_set_eq_partialgraph_reachable_through_set.
 Qed.
 
 Lemma reachable_by_refl (p: V -> Prop):
@@ -366,6 +356,63 @@ Proof.
   do 2 (split; [tauto |]).
   apply partialgraph_step; auto.
 Qed.
+
+Context {MA: MathGraph g}.
+Context {LF: LocalFiniteGraph g}.
+
+Definition predicate_sub_mathgraph (p: V -> Prop): MathGraph (predicate_subgraph p).
+Proof.
+  refine (Build_MathGraph _ (is_null g) (is_null_dec g) _ _).
+  + unfold predicate_subgraph, predicate_vvalid, predicate_evalid; simpl; intros.
+    pose proof valid_graph g e.
+    unfold weak_valid in H0.
+    tauto.
+  + unfold predicate_subgraph, predicate_vvalid, predicate_evalid; simpl; intros.
+    pose proof valid_not_null g x.
+    tauto.
+Defined.
+
+Definition predicate_sub_localfinitegraph (p: NodePred V) : LocalFiniteGraph (predicate_subgraph p).
+Proof.
+  refine (Build_LocalFiniteGraph _ _).
+  intros.
+  exists (filter (fun e => if (sumbool_dec_and (node_pred_dec p (src g e)) (node_pred_dec p (dst g e))) then true else false) (edge_func g x)).
+  split.
+  + apply NoDup_filter.
+    unfold edge_func.
+    destruct (local_enumerable x); simpl.
+    tauto.
+  + intros.
+    unfold predicate_subgraph, predicate_vvalid, predicate_evalid; simpl; intros.
+    rewrite filter_In.
+    rewrite edge_func_spec.
+    destruct (sumbool_dec_and (node_pred_dec p (src g x0)) (node_pred_dec p (dst g x0))).
+    - unfold out_edges, Ensembles.In in *; simpl.
+      assert (true = true) by auto; tauto.
+    - unfold out_edges, Ensembles.In in *; simpl.
+      assert (~ false = true) by congruence; tauto.
+Defined.
+
+Definition predicate_partial_localfinitegraph (p: NodePred V) : LocalFiniteGraph (predicate_partialgraph p).
+Proof.
+  refine (Build_LocalFiniteGraph _ _).
+  intros.
+  exists (filter (fun e => if (node_pred_dec p (src g e)) then true else false) (edge_func g x)).
+  split.
+  + apply NoDup_filter.
+    unfold edge_func.
+    destruct (local_enumerable x); simpl.
+    tauto.
+  + intros.
+    unfold predicate_partialgraph, predicate_vvalid, predicate_weak_evalid; simpl; intros.
+    rewrite filter_In.
+    rewrite edge_func_spec.
+    destruct (node_pred_dec p (src g x0)).
+    - unfold out_edges, Ensembles.In in *; simpl.
+      assert (true = true) by auto; tauto.
+    - unfold out_edges, Ensembles.In in *; simpl.
+      assert (~ false = true) by congruence; tauto.
+Defined.
 
 End SubGraph.
 
@@ -533,6 +580,22 @@ Proof.
     rewrite H in H5. rewrite H0 in H6. apply H4; tauto.
 Qed.
 
+Lemma si_stronger_partialgraph': forall (g1 g2: PreGraph V E) (p1 p2 p1' p2' p: V -> Prop),
+  Same_set p1' (Intersection _ p1 p) ->
+  Same_set p2' (Intersection _ p2 p) ->
+  (predicate_partialgraph g1 p1) ~=~ (predicate_partialgraph g2 p2) ->
+  (predicate_partialgraph g1 p1') ~=~ (predicate_partialgraph g2 p2').
+Proof.
+  intros.
+  apply si_stronger_partialgraph with (p := p) (p1 := p1) (p2 := p2); auto.
+  - intros.
+    rewrite Same_set_spec in H; specialize (H v).
+    rewrite Intersection_spec in H; auto.
+  - intros.
+    rewrite Same_set_spec in H0; specialize (H0 v).
+    rewrite Intersection_spec in H0; auto.
+Qed.
+
 Lemma si_stronger_partialgraph_simple: forall (g1 g2: PreGraph V E) (p p': V -> Prop),
   Included p' p ->
   (predicate_partialgraph g1 p) ~=~ (predicate_partialgraph g2 p) ->
@@ -542,6 +605,19 @@ Proof.
   eapply si_stronger_partialgraph with (p := p'); [| | exact H0].
   + intro v; specialize (H v); simpl in H; tauto.
   + intro v; specialize (H v); simpl in H; tauto.
+Qed.
+
+Lemma si_partialgraph_stronger_trans: forall (g1 g g2: PreGraph V E) (P1 P2 P: V -> Prop),
+  Included P P1 ->
+  Included P P2 ->
+  (predicate_partialgraph g1 P1) ~=~ (predicate_partialgraph g P1) ->
+  (predicate_partialgraph g P2) ~=~ (predicate_partialgraph g2 P2) ->
+  (predicate_partialgraph g1 P) ~=~ (predicate_partialgraph g2 P).
+Proof.
+  intros.
+  transitivity (predicate_partialgraph g P).
+  + apply si_stronger_partialgraph_simple with P1; auto.
+  + apply si_stronger_partialgraph_simple with P2; auto.
 Qed.
 
 Instance subgraph_proper: Proper (structurally_identical ==> @Same_set V ==> structurally_identical) predicate_subgraph.
@@ -586,7 +662,6 @@ Proof.
   rewrite H, H1.
   reflexivity.
 Defined.
-
 Global Existing Instance reachable_by_proper.
 
 Instance reachable_by_proper': Proper ((@structurally_identical V E _ _) ==> (@eq V) ==> @Same_set V ==> @Same_set V) (@reachable_by V E _ _).
@@ -599,6 +674,27 @@ Proof.
   reflexivity.
 Defined.
 Global Existing Instance reachable_by_proper'.
+
+Instance reachable_by_through_set_proper: Proper ((@structurally_identical V E _ _) ==> eq ==> @Same_set V ==> (@eq V) ==> iff) (@reachable_by_through_set V E _ _).
+Proof.
+  intros.
+  do 4 (hnf; intros); subst.
+  rewrite !reachable_by_through_set_eq_partialgraph_reachable_through_set.
+  rewrite H, H1.
+  reflexivity.
+Defined.
+Global Existing Instance reachable_by_through_set_proper.
+
+Instance reachable_by_through_set_proper': Proper ((@structurally_identical V E _ _) ==> eq ==> @Same_set V ==> @Same_set V) (@reachable_by_through_set V E _ _).
+Proof.
+  intros.
+  do 3 (hnf; intros); subst.
+  rewrite Same_set_spec; hnf; intros.
+  rewrite !reachable_by_through_set_eq_partialgraph_reachable_through_set.
+  rewrite H, H1.
+  reflexivity.
+Defined.
+Global Existing Instance reachable_by_through_set_proper'.
 
 Lemma predicate_partialgraph_reachable_by_included (g: PreGraph V E) (p p0: V -> Prop): 
   forall (n: V), Included (reachable_by (predicate_partialgraph g p) n p0) (reachable_by g n p0).
@@ -776,6 +872,116 @@ Proof.
     - symmetry; auto.
     - unfold vertex_prop_coincide in H1 |-* . intros. symmetry. apply H1; auto.
   + destruct H1 as [s [? ?]]. exists s; split; auto. rewrite <- (si_reachable_by g1 g2 p1 p2); auto.
+Qed.
+
+Lemma reachable_by_through_app_strong: forall (g: PreGraph V E) P l1 l2,
+  (forall n, reachable_by_through_set g l1 P n \/ ~ reachable_by_through_set g l1 P n) ->
+  (forall n, reachable_by_through_set g (l1 ++ l2) P n <-> reachable_by_through_set g l1 P n \/ reachable_by_through_set (predicate_partialgraph g (Complement _ (reachable_by_through_set g l1 P))) l2 P n).
+Proof.
+  intros.
+  rewrite reachable_by_through_app.
+  destruct (H n); [tauto |].
+  apply or_iff_compat_l.
+  split; intros.
+  + destruct H1 as [m [? ?]].
+    exists m; split; auto.
+    assert (forall m, g |= m ~o~> n satisfying P -> ~ reachable_by_through_set g l1 P m).
+    Focus 1. {
+      intros m0 ? [s [? ?]].
+      apply H0; exists s.
+      split; auto.
+      apply reachable_by_merge with m0; auto.
+    } Unfocus.
+    rewrite reachable_by_eq_partialgraph_reachable in H2 |- *.
+    rewrite partial_partialgraph.
+    clear H1.
+    rewrite reachable_ind_reachable in H2.
+    induction H2.
+    - destruct (H x); [tauto |].
+      apply reachable_refl.
+      simpl.
+      split; [destruct H1; auto |].
+      rewrite Intersection_spec.
+      split; [auto | destruct H1; auto].
+    - assert (Complement V (reachable_by_through_set g l1 P) x).
+      Focus 1. {
+        apply H3.
+        rewrite reachable_by_eq_partialgraph_reachable, reachable_ind_reachable.
+        apply ind.reachable_cons with y; auto.
+      } Unfocus.
+      assert (vvalid (predicate_partialgraph g
+       (Intersection V (Complement V (reachable_by_through_set g l1 P)) P)) x).
+      Focus 1. {
+        split; [destruct H1 as [[? _] _]; auto |].
+        rewrite Intersection_spec.
+        split; [auto | destruct H1 as [[_ ?] _]; auto].
+      } Unfocus.
+      assert ((predicate_partialgraph g
+        (Intersection V (Complement V (reachable_by_through_set g l1 P)) P)) ~=~
+           (predicate_partialgraph
+        (predicate_partialgraph g P)
+           (Complement V (reachable_by_through_set g l1 P))))
+        by (rewrite Intersection_comm, partial_partialgraph; reflexivity).
+      apply step_reachable with y; [| auto | auto].
+      rewrite (step_si _ _ _ _ H6).
+      apply partialgraph_step; [destruct H1 as [? [? ?]]; auto | auto].
+  + destruct H1 as [s [? ?]]; exists s; split; auto.
+    rewrite reachable_by_eq_partialgraph_reachable in H2 |- *.
+    rewrite partial_partialgraph, Intersection_comm, <- partial_partialgraph, <- reachable_by_eq_partialgraph_reachable in H2.
+    apply reachable_by_is_reachable in H2; auto.
+Qed.
+
+Lemma reachable_by_through_app_join: forall (g: PreGraph V E) P l1 l2,
+  (forall n, reachable_by_through_set g l1 P n \/ ~ reachable_by_through_set g l1 P n) ->
+  Prop_join
+   (reachable_by_through_set g l1 P)
+   (reachable_by_through_set (predicate_partialgraph g (Complement _ (reachable_by_through_set g l1 P))) l2 P)
+   (reachable_by_through_set g (l1 ++ l2) P).
+Proof.
+  intros.
+  split; [apply reachable_by_through_app_strong; auto |].
+  intros.
+  destruct H0 as [s [? ?]], H1 as [? [? ?]].
+  rewrite reachable_by_eq_partialgraph_reachable, partial_partialgraph, Intersection_comm, <- partial_partialgraph, <- reachable_by_eq_partialgraph_reachable in H3.
+  apply reachable_by_foot_prop in H3.
+  apply H3; exists s; auto.
+Qed.
+
+Lemma Complement_reachable_by_through_app_strong: forall (g: PreGraph V E) P l1 l2,
+  Same_set 
+   (Complement _ (reachable_by_through_set g (l1 ++ l2) P))
+   (Intersection _
+     (Complement _ (reachable_by_through_set g l1 P)) 
+     (Complement _ (reachable_by_through_set (predicate_partialgraph g (Complement _ (reachable_by_through_set g l1 P))) l2 P))).
+Proof.
+  intros.
+  rewrite Same_set_spec; intro n.
+  rewrite Intersection_spec; unfold Complement, Ensembles.In.
+  rewrite reachable_by_through_app.
+  split; intros.
+  + split; [tauto |].
+    rewrite reachable_by_through_set_eq_partialgraph_reachable_through_set, partial_partialgraph, Intersection_comm, <- partial_partialgraph, <- reachable_by_through_set_eq_partialgraph_reachable_through_set.
+    intro.
+    apply reachable_by_through_set_is_reachable_through_set in H0.
+    rewrite <- reachable_by_through_set_eq_partialgraph_reachable_through_set in H0.
+    tauto.
+  + destruct H.
+    intros [? | ?]; [tauto |].
+    apply H0; clear H0.
+    rewrite reachable_by_through_set_eq_partialgraph_reachable_through_set in H, H1 |- *.
+    rewrite partial_partialgraph, Intersection_comm, <- partial_partialgraph, <- reachable_by_through_set_eq_partialgraph_reachable_through_set.
+    assert (Same_set (fun x : V => ~ reachable_by_through_set g l1 P x)
+      (Complement _ (reachable_through_set (predicate_partialgraph g P) l1))).
+    Focus 1. {
+      rewrite Same_set_spec; intro v.
+      pose proof reachable_by_through_set_eq_partialgraph_reachable_through_set g P l1 v.
+      unfold Complement, Ensembles.In; tauto.
+    } Unfocus.
+    rewrite H0; clear H0.
+    remember (predicate_partialgraph g P) as g'.
+    clear g Heqg'.
+    apply edge_preserved_rev_foot0; auto.
+    intros; eapply reachable_through_set_reachable; eauto.
 Qed.
 
 End SI_EQUIV.
