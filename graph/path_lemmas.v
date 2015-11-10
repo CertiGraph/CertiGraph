@@ -628,6 +628,18 @@ Proof.
   rewrite Forall_forall in *. intros. apply H. apply H2. auto.
 Qed.
 
+Lemma reachable_by_through_set_weaken:
+  forall (g: Gph) l x P Q,
+    Included P Q ->
+    reachable_by_through_set g l P x ->
+    reachable_by_through_set g l Q x.
+Proof.
+  intros.
+  destruct H0 as [s [? ?]].
+  exists s; split; auto.
+  eapply reachable_by_weaken; eauto.
+Qed.
+
 Lemma reachable_by_eq: forall (g: Gph) x y P Q,
                                   (forall z, P z <-> Q z) ->
                                   (g |= x ~o~> y satisfying P <-> g |= x ~o~> y satisfying Q).

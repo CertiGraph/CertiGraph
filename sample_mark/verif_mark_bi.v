@@ -66,7 +66,7 @@ Proof.
   Focus 1. { (* if-then branch *)
     destruct_pointer_val x.
     forward. (* return *)
-    apply (exp_right g); entailer!.
+    apply (exp_right g); entailer!; auto.
     apply (mark_null_refl g).
   } Unfocus.
   Focus 1. { (* if-else branch *)
@@ -116,7 +116,7 @@ Proof.
   Focus 1. { (* if-then branch *)
     forward. (* return *)
     apply (exp_right g).
-    entailer!.
+    entailer!; auto.
     eapply (mark_vgamma_true_refl g); eauto.
     clear - H0; destruct d; [auto | inversion H0].
   } Unfocus.
@@ -244,6 +244,6 @@ Proof.
 
   unfold semax_ram.
   forward. (* ( return; ) *)
-  apply (exp_right g3); entailer!.
+  apply (exp_right g3); entailer!; auto.
   apply (mark1_mark_left_mark_right g g1 g2 g3 (ValidPointer b i) l r); auto.
 Time Qed. (* Takes 3 hours. *)

@@ -74,9 +74,13 @@ Proof.
     simpl.
     unfold update_vlabel; simpl.
     destruct_eq_dec x n'; [congruence |].
-    reflexivity.
+    simpl in H2.
+    auto.
   + intros.
-    reflexivity.
+    simpl in H2 |- *.
+    unfold update_vlabel in H2; simpl in H2.
+    destruct_eq_dec x n'; [congruence |].
+    auto.
 Qed.
 
 Lemma left_weak_valid: forall (G G1: Graph) (x l r: addr),
