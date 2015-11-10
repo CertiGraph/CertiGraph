@@ -111,6 +111,14 @@ Proof.
   tauto.
 Qed.
 
+Lemma Intersection_assoc: forall A P Q R, Same_set (Intersection A (Intersection A P Q) R) (Intersection A P (Intersection A Q R)).
+Proof.
+  intros.
+  rewrite Same_set_spec; hnf; intros.
+  rewrite !Intersection_spec.
+  tauto.
+Qed.
+
 Instance Included_proper (V: Type): Proper (Same_set ==> Same_set ==> iff) (@Included V).
 Proof.
   hnf; intros.

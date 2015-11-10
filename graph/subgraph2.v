@@ -874,6 +874,60 @@ Proof.
   + destruct H1 as [s [? ?]]. exists s; split; auto. rewrite <- (si_reachable_by g1 g2 p1 p2); auto.
 Qed.
 
+Lemma step_list_partialgraph: forall  (g: PreGraph V E) n l (P: Ensemble V),
+  vvalid g n ->
+  P n ->
+  step_list g n l ->
+  step_list (predicate_partialgraph g P) n l.
+Proof.
+  intros.
+  intro m; specialize (H1 m).
+  rewrite H1; clear H1.
+  split.
+  + intros; apply partialgraph_step; auto.
+  + intro.
+    inv H1; simpl in *.
+    econstructor.
+    - destruct H2; eauto.
+    - reflexivity.
+    - reflexivity.
+Qed.
+
+Lemma reachable_by_step_equiv:
+  forall (g: PreGraph V E) n1 l n2 (P: Ensemble V),
+     let P' := Intersection _ P (Complement _ (eq n1)) in
+     vvalid g n1 ->
+     step_list g n1 l ->
+     P n1 ->
+     (g |= n1 ~o~> n2 satisfying P <->
+     n1 = n2 \/ reachable_by_through_set g l P' n2).
+Proof.
+  intros.
+  split; intros.
+  + apply reachable_by_step in H2.
+    destruct H2; [auto | right].
+    destruct H2 as [n [[? [? ?]] ?]].
+    exists n.
+    split; [rewrite (H0 n); auto |].
+    eapply reachable_by_weaken; [| eauto].
+    clear.
+    intro n; unfold P', Ensembles.In.
+    rewrite Intersection_spec.
+    unfold Complement, Ensembles.In.
+    assert (n <> n1 <-> n1 <> n) by (split; intros; congruence).
+    tauto.
+  + destruct H2.
+    - subst; eapply reachable_by_reflexive; auto.
+    - destruct H2 as [n [? ?]].
+      rewrite (H0 n) in H2.
+      apply reachable_by_cons with n.
+      * split; [| split]; auto.
+        apply reachable_by_head_valid in H3; auto.
+      * auto.
+      * eapply reachable_by_weaken; [| eauto].
+        apply Intersection1_Included, Included_refl.
+Qed.
+
 Lemma reachable_by_through_app_strong: forall (g: PreGraph V E) P l1 l2,
   (forall n, reachable_by_through_set g l1 P n \/ ~ reachable_by_through_set g l1 P n) ->
   (forall n, reachable_by_through_set g (l1 ++ l2) P n <-> reachable_by_through_set g l1 P n \/ reachable_by_through_set (predicate_partialgraph g (Complement _ (reachable_by_through_set g l1 P))) l2 P n).
