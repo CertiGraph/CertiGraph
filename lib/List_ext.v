@@ -684,3 +684,32 @@ Fixpoint prefixes {A: Type} (l: list A): list (list A) :=
   | a :: l0 => nil :: map (cons a) (prefixes l0)
   end.
 
+Lemma rev_list_ind: forall {A} (P: list A -> Prop),
+  P nil ->
+  (forall l a, P l -> P (l +:: a)) ->
+  (forall l, P l).
+Proof.
+  intros.
+  rewrite <- rev_involutive.
+  set (P' l' := P (rev l')).
+  assert (forall l' a, P' l' -> P' (a :: l')).
+  Focus 1. {
+    unfold P'.
+    intros.
+    specialize (H0 (rev l') a).
+    change (a :: l') with ((a :: nil) ++ l').
+    rewrite rev_app_distr.
+    simpl (rev (a :: nil)).
+    apply H0; auto.
+  } Unfocus.
+  set (l' := rev l).
+  change (P (rev l')) with (P' l').
+  assert (P' nil) by auto.
+  clearbody l' P'.
+  clear H0 P l H.
+  induction l'; auto.
+Qed.
+
+Ltac rev_induction l :=
+  revert dependent l;
+  refine (rev_list_ind _ _ _); intros.

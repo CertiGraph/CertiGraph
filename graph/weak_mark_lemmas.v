@@ -324,8 +324,8 @@ Lemma mark1_mark_list_mark: forall root l (g1 g2: Graph),
 Proof.
   intros.
   rename g1 into g.
-  destruct_relation_list g1 in H2.
-  pose proof triple_mark1 root g g1 H3.
+  destruct_relation_list g0 in H2.
+  pose proof triple_mark1 root g g0 H3.
   cbv zeta in H4.
   set (unmarked' := Intersection _ (unmarked g) (Complement _ (eq root))) in H4.
   set (PV1 := reachable_by_through_set g nil unmarked') in H4.
@@ -341,12 +341,24 @@ Proof.
   assert (l = l_done ++ l_later) by (unfold l_later; rewrite app_nil_r; auto).
   revert PV2 H2; change l with l_done; intros.
   clearbody l_done l_later.
-  revert l_later H3; induction l_done; intros.
+  revert  g2 H2 l_later H3; rev_induction l_done; intros.
   + unfold mark_list, relation_list in H2.
     simpl in H2; subst g2.
     auto.
   + clear PV1 H4.
-Admitted.
+    rename l0 into l_done.
+    rewrite <- app_assoc in H5; simpl in H5.
+    unfold mark_list in H3; rewrite map_app in H3; simpl in H3.
+    apply (proj1 ((proj1 (same_relation_spec _ _) (relation_list_tail _ _)) _ _)) in H3.
+    apply compond_relation_spec in H3; destruct H3 as [g1 [? ?]].
+
+    cbv zeta in H2.
+    specialize (H2 g1 H3 (a :: l_later) H5).
+    set (PV1 := reachable_by_through_set g l_done unmarked') in H2.
+    split.
+    - eapply triple1_mark; eauto.
+    - eapply triple2_mark; eauto.
+Qed.
 
 Lemma vertex_update_mark1: forall (g: Graph) x lx,
   label_marked lx ->
