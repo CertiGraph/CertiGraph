@@ -34,7 +34,24 @@ Module SIMPLE_SPANNING_TREE.
         - intros. apply H2. rewrite (reachable_by_path_si g1 g2); auto.
     Qed.
 
-    Definition spanning_tree (g1 : Graph) (root : V) (P: V -> Prop) (g2: Graph) := 
+    Lemma is_tree_ppg_spec: forall (g: Graph) (P : V -> Prop) root,
+        is_tree (predicate_partialgraph g P) root <->
+        forall y, g |= root ~o~> y satisfying P -> exists ! p, g |= p is root ~o~> y satisfying P.
+    Proof.
+      intros. unfold is_tree. split; intros.
+      + rewrite reachable_by_eq_partialgraph_reachable in H0. specialize (H _ H0).
+        destruct H as [p [? ?]]. exists p. split; intros.
+        - rewrite reachable_by_path_eq_partialgraph_reachable; auto.
+        - rewrite reachable_by_path_eq_partialgraph_reachable in H2.
+          apply H1; auto.
+      + rewrite <- reachable_by_eq_partialgraph_reachable in H0. specialize (H _ H0).
+        destruct H as [p [? ?]]. exists p. split; intros.
+        - rewrite <- reachable_by_path_eq_partialgraph_reachable; auto.
+        - rewrite <- reachable_by_path_eq_partialgraph_reachable in H2.
+          apply H1; auto.
+    Qed.
+
+    Definition spanning_tree (g1 : Graph) (root : V) (P: V -> Prop) (g2: Graph) :=
       (predicate_partialgraph g1 (fun n => ~ g1 |= root ~o~> n satisfying P)) ~=~
       (predicate_partialgraph g2 (fun n => ~ g1 |= root ~o~> n satisfying P)) /\
       (P root -> is_tree (predicate_partialgraph g2 (reachable_by g1 root P)) root) /\
@@ -96,10 +113,21 @@ Module SIMPLE_SPANNING_TREE.
       + eapply not_reachable_ST_vvalid; eauto.
     Qed.
 
+    Lemma spanning_tree_vvalid':
+      forall (g1 : Graph) (root : V) (P: V -> Prop) (g2 : Graph) x,
+        spanning_tree g1 root P g2 -> (vvalid g1 x <-> vvalid g2 x).
+    Proof.
+      intros. destruct (classic (g1 |= root ~o~> x satisfying P)) as [r | n].
+      + destruct H as [? [? [? ?]]]. split; intros.
+        - specialize (H1 _ r). apply reachable_foot_valid in H1. auto.
+        - apply reachable_by_foot_valid in r. auto.
+      + eapply not_reachable_ST_vvalid; eauto.
+    Qed.
+
     Lemma spanning_tree_root_vvalid: forall (g1 : Graph) (root : V) (P: V -> Prop) (g2 : Graph),
         spanning_tree g1 root P g2 -> P root -> vvalid g1 root -> vvalid g2 root.
     Proof.
-      intros. destruct H as [_ [_ [? _]]]. 
+      intros. destruct H as [_ [_ [? _]]].
       assert (g1 |= root ~o~> root satisfying P) by (apply reachable_by_reflexive; auto).
       specialize (H _ H2). apply reachable_head_valid in H. auto.
     Qed.
@@ -109,6 +137,15 @@ Module SIMPLE_SPANNING_TREE.
     Proof.
       intros. destruct H as [[_ ?]|[_ [? _]]].
       + apply (spanning_tree_vvalid g1 (dst g1 e) P g2); auto.
+      + apply H.
+    Qed.
+
+    Lemma edge_spanning_tree_vvalid':
+      forall (g1: Graph) e (P: V -> Prop) (g2: Graph) x,
+        edge_spanning_tree g1 e P g2 -> (vvalid g1 x <-> vvalid g2 x).
+    Proof.
+      intros. destruct H as [[_ ?]|[_ [? _]]].
+      + apply (spanning_tree_vvalid' g1 (dst g1 e) P g2); auto.
       + apply H.
     Qed.
 
@@ -262,7 +299,7 @@ Module SIMPLE_SPANNING_TREE.
         (predicate_partialgraph g1 (fun n : V => ~ g1 |= root ~o~> n satisfying P)) ~=~
         (predicate_partialgraph g2 (fun n : V => ~ g1 |= root ~o~> n satisfying P)).
     Proof.
-      intros. destruct H2 as [? [? [? [? ?]]]]. 
+      intros. destruct H2 as [? [? [? [? ?]]]].
       assert (g1 |= root ~o~> src g1 e satisfying P). {
         destruct H. rewrite H7.
         apply reachable_by_reflexive; auto.
@@ -389,7 +426,7 @@ Module SIMPLE_SPANNING_TREE.
         } exists p. destruct H2 as [? _].
         rewrite (ppg_reachable_by_path_eq g1 g2 _ _ p root x H2 H4); auto.
     Qed.
-    
+
     Lemma EST_root_reachable_by: forall (g1 g2: Graph) (e: E) (root: V) (P: V -> Prop),
         out_edges g1 root e -> vvalid g1 root -> P root ->
         ReachDecidable g1 (dst g1 e) (fun x => P x /\ x <> root) ->
@@ -400,7 +437,7 @@ Module SIMPLE_SPANNING_TREE.
       + apply (spanning_tree_root_reachable_by g1 g2 e); auto.
       + intro n. unfold Ensembles.In . intros. rewrite (gremove_root_reachable_by_equiv g1 g2 e); auto.
     Qed.
-    
+
     Inductive spanning_list' : (V -> Prop) -> Graph -> list E -> Graph -> Prop :=
     | spanning_list_nil': forall P g1 g2, g1 ~=~ g2 -> spanning_list' P g1 nil g2
     | spanning_list_cons':
@@ -461,7 +498,7 @@ Module SIMPLE_SPANNING_TREE.
                 rewrite Coqlib.list_append_map. apply in_or_app. left; auto.
               } specialize (IHspanning_list' H2).
     Abort.
-    
+
     Inductive spanning_list : (V -> Prop) -> Graph -> list E -> Graph -> Prop :=
     | spanning_list_nil: forall P g1 g2, g1 ~=~ g2 -> spanning_list P g1 nil g2
     | spanning_list_cons:
@@ -594,64 +631,96 @@ Module SIMPLE_SPANNING_TREE.
     Lemma spanning_tree_not_reachable_derive:
       forall (g1 : Graph) (root : V) (P : V -> Prop) (g2 : Graph) (x y : V),
         spanning_tree g1 root P g2 ->
-        ~ g1 |= root ~o~> x satisfying P ->
         ~ g1 |= root ~o~> y satisfying P ->
-        ~ reachable g1 x y -> ~ reachable g2 x y.
+        reachable g2 x y -> reachable g1 x y.
     Proof.
-      intros. intro; apply H2; clear H2. rename H3 into H2.
-      destruct H as [? [? [? ?]]].
-      destruct (classic
-                  (g2 |= x ~o~> y
-                      satisfying (fun n : V => ~ g1 |= root ~o~> n satisfying P))).
-      + destruct H6 as [p ?].
-        assert (forall v, In v p -> ~ g1 |= root ~o~> v satisfying P). {
-          intros. pose proof (reachable_by_path_in _ _ _ _ _ H6 v H7).
-          apply reachable_by_foot_prop in H8. auto.
-        }
-        rewrite <- ppg_reachable_by_path_eq in H6; eauto.
-        apply reachable_by_path_is_reachable_by in H6.
-        revert H6. apply reachable_by_weaken.
-        hnf; unfold Ensembles.In ; intros; auto.
-      + destruct H2 as [p ?].
-        destruct (classic (exists v, In v p /\ g1 |= root ~o~> v satisfying P)).
-        - destruct H7 as [v [? ?]]. specialize (H5 _ _ H8 H1). exfalso; apply H5.
-          eapply reachable_by_path_in'; eauto.
-        - assert (forall v, In v p -> ~ g1 |= root ~o~> v satisfying P). {
-            intros. apply not_ex_all_not with (n := v) in H7.
-            apply not_and_or in H7. destruct H7; auto.
-          } clear H7. exfalso. apply H6. exists p.
-          destruct H2 as [? [? ?]]. do 2 (split; auto).
-          hnf. rewrite Forall_forall. apply H8.
+      intros. apply (spanning_tree_not_reachable _ _ _ _ _ _ H) in H1; auto.
+      unfold Complement in H1. unfold Ensembles.In in H1.
+      destruct H1 as [p ?].
+      assert (forall v, In v p -> ~ g1 |= root ~o~> v satisfying P). {
+        intros. pose proof (reachable_by_path_in _ _ _ _ _ H1 v H2).
+        apply reachable_by_foot_prop in H3. auto.
+      }
+      destruct H.
+      rewrite <- ppg_reachable_by_path_eq in H1; eauto.
+      apply reachable_by_path_is_reachable_by in H1.
+      revert H1. apply reachable_by_weaken.
+      hnf; unfold Ensembles.In ; intros; auto.
+    Qed.
+
+    Lemma spanning_tree_not_edge_derive:
+      forall (g1 : Graph) (root : V) (P : V -> Prop) (g2 : Graph) (x y : V),
+        spanning_tree g1 root P g2 ->
+        ~ g1 |= root ~o~> x satisfying P ->
+        g2 |= x ~> y -> g1 |= x ~> y.
+    Proof.
+      intros. destruct H1 as [? [? ?]]. hnf.
+      split; [|split]; [rewrite spanning_tree_vvalid'; eauto ..|].
+      rewrite step_spec in H3 |-* . destruct H3 as [e [? [? ?]]].
+      destruct H as [? _]. hnf in H. simpl in H.
+      unfold predicate_weak_evalid in H. destruct H as [_ [? [? ?]]].
+      specialize (H e). specialize (H6 e). specialize (H7 e). rewrite <- H4 in *.
+      assert (evalid g2 e /\ ~ g1 |= root ~o~> src g2 e satisfying P) by intuition.
+      subst y. exists e. intuition.
+    Qed.
+
+    Lemma gremove_not_edge_derive:
+      forall (g1 : Graph) (e : E) (g2 : Graph) (x y : V),
+        gremove_edge g1 e g2 -> g2 |= x ~> y -> g1 |= x ~> y.
+    Proof.
+      intros. destruct H0 as [? [? ?]]. destruct H as [? [? [? [? ?]]]].
+      split; [|split]; [rewrite H; auto..|].
+      rewrite step_spec in H2 |-* . destruct H2 as [e' [? [? ?]]]. exists e'.
+      assert (e' <> e). {
+        intro. subst e'. destruct H6; auto.
+        destruct H6 as [? [? ?]]. subst y. auto.
+      } specialize (H3 _ H9). specialize (H4 _ H9). specialize (H5 _ H9).
+      subst x y. intuition.
+    Qed.
+
+    Lemma gremove_not_reachable_by_derive:
+      forall (g1 : Graph) (e : E) (g2 : Graph) (x y : V) (p: path) (P: V -> Prop),
+        gremove_edge g1 e g2 ->
+        g2 |= p is x ~o~> y satisfying P ->
+        g1 |= p is x ~o~> y satisfying P.
+    Proof.
+      intros. destruct H0 as [? [? ?]]. do 2 (split; auto). clear H0 H2.
+      induction p; simpl; auto. destruct p.
+      + simpl in H1. destruct H. rewrite H; auto.
+      + destruct H1. split.
+        - apply (gremove_not_edge_derive _ e g2); auto.
+        - apply IHp; auto.
     Qed.
 
     Lemma gremove_not_reachable_derive:
       forall (g1 : Graph) (e : E) (g2 : Graph) (x y : V),
         gremove_edge g1 e g2 -> ~ reachable g1 x y -> ~ reachable g2 x y.
     Proof.
-      intros. intro. apply H0; clear H0. destruct H as [? [? [? [? ?]]]].
-      destruct H1 as [p [? [? ?]]]. exists p; do 2 (split; auto). clear H1 H6.
-      induction p; simpl; auto. destruct p.
-      + simpl in H5. rewrite H; auto.
-      + destruct H5. split.
-        - destruct H1 as [? [? ?]]. split; [|split]; [rewrite H; auto ..|].
-          rewrite step_spec in H7 |-* . destruct H7 as [e' [? [? ?]]].
-          exists e'. assert (e' <> e). {
-            intro. subst e'. destruct H4; auto.
-            destruct H4 as [? [? ?]]. subst v. auto.
-          } specialize (H0 _ H10). specialize (H2 _ H10). specialize (H3 _ H10).
-          subst a v. intuition.
-        - apply IHp; auto.
+      intros. intro. apply H0; clear H0.
+      destruct H1 as [p ?]. exists p.
+      apply (gremove_not_reachable_by_derive _ e g2); auto.
+    Qed.
+
+    Lemma EST_not_edge_derive:
+      forall (g1 : Graph) (e : E) (P : V -> Prop) (g2 : Graph) (x y : V),
+        edge_spanning_tree g1 e P g2 ->
+        ~ g1 |= dst g1 e ~o~> x satisfying P ->
+        g2 |= x ~> y -> g1 |= x ~> y.
+    Proof.
+      intros. destruct H as [[? ?] | [? ?]].
+      + apply (spanning_tree_not_edge_derive _ (dst g1 e) P g2); auto.
+      + apply (gremove_not_edge_derive _ e g2); auto.
     Qed.
 
     Lemma EST_not_reachable_derive:
       forall (g1 : Graph) (e : E) (P : V -> Prop) (g2 : Graph) (x y : V),
         edge_spanning_tree g1 e P g2 ->
-        ~ g1 |= dst g1 e ~o~> x satisfying P ->
         ~ g1 |= dst g1 e ~o~> y satisfying P ->
         ~ reachable g1 x y -> ~ reachable g2 x y.
     Proof.
       intros. destruct H as [[? ?] | [? ?]].
-      + apply (spanning_tree_not_reachable_derive g1 (dst g1 e) P g2 x y); auto.
+      + intro. apply H1.
+        apply (spanning_tree_not_reachable_derive g1 (dst g1 e) P g2 x y); auto.
       + apply (gremove_not_reachable_derive g1 e g2 x y); auto.
     Qed.
 
@@ -730,7 +799,7 @@ Module SIMPLE_SPANNING_TREE.
               assert (out_edges g2 root e1). {
                 rewrite <- (ppg_out_edges (fun x => P x /\ x <> root) g1); eauto.
                 intro. destruct H26; auto.
-              } destruct H26. 
+              } destruct H26.
               specialize (H22 _ H). specialize (H23 _ H). specialize (H24 _ H).
               split; [|split].
             - intuition.
@@ -833,23 +902,17 @@ Module SIMPLE_SPANNING_TREE.
     Lemma EST_not_reachable: forall (P Q: V -> Prop) g1 root g2 (e: E) n,
         ~ P root -> Q root -> vvalid g1 root -> Included P Q ->
         out_edges g1 root e -> edge_spanning_tree g1 e P g2 ->
-        ~ g1 |= root ~o~> n satisfying Q ->
+        ~ g1 |= dst g1 e ~o~> n satisfying P ->
         (~ reachable g2 (dst g2 e) n \/ ~ out_edges g2 root e).
     Proof.
       intros. destruct (classic (g1 |= dst g1 e ~o~> dst g1 e satisfying P)).
       + destruct H4 as [[? ?] | [? ?]].
         2: apply reachable_by_head_prop in H6; exfalso; auto.
-        destruct H7 as [? [_ [_ ?]]].
-        assert (~ g1 |= dst g1 e ~o~> n satisfying P). {
-          intro. apply H5. apply reachable_by_cons with (dst g1 e); auto.
-          + split; auto. apply reachable_by_head_valid in H9; split; auto.
-            rewrite step_spec. exists e. destruct H3; auto.
-          + revert H9. apply reachable_by_weaken; auto.
-        } specialize (H8 _ _ H6 H9).
+        destruct H7 as [? [_ [_ ?]]]. specialize (H8 _ _ H6 H5).
         assert (out_edges g2 root e) by (rewrite <- (ppg_out_edges P g1); eauto).
         assert (dst g1 e = dst g2 e)
           by (apply (ppg_the_same_dst _ _ root _ _ e H) in H7; auto).
-        rewrite H11 in *. left; auto.
+        rewrite H10 in *. left; auto.
       + destruct H4 as [[? ?] | [? ?]].
         - assert (~ vvalid g1 (dst g1 e)). {
             intro. apply H6. apply reachable_by_reflexive; auto.
@@ -860,14 +923,100 @@ Module SIMPLE_SPANNING_TREE.
           assert (out_edges g2 root e) by (rewrite <- (ppg_out_edges P g1); eauto).
           assert (~ reachable g1 (dst g2 e) n)
             by (intro; apply reachable_by_head_valid in H12; auto).
+          intro; apply H12.
           apply (spanning_tree_not_reachable_derive g1 _ _ g2 _ _ H9); auto.
-          intro. apply reachable_by_head_valid in H13; auto.
         - destruct H7 as [? [? [? [? ?]]]]. destruct H11.
           * right. intro. apply H11. destruct H12; auto.
           * destruct H11 as [? [? ?]].
             left; intro. apply H11. apply reachable_by_head_valid in H14; auto.
     Qed.
-        
+
+    Lemma ST2_not_reachable: forall (P Q: V -> Prop) g1 root g2 g3 (e1 e2: E) n,
+        e1 <> e2 -> ~ P root -> Q root -> vvalid g1 root -> Included P Q ->
+        out_edges g1 root e1 -> out_edges g1 root e2 ->
+        edge_spanning_tree g1 e1 P g2 ->
+        ReachDecidable g1 (dst g1 e1) P ->
+        ~ g1 |= (dst g1 e1) ~o~> n satisfying P ->
+        edge_spanning_tree g2 e2 (fun x : V =>
+                                    P x /\ ~ g1 |= dst g1 e1 ~o~> x
+                                             satisfying P) g3 ->
+        ~ g2 |= dst g2 e2 ~o~> n
+          satisfying (fun x : V => P x /\
+                                   ~ g1 |= dst g1 e1 ~o~> x satisfying P) ->
+        (~ reachable g3 (dst g3 e1) n \/ ~ out_edges g3 root e1).
+    Proof.
+      intros.
+      assert (vvalid g2 root)
+        by (rewrite <- (edge_spanning_tree_vvalid g1 e1 P); auto).
+      assert (out_edges g2 root e2) by
+          (apply (EST_out_edges P g1 _ _ e1); intuition).
+      destruct (X (dst g1 e1)); destruct H6 as [[? ?] | [? ?]].
+      + destruct H12 as [? [_ [_ ?]]]. specialize (H13 _ _ r H7).
+        assert (out_edges g2 root e1) by (rewrite <- (ppg_out_edges P g1); eauto).
+        assert (dst g1 e1 = dst g2 e1)
+          by (apply (ppg_the_same_dst _ _ root) with (e := e1) in H12; auto).
+        rewrite H15 in *.
+        assert (dst g2 e1 = dst g3 e1). {
+          apply (EST_the_same_dst _ _ root _ _ e1) in H8; auto.
+          intro. destruct H16 as [? _]. auto.
+        } rewrite H16 in *. left.
+        apply (EST_not_reachable_derive _ _ _ _ _ _ H8); auto.
+      + apply reachable_by_head_prop in r; exfalso; auto.
+      + assert (~ vvalid g1 (dst g1 e1)). {
+          intro. apply n0. apply reachable_by_reflexive; auto.
+        } pose proof H12. destruct H12 as [? _].
+        assert (dst g1 e1 = dst g2 e1)
+          by (apply (ppg_the_same_dst _ _ root) with (e := e1) in H12; auto).
+        rewrite H15 in *.
+        assert (out_edges g2 root e1) by (rewrite <- (ppg_out_edges P g1); eauto).
+        assert (dst g2 e1 = dst g3 e1). {
+          apply (EST_the_same_dst _ _ root _ _ e1) in H8; auto.
+          intro. destruct H17 as [? _]. auto.
+        } rewrite H17 in *.
+        assert (~ vvalid g2 (dst g3 e1))
+          by (rewrite <- (not_reachable_ST_vvalid
+                            g1 (dst g3 e1) P); auto). left.
+        apply not_reachable_EST_vvalid with (x := (dst g3 e1)) in H8; auto.
+        2: intro; apply reachable_by_foot_valid in H19; auto.
+        rewrite H8 in H18. intro. apply H18.
+        apply reachable_by_head_valid in H19. auto.
+      + destruct H12 as [? [? [? [? ?]]]]. destruct H16.
+        - right. intro. apply H16.
+          apply (EST_reverse_out_edges
+                   (fun x : V =>
+                      P x /\
+                      ~ g1 |= dst g1 e1 ~o~> x
+                        satisfying P) g2 _ e2) in H17; auto.
+          2: intro; destruct H18 as [? _]; auto.
+          destruct H17; auto.
+        - destruct H16 as [? [? ?]].
+          assert (out_edges g2 root e1). {
+            clear -H4 H17 H18. destruct H4. subst root. split; auto.
+          }
+          assert (dst g2 e1 = dst g3 e1). {
+            apply (EST_the_same_dst _ _ root _ _ e1) in H8; auto.
+            intro. destruct H20 as [? _]. auto.
+          } rewrite H20 in *.
+          assert (~ reachable g2 (dst g3 e1) n). {
+            clear -H16. intro. apply H16.
+            apply reachable_head_valid in H. auto.
+          } left.
+          apply (EST_not_reachable_derive _ _ _ _ _ _ H8); auto.
+    Qed.
+
+    Lemma list_first_prop: forall {A} (n : A) (l : list A) (s : A) (P: A -> Prop),
+        P n -> ~ P s -> In s l -> exists l1 l2 n1 n2, P n1 /\ ~ P n2 /\
+                                                      n :: l = l1 ++ n1 :: n2 :: l2.
+    Proof.
+      intros. revert n H. induction l. inversion H1. simpl in H1. intros. destruct H1.
+      + subst a. exists nil, l, n, s. split; auto.
+      + destruct (classic (P a)).
+        - specialize (IHl H1 a H2). destruct IHl as [l1 [l2 [n1 [n2 [? [? ?]]]]]].
+          exists (n :: l1), l2, n1, n2. do 2 (split; auto).
+          rewrite H5. rewrite <- app_comm_cons. auto.
+        - exists nil, l, n, a. split; auto.
+    Qed.
+
     Lemma spanning_list_spanning_tree2: forall (P: V -> Prop) g1 root g2 (e1 e2 : E),
         (e1 <> e2) -> (forall e, In e (e1 :: e2 :: nil) <-> out_edges g1 root e) ->
         vvalid g1 root -> P root ->
@@ -910,7 +1059,386 @@ Module SIMPLE_SPANNING_TREE.
         cut (Included (reachable_by g2 root P) (reachable_by g1 root P)).
         - unfold Included. unfold Ensembles.In . intros. intuition.
         - apply EST_root_reachable_by with e1; auto.
-      + admit.
+      + rewrite is_tree_ppg_spec. intros.
+        pose proof H10. destruct H11 as [p ?].
+        exists p. unfold unique. split; auto. intros.
+        destruct x'. 1: destruct H12 as [[? _] _]; inversion H12.
+        assert (v = root)
+          by (destruct H12 as [[? _] _]; simpl in H12; inversion H12; auto).
+        subst v. destruct p. 1: destruct H11 as [[? _] _]; inversion H11.
+        assert (v = root)
+          by (destruct H11 as [[? _] _]; simpl in H11; inversion H11; auto).
+        subst v.
+        assert (forall v path, ~ g3 |= root :: v :: path is root ~o~> root
+                                 satisfying (reachable_by g1 root P)). {
+          intros. intro. pose proof H13. destruct H14 as [_ [[[? [? ?]] _] _]].
+          rewrite step_spec in H16. destruct H16 as [e [? [? ?]]].
+          assert (out_edges g1 root e). {
+              apply (EST_reverse_out_edges
+                       (fun x : V => P x /\ x <> root) g1 g2 e1); auto.
+              intro. destruct H19; auto.
+              apply (EST_reverse_out_edges
+                       (fun x : V =>
+                          (P x /\ x <> root) /\
+                          ~ g1 |= dst g1 e1 ~o~> x
+                            satisfying
+                            (fun x0 : V => P x0 /\ x0 <> root)) g2 g3 e2); auto.
+              intro. destruct H19 as [[_ ?] _]; auto.
+              split; auto.
+            } rewrite <- H0 in H19. simpl in H19.
+          destruct H19 as [? | [? | ?]]; auto; subst e; subst v.
+          + assert (~ reachable g3 (dst g3 e1) root \/ ~ out_edges g3 root e1). {
+              apply (ST2_not_reachable
+                       (fun x : V => P x /\ x <> root) P g1 _ g2 _ _ e2); auto.
+              + intro. destruct H18; auto.
+              + compute. tauto.
+              + intro. apply reachable_by_foot_prop in H18. destruct H18; auto.
+              + intro. apply reachable_by_foot_prop in H18.
+                destruct H18 as [[_ ?] _]; auto.
+            } destruct H18.
+            - apply H18. exists (dst g3 e1 :: path). destruct H13 as [[_ ?] [? _]].
+              split; split; auto. destruct H19; auto.
+              hnf. rewrite Forall_forall. intros; auto.
+            - apply H18. split; auto.
+          + assert (~ reachable g3 (dst g3 e2) root \/ ~ out_edges g3 root e2). {
+              apply (EST_not_reachable
+                       (fun x : V =>
+                          (P x /\ x <> root) /\
+                          ~ g1 |= dst g1 e1 ~o~> x
+                            satisfying (fun x0 : V => P x0 /\ x0 <> root))
+                       P g2); auto.
+              + intro. destruct H18 as [[_ ?] _]; auto.
+              + hnf. unfold Ensembles.In . intuition.
+              + intro. apply reachable_by_foot_prop in H18.
+                destruct H18 as [[_ ?] _]; auto.
+            } destruct H18.
+            - apply H18. exists (dst g3 e2 :: path). clear -H13.
+              destruct H13 as [[? ?] [[? ?] ?]]. split; split; auto.
+              hnf. rewrite Forall_forall; intros; auto.
+            - apply H18. split; auto.
+        }
+        destruct x'; destruct p; auto.
+        - destruct H12 as [[_ ?] _]. simpl in H12. inversion H12. subst y.
+          exfalso. specialize (H13 v p). auto.
+        - destruct H11 as [[_ ?] _]. simpl in H11. inversion H11. subst y.
+          exfalso. specialize (H13 v x'). auto.
+        - assert (forall m ms, g3 |= root :: m :: ms is root ~o~> y
+                                  satisfying (reachable_by g1 root P) ->
+                               g3 |= m :: ms is m ~o~> y
+                                  satisfying (fun x : V => P x /\ x <> root)). {
+            clear -H13. intros. pose proof H. destruct H0 as [[_ ?] [[? ?] ?]].
+            split; split; auto. hnf in H3 |-* . rewrite Forall_forall in H3 |-* .
+            intros; split.
+            + assert (In x (root :: m :: ms)) by (apply in_cons; auto).
+              specialize (H3 _ H5). apply reachable_by_foot_prop in H3; auto.
+            + intro. subst. apply in_split in H4. destruct H4 as [l1 [l2 ?]].
+              destruct l1.
+              - rewrite app_nil_l in H4.
+                assert (g3 |= root :: root :: nil is root ~o~> root
+                           satisfying (reachable_by g1 root P)). {
+                  inversion H4. subst. split; split; auto.
+                  * simpl. split; auto. destruct H1; auto.
+                  * hnf. rewrite Forall_forall. intros. apply H3. simpl in H5.
+                  destruct H5 as [? | [? | ?]];
+                    [subst x; apply in_eq ..| exfalso; auto].
+                } specialize (H13 root nil). auto.
+              - rewrite <- app_comm_cons in H4. rewrite app_cons_assoc in H4.
+                assert (g3 |= root :: v :: l1 +:: root is root ~o~> root
+                           satisfying (reachable_by g1 root P)). {
+                  split; split; auto.
+                  + rewrite foot_simpl. rewrite app_comm_cons. rewrite foot_last. auto.
+                  + rewrite H4 in *. rewrite app_cons_assoc in H.
+                    repeat rewrite app_comm_cons in H. destruct H as [_ [? _]].
+                    apply valid_path_split in H. destruct H.
+                    repeat rewrite <- app_comm_cons in H. rewrite app_nil_r in H. auto.
+                  + rewrite H4 in *. hnf. rewrite Forall_forall. intros. apply H3.
+                    simpl. clear -H5. simpl in H5. intuition.
+                } specialize (H13 v (l1 +:: root)). auto.
+          }
+          assert (forall m ms, g3 |= root :: m :: ms is root ~o~> y
+                                  satisfying (reachable_by g1 root P) ->
+                               g3 |= m :: ms is m ~o~> y
+                                  satisfying (reachable_by g1 root P)). {
+            intros. clear -H15. destruct H15 as [[_ ?] [[? ?] ?]].
+            split; split; auto. hnf in H2 |-* . rewrite Forall_forall in H2 |-* .
+            intros. apply H2. apply in_cons; auto.
+          }
+          assert (forall e, evalid g3 e -> src g3 e = root -> out_edges g2 root e). {
+            intros.
+            apply (EST_reverse_out_edges
+                     (fun x : V =>
+                        (P x /\ x <> root) /\
+                        ~ g1 |= dst g1 e1 ~o~> x
+                          satisfying
+                          (fun x0 : V => P x0 /\ x0 <> root)) g2 g3 e2); auto.
+            intro. destruct H18 as [[_ ?] _]; auto. split; auto.
+          }
+          assert (forall e, evalid g3 e -> src g3 e = root -> out_edges g1 root e). {
+            intros.
+            apply (EST_reverse_out_edges
+                     (fun x : V => P x /\ x <> root) g1 g2 e1); auto.
+            intro. destruct H19; auto.
+          }
+          assert (evalid g3 e1 -> src g3 e1 = root ->
+                  vvalid g3 (dst g3 e1) -> (P (dst g1 e1) /\ dst g1 e1 <> root) /\
+                                           dst g1 e1 = dst g2 e1 /\
+                                           dst g2 e1 = dst g3 e1). {
+            intros. clear H11 H12 H13 H14 H15. destruct H5 as [[? ?] | [? ?]].
+            + split; auto. destruct H11 as [? [? [? ?]]].
+              assert (dst g1 e1 = dst g2 e1). {
+                apply (ppg_the_same_dst _ _ root) with (e := e1) in H11; auto.
+                intro. destruct H15. auto.
+              } rewrite H15 in *.
+              assert (out_edges g2 root e1). {
+                rewrite <- (ppg_out_edges (fun x : V => P x /\ x <> root) g1); eauto.
+                intro. destruct H21. auto.
+              }
+              assert (dst g2 e1 = dst g3 e1). {
+                apply (EST_the_same_dst _ _ root _ _ e1) in H6; auto.
+                intro. destruct H22 as [[_ ?] _]. auto.
+              } rewrite H22 in *. auto.
+            + exfalso. specialize (H16 _ H18 H19). destruct H16.
+              destruct H11 as [? [? [? [? ?]]]]. destruct H21; auto.
+              destruct H21 as [? [? ?]]. pose proof H6.
+              apply (EST_the_same_dst _ _ root _ _ e1) in H24; auto.
+              - rewrite H24 in *.
+                apply (edge_spanning_tree_vvalid' _ _ _ _ (dst g3 e1)) in H6.
+                rewrite <- H6 in H20. auto.
+              - intro. destruct H25 as [[_ ?] _]; auto.
+              - split; auto.
+          }
+          assert (evalid g3 e2 -> src g3 e2 = root ->
+                  vvalid g3 (dst g3 e2) ->
+                  ((P (dst g2 e2) /\ dst g2 e2 <> root) /\
+                   ~ g1 |= dst g1 e1 ~o~> dst g2 e2
+                     satisfying (fun x0 : V => P x0 /\ x0 <> root)) /\
+                  dst g2 e2 = dst g3 e2). {
+            intros. clear H11 H12 H13 H14 H15. destruct H6 as [[? ?] | [? ?]].
+            + split; auto. destruct H11 as [? _].
+              apply (ppg_the_same_dst _ _ root) with (e := e2) in H11; auto.
+              intro. destruct H12 as [[_ ?] _]. auto.
+            + exfalso. specialize (H16 _ H19 H20). destruct H16.
+              destruct H11 as [? [? [? [? ?]]]]. destruct H22 as [? | [? _]]; auto.
+          }
+          assert (forall ms, evalid g3 e1 -> src g3 e1 = root ->
+                             vvalid g3 (dst g3 e1) ->
+                             g3 |= dst g3 e1 :: ms is dst g3 e1 ~o~> y
+                                satisfying (fun x : V => P x /\ x <> root) ->
+                             g3 |= dst g3 e1 :: ms is dst g3 e1 ~o~> y
+                                satisfying (reachable_by g1 root P) ->
+                             g2 |= dst g3 e1 :: ms is dst g3 e1 ~o~> y
+                                satisfying
+                                (reachable_by g1 (dst g3 e1)
+                                              (fun x : V => P x /\ x <> root))). {
+            clear H11 H12 H13 H14 H15 H19. intros. specialize (H18 H11 H12 H13).
+            pose proof H5. destruct H18 as [? [? ?]]. destruct H5 as [[_ ?] | [? ?]].
+            2: exfalso; auto. destruct H5 as [? [? [? ?]]].
+            rewrite H20 in *. rewrite H21 in *.
+            assert (g1 |= dst g3 e1 ~o~> dst g3 e1
+                         satisfying (fun x : V => P x /\ x <> root)). {
+              apply reachable_by_reflexive. split; auto.
+              rewrite <- (edge_spanning_tree_vvalid' _ _ _ _ _ H6) in H13.
+              rewrite <- (edge_spanning_tree_vvalid' _ _ _ _ _ H19) in H13.
+              auto.
+            }
+            assert (forall v, In v (dst g3 e1 :: ms) ->
+                              g1 |= dst g3 e1 ~o~> v
+                                 satisfying (fun x : V => P x /\ x <> root)). {
+              intros. simpl in H26. destruct H26.
+              + subst v1. auto.
+              + destruct (X v1). auto.
+                pose
+                proof
+                  (list_first_prop
+                     (dst g3 e1) ms v1
+                     (reachable_by g1 (dst g3 e1) (fun x : V => P x /\ x <> root))
+                     H25 n H26).
+                destruct H27 as [l1 [l2 [n1 [n2 [? [? ?]]]]]].
+                destruct H15 as [? [? ?]].
+                rewrite H29 in H30. apply valid_path_split in H30.
+                destruct H30 as [_ [? _]]. specialize (H24 _ _ H27 H28).
+                apply (EST_not_edge_derive _ _ _ _ _ _ H6) in H30.
+                2: intro; apply reachable_by_foot_prop in H32; destruct H32; auto.
+                clear -H30 H24. exfalso. apply H24.
+                apply reachable_by_cons with n2; auto.
+                apply reachable_by_reflexive. destruct H30 as [? [? ?]]. auto.
+            }
+            assert (g3 |= dst g3 e1 :: ms is dst g3 e1 ~o~> y
+                       satisfying
+                       (reachable_by g1 (dst g3 e1)
+                                     (fun x : V => P x /\ x <> root))). {
+              destruct H15 as [[? ?] [? ?]]. split; split; auto.
+              hnf. rewrite Forall_forall. auto.
+            } destruct H6 as [[? ?] | [? ?]].
+            + destruct H28.
+              rewrite
+                <- (ppg_reachable_by_path_eq
+                      g2 g3
+                      (fun n : V =>
+                         ~ g2 |= dst g2 e2 ~o~> n
+                           satisfying
+                           (fun x : V =>
+                              (P x /\ x <> root) /\
+                              ~ g1 |= dst g3 e1 ~o~> x
+                                satisfying
+                                (fun x0 : V => P x0 /\ x0 <> root)))) in H27; auto.
+                  intros. specialize (H26 _ H30). intro.
+                  apply reachable_by_foot_prop in H31. destruct H31; auto.
+            + apply (gremove_not_reachable_by_derive _ e2 g3); auto.
+          }
+          assert
+          (forall ms,
+              evalid g3 e2 -> src g3 e2 = root -> vvalid g3 (dst g3 e2) ->
+              g3 |= dst g3 e2 :: ms is dst g3 e2 ~o~> y
+                 satisfying (fun x : V => P x /\ x <> root) ->
+              g3 |= dst g3 e2 :: ms is dst g3 e2 ~o~> y
+                 satisfying (reachable_by g1 root P) ->
+              g3 |= dst g3 e2 :: ms is dst g2 e2 ~o~> y
+                 satisfying (
+                   reachable_by g2 (dst g2 e2)
+                                (fun x : V =>
+                                   (P x /\ x <> root) /\
+                                   ~ g1 |= dst g1 e1 ~o~> x
+                                     satisfying (fun x0 : V => P x0 /\
+                                                               x0 <> root))))
+            as HH. {
+            clear H11 H12 H13 H14 H15 H18 H20. intros. specialize (H19 H11 H12 H13).
+            destruct H19. destruct H6 as [[_ ?] | [? _]]. 2: exfalso; auto.
+            pose proof H6. destruct H6 as [? [? [? ?]]]. rewrite H19 in *.
+            assert (g2 |= dst g3 e2 ~o~> dst g3 e2
+                       satisfying
+                       (fun x : V =>
+                          (P x /\ x <> root) /\
+                          ~ g1 |= dst g1 e1 ~o~> x
+                            satisfying (fun x0 : V => P x0 /\ x0 <> root))). {
+              apply reachable_by_reflexive. split; auto.
+              rewrite <- (spanning_tree_vvalid' _ _ _ _ _ H20) in H13. auto.
+            }
+            assert (forall v,
+                       In v (dst g3 e2 :: ms) ->
+                       (g2 |= dst g3 e2 ~o~> v
+                           satisfying
+                           (fun x : V =>
+                              (P x /\ x <> root) /\
+                              ~ g1 |= dst g1 e1 ~o~> x
+                                satisfying (fun x0 : V => P x0 /\ x0 <> root)))). {
+              intros. simpl in H25. destruct H25.
+              + subst v1. auto.
+              + destruct (classic (g2 |= dst g3 e2 ~o~> v1
+                                      satisfying
+                                      (fun x : V =>
+                                         (P x /\ x <> root) /\
+                                         ~ g1 |= dst g1 e1 ~o~> x
+                                           satisfying (fun x0 : V => P x0 /\
+                                                                     x0 <> root)))).
+                auto.
+                pose proof
+                     (list_first_prop
+                        (dst g3 e2) ms v1
+                        (reachable_by g2 (dst g3 e2)
+                                      (fun x : V =>
+                                         (P x /\ x <> root) /\
+                                         ~ g1 |= dst g1 e1 ~o~> x
+                                           satisfying (fun x0 : V => P x0 /\
+                                                                     x0 <> root)))
+                        H24 H26 H25).
+                destruct H27 as [l1 [l2 [n1 [n2 [? [? ?]]]]]].
+                destruct H15 as [? [? ?]].
+                rewrite H29 in H30. apply valid_path_split in H30.
+                destruct H30 as [_ [? _]]. specialize (H23 _ _ H27 H28).
+                clear -H30 H23. exfalso. apply H23.
+                apply reachable_by_cons with n2; auto.
+                apply reachable_by_reflexive. destruct H30 as [? [? ?]]. auto.
+            }
+            destruct H15 as [[? ?] [? ?]]. split; split; auto.
+            hnf. rewrite Forall_forall. auto.
+          }
+          pose proof (H14 _ _ H11). pose proof (H14 _ _ H12). clear H14.
+          pose proof (H15 _ _ H11). pose proof (H15 _ _ H12). clear H15.
+          destruct H11 as [_ [[[? [? ?]] _] _]].
+          rewrite step_spec in H24. destruct H24 as [ex [? [? ?]]].
+          destruct H12 as [_ [[[? [? ?]] _] _]].
+          rewrite step_spec in H28. destruct H28 as [ep [? [? ?]]].
+          pose proof (H17 _ H24 H25). pose proof (H17 _ H28 H29). clear H17.
+          rewrite <- H0 in H31. rewrite <- H0 in H32. simpl in H31. simpl in H32.
+          destruct H31 as [? | [? | ?]]; [subst ex v..| exfalso; tauto];
+          destruct H32 as [? | [? | ?]]; try (exfalso; tauto); subst v0 ep.
+          * specialize (H18 H24 H25 H15). destruct H18 as [? [? ?]].
+            destruct H5 as [[_ ?] | [? ?]]. 2: exfalso; auto.
+            pose proof (H20 _ H24 H25 H15 H21 H14).
+            pose proof (H20 _ H24 H25 H15 H22 H23).
+            pose proof (reachable_by_path_is_reachable_by _ _ _ _ _ H31).
+            destruct H5 as [_ [? _]]. specialize (H5 H17).
+            rewrite is_tree_ppg_spec in H5. rewrite H18 in *. rewrite H26 in *.
+            specialize (H5 _ H32). destruct H5 as [path ?]. destruct H5.
+            pose proof (H33 _ H30). pose proof (H33 _ H31).
+            rewrite <- H34. rewrite <- H35. auto.
+          * specialize (H18 H24 H25 H15). destruct H18 as [? [? ?]].
+            destruct H5 as [[_ ?] | [? _]]. 2: exfalso; auto.
+            specialize (H19 H28 H29 H27). destruct H19 as [? ?].
+            destruct H6 as [[_ ?] | [? _]]. 2: exfalso; auto.
+            specialize (H20 _ H24 H25 H15 H21 H14).
+            apply reachable_by_path_is_reachable_by in H20.
+            apply reachable_by_foot_prop in H20.
+            pose proof H6. destruct H6 as [_ [_ [_ ?]]]. rewrite H30 in *.
+            assert (~ g2 |= dst g3 e2 ~o~> y
+                      satisfying
+                      (fun x : V =>
+                         (P x /\ x <> root) /\
+                         ~ g1 |= dst g1 e1 ~o~> x
+                           satisfying (fun x0 : V => P x0 /\ x0 <> root))). {
+              intro. apply reachable_by_foot_prop in H32. destruct H32.
+              rewrite H18 in *. rewrite H26 in *. auto.
+            }
+            assert (g2 |= dst g3 e2 ~o~> dst g3 e2
+                      satisfying
+                      (fun x : V =>
+                         (P x /\ x <> root) /\
+                         ~ g1 |= dst g1 e1 ~o~> x
+                           satisfying (fun x0 : V => P x0 /\ x0 <> root))). {
+              apply reachable_by_reflexive. split; auto.
+              rewrite <- (spanning_tree_vvalid' _ _ _ _ _ H31) in H27; auto.
+            }
+            specialize (H6 _ _ H33 H32). exfalso; apply H6.
+            apply reachable_by_path_is_reachable in H22; auto.
+          * specialize (H18 H28 H29 H27). destruct H18 as [? [? ?]].
+            destruct H5 as [[_ ?] | [? _]]. 2: exfalso; auto.
+            specialize (H19 H24 H25 H15). destruct H19 as [? ?].
+            destruct H6 as [[_ ?] | [? _]]. 2: exfalso; auto.
+            specialize (H20 _ H28 H29 H27 H22 H23).
+            apply reachable_by_path_is_reachable_by in H20.
+            apply reachable_by_foot_prop in H20.
+            pose proof H6. destruct H6 as [_ [_ [_ ?]]]. rewrite H30 in *.
+            assert (~ g2 |= dst g3 e2 ~o~> y
+                      satisfying
+                      (fun x : V =>
+                         (P x /\ x <> root) /\
+                         ~ g1 |= dst g1 e1 ~o~> x
+                           satisfying (fun x0 : V => P x0 /\ x0 <> root))). {
+              intro. apply reachable_by_foot_prop in H32. destruct H32.
+              rewrite H18 in *. rewrite H26 in *. auto.
+            }
+            assert (g2 |= dst g3 e2 ~o~> dst g3 e2
+                      satisfying
+                      (fun x : V =>
+                         (P x /\ x <> root) /\
+                         ~ g1 |= dst g1 e1 ~o~> x
+                           satisfying (fun x0 : V => P x0 /\ x0 <> root))). {
+              apply reachable_by_reflexive. split; auto.
+              rewrite <- (spanning_tree_vvalid' _ _ _ _ _ H31) in H15; auto.
+            }
+            specialize (H6 _ _ H33 H32). exfalso; apply H6.
+            apply reachable_by_path_is_reachable in H21; auto.
+          * specialize (H19 H24 H25 H15). destruct H19 as [? ?].
+            destruct H6 as [[_ ?] | [? _]]. 2: exfalso; auto.
+            destruct H6 as [_ [? _]]. specialize (H6 H17).
+            pose proof (HH _ H24 H25 H15 H21 H14).
+            pose proof (HH _ H24 H25 H15 H22 H23).
+            pose proof (reachable_by_path_is_reachable_by _ _ _ _ _ H30).
+            rewrite is_tree_ppg_spec in H6. rewrite H19 in *.
+            specialize (H6 _ H31). destruct H6 as [path ?]. destruct H6.
+            pose proof (H32 _ H26). pose proof (H32 _ H30).
+            rewrite <- H33. rewrite <- H34. auto.
       + apply (spanning_list_spanning_tree2_reachable P g1 g2 g3 root e1 e2 n); auto.
       + apply (spanning_list_spanning_tree2_reachable _ _ g2 g3 _ e1 e2) in H9; auto.
         intro.
@@ -935,83 +1463,15 @@ Module SIMPLE_SPANNING_TREE.
               hnf. unfold Ensembles.In . intros. destruct H13 as [[? _] _]; auto.
         }
         assert (~ reachable g3 (dst g3 e1) b \/ ~ out_edges g3 root e1). {
-          destruct (X (dst g1 e1)).
-          + destruct H5 as [[? ?] | [? ?]].
-            2: apply reachable_by_head_prop in r; exfalso; auto.
-            destruct H13 as [? [_ [_ ?]]].
-            assert (~ g1 |= dst g1 e1 ~o~> b
-                      satisfying (fun x : V => P x /\ x <> root)). {
-              intro. apply H10. apply reachable_by_cons with (dst g1 e1); auto.
-              + split; auto. apply reachable_by_head_valid in H15. split; auto.
-                rewrite step_spec. exists e1. destruct H3. auto.
-              + apply reachable_by_weaken with (fun x : V => P x /\ x <> root); auto.
-                compute; tauto.
-            } specialize (H14 _ _ r H15).
-            assert (out_edges g2 root e1). {
-              rewrite <- (ppg_out_edges (fun x => P x /\ x <> root) g1); eauto.
-              intro. destruct H16; auto.
-            }
-            assert (dst g1 e1 = dst g2 e1). {
-              apply (ppg_the_same_dst _ _ root) with (e := e1) in H13; auto.
-              intuition.
-            } rewrite H17 in *.
-            assert (dst g2 e1 = dst g3 e1). {
-              apply (EST_the_same_dst _ _ root _ _ e1) in H6; auto.
-              intro. destruct H18 as [[_ ?] _]. auto.
-            } rewrite H18 in *.
-            left. apply (EST_not_reachable_derive _ _ _ _ _ _ H6); auto.
-            intro. apply reachable_by_foot_prop in H19.
-            destruct H19 as [_ ?]. auto.
-          + destruct H5 as [[? ?] | [? ?]].
-            - assert (~ vvalid g1 (dst g1 e1)). {
-                intro. apply n. apply reachable_by_reflexive; auto.
-              } pose proof H13. destruct H13 as [? _].
-              assert (dst g1 e1 = dst g2 e1). {
-                apply (ppg_the_same_dst _ _ root) with (e := e1) in H13; auto.
-                intuition.
-              } rewrite H16 in *.
-              assert (out_edges g2 root e1). {
-                rewrite <- (ppg_out_edges (fun x => P x /\ x <> root) g1); eauto.
-                intro. destruct H17; auto.
-              }              
-              assert (dst g2 e1 = dst g3 e1). {
-                apply (EST_the_same_dst _ _ root _ _ e1) in H6; auto.
-                intro. destruct H18 as [[_ ?] _]. auto.
-              } rewrite H18 in *.
-              assert (~ reachable g1 (dst g3 e1) b). {
-                intro. apply reachable_by_head_valid in H19; auto.
-              }
-              assert (~ reachable g2 (dst g3 e1) b). {
-                apply (spanning_tree_not_reachable_derive g1 _ _ g2 _ _ H15); auto.
-                intro. apply reachable_by_head_valid in H20; auto.
-              } left.
-              apply (EST_not_reachable_derive _ _ _ _ _ _ H6); auto.
-              intro. apply reachable_by_foot_valid in H21.
-              rewrite <- not_reachable_ST_vvalid in H21; eauto.
-            - destruct H13 as [? [? [? [? ?]]]]. destruct H17.
-              * right. intro. apply H17.
-                apply (EST_reverse_out_edges
-                         (fun x : V =>
-                            (P x /\ x <> root) /\
-                            ~ g1 |= dst g1 e1 ~o~> x
-                              satisfying (fun x0 : V => P x0 /\ x0 <> root))
-                         g2 _ e2) in H18; auto.
-                2: intro; destruct H19 as [[_ ?] _]; auto.
-                destruct H18; auto.
-              * destruct H17 as [? [? ?]].
-                assert (out_edges g2 root e1). {
-                  clear -H3 H18 H19. destruct H3. subst root. split; auto.
-                }              
-                assert (dst g2 e1 = dst g3 e1). {
-                  apply (EST_the_same_dst _ _ root _ _ e1) in H6; auto.
-                  intro. destruct H21 as [[_ ?] _]. auto.
-                } rewrite H21 in *.
-                assert (~ reachable g2 (dst g3 e1) b). {
-                  clear -H17. intro. apply H17.
-                  apply reachable_head_valid in H. auto.
-                } left.
-                apply (EST_not_reachable_derive _ _ _ _ _ _ H6); auto.
-                intro. apply reachable_by_foot_valid in H23; auto.
+          apply (ST2_not_reachable
+                   (fun x : V => P x /\ x <> root) P g1 _ g2 _ _ e2); auto.
+          + intro. destruct H13; auto.
+          + compute. tauto.
+          + intro. apply H10. apply reachable_by_cons with (dst g1 e1); auto.
+            - split; auto. apply reachable_by_head_valid in H13. split; auto.
+              rewrite step_spec. exists e1. destruct H3. auto.
+            - apply reachable_by_weaken with (fun x : V => P x /\ x <> root); auto.
+              compute; tauto.
         }
         assert (~ reachable g3 (dst g3 e2) b \/ ~ out_edges g3 root e2). {
           apply (EST_not_reachable
@@ -1098,7 +1558,7 @@ Section SPANNING.
   Notation Graph := (GeneralGraph V E DV DE P).
 
   Definition is_tree (g : PreGraph V E) (x : V) : Prop := SIMPLE_SPANNING_TREE.is_tree g x.
-  
+
   Definition marked_reachable (g1 : Graph) (x : V) (g2 : Graph) : Prop :=
     (forall y, g1 |= x ~o~> y satisfying (unmarked g1) -> marked g2 y) /\
     forall y, ~ g1 |= x ~o~> y satisfying (unmarked g1) -> (marked g1 y <-> marked g2 y).
@@ -1129,7 +1589,7 @@ Section SPANNING.
         * apply H2; auto.
       - unfold unmarked in H1 at 1. rewrite negateP_spec in H1. specialize (H1 n).
         destruct H1; split; intros; auto.
-    + destruct H0 as [? [? [? ?]]]. unfold is_tree. split; auto. 
+    + destruct H0 as [? [? [? ?]]]. unfold is_tree. split; auto.
   Qed.
 
   Lemma edge_spanning_tree_inj: forall g1 root g2, edge_spanning_tree g1 root g2 <->
@@ -1149,7 +1609,7 @@ Section SPANNING.
       - rewrite spanning_tree_inj. auto.
       - exfalso; auto.
   Qed.
-    
+
   Lemma edge_spanning_tree_invalid: forall (g: Graph) e,
       evalid g e -> ~ vvalid g (dst g e) -> edge_spanning_tree g e g.
   Proof.
@@ -1171,7 +1631,7 @@ Section SPANNING.
     intros. rewrite edge_spanning_tree_inj in H. destruct H.
     apply (SIMPLE_SPANNING_TREE.edge_spanning_tree_vvalid _ e (unmarked g1)); auto.
   Qed.
-  
+
   Lemma edge_spanning_tree_reachable_vvalid: forall (g1 g2: Graph) e,
       ReachDecidable g1 (dst g1 e) (unmarked g1) -> edge_spanning_tree g1 e g2 ->
       Included (reachable g1 (src g1 e)) (vvalid g2).
@@ -1253,7 +1713,7 @@ Section SPANNING.
     + admit.
     + destruct H3 as [? [? [? ?]]].
       assert (out_edges g root e1) by (rewrite <- H0; apply in_eq).
-      assert (out_edges g1 root e1) by (rewrite <- (out_edges_si g); auto). 
+      assert (out_edges g1 root e1) by (rewrite <- (out_edges_si g); auto).
       assert (Included (unmarked g1) (unmarked g)). {
         intro n. unfold Ensembles.In . unfold unmarked. rewrite !negateP_spec.
         intros. rewrite H10; auto. intro; subst. auto.
@@ -1284,7 +1744,7 @@ Section SPANNING.
         intros. intro; apply H27; clear H27. destruct (X1 n).
         * admit.
         * destruct H4. specialize (H27 n n0). destruct H24 as [? _].
-  Abort.  
+  Abort.
 
   Lemma spanning_list_inj: forall (g1 g2 : Graph) (es : list E),
       spanning_list g1 es g2 -> mark_list g1 (map (dst g1) es) g2 /\ SIMPLE_SPANNING_TREE.spanning_list (unmarked g1) g1 es g2.
@@ -1299,5 +1759,5 @@ Section SPANNING.
         intro. symmetry. apply edge_spanning_tree_unmarked_equiv; auto.
   Abort.
 
-  
+
 End SPANNING.
