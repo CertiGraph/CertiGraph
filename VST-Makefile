@@ -22,7 +22,7 @@ COMPCERT=compcert
 
 CC_TARGET=compcert/cfrontend/Clight.vo
 CC_DIRS= lib common cfrontend exportclight
-DIRS= msl sepcomp veric floyd progs sha linking fcf hmacfcf
+DIRS= msl sepcomp veric floyd progs sha linking fcf hmacfcf tweetnacl20140427
 INCLUDE= $(foreach a,$(DIRS),$(if $(wildcard $(a)), -I $(a) -as $(a))) -R $(COMPCERT) -as compcert 
 #Replace the INCLUDE above with the following in order to build the linking target:
 #INCLUDE= $(foreach a,$(DIRS),$(if $(wildcard $(a)), -I $(a) -as $(a))) -R $(COMPCERT) -as compcert -I $(SSREFLECT)/src -R $(SSREFLECT)/theories -as Ssreflect \
@@ -65,7 +65,7 @@ MSL_FILES = \
   knot_hered.v knot_hered_sa.v \
   knot_full.v knot_shims.v \
   knot_sa_trivial.v \
-  corable.v corable_direct.v \
+  corable.v  \
   predicates_hered.v predicates_sl.v subtypes.v subtypes_sl.v \
   contractive.v predicates_rec.v \
   msl_direct.v msl_standard.v msl_classical.v \
@@ -136,7 +136,7 @@ FLOYD_FILES= \
    sublist.v smt_test.v extract_smt.v \
    client_lemmas.v canon.v canonicalize.v assert_lemmas.v closed_lemmas.v jmeq_lemmas.v \
    compare_lemmas.v sc_set_load_store.v \
-   loadstore_mapsto.v loadstore_field_at.v nested_loadstore.v \
+   loadstore_mapsto.v loadstore_field_at.v field_compat.v nested_loadstore.v \
    call_lemmas.v extcall_lemmas.v forward_lemmas.v forward.v \
    entailer.v globals_lemmas.v local2ptree.v fieldlist.v mapsto_memory_block.v\
    nested_field_lemmas.v efield_lemmas.v proj_reptype_lemmas.v replace_refill_reptype_lemmas.v \
@@ -227,7 +227,8 @@ FILES = \
  $(HMAC_FILES:%=sha/%) \
  $(FCF_FILES:%=fcf/%) \
  $(HMACFCF_FILES:%=hmacfcf/%) \
- $(HMACEQUIV_FILES:%=sha/%)
+ $(HMACEQUIV_FILES:%=sha/%) \
+ $(TWEETNACL_FILES:%=tweetnacl20140427/%)
 
 %_stripped.v: %.v
 # e.g., 'make progs/verif_reverse_stripped.v will remove the tutorial comments
