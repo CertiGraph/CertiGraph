@@ -19,6 +19,12 @@ Proof. intros. tauto. Qed.
 Lemma and_iff_compat_r_weak: forall A B C : Prop, (A -> (B <-> C)) -> (B /\ A <-> C /\ A).
 Proof. intros. tauto. Qed.
 
+Lemma and_or_distr_r: forall P Q R, P /\ (Q \/ R) <-> (P /\ Q) \/ (P /\ R).
+Proof.
+  intros.
+  tauto.
+Qed.
+
 Lemma demorgan_weak: forall P Q: Prop, P \/ ~ P -> (~ (P /\ Q) <-> ~ P \/ ~ Q).
 Proof.
   intros.

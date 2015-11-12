@@ -25,6 +25,30 @@ Definition weak_edge_prop (P: V -> Prop) (g: PreGraph V E): E -> Prop := fun e =
 
 Definition weak'_edge_prop (P: V -> Prop) (g: PreGraph V E): E -> Prop := fun e => P (dst g e).
 
+Instance weak_edge_prop_proper: Proper (Same_set ==> eq ==> Same_set) weak_edge_prop.
+Proof.
+  do 2 (hnf; intros); subst.
+  rewrite Same_set_spec in *.
+  intro e; unfold weak_edge_prop.
+  auto.
+Defined.
+Global Existing Instance weak_edge_prop_proper.
+
+Lemma weak_edge_prop_si: forall (P: V -> Prop) (g1 g2: PreGraph V E),
+  g1 ~=~ g2 ->
+  Same_set
+   (Intersection _ (weak_edge_prop P g1) (evalid g1))
+   (Intersection _ (weak_edge_prop P g2) (evalid g2)).
+Proof.
+  intros.
+  rewrite Same_set_spec; intro e.
+  rewrite !Intersection_spec.
+  unfold weak_edge_prop.
+  pose proof (proj1 (proj2 H) e).
+  pose proof proj1 (proj2 (proj2 H)) e.
+  split; intros [? ?]; do 2 (spec H1; [tauto |]); (split; [congruence | tauto]).
+Qed.
+  
 Lemma weak_edge_prop_Disjoint: forall (P1 P2: V -> Prop) (g: PreGraph V E),
   Disjoint _ P1 P2 ->
   Disjoint _ (weak_edge_prop P1 g) (weak_edge_prop P2 g).
@@ -43,6 +67,16 @@ Proof.
   hnf; intros; simpl.
   reflexivity.
 Qed.
+
+Lemma weak_edge_prop_Union: forall (P Q: V -> Prop) (g: PreGraph V E), Same_set (weak_edge_prop (Union _ P Q) g) (Union _ (weak_edge_prop P g) (weak_edge_prop Q g)).
+Proof.
+  intros.
+  unfold weak_edge_prop.
+  rewrite Same_set_spec; intros ?; rewrite !Union_spec.
+  simpl.
+  reflexivity.
+Qed.
+
 
 Definition gpredicate_subgraph (PV: V -> Prop) (PE: E -> Prop) (g: PreGraph V E): PreGraph V E :=
   Build_PreGraph EV EE (Intersection _ (vvalid g) PV) (Intersection _ (evalid g) PE) (src g) (dst g).
@@ -985,6 +1019,29 @@ Proof.
     apply reachable_by_is_reachable in H2; auto.
 Qed.
 
+Lemma reachable_by_through_app_strong': forall (g: PreGraph V E) P l1 l2,
+  Same_set
+   (Union _ (reachable_by_through_set g l1 P) (Complement _ (reachable_by_through_set g l1 P))) (Full_set _) ->
+  Same_set
+   (reachable_by_through_set g (l1 ++ l2) P)
+   (Union _
+     (reachable_by_through_set g l1 P)
+     (reachable_by_through_set g l2 (Intersection _ P (Complement _ (reachable_by_through_set g l1 P))))).
+Proof.
+  intros.
+  rewrite Same_set_spec.
+  intros n.
+  rewrite Union_spec.
+  rewrite (reachable_by_through_set_eq_partialgraph_reachable_through_set _ _ l2), Intersection_comm, <- partial_partialgraph, <- reachable_by_through_set_eq_partialgraph_reachable_through_set.
+  apply reachable_by_through_app_strong.
+  clear n; intro n.
+  rewrite Same_set_spec in H; specialize (H n).
+  rewrite Union_spec in H.
+  pose proof Full_set_spec _ n.
+  unfold Complement, Ensembles.In in H.
+  tauto.
+Qed.
+
 Lemma reachable_by_through_app_join: forall (g: PreGraph V E) P l1 l2,
   (forall n, reachable_by_through_set g l1 P n \/ ~ reachable_by_through_set g l1 P n) ->
   Prop_join
@@ -1273,6 +1330,17 @@ Proof.
   unfold weak_edge_prop.
   destruct H as [_ [? _]].
   firstorder.
+Qed.
+
+Lemma pregraph_join_guarded_si: forall PV PE (G1 G2: Graph),
+  pregraph_join PV PE G1 G2 ->
+  guarded_structurally_identical (Complement _ PV) (Complement _ PE) G1 G2.
+Proof.
+  intros.
+  rewrite guarded_si_spec.
+  destruct H as [[? ?] [? [? ?]]].
+  unfold Complement, Ensembles.In, weak_edge_prop.
+  split; [| split; [| split]]; firstorder.
 Qed.
 
 End ExpandPartialGraph.

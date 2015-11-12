@@ -12,98 +12,6 @@ Require Import VST.msl.ramification_lemmas.
 
 Local Open Scope logic.
 
-Section Ramification.
-
-Context {A : Type}.
-Context {ND : NatDed A}.
-Context {SL : SepLog A}.
-Context {CoSL: CorableSepLog A}.
-
-Lemma ramify_Q_reduce: forall {B} g l (g' l': B -> A),
-  g |-- l * (allp (l' -* g')) ->
-  g |-- l * (exp l' -* exp g').
-Proof.
-  intros.
-  eapply derives_trans; [exact H |].
-  apply sepcon_derives; [auto |].
-  apply wand_sepcon_adjoint.
-  rewrite exp_sepcon2.
-  apply exp_left; intro x; apply (exp_right x).
-  apply wand_sepcon_adjoint.
-  apply (allp_left _ x).
-  auto.
-Qed.
-
-Lemma solve_ramify_Q: forall {B} g l p g' l' F,
-  (forall x: B, corable (p x)) ->
-  g |-- l * F ->
-  (forall x: B, (p x) && (F * l' x) |-- g' x) ->
-  g |-- l * (allp (p --> (l' -* g'))).
-Proof.
-  intros.
-  apply derives_trans with (l * F); auto.
-  apply sepcon_derives; auto.
-  apply allp_right; intro x.
-  simpl.
-  apply imp_andp_adjoint.
-  apply wand_sepcon_adjoint.
-  rewrite corable_andp_sepcon2 by auto.
-  auto.
-Qed.
-
-Lemma ramify_frame_Q: forall {B} g l p g' l' F,
-  (forall x: B, corable (p x)) ->
-  g |-- l * allp (p --> (l' -* g')) ->
-  g * F |-- l * allp (p --> (l' -* g' * Basics.const F)).
-Proof.
-  intros.
-  apply solve_ramify_Q with (allp (p --> (l' -* g')) * F).
-  + auto.
-  + rewrite <- sepcon_assoc.
-    apply sepcon_derives; auto.
-  + intros x; unfold Basics.const; simpl.
-    rewrite <- !corable_andp_sepcon1 by auto.
-    rewrite (sepcon_comm _ (l' x)), <- sepcon_assoc.
-    apply sepcon_derives; [| auto].
-    rewrite sepcon_comm; apply wand_sepcon_adjoint.
-    rewrite andp_comm; apply imp_andp_adjoint; apply (allp_left _ x); apply imp_andp_adjoint.
-    rewrite andp_comm; apply modus_ponens.
-Qed.
-
-Lemma split_ramify_Q: forall {B} g1 g2 l1 l2 (p g1' g2' l1' l2': B -> A),
-  (forall x: B, corable (p x)) ->
-  g1 |-- l1 * allp (p --> (l1' -* g1')) ->
-  g2 |-- l2 * allp (p --> (l2' -* g2')) ->
-  g1 * g2 |-- (l1 * l2) * allp (p --> (l1' * l2' -* g1' * g2')).
-Proof.
-  intros.
-  apply solve_ramify_Q with (allp (p --> (l1' -* g1')) * allp (p --> (l2' -* g2'))).
-  + auto.
-  + rewrite (sepcon_assoc l1), <- (sepcon_assoc l2), (sepcon_comm l2), (sepcon_assoc _ l2), <- (sepcon_assoc l1).
-    apply sepcon_derives; auto.
-  + intros x.
-    change ((l1' * l2') x) with (l1' x * l2' x).
-    rewrite <- (sepcon_assoc _ (l1' x)), (sepcon_assoc _ _ (l1' x)), (sepcon_comm _ (l1' x)), <- (sepcon_assoc _ (l1' x)), (sepcon_assoc _ _ (l2' x)).
-    rewrite <- (andp_dup (p x)), andp_assoc.
-    rewrite <- corable_sepcon_andp1, <- corable_andp_sepcon1 by auto.
-    rewrite <- !corable_sepcon_andp1 by auto.
-    apply sepcon_derives.
-    - apply wand_sepcon_adjoint.
-      apply (allp_left _ x).
-      apply wand_sepcon_adjoint.
-      rewrite corable_sepcon_andp1, <- corable_andp_sepcon1 by auto.
-      (eapply derives_trans; [apply sepcon_derives; [simpl; intros; apply modus_ponens | apply derives_refl] |]).
-      apply wand_sepcon_adjoint; apply derives_refl.
-    - apply wand_sepcon_adjoint.
-      apply (allp_left _ x).
-      apply wand_sepcon_adjoint.
-      rewrite corable_sepcon_andp1, <- corable_andp_sepcon1 by auto.
-      (eapply derives_trans; [apply sepcon_derives; [simpl; intros; apply modus_ponens | apply derives_refl] |]).
-      apply wand_sepcon_adjoint; apply derives_refl.
-Qed.
-
-End Ramification.
-
 Section Ramification_P.
 
 Context {A Env : Type}.
@@ -565,7 +473,7 @@ Ltac solve_ramify_Q_with Fr :=
         reflexivity
       | subst p g' l'; rewrite H; clear H]
   end;
-  apply solve_ramify_Q with Fr.
+  apply RAMIF_Q'.solve with Fr.
 
 Section Ramification_PredSepCon.
 
@@ -622,7 +530,7 @@ Lemma pred_sepcon_ramify1: forall {EqB: EqDec B eq} (P1 P2: B -> Prop) p1 p2 x,
   pred_sepcon P1 p1 |-- p1 x * (p2 x -* pred_sepcon P2 p2).
 Proof.
   intros.
-  apply solve_ramify with (pred_sepcon (fun u => P1 u /\ u <> x) p1).
+  apply RAMIF_PLAIN.solve with (pred_sepcon (fun u => P1 u /\ u <> x) p1).
   + rewrite <- pred_sepcon_sepcon1 with (P' := P1); [auto | |tauto].
     intros.
     destruct_eq_dec x0 x; try subst; tauto.
@@ -657,7 +565,7 @@ Lemma pred_sepcon_ramify_pred: forall (Pg1 Pl1 Pg2 Pl2 PF: B -> Prop) p1 p2,
   pred_sepcon Pg1 p1 |-- pred_sepcon Pl1 p1 * (pred_sepcon Pl2 p2 -* pred_sepcon Pg2 p2).
 Proof.
   intros.
-  apply solve_ramify with (pred_sepcon PF p1).
+  apply RAMIF_PLAIN.solve with (pred_sepcon PF p1).
   + rewrite pred_sepcon_sepcon with (R := Pg1); auto.
   + replace (pred_sepcon PF p1) with (pred_sepcon PF p2).
     - rewrite sepcon_comm, pred_sepcon_sepcon with (R := Pg2); auto.
@@ -677,7 +585,7 @@ Lemma pred_sepcon_ramify_pred_Q: forall {C: Type} (Pg1 Pl1 PF: B -> Prop) (PureF
 Proof.
   intros.
   solve_ramify_Q_with (pred_sepcon PF p1).
-  + intros; apply corable_prop.
+  + intro; simpl; apply corable_prop.
   + rewrite pred_sepcon_sepcon with (R := Pg1); auto.
   + intro c.
     normalize.
@@ -712,7 +620,7 @@ Proof.
   destruct X1 as [[l0 [? ?]] [lF [? ?]]]; clear X0; unfold Ensembles.In in *.
   apply (exp_right l0).
   normalize.
-  apply solve_ramify with (iter_sepcon lF p1).
+  apply RAMIF_PLAIN.solve with (iter_sepcon lF p1).
   + rewrite <- iter_sepcon_app_sepcon.
     erewrite iter_sepcon_permutation; [apply derives_refl |].
     apply NoDup_Permutation; auto.

@@ -371,6 +371,43 @@ Proof.
   + auto.
 Qed.
 
+Lemma guarded_bij_disjointed_weak_edge_prop_union: forall PV1 PV1' PE1' PV2 PV2' PE2' vmap emap (G: PreGraph V E) (G': PreGraph V' E'),
+  let PE1 := Intersection _ (weak_edge_prop PV1 G) (evalid G) in
+  let PE2 := Intersection _ (weak_edge_prop PV2 G) (evalid G) in
+  disjointed_guard PV1' PV2' PE1' PE2' ->
+  guarded_bij PV1 PE1 PV1' PE1' vmap emap G G' ->
+  guarded_bij PV2 PE2 PV2' PE2' vmap emap G G' ->
+  (forall e, PE1 e -> PV2 (dst G e) -> vmap (dst G e) = dst G' (emap e)) ->
+  (forall e, PE2 e -> PV1 (dst G e) -> vmap (dst G e) = dst G' (emap e)) ->
+  guarded_bij (Union _ PV1 PV2) (Union _ PE1 PE2)
+    (Union _ PV1' PV2') (Union _ PE1' PE2') vmap emap G G'.
+Proof.
+  intros.
+  apply guarded_bij_disjointed_union; auto.
+  assert (Disjoint _ PV1 PV2).
+  Focus 1. {
+    rewrite Disjoint_spec; intros v ? ?.
+    apply (proj1 (proj2 (proj2 (proj2 (proj2 H0))))) in H4.
+    apply (proj1 (proj2 (proj2 (proj2 (proj2 H1))))) in H5.
+    destruct H.
+    rewrite Disjoint_spec in H.
+    eapply H; eauto.
+  } Unfocus.
+  split; [| split; [| split]].
+  + intros.
+    destruct H5.
+    unfold Ensembles.In, weak_edge_prop in H5.
+    rewrite Disjoint_spec in H4.
+    pose proof H4 _ H5 H6; tauto.
+  + intros.
+    destruct H5.
+    unfold Ensembles.In, weak_edge_prop in H5.
+    rewrite Disjoint_spec in H4.
+    pose proof H4 _ H6 H5; tauto.
+  + intros; apply (H2 e); auto.
+  + intros; apply (H3 e); auto.
+Qed.
+    
 Lemma guarded_morphism_weaken: forall PV1 PE1 PV1' PE1' PV2 PE2 vmap emap (G: PreGraph V E) (G': PreGraph V' E'),
   Included PV2 PV1 ->
   Included PE2 PE1 ->
@@ -661,7 +698,7 @@ Definition copy (P: V -> Prop) root root' PV' PE' (p1 p2: Graph * Graph') :=
   guarded_pointwise_relation (Complement _ PE) eq (emap g1) (emap g2) /\
   root' = vmap g2 root /\
   pregraph_join PV' PE' g1' g2' /\
-  (forall e, PE e -> ~ PV (dst g1 e) -> dst g2' (emap g2 e) = vmap g1 (dst g1 e)) /\
+  (forall e, PE e -> ~ PV (dst g1 e) -> vmap g2 (dst g1 e) = dst g2' (emap g2 e)) /\
   guarded_bij PV PE PV' PE' (vmap g2) (emap g2) g2 g2'.
 
 Lemma triple_vcopy1: forall (g1 g2: Graph) (g1' g2': Graph') (P: V -> Prop) root root',
@@ -688,28 +725,30 @@ Proof.
   + inversion H6.
 Qed.
 
-Lemma triple_copy: forall (g g1 g2: Graph) (g' g1' g2': Graph') (P: V -> Prop) root es es_done e0 es_later son',
+Lemma triple1_copy: forall (g g1 g2: Graph) (g1' g2': Graph') (P: V -> Prop) root es es_done e0 es_later son',
   vvalid g root ->
   P root ->
   let P0 := Intersection _ P (Complement _ (eq root)) in
   (forall e, In e es <-> out_edges g root e) ->
   es = es_done ++ e0 :: es_later ->
-  let PV1 := Union _ (eq root) (reachable_by_through_set g (map (dst g) es_done) P0) in
-  let PE1 := Union _ (fun e => In e es_done) (weak_edge_prop (reachable_by_through_set g (map (dst g) es_done) P0) g) in
+  let PV1 := reachable_by_through_set g (map (dst g) es_done) P0 in
+  let PE1 := Intersection _ (weak_edge_prop PV1 g) (evalid g) in
   forall PV1' PE1',
-  guarded_bij PV1 PE1 PV1' PE1' (vmap g1) (emap g1) g1 g1' /\
-  (forall e, PE1 e -> ~ PV1 (dst g e) -> dst g2' (emap g2 e) = vmap g1 (dst g e)) ->
-  let PV2 := Union _ (eq root) (reachable_by_through_set g (map (dst g) (es_done ++ e0 :: nil)) P0) in
-  let PE2 := Union _ (fun e => In e es_done) (weak_edge_prop (reachable_by_through_set g (map (dst g) (es_done ++ e0 :: nil)) P0) g) in
+  guarded_bij PV1 PE1 PV1' PE1' (vmap g1) (emap g1) g g1' /\
+  g ~=~ g1 /\
+  (forall e, PE1 e -> ~ PV1 (dst g e) -> vmap g1 (dst g e) = dst g1' (emap g1 e)) ->
+  let PV2 := reachable_by_through_set g (map (dst g) (es_done ++ e0 :: nil)) P0 in
+  let PE2 := Intersection _ (weak_edge_prop PV2 g) (evalid g) in
   forall PV' PE',
+  copy (Intersection _ P0 (Complement _ PV1)) (dst g e0) son' PV' PE' (g1, g1') (g2, g2') ->
+  disjointed_guard PV1' PV' PE1' PE' -> (* From spatial fact *)
+  Same_set (Union _ PV1 (Complement _ PV1)) (Full_set _) -> (* From weak mark lemma *)
   let PV2' := Union _ PV1' PV' in
   let PE2' := Union _ PE1' PE' in
-  copy P0 (dst g e0) son' PV' PE' (g1, g1') (g2, g2') ->
-  disjointed_guard PV1' PV' PE1' PE' -> (* From spatial fact *)
-  guarded_bij PV2 PE2 PV2' PE2' (vmap g2) (emap g2) g2 g2'.
+  guarded_bij PV2 PE2 PV2' PE2' (vmap g2) (emap g2) g g2'.
 Proof.
   intros.
-  destruct H3 as [PRE_bij PRE_consi].
+  destruct H3 as [PRE_bij [PRE_si PRE_consi]].
   rename H5 into DISJ.
   destruct H4 as [? [? [? [? [? [? ?]]]]]].
 
@@ -723,31 +762,105 @@ Proof.
     rewrite Intersection_spec in H; destruct H as [_ ?]; apply H.
     reflexivity.
 *)
-  assert (Same_set PV2 (Union _ PV1 (reachable_by g (dst g e0) P0))).
+  assert (Same_set PV2 (Union _ PV1 (reachable_by g (dst g e0) (Intersection _ P0 (Complement _ PV1))))).
   Focus 1. {
-    unfold PV1, PV2; clear.
-    rewrite Same_set_spec; intros v.
-    rewrite !Union_spec.
+    unfold PV1, PV2.
     rewrite map_app; simpl map.
-    rewrite reachable_by_through_app, reachable_by_through_singleton.
-    tauto.
+    rewrite reachable_by_through_app_strong' by auto.
+    rewrite reachable_by_through_singleton'.
+    reflexivity.
   } Unfocus.
-  assert (Same_set PE2 (Union _ PE1 (weak_edge_prop (reachable_by g (dst g e0) P0) g))).
+  assert (Same_set PE2 (Union _ PE1 (Intersection _ (weak_edge_prop (reachable_by g (dst g e0) (Intersection _ P0 (Complement _ PV1))) g) (evalid g)))).
   Focus 1. {
-    unfold PE1, PE2; clear.
-    rewrite Same_set_spec; intros e; unfold weak_edge_prop.
-    rewrite !Union_spec.
-    rewrite map_app; simpl map.
-    rewrite reachable_by_through_app, reachable_by_through_singleton.
-    tauto.
+    unfold PE1, PE2.
+    rewrite H11.
+    rewrite weak_edge_prop_Union.
+    rewrite Intersection_Union_distr_l.
+    reflexivity.
   } Unfocus.
-  rewrite H10, H11; clear H10 H11.
-   
-  apply guarded_bij_disjointed_union; auto.
+  rewrite H11, H12; clear H11 H12.
+
+  assert (Same_set
+    (Intersection E
+      (weak_edge_prop
+        (reachable_by g (dst g e0) (Intersection V P0 (Complement V PV1))) g) 
+          (evalid g))
+    (Intersection E
+      (weak_edge_prop
+        (reachable_by g1 (dst g e0) (Intersection V P0 (Complement V PV1))) g1)
+          (evalid g1))).
+  Focus 1. {
+    rewrite PRE_si at 1.
+    rewrite (weak_edge_prop_si _ _ _ PRE_si); reflexivity.
+  } Unfocus.
+  assert (guarded_bij
+          (reachable_by g (dst g e0) (Intersection V P0 (Complement V PV1)))
+          (Intersection E
+             (weak_edge_prop
+                (reachable_by g (dst g e0)
+                   (Intersection V P0 (Complement V PV1))) g) 
+             (evalid g)) PV' PE' (vmap g2) (emap g2) g g2').
+  Focus 1. {
+    eapply guarded_bij_proper2; [| eassumption | reflexivity | reflexivity | reflexivity | reflexivity | reflexivity | reflexivity |].
+    1: rewrite PRE_si at 1; reflexivity.
+    eapply guarded_bij_proper1; [reflexivity | reflexivity | | | exact H10].
+    1: apply si_guarded_si; rewrite PRE_si; auto.
+    1: reflexivity.
+  } Unfocus.
+  assert (forall e,
+       Intersection E
+         (weak_edge_prop
+            (reachable_by g (dst g e0)
+               (Intersection V P0 (Complement V PV1))) g) 
+         (evalid g) e ->
+       ~
+       g |= dst g e0 ~o~> dst g e
+       satisfying (Intersection V P0 (Complement V PV1)) ->
+       vmap g2 (dst g e) = dst g2' (emap g2 e)).
+  Focus 1. {
+    intros.
+    assert (evalid g e) by (rewrite Intersection_spec in H13; tauto).
+    assert (evalid g1 e) by (rewrite <- (proj1 (proj2 PRE_si)); auto).
+    rewrite (proj2 (proj2 (proj2 PRE_si))) by auto.
+    apply H9.
+    + rewrite Same_set_spec in H11.
+      rewrite <- (H11 e); auto.
+    + rewrite <- (proj2 (proj2 (proj2 PRE_si))) by auto.
+      rewrite <- PRE_si.
+      auto.
+  } Unfocus.
+  clear H9 H10 H11.
+
+  apply guarded_bij_disjointed_weak_edge_prop_union; auto.
   + eapply guarded_bij_proper_aux1; [.. | exact PRE_bij].
-    * eapply guarded_pointwise_relation_weaken; [| eassumption].
-Locate "+::".
-(* We should add all these into graph lemmas. *)
+    - eapply guarded_pointwise_relation_weaken; [| eassumption].
+      apply Included_Complement_Disjoint.
+      rewrite Disjoint_spec; intros x ? ?.
+      apply reachable_by_foot_prop in H10.
+      rewrite Intersection_spec in H10; unfold Complement in H10; tauto.
+    - eapply guarded_pointwise_relation_weaken; [| eassumption].
+      rewrite <- PRE_si at 1.
+      erewrite <- (weak_edge_prop_si _ g g1) by eassumption.
+      apply Included_Complement_Disjoint.
+      eapply Included_Disjoint; [apply Intersection1_Included, Included_refl | apply Intersection1_Included, Included_refl |].
+      apply weak_edge_prop_Disjoint.
+      rewrite Disjoint_spec; intros x ? ?.
+      apply reachable_by_foot_prop in H10.
+      rewrite Intersection_spec in H10; unfold Complement in H10; tauto.
+    - reflexivity.
+    - pose proof pregraph_join_guarded_si _ _ _ _ H8.
+      destruct DISJ.
+      eapply guarded_si_weaken; [| | exact H9].
+      * apply Included_Complement_Disjoint; auto.
+      * apply Included_Complement_Disjoint; auto.
+  + intros.
+    exfalso.
+    apply reachable_by_foot_prop in H10.
+    unfold weak_edge_prop in H9.
+    rewrite Intersection_spec in H9, H10; destruct H9, H10.
+    apply H14; clear H14; unfold Ensembles.In.
+    unfold PV1 in H9 |- *.
+(* We should clean up all reachable_by_step step_reachable_by lemmas. *)
 Abort.
 
 End LocalCopyGraph.

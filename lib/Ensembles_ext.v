@@ -119,6 +119,42 @@ Proof.
   tauto.
 Qed.
 
+Lemma Union_comm: forall A P Q, Same_set (Union A P Q) (Union A Q P).
+Proof.
+  intros.
+  rewrite Same_set_spec; hnf; intros.
+  rewrite !Union_spec.
+  tauto.
+Qed.
+
+Lemma Union_assoc: forall A P Q R, Same_set (Union A (Union A P Q) R) (Union A P (Union A Q R)).
+Proof.
+  intros.
+  rewrite Same_set_spec; hnf; intros.
+  rewrite !Union_spec.
+  tauto.
+Qed.
+
+Lemma Intersection_Union_distr_l: forall A P Q R,
+  Same_set (Intersection A (Union A Q R) P)
+   (Union A (Intersection A Q P) (Intersection A R P)).
+Proof.
+  intros.
+  rewrite Same_set_spec; intro x.
+  rewrite !Intersection_spec, !Union_spec, !Intersection_spec.
+  tauto.
+Qed.
+
+Lemma Intersection_Union_distr_r: forall A P Q R,
+  Same_set (Intersection A P (Union A Q R))
+   (Union A (Intersection A P Q) (Intersection A P R)).
+Proof.
+  intros.
+  rewrite Same_set_spec; intro x.
+  rewrite !Intersection_spec, !Union_spec, !Intersection_spec.
+  tauto.
+Qed.
+
 Instance Included_proper (V: Type): Proper (Same_set ==> Same_set ==> iff) (@Included V).
 Proof.
   hnf; intros.
