@@ -192,12 +192,12 @@ Section SPATIAL_GRAPH_DISPOSE_BI.
       apply weak_valid_vvalid_dec.
       apply (gamma_left_weak_valid g1 x true l r); auto.
     } destruct (X v).
-    + apply reachable_by_is_reachable in r0. apply reachable_by_cons with l; auto. split; [|split]; auto.
+    + apply reachable_by_is_reachable in r0. apply edge_reachable_by with l; auto. split; [|split]; auto.
       - apply reachable_head_valid in r0. auto.
       - simpl in H1. unfold gamma in H1. inversion H1. exists (x, L); auto.
         * apply (@left_valid _ _ _ _ g1 _ _ (biGraph g1)); auto.
         * apply (@left_sound _ _ _ _ _ _ g1 (biGraph g1)).
-    + apply reachable_by_cons with r; auto.
+    + apply edge_reachable_by with r; auto.
       - split; [|split]; auto. rewrite (gamma_step g1 x true l r); auto.
       - apply (spanning_tree_not_reachable g1 l g2 r v) in H3; auto.
         rewrite reachable_by_eq_partialgraph_reachable in H3.
@@ -214,7 +214,7 @@ Section SPATIAL_GRAPH_DISPOSE_BI.
     assert (l = dst g1 (x, L)) by (simpl in H1; unfold gamma in H1; inversion H1; auto).
     rewrite <- H3 in H2. destruct (node_pred_dec (marked g1) l).
     + destruct H2 as [[? [? [? [? ?]]]] ?]. intro v. unfold Ensembles.In .
-      intros. apply reachable_by_cons with r; auto.
+      intros. apply edge_reachable_by with r; auto.
       - split; [|split]; auto. rewrite (gamma_step g1 x true l r); auto.
       - change (g1 |= r ~o~> v satisfying (fun _ : addr => True)) with (reachable g1 r v).
         rewrite reachable_ind_reachable in H9. clear H1. induction H9.

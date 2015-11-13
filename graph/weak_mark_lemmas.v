@@ -291,7 +291,7 @@ Proof.
   Focus 1. {
     rewrite Same_set_spec.
     intro. rewrite Union_spec.
-    apply reachable_by_step_equiv; auto.
+    apply reachable_by_ind_equiv; auto.
   } Unfocus.
   split; [| split].
   + eapply si_stronger_partialgraph_simple; [| exact H2].

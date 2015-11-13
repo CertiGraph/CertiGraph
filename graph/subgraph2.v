@@ -905,7 +905,7 @@ Proof.
     - reflexivity.
 Qed.
 
-Lemma reachable_by_step_equiv:
+Lemma reachable_by_ind_equiv:
   forall (g: PreGraph V E) n1 l n2 (P: Ensemble V),
      let P' := Intersection _ P (Complement _ (eq n1)) in
      vvalid g n1 ->
@@ -916,7 +916,7 @@ Lemma reachable_by_step_equiv:
 Proof.
   intros.
   split; intros.
-  + apply reachable_by_step in H2.
+  + apply reachable_by_ind in H2.
     destruct H2; [auto | right].
     destruct H2 as [n [[? [? ?]] ?]].
     exists n.
@@ -932,10 +932,10 @@ Proof.
     - subst; eapply reachable_by_refl; auto.
     - destruct H2 as [n [? ?]].
       rewrite (H0 n) in H2.
-      apply reachable_by_cons with n.
+      apply edge_reachable_by with n.
+      * auto.
       * split; [| split]; auto.
         apply reachable_by_head_valid in H3; auto.
-      * auto.
       * eapply reachable_by_weaken; [| eauto].
         apply Intersection1_Included, Included_refl.
 Qed.

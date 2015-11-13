@@ -403,18 +403,60 @@ Proof.
   eapply reachable_by_foot_prop with (n1 := s); eauto.
 Qed.
 
-Lemma reachable_by_cons:
+Lemma edge_reachable_by:
   forall (g: Gph) n1 n2 n3 (P: Ensemble V),
-     g |= n1 ~> n2 ->
      P n1 ->
+     g |= n1 ~> n2 ->
      g |= n2 ~o~> n3 satisfying P ->
      g |= n1 ~o~> n3 satisfying P.
 Proof.
   intros. apply reachable_by_trans with n2; auto.
   apply reachable_by_head_prop in H1.
   exists (n1 :: n2 :: nil). split. split; auto.
-  split. simpl. split; auto. destruct H as [? [? ?]]. auto.
+  split. simpl. split; auto. destruct H0 as [? [? ?]]. auto.
   repeat constructor; auto.
+Qed.
+
+Lemma step_reachable_by:
+  forall (g: Gph) n1 n2 n3 (P: Ensemble V),
+     vvalid g n1 ->
+     P n1 ->
+     step g n1 n2 ->
+     g |= n2 ~o~> n3 satisfying P ->
+     g |= n1 ~o~> n3 satisfying P.
+Proof.
+  intros.
+  eapply edge_reachable_by; eauto.
+  split; [| split]; auto.
+  apply reachable_by_head_valid in H2; auto.
+Qed.
+
+Lemma reachable_by_edge:
+  forall (g: Gph) n1 n2 n3 (P: Ensemble V),
+     P n3 ->
+     g |= n1 ~o~> n2 satisfying P ->
+     g |= n2 ~> n3 ->
+     g |= n1 ~o~> n3 satisfying P.
+Proof.
+  intros. apply reachable_by_trans with n2; auto.
+  apply reachable_by_foot_prop in H0.
+  exists (n2 :: n3 :: nil). split. split; auto.
+  split. simpl. split; auto. destruct H1 as [? [? ?]]. auto.
+  repeat constructor; auto.
+Qed.
+
+Lemma reachable_by_step:
+  forall (g: Gph) n1 n2 n3 (P: Ensemble V),
+     vvalid g n3 ->
+     P n3 ->
+     g |= n1 ~o~> n2 satisfying P ->
+     step g n2 n3 ->
+     g |= n1 ~o~> n3 satisfying P.
+Proof.
+  intros.
+  eapply reachable_by_edge; eauto.
+  split; [| split]; auto.
+  apply reachable_by_foot_valid in H1; auto.
 Qed.
 
 Lemma reachable_refl: forall (g: Gph) x, vvalid g x -> reachable g x x.
@@ -655,7 +697,7 @@ Proof.
   exact H1.
 Qed.
 
-Lemma reachable_by_step: forall (g: Gph) x y P,
+Lemma reachable_by_ind: forall (g: Gph) x y P,
                            g |= x ~o~> y satisfying P -> x = y \/
                                                          exists z, g |= x ~> z /\
                                                                    g |= z ~o~> y satisfying (fun n => P n /\ n <> x).

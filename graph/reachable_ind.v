@@ -212,13 +212,13 @@ Proof.
     - subst. rewrite <- H1 in H7. auto.
   + destruct H3 as [? | [? | ?]].
     - subst. apply reachable_by_refl; auto.
-    - rewrite H0 in H3. apply reachable_by_cons with l.
-      * split; auto. split. apply reachable_head_valid in H3; auto. rewrite H2; auto.
+    - rewrite H0 in H3. apply edge_reachable_by with l.
       * auto.
-      * apply H3.
-    - rewrite H1 in H3. apply reachable_by_cons with r.
       * split; auto. split. apply reachable_head_valid in H3; auto. rewrite H2; auto.
+      * apply H3.
+    - rewrite H1 in H3. apply edge_reachable_by with r.
       * hnf; auto.
+      * split; auto. split. apply reachable_head_valid in H3; auto. rewrite H2; auto.
       * apply H3.
 Qed.
 
@@ -233,7 +233,7 @@ Proof.
   rewrite reachable_ind_reachable in H0.
   induction H0.
   + apply reachable_by_refl; auto.
-  + apply reachable_by_cons with y; auto.
+  + apply edge_reachable_by with y; auto.
     rewrite <- reachable_ind_reachable in H2.
     intro.
     apply (H x z) in H3; [auto |].

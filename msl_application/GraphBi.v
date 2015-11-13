@@ -277,7 +277,7 @@ Qed.
 Lemma gamma_left_reachable_included: forall (g: Graph) x d l r,
                                        vvalid g x -> vgamma g x = (d, l, r) -> Included (reachable g l) (reachable g x).
 Proof.
-  intros. intro y; intros. apply reachable_by_cons with l; auto. split; auto. split.
+  intros. intro y; intros. apply edge_reachable_by with l; auto. split; auto. split.
   + apply reachable_head_valid in H1; auto.
   + rewrite (gamma_step _ _ _ _ _ H H0). auto.
 Qed.
@@ -285,7 +285,7 @@ Qed.
 Lemma gamma_right_reachable_included: forall (g: Graph) x d l r,
                                         vvalid g x -> vgamma g x = (d, l, r) -> Included (reachable g r) (reachable g x).
 Proof.
-  intros. intro y; intros. apply reachable_by_cons with r; auto. split; auto. split.
+  intros. intro y; intros. apply edge_reachable_by with r; auto. split; auto. split.
   + apply reachable_head_valid in H1; auto.
   + rewrite (gamma_step _ _ _ _ _ H H0). auto.
 Qed.
