@@ -752,16 +752,6 @@ Proof.
   rename H5 into DISJ.
   destruct H4 as [? [? [? [? [? [? ?]]]]]].
 
-(*
-  split; [| split; [| split]].
-  + rewrite guarded_pointwise_relation_spec in H4.
-    rewrite <- H4; [auto |].
-    clear.
-    unfold Complement, Ensembles.In; intro.
-    apply reachable_by_foot_prop in H; unfold P0 in H.
-    rewrite Intersection_spec in H; destruct H as [_ ?]; apply H.
-    reflexivity.
-*)
   assert (Same_set PV2 (Union _ PV1 (reachable_by g (dst g e0) (Intersection _ P0 (Complement _ PV1))))).
   Focus 1. {
     unfold PV1, PV2.
@@ -855,13 +845,22 @@ Proof.
       * apply Included_Complement_Disjoint; auto.
   + intros.
     exfalso.
+    pose proof reachable_by_foot_valid _ _ _ _ H10.
     apply reachable_by_foot_prop in H10.
     unfold weak_edge_prop in H9.
     rewrite Intersection_spec in H9, H10; destruct H9, H10.
-    apply H14; clear H14; unfold Ensembles.In.
+    apply H15; clear H15; unfold Ensembles.In.
     unfold PV1 in H9 |- *.
-(* We should clean up all reachable_by_step step_reachable_by lemmas. *)
-Abort.
+    apply reachable_by_through_set_step with (src g e); auto.
+    exists e; auto.
+  + intros.
+    apply H13; auto.
+    intro.
+    apply reachable_by_foot_prop in H11.
+    rewrite Intersection_spec in H11.
+    destruct H11 as [_ ?].
+    destruct H11; auto.
+Qed.
 
 End LocalCopyGraph.
 

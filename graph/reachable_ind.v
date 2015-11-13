@@ -118,40 +118,6 @@ Proof.
       destruct H0; tauto.
 Qed.
 
-Lemma reachable_edge:
-  forall x y z, reachable G x y -> edge G y z -> reachable G x z.
-Proof.
-  intros.
-  rewrite reachable_ind2_reachable in *.
-  apply ind2.reachable_cons with y; auto.
-Qed.
-
-Lemma reachable_step:
-  forall x y z, reachable G x y -> step G y z -> vvalid G z -> reachable G x z.
-Proof.
-  intros.
-  pose proof reachable_foot_valid G _ _ H.
-  apply reachable_edge with y; auto.
-  unfold edge. tauto.
-Qed.
-
-Lemma edge_reachable:
-  forall x y z, reachable G y z -> edge G x y -> reachable G x z.
-Proof.
-  intros.
-  rewrite reachable_ind_reachable in *.
-  apply ind.reachable_cons with y; auto.
-Qed.
-
-Lemma step_reachable:
-  forall x y z, step G x y -> reachable G y z -> vvalid G x -> reachable G x z.
-Proof.
-  intros.
-  pose proof reachable_head_valid G _ _ H0.
-  apply edge_reachable with y; auto.
-  unfold edge. tauto.
-Qed.
-
 Lemma reachable_ind: forall x y, reachable G x y -> x = y \/ exists z, edge G x z /\ x <> z /\ reachable G z y.
 Proof.
   intros.
