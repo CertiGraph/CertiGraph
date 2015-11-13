@@ -328,7 +328,7 @@ Module SIMPLE_SPANNING_TREE.
       (fun n : V => ~ g1 |= dst g1 e ~o~> n satisfying R); auto.
       intro. unfold Ensembles.In. intros. intro. apply H5.
       apply reachable_by_weaken with (Q := P) in H6; auto.
-      apply reachable_by_cons with (dst g1 e); auto. destruct H0. split; auto. split.
+      apply edge_reachable_by with (dst g1 e); auto. destruct H0. split; auto. split.
       + apply reachable_by_head_valid in H6; auto.
       + rewrite step_spec. exists e. auto.
     Qed.
@@ -414,7 +414,7 @@ Module SIMPLE_SPANNING_TREE.
           apply reachable_by_weaken with (fun x => P x /\ x <> root); auto.
           hnf. unfold Ensembles.In . intuition.
         }
-        apply reachable_by_cons with (dst g1 e); auto.
+        apply edge_reachable_by with (dst g1 e); auto.
         apply reachable_by_head_valid in H4. do 2 (split; auto).
         rewrite step_spec. destruct H. exists e; auto.
       + destruct H3 as [p ?].
@@ -856,7 +856,7 @@ Module SIMPLE_SPANNING_TREE.
           apply (ppg_the_same_dst _ _ root) with (e := e2) in H14; auto.
           intro. destruct H16 as [[_ ?] _]; auto.
         }
-        apply reachable_by_cons with (dst g3 e2); auto.
+        apply edge_reachable_by with (dst g3 e2); auto.
         - split; auto; split.
           2: rewrite step_spec; exists e2; destruct H15; auto.
           rewrite <- H16.
@@ -1260,7 +1260,7 @@ Module SIMPLE_SPANNING_TREE.
                 apply (EST_not_edge_derive _ _ _ _ _ _ H6) in H30.
                 2: intro; apply reachable_by_foot_prop in H32; destruct H32; auto.
                 clear -H30 H24. exfalso. apply H24.
-                apply reachable_by_cons with n2; auto.
+                apply edge_reachable_by with n2; auto.
                 apply reachable_by_refl; destruct H30 as [? [? ?]]; auto.
             }
             assert (g3 |= dst g3 e1 :: ms is dst g3 e1 ~o~> y
@@ -1347,7 +1347,7 @@ Module SIMPLE_SPANNING_TREE.
                 rewrite H29 in H30. apply valid_path_split in H30.
                 destruct H30 as [_ [? _]]. specialize (H23 _ _ H27 H28).
                 clear -H30 H23. exfalso. apply H23.
-                apply reachable_by_cons with n2; auto.
+                apply edge_reachable_by with n2; auto.
                 apply reachable_by_refl; destruct H30 as [? [? ?]]; auto.
             }
             destruct H15 as [[? ?] [? ?]]. split; split; auto.
@@ -1456,7 +1456,7 @@ Module SIMPLE_SPANNING_TREE.
                          (P x /\ x <> root) /\
                          ~ g1 |= v ~o~> x
                            satisfying (fun x0 : V => P x0 /\ x0 <> root))). {
-          repeat intro. apply H11. apply reachable_by_cons with (dst g2 e2); auto.
+          repeat intro. apply H11. apply edge_reachable_by with (dst g2 e2); auto.
           + split; auto. apply reachable_by_head_valid in H13. split; auto.
             rewrite step_spec. exists e2. destruct H8; auto.
           + revert H13. apply reachable_by_weaken.
@@ -1467,7 +1467,7 @@ Module SIMPLE_SPANNING_TREE.
                    (fun x : V => P x /\ x <> root) P g1 _ g2 _ _ e2); auto.
           + intro. destruct H13; auto.
           + compute. tauto.
-          + intro. apply H10. apply reachable_by_cons with (dst g1 e1); auto.
+          + intro. apply H10. apply edge_reachable_by with (dst g1 e1); auto.
             - split; auto. apply reachable_by_head_valid in H13. split; auto.
               rewrite step_spec. exists e1. destruct H3. auto.
             - apply reachable_by_weaken with (fun x : V => P x /\ x <> root); auto.

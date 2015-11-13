@@ -460,7 +460,7 @@ Section SIMPLE_MARK_GRAPH.
         destruct (V_DEC x H6).
         + apply (mark1_reverse_unmark m1 root) in H7; auto.
           apply H4. apply H1 in H6.
-          apply reachable_by_cons with x; auto.
+          apply edge_reachable_by with x; auto.
           unfold edge; auto.
         + apply reachable_by_head_valid in H7; tauto.
       }
