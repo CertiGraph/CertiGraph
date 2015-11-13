@@ -135,25 +135,6 @@ Proof.
   unfold edge. tauto.
 Qed.
 
-Lemma reachable_ind: forall x y, reachable G x y -> x = y \/ exists z, edge G x z /\ x <> z /\ reachable G z y.
-Proof.
-  intros.
-  rewrite reachable_ind_reachable in H.
-  induction H.
-  + left; auto.
-  + destruct_eq_dec x y.
-    - subst y.
-      apply IHreachable.
-    - right.
-      exists y. rewrite reachable_ind_reachable in *; auto.
-Qed.
-
-Lemma reachable_refl: forall x, vvalid G x -> reachable G x x.
-Proof.
-  intros.
-  rewrite reachable_ind_reachable; apply ind.reachable_nil; auto.
-Qed.
-
 Lemma edge_reachable:
   forall x y z, reachable G y z -> edge G x y -> reachable G x z.
 Proof.
@@ -169,6 +150,19 @@ Proof.
   pose proof reachable_head_valid G _ _ H0.
   apply edge_reachable with y; auto.
   unfold edge. tauto.
+Qed.
+
+Lemma reachable_ind: forall x y, reachable G x y -> x = y \/ exists z, edge G x z /\ x <> z /\ reachable G z y.
+Proof.
+  intros.
+  rewrite reachable_ind_reachable in H.
+  induction H.
+  + left; auto.
+  + destruct_eq_dec x y.
+    - subst y.
+      apply IHreachable.
+    - right.
+      exists y. rewrite reachable_ind_reachable in *; auto.
 Qed.
 
 Lemma reachable_ind': forall x S y, vvalid G x -> step_list G x S -> (reachable G x y <-> x = y \/ reachable_through_set G S y).
@@ -217,7 +211,7 @@ Proof.
     - subst. rewrite <- H0 in H7. auto.
     - subst. rewrite <- H1 in H7. auto.
   + destruct H3 as [? | [? | ?]].
-    - subst. apply reachable_by_reflexive. split; auto.
+    - subst. apply reachable_by_refl; auto.
     - rewrite H0 in H3. apply reachable_by_cons with l.
       * split; auto. split. apply reachable_head_valid in H3; auto. rewrite H2; auto.
       * auto.
@@ -226,21 +220,6 @@ Proof.
       * split; auto. split. apply reachable_head_valid in H3; auto. rewrite H2; auto.
       * hnf; auto.
       * apply H3.
-Qed.
-
-Lemma reachable_trans: forall x y z,
-    reachable G x y -> reachable G y z -> reachable G x z.
-Proof.
-  intros. rewrite reachable_ind_reachable in H, H0 |- *.
-  apply ind.reachable_trans with y; auto.
-Qed.
-
-Lemma reachable_through_set_reachable: forall l x y,
-  reachable_through_set G l x -> reachable G x y -> reachable_through_set G l y.
-Proof.
-  intros.
-  destruct H as [s [? ?]]; exists s; split; auto.
-  apply reachable_trans with x; auto.
 Qed.
 
 Lemma edge_preserved_rev_foot: forall (P: V -> Prop),
@@ -253,7 +232,7 @@ Proof.
   intros.
   rewrite reachable_ind_reachable in H0.
   induction H0.
-  + apply reachable_by_reflexive; auto.
+  + apply reachable_by_refl; auto.
   + apply reachable_by_cons with y; auto.
     rewrite <- reachable_ind_reachable in H2.
     intro.

@@ -74,7 +74,7 @@ Section SPATIAL_GRAPH_DISPOSE_BI.
       simpl in H0; unfold gamma in H0. inversion H0; auto.
     } Unfocus.
     apply pred_sepcon_ramify1; auto.
-    + apply reachable_by_reflexive; auto.
+    + apply reachable_by_refl; auto.
     + intuition.
     + intros. unfold graph_cell; simpl.
       unfold gamma; simpl. unfold graph_gen.update_dst.
@@ -268,7 +268,7 @@ Section SPATIAL_GRAPH_DISPOSE_BI.
       simpl in H0; unfold gamma in H0. inversion H0; auto.
     } Unfocus.
     apply pred_sepcon_ramify1; auto.
-    + apply reachable_by_reflexive; auto.
+    + apply reachable_by_refl; auto.
     + intuition.
     + intros. unfold graph_cell; simpl.
       unfold gamma; simpl. unfold graph_gen.update_dst.

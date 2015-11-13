@@ -128,7 +128,7 @@ Module SIMPLE_SPANNING_TREE.
         spanning_tree g1 root P g2 -> P root -> vvalid g1 root -> vvalid g2 root.
     Proof.
       intros. destruct H as [_ [_ [? _]]].
-      assert (g1 |= root ~o~> root satisfying P) by (apply reachable_by_reflexive; auto).
+      assert (g1 |= root ~o~> root satisfying P) by (apply reachable_by_refl; auto).
       specialize (H _ H2). apply reachable_head_valid in H. auto.
     Qed.
 
@@ -302,7 +302,7 @@ Module SIMPLE_SPANNING_TREE.
       intros. destruct H2 as [? [? [? [? ?]]]].
       assert (g1 |= root ~o~> src g1 e satisfying P). {
         destruct H. rewrite H7.
-        apply reachable_by_reflexive; auto.
+        apply reachable_by_refl; auto.
       }
       hnf. simpl. unfold predicate_vvalid. unfold predicate_weak_evalid.
       split; [|split; [|split]]; intros.
@@ -750,7 +750,7 @@ Module SIMPLE_SPANNING_TREE.
         intro. apply reachable_by_foot_prop in H10.
         destruct H10 as [[_ ?] _]. apply H10; auto.
       }
-      destruct_eq_dec n root. 1: subst; apply reachable_by_reflexive; split; auto.
+      destruct_eq_dec n root. 1: subst; apply reachable_by_refl; auto.
       destruct (X n).
       + destruct H5 as [[? ?] | [? ?]].
         2: apply reachable_by_head_prop in r; exfalso; apply H5; auto.
@@ -764,7 +764,7 @@ Module SIMPLE_SPANNING_TREE.
           pose proof (reachable_path_in _ _ _ _ H13 _ H16).
           assert (g1 |= dst g1 e1 ~o~> dst g1 e1 satisfying
                      (fun x : V => P x /\ x <> root)). {
-            apply reachable_by_reflexive. split; auto.
+            apply reachable_by_refl; auto.
             apply reachable_by_head_valid in r; auto.
           }
           specialize (H14 _ _ H18 n0). exfalso; auto.
@@ -840,7 +840,7 @@ Module SIMPLE_SPANNING_TREE.
           destruct H9 as [? [? ?]]. exists p. do 2 (split; auto).
           unfold path_prop in H14 |-* . rewrite Forall_forall in H14 |-* .
           intros. split. apply H14; auto. intro. apply n0.
-          specialize (H12 _ H15). apply reachable_by_merge with x; auto.
+          specialize (H12 _ H15). apply reachable_by_trans with x; auto.
         }
         pose proof H5. apply (EST_the_same_dst _ _ root _ _ e2) in H13; auto.
         2: intro; destruct H14; auto. rewrite H13 in H9.
@@ -915,7 +915,7 @@ Module SIMPLE_SPANNING_TREE.
         rewrite H10 in *. left; auto.
       + destruct H4 as [[? ?] | [? ?]].
         - assert (~ vvalid g1 (dst g1 e)). {
-            intro. apply H6. apply reachable_by_reflexive; auto.
+            intro. apply H6. apply reachable_by_refl; auto.
           } pose proof H7. destruct H7 as [? _].
           assert (dst g1 e = dst g2 e)
             by (apply (ppg_the_same_dst _ _ root g2 _ e) in H7; auto).
@@ -963,7 +963,7 @@ Module SIMPLE_SPANNING_TREE.
         apply (EST_not_reachable_derive _ _ _ _ _ _ H8); auto.
       + apply reachable_by_head_prop in r; exfalso; auto.
       + assert (~ vvalid g1 (dst g1 e1)). {
-          intro. apply n0. apply reachable_by_reflexive; auto.
+          intro. apply n0. apply reachable_by_refl; auto.
         } pose proof H12. destruct H12 as [? _].
         assert (dst g1 e1 = dst g2 e1)
           by (apply (ppg_the_same_dst _ _ root) with (e := e1) in H12; auto).
@@ -1236,7 +1236,7 @@ Module SIMPLE_SPANNING_TREE.
             rewrite H20 in *. rewrite H21 in *.
             assert (g1 |= dst g3 e1 ~o~> dst g3 e1
                          satisfying (fun x : V => P x /\ x <> root)). {
-              apply reachable_by_reflexive. split; auto.
+              apply reachable_by_refl; auto.
               rewrite <- (edge_spanning_tree_vvalid' _ _ _ _ _ H6) in H13.
               rewrite <- (edge_spanning_tree_vvalid' _ _ _ _ _ H19) in H13.
               auto.
@@ -1261,7 +1261,7 @@ Module SIMPLE_SPANNING_TREE.
                 2: intro; apply reachable_by_foot_prop in H32; destruct H32; auto.
                 clear -H30 H24. exfalso. apply H24.
                 apply reachable_by_cons with n2; auto.
-                apply reachable_by_reflexive. destruct H30 as [? [? ?]]. auto.
+                apply reachable_by_refl; destruct H30 as [? [? ?]]; auto.
             }
             assert (g3 |= dst g3 e1 :: ms is dst g3 e1 ~o~> y
                        satisfying
@@ -1311,7 +1311,7 @@ Module SIMPLE_SPANNING_TREE.
                           (P x /\ x <> root) /\
                           ~ g1 |= dst g1 e1 ~o~> x
                             satisfying (fun x0 : V => P x0 /\ x0 <> root))). {
-              apply reachable_by_reflexive. split; auto.
+              apply reachable_by_refl; auto.
               rewrite <- (spanning_tree_vvalid' _ _ _ _ _ H20) in H13. auto.
             }
             assert (forall v,
@@ -1348,7 +1348,7 @@ Module SIMPLE_SPANNING_TREE.
                 destruct H30 as [_ [? _]]. specialize (H23 _ _ H27 H28).
                 clear -H30 H23. exfalso. apply H23.
                 apply reachable_by_cons with n2; auto.
-                apply reachable_by_reflexive. destruct H30 as [? [? ?]]. auto.
+                apply reachable_by_refl; destruct H30 as [? [? ?]]; auto.
             }
             destruct H15 as [[? ?] [? ?]]. split; split; auto.
             hnf. rewrite Forall_forall. auto.
@@ -1396,7 +1396,7 @@ Module SIMPLE_SPANNING_TREE.
                          (P x /\ x <> root) /\
                          ~ g1 |= dst g1 e1 ~o~> x
                            satisfying (fun x0 : V => P x0 /\ x0 <> root))). {
-              apply reachable_by_reflexive. split; auto.
+              apply reachable_by_refl; auto.
               rewrite <- (spanning_tree_vvalid' _ _ _ _ _ H31) in H27; auto.
             }
             specialize (H6 _ _ H33 H32). exfalso; apply H6.
@@ -1424,7 +1424,7 @@ Module SIMPLE_SPANNING_TREE.
                          (P x /\ x <> root) /\
                          ~ g1 |= dst g1 e1 ~o~> x
                            satisfying (fun x0 : V => P x0 /\ x0 <> root))). {
-              apply reachable_by_reflexive. split; auto.
+              apply reachable_by_refl; auto.
               rewrite <- (spanning_tree_vvalid' _ _ _ _ _ H31) in H15; auto.
             }
             specialize (H6 _ _ H33 H32). exfalso; apply H6.
@@ -1442,10 +1442,10 @@ Module SIMPLE_SPANNING_TREE.
       + apply (spanning_list_spanning_tree2_reachable P g1 g2 g3 root e1 e2 n); auto.
       + apply (spanning_list_spanning_tree2_reachable _ _ g2 g3 _ e1 e2) in H9; auto.
         intro.
-        assert (reachable g3 root b) by (apply reachable_by_merge with a; auto).
+        assert (reachable g3 root b) by (apply reachable_by_trans with a; auto).
         cut (~ reachable g3 root b). 1: intro. apply H13; auto.
         clear H9 H11. destruct_eq_dec b root.
-        1: subst; exfalso; apply H10; apply reachable_by_reflexive; auto.
+        1: subst; exfalso; apply H10; apply reachable_by_refl; auto.
         assert (~ g2 |= root ~o~> b satisfying P). {
           intro. apply H10. apply EST_root_reachable_by in H5; auto. apply H5, H11.
         }

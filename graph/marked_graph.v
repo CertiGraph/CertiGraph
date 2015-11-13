@@ -150,7 +150,7 @@ Section SIMPLE_MARK_GRAPH.
     destruct (exists_list_dec _ p (fun n => g |= root ~o~> n satisfying (negateP m1))) as [?H | ?H].
     1: apply ENUMC.
     + right. destruct H as [? _]. apply H.
-      destruct H1 as [n [? ?]]. apply reachable_by_merge with n; trivial.
+      destruct H1 as [n [? ?]]. apply reachable_by_trans with n; trivial.
       destruct (reachable_by_path_split_in g _ _ _ _ _ H0 H1) as [p1 [p2 [? [? ?]]]].
       exists p2. trivial.
     + left. exists p. destruct H0. split; trivial. clear H0.

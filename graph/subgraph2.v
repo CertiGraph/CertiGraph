@@ -228,28 +228,6 @@ Proof.
   apply reachable_by_eq_partialgraph_reachable.
 Qed.
 
-Lemma reachable_by_head_valid (p: V -> Prop):
-  forall (n1 n2: V),
-    g |= n1 ~o~> n2 satisfying p -> vvalid g n1.
-Proof.
-  intros.
-  rewrite reachable_by_eq_partialgraph_reachable in H.
-  apply reachable_head_valid in H.
-  destruct H.
-  auto.
-Qed.
-
-Lemma reachable_by_foot_valid (p: V -> Prop):
-  forall (n1 n2: V),
-    g |= n1 ~o~> n2 satisfying p -> vvalid g n2.
-Proof.
-  intros.
-  rewrite reachable_by_eq_partialgraph_reachable in H.
-  apply reachable_foot_valid in H.
-  destruct H.
-  auto.
-Qed.
-
 Lemma reachable_by_through_set_eq_subgraph_reachable_through_set (p: V -> Prop):
   forall l n,
     reachable_by_through_set g l p n <-> reachable_through_set (predicate_subgraph p) l n.
@@ -951,7 +929,7 @@ Proof.
     assert (n <> n1 <-> n1 <> n) by (split; intros; congruence).
     tauto.
   + destruct H2.
-    - subst; eapply reachable_by_reflexive; auto.
+    - subst; eapply reachable_by_refl; auto.
     - destruct H2 as [n [? ?]].
       rewrite (H0 n) in H2.
       apply reachable_by_cons with n.
@@ -978,7 +956,7 @@ Proof.
       intros m0 ? [s [? ?]].
       apply H0; exists s.
       split; auto.
-      apply reachable_by_merge with m0; auto.
+      apply reachable_by_trans with m0; auto.
     } Unfocus.
     rewrite reachable_by_eq_partialgraph_reachable in H2 |- *.
     rewrite partial_partialgraph.

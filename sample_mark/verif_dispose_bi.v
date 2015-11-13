@@ -198,7 +198,7 @@ Proof.
     }
     apply (@vertices_at_ramify1 _ _ _ _ _ _ _ (SGA_VST sh) g1 (reachable g1 x) l (dd, ll, rr) (dd, ll, rr)); auto.
     apply (gamma_left_reachable_included g1 _ _ _ _ H3 H_GAMMA_g1 l).
-    apply reachable_by_reflexive; auto.
+    apply reachable_by_refl; auto.
     Transparent gamma.
   } Unfocus.
 
@@ -408,7 +408,7 @@ Proof.
     apply (@vertices_at_ramify1 _ _ _ _ _ _ _ (SGA_VST sh) g2 (reachable g1 x) r (dd, ll, rr) (dd, ll, rr)); auto.
     rewrite <- (edge_spanning_tree_left_vvalid g1 g2 x true l r r); auto.
     apply (gamma_right_reachable_included g1 _ _ _ _ H3 H_GAMMA_g1 r).
-    apply reachable_by_reflexive; auto.
+    apply reachable_by_refl; auto.
     Transparent gamma.
   } Unfocus.
 
