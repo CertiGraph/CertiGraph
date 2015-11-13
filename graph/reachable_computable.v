@@ -437,7 +437,7 @@ Section REACHABLE_COMPUTABLE.
     apply finite_reachable_computable; auto.
     apply EnumCovered_strengthen with (reachable G x).
     + intros ? ?.
-      apply reachable_by_merge with y; auto.
+      apply reachable_by_trans with y; auto.
     + eapply reachable_list_EnumCovered; eauto.
   Qed.
 

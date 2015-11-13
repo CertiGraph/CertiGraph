@@ -55,19 +55,16 @@ Notation " g '|=' n1 '~~>' n2 'satisfying' P " := (reachable_by_acyclic g n1 P n
 
 Definition reachable (g: Gph) (n : V): Ensemble V:= reachable_by g n (fun _ => True).
 
-Definition reachable_list (g: Gph) (x : V) (L : list V) : Prop := forall y, In y L <-> reachable g x y.
-
 Definition reachable_by_through_set (g: Gph) (S : list V) (P : Ensemble V) : Ensemble V:= fun n => exists s, In s S /\ reachable_by g s P n.
 
 Definition reachable_through_set (g: Gph) (S : list V) : Ensemble V:= fun n => exists s, In s S /\ reachable g s n.
 
+Definition reachable_list (g: Gph) (x : V) (L : list V) : Prop := forall y, In y L <-> reachable g x y.
+
 Definition reachable_set_list (g: Gph) (S : list V) (l : list V) : Prop := forall x : V, In x l <-> reachable_through_set g S x.
 
-Definition ReachDecidable (g: Gph) (x : V) (P : V -> Prop) :=
-  forall y, Decidable (g |= x ~o~> y satisfying P).
-
 (******************************************
- 
+
 Path Lemmas
  
 ******************************************)
@@ -334,19 +331,51 @@ Proof.
   + destruct H0 as [[? ?] [? ?]]. split; split; auto. rewrite <- (valid_path_si g1 g2 H); auto.
 Qed.
 
-Lemma reachable_by_reflexive: forall (g : Gph) n P, vvalid g n /\ P n -> g |= n ~o~> n satisfying P.
+Lemma valid_path_valid: forall (g : Gph) p, valid_path g p -> Forall (vvalid g) p.
+Proof.
+  induction p; intros; simpl in *. apply Forall_nil.
+  destruct p; constructor; auto; destruct H as [[? ?] ?]; [| apply IHp]; auto.
+Qed.
+
+(******************************************
+
+Reachable Lemmas
+ 
+******************************************)
+
+Lemma reachable_by_refl: forall (g : Gph) n (P: V -> Prop), vvalid g n -> P n -> g |= n ~o~> n satisfying P.
 Proof.
   intros.
   exists (n :: nil). split. compute. auto.
-  split. simpl. trivial. destruct H; auto.
+  split. simpl. trivial. auto. auto.
   repeat constructor; tauto.
 Qed.
 
-Lemma reachable_by_merge: forall (g: Gph) n1 n2 n3 P,
+Lemma reachable_by_trans: forall (g: Gph) n1 n2 n3 P,
   g |= n1 ~o~> n2 satisfying P ->
   g |= n2 ~o~> n3 satisfying P ->
   g |= n1 ~o~> n3 satisfying P.
 Proof. do 2 destruct 1. exists (x +++ x0). apply reachable_by_path_merge with n2; auto. Qed.
+
+Lemma reachable_by_through_set_reachable_by: forall (g: Gph) l x y P,
+  reachable_by_through_set g l P x -> reachable_by g x P y -> reachable_by_through_set g l P y.
+Proof.
+  intros.
+  destruct H as [s [? ?]]; exists s; split; auto.
+  apply reachable_by_trans with x; auto.
+Qed.
+
+Lemma reachable_by_head_valid: forall (g : Gph) n1 n2 P, g |= n1 ~o~> n2 satisfying P -> vvalid g n1.
+Proof.
+  repeat intro. destruct H as [l [[? ?] [? ?]]]. destruct l. inversion H. simpl in H. inversion H. subst. simpl in H1.
+  destruct l. auto. destruct H1 as [[? _] _]. auto.
+Qed.
+
+Lemma reachable_by_foot_valid: forall (g : Gph) n1 n2 P, g |= n1 ~o~> n2 satisfying P -> vvalid g n2.
+Proof.
+  repeat intro. destruct H as [l [[? ?] [? ?]]]. apply foot_in in H0. apply valid_path_valid in H1.
+  rewrite Forall_forall in H1. apply H1. auto.
+Qed.
 
 Lemma reachable_by_head_prop: forall (g: Gph) n1 n2 P, g |= n1 ~o~> n2 satisfying P -> P n1.
 Proof.
@@ -360,6 +389,20 @@ Proof.
   apply reachable_by_path_foot in H. apply foot_in. trivial.
 Qed.
 
+Lemma reachable_by_through_set_foot_valid: forall (g : Gph) S n P, reachable_by_through_set g S P n -> vvalid g n.
+Proof.
+  intros.
+  destruct H as [s [? ?]].
+  eapply reachable_by_foot_valid with (n1 := s); eauto.
+Qed.
+
+Lemma reachable_by_through_set_foot_prop: forall (g : Gph) S n P, reachable_by_through_set g S P n -> P n.
+Proof.
+  intros.
+  destruct H as [s [? ?]].
+  eapply reachable_by_foot_prop with (n1 := s); eauto.
+Qed.
+
 Lemma reachable_by_cons:
   forall (g: Gph) n1 n2 n3 (P: Ensemble V),
      g |= n1 ~> n2 ->
@@ -367,12 +410,46 @@ Lemma reachable_by_cons:
      g |= n2 ~o~> n3 satisfying P ->
      g |= n1 ~o~> n3 satisfying P.
 Proof.
-  intros. apply reachable_by_merge with n2; auto.
+  intros. apply reachable_by_trans with n2; auto.
   apply reachable_by_head_prop in H1.
   exists (n1 :: n2 :: nil). split. split; auto.
   split. simpl. split; auto. destruct H as [? [? ?]]. auto.
   repeat constructor; auto.
 Qed.
+
+Lemma reachable_refl: forall (g: Gph) x, vvalid g x -> reachable g x x.
+Proof. intros; apply reachable_by_refl; auto. Qed.
+
+Lemma reachable_trans: forall (g: Gph) x y z,
+  reachable g x y -> reachable g y z -> reachable g x z.
+Proof. intros. eapply reachable_by_trans; eauto. Qed.
+
+Lemma reachable_through_set_reachable: forall (g: Gph) l x y,
+  reachable_through_set g l x -> reachable g x y -> reachable_through_set g l y.
+Proof.
+  intros.
+  destruct H as [s [? ?]]; exists s; split; auto.
+  apply reachable_trans with x; auto.
+Qed.
+
+Lemma reachable_head_valid: forall (g : Gph) n1 n2, reachable g n1 n2 -> vvalid g n1.
+Proof. intros; eapply reachable_by_head_valid; eauto. Qed.
+
+Lemma reachable_foot_valid: forall (g : Gph) n1 n2, reachable g n1 n2 -> vvalid g n2.
+Proof. intros; eapply reachable_by_foot_valid; eauto. Qed.
+
+Lemma reachable_through_set_foot_valid: forall (g : Gph) S n, reachable_through_set g S n -> vvalid g n.
+Proof.
+  intros.
+  destruct H as [s ?].
+  apply reachable_foot_valid with s; tauto.
+Qed.
+
+(******************************************
+
+Other Reachable Lemmas
+ 
+******************************************)
 
 Lemma reachable_acyclic: forall (g: Gph) n1 P n2,
   g |= n1 ~o~> n2 satisfying P <->
@@ -396,32 +473,6 @@ Proof.
   split; trivial. apply path_prop_weaken with P; auto.
 Qed.
 
-Lemma valid_path_valid: forall (g : Gph) p, valid_path g p -> Forall (vvalid g) p.
-Proof.
-  induction p; intros; simpl in *. apply Forall_nil.
-  destruct p; constructor; auto; destruct H as [[? ?] ?]; [| apply IHp]; auto.
-Qed.
-
-Lemma reachable_foot_valid: forall (g : Gph) n1 n2, reachable g n1 n2 -> vvalid g n2.
-Proof.
-  repeat intro. destruct H as [l [[? ?] [? ?]]]. apply foot_in in H0. apply valid_path_valid in H1.
-  rewrite Forall_forall in H1. apply H1. auto.
-Qed.
-
-(* Also called reachable_is_valid *)
-Lemma reachable_head_valid: forall (g : Gph) n1 n2, reachable g n1 n2 -> vvalid g n1.
-Proof.
-  repeat intro. destruct H as [l [[? ?] [? ?]]]. destruct l. inversion H. simpl in H. inversion H. subst. simpl in H1.
-  destruct l. auto. destruct H1 as [[? _] _]. auto.
-Qed.
-
-Lemma reachable_through_set_foot_valid: forall (g : Gph) S n, reachable_through_set g S n -> vvalid g n.
-Proof.
-  intros.
-  destruct H as [s ?].
-  apply reachable_foot_valid with s; tauto.
-Qed.
-
 Lemma reachable_through_empty (g: Gph):
   Same_set (reachable_through_set g nil) (Empty_set V).
 Proof.
@@ -441,7 +492,7 @@ Proof.
       destruct H. specialize (H y).
       spec H; [| inversion H].
       unfold Ensembles.In. exists y.
-      split; [apply in_eq | apply reachable_by_reflexive; split;[|hnf]; trivial].
+      split; [apply in_eq | apply reachable_by_refl; [|hnf]; trivial].
     - assert (Same_set (reachable_through_set g (a :: S)) (reachable_through_set g S)).
       Focus 1. {
         split.
@@ -806,6 +857,9 @@ Proof.
   rewrite reachable_by_through_app, reachable_by_through_singleton; tauto.
 Qed.
 
+Definition ReachDecidable (g: Gph) (x : V) (P : V -> Prop) :=
+  forall y, Decidable (g |= x ~o~> y satisfying P).
+
 End PATH_LEM.
 
 Arguments path_glue {_} _ _.
@@ -817,3 +871,4 @@ End PathNotation.
 Notation " g '|=' p 'is' n1 '~o~>' n2 'satisfying' P" := (reachable_by_path g p n1 P n2) (at level 1).
 Notation " g '|=' n1 '~o~>' n2 'satisfying' P " := (reachable_by g n1 P n2) (at level 1).
 Notation " g '|=' n1 '~~>' n2 'satisfying' P " := (reachable_by_acyclic g n1 P n2) (at level 1).
+
