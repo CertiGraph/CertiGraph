@@ -459,6 +459,33 @@ Proof.
   apply reachable_by_foot_valid in H1; auto.
 Qed.
 
+Lemma reachable_by_through_set_edge:
+  forall (g: Gph) l n2 n3 (P: Ensemble V),
+     P n3 ->
+     reachable_by_through_set g l P n2 ->
+     edge g n2 n3 ->
+     reachable_by_through_set g l P n3.
+Proof.
+  intros.
+  destruct H0 as [s [? ?]].
+  exists s; split; auto.
+  apply reachable_by_edge with n2; auto.
+Qed.
+
+Lemma reachable_by_through_set_step:
+  forall (g: Gph) l n2 n3 (P: Ensemble V),
+     vvalid g n3 ->
+     P n3 ->
+     reachable_by_through_set g l P n2 ->
+     step g n2 n3 ->
+     reachable_by_through_set g l P n3.
+Proof.
+  intros.
+  eapply reachable_by_through_set_edge; eauto.
+  split; [| split]; auto.
+  apply reachable_by_through_set_foot_valid in H1; auto.
+Qed.
+
 Lemma reachable_refl: forall (g: Gph) x, vvalid g x -> reachable g x x.
 Proof. intros; apply reachable_by_refl; auto. Qed.
 
@@ -485,6 +512,47 @@ Proof.
   intros.
   destruct H as [s ?].
   apply reachable_foot_valid with s; tauto.
+Qed.
+
+Lemma edge_reachable:
+  forall (g : Gph) x y z, reachable g y z -> edge g x y -> reachable g x z.
+Proof. intros. eapply edge_reachable_by; eauto. Qed.
+
+Lemma step_reachable:
+  forall (g : Gph) x y z, step g x y -> reachable g y z -> vvalid g x -> reachable g x z.
+Proof. intros. eapply step_reachable_by; eauto. Qed.
+
+Lemma reachable_edge:
+  forall (g : Gph) x y z, reachable g x y -> edge g y z -> reachable g x z.
+Proof. intros. eapply reachable_by_edge; eauto. Qed.
+
+Lemma reachable_step:
+  forall (g : Gph) x y z, reachable g x y -> step g y z -> vvalid g z -> reachable g x z.
+Proof. intros. eapply reachable_by_step; eauto. Qed.
+
+Lemma reachable_through_set_edge:
+  forall (g: Gph) l n2 n3,
+     reachable_through_set g l n2 ->
+     edge g n2 n3 ->
+     reachable_through_set g l n3.
+Proof.
+  intros.
+  destruct H as [s [? ?]].
+  exists s; split; auto.
+  apply reachable_edge with n2; auto.
+Qed.
+
+Lemma reachable_through_set_step:
+  forall (g: Gph) l n2 n3,
+     vvalid g n3 ->
+     reachable_through_set g l n2 ->
+     step g n2 n3 ->
+     reachable_through_set g l n3.
+Proof.
+  intros.
+  eapply reachable_through_set_edge; eauto.
+  split; [| split]; auto.
+  apply reachable_through_set_foot_valid in H0; auto.
 Qed.
 
 (******************************************
@@ -719,6 +787,41 @@ Proof.
   intros. destruct H0 as [p [? [? ?]]].
   exists p. do 2 (split; auto). hnf in *.
   rewrite Forall_forall in *. intros. apply H. apply H2. auto.
+Qed.
+
+Lemma reachable_by_ind_equiv:
+  forall (g: PreGraph V E) n1 l n2 (P: Ensemble V),
+     let P' := Intersection _ P (Complement _ (eq n1)) in
+     vvalid g n1 ->
+     step_list g n1 l ->
+     P n1 ->
+     (g |= n1 ~o~> n2 satisfying P <->
+     n1 = n2 \/ reachable_by_through_set g l P' n2).
+Proof.
+  intros.
+  split; intros.
+  + apply reachable_by_ind in H2.
+    destruct H2; [auto | right].
+    destruct H2 as [n [[? [? ?]] ?]].
+    exists n.
+    split; [rewrite (H0 n); auto |].
+    eapply reachable_by_weaken; [| eauto].
+    clear.
+    intro n; unfold P', Ensembles.In.
+    rewrite Intersection_spec.
+    unfold Complement, Ensembles.In.
+    assert (n <> n1 <-> n1 <> n) by (split; intros; congruence).
+    tauto.
+  + destruct H2.
+    - subst; eapply reachable_by_refl; auto.
+    - destruct H2 as [n [? ?]].
+      rewrite (H0 n) in H2.
+      apply edge_reachable_by with n.
+      * auto.
+      * split; [| split]; auto.
+        apply reachable_by_head_valid in H3; auto.
+      * eapply reachable_by_weaken; [| eauto].
+        apply Intersection1_Included, Included_refl.
 Qed.
 
 Lemma reachable_by_through_set_weaken:

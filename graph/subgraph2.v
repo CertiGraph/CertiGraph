@@ -266,19 +266,6 @@ Proof.
   apply reachable_by_through_set_eq_partialgraph_reachable_through_set.
 Qed.
 
-Lemma reachable_by_refl (p: V -> Prop):
-  forall n: V,
-    vvalid g n ->
-    p n ->
-    g |= n ~o~> n satisfying p.
-Proof.
-  intros.
-  rewrite reachable_by_eq_partialgraph_reachable.
-  apply reachable_refl.
-  simpl.
-  split; auto.
-Qed.
-
 Lemma predicate_subgraph_reachable_included (p: V -> Prop): 
   forall (n: V), Included (reachable (predicate_subgraph p) n) (reachable g n).
 Proof.
@@ -903,41 +890,6 @@ Proof.
     - destruct H2; eauto.
     - reflexivity.
     - reflexivity.
-Qed.
-
-Lemma reachable_by_ind_equiv:
-  forall (g: PreGraph V E) n1 l n2 (P: Ensemble V),
-     let P' := Intersection _ P (Complement _ (eq n1)) in
-     vvalid g n1 ->
-     step_list g n1 l ->
-     P n1 ->
-     (g |= n1 ~o~> n2 satisfying P <->
-     n1 = n2 \/ reachable_by_through_set g l P' n2).
-Proof.
-  intros.
-  split; intros.
-  + apply reachable_by_ind in H2.
-    destruct H2; [auto | right].
-    destruct H2 as [n [[? [? ?]] ?]].
-    exists n.
-    split; [rewrite (H0 n); auto |].
-    eapply reachable_by_weaken; [| eauto].
-    clear.
-    intro n; unfold P', Ensembles.In.
-    rewrite Intersection_spec.
-    unfold Complement, Ensembles.In.
-    assert (n <> n1 <-> n1 <> n) by (split; intros; congruence).
-    tauto.
-  + destruct H2.
-    - subst; eapply reachable_by_refl; auto.
-    - destruct H2 as [n [? ?]].
-      rewrite (H0 n) in H2.
-      apply edge_reachable_by with n.
-      * auto.
-      * split; [| split]; auto.
-        apply reachable_by_head_valid in H3; auto.
-      * eapply reachable_by_weaken; [| eauto].
-        apply Intersection1_Included, Included_refl.
 Qed.
 
 Lemma reachable_by_through_app_strong: forall (g: PreGraph V E) P l1 l2,
