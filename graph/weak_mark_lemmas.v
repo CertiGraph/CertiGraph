@@ -70,8 +70,8 @@ Definition unmarked (g: Graph) : NodePred V := negateP (marked g).
 Hypothesis R_DEC: forall (g: Graph) x, vvalid g x -> ReachDecidable g x (unmarked g).
 
 Definition nothing (n : V) (g1 : Graph) (g2 : Graph) : Prop :=
-  (predicate_partialgraph g1 (eq n)) ~=~
-  (predicate_partialgraph g2 (eq n)) /\
+  (predicate_partialgraph g1 (Complement _ (eq n))) ~=~
+  (predicate_partialgraph g2 (Complement _ (eq n))) /\
   (forall v, marked g1 v <-> marked g2 v).
 
 Definition mark1 (n : V) (g1 : Graph) (g2 : Graph) : Prop :=

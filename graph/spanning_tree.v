@@ -2,13 +2,14 @@ Require Import Coq.Classes.Morphisms.
 Require Import RamifyCoq.lib.EquivDec_ext.
 Require Import RamifyCoq.lib.EnumEnsembles.
 Require Import RamifyCoq.lib.List_ext.
+Require Import RamifyCoq.lib.relation_list.
 Require Import RamifyCoq.graph.graph_model.
 Require Import RamifyCoq.graph.path_lemmas.
 Require Import RamifyCoq.graph.subgraph2.
 Require Import RamifyCoq.graph.reachable_ind.
 Require Import Coq.Logic.Classical.
-Require RamifyCoq.graph.marked_graph.
-Import RamifyCoq.graph.marked_graph.WeakMarkGraph.
+Require RamifyCoq.graph.weak_mark_lemmas.
+Import RamifyCoq.graph.weak_mark_lemmas.WeakMarkGraph.
 
 Module SIMPLE_SPANNING_TREE.
 
@@ -1017,33 +1018,21 @@ Module SIMPLE_SPANNING_TREE.
         - exists nil, l, n, a. split; auto.
     Qed.
 
-    Lemma spanning_list_spanning_tree2: forall (P: V -> Prop) g1 root g2 (e1 e2 : E),
+    Lemma spanning_bi_tree: forall (P: V -> Prop) g1 root g2 g3 (e1 e2 : E),
         (e1 <> e2) -> (forall e, In e (e1 :: e2 :: nil) <-> out_edges g1 root e) ->
         vvalid g1 root -> P root ->
         ReachDecidable g1 (dst g1 e1) (fun x => P x /\ x <> root) ->
-        spanning_list' (fun x => P x /\ x <> root) g1 (e1 :: e2 :: nil) g2 ->
-        spanning_tree g1 root P g2.
-    Proof.
-      intros. assert (out_edges g1 root e1) by (rewrite <- H0; apply in_eq).
-      assert (out_edges g1 root e2) by (rewrite <- H0; apply in_cons, in_eq).
-      inversion H3. subst. destruct es.
-      rewrite app_nil_l in H6. inversion H6. destruct es.
-      2: inversion H6; destruct es; inversion H12.
-      inversion H6. subst. clear H6. inversion H7. subst.
-      destruct es. 2: inversion H6; destruct es; inversion H13.
-      inversion H6. subst. clear H6. inversion H8. 2: destruct es; inversion H6.
-      rewrite <- si_edge_spanning_tree with (g1 := g1) in H12; auto.
-      2: destruct H4; auto. subst. clear g4 H8 H6.
-      rename g2 into g3'. rename g3 into g2. rename g3' into g3.
-      clear H3 H7. rename H4 into H3. rename H5 into H4.
-      rename H12 into H5. rename H10 into H6.
-      rewrite <- (edge_spanning_tree_equiv (fun x => P x /\ x <> root)) in H5.
-      2: intros; simpl; rewrite reachable_by_through_nil; intuition. simpl in H6.
-      rewrite <- (edge_spanning_tree_equiv
-                    (fun x => (P x /\ x <> root) /\
+        edge_spanning_tree g1 e1 (fun x : V => P x /\ x <> root) g2 ->
+        edge_spanning_tree g2 e2
+                           (fun x : V =>
+                              (P x /\ x <> root) /\
                               ~ g1 |= dst g1 e1 ~o~> x
-                                satisfying (fun x0 : V => P x0 /\ x0 <> root))) in H6.
-      2: intros; rewrite reachable_by_through_singleton; intuition.
+                                satisfying (fun x0 : V => P x0 /\ x0 <> root)) g3 ->
+        spanning_tree g1 root P g3.
+    Proof.
+      intros. rename H3 into H5. rename H4 into H6.
+      assert (out_edges g1 root e1) by (rewrite <- H0; apply in_eq).
+      assert (out_edges g1 root e2) by (rewrite <- H0; apply in_cons, in_eq).
       assert (vvalid g2 root) by
           (rewrite <- (edge_spanning_tree_vvalid
                          g1 e1 (fun x : V => P x /\ x <> root)); auto).
@@ -1464,6 +1453,48 @@ Module SIMPLE_SPANNING_TREE.
         destruct H16 as [? | [? | ?]]; auto; subst; auto.
     Qed.
 
+    Lemma spanning_list_spanning_tree2': forall (P: V -> Prop) g1 root g2 (e1 e2 : E),
+        (e1 <> e2) -> (forall e, In e (e1 :: e2 :: nil) <-> out_edges g1 root e) ->
+        vvalid g1 root -> P root ->
+        ReachDecidable g1 (dst g1 e1) (fun x => P x /\ x <> root) ->
+        spanning_list' (fun x => P x /\ x <> root) g1 (e1 :: e2 :: nil) g2 ->
+        spanning_tree g1 root P g2.
+    Proof.
+      intros. assert (out_edges g1 root e1) by (rewrite <- H0; apply in_eq).
+      assert (out_edges g1 root e2) by (rewrite <- H0; apply in_cons, in_eq).
+      inversion H3. subst. destruct es.
+      rewrite app_nil_l in H6. inversion H6. destruct es.
+      2: inversion H6; destruct es; inversion H12.
+      inversion H6. subst. clear H6. inversion H7. subst.
+      destruct es. 2: inversion H6; destruct es; inversion H13.
+      inversion H6. subst. clear H6. inversion H8. 2: destruct es; inversion H6.
+      rewrite <- si_edge_spanning_tree with (g1 := g1) in H12; auto.
+      2: destruct H4; auto. subst. clear g4 H8 H6.
+      rename g2 into g3'. rename g3 into g2. rename g3' into g3.
+      clear H3 H7. rename H4 into H3. rename H5 into H4.
+      rename H12 into H5. rename H10 into H6.
+      rewrite <- (edge_spanning_tree_equiv (fun x => P x /\ x <> root)) in H5.
+      2: intros; simpl; rewrite reachable_by_through_nil; intuition. simpl in H6.
+      rewrite <- (edge_spanning_tree_equiv
+                    (fun x => (P x /\ x <> root) /\
+                              ~ g1 |= dst g1 e1 ~o~> x
+                                satisfying (fun x0 : V => P x0 /\ x0 <> root))) in H6.
+      2: intros; rewrite reachable_by_through_singleton; intuition.
+      apply (spanning_bi_tree P g1 root g2 g3 e1 e2); auto.
+    Qed.
+
+    Lemma spanning_list_spanning_tree2: forall (P: V -> Prop) g1 root g2 (e1 e2 : E),
+        (e1 <> e2) -> (forall e, In e (e1 :: e2 :: nil) <-> out_edges g1 root e) ->
+        vvalid g1 root -> P root ->
+        ReachDecidable g1 (dst g1 e1) (fun x => P x /\ x <> root) ->
+        spanning_list (fun x => P x /\ x <> root) g1 (e1 :: e2 :: nil) g2 ->
+        spanning_tree g1 root P g2.
+    Proof.
+      intros. inversion H3. subst. clear H3. inversion H10. subst. clear H10.
+      inversion H11. subst. rewrite (si_edge_spanning_tree' _ g4 g2) in H7; auto.
+      clear H3 H11. apply (spanning_bi_tree P g1 root g3 g2 e1 e2); auto.
+    Qed.
+
     Lemma spanning_list_spanning_tree: forall (P: V -> Prop) g1 root g2 l,
         NoDup l -> (forall e, In e l <-> out_edges g1 root e) ->
         vvalid g1 root -> P root ->
@@ -1649,76 +1680,47 @@ Section SPANNING.
     + apply spanning_tree_unmarked_equiv; auto.
   Qed.
 
-  Lemma mark1_unmarked_eq: forall (g g1: Graph) root x, mark1 g root g1 -> (unmarked g1 x <-> unmarked g x /\ x <> root).
+  Lemma mark1_unmarked_eq: forall (g g1: Graph) root x, mark1 root g g1 -> (unmarked g1 x <-> unmarked g x /\ x <> root).
   Proof.
-    intros. destruct H as [? [? [? ?]]]. unfold unmarked. rewrite !negateP_spec. split; intros.
-    + split; [rewrite H2; auto|]; intro; subst; auto.
-    + destruct H3. rewrite <- H2; auto.
+    intros. destruct H as [? [? ?]]. unfold unmarked. rewrite !negateP_spec. split; intros.
+    + destruct_eq_dec x root. subst; auto. rewrite H1; auto.
+    + destruct H2. rewrite <- H1; auto.
   Qed.
 
   Inductive spanning_list : Graph -> list E -> Graph -> Prop :=
-  | spanning_list_nil: forall (g1 g2 : Graph), g1 ~=~ g2%LabeledGraph -> spanning_list g1 nil g2
+  | spanning_list_nil: forall (g1 g2 : Graph), g1 = g2 -> spanning_list g1 nil g2
   | spanning_list_cons:
       forall g1 g2 g3 e rest, edge_spanning_tree g1 e g2 -> spanning_list g2 rest g3 -> spanning_list g1 (e :: rest) g3.
-
-  Lemma spanning_list_spanning_tree2: forall (g g1 g2 g3: Graph) root (e1 e2 : E),
-      (e1 <> e2) -> (forall e, In e (e1 :: e2 :: nil) <-> out_edges g root e) ->
-      (forall e, In e (e1 :: e2 :: nil) -> ReachDecidable g1 (dst g1 e) (unmarked g1)) ->
-      vvalid g root -> unmarked g root -> mark1 g root g1 ->
-      edge_spanning_tree g1 e1 g2 -> edge_spanning_tree g2 e2 g3 ->
-      spanning_tree g root g3.
-  Proof.
-    intros. rewrite edge_spanning_tree_inj in H4, H5. rewrite spanning_tree_inj.
-    pose proof H3. destruct H6 as [? _]. rewrite H6. clear H6.
-    destruct H4, H5. split; [|split; [|split; [|split]]].
-    + admit.
-    + destruct H3 as [? [? [? ?]]].
-      assert (out_edges g root e1) by (rewrite <- H0; apply in_eq).
-      assert (out_edges g1 root e1) by (rewrite <- (out_edges_si g); auto).
-      assert (Included (unmarked g1) (unmarked g)). {
-        intro n. unfold Ensembles.In . unfold unmarked. rewrite !negateP_spec.
-        intros. rewrite H10; auto. intro; subst. auto.
-      }
-      assert (vvalid g1 root) by (destruct H3; rewrite <- H3; auto).
-      pose proof (SIMPLE_SPANNING_TREE.EST_predicate_partial_si _ _ _ _ _ _ H13 H12 H14 H2 H6).
-      rewrite H15.
-      assert (X1: ReachDecidable g1 (dst g1 e1) (unmarked g1)) by (apply X, in_eq).
-      assert (Included (unmarked g2) (unmarked g)). {
-        intro n. unfold Ensembles.In . intros.
-        rewrite <- (edge_spanning_tree_unmarked_equiv g1 g2 e1) in H16; auto.
-        + apply H13. destruct H16. apply H16.
-        + rewrite edge_spanning_tree_inj. auto.
-      }
-      assert (out_edges g root e2) by (rewrite <- H0; apply in_cons, in_eq).
-      assert (out_edges g1 root e2) by (rewrite <- (out_edges_si g); auto).
-      assert (~ (unmarked g1) root) by (intro; auto).
-      pose proof (SIMPLE_SPANNING_TREE.EST_out_edges _ _ _ _ _ _ H H19 H18 H6).
-      assert (vvalid g2 root) by (rewrite <- (SIMPLE_SPANNING_TREE.edge_spanning_tree_vvalid g1 e1 (unmarked g1)); auto).
-      pose proof (SIMPLE_SPANNING_TREE.EST_predicate_partial_si _ _ _ _ _ _ H16 H20 H21 H2 H7).
-      apply si_stronger_partialgraph_simple with (fun n : V => ~ g2 |= root ~o~> n satisfying (unmarked g)); auto.
-      assert (forall x, unmarked g1 x <-> unmarked g x /\ x <> root). {
-        intros; rewrite <- (mark1_unmarked_eq g g1); [tauto | split; auto].
-      }
-      intro n. unfold Ensembles.In . destruct H6 as [[? ?] | [? ?]].
-      - assert (spanning_tree g1 (dst g1 e1) g2) by (rewrite spanning_tree_inj; auto).
-        pose proof (spanning_tree_unmarked_equiv _ _ _ X1 H25).
-        intros. intro; apply H27; clear H27. destruct (X1 n).
-        * admit.
-        * destruct H4. specialize (H27 n n0). destruct H24 as [? _].
-  Abort.
-
-  Lemma spanning_list_inj: forall (g1 g2 : Graph) (es : list E),
-      spanning_list g1 es g2 -> mark_list g1 (map (dst g1) es) g2 /\ SIMPLE_SPANNING_TREE.spanning_list (unmarked g1) g1 es g2.
+  
+  Lemma spanning_list_inj: forall (g1 g2 : Graph) (es : list E) (root: V),
+      spanning_list g1 es g2 -> componded_mark_list root (map (dst g1) es) g1 g2 /\
+                                SIMPLE_SPANNING_TREE.spanning_list (unmarked g1) g1 es g2.
   Proof.
     intros. induction H; split; simpl.
-    + constructor; auto.
-    + constructor; destruct H; auto.
-    + destruct IHspanning_list. apply mark_list_cons with g2; admit.
+    + hnf. subst. auto.
+    + constructor. subst. reflexivity.
+    + destruct IHspanning_list. unfold componded_mark_list. simpl. 
+      split_relation_list ((lg_gg g2) :: nil); auto.  
+      - unfold componded. rewrite edge_spanning_tree_inj in H. destruct H.
+        admit.
+      - admit.
     + destruct IHspanning_list. apply SIMPLE_SPANNING_TREE.spanning_list_cons with g2.
       - rewrite edge_spanning_tree_inj in H. destruct H. auto.
       - apply (SIMPLE_SPANNING_TREE.spanning_list_derive (unmarked g2)); auto.
         intro. symmetry. apply edge_spanning_tree_unmarked_equiv; auto.
   Abort.
 
+  Lemma spanning_list_spanning_tree2: forall (g g1 g2 g3: Graph) root (e1 e2 : E),
+      (e1 <> e2) -> (forall e, In e (e1 :: e2 :: nil) <-> out_edges g root e) ->
+      (forall e, In e (e1 :: e2 :: nil) -> ReachDecidable g1 (dst g1 e) (unmarked g1)) ->
+      vvalid g root -> unmarked g root -> mark1 root g g1 ->
+      edge_spanning_tree g1 e1 g2 -> edge_spanning_tree g2 e2 g3 ->
+      spanning_tree g root g3.
+  Proof.
+    intros. rewrite edge_spanning_tree_inj in H4, H5. rewrite spanning_tree_inj.
+    pose proof H3. destruct H6 as [? _]. rewrite H6. clear H6.
+    destruct H4, H5. split.
+    + clear H6 H7.
+  Abort.
 
 End SPANNING.
