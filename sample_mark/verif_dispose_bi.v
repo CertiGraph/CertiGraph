@@ -1,7 +1,6 @@
 Require Import VST.floyd.proofauto.
 Require Import RamifyCoq.sample_mark.env_dispose_bi.
 Require Import RamifyCoq.graph.graph_model.
-Require RamifyCoq.graph.marked_graph. Import RamifyCoq.graph.marked_graph.WeakMarkGraph.
 Require Import RamifyCoq.graph.path_lemmas.
 Require Import RamifyCoq.graph.subgraph2.
 Require Import RamifyCoq.graph.spanning_tree.
@@ -10,6 +9,8 @@ Require Import RamifyCoq.msl_application.Graph.
 Require Import RamifyCoq.msl_application.GraphBi.
 Require Import RamifyCoq.data_structure.spatial_graph_dispose_bi.
 Require Import RamifyCoq.data_structure.spatial_graph_unaligned_bi_VST.
+Require RamifyCoq.graph.weak_mark_lemmas.
+Import RamifyCoq.graph.weak_mark_lemmas.WeakMarkGraph.
 
 Local Open Scope logic.
 
@@ -23,19 +24,19 @@ Definition mark_spec :=
  DECLARE _mark
   WITH sh: share, g: Graph, x: pointer_val
   PRE [ _x OF (tptr (Tstruct _Node noattr))]
-          PROP  (writable_share sh; weak_valid (pg_gg g) x)
+          PROP  (writable_share sh; weak_valid g x)
           LOCAL (temp _x (pointer_val_val x))
           SEP   (`(graph sh x g))
   POST [ Tvoid ]
         PROP ()
         LOCAL()
-        SEP (`(EX g': Graph, !! mark g x g' && graph sh x g')).
+        SEP (`(EX g': Graph, !! mark x g g' && graph sh x g')).
 
 Definition spanning_spec :=
   DECLARE _spanning
   WITH sh: share, g: Graph, x: pointer_val
   PRE [ _x OF (tptr (Tstruct _Node noattr))]
-          PROP  (writable_share sh; vvalid (pg_gg g) x; fst (fst (vgamma g x)) = false)
+          PROP  (writable_share sh; vvalid g x; fst (fst (vgamma g x)) = false)
           LOCAL (temp _x (pointer_val_val x))
           SEP   (`(graph sh x g))
   POST [ Tvoid ]
@@ -47,7 +48,7 @@ Definition dispose_spec :=
   DECLARE _dispose
   WITH sh: share, g: Graph, x: pointer_val
   PRE [ _x OF (tptr (Tstruct _Node noattr))]
-          PROP  (writable_share sh; weak_valid (pg_gg g) x)
+          PROP  (writable_share sh; weak_valid g x)
           LOCAL (temp _x (pointer_val_val x))
           SEP   (`(!!is_tree g x && graph sh x g))
   POST [ Tvoid ]

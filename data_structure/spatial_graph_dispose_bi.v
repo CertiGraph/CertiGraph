@@ -1,6 +1,5 @@
 Require Import VST.msl.seplog.
 Require Import VST.msl.log_normalize.
-Require RamifyCoq.graph.marked_graph. Import RamifyCoq.graph.marked_graph.WeakMarkGraph.
 Require Import RamifyCoq.lib.Coqlib.
 Require Import RamifyCoq.lib.Ensembles_ext.
 Require Import RamifyCoq.lib.EquivDec_ext.
@@ -13,16 +12,14 @@ Require Import RamifyCoq.graph.reachable_ind.
 Require Import RamifyCoq.graph.spanning_tree.
 Require Import RamifyCoq.msl_application.Graph.
 Require Import RamifyCoq.msl_application.GraphBi.
+Require RamifyCoq.graph.weak_mark_lemmas.
+Import RamifyCoq.graph.weak_mark_lemmas.WeakMarkGraph.
 
 Instance MGS: MarkGraphSetting bool.
   apply (Build_MarkGraphSetting bool
-          (eq true)
-          (fun _ => true)
-          (fun _ => false));
+          (eq true));
   intros.
   + destruct x; [left | right]; congruence.
-  + auto.
-  + congruence.
 Defined.
 
 Section SPATIAL_GRAPH_DISPOSE_BI.
@@ -293,16 +290,37 @@ Section SPATIAL_GRAPH_DISPOSE_BI.
     + simpl. tauto.
   Qed.
 
-  Lemma edge_spanning_tree_spanning_tree: forall (g g1 g2 g3 : Graph) x l l' r,
+  Lemma edge_spanning_tree_spanning_tree: forall (g g1 g2 g3 : Graph) x l r,
       vvalid g x -> vvalid g1 x -> vvalid g2 x ->
       vgamma g x = (false, l, r) ->
       vgamma g1 x = (true, l, r) ->
-      vgamma g2 x = (true, l', r) ->
-      mark1 g x g1 ->
+      mark1 x g g1 ->
       edge_spanning_tree g1 (x, L) g2 ->
       edge_spanning_tree g2 (x, R) g3 ->
       spanning_tree g x g3.
   Proof.
-  Abort.
+    intros.
+    apply (spanning_list_spanning_tree2 _ g1 _ _ (x, L) (x, R)); auto; intros.
+    + apply weak_valid_vvalid_dec. simpl in H7. pose proof H2.
+      simpl in H2. unfold gamma in H2. inversion H2. subst l. subst r.
+      destruct H7 as [? | [? | ?]]; [subst x0..| exfalso; auto].
+      - apply (gamma_left_weak_valid _ _ _ _ _ H H8).
+      - apply (gamma_right_weak_valid _ _ _ _ _ H H8).
+    + intro. inversion H7.
+    + pose proof (only_two_edges g x e). simpl in H7 |-* .
+      split; intros.
+      - destruct H8 as [? | [? | ?]]; [subst e..|exfalso; auto].
+        * split; [|intuition]. apply (@left_valid _ _ _ _ g _ _ (biGraph g)); auto.
+        * split; [|intuition]. apply (@right_valid _ _ _ _ g _ _ (biGraph g)); auto.
+      - destruct H8. intuition.
+    + apply Graph_reachable_by_dec. apply weak_valid_vvalid_dec. pose proof H3.
+      simpl in H3. unfold gamma in H3. inversion H3. subst l.
+      apply (gamma_left_weak_valid g1 x true (dst g1 (x, L)) r); auto.
+    + unfold unmarked. rewrite negateP_spec. unfold marked. simpl. simpl in H2.
+      unfold gamma in H2. inversion H2. rewrite H8. intuition.
+    + apply spanning_list_cons with g2; auto.
+      apply spanning_list_cons with g3; auto.
+      apply spanning_list_nil. auto.
+  Qed.
 
 End SPATIAL_GRAPH_DISPOSE_BI.
