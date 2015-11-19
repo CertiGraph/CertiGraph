@@ -193,7 +193,7 @@ Lemma mark1_componded_mark_list_mark: forall root l (g1 g2: Graph)
   step_list g1 root l ->
   relation_list (nothing root :: mark1 root :: nothing root :: componded_mark_list root l :: nothing root :: nil) g1 g2 ->
   mark root g1 g2.
-Abort.
+Admitted.
 
 Lemma triple1_mark: forall (g g1 g2: Graph) root l l_done son l_later,
   vvalid g root ->
