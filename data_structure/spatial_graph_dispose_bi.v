@@ -33,6 +33,15 @@ Section SPATIAL_GRAPH_DISPOSE_BI.
 
   (* Existing Instances SGP SGA SGBA. *)
 
+  Lemma vgamma_is_true: forall (g : Graph) (x l r : addr), vgamma g x = (true, l, r) -> marked g x.
+  Proof. intros. simpl in H. unfold gamma in H. simpl. destruct (vlabel g x) eqn:? . auto. inversion H. Qed.
+  
+  Lemma vgamma_is_false: forall (g : Graph) (x l r : addr), vgamma g x = (false, l, r) -> unmarked g x.
+  Proof.
+    intros. simpl in H. unfold gamma in H. hnf. unfold Ensembles.In. simpl. intro.
+    destruct (vlabel g x) eqn:? . inversion H. simpl in H0. inversion H0.
+  Qed.
+  
   Lemma edge_spanning_tree_left_null:
     forall (g: Graph) x d l r, vvalid g x -> vgamma g x = (d, l, r) -> (marked g) l ->
                                edge_spanning_tree g (x, L) (Graph_gen_left_null g x).

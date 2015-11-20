@@ -7,6 +7,7 @@ Require Import RamifyCoq.graph.spanning_tree.
 Require Import RamifyCoq.graph.reachable_computable.
 Require Import RamifyCoq.msl_application.Graph.
 Require Import RamifyCoq.msl_application.GraphBi.
+Require Import RamifyCoq.msl_application.GraphBi_Mark.
 Require Import RamifyCoq.data_structure.spatial_graph_dispose_bi.
 Require Import RamifyCoq.data_structure.spatial_graph_unaligned_bi_VST.
 Require RamifyCoq.graph.weak_mark_lemmas.
@@ -117,15 +118,11 @@ Proof.
               LOCAL  (temp _r (pointer_val_val r); temp _l (pointer_val_val l); temp _x (pointer_val_val x))
               SEP  (`(graph sh x (Graph_gen g x true)))).
   Grab Existential Variables.
-  Focus 6. { solve_split_by_closed. } Unfocus.
-  Focus 2. { entailer!. } Unfocus.
-  Focus 3. { entailer!. } Unfocus.
-  Focus 3. { repeat constructor; auto with closed. } Unfocus.
   Focus 2. {
-    entailer!.
+    simplify_ramif.
     rewrite Graph_gen_spatial_spec by eauto.
     pose proof (@graph_ramify_aux0 _ _ _ _ _ _ _ (SGA_VST sh) g _ x (false, l, r) (true, l, r)).
-    simpl in H3; auto.
+    simpl in H2; auto.
   } Unfocus.
 
   (* if (l) { *)
@@ -173,8 +170,9 @@ Proof.
             temp _x (pointer_val_val x))
      SEP  (`(graph sh x g1))).
   Grab Existential Variables.
-  Focus 6. { solve_split_by_closed. } Unfocus.
+  (* Focus 6. { solve_split_by_closed. } Unfocus. *)
   Focus 2. {
+    simplify_ramif.
     entailer!.
     rewrite <- H5.
     do 2 f_equal.
