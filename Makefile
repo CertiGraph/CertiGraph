@@ -23,7 +23,7 @@ MSL_EXT_FILES = \
   overlapping_direct.v precise_direct.v alg_seplog_direct.v
 
 MSL_APPLICATION_FILES = \
-  Graph.v Graph_Mark.v GraphBi.v GraphBi_Mark.v Graph_Copy.v
+  Graph.v Graph_Mark.v GraphBi.v GraphBi_Mark.v DagBi_Mark.v Graph_Copy.v
 
 VERIC_EXT_FILES = \
   res_predicates.v seplog.v SeparationLogic.v

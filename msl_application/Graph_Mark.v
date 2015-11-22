@@ -210,7 +210,7 @@ Proof.
     apply Ensemble_join_Intersection_Complement; auto.
     rewrite <- H2; auto.
   + intros.
-    unfold graph_cell.
+    unfold graph_vcell.
     f_equal.
     simpl.
     destruct H5; unfold Ensembles.In in *.

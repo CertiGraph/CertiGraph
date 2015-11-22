@@ -65,14 +65,14 @@ Section SPATIAL_GRAPH_DISPOSE_BI.
       (graph x g : pred) |-- vertex_at x (d, l, r) * (vertex_at x (d, null, r) -* vertices_at (reachable g x) (Graph_gen_left_null g x)).
   Proof.
     intros.
-    replace (@vertex_at _ _ _ _ _ SGP x (d, l, r)) with (graph_cell g x).
+    replace (@vertex_at _ _ _ _ _ SGP x (d, l, r)) with (graph_vcell g x).
     Focus 2. {
-      unfold graph_cell; simpl.
+      unfold graph_vcell; simpl.
       simpl in H0; rewrite H0; auto.
     } Unfocus.
-    replace (@vertex_at _ _ _ _ _ SGP x (d, null, r)) with (graph_cell (Graph_gen_left_null g x) x).
+    replace (@vertex_at _ _ _ _ _ SGP x (d, null, r)) with (graph_vcell (Graph_gen_left_null g x) x).
     Focus 2. {
-      unfold graph_cell; simpl.
+      unfold graph_vcell; simpl.
       unfold gamma. simpl.
       unfold graph_gen.update_dst.
       destruct_eq_dec (x, L) (x, L). 2: exfalso; auto.
@@ -82,7 +82,7 @@ Section SPATIAL_GRAPH_DISPOSE_BI.
     apply pred_sepcon_ramify1; auto.
     + apply reachable_by_refl; auto.
     + intuition.
-    + intros. unfold graph_cell; simpl.
+    + intros. unfold graph_vcell; simpl.
       unfold gamma; simpl. unfold graph_gen.update_dst.
       destruct_eq_dec (x, L) (y, L). inversion H2. exfalso; auto.
       destruct_eq_dec (x, L) (y, R). inversion H3. auto.
@@ -259,14 +259,14 @@ Section SPATIAL_GRAPH_DISPOSE_BI.
                   vertex_at x (d, l, r) * (vertex_at x (d, l, null) -* vertices_at (reachable g1 x) (Graph_gen_right_null g2 x)).
   Proof.
     intros.
-    replace (@vertex_at _ _ _ _ _ SGP x (d, l, r)) with (graph_cell g2 x).
+    replace (@vertex_at _ _ _ _ _ SGP x (d, l, r)) with (graph_vcell g2 x).
     Focus 2. {
-      unfold graph_cell; simpl.
+      unfold graph_vcell; simpl.
       simpl in H0; rewrite H0; auto.
     } Unfocus.
-    replace (@vertex_at _ _ _ _ _ SGP x (d, l, null)) with (graph_cell (Graph_gen_right_null g2 x) x).
+    replace (@vertex_at _ _ _ _ _ SGP x (d, l, null)) with (graph_vcell (Graph_gen_right_null g2 x) x).
     Focus 2. {
-      unfold graph_cell; simpl.
+      unfold graph_vcell; simpl.
       unfold gamma. simpl.
       unfold graph_gen.update_dst.
       destruct_eq_dec (x, R) (x, L). inversion H1.
@@ -276,7 +276,7 @@ Section SPATIAL_GRAPH_DISPOSE_BI.
     apply pred_sepcon_ramify1; auto.
     + apply reachable_by_refl; auto.
     + intuition.
-    + intros. unfold graph_cell; simpl.
+    + intros. unfold graph_vcell; simpl.
       unfold gamma; simpl. unfold graph_gen.update_dst.
       destruct_eq_dec (x, R) (y, L). inversion H2. 
       destruct_eq_dec (x, R) (y, R). inversion H3. exfalso; auto. auto.

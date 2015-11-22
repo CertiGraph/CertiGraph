@@ -531,14 +531,14 @@ Lemma pred_sepcon_ramify1: forall {EqB: EqDec B eq} (P1 P2: B -> Prop) p1 p2 x,
 Proof.
   intros.
   apply RAMIF_PLAIN.solve with (pred_sepcon (fun u => P1 u /\ u <> x) p1).
-  + rewrite <- pred_sepcon_sepcon1 with (P' := P1); [auto | |tauto].
+  + rewrite sepcon_comm,  <- pred_sepcon_sepcon1 with (P' := P1); [auto | |tauto].
     intros.
     destruct_eq_dec x0 x; try subst; tauto.
   + replace (pred_sepcon (fun u : B => P1 u /\ u <> x) p1)
       with (pred_sepcon (fun u : B => P1 u /\ u <> x) p2).
     - assert (pointwise_relation _ iff P1 P2) by auto.
       rewrite <- H2.
-      rewrite sepcon_comm, <- pred_sepcon_sepcon1 with (P' := P1); [auto | | tauto].
+      rewrite <- pred_sepcon_sepcon1 with (P' := P1); [auto | | tauto].
       intros.
       destruct_eq_dec x0 x; try subst; tauto.
     - apply pred_sepcon_strong_proper.
