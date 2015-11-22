@@ -29,38 +29,6 @@ Proof.
     auto.
 Qed.
 
-Lemma allp_uncurry: forall {A} `{NatDed A} (S T: Type) (P: S -> T -> A),
-  allp (allp P) = allp (fun st => P (fst st) (snd st)).
-Proof.
-  intros.
-  apply pred_ext.
-  + apply allp_right; intros [s t].
-    simpl.
-    apply (allp_left _ t).
-    apply (allp_left _ s).
-    apply derives_refl.
-  + apply allp_right; intro t.
-    simpl.
-    apply allp_right; intro s.
-    apply (allp_left _ (s, t)).
-    apply derives_refl.
-Qed.
-
-Lemma allp_curry: forall {A} `{NatDed A} (S T: Type) (P: S * T -> A),
-  allp P = allp (fun s => allp (fun t => P (s, t))).
-Proof.
-  intros.
-  apply pred_ext.
-  + apply allp_right; intro s.
-    apply allp_right; intro t.
-    apply (allp_left _ (s, t)).
-    apply derives_refl.
-  + apply allp_right; intros [s t].
-    apply (allp_left _ s).
-    apply (allp_left _ t).
-    apply derives_refl.
-Qed.
-
 Lemma exp_uncurry: forall {A} `{NatDed A} (S T: Type) (P: S -> T -> A),
   exp (fun s => exp (P s)) = exp (fun st => P (fst st) (snd st)).
 Proof.
@@ -96,6 +64,23 @@ Proof.
   intros.
   apply pred_ext; [| apply FF_left].
   apply exp_left; intros; auto.
+Qed.
+
+Lemma imp_prop_ext: forall {A} {NA: NatDed A} (P P' :Prop) (Q Q': A),
+  (P <-> P') -> (P -> Q = Q') -> !!P --> Q = !!P' --> Q'.
+Proof.
+  intros.
+  apply pred_ext.
+  + apply imp_andp_adjoint.
+    normalize.
+    rewrite prop_imp by tauto.
+    rewrite H0 by tauto.
+    auto.
+  + apply imp_andp_adjoint.
+    normalize.
+    rewrite prop_imp by tauto.
+    rewrite H0 by tauto.
+    auto.
 Qed.
 
 Lemma sepcon_left1_corable_right: forall {A} `{CorableSepLog A} P Q R, corable R -> P |-- R -> P * Q |-- R.

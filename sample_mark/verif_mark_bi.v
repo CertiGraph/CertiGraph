@@ -23,12 +23,12 @@ Definition mark_spec :=
   PRE [ _x OF (tptr (Tstruct _Node noattr))]
           PROP  (writable_share sh; weak_valid g x)
           LOCAL (temp _x (pointer_val_val x))
-          SEP   (`(graph sh x g))
+          SEP   (graph sh x g)
   POST [ Tvoid ]
         EX g': @Graph pSGG_VST,
         PROP (mark x g g')
         LOCAL ()
-        SEP   (`(graph sh x g')).
+        SEP   (graph sh x g').
 
 Definition main_spec :=
  DECLARE _main
@@ -61,7 +61,7 @@ Proof.
   forward_if_tac  (* if (x == 0) *)
     (PROP  (pointer_val_val x <> nullval)
      LOCAL (temp _x (pointer_val_val x))
-     SEP   (`(graph sh x g))).
+     SEP   (graph sh x g)).
   admit. (* type checking for pointer comparable. *)
   Focus 1. { (* if-then branch *)
     destruct_pointer_val x.
@@ -86,8 +86,8 @@ Proof.
   localize
    (PROP  ()
     LOCAL (temp _x (pointer_val_val x))
-    SEP   (`(data_at sh node_type (Vint (Int.repr (if d then 1 else 0)), (pointer_val_val l, pointer_val_val r))
-              (pointer_val_val x)))).
+    SEP   (data_at sh node_type (Vint (Int.repr (if d then 1 else 0)), (pointer_val_val l, pointer_val_val r))
+              (pointer_val_val x))).
   (* localize *)
 
   apply -> ram_seq_assoc. 
@@ -97,7 +97,7 @@ Proof.
     | abbreviate_semax_ram].
   (* root_mark = x -> m; *)
 
-  unlocalize (PROP ()  LOCAL  (temp _root_mark (Vint (Int.repr (if d then 1 else 0))); temp _x (pointer_val_val x))  SEP  (`(graph sh x g))).
+  unlocalize (PROP ()  LOCAL  (temp _root_mark (Vint (Int.repr (if d then 1 else 0))); temp _x (pointer_val_val x))  SEP  (graph sh x g)).
 
   Grab Existential Variables.
   Focus 2. {
@@ -112,7 +112,7 @@ Proof.
   forward_if_tac  (* if (root_mark == 1) *)
     (PROP   (d = false)
       LOCAL (temp _x (pointer_val_val x))
-      SEP   (`(graph sh x g))).
+      SEP   (graph sh x g)).
   Focus 1. { (* if-then branch *)
     forward. (* return *)
     apply (exp_right g).
@@ -130,8 +130,8 @@ Proof.
   localize
    (PROP  ()
     LOCAL (temp _x (pointer_val_val x))
-    SEP   (`(data_at sh node_type (Vint (Int.repr 0), (pointer_val_val l, pointer_val_val r))
-              (pointer_val_val x)))).
+    SEP   (data_at sh node_type (Vint (Int.repr 0), (pointer_val_val l, pointer_val_val r))
+              (pointer_val_val x))).
   (* localize *)
 
   apply -> ram_seq_assoc. 
@@ -165,7 +165,7 @@ Proof.
     LOCAL (temp _r (pointer_val_val r);
            temp _l (pointer_val_val l);
            temp _x (pointer_val_val x))
-    SEP (`(graph sh x (Graph_gen g x true)))).
+    SEP (graph sh x (Graph_gen g x true))).
   Grab Existential Variables.
   Focus 2. {
     simplify_ramif.
@@ -184,7 +184,7 @@ Proof.
   localize
    (PROP  (weak_valid g1 l)
     LOCAL (temp _l (pointer_val_val l))
-    SEP   (`(graph sh l g1))).
+    SEP   (graph sh l g1)).
   1: eapply left_weak_valid; eauto.  
   (* localize *)
 
@@ -200,7 +200,7 @@ Proof.
     LOCAL (temp _r (pointer_val_val r);
            temp _l (pointer_val_val l);
            temp _x (pointer_val_val x))
-    SEP (`(graph sh x g2)))
+    SEP (graph sh x g2))
   using [H3]%RamAssu
   binding [g2]%RamBind.
   Grab Existential Variables.
@@ -215,7 +215,7 @@ Proof.
   localize
    (PROP  (weak_valid g2 r)
     LOCAL (temp _r (pointer_val_val r))
-    SEP   (`(graph sh r g2))).
+    SEP   (graph sh r g2)).
   1: eapply right_weak_valid; eauto.  
   (* localize *)
   
@@ -231,7 +231,7 @@ Proof.
     LOCAL (temp _r (pointer_val_val r);
            temp _l (pointer_val_val l);
            temp _x (pointer_val_val x))
-    SEP (`(graph sh x g3)))
+    SEP (graph sh x g3))
   using [H5]%RamAssu
   binding [g3]%RamBind.
   Grab Existential Variables.

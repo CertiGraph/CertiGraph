@@ -61,6 +61,23 @@ Proof.
   apply data_at_memory_block.
 Defined.
 
+Lemma sepcon_unique_vertex_at sh: writable_share sh -> sepcon_unique2 (@vertex_at _ _ _ _ _ (SGP_VST sh)).
+Proof.
+  intros.
+  hnf; intros.
+  simpl.
+  destruct y1 as [[? ?] ?], y2 as [[? ?] ?].
+  unfold trinode.
+  rewrite data_at_isptr.
+  normalize.
+  apply data_at_conflict.
+  + apply sepalg.nonidentity_nonunit.
+    apply readable_nonidentity, writable_readable.
+    auto.
+  + change (sizeof cenv_cs node_type) with 16.
+    apply pointer_range_overlap_refl; auto; omega.
+Qed.
+
 (*
 Instance sMSLstandard sh : StaticMapstoSepLog (AAV (SGP_VST sh)) (trinode sh).
 Proof.
@@ -121,6 +138,8 @@ Instance SGA_VST (sh: share) : SpatialGraphAssum (SGP_VST sh).
 Defined.
 
 End sSGG_VST.
+
+Hint Extern 10 (@sepcon_unique2 _ _ _ _ _ (@vertex_at _ _ _ _ _ _)) => apply sepcon_unique_vertex_at; auto.
 
 Instance sSGG_VST (sh: share): @sSpatialGraph_Graph_Bi pSGG_VST.
   refine (Build_sSpatialGraph_Graph_Bi pSGG_VST (SGP_VST sh) (SGA_VST sh)).

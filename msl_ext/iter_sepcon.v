@@ -2,6 +2,7 @@ Require Import RamifyCoq.msl_ext.abs_addr.
 Require Import RamifyCoq.msl_ext.seplog.
 Require Import RamifyCoq.msl_ext.log_normalize.
 Require Import RamifyCoq.lib.Coqlib.
+Require Import RamifyCoq.lib.Ensembles_ext.
 Require Import RamifyCoq.lib.List_ext.
 Require Import VST.msl.Extensionality.
 Require Import VST.msl.simple_CCC.
@@ -15,6 +16,12 @@ Import RamifyCoq.msl_ext.seplog.OconNotation.
 Local Open Scope logic.
 
 Set Implicit Arguments.
+
+Definition sepcon_unique1 {X A} `{SepLog A} (P: X -> A): Prop :=
+  forall x, P x * P x |-- FF.
+
+Definition sepcon_unique2 {X Y A} `{SepLog A} (P: X -> Y -> A): Prop :=
+  forall x y1 y2, P x y1 * P x y2 |-- FF.
 
 Section IterSepCon.
 
@@ -61,9 +68,7 @@ Proof.
   apply sepcon_derives; auto. apply TT_right.
 Qed.
 
-Definition sepcon_unique (p : B -> A) :Prop := forall x, p x * p x |-- FF.
-
-Lemma iter_sepcon_unique_nodup: forall (p : B -> A) (l : list B), sepcon_unique p -> iter_sepcon l p |-- !!(NoDup l).
+Lemma iter_sepcon_unique_nodup: forall (p : B -> A) (l : list B), sepcon_unique1 p -> iter_sepcon l p |-- !!(NoDup l).
 Proof.
   intros. induction l.
   + apply prop_right. constructor.
@@ -194,7 +199,7 @@ Proof.
 Qed.
 
 Lemma precise_exp_iter_sepcon: forall (P : B -> A) (Q: list B -> Prop),
-  sepcon_unique P ->
+  sepcon_unique1 P ->
   (exists x : list B, Q x /\ NoDup x) \/ ~ (exists x : list B, Q x /\ NoDup x) ->
   (forall l, precise (P l)) ->
   (forall l l', Q l -> Q l' -> NoDup l -> NoDup l' -> Permutation l l') ->
@@ -394,10 +399,10 @@ Qed.
 Lemma pred_sepcon_sepcon1: forall (P P': B -> Prop) p x0,
   (forall x, P' x <-> P x \/ x = x0) ->
   ~ P x0 ->
-  pred_sepcon P' p = p x0 * pred_sepcon P p.
+  pred_sepcon P' p = pred_sepcon P p * p x0.
 Proof.
   intros.
-  rewrite <- pred_sepcon_sepcon with (P := fun x => x = x0) (Q := P).
+  rewrite <- pred_sepcon_sepcon with (Q := fun x => x = x0) (P := P).
   + f_equal.
     apply pred_sepcon1.
   + split; intros.
@@ -407,7 +412,78 @@ Proof.
     - subst.
       specialize (H x0).
       tauto.
-Qed.    
+Qed.
+
+(* TODO: Maybe delete this one, this is not general enough.
+  it only requires p x0 to be conflict with q x0. *)
+Lemma pred_sepcon_unique_sepcon1: forall (P: B -> Prop) p x0,
+  sepcon_unique1 p ->
+  pred_sepcon P p * p x0 |-- !! (~ P x0).
+Proof.
+  intros.
+  apply not_prop_right; intro.
+  unfold pred_sepcon; normalize.
+  rewrite <- H1 in H0.
+  eapply derives_trans; [apply sepcon_derives; [apply iter_sepcon_in_true; eauto| apply derives_refl] |].
+  rewrite sepcon_comm, <- sepcon_assoc.
+  eapply derives_trans; [apply sepcon_derives; [apply H | apply derives_refl] |].
+  normalize.
+Qed.
+
+(* TODO: Add it to NatDed? *)
+Lemma prop_forall_allp: forall (P: B -> Prop),
+  !! (forall x, P x) = ALL x: B, !! P x.
+Proof.
+  intros.
+  apply pred_ext.
+  + apply allp_right; intros.
+    apply prop_derives; intros.
+    auto.
+  + admit.
+Qed.
+
+(* TODO: Add it to NatDed? *)
+Lemma prop_impl_imp: forall (P Q: Prop),
+  !! (P -> Q) = !! P --> !! Q.
+Admitted.
+
+(* TODO: Maybe delete this one, this is not general enough.
+  it only requires p x0 to be conflict with q x0. *)
+Lemma pred_sepcon_unique_sepcon_seg: forall (P Q: B -> Prop) p,
+  sepcon_unique1 p ->
+  pred_sepcon P p * pred_sepcon Q p |-- !! (Disjoint _ P Q).
+Proof.
+  intros.
+  unfold pred_sepcon; normalize; intros; normalize.
+  rename l into lQ, x into lP.
+  eapply derives_trans with (!! (forall x, P x -> Q x -> False)).
+  2: apply prop_derives; rewrite Disjoint_spec; auto.
+  rewrite prop_forall_allp.
+  apply allp_right; intro x.
+  rewrite !prop_impl_imp.
+  apply imp_andp_adjoint; normalize.
+  apply imp_andp_adjoint; normalize.
+  rewrite <- H2 in H4.
+  rewrite <- H0 in H5.
+  eapply derives_trans; [apply sepcon_derives; [apply iter_sepcon_in_true; eauto| apply iter_sepcon_in_true; eauto] |].
+  rewrite sepcon_assoc, (sepcon_comm TT), sepcon_assoc.
+  rewrite TT_sepcon_TT, <- sepcon_assoc.
+  eapply derives_trans; [apply sepcon_derives; [apply H | apply derives_refl] |].
+  normalize.
+Qed.
+
+Lemma pred_sepcon_prop_true: forall (P: B -> Prop) p x,
+  P x ->
+  pred_sepcon P p |-- p x * TT.
+Proof.
+  intros.
+  unfold pred_sepcon; normalize.
+  intros.
+  normalize.
+  rename x0 into l.
+  rewrite <- H0 in H.
+  eapply iter_sepcon_in_true; auto.
+Qed.
 
 End IterPredSepCon.
 

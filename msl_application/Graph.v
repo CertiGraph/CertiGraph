@@ -228,17 +228,22 @@ Context {SGP: SpatialGraphPred V E DV DE Pred}.
 Context {SGA: SpatialGraphAssum SGP}.
 Notation Graph := (SpatialGraph V E DV DE).
 
-Definition graph_cell (g: Graph) (v : V) : Pred := vertex_at v (vgamma g v).
-
-Definition vertices_at (P: V -> Prop) (g: Graph): Pred := pred_sepcon P (graph_cell g).
+Definition graph_vcell (g: Graph) (v : V) : Pred := vertex_at v (vgamma g v).
+Definition graph_ecell (g: Graph) (e : E) : Pred := edge_at e (egamma g e).
+Definition vertices_at (P: V -> Prop) (g: Graph): Pred := pred_sepcon P (graph_vcell g).
+Definition edges_at (P: E -> Prop) (g: Graph): Pred := pred_sepcon P (graph_ecell g).
 
 Definition graph (x : V) (g: Graph) : Pred := vertices_at (reachable g x) g.
 
+Definition dag (x: V) (g: Graph): Pred := !! localDag g x && vertices_at (reachable g x) g.
+
 Definition graphs' (S : list V) (g : Graph) := vertices_at (reachable_through_set g S) g.
+
+Definition dags' (S : list V) (g : Graph) := !! Forall (localDag g) S && vertices_at (reachable_through_set g S) g.
 
 Definition Gamma (g: Graph) x := (x, vgamma g x).
 
-Definition Graph_cell (p : V * DV) := vertex_at (fst p) (snd p).
+Definition Graph_vcell (p : V * DV) := vertex_at (fst p) (snd p).
 
 Lemma Gamma_injective: forall g x y, Gamma g x = Gamma g y -> x = y.
 Proof. intros. unfold Gamma in H. inversion H. auto. Qed.
@@ -268,7 +273,7 @@ Proof.
     specialize (H x); specialize (H0 x); unfold Ensembles.In in *.
     tauto.
   + intros.
-    unfold graph_cell.
+    unfold graph_vcell.
     f_equal.
     destruct H1 as [_ [? _]].
     simpl in H1; unfold predicate_vvalid in H1.
@@ -324,8 +329,19 @@ Proof.
   do 2 (hnf; intros); subst.
   apply graph_vi_eq; auto.
 Defined.
-
 Global Existing Instance graph_proper.
+
+Instance dag_proper: Proper (eq ==> validly_identical ==> eq) dag.
+Proof.
+  do 2 (hnf; intros); subst.
+  unfold dag.
+  apply andp_prop_ext.
+  + destruct H0 as [? _].
+    rewrite H; tauto.
+  + intros.
+    apply graph_vi_eq; auto.
+Defined.
+Global Existing Instance dag_proper.
 
 Lemma graphs_reachable_subgraph_eq:
   forall (g1 g2 : Graph) S,
@@ -395,21 +411,21 @@ Lemma vertices_at_ramify1: forall (g: Graph) (P: V -> Prop) x d d',
   vertices_at P g |-- vertex_at x d * (vertex_at x d' -* vertices_at P (spatialgraph_vgen g x d')).
 Proof.
   intros.
-  replace (@vertex_at _ _ _ _ _ SGP x d) with (graph_cell g x).
+  replace (@vertex_at _ _ _ _ _ SGP x d) with (graph_vcell g x).
   Focus 2. {
     simpl.
-    unfold graph_cell; simpl.
+    unfold graph_vcell; simpl.
     rewrite H1; auto.
   } Unfocus.
-  replace (@vertex_at _ _ _ _ _ SGP x d') with (graph_cell (spatialgraph_vgen g x d') x).
+  replace (@vertex_at _ _ _ _ _ SGP x d') with (graph_vcell (spatialgraph_vgen g x d') x).
   Focus 2. {
     simpl.
-    unfold graph_cell; simpl.
+    unfold graph_vcell; simpl.
     destruct_eq_dec x x; [auto | congruence].
   } Unfocus.
   apply pred_sepcon_ramify1_simpl; auto.
   intros.
-  unfold graph_cell.
+  unfold graph_vcell.
   f_equal.
   simpl.
   destruct_eq_dec x y; [congruence |].
@@ -427,7 +443,7 @@ Proof.
   intros.
   eapply pred_sepcon_ramify_pred_Q; eauto.
   intros.
-  unfold graph_cell.
+  unfold graph_vcell.
   f_equal.
   apply H1; auto.
 Qed.
@@ -465,7 +481,7 @@ Proof.
     destruct H as [HH [? _]].
     simpl in H.
     unfold predicate_vvalid in H.
-    unfold graph_cell.
+    unfold graph_vcell.
     f_equal.
     apply H.
     - rewrite <- (unreachable_eq' g S1 S2) in H0.
@@ -525,7 +541,7 @@ Lemma existential_partialgraph_update_prime':
 Proof.
   intros.
   unfold vertices_at.
-  apply existential_pred_sepcon_ramify_pred' with (PF := fun x => PureS2 x /\ ~ PureS1 x) (p2 := (fun a => graph_cell (g' a))).
+  apply existential_pred_sepcon_ramify_pred' with (PF := fun x => PureS2 x /\ ~ PureS1 x) (p2 := (fun a => graph_vcell (g' a))).
   + intros.
     destruct (X x H5); [left | right]; auto.
   + intros; specialize (H x); tauto.
@@ -562,7 +578,7 @@ Proof.
     specialize (H6 x).
     spec H6; [tauto |].
     spec H6; [tauto |].
-    unfold graph_cell.
+    unfold graph_vcell.
     f_equal.
     auto.
   + auto.
@@ -665,20 +681,76 @@ Proof.
       tauto.
 Qed.
 
-Lemma dag_graph_unfold: forall (g: Graph) x S, vvalid g x -> localDag g x -> step_list g x S -> graph x g = vertex_at x (vgamma g x) * graphs' S g.
+Lemma sepcon_unique_graph_vcell:
+  sepcon_unique2 (@vertex_at _ _ _ _ _ SGP) ->
+  sepcon_unique1 graph_vcell.
+Proof.
+  unfold sepcon_unique1, sepcon_unique2, graph_vcell.
+  intros.
+  simpl.
+  intros.
+  apply H.
+Qed.
+
+Lemma vertex_at_sepcon_unique_x1: forall (g: Graph) x P d,
+  sepcon_unique2 (@vertex_at _ _ _ _ _ SGP) ->
+  vertices_at P g * vertex_at x d |-- !! (~ P x).
 Proof.
   intros.
-  change (vertex_at x (vgamma g x)) with (graph_cell g x).
+  apply not_prop_right; intros.
+  eapply derives_trans; [apply sepcon_derives; [apply pred_sepcon_prop_true; eauto | apply derives_refl] |].
+  unfold graph_vcell.
+  rewrite sepcon_comm, <- sepcon_assoc.
+  eapply derives_trans; [apply sepcon_derives; [apply H | apply derives_refl] |].
+  normalize.
+Qed.
+
+Lemma vertex_at_sepcon_unique_1x: forall (g: Graph) x P d,
+  sepcon_unique2 (@vertex_at _ _ _ _ _ SGP) ->
+  vertex_at x d * vertices_at P g |-- !! (~ P x).
+Proof.
+  intros.
+  rewrite sepcon_comm.
+  apply vertex_at_sepcon_unique_x1; auto.
+Qed.
+
+Lemma vertex_at_sepcon_unique_xx: forall (g1 g2: Graph) P1 P2,
+  sepcon_unique2 (@vertex_at _ _ _ _ _ SGP) ->
+  vertices_at P1 g1 * vertices_at P2 g2 |-- !! Disjoint _ P1 P2.
+Proof.
+  intros.
+  eapply derives_trans with (!! (forall x, P1 x -> P2 x -> False)).
+  2: apply prop_derives; rewrite Disjoint_spec; auto.
+  rewrite prop_forall_allp.
+  apply allp_right; intro x.
+  rewrite !prop_impl_imp.
+  apply imp_andp_adjoint; normalize.
+  apply imp_andp_adjoint; normalize.
+  eapply derives_trans; [apply sepcon_derives; apply pred_sepcon_prop_true; eauto |].
+  rewrite sepcon_assoc, (sepcon_comm TT), !sepcon_assoc.
+  rewrite TT_sepcon_TT, <- sepcon_assoc.
+  unfold graph_vcell.
+  eapply derives_trans; [apply sepcon_derives; [apply H | apply derives_refl] |].
+  normalize.
+Qed.
+
+Lemma localDag_vertices_unfold: forall (g: Graph) x S, vvalid g x -> localDag g x -> step_list g x S -> vertices_at (reachable g x) g = vertex_at x (vgamma g x) * vertices_at (reachable_through_set g S) g.
+Proof.
+  intros.
+  change (vertex_at x (vgamma g x)) with (graph_vcell g x).
   pose proof localDag_reachable_spec g x S.
   do 3 (spec H2; [auto |]).
   destruct H2.
+  rewrite sepcon_comm.
   apply pred_sepcon_sepcon1; auto.
   specialize (H3 x); tauto.
 Qed.
 
-Lemma dag_graph_gen_step_list: forall (g: Graph) x S d, vvalid g x -> localDag g x -> step_list g x S -> graphs' S g = graphs' S (spatialgraph_vgen g x d).
+Lemma localDag_graph_gen_step_list: forall (g: Graph) x S d, vvalid g x -> localDag g x -> step_list g x S -> vertices_at (reachable_through_set g S) g = vertices_at (reachable_through_set g S) (spatialgraph_vgen g x d).
 Proof.
   intros.
+  change (reachable_through_set g S)
+    with (reachable_through_set (spatialgraph_vgen g x d) S) at 2.
   apply graphs_reachable_subgraph_eq.
   split; [reflexivity | split; intros; [| reflexivity]].
   simpl.
@@ -694,22 +766,78 @@ Proof.
   apply reachable_head_valid in H4; auto.
 Qed.
 
+Lemma dag_unfold: forall (g: Graph) x S,
+  sepcon_unique2 (@vertex_at _ _ _ _ _ SGP) ->
+  vvalid g x ->
+  step_list g x S ->
+  dag x g = vertex_at x (vgamma g x) * dags' S g.
+Proof.
+  intros.
+  unfold dag, dags'.
+  apply pred_ext; normalize.
+  + apply andp_right.
+    - apply prop_right.
+      rewrite Forall_forall; intros.
+      eapply local_dag_step; eauto.
+      rewrite (H1 x0) in H3; auto.
+    - erewrite localDag_vertices_unfold by eauto.
+      auto.
+  + assert (vertex_at x (vgamma g x) * vertices_at (reachable_through_set g S) g
+   |-- !!localDag g x).
+    - eapply derives_trans; [apply vertex_at_sepcon_unique_1x; auto |].
+      apply prop_derives; intro.
+      eapply localDag_step_rev; eauto.
+    - rewrite (add_andp _ _ H3); normalize.
+      erewrite localDag_vertices_unfold by eauto.
+      auto.
+Qed.
+
+Lemma dag_vgen: forall (g: Graph) x S d,
+  sepcon_unique2 (@vertex_at _ _ _ _ _ SGP) ->
+  vvalid g x ->
+  step_list g x S ->
+  dag x (spatialgraph_vgen g x d) = vertex_at x d * dags' S g.
+Proof.
+  intros.
+  erewrite dag_unfold by eauto.
+  unfold dags'.
+  normalize.
+  f_equal.
+  rewrite (add_andp _ _ (vertex_at_sepcon_unique_1x _ _ _ _ H)).
+  rewrite (add_andp _ _ (vertex_at_sepcon_unique_1x _ _ _ d H)).
+  rewrite !(andp_comm _ (!! _)).
+  apply andp_prop_ext; [reflexivity |].
+  intros.
+  f_equal.
+  + rewrite spacialgraph_gen_vgamma; auto.
+  + apply graphs_reachable_subgraph_eq.
+  split; [reflexivity | split; intros; [| reflexivity]].
+  simpl.
+  destruct_eq_dec x v; [exfalso | auto].
+  subst v.
+  simpl in H4; clear H3.
+  destruct H4 as [? [y [? ?]]].
+  simpl in H2.
+  apply H2.
+  exists y; split; auto.
+Qed.
+
 Context {SGSA: SpatialGraphStrongAssum SGP}.
 
-Lemma precise_graph_cell: forall g v, precise (graph_cell g v).
-Proof. intros. unfold graph_cell. apply (@mapsto_precise _ _ _ _ _ _ _ _ VP_MSL). Qed.  
+Lemma precise_graph_cell: forall g v, precise (graph_vcell g v).
+Proof. intros. unfold graph_vcell. apply (@mapsto_precise _ _ _ _ _ _ _ _ VP_MSL). Qed.  
 
-Lemma sepcon_unique_graph_cell: forall g, sepcon_unique (graph_cell g).
+Lemma sepcon_unique_graph_cell: forall g, sepcon_unique1 (graph_vcell g).
 Proof.
-  repeat intro. unfold graph_cell.
+  repeat intro. unfold graph_vcell.
   apply (@mapsto_conflict _ _ _ _ _ _ _ _ _ _ _ VP_sMSL).
   simpl.
   destruct_eq_dec x x; congruence.
 Qed.
 
-Lemma joinable_graph_cell : forall g, joinable (graph_cell g).
+Lemma joinable_graph_cell : forall g, joinable (graph_vcell g).
 Proof.
-  intros. unfold joinable; intros. unfold graph_cell. apply (@disj_mapsto _ _ (AAV SGP) _ _ _ _ _ _ VP_MSL _ VP_sMSL).
+  intros. unfold joinable; intros. unfold graph_vcell. apply (@disj_mapsto _ _ (AAV SGP) _ _ _ _ _ _ VP_MSL _ VP_sMSL).
   simpl.
   destruct_eq_dec x y; congruence.
 Qed.  

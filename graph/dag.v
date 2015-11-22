@@ -27,20 +27,13 @@ Definition localDag (g: Graph) (x: V) := forall y, reachable g x y -> not_in_cir
 
 Definition Dag (g: Graph) := forall x, not_in_circle g x.
 
-Lemma local_dag_step: forall (g: Graph) x y `{@MathGraph _ _ _ _ g}, localDag g x -> step g x y -> localDag g y.
+Lemma local_dag_step: forall (g: Graph) x y, localDag g x -> vvalid g x -> step g x y -> localDag g y.
 Proof.
   intros.
   unfold localDag in *.
   intros z ?.
-  apply (H0 z).
-  apply edge_reachable with y; auto.
-  unfold edge.
-  repeat split; auto.
-  - rewrite step_spec in H1.
-    destruct H1 as [e [? [? ?]]].
-    destruct (valid_graph _ e H1).
-    rewrite <- H3; auto.
-  - apply reachable_head_valid in H2; auto.
+  apply (H z).
+  apply step_reachable with y; auto.
 Qed.
 
 Lemma dag_local_dag: forall (g: Graph) x, Dag g -> localDag g x.
@@ -142,18 +135,25 @@ Proof.
   apply reachable_head_valid in H5; auto.
 Qed.
 
-Lemma localDag_reachable_list_gen: forall g x S l,
+Lemma localDag_step_rev: forall g x S,
   vvalid g x ->
-  localDag g x ->
   step_list g x S ->
-  reachable_set_list g S l ->
-  reachable_list g x (x :: l).
+  ~ reachable_through_set g S x ->
+  Forall (localDag g) S ->
+  localDag g x.
 Proof.
   intros.
-  intro y; simpl.
-  rewrite (H2 y).
-  rewrite (reachable_ind' g x S y H H1).
-  tauto.
+  intros y ?; simpl.
+  rewrite (reachable_ind' g x S y H H0) in H3.
+  destruct H3.
+  + subst y.
+    intros y ? ?.
+    apply H1; exists y; split; auto.
+    rewrite (H0 y).
+    destruct H3 as [? [? ?]]; auto.
+  + destruct H3 as [s [? ?]].
+    rewrite Forall_forall in H2; specialize (H2 s H3).
+    apply H2; auto.
 Qed.
 
 End Dag.

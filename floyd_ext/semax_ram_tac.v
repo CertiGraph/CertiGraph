@@ -336,53 +336,31 @@ Proof.
    auto.
 Qed.
 
-Lemma canonical_ram_reduce2: forall {A: Type} lG lL lL' lG' s G L L' G' (Pure: A -> Prop),
-  extract_trivial_liftx lG G ->
-  extract_trivial_liftx lL L ->
-  (forall a: A, exists La', extract_trivial_liftx (lL' a) La' /\ L' a = La') ->
-  (forall a: A, exists Ga', extract_trivial_liftx (lG' a) Ga' /\ G' a = Ga') ->
+Lemma canonical_ram_reduce2: forall {A: Type} s G L L' G' (Pure: A -> Prop),
   fold_right_sepcon_emp G |--
     fold_right_sepcon_emp L *
      (ALL a: A, !! Pure a -->
         (fold_right_sepcon_emp (L' a) -* fold_right_sepcon_emp (G' a))) ->
-  SEPx lG |-- SEPx lL * ModBox s (ALL a: A, !! Pure a --> (SEPx (lL' a) -* SEPx (lG' a))).
+  SEPx G |-- SEPx L * ModBox s (ALL a: A, !! Pure a --> (SEPx (L' a) -* SEPx (G' a))).
 Proof.
   intros.
-  apply extract_trivial_liftx_e in H.
-  apply extract_trivial_liftx_e in H0.
-  subst.
-
-  assert (forall a, lL' a = map liftx (L' a)).
-  Focus 1. {
-    intro a; destruct (H1 a) as [? [? ?]]; subst.
-    apply extract_trivial_liftx_e; auto.
-  } Unfocus.
-  assert (forall a, lG' a = map liftx (G' a)).
-  Focus 1. {
-    intro a; destruct (H2 a) as [? [? ?]]; subst.
-    apply extract_trivial_liftx_e; auto.
-  } Unfocus.
-
   apply sepcon_EnvironBox_weaken with
-   (ALL  a : A , !!Pure a --> (SEPx (map liftx (L' a)) -* SEPx (map liftx (G' a)))).
+   (ALL  a : A , !!Pure a --> (SEPx (L' a) -* SEPx (G' a))).
   Focus 1. {
     apply allp_derives; intro a.
-    rewrite H, H0; auto.
+    auto.
   } Unfocus.
-  clear - H3.
 
   intro rho; unfold SEPx at 1 2; simpl.
   fold (ModBox s); rewrite go_lower_ModBox.
-  rewrite !fold_right_sepcon_liftx.
 
-  rewrite !fold_right_sepcon_emp_spec in H3.
-  eapply derives_trans; [exact H3 |].
+  rewrite !fold_right_sepcon_emp_spec in H.
+  eapply derives_trans; [exact H |].
   apply sepcon_derives; [apply derives_refl |].
   apply allp_right; intro rho'.
   apply imp_andp_adjoint; apply derives_extract_prop'; intro.
   apply allp_derives; intro a.
   rewrite !fold_right_sepcon_emp_spec.
-  rewrite !fold_right_sepcon_liftx.
   auto.
 Qed.
 
@@ -643,21 +621,7 @@ Ltac simplify_ramif :=
   end;
 
   eapply canonical_ram_reduce2;
-    [ repeat constructor
-    | repeat constructor
-    | let a := fresh "a" in
-      intro a;
-      eexists; split; [solve [repeat constructor] |];
-      match goal with
-      | |- _ = ?r => super_pattern r a; apply eq_refl
-      end
-    | let a := fresh "a" in
-      intro a;
-      eexists; split; [solve [repeat constructor] |];
-      match goal with
-      | |- _ = ?r => super_pattern r a; apply eq_refl
-      end
-    | unfold fold_right_sepcon_emp];
+  unfold fold_right_sepcon_emp;
 
   try
    (let a := fresh "a" in
@@ -685,7 +649,7 @@ Ltac semax_ram_call_body witness :=
 Ltac semax_ram_after_call2 :=
       cbv beta iota; 
       try rewrite <- no_post_exists0;
-      unfold_map_liftx_etc;
+      unfold_app;
       fold (@map (lift_T (LiftEnviron mpred)) (LiftEnviron mpred) liftx); 
       simpl_strong_cast;
       abbreviate_semax_ram.

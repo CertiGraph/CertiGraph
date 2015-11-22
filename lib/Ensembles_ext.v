@@ -321,7 +321,9 @@ Proof.
   intros; hnf; auto.
 Qed.
 
+Definition app_same_set {A: Type} {P Q: Ensemble A} (H: Same_set P Q) (x: A): P x <-> Q x := proj1 (Same_set_spec A P Q) H x.
 
+Coercion app_same_set : Same_set >-> Funclass.
 
 (*
 
