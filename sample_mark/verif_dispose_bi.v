@@ -29,9 +29,10 @@ Definition mark_spec :=
           LOCAL (temp _x (pointer_val_val x))
           SEP   (graph sh x g)
   POST [ Tvoid ]
-        PROP ()
+        EX g': @Graph pSGG_VST,
+        PROP (mark x g g')
         LOCAL()
-        SEP (EX g': Graph, !! mark x g g' && graph sh x g').
+        SEP (graph sh x g').
 
 Definition spanning_spec :=
   DECLARE _spanning
@@ -41,9 +42,10 @@ Definition spanning_spec :=
           LOCAL (temp _x (pointer_val_val x))
           SEP   (graph sh x g)
   POST [ Tvoid ]
-        PROP ()
+        EX g': @Graph pSGG_VST,
+        PROP (spanning_tree g x g')
         LOCAL()
-        SEP (EX g': Graph, !! spanning_tree g x g' && vertices_at sh (reachable g x) g').
+        SEP (vertices_at sh (reachable g x) g').
 
 Definition dispose_spec :=
   DECLARE _dispose
@@ -137,16 +139,17 @@ Proof.
   unfold semax_ram.
   
   forward_if_tac
-    (PROP  ()
+    (EX g2: @Graph pSGG_VST,
+     PROP  (edge_spanning_tree g1 (x, L) g2)
      LOCAL (temp _r (pointer_val_val r);
             temp _l (pointer_val_val l);
             temp _x (pointer_val_val x))
-     SEP (EX g2: Graph, !! edge_spanning_tree g1 (x, L) g2 && vertices_at sh (reachable g1 x) g2)); [admit | | gather_current_goal_with_evar ..].
+     SEP (vertices_at sh (reachable g1 x) g2)); [admit | | gather_current_goal_with_evar ..].
 
   (* root_mark = l -> m; *)
   localize
     (PROP  ()
-     LOCAL  (temp _l (pointer_val_val l))
+     LOCAL (temp _l (pointer_val_val l))
      SEP  (data_at sh node_type (vgamma2cdata (vgamma g1 l)) (pointer_val_val l))).
   remember (vgamma g1 l) as dlr in |-*.
   destruct dlr as [[dd ll] rr].
@@ -161,7 +164,31 @@ Proof.
     unfold Ensembles.In in Heqdlr. simpl in Heqdlr. apply Heqdlr in a. exfalso; auto.
     apply vgamma_is_true in Heqdlr. exfalso; auto.
   } Unfocus.
-  rewrite Heqdlr.
+  rewrite Heqdlr. simpl temp at 1.
+  assert ((Vint (Int.repr (if (@vlabel pointer_val (prod pointer_val LR)
+                                       PointerVal_EqDec
+         PointerValLR_EqDec bool unit
+         (@lg_gg pointer_val (prod pointer_val LR) PointerVal_EqDec
+            PointerValLR_EqDec bool unit
+            (fun
+               g0 : @LabeledGraph pointer_val (prod pointer_val LR)
+                      PointerVal_EqDec PointerValLR_EqDec bool unit =>
+             @BiMaFin pSGG_VST
+               (@pg_lg pointer_val (prod pointer_val LR) PointerVal_EqDec
+                       PointerValLR_EqDec bool unit g0)) g1) l) then 1 else 0))) =
+          (Vint (Int.repr (if node_pred_dec (marked g1) l then 1 else 0)))). {
+    simpl. f_equal. f_equal.
+    destruct (@vlabel pointer_val (prod pointer_val LR) PointerVal_EqDec
+         PointerValLR_EqDec bool unit
+         (@lg_gg pointer_val (prod pointer_val LR) PointerVal_EqDec
+            PointerValLR_EqDec bool unit
+            (fun
+               g0 : @LabeledGraph pointer_val (prod pointer_val LR)
+                      PointerVal_EqDec PointerValLR_EqDec bool unit =>
+             @BiMaFin pSGG_VST
+               (@pg_lg pointer_val (prod pointer_val LR) PointerVal_EqDec
+                       PointerValLR_EqDec bool unit g0)) g1) l); auto.
+  } rewrite H5.
   unlocalize
     (PROP  ()
      LOCAL (temp _root_mark (Vint (Int.repr (if node_pred_dec (marked g1) l then 1 else 0)));
@@ -170,18 +197,20 @@ Proof.
             temp _x (pointer_val_val x))
      SEP  (graph sh x g1)).
   Grab Existential Variables.
-  (* Focus 6. { solve_split_by_closed. } Unfocus. *)
   Focus 2. {
     simplify_ramif.
+    Opaque gamma.
+    destruct (vgamma g1 l) as [[dd ll] rr] eqn:? .
     entailer!.
-    rewrite <- H5.
-    do 2 f_equal.
-    destruct (@vlabel pointer_val (pointer_val * LR) PointerVal_EqDec
-         PointerValLR_EqDec bool unit
-         (fun
-            (g0 : @PreGraph pointer_val (pointer_val * LR) PointerVal_EqDec
-                    PointerValLR_EqDec) (_ : pointer_val -> bool)
-            (_ : pointer_val * LR -> unit) => @BiMaFin pSGG_VST g0) g1 l); auto.
+    rewrite (update_self g1 l (dd, ll, rr)) at 2 by auto.
+    assert (vvalid g1 l). {
+      assert (weak_valid g1 l) by (eapply gamma_left_weak_valid; eauto).
+      destruct H5; auto. rewrite is_null_def in H5. subst. exfalso; intuition.
+    }
+    apply (@vertices_at_ramify1 _ _ _ _ _ _ _ (SGA_VST sh) g1 (reachable g1 x) l (dd, ll, rr) (dd, ll, rr)); auto.
+    apply (gamma_left_reachable_included g1 _ _ _ _ H3 H_GAMMA_g1 l).
+    apply reachable_by_refl; auto.
+    Transparent gamma.
   } Unfocus.
   Focus 3. { entailer!. } Unfocus.
   Focus 3. { repeat constructor; auto with closed. } Unfocus.
