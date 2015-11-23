@@ -1273,4 +1273,16 @@ Proof.
   split; [| split; [| split]]; firstorder.
 Qed.
 
+Lemma edge_union_guarded_si: forall (PE: E -> Prop) (G1 G2: Graph),
+  edge_union PE G1 G2 ->
+  guarded_structurally_identical (Full_set _) (Complement _ PE) G1 G2.
+Proof.
+  intros.
+  rewrite guarded_si_spec.
+  destruct H as [? [? [? ?]]].
+  unfold Complement, Ensembles.In, weak_edge_prop.
+  pose proof Full_set_spec V.
+  split; [| split; [| split]]; firstorder.
+Qed.
+
 End ExpandPartialGraph.
