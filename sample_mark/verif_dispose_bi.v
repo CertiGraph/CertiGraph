@@ -27,11 +27,11 @@ Definition mark_spec :=
   PRE [ _x OF (tptr (Tstruct _Node noattr))]
           PROP  (writable_share sh; weak_valid g x)
           LOCAL (temp _x (pointer_val_val x))
-          SEP   (`(graph sh x g))
+          SEP   (graph sh x g)
   POST [ Tvoid ]
         PROP ()
         LOCAL()
-        SEP (`(EX g': Graph, !! mark x g g' && graph sh x g')).
+        SEP (EX g': Graph, !! mark x g g' && graph sh x g').
 
 Definition spanning_spec :=
   DECLARE _spanning
@@ -39,11 +39,11 @@ Definition spanning_spec :=
   PRE [ _x OF (tptr (Tstruct _Node noattr))]
           PROP  (writable_share sh; vvalid g x; fst (fst (vgamma g x)) = false)
           LOCAL (temp _x (pointer_val_val x))
-          SEP   (`(graph sh x g))
+          SEP   (graph sh x g)
   POST [ Tvoid ]
         PROP ()
         LOCAL()
-        SEP (`(EX g': Graph, !! spanning_tree g x g' && vertices_at sh (reachable g x) g')).
+        SEP (EX g': Graph, !! spanning_tree g x g' && vertices_at sh (reachable g x) g').
 
 Definition dispose_spec :=
   DECLARE _dispose
@@ -51,11 +51,11 @@ Definition dispose_spec :=
   PRE [ _x OF (tptr (Tstruct _Node noattr))]
           PROP  (writable_share sh; weak_valid g x)
           LOCAL (temp _x (pointer_val_val x))
-          SEP   (`(!!is_tree g x && graph sh x g))
+          SEP   (!!is_tree g x && graph sh x g)
   POST [ Tvoid ]
         PROP ()
         LOCAL()
-        SEP (`emp).
+        SEP (emp).
 
 Definition main_spec :=
  DECLARE _main
@@ -82,8 +82,8 @@ Proof.
   localize
    (PROP  ()
     LOCAL (temp _x (pointer_val_val x))
-    SEP   (`(data_at sh node_type (Vint (Int.repr 0), (pointer_val_val l, pointer_val_val r))
-                     (pointer_val_val x)))).
+    SEP   (data_at sh node_type (Vint (Int.repr 0), (pointer_val_val l, pointer_val_val r))
+                     (pointer_val_val x))).
   
   (* begin l = x -> l; *)
   apply -> ram_seq_assoc.
@@ -116,7 +116,7 @@ Proof.
   
   unlocalize (PROP ()
               LOCAL  (temp _r (pointer_val_val r); temp _l (pointer_val_val l); temp _x (pointer_val_val x))
-              SEP  (`(graph sh x (Graph_gen g x true)))).
+              SEP  (graph sh x (Graph_gen g x true))).
   Grab Existential Variables.
   Focus 2. {
     simplify_ramif.
@@ -141,13 +141,13 @@ Proof.
      LOCAL (temp _r (pointer_val_val r);
             temp _l (pointer_val_val l);
             temp _x (pointer_val_val x))
-     SEP (`(EX g2: Graph, !! edge_spanning_tree g1 (x, L) g2 && vertices_at sh (reachable g1 x) g2))); [admit | | gather_current_goal_with_evar ..].
+     SEP (EX g2: Graph, !! edge_spanning_tree g1 (x, L) g2 && vertices_at sh (reachable g1 x) g2)); [admit | | gather_current_goal_with_evar ..].
 
   (* root_mark = l -> m; *)
   localize
     (PROP  ()
      LOCAL  (temp _l (pointer_val_val l))
-     SEP  (`(data_at sh node_type (vgamma2cdata (vgamma g1 l)) (pointer_val_val l)))).
+     SEP  (data_at sh node_type (vgamma2cdata (vgamma g1 l)) (pointer_val_val l))).
   remember (vgamma g1 l) as dlr in |-*.
   destruct dlr as [[dd ll] rr].
   eapply semax_ram_seq;
@@ -168,7 +168,7 @@ Proof.
             temp _r (pointer_val_val r);
             temp _l (pointer_val_val l);
             temp _x (pointer_val_val x))
-     SEP  (`(graph sh x g1))).
+     SEP  (graph sh x g1)).
   Grab Existential Variables.
   (* Focus 6. { solve_split_by_closed. } Unfocus. *)
   Focus 2. {
