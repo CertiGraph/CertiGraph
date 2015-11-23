@@ -281,6 +281,17 @@ End GraphMorphism1.
 Definition disjointed_guard {V E} (PV1 PV2: V -> Prop) (PE1 PE2: E -> Prop) :=
   Disjoint _ PV1 PV2 /\ Disjoint _ PE1 PE2.
 
+Lemma disjointed_guard_left_union: forall {V E} (PV1 PV2 PV3: V -> Prop) (PE1 PE2 PE3: E -> Prop),
+  disjointed_guard (Union _ PV1 PV2) PV3 (Union _ PE1 PE2) PE3 ->
+  disjointed_guard PV1 PV3 PE1 PE3 /\
+  disjointed_guard PV2 PV3 PE2 PE3.
+Proof.
+  intros.
+  destruct H.
+  rewrite Union_left_Disjoint in H, H0.
+  split; split; tauto.
+Qed.
+
 Section GraphMorphism2.
 
 Context {V V' E E': Type}.
@@ -1526,6 +1537,89 @@ Proof.
     pose proof proj1 (proj2 ECOPY_si) e0.
     pose proof proj2 (proj2 (proj2 ECOPY_si)) e0.
     symmetry; tauto.
+Qed.
+
+Lemma triple_loop: forall (g g1 g3: Graph) (g1' g3': Graph') (P: V -> Prop) root es es_done e0 es_later root',
+  vvalid g root ->
+  P root ->
+  let P0 := Intersection _ P (Complement _ (eq root)) in
+  (forall e, In e es <-> out_edges g root e) ->
+  NoDup es ->
+  es = es_done ++ e0 :: es_later ->
+  let PV1 := reachable_by_through_set g (map (dst g) es_done) P0 in
+  let PE1 := Intersection _ (weak_edge_prop PV1 g) (evalid g) in
+  let PE1_root e := In e es_done in
+  forall PV1' PE1' PE1'_root,
+  guarded_bij PV1 PE1 PV1' PE1' (vmap g1) (emap g1) g g1' /\
+  g ~=~ g1 /\
+  (forall e, PE1 e -> ~ PV1 (dst g e) -> vmap g1 (dst g e) = dst g1' (emap g1 e)) /\
+  guarded_bij (eq root) PE1_root (eq root') PE1'_root (vmap g1) (emap g1) g1 g1' /\
+  (forall e, PE1_root e -> vvalid g (dst g e) -> vmap g1 (dst g e) = dst g1' (emap g1 e)) ->
+  forall PV' PE' son' e0',
+  compond_relation
+    (copy (Intersection _ P0 (Complement _ PV1)) (dst g e0) son' PV' PE')
+    (ecopy1 e0 e0')
+    (g1, g1') (g3, g3') /\
+  disjointed_guard (Union _ PV1' (eq root')) PV' (Union _ PE1' PE1'_root) PE' /\ (* From spatial fact *)
+  Same_set (Union _ PV1 (Complement _ PV1)) (Full_set _) -> (* From weak mark lemma *)
+  let PV3 := reachable_by_through_set g (map (dst g) (es_done ++ e0 :: nil)) P0 in
+  let PE3 := Intersection _ (weak_edge_prop PV3 g) (evalid g) in
+  let PE3_root e := In e (es_done ++ e0 :: nil) in
+  let PV3' := Union _ PV1' PV' in
+  let PE3' := Union _ PE1' PE' in
+  let PE3'_root := Union _ PE1'_root (eq e0') in
+  guarded_bij PV3 PE3 PV3' PE3' (vmap g3) (emap g3) g g3' /\
+  g ~=~ g3 /\
+  (forall e, PE3 e -> ~ PV3 (dst g e) -> vmap g3 (dst g e) = dst g3' (emap g3 e)) /\
+  guarded_bij (eq root) PE3_root (eq root') PE3'_root (vmap g3) (emap g3) g3 g3' /\
+  (forall e, PE3_root e -> vvalid g (dst g e) -> vmap g3 (dst g e) = dst g3' (emap g3 e)).
+Proof.
+  intros.
+  destruct H5 as [? [DISJ DEC]].
+  apply disjointed_guard_left_union in DISJ.
+  destruct DISJ as [DISJ DISJ_root].
+  apply compond_relation_spec in H5.
+  destruct H5 as [[g2 g2'] [COPY ECOPY]].
+  assert
+   (guarded_bij PV3 PE3 PV3' PE3' (vmap g2) (emap g2) g g2' /\
+    g ~=~ g2 /\
+    (forall e : E,
+     PE3 e -> ~ PV3 (dst g e) -> vmap g2 (dst g e) = dst g2' (emap g2 e)) /\
+    guarded_bij (eq root) PE1_root (eq root') PE1'_root 
+      (vmap g2) (emap g2) g2 g2' /\
+    (forall e : E,
+     PE1_root e ->
+     vvalid g (dst g e) -> vmap g2 (dst g e) = dst g2' (emap g2 e))) as PRE;
+  [clear g3 g3' ECOPY; rename H4 into PRE | clear COPY H4].
+  + split; [| split; [| split; [| split]]].
+    - eapply triple1_copy; eauto.
+      tauto.
+    - eapply triple2_copy; eauto.
+      tauto.
+    - clear DISJ_root.
+      eapply triple3_copy; eauto.
+      tauto.
+    - clear DISJ.
+      eapply triple4_copy; eauto.
+      tauto.
+    - clear DISJ.
+      eapply triple5_copy; eauto.
+      tauto.
+  + split; [| split; [| split; [| split]]].
+    - eapply triple1_ecopy1; eauto.
+      tauto.
+    - eapply triple2_ecopy1; eauto.
+      tauto.
+    - eapply triple3_ecopy1; eauto.
+      instantiate (1 := PE3').
+      instantiate (1 := PV3').
+      tauto.
+    - eapply triple4_ecopy1; eauto.
+      tauto.
+    - eapply triple5_ecopy1; eauto.
+      instantiate (1 := PE1'_root).
+      instantiate (1 := root').
+      tauto.
 Qed.
 
 End LocalCopyGraph.
