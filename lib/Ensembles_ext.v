@@ -262,6 +262,15 @@ Proof.
   + apply H0; auto.
 Qed.
 
+Lemma Union_left_Disjoint: forall A P Q R,
+  Disjoint A (Union A P Q) R <-> Disjoint A P R /\ Disjoint A Q R.
+Proof.
+  intros.
+  rewrite !Disjoint_spec.
+  pose proof (fun x => Union_spec A x P Q).
+  firstorder.
+Qed.
+
 Lemma Included_Complement_Disjoint: forall A P Q,
   (Included P (Complement _ Q)) <-> Disjoint A P Q.
 Proof.
