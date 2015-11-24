@@ -12,6 +12,7 @@ Require Import RamifyCoq.graph.reachable_ind.
 Require Import RamifyCoq.graph.spanning_tree.
 Require Import RamifyCoq.msl_application.Graph.
 Require Import RamifyCoq.msl_application.GraphBi.
+Require Import RamifyCoq.msl_application.GraphBi_Mark.
 Require RamifyCoq.graph.weak_mark_lemmas.
 Import RamifyCoq.graph.weak_mark_lemmas.WeakMarkGraph.
 
@@ -116,7 +117,7 @@ Section SPATIAL_GRAPH_DISPOSE_BI.
         symmetry. tauto.
   Qed.
 
-  Lemma graph_ramify_aux1_left: forall (g: Graph) x d l r,
+  Lemma graph_ramify_aux1_left': forall (g: Graph) x d l r,
       vvalid g x -> unmarked g l ->
       vgamma g x = (d, l, r) ->
       (forall gg, spanning_tree g l gg -> edge_spanning_tree g (x, L) gg) ->
@@ -131,6 +132,48 @@ Section SPATIAL_GRAPH_DISPOSE_BI.
       - apply reachable_head_valid in H3; auto.
       - rewrite (gamma_step g x d l r); auto.
     + intro v. unfold In. intro. apply reachable_foot_valid in H3. auto.
+  Qed.
+
+  Lemma graph_ramify_aux1_left: forall {RamUnit: Type} (g: Graph) x d l r,
+      vvalid g x -> vgamma g x = (d, l, r) ->
+      (graph x g : pred) |-- graph l g *
+      (ALL  a : RamUnit * Graph ,
+                !!spanning_tree g l (snd a) -->
+                  (vertices_at (reachable g l) (snd a) -*
+                               vertices_at (reachable g x) (snd a))).
+  Proof.
+    intros. eapply vertices_at_ramify_Q; auto.
+    + eapply Prop_join_reachable_left; eauto.
+    + intros. eapply Prop_join_reachable_left; eauto.
+    + intros. simpl; unfold gamma.
+      rewrite Intersection_spec in H2. unfold Complement, Ensembles.In in H2.
+      destruct H2. f_equal; [f_equal |].
+      - apply vlabel_eq. destruct H1. destruct H1. apply H5.
+        intro. apply H3. apply reachable_by_is_reachable in H6; auto.
+      - destruct H1 as [_ [? _]]. hnf in H1. simpl in H1.
+        unfold predicate_weak_evalid in H1. destruct H1 as [_ [? [_ ?]]].
+        specialize (H1 (x0, L)). specialize (H4 (x0, L)).
+        assert (src g (x0, L) = x0)
+          by apply (@left_sound _ _ _ _ _ _ g (biGraph g) x0).
+        rewrite H5 in *.
+        assert (evalid g (x0, L) /\ ~ g |= l ~o~> x0 satisfying (unmarked g)). {
+          split.
+          + apply reachable_foot_valid in H2.
+            apply (@left_valid _ _ _ _ g _ _ (biGraph g)); auto.
+          + intro; apply H3; apply reachable_by_is_reachable in H6; auto.
+        } apply H4; intuition.
+      - destruct H1 as [_ [? _]]. hnf in H1. simpl in H1.
+        unfold predicate_weak_evalid in H1. destruct H1 as [_ [? [_ ?]]].
+        specialize (H1 (x0, R)). specialize (H4 (x0, R)).
+        assert (src g (x0, R) = x0)
+          by apply (@right_sound _ _ _ _ _ _ g (biGraph g) x0).
+        rewrite H5 in *.
+        assert (evalid g (x0, R) /\ ~ g |= l ~o~> x0 satisfying (unmarked g)). {
+          split.
+          + apply reachable_foot_valid in H2.
+            apply (@right_valid _ _ _ _ g _ _ (biGraph g)); auto.
+          + intro; apply H3; apply reachable_by_is_reachable in H6; auto.
+        } apply H4; intuition.
   Qed.
 
   Lemma edge_spanning_tree_left_vvalid: forall (g1 g2: Graph) x d l r n,
