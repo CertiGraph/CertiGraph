@@ -1787,8 +1787,7 @@ Section SPANNING.
         intro. symmetry. apply edge_spanning_tree_unmarked_equiv; auto.
   Qed.
 
-  Lemma spanning_list_spanning_tree2: forall (g g1 g2: Graph) root (e1 e2 : E)
-      (V_DEC: forall x, In x (map (dst g) (e1 :: e2 :: nil)) -> Decidable (vvalid g x)),
+  Lemma spanning_list_spanning_tree2: forall (g g1 g2: Graph) root (e1 e2 : E),
       (e1 <> e2) -> (forall e, In e (e1 :: e2 :: nil) <-> out_edges g root e) ->
       ReachDecidable g1 (dst g1 e1) (unmarked g1) ->
       vvalid g root -> unmarked g root -> mark1 root g g1 ->
@@ -1837,14 +1836,6 @@ Section SPANNING.
         apply eq_do_nothing; auto.
       } apply mark1_componded_mark_list_mark in H7; auto.
       - destruct H7. apply H8.
-      - intros. apply V_DEC. simpl in H8 |-* .
-        assert (out_edges g root e1) by (rewrite <- H0; apply in_eq).
-        assert (out_edges g root e2) by (rewrite <- H0; apply in_cons, in_eq).
-        destruct H9; destruct H10.
-        destruct H8 as [? | [? | ?]]; [left| right; left |exfalso; auto]; subst x;
-        destruct H3 as [[_ [? [_ ?]]] _].
-        * specialize (H3 e1). specialize (H8 e1). apply H8; intuition.
-        * specialize (H3 e2). specialize (H8 e2). apply H8; intuition.
     + assert (forall x, unmarked g1 x <-> unmarked g x /\ x <> root). {
         intros. destruct H3 as [? [? ?]]. unfold unmarked.
         rewrite !negateP_spec. split; intros.

@@ -90,8 +90,6 @@ Definition componded root R :=
 
 Definition componded_mark_list root xs := relation_list (map (fun x => componded root (mark x)) xs).
 
-Definition mark_list xs := relation_list (map mark xs).
-
 Lemma mark_marked: forall (g1: Graph) root (g2: Graph),
   mark root g1 g2 ->
   forall n, marked g1 n -> marked g2 n.
