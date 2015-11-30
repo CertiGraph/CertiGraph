@@ -310,11 +310,6 @@ Section SPATIAL_GRAPH_DISPOSE_BI.
   Proof.
     intros.
     apply (spanning_list_spanning_tree2 _ g1 _ _ (x, L) (x, R)); auto; intros.
-    + apply weak_valid_vvalid_dec. simpl in H7. pose proof H2.
-      simpl in H2. unfold gamma in H2. inversion H2. subst l. subst r.
-      destruct H7 as [? | [? | ?]]; [subst x0..| exfalso; auto].
-      - apply (gamma_left_weak_valid _ _ _ _ _ H H8).
-      - apply (gamma_right_weak_valid _ _ _ _ _ H H8).
     + intro. inversion H7.
     + pose proof (only_two_edges g x e). simpl in H7 |-* .
       split; intros.

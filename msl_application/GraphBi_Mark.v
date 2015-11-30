@@ -193,11 +193,6 @@ Lemma mark1_mark_left_mark_right: forall (g1 g2 g3 g4: Graph) root l r,
 Proof.
   intros.
   apply (mark1_mark_list_mark root (l :: r :: nil)); auto.
-  + intros.
-    destruct_eq_dec x l; [| destruct_eq_dec x r; [| exfalso]].
-    - subst; eapply weak_valid_vvalid_dec, gamma_left_weak_valid; eauto.
-    - subst; eapply weak_valid_vvalid_dec, gamma_right_weak_valid; eauto.
-    - destruct H4 as [| [|]]; try congruence; inversion H4.
   + intros; simpl.
     inversion H0.
     unfold Complement, Ensembles.In.
