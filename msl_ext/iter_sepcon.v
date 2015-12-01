@@ -430,7 +430,6 @@ Proof.
   normalize.
 Qed.
 
-(* TODO: Add it to NatDed? *)
 Lemma prop_forall_allp: forall (P: B -> Prop),
   !! (forall x, P x) = ALL x: B, !! P x.
 Proof.
@@ -439,13 +438,18 @@ Proof.
   + apply allp_right; intros.
     apply prop_derives; intros.
     auto.
-  + admit.
+  + apply allp_prop_left.
 Qed.
 
-(* TODO: Add it to NatDed? *)
 Lemma prop_impl_imp: forall (P Q: Prop),
   !! (P -> Q) = !! P --> !! Q.
-Admitted.
+Proof.
+  intros.
+  apply pred_ext.
+  + apply imp_andp_adjoint.
+    normalize.
+  + apply prop_imp_prop_left.
+Qed.
 
 (* TODO: Maybe delete this one, this is not general enough.
   it only requires p x0 to be conflict with q x0. *)

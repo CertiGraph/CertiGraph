@@ -150,11 +150,12 @@ Proof.
   auto.
 Qed.
 
+(* TODO: this can be written in be more elegent way. *)
 Inductive split_by_closed:
- statement -> list (environ -> Prop) -> list (environ -> Prop) -> list (environ -> Prop) -> Prop :=
+ statement -> list localdef -> list localdef -> list localdef -> Prop :=
  | split_by_closed_nil: forall s, split_by_closed s nil nil nil
  | split_by_closed_cons_closed: forall s q Q Q1 Q2,
-     closed_wrt_modvars s (local q) ->
+     closed_wrt_modvars s (local (locald_denote q)) ->
      split_by_closed s Q Q1 Q2 ->
      split_by_closed s (q :: Q) (q :: Q1) Q2
  | split_by_closed_cons_unclosed: forall s q Q Q1 Q2,
@@ -162,7 +163,7 @@ Inductive split_by_closed:
      split_by_closed s (q :: Q) Q1 (q :: Q2).
 
 Lemma insert_local': forall Q1 Q R,
-  local Q1 && (LOCALx Q R) = LOCALx (Q1 :: Q) R.
+  local (locald_denote Q1) && (LOCALx Q R) = LOCALx (Q1 :: Q) R.
 Proof.
 intros. extensionality rho.
 unfold LOCALx, local; super_unfold_lift. simpl.
@@ -191,7 +192,7 @@ Proof.
     - rewrite <- !insert_local'.
       rewrite IHsplit_by_closed.
       rewrite <- !andp_assoc.
-      rewrite (andp_comm (local q)); auto.
+      rewrite (andp_comm (local (locald_denote q))); auto.
 Qed.
 
 Lemma corable_PROP: forall P, corable (PROPx P TT).
