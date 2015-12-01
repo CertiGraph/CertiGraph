@@ -12,6 +12,7 @@ Require Import RamifyCoq.graph.reachable_ind.
 Require Import RamifyCoq.graph.spanning_tree.
 Require Import RamifyCoq.msl_application.Graph.
 Require Import RamifyCoq.msl_application.GraphBi.
+Require Import RamifyCoq.msl_application.GraphBi_Mark.
 Require RamifyCoq.graph.weak_mark_lemmas.
 Import RamifyCoq.graph.weak_mark_lemmas.WeakMarkGraph.
 
@@ -88,49 +89,46 @@ Section SPATIAL_GRAPH_DISPOSE_BI.
       destruct_eq_dec (x, L) (y, R). inversion H3. auto.
   Qed.
 
-  Lemma graph_ramify_aux1': forall (g: Graph) (l: addr) (e: addr * LR) (P : addr -> Prop) {V_DEC: Decidable (vvalid g l)},
-      unmarked g l -> l = dst g e ->
-      Included (reachable g l) P -> Included P (vvalid g) ->
-      (forall gg, spanning_tree g l gg -> edge_spanning_tree g e gg) ->
-      (vertices_at P g: pred) |-- graph l g *
-      ((EX g': Graph, !! spanning_tree g l g' && vertices_at (reachable g l) g') -*
-       (EX g': Graph, !! edge_spanning_tree g e g' && vertices_at P g')).
+  Lemma graph_ramify_aux1_left: forall {RamUnit: Type} (g: Graph) x d l r,
+      vvalid g x -> vgamma g x = (d, l, r) ->
+      (graph x g : pred) |-- graph l g *
+      (ALL  a : RamUnit * Graph ,
+                !!spanning_tree g l (snd a) -->
+                  (vertices_at (reachable g l) (snd a) -*
+                               vertices_at (reachable g x) (snd a))).
   Proof.
-    intros. apply existential_partialgraph_update_prime'; auto.
-    + intros. apply RFG_reachable_decicable'. apply RGF. auto.
-    + intros. apply H1. auto.
-    + intros g' y ? ?. apply H2 in H5. unfold In in H5.
-      rewrite <- (spanning_tree_vvalid g l g'); auto.
-      apply Graph_reachable_by_dec; auto.
-    + intros g' ?. destruct H4 as [[? ?] [? [? ?]]]. specialize (H7 H).
-      destruct H7. apply Graph_partialgraph_vi_spec.
-      - apply si_stronger_partialgraph_simple with (fun n : addr => ~ g |= l ~o~> n satisfying (unmarked g)); auto.
-        intro v. unfold In. intro. destruct H10.
-        intro. apply H11. apply reachable_by_is_reachable in H12. auto.
-      - intros. specialize (H5 v).
-        assert (~ g |= l ~o~> v satisfying (unmarked g)). {
-          intro. destruct H13. apply H15.
-          apply reachable_by_is_reachable in H14. auto.
-        } specialize (H5 H14). simpl in H5.
-        destruct (vlabel g v), (vlabel g' v); try tauto.
-        symmetry. tauto.
-  Qed.
-
-  Lemma graph_ramify_aux1_left: forall (g: Graph) x d l r,
-      vvalid g x -> unmarked g l ->
-      vgamma g x = (d, l, r) ->
-      (forall gg, spanning_tree g l gg -> edge_spanning_tree g (x, L) gg) ->
-      (graph x g: pred) |-- graph l g *
-      ((EX g': Graph, !! spanning_tree g l g' && vertices_at (reachable g l) g') -*
-       (EX g': Graph, !! edge_spanning_tree g (x, L) g' && vertices_at (reachable g x) g')).
-  Proof.
-    intros. apply graph_ramify_aux1'; auto.
-    + apply weak_valid_vvalid_dec. apply (gamma_left_weak_valid g x d l r); auto.
-    + simpl in H1. unfold gamma in H1. inversion H1; auto.
-    + intros v. unfold In. intro. apply edge_reachable with l; auto. split; [| split]; auto.
-      - apply reachable_head_valid in H3; auto.
-      - rewrite (gamma_step g x d l r); auto.
-    + intro v. unfold In. intro. apply reachable_foot_valid in H3. auto.
+    intros. eapply vertices_at_ramify_Q; auto.
+    + eapply Prop_join_reachable_left; eauto.
+    + intros. eapply Prop_join_reachable_left; eauto.
+    + intros. simpl; unfold gamma.
+      rewrite Intersection_spec in H2. unfold Complement, Ensembles.In in H2.
+      destruct H2. f_equal; [f_equal |].
+      - apply vlabel_eq. destruct H1. destruct H1. apply H5.
+        intro. apply H3. apply reachable_by_is_reachable in H6; auto.
+      - destruct H1 as [_ [? _]]. hnf in H1. simpl in H1.
+        unfold predicate_weak_evalid in H1. destruct H1 as [_ [? [_ ?]]].
+        specialize (H1 (x0, L)). specialize (H4 (x0, L)).
+        assert (src g (x0, L) = x0)
+          by apply (@left_sound _ _ _ _ _ _ g (biGraph g) x0).
+        rewrite H5 in *.
+        assert (evalid g (x0, L) /\ ~ g |= l ~o~> x0 satisfying (unmarked g)). {
+          split.
+          + apply reachable_foot_valid in H2.
+            apply (@left_valid _ _ _ _ g _ _ (biGraph g)); auto.
+          + intro; apply H3; apply reachable_by_is_reachable in H6; auto.
+        } apply H4; intuition.
+      - destruct H1 as [_ [? _]]. hnf in H1. simpl in H1.
+        unfold predicate_weak_evalid in H1. destruct H1 as [_ [? [_ ?]]].
+        specialize (H1 (x0, R)). specialize (H4 (x0, R)).
+        assert (src g (x0, R) = x0)
+          by apply (@right_sound _ _ _ _ _ _ g (biGraph g) x0).
+        rewrite H5 in *.
+        assert (evalid g (x0, R) /\ ~ g |= l ~o~> x0 satisfying (unmarked g)). {
+          split.
+          + apply reachable_foot_valid in H2.
+            apply (@right_valid _ _ _ _ g _ _ (biGraph g)); auto.
+          + intro; apply H3; apply reachable_by_is_reachable in H6; auto.
+        } apply H4; intuition.
   Qed.
 
   Lemma edge_spanning_tree_left_vvalid: forall (g1 g2: Graph) x d l r n,
@@ -189,8 +187,9 @@ Section SPATIAL_GRAPH_DISPOSE_BI.
   Qed.
 
   Lemma spanning_tree_left_reachable:
-    forall (g1 g2: Graph) x l r, vvalid g1 x -> vvalid g1 r -> vgamma g1 x = (true, l, r) ->
-                                 spanning_tree g1 l g2 -> Included (reachable g2 r) (reachable g1 x).
+    forall (g1 g2: Graph) x l r,
+      vvalid g1 x -> vgamma g1 x = (true, l, r) ->
+      spanning_tree g1 l g2 -> Included (reachable g2 r) (reachable g1 x).
   Proof.
     intros. intro v. unfold Ensembles.In . intros.
     assert (X: ReachDecidable g1 l (unmarked g1)). {
@@ -198,59 +197,115 @@ Section SPATIAL_GRAPH_DISPOSE_BI.
       apply weak_valid_vvalid_dec.
       apply (gamma_left_weak_valid g1 x true l r); auto.
     } destruct (X v).
-    + apply reachable_by_is_reachable in r0. apply edge_reachable_by with l; auto. split; [|split]; auto.
+    + apply reachable_by_is_reachable in r0. apply edge_reachable_by with l; auto.
+      split; [|split]; auto.
       - apply reachable_head_valid in r0. auto.
-      - simpl in H1. unfold gamma in H1. inversion H1. exists (x, L); auto.
+      - simpl in H0. unfold gamma in H0. inversion H0. exists (x, L); auto.
         * apply (@left_valid _ _ _ _ g1 _ _ (biGraph g1)); auto.
         * apply (@left_sound _ _ _ _ _ _ g1 (biGraph g1)).
     + apply edge_reachable_by with r; auto.
-      - split; [|split]; auto. rewrite (gamma_step g1 x true l r); auto.
-      - apply (spanning_tree_not_reachable g1 l g2 r v) in H3; auto.
-        rewrite reachable_by_eq_partialgraph_reachable in H3.
-        destruct H2 as [? [? ?]]. rewrite <- H4 in H3.
-        rewrite <- reachable_by_eq_partialgraph_reachable in H3.
-        apply reachable_by_is_reachable in H3. apply H3.
+      - split; [|split]; auto.
+        * apply reachable_head_valid in H2.
+          rewrite (spanning_tree_vvalid g1 l g2); auto.
+        * rewrite (gamma_step g1 x true l r); auto.
+      - apply (spanning_tree_not_reachable g1 l g2 r v) in H2; auto.
+        rewrite reachable_by_eq_partialgraph_reachable in H2.
+        destruct H1 as [? [? ?]]. rewrite <- H3 in H2.
+        rewrite <- reachable_by_eq_partialgraph_reachable in H2.
+        apply reachable_by_is_reachable in H2. apply H2.
   Qed.
 
   Lemma edge_spanning_tree_left_reachable:
-    forall (g1 g2: Graph) x l r, vvalid g1 x -> vvalid g1 r -> vgamma g1 x = (true, l, r) ->
-                                 edge_spanning_tree g1 (x, L) g2 -> Included (reachable g2 r) (reachable g1 x).
+    forall (g1 g2: Graph) x l r,
+      vvalid g1 x -> vgamma g1 x = (true, l, r) ->
+      edge_spanning_tree g1 (x, L) g2 -> Included (reachable g2 r) (reachable g1 x).
   Proof.
-    intros. hnf in H2.
-    assert (l = dst g1 (x, L)) by (simpl in H1; unfold gamma in H1; inversion H1; auto).
-    rewrite <- H3 in H2. destruct (node_pred_dec (marked g1) l).
-    + destruct H2 as [[? [? [? [? ?]]]] ?]. intro v. unfold Ensembles.In .
+    intros. assert (Hv: vvalid g2 r -> vvalid g1 r). {
+      intros. rewrite (edge_spanning_tree_left_vvalid g1 g2 x true l r r); auto.
+    } hnf in H1.
+    assert (l = dst g1 (x, L))
+      by (simpl in H0; unfold gamma in H0; inversion H0; auto).
+    rewrite <- H2 in H1. destruct (node_pred_dec (marked g1) l).
+    + destruct H1 as [[? [? [? [? ?]]]] ?]. intro v. unfold Ensembles.In .
       intros. apply edge_reachable_by with r; auto.
-      - split; [|split]; auto. rewrite (gamma_step g1 x true l r); auto.
-      - change (g1 |= r ~o~> v satisfying (fun _ : addr => True)) with (reachable g1 r v).
-        rewrite reachable_ind_reachable in H9. clear H1. induction H9.
-        * rewrite reachable_ind_reachable. constructor. rewrite H2; auto.
-        * destruct H1 as [? [? ?]]. apply edge_reachable with y. apply IHreachable. rewrite H2; auto.
-          split; [|split]; [rewrite H2; auto .. |]. rewrite step_spec in H11 |- *.
-          destruct H11 as [e [? [? ?]]]. exists e.
-          assert (e <> (x, L)) by (intro; subst; destruct H7; [|destruct H3]; auto).
-          specialize (H4 _ H14). specialize (H5 _ H14). specialize (H6 _ H14).
+      - split; [|split]; auto.
+        * apply Hv. apply reachable_head_valid in H8; auto.
+        * rewrite (gamma_step g1 x true l r); auto.
+      - change (g1 |= r ~o~> v satisfying (fun _ : addr => True))
+        with (reachable g1 r v).
+        rewrite reachable_ind_reachable in H8. clear H0. induction H8.
+        * rewrite reachable_ind_reachable. constructor. rewrite H1; auto.
+        * destruct H0 as [? [? ?]]. apply edge_reachable with y.
+          apply IHreachable. rewrite H1; auto.
+          split; [|split]; [rewrite H1; auto .. |]. rewrite step_spec in H10 |- *.
+          destruct H10 as [e [? [? ?]]]. exists e.
+          assert (e <> (x, L)) by (intro; subst; destruct H6; [|destruct H2]; auto).
+          specialize (H3 _ H13). specialize (H4 _ H13). specialize (H5 _ H13).
           subst x0. subst y. intuition.
     + apply (spanning_tree_left_reachable g1 g2 x l r); auto.
   Qed.
 
-  Lemma graph_ramify_aux1_right: forall (g1 g2: Graph) x l r,
+  Lemma Prop_join_EST_right: forall (g1 g2: Graph) x l r,
       vvalid g1 x -> vgamma g1 x = (true, l, r) ->
-      edge_spanning_tree g1 (x, L) g2 -> unmarked g2 r ->
-      (forall gg, spanning_tree g2 r gg -> edge_spanning_tree g2 (x, R) gg) ->
-      vvalid g1 r ->
-      (vertices_at (reachable g1 x) g2: pred) |-- graph r g2 *
-      ((EX g': Graph, !! spanning_tree g2 r g' && vertices_at (reachable g2 r) g') -*
-       (EX g': Graph, !! edge_spanning_tree g2 (x, R) g' && vertices_at (reachable g1 x) g')).
+      edge_spanning_tree g1 (x, L) g2 ->
+      Prop_join (reachable g2 r)
+                (Intersection _ (reachable g1 x) (Complement addr (reachable g2 r)))
+                (reachable g1 x).
   Proof.
-    intros. destruct (edge_spanning_tree_left_vgamma g1 g2 x l r H H0 H1) as [l' ?].
-    apply graph_ramify_aux1'; auto.
-    + apply weak_valid_vvalid_dec.
-      apply (gamma_right_weak_valid g2 x true l' r); auto.
-      rewrite <- (edge_spanning_tree_left_vvalid g1 g2 x true l r); eauto.
-    + simpl in H5. unfold gamma in H5. inversion H5; auto.
-    + apply (edge_spanning_tree_left_reachable g1 g2 x l r); auto.
-    + apply (edge_spanning_tree_left_reachable_vvalid g1 g2 x true l r); auto.
+    intros. apply Ensemble_join_Intersection_Complement.
+    + eapply edge_spanning_tree_left_reachable; eauto.
+    + intros.
+      destruct (edge_spanning_tree_left_vgamma g1 g2 x l r H H0 H1) as [l' ?].
+      apply gamma_right_weak_valid in H2.
+      - apply decidable_prop_decidable, Graph_reachable_dec,
+        weak_valid_vvalid_dec; auto.
+      - apply (edge_spanning_tree_left_reachable_vvalid g1 g2 x true l r); auto.
+        unfold Ensembles.In . apply reachable_by_refl; auto.
+  Qed.
+                
+  Lemma graph_ramify_aux1_right: forall {RamUnit: Type} (g1 g2: Graph) x l r,
+      vvalid g1 x -> vgamma g1 x = (true, l, r) ->
+      edge_spanning_tree g1 (x, L) g2 ->
+      (vertices_at (reachable g1 x) g2: pred) |-- graph r g2 *
+      (ALL  a : RamUnit * Graph ,
+                !!spanning_tree g2 r (snd a) -->
+                  (vertices_at (reachable g2 r) (snd a) -*
+                               vertices_at (reachable g1 x) (snd a))).
+  Proof.
+    intros. eapply vertices_at_ramify_Q; auto.
+    + eapply Prop_join_EST_right; eauto.
+    + intros. eapply Prop_join_EST_right; eauto.
+    + intros. simpl. unfold gamma.
+      rewrite Intersection_spec in H3; unfold Complement, Ensembles.In in H3.
+      destruct H3. f_equal; [f_equal |].
+      - apply vlabel_eq. destruct H2 as [[_ ?] _]. apply H2.
+        intro. apply H4. apply reachable_by_is_reachable in H5; auto.
+      - destruct H2 as [_ [? _]]. hnf in H2. simpl in H2.
+        unfold predicate_weak_evalid in H2. destruct H2 as [_ [? [_ ?]]].
+        specialize (H2 (x0, L)). specialize (H5 (x0, L)).
+        assert (src g2 (x0, L) = x0)
+          by apply (@left_sound _ _ _ _ _ _ g2 (biGraph g2) x0).
+        rewrite H6 in *.
+        assert (evalid g2 (x0, L) /\ ~ g2 |= r ~o~> x0 satisfying (unmarked g2)). {
+          split.
+          + apply reachable_foot_valid in H3.
+            apply (@left_valid _ _ _ _ g2 _ _ (biGraph g2)).
+            rewrite <- (edge_spanning_tree_left_vvalid g1 g2 x true l r); eauto.
+          + intro; apply H4; apply reachable_by_is_reachable in H7; auto.
+        } apply H5; intuition.
+      - destruct H2 as [_ [? _]]. hnf in H2. simpl in H2.
+        unfold predicate_weak_evalid in H2. destruct H2 as [_ [? [_ ?]]].
+        specialize (H2 (x0, R)). specialize (H5 (x0, R)).
+        assert (src g2 (x0, R) = x0)
+          by apply (@right_sound _ _ _ _ _ _ g2 (biGraph g2) x0).
+        rewrite H6 in *.
+        assert (evalid g2 (x0, R) /\ ~ g2 |= r ~o~> x0 satisfying (unmarked g2)). {
+          split.
+          + apply reachable_foot_valid in H3.
+            apply (@right_valid _ _ _ _ g2 _ _ (biGraph g2)).
+            rewrite <- (edge_spanning_tree_left_vvalid g1 g2 x true l r); eauto.
+          + intro; apply H4; apply reachable_by_is_reachable in H7; auto.
+        } apply H5; intuition.
   Qed.
 
   Lemma graph_gen_right_null_ramify: forall (g1 g2: Graph) (x : addr) d (l r : addr),
