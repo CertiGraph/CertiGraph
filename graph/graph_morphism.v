@@ -18,91 +18,84 @@ Context {EE: EqDec E eq}.
 Context {EV': EqDec V' eq}.
 Context {EE': EqDec E' eq}.
 
-Variables (PV: V -> Prop) (PE: E -> Prop) (PV': V' -> Prop) (PE': E' -> Prop) (vmap: V -> V') (emap: E -> E') (G: PreGraph V E) (G': PreGraph V' E').
+Variables (PV: V -> Prop) (PE: E -> Prop) (vmap: V -> V') (emap: E -> E') (G: PreGraph V E) (G': PreGraph V' E').
 
-Definition guarded_morphism: Prop :=
-  (forall v, PV v -> PV' (vmap v)) /\
-  (forall e, PE e -> PE' (emap e)) /\
-  (forall v, PV v -> (vvalid G v <-> vvalid G' (vmap v))) /\
-  (forall e, PE e -> (evalid G e <-> evalid G' (emap e))) /\
-  (forall e, PE e -> PV (src G e) -> evalid G e -> vmap (src G e) = src G' (emap e)) /\
-  (forall e, PE e -> PV (dst G e) -> evalid G e -> vmap (dst G e) = dst G' (emap e)).
+Record guarded_morphism: Prop := {
+  vvalid_preserved: forall v, PV v -> (vvalid G v <-> vvalid G' (vmap v));
+  evalid_preserved: forall e, PE e -> (evalid G e <-> evalid G' (emap e));
+  src_preserved: forall e, PE e -> PV (src G e) -> evalid G e ->
+                   vmap (src G e) = src G' (emap e);
+  dst_preserved: forall e, PE e -> PV (dst G e) -> evalid G e -> vmap (dst G e) = dst G' (emap e)
+}.
 
-Definition guarded_inj: Prop :=
-  (forall v1 v2, PV v1 -> PV v2 -> v1 <> v2 -> vmap v1 <> vmap v2) /\
-  (forall e1 e2, PE e1 -> PE e2 -> e1 <> e2 -> emap e1 <> emap e2) /\
-  guarded_morphism.
+Record guarded_bij: Prop := {
+  vmap_inj: forall v1 v2, PV v1 -> PV v2 -> v1 <> v2 -> vmap v1 <> vmap v2;
+  emap_inj: forall e1 e2, PE e1 -> PE e2 -> e1 <> e2 -> emap e1 <> emap e2;
+  bij_is_morphism :> guarded_morphism
+}.
 
-Definition guarded_surj: Prop :=
-  (forall v', PV' v' -> exists v, PV v /\ vmap v = v') /\
-  (forall e', PE' e' -> exists e, PE e /\ emap e = e') /\
-  guarded_morphism.
-
-Definition guarded_bij: Prop :=
-  (forall v1 v2, PV v1 -> PV v2 -> v1 <> v2 -> vmap v1 <> vmap v2) /\
-  (forall e1 e2, PE e1 -> PE e2 -> e1 <> e2 -> emap e1 <> emap e2) /\
-  (forall v', PV' v' -> exists v, PV v /\ vmap v = v') /\
-  (forall e', PE' e' -> exists e, PE e /\ emap e = e') /\
-  guarded_morphism.
-
-Lemma guarded_bij_surj: guarded_bij -> guarded_surj.
-Proof.
-  unfold guarded_bij, guarded_surj.
-  tauto.
-Qed.
-
-Lemma guarded_bij_inj: guarded_bij -> guarded_inj.
-Proof.
-  unfold guarded_bij, guarded_inj.
-  tauto.
-Qed.
-
-Lemma guarded_surj_evalid:
-  guarded_surj ->
+Lemma guarded_morphsm_evalid:
+  guarded_morphism ->
   Included PE (evalid G) ->
-  Included PE' (evalid G').
+  Included (image_set emap PE) (evalid G').
 Proof.
-  intros [? [? [? [? [? [? [? ?]]]]]]] ?.
-  eapply guarded_surj_Included; [eauto |].
-  intros e ?.
-  pose proof H7 _ H8; unfold Ensembles.In in H9; clear H7.
-  rewrite <- H4 by auto.
-  auto.
+  intros.
+  unfold Included, Ensembles.In in H0 |- *.
+  intros.
+  rewrite image_set_spec in H1.
+  destruct H1 as [e [? ?]]; subst.
+  pose proof evalid_preserved H.
+  firstorder.
 Qed.
 
-Lemma guarded_surj_weak_edge_prop:
-  guarded_surj ->
+Lemma guarded_morphism_weak_edge_prop:
+  guarded_morphism ->
   Included PE (weak_edge_prop PV G) ->
   Included PE (evalid G) ->
-  Included PE' (weak_edge_prop PV' G').
+  Included (image_set emap PE) (weak_edge_prop (image_set vmap PV) G').
 Proof.
-  intros [? [? [? [? [? [? [? ?]]]]]]] ? ?.
-  eapply guarded_surj_Included; [eauto |].
-  intros e ?.
-  pose proof H7 _ H9; unfold Ensembles.In in H10; clear H7.
-  pose proof H8 _ H9; unfold Ensembles.In in H7; clear H8.
-  unfold weak_edge_prop in *.
-  rewrite <- H5 by auto.
-  apply H1, H10.
+  intros.
+  unfold Included, Ensembles.In in H0, H1 |- *.
+  intros.
+  rewrite image_set_spec in H2.
+  destruct H2 as [e [? ?]]; subst.
+  unfold weak_edge_prop.
+  rewrite image_set_spec.
+  exists (src G e).
+  split.
+  + apply H0; auto.
+  + symmetry; apply (src_preserved H); auto.
+    apply H0; auto.
 Qed.
 
-Lemma guarded_surj_weak'_edge_prop:
-  guarded_surj ->
+Lemma guarded_morphism_weak'_edge_prop:
+  guarded_morphism ->
   Included PE (weak'_edge_prop PV G) ->
   Included PE (evalid G) ->
-  Included PE' (weak'_edge_prop PV' G').
+  Included (image_set emap PE) (weak'_edge_prop (image_set vmap PV) G').
 Proof.
-  intros [? [? [? [? [? [? [? ?]]]]]]] ? ?.
-  eapply guarded_surj_Included; [eauto |].
-  intros e ?.
-  pose proof H7 _ H9; unfold Ensembles.In in H10; clear H7.
-  pose proof H8 _ H9; unfold Ensembles.In in H7; clear H8.
-  unfold weak'_edge_prop in *.
-  rewrite <- H6 by auto.
-  apply H1, H10.
+  intros.
+  unfold Included, Ensembles.In in H0, H1 |- *.
+  intros.
+  rewrite image_set_spec in H2.
+  destruct H2 as [e [? ?]]; subst.
+  unfold weak'_edge_prop.
+  rewrite image_set_spec.
+  exists (dst G e).
+  split.
+  + apply H0; auto.
+  + symmetry; apply (dst_preserved H); auto.
+    apply H0; auto.
 Qed.
 
 End GraphMorphism0.
+
+Arguments vvalid_preserved {_} {_} {_} {_} {_} {_} {_} {_} {_} {_} {_} {_} {_} {_} g _ _.
+Arguments evalid_preserved {_} {_} {_} {_} {_} {_} {_} {_} {_} {_} {_} {_} {_} {_} g _ _.
+Arguments src_preserved {_} {_} {_} {_} {_} {_} {_} {_} {_} {_} {_} {_} {_} {_} g _ _ _ _.
+Arguments dst_preserved {_} {_} {_} {_} {_} {_} {_} {_} {_} {_} {_} {_} {_} {_} g _ _ _ _.
+Arguments vmap_inj {_} {_} {_} {_} {_} {_} {_} {_} {_} {_} {_} {_} {_} {_} g _ _ _ _ _ _.
+Arguments emap_inj {_} {_} {_} {_} {_} {_} {_} {_} {_} {_} {_} {_} {_} {_} g _ _ _ _ _ _.
 
 Section GraphMorphism1.
 
@@ -112,153 +105,133 @@ Context {EE: EqDec E eq}.
 Context {EV': EqDec V' eq}.
 Context {EE': EqDec E' eq}.
 
-Lemma guarded_morphism_proper_aux1: forall PV PE PV' PE' vmap1 vmap2 emap1 emap2 (G1 G2: PreGraph V E) (G1' G2': PreGraph V' E'),
+Lemma guarded_morphism_proper_aux1: forall PV PE vmap1 vmap2 emap1 emap2 (G1 G2: PreGraph V E) (G1' G2': PreGraph V' E'),
   guarded_pointwise_relation PV eq vmap1 vmap2 ->
   guarded_pointwise_relation PE eq emap1 emap2 ->
   guarded_structurally_identical PV PE G1 G2 ->
-  guarded_structurally_identical PV' PE' G1' G2' ->
-  guarded_morphism PV PE PV' PE' vmap1 emap1 G1 G1' ->
-  guarded_morphism PV PE PV' PE' vmap2 emap2 G2 G2'.
+  guarded_structurally_identical (image_set vmap1 PV) (image_set emap1 PE) G1' G2' ->
+  guarded_morphism PV PE vmap1 emap1 G1 G1' ->
+  guarded_morphism PV PE vmap2 emap2 G2 G2'.
 Proof.
-  unfold guarded_morphism.
   intros.
   rewrite guarded_pointwise_relation_spec in H.
   rewrite guarded_pointwise_relation_spec in H0.
-  destruct H3 as [? [? [? [? [? ?]]]]].
   destruct (proj1 (guarded_si_spec _ _ _ _) H1) as [? [? [? ?]]].
   destruct (proj1 (guarded_si_spec _ _ _ _) H2) as [? [? [? ?]]].
-  assert (forall v : V, PV v -> PV' (vmap2 v))
-    by (intros; rewrite <- H by auto; apply H3; auto).
-  assert (forall e : E, PE e -> PE' (emap2 e))
-    by (intros; rewrite <- H0 by auto; apply H4; auto).
   assert (forall v : V, PV v -> (vvalid G2 v <-> vvalid G2' (vmap2 v))).
   Focus 1. {
     intros.
-    rewrite <- H9 by auto.
+    rewrite <- H4 by auto.
     rewrite <- H by auto.
-    rewrite <- H13 by auto.
-    apply H5; auto.
+    rewrite <- H8 by (constructor; auto).
+    apply (vvalid_preserved H3); auto.
   } Unfocus.
   assert (forall e : E, PE e -> (evalid G2 e <-> evalid G2' (emap2 e))).
   Focus 1. {
     intros.
-    rewrite <- H10 by auto.
+    rewrite <- H5 by auto.
     rewrite <- H0 by auto.
-    rewrite <- H14 by auto.
-    apply H6; auto.
+    rewrite <- H9 by (constructor; auto).
+    apply (evalid_preserved H3); auto.
   } Unfocus.
-  split; [| split; [| split; [| split; [| split]]]]; auto; intros.
-  + assert (evalid G1 e) by (rewrite H10 by auto; auto).
-    rewrite <- H15.
-    2: apply H18; auto.
-    2: rewrite <- H0, <- H6, H10 by auto; auto.
-    2: rewrite <- H20 by auto; auto.
+  split; auto; intros.
+  + assert (evalid G1 e) by (rewrite H5 by auto; auto).
+    rewrite <- H10.
+    2: rewrite <- H0 by auto; constructor; auto.
+    2: rewrite <- H0, <- (evalid_preserved H3), H5 by auto; auto.
+    2: rewrite <- H13 by auto; auto.
     rewrite <- H0 by auto.
     rewrite <- H by auto.
-    rewrite <- H11 by auto.
-    apply H7; auto.
-    rewrite H11 by auto; auto.
-  + assert (evalid G1 e) by (rewrite H10 by auto; auto).
-    rewrite <- H16.
-    2: apply H18; auto.
-    2: rewrite <- H0, <- H6, H10 by auto; auto.
-    2: rewrite <- H20 by auto; auto.
+    rewrite <- H6 by auto.
+    apply (src_preserved H3); auto.
+    rewrite H6 by auto; auto.
+  + assert (evalid G1 e) by (rewrite H5 by auto; auto).
+    rewrite <- H11.
+    2: rewrite <- H0 by auto; constructor; auto.
+    2: rewrite <- H0, <- (evalid_preserved H3), H5 by auto; auto.
+    2: rewrite <- H13 by auto; auto.
     rewrite <- H0 by auto.
     rewrite <- H by auto.
-    rewrite <- H12 by auto.
-    apply H8; auto.
-    rewrite H12 by auto; auto.
+    rewrite <- H7 by auto.
+    apply (dst_preserved H3); auto.
+    rewrite H7 by auto; auto.
 Qed.
 
-Lemma guarded_morphism_proper_aux2: forall PV1 PV2 PE1 PE2 PV1' PV2' PE1' PE2' vmap emap (G: PreGraph V E) (G': PreGraph V' E'),
+Lemma guarded_morphism_proper_aux2: forall PV1 PV2 PE1 PE2 vmap emap (G: PreGraph V E) (G': PreGraph V' E'),
   Same_set PV1 PV2 ->
   Same_set PE1 PE2 ->
-  Same_set PV1' PV2' ->
-  Same_set PE1' PE2' ->
-  guarded_morphism PV1 PE1 PV1' PE1' vmap emap G G' ->
-  guarded_morphism PV2 PE2 PV2' PE2' vmap emap G G'.
+  guarded_morphism PV1 PE1 vmap emap G G' ->
+  guarded_morphism PV2 PE2 vmap emap G G'.
 Proof.
   intros.
   rewrite Same_set_spec in *.
-  destruct H3 as [? [? [? [? [? ?]]]]].
-  split; [| split; [| split; [| split; [| split]]]]; intros.
-  + apply H1; apply H in H9; auto.
-  + apply H2; apply H0 in H9; auto.
-  + apply H in H9; auto.
-  + apply H0 in H9; auto.
-  + apply H in H10; apply H0 in H9; auto.
-  + apply H in H10; apply H0 in H9; auto.
+  split; intros.
+  + apply (vvalid_preserved H1), H; auto.
+  + apply (evalid_preserved H1), H0; auto.
+  + apply (src_preserved H1); auto.
+    - apply H0; auto.
+    - apply H; auto.
+  + apply (dst_preserved H1); auto.
+    - apply H0; auto.
+    - apply H; auto.
 Qed.
 
-Lemma guarded_bij_proper_aux1: forall PV PE PV' PE' vmap1 vmap2 emap1 emap2 (G1 G2: PreGraph V E) (G1' G2': PreGraph V' E'),
+Lemma guarded_bij_proper_aux1: forall PV PE vmap1 vmap2 emap1 emap2 (G1 G2: PreGraph V E) (G1' G2': PreGraph V' E'),
   guarded_pointwise_relation PV eq vmap1 vmap2 ->
   guarded_pointwise_relation PE eq emap1 emap2 ->
   guarded_structurally_identical PV PE G1 G2 ->
-  guarded_structurally_identical PV' PE' G1' G2' ->
-  guarded_bij PV PE PV' PE' vmap1 emap1 G1 G1' ->
-  guarded_bij PV PE PV' PE' vmap2 emap2 G2 G2'.
+  guarded_structurally_identical (image_set vmap1 PV) (image_set emap1 PE) G1' G2' ->
+  guarded_bij PV PE vmap1 emap1 G1 G1' ->
+  guarded_bij PV PE vmap2 emap2 G2 G2'.
 Proof.
-  unfold guarded_bij.
   intros.
-  assert (guarded_morphism PV PE PV' PE' vmap2 emap2 G2 G2') by (eapply guarded_morphism_proper_aux1; eauto; tauto).
-  rewrite guarded_pointwise_relation_spec in H.
-  rewrite guarded_pointwise_relation_spec in H0.
-  destruct H3 as [? [? [? [? _]]]].
-  split; [| split; [| split; [| split]]]; intros.
-  + rewrite <- !H by auto.
-    apply H3; auto.
-  + rewrite <- !H0 by auto.
-    apply H5; auto.
-  + apply H6 in H8.
-    destruct H8 as [v [? ?]]; exists v.
-    rewrite <- H by auto; auto.
-  + apply H7 in H8.
-    destruct H8 as [e [? ?]]; exists e.
-    rewrite <- H0 by auto; auto.
-  + auto.
+  split; intros.
+  + rewrite guarded_pointwise_relation_spec in H.
+    rewrite <- !H by auto.
+    apply (vmap_inj H3); auto.
+  + rewrite guarded_pointwise_relation_spec in H0.
+    rewrite <- !H0 by auto.
+    apply (emap_inj H3); auto.
+  + eapply guarded_morphism_proper_aux1; eauto.
+    apply bij_is_morphism; auto.
 Qed.
 
-Lemma guarded_bij_proper_aux2: forall PV1 PV2 PE1 PE2 PV1' PV2' PE1' PE2' vmap emap (G: PreGraph V E) (G': PreGraph V' E'),
+Lemma guarded_bij_proper_aux2: forall PV1 PV2 PE1 PE2 vmap emap (G: PreGraph V E) (G': PreGraph V' E'),
   Same_set PV1 PV2 ->
   Same_set PE1 PE2 ->
-  Same_set PV1' PV2' ->
-  Same_set PE1' PE2' ->
-  guarded_bij PV1 PE1 PV1' PE1' vmap emap G G' ->
-  guarded_bij PV2 PE2 PV2' PE2' vmap emap G G'.
+  guarded_bij PV1 PE1 vmap emap G G' ->
+  guarded_bij PV2 PE2 vmap emap G G'.
 Proof.
   intros.
-  destruct H3 as [? [? [? [? HH]]]].
-  assert (HH': guarded_morphism PV2 PE2 PV2' PE2' vmap emap G G') by (eapply guarded_morphism_proper_aux2; eauto).
-  rewrite Same_set_spec in *.
-  split; [| split; [| split; [| split]]]; intros.
-  + apply H in H7; apply H in H8; auto.
-  + apply H0 in H7; apply H0 in H8; auto.
-  + apply H1, H5 in H7.
-    destruct H7 as [v [? ?]]; exists v.
-    apply H in H7; auto.
-  + apply H2, H6 in H7.
-    destruct H7 as [e [? ?]]; exists e.
-    apply H0 in H7; auto.
-  + auto.
+  split; intros.
+  + rewrite Same_set_spec in H.
+    apply (vmap_inj H1); auto; apply H; auto.
+  + rewrite Same_set_spec in H0.
+    apply (emap_inj H1); auto; apply H0; auto.
+  + eapply guarded_morphism_proper_aux2; eauto.
+    apply bij_is_morphism; auto.
 Qed.
 
-Instance guarded_morphism_proper1 (PV: V -> Prop) (PE: E -> Prop) (PV': V' -> Prop) (PE': E' -> Prop): Proper (guarded_pointwise_relation PV eq ==> guarded_pointwise_relation PE eq ==> guarded_structurally_identical PV PE ==> guarded_structurally_identical PV' PE' ==> iff) (guarded_morphism PV PE PV' PE').
+(*
+Instance guarded_morphism_proper1 (PV: V -> Prop) (PE: E -> Prop) : Proper (guarded_pointwise_relation PV eq ==> guarded_pointwise_relation PE eq ==> guarded_structurally_identical PV PE ==> guarded_structurally_identical (image_set vmap1 PV) (image_set emap1 PE) ==> iff) (guarded_morphism PV PE).
 Proof.
   intros.
   do 4 (hnf; intros).
   split; apply guarded_morphism_proper_aux1; auto; symmetry; auto.
 Defined.
 Global Existing Instance guarded_morphism_proper1.
+*)
 
-Instance guarded_morphism_proper2: Proper (@Same_set V ==> @Same_set E==> @Same_set V' ==> @Same_set E' ==> eq ==> eq ==> eq ==> eq ==> iff) guarded_morphism.
+Instance guarded_morphism_proper2: Proper (@Same_set V ==> @Same_set E ==> @eq (V -> V') ==> @eq (E -> E') ==> eq ==> eq ==> iff) guarded_morphism.
 Proof.
   intros.
-  do 8 (hnf; intros).
+  do 6 (hnf; intros).
   subst.
   split; eapply guarded_morphism_proper_aux2; eauto; symmetry; auto.
 Defined.
 Global Existing Instance guarded_morphism_proper2.
 
+(*
 Instance guarded_bij_proper1 (PV: V -> Prop) (PE: E -> Prop) (PV': V' -> Prop) (PE': E' -> Prop): Proper (guarded_pointwise_relation PV eq ==> guarded_pointwise_relation PE eq ==> guarded_structurally_identical PV PE ==> guarded_structurally_identical PV' PE' ==> iff) (guarded_bij PV PE PV' PE').
 Proof.
   intros.
@@ -266,11 +239,11 @@ Proof.
   split; apply guarded_bij_proper_aux1; auto; symmetry; auto.
 Defined.
 Global Existing Instance guarded_bij_proper1.
-
-Instance guarded_bij_proper2: Proper (@Same_set V ==> @Same_set E==> @Same_set V' ==> @Same_set E' ==> eq ==> eq ==> eq ==> eq ==> iff) guarded_bij.
+*)
+Instance guarded_bij_proper2: Proper (@Same_set V ==> @Same_set E ==> @eq (V -> V') ==> @eq (E -> E') ==> eq ==> eq ==> iff) guarded_bij.
 Proof.
   intros.
-  do 8 (hnf; intros).
+  do 6 (hnf; intros).
   subst.
   split; eapply guarded_bij_proper_aux2; eauto; symmetry; auto.
 Qed.
@@ -310,76 +283,75 @@ Definition boundary_consistent (PV1 PV2: V -> Prop) (PE1 PE2: E -> Prop) vmap em
   (forall e, PE2 e -> PV1 (dst G e) -> evalid G e ->
      vmap (dst G e) = dst G' (emap e)).
 
-Lemma guarded_morphism_disjointed_union: forall PV1 PE1 PV1' PE1' PV2 PE2 PV2' PE2' vmap emap (G: PreGraph V E) (G': PreGraph V' E'),
-  guarded_morphism PV1 PE1 PV1' PE1' vmap emap G G' ->
-  guarded_morphism PV2 PE2 PV2' PE2' vmap emap G G' ->
+Lemma guarded_morphism_disjointed_union: forall PV1 PE1 PV2 PE2 vmap emap (G: PreGraph V E) (G': PreGraph V' E'),
+  guarded_morphism PV1 PE1 vmap emap G G' ->
+  guarded_morphism PV2 PE2 vmap emap G G' ->
   boundary_consistent PV1 PV2 PE1 PE2 vmap emap G G' ->
-  guarded_morphism (Union _ PV1 PV2) (Union _ PE1 PE2)
-    (Union _ PV1' PV2') (Union _ PE1' PE2') vmap emap G G'.
+  guarded_morphism (Union _ PV1 PV2) (Union _ PE1 PE2) vmap emap G G'.
 Proof.
   intros.
-  destruct H as [? [? [? [? [? ?]]]]], H0 as [? [? [? [? [? ?]]]]], H1 as [? [? [? ?]]].
-  split; [| split; [| split; [| split; [| split]]]]; intros.
+  destruct H1 as [? [? [? ?]]].
+  split; intros.
   + rewrite Union_spec in *.
-    destruct H15; [left | right]; auto.
+    destruct H5; [apply (vvalid_preserved H) | apply (vvalid_preserved H0)];
+    auto.
   + rewrite Union_spec in *.
-    destruct H15; [left | right]; auto.
-  + rewrite Union_spec in H15.
-    destruct H15; auto.
-  + rewrite Union_spec in H15.
-    destruct H15; auto.
-  + rewrite Union_spec in *.
-    destruct H15, H16; auto.
-  + rewrite Union_spec in *.
-    destruct H15, H16; auto.
+    destruct H5; [apply (evalid_preserved H) | apply (evalid_preserved H0)];
+    auto.
+  + rewrite Union_spec in H5, H6.
+    destruct H5, H6; 
+    [ apply (src_preserved H)
+    | apply H1
+    | apply H2
+    | apply (src_preserved H0)];
+    auto.
+  + rewrite Union_spec in H5, H6.
+    destruct H5, H6; 
+    [ apply (dst_preserved H)
+    | apply H3
+    | apply H4
+    | apply (dst_preserved H0)];
+    auto.
 Qed.
 
-Lemma guarded_bij_disjointed_union: forall PV1 PE1 PV1' PE1' PV2 PE2 PV2' PE2' vmap emap (G: PreGraph V E) (G': PreGraph V' E'),
-  disjointed_guard PV1' PV2' PE1' PE2' ->
-  guarded_bij PV1 PE1 PV1' PE1' vmap emap G G' ->
-  guarded_bij PV2 PE2 PV2' PE2' vmap emap G G' ->
+Lemma guarded_bij_disjointed_union: forall PV1 PE1 PV2 PE2 vmap emap (G: PreGraph V E) (G': PreGraph V' E'),
+  disjointed_guard
+    (image_set vmap PV1) (image_set vmap PV2) 
+    (image_set emap PE1) (image_set emap PE2) ->
+  guarded_bij PV1 PE1 vmap emap G G' ->
+  guarded_bij PV2 PE2 vmap emap G G' ->
   boundary_consistent PV1 PV2 PE1 PE2 vmap emap G G' ->
-  guarded_bij (Union _ PV1 PV2) (Union _ PE1 PE2)
-    (Union _ PV1' PV2') (Union _ PE1' PE2') vmap emap G G'.
+  guarded_bij (Union _ PV1 PV2) (Union _ PE1 PE2) vmap emap G G'.
 Proof.
   intros.
-  assert (HH: guarded_morphism (Union V PV1 PV2) (Union E PE1 PE2) 
-               (Union V' PV1' PV2') (Union E' PE1' PE2') vmap emap G G')
-  by (apply guarded_morphism_disjointed_union; destruct H0, H1; tauto).
-  destruct H as [? ?], H0 as [? [? [? [? ?]]]], H1 as [? [? [? [? ?]]]], H2 as [? [? [? ?]]].
-  rewrite Disjoint_spec in H, H3.
-  split; [| split; [| split; [| split]]]; intros.
+  destruct H as [vDISJ eDISJ].
+  rewrite Disjoint_spec in vDISJ, eDISJ.
+  split; intros.
   + rewrite Union_spec in *.
-    destruct H7 as [? _], H11 as [? _].
-    destruct H15, H16; auto.
-    - apply H7 in H15.
-      apply H11 in H16.
-      intro.
-      rewrite H18 in H15; eapply H; eauto.
-    - apply H11 in H15.
-      apply H7 in H16.
-      intro.
-      rewrite H18 in H15; eapply H; eauto.
+    destruct H, H3.
+    - apply (vmap_inj H0); auto.
+    - intro.
+      apply (vDISJ (vmap v1)).
+      * constructor; auto.
+      * rewrite H5; constructor; auto.
+    - intro.
+      apply (vDISJ (vmap v2)).
+      * constructor; auto.
+      * rewrite <- H5; constructor; auto.
+    - apply (vmap_inj H1); eauto.
   + rewrite Union_spec in *.
-    destruct H7 as [_ [? _]], H11 as [_ [? _]].
-    destruct H15, H16; auto.
-    - apply H7 in H15.
-      apply H11 in H16.
-      intro.
-      rewrite H18 in H15; eapply H3; eauto.
-    - apply H11 in H15.
-      apply H7 in H16.
-      intro.
-      rewrite H18 in H15; eapply H3; eauto.
-  + rewrite Union_spec in H15.
-    destruct H15; [apply H5 in H15 | apply H9 in H15];
-    destruct H15 as [v [? ?]]; exists v;
-    rewrite Union_spec; auto.
-  + rewrite Union_spec in H15.
-    destruct H15; [apply H6 in H15 | apply H10 in H15];
-    destruct H15 as [v [? ?]]; exists v;
-    rewrite Union_spec; auto.
-  + auto.
+    destruct H, H3.
+    - apply (emap_inj H0); auto.
+    - intro.
+      apply (eDISJ (emap e1)).
+      * constructor; auto.
+      * rewrite H5; constructor; auto.
+    - intro.
+      apply (eDISJ (emap e2)).
+      * constructor; auto.
+      * rewrite <- H5; constructor; auto.
+    - apply (emap_inj H1); eauto.
+  + apply guarded_morphism_disjointed_union; auto; apply bij_is_morphism; auto.
 Qed.
 
 Lemma guarded_bij_disjointed_weak_edge_prop_union: forall PV1 PV1' PE1' PV2 PV2' PE2' vmap emap (G: PreGraph V E) (G': PreGraph V' E'),

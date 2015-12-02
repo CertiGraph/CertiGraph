@@ -334,6 +334,150 @@ Definition app_same_set {A: Type} {P Q: Ensemble A} (H: Same_set P Q) (x: A): P 
 
 Coercion app_same_set : Same_set >-> Funclass.
 
+Definition respectful_set {A B: Type} (f: A -> B) (X: Ensemble B): Ensemble A := fun x => X (f x).
+
+Inductive image_set {A B: Type}: (A -> B) -> Ensemble A -> Ensemble B :=
+  | image_set_intro: forall (f: A -> B) (X: Ensemble A) (x: A), X x -> image_set f X (f x).
+
+Lemma image_set_spec: forall {A B: Type} f X (y: B),
+  image_set f X y <-> exists x: A, X x /\ y = f x.
+Proof.
+  intros.
+  split; intros.
+  + inversion H; subst.
+    exists x.
+    split; auto.
+  + destruct H as [x [?H ?H]].
+    subst.
+    constructor; auto.
+Qed.
+
+Instance respectful_set_proper {A B: Type}: Proper (pointwise_relation A (@eq B) ==> Same_set ==> Same_set) respectful_set.
+Proof.
+  intros.
+  do 2 (hnf; intros).
+  rewrite Same_set_spec in *.
+  unfold pointwise_relation in *.
+  unfold respectful_set.
+  firstorder.
+  + rewrite <- H; firstorder.
+  + rewrite H; firstorder.
+Qed.
+
+Instance image_set_proper {A B: Type}: Proper (pointwise_relation A (@eq B) ==> Same_set ==> Same_set) image_set.
+Proof.
+  intros.
+  do 2 (hnf; intros).
+  rewrite Same_set_spec in *.
+  unfold pointwise_relation in *.
+  intros.
+  rewrite !image_set_spec.
+  firstorder.
+  + subst. rewrite H; firstorder.
+  + subst. rewrite <- H; firstorder.
+Qed.
+
+Lemma resp_Included: forall {A B: Type} (f: A -> B) (X Y: Ensemble B),
+  Included X Y ->
+  Included (respectful_set f X) (respectful_set f Y).
+Proof.
+  intros.
+  unfold respectful_set, Included, In.
+  intro x.
+  apply H.
+Qed.
+
+Lemma resp_Same_set: forall {A B: Type} (f: A -> B) (X Y: Ensemble B),
+  Same_set X Y ->
+  Same_set (respectful_set f X) (respectful_set f Y).
+Proof.
+  intros.
+  unfold Same_set in *.
+  split; apply resp_Included; tauto.
+Qed.
+
+Lemma resp_Intersection: forall {A B: Type} (f: A -> B) (X Y: Ensemble B),
+  Same_set
+   (respectful_set f (Intersection _ X Y))
+   (Intersection _ (respectful_set f X) (respectful_set f Y)).
+Proof.
+  intros.
+  rewrite Same_set_spec; intros x.
+  unfold respectful_set.
+  rewrite !Intersection_spec.
+  reflexivity.
+Qed.
+
+Lemma resp_Union: forall {A B: Type} (f: A -> B) (X Y: Ensemble B),
+  Same_set
+   (respectful_set f (Union _ X Y))
+   (Union _ (respectful_set f X) (respectful_set f Y)).
+Proof.
+  intros.
+  rewrite Same_set_spec; intros x.
+  unfold respectful_set.
+  rewrite !Union_spec.
+  reflexivity.
+Qed.
+
+Lemma resp_Complement: forall {A B: Type} (f: A -> B) (X: Ensemble B),
+  Same_set
+   (respectful_set f (Complement _ X))
+   (Complement _ (respectful_set f X)).
+Proof.
+  intros.
+  rewrite Same_set_spec; intros x.
+  unfold respectful_set, Complement, In.
+  reflexivity.
+Qed.
+
+Lemma image_Included: forall {A B: Type} (f: A -> B) (X Y: Ensemble A),
+  Included X Y ->
+  Included (image_set f X) (image_set f Y).
+Proof.
+  intros.
+  unfold Included, In.
+  intro y.
+  rewrite !image_set_spec.
+  intros [x [? ?]].
+  exists x; split; auto.
+  apply H; auto.
+Qed.
+
+Lemma image_Same_set: forall {A B: Type} (f: A -> B) (X Y: Ensemble A),
+  Same_set X Y ->
+  Same_set (image_set f X) (image_set f Y).
+Proof.
+  intros.
+  unfold Same_set in *.
+  split; apply image_Included; tauto.
+Qed.
+
+Lemma image_Intersection: forall {A B: Type} (f: A -> B) (X Y: Ensemble A),
+  Included
+   (image_set f (Intersection _ X Y))
+   (Intersection _ (image_set f X) (image_set f Y)).
+Proof.
+  intros.
+  unfold Included, In; intros y.
+  rewrite !Intersection_spec, !image_set_spec.
+  intros [x [? ?]].
+  rewrite Intersection_spec in H.
+  split; exists x; tauto.
+Qed.
+
+Lemma image_Union: forall {A B: Type} (f: A -> B) (X Y: Ensemble A),
+  Same_set
+   (image_set f (Union _ X Y))
+   (Union _ (image_set f X) (image_set f Y)).
+Proof.
+  intros.
+  rewrite Same_set_spec; intros y.
+  rewrite !Union_spec, !image_set_spec.
+  pose proof (fun x => Union_spec A x X Y).
+  firstorder.
+Qed.
+
 (*
 
 Lemma Finite_spec: forall A U, Finite A U <-> exists l, NoDup l /\ forall x, In x l <-> Ensembles.In A U x.

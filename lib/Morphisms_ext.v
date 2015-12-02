@@ -46,6 +46,7 @@ Proof.
   apply H.
 Qed.
 
+(* surjection properties are not used now. *)
 Lemma guarded_surj_Included: forall {X Y} (f: X -> Y) (PX: X -> Prop) (PY PY0: Y -> Prop),
   (forall y, PY y -> exists x, PX x /\ f x = y) ->
   (forall x, PX x -> PY0 (f x)) ->
