@@ -431,6 +431,16 @@ Proof.
   reflexivity.
 Qed.
 
+Lemma resp_Disjoint: forall {A B: Type} (f: A -> B) (X Y: Ensemble B),
+  Disjoint _ X Y ->
+  Disjoint _ (respectful_set f X) (respectful_set f Y).
+Proof.
+  intros.
+  rewrite <- Included_Complement_Disjoint in *.
+  rewrite <- resp_Complement.
+  apply resp_Included; auto.
+Qed.
+
 Lemma image_Included: forall {A B: Type} (f: A -> B) (X Y: Ensemble A),
   Included X Y ->
   Included (image_set f X) (image_set f Y).
@@ -476,6 +486,16 @@ Proof.
   rewrite !Union_spec, !image_set_spec.
   pose proof (fun x => Union_spec A x X Y).
   firstorder.
+Qed.
+
+Lemma image_Disjoint_rev: forall {A B: Type} (f: A -> B) (X Y: Ensemble A),
+  Disjoint _ (image_set f X) (image_set f Y) ->
+  Disjoint _ X Y.
+Proof.
+  intros.
+  rewrite Disjoint_spec in *.
+  intros x ? ?.
+  apply (H (f x)); constructor; auto.
 Qed.
 
 (*
