@@ -1231,6 +1231,41 @@ Definition pregraph_join (PV: V -> Prop) (PE: E -> Prop) (G1 G2: Graph) : Prop :
   (forall e : E, evalid G1 e -> evalid G2 e -> src G1 e = src G2 e) /\
   (forall e : E, evalid G1 e -> evalid G2 e -> dst G1 e = dst G2 e).
 
+Lemma pregraph_join_prop_aux: forall (PV1 PV2: V -> Prop) (PE1 PE2: E -> Prop) (G11 G12 G21 G22: Graph),
+  Same_set PV1 PV2 ->
+  Same_set PE1 PE2 ->
+  G11 ~=~ G12 ->
+  G21 ~=~ G22 ->
+  pregraph_join PV1 PE1 G11 G21 ->
+  pregraph_join PV2 PE2 G12 G22.
+Proof.
+  intros.
+  split; [| split; [| split]]; intros.
+  + eapply Prop_join_proper; [.. | apply (proj1 H3)]; symmetry; auto.
+    - rewrite Same_set_spec; destruct H1; auto.
+    - rewrite Same_set_spec; destruct H2; auto.
+  + eapply Prop_join_proper; [.. | apply (proj1 (proj2 H3))]; symmetry; auto.
+    - rewrite Same_set_spec; destruct H1 as [_ [? _]]; auto.
+    - rewrite Same_set_spec; destruct H2 as [_ [? _]]; auto.
+  + assert (evalid G11 e) by (rewrite (proj1 (proj2 H1)); auto).
+    assert (evalid G21 e) by (rewrite (proj1 (proj2 H2)); auto).
+    rewrite <- (proj1 (proj2 (proj2 H1))) by auto.
+    rewrite <- (proj1 (proj2 (proj2 H2))) by auto.
+    apply (proj1 (proj2 (proj2 H3))); auto.
+  + assert (evalid G11 e) by (rewrite (proj1 (proj2 H1)); auto).
+    assert (evalid G21 e) by (rewrite (proj1 (proj2 H2)); auto).
+    rewrite <- (proj2 (proj2 (proj2 H1))) by auto.
+    rewrite <- (proj2 (proj2 (proj2 H2))) by auto.
+    apply (proj2 (proj2 (proj2 H3))); auto.
+Qed.
+
+Instance pregraph_join_proper: Proper (Same_set ==> Same_set ==> structurally_identical ==> structurally_identical ==> iff) pregraph_join.
+Proof.
+  do 4 (hnf; intros).
+  split; apply pregraph_join_prop_aux; auto; symmetry; auto.
+Qed.
+Global Existing Instance pregraph_join_proper.
+
 Lemma vertex_join_guarded_si: forall (PV: V -> Prop) (G1 G2: Graph),
   vertex_join PV G1 G2 ->
   guarded_structurally_identical (Complement _ PV) (Complement _ (weak_edge_prop PV G2)) G1 G2.
