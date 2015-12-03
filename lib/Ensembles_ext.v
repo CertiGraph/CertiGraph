@@ -173,8 +173,6 @@ Instance complement_proper (V: Type): Proper (Same_set ==> Same_set) (Complement
   tauto.
 Defined.
 
-Existing Instance complement_proper.
-
 Instance Union_proper (V: Type): Proper (Same_set ==> Same_set ==> Same_set) (Union V).
   hnf; intros.
   hnf; intros.
@@ -184,7 +182,14 @@ Instance Union_proper (V: Type): Proper (Same_set ==> Same_set ==> Same_set) (Un
   firstorder.
 Defined.
 
-Existing Instance Union_proper.
+Instance Disjoint_proper (V: Type): Proper (Same_set ==> Same_set ==> iff) (Disjoint V).
+  hnf; intros.
+  hnf; intros.
+  rewrite Same_set_spec in *.
+  unfold pointwise_relation in *.
+  rewrite !Disjoint_spec.
+  firstorder.
+Defined.
 
 Lemma left_Included_Union {A: Type}: forall P Q, Included P (Union A P Q).
 Proof.
