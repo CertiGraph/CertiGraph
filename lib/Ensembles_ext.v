@@ -446,6 +446,17 @@ Proof.
   apply resp_Included; auto.
 Qed.
 
+Lemma resp_Empty: forall {A B: Type} (f: A -> B),
+  Same_set (respectful_set f (Empty_set _)) (Empty_set _).
+Proof.
+  intros.
+  rewrite Same_set_spec.
+  intro x.
+  pose proof Noone_in_empty A.
+  pose proof Noone_in_empty B.
+  firstorder.
+Qed.
+
 Lemma image_Included: forall {A B: Type} (f: A -> B) (X Y: Ensemble A),
   Included X Y ->
   Included (image_set f X) (image_set f Y).
@@ -501,6 +512,18 @@ Proof.
   rewrite Disjoint_spec in *.
   intros x ? ?.
   apply (H (f x)); constructor; auto.
+Qed.
+
+Lemma image_Empty: forall {A B: Type} (f: A -> B),
+  Same_set (image_set f (Empty_set _)) (Empty_set _).
+Proof.
+  intros.
+  rewrite Same_set_spec.
+  intro x.
+  rewrite image_set_spec.
+  pose proof Noone_in_empty A.
+  pose proof Noone_in_empty B.
+  firstorder.
 Qed.
 
 (*
