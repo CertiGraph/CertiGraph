@@ -72,3 +72,15 @@ Proof.
   subst y.
   apply (H0 x); auto.
 Qed.
+
+Lemma image_set_proper_strong {A B: Type}: forall (f1 f2: A -> B) X,
+  guarded_pointwise_relation X eq f1 f2 ->
+  Same_set (image_set f1 X) (image_set f2 X).
+Proof.
+  intros.
+  rewrite Same_set_spec.
+  rewrite guarded_pointwise_relation_spec in H.
+  intro x.
+  rewrite !image_set_spec.
+  firstorder; subst; firstorder.
+Qed.
