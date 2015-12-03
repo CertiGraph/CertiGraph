@@ -504,7 +504,7 @@ Definition ecopy1 e (p1 p2: Graph * Graph') :=
   evalid g1 e /\
   pointwise_relation V eq (vmap g1) (vmap g2) /\
   guarded_pointwise_relation (Complement _ (eq e)) eq (emap g1) (emap g2) /\
-  (forall e, emap g2 e <> emap g1 e) /\
+  (forall e0, emap g2 e <> emap g1 e0) /\
   edge_union (eq (emap g2 e)) g1' g2' /\
   vmap g2 (src g2 e) = src g2' (emap g2 e) /\
   vmap g2 (dst g2 e) = dst g2' (emap g2 e).
@@ -934,7 +934,7 @@ Proof.
   intros until es_later.
   intros H_VVALID H_P P0 H_OUT_EDGES H_ES PV1 PE1_root [PRE_bij_root [PRE_si PRE_consi_root]]
          P_rec PV0 PE0 COPY DISJ.
-  destruct COPY as [COPY_si [COPY_gprv [COPY_gpre [COPY_son' [? [? COPY_bij]]]]]].
+  destruct COPY as [COPY_si [COPY_gprv [COPY_gpre [? [? COPY_bij]]]]].
   intros.
   specialize (PRE_consi_root e H1).
     replace (vmap g2 (dst g e)) with (vmap g1 (dst g e)).
@@ -947,15 +947,15 @@ Proof.
       unfold PE1_root in H1.
       pose proof reachable_by_foot_valid _ _ _ _ H2.
       eapply reachable_by_foot_prop in H2.
-      rewrite Intersection_spec in H2; destruct H2 as [? ?].
+      unfold P_rec in H2; rewrite Intersection_spec in H2; destruct H2 as [? ?].
       apply H4; clear H4; unfold Ensembles.In.
       exists (dst g e).
       split.
       + rewrite in_map_iff; eauto.
       + apply reachable_by_refl; auto.
     } Unfocus.
-    replace (emap g2 e) with (emap g1 e).
-    Focus 2. {
+    assert (emap g1 e = emap g2 e).
+    Focus 1. {
       rewrite guarded_pointwise_relation_spec in COPY_gpre.
       apply COPY_gpre.
       unfold Complement at 1, Ensembles.In.
@@ -964,7 +964,7 @@ Proof.
        (reachable_by g1 (dst g e0) (Intersection V P0 (Complement V PV1)))
         g g1 PRE_si.
       rewrite Same_set_spec in H3.
-      rewrite <- (H3 e) in H2; clear H3.
+      unfold P_rec in H2; rewrite <- (H3 e) in H2; clear H3.
       rewrite Intersection_spec in H2.
       destruct H2 as [? _]; unfold weak_edge_prop in H2.
       rewrite <- PRE_si in H2.
@@ -981,31 +981,33 @@ Proof.
       unfold Ensembles.In; congruence.
     } Unfocus.
     rewrite PRE_consi_root by auto.
+    rewrite <- PRE_si in H at 1 2.
+    rewrite <- weak_edge_prop_si in H by exact PRE_si.
     pose proof pregraph_join_guarded_si _ _ _ _ H.
-    rewrite guarded_si_spec in H2.
-    assert (Complement E' PE' (emap g1 e)).
+    rewrite guarded_si_spec in H3.
+    assert (Complement E' (image_set (emap g2) PE0) (emap g1 e)).
     Focus 1. {
       destruct DISJ.
-      rewrite Disjoint_spec in H4.
-      refine (H4 (emap g1 e) _).
-      apply (proj1 (proj2 (proj2 (proj2 (proj2 (proj2 PRE_bij_root)))))); auto.
+      rewrite Disjoint_spec in H5.
+      refine (H5 (emap g1 e) _).
+      rewrite H2.
+      constructor; auto.
     } Unfocus.
     assert (evalid g1' (emap g1 e)).
     Focus 1. {
-      pose proof (proj1 (proj2 (proj2 (proj2 (proj2 (proj2 (proj2 (proj2 PRE_bij_root)))))))).
-      specialize (H4 _ H1).
-      rewrite <- H4.
+      apply (evalid_preserved PRE_bij_root); auto.
       assert (In e es) by (rewrite H_ES; rewrite in_app_iff; tauto).
       rewrite H_OUT_EDGES in H5.
       destruct H5 as [? _].
       rewrite <- (proj1 (proj2 PRE_si)); auto.
     } Unfocus.
     assert (evalid g2' (emap g1 e))
-      by (rewrite (proj1 (proj2 H2)) in H4; auto).
-    apply (proj2 (proj2 (proj2 H2))); auto.
+      by (rewrite (proj1 (proj2 H3)) in H5; auto).
+    rewrite <- H2.
+    apply (proj2 (proj2 (proj2 H3))); auto.
 Qed.
 
-Lemma triple6_copy: forall (g g1 g2: Graph) (g1' g2': Graph') (P: V -> Prop) root es es_done e0 es_later son',
+Lemma triple6_copy: forall (g g1 g2: Graph) (g1' g2': Graph') (P: V -> Prop) root es es_done e0 es_later,
   vvalid g root ->
   P root ->
   let P0 := Intersection _ P (Complement _ (eq root)) in
@@ -1014,13 +1016,12 @@ Lemma triple6_copy: forall (g g1 g2: Graph) (g1' g2': Graph') (P: V -> Prop) roo
   let PV1 := reachable_by_through_set g (map (dst g) es_done) P0 in
   g ~=~ g1 /\
   guarded_pointwise_relation (Complement V (reachable_by g root P)) eq (vmap g) (vmap g1) ->
-  forall PV' PE',
-  copy (Intersection _ P0 (Complement _ PV1)) (dst g e0) son' PV' PE' (g1, g1') (g2, g2') ->
+  copy (Intersection _ P0 (Complement _ PV1)) (dst g e0) (g1, g1') (g2, g2') ->
   guarded_pointwise_relation (Complement V (reachable_by g root P)) eq (vmap g) (vmap g2).
 Proof.
-  intros until son'.
-  intros H_VVALID H_P P0 H_OUT_EDGES H_ES PV1 [PRE_si PRE_gpr] PV' PE' COPY.
-  destruct COPY as [COPY_si [COPY_gprv [COPY_gpre [COPY_son' [? [? COPY_bij]]]]]].
+  intros until es_later.
+  intros H_VVALID H_P P0 H_OUT_EDGES H_ES PV1 [PRE_si PRE_gpr] COPY.
+  destruct COPY as [COPY_si [COPY_gprv [COPY_gpre [? [? COPY_bij]]]]].
   transitivity (vmap g1); auto.
   eapply guarded_pointwise_relation_weaken; [| eauto].
   rewrite <- PRE_si.
@@ -1038,7 +1039,7 @@ Proof.
     tauto.
 Qed.
 
-Lemma triple7_copy: forall (g g1 g2: Graph) (g1' g2': Graph') (P: V -> Prop) root es es_done e0 es_later son',
+Lemma triple7_copy: forall (g g1 g2: Graph) (g1' g2': Graph') (P: V -> Prop) root es es_done e0 es_later,
   let PV := reachable_by g root P in
   let PE := Intersection E (weak_edge_prop PV g) (evalid g) in
   vvalid g root ->
@@ -1049,13 +1050,12 @@ Lemma triple7_copy: forall (g g1 g2: Graph) (g1' g2': Graph') (P: V -> Prop) roo
   let PV1 := reachable_by_through_set g (map (dst g) es_done) P0 in
   g ~=~ g1 /\
   guarded_pointwise_relation (Complement E PE) eq (emap g) (emap g1) ->
-  forall PV' PE',
-  copy (Intersection _ P0 (Complement _ PV1)) (dst g e0) son' PV' PE' (g1, g1') (g2, g2') ->
+  copy (Intersection _ P0 (Complement _ PV1)) (dst g e0) (g1, g1') (g2, g2') ->
   guarded_pointwise_relation (Complement E PE) eq (emap g) (emap g2).
 Proof.
-  intros until son'.
-  intros PV PE H_VVALID H_P P0 H_OUT_EDGES H_ES PV1 [PRE_si PRE_gpr] PV' PE' COPY.
-  destruct COPY as [COPY_si [COPY_gprv [COPY_gpre [COPY_son' [? [? COPY_bij]]]]]].
+  intros until es_later.
+  intros PV PE H_VVALID H_P P0 H_OUT_EDGES H_ES PV1 [PRE_si PRE_gpr] COPY.
+  destruct COPY as [COPY_si [COPY_gprv [COPY_gpre [? [? COPY_bij]]]]].
   transitivity (emap g1); auto.
   eapply guarded_pointwise_relation_weaken; [| eauto].
   erewrite <- weak_edge_prop_si by eauto.
@@ -1102,7 +1102,7 @@ Proof.
   congruence.
 Qed.
 
-Lemma triple1_ecopy1: forall (g g2 g3: Graph) (g2' g3': Graph') (P: V -> Prop) root es es_done e0 es_later e0',
+Lemma triple1_ecopy1: forall (g g2 g3: Graph) (g2' g3': Graph') (P: V -> Prop) root es es_done e0 es_later,
   vvalid g root ->
   P root ->
   let P0 := Intersection _ P (Complement _ (eq root)) in
@@ -1110,34 +1110,47 @@ Lemma triple1_ecopy1: forall (g g2 g3: Graph) (g2' g3': Graph') (P: V -> Prop) r
   es = es_done ++ e0 :: es_later ->
   let PV2 := reachable_by_through_set g (map (dst g) (es_done ++ e0 :: nil)) P0 in
   let PE2 := Intersection _ (weak_edge_prop PV2 g) (evalid g) in
-  forall PV2' PE2',
-  guarded_bij PV2 PE2 PV2' PE2' (vmap g2) (emap g2) g g2' /\
+  guarded_bij PV2 PE2 (vmap g2) (emap g2) g g2' /\
   g ~=~ g2 ->
-  ecopy1 e0 e0' (g2, g2') (g3, g3') ->
-  guarded_bij PV2 PE2 PV2' PE2' (vmap g3) (emap g3) g g3'.
+  ecopy1 e0 (g2, g2') (g3, g3') ->
+  guarded_bij PV2 PE2 (vmap g3) (emap g3) g g3'.
 Proof.
-  intros until e0'.
-  intros H_VVALID H_P P0 H_OUT_EDGES H_ES PV2 PE2 PV2' PE2' [PRE_bij PRE_si]
+  intros until es_later.
+  intros H_VVALID H_P P0 H_OUT_EDGES H_ES PV2 PE2 [PRE_bij PRE_si]
          ECOPY.
   destruct ECOPY as [ECOPY_si [ECOPY_valid [ECOPY_prv [ECOPY_gpre
-                     [? [? [? [? ?]]]]]]]]. 
+                     [? [? [? ?]]]]]]]. 
 
-  eapply guarded_bij_proper_aux1; [.. | exact PRE_bij].
+  eapply guarded_bij_proper_aux1; [.. | eapply guarded_bij_proper_aux2; [.. |exact PRE_bij]].
+  + reflexivity.
+  + apply edge_union_guarded_si in H0.
+    eapply guarded_si_weaken; [apply Included_Full_set | | exact H0].
+    unfold Included, Complement, Ensembles.In; intros e' ?.
+    rewrite image_set_spec in H3.
+    destruct H3 as [e [? ?]].
+    specialize (H e).
+    rewrite guarded_pointwise_relation_spec in ECOPY_gpre.
+    rewrite <- (ECOPY_gpre e) in H4; [congruence |].
+    unfold Complement, Ensembles.In; intro.
+    subst e.
+    unfold PE2 in H3.
+    rewrite Intersection_spec in H3.
+    destruct H3 as [? _].
+    unfold weak_edge_prop in H3.
+    assert (In e0 es) by (rewrite H_ES, in_app_iff; simpl; tauto).
+    rewrite H_OUT_EDGES in H5.
+    destruct H5.
+    rewrite H6 in H3.
+    apply reachable_by_through_set_foot_prop in H3.
+    unfold P0 in H3.
+    rewrite Intersection_spec in H3.
+    apply (proj2 H3); reflexivity.
   + apply guarded_pointwise_relation_pointwise_relation; auto.
   + eapply guarded_pointwise_relation_weaken; [| apply ECOPY_gpre].
     eapply triple1_aux1_ecopy; eauto.
-  + reflexivity.
-  + apply edge_union_guarded_si in H1.
-    eapply guarded_si_weaken; [apply Included_Full_set | | exact H1].
-    unfold Included, Complement, Ensembles.In; intros e' ?.
-    pose proof (proj1 (proj2 (proj2 (proj2 PRE_bij)))).
-    specialize (H5 _ H4).
-    destruct H5 as [e [? ?]].
-    specialize (H0 e).
-    rewrite H6 in H0; auto.
 Qed.
 
-Lemma triple2_ecopy1: forall (g g2 g3: Graph) (g2' g3': Graph') (P: V -> Prop) root es es_done e0 es_later e0',
+Lemma triple2_ecopy1: forall (g g2 g3: Graph) (g2' g3': Graph') (P: V -> Prop) root es es_done e0 es_later,
   vvalid g root ->
   P root ->
   let P0 := Intersection _ P (Complement _ (eq root)) in
@@ -1146,17 +1159,17 @@ Lemma triple2_ecopy1: forall (g g2 g3: Graph) (g2' g3': Graph') (P: V -> Prop) r
   let PV2 := reachable_by_through_set g (map (dst g) (es_done ++ e0 :: nil)) P0 in
   let PE2 := Intersection _ (weak_edge_prop PV2 g) (evalid g) in
   g ~=~ g2 ->
-  ecopy1 e0 e0' (g2, g2') (g3, g3') ->
+  ecopy1 e0 (g2, g2') (g3, g3') ->
   g ~=~ g3.
 Proof.
-  intros until e0'.
+  intros until es_later.
   intros H_VVALID H_P P0 H_OUT_EDGES H_ES PV2 PE2 PRE_si ECOPY.
   destruct ECOPY as [ECOPY_si [ECOPY_valid [ECOPY_prv [ECOPY_gpre
-                     [? [? [? [? ?]]]]]]]]. 
+                     [? [? [? ?]]]]]]]. 
   rewrite PRE_si; auto.
 Qed.
 
-Lemma triple3_ecopy1: forall (g g2 g3: Graph) (g2' g3': Graph') (P: V -> Prop) root es es_done e0 es_later e0',
+Lemma triple3_ecopy1: forall (g g2 g3: Graph) (g2' g3': Graph') (P: V -> Prop) root es es_done e0 es_later,
   vvalid g root ->
   P root ->
   let P0 := Intersection _ P (Complement _ (eq root)) in
@@ -1164,18 +1177,17 @@ Lemma triple3_ecopy1: forall (g g2 g3: Graph) (g2' g3': Graph') (P: V -> Prop) r
   es = es_done ++ e0 :: es_later ->
   let PV2 := reachable_by_through_set g (map (dst g) (es_done ++ e0 :: nil)) P0 in
   let PE2 := Intersection _ (weak_edge_prop PV2 g) (evalid g) in
-  forall PV2' PE2',
-  guarded_bij PV2 PE2 PV2' PE2' (vmap g2) (emap g2) g g2' /\
+  guarded_bij PV2 PE2 (vmap g2) (emap g2) g g2' /\
   g ~=~ g2 /\
   (forall e, PE2 e -> ~ PV2 (dst g e) -> vmap g2 (dst g e) = dst g2' (emap g2 e)) ->
-  ecopy1 e0 e0' (g2, g2') (g3, g3') ->
+  ecopy1 e0 (g2, g2') (g3, g3') ->
   (forall e, PE2 e -> ~ PV2 (dst g e) -> vmap g3 (dst g e) = dst g3' (emap g3 e)).
 Proof.
-  intros until e0'.
-  intros H_VVALID H_P P0 H_OUT_EDGES H_ES PV2 PE2 PV2' PE2' [PRE_bij [PRE_si PRE_disj]]
+  intros until es_later.
+  intros H_VVALID H_P P0 H_OUT_EDGES H_ES PV2 PE2 [PRE_bij [PRE_si PRE_disj]]
          ECOPY.
   destruct ECOPY as [ECOPY_si [ECOPY_valid [ECOPY_prv [ECOPY_gpre
-                     [? [? [? [? ?]]]]]]]]. 
+                     [? [? [? ?]]]]]]]. 
 
   intros.
   replace (vmap g3 (dst g e)) with (vmap g2 (dst g e)) by (apply ECOPY_prv).
@@ -1183,34 +1195,34 @@ Proof.
   Focus 2. {
     rewrite guarded_pointwise_relation_spec in ECOPY_gpre.
     apply ECOPY_gpre.
-    exact (triple1_aux1_ecopy g P root _ _ _ _ H_VVALID H_P H_OUT_EDGES H_ES e H4).
+    exact (triple1_aux1_ecopy g P root _ _ _ _ H_VVALID H_P H_OUT_EDGES H_ES e H3).
   } Unfocus.
   replace (dst g3' (emap g2 e)) with (dst g2' (emap g2 e)).
   Focus 2. {
     assert (evalid g2' (emap g2 e)).
     Focus 1. {
-      rewrite <- (proj1 (proj2 (proj2 (proj2 (proj2 (proj2 (proj2 (proj2 PRE_bij)))))))) by auto.
-      unfold PE2 in H4; rewrite Intersection_spec in H4.
+      rewrite <- (evalid_preserved PRE_bij) by auto.
+      unfold PE2 in H3; rewrite Intersection_spec in H3.
       tauto.
     } Unfocus.
     assert (evalid g3' (emap g2 e)).
     Focus 1. {
-      apply edge_union_guarded_si in H1.
-      rewrite guarded_si_spec in H1.
-      destruct H1 as [_ [? _]].
-      rewrite <- H1; [auto |].
-      apply H0.
+      apply edge_union_guarded_si in H0.
+      rewrite guarded_si_spec in H0.
+      destruct H0 as [_ [? _]].
+      rewrite <- H0; [auto |].
+      apply H.
     } Unfocus.
-    apply edge_union_guarded_si in H1.
-    rewrite guarded_si_spec in H1.
-    destruct H1 as [_ [_ [_ ?]]].
-    apply H1; auto.
-    apply H0.
+    apply edge_union_guarded_si in H0.
+    rewrite guarded_si_spec in H0.
+    destruct H0 as [_ [_ [_ ?]]].
+    apply H0; auto.
+    apply H.
   } Unfocus.
   apply PRE_disj; auto.
 Qed.
 
-Lemma triple4_ecopy1: forall (g g2 g3: Graph) (g2' g3': Graph') (P: V -> Prop) root es es_done e0 es_later root' e0',
+Lemma triple4_ecopy1: forall (g g2 g3: Graph) (g2' g3': Graph') (P: V -> Prop) root es es_done e0 es_later,
   vvalid g root ->
   P root ->
   let P0 := Intersection _ P (Complement _ (eq root)) in
@@ -1219,86 +1231,95 @@ Lemma triple4_ecopy1: forall (g g2 g3: Graph) (g2' g3': Graph') (P: V -> Prop) r
   es = es_done ++ e0 :: es_later ->
   let PV2 := reachable_by_through_set g (map (dst g) es_done) P0 in
   let PE2_root e := In e es_done in
-  forall PE2'_root,
-  guarded_bij (eq root) PE2_root (eq root') PE2'_root (vmap g2) (emap g2) g2 g2' /\
+  guarded_bij (eq root) PE2_root (vmap g2) (emap g2) g2 g2' /\
   g ~=~ g2 ->
-  ecopy1 e0 e0' (g2, g2') (g3, g3') ->
+  ecopy1 e0 (g2, g2') (g3, g3') ->
   let PV3 := reachable_by_through_set g (map (dst g) (es_done ++ e0 :: nil)) P0 in
   let PE3_root e := In e (es_done ++ e0 :: nil) in
-  let PE3'_root := Union _ PE2'_root (eq e0') in
-  guarded_bij (eq root) PE3_root (eq root') PE3'_root (vmap g3) (emap g3) g3 g3'.
+  guarded_bij (eq root) PE3_root (vmap g3) (emap g3) g3 g3'.
 Proof.
-  intros until e0'.
-  intros H_VVALID H_P P0 H_OUT_EDGES H_NODUP H_ES PV2 PE2_root PE2'_root [PRE_bij_root PRE_si] ECOPY PV3 PE3_root PE3'_root.
+  intros until es_later.
+  intros H_VVALID H_P P0 H_OUT_EDGES H_NODUP H_ES PV2 PE2_root [PRE_bij_root PRE_si] ECOPY PV3 PE3_root.
   destruct ECOPY as [ECOPY_si [ECOPY_valid [ECOPY_prv [ECOPY_gpre
-                     [? [? [? [? ?]]]]]]]].
+                     [? [? [? ?]]]]]]].
   rewrite <- (Union_Empty_set (eq root)).
-  rewrite <- (Union_Empty_set (eq root')).
   assert (Same_set PE3_root (Union _ PE2_root (eq e0))).
   Focus 1. {
     rewrite Same_set_spec; intros e; rewrite Union_spec.
     unfold PE3_root; rewrite in_app_iff; simpl; tauto.
   } Unfocus.
-  rewrite H4; clear H4.
+  rewrite H3; clear H3.
   eapply guarded_bij_disjointed_union.
   + split.
-    - apply Disjoint_Empty_set_right.
+    - rewrite image_Empty. apply Disjoint_Empty_set_right.
     - rewrite Disjoint_spec; intros e' ? ?.
-      apply (proj1 (proj2 (proj2 (proj2 PRE_bij_root)))) in H4.
-      destruct H4 as [e [? ?]].
+      rewrite image_set_spec in H3.
+      rewrite image_set_spec in H4.
+      destruct H3 as [e [? ?]].
       subst e'.
-      revert H5; apply H0.
-  + eapply guarded_bij_proper_aux1; [.. | exact PRE_bij_root].
+      destruct H4 as [e00 [? ?]].
+      subst e00.
+      rewrite <- H5 in H.
+      specialize (H e).
+      rewrite guarded_pointwise_relation_spec in ECOPY_gpre.
+      rewrite ECOPY_gpre in H; [congruence |].
+      unfold Complement, Ensembles.In; intro.
+      subst e.
+      unfold PE2_root in H3.
+      rewrite H_ES in H_NODUP.
+      apply NoDup_app_not_in with (y := e0) in H_NODUP; auto.
+      simpl in H_NODUP; tauto.
+  + eapply guarded_bij_proper_aux1; [.. | eapply guarded_bij_proper_aux2; [.. |exact PRE_bij_root]].
+    - apply si_guarded_si; auto.
+    - apply edge_union_guarded_si in H0.
+      eapply guarded_si_weaken; [apply Included_Full_set | | exact H0].
+      unfold Included, Complement, Ensembles.In; intros e' ?.
+      rewrite image_set_spec in H3.
+      destruct H3 as [e [? ?]].
+      subst e'.
+      rewrite guarded_pointwise_relation_spec in ECOPY_gpre.
+      rewrite <- (ECOPY_gpre e); [apply H |].
+      unfold Complement, Ensembles.In; intro.
+      subst e.
+      unfold PE2_root in H3.
+      rewrite H_ES in H_NODUP.
+      apply NoDup_app_not_in with (y := e0) in H_NODUP; auto.
+      simpl in H_NODUP; tauto.
     - apply guarded_pointwise_relation_pointwise_relation; auto.
     - eapply guarded_pointwise_relation_weaken; [| exact ECOPY_gpre].
       unfold Included, Complement, Ensembles.In; intros e ?.
       rewrite H_ES in H_NODUP.
       apply NoDup_app_not_in with (y := e) in H_NODUP; [| auto].
       simpl in H_NODUP; tauto.
-    - apply si_guarded_si; auto.
-    - apply edge_union_guarded_si in H1.
-      eapply guarded_si_weaken; [apply Included_Full_set | | exact H1].
-      unfold Included, Complement, Ensembles.In; intros e' ?.
-      apply (proj1 (proj2 (proj2 (proj2 PRE_bij_root)))) in H4.
-      destruct H4 as [e [? ?]].
-      subst e'.
-      apply H0.
-  + split; [| split; [| split; [| split; [| split; [| split; [| split; [| split; [| split]]]]]]]]; intros.
-    - inversion H4.
+  + split; [.. | split]; intros.
+    - inversion H3.
     - congruence.
-    - inversion H4.
-    - exists e0; split; [auto | congruence].
-    - inversion H4.
-    - subst e; congruence.
-    - inversion H4.
+    - inversion H3.
     - subst e.
       assert (evalid g3 e0).
       Focus 1. {
         assert (In e0 es) by (rewrite H_ES, in_app_iff; simpl; tauto).
-        rewrite H_OUT_EDGES in H4.
-        destruct H4 as [? _].
+        rewrite H_OUT_EDGES in H3.
+        destruct H3 as [? _].
         pose proof proj1 (proj2 PRE_si) e0.
         pose proof proj1 (proj2 ECOPY_si) e0.
         tauto.
       } Unfocus.
       assert (evalid g3' (emap g3 e0)).
       Focus 1. {
-        rewrite <- H.
-        destruct H1 as [_ [? _]].
-        specialize (H1 e0').
+        destruct H0 as [_ [? _]].
+        specialize (H0 (emap g3 e0)).
         tauto.
       } Unfocus.
       tauto.
-    - inversion H5.
-    - inversion H5.
+    - inversion H4.
+    - inversion H4.
   + split; [| split; [| split]]; intros.
-    - inversion H5.
+    - inversion H4.
     - subst e.
-      rewrite <- H.
       auto.
-    - inversion H5.
+    - inversion H4.
     - subst e.
-      rewrite <- H.
       auto.
 Qed.    
 
