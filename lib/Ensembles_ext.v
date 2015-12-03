@@ -276,6 +276,15 @@ Proof.
   firstorder.
 Qed.
 
+Lemma Union_right_Disjoint: forall A P Q R,
+  Disjoint A R (Union A P Q) <-> Disjoint A R P /\ Disjoint A R Q.
+Proof.
+  intros.
+  rewrite !Disjoint_spec.
+  pose proof (fun x => Union_spec A x P Q).
+  firstorder.
+Qed.
+
 Lemma Included_Complement_Disjoint: forall A P Q,
   (Included P (Complement _ Q)) <-> Disjoint A P Q.
 Proof.
