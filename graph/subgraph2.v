@@ -5,6 +5,7 @@ Require Import Coq.Classes.Morphisms.
 Require Import Coq.Classes.Equivalence.
 Require Import RamifyCoq.lib.Coqlib.
 Require Import RamifyCoq.lib.Ensembles_ext.
+Require Import RamifyCoq.lib.relation_list.
 Require Import RamifyCoq.lib.List_ext.
 Require Import RamifyCoq.lib.Equivalence_ext.
 Require Import RamifyCoq.lib.EquivDec_ext.
@@ -1321,4 +1322,142 @@ Proof.
   split; [| split; [| split]]; firstorder.
 Qed.
 
+Lemma edge_union_Empty: forall (G: Graph), edge_union (Empty_set _) G G.
+Proof.
+  intros.
+  split; [| split; [| split]]; auto.
+  + intros; reflexivity.
+  + intros.
+    pose proof Empty_set_iff E e.
+    tauto.
+Qed.
+
+Lemma pregraph_join_Empty: forall (G: Graph),pregraph_join (Empty_set _) (Empty_set _) G G.
+Proof.
+  intros.
+  split; [| split; [| split]]; auto.
+  + pose proof Empty_set_iff V.
+    split; firstorder.
+  + pose proof Empty_set_iff E.
+    split; firstorder.
+Qed.
+
+Definition remove_pregraph (G: Graph) (PV: V -> Prop) (PE: E -> Prop) : Graph :=
+  Build_PreGraph _ _
+   (fun v => vvalid G v /\ ~ PV v)
+   (fun e => evalid G e /\ ~ PE e)
+   (src G)
+   (dst G).
+
+Lemma vertex_join_is_pregraph_join: forall G1 G2 PV,
+  (forall v, PV v \/ ~ PV v) ->
+  (vertex_join PV G1 G2 <-> pregraph_join PV (Intersection _ (weak_edge_prop PV G2) (evalid G2)) G1 G2).
+Proof.
+  intros.
+  unfold vertex_join, pregraph_join.
+  split; (split; [| split; [| split]]); try tauto.
+  + destruct H0 as [_ [? _]].
+    split; intro e; intros.
+    - rewrite Intersection_spec.
+      unfold weak_edge_prop.
+      rewrite H0.
+      specialize (H (src G2 e)).
+      tauto.
+    - rewrite H0 in H1.
+      rewrite Intersection_spec in H2.
+      unfold weak_edge_prop in H2.
+      tauto.
+  + destruct H0 as [_ [? _]].
+    destruct H0.
+    intro e.
+    specialize (H0 e); specialize (H1 e).
+    rewrite Intersection_spec in H0, H1.
+    unfold weak_edge_prop in H0,H1.
+    specialize (H (src G2 e)).
+    tauto.
+Qed.
+
+Lemma remove_pregraph_pregraph_join: forall G PV PE,
+  (forall v, PV v \/ ~ PV v) ->
+  (forall e, PE e \/ ~ PE e) ->
+  Included PV (vvalid G) ->
+  Included PE (evalid G) ->
+  pregraph_join PV PE (remove_pregraph G PV PE) G.
+Proof.
+  intros.
+  unfold remove_pregraph.
+  split; [| split; [| split]]; simpl.
+  + split; intro v.
+    - specialize (H v); specialize (H1 v).
+      tauto.
+    - tauto.
+  + split; intro e.
+    - specialize (H0 e); specialize (H2 e).
+      tauto.
+    - tauto.
+  + intros; auto.
+  + intros; auto.
+Qed.
+
+Lemma id_edge_union: forall G PE,
+  Included PE (evalid G) ->
+  edge_union PE G G.
+Proof.
+  intros.
+  split; [| split; [| split]]; intros; try tauto.
+  specialize (H e).
+  tauto.
+Qed.
+
+Lemma Prop_join_assoc: forall A (P1 P2 P3 Q R: A -> Prop),
+  Prop_join P1 Q P2 ->
+  Prop_join P2 R P3 ->
+  Prop_join P1 (Union _ Q R) P3.
+Proof.
+  unfold Prop_join.
+  intros.
+  destruct H, H0.
+  split; intro a; rewrite Union_spec.
+  + rewrite H0, H.
+    tauto.
+  + intros.
+    destruct H4; firstorder.
+Qed.
+
+Lemma pregraph_join_pregraph_join: forall G1 G2 G3 PV PE PV' PE',
+  pregraph_join PV PE G1 G2 ->
+  pregraph_join PV' PE' G2 G3 ->
+  pregraph_join (Union _ PV PV') (Union _ PE PE') G1 G3.
+Proof.
+  unfold pregraph_join.
+  intros.
+  destruct H as [? [? [? ?]]], H0 as [? [? [? ?]]].
+  split; [| split; [| split]]; intros.
+  + apply Prop_join_assoc with (P2 := vvalid G2); auto.
+  + apply Prop_join_assoc with (P2 := evalid G2); auto.
+  + assert (evalid G2 e) by (destruct H4; firstorder).
+    rewrite H2, H5; auto.
+  + assert (evalid G2 e) by (destruct H4; firstorder).
+    rewrite H3, H6; auto.
+Qed.
+
+(*
+Lemma PJ_VJ_comm: forall PV PE,
+  same_relation Graph
+   (relation_list (vertex_join PV :: edge_union PE :: nil))
+   (relation_list (edge_union PE :: vertex_join PV :: nil)).
+Proof.
+  intros.
+  split; [admit | intros].
+  intros G1 G3 H.
+  destruct_relation_list G2 in H.
+
+Lemma PJ_VJ_EU_PJ: forall PV PE PV0 PE0 PV' PE' (G1 G4 G5: Graph),
+  relation_list (pregraph_join PV PE :: vertex_join PV0 :: edge_union PE0 :: nil) G1 G4 ->
+  pregraph_join PV' PE' G4 G5 ->
+  relation_list (pregraph_join (Union _ PV PV') (Union _ PE PE') :: vertex_join PV0 :: edge_union PE0 :: nil) G1 G4.
+Proof.
+  intros.
+  destruct_relation_list G2 G3 in H.
+*)
 End ExpandPartialGraph.

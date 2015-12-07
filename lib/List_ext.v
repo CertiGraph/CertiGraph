@@ -684,6 +684,59 @@ Fixpoint prefixes {A: Type} (l: list A): list (list A) :=
   | a :: l0 => nil :: map (cons a) (prefixes l0)
   end.
 
+Lemma map_id: forall {A: Type} (l: list A),
+  map id l = l.
+Proof.
+  intros.
+  induction l; auto.
+  simpl.
+  rewrite IHl; auto.
+Qed.
+
+Lemma length_prefixes: forall {A: Type} (l: list A),
+  length (prefixes l) = length l.
+Proof.
+  intros.
+  induction l; auto.
+  simpl.
+  f_equal.
+  rewrite map_length.
+  auto.
+Qed.
+
+Lemma prefixes_app_1: forall {A: Type} (l: list A) (a: A),
+  prefixes (l +:: a) = prefixes l +:: l.
+Proof.
+  intros.
+  induction l; auto.
+  simpl.
+  rewrite IHl.
+  rewrite map_app.
+  auto.
+Qed.
+
+Lemma combine_app: forall {A B: Type} (la1 la2: list A) (lb1 lb2: list B),
+  length la1 = length lb1 ->
+  combine (la1 ++ la2) (lb1 ++ lb2) = combine la1 lb1 ++ combine la2 lb2.
+Proof.
+  intros.
+  revert lb1 H; induction la1; intros; destruct lb1; try now inversion H.
+  inv H.
+  simpl.
+  f_equal.
+  apply IHla1; auto.
+Qed.
+
+Lemma combine_prefixes_app_1: forall {A: Type} (l: list A) (a: A),
+  combine (prefixes (l +:: a)) (l +:: a) =
+  combine (prefixes l) l +:: (l, a).
+Proof.
+  intros.
+  rewrite prefixes_app_1.
+  rewrite combine_app by (apply length_prefixes).
+  auto.
+Qed.
+
 Lemma rev_list_ind: forall {A} (P: list A -> Prop),
   P nil ->
   (forall l a, P l -> P (l +:: a)) ->
