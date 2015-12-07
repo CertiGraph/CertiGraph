@@ -1677,11 +1677,7 @@ Lemma triple_loop: forall (g g1 g3: Graph) (g1' g3': Graph') (P: V -> Prop) root
   let P_rec := Intersection _ P0 (Complement _ PV1) in
   let PV0 := reachable_by g (dst g e0) P_rec in
   let PE0 := Intersection _ (weak_edge_prop PV0 g) (evalid g) in
-  compond_relation (copy P_rec (dst g e0)) (ecopy1 e0) (g1, g1') (g3, g3') /\
-  disjointed_guard
-     (Union _ (image_set (vmap g3) PV1) (image_set (vmap g3) (eq root))) (image_set (vmap g3) PV0)
-     (Union _ (image_set (emap g3) PE1) (image_set (emap g3) PE1_root)) (image_set (emap g3) PE0) /\ (* From spatial fact *)
-  Same_set (Union _ PV1 (Complement _ PV1)) (Full_set _) -> (* From weak mark lemma *)
+  edge_copy g root P (es_done, e0) (g1, g1') (g3, g3') ->
   let PV3 := reachable_by_through_set g (map (dst g) (es_done ++ e0 :: nil)) P0 in
   let PE3 := Intersection _ (weak_edge_prop PV3 g) (evalid g) in
   let PE3_root e := In e (es_done ++ e0 :: nil) in
@@ -1697,55 +1693,12 @@ Lemma triple_loop: forall (g g1 g3: Graph) (g1' g3': Graph') (P: V -> Prop) root
      (image_set (emap g3) PE3) (image_set (emap g3) PE3_root).
 Proof.
   intros.
-  destruct H5 as [? [DISJ DEC]].
-  apply compond_relation_spec in H5.
-  destruct H5 as [[g2 g2'] [COPY ECOPY]].
-
-  assert (disjointed_guard
-           (Union V' (image_set (vmap g2) PV1)
-              (image_set (vmap g2) (eq root))) (image_set (vmap g2) PV0)
-           (Union E' (image_set (emap g2) PE1) (image_set (emap g2) PE1_root))
-           (image_set (emap g2) PE0)) as DISJ2.
-  Focus 1. {
-    destruct DISJ.
-    destruct ECOPY as [ECOPY_si [ECOPY_valid [ECOPY_prv [ECOPY_gpre
-                     [? [? [? ?]]]]]]]. 
-
-    split.
-    + eapply Disjoint_proper; [apply Union_proper | | exact H5];
-      apply image_set_proper_strong;
-      apply guarded_pointwise_relation_pointwise_relation; exact ECOPY_prv.
-    + assert (src g e0 = root).
-      Focus 1. {
-        assert (In e0 es) by (rewrite H3; rewrite in_app_iff; simpl; tauto).
-        rewrite H1 in H11.
-        unfold out_edges in H11.
-        tauto.
-      } Unfocus.
-      eapply Disjoint_proper; [apply Union_proper | | exact H6];
-      apply image_set_proper_strong;
-      (eapply guarded_pointwise_relation_weaken; [ | exact ECOPY_gpre]);
-      unfold Included, Complement, Ensembles.In; intros; intro; subst x.
-      - unfold PE1, weak_edge_prop in H12.
-        rewrite Intersection_spec in H12.
-        rewrite H11 in H12; destruct H12 as [? _].
-        apply reachable_by_through_set_foot_prop in H12.
-        unfold P0 in H12.
-        rewrite Intersection_spec in H12.
-        apply (proj2 H12), eq_refl.
-      - rewrite H3 in H2.
-        apply NoDup_app_not_in with (y := e0) in H2; auto.
-        simpl in H2; tauto.
-      - unfold PE0, weak_edge_prop in H12.
-        rewrite Intersection_spec in H12.
-        rewrite H11 in H12; destruct H12 as [? _].
-        apply reachable_by_foot_prop in H12.
-        unfold P0 in H12.
-        unfold P_rec, P0 in H12; rewrite !Intersection_spec in H12.
-        apply (proj2 (proj1 H12)), eq_refl.
-  } Unfocus.
-  apply disjointed_guard_left_union in DISJ2; clear DISJ.
-  destruct DISJ2 as [DISJ DISJ_root].
+  unfold edge_copy in H5.
+  destruct_relation_list p in H5; destruct p as [g2 g2'].
+  destruct H6 as [COPY [DISJ DEC]].
+  rename H5 into ECOPY.
+  apply disjointed_guard_left_union in DISJ.
+  destruct DISJ as [DISJ DISJ_root].
 
   assert
    (guarded_bij PV3 PE3 (vmap g2) (emap g2) g g2' /\
@@ -2032,7 +1985,7 @@ Proof.
 
     eapply triple_loop; [auto | auto | eauto | auto | eauto | ..].
     1: eapply H3; eauto.
-    admit.
+    auto.
 Qed.
 
 End LocalCopyGraph.
