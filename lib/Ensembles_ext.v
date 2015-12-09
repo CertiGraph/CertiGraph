@@ -217,6 +217,26 @@ Proof.
   tauto.
 Qed.
 
+Lemma Intersection_Full_left {A: Type}: forall P, Same_set (Intersection _ (Full_set A) P) P.
+Proof.
+  intros.
+  rewrite Same_set_spec.
+  hnf; intros.
+  rewrite Intersection_spec.
+  pose proof Full_set_spec A a.
+  tauto.
+Qed.
+
+Lemma Intersection_Full_right {A: Type}: forall P, Same_set (Intersection _ P (Full_set A)) P.
+Proof.
+  intros.
+  rewrite Same_set_spec.
+  hnf; intros.
+  rewrite Intersection_spec.
+  pose proof Full_set_spec A a.
+  tauto.
+Qed.
+
 Lemma Complement_Included_rev: forall (U: Type) P Q, Included P Q -> Included (Complement U Q) (Complement U P).
 Proof.
   unfold Included, Complement, Ensembles.In.
@@ -534,6 +554,18 @@ Proof.
   pose proof Noone_in_empty B.
   firstorder.
 Qed.
+
+Lemma image_single: forall {A B: Type} (f: A -> B) (a: A),
+  Same_set (image_set f (eq a)) (eq (f a)).
+Proof.
+  intros.
+  rewrite Same_set_spec.
+  intro x.
+  rewrite image_set_spec.
+  split; intros; eauto.
+  destruct H as [? [? ?]]; subst; auto.
+Qed.
+  
 
 (*
 

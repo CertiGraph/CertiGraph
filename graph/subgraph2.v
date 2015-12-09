@@ -1232,7 +1232,7 @@ Definition pregraph_join (PV: V -> Prop) (PE: E -> Prop) (G1 G2: Graph) : Prop :
   (forall e : E, evalid G1 e -> evalid G2 e -> src G1 e = src G2 e) /\
   (forall e : E, evalid G1 e -> evalid G2 e -> dst G1 e = dst G2 e).
 
-Lemma pregraph_join_prop_aux: forall (PV1 PV2: V -> Prop) (PE1 PE2: E -> Prop) (G11 G12 G21 G22: Graph),
+Lemma pregraph_join_proper_aux: forall (PV1 PV2: V -> Prop) (PE1 PE2: E -> Prop) (G11 G12 G21 G22: Graph),
   Same_set PV1 PV2 ->
   Same_set PE1 PE2 ->
   G11 ~=~ G12 ->
@@ -1263,9 +1263,41 @@ Qed.
 Instance pregraph_join_proper: Proper (Same_set ==> Same_set ==> structurally_identical ==> structurally_identical ==> iff) pregraph_join.
 Proof.
   do 4 (hnf; intros).
-  split; apply pregraph_join_prop_aux; auto; symmetry; auto.
+  split; apply pregraph_join_proper_aux; auto; symmetry; auto.
 Qed.
 Global Existing Instance pregraph_join_proper.
+
+Lemma edge_union_proper_aux: forall (PE1 PE2: E -> Prop) (G11 G12 G21 G22: Graph),
+  Same_set PE1 PE2 ->
+  G11 ~=~ G12 ->
+  G21 ~=~ G22 ->
+  edge_union PE1 G11 G21 ->
+  edge_union PE2 G12 G22.
+Proof.
+  intros.
+  split; [| split; [| split]]; intros.
+  + destruct H0, H1; firstorder.
+  + destruct H2 as [_ [? _]].
+    rewrite Same_set_spec in H; unfold pointwise_relation in H.
+    destruct H0 as [_ [? _]], H1 as [_ [? _]]; firstorder.
+  + assert (evalid G11 e) by (rewrite (proj1 (proj2 H0)); auto).
+    assert (evalid G21 e) by (rewrite (proj1 (proj2 H1)); auto).
+    rewrite <- (proj1 (proj2 (proj2 H0))) by auto.
+    rewrite <- (proj1 (proj2 (proj2 H1))) by auto.
+    apply (proj1 (proj2 (proj2 H2))); auto.
+  + assert (evalid G11 e) by (rewrite (proj1 (proj2 H0)); auto).
+    assert (evalid G21 e) by (rewrite (proj1 (proj2 H1)); auto).
+    rewrite <- (proj2 (proj2 (proj2 H0))) by auto.
+    rewrite <- (proj2 (proj2 (proj2 H1))) by auto.
+    apply (proj2 (proj2 (proj2 H2))); auto.
+Qed.
+
+Instance edge_union_proper: Proper (Same_set ==> structurally_identical ==> structurally_identical ==> iff) edge_union.
+Proof.
+  do 3 (hnf; intros).
+  split; apply edge_union_proper_aux; auto; symmetry; auto.
+Qed.
+Global Existing Instance edge_union_proper.
 
 Lemma vertex_join_guarded_si: forall (PV: V -> Prop) (G1 G2: Graph),
   vertex_join PV G1 G2 ->
@@ -1441,23 +1473,83 @@ Proof.
     rewrite H3, H6; auto.
 Qed.
 
-(*
-Lemma PJ_VJ_comm: forall PV PE,
-  same_relation Graph
-   (relation_list (vertex_join PV :: edge_union PE :: nil))
-   (relation_list (edge_union PE :: vertex_join PV :: nil)).
+Lemma edge_union_edge_union: forall G1 G2 G3 PE PE',
+  edge_union PE G1 G2 ->
+  edge_union PE' G2 G3 ->
+  edge_union (Union _ PE PE') G1 G3.
 Proof.
+  unfold edge_union.
   intros.
-  split; [admit | intros].
-  intros G1 G3 H.
-  destruct_relation_list G2 in H.
+  destruct H as [? [? [? ?]]], H0 as [? [? [? ?]]].
+  split; [| split; [| split]]; intros.
+  + firstorder.
+  + rewrite Union_spec, <- H4, <- H1.
+    tauto.
+  + assert (evalid G2 e) by (rewrite <- H1; firstorder).
+    rewrite H2, H5; auto.
+  + assert (evalid G2 e) by (rewrite <- H1; firstorder).
+    rewrite H3, H6; auto.
+Qed.
 
-Lemma PJ_VJ_EU_PJ: forall PV PE PV0 PE0 PV' PE' (G1 G4 G5: Graph),
-  relation_list (pregraph_join PV PE :: vertex_join PV0 :: edge_union PE0 :: nil) G1 G4 ->
-  pregraph_join PV' PE' G4 G5 ->
-  relation_list (pregraph_join (Union _ PV PV') (Union _ PE PE') :: vertex_join PV0 :: edge_union PE0 :: nil) G1 G4.
+Lemma edge_union_pregraph_join: forall G1 G3 PV PE PE',
+  relation_list (edge_union PE' :: pregraph_join PV PE :: nil) G1 G3 ->
+  relation_list (pregraph_join PV PE :: edge_union PE' :: nil) G1 G3.
 Proof.
   intros.
-  destruct_relation_list G2 G3 in H.
-*)
+  destruct_relation_list G2 in H.
+  destruct H as [? [? [? ?]]], H0 as [? [? [? ?]]].
+  split_relation_list (gpredicate_subgraph (Full_set _) (Union _ (evalid G1) PE) G3 :: nil);
+  unfold remove_pregraph;
+  (split; [| split; [| split]]); simpl; auto.
+  + rewrite Intersection_Full_right.
+    apply Same_set_spec in H0.
+    rewrite H0.
+    auto.
+  + clear - H4 H1.
+    destruct H1.
+    split.
+    - intro e.
+      rewrite Intersection_spec, Union_spec.
+      firstorder.
+    - firstorder.
+  + intros.
+    rewrite Intersection_spec, Union_spec in H8.
+    destruct H8 as [? _].
+    assert (evalid G2 e) by firstorder.
+    rewrite H5, H2; auto.
+  + intros.
+    rewrite Intersection_spec, Union_spec in H8.
+    destruct H8 as [? _].
+    assert (evalid G2 e) by firstorder.
+    rewrite H6, H3; auto.
+  + intros.
+    rewrite (Intersection_Full_right _ v).
+    tauto.
+  + intros.
+    rewrite Intersection_spec, Union_spec.
+    destruct H1.
+    rewrite H1, <- H4.
+    tauto.
+Qed.
+
+Lemma pregraph_join_edge_union_absorbe: forall G1 G2 PV PE,
+  relation_list (pregraph_join PV PE :: edge_union PE :: nil) G1 G2 ->
+  pregraph_join PV PE G1 G2.
+Proof.
+  intros.
+  destruct_relation_list G3 in H.
+  destruct H as [? [? [? ?]]], H0 as [? [? [? ?]]].
+  split; [| split; [| split]].
+  + apply Same_set_spec in H.
+    rewrite <- H; auto.
+  + clear - H1 H4.
+    destruct H4. firstorder.
+  + intros.
+    assert (evalid G3 e) by (destruct H4; firstorder).
+    rewrite H5, H2; auto.
+  + intros.
+    assert (evalid G3 e) by (destruct H4; firstorder).
+    rewrite H6, H3; auto.
+Qed.
+
 End ExpandPartialGraph.
