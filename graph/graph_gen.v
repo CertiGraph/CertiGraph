@@ -3,6 +3,7 @@ Require Import Coq.Sets.Ensembles.
 Require Import Coq.Sets.Finite_sets.
 Require Import Coq.Lists.List.
 Require Import VST.msl.Coqlib2.
+Require Import RamifyCoq.lib.Coqlib.
 Require Import RamifyCoq.lib.EquivDec_ext.
 Require Import RamifyCoq.graph.graph_model.
 Require Import RamifyCoq.graph.subgraph2.
@@ -15,6 +16,19 @@ Context {EE: EqDec E eq}.
 Context {DV DE: Type}.
 
 Notation Graph := (LabeledGraph V E DV DE).
+
+Definition empty_pregraph (v0: V): PreGraph V E :=
+  @Build_PreGraph V E EV EE (fun v => False) (fun e => False) (fun e => v0) (fun e => v0).
+
+Definition single_vertex_pregraph (v0: V): PreGraph V E :=
+  @Build_PreGraph V E EV EE (fun v => if equiv_dec v0 v then True else False) (fun e => False) (fun e => v0) (fun e => v0).
+
+Definition union_pregraph (PV : V -> Prop) (PE: E -> Prop) (PVD: forall v, Decidable (PV v)) (PED: forall e, Decidable (PE e)) (g1 g2: PreGraph V E): PreGraph V E :=
+  @Build_PreGraph V E EV EE
+    (fun v => if PVD v then vvalid g1 v else vvalid g2 v)
+    (fun e => if PED e then evalid g1 e else evalid g2 e)
+    (fun e => if PED e then src g1 e else src g2 e)
+    (fun e => if PED e then dst g1 e else dst g2 e).
 
 Definition update_vlabel (vlabel: V -> DV) (x: V) (d: DV) :=
   fun v => if equiv_dec x v then d else vlabel v.
@@ -43,6 +57,22 @@ Proof.
     if_tac; auto.
   + intros; simpl.
     reflexivity.
+Qed.
+
+Lemma pregraph_join_empty_single: forall v0 v1,
+  pregraph_join (eq v0) (Empty_set _) (empty_pregraph v1) (single_vertex_pregraph v0).
+Proof.
+  intros.
+  unfold empty_pregraph, single_vertex_pregraph.
+  split; [| split; [| split]]; simpl.
+  + split; intros.
+    - destruct_eq_dec v0 a; tauto.
+    - auto.
+  + split; intros.
+    - tauto.
+    - auto.
+  + intros; tauto.
+  + intros; tauto.
 Qed.
 
 End LABELED_GRAPH_GEN.
