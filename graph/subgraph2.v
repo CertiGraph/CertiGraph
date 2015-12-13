@@ -79,6 +79,14 @@ Proof.
   reflexivity.
 Qed.
 
+Lemma weak_edge_prop_Decidable: forall (P: V -> Prop) (g: PreGraph V E),
+  (forall v, Decidable (P v)) ->
+  (forall e, Decidable (weak_edge_prop P g e)).
+Proof.
+  intros.
+  unfold weak_edge_prop.
+  apply X.
+Qed.
 
 Definition gpredicate_subgraph (PV: V -> Prop) (PE: E -> Prop) (g: PreGraph V E): PreGraph V E :=
   Build_PreGraph EV EE (Intersection _ (vvalid g) PV) (Intersection _ (evalid g) PE) (src g) (dst g).
@@ -1489,6 +1497,26 @@ Proof.
     rewrite H2, H5; auto.
   + assert (evalid G2 e) by (rewrite <- H1; firstorder).
     rewrite H3, H6; auto.
+Qed.
+
+Lemma pregraph_join_edge_union: forall G1 G2 G3 PV (PE PE': E -> Prop),
+  (forall e, evalid G1 e -> PE' e -> False) ->
+  pregraph_join PV PE G1 G2 ->
+  edge_union PE' G2 G3 ->
+  pregraph_join PV (Union _ PE PE') G1 G3.
+Proof.
+  intros.
+  destruct H1 as [? [? [? ?]]], H0 as [? [? [? ?]]].
+  split; [| split; [| split]]; intros.
+  + clear - H0 H1.
+    destruct H0; split; firstorder.
+  + clear - H H5 H2.
+    pose proof (fun e => Union_spec E e PE PE').
+    destruct H5; split; firstorder.
+  + assert (evalid G2 e) by (rewrite (proj1 H5); auto).
+    rewrite H6, H3; auto.
+  + assert (evalid G2 e) by (rewrite (proj1 H5); auto).
+    rewrite H7, H4; auto.
 Qed.
 
 Lemma edge_union_pregraph_join: forall G1 G3 PV PE PE',

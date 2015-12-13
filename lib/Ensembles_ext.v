@@ -103,6 +103,17 @@ Proof.
   firstorder.
 Qed.
 
+Lemma Complement_Empty_set: forall A, Same_set (Complement A (Empty_set _)) (Full_set _).
+Proof.
+  intros.
+  rewrite Same_set_spec.
+  intro a.
+  unfold Complement, Ensembles.In.
+  pose proof Empty_set_iff _ a.
+  pose proof Full_set_spec _ a.
+  tauto.
+Qed.
+
 Lemma Intersection_comm: forall A P Q, Same_set (Intersection A P Q) (Intersection A Q P).
 Proof.
   intros.
@@ -190,6 +201,14 @@ Instance Disjoint_proper (V: Type): Proper (Same_set ==> Same_set ==> iff) (Disj
   rewrite !Disjoint_spec.
   firstorder.
 Defined.
+
+Lemma Union_Included {A: Type}: forall P Q R, Included (Union A P Q) R <-> Included P R /\ Included Q R.
+Proof.
+  intros.
+  unfold Included.
+  pose proof Union_iff A P Q.
+  firstorder.
+Qed.
 
 Lemma left_Included_Union {A: Type}: forall P Q, Included P (Union A P Q).
 Proof.
