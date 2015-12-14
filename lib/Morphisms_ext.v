@@ -4,6 +4,7 @@ Require Import RamifyCoq.lib.Coqlib.
 Require Import RamifyCoq.lib.Ensembles_ext.
 Require Import RamifyCoq.lib.Relation_ext.
 Require Import RamifyCoq.lib.Equivalence_ext.
+Require Import RamifyCoq.lib.EquivDec_ext.
 
 Definition app_sig {A B: Type} (P: A -> Prop) (f: A -> B): sig P -> B := fun a => f (proj1_sig a).
 
@@ -86,6 +87,30 @@ Proof.
   apply (H0 x); auto.
 Qed.
 
+Lemma is_guarded_inj_empty {A B: Type} (f: A -> B):
+  is_guarded_inj (Empty_set _) f.
+Proof.
+  intros.
+  exists (fun v => None).
+  intro b.
+  intros.
+  inv H.
+Qed.
+
+Lemma is_guarded_inj_single {A B: Type} {EqB: EqDec B eq} (f: A -> B) (a: A):
+  is_guarded_inj (eq a) f.
+Proof.
+  intros.
+  exists (fun b => if equiv_dec (f a) b then Some a else None).
+  intro b.
+  destruct_eq_dec (f a) b.
+  + split; auto.
+    intros; subst.
+    tauto.
+  + intros; subst.
+    auto.
+Qed.
+
 Lemma is_guarded_inj_rev_aux {A B: Type} (P: A -> Prop) (f: A -> B) (g: B -> option A) (a: A):
   P a ->
   is_rev_fun P f g ->
@@ -100,6 +125,26 @@ Proof.
     auto.
   + specialize (H0 a H).
     congruence.
+Qed.
+
+Lemma is_guarded_inj_rev_aux' {A B: Type} (P1 P2: A -> Prop) (f: A -> B) (g1: B -> option A) (a: A):
+  Disjoint B (image_set f P1) (image_set f P2) ->
+  P2 a ->
+  is_rev_fun P1 f g1 ->
+  g1 (f a) = None.
+Proof.
+  intros.
+  specialize (H1 (f a)).
+  destruct (g1 (f a)); auto.
+  destruct H1.
+  specialize (H2 a0 H1).
+  pose proof proj2 H2 eq_refl.
+
+  exfalso.
+  rewrite Disjoint_spec in H.
+  apply (H (f a0)).
+  + constructor; auto.
+  + rewrite H3; constructor; auto.
 Qed.
 
 Lemma is_guarded_inj_spec {A B: Type} (P: A -> Prop) (f: A -> B):
