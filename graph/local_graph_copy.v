@@ -106,8 +106,8 @@ Lemma triple_vcopy1: forall (g1 g2: Graph) root,
 Proof.
   intros g1 g2 root ? [VCOPY_si [VCOPY_gprv VCOPY_gpre]].
   split; [.. | split]; intros.
-  + congruence.
-  + inversion H0.
+  + apply is_guarded_inj_single.
+  + apply is_guarded_inj_empty.
   + subst v.
     unfold single_vertex_pregraph; simpl.
     destruct_eq_dec (vmap g2 root) (vmap g2 root); [| congruence].
@@ -1086,8 +1086,8 @@ Proof.
       apply NoDup_app_not_in with (y := e) in H_NODUP; [| auto].
       simpl in H_NODUP; tauto.
   + split; [.. | split]; intros.
-    - inversion H3.
-    - congruence.
+    - apply is_guarded_inj_empty.
+    - apply is_guarded_inj_single.
     - inversion H3.
     - subst e.
       assert (evalid g3 e0).
@@ -1108,11 +1108,11 @@ Proof.
       tauto.
     - inversion H4.
     - inversion H4.
-  + split; [| split; [| split]]; intros.
+  + split; split; intros.
+    - inversion H4.
     - inversion H4.
     - subst e.
       auto.
-    - inversion H4.
     - subst e.
       auto.
 Qed.
@@ -1579,7 +1579,7 @@ Proof.
     apply guarded_bij_disjointed_union; auto.
     - eapply guarded_bij_proper_aux1; [| reflexivity | exact PRE2].
       apply si_guarded_si; symmetry; auto.
-    - split; [| split; [| split]].
+    - split; split.
       * intros.
         exfalso.
         unfold PE1 in H3.
@@ -1589,6 +1589,14 @@ Proof.
         unfold P0 in H3.
         rewrite Intersection_spec in H3.
         unfold Complement, Ensembles.In in H3.
+        tauto.
+      * intros; apply PRE1; auto.
+        intro.
+        unfold PV1 in H7.
+        apply reachable_by_through_set_foot_prop in H7.
+        unfold P0 in H7.
+        rewrite Intersection_spec in H7.
+        unfold Complement, Ensembles.In in H7.
         tauto.
       * intros.
         exfalso.
@@ -1600,14 +1608,6 @@ Proof.
         unfold P0 in H5.
         rewrite Intersection_spec in H5.
         unfold Complement, Ensembles.In in H5.
-        tauto.
-      * intros; apply PRE1; auto.
-        intro.
-        unfold PV1 in H7.
-        apply reachable_by_through_set_foot_prop in H7.
-        unfold P0 in H7.
-        rewrite Intersection_spec in H7.
-        unfold Complement, Ensembles.In in H7.
         tauto.
       * intros; apply PRE3; auto.
 Qed.
@@ -1667,15 +1667,8 @@ Proof.
       split; [intros [] | intros []].
     } Unfocus.
     split; [| split; [| split; [| split; [| split; [| split; [| split; [| split]]]]]]].
-    + eapply guarded_bij_proper_aux1; [.. | eapply guarded_bij_weaken; [.. | exact H5]].
-      - symmetry.
-        apply si_guarded_si.
-        destruct H3; auto.
-      - reflexivity.
-      - rewrite H6.
-        apply Constructive_sets.Included_Empty.
-      - rewrite H7.
-        apply Included_refl.
+    + rewrite H6, H7.
+      apply guarded_bij_empty_empty.
     + destruct H3; auto.
     + intros.
       rewrite (H7 e) in H9.

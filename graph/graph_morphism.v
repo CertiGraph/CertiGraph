@@ -307,6 +307,19 @@ Definition boundary_consistent (PV1 PV2: V -> Prop) (PE1 PE2: E -> Prop) vmap em
   boundary_edge_consistent PE1 PV2 vmap emap G G' /\
   boundary_edge_consistent PE2 PV1 vmap emap G G'.
 
+Lemma guarded_bij_empty_empty: forall vmap emap (G: PreGraph V E) (G': PreGraph V' E'),
+  guarded_bij (Empty_set V) (Empty_set E) vmap emap G G'.
+Proof.
+  intros.
+  split; [.. | split].
+  + apply is_guarded_inj_empty.
+  + apply is_guarded_inj_empty.
+  + intros. inversion H.
+  + intros. inversion H.
+  + intros. inversion H.
+  + intros. inversion H.
+Qed.
+
 Lemma guarded_morphism_disjointed_union: forall PV1 PE1 PV2 PE2 vmap emap (G: PreGraph V E) (G': PreGraph V' E'),
   guarded_morphism PV1 PE1 vmap emap G G' ->
   guarded_morphism PV2 PE2 vmap emap G G' ->
@@ -349,7 +362,6 @@ Lemma guarded_bij_disjointed_union: forall PV1 PE1 PV2 PE2 vmap emap (G: PreGrap
 Proof.
   intros.
   destruct H as [vDISJ eDISJ].
-  (* rewrite Disjoint_spec in vDISJ, eDISJ. *)
   split; intros.
   + pose proof image_Disjoint_rev _ _  _ vDISJ.
     apply Disjoint_Union_Prop_join in H.
@@ -399,26 +411,6 @@ Proof.
     unfold PE2, weak_edge_prop in H6; rewrite Intersection_spec in H6.
     pose proof H5 _  H7 (proj1 H6); tauto.
   + intros; apply (H3 e); auto.
-Qed.
-
-Lemma is_guarded_inj_rev_aux' {A B: Type} (P1 P2: A -> Prop) (f: A -> B) (g1: B -> option A) (a: A):
-  Disjoint B (image_set f P1) (image_set f P2) ->
-  P2 a ->
-  is_rev_fun P1 f g1 ->
-  g1 (f a) = None.
-Proof.
-  intros.
-  specialize (H1 (f a)).
-  destruct (g1 (f a)); auto.
-  destruct H1.
-  specialize (H2 a0 H1).
-  pose proof proj2 H2 eq_refl.
-
-  exfalso.
-  rewrite Disjoint_spec in H.
-  apply (H (f a0)).
-  + constructor; auto.
-  + rewrite H3; constructor; auto.
 Qed.
 
 Lemma guarded_bij_disjointed_union_strong: forall PV1 PE1 PV2 PE2 vmap emap (G: PreGraph V E) (G1' G2': PreGraph V' E'),
@@ -571,22 +563,6 @@ Proof.
     - apply H; auto.
 Qed.
 
-(*
-Lemma guarded_bij_weaken: forall PV1 PE1 PV2 PE2 vmap emap (G: PreGraph V E) (G': PreGraph V' E'),
-  Included PV2 PV1 ->
-  Included PE2 PE1 ->
-  guarded_bij PV1 PE1 vmap emap G G' ->
-  guarded_bij PV2 PE2 vmap emap G G'.
-Proof.
-  intros.
-  split; intros.
-  + apply (vmap_inj H1); auto;
-    apply H; auto.
-  + apply (emap_inj H1); auto;
-    apply H0; auto.
-  + eapply guarded_morphism_weaken; eauto; apply bij_is_morphism; auto.
-Qed.
-*)
 Class GraphMorphismSetting (DV DE V' E': Type): Type := {
   co_vertex: DV -> V';
   co_edge: DE -> E'
