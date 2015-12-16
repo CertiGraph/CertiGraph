@@ -1,49 +1,169 @@
-Since the fully functional correctness proof needs reasoning about
-pure facts of graphs, we formally built a proof framework for
-mathematical graphs and proved many useful theorems in graph
-theory.
+As pointed out in \cite{hobor:ramification}, na\"iave attempts to
+verify graph-manipulating programms using the shape-only predicates
+are unsound. An obvious solution---especially for verifying functional
+correctness---is to involve mathematical graphs $\gamma$ in spatial
+predicates as a parameter. This means the verification needs a way to
+reason about pure facts of graphs. Thus we formalized a proof
+framework for mathematical graphs and proved a lot of useful theorems
+in graph theory. In this section, we will show how we built them.
+
+\subsection{Definitions of graph and other concepts}
 
 In mathematics, a (directed) graph is presented as an ordered pair
 $(V, E)$ where $V$ is a set of vertices or nodes and $E$ is a set of
 edges comprising a source node and a destination node. In our
 framework, we defined a similar structure with a small augmentation:
 we attached ``validity'' property to each vertex and edge in case of
-presenting partial graph structures with dangling edges. We call this
-structure \textbf{PreGraph}. Many concepts such as subgraph,
-reachability and structural equivalence are defined based
-on \textbf{PreGraph} in our framework.
+presenting partial graph structures with dangling edges. For example,
+in some cases, we need to give a representation to describe the
+difference of two graphs: $\gamma_1-\gamma_2$, which is not
+necessarily a graph because it may contain dangling edges. The
+``subtracted'' nodes are not really removed but are ruled out from
+valid nodes because they are still referred in edges part of the
+definition of $\gamma_1-\gamma_2$. So we call this
+structure \textbf{PreGraph}, which means it may be incomplete in
+comparison with a classical graph. In our framework, a mathematical
+graph $\gamma$ is a quadruple $(V, E, \Phi_V, \Phi_E)$ where $\Phi_V$ and
+$\Phi_E$ are validity predicates for vertices $V$ and edges $E$
+respectively. Many concepts such as reachability, subgraph and
+structural equivalence are defined based on PreGraph.
 
-However, there are still many useful and practical theorems can not
-derived barely from \textbf{PreGraph}. For example, when we compute
-some properties of a graph, we always hope the graph is finite
-connected. When we are proving the correctness of graph algorithm, we
-need a spectial node which represents null pointer. In some cases, we
-have to specify a graph in which the outdegree of each nodes is 2. All
-these additional properties are abstracted as different property
-bundles. We defined \textbf{LocalFiniteGraph}, \textbf{MathGraph}
-and \textbf{BiGraph} for the three requirements above
+\paragraph{Reachability}
+Among various properties derived from PreGraph, the most important one
+is reachability: $\gamma \models L_{n_2}^{n_1}(P)$. It means in
+PreGraph $\gamma$, node $n_2$ is reachable from node $n_1$ along the
+path $L$ and in the meantime, every node in $L$ satisfies predicate
+$P$. This property and other derived ones, such as
+\begin{equation*}
+\begin{split}
+\gamma\models n_1 \xrightarrow{P} n_2 &\triangleq \exists L, \gamma \models L_{n_2}^{n_1}(P),\\
+\gamma\models n_1 \leadsto n_2 &\triangleq \exists L, \gamma \models L_{n_2}^{n_1}(True)
+\end{split}
+\end{equation*}
+all play important roles in reasoning about mathematical facts. A
+bunch of key predicates in defining relations of math objects before
+and after program execution rely on these properties. We proved dozens
+of theorems about these properties. Some of them, like ``If there is a
+path from $s$ to $t$, then there is another path without duplicated
+nodes from $s$ to $t$'', are quite tricky to prove.
+
+\paragraph{Subgraph}
+When we tie a mathematical graph $\gamma$ to a spatial graph predicate
+$g(x, \gamma)$ (which will be explained later), $g$ ``owns'' only the
+spatial representation of the portion of $\gamma$ that is reachable
+from $x$; $\gamma$ may contain other nodes. When we reason about
+$g(x, \gamma)$, it is a very natural requirement to describe the
+reachable portion of $\gamma$ in pure part. We generalize this
+description as two concepts: partial graph $\gamma \uparrow P$ and
+subgraph $\gamma \downarrow P$ for any predicate $P$. To define
+$\gamma \uparrow P$ and $\gamma \downarrow P$, for any $\gamma=(V,
+E, \Phi_V, \Phi_E)$, we do not change $V$ and $E$ but change $\Phi_V$
+and $\Phi_E$ by adding proposition about satisfying $P$ for nodes. It
+means valid nodes in $\gamma \uparrow P$ and $\gamma \downarrow P$
+must satisfy $P$. The only difference between $\gamma \uparrow P$ and
+$\gamma \downarrow P$ is that in $\gamma \uparrow P$ the edges with
+its source node satisfying $P$ is valid, but in $\gamma \downarrow P$,
+valid edges means both its source and destination nodes satisfy
+$P$. With the concepts of partial graph and subgraph, we can express
+the reachable portion by instantiating $P$ as reachable predicate.
+
+\paragraph{Structural Equivalence}
+Many graph-manipulating algorithms adopt divide and conquer
+paradigm. Most of those algorithms contain certain invariants as parts
+of their specifications. Usually it means certain portion of graph
+before program execution is equivalent to the one after execution. To
+describe this relation, we introduced ``structural equivalence'' in
+our framework with the following definition:
+\begin{equation*}
+\begin{split}
+\gamma_1 \cong\gamma_2 \triangleq & \forall v, \Phi_{V1}(v) \leftrightarrow \Phi_{V2}(v) \wedge \\
+& \forall e, \Phi_{E1}(e) \leftrightarrow \Phi_{E2}(e) \wedge\\
+& \forall e, \Phi_{E1}(e) \rightarrow \Phi_{E2}(e) \rightarrow \text{src}_{\gamma_1}(e)=\text{src}_{\gamma_2}(e) \wedge\\
+& \forall e, \Phi_{E1}(e) \rightarrow \Phi_{E2}(e) \rightarrow \text{dst}_{\gamma_1}(e)=\text{dst}_{\gamma_2}(e)\\
+\end{split}
+\end{equation*}
+Informally it means $\gamma_1$ and $\gamma_2$ has the same vertex set
+and edge set. And any valid edge in both graphs is comprised by the
+same source and destination nodes. This relation can be used with
+subgraph and reachability to define many concrete relations in program
+verification.
+
+\subsection{Classification of various graphs}
+
+PreGraph and other definitions based on it are not sufficient for
+actural program verification. There are still many useful and
+practical properties can not derived barely from PreGraph. For
+example, when we compute some properties of a graph, we always hope
+the graph is finite connected. In the recursive defnition of a graph
+data structure, a node contains many pointers to point to its
+neighbors. The pointers could be null to indicate that they do not
+point to any. Thus we need a special node which represents null
+pointer. In some cases, we have to specify a graph in which the
+outdegree of each nodes is 2. All these additional properties are
+abstracted as different property bundles. We
+defined \textbf{LocalFiniteGraph}, \textbf{MathGraph}
+and \textbf{BiGraph} for the three requirements above,
 respectively. These abstractions made theorems more flexible and
 general.
 
-We proved quite many property bundle specific theorems. One typical
+(To be continued)
+
+\subsection{Computable Reachability}
+We proved quite many property-bundle specific theorems. One typical
 example of such theorems is the following one:
 \newtheorem{mythm}{Theorem}
 \begin{mythm}
-For any graph $g$ which is both \textbf{MathGraph}
-and \textbf{LocalFiniteGraph} and any node $x$ in $g$, if the number
-of nodes reachable from node $x$ is finite, then we can find a set
-which exactly contains the reachable nodes from $x$ in $g$.
+For any graph $\gamma$ which is both MathGraph and LocalFiniteGraph
+and any node $x$ in $\gamma$, if the number of nodes reachable from
+node $x$ is finite, then we can find a set which exactly contains the
+reachable nodes from $x$ in $\gamma$.
 \end{mythm}
+It sounds so trivial but the proof is totally non-trivial. The most
+obvious way to prove it---filtering reachable nodes from all valid
+nodes---is impossible: there is no decision procedure for reachability
+to select reachable nodes because the current definition of graphs is
+applicable for graphs containing infinite number of nodes
+(LocalFiniteGraph can still be infinite). In such a graph, one may
+need to inspect infinite number of paths to judge whether a node is
+reachable, which is a mission impossible.
 
+Another intuitive way to construct the reachable list is using a
+breadth-first searching algorithm to collect distinct nodes along the
+edges from $x$, which is employed in the proof. But still, a na\"ive
+implementation may not terminate. As mentioned in the premises of this
+lemma, the number of reachable nodes has an upper bound. So the
+actually working breadth-first searching function is constructed as
+follows. It holds a set of nodes collected so far and a queue for
+visited but unexpanded nodes. It keeps on expanding nodes from the
+queue to add distinct nodes to result set and the processing queue,
+until the processing queue is empty or the number of nodes collected
+reaches the upper bound. It is worth mentioning that constructing this
+function in Coq is hard. The direct implementation is rejected because
+it violates the syntactic criteria for recursion in Coq. It has to be
+defined in a sophisticated way: defining a well-founded relation and
+proving that the definition of the function fulfills the relation.
 
-* the DFS algorithm on math graphs
+After the establishing of the searching function, it is still hard to
+prove that the result generated by the function is the reachable
+list. There are two goals that needs to be proved: one is that all
+nodes collected by this searching function is reachable from $x$ and
+the other is all reachable nodes from $x$ is in the
+collected list of the searching function. The former one is relatively
+easier than the latter because for the latter case, there are two
+completeness proofs corresponding to the two different termination
+conditions. It is not known yet whether a proof by contradiction
+exists or is simpler.
 
-1.1. A lot of important theorems about graph are proved.
+\subsection{Application of the framework}
 
-2. Bi-graph.
-2.1. BiMaFin is defined as one kind of general graph.
-2.2. \texttt{pSpatialGraph\_Graph\_Bi} defined in "\texttt{spatial\_graph\_bi.v}" is the premise type class for defining BiMaFin.
+Graph-manipulating programms may also deal with other structures, such
+as dag (directed acyclic graph), tree or spanning tree. With the basic
+defintions in our framework, new structures can be defined
+easily. Acyclic graph is just a graph with an additional property:
+forall any $x$ and $y$, if $x$ is reachable from $y$, then $y$ is not
+reachable from $x$. Tree is similar. The additional property is that
+there is one and only one path from root to any reachable node from
+root. Spanning tree is a tree with the same reachable vertex set of
+the original graph.
 
-1. Classification of various graphs: MathGraph, BiGraph and FinGraph. Though now we put them all in a BiMaFin, there are still many general theorems based on only one of them. The abstraction and classification is useful.
-
-1.4. Dag predicate has not been defined as a whole. It is not hard to get fixed.
+(To be continued)
