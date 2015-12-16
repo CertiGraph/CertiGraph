@@ -12,3 +12,4 @@ _CoqProject
 *.log
 *.out
 *.pdf
+*.dvi
