@@ -45,6 +45,9 @@ DATA_STRUCTURE_FILES = \
 SAMPLE_MARK_FILES = \
   env_mark_bi.v verif_mark_bi.v env_garbage_collector.v env_dispose_bi.v verif_dispose_bi.v verif_mark_bi_dag.v
 
+HIP_FILES = \
+  hip_graphmark.v hip_graphmark_proofs.v
+
 CLIGHT_FILES = sample_mark/mark_bi.v sample_mark/garbage_collector.v sample_mark/dispose_bi.v
 
 C_FILES = $(CLIGHT_FILES:%.v=%.c)
@@ -57,6 +60,7 @@ NORMAL_FILES = \
   $(HEAP_MODEL_DIRECT_FILES:%.v=heap_model_direct/%.v) \
   $(DATA_STRUCTURE_FILES:%.v=data_structure/%.v) \
   $(SAMPLE_MARK_FILES:%.v=sample_mark/%.v) \
+  $(HIP_FILES:%.v=hip/%.v) \
   $(GRAPH_FILES:%.v=graph/%.v) \
   $(LIB_FILES:%.v=lib/%.v)
 
