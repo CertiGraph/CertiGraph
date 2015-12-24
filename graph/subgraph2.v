@@ -1130,6 +1130,16 @@ Proof.
   + apply H2; simpl in H3, H4; rewrite !Intersection_spec in H3, H4; tauto.
 Qed.
 
+Lemma guarded_si_dst1: forall PV PE (G1 G2: Graph),
+  guarded_structurally_identical PV PE G1 G2 ->
+  forall e, PE e -> evalid G1 e -> dst G1 e = dst G2 e.
+Proof.
+  intros.
+  rewrite guarded_si_spec in H.
+  apply (proj2 (proj2 (proj2 H))); auto.
+  rewrite <- (proj1 (proj2 H)); auto.
+Qed.
+
 Instance guarded_si_proper: Proper (@Same_set V ==> @Same_set E ==> eq ==> eq ==> iff) guarded_structurally_identical.
 Proof.
   intros.

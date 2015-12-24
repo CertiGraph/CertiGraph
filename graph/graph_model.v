@@ -350,6 +350,34 @@ Proof.
   tauto.
 Qed.
 
+Lemma si_src1: forall (g1 g2 : PreGraph Vertex Edge) (e: Edge), g1 ~=~ g2 -> evalid g1 e -> src g1 e = src g2 e.
+Proof.
+  intros.
+  destruct H as [? [? [? ?]]].
+  firstorder.
+Qed.
+
+Lemma si_src2: forall (g1 g2 : PreGraph Vertex Edge) (e: Edge), g1 ~=~ g2 -> evalid g2 e -> src g1 e = src g2 e.
+Proof.
+  intros.
+  destruct H as [? [? [? ?]]].
+  firstorder.
+Qed.
+
+Lemma si_dst1: forall (g1 g2 : PreGraph Vertex Edge) (e: Edge), g1 ~=~ g2 -> evalid g1 e -> dst g1 e = dst g2 e.
+Proof.
+  intros.
+  destruct H as [? [? [? ?]]].
+  firstorder.
+Qed.
+
+Lemma si_dst2: forall (g1 g2 : PreGraph Vertex Edge) (e: Edge), g1 ~=~ g2 -> evalid g2 e -> dst g1 e = dst g2 e.
+Proof.
+  intros.
+  destruct H as [? [? [? ?]]].
+  firstorder.
+Qed.
+
 Lemma out_edges_si: forall (g1 g2 : PreGraph Vertex Edge) (v: Vertex) (e : Edge),
     g1 ~=~ g2 -> (out_edges g1 v e <-> out_edges g2 v e).
 Proof.
