@@ -226,7 +226,17 @@ Proof.
   tauto.
 Qed.
 
-Lemma Union_Empty_set {A: Type}: forall P, Same_set (Union _ P (Empty_set A)) P.
+Lemma Union_Empty_left {A: Type}: forall P, Same_set (Union _ (Empty_set A) P) P.
+Proof.
+  intros.
+  rewrite Same_set_spec.
+  hnf; intros.
+  rewrite Union_spec.
+  pose proof Noone_in_empty A a.
+  tauto.
+Qed.
+
+Lemma Union_Empty_right {A: Type}: forall P, Same_set (Union _ P (Empty_set A)) P.
 Proof.
   intros.
   rewrite Same_set_spec.
@@ -383,6 +393,15 @@ Proof.
   intros; hnf; auto.
 Qed.
 
+Lemma Prop_join_Disjoint:
+  forall {A : Type} (P Q R : Ensemble A),
+  Prop_join P Q R -> Disjoint A P Q.
+Proof.
+  intros.
+  destruct H.
+  rewrite Disjoint_spec; auto.
+Qed.
+
 Lemma Disjoint_Union_Prop_join: forall A P Q, Disjoint A P Q -> Prop_join P Q (Union A P Q).
 Proof.
   intros.
@@ -396,13 +415,13 @@ Definition app_same_set {A: Type} {P Q: Ensemble A} (H: Same_set P Q) (x: A): P 
 
 Coercion app_same_set : Same_set >-> Funclass.
 
-Definition respectful_set {A B: Type} (f: A -> B) (X: Ensemble B): Ensemble A := fun x => X (f x).
+Definition respectful_set {A B: Type} (X: Ensemble B) (f: A -> B): Ensemble A := fun x => X (f x).
 
-Inductive image_set {A B: Type}: (A -> B) -> Ensemble A -> Ensemble B :=
-  | image_set_intro: forall (f: A -> B) (X: Ensemble A) (x: A), X x -> image_set f X (f x).
+Inductive image_set {A B: Type}: Ensemble A -> (A -> B) -> Ensemble B :=
+  | image_set_intro: forall (X: Ensemble A) (f: A -> B) (x: A), X x -> image_set X f (f x).
 
 Lemma image_set_spec: forall {A B: Type} f X (y: B),
-  image_set f X y <-> exists x: A, X x /\ y = f x.
+  image_set X f y <-> exists x: A, X x /\ y = f x.
 Proof.
   intros.
   split; intros.
@@ -414,7 +433,7 @@ Proof.
     constructor; auto.
 Qed.
 
-Instance respectful_set_proper {A B: Type}: Proper (pointwise_relation A (@eq B) ==> Same_set ==> Same_set) respectful_set.
+Instance respectful_set_proper {A B: Type}: Proper (Same_set ==> pointwise_relation A (@eq B) ==> Same_set) respectful_set.
 Proof.
   intros.
   do 2 (hnf; intros).
@@ -422,11 +441,11 @@ Proof.
   unfold pointwise_relation in *.
   unfold respectful_set.
   firstorder.
-  + rewrite <- H; firstorder.
-  + rewrite H; firstorder.
+  + rewrite <- H, <- H0; firstorder.
+  + rewrite H, H0; firstorder.
 Qed.
 
-Instance image_set_proper {A B: Type}: Proper (pointwise_relation A (@eq B) ==> Same_set ==> Same_set) image_set.
+Instance image_set_proper2 {A B: Type}: Proper (Same_set ==> eq ==> Same_set) (@image_set A B).
 Proof.
   intros.
   do 2 (hnf; intros).
@@ -435,13 +454,13 @@ Proof.
   intros.
   rewrite !image_set_spec.
   firstorder.
-  + subst. rewrite H; firstorder.
-  + subst. rewrite <- H; firstorder.
+  + subst. firstorder.
+  + subst. firstorder.
 Qed.
 
-Lemma resp_Included: forall {A B: Type} (f: A -> B) (X Y: Ensemble B),
+Lemma resp_Included: forall {A B: Type} (X Y: Ensemble B) (f: A -> B),
   Included X Y ->
-  Included (respectful_set f X) (respectful_set f Y).
+  Included (respectful_set X f) (respectful_set Y f).
 Proof.
   intros.
   unfold respectful_set, Included, In.
@@ -449,19 +468,19 @@ Proof.
   apply H.
 Qed.
 
-Lemma resp_Same_set: forall {A B: Type} (f: A -> B) (X Y: Ensemble B),
+Lemma resp_Same_set: forall {A B: Type} (X Y: Ensemble B) (f: A -> B),
   Same_set X Y ->
-  Same_set (respectful_set f X) (respectful_set f Y).
+  Same_set (respectful_set X f) (respectful_set Y f).
 Proof.
   intros.
   unfold Same_set in *.
   split; apply resp_Included; tauto.
 Qed.
 
-Lemma resp_Intersection: forall {A B: Type} (f: A -> B) (X Y: Ensemble B),
+Lemma resp_Intersection: forall {A B: Type} (X Y: Ensemble B) (f: A -> B),
   Same_set
-   (respectful_set f (Intersection _ X Y))
-   (Intersection _ (respectful_set f X) (respectful_set f Y)).
+   (respectful_set (Intersection _ X Y) f)
+   (Intersection _ (respectful_set X f) (respectful_set Y f)).
 Proof.
   intros.
   rewrite Same_set_spec; intros x.
@@ -470,10 +489,10 @@ Proof.
   reflexivity.
 Qed.
 
-Lemma resp_Union: forall {A B: Type} (f: A -> B) (X Y: Ensemble B),
+Lemma resp_Union: forall {A B: Type} (X Y: Ensemble B) (f: A -> B) ,
   Same_set
-   (respectful_set f (Union _ X Y))
-   (Union _ (respectful_set f X) (respectful_set f Y)).
+   (respectful_set (Union _ X Y) f)
+   (Union _ (respectful_set X f) (respectful_set Y f)).
 Proof.
   intros.
   rewrite Same_set_spec; intros x.
@@ -482,10 +501,10 @@ Proof.
   reflexivity.
 Qed.
 
-Lemma resp_Complement: forall {A B: Type} (f: A -> B) (X: Ensemble B),
+Lemma resp_Complement: forall {A B: Type} (X: Ensemble B) (f: A -> B),
   Same_set
-   (respectful_set f (Complement _ X))
-   (Complement _ (respectful_set f X)).
+   (respectful_set (Complement _ X) f)
+   (Complement _ (respectful_set X f)).
 Proof.
   intros.
   rewrite Same_set_spec; intros x.
@@ -493,9 +512,9 @@ Proof.
   reflexivity.
 Qed.
 
-Lemma resp_Disjoint: forall {A B: Type} (f: A -> B) (X Y: Ensemble B),
+Lemma resp_Disjoint: forall {A B: Type} (X Y: Ensemble B) (f: A -> B),
   Disjoint _ X Y ->
-  Disjoint _ (respectful_set f X) (respectful_set f Y).
+  Disjoint _ (respectful_set X f) (respectful_set Y f).
 Proof.
   intros.
   rewrite <- Included_Complement_Disjoint in *.
@@ -504,7 +523,7 @@ Proof.
 Qed.
 
 Lemma resp_Empty: forall {A B: Type} (f: A -> B),
-  Same_set (respectful_set f (Empty_set _)) (Empty_set _).
+  Same_set (respectful_set (Empty_set _) f) (Empty_set _).
 Proof.
   intros.
   rewrite Same_set_spec.
@@ -516,7 +535,7 @@ Qed.
 
 Lemma image_Included: forall {A B: Type} (f: A -> B) (X Y: Ensemble A),
   Included X Y ->
-  Included (image_set f X) (image_set f Y).
+  Included (image_set X f) (image_set Y f).
 Proof.
   intros.
   unfold Included, In.
@@ -529,17 +548,17 @@ Qed.
 
 Lemma image_Same_set: forall {A B: Type} (f: A -> B) (X Y: Ensemble A),
   Same_set X Y ->
-  Same_set (image_set f X) (image_set f Y).
+  Same_set (image_set X f) (image_set Y f).
 Proof.
   intros.
   unfold Same_set in *.
   split; apply image_Included; tauto.
 Qed.
 
-Lemma image_Intersection: forall {A B: Type} (f: A -> B) (X Y: Ensemble A),
+Lemma image_Intersection: forall {A B: Type} (X Y: Ensemble A) (f: A -> B),
   Included
-   (image_set f (Intersection _ X Y))
-   (Intersection _ (image_set f X) (image_set f Y)).
+   (image_set (Intersection _ X Y) f)
+   (Intersection _ (image_set X f) (image_set Y f)).
 Proof.
   intros.
   unfold Included, In; intros y.
@@ -549,10 +568,10 @@ Proof.
   split; exists x; tauto.
 Qed.
 
-Lemma image_Union: forall {A B: Type} (f: A -> B) (X Y: Ensemble A),
+Lemma image_Union: forall {A B: Type} (X Y: Ensemble A) (f: A -> B),
   Same_set
-   (image_set f (Union _ X Y))
-   (Union _ (image_set f X) (image_set f Y)).
+   (image_set (Union _ X Y) f)
+   (Union _ (image_set X f) (image_set Y f)).
 Proof.
   intros.
   rewrite Same_set_spec; intros y.
@@ -561,8 +580,8 @@ Proof.
   firstorder.
 Qed.
 
-Lemma image_Disjoint_rev: forall {A B: Type} (f: A -> B) (X Y: Ensemble A),
-  Disjoint _ (image_set f X) (image_set f Y) ->
+Lemma image_Disjoint_rev: forall {A B: Type} (X Y: Ensemble A) (f: A -> B),
+  Disjoint _ (image_set X f) (image_set Y f) ->
   Disjoint _ X Y.
 Proof.
   intros.
@@ -572,7 +591,7 @@ Proof.
 Qed.
 
 Lemma image_Empty: forall {A B: Type} (f: A -> B),
-  Same_set (image_set f (Empty_set _)) (Empty_set _).
+  Same_set (image_set (Empty_set _) f) (Empty_set _).
 Proof.
   intros.
   rewrite Same_set_spec.
@@ -583,8 +602,8 @@ Proof.
   firstorder.
 Qed.
 
-Lemma image_single: forall {A B: Type} (f: A -> B) (a: A),
-  Same_set (image_set f (eq a)) (eq (f a)).
+Lemma image_single: forall {A B: Type} (a: A) (f: A -> B),
+  Same_set (image_set (eq a) f) (eq (f a)).
 Proof.
   intros.
   rewrite Same_set_spec.
@@ -593,7 +612,6 @@ Proof.
   split; intros; eauto.
   destruct H as [? [? ?]]; subst; auto.
 Qed.
-  
 
 (*
 

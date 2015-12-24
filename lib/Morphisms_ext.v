@@ -60,6 +60,13 @@ Proof.
   apply H.
 Qed.
 
+Instance guarded_pointwise_relation_Proper {A B : Type}: Proper (Same_set ==> eq ==> eq ==> eq ==> iff) (@guarded_pointwise_relation A B).
+Proof.
+  do 4 (hnf; intros); subst.
+  destruct H.
+  split; apply guarded_pointwise_relation_weaken; auto.
+Defined.
+
 (* surjection properties are not used now. *)
 Lemma guarded_surj_Included: forall {X Y} (f: X -> Y) (PX: X -> Prop) (PY PY0: Y -> Prop),
   (forall y, PY y -> exists x, PX x /\ f x = y) ->
@@ -128,7 +135,7 @@ Proof.
 Qed.
 
 Lemma is_guarded_inj_rev_aux' {A B: Type} (P1 P2: A -> Prop) (f: A -> B) (g1: B -> option A) (a: A):
-  Disjoint B (image_set f P1) (image_set f P2) ->
+  Disjoint B (image_set P1 f) (image_set P2 f) ->
   P2 a ->
   is_rev_fun P1 f g1 ->
   g1 (f a) = None.
@@ -270,14 +277,12 @@ Proof.
   symmetry; auto.
 Qed.
 
-Lemma image_set_proper_strong {A B: Type}: forall (f1 f2: A -> B) X,
-  guarded_pointwise_relation X eq f1 f2 ->
-  Same_set (image_set f1 X) (image_set f2 X).
+Instance image_set_proper1 {A B: Type} (P: A -> Prop) : Proper (guarded_pointwise_relation P (@eq B) ==> Same_set) (image_set P).
 Proof.
-  intros.
+  hnf; intros.
   rewrite Same_set_spec.
   rewrite guarded_pointwise_relation_spec in H.
-  intro x.
+  intro z.
   rewrite !image_set_spec.
   firstorder; subst; firstorder.
 Qed.

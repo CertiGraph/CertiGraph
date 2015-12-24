@@ -21,7 +21,7 @@ Definition empty_pregraph (v0: V): PreGraph V E :=
   @Build_PreGraph V E EV EE (fun v => False) (fun e => False) (fun e => v0) (fun e => v0).
 
 Definition single_vertex_pregraph (v0: V): PreGraph V E :=
-  @Build_PreGraph V E EV EE (fun v => if equiv_dec v0 v then True else False) (fun e => False) (fun e => v0) (fun e => v0).
+  @Build_PreGraph V E EV EE (eq v0) (fun e => False) (fun e => v0) (fun e => v0).
 
 Definition union_pregraph (PV : V -> Prop) (PE: E -> Prop) (PVD: forall v, Decidable (PV v)) (PED: forall e, Decidable (PE e)) (g1 g2: PreGraph V E): PreGraph V E :=
   @Build_PreGraph V E EV EE

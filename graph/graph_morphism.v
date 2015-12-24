@@ -37,7 +37,7 @@ Record guarded_bij: Prop := {
 Lemma guarded_morphsm_evalid:
   guarded_morphism ->
   Included PE (evalid G) ->
-  Included (image_set emap PE) (evalid G').
+  Included (image_set PE emap) (evalid G').
 Proof.
   intros.
   unfold Included, Ensembles.In in H0 |- *.
@@ -52,7 +52,7 @@ Lemma guarded_morphism_weak_edge_prop:
   guarded_morphism ->
   Included PE (weak_edge_prop PV G) ->
   Included PE (evalid G) ->
-  Included (image_set emap PE) (weak_edge_prop (image_set vmap PV) G').
+  Included (image_set PE emap) (weak_edge_prop (image_set PV vmap) G').
 Proof.
   intros.
   unfold Included, Ensembles.In in H0, H1 |- *.
@@ -72,7 +72,7 @@ Lemma guarded_morphism_weak'_edge_prop:
   guarded_morphism ->
   Included PE (weak'_edge_prop PV G) ->
   Included PE (evalid G) ->
-  Included (image_set emap PE) (weak'_edge_prop (image_set vmap PV) G').
+  Included (image_set PE emap) (weak'_edge_prop (image_set PV vmap) G').
 Proof.
   intros.
   unfold Included, Ensembles.In in H0, H1 |- *.
@@ -107,7 +107,7 @@ Context {EE': EqDec E' eq}.
 
 Lemma guarded_morphism_proper_aux1: forall PV PE vmap emap (G1 G2: PreGraph V E) (G1' G2': PreGraph V' E'),
   guarded_structurally_identical PV PE G1 G2 ->
-  guarded_structurally_identical (image_set vmap PV) (image_set emap PE) G1' G2' ->
+  guarded_structurally_identical (image_set PV vmap) (image_set PE emap) G1' G2' ->
   guarded_morphism PV PE vmap emap G1 G1' ->
   guarded_morphism PV PE vmap emap G2 G2'.
 Proof.
@@ -192,7 +192,7 @@ Qed.
 
 Lemma guarded_bij_proper_aux1: forall PV PE vmap emap (G1 G2: PreGraph V E) (G1' G2': PreGraph V' E'),
   guarded_structurally_identical PV PE G1 G2 ->
-  guarded_structurally_identical (image_set vmap PV) (image_set emap PE) G1' G2' ->
+  guarded_structurally_identical (image_set PV vmap) (image_set PE emap) G1' G2' ->
   guarded_bij PV PE vmap emap G1 G1' ->
   guarded_bij PV PE vmap emap G2 G2'.
 Proof.
@@ -236,15 +236,21 @@ Proof.
     apply bij_is_morphism; auto.
 Qed.
 
-(*
-Instance guarded_morphism_proper1 (PV: V -> Prop) (PE: E -> Prop) : Proper (guarded_pointwise_relation PV eq ==> guarded_pointwise_relation PE eq ==> guarded_structurally_identical PV PE ==> guarded_structurally_identical (image_set vmap1 PV) (image_set emap1 PE) ==> iff) (guarded_morphism PV PE).
+Instance guarded_morphism_proper1 (PV: V -> Prop) (PE: E -> Prop) (vmap: V -> V') (emap: E -> E'): Proper (guarded_structurally_identical PV PE ==> guarded_structurally_identical (image_set PV vmap) (image_set PE emap) ==> iff) (guarded_morphism PV PE vmap emap).
 Proof.
   intros.
-  do 4 (hnf; intros).
+  do 2 (hnf; intros).
   split; apply guarded_morphism_proper_aux1; auto; symmetry; auto.
 Defined.
 Global Existing Instance guarded_morphism_proper1.
-*)
+
+Instance guarded_morphism_proper2 (PV: V -> Prop) (PE: E -> Prop) : Proper (guarded_pointwise_relation PV eq ==> guarded_pointwise_relation PE eq ==> eq ==> @eq (PreGraph V' E') ==> iff) (guarded_morphism PV PE).
+Proof.
+  intros.
+  do 4 (hnf; intros); subst.
+  split; apply guarded_morphism_proper_aux2; auto; symmetry; auto.
+Defined.
+Global Existing Instance guarded_morphism_proper2.
 
 Instance guarded_morphism_proper3: Proper (@Same_set V ==> @Same_set E ==> @eq (V -> V') ==> @eq (E -> E') ==> eq ==> eq ==> iff) guarded_morphism.
 Proof.
@@ -255,15 +261,22 @@ Proof.
 Defined.
 Global Existing Instance guarded_morphism_proper3.
 
-(*
-Instance guarded_bij_proper1 (PV: V -> Prop) (PE: E -> Prop) (PV': V' -> Prop) (PE': E' -> Prop): Proper (guarded_pointwise_relation PV eq ==> guarded_pointwise_relation PE eq ==> guarded_structurally_identical PV PE ==> guarded_structurally_identical PV' PE' ==> iff) (guarded_bij PV PE PV' PE').
+Instance guarded_bij_proper1 (PV: V -> Prop) (PE: E -> Prop) (vmap: V -> V') (emap: E -> E'): Proper (guarded_structurally_identical PV PE ==> guarded_structurally_identical (image_set PV vmap) (image_set PE emap) ==> iff) (guarded_bij PV PE vmap emap).
 Proof.
   intros.
-  do 4 (hnf; intros).
+  do 2 (hnf; intros).
   split; apply guarded_bij_proper_aux1; auto; symmetry; auto.
 Defined.
 Global Existing Instance guarded_bij_proper1.
-*)
+
+Instance guarded_bij_proper2 (PV: V -> Prop) (PE: E -> Prop) : Proper (guarded_pointwise_relation PV eq ==> guarded_pointwise_relation PE eq ==> eq ==> @eq (PreGraph V' E') ==> iff) (guarded_bij PV PE).
+Proof.
+  intros.
+  do 4 (hnf; intros); subst.
+  split; apply guarded_bij_proper_aux2; auto; symmetry; auto.
+Defined.
+Global Existing Instance guarded_bij_proper2.
+
 Instance guarded_bij_proper3: Proper (@Same_set V ==> @Same_set E ==> @eq (V -> V') ==> @eq (E -> E') ==> eq ==> eq ==> iff) guarded_bij.
 Proof.
   intros.
@@ -353,8 +366,8 @@ Qed.
 
 Lemma guarded_bij_disjointed_union: forall PV1 PE1 PV2 PE2 vmap emap (G: PreGraph V E) (G': PreGraph V' E'),
   disjointed_guard
-    (image_set vmap PV1) (image_set vmap PV2) 
-    (image_set emap PE1) (image_set emap PE2) ->
+    (image_set PV1 vmap) (image_set PV2 vmap) 
+    (image_set PE1 emap) (image_set PE2 emap) ->
   guarded_bij PV1 PE1 vmap emap G G' ->
   guarded_bij PV2 PE2 vmap emap G G' ->
   boundary_consistent PV1 PV2 PE1 PE2 vmap emap G G' ->
@@ -390,8 +403,8 @@ Lemma guarded_bij_disjointed_weak_edge_prop_union: forall PV1 PV2 vmap emap (G: 
   let PE1 := Intersection _ (weak_edge_prop PV1 G) (evalid G) in
   let PE2 := Intersection _ (weak_edge_prop PV2 G) (evalid G) in
   disjointed_guard
-    (image_set vmap PV1) (image_set vmap PV2) 
-    (image_set emap PE1) (image_set emap PE2) ->
+    (image_set PV1 vmap) (image_set PV2 vmap) 
+    (image_set PE1 emap) (image_set PE2 emap) ->
   guarded_bij PV1 PE1 vmap emap G G' ->
   guarded_bij PV2 PE2 vmap emap G G' ->
   (forall e, PE1 e -> PV2 (dst G e) -> vmap (dst G e) = dst G' (emap e)) ->
@@ -415,16 +428,16 @@ Qed.
 
 Lemma guarded_bij_disjointed_union_strong: forall PV1 PE1 PV2 PE2 vmap emap (G: PreGraph V E) (G1' G2': PreGraph V' E'),
   disjointed_guard
-    (image_set vmap PV1) (image_set vmap PV2) 
-    (image_set emap PE1) (image_set emap PE2) ->
+    (image_set PV1 vmap) (image_set PV2 vmap) 
+    (image_set PE1 emap) (image_set PE2 emap) ->
   guarded_bij PV1 PE1 vmap emap G G1' ->
   guarded_bij PV2 PE2 vmap emap G G2' ->
   boundary_edge_consistent PE1 PV2 vmap emap G G1' ->
   boundary_edge_consistent PE2 PV1 vmap emap G G2' ->
   exists G',
   guarded_bij (Union _ PV1 PV2) (Union _ PE1 PE2) vmap emap G G' /\
-  guarded_structurally_identical (image_set vmap PV1) (image_set emap PE1) G1' G' /\
-  guarded_structurally_identical (image_set vmap PV2) (image_set emap PE2) G2' G'.
+  guarded_structurally_identical (image_set PV1 vmap) (image_set PE1 emap) G1' G' /\
+  guarded_structurally_identical (image_set PV2 vmap) (image_set PE2 emap) G2' G'.
 Proof.
   intros.
   destruct (vmap_inj H0) as [vg1 ?].
