@@ -118,6 +118,17 @@ Proof.
   intro y; intros. simpl. apply is_null_def.
 Defined.
 
+Definition Graph_gen_update (G: Graph) (x : addr) (d: bool) (l r: addr) (Hi: in_math G x l r) (Hn: ~ is_null G x) : Graph.
+Proof.
+  refine (Graph_gen (@update_GeneralGraph _ _ _ _ _ _ _ G _ _ (biGraph G) x l r _) x d).
+  unfold update_LabeledGraph.
+  refine (Build_BiMaFin _
+                        (@update_BiGraph _ _ _ _ G _ _ (biGraph G) x l r)
+                        (@update_MathGraph _ _ _ _ G _ _ (biGraph G) (maGraph G) x l r Hi Hn)
+                        (@update_FiniteGraph _ _ _ _ G _ _ (biGraph G) (finGraph G) x l r) _).
+  intro y; intros. simpl. apply is_null_def.
+Qed.
+
 Lemma Graph_gen_spatial_spec: forall (G: Graph) (x: addr) (d d': bool) l r,
   vgamma G x = (d, l, r) ->
   (Graph_gen G x d') -=- (spatialgraph_vgen G x (d', l, r)).
