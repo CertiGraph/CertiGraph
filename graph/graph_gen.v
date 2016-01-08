@@ -157,79 +157,173 @@ Qed.
 
 End GENERAL_GRAPH_GEN.
 
-Section GRAPH_GEN.
+Section ADD_GRAPH_GEN.
 
-Variable V : Type.
-Variable E : Type.
-Context {EV: EqDec V eq}.
-Context {EE: EqDec E eq}.
-Notation Gph := (PreGraph V E).
+  Context {V E: Type}.
+  Context {EV: EqDec V eq}.
+  Context {EE: EqDec E eq}.
+  Context {DV DE: Type}.
+  Notation Gph := (PreGraph V E).
 
-Variable g: Gph.
-Variable left_out_edge right_out_edge: V -> E.
-Context {BI: BiGraph g left_out_edge right_out_edge}.
-Context {MA: MathGraph g}.
-
-Definition change_vvalid (v: V): Ensemble V :=
-  fun n => vvalid g n \/ n = v.
-
-Definition change_node_pred (P: NodePred V) (v: V) (Pv: {Pv : Prop & {Pv} + {~ Pv}}) : NodePred V.
-  intros.
-  exists (fun n: V => (if equiv_dec n v then projT1 Pv else P n)).
-  intros.
-  destruct_eq_dec x v.
-  + destruct Pv; auto.
-  + destruct P; simpl; auto.
-Defined.
-
-Definition change_evalid v : Ensemble E :=
-  fun e => evalid g e \/ src g e = v.
-
-Definition change_dst (v l r: V) : E -> V.
-  intro e.
-  refine (if equiv_dec (src g e) v then _ else dst g e).
-  exact (if left_or_right _ _ v e _H then l else r).
-Defined.
-
-Definition update_PreGraph v l r : Gph :=
-  Build_PreGraph EV EE (change_vvalid v) (change_evalid v) (src g) (change_dst v l r).
-
-Definition update_BiGraph v l r: BiGraph (update_PreGraph v l r) left_out_edge right_out_edge.
-  refine (Build_BiGraph _ _ _ _ _ _ _).
-  + unfold update_PreGraph; simpl.
-    unfold change_vvalid, change_evalid.
+  Variable g: Gph.
+  Variable left_out_edge right_out_edge: V -> E.
+  Context {BI: BiGraph g left_out_edge right_out_edge}.
+  Context {MA: MathGraph g}.
+  Context {FA: FiniteGraph g}.
+  
+  Definition change_vvalid (v: V): Ensemble V :=
+    fun n => vvalid g n \/ n = v.
+  
+  Definition change_node_pred (P: NodePred V) (v: V) (Pv: {Pv : Prop & {Pv} + {~ Pv}}) : NodePred V.
+  Proof.
     intros.
-    rewrite (left_sound g).
-    pose proof left_valid g x.
-    tauto.
-  + unfold update_PreGraph; simpl.
-    unfold change_vvalid, change_evalid.
+    exists (fun n: V => (if equiv_dec n v then projT1 Pv else P n)).
     intros.
-    rewrite (right_sound g).
-    pose proof right_valid g x.
-    tauto.
-  + unfold update_PreGraph; simpl; apply (bi_consist g).
-  + unfold update_PreGraph; simpl; apply (only_two_edges g).
-Defined.
+    destruct_eq_dec x v.
+    + destruct Pv; auto.
+    + destruct P; simpl; auto.
+  Defined.
 
-Definition in_math (v l r: V) : Type :=
-  forall y, In y (l :: r :: nil) -> {vvalid g y} + {y = v} + {is_null g y}.
+  Definition change_evalid v : Ensemble E := fun e => evalid g e \/ src g e = v.
 
-Definition update_MathGraph v l r (Hi: in_math v l r) (Hn: ~ is_null g v): MathGraph (update_PreGraph v l r).
-  refine (Build_MathGraph _ (is_null g) (is_null_dec g) _ _).
-  + unfold update_PreGraph, change_vvalid, change_evalid, change_dst; simpl.
-    intros.
-    destruct_eq_dec (src g e) v.
-    - split; [right; auto |].
-      destruct (left_or_right g BI v e H0); [destruct (Hi l) | destruct (Hi r)]; simpl; tauto.
-    - assert (evalid g e) by tauto.
-      apply (valid_graph g) in H1.
-      unfold weak_valid in H1.
+  Definition change_dst (v l r: V) : E -> V.
+  Proof.
+    intro e.
+    refine (if equiv_dec (src g e) v then _ else dst g e).
+    exact (if left_or_right _ _ v e _H then l else r).
+  Defined.
+
+  Definition update_PreGraph v l r : Gph :=
+    Build_PreGraph EV EE (change_vvalid v) (change_evalid v) (src g) (change_dst v l r).
+
+  Definition update_BiGraph v l r: BiGraph (update_PreGraph v l r) left_out_edge right_out_edge.
+  Proof.
+    refine (Build_BiGraph _ _ _ _ _ _ _).
+    + unfold update_PreGraph; simpl.
+      unfold change_vvalid, change_evalid.
+      intros.
+      rewrite (left_sound g).
+      pose proof left_valid g x.
       tauto.
-  + unfold update_PreGraph, change_vvalid; simpl.
-    intros.
-    destruct H; [| subst]; auto.
-    apply (valid_not_null g) with x; tauto.
-Defined.
+    + unfold update_PreGraph; simpl.
+      unfold change_vvalid, change_evalid.
+      intros.
+      rewrite (right_sound g).
+      pose proof right_valid g x.
+      tauto.
+    + unfold update_PreGraph; simpl; apply (bi_consist g).
+    + unfold update_PreGraph; simpl; apply (only_two_edges g).
+  Defined.
 
-End GRAPH_GEN.
+  Definition in_math (v l r: V) : Type :=
+    forall y, In y (l :: r :: nil) -> {vvalid g y} + {y = v} + {is_null g y}.
+
+  Definition update_MathGraph v l r (Hi: in_math v l r) (Hn: ~ is_null g v): MathGraph (update_PreGraph v l r).
+  Proof.
+    refine (Build_MathGraph _ (is_null g) (is_null_dec g) _ _).
+    + unfold update_PreGraph, change_vvalid, change_evalid, change_dst; simpl.
+      intros.
+      destruct_eq_dec (src g e) v.
+      - split; [right; auto |].
+        destruct (left_or_right g BI v e H0); [destruct (Hi l) | destruct (Hi r)]; simpl; tauto.
+      - assert (evalid g e) by tauto.
+        apply (valid_graph g) in H1.
+        unfold weak_valid in H1.
+        tauto.
+    + unfold update_PreGraph, change_vvalid; simpl.
+      intros.
+      destruct H; [| subst]; auto.
+      apply (valid_not_null g) with x; tauto.
+  Defined.
+
+  Definition update_FiniteGraph v l r: FiniteGraph (update_PreGraph v l r).
+  Proof.
+    refine (Build_FiniteGraph _ _ _); unfold update_PreGraph, change_vvalid, change_evalid, change_dst; simpl.
+    + destruct FA as [? _]. unfold EnumEnsembles.Enumerable, Ensembles.In in *.
+      destruct finiteV as [l0 [? ?]]. destruct (in_dec equiv_dec v l0).
+      - exists l0. split; auto. intro. split; intros.
+        * left. apply H0 in H1. auto.
+        * destruct H1; [rewrite H0 | subst]; auto.
+      - exists (v :: l0). split. constructor; auto. intros. split; intro.
+        * destruct H1; [right | left]. auto. specialize (H0 x); intuition.
+        * simpl. destruct H1; [right | left]; auto. specialize (H0 x); intuition.
+    + destruct FA as [_ ?]. unfold EnumEnsembles.Enumerable, Ensembles.In in *.
+      destruct finiteE as [l0 [? ?]].
+      destruct (in_dec equiv_dec (left_out_edge v) l0); destruct (in_dec equiv_dec (right_out_edge v) l0).
+      - exists l0. split; auto. intros; split; intros.
+        left; specialize (H0 x); intuition. destruct H1.
+        * specialize (H0 x); intuition.
+        * destruct BI. specialize (only_two_edges v x). rewrite only_two_edges in H1.
+          destruct H1; subst; auto.
+      - remember (left_out_edge v) as e1. remember (right_out_edge v) as e2. exists (e2 :: l0).
+        split. constructor; auto. intro; split; intro.
+        * destruct H1; [right | left]. subst x. subst e2. destruct BI.
+          rewrite only_two_edges. right; auto. specialize (H0 x); intuition.
+        * simpl. destruct H1. right; specialize (H0 x); intuition. destruct BI.
+          rewrite only_two_edges in H1. destruct H1.
+          Focus 1. { right. subst e1. subst x. auto. } Unfocus.
+          Focus 1. { left. subst e2. subst x. auto. } Unfocus.
+      - remember (left_out_edge v) as e1. remember (right_out_edge v) as e2. exists (e1 :: l0).
+        split. constructor; auto. intro; split; intro.
+        * destruct H1; [right | left]. subst x. subst e1. destruct BI.
+          rewrite only_two_edges. left; auto. specialize (H0 x); intuition.
+        * simpl. destruct H1. right; specialize (H0 x); intuition. destruct BI.
+          rewrite only_two_edges in H1. destruct H1.
+          Focus 1. { left. subst e1. subst x. auto. } Unfocus.
+          Focus 1. { right. subst e2. subst x. auto. } Unfocus.
+      - remember (left_out_edge v) as e1. remember (right_out_edge v) as e2. exists (e1 :: e2 :: l0). split.
+        * constructor. intro. destruct H1; auto. destruct BI.
+          specialize (bi_consist v). subst. auto. constructor; auto.
+        * intro. split; intro.
+          Focus 1. {
+            simpl in H1. destruct H1; [|destruct H1].
+            + right. subst x. subst e1. destruct BI. rewrite only_two_edges. left; auto.
+            + right. subst x. subst e2. destruct BI. rewrite only_two_edges. right; auto.
+            + left. specialize (H0 x). intuition.
+          } Unfocus.
+          Focus 1. {
+            destruct H1.
+            + simpl. right; right. specialize (H0 x). intuition.
+            + destruct BI. rewrite only_two_edges in H1. simpl. destruct H1.
+              - left. subst x. subst e1. auto.
+              - right; left. subst x. subst e2. auto.
+          } Unfocus.
+  Qed.
+End ADD_GRAPH_GEN.
+
+Section ADD_LABELED_GRAPH_GEN.
+
+  Context {V E: Type}.
+  Context {EV: EqDec V eq}.
+  Context {EE: EqDec E eq}.
+  Context {DV DE: Type}.
+  
+  Notation Graph := (LabeledGraph V E DV DE).
+
+  Variable g: Graph.
+  Variable left_out_edge right_out_edge: V -> E.
+  Context {BI: BiGraph g left_out_edge right_out_edge}.
+
+  Definition update_LabeledGraph (x l r: V) :=
+    Build_LabeledGraph _ _ (update_PreGraph g left_out_edge right_out_edge x l r) (vlabel g) (elabel g).
+
+End ADD_LABELED_GRAPH_GEN.
+
+Section ADD_GENERAL_GRAPH_GEN.
+
+  Context {V E: Type}.
+  Context {EV: EqDec V eq}.
+  Context {EE: EqDec E eq}.
+  Context {DV DE: Type}.
+  Context {P: LabeledGraph V E DV DE -> Type}.
+  
+  Notation Graph := (GeneralGraph V E DV DE P).
+
+  Variable g: Graph.
+  Variable left_out_edge right_out_edge: V -> E.
+  Context {BI: BiGraph g left_out_edge right_out_edge}.
+  
+  Definition update_GeneralGraph (x l r: V) (sound': P _): Graph :=
+    @Build_GeneralGraph V E EV EE DV DE P (update_LabeledGraph g left_out_edge right_out_edge x l r) sound'.
+
+End ADD_GENERAL_GRAPH_GEN.
