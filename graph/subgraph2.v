@@ -114,6 +114,20 @@ Definition reachable_subgraph (S : list V): PreGraph V E :=
 Definition unreachable_partialgraph (S : list V): PreGraph V E :=
   predicate_partialgraph (fun n => ~ reachable_through_set g S n).
 
+Lemma predicate_partialgraph_gpredicate_subgraph (p: V -> Prop): 
+  (predicate_partialgraph p) ~=~ (gpredicate_subgraph p (Intersection _ (weak_edge_prop p g) (evalid g)) g).
+Proof.
+  split; [| split; [| split]]; simpl; intros.
+  + rewrite Intersection_spec.
+    reflexivity.
+  + rewrite !Intersection_spec.
+    unfold predicate_weak_evalid.
+    unfold weak_edge_prop.
+    tauto.
+  + auto.
+  + auto.
+Qed.
+
 Lemma reachable_by_path_subgraph_partialgraph (p q: V -> Prop):
   forall (n1 n2: V) (l: list V),
     (predicate_subgraph p) |= l is n1 ~o~> n2 satisfying q <->
@@ -1250,6 +1264,16 @@ Definition pregraph_join (PV: V -> Prop) (PE: E -> Prop) (G1 G2: Graph) : Prop :
   (forall e : E, evalid G1 e -> evalid G2 e -> src G1 e = src G2 e) /\
   (forall e : E, evalid G1 e -> evalid G2 e -> dst G1 e = dst G2 e).
 
+(*
+Definition pregraph_join2 (G1 G2 G: Graph) : Prop :=
+  Prop_join (vvalid G1) (vvalid G2) (vvalid G) /\
+  Prop_join (evalid G1) (evalid G2) (evalid G) /\
+  (forall e : E, evalid G1 e -> src G1 e = src G e) /\
+  (forall e : E, evalid G2 e -> src G2 e = src G e) /\
+  (forall e : E, evalid G1 e -> dst G1 e = dst G e) /\
+  (forall e : E, evalid G2 e -> dst G2 e = dst G e).
+*)
+
 Lemma pregraph_join_proper_aux: forall (PV1 PV2: V -> Prop) (PE1 PE2: E -> Prop) (G11 G12 G21 G22: Graph),
   Same_set PV1 PV2 ->
   Same_set PE1 PE2 ->
@@ -1359,6 +1383,38 @@ Proof.
   unfold Complement, Ensembles.In, weak_edge_prop.
   split; [| split; [| split]]; firstorder.
 Qed.
+
+Lemma pregraph_join_partial_si: forall PV PE (G1 G2: Graph) PV1,
+  pregraph_join PV PE G1 G2 ->
+  Disjoint _ PV PV1 ->
+  (forall e, PE e -> evalid G2 e -> PV1 (src G2 e) -> False) ->
+  (predicate_partialgraph G1 PV1) ~=~ (predicate_partialgraph G2 PV1).
+Proof.
+  intros.
+  destruct H as [[? ?] [[? ?] [? ?]]].
+  unfold Complement, Ensembles.In, weak_edge_prop.
+  split; [| split; [| split]].
+  + simpl; intros.
+    unfold predicate_vvalid.
+    rewrite H.
+    rewrite Disjoint_spec in H0; specialize (H0 v).
+    tauto.
+  + simpl; intros.
+    unfold predicate_weak_evalid.
+    split; intros.
+    - assert (evalid G2 e) by (rewrite H3; tauto).
+      rewrite <- H5 by tauto.
+      tauto.
+    - pose proof proj1 H7.
+      rewrite H3 in H8; destruct H8.
+      * rewrite H5 by tauto.
+        tauto.
+      * exfalso; apply (H1 e); tauto.
+  + simpl; unfold predicate_weak_evalid; intros.
+    apply H5; tauto.
+  + simpl; unfold predicate_weak_evalid; intros.
+    apply H6; tauto.
+Qed.    
 
 Lemma edge_union_guarded_si: forall (PE: E -> Prop) (G1 G2: Graph),
   edge_union PE G1 G2 ->
