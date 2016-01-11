@@ -1,9 +1,12 @@
 Require Import Coq.Logic.Classical.
+Require Import Coq.Lists.List.
+Require Import Coq.Sets.Ensembles.
 Require Import VST.msl.seplog.
 Require Import VST.msl.log_normalize.
 Require Import RamifyCoq.lib.Coqlib.
 Require Import RamifyCoq.lib.EquivDec_ext.
 Require Import RamifyCoq.hip.hip_graphmark.
+Require Import RamifyCoq.msl_ext.seplog.
 Require Import RamifyCoq.graph.graph_model.
 Require Import RamifyCoq.graph.weak_mark_lemmas.
 Require Import RamifyCoq.graph.path_lemmas.
@@ -13,56 +16,60 @@ Require Import RamifyCoq.msl_application.Graph.
 Require Import RamifyCoq.msl_application.GraphBi.
 Require Import RamifyCoq.msl_application.Graph_Mark.
 Require Import RamifyCoq.msl_application.GraphBi_Mark.
-Require Import RamifyCoq.data_structure.spatial_graph_aligned_bi_VST.
+
+Context {pSGG_Bi: pSpatialGraph_Graph_Bi}.
+Context {sSGG_Bi: sSpatialGraph_Graph_Bi}.
+Context {SGSA: SpatialGraphStrongAssum SGP}.
+
 Tactic Notation "LEM" constr(v) := (destruct (classic v); auto).
 
 Module GraphMark <: Mgraphmark.
   Definition formula : Type := pred.
   Definition node : Type := addr.
   Definition null_node : node := null.
-  Definition valid : formula -> Prop := fun f => forall w, f w.
-  Definition ptto_node : node -> nat -> node -> node -> formula := trinode.
-  Definition A : Type := @BiMathGraph adr nat 0 natEqDec.
-  Definition graph : node -> A -> formula := spatial_graph.graph.
+  Definition valid : formula -> Prop := fun f => TT |-- f.
+  Definition ptto_node : node -> bool -> node -> node -> formula := fun v d l r => vertex_at v (d, l, r).
+  Definition A : Type := Graph.
+  Definition graph : node -> A -> formula := fun x g => (@graph _ _ _ _ _ _ SGP _ x (GraphBi.Graph_SpatialGraph g)).
   Definition star : formula -> formula -> formula := sepcon.
   Definition and : formula -> formula -> formula := andp.
   Definition imp : formula -> formula -> formula := imp.
-  Definition ext : (nat -> formula) -> formula := exp.
-  Definition not : formula -> formula := fun f w => ~ f w.
-  Definition eq : node -> node -> formula := fun a b w => a = b.
+  Definition ext : (bool -> formula) -> formula := exp.
+  Definition not : formula -> formula := fun f => prop (f |-- FF).
+  Definition eq : node -> node -> formula := fun a b => prop (a = b).
   Definition mwand : formula -> formula -> formula := ewand.
   Definition union : formula -> formula -> formula := ocon.
-  Definition neq : nat -> nat -> formula := fun a b w => ~ a = b.
-  Definition mark : A -> node -> A -> formula :=
-    fun g1 n g2 w => mark adr nat natEqDec (fun d => d = 1) (b_pg_g g1) n (b_pg_g g2).
+  Definition neq : bool -> bool -> formula := fun a b => prop (~ a = b).
+  Definition mark : A -> node -> A -> formula := fun g1 n g2 => prop (mark n g1 g2).
   Definition eq_notreach : A -> node -> A -> formula :=
-    fun g1 n g2 w => (unreachable_subgraph (b_pg_g g1) (n :: nil)) -=- (unreachable_subgraph (b_pg_g g2) (n :: nil)).
-  Definition subset_reach : A -> node -> A -> formula :=
-    fun g1 n g2 w => subset (reachable (b_pg_g g1) n) (reachable (b_pg_g g2) n).
-  Definition lookup : A -> node -> nat -> node -> node -> formula :=
-    fun g x d l r w => @node_label _ _ _ (b_pg_g g) x = d /\ @graph.valid _ _ _ (b_pg_g g) x /\
-                       @graph.valid _ _ _ (b_pg_g g) l /\ @graph.valid _ _ _ (b_pg_g g) r /\
-                       @edge_func _ _ _ (b_pg_g g) x = l :: r :: nil.
-  Definition update : A -> node -> nat -> node -> node -> A -> formula :=
-    fun g1 x d l r g2 w => exists (Hn : x <> 0) (Hi : in_math (bm_ma_g g1) x l r), update_graph g1 x d l r Hi Hn = g2.
+    fun g1 n g2 => prop ((unreachable_partialgraph g1 (n :: nil)) ~=~ (unreachable_partialgraph g2 (n :: nil))).
+  Definition subset_reach : A -> node -> A -> formula := fun g1 n g2 => prop (Included (reachable g1 n) (reachable g2 n)).
+  Definition lookup : A -> node -> bool -> node -> node -> formula :=
+    fun g x d l r => prop (vlabel g x = d /\ vvalid g x /\ vvalid g l /\ vvalid g r /\ dst g (x, L) = l /\ dst g (x, R) = r).
+  Definition update : A -> node -> bool -> node -> node -> A -> formula :=
+    fun g1 x d l r g2 => prop (exists (Hn : ~ is_null g1 x) (Hi : graph_gen.in_math g1 x l r), Graph_gen_update g1 x d l r Hi Hn = g2).
 
-  Lemma update_is_mark1: forall l r w (G G1 : A) x, @graph.valid adr nat natEqDec (b_pg_g G) x ->
-                                                    @edge_func adr nat natEqDec (b_pg_g G) x = l :: r :: nil ->
-                                                    update G x 1 l r G1 w ->
-                                                    mark1 adr nat natEqDec (fun d : nat => d = 1) (b_pg_g G) x (b_pg_g G1).
+  Lemma update_is_mark1: forall (l r: addr) (G G1: A) x,
+      vvalid G x ->
+      step_list G x (l :: r :: nil) ->
+      valid (update G x true l r G1) ->
+      mark1 x G G1.
   Proof.
-    intros. destruct H1 as [Hi [Hn ?]]. rewrite <- H1. split. intro z. split. destruct (t_eq_dec z x); split; intro. hnf.
+    intros. unfold valid in H1. 
+
+    destruct H1 as [Hi [Hn ?]]. rewrite <- H1. split. intro z. split. destruct (t_eq_dec z x); split; intro. hnf.
     left; auto. hnf in H2. subst; auto. left; auto. hnf in H2. destruct H2. auto. exfalso; auto. simpl. unfold change_edge_func.
     destruct (t_eq_dec z x). subst. rewrite H0. auto. auto. split. auto. split. hnf. simpl. unfold change_node_label.
     destruct (@t_eq_dec adr natEqDec x x). auto. exfalso; auto. intros. simpl. unfold change_node_label.
     destruct (t_eq_dec n' x). exfalso; auto. auto.
   Qed.
 
-  Lemma node_is_two: forall (G : A) x l r, @graph.valid adr nat natEqDec (b_pg_g G) x ->
-                                           @graph.valid adr nat natEqDec (b_pg_g G) l ->
-                                           @graph.valid adr nat natEqDec (b_pg_g G) r ->
-                                           @edge_func adr nat natEqDec (b_pg_g G) x = l :: r :: nil ->
-                                           node_connected_two adr nat natEqDec (b_pg_g G) x l r.
+  Lemma node_is_two: forall (G : A) x l r,
+      @graph.valid adr nat natEqDec (b_pg_g G) x ->
+      @graph.valid adr nat natEqDec (b_pg_g G) l ->
+      @graph.valid adr nat natEqDec (b_pg_g G) r ->
+      @edge_func adr nat natEqDec (b_pg_g G) x = l :: r :: nil ->
+      node_connected_two adr nat natEqDec (b_pg_g G) x l r.
   Proof.
     intros. split. do 2 (split; auto). rewrite H2. apply in_eq. split. do 2 (split; auto). rewrite H2. apply in_cons, in_eq.
     intros. destruct H3 as [? [? ?]]. rewrite H2 in H5. apply in_inv in H5; destruct H5. left; auto. apply in_inv in H5.
