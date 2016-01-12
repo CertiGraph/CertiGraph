@@ -1638,7 +1638,6 @@ Proof.
   + apply guarded_pointwise_relation_weaken with (P2 := PV1) in COPY_gprv';
       [| apply left_Included_Union].
     rewrite COPY_gprv' at 1.
-Print extended_copy.
     eapply pregraph_join_partial_si; [exact H10 | ..].
     - destruct H10 as [? _].
       rewrite PRE_vvalid in H10.
@@ -1649,18 +1648,23 @@ Print extended_copy.
       generalize v', H13.
       apply left_Included_Union.
     - intros e' ? ? ?.
-      rewrite image_set_spec in H12;
-      rewrite image_set_spec in H14.
-      destruct H12 as [e [? ?]], H14 as [v [? ?]].
-      subst e'.
-      rewrite <- (src_preserved H7) in H16.
-      SearchAbout guarded_bij weak_edge_prop.
-SearchAbout Included Union.
-SearchAbout Disjoint image_set.
-SearchAbout Intersection weak_edge_prop.
-SearchAbout pregraph_join. gpredicate_subgraph.
-
-
+      unfold PE0 in H12.
+      rewrite COPY_si in PRE_si.
+      erewrite app_same_set in H12 by 
+      (erewrite weak_edge_prop_si by (exact PRE_si); reflexivity).
+      eapply @guarded_bij_weak_edge_prop in H12; [| | | apply bij_is_morphism in H7; exact H7].
+      * rewrite Intersection_spec in H12.
+        destruct H12.
+        destruct H8 as [? _].
+        rewrite image_Union, Union_left_Disjoint in H8; destruct H8 as [? _].
+        rewrite COPY_gprv' in H8.
+        rewrite Disjoint_spec in H8.
+        exact (H8 _ H14 H12).
+      * apply right_Included_Union.
+      * erewrite <- weak_edge_prop_si by (exact PRE_si).
+        apply right_Included_Union.
+  + eapply pregraph_join_partial_si; [exact H11 | ..].
+    
 
 End LocalGraphCopy.
 
