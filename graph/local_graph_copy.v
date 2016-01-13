@@ -1473,6 +1473,7 @@ Proof.
   apply triple_final with (es := es); auto.
 Qed.
 
+(* TODO: This lemma and proof should be improved. The conclusion does not need edge_copy_list assumption. *)
 Lemma vcopy1_edge_copy_list_extend_copy: forall (g g1 g2 g3: Graph) g2' g' root es es_done e0 es_later (M: V -> Prop),
   let g1' := single_vertex_pregraph (vmap g1 root) in
   vvalid g root ->
@@ -1596,7 +1597,6 @@ Proof.
       auto.
   } Unfocus.
   destruct H7 as [g3' [? [? ?]]].
-  (* clear H7. pose proof I as H7. *)
   exists g3'.
   split; [split; [| split; [| split; [| split; [| split; [| split]]]]] | split]; auto.
   + rewrite <- PRE_si at 1 2.
@@ -1652,7 +1652,7 @@ Proof.
       rewrite COPY_si in PRE_si.
       erewrite app_same_set in H12 by 
       (erewrite weak_edge_prop_si by (exact PRE_si); reflexivity).
-      eapply @guarded_bij_weak_edge_prop in H12; [| | | apply bij_is_morphism in H7; exact H7].
+      eapply @guarded_bij_weak_edge_prop in H12; [| | | | apply bij_is_morphism in H7; exact H7].
       * rewrite Intersection_spec in H12.
         destruct H12.
         destruct H8 as [? _].
@@ -1663,8 +1663,45 @@ Proof.
       * apply right_Included_Union.
       * erewrite <- weak_edge_prop_si by (exact PRE_si).
         apply right_Included_Union.
+      * apply Included_refl.
   + eapply pregraph_join_partial_si; [exact H11 | ..].
-    
+    - destruct H8 as [? _].
+      rewrite COPY_gprv' in H8.
+      auto.
+    - intros e' ? ? ?.
+      eapply @guarded_bij_weak_edge_prop in H12; [| | | | apply bij_is_morphism in H7; exact H7].
+      * rewrite Intersection_spec in H12.
+        destruct H12.
+        destruct H8 as [? _].
+        rewrite COPY_gprv' in H8.
+        rewrite Disjoint_spec in H8.
+        exact (H8 _ H12 H14).
+      * apply left_Included_Union.
+      * apply left_Included_Union.
+      * rewrite COPY_si in PRE_si.
+        erewrite <- weak_edge_prop_si by (exact PRE_si).
+        rewrite weak_edge_prop_Union.
+        rewrite Intersection_Union_distr_l.
+        apply Union_Included; split.
+        Focus 1. {
+          apply left_Included_Union.
+        } Unfocus.
+        Focus 1. {
+          eapply Included_trans; [| apply right_Included_Union].
+          intros e; unfold Ensembles.In, weak_edge_prop; intros.
+          rewrite Intersection_spec; split.
+          - symmetry; eapply aux04.
+            * eassumption.
+            * reflexivity.
+            * auto.
+            * auto.
+          - eapply aux22.
+            * eassumption.
+            * reflexivity.
+            * auto.
+            * auto.
+        } Unfocus.
+Qed.
 
 End LocalGraphCopy.
 

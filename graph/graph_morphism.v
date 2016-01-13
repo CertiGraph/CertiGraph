@@ -775,28 +775,29 @@ Proof.
     - apply H; auto.
 Qed.
 
-Lemma guarded_bij_weak_edge_prop: forall PV PE PV0 vmap emap (G: PreGraph V E) (G': PreGraph V' E'),
+Lemma guarded_bij_weak_edge_prop: forall PV PE PV0 PE0 vmap emap (G: PreGraph V E) (G': PreGraph V' E'),
   Included PV0 PV ->
-  Included (Intersection _ (weak_edge_prop PV0 G) (evalid G)) PE ->
+  Included PE0 PE ->
+  Included PE0 (Intersection _ (weak_edge_prop PV0 G) (evalid G)) ->
   guarded_morphism PV PE vmap emap G G' ->
   forall e', 
-    (image_set (Intersection _ (weak_edge_prop PV0 G) (evalid G)) emap) e' ->
+    (image_set PE0 emap) e' ->
     (Intersection _ (weak_edge_prop (image_set PV0 vmap) G') (evalid G')) e'.
 Proof.
   intros.
-  rewrite image_set_spec in H2.
-  destruct H2 as [e [? ?]].
+  rewrite image_set_spec in H3.
+  destruct H3 as [e [? ?]].
   subst e'.
-  pose proof H2.
-  rewrite Intersection_spec in H2 |- *.
-  destruct H2; split.
+  pose proof H1 _ H3.
+  unfold Ensembles.In in H4; rewrite Intersection_spec in H4 |- *.
+  destruct H4; split.
   + unfold weak_edge_prop.
-    rewrite <- (src_preserved H1).
+    rewrite <- (src_preserved H2).
     - constructor; auto.
     - apply H0; auto.
     - apply H; auto.
     - auto.
-  + apply (evalid_preserved H1).
+  + apply (evalid_preserved H2).
     - apply H0; auto.
     - auto.
 Qed.
