@@ -10,6 +10,13 @@ Require Import RamifyCoq.graph.subgraph2.
 Require Import RamifyCoq.graph.graph_gen.
 Require Import RamifyCoq.graph.graph_morphism.
 
+Class GraphMorphismSetting (DV DE V' E' DV' DE': Type): Type := {
+  co_vertex: DV -> V';
+  co_edge: DE -> E';
+  default_DV': DV';
+  default_DE': DE'
+}.
+
 Module LocalGraphCopy.
 
 Section LocalGraphCopy.
@@ -21,12 +28,13 @@ Context {EV: EqDec V eq}.
 Context {EE: EqDec E eq}.
 Context {EV': EqDec V' eq}.
 Context {EE': EqDec E' eq}.
-Context {DV DE: Type}.
-Context {GMS: GraphMorphismSetting DV DE V' E'}.
+Context {DV DE DV' DE': Type}.
+
+Context {GMS: GraphMorphismSetting DV DE V' E' DV' DE'}.
 
 Notation Graph := (LabeledGraph V E DV DE).
 
-Notation Graph' := (PreGraph V' E').
+Notation Graph' := (LabeledGraph V' E' DV' DE').
 
 Definition vmap (g: Graph): V -> V' := fun v => co_vertex (vlabel g v).
 
@@ -74,24 +82,6 @@ Definition extended_copy (M: V -> Prop) root (p1 p2: Graph * Graph') :=
   (forall v, M v \/ ~ M v) /\
   guarded_bij PV PE (vmap g2) (emap g2) g2 g2'.
 
-(*
-Definition side_condition (g: Graph) (root: V) (P: V -> Prop) (l: list E * E) (p1 p2: Graph * Graph') :=
-  let (g1, g1') := p1 in
-  let (g2, g2') := p2 in
-  let (es_done, e0) := l in
-  let P0 := Intersection _ P (Complement _ (eq root)) in
-  let PV1 := reachable_by_through_set g (map (dst g) es_done) P0 in
-  let PE1 := Intersection _ (weak_edge_prop PV1 g) (evalid g) in
-  let PE1_root e := In e es_done in
-  let P_rec := Intersection _ P0 (Complement _ PV1) in
-  let PV0 := reachable_by g (dst g e0) P_rec in
-  let PE0 := Intersection _ (weak_edge_prop PV0 g) (evalid g) in
-  disjointed_guard
-     (image_set (Union _ PV1 (eq root)) (vmap g2)) (image_set PV0 (vmap g2))
-     (image_set (Union _ PE1 PE1_root) (emap g2)) (image_set PE0 (emap g2)) /\ (* From spatial fact *)
-  Same_set (Union _ PV1 (Complement _ PV1)) (Full_set _). (* From weak mark lemma *)
-*)
-
 Definition edge_copy (g: Graph) (root: V) (M: V -> Prop) (l: list E * E) :=
   let (es_done, e0) := l in
   let M0 := Union _ M (eq root) in
@@ -105,14 +95,14 @@ Definition edge_copy_list (g: Graph) (root: V) es (P: V -> Prop) :=
 Lemma triple_vcopy1: forall (g1 g2: Graph) root,
   vvalid g1 root ->
   vcopy1 root g1 g2 ->
-  guarded_bij (eq root) (Empty_set _) (vmap g2) (emap g2) g2 (single_vertex_pregraph (vmap g2 root)).
+  guarded_bij (eq root) (Empty_set _) (vmap g2) (emap g2) g2 (single_vertex_labeledgraph (vmap g2 root) default_DV' default_DE').
 Proof.
   intros g1 g2 root ? [VCOPY_si [VCOPY_gprv VCOPY_gpre]].
   split; [.. | split]; intros.
   + apply is_guarded_inj_single.
   + apply is_guarded_inj_empty.
   + subst v.
-    unfold single_vertex_pregraph; simpl.
+    unfold single_vertex_labeledgraph, single_vertex_pregraph; simpl.
     destruct_eq_dec (vmap g2 root) (vmap g2 root); [| congruence].
     rewrite (proj1 VCOPY_si) in H.
     tauto.
@@ -1349,7 +1339,7 @@ Proof.
 Qed.
 
 Lemma triple_vcopy1_edge_copy_list: forall (g g1 g2: Graph) g2' root es es_done es_later (M: V -> Prop),
-  let g1' := single_vertex_pregraph (vmap g1 root) in
+  let g1' := single_vertex_labeledgraph (vmap g1 root) default_DV' default_DE' in
   vvalid g root ->
   ~ M root ->
   (forall e, In e es <-> out_edges g root e) ->
@@ -1458,7 +1448,7 @@ Proof.
 Qed.
 
 Lemma vcopy1_edge_copy_list_copy: forall (g g1 g2: Graph) g2' root es (M: V -> Prop),
-  let g1' := single_vertex_pregraph (vmap g1 root) in
+  let g1' := single_vertex_labeledgraph (vmap g1 root) default_DV' default_DE' in
   vvalid g root ->
   ~ M root ->
   (forall e, In e es <-> out_edges g root e) ->
@@ -1473,6 +1463,42 @@ Proof.
   apply triple_final with (es := es); auto.
 Qed.
 
+Lemma copy_extend_copy: forall (g g2 g3: Graph) (g2' g': Graph') root es es_done e0 es_later (M: V -> Prop),
+  vvalid g root ->
+  ~ M root ->
+  (forall e, In e es <-> out_edges g root e) ->
+  NoDup es ->
+  es = es_done ++ e0 :: es_later ->
+  (forall v : V, M v \/ ~ M v) ->
+  let M0 := Union _ M (eq root) in
+  let PV1 := reachable_by_through_set g (map (dst g) es_done) (Complement _ M0) in
+  let PE1 := Intersection _ (weak_edge_prop PV1 g) (evalid g) in
+  let PE1_root e := In e es_done in
+  let M_rec := Union _ M0 PV1 in
+  let PV0 := reachable_by g (dst g e0) (Complement _ M_rec) in
+  let PE0 := Intersection _ (weak_edge_prop PV0 g) (evalid g) in
+  copy M_rec (dst g e0) g2 g3 g' ->
+(*
+  disjointed_guard
+    (image_set PV0 (vmap g3)) (vvalid g2')
+    (image_set PE0 (emap g3)) (evalid g2') ->
+*)
+  disjointed_guard (vvalid g') (vvalid g2') (evalid g') (evalid g2') ->
+  (forall v, M_rec v \/ ~ M_rec v) ->
+  exists g3': Graph',
+  extended_copy M_rec (dst g e0) (g2, g2') (g3, g3') /\
+  ((predicate_partial_labeledgraph g2' (image_set PV1 (vmap g2))) ~=~
+   (predicate_partial_labeledgraph g3' (image_set PV1 (vmap g3))))%LabeledGraph /\
+  ((predicate_partial_labeledgraph g' (image_set PV0 (vmap g3))) ~=~
+   (predicate_partial_labeledgraph g3' (image_set PV0 (vmap g3))))%LabeledGraph.
+Proof.
+  intros.
+  pose proof disjointed_union_labeledgraph_exists_ll g' g2' H6.
+  destruct H5 as [COPY_si [COPY_gprv [COPY_gpre [COPY_vvalid [COPY_evalid [COPY_consi COPY_bij]]]]]].
+Admitted.
+
+
+(*
 (* TODO: This lemma and proof should be improved. The conclusion does not need edge_copy_list assumption. *)
 Lemma vcopy1_edge_copy_list_extend_copy: forall (g g1 g2 g3: Graph) g2' g' root es es_done e0 es_later (M: V -> Prop),
   let g1' := single_vertex_pregraph (vmap g1 root) in
@@ -1702,7 +1728,7 @@ Proof.
             * auto.
         } Unfocus.
 Qed.
-
+*)
 End LocalGraphCopy.
 
 End LocalGraphCopy.

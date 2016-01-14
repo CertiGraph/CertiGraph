@@ -148,19 +148,6 @@ Proof.
     reflexivity.
 Qed.
 
-Lemma lge_do_nothing: forall n, inclusion _ labeled_graph_equiv (nothing n).
-Proof.
-  intros; hnf; intros.
-  destruct H as [? [? ?]].
-  split.
-  + rewrite H.
-    reflexivity.
-  + intros.
-    simpl.
-    rewrite H0.
-    reflexivity.
-Qed.
-
 Lemma eq_do_nothing: forall n, inclusion _ eq (nothing n).
 Proof.
   intros; hnf; intros.

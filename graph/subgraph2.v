@@ -1060,6 +1060,9 @@ Context {DV DE: Type}.
 
 Notation Graph := (LabeledGraph V E DV DE).
 
+Definition gpredicate_sub_labeledgraph (PV: V -> Prop) (PE: E -> Prop) (g: Graph): Graph :=
+  Build_LabeledGraph _ _ (gpredicate_subgraph PV PE g) (vlabel g) (elabel g).
+
 Definition predicate_sub_labeledgraph (g: Graph) (p: V -> Prop) :=
   Build_LabeledGraph _ _ (predicate_subgraph g p) (vlabel g) (elabel g).
 
@@ -1077,14 +1080,16 @@ Proof.
   + eapply si_stronger_partialgraph; eauto.
     destruct H1 as [? _].
     auto.
-  + intros.
-    simpl.
+  + simpl.
+    intros ? [? ?] [? ?].
     destruct H1 as [_ [? _]].
-    specialize (H1 v); simpl in H1; auto.
-  + intros.
-    simpl.
+    specialize (H1 v); simpl in H1.
+    firstorder.
+  + simpl.
+    intros ? [? ?] [? ?].
     destruct H1 as [_ [_ ?]].
-    specialize (H1 e); simpl in H1; auto.
+    specialize (H1 e); simpl in H1.
+    firstorder.
 Qed.
 
 Lemma si_stronger_partial_labeledgraph_simple: forall (g1 g2: Graph) (p p': V -> Prop),
@@ -1100,15 +1105,19 @@ Qed.
 
 End PartialLabeledGraph.
 
-Section GuardedStructurallyIdentical.
+Section GuardedIdentical.
 
 Context {V E: Type}.
 Context {EV: EqDec V eq}.
 Context {EE: EqDec E eq}.
+Context {DV DE: Type}.
 
-Notation Graph := (PreGraph V E).
+Notation PGraph := (PreGraph V E).
+Notation LGraph := (LabeledGraph V E DV DE).
 
-Definition guarded_structurally_identical PV PE: relation Graph := respectful_relation (gpredicate_subgraph PV PE) structurally_identical.
+Definition guarded_structurally_identical PV PE: relation PGraph := respectful_relation (gpredicate_subgraph PV PE) structurally_identical.
+
+Definition guarded_labeled_graph_equiv PV PE: relation LGraph := respectful_relation (gpredicate_sub_labeledgraph PV PE) labeled_graph_equiv.
 
 Instance guarded_si_Equivalence PV PE: Equivalence (guarded_structurally_identical PV PE).
 Proof.
@@ -1117,7 +1126,14 @@ Proof.
 Qed.
 Global Existing Instance guarded_si_Equivalence.
 
-Lemma guarded_si_spec: forall PV PE (G1 G2: Graph),
+Instance guarded_lge_Equivalence PV PE: Equivalence (guarded_labeled_graph_equiv PV PE).
+Proof.
+  apply resp_Equivalence.
+  apply lge_Equiv.
+Qed.
+Global Existing Instance guarded_lge_Equivalence.
+
+Lemma guarded_si_spec: forall PV PE (G1 G2: PGraph),
   guarded_structurally_identical PV PE G1 G2 <->
   ((forall v, PV v -> (vvalid G1 v <-> vvalid G2 v)) /\
    (forall e, PE e -> (evalid G1 e <-> evalid G2 e)) /\
@@ -1144,7 +1160,37 @@ Proof.
   + apply H2; simpl in H3, H4; rewrite !Intersection_spec in H3, H4; tauto.
 Qed.
 
-Lemma guarded_si_dst1: forall PV PE (G1 G2: Graph),
+Lemma guarded_lge_spec: forall PV PE (G1 G2: LGraph),
+  guarded_labeled_graph_equiv PV PE G1 G2 <->
+  (((forall v, PV v -> (vvalid G1 v <-> vvalid G2 v)) /\
+    (forall e, PE e -> (evalid G1 e <-> evalid G2 e)) /\
+    (forall e, PE e -> evalid G1 e -> evalid G2 e -> src G1 e = src G2 e) /\
+    (forall e, PE e -> evalid G1 e -> evalid G2 e -> dst G1 e = dst G2 e)) /\
+   (forall v, PV v -> vvalid G1 v -> vvalid G2 v -> vlabel G1 v = vlabel G2 v) /\
+   (forall e, PE e -> evalid G1 e -> evalid G2 e -> elabel G1 e = elabel G2 e)).
+Proof.
+  split; intros; (destruct H as [[? [? [? ?]]] [? ?]]; split; [split; [| split; [| split]] | split]); intros.
+  + specialize (H v); simpl in H.
+    rewrite !Intersection_spec in H.
+    tauto.
+  + specialize (H0 e); simpl in H0.
+    rewrite !Intersection_spec in H0.
+    tauto.
+  + apply H1; simpl; rewrite !Intersection_spec; auto.
+  + apply H2; simpl; rewrite !Intersection_spec; auto.
+Admitted.
+(*
+  + specialize (H v); simpl.
+    rewrite !Intersection_spec.
+    tauto.
+  + specialize (H0 e); simpl.
+    rewrite !Intersection_spec.
+    tauto.
+  + apply H1; simpl in H3, H4; rewrite !Intersection_spec in H3, H4; tauto.
+  + apply H2; simpl in H3, H4; rewrite !Intersection_spec in H3, H4; tauto.
+Qed.
+*)
+Lemma guarded_si_dst1: forall PV PE (G1 G2: PGraph),
   guarded_structurally_identical PV PE G1 G2 ->
   forall e, PE e -> evalid G1 e -> dst G1 e = dst G2 e.
 Proof.
@@ -1169,7 +1215,7 @@ Defined.
 Global Existing Instance guarded_si_proper.
 
 Lemma si_is_guarded_si:
-  same_relation Graph structurally_identical (guarded_structurally_identical (Full_set _) (Full_set _)).
+  same_relation PGraph structurally_identical (guarded_structurally_identical (Full_set _) (Full_set _)).
 Proof.
   intros.
   rewrite same_relation_spec.
@@ -1185,7 +1231,7 @@ Qed.
 Lemma guarded_si_weaken: forall (PV1 PV2: V -> Prop) (PE1 PE2: E -> Prop),
   Included PV2 PV1 ->
   Included PE2 PE1 ->
-  inclusion Graph (guarded_structurally_identical PV1 PE1) (guarded_structurally_identical PV2 PE2).
+  inclusion PGraph (guarded_structurally_identical PV1 PE1) (guarded_structurally_identical PV2 PE2).
 Proof.
   intros.
   hnf; intros.
@@ -1195,7 +1241,7 @@ Proof.
 Qed.
 
 Lemma si_guarded_si: forall PV PE,
-  inclusion Graph structurally_identical (guarded_structurally_identical PV PE).
+  inclusion PGraph structurally_identical (guarded_structurally_identical PV PE).
 Proof.
   intros.
   rewrite si_is_guarded_si.
@@ -1236,7 +1282,7 @@ Proof.
   + eauto.
 Qed.
 
-End GuardedStructurallyIdentical.
+End GuardedIdentical.
 
 Section ExpandPartialGraph.
 
@@ -1513,21 +1559,6 @@ Proof.
   split; [| split; [| split]]; intros; try tauto.
   specialize (H e).
   tauto.
-Qed.
-
-Lemma Prop_join_assoc: forall A (P1 P2 P3 Q R: A -> Prop),
-  Prop_join P1 Q P2 ->
-  Prop_join P2 R P3 ->
-  Prop_join P1 (Union _ Q R) P3.
-Proof.
-  unfold Prop_join.
-  intros.
-  destruct H, H0.
-  split; intro a; rewrite Union_spec.
-  + rewrite H0, H.
-    tauto.
-  + intros.
-    destruct H4; firstorder.
 Qed.
 
 Lemma pregraph_join_pregraph_join: forall G1 G2 G3 PV PE PV' PE',
