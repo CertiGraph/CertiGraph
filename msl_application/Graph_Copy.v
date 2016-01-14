@@ -106,40 +106,26 @@ Definition ecopy1 e (p1 p2: Graph * Graph) :=
 Definition copy x (g1 g2: Graph) (g2': Graph) :=
   g1 ~=~ g2 /\
   WeakMarkGraph.mark x g1 g2 /\
-  LocalGraphCopy.copy (WeakMarkGraph.unmarked g1) x g1 g2 g2'.
+  LocalGraphCopy.copy (WeakMarkGraph.marked g1) x g1 g2 g2'.
 
 Definition extended_copy x (p1 p2: Graph * Graph) :=
   let (g1, g1') := p1 in
   let (g2, g2') := p2 in
   g1 ~=~ g2 /\
   WeakMarkGraph.mark x g1 g2 /\
-  LocalGraphCopy.extended_copy (WeakMarkGraph.unmarked g1) x (g1, pg_lg g1') (g2, pg_lg g2').
+  LocalGraphCopy.extended_copy (WeakMarkGraph.marked g1) x (g1, pg_lg g1') (g2, pg_lg g2').
 
-Definition side_condition (root: V) (l: list E * E) (p1 p2: Graph * Graph) :=
-  let (g1, g1') := p1 in
-  let (g2, g2') := p2 in
-  let (es_done, e0) := l in
-  let PV1 := WeakMarkGraph.marked g1 in
-  let PE1 := Intersection _ (weak_edge_prop (WeakMarkGraph.marked g1) g1) (evalid g1) in
-  let PE1_root e := In e es_done in
-  let P_rec := WeakMarkGraph.unmarked g1 in
-  let PV0 := reachable_by g1 (dst g1 e0) P_rec in
-  let PE0 := Intersection _ (weak_edge_prop PV0 g1) (evalid g1) in
-  GraphMorphism.disjointed_guard
-     (Union _ (image_set (LocalGraphCopy.vmap g2) PV1) (image_set (LocalGraphCopy.vmap g2) (eq root))) (image_set (LocalGraphCopy.vmap g2) PV0)
-     (Union _ (image_set (LocalGraphCopy.emap g2) PE1) (image_set (LocalGraphCopy.emap g2) PE1_root)) (image_set (LocalGraphCopy.emap g2) PE0).
-
-Definition edge_copy g e := compond_relation (copy (dst g e)) (ecopy1 e).
+Definition edge_copy g e := compond_relation (extended_copy (dst g e)) (ecopy1 e).
   
 Definition edge_copy_list g es := relation_list (map (edge_copy g) es).
 
-Lemma vcopy1_edge_copy_list_copy: forall root es (p1 p2: Graph * Graph),
-  let (g1, _) := p1 in
+Lemma vcopy1_edge_copy_list_copy: forall root es (g1 g2 g3 g3': Graph),
   vvalid g1 root ->
   WeakMarkGraph.unmarked g1 root ->
   (forall e, In e es <-> out_edges g1 root e) ->
-  relation_list (vcopy1 root :: edge_copy_list g1 es :: nil) p1 p2 ->
-  copy root p1 p2.
+  vcopy1 root g1 g2 ->
+  edge_copy_list g1 es (g2, ) (g3, g3') ->
+  copy root g1 g3 g3'.
 Admitted.
 *)
 End SpatialGraph_Copy.

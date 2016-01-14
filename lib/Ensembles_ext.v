@@ -402,6 +402,29 @@ Proof.
   rewrite Disjoint_spec; auto.
 Qed.
 
+Lemma Prop_join_assoc: forall A (P1 P2 P3 Q R: A -> Prop),
+  Prop_join P1 Q P2 ->
+  Prop_join P2 R P3 ->
+  Prop_join P1 (Union _ Q R) P3.
+Proof.
+  unfold Prop_join.
+  intros.
+  destruct H, H0.
+  split; intro a; rewrite Union_spec.
+  + rewrite H0, H.
+    tauto.
+  + intros.
+    destruct H4; firstorder.
+Qed.
+
+Lemma Prop_join_comm: forall {A : Type} (P Q R : Ensemble A),
+  Prop_join P Q R <-> Prop_join Q P R.
+Proof.
+  intros.
+  unfold Prop_join.
+  firstorder.
+Qed.
+
 Lemma Disjoint_Union_Prop_join: forall A P Q, Disjoint A P Q -> Prop_join P Q (Union A P Q).
 Proof.
   intros.

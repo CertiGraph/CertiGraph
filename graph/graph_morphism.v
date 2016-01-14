@@ -7,6 +7,7 @@ Require Import RamifyCoq.lib.List_ext.
 Require Import RamifyCoq.graph.graph_model.
 Require Import RamifyCoq.graph.path_lemmas. Import RamifyCoq.graph.path_lemmas.PathNotation.
 Require Import RamifyCoq.graph.subgraph2.
+Require Import RamifyCoq.graph.graph_gen.
 
 Module GraphMorphism.
 
@@ -287,9 +288,6 @@ Qed.
 Global Existing Instance guarded_bij_proper3.
 
 End GraphMorphism1.
-
-Definition disjointed_guard {V E} (PV1 PV2: V -> Prop) (PE1 PE2: E -> Prop) :=
-  Disjoint _ PV1 PV2 /\ Disjoint _ PE1 PE2.
 
 Lemma disjointed_guard_left_union: forall {V E} (PV1 PV2 PV3: V -> Prop) (PE1 PE2 PE3: E -> Prop),
   disjointed_guard (Union _ PV1 PV2) PV3 (Union _ PE1 PE2) PE3 ->
@@ -801,11 +799,6 @@ Proof.
     - apply H0; auto.
     - auto.
 Qed.
-
-Class GraphMorphismSetting (DV DE V' E': Type): Type := {
-  co_vertex: DV -> V';
-  co_edge: DE -> E'
-}.
 
 End GraphMorphism2.
 
