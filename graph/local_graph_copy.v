@@ -78,7 +78,7 @@ Definition extended_copy (M: V -> Prop) root (p1 p2: Graph * Graph') :=
   guarded_pointwise_relation (Complement _ PV) eq (vmap g1) (vmap g2) /\
   guarded_pointwise_relation (Complement _ PE) eq (emap g1) (emap g2) /\
   pregraph_join (image_set PV (vmap g2)) (image_set PE (emap g2)) g1' g2' /\
-  (forall e, PE e -> ~ PV (dst g2 e) -> vmap g2 (dst g2 e) = dst g2' (emap g2 e)) /\
+  boundary_dst_consistent PE (Complement _ PV) (vmap g2) (emap g2) g2 g2' /\
   (forall v, M v \/ ~ M v) /\
   guarded_bij PV PE (vmap g2) (emap g2) g2 g2'.
 
@@ -90,7 +90,25 @@ Definition edge_copy (g: Graph) (root: V) (M: V -> Prop) (l: list E * E) :=
   relation_list (extended_copy M_rec (dst g e0) :: ecopy1 e0 :: nil).
 
 Definition edge_copy_list (g: Graph) (root: V) es (P: V -> Prop) :=
-  relation_list (map (edge_copy g root P) (combine (prefixes es) es)).
+  relation_list (map (edge_copy g root P) (cprefix es)).
+
+Instance extended_copy_proper: Proper (Same_set ==> eq ==> same_relation (Graph * Graph')) extended_copy.
+Proof.
+  hnf; intros M1 M2 ?.
+  hnf; intros root root' ?; subst root'.
+  rewrite same_relation_spec.
+  intros [g1 g1'] [g2 g2'].
+  unfold extended_copy.
+  rewrite H.
+  assert ((forall v : V, M1 v \/ ~ M1 v) <-> (forall v : V, M2 v \/ ~ M2 v)).
+  Focus 1. {
+    rewrite Same_set_spec in H.
+    hnf in H; clear - H.
+    firstorder.
+  } Unfocus.
+  tauto.
+Qed.
+Global Existing Instance extended_copy_proper.
 
 Lemma triple_vcopy1: forall (g1 g2: Graph) root,
   vvalid g1 root ->
@@ -485,8 +503,14 @@ Proof.
   + rewrite <- H in COPY_si.
     rewrite Intersection_spec in H1; destruct H1.
     erewrite si_dst1 in H2 by eauto.
+    unfold Complement, Ensembles.In.
     rewrite <- H.
     auto.
+  + rewrite <- H in COPY_si.
+    destruct COPY_si as [_ [? _]].
+    rewrite Intersection_spec in H1.
+    destruct H1 as [_ ?].
+    rewrite <- H4; auto.
 Qed.
 
 Lemma triple1_copy: forall (g g1 g2: Graph) (g1' g2': Graph') (M: V -> Prop) root es es_done e0 es_later,
@@ -579,7 +603,7 @@ Proof.
     rewrite PRE_vvalid in H1.
     rewrite PRE_evalid in H2.
     split; auto.
-  + split; split; intros.
+  + split; split; hnf; intros.
     - erewrite <- si_src2 in H2 by eauto.
       rewrite Union_spec in H1; destruct H1; exfalso.
       * revert H1 H2; eapply aux12; reflexivity.
@@ -996,7 +1020,7 @@ Proof.
       tauto.
     - inversion H3.
     - inversion H3.
-  + split; split; intros.
+  + split; split; hnf; intros.
     - inversion H3.
     - inversion H3.
     - subst e.
