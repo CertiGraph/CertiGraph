@@ -684,6 +684,8 @@ Fixpoint prefixes {A: Type} (l: list A): list (list A) :=
   | a :: l0 => nil :: map (cons a) (prefixes l0)
   end.
 
+Definition cprefix {A: Type} (l: list A) := combine (prefixes l) l.
+
 Lemma map_id: forall {A: Type} (l: list A),
   map id l = l.
 Proof.
@@ -728,13 +730,59 @@ Proof.
 Qed.
 
 Lemma combine_prefixes_app_1: forall {A: Type} (l: list A) (a: A),
-  combine (prefixes (l +:: a)) (l +:: a) =
-  combine (prefixes l) l +:: (l, a).
+  cprefix (l +:: a) = cprefix l +:: (l, a).
 Proof.
   intros.
+  unfold cprefix.
   rewrite prefixes_app_1.
   rewrite combine_app by (apply length_prefixes).
   auto.
+Qed.
+
+Lemma map_fst_combine: forall {A B: Type} (a: list A) (b: list B),
+  length a = length b ->
+  map fst (combine a b) = a.
+Proof.
+  intros.
+  revert b H; induction a; intros; destruct b; try solve [inversion H].
+  + reflexivity.
+  + simpl.
+    f_equal.
+    apply IHa.
+    inv H.
+    auto.
+Qed.
+
+Lemma map_snd_combine: forall {A B: Type} (a: list A) (b: list B),
+  length a = length b ->
+  map snd (combine a b) = b.
+Proof.
+  intros.
+  revert b H; induction a; intros; destruct b; try solve [inversion H].
+  + reflexivity.
+  + simpl.
+    f_equal.
+    apply IHa.
+    inv H.
+    auto.
+Qed.
+
+Lemma map_snd_cprefix: forall {A: Type} (l: list A),
+  map snd (cprefix l) = l.
+Proof.
+  intros.
+  apply map_snd_combine.
+  apply length_prefixes.
+Qed.
+
+Lemma map_snd_cprefix': forall {A B: Type} (l: list A) (f: A -> B),
+  map f l = map (fun p => f (snd p)) (cprefix l).
+Proof.
+  intros.
+  unfold cprefix.
+  rewrite <- (map_map snd f).
+  rewrite map_snd_combine; auto.
+  apply length_prefixes.
 Qed.
 
 Lemma rev_list_ind: forall {A} (P: list A -> Prop),
@@ -766,3 +814,36 @@ Qed.
 Ltac rev_induction l :=
   revert dependent l;
   refine (rev_list_ind _ _ _); intros.
+
+Lemma in_cprefix: forall {A: Type} (xs: list A) xs0 x0,
+  In (xs0, x0) (cprefix xs) ->
+  In x0 xs.
+Proof.
+  intros.
+  rev_induction xs.
+  + inversion H.
+  + rewrite combine_prefixes_app_1 in H0.
+    rewrite in_app_iff in H0 |- *.
+    destruct H0.
+    - auto.
+    - destruct H0 as [| []].
+      inversion H0; subst.
+      simpl; auto.
+Qed.
+
+Lemma in_cprefix_cprefix: forall {A: Type} (xs: list A) xs0 xss0,
+  In (xss0, xs0) (cprefix (cprefix xs)) ->
+  map snd xss0 = fst xs0.
+Proof.
+  intros.
+  rev_induction xs.
+  + inversion H.
+  + rewrite !combine_prefixes_app_1 in H0.
+    rewrite in_app_iff in H0.
+    destruct H0; [auto |].
+    destruct H0 as [| []].
+    inversion H0; subst.
+    rewrite map_snd_cprefix.
+    reflexivity.
+Qed.
+

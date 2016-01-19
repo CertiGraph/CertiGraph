@@ -65,6 +65,16 @@ Proof.
     auto.
 Qed.
 
+Lemma app_same_relation: forall {A: Type} (R1 R2: relation A) (a1 a2: A),
+  same_relation A R1 R2 ->
+  (R1 a1 a2 <-> R2 a1 a2).
+Proof.
+  intros.
+  rewrite same_relation_spec in H.
+  specialize (H a1 a2).
+  tauto.
+Qed.
+
 Inductive compond_relation {A: Type} (R1 R2: relation A) : relation A :=
   | compond_intro: forall x y z, R1 x y -> R2 y z -> compond_relation R1 R2 x z.
 
@@ -176,4 +186,28 @@ Proof.
 Qed.
 
 Definition respectful_relation {A B} (f: A -> B) (R: relation B): relation A := fun x y => R (f x) (f y).
+
+Definition fst_relation {A B}: relation A -> relation (A * B) := respectful_relation (@fst A B).
+
+Definition snd_relation {A B}: relation B -> relation (A * B) := respectful_relation (@snd A B).
+
+Instance respectful_relation_proper {A B} (f: A -> B): Proper (same_relation _ ==> same_relation _) (respectful_relation f).
+Proof.
+  hnf; intros.
+  rewrite @same_relation_spec in H |- *.
+  intros b1 b2.
+  unfold respectful_relation.
+  apply H.
+Defined.
+
+Lemma respectful_compond_relation: forall {A B} (f: A -> B) R1 R2,
+  inclusion _
+    (compond_relation (respectful_relation f R1) (respectful_relation f R2))
+    (respectful_relation f (compond_relation R1 R2)).
+Proof.
+  intros.
+  intros a1 a2 ?.
+  inversion H; subst.
+  apply compond_intro with (f y); auto.
+Qed.
 
