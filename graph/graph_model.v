@@ -185,6 +185,9 @@ Defined.
 Lemma negateP_spec: forall (p : NodePred Vertex) (x : Vertex), (negateP p) x <-> ~ p x.
 Proof. intros; unfold negateP; simpl; unfold Complement; tauto. Qed.
 
+Lemma negateP_spec': forall (p : NodePred Vertex), Same_set (negateP p) (Complement _ p).
+Proof. intros. rewrite Same_set_spec; intros ?. apply negateP_spec. Qed.
+
 Lemma negateP_spec_d: forall (p: NodePred Vertex) (x : Vertex), ~ Ensembles.In Vertex (negateP p) x <-> p x.
 Proof.
   intros. unfold negateP. simpl. unfold Complement. 

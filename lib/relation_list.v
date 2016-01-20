@@ -140,6 +140,38 @@ Proof.
       right; simpl; auto.
 Qed.
 
+Lemma relation_list_weaken_ind': forall {A B} (R R': B -> relation A) l a1 a2,
+  (forall bs_done b0 a2 a3,
+     In (bs_done, b0) (cprefix l) ->
+     relation_list (map R bs_done) a1 a2 ->
+     relation_list (map R' bs_done) a1 a2 ->
+     R b0 a2 a3 ->
+     R' b0 a2 a3) ->
+  relation_list (map R l) a1 a2 ->
+  relation_list (map R' l) a1 a2.
+Proof.
+  intros.
+  revert a2 H0; rev_induction l; intros.
+  + simpl in H0 |- *; auto.
+  + revert H1.
+    rewrite !map_app; simpl.
+    erewrite !(app_same_relation (relation_list _)) by apply relation_list_tail.
+    intro.
+    destruct H1.
+    assert (relation_list (map R' l) x y).
+    - apply H; auto.
+      clear - H0.
+      intros; apply (H0 bs_done); auto.
+      rewrite combine_prefixes_app_1.
+      apply in_app_iff.
+      left; auto.
+    - apply compond_intro with y; auto.
+      apply (H0 l); auto.
+      rewrite combine_prefixes_app_1.
+      apply in_app_iff.
+      right; simpl; auto.
+Qed.
+
 Lemma relation_list_inclusion: forall {A B} (R R': B -> relation A) l,
   (forall b, In b l -> inclusion _ (R b) (R' b)) ->
   inclusion _ (relation_list (map R l)) (relation_list (map R' l)).

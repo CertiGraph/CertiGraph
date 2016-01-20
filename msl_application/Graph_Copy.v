@@ -166,40 +166,45 @@ Lemma edge_copy_spec': forall (g: Graph) (root: V) (p: list E * E) (* (es_done: 
   WeakMarkGraph.componded root (WeakMarkGraph.mark (dst g e0)) g1 g2.
 *)
 Lemma edge_copy_list_spec: forall root es (g g1 g2 g1' g2': Graph),
+  vvalid g1 root ->
+  WeakMarkGraph.unmarked g1 root ->
+  (forall e, In e es <-> out_edges g1 root e) ->
   WeakMarkGraph.mark1 root g g1 ->
   edge_copy_list g es (g1, g1') (g2, g2') ->
   LocalGraphCopy.edge_copy_list g root es (WeakMarkGraph.marked g) (g1, g1') (g2, g2') /\
   WeakMarkGraph.componded_mark_list root (map (dst g) es) g1 g2.
 Proof.
   intros.
-  unfold edge_copy_list in H0.
-  rewrite map_snd_cprefix' in H0.
+  unfold edge_copy_list in H3.
+  rewrite map_snd_cprefix' in H3.
   eapply relation_list_weaken_ind with
     (R' := fun (p: list E * E) =>
            relation_conjunction
             (LocalGraphCopy.edge_copy g root (WeakMarkGraph.marked g) p)
             (fst_relation (WeakMarkGraph.componded root (WeakMarkGraph.mark (dst g (snd p))))))
-     in H0.
-  + apply relation_list_conjunction in H0.
-    destruct H0.
+     in H3.
+  + apply relation_list_conjunction in H3.
+    destruct H3.
     split; auto.
-    rewrite <- map_map in H1.
-    unfold fst_relation in H1.
-    apply respectful_relation_list in H1.
-    unfold respectful_relation in H1; simpl in H1.
+    rewrite <- map_map in H4.
+    unfold fst_relation in H4.
+    apply respectful_relation_list in H4.
+    unfold respectful_relation in H4; simpl in H4.
     unfold WeakMarkGraph.componded_mark_list.
     rewrite map_map.
     rewrite map_snd_cprefix'.
     auto.
-  + clear.
+  + clear g2 g2' H3.
     intros.
     unfold relation_conjunction, predicate_intersection; simpl.
     destruct a2 as [g2 g2'], a3 as [g3 g3'].
     unfold fst_relation, respectful_relation; simpl.
-    rewrite <- map_map in H0.
-    apply in_cprefix_cprefix in H.
-    rewrite H in H0; clear bs_done H.
+    rewrite <- map_map in H4.
+    pose proof in_cprefix _ _ _ H3.
+    apply in_cprefix_cprefix in H3.
+    rewrite H3 in H4; clear bs_done H3.
     destruct b0 as [es_done e0]; simpl in *.
+    apply in_cprefix in H6.
     apply edge_copy_spec; auto.
 Abort.
 
@@ -217,3 +222,20 @@ Proof.
 Abort.
 
 End SpatialGraph_Copy.
+
+
+(*
+
+https://www.zhihu.com/question/34406872#answer-20111906
+https://www.zhihu.com/question/24375292#answer-24963090
+https://www.zhihu.com/question/37703381#answer-24711147
+https://www.zhihu.com/question/38303758#answer-25773456
+http://www.lwxsw.org/books/23/23978/7948501.html
+https://www.zhihu.com/search?type=question&q=%E5%BF%AB%E6%92%AD+%E6%96%B0%E5%8D%8E%E7%A4%BE
+https://www.zhihu.com/question/39334589
+https://www.zhihu.com/question/39265386
+http://finance.sina.com.cn/review/jcgc/2016-01-11/doc-ifxnkkuy7861463.shtml
+http://media.people.com.cn/n1/2016/0112/c40606-28039812.html
+http://zqb.cyol.com/html/2016-01/12/nw.D110000zgqnb_20160112_1-06.htm
+
+*)
