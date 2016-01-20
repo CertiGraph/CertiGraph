@@ -1,11 +1,65 @@
 Require Import Coq.Classes.Morphisms.
 Require Import Coq.Lists.List.
 Require Import RamifyCoq.lib.Coqlib.
+Require Import RamifyCoq.lib.List_ext.
 Require Import RamifyCoq.lib.List_Func_ext.
 Require Export RamifyCoq.lib.Relation_ext.
 
-Definition relation_list {A: Type} (R: list (relation A)) : relation A := fold_left compond_relation R eq.
+(* TODO: define a general pointwise relation on list *)
+Inductive same_relation_list {A: Type}: list (relation A) -> list (relation A) -> Prop :=
+  | same_relation_list_nil :
+      same_relation_list nil nil
+  | same_relation_list_cons :
+      forall x xs y ys,
+      same_relation A x y ->
+      same_relation_list xs ys -> 
+      same_relation_list (x :: xs) (y :: ys).
 
+Lemma same_relation_list_refl: forall {A} (rs: list (relation A)), same_relation_list rs rs.
+Proof.
+  intros.
+  induction rs; constructor; auto.
+  reflexivity.
+Qed.
+
+Lemma same_relation_list_symm: forall {A} (rs1 rs2: list (relation A)),
+  same_relation_list rs1 rs2 -> same_relation_list rs2 rs1.
+Proof.
+  intros.
+  induction H; constructor.
+  + symmetry; auto.
+  + auto.
+Qed.
+
+Lemma same_relation_list_trans: forall {A} (rs1 rs2 rs3: list (relation A)),
+  same_relation_list rs1 rs2 ->
+  same_relation_list rs2 rs3 ->
+  same_relation_list rs1 rs3.
+Proof.
+  intros.
+  rename H0 into HH.
+  revert rs3 HH; induction H; intros;
+  inversion HH; subst; constructor.
+  + rewrite H; auto.
+  + auto.
+Qed.
+
+Instance Equivalence_same_relation_list {A}: Equivalence (@same_relation_list A).
+Proof.
+  split.
+  + exact same_relation_list_refl.
+  + exact same_relation_list_symm.
+  + exact same_relation_list_trans.
+Defined.
+
+Instance cons_relation_proper {A}: Proper (same_relation A ==> same_relation_list ==> same_relation_list) (@cons (relation A)).
+Proof.
+  do 2 (hnf; intros).
+  apply same_relation_list_cons; auto.
+Defined.
+
+Definition relation_list {A: Type} (R: list (relation A)) : relation A := fold_left compond_relation R eq.
+    
 Lemma relation_list_app: forall {A: Type} (R R': list (relation A)),
   same_relation _ (relation_list (R ++ R')) (compond_relation (relation_list R) (relation_list R')).
 Proof.
@@ -56,6 +110,68 @@ Proof.
     - apply IHl; auto.
 Qed.
 
+Lemma relation_list_weaken_ind: forall {A B} (R R': B -> relation A) l a1 a2,
+  (forall bs_done b0 a2 a3,
+     In (bs_done, b0) (cprefix l) ->
+     relation_list (map R bs_done) a1 a2 ->
+     R b0 a2 a3 ->
+     R' b0 a2 a3) ->
+  relation_list (map R l) a1 a2 ->
+  relation_list (map R' l) a1 a2.
+Proof.
+  intros.
+  revert a2 H0; rev_induction l; intros.
+  + simpl in H0 |- *; auto.
+  + revert H1.
+    rewrite !map_app; simpl.
+    erewrite !(app_same_relation (relation_list _)) by apply relation_list_tail.
+    intro.
+    destruct H1.
+    apply compond_intro with y.
+    - apply H; auto.
+      clear - H0.
+      intros; apply (H0 bs_done); auto.
+      rewrite combine_prefixes_app_1.
+      apply in_app_iff.
+      left; auto.
+    - apply (H0 l); auto.
+      rewrite combine_prefixes_app_1.
+      apply in_app_iff.
+      right; simpl; auto.
+Qed.
+
+Lemma relation_list_weaken_ind': forall {A B} (R R': B -> relation A) l a1 a2,
+  (forall bs_done b0 a2 a3,
+     In (bs_done, b0) (cprefix l) ->
+     relation_list (map R bs_done) a1 a2 ->
+     relation_list (map R' bs_done) a1 a2 ->
+     R b0 a2 a3 ->
+     R' b0 a2 a3) ->
+  relation_list (map R l) a1 a2 ->
+  relation_list (map R' l) a1 a2.
+Proof.
+  intros.
+  revert a2 H0; rev_induction l; intros.
+  + simpl in H0 |- *; auto.
+  + revert H1.
+    rewrite !map_app; simpl.
+    erewrite !(app_same_relation (relation_list _)) by apply relation_list_tail.
+    intro.
+    destruct H1.
+    assert (relation_list (map R' l) x y).
+    - apply H; auto.
+      clear - H0.
+      intros; apply (H0 bs_done); auto.
+      rewrite combine_prefixes_app_1.
+      apply in_app_iff.
+      left; auto.
+    - apply compond_intro with y; auto.
+      apply (H0 l); auto.
+      rewrite combine_prefixes_app_1.
+      apply in_app_iff.
+      right; simpl; auto.
+Qed.
+
 Lemma relation_list_inclusion: forall {A B} (R R': B -> relation A) l,
   (forall b, In b l -> inclusion _ (R b) (R' b)) ->
   inclusion _ (relation_list (map R l)) (relation_list (map R' l)).
@@ -94,11 +210,42 @@ Proof.
     split; apply compond_intro with y0; auto.
 Qed.
 
+Lemma respectful_relation_list: forall {B A} (f: B -> A) (l: list (relation A)),
+  inclusion _
+   (relation_list (map (respectful_relation f) l))
+   (respectful_relation f (relation_list l)).
+Proof.
+  intros; hnf; intros.
+  revert x y H; induction l; intros.
+  + unfold relation_list in H.
+    simpl in *.
+    subst.
+    reflexivity.
+  + simpl.
+    erewrite app_same_relation by (rewrite relation_list_head; reflexivity).
+    apply respectful_compond_relation.
+    simpl in H.
+    erewrite app_same_relation in H by (rewrite relation_list_head; reflexivity).
+    inversion H; subst.
+    apply compond_intro with y0; auto.
+Qed.
+
 Lemma relation_list_singleton: forall {A} (R: relation A), same_relation _ (relation_list (R :: nil)) R.
 Proof.
   intros.
   unfold relation_list; simpl.
   apply compond_eq_left.
+Qed.
+
+Instance relation_list_proper {A: Type}: Proper (same_relation_list ==> same_relation A) relation_list.
+Proof.
+  hnf; intros.
+  induction H.
+  + reflexivity.
+  + rewrite !relation_list_head.
+    rewrite H.
+    rewrite IHsame_relation_list.
+    reflexivity.
 Qed.
 
 Ltac split_relation_list L :=

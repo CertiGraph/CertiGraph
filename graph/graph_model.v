@@ -185,6 +185,9 @@ Defined.
 Lemma negateP_spec: forall (p : NodePred Vertex) (x : Vertex), (negateP p) x <-> ~ p x.
 Proof. intros; unfold negateP; simpl; unfold Complement; tauto. Qed.
 
+Lemma negateP_spec': forall (p : NodePred Vertex), Same_set (negateP p) (Complement _ p).
+Proof. intros. rewrite Same_set_spec; intros ?. apply negateP_spec. Qed.
+
 Lemma negateP_spec_d: forall (p: NodePred Vertex) (x : Vertex), ~ Ensembles.In Vertex (negateP p) x <-> p x.
 Proof.
   intros. unfold negateP. simpl. unfold Complement. 
@@ -408,22 +411,26 @@ Notation Graph := (@LabeledGraph Vertex Edge EV EE DV DE).
 
 Definition labeled_graph_equiv (g1 g2: Graph) :=
   g1 ~=~ g2 /\
-  (forall v, vlabel g1 v = vlabel g2 v) /\
-  (forall e, elabel g1 e = elabel g2 e).
+  (forall v, vvalid g1 v -> vvalid g2 v -> vlabel g1 v = vlabel g2 v) /\
+  (forall e, evalid g1 e -> evalid g2 e -> elabel g1 e = elabel g2 e).
 
 Lemma lge_refl: forall (G : Graph), labeled_graph_equiv G G.
 Proof. intros; repeat split; auto. Qed.
 
 Lemma lge_sym: forall (G1 G2: Graph), labeled_graph_equiv G1 G2 -> labeled_graph_equiv G2 G1.
-Proof. intros; destruct H as [? [? ?]]; split; [| split]; auto. symmetry; auto. Qed.
+Proof. intros; destruct H as [? [? ?]]; split; [| split]; auto; intros; symmetry; auto. Qed.
 
 Lemma lge_trans: forall (G1 G2 G3: Graph), labeled_graph_equiv G1 G2 -> labeled_graph_equiv G2 G3 -> labeled_graph_equiv G1 G3.
 Proof.
   intros; destruct H as [? [? ?]], H0 as [? [? ?]].
   split; [| split].
   + transitivity G2; auto.
-  + intros. specialize (H1 v); specialize (H3 v); congruence.
-  + intros. specialize (H2 e); specialize (H4 e); congruence.
+  + intros.
+    assert (vvalid G2 v) by (pose proof (proj1 H v); tauto).
+    specialize (H1 v H5 H7); specialize (H3 v H7 H6); congruence.
+  + intros.
+    assert (evalid G2 e) by (pose proof (proj1 (proj2 H) e); tauto).
+    specialize (H2 e H5 H7); specialize (H4 e H7 H6); congruence.
 Qed.
 
 Instance lge_Equiv: Equivalence (labeled_graph_equiv).
