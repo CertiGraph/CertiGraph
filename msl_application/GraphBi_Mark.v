@@ -132,10 +132,10 @@ Proof.
     rewrite Intersection_spec in H4; unfold Complement, Ensembles.In in H4; destruct H4.
     f_equal; [f_equal |].
     - apply vlabel_eq.
-      apply (proj2 (proj2 H2)).
+      rewrite (proj2 H2).
       rewrite <- H1.
-      intro.
-      apply reachable_by_subset_reachable in H6; unfold Ensembles.In in H6.
+      pose proof reachable_by_subset_reachable g l (WeakMarkGraph.unmarked g1) x0.
+      unfold Ensembles.In in H6.
       tauto.
     - apply dst_L_eq; auto.
       rewrite H1 in H4.
@@ -170,10 +170,10 @@ Proof.
     rewrite Intersection_spec in H5; unfold Complement, Ensembles.In in H5; destruct H5.
     f_equal; [f_equal |].
     - apply vlabel_eq.
-      apply (proj2 (proj2 H3)).
+      rewrite (proj2 H3).
       rewrite <- H2, <- H1.
-      intro.
-      apply reachable_by_subset_reachable in H7; unfold Ensembles.In in H7.
+      pose proof reachable_by_subset_reachable g r (WeakMarkGraph.unmarked g2) x0.
+      unfold Ensembles.In in H7.
       tauto.
     - apply dst_L_eq; auto.
       rewrite H1, H2 in H5.
