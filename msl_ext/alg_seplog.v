@@ -25,6 +25,7 @@ Instance algOverlapSepLog (A: Type) {JA: Join A} {SA: Sep_alg A} {PA : Perm_alg 
   + apply ocon_emp.
   + apply ocon_TT.
   + apply andp_ocon.
+  + apply ocon_andp_prop.
   + apply sepcon_ocon.
   + intros. rewrite ocon_wand.
     apply (exp_right R).
