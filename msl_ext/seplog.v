@@ -39,6 +39,8 @@ Class OverlapSepLog (A: Type) {ND: NatDed A} {SL: SepLog A} {PSL: PreciseSepLog 
   ocon_emp: forall P, ocon P emp = P;
   ocon_TT: forall P, ocon P TT = P * TT;
   andp_ocon: forall P Q, P && Q |-- ocon P Q;
+  ocon_andp_prop : forall (P : A) (Q : Prop) (R : A),
+      ocon P (!!Q && R) = !!Q && ocon P R;
   sepcon_ocon: forall P Q, P * Q |-- ocon P Q;
   ocon_wand: forall P Q R, (R -* P) * (R -* Q) * R |-- ocon P Q;
   ocon_comm: forall P Q, ocon P Q = ocon Q P;
@@ -58,6 +60,7 @@ Instance LiftOverlapSepLog (A B: Type) {ND: NatDed B} {SL: SepLog B} {PSL: Preci
   + extensionality x. apply ocon_emp.
   + extensionality x. apply ocon_TT.
   + apply andp_ocon.
+  + extensionality x. apply ocon_andp_prop.
   + apply sepcon_ocon.
   + apply ocon_wand.
   + extensionality x. apply ocon_comm.

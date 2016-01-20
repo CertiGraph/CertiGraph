@@ -127,7 +127,7 @@ Proof.
                         (@update_MathGraph _ _ _ _ G _ _ (biGraph G) (maGraph G) x l r Hi Hn)
                         (@update_FiniteGraph _ _ _ _ G _ _ (biGraph G) (finGraph G) x l r) _).
   intro y; intros. simpl. apply is_null_def.
-Qed.
+Defined.
 
 Lemma Graph_gen_spatial_spec: forall (G: Graph) (x: addr) (d d': bool) l r,
   vgamma G x = (d, l, r) ->

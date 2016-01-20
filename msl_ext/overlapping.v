@@ -82,6 +82,15 @@ Proof.
   apply join_comm; apply core_unit.
 Qed.
 
+Lemma ocon_andp_prop {A}{JA: Join A}{PA: Perm_alg A}{SA: Sep_alg A}{AG : ageable A} {AA : Age_alg A}: forall P Q R, P ⊗ (!!Q && R) = !!Q && (P ⊗ R).
+Proof.
+  intros; apply pred_ext; hnf; intros; simpl in *.
+  + destruct H as [h1 [h2 [h3 [h12 [h23 [? [? [? [? [? ?]]]]]]]]]].
+    split; auto. exists h1, h2, h3, h12, h23. intuition.
+  + destruct H as [? [h1 [h2 [h3 [h12 [h23 [? [? [? [? ?]]]]]]]]]].
+    exists h1, h2, h3, h12, h23. intuition.
+Qed.
+
 Lemma sepcon_ocon {A}{JA: Join A}{PA: Perm_alg A}{SA: Sep_alg A}{AG : ageable A} {AA : Age_alg A}: forall P Q, P * Q |-- P ⊗ Q.
 Proof.
   intros; hnf; intros; simpl in *; intros.

@@ -285,6 +285,12 @@ Proof.
   apply ocon_emp.
 Qed.
 
+Lemma ocon_andp_prop': forall {A} `{OverlapSepLog A} P Q R,
+    ocon (!!P && Q) R = !!P && ocon Q R.
+Proof.
+  intros. rewrite ocon_comm. rewrite ocon_andp_prop. rewrite ocon_comm. auto.
+Qed.
+
 Lemma ocon_self: forall {A} {ND: NatDed A} {SL: SepLog A} {CLS: ClassicalSep A} {PSL: PreciseSepLog A} {OSL: OverlapSepLog A} P, P |-- ocon P P.
 Proof.
   intros.
@@ -491,7 +497,9 @@ Qed.
 
 Ltac normalize_overlap :=
   repeat
-  match goal with
+    match goal with
+     | |- context [ocon ?P (!!?Q && ?R)] => rewrite (ocon_andp_prop P Q R)
+     | |- context [ocon (!!?P && ?Q) ?R] => rewrite (ocon_andp_prop' P Q R)
      | |- context [ocon (?P && ?Q) ?R] => rewrite (corable_andp_ocon1 P Q R) by (auto with norm)
      | |- context [ocon ?Q (?P && ?R)] => rewrite (corable_ocon_andp1 P Q R) by (auto with norm)
      | |- context [ocon (?Q && ?P) ?R] => rewrite (corable_andp_ocon2 P Q R) by (auto with norm)
@@ -499,7 +507,7 @@ Ltac normalize_overlap :=
      | |- context [ocon (exp ?P) ?Q] => rewrite (exp_ocon1 _ P Q)
      | |- context [ocon ?P (exp ?Q)] => rewrite (exp_ocon2 _ P Q)
      | |- _ => eauto with typeclass
-  end;
+    end;
   repeat rewrite <- andp_assoc;
   try normalize.
 
