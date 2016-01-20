@@ -7,6 +7,7 @@ Require Import RamifyCoq.lib.List_ext.
 Require Import RamifyCoq.graph.graph_model.
 Require Import RamifyCoq.graph.path_lemmas. Import RamifyCoq.graph.path_lemmas.PathNotation.
 Require Import RamifyCoq.graph.subgraph2.
+Require Import RamifyCoq.graph.graph_gen.
 
 Module GraphMorphism.
 
@@ -288,9 +289,6 @@ Global Existing Instance guarded_bij_proper3.
 
 End GraphMorphism1.
 
-Definition disjointed_guard {V E} (PV1 PV2: V -> Prop) (PE1 PE2: E -> Prop) :=
-  Disjoint _ PV1 PV2 /\ Disjoint _ PE1 PE2.
-
 Lemma disjointed_guard_left_union: forall {V E} (PV1 PV2 PV3: V -> Prop) (PE1 PE2 PE3: E -> Prop),
   disjointed_guard (Union _ PV1 PV2) PV3 (Union _ PE1 PE2) PE3 ->
   disjointed_guard PV1 PV3 PE1 PE3 /\
@@ -310,11 +308,35 @@ Context {EE: EqDec E eq}.
 Context {EV': EqDec V' eq}.
 Context {EE': EqDec E' eq}.
 
+Definition boundary_src_consistent (PE1: E -> Prop) (PV2: V -> Prop) vmap emap (G: PreGraph V E) (G': PreGraph V' E') := 
+  forall e, PE1 e -> PV2 (src G e) -> evalid G e -> vmap (src G e) = src G' (emap e).
+
+Definition boundary_dst_consistent (PE1: E -> Prop) (PV2: V -> Prop) vmap emap (G: PreGraph V E) (G': PreGraph V' E') := 
+  forall e, PE1 e -> PV2 (dst G e) -> evalid G e -> vmap (dst G e) = dst G' (emap e).
+
+Instance boundary_src_consistent_proper: Proper (Same_set ==> Same_set ==> eq ==> eq ==> eq ==> eq ==> iff) boundary_src_consistent.
+Proof.
+  do 6 (hnf; intros); subst.
+  rewrite Same_set_spec in H, H0.
+  hnf in H, H0.
+  unfold boundary_src_consistent.
+  firstorder.
+Qed.
+Global Existing Instance boundary_src_consistent_proper.
+
+Instance boundary_dst_consistent_proper: Proper (Same_set ==> Same_set ==> eq ==> eq ==> eq ==> eq ==> iff) boundary_dst_consistent.
+Proof.
+  do 6 (hnf; intros); subst.
+  rewrite Same_set_spec in H, H0.
+  hnf in H, H0.
+  unfold boundary_dst_consistent.
+  firstorder.
+Qed.
+Global Existing Instance boundary_dst_consistent_proper.
+
 Definition boundary_edge_consistent (PE1: E -> Prop) (PV2: V -> Prop) vmap emap (G: PreGraph V E) (G': PreGraph V' E') := 
-  (forall e, PE1 e -> PV2 (src G e) -> evalid G e ->
-     vmap (src G e) = src G' (emap e)) /\
-  (forall e, PE1 e -> PV2 (dst G e) -> evalid G e ->
-     vmap (dst G e) = dst G' (emap e)).
+  boundary_src_consistent PE1 PV2 vmap emap G G' /\
+  boundary_dst_consistent PE1 PV2 vmap emap G G'.
 
 Definition boundary_consistent (PV1 PV2: V -> Prop) (PE1 PE2: E -> Prop) vmap emap (G: PreGraph V E) (G': PreGraph V' E') := 
   boundary_edge_consistent PE1 PV2 vmap emap G G' /\
@@ -407,23 +429,21 @@ Lemma guarded_bij_disjointed_weak_edge_prop_union: forall PV1 PV2 vmap emap (G: 
     (image_set PE1 emap) (image_set PE2 emap) ->
   guarded_bij PV1 PE1 vmap emap G G' ->
   guarded_bij PV2 PE2 vmap emap G G' ->
-  (forall e, PE1 e -> PV2 (dst G e) -> vmap (dst G e) = dst G' (emap e)) ->
-  (forall e, PE2 e -> PV1 (dst G e) -> vmap (dst G e) = dst G' (emap e)) ->
+  boundary_dst_consistent PE1 PV2 vmap emap G G' ->
+  boundary_dst_consistent PE2 PV1 vmap emap G G' ->
   guarded_bij (Union _ PV1 PV2) (Union _ PE1 PE2) vmap emap G G'.
 Proof.
   intros.
   apply guarded_bij_disjointed_union; auto.
   destruct H.
   assert (Disjoint _ PV1 PV2) by (eapply image_Disjoint_rev; eauto).
-  split; split; intros.
+  split; split; auto; hnf; intros.
   + rewrite Disjoint_spec in H5.
     unfold PE1, weak_edge_prop in H6; rewrite Intersection_spec in H6.
     pose proof H5 _ (proj1 H6) H7; tauto.
-  + intros; apply (H2 e); auto.
   + rewrite Disjoint_spec in H5.
     unfold PE2, weak_edge_prop in H6; rewrite Intersection_spec in H6.
     pose proof H5 _  H7 (proj1 H6); tauto.
-  + intros; apply (H3 e); auto.
 Qed.
 
 Lemma guarded_bij_disjointed_union_strong: forall PV1 PE1 PV2 PE2 vmap emap (G: PreGraph V E) (G1' G2': PreGraph V' E'),
@@ -801,11 +821,6 @@ Proof.
     - apply H0; auto.
     - auto.
 Qed.
-
-Class GraphMorphismSetting (DV DE V' E': Type): Type := {
-  co_vertex: DV -> V';
-  co_edge: DE -> E'
-}.
 
 End GraphMorphism2.
 

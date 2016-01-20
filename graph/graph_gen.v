@@ -1,10 +1,11 @@
 Require Import Coq.Logic.ProofIrrelevance.
 Require Import Coq.Sets.Ensembles.
 Require Import Coq.Sets.Finite_sets.
-Require Import Coq.Lists.List.
 Require Import VST.msl.Coqlib2.
 Require Import RamifyCoq.lib.Coqlib.
 Require Import RamifyCoq.lib.EquivDec_ext.
+Require Import RamifyCoq.lib.Ensembles_ext.
+Require Import Coq.Lists.List.
 Require Import RamifyCoq.graph.graph_model.
 Require Import RamifyCoq.graph.subgraph2.
 
@@ -22,6 +23,9 @@ Definition empty_pregraph (v0: V): PreGraph V E :=
 
 Definition single_vertex_pregraph (v0: V): PreGraph V E :=
   @Build_PreGraph V E EV EE (eq v0) (fun e => False) (fun e => v0) (fun e => v0).
+
+Definition single_vertex_labeledgraph (v0: V) (v_default: DV) (e_default: DE): Graph :=
+  @Build_LabeledGraph V E EV EE DV DE (single_vertex_pregraph v0) (fun v => v_default) (fun e => e_default).
 
 Definition union_pregraph (PV : V -> Prop) (PE: E -> Prop) (PVD: forall v, Decidable (PV v)) (PED: forall e, Decidable (PE e)) (g1 g2: PreGraph V E): PreGraph V E :=
   @Build_PreGraph V E EV EE
@@ -327,3 +331,139 @@ Section ADD_GENERAL_GRAPH_GEN.
     @Build_GeneralGraph V E EV EE DV DE P (update_LabeledGraph g left_out_edge right_out_edge x l r) sound'.
 
 End ADD_GENERAL_GRAPH_GEN.
+
+Section GRAPH_DISJOINT_UNION.
+
+  Context {V E: Type}.
+  Context {EV: EqDec V eq}.
+  Context {EE: EqDec E eq}.
+  Context {DV DE: Type}.
+
+  Definition disjointed_guard (PV1 PV2: V -> Prop) (PE1 PE2: E -> Prop) :=
+    Disjoint _ PV1 PV2 /\ Disjoint _ PE1 PE2.
+
+  (* In assumption, why need decidability in Type? Because we need at least an existence (in Prop) of a function, which requires decidability in Type. *)
+  (* In conclusion, it is possible to generate this stronger existential (In Type) property. *) 
+  Definition disjointed_union_labeledgraph_exists_ll: forall (G1 G2: LabeledGraph V E DV DE),
+    disjointed_guard (vvalid G1) (vvalid G2) (evalid G1) (evalid G2) ->
+    (forall v, Decidable (vvalid G1 v)) ->
+    (forall e, Decidable (evalid G1 e)) ->
+    { G: LabeledGraph V E DV DE | 
+      guarded_labeled_graph_equiv (vvalid G1) (evalid G1) G1 G /\
+      guarded_labeled_graph_equiv (vvalid G2) (evalid G2) G2 G /\
+      Prop_join (evalid G1) (evalid G2) (evalid G) /\
+      Prop_join (evalid G1) (evalid G2) (evalid G)}.
+  Proof.
+    intros.
+    exists
+      (Build_LabeledGraph _ _
+        (@Build_PreGraph V E _ _
+          (fun v => vvalid G1 v \/ vvalid G2 v)
+          (fun e => evalid G1 e \/ evalid G2 e)
+          (fun e => if (X0 e) then src G1 e else src G2 e)
+          (fun e => if (X0 e) then dst G1 e else dst G2 e))
+        (fun v => if (X v) then vlabel G1 v else vlabel G2 v)
+        (fun e => if (X0 e) then elabel G1 e else elabel G2 e)).
+    split; [| split; [| split]].
+    + rewrite guarded_lge_spec.
+      simpl; split; [split; [| split; [| split]] | split].
+      - firstorder.
+      - firstorder.
+      - intros.
+        destruct (X0 e); tauto.
+      - intros.
+        destruct (X0 e); tauto.
+      - intros.
+        destruct (X v); tauto.
+      - intros.
+        destruct (X0 e); tauto.
+    + rewrite guarded_lge_spec.
+      simpl; split; [split; [| split; [| split]] | split].
+      - firstorder.
+      - firstorder.
+      - intros.
+        destruct H as [_ H].
+        rewrite Disjoint_spec in H.
+        destruct (X0 e); auto. firstorder.
+      - intros.
+        destruct H as [_ H].
+        rewrite Disjoint_spec in H.
+        destruct (X0 e); auto. firstorder.
+      - intros.
+        destruct H as [H _].
+        rewrite Disjoint_spec in H.
+        destruct (X v); auto. firstorder.
+      - intros.
+        destruct H as [_ H].
+        rewrite Disjoint_spec in H.
+        destruct (X0 e); auto. firstorder.
+    + simpl; split.
+      - firstorder.
+      - destruct H as [_ ?]; rewrite Disjoint_spec in H; auto.
+    + simpl; split.
+      - firstorder.
+      - destruct H as [_ ?]; rewrite Disjoint_spec in H; auto.
+  Qed.
+
+  Definition disjointed_union_pregraph_exists_l: forall (G1 G2: PreGraph V E),
+    Disjoint _ (evalid G1) (evalid G2) ->
+    (forall e, Decidable (evalid G1 e)) ->
+    { G: PreGraph V E | 
+      guarded_structurally_identical (vvalid G1) (evalid G1) G1 G /\
+      guarded_structurally_identical (vvalid G2) (evalid G2) G2 G /\
+      Same_set (Union _ (vvalid G1) (vvalid G2)) (vvalid G) /\
+      Prop_join (evalid G1) (evalid G2) (evalid G)}.
+  Proof.
+    intros.
+    exists
+      (@Build_PreGraph V E _ _
+        (fun v => vvalid G1 v \/ vvalid G2 v)
+        (fun e => evalid G1 e \/ evalid G2 e)
+        (fun e => if (X e) then src G1 e else src G2 e)
+        (fun e => if (X e) then dst G1 e else dst G2 e)).
+    split; [| split; [| split]].
+    + rewrite guarded_si_spec.
+      simpl; split; [| split; [| split]].
+      - firstorder.
+      - firstorder.
+      - intros.
+        destruct (X e); tauto.
+      - intros.
+        destruct (X e); tauto.
+    + rewrite guarded_si_spec.
+      simpl; split; [| split; [| split]].
+      - firstorder.
+      - firstorder.
+      - intros.
+        rewrite Disjoint_spec in H.
+        destruct (X e); auto. firstorder.
+      - intros.
+        rewrite Disjoint_spec in H.
+        destruct (X e); auto. firstorder.
+    + simpl.
+      rewrite Same_set_spec; intro v.
+      rewrite Union_spec; tauto.
+    + simpl; split.
+      - firstorder.
+      - rewrite Disjoint_spec in H; auto.
+  Qed.
+
+  Definition disjointed_union_pregraph_exists_r: forall (G1 G2: PreGraph V E),
+    Disjoint _ (evalid G1) (evalid G2) ->
+    (forall e, Decidable (evalid G2 e)) ->
+    { G: PreGraph V E | 
+      guarded_structurally_identical (vvalid G1) (evalid G1) G1 G /\
+      guarded_structurally_identical (vvalid G2) (evalid G2) G2 G /\
+      Same_set (Union _ (vvalid G1) (vvalid G2)) (vvalid G) /\
+      Prop_join (evalid G1) (evalid G2) (evalid G)}.
+  Proof.
+    intros.
+    rewrite Disjoint_comm in H.
+    destruct (disjointed_union_pregraph_exists_l G2 G1 H X) as [G ?H].
+    exists G.
+    rewrite Union_comm.
+    rewrite Prop_join_comm.
+    tauto.
+  Qed.
+
+End GRAPH_DISJOINT_UNION.

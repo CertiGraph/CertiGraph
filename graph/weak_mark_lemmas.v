@@ -82,8 +82,7 @@ Definition mark1 (n : V) (g1 : Graph) (g2 : Graph) : Prop :=
 Definition mark (root : V) (g1 : Graph) (g2 : Graph) : Prop :=
   let PV := reachable_by g1 root (unmarked g1) in
   (predicate_partialgraph g1 (Complement _ PV)) ~=~ (predicate_partialgraph g2 (Complement _ PV)) /\
-  (forall n, PV n -> marked g2 n) /\
-  (forall n, ~ PV n -> (marked g1 n <-> marked g2 n)).
+  (forall n, marked g2 n <-> (marked g1 n \/ PV n)).
 
 Definition componded root R :=
   compond_relation (compond_relation (nothing root) R) (nothing root).
@@ -95,11 +94,19 @@ Lemma mark_marked: forall (g1: Graph) root (g2: Graph),
   forall n, marked g1 n -> marked g2 n.
 Proof.
   intros.
-  destruct H as [_ [_ ?]].
-  rewrite <- H; [auto |].
-  intro.
-  apply reachable_by_foot_prop in H1.
-  unfold unmarked in H1; rewrite negateP_spec in H1; auto.
+  destruct H as [_ ?].
+  rewrite H.
+  auto.
+Qed.
+
+Lemma mark_marked': forall (g1: Graph) root (g2: Graph),
+  mark root g1 g2 ->
+  Same_set (marked g2) (Union _ (marked g1) (reachable_by g1 root (unmarked g1))).
+Proof.
+  intros.
+  rewrite Same_set_spec; intro n.
+  rewrite Union_spec.
+  destruct H; auto.
 Qed.
 
 Lemma mark_unmarked: forall (g1: Graph) root (g2: Graph),
@@ -107,58 +114,32 @@ Lemma mark_unmarked: forall (g1: Graph) root (g2: Graph),
   Same_set (unmarked g2) (Intersection _ (unmarked g1) (Complement _ (reachable_by g1 root (unmarked g1)))).
 Proof.
   intros.
-  rewrite Same_set_spec; intro n.
-  rewrite Intersection_spec; unfold Complement, Ensembles.In.
-  pose proof H.
-  destruct H as [_ [? ?]].
-  specialize (H n); specialize (H1 n).
-  unfold unmarked at 1 2; rewrite !negateP_spec.
-  split; intros; [split |].
-  + intro; apply H2; clear H2.
-    eapply mark_marked; eauto.
-  + intro; apply H2; clear H2.
-    apply H; auto.
-  + destruct H2.
-    apply H1 in H3.
-    tauto.
+  unfold unmarked at 1 2.
+  rewrite !negateP_spec'.
+  rewrite Intersection_Complement.
+  apply complement_proper.
+  apply mark_marked'; auto.
 Qed.
 
 Lemma mark_invalid_refl: forall (g: Graph) root, ~ vvalid g root -> mark root g g.
 Proof.
   intros.
-  split; [| split].
+  split.
   + reflexivity.
   + intros.
-    apply reachable_by_head_valid in H0.
+    pose proof reachable_by_head_valid g root n (unmarked g).
     tauto.
-  + intros.
-    reflexivity.
 Qed.
 
 Lemma mark_marked_root_refl: forall (g: Graph) root, marked g root -> mark root g g.
 Proof.
   intros.
-  split; [| split].
+  split.
   + reflexivity.
   + intros.
-    apply reachable_by_head_prop in H0.
-    unfold unmarked in H0; rewrite negateP_spec in H0.
+    pose proof reachable_by_head_prop g root n (unmarked g).
+    unfold unmarked at 2 in H0; rewrite negateP_spec in H0.
     tauto.
-  + intros.
-    reflexivity.
-Qed.
-
-Lemma lge_do_nothing: forall n, inclusion _ labeled_graph_equiv (nothing n).
-Proof.
-  intros; hnf; intros.
-  destruct H as [? [? ?]].
-  split.
-  + rewrite H.
-    reflexivity.
-  + intros.
-    simpl.
-    rewrite H0.
-    reflexivity.
 Qed.
 
 Lemma eq_do_nothing: forall n, inclusion _ eq (nothing n).
@@ -187,17 +168,17 @@ Qed.
 Lemma triple_nothing: forall (g g1 g2: Graph) root l l_done l_later,
   vvalid g root ->
   (unmarked g) root ->
-  let unmarked' := Intersection _ (unmarked g) (Complement _ (eq root)) in
+  let marked' := Union _ (marked g) (eq root) in
   step_list g root l ->
   l = l_done ++ l_later ->
-  let PV1 := reachable_by_through_set g l_done unmarked' in
+  let PV1 := reachable_by_through_set g l_done (Complement _ marked') in
   (predicate_partialgraph g (Complement _ (Union _ PV1 (eq root)))) ~=~
   (predicate_partialgraph g1 (Complement _ (Union _ PV1 (eq root)))) /\
-  Same_set (unmarked g1) (Intersection _ unmarked' (Complement _ PV1)) ->
+  Same_set (marked g1) (Union _ marked' PV1) ->
   nothing root g1 g2 ->
   (predicate_partialgraph g (Complement _ (Union _ PV1 (eq root)))) ~=~
   (predicate_partialgraph g2 (Complement _ (Union _ PV1 (eq root)))) /\
-  Same_set (unmarked g2) (Intersection _ unmarked' (Complement _ PV1)).
+  Same_set (marked g2) (Union _ marked' PV1).
 Proof.
   intros.
   destruct H3.
@@ -207,17 +188,24 @@ Proof.
     eapply si_stronger_partialgraph_simple; [| eauto].
     apply Complement_Included_rev.
     apply right_Included_Union.
-  + assert (Same_set (unmarked g1) (unmarked g2)).
-    Focus 1. {
-      rewrite Same_set_spec.
-      intro v; unfold unmarked; specialize (H6 v).
-      rewrite !negateP_spec.
-      tauto.
-    } Unfocus.
+  + assert (Same_set (marked g1) (marked g2)) by (rewrite Same_set_spec; auto).
     rewrite <- H7.
     auto.
 Qed.
 
+Lemma triple_mark_aux1': forall g PV1 root marked',
+  marked' = Union _ (marked g) (eq root) ->
+  Same_set
+   (Union V PV1 marked')
+   (Union V (Union _ PV1 (eq root)) marked').
+Proof.
+  intros.
+  subst.
+  rewrite Same_set_spec; intro v.
+  rewrite !Union_spec.
+  tauto.
+Qed.
+(*
 Lemma triple_mark_aux1: forall g PV1 root unmarked',
   unmarked' = Intersection _ (unmarked g) (Complement _ (eq root)) ->
   Same_set
@@ -231,19 +219,19 @@ Proof.
   rewrite !Union_spec.
   tauto.
 Qed.
-
+*)
 Lemma triple1_mark: forall (g g1 g2: Graph) root l l_done son l_later,
   vvalid g root ->
   (unmarked g) root ->
-  let unmarked' := Intersection _ (unmarked g) (Complement _ (eq root)) in
+  let marked' := Union _ (marked g) (eq root) in
   step_list g root l ->
   l = l_done ++ son :: l_later ->
-  let PV1 := reachable_by_through_set g l_done unmarked' in
+  let PV1 := reachable_by_through_set g l_done (Complement _ marked') in
   (predicate_partialgraph g (Complement _ (Union _ PV1 (eq root)))) ~=~
   (predicate_partialgraph g1 (Complement _ (Union _ PV1 (eq root)))) /\
-  Same_set (unmarked g1) (Intersection _ unmarked' (Complement _ PV1)) ->
+  Same_set (marked g1) (Union _ marked' PV1) ->
   mark son g1 g2 ->
-  let PV2 := reachable_by_through_set g (l_done ++ son :: nil) unmarked' in
+  let PV2 := reachable_by_through_set g (l_done ++ son :: nil) (Complement _ marked') in
   (predicate_partialgraph g (Complement _ (Union _ PV2 (eq root)))) ~=~
   (predicate_partialgraph g2 (Complement _ (Union _ PV2 (eq root)))).
 Proof.
@@ -262,58 +250,91 @@ Proof.
     - apply Complement_Included_rev.
       apply left_Included_Union.
     - rewrite Complement_reachable_by_through_app_strong.
-      rewrite PRE_unm.
-      rewrite (Intersection_comm _ unmarked').
-      rewrite (triple_mark_aux1 g PV1 root unmarked') by auto.
+      unfold unmarked. rewrite negateP_spec'. rewrite PRE_unm.
+      rewrite (Union_comm _ marked').
+      rewrite (triple_mark_aux1' g PV1 root marked') by auto.
       rewrite reachable_by_eq_partialgraph_reachable'.
+      rewrite <- Intersection_Complement.
       rewrite <- partial_partialgraph, <- PRE_psi.
       rewrite <- reachable_by_eq_partialgraph_reachable'.
       rewrite reachable_by_through_singleton'.
       apply Intersection2_Included.
       rewrite !reachable_by_eq_partialgraph_reachable', !partial_partialgraph.
-      rewrite (triple_mark_aux1 g _ root unmarked') by auto.
+      rewrite Intersection_Complement.
+      rewrite (triple_mark_aux1' g _ root marked') by auto.
+      rewrite Intersection_Complement.
       apply Included_refl.
 Qed.
 
 Lemma triple2_mark: forall (g g1 g2: Graph) root l l_done son l_later,
   vvalid g root ->
   (unmarked g) root ->
-  let unmarked' := Intersection _ (unmarked g) (Complement _ (eq root)) in
+  let marked' := Union _ (marked g) (eq root) in
   step_list g root l ->
   l = l_done ++ son :: l_later ->
-  let PV1 := reachable_by_through_set g l_done unmarked' in
+  let PV1 := reachable_by_through_set g l_done (Complement _ marked') in
   (predicate_partialgraph g (Complement _ (Union _ PV1 (eq root)))) ~=~
   (predicate_partialgraph g1 (Complement _ (Union _ PV1 (eq root)))) /\
-  Same_set (unmarked g1) (Intersection _ unmarked' (Complement _ PV1)) ->
+  Same_set (marked g1) (Union _ marked' PV1) ->
   mark son g1 g2 ->
-  let PV2 := reachable_by_through_set g (l_done ++ son :: nil) unmarked' in
-  Same_set (unmarked g2) (Intersection _ unmarked' (Complement _ PV2)).
+  let PV2 := reachable_by_through_set g (l_done ++ son :: nil) (Complement _ marked') in
+  Same_set (marked g2) (Union _ marked' PV2).
 Proof.
   intros.
   destruct H3 as [PRE_psi PRE_unm].
-  apply mark_unmarked in H4.
+  apply mark_marked' in H4.
   rewrite H4, PRE_unm.
-  rewrite (Intersection_comm _ unmarked') at 2.
+  rewrite Union_assoc.
+  apply Union_proper; [reflexivity |].
+  unfold unmarked.
+  rewrite negateP_spec'.
+  rewrite PRE_unm.
+  unfold PV2.
   rewrite reachable_by_eq_partialgraph_reachable'.
-  rewrite (triple_mark_aux1 g PV1 root unmarked') by auto.
+  rewrite (Union_comm _ marked' PV1).
+  rewrite (triple_mark_aux1' g PV1 root marked') by auto.
+  rewrite <- Intersection_Complement.
   rewrite <- partial_partialgraph, <- PRE_psi.
-  rewrite partial_partialgraph, <- (triple_mark_aux1 g PV1 root unmarked') by auto.
+  rewrite partial_partialgraph.
+  rewrite Intersection_Complement.
+  rewrite <- (triple_mark_aux1' g PV1 root marked') by auto.
+  rewrite <- Intersection_Complement.
   rewrite <- partial_partialgraph, <- reachable_by_eq_partialgraph_reachable'.
   unfold PV2.
-  rewrite Complement_reachable_by_through_app_strong, reachable_by_through_singleton'.
-  rewrite Intersection_assoc.
-  rewrite !reachable_by_eq_partialgraph_reachable'.
-  reflexivity.
+  fold PV1.
+  rewrite reachable_by_through_app_strong', reachable_by_through_singleton'.
+  + rewrite !reachable_by_eq_partialgraph_reachable'.
+    rewrite partial_partialgraph.
+    rewrite Intersection_comm. 
+    reflexivity.
+  + rewrite Same_set_spec in PRE_unm |- *.
+    intro v; specialize (PRE_unm v).
+    rewrite Union_spec in PRE_unm |- *.
+    unfold PV1 in PRE_unm.
+    unfold Complement at 2; unfold Ensembles.In.
+    pose proof reachable_by_through_set_foot_prop g l_done v (Complement V marked').
+    unfold Complement at 2 in H3; unfold Ensembles.In in H3.
+    assert ((marked g1) v \/ ~ (marked g1) v) by (destruct (node_pred_dec (marked g1) v); auto).
+    assert (marked' v \/ ~ marked' v).
+    Focus 1. {
+      unfold marked'.
+      rewrite Union_spec.
+      destruct (node_pred_dec (marked g) v); destruct_eq_dec root v; auto.
+      tauto.
+    } Unfocus.
+    pose proof Full_intro _ v.
+    unfold Ensembles.In in H.
+    tauto.
 Qed.
 
 Lemma triple_mark1: forall root (g g1 g2: Graph),
   nothing root g g1 ->
   mark1 root g1 g2 ->
-  let unmarked' := Intersection _ (unmarked g) (Complement _ (eq root)) in
-  let PV1 := reachable_by_through_set g nil unmarked' in
+  let marked' := Union _ (marked g) (eq root) in
+  let PV1 := reachable_by_through_set g nil (Complement _ marked') in
   (predicate_partialgraph g (Complement _ (Union _ PV1 (eq root)))) ~=~
   (predicate_partialgraph g2 (Complement _ (Union _ PV1 (eq root)))) /\
-  Same_set (unmarked g2) (Intersection _ unmarked' (Complement _ PV1)).
+  Same_set (marked g2) (Union _ marked' PV1).
 Proof.
   intros.
   split.
@@ -322,12 +343,10 @@ Proof.
     eapply si_stronger_partialgraph_simple; [| eauto].
     apply Complement_Included_rev.
     apply right_Included_Union.
-  + unfold PV1, unmarked'.
-    rewrite Same_set_spec; intro n; rewrite !Intersection_spec.
-    unfold Complement, Ensembles.In.
+  + unfold PV1, marked'.
+    rewrite Same_set_spec; intro n; rewrite !Union_spec.
     rewrite reachable_by_through_nil.
     destruct H0 as [_ [? ?]].
-    unfold unmarked; rewrite !negateP_spec.
     destruct_eq_dec root n.
     - subst n; tauto.
     - specialize (H1 n).
@@ -340,11 +359,11 @@ Lemma triple_final: forall root l (g g1: Graph),
   vvalid g root ->
   (unmarked g) root ->
   step_list g root l ->
-  let unmarked' := Intersection _ (unmarked g) (Complement _ (eq root)) in
-  let PV1 := reachable_by_through_set g l unmarked' in
+  let marked' := Union _ (marked g) (eq root) in
+  let PV1 := reachable_by_through_set g l (Complement _ marked') in
   (predicate_partialgraph g (Complement _ (Union _ PV1 (eq root)))) ~=~
   (predicate_partialgraph g1 (Complement _ (Union _ PV1 (eq root)))) /\
-  Same_set (unmarked g1) (Intersection _ unmarked' (Complement _ PV1)) ->
+  Same_set (marked g1) (Union _ marked' PV1) ->
   mark root g g1.
 Proof.
   intros.
@@ -353,76 +372,55 @@ Proof.
   Focus 1. {
     rewrite Same_set_spec.
     intro. rewrite Union_spec.
+    unfold PV1, marked'.
+    rewrite <- Intersection_Complement.
     apply reachable_by_ind_equiv; auto.
   } Unfocus.
-  split; [| split].
+  split.
   + eapply si_stronger_partialgraph_simple; [| exact H2].
     apply Complement_Included_rev.
     rewrite H4.
     rewrite Union_comm.
     apply Included_refl.
   + intros.
-    rewrite Same_set_spec in H4; rewrite (H4 n), Union_spec in H5.
-    rewrite Same_set_spec in H3; specialize (H3 n).
-    rewrite Intersection_spec in H3.
-    unfold unmarked', unmarked, Complement, Ensembles.In in H3.
-    rewrite Intersection_spec, !negateP_spec in H3.
-    destruct (node_pred_dec (marked g1) n); auto.
+    rewrite Same_set_spec in H3; rewrite (H3 n).
+    rewrite Same_set_spec in H4; rewrite (H4 n).
+    unfold marked'.
+    rewrite !Union_spec.
     tauto.
-  + intros.
-    rewrite Same_set_spec in H4; rewrite (H4 n), Union_spec in H5.
-    rewrite Same_set_spec in H3; specialize (H3 n).
-    rewrite Intersection_spec in H3.
-    unfold unmarked', unmarked, Complement, Ensembles.In in H3.
-    rewrite Intersection_spec, !negateP_spec in H3.
-    destruct (node_pred_dec (marked g1) n), (node_pred_dec (marked g) n); destruct_eq_dec root n; tauto.
 Qed.
 
-Lemma mark1_componded_mark_list_mark: forall root l (g1 g2: Graph),
+Lemma triple_mark1_componded_mark_list: forall root l_done l_later l (g1 g2: Graph),
   vvalid g1 root ->
   (unmarked g1) root ->
   step_list g1 root l ->
-  relation_list (nothing root :: mark1 root :: nothing root :: componded_mark_list root l :: nothing root :: nil) g1 g2 ->
-  mark root g1 g2.
+  l = l_done ++ l_later ->
+  relation_list (nothing root :: mark1 root :: nothing root :: componded_mark_list root l_done :: nil) g1 g2 ->
+  let marked' := Union _ (marked g1) (eq root) in
+  let PV1 := reachable_by_through_set g1 l_done (Complement _ marked') in
+  (predicate_partialgraph g1 (Complement _ (Union _ PV1 (eq root)))) ~=~
+  (predicate_partialgraph g2 (Complement _ (Union _ PV1 (eq root)))) /\
+  Same_set (marked g2) (Union _ marked' PV1).
 Proof.
-  intros root l g g5.
+  intros root ? ? ? g g4.
   intros.
-  destruct_relation_list g1 g2 g3 g4 in H2.
-  pose proof triple_mark1 root g g1 g2 H3 H4 as PRE.
+  destruct_relation_list g1 g2 g3 in H3.
+  pose proof triple_mark1 root g g1 g2 H4 H5 as PRE.
   cbv zeta in PRE.
   apply (triple_nothing _ g2 g3 root l nil l H H0 H1 eq_refl) in PRE; [| auto].
-
-  set (unmarked' := Intersection _ (unmarked g) (Complement _ (eq root))) in PRE.
-  set (PV1 := reachable_by_through_set g nil unmarked') in PRE.
-  set (PV2 := reachable_by_through_set g l unmarked').
-  assert ((predicate_partialgraph g (Complement V (Union _ PV2 (eq root)))) ~=~
-          (predicate_partialgraph g4 (Complement V (Union _ PV2 (eq root)))) /\
-          Same_set (unmarked g4) (Intersection V unmarked' (Complement V PV2))).
-  Focus 2. {
-    apply (triple_nothing _ g4 g5 root l l nil H H0 H1) in H7.
-    + eapply triple_final; eauto.
-    + rewrite app_nil_r; auto.
-    + auto.
-  } Unfocus.
-  clear H3 H4 H5 H2 g1 g2 g5.
-
-  set (l_done := l).
-  set (l_later := @nil V).
-  assert (l = l_done ++ l_later) by (unfold l_later; rewrite app_nil_r; auto).
-  revert PV2 H6; change l with l_done; intros.
-  clearbody l_done l_later.
-  revert g4 l_later H2 H6; rev_induction l_done; intros.
-  + unfold componded_mark_list, relation_list in H6.
-    simpl in H6. subst g3.
+  clear g1 g2 H4 H5 H6.
+  revert g4 l_later H2 H3; rev_induction l_done; intros.
+  + unfold componded_mark_list, relation_list in H3.
+    simpl in H3. subst g3.
     auto.
-  + clear PV1 PRE.
+  + clear PRE.
     rename l0 into l_done.
     rewrite <- app_assoc in H3; simpl in H3.
-    unfold componded_mark_list in H6; rewrite map_app in H6; simpl in H6.
-    apply (proj1 ((proj1 (same_relation_spec _ _) (relation_list_tail _ _)) _ _)) in H6.
-    
+    unfold componded_mark_list in H4; rewrite map_app in H4; simpl in H4.
+    apply (proj1 ((proj1 (same_relation_spec _ _) (relation_list_tail _ _)) _ _)) in H4.
+
     rename g3 into g1, g4 into g5.
-    apply compond_relation_spec in H6; destruct H6 as [g2 [? ?]].
+    apply compond_relation_spec in H4; destruct H4 as [g2 [? ?]].
     cbv zeta in H2.
     specialize (H2 g2 (a :: l_later) H3 H4).
     rename H2 into PRE; clear H4.
@@ -438,6 +436,33 @@ Proof.
     split.
     - eapply triple1_mark; eauto.
     - eapply triple2_mark; eauto.
+Qed.
+
+Lemma mark1_componded_mark_list_mark: forall root l (g1 g2: Graph),
+  vvalid g1 root ->
+  (unmarked g1) root ->
+  step_list g1 root l ->
+  relation_list (nothing root :: mark1 root :: nothing root :: componded_mark_list root l :: nothing root :: nil) g1 g2 ->
+  mark root g1 g2.
+Proof.
+  intros root l g g2.
+  intros.
+  change (nothing root
+          :: mark1 root
+             :: nothing root
+                :: componded_mark_list root l :: nothing root :: nil)
+    with ((nothing root
+          :: mark1 root
+             :: nothing root
+                :: componded_mark_list root l :: nil) +:: nothing root)
+    in H2.
+  erewrite app_same_relation in H2 by (rewrite @relation_list_tail; reflexivity).
+  inversion H2; subst; rename y into g1.
+  pose proof triple_mark1_componded_mark_list root l nil l g g1 H H0 H1 (eq_sym (app_nil_r _)) H3.
+  cbv zeta in H5.
+  apply (triple_nothing _ g1 g2 root l l nil H H0 H1 (eq_sym (app_nil_r _))) in H5.
+  apply (triple_final root l g g2 H H0 H1 H5).
+  auto.
 Qed.
 
 Lemma vertex_update_mark1: forall (g: Graph) x lx,
