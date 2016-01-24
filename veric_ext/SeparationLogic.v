@@ -26,10 +26,10 @@ Local Open Scope logic.
 Lemma exp_mapsto_precise: forall sh t p, precise (EX v: val, mapsto sh t p v).
 Proof. exact exp_mapsto_precise. Qed.
 
-Lemma disj_mapsto_: forall sh env t1 t2 p1 p2,
-  ~ pointer_range_overlap p1 (sizeof env t1) p2 (sizeof env t2) ->
+Lemma disj_mapsto_: forall {cs: composite_env} sh t1 t2 p1 p2,
+  ~ pointer_range_overlap p1 (sizeof t1) p2 (sizeof t2) ->
   disjointed (EX v1: val, mapsto sh t1 p1 v1) (EX v2: val, mapsto sh t2 p2 v2).
-Proof. exact disj_mapsto_. Qed.
+Proof. exact @disj_mapsto_. Qed.
 
 Lemma memory_block_precise: forall sh p n, precise (memory_block sh n p).
 Proof. exact memory_block_precise. Qed.

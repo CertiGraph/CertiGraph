@@ -20,7 +20,7 @@ Lemma exp_data_at_precise: forall sh t p,
   precise (EX v: reptype t, data_at sh t v p).
 Proof.
   intros.
-  apply derives_precise with (memory_block sh (sizeof cenv_cs t) p).
+  apply derives_precise with (memory_block sh (sizeof t) p).
   + apply exp_left; intro v.
     apply data_at_memory_block; auto.
   + apply seplog.memory_block_precise.
@@ -28,7 +28,7 @@ Qed.
 
 Lemma disj_data_at: forall sh t1 t2 p1 p2,
   sepalg.nonunit sh ->
-  ~ pointer_range_overlap p1 (sizeof cenv_cs t1) p2 (sizeof cenv_cs t2) ->
+  ~ pointer_range_overlap p1 (sizeof t1) p2 (sizeof t2) ->
   disjointed (EX v: reptype t1, data_at sh t1 v p1) (EX v: reptype t2, data_at sh t2 v p2).
 Proof.
   intros.
@@ -42,7 +42,7 @@ Qed.
 
 Lemma data_at_conflict: forall sh t1 t2 p1 p2 v1 v2,
   sepalg.nonunit sh ->
-  pointer_range_overlap p1 (sizeof cenv_cs t1) p2 (sizeof cenv_cs t2) ->
+  pointer_range_overlap p1 (sizeof t1) p2 (sizeof t2) ->
   data_at sh t1 v1 p1 * data_at sh t2 v2 p2 |-- FF.
 Proof.
   intros.

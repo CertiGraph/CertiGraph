@@ -14,6 +14,20 @@ Local Open Scope logic.
 Module Mapsto.
 Section Mapsto.
 
+Definition empty_compspecs : compspecs.
+Proof.
+  refine (mkcompspecs (PTree.empty _) _ _ _).
+  + constructor.
+    - rewrite PTree.gempty in H; inv H.
+    - rewrite PTree.gempty in H; inv H.
+    - rewrite PTree.gempty in H; inv H.
+    - rewrite PTree.gempty in H; inv H.
+  + hnf; intros.
+    rewrite PTree.gempty in H; inv H.
+  + hnf; intros.
+    rewrite PTree.gempty in H; inv H.
+Defined.
+
 Definition adr_conflict (sh: share) : val * type -> val * type -> bool :=
   fun a1 a2 =>
   if (dec_share_nonunit sh)
@@ -65,7 +79,7 @@ Proof.
   + intros [p1 t1] [p2 t2] v1 v2 ?.
     simpl in H; unfold adr_conflict in H.
     if_tac in H; [| congruence].
-    apply seplog.mapsto_overlap with (PTree.empty _); auto.
+    apply seplog.mapsto_overlap with empty_compspecs; auto.
     apply pointer_range_overlap_BV_sizeof.
     destruct (pointer_range_overlap_dec p1 (BV_sizeof t1) p2 (BV_sizeof t2)); [auto | congruence].
   + intros [p1 t1] [p2 t2] ?.
@@ -73,8 +87,8 @@ Proof.
     if_tac in H.
     Focus 1. {
      destruct (pointer_range_overlap_dec p1 (BV_sizeof t1) p2 (BV_sizeof t2)); [congruence |].
-     destruct (pointer_range_overlap_dec p1 (sizeof (PTree.empty _) t1) p2 (sizeof (PTree.empty _) t2)).
-      - apply pointer_range_overlap_sizeof with (sh := sh) in p.
+     destruct (pointer_range_overlap_dec p1 (@sizeof (PTree.empty _) t1) p2 (@sizeof (PTree.empty _) t2)).
+      - apply pointer_range_overlap_sizeof with (sh0 := sh) in p.
         destruct p as [? | [? | ?]].
         * tauto.
         * eapply disj_derives; [exact H1 | apply derives_refl |].
@@ -83,7 +97,7 @@ Proof.
         * eapply disj_derives; [apply derives_refl | exact H1 |].
           pose proof log_normalize.disj_FF.
           simpl in H2; apply H2.
-      - apply disj_mapsto_ with (PTree.empty _); auto.
+      - apply @disj_mapsto_ with (PTree.empty _); auto.
     } Unfocus.
     Focus 1. {
       unfold mapsto_.

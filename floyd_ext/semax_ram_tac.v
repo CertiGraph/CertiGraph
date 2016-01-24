@@ -220,8 +220,8 @@ Transparent LiftNatDed' LiftSepLog' LiftCorableSepLog'.
 Qed.
 
 Lemma solve_LOCALx_entailer: forall {cs: compspecs} P Ptemp Pvar Q Qtemp Qvar,
-  local2ptree P Ptemp Pvar nil nil ->
-  local2ptree Q Qtemp Qvar nil nil ->
+  local2ptree P = (Ptemp, Pvar, nil, nil) ->
+  local2ptree Q = (Qtemp, Qvar, nil, nil) ->
   Forall (check_one_var_spec' Pvar) (PTree.elements Qvar) ->
   Forall (check_one_temp_spec Ptemp) (PTree.elements Qtemp) ->
   LOCALx P TT |-- LOCALx Q TT.
