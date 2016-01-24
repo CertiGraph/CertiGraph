@@ -59,16 +59,16 @@ Proof.
   reflexivity.
 Qed.
 
-Lemma BV_sizeof_sizeof: forall env t m,
-  access_mode t = By_value m -> BV_sizeof t = sizeof env t.
+Lemma BV_sizeof_sizeof: forall {cs: composite_env} t m,
+  access_mode t = By_value m -> BV_sizeof t = sizeof t.
 Proof.
   intros.
   erewrite BV_sizeof_size_chunk by eauto.
   apply eq_sym, size_chunk_sizeof; auto.
 Qed.
 
-Lemma disj_mapsto_: forall sh env t1 t2 p1 p2,
-  ~ pointer_range_overlap p1 (sizeof env t1) p2 (sizeof env t2) ->
+Lemma disj_mapsto_: forall {cs: composite_env} sh t1 t2 p1 p2,
+  ~ pointer_range_overlap p1 (sizeof t1) p2 (sizeof t2) ->
   disjointed (EX v1: val, mapsto sh t1 p1 v1) (EX v2: val, mapsto sh t2 p2 v2).
 Proof.
   pose proof (@exp_FF mpred val _) as EXP_FF.
@@ -117,9 +117,9 @@ Proof.
   apply size_chunk_pos.
 Qed.
 
-Lemma pointer_range_overlap_BV_sizeof: forall env p1 p2 t1 t2,
+Lemma pointer_range_overlap_BV_sizeof: forall {cs: composite_env} p1 p2 t1 t2,
   pointer_range_overlap p1 (BV_sizeof t1) p2 (BV_sizeof t2) ->
-  pointer_range_overlap p1 (sizeof env t1) p2 (sizeof env t2).
+  pointer_range_overlap p1 (sizeof t1) p2 (sizeof t2).
 Proof.
   intros.
   pose proof pointer_range_overlap_non_zero _ _ _ _ H.
@@ -129,8 +129,8 @@ Proof.
   eauto.
 Qed.
 
-Lemma pointer_range_overlap_sizeof: forall sh env p1 p2 t1 t2,
-  pointer_range_overlap p1 (sizeof env t1) p2 (sizeof env t2) ->
+Lemma pointer_range_overlap_sizeof: forall {cs: composite_env} sh p1 p2 t1 t2,
+  pointer_range_overlap p1 (sizeof t1) p2 (sizeof t2) ->
   pointer_range_overlap p1 (BV_sizeof t1) p2 (BV_sizeof t2) \/
   (EX v: val, mapsto sh t1 p1 v |-- FF) \/
   (EX v: val, mapsto sh t2 p2 v |-- FF).
