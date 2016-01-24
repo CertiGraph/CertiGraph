@@ -207,90 +207,88 @@ Lemma edge_copy_list_spec: forall root es (g g1 g2 g2': Graph),
   let g1' := single_vertex_labeledgraph (LocalGraphCopy.vmap g1 root) default_DV' default_DE' in
   (forall e, In e es <-> out_edges g root e) ->
   NoDup es ->
-  vcopy1 root g g1 ->
   vvalid g root ->
   WeakMarkGraph.unmarked g root ->
   vcopy1 root g g1 ->
-  (forall e, In e es <-> out_edges g root e) ->
-  WeakMarkGraph.mark1 root g g1 ->
   edge_copy_list g es (g1, g1') (g2, g2') ->
   LocalGraphCopy.edge_copy_list g root es (WeakMarkGraph.marked g) (g1, g1') (g2, g2') /\
   WeakMarkGraph.componded_mark_list root (map (dst g) es) g1 g2.
 Proof.
   intros.
-  unfold edge_copy_list in H7.
-  rewrite map_snd_cprefix' in H7.
+  unfold edge_copy_list in H4.
+  rewrite map_snd_cprefix' in H4.
   eapply relation_list_weaken_ind' with
     (R' := fun (p: list E * E) =>
            relation_conjunction
             (LocalGraphCopy.edge_copy g root (WeakMarkGraph.marked g) p)
             (fst_relation (WeakMarkGraph.componded root (WeakMarkGraph.mark (dst g (snd p))))))
-     in H7.
-  + apply relation_list_conjunction in H7.
-    destruct H7.
+     in H4.
+  + apply relation_list_conjunction in H4.
+    destruct H4.
     split; auto.
-    rewrite <- map_map in H8.
-    unfold fst_relation in H8.
-    apply respectful_relation_list in H8.
-    unfold respectful_relation in H8; simpl in H8.
+    rewrite <- map_map in H5.
+    unfold fst_relation in H5.
+    apply respectful_relation_list in H5.
+    unfold respectful_relation in H5; simpl in H5.
     unfold WeakMarkGraph.componded_mark_list.
     rewrite map_map.
     rewrite map_snd_cprefix'.
     auto.
-  + clear g2 g2' H7.
+  + clear g2 g2' H4.
     intros.
-    clear H8.
+    clear H5.
     unfold relation_conjunction, predicate_intersection; simpl.
     destruct a2 as [g2 g2'], a3 as [g3 g3'].
     unfold fst_relation, respectful_relation; simpl.
-    pose proof in_cprefix _ _ _ H7.
-    apply in_cprefix_cprefix in H7.
+    pose proof in_cprefix _ _ _ H4.
+    apply in_cprefix_cprefix in H4.
     subst bs_done.
-    destruct b0 as [es_done e0]; simpl in H9 |- *.
-    pose proof in_cprefix' _ _ _ H8.
-    destruct H7 as [es_later ?].
-    apply relation_list_conjunction in H9.
-    destruct H9.
+    destruct b0 as [es_done e0]; simpl in H6 |- *.
+    pose proof in_cprefix' _ _ _ H5.
+    destruct H4 as [es_later ?].
+    apply relation_list_conjunction in H6.
+    destruct H6.
     rewrite <- (map_map (snd) (fun e => fst_relation
                (WeakMarkGraph.componded root
-                  (WeakMarkGraph.mark (dst g e))))) in H11.
-    rewrite map_snd_cprefix in H11.
-    rewrite <- map_map in H11.
-    unfold fst_relation in H11.
-    apply respectful_relation_list in H11.
-    unfold respectful_relation in H11; simpl in H11.
+                  (WeakMarkGraph.mark (dst g e))))) in H8.
+    rewrite map_snd_cprefix in H8.
+    rewrite <- map_map in H8.
+    unfold fst_relation in H8.
+    apply respectful_relation_list in H8.
+    unfold respectful_relation in H8; simpl in H8.
     eapply edge_copy_spec'; try eassumption.
     rewrite map_map; auto.
 Qed.
 
 Lemma vcopy1_edge_copy_list_copy: forall root es (g1 g2 g3 g3': Graph),
-  let g2' := single_vertex_labeledgraph (LocalGraphCopy.vmap g1 root) default_DV' default_DE' in
+  let g2' := single_vertex_labeledgraph (LocalGraphCopy.vmap g2 root) default_DV' default_DE' in
   vvalid g1 root ->
   WeakMarkGraph.unmarked g1 root ->
   (forall e, In e es <-> out_edges g1 root e) ->
+  NoDup es ->
   vcopy1 root g1 g2 ->
   edge_copy_list g1 es (g2, g2') (g3, g3') ->
   copy root g1 g3 g3'.
 Proof.
   intros.
-  destruct H2 as [? [? ?]].
-Abort.
+  pose proof edge_copy_list_spec root es g1 g2 g3 g3' H1 H2 H H0 H3 H4.
+  destruct H5.
+  split; [| split].
+  + pose proof LocalGraphCopy.triple_vcopy1_edge_copy_list g1 g2 g3 g3' root es es nil (WeakMarkGraph.marked g1) H H0 H1 H2 (eq_sym (app_nil_r _)).
+    spec H7; [intro v; destruct (node_pred_dec (WeakMarkGraph.marked g1) v); auto |].
+    destruct H3 as [_ [_ ?]].
+    specialize (H7 H3 H5).
+    destruct H7 as [_ [? _]]; auto.
+  + pose proof WeakMarkGraph.mark1_componded_mark_list_mark root (map (dst g1) es) g1 g3 H H0.
+    apply H7.
+    - apply out_edges_step_list; auto.
+    - destruct H3 as [_ [? _]].
+      split_relation_list (g1 :: g2 :: g2 :: g3 :: nil); auto; apply WeakMarkGraph.eq_do_nothing; auto.
+  + destruct H3 as [_ [_ ?]].
+    apply (LocalGraphCopy.vcopy1_edge_copy_list_copy g1 g2 g3 g3' root es (WeakMarkGraph.marked g1)); auto.
+    intro v; destruct (node_pred_dec (WeakMarkGraph.marked g1) v); auto.
+Qed.
 
 End SpatialGraph_Copy.
 
 
-(*
-
-https://www.zhihu.com/question/34406872#answer-20111906
-https://www.zhihu.com/question/24375292#answer-24963090
-https://www.zhihu.com/question/37703381#answer-24711147
-https://www.zhihu.com/question/38303758#answer-25773456
-http://www.lwxsw.org/books/23/23978/7948501.html
-https://www.zhihu.com/search?type=question&q=%E5%BF%AB%E6%92%AD+%E6%96%B0%E5%8D%8E%E7%A4%BE
-https://www.zhihu.com/question/39334589
-https://www.zhihu.com/question/39265386
-http://finance.sina.com.cn/review/jcgc/2016-01-11/doc-ifxnkkuy7861463.shtml
-http://media.people.com.cn/n1/2016/0112/c40606-28039812.html
-http://zqb.cyol.com/html/2016-01/12/nw.D110000zgqnb_20160112_1-06.htm
-
-*)
