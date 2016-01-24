@@ -908,6 +908,39 @@ Proof.
       rewrite reachable_through_set_eq. rewrite in_app_iff. tauto.
 Qed.
 
+Lemma graph_unfold:
+  forall (g: Graph) {rfg: ReachableFiniteGraph g} x S
+         (V_DEC: forall x : V, In x S -> Decidable (vvalid g x)),
+    vvalid g x ->
+    step_list g x S ->
+    graph x g = vertex_at x (vgamma g x) ⊗ graphs S g.
+Proof.
+  intros. rewrite graphs_graphs'; auto. unfold graph. unfold graphs'.
+  change (vertex_at x (vgamma g x)) with (graph_vcell g x).
+  assert (forall y, reachable g x y <-> x = y \/ reachable_through_set g S y). {
+    intros. rewrite (reachable_ind' g x S); intuition.
+  } symmetry. apply pred_sepcon_ocon1; intros.
+  + apply VE.
+  + apply RFG_reachable_through_set_decicable; auto.
+  + specialize (H1 a). intuition.
+  + apply precise_graph_cell.
+  + apply joinable_graph_cell.
+Qed.
+
+Lemma precise_graph: forall (g: Graph) {rfg: ReachableFiniteGraph g} x,
+    Decidable (vvalid g x) -> precise (graph x g).
+Proof.
+  intros. unfold graph. unfold vertices_at. rewrite pred_sepcon_eq.
+  apply (precise_exp_iter_sepcon).
+  + apply sepcon_unique_graph_cell.
+  + destruct (construct_reachable_list g x H) as [l [? ?]].
+    left; exists l. intuition.
+  + apply precise_graph_cell.
+  + intros. apply eq_as_set_permutation; auto. 1: apply VE.
+    destruct H0, H1. hnf. unfold Sublist.
+    split; intros; specialize (H0 a); specialize (H1 a); intuition.
+Qed.
+
 Lemma subgraph_update:
   forall (g g': Graph) {rfg: ReachableFiniteGraph g} {rfg': ReachableFiniteGraph g'} (S1 S1' S2: list V),
     (forall x : V, In x (S1 ++ S2) -> Decidable (vvalid g x)) ->
