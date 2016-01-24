@@ -132,6 +132,37 @@ Proof.
   + destruct H as [? [? [? ?]]]; econstructor; eauto.
 Qed.
 
+Lemma out_edges_step: forall (pg: PreGraph Vertex Edge) x e,
+  out_edges pg x e -> step pg x (dst pg e).
+Proof.
+  unfold out_edges.
+  intros.
+  rewrite step_spec.
+  firstorder.
+Qed.
+
+Lemma out_edges_step_list: forall (pg: PreGraph Vertex Edge) x es,
+  (forall e, In e es <-> out_edges pg x e) ->
+  (step_list pg x (map (dst pg) es)).
+Proof.
+  intros.
+  unfold step_list.
+  intros v.
+  split.
+  + intros.
+    rewrite in_map_iff in H0.
+    destruct H0 as [e [? ?]]; subst v.
+    apply out_edges_step.
+    apply H; auto.
+  + intros.
+    rewrite step_spec in H0.
+    destruct H0 as [e [? [? ?]]].
+    subst.
+    apply in_map.
+    rewrite H.
+    split; auto.
+Qed.
+  
 Lemma valid_step: forall (pg: PreGraph Vertex Edge) {ma: MathGraph pg} x y, step pg x y -> vvalid pg x /\ weak_valid pg y.
 Proof.
   intros.

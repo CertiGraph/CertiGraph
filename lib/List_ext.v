@@ -831,7 +831,42 @@ Proof.
       simpl; auto.
 Qed.
 
+Lemma in_cprefix': forall {A: Type} (xs: list A) xs_done x0,
+  In (xs_done, x0) (cprefix xs) ->
+  exists xs_later, xs = xs_done ++ x0 :: xs_later.
+Proof.
+  intros.
+  rev_induction xs.
+  + inversion H.
+  + rewrite combine_prefixes_app_1 in H0.
+    rewrite in_app_iff in H0.
+    destruct H0.
+    - destruct (H H0) as [xs_later ?].
+      exists (xs_later +:: a).
+      change (x0 :: xs_later +:: a) with ((x0 :: xs_later) +:: a).
+      rewrite app_assoc.
+      f_equal; auto.
+    - destruct H0 as [| []].
+      inversion H0; subst.
+      exists nil; auto.
+Qed.
+
 Lemma in_cprefix_cprefix: forall {A: Type} (xs: list A) xs0 xss0,
+  In (xss0, xs0) (cprefix (cprefix xs)) ->
+  xss0 = cprefix (fst xs0).
+Proof.
+  intros.
+  rev_induction xs.
+  + inversion H.
+  + rewrite !combine_prefixes_app_1 in H0.
+    rewrite in_app_iff in H0.
+    destruct H0; [auto |].
+    destruct H0 as [| []].
+    inversion H0; subst.
+    reflexivity.
+Qed.
+
+Lemma in_cprefix_cprefix': forall {A: Type} (xs: list A) xs0 xss0,
   In (xss0, xs0) (cprefix (cprefix xs)) ->
   map snd xss0 = fst xs0.
 Proof.
