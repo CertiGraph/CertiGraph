@@ -299,6 +299,13 @@ Section IterPredSepCon.
 Definition pred_sepcon (P: B -> Prop) (p: B -> A): A :=
   EX l: list B, !! (forall x, In x l <-> P x) && !! NoDup l && iter_sepcon l p.
 
+Lemma pred_sepcon_eq: forall (P: B -> Prop) (p: B -> A),
+    pred_sepcon P p = 
+    (EX l: list B, !! ((forall x, In x l <-> P x) /\ NoDup l) && iter_sepcon l p).
+Proof.
+  intros. unfold pred_sepcon. f_equal. extensionality l. rewrite prop_and. auto.
+Qed.
+
 Lemma pred_sepcon_strong_proper: forall P1 P2 p1 p2,
   (forall x, P1 x <-> P2 x) ->
   (forall x, P1 x -> P2 x -> p1 x = p2 x) ->
@@ -491,4 +498,57 @@ Qed.
 
 End IterPredSepCon.
 
+Section OconIterSepCon.
 
+  Context {A : Type}.
+  Context {B : Type}.
+  Context {ND : NatDed A}.
+  Context {SL : SepLog A}.
+  Context {ClS: ClassicalSep A}.
+  Context {PSL : PreciseSepLog A}.
+  Context {CoSL: CorableSepLog A}.
+  Context {OSL: OverlapSepLog A}.
+  Context {DSL : DisjointedSepLog A}.
+
+  Lemma pred_sepcon_ocon:
+    forall (P Q R: B -> Prop) p (eq_dec : forall x y : B, {x = y} + {x <> y}),
+      (forall x, Decidable (P x)) -> (forall x, Decidable (Q x)) -> 
+      (forall a, P a \/ Q a <-> R a) ->
+      (forall x : B, precise (p x)) ->
+      joinable p ->
+      pred_sepcon P p ⊗ pred_sepcon Q p = pred_sepcon R p.
+  Proof.
+    intros. unfold pred_sepcon. apply pred_ext.
+    + normalize_overlap; intro lP.
+      do 2 normalize_overlap. rename x into lQ.
+      apply (exp_right (remove_dup eq_dec (lP ++ lQ))). 
+      rewrite (iter_sepcon_ocon eq_dec); auto. rewrite <- prop_and.
+      apply andp_right; auto. apply prop_right. split; intros.
+      2: apply remove_dup_nodup. split; intros.
+      - rewrite <- remove_dup_in_inv in H6. rewrite <- H.
+        rewrite in_app_iff in H6. rewrite H2 in H6. rewrite H4 in H6. auto.
+      - rewrite <- remove_dup_in_inv. rewrite <- H in H6.
+        rewrite in_app_iff. rewrite H2. rewrite H4. auto.
+    + normalize. intro lR; intros. normalize. normalize_overlap.
+      assert (forall a, In a lR <-> P a \/ Q a) by (clear -H H2; firstorder).
+      destruct (or_dec_prop_list_split _ _ _ H3 X X0 H4) as [lP [lQ [? [? [? [? ?]]]]]].
+      apply (exp_right lP). normalize_overlap. apply (exp_right lQ).
+      rewrite <- prop_and. normalize_overlap. apply andp_right.
+      - apply prop_right. intuition.
+      - rewrite <- iter_sepcon_ocon' with (l := lR); auto.
+  Qed.
+
+  Lemma pred_sepcon_ocon1:
+    forall (Q R: B -> Prop) p z (eq_dec : forall x y : B, {x = y} + {x <> y}),
+      (forall x, Decidable (Q x)) -> 
+      (forall a, a = z \/ Q a <-> R a) ->
+      (forall x : B, precise (p x)) ->
+      joinable p ->
+      p z ⊗ pred_sepcon Q p = pred_sepcon R p.
+  Proof.
+    intros. rewrite <- (pred_sepcon_ocon (fun x => x = z) Q R); auto.
+    + f_equal. rewrite pred_sepcon1. auto.
+    + intros. apply eq_dec.
+  Qed.
+
+End OconIterSepCon.

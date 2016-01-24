@@ -621,6 +621,33 @@ Qed.
 
 Existing Instance Permutation_app'_Proper.
 
+Ltac split5 := split; [| split; [| split; [| split]]].
+
+Lemma spec_or_list_split: forall {A} (l: list A) P Q,
+    NoDup l -> (forall x, In x l <-> P x \/ Q x) ->
+    exists lp lq,
+      NoDup lp /\
+      NoDup lq /\     
+      (forall x, In x lp -> P x) /\
+      (forall x, In x lq -> Q x) /\
+      (forall x, In x l <-> In x lp \/ In x lq).
+Proof.
+  intros. pose proof (fun x => proj1 (H0 x)). clear H0. induction l.
+  + exists nil, nil.
+    split5; [constructor | constructor |..]; intro x; simpl; tauto.
+  + spec IHl; [inversion H; auto |].
+    spec IHl; [intros; apply H1; simpl; auto |].
+    destruct IHl as [lp [lq [? [? [? [? ?]]]]]].
+    destruct (H1 a (or_introl eq_refl)); [exists (a :: lp), lq | exists lp, (a :: lq)];
+    split5; intros; auto.
+    - constructor; auto. inversion H; subst. firstorder.
+    - destruct H7; [subst |]; auto.
+    - simpl; specialize (H5 x); tauto.
+    - constructor; auto. inversion H; subst. firstorder.
+    - destruct H7; [subst |]; auto.
+    - simpl; specialize (H5 x); tauto.
+Qed.
+
 Lemma spec_list_split: forall {A} (l: list A) P Q R,
   NoDup l ->
   (forall x, In x l <-> R x) ->
@@ -632,50 +659,59 @@ Lemma spec_list_split: forall {A} (l: list A) P Q R,
     (forall x, In x lq <-> Q x) /\
     Permutation l (lp ++ lq).
 Proof.
-Ltac split5 := split; [| split; [| split; [| split]]].
   intros A l P Q R ? EQUIV [? ?].
   assert (forall a, In a l <-> P a \/ Q a) by firstorder.
   clear EQUIV H0 R; rename H2 into H0.
-  assert (exists lp lq,
-     NoDup lp /\
-     NoDup lq /\     
-     (forall x, In x lp -> P x) /\
-     (forall x, In x lq -> Q x) /\
-     (forall x, In x l <-> In x lp \/ In x lq)).
-  + pose proof (fun x => proj1 (H0 x)).
-    clear H0.
-    induction l.
-    - exists nil, nil.
-      split5; [constructor | constructor |..]; intro x; simpl; tauto.
-    - spec IHl; [inversion H; auto |].
-      spec IHl; [intros; apply H2; simpl; auto |].
-      destruct IHl as [lp [lq [? [? [? [? ?]]]]]].
-      destruct (H2 a (or_introl eq_refl)); [exists (a :: lp), lq | exists lp, (a :: lq)];
-      split5; intros.
-      * constructor; auto.
-        inversion H; subst.
-        firstorder.
-      * auto.
-      * destruct H8; [subst |]; auto.
-      * auto.
-      * simpl; specialize (H6 x); tauto.
-      * auto.
-      * constructor; auto.
-        inversion H; subst.
-        firstorder.
-      * auto.
-      * destruct H8; [subst |]; auto.
-      * simpl; specialize (H6 x); tauto.
-  + destruct H2 as [lp [lq [? [? [? [? ?]]]]]].
-    exists lp, lq.
-    split5; auto.
-    - firstorder.
-    - firstorder.
-    - apply NoDup_Permutation; auto.
-      * apply NoDup_app_inv; auto.
-        firstorder.
-      * intro; rewrite in_app_iff.
-        firstorder.
+  pose proof (spec_or_list_split l P Q H H0).
+  destruct H2 as [lp [lq [? [? [? [? ?]]]]]].
+  exists lp, lq. split5; auto.
+  + firstorder.
+  + firstorder.
+  + apply NoDup_Permutation; auto.
+    - apply NoDup_app_inv; auto. firstorder.
+    - intro; rewrite in_app_iff. firstorder.
+Qed.
+
+Fixpoint select {A: Type} {P: A -> Prop} (dec_p: forall x, Decidable (P x)) (l: list A) : list A :=
+  match l with
+  | nil => nil
+  | x :: lx => if dec_p x then x :: select dec_p lx else select dec_p lx
+  end.
+
+Lemma select_In {A: Type} {P: A -> Prop} (dec_p: forall x, Decidable (P x)): forall x l,
+    In x (select dec_p l) <-> In x l /\ P x.
+Proof.
+  intros; induction l; simpl; [intuition | destruct (dec_p a)]; split; intro.
+  + simpl in H. destruct H; [subst|]; intuition.
+  + destruct H. simpl. destruct H; [left | right]; intuition.
+  + rewrite IHl in H. intuition.
+  + rewrite IHl. destruct H. split; auto. destruct H; [subst; exfalso|]; intuition.
+Qed.
+
+Lemma NoDup_select {A: Type} {P: A -> Prop} (dec_p: forall x, Decidable (P x)): forall l,
+    NoDup l -> NoDup (select dec_p l).
+Proof.
+  intro. induction l; intros; simpl; auto. specialize (IHl (NoDup_cons_1 _ _ _ H)).
+  apply NoDup_cons_2 in H. destruct (dec_p a); auto. constructor; auto. intro. apply H.
+  rewrite select_In in H0. intuition.
+Qed.
+
+Lemma or_dec_prop_list_split: forall {A} (l: list A) P Q,
+    NoDup l -> (forall x, Decidable (P x)) -> (forall x, Decidable (Q x)) ->
+    (forall x, In x l <-> P x \/ Q x) ->
+    exists lp lq,
+      NoDup lp /\
+      NoDup lq /\     
+      (forall x, In x lp <-> P x) /\
+      (forall x, In x lq <-> Q x) /\
+      (forall x, In x l <-> In x lp \/ In x lq).
+Proof.
+  intros. exists (select X l), (select X0 l). split5; intros.
+  + apply NoDup_select; auto.
+  + apply NoDup_select; auto.
+  + rewrite select_In. firstorder.
+  + rewrite select_In. firstorder.
+  + do 2 rewrite select_In. firstorder.
 Qed.
 
 Fixpoint prefixes {A: Type} (l: list A): list (list A) :=

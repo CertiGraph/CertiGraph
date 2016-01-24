@@ -371,3 +371,47 @@ Class sSpatialGraph_Graph_Bi {pSGG_Bi: pSpatialGraph_Graph_Bi}: Type := {
 }.
 
 Existing Instances SGP SGA biGraph.
+
+Section GRAPH_BI_OCON_UNFOLD.
+
+  Context {pSGG_Bi: pSpatialGraph_Graph_Bi}.
+  Context {sSGG_Bi: sSpatialGraph_Graph_Bi}.
+  Context {SGSA: SpatialGraphStrongAssum SGP}.
+
+  Notation graph x g := (@graph _ _ _ _ _ _ SGP _ x (Graph_SpatialGraph g)).
+
+  Lemma bi_graph_unfold: forall (g: Graph) x d l r,
+      vvalid g x -> vgamma g x = (d, l, r) ->
+      graph x g = vertex_at x (d, l, r) ⊗ graph l g ⊗ graph r g.
+  Proof.
+    intros. rewrite graph_unfold with (S := (l :: r :: nil)); auto.
+    + rewrite H0. simpl. rewrite ocon_emp. rewrite <- ocon_assoc. auto.
+    + apply RGF.
+    + intros. apply weak_valid_vvalid_dec. simpl in H1.
+      destruct H1; [|destruct H1]; [subst x0 ..|exfalso; auto].
+      - apply (gamma_left_weak_valid _ x d l r); auto.
+      - apply (gamma_right_weak_valid _ x d l r); auto.
+    + apply (gamma_step_list _ _ d l r); auto.
+  Qed.
+
+  Lemma bi_graph_precise_left: forall (g: Graph) x l,
+      vvalid g x -> dst g (x, L) = l -> precise (graph l g).
+  Proof.
+    intros. apply precise_graph. 1: apply RGF.
+    apply weak_valid_vvalid_dec.
+    pose proof (left_valid g x H). simpl in H1.
+    destruct (@valid_graph _ _ _ _ g (maGraph g) (x, L) H1).
+    rewrite H0 in H3. apply H3.
+  Qed.
+
+  Lemma bi_graph_precise_right: forall (g: Graph) x r,
+      vvalid g x -> dst g (x, R) = r -> precise (graph r g).
+  Proof.
+    intros. apply precise_graph. 1: apply RGF.
+    apply weak_valid_vvalid_dec.
+    pose proof (right_valid g x H). simpl in H1.
+    destruct (@valid_graph _ _ _ _ g (maGraph g) (x, R) H1).
+    rewrite H0 in H3. apply H3.
+  Qed.
+  
+End GRAPH_BI_OCON_UNFOLD.
