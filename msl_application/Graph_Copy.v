@@ -5,6 +5,7 @@ Require Import RamifyCoq.lib.Ensembles_ext.
 Require Import RamifyCoq.lib.EquivDec_ext.
 Require Import RamifyCoq.lib.List_ext.
 Require Import RamifyCoq.lib.relation_list.
+Require Import RamifyCoq.lib.Morphisms_ext.
 Require Import RamifyCoq.msl_ext.abs_addr.
 Require Import RamifyCoq.msl_ext.seplog.
 Require Import RamifyCoq.msl_ext.log_normalize.
@@ -151,62 +152,116 @@ Proof.
     auto.
 Qed.
 
-(*
-Lemma edge_copy_spec': forall (g: Graph) (root: V) (p: list E * E) (* (es_done: list E) (e0: E) *),
-  evalid g1 e0 ->
-  src g1 e0 = root ->
-  edge_copy g e0 (g1, g1') (g2, g2') ->
-  Same_set
-    (WeakMarkGraph.marked g1)
-    (let M0 := Union _ (WeakMarkGraph.marked g) (eq root) in
-     let PV1 := reachable_by_through_set g (map (dst g) es_done) (Complement _ M0) in
-     let M_rec := Union _ M0 PV1 in
-     M_rec) ->
-  LocalGraphCopy.edge_copy g root (WeakMarkGraph.marked g) (es_done, e0) (g1, g1') (g2, g2') /\
-  WeakMarkGraph.componded root (WeakMarkGraph.mark (dst g e0)) g1 g2.
-*)
-Lemma edge_copy_list_spec: forall root es (g g1 g2 g1' g2': Graph),
-  vvalid g1 root ->
-  WeakMarkGraph.unmarked g1 root ->
-  (forall e, In e es <-> out_edges g1 root e) ->
+Lemma edge_copy_spec': forall root es e0 es_done es_later (g g1 g2 g3 g2' g3': Graph),
+  let g1' := single_vertex_labeledgraph (LocalGraphCopy.vmap g1 root) default_DV' default_DE' in
+  vvalid g root ->
+  WeakMarkGraph.unmarked g root ->
+  es = es_done ++ e0 :: es_later ->
+  (forall e, In e es <-> out_edges g root e) ->
+  NoDup es ->
+  vcopy1 root g g1 ->
+  relation_list
+   (map (LocalGraphCopy.edge_copy g root (WeakMarkGraph.marked g))
+     (cprefix es_done)) (g1, g1') (g2, g2') ->
+  relation_list
+   (map (fun v => WeakMarkGraph.componded root (WeakMarkGraph.mark v)) (map (dst g) es_done))
+      g1 g2->
+  edge_copy g e0 (g2, g2') (g3, g3') ->
+  LocalGraphCopy.edge_copy g root (WeakMarkGraph.marked g) (es_done, e0) (g2, g2') (g3, g3') /\
+  WeakMarkGraph.componded root (WeakMarkGraph.mark (dst g e0)) g2 g3.
+Proof.
+  intros.
+  destruct H4 as [_ [? ?]].
+  pose proof WeakMarkGraph.triple_mark1_componded_mark_list root (map (dst g) es_done) (map (dst g) (e0 :: es_later)) (map (dst g) es) g g2 H H0.
+  spec H9; [apply out_edges_step_list; auto |].
+  spec H9; [rewrite <- map_app; f_equal; auto |].
+  spec H9; [split_relation_list (g :: g1 :: g1 :: nil) |].
+    1: apply WeakMarkGraph.eq_do_nothing; auto.
+    1: auto.
+    1: apply WeakMarkGraph.eq_do_nothing; auto.
+    1: auto.
+  cbv iota zeta in H9.
+
+  pose proof LocalGraphCopy.triple_vcopy1_edge_copy_list g g1 g2 g2' root es es_done (e0 :: es_later) (WeakMarkGraph.marked g) H H0 H2 H3 H1.
+  spec H10; [intro v; destruct (node_pred_dec (WeakMarkGraph.marked g) v); auto |].
+  specialize (H10 H8 H5).
+  cbv iota zeta in H10.
+
+  assert (evalid g2 e0 /\ src g e0 = root).
+  Focus 1. {
+    destruct H10 as [_ [? _]].
+    rewrite <- (proj1 (proj2 H10)); auto.
+    assert (In e0 es) by (rewrite H1, in_app_iff; simpl; auto).
+    rewrite H2 in H11. auto.
+  } Unfocus.
+
+  apply edge_copy_spec; auto.
+  + tauto.
+  + destruct H10 as [_ [? _]], H11 as [? ?].
+    erewrite <- si_src2 by eauto.
+    auto.
+  + destruct H9 as [_ ?]; auto.
+Qed.
+
+Lemma edge_copy_list_spec: forall root es (g g1 g2 g2': Graph),
+  let g1' := single_vertex_labeledgraph (LocalGraphCopy.vmap g1 root) default_DV' default_DE' in
+  (forall e, In e es <-> out_edges g root e) ->
+  NoDup es ->
+  vcopy1 root g g1 ->
+  vvalid g root ->
+  WeakMarkGraph.unmarked g root ->
+  vcopy1 root g g1 ->
+  (forall e, In e es <-> out_edges g root e) ->
   WeakMarkGraph.mark1 root g g1 ->
   edge_copy_list g es (g1, g1') (g2, g2') ->
   LocalGraphCopy.edge_copy_list g root es (WeakMarkGraph.marked g) (g1, g1') (g2, g2') /\
   WeakMarkGraph.componded_mark_list root (map (dst g) es) g1 g2.
 Proof.
   intros.
-  unfold edge_copy_list in H3.
-  rewrite map_snd_cprefix' in H3.
-  eapply relation_list_weaken_ind with
+  unfold edge_copy_list in H7.
+  rewrite map_snd_cprefix' in H7.
+  eapply relation_list_weaken_ind' with
     (R' := fun (p: list E * E) =>
            relation_conjunction
             (LocalGraphCopy.edge_copy g root (WeakMarkGraph.marked g) p)
             (fst_relation (WeakMarkGraph.componded root (WeakMarkGraph.mark (dst g (snd p))))))
-     in H3.
-  + apply relation_list_conjunction in H3.
-    destruct H3.
+     in H7.
+  + apply relation_list_conjunction in H7.
+    destruct H7.
     split; auto.
-    rewrite <- map_map in H4.
-    unfold fst_relation in H4.
-    apply respectful_relation_list in H4.
-    unfold respectful_relation in H4; simpl in H4.
+    rewrite <- map_map in H8.
+    unfold fst_relation in H8.
+    apply respectful_relation_list in H8.
+    unfold respectful_relation in H8; simpl in H8.
     unfold WeakMarkGraph.componded_mark_list.
     rewrite map_map.
     rewrite map_snd_cprefix'.
     auto.
-  + clear g2 g2' H3.
+  + clear g2 g2' H7.
     intros.
+    clear H8.
     unfold relation_conjunction, predicate_intersection; simpl.
     destruct a2 as [g2 g2'], a3 as [g3 g3'].
     unfold fst_relation, respectful_relation; simpl.
-    rewrite <- map_map in H4.
-    pose proof in_cprefix _ _ _ H3.
-    apply in_cprefix_cprefix in H3.
-    rewrite H3 in H4; clear bs_done H3.
-    destruct b0 as [es_done e0]; simpl in *.
-    apply in_cprefix in H6.
-    apply edge_copy_spec; auto.
-Abort.
+    pose proof in_cprefix _ _ _ H7.
+    apply in_cprefix_cprefix in H7.
+    subst bs_done.
+    destruct b0 as [es_done e0]; simpl in H9 |- *.
+    pose proof in_cprefix' _ _ _ H8.
+    destruct H7 as [es_later ?].
+    apply relation_list_conjunction in H9.
+    destruct H9.
+    rewrite <- (map_map (snd) (fun e => fst_relation
+               (WeakMarkGraph.componded root
+                  (WeakMarkGraph.mark (dst g e))))) in H11.
+    rewrite map_snd_cprefix in H11.
+    rewrite <- map_map in H11.
+    unfold fst_relation in H11.
+    apply respectful_relation_list in H11.
+    unfold respectful_relation in H11; simpl in H11.
+    eapply edge_copy_spec'; try eassumption.
+    rewrite map_map; auto.
+Qed.
 
 Lemma vcopy1_edge_copy_list_copy: forall root es (g1 g2 g3 g3': Graph),
   let g2' := single_vertex_labeledgraph (LocalGraphCopy.vmap g1 root) default_DV' default_DE' in
