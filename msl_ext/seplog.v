@@ -11,7 +11,8 @@ Class PreciseSepLog (A: Type) {ND: NatDed A} {SL: SepLog A} := mkPreciseSepLog {
   precise_left_sepcon_andp_distr: forall P P1 P2 Q R, precise P -> P1 |-- P -> P2 |-- P -> (P1 * Q) && (P2 * R) |-- (P1 && P2) * (Q && R);
   derives_precise: forall P Q, (P |-- Q) -> precise Q -> precise P;
   precise_emp: precise emp;
-  precise_sepcon: forall P Q, precise Q -> precise P -> precise (P * Q)
+  precise_sepcon: forall P Q, precise Q -> precise P -> precise (P * Q);
+  precise_wand_ewand: forall R P Q R', precise P -> R |-- P * (Q -* R') -> Q * (ewand P R) |-- R'
 }.
 
 Implicit Arguments PreciseSepLog [[ND] [SL]].
@@ -23,6 +24,7 @@ Instance LiftPreciseSepLog (A B: Type) {ND: NatDed B} {SL: SepLog B} {PSL: Preci
   + eapply derives_precise; eauto.
   + apply precise_emp.
   + apply precise_sepcon; auto.
+  + apply precise_wand_ewand; auto.
 Defined.
 
 Class MapstoSepLog {Addr Val: Type} (AV: AbsAddr Addr Val) {A: Type} (mapsto: Addr -> Val -> A) {ND: NatDed A} {SL: SepLog A} {PSL: PreciseSepLog A} := mkMapstoSepLog {

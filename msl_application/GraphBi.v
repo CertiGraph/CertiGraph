@@ -129,6 +129,53 @@ Proof.
   intro y; intros. simpl. apply is_null_def.
 Defined.
 
+Ltac s_rewrite p :=
+  let H := fresh "H" in
+  pose proof p as H;
+  simpl in H;
+  rewrite H;
+  clear H.
+
+Lemma Graph_gen_update_vgamma: forall (G: Graph) (x: addr) (d: bool) l r (Hi: in_math G x l r) (Hn: ~ is_null G x),
+    vgamma (Graph_gen_update G x d l r Hi Hn) x = (d, l, r).
+Proof.
+  intros; simpl; unfold gamma; simpl. f_equal; [f_equal |].
+  + unfold update_vlabel. destruct (equiv_dec x x); auto. unfold complement, equiv in c. exfalso; auto.
+  + unfold change_dst. destruct (equiv_dec (src G (x, L)) x).
+    - destruct (left_or_right G (biGraph G) x (x, L) e); auto. inversion e0.
+    - exfalso. apply c. unfold equiv. s_rewrite (left_sound G); auto.
+  + unfold change_dst. destruct (equiv_dec (src G (x, R)) x).
+    - destruct (left_or_right G (biGraph G) x (x, R) e); auto. inversion e0.
+    - exfalso. apply c. unfold equiv. s_rewrite (right_sound G); auto.
+Qed.
+
+Lemma Graph_gen_update_spatial_spec: forall (G: Graph) (x: addr) (d d': bool) l r (Hi: in_math G x l r) (Hn: ~ is_null G x),
+  vvalid G x -> vgamma G x = (d, l, r) ->
+  (Graph_gen_update G x d' l r Hi Hn) -=- (spatialgraph_vgen G x (d', l, r)).
+Proof.
+  intros. split; [|split]; intros; simpl; auto.
+  + hnf. simpl. split; [|split;[|split]]; intros; auto.
+    - unfold change_vvalid. intuition. subst v. auto.
+    - unfold change_evalid. intuition. rewrite (only_two_edges G) in H2.
+      destruct H2; rewrite H1;
+      [apply (@left_valid _ _ _ _ G _ _ (biGraph G)) | apply (@right_valid _ _ _ _ G _ _ (biGraph G))]; auto.
+    - unfold change_dst. simpl. destruct (equiv_dec (src G e) x); auto.
+      simpl in H0. unfold gamma in H0. inversion H0.
+      destruct (left_or_right G (biGraph G) x e e0); subst; auto.
+  + simpl in *. unfold gamma. simpl. unfold update_vlabel, change_dst.
+    assert (forall v', (src G (v', L)) = v') by (intros; s_rewrite (left_sound G); auto).
+    assert (forall v', (src G (v', R)) = v') by (intros; s_rewrite (right_sound G); auto).
+    destruct (equiv_dec x v).
+    - unfold equiv in e. subst v. specialize (H3 x). specialize (H4 x). f_equal; [f_equal|].
+      * destruct (equiv_dec (src G (x, L)) x). 2: unfold complement, equiv in c; exfalso; auto.
+        destruct (left_or_right G (biGraph G) x (x, L) e); auto. inversion e0.
+      * destruct (equiv_dec (src G (x, R)) x). 2: unfold complement, equiv in c; exfalso; auto.
+        destruct (left_or_right G (biGraph G) x (x, R) e); auto. inversion e0.
+    - unfold complement, equiv in c. specialize (H3 v). specialize (H4 v). f_equal; [f_equal|].
+      * destruct (equiv_dec (src G (v, L)) x); auto. unfold equiv in e; exfalso; rewrite H3 in e; auto.
+      * destruct (equiv_dec (src G (v, R)) x); auto. unfold equiv in e; exfalso; rewrite H4 in e; auto.
+Qed.
+
 Lemma Graph_gen_spatial_spec: forall (G: Graph) (x: addr) (d d': bool) l r,
   vgamma G x = (d, l, r) ->
   (Graph_gen G x d') -=- (spatialgraph_vgen G x (d', l, r)).
@@ -170,13 +217,6 @@ Proof.
   rewrite H.
   reflexivity.
 Qed.
-
-Ltac s_rewrite p :=
-  let H := fresh "H" in
-  pose proof p as H;
-  simpl in H;
-  rewrite H;
-  clear H.
 
 Lemma gamma_step: forall (g : Graph) x (d: bool) (l r: addr), vvalid g x -> vgamma g x = (d, l, r) -> forall y, step g x y <-> y = l \/ y = r.
 Proof.
