@@ -19,7 +19,7 @@ Qed.
 
 (* derives_precise, precise_emp is in predicates_sl.v. *)
 
-Lemma precise_sepcon {A} {JA : Join A} {PA : Perm_alg A} {SA: Sep_alg A} {AG : ageable A} {AA: Age_alg A} :
+Lemma precise_sepcon {A} {JA : Join A} {PA : Perm_alg A} {SA: Sep_alg A} {AG : ageable A} {AA: Age_alg A}:
   forall P Q, precise Q -> precise P -> precise (P * Q).
 Proof.
   repeat intro; destruct H1 as [w11 [w12 [? [? ?]]]], H2 as [w21 [w22 [? [? ?]]]].
@@ -30,6 +30,13 @@ Proof.
                          apply join_join_sub' in H2; generalize (join_sub_trans H2 H4); intro;
                          hnf in H; apply H with (w := w); trivial).
   rewrite H9 in *; rewrite H10 in *; equate_join w1 w2; auto.
+Qed.
+
+Lemma precise_wand_ewand {A} {JA : Join A} {PA : Perm_alg A} {SA: Sep_alg A} {CA : Canc_alg A} {AG : ageable A} {AA: Age_alg A}:
+  forall R P Q R', precise P -> R |-- P * (Q -* R') -> Q * (ewand P R) |-- R'.
+Proof.
+  intros. intro w. intros. destruct_sepcon H1 h. destruct H3 as [h3 [h4 [? [? ?]]]].
+  specialize (H0 h4 H5). destruct_sepcon H0 h. equate_precise h3 h0. equate_canc h2 h5. apply (H7 h2 h1); auto.
 Qed.
 
 (*
