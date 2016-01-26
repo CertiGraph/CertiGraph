@@ -276,6 +276,20 @@ Proof.
   tauto.
 Qed.
 
+Lemma gamma_step_list': forall (g : Graph) x d l r, vvalid g x -> vgamma g x = (d, l, r) -> step_list g x (r :: l :: nil).
+Proof.
+  intros.
+  unfold step_list.
+  intros y.
+  rewrite gamma_step by eauto.
+  simpl.
+  pose proof (@eq_sym _ l y).
+  pose proof (@eq_sym _ r y).
+  pose proof (@eq_sym _ y l).
+  pose proof (@eq_sym _ y r).
+  tauto.
+Qed.
+
 Lemma Graph_reachable_dec: forall (G: Graph) x,
     Decidable (vvalid G x) -> forall y, Decidable (reachable G x y).
 Proof.

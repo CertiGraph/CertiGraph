@@ -83,6 +83,44 @@ Module GraphMark <: Mgraphmark.
     intros. unfold WeakMarkGraph.mark. destruct H0 as [? ?]. specialize (H1 x).
     simpl in H1. symmetry. rewrite H1. left; auto.
   Qed.
+
+  Lemma axiom_5 : forall v G1 G2 G G3 x l r,
+      valid (imp (and (lookup G x v l r)
+                      (and (update G x true l r G1)
+                           (and (neq v true) (and (mark G1 r G2) (mark G2 l G3)))))
+                 (and (mark G x G3) (lookup G3 x true l r))).
+  Proof.
+    intros. unfold valid, imp, and, lookup, neq, mark, update.
+    apply imp_andp_adjoint. normalize. destruct H as [? [? [? [? [? ?]]]]].
+    assert (mark1 x G G1) by (apply (update_is_mark1 l r); auto).
+    apply andp_right; normalize.
+    + destruct H0 as [Hn [Hi ?]].
+      apply mark1_mark_list_mark with (r :: l :: nil); auto.
+      - simpl. unfold Complement. unfold In. clear - H H1. subst v. intuition.
+      - apply gamma_step_list' with false; auto. simpl. unfold gamma.
+        do 2 (f_equal; auto). subst v. apply Bool.not_true_is_false in H1. auto.
+      - hnf. apply (compond_intro (compond_relation Logic.eq (mark1 x)) _ _ G1 _).
+        apply (compond_intro Logic.eq (mark1 x) G G G1); auto.
+        unfold mark_list. simpl. hnf.
+        apply (compond_intro
+                 (compond_relation Logic.eq (Graph_Mark.mark r)) _ _ G2 _); auto.
+          apply (compond_intro Logic.eq (Graph_Mark.mark r) G1 G1 G2); auto.
+    + destruct H2, H3, H9. destruct H12 as [? ?]. split.
+      - apply (marked_node_marked G2 l); auto. apply (marked_node_marked G1 r); auto. 
+      - assert (G ~=~ G3) by (transitivity G1; auto; transitivity G2; auto).
+        destruct H14 as [? [? [? ?]]]. split; [|split; [|split; [|split]]].
+        * specialize (H14 x); intuition.
+        * specialize (H14 l); intuition.
+        * specialize (H14 r); intuition.
+        * assert (evalid G (x, L)) by
+              (apply (@left_valid _ _ _ _ _ _ _ (biGraph G)); auto).
+          subst l. symmetry. specialize (H17 (x, L)).
+          specialize (H15 (x, L)). intuition.
+        * assert (evalid G (x, R)) by
+              (apply (@right_valid _ _ _ _ _ _ _ (biGraph G)); auto).
+          subst r. symmetry. specialize (H17 (x, R)).
+          specialize (H15 (x, R)). intuition.
+  Qed.
   
   Lemma axiom_6 : forall v G1 G2 G G3 x l r,
       valid (imp (and (lookup G x v l r)
@@ -315,10 +353,6 @@ Module GraphMark <: Mgraphmark.
   Admitted.
 
   Lemma axiom_4 : forall v G1 G2 G G3 x l r, valid (imp (and (lookup G x v l r) (and (mark G l G1) (and (neq v true) (and (mark G1 r G2) (update G2 x true l r G3))))) (and (mark G x G3) (lookup G3 x true l r))).
-  Proof.
-  Admitted.
-
-  Lemma axiom_5 : forall v G1 G2 G G3 x l r, valid (imp (and (lookup G x v l r) (and (update G x true l r G1) (and (neq v true) (and (mark G1 r G2) (mark G2 l G3))))) (and (mark G x G3) (lookup G3 x true l r))).
   Proof.
   Admitted.
 
