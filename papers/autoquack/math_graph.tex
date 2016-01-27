@@ -91,22 +91,32 @@ verification.
 \subsection{Classification of various graphs}
 
 PreGraph and other definitions based on it are not sufficient for
-actural program verification. There are still many useful and
-practical properties can not derived barely from PreGraph. For
-example, when we compute some properties of a graph, we always hope
-the graph is finite connected. In the recursive defnition of a graph
-data structure, a node contains many pointers to point to its
-neighbors. The pointers could be null to indicate that they do not
-point to any. Thus we need a special node which represents null
-pointer. In some cases, we have to specify a graph in which the
-outdegree of each nodes is 2. All these additional properties are
-abstracted as different property bundles. We
-defined \textbf{LocalFiniteGraph}, \textbf{MathGraph}
+actual program verification. There are still many useful and practical
+properties can not derived barely from PreGraph. For example, when we
+compute some properties of a graph, we always hope the graph is finite
+connected. In the recursive defnition of a graph data structure, a
+node contains many pointers to point to its neighbors. The pointers
+could be null to indicate that they do not point to any. Thus we need
+a special node which represents null pointer. In some cases, we have
+to specify a graph in which the outdegree of each nodes is 2. All
+these additional properties are abstracted as different property
+bundles. We defined \textbf{LocalFiniteGraph}, \textbf{MathGraph}
 and \textbf{BiGraph} for the three requirements above,
 respectively. These abstractions made theorems more flexible and
 general.
 
-(To be continued)
+In our framework, there are four kinds of graphs: MathGraph,
+FiniteGraph, LocalFiniteGraph and BiGraph. They are all constraints on
+PreGraph. MathGraph requires a null node to represent null pointer in
+recursive data structure. FiniteGraph just says all nodes and edges in
+a PreGraph are finite. LocalFiniteGraph requires that every node has
+finite neighbors. BiGraph needs that every nodes only has two out
+edges. Obviously in the correctness proofs of concrete algorithms, all
+graphs satisfy the definition of MathGraph, FiniteGraph,
+LocalFiniteGraph and BiGraph. But for many math theorems in graph
+theory, some constraints (e.g. FiniteGraph, BiGraph) are not
+necessary. These different constraints for different theorems make our
+framework more general.
 
 \subsection{Computable Reachability}
 We proved quite many property-bundle specific theorems. One typical
