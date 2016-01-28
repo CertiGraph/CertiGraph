@@ -63,6 +63,8 @@ Definition reachable_list (g: Gph) (x : V) (L : list V) : Prop := forall y, In y
 
 Definition reachable_set_list (g: Gph) (S : list V) (l : list V) : Prop := forall x : V, In x l <-> reachable_through_set g S x.
 
+Definition is_tree (g : Gph) (x : V) : Prop := forall y, reachable g x y -> exists !(p : path), g |= p is x ~o~> y satisfying (fun _ => True).
+
 (******************************************
 
 Path Lemmas

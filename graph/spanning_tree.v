@@ -22,12 +22,9 @@ Module SIMPLE_SPANNING_TREE.
 
     Notation Graph := (PreGraph V E).
 
-    Definition is_tree (g : Graph) (x : V) : Prop :=
-      forall y, reachable g x y -> exists !(p : path), g |= p is x ~o~> y satisfying (fun _ => True).
-
-    Instance is_tree_proper : Proper (structurally_identical ==> eq ==> iff) is_tree.
+    Instance is_tree_proper : Proper (structurally_identical ==> eq ==> iff) (@is_tree V E EV EE).
     Proof.
-      cut (forall g1 g2 x y, g1 ~=~ g2 -> x = y -> is_tree g1 x -> is_tree g2 y); intros.
+      cut (forall (g1 g2: Graph) x y, g1 ~=~ g2 -> x = y -> is_tree g1 x -> is_tree g2 y); intros.
       + constructor; intros; [apply (H x y x0) | apply (H y x y0)]; auto. symmetry; auto.
       + subst. hnf. intro v; intros. rewrite <- H in H0. specialize (H1 v H0).
         destruct H1 as [p [? ?]]. exists p.
@@ -1550,8 +1547,6 @@ Section SPANNING.
   Context {P: LabeledGraph V E DV DE -> Type}.
   Notation Graph := (GeneralGraph V E DV DE P).
 
-  Definition is_tree (g : PreGraph V E) (x : V) : Prop := SIMPLE_SPANNING_TREE.is_tree g x.
-
   Definition marked_reachable (g1 : Graph) (x : V) (g2 : Graph) : Prop :=
     (forall y, marked g2 y <-> marked g1 y \/ g1 |= x ~o~> y satisfying (unmarked g1)).
 (*    (forall y, g1 |= x ~o~> y satisfying (unmarked g1) -> marked g2 y) /\
@@ -1583,7 +1578,7 @@ Section SPANNING.
         * apply H2; auto.
       - unfold unmarked in H1 at 1. rewrite negateP_spec in H1. specialize (H1 n).
         destruct H1; split; intros; auto.
-    + destruct H0 as [? [? [? ?]]]. unfold is_tree. split; auto.
+    + destruct H0 as [? [? [? ?]]]. split; auto.
   Qed.
 
   Lemma edge_spanning_tree_inj: forall g1 root g2, edge_spanning_tree g1 root g2 <->
