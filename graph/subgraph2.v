@@ -437,6 +437,24 @@ Proof.
       assert (~ false = true) by congruence; tauto.
 Defined.
 
+Lemma is_tree_ppg_spec: forall (P : V -> Prop) root,
+    is_tree (predicate_partialgraph P) root <->
+    forall y, g |= root ~o~> y satisfying P ->
+              exists ! p, g |= p is root ~o~> y satisfying P.
+Proof.
+  intros. unfold is_tree. split; intros.
+  + rewrite reachable_by_eq_partialgraph_reachable in H0. specialize (H _ H0).
+    destruct H as [p [? ?]]. exists p. split; intros.
+  - rewrite reachable_by_path_eq_partialgraph_reachable; auto.
+  - rewrite reachable_by_path_eq_partialgraph_reachable in H2.
+    apply H1; auto.
+    + rewrite <- reachable_by_eq_partialgraph_reachable in H0. specialize (H _ H0).
+      destruct H as [p [? ?]]. exists p. split; intros.
+  - rewrite <- reachable_by_path_eq_partialgraph_reachable; auto.
+  - rewrite <- reachable_by_path_eq_partialgraph_reachable in H2.
+    apply H1; auto.
+Qed.
+
 End SubGraph.
 
 Section IS_PARTIAL_GRAPH.
