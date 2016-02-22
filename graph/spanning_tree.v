@@ -33,23 +33,6 @@ Module SIMPLE_SPANNING_TREE.
         - intros. apply H2. rewrite (reachable_by_path_si g1 g2); auto.
     Qed.
 
-    Lemma is_tree_ppg_spec: forall (g: Graph) (P : V -> Prop) root,
-        is_tree (predicate_partialgraph g P) root <->
-        forall y, g |= root ~o~> y satisfying P -> exists ! p, g |= p is root ~o~> y satisfying P.
-    Proof.
-      intros. unfold is_tree. split; intros.
-      + rewrite reachable_by_eq_partialgraph_reachable in H0. specialize (H _ H0).
-        destruct H as [p [? ?]]. exists p. split; intros.
-        - rewrite reachable_by_path_eq_partialgraph_reachable; auto.
-        - rewrite reachable_by_path_eq_partialgraph_reachable in H2.
-          apply H1; auto.
-      + rewrite <- reachable_by_eq_partialgraph_reachable in H0. specialize (H _ H0).
-        destruct H as [p [? ?]]. exists p. split; intros.
-        - rewrite <- reachable_by_path_eq_partialgraph_reachable; auto.
-        - rewrite <- reachable_by_path_eq_partialgraph_reachable in H2.
-          apply H1; auto.
-    Qed.
-
     Definition spanning_tree (g1 : Graph) (root : V) (P: V -> Prop) (g2: Graph) :=
       (predicate_partialgraph g1 (fun n => ~ g1 |= root ~o~> n satisfying P)) ~=~
       (predicate_partialgraph g2 (fun n => ~ g1 |= root ~o~> n satisfying P)) /\
