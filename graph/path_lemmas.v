@@ -1007,6 +1007,19 @@ Qed.
 Definition ReachDecidable (g: Gph) (x : V) (P : V -> Prop) :=
   forall y, Decidable (g |= x ~o~> y satisfying P).
 
+Lemma is_tree_sub_is_tree: forall (g: Gph) root, vvalid g root -> is_tree g root -> forall v, step g root v -> is_tree g v.
+Proof.
+  repeat intro. assert (reachable g root y) by (apply step_reachable with v; auto). specialize (H0 _ H3).
+  destruct H0 as [proot [? ?]]. destruct H2 as [p ?]. exists p. split; auto. intro p'. intros.
+  assert (forall path, g |= path is v ~o~> y satisfying (fun _ : V => True) -> g |= (root :: path) is root ~o~> y satisfying (fun _ : V => True)). {
+    intro ppp; intros. clear -H H1 H6. destruct ppp. 1: destruct H6 as [[? _] _]; simpl in H0; inversion H0.
+    assert (v0 = v) by (destruct H6 as [[? _] _]; simpl in H0; inversion H0; auto). subst v0.
+    assert (root :: v :: ppp = (root :: v :: nil) +++ (v :: ppp)) by intuition. rewrite H0; clear H0. apply reachable_by_path_merge with v; auto.
+    split; split; simpl; auto. 2: hnf; rewrite Forall_forall; intros; auto.
+    apply reachable_by_path_is_reachable in H6. apply reachable_by_head_valid in H6. split; [split|]; auto.
+  } pose proof (H6 _ H2). pose proof (H6 _ H5). pose proof (H4 _ H7). pose proof (H4 _ H8). rewrite H9 in H10. inversion H10; auto.
+Qed.
+
 End PATH_LEM.
 
 Arguments path_glue {_} _ _.
