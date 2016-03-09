@@ -565,31 +565,6 @@ Module SIMPLE_SPANNING_TREE.
         apply H6; intuition.
     Qed.
 
-    Lemma root_reachable_by_derive: forall (P: V -> Prop) g root,
-        forall n, g |= root ~o~> n satisfying P ->
-                  n = root \/
-                  exists e, out_edges g root e /\ g |= dst g e ~o~> n
-                                        satisfying (fun x : V => P x /\ x <> root).
-    Proof.
-      intros. destruct_eq_dec n root; [left; auto | right].
-      rewrite reachable_acyclic in H.
-      destruct H as [p [? ?]]. destruct p.
-      1: destruct H1 as [[? _] _]; inversion H1; auto.
-      assert (v = root) by (destruct H1 as [[? _] _]; inversion H1; auto). subst.
-      destruct p.
-      + destruct H1 as [[_ ?] _]. simpl in H1. inversion H1. exfalso; auto.
-      + destruct H1 as [? [[? ?] ?]]. destruct H2 as [? [? ?]].
-        rewrite step_spec in H6. destruct H6 as [e [? [? ?]]].
-        exists e. split. 1: split; auto.
-        exists (v :: p). split; [|split]; auto.
-        - split. simpl. subst v. auto. destruct H1.
-          rewrite foot_simpl in H9. auto.
-        - apply path_prop_tail in H4. unfold path_prop in H4 |-* .
-          rewrite Forall_forall in H4 |-* . intros; split.
-          * apply H4; auto.
-          * apply NoDup_cons_2 in H. intro. subst x. auto.
-    Qed.
-
     Lemma root_not_reachable_derive: forall (g: Graph) root,
         forall n, (n <> root /\ forall e, out_edges g root e -> ~ reachable g (dst g e) n) -> ~ reachable g root n.
     Proof.
