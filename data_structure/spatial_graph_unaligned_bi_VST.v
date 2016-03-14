@@ -49,7 +49,7 @@ Proof.
   intros.
   apply mkMapstoSepLog.
   intros.
-  apply derives_precise with (memory_block sh (sizeof cenv_cs node_type) (pointer_val_val p));
+  apply derives_precise with (memory_block sh (sizeof node_type) (pointer_val_val p));
    [| apply memory_block_precise].
   apply exp_left; intros [[? ?] ?].
   unfold trinode.

@@ -47,7 +47,7 @@ Lemma data_at_conflict: forall sh t1 t2 p1 p2 v1 v2,
 Proof.
   intros.
   eapply derives_trans; [apply sepcon_derives; apply data_at_memory_block |].
-  apply seplog.memory_block_overlap; auto.
+  apply mapsto_memory_block.memory_block_overlap; auto.
 Qed.
 
 End DataAtMSL.
