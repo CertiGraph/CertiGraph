@@ -75,11 +75,11 @@ Proof.
       * simpl; tauto.
       * eapply BV_sizeof_pos; eauto.
       * eapply BV_sizeof_pos; eauto.
-    - apply seplog.mapsto_not_nonunit; auto.
+    - apply mapsto_memory_block.mapsto_not_nonunit; auto.
   + intros [p1 t1] [p2 t2] v1 v2 ?.
     simpl in H; unfold adr_conflict in H.
     if_tac in H; [| congruence].
-    apply seplog.mapsto_overlap with empty_compspecs; auto.
+    apply mapsto_memory_block.mapsto_overlap with empty_compspecs; auto.
     apply pointer_range_overlap_BV_sizeof.
     destruct (pointer_range_overlap_dec p1 (BV_sizeof t1) p2 (BV_sizeof t2)); [auto | congruence].
   + intros [p1 t1] [p2 t2] ?.
@@ -103,8 +103,8 @@ Proof.
       unfold mapsto_.
       simpl.
       eapply disj_derives.
-      + apply exp_left; intro; apply seplog.mapsto_not_nonunit; auto.
-      + apply exp_left; intro; apply seplog.mapsto_not_nonunit; auto.
+      + apply exp_left; intro; apply mapsto_memory_block.mapsto_not_nonunit; auto.
+      + apply exp_left; intro; apply mapsto_memory_block.mapsto_not_nonunit; auto.
       + apply (@emp_disj _ Nveric).
     } Unfocus.
 Defined.
@@ -157,8 +157,8 @@ Proof.
     destruct (zlt 0 n).
     - assert (pointer_range_overlap (Vptr b i) n (Vptr b i) n); [| tauto].
       apply pointer_range_overlap_refl; simpl; try tauto; omega.
-    - change memory_block with seplog.memory_block.
-      unfold seplog.memory_block.
+    - change memory_block with mapsto_memory_block.memory_block.
+      unfold mapsto_memory_block.memory_block.
       rewrite nat_of_Z_neg by omega.
       simpl.
       change (predicates_hered.andp
@@ -166,7 +166,7 @@ Proof.
         predicates_sl.emp) with (!! (Int.unsigned i + n <= Int.modulus) && emp)%logic.
       apply andp_left2; auto.
   + intros [p1 n1] [p2 n2] _ _ ?.
-    apply seplog.memory_block_overlap; auto.
+    apply mapsto_memory_block.memory_block_overlap; auto.
     simpl in H.
     destruct (pointer_range_overlap_dec p1 n1 p2 n2); [auto | congruence].
   + intros [p1 n1] [p2 n2] ?.

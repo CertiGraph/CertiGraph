@@ -54,7 +54,7 @@ Proof.
   intros.
   apply mkMapstoSepLog.
   intros.
-  apply derives_precise with (memory_block sh (sizeof cenv_cs node_type) (pointer_val_val p));
+  apply derives_precise with (memory_block sh (sizeof node_type) (pointer_val_val p));
    [| apply memory_block_precise].
   apply exp_left; intros [[? ?] ?].
   unfold trinode.
@@ -74,7 +74,7 @@ Proof.
   + apply sepalg.nonidentity_nonunit.
     apply readable_nonidentity, writable_readable.
     auto.
-  + change (sizeof cenv_cs node_type) with 16.
+  + change (sizeof node_type) with 16.
     apply pointer_range_overlap_refl; auto; omega.
 Qed.
 

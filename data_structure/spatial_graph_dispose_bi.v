@@ -103,8 +103,9 @@ Section SPATIAL_GRAPH_DISPOSE_BI.
     + intros. simpl; unfold gamma.
       rewrite Intersection_spec in H2. unfold Complement, Ensembles.In in H2.
       destruct H2. f_equal; [f_equal |].
-      - apply vlabel_eq. destruct H1. destruct H1. apply H5.
-        intro. apply H3. apply reachable_by_is_reachable in H6; auto.
+      - apply vlabel_eq. destruct H1. specialize (H1 x0).
+        pose proof reachable_by_is_reachable g l x0 (unmarked g).
+        tauto.
       - destruct H1 as [_ [? _]]. hnf in H1. simpl in H1.
         unfold predicate_weak_evalid in H1. destruct H1 as [_ [? [_ ?]]].
         specialize (H1 (x0, L)). specialize (H4 (x0, L)).
@@ -173,10 +174,10 @@ Section SPATIAL_GRAPH_DISPOSE_BI.
       - intro. inversion H3.
       - apply (@right_valid _ _ _ _ g1 _ _ (biGraph g1)) in H; auto.
       - apply (@right_valid _ _ _ _ g2 _ _ (biGraph g2)) in Hvg2; auto.
-    + destruct H1 as [[_ ?] [[_ [_ [_ ?]]] _]].
+    + destruct H1 as [? [[_ [_ [_ ?]]] _]].
       assert (marked g1 x) by (simpl in *; unfold gamma in H0; inversion H0; auto).
       assert (~ g1 |= dst g1 (x, L) ~o~> x satisfying (unmarked g1)) by (intro HS; apply reachable_by_foot_prop in HS; auto).
-      assert (marked g2 x) by (rewrite <- H1; auto).
+      assert (marked g2 x) by (specialize (H1 x); tauto).
       simpl in H5. rewrite <- H5. f_equal.
       simpl in H2. unfold predicate_weak_evalid in H2.
       simpl in H0. unfold gamma in H0. inversion H0. symmetry. apply H2; split.
@@ -278,8 +279,9 @@ Section SPATIAL_GRAPH_DISPOSE_BI.
     + intros. simpl. unfold gamma.
       rewrite Intersection_spec in H3; unfold Complement, Ensembles.In in H3.
       destruct H3. f_equal; [f_equal |].
-      - apply vlabel_eq. destruct H2 as [[_ ?] _]. apply H2.
-        intro. apply H4. apply reachable_by_is_reachable in H5; auto.
+      - apply vlabel_eq. destruct H2 as [? _]. specialize (H2 x0).
+        pose proof reachable_by_is_reachable g2 r x0 (unmarked g2).
+        tauto.
       - destruct H2 as [_ [? _]]. hnf in H2. simpl in H2.
         unfold predicate_weak_evalid in H2. destruct H2 as [_ [? [_ ?]]].
         specialize (H2 (x0, L)). specialize (H5 (x0, L)).

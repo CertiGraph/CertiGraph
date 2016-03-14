@@ -796,7 +796,7 @@ Definition mark (g1 : Graph) (root : V) (g2 : Graph) : Prop :=
   (forall n, ~ g1 |= root ~o~> n satisfying (unmarked g1) -> (marked g1 n <-> marked g2 n)).
 
 Inductive mark_list: Graph -> list V -> Graph -> Prop :=
-| mark_list_nil: forall (g g0: Graph), (g ~=~ g0)%LabeledGraph -> mark_list g nil g0
+| mark_list_nil: forall g, mark_list g nil g
 | mark_list_cons: forall (g g0 g1: Graph) v vs, mark g v g0 -> mark_list g0 vs g1 -> mark_list g (v :: vs) g1
 .
 
@@ -804,7 +804,7 @@ Definition inj (g: Graph): NodePred V.
   exists (fun v => label_marked (vlabel g v)).
   intros; apply marked_dec.
 Defined.
-
+(*
 Instance inj_proper: Proper ((fun (g1 g2: Graph) => (g1 ~=~ g2)%LabeledGraph) ==> node_pred_equiv) inj.
 Proof.
   hnf; intros.
@@ -813,7 +813,7 @@ Proof.
   rewrite H.
   tauto.
 Defined.
-
+*)
 Lemma mark1_inj: forall (g1 g2: Graph) (v: V), mark1 g1 v g2 <-> (g1 ~=~ g2 /\ SIMPLE_MARK_GRAPH.mark1 g1 (inj g1) v (inj g2)).
 Proof.
   intros.
@@ -836,9 +836,9 @@ Lemma mark_list_inj: forall (g1 g2: Graph) (vs: list V), mark_list g1 vs g2 -> (
 Proof.
   intros.
   induction H.
-  - split; [destruct H; auto |].
+  - split; [reflexivity |].
     constructor.
-    apply inj_proper; auto.
+    reflexivity.
   - rewrite mark_inj in H.
     split; [transitivity g0; tauto |].
     apply SIMPLE_MARK_GRAPH.mark_list_cons with (inj g0); [tauto |].
@@ -922,6 +922,7 @@ Qed.
 End MarkGraph.
 End MarkGraph.
 
+(*
 Module WeakMarkGraph.
 
 Class MarkGraphSetting (DV: Type) := {
@@ -1204,3 +1205,4 @@ Qed.
 *)
 End WeakMarkGraph.
 End WeakMarkGraph.
+*)
