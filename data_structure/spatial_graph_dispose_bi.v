@@ -26,13 +26,14 @@ Defined.
 Section SPATIAL_GRAPH_DISPOSE_BI.
 
   Context {pSGG_Bi: pSpatialGraph_Graph_Bi}.
-  Context {sSGG_Bi: sSpatialGraph_Graph_Bi}.
+  Context {sSGG_Bi: sSpatialGraph_Graph_Bi bool unit}.
 
   Existing Instances maGraph biGraph finGraph.
 
   Local Open Scope logic.
 
   (* Existing Instances SGP SGA SGBA. *)
+  Notation Graph := (@Graph pSGG_Bi bool unit).
 
   Lemma vgamma_is_true: forall (g : Graph) (x l r : addr), vgamma g x = (true, l, r) -> marked g x.
   Proof. intros. simpl in H. unfold gamma in H. simpl. destruct (vlabel g x) eqn:? . auto. inversion H. Qed.

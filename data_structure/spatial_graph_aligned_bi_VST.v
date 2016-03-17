@@ -141,8 +141,8 @@ End sSGG_VST.
 
 Hint Extern 10 (@sepcon_unique2 _ _ _ _ _ (@vertex_at _ _ _ _ _ _)) => apply sepcon_unique_vertex_at; auto.
 
-Instance sSGG_VST (sh: share): @sSpatialGraph_Graph_Bi pSGG_VST.
-  refine (Build_sSpatialGraph_Graph_Bi pSGG_VST (SGP_VST sh) (SGA_VST sh)).
+Instance sSGG_VST (sh: share): @sSpatialGraph_Graph_Bi pSGG_VST bool unit.
+  refine (Build_sSpatialGraph_Graph_Bi pSGG_VST _ _ (SGP_VST sh) (SGA_VST sh)).
 Defined.
 
 Global Opaque pSGG_VST sSGG_VST.
