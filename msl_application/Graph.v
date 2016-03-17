@@ -11,6 +11,7 @@ Require Import RamifyCoq.msl_ext.log_normalize.
 Require Import RamifyCoq.msl_ext.iter_sepcon.
 Require Import RamifyCoq.msl_ext.ramification_lemmas.
 Require Import RamifyCoq.graph.graph_model.
+Require Import RamifyCoq.graph.graph_gen.
 Require Import RamifyCoq.graph.path_lemmas.
 Require Import RamifyCoq.graph.reachable_computable.
 Require Import RamifyCoq.graph.reachable_ind.
@@ -142,6 +143,8 @@ Definition reachable_sub_spatialgraph (g: SpatialGraph V E DV DE: Type) (S : lis
 Definition unreachable_partial_spatialgraph (g: SpatialGraph V E DV DE: Type) (S : list V) : SpatialGraph V E DV DE :=
   predicate_partial_spatialgraph g (Complement _ (reachable_through_set g S)).
 
+Definition single_vertex_spatialgraph (x: V) (a: DV) (default_e: DE) : SpatialGraph V E DV DE := Build_SpatialGraph _ _ _ _ _ _ (single_vertex_pregraph x) (fun _ => a) (fun _ => default_e).
+
 Lemma vi_stronger_partial_spatialgraph: forall (g1 g2: SpatialGraph V E DV DE: Type) (p1 p2 p1' p2' p: V -> Prop),
   (forall v, p1' v <-> p1 v /\ p v) ->
   (forall v, p2' v <-> p2 v /\ p v) ->
@@ -232,6 +235,7 @@ Definition graph_vcell (g: Graph) (v : V) : Pred := vertex_at v (vgamma g v).
 Definition graph_ecell (g: Graph) (e : E) : Pred := edge_at e (egamma g e).
 Definition vertices_at (P: V -> Prop) (g: Graph): Pred := pred_sepcon P (graph_vcell g).
 Definition edges_at (P: E -> Prop) (g: Graph): Pred := pred_sepcon P (graph_ecell g).
+Definition full_vertices_at (g: Graph): Pred := vertices_at (vvalid g) g.
 
 Definition graph (x : V) (g: Graph) : Pred := vertices_at (reachable g x) g.
 
@@ -296,6 +300,15 @@ Proof.
   + rewrite <- H0; auto.
   + apply sub_spatialgraph_proper. reflexivity.
     auto.
+Qed.
+
+Lemma vertices_at_P_Q_eq': forall (g : Graph) (P Q: V -> Prop),
+  Same_set P Q -> vertices_at P g = vertices_at Q g.
+Proof.
+  intros.
+  apply pred_sepcon_strong_proper.
+  + rewrite Same_set_spec in H; auto.
+  + auto.
 Qed.
 
 Lemma graph_reachable_subgraph_eq:
@@ -600,6 +613,15 @@ Lemma existential_partialgraph_update_prime:
       (EX a: A, !!PureF a && vertices_at (PureS2' a) (g' a))).
 Proof. intros. apply existential_partialgraph_update_prime'; auto. Qed.
 
+Lemma full_vertices_at_ramify1: forall (g: Graph) x d d',
+  vvalid g x ->
+  vgamma g x = d ->
+  full_vertices_at g |-- vertex_at x d * (vertex_at x d' -* full_vertices_at (spatialgraph_vgen g x d')).
+Proof.
+  intros.
+  apply vertices_at_ramify1; auto.
+Qed.
+
 Lemma graph_ramify_aux0: forall (g: Graph) {rfg: ReachableFiniteGraph g} x d d',
   vvalid g x -> vgamma g x = d ->
   graph x g |-- vertex_at x d * (vertex_at x d' -* graph x (spatialgraph_vgen g x d')).
@@ -679,6 +701,37 @@ Proof.
          (predicate_partialgraph (g' a)
             (fun n : V => ~ reachable_through_set (g' a) (l :: nil) n)) v) in H4; unfold predicate_vvalid in H4.
       tauto.
+Qed.
+
+Lemma vertices_at1: forall (g: Graph) P x0 d,
+  (forall x, P x <-> x0 = x) ->
+  vgamma g x0 = d ->
+  vertices_at P g = vertex_at x0 d.
+Proof.
+  intros.
+  replace (@vertex_at _ _ _ _ _ SGP x0 d) with (graph_vcell g x0).
+  Focus 2. {
+    simpl.
+    unfold graph_vcell; simpl.
+    rewrite H0; auto.
+  } Unfocus.
+  erewrite vertices_at_P_Q_eq'.
+  + apply pred_sepcon1.
+  + rewrite Same_set_spec.
+    intro x; specialize (H x).
+    assert (x = x0 <-> x0 = x) by (split; congruence).
+    tauto.
+Qed.
+
+Lemma full_vertices_at1: forall x d default_e,
+  full_vertices_at (single_vertex_spatialgraph x d default_e: SpatialGraph V E DV DE) = vertex_at x d.
+Proof.
+  intros.
+  apply vertices_at1.
+  + intros; simpl.
+    tauto.
+  + simpl.
+    auto.
 Qed.
 
 Lemma sepcon_unique_graph_vcell:

@@ -36,7 +36,9 @@ Defined.
 Section SpatialGraph_Mark_Bi.
 
 Context {pSGG_Bi: pSpatialGraph_Graph_Bi}.
-Context {sSGG_Bi: sSpatialGraph_Graph_Bi}.
+Context {sSGG_Bi: sSpatialGraph_Graph_Bi bool unit}.
+
+Notation Graph := (@Graph pSGG_Bi bool unit).
 
 Lemma vlabel_eq: forall (g1 g2: Graph) x1 x2, (WeakMarkGraph.marked g1 x1 <-> WeakMarkGraph.marked g2 x2) -> vlabel g1 x1 = vlabel g2 x2.
 Proof.
