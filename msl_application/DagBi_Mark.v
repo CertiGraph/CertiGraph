@@ -37,7 +37,9 @@ Defined.
 Section SpatialGraph_Mark_Bi.
 
 Context {pSGG_Bi: pSpatialGraph_Graph_Bi}.
-Context {sSGG_Bi: sSpatialGraph_Graph_Bi}.
+Context {sSGG_Bi: sSpatialGraph_Graph_Bi bool unit}.
+
+Notation Graph := (@Graph pSGG_Bi bool unit).
 
 Lemma dag_unfold: forall (g: Graph) x d l r,
   sepcon_unique2 (@vertex_at _ _ _ _ _ SGP) ->

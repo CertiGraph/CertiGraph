@@ -1,5 +1,6 @@
 Require Import RamifyCoq.lib.Coqlib.
 Require Import RamifyCoq.lib.EquivDec_ext.
+Require Export VST.floyd.proofauto.
 Require Import RamifyCoq.sample_mark.env_mark_bi.
 Require Import RamifyCoq.graph.graph_model.
 Require Import RamifyCoq.graph.weak_mark_lemmas.
@@ -14,7 +15,8 @@ Require Import RamifyCoq.data_structure.spatial_graph_aligned_bi_VST.
 
 Local Open Scope logic.
 
-Notation dag sh x g := (@dag _ _ _ _ _ _ (@SGP pSGG_VST (sSGG_VST sh)) _ x g).
+Notation dag sh x g := (@dag _ _ _ _ _ _ (@SGP pSGG_VST bool unit (sSGG_VST sh)) _ x g).
+Notation Graph := (@Graph pSGG_VST bool unit).
 Existing Instances MGS biGraph maGraph finGraph RGF.
 
 Definition mark_spec :=
@@ -25,7 +27,7 @@ Definition mark_spec :=
           LOCAL (temp _x (pointer_val_val x))
           SEP   (dag sh x g)
   POST [ Tvoid ]
-      EX g': @Graph pSGG_VST,
+      EX g': Graph,
         PROP (mark x g g')
         LOCAL()
         SEP (dag sh x g').
@@ -144,7 +146,6 @@ Proof.
     rewrite H2.
     erewrite dag_vgen by eauto.
     entailer!.
-    apply derives_refl.
   } Unfocus.
 
   forget (Graph_gen g x true) as g1.

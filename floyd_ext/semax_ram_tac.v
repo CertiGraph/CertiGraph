@@ -429,6 +429,7 @@ Ltac abbreviate_RamFrame :=
   end.
 
 Ltac abbreviate_semax_ram :=
+  fwd_result;
   match goal with
   | |- semax_ram _ _ _ _ _ =>
          ram_simplify_Delta; unfold_abbrev';
