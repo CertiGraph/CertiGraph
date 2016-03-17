@@ -36,6 +36,7 @@ Existing Instance SGBA.
 Section pSpatialGraph_Graph_Bi.
 
 Context {pSGG_Bi: pSpatialGraph_Graph_Bi}.
+Context {DV DE: Type}.
 
 Class BiMaFin (g: PreGraph addr (addr * LR)) := {
   bi: BiGraph g (fun x => (x, L)) (fun x => (x, R));
@@ -44,11 +45,11 @@ Class BiMaFin (g: PreGraph addr (addr * LR)) := {
   is_null_def': forall x: addr, is_null g x = (x = null)
 }.
 
-Definition Graph := (GeneralGraph addr (addr * LR) bool unit (fun g => BiMaFin g)).
+Definition Graph := (GeneralGraph addr (addr * LR) DV DE (fun g => BiMaFin g)).
 
 Identity Coercion G_GG : Graph >-> GeneralGraph.
 
-Definition gamma (G : Graph) (v: addr) : bool * addr * addr := 
+Definition gamma (G : Graph) (v: addr) : DV * addr * addr := 
   (vlabel G v, dst G (v, L), dst G (v, R)).
 
 Instance biGraph (G: Graph): BiGraph G (fun x => (x, L)) (fun x => (x, R)) :=
@@ -73,11 +74,11 @@ Instance RGF (G: Graph): ReachableFiniteGraph G.
   + apply (FiniteGraph_EnumCovered G), finGraph.
 Defined.
 
-Definition Graph_SpatialGraph (G: Graph): SpatialGraph addr (addr * LR) (bool * addr * addr) unit := Build_SpatialGraph _ _ _ _ _ _ G (gamma G) (fun _ => tt).
+Definition Graph_SpatialGraph (G: Graph): SpatialGraph addr (addr * LR) (DV * addr * addr) unit := Build_SpatialGraph _ _ _ _ _ _ G (gamma G) (fun _ => tt).
 
 Coercion Graph_SpatialGraph: Graph >-> SpatialGraph.
 
-Definition Graph_gen (G: Graph) (x: addr) (d: bool) : Graph :=
+Definition Graph_gen (G: Graph) (x: addr) (d: DV) : Graph :=
   generalgraph_vgen G x d (sound_gg G).
 
 Lemma weak_valid_vvalid_dec: forall (g : Graph) (x: addr),
@@ -118,7 +119,7 @@ Proof.
   intro y; intros. simpl. apply is_null_def.
 Defined.
 
-Definition Graph_gen_update (G: Graph) (x : addr) (d: bool) (l r: addr) (Hi: in_math G x l r) (Hn: ~ is_null G x) : Graph.
+Definition Graph_gen_update (G: Graph) (x : addr) (d: DV) (l r: addr) (Hi: in_math G x l r) (Hn: ~ is_null G x) : Graph.
 Proof.
   refine (Graph_gen (@update_GeneralGraph _ _ _ _ _ _ _ G _ _ (biGraph G) x l r _) x d).
   unfold update_LabeledGraph.
@@ -136,7 +137,7 @@ Ltac s_rewrite p :=
   rewrite H;
   clear H.
 
-Lemma Graph_gen_update_vgamma: forall (G: Graph) (x: addr) (d: bool) l r (Hi: in_math G x l r) (Hn: ~ is_null G x),
+Lemma Graph_gen_update_vgamma: forall (G: Graph) (x: addr) (d: DV) l r (Hi: in_math G x l r) (Hn: ~ is_null G x),
     vgamma (Graph_gen_update G x d l r Hi Hn) x = (d, l, r).
 Proof.
   intros; simpl; unfold gamma; simpl. f_equal; [f_equal |].
@@ -149,7 +150,7 @@ Proof.
     - exfalso. apply c. unfold equiv. s_rewrite (right_sound G); auto.
 Qed.
 
-Lemma Graph_gen_update_spatial_spec: forall (G: Graph) (x: addr) (d d': bool) l r (Hi: in_math G x l r) (Hn: ~ is_null G x),
+Lemma Graph_gen_update_spatial_spec: forall (G: Graph) (x: addr) (d d': DV) l r (Hi: in_math G x l r) (Hn: ~ is_null G x),
   vvalid G x -> vgamma G x = (d, l, r) ->
   (Graph_gen_update G x d' l r Hi Hn) -=- (spatialgraph_vgen G x (d', l, r)).
 Proof.
@@ -176,7 +177,7 @@ Proof.
       * destruct (equiv_dec (src G (v, R)) x); auto. unfold equiv in e; exfalso; rewrite H4 in e; auto.
 Qed.
 
-Lemma Graph_gen_spatial_spec: forall (G: Graph) (x: addr) (d d': bool) l r,
+Lemma Graph_gen_spatial_spec: forall (G: Graph) (x: addr) (d d': DV) l r,
   vgamma G x = (d, l, r) ->
   (Graph_gen G x d') -=- (spatialgraph_vgen G x (d', l, r)).
 Proof.
@@ -190,7 +191,7 @@ Proof.
 Qed.
 
 (* This lemma is not true. They are not even structural identical. *)
-Lemma Graph_gen_left_null_spatial_spec: forall (G: Graph) (x: addr) (d : bool) l r,
+Lemma Graph_gen_left_null_spatial_spec: forall (G: Graph) (x: addr) (d : DV) l r,
     vgamma G x = (d, l, r) ->
     (Graph_gen_left_null G x) -=- (spatialgraph_vgen G x (d, null, r)).
 Proof.
@@ -218,7 +219,7 @@ Proof.
   reflexivity.
 Qed.
 
-Lemma gamma_step: forall (g : Graph) x (d: bool) (l r: addr), vvalid g x -> vgamma g x = (d, l, r) -> forall y, step g x y <-> y = l \/ y = r.
+Lemma gamma_step: forall (g : Graph) x (d: DV) (l r: addr), vvalid g x -> vgamma g x = (d, l, r) -> forall y, step g x y <-> y = l \/ y = r.
 Proof.
   intros. simpl in H0; unfold gamma in H0; inversion H0; subst.
   rewrite step_spec; split; intros.
@@ -419,8 +420,8 @@ Qed.
 
 End pSpatialGraph_Graph_Bi.
 
-Class sSpatialGraph_Graph_Bi {pSGG_Bi: pSpatialGraph_Graph_Bi}: Type := {
-  SGP: SpatialGraphPred addr (addr * LR) (bool * addr * addr) unit pred;
+Class sSpatialGraph_Graph_Bi {pSGG_Bi: pSpatialGraph_Graph_Bi} (DV DE: Type): Type := {
+  SGP: SpatialGraphPred addr (addr * LR) (DV * addr * addr) unit pred;
   SGA: SpatialGraphAssum SGP
 }.
 
@@ -429,10 +430,12 @@ Existing Instances SGP SGA biGraph.
 Section GRAPH_BI_OCON_UNFOLD.
 
   Context {pSGG_Bi: pSpatialGraph_Graph_Bi}.
-  Context {sSGG_Bi: sSpatialGraph_Graph_Bi}.
+  Context {DV DE: Type}.
+  Context {sSGG_Bi: sSpatialGraph_Graph_Bi DV DE}.
   Context {SGSA: SpatialGraphStrongAssum SGP}.
 
-  Notation graph x g := (@graph _ _ _ _ _ _ SGP _ x (Graph_SpatialGraph g)).
+  Notation graph x g := (@graph _ _ _ _ _ _ (@SGP pSGG_Bi DV DE sSGG_Bi) _ x g).
+  Notation Graph := (@Graph pSGG_Bi DV DE).
 
   Lemma bi_graph_unfold: forall (g: Graph) x d l r,
       vvalid g x -> vgamma g x = (d, l, r) ->

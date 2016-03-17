@@ -1,5 +1,6 @@
 Require Import RamifyCoq.lib.Coqlib.
 Require Import RamifyCoq.lib.EquivDec_ext.
+Require Export VST.floyd.proofauto.
 Require Import RamifyCoq.sample_mark.env_mark_bi.
 Require Import RamifyCoq.graph.graph_model.
 Require Import RamifyCoq.graph.weak_mark_lemmas.
@@ -13,8 +14,8 @@ Require Import RamifyCoq.msl_application.GraphBi_Mark.
 Require Import RamifyCoq.data_structure.spatial_graph_aligned_bi_VST.
 
 Local Open Scope logic.
-
-Notation graph sh x g := (@graph _ _ _ _ _ _ (@SGP pSGG_VST (sSGG_VST sh)) _ x g).
+Notation graph sh x g := (@graph _ _ _ _ _ _ (@SGP pSGG_VST bool unit (sSGG_VST sh)) _ x g).
+Notation Graph := (@Graph pSGG_VST bool unit).
 Existing Instances MGS biGraph maGraph finGraph RGF.
 
 Definition mark_spec :=
@@ -25,7 +26,7 @@ Definition mark_spec :=
           LOCAL (temp _x (pointer_val_val x))
           SEP   (graph sh x g)
   POST [ Tvoid ]
-        EX g': @Graph pSGG_VST,
+        EX g': Graph,
         PROP (mark x g g')
         LOCAL ()
         SEP   (graph sh x g').
@@ -169,9 +170,7 @@ Proof.
   Grab Existential Variables.
   Focus 2. {
     simplify_ramif.
-    subst.
     rewrite Graph_gen_spatial_spec by eauto.
-    rewrite <- data_at_offset_zero.
     apply (@graph_ramify_aux0 _ _ _ _ _ _ _ (SGA_VST sh) g _ x (false, l, r) (true, l, r)); auto.
   } Unfocus.
   (* unlocalize *)

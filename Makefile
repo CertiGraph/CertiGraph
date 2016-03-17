@@ -23,7 +23,7 @@ MSL_EXT_FILES = \
   overlapping_direct.v precise_direct.v alg_seplog_direct.v
 
 MSL_APPLICATION_FILES = \
-  Graph.v Graph_Mark.v GraphBi.v GraphBi_Mark.v DagBi_Mark.v Graph_Copy.v
+  Graph.v Graph_Mark.v GraphBi.v GraphBi_Mark.v DagBi_Mark.v Graph_Copy.v GraphBi_Copy.v
 
 VERIC_EXT_FILES = \
   res_predicates.v seplog.v SeparationLogic.v
@@ -37,7 +37,7 @@ HEAP_MODEL_DIRECT_FILES = \
 GRAPH_FILES = \
   graph_model.v path_lemmas.v graph_gen.v reachable_computable.v find_not_in.v reachable_ind.v subgraph2.v \
   spanning_tree.v dag.v marked_graph.v weak_mark_lemmas.v dual_graph.v graph_morphism.v \
-  global_graph_copy.v local_graph_copy.v tree_model.v \
+  local_graph_copy.v tree_model.v
 
 DATA_STRUCTURE_FILES = \
   spatial_graph_HMD.v spatial_graph_aligned_bi_VST.v spatial_graph_unaligned_bi_VST.v spatial_graph_dispose_bi.v

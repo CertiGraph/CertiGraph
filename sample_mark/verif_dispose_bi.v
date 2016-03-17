@@ -17,8 +17,9 @@ Local Open Scope logic.
 
 Arguments SingleFrame' {l} {g} {s}.
 
-Notation vertices_at sh g P := (@vertices_at _ _ _ _ _ _ (@SGP pSGG_VST (sSGG_VST sh)) _ g P).
-Notation graph sh x g := (@graph _ _ _ _ _ _ (@SGP pSGG_VST (sSGG_VST sh)) _ x g).
+Notation vertices_at sh g P := (@vertices_at _ _ _ _ _ _ (@SGP pSGG_VST bool unit (sSGG_VST sh)) _ g P).
+Notation graph sh x g := (@graph _ _ _ _ _ _ (@SGP pSGG_VST bool unit (sSGG_VST sh)) _ x g).
+Notation Graph := (@Graph pSGG_VST bool unit).
 Existing Instances MGS biGraph maGraph finGraph RGF.
 
 Definition mark_spec :=
@@ -29,7 +30,7 @@ Definition mark_spec :=
           LOCAL (temp _x (pointer_val_val x))
           SEP   (graph sh x g)
   POST [ Tvoid ]
-        EX g': @Graph pSGG_VST,
+        EX g': Graph,
         PROP (mark x g g')
         LOCAL()
         SEP (graph sh x g').
@@ -42,7 +43,7 @@ Definition spanning_spec :=
           LOCAL (temp _x (pointer_val_val x))
           SEP   (graph sh x g)
   POST [ Tvoid ]
-        EX g': @Graph pSGG_VST,
+        EX g': Graph,
         PROP (spanning_tree g x g')
         LOCAL()
         SEP (vertices_at sh (reachable g x) g').
@@ -139,7 +140,7 @@ Proof.
   unfold semax_ram.
   
   forward_if_tac
-    (EX g2: @Graph pSGG_VST,
+    (EX g2: Graph,
      PROP  (edge_spanning_tree g1 (x, L) g2)
      LOCAL (temp _r (pointer_val_val r);
             temp _l (pointer_val_val l);
@@ -221,7 +222,7 @@ Proof.
   Opaque pSGG_VST.
   (* remember (if node_pred_dec (marked g1) l then 1 else 0). *)
   forward_if_tac
-    (EX g2: @Graph pSGG_VST,
+    (EX g2: Graph,
      PROP  (edge_spanning_tree g1 (x, L) g2)
      LOCAL (temp _r (pointer_val_val r);
             temp _l (pointer_val_val l);
@@ -324,7 +325,7 @@ Proof.
   } Unfocus.
   Focus 1. {
     forward.
-    entailer.
+    Intro x0.
     apply (exp_right x0).
     entailer!.
   } Unfocus.
@@ -337,7 +338,7 @@ Proof.
     + apply (@left_valid _ _ _ _ g1 _ _ (biGraph g1)) in H3; auto.
     + intro. apply (valid_not_null g1 l).
       - assert (l = dst g1 (x, L)) by (simpl in H_GAMMA_g1; unfold gamma in H_GAMMA_g1; inversion H_GAMMA_g1; auto).
-        rewrite H6. apply H5.
+        rewrite H9. apply H8.
       - rewrite is_null_def. apply (destruct_pointer_val_NP). left; auto.
   } Unfocus.
 
@@ -350,7 +351,7 @@ Proof.
   destruct (edge_spanning_tree_left_vgamma g1 g2 x l r H3 H_GAMMA_g1 H4) as [l' H_GAMMA_g2].
 
   forward_if_tac
-    (EX g3: @Graph pSGG_VST,
+    (EX g3: Graph,
      PROP  (edge_spanning_tree g2 (x, R) g3)
      LOCAL (temp _r (pointer_val_val r);
             temp _l (pointer_val_val l);
@@ -438,7 +439,7 @@ Proof.
   Opaque pSGG_VST.
 
   forward_if_tac
-    (EX g3: @Graph pSGG_VST,
+    (EX g3: Graph,
      PROP  (edge_spanning_tree g2 (x, R) g3)
      LOCAL (temp _r (pointer_val_val r);
             temp _l (pointer_val_val l);
@@ -540,7 +541,7 @@ Proof.
   } Unfocus.
   Focus 1. {
     forward.
-    entailer.
+    Intro x0.
     apply (exp_right x0).
     entailer!.
   } Unfocus.
@@ -553,7 +554,7 @@ Proof.
     + apply (@right_valid _ _ _ _ g2 _ _ (biGraph g2)) in H5; auto.
     + intro. apply (valid_not_null g2 r).
       - assert (r = dst g2 (x, R)) by (simpl in H_GAMMA_g2; unfold gamma in H_GAMMA_g2; inversion H_GAMMA_g2; auto).
-        rewrite H8. apply H7.
+        rewrite H11. apply H10.
       - rewrite is_null_def. apply (destruct_pointer_val_NP). left; auto.
   } Unfocus.
 
@@ -574,4 +575,4 @@ Proof.
       split; intro v; rewrite H2; tauto. (* 1 min 20 sec *)
   } Unfocus.
   apply (edge_spanning_tree_spanning_tree g g1 g2 g3 x l r); auto. (* 1 min 27 sec *)
-Qed. (* 9305 sec *)
+Time Qed. (* 9305 sec *)

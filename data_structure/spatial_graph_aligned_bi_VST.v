@@ -54,7 +54,7 @@ Proof.
   intros.
   apply mkMapstoSepLog.
   intros.
-  apply derives_precise with (memory_block sh (sizeof cenv_cs node_type) (pointer_val_val p));
+  apply derives_precise with (memory_block sh (sizeof node_type) (pointer_val_val p));
    [| apply memory_block_precise].
   apply exp_left; intros [[? ?] ?].
   unfold trinode.
@@ -74,7 +74,7 @@ Proof.
   + apply sepalg.nonidentity_nonunit.
     apply readable_nonidentity, writable_readable.
     auto.
-  + change (sizeof cenv_cs node_type) with 16.
+  + change (sizeof node_type) with 16.
     apply pointer_range_overlap_refl; auto; omega.
 Qed.
 
@@ -141,8 +141,8 @@ End sSGG_VST.
 
 Hint Extern 10 (@sepcon_unique2 _ _ _ _ _ (@vertex_at _ _ _ _ _ _)) => apply sepcon_unique_vertex_at; auto.
 
-Instance sSGG_VST (sh: share): @sSpatialGraph_Graph_Bi pSGG_VST.
-  refine (Build_sSpatialGraph_Graph_Bi pSGG_VST (SGP_VST sh) (SGA_VST sh)).
+Instance sSGG_VST (sh: share): @sSpatialGraph_Graph_Bi pSGG_VST bool unit.
+  refine (Build_sSpatialGraph_Graph_Bi pSGG_VST _ _ (SGP_VST sh) (SGA_VST sh)).
 Defined.
 
 Global Opaque pSGG_VST sSGG_VST.

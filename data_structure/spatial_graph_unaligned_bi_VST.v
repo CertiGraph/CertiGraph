@@ -49,7 +49,7 @@ Proof.
   intros.
   apply mkMapstoSepLog.
   intros.
-  apply derives_precise with (memory_block sh (sizeof cenv_cs node_type) (pointer_val_val p));
+  apply derives_precise with (memory_block sh (sizeof node_type) (pointer_val_val p));
    [| apply memory_block_precise].
   apply exp_left; intros [[? ?] ?].
   unfold trinode.
@@ -114,6 +114,6 @@ Instance SGA_VST (sh: share) : SpatialGraphAssum (SGP_VST sh).
   refine (Build_SpatialGraphAssum _ _ _ _ _ _ _ _ _ _ _).
 Defined.
 
-Instance sSGG_VST (sh: share): @sSpatialGraph_Graph_Bi pSGG_VST.
-  refine (Build_sSpatialGraph_Graph_Bi pSGG_VST (SGP_VST sh) (SGA_VST sh)).
+Instance sSGG_VST (sh: share): @sSpatialGraph_Graph_Bi pSGG_VST bool unit.
+  refine (Build_sSpatialGraph_Graph_Bi pSGG_VST _ _ (SGP_VST sh) (SGA_VST sh)).
 Defined.
