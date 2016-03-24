@@ -22,15 +22,13 @@ Import RamifyCoq.msl_ext.seplog.OconNotation.
 Local Open Scope logic.
 
 Class SpatialGraph (V E: Type) {VE: EqDec V eq} {EE: EqDec E eq} (DV DE: Type): Type := {
-  pg: PreGraph V E;
+  pg_sg: PreGraph V E;
   vgamma: V -> DV;
   egamma: E -> DE
 }.
 
 Arguments vgamma {V E _ _ DV DE} _ _.
 Arguments egamma {V E _ _ DV DE} _ _.
-
-Coercion pg : SpatialGraph >-> PreGraph.
 
 Class SpatialGraphPred (V E DV DE Pred: Type): Type := {
   vertex_at: V -> DV -> Pred;
@@ -92,6 +90,8 @@ Context {DE : Type}.
 
 Context {SGBA: SpatialGraphBasicAssum V E}.
 
+Local Coercion pg_sg : SpatialGraph >-> PreGraph.
+
 Section PURE_FACTS.
 Definition validly_identical (g1 g2: SpatialGraph V E DV DE) : Prop :=
   g1 ~=~ g2 /\
@@ -129,7 +129,7 @@ Add Parametric Relation : (SpatialGraph V E DV DE) validly_identical
 
 Global Existing Instance vi_equal.
 
-Definition spatialgraph_vgen (g: SpatialGraph V E DV DE) (x: V) (a: DV) : SpatialGraph V E DV DE := Build_SpatialGraph _ _ _ _ _ _ pg (fun v => if (equiv_dec x v) then a else vgamma g v) (egamma g).
+Definition spatialgraph_vgen (g: SpatialGraph V E DV DE) (x: V) (a: DV) : SpatialGraph V E DV DE := Build_SpatialGraph _ _ _ _ _ _ g (fun v => if (equiv_dec x v) then a else vgamma g v) (egamma g).
 
 Definition predicate_sub_spatialgraph  (g: SpatialGraph V E DV DE: Type) (p: V -> Prop) :=
   Build_SpatialGraph V E _ _ DV DE (predicate_subgraph g p) (vgamma g) (egamma g).

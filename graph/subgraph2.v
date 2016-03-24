@@ -1078,6 +1078,8 @@ Context {DV DE: Type}.
 
 Notation Graph := (LabeledGraph V E DV DE).
 
+Local Coercion pg_lg: LabeledGraph >-> PreGraph.
+
 Definition gpredicate_sub_labeledgraph (PV: V -> Prop) (PE: E -> Prop) (g: Graph): Graph :=
   Build_LabeledGraph _ _ (gpredicate_subgraph PV PE g) (vlabel g) (elabel g).
 
@@ -1178,36 +1180,6 @@ Proof.
   + apply H2; simpl in H3, H4; rewrite !Intersection_spec in H3, H4; tauto.
 Qed.
 
-Lemma guarded_lge_spec: forall PV PE (G1 G2: LGraph),
-  guarded_labeled_graph_equiv PV PE G1 G2 <->
-  (((forall v, PV v -> (vvalid G1 v <-> vvalid G2 v)) /\
-    (forall e, PE e -> (evalid G1 e <-> evalid G2 e)) /\
-    (forall e, PE e -> evalid G1 e -> evalid G2 e -> src G1 e = src G2 e) /\
-    (forall e, PE e -> evalid G1 e -> evalid G2 e -> dst G1 e = dst G2 e)) /\
-   (forall v, PV v -> vvalid G1 v -> vvalid G2 v -> vlabel G1 v = vlabel G2 v) /\
-   (forall e, PE e -> evalid G1 e -> evalid G2 e -> elabel G1 e = elabel G2 e)).
-Proof.
-  split; intros; (destruct H as [[? [? [? ?]]] [? ?]]; split; [split; [| split; [| split]] | split]); intros.
-  + specialize (H v); simpl in H.
-    rewrite !Intersection_spec in H.
-    tauto.
-  + specialize (H0 e); simpl in H0.
-    rewrite !Intersection_spec in H0.
-    tauto.
-  + apply H1; simpl; rewrite !Intersection_spec; auto.
-  + apply H2; simpl; rewrite !Intersection_spec; auto.
-Admitted.
-(*
-  + specialize (H v); simpl.
-    rewrite !Intersection_spec.
-    tauto.
-  + specialize (H0 e); simpl.
-    rewrite !Intersection_spec.
-    tauto.
-  + apply H1; simpl in H3, H4; rewrite !Intersection_spec in H3, H4; tauto.
-  + apply H2; simpl in H3, H4; rewrite !Intersection_spec in H3, H4; tauto.
-Qed.
-*)
 Lemma guarded_si_dst1: forall PV PE (G1 G2: PGraph),
   guarded_structurally_identical PV PE G1 G2 ->
   forall e, PE e -> evalid G1 e -> dst G1 e = dst G2 e.
@@ -1299,6 +1271,39 @@ Proof.
   + eauto.
   + eauto.
 Qed.
+
+Local Coercion pg_lg: LabeledGraph >-> PreGraph.
+
+Lemma guarded_lge_spec: forall PV PE (G1 G2: LGraph),
+  guarded_labeled_graph_equiv PV PE G1 G2 <->
+  (((forall v, PV v -> (vvalid G1 v <-> vvalid G2 v)) /\
+    (forall e, PE e -> (evalid G1 e <-> evalid G2 e)) /\
+    (forall e, PE e -> evalid G1 e -> evalid G2 e -> src G1 e = src G2 e) /\
+    (forall e, PE e -> evalid G1 e -> evalid G2 e -> dst G1 e = dst G2 e)) /\
+   (forall v, PV v -> vvalid G1 v -> vvalid G2 v -> vlabel G1 v = vlabel G2 v) /\
+   (forall e, PE e -> evalid G1 e -> evalid G2 e -> elabel G1 e = elabel G2 e)).
+Proof.
+  split; intros; (destruct H as [[? [? [? ?]]] [? ?]]; split; [split; [| split; [| split]] | split]); intros.
+  + specialize (H v); simpl in H.
+    rewrite !Intersection_spec in H.
+    tauto.
+  + specialize (H0 e); simpl in H0.
+    rewrite !Intersection_spec in H0.
+    tauto.
+  + apply H1; simpl; rewrite !Intersection_spec; auto.
+  + apply H2; simpl; rewrite !Intersection_spec; auto.
+Admitted.
+(*
+  + specialize (H v); simpl.
+    rewrite !Intersection_spec.
+    tauto.
+  + specialize (H0 e); simpl.
+    rewrite !Intersection_spec.
+    tauto.
+  + apply H1; simpl in H3, H4; rewrite !Intersection_spec in H3, H4; tauto.
+  + apply H2; simpl in H3, H4; rewrite !Intersection_spec in H3, H4; tauto.
+Qed.
+*)
 
 End GuardedIdentical.
 

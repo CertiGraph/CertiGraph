@@ -149,17 +149,22 @@ Proof.
       apply reachable_foot_valid in H6; auto.
 Qed.
 
+Set Printing All.
+Check GraphBi.Graph_SpatialGraph.
+Print GraphBi.Graph.
 Lemma extend_copy_left: forall (g g1 g2 g2': Graph) (x l r: addr),
   let g1': LabeledGraph addr (addr * LR) addr (addr * LR) := single_vertex_labeledgraph (LocalGraphCopy.vmap g1 x) null (null, L) in
+  let x' := (LocalGraphCopy.vmap g1 x) in
   let l' := (LocalGraphCopy.vmap g2 l) in
   vvalid g x ->
   vgamma g x = (null, l, r) ->
   vcopy1 x g g1 ->
   copy l g1 g2 g2' ->
-  graph  g2' l' * graph_vcell g1' x' |-- 
+  graph  g2' l' * graph_vcell (@GraphBi.Graph_SpatialGraph pSGG_Bi
+                              (@addr pSGG_Bi) (prod (@addr pSGG_Bi) LR) g1') x' |-- 
   EX g2'': Graph,
     !! extended_copy l (lg_gg g1, g1') (lg_gg g2, lg_gg g2') && 
-    vertices_at (LocalGraphCopy.vmap g2 l) g2''.
+    full_vertices_at (LocalGraphCopy.vmap g2 l) g2''.
 Abort.
 (*
 Lemma graph_ramify_right: forall {RamUnit: Type} (g g1 g2: Graph) x l r,

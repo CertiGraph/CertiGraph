@@ -33,8 +33,8 @@ Context {DV DE DV' DE': Type}.
 Context {GMS: GraphMorphismSetting DV DE V' E' DV' DE'}.
 
 Notation Graph := (LabeledGraph V E DV DE).
-
 Notation Graph' := (LabeledGraph V' E' DV' DE').
+Local Coercion pg_lg : LabeledGraph >-> PreGraph.
 
 Definition vmap (g: Graph): V -> V' := fun v => co_vertex (vlabel g v).
 

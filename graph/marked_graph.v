@@ -775,6 +775,8 @@ Context {MGS: MarkGraphSetting DV}.
 Context {P: LabeledGraph V E DV DE -> Type}.
 
 Notation Graph := (GeneralGraph V E DV DE P).
+Local Coercion pg_lg : LabeledGraph >-> PreGraph.
+Local Coercion lg_gg : GeneralGraph >-> LabeledGraph.
 
 Definition marked (g: Graph) : NodePred V.
   refine (existT _ (fun v => label_marked (vlabel g v)) _).

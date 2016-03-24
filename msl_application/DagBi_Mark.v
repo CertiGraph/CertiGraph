@@ -39,6 +39,14 @@ Section SpatialGraph_Mark_Bi.
 Context {pSGG_Bi: pSpatialGraph_Graph_Bi}.
 Context {sSGG_Bi: sSpatialGraph_Graph_Bi bool unit}.
 
+Local Coercion Graph_LGraph: Graph >-> LGraph.
+Local Coercion LGraph_SGraph: LGraph >-> SGraph.
+Local Coercion SGraph_PGraph: SGraph >-> PGraph.
+Local Identity Coercion Graph_GeneralGraph: Graph >-> GeneralGraph.
+Local Identity Coercion LGraph_LabeledGraph: LGraph >-> LabeledGraph.
+Local Identity Coercion SGraph_SpatialGraph: SGraph >-> SpatialGraph.
+Local Identity Coercion PGraph_PreGraph: PGraph >-> PreGraph.
+
 Notation Graph := (@Graph pSGG_Bi bool unit).
 
 Lemma dag_unfold: forall (g: Graph) x d l r,

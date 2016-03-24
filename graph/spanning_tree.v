@@ -1504,6 +1504,8 @@ Section SPANNING.
   Context {MGS: MarkGraphSetting DV}.
   Context {P: LabeledGraph V E DV DE -> Type}.
   Notation Graph := (GeneralGraph V E DV DE P).
+  Local Coercion pg_lg : LabeledGraph >-> PreGraph.
+  Local Coercion lg_gg : GeneralGraph >-> LabeledGraph.
 
   Definition marked_reachable (g1 : Graph) (x : V) (g2 : Graph) : Prop :=
     (forall y, marked g2 y <-> marked g1 y \/ g1 |= x ~o~> y satisfying (unmarked g1)).

@@ -37,6 +37,8 @@ Context {MGS: WeakMarkGraph.MarkGraphSetting DV}.
 Notation Graph := (LabeledGraph V E DV DE).
 Notation SGraph := (SpatialGraph V E GV GE).
 
+Local Coercion pg_lg: LabeledGraph >-> PreGraph.
+
 Variable compute_vgamma: Graph -> V -> GV.
 Variable compute_egamma: Graph -> E -> GE.
 
