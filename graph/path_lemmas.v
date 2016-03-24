@@ -20,37 +20,74 @@ Definitions
 
 ******************************************)
 
-Definition path : Type := list V.
+Definition path : Type := (V * list E)%type.
 
-Definition paths_meet_at (p1 p2 : path) := fun n => foot p1 = Some n /\ head p2 = Some n.
-
-Definition paths_meet (p1 p2 : path) : Prop := exists n, paths_meet_at p1 p2 n.
-
-Fixpoint valid_path (g: Gph) (p: path) : Prop :=
+Fixpoint valid_path' (g: Gph) (p: list E) : Prop :=
   match p with
     | nil => True
-    | n :: nil => vvalid g n
-    | n1 :: ((n2 :: _) as p') => g |= n1 ~> n2 /\ valid_path g p'
+    | n :: nil => strong_evalid g n
+    | n1 :: ((n2 :: _) as p') => strong_evalid g n1 /\ dst g n1 = src g n2 /\ valid_path' g p'
   end.
 
-Definition graph_is_acyclic (g: Gph) : Prop :=
-  forall p : list V, valid_path g p -> NoDup p.
+Definition valid_path (g: Gph) (p: path) :=
+  match p with
+  | (v, nil) => vvalid g v
+  | (v, (e :: _) as p') => v = src g e /\ valid_path' g p'
+  end.
 
-Definition path_prop (P : Ensemble V) : (list V -> Prop) := Forall P.
+Fixpoint epath_to_vpath' (g: Gph) (p : list E) {struct p} : list V :=
+  match p with
+  | nil => nil
+  | e :: nil => src g e :: dst g e :: nil
+  | e :: el => src g e :: epath_to_vpath' g el
+  end.
 
-Definition good_path (g: Gph) (P : Ensemble V) : (list V -> Prop) := fun p => valid_path g p /\ path_prop P p.
+Definition epath_to_vpath (g: Gph) (p: path) : list V :=
+  match p with
+  | (v, nil) => v :: nil
+  | (_, p') => epath_to_vpath' g p'
+  end.
 
-Definition path_endpoints (p: path) (n1 n2 : V) : Prop := head p = Some n1 /\ foot p = Some n2.
+Definition ptail (g: Gph) (p: path) : path :=
+  match p with
+  | (v, nil) => (v, nil)
+  | (_, e :: el) => (dst g e, el)
+  end.
 
-Definition reachable_by_path (g: Gph) (p: path) (n : V) (P : Ensemble V) : Ensemble V := fun n' => path_endpoints p n n' /\ good_path g P p.
+Definition graph_is_acyclic (g: Gph) : Prop := forall p : path, valid_path g p -> NoDup (epath_to_vpath g p).
+
+Definition path_prop' (g: Gph) (P : Ensemble V) : (list E -> Prop) := Forall (fun e => P (src g e) /\ P (dst g e)).
+
+Definition path_prop (g: Gph) (P : Ensemble V)  (p: path) : Prop :=
+  match p with
+  | (v, nil) => P v
+  | (_, p') => path_prop' g P p'
+  end.
+
+Definition good_path (g: Gph) (P : Ensemble V) : (path -> Prop) := fun p => valid_path g p /\ path_prop g P p.
+
+Definition phead (p : path) : V := match p with | (v, _) => v end.
+
+Fixpoint pfoot' (g: Gph) (l : list E) (v : V) : V :=
+  match l with
+  | nil => v
+  | e :: nil => dst g e
+  | _ :: l' => pfoot' g l' v
+  end.
+
+Definition pfoot (g: Gph) (p: path) : V := match p with (v, l) => pfoot' g l v end.
+
+Definition path_endpoints (g: Gph) (p: path) (n1 n2 : V) : Prop := phead p = n1 /\ pfoot g p = n2.
+
+Definition reachable_by_path (g: Gph) (p: path) (n : V) (P : Ensemble V) : Ensemble V :=
+  fun n' => path_endpoints g p n n' /\ good_path g P p.
 Notation " g '|=' p 'is' n1 '~o~>' n2 'satisfying' P" := (reachable_by_path g p n1 P n2) (at level 1).
 
-Definition reachable_by (g: Gph) (n : V) (P : Ensemble V) : Ensemble V :=
-  fun n' => exists p, g |= p is n ~o~> n' satisfying P.
+Definition reachable_by (g: Gph) (n : V) (P : Ensemble V) : Ensemble V := fun n' => exists p, g |= p is n ~o~> n' satisfying P.
 Notation " g '|=' n1 '~o~>' n2 'satisfying' P " := (reachable_by g n1 P n2) (at level 1).
 
 Definition reachable_by_acyclic (g: Gph) (n : V) (P : Ensemble V) : Ensemble V :=
-  fun n' => exists p, NoDup p /\ g |= p is n ~o~> n' satisfying P.
+  fun n' => exists p, NoDup (epath_to_vpath g p) /\ g |= p is n ~o~> n' satisfying P.
 Notation " g '|=' n1 '~~>' n2 'satisfying' P " := (reachable_by_acyclic g n1 P n2) (at level 1).
 
 Definition reachable (g: Gph) (n : V): Ensemble V:= reachable_by g n (fun _ => True).
@@ -65,181 +102,350 @@ Definition reachable_set_list (g: Gph) (S : list V) (l : list V) : Prop := foral
 
 Definition is_tree (g : Gph) (x : V) : Prop := forall y, reachable g x y -> exists !(p : path), g |= p is x ~o~> y satisfying (fun _ => True).
 
+Definition paths_meet_at (g: Gph) (p1 p2 : path) := fun n => pfoot g p1 = n /\ phead p2 = n.
+
+Definition paths_meet (g: Gph) (p1 p2 : path) : Prop := exists n, paths_meet_at g p1 p2 n.
+
+Definition In_path (g: Gph) (v: V) (p: path): Prop := v = fst p \/ exists e, In e (snd p) /\ (v = src g e \/ v = dst g e).
+
+Definition Subpath (g: Gph) (p1 p2: path): Prop := Sublist (snd p1) (snd p2) /\ In_path g (fst p1) p2.
+
 (******************************************
 
 Path Lemmas
  
 ******************************************)
 
-Lemma path_endpoints_meet: forall p1 p2 n1 n2 n3,
-  path_endpoints p1 n1 n2 ->
-  path_endpoints p2 n2 n3 ->
-  paths_meet p1 p2.
+Lemma path_endpoints_meet: forall (g: Gph) p1 p2 n1 n2 n3,
+  path_endpoints g p1 n1 n2 ->
+  path_endpoints g p2 n2 n3 ->
+  paths_meet g p1 p2.
 Proof.
   unfold path_endpoints, paths_meet; intros.
-  destruct H, H0. exists n2. red. tauto.
+  destruct H, H0. exists n2. split; tauto.
 Qed.
 
-Lemma paths_foot_head_meet: forall p1 p2 n, paths_meet (p1 +:: n) (n :: p2).
-Proof. intros. exists n. split. apply foot_last. trivial. Qed.
+Lemma pfoot_last: forall (g: Gph) p n s, pfoot g (s, p +:: n) = dst g n.
+Proof.
+  intros. induction p. 1: simpl; auto.
+  rewrite <- app_comm_cons. simpl in *. destruct (p +:: n) eqn:? .
+  + destruct p; inversion Heql.
+  + auto.
+Qed.
 
-Definition path_glue (p1 p2 : path) : path := p1 ++ (tail p2).
+Lemma pfoot_head_irrel: forall l (g: Gph) v1 v2 n, pfoot g (v1, n :: l) = pfoot g (v2, n :: l).
+Proof.
+  induction l; intros; simpl; auto. specialize (IHl g v1 v2 a). simpl in *. apply IHl.
+Qed.
+
+Lemma paths_foot_head_meet: forall (g: Gph) p1 p2 n v s, dst g n = v -> paths_meet g (s, p1 +:: n) (v, p2).
+Proof. intros. exists v. split. 2: simpl; auto. rewrite pfoot_last. auto. Qed.
+
+Definition path_glue (p1 p2 : path) : path := (fst p1, (snd p1) ++ (snd p2)).
 Notation "p1 '+++' p2" := (path_glue p1 p2) (at level 20, left associativity).
 
-Lemma path_glue_nil_l: forall p, nil +++ p = tail p.
+Lemma path_glue_nil_l: forall p v, (v, nil) +++ p = (v, snd p).
 Proof.
   unfold path_glue.  trivial.
 Qed.
 
-Lemma path_glue_nil_r: forall p, p +++ nil = p.
+Lemma path_glue_nil_r: forall p v, p +++ (v, nil) = p.
 Proof.
-  unfold path_glue. simpl. intro. rewrite app_nil_r. trivial.
+  unfold path_glue. simpl. intros. rewrite app_nil_r. destruct p. trivial.
 Qed.
 
-Lemma path_glue_assoc: forall p1 p2 p3 : path,
-  paths_meet p1 p2 -> paths_meet p2 p3 -> (p1 +++ p2) +++ p3 = p1 +++ (p2 +++ p3).
+Lemma path_glue_assoc: forall (g: Gph) (p1 p2 p3 : path),
+  paths_meet g p1 p2 -> paths_meet g p2 p3 -> (p1 +++ p2) +++ p3 = p1 +++ (p2 +++ p3).
 Proof.
-  unfold path_glue.
-  induction p1; simpl; intros. icase H. icase H.
-  icase p2. icase H. icase H. icase p3.
-  do 2 rewrite app_nil_r. trivial.
-  icase p2. simpl. rewrite app_nil_r. trivial. simpl.
-  rewrite <- app_assoc. f_equal.
+  unfold path_glue. intros. destruct p1 as [v1 p1]. destruct p2 as [v2 p2].
+  destruct p3 as [v3 p3]. simpl. rewrite <- app_assoc. auto.
 Qed.
 
-Lemma path_glue_comm_cons: forall n p1 p2, (n :: p1 +++ p2) = ((n :: p1) +++ p2).
+Lemma path_endpoints_glue: forall g n1 n2 n3 p1 p2,
+  path_endpoints g p1 n1 n2 -> path_endpoints g p2 n2 n3 -> path_endpoints g (p1 +++ p2) n1 n3.
 Proof.
-  unfold path_glue. intros. rewrite app_comm_cons. trivial.
+  intros. destruct H, H0. split.
+  icase p1. icase p2. icase p1. simpl in *. subst v0 v. destruct l; simpl.
+  + rewrite app_nil_r. subst. auto.
+  + clear H1. revert H2. induction l0; intros.
+    - rewrite app_nil_l. pose proof (pfoot_head_irrel l g n1 n2 e). unfold pfoot in H.
+      rewrite H. auto.
+    - specialize (IHl0 H2). clear H2. rewrite <- app_comm_cons. simpl.
+      remember (l0 ++ e :: l) as l'. destruct l'; auto. destruct l0; inversion Heql'.
 Qed.
 
-Lemma path_endpoints_glue: forall n1 n2 n3 p1 p2,
-  path_endpoints p1 n1 n2 -> path_endpoints p2 n2 n3 -> path_endpoints (p1 +++ p2) n1 n3.
+Lemma paths_meet_cons: forall g v e p1 p2, paths_meet g (v, e :: p1) p2 -> paths_meet g (dst g e, p1) p2.
 Proof.
-  split; destruct H, H0.
-  icase p1. unfold path_glue.
-  icase p2. icase p2. inv H0. inv H2. simpl. rewrite app_nil_r. trivial.
-  rewrite foot_app; disc. apply H2.
+  intros. destruct H as [? [? ?]]. exists x. split; auto. simpl in H |-* . destruct p1. 1: simpl; auto.
+  pose proof (pfoot_head_irrel p1 g v (dst g e) e0). unfold pfoot in H1. rewrite H in H1. auto.
 Qed.
 
-Lemma valid_path_tail: forall (g : Gph) p, valid_path g p -> valid_path g (tail p).
+Lemma valid_path_cons: forall g v e p, valid_path g (v, e :: p) -> valid_path g (dst g e, p).
 Proof.
-  destruct p; auto. simpl. destruct p; auto.
-  intro; simpl; auto. intros [? ?]; auto.
+  intros. destruct H. simpl in *. destruct p.
+  + destruct H0 as [? [? ?]]. auto.
+  + destruct H0; auto.
 Qed.
 
-Lemma valid_path_split: forall (g : Gph) p1 p2, valid_path g (p1 ++ p2) -> valid_path g p1 /\ valid_path g p2.
+Lemma valid_path_split: forall g p1 p2, paths_meet g p1 p2 -> valid_path g (p1 +++ p2) -> valid_path g p1 /\ valid_path g p2.
 Proof.
-  induction p1. simpl. tauto.
-  intros. rewrite <- app_comm_cons in H.
-  simpl in H. revert H. case_eq (p1 ++ p2); intros.
-  apply app_eq_nil in H. destruct H. subst. simpl. tauto.
-  destruct H0. rewrite <- H in H1.
-  apply IHp1 in H1. destruct H1.
-  split; trivial.
-  simpl. destruct p1; auto.
-  destruct H0; auto.
-  rewrite <- app_comm_cons in H. inv H. tauto.
+  intros g p1. destruct p1 as [v1 p1]. revert v1.
+  induction p1; intros; destruct p2 as [v2 p2]; unfold path_glue, fst, snd in H0.
+  + split.
+    - simpl in H0 |-* . destruct p2; auto. destruct H0. subst. simpl in H1. destruct p2; [|destruct H1 as [H1 _]]; destruct H1 as [_ [H1 _]]; apply H1.
+    - rewrite app_nil_l in H0. destruct H as [x [? ?]]. simpl in H, H1. subst v1. subst v2. auto.
+  + specialize (IHp1 (dst g a) (v2, p2)). unfold path_glue, fst, snd in IHp1. rewrite <- app_comm_cons in H0.
+    specialize (IHp1 (paths_meet_cons _ _ _ _ _ H) (valid_path_cons _ _ _ _ H0)). destruct IHp1. split; auto.
+    clear H2 H. destruct H0. split; auto. simpl in *.  destruct p1. destruct (nil ++ p2); intuition. split; auto.
+    destruct ((e :: p1) ++ p2); intuition.
 Qed.
 
 Lemma valid_path_merge: forall (g : Gph) p1 p2,
-                          paths_meet p1 p2 -> valid_path g p1 -> valid_path g p2 -> valid_path g (p1 +++ p2).
+                          paths_meet g p1 p2 -> valid_path g p1 -> valid_path g p2 -> valid_path g (p1 +++ p2).
 Proof.
-  induction p1. simpl. intros. apply valid_path_tail. trivial.
-  intros. rewrite <- path_glue_comm_cons.
-  simpl.
-  case_eq (p1 +++ p2); auto.
-  intros. simpl in H0. destruct p1; auto; destruct H0; destruct H0; auto.
-  intros. rewrite <- H2.
-  split.
-  icase p1. unfold path_glue in H2. simpl in H2.
-  icase p2. inv H. simpl in H2. subst p2.
-  simpl in H1. destruct H3. rewrite <- H in H2. simpl in H2. inv H2. tauto.
-  rewrite <- path_glue_comm_cons in H2. inv H2.
-  simpl in H0. tauto.
-  icase p1.
-  rewrite path_glue_nil_l. apply valid_path_tail; auto.
-  apply IHp1; auto.
-  change (v0 :: p1) with (tail (a :: v0 :: p1)). apply valid_path_tail; auto.
+  intros g p1. destruct p1 as [v1 p1]. revert v1.
+  induction p1; intros; destruct p2 as [v p2]; unfold path_glue; unfold fst, snd.
+  + destruct H as [v' [? ?]]. simpl in H, H2. rewrite <- H in H2. clear v' H.
+    subst. rewrite app_nil_l. auto.
+  + specialize (IHp1 (dst g a) (v, p2)). unfold path_glue, fst, snd in IHp1. specialize (IHp1 (paths_meet_cons _ _ _ _ _ H) (valid_path_cons _ _ _ _ H0) H1).
+    rewrite <- app_comm_cons. destruct H0. red. split; auto.
+    clear H1. simpl in *. destruct (p1 ++ p2) eqn:? .
+    - destruct p1. auto. rewrite <- app_comm_cons in Heql. inversion Heql.
+    - destruct p1; intuition.
 Qed.
 
 Lemma valid_path_si: forall (g1 g2: Gph),
     structurally_identical g1 g2 -> forall p, valid_path g1 p <-> valid_path g2 p.
 Proof.
-  cut (forall g1 g2 : Gph, g1 ~=~ g2 -> forall p : list V, valid_path g1 p -> valid_path g2 p).
+  cut (forall g1 g2 : Gph, g1 ~=~ g2 -> forall p : path, valid_path g1 p -> valid_path g2 p).
   1: intros; split; apply H; [| symmetry]; auto.
-  induction p; simpl; auto.
-  icase p.
-  + pose proof (proj1 H a); tauto.
-  + intros [? ?]. split; auto.
-    rewrite (edge_si g1 g2) in H0; auto.
+  intros. destruct p as [v p]. revert v H0. induction p; intros.
+  + destruct H as [? _]. simpl in *. rewrite <- H. auto.
+  + specialize (IHp (dst g1 a)). destruct H0. simpl in H1. split.
+    - destruct H as [_ [? [? _]]]. destruct p; [| destruct H1 as [? _]]; destruct H1 as [? [? ?]]; specialize (H a); rewrite <- H2; intuition.
+    - assert (strong_evalid g1 a -> strong_evalid g2 a). {
+        intros. destruct H2 as [? [? ?]]. destruct H as [? [? [? ?]]]. assert (evalid g2 a) by (rewrite <- H5; auto).
+        specialize (H6 _ H2 H8). specialize (H7 _ H2 H8). rewrite H6, H7 in *. rewrite H in H3, H4. split; auto.
+      } destruct p. 1: simpl; apply H2; auto. destruct H1 as [? ?]. unfold valid_path in IHp. specialize (IHp H3).
+      destruct H3, IHp. simpl. split. 1: apply H2; auto. split.
+      * rewrite <- H5. symmetry. specialize (H2 H1). destruct H1, H2. destruct H as [_ [_ [_ ?]]]. apply H; auto.
+      * apply H6.
+Qed.
+
+Lemma epath_to_vpath_cons: forall g v e p a l, epath_to_vpath g (v, e :: p) = a :: l -> epath_to_vpath g (dst g e, p) = l.
+Proof. intros. simpl in *. destruct p; inversion H; auto. Qed.
+
+Lemma epath_to_vpath_split: forall (g: Gph) n l1 l2 p, valid_path g p -> epath_to_vpath g p = l1 ++ (n :: l2) ->
+                                                       exists p1 p2, p = p1 +++ p2 /\ valid_path g p1 /\ valid_path g p2 /\
+                                                                     epath_to_vpath g p1 = l1 +:: n /\ epath_to_vpath g p2 = n :: l2.
+Proof.
+  intros g n. induction l1; intros.
+  + rewrite app_nil_l in H0. exists (n, nil), p. simpl. split; [|split; [|split; [|split]]]; auto; destruct p as [v p].
+    - unfold path_glue. simpl. simpl in H. destruct p. 1: inversion H0; auto. f_equal; auto. simpl in H0. destruct H. subst v. destruct p; inversion H0; auto.
+    - simpl in H0, H. destruct p. 1: inversion H0; subst; auto. destruct H. simpl in H0, H1.
+      destruct p; [|destruct H1 as [? _]]; destruct H1 as [_ [? _]]; inversion H0; subst; auto.
+  + destruct p as [v p]. rewrite <- app_comm_cons in H0. destruct p. 1: simpl in H0; inversion H0; destruct l1; inversion H3.
+    specialize (IHl1 l2 (dst g e, p) (valid_path_cons _ _ _ _ H) (epath_to_vpath_cons _ _ _ _ _ _ H0)). destruct IHl1 as [p1 [p2 [? [? [? [? ?]]]]]].
+    exists (v, e :: (snd p1)), p2. split; [|split; [|split; [|split]]]; auto; destruct p1 as [v1 p1]; destruct p2 as [v2 p2]; unfold path_glue, fst, snd in *.
+    - rewrite <- app_comm_cons. inversion H1. auto.
+    - clear H4 H5 H0 H3. inversion H1. subst p. clear H1. destruct H. split; auto. simpl in *. destruct p1.
+      * destruct (nil ++ p2); intuition.
+      * rewrite <- H3 in H2. split; auto. destruct ((e0 :: p1) ++ p2); intuition.
+    - rewrite <- app_comm_cons. inversion H1. subst p. clear H1 H3 H5. simpl epath_to_vpath in *. destruct p1.
+      * rewrite <- H4. f_equal. destruct (nil ++ p2); inversion H0; auto. rewrite H7; auto.
+      * rewrite H4. f_equal; auto. destruct ((e0 :: p1) ++ p2); inversion H0; auto.
+Qed.
+
+Lemma epath_to_vpath_pfoot: forall g p l a, epath_to_vpath g p = l +:: a -> pfoot g p = a.
+Proof.
+  intros g p. destruct p as [v p]; revert v. induction p; intros.
+  + simpl in *. destruct l. rewrite app_nil_l in H. inversion H; auto. inversion H. destruct l; inversion H2.
+  + simpl in H |-* . destruct p.
+    - destruct l. rewrite app_nil_l in H. inversion H. destruct l.
+      * simpl in H. inversion H. auto.
+      * simpl in H. inversion H. destruct l; inversion H3.
+    - destruct l. 1: rewrite app_nil_l in H; inversion H; destruct p; inversion H2. rewrite <- app_comm_cons in H.
+      pose proof (pfoot_head_irrel p g v (src g e) e). unfold pfoot at 1 in H0. rewrite H0. apply IHp with l.
+      inversion H. simpl. auto.
+Qed.
+
+Lemma epath_to_vpath_phead: forall g p l a, valid_path g p -> epath_to_vpath g p = a :: l -> phead p = a.
+Proof.
+  intros. destruct p. simpl. destruct l0; simpl in *. inversion H0; auto.
+  destruct H. subst v. destruct l0; inversion H0; auto.
+Qed.  
+
+Lemma pfoot_app_cons: forall g v e l1 l2, pfoot g (v, l1 ++ e :: l2) = pfoot g (v, e :: l2).
+Proof.
+  intros. induction l1.
+  + rewrite app_nil_l. auto.
+  + rewrite <- app_comm_cons. rewrite <- IHl1. simpl. destruct (l1 ++ e :: l2) eqn:? ; auto.
+    destruct l1; inversion Heql.
+Qed.
+
+Lemma pfoot_cons: forall g v e p, pfoot g (v, e :: p) = pfoot g (dst g e, p).
+Proof.
+  intros. destruct p; simpl; auto.
+  destruct p; auto. apply (pfoot_head_irrel p g v (dst g e) e1).
+Qed.
+
+Lemma Subpath_refl: forall g p, Subpath g p p.
+Proof.
+  intros. destruct p as [v p]. split.
+  + reflexivity.
+  + left; auto.
+Qed.
+
+Lemma Subpath_trans: forall g p1 p2 p3, Subpath g p1 p2 -> Subpath g p2 p3 -> Subpath g p1 p3.
+Proof.
+  intros. destruct p1 as [v1 p1]. destruct p2 as [v2 p2]. destruct p3 as [v3 p3].
+  destruct H, H0. split; unfold fst, snd in *. 1: transitivity p2; auto. destruct H1, H2.
+  + subst v1 v2. left; auto.
+  + subst. right; auto.
+  + subst. destruct H1 as [e [? ?]]. right. exists e. split; auto.
+  + destruct H1 as [e [? ?]]. right. exists e. split; auto.
+Qed.
+
+Lemma path_acyclic:
+  forall (g: Gph) (p: path) n1 n2,
+    path_endpoints g p n1 n2 -> valid_path g p -> Dup (epath_to_vpath g p) ->
+    exists p', length (snd p') < length (snd p) /\ Subpath g p' p /\ path_endpoints g p' n1 n2 /\ valid_path g p'.
+Proof.
+  intros. apply Dup_cyclic in H1. destruct H1 as [a [L1 [L2 [L3 ?]]]]. rewrite <- app_comm_cons in H1.
+  destruct (epath_to_vpath_split _ _ _ _ _ H0 H1) as [p1 [p2 [? [? [? [? ?]]]]]]. rewrite app_comm_cons in H6.
+  destruct (epath_to_vpath_split _ _ _ _ _ H4 H6) as [p3 [p4 [? [? [? [? ?]]]]]]. exists (p1 +++ p4).
+  split; [|split; [|split]];
+  [destruct p as [v p]; destruct p1 as [v1 p1]; destruct p2 as [v2 p2]; destruct p3 as [v3 p3]; destruct p4 as [v4 p4]; unfold path_glue, fst, snd in * ..|].
+  + clear - H2 H7 H10. inversion H2. subst p. rewrite !app_length. apply Plus.plus_lt_compat_l. inversion H7. rewrite app_length.
+    destruct p3. 1: simpl in H10 |-* ; inversion H10; destruct L2; inversion H5. simpl; intuition.
+  + clear - H2 H7. inversion H2. subst p. inversion H7. split. 2: left; simpl; auto. apply Sublist_app. reflexivity. repeat intro. apply in_or_app. right; auto.
+  + inversion H2; subst. clear H2. inversion H7. subst. clear H7. destruct H. split; simpl in H; auto. destruct p4.
+    - rewrite app_nil_r in *. apply epath_to_vpath_pfoot in H5. rewrite H5. simpl in H11. inversion H11. subst L3.
+      replace (L1 ++ a :: L2 +:: a) with ((L1 ++ a :: L2) +:: a) in H1.
+      * apply epath_to_vpath_pfoot in H1. rewrite H2 in H1. auto.
+      * rewrite <- app_assoc. rewrite app_comm_cons. auto.
+    - rewrite pfoot_app_cons. rewrite app_assoc in H2. rewrite pfoot_app_cons in H2. auto.
+  + apply valid_path_merge; auto. exists a. split. apply epath_to_vpath_pfoot in H5. auto.
+    apply epath_to_vpath_phead in H11; auto.
 Qed.
 
 Lemma valid_path_acyclic:
   forall (g : Gph) (p : path) n1 n2,
-    path_endpoints p n1 n2 -> valid_path g p ->
-    exists p', Sublist p' p /\ path_endpoints p' n1 n2 /\ NoDup p' /\ valid_path g p'.
+    path_endpoints g p n1 n2 -> valid_path g p ->
+    exists p', Subpath g p' p /\ path_endpoints g p' n1 n2 /\ NoDup (epath_to_vpath g p') /\ valid_path g p'.
 Proof.
-  intros until p. remember (length p). assert (length p <= n) by omega. clear Heqn. revert p H. induction n; intros.
-  icase p; icase H0. inv H0. inv H.
-  destruct (nodup_dec p) as [? | H2]. exists p. split. reflexivity. tauto.
-  apply Dup_cyclic in H2. destruct H2 as [a [L1 [L2 [L3 ?]]]]. subst p. specialize (IHn (L1 ++ a :: L3)).
-  spec IHn. do 2 rewrite app_length in H. rewrite app_length. simpl in *. omega. specialize (IHn n1 n2).
-  spec IHn. destruct H0. split. icase L1. repeat (rewrite foot_app in *; disc). trivial.
-  spec IHn. change (L1 ++ a :: L3) with (L1 ++ (a :: nil) ++ tail (a :: L3)).
-  rewrite app_assoc. change (a :: L2) with ((a :: nil) ++ L2) in H1.
-  do 2 rewrite app_assoc in H1. apply valid_path_split in H1. destruct H1.
-  apply valid_path_merge; auto. apply paths_foot_head_meet. apply valid_path_split in H1. tauto.
-  destruct IHn as [p' [? [? [? ?]]]]. exists p'. split. 2: tauto. transitivity (L1 ++ a :: L3); auto.
-  apply Sublist_app. reflexivity. pattern (a :: L3) at 1. rewrite <- (app_nil_l (a :: L3)).
-  apply Sublist_app. apply Sublist_nil. reflexivity.
+  intros until p. destruct p as [v p]. revert v. remember (length p). assert (length p <= n) by omega. clear Heqn. revert p H. induction n; intros.
+  + assert (p = nil) by (destruct p; auto; simpl in H; exfalso; intuition). subst. exists (v, nil). simpl. simpl in H1.
+    split. 1: apply Subpath_refl. do 2 (split; auto). constructor. intro; inversion H2. apply NoDup_nil.
+  + destruct (nodup_dec (epath_to_vpath g (v, p))).
+    - exists (v, p); split; [apply Subpath_refl | split; auto].
+    - destruct (path_acyclic _ _ _ _ H0 H1 n0) as [[v2 p2] [? [? [? ?]]]]. simpl in H2. assert (length p2 <= n) by intuition.
+      specialize (IHn p2 H6 _ _ _ H4 H5). simpl in IHn, H3. destruct IHn as [p' [? ?]]. exists p'. split; auto.
+      apply Subpath_trans with (v2, p2); auto.
 Qed.
 
-Lemma path_prop_weaken: forall (P1 P2 : Ensemble V) p,
-  (forall d, P1 d -> P2 d) -> path_prop P1 p -> path_prop P2 p.
-Proof. intros; hnf in *; intros; hnf in *; eapply Forall_impl; eauto. Qed.
-
-Lemma path_prop_sublist: forall P p1 p2, Sublist p1 p2 -> path_prop P p2 -> path_prop P p1.
-Proof. repeat intro. eapply Forall_sublist; eauto. Qed.
-
-Lemma path_prop_tail: forall P n p, path_prop P (n :: p) -> path_prop P p.
-Proof. repeat intro. inversion H; auto. Qed.
-
-Lemma good_path_split: forall (g: Gph) p1 p2 P, good_path g P (p1 ++ p2) -> (good_path g P p1) /\ (good_path g P p2).
+Lemma path_prop_weaken: forall g (P1 P2 : Ensemble V) p,
+  (forall d, P1 d -> P2 d) -> path_prop g P1 p -> path_prop g P2 p.
 Proof.
-  intros. destruct H. apply valid_path_split in H; destruct H. unfold good_path. unfold path_prop in *.
-  rewrite !Forall_forall in *.
-  intuition.
+  intros; hnf in *; intros; hnf in *; destruct p; destruct l.
+  + apply H; auto.
+  + unfold path_prop' in *. eapply Forall_impl; eauto.
+    simpl. intuition.
+Qed.
+
+Lemma path_prop_subpath: forall g P p1 p2, Subpath g p1 p2 -> valid_path g p2 -> path_prop g P p2 -> path_prop g P p1.
+Proof.
+  intros. destruct p1 as [v1 p1]. destruct p2 as [v2 p2]. destruct H. unfold fst, snd in *. destruct H2.
+  + subst. simpl in *. destruct p1, p2; auto.
+    - destruct H0. subst. red in H1. rewrite Forall_forall in H1. assert (In e (e :: p2)) by apply in_eq. specialize (H1 _ H0). intuition.
+    - hnf in H. assert (In e (e :: p1)) by apply in_eq. specialize (H _ H2). inversion H.
+    - unfold path_prop' in *. eapply Forall_sublist; eauto.
+  + destruct H2 as [e [? ?]]. simpl in *. destruct p2. inversion H2. destruct p1.
+    - red in H1. rewrite Forall_forall in H1. specialize (H1 _ H2). destruct H1. destruct H3; subst; auto.
+    - unfold path_prop' in *. eapply Forall_sublist; eauto.
+Qed.
+
+Lemma path_prop_tail: forall g P p, path_prop g P p -> path_prop g P (ptail g p).
+Proof.
+  intros. destruct p as [v p]. destruct p.
+  + simpl in *. auto.
+  + simpl in *. hnf in H. rewrite Forall_forall in H. destruct p.
+    - assert (In e (e :: nil)) by apply in_eq. specialize (H _ H0). destruct H; auto.
+    - hnf. rewrite Forall_forall. intros. apply H. simpl in *. right; auto.
+Qed.
+
+Lemma pfoot_in_cons: forall g e p v x, pfoot g (v, e :: p) = x -> exists e', In e' (e :: p) /\ dst g e' = x.
+Proof.
+  intros. revert v e H. induction p; intros. simpl in H.
+  + exists e. split; auto. apply in_eq.
+  + specialize (IHp (dst g e) a).
+    assert (pfoot g (dst g e, a :: p) = x). {
+      clear IHp. simpl in *. destruct p; auto.
+      pose proof (pfoot_head_irrel p g v (dst g e) e0). unfold pfoot in H0.
+      rewrite H in H0. auto.
+    } specialize (IHp H0).
+    destruct IHp as [e' [? ?]]. exists e'. split; auto.
+    apply in_cons. auto.
+Qed.
+
+Lemma path_prop_split: forall (g: Gph) p1 p2 P, paths_meet g p1 p2 -> valid_path g (p1 +++ p2) -> path_prop g P (p1 +++ p2) -> (path_prop g P p1) /\ (path_prop g P p2).
+Proof.
+  intros. destruct p1 as [v1 p1]. destruct p2 as [v2 p2]. unfold path_glue, fst, snd in H0, H1. simpl. destruct p1, p2.
+  + simpl in *. split; auto. destruct H as [? [? ?]]. simpl in *. subst v1. subst v2. auto.
+  + destruct H as [? [? ?]]. simpl in H, H2. subst v1 v2. rewrite app_nil_l in * |-. simpl in H1. split; auto.
+    destruct H0. subst. red in H1. rewrite Forall_forall in H1. assert (In e (e :: p2)) by apply in_eq. specialize (H1 _ H). intuition.
+  + rewrite app_nil_r in H1. simpl in H1. split; auto. destruct H as [? [? ?]]. simpl in H2. subst v2.
+    apply pfoot_in_cons in H. destruct H as [e' [? ?]]. subst x. red in H1. rewrite Forall_forall in H1.
+    specialize (H1 _  H). destruct H1. apply H2.
+  + simpl in H1. rewrite app_comm_cons in H1. red in H1. rewrite Forall_forall in H1. unfold path_prop'. rewrite !Forall_forall.
+    split; intros; apply H1; apply in_or_app; [left | right]; auto.
+Qed.
+
+Lemma good_path_split: forall (g: Gph) p1 p2 P, paths_meet g p1 p2 -> good_path g P (p1 +++ p2) -> (good_path g P p1) /\ (good_path g P p2).
+Proof.
+  intros. destruct H0. apply path_prop_split in H1; auto. destruct H1.
+  apply valid_path_split in H0; auto. destruct H0.
+  unfold good_path. split; split; auto.
+Qed.
+
+Lemma path_prop_merge: forall (g: Gph) p1 p2 P, paths_meet g p1 p2 -> path_prop g P p1 -> path_prop g P p2 -> path_prop g P (p1 +++ p2).
+Proof.
+  intros. destruct p1 as [v1 p1]. destruct p2 as [v2 p2]. unfold path_glue, fst, snd. simpl in *. destruct p1, p2.
+  + rewrite app_nil_r. auto.
+  + rewrite app_nil_l. auto.
+  + rewrite app_nil_r. auto.
+  + rewrite <- app_comm_cons. rewrite app_comm_cons. unfold path_prop' in *. rewrite Forall_forall in *. intros.
+    apply in_app_or in H2. destruct H2; [apply H0 | apply H1]; auto.
 Qed.
 
 Lemma good_path_merge: forall (g: Gph) p1 p2 P,
-                         paths_meet p1 p2 -> good_path g P p1 -> good_path g P p2 -> good_path g P (p1 +++ p2).
+                         paths_meet g p1 p2 -> good_path g P p1 -> good_path g P p2 -> good_path g P (p1 +++ p2).
 Proof.
-  intros. destruct H0. destruct H1. split. apply valid_path_merge; auto. unfold path_prop in *. intros.
-  rewrite Forall_forall in *; intros.
-  unfold path_glue in H4. apply in_app_or in H4. destruct H4. auto. apply H3. apply In_tail; auto.
+  intros. destruct H0, H1. split.
+  + apply valid_path_merge; auto.
+  + apply path_prop_merge; auto.
 Qed.
 
 Lemma good_path_weaken: forall (g: Gph) p (P1 P2 : Ensemble V),
                           (forall d, P1 d -> P2 d) -> good_path g P1 p -> good_path g P2 p.
 Proof.
-  split; destruct H0; auto.
+  intros. split; destruct H0; auto.
   apply path_prop_weaken with P1; auto.
 Qed.
 
 Lemma good_path_acyclic:
   forall (g: Gph) P p n1 n2,
-    path_endpoints p n1 n2 -> good_path g P p -> exists p', path_endpoints p' n1 n2 /\ NoDup p' /\ good_path g P p'.
+    path_endpoints g p n1 n2 -> good_path g P p -> exists p', path_endpoints g p' n1 n2 /\ NoDup (epath_to_vpath g p') /\ good_path g P p'.
 Proof.
-  intros. destruct H0. apply valid_path_acyclic with (n1 := n1) (n2 := n2) in H0; trivial.
-  destruct H0 as [p' [? [? [? ?]]]]. exists p'. split; trivial. split; trivial.
-  split; trivial. apply path_prop_sublist with p; trivial.
+  intros. destruct H0. pose proof H0. apply valid_path_acyclic with (n1 := n1) (n2 := n2) in H0; trivial.
+  destruct H0 as [p' [? [? [? ?]]]]. exists p'. do 3 (split; trivial).
+  apply path_prop_subpath with p; trivial.
 Qed.
 
-Lemma reachable_by_is_reachable (g: Gph):
-  forall n1 n2 P, g |= n1 ~o~> n2 satisfying P -> reachable g n1 n2.
+Lemma reachable_by_is_reachable (g: Gph): forall n1 n2 P, g |= n1 ~o~> n2 satisfying P -> reachable g n1 n2.
 Proof.
   intros. unfold reachable. destruct H as [l [? [? ?]]]. exists l.
-  split; auto. split. auto. hnf. rewrite Forall_forall; intros; auto.
+  do 2 (split; auto). destruct l. hnf. destruct l; auto. hnf. rewrite Forall_forall; intros; auto.
 Qed.
 
 Lemma reachable_by_through_set_is_reachable_through_set (g: Gph):
@@ -262,13 +468,13 @@ Lemma reachable_Same_set (g: Gph) (S1 S2 : list V):
   S1 ~= S2 -> Same_set (reachable_through_set g S1) (reachable_through_set g S2).
 Proof. intros; destruct H; split; repeat intro; destruct H1 as [y [HIn Hrch]]; exists y; split; auto. Qed.
 
-Lemma reachable_by_path_nil: forall (g : Gph) n1 n2 P, ~ g |= nil is n1 ~o~> n2 satisfying P.
-Proof. repeat intro. destruct H as [[? _] _]. disc. Qed.
+(* Lemma reachable_by_path_nil: forall (g : Gph) n1 n2 P, ~ g |= nil is n1 ~o~> n2 satisfying P. *)
+(* Proof. repeat intro. destruct H as [[? _] _]. disc. Qed. *)
 
-Lemma reachable_by_path_head: forall (g: Gph) p n1 n2 P, g |= p is n1 ~o~> n2 satisfying P -> head p = Some n1.
+Lemma reachable_by_path_head: forall (g: Gph) p n1 n2 P, g |= p is n1 ~o~> n2 satisfying P -> phead p = n1.
 Proof. intros. destruct H as [[? _] _]. trivial. Qed.
 
-Lemma reachable_by_path_foot: forall (g: Gph) p n1 n2 P, g |= p is n1 ~o~> n2 satisfying P -> foot p = Some n2.
+Lemma reachable_by_path_foot: forall (g: Gph) p n1 n2 P, g |= p is n1 ~o~> n2 satisfying P -> pfoot g p = n2.
 Proof. intros. destruct H as [[_ ?] _]. trivial. Qed.
 
 Lemma reachable_by_path_merge: forall (g: Gph) p1 n1 n2 p2 n3 P,
@@ -283,60 +489,131 @@ Proof.
 Qed.
 
 Lemma reachable_by_path_split_glue:
-  forall (g: Gph) P p1 p2 n1 n2 n, paths_meet_at p1 p2 n ->
+  forall (g: Gph) P p1 p2 n1 n2 n, paths_meet_at g p1 p2 n ->
                                    g |= (p1 +++ p2) is n1 ~o~> n2 satisfying P ->
                                    g |= p1 is n1 ~o~> n satisfying P /\
                                    g |= p2 is n ~o~> n2 satisfying P.
 Proof.
-  intros. unfold path_glue in H0. destruct H0.
-  destruct H.
-  destruct (foot_explicit _ _ H) as [L' ?]. subst p1.
-  icase p2. inv H2.
-  copy H1. apply good_path_split in H1. destruct H1 as [? _].
-  rewrite <- app_assoc in H2, H0. simpl in H2, H0.
-  apply good_path_split in H2. destruct H2 as [_ ?].
-  destruct H0. rewrite foot_app in H3; disc.
-  repeat (split; trivial). icase L'.
+  intros. destruct H0 as [[? ?] ?]. apply good_path_split in H2.
+  + destruct H2. destruct H. split; split; auto; split; auto.
+    clear H2 H3. destruct p1 as [v1 p1]. destruct p2 as [v2 p2].
+    unfold path_glue, fst, snd in * |-. destruct p2.
+    - rewrite app_nil_r in * |-. simpl in *. rewrite H in H1. subst v2. auto.
+    - rewrite pfoot_app_cons in H1. rewrite pfoot_head_irrel with (v2 := v2) in H1. auto.
+  + exists n; auto.
+Qed.
+
+Lemma pfoot_split: forall g v p1 e p2, valid_path g (v, p1 ++ e :: p2) -> pfoot g (v, p1) = src g e.
+Proof.
+  intros g v p1. revert v. induction p1; intros.
+  + simpl. rewrite app_nil_l in H. destruct H. auto.
+  + rewrite <- app_comm_cons in H. specialize (IHp1 (dst g a) e p2).
+    apply valid_path_cons in H. specialize (IHp1 H). simpl. destruct p1.
+    - simpl in IHp1. auto.
+    - rewrite pfoot_head_irrel with (v2 := v) in IHp1. apply IHp1.
+Qed.
+
+Lemma in_path_split: forall g p n, In_path g n p -> valid_path g p -> exists p1 p2, p = p1 +++ p2 /\ paths_meet_at g p1 p2 n.
+Proof.
+  intros. destruct p as [v p]. hnf in H. simpl in H. destruct H.
+  + subst. exists (v, nil), (v, p). unfold path_glue. simpl. split; split; auto.
+  + destruct H as [e [? ?]]. destruct (in_split _ _ H) as [p1 [p2 ?]]. destruct H1.
+    - exists (v, p1), (src g e, e :: p2). unfold path_glue. simpl. subst p. split; auto.
+      subst n. split; auto. apply pfoot_split in H0. auto.
+    - exists (v, p1 +:: e), (dst g e, p2). unfold path_glue. simpl. subst p. rewrite <- app_assoc.
+      rewrite <- app_comm_cons. rewrite app_nil_l. split; auto. split.
+      * rewrite pfoot_last. auto.
+      * simpl. auto.
 Qed.
 
 Lemma reachable_by_path_split_in: forall (g : Gph) P p n n1 n2,
   g |= p is n1 ~o~> n2 satisfying P ->
-  In n p -> exists p1 p2,
-              p = p1 +++ p2 /\
-              g |= p1 is n1 ~o~> n satisfying P /\
-              g |= p2 is n ~o~> n2 satisfying P.
+  In_path g n p -> exists p1 p2, p = p1 +++ p2 /\
+                                 g |= p1 is n1 ~o~> n satisfying P /\
+                                 g |= p2 is n ~o~> n2 satisfying P.
 Proof.
-  intros. destruct (in_split _ _ H0) as [p1 [p2 ?]]. subst p. clear H0.
-  replace (p1 ++ n :: p2) with ((p1 ++ (n :: nil)) +++ (n :: p2)) in H.
-  2: unfold path_glue; rewrite <- app_assoc; auto.
-  apply reachable_by_path_split_glue with (n := n) in H.
-  exists (p1 ++ n :: nil). exists (n :: p2).
-  split; trivial.
-  unfold path_glue. rewrite <- app_assoc. trivial.
-  split; trivial. rewrite foot_app; disc. trivial.
+  intros. apply in_path_split in H0.
+  + destruct H0 as [p1 [p2 [? ?]]]. subst p. exists p1, p2. split; auto.
+    apply reachable_by_path_split_glue; auto.
+  + destruct H as [? [? ?]]; auto.
 Qed.
 
-Lemma reachable_by_path_Forall: forall (g: Gph) p n1 n2 P,
-  g |= p is n1 ~o~> n2 satisfying P -> Forall P p.
-Proof. intros. destruct H as [_ [_ ?]]. apply H. Qed.
+(* Lemma reachable_by_path_Forall: forall (g: Gph) p n1 n2 P, *)
+(*   g |= p is n1 ~o~> n2 satisfying P -> Forall P p. *)
+(* Proof. intros. destruct H as [_ [_ ?]]. apply H. Qed. *)
 
 Lemma reachable_by_path_In: forall (g: Gph) p n1 n2 P n,
-  g |= p is n1 ~o~> n2 satisfying P -> In n p -> P n.
-Proof. intros. pose proof reachable_by_path_Forall _ _ _ _ _ H. rewrite Forall_forall in H1; auto. Qed.
-
-Lemma reachable_by_path_si: forall (g1 g2: Gph) p n1 n2 P,
-    structurally_identical g1 g2 -> (g1 |= p is n1 ~o~> n2 satisfying P <-> g2 |= p is n1 ~o~> n2 satisfying P).
+  g |= p is n1 ~o~> n2 satisfying P -> In_path g n p -> P n.
 Proof.
-  cut (forall g1 g2 p n1 n2 P, structurally_identical g1 g2 -> g1 |= p is n1 ~o~> n2 satisfying P ->
-                               g2 |= p is n1 ~o~> n2 satisfying P); intros.
-  + split; intros; [apply (H g1 g2) | apply (H g2 g1)]; auto. symmetry; auto.
-  + destruct H0 as [[? ?] [? ?]]. split; split; auto. rewrite <- (valid_path_si g1 g2 H); auto.
+  intros. destruct H as [_ [? ?]]. destruct p as [v p]. hnf in H0. simpl in *. destruct p, H0.
+  + subst; auto.
+  + destruct H0 as [e [? _]]. inversion H0.
+  + subst. destruct H. hnf in H1. rewrite Forall_forall in H1. assert (In e (e :: p)) by apply in_eq.
+    specialize (H1 _ H2). subst v. intuition.
+  + destruct H0 as [e' [? ?]]. hnf in H1. rewrite Forall_forall in H1. specialize (H1 _ H0).
+    destruct H1. destruct H2; subst n; auto.
 Qed.
 
-Lemma valid_path_valid: forall (g : Gph) p, valid_path g p -> Forall (vvalid g) p.
+Lemma pfoot_si: forall (g1 g2: Gph) p, g1 ~=~ g2 -> valid_path g1 p -> pfoot g1 p = pfoot g2 p.
 Proof.
-  induction p; intros; simpl in *. apply Forall_nil.
-  destruct p; constructor; auto; destruct H as [[? ?] ?]; [| apply IHp]; auto.
+  intros. destruct p as [v p]. revert v H0. induction p; intros.
+  + simpl. auto.
+  + simpl. destruct p.
+    - simpl in H0. destruct H0 as [? [? [? ?]]]. destruct H as [? [? [? ?]]]. specialize (H4 a). apply H6; intuition.
+    - specialize (IHp (dst g1 a)). apply valid_path_cons in H0. specialize (IHp H0). 
+      pose proof (pfoot_head_irrel p g1 v (dst g1 a) e). pose proof (pfoot_head_irrel p g2 v (dst g1 a) e). unfold pfoot in *.
+      rewrite H1, H2. apply IHp.
+Qed.
+
+Lemma valid_path_strong_evalid: forall g v p e, valid_path g (v, p) -> In e p -> strong_evalid g e.
+Proof.
+  intros g v p. revert v. induction p; intros. 1: inversion H0. simpl in H0. destruct H0.
+  + subst. destruct H. simpl in H0. destruct p; intuition.
+  + apply valid_path_cons in H. specialize (IHp _ _ H H0). auto.  
+Qed.
+
+Lemma path_prop_si: forall (g1 g2: Gph) P p, g1 ~=~ g2 -> valid_path g1 p -> path_prop g1 P p -> path_prop g2 P p.
+Proof.
+  intros. destruct p as [v p]. destruct p; simpl in H1 |-* ; auto. unfold path_prop' in *. rewrite Forall_forall in *.
+  intros. specialize (H1 _ H2). destruct H as [_ [? [? ?]]]. specialize (H x). specialize (H3 x). specialize (H4 x).
+  destruct (valid_path_strong_evalid _ _ _ _ H0 H2) as [? _].
+  rewrite <- H3; [|intuition..]. rewrite <- H4; intuition.
+Qed.
+
+Lemma reachable_by_path_si: forall (g1 g2: Gph) p n1 n2 P,
+    g1 ~=~ g2 -> (g1 |= p is n1 ~o~> n2 satisfying P <-> g2 |= p is n1 ~o~> n2 satisfying P).
+Proof.
+  cut (forall g1 g2 p n1 n2 P, g1 ~=~ g2 -> g1 |= p is n1 ~o~> n2 satisfying P -> g2 |= p is n1 ~o~> n2 satisfying P); intros.
+  + split; intros; [apply (H g1 g2) | apply (H g2 g1)]; auto. symmetry; auto.
+  + destruct H0 as [[? ?] [? ?]]. split; split; auto.
+    - rewrite <- (pfoot_si g1 g2 p); auto.
+    - rewrite <- (valid_path_si g1 g2 H); auto.
+    - apply (path_prop_si g1); auto.
+Qed.
+
+Lemma in_path_or_cons: forall g v e p n, v = src g e -> (In_path g n (v, e :: p) <-> n = v \/ In_path g n (dst g e, p)).
+Proof.
+  intros. subst. unfold In_path. simpl. intuition.
+  + destruct H0 as [e0 [? ?]]. destruct H. 1: subst; intuition. right; right; exists e0. split; auto.
+  + right. exists e. intuition.
+  + right. destruct H as [? [? ?]]. exists x. intuition.
+Qed.
+
+Lemma valid_path_valid: forall (g : Gph) p n, valid_path g p -> In_path g n p -> vvalid g n.
+Proof.
+  intros g p. destruct p as [v p]. revert v. induction p; intros.
+  + simpl in *. hnf in H0. simpl in H0. destruct H0. 1: subst; auto. destruct H0 as [e [? _]]. inversion H0.
+  + rewrite in_path_or_cons in H0. 2: destruct H; auto. destruct H0.
+    - subst. destruct H. subst. simpl in H0. destruct p; [|destruct H0 as [H0 _]]; destruct H0 as [_ [? _]]; auto.
+    - apply valid_path_cons in H. apply (IHp (dst g a)); auto.
+Qed.
+
+Lemma pfoot_in: forall g p n, pfoot g p = n -> In_path g n p.
+Proof.
+  intros. destruct p as [v p]. destruct p.
+  + simpl in H. subst. left. simpl; auto.
+  + apply pfoot_in_cons in H. right. unfold snd. destruct H as [e' [? ?]].
+    exists e'. split; auto.
 Qed.
 
 (******************************************
@@ -348,9 +625,8 @@ Reachable Lemmas
 Lemma reachable_by_refl: forall (g : Gph) n (P: V -> Prop), vvalid g n -> P n -> g |= n ~o~> n satisfying P.
 Proof.
   intros.
-  exists (n :: nil). split. compute. auto.
-  split. simpl. trivial. auto. auto.
-  repeat constructor; tauto.
+  exists (n, nil). split. compute. auto.
+  split. simpl. trivial. auto. 
 Qed.
 
 Lemma reachable_by_trans: forall (g: Gph) n1 n2 n3 P,
@@ -369,26 +645,26 @@ Qed.
 
 Lemma reachable_by_head_valid: forall (g : Gph) n1 n2 P, g |= n1 ~o~> n2 satisfying P -> vvalid g n1.
 Proof.
-  repeat intro. destruct H as [l [[? ?] [? ?]]]. destruct l. inversion H. simpl in H. inversion H. subst. simpl in H1.
-  destruct l. auto. destruct H1 as [[? _] _]. auto.
+  repeat intro. destruct H as [p [[? _] [? _]]]. destruct p as [v p]. simpl in *. subst.
+  destruct p; auto. destruct H0. simpl in H0. subst. destruct p; [|destruct H0 as [H0 _]]; destruct H0 as [? [? ?]]; auto.
 Qed.
 
 Lemma reachable_by_foot_valid: forall (g : Gph) n1 n2 P, g |= n1 ~o~> n2 satisfying P -> vvalid g n2.
 Proof.
-  repeat intro. destruct H as [l [[? ?] [? ?]]]. apply foot_in in H0. apply valid_path_valid in H1.
-  rewrite Forall_forall in H1. apply H1. auto.
+  repeat intro. destruct H as [p [[? ?] [? ?]]]. apply pfoot_in in H0.
+  apply (valid_path_valid _ _ n2) in H1; auto.
 Qed.
 
 Lemma reachable_by_head_prop: forall (g: Gph) n1 n2 P, g |= n1 ~o~> n2 satisfying P -> P n1.
 Proof.
   intros. destruct H as [p ?]. eapply reachable_by_path_In; eauto.
-  apply reachable_by_path_head in H. icase p. inv H. simpl. auto.
+  apply reachable_by_path_head in H. destruct p as [v p]. simpl in H. subst. left; auto.
 Qed.
 
 Lemma reachable_by_foot_prop: forall (g: Gph) n1 n2 P, g |= n1 ~o~> n2 satisfying P -> P n2.
 Proof.
   intros. destruct H as [p ?]. eapply reachable_by_path_In; eauto.
-  apply reachable_by_path_foot in H. apply foot_in. trivial.
+  apply reachable_by_path_foot in H. apply pfoot_in. trivial.
 Qed.
 
 Lemma reachable_by_through_set_foot_valid: forall (g : Gph) S n P, reachable_by_through_set g S P n -> vvalid g n.
@@ -405,6 +681,15 @@ Proof.
   eapply reachable_by_foot_prop with (n1 := s); eauto.
 Qed.
 
+Lemma edge_P_reachable_by: forall (g: Gph) n1 n2 (P: Ensemble V), P n1 -> P n2 -> g |= n1 ~> n2 -> g |= n1 ~o~> n2 satisfying P.
+Proof.
+  intros. destruct H1 as [? [? ?]]. rewrite step_spec in H3. destruct H3 as [e [? [? ?]]].
+  exists (n1, e :: nil). split; split; auto.
+  + simpl. split; auto. split; intuition. rewrite H4. auto. rewrite H5; auto.
+  + simpl. hnf. rewrite Forall_forall. intros. simpl in H6. destruct H6; [|inversion H6].
+    subst. intuition.
+Qed.
+
 Lemma edge_reachable_by:
   forall (g: Gph) n1 n2 n3 (P: Ensemble V),
      P n1 ->
@@ -414,9 +699,7 @@ Lemma edge_reachable_by:
 Proof.
   intros. apply reachable_by_trans with n2; auto.
   apply reachable_by_head_prop in H1.
-  exists (n1 :: n2 :: nil). split. split; auto.
-  split. simpl. split; auto. destruct H0 as [? [? ?]]. auto.
-  repeat constructor; auto.
+  apply edge_P_reachable_by; auto.
 Qed.
 
 Lemma step_reachable_by:
@@ -442,9 +725,7 @@ Lemma reachable_by_edge:
 Proof.
   intros. apply reachable_by_trans with n2; auto.
   apply reachable_by_foot_prop in H0.
-  exists (n2 :: n3 :: nil). split. split; auto.
-  split. simpl. split; auto. destruct H1 as [? [? ?]]. auto.
-  repeat constructor; auto.
+  apply edge_P_reachable_by; auto.
 Qed.
 
 Lemma reachable_by_step:
@@ -619,36 +900,6 @@ Proof.
     destruct H0 as [y [? ?]]. apply H in H0. apply reachable_head_valid in H1; tauto. hnf in H0; tauto.
 Qed.
 
-Lemma reachable_by_path_split_dec:
-  forall (g: Gph) p a b P rslt,
-    g |= p is a ~o~> b satisfying P -> {Forall (fun m => In m (a :: rslt)) p} +
-                                       {exists l1 l2 e1 s2, Forall (fun m => In m (a :: rslt)) l1 /\
-                                                            g |= l1 is a ~o~> e1 satisfying P /\
-                                                            g |= l2 is s2 ~o~> b satisfying P /\
-                                                            edge g e1 s2 /\
-                                                            ~ In s2 (a::rslt) /\ p = l1 ++ l2 /\
-                                                            ~ In s2 l1}.
-Proof.
-  intros. remember (findNotIn p (a :: rslt) nil) as f. destruct f as [n [l1 l2]]. destruct n. right.
-  apply eq_sym in Heqf. destruct (find_not_in_some _ _ _ _ _ Heqf) as [? [? [? ?]]]. exists l1, (v :: l2).
-  rewrite Forall_forall in H0. destruct l1. rewrite app_nil_l in H1.
-  generalize (reachable_by_path_head _ _ _ _ _ H); intro. rewrite H1 in *. simpl in H4. inversion H4.
-  rewrite H6 in *. exfalso; apply H3; apply in_eq.
-  generalize (reachable_by_path_head _ _ _ _ _ H); intro.
-  rewrite <- app_comm_cons in H1. rewrite H1 in H4. simpl in H4. inversion H4. rewrite H6 in *. clear H4 H6 v0.
-  remember (foot (a :: l1)). destruct o. exists v0, v. split. rewrite Forall_forall; auto.
-  assert (paths_meet_at (a :: l1) (v0 :: v :: l2) v0) by (repeat split; auto).
-  assert (g |= path_glue (a :: l1) (v0 :: v :: l2) is a ~o~> b satisfying P). unfold path_glue. simpl.
-  rewrite <- H1. auto. destruct (reachable_by_path_split_glue _ _ _ _ _ _ _ H4 H5). clear H4 H5. split; auto.
-  assert (paths_meet_at (v0 :: v :: nil) (v :: l2) v) by repeat split.
-  assert (g |= path_glue (v0 :: v :: nil) (v :: l2) is v0 ~o~> b satisfying P). unfold path_glue. simpl. auto.
-  destruct (reachable_by_path_split_glue _ _ _ _ _ _ _ H4 H5). clear H4 H5 H6 H7. split; auto.
-  split. destruct H8. destruct H5. destruct H5. auto. split. auto. split; simpl; auto.
-  apply eq_sym in Heqo. generalize (foot_none_nil (a :: l1) Heqo); intros. inversion H4.
-  assert (fst (findNotIn p (a :: rslt) nil) = None) by (rewrite <- Heqf; simpl; auto). left.
-  apply find_not_in_none with nil. auto.
-Qed.
-
 Lemma reachable_through_set_eq (g: Gph):
   forall a S x, reachable_through_set g (a :: S) x <-> reachable g a x \/ reachable_through_set g S x.
 Proof.
@@ -658,49 +909,33 @@ Proof.
 Qed.
 
 Lemma reachable_path_in:
-  forall (g: Gph) (p: list V) (l y : V), g |= p is l ~o~> y satisfying (fun _ : V => True) ->
-                                                   forall z, In z p -> reachable g l z.
+  forall (g: Gph) (p: path) (l y : V), g |= p is l ~o~> y satisfying (fun _ : V => True) ->
+                                                   forall z, In_path g z p -> reachable g l z.
 Proof.
-  intros. destruct H as [[? ?] [? ?]]. apply in_split in H0. destruct H0 as [l1 [l2 ?]]. exists (l1 +:: z). subst. split.
-  split. destruct l1; simpl; simpl in H; auto. rewrite foot_last. auto. split. rewrite app_cons_assoc in H2.
-  apply valid_path_split in H2. destruct H2. auto. hnf. rewrite Forall_forall; intros; auto.
+  intros. apply reachable_by_path_split_in with (n := z) in H; auto.
+  destruct H as [p1 [p2 [? [? ?]]]]. exists p1. apply H1.
 Qed.
 
-Lemma reachable_by_path_in: forall (g: Gph) (p: list V) (l y : V) (P: V -> Prop),
-    g |= p is l ~o~> y satisfying P -> forall z, In z p -> g |= l ~o~> z satisfying P.
+Lemma reachable_by_path_in: forall (g: Gph) (p: path) (l y : V) (P: V -> Prop),
+    g |= p is l ~o~> y satisfying P -> forall z, In_path g z p -> g |= l ~o~> z satisfying P.
 Proof.
-  intros. destruct H as [[? ?] [? ?]]. apply in_split in H0. destruct H0 as [l1 [l2 ?]]. exists (l1 +:: z). subst.
-  split; split.
-  + destruct l1; simpl; simpl in H; auto.
-  + rewrite foot_last. auto.
-  + rewrite app_cons_assoc in H2. apply valid_path_split in H2. destruct H2. auto.
-  + unfold path_prop in H3 |-* . rewrite Forall_forall in H3 |-* . intros. apply H3.
-    rewrite in_app_iff in H0 |-* . destruct H0; [left | right]; auto. simpl in H0.
-    destruct H0. subst. apply in_eq. exfalso; auto.
+  intros. apply reachable_by_path_split_in with (n := z) in H; auto.
+  destruct H as [p1 [p2 [? [? ?]]]]. exists p1. apply H1.
 Qed.
 
 Lemma reachable_path_in':
-  forall (g: Gph) (p: list V) (l y : V), g |= p is l ~o~> y satisfying (fun _ : V => True) ->
-                                         forall z, In z p -> reachable g z y.
+  forall (g: Gph) (p: path) (l y : V), g |= p is l ~o~> y satisfying (fun _ : V => True) ->
+                                         forall z, In_path g z p -> reachable g z y.
 Proof.
-  intros. destruct H as [[? ?] [? ?]]. apply in_split in H0.
-  destruct H0 as [l1 [l2 ?]]. exists (z :: l2). subst. split; split.
-  + simpl. auto.
-  + rewrite foot_app in H1; auto. intro. inversion H0.
-  + apply valid_path_split in H2. intuition.
-  + hnf. rewrite Forall_forall; intros; auto.
+  intros. apply reachable_by_path_split_in with (n := z) in H; auto.
+  destruct H as [p1 [p2 [? [? ?]]]]. exists p2. apply H2.
 Qed.
 
-Lemma reachable_by_path_in': forall (g: Gph) (p: list V) (l y : V) (P: V -> Prop),
-    g |= p is l ~o~> y satisfying P -> forall z, In z p -> g |= z ~o~> y satisfying P.
+Lemma reachable_by_path_in': forall (g: Gph) (p: path) (l y : V) (P: V -> Prop),
+    g |= p is l ~o~> y satisfying P -> forall z, In_path g z p -> g |= z ~o~> y satisfying P.
 Proof.
-  intros. destruct H as [[? ?] [? ?]]. apply in_split in H0.
-  destruct H0 as [l1 [l2 ?]]. exists (z :: l2). subst. split; split.
-  + simpl. auto.
-  + rewrite foot_app in H1; auto. intro. inversion H0.
-  + apply valid_path_split in H2. intuition.
-  + unfold path_prop in H3 |-* . rewrite Forall_forall in H3 |-* . intros. apply H3.
-    rewrite in_app_iff. right; auto.
+  intros. apply reachable_by_path_split_in with (n := z) in H; auto.
+  destruct H as [p1 [p2 [? [? ?]]]]. exists p2. apply H2.
 Qed.
 
 Lemma reachable_list_permutation:
@@ -767,18 +1002,43 @@ Proof.
   exact H1.
 Qed.
 
+Lemma epath_to_vpath_cons_eq: forall g v e p, v = src g e -> epath_to_vpath g (v, e :: p) = v :: epath_to_vpath g (dst g e, p).
+Proof.
+  intros. remember (epath_to_vpath g (v, e :: p)) as l. destruct l. 1: simpl in Heql; destruct p; inversion Heql.
+  symmetry in Heql. rewrite (epath_to_vpath_cons _ _ _ _ _ _ Heql). f_equal. subst.
+  simpl in Heql. destruct p; inversion Heql; auto.
+Qed.
+
+Lemma in_path_eq_epath_to_vpath: forall g p x, valid_path g p -> (In x (epath_to_vpath g p) <-> In_path g x p).
+Proof.
+  intros. destruct p as [v p]. revert v H. induction p; intros.
+  + simpl. unfold In_path. simpl. intuition. destruct H1 as [e [? _]]; exfalso; auto.
+  + pose proof (valid_path_cons _ _ _ _ H). destruct H as [? _]. specialize (IHp _ H0).
+    rewrite epath_to_vpath_cons_eq; auto. rewrite in_path_or_cons; auto. rewrite <- IHp.
+    simpl. intuition.
+Qed.
+
 Lemma reachable_by_ind: forall (g: Gph) x y P,
                            g |= x ~o~> y satisfying P -> x = y \/
                                                          exists z, g |= x ~> z /\
                                                                    g |= z ~o~> y satisfying (fun n => P n /\ n <> x).
 Proof.
-  intros. rewrite reachable_acyclic in H. destruct (equiv_dec x y). left; auto. right.
-  destruct H as [path [? [[? ?] [? ?]]]]. destruct path; inversion H0. subst.
-  destruct path0. inversion H1. exfalso; auto. exists v. simpl in H2. destruct H2. split; auto.
-  exists (v :: path0). simpl in H1. split; split; simpl; auto.
-  hnf in H3. hnf. rewrite Forall_forall in *. intros; split.
-  + apply H3. apply in_cons; auto.
-  + apply NoDup_cons_2 in H. intro. subst. apply H; auto.
+  intros. rewrite reachable_acyclic in H. destruct (equiv_dec x y). 1: left; auto. right.
+  destruct H as [path [? [[? ?] [? ?]]]]. destruct path as [v p]. simpl in H0. subst v.
+  destruct p. 1: simpl in H1; exfalso; auto. exists (dst g e). destruct H2. split.
+  + subst x. assert (strong_evalid g e) by (simpl in H2; destruct p; intuition).
+    destruct H0 as [? [? ?]]. do 2 (split; auto). rewrite step_spec. exists e. intuition.
+  + exists (dst g e, p). split; split.
+    - simpl; auto.
+    - rewrite pfoot_cons in H1; auto.
+    - apply valid_path_cons with x. split; auto.
+    - clear H1. simpl in H3. simpl. destruct p.
+      * subst x. clear H2. simpl in *. hnf in H3. rewrite Forall_forall in H3. assert (In e (e :: nil)) by apply in_eq. specialize (H3 _ H0). destruct H3.
+        apply NoDup_cons_2 in H. simpl in H. split; auto.
+      * unfold path_prop' in *. rewrite Forall_forall in *. intros. assert (In x0 (e :: e0 :: p)) by (apply in_cons; auto). specialize (H3 _ H4).
+        destruct H3. rewrite epath_to_vpath_cons_eq in H; auto. clear H4. apply NoDup_cons_2 in H.
+        rewrite in_path_eq_epath_to_vpath in H. 2: apply valid_path_cons with x; simpl; auto.
+        split; split; auto; intro; apply H; unfold In_path; unfold fst, snd; right; exists x0; split; intuition.
 Qed.
 
 Lemma reachable_by_weaken: forall (g: Gph) x y P Q,
@@ -787,8 +1047,7 @@ Lemma reachable_by_weaken: forall (g: Gph) x y P Q,
                                   g |= x ~o~> y satisfying Q.
 Proof.
   intros. destruct H0 as [p [? [? ?]]].
-  exists p. do 2 (split; auto). hnf in *.
-  rewrite Forall_forall in *. intros. apply H. apply H2. auto.
+  exists p. do 2 (split; auto). apply path_prop_weaken with P; auto.
 Qed.
 
 Lemma reachable_by_ind_equiv:
@@ -1011,13 +1270,15 @@ Lemma is_tree_sub_is_tree: forall (g: Gph) root, vvalid g root -> is_tree g root
 Proof.
   repeat intro. assert (reachable g root y) by (apply step_reachable with v; auto). specialize (H0 _ H3).
   destruct H0 as [proot [? ?]]. destruct H2 as [p ?]. exists p. split; auto. intro p'. intros.
-  assert (forall path, g |= path is v ~o~> y satisfying (fun _ : V => True) -> g |= (root :: path) is root ~o~> y satisfying (fun _ : V => True)). {
-    intro ppp; intros. clear -H H1 H6. destruct ppp. 1: destruct H6 as [[? _] _]; simpl in H0; inversion H0.
-    assert (v0 = v) by (destruct H6 as [[? _] _]; simpl in H0; inversion H0; auto). subst v0.
-    assert (root :: v :: ppp = (root :: v :: nil) +++ (v :: ppp)) by intuition. rewrite H0; clear H0. apply reachable_by_path_merge with v; auto.
-    split; split; simpl; auto. 2: hnf; rewrite Forall_forall; intros; auto.
-    apply reachable_by_path_is_reachable in H6. apply reachable_by_head_valid in H6. split; [split|]; auto.
-  } pose proof (H6 _ H2). pose proof (H6 _ H5). pose proof (H4 _ H7). pose proof (H4 _ H8). rewrite H9 in H10. inversion H10; auto.
+  rewrite  step_spec in H1. destruct H1 as [e [? [? ?]]].
+  assert (forall path, g |= path is v ~o~> y satisfying (fun _ : V => True) -> g |= (root, e :: nil) +++ path is root ~o~> y satisfying (fun _ : V => True)). {
+    intro ppp; intros. clear -H H1 H6 H7 H8. apply reachable_by_path_merge with v; auto.
+    split; split; simpl; auto.
+    + split; auto. hnf. apply reachable_by_path_is_reachable in H8. apply reachable_by_head_valid in H8. subst. auto.
+    + hnf. rewrite Forall_forall; intros; auto.
+  } pose proof (H8 _ H2). pose proof (H8 _ H5). pose proof (H4 _ H9). pose proof (H4 _ H10). rewrite H11 in H12. inversion H12.
+  destruct p as [v1 p1]. destruct p' as [v2 p2]. simpl in H14. f_equal; auto.
+  clear -H2 H5. apply reachable_by_path_head in H2. simpl in H2. apply reachable_by_path_head in H5. simpl in H5. subst. auto.
 Qed.
 
 Lemma root_reachable_by_derive: forall (P: V -> Prop) g root,
@@ -1026,28 +1287,14 @@ Lemma root_reachable_by_derive: forall (P: V -> Prop) g root,
               exists e, out_edges g root e /\ g |= dst g e ~o~> n
                                                 satisfying (fun x : V => P x /\ x <> root).
 Proof.
-  intros. destruct_eq_dec n root; [left; auto | right].
-  rewrite reachable_acyclic in H.
-  destruct H as [p [? ?]]. destruct p.
-  1: destruct H1 as [[? _] _]; inversion H1; auto.
-  assert (v = root) by (destruct H1 as [[? _] _]; inversion H1; auto). subst.
-  destruct p.
-  + destruct H1 as [[_ ?] _]. simpl in H1. inversion H1. exfalso; auto.
-  + destruct H1 as [? [[? ?] ?]]. destruct H2 as [? [? ?]].
-    rewrite step_spec in H6. destruct H6 as [e [? [? ?]]].
-    exists e. split. 1: split; auto.
-    exists (v :: p). split; [|split]; auto.
-  - split. simpl. subst v. auto. destruct H1.
-    rewrite foot_simpl in H9. auto.
-  - apply path_prop_tail in H4. unfold path_prop in H4 |-* .
-    rewrite Forall_forall in H4 |-* . intros; split.
-    * apply H4; auto.
-    * apply NoDup_cons_2 in H. intro. subst x. auto.
+  intros. apply reachable_by_ind in H. destruct H; [left | right]; auto.
+  destruct H as [z [[? [? ?]] ?]]. rewrite step_spec in H1. destruct H1 as [e [? [? ?]]]. subst z.
+  exists e; split; auto. hnf. auto.
 Qed.
 
 End PATH_LEM.
 
-Arguments path_glue {_} _ _.
+Arguments path_glue {_ _} _ _.
 
 Module PathNotation.
 Notation "p1 '+++' p2" := (path_glue p1 p2) (at level 20, left associativity).
@@ -1056,4 +1303,3 @@ End PathNotation.
 Notation " g '|=' p 'is' n1 '~o~>' n2 'satisfying' P" := (reachable_by_path g p n1 P n2) (at level 1).
 Notation " g '|=' n1 '~o~>' n2 'satisfying' P " := (reachable_by g n1 P n2) (at level 1).
 Notation " g '|=' n1 '~~>' n2 'satisfying' P " := (reachable_by_acyclic g n1 P n2) (at level 1).
-
