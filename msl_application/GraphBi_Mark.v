@@ -38,6 +38,14 @@ Section SpatialGraph_Mark_Bi.
 Context {pSGG_Bi: pSpatialGraph_Graph_Bi}.
 Context {sSGG_Bi: sSpatialGraph_Graph_Bi bool unit}.
 
+Local Coercion Graph_LGraph: Graph >-> LGraph.
+Local Coercion LGraph_SGraph: LGraph >-> SGraph.
+Local Coercion SGraph_PGraph: SGraph >-> PGraph.
+Local Identity Coercion Graph_GeneralGraph: Graph >-> GeneralGraph.
+Local Identity Coercion LGraph_LabeledGraph: LGraph >-> LabeledGraph.
+Local Identity Coercion SGraph_SpatialGraph: SGraph >-> SpatialGraph.
+Local Identity Coercion PGraph_PreGraph: PGraph >-> PreGraph.
+
 Notation Graph := (@Graph pSGG_Bi bool unit).
 
 Lemma vlabel_eq: forall (g1 g2: Graph) x1 x2, (WeakMarkGraph.marked g1 x1 <-> WeakMarkGraph.marked g2 x2) -> vlabel g1 x1 = vlabel g2 x2.
@@ -93,7 +101,7 @@ Lemma left_weak_valid: forall (G G1: Graph) (x l r: addr),
 Proof.
   intros.
   destruct H1 as [? _].
-  eapply weak_valid_si; [symmetry; eauto |].
+  eapply weak_valid_si; [symmetry; exact H1 |].
   eapply gamma_left_weak_valid; eauto.
 Qed.
 
@@ -107,7 +115,7 @@ Proof.
   intros.
   destruct H1 as [? _].
   destruct H2 as [_ ?].
-  eapply weak_valid_si; [symmetry; transitivity G1; eauto |].
+  eapply weak_valid_si; [symmetry; transitivity G1; [exact H1 | exact H2] |].
   eapply gamma_right_weak_valid; eauto.
 Qed.
 

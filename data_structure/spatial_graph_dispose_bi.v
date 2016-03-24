@@ -16,6 +16,8 @@ Require Import RamifyCoq.msl_application.GraphBi_Mark.
 Require RamifyCoq.graph.weak_mark_lemmas.
 Import RamifyCoq.graph.weak_mark_lemmas.WeakMarkGraph.
 
+(* TODO: Put some pure lemmas into some file like: graph/bi_spanning. *)
+
 Instance MGS: MarkGraphSetting bool.
   apply (Build_MarkGraphSetting bool
           (eq true));
@@ -32,7 +34,14 @@ Section SPATIAL_GRAPH_DISPOSE_BI.
 
   Local Open Scope logic.
 
-  (* Existing Instances SGP SGA SGBA. *)
+  Local Coercion Graph_LGraph: Graph >-> LGraph.
+  Local Coercion LGraph_SGraph: LGraph >-> SGraph.
+  Local Coercion SGraph_PGraph: SGraph >-> PGraph.
+  Local Identity Coercion Graph_GeneralGraph: Graph >-> GeneralGraph.
+  Local Identity Coercion LGraph_LabeledGraph: LGraph >-> LabeledGraph.
+  Local Identity Coercion SGraph_SpatialGraph: SGraph >-> SpatialGraph.
+  Local Identity Coercion PGraph_PreGraph: PGraph >-> PreGraph.
+
   Notation Graph := (@Graph pSGG_Bi bool unit).
 
   Lemma vgamma_is_true: forall (g : Graph) (x l r : addr), vgamma g x = (true, l, r) -> marked g x.
@@ -49,7 +58,7 @@ Section SPATIAL_GRAPH_DISPOSE_BI.
                                edge_spanning_tree g (x, L) (Graph_gen_left_null g x).
   Proof.
     intros. assert (l = dst g (x, L)) by (simpl in H0; unfold gamma in H0; inversion H0; auto).
-    hnf. destruct (node_pred_dec (marked g) (dst g (x, L))). 2: subst l; exfalso; auto.
+    hnf. change (lg_gg g) with (g: LGraph). change (pg_lg g) with (g: PGraph). destruct (node_pred_dec (marked g) (dst g (x, L))). 2: subst l; exfalso; auto.
     split.
     + hnf. simpl. split; [| split; [|split; [| split]]]; [tauto | tauto | tauto | | ].
       - intros. unfold graph_gen.update_dst.
@@ -112,6 +121,8 @@ Section SPATIAL_GRAPH_DISPOSE_BI.
         specialize (H1 (x0, L)). specialize (H4 (x0, L)).
         assert (src g (x0, L) = x0)
           by apply (@left_sound _ _ _ _ _ _ g (biGraph g) x0).
+        change (lg_gg g) with (g: LGraph) in *.
+        change (pg_lg g) with (g: PGraph) in *.
         rewrite H5 in *.
         assert (evalid g (x0, L) /\ ~ g |= l ~o~> x0 satisfying (unmarked g)). {
           split.
@@ -124,6 +135,8 @@ Section SPATIAL_GRAPH_DISPOSE_BI.
         specialize (H1 (x0, R)). specialize (H4 (x0, R)).
         assert (src g (x0, R) = x0)
           by apply (@right_sound _ _ _ _ _ _ g (biGraph g) x0).
+        change (lg_gg g) with (g: LGraph) in *.
+        change (pg_lg g) with (g: PGraph) in *.
         rewrite H5 in *.
         assert (evalid g (x0, R) /\ ~ g |= l ~o~> x0 satisfying (unmarked g)). {
           split.
@@ -140,6 +153,7 @@ Section SPATIAL_GRAPH_DISPOSE_BI.
     apply Graph_reachable_by_dec. apply weak_valid_vvalid_dec.
     apply (gamma_left_weak_valid g1 x d _ r); auto.
     assert (l = dst g1 (x, L)) by (simpl in H0; unfold gamma in H0; inversion H0; auto).
+    change (pg_lg (lg_gg g1)) with (g1: PGraph).
     rewrite <- H2. auto.
   Qed.
 
@@ -150,6 +164,7 @@ Section SPATIAL_GRAPH_DISPOSE_BI.
     apply Graph_reachable_by_dec. apply weak_valid_vvalid_dec.
     apply (gamma_right_weak_valid g1 x d l _); auto.
     assert (r = dst g1 (x, R)) by (simpl in H0; unfold gamma in H0; inversion H0; auto).
+    change (pg_lg (lg_gg g1)) with (g1: PGraph).
     rewrite <- H2. auto.
   Qed.
 
@@ -161,6 +176,7 @@ Section SPATIAL_GRAPH_DISPOSE_BI.
     apply Graph_reachable_by_dec. apply weak_valid_vvalid_dec.
     apply (gamma_left_weak_valid g1 x d _ r); auto.
     assert (l = dst g1 (x, L)) by (simpl in H0; unfold gamma in H0; inversion H0; auto).
+    change (pg_lg (lg_gg g1)) with (g1: PGraph).
     rewrite <- H3. auto.
   Qed.
 
@@ -169,9 +185,16 @@ Section SPATIAL_GRAPH_DISPOSE_BI.
   Proof.
     intros. simpl. unfold gamma. exists (dst g2 (x, L)).
     assert (Hvg2: vvalid g2 x) by (rewrite <- edge_spanning_tree_left_vvalid; eauto).
-    unfold edge_spanning_tree in H1. destruct (node_pred_dec (marked g1) (dst g1 (x, L))).
+    unfold edge_spanning_tree in H1.
+    change (pg_lg g2) with (g2: PGraph).
+    change (lg_gg g1) with (g1: LGraph) in H1.
+    change (pg_lg g1) with (g1: PGraph) in H1.
+    destruct (node_pred_dec (marked g1) (dst g1 (x, L))).
     + destruct H1 as [[_ [_ [_ [? _]]]] ?]. simpl in H0, H2. unfold gamma in H0. inversion H0.
-      rewrite H4. symmetry in H4. rewrite H2 in H4. rewrite <- H4. f_equal. symmetry. apply H1.
+      change (pg_lg g1) with (g1: PGraph) in *.
+      rewrite H4. symmetry in H4. rewrite H2 in H4.
+      change (lg_gg g2) with (g2: LGraph) in H4.
+      rewrite <- H4. f_equal. symmetry. apply H1.
       - intro. inversion H3.
       - apply (@right_valid _ _ _ _ g1 _ _ (biGraph g1)) in H; auto.
       - apply (@right_valid _ _ _ _ g2 _ _ (biGraph g2)) in Hvg2; auto.
@@ -181,7 +204,12 @@ Section SPATIAL_GRAPH_DISPOSE_BI.
       assert (marked g2 x) by (specialize (H1 x); tauto).
       simpl in H5. rewrite <- H5. f_equal.
       simpl in H2. unfold predicate_weak_evalid in H2.
-      simpl in H0. unfold gamma in H0. inversion H0. symmetry. apply H2; split.
+      simpl in H0. unfold gamma in H0. inversion H0. symmetry.
+      change (lg_gg g1) with (g1: LGraph) in *.
+      change (pg_lg g1) with (g1: PGraph) in *.
+      change (lg_gg g2) with (g2: LGraph) in *.
+      change (pg_lg g2) with (g2: PGraph) in *.
+      apply H2; split.
       - apply (@right_valid _ _ _ _ g1 _ _ (biGraph g1) x); auto.
       - rewrite (@right_sound _ _ _ _ _ _ g1 (biGraph g1) x). auto.
       - apply (@right_valid _ _ _ _ g2 _ _ (biGraph g2) x); auto.
@@ -227,6 +255,8 @@ Section SPATIAL_GRAPH_DISPOSE_BI.
     } hnf in H1.
     assert (l = dst g1 (x, L))
       by (simpl in H0; unfold gamma in H0; inversion H0; auto).
+    change (lg_gg g1) with (g1: LGraph) in *.
+    change (pg_lg g1) with (g1: PGraph) in *.
     rewrite <- H2 in H1. destruct (node_pred_dec (marked g1) l).
     + destruct H1 as [[? [? [? [? ?]]]] ?]. intro v. unfold Ensembles.In .
       intros. apply edge_reachable_by with r; auto.
@@ -288,6 +318,8 @@ Section SPATIAL_GRAPH_DISPOSE_BI.
         specialize (H2 (x0, L)). specialize (H5 (x0, L)).
         assert (src g2 (x0, L) = x0)
           by apply (@left_sound _ _ _ _ _ _ g2 (biGraph g2) x0).
+        change (lg_gg g2) with (g2: LGraph) in *.
+        change (pg_lg g2) with (g2: PGraph) in *.
         rewrite H6 in *.
         assert (evalid g2 (x0, L) /\ ~ g2 |= r ~o~> x0 satisfying (unmarked g2)). {
           split.
@@ -301,6 +333,8 @@ Section SPATIAL_GRAPH_DISPOSE_BI.
         specialize (H2 (x0, R)). specialize (H5 (x0, R)).
         assert (src g2 (x0, R) = x0)
           by apply (@right_sound _ _ _ _ _ _ g2 (biGraph g2) x0).
+        change (lg_gg g2) with (g2: LGraph) in *.
+        change (pg_lg g2) with (g2: PGraph) in *.
         rewrite H6 in *.
         assert (evalid g2 (x0, R) /\ ~ g2 |= r ~o~> x0 satisfying (unmarked g2)). {
           split.
@@ -345,7 +379,8 @@ Section SPATIAL_GRAPH_DISPOSE_BI.
                                edge_spanning_tree g (x, R) (Graph_gen_right_null g x).
   Proof.
     intros. assert (r = dst g (x, R)) by (simpl in H0; unfold gamma in H0; inversion H0; auto).
-    hnf. destruct (node_pred_dec (marked g) (dst g (x, R))). 2: subst r; exfalso; auto.
+    hnf.
+    change (lg_gg g) with (g: LGraph). change (pg_lg g) with (g: PGraph). destruct (node_pred_dec (marked g) (dst g (x, R))). 2: subst r; exfalso; auto.
     split.
     + hnf. simpl. split; [| split; [|split; [| split]]]; [tauto | tauto | tauto | | ].
       - intros. unfold graph_gen.update_dst.
@@ -379,7 +414,9 @@ Section SPATIAL_GRAPH_DISPOSE_BI.
       simpl in H3. unfold gamma in H3. inversion H3. subst l.
       apply (gamma_left_weak_valid g1 x true (dst g1 (x, L)) r); auto.
     + unfold unmarked. rewrite negateP_spec. unfold marked. simpl. simpl in H2.
-      unfold gamma in H2. inversion H2. rewrite H8. intuition.
+      unfold gamma in H2. inversion H2.
+      change (lg_gg g) with (g: LGraph).
+      rewrite H8. intuition.
     + apply spanning_list_cons with g2; auto.
       apply spanning_list_cons with g3; auto.
       apply spanning_list_nil. auto.

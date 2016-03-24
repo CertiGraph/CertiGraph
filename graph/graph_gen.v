@@ -9,6 +9,45 @@ Require Import Coq.Lists.List.
 Require Import RamifyCoq.graph.graph_model.
 Require Import RamifyCoq.graph.subgraph2.
 
+Section PREGRAPH_GEN.
+
+Context {V E: Type}.
+Context {EV: EqDec V eq}.
+Context {EE: EqDec E eq}.
+
+Notation Graph := (PreGraph V E).
+
+Definition empty_pregraph (v0: V): Graph :=
+  @Build_PreGraph V E EV EE (fun v => False) (fun e => False) (fun e => v0) (fun e => v0).
+
+Definition single_vertex_pregraph (v0: V): Graph :=
+  @Build_PreGraph V E EV EE (eq v0) (fun e => False) (fun e => v0) (fun e => v0).
+
+Definition union_pregraph (PV : V -> Prop) (PE: E -> Prop) (PVD: forall v, Decidable (PV v)) (PED: forall e, Decidable (PE e)) (g1 g2: Graph): Graph :=
+  @Build_PreGraph V E EV EE
+    (fun v => if PVD v then vvalid g1 v else vvalid g2 v)
+    (fun e => if PED e then evalid g1 e else evalid g2 e)
+    (fun e => if PED e then src g1 e else src g2 e)
+    (fun e => if PED e then dst g1 e else dst g2 e).
+
+Lemma pregraph_join_empty_single: forall v0 v1,
+  pregraph_join (eq v0) (Empty_set _) (empty_pregraph v1) (single_vertex_pregraph v0).
+Proof.
+  intros.
+  unfold empty_pregraph, single_vertex_pregraph.
+  split; [| split; [| split]]; simpl.
+  + split; intros.
+    - destruct_eq_dec v0 a; tauto.
+    - auto.
+  + split; intros.
+    - tauto.
+    - auto.
+  + intros; tauto.
+  + intros; tauto.
+Qed.
+
+End PREGRAPH_GEN.
+
 Section LABELED_GRAPH_GEN.
 
 Context {V E: Type}.
@@ -18,21 +57,10 @@ Context {DV DE: Type}.
 
 Notation Graph := (LabeledGraph V E DV DE).
 
-Definition empty_pregraph (v0: V): PreGraph V E :=
-  @Build_PreGraph V E EV EE (fun v => False) (fun e => False) (fun e => v0) (fun e => v0).
-
-Definition single_vertex_pregraph (v0: V): PreGraph V E :=
-  @Build_PreGraph V E EV EE (eq v0) (fun e => False) (fun e => v0) (fun e => v0).
+Local Coercion pg_lg : LabeledGraph >-> PreGraph.
 
 Definition single_vertex_labeledgraph (v0: V) (v_default: DV) (e_default: DE): Graph :=
   @Build_LabeledGraph V E EV EE DV DE (single_vertex_pregraph v0) (fun v => v_default) (fun e => e_default).
-
-Definition union_pregraph (PV : V -> Prop) (PE: E -> Prop) (PVD: forall v, Decidable (PV v)) (PED: forall e, Decidable (PE e)) (g1 g2: PreGraph V E): PreGraph V E :=
-  @Build_PreGraph V E EV EE
-    (fun v => if PVD v then vvalid g1 v else vvalid g2 v)
-    (fun e => if PED e then evalid g1 e else evalid g2 e)
-    (fun e => if PED e then src g1 e else src g2 e)
-    (fun e => if PED e then dst g1 e else dst g2 e).
 
 Definition update_vlabel (vlabel: V -> DV) (x: V) (d: DV) :=
   fun v => if equiv_dec x v then d else vlabel v.
@@ -63,21 +91,6 @@ Proof.
     reflexivity.
 Qed.
 
-Lemma pregraph_join_empty_single: forall v0 v1,
-  pregraph_join (eq v0) (Empty_set _) (empty_pregraph v1) (single_vertex_pregraph v0).
-Proof.
-  intros.
-  unfold empty_pregraph, single_vertex_pregraph.
-  split; [| split; [| split]]; simpl.
-  + split; intros.
-    - destruct_eq_dec v0 a; tauto.
-    - auto.
-  + split; intros.
-    - tauto.
-    - auto.
-  + intros; tauto.
-  + intros; tauto.
-Qed.
 
 End LABELED_GRAPH_GEN.
 
@@ -123,6 +136,9 @@ Context {DV DE: Type}.
 Context {P: LabeledGraph V E DV DE -> Type}.
 
 Notation Graph := (GeneralGraph V E DV DE P).
+
+Local Coercion pg_lg : LabeledGraph >-> PreGraph.
+Local Coercion lg_gg : GeneralGraph >-> LabeledGraph.
 
 Definition generalgraph_vgen (g: Graph) (x: V) (d: DV) (sound': P _): Graph := @Build_GeneralGraph V E EV EE DV DE P (labeledgraph_vgen g x d) sound'.
 
@@ -304,6 +320,8 @@ Section ADD_LABELED_GRAPH_GEN.
   
   Notation Graph := (LabeledGraph V E DV DE).
 
+  Local Coercion pg_lg: LabeledGraph >-> PreGraph.
+
   Variable g: Graph.
   Variable left_out_edge right_out_edge: V -> E.
   Context {BI: BiGraph g left_out_edge right_out_edge}.
@@ -323,6 +341,9 @@ Section ADD_GENERAL_GRAPH_GEN.
   
   Notation Graph := (GeneralGraph V E DV DE P).
 
+  Local Coercion pg_lg: LabeledGraph >-> PreGraph.
+  Local Coercion lg_gg: GeneralGraph >-> LabeledGraph.
+
   Variable g: Graph.
   Variable left_out_edge right_out_edge: V -> E.
   Context {BI: BiGraph g left_out_edge right_out_edge}.
@@ -338,6 +359,8 @@ Section GRAPH_DISJOINT_UNION.
   Context {EV: EqDec V eq}.
   Context {EE: EqDec E eq}.
   Context {DV DE: Type}.
+
+  Local Coercion pg_lg: LabeledGraph >-> PreGraph.
 
   Definition disjointed_guard (PV1 PV2: V -> Prop) (PE1 PE2: E -> Prop) :=
     Disjoint _ PV1 PV2 /\ Disjoint _ PE1 PE2.

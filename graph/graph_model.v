@@ -36,9 +36,6 @@ Record GeneralGraph {DV DE: Type} {P: @LabeledGraph DV DE -> Type} := {
   sound_gg: P lg_gg
 }.
 
-Coercion pg_lg: LabeledGraph >-> PreGraph.
-Coercion lg_gg: GeneralGraph >-> LabeledGraph.
-
 Definition strong_evalid (pg: PreGraph) (e: Edge) : Prop :=
   evalid pg e /\ vvalid pg (src pg e) /\ vvalid pg (dst pg e).
 
@@ -439,6 +436,8 @@ Section LABELED_GRAPH_EQUIV.
 
 Context {DV DE: Type}.
 Notation Graph := (@LabeledGraph Vertex Edge EV EE DV DE).
+
+Local Coercion pg_lg: LabeledGraph >-> PreGraph.
 
 Definition labeled_graph_equiv (g1 g2: Graph) :=
   g1 ~=~ g2 /\
