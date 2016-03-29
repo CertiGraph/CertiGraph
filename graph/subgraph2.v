@@ -129,39 +129,21 @@ Proof.
 Qed.
 
 Lemma reachable_by_path_subgraph_partialgraph (p q: V -> Prop):
-  forall (n1 n2: V) (l: list V),
+  forall (n1 n2: V) (l: path),
     (predicate_subgraph p) |= l is n1 ~o~> n2 satisfying q <->
     (predicate_partialgraph p) |= l is n1 ~o~> n2 satisfying q.
 Proof.
-  intros.
-  unfold reachable_by_path, good_path.
-  apply and_iff_compat_l.
-  apply and_iff_compat_r.
-  destruct l; [simpl; tauto |].
-  revert v; induction l; intros.
-  + simpl. tauto.
-  + change (valid_path (predicate_subgraph p) (v :: a :: l)) with
-    (edge (predicate_subgraph p) v a /\ valid_path (predicate_subgraph p) (a :: l)).
-    change (valid_path (predicate_partialgraph p) (v :: a :: l)) with
-    (edge (predicate_partialgraph p) v a /\ valid_path (predicate_partialgraph p) (a :: l)).
-    rewrite IHl.
-    apply and_iff_compat_r_weak; intro.
-    assert (vvalid (predicate_partialgraph p) a). {
-      apply valid_path_valid in H.
-      inversion H; subst; auto.
-    }
-    unfold edge; simpl.
-    rewrite !step_spec. simpl.
-    apply and_iff_compat_l.
-    apply and_iff_compat_l.
-    apply ex_iff.
-    intro.
-    apply and_iff_compat_r_weak; intros [? ?].
-    simpl in H0.
-    unfold predicate_evalid, predicate_weak_evalid.
-    unfold predicate_vvalid in H0.
-    subst.
-    tauto.
+  intros. unfold reachable_by_path, good_path. apply and_iff_split; [|apply and_iff_split].
+  + unfold path_endpoints. apply and_iff_compat_l. destruct l as [v l]. revert v. induction l; intros.
+    - simpl. intuition.
+    - rewrite !pfoot_cons. apply IHl.
+  + destruct l as [v l]. revert v. induction l; intros.
+    - simpl. intuition.
+    - rewrite !valid_path_cons_iff. rewrite IHl. apply and_iff_compat_l, and_iff_compat_r.
+      unfold strong_evalid. simpl. apply and_iff_compat_r_weak. intros. destruct H.
+      unfold predicate_evalid. unfold predicate_weak_evalid. destruct H0. intuition.
+  + destruct l as [v l]. simpl. destruct l. intuition. unfold path_prop'.
+    rewrite !Forall_forall. simpl. intuition.
 Qed.
 
 Lemma reachable_subgraph_partialgraph (p: V -> Prop):
@@ -173,49 +155,26 @@ Proof.
 Qed.
 
 Lemma reachable_by_path_eq_subgraph_reachable (p: V -> Prop):
-  forall (n1 n2: V) (path : list V),
+  forall (n1 n2: V) (path : path),
     g |= path is n1 ~o~> n2 satisfying p <-> (predicate_subgraph p) |= path is n1 ~o~> n2 satisfying (fun _ => True).
 Proof.
-  intros; split; intros; destruct H as [? [? ?]].
-  + split; auto. split. 2: repeat intro; hnf; auto.
-    clear H.
-    destruct path. simpl; auto.
-    revert v H0 H1. induction path; intros.
-    - simpl in *. unfold predicate_vvalid. split; auto.
-      hnf in H1. inversion H1; auto.
-    - specialize (IHpath a). simpl in *. destruct H0. split.
-      * hnf in H. destruct H as [? [? ?]]. hnf.
-        unfold vvalid. unfold edge_func.
-        unfold predicate_subgraph.
-        unfold predicate_vvalid, predicate_evalid.
-        hnf in H1. inversion H1; subst. inversion H7; subst.
-        split; auto.
-        split; auto.
-        rewrite step_spec in H3 |- *; simpl in H3 |- *.
-        destruct H3 as [e [? [? ?]]]; exists e; subst; tauto.
-      * apply IHpath. apply H0. hnf in H1. hnf; intros. inversion H1; subst; auto.
-    - rewrite Forall_forall; intros; auto.
-  + split; auto. split.
-    - clear H H1. destruct path. simpl; auto.
-      revert v H0. induction path; intros; simpl in *.
-      * destruct H0; auto.
-      * destruct H0. split. hnf in H.
-        destruct H as [[? ?] [[? ?] ?]].
-        split; auto. split; auto. unfold edge_func in H4.
-        unfold predicate_subgraph in H4.
-        unfold predicate_vvalid, predicate_evalid in H4.
-        rewrite step_spec in H4 |- *; simpl in H4 |- *.
-        destruct H4 as [e [? [? ?]]]; exists e; subst; tauto.
-        apply IHpath. apply H0.
-    - clear H H1. destruct path. hnf; intros. constructor.
-      revert v H0. induction path; intros.
-      * unfold predicate_subgraph in *.
-        hnf. intros. simpl in H0. destruct H0. repeat constructor; auto.
-      * unfold path_prop in *. 
-        specialize (IHpath a).
-        inversion H0.
-        unfold edge, predicate_subgraph, predicate_vvalid in H; simpl in H.
-        constructor; [tauto | auto].
+  intros; split; intros; destruct H as [[? ?] [? ?]]; split.
+  + split; auto. clear - H0. destruct path as [v l]. revert v H0. induction l; intros. 1: simpl in *; auto. rewrite pfoot_cons in H0 |-* . apply IHl; auto.
+  + split. 2: destruct path; simpl; destruct l; auto; unfold path_prop'; rewrite Forall_forall; intros; auto.
+    clear H H0. destruct path as [v l]. revert v H1 H2. induction l; intros. 1: simpl in H1; simpl in *; unfold predicate_vvalid; intuition.
+    rewrite valid_path_cons_iff in H1 |-* . destruct H1 as [? [? ?]]. split; auto. split.
+    - unfold strong_evalid in *. simpl. unfold predicate_evalid, predicate_vvalid. subst v. simpl in H2. hnf in H2. rewrite Forall_forall in H2.
+      assert (In a (a :: l)) by apply in_eq. specialize (H2 _ H). intuition.
+    - apply IHl; auto. apply path_prop_tail in H2. unfold ptail in H2. apply H2.
+  + split; auto. clear - H0. destruct path as [v l]. revert v H0. induction l; intros. 1: simpl in *; auto. rewrite pfoot_cons in H0 |-* . apply IHl; auto.
+  + clear H H0 H2. destruct path. revert v H1. induction l; intros.
+    - simpl in H1. unfold good_path. simpl. auto.
+    - rewrite valid_path_cons_iff in H1. destruct H1 as [? [? ?]]. simpl in H. subst v. unfold strong_evalid in H0. simpl in H0.
+      unfold predicate_vvalid, predicate_evalid in H0. intuition. clear H6 H7. specialize (IHl _ H1).
+      unfold predicate_subgraph in IHl; simpl in IHl. destruct IHl. split.
+      * rewrite valid_path_cons_iff. do 2 (split; auto). hnf. auto.
+      * simpl. hnf. rewrite Forall_forall. intros. simpl in H7. destruct H7. 1: subst; intuition.
+        hnf in H6. destruct l. 1: inversion H7. hnf in H6. rewrite Forall_forall in H6. apply H6; auto.
 Qed.
 
 Lemma reachable_by_eq_subgraph_reachable (p: V -> Prop):
@@ -227,7 +186,7 @@ Proof.
 Qed.
 
 Lemma reachable_by_path_eq_partialgraph_reachable (p: V -> Prop):
-  forall (n1 n2: V) (l : list V),
+  forall (n1 n2: V) (l : path),
     g |= l is n1 ~o~> n2 satisfying p <->
     (predicate_partialgraph p) |= l is n1 ~o~> n2 satisfying (fun _ => True).
 Proof.
@@ -469,18 +428,28 @@ Section IS_PARTIAL_GRAPH.
     (forall e: E, evalid g1 e -> vvalid g1 (src g1 e) -> src g1 e = src g2 e) /\
     (forall e: E, evalid g1 e -> vvalid g1 (dst g1 e) -> dst g1 e = dst g2 e).
 
+  Lemma is_partial_graph_valid_path: forall (g1 g2: PreGraph V E) (p: path), is_partial_graph g1 g2 -> valid_path g1 p -> valid_path g2 p.
+  Proof.
+    intros. destruct p as [v p]. revert v H0. induction p; intros.
+    + simpl in H0 |-* . destruct H. apply H; auto.
+    + rewrite valid_path_cons_iff in H0. destruct H0 as [? [[? [? ?]] ?]]. rewrite valid_path_cons_iff. destruct H as [? [? [? ?]]].
+      assert (src g1 a = src g2 a) by (apply H6; auto). assert (dst g1 a = dst g2 a) by (apply H7; auto). unfold strong_evalid.
+      rewrite <- H8. rewrite <- H9. split; auto.
+  Qed.
+
   Lemma is_partial_graph_reachable_by_path: forall (g1 g2: PreGraph V E) (p: path) (n: V) (P: Ensemble V) (n': V),
       is_partial_graph g1 g2 -> g1 |= p is n ~o~> n' satisfying P -> g2 |= p is n ~o~> n' satisfying P.
   Proof.
-    intros. destruct H0 as [[? ?] [? ?]]. split; split; auto. clear H0 H1 H3. induction p; simpl; auto.
-    simpl in H2. destruct H as [? [? [? ?]]]. destruct p.
-    + apply H; auto.
-    + destruct H2. specialize (IHp H4). split; auto.
-      destruct H2 as [? [? ?]]. pose proof (H _ H2). pose proof (H _ H5). do 2 (split; auto).
-      rewrite step_spec in H6 |-* . destruct H6 as [e [? [? ?]]]. exists e. split; [|split].
-      - apply H0; auto.
-      - rewrite <- H9 in *. specialize (H1 _ H6 H2). auto.
-      - rewrite <- H10 in *. specialize (H3 _ H6 H5). auto.
+    intros. destruct H0 as [[? ?] [? ?]]. destruct p as [v p]. split; split; auto.
+    + clear H0 H3. revert v H2 H1. induction p; intros.
+      - simpl in H1 |-* . auto.
+      - rewrite pfoot_cons in H1 |-* . destruct H as [? [? [? ?]]].
+        assert (strong_evalid g1 a) by (destruct H2; simpl in H5; destruct p; intuition). destruct H5 as [? [? ?]]. assert (dst g1 a = dst g2 a) by (apply H4; auto).
+        rewrite <- H8. apply IHp; auto. apply valid_path_cons in H2. auto.
+    + apply is_partial_graph_valid_path with g1; auto.
+    + destruct p; simpl in H3 |-* ; auto. unfold path_prop' in H3 |-* . rewrite Forall_forall in H3 |-* . intros. specialize (H3 _ H4).
+      destruct H as [? [? [? ?]]]. pose proof (valid_path_strong_evalid _ _ _ _ H2 H4). destruct H8 as [? [? ?]].
+      assert (src g1 x = src g2 x) by (apply H6; auto). assert (dst g1 x = dst g2 x) by (apply H7; auto). rewrite <- H11. rewrite <- H12. auto.
   Qed.
 
   Lemma is_partial_graph_reachable_by: forall (g1 g2: PreGraph V E) (n: V) (P: Ensemble V) (n': V),
@@ -499,34 +468,57 @@ Context {V E: Type}.
 Context {EV: EqDec V eq}.
 Context {EE: EqDec E eq}.
 
-Lemma ppg_reachable_by_path_eq: forall (g1 g2 : PreGraph V E) (P Q: V -> Prop) (p: @path V) (a b: V),
-    (predicate_partialgraph g1 P) ~=~ (predicate_partialgraph g2 P) ->
-    (forall v, In v p -> P v) -> (g1 |= p is a ~o~> b satisfying Q <-> g2 |= p is a ~o~> b satisfying Q).
+Lemma ppg_valid_path: forall (g: PreGraph V E) (P: V -> Prop) (p: @path V E), (valid_path g p /\ (forall v, In_path g v p -> P v)) <-> valid_path (predicate_partialgraph g P) p.
 Proof.
-  cut (forall (g1 g2 : PreGraph V E) (P Q: V -> Prop) (p: @path V) (a b: V),
-          (predicate_partialgraph g1 P) ~=~ (predicate_partialgraph g2 P) ->
-          (forall v, In v p -> P v) -> g1 |= p is a ~o~> b satisfying Q -> g2 |= p is a ~o~> b satisfying Q); intros.
-  + split; intro; [apply (H g1 g2 P) | apply (H g2 g1 P)]; auto. symmetry; auto.
-  + destruct H1 as [? [? ?]]. do 2 (split; auto). clear H1 H3. induction p; simpl; auto.
-    assert (vvalid g1 a0) by (simpl in H2; destruct p; [|destruct H2 as [[? _] _]]; auto).
-    assert (forall v, In v (a0 :: p) -> vvalid g2 v). {
-      intros. apply valid_path_valid in H2. rewrite Forall_forall in H2.
-      specialize (H0 _ H3). specialize (H2 _ H3). destruct H as [? _].
-      simpl in H. unfold predicate_vvalid in H. specialize (H v).
-      assert (vvalid g1 v /\ P v) by (split; auto; apply H0, in_eq).
-      rewrite H in H4. destruct H4; auto.
-    }
-    assert (vvalid g2 a0) by apply H3, in_eq.
-    destruct p; auto. destruct H2. split; [split; [|split]|]; auto.
-    - apply H3, in_cons, in_eq.
-    - destruct H2 as [_ [_ ?]]. rewrite step_spec in H2 |- * .
-      destruct H2 as [e [? [? ?]]]. exists e.
-      hnf in H. simpl in H. unfold predicate_weak_evalid in H. destruct H as [_ [? [? ?]]].
-      specialize (H e). specialize (H8 e). specialize (H9 e). rewrite H6 in *.
-      assert (evalid g1 e /\ P a0) by (split; auto; apply H0, in_eq).
-      rewrite <- H9; intuition.
-    - apply IHp; auto. intros. apply H0, in_cons; auto.
+  intros g P p. destruct p as [v p]. revert v. induction p; intros; split; intros.
+  + destruct H. simpl in *. split; auto. apply H0. unfold In_path. left; simpl; auto.
+  + simpl in H. destruct H. simpl. split; auto. intros. unfold In_path in H1. simpl in H1.
+    destruct H1. 1: subst; auto. destruct H1 as [e [? ?]]. exfalso; auto.
+  + destruct H. rewrite valid_path_cons_iff in H |-* . destruct H as [? [? ?]]. split; [|split].
+    - simpl. auto.
+    - unfold strong_evalid. simpl. unfold predicate_vvalid. unfold predicate_weak_evalid. destruct H1 as [? [? ?]].
+      assert (In_path g (src g a) (v, a :: p)) by (right; exists a; split; [apply in_eq | left; auto]). apply H0 in H5.
+      assert (In_path g (dst g a) (v, a :: p)) by (right; exists a; split; [apply in_eq | right; auto]). apply H0 in H6. intuition.
+    - change (dst (predicate_partialgraph g P) a) with (dst g a). apply IHp. split; auto. intros. apply H0.
+      apply (in_path_or_cons _ _ _ p v0) in H. rewrite H. right; auto.
+  + rewrite valid_path_cons_iff in H. destruct H as [? [? ?]]. change (dst (predicate_partialgraph g P) a) with (dst g a) in H1. simpl in H.
+    rewrite <- IHp in H1. destruct H1. hnf in H0. simpl in H0. unfold predicate_weak_evalid, predicate_vvalid in H0. destruct H0 as [[? _] [[? ?] [? ?]]]. split.
+    - rewrite valid_path_cons_iff. unfold strong_evalid. split; auto.
+    - intros. pose proof (in_path_or_cons _ _ _ p v0 H). rewrite H8 in H7. clear H8. destruct H7. 1: subst; auto. apply H2; auto.
 Qed.
+
+Lemma ppg_reachable_by_path_same: forall (g : PreGraph V E) (P Q: V -> Prop) (p: @path V E) (a b: V),
+    ((forall v, In_path g v p -> P v) /\ g |= p is a ~o~> b satisfying Q) <-> (predicate_partialgraph g P) |= p is a ~o~> b satisfying Q.
+Proof.
+  intros. split; intros.
+  + destruct H. destruct H0 as [[? ?] [? ?]]. split; split; auto. 2: rewrite <- ppg_valid_path; split; auto.
+    destruct p as [v p]. clear H H0 H2 H3. revert v H1. induction p; intros. 1: simpl in *. auto.
+    rewrite pfoot_cons in H1 |-* . change (dst (predicate_partialgraph g P) a0) with (dst g a0). apply IHp. auto.
+  + destruct H as [[? ?] [? ?]]. rewrite <- ppg_valid_path in H1. destruct H1. split; auto. split; split; auto.
+    clear H H1 H3 H2. destruct p as [v p]. revert v H0. induction p; intros. 1: simpl in *; auto.
+    rewrite pfoot_cons in H0 |-* . apply IHp. apply H0.
+Qed.
+
+Lemma ppg_reachable_by_path_to: forall (g1 g2 : PreGraph V E) (P Q: V -> Prop) (p: @path V E) (a b: V),
+    (predicate_partialgraph g1 P) ~=~ (predicate_partialgraph g2 P) ->
+    (forall v, In_path g1 v p -> P v) -> g1 |= p is a ~o~> b satisfying Q -> g2 |= p is a ~o~> b satisfying Q.
+Proof.
+  intros. assert ((predicate_partialgraph g1 P) |= p is a ~o~> b satisfying Q) by (rewrite <- ppg_reachable_by_path_same; split; auto).
+  rewrite (reachable_by_path_si _ _ _ _ _ _ H) in H2. rewrite <- ppg_reachable_by_path_same in H2. destruct H2; auto.
+Qed.
+
+Lemma ppg_reachable_by_path_eq: forall (g1 g2 : PreGraph V E) (P Q: V -> Prop) (p: @path V E) (a b: V),
+    (predicate_partialgraph g1 P) ~=~ (predicate_partialgraph g2 P) ->
+    (forall v, In_path g1 v p -> P v) -> (g1 |= p is a ~o~> b satisfying Q <-> g2 |= p is a ~o~> b satisfying Q).
+Proof.
+  cut (forall (g1 g2 : PreGraph V E) (P Q: V -> Prop) (p: @path V E) (a b: V),
+          (predicate_partialgraph g1 P) ~=~ (predicate_partialgraph g2 P) ->
+          (forall v, In_path g2 v p -> P v) -> g1 |= p is a ~o~> b satisfying Q -> g2 |= p is a ~o~> b satisfying Q); intros.
+  + split; intro; [apply (H g1 g2 P) | apply (H g2 g1 P)]; auto. 2: symmetry; auto.
+    assert (valid_path (predicate_partialgraph g1 P) p) by (rewrite <- ppg_valid_path; split; [destruct H2 as [_ [? _]] |]; auto).
+    rewrite (valid_path_si _ _ H0) in H3. rewrite <- ppg_valid_path in H3. destruct H3; auto.
+  + destruct H1 as [[? ?] [? ?]]. split; split; auto; clear H1.
+Abort.
 
 Lemma partial_partialgraph: forall p1 p2 (g: PreGraph V E),
   (predicate_partialgraph (predicate_partialgraph g p1) p2) ~=~ 
