@@ -301,6 +301,17 @@ Proof.
   destruct_eq_dec e (left_out_edge x); [left | right]; tauto.
 Qed.
 
+Lemma biGraph_out_edges (pg: PreGraph Vertex Edge) (bi: BiGraph pg left_out_edge right_out_edge): forall x e, vvalid pg x -> (In e (left_out_edge x :: right_out_edge x :: nil) <-> out_edges pg x e).
+Proof.
+  intros.
+  unfold out_edges.
+  simpl.
+  pose proof only_two_edges pg x e.
+  assert (left_out_edge x = e -> evalid pg e) by (pose proof left_valid pg x H; intros; subst; auto).
+  assert (right_out_edge x = e -> evalid pg e) by (pose proof right_valid pg x H; intros; subst; auto).
+  firstorder.
+Qed.
+
 Definition biEdge (pg : PreGraph Vertex Edge) {bi: BiGraph pg left_out_edge right_out_edge} (v: Vertex) : Vertex * Vertex := (dst pg (left_out_edge v), dst pg (right_out_edge v)).
 
 Lemma biEdge_only2 (pg : PreGraph Vertex Edge) {bi: BiGraph pg left_out_edge right_out_edge} :

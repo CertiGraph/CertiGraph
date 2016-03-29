@@ -953,6 +953,16 @@ Proof.
   + exfalso; auto.
 Qed.
 
+Lemma reachable_by_through_nil': forall g P, Same_set (reachable_by_through_set g nil P) (Empty_set _).
+Proof.
+  intros.
+  rewrite Same_set_spec; intro n'.
+  pose proof Empty_set_iff V n'.
+  unfold Ensembles.In in H.
+  rewrite H.
+  apply reachable_by_through_nil.
+Qed.
+
 Lemma reachable_by_through_singleton:
   forall g P n1 n2, reachable_by_through_set g (n1 :: nil) P n2 <-> g |= n1 ~o~> n2 satisfying P.
 Proof.

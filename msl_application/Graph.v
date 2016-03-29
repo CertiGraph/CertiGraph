@@ -27,6 +27,7 @@ Class SpatialGraph (V E: Type) {VE: EqDec V eq} {EE: EqDec E eq} (DV DE: Type): 
   egamma: E -> DE
 }.
 
+Arguments pg_sg {V E _ _ DV DE} _.
 Arguments vgamma {V E _ _ DV DE} _ _.
 Arguments egamma {V E _ _ DV DE} _ _.
 
@@ -54,6 +55,12 @@ Class SpatialGraphAssum {V E DV DE Pred: Type} (SGP: SpatialGraphPred V E DV DE 
 }.
 
 Existing Instances SGP_ND SGP_SL SGP_ClSL SGP_CoSL.
+
+Class SpatialGraphAssum_vs {V E DV DE Pred: Type} (SGP: SpatialGraphPred V E DV DE Pred) {SGBA: SpatialGraphBasicAssum V E} {SGA: SpatialGraphAssum SGP} :=
+  vertex_at_sep: sepcon_unique2 (@vertex_at _ _ _ _ _ SGP).
+
+Class SpatialGraphAssum_es {V E DV DE Pred: Type} (SGP: SpatialGraphPred V E DV DE Pred) {SGBA: SpatialGraphBasicAssum V E} {SGA: SpatialGraphAssum SGP} :=
+  edge_at_sep: sepcon_unique2 (@edge_at _ _ _ _ _ SGP).
 
 Instance AAV {V E DV DE Pred: Type} (SGP: SpatialGraphPred V E DV DE Pred) {SGBA: SpatialGraphBasicAssum V E} : AbsAddr V DV.
   apply (mkAbsAddr V DV (fun x y => if equiv_dec x y then true else false)); simpl; intros.
@@ -734,19 +741,17 @@ Proof.
     auto.
 Qed.
 
-Lemma sepcon_unique_graph_vcell:
-  sepcon_unique2 (@vertex_at _ _ _ _ _ SGP) ->
+Lemma sepcon_unique_graph_vcell {SGA_vs: SpatialGraphAssum_vs SGP}:
   sepcon_unique1 graph_vcell.
 Proof.
-  unfold sepcon_unique1, sepcon_unique2, graph_vcell.
-  intros.
+  pose proof vertex_at_sep.
+  unfold sepcon_unique1, sepcon_unique2, graph_vcell in *.
   simpl.
   intros.
   apply H.
 Qed.
 
-Lemma vertex_at_sepcon_unique_x1: forall (g: Graph) x P d,
-  sepcon_unique2 (@vertex_at _ _ _ _ _ SGP) ->
+Lemma vertex_at_sepcon_unique_x1 {SGA_vs: SpatialGraphAssum_vs SGP}: forall (g: Graph) x P d,
   vertices_at P g * vertex_at x d |-- !! (~ P x).
 Proof.
   intros.
@@ -754,12 +759,11 @@ Proof.
   eapply derives_trans; [apply sepcon_derives; [apply pred_sepcon_prop_true; eauto | apply derives_refl] |].
   unfold graph_vcell.
   rewrite sepcon_comm, <- sepcon_assoc.
-  eapply derives_trans; [apply sepcon_derives; [apply H | apply derives_refl] |].
+  eapply derives_trans; [apply sepcon_derives; [apply vertex_at_sep | apply derives_refl] |].
   normalize.
 Qed.
 
-Lemma vertex_at_sepcon_unique_1x: forall (g: Graph) x P d,
-  sepcon_unique2 (@vertex_at _ _ _ _ _ SGP) ->
+Lemma vertex_at_sepcon_unique_1x {SGA_vs: SpatialGraphAssum_vs SGP}: forall (g: Graph) x P d,
   vertex_at x d * vertices_at P g |-- !! (~ P x).
 Proof.
   intros.
@@ -767,8 +771,7 @@ Proof.
   apply vertex_at_sepcon_unique_x1; auto.
 Qed.
 
-Lemma vertex_at_sepcon_unique_xx: forall (g1 g2: Graph) P1 P2,
-  sepcon_unique2 (@vertex_at _ _ _ _ _ SGP) ->
+Lemma vertex_at_sepcon_unique_xx {SGA_vs: SpatialGraphAssum_vs SGP}: forall (g1 g2: Graph) P1 P2,
   vertices_at P1 g1 * vertices_at P2 g2 |-- !! Disjoint _ P1 P2.
 Proof.
   intros.
@@ -783,7 +786,7 @@ Proof.
   rewrite sepcon_assoc, (sepcon_comm TT), !sepcon_assoc.
   rewrite TT_sepcon_TT, <- sepcon_assoc.
   unfold graph_vcell.
-  eapply derives_trans; [apply sepcon_derives; [apply H | apply derives_refl] |].
+  eapply derives_trans; [apply sepcon_derives; [apply vertex_at_sep | apply derives_refl] |].
   normalize.
 Qed.
 
@@ -819,8 +822,7 @@ Proof.
   apply reachable_head_valid in H4; auto.
 Qed.
 
-Lemma dag_unfold: forall (g: Graph) x S,
-  sepcon_unique2 (@vertex_at _ _ _ _ _ SGP) ->
+Lemma dag_unfold {SGA_vs: SpatialGraphAssum_vs SGP}: forall (g: Graph) x S,
   vvalid g x ->
   step_list g x S ->
   dag x g = vertex_at x (vgamma g x) * dags' S g.
@@ -832,7 +834,7 @@ Proof.
     - apply prop_right.
       rewrite Forall_forall; intros.
       eapply local_dag_step; eauto.
-      rewrite (H1 x0) in H3; auto.
+      rewrite (H0 x0) in H2; auto.
     - erewrite localDag_vertices_unfold by eauto.
       auto.
   + assert (vertex_at x (vgamma g x) * vertices_at (reachable_through_set g S) g
@@ -840,13 +842,12 @@ Proof.
     - eapply derives_trans; [apply vertex_at_sepcon_unique_1x; auto |].
       apply prop_derives; intro.
       eapply localDag_step_rev; eauto.
-    - rewrite (add_andp _ _ H3); normalize.
+    - rewrite (add_andp _ _ H2); normalize.
       erewrite localDag_vertices_unfold by eauto.
       auto.
 Qed.
 
-Lemma dag_vgen: forall (g: Graph) x S d,
-  sepcon_unique2 (@vertex_at _ _ _ _ _ SGP) ->
+Lemma dag_vgen {SGA_vs: SpatialGraphAssum_vs SGP}: forall (g: Graph) x S d,
   vvalid g x ->
   step_list g x S ->
   dag x (spatialgraph_vgen g x d) = vertex_at x d * dags' S g.
@@ -856,8 +857,8 @@ Proof.
   unfold dags'.
   normalize.
   f_equal.
-  rewrite (add_andp _ _ (vertex_at_sepcon_unique_1x _ _ _ _ H)).
-  rewrite (add_andp _ _ (vertex_at_sepcon_unique_1x _ _ _ d H)).
+  rewrite (add_andp _ _ (vertex_at_sepcon_unique_1x _ _ _ _)).
+  rewrite (add_andp _ _ (vertex_at_sepcon_unique_1x _ _ _ d)).
   rewrite !(andp_comm _ (!! _)).
   apply andp_prop_ext; [reflexivity |].
   intros.
@@ -868,10 +869,10 @@ Proof.
   simpl.
   destruct_eq_dec x v; [exfalso | auto].
   subst v.
-  simpl in H4; clear H3.
-  destruct H4 as [? [y [? ?]]].
-  simpl in H2.
-  apply H2.
+  simpl in H3; clear H2.
+  destruct H3 as [? [y [? ?]]].
+  simpl in H1.
+  apply H1.
   exists y; split; auto.
 Qed.
 

@@ -66,7 +66,7 @@ Definition copy (M: V -> Prop) root (g1 g2: Graph) (g2': Graph') :=
   guarded_pointwise_relation (Complement _ PE) eq (emap g1) (emap g2) /\
   Same_set (vvalid g2') (image_set PV (vmap g2)) /\
   Same_set (evalid g2') (image_set PE (emap g2)) /\
-  (forall e, PE e -> ~ PV (dst g2 e) -> vmap g2 (dst g2 e) = dst g2' (emap g2 e)) /\
+  boundary_dst_consistent PE (Complement _ PV) (vmap g2) (emap g2) g2 g2' /\
   guarded_bij PV PE (vmap g2) (emap g2) g2 g2'.
 
 Definition extended_copy (M: V -> Prop) root (p1 p2: Graph * Graph') :=
@@ -92,7 +92,37 @@ Definition edge_copy (g: Graph) (root: V) (M: V -> Prop) (l: list E * E) :=
 Definition edge_copy_list (g: Graph) (root: V) es (P: V -> Prop) :=
   relation_list (map (edge_copy g root P) (cprefix es)).
 
-Instance extended_copy_proper: Proper (Same_set ==> eq ==> same_relation (Graph * Graph')) extended_copy.
+Instance copy_proper: Proper (Same_set ==> eq ==> eq ==> eq ==> eq ==> iff) copy.
+Proof.
+  hnf; intros M1 M2 ?.
+  hnf; intros root root' ?; subst root'.
+  hnf; intros g1 g1_ ?; subst g1_.
+  hnf; intros g2 g2_ ?; subst g2_.
+  hnf; intros g2' g2'_ ?; subst g2'_.
+  unfold copy.
+  rewrite H.
+  tauto.
+Qed.
+Global Existing Instance copy_proper.
+
+Instance extended_copy_proper: Proper (Same_set ==> eq ==> eq ==> eq ==> iff) extended_copy.
+Proof.
+  hnf; intros M1 M2 ?.
+  hnf; intros root root' ?; subst root'.
+  intros [g1 g1'] ? ? [g2 g2'] ? ?; subst.
+  unfold extended_copy.
+  rewrite H.
+  assert ((forall v : V, M1 v \/ ~ M1 v) <-> (forall v : V, M2 v \/ ~ M2 v)).
+  Focus 1. {
+    rewrite Same_set_spec in H.
+    hnf in H; clear - H.
+    firstorder.
+  } Unfocus.
+  tauto.
+Qed.
+Global Existing Instance extended_copy_proper.
+
+Instance extended_copy_proper': Proper (Same_set ==> eq ==> same_relation (Graph * Graph')) extended_copy.
 Proof.
   hnf; intros M1 M2 ?.
   hnf; intros root root' ?; subst root'.
@@ -108,7 +138,7 @@ Proof.
   } Unfocus.
   tauto.
 Qed.
-Global Existing Instance extended_copy_proper.
+Global Existing Instance extended_copy_proper'.
 
 Lemma triple_vcopy1: forall (g1 g2: Graph) root,
   vvalid g1 root ->
@@ -1351,7 +1381,7 @@ Proof.
   + auto.
   + rewrite H3. tauto.
   + rewrite H5. tauto.
-  + intros.
+  + hnf; intros.
     rewrite (H5 e) in H6.
     apply PRE1; auto.
     generalize (dst g1 e), H7.
