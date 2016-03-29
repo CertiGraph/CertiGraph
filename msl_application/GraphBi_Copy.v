@@ -34,6 +34,16 @@ Section SpatialGraph_Copy_Bi.
 
 Context {pSGG_Bi: pSpatialGraph_Graph_Bi}.
 Context {sSGG_Bi: sSpatialGraph_Graph_Bi addr (addr * LR)}.
+
+Existing Instances pSGG_Bi sSGG_Bi.
+
+Local Coercion Graph_LGraph: Graph >-> LGraph.
+Local Coercion LGraph_SGraph: LGraph >-> SGraph.
+Local Coercion SGraph_PGraph: SGraph >-> PGraph.
+Local Identity Coercion Graph_GeneralGraph: Graph >-> GeneralGraph.
+Local Identity Coercion LGraph_LabeledGraph: LGraph >-> LabeledGraph.
+Local Identity Coercion SGraph_SpatialGraph: SGraph >-> SpatialGraph.
+Local Identity Coercion PGraph_PreGraph: PGraph >-> PreGraph.
 Notation Graph := (@Graph pSGG_Bi addr (addr * LR)).
 
 Instance MGS: WeakMarkGraph.MarkGraphSetting addr.
@@ -149,23 +159,65 @@ Proof.
       apply reachable_foot_valid in H6; auto.
 Qed.
 
-Set Printing All.
-Check GraphBi.Graph_SpatialGraph.
-Print GraphBi.Graph.
-Lemma extend_copy_left: forall (g g1 g2 g2': Graph) (x l r: addr),
-  let g1': LabeledGraph addr (addr * LR) addr (addr * LR) := single_vertex_labeledgraph (LocalGraphCopy.vmap g1 x) null (null, L) in
+Lemma extend_copy_left: forall (g g1 g2 g2': Graph) (x l r: addr) dx',
+  let g1': LGraph := single_vertex_labeledgraph (LocalGraphCopy.vmap g1 x) null (null, L) in
   let x' := (LocalGraphCopy.vmap g1 x) in
   let l' := (LocalGraphCopy.vmap g2 l) in
   vvalid g x ->
   vgamma g x = (null, l, r) ->
   vcopy1 x g g1 ->
-  copy l g1 g2 g2' ->
-  graph  g2' l' * graph_vcell (@GraphBi.Graph_SpatialGraph pSGG_Bi
-                              (@addr pSGG_Bi) (prod (@addr pSGG_Bi) LR) g1') x' |-- 
-  EX g2'': Graph,
-    !! extended_copy l (lg_gg g1, g1') (lg_gg g2, lg_gg g2') && 
-    full_vertices_at (LocalGraphCopy.vmap g2 l) g2''.
-Abort.
+  copy l g1 g2 g2' -> 
+  (full_vertices_at g2': pred) * vertex_at x' dx' |-- 
+  EX g2'': LGraph,
+    !! extended_copy l (g1: LGraph, g1') (g2: LGraph, g2'') && 
+    (vertices_at (fun x => x' <> x) g2'' * vertex_at x' dx').
+Proof.
+  intros.
+  pose proof WeakMarkGraph.triple_mark1 x g g g1 as HH1.
+  spec HH1; [apply WeakMarkGraph.eq_do_nothing; auto |].
+  spec HH1; [destruct H1 as [? [? ?]]; auto |].
+  cbv zeta in HH1; destruct HH1 as [_ HH1].
+  pose proof LocalGraphCopy.copy_extend_copy g g1 g2 g1' g2' x
+    ((x, L):: (x,R) :: nil) nil (x, L) ((x, R) :: nil) (WeakMarkGraph.marked g) as HH2.
+  spec HH2; [auto |].
+  spec HH2; [simpl in H0 |- *; unfold gamma in H0; inversion H0; congruence |].
+  spec HH2; [intros; apply (@biGraph_out_edges _ _ _ _ _ _ g (biGraph g)); auto |].
+  spec HH2; [simpl; repeat constructor; simpl; [clear; intros [HH | []]; inversion HH | tauto] |].
+  spec HH2; [reflexivity |].
+  spec HH2; [intros; apply decidable_prop_decidable; apply node_pred_dec |].
+  hnf in HH2.
+  spec HH2; [simpl map; rewrite <- HH1; destruct H2 as [_ [_ ?]]; inversion H0; rewrite H5; exact H2 |].
+  unfold full_vertices_at.
+  rewrite (add_andp _ _ (vertex_at_sepcon_unique_x1 g2' x' (vvalid g2') dx')).
+  normalize.
+  spec HH2.
+  Focus 1. {
+    clear HH2.
+    split.
+    + simpl in x' |- *.
+      rewrite Disjoint_spec.
+      intros; subst.
+      subst x'; tauto.
+    + simpl.
+      rewrite Disjoint_spec.
+      auto.
+  } Unfocus.
+  spec HH2.
+  Focus 1. {
+    clear HH2.
+    intros.
+    simpl map.
+    rewrite <- (app_same_set HH1).
+    apply decidable_prop_decidable; apply node_pred_dec.
+  } Unfocus.
+  destruct HH2 as [g2'' [? [? ?]]]; apply (exp_right g2'').
+  apply andp_right.
+  + apply prop_right.
+    split; [| split]; destruct H2 as [? [? ?]]; auto.
+    simpl map in H4; rewrite <- HH1 in H4.
+    inversion H0; auto.
+  + apply sepcon_derives.
+
 (*
 Lemma graph_ramify_right: forall {RamUnit: Type} (g g1 g2: Graph) x l r,
   vvalid g x ->

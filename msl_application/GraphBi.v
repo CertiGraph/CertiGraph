@@ -35,10 +35,11 @@ Existing Instance SGBA.
 
 Class sSpatialGraph_Graph_Bi {pSGG_Bi: pSpatialGraph_Graph_Bi} (DV DE: Type): Type := {
   SGP: SpatialGraphPred addr (addr * LR) (DV * addr * addr) unit pred;
-  SGA: SpatialGraphAssum SGP
+  SGA: SpatialGraphAssum SGP;
+  SGAv: SpatialGraphAssum_vs SGP
 }.
 
-Existing Instances SGP SGA.
+Existing Instances SGP SGA SGAv.
 
 Section GRAPH_BI.
 
