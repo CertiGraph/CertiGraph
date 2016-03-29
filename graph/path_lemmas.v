@@ -187,6 +187,12 @@ Proof.
   + destruct H0; auto.
 Qed.
 
+Lemma valid_path_tail: forall g p, valid_path g p -> valid_path g (ptail g p).
+Proof.
+  intros. destruct p as [v p]. destruct p; unfold ptail; auto.
+  apply valid_path_cons with v; auto.
+Qed.
+
 Lemma valid_path_split: forall g p1 p2, paths_meet g p1 p2 -> valid_path g (p1 +++ p2) -> valid_path g p1 /\ valid_path g p2.
 Proof.
   intros g p1. destruct p1 as [v1 p1]. revert v1.
@@ -344,6 +350,21 @@ Proof.
       apply Subpath_trans with (v2, p2); auto.
 Qed.
 
+Lemma valid_path_edge: forall (g: Gph) v e p, valid_path g (v, e :: p) -> g |= v ~> (dst g e).
+Proof.
+  intros. destruct H. assert (strong_evalid g e) by (simpl in H0; destruct p; intuition).
+  destruct H1 as [? [? ?]]. hnf. subst v. do 2 (split; auto).
+  rewrite step_spec. exists e. auto.
+Qed.
+
+Lemma valid_path_cons_iff: forall g v e p, valid_path g (v, e :: p) <-> v = src g e /\ strong_evalid g e /\ valid_path g (dst g e, p).
+Proof.
+  intros. split; intros.
+  + pose proof (valid_path_cons _ _ _ _ H). destruct H. subst v.
+    do 2 (split; auto). simpl in H1. destruct p; intuition.
+  + destruct H as [? [? ?]]. simpl in *. split; auto. destruct p; auto.
+Qed.
+
 Lemma path_prop_weaken: forall g (P1 P2 : Ensemble V) p,
   (forall d, P1 d -> P2 d) -> path_prop g P1 p -> path_prop g P2 p.
 Proof.
@@ -441,6 +462,9 @@ Proof.
   destruct H0 as [p' [? [? [? ?]]]]. exists p'. do 3 (split; trivial).
   apply path_prop_subpath with p; trivial.
 Qed.
+
+Lemma good_path_tail: forall (g: Gph) P p, good_path g P p -> good_path g P (ptail g p).
+Proof. intros. destruct H. split; [apply valid_path_tail | apply path_prop_tail]; auto. Qed.
 
 Lemma reachable_by_is_reachable (g: Gph): forall n1 n2 P, g |= n1 ~o~> n2 satisfying P -> reachable g n1 n2.
 Proof.
@@ -570,6 +594,15 @@ Proof.
   intros g v p. revert v. induction p; intros. 1: inversion H0. simpl in H0. destruct H0.
   + subst. destruct H. simpl in H0. destruct p; intuition.
   + apply valid_path_cons in H. specialize (IHp _ _ H H0). auto.  
+Qed.
+
+Lemma In_path_si: forall (g1 g2: Gph) p x, g1 ~=~ g2 -> valid_path g1 p -> (In_path g1 x p <-> In_path g2 x p).
+Proof.
+  cut (forall g1 g2 p x, g1 ~=~ g2 -> valid_path g1 p -> In_path g1 x p -> In_path g2 x p); intros.
+  + split; intros; [apply H with g1 | apply H with g2]; auto. 1: symmetry; auto. apply valid_path_si with g1; auto. symmetry; auto.
+  + destruct p as [v p]. unfold In_path in *. simpl in H1 |-* . destruct H1; [left | right]; auto.
+    destruct H1 as [e [? ?]]. exists e. split; auto. destruct (valid_path_strong_evalid _ _ _ _ H0 H1) as [? [? ?]]. destruct H as [? [? [? ?]]]. specialize (H6 e).
+    assert (src g1 e = src g2 e) by (apply H7; intuition). assert (dst g1 e = dst g2 e) by (apply H8; intuition). rewrite <- H9, <- H10. auto.
 Qed.
 
 Lemma path_prop_si: forall (g1 g2: Gph) P p, g1 ~=~ g2 -> valid_path g1 p -> path_prop g1 P p -> path_prop g2 P p.

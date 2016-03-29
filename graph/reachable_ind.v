@@ -70,33 +70,15 @@ Context (G : PreGraph V E).
 Lemma reachable_ind_reachable: forall x y, reachable G x y <-> ind.reachable G x y.
 Proof.
   intros; split; intros.
-  + destruct H as [p [? ?]].
-    destruct p; [inversion H; inversion H1 |].
-    inversion H; inversion H1; subst; clear H1.
-    revert x H H0 H2; induction p; intros.
-    - inversion H; inversion H1; inversion H2.
-      subst; subst.
-      apply ind.reachable_nil.
-      destruct H0; simpl in H0; auto.
-    - destruct H0.
-      apply ind.reachable_cons with a.
-      * simpl in H0. tauto.
-      * apply IHp.
-        1: split; auto.
-        1: split; [exact (proj2 H0) | unfold path_prop; rewrite Forall_forall; intros; auto].
-        1: simpl in H2; auto.
+  + destruct H as [[v p] [[? ?] ?]].
+    simpl in H. subst. revert x H1. induction p; intros.
+    - destruct H1. simpl in *. apply ind.reachable_nil. auto.
+    - pose proof (good_path_tail _ _ _ H1). unfold ptail in H. specialize (IHp _ H).
+      rewrite pfoot_cons. apply ind.reachable_cons with (dst G a); auto.
+      clear H. destruct H1 as [? _]. apply valid_path_edge with p; auto.
   + induction H.
-    - exists (x :: nil).
-      split; [split; auto |].
-      split; [simpl; auto | unfold path_prop; rewrite Forall_forall; intros; auto].
-    - destruct IHreachable as [p [? ?]].
-      exists (x :: p).
-      split.
-      * destruct H1; split; auto.
-        destruct p; simpl in H3 |- *; congruence.
-      * destruct H2; split.
-        1: destruct p; inversion H1; inversion H4; simpl in H2 |- *; subst; tauto.
-        1: unfold path_prop; rewrite Forall_forall; intros; auto.
+    - apply reachable_refl; auto.
+    - apply edge_reachable with y; auto.
 Qed.
 
 Lemma reachable_ind2_reachable: forall x y, reachable G x y <-> ind2.reachable G x y.

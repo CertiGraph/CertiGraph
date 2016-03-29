@@ -454,9 +454,8 @@ Section REACHABLE_COMPUTABLE.
       - apply NoDup_nil.
     + apply (compute_reachable x l).
       - auto.
-      - exists (x :: y :: nil). split; split; simpl; auto.
-        * split; auto. split; auto.
-        * hnf; intros; hnf; auto.
+      - apply reachable_edge with x. 1: apply reachable_refl; auto.
+        hnf. auto.
   Qed.
 (*
   Lemma reachable_from_children:
