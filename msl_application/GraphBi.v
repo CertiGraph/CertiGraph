@@ -64,11 +64,15 @@ Definition LGraph := (LabeledGraph addr (addr * LR) DV DE).
 Definition SGraph := (SpatialGraph addr (addr * LR) (DV * addr * addr) unit).
 Definition PGraph := (PreGraph addr (addr * LR)).
 
-Definition gamma (G : LGraph) (v: addr) : DV * addr * addr := 
-  (vlabel G v, dst (pg_lg G) (v, L), dst (pg_lg G) (v, R)).
+Instance SGC_Bi: SpatialGraphConstructor addr (addr * LR) DV DE (DV * addr * addr) unit.
+Proof.
+  refine (Build_SpatialGraphConstructor _ _ _ _ _ _ SGBA _ _).
+  + exact (fun G v => (vlabel G v, dst (pg_lg G) (v, L), dst (pg_lg G) (v, R))).
+  + exact (fun _ _ => tt).
+Defined.
 
 Definition Graph_LGraph (G: Graph): LGraph := lg_gg G.
-Definition LGraph_SGraph (G: LGraph): SGraph := Build_SpatialGraph _ _ _ _ _ _ (pg_lg G) (gamma G) (fun _ => tt).
+Definition LGraph_SGraph (G: LGraph): SGraph := Graph_SpatialGraph G.
 Definition SGraph_PGraph (G: SGraph): PGraph := @pg_sg _ _ _ _ _ _ G.
 
 Local Coercion Graph_LGraph: Graph >-> LGraph.
@@ -209,13 +213,14 @@ Proof.
   intros.
   split; [reflexivity | split; [| auto]].
   simpl in *; intros.
-  unfold gamma in *; simpl in *; unfold update_vlabel.
+  simpl in *; unfold update_vlabel.
   destruct_eq_dec x v; subst.
   + inversion H; subst; f_equal; f_equal.
   + auto.
 Qed.
 
-(* This lemma is not true. They are not even structural identical. *)
+(* TODO: This lemma is not true. They are not even structural identical.
+   But we should change the definition of validly identical or some how fix this. *)
 Lemma Graph_gen_left_null_spatial_spec: forall (G: Graph) (x: addr) (d : DV) l r,
     vgamma G x = (d, l, r) ->
     (Graph_gen_left_null G x) -=- (spatialgraph_vgen G x (d, null, r)).
@@ -225,10 +230,10 @@ Proof.
   + split; [|split; [|split]]; intros; simpl; intuition.
     unfold Graph_gen_left_null in H0. simpl in H0. unfold spatialgraph_vgen in H1. simpl in H1.
     unfold update_dst. destruct_eq_dec (x, L) e; auto. admit.
-  + intros. simpl. unfold Graph_gen_left_null. unfold generalgraph_gen_dst. unfold gamma. simpl.
+  + intros. simpl. unfold Graph_gen_left_null. unfold generalgraph_gen_dst. simpl.
     unfold update_dst. destruct_eq_dec (x, L) (v, L).
     - destruct_eq_dec (x, L) (v, R). inversion H3. inversion H2. destruct_eq_dec v v. 2: exfalso; auto.
-      simpl in H. unfold gamma in H. inversion H; subst; auto.
+      simpl in H. inversion H; subst; auto.
     - destruct_eq_dec (x, L) (v, R). inversion H3. destruct_eq_dec x v.
       * subst. exfalso; auto.
       * auto.
@@ -246,7 +251,7 @@ Qed.
 
 Lemma gamma_step: forall (g : Graph) x (d: DV) (l r: addr), vvalid g x -> vgamma g x = (d, l, r) -> forall y, step g x y <-> y = l \/ y = r.
 Proof.
-  intros. simpl in H0; unfold gamma in H0; inversion H0; subst.
+  intros. simpl in H0; inversion H0; subst.
   rewrite step_spec; split; intros.
   + destruct H1 as [? [? [? ?]]].
     rewrite (only_two_edges g) in H2.
@@ -264,13 +269,10 @@ Lemma gamma_left_weak_valid: forall (g : Graph) x d l r, vvalid g x -> vgamma g 
 Proof.
   intros.
   simpl in H0.
-  assert (snd (fst (gamma g x)) = l) by (rewrite H0; auto).
-  clear H0.
-  unfold gamma in H1; simpl in H1.
+  inversion H0.
   pose proof valid_graph g (x, L).
-  spec H0; [pose proof (left_valid g); auto |].
-  rewrite <- H1.
-  simpl in H0; tauto.
+  spec H1; [pose proof (left_valid g); auto |].
+  tauto.
 Qed.
 Hint Resolve gamma_left_weak_valid : GraphDec.
 
@@ -278,13 +280,10 @@ Lemma gamma_right_weak_valid: forall (g : Graph) x d l r, vvalid g x -> vgamma g
 Proof.
   intros.
   simpl in H0.
-  assert (snd (gamma g x) = r) by (rewrite H0; auto).
-  clear H0.
-  unfold gamma in H1; simpl in H1.
+  inversion H0.
   pose proof valid_graph g (x, R).
-  spec H0; [pose proof (right_valid g); auto |].
-  rewrite <- H1.
-  simpl in H0; tauto.
+  spec H1; [pose proof (right_valid g); auto |].
+  tauto.
 Qed.
 Hint Resolve gamma_right_weak_valid : GraphDec.
 
@@ -348,7 +347,6 @@ Proof.
   split; [| intros; simpl; auto].
   simpl; unfold predicate_vvalid.
   intros.
-  unfold gamma.
   f_equal; [f_equal |].
   + apply H0; tauto.
   + destruct H as [_ [_ [_ ?]]].
@@ -445,7 +443,7 @@ Qed.
 
 (*********************************************************
 
-Spatial Facts Part
+Spatial Facts (with Strong Assumption) Part
 
 *********************************************************)
 

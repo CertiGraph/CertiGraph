@@ -57,7 +57,7 @@ Proof.
   + tauto.
   + symmetry; tauto.
 Qed.
-
+Set Printing All.
 Lemma mark_null_refl: forall (g: Graph), mark null g g.
 Proof. intros. apply mark_invalid_refl, invalid_null. Qed.
 
@@ -138,7 +138,7 @@ Proof.
     rewrite <- H2, <- H1.
     eapply Prop_join_reachable_left; eauto.
   + intros ? [? ?] ? ?.
-    simpl; unfold gamma.
+    simpl.
     rewrite Intersection_spec in H4; unfold Complement, Ensembles.In in H4; destruct H4.
     f_equal; [f_equal |].
     - apply vlabel_eq.
@@ -176,7 +176,7 @@ Proof.
     rewrite <- H3, <- H2, <- H1.
     eapply Prop_join_reachable_right; eauto.
   + intros ? [? ?] ? ?.
-    simpl; unfold gamma.
+    simpl.
     rewrite Intersection_spec in H5; unfold Complement, Ensembles.In in H5; destruct H5.
     f_equal; [f_equal |].
     - apply vlabel_eq.

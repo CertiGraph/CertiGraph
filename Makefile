@@ -29,7 +29,7 @@ VERIC_EXT_FILES = \
   res_predicates.v seplog.v SeparationLogic.v
 
 FLOYD_EXT_FILES = \
-  MapstoSL.v DataatSL.v semax_ram_lemmas.v semax_ram_tac.v exists_trick.v closed_lemmas.v comparable.v ramification.v
+  MapstoSL.v DataatSL.v semax_ram_lemmas.v semax_ram_tac.v exists_trick.v closed_lemmas.v comparable.v ramification.v share.v
 
 HEAP_MODEL_DIRECT_FILES = \
   SeparationAlgebra.v mapsto.v SeparationLogic.v

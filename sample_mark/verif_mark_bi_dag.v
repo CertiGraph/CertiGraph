@@ -15,15 +15,23 @@ Require Import RamifyCoq.data_structure.spatial_graph_aligned_bi_VST.
 
 Local Open Scope logic.
 
+Local Coercion Graph_LGraph: Graph >-> LGraph.
+Local Coercion LGraph_SGraph: LGraph >-> SGraph.
+Local Coercion SGraph_PGraph: SGraph >-> PGraph.
+Local Identity Coercion Graph_GeneralGraph: Graph >-> GeneralGraph.
+Local Identity Coercion LGraph_LabeledGraph: LGraph >-> LabeledGraph.
+Local Identity Coercion SGraph_SpatialGraph: SGraph >-> SpatialGraph.
+Local Identity Coercion PGraph_PreGraph: PGraph >-> PreGraph.
+
 Notation dag sh x g := (@dag _ _ _ _ _ _ (@SGP pSGG_VST bool unit (sSGG_VST sh)) _ x g).
 Notation Graph := (@Graph pSGG_VST bool unit).
 Existing Instances MGS biGraph maGraph finGraph RGF.
 
 Definition mark_spec :=
  DECLARE _mark
-  WITH sh: share, g: Graph, x: pointer_val
+  WITH sh: wshare, g: Graph, x: pointer_val
   PRE [ _x OF (tptr (Tstruct _Node noattr))]
-          PROP  (writable_share sh; weak_valid g x)
+          PROP  (weak_valid g x)
           LOCAL (temp _x (pointer_val_val x))
           SEP   (dag sh x g)
   POST [ Tvoid ]
