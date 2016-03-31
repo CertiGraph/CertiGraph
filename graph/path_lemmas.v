@@ -279,7 +279,7 @@ Lemma epath_to_vpath_phead: forall g p l a, valid_path g p -> epath_to_vpath g p
 Proof.
   intros. destruct p. simpl. destruct l0; simpl in *. inversion H0; auto.
   destruct H. subst v. destruct l0; inversion H0; auto.
-Qed.  
+Qed.
 
 Lemma pfoot_app_cons: forall g v e l1 l2, pfoot g (v, l1 ++ e :: l2) = pfoot g (v, e :: l2).
 Proof.
@@ -393,6 +393,19 @@ Proof.
   + simpl in *. hnf in H. rewrite Forall_forall in H. destruct p.
     - assert (In e (e :: nil)) by apply in_eq. specialize (H _ H0). destruct H; auto.
     - hnf. rewrite Forall_forall. intros. apply H. simpl in *. right; auto.
+Qed.
+
+Lemma path_prop_equiv: forall g P p, valid_path g p -> (path_prop g P p <-> forall n, In_path g n p -> P n).
+Proof.
+  intros. destruct p as [v p]. split; intros.
+  + destruct p; simpl in *.
+    - unfold In_path in H1. simpl in H1. destruct H1. 1: subst; auto. destruct H1 as [e [? ?]]; exfalso; auto.
+    - destruct H as [? _]. subst v. hnf in H0. rewrite Forall_forall in H0. unfold In_path in H1. unfold fst, snd in H1.
+      destruct H1. 1: subst; assert (In e (e :: p)) by apply in_eq; destruct (H0 _ H); auto. destruct H as [e' [? ?]].
+      destruct (H0 _ H). destruct H1; subst; auto.
+  + destruct p; simpl in *.
+    - apply H0. left; auto.
+    - destruct H as [? _]. hnf. rewrite Forall_forall. subst. intros. split; apply H0; right; unfold fst, snd; exists x; split; auto.
 Qed.
 
 Lemma pfoot_in_cons: forall g e p v x, pfoot g (v, e :: p) = x -> exists e', In e' (e :: p) /\ dst g e' = x.
@@ -647,6 +660,19 @@ Proof.
   + simpl in H. subst. left. simpl; auto.
   + apply pfoot_in_cons in H. right. unfold snd. destruct H as [e' [? ?]].
     exists e'. split; auto.
+Qed.
+
+Lemma pfoot_spec: forall g p n, pfoot g p = n <-> p = (n, nil) \/ exists v l e, p = (v, l +:: e) /\ dst g e = n.
+Proof.
+  intros. destruct p as [h p]. revert h. induction p; intros; split; intros.
+  + simpl in H. subst; left; auto.
+  + simpl in *. destruct H. 1: inversion H; auto. destruct H as [? [? [? [? ?]]]]. inversion H. destruct x0; inversion H3.
+  + right. rewrite pfoot_cons in H. rewrite IHp in H. destruct H.
+    - inversion H. subst p. exists h, nil, a. simpl. auto.
+    - destruct H as [v [l [e [? ?]]]]. inversion H. exists h, (a :: l), e. simpl. auto.
+  + destruct H. inversion H. destruct H as [v [l [e [? ?]]]]. rewrite pfoot_cons. rewrite IHp. destruct l.
+    - simpl in H. inversion H. subst. left; auto.
+    - simpl in H. right. exists (dst g a), l, e. inversion H. auto.
 Qed.
 
 (******************************************
@@ -1049,6 +1075,16 @@ Proof.
   + pose proof (valid_path_cons _ _ _ _ H). destruct H as [? _]. specialize (IHp _ H0).
     rewrite epath_to_vpath_cons_eq; auto. rewrite in_path_or_cons; auto. rewrite <- IHp.
     simpl. intuition.
+Qed.
+
+Lemma NoDup_epath_to_vpath_edge: forall g p, valid_path g p -> NoDup (epath_to_vpath g p) -> forall e, In e (snd p) -> src g e <> dst g e.
+Proof.
+  intros g p. destruct p as [v p]. revert v; induction p; intros. 1: simpl in H1; inversion H1. simpl in H1. destruct H1.
+  + subst. simpl in H. destruct H. simpl in H0. destruct p.
+    - apply NoDup_cons_2 in H0. intro. apply H0. rewrite H2. apply in_eq.
+    - destruct H1 as [? [? ?]]. apply NoDup_cons_2 in H0. intro. apply H0. clear H0. rewrite H4. rewrite H2. destruct p; apply in_eq.
+  + rewrite valid_path_cons_iff in H. destruct H as [? [? ?]]. rewrite epath_to_vpath_cons_eq in H0; auto. unfold snd in IHp.
+    apply IHp with (dst g a); auto. apply NoDup_cons_1 in H0. auto.
 Qed.
 
 Lemma reachable_by_ind: forall (g: Gph) x y P,
