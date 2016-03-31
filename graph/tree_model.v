@@ -335,7 +335,7 @@ Section TREE_DEF.
         assert (forall x : Vertex, False -> exists v : Vertex, False /\ reachable G v x) by (intros; exfalso; auto). specialize (H2 H3 H4). clear H4.
         remember (to_tree_list lim l (0, nil)). destruct p as [total sub_trees]. simpl in *. constructor.
         - intro. specialize (H2 _ H4). destruct H2 as [v [? ?]]. assert (reachable G root root) by (apply reachable_refl; auto). specialize (H1 _ H6).
-          destruct H1 as [p [? ?]]. assert (G |= (root :: nil) is root ~o~> root satisfying (fun _ => True)) by (split; split; simpl; hnf; auto). pose proof (H7 _ H8).
+          destruct H1 as [p [? ?]]. assert (G |= (root, nil) is root ~o~> root satisfying (fun _ => True)) by (split; split; simpl; hnf; auto). pose proof (H7 _ H8).
           destruct H5 as [path ?]. assert (G |= (root :: path) is root ~o~> root satisfying (fun _ => True)). {
             destruct H5 as [[? ?] [? _]]. split; split. 1: simpl; auto.
             + simpl. destruct path; auto.
