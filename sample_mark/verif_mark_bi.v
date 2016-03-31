@@ -14,15 +14,24 @@ Require Import RamifyCoq.msl_application.GraphBi_Mark.
 Require Import RamifyCoq.data_structure.spatial_graph_aligned_bi_VST.
 
 Local Open Scope logic.
+
+Local Coercion Graph_LGraph: Graph >-> LGraph.
+Local Coercion LGraph_SGraph: LGraph >-> SGraph.
+Local Coercion SGraph_PGraph: SGraph >-> PGraph.
+Local Identity Coercion Graph_GeneralGraph: Graph >-> GeneralGraph.
+Local Identity Coercion LGraph_LabeledGraph: LGraph >-> LabeledGraph.
+Local Identity Coercion SGraph_SpatialGraph: SGraph >-> SpatialGraph.
+Local Identity Coercion PGraph_PreGraph: PGraph >-> PreGraph.
+
 Notation graph sh x g := (@graph _ _ _ _ _ _ (@SGP pSGG_VST bool unit (sSGG_VST sh)) _ x g).
 Notation Graph := (@Graph pSGG_VST bool unit).
 Existing Instances MGS biGraph maGraph finGraph RGF.
 
 Definition mark_spec :=
  DECLARE _mark
-  WITH sh: share, g: Graph, x: pointer_val
+  WITH sh: wshare, g: Graph, x: pointer_val
   PRE [ _x OF (tptr (Tstruct _Node noattr))]
-          PROP  (writable_share sh; weak_valid g x)
+          PROP  (weak_valid g x)
           LOCAL (temp _x (pointer_val_val x))
           SEP   (graph sh x g)
   POST [ Tvoid ]
@@ -94,7 +103,7 @@ Proof.
   apply -> ram_seq_assoc. 
   eapply semax_ram_seq;
     [ repeat apply eexists_add_stats_cons; constructor
-    | load_tac 
+    | load_tac
     | abbreviate_semax_ram].
   (* root_mark = x -> m; *)
 
@@ -138,14 +147,14 @@ Proof.
   apply -> ram_seq_assoc. 
   eapply semax_ram_seq;
     [ repeat apply eexists_add_stats_cons; constructor
-    | load_tac 
+    | load_tac
     | abbreviate_semax_ram].
   (* l = x -> l; *)
 
   apply -> ram_seq_assoc.
   eapply semax_ram_seq;
     [ repeat apply eexists_add_stats_cons; constructor
-    | load_tac 
+    | load_tac
     | abbreviate_semax_ram].
   (* r = x -> r; *)
 

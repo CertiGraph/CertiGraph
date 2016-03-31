@@ -10,12 +10,21 @@ Require Import RamifyCoq.msl_application.GraphBi.
 Require Import RamifyCoq.msl_application.GraphBi_Mark.
 Require Import RamifyCoq.data_structure.spatial_graph_dispose_bi.
 Require Import RamifyCoq.data_structure.spatial_graph_unaligned_bi_VST.
+Require Import RamifyCoq.floyd_ext.share.
 Require RamifyCoq.graph.weak_mark_lemmas.
 Import RamifyCoq.graph.weak_mark_lemmas.WeakMarkGraph.
 
 Local Open Scope logic.
 
 Arguments SingleFrame' {l} {g} {s}.
+
+Local Coercion Graph_LGraph: Graph >-> LGraph.
+Local Coercion LGraph_SGraph: LGraph >-> SGraph.
+Local Coercion SGraph_PGraph: SGraph >-> PGraph.
+Local Identity Coercion Graph_GeneralGraph: Graph >-> GeneralGraph.
+Local Identity Coercion LGraph_LabeledGraph: LGraph >-> LabeledGraph.
+Local Identity Coercion SGraph_SpatialGraph: SGraph >-> SpatialGraph.
+Local Identity Coercion PGraph_PreGraph: PGraph >-> PreGraph.
 
 Notation vertices_at sh g P := (@vertices_at _ _ _ _ _ _ (@SGP pSGG_VST bool unit (sSGG_VST sh)) _ g P).
 Notation graph sh x g := (@graph _ _ _ _ _ _ (@SGP pSGG_VST bool unit (sSGG_VST sh)) _ x g).
@@ -24,9 +33,9 @@ Existing Instances MGS biGraph maGraph finGraph RGF.
 
 Definition mark_spec :=
  DECLARE _mark
-  WITH sh: share, g: Graph, x: pointer_val
+  WITH sh: wshare, g: Graph, x: pointer_val
   PRE [ _x OF (tptr (Tstruct _Node noattr))]
-          PROP  (writable_share sh; weak_valid g x)
+          PROP  (weak_valid g x)
           LOCAL (temp _x (pointer_val_val x))
           SEP   (graph sh x g)
   POST [ Tvoid ]
@@ -37,9 +46,9 @@ Definition mark_spec :=
 
 Definition spanning_spec :=
   DECLARE _spanning
-  WITH sh: share, g: Graph, x: pointer_val
+  WITH sh: wshare, g: Graph, x: pointer_val
   PRE [ _x OF (tptr (Tstruct _Node noattr))]
-          PROP  (writable_share sh; vvalid g x; fst (fst (vgamma g x)) = false)
+          PROP  (vvalid g x; fst (fst (vgamma g x)) = false)
           LOCAL (temp _x (pointer_val_val x))
           SEP   (graph sh x g)
   POST [ Tvoid ]
@@ -50,9 +59,9 @@ Definition spanning_spec :=
 
 Definition dispose_spec :=
   DECLARE _dispose
-  WITH sh: share, g: Graph, x: pointer_val
+  WITH sh: wshare, g: Graph, x: pointer_val
   PRE [ _x OF (tptr (Tstruct _Node noattr))]
-          PROP  (writable_share sh; weak_valid g x)
+          PROP  (weak_valid g x)
           LOCAL (temp _x (pointer_val_val x))
           SEP   (!!is_tree g x && graph sh x g)
   POST [ Tvoid ]
@@ -166,30 +175,18 @@ Proof.
     apply vgamma_is_true in Heqdlr. exfalso; auto.
   } Unfocus.
   rewrite Heqdlr. simpl temp at 1.
-  assert ((Vint (Int.repr (if (@vlabel pointer_val (prod pointer_val LR)
-                                       PointerVal_EqDec
-         PointerValLR_EqDec bool unit
-         (@lg_gg pointer_val (prod pointer_val LR) PointerVal_EqDec
-            PointerValLR_EqDec bool unit
-            (fun
-               g0 : @LabeledGraph pointer_val (prod pointer_val LR)
-                      PointerVal_EqDec PointerValLR_EqDec bool unit =>
-             @BiMaFin pSGG_VST
-               (@pg_lg pointer_val (prod pointer_val LR) PointerVal_EqDec
-                       PointerValLR_EqDec bool unit g0)) g1) l) then 1 else 0))) =
+  assert ((Vint (Int.repr (if (@vlabel pointer_val (prod pointer_val LR) PointerVal_EqDec
+           PointerValLR_EqDec bool unit (@Graph_LGraph pSGG_VST bool unit g1)
+           l) then 1 else 0))) =
           (Vint (Int.repr (if node_pred_dec (marked g1) l then 1 else 0)))). {
     simpl. f_equal. f_equal.
+    change (vlabel (lg_gg g1) l) with (vlabel g1 l).
+    simpl.
     destruct (@vlabel pointer_val (prod pointer_val LR) PointerVal_EqDec
-         PointerValLR_EqDec bool unit
-         (@lg_gg pointer_val (prod pointer_val LR) PointerVal_EqDec
-            PointerValLR_EqDec bool unit
-            (fun
-               g0 : @LabeledGraph pointer_val (prod pointer_val LR)
-                      PointerVal_EqDec PointerValLR_EqDec bool unit =>
-             @BiMaFin pSGG_VST
-               (@pg_lg pointer_val (prod pointer_val LR) PointerVal_EqDec
-                       PointerValLR_EqDec bool unit g0)) g1) l); auto.
-  } rewrite H5. clear H5.
+           PointerValLR_EqDec bool unit (@Graph_LGraph pSGG_VST bool unit g1)
+           l); auto.
+  }
+  rewrite H5. clear H5.
   unlocalize
     (PROP  ()
      LOCAL (temp _root_mark (Vint (Int.repr (if node_pred_dec (marked g1) l then 1 else 0)));
@@ -200,7 +197,6 @@ Proof.
   Grab Existential Variables.
   Focus 2. {
     simplify_ramif.
-    Opaque gamma.
     destruct (vgamma g1 l) as [[dd ll] rr] eqn:? .
     entailer!.
     rewrite (update_self g1 l (dd, ll, rr)) at 2 by auto.
@@ -211,7 +207,6 @@ Proof.
     apply (@vertices_at_ramify1 _ _ _ _ _ _ _ (SGA_VST sh) g1 (reachable g1 x) l (dd, ll, rr) (dd, ll, rr)); auto.
     apply (gamma_left_reachable_included g1 _ _ _ _ H3 H_GAMMA_g1 l).
     apply reachable_by_refl; auto.
-    Transparent gamma.
   } Unfocus.
 
   (* if (root_mark == 0) { *)
@@ -271,9 +266,9 @@ Proof.
     binding [g']%RamBind.
   Grab Existential Variables.
   Focus 2. {
-    assert (l = dst g1 (x, L)) by (simpl in H_GAMMA_g1; unfold gamma in H_GAMMA_g1; inversion H_GAMMA_g1; auto).
+    assert (l = dst g1 (x, L)) by (simpl in H_GAMMA_g1; inversion H_GAMMA_g1; auto).
     unfold edge_spanning_tree.
-    destruct (node_pred_dec (marked g1) (dst g1 (x, L))); subst l; [exfalso |]; auto.
+    if_tac; subst l; [exfalso |]; auto.
   } Unfocus.
   Focus 1. {
     unfold semax_ram. forward. entailer.
@@ -322,6 +317,7 @@ Proof.
     apply (exp_right (Graph_gen_left_null g1 x)).
     entailer!.
     apply (edge_spanning_tree_left_null g1 x true l r); auto.
+    apply derives_refl.
   } Unfocus.
   Focus 1. {
     forward.
@@ -337,7 +333,7 @@ Proof.
     apply edge_spanning_tree_invalid.
     + apply (@left_valid _ _ _ _ g1 _ _ (biGraph g1)) in H3; auto.
     + intro. apply (valid_not_null g1 l).
-      - assert (l = dst g1 (x, L)) by (simpl in H_GAMMA_g1; unfold gamma in H_GAMMA_g1; inversion H_GAMMA_g1; auto).
+      - assert (l = dst g1 (x, L)) by (simpl in H_GAMMA_g1; inversion H_GAMMA_g1; auto).
         rewrite H9. apply H8.
       - rewrite is_null_def. apply (destruct_pointer_val_NP). left; auto.
   } Unfocus.
@@ -378,28 +374,14 @@ Proof.
     apply vgamma_is_true in Heqdlr. exfalso; auto.
   } Unfocus.
   rewrite Heqdlr. simpl temp at 1.
-  assert ((Vint (Int.repr (if (@vlabel pointer_val (prod pointer_val LR)
-          PointerVal_EqDec PointerValLR_EqDec bool unit
-          (@lg_gg pointer_val (prod pointer_val LR) PointerVal_EqDec
-                  PointerValLR_EqDec bool unit
-                  (fun
-                      g0 : @LabeledGraph pointer_val (prod pointer_val LR)
-                                         PointerVal_EqDec PointerValLR_EqDec bool unit =>
-                      @BiMaFin pSGG_VST
-                               (@pg_lg pointer_val (prod pointer_val LR) PointerVal_EqDec
-                                       PointerValLR_EqDec bool unit g0)) g2) r) then 1 else 0)))
+  assert ((Vint (Int.repr (if (@vlabel pointer_val (prod pointer_val LR) PointerVal_EqDec
+           PointerValLR_EqDec bool unit (@Graph_LGraph pSGG_VST bool unit g2)
+           r) then 1 else 0)))
           = (Vint (Int.repr (if node_pred_dec (marked g2) r then 1 else 0)))). {
     simpl. do 2 f_equal.
-    destruct ((@vlabel pointer_val (prod pointer_val LR)
-          PointerVal_EqDec PointerValLR_EqDec bool unit
-          (@lg_gg pointer_val (prod pointer_val LR) PointerVal_EqDec
-                  PointerValLR_EqDec bool unit
-                  (fun
-                      g0 : @LabeledGraph pointer_val (prod pointer_val LR)
-                                         PointerVal_EqDec PointerValLR_EqDec bool unit =>
-                      @BiMaFin pSGG_VST
-                               (@pg_lg pointer_val (prod pointer_val LR) PointerVal_EqDec
-                                       PointerValLR_EqDec bool unit g0)) g2) r)); auto.
+    destruct (@vlabel pointer_val (prod pointer_val LR) PointerVal_EqDec
+           PointerValLR_EqDec bool unit (@Graph_LGraph pSGG_VST bool unit g2)
+           r); auto.
   } rewrite H7. clear H7.
   unlocalize
     (PROP  ()
@@ -411,7 +393,6 @@ Proof.
   Grab Existential Variables.
   Focus 2. {
     simplify_ramif.
-    Opaque gamma.
     destruct (vgamma g2 r) as [[dd ll] rr] eqn:? .
     pose proof (update_self g2 r (dd, ll, rr) Heqp).
     
@@ -428,7 +409,6 @@ Proof.
     rewrite <- (edge_spanning_tree_left_vvalid g1 g2 x true l r r); auto.
     apply (gamma_right_reachable_included g1 _ _ _ _ H3 H_GAMMA_g1 r).
     apply reachable_by_refl; auto.
-    Transparent gamma.
   } Unfocus.
 
   (* if (root_mark == 0) { *)
@@ -485,9 +465,9 @@ Proof.
     binding [g3]%RamBind.
   Grab Existential Variables.
   Focus 2. {
-    assert (r = dst g2 (x, R)) by (simpl in H_GAMMA_g2; unfold gamma in H_GAMMA_g2; inversion H_GAMMA_g2; auto).
+    assert (r = dst g2 (x, R)) by (simpl in H_GAMMA_g2; inversion H_GAMMA_g2; auto).
     unfold edge_spanning_tree.
-    destruct (node_pred_dec (marked g2) (dst g2 (x, R))); subst r; [exfalso |]; auto.
+    if_tac; subst r; [exfalso |]; auto.
   } Unfocus.
   Focus 1. {
     unfold semax_ram.
@@ -538,6 +518,7 @@ Proof.
     apply (exp_right (Graph_gen_right_null g2 x)).
     entailer!.
     apply (edge_spanning_tree_right_null g2 x true l' r); auto.
+    apply derives_refl.
   } Unfocus.
   Focus 1. {
     forward.
@@ -553,7 +534,7 @@ Proof.
     apply edge_spanning_tree_invalid.
     + apply (@right_valid _ _ _ _ g2 _ _ (biGraph g2)) in H5; auto.
     + intro. apply (valid_not_null g2 r).
-      - assert (r = dst g2 (x, R)) by (simpl in H_GAMMA_g2; unfold gamma in H_GAMMA_g2; inversion H_GAMMA_g2; auto).
+      - assert (r = dst g2 (x, R)) by (simpl in H_GAMMA_g2; inversion H_GAMMA_g2; auto).
         rewrite H11. apply H10.
       - rewrite is_null_def. apply (destruct_pointer_val_NP). left; auto.
   } Unfocus.

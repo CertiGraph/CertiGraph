@@ -170,7 +170,7 @@ Lemma extend_copy_left: forall (g g1 g2 g2': Graph) (x l r: addr) dx',
   (full_vertices_at g2': pred) * vertex_at x' dx' |-- 
   EX g2'': LGraph,
     !! extended_copy l (g1: LGraph, g1') (g2: LGraph, g2'') && 
-    (vertices_at (fun x => x' <> x) g2'' * vertex_at x' dx').
+    (vertices_at (fun x => vvalid g2'' x /\ x' <> x) g2'' * vertex_at x' dx').
 Proof.
   intros.
   pose proof WeakMarkGraph.triple_mark1 x g g g1 as HH1.
@@ -216,8 +216,14 @@ Proof.
     split; [| split]; destruct H2 as [? [? ?]]; auto.
     simpl map in H4; rewrite <- HH1 in H4.
     inversion H0; auto.
-  + apply sepcon_derives.
-
+  + apply sepcon_derives; [| auto].
+    apply derives_refl'; apply vertices_at_subgraph_eq.
+    - apply Included_refl.
+    - unfold Included, Ensembles.In.
+      intros; tauto.
+    - 
+SearchAbout (_ -> validly_identical _ _).
+Locate GSG_PartialGraphPreserve.
 (*
 Lemma graph_ramify_right: forall {RamUnit: Type} (g g1 g2: Graph) x l r,
   vvalid g x ->

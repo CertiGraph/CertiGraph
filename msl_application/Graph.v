@@ -37,11 +37,11 @@ Class SpatialGraphPred (V E DV DE Pred: Type): Type := {
 }.
 
 Class SpatialGraphBasicAssum (V E: Type) := {
-  VE: EqDec V eq;
-  EE: EqDec E eq
+  SGBA_VE: EqDec V eq;
+  SGBA_EE: EqDec E eq
 }.
 
-Existing Instances VE EE.
+Existing Instances SGBA_VE SGBA_EE.
 
 Class SpatialGraphAssum {V E DV DE Pred: Type} (SGP: SpatialGraphPred V E DV DE Pred) {SGBA: SpatialGraphBasicAssum V E}:= {
   SGP_ND: NatDed Pred;
@@ -974,7 +974,7 @@ Proof.
   assert (forall y, reachable g x y <-> x = y \/ reachable_through_set g S y). {
     intros. rewrite (reachable_ind' g x S); intuition.
   } symmetry. apply pred_sepcon_ocon1; intros.
-  + apply VE.
+  + apply SGBA_VE.
   + apply RFG_reachable_through_set_decicable; auto.
   + specialize (H1 a). intuition.
   + apply precise_graph_cell.
@@ -990,7 +990,7 @@ Proof.
   + destruct (construct_reachable_list g x H) as [l [? ?]].
     left; exists l. intuition.
   + apply precise_graph_cell.
-  + intros. apply eq_as_set_permutation; auto. 1: apply VE.
+  + intros. apply eq_as_set_permutation; auto. 1: apply SGBA_VE.
     destruct H0, H1. hnf. unfold Sublist.
     split; intros; specialize (H0 a); specialize (H1 a); intuition.
 Qed.
@@ -1014,3 +1014,69 @@ End SPATIAL_FACTS.
 End GENERAL_SPATIAL_GRAPH.
 
 Notation "g1 '-=-' g2" := (validly_identical g1 g2) (at level 1).
+
+Section SpatialGraphConstructor.
+
+Class SpatialGraphConstructor (V E DV DE GV GE: Type) {SGBA: SpatialGraphBasicAssum V E}:= {
+  compute_vgamma: LabeledGraph V E DV DE -> V -> GV;
+  compute_egamma: LabeledGraph V E DV DE -> E -> GE
+}.
+
+Local Coercion pg_lg: LabeledGraph >-> PreGraph.
+
+Class Local_SpatialGraphConstructor (V E DV DE GV GE: Type) {SGBA: SpatialGraphBasicAssum V E} {SGC: SpatialGraphConstructor V E DV DE GV GE} := {
+  compute_vgamma_local: forall (G1 G2: LabeledGraph V E DV DE) (x: V),
+    ((predicate_partial_labeledgraph G1 (eq x)) ~=~
+     (predicate_partial_labeledgraph G1 (eq x)))%LabeledGraph ->
+    compute_vgamma G1 x = compute_vgamma G2 x;
+  compute_egamma_local: forall (G1 G2: LabeledGraph V E DV DE) (e: E),
+    evalid G1 e ->
+    evalid G2 e ->
+    elabel G1 e = elabel G2 e ->
+    src G1 e = src G2 e ->
+    dst G1 e = dst G2 e ->
+    compute_egamma G1 e = compute_egamma G2 e
+}.
+
+Context {V E DV DE GV GE: Type}.
+Context {SGBA: SpatialGraphBasicAssum V E}.
+Context {SGC: SpatialGraphConstructor V E DV DE GV GE}.
+Context {L_SGC: Local_SpatialGraphConstructor V E DV DE GV GE}.
+
+Definition Graph_SpatialGraph (G: LabeledGraph V E DV DE) : SpatialGraph V E GV GE :=
+  Build_SpatialGraph _ _ _ _ _ _ G (compute_vgamma G) (compute_egamma G).
+
+Lemma GSG_VGenPreserve: forall (G: LabeledGraph V E DV DE) x lx gx,
+  gx = vgamma (Graph_SpatialGraph (labeledgraph_vgen G x lx)) x ->
+  (Graph_SpatialGraph (labeledgraph_vgen G x lx)) -=- (spatialgraph_vgen (Graph_SpatialGraph G) x gx).
+Proof.
+  intros. subst.
+  split; [| split].
+  + reflexivity.
+  + intros; simpl.
+    destruct_eq_dec x v.
+    - subst; auto.
+    - apply compute_vgamma_local; auto.
+      eapply si_stronger_partial_labeledgraph_simple; [| apply lg_vgen_stable].
+      hnf; unfold Ensembles.In; intros.
+      congruence.
+  + intros; simpl.
+    apply compute_egamma_local; auto.
+Qed.
+
+Lemma GSG_PartialGraphPreserve: forall (G: LabeledGraph V E DV DE) (p: V -> Prop),
+  (predicate_partial_spatialgraph (Graph_SpatialGraph G) p) -=-
+  (Graph_SpatialGraph (predicate_partial_labeledgraph G p)).
+Proof.
+  intros.
+  split; [| split].
+  + reflexivity.
+  + simpl; intros.
+    apply compute_vgamma_local; auto.
+    reflexivity.
+  + simpl; intros.
+    apply compute_egamma_local; auto.
+    destruct H; auto.
+Qed.
+
+End SpatialGraphConstructor.

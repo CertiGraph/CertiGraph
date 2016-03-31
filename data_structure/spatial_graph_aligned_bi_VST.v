@@ -8,6 +8,7 @@ Require Import RamifyCoq.msl_ext.alg_seplog.
 Require Import RamifyCoq.sample_mark.env_mark_bi.
 Require Import RamifyCoq.veric_ext.SeparationLogic.
 Require Import RamifyCoq.floyd_ext.DataatSL.
+Require Import RamifyCoq.floyd_ext.share.
 
 Local Open Scope logic.
 
@@ -137,12 +138,16 @@ Instance SGA_VST (sh: share) : SpatialGraphAssum (SGP_VST sh).
   refine (Build_SpatialGraphAssum _ _ _ _ _ _ _ _ _ _ _).
 Defined.
 
+Instance SGAv_VST (sh: wshare): SpatialGraphAssum_vs (SGP_VST sh).
+  apply sepcon_unique_vertex_at; auto.
+Defined.
+
 End sSGG_VST.
 
 Hint Extern 10 (@sepcon_unique2 _ _ _ _ _ (@vertex_at _ _ _ _ _ _)) => apply sepcon_unique_vertex_at; auto.
 
-Instance sSGG_VST (sh: share): @sSpatialGraph_Graph_Bi pSGG_VST bool unit.
-  refine (Build_sSpatialGraph_Graph_Bi pSGG_VST _ _ (SGP_VST sh) (SGA_VST sh)).
+Instance sSGG_VST (sh: wshare): @sSpatialGraph_Graph_Bi pSGG_VST bool unit.
+  refine (Build_sSpatialGraph_Graph_Bi pSGG_VST _ _ (SGP_VST sh) (SGA_VST sh) (SGAv_VST sh)).
 Defined.
 
 Global Opaque pSGG_VST sSGG_VST.

@@ -8,6 +8,7 @@ Require Import RamifyCoq.msl_ext.alg_seplog.
 Require Import RamifyCoq.sample_mark.env_dispose_bi.
 Require Import RamifyCoq.veric_ext.SeparationLogic.
 Require Import RamifyCoq.floyd_ext.DataatSL.
+Require Import RamifyCoq.floyd_ext.share.
 
 Local Open Scope logic.
 
@@ -55,6 +56,23 @@ Proof.
   unfold trinode.
   apply data_at_memory_block.
 Defined.
+
+Lemma sepcon_unique_vertex_at sh: writable_share sh -> sepcon_unique2 (@vertex_at _ _ _ _ _ (SGP_VST sh)).
+Proof.
+  intros.
+  hnf; intros.
+  simpl.
+  destruct y1 as [[? ?] ?], y2 as [[? ?] ?].
+  unfold trinode.
+  rewrite data_at_isptr.
+  normalize.
+  apply data_at_conflict.
+  + apply sepalg.nonidentity_nonunit.
+    apply readable_nonidentity, writable_readable.
+    auto.
+  + change (sizeof node_type) with 12.
+    apply pointer_range_overlap_refl; auto; omega.
+Qed.
 
 (*
 Instance sMSLstandard sh : StaticMapstoSepLog (AAV (SGP_VST sh)) (trinode sh).
@@ -114,6 +132,11 @@ Instance SGA_VST (sh: share) : SpatialGraphAssum (SGP_VST sh).
   refine (Build_SpatialGraphAssum _ _ _ _ _ _ _ _ _ _ _).
 Defined.
 
-Instance sSGG_VST (sh: share): @sSpatialGraph_Graph_Bi pSGG_VST bool unit.
-  refine (Build_sSpatialGraph_Graph_Bi pSGG_VST _ _ (SGP_VST sh) (SGA_VST sh)).
+Instance SGAv_VST (sh: wshare): SpatialGraphAssum_vs (SGP_VST sh).
+  apply sepcon_unique_vertex_at; auto.
 Defined.
+
+Instance sSGG_VST (sh: wshare): @sSpatialGraph_Graph_Bi pSGG_VST bool unit.
+  refine (Build_sSpatialGraph_Graph_Bi pSGG_VST _ _ (SGP_VST sh) (SGA_VST sh) (SGAv_VST sh)).
+Defined.
+
