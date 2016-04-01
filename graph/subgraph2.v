@@ -1089,6 +1089,12 @@ Definition predicate_sub_labeledgraph (g: Graph) (p: V -> Prop) :=
 Definition predicate_partial_labeledgraph (g: Graph) (p: V -> Prop) :=
   Build_LabeledGraph _ _ (predicate_partialgraph g p) (vlabel g) (elabel g).
 
+Definition reachable_sub_labeledgraph (g: Graph) (S : list V): Graph :=
+  predicate_sub_labeledgraph g (reachable_through_set g S).
+
+Definition unreachable_partial_labeledgraph (g: Graph) (S : list V): Graph :=
+  predicate_partial_labeledgraph g (fun n => ~ reachable_through_set g S n).
+
 Lemma si_stronger_partial_labeledgraph: forall (g1 g2: Graph) (p1 p2 p1' p2' p: V -> Prop),
   (forall v, p1' v <-> p1 v /\ p v) ->
   (forall v, p2' v <-> p2 v /\ p v) ->
@@ -1122,6 +1128,38 @@ Proof.
   + intro v; specialize (H v); simpl in H; tauto.
   + intro v; specialize (H v); simpl in H; tauto.
 Qed.
+
+Instance sub_labeledgraph_proper: Proper (labeled_graph_equiv ==> @Same_set V ==> labeled_graph_equiv) predicate_sub_labeledgraph.
+Proof.
+  do 2 (hnf; intros).
+  destruct H as [? [? ?]].
+  split; [| split].
+  + apply subgraph_proper; auto.
+  + simpl; intros.
+    destruct H3, H4.
+    apply H1; auto.
+  + simpl; intros.
+    destruct H3, H4.
+    apply H2; auto.
+Defined.
+
+Global Existing Instance sub_labeledgraph_proper.
+
+Instance partial_labeledgraph_proper: Proper (labeled_graph_equiv ==> @Same_set V ==> labeled_graph_equiv) predicate_partial_labeledgraph.
+Proof.
+  do 2 (hnf; intros).
+  destruct H as [? [? ?]].
+  split; [| split].
+  + apply partialgraph_proper; auto.
+  + simpl; intros.
+    destruct H3, H4.
+    apply H1; auto.
+  + simpl; intros.
+    destruct H3, H4.
+    apply H2; auto.
+Defined.
+
+Global Existing Instance partial_labeledgraph_proper.
 
 End PartialLabeledGraph.
 
