@@ -60,6 +60,17 @@ Proof.
   apply H.
 Qed.
 
+Lemma pointwise_relation_is_guarded_pointwise_relation: forall {A B : Type} (R : relation B), same_relation _ (pointwise_relation A R) (guarded_pointwise_relation (fun _ => True) R).
+Proof.
+  intros.
+  rewrite same_relation_spec.
+  hnf; intros.
+  hnf; intros.
+  rewrite guarded_pointwise_relation_spec.
+  unfold pointwise_relation.
+  firstorder.
+Qed.
+
 Instance guarded_pointwise_relation_Proper {A B : Type}: Proper (Same_set ==> eq ==> eq ==> eq ==> iff) (@guarded_pointwise_relation A B).
 Proof.
   do 4 (hnf; intros); subst.
