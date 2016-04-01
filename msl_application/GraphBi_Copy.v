@@ -140,7 +140,7 @@ Proof.
     rewrite <- H4, <- H1.
     eapply Prop_join_reachable_left; eauto.
   + intros ? [? ?] ? ?.
-    simpl; unfold gamma.
+    simpl.
     rewrite Intersection_spec in H6; unfold Complement, Ensembles.In in H6; destruct H6.
     f_equal; [f_equal |].
     - destruct H5 as [_ [? [? _]]].
@@ -180,7 +180,7 @@ Proof.
   pose proof LocalGraphCopy.copy_extend_copy g g1 g2 g1' g2' x
     ((x, L):: (x,R) :: nil) nil (x, L) ((x, R) :: nil) (WeakMarkGraph.marked g) as HH2.
   spec HH2; [auto |].
-  spec HH2; [simpl in H0 |- *; unfold gamma in H0; inversion H0; congruence |].
+  spec HH2; [simpl in H0 |- *; inversion H0; congruence |].
   spec HH2; [intros; apply (@biGraph_out_edges _ _ _ _ _ _ g (biGraph g)); auto |].
   spec HH2; [simpl; repeat constructor; simpl; [clear; intros [HH | []]; inversion HH | tauto] |].
   spec HH2; [reflexivity |].
@@ -221,8 +221,9 @@ Proof.
     - apply Included_refl.
     - unfold Included, Ensembles.In.
       intros; tauto.
-    - 
-SearchAbout (_ -> validly_identical _ _).
+    - unfold LGraph_SGraph.
+      rewrite @GSG_SubGraphPreserve.
+SearchAbout predicate_sub_spatialgraph (_ -> validly_identical _ _).
 Locate GSG_PartialGraphPreserve.
 (*
 Lemma graph_ramify_right: forall {RamUnit: Type} (g g1 g2: Graph) x l r,

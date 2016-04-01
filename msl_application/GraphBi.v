@@ -71,6 +71,21 @@ Proof.
   + exact (fun _ _ => tt).
 Defined.
 
+Instance L_SGC_Bi: Local_SpatialGraphConstructor addr (addr * LR) DV DE (DV * addr * addr) unit.
+Proof.
+  constructor.
+  + intros.
+    simpl.
+    f_equal; [f_equal |]; auto.
+    - apply H3; auto.
+Check left_valid.
+      * apply (@left_valid _ _ _ _ (pg_lg G1) _ _ (@bi (pg_lg G1) (@sound_gg _ _ _ _ _ _ _ G1))). SearchAbout evalid L.
+    
+  refine (Build_SpatialGraphConstructor _ _ _ _ _ _ SGBA _ _).
+  + exact (fun G v => (vlabel G v, dst (pg_lg G) (v, L), dst (pg_lg G) (v, R))).
+  + exact (fun _ _ => tt).
+Defined.
+
 Definition Graph_LGraph (G: Graph): LGraph := lg_gg G.
 Definition LGraph_SGraph (G: LGraph): SGraph := Graph_SpatialGraph G.
 Definition SGraph_PGraph (G: SGraph): PGraph := @pg_sg _ _ _ _ _ _ G.
