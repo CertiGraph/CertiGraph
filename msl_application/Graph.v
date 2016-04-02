@@ -1,6 +1,7 @@
 Require Import Coq.Logic.Classical.
 Require Import VST.msl.seplog.
 Require Import VST.msl.log_normalize.
+Require Import VST.msl.ramification_lemmas.
 Require Import RamifyCoq.lib.Coqlib.
 Require Import RamifyCoq.lib.EquivDec_ext.
 Require Import RamifyCoq.lib.EnumEnsembles.
@@ -316,7 +317,37 @@ Ramification Lemmas
 
 *************************************)
 
-Lemma vertices_at_ramify1: forall (g: Graph) (P: V -> Prop) x d d',
+Lemma vertices_at_ramify_1Q: forall {A: Type} (Pure: A -> Prop) (g: Graph) (P: V -> Prop) x d (d': A -> GV),
+  P x ->
+  vgamma g x = d ->
+  vertices_at P g |-- vertex_at x d *
+    (ALL a: A, !! Pure a -->
+      (vertex_at x (d' a) -* vertices_at P (spatialgraph_vgen g x (d' a)))).
+Proof.
+  intros.
+  RAMIF_Q'.formalize.
+  replace (@vertex_at _ _ _ _ _ SGP x d) with (graph_vcell g x).
+  Focus 2. {
+    simpl.
+    unfold graph_vcell; simpl.
+    rewrite H0; auto.
+  } Unfocus.
+  replace (fun a => @vertex_at _ _ _ _ _ SGP x (d' a)) with (fun a => graph_vcell (spatialgraph_vgen g x (d' a)) x).
+  Focus 2. {
+    simpl.
+    unfold graph_vcell; simpl.
+    destruct_eq_dec x x; [auto | congruence].
+  } Unfocus.
+  apply pred_sepcon_ramify1_simpl; auto.
+  intros.
+  unfold graph_vcell.
+  f_equal.
+  simpl.
+  destruct_eq_dec x y; [congruence |].
+  auto.
+Qed.
+
+Lemma vertices_at_ramify_1Q: forall (g: Graph) (P: V -> Prop) x d d',
   P x -> vgamma g x = d ->
   vertices_at P g |-- vertex_at x d * (vertex_at x d' -* vertices_at P (spatialgraph_vgen g x d')).
 Proof.
@@ -342,7 +373,7 @@ Proof.
   auto.
 Qed.
 
-Lemma vertices_at_ramify_Q: forall {A: Type} (g: Graph) (G L F: V -> Prop) (Pure: A -> Prop) (g': A -> Graph) (L' G': A -> V -> Prop),
+Lemma vertices_at_ramify_subQ: forall {A: Type} (g: Graph) (G L F: V -> Prop) (Pure: A -> Prop) (g': A -> Graph) (L' G': A -> V -> Prop),
   Prop_join L F G ->
   (forall a, Pure a -> Prop_join (L' a) F (G' a)) ->
   (forall a, Pure a -> vertices_identical F g (g' a)) ->
@@ -583,11 +614,11 @@ Definition full_vertices_at (g: Graph): Pred := vertices_at (vvalid g) (Graph_Sp
 
 Definition reachable_vertices_at (x : V) (g: Graph): Pred := vertices_at (reachable g x) (Graph_SpatialGraph g).
 
-Definition reachable_vertices_at_dag (x: V) (g: Graph): Pred := !! localDag g x && vertices_at (reachable g x) (Graph_SpatialGraph g).
+Definition reachable_dag_vertices_at (x: V) (g: Graph): Pred := !! localDag g x && vertices_at (reachable g x) (Graph_SpatialGraph g).
 
 Definition reachable_through_vertices_at (S : list V) (g : Graph): Pred := vertices_at (reachable_through_set g S) (Graph_SpatialGraph g).
 
-Definition reachable_through_vertices_at_dag (S : list V) (g : Graph): Pred := !! (Forall (localDag g) S) && vertices_at (reachable_through_set g S) (Graph_SpatialGraph g).
+Definition reachable_through_dag_vertices_at (S : list V) (g : Graph): Pred := !! (Forall (localDag g) S) && vertices_at (reachable_through_set g S) (Graph_SpatialGraph g).
 
 Lemma va_reachable_reachable_through: forall g x, reachable_vertices_at x g = reachable_through_vertices_at (x :: nil) g.
 Proof.
@@ -699,57 +730,61 @@ Proof.
   apply H8; auto.
 Qed.
 
-Lemma dag_unfold {SGA_vs: SpatialGraphAssum_vs SGP}: forall (g: Graph) x S,
+Lemma va_reachable_dag_unfold {SGA_vs: SpatialGraphAssum_vs SGP}: forall (g: Graph) x S,
   vvalid g x ->
   step_list g x S ->
-  dag x g = vertex_at x (vgamma g x) * dags' S g.
+  reachable_dag_vertices_at x g = vertex_at x (vgamma (Graph_SpatialGraph g) x) * reachable_through_dag_vertices_at S g.
 Proof.
   intros.
-  unfold dag, dags'.
+  unfold reachable_dag_vertices_at, reachable_through_dag_vertices_at.
   apply pred_ext; normalize.
   + apply andp_right.
     - apply prop_right.
       rewrite Forall_forall; intros.
       eapply local_dag_step; eauto.
       rewrite (H0 x0) in H2; auto.
-    - erewrite localDag_vertices_unfold by eauto.
-      auto.
-  + assert (vertex_at x (vgamma g x) * vertices_at (reachable_through_set g S) g
+    - apply derives_refl'.
+      apply localDag_vertices_unfold; auto.
+  + assert ((vertex_at x (vgamma (Graph_SpatialGraph g) x): Pred) * vertices_at (reachable_through_set g S) (Graph_SpatialGraph g)
    |-- !!localDag g x).
-    - eapply derives_trans; [apply vertex_at_sepcon_unique_1x; auto |].
+    - eapply derives_trans; [apply vertices_at_sepcon_unique_1x; auto |].
       apply prop_derives; intro.
       eapply localDag_step_rev; eauto.
     - rewrite (add_andp _ _ H2); normalize.
-      erewrite localDag_vertices_unfold by eauto.
-      auto.
+      apply derives_refl'.
+      symmetry; apply localDag_vertices_unfold; auto.
 Qed.
 
-Lemma dag_vgen {SGA_vs: SpatialGraphAssum_vs SGP}: forall (g: Graph) x S d,
+Lemma va_reachable_dag_vgen {SGA_vs: SpatialGraphAssum_vs SGP}: forall (g: Graph) x S d d',
   vvalid g x ->
   step_list g x S ->
-  dag x (spatialgraph_vgen g x d) = vertex_at x d * dags' S g.
+  vgamma (Graph_SpatialGraph (labeledgraph_vgen g x d)) x = d' ->
+  Included (reachable_through_set g S) (vguard g) ->
+  Included (reachable_through_set g S) (vguard (labeledgraph_vgen g x d)) ->
+  reachable_dag_vertices_at x (labeledgraph_vgen g x d) = vertex_at x d' * reachable_through_dag_vertices_at S g.
 Proof.
   intros.
-  erewrite dag_unfold by eauto.
-  unfold dags'.
+  erewrite va_reachable_dag_unfold by eauto.
+  unfold reachable_through_dag_vertices_at.
   normalize.
   f_equal.
-  rewrite (add_andp _ _ (vertex_at_sepcon_unique_1x _ _ _ _)).
-  rewrite (add_andp _ _ (vertex_at_sepcon_unique_1x _ _ _ d)).
+  rewrite (add_andp _ _ (vertices_at_sepcon_unique_1x _ _ _ _)).
+  rewrite (add_andp _ _ (vertices_at_sepcon_unique_1x _ _ _ d')).
   rewrite !(andp_comm _ (!! _)).
   apply andp_prop_ext; [reflexivity |].
   intros.
   f_equal.
-  + rewrite spacialgraph_gen_vgamma; auto.
-  + apply graphs_reachable_subgraph_eq.
+  + subst; auto.
+  + apply va_reachable_through_partialgraph_eq; auto.
   split; [reflexivity | split; intros; [| reflexivity]].
   simpl.
+  unfold update_vlabel.
   destruct_eq_dec x v; [exfalso | auto].
   subst v.
-  simpl in H3; clear H2.
-  destruct H3 as [? [y [? ?]]].
-  simpl in H1.
-  apply H1.
+  simpl in H6; clear H5.
+  destruct H6 as [? [y [? ?]]].
+  simpl in H4.
+  apply H4.
   exists y; split; auto.
 Qed.
 
@@ -785,6 +820,8 @@ Proof.
       hnf in H0. simpl in H0. destruct H0. auto.
 Qed.
 
+(*
+(* TODO: resume these lemmas *)
 Lemma partialgraph_update:
   forall (g g': Graph) {rfg: ReachableFiniteGraph g} {rfg': ReachableFiniteGraph g'} (S1 S1' S2: list V),
     (unreachable_partial_labeledgraph g S1) ~=~ (unreachable_partial_labeledgraph g' S1')%LabeledGraph ->
@@ -964,3 +1001,9 @@ Proof.
   apply partialgraph_update; auto.
 Qed.
 
+*)
+End SPATIAL_FACTS.
+
+End SPATIAL_CONSTRUCTOR.
+
+End GENERAL_SPATIAL_GRAPH.
