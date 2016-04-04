@@ -317,76 +317,88 @@ Ramification Lemmas
 
 *************************************)
 
-Lemma vertices_at_ramify_1Q: forall {A: Type} (Pure: A -> Prop) (g: Graph) (P: V -> Prop) x d (d': A -> GV),
-  P x ->
-  vgamma g x = d ->
-  vertices_at P g |-- vertex_at x d *
+Lemma vertices_at_ramif_1Q: forall {A: Type} (Pure: A -> Prop) (g: Graph) (P: V -> Prop) x (g': A -> Graph) (P': A -> V -> Prop) (x': A -> V),
+  (exists F,
+     Prop_join (eq x) F P /\
+     (forall a, Pure a -> Prop_join (eq (x' a)) F (P' a)) /\
+     (forall a, Pure a -> vertices_identical F g (g' a))) ->
+  vertices_at P g |-- vertex_at x (vgamma g x) *
     (ALL a: A, !! Pure a -->
-      (vertex_at x (d' a) -* vertices_at P (spatialgraph_vgen g x (d' a)))).
+      (vertex_at (x' a) (vgamma (g' a) (x' a)) -* vertices_at (P' a) (g' a))).
 Proof.
   intros.
+  unfold vertices_at.
+  change (@vertex_at _ _ _ _ _ SGP x (vgamma g x)) with (graph_vcell g x).
   RAMIF_Q'.formalize.
-  replace (@vertex_at _ _ _ _ _ SGP x d) with (graph_vcell g x).
-  Focus 2. {
-    simpl.
-    unfold graph_vcell; simpl.
-    rewrite H0; auto.
-  } Unfocus.
-  replace (fun a => @vertex_at _ _ _ _ _ SGP x (d' a)) with (fun a => graph_vcell (spatialgraph_vgen g x (d' a)) x).
-  Focus 2. {
-    simpl.
-    unfold graph_vcell; simpl.
-    destruct_eq_dec x x; [auto | congruence].
-  } Unfocus.
-  apply pred_sepcon_ramify1_simpl; auto.
-  intros.
-  unfold graph_vcell.
-  f_equal.
+  change ((fun a : A => vertex_at (x' a) (vgamma (g' a) (x' a)))) with
+    ((fun a : A => graph_vcell (g' a) (x' a))).
   simpl.
-  destruct_eq_dec x y; [congruence |].
-  auto.
+  apply (pred_sepcon_ramif_1Q Pure P P' (graph_vcell g) (fun a => graph_vcell (g' a)) x x').
+  destruct H as [F [? [? ?]]].
+  exists F; split; [| split]; auto.
+  intros.
+  unfold graph_vcell; f_equal.
+  specialize (H1 a H2).
+  rewrite vertices_identical_spec in H1.
+  apply H1; auto.
 Qed.
 
-Lemma vertices_at_ramify_1Q: forall (g: Graph) (P: V -> Prop) x d d',
-  P x -> vgamma g x = d ->
-  vertices_at P g |-- vertex_at x d * (vertex_at x d' -* vertices_at P (spatialgraph_vgen g x d')).
-Proof.
-  intros.
-  replace (@vertex_at _ _ _ _ _ SGP x d) with (graph_vcell g x).
-  Focus 2. {
-    simpl.
-    unfold graph_vcell; simpl.
-    rewrite H0; auto.
-  } Unfocus.
-  replace (@vertex_at _ _ _ _ _ SGP x d') with (graph_vcell (spatialgraph_vgen g x d') x).
-  Focus 2. {
-    simpl.
-    unfold graph_vcell; simpl.
-    destruct_eq_dec x x; [auto | congruence].
-  } Unfocus.
-  apply pred_sepcon_ramify1_simpl; auto.
-  intros.
-  unfold graph_vcell.
-  f_equal.
-  simpl.
-  destruct_eq_dec x y; [congruence |].
-  auto.
-Qed.
-
-Lemma vertices_at_ramify_subQ: forall {A: Type} (g: Graph) (G L F: V -> Prop) (Pure: A -> Prop) (g': A -> Graph) (L' G': A -> V -> Prop),
-  Prop_join L F G ->
-  (forall a, Pure a -> Prop_join (L' a) F (G' a)) ->
-  (forall a, Pure a -> vertices_identical F g (g' a)) ->
+Lemma vertices_at_ramif_xQ: forall {A: Type} (Pure: A -> Prop) (g: Graph) (G L: V -> Prop) (g': A -> Graph) (L' G': A -> V -> Prop),
+  (exists F,
+     Prop_join L F G /\
+     (forall a, Pure a -> Prop_join (L' a) F (G' a)) /\
+     (forall a, Pure a -> vertices_identical F g (g' a))) ->
   vertices_at G g |-- vertices_at L g *
     (ALL a: A, !! Pure a -->
       (vertices_at (L' a) (g' a) -* vertices_at (G' a) (g' a))).
 Proof.
   intros.
-  eapply pred_sepcon_ramify_pred_Q; eauto.
+  unfold vertices_at.
+  apply pred_sepcon_ramif_xQ.
+  destruct H as [F [? [? ?]]].
+  exists F; split; [| split]; auto.
   intros.
-  unfold graph_vcell.
-  f_equal.
-  specialize (H1 c H2).
+  unfold graph_vcell; f_equal.
+  specialize (H1 a H2).
+  rewrite vertices_identical_spec in H1.
+  apply H1; auto.
+Qed.
+
+Lemma vertices_at_ramif_1: forall (g g': Graph) (P P': V -> Prop) x x' d d',
+  (exists F,
+     Prop_join (eq x) F P /\
+     Prop_join (eq x') F P' /\
+     vertices_identical F g g') ->
+  vgamma g x = d ->
+  vgamma g' x' = d' ->
+  vertices_at P g |-- vertex_at x d * (vertex_at x' d' -* vertices_at P' g').
+Proof.
+  intros.
+  subst.
+  change (@vertex_at _ _ _ _ _ SGP x (vgamma g x)) with (graph_vcell g x).
+  change (@vertex_at _ _ _ _ _ SGP x' (vgamma g' x')) with (graph_vcell g' x').
+  apply pred_sepcon_ramif_1.
+  destruct H as [F [? [? ?]]].
+  exists F; split; [| split]; auto.
+  intros.
+  unfold graph_vcell; f_equal.
+  rewrite vertices_identical_spec in H1.
+  apply H1; auto.
+Qed.
+
+Lemma vertices_at_ramif_x: forall (g g': Graph) (G L L' G': V -> Prop),
+  (exists F,
+     Prop_join L F G /\
+     Prop_join L' F G' /\
+     vertices_identical F g g') ->
+  vertices_at G g |-- vertices_at L g * (vertices_at L' g' -* vertices_at G' g').
+Proof.
+  intros.
+  apply pred_sepcon_ramif_x.
+  destruct H as [F [? [? ?]]].
+  exists F; split; [| split]; auto.
+  intros.
+  unfold graph_vcell; f_equal.
   rewrite vertices_identical_spec in H1.
   apply H1; auto.
 Qed.
@@ -822,23 +834,25 @@ Qed.
 
 (*
 (* TODO: resume these lemmas *)
+
 Lemma partialgraph_update:
-  forall (g g': Graph) {rfg: ReachableFiniteGraph g} {rfg': ReachableFiniteGraph g'} (S1 S1' S2: list V),
+  forall (g g': Graph) (S1 S1' S2: list V),
     (unreachable_partial_labeledgraph g S1) ~=~ (unreachable_partial_labeledgraph g' S1')%LabeledGraph ->
-    (forall x : V, In x (S1 ++ S2) -> Decidable (vvalid g x)) ->
-    (forall x : V, In x (S1' ++ S2) -> Decidable (vvalid g' x)) ->
+    Included (reachable_through_set (unreachable_partialgraph g S1) S2) (vguard g) ->
+    Included (reachable_through_set (unreachable_partialgraph g' S1') S2) (vguard g') ->
     reachable_through_vertices_at (S1 ++ S2) g |-- reachable_through_vertices_at S1 g * (reachable_through_vertices_at S1' g' -* reachable_through_vertices_at (S1' ++ S2) g').
 Proof.
   intros.
-  assert (forall x : V, In x S1 -> Decidable (vvalid g x)) by (intros; apply X; apply in_or_app; left; auto).
-  assert (forall x : V, In x S1' -> Decidable (vvalid g' x)) by (intros; apply X0; apply in_or_app; left; auto).
-  apply pred_sepcon_ramify_pred with (reachable_through_set (unreachable_partialgraph g S1) S2).
+  unfold reachable_through_vertices_at.
+  apply vertices_at_ramif_x.
+  exists (reachable_through_set (unreachable_partialgraph g S1) S2).
+  split; [| split].
   + split.
     - intros.
       rewrite <- (unreachable_eq' g S1 S2).
-      rewrite <- reachable_through_set_app; tauto.
+      rewrite <- reachable_through_set_app; tauto. (* TODO: This tauto use LEM automatically. *)
     - intros.
-      rewrite <- (unreachable_eq' g S1 S2) in H1.
+      rewrite <- (unreachable_eq' g S1 S2) in H3.
       tauto.
   + split.
     - intros.
@@ -848,25 +862,23 @@ Proof.
       rewrite <- reachable_through_set_app; tauto.
     - intros.
       destruct H as [? _].
-      rewrite H in H1.
-      rewrite <- (unreachable_eq' g' S1' S2) in H1.
+      rewrite H in H3.
+      rewrite <- (unreachable_eq' g' S1' S2) in H3.
       tauto.
-  + intros.
-    destruct H as [HH [? _]].
-    simpl in H.
-    unfold predicate_vvalid in H.
-    unfold graph_vcell.
-    f_equal.
-    simpl.
-    apply H.
-    - rewrite <- (unreachable_eq' g S1 S2) in H0.
-      destruct H0; split; [| auto].
+  + apply GSG_PartialGraphPreserve.
+    - auto.
+    - destruct H as [? _]; rewrite H; auto.
+    - hnf; unfold Ensembles.In; intros.
+      rewrite <- (unreachable_eq' g S1 S2) in H2.
+      destruct H2.
       eapply reachable_through_set_foot_valid; eauto.
-    - rewrite HH in H0.
-      rewrite <- (unreachable_eq' g' S1' S2) in H0.
-      destruct H0; split; [| auto].
+    - hnf; unfold Ensembles.In; intros.
+      destruct H as [? _].
+      rewrite H in H2.
+      rewrite <- (unreachable_eq' g' S1' S2) in H2.
+      destruct H2.
       eapply reachable_through_set_foot_valid; eauto.
-Qed.
+    - 
 
 Lemma full_vertices_at_ramify1: forall (g: Graph) x d d',
   vvalid g x ->
@@ -885,6 +897,7 @@ Proof.
   apply vertices_at_ramify1; auto.
   apply reachable_refl; auto.
 Qed.
+
 
 Context {SGSA: SpatialGraphStrongAssum SGP}.
 
