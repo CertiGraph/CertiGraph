@@ -60,27 +60,18 @@ Section SIMPLE_MARK_GRAPH.
     g |= root ~o~> n satisfying (negateP m1) ->
     n = root \/ exists child, edge g root child /\ g |= child ~o~> n satisfying (negateP m2).
   Proof.
-    intros.
-    (* Captain Hammer *)
-    rewrite reachable_acyclic in H0.
-    destruct H0 as [p [? ?]].
-    icase p. exfalso. eapply (reachable_by_path_nil g); eauto.
-    assert (v = root) by (apply reachable_by_path_head in H1; inv H1; trivial). subst v.
-    icase p. apply reachable_by_path_foot in H1. inv H1; auto.
-    right. exists v.
-    change (root :: v :: p) with (path_glue (root :: v :: nil) (v :: p)) in H1.
-    apply (reachable_by_path_split_glue g) with (n := v) in H1. 2: red; auto. destruct H1.
-    split. destruct H1 as [_ [? _]]. apply valid_path_si with (g2 := g) in H1. 2: destruct H; trivial.
-    simpl in H1. destruct H. tauto. reflexivity.
-    exists (v :: p). destruct H2 as [? [? ?]].
-    split; trivial.
-    destruct H as [? [_ ?]]. split. auto.
-    unfold path_prop in H4 |- *.
-    rewrite Forall_forall in H4 |- *.
-    intros ? ?. specialize (H4 x H6).
-    (* Hammertime! *)
-    assert (root <> x). intro. inversion H0. subst. contr.
-    specialize (H5 x H7). rewrite negateP_spec in H4 |- *. tauto.
+    intros. rewrite reachable_acyclic in H0. destruct H0 as [p [? ?]]. destruct p as [v p].
+    assert (v = root) by (destruct H1 as [[? _] _]; simpl in H1; auto). subst v. destruct p.
+    + left. destruct H1 as [[? ?] _]. simpl in H2. auto.
+    + right. exists (dst g e). change (root, e :: p) with (path_glue (root, e :: nil) (dst g e, p)) in H1.
+      apply (reachable_by_path_split_glue g) with (n := dst g e) in H1. 2: red; simpl; auto.
+      destruct H1. split.
+      - destruct H1 as [_ [[? [? [? ?]]] _]]. hnf. subst root. rewrite step_spec. do 2 (split; auto). exists e; auto.
+      - exists (dst g e, p). destruct H2 as [? [? ?]]. split; [|split]; auto.
+        rewrite path_prop_equiv in H4 |-* ; auto. rewrite epath_to_vpath_cons_eq in H0. 2: destruct H1 as [_ [[? _] _]]; auto.
+        apply NoDup_cons_2 in H0. rewrite in_path_eq_epath_to_vpath in H0; auto. intros. specialize (H4 _ H5).
+        destruct H as [? [? ?]]. rewrite negateP_spec in H4 |- *. rewrite <- H7; auto.
+        intro. apply H0. subst; auto.
   Qed.
 
   (* Not the best name in the world... *)
@@ -93,10 +84,9 @@ Section SIMPLE_MARK_GRAPH.
     intros. destruct H0 as [p [? ?]]. exists p. split; trivial.
     destruct H1. destruct H as [? [? ?]].
     split. auto.
-    unfold path_prop in H2 |- *.
-    rewrite Forall_forall in H2 |- *.
-    intros ? ?. specialize (H2 x H5). specialize (H4 x).
-    spec H4. intro. subst x. hnf in H3. hnf in H2. apply H2; auto.
+    rewrite path_prop_equiv in H2 |- *; auto.
+    intros. specialize (H2 _ H5). specialize (H4 n).
+    spec H4. intro. subst n. hnf in H3. hnf in H2. apply H2; auto.
     rewrite negateP_spec in H2 |- *; tauto.
   Qed.
 
@@ -115,10 +105,10 @@ Section SIMPLE_MARK_GRAPH.
     + exists (m). split; intros.
       - destruct H0 as [path ?].
         apply (reachable_by_path_In g _ _ _ _ x) in H0.
-        hnf in H0. tauto. destruct H0 as [[? _] _]. destruct path; simpl in H0; inversion H0. apply in_eq.
+        hnf in H0. tauto. destruct H0 as [[? _] _]. destruct path; simpl in H0; inversion H0. hnf; left; auto.
       - reflexivity.
   Qed.
-   
+
   Lemma mark1_exists: forall m x, vvalid g x -> {m': NodePred V | mark1 m x m'}.
   Proof.
     intros. destruct ((node_pred_dec m) x).
@@ -147,17 +137,18 @@ Section SIMPLE_MARK_GRAPH.
   Proof.
     intros until n2. intros HH ENUMC; intros. destruct H0 as [p ?].
     (* This was a very handy LEM. *)
-    destruct (exists_list_dec _ p (fun n => g |= root ~o~> n satisfying (negateP m1))) as [?H | ?H].
+    destruct (exists_list_dec _ (epath_to_vpath g p) (fun n => g |= root ~o~> n satisfying (negateP m1))) as [?H | ?H].
     1: apply ENUMC.
     + right. destruct H as [? _]. apply H.
       destruct H1 as [n [? ?]]. apply reachable_by_trans with n; trivial.
+      rewrite in_path_eq_epath_to_vpath in H1. 2: destruct H0 as [_ [? _]]; auto.
       destruct (reachable_by_path_split_in g _ _ _ _ _ H0 H1) as [p1 [p2 [? [? ?]]]].
       exists p2. trivial.
     + left. exists p. destruct H0. split; trivial. clear H0.
       destruct H2. destruct H as [_ ?]. split; auto.
-      unfold path_prop in *; rewrite Forall_forall in *.
-      intros ? ?. specialize (H2 x H3). specialize (H x).
-      spec H. intro. apply H1. exists x. tauto.
+      rewrite path_prop_equiv in H2 |-* ; auto.
+      intros x ?. specialize (H2 x H3). specialize (H x).
+      spec H. intro. apply H1. exists x. rewrite in_path_eq_epath_to_vpath; auto.
       rewrite negateP_spec in H2 |- *; tauto.
   Qed.
 
@@ -315,7 +306,7 @@ Section SIMPLE_MARK_GRAPH.
     (forall m m', (m ~=~ m')%NodePred -> P m nil m') ->
     (forall m v m' l m'',
       P m' l m'' ->
-      forall 
+      forall
         (R_DEC: forall x, In x (v :: l) -> ReachDecidable g x (negateP m))
         (V_DEC: forall x, In x (v :: l) -> Decidable (vvalid g x)),
       mark m v m' ->
@@ -361,7 +352,7 @@ Section SIMPLE_MARK_GRAPH.
       apply (mark_marked m v m'); auto.
       apply R_DEC; left; auto.
   Qed.
-  
+
   Lemma mark_list_get_marked: forall m1 l m2
     (R_DEC: forall x, In x l -> ReachDecidable g x (negateP m1))
     (V_DEC: forall x, In x l -> Decidable (vvalid g x)),
@@ -451,9 +442,7 @@ Section SIMPLE_MARK_GRAPH.
         eapply mark_list_get_marked; eauto.
     + assert (m1 n <-> m2 n). {
         destruct H2 as [? [? ?]].
-        apply H6. intro. apply H4. subst. exists (n :: nil).
-        split; split; simpl; auto.
-        hnf. apply Forall_cons. auto. apply Forall_nil.
+        apply H6. intro. apply H4. subst. apply reachable_by_refl; auto.
       } rewrite H5.
       assert (forall x, In x l -> ~ g |= x ~o~> n satisfying (negateP m2)). {
         intros. intro.
@@ -875,7 +864,7 @@ Proof.
   rewrite -> mark_inj.
   split; [reflexivity | auto].
 Qed.
- 
+
 Lemma mark_marked_root_refl: forall (g: Graph) root, marked g root -> mark g root g.
 Proof.
   intros.
@@ -1066,7 +1055,7 @@ Proof.
     rewrite mark_inj in H.
     destruct H; auto.
 Qed.
-  
+
 Lemma mark_reverse_unmarked: forall (g1 g2: Graph) n1 n2 root,
   mark g1 root g2 ->
   ReachDecidable g1 root (unmarked g1) ->
@@ -1128,7 +1117,7 @@ Proof.
       econstructor.
       1: destruct H as [_ H]; exact H.
       erewrite SIMPLE_MARK_GRAPH.mark_list_proper_strong; [exact H2 | | | | |].
-Abort.      
+Abort.
 
 (*
 Lemma vertex_update_mark1: forall (g1: Graph) x (g2: Graph),
@@ -1159,7 +1148,7 @@ Proof.
   rewrite -> mark_inj.
   split; [reflexivity | auto].
 Qed.
- 
+
 Lemma mark_marked_root_refl: forall (g: Graph) root, marked g root -> mark g root g.
 Proof.
   intros.

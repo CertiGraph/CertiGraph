@@ -13,3 +13,4 @@ _CoqProject
 *.out
 *.pdf
 *.dvi
+CONFIGURE
