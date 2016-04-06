@@ -335,17 +335,13 @@ Section TREE_DEF.
         assert (forall x : Vertex, False -> exists v : Vertex, False /\ reachable G v x) by (intros; exfalso; auto). specialize (H2 H3 H4). clear H4.
         remember (to_tree_list lim l (0, nil)). destruct p as [total sub_trees]. simpl in *. constructor.
         - intro. specialize (H2 _ H4). destruct H2 as [v [? ?]]. assert (reachable G root root) by (apply reachable_refl; auto). specialize (H1 _ H6).
-          destruct H1 as [p [? ?]]. assert (G |= (root :: nil) is root ~o~> root satisfying (fun _ => True)) by (split; split; simpl; hnf; auto). pose proof (H7 _ H8).
-          destruct H5 as [path ?]. assert (G |= (root :: path) is root ~o~> root satisfying (fun _ => True)). {
-            destruct H5 as [[? ?] [? _]]. split; split. 1: simpl; auto.
-            + simpl. destruct path; auto.
-            + simpl. destruct path; auto. split; auto. assert (v0 = v) by (simpl in H5; inversion H5; auto). subst v0.
-              rewrite Heql in H2. rewrite <- remove_dup_in_inv in H2. rewrite filter_In in H2.
-              destruct H2. unfold not_null_bool in H12. destruct (is_null_dec G v). 1: inversion H12.
-              rewrite <- edge_func_step in H2. pose proof H2. rewrite step_spec in H2. destruct H2 as [e [? [? ?]]]. destruct (valid_graph G e H2).
-              rewrite H14 in H16. rewrite H15 in H17. destruct H17. 1: exfalso; auto. split; auto.
-            + hnf. rewrite Forall_forall. intros; auto.
-          } specialize (H7 _ H10). rewrite H7 in H9. inversion H9. subst. clear -H5. destruct H5 as [[? _] _]. simpl in H. inversion H.
+          destruct H1 as [p [? ?]]. assert (G |= (root, nil) is root ~o~> root satisfying (fun _ => True)) by (split; split; simpl; hnf; auto). pose proof (H7 _ H8).
+          destruct H5 as [path ?]. rewrite Heql in H2. rewrite <- remove_dup_in_inv in H2. apply in_edge_func_edge in H2.
+          destruct H2 as [? [? ?]]. rewrite step_spec in H11. destruct H11 as [e [? [? ?]]].
+          assert (G |= (root, e :: nil) is root ~o~> v satisfying (fun _ => True)) by
+              (split; split; simpl; intuition; hnf; [subst root v | rewrite Forall_forall; intros]; auto).
+          pose proof (reachable_by_path_merge _ _ _ _ _ _ _ H14 H5). specialize (H7 _ H15). rewrite H7 in H9. clear -H9 H14.
+          destruct path as [v' p']. unfold path_glue in H9. simpl in H9. inversion H9.
         - assert (lim <= up) by intuition. destruct (IHup _ H4 _ H0 H1) as [_ ?]. clear IHup. specialize (H5 l 0 nil). rewrite <- Heqp in H5.
           simpl in H5. apply H5.
           * intros. subst l. rewrite <- remove_dup_in_inv in H6. apply in_edge_func_edge in H6. destruct H6 as [? [? ?]]. split; auto.
@@ -364,17 +360,20 @@ Section TREE_DEF.
           specialize (H2 _ H16). destruct H2. apply (graph_to_tree_is_reachable m x v' H18) in H14.
           assert (x <> v) by (apply NoDup_cons_2 in H5; intro; subst x; exfalso; auto). clear -H0 H1 H2 H8 H14 H17 H19.
           assert (reachable G root v') by (apply step_reachable with x; auto). specialize (H1 _ H). destruct H1 as [p [? ?]]. destruct H14 as [px ?]. destruct H17 as [pv ?].
-          assert (forall pa a, step G root a -> G |= pa is a ~o~> v' satisfying (fun _ : Vertex => True) ->
-                               G |= (root :: pa) is root ~o~> v' satisfying (fun _ : Vertex => True)). {
-            intros. clear -H0 H6 H7. destruct pa. 1: destruct H7 as [[? _] _]; simpl in H; inversion H.
-            assert (v = a) by (destruct H7 as [[? _] _]; simpl in H; inversion H; auto). subst v.
-            assert (root :: a :: pa = path_glue (root :: a :: nil) (a :: pa)) by intuition. rewrite H; clear H. apply reachable_by_path_merge with a; auto.
-            split; split; simpl; auto. 2: hnf; rewrite Forall_forall; intros; auto.
-            apply reachable_by_path_is_reachable in H7. apply reachable_by_head_valid in H7. split; [split|]; auto.
-          } pose proof (H6 _ _ H2 H4). specialize (H6 _ _ H8 H5). apply H3 in H6. apply H3 in H7. rewrite H6 in H7. inversion H7.
-          destruct px. 1: destruct H4 as [[? _] _]; simpl in H4; inversion H4. assert (v0 = x) by (destruct H4 as [[? _] _]; simpl in H4; inversion H4; auto). subst v0.
-          destruct pv. 1: destruct H5 as [[? _] _]; simpl in H5; inversion H5. assert (v0 = v) by (destruct H5 as [[? _] _]; simpl in H5; inversion H5; auto). subst v0.
-          inversion H10. exfalso; auto.
+          assert (forall e pa a, strong_evalid G e -> src G e = root -> dst G e = a -> G |= pa is a ~o~> v' satisfying (fun _ : Vertex => True) ->
+                                 G |= path_glue (root, e :: nil) pa is root ~o~> v' satisfying (fun _ : Vertex => True)). {
+            intros. apply reachable_by_path_merge with a; auto. split; split; simpl; auto.
+            hnf. rewrite Forall_forall; intros. auto.
+          } rewrite step_spec in H2. destruct H2 as [ex [? [? ?]]]. rewrite step_spec in H8. destruct H8 as [ev [? [? ?]]].
+          assert (strong_evalid G ex). {
+            rewrite <- H7 in H0. do 2 (split; auto). rewrite H9.
+            apply reachable_by_path_is_reachable in H4. apply reachable_by_head_valid in H4. auto.
+          }
+          assert (strong_evalid G ev). {
+            rewrite <- H10 in H0. do 2 (split; auto). rewrite H11.
+            apply reachable_by_path_is_reachable in H5. apply reachable_by_head_valid in H5. auto.
+          } pose proof (H6 _ _ _ H12 H7 H9 H4). specialize (H6 _ _ _ H13 H10 H11 H5). apply H3 in H6. apply H3 in H14. rewrite H6 in H14. inversion H14.
+          subst ev. rewrite H9 in H11. auto.
         - apply NoDup_cons_1 with v; auto.
     Qed.
 
