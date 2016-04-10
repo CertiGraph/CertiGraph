@@ -77,8 +77,8 @@ Definition labeledgraph_gen_dst (g : Graph) (e : E) (t : V) :=
   Build_LabeledGraph _ _ (pregraph_gen_dst g e t) (vlabel g) (elabel g).
 
 Lemma lg_vgen_stable: forall (g: Graph) (x: V) (d: DV),
-  (predicate_partial_labeledgraph (labeledgraph_vgen g x d) (fun y => x <> y)) ~=~
-   (predicate_partial_labeledgraph (labeledgraph_vgen g x d) (fun y => x <> y))%LabeledGraph.
+  (predicate_partial_labeledgraph g (Complement V (eq x))) ~=~
+   (predicate_partial_labeledgraph (labeledgraph_vgen g x d) (Complement V (eq x)))%LabeledGraph.
 Proof.
   intros.
   split; [| split].
@@ -87,10 +87,11 @@ Proof.
   + intros; simpl.
     unfold update_vlabel.
     if_tac; auto.
+    destruct H.
+    exfalso; apply H2, H1.
   + intros; simpl.
     reflexivity.
 Qed.
-
 
 End LABELED_GRAPH_GEN.
 

@@ -27,16 +27,20 @@ Local Open Scope logic.
 Section SpatialGraph_Mark.
 
 Context {V E: Type}.
-Context {DV DE: Type}.
 Context {GV GE Pred: Type}.
 Context {SGBA: SpatialGraphBasicAssum V E}.
-Context {SGC: SpatialGraphConstructor V E DV DE GV GE}.
-Context {L_SGC: Local_SpatialGraphConstructor V E DV DE GV GE}.
+Context {SGC: SpatialGraphConstructor V E bool unit GV GE}.
+Context {L_SGC: Local_SpatialGraphConstructor V E bool unit GV GE}.
 Context {SGP: SpatialGraphPred V E GV GE Pred}.
 Context {SGA: SpatialGraphAssum SGP}.
-Context {MGS: WeakMarkGraph.MarkGraphSetting DV}.
 
-Notation Graph := (LabeledGraph V E DV DE).
+Instance MGS: WeakMarkGraph.MarkGraphSetting bool.
+Proof.
+  apply (WeakMarkGraph.Build_MarkGraphSetting _ (eq true)).
+  intros; destruct x; [left | right]; congruence.
+Defined.
+
+Notation Graph := (LabeledGraph V E bool unit).
 Notation SGraph := (SpatialGraph V E GV GE).
 
 Local Coercion pg_lg: LabeledGraph >-> PreGraph.
@@ -103,26 +107,107 @@ Proof.
     rewrite H3; auto.
 Qed.
 
-Lemma vertex_update_ramify: forall (g: Graph) (x: V) (lx: DV) (gx: GV),
-  vvalid g x ->
-  gx = vgamma (Graph_SpatialGraph (labeledgraph_vgen g x lx)) x ->
-  @derives Pred _
-    (graph x (Graph_SpatialGraph g))
-    (vertex_at x (vgamma (Graph_SpatialGraph g) x) *
-      (vertex_at x gx -* graph x (Graph_SpatialGraph (labeledgraph_vgen g x lx)))).
+Lemma mark_partial_labeled_graph_equiv: forall x (g g': Graph),
+  mark x g g' ->
+  ((predicate_partial_labeledgraph g (Complement _ (reachable g x))) ~=~
+  (predicate_partial_labeledgraph g' (Complement _ (reachable g x))))%LabeledGraph.
 Proof.
   intros.
-
-  rewrite GSG_VGenPreserve by eassumption.
-
-  apply vertices_at_ramify1; auto.
-  apply reachable_refl.
-  simpl; auto.
+  split; [| split].
+  + destruct H.
+    simpl;
+    rewrite <- H0.
+    reflexivity.
+  + destruct H as [[? ?] _].
+    simpl in *; intros.
+    specialize (H0 v).
+    assert (~ g |= x ~o~> v satisfying (WeakMarkGraph.unmarked g)).
+    Focus 1. {
+      destruct H1.
+      intro; apply H3.
+      apply reachable_by_is_reachable in H4; auto.
+    } Unfocus.
+    clear - H0 H3.
+    destruct (vlabel g v), (vlabel g' v).
+    - auto.
+    - rewrite H0; auto.
+    - symmetry; tauto.
+    - auto.
+  + intros; simpl.
+    destruct (elabel g e), (elabel g' e); auto.
 Qed.
 
-Lemma exp_mark1: forall (g: Graph) (x: V) (lx: DV),
+Lemma vertex_stable_ramify: forall (g: Graph) (x: V),
+  vvalid g x ->
+  @derives Pred _
+    (reachable_vertices_at x g)
+    (vertex_at x (vgamma (Graph_SpatialGraph g) x) *
+      (vertex_at x (vgamma (Graph_SpatialGraph g) x) -* reachable_vertices_at x g)).
+Proof.
+  intros.
+  unfold reachable_vertices_at.
+  apply vertices_at_ramif_1; auto.
+  eexists.
+  split; [| split].
+  + apply Ensemble_join_Intersection_Complement.
+    - unfold Included, Ensembles.In; intros; subst.
+      apply reachable_refl; auto.
+    - intros.
+      apply decidable_prop_decidable.
+      apply equiv_dec.
+  + apply Ensemble_join_Intersection_Complement.
+    - unfold Included, Ensembles.In; intros; subst.
+      apply reachable_refl; auto.
+    - intros.
+      apply decidable_prop_decidable.
+      apply equiv_dec.
+  + reflexivity.
+Qed.
+
+Lemma vertex_update_ramify: forall (g: Graph) (x: V) (lx: bool) (gx: GV),
+  vvalid g x ->
+  gx = vgamma (Graph_SpatialGraph (labeledgraph_vgen g x lx)) x ->
+  Included (Intersection V (reachable g x) (Complement V (eq x))) (vguard g) ->
+  Included (Intersection V (reachable g x) (Complement V (eq x))) (vguard (labeledgraph_vgen g x lx)) ->
+  @derives Pred _
+    (reachable_vertices_at x g)
+    (vertex_at x (vgamma (Graph_SpatialGraph g) x) *
+      (vertex_at x gx -* reachable_vertices_at x (labeledgraph_vgen g x lx))).
+Proof.
+  intros.
+  unfold reachable_vertices_at.
+  apply vertices_at_ramif_1; auto.
+  eexists.
+  split; [| split].
+  + apply Ensemble_join_Intersection_Complement.
+    - unfold Included, Ensembles.In; intros; subst.
+      apply reachable_refl; auto.
+    - intros.
+      apply decidable_prop_decidable.
+      apply equiv_dec.
+  + apply Ensemble_join_Intersection_Complement.
+    - unfold Included, Ensembles.In; intros; subst.
+      apply reachable_refl; auto.
+    - intros.
+      apply decidable_prop_decidable.
+      apply equiv_dec.
+  + apply GSG_PartialGraphPreserve; auto.
+    - unfold Included, Ensembles.In; intros; subst.
+      rewrite Intersection_spec in H3.
+      destruct H3 as [? _].
+      apply reachable_foot_valid in H0; auto.
+    - unfold Included, Ensembles.In; intros; subst.
+      rewrite Intersection_spec in H3.
+      destruct H3 as [? _].
+      apply reachable_foot_valid in H0; auto.
+    - apply si_stronger_partial_labeledgraph_simple with (Complement V (eq x)).
+      * apply Intersection2_Included, Included_refl.
+      * apply lg_vgen_stable.
+Qed.
+
+Lemma exp_mark1: forall (g: Graph) (x: V) (lx: bool),
   WeakMarkGraph.label_marked lx ->
-  @derives Pred _ (graph x (Graph_SpatialGraph (labeledgraph_vgen g x lx))) (EX g': Graph, !! (mark1 x g g') && graph x (Graph_SpatialGraph g')).
+  @derives Pred _ (reachable_vertices_at x (labeledgraph_vgen g x lx)) (EX g': Graph, !! (mark1 x g g') && reachable_vertices_at x g').
 Proof.
   intros.
   apply (exp_right (labeledgraph_vgen g x lx)).
@@ -135,47 +220,57 @@ Lemma mark_list_mark_ramify: forall {A} (g1 g2: Graph) (g3: A -> Graph) x l y l'
   vvalid g1 x ->
   step_list g1 x (l ++ y :: l') ->
   relation_list (mark1 x :: mark_list l :: nil) g1 g2 ->
+  Included (Intersection V (reachable g2 x) (Complement V (reachable g2 y)))
+     (vguard g2) ->
+  (forall a, mark y g2 (g3 a) -> Included (Intersection V (reachable g2 x) (Complement V (reachable g2 y))) (vguard (g3 a))) ->
   @derives Pred _
-    (graph x (Graph_SpatialGraph g2))
-    (graph y (Graph_SpatialGraph g2) *
+    (reachable_vertices_at x g2)
+    (reachable_vertices_at y g2 *
       (ALL a: A, !! mark y g2 (g3 a) -->
-        (graph y (Graph_SpatialGraph (g3 a)) -*
-         graph x (Graph_SpatialGraph (g3 a))))).
+        (reachable_vertices_at y (g3 a) -*
+         reachable_vertices_at x (g3 a)))).
 Proof.
   intros.
   assert (Included (reachable g1 y) (reachable g1 x)).
   Focus 1. {
     hnf; unfold Ensembles.In; intros.
     apply step_reachable with y; auto.
-    clear H3 x0.
+    clear H5 x0.
     apply H1; clear H1.
     rewrite in_app_iff.
     simpl; auto.
   } Unfocus.
   destruct_relation_list g1' in H2.
-  destruct H4 as [? _].
+  destruct H6 as [? _].
   apply (mark_list_eq x) in H2.
   destruct H2 as [_ ?].
-  rewrite <- H4 in H2; clear g1' H4.
-  apply pred_sepcon_ramify_pred_Q with
-    (PF := Intersection _
-            (reachable g2 x)
-            (Complement _ (reachable g2 y))); auto.
+  rewrite <- H6 in H2; clear g1' H6.
+  apply vertices_at_ramif_xQ.
+  eexists.
+  split; [| split].
   + apply Ensemble_join_Intersection_Complement; auto.
     rewrite <- !H2.
     auto.
   + intros.
-    destruct H4 as [_ ?].
-    rewrite <- H4; clear H4.
+    destruct H6 as [_ ?].
+    rewrite <- H6; clear H6.
     apply Ensemble_join_Intersection_Complement; auto.
     rewrite <- H2; auto.
   + intros.
-    unfold graph_vcell.
-    f_equal.
-    simpl.
-    destruct H5; unfold Ensembles.In in *.
-    apply compute_vgamma_local.
-    reflexivity.
+    apply GSG_PartialGraphPreserve; auto.
+    - unfold Included, Ensembles.In; intros.
+      rewrite Intersection_spec in H7; destruct H7 as [? _].
+      apply reachable_foot_valid in H7; auto.
+    - destruct H6.
+      rewrite H7; clear H7.
+      unfold Included, Ensembles.In; intros.
+      rewrite Intersection_spec in H7; destruct H7 as [? _].
+      apply reachable_foot_valid in H7; auto.
+    - apply mark_partial_labeled_graph_equiv in H6.
+      eapply si_stronger_partial_labeledgraph_simple; [| eassumption].
+      unfold Included, Ensembles.In; intros.
+      rewrite Intersection_spec in H7.
+      tauto.
 Qed.
 
 End SpatialGraph_Mark.
