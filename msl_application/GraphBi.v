@@ -86,6 +86,8 @@ Check Build_Local_SpatialGraphConstructor.
     auto.
 Defined.
 
+Global Existing Instances SGC_Bi L_SGC_Bi.
+
 Definition Graph_LGraph (G: Graph): LGraph := lg_gg G.
 Definition LGraph_SGraph (G: LGraph): SGraph := Graph_SpatialGraph G.
 Definition SGraph_PGraph (G: SGraph): PGraph := @pg_sg _ _ _ _ _ _ G.
@@ -139,6 +141,20 @@ Proof.
   pose proof @valid_not_null _ _ _ _ g (maGraph g) null.
   rewrite is_null_def in H.
   tauto.
+Qed.
+
+Lemma vvalid_vguard: forall (g: Graph) x,
+  vvalid g x ->
+  vguard g x.
+Proof.
+  intros.
+  pose proof biGraph g.
+  simpl.
+  split; [| split; [| split]].
+  + apply left_valid with (x0 := x) in H0; auto.
+  + apply right_valid with (x0 := x) in H0; auto.
+  + apply (proj2 (only_two_edges _ _ _)); auto.
+  + apply (proj2 (only_two_edges _ _ _)); auto.
 Qed.
 
 Definition Graph_gen_left_null (G : Graph) (x : addr) : Graph.

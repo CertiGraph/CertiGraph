@@ -40,6 +40,8 @@ Proof.
   intros; destruct x; [left | right]; congruence.
 Defined.
 
+Global Existing Instance MGS.
+
 Notation Graph := (LabeledGraph V E bool unit).
 Notation SGraph := (SpatialGraph V E GV GE).
 
