@@ -588,6 +588,75 @@ Proof.
       tauto.
 Qed.
 
+(* TODO: As this lemma is proved. many other lemmas about remove can be
+replaced by similar existential lemmas. *)
+Lemma In_Permutation_cons: forall {A : Type} (l : list A) (x : A),
+  In x l ->
+  exists l', Permutation l (x :: l').
+Proof.
+  intros.
+  induction l.
+  + inversion H.
+  + destruct H.
+    - exists l; subst; reflexivity.
+    - destruct (IHl H) as [l' ?].
+      exists (a :: l').
+      rewrite H0.
+      constructor.
+Qed.
+
+Lemma perm_spec_minus_1: forall {A : Type} (l : list A) (P: A -> Prop) (x : A),
+  P x ->
+  (forall y : A, In y l <-> P y) /\ NoDup l ->
+  (exists l', Permutation l (x :: l') /\
+    (forall y : A, In y l' <-> P y /\ x <> y) /\ NoDup l').
+Proof.
+  intros.
+  destruct H0.
+  rewrite <- H0 in H.
+  destruct (In_Permutation_cons _ _ H) as [l' ?].
+  exists l'.
+  split; auto.
+  eapply Permutation_NoDup in H1; eauto.
+  pose proof NoDup_cons_1 _ _ _ H1.
+  pose proof NoDup_cons_2 _ _ _ H1.
+  split; [| auto].
+  intro y; rewrite <- H0.
+  assert (x = y -> ~ In y l') by (intro; subst; auto).
+  pose proof @Permutation_in _ _ _ y H2.
+  pose proof @Permutation_in _ _ _ y (Permutation_sym H2).
+  simpl in H6, H7.
+  tauto.
+Qed.
+
+Lemma Permutation_spec_Prop_join: forall {A : Type} (l : list A) (P Pf: A -> Prop) (x : A),
+  Prop_join (eq x) Pf P ->
+  (forall y : A, In y l <-> P y) /\ NoDup l ->
+  (exists l', Permutation l (x :: l') /\
+    (forall y : A, In y l' <-> Pf y) /\ NoDup l').
+Proof.
+  intros.
+  destruct H, H0.
+  assert (In x l) by (rewrite H0, H; auto).
+  destruct (In_Permutation_cons _ _ H3) as [l' ?].
+  exists l'.
+  split; auto.
+  pose proof Permutation_NoDup H4 H2.
+  pose proof NoDup_cons_1 _ _ _ H5.
+  pose proof NoDup_cons_2 _ _ _ H5.
+  split; auto.
+  intros.
+  pose proof @Permutation_in _ _ _ y H4.
+  pose proof @Permutation_in _ _ _ y (Permutation_sym H4).
+  simpl in H8, H9.
+  clear H6 H2 H3 H4 H5.
+  specialize (H y).
+  specialize (H0 y).
+  specialize (H1 y).
+  assert (x = y -> ~ In y l') by (intros; subst; auto).
+  tauto.
+Qed.
+
 Lemma nodup_remove_perm: forall {A : Type} (eq_dec : forall x y : A, {x = y} + {x <> y}) (l : list A) (x : A),
                            NoDup l -> In x l -> Permutation l (x :: remove eq_dec x l).
 Proof.

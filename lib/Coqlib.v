@@ -76,6 +76,7 @@ Tactic Notation "inv" hyp(H) := inversion H; clear H; subst.
 Tactic Notation  "icase" constr(v) := (destruct v; disc; contr; auto).
 Tactic Notation "copy" hyp(H) := (generalize H; intro).
 
+(* TODO: This tactic is now duplicated here and in VST.msl.Coqlib2. *)
 Ltac super_pattern t x :=
   let t0 := fresh "t" in
   set (t0 := t);

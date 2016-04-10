@@ -373,6 +373,7 @@ Proof.
       rewrite sepcon_emp; auto.
 Qed.
 
+(* TODO: change this name to pred_sepcon_sepcon_xx. *)
 Lemma pred_sepcon_sepcon: forall (P Q R: B -> Prop) p,
   Prop_join P Q R ->
   pred_sepcon P p * pred_sepcon Q p = pred_sepcon R p.
@@ -403,6 +404,8 @@ Proof.
     rewrite H7, iter_sepcon_app_sepcon; auto.
 Qed.
 
+(* TODO: change this name to pred_sepcon_sepcon_x1. *)
+(* TODO: add a lemma pred_sepcon_sepcon_1x. *)
 Lemma pred_sepcon_sepcon1: forall (P P': B -> Prop) p x0,
   (forall x, P' x <-> P x \/ x = x0) ->
   ~ P x0 ->
