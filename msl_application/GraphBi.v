@@ -73,17 +73,17 @@ Defined.
 
 Instance L_SGC_Bi: Local_SpatialGraphConstructor addr (addr * LR) DV DE (DV * addr * addr) unit.
 Proof.
-  constructor.
+Check Build_Local_SpatialGraphConstructor.
+  refine (Build_Local_SpatialGraphConstructor _ _ _ _ _ _ SGBA SGC_Bi
+    (fun G v => evalid (pg_lg G) (v, L) /\ evalid (pg_lg G) (v, R) /\
+                src (pg_lg G) (v, L) = v /\ src (pg_lg G) (v, R) = v) _
+    (fun _ _ => True) _).
   + intros.
     simpl.
+    destruct H as [? [? [? ?]]], H0 as [? [? [? ?]]].
     f_equal; [f_equal |]; auto.
-    - apply H3; auto.
-Check left_valid.
-      * apply (@left_valid _ _ _ _ (pg_lg G1) _ _ (@bi (pg_lg G1) (@sound_gg _ _ _ _ _ _ _ G1))). SearchAbout evalid L.
-    
-  refine (Build_SpatialGraphConstructor _ _ _ _ _ _ SGBA _ _).
-  + exact (fun G v => (vlabel G v, dst (pg_lg G) (v, L), dst (pg_lg G) (v, R))).
-  + exact (fun _ _ => tt).
+  + intros; simpl.
+    auto.
 Defined.
 
 Definition Graph_LGraph (G: Graph): LGraph := lg_gg G.
@@ -221,6 +221,7 @@ Proof.
       * destruct (equiv_dec (src G (v, R)) x); auto. unfold equiv in e; exfalso; rewrite H4 in e; auto.
 Qed.
 *)
+(*
 Lemma Graph_gen_spatial_spec: forall (G: Graph) (x: addr) (d d': DV) l r,
   vgamma G x = (d, l, r) ->
   (Graph_gen G x d') -=- (spatialgraph_vgen G x (d', l, r)).
@@ -253,7 +254,7 @@ Proof.
       * subst. exfalso; auto.
       * auto.
 Qed.
-
+*)
 Lemma weak_valid_si: forall (g1 g2: Graph) n, g1 ~=~ g2 -> (weak_valid g1 n <-> weak_valid g2 n).
 Proof.
   intros.
@@ -351,7 +352,7 @@ Proof.
   + apply LocalFiniteGraph_FiniteGraph, finGraph.
   + apply FiniteGraph_EnumCovered, finGraph.
 Qed.
-
+(*
 Lemma Graph_partialgraph_vi_spec: forall (G G': Graph) (P P': addr -> Prop),
   (predicate_partialgraph G P) ~=~ (predicate_partialgraph G' P') ->
   (forall v, vvalid G v -> P v -> vvalid G' v -> P' v -> vlabel G v = vlabel G' v) ->
@@ -377,7 +378,7 @@ Proof.
     - destruct H1. apply (right_valid G) in H1. change (pg_lg G) with (G: PGraph). rewrite H3. auto.
     - destruct H2. apply (right_valid G') in H2. change (pg_lg G') with (G': PGraph). rewrite H4. auto.
 Qed.
-
+*)
 Lemma gamma_left_reachable_included: forall (g: Graph) x d l r,
                                        vvalid g x -> vgamma g x = (d, l, r) -> Included (reachable g l) (reachable g x).
 Proof.
@@ -465,12 +466,15 @@ Spatial Facts (with Strong Assumption) Part
   Context {sSGG_Bi: sSpatialGraph_Graph_Bi DV DE}.
   Context {SGSA: SpatialGraphStrongAssum SGP}.
 
-  Notation graph x g := (@graph _ _ _ _ _ _ (@SGP pSGG_Bi DV DE sSGG_Bi) _ x g).
+  Notation graph x g := (@reachable_vertices_at _ _ _ _ _ _ _ (_) _ (@SGP pSGG_Bi DV DE sSGG_Bi) _ x g).
 
   Lemma bi_graph_unfold: forall (g: Graph) x d l r,
       vvalid g x -> vgamma g x = (d, l, r) ->
       graph x g = vertex_at x (d, l, r) ⊗ graph l g ⊗ graph r g.
   Proof.
+  Abort.
+(* TODO: resume these lemmas. *)
+(*
     intros. rewrite graph_unfold with (S := (l :: r :: nil)); auto.
     + rewrite H0. simpl. rewrite ocon_emp. rewrite <- ocon_assoc. auto.
     + apply RGF.
@@ -500,5 +504,5 @@ Spatial Facts (with Strong Assumption) Part
     destruct (@valid_graph _ _ _ _ g (maGraph g) (x, R) H1).
     rewrite H0 in H3. apply H3.
   Qed.
-  
+*)  
 End GRAPH_BI.
