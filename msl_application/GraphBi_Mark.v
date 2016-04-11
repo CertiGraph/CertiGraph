@@ -41,6 +41,7 @@ Local Identity Coercion PGraph_PreGraph: PGraph >-> PreGraph.
 
 Notation Graph := (@Graph pSGG_Bi bool unit).
 
+(* TODO: move this lemma into Graph_Mark.v. *)
 Lemma vlabel_eq: forall (g1 g2: Graph) x1 x2, (WeakMarkGraph.marked g1 x1 <-> WeakMarkGraph.marked g2 x2) -> vlabel g1 x1 = vlabel g2 x2.
 Proof.
   intros.
