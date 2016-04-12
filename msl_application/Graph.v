@@ -504,6 +504,18 @@ Proof.
   normalize.
 Qed.
 
+Lemma neg_pure_from_vertices_at: forall (g: Graph) (P Q: V -> Prop),
+  (forall (x: V) (gx: GV), Q x -> @derives _ SGP_ND (vertex_at x gx) FF) ->
+  vertices_at P g |-- !! (Disjoint _ P Q).
+Proof.
+  intros.
+  unfold vertices_at.
+  apply neg_pure_from_pred_sepcon.
+  intros.
+  unfold graph_vcell.
+  apply H; auto.
+Qed.
+
 Section SPATIAL_FACTS_STRONG_ASSU.
 
 Context {SGSA: SpatialGraphStrongAssum SGP}.

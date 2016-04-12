@@ -461,6 +461,27 @@ Proof.
   + apply prop_imp_prop_left.
 Qed.
 
+Lemma neg_pure_from_pred_sepcon: forall (P Q: B -> Prop) p,
+  (forall x, Q x -> p x |-- FF) ->
+  pred_sepcon P p |-- !! (Disjoint _ P Q).
+Proof.
+  intros.
+  unfold pred_sepcon; normalize; intros.
+  rename x into l.
+  normalize.
+  eapply derives_trans with (!! (forall x, P x -> Q x -> False)).
+  2: apply prop_derives; rewrite Disjoint_spec; auto.
+  rewrite prop_forall_allp.
+  apply allp_right; intro x.
+  rewrite !prop_impl_imp.
+  apply imp_andp_adjoint; normalize.
+  apply imp_andp_adjoint; normalize.
+  rewrite <- H0 in H2.
+  eapply derives_trans; [eapply iter_sepcon_in_true; eauto |].
+  eapply derives_trans; [apply sepcon_derives; [apply H; auto | apply derives_refl] |].
+  normalize.
+Qed.
+
 (* TODO: Maybe delete this one, this is not general enough.
   it only requires p x0 to be conflict with q x0. *)
 Lemma pred_sepcon_unique_sepcon_seg: forall (P Q: B -> Prop) p,
