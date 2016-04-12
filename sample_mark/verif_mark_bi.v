@@ -8,8 +8,8 @@ Require Import RamifyCoq.graph.path_lemmas.
 Require Import RamifyCoq.graph.subgraph2.
 Require Import RamifyCoq.graph.reachable_computable.
 Require Import RamifyCoq.msl_application.Graph.
-Require Import RamifyCoq.msl_application.GraphBi.
 Require Import RamifyCoq.msl_application.Graph_Mark.
+Require Import RamifyCoq.msl_application.GraphBi.
 Require Import RamifyCoq.msl_application.GraphBi_Mark.
 Require Import RamifyCoq.data_structure.spatial_graph_aligned_bi_VST.
 
@@ -17,13 +17,12 @@ Local Open Scope logic.
 
 Local Coercion Graph_LGraph: Graph >-> LGraph.
 Local Coercion LGraph_SGraph: LGraph >-> SGraph.
-Local Coercion SGraph_PGraph: SGraph >-> PGraph.
 Local Identity Coercion Graph_GeneralGraph: Graph >-> GeneralGraph.
 Local Identity Coercion LGraph_LabeledGraph: LGraph >-> LabeledGraph.
 Local Identity Coercion SGraph_SpatialGraph: SGraph >-> SpatialGraph.
-Local Identity Coercion PGraph_PreGraph: PGraph >-> PreGraph.
+Local Coercion pg_lg: LabeledGraph >-> PreGraph.
 
-Notation graph sh x g := (@graph _ _ _ _ _ _ (@SGP pSGG_VST bool unit (sSGG_VST sh)) _ x g).
+Notation graph sh x g := (@reachable_vertices_at _ _ _ _ _ _ _ _ _ (@SGP pSGG_VST bool unit (sSGG_VST sh)) _ x g).
 Notation Graph := (@Graph pSGG_VST bool unit).
 Existing Instances MGS biGraph maGraph finGraph RGF.
 
@@ -113,8 +112,10 @@ Proof.
   Focus 2. {
     simplify_ramif.
     subst.
-    rewrite (update_self g (ValidPointer b i) (d, l, r)) at 2 by auto.
-    apply (@graph_ramify_aux0 _ _ _ _ _ _ _ (SGA_VST sh) g _ (ValidPointer b i) (d, l, r) (d, l, r)); auto.
+    pose proof (@root_stable_ramify _ (sSGG_VST sh) g (ValidPointer b i) gx_vvalid).
+rewrite H_GAMMA_g in H0.
+simpl in H0.
+apply H0.
   } Unfocus.
   (* unlocalize *)
 

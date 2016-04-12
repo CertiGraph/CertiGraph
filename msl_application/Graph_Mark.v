@@ -139,34 +139,15 @@ Proof.
     destruct (elabel g e), (elabel g' e); auto.
 Qed.
 
-Lemma vertex_stable_ramify: forall (g: Graph) (x: V),
+Lemma root_stable_ramify: forall (g: Graph) (x: V),
   vvalid g x ->
   @derives Pred _
     (reachable_vertices_at x g)
     (vertex_at x (vgamma (Graph_SpatialGraph g) x) *
       (vertex_at x (vgamma (Graph_SpatialGraph g) x) -* reachable_vertices_at x g)).
-Proof.
-  intros.
-  unfold reachable_vertices_at.
-  apply vertices_at_ramif_1; auto.
-  eexists.
-  split; [| split].
-  + apply Ensemble_join_Intersection_Complement.
-    - unfold Included, Ensembles.In; intros; subst.
-      apply reachable_refl; auto.
-    - intros.
-      apply decidable_prop_decidable.
-      apply equiv_dec.
-  + apply Ensemble_join_Intersection_Complement.
-    - unfold Included, Ensembles.In; intros; subst.
-      apply reachable_refl; auto.
-    - intros.
-      apply decidable_prop_decidable.
-      apply equiv_dec.
-  + reflexivity.
-Qed.
+Proof. apply va_reachable_root_stable_ramify. Qed.
 
-Lemma vertex_update_ramify: forall (g: Graph) (x: V) (lx: bool) (gx: GV),
+Lemma root_update_ramify: forall (g: Graph) (x: V) (lx: bool) (gx: GV),
   vvalid g x ->
   gx = vgamma (Graph_SpatialGraph (labeledgraph_vgen g x lx)) x ->
   Included (Intersection V (reachable g x) (Complement V (eq x))) (vguard g) ->
@@ -175,38 +156,9 @@ Lemma vertex_update_ramify: forall (g: Graph) (x: V) (lx: bool) (gx: GV),
     (reachable_vertices_at x g)
     (vertex_at x (vgamma (Graph_SpatialGraph g) x) *
       (vertex_at x gx -* reachable_vertices_at x (labeledgraph_vgen g x lx))).
-Proof.
-  intros.
-  unfold reachable_vertices_at.
-  apply vertices_at_ramif_1; auto.
-  eexists.
-  split; [| split].
-  + apply Ensemble_join_Intersection_Complement.
-    - unfold Included, Ensembles.In; intros; subst.
-      apply reachable_refl; auto.
-    - intros.
-      apply decidable_prop_decidable.
-      apply equiv_dec.
-  + apply Ensemble_join_Intersection_Complement.
-    - unfold Included, Ensembles.In; intros; subst.
-      apply reachable_refl; auto.
-    - intros.
-      apply decidable_prop_decidable.
-      apply equiv_dec.
-  + apply GSG_PartialGraphPreserve; auto.
-    - unfold Included, Ensembles.In; intros; subst.
-      rewrite Intersection_spec in H3.
-      destruct H3 as [? _].
-      apply reachable_foot_valid in H0; auto.
-    - unfold Included, Ensembles.In; intros; subst.
-      rewrite Intersection_spec in H3.
-      destruct H3 as [? _].
-      apply reachable_foot_valid in H0; auto.
-    - apply si_stronger_partial_labeledgraph_simple with (Complement V (eq x)).
-      * apply Intersection2_Included, Included_refl.
-      * apply lg_vgen_stable.
-Qed.
+Proof. apply va_reachable_root_update_ramify. Qed.
 
+(* TODO: remove this lemma? *)
 Lemma exp_mark1: forall (g: Graph) (x: V) (lx: bool),
   WeakMarkGraph.label_marked lx ->
   @derives Pred _ (reachable_vertices_at x (labeledgraph_vgen g x lx)) (EX g': Graph, !! (mark1 x g g') && reachable_vertices_at x g').

@@ -19,8 +19,8 @@ Require Import RamifyCoq.graph.graph_gen.
 Require Import RamifyCoq.graph.dag.
 Require Import RamifyCoq.graph.weak_mark_lemmas.
 Require Import RamifyCoq.msl_application.Graph.
-Require Import RamifyCoq.msl_application.GraphBi.
 Require Import RamifyCoq.msl_application.Graph_Mark.
+Require Import RamifyCoq.msl_application.GraphBi.
 Require Import Coq.Logic.Classical.
 Import RamifyCoq.msl_ext.seplog.OconNotation.
 
@@ -33,11 +33,10 @@ Context {sSGG_Bi: sSpatialGraph_Graph_Bi bool unit}.
 
 Local Coercion Graph_LGraph: Graph >-> LGraph.
 Local Coercion LGraph_SGraph: LGraph >-> SGraph.
-Local Coercion SGraph_PGraph: SGraph >-> PGraph.
 Local Identity Coercion Graph_GeneralGraph: Graph >-> GeneralGraph.
 Local Identity Coercion LGraph_LabeledGraph: LGraph >-> LabeledGraph.
 Local Identity Coercion SGraph_SpatialGraph: SGraph >-> SpatialGraph.
-Local Identity Coercion PGraph_PreGraph: PGraph >-> PreGraph.
+Local Coercion pg_lg: LabeledGraph >-> PreGraph.
 
 Notation Graph := (@Graph pSGG_Bi bool unit).
 
@@ -113,14 +112,33 @@ Proof.
   eapply gamma_right_weak_valid; eauto.
 Qed.
 
+(* TODO: resume gx in all 4 files. *)
+Lemma root_stable_ramify: forall (g: Graph) (x: addr),
+  vvalid g x ->
+  @derives pred _
+    (reachable_vertices_at x g)
+    (vertex_at x (vgamma g x) *
+      (vertex_at x (vgamma g x) -* reachable_vertices_at x g)).
+Proof. intros; apply va_reachable_root_stable_ramify; auto. Qed.
+
+Lemma root_update_ramify: forall (g: Graph) (x: addr) (lx: bool),
+  vvalid g x ->
+  @derives pred _
+    (reachable_vertices_at x g)
+    (vertex_at x (vgamma g x) *
+      (vertex_at x (vgamma (Graph_gen g x lx) x) -* reachable_vertices_at x (Graph_gen g x lx))).
+Proof. intros; apply va_reachable_root_update_ramify; auto. Qed.
+
 Lemma graph_ramify_left: forall {RamUnit: Type} (g g1: Graph) x l r,
   vvalid g x ->
   vgamma g x = (false, l, r) ->
   mark1 x g g1 ->
-  (reachable_vertices_at x g1: pred) |-- reachable_vertices_at l g1 *
-   (ALL a: RamUnit * Graph,
-     !! (mark l g1 (snd a)) -->
-     (reachable_vertices_at l (snd a) -* reachable_vertices_at x (snd a))).
+  @derives pred _
+    (reachable_vertices_at x g1)
+    (reachable_vertices_at l g1 *
+      (ALL a: RamUnit * Graph,
+        !! (mark l g1 (snd a)) -->
+        (reachable_vertices_at l (snd a) -* reachable_vertices_at x (snd a)))).
 Proof.
   intros.
   apply (mark_list_mark_ramify g g1 _ _ nil _ (r :: nil)); auto.
