@@ -27,9 +27,10 @@ Import RamifyCoq.msl_ext.seplog.OconNotation.
 
 Local Open Scope logic.
 
-Class CompactCopySetting (V E: Type) := {
+Class CompactCopySpatialSetting {V E GV GE Pred} {SGBA: SpatialGraphBasicAssum V E} (SGP: SpatialGraphPred V E GV GE Pred) {SGA: SpatialGraphAssum SGP} := {
   default_v: V;
-  default_e: E
+  default_e: E;
+  default_v_non_store: forall gv, (vertex_at default_v gv: Pred) |-- FF
 }.
 
 Section SpatialGraph_Copy.
@@ -41,7 +42,7 @@ Context {SGP: SpatialGraphPred V E GV GE Pred}.
 Context {SGA: SpatialGraphAssum SGP}.
 Context {SGC: SpatialGraphConstructor V E V E GV GE}.
 Context {L_SGC: Local_SpatialGraphConstructor V E V E GV GE}.
-Context {CCS: CompactCopySetting V E}.
+Context {CCSS: CompactCopySpatialSetting SGP}.
 
 Instance MGS: WeakMarkGraph.MarkGraphSetting V.
 Proof.
