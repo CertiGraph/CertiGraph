@@ -62,7 +62,6 @@ Class BiMaFin (g: PreGraph addr (addr * LR)) := {
 Definition Graph := (GeneralGraph addr (addr * LR) DV DE (fun g => BiMaFin (pg_lg g))).
 Definition LGraph := (LabeledGraph addr (addr * LR) DV DE).
 Definition SGraph := (SpatialGraph addr (addr * LR) (DV * addr * addr) unit).
-Definition PGraph := (PreGraph addr (addr * LR)).
 
 Instance SGC_Bi: SpatialGraphConstructor addr (addr * LR) DV DE (DV * addr * addr) unit.
 Proof.
@@ -90,15 +89,13 @@ Global Existing Instances SGC_Bi L_SGC_Bi.
 
 Definition Graph_LGraph (G: Graph): LGraph := lg_gg G.
 Definition LGraph_SGraph (G: LGraph): SGraph := Graph_SpatialGraph G.
-Definition SGraph_PGraph (G: SGraph): PGraph := @pg_sg _ _ _ _ _ _ G.
 
 Local Coercion Graph_LGraph: Graph >-> LGraph.
 Local Coercion LGraph_SGraph: LGraph >-> SGraph.
-Local Coercion SGraph_PGraph: SGraph >-> PGraph.
 Local Identity Coercion Graph_GeneralGraph: Graph >-> GeneralGraph.
 Local Identity Coercion LGraph_LabeledGraph: LGraph >-> LabeledGraph.
 Local Identity Coercion SGraph_SpatialGraph: SGraph >-> SpatialGraph.
-Local Identity Coercion PGraph_PreGraph: PGraph >-> PreGraph.
+Local Coercion pg_lg: LabeledGraph >-> PreGraph.
 
 Instance biGraph (G: Graph): BiGraph G (fun x => (x, L)) (fun x => (x, R)) :=
   @bi G (@sound_gg _ _ _ _ _ _ _ G).
@@ -448,11 +445,47 @@ Qed.
 
 (*********************************************************
 
+Spatial Facts Part
+
+*********************************************************)
+
+Context {sSGG_Bi: sSpatialGraph_Graph_Bi DV DE}.
+
+Lemma va_reachable_root_stable_ramify: forall (g: Graph) (x: addr),
+  vvalid g x ->
+  @derives pred _
+    (reachable_vertices_at x g)
+    (vertex_at x (vgamma g x) *
+      (vertex_at x (vgamma g x) -* reachable_vertices_at x g)).
+Proof. intros; apply va_reachable_root_stable_ramify; auto. Qed.
+
+Lemma va_reachable_root_update_ramify: forall (g: Graph) (x: addr) (lx: DV),
+  vvalid g x ->
+  @derives pred _
+    (reachable_vertices_at x g)
+    (vertex_at x (vgamma g x) *
+      (vertex_at x (vgamma (Graph_gen g x lx) x) -* reachable_vertices_at x (Graph_gen g x lx))).
+Proof.
+  intros.
+  apply va_reachable_root_update_ramify; auto.
+  + unfold Included, Ensembles.In; intros.
+    apply vvalid_vguard.
+    rewrite Intersection_spec in H0.
+    destruct H0 as [? _].
+    apply reachable_foot_valid in H0; auto.
+  + unfold Included, Ensembles.In; intros.
+    apply vvalid_vguard.
+    rewrite Intersection_spec in H0.
+    destruct H0 as [? _].
+    apply reachable_foot_valid in H0; auto.
+Qed.
+
+(*********************************************************
+
 Spatial Facts (with Strong Assumption) Part
 
 *********************************************************)
 
-  Context {sSGG_Bi: sSpatialGraph_Graph_Bi DV DE}.
   Context {SGSA: SpatialGraphStrongAssum SGP}.
 
   Notation graph x g := (@reachable_vertices_at _ _ _ _ _ _ _ (_) _ (@SGP pSGG_Bi DV DE sSGG_Bi) _ x g).

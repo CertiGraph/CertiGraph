@@ -39,11 +39,11 @@ Existing Instances pSGG_Bi sSGG_Bi.
 
 Local Coercion Graph_LGraph: Graph >-> LGraph.
 Local Coercion LGraph_SGraph: LGraph >-> SGraph.
-Local Coercion SGraph_PGraph: SGraph >-> PGraph.
 Local Identity Coercion Graph_GeneralGraph: Graph >-> GeneralGraph.
 Local Identity Coercion LGraph_LabeledGraph: LGraph >-> LabeledGraph.
 Local Identity Coercion SGraph_SpatialGraph: SGraph >-> SpatialGraph.
-Local Identity Coercion PGraph_PreGraph: PGraph >-> PreGraph.
+Local Coercion pg_lg: LabeledGraph >-> PreGraph.
+
 Notation Graph := (@Graph pSGG_Bi addr (addr * LR)).
 
 Instance MGS: WeakMarkGraph.MarkGraphSetting addr.

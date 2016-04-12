@@ -812,6 +812,74 @@ Proof.
   exists y; split; auto.
 Qed.
 
+Lemma va_reachable_root_stable_ramify: forall (g: Graph) (x: V),
+  vvalid g x ->
+  @derives Pred _
+    (reachable_vertices_at x g)
+    (vertex_at x (vgamma (Graph_SpatialGraph g) x) *
+      (vertex_at x (vgamma (Graph_SpatialGraph g) x) -* reachable_vertices_at x g)).
+Proof.
+  intros.
+  unfold reachable_vertices_at.
+  apply vertices_at_ramif_1; auto.
+  eexists.
+  split; [| split].
+  + apply Ensemble_join_Intersection_Complement.
+    - unfold Included, Ensembles.In; intros; subst.
+      apply reachable_refl; auto.
+    - intros.
+      apply decidable_prop_decidable.
+      apply equiv_dec.
+  + apply Ensemble_join_Intersection_Complement.
+    - unfold Included, Ensembles.In; intros; subst.
+      apply reachable_refl; auto.
+    - intros.
+      apply decidable_prop_decidable.
+      apply equiv_dec.
+  + reflexivity.
+Qed.
+
+Lemma va_reachable_root_update_ramify: forall (g: Graph) (x: V) (lx: DV) (gx: GV),
+  vvalid g x ->
+  gx = vgamma (Graph_SpatialGraph (labeledgraph_vgen g x lx)) x ->
+  Included (Intersection V (reachable g x) (Complement V (eq x))) (vguard g) ->
+  Included (Intersection V (reachable g x) (Complement V (eq x))) (vguard (labeledgraph_vgen g x lx)) ->
+  @derives Pred _
+    (reachable_vertices_at x g)
+    (vertex_at x (vgamma (Graph_SpatialGraph g) x) *
+      (vertex_at x gx -* reachable_vertices_at x (labeledgraph_vgen g x lx))).
+Proof.
+  intros.
+  unfold reachable_vertices_at.
+  apply vertices_at_ramif_1; auto.
+  eexists.
+  split; [| split].
+  + apply Ensemble_join_Intersection_Complement.
+    - unfold Included, Ensembles.In; intros; subst.
+      apply reachable_refl; auto.
+    - intros.
+      apply decidable_prop_decidable.
+      apply equiv_dec.
+  + apply Ensemble_join_Intersection_Complement.
+    - unfold Included, Ensembles.In; intros; subst.
+      apply reachable_refl; auto.
+    - intros.
+      apply decidable_prop_decidable.
+      apply equiv_dec.
+  + apply GSG_PartialGraphPreserve; auto.
+    - unfold Included, Ensembles.In; intros; subst.
+      rewrite Intersection_spec in H3.
+      destruct H3 as [? _].
+      apply reachable_foot_valid in H0; auto.
+    - unfold Included, Ensembles.In; intros; subst.
+      rewrite Intersection_spec in H3.
+      destruct H3 as [? _].
+      apply reachable_foot_valid in H0; auto.
+    - apply si_stronger_partial_labeledgraph_simple with (Complement V (eq x)).
+      * apply Intersection2_Included, Included_refl.
+      * apply lg_vgen_stable.
+Qed.
+
 (* TODO: move this one into subgraph2.v *)
 Lemma unreachable_eq': forall (g : Graph) (S1 S2 : list V),
     forall x, reachable_through_set g (S1 ++ S2) x /\ ~ reachable_through_set g S1 x <-> reachable_through_set (unreachable_partial_labeledgraph g S1) S2 x.
