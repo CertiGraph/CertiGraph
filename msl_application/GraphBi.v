@@ -193,6 +193,20 @@ Ltac s_rewrite p :=
   rewrite H;
   clear H.
 
+Lemma Graph_gen_vgamma: forall (G: Graph) (x: addr) (d d': DV) l r,
+  vgamma G x = (d, l, r) ->
+  vgamma (Graph_gen G x d') x = (d', l, r).
+Proof.
+  intros.
+  simpl in H |- *.
+  inversion H; subst.
+  f_equal.
+  f_equal.
+  unfold update_vlabel.
+  destruct_eq_dec x x; [| congruence].
+  auto.
+Qed.
+
 Lemma Graph_gen_update_vgamma: forall (G: Graph) (x: addr) (d: DV) l r (Hi: in_math G x l r) (Hn: ~ is_null G x),
     vgamma (Graph_gen_update G x d l r Hi Hn) x = (d, l, r).
 Proof.
@@ -451,33 +465,35 @@ Spatial Facts Part
 
 Context {sSGG_Bi: sSpatialGraph_Graph_Bi DV DE}.
 
-Lemma va_reachable_root_stable_ramify: forall (g: Graph) (x: addr),
+Lemma va_reachable_root_stable_ramify: forall (g: Graph) (x: addr) (gx: DV * addr * addr),
+  vgamma g x = gx ->
   vvalid g x ->
   @derives pred _
     (reachable_vertices_at x g)
-    (vertex_at x (vgamma g x) *
-      (vertex_at x (vgamma g x) -* reachable_vertices_at x g)).
+    (vertex_at x gx * (vertex_at x gx -* reachable_vertices_at x g)).
 Proof. intros; apply va_reachable_root_stable_ramify; auto. Qed.
 
-Lemma va_reachable_root_update_ramify: forall (g: Graph) (x: addr) (lx: DV),
+Lemma va_reachable_root_update_ramify: forall (g: Graph) (x: addr) (lx: DV) (gx gx': DV * addr * addr),
   vvalid g x ->
+  vgamma g x = gx ->
+  vgamma (Graph_gen g x lx) x = gx' ->
   @derives pred _
     (reachable_vertices_at x g)
-    (vertex_at x (vgamma g x) *
-      (vertex_at x (vgamma (Graph_gen g x lx) x) -* reachable_vertices_at x (Graph_gen g x lx))).
+    (vertex_at x gx *
+      (vertex_at x gx' -* reachable_vertices_at x (Graph_gen g x lx))).
 Proof.
   intros.
   apply va_reachable_root_update_ramify; auto.
   + unfold Included, Ensembles.In; intros.
     apply vvalid_vguard.
-    rewrite Intersection_spec in H0.
-    destruct H0 as [? _].
-    apply reachable_foot_valid in H0; auto.
+    rewrite Intersection_spec in H2.
+    destruct H2 as [? _].
+    apply reachable_foot_valid in H2; auto.
   + unfold Included, Ensembles.In; intros.
     apply vvalid_vguard.
-    rewrite Intersection_spec in H0.
-    destruct H0 as [? _].
-    apply reachable_foot_valid in H0; auto.
+    rewrite Intersection_spec in H2.
+    destruct H2 as [? _].
+    apply reachable_foot_valid in H2; auto.
 Qed.
 
 (*********************************************************

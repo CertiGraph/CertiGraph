@@ -812,14 +812,15 @@ Proof.
   exists y; split; auto.
 Qed.
 
-Lemma va_reachable_root_stable_ramify: forall (g: Graph) (x: V),
+Lemma va_reachable_root_stable_ramify: forall (g: Graph) (x: V) (gx: GV),
+  vgamma (Graph_SpatialGraph g) x = gx ->
   vvalid g x ->
   @derives Pred _
     (reachable_vertices_at x g)
-    (vertex_at x (vgamma (Graph_SpatialGraph g) x) *
-      (vertex_at x (vgamma (Graph_SpatialGraph g) x) -* reachable_vertices_at x g)).
+    (vertex_at x gx * (vertex_at x gx -* reachable_vertices_at x g)).
 Proof.
   intros.
+  subst.
   unfold reachable_vertices_at.
   apply vertices_at_ramif_1; auto.
   eexists.
@@ -839,17 +840,19 @@ Proof.
   + reflexivity.
 Qed.
 
-Lemma va_reachable_root_update_ramify: forall (g: Graph) (x: V) (lx: DV) (gx: GV),
+Lemma va_reachable_root_update_ramify: forall (g: Graph) (x: V) (lx: DV) (gx gx': GV),
   vvalid g x ->
-  gx = vgamma (Graph_SpatialGraph (labeledgraph_vgen g x lx)) x ->
+  vgamma (Graph_SpatialGraph g) x = gx ->
+  vgamma (Graph_SpatialGraph (labeledgraph_vgen g x lx)) x = gx' ->
   Included (Intersection V (reachable g x) (Complement V (eq x))) (vguard g) ->
   Included (Intersection V (reachable g x) (Complement V (eq x))) (vguard (labeledgraph_vgen g x lx)) ->
   @derives Pred _
     (reachable_vertices_at x g)
-    (vertex_at x (vgamma (Graph_SpatialGraph g) x) *
-      (vertex_at x gx -* reachable_vertices_at x (labeledgraph_vgen g x lx))).
+    (vertex_at x gx *
+      (vertex_at x gx' -* reachable_vertices_at x (labeledgraph_vgen g x lx))).
 Proof.
   intros.
+  subst.
   unfold reachable_vertices_at.
   apply vertices_at_ramif_1; auto.
   eexists.
@@ -868,12 +871,12 @@ Proof.
       apply equiv_dec.
   + apply GSG_PartialGraphPreserve; auto.
     - unfold Included, Ensembles.In; intros; subst.
-      rewrite Intersection_spec in H3.
-      destruct H3 as [? _].
+      rewrite Intersection_spec in H0.
+      destruct H0 as [? _].
       apply reachable_foot_valid in H0; auto.
     - unfold Included, Ensembles.In; intros; subst.
-      rewrite Intersection_spec in H3.
-      destruct H3 as [? _].
+      rewrite Intersection_spec in H0.
+      destruct H0 as [? _].
       apply reachable_foot_valid in H0; auto.
     - apply si_stronger_partial_labeledgraph_simple with (Complement V (eq x)).
       * apply Intersection2_Included, Included_refl.

@@ -111,11 +111,7 @@ Proof.
   Grab Existential Variables.
   Focus 2. {
     simplify_ramif.
-    subst.
-    pose proof (@root_stable_ramify _ (sSGG_VST sh) g (ValidPointer b i) gx_vvalid).
-rewrite H_GAMMA_g in H0.
-simpl in H0.
-apply H0.
+    apply (@root_stable_ramify _ (sSGG_VST sh) g x _ H_GAMMA_g); auto.
   } Unfocus.
   (* unlocalize *)
 
@@ -180,8 +176,8 @@ apply H0.
   Grab Existential Variables.
   Focus 2. {
     simplify_ramif.
-    rewrite Graph_gen_spatial_spec by eauto.
-    apply (@graph_ramify_aux0 _ _ _ _ _ _ _ (SGA_VST sh) g _ x (false, l, r) (true, l, r)); auto.
+    apply (@root_update_ramify _ (sSGG_VST sh) g x _ (false, l, r) (true, l, r)); auto.
+    eapply Graph_gen_vgamma; eauto.
   } Unfocus.
   (* unlocalize *)
 

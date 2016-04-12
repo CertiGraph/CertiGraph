@@ -139,23 +139,24 @@ Proof.
     destruct (elabel g e), (elabel g' e); auto.
 Qed.
 
-Lemma root_stable_ramify: forall (g: Graph) (x: V),
+Lemma root_stable_ramify: forall (g: Graph) (x: V) (gx: GV),
+  vgamma (Graph_SpatialGraph g) x = gx ->
   vvalid g x ->
   @derives Pred _
     (reachable_vertices_at x g)
-    (vertex_at x (vgamma (Graph_SpatialGraph g) x) *
-      (vertex_at x (vgamma (Graph_SpatialGraph g) x) -* reachable_vertices_at x g)).
+    (vertex_at x gx * (vertex_at x gx -* reachable_vertices_at x g)).
 Proof. apply va_reachable_root_stable_ramify. Qed.
 
-Lemma root_update_ramify: forall (g: Graph) (x: V) (lx: bool) (gx: GV),
+Lemma root_update_ramify: forall (g: Graph) (x: V) (lx: bool) (gx gx': GV),
   vvalid g x ->
-  gx = vgamma (Graph_SpatialGraph (labeledgraph_vgen g x lx)) x ->
+  vgamma (Graph_SpatialGraph g) x = gx ->
+  vgamma (Graph_SpatialGraph (labeledgraph_vgen g x lx)) x = gx' ->
   Included (Intersection V (reachable g x) (Complement V (eq x))) (vguard g) ->
   Included (Intersection V (reachable g x) (Complement V (eq x))) (vguard (labeledgraph_vgen g x lx)) ->
   @derives Pred _
     (reachable_vertices_at x g)
-    (vertex_at x (vgamma (Graph_SpatialGraph g) x) *
-      (vertex_at x gx -* reachable_vertices_at x (labeledgraph_vgen g x lx))).
+    (vertex_at x gx *
+      (vertex_at x gx' -* reachable_vertices_at x (labeledgraph_vgen g x lx))).
 Proof. apply va_reachable_root_update_ramify. Qed.
 
 (* TODO: remove this lemma? *)
