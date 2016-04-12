@@ -112,21 +112,23 @@ Proof.
   eapply gamma_right_weak_valid; eauto.
 Qed.
 
-(* TODO: resume gx in all 4 files. *)
-Lemma root_stable_ramify: forall (g: Graph) (x: addr),
+Lemma root_stable_ramify: forall (g: Graph) (x: addr) (gx: bool * addr * addr),
+  vgamma g x = gx ->
   vvalid g x ->
   @derives pred _
     (reachable_vertices_at x g)
-    (vertex_at x (vgamma g x) *
-      (vertex_at x (vgamma g x) -* reachable_vertices_at x g)).
+    (vertex_at x gx *
+      (vertex_at x gx -* reachable_vertices_at x g)).
 Proof. intros; apply va_reachable_root_stable_ramify; auto. Qed.
 
-Lemma root_update_ramify: forall (g: Graph) (x: addr) (lx: bool),
+Lemma root_update_ramify: forall (g: Graph) (x: addr) (lx: bool) (gx gx': bool * addr * addr),
+  vgamma g x = gx ->
+  vgamma (Graph_gen g x lx) x = gx' ->
   vvalid g x ->
   @derives pred _
     (reachable_vertices_at x g)
-    (vertex_at x (vgamma g x) *
-      (vertex_at x (vgamma (Graph_gen g x lx) x) -* reachable_vertices_at x (Graph_gen g x lx))).
+    (vertex_at x gx *
+      (vertex_at x gx' -* reachable_vertices_at x (Graph_gen g x lx))).
 Proof. intros; apply va_reachable_root_update_ramify; auto. Qed.
 
 Lemma graph_ramify_left: forall {RamUnit: Type} (g g1: Graph) x l r,
