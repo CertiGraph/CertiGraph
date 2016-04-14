@@ -57,6 +57,10 @@ Instance GMS: GraphMorphismSetting addr (addr * LR) addr (addr * LR) addr (addr 
   apply (Build_GraphMorphismSetting _ _ _ _ _ _ (fun x => x) (fun x => x) null (null, L)).
 Defined.
 
+Instance CCSS: CompactCopySpatialSetting SGP.
+  apply (Build_CompactCopySpatialSetting _ _ _ _ _ _ _  _ null (null, L) SGAvn).
+Defined.
+
 (*
 Lemma vlabel_eq: forall (g1 g2: Graph) x1 x2, (WeakMarkGraph.marked g1 x1 <-> WeakMarkGraph.marked g2 x2) -> vlabel g1 x1 = vlabel g2 x2.
 Proof.
@@ -113,50 +117,54 @@ Lemma graph_ramify_left: forall {RamUnit: Type} (g g1: Graph) x l r l' (F: pred)
   vvalid g x ->
   vgamma g x = (null, l, r) ->
   vcopy1 x g g1 ->
-  graph x g1 * F |-- graph l g1 *
+  reachable_vertices_at x g1 * F |-- reachable_vertices_at l g1 *
    (ALL a: RamUnit * Graph * Graph,
      !! (copy l g1 (snd (fst a)) (snd a)) -->
-     ((graph l (snd (fst a)) * graph l' (snd a)) -* (graph x (snd (fst a))) * graph l' (snd a) * F)).
+     ((reachable_vertices_at l (snd (fst a)) * reachable_vertices_at l' (snd a)) -* (reachable_vertices_at x (snd (fst a))) * reachable_vertices_at l' (snd a) * F)).
 Proof.
   intros.
   destruct H1 as [? [? ?]].
-  change
-   (ALL a: RamUnit * Graph * Graph,
-     !! (copy l g1 (snd (fst a)) (snd a)) -->
-     ((graph l (snd (fst a)) * graph l' (snd a)) -* (graph x (snd (fst a))) * graph l' (snd a) * F))
-  with
-   (allp
-     ((fun a: RamUnit * Graph * Graph => !! (copy l g1 (snd (fst a)) (snd a))) -->
-        ((fun a: RamUnit * Graph * Graph  => graph l (snd (fst a)) * graph l' (snd a)) -*
-         (fun a: RamUnit * Graph * Graph  => graph x (snd (fst a)) * graph l' (snd a)) * Basics.const F))).
+  RAMIF_Q'.formalize.
   apply RAMIF_Q'.frame; [auto |].
   apply RAMIF_Q'.frame_post; [auto |].
   simpl.
-  eapply vertices_at_ramify_Q; auto.
+  eapply vertices_at_ramif_xQ.
+  eexists.
+  split; [| split].
   + rewrite <- H1.
     eapply Prop_join_reachable_left; eauto.
   + intros.
     destruct H4 as [? [? ?]].
     rewrite <- H4, <- H1.
     eapply Prop_join_reachable_left; eauto.
-  + intros ? [? ?] ? ?.
-    simpl.
-    rewrite Intersection_spec in H6; unfold Complement, Ensembles.In in H6; destruct H6.
-    f_equal; [f_equal |].
-    - destruct H5 as [_ [? [? _]]].
-      rewrite guarded_pointwise_relation_spec in H8.
-      simpl in H8.
-      apply H8.
-      intro.
-      apply H7.
-      apply reachable_by_is_reachable in H9.
-      rewrite <- H1 in H9; auto.
-    - apply dst_L_eq; auto.
-      rewrite H1 in H6.
-      apply reachable_foot_valid in H6; auto.
-    - apply dst_R_eq; auto.
-      rewrite H1 in H6.
-      apply reachable_foot_valid in H6; auto.
+  + intros [[? ?] ?] ?.
+    simpl in H4 |- *; clear r0.
+    apply GSG_PartialGraphPreserve.
+    - rewrite H1.
+      unfold Included, Ensembles.In.
+      intros.
+      apply vvalid_vguard.
+      rewrite Intersection_spec in H5; destruct H5.
+      apply reachable_foot_valid in H5; auto.
+    - rewrite H1.
+      destruct H4 as [? _]; rewrite H4.
+      unfold Included, Ensembles.In.
+      intros.
+      apply vvalid_vguard.
+      rewrite Intersection_spec in H5; destruct H5.
+      apply reachable_foot_valid in H5; auto.
+    - rewrite H1.
+      unfold Included, Ensembles.In.
+      intros.
+      rewrite Intersection_spec in H5; destruct H5.
+      apply reachable_foot_valid in H5; auto.
+    - rewrite H1.
+      destruct H4 as [? _]; rewrite H4.
+      unfold Included, Ensembles.In.
+      intros.
+      rewrite Intersection_spec in H5; destruct H5.
+      apply reachable_foot_valid in H5; auto.
+    - admit.
 Qed.
 
 Lemma extend_copy_left: forall (g g1 g2 g2': Graph) (x l r: addr) dx',
@@ -172,6 +180,8 @@ Lemma extend_copy_left: forall (g g1 g2 g2': Graph) (x l r: addr) dx',
     !! extended_copy l (g1: LGraph, g1') (g2: LGraph, g2'') && 
     (vertices_at (fun x => vvalid g2'' x /\ x' <> x) g2'' * vertex_at x' dx').
 Proof.
+ Abort.
+(*
   intros.
   pose proof WeakMarkGraph.triple_mark1 x g g g1 as HH1.
   spec HH1; [apply WeakMarkGraph.eq_do_nothing; auto |].
@@ -225,6 +235,8 @@ Proof.
       rewrite @GSG_SubGraphPreserve.
 SearchAbout predicate_sub_spatialgraph (_ -> validly_identical _ _).
 Locate GSG_PartialGraphPreserve.
+*)
+
 (*
 Lemma graph_ramify_right: forall {RamUnit: Type} (g g1 g2: Graph) x l r,
   vvalid g x ->

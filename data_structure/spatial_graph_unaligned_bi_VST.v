@@ -132,11 +132,19 @@ Instance SGA_VST (sh: share) : SpatialGraphAssum (SGP_VST sh).
   refine (Build_SpatialGraphAssum _ _ _ _ _ _ _ _ _ _ _).
 Defined.
 
-Instance SGAv_VST (sh: wshare): SpatialGraphAssum_vs (SGP_VST sh).
+Instance SGAvs_VST (sh: wshare): SpatialGraphAssum_vs (SGP_VST sh).
   apply sepcon_unique_vertex_at; auto.
 Defined.
 
+Instance SGAvn_VST (sh: wshare): SpatialGraphAssum_vn (SGP_VST sh) NullPointer.
+  intros [[? ?] ?].
+  simpl.
+  unfold trinode.
+  rewrite data_at_isptr.
+  normalize.
+Defined.
+
 Instance sSGG_VST (sh: wshare): @sSpatialGraph_Graph_Bi pSGG_VST bool unit.
-  refine (Build_sSpatialGraph_Graph_Bi pSGG_VST _ _ (SGP_VST sh) (SGA_VST sh) (SGAv_VST sh)).
+  refine (Build_sSpatialGraph_Graph_Bi pSGG_VST _ _ (SGP_VST sh) (SGA_VST sh) (SGAvs_VST sh) (SGAvn_VST sh)).
 Defined.
 

@@ -30,7 +30,7 @@ Local Open Scope logic.
 Class CompactCopySpatialSetting {V E GV GE Pred} {SGBA: SpatialGraphBasicAssum V E} (SGP: SpatialGraphPred V E GV GE Pred) {SGA: SpatialGraphAssum SGP} := {
   default_v: V;
   default_e: E;
-  default_v_non_store: forall gv, (vertex_at default_v gv: Pred) |-- FF
+  SGA_vn_default: SpatialGraphAssum_vn SGP default_v
 }.
 
 Section SpatialGraph_Copy.
