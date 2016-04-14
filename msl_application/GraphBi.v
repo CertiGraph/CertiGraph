@@ -36,10 +36,11 @@ Existing Instance SGBA.
 Class sSpatialGraph_Graph_Bi {pSGG_Bi: pSpatialGraph_Graph_Bi} (DV DE: Type): Type := {
   SGP: SpatialGraphPred addr (addr * LR) (DV * addr * addr) unit pred;
   SGA: SpatialGraphAssum SGP;
-  SGAv: SpatialGraphAssum_vs SGP
+  SGAvs: SpatialGraphAssum_vs SGP;
+  SGAvn: SpatialGraphAssum_vn SGP null
 }.
 
-Existing Instances SGP SGA SGAv.
+Existing Instances SGP SGA SGAvs.
 
 Section GRAPH_BI.
 
@@ -464,6 +465,33 @@ Spatial Facts Part
 *********************************************************)
 
 Context {sSGG_Bi: sSpatialGraph_Graph_Bi DV DE}.
+
+Lemma va_reachable_dag_unfold: forall (g: Graph) x d l r,
+  vvalid g x ->
+  vgamma g x = (d, l, r) ->
+  reachable_dag_vertices_at x g = vertex_at x (d, l, r) * reachable_through_dag_vertices_at (l :: r :: nil) g.
+Proof.
+  intros.
+  apply va_reachable_dag_unfold; auto.
+  eapply gamma_step_list; eauto.
+Qed.
+
+Lemma va_reachable_dag_update_unfold: forall (g: Graph) x d l r v,
+  vvalid g x ->
+  vgamma g x = (d, l, r) ->
+  reachable_dag_vertices_at x (Graph_gen g x v) = vertex_at x (v, l, r) * reachable_through_dag_vertices_at (l :: r :: nil) g.
+Proof.
+  intros.
+  apply va_reachable_dag_update_unfold; auto.
+  + eapply gamma_step_list; eauto.
+  + eapply Graph_gen_vgamma; eauto.
+  + unfold Included, Ensembles.In; intros.
+    apply vvalid_vguard.
+    apply reachable_through_set_foot_valid in H1; auto.
+  + unfold Included, Ensembles.In; intros.
+    apply vvalid_vguard.
+    apply reachable_through_set_foot_valid in H1; auto.
+Qed.
 
 Lemma va_reachable_root_stable_ramify: forall (g: Graph) (x: addr) (gx: DV * addr * addr),
   vgamma g x = gx ->

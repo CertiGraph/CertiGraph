@@ -62,6 +62,12 @@ Class SpatialGraphAssum_vs {V E GV GE Pred: Type} (SGP: SpatialGraphPred V E GV 
 Class SpatialGraphAssum_es {V E GV GE Pred: Type} (SGP: SpatialGraphPred V E GV GE Pred) {SGBA: SpatialGraphBasicAssum V E} {SGA: SpatialGraphAssum SGP} :=
   edge_at_sep: sepcon_unique2 (@edge_at _ _ _ _ _ SGP).
 
+Class SpatialGraphAssum_vn {V E GV GE Pred: Type} (SGP: SpatialGraphPred V E GV GE Pred) {SGBA: SpatialGraphBasicAssum V E} {SGA: SpatialGraphAssum SGP} (vnull: V) :=
+  vertex_at_not_null: forall gx, @derives Pred _ (vertex_at vnull gx) FF.
+
+Class SpatialGraphAssum_en {V E GV GE Pred: Type} (SGP: SpatialGraphPred V E GV GE Pred) {SGBA: SpatialGraphBasicAssum V E} {SGA: SpatialGraphAssum SGP} (enull: E) :=
+  edge_at_not_null: forall ge, @derives Pred _ (edge_at enull ge) FF.
+
 Instance AAV {V E GV GE Pred: Type} (SGP: SpatialGraphPred V E GV GE Pred) {SGBA: SpatialGraphBasicAssum V E} : AbsAddr V GV.
   apply (mkAbsAddr V GV (fun x y => if equiv_dec x y then true else false)); simpl; intros.
   + destruct_eq_dec p1 p2; destruct_eq_dec p2 p1; congruence.
@@ -754,12 +760,14 @@ Proof.
   apply H8; auto.
 Qed.
 
-Lemma va_reachable_dag_unfold {SGA_vs: SpatialGraphAssum_vs SGP}: forall (g: Graph) x S,
+Lemma va_reachable_dag_unfold {SGA_vs: SpatialGraphAssum_vs SGP}: forall (g: Graph) x S d,
   vvalid g x ->
   step_list g x S ->
-  reachable_dag_vertices_at x g = vertex_at x (vgamma (Graph_SpatialGraph g) x) * reachable_through_dag_vertices_at S g.
+  vgamma (Graph_SpatialGraph g) x = d ->
+  reachable_dag_vertices_at x g = vertex_at x d * reachable_through_dag_vertices_at S g.
 Proof.
   intros.
+  subst.
   unfold reachable_dag_vertices_at, reachable_through_dag_vertices_at.
   apply pred_ext; normalize.
   + apply andp_right.
@@ -779,7 +787,7 @@ Proof.
       symmetry; apply localDag_vertices_unfold; auto.
 Qed.
 
-Lemma va_reachable_dag_vgen {SGA_vs: SpatialGraphAssum_vs SGP}: forall (g: Graph) x S d d',
+Lemma va_reachable_dag_update_unfold {SGA_vs: SpatialGraphAssum_vs SGP}: forall (g: Graph) x S d d',
   vvalid g x ->
   step_list g x S ->
   vgamma (Graph_SpatialGraph (labeledgraph_vgen g x d)) x = d' ->
@@ -793,13 +801,12 @@ Proof.
   normalize.
   f_equal.
   rewrite (add_andp _ _ (vertices_at_sepcon_unique_1x _ _ _ _)).
-  rewrite (add_andp _ _ (vertices_at_sepcon_unique_1x _ _ _ d')).
+  rewrite (add_andp _ _ (vertices_at_sepcon_unique_1x (Graph_SpatialGraph g) _ _ d')).
   rewrite !(andp_comm _ (!! _)).
   apply andp_prop_ext; [reflexivity |].
   intros.
   f_equal.
-  + subst; auto.
-  + apply va_reachable_through_partialgraph_eq; auto.
+  apply va_reachable_through_partialgraph_eq; auto.
   split; [reflexivity | split; intros; [| reflexivity]].
   simpl.
   unfold update_vlabel.
