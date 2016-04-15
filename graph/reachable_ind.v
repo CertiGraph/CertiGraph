@@ -133,6 +133,17 @@ Proof.
       apply reachable_head_valid in H2; auto.
 Qed.
 
+Lemma step_list_step_reachable: forall root s d l, reachable G root s -> reachable G root d -> G |= s ~> d -> step_list G root l -> reachable_through_set G l d.
+Proof.
+  intros. rewrite (reachable_ind' _ l) in H; auto. 2: apply reachable_head_valid in H0; auto. destruct H.
+  + subst s. exists d. split.
+    - hnf in H2. rewrite H2. destruct H1 as [? [? ?]]. auto.
+    - apply reachable_by_refl; auto. apply reachable_foot_valid in H0. auto.
+  + apply reachable_through_set_step with s; auto.
+    - apply reachable_foot_valid in H0; auto.
+    - destruct H1 as [? [? ?]]; auto.
+Qed.
+
 Lemma closed_edge_closed_reachable: forall l,
   (forall x y, In x l -> edge G x y -> In y l) ->
   (forall x y, In x l -> reachable G x y -> In y l).
