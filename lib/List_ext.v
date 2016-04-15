@@ -987,3 +987,8 @@ Proof.
     reflexivity.
 Qed.
 
+Lemma nodup_remove_nodup: forall {A : Type} (eq_dec : forall x y : A, {x = y} + {x <> y}) (l : list A) (x : A), NoDup l -> NoDup (remove eq_dec x l).
+Proof.
+  intros. destruct (in_dec eq_dec x l). 2: rewrite remove_not_in; auto.
+  pose proof (nodup_remove_perm eq_dec _ _ H i). apply (Permutation_NoDup H0) in H. apply NoDup_cons_1 in H; auto.
+Qed.

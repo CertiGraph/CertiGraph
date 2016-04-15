@@ -428,6 +428,9 @@ Section REACHABLE_COMPUTABLE.
       - auto.
   Qed.
 
+  Corollary finite_reachable_enumcovered_enumerable: forall x, vvalid G x -> EnumCovered V (reachable G x) -> Enumerable V (reachable G x).
+  Proof. intros. destruct (finite_reachable_computable _ H X) as [l [? ?]]. exists l. split; auto. Qed.
+  
   Lemma compute_reachable: forall x L,
                              reachable_list G x L -> forall y, reachable G x y ->
                                                           {L' : list V | reachable_list G y L' /\ NoDup L'}.
@@ -488,55 +491,66 @@ Section REACHABLE_COMPUTABLE.
     eapply reachable_set_list_EnumCovered; eauto.
   Qed.
 
+  Lemma reachable_set_enumcovered_single_reachable:
+    forall S, EnumCovered V (reachable_through_set G S) ->
+      forall s, In s S -> weak_valid G s -> {l' : list V | reachable_list G s l' /\ NoDup l'}.
+  Proof.
+    intros.
+    destruct (null_or_valid _ _ H0).
+    + subst. exists nil. split.
+      - unfold reachable_list. intro. split; intros.
+        * inversion H1.
+        * apply reachable_head_valid in H1. apply (valid_not_null G) in H1. exfalso; auto. auto.
+      - apply NoDup_nil.
+    + apply finite_reachable_set_single with S; auto.
+  Qed.
+
   Lemma reachable_through_single_reachable:
     forall S l, reachable_set_list G S l ->
       forall s, In s S -> weak_valid G s -> {l' : list V | reachable_list G s l' /\ NoDup l'}.
   Proof.
-    intros.
-    destruct (null_or_valid _ _ H1).
-    + subst. exists nil. split.
-      - unfold reachable_list. intro. split; intros.
-        * inversion H2.
-        * apply reachable_head_valid in H2. apply (valid_not_null G) in H2. exfalso; auto. auto.
-      - apply NoDup_nil.
-    + apply finite_reachable_set_single with S; auto.
-      eapply reachable_set_list_EnumCovered; eauto.
+    intros. apply (reachable_set_enumcovered_single_reachable S); auto.
+    eapply reachable_set_list_EnumCovered; eauto.
+  Qed.
+
+  Lemma reachable_through_set_enum:
+    forall S, EnumCovered V (reachable_through_set G S) ->
+              forall s, Sublist s S -> well_defined_list G s -> Enumerable V (reachable_through_set G s).
+  Proof.
+    intros. induction s.
+    + exists nil. split. 1: apply NoDup_nil.
+      simpl. unfold reachable_through_set. unfold Ensembles.In. intros. split; intros.
+      - exfalso; auto.
+      - destruct H1 as [? [? ?]]. inversion H1.
+    + spec IHs; [eapply Sublist_trans; [apply Sublist_cons | apply H] |].
+      spec IHs; [intros x HH; apply (H0 x); right; auto |].
+      destruct IHs as [l1 [? ?]].
+      destruct (reachable_set_enumcovered_single_reachable S X a) as [l2 [? ?]].
+      1: apply (H a); left; auto.
+      1: specialize (H0 a); spec H0; [left; auto |]; destruct H0; [left | right]; auto.
+      exists (remove_dup equiv_dec (l1 ++ l2)). split. 1: apply remove_dup_nodup.
+      unfold reachable_list, reachable_through_set, Ensembles.In in *.
+      intros x; rewrite <- remove_dup_in_inv.
+      rewrite in_app_iff. specialize (H2 x). specialize (H3 x).
+      split; intros.
+      - destruct H5; [| exists a; split; [left; auto | tauto]].
+        rewrite H2 in H5.
+        destruct H5 as [s0 ?H]; exists s0.
+        split; [right|]; tauto.
+      - destruct H5 as [s0 ?H].
+        destruct_eq_dec a s0; [right | left]; subst; try tauto.
+        apply H2.
+        exists s0; simpl in H5; tauto.
   Qed.
 
   Lemma reachable_through_sublist_reachable:
     forall S l, reachable_set_list G S l ->
       forall s, Sublist s S -> well_defined_list G s -> { l' : list V | reachable_set_list G s l' /\ NoDup l'}.
   Proof.
-    intros.
-    induction s.
-    + exists nil. simpl; split; hnf; [| constructor].
-      intros.
-      unfold reachable_through_set.
-      split; intro HH; inversion HH.
-      destruct (proj1 H2).
-    + spec IHs; [eapply Sublist_trans; [apply Sublist_cons | apply H0] |].
-      spec IHs; [intros x HH; apply (H1 x); right; auto |].
-      destruct IHs as [l1 ?H].
-      destruct (reachable_through_single_reachable S l H a) as [l2 ?].
-      1: apply (H0 a); left; auto.
-      1: specialize (H1 a); spec H1; [left; auto |]; destruct H1; [left | right]; auto.
-      exists (remove_dup equiv_dec (l1 ++ l2)).
-      split; [| apply remove_dup_nodup].
-      unfold reachable_set_list, reachable_list, reachable_through_set in *.
-      destruct H2 as [?H _], a0 as [?H _].
-      intros x; rewrite <- remove_dup_in_inv.
-      rewrite in_app_iff.
-      specialize (H2 x).
-      specialize (H3 x).
-      split; intros.
-      - destruct H4; [| exists a; split; [left; auto | tauto]].
-        rewrite H2 in H4.
-        destruct H4 as [s0 ?H]; exists s0.
-        split; [right|]; tauto.
-      - destruct H4 as [s0 ?H].
-        destruct_eq_dec a s0; [right | left]; subst; try tauto.
-        apply H2.
-        exists s0; simpl in H4; tauto.
+    intros. cut (Enumerable V (reachable_through_set G s)).
+    + intros. destruct X as [l1 [? ?]]. unfold Ensembles.In in H3. exists l1. split; auto.
+    + apply (reachable_through_set_enum S); auto.
+      apply reachable_set_list_EnumCovered in H; auto.
   Qed.
 
   Lemma reachable_decidable_prime:
