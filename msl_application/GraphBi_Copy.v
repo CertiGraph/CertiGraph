@@ -53,13 +53,19 @@ Instance MGS: WeakMarkGraph.MarkGraphSetting addr.
   destruct_eq_dec x null; [right | left]; auto.
 Defined.
 
+Global Existing Instance MGS.
+
 Instance GMS: GraphMorphismSetting addr (addr * LR) addr (addr * LR) addr (addr * LR).
   apply (Build_GraphMorphismSetting _ _ _ _ _ _ (fun x => x) (fun x => x) null (null, L)).
 Defined.
 
-Instance CCSS: CompactCopySpatialSetting SGP.
-  apply (Build_CompactCopySpatialSetting _ _ _ _ _ _ _  _ null (null, L) SGAvn).
+Global Existing Instance GMS.
+
+Instance CCS: CompactCopySetting addr (addr * LR).
+  apply (Build_CompactCopySetting _ _ null (null, L)).
 Defined.
+
+Global Existing Instance CCS.
 
 (*
 Lemma vlabel_eq: forall (g1 g2: Graph) x1 x2, (WeakMarkGraph.marked g1 x1 <-> WeakMarkGraph.marked g2 x2) -> vlabel g1 x1 = vlabel g2 x2.
