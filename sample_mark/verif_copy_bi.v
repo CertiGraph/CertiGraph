@@ -11,7 +11,7 @@ Require Import RamifyCoq.msl_application.Graph.
 Require Import RamifyCoq.msl_application.Graph_Copy.
 Require Import RamifyCoq.msl_application.GraphBi.
 Require Import RamifyCoq.msl_application.GraphBi_Copy.
-Require Import RamifyCoq.data_structure.spatial_graph_aligned_bi_VST.
+Require Import RamifyCoq.sample_mark.spatial_graph_bi_copy.
 
 Local Open Scope logic.
 
@@ -22,22 +22,45 @@ Local Identity Coercion LGraph_LabeledGraph: LGraph >-> LabeledGraph.
 Local Identity Coercion SGraph_SpatialGraph: SGraph >-> SpatialGraph.
 Local Coercion pg_lg: LabeledGraph >-> PreGraph.
 
-Notation graph sh x g := (@reachable_vertices_at _ _ _ _ _ _ _ _ _ (@SGP pSGG_VST bool unit (sSGG_VST sh)) _ x g).
-Notation Graph := (@Graph pSGG_VST bool unit).
+Notation graph sh x g := (@reachable_vertices_at _ _ _ _ _ _ _ _ _ (@SGP pSGG_VST addr (addr * LR) (sSGG_VST sh)) _ x g).
+Notation full_graph sh g := (@vertices_at _ _ _ _ _ _ (@SGP pSGG_VST addr (addr * LR) (sSGG_VST sh)) _ (vvalid g) g).
+Notation Graph := (@Graph pSGG_VST (@addr pSGG_VST) (addr * LR)).
 Existing Instances MGS biGraph maGraph finGraph RGF.
 
-Definition mark_spec :=
- DECLARE _mark
+Definition natural_alignment := 8.
+
+Definition malloc_compatible (n: Z) (p: val) : Prop :=
+  match p with
+  | Vptr b ofs => (natural_alignment | Int.unsigned ofs) /\
+                           Int.unsigned ofs + n < Int.modulus
+  | _ => False
+  end.
+
+Definition copy_spec :=
+ DECLARE _copy
   WITH sh: wshare, g: Graph, x: pointer_val
   PRE [ _x OF (tptr (Tstruct _Node noattr))]
           PROP  (weak_valid g x)
           LOCAL (temp _x (pointer_val_val x))
           SEP   (graph sh x g)
   POST [ Tvoid ]
-        EX g': Graph,
-        PROP (mark x g g')
+        EX gg: Graph * Graph,
+        PROP (copy (x: addr) g (fst gg) (snd gg))
         LOCAL ()
-        SEP   (graph sh x g').
+        SEP   (graph sh x (fst gg); full_graph sh (snd gg)).
+
+Definition mallocN_spec :=
+ DECLARE _mallocN
+  WITH n: Z
+  PRE [ 1%positive OF tint]
+     PROP (4 <= n <= Int.max_unsigned) 
+     LOCAL (temp 1%positive (Vint (Int.repr n)))
+     SEP ()
+  POST [ tptr tvoid ] 
+     EX v: val,
+     PROP (malloc_compatible n v) 
+     LOCAL (temp ret_temp v) 
+     SEP (memory_block Tsh n v).
 
 Definition main_spec :=
  DECLARE _main
@@ -45,21 +68,11 @@ Definition main_spec :=
   PRE  [] main_pre prog u
   POST [ tint ] main_post prog u.
 
-Definition Vprog : varspecs := (_hd, tptr (Tstruct _Node noattr))::(_n, (Tstruct _Node noattr))::nil.
+Definition Vprog : varspecs := (_x, tptr (Tstruct _Node noattr))::(_y, tptr (Tstruct _Node noattr))::(_n, (Tstruct _Node noattr))::nil.
 
-Definition Gprog : funspecs := mark_spec :: main_spec::nil.
+Definition Gprog : funspecs := copy_spec :: mallocN_spec :: main_spec::nil.
 
-Ltac revert_exp_left_tac x :=
-  match goal with
-  | |- ?P |-- _ =>
-      let P0 := fresh "P" in
-      set (P0 := P);
-      pattern x in P0;
-      subst P0;
-      apply (revert_exists_left x); try clear x
-  end.
-
-Lemma body_mark: semax_body Vprog Gprog f_mark mark_spec.
+Lemma body_mark: semax_body Vprog Gprog f_copy copy_spec.
 Proof.
   start_function.
   remember (vgamma g x) as dlr eqn:?H.
