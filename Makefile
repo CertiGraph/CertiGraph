@@ -40,10 +40,10 @@ GRAPH_FILES = \
   local_graph_copy.v tree_model.v
 
 DATA_STRUCTURE_FILES = \
-  spatial_graph_HMD.v spatial_graph_aligned_bi_VST.v spatial_graph_unaligned_bi_VST.v spatial_graph_dispose_bi.v
+  spatial_graph_HMD.v spatial_graph_unaligned_bi_VST.v spatial_graph_dispose_bi.v
 
 SAMPLE_MARK_FILES = \
-  env_mark_bi.v verif_mark_bi.v env_garbage_collector.v env_dispose_bi.v verif_dispose_bi.v verif_mark_bi_dag.v env_copy_bi.v verif_copy_bi.v
+  env_mark_bi.v verif_mark_bi.v env_garbage_collector.v env_dispose_bi.v verif_dispose_bi.v verif_mark_bi_dag.v env_copy_bi.v verif_copy_bi.v spatial_graph_bi_mark.v spatial_graph_bi_copy.v 
 
 HIP_FILES = \
   hip_graphmark.v hip_graphmark_proofs.v

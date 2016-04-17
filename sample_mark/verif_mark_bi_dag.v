@@ -11,7 +11,7 @@ Require Import RamifyCoq.msl_application.Graph.
 Require Import RamifyCoq.msl_application.GraphBi.
 Require Import RamifyCoq.msl_application.Graph_Mark.
 Require Import RamifyCoq.msl_application.DagBi_Mark.
-Require Import RamifyCoq.data_structure.spatial_graph_aligned_bi_VST.
+Require Import RamifyCoq.sample_mark.spatial_graph_bi_mark.
 
 Local Open Scope logic.
 
@@ -48,16 +48,6 @@ Definition main_spec :=
 Definition Vprog : varspecs := (_hd, tptr (Tstruct _Node noattr))::(_n, (Tstruct _Node noattr))::nil.
 
 Definition Gprog : funspecs := mark_spec :: main_spec::nil.
-
-Ltac revert_exp_left_tac x :=
-  match goal with
-  | |- ?P |-- _ =>
-      let P0 := fresh "P" in
-      set (P0 := P);
-      pattern x in P0;
-      subst P0;
-      apply (revert_exists_left x); try clear x
-  end.
 
 Lemma body_mark: semax_body Vprog Gprog f_mark mark_spec.
 Proof.
