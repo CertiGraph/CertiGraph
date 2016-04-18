@@ -13,13 +13,13 @@ Definition ___i64_stof : ident := 22%positive.
 Definition ___compcert_va_composite : ident := 17%positive.
 Definition ___builtin_annot_intval : ident := 8%positive.
 Definition ___builtin_fabs : ident := 5%positive.
-Definition _x__1 : ident := 50%positive.
+Definition _x : ident := 50%positive.
 Definition ___builtin_read16_reversed : ident := 43%positive.
 Definition ___builtin_va_copy : ident := 12%positive.
 Definition _r0 : ident := 53%positive.
 Definition ___builtin_nop : ident := 47%positive.
 Definition ___builtin_va_start : ident := 10%positive.
-Definition _n : ident := 57%positive.
+Definition _main : ident := 57%positive.
 Definition ___builtin_read32_reversed : ident := 44%positive.
 Definition _l : ident := 3%positive.
 Definition _m : ident := 2%positive.
@@ -35,7 +35,6 @@ Definition ___builtin_va_arg : ident := 11%positive.
 Definition _mallocN : ident := 49%positive.
 Definition ___builtin_fmax : ident := 37%positive.
 Definition _r : ident := 4%positive.
-Definition _main : ident := 58%positive.
 Definition ___i64_shl : ident := 28%positive.
 Definition ___builtin_annot : ident := 7%positive.
 Definition ___builtin_fnmsub : ident := 42%positive.
@@ -53,7 +52,7 @@ Definition ___i64_udiv : ident := 25%positive.
 Definition ___compcert_va_int64 : ident := 15%positive.
 Definition ___builtin_clz : ident := 34%positive.
 Definition ___i64_shr : ident := 29%positive.
-Definition _x : ident := 55%positive.
+Definition _n : ident := 55%positive.
 Definition ___builtin_ctz : ident := 35%positive.
 Definition ___i64_sar : ident := 30%positive.
 Definition ___i64_utof : ident := 23%positive.
@@ -64,26 +63,26 @@ Definition ___i64_stod : ident := 20%positive.
 Definition f_copy := {|
   fn_return := (tptr (Tstruct _Node noattr));
   fn_callconv := cc_default;
-  fn_params := ((_x__1, (tptr (Tstruct _Node noattr))) :: nil);
+  fn_params := ((_x, (tptr (Tstruct _Node noattr))) :: nil);
   fn_vars := nil;
   fn_temps := ((_l, (tptr (Tstruct _Node noattr))) ::
                (_r, (tptr (Tstruct _Node noattr))) ::
                (_x0, (tptr (Tstruct _Node noattr))) ::
                (_l0, (tptr (Tstruct _Node noattr))) ::
                (_r0, (tptr (Tstruct _Node noattr))) ::
-               (61%positive, (tptr (Tstruct _Node noattr))) ::
                (60%positive, (tptr (Tstruct _Node noattr))) ::
-               (59%positive, (tptr tvoid)) :: nil);
+               (59%positive, (tptr (Tstruct _Node noattr))) ::
+               (58%positive, (tptr tvoid)) :: nil);
   fn_body :=
 (Ssequence
-  (Sifthenelse (Ebinop Oeq (Etempvar _x__1 (tptr (Tstruct _Node noattr)))
+  (Sifthenelse (Ebinop Oeq (Etempvar _x (tptr (Tstruct _Node noattr)))
                  (Ecast (Econst_int (Int.repr 0) tint) (tptr tvoid)) tint)
     (Sreturn (Some (Econst_int (Int.repr 0) tint)))
     Sskip)
   (Ssequence
     (Sset _x0
       (Efield
-        (Ederef (Etempvar _x__1 (tptr (Tstruct _Node noattr)))
+        (Ederef (Etempvar _x (tptr (Tstruct _Node noattr)))
           (Tstruct _Node noattr)) _m
         (talignas 4%N (tptr (Tstruct _Node noattr)))))
     (Ssequence
@@ -94,28 +93,28 @@ Definition f_copy := {|
         Sskip)
       (Ssequence
         (Ssequence
-          (Scall (Some 59%positive)
+          (Scall (Some 58%positive)
             (Evar _mallocN (Tfunction (Tcons tint Tnil) (tptr tvoid)
                              cc_default))
             ((Esizeof (Tstruct _Node noattr) tuint) :: nil))
           (Sset _x0
-            (Ecast (Etempvar 59%positive (tptr tvoid))
+            (Ecast (Etempvar 58%positive (tptr tvoid))
               (tptr (Tstruct _Node noattr)))))
         (Ssequence
           (Sset _l
             (Efield
-              (Ederef (Etempvar _x__1 (tptr (Tstruct _Node noattr)))
+              (Ederef (Etempvar _x (tptr (Tstruct _Node noattr)))
                 (Tstruct _Node noattr)) _l
               (talignas 3%N (tptr (Tstruct _Node noattr)))))
           (Ssequence
             (Sset _r
               (Efield
-                (Ederef (Etempvar _x__1 (tptr (Tstruct _Node noattr)))
+                (Ederef (Etempvar _x (tptr (Tstruct _Node noattr)))
                   (Tstruct _Node noattr)) _r (tptr (Tstruct _Node noattr))))
             (Ssequence
               (Sassign
                 (Efield
-                  (Ederef (Etempvar _x__1 (tptr (Tstruct _Node noattr)))
+                  (Ederef (Etempvar _x (tptr (Tstruct _Node noattr)))
                     (Tstruct _Node noattr)) _m
                   (talignas 4%N (tptr (Tstruct _Node noattr))))
                 (Etempvar _x0 (tptr (Tstruct _Node noattr))))
@@ -128,14 +127,14 @@ Definition f_copy := {|
                   (Econst_int (Int.repr 0) tint))
                 (Ssequence
                   (Ssequence
-                    (Scall (Some 60%positive)
+                    (Scall (Some 59%positive)
                       (Evar _copy (Tfunction
                                     (Tcons (tptr (Tstruct _Node noattr))
                                       Tnil) (tptr (Tstruct _Node noattr))
                                     cc_default))
                       ((Etempvar _l (tptr (Tstruct _Node noattr))) :: nil))
                     (Sset _l0
-                      (Etempvar 60%positive (tptr (Tstruct _Node noattr)))))
+                      (Etempvar 59%positive (tptr (Tstruct _Node noattr)))))
                   (Ssequence
                     (Sassign
                       (Efield
@@ -145,7 +144,7 @@ Definition f_copy := {|
                       (Etempvar _l0 (tptr (Tstruct _Node noattr))))
                     (Ssequence
                       (Ssequence
-                        (Scall (Some 61%positive)
+                        (Scall (Some 60%positive)
                           (Evar _copy (Tfunction
                                         (Tcons (tptr (Tstruct _Node noattr))
                                           Tnil) (tptr (Tstruct _Node noattr))
@@ -153,7 +152,7 @@ Definition f_copy := {|
                           ((Etempvar _r (tptr (Tstruct _Node noattr))) ::
                            nil))
                         (Sset _r0
-                          (Etempvar 61%positive (tptr (Tstruct _Node noattr)))))
+                          (Etempvar 60%positive (tptr (Tstruct _Node noattr)))))
                       (Ssequence
                         (Sassign
                           (Efield
@@ -163,20 +162,6 @@ Definition f_copy := {|
                             (tptr (Tstruct _Node noattr)))
                           (Etempvar _r0 (tptr (Tstruct _Node noattr))))
                         (Sreturn (Some (Etempvar _x0 (tptr (Tstruct _Node noattr)))))))))))))))))
-|}.
-
-Definition v_x := {|
-  gvar_info := (tptr (Tstruct _Node noattr));
-  gvar_init := (Init_space 4 :: nil);
-  gvar_readonly := false;
-  gvar_volatile := false
-|}.
-
-Definition v_y := {|
-  gvar_info := (tptr (Tstruct _Node noattr));
-  gvar_init := (Init_space 4 :: nil);
-  gvar_readonly := false;
-  gvar_volatile := false
 |}.
 
 Definition v_n := {|
@@ -191,11 +176,13 @@ Definition f_main := {|
   fn_callconv := cc_default;
   fn_params := nil;
   fn_vars := nil;
-  fn_temps := ((62%positive, (tptr (Tstruct _Node noattr))) :: nil);
+  fn_temps := ((_x, (tptr (Tstruct _Node noattr))) ::
+               (_y, (tptr (Tstruct _Node noattr))) ::
+               (61%positive, (tptr (Tstruct _Node noattr))) :: nil);
   fn_body :=
 (Ssequence
   (Ssequence
-    (Sassign (Evar _x (tptr (Tstruct _Node noattr)))
+    (Sset _x
       (Eaddrof (Evar _n (Tstruct _Node noattr))
         (tptr (Tstruct _Node noattr))))
     (Ssequence
@@ -214,13 +201,12 @@ Definition f_main := {|
             (Efield (Evar _n (Tstruct _Node noattr)) _r
               (tptr (Tstruct _Node noattr))) (Econst_int (Int.repr 0) tint))
           (Ssequence
-            (Scall (Some 62%positive)
+            (Scall (Some 61%positive)
               (Evar _copy (Tfunction
                             (Tcons (tptr (Tstruct _Node noattr)) Tnil)
                             (tptr (Tstruct _Node noattr)) cc_default))
-              ((Evar _x (tptr (Tstruct _Node noattr))) :: nil))
-            (Sassign (Evar _y (tptr (Tstruct _Node noattr)))
-              (Etempvar 62%positive (tptr (Tstruct _Node noattr)))))))))
+              ((Etempvar _x (tptr (Tstruct _Node noattr))) :: nil))
+            (Sset _y (Etempvar 61%positive (tptr (Tstruct _Node noattr)))))))))
   (Sreturn (Some (Econst_int (Int.repr 0) tint))))
 |}.
 
@@ -448,15 +434,15 @@ prog_defs :=
    Gfun(External (EF_external "mallocN"
                    (mksignature (AST.Tint :: nil) (Some AST.Tint) cc_default))
      (Tcons tint Tnil) (tptr tvoid) cc_default)) ::
- (_copy, Gfun(Internal f_copy)) :: (_x, Gvar v_x) :: (_y, Gvar v_y) ::
- (_n, Gvar v_n) :: (_main, Gfun(Internal f_main)) :: nil);
+ (_copy, Gfun(Internal f_copy)) :: (_n, Gvar v_n) ::
+ (_main, Gfun(Internal f_main)) :: nil);
 prog_public :=
-(_main :: _n :: _y :: _x :: _copy :: _mallocN :: ___builtin_debug ::
- ___builtin_nop :: ___builtin_write32_reversed ::
- ___builtin_write16_reversed :: ___builtin_read32_reversed ::
- ___builtin_read16_reversed :: ___builtin_fnmsub :: ___builtin_fnmadd ::
- ___builtin_fmsub :: ___builtin_fmadd :: ___builtin_fmin ::
- ___builtin_fmax :: ___builtin_fsqrt :: ___builtin_ctz :: ___builtin_clz ::
+(_main :: _n :: _copy :: _mallocN :: ___builtin_debug :: ___builtin_nop ::
+ ___builtin_write32_reversed :: ___builtin_write16_reversed ::
+ ___builtin_read32_reversed :: ___builtin_read16_reversed ::
+ ___builtin_fnmsub :: ___builtin_fnmadd :: ___builtin_fmsub ::
+ ___builtin_fmadd :: ___builtin_fmin :: ___builtin_fmax ::
+ ___builtin_fsqrt :: ___builtin_ctz :: ___builtin_clz ::
  ___builtin_bswap16 :: ___builtin_bswap32 :: ___builtin_bswap ::
  ___i64_sar :: ___i64_shr :: ___i64_shl :: ___i64_umod :: ___i64_smod ::
  ___i64_udiv :: ___i64_sdiv :: ___i64_utof :: ___i64_stof :: ___i64_utod ::

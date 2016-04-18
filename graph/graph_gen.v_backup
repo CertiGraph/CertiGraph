@@ -17,8 +17,8 @@ Context {EE: EqDec E eq}.
 
 Notation Graph := (PreGraph V E).
 
-Definition empty_pregraph (src0 dst0: E -> V): Graph :=
-  @Build_PreGraph V E EV EE (fun v => False) (fun e => False) src0 dst0.
+Definition empty_pregraph (v0: V): Graph :=
+  @Build_PreGraph V E EV EE (fun v => False) (fun e => False) (fun e => v0) (fun e => v0).
 
 Definition single_vertex_pregraph (v0: V): Graph :=
   @Build_PreGraph V E EV EE (eq v0) (fun e => False) (fun e => v0) (fun e => v0).
@@ -30,8 +30,8 @@ Definition union_pregraph (PV : V -> Prop) (PE: E -> Prop) (PVD: forall v, Decid
     (fun e => if PED e then src g1 e else src g2 e)
     (fun e => if PED e then dst g1 e else dst g2 e).
 
-Lemma pregraph_join_empty_single: forall v0 src0 dst0,
-  pregraph_join (eq v0) (Empty_set _) (empty_pregraph src0 dst0) (single_vertex_pregraph v0).
+Lemma pregraph_join_empty_single: forall v0 v1,
+  pregraph_join (eq v0) (Empty_set _) (empty_pregraph v1) (single_vertex_pregraph v0).
 Proof.
   intros.
   unfold empty_pregraph, single_vertex_pregraph.
@@ -59,8 +59,8 @@ Notation Graph := (LabeledGraph V E DV DE).
 
 Local Coercion pg_lg : LabeledGraph >-> PreGraph.
 
-Definition empty_labeledgraph (src0 dst0: E -> V) (v_default: DV) (e_default: DE): Graph :=
-  @Build_LabeledGraph V E EV EE DV DE (empty_pregraph src0 dst0) (fun v => v_default) (fun e => e_default).
+Definition empty_labeledgraph (v0: V) (v_default: DV) (e_default: DE): Graph :=
+  @Build_LabeledGraph V E EV EE DV DE (empty_pregraph v0) (fun v => v_default) (fun e => e_default).
 
 Definition single_vertex_labeledgraph (v0: V) (v_default: DV) (e_default: DE): Graph :=
   @Build_LabeledGraph V E EV EE DV DE (single_vertex_pregraph v0) (fun v => v_default) (fun e => e_default).
@@ -154,10 +154,8 @@ Lemma gen_dst_preserve_bi: forall (g: PreGraph V E) e t left_edge right_edge,
     BiGraph g left_edge right_edge -> BiGraph (pregraph_gen_dst g e t) left_edge right_edge.
 Proof.
   intros. apply Build_BiGraph; intros.
-  + simpl in *. eapply left_valid; eauto.
-  + simpl in *. eapply right_valid; eauto.
-  + apply (bi_consist g).
-  + simpl. apply (only_two_edges g).
+  + apply (bi_consist g); auto.
+  + simpl. apply (only_two_edges g); auto.
 Qed.
 
 Lemma gen_dst_preserve_math: forall (g: PreGraph V E) e t (M: MathGraph g),
@@ -210,32 +208,23 @@ Section ADD_GRAPH_GEN.
 
   Definition change_evalid v : Ensemble E := fun e => evalid g e \/ src g e = v.
 
-  Definition change_dst (v l r: V) : E -> V.
-  Proof.
-    intro e.
-    refine (if equiv_dec (src g e) v then _ else dst g e).
-    exact (if left_or_right _ _ v e _H then l else r).
-  Defined.
+  Definition change_dst (v l r: V) : E -> V :=
+    fun e => 
+      if equiv_dec e (left_out_edge v)
+      then l
+      else if equiv_dec e (right_out_edge v)
+           then r
+           else dst g e.
 
   Definition update_PreGraph v l r : Gph :=
     Build_PreGraph EV EE (change_vvalid v) (change_evalid v) (src g) (change_dst v l r).
 
   Definition update_BiGraph v l r: BiGraph (update_PreGraph v l r) left_out_edge right_out_edge.
   Proof.
-    refine (Build_BiGraph _ _ _ _ _ _ _).
+    refine (Build_BiGraph _ _ _ _ _).
     + unfold update_PreGraph; simpl.
-      unfold change_vvalid, change_evalid.
-      intros.
-      rewrite (left_sound g).
-      pose proof left_valid g x.
-      tauto.
-    + unfold update_PreGraph; simpl.
-      unfold change_vvalid, change_evalid.
-      intros.
-      rewrite (right_sound g).
-      pose proof right_valid g x.
-      tauto.
-    + unfold update_PreGraph; simpl; apply (bi_consist g).
+      intros; apply (bi_consist g).
+      destruct H; auto.
     + unfold update_PreGraph; simpl; apply (only_two_edges g).
   Defined.
 

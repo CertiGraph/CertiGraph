@@ -1314,7 +1314,7 @@ Proof.
       tauto.
 Qed.
 
-Lemma triple_final: forall (g g1: Graph) (g1': Graph') (M: V -> Prop) root es,
+Lemma triple_final: forall (g g1: Graph) (g1': Graph') (M: V -> Prop) root es src0 dst0,
   let PV := reachable_by g root (Complement _ M) in
   let PE := Intersection E (weak_edge_prop PV g) (evalid g) in
   vvalid g root ->
@@ -1325,7 +1325,7 @@ Lemma triple_final: forall (g g1: Graph) (g1': Graph') (M: V -> Prop) root es,
   let PV1 := reachable_by_through_set g (map (dst g) es) (Complement _ M0) in
   let PE1 := Intersection _ (weak_edge_prop PV1 g) (evalid g) in
   let PE1_root e := In e es in
-  let g' := empty_pregraph (vmap g root) in
+  let g' := empty_pregraph src0 dst0 in
   guarded_bij (Union _ PV1 (eq root)) (Union _ PE1 PE1_root) (vmap g1) (emap g1) g1 g1' /\
   g ~=~ g1 /\
   (forall e, Union _ PE1 PE1_root e -> Complement _ (Union _ PV1 (eq root)) (dst g1 e) -> vmap g1 (dst g1 e) = dst g1' (emap g1 e)) /\
@@ -1392,7 +1392,7 @@ Proof.
     auto.
 Qed.
 
-Lemma triple_vcopy1_edge_copy_list: forall (g g1 g2: Graph) g2' root es es_done es_later (M: V -> Prop),
+Lemma triple_vcopy1_edge_copy_list: forall (g g1 g2: Graph) g2' root es es_done es_later (M: V -> Prop) (src0 dst0: E -> V),
   let g1' := single_vertex_labeledgraph (vmap g1 root) default_DV' default_DE' in
   vvalid g root ->
   ~ M root ->
@@ -1417,7 +1417,7 @@ Lemma triple_vcopy1_edge_copy_list: forall (g g1 g2: Graph) g2' root es es_done 
   Same_set (evalid g2') (image_set (Union _ PE2 PE2_root) (emap g2)).
 Proof.
   intros.
-  set (g' := empty_pregraph (vmap g root)).
+  set (g' := empty_pregraph src0 dst0).
   assert
    (let PV1 := reachable_by_through_set g (map (dst g) nil) (Complement _ M0) in
     let PE1 := Intersection _ (weak_edge_prop PV1 g) (evalid g) in
@@ -1501,7 +1501,7 @@ Proof.
     auto.
 Qed.
 
-Lemma vcopy1_edge_copy_list_copy: forall (g g1 g2: Graph) g2' root es (M: V -> Prop),
+Lemma vcopy1_edge_copy_list_copy: forall (g g1 g2: Graph) g2' root es (M: V -> Prop) (src0 dst0: E -> V),
   let g1' := single_vertex_labeledgraph (vmap g1 root) default_DV' default_DE' in
   vvalid g root ->
   ~ M root ->
@@ -1513,7 +1513,7 @@ Lemma vcopy1_edge_copy_list_copy: forall (g g1 g2: Graph) g2' root es (M: V -> P
   copy M root g g2 g2'.
 Proof.
   intros.
-  pose proof triple_vcopy1_edge_copy_list g g1 g2 g2' root es es nil M H H0 H1 H2 (eq_sym (app_nil_r _)) H3 H4 H5.
+  pose proof triple_vcopy1_edge_copy_list g g1 g2 g2' root es es nil M src0 dst0 H H0 H1 H2 (eq_sym (app_nil_r _)) H3 H4 H5.
   apply triple_final with (es := es); auto.
 Qed.
 

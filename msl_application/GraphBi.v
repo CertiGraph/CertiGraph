@@ -73,7 +73,6 @@ Defined.
 
 Instance L_SGC_Bi: Local_SpatialGraphConstructor addr (addr * LR) DV DE (DV * addr * addr) unit.
 Proof.
-Check Build_Local_SpatialGraphConstructor.
   refine (Build_Local_SpatialGraphConstructor _ _ _ _ _ _ SGBA SGC_Bi
     (fun G v => evalid (pg_lg G) (v, L) /\ evalid (pg_lg G) (v, R) /\
                 src (pg_lg G) (v, L) = v /\ src (pg_lg G) (v, R) = v) _
@@ -122,6 +121,43 @@ Defined.
 
 Definition Graph_gen (G: Graph) (x: addr) (d: DV) : Graph :=
   generalgraph_vgen G x d (sound_gg G).
+
+Definition empty_BiGraph: BiGraph (empty_pregraph (fun e => fst e) (fun e => null)) (fun x => (x, L)) (fun x => (x, R)).
+  constructor.
+  + intros ? [].
+  + intros ? [].
+  + intros ? ?; congruence.
+  + intros ? [? ?]; split; simpl; intros.
+    - subst; destruct l; auto.
+    - inversion H; inversion H0; auto.
+Defined.
+      
+Definition empty_MathGraph: MathGraph (empty_pregraph (fun e => fst e) (fun e => null)).
+  apply (Build_MathGraph _ (fun x => x = null)).
+  + intros; destruct_eq_dec null x; [left | right]; auto.
+  + intros ? [].
+  + intros ? [].
+Defined.
+
+Definition empty_FiniteGraph: FiniteGraph (empty_pregraph (fun e => fst e) (fun e => null)).
+  constructor.
+  + exists nil.
+    split; [constructor | intros].
+    simpl.
+    unfold Ensembles.In; reflexivity. 
+  + exists nil.
+    split; [constructor | intros].
+    simpl.
+    unfold Ensembles.In; reflexivity. 
+Defined.
+
+Definition empty_sound: BiMaFin (empty_pregraph (fun e => fst e) (fun e => null)).
+  refine (Build_BiMaFin _ empty_BiGraph empty_MathGraph empty_FiniteGraph _).
+  intros; simpl; auto.
+Defined.
+
+Definition empty_Graph (default_v: DV) (default_e: DE) : Graph :=
+  Build_GeneralGraph _ _ _ (empty_labeledgraph (fun e => fst e) (fun e => null) default_v default_e) empty_sound.
 
 Lemma weak_valid_vvalid_dec: forall (g : Graph) (x: addr),
   weak_valid g x -> Decidable (vvalid g x).
