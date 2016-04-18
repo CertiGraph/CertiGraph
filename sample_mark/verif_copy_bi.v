@@ -79,7 +79,6 @@ Proof.
   destruct dlr as [[d l] r].
   rename H0 into H_GAMMA_g; symmetry in H_GAMMA_g.
   rename H into H_weak_valid.
-
   forward_if_tac  (* if (x == 0) *)
     (PROP  (pointer_val_val x <> nullval)
      LOCAL (temp _x (pointer_val_val x))
@@ -88,7 +87,7 @@ Proof.
   Focus 1. { (* if-then branch *)
     destruct_pointer_val x.
     forward. (* return *)
-    apply (exp_right g); entailer!; auto.
+    apply (exp_right (g, g)); entailer!; auto.
     apply (mark_null_refl g).
   } Unfocus.
   Focus 1. { (* if-else branch *)

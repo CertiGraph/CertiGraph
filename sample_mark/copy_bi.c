@@ -25,11 +25,11 @@ struct Node * copy(struct Node * x) {
   return x0;
 }
 
-struct Node * x, * y;
 struct Node n;
 
 int main()
 {
+  struct Node * x, * y;
   x = & n;
   n.m = 0;
   n.l = & n;
