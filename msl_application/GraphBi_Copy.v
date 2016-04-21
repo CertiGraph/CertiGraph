@@ -46,21 +46,6 @@ Local Coercion pg_lg: LabeledGraph >-> PreGraph.
 
 Notation Graph := (@Graph pSGG_Bi addr (addr * LR)).
 
-Instance MGS: WeakMarkGraph.MarkGraphSetting addr.
-  apply (WeakMarkGraph.Build_MarkGraphSetting addr
-          (fun x => ~ (x = null))).
-  intros.
-  destruct_eq_dec x null; [right | left]; auto.
-Defined.
-
-Global Existing Instance MGS.
-
-Instance GMS: GraphMorphismSetting addr (addr * LR) addr (addr * LR) addr (addr * LR).
-  apply (Build_GraphMorphismSetting _ _ _ _ _ _ (fun x => x) (fun x => x) null (null, L)).
-Defined.
-
-Global Existing Instance GMS.
-
 Instance CCS: CompactCopySetting addr (addr * LR).
   apply (Build_CompactCopySetting _ _ null (null, L)).
 Defined.
@@ -89,6 +74,25 @@ Proof.
   simpl; congruence.
 Qed.
 *)
+
+Definition empty_Graph: Graph := empty_Graph null (null, L).
+
+Opaque empty_Graph.
+
+Lemma copy_null_refl: forall (g: Graph),
+  copy null g g empty_Graph.
+Proof. intros; apply copy_invalid_refl, invalid_null; auto. Qed.
+
+Lemma copy_vgamma_not_null_refl: forall (g: Graph) (root: addr) d l r,
+  vgamma g root = (d, l, r) ->
+  d <> null ->
+  copy root g g empty_Graph.
+Proof.
+  intros; apply marked_root_copy_refl.
+  simpl.
+  inversion H.
+  subst; congruence.
+Qed.
 
 Lemma Graph_gen_true_mark1: forall (G: Graph) (x y: addr) l r,
   vgamma G x = (null, l, r) ->

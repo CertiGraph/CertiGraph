@@ -50,7 +50,15 @@ Proof.
   pose proof proj1 (proj2 (proj2 H)) e.
   split; intros [? ?]; do 2 (spec H1; [tauto |]); (split; [congruence | tauto]).
 Qed.
-  
+
+Lemma weak_edge_prop_Empty: forall g, Same_set (weak_edge_prop (Empty_set _) g) (Empty_set _).
+Proof.
+  intros.
+  unfold weak_edge_prop.
+  rewrite Same_set_spec; intros x.
+  rewrite !Empty_set_spec; reflexivity.
+Qed.
+ 
 Lemma weak_edge_prop_Disjoint: forall (P1 P2: V -> Prop) (g: PreGraph V E),
   Disjoint _ P1 P2 ->
   Disjoint _ (weak_edge_prop P1 g) (weak_edge_prop P2 g).

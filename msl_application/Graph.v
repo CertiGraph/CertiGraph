@@ -317,6 +317,21 @@ Proof.
   split; [auto | reflexivity].
 Qed.
 
+Lemma vertices_at_False: forall (g: Graph),
+  vertices_at (fun _ => False) g = emp.
+Proof.
+  intros.
+  apply pred_sepcon_False.
+Qed.
+
+Lemma vertices_at_Empty: forall (g: Graph),
+  vertices_at (Empty_set _) g = emp.
+Proof.
+  intros.
+  apply pred_sepcon_Empty.
+Qed.
+
+
 (*************************************
 
 Ramification Lemmas
