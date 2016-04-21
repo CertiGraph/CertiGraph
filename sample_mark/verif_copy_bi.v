@@ -87,8 +87,11 @@ Proof.
   Focus 1. { (* if-then branch *)
     destruct_pointer_val x.
     forward. (* return *)
-    apply (exp_right (g, g)); entailer!; auto.
-    apply (mark_null_refl g).
+    apply (exp_right (g, empty_Graph)).
+    simpl.
+    rewrite vertices_at_False.
+    entailer!; auto.
+    apply (copy_null_refl g).
   } Unfocus.
   Focus 1. { (* if-else branch *)
     forward. (* skip; *)
@@ -107,18 +110,17 @@ Proof.
   localize
    (PROP  ()
     LOCAL (temp _x (pointer_val_val x))
-    SEP   (data_at sh node_type (Vint (Int.repr (if d then 1 else 0)), (pointer_val_val l, pointer_val_val r))
+    SEP   (data_at sh node_type (pointer_val_val d, (pointer_val_val l, pointer_val_val r))
               (pointer_val_val x))).
   (* localize *)
 
-  apply -> ram_seq_assoc. 
   eapply semax_ram_seq;
     [ repeat apply eexists_add_stats_cons; constructor
     | load_tac
     | abbreviate_semax_ram].
-  (* root_mark = x -> m; *)
+  (* x0 = x -> m; *)
 
-  unlocalize (PROP ()  LOCAL  (temp _root_mark (Vint (Int.repr (if d then 1 else 0))); temp _x (pointer_val_val x))  SEP  (graph sh x g)).
+  unlocalize (PROP ()  LOCAL  (temp _x0 (pointer_val_val d); temp _x (pointer_val_val x))  SEP  (graph sh x g)).
 
   Grab Existential Variables.
   Focus 2. {

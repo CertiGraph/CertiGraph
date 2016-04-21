@@ -5,10 +5,15 @@ Require Export Coq.Sets.Ensembles.
 Require Import Coq.Sets.Constructive_sets.
 Require Import RamifyCoq.lib.Coqlib.
 
-Lemma Full_set_spec: forall A (v: A), Full_set A v.
+Lemma Full_set_spec: forall A (v: A), Full_set A v <-> True.
 Proof.
   intros.
-  constructor.
+  split; intros; constructor.
+Qed.
+
+Lemma Empty_set_spec: forall A (v: A), Empty_set A v <-> False.
+  intros.
+  split; intros [].
 Qed.
 
 Lemma Intersection_spec: forall A (v: A) P Q, Intersection _ P Q v <-> P v /\ Q v.
@@ -43,7 +48,7 @@ Lemma Included_Full_set: forall A P, Included A P (Full_set A).
 Proof.
   intros.
   hnf; unfold In; intros.
-  apply Full_set_spec.
+  apply Full_set_spec; auto.
 Qed.
 
 Lemma Intersection_Complement: forall A (P Q: Ensemble A),
@@ -263,6 +268,26 @@ Proof.
   hnf; intros.
   rewrite Intersection_spec.
   pose proof Full_set_spec A a.
+  tauto.
+Qed.
+
+Lemma Intersection_Empty_left {A: Type}: forall P, Same_set (Intersection _ (Empty_set A) P) (Empty_set A).
+Proof.
+  intros.
+  rewrite Same_set_spec.
+  hnf; intros.
+  rewrite Intersection_spec.
+  pose proof Empty_set_spec A a.
+  tauto.
+Qed.
+
+Lemma Intersection_Empty_right {A: Type}: forall P, Same_set (Intersection _ P (Empty_set A)) (Empty_set A).
+Proof.
+  intros.
+  rewrite Same_set_spec.
+  hnf; intros.
+  rewrite Intersection_spec.
+  pose proof Empty_set_spec A a.
   tauto.
 Qed.
 

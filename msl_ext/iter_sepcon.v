@@ -280,6 +280,9 @@ Proof.
     apply sepcon_derives; auto.
 Qed.
 
+Lemma iter_sepcon_nil: forall (p : B -> A), iter_sepcon nil p = emp.
+Proof. intros; reflexivity. Qed.
+
 End IterSepCon.
 
 Lemma iter_sepcon_map: forall {A B C: Type} {ND : NatDed A} {SL : SepLog A} (l : list C) (f : B -> A) (g: C -> B),
@@ -518,6 +521,32 @@ Proof.
   rename x0 into l.
   rewrite <- H0 in H.
   eapply iter_sepcon_in_true; auto.
+Qed.
+
+Lemma pred_sepcon_False: forall p,
+  pred_sepcon (fun _ => False) p = emp.
+Proof.
+  intros.
+  unfold pred_sepcon.
+  apply pred_ext.
+  + apply exp_left; intros.
+    normalize.
+    destruct x; [auto |].
+    specialize (H b); simpl in H; tauto.
+  + apply (exp_right nil).
+    normalize.
+    apply andp_right; auto.
+    apply prop_right; constructor.
+Qed.
+
+Lemma pred_sepcon_Empty: forall p,
+  pred_sepcon (Empty_set _) p = emp.
+Proof.
+  intros.
+  rewrite <- pred_sepcon_False with p.
+  apply pred_sepcon_proper; [| reflexivity].
+  intros ?.
+  rewrite Empty_set_spec; tauto.
 Qed.
 
 End IterPredSepCon.

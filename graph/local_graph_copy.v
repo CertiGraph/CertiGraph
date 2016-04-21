@@ -543,6 +543,72 @@ Proof.
     rewrite <- H4; auto.
 Qed.
 
+Lemma copy_invalid_refl: forall (g: Graph) M root (src0 dst0: E' -> V'),
+  ~ vvalid g root ->
+  copy M root g g (empty_labeledgraph src0 dst0 default_DV' default_DE').
+Proof.
+  intros.
+  unfold copy.
+  assert (Same_set (reachable_by g root (Complement V M)) (Empty_set _)).
+  Focus 1. {
+    rewrite Same_set_spec; intros ?.
+    rewrite Empty_set_spec.
+    pose proof reachable_by_head_valid g root a (Complement V M); tauto.
+  } Unfocus.
+  rewrite H0.
+  rewrite weak_edge_prop_Empty, Intersection_Empty_left.
+  rewrite !image_Empty.
+  split; [| split; [| split; [| split; [| split; [| split]]]]].
+  + reflexivity.
+  + reflexivity.
+  + reflexivity.
+  + simpl.
+    rewrite Same_set_spec; intros ?.
+    rewrite Empty_set_spec; tauto.
+  + simpl.
+    rewrite Same_set_spec; intros ?.
+    rewrite Empty_set_spec; tauto.
+  + simpl.
+    intros ? ? ? ?.
+    inversion H1.
+  + simpl.
+    apply guarded_bij_empty_empty.
+Qed.
+
+Lemma copy_marked_root_refl: forall (g: Graph) (M: V -> Prop) root (src0 dst0: E' -> V'),
+  M root ->
+  copy M root g g (empty_labeledgraph src0 dst0 default_DV' default_DE').
+Proof.
+  intros.
+  unfold copy.
+  assert (Same_set (reachable_by g root (Complement V M)) (Empty_set _)).
+  Focus 1. {
+    rewrite Same_set_spec; intros ?.
+    rewrite Empty_set_spec.
+    pose proof reachable_by_head_prop g root a (Complement V M).
+    unfold Complement at 2, Ensembles.In in H0.
+    tauto.
+  } Unfocus.
+  rewrite H0.
+  rewrite weak_edge_prop_Empty, Intersection_Empty_left.
+  rewrite !image_Empty.
+  split; [| split; [| split; [| split; [| split; [| split]]]]].
+  + reflexivity.
+  + reflexivity.
+  + reflexivity.
+  + simpl.
+    rewrite Same_set_spec; intros ?.
+    rewrite Empty_set_spec; tauto.
+  + simpl.
+    rewrite Same_set_spec; intros ?.
+    rewrite Empty_set_spec; tauto.
+  + simpl.
+    intros ? ? ? ?.
+    inversion H1.
+  + simpl.
+    apply guarded_bij_empty_empty.
+Qed.
+
 Lemma triple1_copy: forall (g g1 g2: Graph) (g1' g2': Graph') (M: V -> Prop) root es es_done e0 es_later,
   let M0 := Union _ M (eq root) in
   let PV1 := reachable_by_through_set g (map (dst g) es_done) (Complement _ M0) in
