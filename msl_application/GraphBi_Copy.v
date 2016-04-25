@@ -52,29 +52,6 @@ Defined.
 
 Global Existing Instance CCS.
 
-(*
-Lemma vlabel_eq: forall (g1 g2: Graph) x1 x2, (WeakMarkGraph.marked g1 x1 <-> WeakMarkGraph.marked g2 x2) -> vlabel g1 x1 = vlabel g2 x2.
-Proof.
-  intros.
-  simpl in H.
-  destruct H.
-  destruct (vlabel g1 x1), (vlabel g2 x2); try congruence.
-  + tauto.
-  + symmetry; tauto.
-Qed.
-
-Lemma mark_null_refl: forall (g: Graph), mark null g g.
-Proof. intros. apply mark_invalid_refl, invalid_null. Qed.
-
-Lemma mark_vgamma_true_refl: forall (g: Graph) root d l r, vgamma g root = (d, l, r) -> d = true -> mark root g g.
-Proof.
-  intros.
-  apply mark_marked_root_refl.
-  inversion H.
-  simpl; congruence.
-Qed.
-*)
-
 Definition empty_Graph: Graph := empty_Graph null (null, L).
 
 Opaque empty_Graph.
@@ -93,6 +70,25 @@ Proof.
   inversion H.
   subst; congruence.
 Qed.
+
+Lemma root_stable_ramify: forall (g: Graph) (x: addr) (gx: addr * addr * addr),
+  vgamma g x = gx ->
+  vvalid g x ->
+  @derives pred _
+    (reachable_vertices_at x g)
+    (vertex_at x gx *
+      (vertex_at x gx -* reachable_vertices_at x g)).
+Proof. intros; apply va_reachable_root_stable_ramify; auto. Qed.
+
+Lemma root_update_ramify: forall (g: Graph) (x: addr) (lx: addr) (gx gx': addr * addr * addr),
+  vgamma g x = gx ->
+  vgamma (Graph_gen g x lx) x = gx' ->
+  vvalid g x ->
+  @derives pred _
+    (reachable_vertices_at x g)
+    (vertex_at x gx *
+      (vertex_at x gx' -* reachable_vertices_at x (Graph_gen g x lx))).
+Proof. intros; apply va_reachable_root_update_ramify; auto. Qed.
 
 Lemma Graph_gen_true_mark1: forall (G: Graph) (x y: addr) l r,
   vgamma G x = (null, l, r) ->
