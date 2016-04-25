@@ -15,6 +15,8 @@ Require Import RamifyCoq.sample_mark.spatial_graph_bi_copy.
 
 Local Open Scope logic.
 
+Hint Rewrite eval_cast_neutral_is_pointer_or_null using auto : norm. (* TODO: should not need this *)
+
 Local Coercion Graph_LGraph: Graph >-> LGraph.
 Local Coercion LGraph_SGraph: LGraph >-> SGraph.
 Local Identity Coercion Graph_GeneralGraph: Graph >-> GeneralGraph.
@@ -27,6 +29,7 @@ Notation full_graph sh g := (@vertices_at _ _ _ _ _ _ (@SGP pSGG_VST addr (addr 
 Notation Graph := (@Graph pSGG_VST (@addr pSGG_VST) (addr * LR)).
 Existing Instances MGS biGraph maGraph finGraph RGF.
 
+(*
 Definition natural_alignment := 8.
 
 Definition malloc_compatible (n: Z) (p: val) : Prop :=
@@ -35,19 +38,6 @@ Definition malloc_compatible (n: Z) (p: val) : Prop :=
                            Int.unsigned ofs + n < Int.modulus
   | _ => False
   end.
-
-Definition copy_spec :=
- DECLARE _copy
-  WITH sh: wshare, g: Graph, x: pointer_val
-  PRE [ _x OF (tptr (Tstruct _Node noattr))]
-          PROP  (weak_valid g x)
-          LOCAL (temp _x (pointer_val_val x))
-          SEP   (graph sh x g)
-  POST [ Tvoid ]
-        EX gg: Graph * Graph,
-        PROP (copy (x: addr) g (fst gg) (snd gg))
-        LOCAL ()
-        SEP   (graph sh x (fst gg); full_graph sh (snd gg)).
 
 Definition mallocN_spec :=
  DECLARE _mallocN
@@ -61,6 +51,34 @@ Definition mallocN_spec :=
      PROP (malloc_compatible n v) 
      LOCAL (temp ret_temp v) 
      SEP (memory_block Tsh n v).
+*)
+
+Definition mallocN_spec :=
+ DECLARE _mallocN
+  WITH sh: wshare
+  PRE [ 1%positive OF tint]
+     PROP () 
+     LOCAL (temp 1%positive (Vint (Int.repr 16)))
+     SEP ()
+  POST [ tptr tvoid ] 
+     EX v: addr,
+     PROP ()
+     LOCAL (temp ret_temp (pointer_val_val v)) 
+     SEP (data_at sh node_type (pointer_val_val null, (pointer_val_val null, pointer_val_val null))
+              (pointer_val_val v)).
+
+Definition copy_spec :=
+ DECLARE _copy
+  WITH sh: wshare, g: Graph, x: pointer_val
+  PRE [ _x OF (tptr (Tstruct _Node noattr))]
+          PROP  (weak_valid g x)
+          LOCAL (temp _x (pointer_val_val x))
+          SEP   (graph sh x g)
+  POST [ Tvoid ]
+        EX gg: Graph * Graph,
+        PROP (copy (x: addr) g (fst gg) (snd gg))
+        LOCAL ()
+        SEP   (graph sh x (fst gg); full_graph sh (snd gg)).
 
 Definition main_spec :=
  DECLARE _main
@@ -130,67 +148,79 @@ Proof.
   (* unlocalize *)
 
   unfold semax_ram.
-  forward_if_tac  (* if (root_mark == 1) *)
-    (PROP   (d = false)
-      LOCAL (temp _x (pointer_val_val x))
-      SEP   (graph sh x g)).
+  forward_if_tac  (* if (x0 != 0) *)
+    (PROP   (d = null)
+     LOCAL (temp _x (pointer_val_val x))
+     SEP   (graph sh x g)).
+  admit. (* type checking for pointer comparable. *)
   Focus 1. { (* if-then branch *)
     forward. (* return *)
-    apply (exp_right g).
+    apply (exp_right (g, empty_Graph)).
+    simpl.
+    rewrite vertices_at_False.
     entailer!; auto.
-    eapply (mark_vgamma_true_refl g); eauto.
-    clear - H0; destruct d; [auto | inversion H0].
+    eapply (copy_vgamma_not_null_refl g); eauto.
+    clear - H0.
+    destruct d; [change null with (NullPointer) | simpl in H0; change nullval with (Vint Int.zero) in H0]; try congruence.
   } Unfocus.
   Focus 1. { (* if-else branch *)
     forward. (* skip; *)
     entailer!.
-    clear - H0; destruct d; congruence.
+    clear - H0. destruct d; inversion H0. auto.
   } Unfocus.
 
-  normalize.
+  Intros.
+  subst d.
+  forward_call sh. (* x0 = (struct Node * ) mallocN (sizeof (struct Node)); *)
+
+  Intros x0.
   localize
    (PROP  ()
-    LOCAL (temp _x (pointer_val_val x))
-    SEP   (data_at sh node_type (Vint (Int.repr 0), (pointer_val_val l, pointer_val_val r))
+    LOCAL (temp _x (pointer_val_val x); temp _x0 (pointer_val_val x0))
+    SEP   (data_at sh node_type (pointer_val_val null, (pointer_val_val l, pointer_val_val r))
               (pointer_val_val x))).
   (* localize *)
 
-  apply -> ram_seq_assoc. 
   eapply semax_ram_seq;
     [ repeat apply eexists_add_stats_cons; constructor
     | load_tac
     | abbreviate_semax_ram].
   (* l = x -> l; *)
 
-  apply -> ram_seq_assoc.
   eapply semax_ram_seq;
     [ repeat apply eexists_add_stats_cons; constructor
     | load_tac
     | abbreviate_semax_ram].
   (* r = x -> r; *)
 
-  apply -> ram_seq_assoc.
   eapply semax_ram_seq;
     [ repeat apply eexists_add_stats_cons; constructor
     | store_tac
     | abbreviate_semax_ram].
-  cbv beta zeta iota delta [replace_nth].
+
+  autorewrite with norm. (* TODO: should not need this *)
   change (@field_at CompSpecs sh node_type []
-           (Vint (Int.repr 1), (pointer_val_val l, pointer_val_val r))) with
+           (pointer_val_val x0, (pointer_val_val l, pointer_val_val r))) with
          (@data_at CompSpecs sh node_type
-           (Vint (Int.repr 1), (pointer_val_val l, pointer_val_val r))).
-  (* x -> d = 1; *)
+           (pointer_val_val x0, (pointer_val_val l, pointer_val_val r))).
+  (* x -> m = x0; *)
 
   unlocalize
    (PROP  ()
     LOCAL (temp _r (pointer_val_val r);
            temp _l (pointer_val_val l);
-           temp _x (pointer_val_val x))
-    SEP (graph sh x (Graph_gen g x true))).
+           temp _x (pointer_val_val x);
+           temp _x0 (pointer_val_val x0))
+    SEP (data_at sh node_type
+           (pointer_val_val null, (pointer_val_val null, pointer_val_val null))
+           (pointer_val_val x0);
+         graph sh x (Graph_gen g x x0))).
   Grab Existential Variables.
   Focus 2. {
     simplify_ramif.
-    apply (@root_update_ramify _ (sSGG_VST sh) g x _ (false, l, r) (true, l, r)); auto.
+    rewrite !(sepcon_comm (@data_at CompSpecs sh node_type _ (pointer_val_val x0))).
+    apply RAMIF_PLAIN.frame.
+    apply (@root_update_ramify _ (sSGG_VST sh) g x _ (null, l, r) (x0, l, r)); auto.
     eapply Graph_gen_vgamma; eauto.
   } Unfocus.
   (* unlocalize *)
