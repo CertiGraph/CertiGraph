@@ -90,7 +90,7 @@ Lemma root_update_ramify: forall (g: Graph) (x: addr) (lx: addr) (gx gx': addr *
       (vertex_at x gx' -* reachable_vertices_at x (Graph_gen g x lx))).
 Proof. intros; apply va_reachable_root_update_ramify; auto. Qed.
 
-Lemma Graph_gen_true_mark1: forall (G: Graph) (x y: addr) l r,
+Lemma Graph_gen_not_null_copy1: forall (G: Graph) (x y: addr) l r,
   vgamma G x = (null, l, r) ->
   vvalid G x ->
   y <> null ->
@@ -119,6 +119,33 @@ Proof.
       auto.
 Qed.
 
+Lemma left_weak_valid: forall (G G1: Graph) (x l r: addr),
+  vgamma G x = (null, l, r) ->
+  vvalid G x ->
+  vcopy1 x G G1 ->
+  @weak_valid _ _ _ _ G1 (maGraph _) l.
+Proof.
+  intros.
+  destruct H1 as [? _].
+  eapply weak_valid_si; [symmetry; exact H1 |].
+  eapply gamma_left_weak_valid; eauto.
+Qed.
+
+(*
+Lemma right_weak_valid: forall (G G1 G2 G2': Graph) (x l r: addr),
+  vgamma G x = (null, l, r) ->
+  vvalid G x ->
+  vcopy1 x G G1 ->
+  copy l G1 G2 G2' -> (* extended_copy *)
+  @weak_valid _ _ _ _ G2 (maGraph _) r.
+Proof.
+  intros.
+  destruct H1 as [? _].
+  destruct H2 as [_ ?].
+  eapply weak_valid_si; [symmetry; transitivity G1; [exact H1 | exact H2] |].
+  eapply gamma_right_weak_valid; eauto.
+Qed.
+*)
 Lemma graph_ramify_left: forall {RamUnit: Type} (g g1: Graph) x l r l' (F: pred),
   vvalid g x ->
   vgamma g x = (null, l, r) ->

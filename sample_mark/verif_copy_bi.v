@@ -4,6 +4,7 @@ Require Export VST.floyd.proofauto.
 Require Import RamifyCoq.sample_mark.env_copy_bi.
 Require Import RamifyCoq.graph.graph_model.
 Require Import RamifyCoq.graph.weak_mark_lemmas.
+Require Import RamifyCoq.graph.local_graph_copy.
 Require Import RamifyCoq.graph.path_lemmas.
 Require Import RamifyCoq.graph.subgraph2.
 Require Import RamifyCoq.graph.reachable_computable.
@@ -27,6 +28,7 @@ Local Coercion pg_lg: LabeledGraph >-> PreGraph.
 Notation graph sh x g := (@reachable_vertices_at _ _ _ _ _ _ _ _ _ (@SGP pSGG_VST addr (addr * LR) (sSGG_VST sh)) _ x g).
 Notation full_graph sh g := (@vertices_at _ _ _ _ _ _ (@SGP pSGG_VST addr (addr * LR) (sSGG_VST sh)) _ (vvalid g) g).
 Notation Graph := (@Graph pSGG_VST (@addr pSGG_VST) (addr * LR)).
+Notation vmap := (@LocalGraphCopy.vmap addr (addr * LR) addr (addr * LR) _ _ _ _ _ _ (@GMS _ _ CCS)).
 Existing Instances MGS biGraph maGraph finGraph RGF.
 
 (*
@@ -74,10 +76,10 @@ Definition copy_spec :=
           PROP  (weak_valid g x)
           LOCAL (temp _x (pointer_val_val x))
           SEP   (graph sh x g)
-  POST [ Tvoid ]
+  POST [ (tptr (Tstruct _Node noattr)) ]
         EX gg: Graph * Graph,
         PROP (copy (x: addr) g (fst gg) (snd gg))
-        LOCAL ()
+        LOCAL (temp ret_temp (pointer_val_val (vmap (fst gg) x)))
         SEP   (graph sh x (fst gg); full_graph sh (snd gg)).
 
 Definition main_spec :=
@@ -109,7 +111,7 @@ Proof.
     simpl.
     rewrite vertices_at_False.
     entailer!; auto.
-    apply (copy_null_refl g).
+    split; [apply (copy_null_refl g) |].
   } Unfocus.
   Focus 1. { (* if-else branch *)
     forward. (* skip; *)
@@ -227,8 +229,15 @@ Proof.
 
   unfold semax_ram. (* should not need this *)
 
-  pose proof Graph_gen_true_mark1 g x _ _ H_GAMMA_g gx_vvalid.
-  forget (Graph_gen g x true) as g1.
+  assert_PROP (x0 <> null).
+  Focus 1. {
+    entailer!.
+    apply field_compatible_isptr in H5; inversion H5.
+  } Unfocus.
+  pose proof Graph_gen_not_null_copy1 g x x0 _ _ H_GAMMA_g gx_vvalid H0.
+  forget (Graph_gen g x x0) as g1.
+
+  forward. (* x0 -> m = 0; *)
 
   localize
    (PROP  (weak_valid g1 l)
@@ -237,10 +246,51 @@ Proof.
   1: eapply left_weak_valid; eauto.  
   (* localize *)
 
-  rewrite <- ram_seq_assoc.
   eapply semax_ram_seq;
   [ repeat apply eexists_add_stats_cons; constructor
-  | semax_ram_call_body (sh, g1, l) 
+  | |]. 
+
+check_canonical_call;
+  check_Delta.
+
+Ltac forward_call_id1_y_wow witness :=
+let Frame := fresh "Frame" in
+ evar (Frame: list (mpred));
+ match goal with |- @semax ?CS _ _ _ _ _ =>
+ eapply (semax_call_id1_y_wow witness Frame);
+ [ check_function_name | lookup_spec_and_change_compspecs CS | ..] end. (*
+ | find_spec_in_globals | check_result_type | check_result_type
+ | apply Coq.Init.Logic.I | apply Coq.Init.Logic.I | reflexivity 
+ | (clear; let H := fresh in intro H; inversion H)
+ | check_parameter_types
+ | check_prove_local2ptree
+ | check_typecheck
+ | check_funspec_precondition
+ | check_prove_local2ptree
+ | check_cast_params | reflexivity
+ | Forall_pTree_from_elements
+ | Forall_pTree_from_elements
+ | unfold fold_right at 1 2; cancel
+ | cbv beta; extensionality rho; 
+   repeat rewrite exp_uncurry;
+   try rewrite no_post_exists; repeat rewrite exp_unfold;
+   first [apply exp_congr; intros ?vret; reflexivity
+           | give_EX_warning
+           ]
+ | prove_delete_temp
+ | prove_delete_temp
+ | unify_postcondition_exps
+ | unfold fold_right_and; repeat rewrite and_True; auto
+ ] end. *)
+
+  forward_call_id1_y_wow (sh, g1, l).
+        | forward_call_id01_wow witness 
+        | forward_call_id00_wow witness]
+semax_ram_call_body (sh, g1, l) .
+Set Printing All.
+f_equal.
+f_equal.
+reflexivity.
   | semax_ram_after_call; intros g2;
     repeat (apply ram_extract_PROP; intro) ].
 
