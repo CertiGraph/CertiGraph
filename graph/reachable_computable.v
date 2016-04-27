@@ -342,12 +342,10 @@ Section REACHABLE_COMPUTABLE.
 
   End Soundness.
 
-  Theorem finite_reachable_computable: forall x, vvalid G x -> (EnumCovered V (reachable G x)) ->
-                                          {l': list V | reachable_list G x l' /\ NoDup l'}.
+  Lemma finite_reachable_computable': forall x (X: EnumCovered V (reachable G x)) l', vvalid G x -> l' = construct_reachable (length (proj1_sig X), x :: nil, @nil V) ->
+                                                                                      reachable_list G x l' /\ NoDup l'.
   Proof.
-    intros.
-    destruct X as [l [_ ?H]]; unfold Ensembles.In in *.
-    set (i := (length l, x :: nil, @nil V)). exists (construct_reachable i).
+    intros. subst l'. destruct X as [l [? ?H]]. simpl. clear n. set (i := (length l, x :: nil, @nil V)). unfold Ensembles.In in *.
     pose proof sound_by_invariance'
       (fun i => reachable_bounded x i /\
                 Forall_reachable x i /\
@@ -426,6 +424,13 @@ Section REACHABLE_COMPUTABLE.
       - destruct (H3 _ H5) as [z [? ?]].
         apply H4 with z; auto.
       - auto.
+  Qed.
+
+  Theorem finite_reachable_computable: forall x, vvalid G x -> (EnumCovered V (reachable G x)) ->
+                                          {l': list V | reachable_list G x l' /\ NoDup l'}.
+  Proof.
+    intros. remember (construct_reachable (length (proj1_sig X), x :: nil, nil)).
+    pose proof (finite_reachable_computable' x X l H Heql). exists l; auto.
   Qed.
 
   Corollary finite_reachable_enumcovered_enumerable: forall x, vvalid G x -> EnumCovered V (reachable G x) -> Enumerable V (reachable G x).
