@@ -992,3 +992,33 @@ Proof.
   intros. destruct (in_dec eq_dec x l). 2: rewrite remove_not_in; auto.
   pose proof (nodup_remove_perm eq_dec _ _ H i). apply (Permutation_NoDup H0) in H. apply NoDup_cons_1 in H; auto.
 Qed.
+
+Lemma filter_cons: forall {A: Type} (f: A -> bool) l x xl, filter f l = x :: xl -> exists l1 l2, l = l1 ++ x :: l2 /\ filter f l1 = nil /\ filter f l2 = xl /\ f x = true.
+Proof.
+  intros. induction l. 1: simpl in H; inversion H. simpl in H. destruct (f a) eqn:? .
+  + inversion H. subst a. exists nil, l. split; [|split; [|split]]; auto.
+  + specialize (IHl H). destruct IHl as [l1 [l2 [? [? [? ?]]]]]. exists (a :: l1), l2. split; [|split; [|split]]; auto.
+    - rewrite <- app_comm_cons. subst l. auto.
+    - simpl. destruct (f a) eqn:? . inversion Heqb. auto.
+Qed.
+
+Lemma filter_2_cons: forall {A: Type} (f: A -> bool) l x1 x2 xl,
+    filter f l = x1 :: x2 :: xl -> exists l1 l2 l3, l = l1 ++ x1 :: l2 ++ x2 :: l3 /\ filter f l1 = nil /\ filter f l2 = nil /\ filter f l3 = xl /\ f x1 = true /\ f x2 = true.
+Proof.
+  intros. apply filter_cons in H. destruct H as [l1 [l4 [? [? [? ?]]]]]. apply filter_cons in H1. destruct H1 as [l2 [l3 [? [? [? ?]]]]]. subst l4.
+  exists l1, l2, l3. split; auto.
+Qed.
+
+Lemma map_mid: forall {A B: Type} (f: A -> B) l x xl1 xl2, map f l = xl1 ++ x :: xl2 -> exists y yl1 yl2, l = yl1 ++ y :: yl2 /\ f y = x /\ map f yl1 = xl1 /\ map f yl2 = xl2.
+Proof.
+  intros. revert xl1 H. induction l; intros. 1: simpl in H; destruct xl1; inversion H. destruct xl1.
+  + clear IHl. simpl in H. exists a, nil, l. inversion H. split; auto.
+  + simpl in H. inversion H. specialize (IHl _ H2). destruct IHl as [y [yl1 [yl2 [? [? [? ?]]]]]]. exists y, (a :: yl1), yl2. simpl. subst l. rewrite H4. split; auto.
+Qed.
+
+Lemma map_2_mid: forall {A B: Type} (f: A -> B) l x1 x2 l1 l2 l3,
+    map f l = l1 ++ x1 :: l2 ++ x2 :: l3 -> exists y1 y2 m1 m2 m3, l = m1 ++ y1 :: m2 ++ y2 :: m3 /\ map f m1 = l1 /\ map f m2 = l2 /\ map f m3 = l3 /\ f y1 = x1 /\ f y2 = x2.
+Proof.
+  intros. apply map_mid in H. destruct H as [y1 [m1 [m4 [? [? [? ?]]]]]]. apply map_mid in H2. destruct H2 as [y2 [m2 [m3 [? [? [? ?]]]]]]. subst m4.
+  exists y1, y2, m1, m2, m3. split; auto.
+Qed.

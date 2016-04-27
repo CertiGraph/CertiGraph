@@ -1371,6 +1371,27 @@ Proof.
   exists e; split; auto. hnf. auto.
 Qed.
 
+Lemma In_path_glue: forall g p1 p2 v, In_path g v (p1 +++ p2) -> In_path g v p1 \/ In_path g v p2.
+Proof.
+  intros. destruct p1 as [v1 p1]. destruct p2 as [v2 p2]. unfold path_glue in H. simpl in H. unfold In_path in *. simpl in *. destruct H. 1: left; left; auto.
+  destruct H as [e [? ?]]. rewrite in_app_iff in H. destruct H; [left | right]; right; exists e; split; auto.
+Qed.
+
+Lemma valid_path_reachable: forall g p v1 v2, valid_path g p -> In_path g v1 p -> In_path g v2 p -> reachable g v1 v2 \/ reachable g v2 v1.
+Proof.
+  intros. assert (g |= p is (phead p) ~o~> (pfoot g p) satisfying (fun _ => True)) by (split; split; simpl; auto; rewrite path_prop_equiv; intros; auto).
+  destruct (reachable_by_path_split_in _ _ _ _ _ _ H2 H0) as [p1 [p2 [? [? ?]]]]. rewrite H3 in H1. apply In_path_glue in H1. destruct H1.
+  + right. apply (reachable_path_in' _ _ _ _ H4); auto.
+  + left. apply (reachable_path_in _ _ _ _ H5); auto.
+Qed.
+
+Lemma In_path_Subpath: forall g p1 p2 v, In_path g v p1 -> Subpath g p1 p2 -> In_path g v p2.
+Proof.
+  intros. destruct p1 as [v1 p1]. destruct p2 as [v2 p2]. unfold In_path in H. destruct H0. simpl in *. destruct H.
+  + subst. auto.
+  + right. destruct H as [e [? ?]]. exists e. split; auto. 
+Qed.
+  
 End PATH_LEM.
 
 Arguments path_glue {_ _} _ _.

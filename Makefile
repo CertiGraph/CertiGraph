@@ -37,7 +37,7 @@ HEAP_MODEL_DIRECT_FILES = \
 GRAPH_FILES = \
   graph_model.v path_lemmas.v graph_gen.v reachable_computable.v find_not_in.v reachable_ind.v subgraph2.v \
   spanning_tree.v dag.v marked_graph.v weak_mark_lemmas.v dual_graph.v graph_morphism.v \
-  local_graph_copy.v tree_model.v
+  local_graph_copy.v tree_model.v list_model.v
 
 DATA_STRUCTURE_FILES = \
   spatial_graph_HMD.v spatial_graph_unaligned_bi_VST.v spatial_graph_dispose_bi.v
