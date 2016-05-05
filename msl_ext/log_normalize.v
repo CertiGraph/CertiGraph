@@ -66,6 +66,10 @@ Proof.
   apply exp_left; intros; auto.
 Qed.
 
+Lemma allp_derives': forall {A B} `{NatDed A} (P Q : B -> A),
+  P |-- Q -> allp P |-- allp Q.
+Proof. intros; apply allp_derives; auto. Qed.
+
 Lemma imp_prop_ext: forall {A} {NA: NatDed A} (P P' :Prop) (Q Q': A),
   (P <-> P') -> (P -> Q = Q') -> !!P --> Q = !!P' --> Q'.
 Proof.

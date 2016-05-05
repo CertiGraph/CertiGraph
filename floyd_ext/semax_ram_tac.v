@@ -233,12 +233,11 @@ Proof.
   eapply check_specs_lemma'; eauto.
 Qed.
 
-Lemma canonical_ram_reduce0: forall {A B C} {NA: NatDed A} (P Q: C -> B -> A),
-  allp Q |-- allp P ->
-  allp (fun x => Q (fst x) (snd x)) |-- allp (allp P).
+Lemma canonical_ram_reduce0: forall {A B C} {NA: NatDed A} (P: C -> B -> A),
+  allp (fun x => P (fst x) (snd x)) |-- allp (allp P).
 Proof.
   intros.
-  eapply derives_trans; [| apply allp_derives; intro; apply H].
+  eapply derives_trans; [| apply allp_derives; intro; apply derives_refl].
   rewrite allp_uncurry.
   apply derives_refl.
 Qed.
@@ -492,7 +491,7 @@ Ltac localize L :=
 Ltac solve_split_by_closed :=
   repeat first
     [ apply split_by_closed_nil
-    | apply split_by_closed_cons_closed; solve [repeat constructor; auto with closed]
+    | apply split_by_closed_cons_closed; [solve [repeat constructor; auto with closed] |]
     | apply split_by_closed_cons_unclosed].
 
 Ltac super_solve_split :=
@@ -570,10 +569,17 @@ Tactic Notation "unlocalize" constr(G') "binding" constr(bind) :=
 Tactic Notation "unlocalize" constr(G') :=
   unlocalize' G' []%RamAssu []%RamBind.
 
+Ltac canonical_ram_reduce0 :=
+  match goal with
+  | |- _ |-- allp (allp (allp _)) =>
+            (eapply derives_trans; [| apply allp_derives'; canonical_ram_reduce0]);
+            canonical_ram_reduce0
+  | |- _ |-- allp (allp _) => apply canonical_ram_reduce0
+  | |- _ |-- _ => apply derives_refl
+  end.
+
 Ltac simplify_ramif :=
-  eapply sepcon_EnvironBox_weaken;
-  [ repeat first [apply canonical_ram_reduce0 | apply derives_refl]
-  | cbv beta ];
+  eapply sepcon_EnvironBox_weaken; [canonical_ram_reduce0 | cbv beta];
   
   match goal with
   | |- _ |-- _ * EnvironBox _ (allp ?Frame) =>
@@ -649,6 +655,7 @@ Ltac semax_ram_call_body witness :=
         | forward_call_id00_wow witness].
 
 Ltac semax_ram_after_call2 :=
+      cbv beta iota delta [delete_temp_from_locals]; 
       cbv beta iota; 
       try rewrite <- no_post_exists0;
       unfold_app;
