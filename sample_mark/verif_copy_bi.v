@@ -77,10 +77,13 @@ Definition copy_spec :=
           LOCAL (temp _x (pointer_val_val x))
           SEP   (graph sh x g)
   POST [ (tptr (Tstruct _Node noattr)) ]
-        EX gg: Graph * Graph,
-        PROP (copy (x: addr) g (fst gg) (snd gg))
-        LOCAL (temp ret_temp (pointer_val_val (vmap (fst gg) x)))
-        SEP   (graph sh x (fst gg); full_graph sh (snd gg)).
+        EX xgg: pointer_val * Graph * Graph,
+        let x' := fst (fst xgg) in
+        let g1 := snd (fst xgg) in
+        let g1' := snd xgg in
+        PROP (copy (x: addr) g g1 g1'; x = null /\ x' = null \/ x' = vmap g1 x)
+        LOCAL (temp ret_temp (pointer_val_val x'))
+        SEP   (graph sh x g1; full_graph sh g1').
 
 Definition main_spec :=
  DECLARE _main
@@ -106,12 +109,12 @@ Proof.
   admit. (* type checking for pointer comparable. *)
   Focus 1. { (* if-then branch *)
     destruct_pointer_val x.
-    forward. (* return *)
-    apply (exp_right (g, empty_Graph)).
+    forward. (* return 0; *)
+    apply (exp_right ((NullPointer, g), empty_Graph)).
     simpl.
     rewrite vertices_at_False.
     entailer!; auto.
-    split; [apply (copy_null_refl g) |].
+    apply (copy_null_refl g).
   } Unfocus.
   Focus 1. { (* if-else branch *)
     forward. (* skip; *)
@@ -156,14 +159,17 @@ Proof.
      SEP   (graph sh x g)).
   admit. (* type checking for pointer comparable. *)
   Focus 1. { (* if-then branch *)
-    forward. (* return *)
-    apply (exp_right (g, empty_Graph)).
+    forward. (* return x0; *)
+    apply (exp_right (d, g, empty_Graph)).
     simpl.
     rewrite vertices_at_False.
     entailer!; auto.
-    eapply (copy_vgamma_not_null_refl g); eauto.
-    clear - H0.
-    destruct d; [change null with (NullPointer) | simpl in H0; change nullval with (Vint Int.zero) in H0]; try congruence.
+    split.
+    + eapply (copy_vgamma_not_null_refl g); eauto.
+      clear - H0.
+      destruct d; [change null with (NullPointer) | simpl in H0; change nullval with (Vint Int.zero) in H0]; try congruence.
+    + right.
+      inversion H_GAMMA_g; auto.
   } Unfocus.
   Focus 1. { (* if-else branch *)
     forward. (* skip; *)
@@ -248,52 +254,10 @@ Proof.
 
   eapply semax_ram_seq;
   [ repeat apply eexists_add_stats_cons; constructor
-  | |]. 
-
-check_canonical_call;
-  check_Delta.
-
-Ltac forward_call_id1_y_wow witness :=
-let Frame := fresh "Frame" in
- evar (Frame: list (mpred));
- match goal with |- @semax ?CS _ _ _ _ _ =>
- eapply (semax_call_id1_y_wow witness Frame);
- [ check_function_name | lookup_spec_and_change_compspecs CS | ..] end. (*
- | find_spec_in_globals | check_result_type | check_result_type
- | apply Coq.Init.Logic.I | apply Coq.Init.Logic.I | reflexivity 
- | (clear; let H := fresh in intro H; inversion H)
- | check_parameter_types
- | check_prove_local2ptree
- | check_typecheck
- | check_funspec_precondition
- | check_prove_local2ptree
- | check_cast_params | reflexivity
- | Forall_pTree_from_elements
- | Forall_pTree_from_elements
- | unfold fold_right at 1 2; cancel
- | cbv beta; extensionality rho; 
-   repeat rewrite exp_uncurry;
-   try rewrite no_post_exists; repeat rewrite exp_unfold;
-   first [apply exp_congr; intros ?vret; reflexivity
-           | give_EX_warning
-           ]
- | prove_delete_temp
- | prove_delete_temp
- | unify_postcondition_exps
- | unfold fold_right_and; repeat rewrite and_True; auto
- ] end. *)
-
-  forward_call_id1_y_wow (sh, g1, l).
-        | forward_call_id01_wow witness 
-        | forward_call_id00_wow witness]
-semax_ram_call_body (sh, g1, l) .
-Set Printing All.
-f_equal.
-f_equal.
-reflexivity.
-  | semax_ram_after_call; intros g2;
+  | semax_ram_call_body (sh, g1, l) 
+  | semax_ram_after_call; intros [[l' g2] g2'];
     repeat (apply ram_extract_PROP; intro) ].
-
+ 
   unlocalize
    (PROP  ()
     LOCAL (temp _r (pointer_val_val r);
