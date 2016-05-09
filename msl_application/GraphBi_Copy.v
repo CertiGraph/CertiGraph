@@ -146,19 +146,17 @@ Proof.
   eapply gamma_right_weak_valid; eauto.
 Qed.
 *)
-Check @LocalGraphCopy.vmap.
-Check copy.
 
-Lemma graph_ramify_left: forall {RamUnit: Type} (g g1: Graph) (x l r l': addr) (F: pred),
+Lemma graph_ramify_left: forall {RamUnit: Type} (g g1: Graph) (x l r: addr) (F: pred),
   vvalid g x ->
   vgamma g x = (null, l, r) ->
   vcopy1 x g g1 ->
   F * reachable_vertices_at x g1 |--
   reachable_vertices_at l g1 *
    (ALL a: RamUnit * Graph * Graph * addr,
-     !! (copy l g1 (snd (fst (fst a))) (snd (fst a)) /\ (l = null /\ snd a = null \/ snd a = LocalGraphCopy.vmap (snd (fst a)) l)) -->
-     (reachable_vertices_at l (snd (fst (fst a))) * reachable_vertices_at l' (snd (fst a)) -*
-      F * reachable_vertices_at x (snd (fst (fst a))) * reachable_vertices_at l' (snd (fst a)))).
+     !! (copy l g1 (snd (fst a)) (snd (fst (fst a))) /\ (l = null /\ snd a = null \/ snd a = LocalGraphCopy.vmap (snd (fst a)) l)) -->
+     (reachable_vertices_at l (snd (fst a)) * reachable_vertices_at (snd a) (snd (fst (fst a))) -*
+      F * (reachable_vertices_at x (snd (fst a)) * reachable_vertices_at (snd a) (snd (fst (fst a)))))).
 Proof.
   intros.
   destruct H1 as [? [? ?]].
@@ -168,9 +166,9 @@ Proof.
   | |- _ |-- _ * allp (_ --> (_ -* ?A)) =>
     replace A with
     (fun p : RamUnit * Graph * Graph * addr =>
-            reachable_vertices_at x (snd (fst (fst p))) *
-            reachable_vertices_at l' (snd (fst p)) * F) by
-    (extensionality p; rewrite (sepcon_comm _ F), sepcon_assoc; auto)
+            reachable_vertices_at x (snd (fst p)) *
+            reachable_vertices_at (snd p) (snd (fst (fst p))) * F) by
+    (extensionality p; rewrite (sepcon_comm _ F); auto)
   end.
   apply RAMIF_Q'.frame; [auto |].
   apply RAMIF_Q'.frame_post; [auto |].

@@ -266,14 +266,17 @@ Proof.
            temp _l (pointer_val_val l);
            temp _l0 (pointer_val_val l');
            temp _x (pointer_val_val x))
-    SEP (data_at sh node_type (Vint (Int.repr 0), (pointer_val_val null, pointer_val_val null)) (pointer_val_val x0); graph sh x g2; full_graph sh g2'))
+    SEP (data_at sh node_type (Vint (Int.repr 0), (pointer_val_val null, pointer_val_val null)) (pointer_val_val x0); graph sh x g2; graph sh l' g2'))
   using [H4; H5]%RamAssu
   binding [l'; g2; g2']%RamBind.
   Grab Existential Variables.
   Focus 2. {
     simplify_ramif.
+
+pose proof (@graph_ramify_left _ (sSGG_VST sh) RamUnit g g1 x l r l').
+apply (H4 g1).
     subst.
-    eapply (@graph_ramify_left _ (sSGG_VST sh) _ g); eauto.
+    eapply (@graph_ramify_left _ (sSGG_VST sh) RamUnit g); eauto.
   } Unfocus.
   (* unlocalize *)
 
