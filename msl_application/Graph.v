@@ -747,6 +747,18 @@ Proof.
   reflexivity.
 Qed.
 
+Lemma va_reachable_invalid: forall(g: Graph) x, ~ vvalid g x -> reachable_vertices_at x g = emp.
+Proof.
+  intros.
+  unfold reachable_vertices_at.
+  erewrite <- vertices_at_False.
+  apply vertices_at_Same_set.
+  rewrite Same_set_spec; intros ?.
+  split; try tauto.
+  intros.
+  apply reachable_head_valid in H0; auto.
+Qed.
+
 Lemma localDag_vertices_unfold: forall (g: Graph) x S, vvalid g x -> localDag g x -> step_list g x S -> reachable_vertices_at x g = vertex_at x (vgamma (Graph_SpatialGraph g) x) * reachable_through_vertices_at S g.
 Proof.
   intros.

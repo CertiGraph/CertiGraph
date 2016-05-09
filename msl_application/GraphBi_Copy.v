@@ -146,31 +146,46 @@ Proof.
   eapply gamma_right_weak_valid; eauto.
 Qed.
 *)
-Lemma graph_ramify_left: forall {RamUnit: Type} (g g1: Graph) x l r l' (F: pred),
+Check @LocalGraphCopy.vmap.
+Check copy.
+
+Lemma graph_ramify_left: forall {RamUnit: Type} (g g1: Graph) (x l r l': addr) (F: pred),
   vvalid g x ->
   vgamma g x = (null, l, r) ->
   vcopy1 x g g1 ->
-  reachable_vertices_at x g1 * F |-- reachable_vertices_at l g1 *
-   (ALL a: RamUnit * Graph * Graph,
-     !! (copy l g1 (snd (fst a)) (snd a)) -->
-     ((reachable_vertices_at l (snd (fst a)) * reachable_vertices_at l' (snd a)) -* (reachable_vertices_at x (snd (fst a))) * reachable_vertices_at l' (snd a) * F)).
+  F * reachable_vertices_at x g1 |--
+  reachable_vertices_at l g1 *
+   (ALL a: RamUnit * Graph * Graph * addr,
+     !! (copy l g1 (snd (fst (fst a))) (snd (fst a)) /\ (l = null /\ snd a = null \/ snd a = LocalGraphCopy.vmap (snd (fst a)) l)) -->
+     (reachable_vertices_at l (snd (fst (fst a))) * reachable_vertices_at l' (snd (fst a)) -*
+      F * reachable_vertices_at x (snd (fst (fst a))) * reachable_vertices_at l' (snd (fst a)))).
 Proof.
   intros.
   destruct H1 as [? [? ?]].
+  rewrite (sepcon_comm F).
   RAMIF_Q'.formalize.
+  match goal with
+  | |- _ |-- _ * allp (_ --> (_ -* ?A)) =>
+    replace A with
+    (fun p : RamUnit * Graph * Graph * addr =>
+            reachable_vertices_at x (snd (fst (fst p))) *
+            reachable_vertices_at l' (snd (fst p)) * F) by
+    (extensionality p; rewrite (sepcon_comm _ F), sepcon_assoc; auto)
+  end.
   apply RAMIF_Q'.frame; [auto |].
   apply RAMIF_Q'.frame_post; [auto |].
   simpl.
+
   eapply vertices_at_ramif_xQ.
   eexists.
   split; [| split].
   + rewrite <- H1.
     eapply Prop_join_reachable_left; eauto.
   + intros.
-    destruct H4 as [? [? ?]].
+    destruct H4 as [[? [? ?]] _].
     rewrite <- H4, <- H1.
     eapply Prop_join_reachable_left; eauto.
-  + intros [[? ?] ?] ?.
+  + intros [[[? ?] ?] ?] [? _].
     simpl in H4 |- *; clear r0.
     apply GSG_PartialGraphPreserve.
     - rewrite H1.
