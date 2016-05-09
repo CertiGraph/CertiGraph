@@ -26,7 +26,7 @@ Local Identity Coercion SGraph_SpatialGraph: SGraph >-> SpatialGraph.
 Local Coercion pg_lg: LabeledGraph >-> PreGraph.
 
 Notation graph sh x g := (@reachable_vertices_at _ _ _ _ _ _ _ _ _ (@SGP pSGG_VST addr (addr * LR) (sSGG_VST sh)) _ x g).
-Notation full_graph sh g := (@vertices_at _ _ _ _ _ _ (@SGP pSGG_VST addr (addr * LR) (sSGG_VST sh)) _ (vvalid g) g).
+(*Notation full_graph sh g := (@vertices_at _ _ _ _ _ _ (@SGP pSGG_VST addr (addr * LR) (sSGG_VST sh)) _ (vvalid g) g).*)
 Notation Graph := (@Graph pSGG_VST (@addr pSGG_VST) (addr * LR)).
 Notation vmap := (@LocalGraphCopy.vmap addr (addr * LR) addr (addr * LR) _ _ _ _ _ _ (@GMS _ _ CCS)).
 Existing Instances MGS biGraph maGraph finGraph RGF.
@@ -83,7 +83,7 @@ Definition copy_spec :=
         let g1' := snd xgg in
         PROP (copy (x: addr) g g1 g1'; x = null /\ x' = null \/ x' = vmap g1 x)
         LOCAL (temp ret_temp (pointer_val_val x'))
-        SEP   (graph sh x g1; full_graph sh g1').
+        SEP   (graph sh x g1; graph sh x' g1').
 
 Definition main_spec :=
  DECLARE _main
@@ -112,9 +112,9 @@ Proof.
     forward. (* return 0; *)
     apply (exp_right ((NullPointer, g), empty_Graph)).
     simpl.
-    rewrite vertices_at_False.
     entailer!; auto.
-    apply (copy_null_refl g).
+    + apply (copy_null_refl g).
+    + rewrite va_reachable_invalid; auto.
   } Unfocus.
   Focus 1. { (* if-else branch *)
     forward. (* skip; *)
@@ -162,7 +162,6 @@ Proof.
     forward. (* return x0; *)
     apply (exp_right (d, g, empty_Graph)).
     simpl.
-    rewrite vertices_at_False.
     entailer!; auto.
     split.
     + eapply (copy_vgamma_not_null_refl g); eauto.
@@ -170,6 +169,7 @@ Proof.
       destruct d; [change null with (NullPointer) | simpl in H0; change nullval with (Vint Int.zero) in H0]; try congruence.
     + right.
       inversion H_GAMMA_g; auto.
+    + rewrite va_reachable_invalid; auto.
   } Unfocus.
   Focus 1. { (* if-else branch *)
     forward. (* skip; *)
