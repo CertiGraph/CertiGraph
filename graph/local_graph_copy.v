@@ -40,12 +40,13 @@ Definition vmap (g: Graph): V -> V' := fun v => co_vertex (vlabel g v).
 
 Definition emap (g: Graph): E -> E' := fun e => co_edge (elabel g e).
 
-Definition vcopy1 root (g1 g2: Graph) :=
+Definition vcopy1 root (g1 g2: Graph) (g2': Graph') :=
   let PV_root := eq root in
   let PE_root := Intersection _ (weak_edge_prop PV_root g1) (evalid g1) in
   g1 ~=~ g2 /\
   guarded_pointwise_relation (Complement _ PV_root) eq (vmap g1) (vmap g2) /\
-  guarded_pointwise_relation (Complement _ PE_root) eq (emap g1) (emap g2).
+  guarded_pointwise_relation (Complement _ PE_root) eq (emap g1) (emap g2) /\
+  g2' = single_vertex_labeledgraph (vmap g2 root) default_DV' default_DE'.
 
 Definition ecopy1 e (p1 p2: Graph * Graph') :=
   let (g1, g1') := p1 in
@@ -140,12 +141,13 @@ Proof.
 Qed.
 Global Existing Instance extended_copy_proper'.
 
-Lemma triple_vcopy1: forall (g1 g2: Graph) root,
+Lemma triple_vcopy1: forall (g1 g2: Graph) (g2': Graph') root,
   vvalid g1 root ->
-  vcopy1 root g1 g2 ->
-  guarded_bij (eq root) (Empty_set _) (vmap g2) (emap g2) g2 (single_vertex_labeledgraph (vmap g2 root) default_DV' default_DE').
+  vcopy1 root g1 g2 g2' ->
+  guarded_bij (eq root) (Empty_set _) (vmap g2) (emap g2) g2 g2'.
 Proof.
-  intros g1 g2 root ? [VCOPY_si [VCOPY_gprv VCOPY_gpre]].
+  intros g1 g2 g2' root ? [VCOPY_si [VCOPY_gprv [VCOPY_gpre ?]]].
+  subst g2'.
   split; [.. | split]; intros.
   + apply is_guarded_inj_single.
   + apply is_guarded_inj_empty.
@@ -1458,15 +1460,14 @@ Proof.
     auto.
 Qed.
 
-Lemma triple_vcopy1_edge_copy_list: forall (g g1 g2: Graph) g2' root es es_done es_later (M: V -> Prop) (src0 dst0: E -> V),
-  let g1' := single_vertex_labeledgraph (vmap g1 root) default_DV' default_DE' in
+Lemma triple_vcopy1_edge_copy_list: forall (g g1 g2: Graph) g1' g2' root es es_done es_later (M: V -> Prop) (src0 dst0: E -> V),
   vvalid g root ->
   ~ M root ->
   (forall e, In e es <-> out_edges g root e) ->
   NoDup es ->
   es = es_done ++ es_later ->
   (forall v : V, M v \/ ~ M v) ->
-  vcopy1 root g g1 ->
+  vcopy1 root g g1 g1' ->
   edge_copy_list g root es_done M (g1, g1') (g2, g2') ->
   let PV := reachable_by g root (Complement _ M) in
   let PE := Intersection E (weak_edge_prop PV g) (evalid g) in
@@ -1496,7 +1497,7 @@ Proof.
     Same_set (vvalid g1') (image_set (Union _ PV1 (eq root)) (vmap g1)) /\
     Same_set (evalid g1') (image_set (Union _ PE1 PE1_root) (emap g1))).
   Focus 1. {
-    pose proof triple_vcopy1 _ _ _ H H5.
+    pose proof triple_vcopy1 _ _ _ _ H H5.
     intros.
     assert (Same_set PV1 (Empty_set _)).
     Focus 1. {
@@ -1531,7 +1532,7 @@ Proof.
       unfold Included, Ensembles.In; intros.
       subst x; unfold PV.
       apply reachable_by_refl; auto.
-    + destruct H5 as [_ [_ ?]].
+    + destruct H5 as [_ [_ [? _]]].
       eapply guarded_pointwise_relation_weaken; [| exact H5].
       apply Complement_Included_rev.
       unfold Included, Ensembles.In; intros.
@@ -1540,7 +1541,8 @@ Proof.
       unfold weak_edge_prop in H11 |- *.
       rewrite <- H11.
       apply reachable_by_refl; auto.
-    + split.
+    + destruct H5 as [_ [_ [_ ?]]]; subst g1'.
+      split.
       - rewrite H8, Union_Empty_left, image_single.
         reflexivity.
       - rewrite H9, H10, Union_Empty_left, image_Empty.
@@ -1567,19 +1569,18 @@ Proof.
     auto.
 Qed.
 
-Lemma vcopy1_edge_copy_list_copy: forall (g g1 g2: Graph) g2' root es (M: V -> Prop) (src0 dst0: E -> V),
-  let g1' := single_vertex_labeledgraph (vmap g1 root) default_DV' default_DE' in
+Lemma vcopy1_edge_copy_list_copy: forall (g g1 g2: Graph) g1' g2' root es (M: V -> Prop) (src0 dst0: E -> V),
   vvalid g root ->
   ~ M root ->
   (forall e, In e es <-> out_edges g root e) ->
   NoDup es ->
   (forall v : V, M v \/ ~ M v) ->
-  vcopy1 root g g1 ->
+  vcopy1 root g g1 g1' ->
   edge_copy_list g root es M (g1, g1') (g2, g2') ->
   copy M root g g2 g2'.
 Proof.
   intros.
-  pose proof triple_vcopy1_edge_copy_list g g1 g2 g2' root es es nil M src0 dst0 H H0 H1 H2 (eq_sym (app_nil_r _)) H3 H4 H5.
+  pose proof triple_vcopy1_edge_copy_list g g1 g2 g1' g2' root es es nil M src0 dst0 H H0 H1 H2 (eq_sym (app_nil_r _)) H3 H4 H5.
   apply triple_final with (es := es); auto.
 Qed.
 

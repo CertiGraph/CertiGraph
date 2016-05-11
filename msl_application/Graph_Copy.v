@@ -62,10 +62,10 @@ Notation SGraph := (SpatialGraph V E V E).
 
 Local Coercion pg_lg: LabeledGraph >-> PreGraph.
 
-Definition vcopy1 x (g1 g2: Graph) :=
+Definition vcopy1 x (g1 g2 g2': Graph) :=
   g1 ~=~ g2 /\
   WeakMarkGraph.mark1 x g1 g2 /\
-  LocalGraphCopy.vcopy1 x g1 g2.
+  LocalGraphCopy.vcopy1 x g1 g2 g2'.
 
 Definition ecopy1 e (p1 p2: Graph * Graph) :=
   let (g1, g1') := p1 in
@@ -144,14 +144,13 @@ Proof.
     auto.
 Qed.
 
-Lemma edge_copy_spec': forall root es e0 es_done es_later (g g1 g2 g3 g2' g3': Graph) (src0 dst0: E -> V),
-  let g1' := single_vertex_labeledgraph (LocalGraphCopy.vmap g1 root) default_DV' default_DE' in
+Lemma edge_copy_spec': forall root es e0 es_done es_later (g g1 g2 g3 g1' g2' g3': Graph) (src0 dst0: E -> V),
   vvalid g root ->
   WeakMarkGraph.unmarked g root ->
   es = es_done ++ e0 :: es_later ->
   (forall e, In e es <-> out_edges g root e) ->
   NoDup es ->
-  vcopy1 root g g1 ->
+  vcopy1 root g g1 g1' ->
   relation_list
    (map (LocalGraphCopy.edge_copy g root (WeakMarkGraph.marked g))
      (cprefix es_done)) (g1, g1') (g2, g2') ->
@@ -174,7 +173,7 @@ Proof.
     1: auto.
   cbv iota zeta in H9.
 
-  pose proof LocalGraphCopy.triple_vcopy1_edge_copy_list g g1 g2 g2' root es es_done (e0 :: es_later) (WeakMarkGraph.marked g) src0 dst0 H H0 H2 H3 H1.
+  pose proof LocalGraphCopy.triple_vcopy1_edge_copy_list g g1 g2 g1' g2' root es es_done (e0 :: es_later) (WeakMarkGraph.marked g) src0 dst0 H H0 H2 H3 H1.
   spec H10; [intro v; destruct (node_pred_dec (WeakMarkGraph.marked g) v); auto |].
   specialize (H10 H8 H5).
   cbv iota zeta in H10.
@@ -195,13 +194,12 @@ Proof.
   + destruct H9 as [_ ?]; auto.
 Qed.
 
-Lemma edge_copy_list_spec: forall root es (g g1 g2 g2': Graph) (src0 dst0: E -> V),
-  let g1' := single_vertex_labeledgraph (LocalGraphCopy.vmap g1 root) default_DV' default_DE' in
+Lemma edge_copy_list_spec: forall root es (g g1 g2 g1' g2': Graph) (src0 dst0: E -> V),
   (forall e, In e es <-> out_edges g root e) ->
   NoDup es ->
   vvalid g root ->
   WeakMarkGraph.unmarked g root ->
-  vcopy1 root g g1 ->
+  vcopy1 root g g1 g1' ->
   edge_copy_list g es (g1, g1') (g2, g2') ->
   LocalGraphCopy.edge_copy_list g root es (WeakMarkGraph.marked g) (g1, g1') (g2, g2') /\
   WeakMarkGraph.componded_mark_list root (map (dst g) es) g1 g2.
@@ -252,21 +250,20 @@ Proof.
     rewrite map_map; auto.
 Qed.
 
-Lemma vcopy1_edge_copy_list_copy: forall root es (g1 g2 g3 g3': Graph) (src0 dst0: E -> V),
-  let g2' := single_vertex_labeledgraph (LocalGraphCopy.vmap g2 root) default_DV' default_DE' in
+Lemma vcopy1_edge_copy_list_copy: forall root es (g1 g2 g3 g2' g3': Graph) (src0 dst0: E -> V),
   vvalid g1 root ->
   WeakMarkGraph.unmarked g1 root ->
   (forall e, In e es <-> out_edges g1 root e) ->
   NoDup es ->
-  vcopy1 root g1 g2 ->
+  vcopy1 root g1 g2 g2' ->
   edge_copy_list g1 es (g2, g2') (g3, g3') ->
   copy root g1 g3 g3'.
 Proof.
   intros.
-  pose proof edge_copy_list_spec root es g1 g2 g3 g3' src0 dst0 H1 H2 H H0 H3 H4.
+  pose proof edge_copy_list_spec root es g1 g2 g3 g2' g3' src0 dst0 H1 H2 H H0 H3 H4.
   destruct H5.
   split; [| split].
-  + pose proof LocalGraphCopy.triple_vcopy1_edge_copy_list g1 g2 g3 g3' root es es nil (WeakMarkGraph.marked g1) src0 dst0 H H0 H1 H2 (eq_sym (app_nil_r _)).
+  + pose proof LocalGraphCopy.triple_vcopy1_edge_copy_list g1 g2 g3 g2' g3' root es es nil (WeakMarkGraph.marked g1) src0 dst0 H H0 H1 H2 (eq_sym (app_nil_r _)).
     spec H7; [intro v; destruct (node_pred_dec (WeakMarkGraph.marked g1) v); auto |].
     destruct H3 as [_ [_ ?]].
     specialize (H7 H3 H5).
@@ -277,23 +274,23 @@ Proof.
     - destruct H3 as [_ [? _]].
       split_relation_list (g1 :: g2 :: g2 :: g3 :: nil); auto; apply WeakMarkGraph.eq_do_nothing; auto.
   + destruct H3 as [_ [_ ?]].
-    apply (LocalGraphCopy.vcopy1_edge_copy_list_copy g1 g2 g3 g3' root es (WeakMarkGraph.marked g1)); auto.
+    apply (LocalGraphCopy.vcopy1_edge_copy_list_copy g1 g2 g3 g2' g3' root es (WeakMarkGraph.marked g1)); auto.
     intro v; destruct (node_pred_dec (WeakMarkGraph.marked g1) v); auto.
 Qed.
 
-Lemma vcopy1_edge_copy_list_copy_extended_copy: forall root es es_done e0 es_later (g1 g2 g3 g3' g4 g4'': Graph) (src0 dst0: E -> V) (x x0: V),
-  let g2' := single_vertex_labeledgraph (LocalGraphCopy.vmap g2 root) default_DV' default_DE' in
+Lemma vcopy1_edge_copy_list_copy_extended_copy: forall root es es_done e0 es_later (g1 g2 g3 g2' g3' g4 g4'': Graph) (src0 dst0: E -> V) (x x0: V),
   vvalid g1 root ->
   WeakMarkGraph.unmarked g1 root ->
   es = es_done ++ e0 :: es_later ->
   (forall e, In e es <-> out_edges g1 root e) ->
   NoDup es ->
-  vcopy1 root g1 g2 ->
+  vcopy1 root g1 g2 g2' ->
   edge_copy_list g1 es_done (g2, g2') (g3, g3') ->
   x = dst g1 e0 ->
   x0 = LocalGraphCopy.vmap g4 x \/ (~ vvalid g4'' x0 /\ ~ vvalid g1 x) ->
+  copy (dst g1 e0) g3 g4 g4'' ->
   @derives Pred _
-  ((!! copy (dst g1 e0) g3 g4 g4'') && reachable_vertices_at x0 g4'' * vertices_at (fun u => vvalid g3' u /\ LocalGraphCopy.vmap g3 root <> u) (Graph_SpatialGraph g3'))
+  (vertices_at (fun u => vvalid g3' u /\ LocalGraphCopy.vmap g3 root <> u) (Graph_SpatialGraph g3') * reachable_vertices_at x0 g4'')
   (EX g4': Graph,
   (!! extended_copy (dst g1 e0) (g3, g3') (g4, g4')) && vertices_at (fun u => vvalid g4' u /\ LocalGraphCopy.vmap g4 root <> u) (Graph_SpatialGraph g4')).
 Admitted.

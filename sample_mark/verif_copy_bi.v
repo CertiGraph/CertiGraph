@@ -240,8 +240,9 @@ Proof.
     entailer!.
     apply field_compatible_isptr in H5; inversion H5.
   } Unfocus.
-  pose proof Graph_gen_not_null_copy1 g x x0 _ _ H_GAMMA_g gx_vvalid H0.
+  destruct (not_null_copy1 g x x0 _ _ H_GAMMA_g gx_vvalid H0).
   forget (Graph_gen g x x0) as g1.
+  forget (initial_copied_Graph x x0 g) as g1'.
 
   forward. (* x0 -> m = 0; *)
 
@@ -255,21 +256,24 @@ Proof.
   eapply semax_ram_seq;
   [ repeat apply eexists_add_stats_cons; constructor
   | semax_ram_call_body (sh, g1, l)
-  | semax_ram_after_call; intros [[l' g2] g2'];
+  | semax_ram_after_call; intros [[l0 g2] g2''];
     repeat (apply ram_extract_PROP; intro) ].
   (* l0 = copy(l); *)
 
-  cbv [fst snd] in H4, H5 |- *.
+  cbv [fst snd] in H5, H6 |- *.
   unlocalize
    (PROP  ()
     LOCAL (temp _r (pointer_val_val r);
            temp _l (pointer_val_val l);
-           temp _l0 (pointer_val_val l');
+           temp _l0 (pointer_val_val l0);
            temp _x (pointer_val_val x);
            temp _x0 (pointer_val_val x0))
-    SEP (data_at sh node_type (Vint (Int.repr 0), (pointer_val_val null, pointer_val_val null)) (pointer_val_val x0); graph sh x g2; graph sh l' g2'))
-  using [H4; H5]%RamAssu
-  binding [l'; g2; g2']%RamBind.
+    SEP (data_at sh node_type (Vint (Int.repr 0), (pointer_val_val null, pointer_val_val null)) (pointer_val_val x0);
+         hole_graph sh x0 g1';
+         graph sh x g2;
+         graph sh l0 g2''))
+  using [H5; H6]%RamAssu
+  binding [l0; g2; g2'']%RamBind.
   Grab Existential Variables.
   Focus 2. {
     simplify_ramif.
@@ -280,6 +284,25 @@ Proof.
   unfold semax_ram. (* should not need this *)
   forward. (* x0 -> l = l0; *)
   autorewrite with norm. (* TODO: should not need this *)
+
+  apply semax_pre with
+   (PROP  ()
+    LOCAL  (temp _r (pointer_val_val r); temp _l (pointer_val_val l);
+            temp _l0 (pointer_val_val l0); temp _x (pointer_val_val x);
+            temp _x0 (pointer_val_val x0))
+    SEP 
+      (@data_at CompSpecs sh node_type
+         (Vint (Int.repr 0), (pointer_val_val l0, pointer_val_val (@null pSGG_VST)))
+         (pointer_val_val x0);
+      EX g2': LGraph, !! extended_copy l (g1: LGraph, g1') (g2: LGraph, g2') &&
+        hole_graph sh x0 g2';
+      graph sh x g2)).
+  Focus 1. {
+Opaque extended_copy.
+    entailer!.
+Transparent extended_copy.
+    apply (@extend_copy_left _ (sSGG_VST sh) g g1 g2 g1' g2'' (ValidPointer b i) l r (vmap g1 (ValidPointer b i)) l0); auto.
+  } Unfocus.
 
   localize
    (PROP  (weak_valid g2 r)

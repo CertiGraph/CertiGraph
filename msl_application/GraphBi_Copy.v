@@ -109,14 +109,14 @@ Transparent initial_copied_Graph. simpl. Opaque initial_copied_Graph.
   apply va_reachable_root_update_ramify; auto.
 Qed.
 
-Lemma Graph_gen_not_null_copy1: forall (G: Graph) (x y: addr) l r,
+Lemma not_null_copy1: forall (G: Graph) (x x0: addr) l r,
   vgamma G x = (null, l, r) ->
   vvalid G x ->
-  y <> null ->
-  vcopy1 x (G: LabeledGraph _ _ _ _) (Graph_gen G x y: LabeledGraph _ _ _ _).
+  x0 <> null ->
+  vcopy1 x G (Graph_gen G x x0) (initial_copied_Graph x x0 G) /\ x0 = LocalGraphCopy.vmap (Graph_gen G x x0) x.
 Proof.
   intros.
-  split; [| split].
+  split; [split; [| split] |].
   + reflexivity.
   + split; [| split].
     - reflexivity.
@@ -128,20 +128,24 @@ Proof.
       unfold update_vlabel; simpl.
       destruct_eq_dec x n'; [congruence |].
       tauto.
-  + split; [| split].
+  + split; [| split; [| split]].
     - reflexivity.
     - apply guarded_pointwise_relation_spec; intros.
       simpl.
       unfold update_vlabel; simpl.
-      destruct_eq_dec x x0; [congruence | auto].
+      destruct_eq_dec x x1; [congruence | auto].
     - apply guarded_pointwise_relation_spec; intros.
       auto.
+    - reflexivity.
+  + simpl.
+    unfold update_vlabel; simpl.
+    destruct_eq_dec x x; [auto | congruence].
 Qed.
 
-Lemma left_weak_valid: forall (G G1: Graph) (x l r: addr),
+Lemma left_weak_valid: forall (G G1: Graph) (G1': LGraph) (x l r: addr),
   vgamma G x = (null, l, r) ->
   vvalid G x ->
-  vcopy1 x G G1 ->
+  vcopy1 x G G1 G1' ->
   @weak_valid _ _ _ _ G1 (maGraph _) l.
 Proof.
   intros.
@@ -166,28 +170,28 @@ Proof.
 Qed.
 *)
 
-Lemma graph_ramify_left: forall {RamUnit: Type} (g g1: Graph) (x l r: addr) (F: pred),
+Lemma graph_ramify_left: forall {RamUnit: Type} (g g1: Graph) (g1': LGraph) (x l r: addr) (F1 F2: pred),
   vvalid g x ->
   vgamma g x = (null, l, r) ->
-  vcopy1 x g g1 ->
-  F * reachable_vertices_at x g1 |--
+  vcopy1 x g g1 g1' ->
+  F1 * (F2 * reachable_vertices_at x g1) |--
   reachable_vertices_at l g1 *
    (ALL a: RamUnit * Graph * Graph * addr,
      !! (copy l g1 (snd (fst a)) (snd (fst (fst a))) /\ (l = null /\ snd a = null \/ snd a = LocalGraphCopy.vmap (snd (fst a)) l)) -->
      (reachable_vertices_at l (snd (fst a)) * reachable_vertices_at (snd a) (snd (fst (fst a))) -*
-      F * (reachable_vertices_at x (snd (fst a)) * reachable_vertices_at (snd a) (snd (fst (fst a)))))).
+      F1 * (F2 * (reachable_vertices_at x (snd (fst a)) * reachable_vertices_at (snd a) (snd (fst (fst a))))))).
 Proof.
   intros.
   destruct H1 as [? [? ?]].
-  rewrite (sepcon_comm F).
+  rewrite <- sepcon_assoc, (sepcon_comm (F1 * F2)).
   RAMIF_Q'.formalize.
   match goal with
   | |- _ |-- _ * allp (_ --> (_ -* ?A)) =>
     replace A with
     (fun p : RamUnit * Graph * Graph * addr =>
             reachable_vertices_at x (snd (fst p)) *
-            reachable_vertices_at (snd p) (snd (fst (fst p))) * F) by
-    (extensionality p; rewrite (sepcon_comm _ F); auto)
+            reachable_vertices_at (snd p) (snd (fst (fst p))) * (F1 * F2)) by
+    (extensionality p; rewrite <- (sepcon_assoc F1 F2), (sepcon_comm _ (F1 * F2)); auto)
   end.
   apply RAMIF_Q'.frame; [auto |].
   apply RAMIF_Q'.frame_post; [auto |].
@@ -232,20 +236,22 @@ Proof.
     - admit.
 Qed.
 
-Lemma extend_copy_left: forall (g g1 g2 g2': Graph) (x l r: addr) dx',
-  let g1': LGraph := single_vertex_labeledgraph (LocalGraphCopy.vmap g1 x) null (null, L) in
-  let x' := (LocalGraphCopy.vmap g1 x) in
-  let l' := (LocalGraphCopy.vmap g2 l) in
+Lemma extend_copy_left: forall (g g1 g2: Graph) (g1' g2'': LGraph) (x l r x0 l0: addr),
   vvalid g x ->
   vgamma g x = (null, l, r) ->
-  vcopy1 x g g1 ->
-  copy l g1 g2 g2' -> 
-  (full_vertices_at g2': pred) * vertex_at x' dx' |-- 
-  EX g2'': LGraph,
-    !! extended_copy l (g1: LGraph, g1') (g2: LGraph, g2'') && 
-    (vertices_at (fun x => vvalid g2'' x /\ x' <> x) g2'' * vertex_at x' dx').
+  vcopy1 x g g1 g1' ->
+  copy l g1 g2 g2'' ->
+  x0 = LocalGraphCopy.vmap g1 x ->
+  l = null /\ l0 = null \/ l0 = LocalGraphCopy.vmap g2 l ->
+  @derives pred _
+  (vertices_at (fun x => vvalid g1' x /\ x0 <> x) g1' * reachable_vertices_at l0 g2'') 
+  (EX g2': LGraph,
+    !! extended_copy l (g1: LGraph, g1') (g2: LGraph, g2') && 
+    vertices_at (fun x => vvalid g2' x /\ x0 <> x) g2').
 Proof.
- Abort.
+  intros.
+  pose proof vcopy1_edge_copy_list_copy_extended_copy x ((x, L) :: (x, R) :: nil) nil (x, L) ((x, R) :: nil) g g1 g1 g1' g1' g2 g2''.
+Admitted.
 (*
   intros.
   pose proof WeakMarkGraph.triple_mark1 x g g g1 as HH1.
