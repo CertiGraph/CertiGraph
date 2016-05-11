@@ -54,7 +54,9 @@ Global Existing Instance CCS.
 
 Definition empty_Graph: Graph := empty_Graph null (null, L).
 
-Opaque empty_Graph.
+Definition initial_copied_Graph (x x0: addr) (g: Graph): LGraph := single_vertex_labeledgraph (LocalGraphCopy.vmap (Graph_gen g x x0) x) null (null, L).
+
+Opaque empty_Graph initial_copied_Graph.
 
 Lemma copy_null_refl: forall (g: Graph),
   copy null g g empty_Graph.
@@ -80,15 +82,32 @@ Lemma root_stable_ramify: forall (g: Graph) (x: addr) (gx: addr * addr * addr),
       (vertex_at x gx -* reachable_vertices_at x g)).
 Proof. intros; apply va_reachable_root_stable_ramify; auto. Qed.
 
-Lemma root_update_ramify: forall (g: Graph) (x: addr) (lx: addr) (gx gx': addr * addr * addr),
+Lemma root_update_ramify: forall (g: Graph) (x x0: addr) (lx: addr) (gx gx': addr * addr * addr) F,
   vgamma g x = gx ->
   vgamma (Graph_gen g x lx) x = gx' ->
   vvalid g x ->
   @derives pred _
-    (reachable_vertices_at x g)
+    (F * reachable_vertices_at x g)
     (vertex_at x gx *
-      (vertex_at x gx' -* reachable_vertices_at x (Graph_gen g x lx))).
-Proof. intros; apply va_reachable_root_update_ramify; auto. Qed.
+      (vertex_at x gx' -*
+       F * (vertices_at (fun u => vvalid (initial_copied_Graph x x0 g) u /\ x0 <> u) (initial_copied_Graph x x0 g) * reachable_vertices_at x (Graph_gen g x lx)))).
+Proof.
+  intros.
+  rewrite !(sepcon_comm F).
+  apply RAMIF_PLAIN.frame.
+  assert (vertices_at (fun u : addr => vvalid (initial_copied_Graph x x0 g) u /\ x0 <> u) (initial_copied_Graph x x0 g) = emp).
+  Focus 1. {
+    erewrite <- vertices_at_False.
+    apply vertices_at_Same_set.
+    rewrite Same_set_spec; intros ?.
+Transparent initial_copied_Graph. simpl. Opaque initial_copied_Graph.
+    unfold update_vlabel.
+    if_tac; [| congruence].
+    split; [intros [? ?]; congruence | tauto].
+  } Unfocus.
+  rewrite H2, emp_sepcon.
+  apply va_reachable_root_update_ramify; auto.
+Qed.
 
 Lemma Graph_gen_not_null_copy1: forall (G: Graph) (x y: addr) l r,
   vgamma G x = (null, l, r) ->

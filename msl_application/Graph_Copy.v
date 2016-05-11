@@ -281,6 +281,23 @@ Proof.
     intro v; destruct (node_pred_dec (WeakMarkGraph.marked g1) v); auto.
 Qed.
 
+Lemma vcopy1_edge_copy_list_copy_extended_copy: forall root es es_done e0 es_later (g1 g2 g3 g3' g4 g4'': Graph) (src0 dst0: E -> V) (x x0: V),
+  let g2' := single_vertex_labeledgraph (LocalGraphCopy.vmap g2 root) default_DV' default_DE' in
+  vvalid g1 root ->
+  WeakMarkGraph.unmarked g1 root ->
+  es = es_done ++ e0 :: es_later ->
+  (forall e, In e es <-> out_edges g1 root e) ->
+  NoDup es ->
+  vcopy1 root g1 g2 ->
+  edge_copy_list g1 es_done (g2, g2') (g3, g3') ->
+  x = dst g1 e0 ->
+  x0 = LocalGraphCopy.vmap g4 x \/ (~ vvalid g4'' x0 /\ ~ vvalid g1 x) ->
+  @derives Pred _
+  ((!! copy (dst g1 e0) g3 g4 g4'') && reachable_vertices_at x0 g4'' * vertices_at (fun u => vvalid g3' u /\ LocalGraphCopy.vmap g3 root <> u) (Graph_SpatialGraph g3'))
+  (EX g4': Graph,
+  (!! extended_copy (dst g1 e0) (g3, g3') (g4, g4')) && vertices_at (fun u => vvalid g4' u /\ LocalGraphCopy.vmap g4 root <> u) (Graph_SpatialGraph g4')).
+Admitted.
+
 End SpatialGraph_Copy.
 
 
