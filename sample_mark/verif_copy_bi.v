@@ -26,7 +26,7 @@ Local Identity Coercion SGraph_SpatialGraph: SGraph >-> SpatialGraph.
 Local Coercion pg_lg: LabeledGraph >-> PreGraph.
 
 Notation graph sh x g := (@reachable_vertices_at _ _ _ _ _ _ _ _ _ (@SGP pSGG_VST addr (addr * LR) (sSGG_VST sh)) _ x g).
-(*Notation full_graph sh g := (@vertices_at _ _ _ _ _ _ (@SGP pSGG_VST addr (addr * LR) (sSGG_VST sh)) _ (vvalid g) g).*)
+Notation hole_graph sh x g := (@vertices_at _ _ _ _ _ _ (@SGP pSGG_VST addr (addr * LR) (sSGG_VST sh)) _ (fun u => @vvalid addr (addr * LR) _ _ g u /\ x <> u) g).
 Notation Graph := (@Graph pSGG_VST (@addr pSGG_VST) (addr * LR)).
 Notation vmap := (@LocalGraphCopy.vmap addr (addr * LR) addr (addr * LR) _ _ _ _ _ _ (@GMS _ _ CCS)).
 Existing Instances MGS biGraph maGraph finGraph RGF.
@@ -211,6 +211,7 @@ Proof.
            (pointer_val_val x0, (pointer_val_val l, pointer_val_val r))) with
          (@data_at CompSpecs sh node_type
            (pointer_val_val x0, (pointer_val_val l, pointer_val_val r))).
+
   (* x -> m = x0; *)
 
   unlocalize
@@ -222,13 +223,12 @@ Proof.
     SEP (data_at sh node_type
            (pointer_val_val null, (pointer_val_val null, pointer_val_val null))
            (pointer_val_val x0);
+         hole_graph sh x0 (initial_copied_Graph x x0 g);
          graph sh x (Graph_gen g x x0))).
   Grab Existential Variables.
   Focus 2. {
     simplify_ramif.
-    rewrite !(sepcon_comm (@data_at CompSpecs sh node_type _ (pointer_val_val x0))).
-    apply RAMIF_PLAIN.frame.
-    apply (@root_update_ramify _ (sSGG_VST sh) g x _ (null, l, r) (x0, l, r)); auto.
+    apply (@root_update_ramify _ (sSGG_VST sh) g x x0 _ (null, l, r) (x0, l, r)); auto.
     eapply Graph_gen_vgamma; eauto.
   } Unfocus.
   (* unlocalize *)
@@ -265,22 +265,22 @@ Proof.
     LOCAL (temp _r (pointer_val_val r);
            temp _l (pointer_val_val l);
            temp _l0 (pointer_val_val l');
-           temp _x (pointer_val_val x))
+           temp _x (pointer_val_val x);
+           temp _x0 (pointer_val_val x0))
     SEP (data_at sh node_type (Vint (Int.repr 0), (pointer_val_val null, pointer_val_val null)) (pointer_val_val x0); graph sh x g2; graph sh l' g2'))
   using [H4; H5]%RamAssu
   binding [l'; g2; g2']%RamBind.
   Grab Existential Variables.
   Focus 2. {
     simplify_ramif.
-
-pose proof (@graph_ramify_left _ (sSGG_VST sh) RamUnit g g1 x l r l').
-apply (H4 g1).
-    subst.
     eapply (@graph_ramify_left _ (sSGG_VST sh) RamUnit g); eauto.
   } Unfocus.
   (* unlocalize *)
 
   unfold semax_ram. (* should not need this *)
+  forward. (* x0 -> l = l0; *)
+  autorewrite with norm. (* TODO: should not need this *)
+
   localize
    (PROP  (weak_valid g2 r)
     LOCAL (temp _r (pointer_val_val r))
