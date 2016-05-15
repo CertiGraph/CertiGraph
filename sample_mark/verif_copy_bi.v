@@ -285,47 +285,46 @@ Proof.
   forward. (* x0 -> l = l0; *)
   autorewrite with norm. (* TODO: should not need this *)
 
-  apply semax_pre with
-   (PROP  ()
-    LOCAL  (temp _r (pointer_val_val r); temp _l (pointer_val_val l);
-            temp _l0 (pointer_val_val l0); temp _x (pointer_val_val x);
-            temp _x0 (pointer_val_val x0))
-    SEP 
-      (@data_at CompSpecs sh node_type
-         (Vint (Int.repr 0), (pointer_val_val l0, pointer_val_val (@null pSGG_VST)))
-         (pointer_val_val x0);
-      EX g2': LGraph, !! extended_copy l (g1: LGraph, g1') (g2: LGraph, g2') &&
-        hole_graph sh x0 g2';
-      graph sh x g2)).
+  gather_SEP 1 3.
+  replace_SEP 0 (EX g2': LGraph, !! edge_copy g (x, L) (g1: LGraph, g1') (g2: LGraph, g2') &&
+           hole_graph sh x0 g2').
   Focus 1. {
-Opaque extended_copy.
     entailer!.
-Transparent extended_copy.
     apply (@extend_copy_left _ (sSGG_VST sh) g g1 g2 g1' g2'' (ValidPointer b i) l r (vmap g1 (ValidPointer b i)) l0); auto.
   } Unfocus.
+  rewrite extract_exists_in_SEP. (* should be able to use tactic directly *)
+  Intros g2'.
+  clear g2'' H5.
 
+  normalize.
   localize
    (PROP  (weak_valid g2 r)
     LOCAL (temp _r (pointer_val_val r))
     SEP   (graph sh r g2)).
   1: eapply right_weak_valid; eauto.  
   (* localize *)
-  
+
   eapply semax_ram_seq;
   [ repeat apply eexists_add_stats_cons; constructor
-  | semax_ram_call_body (sh, g2, r) 
-  | semax_ram_after_call; intros g3;
+  | semax_ram_call_body (sh, g2, r)
+  | semax_ram_after_call; intros [[r0 g3] g3''];
     repeat (apply ram_extract_PROP; intro) ].
-  (* mark(r); *)
+  (* r0 = copy(r); *)
 
+  cbv [fst snd] in H8, H9 |- *.
   unlocalize
    (PROP  ()
     LOCAL (temp _r (pointer_val_val r);
-           temp _l (pointer_val_val l);
-           temp _x (pointer_val_val x))
-    SEP (graph sh x g3))
-  using [H5]%RamAssu
-  binding [g3]%RamBind.
+           temp _r0 (pointer_val_val r0);
+           temp _x (pointer_val_val x);
+           temp _x0 (pointer_val_val x0))
+    SEP (data_at sh node_type
+          (Vint (Int.repr 0), (pointer_val_val l0, pointer_val_val null))
+          (pointer_val_val x0);
+         hole_graph sh x0 g2';
+         graph sh x g3; graph sh r0 g3''))
+  using [H8; H9]%RamAssu
+  binding [r0; g3; g3'']%RamBind.
   Grab Existential Variables.
   Focus 2. {
     simplify_ramif.

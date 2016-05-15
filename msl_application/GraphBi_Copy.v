@@ -154,21 +154,24 @@ Proof.
   eapply gamma_left_weak_valid; eauto.
 Qed.
 
-(*
-Lemma right_weak_valid: forall (G G1 G2 G2': Graph) (x l r: addr),
+Lemma right_weak_valid: forall (G G1 G3: Graph) (G1' G3': LGraph) (x l r: addr),
   vgamma G x = (null, l, r) ->
   vvalid G x ->
-  vcopy1 x G G1 ->
-  copy l G1 G2 G2' -> (* extended_copy *)
-  @weak_valid _ _ _ _ G2 (maGraph _) r.
+  vcopy1 x G G1 G1' ->
+  edge_copy G (x, L) (G1: LGraph, G1') (G3: LGraph, G3') ->
+  @weak_valid _ _ _ _ G3 (maGraph _) r.
 Proof.
   intros.
   destruct H1 as [? _].
-  destruct H2 as [_ ?].
-  eapply weak_valid_si; [symmetry; transitivity G1; [exact H1 | exact H2] |].
+  unfold edge_copy in H2.
+  destruct_relation_list GG2 in H2.
+  destruct GG2 as [G2 G2'].
+  destruct H3 as [? _].
+  destruct H2 as [? _].
+  rewrite <- H3, <- H1 in H2.
+  eapply weak_valid_si; [symmetry; eauto |].
   eapply gamma_right_weak_valid; eauto.
 Qed.
-*)
 
 Lemma graph_ramify_left: forall {RamUnit: Type} (g g1: Graph) (g1': LGraph) (x l r: addr) (F1 F2: pred),
   vvalid g x ->
@@ -246,7 +249,7 @@ Lemma extend_copy_left: forall (g g1 g2: Graph) (g1' g2'': LGraph) (x l r x0 l0:
   @derives pred _
   (vertices_at (fun x => vvalid g1' x /\ x0 <> x) g1' * reachable_vertices_at l0 g2'') 
   (EX g2': LGraph,
-    !! extended_copy l (g1: LGraph, g1') (g2: LGraph, g2') && 
+    !! edge_copy g (x, L) (g1: LGraph, g1') (g2: LGraph, g2') && 
     vertices_at (fun x => vvalid g2' x /\ x0 <> x) g2').
 Proof.
   intros.
