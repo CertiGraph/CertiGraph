@@ -112,6 +112,19 @@ Proof.
   + apply LocalGraphCopy.copy_marked_root_refl; auto.
 Qed.
 
+Lemma edge_copy_si: forall (g g1 g2 g1' g2': Graph) (e0: E),
+  edge_copy g e0 (g1, g1') (g2, g2') ->
+  g1 ~=~ g2.
+Proof.
+  intros.
+  unfold edge_copy in H.
+  destruct_relation_list GG in H.
+  destruct GG as [G G'].
+  destruct H0 as [? _].
+  destruct H as [? _].
+  transitivity G; auto.
+Qed.
+
 Lemma edge_copy_spec: forall (g g1 g2 g1' g2': Graph) (root: V) (es_done: list E) (e0: E),
   edge_copy g e0 (g1, g1') (g2, g2') ->
   evalid g1 e0 ->

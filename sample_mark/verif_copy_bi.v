@@ -318,22 +318,35 @@ Proof.
            temp _r0 (pointer_val_val r0);
            temp _x (pointer_val_val x);
            temp _x0 (pointer_val_val x0))
-    SEP (data_at sh node_type
+    SEP (hole_graph sh x0 g2';
+         data_at sh node_type
           (Vint (Int.repr 0), (pointer_val_val l0, pointer_val_val null))
           (pointer_val_val x0);
-         hole_graph sh x0 g2';
          graph sh x g3; graph sh r0 g3''))
   using [H8; H9]%RamAssu
   binding [r0; g3; g3'']%RamBind.
   Grab Existential Variables.
   Focus 2. {
     simplify_ramif.
-    subst.
     eapply (@graph_ramify_right _ (sSGG_VST sh) _ g); eauto.
   } Unfocus.
   (* Unlocalize *)
 
-  unfold semax_ram.
+  unfold semax_ram. (* should not need this *)
+  forward. (* x0 -> r = r0; *)
+  autorewrite with norm. (* TODO: should not need this *)
+
+  gather_SEP 0 3.
+  replace_SEP 0 (EX g3': LGraph, !! edge_copy g (x, R) (g2: LGraph, g2') (g3: LGraph, g3') &&
+           hole_graph sh x0 g3').
+  Focus 1. {
+    entailer!.
+    apply (@extend_copy_right _ (sSGG_VST sh) g g1 g2 g3 g1' g2' g3'' (ValidPointer b i) l r (vmap g1 (ValidPointer b i)) r0); auto.
+  } Unfocus.
+  rewrite extract_exists_in_SEP. (* should be able to use tactic directly *)
+  Intros g3'.
+  clear g3'' H8.
+
   forward. (* ( return; ) *)
   apply (exp_right g3); entailer!; auto.
   apply (mark1_mark_left_mark_right g g1 g2 g3 (ValidPointer b i) l r); auto.
