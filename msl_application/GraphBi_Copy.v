@@ -163,12 +163,8 @@ Lemma right_weak_valid: forall (G G1 G3: Graph) (G1' G3': LGraph) (x l r: addr),
 Proof.
   intros.
   destruct H1 as [? _].
-  unfold edge_copy in H2.
-  destruct_relation_list GG2 in H2.
-  destruct GG2 as [G2 G2'].
-  destruct H3 as [? _].
-  destruct H2 as [? _].
-  rewrite <- H3, <- H1 in H2.
+  apply edge_copy_si in H2.
+  rewrite <- H1 in H2.
   eapply weak_valid_si; [symmetry; eauto |].
   eapply gamma_right_weak_valid; eauto.
 Qed.
@@ -236,6 +232,74 @@ Proof.
       intros.
       rewrite Intersection_spec in H5; destruct H5.
       apply reachable_foot_valid in H5; auto.
+    - admit.
+Qed.
+
+Lemma graph_ramify_right: forall {RamUnit: Type} (g g1 g2: Graph) (g1' g2': LGraph) (x l r: addr) (F1 F2: pred),
+  vvalid g x ->
+  vgamma g x = (null, l, r) ->
+  vcopy1 x g g1 g1' ->
+  edge_copy g (x, L) (g1: LGraph, g1') (g2: LGraph, g2') ->
+  F1 * (F2 * reachable_vertices_at x g2) |--
+  reachable_vertices_at r g2 *
+   (ALL a: RamUnit * Graph * Graph * addr,
+     !! (copy r g2 (snd (fst a)) (snd (fst (fst a))) /\ (r = null /\ snd a = null \/ snd a = LocalGraphCopy.vmap (snd (fst a)) r)) -->
+     (reachable_vertices_at r (snd (fst a)) * reachable_vertices_at (snd a) (snd (fst (fst a))) -*
+      F1 * (F2 * (reachable_vertices_at x (snd (fst a)) * reachable_vertices_at (snd a) (snd (fst (fst a))))))).
+Proof.
+  intros.
+  destruct H1 as [? [? ?]].
+  rewrite <- sepcon_assoc, (sepcon_comm (F1 * F2)).
+  RAMIF_Q'.formalize.
+  match goal with
+  | |- _ |-- _ * allp (_ --> (_ -* ?A)) =>
+    replace A with
+    (fun p : RamUnit * Graph * Graph * addr =>
+            reachable_vertices_at x (snd (fst p)) *
+            reachable_vertices_at (snd p) (snd (fst (fst p))) * (F1 * F2)) by
+    (extensionality p; rewrite <- (sepcon_assoc F1 F2), (sepcon_comm _ (F1 * F2)); auto)
+  end.
+  apply RAMIF_Q'.frame; [auto |].
+  apply RAMIF_Q'.frame_post; [auto |].
+  simpl.
+
+  eapply vertices_at_ramif_xQ.
+  eexists.
+  split; [| split].
+  + apply edge_copy_si in H2; rewrite <- H2, <- H1.
+    eapply Prop_join_reachable_right; eauto.
+  + intros.
+    destruct H5 as [[? [? ?]] _].
+    apply edge_copy_si in H2; rewrite <- H5, <- H2, <- H1.
+    eapply Prop_join_reachable_right; eauto.
+  + intros [[[? ?] ?] ?] [? _].
+    rewrite (edge_copy_si _ _ _ _ _ _ H2) in H1.
+    simpl in H5 |- *; clear r0.
+    apply GSG_PartialGraphPreserve.
+    - rewrite H1.
+      unfold Included, Ensembles.In.
+      intros.
+      apply vvalid_vguard.
+      rewrite Intersection_spec in H6; destruct H6.
+      apply reachable_foot_valid in H6; auto.
+    - rewrite H1.
+      destruct H5 as [? _]; rewrite H5.
+      unfold Included, Ensembles.In.
+      intros.
+      apply vvalid_vguard.
+      rewrite Intersection_spec in H6; destruct H6.
+      apply reachable_foot_valid in H6; auto.
+    - rewrite H1.
+      unfold Included, Ensembles.In.
+      intros.
+      rewrite Intersection_spec in H6; destruct H6.
+      apply reachable_foot_valid in H6; auto.
+    - rewrite H1.
+      destruct H5 as [? _]; rewrite H5.
+      unfold Included, Ensembles.In.
+      intros.
+      rewrite Intersection_spec in H6; destruct H6.
+      apply reachable_foot_valid in H6; auto.
     - admit.
 Qed.
 
@@ -311,71 +375,23 @@ SearchAbout predicate_sub_spatialgraph (_ -> validly_identical _ _).
 Locate GSG_PartialGraphPreserve.
 *)
 
-(*
-Lemma graph_ramify_right: forall {RamUnit: Type} (g g1 g2: Graph) x l r,
+Lemma extend_copy_right: forall (g g1 g2 g3: Graph) (g1' g2' g3'': LGraph) (x l r x0 r0: addr),
   vvalid g x ->
   vgamma g x = (null, l, r) ->
-  vcopy1 x g g1 ->
-  c l g1 g2 ->
-  (graph x g2: pred) |-- graph r g2 *
-   (ALL a: RamUnit * Graph,
-     !! (mark r g2 (snd a)) -->
-     (graph r (snd a) -* graph x (snd a))).
+  vcopy1 x g g1 g1' ->
+  edge_copy g (x, L) (g1: LGraph, g1') (g2: LGraph, g2') ->
+  copy r g2 g3 g3'' ->
+  x0 = LocalGraphCopy.vmap g1 x ->
+  r = null /\ r0 = null \/ r0 = LocalGraphCopy.vmap g3 r ->
+  @derives pred _
+  (vertices_at (fun x => vvalid g2' x /\ x0 <> x) g2' * reachable_vertices_at r0 g3'') 
+  (EX g3': LGraph,
+    !! edge_copy g (x, R) (g2: LGraph, g2') (g3: LGraph, g3') && 
+    vertices_at (fun x => vvalid g3' x /\ x0 <> x) g3').
 Proof.
   intros.
-  destruct H1 as [? _].
-  destruct H2 as [_ ?].
-  eapply vertices_at_ramify_Q; auto.
-  + rewrite <- H2, <- H1.
-    eapply Prop_join_reachable_right; eauto.
-  + intros.
-    destruct H3 as [_ ?].
-    rewrite <- H3, <- H2, <- H1.
-    eapply Prop_join_reachable_right; eauto.
-  + intros ? [? ?] ? ?.
-    simpl; unfold gamma.
-    rewrite Intersection_spec in H5; unfold Complement, Ensembles.In in H5; destruct H5.
-    f_equal; [f_equal |].
-    - apply vlabel_eq.
-      rewrite (proj2 H3).
-      rewrite <- H2, <- H1.
-      pose proof reachable_by_subset_reachable g r (WeakMarkGraph.unmarked g2) x0.
-      unfold Ensembles.In in H7.
-      tauto.
-    - apply dst_L_eq; auto.
-      rewrite H1, H2 in H5.
-      apply reachable_foot_valid in H5; auto.
-    - apply dst_R_eq; auto.
-      rewrite H1, H2 in H5.
-      apply reachable_foot_valid in H5; auto.
-Qed.
-
-Lemma mark1_mark_left_mark_right: forall (g1 g2 g3 g4: Graph) root l r,
-  vvalid g1 root ->
-  vgamma g1 root = (false, l, r) ->
-  mark1 root g1 g2 ->
-  mark l g2 g3 ->
-  mark r g3 g4 ->
-  mark root g1 g4.
-Proof.
-  intros.
-  apply (mark1_mark_list_mark root (l :: r :: nil)); auto.
-  + intros; simpl.
-    inversion H0.
-    unfold Complement, Ensembles.In.
-    rewrite H5; congruence.
-  + hnf; intros.
-    apply gamma_step with (y := n') in H0; auto.
-    rewrite H0; simpl.
-    pose proof eq_sym_iff n' l.
-    pose proof eq_sym_iff n' r.
-    tauto.
-  + split_relation_list ((lg_gg g2) :: nil); eauto.
-    unfold mark_list.
-    simpl map.
-    split_relation_list ((lg_gg g3) :: nil); eauto.
-Qed.
-*)
+  pose proof vcopy1_edge_copy_list_copy_extended_copy x ((x, L) :: (x, R) :: nil) ((x, L) :: nil) (x, R) nil g g1 g2 g1' g2' g3 g3''.
+Admitted.
 
 End SpatialGraph_Copy_Bi.
 
