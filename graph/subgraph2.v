@@ -347,6 +347,56 @@ Proof.
   apply partialgraph_step; auto.
 Qed.
 
+Lemma subgraph_step_iff: forall (p: V -> Prop) x y,
+  (step g x y /\ p x /\ p y) <-> step (predicate_subgraph p) x y.
+Proof.
+  intros.
+  split; [intros [? [? ?]]; apply subgraph_step; auto |].
+  rewrite !step_spec.
+  intros [e [? [? ?]]]; simpl in *.
+  destruct H as [? [? ?]].
+  subst.
+  split; [| split]; auto.
+  exists e.
+  split; [| split]; auto.
+Qed.
+
+Lemma subgraph_edge_iff: forall (p: V -> Prop) x y,
+  (edge g x y /\ p x /\ p y) <-> edge (predicate_subgraph p) x y.
+Proof.
+  intros.
+  unfold edge.
+  rewrite <- subgraph_step_iff.
+  simpl.
+  unfold predicate_vvalid.
+  tauto.
+Qed.
+
+Lemma partialgraph_step_iff: forall (p: V -> Prop) x y,
+  (step g x y /\ p x) <-> step (predicate_partialgraph p) x y.
+Proof.
+  intros.
+  split; [intros [? ?]; apply partialgraph_step; auto |].
+  rewrite !step_spec.
+  intros [e [? [? ?]]]; simpl in *.
+  destruct H as [? ?].
+  subst.
+  split; auto.
+  exists e.
+  split; [| split]; auto.
+Qed.
+
+Lemma partialgraph_edge_iff: forall (p: V -> Prop) x y,
+  (edge g x y /\ p x /\ p y) <-> edge (predicate_partialgraph p) x y.
+Proof.
+  intros.
+  unfold edge.
+  rewrite <- partialgraph_step_iff.
+  simpl.
+  unfold predicate_vvalid.
+  tauto.
+Qed.
+
 Context {MA: MathGraph g}.
 Context {LF: LocalFiniteGraph g}.
 
@@ -805,6 +855,18 @@ Proof.
   rewrite Same_set_spec; hnf; intros.
   rewrite reachable_by_eq_partialgraph_reachable.
   reflexivity.
+Qed.
+
+Lemma reachable_by_reachable_by_equiv (g: PreGraph V E) (P: V -> Prop) (n: V):
+  Same_set (reachable_by g n P) (reachable_by g n (reachable_by g n P)).
+Proof.
+  intros.
+  rewrite reachable_by_partialgraph_reachable_by_equiv at 1.
+  2: apply Included_refl.
+  rewrite reachable_by_eq_partialgraph_reachable', partial_partialgraph, <- reachable_by_eq_partialgraph_reachable'.
+  apply reachable_by_proper'; try reflexivity.
+  apply Intersection_absort_right.
+  intro m; apply reachable_by_foot_prop.
 Qed.
 
 Lemma si_subgraph_edge: forall (g1 g2: PreGraph V E) (p1 p2: V -> Prop),

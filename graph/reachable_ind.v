@@ -181,6 +181,34 @@ Proof.
       * apply H3.
 Qed.
 
+Lemma reachable_general_ind: forall (P: V -> Prop),
+  (forall x y, edge G x y -> P x -> P y) ->
+  forall x y,
+  reachable G x y ->
+  P x ->
+  P y.
+Proof.
+  intros.
+  rewrite reachable_ind_reachable in H0.
+  induction H0.
+  + auto.
+  + firstorder.
+Qed.
+
+Lemma reachable_through_general_ind: forall (P: V -> Prop),
+  (forall x y, edge G x y -> P x -> P y) ->
+  forall S y,
+  reachable_through_set G S y ->
+  Forall P S ->
+  P y.
+Proof.
+  intros.
+  destruct H0 as [x [? ?]].
+  rewrite Forall_forall in H1.
+  specialize (H1 _ H0).
+  eapply reachable_general_ind; eauto.
+Qed.
+
 Lemma edge_preserved_rev_foot: forall (P: V -> Prop),
   (forall x y, reachable G x y -> P x -> P y) ->
   forall x y, 
