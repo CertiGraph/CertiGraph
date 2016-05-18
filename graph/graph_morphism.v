@@ -6,6 +6,7 @@ Require Import RamifyCoq.lib.Morphisms_ext.
 Require Import RamifyCoq.lib.List_ext.
 Require Import RamifyCoq.graph.graph_model.
 Require Import RamifyCoq.graph.path_lemmas. Import RamifyCoq.graph.path_lemmas.PathNotation.
+Require Import RamifyCoq.graph.reachable_ind.
 Require Import RamifyCoq.graph.subgraph2.
 Require Import RamifyCoq.graph.graph_gen.
 
@@ -286,6 +287,65 @@ Proof.
   split; eapply guarded_bij_proper_aux3; eauto; symmetry; auto.
 Qed.
 Global Existing Instance guarded_bij_proper3.
+
+Lemma guarded_morphism_step: forall {PV: V -> Prop} {PE: E -> Prop} {vmap emap n m} {g: PreGraph V E} {g': PreGraph V' E'},
+  guarded_morphism PV PE vmap emap g g' ->
+  Included (Intersection _ (weak_edge_prop PV g) (evalid g)) PE ->
+  PV n ->
+  PV m ->
+  step g n m ->
+  step g' (vmap n) (vmap m).
+Proof.
+  intros.
+  rewrite !@step_spec in H3 |- *.
+  destruct H3 as [e [? [? ?]]].
+  exists (emap e).
+  assert (PE e) by
+   (apply H0; unfold Ensembles.In; rewrite Intersection_spec; subst; auto).
+  split; [| split].
+  + eapply (evalid_preserved H); eauto.
+  + symmetry; subst; eapply (src_preserved H); eauto.
+  + symmetry; subst; eapply (dst_preserved H); eauto.
+Qed.
+
+Lemma guarded_morphism_edge: forall {PV: V -> Prop} {PE: E -> Prop} {vmap emap n m} {g: PreGraph V E} {g': PreGraph V' E'},
+  guarded_morphism PV PE vmap emap g g' ->
+  Included (Intersection _ (weak_edge_prop PV g) (evalid g)) PE ->
+  PV n ->
+  PV m ->
+  edge g n m ->
+  edge g' (vmap n) (vmap m).
+Proof.
+  unfold edge.
+  intros.
+  destruct H3 as [? [? ?]].
+  split; [| split].
+  + eapply (vvalid_preserved H); eauto.
+  + eapply (vvalid_preserved H); eauto.
+  + eapply guarded_morphism_step; eauto.
+Qed.
+
+Lemma guarded_morphism_reachable: forall {PV: V -> Prop} {PE: E -> Prop} {vmap emap n m} {g: PreGraph V E} {g': PreGraph V' E'},
+  guarded_morphism PV PE vmap emap g g' ->
+  Included (Intersection _ (weak_edge_prop PV g) (evalid g)) PE ->
+  reachable_by g n PV m ->
+  reachable g' (vmap n) (vmap m).
+Proof.
+  intros.
+  rewrite reachable_by_eq_partialgraph_reachable in H1.
+  pattern m.
+  eapply (@reachable_general_ind V E) with (x := n); [| exact H1 |].
+  + intros.
+    apply reachable_edge with (vmap x); auto.
+    rewrite <- partialgraph_edge_iff in H2.
+    destruct H2 as [? [? ?]].
+    eapply guarded_morphism_edge; eauto.
+  + apply reachable_refl.
+    rewrite <- reachable_by_eq_partialgraph_reachable in H1.
+    eapply (vvalid_preserved H); eauto.
+    - apply reachable_by_head_prop in H1; auto.
+    - apply reachable_by_head_valid in H1; auto.
+Qed.
 
 End GraphMorphism1.
 

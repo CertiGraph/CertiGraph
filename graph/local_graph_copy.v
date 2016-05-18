@@ -1584,6 +1584,22 @@ Proof.
   apply triple_final with (es := es); auto.
 Qed.
 
+Lemma copy_vvalid_eq: forall (g g1 g2: Graph) (g1' g2'': Graph') (M: V -> Prop) x M,
+  copy M x g1 g2 g2'' ->
+  Same_set (vvalid g2'') (reachable g2'' (vmap g2 x)).
+Proof.
+  intros.
+  destruct H as [COPY_si [COPY_gprv [COPY_gpre [COPY_vvalid [COPY_evalid [COPY_consi COPY_bij]]]]]].
+  rewrite Same_set_spec; intros v'.
+  split; [intros | apply reachable_foot_valid].
+  rewrite (app_same_set COPY_vvalid) in H.
+  rewrite image_set_spec in H.
+  destruct H as [v [? ?]]; subst v'.
+  apply (guarded_morphism_reachable COPY_bij); [rewrite (weak_edge_prop_si _ _ _ COPY_si); apply Included_refl |].
+  rewrite <- COPY_si.
+  rewrite <- (reachable_by_reachable_by_equiv _ _ _ _); auto.
+Qed.
+
 Lemma copy_extend_copy: forall (g g2 g3: Graph) (g2' g': Graph') root es es_done e0 es_later (M: V -> Prop),
   vvalid g root ->
   ~ M root ->

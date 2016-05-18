@@ -291,6 +291,24 @@ Proof.
   tauto.
 Qed.
 
+Lemma Intersection_absort_right: forall U (A B: Ensemble U), Included A B -> Same_set (Intersection _ A B) A.
+Proof.
+  intros.
+  rewrite Same_set_spec; intro x.
+  rewrite Intersection_spec.
+  specialize (H x); unfold Ensembles.In in H.
+  tauto.
+Qed.
+
+Lemma Intersection_absort_left: forall U (A B: Ensemble U), Included B A -> Same_set (Intersection _ A B) B.
+Proof.
+  intros.
+  rewrite Same_set_spec; intro x.
+  rewrite Intersection_spec.
+  specialize (H x); unfold Ensembles.In in H.
+  tauto.
+Qed.
+
 Lemma Complement_Included_rev: forall (U: Type) P Q, Included P Q -> Included (Complement U Q) (Complement U P).
 Proof.
   unfold Included, Complement, Ensembles.In.
