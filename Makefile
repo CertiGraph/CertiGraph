@@ -35,7 +35,7 @@ HEAP_MODEL_DIRECT_FILES = \
   SeparationAlgebra.v mapsto.v SeparationLogic.v
 
 GRAPH_FILES = \
-  graph_model.v path_lemmas.v graph_gen.v reachable_computable.v find_not_in.v reachable_ind.v subgraph2.v \
+  graph_model.v path_lemmas.v graph_gen.v graph_relation.v reachable_computable.v find_not_in.v reachable_ind.v subgraph2.v \
   spanning_tree.v dag.v marked_graph.v weak_mark_lemmas.v dual_graph.v graph_morphism.v \
   local_graph_copy.v tree_model.v list_model.v
 

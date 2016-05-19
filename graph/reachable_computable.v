@@ -12,6 +12,7 @@ Require Import RamifyCoq.graph.graph_model.
 Require Import RamifyCoq.graph.path_lemmas.
 Require Import RamifyCoq.graph.reachable_ind.
 Require Import RamifyCoq.graph.subgraph2.
+Require Import RamifyCoq.graph.graph_gen.
 
 Section REACHABLE_COMPUTABLE.
 
