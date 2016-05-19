@@ -308,8 +308,6 @@ Lemma vcopy1_edge_copy_list_copy_extended_copy: forall root es es_done e0 es_lat
   (!! edge_copy g1 e0 (g3, g3') (g4, g4')) && vertices_at (fun u => vvalid g4' u /\ LocalGraphCopy.vmap g4 root <> u) (Graph_SpatialGraph g4')).
 Proof.
   intros.
-Print LocalGraphCopy.extended_copy.
-Print LocalGraphCopy.copy.
 Admitted.
 
 End SpatialGraph_Copy.

@@ -7,6 +7,8 @@ Require Import Coq.Lists.List.
 Require Import RamifyCoq.msl_ext.ramification_lemmas.
 Require Import RamifyCoq.graph.graph_model.
 Require Import RamifyCoq.graph.path_lemmas.
+Require Import RamifyCoq.graph.graph_gen.
+Require Import RamifyCoq.graph.graph_relation.
 Require Import RamifyCoq.graph.subgraph2.
 Require Import RamifyCoq.graph.reachable_ind.
 Require Import RamifyCoq.graph.spanning_tree.
@@ -35,11 +37,10 @@ Section SPATIAL_GRAPH_DISPOSE_BI.
   Local Open Scope logic.
   Local Coercion Graph_LGraph: Graph >-> LGraph.
   Local Coercion LGraph_SGraph: LGraph >-> SGraph.
-  Local Coercion SGraph_PGraph: SGraph >-> PGraph.
   Local Identity Coercion Graph_GeneralGraph: Graph >-> GeneralGraph.
   Local Identity Coercion LGraph_LabeledGraph: LGraph >-> LabeledGraph.
   Local Identity Coercion SGraph_SpatialGraph: SGraph >-> SpatialGraph.
-  Local Identity Coercion PGraph_PreGraph: PGraph >-> PreGraph.
+  Local Coercion pg_lg: LabeledGraph >-> PreGraph.
 
   Notation Graph := (@Graph pSGG_Bi bool unit).
 
@@ -57,7 +58,7 @@ Section SPATIAL_GRAPH_DISPOSE_BI.
                                edge_spanning_tree g (x, L) (Graph_gen_left_null g x).
   Proof.
     intros. assert (l = dst g (x, L)) by (simpl in H0; inversion H0; auto).
-    hnf. change (lg_gg g) with (g: LGraph). change (pg_lg g) with (g: PGraph). destruct (node_pred_dec (marked g) (dst g (x, L))). 2: subst l; exfalso; auto.
+    hnf. change (lg_gg g) with (g: LGraph). destruct (node_pred_dec (marked g) (dst g (x, L))). 2: subst l; exfalso; auto.
     split.
     + hnf. simpl. split; [| split; [|split; [| split]]]; [tauto | tauto | tauto | | ].
       - intros. unfold graph_gen.update_dst.
@@ -72,7 +73,7 @@ Section SPATIAL_GRAPH_DISPOSE_BI.
   Lemma graph_gen_left_null_ramify:
     forall (g: Graph) (x : addr) d (l r : addr),
       vvalid g x -> vgamma g x = (d, l, r) ->
-      (graph x g : pred) |-- vertex_at x (d, l, r) * (vertex_at x (d, null, r) -* vertices_at (reachable g x) (Graph_gen_left_null g x)).
+      (reachable_vertices_at x g : pred) |-- vertex_at x (d, l, r) * (vertex_at x (d, null, r) -* vertices_at (reachable g x) (Graph_gen_left_null g x)).
   Proof.
     intros.
     replace (@vertex_at _ _ _ _ _ SGP x (d, l, r)) with (graph_vcell g x).

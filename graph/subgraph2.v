@@ -22,70 +22,10 @@ Context {V E: Type}.
 Context {EV: EqDec V eq}.
 Context {EE: EqDec E eq}.
 
-Lemma weak_edge_prop_si: forall (P: V -> Prop) (g1 g2: PreGraph V E),
-  g1 ~=~ g2 ->
-  Same_set
-   (Intersection _ (weak_edge_prop P g1) (evalid g1))
-   (Intersection _ (weak_edge_prop P g2) (evalid g2)).
-Proof.
-  intros.
-  rewrite Same_set_spec; intro e.
-  rewrite !Intersection_spec.
-  unfold weak_edge_prop.
-  pose proof (proj1 (proj2 H) e).
-  pose proof proj1 (proj2 (proj2 H)) e.
-  split; intros [? ?]; do 2 (spec H1; [tauto |]); (split; [congruence | tauto]).
-Qed.
-
-Lemma weak_edge_prop_Empty: forall g, Same_set (weak_edge_prop (Empty_set _) g) (Empty_set _).
-Proof.
-  intros.
-  unfold weak_edge_prop.
-  rewrite Same_set_spec; intros x.
-  rewrite !Empty_set_spec; reflexivity.
-Qed.
- 
-Lemma weak_edge_prop_Disjoint: forall (P1 P2: V -> Prop) (g: PreGraph V E),
-  Disjoint _ P1 P2 ->
-  Disjoint _ (weak_edge_prop P1 g) (weak_edge_prop P2 g).
-Proof.
-  intros.
-  unfold weak_edge_prop.
-  rewrite Disjoint_spec in *.
-  firstorder.
-Qed.
-
-Lemma weak_edge_prop_Complement: forall (P: V -> Prop) (g: PreGraph V E), Same_set (weak_edge_prop (Complement _ P) g) (Complement _ (weak_edge_prop P g)).
-Proof.
-  intros.
-  unfold weak_edge_prop, Complement, Ensembles.In.
-  rewrite Same_set_spec.
-  hnf; intros; simpl.
-  reflexivity.
-Qed.
-
-Lemma weak_edge_prop_Union: forall (P Q: V -> Prop) (g: PreGraph V E), Same_set (weak_edge_prop (Union _ P Q) g) (Union _ (weak_edge_prop P g) (weak_edge_prop Q g)).
-Proof.
-  intros.
-  unfold weak_edge_prop.
-  rewrite Same_set_spec; intros ?; rewrite !Union_spec.
-  simpl.
-  reflexivity.
-Qed.
-
-Lemma weak_edge_prop_Decidable: forall (P: V -> Prop) (g: PreGraph V E),
-  (forall v, Decidable (P v)) ->
-  (forall e, Decidable (weak_edge_prop P g e)).
-Proof.
-  intros.
-  unfold weak_edge_prop.
-  apply X.
-Qed.
-
-Definition reachable_subgraph (g: Graph) (S : list V): Graph :=
+Definition reachable_subgraph (g: PreGraph V E) (S : list V): PreGraph V E :=
   predicate_subgraph g (reachable_through_set g S).
 
-Definition unreachable_partialgraph (g: Graph) (S : list V): Graph :=
+Definition unreachable_partialgraph (g: PreGraph V E) (S : list V): PreGraph V E :=
   predicate_partialgraph g (fun n => ~ reachable_through_set g S n).
 
 Lemma reachable_by_path_subgraph_partialgraph (g: PreGraph V E) (p q: V -> Prop):
@@ -247,108 +187,6 @@ Proof.
     split; [| split]; auto.
     rewrite step_spec.
     exists e; auto.
-Qed.
-
-Lemma subgraph_step: forall (p: V -> Prop) x y,
-  step g x y -> p x -> p y -> step (predicate_subgraph g p) x y.
-Proof.
-  intros.
-  rewrite step_spec in H |- *.
-  destruct H as [e [? [? ?]]].
-  exists e.
-  split; [| split; simpl; auto].
-  simpl.
-  unfold predicate_evalid.
-  rewrite H2, H3.
-  auto.
-Qed.
-
-Lemma subgraph_edge: forall (p: V -> Prop) x y,
-    edge g x y -> p x -> p y -> edge (predicate_subgraph g p) x y.
-Proof.
-  intros.
-  destruct H as [? [? ?]].
-  unfold edge.
-  simpl.
-  unfold predicate_vvalid.
-  do 2 (split; [tauto |]).
-  apply subgraph_step; auto.
-Qed.
-
-Lemma partialgraph_step: forall (p: V -> Prop) x y,
-  step g x y -> p x -> step (predicate_partialgraph g p) x y.
-Proof.
-  intros.
-  rewrite step_spec in H |- *.
-  destruct H as [e [? [? ?]]].
-  exists e.
-  split; [| split; simpl; auto].
-  simpl.
-  unfold predicate_weak_evalid.
-  rewrite H1.
-  auto.
-Qed.
-
-Lemma partialgraph_edge: forall (p: V -> Prop) x y,
-    edge g x y -> p x -> p y -> edge (predicate_partialgraph g p) x y.
-Proof.
-  intros.
-  destruct H as [? [? ?]].
-  unfold edge.
-  simpl.
-  unfold predicate_vvalid.
-  do 2 (split; [tauto |]).
-  apply partialgraph_step; auto.
-Qed.
-
-Lemma subgraph_step_iff: forall (p: V -> Prop) x y,
-  (step g x y /\ p x /\ p y) <-> step (predicate_subgraph g p) x y.
-Proof.
-  intros.
-  split; [intros [? [? ?]]; apply subgraph_step; auto |].
-  rewrite !step_spec.
-  intros [e [? [? ?]]]; simpl in *.
-  destruct H as [? [? ?]].
-  subst.
-  split; [| split]; auto.
-  exists e.
-  split; [| split]; auto.
-Qed.
-
-Lemma subgraph_edge_iff: forall (p: V -> Prop) x y,
-  (edge g x y /\ p x /\ p y) <-> edge (predicate_subgraph g p) x y.
-Proof.
-  intros.
-  unfold edge.
-  rewrite <- subgraph_step_iff.
-  simpl.
-  unfold predicate_vvalid.
-  tauto.
-Qed.
-
-Lemma partialgraph_step_iff: forall (p: V -> Prop) x y,
-  (step g x y /\ p x) <-> step (predicate_partialgraph g p) x y.
-Proof.
-  intros.
-  split; [intros [? ?]; apply partialgraph_step; auto |].
-  rewrite !step_spec.
-  intros [e [? [? ?]]]; simpl in *.
-  destruct H as [? ?].
-  subst.
-  split; auto.
-  exists e.
-  split; [| split]; auto.
-Qed.
-
-Lemma partialgraph_edge_iff: forall (p: V -> Prop) x y,
-  (edge g x y /\ p x /\ p y) <-> edge (predicate_partialgraph g p) x y.
-Proof.
-  intros.
-  unfold edge.
-  rewrite <- partialgraph_step_iff.
-  simpl.
-  unfold predicate_vvalid.
-  tauto.
 Qed.
 
 Context {MA: MathGraph g}.
@@ -525,139 +363,6 @@ Proof.
     rewrite (valid_path_si _ _ H0) in H3. rewrite <- ppg_valid_path in H3. destruct H3; auto.
   + destruct H1 as [[? ?] [? ?]]. split; split; auto; clear H1.
 Abort.
-
-Lemma partial_partialgraph: forall p1 p2 (g: PreGraph V E),
-  (predicate_partialgraph (predicate_partialgraph g p1) p2) ~=~ 
-  (predicate_partialgraph g (Intersection _ p1 p2)).
-Proof.
-  intros.
-  split; [| split; [| split]]; simpl; intros.
-  + unfold predicate_vvalid; simpl; unfold predicate_vvalid.
-    rewrite Intersection_spec.
-    tauto.
-  + unfold predicate_weak_evalid; simpl.
-    unfold predicate_weak_evalid.
-    rewrite Intersection_spec.
-    tauto.
-  + reflexivity.
-  + reflexivity.
-Qed.
-
-Lemma sub_subgraph: forall p1 p2 (g: PreGraph V E),
-  (predicate_subgraph (predicate_subgraph g p1) p2) ~=~ 
-  (predicate_subgraph g (Intersection _ p1 p2)).
-Proof.
-  intros.
-  split; [| split; [| split]]; simpl; intros.
-  + unfold predicate_vvalid; simpl; unfold predicate_vvalid.
-    rewrite Intersection_spec.
-    tauto.
-  + unfold predicate_evalid; simpl; unfold predicate_evalid; simpl.
-    rewrite !Intersection_spec.
-    tauto.
-  + reflexivity.
-  + reflexivity.
-Qed.
-
-Lemma partialgraph_si_node_prop: forall n (g1 g2: PreGraph V E) p1 p2,
-  (predicate_partialgraph g1 p1) ~=~ (predicate_partialgraph g2 p2) ->
-  Included p1 (vvalid g1) ->
-  Included p2 (vvalid g2) ->
-  (p1 n <-> p2 n).
-Proof.
-  intros.
-  destruct H as [? _].
-  specialize (H n).
-  specialize (H0 n).
-  specialize (H1 n).
-  simpl in *.
-  unfold predicate_vvalid in H.
-  tauto.
-Qed.
-
-Lemma subgraph_node_prop: forall n (g1 g2: PreGraph V E) p1 p2,
-  (predicate_subgraph g1 p1) ~=~ (predicate_subgraph g2 p2) ->
-  Included p1 (vvalid g1) ->
-  Included p2 (vvalid g2) ->
-  (p1 n <-> p2 n).
-Proof.
-  intros.
-  destruct H as [? _].
-  specialize (H n).
-  specialize (H0 n).
-  specialize (H1 n).
-  simpl in *.
-  unfold Ensembles.In in *.
-  unfold predicate_vvalid in H.
-  tauto.
-Qed.
-
-Lemma si_stronger_partialgraph: forall (g1 g2: PreGraph V E) (p1 p2 p1' p2' p: V -> Prop),
-  (forall v, p1' v <-> p1 v /\ p v) ->
-  (forall v, p2' v <-> p2 v /\ p v) ->
-  (predicate_partialgraph g1 p1) ~=~ (predicate_partialgraph g2 p2) ->
-  (predicate_partialgraph g1 p1') ~=~ (predicate_partialgraph g2 p2').
-Proof.
-  intros.
-  destruct H1 as [? [? [? ?]]].
-  split; [| split; [| split]].
-  + intro v; specialize (H1 v); specialize (H0 v); specialize (H v);
-    simpl in H1 |- *.
-    unfold predicate_vvalid in H1 |- *.
-    tauto.
-  + intro e; specialize (H2 e); specialize (H3 e); specialize (H (src g1 e)); specialize (H0 (src g2 e));
-    simpl in H2, H3 |- *.
-    unfold predicate_weak_evalid in H2, H3 |- *. clear H4. split; intros; destruct H4.
-    - rewrite H in H5. destruct H5. assert (evalid g1 e /\ p1 (src g1 e)) by auto.
-      specialize (H3 H7). rewrite H2 in H7. specialize (H3 H7). rewrite <- H3 in *. tauto.
-    - rewrite H0 in H5. destruct H5. assert (evalid g2 e /\ p2 (src g2 e)) by auto.
-      assert (evalid g1 e /\ p1 (src g1 e)) by tauto. specialize (H3 H8 H7).
-      rewrite H3 in *. rewrite H. tauto.
-  + simpl in *. unfold predicate_weak_evalid in *. intros.
-    rewrite H in H5. rewrite H0 in H6. apply H3; tauto.
-  + simpl in *. unfold predicate_weak_evalid in *. intros.
-    rewrite H in H5. rewrite H0 in H6. apply H4; tauto.
-Qed.
-
-Lemma si_stronger_partialgraph': forall (g1 g2: PreGraph V E) (p1 p2 p1' p2' p: V -> Prop),
-  Same_set p1' (Intersection _ p1 p) ->
-  Same_set p2' (Intersection _ p2 p) ->
-  (predicate_partialgraph g1 p1) ~=~ (predicate_partialgraph g2 p2) ->
-  (predicate_partialgraph g1 p1') ~=~ (predicate_partialgraph g2 p2').
-Proof.
-  intros.
-  apply si_stronger_partialgraph with (p := p) (p1 := p1) (p2 := p2); auto.
-  - intros.
-    rewrite Same_set_spec in H; specialize (H v).
-    rewrite Intersection_spec in H; auto.
-  - intros.
-    rewrite Same_set_spec in H0; specialize (H0 v).
-    rewrite Intersection_spec in H0; auto.
-Qed.
-
-Lemma si_stronger_partialgraph_simple: forall (g1 g2: PreGraph V E) (p p': V -> Prop),
-  Included p' p ->
-  (predicate_partialgraph g1 p) ~=~ (predicate_partialgraph g2 p) ->
-  (predicate_partialgraph g1 p') ~=~ (predicate_partialgraph g2 p').
-Proof.
-  intros.
-  eapply si_stronger_partialgraph with (p := p'); [| | exact H0].
-  + intro v; specialize (H v); simpl in H; tauto.
-  + intro v; specialize (H v); simpl in H; tauto.
-Qed.
-
-Lemma si_partialgraph_stronger_trans: forall (g1 g g2: PreGraph V E) (P1 P2 P: V -> Prop),
-  Included P P1 ->
-  Included P P2 ->
-  (predicate_partialgraph g1 P1) ~=~ (predicate_partialgraph g P1) ->
-  (predicate_partialgraph g P2) ~=~ (predicate_partialgraph g2 P2) ->
-  (predicate_partialgraph g1 P) ~=~ (predicate_partialgraph g2 P).
-Proof.
-  intros.
-  transitivity (predicate_partialgraph g P).
-  + apply si_stronger_partialgraph_simple with P1; auto.
-  + apply si_stronger_partialgraph_simple with P2; auto.
-Qed.
 
 Instance reachable_by_proper: Proper ((@structurally_identical V E _ _) ==> (@eq V) ==> @Same_set V ==> (@eq V) ==> iff) (@reachable_by V E _ _).
 Proof.
@@ -891,25 +596,6 @@ Proof.
   + destruct H1 as [s [? ?]]. exists s; split; auto. rewrite <- (si_reachable_by g1 g2 p1 p2); auto.
 Qed.
 
-Lemma step_list_partialgraph: forall  (g: PreGraph V E) n l (P: Ensemble V),
-  vvalid g n ->
-  P n ->
-  step_list g n l ->
-  step_list (predicate_partialgraph g P) n l.
-Proof.
-  intros.
-  intro m; specialize (H1 m).
-  rewrite H1; clear H1.
-  split.
-  + intros; apply partialgraph_step; auto.
-  + intro.
-    inv H1; simpl in *.
-    econstructor.
-    - destruct H2; eauto.
-    - reflexivity.
-    - reflexivity.
-Qed.
-
 Lemma reachable_by_through_app_strong: forall (g: PreGraph V E) P l1 l2,
   (forall n, reachable_by_through_set g l1 P n \/ ~ reachable_by_through_set g l1 P n) ->
   (forall n, reachable_by_through_set g (l1 ++ l2) P n <-> reachable_by_through_set g l1 P n \/ reachable_by_through_set (predicate_partialgraph g (Complement _ (reachable_by_through_set g l1 P))) l2 P n).
@@ -1061,40 +747,6 @@ Definition reachable_sub_labeledgraph (g: Graph) (S : list V): Graph :=
 
 Definition unreachable_partial_labeledgraph (g: Graph) (S : list V): Graph :=
   predicate_partial_labeledgraph g (fun n => ~ reachable_through_set g S n).
-
-Lemma si_stronger_partial_labeledgraph: forall (g1 g2: Graph) (p1 p2 p1' p2' p: V -> Prop),
-  (forall v, p1' v <-> p1 v /\ p v) ->
-  (forall v, p2' v <-> p2 v /\ p v) ->
-  (predicate_partial_labeledgraph g1 p1) ~=~ (predicate_partial_labeledgraph g2 p2)%LabeledGraph ->
-  (predicate_partial_labeledgraph g1 p1') ~=~ (predicate_partial_labeledgraph g2 p2')%LabeledGraph.
-Proof.
-  intros.
-  split; [| split].
-  + eapply si_stronger_partialgraph; eauto.
-    destruct H1 as [? _].
-    auto.
-  + simpl.
-    intros ? [? ?] [? ?].
-    destruct H1 as [_ [? _]].
-    specialize (H1 v); simpl in H1.
-    firstorder.
-  + simpl.
-    intros ? [? ?] [? ?].
-    destruct H1 as [_ [_ ?]].
-    specialize (H1 e); simpl in H1.
-    firstorder.
-Qed.
-
-Lemma si_stronger_partial_labeledgraph_simple: forall (g1 g2: Graph) (p p': V -> Prop),
-  Included p' p ->
-  (predicate_partial_labeledgraph g1 p) ~=~ (predicate_partial_labeledgraph g2 p)%LabeledGraph ->
-  (predicate_partial_labeledgraph g1 p') ~=~ (predicate_partial_labeledgraph g2 p')%LabeledGraph.
-Proof.
-  intros.
-  eapply si_stronger_partial_labeledgraph with (p := p'); [| | exact H0].
-  + intro v; specialize (H v); simpl in H; tauto.
-  + intro v; specialize (H v); simpl in H; tauto.
-Qed.
 
 End PartialLabeledGraph.
 
