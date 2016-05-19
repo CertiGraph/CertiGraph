@@ -6,8 +6,9 @@ Require Import RamifyCoq.lib.Morphisms_ext.
 Require Import RamifyCoq.lib.List_ext.
 Require Import RamifyCoq.graph.graph_model.
 Require Import RamifyCoq.graph.path_lemmas. Import RamifyCoq.graph.path_lemmas.PathNotation.
-Require Import RamifyCoq.graph.subgraph2.
 Require Import RamifyCoq.graph.graph_gen.
+Require Import RamifyCoq.graph.graph_relation.
+Require Import RamifyCoq.graph.subgraph2.
 Require Import RamifyCoq.graph.graph_morphism.
 
 Class GraphMorphismSetting (DV DE V' E' DV' DE': Type): Type := {
