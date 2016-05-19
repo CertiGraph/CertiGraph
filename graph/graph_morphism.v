@@ -9,6 +9,7 @@ Require Import RamifyCoq.graph.path_lemmas. Import RamifyCoq.graph.path_lemmas.P
 Require Import RamifyCoq.graph.reachable_ind.
 Require Import RamifyCoq.graph.subgraph2.
 Require Import RamifyCoq.graph.graph_gen.
+Require Import RamifyCoq.graph.graph_relation.
 
 Module GraphMorphism.
 

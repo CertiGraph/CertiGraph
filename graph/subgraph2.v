@@ -13,28 +13,14 @@ Require Import VST.msl.Coqlib2.
 Require Import RamifyCoq.graph.graph_model.
 Require Import RamifyCoq.graph.path_lemmas.
 Require Import RamifyCoq.graph.reachable_ind.
+Require Import RamifyCoq.graph.graph_gen.
+Require Import RamifyCoq.graph.graph_relation.
 
 Section SubGraph.
 
 Context {V E: Type}.
 Context {EV: EqDec V eq}.
 Context {EE: EqDec E eq}.
-
-(* TODO: Maybe redefine these three using respectful_set. *)
-Definition strong_edge_prop (P: V -> Prop) (g: PreGraph V E): E -> Prop := fun e => P (src g e) /\ P (dst g e).
-
-Definition weak_edge_prop (P: V -> Prop) (g: PreGraph V E): E -> Prop := fun e => P (src g e).
-
-Definition weak'_edge_prop (P: V -> Prop) (g: PreGraph V E): E -> Prop := fun e => P (dst g e).
-
-Instance weak_edge_prop_proper: Proper (Same_set ==> eq ==> Same_set) weak_edge_prop.
-Proof.
-  do 2 (hnf; intros); subst.
-  rewrite Same_set_spec in *.
-  intro e; unfold weak_edge_prop.
-  auto.
-Defined.
-Global Existing Instance weak_edge_prop_proper.
 
 Lemma weak_edge_prop_si: forall (P: V -> Prop) (g1 g2: PreGraph V E),
   g1 ~=~ g2 ->
@@ -96,50 +82,16 @@ Proof.
   apply X.
 Qed.
 
-Definition gpredicate_subgraph (PV: V -> Prop) (PE: E -> Prop) (g: PreGraph V E): PreGraph V E :=
-  Build_PreGraph EV EE (Intersection _ (vvalid g) PV) (Intersection _ (evalid g) PE) (src g) (dst g).
+Definition reachable_subgraph (g: Graph) (S : list V): Graph :=
+  predicate_subgraph g (reachable_through_set g S).
 
-Context (g: PreGraph V E).
+Definition unreachable_partialgraph (g: Graph) (S : list V): Graph :=
+  predicate_partialgraph g (fun n => ~ reachable_through_set g S n).
 
-Definition predicate_vvalid (p: V -> Prop): Ensemble V :=
-  fun n => vvalid g n /\ p n.
-
-Definition predicate_evalid (p: V -> Prop): Ensemble E :=
-  fun e => evalid g e /\ p (src g e) /\ p (dst g e).
-
-Definition predicate_weak_evalid (p: V -> Prop): Ensemble E :=
-  fun e => evalid g e /\ p (src g e).
-
-Definition predicate_subgraph (p: V -> Prop): PreGraph V E :=
-  Build_PreGraph EV EE (predicate_vvalid p) (predicate_evalid p) (src g) (dst g).
-
-Definition predicate_partialgraph (p: V -> Prop): PreGraph V E :=
-  Build_PreGraph EV EE (predicate_vvalid p) (predicate_weak_evalid p) (src g) (dst g).
-
-Definition reachable_subgraph (S : list V): PreGraph V E :=
-  predicate_subgraph (reachable_through_set g S).
-
-Definition unreachable_partialgraph (S : list V): PreGraph V E :=
-  predicate_partialgraph (fun n => ~ reachable_through_set g S n).
-
-Lemma predicate_partialgraph_gpredicate_subgraph (p: V -> Prop): 
-  (predicate_partialgraph p) ~=~ (gpredicate_subgraph p (Intersection _ (weak_edge_prop p g) (evalid g)) g).
-Proof.
-  split; [| split; [| split]]; simpl; intros.
-  + rewrite Intersection_spec.
-    reflexivity.
-  + rewrite !Intersection_spec.
-    unfold predicate_weak_evalid.
-    unfold weak_edge_prop.
-    tauto.
-  + auto.
-  + auto.
-Qed.
-
-Lemma reachable_by_path_subgraph_partialgraph (p q: V -> Prop):
+Lemma reachable_by_path_subgraph_partialgraph (g: PreGraph V E) (p q: V -> Prop):
   forall (n1 n2: V) (l: path),
-    (predicate_subgraph p) |= l is n1 ~o~> n2 satisfying q <->
-    (predicate_partialgraph p) |= l is n1 ~o~> n2 satisfying q.
+    (predicate_subgraph g p) |= l is n1 ~o~> n2 satisfying q <->
+    (predicate_partialgraph g p) |= l is n1 ~o~> n2 satisfying q.
 Proof.
   intros. unfold reachable_by_path, good_path. apply and_iff_split; [|apply and_iff_split].
   + unfold path_endpoints. apply and_iff_compat_l. destruct l as [v l]. revert v. induction l; intros.
@@ -154,17 +106,17 @@ Proof.
     rewrite !Forall_forall. simpl. intuition.
 Qed.
 
-Lemma reachable_subgraph_partialgraph (p: V -> Prop):
+Lemma reachable_subgraph_partialgraph (g: PreGraph V E) (p: V -> Prop):
   forall (n1 n2: V),
-    reachable (predicate_subgraph p) n1 n2 <-> reachable (predicate_partialgraph p) n1 n2.
+    reachable (predicate_subgraph g p) n1 n2 <-> reachable (predicate_partialgraph g p) n1 n2.
 Proof.
   intros. unfold reachable, reachable_by.
   apply ex_iff, reachable_by_path_subgraph_partialgraph.
 Qed.
 
-Lemma reachable_by_path_eq_subgraph_reachable (p: V -> Prop):
+Lemma reachable_by_path_eq_subgraph_reachable (g: PreGraph V E) (p: V -> Prop):
   forall (n1 n2: V) (path : path),
-    g |= path is n1 ~o~> n2 satisfying p <-> (predicate_subgraph p) |= path is n1 ~o~> n2 satisfying (fun _ => True).
+    g |= path is n1 ~o~> n2 satisfying p <-> (predicate_subgraph g p) |= path is n1 ~o~> n2 satisfying (fun _ => True).
 Proof.
   intros; split; intros; destruct H as [[? ?] [? ?]]; split.
   + split; auto. clear - H0. destruct path as [v l]. revert v H0. induction l; intros. 1: simpl in *; auto. rewrite pfoot_cons in H0 |-* . apply IHl; auto.
@@ -185,9 +137,11 @@ Proof.
         hnf in H6. destruct l. 1: inversion H7. hnf in H6. rewrite Forall_forall in H6. apply H6; auto.
 Qed.
 
+Context (g: PreGraph V E).
+
 Lemma reachable_by_eq_subgraph_reachable (p: V -> Prop):
   forall (n1 n2: V),
-    g |= n1 ~o~> n2 satisfying p <-> reachable (predicate_subgraph p) n1 n2.
+    g |= n1 ~o~> n2 satisfying p <-> reachable (predicate_subgraph g p) n1 n2.
 Proof.
   intros. unfold reachable, reachable_by. apply ex_iff; intros.
   apply reachable_by_path_eq_subgraph_reachable.
@@ -196,7 +150,7 @@ Qed.
 Lemma reachable_by_path_eq_partialgraph_reachable (p: V -> Prop):
   forall (n1 n2: V) (l : path),
     g |= l is n1 ~o~> n2 satisfying p <->
-    (predicate_partialgraph p) |= l is n1 ~o~> n2 satisfying (fun _ => True).
+    (predicate_partialgraph g p) |= l is n1 ~o~> n2 satisfying (fun _ => True).
 Proof.
   intros. rewrite reachable_by_path_eq_subgraph_reachable.
   apply reachable_by_path_subgraph_partialgraph.
@@ -204,7 +158,7 @@ Qed.
 
 Lemma reachable_by_eq_partialgraph_reachable (p: V -> Prop):
   forall (n1 n2: V),
-    g |= n1 ~o~> n2 satisfying p <-> reachable (predicate_partialgraph p) n1 n2.
+    g |= n1 ~o~> n2 satisfying p <-> reachable (predicate_partialgraph g p) n1 n2.
 Proof.
   intros.
   rewrite reachable_by_eq_subgraph_reachable.
@@ -212,7 +166,7 @@ Proof.
 Qed.
 
 Lemma reachable_by_eq_partialgraph_reachable' (p: V -> Prop) n:
-  Same_set (reachable_by g n p) (reachable (predicate_partialgraph p) n).
+  Same_set (reachable_by g n p) (reachable (predicate_partialgraph g p) n).
 Proof.
   intros.
   rewrite Same_set_spec; intro n'.
@@ -221,7 +175,7 @@ Qed.
 
 Lemma reachable_by_through_set_eq_subgraph_reachable_through_set (p: V -> Prop):
   forall l n,
-    reachable_by_through_set g l p n <-> reachable_through_set (predicate_subgraph p) l n.
+    reachable_by_through_set g l p n <-> reachable_through_set (predicate_subgraph g p) l n.
 Proof.
   intros.
   unfold reachable_by_through_set, reachable_through_set.
@@ -231,7 +185,7 @@ Qed.
 
 Lemma reachable_by_through_set_eq_subgraph_reachable_through_set' (p: V -> Prop):
   forall l,
-    Same_set (reachable_by_through_set g l p) (reachable_through_set (predicate_subgraph p) l).
+    Same_set (reachable_by_through_set g l p) (reachable_through_set (predicate_subgraph g p) l).
 Proof.
   intros.
   rewrite Same_set_spec; intro n.
@@ -240,7 +194,7 @@ Qed.
 
 Lemma reachable_by_through_set_eq_partialgraph_reachable_through_set (p: V -> Prop):
   forall l n,
-    reachable_by_through_set g l p n <-> reachable_through_set (predicate_partialgraph p) l n.
+    reachable_by_through_set g l p n <-> reachable_through_set (predicate_partialgraph g p) l n.
 Proof.
   intros.
   unfold reachable_by_through_set, reachable_through_set.
@@ -250,7 +204,7 @@ Qed.
 
 Lemma reachable_by_through_set_eq_partialgraph_reachable_through_set' (p: V -> Prop):
   forall l,
-    Same_set (reachable_by_through_set g l p) (reachable_through_set (predicate_partialgraph p) l).
+    Same_set (reachable_by_through_set g l p) (reachable_through_set (predicate_partialgraph g p) l).
 Proof.
   intros.
   rewrite Same_set_spec; intro n.
@@ -258,7 +212,7 @@ Proof.
 Qed.
 
 Lemma predicate_subgraph_reachable_included (p: V -> Prop): 
-  forall (n: V), Included (reachable (predicate_subgraph p) n) (reachable g n).
+  forall (n: V), Included (reachable (predicate_subgraph g p) n) (reachable g n).
 Proof.
   intros.
   intro; intros.
@@ -277,7 +231,7 @@ Proof.
 Qed.
 
 Lemma predicate_partialgraph_reachable_included (p: V -> Prop): 
-  forall (n: V), Included (reachable (predicate_partialgraph p) n) (reachable g n).
+  forall (n: V), Included (reachable (predicate_partialgraph g p) n) (reachable g n).
 Proof.
   intros.
   intro; intros.
@@ -296,7 +250,7 @@ Proof.
 Qed.
 
 Lemma subgraph_step: forall (p: V -> Prop) x y,
-  step g x y -> p x -> p y -> step (predicate_subgraph p) x y.
+  step g x y -> p x -> p y -> step (predicate_subgraph g p) x y.
 Proof.
   intros.
   rewrite step_spec in H |- *.
@@ -310,7 +264,7 @@ Proof.
 Qed.
 
 Lemma subgraph_edge: forall (p: V -> Prop) x y,
-    edge g x y -> p x -> p y -> edge (predicate_subgraph p) x y.
+    edge g x y -> p x -> p y -> edge (predicate_subgraph g p) x y.
 Proof.
   intros.
   destruct H as [? [? ?]].
@@ -322,7 +276,7 @@ Proof.
 Qed.
 
 Lemma partialgraph_step: forall (p: V -> Prop) x y,
-  step g x y -> p x -> step (predicate_partialgraph p) x y.
+  step g x y -> p x -> step (predicate_partialgraph g p) x y.
 Proof.
   intros.
   rewrite step_spec in H |- *.
@@ -336,7 +290,7 @@ Proof.
 Qed.
 
 Lemma partialgraph_edge: forall (p: V -> Prop) x y,
-    edge g x y -> p x -> p y -> edge (predicate_partialgraph p) x y.
+    edge g x y -> p x -> p y -> edge (predicate_partialgraph g p) x y.
 Proof.
   intros.
   destruct H as [? [? ?]].
@@ -348,7 +302,7 @@ Proof.
 Qed.
 
 Lemma subgraph_step_iff: forall (p: V -> Prop) x y,
-  (step g x y /\ p x /\ p y) <-> step (predicate_subgraph p) x y.
+  (step g x y /\ p x /\ p y) <-> step (predicate_subgraph g p) x y.
 Proof.
   intros.
   split; [intros [? [? ?]]; apply subgraph_step; auto |].
@@ -362,7 +316,7 @@ Proof.
 Qed.
 
 Lemma subgraph_edge_iff: forall (p: V -> Prop) x y,
-  (edge g x y /\ p x /\ p y) <-> edge (predicate_subgraph p) x y.
+  (edge g x y /\ p x /\ p y) <-> edge (predicate_subgraph g p) x y.
 Proof.
   intros.
   unfold edge.
@@ -373,7 +327,7 @@ Proof.
 Qed.
 
 Lemma partialgraph_step_iff: forall (p: V -> Prop) x y,
-  (step g x y /\ p x) <-> step (predicate_partialgraph p) x y.
+  (step g x y /\ p x) <-> step (predicate_partialgraph g p) x y.
 Proof.
   intros.
   split; [intros [? ?]; apply partialgraph_step; auto |].
@@ -387,7 +341,7 @@ Proof.
 Qed.
 
 Lemma partialgraph_edge_iff: forall (p: V -> Prop) x y,
-  (edge g x y /\ p x /\ p y) <-> edge (predicate_partialgraph p) x y.
+  (edge g x y /\ p x /\ p y) <-> edge (predicate_partialgraph g p) x y.
 Proof.
   intros.
   unfold edge.
@@ -400,7 +354,7 @@ Qed.
 Context {MA: MathGraph g}.
 Context {LF: LocalFiniteGraph g}.
 
-Definition predicate_sub_mathgraph (p: V -> Prop): MathGraph (predicate_subgraph p).
+Definition predicate_sub_mathgraph (p: V -> Prop): MathGraph (predicate_subgraph g p).
 Proof.
   refine (Build_MathGraph _ (is_null g) (is_null_dec g) _ _).
   + unfold predicate_subgraph, predicate_vvalid, predicate_evalid; simpl; intros.
@@ -412,7 +366,7 @@ Proof.
     tauto.
 Defined.
 
-Definition predicate_sub_localfinitegraph (p: NodePred V) : LocalFiniteGraph (predicate_subgraph p).
+Definition predicate_sub_localfinitegraph (p: NodePred V) : LocalFiniteGraph (predicate_subgraph g p).
 Proof.
   refine (Build_LocalFiniteGraph _ _).
   intros.
@@ -433,7 +387,7 @@ Proof.
       assert (~ false = true) by congruence; tauto.
 Defined.
 
-Definition predicate_partial_localfinitegraph (p: NodePred V) : LocalFiniteGraph (predicate_partialgraph p).
+Definition predicate_partial_localfinitegraph (p: NodePred V) : LocalFiniteGraph (predicate_partialgraph g p).
 Proof.
   refine (Build_LocalFiniteGraph _ _).
   intros.
@@ -455,7 +409,7 @@ Proof.
 Defined.
 
 Lemma is_tree_ppg_spec: forall (P : V -> Prop) root,
-    is_tree (predicate_partialgraph P) root <->
+    is_tree (predicate_partialgraph g P) root <->
     forall y, g |= root ~o~> y satisfying P ->
               exists ! p, g |= p is root ~o~> y satisfying P.
 Proof.
@@ -479,12 +433,6 @@ Section IS_PARTIAL_GRAPH.
   Context {V E: Type}.
   Context {EV: EqDec V eq}.
   Context {EE: EqDec E eq}.
-
-  Definition is_partial_graph (g1 g2: PreGraph V E) :=
-    (forall v : V, vvalid g1 v -> vvalid g2 v) /\
-    (forall e: E, evalid g1 e -> evalid g2 e) /\
-    (forall e: E, evalid g1 e -> vvalid g1 (src g1 e) -> src g1 e = src g2 e) /\
-    (forall e: E, evalid g1 e -> vvalid g1 (dst g1 e) -> dst g1 e = dst g2 e).
 
   Lemma is_partial_graph_valid_path: forall (g1 g2: PreGraph V E) (p: path), is_partial_graph g1 g2 -> valid_path g1 p -> valid_path g2 p.
   Proof.
@@ -710,40 +658,6 @@ Proof.
   + apply si_stronger_partialgraph_simple with P1; auto.
   + apply si_stronger_partialgraph_simple with P2; auto.
 Qed.
-
-Instance subgraph_proper: Proper (structurally_identical ==> @Same_set V ==> structurally_identical) predicate_subgraph.
-Proof.
-  do 2 (hnf; intros).
-  destruct H as [? [? [? ?]]].
-  rewrite Same_set_spec in H0; hnf in H0.
-  split; [| split; [| split]]; intros; simpl.
-  + unfold predicate_vvalid.
-    rewrite H0, H.
-    reflexivity.
-  + unfold predicate_evalid. rewrite !H0, !H1. specialize (H1 e).
-    split; intros; destruct H4 as [? [? ?]]; [rewrite <- H2, <- H3 | rewrite H2, H3]; tauto.
-  + simpl in * |- . unfold predicate_evalid in * |- . apply H2; tauto.
-  + simpl in * |- . unfold predicate_evalid in * |- . apply H3; tauto.
-Defined.
-
-Global Existing Instance subgraph_proper.
-
-Instance partialgraph_proper: Proper (structurally_identical ==> @Same_set V ==> structurally_identical) predicate_partialgraph.
-Proof.
-  do 2 (hnf; intros).
-  destruct H as [? [? [? ?]]].
-  rewrite Same_set_spec in H0; hnf in H0.
-  split; [| split; [| split]]; intros; simpl.
-  + unfold predicate_vvalid.
-    rewrite H0, H.
-    reflexivity.
-  + unfold predicate_weak_evalid. rewrite !H0, !H1. specialize (H1 e).
-    split; intro; intuition; [rewrite <- H2 | rewrite H2]; auto.
-  + simpl in * |- . unfold predicate_weak_evalid in * |- . apply H2; tauto.
-  + simpl in * |- . unfold predicate_weak_evalid in * |- . apply H3; tauto.
-Defined.
-
-Global Existing Instance partialgraph_proper.
 
 Instance reachable_by_proper: Proper ((@structurally_identical V E _ _) ==> (@eq V) ==> @Same_set V ==> (@eq V) ==> iff) (@reachable_by V E _ _).
 Proof.
@@ -1142,15 +1056,6 @@ Notation Graph := (LabeledGraph V E DV DE).
 
 Local Coercion pg_lg: LabeledGraph >-> PreGraph.
 
-Definition gpredicate_sub_labeledgraph (PV: V -> Prop) (PE: E -> Prop) (g: Graph): Graph :=
-  Build_LabeledGraph _ _ (gpredicate_subgraph PV PE g) (vlabel g) (elabel g).
-
-Definition predicate_sub_labeledgraph (g: Graph) (p: V -> Prop) :=
-  Build_LabeledGraph _ _ (predicate_subgraph g p) (vlabel g) (elabel g).
-
-Definition predicate_partial_labeledgraph (g: Graph) (p: V -> Prop) :=
-  Build_LabeledGraph _ _ (predicate_partialgraph g p) (vlabel g) (elabel g).
-
 Definition reachable_sub_labeledgraph (g: Graph) (S : list V): Graph :=
   predicate_sub_labeledgraph g (reachable_through_set g S).
 
@@ -1191,613 +1096,143 @@ Proof.
   + intro v; specialize (H v); simpl in H; tauto.
 Qed.
 
-Instance sub_labeledgraph_proper: Proper (labeled_graph_equiv ==> @Same_set V ==> labeled_graph_equiv) predicate_sub_labeledgraph.
-Proof.
-  do 2 (hnf; intros).
-  destruct H as [? [? ?]].
-  split; [| split].
-  + apply subgraph_proper; auto.
-  + simpl; intros.
-    destruct H3, H4.
-    apply H1; auto.
-  + simpl; intros.
-    destruct H3, H4.
-    apply H2; auto.
-Defined.
-
-Global Existing Instance sub_labeledgraph_proper.
-
-Instance partial_labeledgraph_proper: Proper (labeled_graph_equiv ==> @Same_set V ==> labeled_graph_equiv) predicate_partial_labeledgraph.
-Proof.
-  do 2 (hnf; intros).
-  destruct H as [? [? ?]].
-  split; [| split].
-  + apply partialgraph_proper; auto.
-  + simpl; intros.
-    destruct H3, H4.
-    apply H1; auto.
-  + simpl; intros.
-    destruct H3, H4.
-    apply H2; auto.
-Defined.
-
-Global Existing Instance partial_labeledgraph_proper.
-
 End PartialLabeledGraph.
 
-Section GuardedIdentical.
+Section GRAPH_DISJOINT_UNION.
 
-Context {V E: Type}.
-Context {EV: EqDec V eq}.
-Context {EE: EqDec E eq}.
-Context {DV DE: Type}.
+  Context {V E: Type}.
+  Context {EV: EqDec V eq}.
+  Context {EE: EqDec E eq}.
+  Context {DV DE: Type}.
 
-Notation PGraph := (PreGraph V E).
-Notation LGraph := (LabeledGraph V E DV DE).
+  Local Coercion pg_lg: LabeledGraph >-> PreGraph.
 
-Definition guarded_structurally_identical PV PE: relation PGraph := respectful_relation (gpredicate_subgraph PV PE) structurally_identical.
+  Definition disjointed_guard (PV1 PV2: V -> Prop) (PE1 PE2: E -> Prop) :=
+    Disjoint _ PV1 PV2 /\ Disjoint _ PE1 PE2.
 
-Definition guarded_labeled_graph_equiv PV PE: relation LGraph := respectful_relation (gpredicate_sub_labeledgraph PV PE) labeled_graph_equiv.
+  (* In assumption, why need decidability in Type? Because we need at least an existence (in Prop) of a function, which requires decidability in Type. *)
+  (* In conclusion, it is possible to generate this stronger existential (In Type) property. *) 
+  Definition disjointed_union_labeledgraph_exists_ll: forall (G1 G2: LabeledGraph V E DV DE),
+    disjointed_guard (vvalid G1) (vvalid G2) (evalid G1) (evalid G2) ->
+    (forall v, Decidable (vvalid G1 v)) ->
+    (forall e, Decidable (evalid G1 e)) ->
+    { G: LabeledGraph V E DV DE | 
+      guarded_labeled_graph_equiv (vvalid G1) (evalid G1) G1 G /\
+      guarded_labeled_graph_equiv (vvalid G2) (evalid G2) G2 G /\
+      Prop_join (evalid G1) (evalid G2) (evalid G) /\
+      Prop_join (evalid G1) (evalid G2) (evalid G)}.
+  Proof.
+    intros.
+    exists
+      (Build_LabeledGraph _ _
+        (@Build_PreGraph V E _ _
+          (fun v => vvalid G1 v \/ vvalid G2 v)
+          (fun e => evalid G1 e \/ evalid G2 e)
+          (fun e => if (X0 e) then src G1 e else src G2 e)
+          (fun e => if (X0 e) then dst G1 e else dst G2 e))
+        (fun v => if (X v) then vlabel G1 v else vlabel G2 v)
+        (fun e => if (X0 e) then elabel G1 e else elabel G2 e)).
+    split; [| split; [| split]].
+    + rewrite guarded_lge_spec.
+      simpl; split; [split; [| split; [| split]] | split].
+      - firstorder.
+      - firstorder.
+      - intros.
+        destruct (X0 e); tauto.
+      - intros.
+        destruct (X0 e); tauto.
+      - intros.
+        destruct (X v); tauto.
+      - intros.
+        destruct (X0 e); tauto.
+    + rewrite guarded_lge_spec.
+      simpl; split; [split; [| split; [| split]] | split].
+      - firstorder.
+      - firstorder.
+      - intros.
+        destruct H as [_ H].
+        rewrite Disjoint_spec in H.
+        destruct (X0 e); auto. firstorder.
+      - intros.
+        destruct H as [_ H].
+        rewrite Disjoint_spec in H.
+        destruct (X0 e); auto. firstorder.
+      - intros.
+        destruct H as [H _].
+        rewrite Disjoint_spec in H.
+        destruct (X v); auto. firstorder.
+      - intros.
+        destruct H as [_ H].
+        rewrite Disjoint_spec in H.
+        destruct (X0 e); auto. firstorder.
+    + simpl; split.
+      - firstorder.
+      - destruct H as [_ ?]; rewrite Disjoint_spec in H; auto.
+    + simpl; split.
+      - firstorder.
+      - destruct H as [_ ?]; rewrite Disjoint_spec in H; auto.
+  Qed.
 
-Instance guarded_si_Equivalence PV PE: Equivalence (guarded_structurally_identical PV PE).
-Proof.
-  apply resp_Equivalence.
-  apply si_Equiv.
-Qed.
-Global Existing Instance guarded_si_Equivalence.
+  Definition disjointed_union_pregraph_exists_l: forall (G1 G2: PreGraph V E),
+    Disjoint _ (evalid G1) (evalid G2) ->
+    (forall e, Decidable (evalid G1 e)) ->
+    { G: PreGraph V E | 
+      guarded_structurally_identical (vvalid G1) (evalid G1) G1 G /\
+      guarded_structurally_identical (vvalid G2) (evalid G2) G2 G /\
+      Same_set (Union _ (vvalid G1) (vvalid G2)) (vvalid G) /\
+      Prop_join (evalid G1) (evalid G2) (evalid G)}.
+  Proof.
+    intros.
+    exists
+      (@Build_PreGraph V E _ _
+        (fun v => vvalid G1 v \/ vvalid G2 v)
+        (fun e => evalid G1 e \/ evalid G2 e)
+        (fun e => if (X e) then src G1 e else src G2 e)
+        (fun e => if (X e) then dst G1 e else dst G2 e)).
+    split; [| split; [| split]].
+    + rewrite guarded_si_spec.
+      simpl; split; [| split; [| split]].
+      - firstorder.
+      - firstorder.
+      - intros.
+        destruct (X e); tauto.
+      - intros.
+        destruct (X e); tauto.
+    + rewrite guarded_si_spec.
+      simpl; split; [| split; [| split]].
+      - firstorder.
+      - firstorder.
+      - intros.
+        rewrite Disjoint_spec in H.
+        destruct (X e); auto. firstorder.
+      - intros.
+        rewrite Disjoint_spec in H.
+        destruct (X e); auto. firstorder.
+    + simpl.
+      rewrite Same_set_spec; intro v.
+      rewrite Union_spec; tauto.
+    + simpl; split.
+      - firstorder.
+      - rewrite Disjoint_spec in H; auto.
+  Qed.
 
-Instance guarded_lge_Equivalence PV PE: Equivalence (guarded_labeled_graph_equiv PV PE).
-Proof.
-  apply resp_Equivalence.
-  apply lge_Equiv.
-Qed.
-Global Existing Instance guarded_lge_Equivalence.
-
-Lemma guarded_si_spec: forall PV PE (G1 G2: PGraph),
-  guarded_structurally_identical PV PE G1 G2 <->
-  ((forall v, PV v -> (vvalid G1 v <-> vvalid G2 v)) /\
-   (forall e, PE e -> (evalid G1 e <-> evalid G2 e)) /\
-   (forall e, PE e -> evalid G1 e -> evalid G2 e -> src G1 e = src G2 e) /\
-   (forall e, PE e -> evalid G1 e -> evalid G2 e -> dst G1 e = dst G2 e)).
-Proof.
-  intros.
-  split; intros; (destruct H as [? [? [? ?]]]; split; [| split; [| split]]); intros.
-  + specialize (H v); simpl in H.
-    rewrite !Intersection_spec in H.
+  Definition disjointed_union_pregraph_exists_r: forall (G1 G2: PreGraph V E),
+    Disjoint _ (evalid G1) (evalid G2) ->
+    (forall e, Decidable (evalid G2 e)) ->
+    { G: PreGraph V E | 
+      guarded_structurally_identical (vvalid G1) (evalid G1) G1 G /\
+      guarded_structurally_identical (vvalid G2) (evalid G2) G2 G /\
+      Same_set (Union _ (vvalid G1) (vvalid G2)) (vvalid G) /\
+      Prop_join (evalid G1) (evalid G2) (evalid G)}.
+  Proof.
+    intros.
+    rewrite Disjoint_comm in H.
+    destruct (disjointed_union_pregraph_exists_l G2 G1 H X) as [G ?H].
+    exists G.
+    rewrite Union_comm.
+    rewrite Prop_join_comm.
     tauto.
-  + specialize (H0 e); simpl in H0.
-    rewrite !Intersection_spec in H0.
-    tauto.
-  + apply H1; simpl; rewrite !Intersection_spec; auto.
-  + apply H2; simpl; rewrite !Intersection_spec; auto.
-  + specialize (H v); simpl.
-    rewrite !Intersection_spec.
-    tauto.
-  + specialize (H0 e); simpl.
-    rewrite !Intersection_spec.
-    tauto.
-  + apply H1; simpl in H3, H4; rewrite !Intersection_spec in H3, H4; tauto.
-  + apply H2; simpl in H3, H4; rewrite !Intersection_spec in H3, H4; tauto.
-Qed.
+  Qed.
 
-Lemma guarded_si_dst1: forall PV PE (G1 G2: PGraph),
-  guarded_structurally_identical PV PE G1 G2 ->
-  forall e, PE e -> evalid G1 e -> dst G1 e = dst G2 e.
-Proof.
-  intros.
-  rewrite guarded_si_spec in H.
-  apply (proj2 (proj2 (proj2 H))); auto.
-  rewrite <- (proj1 (proj2 H)); auto.
-Qed.
+End GRAPH_DISJOINT_UNION.
 
-Instance guarded_si_proper: Proper (@Same_set V ==> @Same_set E ==> eq ==> eq ==> iff) guarded_structurally_identical.
-Proof.
-  intros.
-  hnf; intros PV1 PV2 ?.
-  hnf; intros PE1 PE2 ?.
-  hnf; intros g1 g1' ?; subst g1'.
-  hnf; intros g2 g2' ?; subst g2'.
-  rewrite !guarded_si_spec.
-  rewrite Same_set_spec in *.
-  unfold pointwise_relation in *.
-  firstorder.
-Defined.
-Global Existing Instance guarded_si_proper.
-
-Lemma si_is_guarded_si:
-  same_relation PGraph structurally_identical (guarded_structurally_identical (Full_set _) (Full_set _)).
-Proof.
-  intros.
-  rewrite same_relation_spec.
-  hnf; intros g1.
-  hnf; intros g2.
-  rewrite guarded_si_spec.
-  unfold structurally_identical.
-  pose proof Full_set_spec V.
-  pose proof Full_set_spec E.
-  firstorder.
-Qed.
-
-Lemma guarded_si_weaken: forall (PV1 PV2: V -> Prop) (PE1 PE2: E -> Prop),
-  Included PV2 PV1 ->
-  Included PE2 PE1 ->
-  inclusion PGraph (guarded_structurally_identical PV1 PE1) (guarded_structurally_identical PV2 PE2).
-Proof.
-  intros.
-  hnf; intros.
-  rewrite guarded_si_spec in H1 |- *.
-  unfold Included, Ensembles.In in H, H0.
-  firstorder.
-Qed.
-
-Lemma si_guarded_si: forall PV PE,
-  inclusion PGraph structurally_identical (guarded_structurally_identical PV PE).
-Proof.
-  intros.
-  rewrite si_is_guarded_si.
-  apply guarded_si_weaken; apply Included_Full_set.
-Qed.
-
-Lemma guarded_si_strong_trans: forall (PV1 PV2 PV: V -> Prop) (PE1 PE2 PE: E -> Prop) g1 g2 g3,
-  Included PV PV1 ->
-  Included PV PV2 ->
-  Included PE PE1 ->
-  Included PE PE2 ->
-  guarded_structurally_identical PV1 PE1 g1 g2 ->
-  guarded_structurally_identical PV2 PE2 g2 g3 ->
-  guarded_structurally_identical PV PE g1 g3.
-Proof.
-  intros.
-  transitivity g2.
-  + eapply guarded_si_weaken; [| | eauto]; eauto.
-  + eapply guarded_si_weaken; [| | eauto]; eauto.
-Qed.
-
-Lemma guarded_si_strong_trans': forall (PV1 PV2 PV: V -> Prop) (PE1 PE2 PE: E -> Prop) g1 g2 g3,
-  Included PV1 PV ->
-  Included PV2 PV ->
-  Included PE1 PE ->
-  Included PE2 PE ->
-  guarded_structurally_identical (Complement _ PV1) (Complement _ PE1) g1 g2 ->
-  guarded_structurally_identical (Complement _ PV2) (Complement _ PE2) g2 g3 ->
-  guarded_structurally_identical (Complement _ PV ) (Complement _ PE ) g1 g3.
-Proof.
-  intros.
-  eapply guarded_si_strong_trans.
-  + apply Complement_Included_rev, H.
-  + apply Complement_Included_rev, H0.
-  + apply Complement_Included_rev, H1.
-  + apply Complement_Included_rev, H2.
-  + eauto.
-  + eauto.
-Qed.
-
-Local Coercion pg_lg: LabeledGraph >-> PreGraph.
-
-Lemma guarded_lge_spec: forall PV PE (G1 G2: LGraph),
-  guarded_labeled_graph_equiv PV PE G1 G2 <->
-  (((forall v, PV v -> (vvalid G1 v <-> vvalid G2 v)) /\
-    (forall e, PE e -> (evalid G1 e <-> evalid G2 e)) /\
-    (forall e, PE e -> evalid G1 e -> evalid G2 e -> src G1 e = src G2 e) /\
-    (forall e, PE e -> evalid G1 e -> evalid G2 e -> dst G1 e = dst G2 e)) /\
-   (forall v, PV v -> vvalid G1 v -> vvalid G2 v -> vlabel G1 v = vlabel G2 v) /\
-   (forall e, PE e -> evalid G1 e -> evalid G2 e -> elabel G1 e = elabel G2 e)).
-Proof.
-  split; intros; (destruct H as [[? [? [? ?]]] [? ?]]; split; [split; [| split; [| split]] | split]); intros.
-  + specialize (H v); simpl in H.
-    rewrite !Intersection_spec in H.
-    tauto.
-  + specialize (H0 e); simpl in H0.
-    rewrite !Intersection_spec in H0.
-    tauto.
-  + apply H1; simpl; rewrite !Intersection_spec; auto.
-  + apply H2; simpl; rewrite !Intersection_spec; auto.
-Admitted.
-(*
-  + specialize (H v); simpl.
-    rewrite !Intersection_spec.
-    tauto.
-  + specialize (H0 e); simpl.
-    rewrite !Intersection_spec.
-    tauto.
-  + apply H1; simpl in H3, H4; rewrite !Intersection_spec in H3, H4; tauto.
-  + apply H2; simpl in H3, H4; rewrite !Intersection_spec in H3, H4; tauto.
-Qed.
-*)
-
-End GuardedIdentical.
-
-Section ExpandPartialGraph.
-
-Context {V E: Type}.
-Context {EV: EqDec V eq}.
-Context {EE: EqDec E eq}.
-
-Notation Graph := (PreGraph V E).
-
-Definition vertex_join (PV: V -> Prop) (G1 G2: Graph) : Prop :=
-  Prop_join (vvalid G1) PV (vvalid G2) /\
-  (forall e : E, evalid G1 e <-> evalid G2 e /\ ~ PV (src G2 e)) /\
-  (forall e : E, evalid G1 e -> evalid G2 e -> src G1 e = src G2 e) /\
-  (forall e : E, evalid G1 e -> evalid G2 e -> dst G1 e = dst G2 e).
-
-Definition edge_union (PE: E -> Prop) (G1 G2: Graph) : Prop :=
-  (forall v : V, (vvalid G1 v <-> vvalid G2 v)) /\
-  (forall e : E, (evalid G1 e \/ PE e <-> evalid G2 e)) /\
-  (forall e : E, evalid G1 e -> evalid G2 e -> src G1 e = src G2 e) /\
-  (forall e : E, evalid G1 e -> evalid G2 e -> dst G1 e = dst G2 e).
-
-Definition pregraph_join (PV: V -> Prop) (PE: E -> Prop) (G1 G2: Graph) : Prop :=
-  Prop_join (vvalid G1) PV (vvalid G2) /\
-  Prop_join (evalid G1) PE (evalid G2) /\
-  (forall e : E, evalid G1 e -> evalid G2 e -> src G1 e = src G2 e) /\
-  (forall e : E, evalid G1 e -> evalid G2 e -> dst G1 e = dst G2 e).
-
-(*
-Definition pregraph_join2 (G1 G2 G: Graph) : Prop :=
-  Prop_join (vvalid G1) (vvalid G2) (vvalid G) /\
-  Prop_join (evalid G1) (evalid G2) (evalid G) /\
-  (forall e : E, evalid G1 e -> src G1 e = src G e) /\
-  (forall e : E, evalid G2 e -> src G2 e = src G e) /\
-  (forall e : E, evalid G1 e -> dst G1 e = dst G e) /\
-  (forall e : E, evalid G2 e -> dst G2 e = dst G e).
-*)
-
-Lemma pregraph_join_proper_aux: forall (PV1 PV2: V -> Prop) (PE1 PE2: E -> Prop) (G11 G12 G21 G22: Graph),
-  Same_set PV1 PV2 ->
-  Same_set PE1 PE2 ->
-  G11 ~=~ G12 ->
-  G21 ~=~ G22 ->
-  pregraph_join PV1 PE1 G11 G21 ->
-  pregraph_join PV2 PE2 G12 G22.
-Proof.
-  intros.
-  split; [| split; [| split]]; intros.
-  + eapply Prop_join_proper; [.. | apply (proj1 H3)]; symmetry; auto.
-    - rewrite Same_set_spec; destruct H1; auto.
-    - rewrite Same_set_spec; destruct H2; auto.
-  + eapply Prop_join_proper; [.. | apply (proj1 (proj2 H3))]; symmetry; auto.
-    - rewrite Same_set_spec; destruct H1 as [_ [? _]]; auto.
-    - rewrite Same_set_spec; destruct H2 as [_ [? _]]; auto.
-  + assert (evalid G11 e) by (rewrite (proj1 (proj2 H1)); auto).
-    assert (evalid G21 e) by (rewrite (proj1 (proj2 H2)); auto).
-    rewrite <- (proj1 (proj2 (proj2 H1))) by auto.
-    rewrite <- (proj1 (proj2 (proj2 H2))) by auto.
-    apply (proj1 (proj2 (proj2 H3))); auto.
-  + assert (evalid G11 e) by (rewrite (proj1 (proj2 H1)); auto).
-    assert (evalid G21 e) by (rewrite (proj1 (proj2 H2)); auto).
-    rewrite <- (proj2 (proj2 (proj2 H1))) by auto.
-    rewrite <- (proj2 (proj2 (proj2 H2))) by auto.
-    apply (proj2 (proj2 (proj2 H3))); auto.
-Qed.
-
-Instance pregraph_join_proper: Proper (Same_set ==> Same_set ==> structurally_identical ==> structurally_identical ==> iff) pregraph_join.
-Proof.
-  do 4 (hnf; intros).
-  split; apply pregraph_join_proper_aux; auto; symmetry; auto.
-Qed.
-Global Existing Instance pregraph_join_proper.
-
-Lemma edge_union_proper_aux: forall (PE1 PE2: E -> Prop) (G11 G12 G21 G22: Graph),
-  Same_set PE1 PE2 ->
-  G11 ~=~ G12 ->
-  G21 ~=~ G22 ->
-  edge_union PE1 G11 G21 ->
-  edge_union PE2 G12 G22.
-Proof.
-  intros.
-  split; [| split; [| split]]; intros.
-  + destruct H0, H1; firstorder.
-  + destruct H2 as [_ [? _]].
-    rewrite Same_set_spec in H; unfold pointwise_relation in H.
-    destruct H0 as [_ [? _]], H1 as [_ [? _]]; firstorder.
-  + assert (evalid G11 e) by (rewrite (proj1 (proj2 H0)); auto).
-    assert (evalid G21 e) by (rewrite (proj1 (proj2 H1)); auto).
-    rewrite <- (proj1 (proj2 (proj2 H0))) by auto.
-    rewrite <- (proj1 (proj2 (proj2 H1))) by auto.
-    apply (proj1 (proj2 (proj2 H2))); auto.
-  + assert (evalid G11 e) by (rewrite (proj1 (proj2 H0)); auto).
-    assert (evalid G21 e) by (rewrite (proj1 (proj2 H1)); auto).
-    rewrite <- (proj2 (proj2 (proj2 H0))) by auto.
-    rewrite <- (proj2 (proj2 (proj2 H1))) by auto.
-    apply (proj2 (proj2 (proj2 H2))); auto.
-Qed.
-
-Instance edge_union_proper: Proper (Same_set ==> structurally_identical ==> structurally_identical ==> iff) edge_union.
-Proof.
-  do 3 (hnf; intros).
-  split; apply edge_union_proper_aux; auto; symmetry; auto.
-Qed.
-Global Existing Instance edge_union_proper.
-
-Lemma vertex_join_guarded_si: forall (PV: V -> Prop) (G1 G2: Graph),
-  vertex_join PV G1 G2 ->
-  guarded_structurally_identical (Complement _ PV) (Complement _ (weak_edge_prop PV G2)) G1 G2.
-Proof.
-  intros.
-  rewrite guarded_si_spec.
-  destruct H as [[? ?] [? [? ?]]].
-  unfold Complement, Ensembles.In, weak_edge_prop.
-  split; [| split; [| split]]; firstorder.
-Qed.
-
-Lemma vertex_join_DisjointV: forall (PV: V -> Prop) (G1 G2: Graph),
-  vertex_join PV G1 G2 ->
-  Disjoint V (vvalid G1) PV.
-Proof.
-  intros.
-  rewrite Disjoint_spec.
-  destruct H as [[? ?] _].
-  auto.
-Qed.
-
-Lemma vertex_join_DisjointE: forall (PV: V -> Prop) (G1 G2: Graph),
-  vertex_join PV G1 G2 ->
-  Disjoint E (evalid G1) (weak_edge_prop PV G2).
-Proof.
-  intros.
-  rewrite Disjoint_spec.
-  unfold weak_edge_prop.
-  destruct H as [_ [? _]].
-  firstorder.
-Qed.
-
-Lemma pregraph_join_guarded_si: forall PV PE (G1 G2: Graph),
-  pregraph_join PV PE G1 G2 ->
-  guarded_structurally_identical (Complement _ PV) (Complement _ PE) G1 G2.
-Proof.
-  intros.
-  rewrite guarded_si_spec.
-  destruct H as [[? ?] [? [? ?]]].
-  unfold Complement, Ensembles.In, weak_edge_prop.
-  split; [| split; [| split]]; firstorder.
-Qed.
-
-Lemma pregraph_join_partial_si: forall PV PE (G1 G2: Graph) PV1,
-  pregraph_join PV PE G1 G2 ->
-  Disjoint _ PV PV1 ->
-  (forall e, PE e -> evalid G2 e -> PV1 (src G2 e) -> False) ->
-  (predicate_partialgraph G1 PV1) ~=~ (predicate_partialgraph G2 PV1).
-Proof.
-  intros.
-  destruct H as [[? ?] [[? ?] [? ?]]].
-  unfold Complement, Ensembles.In, weak_edge_prop.
-  split; [| split; [| split]].
-  + simpl; intros.
-    unfold predicate_vvalid.
-    rewrite H.
-    rewrite Disjoint_spec in H0; specialize (H0 v).
-    tauto.
-  + simpl; intros.
-    unfold predicate_weak_evalid.
-    split; intros.
-    - assert (evalid G2 e) by (rewrite H3; tauto).
-      rewrite <- H5 by tauto.
-      tauto.
-    - pose proof proj1 H7.
-      rewrite H3 in H8; destruct H8.
-      * rewrite H5 by tauto.
-        tauto.
-      * exfalso; apply (H1 e); tauto.
-  + simpl; unfold predicate_weak_evalid; intros.
-    apply H5; tauto.
-  + simpl; unfold predicate_weak_evalid; intros.
-    apply H6; tauto.
-Qed.    
-
-Lemma edge_union_guarded_si: forall (PE: E -> Prop) (G1 G2: Graph),
-  edge_union PE G1 G2 ->
-  guarded_structurally_identical (Full_set _) (Complement _ PE) G1 G2.
-Proof.
-  intros.
-  rewrite guarded_si_spec.
-  destruct H as [? [? [? ?]]].
-  unfold Complement, Ensembles.In, weak_edge_prop.
-  pose proof Full_set_spec V.
-  split; [| split; [| split]]; firstorder.
-Qed.
-
-Lemma edge_union_Empty: forall (G: Graph), edge_union (Empty_set _) G G.
-Proof.
-  intros.
-  split; [| split; [| split]]; auto.
-  + intros; reflexivity.
-  + intros.
-    pose proof Empty_set_iff E e.
-    tauto.
-Qed.
-
-Lemma pregraph_join_Empty: forall (G: Graph),pregraph_join (Empty_set _) (Empty_set _) G G.
-Proof.
-  intros.
-  split; [| split; [| split]]; auto.
-  + pose proof Empty_set_iff V.
-    split; firstorder.
-  + pose proof Empty_set_iff E.
-    split; firstorder.
-Qed.
-
-Definition remove_pregraph (G: Graph) (PV: V -> Prop) (PE: E -> Prop) : Graph :=
-  Build_PreGraph _ _
-   (fun v => vvalid G v /\ ~ PV v)
-   (fun e => evalid G e /\ ~ PE e)
-   (src G)
-   (dst G).
-
-Lemma vertex_join_is_pregraph_join: forall G1 G2 PV,
-  (forall v, PV v \/ ~ PV v) ->
-  (vertex_join PV G1 G2 <-> pregraph_join PV (Intersection _ (weak_edge_prop PV G2) (evalid G2)) G1 G2).
-Proof.
-  intros.
-  unfold vertex_join, pregraph_join.
-  split; (split; [| split; [| split]]); try tauto.
-  + destruct H0 as [_ [? _]].
-    split; intro e; intros.
-    - rewrite Intersection_spec.
-      unfold weak_edge_prop.
-      rewrite H0.
-      specialize (H (src G2 e)).
-      tauto.
-    - rewrite H0 in H1.
-      rewrite Intersection_spec in H2.
-      unfold weak_edge_prop in H2.
-      tauto.
-  + destruct H0 as [_ [? _]].
-    destruct H0.
-    intro e.
-    specialize (H0 e); specialize (H1 e).
-    rewrite Intersection_spec in H0, H1.
-    unfold weak_edge_prop in H0,H1.
-    specialize (H (src G2 e)).
-    tauto.
-Qed.
-
-Lemma remove_pregraph_pregraph_join: forall G PV PE,
-  (forall v, PV v \/ ~ PV v) ->
-  (forall e, PE e \/ ~ PE e) ->
-  Included PV (vvalid G) ->
-  Included PE (evalid G) ->
-  pregraph_join PV PE (remove_pregraph G PV PE) G.
-Proof.
-  intros.
-  unfold remove_pregraph.
-  split; [| split; [| split]]; simpl.
-  + split; intro v.
-    - specialize (H v); specialize (H1 v).
-      tauto.
-    - tauto.
-  + split; intro e.
-    - specialize (H0 e); specialize (H2 e).
-      tauto.
-    - tauto.
-  + intros; auto.
-  + intros; auto.
-Qed.
-
-Lemma id_edge_union: forall G PE,
-  Included PE (evalid G) ->
-  edge_union PE G G.
-Proof.
-  intros.
-  split; [| split; [| split]]; intros; try tauto.
-  specialize (H e).
-  tauto.
-Qed.
-
-Lemma pregraph_join_pregraph_join: forall G1 G2 G3 PV PE PV' PE',
-  pregraph_join PV PE G1 G2 ->
-  pregraph_join PV' PE' G2 G3 ->
-  pregraph_join (Union _ PV PV') (Union _ PE PE') G1 G3.
-Proof.
-  unfold pregraph_join.
-  intros.
-  destruct H as [? [? [? ?]]], H0 as [? [? [? ?]]].
-  split; [| split; [| split]]; intros.
-  + apply Prop_join_assoc with (P2 := vvalid G2); auto.
-  + apply Prop_join_assoc with (P2 := evalid G2); auto.
-  + assert (evalid G2 e) by (destruct H4; firstorder).
-    rewrite H2, H5; auto.
-  + assert (evalid G2 e) by (destruct H4; firstorder).
-    rewrite H3, H6; auto.
-Qed.
-
-Lemma edge_union_edge_union: forall G1 G2 G3 PE PE',
-  edge_union PE G1 G2 ->
-  edge_union PE' G2 G3 ->
-  edge_union (Union _ PE PE') G1 G3.
-Proof.
-  unfold edge_union.
-  intros.
-  destruct H as [? [? [? ?]]], H0 as [? [? [? ?]]].
-  split; [| split; [| split]]; intros.
-  + firstorder.
-  + rewrite Union_spec, <- H4, <- H1.
-    tauto.
-  + assert (evalid G2 e) by (rewrite <- H1; firstorder).
-    rewrite H2, H5; auto.
-  + assert (evalid G2 e) by (rewrite <- H1; firstorder).
-    rewrite H3, H6; auto.
-Qed.
-
-Lemma pregraph_join_edge_union: forall G1 G2 G3 PV (PE PE': E -> Prop),
-  (forall e, evalid G1 e -> PE' e -> False) ->
-  pregraph_join PV PE G1 G2 ->
-  edge_union PE' G2 G3 ->
-  pregraph_join PV (Union _ PE PE') G1 G3.
-Proof.
-  intros.
-  destruct H1 as [? [? [? ?]]], H0 as [? [? [? ?]]].
-  split; [| split; [| split]]; intros.
-  + clear - H0 H1.
-    destruct H0; split; firstorder.
-  + clear - H H5 H2.
-    pose proof (fun e => Union_spec E e PE PE').
-    destruct H5; split; firstorder.
-  + assert (evalid G2 e) by (rewrite (proj1 H5); auto).
-    rewrite H6, H3; auto.
-  + assert (evalid G2 e) by (rewrite (proj1 H5); auto).
-    rewrite H7, H4; auto.
-Qed.
-
-Lemma edge_union_pregraph_join: forall G1 G3 PV PE PE',
-  relation_list (edge_union PE' :: pregraph_join PV PE :: nil) G1 G3 ->
-  relation_list (pregraph_join PV PE :: edge_union PE' :: nil) G1 G3.
-Proof.
-  intros.
-  destruct_relation_list G2 in H.
-  destruct H as [? [? [? ?]]], H0 as [? [? [? ?]]].
-  split_relation_list (gpredicate_subgraph (Full_set _) (Union _ (evalid G1) PE) G3 :: nil);
-  unfold remove_pregraph;
-  (split; [| split; [| split]]); simpl; auto.
-  + rewrite Intersection_Full_right.
-    apply Same_set_spec in H0.
-    rewrite H0.
-    auto.
-  + clear - H4 H1.
-    destruct H1.
-    split.
-    - intro e.
-      rewrite Intersection_spec, Union_spec.
-      firstorder.
-    - firstorder.
-  + intros.
-    rewrite Intersection_spec, Union_spec in H8.
-    destruct H8 as [? _].
-    assert (evalid G2 e) by firstorder.
-    rewrite H5, H2; auto.
-  + intros.
-    rewrite Intersection_spec, Union_spec in H8.
-    destruct H8 as [? _].
-    assert (evalid G2 e) by firstorder.
-    rewrite H6, H3; auto.
-  + intros.
-    rewrite (Intersection_Full_right _ v).
-    tauto.
-  + intros.
-    rewrite Intersection_spec, Union_spec.
-    destruct H1.
-    rewrite H1, <- H4.
-    tauto.
-Qed.
-
-Lemma pregraph_join_edge_union_absorbe: forall G1 G2 PV PE,
-  relation_list (pregraph_join PV PE :: edge_union PE :: nil) G1 G2 ->
-  pregraph_join PV PE G1 G2.
-Proof.
-  intros.
-  destruct_relation_list G3 in H.
-  destruct H as [? [? [? ?]]], H0 as [? [? [? ?]]].
-  split; [| split; [| split]].
-  + apply Same_set_spec in H.
-    rewrite <- H; auto.
-  + clear - H1 H4.
-    destruct H4. firstorder.
-  + intros.
-    assert (evalid G3 e) by (destruct H4; firstorder).
-    rewrite H5, H2; auto.
-  + intros.
-    assert (evalid G3 e) by (destruct H4; firstorder).
-    rewrite H6, H3; auto.
-Qed.
-
-End ExpandPartialGraph.

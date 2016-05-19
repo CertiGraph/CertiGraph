@@ -481,6 +481,7 @@ Definition app_same_set {A: Type} {P Q: Ensemble A} (H: Same_set P Q) (x: A): P 
 
 Coercion app_same_set : Same_set >-> Funclass.
 
+(* TODO: rename it into preimage set *)
 Definition respectful_set {A B: Type} (X: Ensemble B) (f: A -> B): Ensemble A := fun x => X (f x).
 
 Inductive image_set {A B: Type}: Ensemble A -> (A -> B) -> Ensemble B :=
