@@ -32,7 +32,7 @@ Module GraphMark <: Mgraphmark.
   Definition valid : formula -> Prop := fun f => TT |-- f.
   Definition ptto_node : node -> bool -> node -> node -> formula := fun v d l r => vertex_at v (d, l, r).
   Definition A : Type := (@Graph _ bool unit).
-  Definition graph : node -> A -> formula := fun x g => (@graph _ _ _ _ _ _ SGP _ x (LGraph_SGraph (Graph_LGraph g))).
+  Definition graph : node -> A -> formula := fun x g => (@reachable_vertices_at _ _ _ _ _ _ _ _ _ SGP _ x (Graph_LGraph g)).
   Definition star : formula -> formula -> formula := sepcon.
   Definition and : formula -> formula -> formula := andp.
   Definition imp : formula -> formula -> formula := imp.
@@ -43,6 +43,7 @@ Module GraphMark <: Mgraphmark.
   Definition union : formula -> formula -> formula := ocon.
   Definition neq : bool -> bool -> formula := fun a b => prop (~ a = b).
   Definition mark : A -> node -> A -> formula := fun g1 n g2 => prop (mark n (Graph_LGraph g1) (Graph_LGraph g2)).
+Check vertices_identical.
   Definition eq_notreach : A -> node -> A -> formula :=
     fun g1 n g2 => prop ((unreachable_partial_spatialgraph (LGraph_SGraph (Graph_LGraph g1)) (n :: nil))
                            -=- (unreachable_partial_spatialgraph (LGraph_SGraph (Graph_LGraph g2)) (n :: nil))).
