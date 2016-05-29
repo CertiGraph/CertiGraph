@@ -1616,23 +1616,49 @@ Lemma copy_extend_copy: forall (g g2 g3: Graph) (g2' g': Graph') root es es_done
   let PV0 := reachable_by g (dst g e0) (Complement _ M_rec) in
   let PE0 := Intersection _ (weak_edge_prop PV0 g) (evalid g) in
   copy M_rec (dst g e0) g2 g3 g' ->
-(*
-  disjointed_guard
-    (image_set PV0 (vmap g3)) (vvalid g2')
-    (image_set PE0 (emap g3)) (evalid g2') ->
-*)
   disjointed_guard (vvalid g') (vvalid g2') (evalid g') (evalid g2') ->
   (forall v, M_rec v \/ ~ M_rec v) ->
   exists g3': Graph',
   extended_copy M_rec (dst g e0) (g2, g2') (g3, g3') /\
-  ((predicate_partial_labeledgraph g2' (image_set PV1 (vmap g2))) ~=~
-   (predicate_partial_labeledgraph g3' (image_set PV1 (vmap g3))))%LabeledGraph /\
-  ((predicate_partial_labeledgraph g' (image_set PV0 (vmap g3))) ~=~
-   (predicate_partial_labeledgraph g3' (image_set PV0 (vmap g3))))%LabeledGraph.
+  guarded_labeled_graph_equiv (vvalid g') (evalid g') g' g3' /\
+  guarded_labeled_graph_equiv (vvalid g2') (evalid g2') g2' g3'.
 Proof.
   intros.
   pose proof disjointed_union_labeledgraph_exists_ll g' g2' H6.
   destruct H5 as [COPY_si [COPY_gprv [COPY_gpre [COPY_vvalid [COPY_evalid [COPY_consi COPY_bij]]]]]].
+  spec H8.
+  Focus 1. {
+    destruct (guarded_bij_vmap_image_dec _ _ _ _ _ _ COPY_bij) as [X _].
+    refine (ex_intro _ _ I).
+    intros v'; specialize (X v').
+    destruct X; [left | right].
+    + rewrite Same_set_spec in COPY_vvalid.
+      rewrite (COPY_vvalid v'); auto.
+    + rewrite Same_set_spec in COPY_vvalid.
+      rewrite (COPY_vvalid v'); auto.
+  } Unfocus.
+  spec H8.
+  Focus 1. {
+    destruct (guarded_bij_emap_image_dec _ _ _ _ _ _ COPY_bij) as [X _].
+    refine (ex_intro _ _ I).
+    intros e'; specialize (X e').
+    destruct X; [left | right].
+    + rewrite Same_set_spec in COPY_evalid.
+      rewrite (COPY_evalid e'); auto.
+    + rewrite Same_set_spec in COPY_evalid.
+      rewrite (COPY_evalid e'); auto.
+  } Unfocus.
+  destruct H8 as [g3' [? [? [? ?]]]]; exists g3'.
+  split; [| split]; auto.
+  split; [| split; [| split; [| split; [| split; [| split]]]]]; auto.
+  + rewrite <- COPY_vvalid, <- COPY_evalid.
+    rewrite pregraph_join_iff.
+    rewrite @Prop_join_comm in H9, H10.
+Print guarded_labeled_graph_equiv.
+    tauto.
+  + 
+ auto.
+SearchAbout Decidable guarded_bij.
 Admitted.
 
 

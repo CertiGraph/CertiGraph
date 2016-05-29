@@ -178,6 +178,16 @@ Qed.
 
 Local Coercion pg_lg: LabeledGraph >-> PreGraph.
 
+Lemma guarded_lge_guarded_si: forall PV PE (G1 G2: LGraph),
+  guarded_labeled_graph_equiv PV PE G1 G2 ->
+  guarded_structurally_identical PV PE G1 G2.
+Proof.
+  intros.
+  hnf in H |- *.
+  destruct H as [? _].
+  auto.
+Qed.
+
 Lemma guarded_lge_spec: forall PV PE (G1 G2: LGraph),
   guarded_labeled_graph_equiv PV PE G1 G2 <->
   (((forall v, PV v -> (vvalid G1 v <-> vvalid G2 v)) /\
@@ -196,18 +206,19 @@ Proof.
     tauto.
   + apply H1; simpl; rewrite !Intersection_spec; auto.
   + apply H2; simpl; rewrite !Intersection_spec; auto.
-Admitted.
-(*
-  + specialize (H v); simpl.
+  + apply H3; split; auto.
+  + apply H4; split; auto.
+  + simpl.
     rewrite !Intersection_spec.
-    tauto.
-  + specialize (H0 e); simpl.
+    specialize (H v); tauto.
+  + simpl.
     rewrite !Intersection_spec.
-    tauto.
-  + apply H1; simpl in H3, H4; rewrite !Intersection_spec in H3, H4; tauto.
-  + apply H2; simpl in H3, H4; rewrite !Intersection_spec in H3, H4; tauto.
+    specialize (H0 e); tauto.
+  + apply H1; simpl in H5, H6; rewrite !Intersection_spec in H5, H6; tauto.
+  + apply H2; simpl in H5, H6; rewrite !Intersection_spec in H5, H6; tauto.
+  + apply H3; simpl in H5, H6; rewrite !Intersection_spec in H5, H6; tauto.
+  + apply H4; simpl in H5, H6; rewrite !Intersection_spec in H5, H6; tauto.
 Qed.
-*)
 
 End GuardedIdentical.
 
@@ -313,37 +324,6 @@ Proof.
     split; firstorder.
 Qed.
 
-(*
-Definition remove_pregraph (G: Graph) (PV: V -> Prop) (PE: E -> Prop) : Graph :=
-  Build_PreGraph _ _
-   (fun v => vvalid G v /\ ~ PV v)
-   (fun e => evalid G e /\ ~ PE e)
-   (src G)
-   (dst G).
-
-Lemma remove_pregraph_pregraph_join: forall G PV PE,
-  (forall v, PV v \/ ~ PV v) ->
-  (forall e, PE e \/ ~ PE e) ->
-  Included PV (vvalid G) ->
-  Included PE (evalid G) ->
-  pregraph_join PV PE (remove_pregraph G PV PE) G.
-Proof.
-  intros.
-  unfold remove_pregraph.
-  split; [| split; [| split]]; simpl.
-  + split; intro v.
-    - specialize (H v); specialize (H1 v).
-      tauto.
-    - tauto.
-  + split; intro e.
-    - specialize (H0 e); specialize (H2 e).
-      tauto.
-    - tauto.
-  + intros; auto.
-  + intros; auto.
-Qed.
-
-*)
 Lemma pregraph_join_pregraph_join: forall G1 G2 G3 PV PE PV' PE',
   pregraph_join PV PE G1 G2 ->
   pregraph_join PV' PE' G2 G3 ->
@@ -361,7 +341,6 @@ Proof.
     rewrite H3, H6; auto.
 Qed.
 
-(* TODO: move somewhere else *)
 Lemma pregraph_join_empty_single: forall v0 src0 dst0,
   pregraph_join (eq v0) (Empty_set _) (empty_pregraph src0 dst0) (single_vertex_pregraph v0).
 Proof.
@@ -376,6 +355,18 @@ Proof.
     - auto.
   + intros; tauto.
   + intros; tauto.
+Qed.
+
+Lemma pregraph_join_iff: forall PV PE G1 G2,
+  pregraph_join PV PE G1 G2 <->
+  (Prop_join (vvalid G1) PV (vvalid G2) /\
+   Prop_join (evalid G1) PE (evalid G2) /\
+   guarded_structurally_identical (vvalid G1) (evalid G1) G1 G2).
+Proof.
+  intros.
+  unfold pregraph_join, Prop_join.
+  rewrite guarded_si_spec.
+  split; intros; repeat split; try tauto; auto; firstorder. (* slow *)
 Qed.
 
 End ExpandPartialGraph.
