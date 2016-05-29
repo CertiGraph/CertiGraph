@@ -403,6 +403,52 @@ Definition boundary_consistent (PV1 PV2: V -> Prop) (PE1 PE2: E -> Prop) vmap em
   boundary_edge_consistent PE1 PV2 vmap emap G G' /\
   boundary_edge_consistent PE2 PV1 vmap emap G G'.
 
+Lemma guarded_bij_vmap_image_dec: forall (PV: V -> Prop) (PE: E -> Prop) vmap emap (G: PreGraph V E) (G': PreGraph V' E'),
+  guarded_bij PV PE vmap emap G G' ->
+  exists f: forall v, Decidable (image_set PV vmap v), True.
+Proof.
+  intros.
+  pose proof vmap_inj H.
+  destruct H0 as [f ?].
+  assert (forall v, Decidable (image_set PV vmap v)).
+  Focus 1. {
+    intros.
+    specialize (H0 v).
+    destruct (f v) eqn:?H; [left | right]; rewrite image_set_spec.
+    + exists v0.
+      destruct H0; split; auto.
+      specialize (H2 _ H0).
+      symmetry; apply H2; auto.
+    + intros [v0 [? ?]].
+      apply (H0 v0 H2).
+      symmetry; auto.
+  } Unfocus.
+  exists X; auto.
+Qed.
+
+Lemma guarded_bij_emap_image_dec: forall (PV: V -> Prop) (PE: E -> Prop) vmap emap (G: PreGraph V E) (G': PreGraph V' E'),
+  guarded_bij PV PE vmap emap G G' ->
+  exists f: forall e, Decidable (image_set PE emap e), True.
+Proof.
+  intros.
+  pose proof emap_inj H.
+  destruct H0 as [f ?].
+  assert (forall e, Decidable (image_set PE emap e)).
+  Focus 1. {
+    intros.
+    specialize (H0 e).
+    destruct (f e) eqn:?H; [left | right]; rewrite image_set_spec.
+    + exists e0.
+      destruct H0; split; auto.
+      specialize (H2 _ H0).
+      symmetry; apply H2; auto.
+    + intros [e0 [? ?]].
+      apply (H0 e0 H2).
+      symmetry; auto.
+  } Unfocus.
+  exists X; auto.
+Qed.
+
 Lemma guarded_bij_empty_empty: forall vmap emap (G: PreGraph V E) (G': PreGraph V' E'),
   guarded_bij (Empty_set V) (Empty_set E) vmap emap G G'.
 Proof.

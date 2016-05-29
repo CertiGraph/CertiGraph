@@ -764,14 +764,14 @@ Section GRAPH_DISJOINT_UNION.
 
   (* In assumption, why need decidability in Type? Because we need at least an existence (in Prop) of a function, which requires decidability in Type. *)
   (* In conclusion, it is possible to generate this stronger existential (In Type) property. *) 
-  Definition disjointed_union_labeledgraph_exists_ll: forall (G1 G2: LabeledGraph V E DV DE),
+  Definition disjointed_union_labeledgraph_sig_ll: forall (G1 G2: LabeledGraph V E DV DE),
     disjointed_guard (vvalid G1) (vvalid G2) (evalid G1) (evalid G2) ->
     (forall v, Decidable (vvalid G1 v)) ->
     (forall e, Decidable (evalid G1 e)) ->
     { G: LabeledGraph V E DV DE | 
       guarded_labeled_graph_equiv (vvalid G1) (evalid G1) G1 G /\
       guarded_labeled_graph_equiv (vvalid G2) (evalid G2) G2 G /\
-      Prop_join (evalid G1) (evalid G2) (evalid G) /\
+      Prop_join (vvalid G1) (vvalid G2) (vvalid G) /\
       Prop_join (evalid G1) (evalid G2) (evalid G)}.
   Proof.
     intros.
@@ -819,13 +819,13 @@ Section GRAPH_DISJOINT_UNION.
         destruct (X0 e); auto. firstorder.
     + simpl; split.
       - firstorder.
-      - destruct H as [_ ?]; rewrite Disjoint_spec in H; auto.
+      - destruct H as [? _]; rewrite Disjoint_spec in H; auto.
     + simpl; split.
       - firstorder.
       - destruct H as [_ ?]; rewrite Disjoint_spec in H; auto.
   Qed.
 
-  Definition disjointed_union_pregraph_exists_l: forall (G1 G2: PreGraph V E),
+  Definition disjointed_union_pregraph_sig_l: forall (G1 G2: PreGraph V E),
     Disjoint _ (evalid G1) (evalid G2) ->
     (forall e, Decidable (evalid G1 e)) ->
     { G: PreGraph V E | 
@@ -868,7 +868,7 @@ Section GRAPH_DISJOINT_UNION.
       - rewrite Disjoint_spec in H; auto.
   Qed.
 
-  Definition disjointed_union_pregraph_exists_r: forall (G1 G2: PreGraph V E),
+  Definition disjointed_union_pregraph_sig_r: forall (G1 G2: PreGraph V E),
     Disjoint _ (evalid G1) (evalid G2) ->
     (forall e, Decidable (evalid G2 e)) ->
     { G: PreGraph V E | 
@@ -879,11 +879,28 @@ Section GRAPH_DISJOINT_UNION.
   Proof.
     intros.
     rewrite Disjoint_comm in H.
-    destruct (disjointed_union_pregraph_exists_l G2 G1 H X) as [G ?H].
+    destruct (disjointed_union_pregraph_sig_l G2 G1 H X) as [G ?H].
     exists G.
     rewrite Union_comm.
     rewrite Prop_join_comm.
     tauto.
+  Qed.
+
+  Definition disjointed_union_labeledgraph_exists_ll: forall (G1 G2: LabeledGraph V E DV DE),
+    disjointed_guard (vvalid G1) (vvalid G2) (evalid G1) (evalid G2) ->
+    (exists f: forall v, Decidable (vvalid G1 v), True) ->
+    (exists f: forall e, Decidable (evalid G1 e), True) ->
+    exists G: LabeledGraph V E DV DE,
+      guarded_labeled_graph_equiv (vvalid G1) (evalid G1) G1 G /\
+      guarded_labeled_graph_equiv (vvalid G2) (evalid G2) G2 G /\
+      Prop_join (vvalid G1) (vvalid G2) (vvalid G) /\
+      Prop_join (evalid G1) (evalid G2) (evalid G).
+  Proof.
+    intros.
+    destruct H0 as [X _].
+    destruct H1 as [X0 _].
+    destruct (disjointed_union_labeledgraph_sig_ll _ _ H X X0) as [G ?].
+    exists G; auto.
   Qed.
 
 End GRAPH_DISJOINT_UNION.
