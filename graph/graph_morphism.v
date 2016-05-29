@@ -395,6 +395,25 @@ Proof.
 Qed.
 Global Existing Instance boundary_dst_consistent_proper.
 
+Lemma boundary_dst_consistent_si: forall (PE1: E -> Prop) (PV1 PV2: V -> Prop) vmap emap G G1' G2',
+  guarded_morphism PV1 PE1 vmap emap G G1' ->
+  guarded_morphism PV1 PE1 vmap emap G G2' ->
+  boundary_dst_consistent PE1 PV2 vmap emap G G1' ->
+  guarded_structurally_identical (image_set PV1 vmap) (image_set PE1 emap) G1' G2' ->
+  boundary_dst_consistent PE1 PV2 vmap emap G G2'.
+Proof.
+  intros.
+  hnf in H |- *.
+  intros.
+  rewrite (H1 e) by auto; clear H1.
+  rewrite guarded_si_spec in H2.
+  destruct H2 as [? [? [? ?]]].
+  apply H7.
+  + constructor; auto.
+  + rewrite <- (evalid_preserved H); auto.
+  + rewrite <- (evalid_preserved H0); auto.
+Qed.
+
 Definition boundary_edge_consistent (PE1: E -> Prop) (PV2: V -> Prop) vmap emap (G: PreGraph V E) (G': PreGraph V' E') := 
   boundary_src_consistent PE1 PV2 vmap emap G G' /\
   boundary_dst_consistent PE1 PV2 vmap emap G G'.

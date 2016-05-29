@@ -1654,13 +1654,23 @@ Proof.
   + rewrite <- COPY_vvalid, <- COPY_evalid.
     rewrite pregraph_join_iff.
     rewrite @Prop_join_comm in H9, H10.
-Print guarded_labeled_graph_equiv.
+    apply guarded_lge_guarded_si in H8.
     tauto.
-  + 
- auto.
-SearchAbout Decidable guarded_bij.
-Admitted.
-
+  + eapply boundary_dst_consistent_si with (G1' := g'); eauto.
+    - apply COPY_bij.
+    - apply (guarded_morphism_proper_aux1 _ _ _ _ g3 g3 g' g3').
+      * reflexivity.
+      * rewrite <- COPY_vvalid, <- COPY_evalid.
+        apply guarded_lge_guarded_si; auto.
+      * apply COPY_bij.
+    - rewrite <- COPY_vvalid, <- COPY_evalid.
+      apply guarded_lge_guarded_si; auto.
+  + apply (guarded_bij_proper_aux1 _ _ _ _ g3 g3 g' g3').
+    - reflexivity.
+    - rewrite <- COPY_vvalid, <- COPY_evalid.
+      apply guarded_lge_guarded_si; auto.
+    - apply COPY_bij.
+Qed.
 
 (*
 (* TODO: This lemma and proof should be improved. The conclusion does not need edge_copy_list assumption. *)
