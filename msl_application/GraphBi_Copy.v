@@ -16,8 +16,9 @@ Require Import RamifyCoq.graph.graph_model.
 Require Import RamifyCoq.graph.path_lemmas.
 Require Import RamifyCoq.graph.reachable_computable.
 Require Import RamifyCoq.graph.reachable_ind.
-Require Import RamifyCoq.graph.subgraph2.
 Require Import RamifyCoq.graph.graph_gen.
+Require Import RamifyCoq.graph.graph_relation.
+Require Import RamifyCoq.graph.subgraph2.
 Require Import RamifyCoq.graph.dag.
 Require Import RamifyCoq.graph.weak_mark_lemmas.
 Require Import RamifyCoq.graph.graph_morphism.
@@ -207,32 +208,30 @@ Proof.
     eapply Prop_join_reachable_left; eauto.
   + intros [[[? ?] ?] ?] [? _].
     simpl in H4 |- *; clear r0.
-    apply GSG_PartialGraphPreserve.
-    - rewrite H1.
-      unfold Included, Ensembles.In.
-      intros.
-      apply vvalid_vguard.
-      rewrite Intersection_spec in H5; destruct H5.
+    rewrite vertices_identical_spec.
+    intros.
+    simpl.
+    destruct H4 as [? [? ?]].
+    f_equal; [f_equal |].
+    - destruct H7 as [_ [? _]].
+      rewrite guarded_pointwise_relation_spec in H7.
+      apply H7; clear H7.
+      unfold Complement, Ensembles.In.
+      intro.
+      apply reachable_by_is_reachable in H7.
+      rewrite Intersection_spec in H5.
+      rewrite <- H1 in H7.
+      destruct H5; auto.
+    - apply dst_L_eq; auto.
+      rewrite Intersection_spec in H5.
+      destruct H5 as [? _].
+      rewrite H1 in H5.
       apply reachable_foot_valid in H5; auto.
-    - rewrite H1.
-      destruct H4 as [? _]; rewrite H4.
-      unfold Included, Ensembles.In.
-      intros.
-      apply vvalid_vguard.
-      rewrite Intersection_spec in H5; destruct H5.
+    - apply dst_R_eq; auto.
+      rewrite Intersection_spec in H5.
+      destruct H5 as [? _].
+      rewrite H1 in H5.
       apply reachable_foot_valid in H5; auto.
-    - rewrite H1.
-      unfold Included, Ensembles.In.
-      intros.
-      rewrite Intersection_spec in H5; destruct H5.
-      apply reachable_foot_valid in H5; auto.
-    - rewrite H1.
-      destruct H4 as [? _]; rewrite H4.
-      unfold Included, Ensembles.In.
-      intros.
-      rewrite Intersection_spec in H5; destruct H5.
-      apply reachable_foot_valid in H5; auto.
-    - admit.
 Qed.
 
 Lemma graph_ramify_right: forall {RamUnit: Type} (g g1 g2: Graph) (g1' g2': LGraph) (x l r: addr) (F1 F2: pred),
@@ -275,35 +274,33 @@ Proof.
   + intros [[[? ?] ?] ?] [? _].
     rewrite (edge_copy_si _ _ _ _ _ _ H2) in H1.
     simpl in H5 |- *; clear r0.
-    apply GSG_PartialGraphPreserve.
-    - rewrite H1.
-      unfold Included, Ensembles.In.
-      intros.
-      apply vvalid_vguard.
-      rewrite Intersection_spec in H6; destruct H6.
+    rewrite vertices_identical_spec.
+    intros.
+    simpl.
+    destruct H5 as [? [? ?]].
+    f_equal; [f_equal |].
+    - destruct H8 as [_ [? _]].
+      rewrite guarded_pointwise_relation_spec in H8.
+      apply H8; clear H8.
+      unfold Complement, Ensembles.In.
+      intro.
+      apply reachable_by_is_reachable in H8.
+      rewrite Intersection_spec in H6.
+      rewrite <- H1 in H8.
+      destruct H6; auto.
+    - apply dst_L_eq; auto.
+      rewrite Intersection_spec in H6.
+      destruct H6 as [? _].
+      rewrite H1 in H6.
       apply reachable_foot_valid in H6; auto.
-    - rewrite H1.
-      destruct H5 as [? _]; rewrite H5.
-      unfold Included, Ensembles.In.
-      intros.
-      apply vvalid_vguard.
-      rewrite Intersection_spec in H6; destruct H6.
+    - apply dst_R_eq; auto.
+      rewrite Intersection_spec in H6.
+      destruct H6 as [? _].
+      rewrite H1 in H6.
       apply reachable_foot_valid in H6; auto.
-    - rewrite H1.
-      unfold Included, Ensembles.In.
-      intros.
-      rewrite Intersection_spec in H6; destruct H6.
-      apply reachable_foot_valid in H6; auto.
-    - rewrite H1.
-      destruct H5 as [? _]; rewrite H5.
-      unfold Included, Ensembles.In.
-      intros.
-      rewrite Intersection_spec in H6; destruct H6.
-      apply reachable_foot_valid in H6; auto.
-    - admit.
 Qed.
 
-Lemma extend_copy_left: forall (g g1 g2: Graph) (g1' g2'': LGraph) (x l r x0 l0: addr),
+Lemma extend_copy_left: forall (g g1 g2: Graph) (g1' g2'': LGraph) (x l r x0 l0: addr) d0,
   vvalid g x ->
   vgamma g x = (null, l, r) ->
   vcopy1 x g g1 g1' ->
@@ -311,13 +308,29 @@ Lemma extend_copy_left: forall (g g1 g2: Graph) (g1' g2'': LGraph) (x l r x0 l0:
   x0 = LocalGraphCopy.vmap g1 x ->
   l = null /\ l0 = null \/ l0 = LocalGraphCopy.vmap g2 l ->
   @derives pred _
-  (vertices_at (fun x => vvalid g1' x /\ x0 <> x) g1' * reachable_vertices_at l0 g2'') 
+  (vertex_at x0 d0 * vertices_at (fun x => vvalid g1' x /\ x0 <> x) g1' * reachable_vertices_at l0 g2'') 
   (EX g2': LGraph,
     !! edge_copy g (x, L) (g1: LGraph, g1') (g2: LGraph, g2') && 
-    vertices_at (fun x => vvalid g2' x /\ x0 <> x) g2').
+    vertex_at x0 d0 * vertices_at (fun x => vvalid g2' x /\ x0 <> x) g2').
 Proof.
   intros.
-  pose proof vcopy1_edge_copy_list_copy_extended_copy x ((x, L) :: (x, R) :: nil) nil (x, L) ((x, R) :: nil) g g1 g1 g1' g1' g2 g2''.
+  inversion H0.
+  pose proof vcopy1_edge_copy_list_copy_extended_copy x ((x, L) :: (x, R) :: nil) nil (x, L) ((x, R) :: nil) g g1 g1 g1' g1' g2 g2'' l l0 H.
+  spec H5; [simpl; unfold Complement, Ensembles.In; congruence |].
+  spec H5; [reflexivity |].
+  spec H5; [intros; apply (biGraph_out_edges g (biGraph _)); auto |].
+  spec H5; [repeat constructor; [intros [|[]]; intro HH; inversion HH | intros []] |].
+  spec H5; [auto |].
+  spec H5; [hnf; auto |].
+  spec H5; [auto |].
+  spec H5; [subst l; auto |].
+
+  unfold reachable_vertices_at.
+  pose proof vertices_at_sepcon_unique_1x (Graph_SpatialGraph g2'') x0 (reachable g2'' l0) d0.
+  pose proof vertices_at_sepcon_unique_xx g1' (Graph_SpatialGraph g2'') (fun x1 : addr => vvalid g1' x1 /\ x0 <> x1) (reachable g2'' l0).
+  rewrite sepcon_assoc, (add_andp _ _ H10); normalize.
+  rewrite (sepcon_comm (vertices_at _ _)), <- sepcon_assoc, (add_andp _ _ H9); normalize.
+  clear H9 H10.
 Admitted.
 (*
   intros.
