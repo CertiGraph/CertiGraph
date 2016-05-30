@@ -15,8 +15,9 @@ Require Import RamifyCoq.graph.graph_model.
 Require Import RamifyCoq.graph.path_lemmas.
 Require Import RamifyCoq.graph.reachable_computable.
 Require Import RamifyCoq.graph.reachable_ind.
-Require Import RamifyCoq.graph.subgraph2.
 Require Import RamifyCoq.graph.graph_gen.
+Require Import RamifyCoq.graph.graph_relation.
+Require Import RamifyCoq.graph.subgraph2.
 Require Import RamifyCoq.graph.dag.
 Require Import RamifyCoq.graph.weak_mark_lemmas.
 Require Import RamifyCoq.graph.graph_morphism.
@@ -43,6 +44,7 @@ Context {SGA: SpatialGraphAssum SGP}.
 Context {SGC: SpatialGraphConstructor V E V E GV GE}.
 Context {L_SGC: Local_SpatialGraphConstructor V E V E GV GE}.
 Context {SGA_vn: SpatialGraphAssum_vn SGP default_v}.
+Context {SGA_vs: SpatialGraphAssum_vs SGP}.
 
 Instance MGS: WeakMarkGraph.MarkGraphSetting V.
 Proof.
@@ -207,58 +209,61 @@ Proof.
   + destruct H9 as [_ ?]; auto.
 Qed.
 
-Lemma edge_copy_list_spec: forall root es (g g1 g2 g1' g2': Graph) (src0 dst0: E -> V),
-  (forall e, In e es <-> out_edges g root e) ->
-  NoDup es ->
+Lemma vcopy1_edge_copy_list_spec: forall root es es_done es_later (g g1 g2 g1' g2': Graph) (src0 dst0: E -> V),
   vvalid g root ->
   WeakMarkGraph.unmarked g root ->
+  es = es_done ++ es_later ->
+  (forall e, In e es <-> out_edges g root e) ->
+  NoDup es ->
   vcopy1 root g g1 g1' ->
-  edge_copy_list g es (g1, g1') (g2, g2') ->
-  LocalGraphCopy.edge_copy_list g root es (WeakMarkGraph.marked g) (g1, g1') (g2, g2') /\
-  WeakMarkGraph.componded_mark_list root (map (dst g) es) g1 g2.
+  edge_copy_list g es_done (g1, g1') (g2, g2') ->
+  LocalGraphCopy.edge_copy_list g root es_done (WeakMarkGraph.marked g) (g1, g1') (g2, g2') /\
+  WeakMarkGraph.componded_mark_list root (map (dst g) es_done) g1 g2.
 Proof.
   intros.
-  unfold edge_copy_list in H4.
-  rewrite map_snd_cprefix' in H4.
+  unfold edge_copy_list in H5.
+  rewrite map_snd_cprefix' in H5.
   eapply relation_list_weaken_ind' with
     (R' := fun (p: list E * E) =>
            relation_conjunction
             (LocalGraphCopy.edge_copy g root (WeakMarkGraph.marked g) p)
             (fst_relation (WeakMarkGraph.componded root (WeakMarkGraph.mark (dst g (snd p))))))
-     in H4.
-  + apply relation_list_conjunction in H4.
-    destruct H4.
+     in H5.
+  + apply relation_list_conjunction in H5.
+    destruct H5.
     split; auto.
-    rewrite <- map_map in H5.
-    unfold fst_relation in H5.
-    apply respectful_relation_list in H5.
-    unfold respectful_relation in H5; simpl in H5.
+    rewrite <- map_map in H6.
+    unfold fst_relation in H6.
+    apply respectful_relation_list in H6.
+    unfold respectful_relation in H6; simpl in H6.
     unfold WeakMarkGraph.componded_mark_list.
     rewrite map_map.
     rewrite map_snd_cprefix'.
     auto.
-  + clear g2 g2' H4.
+  + clear g2 g2' H5.
     intros.
-    clear H5.
+    clear H6.
     unfold relation_conjunction, predicate_intersection; simpl.
     destruct a2 as [g2 g2'], a3 as [g3 g3'].
     unfold fst_relation, respectful_relation; simpl.
-    pose proof in_cprefix _ _ _ H4.
-    apply in_cprefix_cprefix in H4.
+    pose proof in_cprefix _ _ _ H5.
+    apply in_cprefix_cprefix in H5.
     subst bs_done.
-    destruct b0 as [es_done e0]; simpl in H6 |- *.
-    pose proof in_cprefix' _ _ _ H5.
-    destruct H4 as [es_later ?].
-    apply relation_list_conjunction in H6.
-    destruct H6.
+    destruct b0 as [es_done0 e0]; simpl in H7 |- *.
+    pose proof in_cprefix' _ _ _ H6.
+    destruct H5 as [es_later0 ?].
+    apply relation_list_conjunction in H7.
+    destruct H7.
     rewrite <- (map_map (snd) (fun e => fst_relation
                (WeakMarkGraph.componded root
-                  (WeakMarkGraph.mark (dst g e))))) in H8.
-    rewrite map_snd_cprefix in H8.
-    rewrite <- map_map in H8.
-    unfold fst_relation in H8.
-    apply respectful_relation_list in H8.
-    unfold respectful_relation in H8; simpl in H8.
+                  (WeakMarkGraph.mark (dst g e))))) in H9.
+    rewrite map_snd_cprefix in H9.
+    rewrite <- map_map in H9.
+    unfold fst_relation in H9.
+    apply respectful_relation_list in H9.
+    unfold respectful_relation in H9; simpl in H9.
+    subst es_done.
+    rewrite <- app_assoc in H1.
     eapply edge_copy_spec'; try eassumption.
     rewrite map_map; auto.
 Qed.
@@ -273,7 +278,7 @@ Lemma vcopy1_edge_copy_list_copy: forall root es (g1 g2 g3 g2' g3': Graph) (src0
   copy root g1 g3 g3'.
 Proof.
   intros.
-  pose proof edge_copy_list_spec root es g1 g2 g3 g2' g3' src0 dst0 H1 H2 H H0 H3 H4.
+  pose proof vcopy1_edge_copy_list_spec root es es nil g1 g2 g3 g2' g3' src0 dst0 H H0 (eq_sym (app_nil_r _)) H1 H2 H3 H4.
   destruct H5.
   split; [| split].
   + pose proof LocalGraphCopy.triple_vcopy1_edge_copy_list g1 g2 g3 g2' g3' root es es nil (WeakMarkGraph.marked g1) src0 dst0 H H0 H1 H2 (eq_sym (app_nil_r _)).
@@ -302,12 +307,39 @@ Lemma vcopy1_edge_copy_list_copy_extended_copy: forall root es es_done e0 es_lat
   x = dst g1 e0 ->
   x0 = LocalGraphCopy.vmap g4 x \/ (~ vvalid g4'' x0 /\ ~ vvalid g1 x) ->
   copy (dst g1 e0) g3 g4 g4'' ->
+  disjointed_guard (vvalid g4'') (vvalid g3') (evalid g4'') (evalid g3') ->
   @derives Pred _
   (vertices_at (fun u => vvalid g3' u /\ LocalGraphCopy.vmap g3 root <> u) (Graph_SpatialGraph g3') * reachable_vertices_at x0 g4'')
   (EX g4': Graph,
-  (!! edge_copy g1 e0 (g3, g3') (g4, g4')) && vertices_at (fun u => vvalid g4' u /\ LocalGraphCopy.vmap g4 root <> u) (Graph_SpatialGraph g4')).
+  (!! extended_copy (dst g1 e0) (g3, g3') (g4, g4')) && vertices_at (fun u => vvalid g4' u /\ LocalGraphCopy.vmap g4 root <> u) (Graph_SpatialGraph g4')).
 Proof.
   intros.
+  unfold reachable_vertices_at.
+  pose proof vcopy1_edge_copy_list_spec root es es_done _ g1 g2 g3 g2' g3' src0 dst0 H H0 H1 H2 H3 H4 H5.
+  destruct H10.
+  pose proof LocalGraphCopy.copy_extend_copy g1 g3 g4 g3' g4'' root es es_done e0 es_later (WeakMarkGraph.marked g1) H H0 H2 H3 H1.
+  spec H12; [intro v; destruct (node_pred_dec (WeakMarkGraph.marked g1) v); auto |].
+  cbv zeta in H12.
+  pose proof WeakMarkGraph.triple_mark1_componded_mark_list root (map (dst g1) es_done) (map (dst g1) (e0 :: es_later)) (map (dst g1) es) g1 g3 H H0.
+  spec H13; [apply out_edges_step_list; auto |].
+  spec H13; [rewrite <- map_app; f_equal; auto |].
+  spec H13; [split_relation_list (g1 :: g2 :: g2 :: nil) |].
+    1: apply WeakMarkGraph.eq_do_nothing; auto.
+    1: destruct H4 as [? [? ?]]; auto.
+    1: apply WeakMarkGraph.eq_do_nothing; auto.
+    1: auto.
+  cbv iota zeta in H13.
+  destruct H13 as [_ ?].
+
+  rewrite <- H13 in H12.
+  spec H12; [destruct H8 as [? [? ?]]; auto |].
+  spec H12; [auto |].
+  spec H12; [intros v; rewrite <- (app_same_set H13); destruct (node_pred_dec (WeakMarkGraph.marked g3) v); auto |].
+  destruct H12 as [g4' [? [? ?]]].
+  rewrite <- H13 in H12.
+  apply (exp_right g4').
+  apply andp_right; [apply prop_right |].
+  1: destruct H8 as [? [? ?]]; split; [| split]; auto.
 Admitted.
 
 End SpatialGraph_Copy.
