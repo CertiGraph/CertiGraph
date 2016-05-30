@@ -1,6 +1,6 @@
 COMPCERT_DIR = "../CompCert"
 VST_DIR = "../VST"
-CURRENT_DIR = $(shell pwd)
+CURRENT_DIR = "./"
 -include CONFIGURE
 
 COQC = coqc
