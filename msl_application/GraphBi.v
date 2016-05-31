@@ -14,6 +14,9 @@ Require Import RamifyCoq.graph.reachable_computable.
 Require Import RamifyCoq.graph.reachable_ind.
 Require Import RamifyCoq.graph.subgraph2.
 Require Import RamifyCoq.graph.graph_gen.
+Require Import RamifyCoq.graph.BiGraph.
+Require Import RamifyCoq.graph.MathGraph.
+Require Import RamifyCoq.graph.FiniteGraph.
 Require Import RamifyCoq.msl_application.Graph.
 Require Import Coq.Logic.Classical.
 Import RamifyCoq.msl_ext.seplog.OconNotation.
@@ -55,9 +58,8 @@ Context {DV DE: Type}.
 
 Class BiMaFin (g: PreGraph addr (addr * LR)) := {
   bi: BiGraph g (fun x => (x, L)) (fun x => (x, R));
-  ma: MathGraph g;
-  fin: FiniteGraph g;
-  is_null_def': forall x: addr, is_null g x = (x = null)
+  ma: MathGraph g (fun x => x = null);
+  fin: FiniteGraph g
 }.
 
 Definition Graph := (GeneralGraph addr (addr * LR) DV DE (fun g => BiMaFin (pg_lg g))).
@@ -100,20 +102,19 @@ Local Coercion pg_lg: LabeledGraph >-> PreGraph.
 Instance biGraph (G: Graph): BiGraph G (fun x => (x, L)) (fun x => (x, R)) :=
   @bi G (@sound_gg _ _ _ _ _ _ _ G).
 
-Instance maGraph(G: Graph): MathGraph G :=
+Instance maGraph(G: Graph): MathGraph G (fun x => x = null) :=
   @ma G (@sound_gg _ _ _ _ _ _ _ G).
 
 Instance finGraph (G: Graph): FiniteGraph G :=
   @fin G (@sound_gg _ _ _ _ _ _ _ G).
 
-Definition is_null_def (g: Graph): forall x: addr, is_null g x = (x = null) := is_null_def'.
-
 Instance RGF (G: Graph): ReachableFiniteGraph G.
   apply Build_ReachableFiniteGraph.
   intros.
-  apply finite_reachable_computable in H.
+  apply finite_reachable_computable with (is_null := fun x => x = null) in H.
   + destruct H as [l [? ?]].
     exists l; auto.
+  + intros v; destruct_eq_dec v null; [left | right]; auto.
   + apply maGraph.
   + apply (LocalFiniteGraph_FiniteGraph G), finGraph.
   + apply (FiniteGraph_EnumCovered G), finGraph.
@@ -125,16 +126,11 @@ Definition Graph_gen (G: Graph) (x: addr) (d: DV) : Graph :=
 Definition empty_BiGraph: BiGraph (empty_pregraph (fun e => fst e) (fun e => null)) (fun x => (x, L)) (fun x => (x, R)).
   constructor.
   + intros ? [].
-  + intros ? [].
-  + intros ? ?; congruence.
-  + intros ? [? ?]; split; simpl; intros.
-    - subst; destruct l; auto.
-    - inversion H; inversion H0; auto.
+  + intros ? ? [].
 Defined.
       
-Definition empty_MathGraph: MathGraph (empty_pregraph (fun e => fst e) (fun e => null)).
+Definition empty_MathGraph: MathGraph (empty_pregraph (fun e => fst e) (fun e => null)) (fun x => x = null).
   apply (Build_MathGraph _ (fun x => x = null)).
-  + intros; destruct_eq_dec null x; [left | right]; auto.
   + intros ? [].
   + intros ? [].
 Defined.
@@ -151,10 +147,8 @@ Definition empty_FiniteGraph: FiniteGraph (empty_pregraph (fun e => fst e) (fun 
     unfold Ensembles.In; reflexivity. 
 Defined.
 
-Definition empty_sound: BiMaFin (empty_pregraph (fun e => fst e) (fun e => null)).
-  refine (Build_BiMaFin _ empty_BiGraph empty_MathGraph empty_FiniteGraph _).
-  intros; simpl; auto.
-Defined.
+Definition empty_sound: BiMaFin (empty_pregraph (fun e => fst e) (fun e => null)) :=
+  Build_BiMaFin _ empty_BiGraph empty_MathGraph empty_FiniteGraph.
 
 Definition empty_Graph (default_v: DV) (default_e: DE) : Graph :=
   Build_GeneralGraph _ _ _ (empty_labeledgraph (fun e => fst e) (fun e => null) default_v default_e) empty_sound.
@@ -163,7 +157,7 @@ Lemma weak_valid_vvalid_dec: forall (g : Graph) (x: addr),
   weak_valid g x -> Decidable (vvalid g x).
 Proof.
   intros.
-  apply null_or_valid in H.
+  apply (@null_or_valid _ _ _ _ _ (fun x => SGBA_VE x null)) in H.
   destruct H; [right | left]; auto.
   pose proof valid_not_null g x; tauto.
 Qed.
@@ -172,8 +166,8 @@ Hint Resolve weak_valid_vvalid_dec : GraphDec.
 Lemma invalid_null: forall (g: Graph), ~ vvalid g null.
 Proof.
   intros.
-  pose proof @valid_not_null _ _ _ _ g (maGraph g) null.
-  rewrite is_null_def in H.
+  pose proof @valid_not_null _ _ _ _ g _ (maGraph g) null.
+  cbv beta in H.
   tauto.
 Qed.
 
@@ -187,8 +181,12 @@ Proof.
   split; [| split; [| split]].
   + apply left_valid with (x0 := x) in H0; auto.
   + apply right_valid with (x0 := x) in H0; auto.
-  + apply (proj2 (only_two_edges _ _ _)); auto.
-  + apply (proj2 (only_two_edges _ _ _)); auto.
+  + pose proof (proj2 (only_two_edges x (x, L) H)).
+    specialize (H1 (or_introl eq_refl)).
+    tauto.
+  + pose proof (proj2 (only_two_edges x (x, R) H)).
+    specialize (H1 (or_intror eq_refl)).
+    tauto.
 Qed.
 
 Definition Graph_gen_left_null (G : Graph) (x : addr) : Graph.

@@ -596,35 +596,6 @@ Definition generalgraph_gen_dst (g: Graph) (e : E) (t : V)
            (sound' : P _) : Graph :=
   @Build_GeneralGraph V E EV EE DV DE P (labeledgraph_gen_dst g e t) sound'.
 
-Lemma gen_dst_preserve_bi: forall (g: PreGraph V E) e t left_edge right_edge,
-    BiGraph g left_edge right_edge -> BiGraph (pregraph_gen_dst g e t) left_edge right_edge.
-Proof.
-  intros. apply Build_BiGraph; intros.
-  + simpl in *. eapply left_valid; eauto.
-  + simpl in *. eapply right_valid; eauto.
-  + apply (bi_consist g).
-  + simpl. apply (only_two_edges g).
-Qed.
-
-Lemma gen_dst_preserve_math: forall (g: PreGraph V E) e t (M: MathGraph g),
-    weak_valid g t -> MathGraph (pregraph_gen_dst g e t).
-Proof.
-  intros. refine (Build_MathGraph (pregraph_gen_dst g e t) (is_null g) (is_null_dec g) _ (valid_not_null g)).
-  simpl. intros. apply (valid_graph g) in H0. destruct H0. split.
-  + auto.
-  + unfold update_dst.
-    destruct_eq_dec e e0.
-    - apply H.
-    - apply H1.
-Defined.
-
-Lemma gen_dst_preserve_finite: forall (g: PreGraph V E) e t, FiniteGraph g -> FiniteGraph (pregraph_gen_dst g e t).
-Proof.
-  intros. apply Build_FiniteGraph; simpl.
-  + apply finiteV.
-  + apply finiteE.
-Qed.
-
 End GENERAL_GRAPH_GEN.
 
 Section ADD_GRAPH_GEN.
@@ -636,10 +607,6 @@ Section ADD_GRAPH_GEN.
   Notation Gph := (PreGraph V E).
 
   Variable g: Gph.
-  Variable left_out_edge right_out_edge: V -> E.
-  Context {BI: BiGraph g left_out_edge right_out_edge}.
-  Context {MA: MathGraph g}.
-  Context {FA: FiniteGraph g}.
   
   Definition change_vvalid (v: V): Ensemble V :=
     fun n => vvalid g n \/ n = v.
@@ -656,6 +623,10 @@ Section ADD_GRAPH_GEN.
 
   Definition change_evalid v : Ensemble E := fun e => evalid g e \/ src g e = v.
 
+(*
+(*TODO: To resume *)
+  Context {BI: BiGraph g left_out_edge right_out_edge}.
+
   Definition change_dst (v l r: V) : E -> V.
   Proof.
     intro e.
@@ -665,25 +636,6 @@ Section ADD_GRAPH_GEN.
 
   Definition update_PreGraph v l r : Gph :=
     Build_PreGraph EV EE (change_vvalid v) (change_evalid v) (src g) (change_dst v l r).
-
-  Definition update_BiGraph v l r: BiGraph (update_PreGraph v l r) left_out_edge right_out_edge.
-  Proof.
-    refine (Build_BiGraph _ _ _ _ _ _ _).
-    + unfold update_PreGraph; simpl.
-      unfold change_vvalid, change_evalid.
-      intros.
-      rewrite (left_sound g).
-      pose proof left_valid g x.
-      tauto.
-    + unfold update_PreGraph; simpl.
-      unfold change_vvalid, change_evalid.
-      intros.
-      rewrite (right_sound g).
-      pose proof right_valid g x.
-      tauto.
-    + unfold update_PreGraph; simpl; apply (bi_consist g).
-    + unfold update_PreGraph; simpl; apply (only_two_edges g).
-  Defined.
 
   Definition in_math (v l r: V) : Type :=
     forall y, In y (l :: r :: nil) -> {vvalid g y} + {y = v} + {is_null g y}.
@@ -704,6 +656,25 @@ Section ADD_GRAPH_GEN.
       intros.
       destruct H; [| subst]; auto.
       apply (valid_not_null g) with x; tauto.
+  Defined.
+
+  Definition update_BiGraph v l r: BiGraph (update_PreGraph v l r) left_out_edge right_out_edge.
+  Proof.
+    refine (Build_BiGraph _ _ _ _ _ _ _).
+    + unfold update_PreGraph; simpl.
+      unfold change_vvalid, change_evalid.
+      intros.
+      rewrite (left_sound g).
+      pose proof left_valid g x.
+      tauto.
+    + unfold update_PreGraph; simpl.
+      unfold change_vvalid, change_evalid.
+      intros.
+      rewrite (right_sound g).
+      pose proof right_valid g x.
+      tauto.
+    + unfold update_PreGraph; simpl; apply (bi_consist g).
+    + unfold update_PreGraph; simpl; apply (only_two_edges g).
   Defined.
 
   Definition update_FiniteGraph v l r: FiniteGraph (update_PreGraph v l r).
@@ -759,8 +730,10 @@ Section ADD_GRAPH_GEN.
               - right; left. subst x. subst e2. auto.
           } Unfocus.
   Qed.
+*)
 End ADD_GRAPH_GEN.
-
+(*
+(* TODO: to resume *)
 Section ADD_LABELED_GRAPH_GEN.
 
   Context {V E: Type}.
@@ -773,8 +746,6 @@ Section ADD_LABELED_GRAPH_GEN.
   Local Coercion pg_lg: LabeledGraph >-> PreGraph.
 
   Variable g: Graph.
-  Variable left_out_edge right_out_edge: V -> E.
-  Context {BI: BiGraph g left_out_edge right_out_edge}.
 
   Definition update_LabeledGraph (x l r: V) :=
     Build_LabeledGraph _ _ (update_PreGraph g left_out_edge right_out_edge x l r) (vlabel g) (elabel g).
@@ -795,10 +766,9 @@ Section ADD_GENERAL_GRAPH_GEN.
   Local Coercion lg_gg: GeneralGraph >-> LabeledGraph.
 
   Variable g: Graph.
-  Variable left_out_edge right_out_edge: V -> E.
-  Context {BI: BiGraph g left_out_edge right_out_edge}.
   
   Definition update_GeneralGraph (x l r: V) (sound': P _): Graph :=
     @Build_GeneralGraph V E EV EE DV DE P (update_LabeledGraph g left_out_edge right_out_edge x l r) sound'.
 
 End ADD_GENERAL_GRAPH_GEN.
+*)

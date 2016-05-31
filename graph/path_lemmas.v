@@ -1049,18 +1049,6 @@ Proof.
     tauto.
 Qed.
 
-Lemma FiniteGraph_EnumCovered: forall (g: Gph) (fin: FiniteGraph g) x, EnumCovered V (reachable g x).
-Proof.
-  intros.
-  destruct fin as [[xs [? ?]] _].
-  exists xs.
-  split; auto.
-  intros y ?.
-  apply reachable_foot_valid in H1.
-  rewrite H0.
-  exact H1.
-Qed.
-
 Lemma epath_to_vpath_cons_eq: forall g v e p, v = src g e -> epath_to_vpath g (v, e :: p) = v :: epath_to_vpath g (dst g e, p).
 Proof.
   intros. remember (epath_to_vpath g (v, e :: p)) as l. destruct l. 1: simpl in Heql; destruct p; inversion Heql.
@@ -1198,80 +1186,6 @@ Lemma reachable_through_set_app_right: forall g S1 S2 x,
 Proof.
   intros.
   rewrite <- reachable_through_set_app; tauto.
-Qed.
-
-Class ReachableFiniteGraph (pg: PreGraph V E) := {
-  finiteR: forall x, vvalid pg x -> Enumerable V (reachable pg x)
-}.
-
-Lemma construct_reachable_list: forall (g: Gph) {rfg: ReachableFiniteGraph g} x, Decidable (vvalid g x) -> {l: list V | NoDup l /\ reachable_list g x l}.
-Proof.
-  intros.
-  destruct H.
-  + destruct (finiteR x v) as [l ?H].
-    exists l.
-    unfold reachable_list; auto.
-  + exists nil.
-    split; [constructor |].
-    intro; simpl.
-    pose proof reachable_head_valid g x y.
-    tauto.
-Qed.
-
-Lemma RFG_reachable_decicable: forall (g: Gph) {rfg: ReachableFiniteGraph g} x y, vvalid g x -> Decidable (reachable g x y).
-Proof.
-  intros.
-  pose proof finiteR x H.
-  destruct X as [l [_ ?H]].
-  unfold Ensembles.In in H0.
-  destruct (in_dec equiv_dec y l); [left | right]; rewrite <- H0; auto.
-Qed.
-
-Lemma RFG_reachable_decicable': forall (g: Gph) {rfg: ReachableFiniteGraph g} x y, Decidable (vvalid g x) -> Decidable (reachable g x y).
-Proof.
-  intros.
-  destruct H; [apply RFG_reachable_decicable; auto | right].
-  intro.
-  apply reachable_head_valid in H; tauto.
-Qed.
-
-Lemma construct_reachable_set_list: forall (g: Gph) {rfg: ReachableFiniteGraph g} S
-  (V_DEC: forall x, In x S -> Decidable (vvalid g x)),
-  {l: list V | NoDup l /\ reachable_set_list g S l}.
-Proof.
-  intros.
-  induction S.
-  + exists nil.
-    split; [constructor |].
-    intro.
-    pose proof reachable_through_empty g.
-    pose proof Empty_set_iff V.
-    unfold Same_set, Included, Ensembles.In in *.
-    simpl.
-    firstorder.
-  + spec IHS.
-    - intros; apply V_DEC.
-      right; auto.
-    - destruct IHS as [l2 ?H].
-      destruct (construct_reachable_list g a (V_DEC a (or_introl eq_refl))) as [l1 ?H].
-      exists (remove_dup equiv_dec (l1 ++ l2)).
-      split; [apply remove_dup_nodup |].
-      destruct H as [_ ?].
-      destruct H0 as [_ ?].
-      unfold reachable_set_list, reachable_list in *.
-      intros.
-      rewrite <- remove_dup_in_inv.
-      rewrite in_app_iff, reachable_through_set_eq.
-      specialize (H x).
-      specialize (H0 x).
-      tauto.
-Qed.
-
-Lemma RFG_reachable_through_set_decicable: forall (g: Gph) {rfg: ReachableFiniteGraph g} S y, (forall x, In x S -> Decidable (vvalid g x)) -> Decidable (reachable_through_set g S y).
-Proof.
-  intros.
-  destruct (construct_reachable_set_list g S X) as [l [_ ?]].
-  destruct (in_dec equiv_dec y l); [left | right]; rewrite <- (H y); auto.
 Qed.
 
 Lemma reachable_by_through_nil: forall g P n, reachable_by_through_set g nil P n <-> False.
