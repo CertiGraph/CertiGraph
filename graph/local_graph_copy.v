@@ -1583,7 +1583,7 @@ Proof.
   apply triple_final with (es := es); auto.
 Qed.
 
-Lemma copy_vvalid_eq: forall (g g1 g2: Graph) (g1' g2'': Graph') (M: V -> Prop) x M,
+Lemma copy_vvalid_eq: forall (g1 g2: Graph) (g2'': Graph') (M: V -> Prop) x,
   copy M x g1 g2 g2'' ->
   Same_set (vvalid g2'') (reachable g2'' (vmap g2 x)).
 Proof.
@@ -1596,6 +1596,28 @@ Proof.
   destruct H as [v [? ?]]; subst v'.
   apply (guarded_morphism_reachable COPY_bij); [rewrite (weak_edge_prop_si _ _ _ COPY_si); apply Included_refl |].
   rewrite <- COPY_si.
+  rewrite <- (reachable_by_reachable_by_equiv _ _ _ _); auto.
+Qed.
+
+Lemma copy_evalid_eq: forall (g1 g2: Graph) (g2'': Graph') (M: V -> Prop) x,
+  copy M x g1 g2 g2'' ->
+  Same_set (evalid g2'') (Intersection _ (weak_edge_prop (reachable g2'' (vmap g2 x)) g2'') (evalid g2'')).
+Proof.
+  intros.
+  destruct H as [COPY_si [COPY_gprv [COPY_gpre [COPY_vvalid [COPY_evalid [COPY_consi COPY_bij]]]]]].
+  rewrite Same_set_spec; intros e'.
+  split; [intros | rewrite Intersection_spec; tauto].
+  rewrite Intersection_spec; split; [| auto].
+  rewrite (app_same_set COPY_evalid) in H.
+  rewrite image_set_spec in H.
+  destruct H as [e [? ?]]; subst e'.
+  unfold weak_edge_prop.
+  pose proof H.
+  rewrite (app_same_set (weak_edge_prop_si _ _ _ COPY_si)) in H.
+  rewrite Intersection_spec in H; destruct H.
+  rewrite <- (src_preserved COPY_bij) by auto.
+  apply (guarded_morphism_reachable COPY_bij); [rewrite (weak_edge_prop_si _ _ _ COPY_si); apply Included_refl |].
+  rewrite <- COPY_si at 1.
   rewrite <- (reachable_by_reachable_by_equiv _ _ _ _); auto.
 Qed.
 

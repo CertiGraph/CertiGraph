@@ -189,63 +189,6 @@ Proof.
     exists e; auto.
 Qed.
 
-Context {MA: MathGraph g}.
-Context {LF: LocalFiniteGraph g}.
-
-Definition predicate_sub_mathgraph (p: V -> Prop): MathGraph (predicate_subgraph g p).
-Proof.
-  refine (Build_MathGraph _ (is_null g) (is_null_dec g) _ _).
-  + unfold predicate_subgraph, predicate_vvalid, predicate_evalid; simpl; intros.
-    pose proof valid_graph g e.
-    unfold weak_valid in H0.
-    tauto.
-  + unfold predicate_subgraph, predicate_vvalid, predicate_evalid; simpl; intros.
-    pose proof valid_not_null g x.
-    tauto.
-Defined.
-
-Definition predicate_sub_localfinitegraph (p: NodePred V) : LocalFiniteGraph (predicate_subgraph g p).
-Proof.
-  refine (Build_LocalFiniteGraph _ _).
-  intros.
-  exists (filter (fun e => if (sumbool_dec_and (node_pred_dec p (src g e)) (node_pred_dec p (dst g e))) then true else false) (edge_func g x)).
-  split.
-  + apply NoDup_filter.
-    unfold edge_func.
-    destruct (local_enumerable x); simpl.
-    tauto.
-  + intros.
-    unfold predicate_subgraph, predicate_vvalid, predicate_evalid; simpl; intros.
-    rewrite filter_In.
-    rewrite edge_func_spec.
-    destruct (sumbool_dec_and (node_pred_dec p (src g x0)) (node_pred_dec p (dst g x0))).
-    - unfold out_edges, Ensembles.In in *; simpl.
-      assert (true = true) by auto; tauto.
-    - unfold out_edges, Ensembles.In in *; simpl.
-      assert (~ false = true) by congruence; tauto.
-Defined.
-
-Definition predicate_partial_localfinitegraph (p: NodePred V) : LocalFiniteGraph (predicate_partialgraph g p).
-Proof.
-  refine (Build_LocalFiniteGraph _ _).
-  intros.
-  exists (filter (fun e => if (node_pred_dec p (src g e)) then true else false) (edge_func g x)).
-  split.
-  + apply NoDup_filter.
-    unfold edge_func.
-    destruct (local_enumerable x); simpl.
-    tauto.
-  + intros.
-    unfold predicate_partialgraph, predicate_vvalid, predicate_weak_evalid; simpl; intros.
-    rewrite filter_In.
-    rewrite edge_func_spec.
-    destruct (node_pred_dec p (src g x0)).
-    - unfold out_edges, Ensembles.In in *; simpl.
-      assert (true = true) by auto; tauto.
-    - unfold out_edges, Ensembles.In in *; simpl.
-      assert (~ false = true) by congruence; tauto.
-Defined.
-
 Lemma is_tree_ppg_spec: forall (P : V -> Prop) root,
     is_tree (predicate_partialgraph g P) root <->
     forall y, g |= root ~o~> y satisfying P ->

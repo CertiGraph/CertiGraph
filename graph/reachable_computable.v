@@ -13,6 +13,8 @@ Require Import RamifyCoq.graph.path_lemmas.
 Require Import RamifyCoq.graph.reachable_ind.
 Require Import RamifyCoq.graph.subgraph2.
 Require Import RamifyCoq.graph.graph_gen.
+Require Import RamifyCoq.graph.MathGraph.
+Require Import RamifyCoq.graph.FiniteGraph.
 
 Section REACHABLE_COMPUTABLE.
 
@@ -46,10 +48,12 @@ Section REACHABLE_COMPUTABLE.
   Section UniquePreGraph.
 
   Variable G: PreGraph V E.
-  Context {MA: MathGraph G}.
+  Context {is_null: V -> Prop}.
+  Context {is_null_dec: forall v, {is_null v} + {~ is_null v}}.
+  Context {MA: MathGraph G is_null}.
   Context {LF: LocalFiniteGraph G}.
   
-  Lemma weak_In_dec: forall l x, {In x l \/ is_null G x} + {~ (In x l \/ is_null G x)}.
+  Lemma weak_In_dec: forall l x, {In x l \/ is_null x} + {~ (In x l \/ is_null x)}.
   Proof.
     intros.
     apply sumbool_dec_or; [| apply is_null_dec].
@@ -68,7 +72,7 @@ Section REACHABLE_COMPUTABLE.
 
   Lemma in_new_working_list: forall l1 l2 l3 x,
     In x (new_working_list l1 l2 l3) <->
-    In x (l1 ++ l2) /\ ~ In x l3 /\ ~ is_null G x.
+    In x (l1 ++ l2) /\ ~ In x l3 /\ ~ is_null x.
   Proof.
     intros.
     unfold new_working_list; rewrite filter_In.
@@ -365,7 +369,7 @@ Section REACHABLE_COMPUTABLE.
       - unfold reachable_bounded; simpl.
         intros.
         rewrite Forall_forall in H2.
-        assert (Sublist l0 l) by (unfold Sublist; firstorder).
+        assert (Sublist l0 l).  unfold Sublist. exact (fun a H => H0 a (H2 a H)).
         apply NoDup_Sublist_length; [apply equiv_dec | |]; auto.
       - unfold Forall_reachable; simpl.
         repeat constructor.
@@ -456,10 +460,10 @@ Section REACHABLE_COMPUTABLE.
   Proof.
     intros.
     pose proof valid_step _ _ _ H1.
-    destruct (null_or_valid G _ (proj2 H2)).
+    destruct (@null_or_valid _ _ _ _ _ is_null_dec G _ _ (proj2 H2)).
     + subst. exists nil. split.
       - intro. split; intro; [inversion H3 |]. apply reachable_head_valid in H3. 
-        apply (valid_not_null G) in H3. exfalso; auto. auto.
+        apply (@valid_not_null _ _ _ _ G is_null) in H3; auto.
       - apply NoDup_nil.
     + apply (compute_reachable x l).
       - auto.
@@ -502,11 +506,11 @@ Section REACHABLE_COMPUTABLE.
       forall s, In s S -> weak_valid G s -> {l' : list V | reachable_list G s l' /\ NoDup l'}.
   Proof.
     intros.
-    destruct (null_or_valid _ _ H0).
+    destruct (@null_or_valid _ _ _ _ _ is_null_dec G _ _ H0).
     + subst. exists nil. split.
       - unfold reachable_list. intro. split; intros.
         * inversion H1.
-        * apply reachable_head_valid in H1. apply (valid_not_null G) in H1. exfalso; auto. auto.
+        * apply reachable_head_valid in H1. apply (@valid_not_null _ _ _ _ G is_null) in H1; auto.
       - apply NoDup_nil.
     + apply finite_reachable_set_single with S; auto.
   Qed.
@@ -589,7 +593,7 @@ Section REACHABLE_COMPUTABLE.
 
   End UniquePreGraph.
 
-  Lemma reachable_by_decidable (G: PreGraph V E) {MA: MathGraph G} {LF: LocalFiniteGraph G}:
+  Lemma reachable_by_decidable (G: PreGraph V E) {is_null: V -> Prop} {is_null_dec: forall v, {is_null v} + {~ is_null v}} {MA: MathGraph G is_null} {LF: LocalFiniteGraph G}:
     forall (p : NodePred V) x ,
       {vvalid G x} + {~ vvalid G x} ->
       EnumCovered V (reachable G x) ->
@@ -611,7 +615,7 @@ Section REACHABLE_COMPUTABLE.
         apply predicate_subgraph_reachable_included.
       } subst.
       intro y.
-      destruct (@reachable_decidable_prime _ (predicate_sub_mathgraph _ p) (predicate_sub_localfinitegraph _ p) x H0 X0 y).
+      destruct (@reachable_decidable_prime _ _ is_null_dec (predicate_sub_mathgraph _ p _) (predicate_sub_localfinitegraph _ p _) x H0 X0 y).
       - rewrite <- reachable_by_eq_subgraph_reachable in r. left; auto.
       - rewrite <- reachable_by_eq_subgraph_reachable in n. right; auto.
     + right.

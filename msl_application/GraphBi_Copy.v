@@ -300,7 +300,7 @@ Proof.
       apply reachable_foot_valid in H6; auto.
 Qed.
 
-Lemma extend_copy_left: forall (g g1 g2: Graph) (g1' g2'': LGraph) (x l r x0 l0: addr) d0,
+Lemma extend_copy_left: forall (g g1 g2: Graph) (g1': LGraph) (g2'': Graph) (x l r x0 l0: addr) d0,
   vvalid g x ->
   vgamma g x = (null, l, r) ->
   vcopy1 x g g1 g1' ->
@@ -324,13 +324,24 @@ Proof.
   spec H5; [hnf; auto |].
   spec H5; [auto |].
   spec H5; [subst l; auto |].
-
+SearchAbout BiGraph.
   unfold reachable_vertices_at.
   pose proof vertices_at_sepcon_unique_1x (Graph_SpatialGraph g2'') x0 (reachable g2'' l0) d0.
   pose proof vertices_at_sepcon_unique_xx g1' (Graph_SpatialGraph g2'') (fun x1 : addr => vvalid g1' x1 /\ x0 <> x1) (reachable g2'' l0).
   rewrite sepcon_assoc, (add_andp _ _ H10); normalize.
   rewrite (sepcon_comm (vertices_at _ _)), <- sepcon_assoc, (add_andp _ _ H9); normalize.
   clear H9 H10.
+  spec H5.
+  Focus 1. {
+    split.
+    + destruct H2 as [? [? ?]].
+      rewrite (LocalGraphCopy.copy_vvalid_eq _ _ _ _ _ H10).
+      rewrite Disjoint_spec in H11 |- *.
+      destruct H4.
+      clear - H11 H12; intros x1.
+      specialize (H11 x1).
+      destruct_eq_dec x0 x1.
+      - subst.
 Admitted.
 (*
   intros.
