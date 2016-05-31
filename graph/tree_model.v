@@ -1,4 +1,5 @@
 Require Import Coq.Arith.Arith.
+Require Import RamifyCoq.lib.Coqlib.
 Require Import RamifyCoq.lib.EnumEnsembles.
 Require Import RamifyCoq.lib.EquivDec_ext.
 Require Import RamifyCoq.lib.List_ext.
@@ -93,10 +94,11 @@ Section TREE_DEF.
   Section CONVERSION.
 
     Variable G: PreGraph Vertex Edge.
-    Context {MA: MathGraph G}.
+    Context {is_null: DecidablePred Vertex}.
+    Context {MA: MathGraph G is_null}.
     Context {LF: LocalFiniteGraph G}.
 
-    Definition not_null_bool (v: Vertex) := if is_null_dec G v then false else true.
+    Definition not_null_bool (v: Vertex) := if @is_null_dec _ is_null v then false else true.
 
     Fixpoint graph_to_tree (limit: nat) (root: Vertex): nat * Tree :=
       match limit with
@@ -120,10 +122,10 @@ Section TREE_DEF.
     Lemma in_step_list_edge: forall root x l, step_list G root l -> (In x (filter not_null_bool l) <-> G |= root ~> x).
     Proof.
       intros. rewrite filter_In. rewrite (H x). clear H. split; intros.
-      + destruct H. unfold not_null_bool in H0. destruct (is_null_dec G x). 1: inversion H0.
+      + destruct H. unfold not_null_bool in H0. destruct (is_null_dec x). 1: inversion H0.
         pose proof H. rewrite step_spec in H1. destruct H1 as [e [? [? ?]]].
         destruct (valid_graph G e H1). rewrite H2 in H4. rewrite H3 in H5. destruct H5. 1: exfalso; auto. split; auto.
-      + destruct H as [? [? ?]]. split; auto. unfold not_null_bool. destruct (is_null_dec G x); auto. exfalso. apply (valid_not_null G x); auto.
+      + destruct H as [? [? ?]]. split; auto. unfold not_null_bool. destruct (is_null_dec x); auto. exfalso. apply (valid_not_null G x); auto.
     Qed.
 
     Lemma in_edge_func_edge: forall root x, In x (filter not_null_bool (map (dst G) (edge_func G root))) <-> G |= root ~> x.
@@ -411,7 +413,7 @@ Section TREE_DEF.
     Proof.
       intros. split; repeat intro; destruct H as [y [? ?]].
       + exists y. rewrite <- remove_dup_in_inv. rewrite filter_In. do 2 (split; auto). unfold not_null_bool.
-        destruct (is_null_dec G y); auto. apply reachable_head_valid in H0. exfalso; apply (valid_not_null _ y); auto.
+        destruct (is_null_dec y); auto. apply reachable_head_valid in H0. exfalso; apply (valid_not_null _ y); auto.
       + rewrite <- remove_dup_in_inv in H. rewrite filter_In in H. destruct H. exists y. split; auto.
     Qed.
 
@@ -489,7 +491,7 @@ Section TREE_DEF.
           assert (reachable_through_set G (v :: l) x) by apply H3. rewrite <- i in H9. inversion H9.
         - assert (In v (v :: l)) by apply in_eq. pose proof (H7 _ H3); destruct H9. assert (is_tree G v) by (apply is_tree_sub_is_tree with root; auto).
           assert (Enumerable Vertex (reachable G v)) by
-              (apply finite_reachable_enumcovered_enumerable; auto; exists x0; split; auto; unfold Ensembles.In; intros; rewrite i; exists v; split; auto).
+              (apply (@finite_reachable_enumcovered_enumerable _ _ _ _ _ is_null); auto; exists x0; split; auto; unfold Ensembles.In; intros; rewrite i; exists v; split; auto).
           assert (2 * sizeOfEnum X - 1 <= lim). {
             clear -n0 i H4 X H3. destruct X as [l' [? ?]]. unfold sizeOfEnum. simpl. unfold Ensembles.In in i0.
             assert (Sublist l' x0) by (intro; rewrite i, i0; intros; exists v; split; auto).
@@ -571,7 +573,7 @@ Section TREE_DEF.
           rewrite <- i in H10. inversion H10.
         - assert (In v (v :: l)) by apply in_eq. pose proof (H7 _ H5); destruct H10. assert (is_tree G v) by (apply is_tree_sub_is_tree with root; auto).
           assert (Enumerable Vertex (reachable G v)) by
-              (apply finite_reachable_enumcovered_enumerable; auto; exists x; split; auto; unfold Ensembles.In; intros; rewrite i; exists v; split; auto).
+              (apply (@finite_reachable_enumcovered_enumerable _ _ _ _ _ is_null); auto; exists x; split; auto; unfold Ensembles.In; intros; rewrite i; exists v; split; auto).
           assert (2 * sizeOfEnum X - 1 <= lim). {
             clear -n0 i H6 X H5. destruct X as [l' [? ?]]. unfold sizeOfEnum. simpl. unfold Ensembles.In in i0.
             assert (Sublist l' x) by (intro; rewrite i, i0; intros; exists v; split; auto).

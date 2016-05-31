@@ -118,8 +118,7 @@ Qed.
 
 Require Import RamifyCoq.graph.MathGraph.
 
-Context {is_null: V -> Prop}.
-Context {is_null_dec: forall x, {is_null x} + {~ is_null x}}.
+Context {is_null: DecidablePred V}.
 
 Lemma bi_graph_join: forall (g: PreGraph V E) (PV1 PV2 PV: V -> Prop) (PE1 PE2 PE: E -> Prop),
   Prop_join PV1 PV2 PV ->
