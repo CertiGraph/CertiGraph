@@ -3,6 +3,7 @@ Require Import Coq.Arith.Arith.
 Require Import Coq.Logic.ProofIrrelevance.
 Require Import Coq.Logic.FunctionalExtensionality.
 Require Import Coq.Sorting.Permutation.
+Require Import RamifyCoq.lib.Coqlib.
 Require Import RamifyCoq.lib.List_ext.
 Require Import RamifyCoq.lib.EquivDec_ext.
 Require Import RamifyCoq.lib.EnumEnsembles.
@@ -48,8 +49,7 @@ Section REACHABLE_COMPUTABLE.
   Section UniquePreGraph.
 
   Variable G: PreGraph V E.
-  Context {is_null: V -> Prop}.
-  Context {is_null_dec: forall v, {is_null v} + {~ is_null v}}.
+  Context {is_null: DecidablePred V}.
   Context {MA: MathGraph G is_null}.
   Context {LF: LocalFiniteGraph G}.
   
@@ -460,7 +460,7 @@ Section REACHABLE_COMPUTABLE.
   Proof.
     intros.
     pose proof valid_step _ _ _ H1.
-    destruct (@null_or_valid _ _ _ _ _ is_null_dec G _ _ (proj2 H2)).
+    destruct (@null_or_valid _ _ _ _ _ G _ _ (proj2 H2)).
     + subst. exists nil. split.
       - intro. split; intro; [inversion H3 |]. apply reachable_head_valid in H3. 
         apply (@valid_not_null _ _ _ _ G is_null) in H3; auto.
@@ -506,7 +506,7 @@ Section REACHABLE_COMPUTABLE.
       forall s, In s S -> weak_valid G s -> {l' : list V | reachable_list G s l' /\ NoDup l'}.
   Proof.
     intros.
-    destruct (@null_or_valid _ _ _ _ _ is_null_dec G _ _ H0).
+    destruct (@null_or_valid _ _ _ _ _ G _ _ H0).
     + subst. exists nil. split.
       - unfold reachable_list. intro. split; intros.
         * inversion H1.
@@ -593,7 +593,7 @@ Section REACHABLE_COMPUTABLE.
 
   End UniquePreGraph.
 
-  Lemma reachable_by_decidable (G: PreGraph V E) {is_null: V -> Prop} {is_null_dec: forall v, {is_null v} + {~ is_null v}} {MA: MathGraph G is_null} {LF: LocalFiniteGraph G}:
+  Lemma reachable_by_decidable (G: PreGraph V E) {is_null: DecidablePred V} {MA: MathGraph G is_null} {LF: LocalFiniteGraph G}:
     forall (p : NodePred V) x ,
       {vvalid G x} + {~ vvalid G x} ->
       EnumCovered V (reachable G x) ->
@@ -615,7 +615,7 @@ Section REACHABLE_COMPUTABLE.
         apply predicate_subgraph_reachable_included.
       } subst.
       intro y.
-      destruct (@reachable_decidable_prime _ _ is_null_dec (predicate_sub_mathgraph _ p _) (predicate_sub_localfinitegraph _ p _) x H0 X0 y).
+      destruct (@reachable_decidable_prime _ _ (predicate_sub_mathgraph _ p _) (predicate_sub_localfinitegraph _ p _) x H0 X0 y).
       - rewrite <- reachable_by_eq_subgraph_reachable in r. left; auto.
       - rewrite <- reachable_by_eq_subgraph_reachable in n. right; auto.
     + right.

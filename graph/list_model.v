@@ -1,4 +1,5 @@
 Require Import Coq.Arith.Arith.
+Require Import RamifyCoq.lib.Coqlib.
 Require Import RamifyCoq.lib.EnumEnsembles.
 Require Import RamifyCoq.lib.EquivDec_ext.
 Require Import RamifyCoq.lib.List_ext.
@@ -17,7 +18,7 @@ Section LIST_MODEL.
   Context {EV: EqDec Vertex eq}.
   Context {EE: EqDec Edge eq}.
 
-  Variable G : PreGraph Vertex Edge.  
+  Variable G : PreGraph Vertex Edge.
 
   Definition is_list (x: Vertex) : Prop :=
     exists p, valid_path G p /\ forall y, reachable G x y -> exists (py: path), unique (fun pa => G |= pa is x ~o~> y satisfying (fun _ => True)) py /\ Subpath G py p.
@@ -25,11 +26,12 @@ Section LIST_MODEL.
   Definition graph_list_isomorphism (l: list Vertex) (root: Vertex) : Prop :=
     (forall s d, reachable G root s /\ reachable G root d /\ G |= s ~> d <-> exists l1 l2, l = l1 ++ s :: d :: l2) /\ (forall v, reachable G root v <-> In v l) /\ NoDup l.
 
-  Context {MA: MathGraph G}.
+  Context {is_null: DecidablePred Vertex}.
+  Context {MA: MathGraph G is_null}.
   Context {LF: LocalFiniteGraph G}.
 
   Lemma list_expand_nil_or_single: forall root l r,
-      vvalid G root -> is_list root -> l = new_working_list G nil (map (dst G) (edge_func G root)) (root :: r) -> l = nil \/ (exists v, l = v :: nil /\ G |= root ~> v).
+      vvalid G root -> is_list root -> l = @new_working_list _ _ is_null nil (map (dst G) (edge_func G root)) (root :: r) -> l = nil \/ (exists v, l = v :: nil /\ G |= root ~> v).
   Proof.
     intros. destruct l. 1: left; auto. destruct l.
     + right. exists v; split; auto. assert (In v (v :: nil)) by apply in_eq. rewrite H1 in H2. rewrite in_new_working_list in H2. destruct H2 as [? [? ?]].
@@ -112,13 +114,13 @@ Section LIST_MODEL.
   Qed.
 
   Lemma construct_reachable_edge:
-    forall lim root r, vvalid G root -> is_list root -> list_composed_by_edges (rev (root :: r)) -> list_composed_by_edges (rev (construct_reachable G (lim, root :: nil, r))).
+    forall lim root r, vvalid G root -> is_list root -> list_composed_by_edges (rev (root :: r)) -> list_composed_by_edges (rev (@construct_reachable _ _ _ _ G is_null _ (lim, root :: nil, r))).
   Proof.
     intros lim root r. remember (lengthInput (lim, root :: nil, r)) as n. assert (lengthInput (lim, root :: nil, r) <= n) by intuition. clear Heqn.
     revert n lim root r H. induction n; intros.
     + simpl in H. rewrite construct_reachable_unfold. destruct (le_dec lim (length r)); [apply (lcbe_rev_cons root) | exfalso]; intuition.
     + rewrite construct_reachable_unfold. unfold lengthInput in H, IHn. destruct (le_dec lim (length r)). 1: apply (lcbe_rev_cons root); auto.
-      remember (new_working_list G nil (map (dst G) (edge_func G root)) (root :: r)).
+      remember (@new_working_list _ _ is_null nil (map (dst G) (edge_func G root)) (root :: r)).
       assert (l = nil \/ exists v, l = (v :: nil) /\ G |= root ~> v) by (apply (list_expand_nil_or_single _ _ r); auto). destruct H3.
       - clear Heql. subst l. simpl. rewrite construct_reachable_unfold. auto.
       - destruct H3 as [v [? ?]]. rewrite H3. simpl. apply IHn.
@@ -185,19 +187,19 @@ Section LIST_MODEL.
     inversion H16. apply app_inj_tail in H23. destruct H23. subst es. rewrite H7 in H11. auto.
   Qed.
 
-  Lemma construct_reachable_tail_preserve: forall lim p r, exists l', construct_reachable G (lim, p, r) = l' ++ r.
+  Lemma construct_reachable_tail_preserve: forall lim p r, exists l', @construct_reachable _ _ _ _ G is_null _ (lim, p, r) = l' ++ r.
   Proof.
     intros lim p r. remember (lengthInput (lim, p, r)) as n. assert (lengthInput (lim, p, r) <= n) by intuition. clear Heqn. revert lim p r H. induction n; intros.
     + simpl in H. rewrite construct_reachable_unfold. destruct p. exists nil; rewrite app_nil_l; auto. destruct (le_dec lim (length r)).
       exists nil; rewrite app_nil_l; auto. exfalso; intuition.
     + simpl in H. rewrite construct_reachable_unfold. destruct p. exists nil; rewrite app_nil_l; auto. destruct (le_dec lim (length r)). exists nil; rewrite app_nil_l; auto.
-      remember (new_working_list G p (map (dst G) (edge_func G v)) (v :: r)). simpl. simpl in IHn. specialize (IHn lim l (v :: r)).
+      remember (@new_working_list _ _ is_null p (map (dst G) (edge_func G v)) (v :: r)). simpl. simpl in IHn. specialize (IHn lim l (v :: r)).
       assert (lim - length (v :: r) <= n) by (simpl; intuition). apply IHn in H0. destruct H0 as [l1 ?]. rewrite app_cons_assoc in H0. exists (l1 +:: v). auto.
   Qed.
 
   Theorem is_list_is_list: forall root, vvalid G root -> EnumCovered Vertex (reachable G root) -> is_list root -> {l | graph_list_isomorphism l root}.
   Proof.
-    intros. remember (construct_reachable G (length (proj1_sig X), root :: nil, nil)). destruct (finite_reachable_computable' _ _ X l H Heql).
+    intros. remember (@construct_reachable _ _ _ _ G is_null _ (length (proj1_sig X), root :: nil, nil)). destruct (finite_reachable_computable' _ _ X l H Heql).
     hnf in H1. exists (rev l). split; [|split].
     + intros. destruct X as [ss [? ?]]. simpl in Heql. unfold Ensembles.In in i.
       assert (list_composed_by_edges (rev (root :: nil))) by (simpl; apply list_composed_by_edges_single). apply (construct_reachable_edge (length ss) _ nil H H0) in H3.
@@ -207,7 +209,7 @@ Section LIST_MODEL.
           2: subst d; apply (is_list_no_self_loop root s); auto. destruct l1. 1: inversion H8.
           assert (v = root). {
             rewrite construct_reachable_unfold in Heql. destruct (le_dec (length ss) (length nil)). 1: rewrite Heql in H4; simpl in H4; inversion H4.
-            remember (new_working_list G nil (map (dst G) (edge_func G root)) (root :: nil)). simpl in Heql.
+            remember (@new_working_list _ _ is_null nil (map (dst G) (edge_func G root)) (root :: nil)). simpl in Heql.
             destruct (construct_reachable_tail_preserve (length ss) l0 (root :: nil)) as [l' ?]. rewrite <- Heql in H9. rewrite H9 in H4.
             rewrite rev_unit in H4. simpl in H4. inversion H4. auto.
           } subst v. simpl in H8. destruct H8.

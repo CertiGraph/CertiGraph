@@ -36,6 +36,8 @@ Class pSpatialGraph_Graph_Bi: Type := {
 
 Existing Instance SGBA.
 
+Definition is_null_SGBA {pSGGB: pSpatialGraph_Graph_Bi} : DecidablePred addr := (existT (fun P => forall a, {P a} + {~ P a}) (fun x => x = null) (fun x => SGBA_VE x null)).
+
 Class sSpatialGraph_Graph_Bi {pSGG_Bi: pSpatialGraph_Graph_Bi} (DV DE: Type): Type := {
   SGP: SpatialGraphPred addr (addr * LR) (DV * addr * addr) unit pred;
   SGA: SpatialGraphAssum SGP;
@@ -58,7 +60,7 @@ Context {DV DE: Type}.
 
 Class BiMaFin (g: PreGraph addr (addr * LR)) := {
   bi: BiGraph g (fun x => (x, L)) (fun x => (x, R));
-  ma: MathGraph g (fun x => x = null);
+  ma: MathGraph g is_null_SGBA;
   fin: FiniteGraph g
 }.
 
@@ -102,7 +104,7 @@ Local Coercion pg_lg: LabeledGraph >-> PreGraph.
 Instance biGraph (G: Graph): BiGraph G (fun x => (x, L)) (fun x => (x, R)) :=
   @bi G (@sound_gg _ _ _ _ _ _ _ G).
 
-Instance maGraph(G: Graph): MathGraph G (fun x => x = null) :=
+Instance maGraph(G: Graph): MathGraph G is_null_SGBA :=
   @ma G (@sound_gg _ _ _ _ _ _ _ G).
 
 Instance finGraph (G: Graph): FiniteGraph G :=
@@ -111,10 +113,9 @@ Instance finGraph (G: Graph): FiniteGraph G :=
 Instance RGF (G: Graph): ReachableFiniteGraph G.
   apply Build_ReachableFiniteGraph.
   intros.
-  apply finite_reachable_computable with (is_null := fun x => x = null) in H.
+  apply finite_reachable_computable with (is_null := is_null_SGBA) in H.
   + destruct H as [l [? ?]].
     exists l; auto.
-  + intros v; destruct_eq_dec v null; [left | right]; auto.
   + apply maGraph.
   + apply (LocalFiniteGraph_FiniteGraph G), finGraph.
   + apply (FiniteGraph_EnumCovered G), finGraph.
@@ -129,8 +130,8 @@ Definition empty_BiGraph: BiGraph (empty_pregraph (fun e => fst e) (fun e => nul
   + intros ? ? [].
 Defined.
       
-Definition empty_MathGraph: MathGraph (empty_pregraph (fun e => fst e) (fun e => null)) (fun x => x = null).
-  apply (Build_MathGraph _ (fun x => x = null)).
+Definition empty_MathGraph: MathGraph (empty_pregraph (fun e => fst e) (fun e => null)) is_null_SGBA.
+  apply (Build_MathGraph _ is_null_SGBA).
   + intros ? [].
   + intros ? [].
 Defined.
@@ -157,7 +158,7 @@ Lemma weak_valid_vvalid_dec: forall (g : Graph) (x: addr),
   weak_valid g x -> Decidable (vvalid g x).
 Proof.
   intros.
-  apply (@null_or_valid _ _ _ _ _ (fun x => SGBA_VE x null)) in H.
+  apply null_or_valid in H.
   destruct H; [right | left]; auto.
   pose proof valid_not_null g x; tauto.
 Qed.
@@ -167,7 +168,7 @@ Lemma invalid_null: forall (g: Graph), ~ vvalid g null.
 Proof.
   intros.
   pose proof @valid_not_null _ _ _ _ g _ (maGraph g) null.
-  cbv beta in H.
+  cbv beta delta [is_null_SGBA] in H; simpl in H.
   tauto.
 Qed.
 
@@ -192,33 +193,19 @@ Qed.
 Definition Graph_gen_left_null (G : Graph) (x : addr) : Graph.
 Proof.
   refine (generalgraph_gen_dst G (x, L) null _).
-  assert (weak_valid G null) by (left; rewrite is_null_def; auto).
-  refine (Build_BiMaFin _ (gen_dst_preserve_bi G (x, L) null _ _ (biGraph G))
+  assert (weak_valid G null) by (left; reflexivity).
+  refine (Build_BiMaFin _ (gen_dst_preserve_bi G (x, L) null _)
                         (gen_dst_preserve_math G (x, L) null ma H)
-                        (gen_dst_preserve_finite G (x, L) null (finGraph G)) _).
-  intro y; intros. simpl. apply is_null_def.
+                        (gen_dst_preserve_finite G (x, L) null (finGraph G))).
 Defined.
 
 Definition Graph_gen_right_null (G : Graph) (x : addr) : Graph.
 Proof.
   refine (generalgraph_gen_dst G (x, R) null _).
-  assert (weak_valid G null) by (left; rewrite is_null_def; auto).
-  refine (Build_BiMaFin _ (gen_dst_preserve_bi G (x, R) null _ _ (biGraph G))
+  assert (weak_valid G null) by (left; reflexivity).
+  refine (Build_BiMaFin _ (gen_dst_preserve_bi G (x, R) null _)
                         (gen_dst_preserve_math G (x, R) null ma H)
-                        (gen_dst_preserve_finite G (x, R) null (finGraph G)) _).
-  intro y; intros. simpl. apply is_null_def.
-Defined.
-
-(* This Graph_gen_update is used in hip/hip_graphmark_proofs.v *)
-Definition Graph_gen_update (G: Graph) (x : addr) (d: DV) (l r: addr) (Hi: in_math G x l r) (Hn: ~ is_null G x) : Graph.
-Proof.
-  refine (Graph_gen (@update_GeneralGraph _ _ _ _ _ _ _ G _ _ (biGraph G) x l r _) x d).
-  unfold update_LabeledGraph.
-  refine (Build_BiMaFin _
-                        (@update_BiGraph _ _ _ _ G _ _ (biGraph G) x l r)
-                        (@update_MathGraph _ _ _ _ G _ _ (biGraph G) (maGraph G) x l r Hi Hn)
-                        (@update_FiniteGraph _ _ _ _ G _ _ (biGraph G) (finGraph G) x l r) _).
-  intro y; intros. simpl. apply is_null_def.
+                        (gen_dst_preserve_finite G (x, R) null (finGraph G))).
 Defined.
 
 Ltac s_rewrite p :=
@@ -240,19 +227,6 @@ Proof.
   unfold update_vlabel.
   destruct_eq_dec x x; [| congruence].
   auto.
-Qed.
-
-Lemma Graph_gen_update_vgamma: forall (G: Graph) (x: addr) (d: DV) l r (Hi: in_math G x l r) (Hn: ~ is_null G x),
-    vgamma (Graph_gen_update G x d l r Hi Hn) x = (d, l, r).
-Proof.
-  intros; simpl. f_equal; [f_equal |].
-  + unfold update_vlabel. destruct (equiv_dec x x); auto. unfold complement, equiv in c. exfalso; auto.
-  + unfold change_dst. destruct (equiv_dec (src (pg_lg (lg_gg G)) (x, L)) x).
-    - destruct (left_or_right (pg_lg (lg_gg G)) (biGraph G) x (x, L) e); auto. inversion e0.
-    - exfalso. apply c. unfold equiv. s_rewrite (left_sound G); auto.
-  + unfold change_dst. destruct (equiv_dec (src (pg_lg (lg_gg G)) (x, R)) x).
-    - destruct (left_or_right (pg_lg (lg_gg G)) (biGraph G) x (x, R) e); auto. inversion e0.
-    - exfalso. apply c. unfold equiv. s_rewrite (right_sound G); auto.
 Qed.
 
 (*
@@ -294,7 +268,6 @@ Lemma weak_valid_si: forall (g1 g2: Graph) n, g1 ~=~ g2 -> (weak_valid g1 n <-> 
 Proof.
   intros.
   unfold weak_valid.
-  rewrite !is_null_def.
   destruct H as [? _].
   rewrite H.
   reflexivity.
@@ -304,16 +277,20 @@ Lemma gamma_step: forall (g : Graph) x (d: DV) (l r: addr), vvalid g x -> vgamma
 Proof.
   intros. simpl in H0; inversion H0; subst.
   rewrite step_spec; split; intros.
-  + destruct H1 as [? [? [? ?]]].
-    rewrite (only_two_edges g) in H2.
-    destruct H2; subst; auto.
+  + destruct H1 as [e [? [? ?]]].
+    pose proof (only_two_edges x e H).
+    cbv beta in H4.
+    pose proof (proj1 H4 (conj H2 H1)).
+    destruct H5; subst e; auto.
   + destruct H1.
     - exists (x, L).
-      apply (left_valid g) in H.
       s_rewrite (left_sound g); auto.
+      apply (left_valid g) in H.
+      auto.
     - exists (x, R).
-      apply (right_valid g) in H.
       s_rewrite (right_sound g); auto.
+      apply (right_valid g) in H.
+      auto.
 Qed.
 
 Lemma gamma_left_weak_valid: forall (g : Graph) x d l r, vvalid g x -> vgamma g x = (d, l, r) -> weak_valid g l.
@@ -370,7 +347,7 @@ Lemma Graph_reachable_dec: forall (G: Graph) x,
     Decidable (vvalid G x) -> forall y, Decidable (reachable G x y).
 Proof.
   intros.
-  apply reachable_decidable; auto.
+  apply reachable_decidable with (is_null := is_null_SGBA); auto.
   + apply maGraph.
   + apply LocalFiniteGraph_FiniteGraph, finGraph.
   + apply FiniteGraph_EnumCovered, finGraph.
@@ -382,7 +359,7 @@ Lemma Graph_reachable_by_dec: forall (G: Graph) x (P: NodePred addr),
 Proof.
   intros.
   intro y.
-  apply reachable_by_decidable; auto.
+  apply reachable_by_decidable with (is_null := is_null_SGBA); auto.
   + apply maGraph.
   + apply LocalFiniteGraph_FiniteGraph, finGraph.
   + apply FiniteGraph_EnumCovered, finGraph.

@@ -10,14 +10,21 @@ Section MathGraph.
 
 Context {V E: Type} {EV: EqDec V eq} {EE: EqDec E eq}.
 
-Class MathGraph (pg: PreGraph V E) (is_null: V -> Prop): Prop := {
+Class MathGraph (pg: PreGraph V E) (is_null: DecidablePred V): Prop := {
   weak_valid: V -> Prop := fun p => is_null p \/ vvalid pg p;
   valid_graph: forall e, evalid pg e -> vvalid pg (src pg e) /\ weak_valid (dst pg e);
   valid_not_null: forall x, vvalid pg x -> is_null x -> False
 }.
 
-Context {is_null: V -> Prop}.
-Context {is_null_dec: forall x, {is_null x} + {~ is_null x}}.
+Context {is_null: DecidablePred V}.
+
+Lemma is_null_dec: forall x, {is_null x} + {~ is_null x}.
+Proof.
+  intros.
+  destruct is_null as [P ?].
+  simpl.
+  auto.
+Qed.
 
 Arguments weak_valid _ {_} {_}  _.
 Arguments valid_graph _ {_} {_} _ _.
