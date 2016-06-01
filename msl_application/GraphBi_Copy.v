@@ -23,6 +23,9 @@ Require Import RamifyCoq.graph.dag.
 Require Import RamifyCoq.graph.weak_mark_lemmas.
 Require Import RamifyCoq.graph.graph_morphism.
 Require Import RamifyCoq.graph.local_graph_copy.
+Require Import RamifyCoq.graph.BiGraph.
+Require Import RamifyCoq.graph.MathGraph.
+Require Import RamifyCoq.graph.FiniteGraph.
 Require Import RamifyCoq.msl_application.Graph.
 Require Import RamifyCoq.msl_application.GraphBi.
 Require Import RamifyCoq.msl_application.Graph_Copy.
@@ -147,7 +150,7 @@ Lemma left_weak_valid: forall (G G1: Graph) (G1': LGraph) (x l r: addr),
   vgamma G x = (null, l, r) ->
   vvalid G x ->
   vcopy1 x G G1 G1' ->
-  @weak_valid _ _ _ _ G1 (maGraph _) l.
+  @weak_valid _ _ _ _ G1 _ (maGraph _) l.
 Proof.
   intros.
   destruct H1 as [? _].
@@ -160,7 +163,7 @@ Lemma right_weak_valid: forall (G G1 G3: Graph) (G1' G3': LGraph) (x l r: addr),
   vvalid G x ->
   vcopy1 x G G1 G1' ->
   edge_copy G (x, L) (G1: LGraph, G1') (G3: LGraph, G3') ->
-  @weak_valid _ _ _ _ G3 (maGraph _) r.
+  @weak_valid _ _ _ _ G3 _ (maGraph _) r.
 Proof.
   intros.
   destruct H1 as [? _].
@@ -324,7 +327,6 @@ Proof.
   spec H5; [hnf; auto |].
   spec H5; [auto |].
   spec H5; [subst l; auto |].
-SearchAbout BiGraph.
   unfold reachable_vertices_at.
   pose proof vertices_at_sepcon_unique_1x (Graph_SpatialGraph g2'') x0 (reachable g2'' l0) d0.
   pose proof vertices_at_sepcon_unique_xx g1' (Graph_SpatialGraph g2'') (fun x1 : addr => vvalid g1' x1 /\ x0 <> x1) (reachable g2'' l0).

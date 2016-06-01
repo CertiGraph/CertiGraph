@@ -18,6 +18,9 @@ Require Import RamifyCoq.graph.subgraph2.
 Require Import RamifyCoq.graph.graph_gen.
 Require Import RamifyCoq.graph.dag.
 Require Import RamifyCoq.graph.weak_mark_lemmas.
+Require Import RamifyCoq.graph.BiGraph.
+Require Import RamifyCoq.graph.MathGraph.
+Require Import RamifyCoq.graph.FiniteGraph.
 Require Import RamifyCoq.msl_application.Graph.
 Require Import RamifyCoq.msl_application.Graph_Mark.
 Require Import RamifyCoq.msl_application.GraphBi.
@@ -90,7 +93,7 @@ Lemma left_weak_valid: forall (G G1: Graph) (x l r: addr),
   vgamma G x = (false, l, r) ->
   vvalid G x ->
   mark1 x G G1 ->
-  @weak_valid _ _ _ _ G1 (maGraph _) l.
+  @weak_valid _ _ _ _ G1 _ (maGraph _) l.
 Proof.
   intros.
   destruct H1 as [? _].
@@ -103,7 +106,7 @@ Lemma right_weak_valid: forall (G G1 G2: Graph) (x l r: addr),
   vvalid G x ->
   mark1 x G G1 ->
   mark l G1 G2 ->
-  @weak_valid _ _ _ _ G2 (maGraph _) r.
+  @weak_valid _ _ _ _ G2 _ (maGraph _) r.
 Proof.
   intros.
   destruct H1 as [? _].
