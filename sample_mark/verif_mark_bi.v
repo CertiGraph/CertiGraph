@@ -76,7 +76,7 @@ Proof.
   assert (vvalid g x) as gx_vvalid.
   Focus 1. {
     destruct H_weak_valid; [| auto].
-    rewrite is_null_def in H0; subst x.
+    unfold is_null_SGBA in H0; simpl in H0; subst x.
     exfalso.
     apply H. auto.
   } Unfocus.

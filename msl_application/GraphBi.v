@@ -14,9 +14,9 @@ Require Import RamifyCoq.graph.reachable_computable.
 Require Import RamifyCoq.graph.reachable_ind.
 Require Import RamifyCoq.graph.subgraph2.
 Require Import RamifyCoq.graph.graph_gen.
-Require Import RamifyCoq.graph.BiGraph.
-Require Import RamifyCoq.graph.MathGraph.
-Require Import RamifyCoq.graph.FiniteGraph.
+Require Export RamifyCoq.graph.BiGraph.
+Require Export RamifyCoq.graph.MathGraph.
+Require Export RamifyCoq.graph.FiniteGraph.
 Require Import RamifyCoq.msl_application.Graph.
 Require Import Coq.Logic.Classical.
 Import RamifyCoq.msl_ext.seplog.OconNotation.

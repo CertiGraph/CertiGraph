@@ -23,9 +23,6 @@ Require Import RamifyCoq.graph.dag.
 Require Import RamifyCoq.graph.weak_mark_lemmas.
 Require Import RamifyCoq.graph.graph_morphism.
 Require Import RamifyCoq.graph.local_graph_copy.
-Require Import RamifyCoq.graph.BiGraph.
-Require Import RamifyCoq.graph.MathGraph.
-Require Import RamifyCoq.graph.FiniteGraph.
 Require Import RamifyCoq.msl_application.Graph.
 Require Import RamifyCoq.msl_application.GraphBi.
 Require Import RamifyCoq.msl_application.Graph_Copy.

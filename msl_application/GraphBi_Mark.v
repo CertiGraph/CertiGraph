@@ -18,9 +18,6 @@ Require Import RamifyCoq.graph.subgraph2.
 Require Import RamifyCoq.graph.graph_gen.
 Require Import RamifyCoq.graph.dag.
 Require Import RamifyCoq.graph.weak_mark_lemmas.
-Require Import RamifyCoq.graph.BiGraph.
-Require Import RamifyCoq.graph.MathGraph.
-Require Import RamifyCoq.graph.FiniteGraph.
 Require Import RamifyCoq.msl_application.Graph.
 Require Import RamifyCoq.msl_application.Graph_Mark.
 Require Import RamifyCoq.msl_application.GraphBi.
