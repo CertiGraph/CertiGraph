@@ -12,6 +12,9 @@ Require Import RamifyCoq.graph.graph_relation.
 Require Import RamifyCoq.graph.subgraph2.
 Require Import RamifyCoq.graph.reachable_ind.
 Require Import RamifyCoq.graph.spanning_tree.
+Require Import RamifyCoq.graph.BiGraph.
+Require Import RamifyCoq.graph.MathGraph.
+Require Import RamifyCoq.graph.FiniteGraph.
 Require Import RamifyCoq.msl_application.Graph.
 Require Import RamifyCoq.msl_application.GraphBi.
 Require Import RamifyCoq.msl_application.GraphBi_Mark.
@@ -65,8 +68,8 @@ Section SPATIAL_GRAPH_DISPOSE_BI.
         destruct (equiv_dec (x, L) e); intuition.
       - right. unfold graph_gen.update_dst.
         destruct (equiv_dec (x, L) (x, L)); intuition.
-        * apply (valid_not_null g) in H3; auto. rewrite is_null_def. auto.
-        * apply (@left_valid _ _ _ _ g _ _ (biGraph g)) in H; auto.
+        * apply (valid_not_null g) in H3; auto. reflexivity.
+        * apply (@left_valid _ _ _ _ _ _ g (biGraph g)) in H; auto.
     + simpl. tauto.
   Qed.
 
@@ -131,26 +134,26 @@ Section SPATIAL_GRAPH_DISPOSE_BI.
         unfold predicate_weak_evalid in H1. destruct H1 as [_ [? [_ ?]]].
         specialize (H1 (x0, L)). specialize (H4 (x0, L)).
         assert (src g (x0, L) = x0)
-          by apply (@left_sound _ _ _ _ _ _ g (biGraph g) x0).
+          by (apply (@left_sound _ _ _ _ _ _ g (biGraph g) x0); apply reachable_foot_valid in H2; auto).
         change (lg_gg g) with (g: LGraph) in *.
         rewrite H5 in *.
         assert (evalid g (x0, L) /\ ~ g |= l ~o~> x0 satisfying (unmarked g)). {
           split.
           + apply reachable_foot_valid in H2.
-            apply (@left_valid _ _ _ _ g _ _ (biGraph g)); auto.
+            apply (@left_valid _ _ _ _ _ _ g (biGraph g)); auto.
           + intro; apply H3; apply reachable_by_is_reachable in H6; auto.
         } apply H4; intuition.
       - destruct H1 as [_ [? _]]. hnf in H1. simpl in H1.
         unfold predicate_weak_evalid in H1. destruct H1 as [_ [? [_ ?]]].
         specialize (H1 (x0, R)). specialize (H4 (x0, R)).
         assert (src g (x0, R) = x0)
-          by apply (@right_sound _ _ _ _ _ _ g (biGraph g) x0).
+          by (apply (@right_sound _ _ _ _ _ _ g (biGraph g) x0); apply reachable_foot_valid in H2; auto).
         change (lg_gg g) with (g: LGraph) in *.
         rewrite H5 in *.
         assert (evalid g (x0, R) /\ ~ g |= l ~o~> x0 satisfying (unmarked g)). {
           split.
           + apply reachable_foot_valid in H2.
-            apply (@right_valid _ _ _ _ g _ _ (biGraph g)); auto.
+            apply (@right_valid _ _ _ _ _ _ g (biGraph g)); auto.
           + intro; apply H3; apply reachable_by_is_reachable in H6; auto.
         } apply H4; intuition.
   Qed.
@@ -180,7 +183,7 @@ Section SPATIAL_GRAPH_DISPOSE_BI.
   Lemma edge_spanning_tree_left_reachable_vvalid: forall (g1 g2: Graph) x d l r,
       vvalid g1 x -> vgamma g1 x = (d, l, r) -> edge_spanning_tree g1 (x, L) g2 -> Included (reachable g1 x) (vvalid g2).
   Proof.
-    intros. assert (x = src g1 (x, L)) by (symmetry; apply (@left_sound _ _ _ _ _ _ g1 (biGraph g1) x)).
+    intros. assert (x = src g1 (x, L)) by (symmetry; apply (@left_sound _ _ _ _ _ _ g1 (biGraph g1) x); auto).
     rewrite H2. apply edge_spanning_tree_reachable_vvalid; auto.
     apply Graph_reachable_by_dec. apply weak_valid_vvalid_dec.
     apply (gamma_left_weak_valid g1 x d _ r); auto.
@@ -202,8 +205,8 @@ Section SPATIAL_GRAPH_DISPOSE_BI.
       change (lg_gg g2) with (g2: LGraph) in H4.
       rewrite <- H4. f_equal. symmetry. apply H1.
       - intro. inversion H3.
-      - apply (@right_valid _ _ _ _ g1 _ _ (biGraph g1)) in H; auto.
-      - apply (@right_valid _ _ _ _ g2 _ _ (biGraph g2)) in Hvg2; auto.
+      - apply (@right_valid _ _ _ _ _ _ g1 (biGraph g1)) in H; auto.
+      - apply (@right_valid _ _ _ _ _ _ g2 (biGraph g2)) in Hvg2; auto.
     + destruct H1 as [? [[_ [_ [_ ?]]] _]].
       assert (marked g1 x) by (simpl in *; inversion H0; auto).
       assert (~ g1 |= dst g1 (x, L) ~o~> x satisfying (unmarked g1)) by (intro HS; apply reachable_by_foot_prop in HS; auto).
@@ -214,10 +217,10 @@ Section SPATIAL_GRAPH_DISPOSE_BI.
       change (lg_gg g1) with (g1: LGraph) in *.
       change (lg_gg g2) with (g2: LGraph) in *.
       apply H2; split.
-      - apply (@right_valid _ _ _ _ g1 _ _ (biGraph g1) x); auto.
-      - rewrite (@right_sound _ _ _ _ _ _ g1 (biGraph g1) x). auto.
-      - apply (@right_valid _ _ _ _ g2 _ _ (biGraph g2) x); auto.
-      - rewrite (@right_sound _ _ _ _ _ _ g2 (biGraph g2) x). auto.
+      - apply (@right_valid _ _ _ _ _ _ g1 (biGraph g1) x); auto.
+      - rewrite (@right_sound _ _ _ _ _ _ g1 (biGraph g1) x); auto.
+      - apply (@right_valid _ _ _ _ _ _ g2 (biGraph g2) x); auto.
+      - rewrite (@right_sound _ _ _ _ _ _ g2 (biGraph g2) x); auto.
   Qed.
 
   Lemma spanning_tree_left_reachable:
@@ -235,8 +238,8 @@ Section SPATIAL_GRAPH_DISPOSE_BI.
       split; [|split]; auto.
       - apply reachable_head_valid in r0. auto.
       - simpl in H0. inversion H0. exists (x, L); auto.
-        * apply (@left_valid _ _ _ _ g1 _ _ (biGraph g1)); auto.
-        * apply (@left_sound _ _ _ _ _ _ g1 (biGraph g1)).
+        * apply (@left_valid _ _ _ _ _ _ g1 (biGraph g1)); auto.
+        * apply (@left_sound _ _ _ _ _ _ g1 (biGraph g1)); auto.
     + apply edge_reachable_by with r; auto.
       - split; [|split]; auto.
         * apply reachable_head_valid in H2.
@@ -321,8 +324,14 @@ Section SPATIAL_GRAPH_DISPOSE_BI.
       - destruct H2 as [_ [? _]]. hnf in H2. simpl in H2.
         unfold predicate_weak_evalid in H2. destruct H2 as [_ [? [_ ?]]].
         specialize (H2 (x0, L)). specialize (H5 (x0, L)).
-        assert (src g2 (x0, L) = x0)
-          by apply (@left_sound _ _ _ _ _ _ g2 (biGraph g2) x0).
+        assert (src g2 (x0, L) = x0).
+        Focus 1. {
+          apply (@left_sound _ _ _ _ _ _ g2 (biGraph g2) x0).
+Check edge_spanning_tree_vvalid.
+SearchAbout ReachDecidable.
+Locate edge_spanning_tree_vvalid'.
+          rewrite <- SIMPLE_SPANNING_TREE.edge_spanning_tree_vvalid'. _ _ _ _).
+apply reachable_foot_valid in H3; auto).
         change (lg_gg g2) with (g2: LGraph) in *.
         rewrite H6 in *.
         assert (evalid g2 (x0, L) /\ ~ g2 |= r ~o~> x0 satisfying (unmarked g2)). {
