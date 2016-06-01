@@ -158,26 +158,16 @@ Section SPATIAL_GRAPH_DISPOSE_BI.
         } apply H4; intuition.
   Qed.
 
-  Lemma edge_spanning_tree_left_vvalid: forall (g1 g2: Graph) x d l r n,
-      vvalid g1 x -> vgamma g1 x = (d, l, r) -> edge_spanning_tree g1 (x, L) g2 -> (vvalid g1 n <-> vvalid g2 n).
+  Lemma edge_spanning_tree_left_vvalid: forall (g1 g2: Graph) x n,
+      vvalid g1 x -> edge_spanning_tree g1 (x, L) g2 -> (vvalid g1 n <-> vvalid g2 n).
   Proof.
     intros. apply (edge_spanning_tree_vvalid g1 g2 (x, L) n); auto.
-    apply Graph_reachable_by_dec. apply weak_valid_vvalid_dec.
-    apply (gamma_left_weak_valid g1 x d _ r); auto.
-    assert (l = dst g1 (x, L)) by (simpl in H0; inversion H0; auto).
-    change ((lg_gg g1)) with (g1: LGraph).
-    rewrite <- H2. auto.
   Qed.
 
-  Lemma edge_spanning_tree_right_vvalid: forall (g1 g2: Graph) x d l r n,
-      vvalid g1 x -> vgamma g1 x = (d, l, r) -> edge_spanning_tree g1 (x, R) g2 -> (vvalid g1 n <-> vvalid g2 n).
+  Lemma edge_spanning_tree_right_vvalid: forall (g1 g2: Graph) x n,
+      vvalid g1 x -> edge_spanning_tree g1 (x, R) g2 -> (vvalid g1 n <-> vvalid g2 n).
   Proof.
     intros. apply (edge_spanning_tree_vvalid g1 g2 (x, R) n); auto.
-    apply Graph_reachable_by_dec. apply weak_valid_vvalid_dec.
-    apply (gamma_right_weak_valid g1 x d l _); auto.
-    assert (r = dst g1 (x, R)) by (simpl in H0; inversion H0; auto).
-    change ((lg_gg g1)) with (g1: LGraph).
-    rewrite <- H2. auto.
   Qed.
 
   Lemma edge_spanning_tree_left_reachable_vvalid: forall (g1 g2: Graph) x d l r,
@@ -185,11 +175,6 @@ Section SPATIAL_GRAPH_DISPOSE_BI.
   Proof.
     intros. assert (x = src g1 (x, L)) by (symmetry; apply (@left_sound _ _ _ _ _ _ g1 (biGraph g1) x); auto).
     rewrite H2. apply edge_spanning_tree_reachable_vvalid; auto.
-    apply Graph_reachable_by_dec. apply weak_valid_vvalid_dec.
-    apply (gamma_left_weak_valid g1 x d _ r); auto.
-    assert (l = dst g1 (x, L)) by (simpl in H0; inversion H0; auto).
-    change ((lg_gg g1)) with (g1: LGraph).
-    rewrite <- H3. auto.
   Qed.
 
   Lemma edge_spanning_tree_left_vgamma: forall (g1 g2: Graph) x l r,
@@ -258,7 +243,7 @@ Section SPATIAL_GRAPH_DISPOSE_BI.
       edge_spanning_tree g1 (x, L) g2 -> Included (reachable g2 r) (reachable g1 x).
   Proof.
     intros. assert (Hv: vvalid g2 r -> vvalid g1 r). {
-      intros. rewrite (edge_spanning_tree_left_vvalid g1 g2 x true l r r); auto.
+      intros. rewrite (edge_spanning_tree_left_vvalid g1 g2 x r); auto.
     } hnf in H1.
     assert (l = dst g1 (x, L))
       by (simpl in H0; inversion H0; auto).
@@ -327,32 +312,34 @@ Section SPATIAL_GRAPH_DISPOSE_BI.
         assert (src g2 (x0, L) = x0).
         Focus 1. {
           apply (@left_sound _ _ _ _ _ _ g2 (biGraph g2) x0).
-Check edge_spanning_tree_vvalid.
-SearchAbout ReachDecidable.
-Locate edge_spanning_tree_vvalid'.
-          rewrite <- SIMPLE_SPANNING_TREE.edge_spanning_tree_vvalid'. _ _ _ _).
-apply reachable_foot_valid in H3; auto).
+          rewrite <- (edge_spanning_tree_left_vvalid g1 g2 x x0 H H1).
+          apply reachable_foot_valid in H3; auto.
+        } Unfocus.
         change (lg_gg g2) with (g2: LGraph) in *.
         rewrite H6 in *.
         assert (evalid g2 (x0, L) /\ ~ g2 |= r ~o~> x0 satisfying (unmarked g2)). {
           split.
           + apply reachable_foot_valid in H3.
-            apply (@left_valid _ _ _ _ g2 _ _ (biGraph g2)).
-            rewrite <- (edge_spanning_tree_left_vvalid g1 g2 x true l r); eauto.
+            apply (@left_valid _ _ _ _ _ _ g2 (biGraph g2)).
+            rewrite <- (edge_spanning_tree_left_vvalid g1 g2 x); eauto.
           + intro; apply H4; apply reachable_by_is_reachable in H7; auto.
         } apply H5; intuition.
       - destruct H2 as [_ [? _]]. hnf in H2. simpl in H2.
         unfold predicate_weak_evalid in H2. destruct H2 as [_ [? [_ ?]]].
         specialize (H2 (x0, R)). specialize (H5 (x0, R)).
-        assert (src g2 (x0, R) = x0)
-          by apply (@right_sound _ _ _ _ _ _ g2 (biGraph g2) x0).
+        assert (src g2 (x0, R) = x0).
+        Focus 1. {
+          apply (@right_sound _ _ _ _ _ _ g2 (biGraph g2) x0).
+          rewrite <- (edge_spanning_tree_left_vvalid g1 g2 x x0 H H1).
+          apply reachable_foot_valid in H3; auto.
+        } Unfocus.
         change (lg_gg g2) with (g2: LGraph) in *.
         rewrite H6 in *.
         assert (evalid g2 (x0, R) /\ ~ g2 |= r ~o~> x0 satisfying (unmarked g2)). {
           split.
           + apply reachable_foot_valid in H3.
-            apply (@right_valid _ _ _ _ g2 _ _ (biGraph g2)).
-            rewrite <- (edge_spanning_tree_left_vvalid g1 g2 x true l r); eauto.
+            apply (@right_valid _ _ _ _ _ _ g2 (biGraph g2)).
+            rewrite <- (edge_spanning_tree_left_vvalid g1 g2 x); eauto.
           + intro; apply H4; apply reachable_by_is_reachable in H7; auto.
         } apply H5; intuition.
   Qed.
@@ -410,8 +397,8 @@ apply reachable_foot_valid in H3; auto).
         destruct (equiv_dec (x, R) e); intuition.
       - right. split; auto. unfold graph_gen.update_dst.
         destruct (equiv_dec (x, R) (x, R)); intuition.
-        * apply (valid_not_null g) in H3; auto. rewrite is_null_def. auto.
-        * split; auto. apply (@right_valid _ _ _ _ g _ _ (biGraph g)) in H; auto.
+        * apply (valid_not_null g) in H3; auto. reflexivity.
+        * split; auto. apply (@right_valid _ _ _ _ _ _ g (biGraph g)) in H; auto.
     + simpl. tauto.
   Qed.
 
@@ -427,11 +414,11 @@ apply reachable_foot_valid in H3; auto).
     intros.
     apply (spanning_list_spanning_tree2 _ g1 _ _ (x, L) (x, R)); auto; intros.
     + intro. inversion H7.
-    + pose proof (only_two_edges g x e). simpl in H7 |-* .
+    + pose proof (only_two_edges x e H). simpl in H7 |-* .
       split; intros.
       - destruct H8 as [? | [? | ?]]; [subst e..|exfalso; auto].
-        * split; [|intuition]. apply (@left_valid _ _ _ _ g _ _ (biGraph g)); auto.
-        * split; [|intuition]. apply (@right_valid _ _ _ _ g _ _ (biGraph g)); auto.
+        * split; [|intuition]. apply (@left_valid _ _ _ _ _ _ g (biGraph g)); auto.
+        * split; [|intuition]. apply (@right_valid _ _ _ _ _ _ g (biGraph g)); auto.
       - destruct H8. intuition.
     + apply Graph_reachable_by_dec. apply weak_valid_vvalid_dec. pose proof H3.
       simpl in H3. inversion H3. subst l.
