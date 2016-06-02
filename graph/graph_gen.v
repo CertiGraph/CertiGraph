@@ -51,8 +51,16 @@ Definition predicate_evalid (g: PreGraph V E) (p: V -> Prop): Ensemble E :=
 Definition predicate_weak_evalid (g: PreGraph V E) (p: V -> Prop): Ensemble E :=
   fun e => evalid g e /\ p (src g e).
 
+Definition add_evalid (evalid: E -> Prop) (e0: E): E -> Prop := fun e => evalid e \/ e = e0.
+
 Definition update_vlabel (vlabel: V -> DV) (x: V) (d: DV) :=
   fun v => if equiv_dec x v then d else vlabel v.
+
+Definition update_elabel (elabel: E -> DE) (e0: E) (d: DE) :=
+  fun e => if equiv_dec e0 e then d else elabel e.
+
+Definition update_src (source : E -> V) (e : E) (origin: V) :=
+  fun v => if equiv_dec e v then origin else source v.
 
 Definition update_dst (destination : E -> V) (e : E) (target: V) :=
   fun v => if equiv_dec e v then target else destination v.
@@ -136,6 +144,9 @@ Definition empty_pregraph (src0 dst0: E -> V): Graph :=
 
 Definition single_vertex_pregraph (v0: V): Graph :=
   @Build_PreGraph V E EV EE (eq v0) (fun e => False) (fun e => v0) (fun e => v0).
+
+Definition pregraph_add_edge (g : Graph) (e : E) (o t : V) :=
+  @Build_PreGraph V E EV EE (vvalid g) (add_evalid (evalid g) e) (update_src (src g) e o) (update_dst (dst g) e t).
 
 Definition pregraph_gen_dst (g : Graph) (e : E) (t : V) :=
   @Build_PreGraph V E EV EE (vvalid g) (evalid g) (src g) (update_dst (dst g) e t).
@@ -480,6 +491,11 @@ Definition single_vertex_labeledgraph (v0: V) (v_default: DV) (e_default: DE): G
 
 Definition labeledgraph_vgen (g: Graph) (x: V) (a: DV) : Graph := Build_LabeledGraph _ _ g (update_vlabel (vlabel g) x a) (elabel g).
 
+Definition labeledgraph_egen (g: Graph) (e: E) (d: DE) : Graph := Build_LabeledGraph _ _ g (vlabel g) (update_elabel (elabel g) e d).
+
+Definition labeledgraph_add_edge (g : Graph) (e : E) (o t : V) (d: DE) :=
+  Build_LabeledGraph _ _ (pregraph_add_edge g e o t) (vlabel g) (update_elabel (elabel g) e d).
+
 Definition labeledgraph_gen_dst (g : Graph) (e : E) (t : V) :=
   Build_LabeledGraph _ _ (pregraph_gen_dst g e t) (vlabel g) (elabel g).
 
@@ -583,6 +599,17 @@ Context {V E: Type}.
 Context {EV: EqDec V eq}.
 Context {EE: EqDec E eq}.
 Context {DV DE: Type}.
+
+Class NormalGeneralGraph (P: LabeledGraph V E DV DE -> Type): Type := {
+  lge_preserved: forall g1 g2, labeled_graph_equiv g1 g2 -> P g1 -> P g2;
+  join_preserved: forall g (PV1 PV2 PV: V -> Prop) (PE1 PE2 PE: E -> Prop),
+    Prop_join PV1 PV2 PV ->
+    Prop_join PE1 PE2 PE ->
+    P (gpredicate_sub_labeledgraph PV1 PE1 g) ->
+    P (gpredicate_sub_labeledgraph PV2 PE2 g) ->
+    P (gpredicate_sub_labeledgraph PV PE g)
+}.
+
 Context {P: LabeledGraph V E DV DE -> Type}.
 
 Notation Graph := (GeneralGraph V E DV DE P).
@@ -591,6 +618,8 @@ Local Coercion pg_lg : LabeledGraph >-> PreGraph.
 Local Coercion lg_gg : GeneralGraph >-> LabeledGraph.
 
 Definition generalgraph_vgen (g: Graph) (x: V) (d: DV) (sound': P _): Graph := @Build_GeneralGraph V E EV EE DV DE P (labeledgraph_vgen g x d) sound'.
+
+Definition generalgraph_egen (g: Graph) (e: E) (d: DE) (sound': P _): Graph := @Build_GeneralGraph V E EV EE DV DE P (labeledgraph_egen g e d) sound'.
 
 Definition generalgraph_gen_dst (g: Graph) (e : E) (t : V)
            (sound' : P _) : Graph :=

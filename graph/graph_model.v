@@ -1,5 +1,5 @@
 Require Import Coq.Logic.ProofIrrelevance.
-Require Import RamifyCoq.lib.EnumEnsembles.
+Require Import RamifyCoq.lib.Ensembles_ext.
 Require Import RamifyCoq.lib.EquivDec_ext.
 Require Import RamifyCoq.lib.List_ext.
 Require Import RamifyCoq.lib.relation_list.

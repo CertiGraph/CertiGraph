@@ -65,6 +65,20 @@ Proof.
     assert (~ false = true) by congruence; tauto.
 Defined.
 
+Lemma finite_graph_si: forall (g1 g2: PreGraph V E),
+  g1 ~=~ g2 ->
+  FiniteGraph g1 ->
+  FiniteGraph g2.
+Proof.
+  intros.
+  destruct X as [X Y].
+  constructor.
+  + revert X; apply Enumerable_Same_set.
+    destruct H as [? _]; rewrite Same_set_spec; auto.
+  + revert Y; apply Enumerable_Same_set.
+    destruct H as [_ [? _]]; rewrite Same_set_spec; auto.
+Qed.
+
 Require Import RamifyCoq.graph.graph_gen.
 
 Lemma gen_dst_preserve_finite: forall (g: PreGraph V E) e t, FiniteGraph g -> FiniteGraph (pregraph_gen_dst g e t).
@@ -72,6 +86,56 @@ Proof.
   intros. apply Build_FiniteGraph; simpl.
   + apply finiteV.
   + apply finiteE.
+Qed.
+
+Lemma predicate_sub_finitegraph: forall (g: PreGraph V E) (p: NodePred V), FiniteGraph g -> FiniteGraph (predicate_subgraph g p).
+Proof.
+  intros.
+  destruct X as [X Y].
+  constructor.
+  + destruct X as [l ?].
+    exists (filter (fun v => if node_pred_dec p v then true else false) l); split.
+    - apply NoDup_filter; tauto.
+    - intros.
+      unfold predicate_subgraph, predicate_vvalid, predicate_evalid; simpl; intros.
+      rewrite filter_In.
+      unfold Ensembles.In in *.
+      assert (false <> true) by congruence.
+      destruct (node_pred_dec p x); firstorder.
+  + destruct Y as [l ?].
+    exists (filter (fun e => if (Coqlib2.sumbool_dec_and (node_pred_dec p (src g e)) (node_pred_dec p (dst g e))) then true else false) l); split.
+    - apply NoDup_filter; tauto.
+    - intros e.
+      unfold predicate_subgraph, predicate_vvalid, predicate_evalid; simpl; intros.
+      rewrite filter_In.
+      unfold Ensembles.In in *.
+      assert (false <> true) by congruence.
+      destruct (Coqlib2.sumbool_dec_and (node_pred_dec p (src g e)) (node_pred_dec p (dst g e))); firstorder.
+Qed.
+
+Lemma predicate_partial_finitegraph: forall (g: PreGraph V E) (p: NodePred V), FiniteGraph g -> FiniteGraph (predicate_partialgraph g p).
+Proof.
+  intros.
+  destruct X as [X Y].
+  constructor.
+  + destruct X as [l ?].
+    exists (filter (fun v => if node_pred_dec p v then true else false) l); split.
+    - apply NoDup_filter; tauto.
+    - intros.
+      unfold predicate_subgraph, predicate_vvalid, predicate_evalid; simpl; intros.
+      rewrite filter_In.
+      unfold Ensembles.In in *.
+      assert (false <> true) by congruence.
+      destruct (node_pred_dec p x); firstorder.
+  + destruct Y as [l ?].
+    exists (filter (fun e => if (node_pred_dec p (src g e)) then true else false) l); split.
+    - apply NoDup_filter; tauto.
+    - intros e.
+      unfold predicate_subgraph, predicate_vvalid, predicate_evalid; simpl; intros.
+      rewrite filter_In.
+      unfold Ensembles.In in *.
+      assert (false <> true) by congruence.
+      destruct (node_pred_dec p (src g e)); firstorder.
 Qed.
 
 Definition predicate_sub_localfinitegraph (g: PreGraph V E) (p: NodePred V) (LF: LocalFiniteGraph g): LocalFiniteGraph (predicate_subgraph g p).
@@ -115,6 +179,49 @@ Proof.
     - unfold out_edges, Ensembles.In in *; simpl.
       assert (~ false = true) by congruence; tauto.
 Defined.
+
+Lemma finite_graph_join: forall (g: PreGraph V E) (PV1 PV2 PV: V -> Prop) (PE1 PE2 PE: E -> Prop),
+  Prop_join PV1 PV2 PV ->
+  Prop_join PE1 PE2 PE ->
+  FiniteGraph (gpredicate_subgraph PV1 PE1 g) ->
+  FiniteGraph (gpredicate_subgraph PV2 PE2 g) ->
+  FiniteGraph (gpredicate_subgraph PV PE g).
+Proof.
+  intros.
+  constructor.
+  + destruct X as [[l1 [?H ?H]] ?].
+    destruct X0 as [[l2 [?H ?H]] ?].
+    exists (l1 ++ l2).
+    split.
+    - apply NoDup_app_inv; auto.
+      intros v ? ?.
+      rewrite H2 in H5; rewrite H4 in H6.
+      unfold Ensembles.In in H5, H6; simpl in H5, H6.
+      rewrite Intersection_spec in H5, H6.
+      destruct H5, H6, H as [_ ?].
+      apply (H v); auto.
+    - intros v.
+      rewrite in_app_iff.
+      rewrite H2, H4.
+      unfold Ensembles.In; simpl; rewrite !Intersection_spec.
+      destruct H as [? _]; specialize (H v); tauto.
+  + destruct X as [? [l1 [?H ?H]]].
+    destruct X0 as [? [l2 [?H ?H]]].
+    exists (l1 ++ l2).
+    split.
+    - apply NoDup_app_inv; auto.
+      intros e ? ?.
+      rewrite H2 in H5; rewrite H4 in H6.
+      unfold Ensembles.In in H5, H6; simpl in H5, H6.
+      rewrite Intersection_spec in H5, H6.
+      destruct H5, H6, H0 as [_ ?].
+      apply (H0 e); auto.
+    - intros e.
+      rewrite in_app_iff.
+      rewrite H2, H4.
+      unfold Ensembles.In; simpl; rewrite !Intersection_spec.
+      destruct H0 as [? _]; specialize (H0 e); tauto.
+Qed.
 
 Require Import RamifyCoq.graph.path_lemmas.
 

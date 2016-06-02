@@ -153,6 +153,12 @@ Proof.
     reflexivity.
 Qed.
 
+Lemma labeledgraph_egen_do_nothing: forall (g: Graph) e d n, nothing n g (labeledgraph_egen g e d).
+Proof.
+  split; [reflexivity |].
+  intros; reflexivity.
+Qed.
+
 Lemma mark_is_componded_mark: forall root x,
   inclusion Graph (mark x) (componded root (mark x)).
 Proof.
@@ -466,6 +472,7 @@ Proof.
   auto.
 Qed.
 
+(* TODO: rename it into labeledgraph_vgen? or rename labeledgraph_vgen itself? *)
 Lemma vertex_update_mark1: forall (g: Graph) x lx,
   label_marked lx ->
   mark1 x g (labeledgraph_vgen g x lx).

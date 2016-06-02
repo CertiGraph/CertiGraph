@@ -62,28 +62,14 @@ Proof.
   simpl; congruence.
 Qed.
 
-Lemma Graph_gen_true_mark1: forall (G: Graph) (x: addr) l r,
+Lemma Graph_vgen_true_mark1: forall (G: Graph) (x: addr) l r,
   vgamma G x = (false, l, r) ->
   vvalid G x ->
-  mark1 x (G: LabeledGraph _ _ _ _) (Graph_gen G x true: LabeledGraph _ _ _ _).
+  mark1 x (G: LabeledGraph _ _ _ _) (Graph_vgen G x true: LabeledGraph _ _ _ _).
 Proof.
   intros.
-  split; [| split; [| split]].
-  + reflexivity.
-  + simpl.
-    unfold update_vlabel.
-    destruct_eq_dec x x; congruence.
-  + intros.
-    simpl.
-    unfold update_vlabel; simpl.
-    destruct_eq_dec x n'; [congruence |].
-    simpl in H2.
-    auto.
-  + intros.
-    simpl in H2 |- *.
-    unfold update_vlabel in H2; simpl in H2.
-    destruct_eq_dec x n'; [congruence |].
-    auto.
+  apply WeakMarkGraph.vertex_update_mark1.
+  inversion H; simpl; auto.
 Qed.
 
 Lemma left_weak_valid: forall (G G1: Graph) (x l r: addr),
@@ -123,12 +109,12 @@ Proof. intros; apply va_reachable_root_stable_ramify; auto. Qed.
 
 Lemma root_update_ramify: forall (g: Graph) (x: addr) (lx: bool) (gx gx': bool * addr * addr),
   vgamma g x = gx ->
-  vgamma (Graph_gen g x lx) x = gx' ->
+  vgamma (Graph_vgen g x lx) x = gx' ->
   vvalid g x ->
   @derives pred _
     (reachable_vertices_at x g)
     (vertex_at x gx *
-      (vertex_at x gx' -* reachable_vertices_at x (Graph_gen g x lx))).
+      (vertex_at x gx' -* reachable_vertices_at x (Graph_vgen g x lx))).
 Proof. intros; apply va_reachable_root_update_ramify; auto. Qed.
 
 Lemma graph_ramify_left: forall {RamUnit: Type} (g g1: Graph) x l r,

@@ -4,6 +4,7 @@ Require Export Coq.Classes.Equivalence.
 Require Export Coq.Sets.Ensembles.
 Require Import Coq.Sets.Constructive_sets.
 Require Import RamifyCoq.lib.Coqlib.
+Require Import RamifyCoq.lib.EquivDec_ext.
 
 Lemma Full_set_spec: forall A (v: A), Full_set A v <-> True.
 Proof.
@@ -409,6 +410,18 @@ Proof.
   apply Constructive_sets.Included_Empty.
 Qed.
 
+Lemma Disjoint_x1: forall {U} {UE: EqDec U eq} (A B: Ensemble U) (x0: U),
+  Disjoint U (fun x: U => A x /\ x0 <> x) B ->
+  ~ B x0 ->
+  Disjoint U A B.
+Proof.
+  intros.
+  rewrite Disjoint_spec in H |- *.
+  intros.
+  specialize (H x).
+  destruct_eq_dec x0 x; [subst |]; tauto.
+Qed.
+
 Lemma Included_trans: forall {A} (P Q R: Ensemble A), Included P Q -> Included Q R -> Included P R.
 Proof.
   unfold Included, Ensembles.In.
@@ -475,6 +488,26 @@ Proof.
   split.
   + intros; rewrite Union_spec; tauto.
   + auto.
+Qed.
+
+Lemma Prop_join_Empty: forall {U} (A: Ensemble U), Prop_join A (Empty_set _) A.
+Proof.
+  intros.
+  split; intros.
+  + rewrite Empty_set_spec.
+    tauto.
+  + rewrite Empty_set_spec in H0; auto.
+Qed.
+
+Lemma Prop_join_x1: forall {U} (A: Ensemble U) (a: U),
+  ~ A a ->
+  Prop_join A (eq a) (fun x => A x \/ x = a).
+Proof.
+  intros.
+  split; intros.
+  + assert (a = a0 <-> a0 = a) by (split; intros; congruence).
+    tauto.
+  + subst; auto.
 Qed.
 
 Definition app_same_set {A: Type} {P Q: Ensemble A} (H: Same_set P Q) (x: A): P x <-> Q x := proj1 (Same_set_spec A P Q) H x.
