@@ -128,19 +128,19 @@ Proof.
   forward. (* r = x -> r; *)
   forward. (* x -> d = 1; *)
 
-  pose proof Graph_gen_true_mark1 g x _ _ H_GAMMA_g gx_vvalid.
+  pose proof Graph_vgen_true_mark1 g x _ _ H_GAMMA_g gx_vvalid.
   apply semax_pre with
    (PROP  ()
     LOCAL (temp _r (pointer_val_val r);
            temp _l (pointer_val_val l);
            temp _x (pointer_val_val x))
-    SEP (dag sh x (Graph_gen g x true))).
+    SEP (dag sh x (Graph_vgen g x true))).
   Focus 1. {
     erewrite root_update_unfold by eauto.
     entailer!.
   } Unfocus.
 
-  forget (Graph_gen g x true) as g1.
+  forget (Graph_vgen g x true) as g1.
 
   localize
    (PROP  (weak_valid g1 l)

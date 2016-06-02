@@ -121,8 +121,11 @@ Instance RGF (G: Graph): ReachableFiniteGraph G.
   + apply (FiniteGraph_EnumCovered G), finGraph.
 Defined.
 
-Definition Graph_gen (G: Graph) (x: addr) (d: DV) : Graph :=
+Definition Graph_vgen (G: Graph) (x: addr) (d: DV) : Graph :=
   generalgraph_vgen G x d (sound_gg G).
+
+Definition Graph_egen (G: Graph) (e: addr * LR) (d: DE) : Graph :=
+  generalgraph_egen G e d (sound_gg G).
 
 Definition empty_BiGraph: BiGraph (empty_pregraph (fun e => fst e) (fun e => null)) (fun x => (x, L)) (fun x => (x, R)).
   constructor.
@@ -153,6 +156,42 @@ Definition empty_sound: BiMaFin (empty_pregraph (fun e => fst e) (fun e => null)
 
 Definition empty_Graph (default_v: DV) (default_e: DE) : Graph :=
   Build_GeneralGraph _ _ _ (empty_labeledgraph (fun e => fst e) (fun e => null) default_v default_e) empty_sound.
+
+Definition is_BiMaFin (g: LGraph): Prop := exists X: BiMaFin (pg_lg g), True.
+
+Definition is_guarded_BiMaFin (PV: addr -> Prop) (PE: addr * LR -> Prop) (g: LGraph): Prop := is_BiMaFin (gpredicate_sub_labeledgraph PV PE g).
+
+Definition left_right_sound: forall (g: Graph) (x: addr) lr,
+  vvalid g x ->
+  src g (x, lr) = x.
+Proof.
+  intros.
+  destruct lr.
+  + apply (@left_sound _ _ _ _ _ _ g (biGraph _) x); auto.
+  + apply (@right_sound _ _ _ _ _ _ g (biGraph _) x); auto.
+Qed.
+
+Definition left_right_sound0: forall (g: Graph) (x: addr) lr,
+  evalid g (x, lr) ->
+  src g (x, lr) = x.
+Proof.
+  intros.
+  destruct lr.
+  + destruct (@valid_graph _ _ _ _ g _ (maGraph _) (x, L) H) as [? _].
+    pose proof (@only_two_edges _ _ _ _ g _ _ (biGraph _) _ (x, L) H0).
+    simpl in H1.
+    destruct H1 as [? _].
+    specialize (H1 (conj eq_refl H)).
+    destruct H1; inversion H1.
+    rewrite <- ! H3; auto.
+  + destruct (@valid_graph _ _ _ _ g _ (maGraph _) (x, R) H) as [? _].
+    pose proof (@only_two_edges _ _ _ _ g _ _ (biGraph _) _ (x, R) H0).
+    simpl in H1.
+    destruct H1 as [? _].
+    specialize (H1 (conj eq_refl H)).
+    destruct H1; inversion H1.
+    rewrite <- ! H3; auto.
+Qed.
 
 Lemma weak_valid_vvalid_dec: forall (g : Graph) (x: addr),
   weak_valid g x -> Decidable (vvalid g x).
@@ -215,9 +254,9 @@ Ltac s_rewrite p :=
   rewrite H;
   clear H.
 
-Lemma Graph_gen_vgamma: forall (G: Graph) (x: addr) (d d': DV) l r,
+Lemma Graph_vgen_vgamma: forall (G: Graph) (x: addr) (d d': DV) l r,
   vgamma G x = (d, l, r) ->
-  vgamma (Graph_gen G x d') x = (d', l, r).
+  vgamma (Graph_vgen G x d') x = (d', l, r).
 Proof.
   intros.
   simpl in H |- *.
@@ -469,6 +508,31 @@ Proof.
     auto.
 Qed.
 
+Instance BiMaFin_Normal: NormalGeneralGraph (fun g: LGraph => BiMaFin g).
+Proof.
+  constructor.
+  + intros.
+    destruct X as [?H ?H ?H].
+    apply (bi_graph_si _ _ (proj1 H)) in H0.
+    apply (math_graph_si _ _ (proj1 H)) in H1.
+    apply (finite_graph_si _ _ (proj1 H)) in H2.
+    constructor; auto.
+  + intros.
+    destruct X as [?H ?H ?H].
+    destruct X0 as [?H ?H ?H].
+    constructor.
+    - eapply bi_graph_join; eauto.
+    - eapply math_graph_join; eauto.
+    - eapply finite_graph_join; eauto.
+Qed.
+
+Lemma Graph_is_BiMaFin: forall (g: Graph), is_BiMaFin g.
+Proof.
+  intros.
+  destruct g.
+  exists sound_gg; auto.
+Qed.
+
 (*********************************************************
 
 Spatial Facts Part
@@ -490,12 +554,12 @@ Qed.
 Lemma va_reachable_dag_update_unfold: forall (g: Graph) x d l r v,
   vvalid g x ->
   vgamma g x = (d, l, r) ->
-  reachable_dag_vertices_at x (Graph_gen g x v) = vertex_at x (v, l, r) * reachable_through_dag_vertices_at (l :: r :: nil) g.
+  reachable_dag_vertices_at x (Graph_vgen g x v) = vertex_at x (v, l, r) * reachable_through_dag_vertices_at (l :: r :: nil) g.
 Proof.
   intros.
   apply va_reachable_dag_update_unfold; auto.
   + eapply gamma_step_list; eauto.
-  + eapply Graph_gen_vgamma; eauto.
+  + eapply Graph_vgen_vgamma; eauto.
   + unfold Included, Ensembles.In; intros.
     apply vvalid_vguard.
     apply reachable_through_set_foot_valid in H1; auto.
@@ -515,11 +579,11 @@ Proof. intros; apply va_reachable_root_stable_ramify; auto. Qed.
 Lemma va_reachable_root_update_ramify: forall (g: Graph) (x: addr) (lx: DV) (gx gx': DV * addr * addr),
   vvalid g x ->
   vgamma g x = gx ->
-  vgamma (Graph_gen g x lx) x = gx' ->
+  vgamma (Graph_vgen g x lx) x = gx' ->
   @derives pred _
     (reachable_vertices_at x g)
     (vertex_at x gx *
-      (vertex_at x gx' -* reachable_vertices_at x (Graph_gen g x lx))).
+      (vertex_at x gx' -* reachable_vertices_at x (Graph_vgen g x lx))).
 Proof.
   intros.
   apply va_reachable_root_update_ramify; auto.
@@ -533,6 +597,35 @@ Proof.
     rewrite Intersection_spec in H2.
     destruct H2 as [? _].
     apply reachable_foot_valid in H2; auto.
+Qed.
+
+Lemma is_BiMaFin_si: forall (g1 g2: LGraph),
+  g1 ~=~ g2 ->
+  is_BiMaFin g1 ->
+  is_BiMaFin g2.
+Proof.
+  intros.
+  destruct H0 as [[?H ?H ?H] _].
+  apply (bi_graph_si _ _ H) in H0.
+  apply (math_graph_si _ _ H) in H1.
+  apply (finite_graph_si _ _ H) in H2.
+  constructor; constructor; auto.
+Qed.
+
+(*
+TODO: maybe as a general lemma for normal_general_graph
+Lemma is_guarded_BiMaFin_si: forall (g1 g2: LGraph),
+*)
+
+Lemma is_BiMaFin_LGraph_Graph: forall (g: LGraph) (P: LGraph -> pred),
+  is_BiMaFin g ->
+  P g |-- EX g: Graph, P g.
+Proof.
+  intros.
+  destruct H as [X _].
+  apply (exp_right (Build_GeneralGraph _ _ BiMaFin g X)).
+  simpl.
+  auto.
 Qed.
 
 (*********************************************************

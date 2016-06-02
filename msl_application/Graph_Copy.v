@@ -341,6 +341,32 @@ Proof.
   destruct H7 as [? [? ?]]; split; [| split]; auto.
 Qed.
 
+Lemma vcopy1_edge_copy_list_weak_copy_extended_copy: forall {P: Graph -> Type} {NP: NormalGeneralGraph P},
+  forall root es es_done e0 es_later (g1 g2 g3 g2' g3' g4 g4'': Graph) (x x0: V),
+  vvalid g1 root ->
+  WeakMarkGraph.unmarked g1 root ->
+  es = es_done ++ e0 :: es_later ->
+  (forall e, In e es <-> out_edges g1 root e) ->
+  NoDup es ->
+  vcopy1 root g1 g2 g2' ->
+  edge_copy_list g1 es_done (g2, g2') (g3, g3') ->
+  x = dst g1 e0 ->
+  copy (dst g1 e0) g3 g4 g4'' ->
+  disjointed_guard (vvalid g4'') (vvalid g3') (evalid g4'') (evalid g3') ->
+  (exists Pg3': P (gpredicate_sub_labeledgraph
+                    (fun v' => LocalGraphCopy.vmap g3 root <> v')
+                    (fun e' => ~ In e' (map (LocalGraphCopy.emap g3) es_done)) g3'), True) ->
+  (exists Pg4'': P g4'', True) ->
+  exists g4': Graph,
+  extended_copy (dst g1 e0) (g3, g3') (g4, g4') /\
+  (exists Pg4': P (gpredicate_sub_labeledgraph
+                    (fun v' => v' <> LocalGraphCopy.vmap g4 root)
+                    (fun e' => ~ In e' (map (LocalGraphCopy.emap g4) es_done)) g4'), True) /\
+  guarded_labeled_graph_equiv (vvalid g4'') (evalid g4'') g4'' g4' /\
+  guarded_labeled_graph_equiv (vvalid g3') (evalid g3') g3' g4'.
+Proof.
+Admitted.
+
 End SpatialGraph_Copy.
 
 

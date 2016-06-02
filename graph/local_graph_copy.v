@@ -55,7 +55,7 @@ Definition ecopy1 e (p1 p2: Graph * Graph') :=
   g1 ~=~ g2 /\
   pointwise_relation V eq (vmap g1) (vmap g2) /\
   guarded_pointwise_relation (Complement _ (eq e)) eq (emap g1) (emap g2) /\
-  (forall e0, e <> e0 -> emap g2 e <> emap g2 e0) /\
+  True /\
   pregraph_join (Empty_set _) (eq (emap g2 e)) g1' g2' /\
   vmap g2 (src g2 e) = src g2' (emap g2 e) /\
   vmap g2 (dst g2 e) = dst g2' (emap g2 e).
@@ -141,6 +141,68 @@ Proof.
   tauto.
 Qed.
 Global Existing Instance extended_copy_proper'.
+
+Lemma labeledgraph_vgen_vcopy1: forall (G: Graph) x x0,
+  vcopy1 x G (labeledgraph_vgen G x x0) (single_vertex_labeledgraph (vmap (labeledgraph_vgen G x x0) x) default_DV' default_DE') /\ co_vertex x0 = vmap (labeledgraph_vgen G x x0) x.
+Proof.
+  intros.
+  split.
+  + split; [| split; [| split]].
+    - reflexivity.
+    - apply guarded_pointwise_relation_spec; intros.
+      simpl.
+      unfold labeledgraph_vgen, update_vlabel, vmap; simpl.
+      destruct_eq_dec x x1; [congruence | auto].
+    - apply guarded_pointwise_relation_spec; intros.
+      auto.
+    - reflexivity.
+  + simpl.
+    unfold labeledgraph_vgen, update_vlabel, vmap; simpl.
+    destruct_eq_dec x x; [auto | congruence].
+Qed.
+
+Lemma labeledgraph_egen_ecopy1: forall (g1: Graph) (g1': Graph') e e',
+  (forall e0, evalid g1 e0 -> e0 <> e -> emap g1 e0 <> co_edge e') ->
+  ~ evalid g1' (co_edge e') ->
+  ecopy1 e (g1, g1') (labeledgraph_egen g1 e e', labeledgraph_add_edge g1' (co_edge e') (vmap g1 (src g1 e)) (vmap g1 (dst g1 e)) default_DE').
+Proof.
+  intros ? ? ? ? HH HH0.
+  split; [| split; [| split; [| split; [| split; [| split]]]]].
+  + reflexivity.
+  + intros v; reflexivity.
+  + rewrite guarded_pointwise_relation_spec; intros.
+    unfold emap, labeledgraph_egen, update_elabel; simpl.
+    destruct_eq_dec e x; auto.
+    unfold Complement, Ensembles.In in H; congruence.
+  + intros.
+    unfold emap, labeledgraph_egen, update_elabel; simpl.
+    destruct_eq_dec e e; [| congruence].
+    destruct_eq_dec e e0; auto.
+    intro; apply (HH e0 H); [intro; apply H0 |]; symmetry; auto.
+  + split; [| split; [| split]]; simpl.
+    - apply Prop_join_Empty.
+    - unfold emap, labeledgraph_egen, update_elabel, add_evalid; simpl.
+      destruct_eq_dec e e; [| congruence].
+      apply Prop_join_x1; auto.
+    - unfold emap, labeledgraph_egen, update_src, add_evalid; simpl.
+      intros.
+      destruct_eq_dec (co_edge e') e0; auto.
+      subst; exfalso; auto.
+    - unfold emap, labeledgraph_egen, update_dst, add_evalid; simpl.
+      intros.
+      destruct_eq_dec (co_edge e') e0; auto.
+      subst; exfalso; auto.
+  + simpl.
+    unfold vmap, emap, labeledgraph_egen, update_src, update_elabel; simpl.
+    destruct_eq_dec e e; [| congruence].
+    destruct_eq_dec (co_edge e') (co_edge e'); [| congruence].
+    auto.
+  + simpl.
+    unfold vmap, emap, labeledgraph_egen, update_dst, update_elabel; simpl.
+    destruct_eq_dec e e; [| congruence].
+    destruct_eq_dec (co_edge e') (co_edge e'); [| congruence].
+    auto.
+Qed.
 
 Lemma triple_vcopy1: forall (g1 g2: Graph) (g2': Graph') root,
   vvalid g1 root ->
@@ -1619,6 +1681,53 @@ Proof.
   apply (guarded_morphism_reachable COPY_bij); [rewrite (weak_edge_prop_si _ _ _ COPY_si); apply Included_refl |].
   rewrite <- COPY_si at 1.
   rewrite <- (reachable_by_reachable_by_equiv _ _ _ _); auto.
+Qed.
+
+Lemma copy_vvalid_weak_eq: forall (g1 g2: Graph) (g2'': Graph') (M: V -> Prop) x x0,
+  ~ vvalid g1 x /\ ~ vvalid g2'' x0 \/ x0 = vmap g2 x ->
+  copy M x g1 g2 g2'' ->
+  Same_set (vvalid g2'') (reachable g2'' x0).
+Proof.
+  intros.
+  destruct H; [| subst x0; eapply copy_vvalid_eq; eauto].
+  destruct H0 as [COPY_si [COPY_gprv [COPY_gpre [COPY_vvalid [COPY_evalid [COPY_consi COPY_bij]]]]]].
+  rewrite COPY_vvalid.
+  destruct H.
+  assert (Same_set (reachable_by g1 x (Complement V M)) (Empty_set _)).
+  Focus 1. {
+    rewrite Same_set_spec; intros v; rewrite Empty_set_spec.
+    pose proof reachable_by_head_valid g1 x v (Complement V M); tauto.
+  } Unfocus.
+  assert (Same_set (reachable g2'' x0) (Empty_set _)).
+  Focus 1. {
+    rewrite Same_set_spec; intros v; rewrite Empty_set_spec.
+    pose proof reachable_head_valid g2'' x0 v; tauto.
+  } Unfocus.
+  rewrite H1, H2.
+  apply image_Empty.
+Qed.
+
+Lemma copy_evalid_weak_eq: forall (g1 g2: Graph) (g2'': Graph') (M: V -> Prop) x x0,
+  ~ vvalid g1 x /\ ~ vvalid g2'' x0 \/ x0 = vmap g2 x ->
+  copy M x g1 g2 g2'' ->
+  Same_set (evalid g2'') (Intersection _ (weak_edge_prop (reachable g2'' x0) g2'') (evalid g2'')).
+  intros.
+  destruct H; [| subst x0; eapply copy_evalid_eq; eauto].
+  destruct H0 as [COPY_si [COPY_gprv [COPY_gpre [COPY_vvalid [COPY_evalid [COPY_consi COPY_bij]]]]]].
+  rewrite COPY_evalid.
+  assert (Same_set (reachable_by g1 x (Complement V M)) (Empty_set _)).
+  Focus 1. {
+    rewrite Same_set_spec; intros v; rewrite Empty_set_spec.
+    pose proof reachable_by_head_valid g1 x v (Complement V M); tauto.
+  } Unfocus.
+  assert (Same_set (reachable g2'' x0) (Empty_set _)).
+  Focus 1. {
+    rewrite Same_set_spec; intros v; rewrite Empty_set_spec.
+    pose proof reachable_head_valid g2'' x0 v; tauto.
+  } Unfocus.
+  rewrite H0, H1, weak_edge_prop_Empty, !Intersection_Empty_left.
+  rewrite image_Empty, Intersection_Empty_right.
+  reflexivity.
 Qed.
 
 Lemma copy_extend_copy: forall (g g2 g3: Graph) (g2' g': Graph') root es es_done e0 es_later (M: V -> Prop),

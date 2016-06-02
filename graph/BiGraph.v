@@ -1,5 +1,5 @@
 Require Import RamifyCoq.lib.Coqlib.
-Require Import RamifyCoq.lib.EnumEnsembles.
+Require Import RamifyCoq.lib.Ensembles_ext.
 Require Import RamifyCoq.lib.EquivDec_ext.
 Require Import RamifyCoq.lib.List_ext.
 Require Import RamifyCoq.lib.relation_list.
@@ -106,10 +106,8 @@ Qed.
 
 Require Import RamifyCoq.graph.graph_gen.
 
-Context {left_edge right_edge: V -> E}.
-
 Lemma gen_dst_preserve_bi: forall (g: PreGraph V E) e t,
-    BiGraph g left_edge right_edge -> BiGraph (pregraph_gen_dst g e t) left_edge right_edge.
+    BiGraph g left_out_edge right_out_edge -> BiGraph (pregraph_gen_dst g e t) left_out_edge right_out_edge.
 Proof.
   intros. apply Build_BiGraph; intros.
   + apply bi_consist; auto.
@@ -125,9 +123,9 @@ Lemma bi_graph_join: forall (g: PreGraph V E) (PV1 PV2 PV: V -> Prop) (PE1 PE2 P
   Prop_join PE1 PE2 PE ->
   MathGraph (gpredicate_subgraph PV1 PE1 g) is_null ->
   MathGraph (gpredicate_subgraph PV2 PE2 g) is_null ->
-  BiGraph (gpredicate_subgraph PV1 PE1 g) left_edge right_edge ->
-  BiGraph (gpredicate_subgraph PV2 PE2 g) left_edge right_edge ->
-  BiGraph (gpredicate_subgraph PV PE g) left_edge right_edge.
+  BiGraph (gpredicate_subgraph PV1 PE1 g) left_out_edge right_out_edge ->
+  BiGraph (gpredicate_subgraph PV2 PE2 g) left_out_edge right_out_edge ->
+  BiGraph (gpredicate_subgraph PV PE g) left_out_edge right_out_edge.
 Proof.
   intros.
   constructor.

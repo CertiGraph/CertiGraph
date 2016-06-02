@@ -162,19 +162,19 @@ Proof.
     LOCAL (temp _r (pointer_val_val r);
            temp _l (pointer_val_val l);
            temp _x (pointer_val_val x))
-    SEP (graph sh x (Graph_gen g x true))).
+    SEP (graph sh x (Graph_vgen g x true))).
   Grab Existential Variables.
   Focus 2. {
     simplify_ramif.
     apply (@root_update_ramify _ (sSGG_VST sh) g x _ (false, l, r) (true, l, r)); auto.
-    eapply Graph_gen_vgamma; eauto.
+    eapply Graph_vgen_vgamma; eauto.
   } Unfocus.
   (* unlocalize *)
 
   unfold semax_ram. (* should not need this *)
 
-  pose proof Graph_gen_true_mark1 g x _ _ H_GAMMA_g gx_vvalid.
-  forget (Graph_gen g x true) as g1.
+  pose proof Graph_vgen_true_mark1 g x _ _ H_GAMMA_g gx_vvalid.
+  forget (Graph_vgen g x true) as g1.
 
   localize
    (PROP  (weak_valid g1 l)

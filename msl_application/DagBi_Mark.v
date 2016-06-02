@@ -50,7 +50,7 @@ Proof. apply va_reachable_dag_unfold. Qed.
 Lemma root_update_unfold: forall (g: Graph) x d l r v,
   vvalid g x ->
   vgamma g x = (d, l, r) ->
-  reachable_dag_vertices_at x (Graph_gen g x v) = vertex_at x (v, l, r) * reachable_through_dag_vertices_at (l :: r :: nil) g.
+  reachable_dag_vertices_at x (Graph_vgen g x v) = vertex_at x (v, l, r) * reachable_through_dag_vertices_at (l :: r :: nil) g.
 Proof. intros. eapply va_reachable_dag_update_unfold; eauto. Qed.
 
 (* TODO: More modularized way to prove these two RamificationPremise? 
