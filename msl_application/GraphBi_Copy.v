@@ -341,6 +341,34 @@ Proof.
     destruct H; auto.
 Qed.
 
+Lemma is_BiMaFin_not_evalid: forall (g1': @LGraph pSGG_Bi (@addr pSGG_Bi) (prod (@addr pSGG_Bi) LR))x0 es0 e0,
+  is_guarded_BiMaFin (fun v => x0 <> v) (fun e => ~ In e es0) g1' ->
+  vvalid g1' x0 ->
+  (forall e, In e es0 -> fst e = x0) ->
+  fst e0 = x0 ->
+  ~ In e0 es0 ->
+  ~ evalid g1' e0.
+Proof.
+  intros.
+  intro.
+  destruct H as [X ?].
+  set (G := (Build_GeneralGraph _ _ (fun g => BiMaFin (pg_lg g)) _ X: Graph)).
+  assert (evalid G e0).
+  Focus 1. {
+    simpl.
+    rewrite Intersection_spec; auto.
+  } Unfocus.
+  pose proof @valid_graph _ _ _ _ G _ (maGraph _) _ H5.
+  destruct H6.
+  destruct e0.
+  simpl in H2; subst a.
+  rewrite (left_right_sound0 _ _ _ H5) in H6.
+  simpl in H6.
+  rewrite Intersection_spec in H6.
+  destruct H6.
+  auto.
+Qed.
+
 Lemma labeledgraph_add_edge_ecopy1_left: forall (g g1 g2: Graph) (g1' g2': LGraph) (x l r x0 l0: addr),
   vvalid g x ->
   vgamma g x = (null, l, r) ->
@@ -348,6 +376,8 @@ Lemma labeledgraph_add_edge_ecopy1_left: forall (g g1 g2: Graph) (g1' g2': LGrap
   extended_copy (dst g (x, L)) (g1: LGraph, g1') (g2: LGraph, g2') ->
   x0 = LocalGraphCopy.vmap g1 x ->
   l = null /\ l0 = null \/ l0 = LocalGraphCopy.vmap g2 l ->
+  is_guarded_BiMaFin (fun v => x0 <> v) (fun e => ~ In e nil) g2' ->
+  x0 <> null ->
   let g3 := Graph_egen g2 (x, L) (x0, L): Graph in
   let g3' := labeledgraph_add_edge g2' (x0, L) x0 l0 (null, L): LGraph in
   ecopy1 (x, L) (g2: LGraph, g2') (g3: LGraph, g3').
@@ -357,74 +387,89 @@ Proof.
   split; [| split].
   + reflexivity.
   + apply WeakMarkGraph.labeledgraph_egen_do_nothing.
-  + destruct H4; [admit |].
-    pose proof LocalGraphCopy.labeledgraph_egen_ecopy1 g2 g2' (x, L) (x0, L).
-    rewrite !left_right_sound in H5 by admit.
-    replace (dst g2 (x, L)) with l in H5 by admit.
-    replace (@LocalGraphCopy.vmap (@addr pSGG_Bi)
-                  (prod (@addr pSGG_Bi) LR) (@addr pSGG_Bi)
-                  (prod (@addr pSGG_Bi) LR)
-                  (@SGBA_VE (@addr pSGG_Bi) (prod (@addr pSGG_Bi) LR)
-                     (@SGBA pSGG_Bi))
-                  (@SGBA_EE (@addr pSGG_Bi) (prod (@addr pSGG_Bi) LR)
-                     (@SGBA pSGG_Bi)) (@addr pSGG_Bi)
-                  (prod (@addr pSGG_Bi) LR) (@addr pSGG_Bi)
-                  (prod (@addr pSGG_Bi) LR)
-                  (@GMS (@addr pSGG_Bi) (prod (@addr pSGG_Bi) LR) CCS)
-                  (@Graph_LGraph pSGG_Bi (@addr pSGG_Bi)
-                     (prod (@addr pSGG_Bi) LR) g2) x)
-      with (@LocalGraphCopy.vmap (@addr pSGG_Bi)
-                  (prod (@addr pSGG_Bi) LR) (@addr pSGG_Bi)
-                  (prod (@addr pSGG_Bi) LR)
-                  (@SGBA_VE (@addr pSGG_Bi) (prod (@addr pSGG_Bi) LR)
-                     (@SGBA pSGG_Bi))
-                  (@SGBA_EE (@addr pSGG_Bi) (prod (@addr pSGG_Bi) LR)
-                     (@SGBA pSGG_Bi)) (@addr pSGG_Bi)
-                  (prod (@addr pSGG_Bi) LR) (@addr pSGG_Bi)
-                  (prod (@addr pSGG_Bi) LR)
-                  (@GMS (@addr pSGG_Bi) (prod (@addr pSGG_Bi) LR) CCS)
-                  (@Graph_LGraph pSGG_Bi (@addr pSGG_Bi)
-                     (prod (@addr pSGG_Bi) LR) g1) x) in H5 by admit.
-    rewrite <- H3, <- H4 in H5.
-    apply H5.
-split; [| split; [| split; [| split; [| split; [| split]]]]].
-    - reflexivity.
-    - intros v; reflexivity.
-    - rewrite guarded_pointwise_relation_spec; intros.
-      simpl.
-      unfold update_elabel; simpl.
-      destruct_eq_dec (x, L) x1; auto.
-      unfold Complement, Ensembles.In in H6; congruence.
-    - intros.
-      simpl.
-      unfold update_elabel.
-      destruct_eq_dec (x, L) (x, L); [| congruence].
-      destruct_eq_dec (x, L) e0; auto.
-      change (elabel (lg_gg g2) e0) with (LocalGraphCopy.emap g2 e0).
-      (* assert (evalid g2' (LocalGraphCopy.emap g2 e0)); [| intro HH; rewrite HH in *; tauto]. *)
-      Print LocalGraphCopy.ecopy1.
-      admit.
-    - split; [| split; [| split]]; simpl.
-      * apply Prop_join_Empty.
-      * unfold update_elabel, add_evalid; simpl.
-        destruct_eq_dec (x, L) (x, L); [| congruence].
-        apply Prop_join_x1.
-        admit.
-      * unfold update_src, add_evalid; simpl.
-        intros. admit.
-      * admit.
-    - simpl.
-      unfold update_src, update_elabel; simpl.
-      destruct_eq_dec (x, L) (x, L); [| congruence].
-      destruct_eq_dec (x0, L) (x0, L); [| congruence].
-      admit.
-    - simpl.
-      unfold update_dst, update_elabel; simpl.
-      destruct_eq_dec (x, L) (x, L); [| congruence].
-      destruct_eq_dec (x0, L) (x0, L); [| congruence].
-      admit.
+  + destruct H4.
+    - pose proof LocalGraphCopy.labeledgraph_egen_ecopy1_not_vvalid g2 g2' (x, L) (x0, L) x0 l0.
+      apply H7; clear H7.
+      * simpl.
+        eapply is_BiMaFin_not_evalid; eauto.
+        Focus 1. {
+          destruct H1 as [_ [_ ?]], H2 as [_ [_ ?]].
+          eapply LocalGraphCopy.extended_copy_vvalid_mono in H2; [exact H2 |].
+          eapply LocalGraphCopy.vcopy1_copied_root_valid in H1; auto.
+          subst x0; auto.
+        } Unfocus.
+        Focus 1. {
+          intros ? [].
+        } Unfocus.
+      * rewrite left_right_sound.
+        Focus 1. {
+          destruct H1 as [_ [? _]], H2 as [_ [_ ?]].
+          subst x0.
+          destruct H2 as [_ [? _]].
+          rewrite guarded_pointwise_relation_spec in H2.
+          apply H2.
+          unfold Complement, Ensembles.In; intro.
+          apply reachable_by_foot_prop in H3.
+          apply H3.
+          destruct H1 as [_ [? _]]; auto.
+        } Unfocus.
+        Focus 1. {
+          destruct H1 as [? _], H2 as [? _].
+          rewrite <- (proj1 H2), <- (proj1 H1); auto.
+        } Unfocus.
+      * destruct H4.
+        subst l0.
+        destruct H5 as [[? ? ?] _].
+        pose proof @valid_not_null _ _ _ _ (gpredicate_sub_labeledgraph (fun v : addr => x0 <> v)
+            (fun e : addr * LR => ~ In e nil) g2') _ ma null.
+        intro.
+        apply H5; [| reflexivity].
+        simpl.
+        rewrite Intersection_spec; split; auto.
+      * inversion H0.
+        destruct H1 as [? _], H2 as [? _].
+        rewrite <- H1 in H2.
+        rewrite <- (si_dst1 _ _ _ H2); [| apply (@left_valid _ _ _ _ _ _ g (biGraph _)); auto].
+        destruct H4; rewrite H9; subst l.
+        intro.
+        apply (@valid_not_null _ _ _ _ g2 _ (maGraph _) null); auto; reflexivity.
+    - pose proof LocalGraphCopy.labeledgraph_egen_ecopy1 g2 g2' (x, L) (x0, L) x0 l0.
+      apply H7; clear H7.
+      * simpl.
+        eapply is_BiMaFin_not_evalid; eauto.
+        Focus 1. {
+          destruct H1 as [_ [_ ?]], H2 as [_ [_ ?]].
+          eapply LocalGraphCopy.extended_copy_vvalid_mono in H2; [exact H2 |].
+          eapply LocalGraphCopy.vcopy1_copied_root_valid in H1; auto.
+          subst x0; auto.
+        } Unfocus.
+        Focus 1. {
+          intros ? [].
+        } Unfocus.
+      * rewrite left_right_sound.
+        Focus 1. {
+          destruct H1 as [_ [? _]], H2 as [_ [_ ?]].
+          subst x0.
+          destruct H2 as [_ [? _]].
+          rewrite guarded_pointwise_relation_spec in H2.
+          apply H2.
+          unfold Complement, Ensembles.In; intro.
+          apply reachable_by_foot_prop in H3.
+          apply H3.
+          destruct H1 as [_ [? _]]; auto.
+        } Unfocus.
+        Focus 1. {
+          destruct H1 as [? _], H2 as [? _].
+          rewrite <- (proj1 H2), <- (proj1 H1); auto.
+        } Unfocus.
+      * subst l0.
+        f_equal.
+        inversion H0.
+        destruct H1 as [? _], H2 as [? _].
+        rewrite <- H1 in H2.
+        rewrite (si_dst1 _ _ _ H2); auto.
+        apply (@left_valid _ _ _ _ _ _ g (biGraph _)); auto.
 Qed.
-
 
 Lemma extend_copy_left: forall (g g1 g2: Graph) (g1': LGraph) (g2'': Graph) (x l r x0 l0: addr) d0,
   vvalid g x ->
@@ -485,7 +530,8 @@ Proof.
   apply andp_right; [apply prop_right; split | rewrite sepcon_assoc; apply sepcon_derives; auto].
   + unfold edge_copy.
     split_relation_list ((g2: LGraph, g2' : LGraph) :: nil); auto.
-    
+    apply (labeledgraph_add_edge_ecopy1_left g g1 g2 g1' g2' x l r x0 l0); auto.
+    - subst x0; exact H9.
 (*
   intros.
   pose proof WeakMarkGraph.triple_mark1 x g g g1 as HH1.
