@@ -369,6 +369,34 @@ Proof.
   split; intros; repeat split; try tauto; auto; firstorder. (* slow *)
 Qed.
 
+Lemma pregraph_join_vvalid_mono: forall PV PE G1 G2,
+  pregraph_join PV PE G1 G2 ->
+  forall v: V,
+  vvalid G1 v ->
+  vvalid G2 v.
+Proof.
+  intros.
+  rewrite pregraph_join_iff in H.
+  destruct H as [? _].
+  destruct H.
+  rewrite H.
+  auto.
+Qed.
+
+Lemma pregraph_join_vealid_mono: forall PV PE G1 G2,
+  pregraph_join PV PE G1 G2 ->
+  forall e: E,
+  evalid G1 e ->
+  evalid G2 e.
+Proof.
+  intros.
+  rewrite pregraph_join_iff in H.
+  destruct H as [_ [? _]].
+  destruct H.
+  rewrite H.
+  auto.
+Qed.
+
 End ExpandPartialGraph.
 
 
