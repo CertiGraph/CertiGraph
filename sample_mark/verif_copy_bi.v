@@ -26,7 +26,7 @@ Local Identity Coercion SGraph_SpatialGraph: SGraph >-> SpatialGraph.
 Local Coercion pg_lg: LabeledGraph >-> PreGraph.
 
 Notation graph sh x g := (@reachable_vertices_at _ _ _ _ _ _ _ _ _ (@SGP pSGG_VST addr (addr * LR) (sSGG_VST sh)) _ x g).
-Notation holegraph sh x g := (@vertices_at _ _ _ _ _ _ (@SGP pSGG_VST addr (addr * LR) (sSGG_VST sh)) _ (Ensembles.Intersection _ (@vvalid addr (addr * LR) _ _ g) (fun u => x <> u)) g).
+Notation holegraph sh x g := (@vertices_at _ _ _ _ _ _ (@SGP pSGG_VST addr (addr * LR) (sSGG_VST sh)) _ (Ensembles.Intersection _ (@vvalid addr (addr * LR) _ _ g) (fun u => x <> u)) (LGraph_SGraph g)).
 Notation Graph := (@Graph pSGG_VST (@addr pSGG_VST) (addr * LR)).
 Notation vmap := (@LocalGraphCopy.vmap addr (addr * LR) addr (addr * LR) _ _ _ _ _ _ (@GMS _ _ CCS)).
 Existing Instances MGS biGraph maGraph finGraph RGF.
@@ -181,6 +181,8 @@ Proof.
   forward_call sh. (* x0 = (struct Node * ) mallocN (sizeof (struct Node)); *)
 
   Intros x0.
+  assert_PROP (x0 <> null) as x0_not_null. entailer!. destruct H3 as [? _]. apply H1.
+
   localize
    (PROP  ()
     LOCAL (temp _x (pointer_val_val x); temp _x0 (pointer_val_val x0))
@@ -234,12 +236,7 @@ Proof.
 
   unfold semax_ram. (* should not need this *)
 
-  assert_PROP (x0 <> null).
-  Focus 1. {
-    entailer!.
-    apply field_compatible_isptr in H5; inversion H5.
-  } Unfocus.
-  destruct (not_null_copy1 g x x0 _ _ H_GAMMA_g gx_vvalid H0) as [? [? ?]].
+  destruct (not_null_copy1 g x x0 _ _ H_GAMMA_g gx_vvalid x0_not_null) as [H_vopy1 [H_x0 BiMaFin_g1']].
   forget (Graph_vgen g x x0) as g1.
   forget (initial_copied_Graph x x0 g) as g1'.
 
@@ -257,9 +254,11 @@ Proof.
   | semax_ram_call_body (sh, g1, l)
   | semax_ram_after_call; intros [[l0 g2] g2''];
     repeat (apply ram_extract_PROP; intro) ].
+
   (* l0 = copy(l); *)
 
-  cbv [fst snd] in H6, H7 |- *.
+  rename H2 into H_copy, H3 into H_l0.
+  cbv [fst snd] in H_copy, H_l0 |- *.
   unlocalize
    (PROP  ()
     LOCAL (temp _r (pointer_val_val r);
@@ -271,7 +270,7 @@ Proof.
          holegraph sh x0 g1';
          graph sh x g2;
          graph sh l0 g2''))
-  using [H6; H7]%RamAssu
+  using [H_copy; H_l0]%RamAssu
   binding [l0; g2; g2'']%RamBind.
   Grab Existential Variables.
   Focus 2. {
@@ -281,27 +280,33 @@ Proof.
   (* unlocalize *)
 
   unfold semax_ram. (* should not need this *)
-  forward. (* x0 -> l = l0; *)
-  autorewrite with norm. (* TODO: should not need this *)
-
   gather_SEP 0 1 3.
   replace_SEP 0
       (EX g2': LGraph,
-       !! (edge_copy g (x, L) (g1: LGraph, g1') (Graph_egen g2 (x, L) (x0, L): LGraph, g2') /\
-           is_guarded_BiMaFin (fun v => x0 <> v) (fun e => ~ In e ((x0, L) :: nil)) g2') &&
+       !! (extended_copy l (g1: LGraph, g1') (g2: LGraph, g2') /\
+           is_guarded_BiMaFin (fun v => x0 <> v) (fun e => ~ In e nil) g2') &&
           (data_at sh node_type
-            (pointer_val_val null, (pointer_val_val l0, pointer_val_val null)) (pointer_val_val x0) *
+            (pointer_val_val null, (pointer_val_val null, pointer_val_val null)) (pointer_val_val x0) *
            holegraph sh x0 g2')).
   Focus 1. {
-    Opaque Graph_egen In.
     entailer.
-    Transparent Graph_egen In.
-    apply (@extend_copy_left _ (sSGG_VST sh) g g1 g2 g1' g2'' (ValidPointer b i) l r (vmap g1 (ValidPointer b i)) l0 (null, l0, null)); auto.
+    apply (@extend_copy_left _ (sSGG_VST sh) g g1 g2 g1' g2'' (ValidPointer b i) l r (vmap g1 (ValidPointer b i)) l0 (null, null, null)); auto.
   } Unfocus.
+  Opaque extended_copy.
   rewrite extract_exists_in_SEP. (* should be able to use tactic directly *)
-  forget (Graph_egen g2 (x, L) (x0, L)) as g3.
-  Intros g2'.
-  clear g2'' H6 g2 l0 H7.
+  Transparent extended_copy.
+  clear g2'' H_copy BiMaFin_g1'.
+  Intros g2'. rename H2 into H_copy_left, H3 into BiMaFin_g2'.
+
+  forward. (* x0 -> l = l0; *)
+  autorewrite with norm. (* TODO: should not need this *)
+
+  rewrite (va_labeledgraph_add_edge_left g g1 g2 g1' g2' x l r x0 l0) by auto.
+  rewrite (va_labeledgraph_egen_left g2 x x0).
+  pose proof labeledgraph_add_edge_ecopy1_left g g1 g2 g1' g2' x l r x0 l0 gx_vvalid H_GAMMA_g H_vopy1 H_copy_left H_x0 H_l0 BiMaFin_g2' x0_not_null as H_ecopy1_left.
+  cbv zeta in H_ecopy1_left.
+  forget (graph_gen.labeledgraph_egen g2 (x, L) (x0, L)) as g3.
+  forget (Graph_add_edge g2' (x0, L) x0 l0 (null, L)) as g3'.
 
   normalize.
   localize
