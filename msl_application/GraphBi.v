@@ -533,6 +533,31 @@ Proof.
   exists sound_gg; auto.
 Qed.
 
+Lemma single_vertex_guarded_BiMaFin: forall (x0: addr) dv de,
+  is_guarded_BiMaFin (fun v : addr => x0 <> v) (fun _ : addr * LR => ~ False)
+    (single_vertex_labeledgraph x0 dv de).
+Proof.
+  intros.
+  constructor; auto.
+  simpl.
+  constructor.
+  + constructor; simpl; intros.
+    - congruence.
+    - rewrite Intersection_spec in H; destruct H; congruence.
+  + constructor; simpl; intros.
+    - rewrite Intersection_spec in H; destruct H; tauto.
+    - rewrite Intersection_spec in H; destruct H; congruence.
+  + constructor; exists nil; repeat constructor.
+    - inversion H.
+    - inversion H.
+    - simpl; intros.
+      unfold Ensembles.In in H; rewrite Intersection_spec in H; destruct H; congruence.
+    - inversion H.
+    - inversion H.
+    - simpl; intros.
+      unfold Ensembles.In in H; rewrite Intersection_spec in H; destruct H; congruence.
+Qed.
+  
 (*********************************************************
 
 Spatial Facts Part
@@ -626,6 +651,41 @@ Proof.
   apply (exp_right (Build_GeneralGraph _ _ BiMaFin g X)).
   simpl.
   auto.
+Qed.
+
+Lemma is_guarded_BiMaFin_labeledgraph_add_edge: forall (g: LGraph) PV PE PE' e s d data_e,
+  ~ evalid g e ->
+  Same_set PE' (Intersection _ PE (fun e0 => e0 <> e)) ->
+  is_guarded_BiMaFin PV PE g ->
+  is_guarded_BiMaFin PV PE' (labeledgraph_add_edge g e s d data_e).
+Proof.
+  unfold is_guarded_BiMaFin.
+  intros.
+  eapply is_BiMaFin_si; [| eassumption].
+  simpl.
+  rewrite Same_set_spec in H0.
+  split; [| split; [| split]].
+  + intros; simpl; reflexivity.
+  + intros; simpl.
+    specialize (H0 e0).
+    rewrite !Intersection_spec in *.
+    unfold add_evalid.
+    rewrite H0.
+    destruct_eq_dec e0 e; [subst |]; try tauto.
+  + simpl; intros.
+    unfold update_src.
+    destruct_eq_dec e e0; auto; subst.
+    specialize (H0 e0).
+    rewrite Intersection_spec in *.
+    destruct H3.
+    tauto.
+  + simpl; intros.
+    unfold update_dst.
+    destruct_eq_dec e e0; auto; subst.
+    specialize (H0 e0).
+    rewrite Intersection_spec in *.
+    destruct H3.
+    tauto.
 Qed.
 
 (*********************************************************

@@ -317,6 +317,18 @@ Proof.
   firstorder.
 Qed.
 
+Lemma Prop_join_shrink: forall {U} (A B C R: Ensemble U),
+  Included B R ->
+  Prop_join A B C ->
+  Prop_join (Intersection _ A R) B (Intersection _ C R).
+Proof.
+  unfold Prop_join, Included, Ensembles.In.
+  intros.
+  split; intros; rewrite !Intersection_spec in *; auto.
+  + split; firstorder.
+  + firstorder.
+Qed.
+
 Lemma Ensemble_join_Intersection_Complement: forall {A} P Q,
   Included Q P ->
   (forall x, Q x \/ ~ Q x) ->
@@ -419,6 +431,19 @@ Proof.
   rewrite Disjoint_spec in H |- *.
   intros.
   specialize (H x).
+  destruct_eq_dec x0 x; [subst |]; tauto.
+Qed.
+
+Lemma Disjoint_x1': forall {U} {UE: EqDec U eq} (A B: Ensemble U) (x0: U),
+  Disjoint U (Intersection _ A (fun x: U => x0 <> x)) B ->
+  ~ B x0 ->
+  Disjoint U A B.
+Proof.
+  intros.
+  rewrite Disjoint_spec in H |- *.
+  intros.
+  specialize (H x).
+  rewrite Intersection_spec in H.
   destruct_eq_dec x0 x; [subst |]; tauto.
 Qed.
 

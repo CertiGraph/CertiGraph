@@ -163,6 +163,44 @@ Proof.
   eapply pregraph_join_vvalid_mono; eauto.
 Qed.
 
+Lemma ecopy1_vvalid_mono: forall (G1 G2: Graph) (G1' G2': Graph') e x0,
+  ecopy1 e (G1, G1') (G2, G2') ->
+  vvalid G1' x0 ->
+  vvalid G2' x0.
+Proof.
+  intros.
+  destruct H as [_ [_ [_ [? _]]]].
+  eapply pregraph_join_vvalid_mono; eauto.
+Qed.
+
+Lemma edge_copy_vvalid_mono: forall (G1 G2: Graph) (G1' G2': Graph') g root M es_done e0 x0,
+  edge_copy g root M (es_done, e0) (G1, G1') (G2, G2') ->
+  vvalid G1' x0 ->
+  vvalid G2' x0.
+Proof.
+  intros.
+  unfold edge_copy in H.
+  destruct_relation_list GG0 in H; destruct GG0 as [G G'].
+  eapply ecopy1_vvalid_mono; eauto.
+  eapply extended_copy_vvalid_mono; eauto.
+Qed.
+
+Lemma edge_copy_list_vvalid_mono: forall (G1 G2: Graph) (G1' G2': Graph') g root es P x0,
+  edge_copy_list g root es P (G1, G1') (G2, G2') ->
+  vvalid G1' x0 ->
+  vvalid G2' x0.
+Proof.
+  intros.
+  revert G2 G2' H; rev_induction es.
+  + unfold edge_copy_list, relation_list in H; simpl in H.
+    inversion H; subst; auto.
+  + unfold edge_copy_list in H1; rewrite combine_prefixes_app_1, map_app in H1; simpl in H1.
+    apply (proj1 ((proj1 (same_relation_spec _ _) (relation_list_tail _ _)) _ _)) in H1.
+    apply compond_relation_spec in H1. destruct H1 as [[G G'] [? ?]].
+    eapply (edge_copy_vvalid_mono G G2 G' G2' g); [exact H2 |].
+    eapply H; eauto.
+Qed.
+
 Lemma labeledgraph_vgen_vcopy1: forall (G: Graph) x x0,
   vcopy1 x G (labeledgraph_vgen G x x0) (single_vertex_labeledgraph (vmap (labeledgraph_vgen G x x0) x) default_DV' default_DE') /\ co_vertex x0 = vmap (labeledgraph_vgen G x x0) x.
 Proof.
@@ -1894,17 +1932,14 @@ Proof.
     - apply COPY_bij.
 Qed.
 
-(*
-(* TODO: This lemma and proof should be improved. The conclusion does not need edge_copy_list assumption. *)
-Lemma vcopy1_edge_copy_list_extend_copy: forall (g g1 g2 g3: Graph) g2' g' root es es_done e0 es_later (M: V -> Prop),
-  let g1' := single_vertex_pregraph (vmap g1 root) in
+Lemma extend_copy_emap_root: forall (g g1 g2 g3: Graph) (g1' g2' g3': Graph') root es es_done e0 es_later (M: V -> Prop),
   vvalid g root ->
   ~ M root ->
   (forall e, In e es <-> out_edges g root e) ->
   NoDup es ->
   es = es_done ++ e0 :: es_later ->
   (forall v : V, M v \/ ~ M v) ->
-  vcopy1 root g g1 ->
+  vcopy1 root g g1 g1' ->
   edge_copy_list g root es_done M (g1, g1') (g2, g2') ->
   let M0 := Union _ M (eq root) in
   let PV1 := reachable_by_through_set g (map (dst g) es_done) (Complement _ M0) in
@@ -1913,218 +1948,73 @@ Lemma vcopy1_edge_copy_list_extend_copy: forall (g g1 g2 g3: Graph) g2' g' root 
   let M_rec := Union _ M0 PV1 in
   let PV0 := reachable_by g (dst g e0) (Complement _ M_rec) in
   let PE0 := Intersection _ (weak_edge_prop PV0 g) (evalid g) in
-  copy M_rec (dst g e0) g2 g3 g' ->
-  disjointed_guard
-    (image_set (Union V PV1 (eq root))(vmap g2)) (image_set PV0 (vmap g3))
-    (image_set (Union E PE1 PE1_root) (emap g2)) (image_set PE0 (emap g3)) ->
   (forall v, M_rec v \/ ~ M_rec v) ->
-  exists g3': Graph',
-  extended_copy M_rec (dst g e0) (g2, g2') (g3, g3') /\
-  (predicate_partialgraph g2' (image_set PV1 (vmap g2))) ~=~
-  (predicate_partialgraph g3' (image_set PV1 (vmap g3))) /\
-  (predicate_partialgraph g' (image_set PV0 (vmap g3))) ~=~
-  (predicate_partialgraph g3' (image_set PV0 (vmap g3))).
-(*
-  (gpredicate_subgraph (image_set PV1 (vmap g2)) (image_set PE1 (emap g2)) g2') ~=~
-  (gpredicate_subgraph (image_set PV1 (vmap g3)) (image_set PE1 (emap g3)) g3') /\
-  (gpredicate_subgraph (image_set PV0 (vmap g3)) (image_set PE0 (emap g3)) g') ~=~
-  (gpredicate_subgraph (image_set PV0 (vmap g3)) (image_set PE0 (emap g3)) g3').
-*)
+  extended_copy M_rec (dst g e0) (g2, g2') (g3, g3') ->
+  map (emap g2) es_done = map (emap g3) es_done.
 Proof.
   intros.
-  pose proof triple_vcopy1_edge_copy_list g g1 g2 g2' root es es_done (e0 :: es_later) M H H0 H1 H2 H3 H4 H5 H6.
+  destruct H8 as [_ [_ [? _]]].
+  rewrite guarded_pointwise_relation_spec in H8.
+  apply Coqlib.list_map_exten.
+  intros e ?; symmetry.
+  apply (H8 e).
+  intro.
+  pose proof triple_vcopy1_edge_copy_list g g1 g2 g1' g2' root es es_done _ M H H0 H1 H2 H3 H4 H5 H6.
+  destruct H11 as [? [? [? [? [? [? ?]]]]]].
   
-  destruct H10 as [PRE_bij [PRE_si [PRE_consi [PRE_gprv [PRE_gpre [PRE_vvalid PRE_evalid]]]]]].
-  destruct H7 as [COPY_si [COPY_gprv [COPY_gpre [COPY_vvalid [COPY_evalid [COPY_consi COPY_bij]]]]]].
-  pose proof (fun H => guarded_pointwise_relation_weaken _ (Union _ PV1 (eq root)) eq H _ _ COPY_gprv) as COPY_gprv'.
-  spec COPY_gprv'.
+  unfold Ensembles.In in H10.
+  rewrite Intersection_spec in H10; destruct H10.
+  unfold weak_edge_prop in H10; apply reachable_by_foot_prop in H10.
+  rewrite <- (si_src2 _ _ _ H12) in H10 by auto.
+  assert (src g e = root).
   Focus 1. {
-    apply Included_Complement_Disjoint.
-    rewrite <- PRE_si.
-    apply Union_left_Disjoint; split.
-    + eapply aux06; eauto; reflexivity.
-    + eapply aux08; try reflexivity; eassumption.
+    rewrite H3 in H1.
+    specialize (H1 e).
+    rewrite in_app_iff in H1.
+    pose proof (proj1 H1 (or_introl H9)).
+    destruct H19; auto.
   } Unfocus.
-  pose proof (fun H => guarded_pointwise_relation_weaken _ (Union _ PE1 PE1_root) eq H _ _ COPY_gpre) as COPY_gpre'.
-  spec COPY_gpre'.
-  Focus 1. {
-    apply Included_Complement_Disjoint.
-    rewrite <- PRE_si at 1.
-    rewrite <- weak_edge_prop_si by (exact PRE_si).
-    apply Union_left_Disjoint; split.
-    + eapply aux07; eauto; reflexivity.
-    + eapply aux09; try eassumption; reflexivity.
-  } Unfocus.
-  assert
-   (exists G',
-      guarded_bij (Union V (Union V PV1 (eq root)) PV0)
-        (Union E (Union E PE1 PE1_root) PE0) (vmap g3) 
-        (emap g3) g3 G' /\
-      pregraph_join (image_set PV0 (vmap g3)) (image_set PE0 (emap g3))
-        g2' G' /\
-      pregraph_join (image_set (Union V PV1 (eq root)) (vmap g3))
-        (image_set (Union E PE1 PE1_root) (emap g3)) g' G').
-  Focus 1. {
-    apply (guarded_bij_pregraph_join (Union _ PV1 (eq root)) (Union _ PE1 PE1_root) PV0 PE0 (vmap g3) (emap g3) g3 g2' g').
-    + destruct H8; split.
-      - rewrite COPY_gprv' in H7; auto.
-      - rewrite COPY_gpre' in H8; auto.
-    + apply si_guarded_si with (PV := Union _ PV1 (eq root)) (PE := Union _ PE1 PE1_root) in COPY_si.
-      rewrite <- COPY_si.
-      rewrite <- COPY_gprv'.
-      rewrite <- COPY_gpre'.
-      auto.
-    + rewrite <- PRE_si in COPY_bij at 1 2.
-      rewrite <- weak_edge_prop_si in COPY_bij by (exact PRE_si).
-      auto.
-    + split; intros.
-      - exfalso.
-        rewrite COPY_si in PRE_si.
-        rewrite <- si_src2 with (g4 := g) in H10 by auto.
-        rewrite Union_spec in H7; destruct H7.
-        * eapply aux12; eauto; reflexivity.
-        * eapply aux15; [eassumption | reflexivity | reflexivity | reflexivity | reflexivity |  eassumption | eauto | eauto | eauto ]. 
-      - exfalso.
-        rewrite COPY_si in PRE_si.
-        rewrite <- si_dst2 with (g4 := g) in H10 by auto.
-        rewrite Union_spec in H7; destruct H7.
-        * eapply aux13; eauto; reflexivity.
-        * eapply aux16; [reflexivity | reflexivity | reflexivity | reflexivity | reflexivity | reflexivity | reflexivity | reflexivity | exact H4 | eassumption | eauto | eauto].
-    + split; intros.
-      - exfalso.
-        rewrite COPY_si in PRE_si.
-        rewrite <- si_src2 with (g4 := g) in H10 by auto.
-        rewrite Union_spec in H10; destruct H10.
-        * eapply aux14; eauto; reflexivity.
-        * eapply aux17; [reflexivity | reflexivity | reflexivity | reflexivity | reflexivity | reflexivity | eauto | eauto | eauto].
-      - apply COPY_consi.
-        * eapply app_same_set; [| exact H7].
-          rewrite <- PRE_si at 1.
-          rewrite <- weak_edge_prop_si by (exact PRE_si).
-          reflexivity.
-        * generalize (dst g3 e), H10.
-          unfold not; apply Disjoint_spec.
-          rewrite <- PRE_si.
-          apply Union_left_Disjoint; split.
-          1: eapply aux06; eauto; reflexivity.
-          1: eapply aux08; eauto; reflexivity.
-    + rewrite <- COPY_gprv'.
-      auto.
-    + rewrite <- COPY_gpre'.
-      auto.
-    + rewrite <- PRE_si in COPY_vvalid.
-      auto.
-    + rewrite <- PRE_si in COPY_evalid at 1.
-      rewrite <- weak_edge_prop_si in COPY_evalid by exact PRE_si.
-      auto.
-  } Unfocus.
-  destruct H7 as [g3' [? [? ?]]].
-  exists g3'.
-  split; [split; [| split; [| split; [| split; [| split; [| split]]]]] | split]; auto.
-  + rewrite <- PRE_si at 1 2.
-    rewrite <- weak_edge_prop_si by exact PRE_si.
-    auto.
-  + intros.
-    replace (dst g3' (emap g3 e)) with (dst g' (emap g3 e)).
-    1: apply COPY_consi; auto.
-    assert (evalid g' (emap g3 e)).
-    Focus 1. {
-      apply (evalid_preserved COPY_bij); auto.
-      rewrite <- (proj1 (proj2 COPY_si)).
-      rewrite Intersection_spec in H12; tauto.
-    } Unfocus.
-    assert (evalid g3' (emap g3 e)).
-    Focus 1. {
-      destruct H11 as [_ [[? _] _]].
-      rewrite H11.
-      tauto.
-    } Unfocus.
-    apply (proj2 (proj2 (proj2 H11))); auto.
-  + rewrite <- PRE_si at 1 2.
-    rewrite <- weak_edge_prop_si by exact PRE_si.
-    fold PV0 PE0.
-    apply pregraph_join_guarded_si in H11.
-    apply guarded_si_weaken with (PV3 := image_set PV0 (vmap g3)) (PE3 := image_set PE0 (emap g3)) in H11.
-    - rewrite <- H11.
-      rewrite <- PRE_si in COPY_bij at 1 2.
-      rewrite <- weak_edge_prop_si in COPY_bij by exact PRE_si.
-      auto.
-    - apply Included_Complement_Disjoint, Disjoint_comm.
-      destruct H8; auto.
-      rewrite <- COPY_gprv' at 1.
-      auto.
-    - apply Included_Complement_Disjoint, Disjoint_comm.
-      destruct H8; auto.
-      rewrite <- COPY_gpre' at 1.
-      auto.
-  + apply guarded_pointwise_relation_weaken with (P2 := PV1) in COPY_gprv';
-      [| apply left_Included_Union].
-    rewrite COPY_gprv' at 1.
-    eapply pregraph_join_partial_si; [exact H10 | ..].
-    - destruct H10 as [? _].
-      rewrite PRE_vvalid in H10.
-      destruct H10 as [_ ?].
-      apply Disjoint_spec; intros v' ? ?; apply (H10 v'); auto.
-      erewrite app_same_set; [| apply image_Union].
-      erewrite app_same_set; [| fold M0 PV1; rewrite COPY_gprv' at 1; reflexivity].
-      generalize v', H13.
-      apply left_Included_Union.
-    - intros e' ? ? ?.
-      unfold PE0 in H12.
-      rewrite COPY_si in PRE_si.
-      erewrite app_same_set in H12 by 
-      (erewrite weak_edge_prop_si by (exact PRE_si); reflexivity).
-      eapply @guarded_bij_weak_edge_prop in H12; [| | | | apply bij_is_morphism in H7; exact H7].
-      * rewrite Intersection_spec in H12.
-        destruct H12.
-        destruct H8 as [? _].
-        rewrite image_Union, Union_left_Disjoint in H8; destruct H8 as [? _].
-        rewrite COPY_gprv' in H8.
-        rewrite Disjoint_spec in H8.
-        exact (H8 _ H14 H12).
-      * apply right_Included_Union.
-      * erewrite <- weak_edge_prop_si by (exact PRE_si).
-        apply right_Included_Union.
-      * apply Included_refl.
-  + eapply pregraph_join_partial_si; [exact H11 | ..].
-    - destruct H8 as [? _].
-      rewrite COPY_gprv' in H8.
-      auto.
-    - intros e' ? ? ?.
-      eapply @guarded_bij_weak_edge_prop in H12; [| | | | apply bij_is_morphism in H7; exact H7].
-      * rewrite Intersection_spec in H12.
-        destruct H12.
-        destruct H8 as [? _].
-        rewrite COPY_gprv' in H8.
-        rewrite Disjoint_spec in H8.
-        exact (H8 _ H12 H14).
-      * apply left_Included_Union.
-      * apply left_Included_Union.
-      * rewrite COPY_si in PRE_si.
-        erewrite <- weak_edge_prop_si by (exact PRE_si).
-        rewrite weak_edge_prop_Union.
-        rewrite Intersection_Union_distr_l.
-        apply Union_Included; split.
-        Focus 1. {
-          apply left_Included_Union.
-        } Unfocus.
-        Focus 1. {
-          eapply Included_trans; [| apply right_Included_Union].
-          intros e; unfold Ensembles.In, weak_edge_prop; intros.
-          rewrite Intersection_spec; split.
-          - symmetry; eapply aux04.
-            * eassumption.
-            * reflexivity.
-            * auto.
-            * auto.
-          - eapply aux22.
-            * eassumption.
-            * reflexivity.
-            * auto.
-            * auto.
-        } Unfocus.
+  rewrite H19 in H10.
+  apply H10.
+  clear.
+  unfold Ensembles.In.
+  subst M_rec PV1 M0.
+  rewrite !Union_spec.
+  left; right; auto.
 Qed.
-*)
+
+Lemma vcopy1_edge_copy_list_mapped_root_edge_evalid: forall (g g1 g2: Graph) (g1' g2': Graph') root es es_done es_later (M: V -> Prop),
+  vvalid g root ->
+  ~ M root ->
+  (forall e, In e es <-> out_edges g root e) ->
+  NoDup es ->
+  es = es_done ++ es_later ->
+  (forall v : V, M v \/ ~ M v) ->
+  vcopy1 root g g1 g1' ->
+  edge_copy_list g root es_done M (g1, g1') (g2, g2') ->
+  forall e',
+  In e' (map (emap g2) es_done) ->
+  evalid g2' e'.
+Proof.
+  intros.
+  rewrite in_map_iff in H7.
+  destruct H7 as [e [? ?]].
+  pose proof triple_vcopy1_edge_copy_list g g1 g2 g1' g2' root es es_done _ M H H0 H1 H2 H3 H4 H5 H6.
+  destruct H9 as [? [? _]].
+  pose proof evalid_preserved H9 e.
+  subst e'.
+  rewrite <- H11.
+  + rewrite <- (proj1 (proj2 H10)).
+    clear - H1 H3 H8.
+    rewrite H3 in H1.
+    specialize (H1 e).
+    rewrite in_app_iff in H1.
+    pose proof (proj1 H1 (or_introl H8)).
+    destruct H; auto.
+  + rewrite Union_spec; right.
+    auto.
+Qed.
+
 End LocalGraphCopy.
 
 End LocalGraphCopy.

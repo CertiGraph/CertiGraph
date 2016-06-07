@@ -202,6 +202,28 @@ Defined.
 
 Global Existing Instance partialgraph_proper.
 
+Instance gpredicate_subgraph_proper: Proper (@Same_set V ==> @Same_set E ==> structurally_identical ==> structurally_identical) gpredicate_subgraph.
+Proof.
+  do 3 (hnf; intros).
+  destruct H1 as [? [? [? ?]]].
+  rewrite Same_set_spec in H, H0; hnf in H, H0.
+  split; [| split; [| split]]; intros; simpl.
+  + rewrite !Intersection_spec.
+    rewrite H1, H.
+    reflexivity.
+  + rewrite !Intersection_spec.
+    rewrite H2, H0.
+    reflexivity.
+  + simpl in H5, H6.
+    rewrite Intersection_spec in *.
+    apply H3; tauto.
+  + simpl in H5, H6.
+    rewrite Intersection_spec in *.
+    apply H4; tauto.
+Defined.
+
+Global Existing Instance gpredicate_subgraph_proper.
+
 Lemma predicate_partialgraph_gpredicate_subgraph (g: Graph) (p: V -> Prop): 
   (predicate_partialgraph g p) ~=~ (gpredicate_subgraph p (Intersection _ (weak_edge_prop p g) (evalid g)) g).
 Proof.
@@ -470,6 +492,66 @@ Proof.
   tauto.
 Qed.
 
+Lemma gpredicate_subgraph_self: forall (g: Graph),
+  (gpredicate_subgraph (vvalid g) (evalid g) g) ~=~ g.
+Proof.
+  intros.
+  split; [| split; [| split]].
+  + simpl; intros.
+    rewrite Intersection_spec; tauto.
+  + simpl; intros.
+    rewrite Intersection_spec; tauto.
+  + simpl; intros.
+    auto.
+  + simpl; intros.
+    auto.
+Qed.
+
+Lemma gpredicate_subgraph_equiv: forall (g: Graph) (PV1 PV2: V -> Prop) (PE1 PE2: E -> Prop),
+  Same_set (Intersection _ (vvalid g) PV1) (Intersection _ (vvalid g) PV2) ->
+  Same_set (Intersection _ (evalid g) PE1) (Intersection _ (evalid g) PE2) ->
+  (gpredicate_subgraph PV1 PE1 g) ~=~ (gpredicate_subgraph PV2 PE2 g).
+Proof.
+  intros.
+  split; [| split; [| split]].
+  + simpl; intros.
+    rewrite Same_set_spec in H.
+    auto.
+  + simpl; intros.
+    rewrite Same_set_spec in H0.
+    auto.
+  + simpl; intros.
+    auto.
+  + simpl; intros.
+    auto.
+Qed.
+
+Lemma stronger_gpredicate_subgraph_simple: forall (g g': PreGraph V E) (PV1 PV2: V -> Prop) (PE1 PE2: E -> Prop),
+  Included PV2 PV1 ->
+  Included PE2 PE1 ->
+  (gpredicate_subgraph PV1 PE1 g) ~=~ (gpredicate_subgraph PV1 PE1 g') ->
+  (gpredicate_subgraph PV2 PE2 g) ~=~ (gpredicate_subgraph PV2 PE2 g').
+Proof.
+  intros.
+  destruct H1 as [? [? [? ?]]].
+  unfold Included, Ensembles.In in H, H0.
+  split; [| split; [| split]].
+  + simpl in *; intros.
+    specialize (H1 v); specialize (H v).
+    rewrite !Intersection_spec in H1 |- *.
+    tauto.
+  + simpl in *; intros.
+    specialize (H2 e); specialize (H0 e).
+    rewrite !Intersection_spec in H2 |- *.
+    tauto.
+  + simpl; intros.
+    specialize (H0 e).
+    apply H3; simpl; rewrite !Intersection_spec in *; tauto.
+  + simpl; intros.
+    specialize (H0 e).
+    apply H4; simpl; rewrite !Intersection_spec in *; tauto.
+Qed.
+
 End PREGRAPH_GEN.
 
 Section LABELED_GRAPH_GEN.
@@ -591,6 +673,46 @@ Proof.
   + intro v; specialize (H v); simpl in H; tauto.
 Qed.
 
+Lemma gpredicate_sub_labeledgraph_self: forall (g: Graph),
+  (gpredicate_sub_labeledgraph (vvalid g) (evalid g) g) ~=~ g%LabeledGraph.
+Proof.
+  intros.
+  split; [| split].
+  + apply gpredicate_subgraph_self; auto.
+  + simpl; intros; auto.
+  + simpl; intros; auto.
+Qed.
+
+Lemma gpredicate_sub_labeledgraph_equiv: forall (g: Graph) (PV1 PV2: V -> Prop) (PE1 PE2: E -> Prop),
+  Same_set (Intersection _ (vvalid g) PV1) (Intersection _ (vvalid g) PV2) ->
+  Same_set (Intersection _ (evalid g) PE1) (Intersection _ (evalid g) PE2) ->
+  (gpredicate_sub_labeledgraph PV1 PE1 g) ~=~ (gpredicate_sub_labeledgraph PV2 PE2 g)%LabeledGraph.
+Proof.
+  intros.
+  split; [| split].
+  + apply gpredicate_subgraph_equiv; auto.
+  + simpl; intros; auto.
+  + simpl; intros; auto.
+Qed.
+
+Lemma stronger_gpredicate_sub_labeledgraph_simple: forall (g g': Graph) (PV1 PV2: V -> Prop) (PE1 PE2: E -> Prop),
+  Included PV2 PV1 ->
+  Included PE2 PE1 ->
+  (gpredicate_sub_labeledgraph PV1 PE1 g) ~=~ (gpredicate_sub_labeledgraph PV1 PE1 g')%LabeledGraph ->
+  (gpredicate_sub_labeledgraph PV2 PE2 g) ~=~ (gpredicate_sub_labeledgraph PV2 PE2 g')%LabeledGraph.
+Proof.
+  intros.
+  destruct H1 as [? [? ?]].
+  split; [| split].
+  + eapply stronger_gpredicate_subgraph_simple; eauto.
+  + simpl; intros.
+    specialize (H v).
+    apply H2; simpl; rewrite !Intersection_spec in *; tauto.
+  + simpl; intros.
+    specialize (H0 e).
+    apply H3; simpl; rewrite !Intersection_spec in *; tauto.
+Qed.
+    
 End LABELED_GRAPH_GEN.
 
 Section GENERAL_GRAPH_GEN.
