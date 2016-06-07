@@ -558,6 +558,54 @@ Proof.
       unfold Ensembles.In in H; rewrite Intersection_spec in H; destruct H; congruence.
 Qed.
   
+Lemma is_BiMaFin_si: forall (g1 g2: LGraph),
+  g1 ~=~ g2 ->
+  is_BiMaFin g1 ->
+  is_BiMaFin g2.
+Proof.
+  intros.
+  destruct H0 as [[?H ?H ?H] _].
+  apply (bi_graph_si _ _ H) in H0.
+  apply (math_graph_si _ _ H) in H1.
+  apply (finite_graph_si _ _ H) in H2.
+  constructor; constructor; auto.
+Qed.
+
+Lemma is_guarded_BiMaFin_labeledgraph_add_edge: forall (g: LGraph) PV PE PE' e s d data_e,
+  ~ evalid g e ->
+  Same_set PE' (Intersection _ PE (fun e0 => e0 <> e)) ->
+  is_guarded_BiMaFin PV PE g ->
+  is_guarded_BiMaFin PV PE' (labeledgraph_add_edge g e s d data_e).
+Proof.
+  unfold is_guarded_BiMaFin.
+  intros.
+  eapply is_BiMaFin_si; [| eassumption].
+  simpl.
+  rewrite Same_set_spec in H0.
+  split; [| split; [| split]].
+  + intros; simpl; reflexivity.
+  + intros; simpl.
+    specialize (H0 e0).
+    rewrite !Intersection_spec in *.
+    unfold add_evalid.
+    rewrite H0.
+    destruct_eq_dec e0 e; [subst |]; try tauto.
+  + simpl; intros.
+    unfold update_src.
+    destruct_eq_dec e e0; auto; subst.
+    specialize (H0 e0).
+    rewrite Intersection_spec in *.
+    destruct H3.
+    tauto.
+  + simpl; intros.
+    unfold update_dst.
+    destruct_eq_dec e e0; auto; subst.
+    specialize (H0 e0).
+    rewrite Intersection_spec in *.
+    destruct H3.
+    tauto.
+Qed.
+
 (*********************************************************
 
 Spatial Facts Part
@@ -624,19 +672,6 @@ Proof.
     apply reachable_foot_valid in H2; auto.
 Qed.
 
-Lemma is_BiMaFin_si: forall (g1 g2: LGraph),
-  g1 ~=~ g2 ->
-  is_BiMaFin g1 ->
-  is_BiMaFin g2.
-Proof.
-  intros.
-  destruct H0 as [[?H ?H ?H] _].
-  apply (bi_graph_si _ _ H) in H0.
-  apply (math_graph_si _ _ H) in H1.
-  apply (finite_graph_si _ _ H) in H2.
-  constructor; constructor; auto.
-Qed.
-
 (*
 TODO: maybe as a general lemma for normal_general_graph
 Lemma is_guarded_BiMaFin_si: forall (g1 g2: LGraph),
@@ -653,41 +688,47 @@ Proof.
   auto.
 Qed.
 
-Lemma is_guarded_BiMaFin_labeledgraph_add_edge: forall (g: LGraph) PV PE PE' e s d data_e,
+Lemma va_labeledgraph_add_edge_eq: forall (g: LGraph) es e s d data,
   ~ evalid g e ->
-  Same_set PE' (Intersection _ PE (fun e0 => e0 <> e)) ->
-  is_guarded_BiMaFin PV PE g ->
-  is_guarded_BiMaFin PV PE' (labeledgraph_add_edge g e s d data_e).
+  is_guarded_BiMaFin (fun x => s <> x) (fun e => ~ In e es) g ->
+  let g' := labeledgraph_add_edge g e s d data in
+  vertices_at (Intersection _ (vvalid g) (fun x => s <> x)) (Graph_SpatialGraph g) = vertices_at (Intersection _ (vvalid g') (fun x => s <> x)) (Graph_SpatialGraph g').
 Proof.
-  unfold is_guarded_BiMaFin.
   intros.
-  eapply is_BiMaFin_si; [| eassumption].
-  simpl.
-  rewrite Same_set_spec in H0.
-  split; [| split; [| split]].
-  + intros; simpl; reflexivity.
-  + intros; simpl.
-    specialize (H0 e0).
-    rewrite !Intersection_spec in *.
-    unfold add_evalid.
-    rewrite H0.
-    destruct_eq_dec e0 e; [subst |]; try tauto.
-  + simpl; intros.
-    unfold update_src.
-    destruct_eq_dec e e0; auto; subst.
-    specialize (H0 e0).
-    rewrite Intersection_spec in *.
-    destruct H3.
+  apply va_labeledgraph_add_edge_eq; auto.
+  + unfold Included, Ensembles.In.
+    intros x0 ?.
+    destruct H0 as [X _].
+    pose (g0 := Build_GeneralGraph _ _ (fun g => BiMaFin (pg_lg g)) _ X: Graph).
+    assert (vvalid g0 x0) by auto.
+    apply vvalid_vguard in H0.
+    simpl in H0 |- *.
+    rewrite !Intersection_spec in H0.
     tauto.
-  + simpl; intros.
-    unfold update_dst.
-    destruct_eq_dec e e0; auto; subst.
-    specialize (H0 e0).
-    rewrite Intersection_spec in *.
-    destruct H3.
+  + unfold Included, Ensembles.In.
+    intros x0 ?.
+    destruct H0 as [X _].
+    pose (g0 := Build_GeneralGraph _ _ (fun g => BiMaFin (pg_lg g)) _ X: Graph).
+    assert (vvalid g0 x0) by auto.
+    apply vvalid_vguard in H0.
+    simpl in H0 |- *.
+    rewrite !Intersection_spec in H0.
+    unfold add_evalid, update_src.
+    split; [| split]; [tauto | tauto |].
+    destruct_eq_dec e (x0, L); subst; [tauto |].
+    destruct_eq_dec e (x0, R); subst; [tauto |].
     tauto.
 Qed.
 
+Lemma va_labeledgraph_egen_eq: forall (g: LGraph) e data P,
+  vertices_at P (Graph_SpatialGraph g) = vertices_at P (Graph_SpatialGraph (labeledgraph_egen g e data)).
+Proof.
+  intros.
+  apply vertices_at_vertices_identical.
+  rewrite vertices_identical_spec; intros.
+  simpl; auto.
+Qed.
+    
 (*********************************************************
 
 Spatial Facts (with Strong Assumption) Part

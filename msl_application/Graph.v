@@ -917,6 +917,41 @@ Proof.
       * apply lg_vgen_stable.
 Qed.
 
+Lemma va_labeledgraph_add_edge_eq: forall (g: Graph) e s d data,
+  ~ evalid g e ->
+  let g' := labeledgraph_add_edge g e s d data in
+(*  vertices_identical (Intersection V (vvalid g) (fun x : V => s <> x))
+     (Graph_SpatialGraph g) (Graph_SpatialGraph g') -> *)
+  Included (Intersection _ (vvalid g) (fun x => s <> x)) (vguard g) ->
+  Included (Intersection _ (vvalid g') (fun x => s <> x)) (vguard g') ->
+  vertices_at (Intersection _ (vvalid g) (fun x => s <> x)) (Graph_SpatialGraph g) = vertices_at (Intersection _ (vvalid g') (fun x => s <> x)) (Graph_SpatialGraph g').
+Proof.
+  intros.
+  apply vertices_at_vertices_identical2.
+  split; [simpl; reflexivity |].
+  rewrite vertices_identical_spec; intros.
+  apply compute_vgamma_local.
+  + apply H0; auto.
+  + apply H1; auto.
+  + reflexivity.
+  + intros.
+    simpl.
+    unfold add_evalid, update_src.
+    rewrite Intersection_spec in H2.
+    destruct H2.
+    destruct_eq_dec e e0.
+    - subst e0; tauto.
+    - assert (e0 <> e) by congruence; tauto.
+  + simpl; unfold add_evalid, update_src, update_dst; intros.
+    destruct_eq_dec e e0.
+    - subst e0; exfalso; tauto.
+    - reflexivity.
+  + simpl; unfold add_evalid, update_src, update_dst, update_elabel; intros.
+    destruct_eq_dec e e0.
+    - subst e0; exfalso; tauto.
+    - reflexivity.
+Qed.
+
 (* TODO: move this one into subgraph2.v *)
 Lemma unreachable_eq': forall (g : Graph) (S1 S2 : list V),
     forall x, reachable_through_set g (S1 ++ S2) x /\ ~ reachable_through_set g S1 x <-> reachable_through_set (unreachable_partial_labeledgraph g S1) S2 x.

@@ -383,7 +383,7 @@ Lemma labeledgraph_add_edge_ecopy1_left: forall (g g1 g2: Graph) (g1' g2': LGrap
   vvalid g x ->
   vgamma g x = (null, l, r) ->
   vcopy1 x g g1 g1' ->
-  extended_copy (dst g (x, L)) (g1: LGraph, g1') (g2: LGraph, g2') ->
+  extended_copy l (g1: LGraph, g1') (g2: LGraph, g2') ->
   x0 = LocalGraphCopy.vmap g1 x ->
   l = null /\ l0 = null \/ l0 = LocalGraphCopy.vmap g2 l ->
   is_guarded_BiMaFin (fun v => x0 <> v) (fun e => ~ In e nil) g2' ->
@@ -401,16 +401,11 @@ Proof.
     - pose proof LocalGraphCopy.labeledgraph_egen_ecopy1_not_vvalid g2 g2' (x, L) (x0, L) x0 l0.
       apply H7; clear H7.
       * simpl.
-        eapply is_BiMaFin_not_evalid; eauto.
-        Focus 1. {
-          destruct H1 as [_ [_ ?]], H2 as [_ [_ ?]].
-          eapply LocalGraphCopy.extended_copy_vvalid_mono in H2; [exact H2 |].
-          eapply LocalGraphCopy.vcopy1_copied_root_valid in H1; auto.
-          subst x0; auto.
-        } Unfocus.
-        Focus 1. {
-          intros ? [].
-        } Unfocus.
+        eapply is_BiMaFin_not_evalid; eauto; [| intros ? []].
+        destruct H1 as [_ [_ ?]], H2 as [_ [_ ?]].
+        eapply LocalGraphCopy.extended_copy_vvalid_mono in H2; [exact H2 |].
+        eapply LocalGraphCopy.vcopy1_copied_root_valid in H1; auto.
+        subst x0; auto.
       * rewrite left_right_sound.
         Focus 1. {
           destruct H1 as [_ [? _]], H2 as [_ [_ ?]].
@@ -446,16 +441,11 @@ Proof.
     - pose proof LocalGraphCopy.labeledgraph_egen_ecopy1 g2 g2' (x, L) (x0, L) x0 l0.
       apply H7; clear H7.
       * simpl.
-        eapply is_BiMaFin_not_evalid; eauto.
-        Focus 1. {
-          destruct H1 as [_ [_ ?]], H2 as [_ [_ ?]].
-          eapply LocalGraphCopy.extended_copy_vvalid_mono in H2; [exact H2 |].
-          eapply LocalGraphCopy.vcopy1_copied_root_valid in H1; auto.
-          subst x0; auto.
-        } Unfocus.
-        Focus 1. {
-          intros ? [].
-        } Unfocus.
+        eapply is_BiMaFin_not_evalid; eauto; [| intros ? []].
+        destruct H1 as [_ [_ ?]], H2 as [_ [_ ?]].
+        eapply LocalGraphCopy.extended_copy_vvalid_mono in H2; [exact H2 |].
+        eapply LocalGraphCopy.vcopy1_copied_root_valid in H1; auto.
+        subst x0; auto.
       * rewrite left_right_sound.
         Focus 1. {
           destruct H1 as [_ [? _]], H2 as [_ [_ ?]].
@@ -489,12 +479,11 @@ Lemma extend_copy_left: forall (g g1 g2: Graph) (g1': LGraph) (g2'': Graph) (x l
   x0 = LocalGraphCopy.vmap g1 x ->
   l = null /\ l0 = null \/ l0 = LocalGraphCopy.vmap g2 l ->
   is_guarded_BiMaFin (fun v => x0 <> v) (fun e => ~ In e nil) g1' ->
-  let g3 := Graph_egen g2 (x, L) (x0, L): Graph in
   @derives pred _
   (vertex_at x0 d0 * vertices_at (Intersection _ (vvalid g1') (fun x => x0 <> x)) g1' * reachable_vertices_at l0 g2'') 
-  (EX g3': LGraph,
-    !! (edge_copy g (x, L) (g1: LGraph, g1') (g3: LGraph, g3') /\ is_guarded_BiMaFin (fun v => x0 <> v) (fun e => ~ In e ((x0, L) :: nil)) g3') && 
-    (vertex_at x0 d0 * vertices_at (Intersection _ (vvalid g3') (fun x => x0 <> x)) g3')).
+  (EX g2': LGraph,
+    !! (extended_copy l (g1: LGraph, g1') (g2: LGraph, g2') /\ is_guarded_BiMaFin (fun v => x0 <> v) (fun e => ~ In e nil) g2') && 
+    (vertex_at x0 d0 * vertices_at (Intersection _ (vvalid g2') (fun x => x0 <> x)) g2')).
 Proof.
   intros.
   rename H5 into BMF.
@@ -537,49 +526,53 @@ Proof.
   specialize (H5 (Graph_is_BiMaFin _)).
 
   destruct H5 as [g2' [? [? [? ?]]]].
-  pose (g3' := labeledgraph_add_edge g2' (x0, L) x0 l0 (null, L) : LGraph).
-  apply (exp_right g3').
+  apply (exp_right g2').
 
   destruct_eq_dec x0 null.
   Focus 1. {
     clear - H14.
-    subst g3' g3 x0.
+    subst x0.
     pose proof @vertex_at_not_null _ _ _ _ _ _ _ _ null SGAvn d0.
     rewrite (add_andp _ _ H).
     normalize.
   } Unfocus.
   
-  apply andp_right; [apply prop_right; split | rewrite sepcon_assoc; apply sepcon_derives; auto].
-  + unfold edge_copy.
-    split_relation_list ((g2: LGraph, g2' : LGraph) :: nil); auto.
-    apply (labeledgraph_add_edge_ecopy1_left g g1 g2 g1' g2' x l r x0 l0); auto.
-  + eapply is_guarded_BiMaFin_labeledgraph_add_edge; [| | eassumption].
-    - eapply is_BiMaFin_not_evalid; eauto.
-      Focus 1. {
-        destruct H1 as [_ [_ ?]], H5 as [_ [_ ?]].
-        eapply LocalGraphCopy.extended_copy_vvalid_mono in H5; [exact H5 |].
-        eapply LocalGraphCopy.vcopy1_copied_root_valid in H1; auto.
-        subst x0; auto.
-      } Unfocus.
-      Focus 1. {
-        intros ? [].
-      } Unfocus.
-    - clear.
-      rewrite Same_set_spec; intro e.
-      rewrite Intersection_spec; simpl.
-      assert (e = (x0, L) <-> (x0, L) = e) by (split; intros; congruence).
-      tauto.
-  + rewrite (vertices_at_vertices_identical (Graph_SpatialGraph g2'') g3').
-    rewrite (vertices_at_vertices_identical g1' g3').
-    - erewrite vertices_at_sepcon_xx; [apply derives_refl |].
-      rewrite Prop_join_comm.
-      destruct H2 as [_ [_ ?]].
-      apply (vmap_weaken g1 g2'') in H4.
-      rewrite <- (LocalGraphCopy.copy_vvalid_weak_eq g1 g2 g2'' (WeakMarkGraph.marked g1) l l0 H4 H2).
-      apply Prop_join_shrink;
-      admit. (* some how copy the proof in Graph_Copy.v *)
-    - admit.
-    - admit.
+  apply andp_right; [apply prop_right; split; auto | rewrite sepcon_assoc; apply sepcon_derives; auto].
+  rewrite (vertices_at_vertices_identical (Graph_SpatialGraph g2'') (LGraph_SGraph g2')).
+  rewrite (vertices_at_vertices_identical (LGraph_SGraph g1') (LGraph_SGraph g2')).
+  - erewrite vertices_at_sepcon_xx; [apply derives_refl |].
+    rewrite Prop_join_comm.
+    destruct H2 as [_ [_ ?]].
+    apply (vmap_weaken g1 g2'') in H4.
+    rewrite <- (LocalGraphCopy.copy_vvalid_weak_eq g1 g2 g2'' (WeakMarkGraph.marked g1) l l0 H4 H2).
+    apply Prop_join_shrink;
+    admit. (* some how copy the proof in Graph_Copy.v *)
+  - admit.
+  - admit.
+Qed.
+
+Lemma va_labeledgraph_add_edge_left: forall (g g1 g2: Graph) (g1' g2': LGraph) (x l r x0 l0: addr),
+  vvalid g x ->
+  vgamma g x = (null, l, r) ->
+  vcopy1 x g g1 g1' ->
+  extended_copy l (g1: LGraph, g1') (g2: LGraph, g2') ->
+  x0 = LocalGraphCopy.vmap g1 x ->
+  is_guarded_BiMaFin (fun x => x0 <> x) (fun e => ~ In e nil) g2' ->
+  vertices_at (Intersection _ (vvalid g2') (fun x => x0 <> x)) g2' = vertices_at (Intersection _ (vvalid (labeledgraph_add_edge g2' (x0, L) x0 l0 (null, L))) (fun x => x0 <> x)) (LGraph_SGraph (labeledgraph_add_edge g2' (x0, L) x0 l0 (null, L))).
+Proof.
+  intros.
+  eapply va_labeledgraph_add_edge_eq; eauto.
+  eapply is_BiMaFin_not_evalid; eauto.
+  + (* apply extended_copy_valid_mono; eauto. *)
+    admit.
+  + intros ? [].
+Qed.
+
+Lemma va_labeledgraph_egen_left: forall (g2: Graph) (x x0: addr),
+  reachable_vertices_at x g2 = reachable_vertices_at x (Graph_egen g2 (x, L) (x0, L)).
+Proof.
+  intros.
+  apply va_labeledgraph_egen_eq.
 Qed.
 
 Lemma extend_copy_right: forall (g g1 g2 g3: Graph) (g1' g2': LGraph) (g3'': Graph) (x l r x0 r0: addr) d0,
