@@ -26,7 +26,7 @@ Local Identity Coercion SGraph_SpatialGraph: SGraph >-> SpatialGraph.
 Local Coercion pg_lg: LabeledGraph >-> PreGraph.
 
 Notation graph sh x g := (@reachable_vertices_at _ _ _ _ _ _ _ _ _ (@SGP pSGG_VST addr (addr * LR) (sSGG_VST sh)) _ x g).
-Notation hole_graph sh x g := (@vertices_at _ _ _ _ _ _ (@SGP pSGG_VST addr (addr * LR) (sSGG_VST sh)) _ (fun u => @vvalid addr (addr * LR) _ _ g u /\ x <> u) g).
+Notation holegraph sh x g := (@vertices_at _ _ _ _ _ _ (@SGP pSGG_VST addr (addr * LR) (sSGG_VST sh)) _ (Ensembles.Intersection _ (@vvalid addr (addr * LR) _ _ g) (fun u => x <> u)) g).
 Notation Graph := (@Graph pSGG_VST (@addr pSGG_VST) (addr * LR)).
 Notation vmap := (@LocalGraphCopy.vmap addr (addr * LR) addr (addr * LR) _ _ _ _ _ _ (@GMS _ _ CCS)).
 Existing Instances MGS biGraph maGraph finGraph RGF.
@@ -124,9 +124,8 @@ Proof.
   assert (vvalid g x) as gx_vvalid.
   Focus 1. {
     destruct H_weak_valid; [| auto].
-    rewrite is_null_def in H0; subst x.
-    exfalso.
-    apply H. auto.
+    simpl in H0.
+    subst; exfalso; apply H. auto.
   } Unfocus.
   destruct_pointer_val x. clear H0 H_weak_valid.
 
@@ -223,13 +222,13 @@ Proof.
     SEP (data_at sh node_type
            (pointer_val_val null, (pointer_val_val null, pointer_val_val null))
            (pointer_val_val x0);
-         hole_graph sh x0 (initial_copied_Graph x x0 g);
-         graph sh x (Graph_gen g x x0))).
+         holegraph sh x0 (initial_copied_Graph x x0 g);
+         graph sh x (Graph_vgen g x x0))).
   Grab Existential Variables.
   Focus 2. {
     simplify_ramif.
     apply (@root_update_ramify _ (sSGG_VST sh) g x x0 _ (null, l, r) (x0, l, r)); auto.
-    eapply Graph_gen_vgamma; eauto.
+    eapply Graph_vgen_vgamma; eauto.
   } Unfocus.
   (* unlocalize *)
 
@@ -240,8 +239,8 @@ Proof.
     entailer!.
     apply field_compatible_isptr in H5; inversion H5.
   } Unfocus.
-  destruct (not_null_copy1 g x x0 _ _ H_GAMMA_g gx_vvalid H0).
-  forget (Graph_gen g x x0) as g1.
+  destruct (not_null_copy1 g x x0 _ _ H_GAMMA_g gx_vvalid H0) as [? [? ?]].
+  forget (Graph_vgen g x x0) as g1.
   forget (initial_copied_Graph x x0 g) as g1'.
 
   forward. (* x0 -> m = 0; *)
@@ -260,7 +259,7 @@ Proof.
     repeat (apply ram_extract_PROP; intro) ].
   (* l0 = copy(l); *)
 
-  cbv [fst snd] in H5, H6 |- *.
+  cbv [fst snd] in H6, H7 |- *.
   unlocalize
    (PROP  ()
     LOCAL (temp _r (pointer_val_val r);
@@ -269,10 +268,10 @@ Proof.
            temp _x (pointer_val_val x);
            temp _x0 (pointer_val_val x0))
     SEP (data_at sh node_type (Vint (Int.repr 0), (pointer_val_val null, pointer_val_val null)) (pointer_val_val x0);
-         hole_graph sh x0 g1';
+         holegraph sh x0 g1';
          graph sh x g2;
          graph sh l0 g2''))
-  using [H5; H6]%RamAssu
+  using [H6; H7]%RamAssu
   binding [l0; g2; g2'']%RamBind.
   Grab Existential Variables.
   Focus 2. {
@@ -285,16 +284,24 @@ Proof.
   forward. (* x0 -> l = l0; *)
   autorewrite with norm. (* TODO: should not need this *)
 
-  gather_SEP 1 3.
-  replace_SEP 0 (EX g2': LGraph, !! edge_copy g (x, L) (g1: LGraph, g1') (g2: LGraph, g2') &&
-           hole_graph sh x0 g2').
+  gather_SEP 0 1 3.
+  replace_SEP 0
+      (EX g2': LGraph,
+       !! (edge_copy g (x, L) (g1: LGraph, g1') (Graph_egen g2 (x, L) (x0, L): LGraph, g2') /\
+           is_guarded_BiMaFin (fun v => x0 <> v) (fun e => ~ In e ((x0, L) :: nil)) g2') &&
+          (data_at sh node_type
+            (pointer_val_val null, (pointer_val_val l0, pointer_val_val null)) (pointer_val_val x0) *
+           holegraph sh x0 g2')).
   Focus 1. {
-    entailer!.
-    apply (@extend_copy_left _ (sSGG_VST sh) g g1 g2 g1' g2'' (ValidPointer b i) l r (vmap g1 (ValidPointer b i)) l0); auto.
+    Opaque Graph_egen In.
+    entailer.
+    Transparent Graph_egen In.
+    apply (@extend_copy_left _ (sSGG_VST sh) g g1 g2 g1' g2'' (ValidPointer b i) l r (vmap g1 (ValidPointer b i)) l0 (null, l0, null)); auto.
   } Unfocus.
   rewrite extract_exists_in_SEP. (* should be able to use tactic directly *)
+  forget (Graph_egen g2 (x, L) (x0, L)) as g3.
   Intros g2'.
-  clear g2'' H5.
+  clear g2'' H6 g2 l0 H7.
 
   normalize.
   localize
@@ -318,7 +325,7 @@ Proof.
            temp _r0 (pointer_val_val r0);
            temp _x (pointer_val_val x);
            temp _x0 (pointer_val_val x0))
-    SEP (hole_graph sh x0 g2';
+    SEP (holegraph sh x0 g2';
          data_at sh node_type
           (Vint (Int.repr 0), (pointer_val_val l0, pointer_val_val null))
           (pointer_val_val x0);
@@ -338,7 +345,7 @@ Proof.
 
   gather_SEP 0 3.
   replace_SEP 0 (EX g3': LGraph, !! edge_copy g (x, R) (g2: LGraph, g2') (g3: LGraph, g3') &&
-           hole_graph sh x0 g3').
+           holegraph sh x0 g3').
   Focus 1. {
     entailer!.
     apply (@extend_copy_right _ (sSGG_VST sh) g g1 g2 g3 g1' g2' g3'' (ValidPointer b i) l r (vmap g1 (ValidPointer b i)) r0); auto.
