@@ -303,16 +303,15 @@ Proof.
 
   rewrite (va_labeledgraph_add_edge_left g g1 g2 g1' g2' x l r x0 l0) by auto.
   rewrite (va_labeledgraph_egen_left g2 x x0).
-  pose proof labeledgraph_add_edge_ecopy1_left g g1 g2 g1' g2' x l r x0 l0 gx_vvalid H_GAMMA_g H_vopy1 H_copy_left H_x0 H_l0 BiMaFin_g2' x0_not_null as H_ecopy1_left.
-  cbv zeta in H_ecopy1_left.
-  forget (graph_gen.labeledgraph_egen g2 (x, L) (x0, L)) as g3.
-  forget (Graph_add_edge g2' (x0, L) x0 l0 (null, L)) as g3'.
+  destruct (labeledgraph_add_edge_ecopy1_left g g1 g2 g1' g2' x l r x0 l0 gx_vvalid H_GAMMA_g H_vopy1 H_copy_left H_x0 H_l0 BiMaFin_g2' x0_not_null) as [H_ecopy1_left [BiMaFin_g3' H_x0L]].
+  forget (Graph_egen g2 (x: addr, L) (x0: addr, L)) as g3.
+  forget (graph_gen.labeledgraph_add_edge g2' (x0, L) x0 l0 (null, L)) as g3'.
 
   normalize.
   localize
-   (PROP  (weak_valid g2 r)
+   (PROP  (weak_valid g3 r)
     LOCAL (temp _r (pointer_val_val r))
-    SEP   (graph sh r g2)).
+    SEP   (graph sh r g3)).
   1: eapply right_weak_valid; eauto.  
   (* localize *)
 

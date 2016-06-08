@@ -114,6 +114,46 @@ Proof.
   + apply LocalGraphCopy.copy_marked_root_refl; auto.
 Qed.
 
+Lemma copy_vvalid_weak_eq: forall (g1 g2 g2'': Graph) x x0,
+  ~ vvalid g1 x /\ ~ vvalid g2'' x0 \/ x0 = LocalGraphCopy.vmap g2 x ->
+  copy x g1 g2 g2'' ->
+  Same_set (vvalid g2'') (reachable g2'' x0).
+Proof.
+  intros.
+  eapply (LocalGraphCopy.copy_vvalid_weak_eq g1 g2 g2'' _ x x0); auto.
+  destruct H0 as [_ [_ ?]]; eauto.
+Qed.
+
+Lemma vcopy1_copied_root_valid: forall (G G1 G1': Graph) x x0,
+  vcopy1 x G G1 G1' ->
+  x0 = LocalGraphCopy.vmap G1 x ->
+  vvalid G1' x0.
+Proof.
+  intros.
+  apply (LocalGraphCopy.vcopy1_copied_root_valid G G1 G1' x x0); auto.
+  destruct H as [_ [_ ?]]; eauto.
+Qed.
+
+Lemma extended_copy_vvalid_mono: forall (G1 G2 G1' G2': Graph) x x0,
+  extended_copy x (G1, G1') (G2, G2') ->
+  vvalid G1' x0 ->
+  vvalid G2' x0.
+Proof.
+  intros.
+  eapply (LocalGraphCopy.extended_copy_vvalid_mono G1 G2 G1' G2' _ x x0); auto.
+  destruct H as [_ [_ ?]]; eauto.
+Qed.
+
+Lemma ecopy1_vvalid_mono: forall (G1 G2 G1' G2': Graph) e x0,
+  ecopy1 e (G1, G1') (G2, G2') ->
+  vvalid G1' x0 ->
+  vvalid G2' x0.
+Proof.
+  intros.
+  eapply (LocalGraphCopy.ecopy1_vvalid_mono G1 G2 G1' G2' e x0); auto.
+  destruct H as [_ [_ ?]]; eauto.
+Qed.
+
 Lemma edge_copy_si: forall (g g1 g2 g1' g2': Graph) (e0: E),
   edge_copy g e0 (g1, g1') (g2, g2') ->
   g1 ~=~ g2.
@@ -340,6 +380,39 @@ Proof.
   destruct H6 as [? [? ?]]; split; [| split]; auto.
 Qed.
 
+Lemma extend_copy_emap_root: forall (g g1 g2 g3 g1' g2' g3' : Graph) root es es_done e0 es_later,
+  vvalid g root ->
+  WeakMarkGraph.unmarked g root ->
+  es = es_done ++ e0 :: es_later ->
+  (forall e : E, In e es <-> out_edges g root e) ->
+  NoDup es ->
+  vcopy1 root g g1 g1' ->
+  edge_copy_list g es_done (g1, g1') (g2, g2') ->
+  extended_copy (dst g e0) (g2, g2') (g3, g3') ->
+  map (LocalGraphCopy.emap g2) es_done = map (LocalGraphCopy.emap g3) es_done.
+Proof.
+  intros.
+  destruct (vcopy1_edge_copy_list_spec root es es_done _ g g1 g2 g1' g2' H H0 H1 H2 H3 H4 H5).
+  pose proof WeakMarkGraph.triple_mark1_componded_mark_list root (map (dst g) es_done) (map (dst g) (e0 :: es_later)) (map (dst g) es) g g2 H H0.
+  spec H9; [apply out_edges_step_list; auto |].
+  spec H9; [rewrite <- map_app; f_equal; auto |].
+  spec H9; [split_relation_list (g :: g1 :: g1 :: nil) |].
+    1: apply WeakMarkGraph.eq_do_nothing; auto.
+    1: destruct H4 as [? [? ?]]; auto.
+    1: apply WeakMarkGraph.eq_do_nothing; auto.
+    1: auto.
+  cbv iota zeta in H9.
+  destruct H9 as [_ ?].
+
+  eapply LocalGraphCopy.extend_copy_emap_root; eauto.
+  + intros; destruct (node_pred_dec (WeakMarkGraph.marked g) v); auto.
+  + destruct H4 as [_ [_ ?]]; auto.
+  + intros; rewrite <- (app_same_set H9).
+    destruct (node_pred_dec (WeakMarkGraph.marked g2) v); auto.
+  + rewrite <- H9.
+    destruct H6 as [_ [_ ?]]. exact H6.
+Qed.
+
 Lemma vcopy1_edge_copy_list_weak_copy_extended_copy: forall {P: Graph -> Type} {NP: NormalGeneralGraph P},
   forall root es es_done e0 es_later (g1 g2 g3 g2' g3' g4 g4'': Graph) (root0: V),
   vvalid g1 root ->
@@ -423,28 +496,8 @@ Proof.
     destruct H4 as [_ [_ ?]].
     eapply LocalGraphCopy.vcopy1_copied_root_valid in H4; eauto.
   + replace (map (@LocalGraphCopy.emap V E V E (@SGBA_VE V E SGBA)
-                    (@SGBA_EE V E SGBA) V E V E GMS g4) es_done) with (map (LocalGraphCopy.emap g3) es_done).
-    Focus 2. {
-      destruct H11 as [_ [_ ?]].
-      pose proof proj1 (proj2 H4).
-      destruct (vcopy1_edge_copy_list_spec root _ _ _ _ _ _ _ _ H H0 H1 H2 H3 H4 H5).
-      pose proof WeakMarkGraph.triple_mark1_componded_mark_list root (map (dst g1) es_done) (map (dst g1) (e0 :: es_later)) (map (dst g1) es) g1 g3 H H0.
-      spec H15; [apply out_edges_step_list; auto |].
-      spec H15; [rewrite <- map_app; f_equal; auto |].
-      spec H15; [split_relation_list (g1 :: g2 :: g2 :: nil) |].
-        1: apply WeakMarkGraph.eq_do_nothing; auto.
-        1: auto.
-        1: apply WeakMarkGraph.eq_do_nothing; auto.
-        1: auto.
-      cbv iota zeta in H15.
-      destruct H15 as [_ ?].
-      
-      destruct H4 as [_ [_ ?]].
-      apply (LocalGraphCopy.extend_copy_emap_root g1 g2 g3 g4 g2' g3' g4' root es es_done e0 es_later (WeakMarkGraph.marked g1)); auto.
-        1: intros; destruct (node_pred_dec (WeakMarkGraph.marked g1) v); auto.
-        1: intros; rewrite <- (app_same_set H15); destruct (node_pred_dec (WeakMarkGraph.marked g3) v); auto.
-        1: rewrite <- H15; auto.
-    } Unfocus.
+                    (@SGBA_EE V E SGBA) V E V E GMS g4) es_done) with (map (LocalGraphCopy.emap g3) es_done)
+      by (apply (extend_copy_emap_root g1 g2 g3 g4 g2' g3' g4' root es es_done e0 es_later); auto).
     destruct H11 as [_ [_ HH]].
     destruct HH as [_ [_ [_ [HH _]]]].
     destruct H7 as [_ [_ ?]].
