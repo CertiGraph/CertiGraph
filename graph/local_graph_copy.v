@@ -1983,6 +1983,66 @@ Proof.
   left; right; auto.
 Qed.
 
+Lemma extended_copy_vmap_root: forall (g1 g2: Graph) (g1' g2': Graph') x x0 (M: V -> Prop),
+  M x0 ->
+  extended_copy M x (g1, g1') (g2, g2') ->
+  vmap g1 x0 = vmap g2 x0.
+Proof.
+  intros.
+  destruct H0 as [_ [? _]].
+  rewrite guarded_pointwise_relation_spec in H0.
+  apply H0.
+  clear - H; unfold Complement, Ensembles.In; intros ?.
+  apply reachable_by_foot_prop in H0.
+  auto.
+Qed.
+
+Lemma ecopy1_vmap_root: forall (g1 g2: Graph) (g1' g2': Graph') e x0,
+  ecopy1 e (g1, g1') (g2, g2') ->
+  vmap g1 x0 = vmap g2 x0.
+Proof.
+  intros.
+  destruct H as [_ [? _]].
+  apply H.
+Qed.
+
+(*
+(* Maybe useful for non bigraph situation *)
+Lemma vcopy1_edge_copy_list_vmap_root_aux: forall (g g1 g2: Graph) (g1' g2': Graph') root es es_done es_later (M: V -> Prop),
+  vvalid g root ->
+  ~ M root ->
+  (forall e, In e es <-> out_edges g root e) ->
+  NoDup es ->
+  es = es_done ++ es_later ->
+  vcopy1 root g g1 g1' ->
+  edge_copy_list g root es_done M (g1, g1') (g2, g2') ->
+  vmap g1 root = vmap g2 root /\
+  (forall (g3: Graph) (g3': Graph') (M_rec: V -> Prop) (dst0: V), M_rec root -> extended_copy M_rec dst0 (g2, g2') (g3, g3') -> vmap g1 root = vmap g3 root).
+Proof.
+  intros.
+  revert es_later g2 g2' H3 H5; rev_induction es_done.
+  + hnf in H5.
+    i
+Lemma vcopy1_edge_copy_list_extended_vmap_root: forall (g g1 g2 g3: Graph) (g1' g2' g3': Graph') root es es_done e0 es_later (M: V -> Prop),
+  vvalid g root ->
+  ~ M root ->
+  (forall e, In e es <-> out_edges g root e) ->
+  NoDup es ->
+  es = es_done ++ e0 :: es_later ->
+  (forall v : V, M v \/ ~ M v) ->
+  vcopy1 root g g1 g1' ->
+  edge_copy_list g root es_done M (g1, g1') (g2, g2') ->
+  let M0 := Union _ M (eq root) in
+  let PV1 := reachable_by_through_set g (map (dst g) es_done) (Complement _ M0) in
+  let PE1 := Intersection _ (weak_edge_prop PV1 g) (evalid g) in
+  let PE1_root e := In e es_done in
+  let M_rec := Union _ M0 PV1 in
+  let PV0 := reachable_by g (dst g e0) (Complement _ M_rec) in
+  let PE0 := Intersection _ (weak_edge_prop PV0 g) (evalid g) in
+  (forall v, M_rec v \/ ~ M_rec v) ->
+  extended_copy M_rec (dst g e0) (g2, g2') (g3, g3') ->
+  map (emap g1) es_done = map (emap g3) es_done.
+*)
 Lemma vcopy1_edge_copy_list_mapped_root_edge_evalid: forall (g g1 g2: Graph) (g1' g2': Graph') root es es_done es_later (M: V -> Prop),
   vvalid g root ->
   ~ M root ->
