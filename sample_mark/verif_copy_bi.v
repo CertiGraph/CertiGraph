@@ -304,6 +304,7 @@ Proof.
   rewrite (va_labeledgraph_add_edge_left g g1 g2 g1' g2' x l r x0 l0) by auto.
   rewrite (va_labeledgraph_egen_left g2 x x0).
   destruct (labeledgraph_add_edge_ecopy1_left g g1 g2 g1' g2' x l r x0 l0 gx_vvalid H_GAMMA_g H_vopy1 H_copy_left H_x0 H_l0 BiMaFin_g2' x0_not_null) as [H_ecopy1_left [BiMaFin_g3' H_x0L]].
+  clear BiMaFin_g2'.
   forget (Graph_egen g2 (x: addr, L) (x0: addr, L)) as g3.
   forget (graph_gen.labeledgraph_add_edge g2' (x0, L) x0 l0 (null, L)) as g3'.
 
@@ -317,48 +318,68 @@ Proof.
 
   eapply semax_ram_seq;
   [ repeat apply eexists_add_stats_cons; constructor
-  | semax_ram_call_body (sh, g2, r)
-  | semax_ram_after_call; intros [[r0 g3] g3''];
+  | semax_ram_call_body (sh, g3, r)
+  | semax_ram_after_call; intros [[r0 g4] g4''];
     repeat (apply ram_extract_PROP; intro) ].
   (* r0 = copy(r); *)
 
-  cbv [fst snd] in H8, H9 |- *.
+  rename H3 into H_copy, H4 into H_r0.
+  cbv [fst snd] in H_copy, H_r0 |- *.
   unlocalize
    (PROP  ()
     LOCAL (temp _r (pointer_val_val r);
            temp _r0 (pointer_val_val r0);
            temp _x (pointer_val_val x);
            temp _x0 (pointer_val_val x0))
-    SEP (holegraph sh x0 g2';
-         data_at sh node_type
+    SEP (data_at sh node_type
           (Vint (Int.repr 0), (pointer_val_val l0, pointer_val_val null))
           (pointer_val_val x0);
-         graph sh x g3; graph sh r0 g3''))
-  using [H8; H9]%RamAssu
-  binding [r0; g3; g3'']%RamBind.
+         holegraph sh x0 g3';
+         graph sh x g4; graph sh r0 g4''))
+  using [H_copy; H_r0]%RamAssu
+  binding [r0; g4; g4'']%RamBind.
   Grab Existential Variables.
   Focus 2. {
     simplify_ramif.
-    eapply (@graph_ramify_right _ (sSGG_VST sh) _ g); eauto.
+    eapply (@graph_ramify_right _ (sSGG_VST sh) RamUnit g); eauto.
   } Unfocus.
   (* Unlocalize *)
 
   unfold semax_ram. (* should not need this *)
+  gather_SEP 0 1 3.
+  replace_SEP 0
+      (EX g4': LGraph,
+       !! (extended_copy r (g3: LGraph, g3') (g4: LGraph, g4') /\
+           is_guarded_BiMaFin (fun v => x0 <> v) (fun e => ~ In e ((x0, L) :: nil)) g4') &&
+          (data_at sh node_type
+            (pointer_val_val null, (pointer_val_val l0, pointer_val_val null)) (pointer_val_val x0) *
+           holegraph sh x0 g4')).
+  Focus 1. {
+    entailer.
+    apply (@extend_copy_right _ (sSGG_VST sh) g g1 g2 g3 g4 g1' g2' g3' g4''(ValidPointer b i) l r (vmap g1 (ValidPointer b i)) r0 (null, l0, null)); auto.
+  } Unfocus.
+  Opaque extended_copy.
+  rewrite extract_exists_in_SEP. (* should be able to use tactic directly *)
+  Transparent extended_copy.
+  clear g4'' H_copy BiMaFin_g3'.
+  Intros g4'. rename H3 into H_copy_right, H4 into BiMaFin_g4'.
+
   forward. (* x0 -> r = r0; *)
   autorewrite with norm. (* TODO: should not need this *)
 
-  gather_SEP 0 3.
-  replace_SEP 0 (EX g3': LGraph, !! edge_copy g (x, R) (g2: LGraph, g2') (g3: LGraph, g3') &&
-           holegraph sh x0 g3').
-  Focus 1. {
-    entailer!.
-    apply (@extend_copy_right _ (sSGG_VST sh) g g1 g2 g3 g1' g2' g3'' (ValidPointer b i) l r (vmap g1 (ValidPointer b i)) r0); auto.
-  } Unfocus.
-  rewrite extract_exists_in_SEP. (* should be able to use tactic directly *)
-  Intros g3'.
-  clear g3'' H8.
+  rewrite (va_labeledgraph_add_edge_right g g1 g2 g3 g4 g1' g2' g3' g4' x l r x0 r0) by auto.
+  rewrite (va_labeledgraph_egen_right g4 x x0).
+  destruct (labeledgraph_add_edge_ecopy1_right g g1 g2 g3 g4 g1' g2' g3' g4' x l r x0 r0 gx_vvalid H_GAMMA_g H_vopy1 H_copy_left H_ecopy1_left H_copy_right H_x0 H_x0L H_r0 BiMaFin_g4' x0_not_null) as [H_ecopy1_right [BiMaFin_g5' H_x0R]].
+  clear BiMaFin_g4'.
+  forget (Graph_egen g4 (x: addr, R) (x0: addr, R)) as g5.
+  forget (graph_gen.labeledgraph_add_edge g4' (x0, R) x0 r0 (null, L)) as g5'.
 
-  forward. (* ( return; ) *)
-  apply (exp_right g3); entailer!; auto.
-  apply (mark1_mark_left_mark_right g g1 g2 g3 (ValidPointer b i) l r); auto.
+  gather_SEP 0 1.
+  replace_SEP 0 (EX gg5': Graph, !! (@copy _ _ _ CCS x g g5 gg5' /\ x0 = vmap g5 x) && graph sh x0 gg5').
+  admit.
+
+  forward. (* return x0; *)
+  rewrite H7.
+  apply (exp_right (vlabel g5 (ValidPointer b i), g5, gg5')); entailer!; auto. cancel.
+  apply derives_refl.
 Time Qed. (* Takes 3 hours. *)
