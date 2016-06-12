@@ -738,6 +738,41 @@ Proof.
   destruct H as [? [? ?]]; subst; auto.
 Qed.
 
+Definition Countable_Union (A: Type) (P: nat -> Ensemble A) : Ensemble A :=
+  fun x => exists i, P i x.
+
+Definition Non_Empty {U: Type} (A: Ensemble U): Prop := exists x, A x.
+
+Definition Binart_set_list (U: Type) (A B: Ensemble U): nat -> Ensemble U :=
+  fun n => match n with | 0 => A | 1 => B | _ => Empty_set _ end.
+
+Lemma Union_is_Countable_Union: forall {U: Type} (A B: Ensemble U),
+  Same_set (Union _ A B) (Countable_Union _ (Binart_set_list _ A B)).
+Proof.
+  intros.
+  rewrite Same_set_spec.
+  intros x.
+  rewrite Union_spec; unfold Countable_Union.
+  split.
+  + intros [? | ?].
+    - exists 0; auto.
+    - exists 1; auto.
+  + intros [[ | [ | ]] ?].
+    - left; auto.
+    - right; auto.
+    - inversion H.
+Qed.
+
+Lemma Intersection_is_Complement_Union (classic: forall P: Prop, P \/ ~ P): forall {U: Type} (A B: Ensemble U),
+  Same_set (Intersection _ A B) (Complement _ (Union _ (Complement _ A) (Complement _ B))).
+Proof.
+  intros.
+  rewrite Same_set_spec.
+  intros x; unfold Complement, Ensembles.In.
+  rewrite Union_spec, Intersection_spec.
+  destruct (classic (A x)), (classic (B x)); tauto.
+Qed.
+
 (*
 
 Lemma Finite_spec: forall A U, Finite A U <-> exists l, NoDup l /\ forall x, In x l <-> Ensembles.In A U x.

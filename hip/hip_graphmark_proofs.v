@@ -43,39 +43,32 @@ Module GraphMark <: Mgraphmark.
   Definition union : formula -> formula -> formula := ocon.
   Definition neq : bool -> bool -> formula := fun a b => prop (~ a = b).
   Definition mark : A -> node -> A -> formula := fun g1 n g2 => prop (mark n (Graph_LGraph g1) (Graph_LGraph g2)).
-Check vertices_identical.
+
   Definition eq_notreach : A -> node -> A -> formula :=
-    fun g1 n g2 => prop ((unreachable_partial_spatialgraph (LGraph_SGraph (Graph_LGraph g1)) (n :: nil))
-                           -=- (unreachable_partial_spatialgraph (LGraph_SGraph (Graph_LGraph g2)) (n :: nil))).
-  Definition subset_reach : A -> node -> A -> formula := fun g1 n g2 => prop (Included (reachable (SGraph_PGraph (LGraph_SGraph (Graph_LGraph g1))) n)
-                                                                                       (reachable (SGraph_PGraph (LGraph_SGraph (Graph_LGraph g2))) n)).
+    fun g1 n g2 => prop (vertices_identical2 (Complement _ (reachable (pg_lg (Graph_LGraph g1)) n)) (Complement _ (reachable (pg_lg (Graph_LGraph g2)) n)) (LGraph_SGraph (Graph_LGraph g1)) (LGraph_SGraph (Graph_LGraph g2))).
+
+  Definition subset_reach : A -> node -> A -> formula := fun g1 n g2 => prop (Included (reachable (pg_lg (Graph_LGraph g1)) n) (reachable (pg_lg (Graph_LGraph g2)) n)).
+
   Definition lookup : A -> node -> bool -> node -> node -> formula :=
-    fun g x d l r => prop (vlabel (Graph_LGraph g) x = d /\ vvalid (SGraph_PGraph (LGraph_SGraph (Graph_LGraph g))) x /\
-                           vvalid (SGraph_PGraph (LGraph_SGraph (Graph_LGraph g))) l /\ vvalid (SGraph_PGraph (LGraph_SGraph (Graph_LGraph g))) r /\
-                           dst (SGraph_PGraph (LGraph_SGraph (Graph_LGraph g))) (x, L) = l /\ dst (SGraph_PGraph (LGraph_SGraph (Graph_LGraph g))) (x, R) = r).
-  Definition update : A -> node -> bool -> node -> node -> A -> formula :=
-    fun g1 x d l r g2 => prop (exists (Hn : ~ is_null (SGraph_PGraph (LGraph_SGraph (Graph_LGraph g1))) x)
-                                      (Hi : graph_gen.in_math (SGraph_PGraph (LGraph_SGraph (Graph_LGraph g1))) x l r), Graph_gen_update g1 x d l r Hi Hn = g2).
+    fun g x d l r => prop (vlabel (Graph_LGraph g) x = d /\ vvalid (pg_lg (Graph_LGraph g)) x /\
+                           vvalid (pg_lg (Graph_LGraph g)) l /\ vvalid (pg_lg (Graph_LGraph g)) r /\
+                           dst (pg_lg (Graph_LGraph g)) (x, L) = l /\ dst (pg_lg (Graph_LGraph g)) (x, R) = r).
+
+  Definition update : A -> node -> bool -> A -> formula :=
+    fun g1 x d g2 => prop (Graph_vgen g1 x d = g2).
 
   Lemma update_is_mark1: forall (l r: addr) (G G1: A) x,
-      vvalid (SGraph_PGraph (LGraph_SGraph (Graph_LGraph G))) x ->
-      dst (SGraph_PGraph (LGraph_SGraph (Graph_LGraph G))) (x, L) = l -> dst (SGraph_PGraph (LGraph_SGraph (Graph_LGraph G))) (x, R) = r ->
-      (exists (Hn : ~ is_null (SGraph_PGraph (LGraph_SGraph (Graph_LGraph G))) x) (Hi : graph_gen.in_math (SGraph_PGraph (LGraph_SGraph (Graph_LGraph G))) x l r),
-          Graph_gen_update G x true l r Hi Hn = G1) ->
+      vvalid (pg_lg (Graph_LGraph G)) x ->
+      dst (pg_lg (Graph_LGraph G)) (x, L) = l ->
+      dst (pg_lg (Graph_LGraph G)) (x, R) = r ->
+      Graph_vgen G x true = G1 ->
       mark1 x (Graph_LGraph G) (Graph_LGraph G1).
   Proof.
-    intros. unfold valid in H1. destruct H2 as [Hn [Hi ?]].
+    intros. unfold valid in H1.
     rewrite <- H2. split; [|split]; simpl.
     + split; [|split; [|split]]; simpl; intros; auto.
-      - unfold graph_gen.change_vvalid. intuition. subst; auto.
+      - unfold graph_gen.change_vvalid. intuition.
       - unfold graph_gen.change_evalid. intuition.
-        rewrite (@only_two_edges _ _ _ _ (SGraph_PGraph (LGraph_SGraph (Graph_LGraph G))) _ _ (biGraph G)) in H4.
-        destruct H4; rewrite H3;
-        [apply (@left_valid _ _ _ _ _ _ _ (biGraph G)) |
-         apply (@right_valid _ _ _ _ _ _ _ (biGraph G))]; auto.
-      - unfold graph_gen.change_dst. destruct (equiv_dec (src (pg_lg (lg_gg G)) e) x); auto.
-        unfold equiv in e0.
-        destruct (left_or_right (pg_lg (lg_gg G)) (biGraph G) x e e0); subst e; auto.
     + unfold graph_gen.update_vlabel. destruct (equiv_dec x x); intuition.
     + intros. unfold graph_gen.update_vlabel. destruct (equiv_dec x n'); intuition.
   Qed.
@@ -89,96 +82,101 @@ Check vertices_identical.
     simpl in H1. symmetry. rewrite H1. left; auto.
   Qed.
 
+(* (*TODO: delete it *)
   Lemma axiom_5 : forall v G1 G2 G G3 x l r,
       valid (imp (and (lookup G x v l r)
-                      (and (update G x true l r G1)
+                      (and (update G x true G1)
                            (and (neq v true) (and (mark G1 r G2) (mark G2 l G3)))))
                  (and (mark G x G3) (lookup G3 x true l r))).
   Proof.
     intros. unfold valid, imp, and, lookup, neq, mark, update.
     apply imp_andp_adjoint. normalize. destruct H as [? [? [? [? [? ?]]]]].
-    assert (mark1 x (Graph_LGraph G) (Graph_LGraph G1)) by (apply (update_is_mark1 l r); auto).
+    assert (mark1 x (Graph_LGraph G) (Graph_LGraph (Graph_vgen G x true))) by (apply (update_is_mark1 l r); auto).
     apply andp_right; normalize.
-    + destruct H0 as [Hn [Hi ?]].
-      apply mark1_mark_list_mark with (r :: l :: nil); auto.
-      - simpl. unfold Complement. unfold In. clear - H H1. subst v. intuition.
+    + apply mark1_mark_list_mark with (r :: l :: nil); auto.
+      - simpl. unfold Complement. unfold In.
+        subst v. clear - H0. intuition.
       - apply gamma_step_list' with false; auto. simpl.
-        do 2 (f_equal; auto). subst v. apply Bool.not_true_is_false in H1. auto.
-      - hnf. apply (compond_intro (compond_relation Logic.eq (mark1 x)) _ _ (Graph_LGraph G1) _).
-        apply (compond_intro Logic.eq (mark1 x) (Graph_LGraph G) (Graph_LGraph G) (Graph_LGraph G1)); auto.
+        do 2 (f_equal; auto). subst v. apply Bool.not_true_is_false in H0. auto.
+      - hnf. apply (compond_intro (compond_relation Logic.eq (mark1 x)) _ _ (Graph_LGraph (Graph_vgen G x true)) _).
+        apply (compond_intro Logic.eq (mark1 x) (Graph_LGraph G) (Graph_LGraph G) (Graph_LGraph (Graph_vgen G x true))); auto.
         unfold mark_list. simpl. hnf.
         apply (compond_intro
                  (compond_relation Logic.eq (Graph_Mark.mark r)) _ _ (Graph_LGraph G2) _); auto.
-          apply (compond_intro Logic.eq (Graph_Mark.mark r) (Graph_LGraph G1) (Graph_LGraph G1) (Graph_LGraph G2)); auto.
-    + destruct H2, H3, H9. destruct H12 as [? ?]. split.
-      - apply (marked_node_marked G2 l); auto. apply (marked_node_marked G1 r); auto. 
-      - assert ((SGraph_PGraph (LGraph_SGraph (Graph_LGraph G))) ~=~ (SGraph_PGraph (LGraph_SGraph (Graph_LGraph G3)))) by
-            (transitivity (SGraph_PGraph (LGraph_SGraph (Graph_LGraph G1))); auto; transitivity (SGraph_PGraph (LGraph_SGraph (Graph_LGraph G2))); auto).
-        destruct H14 as [? [? [? ?]]]. split; [|split; [|split; [|split]]].
-        * specialize (H14 x); intuition.
-        * specialize (H14 l); intuition.
-        * specialize (H14 r); intuition.
-        * assert (evalid (SGraph_PGraph (LGraph_SGraph (Graph_LGraph G))) (x, L)) by
+          apply (compond_intro Logic.eq (Graph_Mark.mark r) (Graph_LGraph (Graph_vgen G x true)) (Graph_LGraph (Graph_vgen G x true)) (Graph_LGraph G2)); auto.
+    + destruct H1, H2, H8. destruct H11 as [? ?]. split.
+      - apply (marked_node_marked G2 l); auto. apply (marked_node_marked (Graph_vgen G x true) r); auto. 
+      - assert ((pg_lg (Graph_LGraph G)) ~=~ (pg_lg (Graph_LGraph G3))) by
+            (transitivity (pg_lg (Graph_LGraph (Graph_vgen G x true))); auto; transitivity (pg_lg (Graph_LGraph G2)); auto).
+        destruct H13 as [? [? [? ?]]]. split; [|split; [|split; [|split]]].
+        * specialize (H13 x); intuition.
+        * specialize (H13 l); intuition.
+        * specialize (H13 r); intuition.
+        * assert (evalid (pg_lg (Graph_LGraph G)) (x, L)) by
               (apply (@left_valid _ _ _ _ _ _ _ (biGraph G)); auto).
-          subst l. symmetry. specialize (H17 (x, L)).
-          specialize (H15 (x, L)). intuition.
-        * assert (evalid (SGraph_PGraph (LGraph_SGraph (Graph_LGraph G))) (x, R)) by
+          subst l. symmetry. specialize (H16 (x, L)).
+          specialize (H14 (x, L)). intuition.
+        * assert (evalid (pg_lg (Graph_LGraph G)) (x, R)) by
               (apply (@right_valid _ _ _ _ _ _ _ (biGraph G)); auto).
-          subst r. symmetry. specialize (H17 (x, R)).
-          specialize (H15 (x, R)). intuition.
+          subst r. symmetry. specialize (H16 (x, R)).
+          specialize (H14 (x, R)). intuition.
   Qed.
-  
-  Lemma axiom_6 : forall v G1 G2 G G3 x l r,
+  *)
+  Lemma axiom_1 : forall v G1 G2 G G3 x l r,
       valid (imp (and (lookup G x v l r)
-                      (and (update G x true l r G1)
+                      (and (update G x true G1)
                            (and (neq v true) (and (mark G1 l G2) (mark G2 r G3)))))
                  (and (mark G x G3) (lookup G3 x true l r))).
   Proof.
     intros. unfold valid, imp, and, lookup, neq, mark, update.
     apply imp_andp_adjoint. normalize. destruct H as [? [? [? [? [? ?]]]]].
-    assert (mark1 x (Graph_LGraph G) (Graph_LGraph G1)) by (apply (update_is_mark1 l r); auto).
+    assert (mark1 x (Graph_LGraph G) (Graph_LGraph (Graph_vgen G x true))) by (apply (update_is_mark1 l r); auto).
     apply andp_right; normalize.
-    + destruct H0 as [Hn [Hi ?]].
-      apply mark1_mark_list_mark with (l :: r :: nil); auto.
-      - simpl. unfold Complement. unfold In. clear - H H1. subst v. intuition.
+    + apply mark1_mark_list_mark with (l :: r :: nil); auto.
+      - simpl. unfold Complement. unfold In.
+        subst v. clear - H0. intuition.
       - apply gamma_step_list with false; auto. simpl.
-        do 2 (f_equal; auto). subst v. apply Bool.not_true_is_false in H1. auto.
-      - hnf. apply (compond_intro (compond_relation Logic.eq (mark1 x)) _ _ (Graph_LGraph G1) _).
-        apply (compond_intro Logic.eq (mark1 x) (Graph_LGraph G) (Graph_LGraph G) (Graph_LGraph G1)); auto.
+        do 2 (f_equal; auto). subst v. apply Bool.not_true_is_false in H0. auto.
+      - hnf. apply (compond_intro (compond_relation Logic.eq (mark1 x)) _ _ (Graph_LGraph (Graph_vgen G x true)) _).
+        apply (compond_intro Logic.eq (mark1 x) (Graph_LGraph G) (Graph_LGraph G) (Graph_LGraph (Graph_vgen G x true))); auto.
         unfold mark_list. simpl. hnf.
         apply (compond_intro
                  (compond_relation Logic.eq (Graph_Mark.mark l)) _ _ (Graph_LGraph G2) _); auto.
-          apply (compond_intro Logic.eq (Graph_Mark.mark l) (Graph_LGraph G1) (Graph_LGraph G1) (Graph_LGraph G2)); auto.
-    + destruct H2, H3, H9. destruct H12 as [? ?]. split.
-      - apply (marked_node_marked G2 r); auto. apply (marked_node_marked G1 l); auto. 
-      - assert ((SGraph_PGraph (LGraph_SGraph (Graph_LGraph G))) ~=~ (SGraph_PGraph (LGraph_SGraph (Graph_LGraph G3)))) by
-            (transitivity (SGraph_PGraph (LGraph_SGraph (Graph_LGraph G1))); auto; transitivity (SGraph_PGraph (LGraph_SGraph (Graph_LGraph G2))); auto).
-        destruct H14 as [? [? [? ?]]]. split; [|split; [|split; [|split]]].
-        * specialize (H14 x); intuition.
-        * specialize (H14 l); intuition.
-        * specialize (H14 r); intuition.
-        * assert (evalid (SGraph_PGraph (LGraph_SGraph (Graph_LGraph G))) (x, L)) by
+          apply (compond_intro Logic.eq (Graph_Mark.mark l) (Graph_LGraph (Graph_vgen G x true)) (Graph_LGraph (Graph_vgen G x true)) (Graph_LGraph G2)); auto.
+    + destruct H1, H2, H8. destruct H11 as [? ?]. split.
+      - apply (marked_node_marked G2 r); auto. apply (marked_node_marked (Graph_vgen G x true) l); auto. 
+      - assert ((pg_lg (Graph_LGraph G)) ~=~ (pg_lg (Graph_LGraph G3))) by
+            (transitivity (pg_lg (Graph_LGraph (Graph_vgen G x true))); auto; transitivity (pg_lg (Graph_LGraph G2)); auto).
+        destruct H13 as [? [? [? ?]]]. split; [|split; [|split; [|split]]].
+        * specialize (H13 x); intuition.
+        * specialize (H13 l); intuition.
+        * specialize (H13 r); intuition.
+        * assert (evalid (pg_lg (Graph_LGraph G)) (x, L)) by
               (apply (@left_valid _ _ _ _ _ _ _ (biGraph G)); auto).
-          subst l. symmetry. specialize (H17 (x, L)).
-          specialize (H15 (x, L)). intuition.
-        * assert (evalid (SGraph_PGraph (LGraph_SGraph (Graph_LGraph G))) (x, R)) by
+          subst l. symmetry. specialize (H16 (x, L)).
+          specialize (H14 (x, L)). intuition.
+        * assert (evalid (pg_lg (Graph_LGraph G)) (x, R)) by
               (apply (@right_valid _ _ _ _ _ _ _ (biGraph G)); auto).
-          subst r. symmetry. specialize (H17 (x, R)).
-          specialize (H15 (x, R)). intuition.
+          subst r. symmetry. specialize (H16 (x, R)).
+          specialize (H14 (x, R)). intuition.
   Qed.
 
-  Lemma axiom_7 : forall v G x G1 y l r,
-      valid (imp (and (mark G x G1) (lookup G y v l r))
-                 (and (subset_reach G x G1)
-                      (and (eq_notreach G x G1)
-                           (ext (fun Anon_15 => (lookup G1 y Anon_15 l r)))))).
+  Lemma axiom_2 : forall v G x G1 y l r, valid (imp (and (mark G x G1) (lookup G y v l r)) (and (subset_reach G x G1) (and (eq_notreach G x G1) (ext (fun Anon_15 => (lookup G1 y Anon_15 l r)))))).
   Proof.
     intros. unfold valid, imp, and, mark, lookup, subset_reach, eq_notreach.
     apply imp_andp_adjoint. normalize. destruct H0 as [? [? [? [? [? ?]]]]].
     apply andp_right; [|apply andp_right].
     + apply TT_prop_right. destruct H. apply (reachable_ind.si_reachable _ _ x) in H6.
       destruct H6. auto.
-    + apply TT_prop_right. destruct H. unfold unreachable_partial_spatialgraph.
+    + apply TT_prop_right. destruct H.
+      destruct H.
+      unfold vertices_identical2.
+      split; [rewrite H6; reflexivity |].
+      rewrite vertices_identical_spec; intros.
+      specialize (H7 x0).
+      simpl in H7 |- *.
+SearchAbout vertices_identical.
+ unfold unreachable_partial_spatialgraph.
       hnf. simpl. unfold predicate_vvalid. unfold predicate_weak_evalid.
       split; [|split]; intros; auto.
       - apply partialgraph_proper; auto. unfold Complement. unfold In. hnf.
