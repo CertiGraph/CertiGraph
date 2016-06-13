@@ -1,51 +1,92 @@
 As pointed out in \cite{hobor:ramification}, na\"iave attempts to
 verify graph-manipulating programms using the shape-only predicates
 are unsound. An obvious solution---especially for verifying functional
-correctness---is to involve mathematical graphs $\gamma$ in spatial
-predicates as a parameter. This means the verification needs a way to
-reason about pure facts of graphs. Thus we formalized a proof
-framework for mathematical graphs and proved a lot of useful theorems
-in graph theory. In this section, we will show how we built them.
+correctness---is to involve a mathematical graph $\gamma$ in spatial
+predicates as a parameter. Since the additional parameter is involved
+in the specification, we needs a way to reason about it, so as to
+deduce the specification. Thus we formalize a proof framework for
+mathematical graphs and provide a bunch of useful theorems in graph
+theory to ease the burden in verifying programs. In this section, we
+will introduce the framework and show how we built them.
 
 \subsection{Definitions of graph and other concepts}
 
-In mathematics, a (directed) graph is presented as an ordered pair
-$(V, E)$ where $V$ is a set of vertices or nodes and $E$ is a set of
-edges comprising a source node and a destination node. In our
-framework, we defined a similar structure with a small augmentation:
-we attached ``validity'' property to each vertex and edge in case of
-presenting partial graph structures with dangling edges. For example,
-in some cases, we need to give a representation to describe the
-difference of two graphs: $\gamma_1-\gamma_2$, which is not
-necessarily a graph because it may contain dangling edges. The
-``subtracted'' nodes are not really removed but are ruled out from
-valid nodes because they are still referred in edges part of the
-definition of $\gamma_1-\gamma_2$. So we call this
-structure \textbf{PreGraph}, which means it may be incomplete in
-comparison with a classical graph. In our framework, a mathematical
-graph $\gamma$ is a quadruple $(V, E, \Phi_V, \Phi_E)$ where $\Phi_V$ and
-$\Phi_E$ are validity predicates for vertices $V$ and edges $E$
-respectively. Many concepts such as reachability, subgraph and
-structural equivalence are defined based on PreGraph.
+The core of the graph theory framework are the definitions of graph,
+graph-related structures and relations. In mathematics, a (directed)
+graph is an ordered pair $(V, E)$ where $V$ is a set of vertices or
+nodes and $E$ is a set of edges comprising a source node and a
+destination node. In our framework, we defined a similar structure
+with minor amendment: we attached ``validity'' property to each vertex
+and edge while $V$ and $E$ serve as types instead of sets of vertices
+and edges respectively. There are two reasons for the amendment. The
+first is that in many proof assistants, it is much easier and natural
+to declare types instead of sets. When using types, validity is an
+effective way in controlling membership: most graphs do not contain
+all instances of vertex type and edge type. The second reason is
+expanding the scope of representation, not just normal graphs. For
+example, in some cases, we need to describe the difference of two
+graphs: $\gamma_1-\gamma_2$, which is not necessarily a graph because
+it may contain dangling edges. The ``subtracted'' nodes are not really
+removed but are ruled out from valid nodes because they are still
+referred in edges part of the definition of $\gamma_1-\gamma_2$. So we
+call this structure \textbf{PreGraph}, which means it may be
+incomplete in comparison with a classical graph. In our framework, a
+PreGraph $\gamma$ is a hextuple $(V, E, \Phi_V, \Phi_E, s, t)$ where
+$\Phi_V$ and $\Phi_E$ are validity predicates for vertex type $V$ and
+edge type $E$, $s$ and $t$ are functions which takes an edge as
+argument and returns source/destination node of the edge. Many
+concepts such as reachability, subgraph and structural equivalence are
+defined based on PreGraph.
+
+\paragraph{Path}
+Once we have the definition of PreGraph, it is time to define another
+infrastructure: path. Informally, a path is a list of nodes
+concatenated with edges. Since an edge contains the information about
+its source and destination nodes, there is no necessary to define path
+as an interleaving list of nodes and edges. Then we have two obvious
+choices for representation of a path: a list of nodes or a list of
+edges.
+
+Both choices have certain defects. If a path is defined as a list of
+nodes, we can not distinguish different paths between two nodes in
+case there are multiple edges between two nodes. If a path is defined
+as a list of edges, then we can deal with multiple edges but we can
+not represent an empty path for a certain node---we can not determine
+which node an empty list of edges belongs to.
+
+To avoid the defects above, we define the path as a ordered pair $(n,
+l)$ where $n$ is a node and $l$ is a list of edges. A valid path
+requires that $n$ is the source node of the first edge of $l$ and $l$
+is well chained---the destination of an edge in $l$ is the same as the
+source of the next edge. The list $l$ can be null to represent an
+empty path for a particular node $n$.
+
+Why we insist that a path---even an empty path---must have a leading
+node? One reason is that with such a definition, we can give a
+consistent definition for a very important concept: reachability.
 
 \paragraph{Reachability}
 Among various properties derived from PreGraph, the most important one
-is reachability: $\gamma \models L_{n_2}^{n_1}(P)$. It means in
-PreGraph $\gamma$, node $n_2$ is reachable from node $n_1$ along the
-path $L$ and in the meantime, every node in $L$ satisfies predicate
-$P$. This property and other derived ones, such as
+is the reachability. The definition of reachability is based on
+path. The notation $\gamma \models L_{n_2}^{n_1}(P)$ means in PreGraph
+$\gamma$, node $n_2$ is reachable from node $n_1$ along the path $L$
+while every node in $L$ satisfies predicate $P$. This notation, along
+with other derived ones, such as
 \begin{equation*}
 \begin{split}
 \gamma\models n_1 \xrightarrow{P} n_2 &\triangleq \exists L, \gamma \models L_{n_2}^{n_1}(P),\\
 \gamma\models n_1 \leadsto n_2 &\triangleq \exists L, \gamma \models L_{n_2}^{n_1}(True)
 \end{split}
 \end{equation*}
-all play important roles in reasoning about mathematical facts. A
-bunch of key predicates in defining relations of math objects before
-and after program execution rely on these properties. We proved dozens
-of theorems about these properties. Some of them, like ``If there is a
-path from $s$ to $t$, then there is another path without duplicated
-nodes from $s$ to $t$'', are quite tricky to prove.
+form the bedrock of nearly every nontrivial predicate about
+graph. Either the relation of two states---before and after running an
+algorithm---of a graph or the description of a graph with a particular
+shape, reachability is inevitable. To some extent, it is quite natural
+because most graph-related algorithms (DFS, BFS, Shortest Path,
+Spanning Tree, etc) depend on a small operation: exploring neighbours
+from one node. Thus when describing the effect of an algorithm,
+reachability is indispensable. Some of those descriptions are
+discussed in later sections.
 
 \paragraph{Subgraph}
 When we tie a mathematical graph $\gamma$ to a spatial graph predicate
@@ -54,18 +95,19 @@ spatial representation of the portion of $\gamma$ that is reachable
 from $x$; $\gamma$ may contain other nodes. When we reason about
 $g(x, \gamma)$, it is a very natural requirement to describe the
 reachable portion of $\gamma$ in pure part. We generalize this
-description as two concepts: partial graph $\gamma \uparrow P$ and
-subgraph $\gamma \downarrow P$ for any predicate $P$. To define
-$\gamma \uparrow P$ and $\gamma \downarrow P$, for any $\gamma=(V,
-E, \Phi_V, \Phi_E)$, we do not change $V$ and $E$ but change $\Phi_V$
-and $\Phi_E$ by adding proposition about satisfying $P$ for nodes. It
-means valid nodes in $\gamma \uparrow P$ and $\gamma \downarrow P$
-must satisfy $P$. The only difference between $\gamma \uparrow P$ and
-$\gamma \downarrow P$ is that in $\gamma \uparrow P$ the edges with
-its source node satisfying $P$ is valid, but in $\gamma \downarrow P$,
-valid edges means both its source and destination nodes satisfy
-$P$. With the concepts of partial graph and subgraph, we can express
-the reachable portion by instantiating $P$ as reachable predicate.
+description as two concepts: partial graph $\gamma \!\uparrow\! P$ and
+subgraph $\gamma \!\downarrow\! P$ for arbitrary predicate $P$. To define
+$\gamma \!\uparrow\! P$ and $\gamma \!\downarrow\! P$, for any $\gamma=(V,
+E, \Phi_V, \Phi_E, s, t)$, we do not change $V$ and $E$ but change
+$\Phi_V$ and $\Phi_E$ by adding proposition about satisfying $P$ for
+nodes. It means valid nodes in $\gamma \!\uparrow\! P$ and
+$\gamma \!\downarrow\! P$ must satisfy $P$. The only difference between
+$\gamma \!\uparrow\! P$ and $\gamma \!\downarrow\! P$ is that in
+$\gamma \!\uparrow\! P$ the edges with its source node satisfying $P$ is
+valid, but in $\gamma \!\downarrow\! P$, valid edges means both its source
+and destination nodes satisfy $P$. With the concepts of partial graph
+and subgraph, we can express the reachable portion by instantiating
+$P$ as reachable predicate.
 
 \paragraph{Structural Equivalence}
 Many graph-manipulating algorithms adopt divide and conquer
@@ -104,6 +146,37 @@ bundles. We defined \textbf{LocalFiniteGraph}, \textbf{MathGraph}
 and \textbf{BiGraph} for the three requirements above,
 respectively. These abstractions made theorems more flexible and
 general.
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}[->/.tip={Stealth}]
+\tikzstyle{every node}=[shape=rectangle, rounded corners=4pt, draw]
+\node (GG) at (1, 6) {GeneralGraph};
+\node (NGG) at (4, 6) {NormalGeneralGraph};
+\node (RFG) at (0, 4.5) {ReachableFiniteGraph};
+\node (LG) at (3, 4.5) {LabeledGraph};
+\node (LFG) at (-1, 3) {LocalFiniteGraph};
+\node (PG) at (2, 3) {PreGraph};
+\node (SG) at (4.5, 3) {SpatialGraph};
+\node (BG) at (-0.5, 1.5) {BiGraph};
+\node (MG) at (1.5, 1.5) {MathGraph};
+\node (FG) at (4, 1.5) {FiniteGraph};
+\node (BMF) at (1.5, 0) {BiMaFin};
+\draw [->] (LG) to (NGG);
+\draw [->] (LG) to (GG);
+\draw [->] (PG) to (LG);
+\draw [->] (PG) to (SG);
+\draw [->] (PG) to (RFG);
+\draw [->] (PG) to (LFG);
+\draw [->] (PG) to (BG);
+\draw [->] (PG) to (MG);
+\draw [->] (PG) to (FG);
+\draw [->] (BG) to (BMF);
+\draw [->] (MG) to (BMF);
+\draw [->] (FG) to (BMF);
+\end{tikzpicture}
+\caption{Various Kinds of Graphs}
+\end{figure}
 
 In our framework, there are four kinds of graphs: MathGraph,
 FiniteGraph, LocalFiniteGraph and BiGraph. They are all constraints on
@@ -171,9 +244,14 @@ as dag (directed acyclic graph), tree or spanning tree. With the basic
 defintions in our framework, new structures can be defined
 easily. Acyclic graph is just a graph with an additional property:
 forall any $x$ and $y$, if $x$ is reachable from $y$, then $y$ is not
-reachable from $x$. Tree is similar. The additional property is that
-there is one and only one path from root to any reachable node from
-root. Spanning tree is a tree with the same reachable vertex set of
-the original graph.
+reachable from $x$. Tree is similar. The additional property for tree
+is that there is one and only one path from root to any reachable node
+from root. Spanning tree is a tree with the same reachable vertex set
+of the original graph.
+
+But when dealing with formal proofs, there are some unexpected
+facts. For example, our naive definition of the
+predicate \verb|spanning_tree| is not strong enough to complete the
+inference. Besides the tree
 
 (To be continued)

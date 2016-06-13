@@ -21,6 +21,8 @@
 \usepackage{enumitem}      % adjust spacing in enums
 \usepackage[colorlinks=true,allcolors=blue,breaklinks,draft=false]{hyperref}   % hyperlinks, including DOIs and URLs in bibliography
 % known bug: http://tex.stackexchange.com/questions/1522/pdfendlink-ended-up-in-different-nesting-level-than-pdfstartlink
+\usepackage{tikz}
+\usetikzlibrary{arrows.meta}
 \newcommand{\doi}[1]{doi:~\href{http://dx.doi.org/#1}{\Hurl{#1}}}   % print a hyperlinked DOI
 
 
@@ -79,7 +81,7 @@ so that it can handle a wider variety of data structures;
 We use both systems to verify a number of different programs utilizing graph-manipulating structures,
 letting us understand the advantages and disadvantages of both.
 
-\section{A framework for mathematical graphs}
+\section{A framework for graph theory}
 \input{math_graph.tex}
 
 \section{Defining and reasoning about spatial graphs}
