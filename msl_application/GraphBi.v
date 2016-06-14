@@ -743,11 +743,9 @@ Spatial Facts (with Strong Assumption) Part
       vvalid g x -> vgamma g x = (d, l, r) ->
       graph x g = vertex_at x (d, l, r) ⊗ graph l g ⊗ graph r g.
   Proof.
-  Abort.
-(* TODO: resume these lemmas. *)
-(*
     intros. rewrite graph_unfold with (S := (l :: r :: nil)); auto.
-    + rewrite H0. simpl. rewrite ocon_emp. rewrite <- ocon_assoc. auto.
+    + change (Graph_SpatialGraph g) with (LGraph_SGraph g).
+      rewrite H0. simpl. rewrite ocon_emp. rewrite <- ocon_assoc. auto.
     + apply RGF.
     + intros. apply weak_valid_vvalid_dec. simpl in H1.
       destruct H1; [|destruct H1]; [subst x0 ..|exfalso; auto].
@@ -762,7 +760,7 @@ Spatial Facts (with Strong Assumption) Part
     intros. apply precise_graph. 1: apply RGF.
     apply weak_valid_vvalid_dec.
     pose proof (left_valid g x H). simpl in H1.
-    destruct (@valid_graph _ _ _ _ g (maGraph g) (x, L) H1).
+    destruct (@valid_graph _ _ _ _ g _ (maGraph g) (x, L) H1).
     rewrite H0 in H3. apply H3.
   Qed.
 
@@ -772,8 +770,51 @@ Spatial Facts (with Strong Assumption) Part
     intros. apply precise_graph. 1: apply RGF.
     apply weak_valid_vvalid_dec.
     pose proof (right_valid g x H). simpl in H1.
-    destruct (@valid_graph _ _ _ _ g (maGraph g) (x, R) H1).
+    destruct (@valid_graph _ _ _ _ g _ (maGraph g) (x, R) H1).
     rewrite H0 in H3. apply H3.
   Qed.
-*)  
+
+Lemma unreachable_partialgraph_si_vertices_identical: forall (g g': Graph) (S1 S1' S2: list addr),
+  (predicate_partialgraph g (Complement addr (reachable_through_set g S1))) ~=~
+  (predicate_partialgraph g' (Complement addr (reachable_through_set g' S1'))) ->
+  vertices_identical2
+     (reachable_through_set
+        (predicate_partialgraph g
+           (Intersection addr (vvalid g)
+              (Complement addr (reachable_through_set g S1)))) S2)
+     (reachable_through_set
+        (predicate_partialgraph g'
+           (Intersection addr (vvalid g')
+              (Complement addr (reachable_through_set g' S1')))) S2)
+     (Graph_SpatialGraph g) (Graph_SpatialGraph g').
+Proof.
+  intros.
+  admit.
+Qed.
+
+  Lemma subgraph_update:
+    forall (g g': Graph) (S1 S1' S2: list addr),
+      (forall x : addr, In x (S1 ++ S2) -> Decidable (vvalid g x)) ->
+      (forall x : addr, In x (S1' ++ S2) -> Decidable (vvalid g' x)) ->
+      (predicate_partialgraph g (Complement addr (reachable_through_set g S1))) ~=~
+      (predicate_partialgraph g' (Complement addr (reachable_through_set g' S1'))) ->
+      @derives pred _ (graphs S1 g ⊗ graphs S2 g) (graphs S1 g * (graphs S1' g' -* graphs S1' g' ⊗ graphs S2 g')).
+  Proof.
+    intros.
+    apply subgraph_update; auto.
+    + apply RGF.
+    + apply RGF.
+    + apply unreachable_partialgraph_si_vertices_identical; auto.
+    + apply Included_trans with (vvalid g).
+      - hnf; intros.
+        apply reachable_through_set_foot_valid in H0.
+        destruct H0; auto.
+      - intro v; apply vvalid_vguard.
+    + apply Included_trans with (vvalid g').
+      - hnf; intros.
+        apply reachable_through_set_foot_valid in H0.
+        destruct H0; auto.
+      - intro v; apply vvalid_vguard.
+Qed.
+
 End GRAPH_BI.

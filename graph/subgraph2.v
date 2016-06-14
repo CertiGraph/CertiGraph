@@ -672,6 +672,40 @@ Proof.
     intros; eapply reachable_through_set_reachable; eauto.
 Qed.
 
+Lemma unreachable_eq': forall (g : PreGraph V E) (S1 S2 : list V),
+    forall x, reachable_through_set g (S1 ++ S2) x /\ ~ reachable_through_set g S1 x <-> reachable_through_set (predicate_partialgraph g (Intersection _ (vvalid g) (Complement _ (reachable_through_set g S1)))) S2 x.
+Proof.
+  intros. split; intro.
+  + destruct H.
+    destruct H as [s [? ?]]. exists s. split.
+    - apply in_app_or in H. destruct H; auto.
+      exfalso. apply H0. exists s. auto.
+    - rewrite reachable_ind_reachable in H1. clear -H1 H0.
+      induction H1.
+      * apply reachable_refl. simpl. hnf. rewrite Intersection_spec; auto.
+      * apply edge_reachable with y. apply IHreachable; auto.
+        rewrite <- reachable_ind_reachable in H1.
+        assert (~ reachable_through_set g S1 y). {
+          intro. apply H0.
+          destruct H2 as [s [? ?]]. exists s. split; auto.
+          apply reachable_trans with y; auto.
+        }
+        assert (~ reachable_through_set g S1 x). {
+          intro. apply H2.
+          destruct H3 as [s [? ?]]. exists s. split; auto.
+          apply reachable_edge with x; auto.
+        }
+        pose proof H; destruct H as [? [?  ?]].
+        apply partialgraph_edge; auto;
+        rewrite Intersection_spec; auto.
+  + destruct H as [s [? ?]]. split.
+    - exists s. split; [apply in_or_app; auto |].
+      revert H0. apply (predicate_partialgraph_reachable_included g _ s x).
+    - intro. apply reachable_foot_valid in H0.
+      hnf in H0. simpl in H0. destruct H0.
+      rewrite Intersection_spec in H2; destruct H2; auto.
+Qed.
+
 End SI_EQUIV.
 
 Section PartialLabeledGraph.

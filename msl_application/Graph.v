@@ -21,6 +21,7 @@ Require Import RamifyCoq.graph.reachable_computable.
 Require Import RamifyCoq.graph.reachable_ind.
 Require Import RamifyCoq.graph.subgraph2.
 Require Import RamifyCoq.graph.dag.
+Require Import RamifyCoq.graph.FiniteGraph.
 Import RamifyCoq.msl_ext.seplog.OconNotation.
 
 Local Open Scope logic.
@@ -952,85 +953,41 @@ Proof.
     - reflexivity.
 Qed.
 
-(* TODO: move this one into subgraph2.v *)
-Lemma unreachable_eq': forall (g : Graph) (S1 S2 : list V),
-    forall x, reachable_through_set g (S1 ++ S2) x /\ ~ reachable_through_set g S1 x <-> reachable_through_set (unreachable_partial_labeledgraph g S1) S2 x.
-Proof.
-  intros. split; intro.
-  + destruct H.
-    destruct H as [s [? ?]]. exists s. split.
-    - apply in_app_or in H. destruct H; auto.
-      exfalso. apply H0. exists s. auto.
-    - rewrite reachable_ind_reachable in H1. clear -H1 H0.
-      induction H1.
-      * apply reachable_refl. simpl. hnf. simpl. auto.
-      * apply edge_reachable with y. apply IHreachable; auto.
-        rewrite <- reachable_ind_reachable in H1.
-        assert (~ reachable_through_set g S1 y). {
-          intro. apply H0.
-          destruct H2 as [s [? ?]]. exists s. split; auto.
-          apply reachable_trans with y; auto.
-        }
-        assert (~ reachable_through_set g S1 x). {
-          intro. apply H2.
-          destruct H3 as [s [? ?]]. exists s. split; auto.
-          apply reachable_edge with x; auto.
-        }
-        apply partialgraph_edge; auto.
-  + destruct H as [s [? ?]]. split.
-    - exists s. split; [apply in_or_app; auto |].
-      revert H0. apply (predicate_partialgraph_reachable_included g _ s x).
-    - intro. apply reachable_foot_valid in H0.
-      hnf in H0. simpl in H0. destruct H0. auto.
-Qed.
-
-(*
-(* TODO: resume these lemmas *)
-
 Lemma partialgraph_update:
   forall (g g': Graph) (S1 S1' S2: list V),
-    (unreachable_partial_labeledgraph g S1) ~=~ (unreachable_partial_labeledgraph g' S1')%LabeledGraph ->
-    Included (reachable_through_set (unreachable_partialgraph g S1) S2) (vguard g) ->
-    Included (reachable_through_set (unreachable_partialgraph g' S1') S2) (vguard g') ->
+    (vertices_identical2 (reachable_through_set (predicate_partialgraph g (Intersection _ (vvalid g) (Complement _ (reachable_through_set g S1)))) S2) (reachable_through_set (predicate_partialgraph g' (Intersection _ (vvalid g') (Complement _ (reachable_through_set g' S1')))) S2) (Graph_SpatialGraph g) (Graph_SpatialGraph g')) ->
+    Included (reachable_through_set (predicate_partialgraph g (Intersection _ (vvalid g) (Complement _ (reachable_through_set g S1)))) S2) (vguard g) ->
+    Included (reachable_through_set (predicate_partialgraph g' (Intersection _ (vvalid g') (Complement _ (reachable_through_set g' S1')))) S2) (vguard g') ->
     reachable_through_vertices_at (S1 ++ S2) g |-- reachable_through_vertices_at S1 g * (reachable_through_vertices_at S1' g' -* reachable_through_vertices_at (S1' ++ S2) g').
 Proof.
   intros.
   unfold reachable_through_vertices_at.
   apply vertices_at_ramif_x.
-  exists (reachable_through_set (unreachable_partialgraph g S1) S2).
+  exists (reachable_through_set (predicate_partialgraph g (Intersection _ (vvalid g) (Complement _ (reachable_through_set g S1)))) S2).
   split; [| split].
   + split.
     - intros.
       rewrite <- (unreachable_eq' g S1 S2).
-      rewrite <- reachable_through_set_app; tauto. (* TODO: This tauto use LEM automatically. *)
+      rewrite <- reachable_through_set_app. tauto. (* TODO: This tauto use LEM automatically. *)
     - intros.
       rewrite <- (unreachable_eq' g S1 S2) in H3.
       tauto.
   + split.
     - intros.
       destruct H as [? _].
-      rewrite H.
+      rewrite (app_same_set H).
       rewrite <- (unreachable_eq' g' S1' S2).
       rewrite <- reachable_through_set_app; tauto.
     - intros.
       destruct H as [? _].
-      rewrite H in H3.
+      rewrite (app_same_set H) in H3.
       rewrite <- (unreachable_eq' g' S1' S2) in H3.
       tauto.
-  + apply GSG_PartialGraphPreserve.
-    - auto.
-    - destruct H as [? _]; rewrite H; auto.
-    - hnf; unfold Ensembles.In; intros.
-      rewrite <- (unreachable_eq' g S1 S2) in H2.
-      destruct H2.
-      eapply reachable_through_set_foot_valid; eauto.
-    - hnf; unfold Ensembles.In; intros.
-      destruct H as [? _].
-      rewrite H in H2.
-      rewrite <- (unreachable_eq' g' S1' S2) in H2.
-      destruct H2.
-      eapply reachable_through_set_foot_valid; eauto.
-    - 
+  + destruct H; auto.
+Qed.
+
+(*
+(* TODO: resume these lemmas *)
 
 Lemma full_vertices_at_ramify1: forall (g: Graph) x d d',
   vvalid g x ->
@@ -1049,14 +1006,14 @@ Proof.
   apply vertices_at_ramify1; auto.
   apply reachable_refl; auto.
 Qed.
-
+*)
 
 Context {SGSA: SpatialGraphStrongAssum SGP}.
 
 Fixpoint graphs (l : list V) (g: Graph) :=
   match l with
     | nil => emp
-    | v :: l' => graph v g ⊗ graphs l' g
+    | v :: l' => reachable_vertices_at v g ⊗ graphs l' g
   end.
 
 Lemma graphs_app: forall (g : Graph) S1 S2, graphs (S1 ++ S2) g = graphs S1 g ⊗ graphs S2 g.
@@ -1068,10 +1025,10 @@ Qed.
 
 Lemma graphs_graphs': forall S (g: Graph) {rfg: ReachableFiniteGraph g}
   (V_DEC: forall x : V, In x S -> Decidable (vvalid g x)),
-  graphs S g = graphs' S g.
+  graphs S g = reachable_through_vertices_at S g.
 Proof.
   induction S; intros until g; intros rfg V_DEC.
-  + unfold graphs. unfold graphs', vertices_at, pred_sepcon. apply pred_ext.
+  + unfold graphs. unfold reachable_through_vertices_at, vertices_at, pred_sepcon. apply pred_ext.
     - apply (exp_right nil). simpl. apply andp_right; auto.
       apply andp_right; [| apply prop_right; constructor].
       apply prop_right. intro x. split; intros.
@@ -1082,11 +1039,11 @@ Proof.
       rewrite H in H1. unfold reachable_through_set in H1.
       destruct H1 as [s [? _]]. inversion H1.
   + unfold graphs. fold graphs. rewrite IHS; [| auto | intros; apply V_DEC; right; auto].
-    unfold graphs', graph, vertices_at, pred_sepcon. clear IHS. apply pred_ext.
+    unfold reachable_through_vertices_at, reachable_vertices_at, vertices_at, pred_sepcon. clear IHS. apply pred_ext.
     - normalize_overlap. intros. rename x into la.
       normalize_overlap. rename x into lS. normalize_overlap.
-      rewrite (add_andp _ _ (iter_sepcon_unique_nodup la (sepcon_unique_graph_cell g))).
-      rewrite (add_andp _ _ (iter_sepcon_unique_nodup lS (sepcon_unique_graph_cell g))).
+      rewrite (add_andp _ _ (iter_sepcon_unique_nodup la (sepcon_unique_graph_cell (Graph_SpatialGraph g)))).
+      rewrite (add_andp _ _ (iter_sepcon_unique_nodup lS (sepcon_unique_graph_cell (Graph_SpatialGraph g)))).
       normalize_overlap.
       rewrite (iter_sepcon_ocon equiv_dec); auto. apply (exp_right (remove_dup equiv_dec (la ++ lS))).
       apply andp_right; [apply andp_right |].
@@ -1108,7 +1065,7 @@ Proof.
       normalize_overlap. apply (exp_right la).
       destruct (construct_reachable_set_list g S) as [lS [? ?]]; [intros; apply V_DEC; right; auto |].
       normalize_overlap. apply (exp_right lS). normalize_overlap.
-      rewrite (add_andp _ _ (iter_sepcon_unique_nodup l (sepcon_unique_graph_cell g))).
+      rewrite (add_andp _ _ (iter_sepcon_unique_nodup l (sepcon_unique_graph_cell (Graph_SpatialGraph g)))).
       normalize. rewrite (iter_sepcon_ocon equiv_dec); auto.
       2: apply precise_graph_cell.
       2: apply joinable_graph_cell.
@@ -1124,10 +1081,10 @@ Lemma graph_unfold:
          (V_DEC: forall x : V, In x S -> Decidable (vvalid g x)),
     vvalid g x ->
     step_list g x S ->
-    graph x g = vertex_at x (vgamma g x) ⊗ graphs S g.
+    reachable_vertices_at x g = vertex_at x (vgamma (Graph_SpatialGraph g) x) ⊗ graphs S g.
 Proof.
-  intros. rewrite graphs_graphs'; auto. unfold graph. unfold graphs'.
-  change (vertex_at x (vgamma g x)) with (graph_vcell g x).
+  intros. rewrite graphs_graphs'; auto. unfold reachable_vertices_at. unfold reachable_through_vertices_at.
+  change (vertex_at x (vgamma (Graph_SpatialGraph g) x)) with (graph_vcell (Graph_SpatialGraph g) x).
   assert (forall y, reachable g x y <-> x = y \/ reachable_through_set g S y). {
     intros. rewrite (reachable_ind' g x S); intuition.
   } symmetry. apply pred_sepcon_ocon1; intros.
@@ -1139,9 +1096,9 @@ Proof.
 Qed.
 
 Lemma precise_graph: forall (g: Graph) {rfg: ReachableFiniteGraph g} x,
-    Decidable (vvalid g x) -> precise (graph x g).
+    Decidable (vvalid g x) -> precise (reachable_vertices_at x g).
 Proof.
-  intros. unfold graph. unfold vertices_at. rewrite pred_sepcon_eq.
+  intros. unfold reachable_vertices_at. unfold vertices_at. rewrite pred_sepcon_eq.
   apply (precise_exp_iter_sepcon).
   + apply sepcon_unique_graph_cell.
   + destruct (construct_reachable_list g x H) as [l [? ?]].
@@ -1156,7 +1113,28 @@ Lemma subgraph_update:
   forall (g g': Graph) {rfg: ReachableFiniteGraph g} {rfg': ReachableFiniteGraph g'} (S1 S1' S2: list V),
     (forall x : V, In x (S1 ++ S2) -> Decidable (vvalid g x)) ->
     (forall x : V, In x (S1' ++ S2) -> Decidable (vvalid g' x)) ->
-    (unreachable_partial_spatialgraph g S1) -=- (unreachable_partial_spatialgraph g' S1') ->
+    vertices_identical2
+     (reachable_through_set
+        (predicate_partialgraph g
+           (Intersection V (vvalid g)
+              (Complement V (reachable_through_set g S1)))) S2)
+     (reachable_through_set
+        (predicate_partialgraph g'
+           (Intersection V (vvalid g')
+              (Complement V (reachable_through_set g' S1')))) S2)
+     (Graph_SpatialGraph g) (Graph_SpatialGraph g') ->
+    Included
+     (reachable_through_set
+        (predicate_partialgraph g
+           (Intersection V (vvalid g)
+              (Complement V (reachable_through_set g S1)))) S2) 
+     (vguard g) ->
+    Included
+     (reachable_through_set
+        (predicate_partialgraph g'
+           (Intersection V (vvalid g')
+              (Complement V (reachable_through_set g' S1')))) S2) 
+     (vguard g') ->
     graphs S1 g ⊗ graphs S2 g |-- graphs S1 g * (graphs S1' g' -* graphs S1' g' ⊗ graphs S2 g').
 Proof.
   intros. rewrite <- !graphs_app.
@@ -1166,7 +1144,6 @@ Proof.
   apply partialgraph_update; auto.
 Qed.
 
-*)
 End SPATIAL_FACTS.
 
 End SPATIAL_CONSTRUCTOR.

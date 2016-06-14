@@ -1013,6 +1013,14 @@ Proof.
     left; auto.
 Qed.
 
+Lemma reachable_through_set_single':
+  forall (g: Gph) x, Same_set (reachable_through_set g (x :: nil)) (reachable g x).
+Proof.
+  intros.
+  rewrite Same_set_spec; intros y.
+  apply reachable_through_set_single.
+Qed.
+
 Lemma reachable_valid_and_through_single:
   forall (g: Gph) {x y}, reachable g x y -> (vvalid g y /\ reachable_through_set g (x :: nil) y).
 Proof.

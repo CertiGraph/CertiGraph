@@ -4,6 +4,7 @@ Require Import Coq.Sets.Ensembles.
 Require Import VST.msl.seplog.
 Require Import VST.msl.log_normalize.
 Require Import RamifyCoq.lib.Coqlib.
+Require Import RamifyCoq.lib.Ensembles_ext.
 Require Import RamifyCoq.lib.EquivDec_ext.
 Require Import RamifyCoq.lib.Relation_ext.
 Require Import RamifyCoq.hip.hip_graphmark.
@@ -11,6 +12,8 @@ Require Import RamifyCoq.msl_ext.seplog.
 Require Import RamifyCoq.graph.graph_model.
 Require Import RamifyCoq.graph.weak_mark_lemmas.
 Require Import RamifyCoq.graph.path_lemmas.
+Require Import RamifyCoq.graph.graph_gen.
+Require Import RamifyCoq.graph.graph_relation.
 Require Import RamifyCoq.graph.subgraph2.
 Require Import RamifyCoq.graph.reachable_computable.
 Require Import RamifyCoq.msl_application.Graph.
@@ -45,7 +48,7 @@ Module GraphMark <: Mgraphmark.
   Definition mark : A -> node -> A -> formula := fun g1 n g2 => prop (mark n (Graph_LGraph g1) (Graph_LGraph g2)).
 
   Definition eq_notreach : A -> node -> A -> formula :=
-    fun g1 n g2 => prop (vertices_identical2 (Complement _ (reachable (pg_lg (Graph_LGraph g1)) n)) (Complement _ (reachable (pg_lg (Graph_LGraph g2)) n)) (LGraph_SGraph (Graph_LGraph g1)) (LGraph_SGraph (Graph_LGraph g2))).
+    fun g1 n g2 => prop ((predicate_partialgraph (pg_lg (Graph_LGraph g1)) (Complement _ (reachable (pg_lg (Graph_LGraph g1)) n))) ~=~ (predicate_partialgraph (pg_lg (Graph_LGraph g2)) (Complement _ (reachable (pg_lg (Graph_LGraph g2)) n)))).
 
   Definition subset_reach : A -> node -> A -> formula := fun g1 n g2 => prop (Included (reachable (pg_lg (Graph_LGraph g1)) n) (reachable (pg_lg (Graph_LGraph g2)) n)).
 
@@ -67,10 +70,10 @@ Module GraphMark <: Mgraphmark.
     intros. unfold valid in H1.
     rewrite <- H2. split; [|split]; simpl.
     + split; [|split; [|split]]; simpl; intros; auto.
-      - unfold graph_gen.change_vvalid. intuition.
-      - unfold graph_gen.change_evalid. intuition.
-    + unfold graph_gen.update_vlabel. destruct (equiv_dec x x); intuition.
-    + intros. unfold graph_gen.update_vlabel. destruct (equiv_dec x n'); intuition.
+      - unfold change_vvalid. intuition.
+      - unfold change_evalid. intuition.
+    + unfold update_vlabel. destruct (equiv_dec x x); intuition.
+    + intros. unfold update_vlabel. destruct (equiv_dec x n'); intuition.
   Qed.
 
   Lemma marked_node_marked: forall (G1: A) (n: addr) (G2: A) (x: addr) (v: bool),
@@ -169,41 +172,45 @@ Module GraphMark <: Mgraphmark.
     + apply TT_prop_right. destruct H. apply (reachable_ind.si_reachable _ _ x) in H6.
       destruct H6. auto.
     + apply TT_prop_right. destruct H.
-      destruct H.
+      rewrite H6; reflexivity.
+(*
+SearchAbout predicate_partialgraph (_ ~=~ _).
+Locate si_stronger_partialgraph.
+       reflexivity.
       unfold vertices_identical2.
-      split; [rewrite H6; reflexivity |].
+      split; [apply Ensembles_ext.Intersection_proper |].
+      1: rewrite Same_set_spec; intro; hnf; apply (proj1 H6).
+      1: rewrite H6; reflexivity.
       rewrite vertices_identical_spec; intros.
       specialize (H7 x0).
-      simpl in H7 |- *.
-SearchAbout vertices_identical.
- unfold unreachable_partial_spatialgraph.
-      hnf. simpl. unfold predicate_vvalid. unfold predicate_weak_evalid.
-      split; [|split]; intros; auto.
-      - apply partialgraph_proper; auto. unfold Complement. unfold In. hnf.
-        split; intro z; unfold In; rewrite H6; auto.
-      - destruct H7, H8. unfold Complement in *. unfold In in *.
-        f_equal;[f_equal |]; [|apply dst_L_eq | apply dst_R_eq]; auto.
-        destruct H. simpl in H11.
-        assert (~ reachable (SGraph_PGraph (LGraph_SGraph (Graph_LGraph G))) x v0) by (intro; apply H9; rewrite reachable_through_set_single; auto).
-        destruct (Bool.bool_dec (vlabel (Graph_LGraph G) v0) true).
-        * rewrite e. apply H11. left; auto.
-        * apply Bool.not_true_is_false in n. rewrite n. symmetry.
-          apply Bool.not_true_is_false. intro. symmetry in H13. rewrite H11 in H13.
-          destruct H13.  clear -n H13. apply Bool.diff_true_false. rewrite H13. rewrite <- n. auto.
-          apply reachable_by_is_reachable in H13. exfalso; auto.
+      simpl in H7 |- *; unfold node in *.
+      rewrite Intersection_spec in H8; destruct H8.
+      f_equal; [f_equal |].
+      - assert (~ reachable_by (pg_lg (Graph_LGraph G)) x (WeakMarkGraph.unmarked (Graph_LGraph G)) x0).
+        Focus 1. {
+          intro.
+          apply reachable_by_is_reachable in H10; auto.
+        } Unfocus.
+        assert (true <> false) by congruence.
+        destruct (vlabel (Graph_LGraph G) x0), (vlabel (Graph_LGraph G1) x0); try tauto.
+      - apply (si_dst1 _ _ _ H6).
+        apply (@left_valid _ _ _ _ _ _ (pg_lg (Graph_LGraph G)) (biGraph G)); auto.
+      - apply (si_dst1 _ _ _ H6).
+        apply (@right_valid _ _ _ _ _ _ (pg_lg (Graph_LGraph G)) (biGraph G)); auto.
+*)
     + unfold ext. destruct H as [[? ?] ?]. specialize (H6 y). simpl in H6.
       destruct H7 as [? [? [? ?]]].
-      LEM ((SGraph_PGraph (LGraph_SGraph (Graph_LGraph G))) |= x ~o~> y satisfying (WeakMarkGraph.unmarked (Graph_LGraph G))).
+      LEM ((pg_lg (Graph_LGraph G)) |= x ~o~> y satisfying (WeakMarkGraph.unmarked (Graph_LGraph G))).
       - assert (vlabel (Graph_LGraph G1) y = true) by (symmetry; rewrite H6; right; auto).
         apply (exp_right true). normalize. split; [|split;[|split;[|split; [|split]]]]; auto.
         * specialize (H7 y); intuition.
         * specialize (H7 l); intuition.
         * specialize (H7 r); intuition.
-        * assert (evalid (SGraph_PGraph (LGraph_SGraph (Graph_LGraph G))) (y, L)) by
+        * assert (evalid (pg_lg (Graph_LGraph G)) (y, L)) by
               (apply (@left_valid _ _ _ _ _ _ _ (biGraph G)); auto).
           subst l. symmetry. specialize (H10 (y, L)).
           specialize (H8 (y, L)). intuition.
-        * assert (evalid (SGraph_PGraph (LGraph_SGraph (Graph_LGraph G))) (y, R)) by
+        * assert (evalid (pg_lg (Graph_LGraph G)) (y, R)) by
               (apply (@right_valid _ _ _ _ _ _ _ (biGraph G)); auto).
           subst r. symmetry. specialize (H10 (y, R)).
           specialize (H8 (y, R)). intuition.
@@ -217,17 +224,17 @@ SearchAbout vertices_identical.
         * specialize (H7 y); intuition.
         * specialize (H7 l); intuition.
         * specialize (H7 r); intuition.
-        * assert (evalid (SGraph_PGraph (LGraph_SGraph (Graph_LGraph G))) (y, L)) by
+        * assert (evalid (pg_lg (Graph_LGraph G)) (y, L)) by
               (apply (@left_valid _ _ _ _ _ _ _ (biGraph G)); auto).
           subst l. symmetry. specialize (H10 (y, L)).
           specialize (H8 (y, L)). intuition.
-        * assert (evalid (SGraph_PGraph (LGraph_SGraph (Graph_LGraph G))) (y, R)) by
+        * assert (evalid (pg_lg (Graph_LGraph G)) (y, R)) by
               (apply (@right_valid _ _ _ _ _ _ _ (biGraph G)); auto).
           subst r. symmetry. specialize (H10 (y, R)).
           specialize (H8 (y, R)). intuition.
   Qed.
 
-  Lemma axiom_8 : forall l r x G, valid (imp (lookup G x true l r) (mark G x G)).
+  Lemma axiom_3 : forall l r x G, valid (imp (lookup G x true l r) (mark G x G)).
   Proof.
     intros. unfold valid, imp, lookup, mark. rewrite <- iter_sepcon.prop_impl_imp. normalize.
     destruct H as [? [? [? [? [? ?]]]]]. hnf. split; [|reflexivity].
@@ -236,30 +243,29 @@ SearchAbout vertices_identical.
     exfalso; auto.
   Qed.
 
-  Lemma axiom_9 : forall G, valid (mark G null_node G).
+  Lemma axiom_4 : forall G, valid (mark G null_node G).
   Proof.
     intros. unfold valid, mark, null_node. normalize. hnf. split; [|reflexivity].
     hnf. split; [|intros; split; intros]; [reflexivity | intuition |]. destruct H; auto.
     exfalso. apply reachable_by_head_valid in H.
-    apply (@valid_not_null _ _ _ _ _ (maGraph G) _) in H; auto. rewrite is_null_def. auto.
+    apply (@valid_not_null _ _ _ _ _ _ (maGraph G) _) in H; auto. reflexivity.
   Qed.
 
   Lemma lookup_graph_unfold: forall (G: A) x v l r,
-      vlabel (Graph_LGraph G) x = v -> vvalid (SGraph_PGraph (LGraph_SGraph (Graph_LGraph G))) x -> vvalid (SGraph_PGraph (LGraph_SGraph (Graph_LGraph G))) l ->
-      vvalid (SGraph_PGraph (LGraph_SGraph (Graph_LGraph G))) r -> dst (SGraph_PGraph (LGraph_SGraph (Graph_LGraph G))) (x, L) = l ->
-      dst (SGraph_PGraph (LGraph_SGraph (Graph_LGraph G))) (x, R) = r -> (graph x G = ptto_node x v l r ⊗ graph l G ⊗ graph r G).
+      vlabel (Graph_LGraph G) x = v -> vvalid (pg_lg (Graph_LGraph G)) x -> vvalid (pg_lg (Graph_LGraph G)) l ->
+      vvalid (pg_lg (Graph_LGraph G)) r -> dst (pg_lg (Graph_LGraph G)) (x, L) = l ->
+      dst (pg_lg (Graph_LGraph G)) (x, R) = r -> (graph x G = ptto_node x v l r ⊗ graph l G ⊗ graph r G).
   Proof.
     intros. unfold graph. unfold ptto_node. apply bi_graph_unfold; auto.
     simpl. f_equal; [f_equal|]; auto.
   Qed.
 
   Lemma graph_graphs_eq_l:
-    forall (G: A) v x l r, vlabel (Graph_LGraph G) x = v -> vvalid (SGraph_PGraph (LGraph_SGraph (Graph_LGraph G))) x ->
-                           vvalid (SGraph_PGraph (LGraph_SGraph (Graph_LGraph G))) l -> vvalid (SGraph_PGraph (LGraph_SGraph (Graph_LGraph G))) r ->
-                           dst (SGraph_PGraph (LGraph_SGraph (Graph_LGraph G))) (x, L) = l -> dst (SGraph_PGraph (LGraph_SGraph (Graph_LGraph G))) (x, R) = r ->
+    forall (G: A) v x l r, vlabel (Graph_LGraph G) x = v -> vvalid (pg_lg (Graph_LGraph G)) x ->
+                           vvalid (pg_lg (Graph_LGraph G)) l -> vvalid (pg_lg (Graph_LGraph G)) r ->
+                           dst (pg_lg (Graph_LGraph G)) (x, L) = l -> dst (pg_lg (Graph_LGraph G)) (x, R) = r ->
                            (ptto_node x v l r ⊗ (graph l G ⊗ graph r G)) =
-                           graph l G ⊗ graphs (x :: l :: r :: nil)
-                                 (LGraph_SGraph (Graph_LGraph G)).
+                           graph l G ⊗ graphs (x :: l :: r :: nil) (Graph_LGraph G).
   Proof.
     intros. simpl. rewrite ocon_emp. do 3 rewrite <- ocon_assoc.
     rewrite (ocon_comm (graph l G) (graph x G)).
@@ -286,19 +292,19 @@ SearchAbout vertices_identical.
     + apply precise_graph. apply RGF. left; intuition.
     + destruct H1 as [? [? [? [? [? ?]]]]]. destruct H2 as [? [? [? [? [? ?]]]]].
       rewrite (graph_graphs_eq_l G v x l r); auto. rewrite (graph_graphs_eq_l G1 v1 x l r); auto.
-      assert (forall (g: A), graph l g = graphs (l :: nil) (LGraph_SGraph (Graph_LGraph g))) by (intros; simpl; rewrite ocon_emp; auto).
-      rewrite (H13 G). rewrite (H13 G1). apply subgraph_update; auto. apply RGF. apply RGF. 
+      assert (forall (g: A), graph l g = graphs (l :: nil) (Graph_LGraph g)) by (intros; simpl; rewrite ocon_emp; auto).
+      rewrite (H13 G). rewrite (H13 G1). apply subgraph_update; auto.
       - intros. left. simpl in H14. destruct H14 as [? | [? | [? | [? | ?]]]]; [subst x0 ..|exfalso]; auto.
       - intros. left. simpl in H14. destruct H14 as [? | [? | [? | [? | ?]]]]; [subst x0 ..|exfalso]; auto.
+      - rewrite !reachable_through_set_single'; auto.
   Qed.
 
   Lemma graph_graphs_eq_r:
-    forall (G: A) v x l r, vlabel (Graph_LGraph G) x = v -> vvalid (SGraph_PGraph (LGraph_SGraph (Graph_LGraph G))) x ->
-                           vvalid (SGraph_PGraph (LGraph_SGraph (Graph_LGraph G))) l -> vvalid (SGraph_PGraph (LGraph_SGraph (Graph_LGraph G))) r ->
-                           dst (SGraph_PGraph (LGraph_SGraph (Graph_LGraph G))) (x, L) = l -> dst (SGraph_PGraph (LGraph_SGraph (Graph_LGraph G))) (x, R) = r ->
+    forall (G: A) v x l r, vlabel (Graph_LGraph G) x = v -> vvalid (pg_lg (Graph_LGraph G)) x ->
+                           vvalid (pg_lg (Graph_LGraph G)) l -> vvalid (pg_lg (Graph_LGraph G)) r ->
+                           dst (pg_lg (Graph_LGraph G)) (x, L) = l -> dst (pg_lg (Graph_LGraph G)) (x, R) = r ->
                            (ptto_node x v l r ⊗ (graph l G ⊗ graph r G)) =
-                           graph r G ⊗ graphs (x :: l :: r :: nil)
-                                 (LGraph_SGraph (Graph_LGraph G)).
+                           graph r G ⊗ graphs (x :: l :: r :: nil) (Graph_LGraph G).
   Proof.
     intros. simpl. rewrite ocon_emp. do 3 rewrite <- ocon_assoc.
     rewrite (ocon_comm (graph r G) (graph x G)).
@@ -325,43 +331,28 @@ SearchAbout vertices_identical.
     + apply precise_graph. apply RGF. left; intuition.
     + destruct H1 as [? [? [? [? [? ?]]]]]. destruct H2 as [? [? [? [? [? ?]]]]].
       rewrite (graph_graphs_eq_r G v x l r); auto. rewrite (graph_graphs_eq_r G1 v1 x l r); auto.
-      assert (forall (g: A), graph r g = graphs (r :: nil) (LGraph_SGraph (Graph_LGraph g))) by (intros; simpl; rewrite ocon_emp; auto).
-      rewrite (H13 G). rewrite (H13 G1). apply subgraph_update; auto. apply RGF. apply RGF. 
+      assert (forall (g: A), graph r g = graphs (r :: nil) (Graph_LGraph g)) by (intros; simpl; rewrite ocon_emp; auto).
+      rewrite (H13 G). rewrite (H13 G1). apply subgraph_update; auto.
       - intros. left. simpl in H14. destruct H14 as [? | [? | [? | [? | ?]]]]; [subst x0 ..|exfalso]; auto.
       - intros. left. simpl in H14. destruct H14 as [? | [? | [? | [? | ?]]]]; [subst x0 ..|exfalso]; auto.
+      - rewrite !reachable_through_set_single'; auto.
   Qed.
 
-  Lemma lem_pttoupdate : forall v G x v1 l r G1, valid (imp (and (star (ptto_node x v1 l r) (mwand (ptto_node x v l r) (union (ptto_node x v l r) (union (graph l G) (graph r G))))) (and (lookup G x v l r) (update G x v1 l r G1))) (union (ptto_node x v1 l r) (union (graph l G1) (graph r G1)))).
+  Lemma lem_pttoupdate : forall v l r G x v1 G1, valid (imp (and (star (ptto_node x v1 l r) (mwand (ptto_node x v l r) (union (ptto_node x v l r) (union (graph l G) (graph r G))))) (and (lookup G x v l r) (update G x v1 G1))) (union (ptto_node x v1 l r) (union (graph l G1) (graph r G1)))).
   Proof.
     intros. unfold valid, imp, and, star, mwand, union, subset_reach, eq_notreach, lookup, update.
     apply imp_andp_adjoint. normalize. apply precise_wand_ewand.
     + unfold ptto_node. apply log_normalize.mapsto_precise.
     + destruct H as [? [? [? [? [? ?]]]]]. rewrite <- ocon_assoc. rewrite <- (lookup_graph_unfold G x v l r); auto.
-      destruct H0 as [Hn [Hi ?]]. rewrite <- ocon_assoc.
+      rewrite <- ocon_assoc.
       assert (vgamma (LGraph_SGraph (Graph_LGraph G)) x = (v, l, r)). {
         simpl. f_equal; [f_equal |]; auto.
-      } pose proof (Graph_gen_update_spatial_spec  G x v v1 l r Hi Hn H1 H6).
-      pose proof (Graph_gen_update_vgamma G x v1 l r Hi Hn). rewrite H0 in H8.
-      simpl in H8. rewrite <- (lookup_graph_unfold G1 x v1 l r);
-        [| inversion H8 |rewrite <- H0; simpl; unfold graph_gen.change_vvalid ..|inversion H8|inversion H8]; auto.
-      pose proof (graph_vi_eq _ _ x H7). rewrite H0 in H9. unfold graph at 2.
-      unfold node in H9 at 1. rewrite H9. apply graph_ramify_aux0; auto. apply RGF.
+      } 
+      pose proof (Graph_vgen_vgamma G x v v1 l r H5).
+      rewrite <- (lookup_graph_unfold (Graph_vgen G x v1) x v1 l r);
+        [| inversion H6 | ..|inversion H6|inversion H6]; auto.
+      2: rewrite H8; auto.
+      apply va_reachable_root_update_ramify; auto.
   Qed.
-
-  Lemma axiom_1 : forall v G1 G2 G G3 x l r, valid (imp (and (lookup G x v l r) (and (mark G r G1) (and (neq v true) (and (mark G2 l G3) (update G1 x true l r G2))))) (and (mark G x G3) (lookup G3 x true l r))).
-  Proof.
-  Admitted.
-
-  Lemma axiom_2 : forall v G1 G2 G G3 x l r, valid (imp (and (lookup G x v l r) (and (mark G l G1) (and (neq v true) (and (mark G2 r G3) (update G1 x true l r G2))))) (and (mark G x G3) (lookup G3 x true l r))).
-  Proof.
-  Admitted.
-
-  Lemma axiom_3 : forall v G1 G2 G G3 x l r, valid (imp (and (lookup G x v l r) (and (mark G r G1) (and (neq v true) (and (mark G1 l G2) (update G2 x true l r G3))))) (and (mark G x G3) (lookup G3 x true l r))).
-  Proof.
-  Admitted.
-
-  Lemma axiom_4 : forall v G1 G2 G G3 x l r, valid (imp (and (lookup G x v l r) (and (mark G l G1) (and (neq v true) (and (mark G1 r G2) (update G2 x true l r G3))))) (and (mark G x G3) (lookup G3 x true l r))).
-  Proof.
-  Admitted.
 
 End GraphMark.
