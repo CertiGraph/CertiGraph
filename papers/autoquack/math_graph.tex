@@ -132,10 +132,12 @@ verification.
 
 \subsection{Classification of various graphs}
 
-PreGraph and other definitions based on it are not sufficient for
-actual program verification. There are still many useful and practical
-properties can not derived barely from PreGraph. For example, when we
-compute some properties of a graph, we always hope the graph is finite
+PreGraph and its derived properties (reachability, subgraph, etc) are
+inadequate for real program verifications. Admittedly many helpful
+lemmas can be inferred directly from PreGraph. But when we dealing
+with concrete graphs for various algorithms, there are many features
+which a bare PreGraph can not inculde. For example, when we compute
+some properties of a graph, we always hope the graph is finite
 connected. In the recursive defnition of a graph data structure, a
 node contains many pointers to point to its neighbors. The pointers
 could be null to indicate that they do not point to any. Thus we need
@@ -144,20 +146,19 @@ to specify a graph in which the outdegree of each nodes is 2. All
 these additional properties are abstracted as different property
 bundles. We defined \textbf{LocalFiniteGraph}, \textbf{MathGraph}
 and \textbf{BiGraph} for the three requirements above,
-respectively. These abstractions made theorems more flexible and
-general.
+respectively.
 
 \begin{figure}[htbp]
 \centering
 \begin{tikzpicture}[->/.tip={Stealth}]
 \tikzstyle{every node}=[shape=rectangle, rounded corners=4pt, draw]
-\node (GG) at (1, 6) {GeneralGraph};
+\node[fill=gray!40] (GG) at (1, 6) {GeneralGraph};
 \node (NGG) at (4, 6) {NormalGeneralGraph};
 \node (RFG) at (0, 4.5) {ReachableFiniteGraph};
-\node (LG) at (3, 4.5) {LabeledGraph};
+\node[fill=gray!40] (LG) at (3, 4.5) {LabeledGraph};
 \node (LFG) at (-1, 3) {LocalFiniteGraph};
-\node (PG) at (2, 3) {PreGraph};
-\node (SG) at (4.5, 3) {SpatialGraph};
+\node[fill=gray!40] (PG) at (2, 3) {PreGraph};
+\node[fill=gray!40] (SG) at (4.5, 3) {SpatialGraph};
 \node (BG) at (-0.5, 1.5) {BiGraph};
 \node (MG) at (1.5, 1.5) {MathGraph};
 \node (FG) at (4, 1.5) {FiniteGraph};
@@ -175,21 +176,39 @@ general.
 \draw [->] (MG) to (BMF);
 \draw [->] (FG) to (BMF);
 \end{tikzpicture}
-\caption{Various Kinds of Graphs}
+\caption{Various Kinds of Graphs}\label{fig:graphs}
 \end{figure}
 
-In our framework, there are four kinds of graphs: MathGraph,
-FiniteGraph, LocalFiniteGraph and BiGraph. They are all constraints on
-PreGraph. MathGraph requires a null node to represent null pointer in
-recursive data structure. FiniteGraph just says all nodes and edges in
-a PreGraph are finite. LocalFiniteGraph requires that every node has
-finite neighbors. BiGraph needs that every nodes only has two out
-edges. Obviously in the correctness proofs of concrete algorithms, all
-graphs satisfy the definition of MathGraph, FiniteGraph,
-LocalFiniteGraph and BiGraph. But for many math theorems in graph
-theory, some constraints (e.g. FiniteGraph, BiGraph) are not
-necessary. These different constraints for different theorems make our
-framework more general.
+As shown in Figure \ref{fig:graphs}, there are several different
+``Graph'' definitions in our framework. Some of them (with gray
+background) are real mathematical objects, just like PreGraph. The
+rest are just property bundles which are PreGraph with special
+properties. They provide different views of graphs from a certain
+perspective.
+
+In our framework, there are four kinds of \emph{real}
+graphs: \textbf{PreGraph}, \textbf{SpatialGraph}, \textbf{LabeledGraph}
+and \textbf{GeneralGraph}. The definition of PreGraph is already
+known. Based on PreGraph, each node and each edge in a LabeledGraph
+has extra labels which can be seen as label functions of nodes and
+edges. A GeneralGraph is a LabeledGraph with a customized sound
+condition. A SpatialGraph is the graph directly stored in memory,
+which contains connecting and user specified informations stored on
+every vertex and/or every edge.
+
+The rest in Figure \ref{fig:graphs} are all property bundles where
+LocalFiniteGraph, MathGraph and BiGraph are already explained. A
+FiniteGraph is a graph with finite number of vertices and edges. (So a
+FiniteGraph is definitely a LocalFiniteGraph.) A BiMaFin is a graph
+satisfying BiGraph, MathGraph and FiniteGraph simultaneously. A
+ReachableFiniteGraph is a graph in which all reachable nodes of an
+arbitrary node are finite. A NormalGeneralGraph is a special
+GeneralGraph used for certain algorithms. Usually in the correctness
+proofs of concrete algorithms, all graphs satisfy the definition of
+BiMaFin, LocalFiniteGraph, ReachableFiniteGraph and etc. But for many
+math theorems in graph theory, some properties (e.g. FiniteGraph,
+BiGraph) are not necessary. These different properties for different
+theorems make our framework more flexible and general.
 
 \subsection{Computable Reachability}
 We proved quite many property-bundle specific theorems. One typical
@@ -205,9 +224,9 @@ It sounds so trivial but the proof is totally non-trivial. The most
 obvious way to prove it---filtering reachable nodes from all valid
 nodes---is impossible: there is no decision procedure for reachability
 to select reachable nodes because the current definition of graphs is
-applicable for graphs containing infinite number of nodes
-(LocalFiniteGraph can still be infinite). In such a graph, one may
-need to inspect infinite number of paths to judge whether a node is
+applicable for graphs containing infinite number of nodes (A
+LocalFiniteGraph can still be infinite). In such a graph, one may need
+to inspect infinite number of paths to judge whether a node is
 reachable, which is a mission impossible.
 
 Another intuitive way to construct the reachable list is using a
@@ -250,8 +269,8 @@ from root. Spanning tree is a tree with the same reachable vertex set
 of the original graph.
 
 But when dealing with formal proofs, there are some unexpected
-facts. For example, our naive definition of the
+facts. For example, our na\"ive definition of the
 predicate \verb|spanning_tree| is not strong enough to complete the
-inference. Besides the tree
+inference.
 
 (To be continued)
