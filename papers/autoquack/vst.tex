@@ -111,13 +111,10 @@ $$\frac{\frac{\frac{\forall x, (L' (x) -* G' (x)) \vdash L' (x_0) -* G' (x_0)}{\
 $$\forall x, (L' (x) -* G' (x)) \vdash \exists x, L' (x) -* \exists x, G' (x)$$
 Like what we do to P rule, three corresponding rules, SOLVE-RAM-PQ, RAM-PQ-FRAME and RAM-PQ-SPLIT, are proved sound and can be used to establish the assumption of PQ rule in a modularized way. For those who do not care about local variable related issue, a ramification-Q rule can be used to deal with existentials. For the sake for space here, we omit them in this paper.
 
-\section{Ramification based on VST}\label{vst}
+\subsection{Ramification in Decorated Programs}
 
-\subsection{Background: Verified Software Toolchain}
-VST is a correctness-certified tool to prove functional correctness of C programs CITE. All Hoare rules are proved sound and users can use them to build modularized proof. At the same time, users can have all the convenience offered by separation logic. For example, frame rule is already proved sound as well. VST is fully developed in Coq and it uses the C semantics offered by ComCert. CITE
-
-Apart from enabling mechanized program verification in Coq, VST establishes a connection between Hoare logic proofs and nice printed decorated programs. For example, 
-\begin{figure}[h]
+One nice thing about Hoare logic is that it enables people to write combinational proofs. Moreover, such kind of proofs can be written in a nice printed form, decorated programs. For example, 
+ \begin{figure}[h]
 \begin{tabular}{c | c}
 \begin{lstlisting}
 $\{\ \ \ P_1 \ \ \ \}$
@@ -143,9 +140,46 @@ $$
 \end{tabular}
 \end{figure}
 
-The decorated program on the left is actually representing the Hoare logic proof on the right side. When users prove a Hoare triple, VST enables them to feel as if they were write a decorated program from up to down, but the proof built in Coq is has a structure as an inference diagram.
+The decorated program on the left is actually representing the Hoare logic proof on the right side. By adding a new pattern, we call it localized and unlocalize, ramification proofs can also be presented in a decorated programs.
 
-Specifically, when the proof goal is $\triple{P_1}{c1;c2}{P_5}$, VST's user can apply some Hoare rule to get a triple for c1, e.g. $\triple{P_1}{c1}{P_2}$. VST system then applies sequence rule automatically and the proof goal left to user will be $\triple{P_2}{c2}{P_5}$. On user's view, he/she finishes the first three lines in his/her decorate program. But in Coq's underlying logic, VST system is build a proof tree from bottom to the top.
+\begin{figure}[h]
+\begin{tabular}{c | c}
+\begin{lstlisting}
+$\{\ \ \ G_1 \ \ \ \}$
+$\searrow \{\ \ \ L_1 \ \ \ \}$
+      c1;
+      ...
+      c5;
+$\swarrow \{\ \ \ L_2 \ \ \ \}$
+$\{\ \ \ G_2 \ \ \ \}$
+\end{lstlisting}
+&
+$$
+\inference[]
+{\triple{L_1}{c1;...;c5}{L_2} \\
+G_1 \vdash L_1 * (L_2 -* G_2)
+}
+{\triple{G_1}{c1;...;c5}{G_2}}
+$$
+ \\
+%TODO: fix format
+\end{tabular}
+\caption{Localize and unlocalize in decorated programs}
+\label{figure:lul}
+\end{figure}
+
+Figure \ref{figure:lul} shows such a decorated program. We call the action in line 2 \emph{localize} and call the action in line 6 \emph{unlocalize}. A Hoare logic proof using ramification rule can always be written as a decorated program with localize and unlocalize, as long as wherever we write do unlocalize action, we should prove a side condition, e.g. $G_1 \vdash L_1 * (L_2 -* G_2)$ in this example.
+
+\section{Ramification based on VST}\label{vst}
+
+\subsection{Background: Verified Software Toolchain}
+VST is a correctness-certified tool to prove functional correctness of C programs CITE. All Hoare rules are proved sound and users can use them to build modularized proof. At the same time, users can have all the convenience offered by separation logic. For example, frame rule is already proved sound as well. VST is fully developed in Coq and it uses the C semantics offered by ComCert. CITE
+
+Apart from enabling mechanized program verification in Coq, VST establishes a connection between Hoare logic proofs and nice printed decorated programs. For example,
+
+When users prove a Hoare triple, VST enables them to feel as if they were write a decorated program from up to down, but the proof built in Coq has a structure as an inference diagram.
+
+Specifically, when the proof goal is $\triple{P_1}{c1;c2}{P_5}$, VST's user can apply some Hoare rule to get a triple for c1, e.g. $\triple{P_1}{c1}{P_2}$. VST system then applies sequence rule automatically and the proof goal left to user will be $\triple{P_2}{c2}{P_5}$. On user's view, his/her proof goal changes from $\triple{P_1}{c1;c2}{P_5}$ to $\triple{P_2}{c2}{P_5}$ and this means that he/she finishes the first three lines in his/her decorate program. But in Coq's underlying logic, VST system is build a proof tree from bottom to the top.
 
 \subsection{Ramification in VST}
 
