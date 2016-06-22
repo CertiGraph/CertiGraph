@@ -271,6 +271,16 @@ of the original graph.
 But when dealing with formal proofs, there are some unexpected
 facts. For example, our na\"ive definition of the
 predicate \verb|spanning_tree| is not strong enough to complete the
-inference.
-
-(To be continued)
+inference. We express that graph $g_2$ is a spanning tree of graph
+$g_1$ starting from root node $r$ as \verb|spanning_tree|
+$g_1\,r\,g_2$. We conclude three relations as the predicate. First,
+the unreachable parts from root $r$ in $g_1$ and $g_2$ are the
+same. Secondly, the shape of $g_2$ must be a tree. Lastly, all nodes
+reachable from $r$ in $g_1$ are still reachable from $r$ in $g_2$. The
+second relation ensures that the result is a tree while the third one
+ensures it is a spanning tree of $g_1$. At first glance, it is a very
+complete definition. But the subsequent formal proof reveals that the
+definition still lacks one condition: for any two nodes $a$ and $b$,
+if $a$ is reachable from $r$ in $g_1$ and $b$ is not reachable from
+$r$ in $g_1$, then in $g_2$, $b$ is not reachable from $a$. It is a
+long-winded but necessary relation.
