@@ -113,11 +113,43 @@ Like what we do to P rule, three corresponding rules, SOLVE-RAM-PQ, RAM-PQ-FRAME
 
 \section{Ramification based on VST}\label{vst}
 
+\subsection{Background: Verified Software Toolchain}
 VST is a correctness-certified tool to prove functional correctness of C programs CITE. All Hoare rules are proved sound and users can use them to build modularized proof. At the same time, users can have all the convenience offered by separation logic. For example, frame rule is already proved sound as well. VST is fully developed in Coq and it uses the C semantics offered by ComCert. CITE
 
-AQUINAS, IS IT CORRECT TO USE PRESENT TENSE TO TALK ABOUT VST? SHALL I USE PAST TENSE?
+Apart from enabling mechanized program verification in Coq, VST establishes a connection between Hoare logic proofs and nice printed decorated programs. For example, 
+\begin{figure}[h]
+\begin{tabular}{c | c}
+\begin{lstlisting}
+$\{\ \ \ P_1 \ \ \ \}$
+  c1;
+$\{\ \ \ P_2 \ \ \ \}$
+$\{\ \ \ P_3 \ \ \ \}$
+  c2;
+$\{\ \ \ P_4 \ \ \ \}$
+$\{\ \ \ P_5 \ \ \ \}$
+\end{lstlisting}
+&
+$$
+\inference[]
+{\triple{P_1}{c1}{P_2} &
+\inference[]
+{P_2 \vdash P_3 \\ P_4 \vdash P_5 \\ \triple{P_3}{c2}{P_4} }
+{\triple{P_2}{c2}{P_5}}
+}
+{\triple{P_1}{c1;c2}{P_5}}
+$$
+ \\
+%TODO: fix format
+\end{tabular}
+\end{figure}
 
-In this work we present, we establish the soundness of primary ramification rule and pure-fact-related ramification rule based on frame rule. 	
+The decorated program on the left is actually representing the Hoare logic proof on the right side. When users prove a Hoare triple, VST enables them to feel as if they were write a decorated program from up to down, but the proof built in Coq is has a structure as an inference diagram.
+
+Specifically, when the proof goal is $\triple{P_1}{c1;c2}{P_5}$, VST's user can apply some Hoare rule to get a triple for c1, e.g. $\triple{P_1}{c1}{P_2}$. VST system then applies sequence rule automatically and the proof goal left to user will be $\triple{P_2}{c2}{P_5}$. On user's view, he/she finishes the first three lines in his/her decorate program. But in Coq's underlying logic, VST system is build a proof tree from bottom to the top.
+
+\subsection{Ramification in VST}
+
+Our work of embedding ramification into VST system involves 3 parts. 1: Prove all ramification rules sound in Coq. 2: Establish a connection between ramification rule in decorated programs and in proof trees. 3: Write a Coq tactic system which implements this connection.
 
 
 MORE TO WRITE: divide pure facts into frame and local based on VST's canonical form. Based on localize/unlocalize, compared with frame rule, ramification rule have better use on VST's automatic symbolic execution system.

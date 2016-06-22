@@ -10,7 +10,9 @@
 % the following standard packages may be helpful, but are not required
 %
 
-\usepackage{amsmath, amssymb}
+\usepackage{mathpartir}
+\usepackage{amsmath}
+\usepackage{ amssymb }
 \usepackage{wasysym}
 \usepackage{stmaryrd}
 \usepackage{SIunits}            % typset units correctly
@@ -22,10 +24,14 @@
 \usepackage[colorlinks=true,allcolors=blue,breaklinks,draft=false]{hyperref}   % hyperlinks, including DOIs and URLs in bibliography
 % known bug: http://tex.stackexchange.com/questions/1522/pdfendlink-ended-up-in-different-nesting-level-than-pdfstartlink
 \usepackage{tikz}
+\usepackage{fancybox}
+\usepackage{multicol}
 \usetikzlibrary{arrows.meta}
+\usepackage{semantic}
+\newcommand{\triple}[3]{\{#1\}\,#2\,\{#3\}}
 \newcommand{\doi}[1]{doi:~\href{http://dx.doi.org/#1}{\Hurl{#1}}}   % print a hyperlinked DOI
 
-
+\lstset{language=C,basicstyle=\small,mathescape=true,columns=fullflexible}
 
 \begin{document}
 
