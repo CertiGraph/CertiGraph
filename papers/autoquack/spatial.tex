@@ -1,0 +1,58 @@
+\section{Defining and reasoning about spatial graphs}
+
+To prove the functional correctness of real graph-manipulating
+algorithms, we provide spatial predicate of graphs as a shape
+description about heaps.
+
+%% 2.3. \texttt{sSpatialGraph\_Graph\_Bi} defined in "\texttt{spatial\_graph\_bi.v}" is the premise type class for defining how a BiMaFin graph is stored in memory.
+
+%% 2.5. Heap-Model-Direct instances are broken now. They are not hard to get fixed. Previous proofs are in "\texttt{spatial\_graph\_HMD.v}".
+
+\subsection{Traditional fixpoints fail}
+
+Hobor and Villard\cite{hobor:ramification} defined the separation
+logic graph predicate $\mathsf{graph}(x,\gamma)$ in direct analogy to
+the standard separation logic definition of a tree as follows:
+\begin{equation*}\label{eqn:graph}
+  \begin{split}
+  \mathtt{graph}(x, \gamma)\stackrel{\Delta}{=} & (x = 0 \wedge \mathtt{emp}) \vee
+  \exists d,l,r . \gamma(x)=(d,l,r) \wedge \\ & x \mapsto d,l,r\;
+  \ocon \mathtt{graph}(l, \gamma) \ocon \mathtt{graph}(l, \gamma)
+  \end{split}
+\end{equation*}
+where $\gamma$ is a mathematical graph and $\gamma(x)$ extracts the
+data mapped by the label function and two neighbors of node $x$. Three
+attempts was made to formalize $\mathtt{graph}$. The first two times
+failed and the last one succeed.
+
+%% \[
+%% \begin{array}{l}
+%% \mathsf{graph}(x,\gamma) ~~ \stackrel{\Delta}{=} ~~ ({x = 0} \wedge \mathsf{emp}) \vee \null \\
+%% ~~~~ (\exists d,l,r.~\gamma(x)=(d,l,r) \wedge x \mapsto d,l,r, \ocon \mathsf{graph}(l,\gamma) \ocon \mathsf{graph}(r,\gamma))
+%% \end{array}
+%% \]
+
+%* Showing that neither traditional fixpoint method works
+
+Recursive/inductive predicates are ubiquitous in separation logic---so much so that when a person writes the definition of a
+predicate as $P \stackrel{\textrm{``}\Delta\textrm{''}}{=} \ldots P \ldots$ no one raises an eyebrow, despite the dangers of circularity in
+mathematics.  Indeed, 95\% of the time there is no danger thanks to the magic of the Knaster/Tarski fixpoint $\mu_{\mathsf{T}}$ \cite{tarski:fixpoint}.
+Formally what is going on is instead of defining $P$ directly, one defines a functional
+$F_P \stackrel{\Delta}{=} \lambda P.~ \ldots P \ldots$ and then defines $P$ itself as $P \stackrel{\Delta}{=} \mu_{\mathsf{T}} \, F_P$.
+Assuming (as one typically does without comment) that $F_P$ is \emph{covariant}, i.e. $(P \vdash Q) \Rightarrow (F \, P \vdash F \, Q)$,
+one then enjoys the fixpoint equation
+$P \Leftrightarrow \ldots P \ldots$, formally justifying typically written pseudodefinition ($\stackrel{\textrm{``}\Delta\textrm{''}}{=}$).
+
+
+
+
+
+Appel and McAllester developed an additional fixpoint \cite{appel:fixpoint} whose \cite{appel:vmm}
+
+\subsection{The iterated separating conjunction}
+1.2. \texttt{Iter\_sepcon} and \texttt{pred\_sepcon} are defined. And related ramification rules are proved.
+1.3. The most general graph-spatial-predicate \texttt{vertices\_at} are defined (for all possible styles of graphs). Related ramification rules are proved. Graph and graphs are defined as special cases of vertices at.
+
+2. A minor implementation trick. There are many tactics defined in \texttt{msl\_ext/ramify\_tactics.v}, which can manipulate low level heaps efficiently.
+
+* Separating the material into the general vs. tool-specific part.  Measurements of etc.
