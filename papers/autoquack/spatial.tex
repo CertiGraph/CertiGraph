@@ -2,7 +2,11 @@
 
 To prove the functional correctness of real graph-manipulating
 algorithms, we provide spatial predicate of graphs as a shape
-description about heaps.
+description about heaps. As a matter of fact, we defined a much more
+general spatial predicate ``$\bigstar$'' to indicate a collection of
+standard points-to predicates chained by $\scon$ in separation
+logic. The spatial graph predicate is just a special case in terms of
+$\bigstar$.
 
 %% 2.3. \texttt{sSpatialGraph\_Graph\_Bi} defined in "\texttt{spatial\_graph\_bi.v}" is the premise type class for defining how a BiMaFin graph is stored in memory.
 
@@ -15,39 +19,60 @@ logic graph predicate $\mathsf{graph}(x,\gamma)$ in direct analogy to
 the standard separation logic definition of a tree as follows:
 \begin{equation*}\label{eqn:graph}
   \begin{split}
-  \mathtt{graph}(x, \gamma)\stackrel{\Delta}{=} & (x = 0 \wedge \mathtt{emp}) \vee
-  \exists d,l,r . \gamma(x)=(d,l,r) \wedge \\ & x \mapsto d,l,r\;
+  \mathtt{graph}(x, \gamma)\defeq & (x = 0 \wedge \mathtt{emp}) \vee
+  \exists d,l,r . \gamma(x)=(d,l,r) \wedge \\ & x \mapsto d,l,r\,
   \ocon \mathtt{graph}(l, \gamma) \ocon \mathtt{graph}(l, \gamma)
   \end{split}
 \end{equation*}
 where $\gamma$ is a mathematical graph and $\gamma(x)$ extracts the
-data mapped by the label function and two neighbors of node $x$. Three
-attempts was made to formalize $\mathtt{graph}$. The first two times
-failed and the last one succeed.
-
-%% \[
-%% \begin{array}{l}
-%% \mathsf{graph}(x,\gamma) ~~ \stackrel{\Delta}{=} ~~ ({x = 0} \wedge \mathsf{emp}) \vee \null \\
-%% ~~~~ (\exists d,l,r.~\gamma(x)=(d,l,r) \wedge x \mapsto d,l,r, \ocon \mathsf{graph}(l,\gamma) \ocon \mathsf{graph}(r,\gamma))
-%% \end{array}
-%% \]
+data mapped by the label function and two neighbors of node
+$x$. However, it is peculiarly challenging in rigorously formalizing
+$\mathtt{graph}$ as shown above.
 
 %* Showing that neither traditional fixpoint method works
 
-Recursive/inductive predicates are ubiquitous in separation logic---so much so that when a person writes the definition of a
-predicate as $P \stackrel{\textrm{``}\Delta\textrm{''}}{=} \ldots P \ldots$ no one raises an eyebrow, despite the dangers of circularity in
-mathematics.  Indeed, 95\% of the time there is no danger thanks to the magic of the Knaster/Tarski fixpoint $\mu_{\mathsf{T}}$ \cite{tarski:fixpoint}.
-Formally what is going on is instead of defining $P$ directly, one defines a functional
-$F_P \stackrel{\Delta}{=} \lambda P.~ \ldots P \ldots$ and then defines $P$ itself as $P \stackrel{\Delta}{=} \mu_{\mathsf{T}} \, F_P$.
-Assuming (as one typically does without comment) that $F_P$ is \emph{covariant}, i.e. $(P \vdash Q) \Rightarrow (F \, P \vdash F \, Q)$,
-one then enjoys the fixpoint equation
-$P \Leftrightarrow \ldots P \ldots$, formally justifying typically written pseudodefinition ($\stackrel{\textrm{``}\Delta\textrm{''}}{=}$).
+Recursive/inductive predicates are ubiquitous in separation logic---so
+much so that when a person writes the definition of a predicate as $P$
+``$\defeq$'' $\ldots P \ldots$ no one raises an eyebrow, despite the
+dangers of circularity in mathematics. Indeed, 95\% of the time there
+is no danger thanks to the magic of the Knaster/Tarski fixpoint
+$\mu_{\mathsf{T}}$ \cite{tarski:fixpoint}. Formally what is going on
+is instead of defining $P$ directly, one defines a functional $F_P
+\defeq \lambda P.~ \ldots P \ldots$ and then defines $P$ itself as $P
+\defeq \mu_{\mathsf{T}} \, F_P$.  Assuming (as one typically does
+without comment) that $F_P$ is \emph{covariant}, i.e. $(P \vdash Q)
+\Rightarrow (F \, P \vdash F \, Q)$, one then enjoys the fixpoint
+equation $P \Leftrightarrow \ldots P \ldots$, formally justifying
+typically written pseudodefinition (``$\defeq$'').
 
+Appel and McAllester developed an additional fixpoint
+$\mu_{\mathsf{R}}$ \cite{appel:fixpoint} whose \cite{appel:vmm}
+mechanically verified its soundness. People can still define recursive
+predicate $P$ through $F_p$ and $\mu_{\mathsf{R}}$, but this time the
+$F_p$ needs to be \emph{contractive}. Informally, a contractive
+function is one such that if $\tau$ is approximately equal to
+$\sigma$, then $F_p(\tau)$ is more accurately equal to
+$F_p(\sigma)$. The approximate equality is achieved by a data type as
+a sequence of accurate approximations taken successively. This idea is
+called step-indexing.
 
-
-
-
-Appel and McAllester developed an additional fixpoint \cite{appel:fixpoint} whose \cite{appel:vmm}
+We attempted to formulate $\mathtt{graph}$ through $\mu_{\mathsf{T}}$
+and $\mu_{\mathsf{R}}$. The covariant functor $\mathtt{graphF}$ is
+defined as follows:
+\[\label{eqn:graphF}
+  \begin{split}
+  & \mathtt{graphF}(Q, x, \gamma)\defeq (x = 0 \wedge
+  \mathtt{emp}) \vee \\ & \exists d,l,r . \gamma(x)=(d,l,r) \wedge  x
+  \mapsto d,l,r\, \ocon Q(l, \gamma) \ocon Q(l, \gamma)
+  \end{split}
+\]
+Note that $\mathtt{graphF}$ is a normal predicate without
+recursion. The first try is to define $\mathtt{graph}$ as
+$\mu_{\mathsf{T}}\,\mathtt{graphF}$. Unfortunately There is no way to
+prove any non-trivial theorem even for a self-referencing single node
+graph because there is no induction principle for this definition:
+every time the expanding of $\mathtt{graph}(x,\gamma)$ leads to
+itself. So this definition is abandoned.
 
 \subsection{The iterated separating conjunction}
 1.2. \texttt{Iter\_sepcon} and \texttt{pred\_sepcon} are defined. And related ramification rules are proved.
