@@ -17,7 +17,30 @@ functions. It is quite a very different structure from graph.
 Lars Noschinski built a formalized graph library for the Isabelle/HOL
 proof assistant and verified a method of checking Kuratowski subgraphs
 used in the LEDA library. It supports general infinite directed graphs
-with labeled and parallel arcs \cite{Noschinski2015}.
+with labeled and parallel arcs \cite{Noschinski2015}. His definition
+of graph is similar to our PreGraph except he uses vertex/edge set
+instead of validity functions. Besides, Noschinski's library also
+covers basic graph related concepts such as reachable component and
+spanning tree.
+
+Nordhoff and Lammich \cite{Dijkstra_Shortest_Path-AFP} formalized and
+proved Dijkstra's algorithm in Isabelle. Their graph is defined as
+vertex and edge sets where the edge is a triple (source, label,
+destination). They only defined what they need for the algorithm.
+
+Written in HOL, Wong \cite{wong1991} expressed a small portion of the
+conventional graph theory, which is mainly used to model the railway
+track network and applied in signalling systems. It does not contain
+too many graph property-related theorems.
+
+Chou \cite{chou1994formal} formalized theory of undirected graphs in
+HOL that emphasize on the notion and important properties of trees. He
+applied this library to verified distributed algorithms
+\cite{chou1995mechanical}.
+
+Duprat \cite{duprat2001coq} 
+
+
 
 5.2. An alternative way of verifying marking program is reasoning about the whole history of marking operations. The disadvantage of it is that it currently needs more work in a Hoare logic framework. The advantage of it is that its reasoning structure are more similar with the way we understand it in our first algorithm class.
 5.3. I take some effort on garbage collector like graph structural. Though it is only connecting this special structural with 5.1.1 and 1.3, it takes much time and it is not finished yet.
