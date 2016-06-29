@@ -399,6 +399,21 @@ Proof.
   apply andp_left1.
   auto.
 Qed.
+
+Lemma reduce_frame_from_ramification: forall F Q, EnvironStable F -> F |-- EnvironBox (Q -* Q * F).
+Proof.
+  intros.
+  unfold EnvironBox.
+  simpl; intros rho.
+  apply allp_right; intros rho'.
+  apply imp_andp_adjoint.
+  normalize.
+  apply wand_sepcon_adjoint.
+  rewrite sepcon_comm.
+  specialize (H _ _ H0).
+  rewrite H.
+  auto.
+Qed.
   
 End Ramification_P.
 
