@@ -11,6 +11,6 @@ _CoqProject
 *.blg
 *.log
 *.out
-*.pdf
 *.dvi
 CONFIGURE
+autoquack.pdf
