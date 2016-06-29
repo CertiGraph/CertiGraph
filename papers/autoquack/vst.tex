@@ -113,34 +113,35 @@ Like what we do to P rule, three corresponding rules, SOLVE-RAM-PQ, RAM-PQ-FRAME
 
 \subsection{Ramification in Decorated Programs}
 
-One nice thing about Hoare logic is that it enables people to write combinational proofs. Moreover, such kind of proofs can be written in a nice printed form, decorated programs. For example, 
- \begin{figure}[h]
-\begin{tabular}{c | c}
-\begin{lstlisting}
-$\{\ \ \ P_1 \ \ \ \}$
-  c1;
-$\{\ \ \ P_2 \ \ \ \}$
-$\{\ \ \ P_3 \ \ \ \}$
-  c2;
-$\{\ \ \ P_4 \ \ \ \}$
-$\{\ \ \ P_5 \ \ \ \}$
-\end{lstlisting}
-&
-$$
-\inference[]
-{\triple{P_1}{c1}{P_2} &
-\inference[]
-{P_2 \vdash P_3 \\ P_4 \vdash P_5 \\ \triple{P_3}{c2}{P_4} }
-{\triple{P_2}{c2}{P_5}}
-}
-{\triple{P_1}{c1;c2}{P_5}}
-$$
- \\
-%TODO: fix format
-\end{tabular}
-\end{figure}
+One nice thing about Hoare logic is that it enables people to write combinational proofs. Moreover, such kind of proofs can be written in a nice printed form, decorated programs. %For example, 
+% \begin{figure}[h]
+%\begin{tabular}{c | c}
+%\begin{lstlisting}
+%$\{\ \ \ P_1 \ \ \ \}$
+%  c1;
+%$\{\ \ \ P_2 \ \ \ \}$
+%$\{\ \ \ P_3 \ \ \ \}$
+%  c2;
+%$\{\ \ \ P_4 \ \ \ \}$
+%$\{\ \ \ P_5 \ \ \ \}$
+%\end{lstlisting}
+%&
+%$$
+%\inference[]
+%{\triple{P_1}{c1}{P_2} &
+%\inference[]
+%{P_2 \vdash P_3 \\ P_4 \vdash P_5 \\ \triple{P_3}{c2}{P_4} }
+%{\triple{P_2}{c2}{P_5}}
+%}
+%{\triple{P_1}{c1;c2}{P_5}}
+%$$
+% \\
+%%TODO: fix format
+%\end{tabular}
+%\end{figure}
 
-The decorated program on the left is actually representing the Hoare logic proof on the right side. By adding a new pattern, we call it localized and unlocalize, ramification proofs can also be presented in a decorated programs.
+%The decorated program on the left is actually representing the Hoare logic proof on the right side.
+By adding a new pattern, we call it localized and unlocalize, ramification proofs can also be presented in a decorated programs.
 
 \begin{figure}[h]
 \begin{tabular}{c | c}
@@ -175,18 +176,58 @@ Figure \ref{figure:lul} shows such a decorated program. We call the action in li
 \subsection{Background: Verified Software Toolchain}
 VST is a correctness-certified tool to prove functional correctness of C programs CITE. All Hoare rules are proved sound and users can use them to build modularized proof. At the same time, users can have all the convenience offered by separation logic. For example, frame rule is already proved sound as well. VST is fully developed in Coq and it uses the C semantics offered by ComCert. CITE
 
-Apart from enabling mechanized program verification in Coq, VST establishes a connection between Hoare logic proofs and nice printed decorated programs. For example,
+Apart from enabling mechanized program verification in Coq, VST establishes a connection between Hoare logic proofs and decorated programs. Specifically, when users prove a Hoare triple, VST's tactic system enables them to feel as if they were write a decorated program from up to down, but the proof built in Coq has a structure as an inference diagram.
 
-When users prove a Hoare triple, VST enables them to feel as if they were write a decorated program from up to down, but the proof built in Coq has a structure as an inference diagram.
+For example, when the proof goal is $\triple{P_1}{c1;c2}{P_5}$, VST's user can apply some Hoare rule to get a triple for c1, e.g. $\triple{P_1}{c1}{P_2}$. VST's tactic system then applies sequence rule automatically and the proof goal left to user will be $\triple{P_2}{c2}{P_5}$. On user's view, his/her proof goal changes from $\triple{P_1}{c1;c2}{P_5}$ to $\triple{P_2}{c2}{P_5}$ and these interaction with VST system is exact the same as writing the first three lines of his/her decorate program on a pen-and-paper proof. At the same time, in Coq's underlying logic, VST's tactic system builds a proof tree from bottom to the top.
 
-Specifically, when the proof goal is $\triple{P_1}{c1;c2}{P_5}$, VST's user can apply some Hoare rule to get a triple for c1, e.g. $\triple{P_1}{c1}{P_2}$. VST system then applies sequence rule automatically and the proof goal left to user will be $\triple{P_2}{c2}{P_5}$. On user's view, his/her proof goal changes from $\triple{P_1}{c1;c2}{P_5}$ to $\triple{P_2}{c2}{P_5}$ and this means that he/she finishes the first three lines in his/her decorate program. But in Coq's underlying logic, VST system is build a proof tree from bottom to the top.
+In summary, VST's users build a Hoare logic proof by interacting with VST's tactic system. At any intermedium point of this interaction process, the decorated program is partially done (from top to bottom) and the inference tree is also partially done (the holes are proof goals in Coq).
 
-\subsection{Ramification in VST}
+\subsection{Extend VST to Support Ramification}
 
-Our work of embedding ramification into VST system involves 3 parts. 1: Prove all ramification rules sound in Coq. 2: Establish a connection between ramification rule in decorated programs and in proof trees. 3: Write a Coq tactic system which implements this connection.
+In order to extend VST to support ramification, we should enable people to write decorated programs with localize and unlocalize action. Our task here is to construct a proof in Coq's underlying logic from a decorated program, in which localize and unlocalize are involved. Moreover, our extension of VST's tactic system should construct a partial proof when the user finishes part of his proof. 
+
+It is especially difficult when the following kind of partial decorated programs are considered.
+
+\begin{figure}[h]
+\begin{lstlisting}
+$\{\ \ \ P_1 \ \ \ \}$
+    c1
+$\{\ \ \ P_2 \ \ \ \}$
+$\searrow \{\ \ \ P_3 \ \ \ \}$
+      c2;
+$~~~~~~ \{\ \ \ P_4 \ \ \ \}$
+
+      ...
+      
+  (to be done: c3; c4; c5)
+  
+$\{\ \ \ \text{Post} \ \ \ \}$
+\end{lstlisting}
+\end{figure}
+
+Our tactic system cannot even know when corresponding unlocalize action will be done. To construct a partial proof, the tactic system cannot know where to close this ramification block.
+
+In order to solve this problem, our tactic systems builds the partial proof in underlying logic by using uninstantiated frame. For example, the partial decorated program above is treated like this:
+
+\begin{figure}[h]
+\begin{lstlisting}
+$\{\ \ \ P_1 \ \ \ \}$
+    c1
+$\{\ \ \ P_2 \ \ \ \}$
+$\{\ \ \ ?F * P_3 \ \ \ \}$
+    c2;
+$\{\ \ \ ?F * P_4 \ \ \ \}$
+
+    ...
+      
+  (to be done: c3; c4; c5)
+  
+$\{\ \ \ \text{Post} \ \ \ \}$
+\end{lstlisting}
+\end{figure}
 
 
-MORE TO WRITE: divide pure facts into frame and local based on VST's canonical form. Based on localize/unlocalize, compared with frame rule, ramification rule have better use on VST's automatic symbolic execution system.
+%MORE TO WRITE: divide pure facts into frame and local based on VST's canonical form. Based on localize/unlocalize, compared with frame rule, ramification rule have better use on VST's automatic symbolic execution system.
 
 
 

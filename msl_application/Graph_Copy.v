@@ -548,14 +548,9 @@ Proof.
     destruct HH as [? _].
     destruct H7 as [_ [_ [_ [? _]]]].
     rewrite <- H7 in H9.
-    apply Prop_join_shrink; auto.
-    unfold Included, Ensembles.In.
-    intros ? ? ?.
-    subst x1.
-    destruct H9 as [_ ?].
-    apply (H9 root0); auto.
+    apply Prop_join_shrink1; auto.
     destruct (vcopy1_edge_copy_list_spec root _ _ _ _ _ _ _ _ H H0 H1 H2 H3 H4 H5).
-    eapply LocalGraphCopy.edge_copy_list_vvalid_mono in H11; [exact H11 |].
+    eapply LocalGraphCopy.edge_copy_list_vvalid_mono in H10; [exact H10 |].
     destruct H4 as [_ [_ ?]].
     eapply LocalGraphCopy.vcopy1_copied_root_valid in H4; eauto.
   + replace (map (@LocalGraphCopy.emap V E V E (@SGBA_VE V E SGBA)

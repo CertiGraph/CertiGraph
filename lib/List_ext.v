@@ -528,6 +528,20 @@ Proof. induction L. inversion 1. icase L. simpl. inversion 1. auto. rewrite foot
 Lemma foot_none_nil {A}: forall (l : list A), foot l = None -> l = nil.
 Proof. induction l; intros; auto. simpl in H. destruct l. inversion H. specialize (IHl H). inversion IHl. Qed.
 
+Lemma cons_tail_dec {A}: forall (l: list A), (l = nil) + {l0: list A & {a: A | l = l0 +:: a}}.
+Proof.
+  intros.
+  destruct l.
+  1: left; auto.
+  right.
+  revert a; induction l; intros.
+  + exists nil, a; auto.
+  + destruct (IHl a) as [? [? ?]].
+    exists (a0 :: x), x0.
+    rewrite e.
+    simpl; auto.
+Qed.
+
 Lemma filter_sublist: forall A f (l: list A), Sublist (filter f l) l.
 Proof.
   unfold Sublist; intros.
@@ -1022,3 +1036,40 @@ Proof.
   intros. apply map_mid in H. destruct H as [y1 [m1 [m4 [? [? [? ?]]]]]]. apply map_mid in H2. destruct H2 as [y2 [m2 [m3 [? [? [? ?]]]]]]. subst m4.
   exists y1, y2, m1, m2, m3. split; auto.
 Qed.
+
+Lemma nth_error_None_iff: forall {A} (l: list A) n, nth_error l n = None <-> n >= length l.
+Proof.
+  intros.
+  revert n; induction l; intros; destruct n; simpl.
+  + split; [intros _; omega | auto].
+  + split; [intros _; omega | auto].
+  + split; [intros; inversion H | omega].
+  + rewrite IHl.
+    omega.
+Qed.
+
+(* TODO: These three lemmas are copied from VST.veric.assert_lemmas and VST.veric.initial_world *)
+Lemma nth_error_in_bounds: forall {A} (l: list A) i, (O <= i < length l)%nat
+  -> exists x, nth_error l i = value x.
+Proof.
+intros until i; intros H.
+revert i l H.
+induction i; destruct l; intros; simpl in *;
+  try solve [eauto | omega].
+apply IHi; omega.
+Qed.
+
+Lemma nth_error_app: forall {T} (al bl : list T) (j: nat),
+     nth_error (al++bl) (length al + j) = nth_error bl j.
+Proof.
+ intros. induction al; simpl; auto.
+Qed.
+
+Lemma nth_error_app1: forall {T} (al bl : list T) (j: nat),
+     (j < length al)%nat ->
+     nth_error (al++bl) j = nth_error al j.
+Proof.
+  intros. revert al H; induction j; destruct al; simpl; intros; auto; try omega.
+   apply IHj. omega.
+Qed.
+
