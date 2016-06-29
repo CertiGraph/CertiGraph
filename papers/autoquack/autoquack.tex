@@ -13,9 +13,11 @@
 \usepackage{mathpartir}
 \usepackage{amsmath}
 \usepackage{ amssymb }
+\usepackage{mathabx}
+\usepackage{mathtools}
 \usepackage{wasysym}
 \usepackage{stmaryrd}
-\usepackage{SIunits}            % typset units correctly
+%% \usepackage{SIunits}            % typset units correctly
 \usepackage{courier}            % standard fixed width font
 \usepackage[scaled]{helvet} % see www.ctan.org/get/macros/latex/required/psnfss/psnfss2e.pdf
 \usepackage{url}                  % format URLs
@@ -31,7 +33,17 @@
 \newcommand{\triple}[3]{\{#1\}\,#2\,\{#3\}}
 \newcommand{\doi}[1]{doi:~\href{http://dx.doi.org/#1}{\Hurl{#1}}}   % print a hyperlinked DOI
 
+
 \lstset{language=C,basicstyle=\small,mathescape=true,columns=fullflexible}
+
+\newcommand{\scon}{\mathbin{\varstar}}
+\newcommand{\ocon}{%
+  \mathbin{\mbox{$\mathrlap{\cup}\hspace*{.15em}
+      \raisebox{.01em}[0ex][0ex]{$\scon$}$\hspace*{.07em}}}}
+\newcommand{\wand}{%
+ \mathrel{\mbox{$\hspace*{-0.03em}\mathord{-}\hspace*{-0.66em}
+     \mathord{-}\hspace*{-0.36em}\mathord{\scon}$\hspace*{-0.005em}}}}
+\newcommand{\defeq}{\mathbin{\stackrel{\Delta}{=}}}
 
 \begin{document}
 
@@ -90,47 +102,7 @@ letting us understand the advantages and disadvantages of both.
 \section{A framework for graph theory}
 \input{math_graph.tex}
 
-\section{Defining and reasoning about spatial graphs}
-
-2.3. \texttt{sSpatialGraph\_Graph\_Bi} defined in "\texttt{spatial\_graph\_bi.v}" is the premise type class for defining how a BiMaFin graph is stored in memory.
-
-2.5. Heap-Model-Direct instances are broken now. They are not hard to get fixed. Previous proofs are in "\texttt{spatial\_graph\_HMD.v}".
-
-\subsection{Traditional fixpoints fail}
-
-Hobor and Villard defined the separation logic graph predicate $\mathsf{graph}(x,\gamma)$ in direct analogy to the standard
-separation logic definition of a tree as follows:
-\[
-\begin{array}{l}
-\mathsf{graph}(x,\gamma) ~~ \stackrel{\Delta}{=} ~~ ({x = 0} \wedge \mathsf{emp}) \vee \null \\
-~~~~ (\exists d,l,r.~ x \mapsto d,l,r, ** \mathsf{graph}(l,\gamma) ** \mathsf{graph}(r,\gamma))
-\end{array}
-\]
-
-%* Showing that neither traditional fixpoint method works
-
-Recursive/inductive predicates are ubiquitous in separation logic---so much so that when a person writes the definition of a
-predicate as $P \stackrel{\textrm{``}\Delta\textrm{''}}{=} \ldots P \ldots$ no one raises an eyebrow, despite the dangers of circularity in
-mathematics.  Indeed, 95\% of the time there is no danger thanks to the magic of the Knaster/Tarski fixpoint $\mu_{\mathsf{T}}$ \cite{tarski:fixpoint}.
-Formally what is going on is instead of defining $P$ directly, one defines a functional
-$F_P \stackrel{\Delta}{=} \lambda P.~ \ldots P \ldots$ and then defines $P$ itself as $P \stackrel{\Delta}{=} \mu_{\mathsf{T}} \, F_P$.
-Assuming (as one typically does without comment) that $F_P$ is \emph{covariant}, i.e. $(P \vdash Q) \Rightarrow (F \, P \vdash F \, Q)$,
-one then enjoys the fixpoint equation
-$P \Leftrightarrow \ldots P \ldots$, formally justifying typically written pseudodefinition ($\stackrel{\textrm{``}\Delta\textrm{''}}{=}$).
-
-
-
-
-
-Appel and McAllester developed an additional fixpoint \cite{appel:fixpoint} whose \cite{appel:vmm}
-
-\subsection{The iterated separating conjunction}
-1.2. \texttt{Iter\_sepcon} and \texttt{pred\_sepcon} are defined. And related ramification rules are proved.
-1.3. The most general graph-spatial-predicate \texttt{vertices\_at} are defined (for all possible styles of graphs). Related ramification rules are proved. Graph and graphs are defined as special cases of vertices at.
-
-2. A minor implementation trick. There are many tactics defined in \texttt{msl\_ext/ramify\_tactics.v}, which can manipulate low level heaps efficiently.
-
-* Separating the material into the general vs. tool-specific part.  Measurements of etc.
+\input{spatial.tex}
 
 \section{Verifying graph-manipulating programs}
 
@@ -159,10 +131,7 @@ Appel and McAllester developed an additional fixpoint \cite{appel:fixpoint} whos
 6.2. Important pure facts and ramification rules are not proved yet.
 6.3. Shengyi has already known how to use VST to handle the C program of bigraph spanning tree.
 
-\section{Related and future work}
-
-5.2. An alternative way of verifying marking program is reasoning about the whole history of marking operations. The disadvantage of it is that it currently needs more work in a Hoare logic framework. The advantage of it is that its reasoning structure are more similar with the way we understand it in our first algorithm class.
-5.3. I take some effort on garbage collector like graph structural. Though it is only connecting this special structural with 5.1.1 and 1.3, it takes much time and it is not finished yet.
+\input{related.tex}
 
 \section{Conclusion}
 
