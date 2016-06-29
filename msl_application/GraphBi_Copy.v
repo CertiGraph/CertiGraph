@@ -627,7 +627,9 @@ Proof.
   specialize (H8 BMF).
   specialize (H8 (Graph_is_BiMaFin _)).
 
-  destruct H8 as [g4' [? [? [? ?]]]].
+  destruct H8 as [g4' [? [? [_ _]]]].
+pose proof I.
+pose proof I.
   apply (exp_right g4').
 
   destruct_eq_dec x0 null.
@@ -659,18 +661,113 @@ Proof.
   simpl in H18.
 
   apply andp_right; [apply prop_right; split; auto | rewrite sepcon_assoc; apply sepcon_derives; auto].
+  assert (Prop_join (vvalid g3') (vvalid g4'') (vvalid g4')).
+  Focus 1. {
+    destruct H8 as [_ [_ HH]].
+    destruct HH as [_ [_ [_ [HH _]]]].
+    destruct H4 as [_ [_ ?]].
+    destruct HH as [? _].
+    destruct H4 as [_ [_ [_ [? _]]]].
+    rewrite H11, <- H4 in H8; auto.
+  } Unfocus.
   rewrite (vertices_at_vertices_identical (Graph_SpatialGraph g4'') (LGraph_SGraph g4')).
   rewrite (vertices_at_vertices_identical (LGraph_SGraph g3') (LGraph_SGraph g4')).
   - erewrite vertices_at_sepcon_xx; [apply derives_refl |].
     rewrite Prop_join_comm.
     apply (vmap_weaken g3 g4'') in H7.
     rewrite <- (copy_vvalid_weak_eq g3 g4 g4'' r r0 H7 H4).
-    apply Prop_join_shrink;
-    admit. (* some how copy the proof in Graph_Copy.v *)
+    apply Prop_join_shrink1; auto.
+    eapply ecopy1_vvalid_mono in H3; [exact H3 |].
+    eapply extended_copy_vvalid_mono in H2; [exact H2 |].
+    eapply vcopy1_copied_root_valid in H1; auto.
+    rewrite H5; auto.
+Admitted.
+(*
   - admit.
+  - Check copy_vvalid_weak_eq. 
+apply (vmap_weaken g3 g4'') in H7.
+SearchAbout  vertices_identical Proper.
+rewrite <- (copy_vvalid_weak_eq _ _ _ _ _ H7 H4).
+erewrite <- copy_vvalid_weak_eq.
+
+
+Lemma shrink1_vertices_identical: forall (g1 g2: @LGraph pSGG_Bi (@addr pSGG_Bi) (prod (@addr pSGG_Bi) LR)) x0 es1 es2,
+  is_guarded_BiMaFin (fun v : addr => x0 <> v) (fun e : addr * LR => ~ In e es1) g1 ->
+  is_guarded_BiMaFin (fun v : addr => x0 <> v) (fun e : addr * LR => ~ In e es2) g2 ->
+  guarded_labeled_graph_equiv (vvalid g1) (evalid g1) g1 g2 ->
+  vertices_identical
+     (Intersection addr (vvalid g1) (fun x1 : addr => x0 <> x1)) g1 g2.
+Proof.
+  intros.
+  destruct H as [X _].
+  destruct H0 as [X0 _].
+  assert (Included (vvalid g1) (vvalid g2)).
+  Focus 1. {
+    destruct H1 as [[? _] _].
+    unfold Included, Ensembles.In; intros v ?; specialize (H v).
+    simpl in H.
+    rewrite !Intersection_spec in H.
+    tauto.
+  } Unfocus.
+  apply GSG_PartialGraphPreserve.
+  + unfold Included, Ensembles.In; intros.
+    pose (pg1 := Build_GeneralGraph _ _ (fun g: LGraph => BiMaFin g) (gpredicate_sub_labeledgraph (fun v => x0 <> v) (fun e => ~ In e es1) g1) X: Graph).
+    assert (vvalid pg1 x) by (simpl; auto).
+    apply vvalid_vguard in H2.
+    simpl in H2.
+    rewrite !Intersection_spec in H2.
+    simpl; tauto.
+  + unfold Included, Ensembles.In; intros.
+    pose (pg2 := Build_GeneralGraph _ _ (fun g: LGraph => BiMaFin g) (gpredicate_sub_labeledgraph (fun v => x0 <> v) (fun e => ~ In e es2) g2) X0: Graph).
+    assert (vvalid pg2 x).
+    Focus 1. {
+      simpl.
+      rewrite Intersection_spec in H0 |- *; destruct H0.
+      apply H in H0.
+      auto.
+    } Unfocus.
+    apply vvalid_vguard in H2.
+    simpl in H2.
+    rewrite !Intersection_spec in H2.
+    simpl; tauto.
+  + unfold Included, Ensembles.In; intros.
+    rewrite !Intersection_spec in H0; tauto.
+  + unfold Included, Ensembles.In; intros.
+    rewrite !Intersection_spec in H0.
+    apply H; tauto.
+  + rewrite !predicate_partial_labeledgraph_gpredicate_sub_labeledgraph.
+    assert (Included
+             (weak_edge_prop (Intersection _ (vvalid g1) (fun x1 => x0 <> x1)) g1)
+             (evalid g1)).
+    Focus 1. {
+      unfold Included, Ensembles.In, weak_edge_prop.
+      intros e ?.
+      pose (pg1 := Build_GeneralGraph _ _ (fun g: LGraph => BiMaFin g) (gpredicate_sub_labeledgraph (fun v => x0 <> v) (fun e => ~ In e es1) g1) X: Graph).
+      assert (vvalid pg1 (src g1 e)) by (simpl; auto).
+SearchAbout evalid vvalid.
+      rewrite Intersection_spec in H0.
+     
+SearchAbout  gpredicate_sub_labeledgraph.
+
+
+
+
+SearchAbout vguard.
+ simpl.
+SearchAbout vertices_identical.
+
+
+ rewrite vertices_identical_spec; intros.
+    simpl.
+    f_equal; [f_equal |].
+    * destruct H16 as [? [? ?]].
+      apply H21; simpl; rewrite Intersection_spec in H20 |- *; try tauto.
+      destruct H19 as [? _]. specialize (H19 x1). tauto.
+    * destruct H16 as [? [? ?]].
+      
   - admit.
 Qed.
-
+*)
 Lemma labeledgraph_add_edge_ecopy1_right: forall (g g1 g2 g3 g4: Graph) (g1' g2' g3' g4': LGraph) (x l r x0 r0: addr),
   vvalid g x ->
   vgamma g x = (null, l, r) ->
