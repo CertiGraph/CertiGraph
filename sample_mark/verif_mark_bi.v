@@ -123,7 +123,7 @@ Proof.
     clear - H0; destruct d; congruence.
   } Unfocus.
 
-  normalize.
+  Intros. subst d.
   localize
    (PROP  ()
     LOCAL (temp _x (pointer_val_val x))

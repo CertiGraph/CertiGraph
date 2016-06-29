@@ -1932,6 +1932,134 @@ Proof.
     - apply COPY_bij.
 Qed.
 
+Lemma vcopy1_edge_copy_list_copy_and_copy_extend: forall (g g1 g2 g3: Graph) (g1' g2' g3'' g3': Graph') root es es_done e0 es_later (M: V -> Prop),
+  vvalid g root ->
+  ~ M root ->
+  (forall e, In e es <-> out_edges g root e) ->
+  NoDup es ->
+  es = es_done ++ e0 :: es_later ->
+  (forall v : V, M v \/ ~ M v) ->
+  vcopy1 root g g1 g1' ->
+  edge_copy_list g root es_done M (g1, g1') (g2, g2') ->
+  let M0 := Union _ M (eq root) in
+  let PV1 := reachable_by_through_set g (map (dst g) es_done) (Complement _ M0) in
+  let PE1 := Intersection _ (weak_edge_prop PV1 g) (evalid g) in
+  let PE1_root e := In e es_done in
+  let M_rec := Union _ M0 PV1 in
+  let PV0 := reachable_by g (dst g e0) (Complement _ M_rec) in
+  let PE0 := Intersection _ (weak_edge_prop PV0 g) (evalid g) in
+  copy M_rec (dst g e0) g2 g3 g3'' ->
+  disjointed_guard (vvalid g3'') (vvalid g2') (evalid g3'') (evalid g2') ->
+  (forall v, M_rec v \/ ~ M_rec v) ->
+  extended_copy M_rec (dst g e0) (g2, g2') (g3, g3') ->
+  guarded_labeled_graph_equiv (vvalid g3'') (evalid g3'') g3'' g3' ->
+  guarded_labeled_graph_equiv (vvalid g2') (evalid g2') g2' g3' ->
+  Prop_join (vvalid g2') (vvalid g3'') (vvalid g3') /\
+  Prop_join (evalid g2') (evalid g3'') (evalid g3') /\
+  ((predicate_partial_labeledgraph g3'' (vvalid g3'')) ~=~ (predicate_partial_labeledgraph g3' (vvalid g3'')))%LabeledGraph /\
+  ((predicate_partial_labeledgraph g2' (vvalid g2')) ~=~ (predicate_partial_labeledgraph g3' (vvalid g2')))%LabeledGraph.
+Proof.
+  intros.
+  destruct H7 as [COPY_si [COPY_gprv [COPY_gpre [COPY_vvalid [COPY_evalid [COPY_consi COPY_bij]]]]]].
+  assert (Prop_join (vvalid g2') (vvalid g3'') (vvalid g3') /\ Prop_join (evalid g2') (evalid g3'') (evalid g3') ) as [? ?].
+  Focus 1. {
+    destruct H10 as [_ [_ [_ [? _]]]].
+    destruct H7 as [? [? _]].
+    rewrite <- COPY_vvalid in H7.
+    rewrite <- COPY_evalid in H10; auto.
+  } Unfocus.
+  split; [| split; [| split]]; auto.
+  Focus 1. {
+    rewrite !predicate_partial_labeledgraph_gpredicate_sub_labeledgraph.
+    assert (Same_set (Intersection E' (weak_edge_prop (vvalid g3'') g3') (evalid g3')) (Intersection E' (weak_edge_prop (vvalid g3'') g3'') (evalid g3''))).
+    + rewrite Same_set_spec; intros e.
+      rewrite !Intersection_spec; unfold weak_edge_prop.
+      rewrite (proj1 H13).
+      split; [intros [? [? | ?]] | intros].
+      - exfalso.
+        assert (Included (evalid g2') (weak_edge_prop (vvalid g2') g2')) as HE_g2'.
+        Focus 1. {
+          pose proof triple_vcopy1_edge_copy_list _ _ _ _ _ _ _ _ _ _ H H0 H1 H2 H3 H4 H5 H6.
+          destruct H16 as [? [? [_ [_ [_ [? ?]]]]]].
+          rewrite H18, H19.
+          eapply guarded_morphism_weak_edge_prop; [apply H16 | |].
+          + rewrite weak_edge_prop_si by exact H17.
+            unfold Included, Ensembles.In, weak_edge_prop; intros.
+            rewrite Union_spec in H20 |- *.
+            destruct H20; [rewrite Intersection_spec in H20; tauto |].
+            right.
+            rewrite H3 in H1.
+            specialize (H1 x); rewrite in_app_iff in H1.
+            pose proof (proj1 H1 (or_introl H20)).
+            destruct H21.
+            rewrite (si_src1 _ _ _ H17) in H22 by auto; symmetry; auto.
+          + rewrite weak_edge_prop_si by exact H17.
+            unfold Included, Ensembles.In, weak_edge_prop; intros.
+            rewrite Union_spec, Intersection_spec in H20.
+            destruct H20; [tauto |].
+            rewrite H3 in H1.
+            specialize (H1 x); rewrite in_app_iff in H1.
+            pose proof (proj1 H1 (or_introl H20)).
+            destruct H21.
+            rewrite (proj1 (proj2 H17)) in H21; auto.
+        } Unfocus.
+        assert (vvalid g2' (src g2' e)) by (apply HE_g2'; auto).
+        unfold guarded_labeled_graph_equiv, respectful_relation in H12.
+        rewrite gpredicate_sub_labeledgraph_self in H12.
+        rewrite (si_src1 _ _ _ (proj1 H12)) in H16 by auto.
+        simpl in H16.
+        apply (proj2 H7 (src g3' e)); auto.
+      - unfold guarded_labeled_graph_equiv, respectful_relation in H11.
+        rewrite gpredicate_sub_labeledgraph_self in H11.
+        rewrite (si_src1 _ _ _ (proj1 H11)) by auto.
+        auto.
+      - unfold guarded_labeled_graph_equiv, respectful_relation in H11.
+        rewrite gpredicate_sub_labeledgraph_self in H11.
+        rewrite (si_src1 _ _ _ (proj1 H11)) in H14 by tauto.
+        tauto.
+    + rewrite H14.
+      eapply stronger_gpredicate_sub_labeledgraph_simple; [| | exact H11].
+      - apply Included_refl.
+      - apply Intersection2_Included, Included_refl.
+  } Unfocus.
+  Focus 1. {
+    rewrite !predicate_partial_labeledgraph_gpredicate_sub_labeledgraph.
+    assert (Same_set (Intersection E' (weak_edge_prop (vvalid g2') g3') (evalid g3')) (Intersection E' (weak_edge_prop (vvalid g2') g2') (evalid g2'))).
+    + rewrite Same_set_spec; intros e.
+      rewrite !Intersection_spec; unfold weak_edge_prop.
+      rewrite (proj1 H13).
+      split; [intros [? [? | ?]] | intros].
+      - unfold guarded_labeled_graph_equiv, respectful_relation in H12.
+        rewrite gpredicate_sub_labeledgraph_self in H12.
+        rewrite (si_src1 _ _ _ (proj1 H12)) by auto.
+        auto.
+      - exfalso.
+        assert (Included (evalid g3'') (weak_edge_prop (vvalid g3'') g3'')) as HE_g3''.
+        Focus 1. {
+          rewrite COPY_vvalid, COPY_evalid.
+          eapply guarded_morphism_weak_edge_prop; [apply COPY_bij | |].
+          + rewrite weak_edge_prop_si by exact COPY_si.
+            apply Intersection1_Included, Included_refl.
+          + rewrite weak_edge_prop_si by exact COPY_si.
+            apply Intersection2_Included, Included_refl.
+        } Unfocus.
+        assert (vvalid g3'' (src g3'' e)) by (apply HE_g3''; auto).
+        unfold guarded_labeled_graph_equiv, respectful_relation in H11.
+        rewrite gpredicate_sub_labeledgraph_self in H11.
+        rewrite (si_src1 _ _ _ (proj1 H11)) in H16 by auto.
+        simpl in H16.
+        apply (proj2 H7 (src g3' e)); auto.
+      - unfold guarded_labeled_graph_equiv, respectful_relation in H12.
+        rewrite gpredicate_sub_labeledgraph_self in H12.
+        rewrite (si_src1 _ _ _ (proj1 H12)) in H14 by tauto.
+        tauto.
+    + rewrite H14.
+      eapply stronger_gpredicate_sub_labeledgraph_simple; [| | exact H12].
+      - apply Included_refl.
+      - apply Intersection2_Included, Included_refl.
+  } Unfocus.
+Qed.
+
 Lemma extend_copy_emap_root: forall (g g1 g2 g3: Graph) (g1' g2' g3': Graph') root es es_done e0 es_later (M: V -> Prop),
   vvalid g root ->
   ~ M root ->
