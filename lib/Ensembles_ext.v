@@ -329,6 +329,20 @@ Proof.
   + firstorder.
 Qed.
 
+Lemma Prop_join_shrink1: forall {U} (A B C: Ensemble U) (x: U),
+  A x ->
+  Prop_join A B C ->
+  Prop_join (Intersection _ A (fun x0 => x <> x0)) B (Intersection _ C (fun x0 => x <> x0)).
+Proof.
+  intros.
+  apply Prop_join_shrink; auto.
+  unfold Included, In; intros.
+  intro.
+  subst x0.
+  destruct H0.
+  apply (H2 x); auto.
+Qed.
+
 Lemma Ensemble_join_Intersection_Complement: forall {A} P Q,
   Included Q P ->
   (forall x, Q x \/ ~ Q x) ->

@@ -452,7 +452,8 @@ Proof.
     rewrite <- (copy_vvalid_weak_eq g1 g2 g2'' l l0 H4 H2).
     apply Prop_join_shrink;
     admit. (* some how copy the proof in Graph_Copy.v *)
-  - admit.
+  - rewrite vertices_identical_spec; intros.
+    simpl. admit.
   - admit.
 Qed.
 
