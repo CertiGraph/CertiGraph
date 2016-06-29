@@ -1,0 +1,69 @@
+\paragraph{Mark example.} In Qinxiang's new format.
+
+\newcommand{\tx}[1]{\text{#1}}
+\newcommand{\p}[1]{\ensuremath{\mathsf{#1}}} % predicate font
+\newcommand{\m}[1]{\ensuremath{\mathit{#1}}} % math font
+\let\ramify\lightning
+
+\begin{figure}
+  \begin{lstlisting}
+struct Node {
+  int  _Alignas(16) m;
+  struct Node * _Alignas(8) l;
+  struct Node * r;
+};
+
+void mark(struct Node * x) { // $\{\p{graph}(\tx{x},\gamma)\}$
+  struct Node * l, * r;
+  int root_mark;
+  if (x == 0)
+    return;
+// $\{\p{graph}(\tx x,\gamma) /| {\tx x} \neq 0\}$
+// $\searrow \{\exists m,l,r.~ \tx x|-> m,l,r /| \gamma(\tx{x}) = (m,l,r)\}$
+      root_mark = x -> m;
+// $\swarrow \{\exists l,r.~ \tx x|-> \tx{root\_mark},l,r /| \gamma(\tx{x}) = (\tx{root\_mark},l,r)\}$
+// $\{\exists l,r.~ \p{graph}(\tx x,\gamma) /| {\tx x} \neq 0 /| \gamma(\tx{x}) = (\tx{root\_mark},l,r) \}$
+  if (root_mark == 1)
+    return;
+// $\{\exists l,r.~ \p{graph}(\tx x,\gamma) /| {\tx x} \neq 0 /| \gamma(\tx{x}) = (0,l,r) \}$
+// $\searrow \{\exists l,r.~ \tx x|-> 0,l,r /| \gamma(\tx{x}) = (0,l,r)\}$
+      l = x -> l;
+      r = x -> r;
+      x -> m = 1;
+// $\swarrow \{\tx x|-> 1,\tx{l},\tx{r} /| \gamma(\tx{x}) = (0,\tx{l},\tx{r})\}$
+// $\{\p{graph}(\tx x,\gamma') /| {\tx x} \neq 0 /| \gamma(\tx{x}) = (0,\tx{l},\tx{r}) /| \m{mark1}(\gamma, \tx{x}, \gamma')\}$
+// $\searrow \{\p{graph}(\tx l, \gamma')\}$
+      mark(l);
+// $\swarrow \{\exists \gamma''.~ \p{graph}(\tx l, \gamma'') /| \m{mark}(\gamma', \tx{l}, \gamma'')\}$
+// $\left\{\!\!\!\begin{array}{l@{}}\p{graph}(\tx x,\gamma'') /| {\tx x} \neq 0 /| \gamma(\tx{x}) = (0,\tx{l},\tx{r}) /| \null \\ \m{mark1}(\gamma, \tx{x}, \gamma') /| \m{mark}(\gamma', \tx{l}, \gamma'')\end{array}\right\}$
+// $\searrow \{\p{graph}(\tx r, \gamma'')\}$
+      mark(r);
+// $\swarrow \{\exists \gamma'''.~ \p{graph}(\tx r, \gamma''') /| \m{mark}(\gamma'', \tx{r}, \gamma''')\}$
+// $\left\{\!\!\!\begin{array}{l@{}}\p{graph}(\tx x,\gamma''') /| {\tx x} \neq 0 /| \gamma(\tx{x}) = (0,\tx{l},\tx{r}) /| \null \\ \m{mark1}(\gamma, \tx{x}, \gamma') /| \m{mark}(\gamma', \tx{l}, \gamma'') /| \m{mark}(\gamma'', \tx{r}, \gamma''')\end{array}\right\}$
+// $\{\exists \gamma'''.~ \p{graph}(\tx x,\gamma''') /| \m{mark}(\gamma, \tx{x}, \gamma''')\}$
+}
+\end{lstlisting}
+%% \vspace{-8pt}
+\caption{Clight code and proof sketch for bigraph mark. {\color{magenta} The steps that induce
+  ramifications are indicated with $\ramify_i$, where the associated ramification entailment is equation number $i$.}} %whose numbers point with their associated ramification entailment reference.}
+%\vspace{-19pt}
+\label{fig:markgraph}
+
+\hide{
+void mark(struct node *x) { // $\{\p{graph}(\tx x,\delta)\}$
+  struct node *l,*r;
+  if (x == 0 || x->m == 1) return;
+
+  l = x->l; r = x->r;
+// $\{\tx x|-> 0,\tx l,\tx r ** \p{graph}(\tx l,\delta) ** \p{graph}(\tx r,\delta) /|\delta(\tx x) = (0,\tx l,\tx r)\}$
+// $\searrow \{\tx x|-> 0,\tx l,\tx r\}$
+      x->m = 1;
+// $\swarrow \{\tx x|-> 1,\tx l,\tx r\}$
+// $\{\tx x|-> 1,\tx l,\tx r ** \p{graph}(\tx l,\delta) ** \p{graph}(\tx r,\delta) /|\delta(\tx x) = (0,\tx l,\tx r)\}$
+  mark(l);
+//$\ramify_{(\ref{ram:mark1})}\left\{\begin{array}{l@{}}\tx x|-> 1,\tx l,\tx r * (\p{graph}(\tx l,m(\delta,\tx l)) ** \p{graph}(\tx r,m(\delta,\tx l))) /|\null \\ \delta(\tx x) = (0,\tx l,\tx r)\end{array}\right\}$
+  mark(r);
+//$\ramify_{(\ref{ram:mark2})}\left\{\begin{array}{l@{}}\tx x|-> 1,\tx l,\tx r * (\p{graph}(\tx l,\delta') ** \p{graph}(\tx r,\delta'))/|\null \\ \delta(\tx x) = (0,\tx l,\tx r)/|\delta'=m(m(\delta,\tx l),\tx r)\end{array}\right\}$
+} // $\{\p{graph}(\tx x,m(\delta,\tx x))\}$
+}
+\end{figure}

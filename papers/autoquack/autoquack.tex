@@ -10,18 +10,24 @@
 % the following standard packages may be helpful, but are not required
 %
 
-\usepackage{mathpartir}
-\usepackage{amsmath}
-\usepackage{ amssymb }
-\usepackage{mathabx}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[tbtags]{amsmath} %\usepackage{amsmath}
 \usepackage{mathtools}
-\usepackage{wasysym}
+\usepackage{mathpartir}
+\usepackage{listings}          % format code
 \usepackage{stmaryrd}
+\usepackage{relsize}
+\usepackage{setspace}
+\usepackage[small,compact]{titlesec}
+
+\usepackage{amssymb}
+\usepackage{mathabx}
+\usepackage{wasysym}
 %% \usepackage{SIunits}            % typset units correctly
 \usepackage{courier}            % standard fixed width font
 \usepackage[scaled]{helvet} % see www.ctan.org/get/macros/latex/required/psnfss/psnfss2e.pdf
 \usepackage{url}                  % format URLs
-\usepackage{listings}          % format code
 \usepackage{enumitem}      % adjust spacing in enums
 \usepackage[colorlinks=true,allcolors=blue,breaklinks,draft=false]{hyperref}   % hyperlinks, including DOIs and URLs in bibliography
 % known bug: http://tex.stackexchange.com/questions/1522/pdfendlink-ended-up-in-different-nesting-level-than-pdfstartlink
@@ -33,8 +39,28 @@
 \newcommand{\triple}[3]{\{#1\}\,#2\,\{#3\}}
 \newcommand{\doi}[1]{doi:~\href{http://dx.doi.org/#1}{\Hurl{#1}}}   % print a hyperlinked DOI
 
+%\input mathlig
 
-\lstset{language=C,basicstyle=\small,mathescape=true,columns=fullflexible}
+%\usepackage{common}
+%\usepackage{seplog}
+
+\lstset{%
+  language=C,
+  morecomment=[n][{\color{red!80!black}}]{/*}{*/},
+  morecomment=[l][{\color{red!80!black}}]{//},
+  sensitive=true,
+  mathescape=true,
+  showlines=true,
+  basicstyle=\normalfont\smaller\tt,
+  keywordstyle=\color{blue},
+  numbers=left,
+  numberstyle=\tiny,
+  numbersep=5pt,
+  boxpos=t,
+}
+
+
+%\lstset{language=C,basicstyle=\small,mathescape=true,columns=fullflexible}
 
 \newcommand{\scon}{\mathbin{\varstar}}
 \newcommand{\ocon}{%
@@ -81,14 +107,14 @@ shared between them, and since many of the other computer-assisted verification 
 today CITE CITE CITE CITE have much in common with at least one of these tools, we believe that our techniques will be
 applicable to many other systems as well.
 
-Along the way we develop an improved proof rule for ramification that supports existential variables and enjoys a smoother interaction with 
+Along the way we develop an improved proof rule for ramification that supports existential variables and enjoys a smoother interaction with
 
 
-with modified 
+with modified
 
  references to modified local program variables more generally.
 
- smoothly 
+ smoothly
 
 
 
@@ -96,7 +122,7 @@ a smoother and more uniform support for modified program variables.
 
 along with a more
 
-make a number upgrades to the theory of ramification and present 
+make a number upgrades to the theory of ramification and present
 
 , with a better treatment of modified variables, existentials,
 
@@ -116,7 +142,7 @@ so that it can handle a wider variety of data structures;
 We use both systems to verify a number of different programs utilizing graph-manipulating structures,
 letting us understand the advantages and disadvantages of both.
 
-\paragraph{Contributions and structure of the remainder of this paper.}  
+\paragraph{Contributions and structure of the remainder of this paper.}
 \begin{itemize}
 \item Example \S\ref{sec:example}.  Contributions: new ramify rules, new notation, everything machine-checked, multiple tools sharing mathematical infrastructure.
 \item Mathematical graphs.  Contributions: computable, compositional, \& general graph library in Coq.  Treatment of null.
@@ -128,7 +154,7 @@ letting us understand the advantages and disadvantages of both.
 \section{Generalizing and mechanizing ramification}
 \label{sec:example}
 
-\paragraph{Mark example.} In Qinxiang's new format.
+\input{orientation.tex}
 
 \section{A framework for graph theory}
 \input{math_graph.tex}
