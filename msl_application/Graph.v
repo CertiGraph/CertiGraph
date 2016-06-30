@@ -142,6 +142,22 @@ Definition vertices_identical0: relation (SpatialGraph V E GV GE) :=
 Definition vertices_identical2 (PV1 PV2: Ensemble V) (g1 g2: SpatialGraph V E GV GE) : Prop :=
   Same_set PV1 PV2 /\ vertices_identical PV1 g1 g2.
 
+Instance vertices_identical_proper: Proper (Same_set ==> eq ==> eq ==> iff) vertices_identical.
+Proof.
+  hnf; intros.
+  hnf; intros G1 G1' ?; subst G1'.
+  hnf; intros G2 G2' ?; subst G2'.
+  unfold vertices_identical, respectful_relation.
+  split; intros.
+  + rewrite guarded_pointwise_relation_spec in H0 |- *.
+    intros; apply H0.
+    rewrite (app_same_set H); auto.
+  + rewrite guarded_pointwise_relation_spec in H0 |- *.
+    intros; apply H0.
+    rewrite <- (app_same_set H); auto.
+Qed.
+Global Existing Instance vertices_identical_proper.
+
 Lemma vertices_identical_spec: forall PV g1 g2,
   vertices_identical PV g1 g2 <-> (forall x, PV x -> vgamma g1 x = vgamma g2 x).
 Proof.

@@ -622,6 +622,22 @@ Defined.
 
 Global Existing Instance partial_labeledgraph_proper.
 
+Instance gpredicate_sub_labeledgraph_proper: Proper (@Same_set V ==> @Same_set E ==> labeled_graph_equiv ==> labeled_graph_equiv) gpredicate_sub_labeledgraph.
+Proof.
+  do 3 (hnf; intros).
+  split; [| split].
+  + apply gpredicate_subgraph_proper; auto.
+    destruct H1; auto.
+  + simpl; intros.
+    rewrite Intersection_spec in H2, H3.
+    apply (proj1 (proj2 H1)); tauto.
+  + simpl; intros.
+    rewrite Intersection_spec in H2, H3.
+    apply (proj2 (proj2 H1)); tauto.
+Qed.
+
+Global Existing Instance gpredicate_sub_labeledgraph_proper.
+
 Lemma lg_vgen_stable: forall (g: Graph) (x: V) (d: DV),
   (predicate_partial_labeledgraph g (Complement V (eq x))) ~=~
    (predicate_partial_labeledgraph (labeledgraph_vgen g x d) (Complement V (eq x)))%LabeledGraph.
@@ -671,6 +687,15 @@ Proof.
   eapply si_stronger_partial_labeledgraph with (p := p'); [| | exact H0].
   + intro v; specialize (H v); simpl in H; tauto.
   + intro v; specialize (H v); simpl in H; tauto.
+Qed.
+
+Lemma predicate_partial_labeledgraph_gpredicate_sub_labeledgraph (g: Graph) (p: V -> Prop): 
+  (predicate_partial_labeledgraph g p) ~=~ (gpredicate_sub_labeledgraph p (Intersection _ (weak_edge_prop p g) (evalid g)) g)%LabeledGraph.
+Proof.
+  split; [| split].
+  + apply predicate_partialgraph_gpredicate_subgraph.
+  + simpl; auto.
+  + simpl; auto.
 Qed.
 
 Lemma gpredicate_sub_labeledgraph_self: forall (g: Graph),

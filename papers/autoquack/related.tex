@@ -38,8 +38,54 @@ HOL that emphasize on the notion and important properties of trees. He
 applied this library to verified distributed algorithms
 \cite{chou1995mechanical}.
 
-Duprat \cite{duprat2001coq} 
+Duprat \cite{duprat2001coq} formalized graph in an inductive way in
+Coq. Only some basic properties are proved in it. To our knowledge, no
+application is built on it.
 
+In \cite{yamamoto1995formalization} a formalization of planar graph is
+inductively defined in HOL. They use it to prove Euler's formula as an
+application. \cite{tamai2000formal} treat the same problem. But their
+purpose is just giving a formal specification in CafeOBJ. So their
+graph library only contains formal definitions.
+
+In \cite{yamamoto1998formalization}, Yamamoto et al formalized
+directed graph based on Wong's work \cite{wong1991}. They proved the
+correctness of the abstract A* algorithm based on graph and
+semi-lattice. \cite{tamai2000formal}
+
+NASA's graph theory library is written in PVS
+\cite{R.W.:1998:PGT:886490}. It is restricted to finite graphs only
+and does not support multi-edge graphs. They use the library to prove
+Ramsey's Theorem and Menger's Theorem.
+
+\cite{bauer20025} inherited the inductive approach of
+\cite{yamamoto1995formalization} for the formalization of planar graph
+theory. They formally proved the 5 color theorem using graph theory
+and triangulations.
+
+In \cite{nipkow2006flyspeck}, a finite, undirected, planar graph is
+formalized as a list of faces and faces as lists of vertices. That
+library is mainly used to prove the completeness of the enumeration of
+tame graphs.
+
+\cite{ridge2005graphs} also mechanised graphs and trees in
+Isabelle/HOL. It is closed to \cite{wong1991} with the following
+difference: the edges are represented as sets of vertices instead of
+atomic objects.
+
+In \cite{noschinski2015formalizing}, Noschinski presented a graph
+library in Isabelle/HOL to reason about graphs and implemented a
+verified decision procedure for combinatorial planarity of graphs. He
+also verified checkers for both the planarity and the non-planarity
+certificates emitted by the LEDA library. Both the implementation and
+verification of the checker are written in the abstract language of
+AutoCorres.
+
+In \cite{dubois2015graphes} they proposed a formalization of graphs
+without multiple edges. A formally verified auditor was developed to
+certify the result of a function that calculates a maximum cardinality
+matching. The executable code of the auditor is extracted from Coq
+directly.
 
 
 5.2. An alternative way of verifying marking program is reasoning about the whole history of marking operations. The disadvantage of it is that it currently needs more work in a Hoare logic framework. The advantage of it is that its reasoning structure are more similar with the way we understand it in our first algorithm class.
