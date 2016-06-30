@@ -61,7 +61,7 @@ Proof.
     (PROP  (pointer_val_val x <> nullval)
      LOCAL (temp _x (pointer_val_val x))
      SEP   (graph sh x g)).
-  admit. (* type checking for pointer comparable. *)
+  admit. (* type checking for pointer comparable. VST will fix it. *)
   Focus 1. { (* if-then branch *)
     destruct_pointer_val x.
     forward. (* return *)
@@ -242,3 +242,5 @@ Proof.
   apply (exp_right g3); entailer!; auto.
   apply (mark1_mark_left_mark_right g g1 g2 g3 (ValidPointer b i) l r); auto.
 Time Qed. (* Takes 3 hours. *)
+
+Print Assumptions body_mark.
