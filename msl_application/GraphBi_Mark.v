@@ -130,7 +130,7 @@ Lemma graph_ramify_left: forall {RamUnit: Type} (g g1: Graph) x l r,
 Proof.
   intros.
   apply (mark_list_mark_ramify g g1 _ _ nil _ (r :: nil)); auto.
-  + admit.
+  + intros; apply classic.
   + simpl.
     eapply gamma_step_list; eauto.
   + split_relation_list ((lg_gg g1) :: nil); auto.
@@ -159,7 +159,7 @@ Lemma graph_ramify_right: forall {RamUnit: Type} (g g1 g2: Graph) x l r,
 Proof.
   intros.
   apply (mark_list_mark_ramify g g2 _ _ (l :: nil) _ nil); auto.
-  + admit.
+  + intros; apply classic.
   + simpl.
     eapply gamma_step_list; eauto.
   + split_relation_list ((lg_gg g1) :: nil); auto.
