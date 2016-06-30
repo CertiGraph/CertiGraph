@@ -1,0 +1,42 @@
+\begin{figure}
+  \begin{lstlisting}
+struct Node {
+  int  _Alignas(16) m;
+  struct Node * _Alignas(8) l;
+  struct Node * r; };
+
+void mark(struct Node * x) { // $\{\p{graph}(\tx{x},\gamma)\}$
+  struct Node * l, * r; int root_mark;
+  if (x == 0) return;
+// $\{\p{graph}(\tx x,\gamma) /| \exists m,l,r.~ \gamma(\tx{x}) = (m,l,r)\}$
+// $\{\p{graph}(\tx x,\gamma) /| \gamma(\tx{x}) = (m,l,r)\}$
+// $\searrow \{\tx x|-> m,l,r \}$
+      root_mark = x -> m;
+// $\swarrow \{\tx x|-> m,l,r /| m = \tx{root\_mark} \}$
+// $\{\p{graph}(\tx x,\gamma) /| \gamma(\tx{x}) = (m,l,r) /| m = \tx{root\_mark}\}$
+  if (root_mark == 1) return;
+// $\{\p{graph}(\tx x,\gamma) /| \gamma(\tx{x}) = (0,l,r) \}$
+// $\searrow \{\tx x|-> 0,l,r /| \gamma(\tx{x}) = (0,l,r)\}$
+      l = x -> l;
+      r = x -> r;
+      x -> m = 1;
+// $\swarrow \{\tx x|-> 1,\tx{l},\tx{r} /| \gamma(\tx{x}) = (0,\tx{l},\tx{r}) /| \exists \gamma'.~ \m{mark1}(\gamma, \tx{x}, \gamma')\}$
+// $\{\exists \gamma'.~ \p{graph}(\tx x,\gamma') /| \gamma(\tx{x}) = (0,\tx{l},\tx{r}) /| \m{mark1}(\gamma, \tx{x}, \gamma')\}$
+// $\{\p{graph}(\tx x,\gamma') /| \gamma(\tx{x}) = (0,\tx{l},\tx{r}) /| \m{mark1}(\gamma, \tx{x}, \gamma')\}$
+// $\searrow \{\p{graph}(\tx l, \gamma')\}$
+      mark(l);
+// $\swarrow \{\exists \gamma''.~ \p{graph}(\tx l, \gamma'') /| \m{mark}(\gamma', \tx{l}, \gamma'')\}$
+// $\left\{\!\!\!\begin{array}{l@{}}\exists \gamma''.~ \p{graph}(\tx x,\gamma'') /| \gamma(\tx{x}) = (0,\tx{l},\tx{r}) /| \null \\ \m{mark1}(\gamma, \tx{x}, \gamma') /| \m{mark}(\gamma', \tx{l}, \gamma'')\end{array}\right\}$
+// $\left\{\!\!\!\begin{array}{l@{}}\p{graph}(\tx x,\gamma'') /| \gamma(\tx{x}) = (0,\tx{l},\tx{r}) /| \null \\ \m{mark1}(\gamma, \tx{x}, \gamma') /| \m{mark}(\gamma', \tx{l}, \gamma'')\end{array}\right\}$
+// $\searrow \{\p{graph}(\tx r, \gamma'')\}$
+      mark(r);
+// $\swarrow \{\exists \gamma'''.~ \p{graph}(\tx r, \gamma''') /| \m{mark}(\gamma'', \tx{r}, \gamma''')\}$
+// $\left\{\!\!\!\begin{array}{l@{}}\exists \gamma'''.~ \p{graph}(\tx x,\gamma''') /| \gamma(\tx{x}) = (0,\tx{l},\tx{r}) /| \null \\ \m{mark1}(\gamma, \tx{x}, \gamma') /| \m{mark}(\gamma', \tx{l}, \gamma'') /| \m{mark}(\gamma'', \tx{r}, \gamma''')\end{array}\right\}$
+} // $\{\exists \gamma'''.~ \p{graph}(\tx x,\gamma''') /| \m{mark}(\gamma, \tx{x}, \gamma''')\}$
+\end{lstlisting}
+%% \vspace{-8pt}
+\caption{Clight code and proof sketch for bigraph mark. {\color{magenta} The steps that induce
+  ramifications are indicated with $\ramify_i$, where the associated ramification entailment is equation number $i$.}} %whose numbers point with their associated ramification entailment reference.}
+%\vspace{-19pt}
+\label{fig:markgraph}
+\end{figure}
