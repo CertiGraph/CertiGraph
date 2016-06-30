@@ -1,8 +1,5 @@
 \section{Ramification Rules}
 
-\newcommand{\Rule}[3]{\[\text{#1}\frac{\begin{array}{c} #2 \end{array}}{#3}\]}
-\newcommand{\MV}{\text{ModVar}}
-\newcommand{\FV}{\text{FreeVar}}
 
 \Rule{Frame  }
 {\{ P \} c \{Q \} \\
@@ -38,7 +35,7 @@ P \text{ is stable} &  \Leftrightarrow  & \forall m \ m',  \text{if $m$ and $m'$
 \end{eqnarray*}
 
 Here, $\Box$ represents the necessity modal operator. The formula $\Box^{\llbracket c \rrbracket} (L' -* G')$ says, it is true on a state $m$ if and only if for any state $m'$, if $m$ and $m'$
-coincide everywhere except on the variables modified by $c$, then $(L' -* G')$ is true on $m'$. 
+coincide everywhere except on the variables modified by $c$, then $(L' -* G')$ is true on $m'$.
 
 Based on the combination frame rule, consequence rule and three basic facts below, we can immediate prove ramification-P rule.
 \begin{quotation}
@@ -55,7 +52,7 @@ It is well-known that the proof theory with magic wand is already complicated, s
 \begin{equation}G \vdash  L * \Box^R (L' -* G') \label{eqn:Passu} \end{equation}
 at first when applying ramification-P rule. Luckily, this special form makes the task simpler.
 
-First of all, SOLVE-RAM-P rule can turn the proof goal into two wand-free and modality-free entailments. Specifically, people only need to find an $R$-stable predicate $F$, such that $G \vdash L * F$ and $F * L' \vdash G'$ are both true. 
+First of all, SOLVE-RAM-P rule can turn the proof goal into two wand-free and modality-free entailments. Specifically, people only need to find an $R$-stable predicate $F$, such that $G \vdash L * F$ and $F * L' \vdash G'$ are both true.
 
 SOLVE-RAM-P alone is not a satisfactory proof theory because in that case using P rule would have no different from using frame rule directly. The key point here is that, an entailment with form \ref{Passu} can be proved in a modularized way. For primary ramification rule, CITE proposed two proof rule, RAM-FRAME and RAM-SPLIT\footnote{\Rule{RAM-FRAME }
 {G \vdash L * (L' -* G') \\
@@ -113,7 +110,7 @@ Like what we do to P rule, three corresponding rules, SOLVE-RAM-PQ, RAM-PQ-FRAME
 
 \subsection{Ramification in Decorated Programs}
 
-One nice thing about Hoare logic is that it enables people to write combinational proofs. Moreover, such kind of proofs can be written in a nice printed form, decorated programs. %For example, 
+One nice thing about Hoare logic is that it enables people to write combinational proofs. Moreover, such kind of proofs can be written in a nice printed form, decorated programs. %For example,
 % \begin{figure}[h]
 %\begin{tabular}{c | c}
 %\begin{lstlisting}
@@ -184,7 +181,7 @@ In summary, VST's users build a Hoare logic proof by interacting with VST's tact
 
 \subsection{Extend VST to Support Ramification}
 
-In order to extend VST to support ramification, we should enable people to write decorated programs with localize and unlocalize action. Our task here is to construct a proof in Coq's underlying logic from a decorated program, in which localize and unlocalize are involved. Moreover, our extension of VST's tactic system should construct a partial proof when the user finishes part of his proof. 
+In order to extend VST to support ramification, we should enable people to write decorated programs with localize and unlocalize action. Our task here is to construct a proof in Coq's underlying logic from a decorated program, in which localize and unlocalize are involved. Moreover, our extension of VST's tactic system should construct a partial proof when the user finishes part of his proof.
 
 It is especially difficult when the following kind of partial decorated programs are considered.
 
@@ -198,9 +195,9 @@ $\searrow \{\ \ \ P_3 \ \ \ \}$
 $~~~~~~ \{\ \ \ P_4 \ \ \ \}$
 
       ...
-      
+
   (to be done: c3; c4; c5)
-  
+
 $\{\ \ \ \text{Post} \ \ \ \}$
 \end{lstlisting}
 \end{figure}
@@ -219,9 +216,9 @@ $\{\ \ \ ?F * P_3 \ \ \ \}$
 $\{\ \ \ ?F * P_4 \ \ \ \}$
 
     ...
-      
+
   (to be done: c3; c4; c5)
-  
+
 $\{\ \ \ \text{Post} \ \ \ \}$
 \end{lstlisting}
 \end{figure}

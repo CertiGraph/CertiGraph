@@ -1,15 +1,155 @@
 \paragraph{Mark example.} In Qinxiang's new format.
 
+% inline code
+\makeatletter
+\newlength{\@mli}
+\newcommand{\mli}[1]{%
+  \settowidth{\@mli}{\lstinline/#1/}
+  \hspace{-.5ex}\begin{minipage}[t]{\@mli}\lstinline/#1/\end{minipage}}
+\makeatother
+\newcommand{\li}[1]{\ifmmode\mbox{\mli{#1}}\else\mbox{\lstinline/#1/}\fi}
+
 \newcommand{\tx}[1]{\text{#1}}
 \newcommand{\p}[1]{\ensuremath{\mathsf{#1}}} % predicate font
 \newcommand{\m}[1]{\ensuremath{\mathit{#1}}} % math font
 \let\ramify\lightning
+\newcommand{\infrulestyle}[1]{\textsc{#1}}
+\newcommand{\infrule}[4]{\inferrule*[lab={\infrulestyle{#1}},right=$\mathrlap{#4}$]{#2}{#3}}
+\newcommand{\RuleS}[4]{\infrulestyle{#1}\frac{#2}{#3} \textit{#4}}
+\newcommand{\Rule}[3]{\[\RuleS{#1}{\begin{array}{c} #2 \end{array}}{#3}{}\]}
+\newcommand{\MV}{\ensuremath{\mathsf{ModVar}}}
+\newcommand{\FV}{\ensuremath{\mathsf{FreeVar}}}
 
 \input{mark_listing.tex}
 
+\subsection{Frames and ramifications are localizations}
+The distinguishing rule of separation logic is \infrulestyle{Frame}~\cite{rey02}:
+\[
+\infrule{Frame}
+{\{ P \} ~ c ~ \{Q \}}
+{\{P * F \} ~ c ~ \{ Q * F \}}
+{\begin{array}{c}F \textrm{ is stable w.r.t.} \\ \MV(c) \end{array}}
+\]
+The side condition ``$F \text{ is stable w.r.t.} \MV(c)$'' can be defined in two ways.
+In the more traditional syntactic style, it means that $\FV(F) \cap \MV(c) = \emptyset$.
+By ``syntactic style'' we mean that the side condition is written using a function $\FV(F)$ that takes an arbitrary formula and returns the set of free variables within that formula.  To define this $\FV(F)$ function
+we need a fixed inductive \textbf{syntax} for formulas.  In contrast, in this paper we follow a ``semantic style'' in which formulas are not given a fixed syntax in advance but can be defined \textbf{semantically} on the fly using an appropriate model~\cite{appel:programlogics}.  In a semantic style, the side condition on the frame rule is defined as:
+\[
+\begin{array}{l}
+\sigma \stackrel{S}{\cong} \sigma' ~~ \stackrel{\Delta}{=} ~~ \sigma \text{ and } \sigma' \text{ coincide everywhere except } S\\
+P \text{ is stable w.r.t. } S ~~ \stackrel{\Delta}{=} ~~ \forall \sigma, \sigma'.~ \sigma \stackrel{S}{\cong} \sigma' => \null \\
+\qquad \qquad \qquad \qquad \qquad \qquad ~~ (\sigma |= P) <=> (\sigma' |= P)
+\end{array}
+\]
+That is, we consider two program states $\sigma$ and $\sigma'$ equivalent up to program variable set $S$ when they agree everywhere except for on the values of variables in $S$ (typically, a state $\sigma$ is a pair of a heap $h$ and program variables $\rho$).  A predicate $P$ is then stable with respect to $S$ when it ignores all local variables in $S$.  Notice both the syntactic and semantic styles use the $\MV(c)$ function defined via straightforward recursive case analysis on program syntax; programming languages typically do have a fixed syntactic structure.
+
+Ramification
 \[
 \infrule{Ramify}
-{\metahoare P c Q\\R|-P*(Q--* R')}
-{\metahoare R c {R'}}
-{$\begin{array}{l}\m{fv}(Q --* R') \cap \null \\ \m{modif}(c) = \emptyset\end{array}$} \qquad \qquad \qquad
+{\{L_1\} ~ c ~ \{L_2\} \\ G_1 |- L_1 * (L_2--* G_2)}
+{\{G_1\} ~ c ~ \{G_2\}}
+{\begin{array}{c}(L_2 --* G_2) \\ \textrm{is stable} \\ \textrm{w.r.t. } \MV(c) \end{array}} \qquad \qquad \qquad
+%{$\begin{array}{l}\m{fv}(Q --* R') \cap \null \\ \m{modif}(c) = \emptyset\end{array}$} \qquad \qquad \qquad
 \]
+
+Notation
+\begin{lstlisting}
+// $\{ G_1 \}$
+// $\searrow \{ L_1 \}$
+      $c_1$; . . . ; $c_n$;
+// $\swarrow \{ L_2 \}$
+// $\{ G_2 \}$
+\end{lstlisting}
+
+
+
+
+Ramify implies frame
+
+\subsection{The program variable bugaboo}
+
+Consider using ramification to verify the following program:
+\begin{lstlisting}
+// $\{ \tx{x} = 5 /| G_1 \}$
+// $\searrow \{\tx{x} = 5 /| L_1 \}$
+      ...
+      x = x + 1;
+      ...
+// $\swarrow \{\tx{x} = 6 /| L_2 \}$
+// $\{ \tx{x} = 6 /| G_2 \}$
+\end{lstlisting}
+Suppose that the other (unshown) lines of the program make localization desirable, even though it is overkill for a single assignment.  The key issue is that the program variable {\li{x}} appears in all four positions in the ramification entailment
+\[
+(\li{x} = 5 /| G_1) \vdash (\li{x} = 5 /| L_1) * \big((\li{x} = 6 /| L_2) -* (\li{x} = 6 /| G_2)\big)
+\]
+This entailment has two problems.  {\color{magenta} First, the formula $(\li{x} = 6 /| L_2) -* (\li{x} = 6 /| G_2)$ is \textbf{not} stable with respect to the modified program variable \tx{x}.}  Thus, we cannot
+
+\footnote{An alternative semantics that gets around this problem is to use ``variables as resource''~\cite{bornat:var}, but this introduces other unpleasantness.}
+
+
+Unfortunately, the 
+
+Old ramify can only handle:
+\begin{lstlisting}
+// $\{ \tx{x} = 5 \}$
+// $\searrow \{ \tx{x} = 5 \}$
+      x = x + 1;
+// $\swarrow \{ \top \}$
+// $\{ \top \}$
+\end{lstlisting}
+
+New rule:
+\[
+\infrule{Ramification-P}
+{\{ L \} c \{L' \} \\
+ G \vdash L * \Box^{\llbracket c \rrbracket} (L' -* G')}
+{\{ G \} c \{ G' \}}{}
+\]
+
+
+Related?: variables as resource
+
+\subsection{The existential ogre}
+
+Existential rule by Floyd~\cite{floydlogic} (1967!)
+
+\[
+\infrule{Existential extraction}
+{\forall x.~ \big(\{ P \} ~ c ~ \{Q \}\big)}
+{\{ \exists x. P \} ~ c ~ \{ {\color{magenta}\exists x.~ Q} \}}{}
+%existential_ret_assert =
+%fun (A : Type) (R : A -> ret_assert) (ek : exitkind) (vl : option val) =>
+%(EX  x : A, R x ek vl)%assert
+%     : forall A : Type,
+%       (A -> ret_assert) -> exitkind -> option val -> environ -> mpred
+%Axiom extract_exists:
+%  forall  {Espec: OracleKind}{CS: compspecs} ,
+%  forall (A : Type)  (P : A -> environ->mpred) c (Delta: tycontext) (R: A -> ret_assert),
+%  (forall x, @semax CS Espec Delta (P x) c (R x)) ->
+%   @semax CS Espec Delta (EX x:A, P x) c (existential_ret_assert R).
+\]
+
+\begin{lstlisting}
+// $\{ P \}$
+  $c$
+// $\{ \exists x.~Q \}$
+// $\{ Q \}$
+\end{lstlisting}
+
+
+But:
+\begin{lstlisting}
+// $\{ G_1 \}$
+// $\searrow \{ L_1 \}$
+      $c$
+// $\swarrow \{ \exists x.~L_2 \}$
+// $\{ \exists x.~G_2 \}$
+// $\{ G_2 \}$
+\end{lstlisting}
+
+Need:
+
+
+
+
+
