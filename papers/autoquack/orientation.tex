@@ -1,5 +1,3 @@
-\paragraph{Mark example.} In Qinxiang's new format.
-
 % inline code
 \makeatletter
 \newlength{\@mli}
@@ -23,8 +21,23 @@
 
 \input{mark_listing.tex}
 
+figure~\ref{fig:markgraph}! C light code, compcert \cite{leroy:compcert}, vst \cite{appel:programlogics} certified, 
+Notation \ref{sec:localizations}
+
+Fold/unfold of graph, alignment
+
+Relations
+
+Program variables \S\ref{sec:freevars}, existentials \S\ref{sec:existentials}
+
+Also in H/S \ref{sec:hipsleek}
+
+
+{\color{magenta} Additional comparison of our solution to Hobor and Villard's is given in \S\ref{sec:related}.}
+
 \subsection{Frames and ramifications are localizations}
-The distinguishing rule of separation logic is \infrulestyle{Frame}~\cite{rey02}:
+\label{sec:localizations}
+The key rule of separation logic is \infrulestyle{Frame}~\cite{rey02}:
 \[
 \infrule{Frame}
 {\{ P \} ~ c ~ \{Q \}}
@@ -46,7 +59,7 @@ That is, we consider two program states $\sigma$ and $\sigma'$ equivalent up to 
 
 The reason why \infrulestyle{Frame} is so important is because it enables local verifications.  That is, rather than BLAH.
 
-Hobor and Villard observed that in some ways \infrulestyle{Frame} is too rigid because it forces verifiers to split the program assertions into explicitly $*$-separated parts~\cite{hobor:ramification}.  This rigidity is particularly unpleasant when verifying programs that manipulate data structures with intrinsic unspecified sharing such as DAGs and graphs.  Hobor and Villard proposed the following rule to circumvent this rigidity:
+Hobor and Villard observed that \infrulestyle{Frame} is bit rigid because it forces verifiers to split program assertions into syntactically $*$-separated parts~\cite{hobor:ramification}.  This rigidity is particularly unpleasant when verifying programs that manipulate data structures with intrinsic unspecified sharing such as DAGs and graphs.  Hobor and Villard proposed the \infrulestyle{Ramify} rule to circumvent this rigidity:
 \[
 \infrule{Ramify}
 {\{L_1\} ~ c ~ \{L_2\} \\ G_1 |- L_1 * (L_2--* G_2)}
@@ -54,24 +67,60 @@ Hobor and Villard observed that in some ways \infrulestyle{Frame} is too rigid b
 {\begin{array}{c}(L_2 --* G_2) \\ \textrm{ignores} \\ \MV(c) \end{array}} \qquad \qquad \qquad
 %{$\begin{array}{l}\m{fv}(Q --* R') \cap \null \\ \m{modif}(c) = \emptyset\end{array}$} \qquad \qquad \qquad
 \]
+That is, we can verify a ``global'' specification $\{G_1\}~c~\{G_2\}$ by combining a ``local'' specification $\{L_1\}~c~\{L_2\}$ with a \emph{ramification entailment} $G_1 |- L_1 * (L_2--* G_2)$.  Essentially the ramification entailment ensures that the change in state specified locally fits properly into the global context.
 
-The \infrulestyle{Ramify} rule is sound but 
+The \infrulestyle{Ramify} rule is sound but interacts poorly with modified program variables (as in lines~\ref{code:markbeforetripleramify}--\ref{code:markaftertripleramify} of figure~\ref{fig:markgraph}) and
+localized existentials (as in lines~\ref{code:beforemarkl}--\ref{code:aftermarkl}).  Both of these limitations are annoying enough in paper proofs and graduate to major headaches in mechanized ones.  Happily, we show how to overcome both limitations in \S\ref{sec:freevars} and \S\ref{sec:existentials}, respectively.
 
-\ref{sec:freevars} \ref{sec:existentials}
-
-Notation
+We are now ready to give a formal meaning to the ``localization'' pattern employed in figure~\ref{fig:markgraph}.  When we write:
+%\begin{minipage}{.25\textwidth}
 \begin{lstlisting}
-// $\{ G_1 \}$
-// $\searrow \{ L_1 \}$
-      $c_1$; ... ; $c_n$;
-// $\swarrow \{ L_2 \}$
-// $\{ G_2 \}$
+// $\label{code:prelocal}\{ G_1 \}$
+// $\label{code:inlocal}\searrow \{ L_1 \}$
+$\ramify(i)$      $c_1$; ... ; $c_n$;
+// $\label{code:outlocal}\swarrow \{ L_2 \}$
+// $\label{code:postlocal}\{ G_2 \}$
 \end{lstlisting}
+we mean apply the \infrulestyle{Ramify} rule with $G_1 |- L_1 * (L_2 -* G_2)$.
+An advantage of this notation is crystal clarity on the predicates used in the ramification entailment.  For convenience, the optional $\ramify(i)$ specification can reference an equation or lemma number that solves the ramification entailment.
+If we wish to save a line or two we can compress \emph{e.g.} the line pairs \ref{code:prelocal}--\ref{code:inlocal} and \ref{code:outlocal}--\ref{code:postlocal}
+to the single lines $\{ G_1 \} \searrow \{ L_1 \}$ and $\{ G_2 \} \swarrow \{ L_2 \}$ without sacrificing clarity.
 
-Ramify implies frame (modulo FV) \S\ref{sec:freevars}
+In \S\ref{sec:freevars} and \S\ref{sec:existentials} we present new variants of \infrulestyle{Ramify}.  Our notation carries over without any meaningful change: just use the new rules to enable the more general ramification entailments they permit.  When in doubt the most general rule, \infrulestyle{Ramify-PQ} from \S\ref{sec:existentials}, implies all of the others.
+
+Hobor and Villard pointed out that \infrulestyle{Ramify} implies \infrulestyle{Frame} (modulo the modified program variables issue we fix in \S\ref{sec:freevars}), meaning that our notation can clarify uses of \infrulestyle{Frame} as well.  This is particularly useful in multi-line contexts with nontrivial $F$, for which the current popular notation to express \infrulestyle{Frame} involves a liberal use of ``\ldots'', \emph{e.g.}:
+
+\vspace{5pt}
+
+\begin{minipage}{.25\textwidth}
+Old notation:
+\begin{lstlisting}
+// $\{ P_1 * F \}$
+   $c_1$;
+// $\{ P_2 * \ldots \}$
+   $c_2$;
+// $\{ P_3 * \ldots \}$
+   $c_3$;
+// $\{ P_4 * F \}$
+\end{lstlisting}
+\end{minipage}
+\begin{minipage}{.2\textwidth}
+New notation:
+\begin{lstlisting}
+// $\{ P_1 * F \} \searrow \{ P_1 \}$
+      $c_1$;
+//    $\{ P_2 \}$
+      $c_2$;
+//    $\{ P_3 \}$
+      $c_3$;
+// $\{ P_4 * F \} \swarrow \{ P_4 \}$
+\end{lstlisting}
+\end{minipage}
 
 \subsection{The program variable bugaboo}
 \label{sec:freevars}
+
+Intro blah. lines~\ref{code:beforemarkl}--\ref{code:aftermarkl} of figure~\ref{fig:markgraph}
 
 Consider using ramification to verify the following program:
 \begin{lstlisting}
@@ -89,14 +138,15 @@ Suppose that the other (elided) lines of the program make localization desirable
 \]
 One problem is that $(\li{x} = 6 /| C) -* (\li{x} = 6 /| D)$ does \textbf{not} ignore the modified program variable \tx{x}, preventing us from applying the \infrulestyle{Ramify} rule.  Intuitively, the stability side condition on the \infrulestyle{Ramify} rule is a bit too strong since it prevents us from mentioning variables in the postconditions that \textbf{have} been modified by code $c$.
 
-The obvious thing to try is to weaken the side condition in \infrulestyle{Ramify} to $\big(\FV(G_2) \cap \MV(c)\big) \subseteq \FV(L_2)$, the idea being that information about modified program variables mentioned in the local postcondition $L_2$ can be carried that information to the global postcondition $G_2$.  Unfortunately, this approach is unsound.  A better idea is: % the following :
+The obvious thing to try is to weaken the side condition in \infrulestyle{Ramify} to $\big(\FV(G_2) \cap \MV(c)\big) \subseteq \FV(L_2)$, the idea being that information about modified program variables mentioned in the local postcondition $L_2$ can be carried to the global postcondition $G_2$.  Unfortunately, this idea is unsound because \li{x} cannot simultaneously be both~5 and~6, \emph{i.e.} the above entailment is vacuous.  A better idea is: % the following :
 \[
-\infrule{Ramify-P (Program Variables)}
+\infrule{Ramify-P (Program variables)}
 {\{ L_1 \} ~ c ~ \{L_2 \} \\
  G_1 \vdash L_1 * \pguards{c}  (L_2 -* G_2)}
 {\{ G_1 \} ~ c ~ \{ G_2 \}}{}
 \]
 The ramification entailment now incorporates a new (universal/boxy) modal operator $\pguards{c}$.  The intuitive meaning of $\pguards{c}$ is that program variables modified by command $c$ can change value inside its scope.    Note that it is vital that $L_2$ appears as the antecedent of a (spatial) implication since the change in program variables is universally quantified.  This means that if we want to say anything specific about modified program variables in the global postcondition $G_2$ then we had better say something about them in the local postcondition $L_2$.
+
 Let us return to our earlier entailment:
 \[
 \begin{array}{l}
@@ -106,23 +156,23 @@ Let us return to our earlier entailment:
 \]
 Since \li{x} is modified, its value can change from the first line, in which \li{x} must be 5, to the second, in which \li{x} must be 6.
 
-Here is the formal definition of $\pguards{c}$:
+Here is the definition of $\pguards{c}$, writing $\langle c \rangle$ for $\MV(c)$:
 \[
-\begin{array}{lcl}
-\langle c \rangle & \stackrel{\Delta}{=} & \MV(c) \\
-\sigma |= \pguards{c} P & \stackrel{\Delta}{=} & \forall \sigma'.~ (\sigma \stackrel{\langle c \rangle}{\cong} \sigma') => (\sigma' |= P)% ~~~~ \text{where $\mathsf{MV}(c)$ is $\MV(c)$}\\
-\end{array}
+%\begin{array}{lcl}
+%\langle c \rangle & \stackrel{\Delta}{=} & \MV(c) \\
+\sigma |= \pguards{c} P ~~ \stackrel{\Delta}{=} ~~ \forall \sigma'.~ (\sigma \stackrel{\langle c \rangle}{\cong} \sigma') => (\sigma' |= P)% ~~~~ \text{where $\mathsf{MV}(c)$ is $\MV(c)$}\\
+%\end{array}
 \]
 In other words, $\pguards{c}$ is exactly the universal modal operator~$\Box$ over the relation that considers equivalent all states that differ only on program values modified by $c$.
 
-Note that \infrulestyle{Ramify-P} has no free variable side conditions because $\forall P.~ \pguards{c}P \text{ ignores } \MV(c)$.  However, in practice this side condition reappears because to actually prove a ramification entailment containing $\pguards{c}$ one typically applies the following \infrulestyle{Solve Ramify-P} rule:
+Note that \infrulestyle{Ramify-P} has no free variable side condition, which is unnecessary because $\forall P.~ \pguards{c}P \text{ ignores } \MV(c)$.  However, in practice this side condition reappears because to actually prove a ramification entailment containing $\pguards{c}$ one typically applies the following \infrulestyle{Solve Ramify-P} rule:
 \[
 \infrule{Solve Ramify-P}
 {G_1 |- L_1 * F \\
 {\color{magenta} F |- L_2 -* G_2}}
 {G_1 \vdash L_1 * \pguards{c}  (L_2 -* G_2)}{F \textrm{ ignores } \MV(c)} \qquad \qquad \qquad \qquad
 \]
-In other words, we can handle the $\pguards{c}$ by breaking apart the single entailment into a pair.  Using two entailments allows modified program variables to change between the preconditions and postconditions.  To connect the pair, we must choose a suitable predicate $F$ that ignores modified variables in $c$. Finding a suitable $F$ and proving the associated entailments can be tricky in the abstract but in practice is guided by using a ``ramification library'' as given in \S\ref{sec:ramifylib}.
+That is, we can handle the $\pguards{c}$ by breaking apart the single entailment into a pair.  Using two entailments allows modified program variables to change between the preconditions and postconditions.  To connect the pair, we must choose a suitable predicate $F$ that ignores modified variables in $c$. Finding a suitable $F$ and proving the associated entailments can be tricky in the abstract but in practice is guided by using a ``ramification library'' as given in \S\ref{sec:ramifylib}.
 
 {\color{magenta} Universally-quantified metavariables can appear free in the predicates to make further connections.
 Assuming that the abstracted pre- and postconditions $A$, $B$, $C$, and $D$ above all use \li{x}, we proceed
@@ -136,6 +186,62 @@ F & |- & (\li{x} = 6 /| C') -* (x = 6 /| D)
 \]
 To further relate the earlier and later values of \li{x} in $F$ we can introduce a second fresh $x'$ and use $B' \stackrel{\Delta}{=} B /| \li{x} = x'$.
 }
+
+%\[
+%\infrule{}{\infrule{}{\infrule{}{F |- \p{emp} * F \\ F |- Q -* (Q * F)}{F |- \pguards{c} \big(Q -* (Q * F)\big)}{\begin{array}{c}F \text{ ignores} \\ \MV(c)\end{array}}}
+%  {P * F |- P * \pguards{c}\big(Q -* (Q * F)\big)}{}
+%\\ \{P\}~c~\{Q\}}
+%{\{P * F\}~c~\{Q * F\}}
+%{}
+%\]
+
+With \infrulestyle{Ramify-P} and \infrulestyle{Solve Ramify-P} we can prove the \infrulestyle{Frame} rule with its canonical side condition as follows:
+\[
+\infrule{}{\raisebox{1.4ex}{$\infrule{}{P * F |- P * F \\ F |- Q -* (Q * F)}
+{\raisebox{-4pt}[0pt][0pt]{$P * F |- P * \pguards{c}\big(Q -* (Q * F)\big)$}}
+{\hspace{-1.1ex}\raisebox{0.9ex}{$\begin{array}{c}F \text{ ignores} \\ \MV(c)\end{array}$}}$}
+\\ \{P\}~c~\{Q\}}
+{\{P * F\}~c~\{Q * F\}}
+{}
+\]
+This justifies our point in \S\ref{sec:localizations} that our new localization notation can also be used for frames.  Conversely, we can also prove \infrulestyle{Ramify-P} from \infrulestyle{Frame} and \infrulestyle{Consequence}:
+\begin{figure*}
+Proof of \infrulestyle{Ramify-P} from \infrulestyle{Frame} and \infrulestyle{Consequence}:
+\vspace{-2em}
+\[
+\begin{array}{c}
+\infrule{}{
+  G_1 |- L_1 * \pguards{c}(L_2 -* G_2) \\ 
+  \infrule{}{\{L_1\}~c~\{L_2\}}
+            {\{L_1 * \pguards{c}(L_2 -* G_2)\}~c~\{L_2 * \pguards{c}(L_2 -* G_2)\}}{(1)} \\
+  \infrule{}{
+            \infrule{}{\stackrel{\langle c \rangle}{\cong} \text{ is reflexive}}{\pguards{c}(L_2 -* G_2) |- L_2 -* G_2}{(2)}}
+            {L_2 * \pguards{c}(L_2 -* G_2) |- G_2}{(3)}}
+{\{G_1\}~c~\{G_2\}}
+{} \\
+[5pt]
+(1)~ \forall P.~ \pguards{c}P \text{ ignores } \FV(c) \qquad (2)~ \text{Axiom T of modal logic} \qquad (3)~ -* \text{ is the adjunct of } *
+\end{array}
+\]
+
+Proof of \infrulestyle{Ramify-PQ} from \infrulestyle{Ramify-P}:
+\vspace{-2em}
+\[
+\infrule{}
+{
+  \{L_1\}~c~\{\exists x.~ L_2\} \hspace{-0.5em} \\
+  \infrule{}
+  {
+    G_1 |- L_1 * \pguards{c}\big(\forall x.~ (L_2 -* G_2)\big) \hspace{-0.5em} \\
+    \infrule{}{ \textrm{modal/separation tautology, see figure~\ref{fig:remainrampq} in appendix~\ref{apx}} } {L_1 * \pguards{c}\big(\forall x.~ (L_2 -* G_2)\big) |- L_1 * \pguards{c}\big((\exists x.~ L_2) -* (\exists x.~ G_2)\big)}{}
+  } {
+    G_1 |- L_1 * \pguards{c}\big((\exists x.~ L_2) -* (\exists x.~ G_2)\big)
+  } {}
+} {
+  \{G_1\}~c~\{\exists x.~ G_2\}
+} {}
+\]
+\end{figure*}
 
 \subsection{The existential ogre}
 \label{sec:existentials}

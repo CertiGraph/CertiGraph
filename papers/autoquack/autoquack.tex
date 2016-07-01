@@ -78,14 +78,17 @@
 % any author declaration will be ignored  when using 'plid' option (for double blind review)
 %
 
-\title{The Ramifications of Mechanizing Verification}
+%\title{The Ramifications of Mechanizing Verification}
+\title{The Ramifications of Mechanized Localizations within Data Structures}
 \authorinfo{Shengyi Wang$^{*}$ \qquad Qinxiang Cao$^{+}$ \qquad Asankhaya Sharma$^{*}$ \qquad Aquinas Hobor$^{\dagger,*}$}
 {}
 {School of Computing$^{*}$ and Yale-NUS College$^{\dagger}$, National University of Singapore; Princeton University$^{+}$}
 
 \maketitle
+
 \begin{abstract}
-Blah blah blah
+We show how to mechanically verify programs manipulating data structures with intrinsic sharing such as heap-represented graphs.  We upgrade the theory of ramification to better support modified program variables and existential quantifiers in assertions.  We develop a modular and general setup for reasoning about mathematical graphs and show
+how to connect this setup to a general theory for graphs in separation logic.  We connect our theories to two verification tools with different levels of automation and use them to verify several canonical graph algorithms. Our proofs are entirely machine-checked in Coq.
 \end{abstract}
 
 \newcommand\hide[1]{}
@@ -153,7 +156,7 @@ letting us understand the advantages and disadvantages of both.
 \end{itemize}
 
 \section{Generalizing localizations}
-\label{sec:example}
+\label{sec:orientation}
 
 \input{orientation.tex}
 
@@ -214,5 +217,7 @@ In the H/S section we talk about the engineering inside H/S, the module type/mod
 \bibliographystyle{abbrvnat}
 %\bibliographystyle{tropbien_nopages}
 \bibliography{autoquack}
+
+\input{appendix.tex}
 
 \end{document}

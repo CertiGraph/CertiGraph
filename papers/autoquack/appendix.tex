@@ -1,0 +1,71 @@
+
+\appendix
+
+\section{Remaining proof of \infrulestyle{Ramify-PQ}}
+\label{apx}
+
+See figure \ref{fig:remainrampq}.
+
+\begin{figure*}[t]
+\[
+\infrule{}
+{
+  L_1 |- L_1 \\
+  \infrule{}
+  {
+    \infrule{}
+    {
+      \infrule{}
+      {
+        \infrule{}
+        {
+          \infrule{}
+          {
+            \infrule{}
+            {
+              \infrule{}
+              {
+                \infrule{}
+                {
+                  \infrule{}
+                  {
+                    \infrule{}
+                    {
+                      [x |-> x_0] (L_2 -* G_2) |- [x |-> x_0](L_2 -* G_2)
+                    } {
+                      \forall x.~ (L_2 -* G_2) |- [x |-> x_0](L_2 -* G_2)
+                    } {\forall \mathsf{e}}
+                  } {
+                    \forall x.~ (L_2 -* G_2) |- ([x |-> x_0]L_2) -* ([x |-> x_0]G_2)
+                  } {\textrm{substitute}}
+                } {
+                  \big(\forall x.~ (L_2 -* G_2)\big) * [x |-> x_0]L_2 |- [x |-> x_0]G_2
+                } {(3)}
+              } {
+                \big(\forall x.~ (L_2 -* G_2)\big) * [x |-> x_0]L_2 |- \exists x.~ G_2
+              } {\exists \mathsf{i}}
+            } {
+            \big(\forall x.~ (L_2 -* G_2)\big) * (\exists x.~ L_2) |- \exists x.~ G_2
+            } {\exists \mathsf{e}}
+          } {
+            \forall x.~ (L_2 -* G_2) |- (\exists x.~ L_2) -* (\exists x.~ G_2)
+          } {(3)}
+        } {
+          |- \big(\forall x.~ (L_2 -* G_2)\big) => \big((\exists x.~ L_2) -* (\exists x.~ G_2)\big)
+        } {=> \mathsf{i}}
+      } {
+        |- \pguards{c}\Big(\big(\forall x.~ (L_2 -* G_2)\big) => \big((\exists x.~ L_2) -* (\exists x.~ G_2)\big)\Big)
+      } {\mathsf{N}}
+    } {
+      |- \Big(\pguards{c}\big(\forall x.~ (L_2 -* G_2)\big) \Big) => \Big( \pguards{c}\big((\exists x.~ L_2) -* (\exists x.~ G_2)\big) \Big)
+    } {\mathsf{K}}
+  } {
+    \pguards{c}\big(\forall x.~ (L_2 -* G_2)\big) |- \pguards{c}\big((\exists x.~ L_2) -* (\exists x.~ G_2)\big)
+  } {\mathsf{i} =>}
+} {
+  L_1 * \pguards{c}\big(\forall x.~ (L_2 -* G_2)\big) |- L_1 * \pguards{c}\big((\exists x.~ L_2) -* (\exists x.~ G_2)\big)
+} {* \textrm{ split} }
+\]
+\caption{Remaining proof of \infrulestyle{Ramify-PQ}}
+\label{fig:remainrampq}
+\end{figure*}

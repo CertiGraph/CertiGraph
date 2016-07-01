@@ -1,4 +1,5 @@
 \section{Related and future work}
+\label{sec:related}
 
 The most famous graph related theorem which has been mechanically
 verified is the Four Color Theorem: Any planar map can be colored with
@@ -96,3 +97,6 @@ Hobor and Villard hacked their way around this [local var] issue by proposing a 
 
 An alternative way to avoid local variable issues is to use ``variables as resource''~\cite{bornat:var}.
 Unfortunately variables as resource introduces other unpleasantness, which is why many mechanized verification systems do not use it\cite{appel:programlogics,bengtson:charge}.
+
+\paragraph{Existentials.}
+Hobor and Villard were able to avoid having existentials in localized postconditions because they defined all of their mathematical operations (\emph{e.g.} $\m{mark}$, $\m{mark1}$) as functions rather than relations. 
