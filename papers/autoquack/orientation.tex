@@ -207,7 +207,7 @@ With \infrulestyle{Ramify-P} and \infrulestyle{Solve Ramify-P} we can prove the 
 This justifies our point in \S\ref{sec:localizations} that our new localization notation can also be used for frames.  Conversely, we can also prove \infrulestyle{Ramify-P} from \infrulestyle{Frame} and \infrulestyle{Consequence}:
 \begin{figure*}
 Proof of \infrulestyle{Ramify-P} from \infrulestyle{Frame} and \infrulestyle{Consequence}:
-\vspace{-2em}
+\vspace{-3em}
 \[
 \begin{array}{c}
 \infrule{}{
@@ -225,23 +225,58 @@ Proof of \infrulestyle{Ramify-P} from \infrulestyle{Frame} and \infrulestyle{Con
 \]
 
 Proof of \infrulestyle{Ramify-PQ} from \infrulestyle{Ramify-P}:
-\vspace{-2em}
+\vspace{-4em}
 \[
+\begin{array}{c}
 \infrule{}
 {
   \{L_1\}~c~\{\exists x.~ L_2\} \hspace{-0.5em} \\
   \infrule{}
   {
     G_1 |- L_1 * \pguards{c}\big(\forall x.~ (L_2 -* G_2)\big) \hspace{-0.5em} \\
-    \infrule{}{ \textrm{modal/separation tautology, see figure~\ref{fig:remainrampq} in appendix~\ref{apx}} } {L_1 * \pguards{c}\big(\forall x.~ (L_2 -* G_2)\big) |- L_1 * \pguards{c}\big((\exists x.~ L_2) -* (\exists x.~ G_2)\big)}{}
+    \infrule{}{ 
+      \infrule{}{
+        \infrule{}{
+          \vdots
+        } {
+          \forall x.~ (L_2 -* G_2) |- (\exists x.~ L_2) -* (\exists x.~ G_2)
+        } {(1)}
+      } {
+        \pguards{c}\big(\forall x.~ (L_2 -* G_2)\big) |- \pguards{c}\big((\exists x.~ L_2) -* (\exists x.~ G_2)\big)
+      } {(2)}
+    } {
+      L_1 * \pguards{c}\big(\forall x.~ (L_2 -* G_2)\big) |- L_1 * \pguards{c}\big((\exists x.~ L_2) -* (\exists x.~ G_2)\big)
+    } {}
   } {
     G_1 |- L_1 * \pguards{c}\big((\exists x.~ L_2) -* (\exists x.~ G_2)\big)
   } {}
 } {
   \{G_1\}~c~\{\exists x.~ G_2\}
 } {}
+\\
+[5pt]
+(1)~ \text{tautology using $(P * Q |- R) <=> (P |- Q -* R)$} \qquad (2)~ \text{reduction using modal axioms K and N}
+\end{array}
 \]
 \end{figure*}
+
+%Proof of \infrulestyle{Ramify-PQ} from \infrulestyle{Ramify-P}:
+%\vspace{-2em}
+%\[
+%\infrule{}
+%{
+%  \{L_1\}~c~\{\exists x.~ L_2\} \hspace{-0.5em} \\
+%  \infrule{}
+%  {
+%    G_1 |- L_1 * \pguards{c}\big(\forall x.~ (L_2 -* G_2)\big) \hspace{-0.5em} \\
+%    \infrule{}{ \textrm{modal/separation tautology, see figure~\ref{fig:remainrampq} in appendix~\ref{apx}} } {L_1 * \pguards{c}\big(\forall x.~ (L_2 -* G_2)\big) |- L_1 * \pguards{c}\big((\exists x.~ L_2) -* (\exists x.~ G_2)\big)}{}
+%  } {
+%    G_1 |- L_1 * \pguards{c}\big((\exists x.~ L_2) -* (\exists x.~ G_2)\big)
+%  } {}
+%} {
+%  \{G_1\}~c~\{\exists x.~ G_2\}
+%} {}
+%\]
 
 \subsection{The existential ogre}
 \label{sec:existentials}
