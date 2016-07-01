@@ -19,6 +19,7 @@
 \newcommand{\Rule}[3]{\[\RuleS{#1}{\begin{array}{c} #2 \end{array}}{#3}{}\]}
 \newcommand{\MV}{\ensuremath{\mathsf{ModVar}}}
 \newcommand{\FV}{\ensuremath{\mathsf{FreeVar}}}
+\newcommand{\pguards}[1]{\llbracket #1 \rrbracket}
 
 \input{mark_listing.tex}
 
@@ -28,86 +29,110 @@ The distinguishing rule of separation logic is \infrulestyle{Frame}~\cite{rey02}
 \infrule{Frame}
 {\{ P \} ~ c ~ \{Q \}}
 {\{P * F \} ~ c ~ \{ Q * F \}}
-{\begin{array}{c}F \textrm{ is stable w.r.t.} \\ \MV(c) \end{array}}
+{\begin{array}{c}F \textrm{ ignores } \MV(c) \end{array}} \qquad \qquad
 \]
-The side condition ``$F \text{ is stable w.r.t.} \MV(c)$'' can be defined in two ways.
+The side condition ``$F \text{ ignores } \MV(c)$'' can be defined in two ways.
 In the more traditional syntactic style, it means that $\FV(F) \cap \MV(c) = \emptyset$.
 By ``syntactic style'' we mean that the side condition is written using a function $\FV(F)$ that takes an arbitrary formula and returns the set of free variables within that formula.  To define this $\FV(F)$ function
 we need a fixed inductive \textbf{syntax} for formulas.  In contrast, in this paper we follow a ``semantic style'' in which formulas are not given a fixed syntax in advance but can be defined \textbf{semantically} on the fly using an appropriate model~\cite{appel:programlogics}.  In a semantic style, the side condition on the frame rule is defined as:
 \[
-\begin{array}{l}
-\sigma \stackrel{S}{\cong} \sigma' ~~ \stackrel{\Delta}{=} ~~ \sigma \text{ and } \sigma' \text{ coincide everywhere except } S\\
-P \text{ is stable w.r.t. } S ~~ \stackrel{\Delta}{=} ~~ \forall \sigma, \sigma'.~ \sigma \stackrel{S}{\cong} \sigma' => \null \\
-\qquad \qquad \qquad \qquad \qquad \qquad ~~ (\sigma |= P) <=> (\sigma' |= P)
+\begin{array}{ll}
+\sigma \stackrel{S}{\cong} \sigma' & \stackrel{\Delta}{=} ~~ \sigma \text{ and } \sigma' \text{ coincide everywhere except } S\\
+P \text{ ignores } S & \stackrel{\Delta}{=} ~~ \forall \sigma, \sigma'.~ \sigma \stackrel{S}{\cong} \sigma' => \null \\
+& \qquad ~~ (\sigma |= P) <=> (\sigma' |= P)
 \end{array}
 \]
-That is, we consider two program states $\sigma$ and $\sigma'$ equivalent up to program variable set $S$ when they agree everywhere except for on the values of variables in $S$ (typically, a state $\sigma$ is a pair of a heap $h$ and program variables $\rho$).  A predicate $P$ is then stable with respect to $S$ when it ignores all local variables in $S$.  Notice both the syntactic and semantic styles use the $\MV(c)$ function defined via straightforward recursive case analysis on program syntax; programming languages typically do have a fixed syntactic structure.
+That is, we consider two program states $\sigma$ and $\sigma'$ equivalent up to program variable set $S$ when they agree everywhere except for on the values of variables in $S$ (typically, a state $\sigma$ is a pair of a heap $h$ and program variables $\rho$).  A predicate $P$ is then stable with respect to $S$ when its truth is independent of all program variables in $S$.  %{\color{magenta} Notice both the syntactic and semantic styles use the $\MV(c)$ function defined via straightforward recursive case analysis on program syntax; programming languages typically do have a fixed syntactic structure.}
 
-Ramification
+The reason why \infrulestyle{Frame} is so important is because it enables local verifications.  That is, rather than BLAH.
+
+Hobor and Villard observed that in some ways \infrulestyle{Frame} is too rigid because it forces verifiers to split the program assertions into explicitly $*$-separated parts~\cite{hobor:ramification}.  This rigidity is particularly unpleasant when verifying programs that manipulate data structures with intrinsic unspecified sharing such as DAGs and graphs.  Hobor and Villard proposed the following rule to circumvent this rigidity:
 \[
 \infrule{Ramify}
 {\{L_1\} ~ c ~ \{L_2\} \\ G_1 |- L_1 * (L_2--* G_2)}
 {\{G_1\} ~ c ~ \{G_2\}}
-{\begin{array}{c}(L_2 --* G_2) \\ \textrm{is stable} \\ \textrm{w.r.t. } \MV(c) \end{array}} \qquad \qquad \qquad
+{\begin{array}{c}(L_2 --* G_2) \\ \textrm{ignores} \\ \MV(c) \end{array}} \qquad \qquad \qquad
 %{$\begin{array}{l}\m{fv}(Q --* R') \cap \null \\ \m{modif}(c) = \emptyset\end{array}$} \qquad \qquad \qquad
 \]
+
 
 Notation
 \begin{lstlisting}
 // $\{ G_1 \}$
 // $\searrow \{ L_1 \}$
-      $c_1$; . . . ; $c_n$;
+      $c_1$; ... ; $c_n$;
 // $\swarrow \{ L_2 \}$
 // $\{ G_2 \}$
 \end{lstlisting}
 
-
-
-
-Ramify implies frame
+Ramify implies frame (modulo FV) \S\ref{sec:freevars}
 
 \subsection{The program variable bugaboo}
+\label{sec:freevars}
 
 Consider using ramification to verify the following program:
 \begin{lstlisting}
-// $\{ \tx{x} = 5 /| G_1 \}$
-// $\searrow \{\tx{x} = 5 /| L_1 \}$
-      ...
+// $\{ \tx{x} = 5 /| A \}$
+// $\searrow \{\tx{x} = 5 /| B \}$
+      ...;
       x = x + 1;
-      ...
-// $\swarrow \{\tx{x} = 6 /| L_2 \}$
-// $\{ \tx{x} = 6 /| G_2 \}$
+      ...;
+// $\swarrow \{\tx{x} = 6 /| C \}$
+// $\{ \tx{x} = 6 /| D \}$
 \end{lstlisting}
-Suppose that the other (unshown) lines of the program make localization desirable, even though it is overkill for a single assignment.  The key issue is that the program variable {\li{x}} appears in all four positions in the ramification entailment
+Suppose that the other (elided) lines of the program make localization desirable, even though it is overkill for a single assignment.  The key issue is that the program variable {\li{x}} appears in all four positions in the ramification entailment
 \[
-(\li{x} = 5 /| G_1) \vdash (\li{x} = 5 /| L_1) * \big((\li{x} = 6 /| L_2) -* (\li{x} = 6 /| G_2)\big)
+(\li{x} = 5 /| A) \vdash (\li{x} = 5 /| B) * \big((\li{x} = 6 /| C) -* (\li{x} = 6 /| D)\big)
 \]
-This entailment has two problems.  {\color{magenta} First, the formula $(\li{x} = 6 /| L_2) -* (\li{x} = 6 /| G_2)$ is \textbf{not} stable with respect to the modified program variable \tx{x}.}  Thus, we cannot
+One problem is that $(\li{x} = 6 /| C) -* (\li{x} = 6 /| D)$ does \textbf{not} ignore the modified program variable \tx{x}, preventing us from applying the \infrulestyle{Ramify} rule.  Intuitively, the stability side condition on the \infrulestyle{Ramify} rule is a bit too strong since it prevents us from mentioning variables in the postconditions that \textbf{have} been modified by code $c$.
 
-\footnote{An alternative semantics that gets around this problem is to use ``variables as resource''~\cite{bornat:var}, but this introduces other unpleasantness.}
-
-
-Unfortunately, the 
-
-Old ramify can only handle:
-\begin{lstlisting}
-// $\{ \tx{x} = 5 \}$
-// $\searrow \{ \tx{x} = 5 \}$
-      x = x + 1;
-// $\swarrow \{ \top \}$
-// $\{ \top \}$
-\end{lstlisting}
-
-New rule:
+The obvious thing to try is to weaken the side condition in \infrulestyle{Ramify} to $\big(\FV(G_2) \cap \MV(c)\big) \subseteq \FV(L_2)$, the idea being that information about modified program variables mentioned in the local postcondition $L_2$ can be carried that information to the global postcondition $G_2$.  Unfortunately, this approach is unsound.  A better idea is: % the following :
 \[
-\infrule{Ramification-P}
-{\{ L \} c \{L' \} \\
- G \vdash L * \Box^{\llbracket c \rrbracket} (L' -* G')}
-{\{ G \} c \{ G' \}}{}
+\infrule{Ramify-P (Program Variables)}
+{\{ L_1 \} ~ c ~ \{L_2 \} \\
+ G_1 \vdash L_1 * \pguards{c}  (L_2 -* G_2)}
+{\{ G_1 \} ~ c ~ \{ G_2 \}}{}
 \]
+The ramification entailment now incorporates a new (universal/boxy) modal operator $\pguards{c}$.  The intuitive meaning of $\pguards{c}$ is that program variables modified by command $c$ can change value inside its scope.    Note that it is vital that $L_2$ appears as the antecedent of a (spatial) implication since the change in program variables is universally quantified.  This means that if we want to say anything specific about modified program variables in the global postcondition $G_2$ then we had better say something about them in the local postcondition $L_2$.
+Let us return to our earlier entailment:
+\[
+\begin{array}{l}
+(\li{x} = 5 /| A) \vdash (\li{x} = 5 /| B) * \null \\
+~~ \pguards{\li{...; x = x + 1; ...;}} \big((\li{x} = 6 /| C) -* (\li{x} = 6 /| D)\big)
+\end{array}
+\]
+Since \li{x} is modified, its value can change from the first line, in which \li{x} must be 5, to the second, in which \li{x} must be 6.
 
+Here is the formal definition of $\pguards{c}$:
+\[
+\begin{array}{lcl}
+\langle c \rangle & \stackrel{\Delta}{=} & \MV(c) \\
+\sigma |= \pguards{c} P & \stackrel{\Delta}{=} & \forall \sigma'.~ (\sigma \stackrel{\langle c \rangle}{\cong} \sigma') => (\sigma' |= P)% ~~~~ \text{where $\mathsf{MV}(c)$ is $\MV(c)$}\\
+\end{array}
+\]
+In other words, $\pguards{c}$ is exactly the universal modal operator~$\Box$ over the relation that considers equivalent all states that differ only on program values modified by $c$.
 
-Related?: variables as resource
+Note that \infrulestyle{Ramify-P} has no free variable side conditions because $\forall P.~ \pguards{c}P \text{ ignores } \MV(c)$.  However, in practice this side condition reappears because to actually prove a ramification entailment containing $\pguards{c}$ one typically applies the following \infrulestyle{Solve Ramify-P} rule:
+\[
+\infrule{Solve Ramify-P}
+{G_1 |- L_1 * F \\
+{\color{magenta} F |- L_2 -* G_2}}
+{G_1 \vdash L_1 * \pguards{c}  (L_2 -* G_2)}{F \textrm{ ignores } \MV(c)} \qquad \qquad \qquad \qquad
+\]
+In other words, we can handle the $\pguards{c}$ by breaking apart the single entailment into a pair.  Using two entailments allows modified program variables to change between the preconditions and postconditions.  To connect the pair, we must choose a suitable predicate $F$ that ignores modified variables in $c$. Finding a suitable $F$ and proving the associated entailments can be tricky in the abstract but in practice is guided by using a ``ramification library'' as given in \S\ref{sec:ramifylib}.
+
+{\color{magenta} Universally-quantified metavariables can appear free in the predicates to make further connections.
+Assuming that the abstracted pre- and postconditions $A$, $B$, $C$, and $D$ above all use \li{x}, we proceed
+as follows.  First we introduce a new fresh metavariable $x$ whose value will be equal to \li{x} after the localization, and then choose $F \stackrel{\Delta}{=} [\li{x} |-> x] (C -* D)$, that is we substitute the program
+variable \li{x} for the metavariable $x$.  Since we have substituted away \li{x}, $F$ ignores it and so we satisfy the side condition on \infrulestyle{Solve Ramify-P}.  We then must strengthen $C$ into $C' \stackrel{\Delta}{=} C /| \li{x} = x$ to make the connection at the appropriate program point.  Now we are left with the entailments
+\[
+\begin{array}{lcl}
+\li{x} = 5 /| A & |- & (\li{x} = 5 /| B) * F \\
+F & |- & (\li{x} = 6 /| C') -* (x = 6 /| D)
+\end{array}
+\]
+To further relate the earlier and later values of \li{x} in $F$ we can introduce a second fresh $x'$ and use $B' \stackrel{\Delta}{=} B /| \li{x} = x'$.
+}
 
 \subsection{The existential ogre}
 
@@ -116,17 +141,7 @@ Existential rule by Floyd~\cite{floydlogic} (1967!)
 \[
 \infrule{Existential extraction}
 {\forall x.~ \big(\{ P \} ~ c ~ \{Q \}\big)}
-{\{ \exists x. P \} ~ c ~ \{ {\color{magenta}\exists x.~ Q} \}}{}
-%existential_ret_assert =
-%fun (A : Type) (R : A -> ret_assert) (ek : exitkind) (vl : option val) =>
-%(EX  x : A, R x ek vl)%assert
-%     : forall A : Type,
-%       (A -> ret_assert) -> exitkind -> option val -> environ -> mpred
-%Axiom extract_exists:
-%  forall  {Espec: OracleKind}{CS: compspecs} ,
-%  forall (A : Type)  (P : A -> environ->mpred) c (Delta: tycontext) (R: A -> ret_assert),
-%  (forall x, @semax CS Espec Delta (P x) c (R x)) ->
-%   @semax CS Espec Delta (EX x:A, P x) c (existential_ret_assert R).
+{\{ \exists x. P \} ~ c ~ \{ \exists x.~ Q \}}{}
 \]
 
 \begin{lstlisting}
@@ -147,9 +162,24 @@ But:
 // $\{ G_2 \}$
 \end{lstlisting}
 
+\[
+\infrule{Ramify-Q}
+{\{ L \} ~ c ~ \{\exists x.~ L' \} \\
+ G \vdash L * \big(\forall x.~ (L' -* G')\big)}
+{\{ G \} ~ c ~ \{ \exists x.~G' \}}{}
+\]
+
+%\Box^{\llbracket c \rrbracket}
+
 Need:
 
 
 
 
 
+%Related work
+\paragraph{Local variables.}
+Hobor and Villard hacked their way around this [local var] issue by proposing a variant of \infrulestyle{Ramify} called \infrulestyle{RamifyAssign}, which could reason about the special case of a single assignment $\li{x = }f(\ldots)$, assuming the verifier can make the local program translation to $\li{x' = }f(\ldots)\li{; x = x'}$, where \li{x'} is fresh.  They proposed no way to verify unmodified program code or to do a ramification across multiple assignments as we do in lines~\ref{code:markbeforetripleramify}--\ref{code:markaftertripleramify} of figure~\ref{fig:markgraph}.
+
+An alternative way to avoid local variable issues is to use ``variables as resource''~\cite{bornat:var}.
+Unfortunately variables as resource introduces other unpleasantness, which is why many mechanized verification systems do not use it\cite{appel:programlogics,bengtson:charge}.

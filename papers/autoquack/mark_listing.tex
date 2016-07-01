@@ -16,11 +16,11 @@ void mark(struct Node * x) { // $\{\p{graph}(\tx{x},\gamma)\}$
 // $\{\p{graph}(\tx x,\gamma) /| \gamma(\tx{x}) = (m,l,r) /| m = \tx{root\_mark}\}$
   if (root_mark == 1) return;
 // $\{\p{graph}(\tx x,\gamma) /| \gamma(\tx{x}) = (0,l,r) \}$
-// $\searrow \{\tx x|-> 0,l,r /| \gamma(\tx{x}) = (0,l,r)\}$
+// $\label{code:markbeforetripleramify}\searrow \{\tx x|-> 0,l,r /| \gamma(\tx{x}) = (0,l,r)\}$
       l = x -> l;
       r = x -> r;
       x -> m = 1;
-// $\swarrow \{\tx x|-> 1,\tx{l},\tx{r} /| \gamma(\tx{x}) = (0,\tx{l},\tx{r}) /| \exists \gamma'.~ \m{mark1}(\gamma, \tx{x}, \gamma')\}$
+// $\label{code:markaftertripleramify}\swarrow \{\tx x|-> 1,\tx{l},\tx{r} /| \gamma(\tx{x}) = (0,\tx{l},\tx{r}) /| \exists \gamma'.~ \m{mark1}(\gamma, \tx{x}, \gamma')\}$
 // $\{\exists \gamma'.~ \p{graph}(\tx x,\gamma') /| \gamma(\tx{x}) = (0,\tx{l},\tx{r}) /| \m{mark1}(\gamma, \tx{x}, \gamma')\}$
 // $\{\p{graph}(\tx x,\gamma') /| \gamma(\tx{x}) = (0,\tx{l},\tx{r}) /| \m{mark1}(\gamma, \tx{x}, \gamma')\}$
 // $\searrow \{\p{graph}(\tx l, \gamma')\}$
