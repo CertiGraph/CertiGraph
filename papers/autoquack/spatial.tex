@@ -56,25 +56,82 @@ $F_p(\sigma)$. The approximate equality is achieved by a data type as
 a sequence of accurate approximations taken successively. This idea is
 called step-indexing.
 
-We attempted to formulate $\mathtt{graph}$ through $\mu_{\mathsf{T}}$
-and $\mu_{\mathsf{R}}$. The covariant functor $\mathtt{graphF}$ is
-defined as follows:
-\[\label{eqn:graphF}
+We attempted to formulate $\mathtt{graph}$ through fixed-point
+functions $\mu_{\mathsf{T}}$ and $\mu_{\mathsf{R}}$. The contractive
+functor $\mathtt{graphF}$ is defined as follows:
+\[\label{eqn:graphFcotr}
   \begin{split}
-  & \mathtt{graphF}(Q, x, \gamma)\defeq (x = 0 \wedge
-  \mathtt{emp}) \vee \\ & \exists d,l,r . \gamma(x)=(d,l,r) \wedge  x
-  \mapsto d,l,r\, \ocon Q(l, \gamma) \ocon Q(l, \gamma)
+  & \mathtt{graphF}(Q, x, \gamma)\defeq (x = 0 \wedge \mathtt{emp})
+    \vee \\ & \exists d,l,r . \gamma(x)=(d,l,r) \wedge x \mapsto
+    d,l,r\, \ocon \triangleright Q(l, \gamma) \ocon \triangleright
+    Q(r, \gamma)
   \end{split}
 \]
-Note that $\mathtt{graphF}$ is a normal predicate without
-recursion. The first try is to define $\mathtt{graph}$ as
-$\mu_{\mathsf{T}}\,\mathtt{graphF}$. Unfortunately There is no way to
-prove any non-trivial theorem even for a self-referencing single node
-graph because there is no induction principle for this definition:
-every time the expanding of $\mathtt{graph}(x,\gamma)$ leads to
-itself. So this definition is abandoned.
+where $\triangleright$ is is the ``later'' operator which implements
+the machinery of step-indexing. Note that $\mathtt{graphF}$ is a
+normal predicate without recursion. $\mathtt{graph}$ is defined as
+$\mu_{\mathsf{R}}\,\mathtt{graphF}$. One advantage of this definition
+of $\mathtt{graph}$ is that proof by induction is possible because the
+step-index can be seen as the inductive number. Unfortunately
+$\mathtt{graph}$ is not \emph{precise} under this definition. For any
+spatial predicate $P$, $\text{precise}(P)$ means whenever $P$ is
+satisfied on a sub-state, that sub-state must be unique. Being precise
+is a crucial requirement of $\mathtt{graph}$ for key theorems in our
+framework. Further-more, it can be proved that for any predicate $P$,
+$\triangleright P$ is not precise. So this defintion is abandoned.
+
+Similarly we can define a covariant functor $\mathtt{graphQ}$ as
+follows:
+\[\label{eqn:graphFco}
+  \begin{split}
+  & \mathtt{graphQ}(Q, x, \gamma)\defeq (x = 0 \wedge
+  \mathtt{emp}) \vee \\ & \exists d,l,r . \gamma(x)=(d,l,r) \wedge  x
+  \mapsto d,l,r\, \ocon Q(l, \gamma) \ocon Q(r, \gamma)
+  \end{split}
+\]
+The only difference between $\mathtt{graphQ}$ and $\mathtt{graphF}$ is
+that $\mathtt{graphQ}$ does not have the $\triangleright$
+operator. With this definition $\mathtt{graph}$ can be defined as
+$\mu_{\mathsf{T}}\,\mathtt{graphQ}$. Again we need to prove the
+preciseness of $\mathtt{graph}$. Since there is no induction principle
+for this definition, we tried to prove it through the following lemma:
+\begin{equation}\label{eqn:graph_iter}
+\mathtt{graph}(x, \gamma) \dashv\vdash
+\underset{v\in\mathit{reach}(\gamma, x)}{\bigstar} v\mapsto\gamma(v)
+\end{equation}
+where $\mathit{reach}(\gamma, x)$ is the set of nodes reachable from
+$x$ in $\gamma$ and the definition of $\bigstar$ over a set and a
+predicate $p$ is
+\begin{equation*}
+  \underset{\{a_1, a_2,\dots,a_n\}}{\bigstar}p \defeq p(a_1) \scon
+  p(a_2) \scon \dots \scon p(a_n).
+\end{equation*}
+The preciseness of $\mathtt{graph}$ is a natural corollary of the
+lemma above because for any $v$, $v\mapsto\gamma(v)$ is
+precise. Unfortunately that lemma does not hold even for a
+self-referencing single node graph because: every time the expanding
+of $\mathtt{graph}(x,\gamma)$ leads to itself. So this definition is
+abandoned too.
 
 \subsection{The iterated separating conjunction}
+The two failures of fixpoint method above force us to turn to another
+direction. Inspired by lemma \ref{eqn:graph_iter}, we defined the
+\mathtt{graph} as follows:
+\begin{equation*}
+  \mathtt{graph}(x, \gamma)\defeq\underset{v\in\mathit{reach}(\gamma, x)}{\bigstar} v\mapsto\gamma(v)
+\end{equation*}
+This non-recursive predicate says that a graph whose root is x is a
+list of reachable nodes from x separated by $\scon$. From this
+definition we can prove the unfold lemma:
+\begin{equation*}
+  \begin{split}
+  & \mathtt{graph}(x, \gamma) \Leftrightarrow \exists d,l,r
+    . \gamma(x)=(d,l,r) \wedge \\ & x \mapsto d,l,r\, \ocon
+    \mathtt{graph}(l, \gamma) \ocon \mathtt{graph}(r, \gamma)
+  \end{split}
+\end{equation*}
+
+
 1.2. \texttt{Iter\_sepcon} and \texttt{pred\_sepcon} are defined. And related ramification rules are proved.
 1.3. The most general graph-spatial-predicate \texttt{vertices\_at} are defined (for all possible styles of graphs). Related ramification rules are proved. Graph and graphs are defined as special cases of vertices at.
 
