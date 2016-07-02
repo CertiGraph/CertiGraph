@@ -1,6 +1,21 @@
 
 \appendix
 
+\section{Junk}
+{\color{magenta} Universally-quantified metavariables can appear free in the predicates to make further connections.
+Assuming that the abstracted pre- and postconditions $A$, $B$, $C$, and $D$ above all use \li{x}, we proceed
+as follows.  First we introduce a new fresh metavariable $x$ whose value will be equal to \li{x} after the localization, and then choose $F \stackrel{\Delta}{=} [\li{x} |-> x] (C -* D)$, that is we substitute the program
+variable \li{x} for the metavariable $x$.  Since we have substituted away \li{x}, $F$ ignores it and so we satisfy the side condition on \infrulestyle{Solve Ramify-P}.  We then must strengthen $C$ into $C' \stackrel{\Delta}{=} C /| \li{x} = x$ to make the connection at the appropriate program point.  Now we are left with the entailments
+\[
+\begin{array}{lcl}
+\li{x} = 5 /| A & |- & (\li{x} = 5 /| B) * F \\
+F & |- & (\li{x} = 6 /| C') -* (x = 6 /| D)
+\end{array}
+\]
+To further relate the earlier and later values of \li{x} in $F$ we can introduce a second fresh $x'$ and use $B' \stackrel{\Delta}{=} B /| \li{x} = x'$.
+}
+
+
 \section{Remaining proof of \infrulestyle{Ramify-PQ}}
 \label{apx}
 
