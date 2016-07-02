@@ -93,7 +93,9 @@ directly.
 5.3. I take some effort on garbage collector like graph structural. Though it is only connecting this special structural with 5.1.1 and 1.3, it takes much time and it is not finished yet.}
 
 \paragraph{Local variables.}
+\hide{
 Hobor and Villard hacked their way around this [local var] issue by proposing a variant of \infrulestyle{Ramify} called \infrulestyle{RamifyAssign}, which could reason about the special case of a single assignment $\li{x = }f(\ldots)$, assuming the verifier can make the local program translation to $\li{x' = }f(\ldots)\li{; x = x'}$, where \li{x'} is fresh.  They proposed no way to verify unmodified program code or to do a ramification across multiple assignments as we do in lines~\ref{code:markbeforetripleramify}--\ref{code:markaftertripleramify} of figure~\ref{fig:markgraph}.
+}
 
 An alternative way to avoid local variable issues is to use ``variables as resource''~\cite{bornat:var}.
 Unfortunately variables as resource introduces other unpleasantness, which is why many mechanized verification systems do not use it\cite{appel:programlogics,bengtson:charge}.
