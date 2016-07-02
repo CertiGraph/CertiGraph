@@ -183,45 +183,86 @@ In summary, VST's users build a Hoare logic proof by interacting with VST's tact
 
 In order to extend VST to support ramification, we should enable people to write decorated programs with localize and unlocalize action. Our task here is to construct a proof in Coq's underlying logic from a decorated program, in which localize and unlocalize are involved. Moreover, our extension of VST's tactic system should construct a partial proof when the user finishes part of his proof.
 
-It is especially difficult when the following kind of partial decorated programs are considered.
+It is especially difficult when we consider such partial decorated programs as in the first column of Figure \ref{figure:backend}. In this situation, our tactic system cannot even know when corresponding unlocalize action will be done. To construct a partial proof, the tactic system cannot know where to close this ramification block.
+
+In order to solve this problem, our tactic systems builds the partial proof in underlying logic by using uninstantiated frame. For example, the second column of Figure \ref{figure:backend} shows the backend of a localize operation. We put an unknown frame $?F$ there which will be instantiated when doing unlocalize.
 
 \begin{figure}[h]
+\begin{tabular}{l | l | l | l}
 \begin{lstlisting}
-$\{\ \ \ P_1 \ \ \ \}$
+$\{\ \ P_1 \ \ \}$
     c1
-$\{\ \ \ P_2 \ \ \ \}$
-$\searrow \{\ \ \ P_3 \ \ \ \}$
+$\{\ \ P_2 \ \ \}$
+$\searrow \{\ \ P_3 \ \ \ \}$
       c2;
-$~~~~~~ \{\ \ \ P_4 \ \ \ \}$
-
-      ...
-
-  (to be done: c3; c4; c5)
-
-$\{\ \ \ \text{Post} \ \ \ \}$
-\end{lstlisting}
-\end{figure}
-
-Our tactic system cannot even know when corresponding unlocalize action will be done. To construct a partial proof, the tactic system cannot know where to close this ramification block.
-
-In order to solve this problem, our tactic systems builds the partial proof in underlying logic by using uninstantiated frame. For example, the partial decorated program above is treated like this:
-
-\begin{figure}[h]
-\begin{lstlisting}
-$\{\ \ \ P_1 \ \ \ \}$
-    c1
-$\{\ \ \ P_2 \ \ \ \}$
-$\{\ \ \ ?F * P_3 \ \ \ \}$
-    c2;
-$\{\ \ \ ?F * P_4 \ \ \ \}$
+$~~\{\ \ P_4 \ \ \ \}$
 
     ...
 
-  (to be done: c3; c4; c5)
+(to be done)
 
-$\{\ \ \ \text{Post} \ \ \ \}$
+\end{lstlisting} &
+\begin{lstlisting}
+$\{\ \ P_1 \ \ \}$
+    c1
+$\{\ \ P_2 \ \ \}$
+$\{\ \ ?F * P_3 \ \ \}$
+    c2;
+$\{\ \ ?F * P_4 \ \ \}$
+
+  ...
+
+(to be done)
+
+\end{lstlisting} &
+\begin{lstlisting}
+$\{\ \ P_1 \ \ \}$
+    c1
+$\{\ \ P_2 \ \ \}$
+$\searrow \{\ \ P_3 \ \ \ \}$
+      c2;
+      ..
+      c3;
+$\swarrow\{\ \ P_8 \ \ \ \}$
+$\{\ \ P_9 \ \ \}$
+
+    ...
+
+(to be done)
+\end{lstlisting} &
+\begin{lstlisting}
+$\{\ \ P_1 \ \ \}$
+    c1
+$\{\ \ P_2 \ \ \}$
+$\{\ \ ?F * P_3 \ \ \}$
+    c2;
+    ...
+    c3;
+$\{\ \ ?F * P_8 \ \ \}$
+$\{\ \ P_9 \ \ \}$
+
+  ...
+
+(to be done)
 \end{lstlisting}
+\end{tabular}
+\caption{Front end and back end of localize and unlocalize}
+\label{figure:backend}
 \end{figure}
+
+Specifically, as the unlocalize command is done in the third column, $?F$ is filled with $$[\text{c2; c3}](P_8 \wand P_9)$$
+
+This engineering solution shows the intrinsic correlation between frame rule and ramification-P rule, i.e. the entailment relation that $?F$ should satisfy at the localize operation is exactly the ramification criterion.
+
+\textbf{Tracking Guarded Criteria.} Notice that not all separation logic assertions can be used to fill the uninstantiated frame, there are two criteria to follow. Using the example in Figure \ref{figure:backend}, the frame should satisfy: (1) $P_1 \vdash ?F * P_2$ (2) $?F$ ignores $\mathrm{ModVar}(\text{c2; c3})$.
+
+Our tactic system keeps track with these two guarded criteria to ensure soundness. When people do localize, the tactic system will create the uninstantiated frame tagged with these two criteria (using dependent types in Coq). The first criterion is fully specified while the second one is only semi-specified at the time of localizing because it is unknown which commands will be involved in this ramification block.
+
+When people do unlocalize, the tactic system will use the magic wand operation between local and global assertions under universal modal operator ($[\text{c2;c3}](P_8 \wand P_9)$ in this example) to instantiate the frame and check whether these two criteria is satisfied. The first criterion ($P_1 \vdash P_2 * [\text{c2;c3}](P_8 \wand P_9)$ in this example) is usually left for manual proofs and the second criterion is always true because of the modality's property.
+
+\textbf{Simply Ramification Criterion}
+
+
 
 
 %MORE TO WRITE: divide pure facts into frame and local based on VST's canonical form. Based on localize/unlocalize, compared with frame rule, ramification rule have better use on VST's automatic symbolic execution system.
