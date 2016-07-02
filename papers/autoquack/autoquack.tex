@@ -161,31 +161,15 @@ letting us understand the advantages and disadvantages of both.
 \input{orientation.tex}
 
 \section{A framework for graph theory}
+\label{sec:mathgraph}
 \input{math_graph.tex}
 
 \input{spatial.tex}
-
-\section{Verifying graph-manipulating programs}
-
-4. General Strategy for Verifying Programs
-4.1. Using relation. (Better for proof's code reuse). For example, spanning tree is mark together with some structural requirement.
-4.2. Using existential quantifier in post condition.
 
 %[5:19:46 AM] Aquinas Hobor: the localize/unlocalize tactics or the semantic model for semax_ram
 %[5:19:46 AM] caoqinxiang: And we will discuss the trick in "\item Integrating ramification into verification tools" section right?
 %[5:20:00 AM] Aquinas Hobor: Yes, and also the model for semax_ram
 %[5:20:06 AM] Aquinas Hobor: And also the other examples
-%[5:20:12 AM] caoqinxiang: Aha, yes.
-%[5:20:23 AM] Aquinas Hobor: And also point out which parts are easier to automate, etc.
-%[5:20:49 AM] Aquinas Hobor: For example, how does the "close w.r.t. modified variables" work?  Is that calculated automagically?
-%[5:21:06 AM] caoqinxiang: yes.
-%[5:21:22 AM | Edited 5:21:37 AM] caoqinxiang: Box_c(P) is closed w.r.t. to modvar(c)
-%[5:21:34 AM] Aquinas Hobor: Right, so we point that out.  What about how the existentials etc. work.  Is that automagic also or does the user have to specify them?
-%[5:22:20 AM] caoqinxiang: User specify which variables are dependent, and the tactic makes them quantified.
-%[5:22:29 AM] Aquinas Hobor: So "semiautomatic"?
-%[5:22:44 AM] caoqinxiang: Right, user should give hints.
-%[5:22:52 AM] caoqinxiang: And tactic do the rest.
-%[5:23:06 AM] Aquinas Hobor: Right.  Anyhow, that goes there, along with the extra VST examples.
 
 \input{vst.tex}
 
