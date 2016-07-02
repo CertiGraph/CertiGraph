@@ -1,4 +1,4 @@
-\section{Defining and reasoning about spatial graphs}
+\section{Defining and reasoning about spatial graphs}\label{sec:spacegraph}
 
 To prove the functional correctness of real graph-manipulating
 algorithms, we provide spatial predicate of graphs as a shape
@@ -12,22 +12,15 @@ $\bigstar$.
 
 %% 2.5. Heap-Model-Direct instances are broken now. They are not hard to get fixed. Previous proofs are in "\texttt{spatial\_graph\_HMD.v}".
 
-\subsection{Traditional fixpoints fail}
+\subsection{Traditional fixpoints fail}\label{sec:fixpointfail}
 
-Hobor and Villard\cite{hobor:ramification} defined the separation
-logic graph predicate $\mathsf{graph}(x,\gamma)$ in direct analogy to
-the standard separation logic definition of a tree as follows:
-\begin{equation*}\label{eqn:graph}
-  \begin{split}
-  \mathtt{graph}(x, \gamma)\defeq & (x = 0 \wedge \mathtt{emp}) \vee
-  \exists d,l,r . \gamma(x)=(d,l,r) \wedge \\ & x \mapsto d,l,r\,
-  \ocon \mathtt{graph}(l, \gamma) \ocon \mathtt{graph}(l, \gamma)
-  \end{split}
-\end{equation*}
-where $\gamma$ is a mathematical graph and $\gamma(x)$ extracts the
-data mapped by the label function and two neighbors of node
-$x$. However, it is peculiarly challenging in rigorously formalizing
-$\mathtt{graph}$ as shown above.
+As shown in (\ref{eqn:bigraphintrofoldunfold}) of Section
+\ref{sec:orientation}, Hobor and Villard\cite{hobor:ramification}
+defined the separation logic graph predicate
+$\mathsf{graph}(x,\gamma)$ in direct analogy to the standard
+separation logic definition of a tree. Note that the two-neighborhood
+means $\gamma$ is a BiGraph. However, it is peculiarly challenging in
+rigorously formalizing $\p{graph}$.
 
 %* Showing that neither traditional fixpoint method works
 
@@ -113,16 +106,18 @@ self-referencing single node graph because: every time the expanding
 of $\mathtt{graph}(x,\gamma)$ leads to itself. So this definition is
 abandoned too.
 
-\subsection{The iterated separating conjunction}
+\subsection{The iterated separating conjunction}\
 The two failures of fixpoint method above force us to turn to another
 direction. Inspired by lemma \ref{eqn:graph_iter}, we defined the
 $\mathtt{graph}$ as follows:
-\begin{equation*}
+\begin{equation}\label{eqn:iter_def}
   \mathtt{graph}(x, \gamma)\defeq\underset{v\in\mathit{reach}(\gamma, x)}{\bigstar} v\mapsto\gamma(v)
-\end{equation*}
-This non-recursive predicate says that a graph whose root is x is a
-list of reachable nodes from x separated by $\scon$. From this
-definition we can prove the unfold lemma:
+\end{equation}
+
+This non-recursive predicate says that a graph whose root is $x$ is a
+list of reachable nodes from $x$ separated by $\scon$.
+
+\label{sec:foldunfold} From this definition we can prove the unfold lemma:
 \begin{equation*}
   \begin{split}
   & \mathtt{graph}(x, \gamma) \Leftrightarrow \exists d,l,r
@@ -131,10 +126,33 @@ definition we can prove the unfold lemma:
   \end{split}
 \end{equation*}
 
+One useful property in proving the unfold lemma is \emph{joinable}. A
+predicate $p$ is joinable iff for any $x\neq y$, $p(x)$ and $p(y)$ are
+in disjointed heap, which means we can write $p(x) * p(y)$.
 
-1.2. \texttt{Iter\_sepcon} and \texttt{pred\_sepcon} are defined. And related ramification rules are proved.
-1.3. The most general graph-spatial-predicate \texttt{vertices\_at} are defined (for all possible styles of graphs). Related ramification rules are proved. Graph and graphs are defined as special cases of vertices at.
+One benefit of the definition in (\ref{eqn:iter_def}) is that the pure
+mathematical graph $\gamma$ in $\mathtt{graph}$ is not necessarily a
+BiGraph. (\ref{eqn:iter_def}) can represent a general graph with
+variant number of neighors as long as extending the definition of
+$\gamma(x)$ to data mapped by the label function and every neighbor of
+node $x$.
 
-2. A minor implementation trick. There are many tactics defined in \texttt{msl\_ext/ramify\_tactics.v}, which can manipulate low level heaps efficiently.
+Moreover, it turns out that the $\bigstar$ notation is a more useful
+and fundamental concept than $\mathtt{graph}$. There are two parts of
+the $\bigstar$ in (\ref{eqn:iter_def}): one is the predicate $\mapsto$
+and the other is the node set which the $\mapsto$ iterates on. They
+both bind to $\gamma$ in (\ref{eqn:iter_def}) for $\p{graph}(x,
+\gamma)$, which is a special case. In section \ref{sec:applicable}, we
+will see the specification of a spanning tree algorithm which uses
+$\bigstar$ directly instead of $\p{graph}$ because in that
+specification, the predicate $\mapsto$ and the node set bind to
+different mathematical graphs. Furthermore, we generalize the
+ramification rules for $\p{graph}$ in \cite{hobor:ramification}, which
+uses $\bigstar$ so as to be applied in all verification examples.
 
-* Separating the material into the general vs. tool-specific part.  Measurements of etc.
+%% 1.2. \texttt{Iter\_sepcon} and \texttt{pred\_sepcon} are defined. And related ramification rules are proved.
+%% 1.3. The most general graph-spatial-predicate \texttt{vertices\_at} are defined (for all possible styles of graphs). Related ramification rules are proved. Graph and graphs are defined as special cases of vertices at.
+
+%% 2. A minor implementation trick. There are many tactics defined in \texttt{msl\_ext/ramify\_tactics.v}, which can manipulate low level heaps efficiently.
+
+%% * Separating the material into the general vs. tool-specific part.  Measurements of etc.
