@@ -1,0 +1,38 @@
+\begin{figure}
+  \begin{lstlisting}
+struct Node {
+    int m;
+    struct Node * l;
+    struct Node * r; };
+
+void spanning(struct Node * x) { // $\{\p{graph}(\tx{x},\gamma)/|\gamma(\tx{x}).1=0\}$
+    struct Node * l, * r; int root_mark;
+// $\{\p{graph}(\tx x,\gamma) /| \exists l,r.~ \gamma(\tx{x}) = (0,l,r)\}$
+// $\{\p{graph}(\tx x,\gamma) /| \gamma(\tx{x}) = (0,l,r)\}$
+// $\searrow \{\tx x|-> 0,l,r /| \gamma(\tx{x}) = (0,l,r)\}$
+    l = x -> l;
+    r = x -> r;
+    x -> m = 1;
+// $\swarrow \{\tx x|-> 1,\tx{l},\tx{r} /| \gamma(\tx{x}) = (0,\tx{l},\tx{r}) /| \exists \gamma'.~ \m{mark1}(\gamma, \tx{x}, \gamma')\}$
+    if (l) {
+        root_mark = l -> m;
+        if (root_mark == 0) {
+            spanning(l);
+        } else {
+            x -> l = 0;
+        }
+    }
+    if (r) {
+        root_mark = r -> m;
+        if (root_mark == 0) {
+            spanning(r);
+        } else {
+            x -> r = 0;
+        }
+    }
+} // $\{\exists \gamma_4.~\p{vertex\_at}(\p{reachable}(\gamma, \tx{x}), \gamma_4)/|\m{spanning}(\gamma,\tx{x},\gamma_4)\}$
+\end{lstlisting}
+
+\caption{Clight code and proof sketch for bigraph spanning tree.}
+  
+\end{figure}
