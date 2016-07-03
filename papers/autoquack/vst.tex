@@ -262,10 +262,47 @@ Our tactic system keeps track with these two guarded criteria to ensure soundnes
 
 When people do unlocalize, the tactic system will use the magic wand operation between local and global assertions under universal modal operator ($[\text{c2;c3}](P_8 \wand P_9)$ in this example) to instantiate the frame and check whether these two criteria is satisfied. The first criterion ($P_1 \vdash P_2 * [\text{c2;c3}](P_8 \wand P_9)$ in this example) is usually left for manual proofs and the second criterion is always true because of the modality's property.
 
-\textbf{Simply Ramification Criterion}
+\textbf{Simply Ramification Criterion.} Besides implementing localize and unlocalize operation, our tactic system simplifies the ramification criterion for users. The target of this simplification is eliminating the $[c]$ modality. 
 
+\begin{figure}[h]
+\begin{tabular}{l | l}
+\begin{lstlisting}
+$\{\mathrm{x} = 1 * P\}$
+$\searrow \{\mathrm{emp}\}$
+      y = 0;
+$\swarrow \{\mathrm{y} = 0 * \mathrm{emp} \}$
+$\{\mathrm{x} = 1 \wedge \mathrm{y} = 0 * Q \}$
+\end{lstlisting} &
+\begin{lstlisting}
+$\{\mathrm{x} = 1 * P \}$
+$\searrow \{\mathrm{emp} \}$
+      y = 0;
+$\swarrow \{\exists y_0, \mathrm{y} = y_0 \wedge y_0 = 0 * \mathrm{emp} \}$
+$\{\exists y_0, \mathrm{y} = y_0 \wedge \mathrm{x} = 1 \wedge y_0 = 0 * Q[\mathrm{y} \mapsto y_0] \}$
+\end{lstlisting}
+\end{tabular}
+\caption{Eliminating Modality}
+\label{figure:modality}
+\end{figure}
 
+The left column of Figure \ref{figure:modality} shows a simple application of ramification. However, it is not obvious to how to eliminate the modality in its ramification criterion, i.e.
+$$\mathrm{x} = 1 * P \vdash \mathrm{emp} * [\mathrm{y}](\mathrm{y} = 0 * \mathrm{emp} \wand \mathrm{x} = 1 \wedge \mathrm{y} = 0 * Q)$$
 
+The assertions on the right side are equivalent with those on the left side, line by line. But in comparison, the ramification criterion of it (following RAMIF-PQ rule) is easier to simplify. Specifically,
+\begin{eqnarray*}
+&&~~~~[\mathrm{y}]\forall y_0. (\mathrm{y} = y_0 \wedge y_0 = 0 * \mathrm{emp} \wand \\
+&& ~~~~~~~~~   \mathrm{y} = y_0 \wedge \mathrm{x} = 1  \wedge y_0 = 0 * Q[\mathrm{y} \mapsto y_0]) \\
+&&= [\mathrm{y}]\forall y_0. (\mathrm{y} = y_0 \to \\
+&& ~~~~~~~~~ (y_0 = 0 * \mathrm{emp} \wand \mathrm{x} = 1  \wedge y_0 = 0 * Q[\mathrm{y} \mapsto y_0])) \\
+&&= \forall y_0. [\mathrm{y}](\mathrm{y} = y_0 \to \\
+&& ~~~~~~~~~ (y_0 = 0 * \mathrm{emp} \wand \mathrm{x} = 1  \wedge y_0 = 0 * Q[\mathrm{y} \mapsto y_0])) \\
+&&= \forall y_0. [\mathrm{y}](y_0 = 0 * \mathrm{emp} \wand \mathrm{x} = 1  \wedge y_0 = 0 * Q[\mathrm{y} \mapsto y_0]) \\
+&&= \forall y_0. (y_0 = 0 * \mathrm{emp} \wand \mathrm{x} = 1  \wedge y_0 = 0 * Q[\mathrm{y} \mapsto y_0])
+\end{eqnarray*}
+
+We build this trick of using existential quantifiers and meta variables to these elimination as a common pattern into our tactic system. As a result, the tactic system always leave a modality free ramification criterion for users to prove. Reformulating assertions to isolate program variables are especially easy as a VST's extension because VST's original tactic system can help its users to write their assertions in such a isolated style.
+
+\textbf{Remark.} We extend VST's tactic system such that people can interactively build Hoare proofs with ramification involved. When localize and unlocalize are applied on a paper proof, we use frame rule and uninstantiated frame to build corresponding proof in the underlying logic. Simplified and modality free ramification criteria are left for users to prove as side condition of unlocalize.
 
 %MORE TO WRITE: divide pure facts into frame and local based on VST's canonical form. Based on localize/unlocalize, compared with frame rule, ramification rule have better use on VST's automatic symbolic execution system.
 
