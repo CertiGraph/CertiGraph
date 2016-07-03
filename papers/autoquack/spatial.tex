@@ -6,6 +6,38 @@ standard points-to predicates chained by $\scon$ in separation
 logic. The spatial graph predicate is just a special case in terms of
 $\bigstar$.
 
+\subsection{Infrastructure}
+To formalize spatial graphs and related lemmas, we need a way to
+represent spatial predicate first, in other words, a mechanized
+library of separation logic. We adopt a layered style to get things
+done: Our spatial graph definition is build on a separation logic
+layer which are composed by atomic notations ($\scon$, $\ocon$, $|->$,
+$\p{precise}$, etc.) and related properties as axioms. Under the logic
+layer are sound models of the logic.
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}
+\tikzstyle{every node}=[shape=rectangle, rounded corners=4pt, draw]
+\node (SM) at (-3, 0) {Step-Indexing Model};
+\node (DM) at (0, 0) {Direct Model};
+\node (OM) at (2.5, 0) {Other Models};
+\node (CL) at (-3, 1.5) {Core Logic};
+\node (SL) at (1, 1.5) {Supplementary Logic};
+\node (G) at (-0.25, 3) {Graphs and Related Theorems};
+\draw [->] (CL) to (G);
+\draw [->] (SL) to (G);
+\draw [->] (CL) to (SL);
+\draw [->] (SM) to (CL);
+\draw [->] (SM) to (SL);
+\draw [->] (DM) to (CL);
+\draw [->] (DM) to (SL);
+%% \draw [->] (OM) to (CL);
+%% \draw [->] (OM) to (SL);
+\end{tikzpicture}
+\caption{Infrastructure of spatial graph library}
+\end{figure}
+
 %% 2.3. \texttt{sSpatialGraph\_Graph\_Bi} defined in "\texttt{spatial\_graph\_bi.v}" is the premise type class for defining how a BiMaFin graph is stored in memory.
 
 %% 2.5. Heap-Model-Direct instances are broken now. They are not hard to get fixed. Previous proofs are in "\texttt{spatial\_graph\_HMD.v}".
