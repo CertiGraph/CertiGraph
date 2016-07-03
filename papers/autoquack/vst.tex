@@ -189,6 +189,8 @@ It is especially difficult when we consider such partial decorated programs as i
 
 In order to solve this problem, our tactic systems builds the partial proof in underlying logic by using uninstantiated frame. For example, the second column of Figure \ref{figure:backend} shows the backend of a localize operation. We put an unknown frame $?F$ there which will be instantiated when doing unlocalize.
 
+\lstset{numbers=none}
+
 \begin{figure}[h]
 \begin{tabular}{l | l | l | l}
 \begin{lstlisting}
@@ -203,8 +205,7 @@ $~~\{\ \ P_4 \ \ \ \}$
 
 (to be done)
 
-\end{lstlisting} &
-\begin{lstlisting}
+\end{lstlisting} & \begin{lstlisting}
 $\{\ \ P_1 \ \ \}$
     c1
 $\{\ \ P_2 \ \ \}$
@@ -216,8 +217,7 @@ $\{\ \ ?F * P_4 \ \ \}$
 
 (to be done)
 
-\end{lstlisting} &
-\begin{lstlisting}
+\end{lstlisting} & \begin{lstlisting}
 $\{\ \ P_1 \ \ \}$
     c1
 $\{\ \ P_2 \ \ \}$
@@ -231,8 +231,7 @@ $\{\ \ P_9 \ \ \}$
     ...
 
 (to be done)
-\end{lstlisting} &
-\begin{lstlisting}
+\end{lstlisting} & \begin{lstlisting}
 $\{\ \ P_1 \ \ \}$
     c1
 $\{\ \ P_2 \ \ \}$
@@ -252,6 +251,8 @@ $\{\ \ P_9 \ \ \}$
 \label{figure:backend}
 \end{figure}
 
+\lstset{numbers=left}
+
 Specifically, as the unlocalize command is done in the third column, $?F$ is filled with $$[\text{c2; c3}](P_8 \wand P_9)$$
 
 This engineering solution shows the intrinsic correlation between frame rule and ramification-P rule, i.e. the entailment relation that $?F$ should satisfy at the localize operation is exactly the ramification criterion.
@@ -262,10 +263,12 @@ Our tactic system keeps track with these two guarded criteria to ensure soundnes
 
 When people do unlocalize, the tactic system will use the magic wand operation between local and global assertions under universal modal operator ($[\text{c2;c3}](P_8 \wand P_9)$ in this example) to instantiate the frame and check whether these two criteria is satisfied. The first criterion ($P_1 \vdash P_2 * [\text{c2;c3}](P_8 \wand P_9)$ in this example) is usually left for manual proofs and the second criterion is always true because of the modality's property.
 
-\textbf{Simply Ramification Criterion.} Besides implementing localize and unlocalize operation, our tactic system simplifies the ramification criterion for users. The target of this simplification is eliminating the $[c]$ modality. 
+\textbf{Simply Ramification Criterion.} Besides implementing localize and unlocalize operation, our tactic system simplifies the ramification criterion for users. The target of this simplification is eliminating the $[c]$ modality.
+
+\lstset{numbers=none}
 
 \begin{figure}[h]
-\begin{tabular}{l | l}
+\begin{tabular}{@{\hspace{1pt}}l@{\hspace{3pt}}|@{\hspace{3pt}}l@{\hspace{1pt}}}
 \begin{lstlisting}
 $\{\mathrm{x} = 1 * P\}$
 $\searrow \{\mathrm{emp}\}$
@@ -284,6 +287,8 @@ $\{\exists y_0, \mathrm{y} = y_0 \wedge \mathrm{x} = 1 \wedge y_0 = 0 * Q[\mathr
 \caption{Eliminating Modality}
 \label{figure:modality}
 \end{figure}
+
+\lstset{numbers=left}
 
 The left column of Figure \ref{figure:modality} shows a simple application of ramification. However, it is not obvious to how to eliminate the modality in its ramification criterion, i.e.
 $$\mathrm{x} = 1 * P \vdash \mathrm{emp} * [\mathrm{y}](\mathrm{y} = 0 * \mathrm{emp} \wand \mathrm{x} = 1 \wedge \mathrm{y} = 0 * Q)$$

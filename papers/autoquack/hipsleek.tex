@@ -1,6 +1,6 @@
 \subsection{Background on HIP/SLEEK}
 HIP is an automated verifier for separation logic, it supports arbitrary user defined predicates and lemmas. While, SLEEK
-is an entailment checker for separation logic, it contains a sound  procedure to decide entailments in separation logic and uses existing solvers like Z3 to reason over pure facts. Together, the HIP/SLEEK verification system \cite{chin:hipsleek} has been used to verify programs manipulating data structures like lists, arrays, trees etc. 
+is an entailment checker for separation logic, it contains a sound  procedure to decide entailments in separation logic and uses existing solvers like Z3 to reason over pure facts. Together, the HIP/SLEEK verification system \cite{chin:hipsleek} has been used to verify programs manipulating data structures like lists, arrays, trees etc.
 
 In HIP, the user only needs to specify the pre and post condition for each method (and loop invariants) and the verifier automatically uses forward reasoning to generate necessary entailments that are checked by SLEEK. Each entailment is of the form $P \vdash Q \scon R$, where the heap from the antecedent $P$ is matched up with the consequent $Q$ and a "frame" $R$ is computed automatically based on the residual state.
 
@@ -16,7 +16,7 @@ data node {$\label{code:nodedefstart}$
   data node right; };$\label{code:nodedefend}$
 
 void mark(node x) { // $\label{code:markstart}\{\p{graph}(\tx{x},\gamma)\}$
-  node l, r; 
+  node l, r;
   if (x == null) return;
   else {
     if (x.val == 1) return;
@@ -52,27 +52,28 @@ Where, $\p{subset\_reach}$ and $\p{eqnot\_reach}$ are uninterpreted relations. T
 
 \subsection{Generating Coq module type}
 
+\lstset{deletekeywords={union}}
 \begin{figure}[t]
   \begin{lstlisting}
 Module Type Mgraphmark.
-  Parameter formula : Type.
-  Parameter valid : formula -> Prop.
-  ...
-  Axiom subgraphupdate_l : forall G v G1 x v1 l r,
-    valid (imp (and (star (graph l G1)
-    (mwand (graph l G) (union (ptto_node x v l r) 
-    (union (graph l G) (graph r G)))))
-    (and (subset_reach G l G1) (and 
-    (eq_notreach G l G1) (and (lookup G x v l r) 
-    (lookup G1 x v1 l r))))) 
-    (union (ptto_node x v1 l r) (union (graph l G1) 
-    (graph r G1)))).
-  ...
+ Parameter formula : Type.
+ Parameter valid : formula -> Prop.
+ ...
+ Axiom subgraphupdate_l : forall G v G1 x v1 l r,
+  valid (imp (and (star (graph l G1)
+  (mwand (graph l G) (union (ptto_node x v l r)
+  (union (graph l G) (graph r G)))))
+  (and (subset_reach G l G1) (and
+  (eq_notreach G l G1) (and (lookup G x v l r)
+  (lookup G1 x v1 l r)))))
+  (union (ptto_node x v1 l r) (union (graph l G1)
+  (graph r G1)))).
+ ...
 End Mgraphmark.
 \end{lstlisting}
 %% \vspace{-8pt}
-\caption{Bigraph marking Coq module type}
+\caption{Bigraph marking Coq module type for HIP/SLEEK}
 \label{fig:hipcoqfile}
 \end{figure}
 
-The lemmas used in HIP/SLEEK are ultimately certified mechanically in Coq. HIP/SLEEK generates a file with module type as shown in figure \ref{fig:hipcoqfile}, this file lists all lemmas that were used during the verification by HIP/SLEEK as axioms. The \texttt{Mgraphmark} module is implemented in Coq and those axioms are verified mechanically. Thus even though we rely on lemmas in HIP/SLEEK for automation our proof is verified end-to-end as we mechanically check all lemmas used by the tool.
+The lemmas used in HIP/SLEEK are ultimately certified mechanically in Coq. HIP/SLEEK generates a file with module type as shown in figure \ref{fig:hipcoqfile}, this file lists all lemmas that were used during the verification by HIP/SLEEK as axioms. The \texttt{Mgraphmark} module is implemented in Coq and those axioms are verified mechanically. Thus even though we rely on lemmas in HIP/SLEEK for automation our proof is verified end-to-end as we mechanically check all lemmas used by the tool. 

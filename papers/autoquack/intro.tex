@@ -5,11 +5,11 @@ tree-like data structures using separation logic
 In recent years, Hobor and Villard introduced the concept of \emph{ramification} as a kind of proof pattern or framework to verify graph-manipulating programs with pen and paper~\cite{hobor:ramification}, but left open the question of how such proofs could be incorporated in a machine-assisted setting.  In this paper, we show how this can be done, and demonstrate the value of our approach by adding ramification to two sizeable separation logic-based verification tools: the Floyd system of the Verified Software Toolchain (VST)~\cite{appel:programlogics} and the HIP/SLEEK program verifier~\cite{chin:hipsleek}.  VST and HIP/SLEEK inhabit quite different points in the design space for verification tools, with VST primarily focused on heavily human-guided verifications with an emphasis on end-to-end machine-checked proofs, and HIP/SLEEK focusing on more automation.  Despite these differences, the vast majority of our Coq code base is shared between them,
 giving us hope that our techniques will be applicable to a variety of other verification tools.
 
-Along the way we make numerous improvements to, and generalizations of, Hobor and Villard's theory.  We introduce a notation for \emph{localization blocks} to visualize ramification more clearly in paper proofs.  We improve their \infrulestyle{Ramify} rule to handle modified program variables and existential quantifiers more gracefully.  We generalize and modularize their model of mathematical graphs.  We expose a rather subtle error due to their use of the standard Knaster-Tarski fixpoint~\cite{tarski:fixpoint} in their recursive definition of spatial graphs.  We provide a sound and general definition for spatial graphs and a more general ``ramification library''.
+\marginpar{Is this too much comparison to H\&V, not enough ``our contributions are''?}Along the way we make numerous improvements to, and generalizations of, Hobor and Villard's theory.  We introduce a notation for \emph{localization blocks} to visualize ramification more clearly in paper proofs.  We improve their \infrulestyle{Ramify} rule to handle modified program variables and existential quantifiers more gracefully.  We generalize and modularize their model of mathematical graphs.  We expose a rather subtle error due to their use of the standard Knaster-Tarski fixpoint~\cite{tarski:fixpoint} in their recursive definition of spatial graphs.  We provide a sound and general definition for spatial graphs and a more general ``ramification library''.
 
-All of our results are machine-checked. % in Coq or HIP/SLEEK.
+All of our results are machine checked. % in Coq or HIP/SLEEK.
 
-\paragraph{Structure of the remainder of this paper}
+{\color{magenta}\paragraph{Structure of the remainder of this paper}
 \begin{itemize}
 \item[\S\ref{sec:orientation}] Example, new notation, new ramify rules, relations
 \item[\S\ref{sec:mathgraph}] Mathematical graphs.  Contributions: computable, compositional, \& general graph library in Coq.  Treatment of null.
@@ -18,3 +18,4 @@ All of our results are machine-checked. % in Coq or HIP/SLEEK.
 \item[\S\ref{sec:hipsleek}] H/S (external axioms).
 \item[\S\ref{sec:related}] Related work, future work, and conclusion
 \end{itemize}
+}
