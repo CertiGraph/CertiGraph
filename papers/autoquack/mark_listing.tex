@@ -60,18 +60,5 @@ v_1 \mathrel{{\stackrel{\gamma~}{\leadsto^{\star}_{0}}}} v_2 & \defeq & \text{re
 \]
 \caption{Clight code and proof sketch for bigraph mark.}
 \label{fig:markgraph}
-\end{figure}
-
-\begin{figure}
-\[
-\begin{array}{lcl}
-\sigma |= P * Q & \defeq & \exists \sigma_1, \sigma_2.~ \sigma_1 \oplus \sigma_2 = \sigma /| \null \\ && ~~ \sigma_1 |= P /| \sigma_2 |= 2\\
-\sigma |= P ** Q & \defeq & \exists \sigma_1, \sigma_2, \sigma_3.~ \sigma_1 \oplus \sigma_2 \oplus \sigma_3 = \sigma /| \null \\ && ~~ \sigma_1 \oplus \sigma_2 |= P /| \sigma_2 \oplus \sigma_3 |= Q\\
-\sigma |= P --* Q & \defeq & \forall \sigma_1, \sigma_2.~ \sigma_1 \oplus \sigma = \sigma_2 /| \null \\ && ~~
-(\sigma_1 |= P) => (\sigma_2 |= Q) \\
-\sigma |= P --o Q & \defeq & \exists \sigma_1, \sigma_2.~ \sigma_1 \oplus \sigma = \sigma_2 /| \null \\ && ~~
-(\sigma_1 |= P) /| (\sigma_2 |= Q) 
-\end{array}
-\]
-\caption{Model for separation logic connectives}
+\vspace{-2ex}
 \end{figure}

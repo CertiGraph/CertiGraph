@@ -1,6 +1,6 @@
 \input{mark_listing.tex}
 
-In Figure~\ref{fig:markgraph} we put the code and proof sketch of the classic \li{mark} algorithm that visits and colors every reachable node in a heap-represented graph.  The \li{mark} algorithm is good to start with because it is complex enough to require some care to verify while being simple enough that the invariants are straightforward.  In \S\ref{sec:application} we will discuss more complex examples that \emph{e.g.} changing the graph by adding/changing/removing edges and/or vertices.
+In Figure~\ref{fig:markgraph} we put the code and proof sketch of the classic \li{mark} algorithm that visits and colors every reachable node in a heap-represented graph.  The \li{mark} algorithm is good to start with because it is complex enough to require some care to verify while being simple enough that the invariants are straightforward.  In \S\ref{sec:application} we will discuss more complex examples that \emph{e.g.} add/chang/remove edges and/or vertices.
 
 The code in Figure~\ref{fig:markgraph} is written in Clight~\cite{blazy:clight}, an input language to the CompCert certified compiler~\cite{leroy:compcert}, which compiles our code exactly as written.
 The paper-format verification sketch for \li{mark} in Figure~\ref{fig:markgraph} is extracted from
@@ -15,10 +15,29 @@ The specification is for full functional correctness, stated using \emph{mathema
 The \emph{spatial} \p{graph} predicate describes how the mathematical graph $\gamma$ is implemented in the heap.  Until~\S\ref{sec:spacegraph} it is enough to know that \p{graph} satisfies the fold/unfold relationship in
 equation \eqref{eqn:bigraphintrofoldunfold}, located just under the code in Figure~\ref{fig:markgraph}.
 
-This fold/unfold relationship has several interesting points.  
-First, as we explain in \S\ref{sec:fixpointfail}, it is a terrible mistake to write \eqref{eqn:bigraphintrofoldunfold} as a definition using $\stackrel{\Delta}{=}$ rather than as a biimplication using $<=>$.  Second, as in Hobor and Villard, \eqref{eqn:bigraphintrofoldunfold} uses the less-standard ``overlapping conjunction'' $\ocon$ of separation logic.  The semantics of $\sigma |= P \ocon Q$ is that the state $\sigma$ divides into \emph{three} disjoint parts $\sigma_1$, $\sigma_2$, and $\sigma_3$ such that $\sigma_1 \oplus \sigma_2 |= P$ and $\sigma_2 \oplus \sigma_3 |= Q$.  That is, $P$ and $Q$ share the existentially-quantified substate $\sigma_2$, which we use in the unfolded side of \eqref{eqn:bigraphintrofoldunfold} to indicate that all portions of the graph can overlap (\emph{e.g.}, nodes in the left subgraph can also be in the right subgraph or even be the root $x$).  The presence of the unspecified sharing indicated by the $\ocon$ connective is exactly why graph-manipulating algorithms are so hard to verify (\emph{e.g.}, it is hard to apply the \infrulestyle{Frame} rule).  Third \eqref{eqn:bigraphintrofoldunfold} includes an example of a consequence of how an industrial-strength setting complicates verification.  Lines~\ref{code:nodedefstart}--\ref{code:nodedefend} define the data type \li{Node} used by \li{mark}.  The \li{_Allignas($n$)} directives force the compiler to align fields on $n$-byte boundaries.  As explained in \S\ref{sec:foldunfold}, this alignment is necessary in C-like memory models to prove the fold-unfold relationship \eqref{eqn:bigraphintrofoldunfold}, which is why \eqref{eqn:bigraphintrofoldunfold} includes an alignment restriction $x~\mathsf{mod}~16 = 0$ and an existentially-quantified ``blank'' second field for the root $x \mapsto m,-,l,r$.  (In our Floyd proofs the alignment restriction and blank second field are nicely hidden ``behind the scenes'', but they are there if you unfold the definitions far enough.)
+\begin{figure}
+\[
+\begin{array}{lcl}
+\sigma |= P * Q & \defeq & \exists \sigma_1, \sigma_2.~ \sigma_1 \oplus \sigma_2 = \sigma /| \null \\ && ~~ \sigma_1 |= P /| \sigma_2 |= 2\\
+\sigma |= P ** Q & \defeq & \exists \sigma_1, \sigma_2, \sigma_3.~ \sigma_1 \oplus \sigma_2 \oplus \sigma_3 = \sigma /| \null \\ && ~~ \sigma_1 \oplus \sigma_2 |= P /| \sigma_2 \oplus \sigma_3 |= Q\\
+\sigma |= P --* Q & \defeq & \forall \sigma_1, \sigma_2.~ \sigma_1 \oplus \sigma = \sigma_2 /| \null \\ && ~~
+(\sigma_1 |= P) => (\sigma_2 |= Q) \\
+\sigma |= P --o Q & \defeq & \exists \sigma_1, \sigma_2.~ \sigma_1 \oplus \sigma = \sigma_2 /| \null \\ && ~~
+(\sigma_1 |= P) /| (\sigma_2 |= Q)
+\end{array}
+\]
+\caption{Separation logic connectives; $\oplus$ is the join operation on states, usually some kind of disjoint union on heaps}
+\label{fig:seplogsem}
+\vspace{-2ex}
+\end{figure}
 
-Our \textbf{fifth} improvement on Hobor and Villard is that the postcondition of \li{mark} is specified \emph{relationally}, \emph{i.e.}
+This fold/unfold relationship has several interesting points.  
+First, as we explain in~\S\ref{sec:fixpointfail}, it is a terrible mistake to write~\eqref{eqn:bigraphintrofoldunfold} as a definition using $\stackrel{\Delta}{=}$ rather than as a biimplication using $<=>$.  Second, \eqref{eqn:bigraphintrofoldunfold} uses the ``overlapping conjunction'' $\ocon$ of separation logic; informally $P ** Q$ means that $P$ and $Q$ may overlap in the heap (\emph{e.g.}, nodes in the left subgraph can also be in the right subgraph or even be the root $x$).  The presence of the unspecified sharing indicated by the $\ocon$ connective is exactly why graph-manipulating algorithms are so hard to verify (\emph{e.g.}, it is hard to apply the \infrulestyle{Frame} rule).  Readers can find the semantics of the separation logic connectives we use in Figure~\ref{fig:seplogsem}.
+Third, \eqref{eqn:bigraphintrofoldunfold} includes an example of a consequence of how an industrial-strength setting complicates verification.  Lines~\ref{code:nodedefstart}--\ref{code:nodedefend} define the data type \li{Node} used by \li{mark}.  The \li{_Allignas($n$)} directives force the compiler to align fields on $n$-byte boundaries.  As explained in \S\ref{sec:foldunfold}, this alignment is necessary in C-like memory models to prove the fold-unfold relationship \eqref{eqn:bigraphintrofoldunfold}, which is why \eqref{eqn:bigraphintrofoldunfold} includes an alignment restriction $x~\mathsf{mod}~16 = 0$ and an existentially-quantified ``blank'' second field for the root $x \mapsto m,-,l,r$.
+
+%(In our Floyd proofs the alignment restriction and blank second field are nicely hidden ``behind the scenes'', but they are there if you unfold the definitions far enough.)
+
+{\color{magenta} One nice improvement from Hobor and Villard is that the postcondition of \li{mark} is specified \emph{relationally}, \emph{i.e.}
 \[
 \{\exists \gamma'.~ \p{graph}(\li{x},\gamma') /| \m{mark}(\gamma, \li{x}, \gamma')\}
 \]
@@ -26,12 +45,10 @@ instead of \emph{functionally}, \emph{i.e.}
 \[
 \{\p{graph}\big(\li{x},\m{mark}(\gamma, \li{x})\big)\}
 \]
-In both cases a mathematical definition $\m{mark}$ is used; in the first case it is a relation that specifies that $\gamma'$ is the result of correctly marking $\gamma$ from \li{x}, whereas in the second it is a function that computes the result of marking $\gamma$ from \li{x}. For both practical and theoretical reasons a relational approach is better.  Practically, it is remarkably painful to define computational functions over graphs in a proof assistant like Coq.  Substantial portions of this pain are even unnecessary: for example, Coq requires that all functions terminate, a nontrivial proof obligation over cyclic structures like graphs, but our verification of \li{mark} is only for partial correctness.  In contrast, defining relations is much easier because \emph{e.g.} one can use quantifiers and do not have to prove termination.  Theoretically, relations are preferable because they are more general (\emph{e.g.} they allow some ``inputs'' to not have ``outputs'', \emph{i.e.} be partial; or conversely allow multiple outputs from a single input, \emph{i.e.} in nondeterministic settings) and more compositional (\emph{i.e.}, we can reuse relations and associated lemmas in other verifications).
-We take advantage of compositionality by using $\m{mark}(\gamma,x,\gamma') /| \ldots$ to specify both our ``spanning tree'' and ``graph copy'' algorithms in \S\ref{sec:application}, which also mark nodes while carrying out their primary task.
-
-The actual definition of the $\m{mark}$ relation is straightforward.  Our mathematical graphs admit natural definitions of reachability, and so $\m{mark}(\gamma,x,\gamma')$ means that
-{\color{magenta} SNIP}
-That is, $\gamma$ and $\gamma'$ have the same vertices and edges but the mark bits in $\gamma'$ have been set to 1 (marked) in all nodes $x'$ reachable from $x$ in $\gamma$ along an unmarked path.  Note the use of the $\forall$ quantifier, permitted because \m{mark} is a relation.
+In both cases a mathematical definition $\m{mark}$ is used, but in the first case it is a relation that specifies that~$\gamma'$ is the result of correctly marking~$\gamma$ from~\li{x}, whereas in the second it is a function that computes the result of marking~$\gamma$ from~\li{x}. For both practical and theoretical reasons a relational approach is better.  Practically, it is remarkably painful to define computational functions over graphs in a proof assistant like Coq.  Substantial portions of this pain are overkill: for example, Coq requires that all functions terminate, a nontrivial proof obligation over cyclic structures like graphs, but our verification of \li{mark} is only for partial correctness.  In contrast, defining relations is much easier because \emph{e.g.} one can use quantifiers and do not have to prove termination.  Theoretically, relations are preferable because they are more general (\emph{e.g.} they allow some ``inputs'' to not have ``outputs'', \emph{i.e.} be partial; or conversely allow multiple outputs from a single input, \emph{i.e.} in nondeterministic settings) and more compositional (\emph{i.e.}, we can reuse relations and associated lemmas in other verifications).
+We take advantage of compositionality by using $\m{mark}(\gamma,x,\gamma') /| \ldots$ to specify both our ``spanning tree'' and ``graph copy'' algorithms in~\S\ref{sec:application}, which also mark nodes while carrying out their primary task.
+The $\m{mark}$ and $\m{mark1}$ relations used in the proof are straightforwardly defined at the bottom of Figure~\ref{fig:markgraph}.
+}
 
 Turning to the body of the verification (lines~\ref{code:inmark}--\ref{code:outmark}), our \textbf{sixth} improvement over Hobor and Villard is perhaps the most readily apparent visually: blocks of proof script bracketed by the symbols $\searrow$ and $\swarrow$, such as lines~\ref{code:beforerootmark}--\ref{code:afterrootmark}.  We call a bracketed set of lines like this a ``localization block'', and it is a new paper-based notation/visualization for Hobor and Villard's concept of \emph{ramification}.  The intuitive idea is that we zoom in from a larger ``global'' context into a smaller ``local'' one.  After verifying some commands locally to arrive at the local postcondition we zoom back out to the global postcondition. In the case of these lines, you can imagine unfolding the \p{graph} predicate in line~\ref{code:globalbeforerootmark} using equation \eqref{eqn:bigraphintrofoldunfold} and then zooming in to the root node \li{x} for lines~\ref{code:beforerootmark}--\ref{code:afterrootmark}, before zooming back out in line~\ref{code:globalafterrootmark}.  Although we do not use this power here, localization blocks can be safely nested.  We will define localization blocks formally in \S\ref{sec:localizations}.
 This notation was inspired by the way we mechanized our theories in \S\ref{vst}, but we believe it to be useful outside of mechanized contexts.
@@ -43,13 +60,7 @@ Our \textbf{seventh} improvement is best illustrated by lines~\ref{code:markbefo
 
 {\color{magenta} 
 existentials \S\ref{sec:existentials} 4.2. Using existential quantifier in post condition.
-}
-
-Our \textbf{nineth} and final improvement over Hobor and Villard is that, not content with verifying \li{mark} with one mechanized verification tool (VST), we also verify it using the HIP/SLEEK system~\cite{chin:hipsleek}.  HIP/SLEEK is at a very 
- 
- than VST, with on the one hand a much higher emphasis on automation but on the other no machine-checked soundness proof.  
- 
- 
+} 
  
 \subsection{Frames and ramifications are localizations}
 \label{sec:localizations}
