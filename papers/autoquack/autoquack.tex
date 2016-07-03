@@ -40,7 +40,67 @@
 \newcommand{\doi}[1]{doi:~\href{http://dx.doi.org/#1}{\Hurl{#1}}}   % print a hyperlinked DOI
 \usepackage{mathtools}
 
+\newcommand\hide[1]{}
+
+\newcommand{\scon}{\mathbin{\varstar}}
+\newcommand{\ocon}{%
+  \mathbin{\mbox{$\mathrlap{\cup}\hspace*{.15em}
+      \raisebox{.01em}[0ex][0ex]{$\scon$}$\hspace*{.07em}}}}
+\newcommand{\wand}{%
+ \mathrel{\mbox{$\hspace*{-0.03em}\mathord{-}\hspace*{-0.66em}
+     \mathord{-}\hspace*{-0.36em}\mathord{\scon}$\hspace*{-0.005em}}}}
+\newcommand{\septraction}{%
+  \mathrel{\mbox{$\hspace*{-0.03em}\mathord{-}\hspace*{-0.66em}
+  \mathord{-}\hspace*{-0.155em}\mathord{\ocircle\hspace*{-.66em}\scon}$\hspace*{0.05em}}}}
+\newcommand{\magicwand}{\wand}
+\newcommand{\defeq}{\mathbin{\stackrel{\Delta}{=}}}
+
 %\input mathlig
+  \mathlig{--*}{\mathrel{\magicwand}}
+  \mathlig{--o}{\mathrel{\septraction}}
+  \mathlig{|->}{\mathrel{\mapsto}} % tight points-to
+  \mathlig{<=>}{\mathrel{\Leftrightarrow}} % equivalence of expressions
+  \mathlig{==>}{\mathrel{\Rightarrow}} % meta implication
+\hide{
+  \mathlig{||-}{\mathbin{\Vdash}}
+  \mathlig{<==>}{\mathrel{\Longleftrightarrow}} % equivalence
+  \mathlig{--->}{\mathrel{\longrightarrow}} % transitions
+  % 3 chars
+  %\mathlig{::=}{\mathrel{\Coloneqq}}
+  \mathlig{-->}{\mathrel{\rightarrow}} % set function space
+  \mathlig{<->}{\mathrel{\leftrightarrow}}
+  \mathlig{-|}{\dashv}
+  \mathlig{--`}{\mathrel{\rightharpoonup}} % partial function
+  \mathlig{===}{\mathrel{\equiv}} % syntactic equality
+  \mathlig{=/=}{\mathrel{\not\equiv}} % not syntactic equality
+  \mathlig{|/-}{\nvdash} % not entailment
+  \mathlig{|/=}{\nvDash} % not forces
+  \mathlig{|||}{\mathrel{|}} % grammar
+  \mathlig{-|-}{\mathrel{\mathrlap{\dashv} \hspace{5pt} \vdash}} % entails
+  \mathlig{||=}{\VDash}
+  \mathlig{||-}{\Vdash}
+  % 2 chars
+  \mathlig{==}{\mathrel{\stackrel{\smash{\scriptscriptstyle\mathrm{def}}}{=}}}
+% \mathlig{==}{\mathrel{\triangleq}}
+}
+  \mathlig{/|}{\mathbin{\wedge}} % additive conjunction
+  \mathlig{|/}{\mathbin{\vee}} % additive disjunction
+  \mathlig{|-}{\mathrel{\vdash}} % entails
+  \mathlig{|=}{\vDash} % models
+\hide{
+  \mathlig{/=}{\mathrel{\neq}} % non-equality expression
+  \mathlig{<=}{\mathord{\leq}} % less than or equal expression
+  \mathlig{=>}{\mathrel{\Rightarrow}} % implication
+  \mathlig{|>}{\vartriangleright}
+  \mathlig{<|}{\vartriangleleft}
+  \mathlig{[|}{\llbracket} % open double bracket
+  \mathlig{|]}{\rrbracket} % close double bracket
+  \mathlig{->}{\mathord{\rightarrow}} % field dereference
+  \mathlig{<-}{\mathord{\leftarrow}} % assignement
+}
+
+  \mathlig{**}{\mathbin{\ocon}}
+  \mathlig{*}{\mathbin{\scon}}
 
 %\usepackage{common}
 %\usepackage{seplog}
@@ -63,14 +123,6 @@
 
 %\lstset{language=C,basicstyle=\small,mathescape=true,columns=fullflexible}
 
-\newcommand{\scon}{\mathbin{\varstar}}
-\newcommand{\ocon}{%
-  \mathbin{\mbox{$\mathrlap{\cup}\hspace*{.15em}
-      \raisebox{.01em}[0ex][0ex]{$\scon$}$\hspace*{.07em}}}}
-\newcommand{\wand}{%
- \mathrel{\mbox{$\hspace*{-0.03em}\mathord{-}\hspace*{-0.66em}
-     \mathord{-}\hspace*{-0.36em}\mathord{\scon}$\hspace*{-0.005em}}}}
-\newcommand{\defeq}{\mathbin{\stackrel{\Delta}{=}}}
 
 \begin{document}
 
@@ -90,8 +142,6 @@
 We show how to mechanically verify programs manipulating data structures with intrinsic sharing such as heap-represented graphs.  We upgrade the theory of ramification to better support modified program variables and existential quantifiers in assertions.  We develop a modular and general setup for reasoning about mathematical graphs and show
 how to connect this setup to a general theory for graphs in separation logic.  We connect our theories to two verification tools with different levels of automation and use them to verify several canonical graph algorithms. Our proofs are entirely machine-checked in Coq.
 \end{abstract}
-
-\newcommand\hide[1]{}
 
 \section{Introduction}
 Over the last fifteen years great strides have been made in automating verifications of programs that manipulate

@@ -20,6 +20,8 @@
 \newcommand{\FV}{\ensuremath{\mathsf{FreeVar}}}
 \newcommand{\pguards}[1]{\llbracket #1 \rrbracket}
 
+
+
 \input{mark_listing.tex}
 
 In Figure~\ref{fig:markgraph} we put the code and proof sketch of the classic \li{mark} algorithm that visits and colors every reachable node in a heap-represented graph.  The \li{mark} algorithm is good to start with because it is complex enough to require some care to verify while being simple enough that the invariants are straightforward.  In \S\ref{sec:application} we will discuss more complex examples that do the kinds of things \li{mark} does not (\emph{e.g.} structurally changing the graph by adding/changing/removing edges and/or vertices).  Hobor and Villard developed a modular way to verify graph-manipulating programs called ``ramification'' and the outline of our verification sketch for \li{mark} draws heavily their first example~\cite{hobor:ramification}.  However, we have made many improvements to both their theory and practice as we detail below.
@@ -33,14 +35,7 @@ The specification we certify (lines \ref{code:markstart} and \ref{code:markend})
 The specification is for full functional correctness and stated incorporating some \emph{mathematical} graphs $\gamma$.  Our \textbf{third} improvement on Hobor and Villard is that the definition of $\gamma$ we employ is quite general; we defer it until \S\ref{sec:mathgraph}.  For now consider $\gamma$ to be a function that maps a vertex $v \in V$ to triples $(m,l,r)$, where $m$ is a ``color'' bit (0 or 1) and $\{l,r\} \subseteq V \uplus \{0\}$ are the neighbors of $v$.  %Neighbors can take a non-$V$ ``null'' value.
 
 The \p{graph} predicate is \emph{spatial}, \emph{i.e.} defined with separation logic operators such as maps-to $|->$, and explains how the mathematical graph $\gamma$ is actually implemented in the heap.  Our \textbf{fourth} improvement on Hobor and Villard is that our spatial \p{graph} predicate is also quite general, so we defer it until \S\ref{sec:spacegraph}.  For now it is enough to know that \p{graph} satisfies the following fold/unfold relationship:
-\begin{equation}
-\label{eqn:bigraphintrofoldunfold}
-\begin{array}{@{}l@{}}
-\p{graph}(x, \gamma) ~ <=> ~ (x = 0 \wedge \p{emp}) \vee \null \\
-\quad \exists m,l,r.~ \gamma(x)=(m,l,r) \wedge x~\mathsf{mod}~16 = 0 \wedge \null \\
-\quad \qquad \quad ~~ x \mapsto m,-,l,r \ocon \p{graph}(l, \gamma) \ocon \p{graph}(r, \gamma)
-\end{array}
-\end{equation}
+{\color{magenta} SNIP}
 This fold/unfold relationship has several interesting points.  
 First, as we explain in \S\ref{sec:fixpointfail}, it is a terrible mistake to write \eqref{eqn:bigraphintrofoldunfold} as a definition using $\stackrel{\Delta}{=}$ rather than as a biimplication using $<=>$.  Second, as in Hobor and Villard, \eqref{eqn:bigraphintrofoldunfold} uses the less-standard ``overlapping conjunction'' $\ocon$ of separation logic.  The semantics of $\sigma |= P \ocon Q$ is that the state $\sigma$ divides into \emph{three} disjoint parts $\sigma_1$, $\sigma_2$, and $\sigma_3$ such that $\sigma_1 \oplus \sigma_2 |= P$ and $\sigma_2 \oplus \sigma_3 |= Q$.  That is, $P$ and $Q$ share the existentially-quantified substate $\sigma_2$, which we use in the unfolded side of \eqref{eqn:bigraphintrofoldunfold} to indicate that all portions of the graph can overlap (\emph{e.g.}, nodes in the left subgraph can also be in the right subgraph or even be the root $x$).  The presence of the unspecified sharing indicated by the $\ocon$ connective is exactly why graph-manipulating algorithms are so hard to verify (\emph{e.g.}, it is hard to apply the \infrulestyle{Frame} rule).  Third \eqref{eqn:bigraphintrofoldunfold} includes an example of a consequence of how an industrial-strength setting complicates verification.  Lines~\ref{code:nodedefstart}--\ref{code:nodedefend} define the data type \li{Node} used by \li{mark}.  The \li{_Allignas($n$)} directives force the compiler to align fields on $n$-byte boundaries.  As explained in \S\ref{sec:foldunfold}, this alignment is necessary in C-like memory models to prove the fold-unfold relationship \eqref{eqn:bigraphintrofoldunfold}, which is why \eqref{eqn:bigraphintrofoldunfold} includes an alignment restriction $x~\mathsf{mod}~16 = 0$ and an existentially-quantified ``blank'' second field for the root $x \mapsto m,-,l,r$.  (In our Floyd proofs the alignment restriction and blank second field are nicely hidden ``behind the scenes'', but they are there if you unfold the definitions far enough.)
 
@@ -56,13 +51,7 @@ In both cases a mathematical definition $\m{mark}$ is used; in the first case it
 We take advantage of compositionality by using $\m{mark}(\gamma,x,\gamma') /| \ldots$ to specify both our ``spanning tree'' and ``graph copy'' algorithms in \S\ref{sec:application}, which also mark nodes while carrying out their primary task.
 
 The actual definition of the $\m{mark}$ relation is straightforward.  Our mathematical graphs admit natural definitions of reachability, and so $\m{mark}(\gamma,x,\gamma')$ means that
-\[
-%\m{mark}(\gamma,x,\gamma') ~~ \stackrel{\Delta}{=} ~~
-\forall v.~ \gamma'(v) = \begin{cases}
-(1,l,r) & \text{when } x {\stackrel{\gamma}{\leadsto}}^{*}_{0} v \text{ and } \gamma(v) = (0,l,r) \\
-\gamma(v) & \text{otherwise}
-\end{cases}
-\]
+{\color{magenta} SNIP}
 That is, $\gamma$ and $\gamma'$ have the same vertices and edges but the mark bits in $\gamma'$ have been set to 1 (marked) in all nodes $x'$ reachable from $x$ in $\gamma$ along an unmarked path.  Note the use of the $\forall$ quantifier, permitted because \m{mark} is a relation.
 
 Turning to the body of the verification (lines~\ref{code:inmark}--\ref{code:outmark}), our \textbf{sixth} improvement over Hobor and Villard is perhaps the most readily apparent visually: blocks of proof script bracketed by the symbols $\searrow$ and $\swarrow$, such as lines~\ref{code:beforerootmark}--\ref{code:afterrootmark}.  We call a bracketed set of lines like this a ``localization block'', and it is a new paper-based notation/visualization for Hobor and Villard's concept of \emph{ramification}.  The intuitive idea is that we zoom in from a larger ``global'' context into a smaller ``local'' one.  After verifying some commands locally to arrive at the local postcondition we zoom back out to the global postcondition. In the case of these lines, you can imagine unfolding the \p{graph} predicate in line~\ref{code:globalbeforerootmark} using equation \eqref{eqn:bigraphintrofoldunfold} and then zooming in to the root node \li{x} for lines~\ref{code:beforerootmark}--\ref{code:afterrootmark}, before zooming back out in line~\ref{code:globalafterrootmark}.  Although we do not use this power here, localization blocks can be safely nested.  We will define localization blocks formally in \S\ref{sec:localizations}.
@@ -98,7 +87,7 @@ Hobor and Villard observed that \infrulestyle{Frame} is bit rigid because it for
 {\begin{array}{c}(L_2 --* G_2) \\ \textrm{ignores} \\ \MV(c) \end{array}} \qquad \qquad \qquad
 %{$\begin{array}{l}\m{fv}(Q --* R') \cap \null \\ \m{modif}(c) = \emptyset\end{array}$} \qquad \qquad \qquad
 \]
-That is, we can verify a ``global'' specification $\{G_1\}~c~\{G_2\}$ by combining a ``local'' specification $\{L_1\}~c~\{L_2\}$ with a \emph{ramification entailment} $G_1 |- L_1 * (L_2--* G_2)$.  This entailment uses the ``magic wand'' operator $--*$ of separation logic\footnote{$-*$ is the adjunct of $*$, \emph{i.e.} $(P * Q |- R) <=> (P |- Q -* R)$.} to express a notion of ``state update'': replace $L_1$ with $L_2$ inside $G_1$ to reach $G_2$.  Essentially the ramification entailment ensures that the change in state specified locally fits properly into the global context.  In exchange for proving the ramification entailment, a verifier can use \infrulestyle{Ramify} at any time, \emph{i.e.} they need not worry about syntactically matching their assertions with the $*$ in the \infrulestyle{Frame} rule.
+That is, we can verify a ``global'' specification $\{G_1\}~c~\{G_2\}$ by combining a ``local'' specification $\{L_1\}~c~\{L_2\}$ with a \emph{ramification entailment} $G_1 |- L_1 * (L_2--* G_2)$.  This entailment uses the ``magic wand'' operator $--*$ of separation logic\footnote{$--*$ is the adjunct of $*$, \emph{i.e.} $(P * Q |- R) <=> (P |- Q --* R)$.} to express a notion of ``state update'': replace $L_1$ with $L_2$ inside $G_1$ to reach $G_2$.  Essentially the ramification entailment ensures that the change in state specified locally fits properly into the global context.  In exchange for proving the ramification entailment, a verifier can use \infrulestyle{Ramify} at any time, \emph{i.e.} they need not worry about syntactically matching their assertions with the $*$ in the \infrulestyle{Frame} rule.
 
 We are now ready to give a formal meaning to the ``localization'' pattern employed in Figure~\ref{fig:markgraph}.  When we write:
 %\begin{minipage}{.25\textwidth}
@@ -109,7 +98,7 @@ $\ramify(i)$      $c_1$; ... ; $c_n$;
 // $\label{code:outlocal}\swarrow \{ L_2 \}$
 // $\label{code:postlocal}\{ G_2 \}$
 \end{lstlisting}
-we mean apply the \infrulestyle{Ramify} rule with $G_1 |- L_1 * (L_2 -* G_2)$.
+we mean apply the \infrulestyle{Ramify} rule with $G_1 |- L_1 * (L_2 --* G_2)$.
 An advantage of this notation is crystal clarity on the predicates used in the ramification entailment.  For convenience, the optional $\ramify(i)$ specification can reference an equation or lemma number that solves the ramification entailment.  For example, in Figure \ref{fig:markgraph} line \ref{code:markram2} references Lemma \ref{lem:updategraphnode} whereas we omit the ramification entailment around line \ref{code:markram1} since the heap is unchanged.
 If we wish to save a line or two we can compress \emph{e.g.} the line pairs \ref{code:prelocal}--\ref{code:inlocal} and \ref{code:outlocal}--\ref{code:postlocal}
 to the single lines $\{ G_1 \} \searrow \{ L_1 \}$ and $\{ G_2 \} \swarrow \{ L_2 \}$ without sacrificing clarity.
@@ -179,15 +168,15 @@ Now consider using ramification to verify this program:
 \end{lstlisting}
 Suppose that the other (elided) lines of the program make localization desirable, even though it is overkill for a single assignment.  The key issue is that the program variable {\li{x}} appears in all four positions in the ramification entailment
 \[
-(\li{x} = 5 /| A) \vdash (\li{x} = 5 /| B) * \big((\li{x} = 6 /| C) -* (\li{x} = 6 /| D)\big)
+(\li{x} = 5 /| A) \vdash (\li{x} = 5 /| B) * \big((\li{x} = 6 /| C) --* (\li{x} = 6 /| D)\big)
 \]
-One problem is that $(\li{x} = 6 /| C) -* (\li{x} = 6 /| D)$ does \textbf{not} ignore the modified program variable \tx{x}, preventing us from applying the \infrulestyle{Ramify} rule.  Intuitively, the stability side condition on the \infrulestyle{Ramify} rule is a bit too strong since it prevents us from mentioning variables in the postconditions that \textbf{have} been modified by code $c$.
+One problem is that $(\li{x} = 6 /| C) --* (\li{x} = 6 /| D)$ does \textbf{not} ignore the modified program variable \tx{x}, preventing us from applying the \infrulestyle{Ramify} rule.  Intuitively, the stability side condition on the \infrulestyle{Ramify} rule is a bit too strong since it prevents us from mentioning variables in the postconditions that \textbf{have} been modified by code $c$.
 
 The obvious thing to try is to weaken the side condition in \infrulestyle{Ramify} to $\big(\FV(G_2) \cap \MV(c)\big) \subseteq \FV(L_2)$, the idea being that information about modified program variables mentioned in the local postcondition $L_2$ can be carried to the global postcondition $G_2$.  Unfortunately, this idea is unsound because \li{x} cannot simultaneously be both~5 and~6, \emph{i.e.} the above entailment is vacuous.  A better idea is: % the following :
 \[
 \infrule{Ramify-P (Program variables)}
 {\{ L_1 \} ~ c ~ \{L_2 \} \\
- G_1 \vdash L_1 * \pguards{c}  (L_2 -* G_2)}
+ G_1 \vdash L_1 * \pguards{c}  (L_2 --* G_2)}
 {\{ G_1 \} ~ c ~ \{ G_2 \}}{}
 \]
 The ramification entailment now incorporates a new (universal/boxy) modal operator $\pguards{c}$.  The intuitive meaning of $\pguards{c}$ is that program variables modified by command $c$ can change value inside its scope.    Note that it is vital that $L_2$ appears as the antecedent of a (spatial) implication since the change in program variables is universally quantified.  This means that if we want to say anything specific about modified program variables in the global postcondition $G_2$ then we had better say something about them in the local postcondition $L_2$.
@@ -196,7 +185,7 @@ Let us return to our earlier entailment:
 \[
 \begin{array}{l}
 (\li{x} = 5 /| A) \vdash (\li{x} = 5 /| B) * \null \\
-~~ \pguards{\li{...; x = x + 1; ...;}} \big((\li{x} = 6 /| C) -* (\li{x} = 6 /| D)\big)
+~~ \pguards{\li{...; x = x + 1; ...;}} \big((\li{x} = 6 /| C) --* (\li{x} = 6 /| D)\big)
 \end{array}
 \]
 Since \li{x} is modified, its value can change from the first line, in which \li{x} must be 5, to the second, in which \li{x} must be 6.
@@ -214,15 +203,15 @@ Note that \infrulestyle{Ramify-P} has no free variable side condition, which is 
 \[
 \infrule{Solve Ramify-P}
 {G_1 |- L_1 * F \\
-{\color{magenta} F |- L_2 -* G_2}}
-{G_1 \vdash L_1 * \pguards{c}  (L_2 -* G_2)}{F \textrm{ ignores } \MV(c)} \qquad \qquad \qquad \qquad
+{\color{magenta} F |- L_2 --* G_2}}
+{G_1 \vdash L_1 * \pguards{c}  (L_2 --* G_2)}{F \textrm{ ignores } \MV(c)} \qquad \qquad \qquad \qquad
 \]
 That is, we can handle the $\pguards{c}$ by breaking apart the single entailment into a pair.  Using two entailments allows modified program variables to change between the preconditions and postconditions.  To connect the pair, we must choose a suitable predicate $F$ that ignores modified variables in $c$. Finding a suitable $F$ and proving the associated entailments can be tricky in the abstract but in practice is guided by using a ``ramification library'' as given in \S\ref{sec:ramifylib}.
 
 With \infrulestyle{Ramify-P} and \infrulestyle{Solve Ramify-P} we can prove the \infrulestyle{Frame} rule with its canonical side condition as follows:
 \[
-\infrule{}{\raisebox{1.4ex}{$\infrule{}{P * F |- P * F \\ F |- Q -* (Q * F)}
-{\raisebox{-4pt}[0pt][0pt]{$P * F |- P * \pguards{c}\big(Q -* (Q * F)\big)$}}
+\infrule{}{\raisebox{1.4ex}{$\infrule{}{P * F |- P * F \\ F |- Q --* (Q * F)}
+{\raisebox{-4pt}[0pt][0pt]{$P * F |- P * \pguards{c}\big(Q --* (Q * F)\big)$}}
 {\hspace{-1.1ex}\raisebox{0.9ex}{$\begin{array}{c}F \text{ ignores} \\ \MV(c)\end{array}$}}$}
 \\ \{P\}~c~\{Q\}}
 {\{P * F\}~c~\{Q * F\}}
@@ -265,32 +254,32 @@ But:
 \end{lstlisting}
 
 \Rule{RAM-P-FRAME }
-{G \vdash L * \Box^{\llbracket c \rrbracket} (L' -* G') \\
+{G \vdash L * \Box^{\llbracket c \rrbracket} (L' --* G') \\
 F \text{ is stable w.r.t. } \MV(c) \\}
-{G * F \vdash L * \Box^{\llbracket c \rrbracket} (L' -* G' * F) }
+{G * F \vdash L * \Box^{\llbracket c \rrbracket} (L' --* G' * F) }
 
 \Rule{RAM-P-SPLIT }
-{G_1 \vdash L_1 * \Box^{\llbracket c \rrbracket} (L_1' -* G_1') \\
-G_2 \vdash L_2 * \Box^{\llbracket c \rrbracket} (L_2' -* G_2') \\}
-{G_1 * G_2 \vdash L_1 * L_2 * \Box^{\llbracket c \rrbracket} (L_1' * L_2' -* G_1' * G_2') }
+{G_1 \vdash L_1 * \Box^{\llbracket c \rrbracket} (L_1' --* G_1') \\
+G_2 \vdash L_2 * \Box^{\llbracket c \rrbracket} (L_2' --* G_2') \\}
+{G_1 * G_2 \vdash L_1 * L_2 * \Box^{\llbracket c \rrbracket} (L_1' * L_2' --* G_1' * G_2') }
 
 \[\text{UNSOUND-RAM-Q-SPLIT}\]
 \Rule{}
-{G_1 \vdash L_1 * (\exists x, L_1' (x) -* \exists x, G_1'(x)) \\
-G_2 \vdash L_2 * (\exists x, L_2' (x) -* \exists x, G_2'(x)) \\}
-{G_1 * G_2 \vdash L_1 * L_2 * (\exists x, L_1'(x) * L_2'(x) -* \exists x, G_1'(x) * G_2'(x)) }
+{G_1 \vdash L_1 * (\exists x, L_1' (x) --* \exists x, G_1'(x)) \\
+G_2 \vdash L_2 * (\exists x, L_2' (x) --* \exists x, G_2'(x)) \\}
+{G_1 * G_2 \vdash L_1 * L_2 * (\exists x, L_1'(x) * L_2'(x) --* \exists x, G_1'(x) * G_2'(x)) }
 
 
 \[
 \infrule{Ramify-Q}
 {\{ L \} ~ c ~ \{\exists x.~ L' \} \\
- G \vdash L * \big(\forall x.~ (L' -* G')\big)}
+ G \vdash L * \big(\forall x.~ (L' --* G')\big)}
 {\{ G \} ~ c ~ \{ \exists x.~G' \}}{}
 \]
 
 \Rule{Ramification-PQ}
 {\{ L \} c \{ \exists x, L' (x) \} \\
- G \vdash L * \Box^{\llbracket c \rrbracket} (\forall x, L' (x) -* G' (x)) \\}
+ G \vdash L * \Box^{\llbracket c \rrbracket} (\forall x, L' (x) --* G' (x)) \\}
 {\{ G \} c \{ \exists x, G' (x)\}}
 
 
@@ -305,16 +294,16 @@ Proof of \infrulestyle{Ramify-P} from \infrulestyle{Frame} and \infrulestyle{Con
 \[
 \begin{array}{c}
 \infrule{}{
-  G_1 |- L_1 * \pguards{c}(L_2 -* G_2) \\
+  G_1 |- L_1 * \pguards{c}(L_2 --* G_2) \\
   \infrule{}{\{L_1\}~c~\{L_2\}}
-            {\{L_1 * \pguards{c}(L_2 -* G_2)\}~c~\{L_2 * \pguards{c}(L_2 -* G_2)\}}{(1)} \\
+            {\{L_1 * \pguards{c}(L_2 --* G_2)\}~c~\{L_2 * \pguards{c}(L_2 --* G_2)\}}{(1)} \\
   \infrule{}{
-            \infrule{}{\stackrel{\langle c \rangle}{\cong} \text{ is reflexive}}{\pguards{c}(L_2 -* G_2) |- L_2 -* G_2}{(2)}}
-            {L_2 * \pguards{c}(L_2 -* G_2) |- G_2}{(3)}}
+            \infrule{}{\stackrel{\langle c \rangle}{\cong} \text{ is reflexive}}{\pguards{c}(L_2 --* G_2) |- L_2 --* G_2}{(2)}}
+            {L_2 * \pguards{c}(L_2 --* G_2) |- G_2}{(3)}}
 {\{G_1\}~c~\{G_2\}}
 {} \\
 [5pt]
-(1)~ \forall P.~ \pguards{c}P \text{ ignores } \FV(c) \qquad (2)~ \text{Axiom T of modal logic} \qquad (3)~ -* \text{ is the adjunct of } *
+(1)~ \forall P.~ \pguards{c}P \text{ ignores } \FV(c) \qquad (2)~ \text{Axiom T of modal logic} \qquad (3)~ --* \text{ is the adjunct of } *
 \end{array}
 \]
 
@@ -327,29 +316,29 @@ Proof of \infrulestyle{Ramify-PQ} from \infrulestyle{Ramify-P}:
   \{L_1\}~c~\{\exists x.~ L_2\} \hspace{-0.5em} \\
   \infrule{}
   {
-    G_1 |- L_1 * \pguards{c}\big(\forall x.~ (L_2 -* G_2)\big) \hspace{-0.5em} \\
+    G_1 |- L_1 * \pguards{c}\big(\forall x.~ (L_2 --* G_2)\big) \hspace{-0.5em} \\
     \infrule{}{
       \infrule{}{
         \infrule{}{
           \vdots
         } {
-          \forall x.~ (L_2 -* G_2) |- (\exists x.~ L_2) -* (\exists x.~ G_2)
+          \forall x.~ (L_2 --* G_2) |- (\exists x.~ L_2) --* (\exists x.~ G_2)
         } {(1)}
       } {
-        \pguards{c}\big(\forall x.~ (L_2 -* G_2)\big) |- \pguards{c}\big((\exists x.~ L_2) -* (\exists x.~ G_2)\big)
+        \pguards{c}\big(\forall x.~ (L_2 --* G_2)\big) |- \pguards{c}\big((\exists x.~ L_2) --* (\exists x.~ G_2)\big)
       } {(2)}
     } {
-      L_1 * \pguards{c}\big(\forall x.~ (L_2 -* G_2)\big) |- L_1 * \pguards{c}\big((\exists x.~ L_2) -* (\exists x.~ G_2)\big)
+      L_1 * \pguards{c}\big(\forall x.~ (L_2 --* G_2)\big) |- L_1 * \pguards{c}\big((\exists x.~ L_2) --* (\exists x.~ G_2)\big)
     } {}
   } {
-    G_1 |- L_1 * \pguards{c}\big((\exists x.~ L_2) -* (\exists x.~ G_2)\big)
+    G_1 |- L_1 * \pguards{c}\big((\exists x.~ L_2) --* (\exists x.~ G_2)\big)
   } {}
 } {
   \{G_1\}~c~\{\exists x.~ G_2\}
 } {}
 \\
 [5pt]
-(1)~ \text{tautology using $(P * Q |- R) <=> (P |- Q -* R)$} \qquad (2)~ \text{reduction using modal axioms K and N} %\qquad (3)~ (P |- Q) => (P * F |- Q * F)
+(1)~ \text{tautology using $(P * Q |- R) <=> (P |- Q --* R)$} \qquad (2)~ \text{reduction using modal axioms K and N} %\qquad (3)~ (P |- Q) => (P * F |- Q * F)
 \end{array}
 \]
 \caption{Proofs of \infrulestyle{Ramify-P} and \infrulestyle{Ramify-PQ}}

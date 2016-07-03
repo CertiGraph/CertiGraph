@@ -1,4 +1,4 @@
-\begin{figure}[t]
+\begin{figure}[!ht]
   \begin{lstlisting}
 struct Node {$\label{code:nodedefstart}$
   int  _Alignas(16) m;
@@ -34,10 +34,44 @@ $\label{code:markram4}\ramify(\ref{lem:updatesubgraph})$      mark(r);
 // $\label{code:outmark}\left\{\!\!\!\begin{array}{l@{}}\exists \gamma'''.~ \p{graph}(\tx x,\gamma''') /| \gamma(\tx{x}) = (0,\tx{l},\tx{r}) /| \null \\ \m{mark1}(\gamma, \tx{x}, \gamma') /| \m{mark}(\gamma', \tx{l}, \gamma'') /| \m{mark}(\gamma'', \tx{r}, \gamma''')\end{array}\right\}$
 } // $\label{code:markend}\{\exists \gamma'''.~ \p{graph}(\tx x,\gamma''') /| \m{mark}(\gamma, \tx{x}, \gamma''')\}$
 \end{lstlisting}
-%% \vspace{-8pt}
+\begin{equation}
+\label{eqn:bigraphintrofoldunfold}
+\begin{array}{@{}l@{}}
+\p{graph}(x, \gamma) ~ <=> ~ (x = 0 /| \p{emp}) |/ \null \\
+\quad \exists m,l,r.~ \gamma(x)=(m,l,r) /| x~\mathsf{mod}~16 = 0 /| \null \\
+\quad \qquad \quad ~~ x |-> m,-,l,r ** \p{graph}(l, \gamma) ** \p{graph}(r, \gamma)
+\end{array}
+\end{equation}
+\[
+\begin{array}{l@{\hspace{2pt}}c@{\hspace{2pt}}l}
+\m{mark1}(\gamma,x,\gamma') & \defeq & \forall v. \gamma'(v) = \! \begin{cases}
+(1,l,r) \! & \begin{array}{@{}l@{}}\text{when } x = v /| \null \\ \gamma(v) = (0,l,r) \end{array} \\
+\gamma(v) & \text{otherwise}
+\end{cases} \\
+v_1 \mathrel{{\stackrel{\gamma~}{\leadsto_{0}}}} v_2 & \defeq & \exists l,r.~ \gamma(v_1) = (0,l,r) /| v_2 \in \{l,r\} \\
+v_1 \mathrel{{\stackrel{\gamma~}{\leadsto^{\star}_{0}}}} v_2 & \defeq & \text{reflexive, transitive closure of }\mathrel{{\stackrel{\gamma}{\leadsto}}_{0}} \\
+[2pt]
+\m{mark}(\gamma,x,\gamma') & \defeq &
+\forall v. \gamma'(v) = \! \begin{cases}
+(1,l,r) \! & \begin{array}{@{}l@{}}\text{when } x \mathrel{\stackrel{\gamma~}{\leadsto^{\star}_{0}}} v /| \null \\ \gamma(v) = (0,l,r) \end{array}\\
+\gamma(v) & \text{otherwise}
+\end{cases}
+\end{array}
+\]
 \caption{Clight code and proof sketch for bigraph mark.}
-% {\color{magenta} The steps that induce
-%  ramifications are indicated with $\ramify_i$, where the associated ramification entailment is equation number $i$.}} %whose numbers point with their associated ramification entailment reference.}
-%\vspace{-19pt}
 \label{fig:markgraph}
+\end{figure}
+
+\begin{figure}
+\[
+\begin{array}{lcl}
+\sigma |= P * Q & \defeq & \exists \sigma_1, \sigma_2.~ \sigma_1 \oplus \sigma_2 = \sigma /| \null \\ && ~~ \sigma_1 |= P /| \sigma_2 |= 2\\
+\sigma |= P ** Q & \defeq & \exists \sigma_1, \sigma_2, \sigma_3.~ \sigma_1 \oplus \sigma_2 \oplus \sigma_3 = \sigma /| \null \\ && ~~ \sigma_1 \oplus \sigma_2 |= P /| \sigma_2 \oplus \sigma_3 |= Q\\
+\sigma |= P --* Q & \defeq & \forall \sigma_1, \sigma_2.~ \sigma_1 \oplus \sigma = \sigma_2 /| \null \\ && ~~
+(\sigma_1 |= P) => (\sigma_2 |= Q) \\
+\sigma |= P --o Q & \defeq & \exists \sigma_1, \sigma_2.~ \sigma_1 \oplus \sigma = \sigma_2 /| \null \\ && ~~
+(\sigma_1 |= P) /| (\sigma_2 |= Q) 
+\end{array}
+\]
+\caption{Model for separation logic connectives}
 \end{figure}
