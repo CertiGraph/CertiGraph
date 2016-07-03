@@ -1,27 +1,3 @@
-% inline code
-\makeatletter
-\newlength{\@mli}
-\newcommand{\mli}[1]{%
-  \settowidth{\@mli}{\lstinline/#1/}
-  \hspace{-.5ex}\begin{minipage}[t]{\@mli}\lstinline/#1/\end{minipage}}
-\makeatother
-\newcommand{\li}[1]{\ifmmode\mbox{\mli{#1}}\else\mbox{\lstinline/#1/}\fi}
-
-\newcommand{\tx}[1]{\text{#1}}
-\newcommand{\p}[1]{\ensuremath{\mathsf{#1}}} % predicate font
-\newcommand{\m}[1]{\ensuremath{\mathit{#1}}} % math font
-%\let\ramify\lightning
-\newcommand{\ramify}{\mbox{\lightning}}
-\newcommand{\infrulestyle}[1]{\textsc{#1}}
-\newcommand{\infrule}[4]{\inferrule*[lab=\infrulestyle{#1},right=$\mathrlap{#4}$]{#2}{#3}}
-\newcommand{\RuleS}[4]{\infrulestyle{#1}\frac{#2}{#3} \textit{#4}}
-\newcommand{\Rule}[3]{\[\RuleS{#1}{\begin{array}{c} #2 \end{array}}{#3}{}\]}
-\newcommand{\MV}{\ensuremath{\mathsf{ModVar}}}
-\newcommand{\FV}{\ensuremath{\mathsf{FreeVar}}}
-\newcommand{\pguards}[1]{\llbracket #1 \rrbracket}
-
-
-
 \input{mark_listing.tex}
 
 In Figure~\ref{fig:markgraph} we put the code and proof sketch of the classic \li{mark} algorithm that visits and colors every reachable node in a heap-represented graph.  The \li{mark} algorithm is good to start with because it is complex enough to require some care to verify while being simple enough that the invariants are straightforward.  In \S\ref{sec:application} we will discuss more complex examples that do the kinds of things \li{mark} does not (\emph{e.g.} structurally changing the graph by adding/changing/removing edges and/or vertices).  Hobor and Villard developed a modular way to verify graph-manipulating programs called ``ramification'' and the outline of our verification sketch for \li{mark} draws heavily their first example~\cite{hobor:ramification}.  However, we have made many improvements to both their theory and practice as we detail below.
@@ -66,7 +42,11 @@ Our \textbf{seventh} improvement is best illustrated by lines~\ref{code:markbefo
 existentials \S\ref{sec:existentials} 4.2. Using existential quantifier in post condition.
 }
 
-Our \textbf{nineth} and final improvement over Hobor and Villard is that, not content with verifying \li{mark} with one mechanized verification tool (VST), we also verify it using the HIP/SLEEK system~\cite{chin:hipsleek}.  HIP/SLEEK is at a very different point in the design space for verification tools than VST, with on the one hand a much higher emphasis on automation but on the other no machine-checked soundness proof.  HIP/SLEEK verifies a \li{mark} program written in a variant of Java instead of Clight, and generates a proof that is structured modestly differently due to the way HIP/SLEEK is engineered to increase automation.  Nevertheless, both verifications share the vast majority of their Coq code base, providing some evidence that our techniques are applicable to a variety of verification tool styles.  We explain our modifications to HIP/SLEEK and discuss our experience verifying the \li{mark} algorithm using it in \S\ref{sec:hipsleek}.
+Our \textbf{nineth} and final improvement over Hobor and Villard is that, not content with verifying \li{mark} with one mechanized verification tool (VST), we also verify it using the HIP/SLEEK system~\cite{chin:hipsleek}.  HIP/SLEEK is at a very 
+ 
+ than VST, with on the one hand a much higher emphasis on automation but on the other no machine-checked soundness proof.  HIP/SLEEK verifies a \li{mark} program written in a variant of Java instead of Clight, and generates a proof that is structured modestly differently due to the way HIP/SLEEK is engineered to increase automation.  Nevertheless, both verifications share the vast majority of their Coq code base, providing some evidence that
+ 
+ styles.  We explain our modifications to HIP/SLEEK and discuss our experience verifying the \li{mark} algorithm using it in \S\ref{sec:hipsleek}.
 
 \subsection{Frames and ramifications are localizations}
 \label{sec:localizations}

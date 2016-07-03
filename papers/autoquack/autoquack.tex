@@ -105,6 +105,30 @@
 %\usepackage{common}
 %\usepackage{seplog}
 
+
+% inline code
+\makeatletter
+\newlength{\@mli}
+\newcommand{\mli}[1]{%
+  \settowidth{\@mli}{\lstinline/#1/}
+  \hspace{-.5ex}\begin{minipage}[t]{\@mli}\lstinline/#1/\end{minipage}}
+\makeatother
+\newcommand{\li}[1]{\ifmmode\mbox{\mli{#1}}\else\mbox{\lstinline/#1/}\fi}
+
+\newcommand{\tx}[1]{\text{#1}}
+\newcommand{\p}[1]{\ensuremath{\mathsf{#1}}} % predicate font
+\newcommand{\m}[1]{\ensuremath{\mathit{#1}}} % math font
+%\let\ramify\lightning
+\newcommand{\ramify}{\mbox{\lightning}}
+\newcommand{\infrulestyle}[1]{\textsc{#1}}
+\newcommand{\infrule}[4]{\inferrule*[lab=\infrulestyle{#1},right=$\mathrlap{#4}$]{#2}{#3}}
+\newcommand{\RuleS}[4]{\infrulestyle{#1}\frac{#2}{#3} \textit{#4}}
+\newcommand{\Rule}[3]{\[\RuleS{#1}{\begin{array}{c} #2 \end{array}}{#3}{}\]}
+\newcommand{\MV}{\ensuremath{\mathsf{ModVar}}}
+\newcommand{\FV}{\ensuremath{\mathsf{FreeVar}}}
+\newcommand{\pguards}[1]{\llbracket #1 \rrbracket}
+
+
 \lstset{%
   language=C,
   morecomment=[n][{\color{red!80!black}}]{/*}{*/},
@@ -155,7 +179,11 @@ how to connect this setup to a general theory for graphs in separation logic.  W
 
 \section{A framework for graph theory}
 \label{sec:mathgraph}
+
 \input{math_graph.tex}
+
+\section{Defining and reasoning about spatial graphs}
+\label{sec:spacegraph}
 
 \input{spatial.tex}
 
@@ -167,7 +195,8 @@ how to connect this setup to a general theory for graphs in separation logic.  W
 \input{vst.tex}
 
 \section{Externally-verified lemmas in HIP/SLEEK}
-%Asankhaya needs to push this file.
+\label{sec:hipsleek}
+
 \input{hipsleek.tex}
 
 
@@ -187,9 +216,15 @@ how to connect this setup to a general theory for graphs in separation logic.  W
 6.2. Important pure facts and ramification rules are not proved yet.
 6.3. Shengyi has already known how to use VST to handle the C program of bigraph spanning tree.
 
+\section{Related and future work}
+\label{sec:related}
+
 \input{related.tex}
 
 \section{Conclusion}
+\label{sec:conclusion}
+
+BLAH
 
 \bibliographystyle{abbrvnat}
 %\bibliographystyle{tropbien_nopages}
