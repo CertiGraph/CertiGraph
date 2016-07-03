@@ -24,9 +24,12 @@ layer are sound models of the logic.
 \node (OM) at (2.5, 0) {Other Models};
 \node (CL) at (-3, 1.5) {Core Logic};
 \node (SL) at (1, 1.5) {Supplementary Logic};
-\node (G) at (-0.25, 3) {Graphs and Related Theorems};
+\node (G) at (-3, 3) {Graphs};
+\node (SG) at (1, 3) {Supplementary Graphs};
 \draw [->] (CL) to (G);
-\draw [->] (SL) to (G);
+\draw [->] (G) to (SG);
+\draw [->] (CL) to (SG);
+\draw [->] (SL) to (SG);
 \draw [->] (CL) to (SL);
 \draw [->] (SM) to (CL);
 \draw [->] (SM) to (SL);
@@ -135,6 +138,10 @@ precise. Unfortunately that lemma does not hold even for a
 self-referencing single node graph because: every time the expanding
 of $\mathtt{graph}(x,\gamma)$ leads to itself. So this definition is
 abandoned too.
+
+Although the traditional fixpoints fail for spatial graphs, it is
+worth mentioning that the traditional fixpoints work for trees, lists,
+dags and etc, as long as they do not contain cycles.
 
 \subsection{The iterated separating conjunction}\
 The two failures of fixpoint method above force us to turn to another
