@@ -13,7 +13,9 @@ void spanning(struct Node * x) { // $\{\p{graph}(\tx{x},\gamma)/|\gamma(\tx{x}).
     l = x -> l;
     r = x -> r;
     x -> m = 1;
-// $\swarrow \{\tx x|-> 1,\tx{l},\tx{r} /| \gamma(\tx{x}) = (0,\tx{l},\tx{r}) /| \exists \gamma'.~ \m{mark1}(\gamma, \tx{x}, \gamma')\}$
+// $\swarrow \{\tx x|-> 1,\tx{l},\tx{r} /| \gamma(\tx{x}) = (0,\tx{l},\tx{r}) /| \exists \gamma_1.~ \m{mark1}(\gamma, \tx{x}, \gamma_1)\}$
+// $\{\exists \gamma_1.~\p{graph}(\tx x,\gamma_1) /| \gamma(\tx{x}) = (0,\tx{l},\tx{r}) /| \m{mark1}(\gamma, \tx{x}, \gamma_1)\}$
+// $\{\p{graph}(\tx x,\gamma_1) /| \gamma(\tx{x}) = (0,\tx{l},\tx{r}) /| \m{mark1}(\gamma, \tx{x}, \gamma_1)\}$
     if (l) {
         root_mark = l -> m;
         if (root_mark == 0) {
@@ -21,7 +23,7 @@ void spanning(struct Node * x) { // $\{\p{graph}(\tx{x},\gamma)/|\gamma(\tx{x}).
         } else {
             x -> l = 0;
         }
-    }
+    }// $\{\exists\gamma_2.~\p{vertices\_at}(\p{reachable}(\gamma_1,\tx x),\gamma_2)/|\m{e\_span}(\gamma_1,\tx{x}.\text{left},\gamma_2)\}$
     if (r) {
         root_mark = r -> m;
         if (root_mark == 0) {
@@ -30,7 +32,7 @@ void spanning(struct Node * x) { // $\{\p{graph}(\tx{x},\gamma)/|\gamma(\tx{x}).
             x -> r = 0;
         }
     }
-} // $\{\exists \gamma_4.~\p{vertex\_at}(\p{reachable}(\gamma, \tx{x}), \gamma_4)/|\m{spanning}(\gamma,\tx{x},\gamma_4)\}$
+} // $\{\exists \gamma_4.~\p{vertex\_at}(\p{reachable}(\gamma, \tx{x}), \gamma_4)/|\m{span}(\gamma,\tx{x},\gamma_4)\}$
 \end{lstlisting}
 
 \caption{Clight code and proof sketch for bigraph spanning tree.}
