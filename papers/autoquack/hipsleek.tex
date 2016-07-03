@@ -48,4 +48,31 @@ The third and final step is to eliminate the $-(\scon)$ operator from the state 
 \end{array}
 \]
 
-Where, $\p{subset\_reach}$ and $\p{eqnot\_reach}$ are uninterpreted relations.
+Where, $\p{subset\_reach}$ and $\p{eqnot\_reach}$ are uninterpreted relations. The lemma application is guided by structural matching, the LHS of the lemma matches with the current state at line 14. Thus we apply the lemma by substituting and rewriting the state to RHS of the lemma. Thus, the $-(\scon)$ operator is eliminated from the state and we can happily use the usual HIP/SLEEK forward reasoning to proceed with the verification.
+
+\subsection{Generating Coq module type}
+
+\begin{figure}[t]
+  \begin{lstlisting}
+Module Type Mgraphmark.
+  Parameter formula : Type.
+  Parameter valid : formula -> Prop.
+  ...
+  Axiom subgraphupdate_l : forall G v G1 x v1 l r,
+    valid (imp (and (star (graph l G1)
+    (mwand (graph l G) (union (ptto_node x v l r) 
+    (union (graph l G) (graph r G)))))
+    (and (subset_reach G l G1) (and 
+    (eq_notreach G l G1) (and (lookup G x v l r) 
+    (lookup G1 x v1 l r))))) 
+    (union (ptto_node x v1 l r) (union (graph l G1) 
+    (graph r G1)))).
+  ...
+End Mgraphmark.
+\end{lstlisting}
+%% \vspace{-8pt}
+\caption{Bigraph marking Coq module type}
+\label{fig:hipcoqfile}
+\end{figure}
+
+The lemmas used in HIP/SLEEK are ultimately certified mechanically in Coq. HIP/SLEEK generates a file with module type as shown in figure \ref{fig:hipcoqfile}, this file lists all lemmas that were used during the verification by HIP/SLEEK as axioms. The \texttt{Mgraphmark} module is implemented in Coq and those axioms are verified mechanically. Thus even though we rely on lemmas in HIP/SLEEK for automation our proof is verified end-to-end as we mechanically check all lemmas used by the tool.
