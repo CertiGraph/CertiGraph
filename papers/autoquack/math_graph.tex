@@ -48,6 +48,7 @@ them.
 \draw[->,dashed] (3, -0.5) -- (3.5, -0.5);
 \end{tikzpicture}
 \endpgfgraphicnamed
+\vspace{1ex}
 \caption{A PreGraph with invalid nodes and edges.}
 \end{figure}
 
@@ -197,9 +198,9 @@ respectively.
                     propG/.style={shape=rectangle, rounded corners=4pt, draw}]
 \node[realG] (PG) at (0, 0) {PreGraph};
 \node[realG] (LG) [below=1 of PG] {LabeledGraph};
-\node[realG] (GG) [right=2.5 of LG] {GeneralGraph};
+\node[realG] (GG) [right=3 of LG] {GeneralGraph};
 \draw [->] (PG) -- (LG) node [pos=0.5, right] {\small Add Label} ;
-\draw [->] (LG) -- (GG) node [pos=0.5, above] {\small Add} node (SC) [pos=0.5, below] {\small Sound Condition};
+\draw [->] (LG) -- (GG) node [pos=0.5, above] {\small Add} node (SC) [pos=0.5, below] {\small Soundness Condition};
 \node[propG] (BMF) [below=1 of SC] {BiMaFin};
 \draw [double,->] (BMF) -- (SC) node [pos=0.5, left] {\small Instantialize};
 \node[propG] (BG) [left=1 of BMF] {BiGraph};
@@ -210,6 +211,7 @@ respectively.
 \draw [->] (FG) to (BMF);
 \end{tikzpicture}
 \endpgfgraphicnamed
+\vspace{1ex}
 \caption{Various Kinds of Graphs}\label{fig:graphs}
 \end{figure}
 

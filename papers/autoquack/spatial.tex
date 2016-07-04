@@ -18,11 +18,11 @@ layer are sound models of the logic.
 \begin{figure}[htbp]
 \centering
 \beginpgfgraphicnamed{infrastructure}
-\begin{tikzpicture}
+\begin{tikzpicture}[->/.tip={Stealth}]
 \tikzstyle{every node}=[shape=rectangle, rounded corners=4pt, draw]
 \node (SM) at (-3, 0) {Step-Indexing Model};
-\node (DM) at (0, 0) {Direct Model};
-\node (OM) at (2.5, 0) {Other Models};
+\node (DM) at (1, 0) {Direct Model};
+%% \node (OM) at (2.5, 0) {Other Models};
 \node (CL) at (-3, 1.5) {Core Logic};
 \node (SL) at (1, 1.5) {Supplementary Logic};
 \node (G) at (-3, 3) {Graphs};
@@ -40,6 +40,7 @@ layer are sound models of the logic.
 %% \draw [->] (OM) to (SL);
 \end{tikzpicture}
 \endpgfgraphicnamed
+\vspace{1ex}
 \caption{Infrastructure of spatial graph library}
 \end{figure}
 
