@@ -10,12 +10,12 @@ In order to implement ramifications in HIP/SLEEK we extend the lemma mechanism \
 
 \begin{figure}[t]
   \begin{lstlisting}
-data node {$\label{code:nodedefstart}$
+data node {
   int val;
   data node left;
-  data node right; };$\label{code:nodedefend}$
+  data node right; };
 
-void mark(node x) { // $\label{code:markstart}\{\p{graph}(\tx{x},\gamma)\}$
+void mark(node x) { // $\{\p{graph}(\tx{x},\gamma)\}$
   node l, r;
   if (x == null) return;
   else {
@@ -26,7 +26,7 @@ void mark(node x) { // $\label{code:markstart}\{\p{graph}(\tx{x},\gamma)\}$
     mark(l);
     mark(r);
   }
-} // $\label{code:markend}\{\exists \gamma'.~ \p{graph}(\tx x,\gamma') /| \m{mark}(\gamma, \tx{x}, \gamma')\}$
+} // $\{\exists \gamma'.~ \p{graph}(\tx x,\gamma') /| \m{mark}(\gamma, \tx{x}, \gamma')\}$
 \end{lstlisting}
 %% \vspace{-8pt}
 \caption{Bigraph marking in HIP/SLEEK}
