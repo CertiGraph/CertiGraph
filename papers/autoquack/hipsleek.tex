@@ -12,8 +12,8 @@ In order to implement ramifications in HIP/SLEEK we extend the lemma mechanism \
   \begin{lstlisting}
 data node {
   int val;
-  data node left;
-  data node right; };
+  node left;
+  node right; };
 
 void mark(node x) { // $\{\p{graph}(\tx{x},\gamma)\}$
   node l, r;
