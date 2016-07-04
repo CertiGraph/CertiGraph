@@ -1,3 +1,15 @@
+\paragraph{Comparison with Hobor and Villard.}
+{\color{magenta}
+Hobor and Villard's \infrulestyle{Ramify} rule interacts very poorly with modified program variables such as \li{l} and \li{r}.  They hacked their way around this issue by proposing a variant of \infrulestyle{Ramify} called \infrulestyle{RamifyAssign}, which could reason about the special case of a single assignment \li{x=$f(\ldots)$}, assuming the verifier can make the local program translation to \li{x'=$f(\ldots)$;x=x'}, where \li{x'} is fresh.  They proposed no way to verify unmodified program code or to ramify/localize across multiple assignments; we do both in lines~\ref{code:markbeforetripleramify}--\ref{code:markaftertripleramify} using a new \infrulestyle{Ramify-P} rule.
+
+An alternative way to avoid local variable issues is to use ``variables as resource''~\cite{bornat:var}.
+Unfortunately variables as resource introduces other unpleasantness, which is why many mechanized verification systems do not use it\cite{chin:hipsleek,appel:programlogics,bengtson:charge}.
+}
+
+Hobor and Villard were able to avoid having existentials in localized postconditions because they defined all of their mathematical operations (\emph{e.g.} $\m{mark}$, $\m{mark1}$) as functions rather than relations.
+
+\paragraph{Mechanized mathematical graph theory.}
+
 The most famous graph related theorem which has been mechanically
 verified is the Four Color Theorem: Any planar map can be colored with
 only four colours. In 2005, Benjamin Werner and Georges Gonthier
@@ -93,9 +105,3 @@ directly.
 \hide{
 Hobor and Villard hacked their way around this [local var] issue by proposing a variant of \infrulestyle{Ramify} called \infrulestyle{RamifyAssign}, which could reason about the special case of a single assignment $\li{x = }f(\ldots)$, assuming the verifier can make the local program translation to $\li{x' = }f(\ldots)\li{; x = x'}$, where \li{x'} is fresh.  They proposed no way to verify unmodified program code or to do a ramification across multiple assignments as we do in lines~\ref{code:markbeforetripleramify}--\ref{code:markaftertripleramify} of figure~\ref{fig:markgraph}.
 }
-
-An alternative way to avoid local variable issues is to use ``variables as resource''~\cite{bornat:var}.
-Unfortunately variables as resource introduces other unpleasantness, which is why many mechanized verification systems do not use it\cite{appel:programlogics,bengtson:charge}.
-
-\paragraph{Existentials.}
-Hobor and Villard were able to avoid having existentials in localized postconditions because they defined all of their mathematical operations (\emph{e.g.} $\m{mark}$, $\m{mark1}$) as functions rather than relations. 
