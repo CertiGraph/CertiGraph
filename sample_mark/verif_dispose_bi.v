@@ -20,14 +20,13 @@ Arguments SingleFrame' {l} {g} {s}.
 
 Local Coercion Graph_LGraph: Graph >-> LGraph.
 Local Coercion LGraph_SGraph: LGraph >-> SGraph.
-Local Coercion SGraph_PGraph: SGraph >-> PGraph.
 Local Identity Coercion Graph_GeneralGraph: Graph >-> GeneralGraph.
 Local Identity Coercion LGraph_LabeledGraph: LGraph >-> LabeledGraph.
 Local Identity Coercion SGraph_SpatialGraph: SGraph >-> SpatialGraph.
-Local Identity Coercion PGraph_PreGraph: PGraph >-> PreGraph.
+Local Coercion pg_lg: LabeledGraph >-> PreGraph.
 
 Notation vertices_at sh g P := (@vertices_at _ _ _ _ _ _ (@SGP pSGG_VST bool unit (sSGG_VST sh)) _ g P).
-Notation graph sh x g := (@graph _ _ _ _ _ _ (@SGP pSGG_VST bool unit (sSGG_VST sh)) _ x g).
+Notation graph sh x g := (@reachable_vertices_at _ _ _ _ _ _ _ _ _ (@SGP pSGG_VST bool unit (sSGG_VST sh)) _ x g).
 Notation Graph := (@Graph pSGG_VST bool unit).
 Existing Instances MGS biGraph maGraph finGraph RGF.
 
@@ -89,7 +88,7 @@ Proof.
   assert (Hisptr: isptr (pointer_val_val x)). {
     destruct x. simpl. auto.
     apply (valid_not_null g) in H. exfalso; auto.
-    rewrite is_null_def. auto.
+    reflexivity.
   }
   localize
    (PROP  ()
@@ -128,24 +127,22 @@ Proof.
   
   unlocalize (PROP ()
               LOCAL  (temp _r (pointer_val_val r); temp _l (pointer_val_val l); temp _x (pointer_val_val x))
-              SEP  (graph sh x (Graph_gen g x true))).
+              SEP  (graph sh x (Graph_vgen g x true))).
   Grab Existential Variables.
   Focus 2. {
     simplify_ramif.
-    rewrite Graph_gen_spatial_spec by eauto.
-    pose proof (@graph_ramify_aux0 _ _ _ _ _ _ _ (SGA_VST sh) g _ x (false, l, r) (true, l, r)).
-    simpl in H2; auto.
+    apply (@root_update_ramify _ (sSGG_VST sh) g x _ (false, l, r) (true, l, r)); auto.
+    eapply Graph_vgen_vgamma; eauto.
   } Unfocus.
 
   (* if (l) { *)
   apply -> ram_seq_assoc.
   symmetry in H1.
-  pose proof Graph_gen_true_mark1 g x _ _ H1 H.
-  assert (H_GAMMA_g1: vgamma (Graph_gen g x true) x = (true, l, r)) by
-   (rewrite (proj1 (proj2 (Graph_gen_spatial_spec g x _ true _ _ H1))) by assumption;
-    apply spacialgraph_gen_vgamma).
-  assert (vvalid (Graph_gen g x true) x) by (destruct H2 as [[? _] _]; apply H2; auto).
-  forget (Graph_gen g x true) as g1.
+  pose proof Graph_vgen_true_mark1 g x _ _ H1 H.
+  assert (H_GAMMA_g1: vgamma (Graph_vgen g x true) x = (true, l, r)) by
+   (eapply Graph_vgen_vgamma; eauto).
+  assert (vvalid (Graph_vgen g x true) x) by (destruct H2 as [[? _] _]; apply H2; auto).
+  forget (Graph_vgen g x true) as g1.
   unfold semax_ram.
   
   forward_if_tac
@@ -199,12 +196,12 @@ Proof.
     simplify_ramif.
     destruct (vgamma g1 l) as [[dd ll] rr] eqn:? .
     entailer!.
-    rewrite (update_self g1 l (dd, ll, rr)) at 2 by auto.
     assert (vvalid g1 l). {
       assert (weak_valid g1 l) by (eapply gamma_left_weak_valid; eauto).
-      destruct H5; auto. rewrite is_null_def in H5. subst. exfalso; intuition.
+      destruct H5; auto. hnf in H5. subst. exfalso; intuition.
     }
-    apply (@vertices_at_ramify1 _ _ _ _ _ _ _ (SGA_VST sh) g1 (reachable g1 x) l (dd, ll, rr) (dd, ll, rr)); auto.
+    unfold vgamma2cdata.
+    apply (@va_reachable_internal_stable_ramify pSGG_VST _ _ (sSGG_VST sh) g1 x l (dd, ll, rr)); auto.
     apply (gamma_left_reachable_included g1 _ _ _ _ H3 H_GAMMA_g1 l).
     apply reachable_by_refl; auto.
   } Unfocus.
@@ -238,7 +235,7 @@ Proof.
     destruct H2.
     rewrite (weak_valid_si _ _ _ H2) in H1.
     destruct H1. 2: auto.
-    rewrite is_null_def in H1. subst l.
+    hnf in H1. subst l.
     simpl in H3. exfalso; auto.
   }
   assert (fst (fst (vgamma g1 l)) = false). {
@@ -331,19 +328,18 @@ Proof.
     apply (exp_right g1).
     entailer!; auto.
     apply edge_spanning_tree_invalid.
-    + apply (@left_valid _ _ _ _ g1 _ _ (biGraph g1)) in H3; auto.
+    + apply (@left_valid _ _ _ _ _ _ g1 _ _) in H3; auto.
     + intro. apply (valid_not_null g1 l).
       - assert (l = dst g1 (x, L)) by (simpl in H_GAMMA_g1; inversion H_GAMMA_g1; auto).
         rewrite H9. apply H8.
-      - rewrite is_null_def. apply (destruct_pointer_val_NP). left; auto.
+      - hnf. apply (destruct_pointer_val_NP). left; auto.
   } Unfocus.
 
   (* if (r) { *)
 
   Intro g2.
   normalize.
-
-  assert (vvalid g2 x) by (rewrite <- (edge_spanning_tree_left_vvalid g1 g2 x true l r x); auto).
+  assert (vvalid g2 x) by (rewrite <- (edge_spanning_tree_left_vvalid g1 g2 x); auto).
   destruct (edge_spanning_tree_left_vgamma g1 g2 x l r H3 H_GAMMA_g1 H4) as [l' H_GAMMA_g2].
 
   forward_if_tac
@@ -394,19 +390,12 @@ Proof.
   Focus 2. {
     simplify_ramif.
     destruct (vgamma g2 r) as [[dd ll] rr] eqn:? .
-    pose proof (update_self g2 r (dd, ll, rr) Heqp).
-    
-    assert (vertices_at sh (reachable g1 x) g2 = vertices_at sh (reachable g1 x) (spatialgraph_vgen g2 r (dd, ll, rr))). {
-      apply vertices_at_vi_eq; auto.
-      apply (edge_spanning_tree_left_reachable_vvalid g1 g2 x true l r); auto.
-    }
-    simpl in H8. rewrite H8 at 2.
     assert (vvalid g1 r). {
       assert (weak_valid g1 r) by (eapply gamma_right_weak_valid; eauto).
-      destruct H9; auto. rewrite is_null_def in H9. subst. exfalso; intuition.
+      destruct H7; auto. hnf in H7; subst. exfalso; intuition.
     }
-    apply (@vertices_at_ramify1 _ _ _ _ _ _ _ (SGA_VST sh) g2 (reachable g1 x) r (dd, ll, rr) (dd, ll, rr)); auto.
-    rewrite <- (edge_spanning_tree_left_vvalid g1 g2 x true l r r); auto.
+    unfold vgamma2cdata;
+    apply (@vertices_at_ramif_1_stable _ _ _ _ _ _ _ (SGA_VST sh) _ _ r (dd, ll, rr)); auto.
     apply (gamma_right_reachable_included g1 _ _ _ _ H3 H_GAMMA_g1 r).
     apply reachable_by_refl; auto.
   } Unfocus.
@@ -437,9 +426,9 @@ Proof.
      SEP (graph sh r g2)).
   assert (vvalid g1 r). {
       assert (weak_valid g1 r) by (eapply gamma_right_weak_valid; eauto).
-      destruct H8; auto. rewrite is_null_def in H8. subst. exfalso; intuition.
+      destruct H8; auto. hnf in H8; subst. exfalso; intuition.
   }
-  assert (vvalid g2 r) by (rewrite <- (edge_spanning_tree_left_vvalid g1 g2 x true l r r); auto).
+  assert (vvalid g2 r) by (rewrite <- (edge_spanning_tree_left_vvalid g1 g2 x); auto).
   assert (fst (fst (vgamma g2 r)) = false). {
     simpl in n |-* . destruct (vlabel g2 r) eqn:? .
     + symmetry in Heqb. apply n in Heqb. exfalso; auto.
@@ -532,11 +521,11 @@ Proof.
     apply (exp_right g2).
     entailer!.
     apply edge_spanning_tree_invalid.
-    + apply (@right_valid _ _ _ _ g2 _ _ (biGraph g2)) in H5; auto.
+    + apply (@right_valid _ _ _ _ _ _ g2 _ _) in H5; auto.
     + intro. apply (valid_not_null g2 r).
       - assert (r = dst g2 (x, R)) by (simpl in H_GAMMA_g2; inversion H_GAMMA_g2; auto).
         rewrite H11. apply H10.
-      - rewrite is_null_def. apply (destruct_pointer_val_NP). left; auto.
+      - hnf; apply (destruct_pointer_val_NP). left; auto.
   } Unfocus.
 
   (* return *)
@@ -547,13 +536,9 @@ Proof.
   entailer!.
   Focus 2. {
     destruct H2.
-    rewrite (vertices_at_P_Q_eq g3 (reachable g1 x) (reachable g x)).
-    + apply derives_refl.
-    + intro v. unfold Ensembles.In; intros.
-      rewrite <- (edge_spanning_tree_right_vvalid g2 g3 x true l' r v); auto.
-      apply (edge_spanning_tree_left_reachable_vvalid g1 g2 x true l r H3 H_GAMMA_g1 H4 v); auto.
-    + unfold Ensembles.Same_set, Ensembles.Included, Ensembles.In . (* 1 min 22 sec *)
-      split; intro v; rewrite H2; tauto. (* 1 min 20 sec *)
+    apply derives_refl'.
+    apply vertices_at_Same_set.
+    rewrite H2; reflexivity.
   } Unfocus.
   apply (edge_spanning_tree_spanning_tree g g1 g2 g3 x l r); auto. (* 1 min 27 sec *)
 Time Qed. (* 9305 sec *)
