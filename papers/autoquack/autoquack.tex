@@ -32,7 +32,9 @@
 \usepackage[colorlinks=true,allcolors=blue,breaklinks,draft=false]{hyperref}   % hyperlinks, including DOIs and URLs in bibliography
 % known bug: http://tex.stackexchange.com/questions/1522/pdfendlink-ended-up-in-different-nesting-level-than-pdfstartlink
 \usepackage{tikz}
-%\usetikzlibrary{arrows.meta}
+\long\def\beginpgfgraphicnamed#1#2\endpgfgraphicnamed{\includegraphics{#1}}
+%% \usetikzlibrary{arrows.meta, positioning}
+%% \pgfrealjobname{autoquack}
 \usepackage{fancybox}
 \usepackage{multicol}
 \usepackage{semantic}

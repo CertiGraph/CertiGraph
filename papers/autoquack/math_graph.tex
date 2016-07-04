@@ -4,12 +4,52 @@ are unsound. An obvious solution---especially for verifying functional
 correctness---is to involve a mathematical graph $\gamma$ in spatial
 predicates as a parameter. Since the additional parameter is involved
 in the specification, we needs a way to reason about it, so as to
-deduce the specification. Thus we formalize a proof framework for
-mathematical graphs and provide a bunch of useful theorems in graph
-theory to ease the burden in verifying programs. In this section, we
-will introduce the framework and show how we built them.
+deduce the specification. Thus we formalize a general-purpose proof
+framework for mathematical graphs and provide a bunch of useful
+theorems in graph theory to ease the burden in verifying programs. In
+this section, we will introduce the framework and show how we built
+them.
 
 \subsection{Definitions of graph and other concepts}
+
+\begin{figure}
+\centering
+\beginpgfgraphicnamed{pregraphexp}
+\begin{tikzpicture}
+[vad/.style={circle, fill=black, inner sep=0pt, minimum size=4pt},
+ inv/.style={circle, draw=black, thick, inner sep=0pt, minimum size=4pt},
+ ->/.style={thick, arrows={-Stealth}}]
+\node[vad] (n1) at (0, 0) {};
+\node[vad] (n2) at (1, 1) {};
+\node[inv] (n3) at (1, -1) {};
+\node[vad] (n4) at (-2,2) {};
+\node[vad] (n5) at (-2,-2) {};
+\node[vad] (n6) at (-3,0) {};
+\node[vad] (n7) at (3,1.5) {};
+\node[inv] (n8) at (3,-1.5) {};
+\node[vad] (n9) at (3.5, 1) {};
+\node[inv] (n10) at (3.5, 0.5) {};
+\node at (3.5, 1) [right=1.5pt] {\small Valid node};
+\node at (3.5, 0.5) [right=1.5pt] {\small Invalid node};
+\node at (3.5, 0) [right=1.5pt] {\small Valid edge};
+\node at (3.5, -0.5) [right=1.5pt] {\small Invalid edge};
+\draw[->] (n1) to (n2);
+\draw[->,dashed] (n1) to (n3);
+\draw[->] (n2) to (n3);
+\draw[->] (n2) to (n7);
+\draw[->] (n2) to (n8);
+\draw[->,dashed] (n3) to (n8);
+\draw[->] (n4) to (n1);
+\draw[->] (n1) to (n5);
+\draw[->] (n2) to (n4);
+\draw[->] (n1) to (n6);
+\draw[->] (n6) to (n5);
+\draw[->] (3, 0) -- (3.5, 0);
+\draw[->,dashed] (3, -0.5) -- (3.5, -0.5);
+\end{tikzpicture}
+\endpgfgraphicnamed
+\caption{A PreGraph with invalid nodes and edges.}
+\end{figure}
 
 The core of the graph theory framework are the definitions of graph,
 graph-related structures and relations. In mathematics, a (directed)
@@ -74,8 +114,8 @@ while every node in $L$ satisfies predicate $P$. This notation, along
 with other derived ones, such as
 \begin{equation*}
 \begin{split}
-\gamma\models n_1 \xrightarrow{P} n_2 &\triangleq \exists L, \gamma \models L_{n_2}^{n_1}(P),\\
-\gamma\models n_1 \leadsto n_2 &\triangleq \exists L, \gamma \models L_{n_2}^{n_1}(True)
+\gamma\models n_1 \xrightarrow{P} n_2 &\defeq \exists L, \gamma \models L_{n_2}^{n_1}(P),\\
+\gamma\models n_1 \leadsto n_2 &\defeq \exists L, \gamma \models L_{n_2}^{n_1}(True)
 \end{split}
 \end{equation*}
 form the bedrock of nearly every nontrivial predicate about
@@ -108,7 +148,7 @@ valid, but in $\gamma \!\downarrow\! P$, valid edges means both its source
 and destination nodes satisfy $P$. With the concepts of partial graph
 and subgraph, we can express the reachable portion by instantiating
 $P$ as reachable predicate.
-
+\hide{
 \paragraph{Structural Equivalence}
 Many graph-manipulating algorithms adopt divide and conquer
 paradigm. Most of those algorithms contain certain invariants as parts
@@ -118,7 +158,7 @@ describe this relation, we introduced ``structural equivalence'' in
 our framework with the following definition:
 \begin{equation*}
 \begin{split}
-\gamma_1 \cong\gamma_2 \triangleq & \forall v, \Phi_{V1}(v) \leftrightarrow \Phi_{V2}(v) \wedge \\
+\gamma_1 \cong\gamma_2 \defeq & \forall v, \Phi_{V1}(v) \leftrightarrow \Phi_{V2}(v) \wedge \\
 & \forall e, \Phi_{E1}(e) \leftrightarrow \Phi_{E2}(e) \wedge\\
 & \forall e, \Phi_{E1}(e) \rightarrow \Phi_{E2}(e) \rightarrow \text{src}_{\gamma_1}(e)=\text{src}_{\gamma_2}(e) \wedge\\
 & \forall e, \Phi_{E1}(e) \rightarrow \Phi_{E2}(e) \rightarrow \text{dst}_{\gamma_1}(e)=\text{dst}_{\gamma_2}(e)\\
@@ -129,6 +169,7 @@ and edge set. And any valid edge in both graphs is comprised by the
 same source and destination nodes. This relation can be used with
 subgraph and reachability to define many concrete relations in program
 verification.
+}
 
 \subsection{Classification of various graphs}
 
@@ -150,32 +191,25 @@ respectively.
 
 \begin{figure}[htbp]
 \centering
-\begin{tikzpicture}%[->/.tip={Stealth}]
-\tikzstyle{every node}=[shape=rectangle, rounded corners=4pt, draw]
-\node[fill=gray!40] (GG) at (1, 6) {GeneralGraph};
-\node (NGG) at (4, 6) {NormalGeneralGraph};
-\node (RFG) at (0, 4.5) {ReachableFiniteGraph};
-\node[fill=gray!40] (LG) at (3, 4.5) {LabeledGraph};
-\node (LFG) at (-1, 3) {LocalFiniteGraph};
-\node[fill=gray!40] (PG) at (2, 3) {PreGraph};
-\node[fill=gray!40] (SG) at (4.5, 3) {SpatialGraph};
-\node (BG) at (-0.5, 1.5) {BiGraph};
-\node (MG) at (1.5, 1.5) {MathGraph};
-\node (FG) at (4, 1.5) {FiniteGraph};
-\node (BMF) at (1.5, 0) {BiMaFin};
-\draw [->] (LG) to (NGG);
-\draw [->] (LG) to (GG);
-\draw [->] (PG) to (LG);
-\draw [->] (PG) to (SG);
-\draw [->] (PG) to (RFG);
-\draw [->] (PG) to (LFG);
-\draw [->] (PG) to (BG);
-\draw [->] (PG) to (MG);
-\draw [->] (PG) to (FG);
+\beginpgfgraphicnamed{variousgraph}
+\begin{tikzpicture}[->/.style={thick,arrows={-Stealth}},
+                    realG/.style={shape=rectangle, rounded corners=4pt, draw, fill=gray!40},
+                    propG/.style={shape=rectangle, rounded corners=4pt, draw}]
+\node[realG] (PG) at (0, 0) {PreGraph};
+\node[realG] (LG) [below=1 of PG] {LabeledGraph};
+\node[realG] (GG) [right=2.5 of LG] {GeneralGraph};
+\draw [->] (PG) -- (LG) node [pos=0.5, right] {\small Add Label} ;
+\draw [->] (LG) -- (GG) node [pos=0.5, above] {\small Add} node (SC) [pos=0.5, below] {\small Sound Condition};
+\node[propG] (BMF) [below=1 of SC] {BiMaFin};
+\draw [double,->] (BMF) -- (SC) node [pos=0.5, left] {\small Instantialize};
+\node[propG] (BG) [left=1 of BMF] {BiGraph};
+\node[propG] (MG) [below=0.5 of GG] {MathGraph};
+\node[propG] (FG) [below=0.5 of MG] {FiniteGraph};
 \draw [->] (BG) to (BMF);
 \draw [->] (MG) to (BMF);
 \draw [->] (FG) to (BMF);
 \end{tikzpicture}
+\endpgfgraphicnamed
 \caption{Various Kinds of Graphs}\label{fig:graphs}
 \end{figure}
 
