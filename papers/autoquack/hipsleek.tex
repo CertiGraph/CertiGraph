@@ -13,13 +13,13 @@ In order to implement ramifications in HIP/SLEEK we extend the lemma mechanism \
 data node {
   int val;
   node left;
-  node right; };
+  node right;}
 
 void mark(node x) { // $\{\p{graph}(\tx{x},\gamma)\}$
   node l, r;
   if (x == null) return;
   else {
-    if (x.val == 1) return;
+    if (x.val == 1) return; $\label{ifcondmark}$
     l = x.left;
     r = x.right;
     x.val = 1;
@@ -33,7 +33,7 @@ void mark(node x) { // $\{\p{graph}(\tx{x},\gamma)\}$
 \label{fig:hipmarkgraph}
 \end{figure}
 
-As shown in figure \ref{fig:hipmarkgraph} the pre and post conditions for verifying the bigraph marking program in HIP/SLEEK are the same as they were for VST. There are three key steps that automate ramifications in HIP/SLEEK, the first step is the use of fold/unfold relationship for graphs given in (\ref{eqn:bigraphintrofoldunfold}). HIP/SLEEK uses unfold lemma for graph to automatically expose the heap required to check entailments during forward reasoning. E.g. in order to check the dereference at line 10 in figure \ref{fig:hipmarkgraph} the $\p{graph}(\tx{x},\gamma)$ predicate is unfolded and the state just before line 10 is $ \exists m,l,r.~ \gamma(x)=(m,l,r) \wedge x \mapsto m,-,l,r \ocon \p{graph}(l, \gamma) \ocon \p{graph}(r, \gamma)$.
+As shown in figure \ref{fig:hipmarkgraph} the pre and post conditions for verifying the bigraph marking program in HIP/SLEEK are the same as they were for VST. There are three key steps that automate ramifications in HIP/SLEEK, the first step is the use of fold/unfold relationship for graphs given in (\ref{eqn:bigraphintrofoldunfold}). HIP/SLEEK uses unfold lemma for graph to automatically expose the heap required to check entailments during forward reasoning. E.g. in order to check the dereference at line 10 in figure \ref{fig:hipmarkgraph} the $\p{graph}(\tx{x},\gamma)$ predicate is unfolded and the state just before line \ref{ifcondmark} is $ \exists m,l,r.~ \gamma(x)=(m,l,r) \wedge x \mapsto m,-,l,r \ocon \p{graph}(l, \gamma) \ocon \p{graph}(r, \gamma)$.
 
 Second step is the use of $\septraction$ operator to capture the strongest post condition during forward reasoning. Given a precondition $R$ and $\{P\}~c~\{Q\}$ the strongest post condition can be captured as $(P \septraction R) \scon Q$. During forward reasoning in HIP/SLEEK we introduce the $\septraction$ when checking entailments with predicates that use sharing. E.g. at line 14 in figure \ref{fig:hipmarkgraph} in order to check the precondition we introduce the following to the state $ (\p{graph}(l, \gamma) \septraction (x \mapsto m,-,l,r \ocon \p{graph}(l, \gamma) \ocon \p{graph}(r, \gamma))) \scon \p{graph}(l, \gamma')$, where $\gamma'$ is the mathematical graph after the \texttt{mark(l)} recursive call.
 
