@@ -491,7 +491,7 @@ Proof.
   rewrite <- H1 in H2.
   auto.
 Qed.
-
+(*
 Lemma vcopy1_edge_copy_list_copy_extended_copy': forall root es es_done e0 es_later (g1 g2 g3 g2' g3' g4 g4'': Graph),
   vvalid g1 root ->
   WeakMarkGraph.unmarked g1 root ->
@@ -554,7 +554,7 @@ Proof.
     - eapply si_stronger_partial_labeledgraph_simple; [| exact H13].
       apply Intersection1_Included, Included_refl.
 Qed.
-
+*)
 Lemma vcopy1_edge_copy_list_weak_copy_extended_copy: forall {P: Graph -> Type} {NP: NormalGeneralGraph P},
   forall root es es_done e0 es_later (g1 g2 g3 g2' g3' g4 g4'': Graph) (root0: V),
   vvalid g1 root ->
@@ -651,7 +651,7 @@ Proof.
       1: intros; destruct (node_pred_dec (WeakMarkGraph.marked g1) v); auto.
       1: destruct H4 as [? [? ?]]; auto.
 Qed.
-(*
+
 Lemma vcopy1_edge_copy_list_weak_copy_extended_copy': forall {P: Graph -> Type} {NP: NormalGeneralGraph P},
   forall root es es_done e0 es_later (g1 g2 g3 g2' g3' g4 g4'': Graph) (root0: V),
   vvalid g1 root ->
@@ -682,78 +682,119 @@ Lemma vcopy1_edge_copy_list_weak_copy_extended_copy': forall {P: Graph -> Type} 
      (Intersection _ (vvalid g3') (fun x1 => LocalGraphCopy.vmap g2 root <> x1)) (Graph_SpatialGraph g3') (Graph_SpatialGraph g4')).
 Proof.
   intros.
-  pose proof vcopy1_edge_copy_list_copy_extended_copy' root es es_done e0 es_later g1 g2 g3 g2' g3' g4 g4''.
+  pose proof vcopy1_edge_copy_list_copy_extended_copy root es es_done e0 es_later g1 g2 g3 g2' g3' g4 g4''.
   repeat (spec H11; [auto |]).
   destruct H11 as [g4' [? [? ?]]].
-  exists g4'; split; [| split; [| split]]; auto.
-  destruct H9 as [? _], H10 as [? _].
-  apply (lge_preserved _
-          (gpredicate_sub_labeledgraph
-            (Intersection _ (vvalid g3') (fun v' : V => root0 <> v'))
-            (Intersection _ (evalid g3') (fun e' : E => ~ In e' (map (LocalGraphCopy.emap g3) es_done))) g4')) in x.
-  Focus 2. {
-    etransitivity.
-    + apply gpredicate_sub_labeledgraph_equiv.
-      - symmetry; apply Intersection_absort_left.
-        apply Intersection1_Included, Included_refl.
-      - symmetry; apply Intersection_absort_left.
-        apply Intersection1_Included, Included_refl.
-    + eapply stronger_gpredicate_sub_labeledgraph_simple; [| | eauto].
-      - apply Intersection1_Included, Included_refl.
-      - apply Intersection1_Included, Included_refl.
-  } Unfocus.
-  apply (lge_preserved _ (gpredicate_sub_labeledgraph (vvalid g4'') (evalid g4'') g4')) in x0.
-  Focus 2. {
-    etransitivity.
-    + symmetry; apply gpredicate_sub_labeledgraph_self.
-    + eapply stronger_gpredicate_sub_labeledgraph_simple; [| | eauto].
-      - apply Included_refl.
-      - apply Included_refl.
-  } Unfocus.
-  eexists; auto.
-  apply (lge_preserved
-          (gpredicate_sub_labeledgraph
-            (Intersection _ (vvalid g4') (fun v' : V => root0 <> v'))
-            (Intersection _ (evalid g4') (fun e' : E => ~ In e' (map (LocalGraphCopy.emap g4) es_done))) g4')).
+  exists g4'; split; [| split]; auto.
   Focus 1. {
-    apply gpredicate_sub_labeledgraph_equiv.
-    + apply Intersection_absort_left.
-      apply Intersection1_Included, Included_refl.
-    + apply Intersection_absort_left.
+    destruct H9 as [? _], H10 as [? _].
+    apply (lge_preserved _
+            (gpredicate_sub_labeledgraph
+              (Intersection _ (vvalid g3') (fun v' : V => root0 <> v'))
+              (Intersection _ (evalid g3') (fun e' : E => ~ In e' (map (LocalGraphCopy.emap g3) es_done))) g4')) in x.
+    Focus 2. {
+      etransitivity.
+      + apply gpredicate_sub_labeledgraph_equiv.
+        - symmetry; apply Intersection_absort_left.
+          apply Intersection1_Included, Included_refl.
+        - symmetry; apply Intersection_absort_left.
+          apply Intersection1_Included, Included_refl.
+      + eapply stronger_gpredicate_sub_labeledgraph_simple; [| | eauto].
+        - apply Intersection1_Included, Included_refl.
+        - apply Intersection1_Included, Included_refl.
+    } Unfocus.
+    apply (lge_preserved _ (gpredicate_sub_labeledgraph (vvalid g4'') (evalid g4'') g4')) in x0.
+    Focus 2. {
+      etransitivity.
+      + symmetry; apply gpredicate_sub_labeledgraph_self.
+      + eapply stronger_gpredicate_sub_labeledgraph_simple; [| | eauto].
+        - apply Included_refl.
+        - apply Included_refl.
+    } Unfocus.
+    eexists; auto.
+    apply (lge_preserved
+            (gpredicate_sub_labeledgraph
+              (Intersection _ (vvalid g4') (fun v' : V => root0 <> v'))
+              (Intersection _ (evalid g4') (fun e' : E => ~ In e' (map (LocalGraphCopy.emap g4) es_done))) g4')).
+    Focus 1. {
+      apply gpredicate_sub_labeledgraph_equiv.
+      + apply Intersection_absort_left.
+        apply Intersection1_Included, Included_refl.
+      + apply Intersection_absort_left.
+        apply Intersection1_Included, Included_refl.
+    } Unfocus.
+    eapply join_preserved; [| | exact x | exact x0].
+    + destruct H11 as [_ [_ HH]].
+      destruct HH as [_ [_ [_ [HH _]]]].
+      destruct H7 as [_ [_ ?]].
+      destruct HH as [? _].
+      destruct H7 as [_ [_ [_ [? _]]]].
+      rewrite <- H7 in H9.
+      apply Prop_join_shrink1; auto.
+      destruct (vcopy1_edge_copy_list_spec root _ _ _ _ _ _ _ _ H H0 H1 H2 H3 H4 H5).
+      eapply LocalGraphCopy.edge_copy_list_vvalid_mono in H10; [exact H10 |].
+      destruct H4 as [_ [_ ?]].
+      eapply LocalGraphCopy.vcopy1_copied_root_valid in H4; eauto.
+    + replace (map (@LocalGraphCopy.emap V E V E (@SGBA_VE V E SGBA)
+                      (@SGBA_EE V E SGBA) V E V E GMS g4) es_done) with (map (LocalGraphCopy.emap g3) es_done)
+        by (apply (extend_copy_emap_root g1 g2 g3 g4 g2' g3' g4' root es es_done e0 es_later); auto).
+      destruct H11 as [_ [_ HH]].
+      destruct HH as [_ [_ [_ [HH _]]]].
+      destruct H7 as [_ [_ ?]].
+      destruct HH as [_ [? _]].
+      destruct H7 as [_ [_ [_ [_ [? _]]]]].
+      rewrite <- H7 in H9.
+      apply Prop_join_shrink; auto.
+      unfold Included, Ensembles.In.
+      intros e ? ?.
+      destruct H9 as [_ ?].
+      apply (H9 e); auto.
+      destruct (vcopy1_edge_copy_list_spec root _ _ _ _ _ _ _ _ H H0 H1 H2 H3 H4 H5).
+      eapply (LocalGraphCopy.vcopy1_edge_copy_list_mapped_root_edge_evalid g1 g2 g3 g2' g3'); eauto.
+        1: intros; destruct (node_pred_dec (WeakMarkGraph.marked g1) v); auto.
+        1: destruct H4 as [? [? ?]]; auto.
+  } Unfocus.
+  Focus 1. {
+    intros.
+    pose proof vcopy1_edge_copy_list_spec root es es_done (e0 :: es_later) g1 g2 g3 g2' g3' H H0 H1 H2 H3 H4 H5.
+    destruct H14.
+    pose proof WeakMarkGraph.triple_mark1_componded_mark_list root (map (dst g1) es_done) (map (dst g1) (e0 :: es_later)) (map (dst g1) es) g1 g3 H H0.
+    spec H16; [apply out_edges_step_list; auto |].
+    spec H16; [rewrite <- map_app; f_equal; auto |].
+    spec H16; [split_relation_list (g1 :: g2 :: g2 :: nil) |].
+      1: apply WeakMarkGraph.eq_do_nothing; auto.
+      1: destruct H4 as [? [? ?]]; auto.
+      1: apply WeakMarkGraph.eq_do_nothing; auto.
+      1: auto.
+    cbv iota zeta in H16.
+    destruct H16 as [_ ?].
+
+    pose proof LocalGraphCopy.vcopy1_edge_copy_list_copy_and_copy_extend g1 g2 g3 g4 g2' g3' g4'' g4' root es es_done e0 es_later (WeakMarkGraph.marked g1) H H0 H2 H3 H1.
+    spec H17; [intros; apply decidable_prop_decidable; apply node_pred_dec |].
+    spec H17; [destruct H4 as [? [? ?]]; auto |].
+    spec H17; [auto |].
+    cbv zeta in H17.
+    rewrite <- H16 in H17.
+    spec H17; [destruct H7 as [? [? ?]]; auto |].
+    spec H17; [auto |].
+    spec H17; [intros; rewrite <- (app_same_set H16); apply decidable_prop_decidable; apply node_pred_dec |].
+    spec H17; [destruct H11 as [? [? ?]]; auto |].
+    spec H17; [auto |].
+    spec H17; [auto |].
+    destruct H17 as [? [? [? ?]]].
+    split; intros; apply GSG_PartialGraphPreserve; auto.
+    + apply Included_refl.
+    + destruct H17.
+      intros ? ?; unfold Ensembles.In; rewrite H17; tauto.
+    + apply Intersection1_Included, Included_refl.
+    + apply Intersection1_Included.
+      destruct H17.
+      intros ? ?; unfold Ensembles.In; rewrite H17; tauto.
+    + eapply si_stronger_partial_labeledgraph_simple; [| eassumption].
       apply Intersection1_Included, Included_refl.
   } Unfocus.
-  eapply join_preserved; [| | exact x | exact x0].
-  + destruct H11 as [_ [_ HH]].
-    destruct HH as [_ [_ [_ [HH _]]]].
-    destruct H7 as [_ [_ ?]].
-    destruct HH as [? _].
-    destruct H7 as [_ [_ [_ [? _]]]].
-    rewrite <- H7 in H9.
-    apply Prop_join_shrink1; auto.
-    destruct (vcopy1_edge_copy_list_spec root _ _ _ _ _ _ _ _ H H0 H1 H2 H3 H4 H5).
-    eapply LocalGraphCopy.edge_copy_list_vvalid_mono in H10; [exact H10 |].
-    destruct H4 as [_ [_ ?]].
-    eapply LocalGraphCopy.vcopy1_copied_root_valid in H4; eauto.
-  + replace (map (@LocalGraphCopy.emap V E V E (@SGBA_VE V E SGBA)
-                    (@SGBA_EE V E SGBA) V E V E GMS g4) es_done) with (map (LocalGraphCopy.emap g3) es_done)
-      by (apply (extend_copy_emap_root g1 g2 g3 g4 g2' g3' g4' root es es_done e0 es_later); auto).
-    destruct H11 as [_ [_ HH]].
-    destruct HH as [_ [_ [_ [HH _]]]].
-    destruct H7 as [_ [_ ?]].
-    destruct HH as [_ [? _]].
-    destruct H7 as [_ [_ [_ [_ [? _]]]]].
-    rewrite <- H7 in H9.
-    apply Prop_join_shrink; auto.
-    unfold Included, Ensembles.In.
-    intros e ? ?.
-    destruct H9 as [_ ?].
-    apply (H9 e); auto.
-    destruct (vcopy1_edge_copy_list_spec root _ _ _ _ _ _ _ _ H H0 H1 H2 H3 H4 H5).
-    eapply (LocalGraphCopy.vcopy1_edge_copy_list_mapped_root_edge_evalid g1 g2 g3 g2' g3'); eauto.
-      1: intros; destruct (node_pred_dec (WeakMarkGraph.marked g1) v); auto.
-      1: destruct H4 as [? [? ?]]; auto.
 Qed.
-*)
+
 End SpatialGraph_Copy.
 
 

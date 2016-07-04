@@ -424,6 +424,32 @@ Proof.
   apply H1; auto.
 Qed.
 
+Lemma vertices_at_ramif_1_stable: forall (g: Graph) (P: V -> Prop) x d,
+  vgamma g x = d ->
+  P x ->
+  vertices_at P g |-- vertex_at x d * (vertex_at x d -* vertices_at P g).
+Proof.
+  intros.
+  apply vertices_at_ramif_1.
+  eexists.
+  split; [| split].
+  + apply Ensemble_join_Intersection_Complement.
+    - unfold Included, Ensembles.In; intros; subst.
+      auto.
+    - intros.
+      apply decidable_prop_decidable.
+      apply equiv_dec.
+  + apply Ensemble_join_Intersection_Complement.
+    - unfold Included, Ensembles.In; intros; subst.
+      auto.
+    - intros.
+      apply decidable_prop_decidable.
+      apply equiv_dec.
+  + reflexivity.
+  + auto.
+  + auto.
+Qed.
+
 Lemma vertices_at_ramif_x: forall (g g': Graph) (G L L' G': V -> Prop),
   (exists F,
      Prop_join L F G /\
@@ -873,22 +899,8 @@ Proof.
   intros.
   subst.
   unfold reachable_vertices_at.
-  apply vertices_at_ramif_1; auto.
-  eexists.
-  split; [| split].
-  + apply Ensemble_join_Intersection_Complement.
-    - unfold Included, Ensembles.In; intros; subst.
-      apply reachable_refl; auto.
-    - intros.
-      apply decidable_prop_decidable.
-      apply equiv_dec.
-  + apply Ensemble_join_Intersection_Complement.
-    - unfold Included, Ensembles.In; intros; subst.
-      apply reachable_refl; auto.
-    - intros.
-      apply decidable_prop_decidable.
-      apply equiv_dec.
-  + reflexivity.
+  apply vertices_at_ramif_1_stable; auto.
+  apply reachable_refl; auto.
 Qed.
 
 Lemma va_reachable_root_update_ramify: forall (g: Graph) (x: V) (lx: DV) (gx gx': GV),
@@ -932,6 +944,20 @@ Proof.
     - apply si_stronger_partial_labeledgraph_simple with (Complement V (eq x)).
       * apply Intersection2_Included, Included_refl.
       * apply lg_vgen_stable.
+Qed.
+
+Lemma va_reachable_internal_stable_ramify: forall (g: Graph) (x y: V) (gy: GV),
+  vvalid g y ->
+  vgamma (Graph_SpatialGraph g) y = gy ->
+  reachable g x y ->
+  @derives _ _
+    (reachable_vertices_at x g)
+    (vertex_at y gy *
+      (vertex_at y gy -* reachable_vertices_at x g)).
+Proof.
+  intros.
+  subst.
+  apply vertices_at_ramif_1_stable; auto.
 Qed.
 
 Lemma va_labeledgraph_add_edge_eq: forall (g: Graph) e s d data,
