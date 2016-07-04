@@ -23,7 +23,7 @@ void mark(node x) { // $\{\p{graph}(\tx{x},\gamma)\}$
     l = x.left;
     r = x.right;
     x.val = 1;
-    mark(l);
+    mark(l);$\label{beforemarkleft}$
     mark(r);
   }
 } // $\{\exists \gamma'.~ \p{graph}(\tx x,\gamma') /| \m{mark}(\gamma, \tx{x}, \gamma')\}$
@@ -33,11 +33,11 @@ void mark(node x) { // $\{\p{graph}(\tx{x},\gamma)\}$
 \label{fig:hipmarkgraph}
 \end{figure}
 
-As shown in figure \ref{fig:hipmarkgraph} the pre and post conditions for verifying the bigraph marking program in HIP/SLEEK are the same as they were for VST. There are three key steps that automate ramifications in HIP/SLEEK, the first step is the use of fold/unfold relationship for graphs given in (\ref{eqn:bigraphintrofoldunfold}). HIP/SLEEK uses unfold lemma for graph to automatically expose the heap required to check entailments during forward reasoning. E.g. in order to check the dereference at line 10 in figure \ref{fig:hipmarkgraph} the $\p{graph}(\tx{x},\gamma)$ predicate is unfolded and the state just before line \ref{ifcondmark} is $ \exists m,l,r.~ \gamma(x)=(m,l,r) \wedge x \mapsto m,-,l,r \ocon \p{graph}(l, \gamma) \ocon \p{graph}(r, \gamma)$.
+As shown in figure \ref{fig:hipmarkgraph} the pre and post conditions for verifying the bigraph marking program in HIP/SLEEK are the same as they were for VST. There are three key steps that automate ramifications in HIP/SLEEK, the first step is the use of fold/unfold relationship for graphs given in (\ref{eqn:bigraphintrofoldunfold}). HIP/SLEEK uses unfold lemma for graph to automatically expose the heap required to check entailments during forward reasoning. E.g. in order to check the dereference at line \ref{ifcondmark} in figure \ref{fig:hipmarkgraph} the $\p{graph}(\tx{x},\gamma)$ predicate is unfolded and the state just before line \ref{ifcondmark} is $ \exists m,l,r.~ \gamma(x)=(m,l,r) \wedge x \mapsto m,-,l,r \ocon \p{graph}(l, \gamma) \ocon \p{graph}(r, \gamma)$.
 
-Similar to most other verification tools \cite{Beckert:2007,DistefanoP08,berdine:smallfoot,jacobs:verifast}, HIP/SLEEK uses forward reasoning based on symbolic execution. We use the $\septraction$ operator to capture the strongest post condition during forward reasoning. Given a precondition $R$ and $\{P\}~c~\{Q\}$ the strongest post condition can be captured as $(P \septraction R) \scon Q$. During forward reasoning in HIP/SLEEK we introduce the $\septraction$ when checking entailments with predicates that use sharing. E.g. at line 14 in figure \ref{fig:hipmarkgraph} in order to check the precondition we introduce the following to the state $ (\p{graph}(l, \gamma) \septraction (x \mapsto m,-,l,r \ocon \p{graph}(l, \gamma) \ocon \p{graph}(r, \gamma))) \scon \p{graph}(l, \gamma')$, where $\gamma'$ is the mathematical graph after the \texttt{mark(l)} recursive call.
+Similar to most other verification tools \cite{Beckert:2007,DistefanoP08,berdine:smallfoot,jacobs:verifast}, HIP/SLEEK uses forward reasoning based on symbolic execution. We use the $\septraction$ operator to capture the strongest post condition during forward reasoning. Given a precondition $R$ and $\{P\}~c~\{Q\}$ the strongest post condition can be captured as $(P \septraction R) \scon Q$. During forward reasoning in HIP/SLEEK we introduce the $\septraction$ when checking entailments with predicates that use sharing. E.g. at line \ref{beforemarkleft} in figure \ref{fig:hipmarkgraph} in order to check the precondition we introduce the following to the state $ (\p{graph}(l, \gamma) \septraction (x \mapsto m,-,l,r \ocon \p{graph}(l, \gamma) \ocon \p{graph}(r, \gamma))) \scon \p{graph}(l, \gamma')$, where $\gamma'$ is the mathematical graph after the \texttt{mark(l)} recursive call.
 
-The third and final step is to eliminate the $\septraction$ operator from the state using lemmas. At line 14, we make use of the following lemma:
+The third and final step is to eliminate the $\septraction$ operator from the state using lemmas. At line \ref{beforemarkleft}, we make use of the following lemma:
 
 \[
 \begin{array}{l}
@@ -48,7 +48,7 @@ The third and final step is to eliminate the $\septraction$ operator from the st
 \end{array}
 \]
 
-Where, $\p{subset\_reach}$ and $\p{eqnot\_reach}$ are uninterpreted relations. The lemma application is guided by structural matching, the LHS of the lemma matches with the current state at line 14. Thus we apply the lemma by substituting and rewriting the state to RHS of the lemma. Thus, the $\septraction$ operator is eliminated from the state and we can happily use the usual HIP/SLEEK forward reasoning to proceed with the verification.
+Where, $\p{subset\_reach}$ and $\p{eqnot\_reach}$ are uninterpreted relations. The lemma application is guided by structural matching, the LHS of the lemma matches with the current state at line \ref{beforemarkleft}. Thus we apply the lemma by substituting and rewriting the state to RHS of the lemma. Thus, the $\septraction$ operator is eliminated from the state and we can happily use the usual HIP/SLEEK forward reasoning to proceed with the verification.
 
 \subsection{Generating Coq module type}
 
