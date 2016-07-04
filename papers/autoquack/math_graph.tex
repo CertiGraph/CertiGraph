@@ -11,6 +11,27 @@ this section, we will introduce the framework and show how we built
 them.
 
 \subsection{Definitions of graph and other concepts}
+The core of the graph theory framework are the definitions of graph,
+graph-related structures and relations. In mathematics, a (directed)
+graph is an ordered pair $(V, E)$ where $V$ is the set of vertices or
+nodes and $E$ is the set of edges comprising a source node and a
+destination node. Analogously, in our framework, a mathematical graph
+is a hextuple $(V, E, \phi_V, \phi_E, s, t)$ where $V$/$E$ is the type
+of vertices/edges, $\phi_V$/$\phi_E$ is the predicate over $V$/$E$
+which asserts the validity of a vertex/edge, $s$ and $e$ are functions
+of type $E -> V$ which maps an edge to its source and destination
+respectively. Invalid nodes and edges are not considered as elements
+of a graph. However, there are no additional requirements for the
+validity of the whole graph. As shown in Figure \ref{fig:pregraph},
+our graph can contain invalid nodes and edges. That is why we call
+this combinatorial structure \textbf{PreGraph} because it can express
+not just normal graphs. We design it deliberately because we need a
+way to present such things. For example, the difference of two graphs:
+$\gamma_1-\gamma_2$, is not necessarily a normal graph because it may
+contain dangling edges. The ``subtracted'' nodes are not really
+removed but are ruled out from valid nodes because they are still
+referred in edge-part of $\gamma_1-\gamma_2$. Many concepts such as
+path, reachability, subgraph are defined based on PreGraph.
 
 \begin{figure}
 \centering
@@ -49,44 +70,16 @@ them.
 \end{tikzpicture}
 \endpgfgraphicnamed
 \vspace{1ex}
-\caption{A PreGraph with invalid nodes and edges.}
+\caption{A PreGraph with invalid nodes and edges.}\label{fig:pregraph}
 \end{figure}
-
-The core of the graph theory framework are the definitions of graph,
-graph-related structures and relations. In mathematics, a (directed)
-graph is an ordered pair $(V, E)$ where $V$ is a set of vertices or
-nodes and $E$ is a set of edges comprising a source node and a
-destination node. In our framework, we defined a similar structure
-with minor amendment: we attached ``validity'' property to each vertex
-and edge while $V$ and $E$ serve as types instead of sets of vertices
-and edges respectively. There are two reasons for the amendment. The
-first is that in many proof assistants, it is much easier and natural
-to declare types instead of sets. When using types, validity is an
-effective way in controlling membership: most graphs do not contain
-all instances of vertex type and edge type. The second reason is
-expanding the scope of representation, not just normal graphs. For
-example, in some cases, we need to describe the difference of two
-graphs: $\gamma_1-\gamma_2$, which is not necessarily a graph because
-it may contain dangling edges. The ``subtracted'' nodes are not really
-removed but are ruled out from valid nodes because they are still
-referred in edges part of the definition of $\gamma_1-\gamma_2$. So we
-call this structure \textbf{PreGraph}, which means it may be
-incomplete in comparison with a classical graph. In our framework, a
-PreGraph $\gamma$ is a hextuple $(V, E, \Phi_V, \Phi_E, s, t)$ where
-$\Phi_V$ and $\Phi_E$ are validity predicates for vertex type $V$ and
-edge type $E$, $s$ and $t$ are functions which takes an edge as
-argument and returns source/destination node of the edge. Many
-concepts such as reachability, subgraph and structural equivalence are
-defined based on PreGraph.
 
 \paragraph{Path}
 Once we have the definition of PreGraph, it is time to define another
 infrastructure: path. Informally, a path is a list of nodes
 concatenated with edges. Since an edge contains the information about
-its source and destination nodes, there is no necessary to define path
-as an interleaving list of nodes and edges. Then we have two obvious
-choices for representation of a path: a list of nodes or a list of
-edges.
+its source and destination, there is no necessary to define path as an
+interleaving list of nodes and edges. Then we have two obvious choices
+for representation of a path: a list of nodes or a list of edges.
 
 Both choices have certain defects. If a path is defined as a list of
 nodes, we can not distinguish different paths between two nodes in
