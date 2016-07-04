@@ -179,10 +179,46 @@ Note that \infrulestyle{Ramify-P} has no free variable side condition, which is 
 \[
 \infrule{Solve Ramify-P}
 {G_1 |- L_1 * F \\
-{\color{magenta} F |- L_2 --* G_2}}
+{\color{magenta} F |- L_2 --* G_2}
+%F * L_2 |- G_2
+}
 {G_1 \vdash L_1 * \pguards{c}  (L_2 --* G_2)}{F \textrm{ ignores } \MV(c)} \qquad \qquad \qquad \qquad
 \]
-That is, we can handle the $\pguards{c}$ by breaking apart the single entailment into a pair.  Using two entailments allows modified program variables to change between the preconditions and postconditions.  To connect the pair, we must choose a suitable predicate $F$ that ignores modified variables in $c$. Finding a suitable $F$ and proving the associated entailments can be tricky in the abstract but in practice is guided by using a ``ramification library'' as given in \S\ref{sec:ramifylib}.
+That is, we can handle the $\pguards{c}$ by breaking apart the single entailment into a pair.  Using two entailments allows modified program variables to change between the preconditions and postconditions\footnote{Entailment procedures for separation logic may prefer to use $F * L_2 |- G_2$ as the second premise of \infrulestyle{Solve Ramify-P} because it is free from $--*$.}.
+To connect the pair, we must choose a suitable predicate~$F$ that ignores modified variables in~$c$.  Doing so is a fully-mechanical albeit delicate process.  We proceed as follows.
+
+First, we create a fresh metavariable for each program variable.  This variable will be universally quantified over the entire entailment.
+
+
+but 
+
+Generally speaking, we do so by replacing referenc
+
+modified program variables in 
+  
+  Finding a suitable~$F$ is tricky.  To choose the
+ 
+ divides into two parts: spatial and .  For the spatial part, the choice can be very tricky in the abstract but
+is guided in practice by a ``ramification library'' such as discussed in~\S\ref{sec:ramifylib}.
+
+: a delicate but fully-mechanical transformation to remove the modified variables and a more ``intuitive'' spatial part 
+
+
+
+
+ and proving the associated entailments can be subtle
+
+.  Generally speaking, program variables in $L_2 --* G_2$ are replaced by metavariables
+
+Universally 
+
+
+; universally quantified metavariables can make further connections between the preconditions and the postconditions.  For example, for the ramification block
+
+
+
+
+but in practice 
 
 {
 \color{magenta}
@@ -201,87 +237,6 @@ With \infrulestyle{Ramify-P} and \infrulestyle{Solve Ramify-P} we can prove the 
 \]
 This justifies our point in \S\ref{sec:localizations} that our new localization notation can also be used for frames.
 %Conversely, we can also prove \infrulestyle{Ramify-P} from \infrulestyle{Frame} and \infrulestyle{Consequence}:
-
-
-
-
-\subsection{Subdividing ramification entailments}
-\label{sec:existentials}
-
-After applying \infrulestyle{Ramify-P}, 
-
-%{\color{magenta} Intro blah. lines~\ref{code:beforemarkl}--\ref{code:aftermarkl} of Figure~\ref{fig:markgraph}}
-
-
-{\color{magenta}
-existentials \S\ref{sec:existentials} 4.2. Using existential quantifier in post condition.
-}
-
-
-We call the action in line 2 \emph{localize} and call the action in line 6 \emph{unlocalize}.
-
-~\ref{code:beforemarkl}--\ref{code:aftermarkl}
-
-Existential rule by Floyd~\cite{floydlogic} (1967!)
-
-\[
-\infrule{Existential extraction}
-{\forall x.~ \big(\{ P \} ~ c ~ \{Q \}\big)}
-{\{ \exists x. P \} ~ c ~ \{ \exists x.~ Q \}}{}
-\]
-
-\begin{lstlisting}
-// $\{ P \}$
-  $c$
-// $\{ \exists x.~Q \}$
-// $\{ Q \}$
-\end{lstlisting}
-
-
-But:
-\begin{lstlisting}
-// $\{ G_1 \}$
-// $\searrow \{ L_1 \}$
-      $c$
-// $\swarrow \{ \exists x.~L_2 \}$
-// $\{ \exists x.~G_2 \}$
-// $\{ G_2 \}$
-\end{lstlisting}
-
-\Rule{RAM-P-FRAME }
-{G \vdash L * \Box^{\llbracket c \rrbracket} (L' --* G') \\
-F \text{ is stable w.r.t. } \MV(c) \\}
-{G * F \vdash L * \Box^{\llbracket c \rrbracket} (L' --* G' * F) }
-
-\Rule{RAM-P-SPLIT }
-{G_1 \vdash L_1 * \Box^{\llbracket c \rrbracket} (L_1' --* G_1') \\
-G_2 \vdash L_2 * \Box^{\llbracket c \rrbracket} (L_2' --* G_2') \\}
-{G_1 * G_2 \vdash L_1 * L_2 * \Box^{\llbracket c \rrbracket} (L_1' * L_2' --* G_1' * G_2') }
-
-\[\text{UNSOUND-RAM-Q-SPLIT}\]
-\Rule{}
-{G_1 \vdash L_1 * (\exists x, L_1' (x) --* \exists x, G_1'(x)) \\
-G_2 \vdash L_2 * (\exists x, L_2' (x) --* \exists x, G_2'(x)) \\}
-{G_1 * G_2 \vdash L_1 * L_2 * (\exists x, L_1'(x) * L_2'(x) --* \exists x, G_1'(x) * G_2'(x)) }
-
-
-\[
-\infrule{Ramify-Q}
-{\{ L \} ~ c ~ \{\exists x.~ L' \} \\
- G \vdash L * \big(\forall x.~ (L' --* G')\big)}
-{\{ G \} ~ c ~ \{ \exists x.~G' \}}{}
-\]
-
-\Rule{Ramification-PQ}
-{\{ L \} c \{ \exists x, L' (x) \} \\
- G \vdash L * \Box^{\llbracket c \rrbracket} (\forall x, L' (x) --* G' (x)) \\}
-{\{ G \} c \{ \exists x, G' (x)\}}
-
-
-%Related work
-
-\subsection{Soundness of our rules}
-Figure~\ref{fig:rampqproofs}!
 
 \begin{figure*}
 Proof of \infrulestyle{Ramify-P} from \infrulestyle{Frame} and \infrulestyle{Consequence}:
@@ -339,6 +294,96 @@ Proof of \infrulestyle{Ramify-PQ} from \infrulestyle{Ramify-P}:
 \caption{Proofs of \infrulestyle{Ramify-P} and \infrulestyle{Ramify-PQ}}
 \label{fig:rampqproofs}
 \end{figure*}
+
+\subsection{Subdividing ramification entailments}
+\label{sec:existentials}
+
+After applying \infrulestyle{Ramify-P}, it is often desirable to break the ramification entailment into smaller disjoint pieces before applying \infrulestyle{Solve Ramify-P}.
+One common case is to ``frame out'' an unneeded part of the global state:
+\[
+\infrule{Frame Ramify-P}
+{G_1 \vdash L_1 * \pguards{c} (L_2 --* G_2)}
+{G_1 * F \vdash L_1 * \pguards{c} \big(L_2 --* (G_2 * F)\big) }
+{\begin{array}{c}F \text{ ignores} \\ \MV(c)\end{array}} \qquad \qquad
+\]
+In fact \infrulestyle{Frame Ramify-P} is a simple consequence of \infrulestyle{Solve Ramify-P} and the more general \[
+\infrule{Split Ramify-P}
+{G_1 \vdash L_1 * \pguards{c} (L_2 --* G_2) \\
+ G_1' \vdash L_1' * \pguards{c} (L_2' --* G_2') }
+{G_1 * G_1' \vdash L_1 * L_1' * \pguards{c} \big((L_2 * L_2') --* (G_2 * G_2')\big)} {}
+\]
+In general the strategy is to apply \infrulestyle{Frame Ramify-P} and \infrulestyle{Split Ramify-P} until the ramification entailments are as small as they can be (while remaining true!) before using \infrulestyle{Solve Ramify-P} on the remaining ``atoms''.
+
+The situation is unfortunately a little messier when the postconditions contain existential quantifiers, as they tend to be when program invariants are stated relationally instead of functionally.  To make this point a little more clearly we were more explicit about existentials in \emph{e.g.} lines~\ref{code:beforemarkl}--\ref{code:aftermarkl} of Figure~\ref{fig:markgraph} than is typical in pen-and-paper proofs.  Pen and paper proofs are often a little casual with existentials because they can be extracted to the metacontext using Floyd's 1967 \infrulestyle{Existential extraction} rule~\cite{floydlogic}:
+\[
+\infrule{Existential extraction}
+{\forall x.~ \big(\{ P \} ~ c ~ \{Q \}\big)}
+{\{ \exists x. P \} ~ c ~ \{ \exists x.~ Q \}}{}
+\]
+
+.  Pen-and-paper verifiers are often a little casual with existentials, an approach that is ess
+
+
+
+\[
+\infrule{Ramify-PQ (Program variables and Quantifiers)}
+{\{ L \} c \{ \exists x.~ L_2 \} \\
+ G_1 \vdash L_1 * \pguards{c} \big(\forall x.~ (L_2 --* G_2)\big) }
+{\{ G_1 \} c \{ \exists x.~ G_2 \}} {}
+\]
+
+
+%{\color{magenta} Intro blah. lines~\ref{code:beforemarkl}--\ref{code:aftermarkl} of Figure~\ref{fig:markgraph}}
+
+
+
+
+
+
+~\ref{code:beforemarkl}--\ref{code:aftermarkl}
+
+Existential rule by Floyd (!)
+
+
+\begin{lstlisting}
+// $\{ P \}$
+  $c$
+// $\{ \exists x.~Q \}$
+// $\{ Q \}$
+\end{lstlisting}
+
+
+But:
+\begin{lstlisting}
+// $\{ G_1 \}$
+// $\searrow \{ L_1 \}$
+      $c$
+// $\swarrow \{ \exists x.~L_2 \}$
+// $\{ \exists x.~G_2 \}$
+// $\{ G_2 \}$
+\end{lstlisting}
+
+
+\[\text{UNSOUND-RAM-Q-SPLIT}\]
+\Rule{}
+{G_1 \vdash L_1 * (\exists x, L_1' (x) --* \exists x, G_1'(x)) \\
+G_2 \vdash L_2 * (\exists x, L_2' (x) --* \exists x, G_2'(x)) \\}
+{G_1 * G_2 \vdash L_1 * L_2 * (\exists x, L_1'(x) * L_2'(x) --* \exists x, G_1'(x) * G_2'(x)) }
+
+
+\[
+\infrule{Ramify-Q}
+{\{ L \} ~ c ~ \{\exists x.~ L' \} \\
+ G \vdash L * \big(\forall x.~ (L' --* G')\big)}
+{\{ G \} ~ c ~ \{ \exists x.~G' \}}{}
+\]
+
+
+
+%Related work
+
+\subsection{Soundness of our rules}
+Figure~\ref{fig:rampqproofs}!
 
 \hide{
 The \infrulestyle{Ramify} rule is sound but interacts poorly with modified program variables (as in lines~\ref{code:markbeforetripleramify}--\ref{code:markaftertripleramify} of Figure~\ref{fig:markgraph}) {\color{magenta} and
