@@ -376,7 +376,10 @@ Proof.
 
   gather_SEP 0 1.
   replace_SEP 0 (EX gg5': Graph, !! (@copy _ _ _ CCS x g g5 gg5' /\ x0 = vmap g5 x) && graph sh x0 gg5').
-  admit.
+  Focus 1. {
+    entailer!.
+    eapply (@copy_final pSGG_VST (sSGG_VST sh) g g1 g2 g3 g4 g5 g1' g2' g3' g4' g5'); [| | | | | | | | eassumption ..]; eauto.
+  } Unfocus.
 
   forward. (* return x0; *)
   rewrite H7.

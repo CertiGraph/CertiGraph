@@ -672,6 +672,16 @@ Proof.
     apply reachable_foot_valid in H2; auto.
 Qed.
 
+Lemma va_reachable_internal_stable_ramify: forall (g: Graph) (x y: addr) (gy: DV * addr * addr),
+  vvalid g y ->
+  vgamma g y = gy ->
+  reachable g x y ->
+  @derives pred _
+    (reachable_vertices_at x g)
+    (vertex_at y gy *
+      (vertex_at y gy -* reachable_vertices_at x g)).
+Proof. intros. apply va_reachable_internal_stable_ramify; auto. Qed.
+
 (*
 TODO: maybe as a general lemma for normal_general_graph
 Lemma is_guarded_BiMaFin_si: forall (g1 g2: LGraph),
