@@ -113,14 +113,14 @@ with other derived ones, such as
 \end{split}
 \end{equation*}
 form the bedrock of nearly every nontrivial predicate about
-graph. Either the relation of two states---before and after running an
-algorithm---of a graph or the description of a graph with a particular
-shape, reachability is inevitable. To some extent, it is quite natural
-because most graph-related algorithms (DFS, BFS, Shortest Path,
-Spanning Tree, etc) depend on a small operation: exploring neighbours
-from one node. Thus when describing the effect of an algorithm,
-reachability is indispensable. Some of those descriptions are
-discussed in later sections.
+graphs. Either the relation of two states---before and after running
+an algorithm---of a graph or the description of a graph with a
+particular shape, reachability is inevitable. To some extent, it is
+quite natural because most graph-related algorithms (DFS, BFS,
+Shortest Path, Spanning Tree, etc) depend on a small operation:
+exploring neighbours from one node. Thus when describing the effect of
+an algorithm, reachability is indispensable. Some of those
+descriptions are discussed in later sections.
 
 \paragraph{Subgraph}
 When we tie a mathematical graph $\gamma$ to a spatial graph predicate
@@ -132,8 +132,8 @@ reachable portion of $\gamma$ in pure part. We generalize this
 description as two concepts: partial graph $\gamma \!\uparrow\! P$ and
 subgraph $\gamma \!\downarrow\! P$ for arbitrary predicate $P$. To define
 $\gamma \!\uparrow\! P$ and $\gamma \!\downarrow\! P$, for any $\gamma=(V,
-E, \Phi_V, \Phi_E, s, t)$, we do not change $V$ and $E$ but change
-$\Phi_V$ and $\Phi_E$ by adding proposition about satisfying $P$ for
+E, \phi_V, \phi_E, s, t)$, we do not change $V$ and $E$ but change
+$\phi_V$ and $\phi_E$ by adding proposition about satisfying $P$ for
 nodes. It means valid nodes in $\gamma \!\uparrow\! P$ and
 $\gamma \!\downarrow\! P$ must satisfy $P$. The only difference between
 $\gamma \!\uparrow\! P$ and $\gamma \!\downarrow\! P$ is that in
@@ -142,28 +142,6 @@ valid, but in $\gamma \!\downarrow\! P$, valid edges means both its source
 and destination nodes satisfy $P$. With the concepts of partial graph
 and subgraph, we can express the reachable portion by instantiating
 $P$ as reachable predicate.
-\hide{
-\paragraph{Structural Equivalence}
-Many graph-manipulating algorithms adopt divide and conquer
-paradigm. Most of those algorithms contain certain invariants as parts
-of their specifications. Usually it means certain portion of graph
-before program execution is equivalent to the one after execution. To
-describe this relation, we introduced ``structural equivalence'' in
-our framework with the following definition:
-\begin{equation*}
-\begin{split}
-\gamma_1 \cong\gamma_2 \defeq & \forall v, \Phi_{V1}(v) \leftrightarrow \Phi_{V2}(v) \wedge \\
-& \forall e, \Phi_{E1}(e) \leftrightarrow \Phi_{E2}(e) \wedge\\
-& \forall e, \Phi_{E1}(e) \rightarrow \Phi_{E2}(e) \rightarrow \text{src}_{\gamma_1}(e)=\text{src}_{\gamma_2}(e) \wedge\\
-& \forall e, \Phi_{E1}(e) \rightarrow \Phi_{E2}(e) \rightarrow \text{dst}_{\gamma_1}(e)=\text{dst}_{\gamma_2}(e)\\
-\end{split}
-\end{equation*}
-Informally it means $\gamma_1$ and $\gamma_2$ has the same vertex set
-and edge set. And any valid edge in both graphs is comprised by the
-same source and destination nodes. This relation can be used with
-subgraph and reachability to define many concrete relations in program
-verification.
-}
 
 \subsection{Classification of various graphs}
 
@@ -172,16 +150,15 @@ inadequate for real program verifications. Admittedly many helpful
 lemmas can be inferred directly from PreGraph. But when we dealing
 with concrete graphs for various algorithms, there are many features
 which a bare PreGraph can not inculde. For example, when we compute
-some properties of a graph, we always hope the graph is finite
-connected. In the recursive defnition of a graph data structure, a
-node contains many pointers to point to its neighbors. The pointers
-could be null to indicate that they do not point to any. Thus we need
-a special node which represents null pointer. In some cases, we have
-to specify a graph in which the outdegree of each nodes is 2. All
-these additional properties are abstracted as different property
-bundles. We defined \textbf{LocalFiniteGraph}, \textbf{MathGraph}
-and \textbf{BiGraph} for the three requirements above,
-respectively.
+some properties of a graph, we always hope the graph is finite. In the
+recursive defnition of a graph data structure, a node contains many
+pointers to point to its neighbors. The pointers could be null to
+indicate that they do not point to any. Thus we need a special node
+which represents null pointer. In some cases, we have to specify a
+graph in which the outdegree of each nodes is 2. All these additional
+properties are abstracted as different property bundles. We
+defined \textbf{FiniteGraph}, \textbf{MathGraph} and \textbf{BiGraph}
+to fulfill the three requirements above, respectively.
 
 \begin{figure}[htbp]
 \centering
@@ -212,32 +189,26 @@ As shown in Figure \ref{fig:graphs}, there are several different
 ``Graph'' definitions in our framework. Some of them (with gray
 background) are real mathematical objects, just like PreGraph. The
 rest are just property bundles which are PreGraph with special
-properties. They provide different views of graphs from a certain
-perspective.
+properties. They provide different views of graphs from certain
+perspectives.
 
-In our framework, there are four kinds of \emph{real}
-graphs: \textbf{PreGraph}, \textbf{SpatialGraph}, \textbf{LabeledGraph}
+In our framework, there are three kinds of \emph{real}
+graphs: \textbf{PreGraph}, \textbf{LabeledGraph}
 and \textbf{GeneralGraph}. The definition of PreGraph is already
-known. Based on PreGraph, each node and each edge in a LabeledGraph
-has extra labels which can be seen as label functions of nodes and
-edges. A GeneralGraph is a LabeledGraph with a customized sound
-condition. A SpatialGraph is the graph directly stored in memory,
-which contains connecting and user specified informations stored on
-every vertex and/or every edge.
+known. Based on a PreGraph, when adding labels of vertices or of
+edges, we get a LabeledGraph. Sometimes when we hope the graph we
+refer to satisfies more conditions (finite, binary, etc), we can use
+GeneralGraph with a customized soundness condition. We distinguish
+these ``Graphs'' because we hope the lemmas provided by our framework
+are in their most general and flexible form. For some of the lemmas, a PreGraph is
+enough while others may not hold without extra conditions.
 
 The rest in Figure \ref{fig:graphs} are all property bundles where
-LocalFiniteGraph, MathGraph and BiGraph are already explained. A
-FiniteGraph is a graph with finite number of vertices and edges. (So a
-FiniteGraph is definitely a LocalFiniteGraph.) A BiMaFin is a graph
-satisfying BiGraph, MathGraph and FiniteGraph simultaneously. A
-ReachableFiniteGraph is a graph in which all reachable nodes of an
-arbitrary node are finite. A NormalGeneralGraph is a special
-GeneralGraph used for certain algorithms. Usually in the correctness
-proofs of concrete algorithms, all graphs satisfy the definition of
-BiMaFin, LocalFiniteGraph, ReachableFiniteGraph and etc. But for many
-math theorems in graph theory, some properties (e.g. FiniteGraph,
-BiGraph) are not necessary. These different properties for different
-theorems make our framework more flexible and general.
+FiniteGraph, MathGraph and BiGraph are already explained. BiMaFin is a
+compositional property of the three: it means a graph satisfying
+BiGraph, MathGraph and FiniteGraph simultaneously. As an application,
+we adopt BiMaFin as the soundness condition for GeneralGraph in the
+final real verifications.
 
 \subsection{Computable Reachability}
 We proved quite many property-bundle specific theorems. One typical
@@ -245,9 +216,10 @@ example of such theorems is the following one:
 \newtheorem{mythm}{Theorem}
 \begin{mythm}
 For any graph $\gamma$ which is both MathGraph and LocalFiniteGraph
-and any node $x$ in $\gamma$, if the number of nodes reachable from
-node $x$ is finite, then we can find a set which exactly contains the
-reachable nodes from $x$ in $\gamma$.
+(i.e. every node has a finite number of neighbors) and any node $x$ in
+$\gamma$, if the number of nodes reachable from node $x$ is finite,
+then we can find a set which exactly contains the reachable nodes from
+$x$ in $\gamma$.
 \end{mythm}
 It sounds so trivial but the proof is totally non-trivial. The most
 obvious way to prove it---filtering reachable nodes from all valid
@@ -288,8 +260,8 @@ exists or is simpler.
 \subsection{Application of the framework}
 
 Graph-manipulating programms may also deal with other structures, such
-as dag (directed acyclic graph), tree or spanning tree. With the basic
-defintions in our framework, new structures can be defined
+as dags (directed acyclic graphs), trees or spanning trees. With the
+basic defintions in our framework, new structures can be defined
 easily. Acyclic graph is just a graph with an additional property:
 forall any $x$ and $y$, if $x$ is reachable from $y$, then $y$ is not
 reachable from $x$. Tree is similar. The additional property for tree
