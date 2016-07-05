@@ -159,13 +159,13 @@ This non-recursive predicate says that a graph whose root is $x$ is a
 list of reachable nodes from $x$ separated by $\scon$.
 
 \label{sec:foldunfold} From this definition we can prove the unfold lemma:
-\begin{equation*}
+\begin{equation}\label{eqn:unfold_graph}
   \begin{split}
   & \mathtt{graph}(x, \gamma) \Leftrightarrow \exists d,l,r
     . \gamma(x)=(d,l,r) \wedge \\ & x \mapsto d,l,r\, \ocon
     \mathtt{graph}(l, \gamma) \ocon \mathtt{graph}(r, \gamma)
   \end{split}
-\end{equation*}
+\end{equation}
 
 One useful property in proving the unfold lemma is \emph{joinable}. A
 predicate $p$ is joinable iff for any $x\neq y$, $p(x)$ and $p(y)$ are

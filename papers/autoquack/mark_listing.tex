@@ -8,7 +8,7 @@ struct Node {$\label{code:nodedefstart}$
 void mark(struct Node * x) { // $\label{code:markstart}\{\p{graph}(\tx{x},\gamma)\}$
   struct Node * l, * r; int root_mark; $\label{code:inmark}$
   if (x == 0) return;
-// $\{\p{graph}(\tx x,\gamma) /| \exists m,l,r.~ \gamma(\tx{x}) = (m,l,r)\}$
+// $\label{code:globalbeforerootmarkwithex}\{\p{graph}(\tx x,\gamma) /| \exists m,l,r.~ \gamma(\tx{x}) = (m,l,r)\}$
 // $\label{code:globalbeforerootmark}\{\p{graph}(\tx x,\gamma) /| \gamma(\tx{x}) = (m,l,r)\}$
 // $\label{code:beforerootmark}\searrow \{\tx x|-> m,-,l,r \}$
 $\label{code:markram1}$      root_mark = x -> m;
@@ -25,7 +25,7 @@ $\label{code:markram2}\ramify(\ref{lem:updategraphnode})$      r = x -> r;
 // $\label{code:beforemarkl}\{\p{graph}(\tx x,\gamma') /| \gamma(\tx{x}) = (0,\tx{l},\tx{r}) /| \m{mark1}(\gamma, \tx{x}, \gamma')\}$
 // $\searrow \{\p{graph}(\tx l, \gamma')\}$
 $\label{code:markram3}\ramify(\ref{lem:updatesubgraph})$      mark(l);
-// $\swarrow \{\exists \gamma''.~ \p{graph}(\tx l, \gamma'') /| \m{mark}(\gamma', \tx{l}, \gamma'')\}$
+// $\label{code:postmark1}\swarrow \{\exists \gamma''.~ \p{graph}(\tx l, \gamma'') /| \m{mark}(\gamma', \tx{l}, \gamma'')\}$
 // $\label{code:aftermarkl}\left\{\!\!\!\begin{array}{l@{}}\exists \gamma''.~ \p{graph}(\tx x,\gamma'') /| \gamma(\tx{x}) = (0,\tx{l},\tx{r}) /| \null \\ \m{mark1}(\gamma, \tx{x}, \gamma') /| \m{mark}(\gamma', \tx{l}, \gamma'')\end{array}\right\}$
 // $\left\{\!\!\!\begin{array}{l@{}}\p{graph}(\tx x,\gamma'') /| \gamma(\tx{x}) = (0,\tx{l},\tx{r}) /| \null \\ \m{mark1}(\gamma, \tx{x}, \gamma') /| \m{mark}(\gamma', \tx{l}, \gamma'')\end{array}\right\}$
 // $\searrow \{\p{graph}(\tx r, \gamma'')\}$
