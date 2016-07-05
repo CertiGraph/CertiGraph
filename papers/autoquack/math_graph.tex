@@ -56,6 +56,7 @@ path, reachability, subgraph are defined based on PreGraph.
 \node at (3.5, -0.5) [right=1.5pt] {\small Invalid edge};
 \draw[->] (n1) to (n2);
 \draw[->,dashed] (n1) to (n3);
+\draw[->,dashed] (n3) to (n5);
 \draw[->] (n2) to (n3);
 \draw[->] (n2) to (n7);
 \draw[->] (n2) to (n8);
@@ -63,10 +64,12 @@ path, reachability, subgraph are defined based on PreGraph.
 \draw[->] (n4) to (n1);
 \draw[->] (n1) to (n5);
 \draw[->] (n2) to (n4);
-\draw[->] (n1) to (n6);
+\draw[->] (n1) to [bend left=20] (n6);
 \draw[->] (n6) to (n5);
-\draw[->] (3, 0) -- (3.5, 0);
-\draw[->,dashed] (3, -0.5) -- (3.5, -0.5);
+\draw[->] (n8) to [bend left=20] (n7);
+\draw[->] (n4) to [bend right=35] (n1);
+\draw[->] (3.0, 0) -- (3.6, 0);
+\draw[->,dashed] (3.0, -0.5) -- (3.6, -0.5);
 \end{tikzpicture}
 \endpgfgraphicnamed
 \vspace{1ex}
