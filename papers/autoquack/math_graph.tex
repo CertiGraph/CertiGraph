@@ -259,29 +259,50 @@ exists or is simpler.
 
 \subsection{Application of the framework}
 
-Graph-manipulating programms may also deal with other structures, such
-as dags (directed acyclic graphs), trees or spanning trees. With the
-basic defintions in our framework, new structures can be defined
-easily. Acyclic graph is just a graph with an additional property:
-forall any $x$ and $y$, if $x$ is reachable from $y$, then $y$ is not
-reachable from $x$. Tree is similar. The additional property for tree
-is that there is one and only one path from root to any reachable node
-from root. Spanning tree is a tree with the same reachable vertex set
-of the original graph.
+We apply our framework to define other structures and relations
+between these structures (including graph), and then use them to prove
+certain pure facts proposed by real verifications.
 
-But when dealing with formal proofs, there are some unexpected
-facts. For example, our na\"ive definition of the
-predicate \verb|spanning_tree| is not strong enough to complete the
-inference. We express that graph $g_2$ is a spanning tree of graph
-$g_1$ starting from root node $r$ as \verb|spanning_tree|
-$g_1\,r\,g_2$. We conclude three relations as the predicate. First,
-the unreachable parts from root $r$ in $g_1$ and $g_2$ are the
-same. Secondly, the shape of $g_2$ must be a tree. Lastly, all nodes
-reachable from $r$ in $g_1$ are still reachable from $r$ in $g_2$. The
-second relation ensures that the result is a tree while the third one
-ensures it is a spanning tree of $g_1$. At first glance, it is a very
-complete definition. But the subsequent formal proof reveals that the
-definition still lacks one condition: for any two nodes $a$ and $b$,
-if $a$ is reachable from $r$ in $g_1$ and $b$ is not reachable from
-$r$ in $g_1$, then in $g_2$, $b$ is not reachable from $a$. It is a
-long-winded but necessary relation.
+For example, we define dag (directed acyclic graph) as a PreGraph with
+an additional property: forall any $x$ and $y$, if $x$ is reachable
+from $y$, then $y$ is not reachable from $x$. We also define tree in a
+similar way. The additional property for tree is that there is one and
+only one path from root to any reachable node from root. As for
+relations, we define the relation $\m{mark}(\gamma, \tx x, \gamma')$
+for the ``graph mark'' algorithm in Figure~\ref{fig:markgraph}. It
+means $gamma'$ is the result of marking $\gamma$ from $\tx
+x$. Similarly, we define $\m{span}$ for the ``spanning tree'' program
+and $\m{copy}$ for the ``graph copy'' program. All these relations
+captured the connections of the states of mathematical graphs before
+and after program execution. As we mentioned before, $\m{mark}$ and
+related lemmas are reused in proving pure facts of ``spanning tree''
+and ``graph copy'' because the latter two programs do contain marking
+operations. So we reuse the following pure fact:
+\begin{equation*}
+\begin{split}
+\forall \gamma, x.~&\gamma(x)=(0, v_1, v_2,\dots,v_n) => \m{mark1}(\gamma, x, \gamma_1) =>\\
+        & \m{mark}(\gamma_1,v_1,\gamma_2) => \m{mark}(\gamma_2,v_2,\gamma_3) => \dots =>\\
+        & \m{mark}(\gamma_n,v_n,\gamma_{n+1}) => \m{mark}(\gamma,x,\gamma_{n+1}).
+\end{split}
+\end{equation*}
+Note that it is a general theorem for any LocalFiniteGraph, not just
+BiGraph. In our framework, almost all theorems (except $\m{span}$
+related ones) are proved as generally as possible.
+
+It is worth mentioning that when dealing with formal proofs, there are
+some unexpected facts which showed the rigidity of mechanized
+verification. For example, our na\"ive definition of the relation
+$\m{span}$ is not strong enough to complete a above-like inference. We
+express that graph $g_2$ is a spanning tree of graph $g_1$ starting
+from root node $r$ as $\m{span}(g_1, r, g_2)$. We conclude three
+relations as the predicate. First, the unreachable parts from root $r$
+in $g_1$ and $g_2$ are the same. Secondly, the shape of $g_2$ must be
+a tree. Lastly, all nodes reachable from $r$ in $g_1$ are still
+reachable from $r$ in $g_2$. The second relation ensures that the
+result is a tree while the third one ensures it is a spanning tree of
+$g_1$. At first glance, it is a very complete definition. But the
+subsequent formal proof reveals that the definition still lacks one
+condition: for any two nodes $a$ and $b$, if $a$ is reachable from $r$
+in $g_1$ and $b$ is not reachable from $r$ in $g_1$, then in $g_2$,
+$b$ is not reachable from $a$. It is a long-winded but necessary
+relation.
