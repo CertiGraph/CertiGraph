@@ -1,28 +1,25 @@
-To prove the functional correctness of real graph-manipulating
-algorithms, we provide spatial predicate of graphs as a shape
-description about heaps. As a matter of fact, we defined a much more
-general spatial predicate ``$\bigstar$'' to indicate a collection of
-standard points-to predicates chained by $\scon$ in separation
-logic. The spatial graph predicate is just a special case in terms of
-$\bigstar$.
+In this section, we show how we formalize the ramification proofs we introduced in \S\ref{sec:orientation}. To prove the functional correctness of real graph-manipulating
+algorithms implemented in a real language, we need to connect the following pieces together: the memory model of the programming language, the mathematical properties of graphs and the graph representation in heap. 
 
-\subsection{Infrastructure}
-To formalize spatial graphs and related lemmas, we need a way to
-represent spatial predicate first, in other words, a mechanized
-library of separation logic. We adopt a layered style to get things
+In short, we define spatial predicates of graphs as a shape
+description about heaps. We provide a generic ramification library for these predicates. Here, \emph{generic} means that the library is not for a specific memory model, it is not for a specific graph representation, it is not for a specific graph algorithm and it is not for a specific program implementation. Our library supports general spatial reasonings for graph algorithms.
+
+\subsection{Infrastructure: Isolate memory model}
+
+In order to ensure proofs reusability, we build a logic level between memory models and our ramification library.
+In other words, we adopt a layered style to get things
 done: Our spatial graph definition is build on a separation logic
 layer which are composed by atomic notations ($\scon$, $\ocon$, $|->$,
-$\p{precise}$, etc.) and related properties as axioms. Under the logic
-layer are sound models of the logic.
+$\p{precise}$, etc.) and related properties as axioms, while these axioms are proved sound w.r.t. different memory models.
 
 \begin{figure}[htbp]
 \centering
 \beginpgfgraphicnamed{infrastructure}
-\begin{tikzpicture}
+\begin{tikzpicture}[->/.tip={Stealth}]
 \tikzstyle{every node}=[shape=rectangle, rounded corners=4pt, draw]
 \node (SM) at (-3, 0) {Step-Indexing Model};
-\node (DM) at (0, 0) {Direct Model};
-\node (OM) at (2.5, 0) {Other Models};
+\node (DM) at (1, 0) {Direct Model};
+%% \node (OM) at (2.5, 0) {Other Models};
 \node (CL) at (-3, 1.5) {Core Logic};
 \node (SL) at (1, 1.5) {Supplementary Logic};
 \node (G) at (-3, 3) {Graphs};
@@ -40,6 +37,7 @@ layer are sound models of the logic.
 %% \draw [->] (OM) to (SL);
 \end{tikzpicture}
 \endpgfgraphicnamed
+\vspace{1ex}
 \caption{Infrastructure of spatial graph library}
 \end{figure}
 

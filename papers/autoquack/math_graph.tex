@@ -11,6 +11,27 @@ this section, we will introduce the framework and show how we built
 them.
 
 \subsection{Definitions of graph and other concepts}
+The core of the graph theory framework are the definitions of graph,
+graph-related structures and relations. In mathematics, a (directed)
+graph is an ordered pair $(V, E)$ where $V$ is the set of vertices or
+nodes and $E$ is the set of edges comprising a source node and a
+destination node. Analogously, in our framework, a mathematical graph
+is a hextuple $(V, E, \phi_V, \phi_E, s, t)$ where $V$/$E$ is the type
+of vertices/edges, $\phi_V$/$\phi_E$ is the predicate over $V$/$E$
+which asserts the validity of a vertex/edge, $s$ and $e$ are functions
+of type $E -> V$ which maps an edge to its source and destination
+respectively. Invalid nodes and edges are not considered as elements
+of a graph. However, there are no additional requirements for the
+validity of the whole graph. As shown in Figure \ref{fig:pregraph},
+our graph can contain invalid nodes and edges. That is why we call
+this combinatorial structure \textbf{PreGraph} because it can express
+not just normal graphs. We design it deliberately because we need a
+way to present such things. For example, the difference of two graphs:
+$\gamma_1-\gamma_2$, is not necessarily a normal graph because it may
+contain dangling edges. The ``subtracted'' nodes are not really
+removed but are ruled out from valid nodes because they are still
+referred in edge-part of $\gamma_1-\gamma_2$. Many concepts such as
+path, reachability, subgraph are defined based on PreGraph.
 
 \begin{figure}
 \centering
@@ -48,44 +69,17 @@ them.
 \draw[->,dashed] (3, -0.5) -- (3.5, -0.5);
 \end{tikzpicture}
 \endpgfgraphicnamed
-\caption{A PreGraph with invalid nodes and edges.}
+\vspace{1ex}
+\caption{A PreGraph with invalid nodes and edges.}\label{fig:pregraph}
 \end{figure}
-
-The core of the graph theory framework are the definitions of graph,
-graph-related structures and relations. In mathematics, a (directed)
-graph is an ordered pair $(V, E)$ where $V$ is a set of vertices or
-nodes and $E$ is a set of edges comprising a source node and a
-destination node. In our framework, we defined a similar structure
-with minor amendment: we attached ``validity'' property to each vertex
-and edge while $V$ and $E$ serve as types instead of sets of vertices
-and edges respectively. There are two reasons for the amendment. The
-first is that in many proof assistants, it is much easier and natural
-to declare types instead of sets. When using types, validity is an
-effective way in controlling membership: most graphs do not contain
-all instances of vertex type and edge type. The second reason is
-expanding the scope of representation, not just normal graphs. For
-example, in some cases, we need to describe the difference of two
-graphs: $\gamma_1-\gamma_2$, which is not necessarily a graph because
-it may contain dangling edges. The ``subtracted'' nodes are not really
-removed but are ruled out from valid nodes because they are still
-referred in edges part of the definition of $\gamma_1-\gamma_2$. So we
-call this structure \textbf{PreGraph}, which means it may be
-incomplete in comparison with a classical graph. In our framework, a
-PreGraph $\gamma$ is a hextuple $(V, E, \Phi_V, \Phi_E, s, t)$ where
-$\Phi_V$ and $\Phi_E$ are validity predicates for vertex type $V$ and
-edge type $E$, $s$ and $t$ are functions which takes an edge as
-argument and returns source/destination node of the edge. Many
-concepts such as reachability, subgraph and structural equivalence are
-defined based on PreGraph.
 
 \paragraph{Path}
 Once we have the definition of PreGraph, it is time to define another
 infrastructure: path. Informally, a path is a list of nodes
 concatenated with edges. Since an edge contains the information about
-its source and destination nodes, there is no necessary to define path
-as an interleaving list of nodes and edges. Then we have two obvious
-choices for representation of a path: a list of nodes or a list of
-edges.
+its source and destination, there is no necessary to define path as an
+interleaving list of nodes and edges. Then we have two obvious choices
+for representation of a path: a list of nodes or a list of edges.
 
 Both choices have certain defects. If a path is defined as a list of
 nodes, we can not distinguish different paths between two nodes in
@@ -119,14 +113,14 @@ with other derived ones, such as
 \end{split}
 \end{equation*}
 form the bedrock of nearly every nontrivial predicate about
-graph. Either the relation of two states---before and after running an
-algorithm---of a graph or the description of a graph with a particular
-shape, reachability is inevitable. To some extent, it is quite natural
-because most graph-related algorithms (DFS, BFS, Shortest Path,
-Spanning Tree, etc) depend on a small operation: exploring neighbours
-from one node. Thus when describing the effect of an algorithm,
-reachability is indispensable. Some of those descriptions are
-discussed in later sections.
+graphs. Either the relation of two states---before and after running
+an algorithm---of a graph or the description of a graph with a
+particular shape, reachability is inevitable. To some extent, it is
+quite natural because most graph-related algorithms (DFS, BFS,
+Shortest Path, Spanning Tree, etc) depend on a small operation:
+exploring neighbours from one node. Thus when describing the effect of
+an algorithm, reachability is indispensable. Some of those
+descriptions are discussed in later sections.
 
 \paragraph{Subgraph}
 When we tie a mathematical graph $\gamma$ to a spatial graph predicate
@@ -138,8 +132,8 @@ reachable portion of $\gamma$ in pure part. We generalize this
 description as two concepts: partial graph $\gamma \!\uparrow\! P$ and
 subgraph $\gamma \!\downarrow\! P$ for arbitrary predicate $P$. To define
 $\gamma \!\uparrow\! P$ and $\gamma \!\downarrow\! P$, for any $\gamma=(V,
-E, \Phi_V, \Phi_E, s, t)$, we do not change $V$ and $E$ but change
-$\Phi_V$ and $\Phi_E$ by adding proposition about satisfying $P$ for
+E, \phi_V, \phi_E, s, t)$, we do not change $V$ and $E$ but change
+$\phi_V$ and $\phi_E$ by adding proposition about satisfying $P$ for
 nodes. It means valid nodes in $\gamma \!\uparrow\! P$ and
 $\gamma \!\downarrow\! P$ must satisfy $P$. The only difference between
 $\gamma \!\uparrow\! P$ and $\gamma \!\downarrow\! P$ is that in
@@ -148,28 +142,6 @@ valid, but in $\gamma \!\downarrow\! P$, valid edges means both its source
 and destination nodes satisfy $P$. With the concepts of partial graph
 and subgraph, we can express the reachable portion by instantiating
 $P$ as reachable predicate.
-\hide{
-\paragraph{Structural Equivalence}
-Many graph-manipulating algorithms adopt divide and conquer
-paradigm. Most of those algorithms contain certain invariants as parts
-of their specifications. Usually it means certain portion of graph
-before program execution is equivalent to the one after execution. To
-describe this relation, we introduced ``structural equivalence'' in
-our framework with the following definition:
-\begin{equation*}
-\begin{split}
-\gamma_1 \cong\gamma_2 \defeq & \forall v, \Phi_{V1}(v) \leftrightarrow \Phi_{V2}(v) \wedge \\
-& \forall e, \Phi_{E1}(e) \leftrightarrow \Phi_{E2}(e) \wedge\\
-& \forall e, \Phi_{E1}(e) \rightarrow \Phi_{E2}(e) \rightarrow \text{src}_{\gamma_1}(e)=\text{src}_{\gamma_2}(e) \wedge\\
-& \forall e, \Phi_{E1}(e) \rightarrow \Phi_{E2}(e) \rightarrow \text{dst}_{\gamma_1}(e)=\text{dst}_{\gamma_2}(e)\\
-\end{split}
-\end{equation*}
-Informally it means $\gamma_1$ and $\gamma_2$ has the same vertex set
-and edge set. And any valid edge in both graphs is comprised by the
-same source and destination nodes. This relation can be used with
-subgraph and reachability to define many concrete relations in program
-verification.
-}
 
 \subsection{Classification of various graphs}
 
@@ -178,16 +150,15 @@ inadequate for real program verifications. Admittedly many helpful
 lemmas can be inferred directly from PreGraph. But when we dealing
 with concrete graphs for various algorithms, there are many features
 which a bare PreGraph can not inculde. For example, when we compute
-some properties of a graph, we always hope the graph is finite
-connected. In the recursive defnition of a graph data structure, a
-node contains many pointers to point to its neighbors. The pointers
-could be null to indicate that they do not point to any. Thus we need
-a special node which represents null pointer. In some cases, we have
-to specify a graph in which the outdegree of each nodes is 2. All
-these additional properties are abstracted as different property
-bundles. We defined \textbf{LocalFiniteGraph}, \textbf{MathGraph}
-and \textbf{BiGraph} for the three requirements above,
-respectively.
+some properties of a graph, we always hope the graph is finite. In the
+recursive defnition of a graph data structure, a node contains many
+pointers to point to its neighbors. The pointers could be null to
+indicate that they do not point to any. Thus we need a special node
+which represents null pointer. In some cases, we have to specify a
+graph in which the outdegree of each nodes is 2. All these additional
+properties are abstracted as different property bundles. We
+defined \textbf{FiniteGraph}, \textbf{MathGraph} and \textbf{BiGraph}
+to fulfill the three requirements above, respectively.
 
 \begin{figure}[htbp]
 \centering
@@ -197,9 +168,9 @@ respectively.
                     propG/.style={shape=rectangle, rounded corners=4pt, draw}]
 \node[realG] (PG) at (0, 0) {PreGraph};
 \node[realG] (LG) [below=1 of PG] {LabeledGraph};
-\node[realG] (GG) [right=2.5 of LG] {GeneralGraph};
+\node[realG] (GG) [right=3 of LG] {GeneralGraph};
 \draw [->] (PG) -- (LG) node [pos=0.5, right] {\small Add Label} ;
-\draw [->] (LG) -- (GG) node [pos=0.5, above] {\small Add} node (SC) [pos=0.5, below] {\small Sound Condition};
+\draw [->] (LG) -- (GG) node [pos=0.5, above] {\small Add} node (SC) [pos=0.5, below] {\small Soundness Condition};
 \node[propG] (BMF) [below=1 of SC] {BiMaFin};
 \draw [double,->] (BMF) -- (SC) node [pos=0.5, left] {\small Instantialize};
 \node[propG] (BG) [left=1 of BMF] {BiGraph};
@@ -210,6 +181,7 @@ respectively.
 \draw [->] (FG) to (BMF);
 \end{tikzpicture}
 \endpgfgraphicnamed
+\vspace{1ex}
 \caption{Various Kinds of Graphs}\label{fig:graphs}
 \end{figure}
 
@@ -217,32 +189,26 @@ As shown in Figure \ref{fig:graphs}, there are several different
 ``Graph'' definitions in our framework. Some of them (with gray
 background) are real mathematical objects, just like PreGraph. The
 rest are just property bundles which are PreGraph with special
-properties. They provide different views of graphs from a certain
-perspective.
+properties. They provide different views of graphs from certain
+perspectives.
 
-In our framework, there are four kinds of \emph{real}
-graphs: \textbf{PreGraph}, \textbf{SpatialGraph}, \textbf{LabeledGraph}
+In our framework, there are three kinds of \emph{real}
+graphs: \textbf{PreGraph}, \textbf{LabeledGraph}
 and \textbf{GeneralGraph}. The definition of PreGraph is already
-known. Based on PreGraph, each node and each edge in a LabeledGraph
-has extra labels which can be seen as label functions of nodes and
-edges. A GeneralGraph is a LabeledGraph with a customized sound
-condition. A SpatialGraph is the graph directly stored in memory,
-which contains connecting and user specified informations stored on
-every vertex and/or every edge.
+known. Based on a PreGraph, when adding labels of vertices or of
+edges, we get a LabeledGraph. Sometimes when we hope the graph we
+refer to satisfies more conditions (finite, binary, etc), we can use
+GeneralGraph with a customized soundness condition. We distinguish
+these ``Graphs'' because we hope the lemmas provided by our framework
+are in their most general and flexible form. For some of the lemmas, a PreGraph is
+enough while others may not hold without extra conditions.
 
 The rest in Figure \ref{fig:graphs} are all property bundles where
-LocalFiniteGraph, MathGraph and BiGraph are already explained. A
-FiniteGraph is a graph with finite number of vertices and edges. (So a
-FiniteGraph is definitely a LocalFiniteGraph.) A BiMaFin is a graph
-satisfying BiGraph, MathGraph and FiniteGraph simultaneously. A
-ReachableFiniteGraph is a graph in which all reachable nodes of an
-arbitrary node are finite. A NormalGeneralGraph is a special
-GeneralGraph used for certain algorithms. Usually in the correctness
-proofs of concrete algorithms, all graphs satisfy the definition of
-BiMaFin, LocalFiniteGraph, ReachableFiniteGraph and etc. But for many
-math theorems in graph theory, some properties (e.g. FiniteGraph,
-BiGraph) are not necessary. These different properties for different
-theorems make our framework more flexible and general.
+FiniteGraph, MathGraph and BiGraph are already explained. BiMaFin is a
+compositional property of the three: it means a graph satisfying
+BiGraph, MathGraph and FiniteGraph simultaneously. As an application,
+we adopt BiMaFin as the soundness condition for GeneralGraph in the
+final real verifications.
 
 \subsection{Computable Reachability}
 We proved quite many property-bundle specific theorems. One typical
@@ -250,9 +216,10 @@ example of such theorems is the following one:
 \newtheorem{mythm}{Theorem}
 \begin{mythm}
 For any graph $\gamma$ which is both MathGraph and LocalFiniteGraph
-and any node $x$ in $\gamma$, if the number of nodes reachable from
-node $x$ is finite, then we can find a set which exactly contains the
-reachable nodes from $x$ in $\gamma$.
+(i.e. every node has a finite number of neighbors) and any node $x$ in
+$\gamma$, if the number of nodes reachable from node $x$ is finite,
+then we can find a set which exactly contains the reachable nodes from
+$x$ in $\gamma$.
 \end{mythm}
 It sounds so trivial but the proof is totally non-trivial. The most
 obvious way to prove it---filtering reachable nodes from all valid
@@ -292,29 +259,50 @@ exists or is simpler.
 
 \subsection{Application of the framework}
 
-Graph-manipulating programms may also deal with other structures, such
-as dag (directed acyclic graph), tree or spanning tree. With the basic
-defintions in our framework, new structures can be defined
-easily. Acyclic graph is just a graph with an additional property:
-forall any $x$ and $y$, if $x$ is reachable from $y$, then $y$ is not
-reachable from $x$. Tree is similar. The additional property for tree
-is that there is one and only one path from root to any reachable node
-from root. Spanning tree is a tree with the same reachable vertex set
-of the original graph.
+We apply our framework to define other structures and relations
+between these structures (including graph), and then use them to prove
+certain pure facts proposed by real verifications.
 
-But when dealing with formal proofs, there are some unexpected
-facts. For example, our na\"ive definition of the
-predicate \verb|spanning_tree| is not strong enough to complete the
-inference. We express that graph $g_2$ is a spanning tree of graph
-$g_1$ starting from root node $r$ as \verb|spanning_tree|
-$g_1\,r\,g_2$. We conclude three relations as the predicate. First,
-the unreachable parts from root $r$ in $g_1$ and $g_2$ are the
-same. Secondly, the shape of $g_2$ must be a tree. Lastly, all nodes
-reachable from $r$ in $g_1$ are still reachable from $r$ in $g_2$. The
-second relation ensures that the result is a tree while the third one
-ensures it is a spanning tree of $g_1$. At first glance, it is a very
-complete definition. But the subsequent formal proof reveals that the
-definition still lacks one condition: for any two nodes $a$ and $b$,
-if $a$ is reachable from $r$ in $g_1$ and $b$ is not reachable from
-$r$ in $g_1$, then in $g_2$, $b$ is not reachable from $a$. It is a
-long-winded but necessary relation.
+For example, we define dag (directed acyclic graph) as a PreGraph with
+an additional property: forall any $x$ and $y$, if $x$ is reachable
+from $y$, then $y$ is not reachable from $x$. We also define tree in a
+similar way. The additional property for tree is that there is one and
+only one path from root to any reachable node from root. As for
+relations, we define the relation $\m{mark}(\gamma, \tx x, \gamma')$
+for the ``graph mark'' algorithm in Figure~\ref{fig:markgraph}. It
+means $gamma'$ is the result of marking $\gamma$ from $\tx
+x$. Similarly, we define $\m{span}$ for the ``spanning tree'' program
+and $\m{copy}$ for the ``graph copy'' program. All these relations
+captured the connections of the states of mathematical graphs before
+and after program execution. As we mentioned before, $\m{mark}$ and
+related lemmas are reused in proving pure facts of ``spanning tree''
+and ``graph copy'' because the latter two programs do contain marking
+operations. So we reuse the following pure fact:
+\begin{equation*}
+\begin{split}
+\forall \gamma, x.~&\gamma(x)=(0, v_1, v_2,\dots,v_n) => \m{mark1}(\gamma, x, \gamma_1) =>\\
+        & \m{mark}(\gamma_1,v_1,\gamma_2) => \m{mark}(\gamma_2,v_2,\gamma_3) => \dots =>\\
+        & \m{mark}(\gamma_n,v_n,\gamma_{n+1}) => \m{mark}(\gamma,x,\gamma_{n+1}).
+\end{split}
+\end{equation*}
+Note that it is a general theorem for any LocalFiniteGraph, not just
+BiGraph. In our framework, almost all theorems (except $\m{span}$
+related ones) are proved as generally as possible.
+
+It is worth mentioning that when dealing with formal proofs, there are
+some unexpected facts which showed the rigidity of mechanized
+verification. For example, our na\"ive definition of the relation
+$\m{span}$ is not strong enough to complete a above-like inference. We
+express that graph $g_2$ is a spanning tree of graph $g_1$ starting
+from root node $r$ as $\m{span}(g_1, r, g_2)$. We conclude three
+relations as the predicate. First, the unreachable parts from root $r$
+in $g_1$ and $g_2$ are the same. Secondly, the shape of $g_2$ must be
+a tree. Lastly, all nodes reachable from $r$ in $g_1$ are still
+reachable from $r$ in $g_2$. The second relation ensures that the
+result is a tree while the third one ensures it is a spanning tree of
+$g_1$. At first glance, it is a very complete definition. But the
+subsequent formal proof reveals that the definition still lacks one
+condition: for any two nodes $a$ and $b$, if $a$ is reachable from $r$
+in $g_1$ and $b$ is not reachable from $r$ in $g_1$, then in $g_2$,
+$b$ is not reachable from $a$. It is a long-winded but necessary
+relation.

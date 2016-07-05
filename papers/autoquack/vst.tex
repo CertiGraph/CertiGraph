@@ -309,19 +309,3 @@ We build this trick of using existential quantifiers and meta variables to these
 
 \textbf{Remark.} We extend VST's tactic system such that people can interactively build Hoare proofs with ramification involved. When localize and unlocalize are applied on a paper proof, we use frame rule and uninstantiated frame to build corresponding proof in the underlying logic. Simplified and modality free ramification criteria are left for users to prove as side condition of unlocalize.
 
-%MORE TO WRITE: divide pure facts into frame and local based on VST's canonical form. Based on localize/unlocalize, compared with frame rule, ramification rule have better use on VST's automatic symbolic execution system.
-
-
-
-
-
-2.4. VST instance of \texttt{pSpatialGraph\_Graph\_Bi} and \texttt{sSpatialGraph\_Graph\_Bi} are constructed in "\texttt{spatial\_graph\_aligned\_bi\_VST.v}" and "\texttt{spatial\_graph\_unaligned\_bi\_VST.v}".
-
-3. Embed ramification into VST.
-3.1. Ramification rule are proved sound in VST.
-3.2. A special ramification rule for VST's Sep-Local-Prop style pre/post condition is prove. The point is traditional ramification rule require the whole frame-like-wand-expression to be closed w.r.t. the modified variables. This special rule split closed and unclosed away.
-3.3. Localize and unlocalize are defined.
-3.3.1. Localize/unlocalize offer a user-friendly way of using ramification rule.
-3.3.2. Unlocalize tactic need "Grab Existential Variables" afterwards. It is not nice.
-3.3.3. Writing Ocaml plugin is one solution. But we need to develop for both mac and windows.
-3.3.4. Or we can see whether Coq's next version offers more tactics for existential variables.

@@ -541,4 +541,4 @@ Proof.
     rewrite H2; reflexivity.
   } Unfocus.
   apply (edge_spanning_tree_spanning_tree g g1 g2 g3 x l r); auto. (* 1 min 27 sec *)
-Time Qed. (* 9305 sec *)
+Time Qed. (* 5500 sec *)

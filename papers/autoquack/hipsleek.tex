@@ -15,6 +15,23 @@ data node {
   node left;
   node right;}
 
+//...
+relation 
+subset_reach(abstract G, node x, abstract G1).
+relation 
+eq_notreach(abstract G, node x, abstract G1).  
+  
+rlemma "subgraphupdate_l" l::graph<G1> *
+ (l::graph<G> --@ (x::node<v,l,r> U*
+ (l::graph<G> U* r::graph<G>))) & 
+ subset_reach(G,l,G1) & eq_notreach(G,l,G1)
+ & lookup(G,x,v,l,r) & lookup(G1,x,v1,l,r)
+  -> x::node<v1,l,r> U* 
+   (l::graph<G1> U* r::graph<G1>);
+   
+axiom lookup(G,x,1,l,r) ==> mark(G,x,G).
+//...
+      
 void mark(node x) { // $\{\p{graph}(\tx{x},\gamma)\}$
   node l, r;
   if (x == null) return;
@@ -33,18 +50,18 @@ void mark(node x) { // $\{\p{graph}(\tx{x},\gamma)\}$
 \label{fig:hipmarkgraph}
 \end{figure}
 
-As shown in figure \ref{fig:hipmarkgraph} the pre and post conditions for verifying the bigraph marking program in HIP/SLEEK are the same as they were for VST. There are three key steps that automate ramifications in HIP/SLEEK, the first step is the use of fold/unfold relationship for graphs given in (\ref{eqn:bigraphintrofoldunfold}). HIP/SLEEK uses unfold lemma for graph to automatically expose the heap required to check entailments during forward reasoning. E.g. in order to check the dereference at line \ref{ifcondmark} in figure \ref{fig:hipmarkgraph} the $\p{graph}(\tx{x},\gamma)$ predicate is unfolded and the state just before line \ref{ifcondmark} is $ \exists m,l,r.~ \gamma(x)=(m,l,r) \wedge x \mapsto m,-,l,r \ocon \p{graph}(l, \gamma) \ocon \p{graph}(r, \gamma)$.
+As shown in figure \ref{fig:hipmarkgraph} the pre and post conditions for verifying the bigraph marking program in HIP/SLEEK are the same as they were for VST. There are three key steps that automate ramifications in HIP/SLEEK, the first step is the use of fold/unfold relationship for graphs given in (\ref{eqn:bigraphintrofoldunfold}). HIP/SLEEK uses unfold lemma for graph to automatically expose the heap required to check entailments during forward reasoning. E.g. in order to check the dereference at line \ref{ifcondmark} in figure \ref{fig:hipmarkgraph} the $\p{graph}(\tx{x},\gamma)$ predicate is unfolded and the state just before line \ref{ifcondmark} is $ \exists m,l,r.~ \gamma(x)=(m,l,r) \wedge x \mapsto m,l,r \ocon \p{graph}(l, \gamma) \ocon \p{graph}(r, \gamma)$.
 
-Similar to most other verification tools \cite{Beckert:2007,DistefanoP08,berdine:smallfoot,jacobs:verifast}, HIP/SLEEK uses forward reasoning based on symbolic execution. We use the $\septraction$ operator to capture the strongest post condition during forward reasoning. Given a precondition $R$ and $\{P\}~c~\{Q\}$ the strongest post condition can be captured as $(P \septraction R) \scon Q$. During forward reasoning in HIP/SLEEK we introduce the $\septraction$ when checking entailments with predicates that use sharing. E.g. at line \ref{beforemarkleft} in figure \ref{fig:hipmarkgraph} in order to check the precondition we introduce the following to the state $ (\p{graph}(l, \gamma) \septraction (x \mapsto m,-,l,r \ocon \p{graph}(l, \gamma) \ocon \p{graph}(r, \gamma))) \scon \p{graph}(l, \gamma')$, where $\gamma'$ is the mathematical graph after the \texttt{mark(l)} recursive call.
+Similar to most other verification tools \cite{Beckert:2007,DistefanoP08,berdine:smallfoot,jacobs:verifast}, HIP/SLEEK uses forward reasoning based on symbolic execution. We use the $\septraction$ operator to capture the strongest post condition during forward reasoning. Given a precondition $R$ and $\{P\}~c~\{Q\}$ the strongest post condition can be captured as $(P \septraction R) \scon Q$. During forward reasoning in HIP/SLEEK we introduce the $\septraction$ when checking entailments with predicates that use sharing. E.g. at line \ref{beforemarkleft} in figure \ref{fig:hipmarkgraph} in order to check the precondition we introduce the following to the state $ (\p{graph}(l, \gamma) \septraction (x \mapsto m,l,r \ocon \p{graph}(l, \gamma) \ocon \p{graph}(r, \gamma))) \scon \p{graph}(l, \gamma')$, where $\gamma'$ is the mathematical graph after the \texttt{mark(l)} recursive call.
 
 The third and final step is to eliminate the $\septraction$ operator from the state using lemmas. At line \ref{beforemarkleft}, we make use of the following lemma:
 
 \[
 \begin{array}{l}
-(\p{graph}(l, \gamma) \septraction (x \mapsto m,-,l,r \ocon \p{graph}(l, \gamma) \ocon \p{graph}(r, \gamma))) \\
+(\p{graph}(l, \gamma) \septraction (x \mapsto m,l,r \ocon \p{graph}(l, \gamma) \ocon \p{graph}(r, \gamma))) \\
 \quad \scon \p{graph}(l, \gamma') \wedge \p{subset\_reach}(\gamma,l,\gamma') \wedge \p{eqnot\_reach}(\gamma,l,\gamma') \\
 \quad \wedge  \gamma(x)=(m,l,r) \wedge \gamma'(x)=(m1,l,r) ==> \\
-\qquad \qquad x \mapsto m1,-,l,r \ocon \p{graph}(l, \gamma') \ocon \p{graph}(r, \gamma')
+\qquad \qquad x \mapsto m1,l,r \ocon \p{graph}(l, \gamma') \ocon \p{graph}(r, \gamma')
 \end{array}
 \]
 
