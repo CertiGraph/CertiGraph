@@ -1,12 +1,11 @@
-To prove the functional correctness of real graph-manipulating
-algorithms, we provide spatial predicate of graphs as a shape
-description about heaps. As a matter of fact, we defined a much more
-general spatial predicate ``$\bigstar$'' to indicate a collection of
-standard points-to predicates chained by $\scon$ in separation
-logic. The spatial graph predicate is just a special case in terms of
-$\bigstar$.
+In this section, we show how we formalize the ramification proofs we introduced in \S\ref{sec:orientation}. To prove the functional correctness of real graph-manipulating
+algorithms implemented in a real language, we need to connect the following pieces together: the memory model of the programming language, the mathematical properties of graphs and the graph representation in heap. 
 
-\subsection{Infrastructure}
+In short, we define spatial predicates of graphs as a shape
+description about heaps. We provide a generic ramification library for these predicates. Here, \emph{generic} means that the library is not for a specific memory model, it is not for a specific graph representation, it is not for a specific graph algorithm and it is not for a specific program implementation. Our library supports general spatial reasonings for graph algorithms.
+
+\subsection{Infrastructure: Isolate memory model}
+
 To formalize spatial graphs and related lemmas, we need a way to
 represent spatial predicate first, in other words, a mechanized
 library of separation logic. We adopt a layered style to get things

@@ -385,4 +385,4 @@ Proof.
   rewrite H7.
   apply (exp_right (vlabel g5 (ValidPointer b i), g5, gg5')); entailer!; auto. cancel.
   apply derives_refl.
-Time Qed. (* Takes 3 hours. *)
+Time Qed. (* Takes 9575 seconds. *)
