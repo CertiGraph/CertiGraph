@@ -6,13 +6,11 @@ description about heaps. We provide a generic ramification library for these pre
 
 \subsection{Infrastructure: Isolate memory model}
 
-To formalize spatial graphs and related lemmas, we need a way to
-represent spatial predicate first, in other words, a mechanized
-library of separation logic. We adopt a layered style to get things
+In order to ensure proofs reusability, we build a logic level between memory models and our ramification library.
+In other words, we adopt a layered style to get things
 done: Our spatial graph definition is build on a separation logic
 layer which are composed by atomic notations ($\scon$, $\ocon$, $|->$,
-$\p{precise}$, etc.) and related properties as axioms. Under the logic
-layer are sound models of the logic.
+$\p{precise}$, etc.) and related properties as axioms, while these axioms are proved sound w.r.t. different memory models.
 
 \begin{figure}[htbp]
 \centering
