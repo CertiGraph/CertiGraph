@@ -326,14 +326,14 @@ F |- \forall x.~ (L_2 --* G_2)
 }
 {G_1 \vdash L_1 * \pguards{c}  \big(\forall x.~ (L_2 --* G_2)\big)}{\begin{array}{c}F \textrm{ ignores} \\ \MV(c)\end{array}} \qquad \qquad \quad
 \]
-Since we use a relational style to verify graph algorithms (\emph{e.g.} in Figure~\ref{fig:markgraph}), existentials appear frequently and a smooth treatment is very helpful in practice.  To make this point a little more clearly we were more explicit about existentials in \emph{e.g.} lines~\ref{code:beforemarkl}--\ref{code:aftermarkl} than is typical in pen-and-paper proofs.  {\color{magenta} However, fortified by the \infrulestyle{Ramify-PQ} rule, we could very reasonably have \emph{e.g.} written line~\ref{code:postmark1} as \begin{lstlisting}[firstnumber=26]
+Since we use a relational style to verify graph algorithms (\emph{e.g.} in Figure~\ref{fig:markgraph}), existentials appear frequently and a smooth treatment is very helpful in practice.  To make this point a little more clearly we were more explicit about existentials in \emph{e.g.} lines~\ref{code:beforemarkl}--\ref{code:aftermarkl} than is typical in pen-and-paper proofs.  However, fortified by the \infrulestyle{Ramify-PQ} rule, we could very reasonably have \emph{e.g.} written line~\ref{code:postmark1} as \begin{lstlisting}[firstnumber=26]
 // $\swarrow \{\p{graph}(\tx l, \gamma'') /| \m{mark}(\gamma', \tx{l}, \gamma'')\}$
 \end{lstlisting}
 and omitted line~\ref{code:aftermarkl} entirely.
-}
+
 %\ref{code:postmark1}]
 
-Although our technique to handle modified program variables is rather intricate, {\color{magenta}it can be done mechanically without human guidance (\S\ref{vst}).}  Our \li{localize} and \li{unlocalize} tactics use \infrulestyle{Ramify-PQ} since it is the most general rule.
+Although our technique to handle modified program variables is rather intricate, it can be done mechanically/automatically (\S\ref{vst}).  Our \li{localize} and \li{unlocalize} tactics use \infrulestyle{Ramify-PQ} since it is the most general rule.
 
 \subsection{Soundness of our rules}
 
@@ -394,7 +394,7 @@ Proof of \infrulestyle{Ramify-PQ} from \infrulestyle{Ramify-P}:
 \label{fig:rampqproofs}
 \end{figure*}
 
-In Figure~\ref{fig:rampqproofs} we sketch the soundness proofs for \infrulestyle{Ramify-P} and \infrulestyle{Ramify-PQ}.  \infrulestyle{Ramify-P} requires only \infrulestyle{Frame} and \infrulestyle{Consequence} to prove, along with some basic properties of $\pguards{c}$.  \infrulestyle{Ramify-PQ} is built on top of \infrulestyle{Ramify-P} with some complicated logical maneuvers.  {\color{magenta}Systems of separation logic that do not wish to add $\pguards{c}$ to their logical formulae might consider adding a rule that combines the \infrulestyle{Ramify-PQ} and \infrulestyle{Solve Ramify-PQ} rules into a single package.}
+In Figure~\ref{fig:rampqproofs} we sketch the soundness proofs for \infrulestyle{Ramify-P} and \infrulestyle{Ramify-PQ}.  \infrulestyle{Ramify-P} requires only \infrulestyle{Frame} and \infrulestyle{Consequence} to prove, along with some basic properties of $\pguards{c}$.  \infrulestyle{Ramify-PQ} is built on top of \infrulestyle{Ramify-P} with some complicated logical maneuvers.  Systems of separation logic that do not wish to add $\pguards{c}$ to their logical formulae might consider adding a rule that combines the \infrulestyle{Ramify-PQ} and \infrulestyle{Solve Ramify-PQ} rules into a single package.
 
 {\color{magenta}
 \subsection{Simplifying ramification entailments}
