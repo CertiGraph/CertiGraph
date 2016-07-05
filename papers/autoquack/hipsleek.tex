@@ -1,58 +1,57 @@
-\subsection{Background on HIP/SLEEK}
-HIP is an automated verifier for separation logic, it supports arbitrary user defined predicates and lemmas. While, SLEEK
-is an entailment checker for separation logic, it contains a sound  procedure to decide entailments in separation logic and uses existing solvers like Z3 to reason over pure facts. Together, the HIP/SLEEK verification system \cite{chin:hipsleek} has been used to verify programs manipulating data structures like lists, arrays, trees etc.
+HIP/SLEEK is a toolset for verifying programs using separation logic~\cite{chin:hipsleek}.  As compared to VST, H/S has a heavier focus on automation: for example, users need only specify loop invariants and the pre/postconditions of methods, rather than describing each program point.  H/S has two interlocking components.  HIP applies Hoare rules using forward reasoning to verify programs, \emph{i.e.} each entailment is of the form $P |- Q * R$, where the heap from the antecedent~$P$ is matched with the consequent $Q$ and a frame/residue $R$. To check these separation logic entailments and calculate~$R$, HIP calls SLEEK.  SLEEK handles spatial operators such as~$*$ and $|->$ before handing any remaining pure entailments to a variety of external solvers such as Z3.  One of H/S's distinguishing features is support for user-defined recursive predicates.  HIP/SLEEK has been used to verify programs manipulating data structures like lists, arrays, and trees.
 
-In HIP, the user only needs to specify the pre and post condition for each method (and loop invariants) and the verifier automatically uses forward reasoning to generate necessary entailments that are checked by SLEEK. Each entailment is of the form $P \vdash Q \scon R$, where the heap from the antecedent $P$ is matched up with the consequent $Q$ and a "frame" $R$ is computed automatically based on the residual state.
-
-In order to implement ramifications in HIP/SLEEK we extend the lemma mechanism \cite{NguyenC08} to support externally verified lemmas. These lemmas are defined by the user, automatically applied by the tool, and mechanically verified in Coq. Once, the required lemmas are specified the program is verified automatically in HIP/SLEEK, in addition a Coq module type file is generated that contains all the external lemmas. An implementation for this module type is written in Coq which provides mechanical proofs of the correctness of the external lemmas.
-
-\subsection{Automating Ramifications with Lemmas}
+\subsection{Verifying \li{mark} in HIP/SLEEK}
+\label{sec:hipsleekmark}
 
 \begin{figure}[t]
   \begin{lstlisting}
-data node {
-  int val;
-  node left;
-  node right;}
+data node { int val; node left; node right; }
 
-//...
-relation 
-subset_reach(abstract G, node x, abstract G1).
-relation 
-eq_notreach(abstract G, node x, abstract G1).  
-  
+...
+relation
+  subset_reach(abstract G, node x, abstract G1).
+relation
+  eq_notreach(abstract G, node x, abstract G1).
+
 rlemma "subgraphupdate_l" l::graph<G1> *
  (l::graph<G> --@ (x::node<v,l,r> U*
- (l::graph<G> U* r::graph<G>))) & 
+ (l::graph<G> U* r::graph<G>))) &
  subset_reach(G,l,G1) & eq_notreach(G,l,G1)
  & lookup(G,x,v,l,r) & lookup(G1,x,v1,l,r)
-  -> x::node<v1,l,r> U* 
+  -> x::node<v1,l,r> U*
    (l::graph<G1> U* r::graph<G1>);
-   
+
 axiom lookup(G,x,1,l,r) ==> mark(G,x,G).
-//...
-      
-void mark(node x) { // $\{\p{graph}(\tx{x},\gamma)\}$
+...
+
+void mark(node x) { // $\label{code:hipmarkstart}\{\p{graph}(\tx{x},\gamma)\}$
   node l, r;
   if (x == null) return;
-  else {
-    if (x.val == 1) return; $\label{ifcondmark}$
-    l = x.left;
-    r = x.right;
-    x.val = 1;
-    mark(l);$\label{beforemarkleft}$
-    mark(r);
-  }
-} // $\{\exists \gamma'.~ \p{graph}(\tx x,\gamma') /| \m{mark}(\gamma, \tx{x}, \gamma')\}$
+  else { if (x.val == 1) return; $\label{ifcondmark}$
+         l = x.left; r = x.right; x.val = 1;
+         mark(l);$\label{beforemarkleft}$
+         mark(r); } } //$\label{code:hipmarkend}\{\exists \gamma'. \p{graph}(\tx x,\gamma') {/|} \m{mark}(\gamma, \tx{x}, \gamma')\}$
 \end{lstlisting}
 %% \vspace{-8pt}
 \caption{Bigraph marking in HIP/SLEEK}
 \label{fig:hipmarkgraph}
 \end{figure}
 
-As shown in figure \ref{fig:hipmarkgraph} the pre and post conditions for verifying the bigraph marking program in HIP/SLEEK are the same as they were for VST. One difference here is that HIP/SLEEK uses a Java-like memory model with objects and fields, thus there are no alignment issues as one cannot have a pointer to the middle of a field. As explained in section \ref{sec:spacegraph} the ramification library we provide is generic, reasoning in HIP/SLEEK uses the supplementary graphs from our library. There are three key steps that automate ramifications in HIP/SLEEK, the first step is the use of fold/unfold relationship for graphs given in (\ref{eqn:unfold_graph}). HIP/SLEEK uses unfold lemma for graph to automatically expose the heap required to check entailments during forward reasoning. E.g. in order to check the dereference at line \ref{ifcondmark} in figure \ref{fig:hipmarkgraph} the $\p{graph}(\tx{x},\gamma)$ predicate is unfolded and the state just before line \ref{ifcondmark} is $ \exists m,l,r.~ \gamma(x)=(m,l,r) \wedge x \mapsto m,l,r \ocon \p{graph}(l, \gamma) \ocon \p{graph}(r, \gamma)$.
+Figure~\ref{fig:hipmarkgraph} gives the HIP/SLEEK file used to verify \li{mark}.  In the body of the function itself (lines~\ref{code:hipmarkstart}--\ref{code:hipmarkend}) we only specify 
 
-Similar to most other verification tools \cite{Beckert:2007,DistefanoP08,berdine:smallfoot,jacobs:verifast}, HIP/SLEEK uses forward reasoning based on symbolic execution. We use the $\septraction$ operator to capture the strongest post condition during forward reasoning. Given a precondition $R$ and $\{P\}~c~\{Q\}$ the strongest post condition can be captured as $(P \septraction R) \scon Q$. During forward reasoning in HIP/SLEEK we introduce the $\septraction$ when checking entailments with predicates that use sharing. E.g. at line \ref{beforemarkleft} in figure \ref{fig:hipmarkgraph} in order to check the precondition we introduce the following to the state $ (\p{graph}(l, \gamma) \septraction (x \mapsto m,l,r \ocon \p{graph}(l, \gamma) \ocon \p{graph}(r, \gamma))) \scon \p{graph}(l, \gamma')$, where $\gamma'$ is the mathematical graph after the \texttt{mark(l)} recursive call.
+the pre and post conditions for verifying the bigraph marking program in HIP/SLEEK are the same as they were for VST. One difference here is that HIP/SLEEK uses a Java-like memory model with objects and fields, thus there are no alignment issues as one cannot have a pointer to the middle of a field. As explained in section \ref{sec:spacegraph} the ramification library we provide is generic, reasoning in HIP/SLEEK uses the supplementary graphs from our library.
+
+There are three key steps that automate ramifications in HIP/SLEEK, the first step is the use of fold/unfold relationship for graphs given in (\ref{eqn:unfold_graph}). HIP/SLEEK uses unfold lemma for graph to automatically expose the heap required to check entailments during forward reasoning. E.g. in order to check the dereference at line \ref{ifcondmark} in figure \ref{fig:hipmarkgraph} the $\p{graph}(\tx{x},\gamma)$ predicate is unfolded and the state just before line \ref{ifcondmark} is $ \exists m,l,r.~ \gamma(x)=(m,l,r) \wedge x \mapsto m,l,r \ocon \p{graph}(l, \gamma) \ocon \p{graph}(r, \gamma)$.
+
+\subsection{Externally-verified lemmas}
+
+To implement ramifications in HIP/SLEEK we extended its lemma system~\cite{NguyenC08}.
+Normal lemmas in H/S are user defined, automatically checked, and automatically
+applied in program verifications.  In contrast, our new lemmas are still user defined and still automatically applied in program verifications, but \textbf{not} automatically checked, so we call them \emph{externally verified lemmas}; their key advantage is that they can be much more complex than the lemmas H/S can check automatically.  Instead of checking the lemmas automatically, H/S outputs a Coq \li{Module} \li{Type} that states the lemmas H/S needed in the verification.  Users then implement a matching \li{Module} to get a fully-verified result.
+
+Similar to most other verification tools~\cite{Beckert:2007,DistefanoP08,berdine:smallfoot,jacobs:verifast}, HIP/SLEEK uses forward reasoning based on symbolic execution.
+
+We use the $\septraction$ operator to capture the strongest post condition during forward reasoning. Given a precondition $R$ and $\{P\}~c~\{Q\}$ the strongest post condition can be captured as $(P \septraction R) \scon Q$. During forward reasoning in HIP/SLEEK we introduce the $\septraction$ when checking entailments with predicates that use sharing. E.g. at line \ref{beforemarkleft} in figure \ref{fig:hipmarkgraph} in order to check the precondition we introduce the following to the state $ (\p{graph}(l, \gamma) \septraction (x \mapsto m,l,r \ocon \p{graph}(l, \gamma) \ocon \p{graph}(r, \gamma))) \scon \p{graph}(l, \gamma')$, where $\gamma'$ is the mathematical graph after the \texttt{mark(l)} recursive call.
 
 The third and final step is to eliminate the $\septraction$ operator from the state using lemmas. At line \ref{beforemarkleft}, we make use of the following lemma:
 
@@ -89,7 +88,7 @@ Module Type Mgraphmark.
 End Mgraphmark.
 \end{lstlisting}
 %% \vspace{-8pt}
-\caption{Bigraph marking Coq module type for HIP/SLEEK}
+\caption{Coq \li{Module Type} generated by HIP/SLEEK}
 \label{fig:hipcoqfile}
 \end{figure}
 
