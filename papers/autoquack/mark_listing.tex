@@ -8,7 +8,7 @@ struct Node {$\label{code:nodedefstart}$
 void mark(struct Node * x) { // $\label{code:markstart}\{\p{graph}(\tx{x},\gamma)\}$
   struct Node * l, * r; int root_mark; $\label{code:inmark}$
   if (x == 0) return;
-// $\{\p{graph}(\tx x,\gamma) /| \exists m,l,r.~ \gamma(\tx{x}) = (m,l,r)\}$
+// $\label{code:globalbeforerootmarkwithex}\{\p{graph}(\tx x,\gamma) /| \exists m,l,r.~ \gamma(\tx{x}) = (m,l,r)\}$
 // $\label{code:globalbeforerootmark}\{\p{graph}(\tx x,\gamma) /| \gamma(\tx{x}) = (m,l,r)\}$
 // $\label{code:beforerootmark}\searrow \{\tx x|-> m,-,l,r \}$
 $\label{code:markram1}$      root_mark = x -> m;
