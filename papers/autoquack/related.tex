@@ -2,11 +2,39 @@
 {\color{magenta}
 Hobor and Villard's \infrulestyle{Ramify} rule interacts very poorly with modified program variables such as \li{l} and \li{r}.  They hacked their way around this issue by proposing a variant of \infrulestyle{Ramify} called \infrulestyle{RamifyAssign}, which could reason about the special case of a single assignment \li{x=$f(\ldots)$}, assuming the verifier can make the local program translation to \li{x'=$f(\ldots)$;x=x'}, where \li{x'} is fresh.  They proposed no way to verify unmodified program code or to ramify/localize across multiple assignments; we do both in lines~\ref{code:markbeforetripleramify}--\ref{code:markaftertripleramify} using a new \infrulestyle{Ramify-P} rule.
 
+\paragraph{Local variables.}
+Hobor and Villard hacked their way around this [local var] issue by proposing a variant of \infrulestyle{Ramify} called \infrulestyle{RamifyAssign}, which could reason about the special case of a single assignment $\li{x = }f(\ldots)$, assuming the verifier can make the local program translation to $\li{x' = }f(\ldots)\li{; x = x'}$, where \li{x'} is fresh.  They proposed no way to verify unmodified program code or to do a ramification across multiple assignments as we do in lines~\ref{code:markbeforetripleramify}--\ref{code:markaftertripleramify} of figure~\ref{fig:markgraph}.
+
+
 An alternative way to avoid local variable issues is to use ``variables as resource''~\cite{bornat:var}.
 Unfortunately variables as resource introduces other unpleasantness, which is why many mechanized verification systems do not use it\cite{chin:hipsleek,appel:programlogics,bengtson:charge}.
 }
 
 Hobor and Villard were able to avoid having existentials in localized postconditions because they defined all of their mathematical operations (\emph{e.g.} $\m{mark}$, $\m{mark1}$) as functions rather than relations.
+
+\paragraph{Verification tools.}
+
+Coq based, tactics \cite{bengtson:charge}, somewhat similar to Floyd?
+
+Coq based, more automated \cite{chlipala:bedrock}, how does this compare?
+
+Less automation, more complete, not in Coq \cite{jacobs:verifast}
+
+More automation, not in Coq \cite{Beckert:2007,DistefanoP08,berdine:smallfoot}  how do these compare, esp. the first two?
+
+Non separation logic tools, e.g. Chalice?
+
+\paragraph{Verification of graph algorithms, $**$}
+
+Yang, Bornat: early work
+
+Reynolds's notes: $**$
+
+Javascript: Gareth
+
+concurrent, paper: Azalea
+
+In Coq, concurrent: Ilya and Aleks
 
 \paragraph{Mechanized mathematical graph theory.}
 
@@ -101,7 +129,4 @@ directly.
 5.2. An alternative way of verifying marking program is reasoning about the whole history of marking operations. The disadvantage of it is that it currently needs more work in a Hoare logic framework. The advantage of it is that its reasoning structure are more similar with the way we understand it in our first algorithm class.
 5.3. I take some effort on garbage collector like graph structural. Though it is only connecting this special structural with 5.1.1 and 1.3, it takes much time and it is not finished yet.}
 
-\paragraph{Local variables.}
-\hide{
-Hobor and Villard hacked their way around this [local var] issue by proposing a variant of \infrulestyle{Ramify} called \infrulestyle{RamifyAssign}, which could reason about the special case of a single assignment $\li{x = }f(\ldots)$, assuming the verifier can make the local program translation to $\li{x' = }f(\ldots)\li{; x = x'}$, where \li{x'} is fresh.  They proposed no way to verify unmodified program code or to do a ramification across multiple assignments as we do in lines~\ref{code:markbeforetripleramify}--\ref{code:markaftertripleramify} of figure~\ref{fig:markgraph}.
-}
+
