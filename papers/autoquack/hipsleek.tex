@@ -8,16 +8,17 @@ HIP/SLEEK is a toolset for verifying programs using separation logic~\cite{chin:
   \begin{lstlisting}
 data node { int val; node left; node right; }
 
-...
->> definition of graph??
+graph<G> == self = null or 
+ self::node<v,l,r>U*(l::graph<G>U*r::graph<G>)
+ & lookup(G,self,v,l,r);
 
-$\label{code:hipstartrelation}$>> relation 
->>   lookup(abstract G, node x, node v, node l, node r).
->> relation mark(abstract G, node x, abstract G1).
+$\label{code:hipstartrelation}$relation lookup(abstract G, node x, 
+  node v, node l, node r).
+relation mark(abstract G, node x, abstract G1).
 relation
   subset_reach(abstract G, node x, abstract G1).
 relation
-$\label{code:hipendrelation}$  eq_notreach(abstract G, node x, abstract G1).
+$\label{code:hipendrelation}$ eq_notreach(abstract G, node x, abstract G1).
 
 $\label{code:hipaxiom}$axiom lookup(G,x,1,l,r) ==> mark(G,x,G).
 
