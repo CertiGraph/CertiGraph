@@ -159,11 +159,11 @@ The lemmas and axioms that HIP/SLEEK has used in the verification still need to 
 
 \subsection{Consequences of HIP/SLEEK's style of reasoning}
 
-HIP/SLEEK's style of reasoning has a few consequences for how we proceed.  First, H/S's use of the fold/unfold relationship means that we need the ``supplementary'' package from the ramification library (\S\ref{sec:ramifylib}) to enable it.  Second, H/S's use of the existential wand $--o$ means we need to convert our $--*$ ramification lemmas to contain $--o$.  Fortunately, this is easy, assuming $L_1$ is precise:
+HIP/SLEEK's style of reasoning has a few consequences for how we proceed.  First, H/S's use of the fold/unfold relationship means that we need the ``supplementary'' package from the ramification library (\S\ref{sec:ramifylib}) to enable it.  Second, H/S's use of the existential wand $--o$ means we need to convert our $--*$ ramification lemmas to contain $--o$.  Fortunately this is easy, assuming $L_1$ is precise:
 \[
 \infrule{WandToEwand}
 {G_1 |- L_1 * (L_2 --* G_2)}
 {(L_1 --o G_1) * L_2 |- G_2}
 {\m{precise}(P)}
 \]
-Even more fortunately, the supplementary package proves that the $\p{graph}$ predicate is ``precise'', so all of our graph lemmas work without any additional effort.  Accordingly, to provide the \li{Module} implementing \li{Mgraphmark} not burdensome, especially starting from a working Floyd proof that uses the same mathematical relations.
+The supplementary package proves that the $\p{graph}$ predicate is ``precise'', so all of our graph ramification lemmas work without additional effort.  Accordingly, to provide the \li{Module} implementing \li{Mgraphmark} not burdensome, especially starting from a working Floyd proof that uses the same mathematical relations.
