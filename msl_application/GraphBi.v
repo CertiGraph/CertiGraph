@@ -799,7 +799,26 @@ Lemma unreachable_partialgraph_si_vertices_identical: forall (g g': Graph) (S1 S
      (Graph_SpatialGraph g) (Graph_SpatialGraph g').
 Proof.
   intros.
-  admit.
+  apply GSG_PartialGraphPreserve2.
+  + unfold Included, Ensembles.In.
+    intros.
+    apply vvalid_vguard.
+    apply reachable_through_set_foot_valid in H0.
+    destruct H0; auto.
+  + unfold Included, Ensembles.In.
+    intros.
+    apply vvalid_vguard.
+    apply reachable_through_set_foot_valid in H0.
+    destruct H0; auto.
+  + unfold Included, Ensembles.In.
+    intros.
+    apply reachable_through_set_foot_valid in H0.
+    destruct H0; auto.
+  + unfold Included, Ensembles.In.
+    intros.
+    apply reachable_through_set_foot_valid in H0.
+    destruct H0; auto.
+  + admit.
 Qed.
 
   Lemma subgraph_update:
