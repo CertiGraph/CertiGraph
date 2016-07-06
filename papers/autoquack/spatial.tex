@@ -6,35 +6,42 @@ description about heaps. We provide a generic ramification library for these pre
 
 \subsection{Infrastructure: Isolate memory model}
 
-In order to ensure proofs reusability, we build a logic level between memory models and our ramification library.
-In other words, we adopt a layered style to get things
-done: Our spatial graph definition is build on a separation logic
-layer which are composed by atomic notations ($\scon$, $\ocon$, $|->$,
-$\p{precise}$, etc.) and related properties as axioms, while these axioms are proved sound w.r.t. different memory models.
+In order to ensure proofs reusability, we build a logic level between
+memory models and our ramification library.  In other words, we adopt
+a layered style to get things done: Our spatial graph definition is
+build on a separation logic layer which are composed by atomic
+notations ($\scon$, $\ocon$, $|->$, $\p{precise}$, etc.) and related
+properties as axioms, while these axioms are proved sound
+w.r.t. different memory models.
 
 \begin{figure}[htbp]
 \centering
 \beginpgfgraphicnamed{infrastructure}
-\begin{tikzpicture}[->/.tip={Stealth}]
+\begin{tikzpicture}[->/.style={thick, arrows={-Stealth}}]
 \tikzstyle{every node}=[shape=rectangle, rounded corners=4pt, draw]
-\node (SM) at (-3, 0) {Step-Indexing Model};
-\node (DM) at (1, 0) {Direct Model};
-%% \node (OM) at (2.5, 0) {Other Models};
-\node (CL) at (-3, 1.5) {Core Logic};
-\node (SL) at (1, 1.5) {Supplementary Logic};
-\node (G) at (-3, 3) {Graphs};
-\node (SG) at (1, 3) {Supplementary Graphs};
-\draw [->] (CL) to (G);
-\draw [->] (G) to (SG);
-\draw [->] (CL) to (SG);
-\draw [->] (SL) to (SG);
+\node (SM) at (0, 0) {\small Step-Indexing Model};
+\node (DM) [right=2 of SM] {\small Direct Model};
+\node (CL) [above=0.8 of SM] {\small Core Logic};
+\node (SL) [above=0.8 of DM] {\small Supplementary Logic};
+\node (R) [above=0.8 of CL] {\small Ramification};
+\node (SR) [above=0.8 of SL] {\small Suppl. Ramification};
+\node (G) [above=0.8 of R] {\small Graphs};
+\node (SG) [above=0.8 of SR]{\small Supplementary Graphs};
+\draw [double, ->] (SM) to (CL);
+\draw [double, ->] (SM) to (SL);
+\draw [double, ->] (DM) to (CL);
+\draw [double, ->] (DM) to (SL);
+\draw [->] (CL) to (R);
+\draw [->] (CL) to (SR);
 \draw [->] (CL) to (SL);
-\draw [->] (SM) to (CL);
-\draw [->] (SM) to (SL);
-\draw [->] (DM) to (CL);
-\draw [->] (DM) to (SL);
-%% \draw [->] (OM) to (CL);
-%% \draw [->] (OM) to (SL);
+\draw [->] (CL) to (SG);
+\draw [->] (SL) to (SR);
+\draw [->] (G) to (SG);
+\draw [->] (SR) to (SG);
+\draw [->] (R) to (G);
+\draw [->] (R) to (SR);
+\draw [->] (CL.west) to [bend left=40] (G.west);
+\draw [->] (SL.east) to [bend right=40] (SG.east);
 \end{tikzpicture}
 \endpgfgraphicnamed
 \vspace{1ex}
@@ -42,8 +49,15 @@ $\p{precise}$, etc.) and related properties as axioms, while these axioms are pr
 \end{figure}
 
 As shown in Figure~\ref{fig:infra}, our spatial library can be divided
-into three layers. At the bottom are the memory models. All axioms in the middle layer are proved sound w.r.t. all memory models.
-All definitions and lemmas at the top layer are based on the separation logic at the middle layer.
+into three layers. The top layer is composed by the definition of
+spatial graphs as predicate of heaps and related ramification rules
+about spatial graphs. can be divided into two categories: one is for
+
+At the bottom are the memory models. All axioms in the middle layer
+are proved sound w.r.t. all memory models. All definitions and lemmas
+at the top layer are based on the separation logic at the middle
+layer.
+
 
 %% 2.3. \texttt{sSpatialGraph\_Graph\_Bi} defined in "\texttt{spatial\_graph\_bi.v}" is the premise type class for defining how a BiMaFin graph is stored in memory.
 

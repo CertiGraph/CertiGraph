@@ -211,7 +211,7 @@ FiniteGraph, MathGraph and BiGraph are already explained. BiMaFin is a
 compositional property of the three: it means a graph satisfying
 BiGraph, MathGraph and FiniteGraph simultaneously. As an application,
 we adopt BiMaFin as the soundness condition for GeneralGraph in the
-final real verifications.
+verifying the program in \S\ref{sec:orientation}.
 
 \subsection{Computable Reachability}
 We proved quite many property-bundle specific theorems. One typical
@@ -283,7 +283,7 @@ and ``graph copy'' because the latter two programs do contain marking
 operations. So we reuse the following pure fact:
 \begin{equation*}
 \begin{split}
-\forall \gamma, x.~&\gamma(x)=(0, v_1, v_2,\dots,v_n) => \m{mark1}(\gamma, x, \gamma_1) =>\\
+\forall \gamma, x, n.~&\gamma(x)=(0, v_1, v_2,\dots,v_n) => \m{mark1}(\gamma, x, \gamma_1) =>\\
         & \m{mark}(\gamma_1,v_1,\gamma_2) => \m{mark}(\gamma_2,v_2,\gamma_3) => \dots =>\\
         & \m{mark}(\gamma_n,v_n,\gamma_{n+1}) => \m{mark}(\gamma,x,\gamma_{n+1}).
 \end{split}
