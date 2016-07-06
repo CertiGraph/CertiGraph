@@ -1,6 +1,43 @@
 
 \appendix
 
+{\color{magenta}
+\subsection{Simplifying ramification entailments}
+After applying \infrulestyle{Ramify-P}, it is often desirable to break the ramification entailment into smaller disjoint pieces before applying \infrulestyle{Solve Ramify-P}.
+One common case is to ``frame out'' an unneeded part of the global state:
+\[
+\infrule{Frame Ramify-P}
+{G_1 \vdash L_1 * \pguards{c} (L_2 --* G_2)}
+{G_1 * F \vdash L_1 * \pguards{c} \big(L_2 --* (G_2 * F)\big) }
+{\begin{array}{c}F \text{ ignores} \\ \MV(c)\end{array}} \qquad \qquad
+\]
+In fact \infrulestyle{Frame Ramify-P} is a simple consequence of \infrulestyle{Solve Ramify-P} and the more general \[
+\infrule{Split Ramify-P}
+{G_1 \vdash L_1 * \pguards{c} (L_2 --* G_2) \\
+ G_1' \vdash L_1' * \pguards{c} (L_2' --* G_2') }
+{G_1 * G_1' \vdash L_1 * L_1' * \pguards{c} \big((L_2 * L_2') --* (G_2 * G_2')\big)} {}
+\]
+In general the strategy is to apply \infrulestyle{Frame Ramify-P} and \infrulestyle{Split Ramify-P} until the ramification entailments are as small as they can be (while remaining true!) before using \infrulestyle{Solve Ramify-P} on the remaining ``atoms''.
+
+The situation is unfortunately a little messier when the postconditions contain existential quantifiers.
+
+\[\text{UNSOUND-RAM-Q-SPLIT}\]
+\Rule{}
+{G_1 \vdash L_1 * (\exists x, L_1' (x) --* \exists x, G_1'(x)) \\
+G_2 \vdash L_2 * (\exists x, L_2' (x) --* \exists x, G_2'(x)) \\}
+{G_1 * G_2 \vdash L_1 * L_2 * (\exists x, L_1'(x) * L_2'(x) --* \exists x, G_1'(x) * G_2'(x)) }
+
+
+\[
+\infrule{Ramify-Q}
+{\{ L \} ~ c ~ \{\exists x.~ L' \} \\
+ G \vdash L * \big(\forall x.~ (L' --* G')\big)}
+{\{ G \} ~ c ~ \{ \exists x.~G' \}}{}
+\]
+
+}
+
+
 \section{Junk}
 {\color{magenta} Universally-quantified metavariables can appear free in the predicates to make further connections.
 Assuming that the abstracted pre- and postconditions $A$, $B$, $C$, and $D$ above all use \li{x}, we proceed

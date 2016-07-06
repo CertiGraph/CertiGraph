@@ -74,8 +74,7 @@ Hobor and Villard observed that \infrulestyle{Frame} is bit rigid because it for
 That is, we can verify a ``global'' specification $\{G_1\}~c~\{G_2\}$ by combining a ``local'' specification $\{L_1\}~c~\{L_2\}$ with a \emph{ramification entailment} $G_1 |- L_1 * (L_2--* G_2)$.  This entailment uses the ``magic wand'' operator $--*$ of separation logic\footnote{$--*$ is the adjunct of $*$, \emph{i.e.} $(P * Q |- R) <=> (P |- Q --* R)$.} to express a notion of ``substate update'': inside $G_1$ replace $L_1$ with $L_2$ to reach $G_2$.  Essentially the ramification entailment ensures that the change in state specified locally fits properly into the global context.  In exchange for proving the ramification entailment, a verifier can use \infrulestyle{Ramify} at any time, \emph{i.e.} they need not worry about syntactically matching their assertions with the $*$ in the \infrulestyle{Frame} rule.
 
 We are now ready to give a formal meaning to the ``localization'' pattern employed in Figure~\ref{fig:markgraph}.  When we write:
-%\begin{minipage}{.25\textwidth}
-\begin{lstlisting} %[numbers=none]
+\begin{lstlisting}
 // $\label{code:prelocal}\{ G_1 \}$
 // $\label{code:inlocal}\searrow \{ L_1 \}$
 $\ramify(i)$      $c_1$; ... ; $c_n$;
@@ -216,7 +215,9 @@ Meanwhile, the second premise looks like this:
 \end{array}
 \vspace*{-0.75ex}
 \end{equation}
-Although it may not be readily apparent, this is in fact a tautology: introduce the $L_2$ premise of the right $--*$ to the left side of the entailment and, since the clause $\li{x} = 6$ is now on the left, substitute it everywhere.
+Although it may not be readily apparent, this is in fact a tautology using $(P * Q |- R) <=> (P |- Q --* R)$.
+
+%: introduce the $L_2$ premise of the right $--*$ to the left side of the entailment and, since the clause $\li{x} = 6$ is now on the left, substitute it everywhere.
 
 This strategy is sufficient to handle all of the localization blocks in Figure~\ref{fig:markgraph}.  For example, in lines~\ref{code:markbeforetripleramify}--\ref{code:markaftertripleramify}, choose $F \defeq \null$
 \vspace*{-0.75ex}
@@ -326,10 +327,10 @@ F |- \forall x.~ (L_2 --* G_2)
 }
 {G_1 \vdash L_1 * \pguards{c}  \big(\forall x.~ (L_2 --* G_2)\big)}{\begin{array}{c}F \textrm{ ignores} \\ \MV(c)\end{array}} \qquad \qquad \quad
 \]
-Since we use a relational style to verify graph algorithms (\emph{e.g.} in Figure~\ref{fig:markgraph}), existentials appear frequently and a smooth treatment is very helpful in practice.  To make this point a little more clearly we were more explicit about existentials in \emph{e.g.} lines~\ref{code:beforemarkl}--\ref{code:aftermarkl} than is typical in pen-and-paper proofs.  However, fortified by the \infrulestyle{Ramify-PQ} rule, we could very reasonably have \emph{e.g.} written line~\ref{code:postmark1} as \begin{lstlisting}[firstnumber=26]
+Since we use a relational style to verify graph algorithms (\emph{e.g.} in Figure~\ref{fig:markgraph}), existentials appear frequently and a smooth treatment is very helpful in practice.  To make this point a little more clearly we were more explicit about existentials in \emph{e.g.} lines~\ref{code:beforemarkl}--\ref{code:aftermarkl} than is typical in pen-and-paper proofs.  {\color{magenta}However, fortified by the \infrulestyle{Ramify-PQ} rule, we could very reasonably have \emph{e.g.} written line~\ref{code:postmark1} as \begin{lstlisting}[firstnumber=26]
 // $\swarrow \{\p{graph}(\tx l, \gamma'') /| \m{mark}(\gamma', \tx{l}, \gamma'')\}$
 \end{lstlisting}
-and omitted line~\ref{code:aftermarkl} entirely.
+and omitted line~\ref{code:aftermarkl} entirely.}
 
 %\ref{code:postmark1}]
 
@@ -352,7 +353,7 @@ Proof of \infrulestyle{Ramify-P} from \infrulestyle{Frame} and \infrulestyle{Con
 {\{G_1\}~c~\{G_2\}}
 {} \\
 [5pt]
-(1)~ \forall P.~ \pguards{c}P \text{ ignores } \FV(c) \qquad (2)~ \text{Axiom T of modal logic} \qquad (3)~ --* \text{ is the adjunct of } *
+(1)~ \forall P.~ \pguards{c}P \text{ ignores } \FV(c) \qquad (2)~ \text{axiom T of modal logic} \qquad (3)~ (P * Q |- R) <=> (P |- Q --* R)
 \end{array}
 \]
 
@@ -395,41 +396,5 @@ Proof of \infrulestyle{Ramify-PQ} from \infrulestyle{Ramify-P}:
 \end{figure*}
 
 In Figure~\ref{fig:rampqproofs} we sketch the soundness proofs for \infrulestyle{Ramify-P} and \infrulestyle{Ramify-PQ}.  \infrulestyle{Ramify-P} requires only \infrulestyle{Frame} and \infrulestyle{Consequence} to prove, along with some basic properties of $\pguards{c}$.  \infrulestyle{Ramify-PQ} is built on top of \infrulestyle{Ramify-P} with some complicated logical maneuvers.  Systems of separation logic that do not wish to add $\pguards{c}$ to their logical formulae might consider adding a rule that combines the \infrulestyle{Ramify-PQ} and \infrulestyle{Solve Ramify-PQ} rules into a single package.
-
-{\color{magenta}
-\subsection{Simplifying ramification entailments}
-After applying \infrulestyle{Ramify-P}, it is often desirable to break the ramification entailment into smaller disjoint pieces before applying \infrulestyle{Solve Ramify-P}.
-One common case is to ``frame out'' an unneeded part of the global state:
-\[
-\infrule{Frame Ramify-P}
-{G_1 \vdash L_1 * \pguards{c} (L_2 --* G_2)}
-{G_1 * F \vdash L_1 * \pguards{c} \big(L_2 --* (G_2 * F)\big) }
-{\begin{array}{c}F \text{ ignores} \\ \MV(c)\end{array}} \qquad \qquad
-\]
-In fact \infrulestyle{Frame Ramify-P} is a simple consequence of \infrulestyle{Solve Ramify-P} and the more general \[
-\infrule{Split Ramify-P}
-{G_1 \vdash L_1 * \pguards{c} (L_2 --* G_2) \\
- G_1' \vdash L_1' * \pguards{c} (L_2' --* G_2') }
-{G_1 * G_1' \vdash L_1 * L_1' * \pguards{c} \big((L_2 * L_2') --* (G_2 * G_2')\big)} {}
-\]
-In general the strategy is to apply \infrulestyle{Frame Ramify-P} and \infrulestyle{Split Ramify-P} until the ramification entailments are as small as they can be (while remaining true!) before using \infrulestyle{Solve Ramify-P} on the remaining ``atoms''.
-
-The situation is unfortunately a little messier when the postconditions contain existential quantifiers.
-
-\[\text{UNSOUND-RAM-Q-SPLIT}\]
-\Rule{}
-{G_1 \vdash L_1 * (\exists x, L_1' (x) --* \exists x, G_1'(x)) \\
-G_2 \vdash L_2 * (\exists x, L_2' (x) --* \exists x, G_2'(x)) \\}
-{G_1 * G_2 \vdash L_1 * L_2 * (\exists x, L_1'(x) * L_2'(x) --* \exists x, G_1'(x) * G_2'(x)) }
-
-
-\[
-\infrule{Ramify-Q}
-{\{ L \} ~ c ~ \{\exists x.~ L' \} \\
- G \vdash L * \big(\forall x.~ (L' --* G')\big)}
-{\{ G \} ~ c ~ \{ \exists x.~G' \}}{}
-\]
-
-}
 
 %\FloatBarrier
