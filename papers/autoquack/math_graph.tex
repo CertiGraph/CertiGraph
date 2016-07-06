@@ -166,22 +166,49 @@ to fulfill the three requirements above, respectively.
 \begin{figure}[htbp]
 \centering
 \beginpgfgraphicnamed{variousgraph}
-\begin{tikzpicture}[->/.style={thick,arrows={-Stealth}},
-                    realG/.style={shape=rectangle, rounded corners=4pt, draw, fill=gray!40},
-                    propG/.style={shape=rectangle, rounded corners=4pt, draw}]
-\node[realG] (PG) at (0, 0) {PreGraph};
-\node[realG] (LG) [below=1 of PG] {LabeledGraph};
-\node[realG] (GG) [right=3 of LG] {GeneralGraph};
-\draw [->] (PG) -- (LG) node [pos=0.5, right] {\small Add Label} ;
-\draw [->] (LG) -- (GG) node [pos=0.5, above] {\small Add} node (SC) [pos=0.5, below] {\small Soundness Condition};
-\node[propG] (BMF) [below=1 of SC] {BiMaFin};
-\draw [double,->] (BMF) -- (SC) node [pos=0.5, left] {\small Instantialize};
-\node[propG] (BG) [left=1 of BMF] {BiGraph};
-\node[propG] (MG) [below=0.5 of GG] {MathGraph};
-\node[propG] (FG) [below=0.5 of MG] {FiniteGraph};
-\draw [->] (BG) to (BMF);
-\draw [->] (MG) to (BMF);
-\draw [->] (FG) to (BMF);
+\begin{tikzpicture}
+[->/.style={thick,arrows={-Stealth}},
+-->/.style={thick,arrows={-Stealth}, decorate, decoration={snake, amplitude=.4mm,segment length=2mm,post length=2mm}},
+   realG/.style={shape=rectangle, rounded corners=4pt, draw, fill=gray!40},
+   propG/.style={shape=rectangle, rounded corners=4pt, draw}]
+\node[realG] (PG) at (0, 0) {\small PreGraph};
+\node[realG] (LG) [right=0.8 of PG] {\small LabeledGraph};
+\node[realG] (GG) [right=2 of LG] {\small GeneralGraph};
+\draw [double, ->] (PG) -- (LG) node [pos=0.5, above] {\small Label} ;
+\draw [double, ->] (LG) -- (GG) node (SC) [pos=0.5, above, align=center]
+{\small Soundness \\ \small Condition};
+\node[propG] (Prop) [below=0.6 of SC] {\small Property};
+\node[propG] (PropL) [below=0.4 of Prop] {\small Property Lemmas};
+\node[propG] (PGL) [below=2 of PG, align=center] {\small PreGraph \\\small Lemmas};
+\node[propG] (LGL) [below=2 of LG, align=center] {\small LabeledGraph \\\small Lemmas};
+\node[propG] (GGL) [below=2 of GG, align=center] {\small GeneralGraph \\\small Lemmas};
+\draw [double, ->] (PGL) to (LGL);
+%% \draw [double, ->] (LGL) to (GGL);
+\draw [->] (PG) to (PGL);
+\draw [->] (Prop) to (PropL);
+\draw [-->] (Prop) to (SC);
+\coordinate [left=0.2 of LG.south] (LGs1);
+\coordinate [left=0.2 of LGL.north] (LGLn1);
+\draw [->] (LGs1) to (LGLn1);
+\coordinate [right=0.2 of LG.south] (LGs2);
+\coordinate [right=0.2 of LGL.north] (LGLn2);
+\draw [->] (LGs2) |- (Prop);
+\draw [double, ->] (LGLn2) |- (PropL);
+\coordinate [right=0.2 of GG.south] (GGs);
+\coordinate [left=0.2 of GGL.north] (GGLn1);
+\coordinate [right=0.2 of GGL.north] (GGLn2);
+\draw [double, ->] (PropL) -| (GGLn1);
+\draw [->] (GGs) to (GGLn2);
+\node [draw, thick, rectangle, dashed, fit=(Prop) (PropL)] {};
+\node (legend1) [below right=0.2 and -0.3 of PGL] {\small Dependence};
+\coordinate[left=0.8 of legend1]  (l1);
+\draw [->] (l1) to (legend1);
+\node (legend2) [right=1 of legend1] {\small Inheritance};
+\coordinate[left=0.8 of legend2]  (l2);
+\draw [double, ->] (l2) to (legend2);
+\node (legend3) [right=1 of legend2] {\small Instantializes};
+\coordinate[left=0.8 of legend3]  (l3);
+\draw [-->] (l3) to (legend3);
 \end{tikzpicture}
 \endpgfgraphicnamed
 \vspace{1ex}
@@ -194,6 +221,41 @@ background) are real mathematical objects, just like PreGraph. The
 rest are just property bundles which are PreGraph with special
 properties. They provide different views of graphs from certain
 perspectives.
+
+\begin{figure}[htbp]
+\centering
+\beginpgfgraphicnamed{graphproperty}
+\begin{tikzpicture}
+[->/.style={thick,arrows={-Stealth}},
+   group/.style={shape=rectangle, draw, thick, dashed},
+   propG/.style={shape=rectangle, rounded corners=4pt, draw}]
+\node[propG] (PL12) at (0, 0) {\small Lemmas of Property 1 and 2};
+\coordinate [left=1 of PL12.north] (PL12n1);
+\coordinate [right=1 of PL12.north] (PL12n2);
+\node[propG] (PL1) [above=0.5 of PL12n1, align=center] {\small Property 1 \\\small Lemmas};
+\node[propG] (PL2) [above=0.5 of PL12n2, align=center] {\small Property 2 \\\small Lemms};
+\node[propG] (P1) [above=0.5 of PL1] {\small Property 1};
+\node[propG] (P2) [above=0.5 of PL2] {\small Property 2};
+\draw [->] (P1) to (PL1);
+\draw [->] (P2) to (PL2);
+\draw [double, ->] (PL1) to (PL12n1);
+\draw [double, ->] (PL2) to (PL12n2);
+\draw [->] (P1.west) to [bend right=45] (PL12.west);
+\draw [->] (P2.east) to [bend left=45] (PL12.east);
+\node (R1) [group, fit=(P1) (PL1)] {};
+\node (R2) [group, fit=(P2) (PL2)] {};
+\node (R3) [group, fit=(current bounding box)] {};
+\node [propG] (P1P2) [above right=-1.1 and 1.2 of R3, align=left] {\small Property 1$/|$ \\\small Property 2};
+\node [propG] (PL1PL2) [below=0.5 of P1P2, align=center] {\small Prop. 1 Lemmas \\\small Prop. 2 Lemmas \\\small Prop. 1$/|$2 Lemmas};
+\draw [->] (P1P2) to (PL1PL2);
+\node (R4) [group, fit=(P1P2) (PL1PL2)] {};
+\node (EQ) [right=0 of R3] {\bf \Large $\mapsto$};
+\end{tikzpicture}
+\endpgfgraphicnamed
+\vspace{1ex}
+\caption{Graph Properties}\label{fig:properties}
+\end{figure}
+
 
 In our framework, there are three kinds of \emph{real}
 graphs: \textbf{PreGraph}, \textbf{LabeledGraph}
