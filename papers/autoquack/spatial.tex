@@ -42,8 +42,8 @@ $\p{precise}$, etc.) and related properties as axioms, while these axioms are pr
 \end{figure}
 
 As shown in Figure~\ref{fig:infra}, our spatial library can be divided
-into three layers. At the bottom are the memory models. The models are
-used to instantialize show the soundness of logic level axioms.
+into three layers. At the bottom are the memory models. All axioms in the middle layer are proved sound w.r.t. all memory models.
+All definitions and lemmas at the top layer are based on the separation logic at the middle layer.
 
 %% 2.3. \texttt{sSpatialGraph\_Graph\_Bi} defined in "\texttt{spatial\_graph\_bi.v}" is the premise type class for defining how a BiMaFin graph is stored in memory.
 
@@ -167,29 +167,55 @@ list of reachable nodes from $x$ separated by $\scon$.
   \end{split}
 \end{equation}
 
-One useful property in proving the unfold lemma is \emph{joinable}. A
-predicate $p$ is joinable iff for any $x\neq y$, $p(x)$ and $p(y)$ are
-in disjointed heap, which means we can write $p(x) * p(y)$.
+%One useful property in proving the unfold lemma is \emph{joinable}. A
+%predicate $p$ is joinable iff for any $x\neq y$, $p(x)$ and $p(y)$ are
+%in disjointed heap, which means we can write $p(x) * p(y)$.
 
-One benefit of the definition in (\ref{eqn:iter_def}) is that the pure
-mathematical graph $\gamma$ in $\mathtt{graph}$ is not necessarily a
-BiGraph. (\ref{eqn:iter_def}) can represent a general graph with
-variant number of neighors as long as extending the definition of
-$\gamma(x)$ to data mapped by the label function and every neighbor of
-node $x$.
+\subsection{Ramification Libraries}\
 
-Moreover, it turns out that the $\bigstar$ notation is a more useful
-and fundamental concept than $\mathtt{graph}$. There are two parts of
-the $\bigstar$ in (\ref{eqn:iter_def}): one is the predicate $\mapsto$
-and the other is the node set which the $\mapsto$ iterates on. They
-both bind to $\gamma$ in (\ref{eqn:iter_def}) for $\p{graph}(x,
-\gamma)$, which is a special case. In section \ref{sec:applicable}, we
-will see the specification of a spanning tree algorithm which uses
-$\bigstar$ directly instead of $\p{graph}$ because in that
-specification, the predicate $\mapsto$ and the node set bind to
-different mathematical graphs. Furthermore, we generalize the
-ramification rules for $\p{graph}$ in \cite{hobor:ramification}, which
-uses $\bigstar$ so as to be applied in all verification examples.
+To establish all separation logic properties, especially ramification entailments, we build our ramification libraries for $\mathtt{graph}$ predicate.
+
+The ramification libraries are again build in 3 layers. The first layer is separation logic theorems for iterated separating conjunction. For example:
+\begin{eqnarray*}
+&& \text{If }A \cap B = \emptyset, \text{ then } \\
+&&  \underset{x\in A}{\bigstar} P(x) *   \underset{x\in B}{\bigstar} P(x) \Leftrightarrow \underset{x\in A \cup B}{\bigstar} P(x) \\
+&& \text{If }A \cap B = \emptyset,  A' \cap B = \emptyset, \text{ then }\\
+&& \underset{x\in A\cup B}{\bigstar} P(x) \vdash \underset{x\in A}{\bigstar} P(x) * ( \underset{x\in A'}{\bigstar} P(x) \wand \underset{x\in A' \cup B}{\bigstar} P(x))
+\end{eqnarray*}
+
+The next layer is general separation logic theorems for $\mathtt{graph}$ predicate. For example, if $\gamma(x) = \gamma'(x)$ for any $x \neq x_0$ then
+$$\mathtt{graph}(x, \gamma) \vdash x \mapsto \gamma(x) * (x \mapsto \gamma'(x) \wand \mathtt{graph}(x, \gamma'))$$
+
+The third layer contains ramification libraries for different specific graph algorithms. Taking the marking algorithm we introduced in \S\ref{sec:orientation} as an example, we prove the following theorem:
+
+\begin{eqnarray*}
+&& \text{If } \gamma(x) = (1, l, r) \text{ then } \\
+&& \mathtt{graph}(x, \gamma) \vdash \mathtt{graph}(l, \gamma) * \\
+&& ~~ (\forall \gamma', \text{mark}(\gamma, l, \gamma') \wedge \mathtt{graph}(l, \gamma') \wand \\
+&& ~~~~~~~~~~~~~~~~ \text{mark}(\gamma, l, \gamma') \wedge \mathtt{graph}(x, \gamma'))
+\end{eqnarray*}
+
+This three layer structure mostly enables proof reuse. All libraries on the third layer for specific algorithms are derived from general theorems at the second layer. And the theorems for $\mathtt{graph}$ at the second layer are proved from the separation logic library on our first layer. Also, this library for iterated separating conjunction can be used in other structures than graphs.
+
+%One benefit of the definition in (\ref{eqn:iter_def}) is that the pure
+%mathematical graph $\gamma$ in $\mathtt{graph}$ is not necessarily a
+%BiGraph. (\ref{eqn:iter_def}) can represent a general graph with
+%variant number of neighors as long as extending the definition of
+%$\gamma(x)$ to data mapped by the label function and every neighbor of
+%node $x$.
+%
+%Moreover, it turns out that the $\bigstar$ notation is a more useful
+%and fundamental concept than $\mathtt{graph}$. There are two parts of
+%the $\bigstar$ in (\ref{eqn:iter_def}): one is the predicate $\mapsto$
+%and the other is the node set which the $\mapsto$ iterates on. They
+%both bind to $\gamma$ in (\ref{eqn:iter_def}) for $\p{graph}(x,
+%\gamma)$, which is a special case. In section \ref{sec:applicable}, we
+%will see the specification of a spanning tree algorithm which uses
+%$\bigstar$ directly instead of $\p{graph}$ because in that
+%specification, the predicate $\mapsto$ and the node set bind to
+%different mathematical graphs. Furthermore, we generalize the
+%ramification rules for $\p{graph}$ in \cite{hobor:ramification}, which
+%uses $\bigstar$ so as to be applied in all verification examples.
 
 %% 1.2. \texttt{Iter\_sepcon} and \texttt{pred\_sepcon} are defined. And related ramification rules are proved.
 %% 1.3. The most general graph-spatial-predicate \texttt{vertices\_at} are defined (for all possible styles of graphs). Related ramification rules are proved. Graph and graphs are defined as special cases of vertices at.
