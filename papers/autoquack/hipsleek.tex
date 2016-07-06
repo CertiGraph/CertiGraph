@@ -2,30 +2,35 @@ HIP/SLEEK is a toolset for verifying programs using separation logic~\cite{chin:
 
 \subsection{Verifying \li{mark} in HIP/SLEEK}
 \label{sec:hipsleekmark}
+\lstset{otherkeywords={data,relation,rlemma,abstract,axiom}}
 
 \begin{figure}[t]
   \begin{lstlisting}
 data node { int val; node left; node right; }
 
 ...
+>> definition of graph??
+
+$\label{code:hipstartrelation}$>> relation 
+>>   lookup(abstract G, node x, node v, node l, node r).
+>> relation mark(abstract G, node x, abstract G1).
 relation
   subset_reach(abstract G, node x, abstract G1).
 relation
-  eq_notreach(abstract G, node x, abstract G1).
+$\label{code:hipendrelation}$  eq_notreach(abstract G, node x, abstract G1).
 
-rlemma "subgraphupdate_l" l::graph<G1> *
+$\label{code:hipaxiom}$axiom lookup(G,x,1,l,r) ==> mark(G,x,G).
+
+$\label{code:hipbeginlemma}$rlemma "subgraphupdate_l" l::graph<G1> *
  (l::graph<G> --@ (x::node<v,l,r> U*
  (l::graph<G> U* r::graph<G>))) &
  subset_reach(G,l,G1) & eq_notreach(G,l,G1)
  & lookup(G,x,v,l,r) & lookup(G1,x,v1,l,r)
   -> x::node<v1,l,r> U*
-   (l::graph<G1> U* r::graph<G1>);
-
-axiom lookup(G,x,1,l,r) ==> mark(G,x,G).
+$\label{code:hipendlemma}$   (l::graph<G1> U* r::graph<G1>);
 ...
 
-void mark(node x) { // $\label{code:hipmarkstart}\{\p{graph}(\tx{x},\gamma)\}$
-  node l, r;
+void mark(node x) { node l, r; // $\label{code:hipmarkstart}\{\p{graph}(\tx{x},\gamma)\}$
   if (x == null) return;
   else { if (x.val == 1) return; $\label{ifcondmark}$
          l = x.left; r = x.right; x.val = 1;
@@ -37,9 +42,14 @@ void mark(node x) { // $\label{code:hipmarkstart}\{\p{graph}(\tx{x},\gamma)\}$
 \label{fig:hipmarkgraph}
 \end{figure}
 
-Figure~\ref{fig:hipmarkgraph} gives the HIP/SLEEK file used to verify \li{mark}.  In the body of the function itself (lines~\ref{code:hipmarkstart}--\ref{code:hipmarkend}) we only specify 
+Figure~\ref{fig:hipmarkgraph} gives the HIP/SLEEK file used to verify \li{mark}.  In the body of the function itself (lines~\ref{code:hipmarkstart}--\ref{code:hipmarkend}) we only specify the pre/postconditions of the function (in a mathematical style for succinct readability); note this is the same specification we verified in VST in Figure~\ref{fig:markgraph}.  We do define a number of things e define a number of abstract relations (\emph{e.g.} lines~\ref{code:hipstartrelation}--\ref{code:hipendrelation}), axioms relating these pure relations to each other (\emph{e.g.} line~\ref{code:hipaxiom}), and ramification rules connection spatial predicates with the abstract relations (\emph{e.g.} lines~\ref{code:hipbeginlemma}--\ref{code:hipendlemma}).
 
-the pre and post conditions for verifying the bigraph marking program in HIP/SLEEK are the same as they were for VST. One difference here is that HIP/SLEEK uses a Java-like memory model with objects and fields, thus there are no alignment issues as one cannot have a pointer to the middle of a field. As explained in section \ref{sec:spacegraph} the ramification library we provide is generic, reasoning in HIP/SLEEK uses the supplementary graphs from our library.
+
+
+and 
+
+
+One difference here is that HIP/SLEEK uses a Java-like memory model with objects and fields, thus there are no alignment issues as one cannot have a pointer to the middle of a field. As explained in section \ref{sec:spacegraph} the ramification library we provide is generic, reasoning in HIP/SLEEK uses the supplementary graphs from our library.
 
 There are three key steps that automate ramifications in HIP/SLEEK, the first step is the use of fold/unfold relationship for graphs given in (\ref{eqn:unfold_graph}). HIP/SLEEK uses unfold lemma for graph to automatically expose the heap required to check entailments during forward reasoning. E.g. in order to check the dereference at line \ref{ifcondmark} in figure \ref{fig:hipmarkgraph} the $\p{graph}(\tx{x},\gamma)$ predicate is unfolded and the state just before line \ref{ifcondmark} is $ \exists m,l,r.~ \gamma(x)=(m,l,r) \wedge x \mapsto m,l,r \ocon \p{graph}(l, \gamma) \ocon \p{graph}(r, \gamma)$.
 
@@ -68,12 +78,13 @@ Where, $\p{subset\_reach}$ and $\p{eqnot\_reach}$ are uninterpreted relations. T
 
 \subsection{Generating Coq module type}
 
-\lstset{deletekeywords={union}}
+% Parameter formula : Type.
+% Parameter valid : formula -> Prop.
+
+\lstset{deletekeywords={union},otherkeywords={Module,Type,Prop,Parameter,Axiom,End}}
 \begin{figure}[t]
   \begin{lstlisting}
 Module Type Mgraphmark.
- Parameter formula : Type.
- Parameter valid : formula -> Prop.
  ...
  Axiom subgraphupdate_l : forall G v G1 x v1 l r,
   valid (imp (and (star (graph l G1)

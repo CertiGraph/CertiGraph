@@ -1,269 +1,105 @@
-\hide{
-\section{Ramification Rules}
+The Verified Software Toolchain is a series of machine-checked modules written in Coq whose focus is reasoning about C programs~\cite{appel:programlogics}, especially those programs that can be compiled with the CompCert compiler~\cite{leroy:compcert}.  One of VST's modules, Floyd, is a separation-logic based engine to help users
+verify concrete programs.  The modules interlock so there are no ``gaps'' in the end-to-end certified results; accordingly all of the rules employed by Floyd have been proved sound with respect to the underlying semantics used by CompCert.  Floyd is written in a combination of Ltac and Gallina and is designed to help users verify the full functional correctness of their programs.  Although Floyd devotes considerable effort to make this task simpler, it prefers expressibility and completeness to more highly-automated tools like HIP/SLEEK.
 
+Floyd presents users with a pleasant ``decorated program'' visualization for Hoare proofs, in which users work from the top of the program to the bottom even though the formal proof is maintained as applications of inference rules.  For example, suppose the proof goal is $\triple{P_1}{c_1\li{;}c_2}{P_5}$ and VST's user tells Floyd to apply a Hoare rule for $c_1$, \emph{e.g.}~$\triple{P_1}{c_1}{P_2}$.  Floyd will then automatically apply the \infrulestyle{Sequence} rule and show the user $\triple{P_2}{c_2}{P_5}$ as the remaining goal.
+When the user is in the middle of a verification, the decorated program is partially done (\emph{i.e.} the proof is finished from the top to ``the current program point'') and the inference tree is also partially done (\emph{i.e.} with holes that are represented by the remaining proof goals in Coq).
 
-\Rule{Frame  }
-{\{ P \} c \{Q \} \\
-  F \text{ is stable w.r.t. } \MV(c)\\}
- {\{P * F \} c \{ Q * F \}}
+\subsection{The \li{localize} and \li{unlocalize} tactics}
 
-\Rule{Ramification   }
-{\{ L \} c \{L' \} \\
- G \vdash L * (L' -* G') \\
- (L' -* G') \text{ is stable w.r.t. } \MV(c)\\}
-{\{ G \} c \{ G' \}}
+We wish to preserve this ``decorated program'' view while extending Floyd to support ramification.  Our task therefore is to construct a proof in Coq's underlying logic that allows a localization block to be constructed in this manner---that is, we wish to enter a localization block without requiring the user to specify the ``exit point'' in advance.  The engineering is tricky because the proof Floyd is constructing (\emph{i.e.} applications of inference rules) has holes in places where the user's ``top to bottom'' view of things has not yet arrived.
 
-\Rule{Ramification-P }
-{\{ L \} c \{L' \} \\
- G \vdash L * \Box^{\llbracket c \rrbracket} (L' -* G') \\}
-{\{ G \} c \{ G' \}}
-
-\subsection{P for Pure Facts}
-
-Separation logic has been mechanized by many projects CITE CITE CITE.
-In many of them, like VST and Charge!, expressing the value of a local
-variable (a variable stored in stack) is a pure fact rather than a
-spatial fact. Because the side condition of ramification rule requires $(L' -* G')$ to be stable w.r.t. modified local variables in $c$\footnote{In previous papers, the side conditions of Frame rule and ramification rule are usually expressed as ``$\FV(F) \cap \MV(c) = \emptyset$'' and ``$\FV(L' -* G') \cap \MV(c) = \emptyset$''. The side conditions used in this paper are equivalent with typical ones if the semantic interpretation of $\FV$ is used. All the previous mentioned projects takes semantic interpretation instead of syntactical interpretation.}, it is almost impossible to apply ramification rule in any practical situations in these systems. In this paper, we present a pure-facts-related rule (we call it ramification-P rule, or just P rule, in the rest of this paper) such that it is sound and practical in the most general setting of separation logics.
-
-The primary ramification rule is essentially an application of the frame rule using $(L' -* G')$ as frame.
-Thus, the key point of handling pure facts is to find a legal frame even if $(L' -* G')$ is not stable w.r.t. $\MV(c)$. This frame is $\Box^{\llbracket c \rrbracket} (L' -* G')$ in ramification-P rule.
-\begin{eqnarray*}
-m \models \Box^R P &  \Leftrightarrow  & \forall m', \text{ if } m\xrightarrow{R}m' \text{ then } m' \models P \\
-m \xrightarrow{\llbracket c \rrbracket} m' & \Leftrightarrow &   \text{$m$ and $m'$ coincide everywhere} \\
-&& \text{except $\MV(c)$} \\
-P \text{ is stable} &  \Leftrightarrow  & \forall m \ m',  \text{if $m$ and $m'$ coincide everywhere} \\
-\text{w.r.t. $S$} && \text{except $S$, then $m \models P$ iff $m' \models P$}
-\end{eqnarray*}
-
-Here, $\Box$ represents the necessity modal operator. The formula $\Box^{\llbracket c \rrbracket} (L' -* G')$ says, it is true on a state $m$ if and only if for any state $m'$, if $m$ and $m'$
-coincide everywhere except on the variables modified by $c$, then $(L' -* G')$ is true on $m'$.
-
-Based on the combination frame rule, consequence rule and three basic facts below, we can immediate prove ramification-P rule.
-\begin{quotation}
-(a) $\Box^{\llbracket c \rrbracket} (L' -* G')$ is stable w.r.t. $\MV(c).$\footnote{This can be proved directly from the definition of $\llbracket c \rrbracket$ and stability, and the fact that $\llbracket c \rrbracket$ is an equivalence relation.}
-
-(b) $G \vdash L * \Box^{\llbracket c \rrbracket} (L' -* G')$. (Assumption)
-
-(c) $L' *  \Box^{\llbracket c \rrbracket} (L' -* G') \vdash G'$. \footnote{When $R$ is reflexive, T-Axiom of modal logic is sound, i.e. for any $P$, $\Box^R P \vdash P$. As $\llbracket c \rrbracket$ is reflexive, we know the fact that $\Box^{\llbracket c \rrbracket} (L' -* G') \vdash L' -* G'$, which is immediate followed by $L' *  \Box^{\llbracket c \rrbracket (L' -* G')} \vdash G'$.}
-\end{quotation}
-
-\subsection{Establish the Assumption Entailment of P Rule}
-
-It is well-known that the proof theory with magic wand is already complicated, so generally speaking, it will not be a easy task to prove an entailment with magic wand together with modality. However, people need to prove an entailment with form
-\begin{equation}G \vdash  L * \Box^R (L' -* G') \label{eqn:Passu} \end{equation}
-at first when applying ramification-P rule. Luckily, this special form makes the task simpler.
-
-First of all, SOLVE-RAM-P rule can turn the proof goal into two wand-free and modality-free entailments. Specifically, people only need to find an $R$-stable predicate $F$, such that $G \vdash L * F$ and $F * L' \vdash G'$ are both true.
-
-SOLVE-RAM-P alone is not a satisfactory proof theory because in that case using P rule would have no different from using frame rule directly. The key point here is that, an entailment with form \ref{Passu} can be proved in a modularized way. For primary ramification rule, CITE proposed two proof rule, RAM-FRAME and RAM-SPLIT\footnote{\Rule{RAM-FRAME }
-{G \vdash L * (L' -* G') \\
-F \text{ is stable w.r.t. } \MV(c) \\}
-{G * F \vdash L * (L' -* G' * F) }
-
-\Rule{RAM-SPLIT }
-{G_1 \vdash L_1 * (L_1' -* G_1') \\
-G_2 \vdash L_2 * (L_2' -* G_2') \\}
-{G_1 * G_2 \vdash L_1 * L_2 * (L_1' * L_2' -* G_1' * G_2') }
-}, to divide an entailment with form $G \vdash L * (L' -* G')$ into small pieces. When it comes to ramification-P rule, two corresponding proof rules, RAM-P-FRAME and RAM-P-SPLIT are still sound.
-
-\Rule{SOLVE-RAM-P }
-{G \vdash L * F\\
-F * L' \vdash G' \\
-F \text{ is stable w.r.t. } \MV(c) \\}
-{G \vdash L * \Box^{\llbracket c \rrbracket} (L' -* G') }
-
-\Rule{RAM-P-FRAME }
-{G \vdash L * \Box^{\llbracket c \rrbracket} (L' -* G') \\
-F \text{ is stable w.r.t. } \MV(c) \\}
-{G * F \vdash L * \Box^{\llbracket c \rrbracket} (L' -* G' * F) }
-
-\Rule{RAM-P-SPLIT }
-{G_1 \vdash L_1 * \Box^{\llbracket c \rrbracket} (L_1' -* G_1') \\
-G_2 \vdash L_2 * \Box^{\llbracket c \rrbracket} (L_2' -* G_2') \\}
-{G_1 * G_2 \vdash L_1 * L_2 * \Box^{\llbracket c \rrbracket} (L_1' * L_2' -* G_1' * G_2') }
-
-To conclude, if $L'$ and $G'$ are two separating conjunctions of a bunch of atomic predicates, RAM-P-FRAME and RAM-P-SPLIT can establish \ref{Passu} from entailments with the same form but smaller size. Atomic sized entailments can be proved using SOLVE-RAM-P. They are usually general purposed entailments and do not need to be proved for every single program. In section \ref{vst}, we will see examples of this approach for real programs.
-
-\subsection{Q for Quantifiers}
-
-In secion ???, we have already seen that it is a practical approach writing pre/postconditions as a separating conjunction of a list of atomic predicates (which makes RAM-P-FRAME and RAM-P-SPLIT useful). But unfortunately, an existential in post condition (also very common as we have seen in section ???) will prevent us from using these two rules. Now, one natural solution is to find other proof rules, like the following one, to deal with existential quantifiers.
-\[\text{UNSOUND-RAM-Q-SPLIT}\]
-\Rule{}
-{G_1 \vdash L_1 * (\exists x, L_1' (x) -* \exists x, G_1'(x)) \\
-G_2 \vdash L_2 * (\exists x, L_2' (x) -* \exists x, G_2'(x)) \\}
-{G_1 * G_2 \vdash L_1 * L_2 * (\exists x, L_1'(x) * L_2'(x) -* \exists x, G_1'(x) * G_2'(x)) }
-
-But this rule is NOT sound (even though we have not add $\Box$ operator to deal with local variable related stuff). The reason is that, given the local piece of memory satisfies $L_1'(x) * L_2'(x)$ for some specific $x$, we know that it can be split into two small piece of memory and they satisfies $L_1'(x)$ and $L_2'(x)$ respectively. Then the assumption tell us that the global piece can be split into two corresponding piece, $G_1'(x_1)$ and $G_2'(x_2)$ are true on them for some specific $x_1$ and $x_2$. Now the problem comes. Only if we could prove $x_1 = x_2$, we could prove the conclusion. But we cannot.
-
-The key point of the failure above is that the frame, $\exists x, L' (x) -* \exists x, G'(x)$, says if $L'(x)$ is true on local then there is another (might be same one) $x_0$ such that $G'(x_0)$ is true on global. This is too weak for modularity. In many practical cases, we can in fact prove that $G'(x)$ should be true for the exact same $x$. This observation brings us to the ramification-PQ rule here.
-\Rule{Ramification-PQ}
-{\{ L \} c \{ \exists x, L' (x) \} \\
- G \vdash L * \Box^{\llbracket c \rrbracket} (\forall x, L' (x) -* G' (x)) \\}
-{\{ G \} c \{ \exists x, G' (x)\}}
-
-PQ rule can be directly derived from P rule by using the following theorem from separation logic\footnote{
-$$\frac{\frac{\frac{\forall x, (L' (x) -* G' (x)) \vdash L' (x_0) -* G' (x_0)}{\forall x, (L' (x) -* G' (x)) * L' (x_0) \vdash G' (x_0)}}
-{\forall x, (L' (x) -* G' (x)) * \exists x, L' (x) \vdash \exists x, G' (x)}}
-{\forall x, (L' (x) -* G' (x)) \vdash \exists x, L' (x) -* \exists x, G' (x)}$$
-}.
-$$\forall x, (L' (x) -* G' (x)) \vdash \exists x, L' (x) -* \exists x, G' (x)$$
-Like what we do to P rule, three corresponding rules, SOLVE-RAM-PQ, RAM-PQ-FRAME and RAM-PQ-SPLIT, are proved sound and can be used to establish the assumption of PQ rule in a modularized way. For those who do not care about local variable related issue, a ramification-Q rule can be used to deal with existentials. For the sake for space here, we omit them in this paper.
-
-\subsection{Ramification in Decorated Programs}
-
-One nice thing about Hoare logic is that it enables people to write combinational proofs. Moreover, such kind of proofs can be written in a nice printed form, decorated programs. %For example,
-% \begin{figure}[h]
-%\begin{tabular}{c | c}
-%\begin{lstlisting}
-%$\{\ \ \ P_1 \ \ \ \}$
-%  c1;
-%$\{\ \ \ P_2 \ \ \ \}$
-%$\{\ \ \ P_3 \ \ \ \}$
-%  c2;
-%$\{\ \ \ P_4 \ \ \ \}$
-%$\{\ \ \ P_5 \ \ \ \}$
-%\end{lstlisting}
-%&
-%$$
-%\inference[]
-%{\triple{P_1}{c1}{P_2} &
-%\inference[]
-%{P_2 \vdash P_3 \\ P_4 \vdash P_5 \\ \triple{P_3}{c2}{P_4} }
-%{\triple{P_2}{c2}{P_5}}
-%}
-%{\triple{P_1}{c1;c2}{P_5}}
-%$$
-% \\
-%%TODO: fix format
-%\end{tabular}
-%\end{figure}
-
-%The decorated program on the left is actually representing the Hoare logic proof on the right side.
-By adding a new pattern, we call it localized and unlocalize, ramification proofs can also be presented in a decorated programs.
-
-\begin{figure}[h]
-\begin{tabular}{c | c}
-\begin{lstlisting}
-$\{\ \ \ G_1 \ \ \ \}$
-$\searrow \{\ \ \ L_1 \ \ \ \}$
-      c1;
-      ...
-      c5;
-$\swarrow \{\ \ \ L_2 \ \ \ \}$
-$\{\ \ \ G_2 \ \ \ \}$
-\end{lstlisting}
-&
-$$
-\inference[]
-{\triple{L_1}{c1;...;c5}{L_2} \\
-G_1 \vdash L_1 * (L_2 -* G_2)
-}
-{\triple{G_1}{c1;...;c5}{G_2}}
-$$
- \\
-%TODO: fix format
-\end{tabular}
-\caption{Localize and unlocalize in decorated programs}
-\label{figure:lul}
-\end{figure}
-
-Figure \ref{figure:lul} shows such a decorated program. We call the action in line 2 \emph{localize} and call the action in line 6 \emph{unlocalize}. A Hoare logic proof using ramification rule can always be written as a decorated program with localize and unlocalize, as long as wherever we write do unlocalize action, we should prove a side condition, e.g. $G_1 \vdash L_1 * (L_2 -* G_2)$ in this example.
-}
-
-\section{Ramification based on VST}\label{vst}
-
-\subsection{Background: Verified Software Toolchain}
-VST is a correctness-certified tool to prove functional correctness of C programs CITE. All Hoare rules are proved sound and users can use them to build modularized proof. At the same time, users can have all the convenience offered by separation logic. For example, frame rule is already proved sound as well. VST is fully developed in Coq and it uses the C semantics offered by ComCert. CITE
-
-Apart from enabling mechanized program verification in Coq, VST establishes a connection between Hoare logic proofs and decorated programs. Specifically, when users prove a Hoare triple, VST's tactic system enables them to feel as if they were write a decorated program from up to down, but the proof built in Coq has a structure as an inference diagram.
-
-For example, when the proof goal is $\triple{P_1}{c1;c2}{P_5}$, VST's user can apply some Hoare rule to get a triple for c1, e.g. $\triple{P_1}{c1}{P_2}$. VST's tactic system then applies sequence rule automatically and the proof goal left to user will be $\triple{P_2}{c2}{P_5}$. On user's view, his/her proof goal changes from $\triple{P_1}{c1;c2}{P_5}$ to $\triple{P_2}{c2}{P_5}$ and these interaction with VST system is exact the same as writing the first three lines of his/her decorate program on a pen-and-paper proof. At the same time, in Coq's underlying logic, VST's tactic system builds a proof tree from bottom to the top.
-
-In summary, VST's users build a Hoare logic proof by interacting with VST's tactic system. At any intermedium point of this interaction process, the decorated program is partially done (from top to bottom) and the inference tree is also partially done (the holes are proof goals in Coq).
-
-\subsection{Extend VST to Support Ramification}
-
-In order to extend VST to support ramification, we should enable people to write decorated programs with localize and unlocalize action. Our task here is to construct a proof in Coq's underlying logic from a decorated program, in which localize and unlocalize are involved. Moreover, our extension of VST's tactic system should construct a partial proof when the user finishes part of his proof.
-
-It is especially difficult when we consider such partial decorated programs as in the first column of Figure \ref{figure:backend}. In this situation, our tactic system cannot even know when corresponding unlocalize action will be done. To construct a partial proof, the tactic system cannot know where to close this ramification block.
-
-In order to solve this problem, our tactic systems builds the partial proof in underlying logic by using uninstantiated frame. For example, the second column of Figure \ref{figure:backend} shows the backend of a localize operation. We put an unknown frame $?F$ there which will be instantiated when doing unlocalize.
-
-\lstset{numbers=none}
-
-\begin{figure}[h]
-\begin{tabular}{l | l | l | l}
+\begin{figure}[t]
+\begin{minipage}{.1\textwidth}
 \begin{lstlisting}
 $\{\ \ P_1 \ \ \}$
     c1
-$\{\ \ P_2 \ \ \}$
-$\searrow \{\ \ P_3 \ \ \ \}$
+$\{\ \ P_2 \ \ \}\label{code:localglobalin}$
+$\searrow \{\ \ P_3 \ \ \}\label{code:locallocalin}$
       c2;
-$~~\{\ \ P_4 \ \ \ \}$
+$~~\,\{\ \ P_4 \ \ \}\label{code:localsndcmd}$
 
     ...
 
-(to be done)
 
-\end{lstlisting} & \begin{lstlisting}
+
+\end{lstlisting}
+\end{minipage} \vline ~
+\begin{minipage}{.11\textwidth}
+\begin{lstlisting}[numbers=none]
 $\{\ \ P_1 \ \ \}$
     c1
 $\{\ \ P_2 \ \ \}$
-$\{\ \ ?F * P_3 \ \ \}$
+$\{\ \ ?F * P_3 \ \}$
     c2;
-$\{\ \ ?F * P_4 \ \ \}$
+$\{\ \ ?F * P_4 \ \}$
 
   ...
 
-(to be done)
 
-\end{lstlisting} & \begin{lstlisting}
+
+\end{lstlisting}
+\end{minipage} \vline ~
+\begin{minipage}{.11\textwidth}
+\begin{lstlisting}[numbers=none]
 $\{\ \ P_1 \ \ \}$
     c1
 $\{\ \ P_2 \ \ \}$
-$\searrow \{\ \ P_3 \ \ \ \}$
+$\searrow \{\ \ P_3 \ \ \}$
       c2;
-      ..
+  $\,\{\ \ P_4 \ \ \}$
       c3;
-$\swarrow\{\ \ P_8 \ \ \ \}$
-$\{\ \ P_9 \ \ \}$
+$\swarrow\{\ \ P_5 \ \ \}$
+$\{\ \ P_6 \ \ \}$
 
     ...
-
-(to be done)
-\end{lstlisting} & \begin{lstlisting}
+\end{lstlisting}
+\end{minipage} \vline ~
+\begin{minipage}{.11\textwidth}
+\begin{lstlisting}[numbers=none]
 $\{\ \ P_1 \ \ \}$
     c1
 $\{\ \ P_2 \ \ \}$
-$\{\ \ ?F * P_3 \ \ \}$
+$\{\ \ ?F * P_3 \ \}$
     c2;
-    ...
+$\{\ \ ?F * P_4 \ \}$
     c3;
-$\{\ \ ?F * P_8 \ \ \}$
-$\{\ \ P_9 \ \ \}$
+$\{\ \ ?F * P_5 \ \}$
+$\{\ \ P_6 \ \ \}$
 
   ...
-
-(to be done)
 \end{lstlisting}
-\end{tabular}
-\caption{Front end and back end of localize and unlocalize}
+\end{minipage}
+\caption{Front and back ends of \li{localize} and \li{unlocalize}}
 \label{figure:backend}
+\vspace{-2ex}
 \end{figure}
 
-\lstset{numbers=left}
+Figure~\ref{figure:backend} has four partially-decorated ``proofs in progress'', from both the user's (front end) and Floyd's (back end) points of view.  In the first column, from the user's point of view, they saw the assertion $P_2$ (line~\ref{code:localglobalin}) and decided to use the \li{localize} tactic to zoom into $P_3$ (line~\ref{code:locallocalin}).  They then applied some proof rules to move past $c_2$ to reach the assertion $P_4$ (line~\ref{code:localsndcmd}).  At this point, Floyd does not know when the corresponding \li{unlocalize} tactic will execute, so it does not know how which commands will be inside the block or what the final local and global postconditions will be.
 
-Specifically, as the unlocalize command is done in the third column, $?F$ is filled with $$[\text{c2; c3}](P_8 \wand P_9)$$
+Accordingly, the \li{localize} tactic builds an incremental proof in the underlying program logic by applying \infrulestyle{Frame} with an uninstantiated metavariable.  The second column of Figure~\ref{figure:backend} shows the back end with the unknown frame $?F$, which will eventually be instantiated by \li{unlocalize}.
 
-This engineering solution shows the intrinsic correlation between frame rule and ramification-P rule, i.e. the entailment relation that $?F$ should satisfy at the localize operation is exactly the ramification criterion.
+In the third column, the user has advanced past $c_3$ to reach the local postcondition $P_5$ and now wishes to \li{unlocalize} to~$P_6$.  Afterwards, the internal state looks like the fourth column, and so to a first approximation, \li{unlocalize} can instantiate $?F$ with $\pguards{c_2\li{;} c_3}(P_5 \wand P_6)$.  In fact, as discussed in \S\ref{sec:existentials}, \li{unlocalize} replaces $P_5$ and $P_6$ with equivalent $P_5'$ and $P_6'$ that use existentials to pack up modified program variables, and then instantiates $?F$ with a version of $\pguards{c_2\li{;} c_3}(P_5 \wand P_6)$ in which those same modified program variables have been replaced with universally-quantified metavariables.  Reformulating assertions to isolate program variables is aided by Floyd's use of a canonical form for assertions that explicitly separates assertions containing program variables from spatial assertions.
+%original tactic system can help its users to write their assertions in such a isolated style.
 
-\textbf{Tracking Guarded Criteria.} Notice that not all separation logic assertions can be used to fill the uninstantiated frame, there are two criteria to follow. Using the example in Figure \ref{figure:backend}, the frame should satisfy: (1) $P_1 \vdash ?F * P_2$ (2) $?F$ ignores $\mathrm{ModVar}(\text{c2; c3})$.
+As indicated in \S\ref{sec:existentials}, this leaves two proof goals.  The first, $P_2 |- ?F * P_3$, is simplified to remove the $\pguards{c_2\li{;} c_3}$ and referred to the user as a new obligation; most often the user solves it using a ramification library~(\S\ref{sec:ramifylib}).  The second, $?F |- P_5' --* P_6'$, is solved automatically by \li{unlocalize}.
 
-Our tactic system keeps track with these two guarded criteria to ensure soundness. When people do localize, the tactic system will create the uninstantiated frame tagged with these two criteria (using dependent types in Coq). The first criterion is fully specified while the second one is only semi-specified at the time of localizing because it is unknown which commands will be involved in this ramification block.
 
-When people do unlocalize, the tactic system will use the magic wand operation between local and global assertions under universal modal operator ($[\text{c2;c3}](P_8 \wand P_9)$ in this example) to instantiate the frame and check whether these two criteria is satisfied. The first criterion ($P_1 \vdash P_2 * [\text{c2;c3}](P_8 \wand P_9)$ in this example) is usually left for manual proofs and the second criterion is always true because of the modality's property.
 
-\textbf{Simply Ramification Criterion.} Besides implementing localize and unlocalize operation, our tactic system simplifies the ramification criterion for users. The target of this simplification is eliminating the $[c]$ modality.
+
+
+
+
+%This engineering solution shows the intrinsic correlation between frame rule and ramification-P rule, i.e. the entailment relation that $?F$ should satisfy at the localize operation is exactly the ramification criterion.
+
+%\textbf{Tracking Guarded Criteria.} Notice that not all separation logic assertions can be used to fill the uninstantiated frame, there are two criteria to follow. Using the example in Figure \ref{figure:backend}, the frame should satisfy: (1) $P_1 \vdash ?F * P_2$ (2) $?F$ ignores $\mathrm{ModVar}(\text{c2; c3})$.
+
+%{\color{magenta}Our tactic system keeps track with these two guarded criteria to ensure soundness. When people do localize, the tactic system will create the uninstantiated frame tagged with these two criteria (using dependent types in Coq). The first criterion is fully specified while the second one is only semi-specified at the time of localizing because it is unknown which commands will be involved in this ramification block.}
+
+%When people do unlocalize, the tactic system will use the magic wand operation between local and global assertions under universal modal operator ($[\text{c2;c3}](P_8 \wand P_9)$ in this example) to instantiate the frame and check whether these two criteria is satisfied. The first criterion ($P_1 \vdash P_2 * [\text{c2;c3}](P_8 \wand P_9)$ in this example) is usually left for manual proofs and the second criterion is always true because of the modality's property.
+
+%\textbf{Simply Ramification Criterion.} Besides implementing localize and unlocalize operation, our tactic system simplifies the ramification criterion for users. The target of this simplification is eliminating the $[c]$ modality.
+
+\hide{
 
 \lstset{numbers=none}
 
@@ -304,8 +140,10 @@ The assertions on the right side are equivalent with those on the left side, lin
 &&= \forall y_0. [\mathrm{y}](y_0 = 0 * \mathrm{emp} \wand \mathrm{x} = 1  \wedge y_0 = 0 * Q[\mathrm{y} \mapsto y_0]) \\
 &&= \forall y_0. (y_0 = 0 * \mathrm{emp} \wand \mathrm{x} = 1  \wedge y_0 = 0 * Q[\mathrm{y} \mapsto y_0])
 \end{eqnarray*}
+}
 
-We build this trick of using existential quantifiers and meta variables to these elimination as a common pattern into our tactic system. As a result, the tactic system always leave a modality free ramification criterion for users to prove. Reformulating assertions to isolate program variables are especially easy as a VST's extension because VST's original tactic system can help its users to write their assertions in such a isolated style.
+%We build this trick of using existential quantifiers and meta variables to these elimination as a common pattern into our tactic system. As a result, the tactic system always leave a modality free ramification criterion for users to prove. 
 
-\textbf{Remark.} We extend VST's tactic system such that people can interactively build Hoare proofs with ramification involved. When localize and unlocalize are applied on a paper proof, we use frame rule and uninstantiated frame to build corresponding proof in the underlying logic. Simplified and modality free ramification criteria are left for users to prove as side condition of unlocalize.
+
+%\textbf{Remark.} We extend VST's tactic system such that people can interactively build Hoare proofs with ramification involved. When localize and unlocalize are applied on a paper proof, we use frame rule and uninstantiated frame to build corresponding proof in the underlying logic. Simplified and modality free ramification criteria are left for users to prove as side condition of unlocalize.
 
