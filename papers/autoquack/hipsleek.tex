@@ -31,12 +31,15 @@ $\label{code:hipbeginlemma}$rlemma "subgraphupdate_l" l::graph<G1> *
 $\label{code:hipendlemma}$   (l::graph<G1> U* r::graph<G1>);
 ...
 
-void mark(node x) { node l, r; // $\label{code:hipmarkstart}\{\p{graph}(\tx{x},\gamma)\}$
+void mark(node x) 
+requires x::graph<G>
+ensures x::graph<G1> & mark(G,x,G1);
+{ node l, r;  $\label{code:hipmarkstart}$ 
   if (x == null) return;
   else { if (x.val == 1) return; $\label{ifcondmark}$
          l = x.left; r = x.right; x.val = 1;
          mark(l);$\label{beforemarkleft}$
-         mark(r); } } //$\label{code:hipmarkend}\{\exists \gamma'. \p{graph}(\tx x,\gamma') {/|} \m{mark}(\gamma, \tx{x}, \gamma')\}$
+         mark(r); } } 
 \end{lstlisting}
 %% \vspace{-8pt}
 \caption{Bigraph marking in HIP/SLEEK}
