@@ -14,15 +14,9 @@ Hobor and Villard were able to avoid having existentials in localized postcondit
 
 \paragraph{Verification tools.}
 
-Coq based, tactics \cite{bengtson:charge}, somewhat similar to Floyd?
+\cite{bengtson:charge} present a set of Coq based tactics for working with a shallow embedding of higher order separation logic that is somewhat similar to Floyd but for reasoning about OO programs (written in Java/C\#). A  more automated approach to verification of low level programs using Coq is implemented in the Bedrock framework \cite{chlipala:bedrock}.
 
-Coq based, more automated \cite{chlipala:bedrock}, how does this compare?
-
-Less automation, more complete, not in Coq \cite{jacobs:verifast}
-
-More automation, not in Coq \cite{Beckert:2007,DistefanoP08,berdine:smallfoot}  how do these compare, esp. the first two?
-
-Non separation logic tools, e.g. Chalice?
+Other separation logic based automated verification tools include Verifast \cite{jacobs:verifast}, jStar \cite{DistefanoP08} and smallfoot \cite{berdine:smallfoot}. Similar to HIP/SLEEK, they all use forward reasoning but have limited support for user-defined inductive predicates and instead rely on a library of pre-defined predicates for lists, trees etc.. Dafny \cite{Leino10} and KEY \cite{Beckert:2007} are two notable automated verifiers that are not based on separation logic, however they do not support verification of data structures with intrinsic sharing like graphs and DAGs.
 
 \paragraph{Verification of graph algorithms, $**$}
 
