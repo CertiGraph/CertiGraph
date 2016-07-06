@@ -166,19 +166,20 @@ to fulfill the three requirements above, respectively.
 \begin{figure}[htbp]
 \centering
 \beginpgfgraphicnamed{variousgraph}
-\begin{tikzpicture}[->/.style={thick,arrows={-Stealth}},
-                    realG/.style={shape=rectangle, rounded corners=4pt, draw, fill=gray!40},
-                    propG/.style={shape=rectangle, rounded corners=4pt, draw}]
-\node[realG] (PG) at (0, 0) {PreGraph};
-\node[realG] (LG) [below=1 of PG] {LabeledGraph};
-\node[realG] (GG) [right=3 of LG] {GeneralGraph};
+\begin{tikzpicture}
+[->/.style={thick,arrows={-Stealth}},
+   realG/.style={shape=rectangle, rounded corners=4pt, draw, fill=gray!40},
+   propG/.style={shape=rectangle, rounded corners=4pt, draw}]
+\node[realG] (PG) at (0, 0) {\small PreGraph};
+\node[realG] (LG) [below=1 of PG] {\small LabeledGraph};
+\node[realG] (GG) [right=3 of LG] {\small GeneralGraph};
 \draw [->] (PG) -- (LG) node [pos=0.5, right] {\small Add Label} ;
 \draw [->] (LG) -- (GG) node [pos=0.5, above] {\small Add} node (SC) [pos=0.5, below] {\small Soundness Condition};
-\node[propG] (BMF) [below=1 of SC] {BiMaFin};
+\node[propG] (BMF) [below=1 of SC] {\small BiMaFin};
 \draw [double,->] (BMF) -- (SC) node [pos=0.5, left] {\small Instantialize};
-\node[propG] (BG) [left=1 of BMF] {BiGraph};
-\node[propG] (MG) [below=0.5 of GG] {MathGraph};
-\node[propG] (FG) [below=0.5 of MG] {FiniteGraph};
+\node[propG] (BG) [left=1 of BMF] {\small BiGraph};
+\node[propG] (MG) [below=0.5 of GG] {\small MathGraph};
+\node[propG] (FG) [below=0.5 of MG] {\small FiniteGraph};
 \draw [->] (BG) to (BMF);
 \draw [->] (MG) to (BMF);
 \draw [->] (FG) to (BMF);
