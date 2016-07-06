@@ -146,20 +146,24 @@ and destination nodes satisfy $P$. With the concepts of partial graph
 and subgraph, we can express the reachable portion by instantiating
 $P$ as reachable predicate.
 
-\subsection{Classification of various graphs}
+\subsection{Structure of the mathematical graph framework}
 
 PreGraph and its derived properties (reachability, subgraph, etc) are
 inadequate for real program verifications. Admittedly many helpful
 lemmas can be inferred directly from PreGraph. But when we dealing
 with concrete graphs for various algorithms, there are many features
-which a bare PreGraph can not inculde. For example, when we compute
-some properties of a graph, we always hope the graph is finite. In the
-recursive defnition of a graph data structure, a node contains many
-pointers to point to its neighbors. The pointers could be null to
-indicate that they do not point to any. Thus we need a special node
-which represents null pointer. In some cases, we have to specify a
-graph in which the outdegree of each nodes is 2. All these additional
-properties are abstracted as different property bundles. We
+which a bare PreGraph can not inculde. {\color{magenta} For example,
+many algorithms about graphs assume there are labels in vertices or
+edges.}
+
+For example, when we compute some properties of a graph, we always
+hope the graph is finite. In the recursive defnition of a graph data
+structure, a node contains many pointers to point to its
+neighbors. The pointers could be null to indicate that they do not
+point to any. Thus we need a special node which represents null
+pointer. In some cases, we have to specify a graph in which the
+outdegree of each nodes is 2. All these additional properties are
+abstracted as different property bundles. We
 defined \textbf{FiniteGraph}, \textbf{MathGraph} and \textbf{BiGraph}
 to fulfill the three requirements above, respectively.
 
@@ -212,7 +216,7 @@ to fulfill the three requirements above, respectively.
 \end{tikzpicture}
 \endpgfgraphicnamed
 \vspace{1ex}
-\caption{Various Kinds of Graphs}\label{fig:graphs}
+\caption{Structure of the Mathematical Graph Library}\label{fig:graphs}
 \end{figure}
 
 As shown in Figure \ref{fig:graphs}, there are several different
