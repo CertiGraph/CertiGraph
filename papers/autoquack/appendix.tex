@@ -3,19 +3,19 @@
 
 {\color{magenta}
 \section{Simplifying ramification entailments}
-After applying \infrulestyle{Ramify-P}, it is often desirable to break the ramification entailment into smaller disjoint pieces before applying \infrulestyle{Solve Ramify-P}.
+After applying \infrulestyle{Solve Ramify-PQ}, it is often desirable to break the ramification entailment into smaller disjoint pieces before trying to solve it directly.
 One common case is to ``frame out'' an unneeded part of the global state:
 \[
-\infrule{Frame Ramify-P}
-{G_1 \vdash L_1 * \pguards{c} (L_2 --* G_2)}
-{G_1 * F \vdash L_1 * \pguards{c} \big(L_2 --* (G_2 * F)\big) }
-{\begin{array}{c}F \text{ ignores} \\ \MV(c)\end{array}} \qquad \qquad
+\infrule{Frame Ramify-Q}
+{G_1 \vdash L_1 * \forall x.~ (L_2 --* G_2)}  
+{G_1 * F \vdash L_1 * \forall x.~ \big(L_2 --* (G_2 * F)\big) }
+{\begin{array}{c}F \text{ ignores} \\ \MV(c) \cup \{x\} \end{array}} \qquad \qquad \qquad
 \]
-In fact \infrulestyle{Frame Ramify-P} is a simple consequence of \infrulestyle{Solve Ramify-P} and the more general \[
-\infrule{Split Ramify-P}
-{G_1 \vdash L_1 * \pguards{c} (L_2 --* G_2) \\
- G_1' \vdash L_1' * \pguards{c} (L_2' --* G_2') }
-{G_1 * G_1' \vdash L_1 * L_1' * \pguards{c} \big((L_2 * L_2') --* (G_2 * G_2')\big)} {}
+In fact \infrulestyle{Frame Ramify-Q} is a consequence of the more general \[
+\infrule{Split Ramify-Q}
+{G_1 \vdash L_1 * \big(\forall x.~ (L_2 --* G_2)\big) \! \! \! \! \\
+ G_1' \vdash L_1' * \big(\forall x.~ (L_2' --* G_2')\big) }
+{G_1 * G_1' \vdash L_1 * L_1' * \Big(\forall x.~ \big((L_2 * L_2') --* (G_2 * G_2')\big)\Big)} {}
 \]
 In general the strategy is to apply \infrulestyle{Frame Ramify-P} and \infrulestyle{Split Ramify-P} until the ramification entailments are as small as they can be (while remaining true!) before using \infrulestyle{Solve Ramify-P} on the remaining ``atoms''.
 

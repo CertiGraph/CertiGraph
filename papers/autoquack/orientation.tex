@@ -14,7 +14,7 @@ The specification we certify (lines \ref{code:markstart} and \ref{code:markend})
 \]
 The specification is for full functional correctness, stated using \emph{mathematical} graphs~$\gamma$; until \S\ref{sec:mathgraph} consider $\gamma$ to be a function that maps a vertex $v \in V$ to triples $(m,l,r)$, where $m$ is a ``mark'' bit (0 or 1) and $\{l,r\} \subseteq V \uplus \{0\}$ are the neighbors of $v$.
 The \emph{spatial} \p{graph} predicate describes how the mathematical graph $\gamma$ is implemented in the heap.  Until~\S\ref{sec:spacegraph} it is enough to know that \p{graph} satisfies the fold/unfold relationship in
-equation \eqref{eqn:bigraphintrofoldunfold}, located just under the code in Figure~\ref{fig:markgraph}.
+equation~\eqref{eqn:bigraphintrofoldunfold}, located just under the code in Figure~\ref{fig:markgraph}.
 
 This fold/unfold relationship deserves attention.  
 First, as we explain in~\S\ref{sec:fixpointfail}, it is a terrible mistake to write~\eqref{eqn:bigraphintrofoldunfold} as a definition using $\stackrel{\Delta}{=}$ rather than as a biimplication using $<=>$.  Second, \eqref{eqn:bigraphintrofoldunfold} uses the ``overlapping conjunction'' $\ocon$ of separation logic; informally $P ** Q$ means that $P$ and $Q$ may overlap in the heap (\emph{e.g.}, nodes in the left subgraph can also be in the right subgraph or even be the root $x$).  The presence of the unspecified sharing indicated by the $\ocon$ connective is exactly why graph-manipulating algorithms are so hard to verify (\emph{e.g.}, it is hard to apply the \infrulestyle{Frame} rule).  The standard semantics of the separation logic connectives used in this paper are in Figure~\ref{fig:seplogsem}.
@@ -241,6 +241,63 @@ Pen and paper Hoare proofs are often a little casual with existentials, \emph{e.
 
 %Conversely, we can also prove \infrulestyle{Ramify-P} from \infrulestyle{Frame} and \infrulestyle{Consequence}:
 
+\begin{figure*}
+Proof of \infrulestyle{Ramify-P} from \infrulestyle{Frame} and \infrulestyle{Consequence}:
+\vspace{-3em}
+\[
+\begin{array}{c}
+\infrule{}{
+  G_1 |- L_1 * \pguards{c}(L_2 --* G_2) \\
+  \infrule{}{\{L_1\}~c~\{L_2\}}
+            {\{L_1 * \pguards{c}(L_2 --* G_2)\}~c~\{L_2 * \pguards{c}(L_2 --* G_2)\}}{(1)} \\
+  \infrule{}{
+            \infrule{}{\stackrel{\langle c \rangle}{\cong} \text{ is reflexive}}{\pguards{c}(L_2 --* G_2) |- L_2 --* G_2}{(2)}}
+            {L_2 * \pguards{c}(L_2 --* G_2) |- G_2}{(3)}}
+{\{G_1\}~c~\{G_2\}}
+{} \\
+[5pt]
+(1)~ \forall P.~ \pguards{c}P \text{ ignores } \FV(c) \qquad (2)~ \text{axiom T of modal logic} \qquad (3)~ (P * Q |- R) <=> (P |- Q --* R)
+\end{array}
+\]
+
+Proof of \infrulestyle{Ramify-PQ} from \infrulestyle{Ramify-P}:
+\vspace{-4em}
+\[
+\begin{array}{c}
+\infrule{}
+{
+  \{L_1\}~c~\{\exists x.~ L_2\} \hspace{-0.5em} \\
+  \infrule{}
+  {
+    G_1 |- L_1 * \pguards{c}\big(\forall x.~ (L_2 --* G_2)\big) \hspace{-0.5em} \\
+    \infrule{}{
+      \infrule{}{
+        \infrule{}{
+          \vdots
+        } {
+          \forall x.~ (L_2 --* G_2) |- (\exists x.~ L_2) --* (\exists x.~ G_2)
+        } {(1)}
+      } {
+        \pguards{c}\big(\forall x.~ (L_2 --* G_2)\big) |- \pguards{c}\big((\exists x.~ L_2) --* (\exists x.~ G_2)\big)
+      } {(2)}
+    } {
+      L_1 * \pguards{c}\big(\forall x.~ (L_2 --* G_2)\big) |- L_1 * \pguards{c}\big((\exists x.~ L_2) --* (\exists x.~ G_2)\big)
+    } {}
+  } {
+    G_1 |- L_1 * \pguards{c}\big((\exists x.~ L_2) --* (\exists x.~ G_2)\big)
+  } {}
+} {
+  \{G_1\}~c~\{\exists x.~ G_2\}
+} {}
+\\
+[5pt]
+(1)~ \text{tautology using $(P * Q |- R) <=> (P |- Q --* R)$} \qquad (2)~ \text{reduction using modal axioms K and N} %\qquad (3)~ (P |- Q) => (P * F |- Q * F)
+\end{array}
+\]
+\caption{Proofs of \infrulestyle{Ramify-P} and \infrulestyle{Ramify-PQ}}
+\label{fig:rampqproofs}
+\end{figure*}
+
 \subsection{The existential ogre}
 \label{sec:existentials}
 
@@ -338,63 +395,6 @@ Although our technique to handle modified program variables is rather intricate,
 
 \subsection{Soundness of our rules}
 
-\begin{figure*}
-Proof of \infrulestyle{Ramify-P} from \infrulestyle{Frame} and \infrulestyle{Consequence}:
-\vspace{-3em}
-\[
-\begin{array}{c}
-\infrule{}{
-  G_1 |- L_1 * \pguards{c}(L_2 --* G_2) \\
-  \infrule{}{\{L_1\}~c~\{L_2\}}
-            {\{L_1 * \pguards{c}(L_2 --* G_2)\}~c~\{L_2 * \pguards{c}(L_2 --* G_2)\}}{(1)} \\
-  \infrule{}{
-            \infrule{}{\stackrel{\langle c \rangle}{\cong} \text{ is reflexive}}{\pguards{c}(L_2 --* G_2) |- L_2 --* G_2}{(2)}}
-            {L_2 * \pguards{c}(L_2 --* G_2) |- G_2}{(3)}}
-{\{G_1\}~c~\{G_2\}}
-{} \\
-[5pt]
-(1)~ \forall P.~ \pguards{c}P \text{ ignores } \FV(c) \qquad (2)~ \text{axiom T of modal logic} \qquad (3)~ (P * Q |- R) <=> (P |- Q --* R)
-\end{array}
-\]
-
-Proof of \infrulestyle{Ramify-PQ} from \infrulestyle{Ramify-P}:
-\vspace{-4em}
-\[
-\begin{array}{c}
-\infrule{}
-{
-  \{L_1\}~c~\{\exists x.~ L_2\} \hspace{-0.5em} \\
-  \infrule{}
-  {
-    G_1 |- L_1 * \pguards{c}\big(\forall x.~ (L_2 --* G_2)\big) \hspace{-0.5em} \\
-    \infrule{}{
-      \infrule{}{
-        \infrule{}{
-          \vdots
-        } {
-          \forall x.~ (L_2 --* G_2) |- (\exists x.~ L_2) --* (\exists x.~ G_2)
-        } {(1)}
-      } {
-        \pguards{c}\big(\forall x.~ (L_2 --* G_2)\big) |- \pguards{c}\big((\exists x.~ L_2) --* (\exists x.~ G_2)\big)
-      } {(2)}
-    } {
-      L_1 * \pguards{c}\big(\forall x.~ (L_2 --* G_2)\big) |- L_1 * \pguards{c}\big((\exists x.~ L_2) --* (\exists x.~ G_2)\big)
-    } {}
-  } {
-    G_1 |- L_1 * \pguards{c}\big((\exists x.~ L_2) --* (\exists x.~ G_2)\big)
-  } {}
-} {
-  \{G_1\}~c~\{\exists x.~ G_2\}
-} {}
-\\
-[5pt]
-(1)~ \text{tautology using $(P * Q |- R) <=> (P |- Q --* R)$} \qquad (2)~ \text{reduction using modal axioms K and N} %\qquad (3)~ (P |- Q) => (P * F |- Q * F)
-\end{array}
-\]
-\caption{Proofs of \infrulestyle{Ramify-P} and \infrulestyle{Ramify-PQ}}
-\label{fig:rampqproofs}
-\end{figure*}
-
-In Figure~\ref{fig:rampqproofs} we sketch the soundness proofs for \infrulestyle{Ramify-P} and \infrulestyle{Ramify-PQ}.  \infrulestyle{Ramify-P} requires only \infrulestyle{Frame} and \infrulestyle{Consequence} to prove, along with some basic properties of $\pguards{c}$.  \infrulestyle{Ramify-PQ} is built on top of \infrulestyle{Ramify-P} with some complicated logical maneuvers.  Systems of separation logic that do not wish to add $\pguards{c}$ to their logical formulae might consider adding a rule that combines the \infrulestyle{Ramify-PQ} and \infrulestyle{Solve Ramify-PQ} rules into a single package.
+In Figure~\ref{fig:rampqproofs} we sketch the soundness proofs for \infrulestyle{Ramify-P} and \infrulestyle{Ramify-PQ}.  \infrulestyle{Ramify-P} requires only \infrulestyle{Frame} and \infrulestyle{Consequence} to prove, along with some basic properties of $\pguards{c}$.  \infrulestyle{Ramify-PQ} is built on top of \infrulestyle{Ramify-P} with some complicated logical maneuvers.  Systems of separation logic that do not wish to add $\pguards{c}$ to their logical formulae might consider adding a rule that packages the \infrulestyle{Ramify-PQ} and \infrulestyle{Solve Ramify-PQ} rules together.
 
 %\FloatBarrier
