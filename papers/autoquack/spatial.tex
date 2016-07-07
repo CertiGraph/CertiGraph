@@ -164,15 +164,18 @@ In other words, either they are completely on top of one another or they do not 
 
 Some of our VST proofs do not use fold/unfold, instead preferring to use the lemmas in~\S\ref{sec:ramifylib} directly.  On the other hand, for HIP/SLEEK fold/unfold is vital, and knowing that the recursive relationship holds produces a pleasant feeling.  We also prove a general fold/unfold lemma for DAGs in which we get a $*$ between the root and its $\medocon$-joined neighbors rather than the $**$ present in \eqref{eqn:unfold_graph}.
 
-\subsection{Infrastructure: Isolate memory model}
+\subsection{Ramification Libraries}\label{sec:ramifylib}
+%\subsection{Infrastructure: Isolate memory model}
 
-In order to ensure proofs reusability, we build a logic level between
-memory models and our ramification library.  In other words, we adopt
-a layered style to get things done: Our spatial graph definition is
-build on a separation logic layer which are composed by atomic
-notations ($\scon$, $\ocon$, $|->$, $\p{precise}$, etc.) and related
-properties as axioms, while these axioms are proved sound
-w.r.t. different memory models.
+In order to ensure proofs reusability, we adopt
+a layered style to get things done.
+
+First we build a logic layer between
+memory models and our ramification library. 
+
+As shown in Figure~\ref{fig:infra}, the second bottom layer is a separation logic layer which are composed by atomic
+notations ($\scon$, $\ocon$, $|->$, $\p{precise}$, etc.) and a small set of axioms. These axioms are proved sound
+w.r.t. different memory models at the bottom layer. Using this structure, all of our further development of ramification library can be just depended on this small set of axioms and all properties proved from it will be sound w.r.t. all memory models.
 
 \begin{figure}[htbp]
 \centering
@@ -222,41 +225,43 @@ ent/.style={shape=rectangle, rounded corners=4pt, draw, on grid}]
 \end{tikzpicture}
 \endpgfgraphicnamed
 \vspace{1ex}
-\caption{Infrastructure of spatial graph library}\label{fig:infra}
+\caption{Infrastructure of ramification library}\label{fig:infra}
 \end{figure}
 
-As shown in Figure~\ref{fig:infra}, our spatial library can be divided
-into three layers. The top layer is composed by the definition of
-spatial graphs as predicate of heaps and related ramification rules
-about spatial graphs. can be divided into two categories: one is for
+Besides the isolation of memory models, all of our ramification entailments and spatial graph properties are also constructed in a modular way.
 
-At the bottom are the memory models. All axioms in the middle layer
-are proved sound w.r.t. all memory models. All definitions and lemmas
-at the top layer are based on the separation logic at the middle
-layer.
+We first build the some basic facts about ramification upon the core logic. For example, the following rule is useful in building ramification entailments combinationally.
+\[
+\infrule{Ramify-Q-SPLIT}
+{G_1 \vdash L_1 * \forall x.  (L_2 --* G_2) \\
+ G'_1 \vdash L'_1 * \forall x.  (L_2' --* G'_2)}
+{G_1 * G'_1 \vdash (L_1 * L'_1) * \forall x.  ((L_2 * L'_2)--* (G_2 * G'_2))}{}
+\]
 
+MSL also provides a rich and useful separation logic library based on the core logic.
 
-%% 2.3. \texttt{sSpatialGraph\_Graph\_Bi} defined in "\texttt{spatial\_graph\_bi.v}" is the premise type class for defining how a BiMaFin graph is stored in memory.
+The next layer is separation logic theorems and ramification entailments for iterated separating conjunction. For example:
+\[
+\infrule{}
+{A \cap B = \emptyset}
+{\underset{x\in A}{\bigstar} P(x) *   \underset{x\in B}{\bigstar} P(x) \Leftrightarrow \underset{x\in A \cup B}{\bigstar} P(x)}{}
+\]
+\[
+\infrule{}
+{A \cap B = \emptyset,  ~~~  A' \cap B = \emptyset}
+{\underset{x\in A\cup B}{\bigstar} P(x) \vdash \underset{x\in A}{\bigstar} P(x) * ( \underset{x\in A'}{\bigstar} P(x) \wand \underset{x\in A' \cup B}{\bigstar} P(x))}{}
+\]
 
-%% 2.5. Heap-Model-Direct instances are broken now. They are not hard to get fixed. Previous proofs are in "\texttt{spatial\_graph\_HMD.v}".
+As in Figure~\ref{fig:infra}, the top layer in this library is the general separation logic theorems and ramification entailments for $\mathtt{graph}$ predicate. For example, the following rule describes the behavior of updating one single vertex in a graph. 
+\[
+\infrule{}
+{\gamma(x) = \gamma'(x) \text{ for any } x \neq x_0 }
+{\mathtt{graph}(x, \gamma) \vdash x \mapsto \gamma(x) * (x \mapsto \gamma'(x) \wand \mathtt{graph}(x, \gamma'))}{}
+\]
 
-\subsection{Ramification Libraries}\label{sec:ramifylib}
+This layered structure mostly enables proof reuse. All of the theorems for $\mathtt{graph}$ are proved from the properties of iterated separating conjunction while this library for \emph{big star} can be used in other structures than graphs.
 
-To establish all separation logic properties, especially ramification entailments, we build our ramification libraries for $\mathtt{graph}$ predicate.
-
-The ramification libraries are again build in 3 layers. The first layer is separation logic theorems for iterated separating conjunction. For example:
-\begin{eqnarray*}
-&& \text{If }A \cap B = \emptyset, \text{ then } \\
-&&  \underset{x\in A}{\bigstar} P(x) *   \underset{x\in B}{\bigstar} P(x) \Leftrightarrow \underset{x\in A \cup B}{\bigstar} P(x) \\
-&& \text{If }A \cap B = \emptyset,  A' \cap B = \emptyset, \text{ then }\\
-&& \underset{x\in A\cup B}{\bigstar} P(x) \vdash \underset{x\in A}{\bigstar} P(x) * ( \underset{x\in A'}{\bigstar} P(x) \wand \underset{x\in A' \cup B}{\bigstar} P(x))
-\end{eqnarray*}
-
-The next layer is general separation logic theorems for $\mathtt{graph}$ predicate. For example, if $\gamma(x) = \gamma'(x)$ for any $x \neq x_0$ then
-$$\mathtt{graph}(x, \gamma) \vdash x \mapsto \gamma(x) * (x \mapsto \gamma'(x) \wand \mathtt{graph}(x, \gamma'))$$
-
-The third layer contains ramification libraries for different specific graph algorithms. Taking the marking algorithm we introduced in \S\ref{sec:orientation} as an example, we prove the following theorem:
-
+Also, all of our verifications of different graph algorithms use the proof rules of $\mathtt{graph}$ at the top level in the library. Taking the marking algorithm we introduced in \S\ref{sec:orientation} as an example, we prove the following theorem from the library:
 \begin{eqnarray*}
 && \text{If } \gamma(x) = (1, l, r) \text{ then } \\
 && \mathtt{graph}(x, \gamma) \vdash \mathtt{graph}(l, \gamma) * \\
@@ -264,7 +269,6 @@ The third layer contains ramification libraries for different specific graph alg
 && ~~~~~~~~~~~~~~~~ \text{mark}(\gamma, l, \gamma') \wedge \mathtt{graph}(x, \gamma'))
 \end{eqnarray*}
 
-This three layer structure mostly enables proof reuse. All libraries on the third layer for specific algorithms are derived from general theorems at the second layer. And the theorems for $\mathtt{graph}$ at the second layer are proved from the separation logic library on our first layer. Also, this library for iterated separating conjunction can be used in other structures than graphs.
 
 %One benefit of the definition in (\ref{eqn:iter_def}) is that the pure
 %mathematical graph $\gamma$ in $\mathtt{graph}$ is not necessarily a
