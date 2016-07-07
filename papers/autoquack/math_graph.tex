@@ -24,7 +24,7 @@ respectively. Invalid nodes and edges are not considered as elements
 of a graph. However, there are no additional requirements for the
 validity of the whole graph. As shown in Figure \ref{fig:pregraph},
 our graph can contain invalid nodes and edges. That is why we call
-this combinatorial structure \textbf{PreGraph} because it can express
+this combinatorial structure \emph{PreGraph} because it can express
 not just normal graphs. We design it deliberately because we need a
 way to present such things. For example, the difference of two graphs:
 $\gamma_1-\gamma_2$, is not necessarily a normal graph because it may
@@ -146,26 +146,46 @@ and destination nodes satisfy $P$. With the concepts of partial graph
 and subgraph, we can express the reachable portion by instantiating
 $P$ as reachable predicate.
 
-\subsection{Structure of the mathematical graph framework}
+\subsection{Structure of the mathematical graph framework}\label{sec:mathinfra}
 
 PreGraph and its derived properties (reachability, subgraph, etc) are
 inadequate for real program verifications. Admittedly many helpful
 lemmas can be inferred directly from PreGraph. But when we dealing
 with concrete graphs for various algorithms, there are many features
-which a bare PreGraph can not inculde. {\color{magenta} For example,
-many algorithms about graphs assume there are labels in vertices or
-edges.}
+which a bare PreGraph can not inculde. For example, many algorithms
+about graphs assume there are labels in vertices or edges. And some
+graph related theorems do not allow dangling edges (i.e.\ valid edges
+with invalid vertices). The former problem can be solved by adding
+label functions to the definition of PreGraph, which defines
+a \emph{LabeledGraph}. For the latter one, we
+defined \emph{GeneralGraph} which contains a configurable soundness
+condition based on LabeledGraph.
 
-For example, when we compute some properties of a graph, we always
-hope the graph is finite. In the recursive defnition of a graph data
-structure, a node contains many pointers to point to its
+Figure~\ref{fig:graphs} illustrates the inheritance relation among the
+three defintions and their corresponding lemmas. A GeneralGraph can be
+seen as a LabeledGraph, and a LabeledGraph can be seen as a
+PreGraph. Thus all lemmas about PreGraph can be applied to a
+LabeledGraph or GeneralGraph for free, and all lemmas about
+LabeledGraph are applicable to a GeneralGraph too. The soundness
+condition can be configured with extra requirements of graphs. We
+categories several common requirements into different property
+bundles. Those property bundles along with their derived lemmas can be
+seen as certain kinds of ``plug-ins'' of the framework, which are
+indicated as a dashed rectangle in Figure~\ref{fig:graphs}.
+
+For example, some graph theory lemmas only hold when the graph is
+finite (i.e.\ finite vertices and finite edge). We call this
+property \emph{FiniteGraph}. We also defined a less restrictive
+property called \emph{LocalFiniteGraph}, which requires that each
+vertex only has finite neighbors. In the recursive defnition of a
+graph data structure, a node contains many pointers to point to its
 neighbors. The pointers could be null to indicate that they do not
 point to any. Thus we need a special node which represents null
-pointer. In some cases, we have to specify a graph in which the
-outdegree of each nodes is 2. All these additional properties are
-abstracted as different property bundles. We
-defined \textbf{FiniteGraph}, \textbf{MathGraph} and \textbf{BiGraph}
-to fulfill the three requirements above, respectively.
+pointer. We call this kind of graph as \emph{MathGraph}. In some
+cases, we have to specify a graph in which the outdegree of each nodes
+is 2. That is a \emph{BiGraph}. FiniteGraph, LocalFiniteGraph,
+MathGraph and BiGraph, each with its own related lemmas, are four
+property plugins of our framework. There are several other plugins.
 
 \begin{figure}[htbp]
 \centering
@@ -219,12 +239,13 @@ to fulfill the three requirements above, respectively.
 \caption{Structure of the Mathematical Graph Library}\label{fig:graphs}
 \end{figure}
 
-As shown in Figure \ref{fig:graphs}, there are several different
-``Graph'' definitions in our framework. Some of them (with gray
-background) are real mathematical objects, just like PreGraph. The
-rest are just property bundles which are PreGraph with special
-properties. They provide different views of graphs from certain
-perspectives.
+Furthermore, property plugins can be composed to a larger plugin. This
+composition is not just putting them together because when we consider
+two property bundles at the same time, new lemmas would emerge, just
+like Figure~\ref{fig:properties}. For example, we compose BiGraph,
+MathGraph and FiniteGraph together---called \emph{BiMaFin}---as the
+soundness condition for GeneralGraph in verifying the program
+in \S\ref{sec:orientation}.
 
 \begin{figure}[htbp]
 \centering
@@ -260,44 +281,23 @@ perspectives.
 \caption{Graph Properties}\label{fig:properties}
 \end{figure}
 
-
-In our framework, there are three kinds of \emph{real}
-graphs: \textbf{PreGraph}, \textbf{LabeledGraph}
-and \textbf{GeneralGraph}. The definition of PreGraph is already
-known. Based on a PreGraph, when adding labels of vertices or of
-edges, we get a LabeledGraph. Sometimes when we hope the graph we
-refer to satisfies more conditions (finite, binary, etc), we can use
-GeneralGraph with a customized soundness condition. We distinguish
-these ``Graphs'' because we hope the lemmas provided by our framework
-are in their most general and flexible form. For some of the lemmas, a PreGraph is
-enough while others may not hold without extra conditions.
-
-The rest in Figure \ref{fig:graphs} are all property bundles where
-FiniteGraph, MathGraph and BiGraph are already explained. BiMaFin is a
-compositional property of the three: it means a graph satisfying
-BiGraph, MathGraph and FiniteGraph simultaneously. As an application,
-we adopt BiMaFin as the soundness condition for GeneralGraph in the
-verifying the program in \S\ref{sec:orientation}.
-
-\subsection{Computable Reachability}
-We proved quite many property-bundle specific theorems. One typical
-example of such theorems is the following one:
-\newtheorem{mythm}{Theorem}
-\begin{mythm}
-For any graph $\gamma$ which is both MathGraph and LocalFiniteGraph
-(i.e. every node has a finite number of neighbors) and any node $x$ in
-$\gamma$, if the number of nodes reachable from node $x$ is finite,
-then we can find a set which exactly contains the reachable nodes from
-$x$ in $\gamma$.
-\end{mythm}
-It sounds so trivial but the proof is totally non-trivial. The most
-obvious way to prove it---filtering reachable nodes from all valid
-nodes---is impossible: there is no decision procedure for reachability
-to select reachable nodes because the current definition of graphs is
-applicable for graphs containing infinite number of nodes (A
-LocalFiniteGraph can still be infinite). In such a graph, one may need
-to inspect infinite number of paths to judge whether a node is
-reachable, which is a mission impossible.
+One example of the compositional property lemmas is listed as follows:
+\[
+\begin{split}
+\forall \gamma, x.~&\text{MathGraph }x => \text{LocalFiniteGraph x} =>\\
+        & \p{reachable}(\gamma, x)\text{ is finite} => \\
+        & \text{compute an }S \text{ s.t.\ } \forall v.~v \in S <=>
+        \gamma \models x \leadsto v.
+\end{split}
+\]
+It sounds so trivial but the proof is subtle. The most obvious way to
+prove it---filtering reachable nodes from all valid nodes---is
+impossible: there is no decision procedure for reachability to select
+reachable nodes because the current definition of graphs is applicable
+for graphs containing infinite number of nodes (A LocalFiniteGraph can
+still be infinite). In such a graph, one may need to inspect infinite
+number of paths to judge whether a node is reachable, which is a
+mission impossible.
 
 Another intuitive way to construct the reachable list is using a
 breadth-first searching algorithm to collect distinct nodes along the
@@ -310,21 +310,11 @@ visited but unexpanded nodes. It keeps on expanding nodes from the
 queue to add distinct nodes to result set and the processing queue,
 until the processing queue is empty or the number of nodes collected
 reaches the upper bound. It is worth mentioning that constructing this
-function in Coq is hard. The direct implementation is rejected because
-it violates the syntactic criteria for recursion in Coq. It has to be
-defined in a sophisticated way: defining a well-founded relation and
-proving that the definition of the function fulfills the relation.
-
-After the establishing of the searching function, it is still hard to
-prove that the result generated by the function is the reachable
-list. There are two goals that needs to be proved: one is that all
-nodes collected by this searching function is reachable from $x$ and
-the other is all reachable nodes from $x$ is in the
-collected list of the searching function. The former one is relatively
-easier than the latter because for the latter case, there are two
-completeness proofs corresponding to the two different termination
-conditions. It is not known yet whether a proof by contradiction
-exists or is simpler.
+function in Coq is nontrivial. The direct implementation is rejected
+because it violates the syntactic criteria for recursion in Coq. It
+has to be defined in a sophisticated way: defining a well-founded
+relation and proving that the definition of the function fulfills the
+relation.
 
 \subsection{Application of the framework}
 
