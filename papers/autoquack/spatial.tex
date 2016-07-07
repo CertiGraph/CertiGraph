@@ -80,7 +80,7 @@ layer.
 
 %% 2.5. Heap-Model-Direct instances are broken now. They are not hard to get fixed. Previous proofs are in "\texttt{spatial\_graph\_HMD.v}".
 
-\subsection{Traditional fixpoints fail to define good graph predicates}\label{sec:fixpointfail}
+\subsection{Traditional fixpoints fail to define good \p{graph} predicates}\label{sec:fixpointfail}
 
 \newcommand{\graphkt}{\p{graph}_T}
 \newcommand{\grapham}{\p{graph}_A}
@@ -109,8 +109,8 @@ much so that when a person writes the definition of a predicate as
 dangers of circularity in mathematics. Indeed, the vast majority of the time there
 is no danger thanks to the magic of the Knaster-Tarski fixpoint
 $\mu_{\mathsf{T}}$ \cite{tarski:fixpoint}.  Formally what is going on
-is instead of defining $P$ directly, one defines a functional 
-\mbox{$F_P \defeq \lambda P.~ \ldots P \! \ldots$} and then defines $P$ itself as 
+is instead of defining $P$ directly, one defines a functional
+\mbox{$F_P \defeq \lambda P.~ \ldots P \! \ldots$} and then defines $P$ itself as
 \mbox{$P \defeq \mu_{\mathsf{T}} \, F_P$}.  Assuming (as one typically does
 without comment) that $F_P$ is \emph{covariant}, i.e. $(P \vdash Q)
 \Rightarrow (F \, P \vdash F \, Q)$, one then enjoys the fixpoint
@@ -131,8 +131,8 @@ We have removed the alignment-related portions of equation~\eqref{eqn:bigraphint
 
 Consider the following partial memory $m$ for a toy machine:
 
-\begin{minipage}{.19\textwidth}
-\[
+\begin{minipage}{.24\textwidth}
+\qquad \[
 \begin{array}{l|l}
 \textrm{address} & \textrm{value} \\
 \hline
@@ -154,8 +154,9 @@ Consider the following partial memory $m$ for a toy machine:
 \end{tikzpicture}
 \endpgfgraphicnamed
 \end{minipage}
+\vspace{0.75ex}
 
-Clearly $m |= 100 |-> 42,100,0$.  But it seems also clear that this memory represents a one-cell cyclic graph as illustrated in the accompanying diagram, \emph{i.e.} we want $m |= \graphkt(100,\hat{\gamma})$, where $\hat{\gamma}(100) = (42,100,0)$.  This is equivalent to wanting to be able to prove $100 |-> 42,100,0 |- \graphkt(100,\hat{\gamma})$.  Unfortunately, as hinted at in Figure~\ref{fig:badcycle}, this seems rather difficult to do so since applying the natural proof techniques have only strengthened the goal.  In fact we do not know if this entailment is provable or not, but the difficulties encountered in proving what ``should be'' straightforward suggest that Knaster-Tarski should be treated with caution when defining spatial predicates for graphs.
+\noindent Clearly $m |= 100 |-> 42,100,0$.  But it seems also clear that this memory represents a one-cell cyclic graph as illustrated in the accompanying diagram, \emph{i.e.} we want $m |= \graphkt(100,\hat{\gamma})$, where $\hat{\gamma}(100) = (42,100,0)$.  This is equivalent to wanting to be able to prove $100 |-> 42,100,0 |- \graphkt(100,\hat{\gamma})$.  Unfortunately, as hinted at in Figure~\ref{fig:badcycle}, this seems rather difficult to do so since applying the natural proof techniques have only strengthened the goal.  In fact we do not know if this entailment is provable or not, but the difficulties encountered in proving what ``should be'' straightforward suggest that Knaster-Tarski should be treated with caution when defining spatial predicates for graphs.
 
 Part of the problem is that the recursive structure interacts very badly with $**$: if the recursion involved $*$ then it \textbf{would} be provable, by induction on the finite memory (each ``recursive call'' would be on a strictly smaller subheap).  This is why Knaster-Tarski works so well with list, tree, and DAG predicates in separation logic.  Note that the other direction, \mbox{$\graphkt(100,\hat{\gamma}) |- 100 |-> 42,100,0$},
 \textbf{is} true but is not easy to prove, relying on the constructions in \S\ref{sec:foldunfold} and the fact that $\mu_{\mathsf{T}}$ constructs the least fixpoint.  In contrast, $\graphkt(100,\hat{\gamma}) |- 100 |-> 42,100,0 * \top$ is very easy to prove. % via fold/unfold.
@@ -174,12 +175,12 @@ Part of the problem is that the recursive structure interacts very badly with $*
 %* Showing that neither traditional fixpoint method works
 
 Appel and McAllester proposed another fixpoint $\mu_{\mathsf{A}}$
-that is sometimes used to define recursive predicates in separation 
+that is sometimes used to define recursive predicates in separation
 logic \cite{appel:fixpoint}.  This time the functional $F_P$ needs to be
 \emph{contractive}, which to a first order of approximation means that
 all recursion needs to be guarded by the ``approximation
 modality''~$\rhd$~\cite{appel:vmm}, \emph{i.e.} our graph predicate would
-look like 
+look like
 \[
 \begin{array}{@{}l@{}l@{}}
 \grapham(x, \gamma) ~ \stackrel{\Delta}{=} ~ & (x = 0 /| \p{emp}) |/ \exists m,l,r.~ \gamma(x)=(m,l,r) /| \null \\
@@ -197,26 +198,35 @@ HIP/SLEEK is greatly aided when predicates are \emph{precise}, \emph{i.e.}
 \]
 Unfortunately, $\rhd P$ is not precise for all $P$, so $\grapham$ is not precise either.  The approximation modality's universal imprecision has never been mentioned previously in the literature.  %We must do better.
 
-\subsection{The iterated separating conjunction}
-the definition of $\bigstar$ over a set and a
-predicate $p$ is
-\begin{equation*}
-  \underset{\{a_1, a_2,\dots,a_n\}}{\bigstar}p \defeq p(a_1) \scon
-  p(a_2) \scon \dots \scon p(a_n).
-\end{equation*}
-The preciseness of $\mathtt{graph}$ is a natural corollary of the
-lemma above because for any $v$, $v\mapsto\gamma(v)$ is
-precise. Unfortunately that lemma does not hold even for a
-self-referencing single node graph because: every time the expanding
-of $\mathtt{graph}(x,\gamma)$ leads to itself. So this definition is
-abandoned too.
+\subsection{Defining a good \p{graph} predicate}
 
-The two failures of fixpoint method above force us to turn to another
-direction. Inspired by lemma \ref{eqn:graph_iter}, we defined the
-$\mathtt{graph}$ as follows:
+We choose an alternative path.  Rather than trying to define \p{graph} directly as a recursive fixpoint, we will give it a flat structure and then \textbf{prove} that it satisfies fold/unfold.  Our path starts with the iterated separating conjunction or ``big star'', defined as follows:
+\begin{equation*}
+  \underset{\{l_1, l_2,\dots,l_n\}}{\bigstar}P ~~ \defeq ~~ P(l_1) *
+  P(l_2) * \dots * P(l_n).
+\end{equation*}
+Notice that formally $\bigstar$ is defined over a list rather than a set, and is parameterized by a predicate $P$.  It is natural to extend it to a set $S$ using an existentially-quantified duplicate-free list $L$ as follows:
+\[
+\underset{S}{\bigstar} P ~~ \defeq ~~ \exists L.~ (\p{NoDup}\ L) /| (\forall x.~ x\ \p{in}\ L <=> x \in S) /| \underset{L}{\bigstar}P
+\]
+We use the same $\bigstar$ notation since the concepts are similar, but the existential can add a little pain since it means that we need to prove that all choices of list $L$ yield equivalent predicates.
+
+We are now ready to give a good \p{graph} predicate:
 \begin{equation}\label{eqn:iter_def}
-  \mathtt{graph}(x, \gamma)\defeq\underset{v\in\mathit{reach}(\gamma, x)}{\bigstar} v\mapsto\gamma(v)
+  \p{graph}(x, \gamma) ~~ \defeq ~~ \underset{v \in \mathit{reach}(\gamma, x)}{\bigstar} v\mapsto\gamma(v)
 \end{equation}
+Here~$\gamma$ is a GeneralGraph from~\S\ref{sec:mathinfra} and ``$x |-> \gamma(x)$'' is a predicate that describes how single nodes fit in memory; in Figure~\ref{fig:markgraph} it was
+\[
+\exists m,l,r.~\gamma(x) = (m,l,r) /| x |-> m,-,l,r /| x\ \p{mod}\ 16 = 0
+\]
+
+Our definition of \p{graph} is flat in the sense that there is no obvious way to follow the link structure recursively.  Happily, we can recover a very general one.  First we need a technicality, which is that $x |-> \gamma(x)$ is \emph{alignable}.  A predicate $P$ is alignable when
+\[
+\forall x,y.~ \Big(P(x) ** P(y) |- \big(P(x) /| x = y\big) |/ \big(P(x) * P(y)\big)\Big)
+\]
+In other words, $P(x)$ and $P(y)$ cannot \emph{skew} or ``partially overlap'': either they are completely on top of one another or they do not interfere at all.  In a Java-like memory model such as in HIP/SLEEK this property is automatic because pointers in such a model always point to the root/beginning of an object.  In contrast, in a C-like memory model such as in VST/CompCert, this property is not automatic because pointers can point anywhere.  In such a model, alignment is most easily enforced storing graph nodes at addresses that are multiples of an appropriate size (16 in Figure~\ref{fig:markgraph}).
+
+%; to access data stored in the middle of an object one combines a root pointer with a field name rather than by setting a pointer into the middle of an object
 
 This non-recursive predicate says that a graph whose root is $x$ is a
 list of reachable nodes from $x$ separated by $\scon$.
