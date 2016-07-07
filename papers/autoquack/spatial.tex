@@ -1,5 +1,5 @@
 In this section, we show how we formalize the ramification proofs we introduced in \S\ref{sec:orientation}. To prove the functional correctness of real graph-manipulating
-algorithms implemented in a real language, we need to connect the following pieces together: the memory model of the programming language, the mathematical properties of graphs and the graph representation in heap. 
+algorithms implemented in a real language, we need to connect the following pieces together: the memory model of the programming language, the mathematical properties of graphs and the graph representation in heap.
 
 In short, we define spatial predicates of graphs as a shape
 description about heaps. We provide a generic ramification library for these predicates. Here, \emph{generic} means that the library is not for a specific memory model, it is not for a specific graph representation, it is not for a specific graph algorithm and it is not for a specific program implementation. Our library supports general spatial reasonings for graph algorithms.
@@ -80,88 +80,109 @@ layer.
 
 %% 2.5. Heap-Model-Direct instances are broken now. They are not hard to get fixed. Previous proofs are in "\texttt{spatial\_graph\_HMD.v}".
 
-\subsection{Traditional fixpoints fail}\label{sec:fixpointfail}
+\subsection{Traditional fixpoints fail to define good graph predicates}\label{sec:fixpointfail}
 
-As shown in (\ref{eqn:bigraphintrofoldunfold}) of Section
-\ref{sec:orientation}, Hobor and Villard\cite{hobor:ramification}
-defined the separation logic graph predicate
-$\mathsf{graph}(x,\gamma)$ in direct analogy to the standard
-separation logic definition of a tree. Note that the two-neighborhood
-means $\gamma$ is a BiGraph. However, it is peculiarly challenging in
-rigorously formalizing $\p{graph}$.
+\newcommand{\graphkt}{\p{graph}_T}
+\newcommand{\grapham}{\p{graph}_A}
 
-%* Showing that neither traditional fixpoint method works
+\begin{figure*}
+\[
+\infrule{}
+{\infrule{}
+  {100 |-> 42,100,0 ~ |- ~ 100 |-> 42,100,0 ** \graphkt(100,\hat{\gamma})}
+  {100 |-> 42,100,0 ~ |- ~ \hat{\gamma}(100) = (42,100,0) ~ /| ~ 100 |-> 42,100,0 ** \graphkt(100,\hat{\gamma}) ** \graphkt(0,\hat{\gamma})}
+  {(2)}
+}
+{100 |-> 42,100,0 ~ |- ~ \graphkt(100,\hat{\gamma})}
+{(1)}
+\]
+(1) Unfold $\graphkt$, dismiss first disjunct (contradiction), introduce existentials (which must be 42,100,0) \\
+(2) simplify using $P * \p{emp} -|- P$ and remove pure conjunct
 
-Recursive/inductive predicates are ubiquitous in separation logic---so
-much so that when a person writes the definition of a predicate as $P$
-``$\defeq$'' $\ldots P \ldots$ no one raises an eyebrow, despite the
-dangers of circularity in mathematics. Indeed, 95\% of the time there
-is no danger thanks to the magic of the Knaster/Tarski fixpoint
-$\mu_{\mathsf{T}}$ \cite{tarski:fixpoint}. Formally what is going on
-is instead of defining $P$ directly, one defines a functional $F_P
-\defeq \lambda P.~ \ldots P \ldots$ and then defines $P$ itself as $P
-\defeq \mu_{\mathsf{T}} \, F_P$.  Assuming (as one typically does
+\caption{An honest academic tries to prove a ``simple'' entailment}
+\label{fig:badcycle}
+\end{figure*}
+
+Recursive predicates are ubiquitous in separation logic---so
+much so that when a person writes the definition of a predicate as
+\mbox{$P$ ``$\defeq$'' $\ldots P \! \ldots$}, no one raises an eyebrow despite the
+dangers of circularity in mathematics. Indeed, the vast majority of the time there
+is no danger thanks to the magic of the Knaster-Tarski fixpoint
+$\mu_{\mathsf{T}}$ \cite{tarski:fixpoint}.  Formally what is going on
+is instead of defining $P$ directly, one defines a functional 
+\mbox{$F_P \defeq \lambda P.~ \ldots P \! \ldots$} and then defines $P$ itself as 
+\mbox{$P \defeq \mu_{\mathsf{T}} \, F_P$}.  Assuming (as one typically does
 without comment) that $F_P$ is \emph{covariant}, i.e. $(P \vdash Q)
 \Rightarrow (F \, P \vdash F \, Q)$, one then enjoys the fixpoint
 equation $P \Leftrightarrow \ldots P \ldots$, formally justifying
 typically written pseudodefinition (``$\defeq$'').
 
-Appel and McAllester developed an additional fixpoint
-$\mu_{\mathsf{R}}$ \cite{appel:fixpoint} whose \cite{appel:vmm}
-mechanically verified its soundness. People can still define recursive
-predicate $P$ through $F_p$ and $\mu_{\mathsf{R}}$, but this time the
-$F_p$ needs to be \emph{contractive}. Informally, a contractive
-function is one such that if $\tau$ is approximately equal to
-$\sigma$, then $F_p(\tau)$ is more accurately equal to
-$F_p(\sigma)$. The approximate equality is achieved by a data type as
-a sequence of accurate approximations taken successively. This idea is
-called step-indexing.
+%Definition corec {B A: Type}  (F: (B -> pred A) -> (B -> pred A)) : B -> pred A :=
+%fun x w => forall P: B -> pred A, (forall x, F P x |-- P x) -> P x w.
 
-We attempted to formulate $\mathtt{graph}$ through fixed-point
-functions $\mu_{\mathsf{T}}$ and $\mu_{\mathsf{R}}$. The contractive
-functor $\mathtt{graphF}$ is defined as follows:
-\[\label{eqn:graphFcotr}
-  \begin{split}
-  & \mathtt{graphF}(Q, x, \gamma)\defeq (x = 0 \wedge \mathtt{emp})
-    \vee \\ & \exists d,l,r . \gamma(x)=(d,l,r) \wedge x \mapsto
-    d,l,r\, \ocon \triangleright Q(l, \gamma) \ocon \triangleright
-    Q(r, \gamma)
-  \end{split}
+Suppose we define a graph predicate $\graphkt$ this way, \emph{e.g.} along the lines of the fold/unfold definition we used in Figure~\ref{fig:markgraph}, \emph{i.e.}
+\[
+\begin{array}{@{}l@{}l@{}}
+\graphkt(x, \gamma) ~ \stackrel{\Delta}{=} ~ & (x = 0 /| \p{emp}) |/ \exists m,l,r.~ \gamma(x)=(m,l,r) /| \null \\
+& x |-> m,l,r ** \graphkt(l, \gamma) ** \graphkt(r, \gamma)
+\end{array}
 \]
-where $\triangleright$ is is the ``later'' operator which implements
-the machinery of step-indexing. Note that $\mathtt{graphF}$ is a
-normal predicate without recursion. $\mathtt{graph}$ is defined as
-$\mu_{\mathsf{R}}\,\mathtt{graphF}$. One advantage of this definition
-of $\mathtt{graph}$ is that proof by induction is possible because the
-step-index can be seen as the inductive number. Unfortunately
-$\mathtt{graph}$ is not \emph{precise} under this definition. For any
-spatial predicate $P$, $\text{precise}(P)$ means whenever $P$ is
-satisfied on a sub-state, that sub-state must be unique. Being precise
-is a crucial requirement of $\mathtt{graph}$ for key theorems in our
-framework. Further-more, it can be proved that for any predicate $P$,
-$\triangleright P$ is not precise. So this defintion is abandoned.
+We have removed the alignment-related portions of equation~\eqref{eqn:bigraphintrofoldunfold} to focus on a more serious issue, even though as we will explain in~\S\ref{sec:foldunfold} alignment concerns are also necessary for the fold/unfold relationship to hold in C-like memory models.  The functional needed to define $\graphkt$ is covariant, so we can apply Knaster-Tarski soundly.  However, the resulting predicate can be hard to use.
 
-Similarly we can define a covariant functor $\mathtt{graphQ}$ as
-follows:
-\[\label{eqn:graphFco}
-  \begin{split}
-  & \mathtt{graphQ}(Q, x, \gamma)\defeq (x = 0 \wedge
-  \mathtt{emp}) \vee \\ & \exists d,l,r . \gamma(x)=(d,l,r) \wedge  x
-  \mapsto d,l,r\, \ocon Q(l, \gamma) \ocon Q(r, \gamma)
-  \end{split}
+Consider the following partial memory $m$ for a toy machine:
+\[
+\begin{array}{l|l}
+\textrm{address} & \textrm{value} \\
+\hline
+102 & 0 \\
+101 & 100 \\
+100 & 42 \\
+\end{array} \textrm{Can we get a pretty picture here?}
 \]
-The only difference between $\mathtt{graphQ}$ and $\mathtt{graphF}$ is
-that $\mathtt{graphQ}$ does not have the $\triangleright$
-operator. With this definition $\mathtt{graph}$ can be defined as
-$\mu_{\mathsf{T}}\,\mathtt{graphQ}$. Again we need to prove the
-preciseness of $\mathtt{graph}$. Since there is no induction principle
-for this definition, we tried to prove it through the following lemma:
-\begin{equation}\label{eqn:graph_iter}
-\mathtt{graph}(x, \gamma) \dashv\vdash
-\underset{v\in\mathit{reach}(\gamma, x)}{\bigstar} v\mapsto\gamma(v)
-\end{equation}
-where $\mathit{reach}(\gamma, x)$ is the set of nodes reachable from
-$x$ in $\gamma$ and the definition of $\bigstar$ over a set and a
+Clearly $m |= 100 |-> 42,100,0$.  But it seems also clear that this memory represents a one-cell cyclic graph as illustrated in the accompanying diagram, \emph{i.e.} we want $m |= \graphkt(100,\hat{\gamma})$, where $\hat{\gamma}(100) = (42,100,0)$.  This is equivalent to wanting to be able to prove $100 |-> 42,100,0 |- \graphkt(100,\hat{\gamma})$.  Unfortunately, as hinted at in Figure~\ref{fig:badcycle}, this seems rather difficult to do so since applying the natural proof techniques have only strengthened the goal.  In fact we do not know if this entailment is provable or not, but the difficulties encountered in proving what ``should be'' straightforward suggest that Knaster-Tarski should be treated with caution when defining spatial predicates for graphs.
+
+Part of the problem is that the recursive structure interacts very badly with $**$: if the recursion involved $*$ then it \textbf{would} be provable, by induction on the finite memory (each ``recursive call'' would be on a strictly smaller subheap).  This is why Knaster-Tarski works so well with list, tree, and DAG predicates in separation logic.  Note that the other direction, \mbox{$\graphkt(100,\hat{\gamma}) |- 100 |-> 42,100,0$},
+\textbf{is} true but is not easy to prove, relying on the constructions in \S\ref{sec:foldunfold} and the fact that $\mu_{\mathsf{T}}$ constructs the weakest fixpoint.  In contrast, $\graphkt(100,\hat{\gamma}) |- 100 |-> 42,100,0 * \top$ is very easy to prove. % via fold/unfold.
+
+
+%As explained in~\S\ref{sec:foldunfold}, this alignment is necessary in C-like memory models to prove fold-unfold \eqref{eqn:bigraphintrofoldunfold}, which is why \eqref{eqn:bigraphintrofoldunfold} includes an alignment restriction $x~\mathsf{mod}~16 = 0$ and an existentially-quantified ``blank'' second field for the root $x \mapsto m,-,l,r$.
+
+%As shown in (\ref{eqn:bigraphintrofoldunfold}) of Section
+%\ref{sec:orientation}, Hobor and Villard\cite{hobor:ramification}
+%defined the separation logic graph predicate
+%$\mathsf{graph}(x,\gamma)$ in direct analogy to the standard
+%separation logic definition of a tree. Note that the two-neighborhood
+%means $\gamma$ is a BiGraph. However, it is peculiarly challenging in
+%rigorously formalizing $\p{graph}$.
+
+%* Showing that neither traditional fixpoint method works
+
+Appel and McAllester proposed another fixpoint $\mu_{\mathsf{A}}$
+that is sometimes used to define recursive predicates in separation 
+logic \cite{appel:fixpoint}.  This time the functional $F_P$ needs to be
+\emph{contractive}, which to a first order of approximation means that
+all recursion needs to be guarded by the ``approximation
+modality''~$\rhd$~\cite{appel:vmm}, \emph{i.e.} our graph predicate would
+look like 
+\[
+\begin{array}{@{}l@{}l@{}}
+\grapham(x, \gamma) ~ \stackrel{\Delta}{=} ~ & (x = 0 /| \p{emp}) |/ \exists m,l,r.~ \gamma(x)=(m,l,r) /| \null \\
+& x |-> m,l,r ** \rhd \graphkt(l, \gamma) ** \rhd \graphkt(r, \gamma)
+\end{array}
+\]
+
+As we will see in \S\ref{sec:hipsleek}, the forward style of reasoning employed by
+HIP/SLEEK is greatly aided when predicates are \emph{precise}, \emph{i.e.}
+\[
+\begin{array}{@{}l@{}l@{}}
+\m{precise}(P) ~~ \defeq ~~ & (\sigma_1 |= P) => (\sigma_2 |= P) => \\
+& ~~ (\sigma_1 \oplus \sigma_1' = \sigma) => (\sigma_2 \oplus \sigma_2' = \sigma) => \sigma_1 = \sigma_2
+\end{array}
+\]
+Unfortunately, $\rhd P$ is not precise for all $P$, so $\grapham$ is not precise either.  The approximation modality's universal imprecision has never been mentioned previously in the literature.  %We must do better.
+
+\subsection{The iterated separating conjunction}
+the definition of $\bigstar$ over a set and a
 predicate $p$ is
 \begin{equation*}
   \underset{\{a_1, a_2,\dots,a_n\}}{\bigstar}p \defeq p(a_1) \scon
@@ -174,11 +195,6 @@ self-referencing single node graph because: every time the expanding
 of $\mathtt{graph}(x,\gamma)$ leads to itself. So this definition is
 abandoned too.
 
-Although the traditional fixpoints fail for spatial graphs, it is
-worth mentioning that the traditional fixpoints work for trees, lists,
-dags and etc, as long as they do not contain cycles.
-
-\subsection{The iterated separating conjunction}\
 The two failures of fixpoint method above force us to turn to another
 direction. Inspired by lemma \ref{eqn:graph_iter}, we defined the
 $\mathtt{graph}$ as follows:
