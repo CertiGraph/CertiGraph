@@ -102,7 +102,7 @@ framework for such mathematical graphs.
 \end{figure}
 
 Figure~\ref{fig:graphs} gives the overall architecture of how our graphs are constructed.
-The most basic kind of graph is PreGraph, out of which we LabeledGraphs, and which in turn are used
+The most basic kind of graph is PreGraph, out of which we build LabeledGraphs, and which in turn are used
 to build GeneralGraphs.  Each kind of graph has some associated lemmas, and each kind inherits the lemmas of the previous kind.  The dashed box represents a ``plugin'' system for attaching arbitrary properties to LabeledGraphs and will be discussed more later. %We will consider each in turn.
 
 \paragraph{Pregraphs.} A PreGraph is a hextuple $(V, E, \phi_V, \phi_E, s, t)$,
