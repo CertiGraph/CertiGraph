@@ -1,29 +1,13 @@
 \paragraph{Comparison with Hobor and Villard.}
-The most direct ancestor of our work is by Hobor and Villard, who focused on verifying graph algorithms on paper and introduced the \infrulestyle{Ramify} rule~\cite{hobor:ramification}.  We have generalized this rule to better handle modified program variables and existential quantifiers in postconditions.  
+The most direct ancestor of our work is \cite{hobor:ramification}, which focused on verifying graph algorithms using and introduced the \infrulestyle{Ramify} rule.  We have generalized this rule to better handle modified program variables and existential quantifiers in postconditions; they hacked their way around these issues by proposing a variant of \infrulestyle{Ramify} called \infrulestyle{RamifyAssign}, which could reason about the special case of a single assignment $\li{x=}f(\ldots)$, assuming the verifier can make the local program translation to $\li{x'=}f(\ldots)\li{; x=x'}$, where \li{x'} is fresh.  They proposed no way to verify unmodified program code, to modify program variables inside nested localization blocks, or to do a ramification across multiple assignments as we do in lines~\ref{code:markbeforetripleramify}--\ref{code:markaftertripleramify} of figure~\ref{fig:markgraph}.  Hobor and Villard avoided existentials in localized postconditions because they defined all of their mathematical operations (\emph{e.g.} $\m{mark}$, $\m{mark1}$) as functions rather than as relations.
 
-Hobor and Villard's 
- 
- rule interacts very poorly with modified program variables such as \li{l} and \li{r}.  They hacked their way around this issue by proposing a variant of \infrulestyle{Ramify} called \infrulestyle{RamifyAssign}, which could reason about the special case of a single assignment \li{x=$f(\ldots)$}, assuming the verifier can make the local program translation to \li{x'=$f(\ldots)$;x=x'}, where \li{x'} is fresh.  They proposed no way to verify unmodified program code or to ramify/localize across multiple assignments; we do both in lines~\ref{code:markbeforetripleramify}--\ref{code:markaftertripleramify} using a new \infrulestyle{Ramify-P} rule.
+Hobor and Villard treated mathematical graphs very simply, as triples $(V,E,L)$ of vertices, edges, and a labeling function on vertices.  Vertices had no more than two neighbors.  In contrast, our mathematical graph framework~(\S\ref{sec:mathgraph}) is very modular and general and has been tuned to work smoothly in a mechanized context.
 
-\paragraph{Local variables.}
-Hobor and Villard hacked their way around this [local var] issue by proposing a variant of \infrulestyle{Ramify} called \infrulestyle{RamifyAssign}, which could reason about the special case of a single assignment $\li{x = }f(\ldots)$, assuming the verifier can make the local program translation to $\li{x' = }f(\ldots)\li{; x = x'}$, where \li{x'} is fresh.  They proposed no way to verify unmodified program code or to do a ramification across multiple assignments as we do in lines~\ref{code:markbeforetripleramify}--\ref{code:markaftertripleramify} of figure~\ref{fig:markgraph}.
+Hobor and Villard fell into the trap of defining spatial graphs recursively~(\S\ref{sec:fixpointfail}); unfortunately other members of the research community have since followed them in; in their defense they asserted an equivalence with a $\bigstar$ form and other than that single proof their paper has no significant errors.  We exposed their error and provided a sound and quite general definition for \p{graph}~(\S\ref{sec:goodgraph}) that recovers fold/unfold reasoning.  We developed a much more general and more modular set of related lemmas and connect our spatial reasoning to two very different verification tools~(\S\ref{sec:ramifylib}), VST~(\S\ref{sec:vst}) and HIP/SLEEK~(\S\ref{sec:hipsleek}).  Our entire development is machine-checked (\S\ref{sec:development}) whereas Hobor and Villard used only with pen-and-paper.
 
+\paragraph{Other verification of graph algorithms, with or without $**$}
 
-An alternative way to avoid local variable issues is to use ``variables as resource''~\cite{bornat:var}.
-Unfortunately variables as resource introduces other unpleasantness, which is why many mechanized verification systems do not use it\cite{chin:hipsleek,appel:programlogics,bengtson:charge}.
-
-
-Hobor and Villard were able to avoid having existentials in localized postconditions because they defined all of their mathematical operations (\emph{e.g.} $\m{mark}$, $\m{mark1}$) as functions rather than relations.
-
-\paragraph{Verification tools.}
-
-Like many other verification tools~\cite{berdine:smallfoot,Beckert:2007,DistefanoP08,jacobs:verifast}, HIP/SLEEK uses forward reasoning based on symbolic execution.
-
-\cite{bengtson:charge} present a set of Coq based tactics for working with a shallow embedding of higher order separation logic that is somewhat similar to Floyd but for reasoning about OO programs (written in Java/C\#). A  more automated approach to verification of low level programs using Coq is implemented in the Bedrock framework \cite{chlipala:bedrock}.
-
-Other separation logic based automated verification tools include Verifast \cite{jacobs:verifast}, jStar \cite{DistefanoP08} and Smallfoot \cite{berdine:smallfoot}. Similar to HIP/SLEEK, they all use forward reasoning but have limited support for user-defined inductive predicates and instead rely on a library of pre-defined predicates for lists, trees etc.. Dafny \cite{Leino10} and KeY \cite{Beckert:2007} are two notable verifiers that are not based on separation logic. The KeY tool uses an interactive verifier while Dafny is automated using an SMT solver Z3.
-
-\paragraph{Verification of graph algorithms, $**$}
+Reynolds was the first to document the overlapping conjunction~$**$, although he did not present any way to reason about it~.  
 
 Yang, Bornat: early work
 
@@ -34,6 +18,18 @@ Javascript: Gareth
 concurrent, paper: Azalea
 
 In Coq, concurrent: Ilya and Aleks
+
+\paragraph{Local variables.}
+An alternative way to avoid local variable issues is to use ``variables as resource''~\cite{bornat:var}.
+However, most mechanized verification systems do not use variables as resource~\cite{Beckert:2007,DistefanoP08,chin:hipsleek,Leino10,bengtson:charge,appel:programlogics}.
+
+\paragraph{Verification tools.}
+
+Our work heavily interacts with the Floyd~\cite{appel:programlogics} and HIP/SLEEK~\cite{chin:hipsleek} verification tools.  Like Floyd, Charge! uses Coq tactics to work with a shallow embedding of higher order separation logic, but focuses on OO programs written in Java/C\#~\cite{bengtson:charge}.  A  more automated approach to verification of low level programs using Coq is implemented in the Bedrock framework \cite{chlipala:bedrock}.
+
+Many automated verification tools also use separation logic in a forward reasoning style as does HIP/SLEEK, including Smallfoot~\cite{berdine:smallfoot}, jStar~\cite{DistefanoP08}, and Verifast~\cite{jacobs:verifast}.  One of HIP/SLEEK's distinguishing features is good support for user-defined inductive predicates rather than a library of pre-defined predicates for lists, trees etc.
+
+Dafny~\cite{Leino10} and KeY~\cite{Beckert:2007} are two notable verifiers not based on separation logic; KeY uses an interactive verifier while Dafny pursues more automation by using the SMT solver Z3~\cite{Moura2008}.
 
 \paragraph{Mechanized mathematical graph theory.}
 
