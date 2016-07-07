@@ -167,19 +167,7 @@ Some of our VST proofs do not use fold/unfold, instead preferring to use the lem
 \subsection{Ramification Libraries}\label{sec:ramifylib}
 %\subsection{Infrastructure: Isolate memory model}
 
-
-
-In order to ensure proofs reusability, we adopt
-a layered style to get things done.
-
-First we build a logic layer between
-memory models and our ramification library.
-
-As shown in Figure~\ref{fig:infra}, the second bottom layer is a separation logic layer which are composed by atomic
-notations ($\scon$, $\ocon$, $|->$, $\p{precise}$, etc.) and a small set of axioms. These axioms are proved sound
-w.r.t. different memory models at the bottom layer. Using this structure, all of our further development of ramification library can be just depended on this small set of axioms and all properties proved from it will be sound w.r.t. all memory models.
-
-\begin{figure}[htbp]
+\begin{figure}[t]
 \centering
 \beginpgfgraphicnamed{infrastructure}
 \begin{tikzpicture}[
@@ -230,47 +218,59 @@ ent/.style={shape=rectangle, rounded corners=4pt, draw, on grid}]
 \caption{Infrastructure of ramification library}\label{fig:infra}
 \end{figure}
 
-Besides the isolation of memory models, all of our ramification entailments and spatial graph properties are also constructed in a modular way.
+We provide of our spatial development in Figure~\ref{fig:infra}.  Starting from the bottom, notice that there are two underlying heap models: the Step-Indexed Model, which is the main heap model used in VST, and a much simpler Direct Model, which is used by HIP/SLEEK among others.  The Step-Indexed model is much fancier, but none of our development depends on its bells and whistles.
 
-We first build the some basic facts about ramification upon the core logic. For example, the following rule is useful in building ramification entailments combinationally.
+To isolate our development from these unnecessary complications, and to ensure that HIP/SLEEK can reuse our spatial reasoning, we use two interfaces: Core Logic and Supplementary Logic.  Both models can instantiate both interfaces, but generally speaking our VST proofs only need the Core properties to prove our examples, whereas HIP/SLEEK uses both Core and Supplemental.  Each interface defines some operators of separation logic and provides some axioms about how they work.  For example, $*$ and $ --*$ are in Core Logic, along with the axiom $(P |- Q --* R) <=> (P * Q |- R)$.  On the other hand, the $**$ and $--o$ operators are in Supplementary Logic, along with rules like $P |- P ** P$.
+
+Above the Logic layer we have three towers, each three levels high.  The leftmost tower is about basic lemmas about Logic, $\bigstar$, and \p{graph}.  For example, in the $\bigstar$ Facts box we prove lemmas such as the following:
+\[
+\infrule{}
+{A \cap B = \emptyset}
+{\underset{x\in A}{\bigstar} P(x) *   \underset{x\in B}{\bigstar} P(x) \Leftrightarrow \underset{x\in A \cup B}{\bigstar} P(x)}{}
+\]
+
+The middle tower is more interesting in that it is entirely focused on ramification entailments.  The lowest level contains lemmas such as the following:
 \[
 \infrule{Ramify-Q-SPLIT}
 {G_1 \vdash L_1 * \forall x.  (L_2 --* G_2) \\
  G'_1 \vdash L'_1 * \forall x.  (L_2' --* G'_2)}
 {G_1 * G'_1 \vdash (L_1 * L'_1) * \forall x.  ((L_2 * L'_2)--* (G_2 * G'_2))}{}
 \]
+We use this lemma to break large ramification entailments into more manageable pieces in a compositional way. % compositionally.
 
-MSL also provides a rich and useful separation logic library based on the core logic.
-
-The next layer is separation logic theorems and ramification entailments for iterated separating conjunction. For example:
-\[
-\infrule{}
-{A \cap B = \emptyset}
-{\underset{x\in A}{\bigstar} P(x) *   \underset{x\in B}{\bigstar} P(x) \Leftrightarrow \underset{x\in A \cup B}{\bigstar} P(x)}{}
-\]
-\[
+The middle level contains ramification lemmas about $\bigstar$, such as the following:
+\begin{equation}
+\label{ramify:bigstar}
 \infrule{}
 {A \cap B = \emptyset,  ~~~  A' \cap B = \emptyset}
 {\underset{x\in A\cup B}{\bigstar} P(x) \vdash \underset{x\in A}{\bigstar} P(x) * ( \underset{x\in A'}{\bigstar} P(x) \wand \underset{x\in A' \cup B}{\bigstar} P(x))}{}
-\]
+\end{equation}
 
-As in Figure~\ref{fig:infra}, the top layer in this library is the general separation logic theorems and ramification entailments for $\mathtt{graph}$ predicate. For example, the following rule describes the behavior of updating one single vertex in a graph.
-\[
+The top level is focused on graph ramifications, such as the following ``update one node'' lemma:
+\begin{equation}
+\label{lem:updategraphnode}
 \infrule{}
-{\gamma(x) = \gamma'(x) \text{ for any } x \neq x_0 }
+{\gamma(x_0) = \gamma'(x_0) \text{ for any } x_0 \neq x }
 {\mathtt{graph}(x, \gamma) \vdash x \mapsto \gamma(x) * (x \mapsto \gamma'(x) \wand \mathtt{graph}(x, \gamma'))}{}
-\]
+\end{equation}
+This lemma was used on line~\ref{code:markram2} in Figure~\ref{fig:markgraph}.
 
-This layered structure mostly enables proof reuse. All of the theorems for $\mathtt{graph}$ are proved from the properties of iterated separating conjunction while this library for \emph{big star} can be used in other structures than graphs.
+This layered structure enables proof reuse. All of the theorems for $\mathtt{graph}$ are proved from the properties of iterated separating conjunction, but having a modular library allows \emph{big star} to be used in other structures as well.
 
 Also, all of our verifications of different graph algorithms use the proof rules of $\mathtt{graph}$ at the top level in the library. Taking the marking algorithm we introduced in \S\ref{sec:orientation} as an example, we prove the following theorem from the library:
-\begin{eqnarray*}
-&& \text{If } \gamma(x) = (1, l, r) \text{ then } \\
-&& \mathtt{graph}(x, \gamma) \vdash \mathtt{graph}(l, \gamma) * \\
-&& ~~ (\forall \gamma', \text{mark}(\gamma, l, \gamma') \wedge \mathtt{graph}(l, \gamma') \wand \\
-&& ~~~~~~~~~~~~~~~~ \text{mark}(\gamma, l, \gamma') \wedge \mathtt{graph}(x, \gamma'))
-\end{eqnarray*}
+\begin{equation}
+\label{lem:updatesubgraph}
+\begin{array}{l}
+\text{If } \gamma(x) = (1, l, r) \text{ then } \\
+\mathtt{graph}(x, \gamma) \vdash \mathtt{graph}(l, \gamma) * \\
+~~ (\forall \gamma', \text{mark}(\gamma, l, \gamma') \wedge \mathtt{graph}(l, \gamma') \wand \\
+~~~~~~~~~~~~~~~~ \text{mark}(\gamma, l, \gamma') \wedge \mathtt{graph}(x, \gamma'))
+\end{array}
+\end{equation}
 
+The Supplementary line contains properties not used by most of the VST examples.  This includes the fold/unfold relationship from \S\ref{sec:goodgraph}, facts about precision, and so forth.  As we will see in \S\ref{sec:hipsleek}, some of these properties are needed by HIP/SLEEK.  Other supplementary lemmas are mostly included for esthetic effect.
+
+% are there just because we felt they might be useful in the future.
 
 %One benefit of the definition in (\ref{eqn:iter_def}) is that the pure
 %mathematical graph $\gamma$ in $\mathtt{graph}$ is not necessarily a
