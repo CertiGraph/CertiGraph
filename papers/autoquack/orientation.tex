@@ -169,7 +169,7 @@ Here is the definition of $\pguards{c}$, writing $\langle c \rangle$ for $\MV(c)
 \sigma |= \pguards{c} P ~~ \stackrel{\Delta}{=} ~~ \forall \sigma'.~ (\sigma \stackrel{\langle c \rangle}{\cong} \sigma') => (\sigma' |= P)% ~~~~ \text{where $\mathsf{MV}(c)$ is $\MV(c)$}\\
 %\end{array}
 \]
-In other words, $\pguards{c}$ is exactly the universal modal operator~$\Box$ over the relation that considers equivalent all states that differ only on program values modified by $c$.  Since $\color{magenta}\stackrel{\langle c \rangle}{\cong}$ is an equivalence relation, $\pguards{c}$ forms an S5 modal logic.
+In other words, $\pguards{c}$ is exactly the universal modal operator~$\Box$ over the relation that considers equivalent all states that differ only on program values modified by $c$.  Since $\stackrel{\langle c \rangle}{\cong}$ is an equivalence relation, $\pguards{c}$ forms an S5 modal logic.
 
 Note that \infrulestyle{Ramify-P} has no free variable side condition, which is unnecessary because $\forall P.~ \pguards{c}P \text{ ignores } \MV(c)$.  However, in practice this side condition reappears because to actually prove a ramification entailment containing $\pguards{c}$ one typically applies the following \infrulestyle{Solve Ramify-P} rule:
 \[
@@ -386,10 +386,10 @@ F |- \forall x.~ (L_2 --* G_2)
 }
 {G_1 \vdash L_1 * \pguards{c}  \big(\forall x.~ (L_2 --* G_2)\big)}{\begin{array}{c}F \textrm{ ignores} \\ \MV(c)\end{array}} \qquad \qquad \quad
 \]
-Since we use a relational style to verify graph algorithms (\emph{e.g.} in Figure~\ref{fig:markgraph}), existentials appear frequently and a smooth treatment is very helpful in practice.  To make this point a little more clearly we were more explicit about existentials in \emph{e.g.} lines~\ref{code:beforemarkl}--\ref{code:aftermarkl} than is typical in pen-and-paper proofs.  {\color{magenta}However, fortified by the \infrulestyle{Ramify-PQ} rule, we could very reasonably have \emph{e.g.} written line~\ref{code:postmark1} as \begin{lstlisting}[firstnumber=26]
+Since we use a relational style to verify graph algorithms (\emph{e.g.} in Figure~\ref{fig:markgraph}), existentials appear frequently and a smooth treatment is very helpful in practice.  To make this point a little more clearly we were more explicit about existentials in \emph{e.g.} lines~\ref{code:beforemarkl}--\ref{code:aftermarkl} than is typical in pen-and-paper proofs.  However, fortified by the \infrulestyle{Ramify-PQ} rule, we could very reasonably have \emph{e.g.} written line~\ref{code:postmark1} as \begin{lstlisting}[firstnumber=25]
 // $\swarrow \{\p{graph}(\tx l, \gamma'') /| \m{mark}(\gamma', \tx{l}, \gamma'')\}$
 \end{lstlisting}
-and omitted line~\ref{code:aftermarkl} entirely.}
+and omitted line~\ref{code:aftermarkl} entirely.
 
 %\ref{code:postmark1}]
 

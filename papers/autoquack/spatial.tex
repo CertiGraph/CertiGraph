@@ -167,11 +167,13 @@ Some of our VST proofs do not use fold/unfold, instead preferring to use the lem
 \subsection{Ramification Libraries}\label{sec:ramifylib}
 %\subsection{Infrastructure: Isolate memory model}
 
+
+
 In order to ensure proofs reusability, we adopt
 a layered style to get things done.
 
 First we build a logic layer between
-memory models and our ramification library. 
+memory models and our ramification library.
 
 As shown in Figure~\ref{fig:infra}, the second bottom layer is a separation logic layer which are composed by atomic
 notations ($\scon$, $\ocon$, $|->$, $\p{precise}$, etc.) and a small set of axioms. These axioms are proved sound
@@ -252,7 +254,7 @@ The next layer is separation logic theorems and ramification entailments for ite
 {\underset{x\in A\cup B}{\bigstar} P(x) \vdash \underset{x\in A}{\bigstar} P(x) * ( \underset{x\in A'}{\bigstar} P(x) \wand \underset{x\in A' \cup B}{\bigstar} P(x))}{}
 \]
 
-As in Figure~\ref{fig:infra}, the top layer in this library is the general separation logic theorems and ramification entailments for $\mathtt{graph}$ predicate. For example, the following rule describes the behavior of updating one single vertex in a graph. 
+As in Figure~\ref{fig:infra}, the top layer in this library is the general separation logic theorems and ramification entailments for $\mathtt{graph}$ predicate. For example, the following rule describes the behavior of updating one single vertex in a graph.
 \[
 \infrule{}
 {\gamma(x) = \gamma'(x) \text{ for any } x \neq x_0 }
