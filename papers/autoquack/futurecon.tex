@@ -1,15 +1,18 @@
-As future work, we plan to improve the pure reasoning of graphs and
-similar data structures. We also have plan to verify a garbage
-collector algorithm of CertiCoq, which is a project focuses on a
-certified compiler from Gallina to Clight. On HIP/SLEEK side, we tend
-to use extensions to verify other kinds of code such as fast
-exponentiation and more graph algorithms. We also have plan to make
-the interface between Coq and HIP/SLEEK simpler and cleaner. Having
-HIP/SLEEK to output certificates about algorithm is under
-consideration, too.
+In the future we plan to improve the pure reasoning of graphs and
+similar data structures.  We plan to verify a garbage
+collector algorithm for the ``CertiCoq'' project, which is building 
+a certified compiler from Gallina to Clight. We would like to investigate
+using our externally-verified lemmas in HIP/SLEEK to verify code such as fast
+exponentiation and more graph algorithms. We also would like to make
+the interface between Coq and HIP/SLEEK simpler and cleaner.
+One final direction we would like to investigate is using our new
+connection to Coq to have HIP/SLEEK output certificates as it 
+verifies programs so that the system becomes more trustworthy.
 
-As a conclusion, we generalize the Ramify rule, mechanize a generic
-library of ramification rule, develop a general framework of
-mathematical graphs and put them together successfully verify serveral
-tricky graph-manipulating algorthm from end-to-end by two different
-tools.
+Our main contributions were as follows.  We generalized the \infrulestyle{Ramify}
+rule to handle modified program and existential quantifiers in postconditions
+more smoothly.  We developed a general and modular framework for reasoning
+about mathematical graphs and a general and modular spatial library for
+reasoning about graphs in the heap.  We provided a sound definition for \p{graph}
+that still obeyed the fold/unfold relationship.  We connected our reasoning
+to two verification tools and used them to verify several graph-manipulating algorithms.
