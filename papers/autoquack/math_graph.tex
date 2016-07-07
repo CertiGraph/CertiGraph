@@ -103,7 +103,7 @@ framework for such mathematical graphs.
 
 Figure~\ref{fig:graphs} gives the overall architecture of how our graphs are constructed.
 The most basic kind of graph is PreGraph, out of which we LabeledGraphs, and which in turn are used
-to build GeneralGraphs.  Each kind of graph has some associated lemmas, and each kind inherits the lemmas of the previous kind.  %We will consider each in turn.
+to build GeneralGraphs.  Each kind of graph has some associated lemmas, and each kind inherits the lemmas of the previous kind.  The dashed box represents a ``plugin'' system for attaching arbitrary properties to LabeledGraphs and will be discussed more later. %We will consider each in turn.
 
 \paragraph{Pregraphs.} A PreGraph is a hextuple $(V, E, \phi_V, \phi_E, s, t)$,
 where $V$ and $E$ are the underlying carrier set of vertices and edges.  Not every $v \in V$ or $e \in E$ is actually ``in'' the graph, so we provide the predicates $\phi_V$ and $\phi_E$ to classify vertices and edges as \emph{valid} (in) or not (out).  Finally, $s$ and $e : E -> V$ are functions that map an edges to their source and destination respectively; this model means that PreGraphs are directed rather than undirected.  By design, there are no requirements for \emph{e.g.} how the validity of edges and vertices related.  As shown in Figure \ref{fig:pregraph}, a PreGraph can contain invalid nodes and edges in an arbitrary configuration.
@@ -130,6 +130,7 @@ with some derived ones such as
 \end{equation*}
 form the bedrock of nearly every nontrivial predicate about and relation between
 graphs.
+We write $\p{reachable}(\gamma,v)$ to mean the set of vertices reachable in $\gamma$ from a given vertex $v$.
 
 In \S\ref{sec:spacegraph} we will tie mathematical graphs $\gamma$ to a spatial graph predicate
 $\p{graph}(x, \gamma)$.   As we will see, $\p{graph}$ ``owns'' only the
@@ -139,7 +140,10 @@ $\p{graph}(x, \gamma)$, it is natural to want to describe the
 reachable portion of $\gamma$.  In fact we generalize this
 idea into two concepts: the subgraph of $\gamma$ satisfying
 an arbitrary predicate $P$, written $\gamma \!\downarrow\! P$, and the \emph{relaxed subgraph}, written $\gamma \!\uparrow\! P$, which contains the all of the subgraph plus some additional edges.  In particular, $\gamma \!\downarrow\! P$ contains exactly the vertices satisfying $P$ and only the edges whose source and destination both satisfy $P$.  The relaxed subgraph $\gamma \!\uparrow\! P$ adds the additional edges whose \textbf{source} satisfies $P$, even though their destination may not.
-We can use these definitions to, for example, extract the subgraph or relaxed subgraph reachable from a vertex $v$ by writing \emph{e.g.} $\gamma \!\downarrow\! (\lambda v'. \gamma\models v \leadsto v')$.
+We can use these definitions to, for example, extract the subgraph or relaxed subgraph reachable from a vertex $v$ by writing \emph{e.g.}
+\[
+\gamma \!\downarrow\! (\lambda v'. \gamma\models v \leadsto v')
+\]
 
 \paragraph{LabeledGraph.} 
 PreGraph and its derived properties (reachability, subgraph, etc) are
@@ -149,61 +153,18 @@ we usually need to add a notion of \emph{labels} on vertices and/or edges, such 
 the ``mark bit'' used in Figure~\ref{fig:markgraph}.
 
 \paragraph{GeneralGraph.}
-Much more interesting is the concept of GeneralGraph, which augments a LabeledGraph by adding a user-specified soundness condition.  In Figure~\ref{fig:graphs} this soundness condition is highlighted by a dashed border.  These ``plugins'' can specify many different kinds of properties.  Each property, in turn, can be used to prove many property-specific lemmas, all of which are inherited by the instantiating GeneralGraph.
+Much more interesting is the concept of GeneralGraph, which augments a LabeledGraph by adding a user-specified soundness condition.  In Figure~\ref{fig:graphs} this soundness condition is highlighted by a dashed border.  These ``plugins'' can specify many different kinds of properties.  Each property, in turn, can be used to prove many property-specific lemmas, all of which then apply to the instantiating GeneralGraph.
 
+\subsection{Graph plugins}
 
-illustrates the inheritance relation among the
-three defintions and their corresponding lemmas. A GeneralGraph can be
-seen as a LabeledGraph, and a LabeledGraph can be seen as a
-PreGraph. Thus all lemmas about PreGraph can be applied to a
-LabeledGraph or GeneralGraph for free, and all lemmas about
-LabeledGraph are applicable to a GeneralGraph too. The soundness
-condition can be configured with extra requirements of graphs. We
-categories several common requirements into different property
-bundles. Those property bundles along with their derived lemmas can be
-seen as certain kinds of ``plug-ins'' of the framework, which are
-indicated as a dashed rectangle in Figure~\ref{fig:graphs}.
-
-, each of which carries with it some associated 
-
-there are many features
-which a bare PreGraph can not inculde. For example, many algorithms
-about graphs assume there are labels in vertices or edges. And some
-graph related theorems do not allow dangling edges (i.e.\ valid edges
-with invalid vertices). The former problem can be solved by adding
-label functions to the definition of PreGraph, which defines
-a \emph{LabeledGraph}. For the latter one, we
-defined \emph{GeneralGraph} which contains a configurable soundness
-condition based on LabeledGraph.
-
-
-
-
-\subsection{Definitions of graph and other concepts}
-
-
-For example, some graph theory lemmas only hold when the graph is
-finite (i.e.\ finite vertices and finite edge). We call this
-property \emph{FiniteGraph}. We also defined a less restrictive
-property called \emph{LocalFiniteGraph}, which requires that each
-vertex only has finite neighbors. In the recursive defnition of a
-graph data structure, a node contains many pointers to point to its
-neighbors. The pointers could be null to indicate that they do not
-point to any. Thus we need a special node which represents null
-pointer. We call this kind of graph as \emph{MathGraph}. In some
-cases, we have to specify a graph in which the outdegree of each nodes
-is 2. That is a \emph{BiGraph}. FiniteGraph, LocalFiniteGraph,
-MathGraph and BiGraph, each with its own related lemmas, are four
-property plugins of our framework. There are several other plugins.
-
-
-Furthermore, property plugins can be composed to a larger plugin. This
-composition is not just putting them together because when we consider
-two property bundles at the same time, new lemmas would emerge, just
-like Figure~\ref{fig:properties}. For example, we compose BiGraph,
-MathGraph and FiniteGraph together---called \emph{BiMaFin}---as the
-soundness condition for GeneralGraph in verifying the program
-in \S\ref{sec:orientation}.
+Many theorems about graphs require certain properties, such as:
+\begin{itemize}
+\item A graph may be finite (\p{FiniteGraph}), meaning that both the set of valid vertices and the set of valid edges are finite.
+\item A less restrictive property is \emph{locally finite} (\p{LocalFiniteGraph}), in which each vertex has a finite number of neighbors.  Locally finite graphs are useful, for example, when we wish to reason about algorithms that process vertices by cycling through neighbors, such as breadth-first search.
+\item More subtly, consider that many real data structures use special null values to represent unused edges.  The \p{MathGraph} property introduces this concept---\emph{i.e.} some invalid nodes that are none-the-less allowed to appear as destinations for valid edges.
+\item Many of our verified algorithms have only two outgoing edges per node.  The \p{BiGraph} property lets us reason about this common special case in a convenient manner.
+\end{itemize}
+We have a number of other properties in our codebase, but these four are the most important basic ones.
 
 \begin{figure}[t]
 \centering
@@ -236,68 +197,54 @@ in \S\ref{sec:orientation}.
 \end{tikzpicture}
 \endpgfgraphicnamed
 \vspace{1ex}
-\caption{Graph Properties}\label{fig:properties}
+\caption{Combining plugins}\label{fig:properties}
 \end{figure}
 
-One example of the compositional property lemmas is listed as follows:
+We use Coq's typeclass system to manage our plugins in a smooth manner.  Essentially the typeclass system enables the diagram in Figure~\ref{fig:properties}.  The idea is that if we have two properties, each of which come with some already-proved lemmas, we can combine these plugins to prove the emergent lemmas that result from the combination, and then treat the new combination as a new plugin.  Since the system is compositional, we can easily mix many different properties together.  For example, we compose \p{BiGraph}, \p{MathGraph}, and \p{FiniteGraph} together into a new plugin we call \p{BiMaFin}.  \p{BiMaFin} is the actual soundness condition used to verify the program in Figure~\ref{fig:markgraph}.
+
+One interesting example of this process is the following lemma:
 \newtheorem{mylem}{Lemma}
-\begin{mylem}\label{lem:computereach}
+\begin{mylem}[Computable reachability]\label{lem:computereach}
 \[
 \begin{split}
-\forall \gamma, x.~&\text{MathGraph }x => \text{LocalFiniteGraph x} =>\\
-        & \p{reachable}(\gamma, x)\text{ is finite} => \\
-        & \text{compute an }S \text{ s.t.\ } \forall v.~v \in S <=>
-        \gamma \models x \leadsto v.
+\forall \gamma, x.~&\p{MathGraph}\ \gamma => \p{LocalFiniteGraph}\ \gamma =>\\
+        & \p{reachable}(\gamma, x)\textrm{ is finite} => \\
+        & \text{we can \textbf{compute} a set }S \text{ s.t.\ } \\
+        & \quad \forall v.~v \in S <=> \gamma \models x \leadsto v.
 \end{split}
 \]
 \end{mylem}
-It sounds so trivial but the proof is subtle. The most obvious way to
-prove it---filtering reachable nodes from all valid nodes---is
-impossible: there is no decision procedure for reachability to select
-reachable nodes because the current definition of graphs is applicable
-for graphs containing infinite number of nodes (A LocalFiniteGraph can
-still be infinite). In such a graph, one may need to inspect infinite
-number of paths to judge whether a node is reachable, which is a
-mission impossible.
-
-Another intuitive way to construct the reachable list is using a
-breadth-first searching algorithm to collect distinct nodes along the
-edges from $x$, which is employed in the proof. But still, a na\"ive
-implementation may not terminate. As mentioned in the premises of this
-lemma, the number of reachable nodes has an upper bound. So the
-actually working breadth-first searching function is constructed as
-follows. It holds a set of nodes collected so far and a queue for
-visited but unexpanded nodes. It keeps on expanding nodes from the
-queue to add distinct nodes to result set and the processing queue,
-until the processing queue is empty or the number of nodes collected
-reaches the upper bound. It is worth mentioning that constructing this
-function in Coq is nontrivial. The direct implementation is rejected
-because it violates the syntactic criteria for recursion in Coq. It
-has to be defined in a sophisticated way: defining a well-founded
-relation and proving that the definition of the function fulfills the
-relation.
-
-\subsection{Application of the framework}
+The proof of this lemma is a bit subtle.  To compute the reachable set
+we need to design a decision procedure that explores the (potentially cyclic)
+graph.  Accordingly we implement a flavor of breadth-first search, also keeping
+track of the nodes that we have explored previously.  Since nodes are explored
+in BFS order while reachability is in some sense defined in DFS order, when
+we reach a node $n$ we must take some care to reconstruct a path from the origin to $n$
+to satisfy the reachability property.  The definition is also
+painful because of Coq's insistence that all computations terminate; we 
+utilized the techniques outlined by Chlipala to pacify Coq's termination checker~\cite{chlipala:cpdt}.
+ 
+\subsection{Reasoning about relations between graphs} %Using our framework to reasonApplication of the framework}
 
 We apply our framework to define other structures and relations
 between these structures (including graph), and then use them to prove
 certain pure facts proposed by real verifications.
 
-For example, we define dag (directed acyclic graph) as a PreGraph with
+For example, we define DAG (directed acyclic graph) as a PreGraph with
 an additional property: forall any $x$ and $y$, if $x$ is reachable
-from $y$, then $y$ is not reachable from $x$. We also define tree in a
-similar way. The additional property for tree is that there is one and
-only one path from root to any reachable node from root. As for
-relations, we define the relation $\m{mark}(\gamma, \tx x, \gamma')$
-for the ``graph mark'' algorithm in Figure~\ref{fig:markgraph}. It
-means $gamma'$ is the result of marking $\gamma$ from $\tx
-x$. Similarly, we define $\m{span}$ for the ``spanning tree'' program
-and $\m{copy}$ for the ``graph copy'' program. All these relations
-captured the connections of the states of mathematical graphs before
-and after program execution. As we mentioned before, $\m{mark}$ and
-related lemmas are reused in proving pure facts of ``spanning tree''
-and ``graph copy'' because the latter two programs do contain marking
-operations. So we reuse the following pure fact:
+from $y$, then $x = y$ or $y$ is not reachable from $x$.  Similarly, we define tree 
+by saying that for any reachable node $n$ there is a unique path from the root
+to $n$.
+
+We already defined the relation $\m{mark}(\gamma, \tx x, \gamma')$, used in 
+the graph marking algorithm, in Figure~\ref{fig:markgraph}.  
+Similarly, we define $\m{span}$ for the spanning tree program
+and $\m{copy}$ for the graph copy program.  These relations all
+capture how the graph has changed from before to after the program 
+execution.  As previously mentioned, we reuse $\m{mark}$ and its
+related lemmas to prove facts about spanning tree and graph copy 
+because the latter two programs mark nodes as they work. 
+Accordingly, we can reuse the following fact:
 \begin{equation*}
 \begin{split}
 \forall \gamma, x, n.~&\gamma(x)=(0, v_1, v_2,\dots,v_n) => \m{mark1}(\gamma, x, \gamma_1) =>\\
@@ -305,24 +252,6 @@ operations. So we reuse the following pure fact:
         & \m{mark}(\gamma_n,v_n,\gamma_{n+1}) => \m{mark}(\gamma,x,\gamma_{n+1}).
 \end{split}
 \end{equation*}
-Note that it is a general theorem for any LocalFiniteGraph, not just
-BiGraph. In our framework, almost all theorems (except $\m{span}$
-related ones) are proved as generally as possible.
+Note that it is a general theorem for any \p{LocalFiniteGraph}, not just
+\p{BiGraph}. In our framework, we aspire to prove theorems as generally as possible.
 
-It is worth mentioning that when dealing with formal proofs, there are
-some unexpected facts which showed the rigidity of mechanized
-verification. For example, our na\"ive definition of the relation
-$\m{span}$ is not strong enough to complete a above-like inference. We
-express that graph $g_2$ is a spanning tree of graph $g_1$ starting
-from root node $r$ as $\m{span}(g_1, r, g_2)$. We conclude three
-relations as the predicate. First, the unreachable parts from root $r$
-in $g_1$ and $g_2$ are the same. Secondly, the shape of $g_2$ must be
-a tree. Lastly, all nodes reachable from $r$ in $g_1$ are still
-reachable from $r$ in $g_2$. The second relation ensures that the
-result is a tree while the third one ensures it is a spanning tree of
-$g_1$. At first glance, it is a very complete definition. But the
-subsequent formal proof reveals that the definition still lacks one
-condition: for any two nodes $a$ and $b$, if $a$ is reachable from $r$
-in $g_1$ and $b$ is not reachable from $r$ in $g_1$, then in $g_2$,
-$b$ is not reachable from $a$. It is a long-winded but necessary
-relation.
