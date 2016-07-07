@@ -3,12 +3,12 @@ The most direct ancestor of our work is \cite{hobor:ramification}, which focused
 
 Hobor and Villard treated mathematical graphs very simply, as triples $(V,E,L)$ of vertices, edges, and a labeling function on vertices.  Vertices had no more than two neighbors.  In contrast, our mathematical graph framework~(\S\ref{sec:mathgraph}) is very modular and general and has been tuned to work smoothly in a mechanized context.
 
-Hobor and Villard fell into the trap of defining spatial graphs recursively~(\S\ref{sec:fixpointfail}); unfortunately other members of the research community have since followed them in; in their defense they asserted an equivalence with a $\bigstar$ form and other than that single proof their paper has no significant errors.  We exposed their error and provided a sound and quite general definition for \p{graph}~(\S\ref{sec:goodgraph}) that recovers fold/unfold reasoning.  We developed a much more general and more modular set of related lemmas and connect our spatial reasoning to two very different verification tools~(\S\ref{sec:ramifylib}), VST~(\S\ref{sec:vst}) and HIP/SLEEK~(\S\ref{sec:hipsleek}).  Our entire development is machine-checked (\S\ref{sec:development}) whereas Hobor and Villard used only with pen-and-paper.
+Hobor and Villard fell into the trap of defining spatial graphs recursively~(\S\ref{sec:fixpointfail}); unfortunately other members of the research community have since followed them in.  We exposed this error and provided a sound and quite general definition for \p{graph}~(\S\ref{sec:goodgraph}) that recovers fold/unfold reasoning.  We developed a much more general and more modular set of related lemmas and connect our spatial reasoning to two very different verification tools~(\S\ref{sec:ramifylib}), VST~(\S\ref{sec:vst}) and HIP/SLEEK~(\S\ref{sec:hipsleek}).  Our development is entirely machine-checked~(\S\ref{sec:development}) whereas they used only pen and paper.
 
 \paragraph{Other verification of graph algorithms, with or without $**$.}
 Yang's verification of the Schorr-Waite algorithm is a landmark in the early separation logic literature~\cite{hongseok:phd}.  Bornat \emph{et al.} gave an early attempt to reason about graph algorithms in separation logic in a more general way~\cite{bornat:aliasing04}.
 
-Reynolds was the first to document the overlapping conjunction~$**$, although he did not present any strategy to reason about it using Hoare rules~\cite{rey-slnotes}.  Gardner \emph{et al.} were the first to reason about a program using $**$ in a particular place in Javascript~\cite{GardnerMS12}.  Raad \emph{et al.} used $**$ to reason about a concurrent spanning algorithm~\cite{RaadVG15}.  Sergey \emph{et al.} also verified a concurrent spanning tree algorithm, but with proofs mechanized in Coq~\cite{ilya-graphs}.
+Reynolds was the first to document the overlapping conjunction~$**$, although he did not present any strategy to reason about it using Hoare rules~\cite{rey-slnotes}.  Gardner \emph{et al.} were the first to reason about a program using $**$ in Javascript~\cite{GardnerMS12}.  Raad \emph{et al.} used $**$ to reason about a concurrent spanning algorithm using a kind of ``concurrent localization''~\cite{RaadVG15}.  Sergey \emph{et al.} also verified a concurrent spanning tree algorithm and mechanized their proofs in Coq~\cite{ilya-graphs}.
 
 \paragraph{Local variables.}
 An alternative way to avoid local variable issues is to use ``variables as resource''~\cite{bornat:var}.
@@ -21,97 +21,23 @@ Many automated verification tools also use separation logic in a forward reasoni
 
 Dafny~\cite{Leino10} and KeY~\cite{Beckert:2007} are two notable verifiers not based on separation logic; KeY uses an interactive verifier while Dafny pursues more automation by using the SMT solver Z3~\cite{Moura2008}.
 
-\paragraph{Mechanized mathematical graph theory.}
+\paragraph{Mechanized mathematical graph theory.} There is a long history,
+going back at least 25 years, of mechanized reasoning about mathematical
+graphs~\cite{wong1991}.  The most famous mechanically verified ``graph theorem''
+is the Four Color Theorem~\cite{gonthier2005computer}; however
+the development actually uses hypermaps instead of graphs.
+Noschinski built a graph library in Isabelle/HOL whose formalization
+is the most similar to ours~\cite{Noschinski2015}, \emph{e.g.} supporting
+graphs with labeled and parallel arcs.
 
-The most famous graph related theorem which has been mechanically
-verified is the Four Color Theorem: Any planar map can be colored with
-only four colours. In 2005, Benjamin Werner and Georges Gonthier
-formalized a proof of the theorem \cite{gonthier2005computer} inside
-Coq. It is very easy and natural to rephrase the problem in graph
-theory: by taking regions as nodes and connecting each pair of
-adjacent regions as edges, coloring the map is equivalent to coloring
-the graph obtained. However, they used a different kind of
-combinatorial structure, known as hypermaps, instead of
-graphs. Basically, a hypermap is a type ``dart'' with several
-functions mapping dart to dart. The combinatorial and geometrical
-properties are encoded as certain permutation properties of those
-functions. It is quite a very different structure from graph.
+Noschinski and Dubois \emph{et al.} used proof assistants to design verifiable
+checkers for solutions to graph problems~\cite{noschinski2015formalizing,dubois2015graphes}.
+Yamamoto \emph{et al.} and Bauer and Nipkow use an alternative inductive
+encoding of graphs to formalize planar graph theory~\cite{yamamoto1995formalization,bauer20025}.
 
-Lars Noschinski built a formalized graph library for the Isabelle/HOL
-proof assistant and verified a method of checking Kuratowski subgraphs
-used in the LEDA library. It supports general infinite directed graphs
-with labeled and parallel arcs \cite{Noschinski2015}. His definition
-of graph is similar to our PreGraph except he uses vertex/edge set
-instead of validity functions. Besides, Noschinski's library also
-covers basic graph related concepts such as reachable component and
-spanning tree.
 
-Nordhoff and Lammich \cite{Dijkstra_Shortest_Path-AFP} formalized and
-proved Dijkstra's algorithm in Isabelle. Their graph is defined as
-vertex and edge sets where the edge is a triple (source, label,
-destination). They only defined what they need for the algorithm.
-
-Written in HOL, Wong \cite{wong1991} expressed a small portion of the
-conventional graph theory, which is mainly used to model the railway
-track network and applied in signalling systems. It does not contain
-too many graph property-related theorems.
-
-Chou \cite{chou1994formal} formalized theory of undirected graphs in
-HOL that emphasize on the notion and important properties of trees. He
-applied this library to verified distributed algorithms
-\cite{chou1995mechanical}.
-
-Duprat \cite{duprat2001coq} formalized graph in an inductive way in
-Coq. Only some basic properties are proved in it. To our knowledge, no
-application is built on it.
-
-In \cite{yamamoto1995formalization} a formalization of planar graph is
-inductively defined in HOL. They use it to prove Euler's formula as an
-application. \cite{tamai2000formal} treat the same problem. But their
-purpose is just giving a formal specification in CafeOBJ. So their
-graph library only contains formal definitions.
-
-In \cite{yamamoto1998formalization}, Yamamoto et al formalized
-directed graph based on Wong's work \cite{wong1991}. They proved the
-correctness of the abstract A* algorithm based on graph and
-semi-lattice. \cite{tamai2000formal}
-
-NASA's graph theory library is written in PVS
-\cite{R.W.:1998:PGT:886490}. It is restricted to finite graphs only
-and does not support multi-edge graphs. They use the library to prove
-Ramsey's Theorem and Menger's Theorem.
-
-\cite{bauer20025} inherited the inductive approach of
-\cite{yamamoto1995formalization} for the formalization of planar graph
-theory. They formally proved the 5 color theorem using graph theory
-and triangulations.
-
-In \cite{nipkow2006flyspeck}, a finite, undirected, planar graph is
-formalized as a list of faces and faces as lists of vertices. That
-library is mainly used to prove the completeness of the enumeration of
-tame graphs.
-
-\cite{ridge2005graphs} also mechanised graphs and trees in
-Isabelle/HOL. It is closed to \cite{wong1991} with the following
-difference: the edges are represented as sets of vertices instead of
-atomic objects.
-
-In \cite{noschinski2015formalizing}, Noschinski presented a graph
-library in Isabelle/HOL to reason about graphs and implemented a
-verified decision procedure for combinatorial planarity of graphs. He
-also verified checkers for both the planarity and the non-planarity
-certificates emitted by the LEDA library. Both the implementation and
-verification of the checker are written in the abstract language of
-AutoCorres.
-
-In \cite{dubois2015graphes} they proposed a formalization of graphs
-without multiple edges. A formally verified auditor was developed to
-certify the result of a function that calculates a maximum cardinality
-matching. The executable code of the auditor is extracted from Coq
-directly.
-
-{\color{magenta}
-5.2. An alternative way of verifying marking program is reasoning about the whole history of marking operations. The disadvantage of it is that it currently needs more work in a Hoare logic framework. The advantage of it is that its reasoning structure are more similar with the way we understand it in our first algorithm class.
-5.3. I take some effort on garbage collector like graph structural. Though it is only connecting this special structural with 5.1.1 and 1.3, it takes much time and it is not finished yet.}
+%{\color{magenta}
+%5.2. An alternative way of verifying marking program is reasoning about the whole history of marking operations. The disadvantage of it is that it currently needs more work in a Hoare logic framework. The advantage of it is that its reasoning structure are more similar with the way we understand it in our first algorithm class.
+%5.3. I take some effort on garbage collector like graph structural. Though it is only connecting this special structural with 5.1.1 and 1.3, it takes much time and it is not finished yet.}
 
 
