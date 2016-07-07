@@ -1,193 +1,12 @@
-As pointed out in \cite{hobor:ramification}, na\"iave attempts to
-verify graph-manipulating programms using the shape-only predicates
-are unsound. An obvious solution---especially for verifying functional
-correctness---is to involve a mathematical graph $\gamma$ in spatial
-predicates as a parameter. Since the additional parameter is involved
-in the specification, we needs a way to reason about it, so as to
-deduce the specification. Thus we formalize a general-purpose proof
-framework for mathematical graphs and provide a bunch of useful
-theorems in graph theory to ease the burden in verifying programs. In
-this section, we will introduce the framework and show how we built
-them.
-
-\subsection{Definitions of graph and other concepts}
-The core of the graph theory framework are the definitions of graph,
-graph-related structures and relations. In mathematics, a (directed)
-graph is an ordered pair $(V, E)$ where $V$ is the set of vertices or
-nodes and $E$ is the set of edges comprising a source node and a
-destination node. Analogously, in our framework, a mathematical graph
-is a hextuple $(V, E, \phi_V, \phi_E, s, t)$ where $V$/$E$ is the type
-of vertices/edges, $\phi_V$/$\phi_E$ is the predicate over $V$/$E$
-which asserts the validity of a vertex/edge, $s$ and $e$ are functions
-of type $E -> V$ which maps an edge to its source and destination
-respectively. Invalid nodes and edges are not considered as elements
-of a graph. However, there are no additional requirements for the
-validity of the whole graph. As shown in Figure \ref{fig:pregraph},
-our graph can contain invalid nodes and edges. That is why we call
-this combinatorial structure \emph{PreGraph} because it can express
-not just normal graphs. We design it deliberately because we need a
-way to present such things. For example, the difference of two graphs:
-$\gamma_1-\gamma_2$, is not necessarily a normal graph because it may
-contain dangling edges. The ``subtracted'' nodes are not really
-removed but are ruled out from valid nodes because they are still
-referred in edge-part of $\gamma_1-\gamma_2$. Many concepts such as
-path, reachability, subgraph are defined based on PreGraph.
-
-\begin{figure}
-\centering
-\beginpgfgraphicnamed{pregraphexp}
-\begin{tikzpicture}
-[vad/.style={circle, fill=black, inner sep=0pt, minimum size=4pt},
- inv/.style={circle, draw=black, thick, inner sep=0pt, minimum size=4pt},
- ->/.style={thick, arrows={-Stealth}}]
-\node[vad] (n1) at (0, 0) {};
-\node[vad] (n2) at (1, 1) {};
-\node[inv] (n3) at (1, -1) {};
-\node[vad] (n4) at (-2,2) {};
-\node[vad] (n5) at (-2,-2) {};
-\node[vad] (n6) at (-3,0) {};
-\node[vad] (n7) at (3,1.5) {};
-\node[inv] (n8) at (3,-1.5) {};
-\node[vad] (n9) at (3.5, 1) {};
-\node[inv] (n10) at (3.5, 0.5) {};
-\node at (3.5, 1) [right=1.5pt] {\small Valid node};
-\node at (3.5, 0.5) [right=1.5pt] {\small Invalid node};
-\node at (3.5, 0) [right=1.5pt] {\small Valid edge};
-\node at (3.5, -0.5) [right=1.5pt] {\small Invalid edge};
-\draw[->] (n1) to (n2);
-\draw[->,dashed] (n1) to (n3);
-\draw[->,dashed] (n3) to (n5);
-\draw[->] (n2) to (n3);
-\draw[->] (n2) to (n7);
-\draw[->] (n2) to (n8);
-\draw[->,dashed] (n3) to (n8);
-\draw[->] (n4) to (n1);
-\draw[->] (n1) to (n5);
-\draw[->] (n2) to (n4);
-\draw[->] (n1) to [bend left=20] (n6);
-\draw[->] (n6) to (n5);
-\draw[->] (n8) to [bend left=20] (n7);
-\draw[->] (n4) to [bend right=35] (n1);
-\draw[->] (3.0, 0) -- (3.6, 0);
-\draw[->,dashed] (3.0, -0.5) -- (3.6, -0.5);
-\end{tikzpicture}
-\endpgfgraphicnamed
-\vspace{1ex}
-\caption{A PreGraph with invalid nodes and edges.}\label{fig:pregraph}
-\end{figure}
-
-\paragraph{Path}
-Once we have the definition of PreGraph, it is time to define another
-infrastructure: path. Informally, a path is a list of nodes
-concatenated with edges. Since an edge contains the information about
-its source and destination, there is no necessary to define path as an
-interleaving list of nodes and edges. Then we have two obvious choices
-for representation of a path: a list of nodes or a list of edges.
-
-Both choices have certain defects. If a path is defined as a list of
-nodes, we can not distinguish different paths between two nodes in
-case there are multiple edges between two nodes. If a path is defined
-as a list of edges, then we can deal with multiple edges but we can
-not represent an empty path for a certain node---we can not determine
-which node an empty list of edges belongs to.
-
-To avoid the defects above, we define the path as a ordered pair $(n,
-l)$ where $n$ is a node and $l$ is a list of edges. A valid path
-requires that $n$ is the source node of the first edge of $l$ and $l$
-is well chained---the destination of an edge in $l$ is the same as the
-source of the next edge. The list $l$ can be null to represent an
-empty path for a particular node $n$.
-
-Why we insist that a path---even an empty path---must have a leading
-node? One reason is that with such a definition, we can give a
-consistent definition for a very important concept: reachability.
-
-\paragraph{Reachability}
-Among various properties derived from PreGraph, the most important one
-is the reachability. The definition of reachability is based on
-path. The notation $\gamma \models L_{n_2}^{n_1}(P)$ means in PreGraph
-$\gamma$, node $n_2$ is reachable from node $n_1$ along the path $L$
-while every node in $L$ satisfies predicate $P$. This notation, along
-with other derived ones, such as
-\begin{equation*}
-\begin{split}
-\gamma\models n_1 \xrightarrow{P} n_2 &\defeq \exists L, \gamma \models L_{n_2}^{n_1}(P),\\
-\gamma\models n_1 \leadsto n_2 &\defeq \exists L, \gamma \models L_{n_2}^{n_1}(True)
-\end{split}
-\end{equation*}
-form the bedrock of nearly every nontrivial predicate about
-graphs. Either the relation of two states---before and after running
-an algorithm---of a graph or the description of a graph with a
-particular shape, reachability is inevitable. To some extent, it is
-quite natural because most graph-related algorithms (DFS, BFS,
-Shortest Path, Spanning Tree, etc) depend on a small operation:
-exploring neighbours from one node. Thus when describing the effect of
-an algorithm, reachability is indispensable. Some of those
-descriptions are discussed in later sections.
-
-\paragraph{Subgraph}
-When we tie a mathematical graph $\gamma$ to a spatial graph predicate
-$g(x, \gamma)$ (which will be explained later), $g$ ``owns'' only the
-spatial representation of the portion of $\gamma$ that is reachable
-from $x$; $\gamma$ may contain other nodes. When we reason about
-$g(x, \gamma)$, it is a very natural requirement to describe the
-reachable portion of $\gamma$ in pure part. We generalize this
-description as two concepts: partial graph $\gamma \!\uparrow\! P$ and
-subgraph $\gamma \!\downarrow\! P$ for arbitrary predicate $P$. To define
-$\gamma \!\uparrow\! P$ and $\gamma \!\downarrow\! P$, for any $\gamma=(V,
-E, \phi_V, \phi_E, s, t)$, we do not change $V$ and $E$ but change
-$\phi_V$ and $\phi_E$ by adding proposition about satisfying $P$ for
-nodes. It means valid nodes in $\gamma \!\uparrow\! P$ and
-$\gamma \!\downarrow\! P$ must satisfy $P$. The only difference between
-$\gamma \!\uparrow\! P$ and $\gamma \!\downarrow\! P$ is that in
-$\gamma \!\uparrow\! P$ the edges with its source node satisfying $P$ is
-valid, but in $\gamma \!\downarrow\! P$, valid edges means both its source
-and destination nodes satisfy $P$. With the concepts of partial graph
-and subgraph, we can express the reachable portion by instantiating
-$P$ as reachable predicate.
+To enable the verification of full functional correctness of graph
+algorithms we need a way to reason about mathematical graphs.
+To allow such verifications to be mechanized without undue pain
+we must take care to develop a modular and general-purpose 
+framework for such mathematical graphs.
 
 \subsection{Structure of the mathematical graph framework}\label{sec:mathinfra}
 
-PreGraph and its derived properties (reachability, subgraph, etc) are
-inadequate for real program verifications. Admittedly many helpful
-lemmas can be inferred directly from PreGraph. But when we dealing
-with concrete graphs for various algorithms, there are many features
-which a bare PreGraph can not inculde. For example, many algorithms
-about graphs assume there are labels in vertices or edges. And some
-graph related theorems do not allow dangling edges (i.e.\ valid edges
-with invalid vertices). The former problem can be solved by adding
-label functions to the definition of PreGraph, which defines
-a \emph{LabeledGraph}. For the latter one, we
-defined \emph{GeneralGraph} which contains a configurable soundness
-condition based on LabeledGraph.
-
-Figure~\ref{fig:graphs} illustrates the inheritance relation among the
-three defintions and their corresponding lemmas. A GeneralGraph can be
-seen as a LabeledGraph, and a LabeledGraph can be seen as a
-PreGraph. Thus all lemmas about PreGraph can be applied to a
-LabeledGraph or GeneralGraph for free, and all lemmas about
-LabeledGraph are applicable to a GeneralGraph too. The soundness
-condition can be configured with extra requirements of graphs. We
-categories several common requirements into different property
-bundles. Those property bundles along with their derived lemmas can be
-seen as certain kinds of ``plug-ins'' of the framework, which are
-indicated as a dashed rectangle in Figure~\ref{fig:graphs}.
-
-For example, some graph theory lemmas only hold when the graph is
-finite (i.e.\ finite vertices and finite edge). We call this
-property \emph{FiniteGraph}. We also defined a less restrictive
-property called \emph{LocalFiniteGraph}, which requires that each
-vertex only has finite neighbors. In the recursive defnition of a
-graph data structure, a node contains many pointers to point to its
-neighbors. The pointers could be null to indicate that they do not
-point to any. Thus we need a special node which represents null
-pointer. We call this kind of graph as \emph{MathGraph}. In some
-cases, we have to specify a graph in which the outdegree of each nodes
-is 2. That is a \emph{BiGraph}. FiniteGraph, LocalFiniteGraph,
-MathGraph and BiGraph, each with its own related lemmas, are four
-property plugins of our framework. There are several other plugins.
-
-\begin{figure}[htbp]
+\begin{figure}[t]
 \centering
 \beginpgfgraphicnamed{variousgraph}
 \begin{tikzpicture}
@@ -239,6 +58,145 @@ property plugins of our framework. There are several other plugins.
 \caption{Structure of the Mathematical Graph Library}\label{fig:graphs}
 \end{figure}
 
+\begin{figure}[t]
+\centering
+\beginpgfgraphicnamed{pregraphexp}
+\begin{tikzpicture}
+[vad/.style={circle, fill=black, inner sep=0pt, minimum size=4pt},
+ inv/.style={circle, draw=black, thick, inner sep=0pt, minimum size=4pt},
+ ->/.style={thick, arrows={-Stealth}}]
+\node[vad] (n1) at (0, 0) {};
+\node[vad] (n2) at (1, 1) {};
+\node[inv] (n3) at (1, -1) {};
+\node[vad] (n4) at (-2,2) {};
+\node[vad] (n5) at (-2,-2) {};
+\node[vad] (n6) at (-3,0) {};
+\node[vad] (n7) at (3,1.5) {};
+\node[inv] (n8) at (3,-1.5) {};
+\node[vad] (n9) at (3.5, 1) {};
+\node[inv] (n10) at (3.5, 0.5) {};
+\node at (3.5, 1) [right=1.5pt] {\small Valid node};
+\node at (3.5, 0.5) [right=1.5pt] {\small Invalid node};
+\node at (3.5, 0) [right=1.5pt] {\small Valid edge};
+\node at (3.5, -0.5) [right=1.5pt] {\small Invalid edge};
+\draw[->] (n1) to (n2);
+\draw[->,dashed] (n1) to (n3);
+\draw[->,dashed] (n3) to (n5);
+\draw[->] (n2) to (n3);
+\draw[->] (n2) to (n7);
+\draw[->] (n2) to (n8);
+\draw[->,dashed] (n3) to (n8);
+\draw[->] (n4) to (n1);
+\draw[->] (n1) to (n5);
+\draw[->] (n2) to (n4);
+\draw[->] (n1) to [bend left=20] (n6);
+\draw[->] (n6) to (n5);
+\draw[->] (n8) to [bend left=20] (n7);
+\draw[->] (n4) to [bend right=35] (n1);
+\draw[->] (3.0, 0) -- (3.6, 0);
+\draw[->,dashed] (3.0, -0.5) -- (3.6, -0.5);
+\end{tikzpicture}
+\endpgfgraphicnamed
+\vspace{1ex}
+\caption{A PreGraph with invalid nodes and edges.}\label{fig:pregraph}
+\end{figure}
+
+Figure~\ref{fig:graphs} gives the overall architecture of how our graphs are constructed.
+The most basic kind of graph is PreGraph, out of which we LabeledGraphs, and which in turn are used
+to build GeneralGraphs.  Each kind of graph has some associated lemmas, and each kind inherits the lemmas of the previous kind.  %We will consider each in turn.
+
+\paragraph{Pregraphs.} A PreGraph is a hextuple $(V, E, \phi_V, \phi_E, s, t)$,
+where $V$ and $E$ are the underlying carrier set of vertices and edges.  Not every $v \in V$ or $e \in E$ is actually ``in'' the graph, so we provide the predicates $\phi_V$ and $\phi_E$ to classify vertices and edges as \emph{valid} (in) or not (out).  Finally, $s$ and $e : E -> V$ are functions that map an edges to their source and destination respectively; this model means that PreGraphs are directed rather than undirected.  By design, there are no requirements for \emph{e.g.} how the validity of edges and vertices related.  As shown in Figure \ref{fig:pregraph}, a PreGraph can contain invalid nodes and edges in an arbitrary configuration.
+
+The advantage of designing a graph type that can reason about missing vertices and edges is because some of our later definitions need such flexibility.  Consider the difference of two graphs, $\gamma_1 - \gamma_2$.  Even if both of these graphs are ``well-formed'' to begin with, in the sense that valid nodes have only valid edges and vice versa, their difference may not since there may be dangling edges pointing to the now-removed vertices of $\gamma_2$.
+
+Many basic graph concepts such as \emph{path}, \emph{reachability}, and \emph{subgraph} are defined on PreGraphs.
+Informally a path is a list of nodes connected by edges.  Formally it is more convenient to
+define a path as an ordered pair $(n,l)$ where $n$ is a node and $l$ is a list of edges.
+A valid path requires $n$ to be the source of the first edge of $l$ (if one exists) and moreover
+requires $l$ to be ``well chained''.  That is, the destination of one edge in $l$ must be the 
+source of the next edge.  The list $l$ can be null to represent an empty path starting and ending
+at the node $n$.  We prefer this encoding as opposed to some others (\emph{e.g.} a list of edges)
+because the definitions of important concepts like reachability are cleaner.
+
+The most important definition on PreGraph is the concept of reachability.
+We use the notation $\gamma \models L_{n_2}^{n_1}(P)$ to mean that we can reach $n_2$ from $n_1$ via the path $L$ in PreGraph $\gamma$, and moreover that every node in $L$ satisfies predicate $P$.  This notation, along
+with some derived ones such as
+\begin{equation*}
+\begin{split}
+\gamma\models n_1 \xrightarrow{P} n_2 &\defeq \exists L, \gamma \models L_{n_2}^{n_1}(P),\\
+\gamma\models n_1 \leadsto n_2 &\defeq \exists L, \gamma \models L_{n_2}^{n_1}(True)
+\end{split}
+\end{equation*}
+form the bedrock of nearly every nontrivial predicate about and relation between
+graphs.
+
+In \S\ref{sec:spacegraph} we will tie mathematical graphs $\gamma$ to a spatial graph predicate
+$\p{graph}(x, \gamma)$.   As we will see, $\p{graph}$ ``owns'' only the
+spatial portion of $\gamma$ that is reachable
+from $x$ even though $\gamma$ may contain other nodes.  Accordingly, when we reason about
+$\p{graph}(x, \gamma)$, it is natural to want to describe the
+reachable portion of $\gamma$.  In fact we generalize this
+idea into two concepts: the subgraph of $\gamma$ satisfying
+an arbitrary predicate $P$, written $\gamma \!\downarrow\! P$, and the \emph{relaxed subgraph}, written $\gamma \!\uparrow\! P$, which contains the all of the subgraph plus some additional edges.  In particular, $\gamma \!\downarrow\! P$ contains exactly the vertices satisfying $P$ and only the edges whose source and destination both satisfy $P$.  The relaxed subgraph $\gamma \!\uparrow\! P$ adds the additional edges whose \textbf{source} satisfies $P$, even though their destination may not.
+We can use these definitions to, for example, extract the subgraph or relaxed subgraph reachable from a vertex $v$ by writing \emph{e.g.} $\gamma \!\downarrow\! (\lambda v'. \gamma\models v \leadsto v')$.
+
+\paragraph{LabeledGraph.} 
+PreGraph and its derived properties (reachability, subgraph, etc) are
+inadequate for real program verification, even though many basic lemmas can already be proved about them.
+However, when reasoning about the concrete graphs manipulated by various algorithms, 
+we usually need to add a notion of \emph{labels} on vertices and/or edges, such as
+the ``mark bit'' used in Figure~\ref{fig:markgraph}.
+
+\paragraph{GeneralGraph.}
+Much more interesting is the concept of GeneralGraph, which augments a LabeledGraph by adding a user-specified soundness condition.  In Figure~\ref{fig:graphs} this soundness condition is highlighted by a dashed border.  These ``plugins'' can specify many different kinds of properties.  Each property, in turn, can be used to prove many property-specific lemmas, all of which are inherited by the instantiating GeneralGraph.
+
+
+illustrates the inheritance relation among the
+three defintions and their corresponding lemmas. A GeneralGraph can be
+seen as a LabeledGraph, and a LabeledGraph can be seen as a
+PreGraph. Thus all lemmas about PreGraph can be applied to a
+LabeledGraph or GeneralGraph for free, and all lemmas about
+LabeledGraph are applicable to a GeneralGraph too. The soundness
+condition can be configured with extra requirements of graphs. We
+categories several common requirements into different property
+bundles. Those property bundles along with their derived lemmas can be
+seen as certain kinds of ``plug-ins'' of the framework, which are
+indicated as a dashed rectangle in Figure~\ref{fig:graphs}.
+
+, each of which carries with it some associated 
+
+there are many features
+which a bare PreGraph can not inculde. For example, many algorithms
+about graphs assume there are labels in vertices or edges. And some
+graph related theorems do not allow dangling edges (i.e.\ valid edges
+with invalid vertices). The former problem can be solved by adding
+label functions to the definition of PreGraph, which defines
+a \emph{LabeledGraph}. For the latter one, we
+defined \emph{GeneralGraph} which contains a configurable soundness
+condition based on LabeledGraph.
+
+
+
+
+\subsection{Definitions of graph and other concepts}
+
+
+For example, some graph theory lemmas only hold when the graph is
+finite (i.e.\ finite vertices and finite edge). We call this
+property \emph{FiniteGraph}. We also defined a less restrictive
+property called \emph{LocalFiniteGraph}, which requires that each
+vertex only has finite neighbors. In the recursive defnition of a
+graph data structure, a node contains many pointers to point to its
+neighbors. The pointers could be null to indicate that they do not
+point to any. Thus we need a special node which represents null
+pointer. We call this kind of graph as \emph{MathGraph}. In some
+cases, we have to specify a graph in which the outdegree of each nodes
+is 2. That is a \emph{BiGraph}. FiniteGraph, LocalFiniteGraph,
+MathGraph and BiGraph, each with its own related lemmas, are four
+property plugins of our framework. There are several other plugins.
+
+
 Furthermore, property plugins can be composed to a larger plugin. This
 composition is not just putting them together because when we consider
 two property bundles at the same time, new lemmas would emerge, just
@@ -247,7 +205,7 @@ MathGraph and FiniteGraph together---called \emph{BiMaFin}---as the
 soundness condition for GeneralGraph in verifying the program
 in \S\ref{sec:orientation}.
 
-\begin{figure}[htbp]
+\begin{figure}[t]
 \centering
 \beginpgfgraphicnamed{graphproperty}
 \begin{tikzpicture}

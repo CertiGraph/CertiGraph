@@ -17,7 +17,9 @@ The structure of our paper is as follows:
 \item[\S\ref{sec:spacegraph}] We suggest that the standard Knaster-Tarski fixpoint~\cite{tarski:fixpoint} cannot define a usable separation logic graph predicate.  We propose a better definition for general spatial graphs that still enjoys a ``recursive'' fold/unfold.  We prove general theorems about spatial graphs in a way that can be utilized in multiple flavors of separation logic, such as the logics contained in VST and HIP/SLEEK. {\color{magenta} Line about modularity?}
 \item[\S\ref{sec:vst}] We explain how we integrated ramification into VST by developing two new Floyd tactics, \li{localize} and \li{unlocalize}.  We discuss three additional VST-certified examples: marking a DAG, pruning a graph into a spanning tree (\emph{e.g.} for disposal), and making a structure-preserving copy of a graph.
 \item[\S\ref{sec:hipsleek}] We explain how we modified HIP/SLEEK to introduce ramifications when programs modify data structures with intrinsic sharing and to automatically discharge the associated obligations using Coq-verified external lemmas.
-\item[\S\ref{sec:related}] We discuss related work, future work, and conclude.
+\item[\S\ref{sec:development}] We document some statistics related to our development.
+\item[\S\ref{sec:related}] We discuss related work.
+\item[\S\ref{sec:conclusion}] We discuss directions for future work and conclude.
 \end{itemize}
 All of our results are machine checked.
 
