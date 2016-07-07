@@ -86,10 +86,15 @@ As indicated in \S\ref{sec:existentials}, this leaves two proof goals.  The firs
 \subsection{Additional examples in VST}\label{sec:application}
 \input{spanning.tex}
 
-In Figure~\ref{fig:spanning} we show our brief proof script of spanning tree algorithm. We have also verified mark on dag and copy on graph. For the sake of space, we do not put those scripts here.
+In Figure~\ref{fig:spanning} we show our brief proof script of
+spanning tree algorithm. We have also verified mark on dag and copy on
+graph. For the sake of space, we do not put those scripts here.
 
-
-
+Not like graph marking, the spanning tree algorithm changes the
+structure of the graph, which leads a more complicated specfication,
+in both pure part and spatial part. We can see the $\m{span}$ is
+rather long and we even have an $\m{e\_span}$ to describe relation of
+either calling spanning tree or deleting an edge.
 
 %This engineering solution shows the intrinsic correlation between frame rule and ramification-P rule, i.e. the entailment relation that $?F$ should satisfy at the localize operation is exactly the ramification criterion.
 
