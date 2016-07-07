@@ -282,6 +282,8 @@ in \S\ref{sec:orientation}.
 \end{figure}
 
 One example of the compositional property lemmas is listed as follows:
+\newtheorem{mylem}{Lemma}
+\begin{mylem}\label{lem:computereach}
 \[
 \begin{split}
 \forall \gamma, x.~&\text{MathGraph }x => \text{LocalFiniteGraph x} =>\\
@@ -290,6 +292,7 @@ One example of the compositional property lemmas is listed as follows:
         \gamma \models x \leadsto v.
 \end{split}
 \]
+\end{mylem}
 It sounds so trivial but the proof is subtle. The most obvious way to
 prove it---filtering reachable nodes from all valid nodes---is
 impossible: there is no decision procedure for reachability to select
