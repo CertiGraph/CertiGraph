@@ -130,6 +130,8 @@ Suppose we define a graph predicate $\graphkt$ this way, \emph{e.g.} along the l
 We have removed the alignment-related portions of equation~\eqref{eqn:bigraphintrofoldunfold} to focus on a more serious issue, even though as we will explain in~\S\ref{sec:foldunfold} alignment concerns are also necessary for the fold/unfold relationship to hold in C-like memory models.  The functional needed to define $\graphkt$ is covariant, so we can apply Knaster-Tarski soundly.  However, the resulting predicate can be hard to use.
 
 Consider the following partial memory $m$ for a toy machine:
+
+\begin{minipage}{.19\textwidth}
 \[
 \begin{array}{l|l}
 \textrm{address} & \textrm{value} \\
@@ -137,8 +139,22 @@ Consider the following partial memory $m$ for a toy machine:
 102 & 0 \\
 101 & 100 \\
 100 & 42 \\
-\end{array} \textrm{Can we get a pretty picture here?}
+\end{array}
 \]
+\end{minipage}
+\begin{minipage}{.19\textwidth}
+\centering
+\beginpgfgraphicnamed{selfref}
+\begin{tikzpicture}
+[->/.style={thick,arrows={-Stealth}},
+   propG/.style={shape=circle, draw}]
+   \path[use as bounding box] (-1, -1) rectangle (0.5, 0.5);
+   \node[propG] (P) at (0, 0) {42};
+   \draw[->] (P.west) .. controls (-1.5, 0) and (0, -1.5) .. (P.south);
+\end{tikzpicture}
+\endpgfgraphicnamed
+\end{minipage}
+
 Clearly $m |= 100 |-> 42,100,0$.  But it seems also clear that this memory represents a one-cell cyclic graph as illustrated in the accompanying diagram, \emph{i.e.} we want $m |= \graphkt(100,\hat{\gamma})$, where $\hat{\gamma}(100) = (42,100,0)$.  This is equivalent to wanting to be able to prove $100 |-> 42,100,0 |- \graphkt(100,\hat{\gamma})$.  Unfortunately, as hinted at in Figure~\ref{fig:badcycle}, this seems rather difficult to do so since applying the natural proof techniques have only strengthened the goal.  In fact we do not know if this entailment is provable or not, but the difficulties encountered in proving what ``should be'' straightforward suggest that Knaster-Tarski should be treated with caution when defining spatial predicates for graphs.
 
 Part of the problem is that the recursive structure interacts very badly with $**$: if the recursion involved $*$ then it \textbf{would} be provable, by induction on the finite memory (each ``recursive call'' would be on a strictly smaller subheap).  This is why Knaster-Tarski works so well with list, tree, and DAG predicates in separation logic.  Note that the other direction, \mbox{$\graphkt(100,\hat{\gamma}) |- 100 |-> 42,100,0$},
