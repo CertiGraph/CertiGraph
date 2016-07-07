@@ -1,3 +1,23 @@
+All concept introduced by this paper are mechanized and all proofs are
+machine checked in Coq. Here is the size statistics.
+\begin{table}[htbp]
+\centering
+\begin{tabular}{c|c|c}
+Component & Number of Files & Size (in lines)\\\hline
+Math Graph (\S\ref{sec:mathgraph}) & 19 & 12,628\\
+Spatial Graph (\$\ref{sec:spacegraph}) & 4 & 3,074 \\
+Integration into Floyd (\S\ref{sec:vst}) & 12 & 1,917 \\
+Modifications to H/S (\S\ref{sec:hipsleek}) & 51\tablefootnote{H/S files modified here is not necessarily fresh created.} & 2,500 \\
+VST Examples (\S\ref{sec:application}) & 19 & 5,985 \\
+H/S Examples (\S\ref{sec:hipsleek}) & 3 & 459 \\
+Memory Model & 15 & 3,926 \\
+Common Utilities & 10 & 3,085 \\\hline\hline
+Total Development & 133 & 33,574 \\
+\end{tabular}
+\caption{Size of our codebase}
+\end{table}
+
+\hide{
 \paragraph{Size of Coq mathgraph \S\ref{sec:mathgraph}.}
 Graph folder has 18 files in total with 10,919 lines in total
 
@@ -39,3 +59,4 @@ main file: 54 lines (Figure~\ref{fig:hipmarkgraph}), \li{Module Type} generated 
 total: 2 human-generated files, 429 lines
 
 \paragraph{Size of total development.} ?
+}
