@@ -49,7 +49,7 @@ framework for such mathematical graphs.
 \node (legend2) [right=1 of legend1] {\small Inheritance};
 \coordinate[left=0.8 of legend2]  (l2);
 \draw [double, ->] (l2) to (legend2);
-\node (legend3) [right=1 of legend2] {\small Instantializes};
+\node (legend3) [right=1 of legend2] {\small Instantialize};
 \coordinate[left=0.8 of legend3]  (l3);
 \draw [-->] (l3) to (legend3);
 \end{tikzpicture}
@@ -106,7 +106,7 @@ The most basic kind of graph is PreGraph, out of which we build LabeledGraphs, a
 to build GeneralGraphs.  Each kind of graph has some associated lemmas, and each kind inherits the lemmas of the previous kind.  The dashed box represents a ``plugin'' system for attaching arbitrary properties to LabeledGraphs and will be discussed more later. %We will consider each in turn.
 
 \paragraph{Pregraphs.} A PreGraph is a hextuple $(V, E, \phi_V, \phi_E, s, t)$,
-where $V$ and $E$ are the underlying carrier set of vertices and edges.  Not every $v \in V$ or $e \in E$ is actually ``in'' the graph, so we provide the predicates $\phi_V$ and $\phi_E$ to classify vertices and edges as \emph{valid} (in) or not (out).  Finally, $s$ and $e : E -> V$ are functions that map an edges to their source and destination respectively; this model means that PreGraphs are directed rather than undirected.  By design, there are no requirements for \emph{e.g.} how the validity of edges and vertices related.  As shown in Figure \ref{fig:pregraph}, a PreGraph can contain invalid nodes and edges in an arbitrary configuration.
+where $V$ and $E$ are the underlying carrier set of vertices and edges.  Not every $v \in V$ or $e \in E$ is actually ``in'' the graph, so we provide the predicates $\phi_V$ and $\phi_E$ to classify vertices and edges as \emph{valid} (in) or not (out).  Finally, $s$ and $e : E -> V$ are functions that map an edges to their source and destination respectively; this model means that PreGraphs are directed rather than undirected.  By design, there are no requirements for \emph{e.g.} how the validities of edges and vertices relate.  As shown in Figure \ref{fig:pregraph}, a PreGraph can contain invalid nodes and edges in an arbitrary configuration.
 
 The advantage of designing a graph type that can reason about missing vertices and edges is because some of our later definitions need such flexibility.  Consider the difference of two graphs, $\gamma_1 - \gamma_2$.  Even if both of these graphs are ``well-formed'' to begin with, in the sense that valid nodes have only valid edges and vice versa, their difference may not since there may be dangling edges pointing to the now-removed vertices of $\gamma_2$.
 
@@ -252,6 +252,6 @@ Accordingly, we can reuse the following fact:
         & \m{mark}(\gamma_n,v_n,\gamma_{n+1}) => \m{mark}(\gamma,x,\gamma_{n+1}).
 \end{split}
 \end{equation*}
-Note that it is a general theorem for any \p{LocalFiniteGraph}, not just
+This is a general theorem for any \p{LocalFiniteGraph}, not just
 \p{BiGraph}. In our framework, we aspire to prove theorems as generally as possible.
 

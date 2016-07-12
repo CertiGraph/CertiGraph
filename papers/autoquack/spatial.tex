@@ -156,7 +156,7 @@ In other words, we get a full equivalence between a graph and its ``unfolded'' s
 
 Both directions of this lemma are a little subtle.  In the $=>$ direction, the key difficulty is that we need to take the existentially-quantified list of vertices on the left $L$ and divide it into (not necessarily disjoint) sublists $L_1, \dots, L_n$ such that $L_i$ is exactly those vertices reachable from neighbor $i$.  To construct these lists we need to use the computable reachability lemma~\ref{lem:computereach} to explicitly test, for each neighbor $i$ and $v\ \p{in}\ L$, whether $i$ can reach $v$; accordingly we require that the GeneralGraph be appropriately finite.
 
-In the $<=$ direction, the difficulty is that if two nodes $x |-> \gamma(x)$ and $x' |-> \gamma(x')$ are \emph{skewed}, \emph{i.e.} ``partially overlaping'' with some---but not all---of $x$'s memory cells shared with $x'$, then the $\bigstar$ on the left hand side cannot separate them.  To avoid skewing we require $x |-> \gamma(x)$ be \emph{alignable}.  A predicate $P$ is alignable when
+In the $<=$ direction, the difficulty is that if two nodes $x |-> \gamma(x)$ and $x' |-> \gamma(x')$ are \emph{skewed}, \emph{i.e.} ``partially overlapping'' with some---but not all---of $x$'s memory cells shared with $x'$, then the $\bigstar$ on the left hand side cannot separate them.  To avoid skewing we require $x |-> \gamma(x)$ be \emph{alignable}.  A predicate $P$ is alignable when
 \[
 \forall x,y.~ \Big(P(x) ** P(y) |- \big(P(x) /| x = y\big) |/ \big(P(x) * P(y)\big)\Big)
 \]
