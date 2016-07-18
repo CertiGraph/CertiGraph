@@ -19,8 +19,8 @@ relation
 $\label{code:hipendrelation}$ eq_notreach(abstract G, node x, abstract G1).
 
 $\label{code:hipaxiom}$axiom lookup(G,x,1,l,r) ==> mark(G,x,G).
-$\label{code:hipmarkramconnect}$axiom mark(G,x,G1) & lookup(G,y,v,l,r) ==> 
-  subset_reach(G,x,G1) & eq_notreach(G,x,G1) & 
+$\label{code:hipmarkramconnect}$axiom mark(G,x,G1) & lookup(G,y,v,l,r) ==>
+  subset_reach(G,x,G1) & eq_notreach(G,x,G1) &
 $\label{code:hipmarkramconnectend}$  lookup(G1,y,_,l,r).
 // ... other $\color{red!80!black}\tx{axioms elided ...}$
 
@@ -76,7 +76,7 @@ HIP/SLEEK reasons about graph algorithms using three key ideas.  First, H/S uses
 \exists m,l,r.~ \gamma(\li{x}) \! = \! (m,l,r) /| \li{x} \! |-> \! m,l,r ** \p{graph}(l, \gamma) ** \p{graph}(r, \gamma)
 \]
 
-% (\emph{e.g.} $\li{x} \mapsto m,l,r$) 
+% (\emph{e.g.} $\li{x} \mapsto m,l,r$)
 Second, once HIP/SLEEK realizes that its forward reasoning needs to isolate a predicate that is $**$-shared, it uses the existential wand ``septraction'' operator~$\septraction$~(defined in Figure~\ref{fig:seplogsem}) to reach the strongest post condition.  The existential wand $--o$ is simpler to introduce than the universal one $--*$ during forward reasoning because H/S already knows $G_1$ and $L_1$ when it needs to calculate a residual frame~$R$.  For example, the precondition at line~\ref{beforemarkleft} is
 \[
 \begin{array}{l}
@@ -164,6 +164,6 @@ HIP/SLEEK's style of reasoning has a few consequences for how we proceed.  First
 \infrule{WandToEwand}
 {G_1 |- L_1 * (L_2 --* G_2)}
 {(L_1 --o G_1) * L_2 |- G_2}
-{\m{precise}(P)}
+{\m{precise}(L_1)}
 \]
 The supplementary package proves that the $\p{graph}$ predicate is ``precise'', so all of our graph ramification lemmas work without additional effort.  Accordingly, to provide the \li{Module} implementing \li{Mgraphmark} not burdensome, especially starting from a working Floyd proof that uses the same mathematical relations.
