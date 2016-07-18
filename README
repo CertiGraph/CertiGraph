@@ -2,7 +2,7 @@ HOW TO SET UP YOUR ENVIRMENT
 
 1. Download and Unpack
 1.1. Download CompCert 2.6 and unpack it into your CompCert folder.
-1.2. Download VST of master branch (commit 2a6410048ba09356cc338ea8133fe31f7af264ec) and unpack it into your VST folder.
+1.2. Download VST of master branch (commit 4fd994630bd25eb15417cdccb1a28d54663d7190) and unpack it into your VST folder.
 1.3. Download RamifyCoq and unpack it into your Ramify folder.
 1.4. It is not necessary for your folder names to be CompCert, VST and/or Ramify, you can feel free to name them in your own way.
 
