@@ -229,7 +229,7 @@ Above the Logic layer we have three towers, each three levels high.  The leftmos
 {\underset{x\in A}{\bigstar} P(x) *   \underset{x\in B}{\bigstar} P(x) \Leftrightarrow \underset{x\in A \cup B}{\bigstar} P(x)}{}
 \]
 
-The middle tower is more interesting in that it is entirely focused on ramification entailments.  The lowest level contains lemmas such as the following:
+The middle tower is more interesting in that it is entirely focused on ramification entailments.  A robust library of ramification entailments is essential to making ramification work smoothly in practice.  The lowest level contains lemmas such as the following:
 \[
 \infrule{Ramify-Q-SPLIT}
 {G_1 \vdash L_1 * \forall x.~ (L_2 --* G_2) \\
@@ -266,8 +266,8 @@ Also, all of our verifications of different graph algorithms use the proof rules
 {
 \mbox{
 $\begin{array}{@{}l@{}l@{}}
-\p{graph}(x, \gamma) \vdash \\ 
-~~ \mathtt{graph}(n, \gamma) * 
+\p{graph}(x, \gamma) \vdash \\
+~~ \mathtt{graph}(n, \gamma) *
 \big(\forall \gamma'.~ & \m{mark}(\gamma, n, \gamma') /| \p{graph}(n, \gamma') --* \null \\
 & \m{mark}(\gamma, n, \gamma') /| \p{graph}(x, \gamma')\big)
 \end{array}$
