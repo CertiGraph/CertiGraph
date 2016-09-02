@@ -241,6 +241,6 @@ Proof.
   forward. (* ( return; ) *)
   apply (exp_right g3); entailer!; auto.
   apply (mark1_mark_left_mark_right g g1 g2 g3 (ValidPointer b i) l r); auto.
-Time Qed. (* Takes 3 hours. *)
+Time Qed. (* 358 secs. *)
 
 Print Assumptions body_mark.
