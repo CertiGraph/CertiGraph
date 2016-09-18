@@ -170,6 +170,75 @@ Proof.
   apply WeakMarkGraph.vertex_update_mark1; auto.
 Qed.
 
+Lemma mark_neighbor_ramify: forall {A} (g1: Graph) (g2: A -> Graph) x y,
+  (forall (g: Graph) x y, reachable g x y \/ ~ reachable g x y) ->
+  vvalid g1 x ->
+  step g1 x y ->
+  Included (Intersection V (reachable g1 x) (Complement V (reachable g1 y)))
+     (vguard g1) ->
+  (forall a, mark y g1 (g2 a) -> Included (Intersection V (reachable g1 x) (Complement V (reachable g1 y))) (vguard (g2 a))) ->
+  @derives Pred _
+    (reachable_vertices_at x g1)
+    (reachable_vertices_at y g1 *
+      (ALL a: A, !! mark y g1 (g2 a) -->
+        (reachable_vertices_at y (g2 a) -*
+         reachable_vertices_at x (g2 a)))).
+Proof.
+  intros.
+  assert (Included (reachable g1 y) (reachable g1 x)).
+  Focus 1. {
+    hnf; unfold Ensembles.In; intros.
+    apply step_reachable with y; auto.
+  } Unfocus.  
+  apply vertices_at_ramif_xQ. eexists. split; [|split].
+  + apply Ensemble_join_Intersection_Complement; auto. 
+  + intros. destruct H5 as [_ ?].
+    rewrite <- H5; clear H5.
+    apply Ensemble_join_Intersection_Complement; auto.
+  + intros.
+    apply GSG_PartialGraphPreserve; auto.
+    - unfold Included, Ensembles.In; intros.
+      rewrite Intersection_spec in H6; destruct H6 as [? _].
+      apply reachable_foot_valid in H6; auto.
+    - destruct H5.
+      rewrite H6; clear H6.
+      unfold Included, Ensembles.In; intros.
+      rewrite Intersection_spec in H6; destruct H6 as [? _].
+      apply reachable_foot_valid in H6; auto.
+    - apply mark_partial_labeled_graph_equiv in H5.
+      eapply si_stronger_partial_labeledgraph_simple; [| eassumption].
+      unfold Included, Ensembles.In; intros.
+      rewrite Intersection_spec in H6.
+      tauto.
+Qed.
+
+Lemma mark_list_mark_ramify: forall {A} (g1 g2: Graph) (g3: A -> Graph) x l y l',
+  (forall (g: Graph) x y, reachable g x y \/ ~ reachable g x y) ->
+  vvalid g1 x ->
+  step_list g1 x (l ++ y :: l') ->
+  relation_list (mark1 x :: mark_list l :: nil) g1 g2 ->
+  Included (Intersection V (reachable g2 x) (Complement V (reachable g2 y)))
+     (vguard g2) ->
+  (forall a, mark y g2 (g3 a) -> Included (Intersection V (reachable g2 x) (Complement V (reachable g2 y))) (vguard (g3 a))) ->
+  @derives Pred _
+    (reachable_vertices_at x g2)
+    (reachable_vertices_at y g2 *
+      (ALL a: A, !! mark y g2 (g3 a) -->
+        (reachable_vertices_at y (g3 a) -*
+         reachable_vertices_at x (g3 a)))).
+Proof.
+  intros. 
+  destruct_relation_list g1' in H2.
+  destruct H5 as [? _].
+  apply (mark_list_eq x) in H2.
+  destruct H2 as [_ ?].
+  rewrite <- H5 in H2; clear g1' H5.
+  apply mark_neighbor_ramify; auto.
+  + destruct H2. rewrite <- (H2 x). auto.
+  + rewrite <- (step_si g1); auto. hnf in H1. rewrite <- H1.
+    rewrite in_app_iff. right. apply in_eq.
+Qed.
+
 Lemma mark_list_mark_ramify: forall {A} (g1 g2: Graph) (g3: A -> Graph) x l y l',
   (forall (g: Graph) x y, reachable g x y \/ ~ reachable g x y) ->
   vvalid g1 x ->
