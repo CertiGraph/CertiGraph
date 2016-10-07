@@ -7,9 +7,9 @@ COQC = coqc
 COQDEP=coqdep -slash
 
 DIRS = lib msl_ext msl_application graph heap_model_direct
-INCLUDE_COMPCERT = -R $(COMPCERT_DIR) -as compcert
-INCLUDE_VST = -R $(VST_DIR) -as VST
-INCLUDE_RAMIFYCOQ = $(foreach d, $(DIRS), -R $(d) -as RamifyCoq.$(d)) -R "." -as RamifyCoq
+INCLUDE_COMPCERT = -R $(COMPCERT_DIR) compcert
+INCLUDE_VST = -R $(VST_DIR) VST
+INCLUDE_RAMIFYCOQ = $(foreach d, $(DIRS), -R $(d) RamifyCoq.$(d)) -R "." RamifyCoq
 NORMAL_FLAG = $(INCLUDE_RAMIFYCOQ) $(INCLUDE_VST) $(INCLUDE_COMPCERT)
 CLIGHT_FLAG = $(INCLUDE_COMPCERT) $(INCLUDE_RAMIFYCOQ)
 
@@ -81,7 +81,7 @@ depend:
 	@$(COQDEP) $(CLIGHT_FLAG) $(CLIGHT_FILES) >> .depend
 
 clean:
-	@rm *.vo */*.vo *.glob */*.glob
+	@rm */*.vo */*.glob */.*.aux
 
 .DEFAULT_GOAL := all
 
