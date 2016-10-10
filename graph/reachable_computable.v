@@ -3,6 +3,7 @@ Require Import Coq.Arith.Arith.
 Require Import Coq.Logic.ProofIrrelevance.
 Require Import Coq.Logic.FunctionalExtensionality.
 Require Import Coq.Sorting.Permutation.
+Require Import Coq.omega.Omega.
 Require Import RamifyCoq.lib.Coqlib.
 Require Import RamifyCoq.lib.List_ext.
 Require Import RamifyCoq.lib.EquivDec_ext.
@@ -67,8 +68,7 @@ Section REACHABLE_COMPUTABLE.
      l2 is all hop-1 neighbor of the head of original working list,
      l3 is visited list. *)
 
-  Lemma new_working_list_sublist: forall l1 l2 l3, Sublist (new_working_list l1 l2 l3) (l1 ++ l2).
-  Proof. intros; apply filter_sublist; auto. Qed.
+  Lemma new_working_list_sublist: forall l1 l2 l3, incl (new_working_list l1 l2 l3) (l1 ++ l2). Proof. intros; apply filter_incl; auto. Qed.
 
   Lemma in_new_working_list: forall l1 l2 l3 x,
     In x (new_working_list l1 l2 l3) <->
@@ -171,7 +171,7 @@ Section REACHABLE_COMPUTABLE.
   Proof.
     intros.
     intros i g l r HH; specialize (H i g l r HH); specialize (H0 i g l r HH).
-    simpl in H, H0.
+    simpl in H, H0. simpl.
     tauto.
   Qed.
 
@@ -229,7 +229,7 @@ Section REACHABLE_COMPUTABLE.
   Lemma Invariance1: forall x, invariant (Forall_reachable x).
   Proof.
     unfold Forall_reachable.
-    intros; intros len g l r; intros.
+    intros; intros len g l r. simpl. intros.
     rewrite Forall_forall in *. intro y; intros; simpl in *.
     rewrite in_app_iff in H1.
     destruct H1.
@@ -369,8 +369,8 @@ Section REACHABLE_COMPUTABLE.
       - unfold reachable_bounded; simpl.
         intros.
         rewrite Forall_forall in H2.
-        assert (Sublist l0 l).  unfold Sublist. exact (fun a H => H0 a (H2 a H)).
-        apply NoDup_Sublist_length; [apply equiv_dec | |]; auto.
+        assert (incl l0 l).  unfold incl. exact (fun a H => H0 a (H2 a H)).
+        apply NoDup_incl_length; auto.
       - unfold Forall_reachable; simpl.
         repeat constructor.
         apply reachable_refl; auto.
@@ -389,28 +389,29 @@ Section REACHABLE_COMPUTABLE.
       intros.
       rewrite Forall_app_iff in H2. destruct H2.
       destruct H3.
-      specialize (H1 (remove_dup equiv_dec (rch2 i0) ++ rch3 i0)).
+      specialize (H1 (nodup equiv_dec (rch2 i0) ++ rch3 i0)).
       spec H1.
       Focus 1. {
         apply NoDup_app_inv.
-        + apply remove_dup_nodup.
+        + apply NoDup_nodup.
         + auto.
         + intros; intro.
-          rewrite <- remove_dup_in_inv in H7.
+          rewrite nodup_In in H7.
           eapply H6; eauto.
       } Unfocus.
       spec H1.
       Focus 1. {
         apply Forall_app_iff; split; auto.
         rewrite Forall_forall in H2 |- *; intros.
-        rewrite <- remove_dup_in_inv in H7.
+        rewrite nodup_In in H7.
         apply H2; auto.
       } Unfocus.
       rewrite app_length in H1.
-      assert (length (remove_dup equiv_dec (rch2 i0)) = 0) by omega.
-      clear - H7.
-      rewrite remove_dup_unfold in H7.
-      destruct (rch2 i0); [auto | inversion H7].
+      assert (length (nodup equiv_dec (rch2 i0)) = 0) by omega.
+      clear - H7. remember (rch2 i0). clear Heql. induction l; auto.
+      simpl in H7. destruct (in_dec equiv_dec a l).
+      * specialize (IHl H7). subst. inversion i.
+      * simpl in H7. inversion H7.
     + (* Prove all invariances are invariant *)
       apply invariant_and; [apply Invariance0 |].
       apply invariant_and; [apply Invariance1 |].
@@ -525,29 +526,29 @@ Section REACHABLE_COMPUTABLE.
 
   Lemma reachable_through_set_enum:
     forall S, EnumCovered V (reachable_through_set G S) ->
-              forall s, Sublist s S -> well_defined_list G s -> Enumerable V (reachable_through_set G s).
+              forall s, incl s S -> well_defined_list G s -> Enumerable V (reachable_through_set G s).
   Proof.
     intros. induction s.
-    + exists nil. split. 1: apply NoDup_nil.
+    - exists nil. split. 1: apply NoDup_nil.
       simpl. unfold reachable_through_set. unfold Ensembles.In. intros. split; intros.
-      - exfalso; auto.
-      - destruct H1 as [? [? ?]]. inversion H1.
-    + spec IHs; [eapply Sublist_trans; [apply Sublist_cons | apply H] |].
+      + exfalso; auto.
+      + destruct H1 as [? [? ?]]. inversion H1.
+    - spec IHs; [eapply incl_tran; [apply incl_tl, incl_refl | apply H] |].
       spec IHs; [intros x HH; apply (H0 x); right; auto |].
       destruct IHs as [l1 [? ?]].
       destruct (reachable_set_enumcovered_single_reachable S X a) as [l2 [? ?]].
       1: apply (H a); left; auto.
       1: specialize (H0 a); spec H0; [left; auto |]; destruct H0; [left | right]; auto.
-      exists (remove_dup equiv_dec (l1 ++ l2)). split. 1: apply remove_dup_nodup.
+      exists (nodup equiv_dec (l1 ++ l2)). split. 1: apply NoDup_nodup.
       unfold reachable_list, reachable_through_set, Ensembles.In in *.
-      intros x; rewrite <- remove_dup_in_inv.
+      intros x; rewrite nodup_In.
       rewrite in_app_iff. specialize (H2 x). specialize (H3 x).
       split; intros.
-      - destruct H5; [| exists a; split; [left; auto | tauto]].
+      + destruct H5; [| exists a; split; [left; auto | tauto]].
         rewrite H2 in H5.
         destruct H5 as [s0 ?H]; exists s0.
         split; [right|]; tauto.
-      - destruct H5 as [s0 ?H].
+      + destruct H5 as [s0 ?H].
         destruct_eq_dec a s0; [right | left]; subst; try tauto.
         apply H2.
         exists s0; simpl in H5; tauto.
@@ -555,7 +556,7 @@ Section REACHABLE_COMPUTABLE.
 
   Lemma reachable_through_sublist_reachable:
     forall S l, reachable_set_list G S l ->
-      forall s, Sublist s S -> well_defined_list G s -> { l' : list V | reachable_set_list G s l' /\ NoDup l'}.
+      forall s, incl s S -> well_defined_list G s -> { l' : list V | reachable_set_list G s l' /\ NoDup l'}.
   Proof.
     intros. cut (Enumerable V (reachable_through_set G s)).
     + intros. destruct X as [l1 [? ?]]. unfold Ensembles.In in H3. exists l1. split; auto.
