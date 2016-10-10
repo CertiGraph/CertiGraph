@@ -378,8 +378,8 @@ Lemma aux00: Same_set (Union _ PV1 (Complement _ PV1)) (Full_set _).
 Proof.
   rewrite Same_set_spec; intro v.
   rewrite Union_spec; unfold Complement, Ensembles.In.
-  clear.
   pose proof PV1_DEC.
+  clear -H.
   firstorder;
   constructor.
 Qed.
@@ -388,7 +388,7 @@ Lemma aux01: Same_set PV3 (Union _ PV1 PV0).
 Proof.
   clear PE1 PE3 PE0 H_PE1 H_PE3 H_PE0.
   intros.
-  subst PV0 M_rec PV3.
+  rewrite H_PV0, H_Mrec, H_PV3.
   rewrite map_app; simpl map.
   rewrite reachable_by_through_app_strong' by (rewrite <- H_PV1; apply aux00).
   rewrite reachable_by_through_singleton'.
@@ -582,7 +582,7 @@ Proof.
   subst PV0.
   pose proof reachable_by_foot_valid _ _ _ _ H0.
   apply reachable_by_foot_prop in H0.
-  subst M_rec.
+  rewrite H_Mrec in *.
   apply H0; unfold Ensembles.In; clear H0.
   rewrite Union_spec.
   destruct (M0_DEC (dst g e)); [left; auto | right].
@@ -1263,7 +1263,7 @@ Proof.
   } Unfocus.
   rewrite ECOPY_prv in PRE_vvalid, PRE_bij.
   rewrite ECOPY_gpre in PRE_evalid, PRE_bij.
-  rewrite <- Union_Empty_right.
+  rewrite <- (Union_Empty_right (Union V PV3 (eq root))).
   erewrite (aux20 e0 PE1_root PE3 PE3_root) by (eauto; reflexivity).
   apply guarded_bij_disjointed_union.
   + split.

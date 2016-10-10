@@ -103,7 +103,7 @@ Section TREE_DEF.
     Fixpoint graph_to_tree (limit: nat) (root: Vertex): nat * Tree :=
       match limit with
       | O => (O, EPT)
-      | S n => let vertices_list := remove_dup veq_dec (filter not_null_bool (map (dst G) (edge_func G root))) in
+      | S n => let vertices_list := nodup veq_dec (filter not_null_bool (map (dst G) (edge_func G root))) in
                let (total, sub_trees) := to_tree_list n vertices_list (0, nil) in
                (1 + total, T root sub_trees)
       end with
@@ -137,9 +137,9 @@ Section TREE_DEF.
       intro lim. remember lim as up.  rewrite Hequp. assert (lim <= up) by intuition. clear Hequp. revert lim H. induction up; intros; split; intros.
       + assert (lim = 0) by intuition. subst. simpl; auto.
       + assert (lim = 0) by intuition. subst. simpl; auto.
-      + destruct lim; simpl; auto. remember (to_tree_list lim (remove_dup veq_dec (filter not_null_bool (map (dst G) (edge_func G root)))) (0, nil)).
+      + destruct lim; simpl; auto. remember (to_tree_list lim (nodup veq_dec (filter not_null_bool (map (dst G) (edge_func G root)))) (0, nil)).
         destruct p as [total sub_trees]. simpl. assert (lim <= up) by intuition. destruct (IHup _ H0) as [_ ?].
-        specialize (H1 (remove_dup veq_dec (filter not_null_bool (map (dst G) (edge_func G root)))) 0 nil). rewrite <- Heqp in H1. simpl in H1. intuition.
+        specialize (H1 (nodup veq_dec (filter not_null_bool (map (dst G) (edge_func G root)))) 0 nil). rewrite <- Heqp in H1. simpl in H1. intuition.
       + destruct lim; simpl; auto. destruct l; simpl; intuition. remember (graph_to_tree lim v). destruct p as [current tr].
         destruct (eq_nat_dec current 0). 1: simpl; intuition.
         assert (lim <= up) by intuition. destruct (IHup _ H0) as [? _]. specialize (H1 v). rewrite <- Heqp in H1. simpl in H1.
@@ -157,8 +157,8 @@ Section TREE_DEF.
       + assert (lim = 0) by intuition. subst. simpl; auto.
       + assert (lim = 0) by intuition. subst. simpl; auto.
       + destruct lim; simpl; auto. assert (lim <= up) by intuition. destruct (IHup _ H0) as [_ ?].
-        specialize (H1 (remove_dup veq_dec (filter not_null_bool (map (dst G) (edge_func G root)))) 0 nil). assert (0 = 2 * sum_of_leaves nil) by intuition. specialize (H1 H2).
-        remember (to_tree_list lim (remove_dup veq_dec (filter not_null_bool (map (dst G) (edge_func G root)))) (0, nil)). destruct p as [total sub_trees]. simpl.
+        specialize (H1 (nodup veq_dec (filter not_null_bool (map (dst G) (edge_func G root)))) 0 nil). assert (0 = 2 * sum_of_leaves nil) by intuition. specialize (H1 H2).
+        remember (to_tree_list lim (nodup veq_dec (filter not_null_bool (map (dst G) (edge_func G root)))) (0, nil)). destruct p as [total sub_trees]. simpl.
         unfold sum_of_leaves in H1. intuition.
       + destruct lim; simpl; auto. destruct l; simpl; auto. assert (lim <= up) by intuition. destruct (IHup _ H1) as [? _]. specialize (H2 v).
         remember (graph_to_tree lim v). destruct p as [current tr]. destruct (eq_nat_dec current 0). 1: intuition. assert (lim - current <= up) by intuition.
@@ -181,13 +181,13 @@ Section TREE_DEF.
       + assert (lim = 0) by intuition; subst; simpl in H1; exfalso; auto.
       + assert (lim = 0) by intuition; subst; simpl in H2; apply H1; auto.
       + destruct lim. 1: simpl in H1; exfalso; auto. simpl in H1. destruct lim; simpl in H1. 1: destruct H1; [subst | exfalso; auto]; apply reachable_refl; auto.
-        remember (remove_dup veq_dec (filter not_null_bool (map (dst G) (edge_func G root)))). destruct l.
+        remember (nodup veq_dec (filter not_null_bool (map (dst G) (edge_func G root)))). destruct l.
         1: simpl in H1; destruct H1; [subst | exfalso; auto]; apply reachable_refl; auto.
         remember (graph_to_tree lim v). destruct p as [current tr]. destruct (eq_nat_dec current 0). 1: simpl in H1; destruct H1; [subst; apply reachable_refl | exfalso]; auto.
         remember (to_tree_list (lim - current) l (current + 1, tr :: nil)). destruct p as [total sub_trees].
         simpl in H1. destruct H1. 1: subst; apply reachable_refl; auto.
         assert (Forall (reachable G root) (v :: l)). {
-          rewrite Forall_forall. intro y; intros. rewrite Heql in H2. rewrite <- remove_dup_in_inv in H2. apply in_edge_func_edge in H2.
+          rewrite Forall_forall. intro y; intros. rewrite Heql in H2. rewrite nodup_In in H2. apply in_edge_func_edge in H2.
           apply reachable_edge with root; auto. apply reachable_refl; auto.
         } assert (lim - current <= up) by intuition. destruct (IHup _ H3) as [_ ?]. apply (H4 root l (current + 1) (tr :: nil)); clear H4.
         - apply Forall_tl in H2; auto.
@@ -226,7 +226,7 @@ Section TREE_DEF.
           + destruct tr. 1: simpl in H3; exfalso; auto.
             assert (v0 = v). {
               clear -Heqp. destruct lim; simpl in Heqp. 1: inversion Heqp.
-              remember (to_tree_list lim (remove_dup veq_dec (filter not_null_bool (map (dst G) (edge_func G v)))) (0, nil)).
+              remember (to_tree_list lim (nodup veq_dec (filter not_null_bool (map (dst G) (edge_func G v)))) (0, nil)).
               destruct p as [total sub_trees]. inversion Heqp. auto.
             } subst. exists v. simpl. split. 1: left; auto. pose proof (graph_to_tree_is_reachable lim v y). apply H4.
             - apply Forall_inv in H0; auto.
@@ -236,7 +236,7 @@ Section TREE_DEF.
         - left. simpl. right. auto.
         - simpl in H2. destruct tr. 1: right; auto. simpl in H2. destruct H2. 2: right; auto. subst.
           assert (v' = v). {
-            destruct lim; simpl in Heqp. 1: inversion Heqp. remember (to_tree_list lim (remove_dup veq_dec (filter not_null_bool (map (dst G) (edge_func G v)))) (0, nil)).
+            destruct lim; simpl in Heqp. 1: inversion Heqp. remember (to_tree_list lim (nodup veq_dec (filter not_null_bool (map (dst G) (edge_func G v)))) (0, nil)).
             destruct p as [p1 p2]. inversion Heqp. auto.
           } subst. left. simpl. left; auto.
     Qed.
@@ -250,12 +250,12 @@ Section TREE_DEF.
       + assert (lim = 0) by intuition; subst; simpl in H1; exfalso; auto.
       + assert (lim = 0) by intuition; subst; simpl in H2; apply H1; auto.
       + destruct lim. 1: simpl in H1; exfalso; auto. simpl in H1. destruct lim. 1: simpl in H1; destruct H1; [subst | exfalso]; auto. simpl in H1.
-        remember (remove_dup veq_dec (filter not_null_bool (map (dst G) (edge_func G root)))). destruct l. 1: simpl in H1; destruct H1; [subst | exfalso]; auto.
+        remember (nodup veq_dec (filter not_null_bool (map (dst G) (edge_func G root)))). destruct l. 1: simpl in H1; destruct H1; [subst | exfalso]; auto.
         remember (graph_to_tree lim v). destruct p as [current tr]. destruct (eq_nat_dec current 0). 1: simpl in H1; destruct H1; [subst | exfalso]; auto.
         remember (to_tree_list (lim - current) l (current + 1, tr :: nil)). destruct p as [total sub_trees].
         simpl in H1. destruct H1. 1: subst; auto.
         assert (Forall (vvalid G) (v :: l)). {
-          rewrite Forall_forall. intro y; intros. rewrite Heql in H2. rewrite <- remove_dup_in_inv in H2. apply in_edge_func_edge in H2. destruct H2 as [? [? ?]]; auto.
+          rewrite Forall_forall. intro y; intros. rewrite Heql in H2. rewrite nodup_In in H2. apply in_edge_func_edge in H2. destruct H2 as [? [? ?]]; auto.
         } assert (lim - current <= up) by intuition. destruct (IHup _ H3) as [_ ?]. apply (H4 l (current + 1) (tr :: nil)); clear H4.
         - apply Forall_tl in H2; auto.
         - simpl. intro y; intros. rewrite app_nil_r in H4. assert (lim <= up) by intuition. destruct (IHup _ H5) as [? _]. apply (H6 v); auto.
@@ -289,16 +289,16 @@ Section TREE_DEF.
       + assert (lim = 0) by intuition; subst. simpl in H3. apply H2; auto.
       + destruct lim; simpl in H0. 1: inversion H0. destruct lim; simpl in H0.
         1: inversion H0; [| inversion H5]; clear v t0 H2 H5; subst s; subst t; simpl in H1; exfalso; auto.
-        remember (remove_dup veq_dec (filter not_null_bool (map (dst G) (edge_func G root)))). destruct l; simpl in H0.
+        remember (nodup veq_dec (filter not_null_bool (map (dst G) (edge_func G root)))). destruct l; simpl in H0.
         1: inversion H0; [| inversion H5]; clear v t0 H2 H5; subst s; subst t; simpl in H1; exfalso; auto.
         remember (graph_to_tree lim v). destruct p as [current tr]. destruct (eq_nat_dec current 0). 1: inversion H0; subst; [simpl in H1 | simpl in H5]; exfalso; auto.
         remember (to_tree_list (lim - current) l (current + 1, tr :: nil)). destruct p as [total sub_trees].
         simpl in H0. assert (lim - current <= up) by intuition. destruct (IHup _ H2) as [_ ?].
         specialize (H3 s d t root l (current + 1) (tr :: nil)).
-        assert (forall m : Vertex, In m (v :: l) -> G |= root ~> m). { intros. rewrite Heql in H4. rewrite <- remove_dup_in_inv in H4; apply in_edge_func_edge; auto. }
+        assert (forall m : Vertex, In m (v :: l) -> G |= root ~> m). { intros. rewrite Heql in H4. rewrite nodup_In in H4; apply in_edge_func_edge; auto. }
         assert (forall m : Vertex, In m (forest_head (tr :: nil)) -> G |= root ~> m). {
           intros. clear H1 H2 H3. destruct lim; simpl in Heqp. 1: inversion Heqp; subst; simpl in H5; exfalso; auto.
-          remember (to_tree_list lim (remove_dup veq_dec (filter not_null_bool (map (dst G) (edge_func G v)))) (0, nil)). destruct p as [total1 sub_trees1].
+          remember (to_tree_list lim (nodup veq_dec (filter not_null_bool (map (dst G) (edge_func G v)))) (0, nil)). destruct p as [total1 sub_trees1].
           inversion Heqp. subst. simpl in H5. destruct H5. 2: exfalso; auto. subst. apply H4. simpl; left; auto.
         } apply H3; auto.
         - intros. apply H4. apply in_cons; auto.
@@ -311,7 +311,7 @@ Section TREE_DEF.
         assert (lim - current <= up) by intuition. destruct (IHup _ H5) as [_ ?].
         assert (forall m : Vertex, In m (forest_head (tr :: trL)) -> G |= root ~> m). {
           intros. destruct lim; simpl in Heqp; inversion Heqp; subst. 1: simpl in H7; apply H1; auto.
-          remember (to_tree_list lim (remove_dup veq_dec (filter not_null_bool (map (dst G) (edge_func G v)))) (0, nil)). destruct p as [total1 sub_trees1].
+          remember (to_tree_list lim (nodup veq_dec (filter not_null_bool (map (dst G) (edge_func G v)))) (0, nil)). destruct p as [total1 sub_trees1].
           inversion H9. subst. simpl in H7. destruct H7. 2: apply H1; auto. subst v. apply H0. simpl; left; auto.
         } specialize (H6 s d t root l (n + current + 1) (tr :: trL)). apply H6; auto. 1: intros; apply H0; simpl; right; auto.
         repeat intro. clear H3 H4 H5 H6. inversion H8.
@@ -369,22 +369,22 @@ Section TREE_DEF.
       intro lim. remember lim as up.  rewrite Hequp. assert (lim <= up) by intuition. clear Hequp. revert lim H. induction up; intros; simpl; split; intros.
       + assert (lim = 0) by intuition. subst. simpl. apply NoDup_nil.
       + assert (lim = 0) by intuition. subst. simpl. auto.
-      + destruct lim; simpl. 1: apply NoDup_nil. pose proof (to_tree_list_is_reachable lim (remove_dup veq_dec (filter not_null_bool (map (dst G) (edge_func G root)))) 0 nil).
-        remember (remove_dup veq_dec (filter not_null_bool (map (dst G) (edge_func G root)))). simpl in H2. rewrite app_nil_r in H2.
+      + destruct lim; simpl. 1: apply NoDup_nil. pose proof (to_tree_list_is_reachable lim (nodup veq_dec (filter not_null_bool (map (dst G) (edge_func G root)))) 0 nil).
+        remember (nodup veq_dec (filter not_null_bool (map (dst G) (edge_func G root)))). simpl in H2. rewrite app_nil_r in H2.
         assert (Forall (vvalid G) l). {
-          clear H2; rewrite Forall_forall. intros. subst. rewrite <- remove_dup_in_inv in H2.
+          clear H2; rewrite Forall_forall. intros. subst. rewrite nodup_In in H2.
           apply in_edge_func_edge in H2. destruct H2 as [? [? ?]]. apply H3.
         }
         assert (forall x : Vertex, False -> exists v : Vertex, False /\ reachable G v x) by (intros; exfalso; auto). specialize (H2 H3 H4). clear H4.
         remember (to_tree_list lim l (0, nil)). destruct p as [total sub_trees]. simpl in *. constructor.
-        - intro. specialize (H2 _ H4). destruct H2 as [v [? ?]]. rewrite Heql in H2. rewrite <- remove_dup_in_inv in H2. apply in_edge_func_edge in H2.
+        - intro. specialize (H2 _ H4). destruct H2 as [v [? ?]]. rewrite Heql in H2. rewrite nodup_In in H2. apply in_edge_func_edge in H2.
           apply (is_tree_not_to_root _ _ _ H1 H2 H5); auto.
         - assert (lim <= up) by intuition. destruct (IHup _ H4 _ H0 H1) as [_ ?]. clear IHup. specialize (H5 l 0 nil). rewrite <- Heqp in H5.
           simpl in H5. apply H5.
-          * intros. subst l. rewrite <- remove_dup_in_inv in H6. apply in_edge_func_edge in H6. destruct H6 as [? [? ?]]. split; auto.
+          * intros. subst l. rewrite nodup_In in H6. apply in_edge_func_edge in H6. destruct H6 as [? [? ?]]. split; auto.
           * apply NoDup_nil.
           * intros. intro; auto.
-          * rewrite Heql. apply remove_dup_nodup.
+          * rewrite Heql. apply NoDup_nodup.
       + destruct lim; simpl; auto. destruct l; simpl; auto. remember (graph_to_tree lim v). destruct p as [current tr]. destruct (eq_nat_dec current 0).
         1: simpl; auto. assert (lim  <= up) by intuition. assert (In v (v :: l)) by (simpl; left; auto). destruct (H2 _ H7).
         assert (is_tree G v) by (apply is_tree_sub_is_tree with root; auto). destruct (IHup _ H6 _ H9 H10) as [? _]. rewrite <- Heqp in H11. simpl in H11.
@@ -405,33 +405,33 @@ Section TREE_DEF.
 
     Lemma graph_to_tree_zero: forall lim root, fst (graph_to_tree lim root) = 0 -> lim = 0.
     Proof.
-      intros. destruct lim. auto. simpl in H. remember (remove_dup veq_dec (filter not_null_bool (map (dst G) (edge_func G root)))).
+      intros. destruct lim. auto. simpl in H. remember (nodup veq_dec (filter not_null_bool (map (dst G) (edge_func G root)))).
       remember (to_tree_list lim l (0, nil)). destruct p. simpl in H. exfalso; intuition.
     Qed.
 
-    Lemma reachable_through_set_nonull_nodup: forall S x, reachable_through_set G S x <-> reachable_through_set G (remove_dup veq_dec (filter not_null_bool S)) x.
+    Lemma reachable_through_set_nonull_nodup: forall S x, reachable_through_set G S x <-> reachable_through_set G (nodup veq_dec (filter not_null_bool S)) x.
     Proof.
       intros. split; repeat intro; destruct H as [y [? ?]].
-      + exists y. rewrite <- remove_dup_in_inv. rewrite filter_In. do 2 (split; auto). unfold not_null_bool.
+      + exists y. rewrite nodup_In. rewrite filter_In. do 2 (split; auto). unfold not_null_bool.
         destruct (is_null_dec y); auto. apply reachable_head_valid in H0. exfalso; apply (valid_not_null _ y); auto.
-      + rewrite <- remove_dup_in_inv in H. rewrite filter_In in H. destruct H. exists y. split; auto.
+      + rewrite nodup_In in H. rewrite filter_In in H. destruct H. exists y. split; auto.
     Qed.
 
     Lemma Enumerable_step_list_enum: forall root l, vvalid G root -> is_tree G root -> Enumerable Vertex (reachable G root) -> step_list G root l ->
-                                                    Enumerable Vertex (reachable_through_set G (remove_dup veq_dec (filter not_null_bool l))).
+                                                    Enumerable Vertex (reachable_through_set G (nodup veq_dec (filter not_null_bool l))).
     Proof.
       intros. destruct X as [l' [? ?]]. exists (remove EV root l'). split. 1: apply nodup_remove_nodup; auto. unfold Ensembles.In in *. intros.
-      pose proof (reachable_ind.reachable_ind' _ _ _ x H H1). rewrite remove_in_3. rewrite H3, H4, reachable_through_set_nonull_nodup. clear -H0 H1.
-      intuition. destruct H as [v [? ?]]. rewrite <- remove_dup_in_inv in H. rewrite (in_step_list_edge _ _ _ H1) in H. subst. eapply is_tree_not_to_root; eauto.
+      pose proof (reachable_ind.reachable_ind' _ _ _ x H H1). rewrite remove_In_iff. rewrite H3, H4, reachable_through_set_nonull_nodup. clear -MA H0 H1.
+      intuition. destruct H as [v [? ?]]. rewrite nodup_In in H. rewrite (in_step_list_edge _ _ _ H1) in H. subst. eapply is_tree_not_to_root; eauto.
     Qed.
 
-    Lemma sizeOfEnum_step_list: forall root l (X: Enumerable Vertex (reachable_through_set G (remove_dup veq_dec (filter not_null_bool l)))) s lim,
+    Lemma sizeOfEnum_step_list: forall root l (X: Enumerable Vertex (reachable_through_set G (nodup veq_dec (filter not_null_bool l)))) s lim,
         vvalid G root -> is_tree G root -> step_list G root l -> NoDup s -> (forall x, In x s <-> reachable G root x) -> 2 * (length s) - 1 <= S lim -> 2 * sizeOfEnum X <= lim.
     Proof.
       intros. destruct X as [l' [? ?]]. unfold sizeOfEnum. simpl in *. unfold Ensembles.In in i.
       assert (Permutation (root :: l') s). {
         apply NoDup_Permutation; auto.
-        + constructor; auto. intro. rewrite i in H5. destruct H5 as [v [? ?]]. rewrite <- remove_dup_in_inv in H5.
+        + constructor; auto. intro. rewrite i in H5. destruct H5 as [v [? ?]]. rewrite nodup_In in H5.
           apply (in_step_list_edge root) in H5; auto. eapply is_tree_not_to_root; eauto.
         + intros. simpl. rewrite i. rewrite H3. rewrite <- reachable_through_set_nonull_nodup. symmetry. apply reachable_ind.reachable_ind'; auto.
       } apply Permutation_length in H5. simpl in H5. clear -H5 H4. intuition.
@@ -471,16 +471,16 @@ Section TREE_DEF.
       + assert (lim = 0) by intuition. subst. simpl. destruct H8; auto. assert (reachable_through_set G l x) by (apply H3).
         rewrite <- i in H8. destruct x0. inversion H8. simpl in H4. exfalso; intuition.
       + remember (graph_to_tree lim root). destruct p as [num t]. simpl. destruct lim. 1: rewrite <- i in H2; destruct x0; [inversion H2 | simpl in H4; exfalso; intuition].
-        simpl in Heqp. remember (remove_dup veq_dec (filter not_null_bool (map (dst G) (edge_func G root)))). assert (lim <= up) by intuition. clear H.
+        simpl in Heqp. remember (nodup veq_dec (filter not_null_bool (map (dst G) (edge_func G root)))). assert (lim <= up) by intuition. clear H.
         assert (step_list G root (map (dst G) (edge_func G root))) by (subst l; clear; intro y; rewrite edge_func_step; intuition).
         assert (Enumerable Vertex (reachable_through_set G l)) by (subst l; apply (Enumerable_step_list_enum root); auto).
         rewrite Heql in X. assert (2 * sizeOfEnum X <= lim) by (apply (sizeOfEnum_step_list root _ _ x0); auto). destruct (IHup _ H3 _ H0 H1 _ H2) as [_ ?].
         specialize (H6 0 _ nil X H5). rewrite <- Heql in H6. remember (to_tree_list lim l (0, nil)). destruct p as [total sub_trees].
         inversion Heqp. subst num t. clear Heqp. clear IHup. simpl in *. destruct_eq_dec x root; [left | right]; auto. apply H6; auto.
-        - rewrite Heql. apply remove_dup_nodup.
-        - intros. rewrite Heql in H8. rewrite <- remove_dup_in_inv in H8. apply in_edge_func_edge in H8. destruct H8 as [? [? ?]]. split; auto.
-        - left; clear -H2 Heql H7. apply reachable_by_ind in H2. destruct H2. 1: exfalso; auto. destruct H as [z [? ?]]. exists z. apply reachable_by_is_reachable in H0.
-          split; auto. rewrite Heql. rewrite <- remove_dup_in_inv, in_edge_func_edge; auto.
+        - rewrite Heql. apply NoDup_nodup.
+        - intros. rewrite Heql in H8. rewrite nodup_In in H8. apply in_edge_func_edge in H8. destruct H8 as [? [? ?]]. split; auto.
+        - left; clear -MA H2 Heql H7. apply reachable_by_ind in H2. destruct H2. 1: exfalso; auto. destruct H as [z [? ?]]. exists z. apply reachable_by_is_reachable in H0.
+          split; auto. rewrite Heql. rewrite nodup_In, in_edge_func_edge; auto.
       + destruct lim.
         1: simpl; destruct H8; auto; unfold reachable_through_set in i; rewrite <- i in H3; assert (length x0 = 0) by intuition; destruct x0; [inversion H3 | inversion H8].
         destruct l. 1: simpl; destruct H8; auto; destruct H3 as [i' [? _]]; inversion H3.
@@ -494,8 +494,8 @@ Section TREE_DEF.
               (apply (@finite_reachable_enumcovered_enumerable _ _ _ _ _ is_null); auto; exists x0; split; auto; unfold Ensembles.In; intros; rewrite i; exists v; split; auto).
           assert (2 * sizeOfEnum X - 1 <= lim). {
             clear -n0 i H4 X H3. destruct X as [l' [? ?]]. unfold sizeOfEnum. simpl. unfold Ensembles.In in i0.
-            assert (Sublist l' x0) by (intro; rewrite i, i0; intros; exists v; split; auto).
-            assert (length l' <= length x0) by (apply NoDup_Sublist_length; auto). intuition.
+            assert (incl l' x0) by (intro; rewrite i, i0; intros; exists v; split; auto).
+            assert (length l' <= length x0) by (apply NoDup_incl_length; auto). intuition.
           }
           assert (forall y, reachable G v y -> In y (leaves tr)). {
             intros. assert (lim <= up) by intuition. destruct (IHup _ H14 _ H10 H11 _ H13) as [? _]. specialize (H15 X H12).
@@ -503,7 +503,7 @@ Section TREE_DEF.
           } clear X H12.
           assert (lim - current <= up) by intuition. destruct (IHup _ H12 _ H0 H1 _ H2) as [_ ?]. specialize (H14 (n + current + 1) l (tr :: trL)). clear H12 IHup.
           assert (Enumerable Vertex (reachable_through_set G l)). {
-            apply (reachable_through_set_enum _ (v :: l)); [apply Enumerable_is_EnumCovered; exists x0; split; auto | apply Sublist_cons |].
+            apply (reachable_through_set_enum _ (v :: l)); [apply Enumerable_is_EnumCovered; exists x0; split; auto | apply incl_tl, incl_refl |].
             hnf. intros. assert (In x1 (v :: l)) by (right; auto). apply H7 in H15. destruct H15. hnf. right; auto.
           }
           assert (2 * sizeOfEnum X <= lim - current) by
@@ -553,15 +553,15 @@ Section TREE_DEF.
       + assert (lim = 0) by intuition. subst. rewrite <- i in H2. destruct x. inversion H2. simpl in H6; exfalso; intuition.
       + assert (lim = 0) by intuition. subst. simpl. destruct H8; auto. rewrite <- i in H5. destruct x. inversion H5. simpl in H6. exfalso; intuition.
       + remember (graph_to_tree lim root). destruct p as [num t]. simpl. destruct lim. 1: rewrite <- i in H2; destruct x; [inversion H2 | simpl in H6; exfalso; intuition].
-        simpl in Heqp. remember (remove_dup veq_dec (filter not_null_bool (map (dst G) (edge_func G root)))). assert (lim <= up) by intuition. clear H.
+        simpl in Heqp. remember (nodup veq_dec (filter not_null_bool (map (dst G) (edge_func G root)))). assert (lim <= up) by intuition. clear H.
         assert (step_list G root (map (dst G) (edge_func G root))) by (subst l; clear; intro y; rewrite edge_func_step; intuition).
         assert (Enumerable Vertex (reachable_through_set G l)) by (subst l; apply (Enumerable_step_list_enum root); auto).
         rewrite Heql in X. assert (2 * sizeOfEnum X <= lim) by (apply (sizeOfEnum_step_list root _ _ x); auto).
         destruct (IHup _ H5 _ _ _ H0 H1 H2 H3 H4) as [_ ?]. specialize (H8 0 _ nil X H7). rewrite <- Heql in H8. remember (to_tree_list lim l (0, nil)).
         destruct p as [total sub_trees]. inversion Heqp. subst num t. clear Heqp. clear IHup. simpl in *. apply H8.
-        - intros. rewrite Heql in H9. rewrite <- remove_dup_in_inv in H9. apply in_edge_func_edge in H9. destruct H9 as [? [? ?]]. split; auto.
+        - intros. rewrite Heql in H9. rewrite nodup_In in H9. apply in_edge_func_edge in H9. destruct H9 as [? [? ?]]. split; auto.
         - left. rewrite Heql. rewrite <- reachable_through_set_nonull_nodup. apply (reachable_ind.step_list_step_reachable _ root s); auto.
-        - rewrite Heql. apply remove_dup_nodup.
+        - rewrite Heql. apply NoDup_nodup.
       + destruct lim. 1: simpl; destruct H8; auto; rewrite <- i in H5; destruct x; [inversion H5 | simpl in H6; exfalso; intuition].
         destruct l. 1: simpl; destruct H8; auto; destruct H5 as [? [? ?]]; inversion H5.
         remember (to_tree_list (S lim) (v :: l) (n, trL)). destruct p as [num t]. simpl in Heqp. remember (graph_to_tree lim v). destruct p as [current tr].
@@ -576,8 +576,8 @@ Section TREE_DEF.
               (apply (@finite_reachable_enumcovered_enumerable _ _ _ _ _ is_null); auto; exists x; split; auto; unfold Ensembles.In; intros; rewrite i; exists v; split; auto).
           assert (2 * sizeOfEnum X - 1 <= lim). {
             clear -n0 i H6 X H5. destruct X as [l' [? ?]]. unfold sizeOfEnum. simpl. unfold Ensembles.In in i0.
-            assert (Sublist l' x) by (intro; rewrite i, i0; intros; exists v; split; auto).
-            assert (length l' <= length x) by (apply NoDup_Sublist_length; auto). intuition.
+            assert (incl l' x) by (intro; rewrite i, i0; intros; exists v; split; auto).
+            assert (length l' <= length x) by (apply NoDup_incl_length; auto). intuition.
           }
           assert (reachable G v d -> graph_match_tree_edges s d (T root ((snd (graph_to_tree lim v)) :: nil))). {
             assert (EnumCovered Vertex (reachable G v)) by (apply Enumerable_is_EnumCovered; auto). intros. destruct (reachable_decidable_prime G v H11 X0 s).
@@ -586,7 +586,7 @@ Section TREE_DEF.
             + clear IHup. apply reachable_ind.reachable_ind in H2. destruct H2.
               - subst s. assert (d = v) by (destruct H4 as [? [? ?]]; apply (is_tree_step_eq root d v d); auto; apply reachable_refl; auto). subst d.
                 exists (T root (snd (graph_to_tree lim v) :: nil)). split. 1: apply FT_base. rewrite <- Heqp0. unfold snd. clear -Heqp0 n1.
-                destruct lim; simpl in Heqp0. inversion Heqp0. 1: exfalso; auto. remember (remove_dup veq_dec (filter not_null_bool (map (dst G) (edge_func G v)))).
+                destruct lim; simpl in Heqp0. inversion Heqp0. 1: exfalso; auto. remember (nodup veq_dec (filter not_null_bool (map (dst G) (edge_func G v)))).
                 destruct (to_tree_list lim l (0, nil)). inversion Heqp0. simpl. left; auto.
               - exfalso. apply n2. destruct H2 as [z [? [? ?]]].
                 assert (z = v) by (apply (is_tree_step_eq root z v d); auto; [destruct H2 as [? [? ?]] | apply reachable_edge with s]; auto). subst z; auto.
@@ -598,7 +598,7 @@ Section TREE_DEF.
           } clear X H13.
           assert (lim - current <= up) by intuition. destruct (IHup _ H13 _ _ _ H0 H1 H2 H3 H4) as [_ ?]. specialize (H15 (n + current + 1) l (tr :: trL)). clear H13 IHup.
           assert (Enumerable Vertex (reachable_through_set G l)). {
-            apply (reachable_through_set_enum _ (v :: l)); [apply Enumerable_is_EnumCovered; exists x; split; auto | apply Sublist_cons |].
+            apply (reachable_through_set_enum _ (v :: l)); [apply Enumerable_is_EnumCovered; exists x; split; auto | apply incl_tl, incl_refl |].
             hnf. intros. assert (In x0 (v :: l)) by (right; auto). apply H7 in H16. destruct H16. hnf. right; auto.
           } assert (2 * sizeOfEnum X <= lim - current) by (apply (sizeOfEnum_cons root l X v x lim current tr); auto).
           specialize (H15 X H13). rewrite Heqp. apply H15; [intros; apply H7; right | | apply NoDup_cons_1 in H9]; auto. clear H15 X H13.
@@ -620,7 +620,7 @@ Section TREE_DEF.
         - pose proof (finite_reachable_enumcovered_enumerable _ _ H XX). destruct H3 as [? [? ?]].
           pose proof (graph_to_tree_contains_all_edges (2 * length ul) _ _ _ X H H0 H3 H4 H5). rewrite <- HeqnT in H6. apply H6. clear H6.
           destruct X as [l [? ?]]. unfold sizeOfEnum. simpl. unfold Ensembles.In in i. cut (length l <= length ul). 1: intuition.
-          apply NoDup_Sublist_length; auto. repeat intro. apply H2. rewrite <- i. auto.
+          apply NoDup_incl_length; auto. repeat intro. apply H2. rewrite <- i. auto.
         - destruct H3 as [t' [? ?]]. assert (G |= s ~> d) by (apply (graph_to_tree_edge (2 * length ul) s d t' root); auto; rewrite <- HeqnT; simpl; auto).
           split; [|split]; auto.
           * apply find_tree_in_leaves in H3. apply (graph_to_tree_is_reachable (2 * length ul) root s); auto. rewrite <- HeqnT; simpl; auto.
@@ -629,7 +629,7 @@ Section TREE_DEF.
       + split; intros.
         - pose proof (finite_reachable_enumcovered_enumerable _ _ H XX). change (leaves tree) with (leaves (snd (n, tree))). rewrite HeqnT.
           apply (graph_to_tree_contains_reachable _ _ X); auto. destruct X as [l [? ?]]. unfold sizeOfEnum. simpl. unfold Ensembles.In in i.
-          cut (length l <= length ul). 1: intuition. apply NoDup_Sublist_length; auto. repeat intro. apply H2. rewrite <- i. auto.
+          cut (length l <= length ul). 1: intuition. apply NoDup_incl_length; auto. repeat intro. apply H2. rewrite <- i. auto.
         - apply (graph_to_tree_is_reachable (2 * length ul)); auto. rewrite <- HeqnT; simpl; auto.
       + pose proof (graph_to_tree_nodup (2 * length ul) root H H0). rewrite <- HeqnT in H3. simpl in H3. auto.
     Qed.

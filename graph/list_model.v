@@ -109,7 +109,7 @@ Section LIST_MODEL.
     apply H1 in H9. clear H1. destruct H9 as [py [[? ?] ?]]. pose proof (H9 _ H8). exists (v, pv). split; split; auto.
     + intros. specialize (H7 _ H12). destruct x' as [x px]. assert (x = v) by (destruct H12 as [[? _] _]; simpl in H12; auto). subst x.
       unfold path_glue, fst, snd in H7. rewrite <- app_comm_cons, app_nil_l in H7. specialize (H9 _ H7). rewrite H9 in H11. inversion H11. auto.
-    + simpl. destruct H10. subst py. simpl in *. clear -H10. unfold Sublist in *. intros. apply H10. right; auto.
+    + simpl. destruct H10. subst py. simpl in *. clear -H10. unfold incl in *. intros. apply H10. right; auto.
     + simpl. destruct H10. subst py. simpl in *. unfold In_path. clear -H6 H10. right. exists e. split; intuition.
   Qed.
 
@@ -228,14 +228,14 @@ Section LIST_MODEL.
             apply in_split in H8. destruct H8 as [l0 [l2 ?]]. subst l1. assert (root :: l0 <> nil) by (intro HS; inversion HS). apply exists_last in H8.
             destruct H8 as [l' [a ?]]. rewrite app_comm_cons, e in H4. rewrite <- app_cons_assoc, <- app_assoc in H4. simpl in H4. specialize (H3 _ _ _ _ H4).
             assert (a = s) by (apply (is_list_edge_src_the_same root _ d); auto; rewrite <- H1, in_rev, H4, in_app_iff; right; apply in_eq). subst a.
-            assert (NoDup (rev l)) by (apply Permutation_NoDup with (l1 := l); auto; apply Permutation_rev). rewrite H4 in H8. apply NoDup_app_r in H8.
+            assert (NoDup (rev l)) by (apply Permutation_NoDup with (l := l); auto; apply Permutation_rev). rewrite H4 in H8. apply NoDup_app_r in H8.
             apply NoDup_cons_2 in H8. apply H8. simpl. right. rewrite in_app_iff. right. apply in_eq.
           } Unfocus.
         * specialize (H3 _ _ _ _ H4). assert (d = v) by (apply (is_list_edge_dst_the_same root s); auto). subst v. exists l2; auto.
       - destruct H4 as [l1 [l2 ?]]. split; [|split]; [apply H1; rewrite in_rev; rewrite H4; rewrite in_app_iff; right ..|]; [apply in_eq | right; apply in_eq |].
         apply (H3 l1 l2); auto.
     + intros; rewrite <- in_rev, H1; tauto.
-    + apply Permutation_NoDup with (l1 := l); auto. apply Permutation_rev.
+    + apply Permutation_NoDup with (l := l); auto. apply Permutation_rev.
   Qed.
 
   (* Print Assumptions is_list_is_list. *)
