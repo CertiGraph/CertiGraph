@@ -1,6 +1,6 @@
 Require Import VST.veric.base.
-Require Import VST.msl.rmaps.
-Require Import VST.msl.rmaps_lemmas.
+Require Import VST.veric.rmaps.
+Require Import VST.veric.rmaps_lemmas.
 Require Import VST.veric.compcert_rmaps.
 Require Import VST.veric.slice.
 Require Import VST.veric.Clight_lemmas.
