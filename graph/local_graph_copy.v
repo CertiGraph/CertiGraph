@@ -237,24 +237,24 @@ Proof.
     unfold Complement, Ensembles.In in H; congruence.
   + split; [| split; [| split]]; simpl.
     - apply Prop_join_Empty.
-    - unfold emap, labeledgraph_egen, update_elabel, add_evalid; simpl.
+    - unfold emap, labeledgraph_egen, update_elabel, addValidFunc; simpl.
       destruct_eq_dec e e; [| congruence].
       apply Prop_join_x1; auto.
-    - unfold emap, labeledgraph_egen, update_src, add_evalid; simpl.
+    - unfold emap, labeledgraph_egen, updateEdgeFunc, addValidFunc; simpl.
       intros.
       destruct_eq_dec (co_edge e') e0; auto.
       subst; exfalso; auto.
-    - unfold emap, labeledgraph_egen, update_dst, add_evalid; simpl.
+    - unfold emap, labeledgraph_egen, updateEdgeFunc, addValidFunc; simpl.
       intros.
       destruct_eq_dec (co_edge e') e0; auto.
       subst; exfalso; auto.
   + simpl.
-    unfold vmap, emap, labeledgraph_egen, update_src, update_elabel; simpl.
+    unfold vmap, emap, labeledgraph_egen, updateEdgeFunc, update_elabel; simpl.
     destruct_eq_dec e e; [| congruence].
     destruct_eq_dec (co_edge e') (co_edge e'); [| congruence].
     auto.
   + simpl.
-    unfold vmap, emap, labeledgraph_egen, update_dst, update_elabel; simpl.
+    unfold vmap, emap, labeledgraph_egen, updateEdgeFunc, update_elabel; simpl.
     destruct_eq_dec e e; [| congruence].
     destruct_eq_dec (co_edge e') (co_edge e'); [| congruence].
     auto.
@@ -278,19 +278,19 @@ Proof.
     unfold Complement, Ensembles.In in H; congruence.
   + split; [| split; [| split]]; simpl.
     - apply Prop_join_Empty.
-    - unfold emap, labeledgraph_egen, update_elabel, add_evalid; simpl.
+    - unfold emap, labeledgraph_egen, update_elabel, addValidFunc; simpl.
       destruct_eq_dec e e; [| congruence].
       apply Prop_join_x1; auto.
-    - unfold emap, labeledgraph_egen, update_src, add_evalid; simpl.
+    - unfold emap, labeledgraph_egen, updateEdgeFunc, addValidFunc; simpl.
       intros.
       destruct_eq_dec (co_edge e') e0; auto.
       subst; exfalso; auto.
-    - unfold emap, labeledgraph_egen, update_dst, add_evalid; simpl.
+    - unfold emap, labeledgraph_egen, updateEdgeFunc, addValidFunc; simpl.
       intros.
       destruct_eq_dec (co_edge e') e0; auto.
       subst; exfalso; auto.
   + simpl.
-    unfold vmap, emap, labeledgraph_egen, update_src, update_elabel; simpl.
+    unfold vmap, emap, labeledgraph_egen, updateEdgeFunc, update_elabel; simpl.
     destruct_eq_dec e e; [| congruence].
     destruct_eq_dec (co_edge e') (co_edge e'); [| congruence].
     auto.

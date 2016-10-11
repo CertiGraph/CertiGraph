@@ -78,7 +78,7 @@ Proof.
   intros. refine (Build_MathGraph (pregraph_gen_dst g e t) is_null _ (valid_not_null g)).
   simpl. intros. apply (valid_graph g) in H0. destruct H0. split.
   + auto.
-  + unfold update_dst.
+  + unfold updateEdgeFunc.
     destruct_eq_dec e e0.
     - apply H.
     - apply H1.
