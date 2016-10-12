@@ -979,17 +979,17 @@ Proof.
   + reflexivity.
   + intros.
     simpl.
-    unfold add_evalid, update_src.
+    unfold addValidFunc, updateEdgeFunc.
     rewrite Intersection_spec in H2.
     destruct H2.
     destruct_eq_dec e e0.
     - subst e0; tauto.
     - assert (e0 <> e) by congruence; tauto.
-  + simpl; unfold add_evalid, update_src, update_dst; intros.
+  + simpl; unfold addValidFunc, updateEdgeFunc; intros.
     destruct_eq_dec e e0.
     - subst e0; exfalso; tauto.
     - reflexivity.
-  + simpl; unfold add_evalid, update_src, update_dst, update_elabel; intros.
+  + simpl; unfold addValidFunc, updateEdgeFunc, update_elabel; intros.
     destruct_eq_dec e e0.
     - subst e0; exfalso; tauto.
     - reflexivity.
@@ -1087,18 +1087,18 @@ Proof.
       rewrite (add_andp _ _ (iter_sepcon_unique_nodup la (sepcon_unique_graph_cell (Graph_SpatialGraph g)))).
       rewrite (add_andp _ _ (iter_sepcon_unique_nodup lS (sepcon_unique_graph_cell (Graph_SpatialGraph g)))).
       normalize_overlap.
-      rewrite (iter_sepcon_ocon equiv_dec); auto. apply (exp_right (remove_dup equiv_dec (la ++ lS))).
+      rewrite (iter_sepcon_ocon equiv_dec); auto. apply (exp_right (nodup equiv_dec (la ++ lS))).
       apply andp_right; [apply andp_right |].
       * apply prop_right.
         unfold reachable_set_list in *.
         unfold reachable_list in *. intros.
-        rewrite <- remove_dup_in_inv.
+        rewrite nodup_In.
         rewrite reachable_through_set_eq.
         specialize (H1 x). specialize (H x).
         split; intro; [apply in_app_or in H3 | apply in_or_app];
         destruct H3; [left | right | left | right]; tauto.
       * apply prop_right.
-        apply remove_dup_nodup.
+        apply NoDup_nodup.
       * auto.
       * apply precise_graph_cell.
       * apply joinable_graph_cell.
@@ -1111,9 +1111,9 @@ Proof.
       normalize. rewrite (iter_sepcon_ocon equiv_dec); auto.
       2: apply precise_graph_cell.
       2: apply joinable_graph_cell.
-      rewrite iter_sepcon_permutation with (l2 := remove_dup equiv_dec (la ++ lS)); auto.
-      apply NoDup_Permutation; auto. apply remove_dup_nodup.
-      intros. rewrite <- remove_dup_in_inv. clear -H H2 H5.
+      rewrite iter_sepcon_permutation with (l2 := nodup equiv_dec (la ++ lS)); auto.
+      apply NoDup_Permutation; auto. apply NoDup_nodup.
+      intros. rewrite nodup_In. clear -H H2 H5.
       specialize (H x). specialize (H2 x). specialize (H5 x). rewrite H.
       rewrite reachable_through_set_eq. rewrite in_app_iff. tauto.
 Qed.
@@ -1146,9 +1146,8 @@ Proof.
   + destruct (construct_reachable_list g x H) as [l [? ?]].
     left; exists l. intuition.
   + apply precise_graph_cell.
-  + intros. apply eq_as_set_permutation; auto. 1: apply SGBA_VE.
-    destruct H0, H1. hnf. unfold Sublist.
-    split; intros; specialize (H0 a); specialize (H1 a); intuition.
+  + intros. apply NoDup_Permutation; auto. 
+    destruct H0, H1. split; intros; specialize (H0 x0); specialize (H1 x0); intuition.
 Qed.
 
 Lemma subgraph_update:

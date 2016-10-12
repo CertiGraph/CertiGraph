@@ -366,7 +366,7 @@ Proof.
   + intros; rewrite <- (app_same_set H9).
     destruct (node_pred_dec (WeakMarkGraph.marked g2) v); auto.
   + rewrite <- H9.
-    destruct H6 as [_ [_ ?]]. exact H6.
+    destruct H6 as [_ [_ ?]]. exact e.
 Qed.
 
 Lemma extended_copy_vmap_root: forall (g1 g2 g1' g2': Graph) x x0,
