@@ -289,7 +289,7 @@ Proof.
   eapply vertices_at_ramif_xQ.
   eexists.
   split; [| split].
-  + destruct H2 as [? _], H3 as [? _]; rewrite <- H3, <- H2, <- H1.
+  + destruct H2 as [? _], H3 as [? _]; rewrite <- s0, <- s, <- H1.
     eapply Prop_join_reachable_right; eauto.
   + intros.
     destruct H6 as [[? [? ?]] _].
@@ -808,7 +808,7 @@ Proof.
       Focus 1. {
         destruct H3 as [_ [? _]].
         rewrite <- (proj2 H3).
-        eapply WeakMarkGraph.mark_marked; [destruct H2 as [_ [? _]]; exact H2 | auto].
+        eapply WeakMarkGraph.mark_marked; [destruct H2 as [_ [H2 _]]; exact H2 | auto].
       } Unfocus.
       rewrite (extended_copy_vmap_root g1 g2 g1' g2' l x) by auto.
       rewrite (ecopy1_vmap_root g2 g3 g2' g3' (x, L) x H3).
