@@ -702,6 +702,8 @@ Definition full_vertices_at (g: Graph): Pred := vertices_at (vvalid g) (Graph_Sp
 
 Definition reachable_vertices_at (x : V) (g: Graph): Pred := vertices_at (reachable g x) (Graph_SpatialGraph g).
 
+Definition reachable_vertices_at' (x : V) (g1 g2: Graph): Pred := vertices_at (reachable g2 x) (Graph_SpatialGraph g1).
+
 Definition reachable_dag_vertices_at (x: V) (g: Graph): Pred := !! localDag g x && vertices_at (reachable g x) (Graph_SpatialGraph g).
 
 Definition reachable_through_vertices_at (S : list V) (g : Graph): Pred := vertices_at (reachable_through_set g S) (Graph_SpatialGraph g).

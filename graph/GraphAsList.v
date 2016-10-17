@@ -10,13 +10,6 @@ Require Import RamifyCoq.graph.path_lemmas.
 Require Import RamifyCoq.graph.graph_gen.
 Require Import RamifyCoq.graph.FiniteGraph.
 
-(* Require Import MathEase.CoqLib. *)
-(* Require Import MathEase.Graph. *)
-(* Require Import MathEase.PathLemmas. *)
-(* Require Import Coq.omega.Omega. *)
-(* Require Import Coq.Logic.FunctionalExtensionality. *)
-(* Require Import Coq.Sorting.Permutation. *)
-
 Section LIST_DEF.
 
   Variable V E: Type.
