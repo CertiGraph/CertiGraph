@@ -51,7 +51,8 @@ Definition predicate_evalid (g: PreGraph V E) (p: V -> Prop): Ensemble E :=
 Definition predicate_weak_evalid (g: PreGraph V E) (p: V -> Prop): Ensemble E :=
   fun e => evalid g e /\ p (src g e).
 
-Definition add_evalid (evalid: E -> Prop) (e0: E): E -> Prop := fun e => evalid e \/ e = e0.
+Definition addValidFunc {T: Type} (v: T) (validFunc: Ensemble T) : Ensemble T :=
+  fun n => validFunc n \/ n = v.
 
 Definition update_vlabel (vlabel: V -> DV) (x: V) (d: DV) :=
   fun v => if equiv_dec x v then d else vlabel v.
@@ -59,11 +60,8 @@ Definition update_vlabel (vlabel: V -> DV) (x: V) (d: DV) :=
 Definition update_elabel (elabel: E -> DE) (e0: E) (d: DE) :=
   fun e => if equiv_dec e0 e then d else elabel e.
 
-Definition update_src (source : E -> V) (e : E) (origin: V) :=
-  fun v => if equiv_dec e v then origin else source v.
-
-Definition update_dst (destination : E -> V) (e : E) (target: V) :=
-  fun v => if equiv_dec e v then target else destination v.
+Definition updateEdgeFunc (edgeFunc: E -> V) (e: E) (v: V) :
+  E -> V := fun n => if equiv_dec e n then v else edgeFunc n.
 
 (******************)
 (* Properties     *)
@@ -145,11 +143,37 @@ Definition empty_pregraph (src0 dst0: E -> V): Graph :=
 Definition single_vertex_pregraph (v0: V): Graph :=
   @Build_PreGraph V E EV EE (eq v0) (fun e => False) (fun e => v0) (fun e => v0).
 
+Definition pregraph_add_vertex (g: Graph) (v: V) : Graph :=
+  @Build_PreGraph V E EV EE (addValidFunc v (vvalid g)) (evalid g) (src g) (dst g).
+
+Lemma addVertex_preserve_vvalid: forall g v v', vvalid g v -> vvalid (pregraph_add_vertex g v') v. Proof. intros; hnf; left; auto. Qed.
+
+Lemma addVertex_add_vvalid: forall g v, vvalid (pregraph_add_vertex g v) v. Proof. intros. hnf. right; auto. Qed.
+
+Lemma addVertex_preserve_evalid: forall g e v, evalid g e -> evalid (pregraph_add_vertex g v) e. Proof. intros; simpl; auto. Qed.
+
 Definition pregraph_add_edge (g : Graph) (e : E) (o t : V) :=
-  @Build_PreGraph V E EV EE (vvalid g) (add_evalid (evalid g) e) (update_src (src g) e o) (update_dst (dst g) e t).
+  @Build_PreGraph V E EV EE (vvalid g) (addValidFunc e (evalid g)) (updateEdgeFunc (src g) e o) (updateEdgeFunc (dst g) e t).
+
+Definition pregraph_add_whole_edge (g: Graph) (e: E) (s t: V) : Graph :=
+  Build_PreGraph _ _ (addValidFunc t (vvalid g)) (addValidFunc e (evalid g)) (updateEdgeFunc (src g) e s) (updateEdgeFunc (dst g) e t).
+
+Lemma addEdge_preserve_vvalid: forall g v e s t, vvalid g v -> vvalid (pregraph_add_whole_edge g e s t) v. Proof. intros. hnf; left; auto. Qed.
+
+Lemma addEdge_preserve_evalid: forall g e e' s t, evalid g e -> evalid (pregraph_add_whole_edge g e' s t) e. Proof. intros. hnf; left; auto. Qed.
+
+Lemma addEdge_add_vvalid: forall g e s t, vvalid (pregraph_add_whole_edge g e s t) t. Proof. intros. hnf. right; auto. Qed.
+
+Lemma addEdge_add_evalid: forall g e s t, evalid (pregraph_add_whole_edge g e s t) e. Proof. intros. hnf. right; auto. Qed.
+
+Lemma addEdge_src_iff: forall g e s t e' x, src (pregraph_add_whole_edge g e s t) e' = x <-> ((e <> e' /\ src g e' = x) \/ (e = e' /\ s = x)).
+Proof. intros. simpl. unfold updateEdgeFunc. destruct (equiv_dec e e'); intuition. Qed.
+
+Lemma addEdge_dst_iff: forall g e s t e' x, dst (pregraph_add_whole_edge g e s t) e' = x <-> ((e <> e' /\ dst g e' = x) \/ (e = e' /\ t = x)).
+Proof. intros. simpl. unfold updateEdgeFunc. destruct (equiv_dec e e'); intuition. Qed.
 
 Definition pregraph_gen_dst (g : Graph) (e : E) (t : V) :=
-  @Build_PreGraph V E EV EE (vvalid g) (evalid g) (src g) (update_dst (dst g) e t).
+  @Build_PreGraph V E EV EE (vvalid g) (evalid g) (src g) (updateEdgeFunc (dst g) e t).
 
 Definition union_pregraph (PV : V -> Prop) (PE: E -> Prop) (PVD: forall v, Decidable (PV v)) (PED: forall e, Decidable (PE e)) (g1 g2: Graph): Graph :=
   @Build_PreGraph V E EV EE

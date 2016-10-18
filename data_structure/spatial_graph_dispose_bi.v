@@ -64,9 +64,9 @@ Section SPATIAL_GRAPH_DISPOSE_BI.
     hnf. change (lg_gg g) with (g: LGraph). destruct (node_pred_dec (marked g) (dst g (x, L))). 2: subst l; exfalso; auto.
     split.
     + hnf. simpl. split; [| split; [|split; [| split]]]; [tauto | tauto | tauto | | ].
-      - intros. unfold graph_gen.update_dst.
+      - intros. unfold updateEdgeFunc.
         destruct (equiv_dec (x, L) e); intuition.
-      - right. unfold graph_gen.update_dst.
+      - right. unfold updateEdgeFunc.
         destruct (equiv_dec (x, L) (x, L)); intuition.
         * apply (valid_not_null g) in H3; auto. reflexivity.
         * apply (@left_valid _ _ _ _ _ _ g (biGraph g)) in H; auto.
@@ -87,7 +87,7 @@ Section SPATIAL_GRAPH_DISPOSE_BI.
     replace (@vertex_at _ _ _ _ _ SGP x (d, null, r)) with (graph_vcell (Graph_gen_left_null g x) x).
     Focus 2. {
       unfold graph_vcell; simpl.
-      unfold graph_gen.update_dst.
+      unfold updateEdgeFunc.
       destruct_eq_dec (x, L) (x, L). 2: exfalso; auto.
       destruct_eq_dec (x, L) (x, R). inversion H2.
       simpl in H0; inversion H0; auto.
@@ -105,7 +105,7 @@ Section SPATIAL_GRAPH_DISPOSE_BI.
       change (lg_gg g) with (g: LGraph).
       rewrite Intersection_spec in H1.
       destruct H1; unfold Complement, Ensembles.In in H2.
-      simpl. unfold graph_gen.update_dst.
+      simpl. unfold updateEdgeFunc.
       destruct_eq_dec (x, L) (x0, L).
       - inversion H3. exfalso; auto.
       - destruct_eq_dec (x, L) (x0, R). inversion H4. auto.
@@ -358,7 +358,7 @@ Section SPATIAL_GRAPH_DISPOSE_BI.
     replace (@vertex_at _ _ _ _ _ SGP x (d, l, null)) with (graph_vcell (Graph_gen_right_null g2 x) x).
     Focus 2. {
       unfold graph_vcell; simpl.
-      unfold graph_gen.update_dst.
+      unfold updateEdgeFunc.
       destruct_eq_dec (x, R) (x, L). inversion H1.
       destruct_eq_dec (x, R) (x, R). 2: exfalso; apply H2; auto.
       simpl in H0; inversion H0; auto.
@@ -376,7 +376,7 @@ Section SPATIAL_GRAPH_DISPOSE_BI.
       change (lg_gg g2) with (g2: LGraph).
       rewrite Intersection_spec in H1.
       destruct H1; unfold Complement, Ensembles.In in H2.
-      simpl. unfold graph_gen.update_dst.
+      simpl. unfold updateEdgeFunc.
       destruct_eq_dec (x, R) (x0, L).
       - inversion H3.
       - destruct_eq_dec (x, R) (x0, R).
@@ -393,9 +393,9 @@ Section SPATIAL_GRAPH_DISPOSE_BI.
     change (lg_gg g) with (g: LGraph). destruct (node_pred_dec (marked g) (dst g (x, R))). 2: subst r; exfalso; auto.
     split.
     + hnf. simpl. split; [| split; [|split; [| split]]]; [tauto | tauto | tauto | | ].
-      - intros. unfold graph_gen.update_dst.
+      - intros. unfold updateEdgeFunc.
         destruct (equiv_dec (x, R) e); intuition.
-      - right. split; auto. unfold graph_gen.update_dst.
+      - right. split; auto. unfold updateEdgeFunc.
         destruct (equiv_dec (x, R) (x, R)); intuition.
         * apply (valid_not_null g) in H3; auto. reflexivity.
         * split; auto. apply (@right_valid _ _ _ _ _ _ g (biGraph g)) in H; auto.

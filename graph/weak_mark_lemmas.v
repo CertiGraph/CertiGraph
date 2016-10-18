@@ -429,7 +429,7 @@ Proof.
     rename g3 into g1, g4 into g5.
     apply compond_relation_spec in H4; destruct H4 as [g2 [? ?]].
     cbv zeta in H2.
-    specialize (H2 g2 (a :: l_later) H3 H4).
+    specialize (H2 g2 (x :: l_later) H3 H4).
     rename H2 into PRE; clear H4.
 
     unfold componded in H5.
@@ -438,7 +438,7 @@ Proof.
     apply compond_relation_spec in H2.
     destruct H2 as [g3 [? ?]].
     apply (triple_nothing _ g2 g3 root _ _ _ H H0 H1 H3) in PRE; [| auto].
-    apply (triple_nothing _ g4 g5 root l (l_done ++ a :: nil) l_later H H0 H1); [rewrite <- app_assoc; exact H3 | | auto].
+    apply (triple_nothing _ g4 g5 root l (l_done ++ x :: nil) l_later H H0 H1); [rewrite <- app_assoc; exact H3 | | auto].
     
     split.
     - eapply triple1_mark; eauto.

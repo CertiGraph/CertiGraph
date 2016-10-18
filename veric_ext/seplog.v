@@ -4,8 +4,8 @@ Require Import RamifyCoq.msl_ext.seplog.
 Require Import RamifyCoq.msl_ext.log_normalize.
 
 Require Export veric.base.
-Require Import msl.rmaps.
-Require Import msl.rmaps_lemmas.
+Require Import veric.rmaps.
+Require Import veric.rmaps_lemmas.
 Require Import veric.compcert_rmaps.
 Require Import veric.slice.
 Require Import veric.res_predicates.

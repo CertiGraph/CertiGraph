@@ -158,19 +158,13 @@ Proof.
     rewrite <- precise_ocon_self by (apply precise_iter_sepcon; auto).
     assert (Permutation l (i1 ++ i2 ++ i3)).
     Focus 1. {
-      apply eq_as_set_permutation; auto.
-      rewrite H.
-      apply eq_as_set_spec; intro x.
-      unfold eq_as_set, Sublist.
+      apply NoDup_Permutation; auto.
+      intros. rewrite JOINABLE. rewrite !in_app_iff.
       pose proof (Permutation_in x H0).
       pose proof (Permutation_in x H1).
       pose proof (Permutation_in x (Permutation_sym H0)).
       pose proof (Permutation_in x (Permutation_sym H1)).
-      pose proof (in_app_iff i1 i2 x).
-      pose proof (in_app_iff i2 i3 x).
-      pose proof (in_app_iff i1 (i2 ++ i3) x).
-      pose proof (in_app_iff l1 l2 x).
-      tauto.
+      rewrite in_app_iff in *. tauto.
     } Unfocus.
     rewrite (iter_sepcon_permutation _ H3).
     rewrite !iter_sepcon_app_sepcon.
@@ -187,13 +181,13 @@ Lemma iter_sepcon_ocon (eq_dec: forall x y : B, {x = y} + {x <> y}):
   forall l1 l2 p,
     NoDup l1 -> NoDup l2 ->
     (forall x, precise (p x)) -> joinable p ->
-    iter_sepcon l1 p ⊗ iter_sepcon l2 p = iter_sepcon (remove_dup eq_dec (l1 ++ l2)) p.
+    iter_sepcon l1 p ⊗ iter_sepcon l2 p = iter_sepcon (nodup eq_dec (l1 ++ l2)) p.
 Proof.
   intros.
   symmetry; apply iter_sepcon_ocon'; auto.
-  + apply remove_dup_nodup; auto.
+  + apply NoDup_nodup; auto.
   + intros.
-    rewrite <- remove_dup_in_inv.
+    rewrite nodup_In.
     rewrite in_app_iff.
     tauto.
 Qed.
@@ -247,7 +241,7 @@ Proof.
   + apply iter_sepcon_permutation. auto.
 Qed.
 
-Lemma iter_sepcon_emp: forall (p : B -> A) (l l' : list B), (forall x, p x |-- emp) -> NoDup l' -> Sublist l' l -> iter_sepcon l p |-- iter_sepcon l' p.
+Lemma iter_sepcon_emp: forall (p : B -> A) (l l' : list B), (forall x, p x |-- emp) -> NoDup l' -> incl l' l -> iter_sepcon l p |-- iter_sepcon l' p.
 Proof.
   intros.
   revert l H1; induction l'; intros.
@@ -574,13 +568,13 @@ Section OconIterSepCon.
     intros. unfold pred_sepcon. apply pred_ext.
     + normalize_overlap; intro lP.
       do 2 normalize_overlap. rename x into lQ.
-      apply (exp_right (remove_dup eq_dec (lP ++ lQ))). 
+      apply (exp_right (nodup eq_dec (lP ++ lQ))). 
       rewrite (iter_sepcon_ocon eq_dec); auto. rewrite <- prop_and.
       apply andp_right; auto. apply prop_right. split; intros.
-      2: apply remove_dup_nodup. split; intros.
-      - rewrite <- remove_dup_in_inv in H6. rewrite <- H.
+      2: apply NoDup_nodup. split; intros.
+      - rewrite nodup_In in H6. rewrite <- H.
         rewrite in_app_iff in H6. rewrite H2 in H6. rewrite H4 in H6. auto.
-      - rewrite <- remove_dup_in_inv. rewrite <- H in H6.
+      - rewrite nodup_In. rewrite <- H in H6.
         rewrite in_app_iff. rewrite H2. rewrite H4. auto.
     + normalize. intro lR; intros. normalize. normalize_overlap.
       assert (forall a, In a lR <-> P a \/ Q a) by (clear -H H2; firstorder).

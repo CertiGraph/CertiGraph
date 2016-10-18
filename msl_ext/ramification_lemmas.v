@@ -8,6 +8,7 @@ Require Import VST.msl.base.
 Require Import VST.msl.simple_CCC.
 Require Import VST.msl.seplog.
 Require Import VST.msl.log_normalize.
+Require Import VST.msl.Coqlib2.
 Require Import VST.msl.ramification_lemmas.
 
 Local Open Scope logic.
@@ -728,7 +729,21 @@ Proof.
   normalize; intros; normalize; rename x0 into g.
   destruct H as [Pf [? [? ?]]].
   destruct (Permutation_spec_Prop_join g P Pf x H (conj H0 H1)) as [f [? [? ?]]].
-  RAMIF_Q'.formalize.
+  evar (pp : T -> A). evar (ll: T -> A). evar (gg: list B -> T -> A).
+  assert ((fun a : T =>
+   !! Pure a -->
+   (p' a (x' a) -*
+    (EX l : list B,
+            !! (forall x0 : B, In x0 l <-> P' a x0) && !! NoDup l && iter_sepcon l (p' a)))) = (pp --> (ll -* exp gg))). {
+    extensionality x0.
+    super_pattern (!! Pure x0) x0. super_pattern (p' x0 (x' x0)) x0.
+    super_pattern (fun l => !! (forall x1 : B, In x1 l <-> P' x0 x1) && !! NoDup l && iter_sepcon l (p' x0)) x0.
+    instantiate (1 := (fun t : T => !! Pure t)) in (Value of pp).
+    instantiate (1 := (fun t : T => p' t (x' t))) in (Value of ll).
+    instantiate (1 := (fun (l : list B) (t : T) => !! (forall x1 : B, In x1 l <-> P' t x1) && !! NoDup l && iter_sepcon l (p' t))) in (Value of gg).
+    subst pp gg ll. reflexivity.
+  }
+  subst pp gg ll. rewrite H7. clear H7.
   apply (RAMIF_Q'.exp_right (fun a => x' a :: f)); [simpl; auto |].
   pose proof iter_sepcon_ramif_1Q Pure p p' g (fun a => x' a :: f) x x'.
   spec H7; [clear H7 |].

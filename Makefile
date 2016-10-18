@@ -4,12 +4,12 @@ CURRENT_DIR = "./"
 -include CONFIGURE
 
 COQC = coqc
-COQDEP=coqdep -slash
+COQDEP=coqdep
 
 DIRS = lib msl_ext msl_application graph heap_model_direct
-INCLUDE_COMPCERT = -R $(COMPCERT_DIR) -as compcert
-INCLUDE_VST = -R $(VST_DIR) -as VST
-INCLUDE_RAMIFYCOQ = $(foreach d, $(DIRS), -R $(d) -as RamifyCoq.$(d)) -R "." -as RamifyCoq
+INCLUDE_COMPCERT = -R $(COMPCERT_DIR) compcert
+INCLUDE_VST = -R $(VST_DIR) VST
+INCLUDE_RAMIFYCOQ = $(foreach d, $(DIRS), -R $(d) RamifyCoq.$(d)) -R "." RamifyCoq
 NORMAL_FLAG = $(INCLUDE_RAMIFYCOQ) $(INCLUDE_VST) $(INCLUDE_COMPCERT)
 CLIGHT_FLAG = $(INCLUDE_COMPCERT) $(INCLUDE_RAMIFYCOQ)
 
@@ -37,7 +37,7 @@ HEAP_MODEL_DIRECT_FILES = \
 GRAPH_FILES = \
   graph_model.v path_lemmas.v graph_gen.v graph_relation.v reachable_computable.v find_not_in.v reachable_ind.v subgraph2.v \
   spanning_tree.v dag.v marked_graph.v weak_mark_lemmas.v dual_graph.v graph_morphism.v \
-  local_graph_copy.v tree_model.v list_model.v BiGraph.v MathGraph.v FiniteGraph.v
+  local_graph_copy.v tree_model.v list_model.v BiGraph.v MathGraph.v FiniteGraph.v GraphAsList.v
 
 DATA_STRUCTURE_FILES = \
   spatial_graph_HMD.v spatial_graph_unaligned_bi_VST.v spatial_graph_dispose_bi.v
@@ -81,7 +81,7 @@ depend:
 	@$(COQDEP) $(CLIGHT_FLAG) $(CLIGHT_FILES) >> .depend
 
 clean:
-	@rm *.vo */*.vo *.glob */*.glob
+	@rm */*.vo */*.glob */.*.aux
 
 .DEFAULT_GOAL := all
 

@@ -774,7 +774,7 @@ Proof.
   + intros [[ | [ | ]] ?].
     - left; auto.
     - right; auto.
-    - inversion H.
+    - intros; inversion H.
 Qed.
 
 Lemma Intersection_is_Complement_Union (classic: forall P: Prop, P \/ ~ P): forall {U: Type} (A B: Ensemble U),

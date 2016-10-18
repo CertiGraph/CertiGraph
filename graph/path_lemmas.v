@@ -1,4 +1,5 @@
 Require Import Coq.Logic.ProofIrrelevance.
+Require Import Coq.omega.Omega.
 Require Import RamifyCoq.lib.Coqlib.
 Require Import RamifyCoq.lib.EnumEnsembles.
 Require Import RamifyCoq.lib.List_ext.
@@ -6,6 +7,7 @@ Require Import RamifyCoq.lib.EquivDec_ext.
 Require Import RamifyCoq.graph.graph_model.
 Require Import RamifyCoq.graph.find_not_in.
 Require Import Coq.Lists.List.
+Require Import Coq.Lists.ListDec.
 
 Section PATH_LEM.
 
@@ -108,7 +110,7 @@ Definition paths_meet (g: Gph) (p1 p2 : path) : Prop := exists n, paths_meet_at 
 
 Definition In_path (g: Gph) (v: V) (p: path): Prop := v = fst p \/ exists e, In e (snd p) /\ (v = src g e \/ v = dst g e).
 
-Definition Subpath (g: Gph) (p1 p2: path): Prop := Sublist (snd p1) (snd p2) /\ In_path g (fst p1) p2.
+Definition Subpath (g: Gph) (p1 p2: path): Prop := incl (snd p1) (snd p2) /\ In_path g (fst p1) p2.
 
 (******************************************
 
@@ -298,14 +300,14 @@ Qed.
 Lemma Subpath_refl: forall g p, Subpath g p p.
 Proof.
   intros. destruct p as [v p]. split.
-  + reflexivity.
+  + apply incl_refl.
   + left; auto.
 Qed.
 
 Lemma Subpath_trans: forall g p1 p2 p3, Subpath g p1 p2 -> Subpath g p2 p3 -> Subpath g p1 p3.
 Proof.
   intros. destruct p1 as [v1 p1]. destruct p2 as [v2 p2]. destruct p3 as [v3 p3].
-  destruct H, H0. split; unfold fst, snd in *. 1: transitivity p2; auto. destruct H1, H2.
+  destruct H, H0. split; unfold fst, snd in *. 1: apply incl_tran with p2; auto. destruct H1, H2.
   + subst v1 v2. left; auto.
   + subst. right; auto.
   + subst. destruct H1 as [e [? ?]]. right. exists e. split; auto.
@@ -324,7 +326,9 @@ Proof.
   [destruct p as [v p]; destruct p1 as [v1 p1]; destruct p2 as [v2 p2]; destruct p3 as [v3 p3]; destruct p4 as [v4 p4]; unfold path_glue, fst, snd in * ..|].
   + clear - H2 H7 H10. inversion H2. subst p. rewrite !app_length. apply Plus.plus_lt_compat_l. inversion H7. rewrite app_length.
     destruct p3. 1: simpl in H10 |-* ; inversion H10; destruct L2; inversion H5. simpl; intuition.
-  + clear - H2 H7. inversion H2. subst p. inversion H7. split. 2: left; simpl; auto. apply Sublist_app. reflexivity. repeat intro. apply in_or_app. right; auto.
+  + clear - H2 H7. inversion H2. subst p. inversion H7. split. 2: left; simpl; auto. simpl. apply incl_app.
+    * apply incl_appl, incl_refl. 
+    * apply incl_appr, incl_appr, incl_refl.
   + inversion H2; subst. clear H2. inversion H7. subst. clear H7. destruct H. split; simpl in H; auto. destruct p4.
     - rewrite app_nil_r in *. apply epath_to_vpath_pfoot in H5. rewrite H5. simpl in H11. inversion H11. subst L3.
       replace (L1 ++ a :: L2 +:: a) with ((L1 ++ a :: L2) +:: a) in H1.
@@ -343,7 +347,7 @@ Proof.
   intros until p. destruct p as [v p]. revert v. remember (length p). assert (length p <= n) by omega. clear Heqn. revert p H. induction n; intros.
   + assert (p = nil) by (destruct p; auto; simpl in H; exfalso; intuition). subst. exists (v, nil). simpl. simpl in H1.
     split. 1: apply Subpath_refl. do 2 (split; auto). constructor. intro; inversion H2. apply NoDup_nil.
-  + destruct (nodup_dec (epath_to_vpath g (v, p))).
+  + destruct (NoDup_dec EV (epath_to_vpath g (v, p))).
     - exists (v, p); split; [apply Subpath_refl | split; auto].
     - destruct (path_acyclic _ _ _ _ H0 H1 n0) as [[v2 p2] [? [? [? ?]]]]. simpl in H2. assert (length p2 <= n) by intuition.
       specialize (IHn p2 H6 _ _ _ H4 H5). simpl in IHn, H3. destruct IHn as [p' [? ?]]. exists p'. split; auto.
@@ -380,10 +384,10 @@ Proof.
   + subst. simpl in *. destruct p1, p2; auto.
     - destruct H0. subst. red in H1. rewrite Forall_forall in H1. assert (In e (e :: p2)) by apply in_eq. specialize (H1 _ H0). intuition.
     - hnf in H. assert (In e (e :: p1)) by apply in_eq. specialize (H _ H2). inversion H.
-    - unfold path_prop' in *. eapply Forall_sublist; eauto.
+    - unfold path_prop' in *. eapply Forall_incl; eauto.
   + destruct H2 as [e [? ?]]. simpl in *. destruct p2. inversion H2. destruct p1.
     - red in H1. rewrite Forall_forall in H1. specialize (H1 _ H2). destruct H1. destruct H3; subst; auto.
-    - unfold path_prop' in *. eapply Forall_sublist; eauto.
+    - unfold path_prop' in *. eapply Forall_incl; eauto.
 Qed.
 
 Lemma path_prop_tail: forall g P p, path_prop g P p -> path_prop g P (ptail g p).
@@ -1035,12 +1039,12 @@ Lemma reachable_list_EnumCovered: forall (g: Gph) x l, reachable_list g x l -> E
 Proof.
   unfold reachable_list, EnumCovered, Ensembles.In.
   intros.
-  exists (remove_dup equiv_dec l).
+  exists (nodup equiv_dec l).
   split.
-  + apply remove_dup_nodup.
+  + apply NoDup_nodup.
   + intros y ?.
     specialize (H y).
-    rewrite <- remove_dup_in_inv.
+    rewrite nodup_In.
     tauto.
 Qed.
 
@@ -1048,12 +1052,12 @@ Lemma reachable_set_list_EnumCovered: forall (g: Gph) S l, reachable_set_list g 
 Proof.
   unfold reachable_set_list, EnumCovered, Ensembles.In.
   intros.
-  exists (remove_dup equiv_dec l).
+  exists (nodup equiv_dec l).
   split.
-  + apply remove_dup_nodup.
+  + apply NoDup_nodup.
   + intros y ?.
     specialize (H y).
-    rewrite <- remove_dup_in_inv.
+    rewrite nodup_In.
     tauto.
 Qed.
 

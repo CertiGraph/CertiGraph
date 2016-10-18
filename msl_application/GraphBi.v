@@ -587,18 +587,18 @@ Proof.
   + intros; simpl.
     specialize (H0 e0).
     rewrite !Intersection_spec in *.
-    unfold add_evalid.
+    unfold addValidFunc.
     rewrite H0.
     destruct_eq_dec e0 e; [subst |]; try tauto.
   + simpl; intros.
-    unfold update_src.
+    unfold updateEdgeFunc.
     destruct_eq_dec e e0; auto; subst.
     specialize (H0 e0).
     rewrite Intersection_spec in *.
     destruct H3.
     tauto.
   + simpl; intros.
-    unfold update_dst.
+    unfold updateEdgeFunc.
     destruct_eq_dec e e0; auto; subst.
     specialize (H0 e0).
     rewrite Intersection_spec in *.
@@ -723,7 +723,7 @@ Proof.
     apply vvalid_vguard in H0.
     simpl in H0 |- *.
     rewrite !Intersection_spec in H0.
-    unfold add_evalid, update_src.
+    unfold addValidFunc, updateEdgeFunc.
     split; [| split]; [tauto | tauto |].
     destruct_eq_dec e (x0, L); subst; [tauto |].
     destruct_eq_dec e (x0, R); subst; [tauto |].
@@ -819,7 +819,7 @@ Proof.
     apply reachable_through_set_foot_valid in H0.
     destruct H0; auto.
   + admit.
-Qed.
+Admitted.
 
   Lemma subgraph_update:
     forall (g g': Graph) (S1 S1' S2: list addr),
