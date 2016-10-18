@@ -702,7 +702,10 @@ Lemma va_labeledgraph_add_edge_eq: forall (g: LGraph) es e s d data,
   ~ evalid g e ->
   is_guarded_BiMaFin (fun x => s <> x) (fun e => ~ In e es) g ->
   let g' := labeledgraph_add_edge g e s d data in
-  vertices_at (Intersection _ (vvalid g) (fun x => s <> x)) (Graph_SpatialGraph g) = vertices_at (Intersection _ (vvalid g') (fun x => s <> x)) (Graph_SpatialGraph g').
+  @vertices_at _ _ _ _ _ _ SGP _
+   (Intersection _ (vvalid g) (fun x => s <> x)) (Graph_SpatialGraph g) =
+  @vertices_at _ _ _ _ _ _ SGP _
+   (Intersection _ (vvalid g') (fun x => s <> x)) (Graph_SpatialGraph g').
 Proof.
   intros.
   apply va_labeledgraph_add_edge_eq; auto.
@@ -731,14 +734,17 @@ Proof.
 Qed.
 
 Lemma va_labeledgraph_egen_eq: forall (g: LGraph) e data P,
-  vertices_at P (Graph_SpatialGraph g) = vertices_at P (Graph_SpatialGraph (labeledgraph_egen g e data)).
+  @vertices_at _ _ _ _ _ _ SGP _
+   P (Graph_SpatialGraph g) =
+  @vertices_at _ _ _ _ _ _ SGP _
+   P (Graph_SpatialGraph (labeledgraph_egen g e data)).
 Proof.
   intros.
   apply vertices_at_vertices_identical.
   rewrite vertices_identical_spec; intros.
   simpl; auto.
 Qed.
-    
+
 (*********************************************************
 
 Spatial Facts (with Strong Assumption) Part

@@ -3,8 +3,8 @@ VST_DIR = "../VST"
 CURRENT_DIR = "./"
 -include CONFIGURE
 
-COQC = coqc
-COQDEP=coqdep
+COQC=$(COQBIN)coqc
+COQDEP=$(COQBIN)coqdep
 
 DIRS = lib msl_ext msl_application graph heap_model_direct
 INCLUDE_COMPCERT = -R $(COMPCERT_DIR) compcert
