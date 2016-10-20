@@ -790,49 +790,76 @@ Spatial Facts (with Strong Assumption) Part
     rewrite H0 in H3. apply H3.
   Qed.
 
-Lemma unreachable_partialgraph_si_vertices_identical: forall (g g': Graph) (S1 S1' S2: list addr),
-  (predicate_partialgraph g (Complement addr (reachable_through_set g S1))) ~=~
-  (predicate_partialgraph g' (Complement addr (reachable_through_set g' S1'))) ->
-  vertices_identical2
-     (reachable_through_set
-        (predicate_partialgraph g
-           (Intersection addr (vvalid g)
-              (Complement addr (reachable_through_set g S1)))) S2)
-     (reachable_through_set
-        (predicate_partialgraph g'
-           (Intersection addr (vvalid g')
-              (Complement addr (reachable_through_set g' S1')))) S2)
-     (Graph_SpatialGraph g) (Graph_SpatialGraph g').
-Proof.
+  Lemma reachable_through_set_unreachable: forall (g: Graph) (S1 S2: list addr) (v: addr),
+      reachable_through_set (predicate_partialgraph g (Intersection addr (vvalid g) (Complement addr (reachable_through_set g S1)))) S2 v ->
+      Complement addr (reachable_through_set g S1) v.
+  Proof.
+    intros. hnf in H. destruct H as [s [? ?]]. unfold Complement. unfold Ensembles.In . rewrite <- reachable_by_eq_partialgraph_reachable in H0.
+    apply reachable_by_foot_prop in H0. rewrite Intersection_spec in H0. destruct H0. unfold Complement, Ensembles.In in H1. auto.
+  Qed.
+
+  Lemma unreachable_partialgraph_si_vertices_identical: forall (g g': Graph) (S1 S1' S2: list addr),
+      (predicate_partial_labeledgraph g (Complement addr (reachable_through_set g S1)))
+        ~=~
+        (predicate_partial_labeledgraph g' (Complement addr (reachable_through_set g' S1')))%LabeledGraph ->
+      vertices_identical2 (reachable_through_set (predicate_partialgraph g (Intersection addr (vvalid g) (Complement addr (reachable_through_set g S1)))) S2)
+                          (reachable_through_set (predicate_partialgraph g' (Intersection addr (vvalid g') (Complement addr (reachable_through_set g' S1')))) S2)
+                          (Graph_SpatialGraph g) (Graph_SpatialGraph g').
+  Proof.
   intros.
   apply GSG_PartialGraphPreserve2.
-  + unfold Included, Ensembles.In.
+  - unfold Included, Ensembles.In.
     intros.
     apply vvalid_vguard.
     apply reachable_through_set_foot_valid in H0.
     destruct H0; auto.
-  + unfold Included, Ensembles.In.
+  - unfold Included, Ensembles.In.
     intros.
     apply vvalid_vguard.
     apply reachable_through_set_foot_valid in H0.
     destruct H0; auto.
-  + unfold Included, Ensembles.In.
+  - unfold Included, Ensembles.In.
     intros.
     apply reachable_through_set_foot_valid in H0.
     destruct H0; auto.
-  + unfold Included, Ensembles.In.
+  - unfold Included, Ensembles.In.
     intros.
     apply reachable_through_set_foot_valid in H0.
     destruct H0; auto.
-  + admit.
-Admitted.
+  - assert ((predicate_partialgraph g (Intersection addr (vvalid g) (Complement addr (reachable_through_set g S1))))
+              ~=~
+              (predicate_partialgraph g' (Intersection addr (vvalid g') (Complement addr (reachable_through_set g' S1'))))). {
+      destruct H as [[? [? [? ?]]] _]. hnf. simpl in *. unfold predicate_vvalid in *. unfold predicate_weak_evalid in *.
+      split; [|split; [|split]]; intros; rewrite !Intersection_spec in *.
+      - clear -H. specialize (H v). intuition.
+      - clear H2. specialize (H0 e). specialize (H1 e). intuition.
+        + rewrite <- H2 in *. specialize (H (src g e)). intuition.
+        + rewrite H2 in *. specialize (H (src g' e)). intuition.
+      - apply H1; intuition.
+      - apply H2; intuition.
+    } rewrite <- H0. destruct H as [[? [? [? ?]]] [? ?]]. hnf. unfold structurally_identical. simpl in *. unfold predicate_vvalid in *. unfold predicate_weak_evalid in *.
+    split; [split; [|split; [|split]] |split]; intros.
+    + clear -H H0. intuition.
+      * apply reachable_through_set_unreachable in H3. specialize (H v). intuition.
+      * rewrite H0 in H3. apply reachable_through_set_unreachable in H3. specialize (H v). intuition.
+    + clear -H1 H2 H0. specialize (H1 e). specialize (H2 e). intuition.
+      * apply reachable_through_set_unreachable in H5. apply H1 in H5. intuition.
+      * pose proof H5. apply reachable_through_set_unreachable in H5. specialize (H3 H5). specialize (H1 H5). specialize (H3 H1). rewrite <- H3. auto.
+      * rewrite H0 in H5. apply reachable_through_set_unreachable in H5. specialize (H3 H5). intuition.
+      * pose proof H5. rewrite H0 in H5. apply reachable_through_set_unreachable in H5. specialize (H3 H5). destruct H3. specialize (H1 H3 H6).
+        assert (src g e = src g' e) by (apply H1; auto). rewrite H7. auto.
+    + destruct H6, H7. rewrite H0 in H9. apply reachable_through_set_unreachable in H8. apply reachable_through_set_unreachable in H9. apply H2; auto.
+    + destruct H6, H7. rewrite H0 in H9. apply reachable_through_set_unreachable in H8. apply reachable_through_set_unreachable in H9. apply H3; auto.
+    + destruct H6, H7. rewrite H0 in H9. apply reachable_through_set_unreachable in H8. apply reachable_through_set_unreachable in H9. apply H4; auto.
+    + destruct H6, H7. rewrite H0 in H9. apply reachable_through_set_unreachable in H8. apply reachable_through_set_unreachable in H9. apply H5; auto.
+  Qed.
 
   Lemma subgraph_update:
     forall (g g': Graph) (S1 S1' S2: list addr),
       (forall x : addr, In x (S1 ++ S2) -> Decidable (vvalid g x)) ->
       (forall x : addr, In x (S1' ++ S2) -> Decidable (vvalid g' x)) ->
-      (predicate_partialgraph g (Complement addr (reachable_through_set g S1))) ~=~
-      (predicate_partialgraph g' (Complement addr (reachable_through_set g' S1'))) ->
+      (predicate_partial_labeledgraph g (Complement addr (reachable_through_set g S1))) ~=~
+      (predicate_partial_labeledgraph g' (Complement addr (reachable_through_set g' S1')))%LabeledGraph ->
       @derives pred _ (graphs S1 g ⊗ graphs S2 g) (graphs S1 g * (graphs S1' g' -* graphs S1' g' ⊗ graphs S2 g')).
   Proof.
     intros.
@@ -850,6 +877,6 @@ Admitted.
         apply reachable_through_set_foot_valid in H0.
         destruct H0; auto.
       - intro v; apply vvalid_vguard.
-Qed.
+  Qed.
 
 End GRAPH_BI.
