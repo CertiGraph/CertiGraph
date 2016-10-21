@@ -171,7 +171,20 @@ Module GraphMark <: Mgraphmark.
     apply andp_right; [|apply andp_right].
     + apply TT_prop_right. destruct H. apply (reachable_ind.si_reachable _ _ x) in H6.
       destruct H6. auto.
-    + apply TT_prop_right. destruct H. admit.
+    + apply TT_prop_right. destruct H.
+      destruct H.
+      split; [| split].
+      - simpl. rewrite H6; reflexivity.
+      - simpl; intros ? [? ?] [? ?].
+        apply vlabel_eq.
+        rewrite H7.
+        assert (~ (pg_lg (Graph_LGraph G)) |= x ~o~> v0
+          satisfying (WeakMarkGraph.unmarked (Graph_LGraph G))); [| tauto].
+        intro.
+        apply reachable_by_is_reachable in H12.
+        apply H9; auto.
+      - simpl; intros ? [? ?] [? ?].
+        match goal with | |- ?A = ?B => destruct A, B; auto end.
       (* rewrite H6; reflexivity. *)
 (*
 SearchAbout predicate_partialgraph (_ ~=~ _).
@@ -232,7 +245,7 @@ Locate si_stronger_partialgraph.
               (apply (@right_valid _ _ _ _ _ _ _ (biGraph G)); auto).
           subst r. symmetry. specialize (H10 (y, R)).
           specialize (H8 (y, R)). intuition.
-  Admitted.
+  Qed.
 
   Lemma axiom_3 : forall l r x G, valid (imp (lookup G x true l r) (mark G x G)).
   Proof.
