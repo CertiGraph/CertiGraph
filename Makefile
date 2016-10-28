@@ -46,7 +46,7 @@ SAMPLE_MARK_FILES = \
   env_mark_bi.v verif_mark_bi.v env_garbage_collector.v env_dispose_bi.v verif_dispose_bi.v verif_mark_bi_dag.v env_copy_bi.v verif_copy_bi.v spatial_graph_bi_mark.v spatial_graph_bi_copy.v 
 
 HIP_FILES = \
-  hip_graphmark.v hip_graphmark_proofs.v
+  hip_graphmark.v hip_graphmark_proofs.v spanningtree.v
 
 CLIGHT_FILES = sample_mark/mark_bi.v sample_mark/garbage_collector.v sample_mark/dispose_bi.v sample_mark/copy_bi.v
 
