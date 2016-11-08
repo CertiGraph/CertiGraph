@@ -247,6 +247,13 @@ Section IS_PARTIAL_GRAPH.
       is_partial_graph g1 g2 -> reachable g1 n n' -> reachable g2 n n'.
   Proof. intros. apply is_partial_graph_reachable_by with g1; auto. Qed.
 
+  Lemma pregraph_gen_dst_is_partial_graph: forall (g: PreGraph V E) e v,
+      ~ vvalid g v -> is_partial_graph (pregraph_gen_dst g e v) g.
+  Proof.
+    intros. hnf. simpl. unfold updateEdgeFunc.
+    split; [|split; [|split]]; intros; auto. destruct_eq_dec e e0; [exfalso|]; auto.
+  Qed.
+
 End IS_PARTIAL_GRAPH.
 
 Section SI_EQUIV.
