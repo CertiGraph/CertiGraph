@@ -111,6 +111,25 @@ Section SPATIAL_GRAPH_DISPOSE_BI.
       - destruct_eq_dec (x, L) (x0, R). inversion H4. auto.
   Qed.
 
+  Lemma graph_gen_left_null_ramify_weak:
+    forall (g: Graph) (x : addr) d (l r : addr),
+      vvalid g x -> vgamma g x = (d, l, r) ->
+      (reachable_vertices_at x g : pred) |-- vertex_at x (d, l, r) * (vertex_at x (d, null, r) -* (reachable_vertices_at x (Graph_gen_left_null g x) * TT)).
+  Proof.
+    intros. pose proof (graph_gen_left_null_ramify g x d l r H H0).
+    apply log_normalize.sepcon_weaken with (vertex_at x (d, null, r) -* vertices_at (reachable g x) (Graph_gen_left_null g x)); auto.
+    apply wand_derives; auto. unfold reachable_vertices_at.
+    cut ((vertices_at (reachable g x) (Graph_gen_left_null g x) : pred)
+                     |-- vertices_at (reachable (Graph_gen_left_null g x) x)
+                     (Graph_gen_left_null g x) * TT). auto. unfold vertices_at.
+    apply iter_sepcon.pred_sepcon_prop_true_weak.
+    - apply Graph_reachable_dec, weak_valid_vvalid_dec. right.
+      unfold Graph_gen_left_null. simpl. apply H.
+    - intro y. unfold Graph_gen_left_null. simpl.
+      apply is_partial_graph_reachable, pregraph_gen_dst_is_partial_graph.
+      apply invalid_null.
+  Qed.
+
   Lemma graph_ramify_aux1_left: forall {RamUnit: Type} (g: Graph) x d l r,
       vvalid g x -> vgamma g x = (d, l, r) ->
       (reachable_vertices_at x g : pred) |-- reachable_vertices_at l g *
