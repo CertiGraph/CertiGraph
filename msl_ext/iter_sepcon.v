@@ -68,6 +68,14 @@ Proof.
   apply sepcon_derives; auto. apply TT_right.
 Qed.
 
+Lemma iter_sepcon_incl_true: forall (p : B -> A) (l s: list B),
+    NoDup s -> incl s l -> iter_sepcon l p |-- iter_sepcon s p * TT.
+Proof.
+  intros. destruct (incl_Permutation l s H H0) as [l' ?].
+  apply (iter_sepcon_permutation p) in H1. rewrite H1, iter_sepcon_app_sepcon.
+  apply sepcon_derives; auto. apply TT_right.
+Qed.
+
 Lemma iter_sepcon_unique_nodup: forall (p : B -> A) (l : list B), sepcon_unique1 p -> iter_sepcon l p |-- !!(NoDup l).
 Proof.
   intros. induction l.
@@ -515,6 +523,24 @@ Proof.
   rename x0 into l.
   rewrite <- H0 in H.
   eapply iter_sepcon_in_true; auto.
+Qed.
+
+Lemma pred_sepcon_prop_true_weak:
+  forall (P Q: B -> Prop) (qdec: forall x, Decidable (Q x)) p,
+    (forall x, Q x -> P x) -> pred_sepcon P p |-- pred_sepcon Q p * TT.
+Proof.
+  intros. unfold pred_sepcon. normalize.
+  apply (exp_right (filter (fun x => if (qdec x) then true else false) l)).
+  rewrite <- prop_and, sepcon_andp_prop'.
+  remember (filter (fun x0 : B => if qdec x0 then true else false) l) as l'.
+  assert (forall x : B, In x l' <-> Q x). {
+    intros. subst l'. rewrite filter_In. destruct (qdec x); split; intros; auto.
+    - split; auto. apply H in H2. rewrite H0. auto.
+    - destruct H2; inversion H3.
+    - exfalso; auto.
+  } assert (NoDup l') by (subst l'; apply NoDup_filter; auto). apply andp_right.
+  - apply prop_right. split; auto.
+  - apply iter_sepcon_incl_true; auto. intro. rewrite H0, H2. apply H.
 Qed.
 
 Lemma pred_sepcon_False: forall p,
