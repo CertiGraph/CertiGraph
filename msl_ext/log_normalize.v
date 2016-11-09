@@ -7,28 +7,6 @@ Require Import VST.msl.log_normalize.
 
 Local Open Scope logic.
 
-Lemma exp_unit: forall {A} `{NatDed A} (P: unit -> A),
-  exp P = P tt.
-Proof.
-  intros.
-  apply pred_ext.
-  + apply exp_left; intro x.
-    destruct x.
-    auto.
-  + apply (exp_right tt); auto.
-Qed.
-
-Lemma allp_unit: forall {A} `{NatDed A} (P: unit -> A),
-  allp P = P tt.
-Proof.
-  intros.
-  apply pred_ext.
-  + apply (allp_left _ tt); auto.
-  + apply allp_right; intro x.
-    destruct x.
-    auto.
-Qed.
-
 Lemma exp_uncurry: forall {A} `{NatDed A} (S T: Type) (P: S -> T -> A),
   exp (fun s => exp (P s)) = exp (fun st => P (fst st) (snd st)).
 Proof.
