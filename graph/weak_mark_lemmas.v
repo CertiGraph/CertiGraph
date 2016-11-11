@@ -68,6 +68,9 @@ Defined.
 
 Definition unmarked (g: Graph) : NodePred V := negateP (marked g).
 
+Definition totally_unmarked (g: Graph) (x: V) :=
+  forall y, reachable g x y -> g |= x ~o~> y satisfying (unmarked g).
+
 Hypothesis R_DEC: forall (g: Graph) x, vvalid g x -> ReachDecidable g x (unmarked g).
 
 Definition nothing (n : V) (g1 : Graph) (g2 : Graph) : Prop :=

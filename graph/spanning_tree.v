@@ -1707,6 +1707,62 @@ Section SPANNING.
       - apply (SIMPLE_SPANNING_TREE.spanning_list_derive (unmarked g1)); auto.
   Qed.
 
+  Lemma spanning_tree_root_reachable: forall (g1 g2: Graph) (root: V),
+      ReachDecidable g1 root (unmarked g1) ->
+      spanning_tree g1 root g2 ->
+      forall x, reachable g2 root x -> reachable g1 root x.
+  Proof.
+    intros. destruct (X x).
+    - apply reachable_by_is_reachable in r. auto.
+    - apply spanning_tree_inj in H. destruct H.
+      apply (SIMPLE_SPANNING_TREE.spanning_tree_not_reachable_derive
+               _ root (unmarked g1) g2); auto.
+  Qed.
+
+  Lemma spanning_tree_totally_unmarked_root_reachable:
+    forall (g1 g2: Graph) (root: V),
+      totally_unmarked g1 root ->
+      (vvalid g1 root -> ReachDecidable g1 root (unmarked g1)) ->
+      spanning_tree g1 root g2 ->
+      forall x, reachable g1 root x <-> reachable g2 root x.
+  Proof.
+    intros. split; intro.
+    - apply H in H1. apply spanning_tree_inj in H0.
+      destruct H0 as [_ [_ [_ [? _]]]]. apply H0; auto.
+    - apply spanning_tree_root_reachable with g2; auto.
+      apply X. rewrite (spanning_tree_vvalid g1 root g2); auto.
+      apply reachable_head_valid in H1; auto.
+  Qed.
+
+  Lemma spanning_tree_totally_unmarked_parent_reachable:
+    forall (g1 g2: Graph) (root: V) (e: E),
+      out_edges g1 root e -> vvalid g1 root -> marked g1 root ->
+      totally_unmarked g1 (dst g1 e) ->
+      (vvalid g1 (dst g1 e) -> ReachDecidable g1 (dst g1 e) (unmarked g1)) ->
+      spanning_tree g1 (dst g1 e) g2 ->
+      forall x, reachable g1 root x <-> reachable g2 root x.
+  Proof.
+    intros. pose proof (spanning_tree_totally_unmarked_root_reachable _ g2 _ H2 X H3). destruct (classic (reachable g1 (dst g1 e) x)).
+    - pose proof H5. rewrite H4 in H6. split; intros; apply edge_reachable with (dst g1 e); auto; destruct H; hnf; rewrite step_spec; split; [|split | |split]; auto.
+      + rewrite <- (spanning_tree_vvalid g1 (dst g1 e)); auto.
+      + apply reachable_head_valid in H6; auto.
+      + exists e. destruct H3 as [_ [[_ [? [? ?]]] _]]. simpl in *. unfold predicate_weak_evalid in *.
+        specialize (H3 e). specialize (H9 e). specialize (H10 e). rewrite H8 in *.
+        assert (evalid g1 e /\ ~ g1 |= dst g1 e ~o~> root satisfying (unmarked g1)) by (split; auto; intro; apply reachable_by_foot_prop in H11; exfalso; auto).
+        pose proof H11. rewrite H3 in H12. split; [|split]; intuition.
+      + apply reachable_head_valid in H5; auto.
+      + exists e. auto.
+    - assert (~ g1 |= (dst g1 e) ~o~> x satisfying (unmarked g1)) by (intro; apply H5; apply reachable_by_is_reachable in H6; auto). split; intros.
+      + assert (~ reachable g1 (dst g1 e) x) by (intro; apply H6; apply H2; auto).
+        assert (g1 |= root ~o~> x satisfying (Complement V (reachable_by g1 (dst g1 e) (unmarked g1)))). {
+          destruct H7 as [p ?]. pose proof H7. destruct H7 as [? [? ?]]. exists p. split; [|split]; auto. rewrite path_prop_equiv; auto.
+          intros. unfold Complement, Ensembles.In . intro. apply (reachable_path_in' g1 _ root x) in H12; auto. apply reachable_by_is_reachable in H13.
+          apply H8. apply reachable_trans with n; auto.
+        } rewrite reachable_by_eq_partialgraph_reachable in H9. destruct H3 as [_ [? _]]. rewrite H3 in H9.
+        rewrite <- reachable_by_eq_partialgraph_reachable in H9. apply reachable_by_is_reachable in H9. auto.
+      + apply spanning_tree_inj in H3. destruct H3. eapply SIMPLE_SPANNING_TREE.spanning_tree_not_reachable_derive; eauto.
+  Qed.
+
   (* Print Assumptions spanning_list_spanning_tree2. *)
 
 End SPANNING.
