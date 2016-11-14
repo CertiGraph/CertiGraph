@@ -148,7 +148,7 @@ Our definition of \p{graph} is flat in the sense that there is no obvious way to
 Now we can state the general fold/unfold as follows:
 \begin{equation}
 \label{eqn:unfold_graph}
-\p{graph}(x,\gamma) ~~ <=> ~~ x |-> \gamma(x) ** \Big(\underset{n \in \p{neighbors}(\gamma,x)}{\raisebox{-0.3ex}{\resizebox{0.75em}{!}{$\scon$}} \hspace{-2.45ex} \bigcup} \p{graph}(\gamma,n) \Big)
+\p{graph}(x,\gamma) ~~ <=> ~~ x |-> \gamma(x) ** \Big(\!\!\!\!\!\!\!\!\!\!\!\!\underset{n \in \p{neighbors}(\gamma,x)}{\raisebox{-0.3ex}{\resizebox{0.75em}{!}{$\scon$}} \hspace{-2.45ex} \bigcup}\!\!\!\!\!\!\!\!\!\!\!\! \p{graph}(\gamma,n) \Big)
 \end{equation}
 In other words, we get a full equivalence between a graph and its ``unfolded'' structure, regardless of how many neighbors $x$ has.
 
