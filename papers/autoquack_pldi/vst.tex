@@ -83,18 +83,6 @@ In the third column, the user has advanced past $c_3$ to reach the local postcon
 
 As indicated in \S\ref{sec:existentials}, this leaves two proof goals.  The first, $P_2 |- ?F * P_3$, is simplified to remove the $\pguards{c_2\li{;} c_3}$ and referred to the user as a new obligation; most often the user solves it using a ramification library~(\S\ref{sec:ramifylib}).  The second, $?F |- P_5' --* P_6'$, is solved automatically by \li{unlocalize}.
 
-\subsection{Additional examples in VST}\label{sec:application}
-\input{spanning.tex}
-
-In Figure~\ref{fig:spanning} we show a simplified proof script for
-the spanning tree algorithm. We have also verified \li{mark} for DAGs and \li{copy} for
-graphs.  For the sake of space, we do not put these decorated program scripts here.
-
-Unlike graph marking, the spanning tree algorithm changes the
-structure of the graph, leading to a more complicated specification,
-in both the pure part and the spatial part. Observe that the $\m{span}$ relation is
-rather long; the $\m{e\_span}$ handles the case of either calling spanning tree or deleting an edge.
-
 %This engineering solution shows the intrinsic correlation between frame rule and ramification-P rule, i.e. the entailment relation that $?F$ should satisfy at the localize operation is exactly the ramification criterion.
 
 %\textbf{Tracking Guarded Criteria.} Notice that not all separation logic assertions can be used to fill the uninstantiated frame, there are two criteria to follow. Using the example in Figure \ref{figure:backend}, the frame should satisfy: (1) $P_1 \vdash ?F * P_2$ (2) $?F$ ignores $\mathrm{ModVar}(\text{c2; c3})$.
