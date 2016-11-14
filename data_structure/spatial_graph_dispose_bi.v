@@ -133,10 +133,7 @@ Section SPATIAL_GRAPH_DISPOSE_BI.
   Lemma graph_ramify_aux1_left: forall {RamUnit: Type} (g: Graph) x d l r,
       vvalid g x -> vgamma g x = (d, l, r) ->
       (reachable_vertices_at x g : pred) |-- reachable_vertices_at l g *
-      (ALL  a : RamUnit * Graph ,
-                !!spanning_tree g l (snd a) -->
-                  (vertices_at (reachable g l) (snd a) -*
-                               vertices_at (reachable g x) (snd a))).
+      (ALL  a : RamUnit * Graph , !!spanning_tree g l (snd a) --> (vertices_at (reachable g l) (snd a) -* vertices_at (reachable g x) (snd a))).
   Proof.
     intros. eapply vertices_at_ramif_xQ; auto.
     eexists; split; [| split].
@@ -177,27 +174,43 @@ Section SPATIAL_GRAPH_DISPOSE_BI.
         } apply H4; intuition.
   Qed.
 
+  Lemma totally_unmarked_root_ST_reachable_eq: forall (g1 g2: Graph) root,
+      totally_unmarked g1 root -> spanning_tree g1 root g2 ->
+      vertices_at (reachable g1 root) g2 = reachable_vertices_at root g2.
+  Proof.
+    intros. apply vertices_at_Same_set. rewrite Same_set_spec. hnf.
+    apply spanning_tree_totally_unmarked_root_reachable; auto. intros.
+    apply Graph_reachable_by_dec, weak_valid_vvalid_dec; right; auto.
+  Qed.
+
+  Lemma totally_unmarked_parent_ST_reachable_eq: forall (g1 g2: Graph) x l r,
+      vvalid g1 x -> vgamma g1 x = (true, l, r) -> totally_unmarked g1 l ->
+      spanning_tree g1 l g2 ->
+      vertices_at (reachable g1 x) g2 = reachable_vertices_at x g2.
+  Proof.
+    intros. apply vertices_at_Same_set. rewrite Same_set_spec. hnf.
+    assert (l = dst (lg_gg g1) (x, L)) by (simpl in H0; inversion H0; auto).
+    apply spanning_tree_totally_unmarked_parent_reachable with (e := (x, L));
+      auto; try rewrite <- H3; auto.
+      - hnf. split.
+        + apply (@left_valid _ _ _ _ _ _ g1 (biGraph g1)); auto.
+        + apply (@left_sound _ _ _ _ _ _ g1 (biGraph g1) x); auto.
+      - apply vgamma_is_true in H0. auto.
+      - intros; apply Graph_reachable_by_dec, weak_valid_vvalid_dec; right; auto.
+  Qed.
+
   Lemma graph_ramify_aux1_left_weak: forall {RamUnit: Type} (g: Graph) x l r,
       vvalid g x -> vgamma g x = (true, l, r) -> totally_unmarked g l ->
       (reachable_vertices_at x g : pred) |-- reachable_vertices_at l g *
       (ALL  a : RamUnit * Graph , !!spanning_tree g l (snd a) --> (reachable_vertices_at l (snd a) -* reachable_vertices_at x (snd a))).
   Proof.
     intros. pose proof (@graph_ramify_aux1_left RamUnit g x true l r H H0).
-    eapply log_normalize.sepcon_weaken. 2: apply H2.
+    eapply log_normalize.sepcon_weaken. 2: apply H2. clear H2.
     apply allp_derives. intros p. destruct p as [? g2]. simpl.
     rewrite <- imp_andp_adjoint. apply derives_extract_prop'. intros.
-    rewrite prop_imp; auto. unfold reachable_vertices_at.
-    cut ((vertices_at (reachable g l) g2 : pred) -* vertices_at (reachable g x) g2 |-- vertices_at (reachable g2 l) g2 -* vertices_at (reachable g2 x) g2); auto.
-    assert (vvalid g l -> ReachDecidable g l (unmarked g)) by (intros; apply Graph_reachable_by_dec, weak_valid_vvalid_dec; right; auto).
-    apply wand_derives; unfold vertices_at.
-    - rewrite (iter_sepcon.pred_sepcon_strong_proper _ (reachable g l) _ (graph_vcell g2)); intros; auto. symmetry. apply spanning_tree_totally_unmarked_root_reachable; auto.
-    - rewrite (iter_sepcon.pred_sepcon_strong_proper _ (reachable g2 x) _ (graph_vcell g2)); intros; auto.
-      assert (l = dst (lg_gg g) (x, L)) by (simpl in H0; inversion H0; auto).
-      apply spanning_tree_totally_unmarked_parent_reachable with (e := (x, L)); auto; try rewrite <- H4; auto.
-      + hnf. split.
-        * apply (@left_valid _ _ _ _ _ _ g (biGraph g)); auto.
-        * apply (@left_sound _ _ _ _ _ _ g (biGraph g) x); auto.
-      + apply vgamma_is_true in H0. auto.
+    rewrite prop_imp; auto. apply wand_derives.
+    - rewrite totally_unmarked_root_ST_reachable_eq; auto.
+    - rewrite (totally_unmarked_parent_ST_reachable_eq _ _ _ l r); auto.
   Qed.
 
   Lemma edge_spanning_tree_left_vvalid: forall (g1 g2: Graph) x n,
@@ -491,16 +504,5 @@ Section SPATIAL_GRAPH_DISPOSE_BI.
       apply spanning_list_cons with g3; auto.
       apply spanning_list_nil. auto.
   Qed.
-
-  Lemma graph_ramify_aux1_right_weak: forall {RamUnit: Type} (g1 g2: Graph) x l r,
-      vvalid g1 x -> vgamma g1 x = (true, l, r) ->
-      edge_spanning_tree g1 (x, L) g2 ->
-      (vertices_at (reachable g1 x) g2: pred) |-- reachable_vertices_at r g2 *
-      (ALL  a : RamUnit * Graph ,
-                !!spanning_tree g2 r (snd a) -->
-                  (vertices_at (reachable g2 r) (snd a) -*
-                               vertices_at (reachable g1 x) (snd a))).
-  Proof.
-  Abort.
 
 End SPATIAL_GRAPH_DISPOSE_BI.
