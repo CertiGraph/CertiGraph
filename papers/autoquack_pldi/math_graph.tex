@@ -103,13 +103,14 @@ framework for such mathematical graphs.
 
 Figure~\ref{fig:graphs} gives the overall architecture of how our graphs are constructed.
 The most basic kind of graph is PreGraph, out of which we build LabeledGraphs, and which in turn are used
-to build GeneralGraphs.  Each kind of graph has some associated lemmas, and each kind inherits the lemmas of the previous kind.  The dashed box represents a ``plugin'' system for attaching arbitrary properties to LabeledGraphs and will be discussed more later. %We will consider each in turn.
+to build GeneralGraphs.  {\color{magenta} Each kind of graph has some associated lemmas, and each kind inherits the lemmas of the previous kind.}  The dashed box represents a ``plugin'' system for attaching arbitrary properties to LabeledGraphs and will be discussed more later. %We will consider each in turn.
 
 \paragraph{Pregraphs.} A PreGraph is a hextuple $(V, E, \phi_V, \phi_E, s, t)$,
 where $V$ and $E$ are the underlying carrier set of vertices and edges.  Not every $v \in V$ or $e \in E$ is actually ``in'' the graph, so we provide the predicates $\phi_V$ and $\phi_E$ to classify vertices and edges as \emph{valid} (in) or not (out).  Finally, $s$ and $e : E -> V$ are functions that map an edges to their source and destination respectively; this model means that PreGraphs are directed rather than undirected.  By design, there are no requirements for \emph{e.g.} how the validities of edges and vertices relate.  As shown in Figure \ref{fig:pregraph}, a PreGraph can contain invalid nodes and edges in an arbitrary configuration.
 
-The advantage of designing a graph type that can reason about missing vertices and edges is because some of our later definitions need such flexibility.  Consider the difference of two graphs, $\gamma_1 - \gamma_2$.  Even if both of these graphs are ``well-formed'' to begin with, in the sense that valid nodes have only valid edges and vice versa, their difference may not since there may be dangling edges pointing to the now-removed vertices of $\gamma_2$.
+The advantage of designing a graph type that can reason about missing vertices and edges is because some of our later definitions need such flexibility. {\color{magenta} Consider the difference of two graphs, $\gamma_1 - \gamma_2$.  Even if both of these graphs are ``well-formed'' to begin with, in the sense that valid nodes have only valid edges and vice versa, their difference may not since there may be dangling edges pointing to the now-removed vertices of $\gamma_2$.}
 
+{\color{magenta}
 Many basic graph concepts such as \emph{path}, \emph{reachability}, and \emph{subgraph} are defined on PreGraphs.
 Informally a path is a list of nodes connected by edges.  Formally it is more convenient to
 define a path as an ordered pair $(n,l)$ where $n$ is a node and $l$ is a list of edges.
@@ -118,6 +119,7 @@ requires $l$ to be ``well chained''.  That is, the destination of one edge in $l
 source of the next edge.  The list $l$ can be null to represent an empty path starting and ending
 at the node $n$.  We prefer this encoding as opposed to some others (\emph{e.g.} a list of edges)
 because the definitions of important concepts like reachability are cleaner.
+}
 
 The most important definition on PreGraph is the concept of reachability.
 We use the notation $\gamma \models L_{n_2}^{n_1}(P)$ to mean that we can reach $n_2$ from $n_1$ via the path $L$ in PreGraph $\gamma$, and moreover that every node in $L$ satisfies predicate $P$.  This notation, along
@@ -202,6 +204,7 @@ We have a number of other properties in our codebase, but these four are the mos
 
 We use Coq's typeclass system to manage our plugins in a smooth manner.  Essentially the typeclass system enables the diagram in Figure~\ref{fig:properties}.  The idea is that if we have two properties, each of which come with some already-proved lemmas, we can combine these plugins to prove the emergent lemmas that result from the combination, and then treat the new combination as a new plugin.  Since the system is compositional, we can easily mix many different properties together.  For example, we compose \p{BiGraph}, \p{MathGraph}, and \p{FiniteGraph} together into a new plugin we call \p{BiMaFin}.  \p{BiMaFin} is the actual soundness condition used to verify the program in Figure~\ref{fig:markgraph}.
 
+{\color{magenta}
 One interesting example of this process is the following lemma:
 \newtheorem{mylem}{Lemma}
 \begin{mylem}[Computable reachability]\label{lem:computereach}
@@ -223,7 +226,8 @@ we reach a node $n$ we must take some care to reconstruct a path from the origin
 to satisfy the reachability property.  The definition is also
 painful because of Coq's insistence that all computations terminate; we 
 utilized the techniques outlined by Chlipala to pacify Coq's termination checker~\cite{chlipala:cpdt}.
- 
+}
+
 \subsection{Reasoning about relations between graphs} %Using our framework to reasonApplication of the framework}
 
 We apply our framework to define other structures and relations
