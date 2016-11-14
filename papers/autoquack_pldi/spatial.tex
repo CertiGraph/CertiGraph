@@ -240,8 +240,8 @@ The middle level contains ramification lemmas about $\bigstar$, such as the foll
 \begin{equation}
 \label{ramify:bigstar}
 \infrule{}
-{A \cap B = \emptyset,  ~~~  A' \cap B = \emptyset}
-{\underset{x\in A\cup B}{\bigstar} P(x) \vdash \underset{x\in A}{\bigstar} P(x) * \Big( \underset{x\in A'}{\bigstar} P(x) \wand \underset{x\in A' \cup B}{\bigstar} P(x)\Big)}{}
+{A \cap B = \emptyset  \qquad  A' \cap B = \emptyset}
+{\underset{x\in A\cup B}{\bigstar} P(x) \vdash \! \underset{x\in A}{\bigstar} \! P(x) * \Big( \underset{x\in A'}{\bigstar} \! P(x) \! \wand \! \! \! \! \underset{x\in A' \cup B}{\bigstar} \! \! P(x)\Big)}{}
 \end{equation}
 
 The top level is focused on graph ramifications, such as the following ``update one node'' lemma:
@@ -250,7 +250,7 @@ The top level is focused on graph ramifications, such as the following ``update 
 %{\gamma(x_0) = \gamma'(x_0) \text{ for any } x_0 \neq x }
 \infrule{}
 {\forall x_0 \neq x.~ \gamma(x_0) = \gamma'(x_0) \\ \p{neighbors}(\gamma,x)=\p{neighbors}(\gamma',x)}
-{\p{graph}(x, \gamma) \vdash x \mapsto \gamma(x) * \big(x \mapsto \gamma'(x) \wand \p{graph}(x, \gamma')\big)}{}
+{\p{graph}(x, \gamma) \! \vdash \! x \! \mapsto \! \gamma(x) \! * \! \big(x \! \mapsto \! \gamma'(x) \! \wand \! \p{graph}(x, \gamma')\big)}{}
 \end{equation}
 This lemma was used on line~\ref{code:markram2} in Figure~\ref{fig:markgraph}.
 
@@ -265,9 +265,9 @@ Also, all of our verifications of different graph algorithms use the proof rules
 \mbox{
 $\begin{array}{@{}l@{}l@{}}
 \p{graph}(x, \gamma) \vdash \\
-~~ \mathtt{graph}(n, \gamma) *
-\big(\forall \gamma'.~ & \m{mark}(\gamma, n, \gamma') /| \p{graph}(n, \gamma') --* \null \\
-& \m{mark}(\gamma, n, \gamma') /| \p{graph}(x, \gamma')\big)
+\p{graph}(n, \gamma) \! * \!
+\big(\forall \gamma'. & \m{mark}(\gamma, n, \gamma') \! /| \! \p{graph}(n, \gamma') \! --* \null \\
+& \m{mark}(\gamma, n, \gamma') \! /| \! \p{graph}(x, \gamma')\big)
 \end{array}$
 }
 }{}
