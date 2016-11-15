@@ -1,12 +1,17 @@
 
 \appendix
 
-\section{More examples}
+\section{Spanning}
+\label{apx:spanning}
 
 \input{spanning.tex}
 
 In Figure~\ref{fig:spanning} we show a simplified proof script for
-the spanning tree algorithm.
+the spanning tree algorithm.  Unlike graph marking, the spanning tree algorithm changes the
+structure of the graph, leading to a more complicated specification,
+in both the pure part and the spatial part. Observe that the $\m{span}$ relation is
+rather long; the $\m{e\_span}$ handles the case of either calling spanning tree or deleting an edge.
+
 
 \section{Proof of \infrulestyle{Ramify-P} and \infrulestyle{Ramify-PQ}}
 \label{apx:ruleproofs}
