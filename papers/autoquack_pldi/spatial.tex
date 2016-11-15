@@ -1,6 +1,6 @@
 To prove the functional correctness of graph-manipulating algorithms implemented in a real language, we need to connect the heap representation of graphs, the memory model of the programming language, and the mathematical properties of graphs from \S\ref{sec:mathgraph}.  The first of these turns out to be surprisingly subtle as we shall see in \S\ref{sec:fixpointfail} and \S\ref{sec:goodgraph}.  The main challenge for the others is to engineer a framework that is generic enough and modular enough to be useful in practice in a variety of settings; we cover it in~\S\ref{sec:ramifylib}.
 
-\subsection{Traditional fixpoints fail to define good \p{graph} predicates}\label{sec:fixpointfail}
+\subsection{Traditional fixpoints fail for \p{graph} predicates}\label{sec:fixpointfail}
 
 \newcommand{\graphkt}{\p{graph}_T}
 \newcommand{\grapham}{\p{graph}_A}
@@ -22,7 +22,7 @@ typically written pseudodefinition (``$\defeq$'').
 %Definition corec {B A: Type}  (F: (B -> pred A) -> (B -> pred A)) : B -> pred A :=
 %fun x w => forall P: B -> pred A, (forall x, F P x |-- P x) -> P x w.
 
-Suppose we define a graph predicate $\graphkt$ this way, \emph{e.g.} along the lines of the fold/unfold definition we used in Figure~\ref{fig:markgraph}, \emph{i.e.}
+Suppose we define a graph predicate $\graphkt$ this way, \emph{e.g.} along the lines of the fold/unfold definition in Figure~\ref{fig:markgraph}: %, \emph{i.e.}
 \begin{align*}
 \graphkt(x, \gamma) ~ & \stackrel{\Delta}{=}\\
 (x = 0 /| \p{emp}) & |/ \exists m,l,r.~ \gamma(x)=(m,l,r) /| \null \\
@@ -31,7 +31,7 @@ x |-> m,l,r & ** \graphkt(l, \gamma) ** \graphkt(r, \gamma)
 
 We have removed the alignment-related portions of equation~\eqref{eqn:bigraphintrofoldunfold} to focus on a more serious issue, even though as we will explain in~\S\ref{sec:goodgraph} alignment concerns are also necessary for the fold/unfold relationship to hold in C-like memory models.  The functional needed to define $\graphkt$ is covariant, so we can apply Knaster-Tarski soundly.  However, the resulting predicate can be hard to use.
 
-Consider the following partial memory $m$ for a toy machine:
+Consider the following memory $m$ for a toy machine:
 
 \begin{minipage}{.24\textwidth}
 \qquad \[
@@ -61,7 +61,7 @@ Consider the following partial memory $m$ for a toy machine:
 \noindent Clearly $m |= 100 |-> 42,100,0$.  But it seems also clear that this memory represents a one-cell cyclic graph as illustrated in the accompanying diagram, \emph{i.e.} we want $m |= \graphkt(100,\hat{\gamma})$, where $\hat{\gamma}(100) = (42,100,0)$.  This is equivalent to wanting to be able to prove $100 |-> 42,100,0 |- \graphkt(100,\hat{\gamma})$.  Unfortunately, as hinted in Appendix~\ref{apx:problemrecgraph}, this seems rather difficult to do so since applying the natural proof techniques have only strengthened the goal.  In fact we do not know if this entailment is provable or not, but the difficulties encountered in proving what ``should be'' straightforward suggest that Knaster-Tarski should be treated with caution when defining spatial predicates for graphs.
 
 Part of the problem is that the recursive structure interacts very badly with $**$: if the recursion involved $*$ then it \textbf{would} be provable, by induction on the finite memory (each ``recursive call'' would be on a strictly smaller subheap).  This is why Knaster-Tarski works so well with list, tree, and DAG predicates in separation logic.  Note that the other direction, \mbox{$\graphkt(100,\hat{\gamma}) |- 100 |-> 42,100,0$},
-\textbf{is} true but is not easy to prove, relying on the constructions in \S\ref{sec:goodgraph} and the fact that $\mu_{\mathsf{T}}$ constructs the least fixpoint.  In contrast, $\graphkt(100,\hat{\gamma}) |- 100 |-> 42,100,0 * \top$ is very easy to prove. % via fold/unfold.
+\textbf{is} true but is not easy to prove, relying on the constructions in \S\ref{sec:goodgraph} and the fact that $\mu_{\mathsf{T}}$ constructs the least fixpoint.  In contrast, $\graphkt(100,\hat{\gamma}) |- 100 |-> 42,100,0 * \top$ is easy to prove. % via fold/unfold.
 
 
 %As explained in~\S\ref{sec:foldunfold}, this alignment is necessary in C-like memory models to prove fold-unfold \eqref{eqn:bigraphintrofoldunfold}, which is why \eqref{eqn:bigraphintrofoldunfold} includes an alignment restriction $x~\mathsf{mod}~16 = 0$ and an existentially-quantified ``blank'' second field for the root $x \mapsto m,-,l,r$.
@@ -89,26 +89,26 @@ look like
  x |-> m,l,r & ** \rhd \grapham(l, \gamma) ** \rhd \grapham(r, \gamma)
 \end{align*}
 
-Unfortunately, $\rhd P$ is not precise for all $P$, so $\grapham$ is not precise either.  The approximation modality's universal imprecision has never been mentioned previously in the literature.  %We must do better.
+Unfortunately, $\rhd P$ is not precise for all $P$, so $\grapham$ is not precise either.  The approximation modality's universal imprecision has never been noticed before. % in the literature.  %We must do better.
 
 \subsection{Defining a good \p{graph} predicate}\label{sec:goodgraph}
 
-We choose an alternative path.  Rather than trying to define \p{graph} directly as a recursive fixpoint, we will give it a flat structure and then \textbf{prove} that it satisfies fold/unfold.  Our path starts with the iterated separating conjunction or ``big star'', defined as follows:
+Rather than trying to define \p{graph} as a recursive fixpoint, we will instead give it a flat structure.  As discussed in \S\ref{sec:related}, graphs in separation logic have been defined in similar ways before; what is new here is that we prove---with the amount of precision required to convince Coq---that we can still enjoy fold/unfold with our definition.  Our path starts with the iterated separating conjunction or ``big star'', defined as:
 \begin{equation*}
   \underset{\{l_1, l_2,\dots,l_n\}}{\bigstar}P ~~ \defeq ~~ P(l_1) *
   P(l_2) * \dots * P(l_n).
 \end{equation*}
-Notice that formally $\bigstar$ is defined over a list rather than a set, and is parameterized by a predicate $P$.  It is natural to extend it to a set $S$ using an existentially-quantified duplicate-free list $L$ as follows:
+Formally $\bigstar$ is defined over a list rather than a set and is parameterized by a predicate $P$.  It is natural to extend $\bigstar$ to a set $S$ with an existentially-quantified duplicate-free list~$L$:
 \[
 \underset{S}{\bigstar} P ~~ \defeq ~~ \exists L.~ (\p{NoDup}\ L) /| (\forall x.~ x\ \p{in}\ L <=> x \in S) /| \underset{L}{\bigstar}P
 \]
-We use the same $\bigstar$ notation since the concepts are similar, but the existential can add a little pain since it means that we need to prove that all choices of list $L$ yield equivalent predicates.
+We use the same $\bigstar$ notation since the concepts are similar, but the existential adds a little pain since we need to prove that all choices of $L$ yield equivalent predicates.
 
 We are now ready to give a good \p{graph} predicate:
 \begin{equation}\label{eqn:iter_def}
   \p{graph}(x, \gamma) ~~ \defeq ~~ \underset{v \in \mathit{reach}(\gamma, x)}{\bigstar} v\mapsto\gamma(v)
 \end{equation}
-Here~$\gamma$ is a GeneralGraph from~\S\ref{sec:mathinfra} and ``$x |-> \gamma(x)$'' is a predicate that describes how single nodes fit in memory; in Figure~\ref{fig:markgraph} it was
+$\gamma$ is a GeneralGraph and ``$x |-> \gamma(x)$'' is a predicate that describes how single nodes fit in memory; in Figure~\ref{fig:markgraph} it was:
 \[
 \exists m,l,r.~\gamma(x) = (m,l,r) /| x |-> m,-,l,r /| x\ \p{mod}\ 16 = 0
 \]
@@ -116,9 +116,9 @@ $\gamma$ need not be a bigraph, but \emph{e.g.} can have many edges.
 %,  it can have more edges or data fields.
 %; $\gamma$ is in no way limited to bigraphs.
 
-Our definition of \p{graph} is flat in the sense that there is no obvious way to follow the link structure recursively.  Happily, we can recover a general recursive fold/unfold, assuming our \p{graph} and GeneralGraph give us the necessary properties.  To state a general fold/unfold lemma we need the iterated overlapping conjunction:
+Our definition of \p{graph} is flat in the sense that there is no obvious way to follow the link structure recursively.  Happily, we can recover a general recursive fold/unfold if $x |-> \gamma(x)$ and the GeneralGraph have the necessary properties.  To state this lemma we need the iterated overlapping conjunction:
 \[
-\bigocon_{l_1,\dots,l_n} \!\! P ~~ \defeq ~~ P(l_1) ** \ldots ** P(l_n)
+\underset{l_1,\dots,l_n}{\raisebox{-0.3ex}{\resizebox{0.75em}{!}{$\scon$}}\hspace{-2.45ex} \bigcup} \! \! P ~~ \defeq ~~ P(l_1) ** \ldots ** P(l_n)
 \]
 Now we can state the general fold/unfold as follows:
 \begin{equation}
@@ -127,7 +127,7 @@ Now we can state the general fold/unfold as follows:
 \end{equation}
 We get a full equivalence between a graph and its ``unfolded'' structure, regardless of how many neighbors $x$ has.
 
-Both directions of this lemma require care.  In the $=>$ direction, the key difficulty is that we need to take the existentially-quantified list of vertices on the left $L$ and divide it into (not necessarily disjoint) sublists $L_1, \dots, L_n$ such that $L_i$ is exactly those vertices reachable from neighbor $i$; the goal is straightforward but mechanizing the proof is quite tricky.
+Both directions of this lemma require care.  In the $=>$ direction, the key difficulty is that we need to take the existentially-quantified list of vertices on the left $L$ and divide it into (not necessarily disjoint) sublists $L_1, \dots, L_n$ such that $L_i$ is exactly those vertices reachable from neighbor $i$.  The goal is straightforward assuming that the GeneralGraph is appropriately finite, but mechanizing the proof is tricky.
 In the $<=$ direction, the difficulty is that if two nodes $x |-> \gamma(x)$ and $x' |-> \gamma(x')$ are \emph{skewed}, \emph{i.e.} ``partially overlapping'' with some---but not all---of $x$'s memory cells shared with $x'$, then the $\bigstar$ on the left hand side cannot separate them.  To avoid skewing we require $x |-> \gamma(x)$ be \emph{alignable}.  A predicate $P$ is alignable when
 \[
 \forall x,y.~ \Big(P(x) ** P(y) |- \big(P(x) /| x = y\big) |/ \big(P(x) * P(y)\big)\Big)

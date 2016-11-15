@@ -119,9 +119,9 @@ and since H/S knows the call to \li{mark(l)} requires $\p{graph}(\li{l}, \gamma'
 \overbrace{\li{x} |-> 1,\li{l},\li{r} ** \p{graph}(\li{l}, \gamma') ** \p{graph}(\li{r}, \gamma')}^P |- \overbrace{\p{graph}(\li{l}, \gamma')}^Q * \null \\
 \underbrace{\Big(\!\p{graph}(\li{l}, \gamma') \! --o \! \big(\li{x} \! |-> \! 1,\!\li{l},\!\li{r}  **  \p{graph}(\li{l},\! \gamma')  **  \p{graph}(\li{r}, \!\gamma')\big)\!\Big)}_{R}
 \end{gather*}
-Note that in general $P |- Q * (Q --o P)$ is \textbf{not} a tautology since not every $P$ has a $Q$ ``hiding inside it''.  However, H/S's unfold of \p{graph} makes it readily apparent that $\p{graph}(l, \gamma)$ \textbf{is} inside the premise of the entailment $P$, so H/S is justified in calculating the frame $R$.
+Note that $P |- Q * (Q --o P)$ is \textbf{not} a tautology since not every $P$ has a $Q$ ``hiding inside it''.  However, H/S's unfold of \p{graph} makes it clear that $\p{graph}(l, \gamma)$ \textbf{is} inside the premise of the entailment $P$, so H/S is justified calculating this $R$. %in calculating the frame $R$.
 
-To calculate the postcondition of line~\ref{beforemarkleft}, H/S takes the residue~$R$ and $*$-combines it with the postcondition of the \li{mark(l)} call, \emph{i.e.}: % to reach% $\p{graph}(\li{l}, \gamma') /| \m{mark}(\gamma,\li{l},\gamma')$, to reach
+To calculate the postcondition of line~\ref{beforemarkleft}, H/S $*$-combines the residue~$R$ with the postcondition of \li{mark(l)} to reach: %, \emph{i.e.}: % to reach% $\p{graph}(\li{l}, \gamma') /| \m{mark}(\gamma,\li{l},\gamma')$, to reach
 \begin{gather*}
 \big(\p{graph}(\li{l}, \gamma'')  /|  \m{mark}(\gamma',\li{l},\gamma'')\big)  *  \gamma(\li{x})  =  (0,\li{l},\li{r})  /| \null\\
 \m{mark1}(\gamma,\li{x},\gamma') /| \Big(\p{graph}(\li{l}, \gamma') --o \\ \big(x |-> 1,\li{l},\li{r} ** \p{graph}(\li{l}, \gamma') ** \p{graph}(\li{r}, \gamma')\big)\Big)

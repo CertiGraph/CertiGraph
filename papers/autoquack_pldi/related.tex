@@ -5,7 +5,7 @@ Hobor and Villard treated mathematical graphs very simply, as triples $(V,E,L)$ 
 
 Hobor and Villard fell into the trap of defining spatial graphs recursively~(\S\ref{sec:fixpointfail}); unfortunately other members of the research community have since followed them in.  We exposed this error and provided a sound and quite general definition for \p{graph}~(\S\ref{sec:goodgraph}) that recovers fold/unfold reasoning.  We developed a much more general and more modular set of related lemmas and connect our spatial reasoning to two very different verification tools~(\S\ref{sec:ramifylib}), VST~(\S\ref{sec:vst}) and HIP/SLEEK~(\S\ref{sec:hipsleek}).  Our development is entirely machine-checked~(\S\ref{sec:development}) whereas they used only pen and paper.
 
-\paragraph{Other verification of graph algorithms, with or without $**$.}
+\paragraph{Other verification of graph algorithms and/or $**$.}
 Yang's verification of the Schorr-Waite algorithm is a landmark in the early separation logic literature~\cite{hongseok:phd}.  Bornat \emph{et al.} gave an early attempt to reason about graph algorithms in separation logic in a more general way~\cite{bornat:aliasing04}.
 
 Reynolds was the first to document the overlapping conjunction~$**$, although he did not present any strategy to reason about it using Hoare rules~\cite{rey-slnotes}.  Gardner \emph{et al.} were the first to reason about a program using $**$ in Javascript~\cite{GardnerMS12}.  Raad \emph{et al.} used $**$ to reason about a concurrent spanning algorithm using a kind of ``concurrent localization''~\cite{RaadVG15}.  Sergey \emph{et al.} also verified a concurrent spanning tree algorithm and mechanized their proofs in Coq~\cite{ilya-graphs}.

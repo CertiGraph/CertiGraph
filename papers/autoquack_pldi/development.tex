@@ -5,7 +5,7 @@ Component & Files & Size (in lines)\\\hline
 Math Graph (\S\ref{sec:mathgraph}) & 19 & 12,723\\
 Spatial Graph (\$\ref{sec:spacegraph}) & 10 & 6,458 \\
 Integration into Floyd (\S\ref{sec:vst}) & 12 & 1,917 \\
-Modifications to H/S (\S\ref{sec:hipsleek}) & ~~51\tablefootnote{H/S files modified here is not necessarily fresh created.} & 2,500 \\
+Modifications to H/S (\S\ref{sec:hipsleek}) & ~~51\tablefootnote{H/S files are modified, not necessarily freshly created.} & 2,500 \\
 VST Examples (\S\ref{sec:application}) & 13 & 3,290 \\
 H/S Example (\S\ref{sec:hipsleek}) & 2 & 443 \\
 Memory Model \& Logic & 13 & 2,373 \\
@@ -16,8 +16,8 @@ Total Development & 130 & 32,546 \\
 \label{tab:codebase}
 \end{table}
 
-All of our results in this paper have been machine-checked.  The vast bulk of our development was checked in Coq, although a 55-line file (shown in Figure~\ref{fig:hipmarkgraph}) was checked in HIP/SLEEK.  Our modifications to HIP/SLEEK itself were not machine-checked since HIP/SLEEK does not have a mechanized soundness proof.
-Although the size of a development does not perfectly match with that development's importance or implementation difficulty, we present it nonetheless in Table~\ref{tab:codebase}, organized roughly by the paper section corresponding to each development.  It took fewer than 400 lines of Coq to verify the \li{mark} algorithm in HIP/SLEEK, indicating that a large portion of the codebase is shared between VST and H/S.
+All of our results in this paper have been machine-checked.  The bulk of our development was checked in Coq, although a 55-line file (shown in Figure~\ref{fig:hipmarkgraph}) was checked in HIP/SLEEK.  Our modifications to H/S itself were not machine-checked since H/S does not have a mechanized soundness proof.
+Although the size of a development does not perfectly match with that development's importance or implementation difficulty, we present it nonetheless in Table~\ref{tab:codebase}, organized roughly by the paper section corresponding to each development.  It took fewer than 400 lines of Coq to verify the \li{mark} algorithm in H/S, indicating that a large portion of the codebase is shared between VST and H/S.
 
 \hide{
 \paragraph{Size of Coq mathgraph \S\ref{sec:mathgraph}.}
