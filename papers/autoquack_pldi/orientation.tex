@@ -198,9 +198,10 @@ $\{\ \ P_6 \ \ \}$
   ...
 \end{lstlisting}
 \end{minipage}
+\vspace{-2ex}
 \caption{Front and back ends of \li{localize} and \li{unlocalize}}
 \label{figure:backend}
-\vspace{-2ex}
+\vspace{-3ex}
 \end{figure}
 
 Figure~\ref{figure:backend} has four partially-decorated ``proofs in progress'', from both the user's (front end) and Floyd's (back end) points of view.  In the first column, from the user's point of view, they saw the assertion $P_2$ (line~\ref{code:localglobalin}) and decided to use the \li{localize} tactic to zoom into $P_3$ (line~\ref{code:locallocalin}).  They then applied some proof rules to move past $c_2$ to reach the assertion $P_4$ (line~\ref{code:localsndcmd}).  At this point, Floyd does not know when the corresponding \li{unlocalize} tactic will execute, so it does not know which commands will be inside the block or what the final local and global postconditions will be.
