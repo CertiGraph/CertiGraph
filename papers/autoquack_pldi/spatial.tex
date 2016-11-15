@@ -1,6 +1,6 @@
 To prove the functional correctness of graph-manipulating algorithms implemented in a real language, we need to connect the heap representation of graphs, the memory model of the programming language, and the mathematical properties of graphs from \S\ref{sec:mathgraph}.  The first of these turns out to be surprisingly subtle as we shall see in \S\ref{sec:fixpointfail} and \S\ref{sec:goodgraph}.  The main challenge for the others is to engineer a framework that is generic enough and modular enough to be useful in practice in a variety of settings; we cover it in~\S\ref{sec:ramifylib}.
 
-\subsection{Traditional fixpoints fail for \p{graph} predicates}\label{sec:fixpointfail}
+\subsection{Recursive definitions yield poor \p{graph} predicates}\label{sec:fixpointfail}
 
 \newcommand{\graphkt}{\p{graph}_T}
 \newcommand{\grapham}{\p{graph}_A}
@@ -23,12 +23,15 @@ typically written pseudodefinition (``$\defeq$'').
 %fun x w => forall P: B -> pred A, (forall x, F P x |-- P x) -> P x w.
 
 Suppose we define a graph predicate $\graphkt$ this way, \emph{e.g.} along the lines of the fold/unfold definition in Figure~\ref{fig:markgraph}: %, \emph{i.e.}
-\begin{align*}
-\graphkt(x, \gamma) ~ & \stackrel{\Delta}{=}\\
-(x = 0 /| \p{emp}) & |/ \exists m,l,r.~ \gamma(x)=(m,l,r) /| \null \\
-x |-> m,l,r & ** \graphkt(l, \gamma) ** \graphkt(r, \gamma)
-\end{align*}
-
+\vspace{-1ex}
+\[
+\begin{array}{@{}l@{}l@{}}
+\graphkt(x, \gamma) \stackrel{\Delta}{=} & (x = 0 /| \p{emp}) |/ \null \\
+& \exists m,l,r.~ \gamma(x)=(m,l,r) /| \null \\
+& ~~  x |-> m,l,r ** \graphkt(l, \gamma) ** \graphkt(r, \gamma)
+\end{array}
+\vspace{-1ex}
+\]
 We have removed the alignment-related portions of equation~\eqref{eqn:bigraphintrofoldunfold} to focus on a more serious issue, even though as we will explain in~\S\ref{sec:goodgraph} alignment concerns are also necessary for the fold/unfold relationship to hold in C-like memory models.  The functional needed to define $\graphkt$ is covariant, so we can apply Knaster-Tarski soundly.  However, the resulting predicate can be hard to use.
 
 Consider the following memory $m$ for a toy machine:
@@ -58,11 +61,10 @@ Consider the following memory $m$ for a toy machine:
 \end{minipage}
 \vspace{0.75ex}
 
-\noindent Clearly $m |= 100 |-> 42,100,0$.  But it seems also clear that this memory represents a one-cell cyclic graph as illustrated in the accompanying diagram, \emph{i.e.} we want $m |= \graphkt(100,\hat{\gamma})$, where $\hat{\gamma}(100) = (42,100,0)$.  This is equivalent to wanting to be able to prove $100 |-> 42,100,0 |- \graphkt(100,\hat{\gamma})$.  Unfortunately, as hinted in Appendix~\ref{apx:problemrecgraph}, this seems rather difficult to do so since applying the natural proof techniques have only strengthened the goal.  In fact we do not know if this entailment is provable or not, but the difficulties encountered in proving what ``should be'' straightforward suggest that Knaster-Tarski should be treated with caution when defining spatial predicates for graphs.
+\noindent Clearly $m |= 100 |-> 42,100,0$.  But it seems also clear that this memory represents a one-cell cyclic graph as illustrated in the accompanying diagram, \emph{i.e.} we want $m |= \graphkt(100,\hat{\gamma})$, where $\hat{\gamma}(100) = (42,100,0)$.  This is equivalent to wanting to be able to prove $100 |-> 42,100,0 |- \graphkt(100,\hat{\gamma})$.  Unfortunately, as hinted in Appendix~\ref{apx:problemrecgraph}, this seems rather difficult to do so since applying the natural proof techniques actually strengthen the goal.  In fact we do not know if this entailment is provable or not, but the difficulties encountered in proving what ``should be'' straightforward suggest that Knaster-Tarski should be treated with caution when defining spatial predicates for graphs.
 
 Part of the problem is that the recursive structure interacts very badly with $**$: if the recursion involved $*$ then it \textbf{would} be provable, by induction on the finite memory (each ``recursive call'' would be on a strictly smaller subheap).  This is why Knaster-Tarski works so well with list, tree, and DAG predicates in separation logic.  Note that the other direction, \mbox{$\graphkt(100,\hat{\gamma}) |- 100 |-> 42,100,0$},
 \textbf{is} true but is not easy to prove, relying on the constructions in \S\ref{sec:goodgraph} and the fact that $\mu_{\mathsf{T}}$ constructs the least fixpoint.  In contrast, $\graphkt(100,\hat{\gamma}) |- 100 |-> 42,100,0 * \top$ is easy to prove. % via fold/unfold.
-
 
 %As explained in~\S\ref{sec:foldunfold}, this alignment is necessary in C-like memory models to prove fold-unfold \eqref{eqn:bigraphintrofoldunfold}, which is why \eqref{eqn:bigraphintrofoldunfold} includes an alignment restriction $x~\mathsf{mod}~16 = 0$ and an existentially-quantified ``blank'' second field for the root $x \mapsto m,-,l,r$.
 
@@ -97,19 +99,21 @@ Part of the problem is that the recursive structure interacts very badly with $*
 
 \subsection{Defining a good \p{graph} predicate}\label{sec:goodgraph}
 
-Rather than trying to define \p{graph} as a recursive fixpoint, we will instead give it a flat structure.  As discussed in \S\ref{sec:related}, graphs in separation logic have been defined in similar ways before; what is new here is that we prove---with the amount of precision required to convince Coq---that we can still enjoy fold/unfold with our definition.  Our path starts with the iterated separating conjunction or ``big star'', defined as:
+Rather than trying to define \p{graph} as a recursive fixpoint, we will instead give it a flat structure.  Graphs in separation logic have been defined in similar ways before~\cite{ilya-graphs}; what is new here is that we prove---with the amount of precision required to convince Coq---that we can still enjoy fold/unfold with our definition.  Our path starts with the iterated separating conjunction or ``big star'', defined as:
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%% Edit1
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%% Edit1: Qinxiang's proposal starts
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \iftrue
-\begin{eqnarray*}
-&& \underset{\{l_1, l_2,\dots,l_n\}}{\bigstar}P ~~ \defeq ~~ P(l_1) *
+\[
+\begin{array}{@{}l@{}}
+\underset{\{l_1, l_2,\dots,l_n\}}{\bigstar}P ~~ \defeq ~~ P(l_1) *
   P(l_2) * \dots * P(l_n) \\
-&& \underset{S}{\bigstar} P ~~ \defeq ~~ \exists L.~ (\p{NoDup}\ L) /| (\forall x.~ x\ \p{in}\ L <=> x \in S) /| \underset{L}{\bigstar}P
-\end{eqnarray*}
-The big star $\bigstar$ is first defined over a list. Then the definition extended to sets. Now, we are ready to give a good \p{graph} predicate:
+\underset{S}{\bigstar} P ~~ \defeq ~~ \exists L.~ (\p{NoDup}\ L) /| (\forall x.~ x\ \p{in}\ L <=> x \in S) /| \underset{L}{\bigstar}P
+\end{array}
+\]
+Big star $\bigstar$ is first defined over a list and then extended to sets.  We are now ready to define a good \p{graph} predicate:
 \fi
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%% Edit1: Qinxiang's proposal ends
@@ -148,11 +152,13 @@ $\gamma$ need not be a bigraph, but \emph{e.g.} can have many edges.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \iftrue
 Our definition of \p{graph} is flat in the sense that there is no obvious way to follow the link structure recursively.  Happily, we can recover a general recursive fold/unfold (if $x |-> \gamma(x)$ and the GeneralGraph have the necessary properties):
-\begin{eqnarray}
+\begin{equation}
 \label{eqn:unfold_graph}
-&\p{graph}(x,\gamma) ~~ <=> ~~ x |-> \gamma(x) ** \Big(\!\!\!\!\!\!\!\!\!\!\!\!\underset{n \in \p{neighbors}(\gamma,x)}{\raisebox{-0.3ex}{\resizebox{0.75em}{!}{$\scon$}} \hspace{-2.45ex} \bigcup}\!\!\!\!\!\!\!\!\!\!\!\! \p{graph}(\gamma,n) \Big) \\
-& ~~~ \text{where } ~ \underset{l_1,\dots,l_n}{\raisebox{-0.3ex}{\resizebox{0.75em}{!}{$\scon$}}\hspace{-2.45ex} \bigcup} \! \! P ~~ \defeq ~~ P(l_1) ** \ldots ** P(l_n) \notag
-\end{eqnarray}
+\hspace{-1em}\begin{array}{@{}lc@{\hspace{1pt}}c@{\hspace{1pt}}l@{}}
+&\p{graph}(x,\gamma) & <=> & x |-> \gamma(x) ** \big(\!\!\!\!\!\!\!\!\!\!\!\!\!\underset{n \in \p{neighbors}(\gamma,x)}{\raisebox{-0.3ex}{\resizebox{0.75em}{!}{$\scon$}} \hspace{-2.18ex} \bigcup}\!\!\!\!\!\!\!\!\!\!\!\! \p{graph}(\gamma,n) \big) \\
+[2pt]
+\text{where} & \underset{l_1,\dots,l_n}{\raisebox{-0.3ex}{\resizebox{0.75em}{!}{$\scon$}}\hspace{-2.18ex} \bigcup} \! \! P & \defeq & P(l_1) ** \ldots ** P(l_n) \end{array}
+\end{equation}
 \fi
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%% Edit2: Qinxiang's proposal ends
@@ -175,7 +181,7 @@ We get a full equivalence between a graph and its ``unfolded'' structure, regard
 %%%%%% Edit2: Original version ends
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-The proof of $<=$ direction requires care. The difficulty is that if two nodes $x |-> \gamma(x)$ and $x' |-> \gamma(x')$ are \emph{skewed}, \emph{i.e.} ``partially overlapping'' with some---but not all---of $x$'s memory cells shared with $x'$, then the $\bigstar$ on the left hand side cannot separate them.  To avoid skewing we require $x |-> \gamma(x)$ be \emph{alignable}.  A predicate $P$ is alignable when
+The proof of the $<=$ direction requires care. The difficulty is that if two nodes $x |-> \gamma(x)$ and $x' |-> \gamma(x')$ are \emph{skewed}, \emph{i.e.} ``partially overlapping'' with some---but not all---of $x$'s memory cells shared with $x'$, then the $\bigstar$ on the left hand side cannot separate them.  To avoid skewing we require $x |-> \gamma(x)$ be \emph{alignable}.  A predicate $P$ is alignable when
 \[
 \forall x,y.~ \Big(P(x) ** P(y) |- \big(P(x) /| x = y\big) |/ \big(P(x) * P(y)\big)\Big)
 \]
@@ -184,8 +190,7 @@ That is, either they are completely on top of one another or they do not interfe
 %%%%%% Edit3: cut the => direction
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-
-Some of our VST proofs do not use fold/unfold, instead preferring to use the lemmas in~\S\ref{sec:ramifylib} directly.  On the other hand, for HIP/SLEEK fold/unfold is vital, and knowing that the recursive relationship holds produces a pleasant feeling.  We also prove a general fold/unfold lemma for DAGs in which we get a $*$ between the root and its $\medocon$-joined neighbors rather than the $**$ present in \eqref{eqn:unfold_graph}.
+Some of our VST proofs do not use fold/unfold, instead preferring to use the lemmas in~\S\ref{sec:ramifylib} directly.  On the other hand, for HIP/SLEEK fold/unfold is vital, and knowing that the recursive relationship holds produces a pleasant feeling.  We also prove fold/unfold lemma for DAGs in which we get a $*$ between the root and its $\medocon$-joined neighbors. % rather than the $**$ present in \eqref{eqn:unfold_graph}.
 
 \subsection{Ramification Libraries}\label{sec:ramifylib}
 
@@ -240,27 +245,28 @@ ent/.style={shape=rectangle, rounded corners=4pt, draw, on grid}]
 \caption{Infrastructure of ramification library}\label{fig:infra}
 \end{figure}
 
-We provide {\color{magenta} the structure} of our spatial development in Figure~\ref{fig:infra}.  Starting from the bottom, notice that there are two underlying heap models: the Step-Indexed Model, which is the main heap model used in VST, and a much simpler Direct Model, which is used by HIP/SLEEK among others.  The Step-Indexed model is much fancier, but none of our development depends on its bells and whistles.
+We provide the architecture of our spatial development in Figure~\ref{fig:infra}.  Starting from the bottom, notice that there are two underlying heap models: the Step-Indexed Model, which is the main heap model used in VST, and a much simpler Direct Model, which is used by HIP/SLEEK among others.  The Step-Indexed model is much fancier, but none of our development depends on its bells and whistles.
 
-To isolate our development from these unnecessary complications, and to ensure that HIP/SLEEK can reuse our spatial reasoning, we use two interfaces: Core Logic and Supplementary Logic.  Both models can instantiate both interfaces, but generally speaking our VST proofs only need the Core properties to prove our examples, whereas HIP/SLEEK uses both Core and Supplemental.  Each interface defines some operators of separation logic and provides some axioms about how they work.  For example, $*$ and $ --*$ are in Core Logic, along with the axiom $(P |- Q --* R) <=> (P * Q |- R)$.  On the other hand, the $**$ and $--o$ operators are in Supplementary Logic, along with rules like $P |- P ** P$.
+To isolate our development from these unnecessary complications, and to ensure that HIP/SLEEK can reuse our spatial reasoning, we use two interfaces: Core Logic and Supplementary Logic.  Both models can instantiate both interfaces, but generally speaking our VST proofs only need the Core properties to prove our examples, whereas HIP/SLEEK uses both Core and Supplemental.  Each interface defines some operators of separation logic and provides some axioms about how they work.  For example, $*$ and $--*$ are in Core Logic, along with the axiom $(P |- Q --* R) <=> (P * Q |- R)$.  On the other hand, the $**$ and $--o$ operators are in Supplementary Logic, along with rules like $P |- P ** P$.
 
-Above the Logic layer we have three towers, each three levels high.  The leftmost tower is about basic lemmas about Logic, $\bigstar$, and \p{graph}.  For example, in the $\bigstar$ Facts box we prove lemmas such as the following:
+Above the Logic layer we have three towers, each three levels high.  The leftmost tower contains basic lemmas about Logic, $\bigstar$, and \p{graph}.  In the $\bigstar$ Facts box we prove \emph{e.g.}:
 \[
 \infrule{}
 {A \cap B = \emptyset}
 {\underset{x\in A}{\bigstar} P(x) *   \underset{x\in B}{\bigstar} P(x) \Leftrightarrow \underset{x\in A \cup B}{\bigstar} P(x)}{}
 \]
 
-The middle tower is more interesting in that it is entirely focused on ramification entailments.  A robust library of ramification entailments is essential to making ramification work smoothly in practice.  The lowest level contains lemmas such as the following:
+The middle tower is more interesting in that it is entirely focused on ramification entailments.  A robust library of ramification entailments is essential to making ramification work smoothly in practice.  The lowest level contains lemmas like:
 \[
-\infrule{Ramify-Q-SPLIT}
+%\infrule{Ramify-Q-SPLIT}
+\infrule{}
 {G_1 \vdash L_1 * \forall x.~ (L_2 --* G_2) \\
  G'_1 \vdash L'_1 * \forall x.~ (L_2' --* G'_2)}
 {G_1 * G'_1 \vdash (L_1 * L'_1) * \forall x.~ \big((L_2 * L'_2)--* (G_2 * G'_2)\big)}{}
 \]
 We use this lemma to break large ramification entailments into more manageable pieces in a compositional way. % compositionally.
 
-The middle level contains ramification lemmas about $\bigstar$, such as the following:
+The middle level contains $\bigstar$ ramification lemmas, \emph{e.g.}:
 \begin{equation}
 \label{ramify:bigstar}
 \infrule{}
@@ -297,7 +303,7 @@ $\begin{array}{@{}l@{}l@{}}
 }{}
 \end{equation}
 
-The Supplementary tower contains properties not used by most of the VST examples.  This includes the fold/unfold relationship from \S\ref{sec:goodgraph}, facts about precision, and so forth.  As we will see in \S\ref{sec:hipsleek}, some of these properties are needed by HIP/SLEEK.  Other supplementary lemmas are mostly included for esthetic effect.
+The Supplementary tower contains properties not used by most of the VST examples.  This includes the fold/unfold relationship from \S\ref{sec:goodgraph}, facts about precision, and so forth.  Some of these properties are needed by HIP/SLEEK, while others are mostly included for esthetic effect.
 
 % are there just because we felt they might be useful in the future.
 

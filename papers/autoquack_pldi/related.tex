@@ -12,6 +12,10 @@ Reynolds was the first to document the overlapping conjunction~$**$, although he
 
 Almost a decade after Yang verified Schorr-Waite on paper, Dafny automated its verification~\cite{Leino10}.
 
+\paragraph{Alternative fixpoint constructions.} 
+Appel and McAllester defined an alternative ``contractive'' fixpoint that is sometimes used to define recursive predicates in separation
+logic~\cite{appel:fixpoint}.  In Appendix~\ref{apx:appelfixpiont} we explain why Appel and McAllester's  is also unsuitable to define graphs.
+
 \paragraph{Local variables.}
 An alternative way to avoid local variable issues is to use ``variables as resource''~\cite{bornat:var}.
 However, most mechanized verification systems do not use variables as resource~\cite{Beckert:2007,DistefanoP08,chin:hipsleek,Leino10,bengtson:charge,appel:programlogics}.

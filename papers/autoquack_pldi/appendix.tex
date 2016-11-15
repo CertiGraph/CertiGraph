@@ -95,3 +95,21 @@ Proof of \infrulestyle{Ramify-PQ} from \infrulestyle{Ramify-P}:
 \caption{An honest academic tries to prove a ``simple'' entailment}
 \label{fig:badcycle}
 \end{figure*}
+
+\section{Problem with Appel and McAllester's fixpoint}
+\label{apx:appelfixpiont}
+
+Appel and McAllester proposed another fixpoint $\mu_{\mathsf{A}}$
+that is sometimes used to define recursive predicates in separation
+logic \cite{appel:fixpoint}.  This time the functional $F_P$ needs to be
+\emph{contractive}, which to a first order of approximation means that
+all recursion needs to be guarded by the ``approximation
+modality''~$\rhd$~\cite{appel:vmm}, \emph{i.e.} our graph predicate would
+look like
+\begin{align*}
+\grapham(x, \gamma) ~ &\stackrel{\Delta}{=}\\
+ (x = 0 /| \p{emp}) & |/ \exists m,l,r.~ \gamma(x)=(m,l,r) /| \null \\
+ x |-> m,l,r & ** \rhd \grapham(l, \gamma) ** \rhd \grapham(r, \gamma)
+\end{align*}
+
+Unfortunately, $\rhd P$ is not precise for all $P$, so $\grapham$ is not precise either.  The approximation modality's universal imprecision has never been noticed before.
