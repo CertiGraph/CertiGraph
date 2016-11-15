@@ -204,7 +204,7 @@ Many theorems about graphs require certain properties, \emph{e.g.}:
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%% Edit 3: Qinxiang's proposal ends
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\item More subtly, consider that many real data structures use special null values to represent unused edges.  The \p{MathGraph} property introduces this concept---\emph{i.e.} some invalid nodes that are none-the-less allowed to appear as destinations for valid edges.
+\item More subtly, consider that many real data structures use special null values to represent unused edges.  The \p{MathGraph} property introduces this concept---\emph{i.e.} some invalid nodes that are nonetheless allowed to appear as destinations for valid edges.
 \item Many of our verified algorithms have only two outgoing edges per node.  The \p{BiGraph} property lets us reason about this common special case in a convenient manner.
 \end{itemize}
 We have a number of other properties in our codebase, but these four are the most important basic ones.
