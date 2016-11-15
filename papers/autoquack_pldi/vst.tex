@@ -3,77 +3,8 @@ When the user is in the middle of a verification, the decorated program is parti
 
 \subsection{The \li{localize} and \li{unlocalize} tactics}
 
-We wish to preserve this ``decorated program'' view while extending Floyd to support ramification.  Our task therefore is to construct a proof in Coq's underlying logic that allows a localization block to be constructed in this manner---that is, we wish to enter a localization block without requiring the user to specify the ``exit point'' in advance.  The engineering is tricky because the proof Floyd is constructing (\emph{i.e.} applications of inference rules) has holes in places where the user's ``top to bottom'' view of things has not yet arrived.
-
-\begin{figure}[t]
-\begin{minipage}{.1\textwidth}
-\begin{lstlisting}
-$\{\ \ P_1 \ \ \}$
-    c1
-$\{\ \ P_2 \ \ \}\label{code:localglobalin}$
-$\searrow \{\ \ P_3 \ \ \}\label{code:locallocalin}$
-      c2;
-$~~\,\{\ \ P_4 \ \ \}\label{code:localsndcmd}$
-
-    ...
 
 
-
-\end{lstlisting}
-\end{minipage} \vline ~
-\begin{minipage}{.11\textwidth}
-\begin{lstlisting}[numbers=none]
-$\{\ \ P_1 \ \ \}$
-    c1
-$\{\ \ P_2 \ \ \}$
-$\{\ \ ?F * P_3 \ \}$
-    c2;
-$\{\ \ ?F * P_4 \ \}$
-
-  ...
-
-
-
-\end{lstlisting}
-\end{minipage} \vline ~
-\begin{minipage}{.11\textwidth}
-\begin{lstlisting}[numbers=none]
-$\{\ \ P_1 \ \ \}$
-    c1
-$\{\ \ P_2 \ \ \}$
-$\searrow \{\ \ P_3 \ \ \}$
-      c2;
-  $\,\{\ \ P_4 \ \ \}$
-      c3;
-$\swarrow\{\ \ P_5 \ \ \}$
-$\{\ \ P_6 \ \ \}$
-
-    ...
-\end{lstlisting}
-\end{minipage} \vline ~
-\begin{minipage}{.11\textwidth}
-\begin{lstlisting}[numbers=none]
-$\{\ \ P_1 \ \ \}$
-    c1
-$\{\ \ P_2 \ \ \}$
-$\{\ \ ?F * P_3 \ \}$
-    c2;
-$\{\ \ ?F * P_4 \ \}$
-    c3;
-$\{\ \ ?F * P_5 \ \}$
-$\{\ \ P_6 \ \ \}$
-
-  ...
-\end{lstlisting}
-\end{minipage}
-\caption{Front and back ends of \li{localize} and \li{unlocalize}}
-\label{figure:backend}
-\vspace{-2ex}
-\end{figure}
-
-Figure~\ref{figure:backend} has four partially-decorated ``proofs in progress'', from both the user's (front end) and Floyd's (back end) points of view.  In the first column, from the user's point of view, they saw the assertion $P_2$ (line~\ref{code:localglobalin}) and decided to use the \li{localize} tactic to zoom into $P_3$ (line~\ref{code:locallocalin}).  They then applied some proof rules to move past $c_2$ to reach the assertion $P_4$ (line~\ref{code:localsndcmd}).  At this point, Floyd does not know when the corresponding \li{unlocalize} tactic will execute, so it does not know how which commands will be inside the block or what the final local and global postconditions will be.
-
-Accordingly, the \li{localize} tactic builds an incremental proof in the underlying program logic by applying \infrulestyle{Frame} with an uninstantiated metavariable.  The second column of Figure~\ref{figure:backend} shows the back end with the unknown frame $?F$, which will eventually be instantiated by \li{unlocalize}.
 
 In the third column, the user has advanced past $c_3$ to reach the local postcondition $P_5$ and now wishes to \li{unlocalize} to~$P_6$.  Afterwards, the internal state looks like the fourth column, and so to a first approximation, \li{unlocalize} can instantiate $?F$ with $\pguards{c_2\li{;} c_3}(P_5 \wand P_6)$.  In fact, as discussed in \S\ref{sec:existentials}, \li{unlocalize} replaces $P_5$ and $P_6$ with equivalent $P_5'$ and $P_6'$ that use existentials to pack up modified program variables, and then instantiates $?F$ with a version of $\pguards{c_2\li{;} c_3}(P_5 \wand P_6)$ in which those same modified program variables have been replaced with universally-quantified metavariables.  Reformulating assertions to isolate program variables is aided by Floyd's use of a canonical form for assertions that explicitly separates assertions containing program variables from spatial assertions.
 %original tactic system can help its users to write their assertions in such a isolated style.
