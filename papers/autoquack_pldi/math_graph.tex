@@ -216,13 +216,13 @@ We have a number of other properties in our codebase, but these four are the mos
 [->/.style={thick,arrows={-Stealth}},
    group/.style={shape=rectangle, draw, thick, dashed},
    propG/.style={shape=rectangle, rounded corners=4pt, draw}]
-\node[propG] (PL12) at (0, 0) {\small Lemmas of Property 1 and 2};
+\node[propG] (PL12) at (0, 0) {\footnotesize Lemmas of Property 1 and 2};
 \coordinate [left=1 of PL12.north] (PL12n1);
 \coordinate [right=1 of PL12.north] (PL12n2);
-\node[propG] (PL1) [above=0.5 of PL12n1, align=center] {\small Property 1 \\\small Lemmas};
-\node[propG] (PL2) [above=0.5 of PL12n2, align=center] {\small Property 2 \\\small Lemms};
-\node[propG] (P1) [above=0.5 of PL1] {\small Property 1};
-\node[propG] (P2) [above=0.5 of PL2] {\small Property 2};
+\node[propG] (PL1) [above=0.5 of PL12n1, align=center] {\footnotesize Property 1 \\\footnotesize Lemmas};
+\node[propG] (PL2) [above=0.5 of PL12n2, align=center] {\footnotesize Property 2 \\\footnotesize Lemmas};
+\node[propG] (P1) [above=0.5 of PL1] {\footnotesize Property 1};
+\node[propG] (P2) [above=0.5 of PL2] {\footnotesize Property 2};
 \draw [->] (P1) to (PL1);
 \draw [->] (P2) to (PL2);
 \draw [double, ->] (PL1) to (PL12n1);
@@ -232,8 +232,8 @@ We have a number of other properties in our codebase, but these four are the mos
 \node (R1) [group, fit=(P1) (PL1)] {};
 \node (R2) [group, fit=(P2) (PL2)] {};
 \node (R3) [group, fit=(current bounding box)] {};
-\node [propG] (P1P2) [above right=-1.1 and 1.2 of R3, align=left] {\small Property 1$/|$ \\\small Property 2};
-\node [propG] (PL1PL2) [below=0.5 of P1P2, align=center] {\small Prop. 1 Lemmas \\\small Prop. 2 Lemmas \\\small Prop. 1$/|$2 Lemmas};
+\node [propG] (P1P2) [above right=-1.1 and 1.2 of R3, align=left] {\footnotesize Property 1$/|$ \\\footnotesize Property 2};
+\node [propG] (PL1PL2) [below=0.5 of P1P2, align=center] {\footnotesize Prop. 1 Lemmas \\\footnotesize Prop. 2 Lemmas \\\footnotesize Prop. 1$/|$2 Lemmas};
 \draw [->] (P1P2) to (PL1PL2);
 \node (R4) [group, fit=(P1P2) (PL1PL2)] {};
 \node (EQ) [right=0 of R3] {\bf \Large $\mapsto$};
