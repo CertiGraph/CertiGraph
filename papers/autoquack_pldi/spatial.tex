@@ -5,24 +5,6 @@ To prove the functional correctness of graph-manipulating algorithms implemented
 \newcommand{\graphkt}{\p{graph}_T}
 \newcommand{\grapham}{\p{graph}_A}
 
-\begin{figure*}
-\[
-\infrule{}
-{\infrule{}
-  {100 |-> 42,100,0 ~ |- ~ 100 |-> 42,100,0 ** \graphkt(100,\hat{\gamma})}
-  {100 |-> 42,100,0 ~ |- ~ \hat{\gamma}(100) = (42,100,0) ~ /| ~ 100 |-> 42,100,0 ** \graphkt(100,\hat{\gamma}) ** \graphkt(0,\hat{\gamma})}
-  {(2)}
-}
-{100 |-> 42,100,0 ~ |- ~ \graphkt(100,\hat{\gamma})}
-{(1)}
-\]
-(1) Unfold $\graphkt$, dismiss first disjunct (contradiction), introduce existentials (which must be 42,100,0) \\
-(2) simplify using $P * \p{emp} -|- P$ and remove pure conjunct
-
-\caption{An honest academic tries to prove a ``simple'' entailment}
-\label{fig:badcycle}
-\end{figure*}
-
 Recursive predicates are ubiquitous in separation logic---so
 much so that when a person writes the definition of a predicate as
 \mbox{$P$ ``$\defeq$'' $\ldots P \! \ldots$}, no one raises an eyebrow despite the
@@ -76,7 +58,7 @@ Consider the following partial memory $m$ for a toy machine:
 \end{minipage}
 \vspace{0.75ex}
 
-\noindent Clearly $m |= 100 |-> 42,100,0$.  But it seems also clear that this memory represents a one-cell cyclic graph as illustrated in the accompanying diagram, \emph{i.e.} we want $m |= \graphkt(100,\hat{\gamma})$, where $\hat{\gamma}(100) = (42,100,0)$.  This is equivalent to wanting to be able to prove $100 |-> 42,100,0 |- \graphkt(100,\hat{\gamma})$.  Unfortunately, as hinted at in Figure~\ref{fig:badcycle}, this seems rather difficult to do so since applying the natural proof techniques have only strengthened the goal.  In fact we do not know if this entailment is provable or not, but the difficulties encountered in proving what ``should be'' straightforward suggest that Knaster-Tarski should be treated with caution when defining spatial predicates for graphs.
+\noindent Clearly $m |= 100 |-> 42,100,0$.  But it seems also clear that this memory represents a one-cell cyclic graph as illustrated in the accompanying diagram, \emph{i.e.} we want $m |= \graphkt(100,\hat{\gamma})$, where $\hat{\gamma}(100) = (42,100,0)$.  This is equivalent to wanting to be able to prove $100 |-> 42,100,0 |- \graphkt(100,\hat{\gamma})$.  Unfortunately, as hinted in Appendix~\ref{apx:problemrecgraph}, this seems rather difficult to do so since applying the natural proof techniques have only strengthened the goal.  In fact we do not know if this entailment is provable or not, but the difficulties encountered in proving what ``should be'' straightforward suggest that Knaster-Tarski should be treated with caution when defining spatial predicates for graphs.
 
 Part of the problem is that the recursive structure interacts very badly with $**$: if the recursion involved $*$ then it \textbf{would} be provable, by induction on the finite memory (each ``recursive call'' would be on a strictly smaller subheap).  This is why Knaster-Tarski works so well with list, tree, and DAG predicates in separation logic.  Note that the other direction, \mbox{$\graphkt(100,\hat{\gamma}) |- 100 |-> 42,100,0$},
 \textbf{is} true but is not easy to prove, relying on the constructions in \S\ref{sec:goodgraph} and the fact that $\mu_{\mathsf{T}}$ constructs the least fixpoint.  In contrast, $\graphkt(100,\hat{\gamma}) |- 100 |-> 42,100,0 * \top$ is very easy to prove. % via fold/unfold.
@@ -104,7 +86,7 @@ look like
 \begin{align*}
 \grapham(x, \gamma) ~ &\stackrel{\Delta}{=}\\
  (x = 0 /| \p{emp}) & |/ \exists m,l,r.~ \gamma(x)=(m,l,r) /| \null \\
- x |-> m,l,r & ** \rhd \graphkt(l, \gamma) ** \rhd \graphkt(r, \gamma)
+ x |-> m,l,r & ** \rhd \grapham(l, \gamma) ** \rhd \grapham(r, \gamma)
 \end{align*}
 
 Unfortunately, $\rhd P$ is not precise for all $P$, so $\grapham$ is not precise either.  The approximation modality's universal imprecision has never been mentioned previously in the literature.  %We must do better.
