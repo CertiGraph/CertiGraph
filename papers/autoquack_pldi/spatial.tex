@@ -1,4 +1,4 @@
-To prove the functional correctness of real graph-manipulating algorithms implemented in a real language, we need to connect the heap representation of graphs, the memory model of the programming language, and the mathematical properties of graphs from \S\ref{sec:mathgraph}.  The first of these turns out to be surprisingly subtle as we shall see in \S\ref{sec:fixpointfail} and \S\ref{sec:goodgraph}.  The main challenge for the others is to engineer a framework that is generic enough and modular enough to be useful in practice in a variety of settings; we cover it in~\S\ref{sec:ramifylib}.
+To prove the functional correctness of graph-manipulating algorithms implemented in a real language, we need to connect the heap representation of graphs, the memory model of the programming language, and the mathematical properties of graphs from \S\ref{sec:mathgraph}.  The first of these turns out to be surprisingly subtle as we shall see in \S\ref{sec:fixpointfail} and \S\ref{sec:goodgraph}.  The main challenge for the others is to engineer a framework that is generic enough and modular enough to be useful in practice in a variety of settings; we cover it in~\S\ref{sec:ramifylib}.
 
 \subsection{Traditional fixpoints fail to define good \p{graph} predicates}\label{sec:fixpointfail}
 
@@ -106,14 +106,7 @@ look like
  (x = 0 /| \p{emp}) & |/ \exists m,l,r.~ \gamma(x)=(m,l,r) /| \null \\
  x |-> m,l,r & ** \rhd \graphkt(l, \gamma) ** \rhd \graphkt(r, \gamma)
 \end{align*}
-As we will see in \S\ref{sec:hipsleek}, the forward style of reasoning employed by
-HIP/SLEEK is greatly aided when predicates are \emph{precise}, \emph{i.e.}
-\[
-\begin{array}{@{}l@{}l@{}}
-\m{precise}(P) ~~ \defeq ~~ & (\sigma_1 |= P) => (\sigma_2 |= P) => \\
-& ~~ (\sigma_1 \oplus \sigma_1' = \sigma) => (\sigma_2 \oplus \sigma_2' = \sigma) => \sigma_1 = \sigma_2
-\end{array}
-\]
+
 Unfortunately, $\rhd P$ is not precise for all $P$, so $\grapham$ is not precise either.  The approximation modality's universal imprecision has never been mentioned previously in the literature.  %We must do better.
 
 \subsection{Defining a good \p{graph} predicate}\label{sec:goodgraph}
@@ -152,17 +145,13 @@ Now we can state the general fold/unfold as follows:
 \end{equation}
 In other words, we get a full equivalence between a graph and its ``unfolded'' structure, regardless of how many neighbors $x$ has.
 
-{\color{magenta}
-Both directions of this lemma are a little subtle.  In the $=>$ direction, the key difficulty is that we need to take the existentially-quantified list of vertices on the left $L$ and divide it into (not necessarily disjoint) sublists $L_1, \dots, L_n$ such that $L_i$ is exactly those vertices reachable from neighbor $i$.  To construct these lists we need to use the computable reachability lemma~\ref{lem:computereach} to explicitly test, for each neighbor $i$ and $v\ \p{in}\ L$, whether $i$ can reach $v$; accordingly we require that the GeneralGraph be appropriately finite.
-}
-
-{\color{magenta}
+Both directions of this lemma require care.  In the $=>$ direction, the key difficulty is that we need to take the existentially-quantified list of vertices on the left $L$ and divide it into (not necessarily disjoint) sublists $L_1, \dots, L_n$ such that $L_i$ is exactly those vertices reachable from neighbor $i$; the goal is straightforward but mechanizing the proof is quite tricky.
 In the $<=$ direction, the difficulty is that if two nodes $x |-> \gamma(x)$ and $x' |-> \gamma(x')$ are \emph{skewed}, \emph{i.e.} ``partially overlapping'' with some---but not all---of $x$'s memory cells shared with $x'$, then the $\bigstar$ on the left hand side cannot separate them.  To avoid skewing we require $x |-> \gamma(x)$ be \emph{alignable}.  A predicate $P$ is alignable when
 \[
 \forall x,y.~ \Big(P(x) ** P(y) |- \big(P(x) /| x = y\big) |/ \big(P(x) * P(y)\big)\Big)
 \]
 In other words, either they are completely on top of one another or they do not interfere at all.  In a Java-like memory model such as in HIP/SLEEK this property is automatic because pointers in such a model always point to the root/beginning of an object.  In contrast, in a C-like memory model such as in VST/CompCert, this property is not automatic because pointers can point anywhere.  In such a model, alignment is most easily enforced by storing graph nodes at addresses that are multiples of an appropriate size (16 in Figure~\ref{fig:markgraph}).
-}
+
 
 Some of our VST proofs do not use fold/unfold, instead preferring to use the lemmas in~\S\ref{sec:ramifylib} directly.  On the other hand, for HIP/SLEEK fold/unfold is vital, and knowing that the recursive relationship holds produces a pleasant feeling.  We also prove a general fold/unfold lemma for DAGs in which we get a $*$ between the root and its $\medocon$-joined neighbors rather than the $**$ present in \eqref{eqn:unfold_graph}.
 
