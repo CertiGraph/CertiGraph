@@ -119,6 +119,29 @@ to build GeneralGraphs.  Each kind has some lemmas and also inherits the lemmas 
 \caption{A PreGraph with invalid nodes and edges.}\label{fig:pregraph}
 \end{figure}
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%% Edit 1
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%% Edit 1: Qinxiang's proposal starts
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\iftrue
+\paragraph{Pregraphs.} A PreGraph is a hextuple $(V, E, \phi_V, \phi_E, s, d)$,
+where $V$ and $E$ are the underlying carrier set of vertices and edges.  Not every $v \in V$ or $e \in E$ is actually ``in'' the graph, so we provide the predicates $\phi_V$ and $\phi_E$ to classify vertices and edges as \emph{valid} (in) or not (out).  Finally, $s$ and $d : E -> V$ are functions that map an edges to their source and destination respectively; this model means that PreGraphs are directed rather than undirected.  By design, there are no requirements for \emph{e.g.} how the validities of edges and vertices relate.  As shown in Figure \ref{fig:pregraph}, a PreGraph can contain invalid nodes and edges in an arbitrary configuration.
+
+Designing a graph type that can reason about missing vertices and edges is convenient for verifying real programs.  For example, consider the difference of two graphs, $\gamma_1 - \gamma_2$.  Even if both of these graphs are ``well-formed'' to begin with, in the sense that valid nodes have only valid edges and vice versa, their difference may not since there may be dangling edges pointing to the now-removed vertices of $\gamma_2$.
+
+Many graph concepts such as \emph{path}, \emph{reachability}, and \emph{subgraph} are defined on PreGraphs.  We write $\p{reachable}(\gamma,v)$ to represent set of all reachable vertices from $v$. 
+In \S\ref{sec:spacegraph} we will tie mathematical graphs $\gamma$ to a spatial graph predicate
+$\p{graph}(x, \gamma)$.   As we will see, $\p{graph}$ ``owns'' only the
+spatial portion of $\gamma$ that is reachable
+from $x$ even though $\gamma$ may have other valid vertices.
+\fi
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%% Edit 1: Qinxiang's proposal ends
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%% Edit 1: Original version starts
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\iffalse
 \paragraph{Pregraphs.} A PreGraph is a hextuple $(V, E, \phi_V, \phi_E, s, d)$,
 where $V$ and $E$ are the underlying carrier set of vertices and edges.  Not every $v \in V$ or $e \in E$ is actually ``in'' the graph, so we provide the predicates $\phi_V$ and $\phi_E$ to classify vertices and edges as \emph{valid} (in) or not (out).  Finally, $s$ and $d : E -> V$ are functions that map an edges to their source and destination respectively; this model means that PreGraphs are directed rather than undirected.  By design, there are no requirements for \emph{e.g.} how the validities of edges and vertices relate.  As shown in Figure \ref{fig:pregraph}, a PreGraph can contain invalid nodes and edges in an arbitrary configuration.
 
@@ -129,13 +152,37 @@ spatial portion of $\gamma$ that is reachable
 from $x$ even though $\gamma$ may have other valid vertices.
 
 The advantage of designing a graph type that can reason about missing vertices and edges is because concepts necessary to verify real programs require such flexibility.  For example, consider the difference of two graphs, $\gamma_1 - \gamma_2$.  Even if both of these graphs are ``well-formed'' to begin with, in the sense that valid nodes have only valid edges and vice versa, their difference may not since there may be dangling edges pointing to the now-removed vertices of $\gamma_2$.
+\fi
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%% Edit 1: Original version ends
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%% Edit 2
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%% Edit 2: Qinxiang's proposal starts
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\iftrue
+\paragraph{LabeledGraph.}
+A LabeldGraph is a PreGraph with labels, e.g. the ``mark bit'' used in Figure~\ref{fig:markgraph} are labels.
+\fi
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%% Edit 2: Qinxiang's proposal ends
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%% Edit 2: Original version starts
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\iffalse
 \paragraph{LabeledGraph.}
 Although many basic lemmas can be proved about PreGraphs, they are inadequate for real program verification.
 When reasoning about the concrete graphs manipulated by various algorithms,
 we usually need to add a notion of \emph{labels} on vertices and/or edges, such as
 the ``mark bit'' used in Figure~\ref{fig:markgraph}, letting us define notions like ``the vertices reachable via an unmarked path''
 on LabeledGraphs.
+\fi
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%% Edit 2: Original version ends
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \paragraph{GeneralGraph.}
 GeneralGraphs augment LabeledGraphs by adding a soundness condition, indicated in Figure~\ref{fig:graphs} by a dashed border.  These ``plugins'' can specify many different properties which in turn can be used to prove lemmas about the associated GeneralGraph.
@@ -145,7 +192,18 @@ GeneralGraphs augment LabeledGraphs by adding a soundness condition, indicated i
 Many theorems about graphs require certain properties, \emph{e.g.}:
 \begin{itemize}
 \item A graph may be finite (\p{FiniteGraph}), meaning that the sets of valid vertices and valid edges are both finite.
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%% Edit 3
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%% Edit 3: Qinxiang's proposal: remove this paragraph about locally finite
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\iffalse
 \item A \emph{locally finite} graph (\p{LocalFiniteGraph}) is less restrictive, requiring only that each vertex have a finite number of neighbors.  Locally finite graphs are useful when we wish to reason about algorithms that process vertices by cycling through neighbors, such as breadth-first search.
+\fi
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%% Edit 3: Qinxiang's proposal ends
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \item More subtly, consider that many real data structures use special null values to represent unused edges.  The \p{MathGraph} property introduces this concept---\emph{i.e.} some invalid nodes that are none-the-less allowed to appear as destinations for valid edges.
 \item Many of our verified algorithms have only two outgoing edges per node.  The \p{BiGraph} property lets us reason about this common special case in a convenient manner.
 \end{itemize}
@@ -206,14 +264,24 @@ As previously mentioned, we reuse $\m{mark}$ and its
 related lemmas to prove facts about spanning tree and graph copy
 because the latter two programs mark nodes as they work.
 Accordingly, we can reuse facts such as the following:
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%% Edit 4
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%% Edit 4: Qinxiang's proposal starts
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{equation*}
 \begin{split}
-\forall \gamma, x, n.~&\gamma(x)=(0, v_1, v_2,\dots,v_n) => \m{mark1}(\gamma, x, \gamma_1) =>\\
-        & \m{mark}(\gamma_1,v_1,\gamma_2) => \m{mark}(\gamma_2,v_2,\gamma_3) => \dots =>\\
-        & \m{mark}(\gamma_n,v_n,\gamma_{n+1}) => \m{mark}(\gamma,x,\gamma_{n+1}).
+& \forall \gamma,  x, \gamma_1, .., \gamma_{n+1}. \\
+& ~~ \text{if } \gamma(x)=(0, v_1, \dots,v_n),   \m{mark1}(\gamma, x, \gamma_1) \\
+& ~~~~ \text{ and } \forall i, \m{mark}(\gamma_i,v_i,\gamma_{i+1}) \\
+& ~~ \text{then } \m{mark}(\gamma,x,\gamma_{n+1}).
 \end{split}
 \end{equation*}
-This theorem holds for any \p{LocalFiniteGraph}, not just
+We prove this theorem sound for any LabeledGraph, not just
 \p{BiGraph}s (\emph{i.e.}, we do not assume only two neighbors). 
-In our framework we prove theorems as generally as possible.
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%% Edit 4: Qinxiang's proposal ends
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
 
