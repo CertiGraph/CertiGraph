@@ -1,9 +1,27 @@
 \paragraph{Comparison with Hobor and Villard.}
 The most direct ancestor of our work is \cite{hobor:ramification}, which focused on verifying graph algorithms using and introduced the \infrulestyle{Ramify} rule.  We have generalized this rule to better handle modified program variables and existential quantifiers in postconditions; they hacked their way around these issues by proposing a variant of \infrulestyle{Ramify} called \infrulestyle{RamifyAssign}, which could reason about the special case of a single assignment $\li{x=}f(\ldots)$, assuming the verifier can make the local program translation to $\li{x'=}f(\ldots)\li{; x=x'}$, where \li{x'} is fresh.  They proposed no way to verify unmodified program code, to modify program variables inside nested localization blocks, or to do a ramification across multiple assignments as we do in lines~\ref{code:markbeforetripleramify}--\ref{code:markaftertripleramify} of figure~\ref{fig:markgraph}.  Hobor and Villard avoided existentials in localized postconditions because they defined all of their mathematical operations (\emph{e.g.} $\m{mark}$, $\m{mark1}$) as functions rather than as relations.
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%% Edit 1
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%% Edit 1: Qinxiang's proposal starts
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\iftrue
+Our development is entirely machine-checked~(\S\ref{sec:development}) which reveals some tricky technique details. Hobor and Villard fell into the trap of defining spatial graphs recursively~(\S\ref{sec:fixpointfail}); unfortunately other members of the research community have since followed them in.  We exposed this error and provided a sound and quite general definition for \p{graph}~(\S\ref{sec:goodgraph}) that recovers fold/unfold reasoning.
+\fi
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%% Edit 1: Qinxiang's proposal ends
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%% Edit 1: Original version starts
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\iffalse
 Hobor and Villard treated mathematical graphs very simply, as triples $(V,E,L)$ of vertices, edges, and a labeling function on vertices.  Vertices had no more than two neighbors.  In contrast, our mathematical graph framework~(\S\ref{sec:mathgraph}) is very modular and general and has been tuned to work smoothly in a mechanized context.
 
 Hobor and Villard fell into the trap of defining spatial graphs recursively~(\S\ref{sec:fixpointfail}); unfortunately other members of the research community have since followed them in.  We exposed this error and provided a sound and quite general definition for \p{graph}~(\S\ref{sec:goodgraph}) that recovers fold/unfold reasoning.  We developed a much more general and more modular set of related lemmas and connect our spatial reasoning to two very different verification tools~(\S\ref{sec:ramifylib}), VST~(\S\ref{sec:vst}) and HIP/SLEEK~(\S\ref{sec:hipsleek}).  Our development is entirely machine-checked~(\S\ref{sec:development}) whereas they used only pen and paper.
+\fi
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%% Edit 1: Original version ends
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \paragraph{Other verification of graph algorithms and/or $**$.}
 Yang's verification of the Schorr-Waite algorithm is a landmark in the early separation logic literature~\cite{hongseok:phd}.  Bornat \emph{et al.} gave an early attempt to reason about graph algorithms in separation logic in a more general way~\cite{bornat:aliasing04}.
