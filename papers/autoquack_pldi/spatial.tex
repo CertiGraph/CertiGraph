@@ -76,24 +76,47 @@ Part of the problem is that the recursive structure interacts very badly with $*
 
 %* Showing that neither traditional fixpoint method works
 
-Appel and McAllester proposed another fixpoint $\mu_{\mathsf{A}}$
-that is sometimes used to define recursive predicates in separation
-logic \cite{appel:fixpoint}.  This time the functional $F_P$ needs to be
-\emph{contractive}, which to a first order of approximation means that
-all recursion needs to be guarded by the ``approximation
-modality''~$\rhd$~\cite{appel:vmm}, \emph{i.e.} our graph predicate would
-look like
-\begin{align*}
-\grapham(x, \gamma) ~ &\stackrel{\Delta}{=}\\
- (x = 0 /| \p{emp}) & |/ \exists m,l,r.~ \gamma(x)=(m,l,r) /| \null \\
- x |-> m,l,r & ** \rhd \grapham(l, \gamma) ** \rhd \grapham(r, \gamma)
-\end{align*}
+%Appel and McAllester proposed another fixpoint $\mu_{\mathsf{A}}$
+%that is sometimes used to define recursive predicates in separation
+%logic \cite{appel:fixpoint}.  This time the functional $F_P$ needs to be
+%\emph{contractive}, which to a first order of approximation means that
+%all recursion needs to be guarded by the ``approximation
+%modality''~$\rhd$~\cite{appel:vmm}, \emph{i.e.} our graph predicate would
+%look like
+%\begin{align*}
+%\grapham(x, \gamma) ~ &\stackrel{\Delta}{=}\\
+% (x = 0 /| \p{emp}) & |/ \exists m,l,r.~ \gamma(x)=(m,l,r) /| \null \\
+% x |-> m,l,r & ** \rhd \grapham(l, \gamma) ** \rhd \grapham(r, \gamma)
+%\end{align*}
+%
+%Unfortunately, $\rhd P$ is not precise for all $P$, so $\grapham$ is not precise either.  The approximation modality's universal imprecision has never been noticed before. % in the literature.  %We must do better.
 
-Unfortunately, $\rhd P$ is not precise for all $P$, so $\grapham$ is not precise either.  The approximation modality's universal imprecision has never been noticed before. % in the literature.  %We must do better.
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%% Edit0: cut down contractive recursion
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \subsection{Defining a good \p{graph} predicate}\label{sec:goodgraph}
 
 Rather than trying to define \p{graph} as a recursive fixpoint, we will instead give it a flat structure.  As discussed in \S\ref{sec:related}, graphs in separation logic have been defined in similar ways before; what is new here is that we prove---with the amount of precision required to convince Coq---that we can still enjoy fold/unfold with our definition.  Our path starts with the iterated separating conjunction or ``big star'', defined as:
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%% Edit1
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%% Edit1: Qinxiang's proposal starts
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\iftrue
+\begin{eqnarray*}
+&& \underset{\{l_1, l_2,\dots,l_n\}}{\bigstar}P ~~ \defeq ~~ P(l_1) *
+  P(l_2) * \dots * P(l_n) \\
+&& \underset{S}{\bigstar} P ~~ \defeq ~~ \exists L.~ (\p{NoDup}\ L) /| (\forall x.~ x\ \p{in}\ L <=> x \in S) /| \underset{L}{\bigstar}P
+\end{eqnarray*}
+The big star $\bigstar$ is first defined over a list. Then the definition extended to sets. Now, we are ready to give a good \p{graph} predicate:
+\fi
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%% Edit1: Qinxiang's proposal ends
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%% Edit1: Original version starts
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\iffalse
 \begin{equation*}
   \underset{\{l_1, l_2,\dots,l_n\}}{\bigstar}P ~~ \defeq ~~ P(l_1) *
   P(l_2) * \dots * P(l_n).
@@ -105,6 +128,10 @@ Formally $\bigstar$ is defined over a list rather than a set and is parameterize
 We use the same $\bigstar$ notation since the concepts are similar, but the existential adds a little pain since we need to prove that all choices of $L$ yield equivalent predicates.
 
 We are now ready to give a good \p{graph} predicate:
+\fi
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%% Edit1: Original version ends
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{equation}\label{eqn:iter_def}
   \p{graph}(x, \gamma) ~~ \defeq ~~ \underset{v \in \mathit{reach}(\gamma, x)}{\bigstar} v\mapsto\gamma(v)
 \end{equation}
@@ -113,9 +140,26 @@ $\gamma$ is a GeneralGraph and ``$x |-> \gamma(x)$'' is a predicate that describ
 \exists m,l,r.~\gamma(x) = (m,l,r) /| x |-> m,-,l,r /| x\ \p{mod}\ 16 = 0
 \]
 $\gamma$ need not be a bigraph, but \emph{e.g.} can have many edges.
-%,  it can have more edges or data fields.
-%; $\gamma$ is in no way limited to bigraphs.
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%% Edit2
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%% Edit2: Qinxiang's proposal starts
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\iftrue
+Our definition of \p{graph} is flat in the sense that there is no obvious way to follow the link structure recursively.  Happily, we can recover a general recursive fold/unfold (if $x |-> \gamma(x)$ and the GeneralGraph have the necessary properties):
+\begin{eqnarray}
+\label{eqn:unfold_graph}
+&\p{graph}(x,\gamma) ~~ <=> ~~ x |-> \gamma(x) ** \Big(\!\!\!\!\!\!\!\!\!\!\!\!\underset{n \in \p{neighbors}(\gamma,x)}{\raisebox{-0.3ex}{\resizebox{0.75em}{!}{$\scon$}} \hspace{-2.45ex} \bigcup}\!\!\!\!\!\!\!\!\!\!\!\! \p{graph}(\gamma,n) \Big) \\
+& ~~~ \text{where } ~ \underset{l_1,\dots,l_n}{\raisebox{-0.3ex}{\resizebox{0.75em}{!}{$\scon$}}\hspace{-2.45ex} \bigcup} \! \! P ~~ \defeq ~~ P(l_1) ** \ldots ** P(l_n) \notag
+\end{eqnarray}
+\fi
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%% Edit2: Qinxiang's proposal ends
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%% Edit2: Original version starts
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\iffalse
 Our definition of \p{graph} is flat in the sense that there is no obvious way to follow the link structure recursively.  Happily, we can recover a general recursive fold/unfold if $x |-> \gamma(x)$ and the GeneralGraph have the necessary properties.  To state this lemma we need the iterated overlapping conjunction:
 \[
 \underset{l_1,\dots,l_n}{\raisebox{-0.3ex}{\resizebox{0.75em}{!}{$\scon$}}\hspace{-2.45ex} \bigcup} \! \! P ~~ \defeq ~~ P(l_1) ** \ldots ** P(l_n)
@@ -126,19 +170,24 @@ Now we can state the general fold/unfold as follows:
 \p{graph}(x,\gamma) ~~ <=> ~~ x |-> \gamma(x) ** \Big(\!\!\!\!\!\!\!\!\!\!\!\!\underset{n \in \p{neighbors}(\gamma,x)}{\raisebox{-0.3ex}{\resizebox{0.75em}{!}{$\scon$}} \hspace{-2.45ex} \bigcup}\!\!\!\!\!\!\!\!\!\!\!\! \p{graph}(\gamma,n) \Big)
 \end{equation}
 We get a full equivalence between a graph and its ``unfolded'' structure, regardless of how many neighbors $x$ has.
+\fi
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%% Edit2: Original version ends
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-Both directions of this lemma require care.  In the $=>$ direction, the key difficulty is that we need to take the existentially-quantified list of vertices on the left $L$ and divide it into (not necessarily disjoint) sublists $L_1, \dots, L_n$ such that $L_i$ is exactly those vertices reachable from neighbor $i$.  The goal is straightforward assuming that the GeneralGraph is appropriately finite, but mechanizing the proof is tricky.
-In the $<=$ direction, the difficulty is that if two nodes $x |-> \gamma(x)$ and $x' |-> \gamma(x')$ are \emph{skewed}, \emph{i.e.} ``partially overlapping'' with some---but not all---of $x$'s memory cells shared with $x'$, then the $\bigstar$ on the left hand side cannot separate them.  To avoid skewing we require $x |-> \gamma(x)$ be \emph{alignable}.  A predicate $P$ is alignable when
+The proof of $<=$ direction requires care. The difficulty is that if two nodes $x |-> \gamma(x)$ and $x' |-> \gamma(x')$ are \emph{skewed}, \emph{i.e.} ``partially overlapping'' with some---but not all---of $x$'s memory cells shared with $x'$, then the $\bigstar$ on the left hand side cannot separate them.  To avoid skewing we require $x |-> \gamma(x)$ be \emph{alignable}.  A predicate $P$ is alignable when
 \[
 \forall x,y.~ \Big(P(x) ** P(y) |- \big(P(x) /| x = y\big) |/ \big(P(x) * P(y)\big)\Big)
 \]
 That is, either they are completely on top of one another or they do not interfere at all.  In a Java-like memory model such as in HIP/SLEEK this property is automatic because pointers in such a model always point to the root/beginning of an object.  In contrast, in a C-like memory model such as in VST/CompCert, this property is not automatic because pointers can point anywhere.  In such a model, alignment is most easily enforced by storing graph nodes at addresses that are multiples of an appropriate size (16 in Figure~\ref{fig:markgraph}).
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%% Edit3: cut the => direction
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 
 Some of our VST proofs do not use fold/unfold, instead preferring to use the lemmas in~\S\ref{sec:ramifylib} directly.  On the other hand, for HIP/SLEEK fold/unfold is vital, and knowing that the recursive relationship holds produces a pleasant feeling.  We also prove a general fold/unfold lemma for DAGs in which we get a $*$ between the root and its $\medocon$-joined neighbors rather than the $**$ present in \eqref{eqn:unfold_graph}.
 
 \subsection{Ramification Libraries}\label{sec:ramifylib}
-%\subsection{Infrastructure: Isolate memory model}
 
 \begin{figure}[t]
 \centering
