@@ -1,22 +1,22 @@
 To verify the functional correctness of graph
 algorithms we need a framework to reason about mathematical graphs.
-As will be shown in \S\ref{sec:development}, our mathematical 
+As will be shown in \S\ref{sec:development}, our mathematical
 graph constructions comprise a considerable fraction of our
-codebase.  Indeed, as discussed in \S\ref{sec:related}, 
+codebase.  Indeed, as discussed in \S\ref{sec:related},
 25 years of research into mechanized graph theory can
 be summarized as ``it is a little tricky''.  While
-we have some elegant definitions and proofs, 
+we have some elegant definitions and proofs,
 our two key contributions for this section are more abstract.
 
-First, as demonstrated in \S\ref{sec:orientation}, 
-our development is expressive and powerful enough to verify realistic 
-algorithms---that is, it actually works in an end-to-end system.  
-Second, we have taken considerable care to develop a modular and 
-general-purpose framework for such mathematical graphs to allow 
+First, as demonstrated in \S\ref{sec:orientation},
+our development is expressive and powerful enough to verify realistic
+algorithms---that is, it actually works in an end-to-end system.
+Second, we have taken considerable care to develop a modular and
+general-purpose framework for such mathematical graphs to allow
 such verifications to be mechanized without undue pain.
 Accordingly, in this section we will present our framework
 at a high level to communicate the overall architecture rather
-than focusing on the nitty-gritty details.  
+than focusing on the nitty-gritty details.
 
 \subsection{Structure of the mathematical graph framework}\label{sec:mathinfra}
 
@@ -130,7 +130,7 @@ where $V$ and $E$ are the underlying carrier set of vertices and edges.  Not eve
 
 Designing a graph type that can reason about missing vertices and edges is convenient for verifying real programs.  For example, consider the difference of two graphs, $\gamma_1 - \gamma_2$.  Even if both of these graphs are ``well-formed'' to begin with, in the sense that valid nodes have only valid edges and vice versa, their difference may not since there may be dangling edges pointing to the now-removed vertices of $\gamma_2$.
 
-Many graph concepts such as \emph{path}, \emph{reachability}, and \emph{subgraph} are defined on PreGraphs.  We write $\p{reachable}(\gamma,v)$ to represent set of all reachable vertices from $v$. 
+Many graph concepts such as \emph{path}, \emph{reachability}, and \emph{subgraph} are defined on PreGraphs.  We write $\p{reachable}(\gamma,v)$ to represent set of all reachable vertices from $v$.
 In \S\ref{sec:spacegraph} we will tie mathematical graphs $\gamma$ to a spatial graph predicate
 $\p{graph}(x, \gamma)$.   As we will see, $\p{graph}$ ``owns'' only the
 spatial portion of $\gamma$ that is reachable
@@ -246,7 +246,7 @@ We have a number of other properties in our codebase, but these four are the mos
 We use Coq's typeclass system to manage our plugins smoothly, essentially to enable the diagram in Figure~\ref{fig:properties}.  The idea is that if we have two properties, each of which come with some already-proved lemmas, we can combine these plugins to prove the emergent lemmas that result from the combination, and then treat the new combination as a new plugin.  Since the system is compositional, we can easily mix many different properties together.  For example, we compose \p{BiGraph}, \p{MathGraph}, and \p{FiniteGraph} together into a new plugin we call \p{BiMaFin}.  \p{BiMaFin} is the actual soundness condition used to verify the program in Figure~\ref{fig:markgraph}.
 
 We can apply our framework to define related structures such as DAGs and trees.
-For example, a DAG has the additional property that for any $x$ and $y$, 
+For example, a DAG has the additional property that for any $x$ and $y$,
 if $x$ is reachable from $y$, then $x = y$ or $y$ is not reachable
 from $x$.  Similarly, we define tree by saying that for any reachable node $n$ there is
 a unique path from the root to $n$.
@@ -270,16 +270,14 @@ Accordingly, we can reuse facts such as the following:
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%% Edit 4: Qinxiang's proposal starts
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{equation*}
-\begin{split}
-& \forall \gamma,  x, \gamma_1, .., \gamma_{n+1}. \\
-& ~~ \text{if } \gamma(x)=(0, v_1, \dots,v_n),   \m{mark1}(\gamma, x, \gamma_1) \\
-& ~~~~ \text{ and } \forall i, \m{mark}(\gamma_i,v_i,\gamma_{i+1}) \\
-& ~~ \text{then } \m{mark}(\gamma,x,\gamma_{n+1}).
-\end{split}
-\end{equation*}
-We prove this theorem sound for any LabeledGraph, not just
-\p{BiGraph}s (\emph{i.e.}, we do not assume only two neighbors). 
+\[
+\begin{array}{@{}l@{}}
+\text{if } \gamma(x)=(0, v_1, \dots,v_n), \m{mark1}(\gamma, x, \gamma_1), \\
+\text{and } \forall i, \m{mark}(\gamma_i,v_i,\gamma_{i+1}) \text{ then } \m{mark}(\gamma,x,\gamma_{n+1}).
+\end{array}
+\]
+%We prove this theorem sound for any LabeledGraph, not just
+%\p{BiGraph}s (\emph{i.e.}, we do not assume only two neighbors).
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%% Edit 4: Qinxiang's proposal ends
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
