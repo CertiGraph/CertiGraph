@@ -1,0 +1,85 @@
+\begin{figure}
+  \begin{lstlisting}
+struct Node {
+    int m;
+    struct Node * l;
+    struct Node * r; };
+
+struct Node * copy(struct Node * x) { 
+    struct Node * l, * r, * x0, * l0, * r0;
+// $\{\p{graph}(\tx{x},\gamma)\}$
+      if (x == 0)
+        return 0;
+// $\{\p{graph}(\tx{x},\gamma)/| x\neq 0\}$
+// $\{\p{graph}(\tx x,\gamma) /| \exists x_0,l,r.~ \gamma(\tx{x}) = (x_0,l,r)\}$
+// $\{\p{graph}(\tx x,\gamma) /| \gamma(\tx{x}) = (x_0,l,r)\}$
+// $\searrow \{\tx x|-> x_0,l,r /| \gamma(\tx{x}) = (x_0,l,r)\}$
+      x0 = x -> m;
+// $\swarrow \{\tx x|-> x_0,l,r /| \gamma(\tx{x}) = (x_0,l,r) /| \tx{x0} = x_0\}$
+// $\{\p{graph}(\tx x,\gamma) /| \gamma(\tx{x}) = (\tx{x0},l,r)\}$
+      if (x0 != 0)
+        return x0;
+// $\{\p{graph}(\tx x,\gamma) /| \gamma(\tx{x}) = (0,l,r) \}$
+      x0 = (struct Node *) mallocN (sizeof (struct Node));
+// $\{\p{graph}(\tx x,\gamma) * \tx{x0} |-> \_, \_, \_ /| \gamma(\tx{x}) = (0,l,r) \}$
+// $\searrow \{\tx x|-> 0,l,r * \tx{x0} |-> \_, \_, \_ /| \gamma(\tx{x}) = (0,l,r)\}$
+      l = x -> l;
+      r = x -> r;
+      x -> m = x0;
+      x0 -> m = 0;
+// $\swarrow \left\{\!\!\!\begin{array}{l@{}} \tx x|-> \tx{x0},\tx{l},\tx{r} * \tx{x0} |-> 0, \_, \_ /| \\ \gamma(\tx{x}) = (\tx{x0},\tx{l},\tx{r}) /|  \exists \gamma_1 \gamma_1'. \m{v\_copy1}(\gamma, \tx{x}, \gamma_1, \gamma_1') \end{array}\right\}$
+// $\left\{\!\!\!\begin{array}{l@{}}\exists \gamma_1 \gamma_1'. \p{graph}(\tx x,\gamma_1) * \tx{x0} |-> 0, \_, \_ /| \\ \gamma(\tx{x}) = (\tx{x0},\tx{l},\tx{r}) /| \m{v\_copy1}(\gamma, \tx{x}, \gamma_1, \gamma_1')\end{array}\right\}$
+// $\left\{\!\!\!\begin{array}{l@{}} \p{graph}(\tx x,\gamma_1) * \tx{x0} |-> 0, \_, \_ /| \\ \gamma(\tx{x}) = (\tx{x0},\tx{l},\tx{r}) /| \m{v\_copy1}(\gamma, \tx{x}, \gamma_1, \gamma_1')\end{array}\right\}$
+// $\left\{\!\!\!\begin{array}{l@{}} \p{graph}(\tx x,\gamma_1) * \tx{x0} |-> 0, \_, \_ * \p{holegraph}(\tx{x0}, \gamma_1') /| \\ \gamma(\tx{x}) = (\tx{x0},\tx{l},\tx{r}) /| \m{v\_copy1}(\gamma, \tx{x}, \gamma_1, \gamma_1')\end{array}\right\}$
+// $\searrow \{\p{graph}(\tx l,\gamma_1)\}$
+      l0 = copy(l);
+// $\swarrow \left\{\!\!\!\begin{array}{l@{}} \exists \gamma_2 \gamma_2''. \p{graph}(\tx{l},\gamma_2) * \p{graph}(\tx{l0}, \gamma_2'') /| \\ \m{copy}(\gamma_1, \tx{l}, \gamma_2, \gamma_2'') /| \gamma_2(\tx{l}) = (\tx{l0}, \_, \_)\end{array}\right\}$
+// $\left\{\!\!\!\begin{array}{l@{}} \exists \gamma_2 \gamma_2''. \p{graph}(\tx{x},\gamma_2)  * \tx{x0} |-> 0, \_, \_ * \p{holegraph}(\tx{x0}, \gamma_1') * \p{graph}(\tx{l0}, \gamma_2'') /| \\ \m{v\_copy1}(\gamma, \tx{x}, \gamma_1, \gamma_1')/| \m{copy}(\gamma_1, \tx{l}, \gamma_2, \gamma_2'') /| \gamma_2(\tx{l}) = (\tx{l0}, \_, \_)\end{array}\right\}$
+// $\left\{\!\!\!\begin{array}{l@{}} \exists \gamma_2 \gamma_2'. \p{graph}(\tx{x},\gamma_2)  * \tx{x0} |-> 0, \_, \_ * \p{holegraph}(\tx{x0}, \gamma_2') /| \\ \m{v\_copy1}(\gamma, \tx{x}, \gamma_1, \gamma_1') /| \m{ext\_copy}(\gamma_1, \gamma_1', \tx{l}, \gamma_2, \gamma_2') /| \gamma_2(\tx{l}) = (\tx{l0}, \_, \_)\end{array}\right\}$
+// $\left\{\!\!\!\begin{array}{l@{}}\p{graph}(\tx{x},\gamma_2)  * \tx{x0} |-> 0, \_, \_ * \p{holegraph}(\tx{x0}, \gamma_2') /| \\ \m{v\_copy1}(\gamma, \tx{x}, \gamma_1, \gamma_1') /| \m{ext\_copy}(\gamma_1, \gamma_1', \tx{l}, \gamma_2, \gamma_2') /| \gamma_2(\tx{l}) = (\tx{l0}, \_, \_)\end{array}\right\}$
+      x0 -> l = l0;
+// $\left\{\!\!\!\begin{array}{l@{}} \p{graph}(\tx{x},\gamma_2)  * \tx{x0} |-> 0, \tx{l0}, \_ * \p{holegraph}(\tx{x0}, \gamma_2') /| \\ \m{v\_copy1}(\gamma, \tx{x}, \gamma_1, \gamma_1') /| \m{ext\_copy}(\gamma_1, \gamma_1', \tx{l}, \gamma_2, \gamma_2') /| \gamma_2(\tx{l}) = (\tx{l0}, \_, \_)\end{array}\right\}$
+// $\left\{\!\!\!\begin{array}{l@{}} \exists \gamma_3 \gamma_3', \p{graph}(\tx{x},\gamma_3)  * \tx{x0} |-> 0, \tx{l0}, \_ * \p{holegraph}(\tx{x0}, \gamma_3') /| \\ \m{v\_copy1}(\gamma, \tx{x}, \gamma_1, \gamma_1') /| \m{ext\_copy}(\gamma_1, \gamma_1', \tx{l}, \gamma_2, \gamma_2') /| \\ \m{e\_copyL}(\gamma_2, \gamma_2', \tx{x}, \gamma_3, \gamma_3')\end{array}\right\}$
+// $\left\{\!\!\!\begin{array}{l@{}} \p{graph}(\tx{x},\gamma_3) * \tx{x0} |-> 0, \tx{l0}, \_ * \p{holegraph}(\tx{x0}, \gamma_3') /| \\ \m{v\_copy1}(\gamma, \tx{x}, \gamma_1, \gamma_1') /| \m{ext\_copy}(\gamma_1, \gamma_1', \tx{l}, \gamma_2, \gamma_2') /| \\ \m{e\_copyL}(\gamma_2, \gamma_2', \tx{x}, \gamma_3, \gamma_3') \end{array}\right\}$
+// $\searrow \{\p{graph}(\tx r,\gamma_3)\}$
+      r0 = copy(r);
+// $\swarrow \left\{\!\!\!\begin{array}{l@{}} \exists \gamma_4 \gamma_4''. \p{graph}(\tx{r},\gamma_4) * \p{graph}(\tx{r0}, \gamma_4'') /| \\ \m{copy}(\gamma_3, \tx{r}, \gamma_4, \gamma_4'') /| \gamma_4(\tx{r}) = (\tx{r0}, \_, \_)\end{array}\right\}$
+// $\left\{\!\!\!\begin{array}{l@{}} \exists \gamma_4 \gamma_4''. \p{graph}(\tx{x},\gamma_4) * \tx{x0} |-> 0, \tx{l0}, \_ * \p{holegraph}(\tx{x0}, \gamma_4') * \p{graph}(\tx{r0}, \gamma_4'')  /| \\\m{v\_copy1}(\gamma, \tx{x}, \gamma_1, \gamma_1') /| \m{ext\_copy}(\gamma_1, \gamma_1', \tx{l}, \gamma_2, \gamma_2') /| \\ \m{e\_copyL}(\gamma_2, \gamma_2', \tx{x}, \gamma_3, \gamma_3') /| \m{copy}(\gamma_3, \tx{r}, \gamma_4, \gamma_4'') /| \gamma_4(\tx{r}) = (\tx{r0}, \_, \_)\end{array}\right\}$
+// $\left\{\!\!\!\begin{array}{l@{}} \exists \gamma_4 \gamma_4'. \p{graph}(\tx{x},\gamma_4) * \tx{x0} |-> 0, \tx{l0}, \_ * \p{holegraph}(\tx{x0}, \gamma_4')  /| \\\m{v\_copy1}(\gamma, \tx{x}, \gamma_1, \gamma_1') /| \m{ext\_copy}(\gamma_1, \gamma_1', \tx{l}, \gamma_2, \gamma_2') /| \\ \m{e\_copyL}(\gamma_2, \gamma_2', \tx{x}, \gamma_3, \gamma_3') /| \m{ext\_copy}(\gamma_3, \gamma_3', \tx{r}, \gamma_4, \gamma_4') /| \\ \gamma_4(\tx{r}) = (\tx{r0}, \_, \_)\end{array}\right\}$
+  \end{lstlisting}
+\caption{Proof sketch for bigraph copy - part 1}
+\label{fig:copy-part1}
+\end{figure}
+
+\newpage 
+
+\begin{figure}
+  \begin{lstlisting}
+// $\left\{\!\!\!\begin{array}{l@{}} \p{graph}(\tx{x},\gamma_4) * \tx{x0} |-> 0, \tx{l0}, \_ * \p{holegraph}(\tx{x0}, \gamma_4') * \p{graph}(\tx{r0}, \gamma_4')  /| \\\m{v\_copy1}(\gamma, \tx{x}, \gamma_1, \gamma_1') /| \m{ext\_copy}(\gamma_1, \gamma_1', \tx{l}, \gamma_2, \gamma_2') /| \\ \m{e\_copyL}(\gamma_2, \gamma_2', \tx{x}, \gamma_3, \gamma_3') /| \m{ext\_copy}(\gamma_3, \gamma_3', \tx{r}, \gamma_4, \gamma_4') /| \\ \gamma_4(\tx{r}) = (\tx{r0}, \_, \_)\end{array}\right\}$
+      x0 -> r = r0;
+// $\left\{\!\!\!\begin{array}{l@{}} \p{graph}(\tx{x},\gamma_4) * \tx{x0} |-> 0, \tx{l0}, \tx{r0} * \p{holegraph}(\tx{x0}, \gamma_4') * \p{graph}(\tx{r0}, \gamma_4')  /| \\\m{v\_copy1}(\gamma, \tx{x}, \gamma_1, \gamma_1') /| \m{ext\_copy}(\gamma_1, \gamma_1', \tx{l}, \gamma_2, \gamma_2') /| \\ \m{e\_copyL}(\gamma_2, \gamma_2', \tx{x}, \gamma_3, \gamma_3') /| \m{ext\_copy}(\gamma_3, \gamma_3', \tx{r}, \gamma_4, \gamma_4') /| \\ \gamma_4(\tx{r}) = (\tx{r0}, \_, \_)\end{array}\right\}$
+// $\left\{\!\!\!\begin{array}{l@{}} \exists \gamma_5 \gamma_5'. \p{graph}(\tx{x},\gamma_5) * \tx{x0} |-> 0, \tx{l0}, \tx{r0} * \p{holegraph}(\tx{x0}, \gamma_5')  /| \\\m{v\_copy1}(\gamma, \tx{x}, \gamma_1, \gamma_1') /| \m{ext\_copy}(\gamma_1, \gamma_1', \tx{l}, \gamma_2, \gamma_2') /| \\ \m{e\_copyL}(\gamma_2, \gamma_2', \tx{x}, \gamma_3, \gamma_3') /| \m{ext\_copy}(\gamma_3, \gamma_3', \tx{r}, \gamma_4, \gamma_4') /| \\ \m{e\_copyR}(\gamma_4, \gamma_4', \tx{r}, \gamma_5, \gamma_5')\end{array}\right\}$
+// $\left\{\!\!\!\begin{array}{l@{}} \p{graph}(\tx{x},\gamma_5) * \tx{x0} |-> 0, \tx{l0}, \tx{r0} * \p{holegraph}(\tx{x0}, \gamma_5')  /| \\\m{v\_copy1}(\gamma, \tx{x}, \gamma_1, \gamma_1') /| \m{ext\_copy}(\gamma_1, \gamma_1', \tx{l}, \gamma_2, \gamma_2') /| \\ \m{e\_copyL}(\gamma_2, \gamma_2', \tx{x}, \gamma_3, \gamma_3') /| \m{ext\_copy}(\gamma_3, \gamma_3', \tx{r}, \gamma_4, \gamma_4') /| \\ \m{e\_copyR}(\gamma_4, \gamma_4', \tx{r}, \gamma_5, \gamma_5')\end{array}\right\}$
+// $\left\{\p{graph}(\tx{x},\gamma_5) * \p{graph}(\tx{x0}, \gamma_5') /| \m{copy}(\gamma, \tx{x}, \gamma_5, \gamma_5')\right\}$
+
+// $\left\{\!\!\!\begin{array}{l@{}}\exists\gamma_3.~\p{vertices\_at}(R,\gamma_3)/| \gamma(\tx{x}) = (0,\tx{l},\tx{r})  /| \null \\ \m{mark1}(\gamma, \tx{x}, \gamma_1) /| \m{e\_span}(\gamma_1,\tx{x}.\text{L},\gamma_2) /| \m{e\_span}(\gamma_2,\tx{x}.\text{R},\gamma_3)\end{array}\right\}$
+} // $\{\exists \gamma_3.~\p{vertex\_at}(\p{reachable}(\gamma, \tx{x}), \gamma_3)/|\m{span}(\gamma,\tx{x},\gamma_3)\}$
+  \end{lstlisting}
+  \small
+\begin{gather*}
+  \p{holegraph}(x, \gamma)\defeq \underset{v\in\p{reachable}(\gamma, \tx x) - \{x\}}{\bigstar}v \mapsto \gamma(v)\\
+%  \begin{split}
+%  \m{span}(\gamma_1, \tx x, \gamma_2)\defeq &\m{mark}(\gamma_1,\tx x, \gamma_2) /| \gamma_1\!\uparrow(\lambda v. x\mathrel{{\stackrel{\gamma_1~}{\leadsto^{\star}_{0}}}} v) \text{ is a tree} /| \null\\
+%  & \gamma_1\!\uparrow\!(\lambda v.\neg x\mathrel{{\stackrel{\gamma_1~}{\leadsto^{\star}_{0}}}} v) = \gamma_2\!\uparrow\!(\lambda v.\neg x\mathrel{{\stackrel{\gamma_1~}{\leadsto^{\star}_{0}}}} v) /| \null\\
+%  & (\forall v.~x\mathrel{{\stackrel{\gamma_1~}{\leadsto^{\star}_{0}}}} v => \gamma_2\models x \leadsto v) /| \null\\
+%  & (\forall a,b.~x\mathrel{{\stackrel{\gamma_1~}{\leadsto^{\star}_{0}}}} a => \neg x\mathrel{{\stackrel{\gamma_1~}{\leadsto^{\star}_{0}}}} b => \neg \gamma_2\models a \leadsto b)\\
+%  \end{split}\\
+%  \m{e\_span}(\gamma_1, e, \gamma_2)\defeq
+%  \begin{cases}
+%    \gamma_1 - e = \gamma_2  & t(\gamma_1,e)=1\\
+%    \m{span}(\gamma_1, t(\gamma_1,e), \gamma_2) & t(\gamma_1,e)=0\\
+%  \end{cases}
+\end{gather*}
+\caption{Proof sketch for bigraph copy - part 2}
+\label{fig:copy-part2}
+\end{figure}
