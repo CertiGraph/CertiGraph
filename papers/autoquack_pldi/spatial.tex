@@ -209,7 +209,7 @@ ent/.style={shape=rectangle, rounded corners=4pt, draw, on grid}]
 \caption{Infrastructure of ramification library}\label{fig:infra}
 \end{figure}
 
-We provide of our spatial development in Figure~\ref{fig:infra}.  Starting from the bottom, notice that there are two underlying heap models: the Step-Indexed Model, which is the main heap model used in VST, and a much simpler Direct Model, which is used by HIP/SLEEK among others.  The Step-Indexed model is much fancier, but none of our development depends on its bells and whistles.
+We provide {\color{magenta} the structure} of our spatial development in Figure~\ref{fig:infra}.  Starting from the bottom, notice that there are two underlying heap models: the Step-Indexed Model, which is the main heap model used in VST, and a much simpler Direct Model, which is used by HIP/SLEEK among others.  The Step-Indexed model is much fancier, but none of our development depends on its bells and whistles.
 
 To isolate our development from these unnecessary complications, and to ensure that HIP/SLEEK can reuse our spatial reasoning, we use two interfaces: Core Logic and Supplementary Logic.  Both models can instantiate both interfaces, but generally speaking our VST proofs only need the Core properties to prove our examples, whereas HIP/SLEEK uses both Core and Supplemental.  Each interface defines some operators of separation logic and provides some axioms about how they work.  For example, $*$ and $ --*$ are in Core Logic, along with the axiom $(P |- Q --* R) <=> (P * Q |- R)$.  On the other hand, the $**$ and $--o$ operators are in Supplementary Logic, along with rules like $P |- P ** P$.
 
