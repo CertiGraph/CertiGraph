@@ -36,7 +36,6 @@ Suppose that other (elided) lines of the program make localization desirable, ev
 One problem is that $L_2 --* G_2$ does \textbf{not} ignore the modified program variable \tx{x}, preventing us from applying \infrulestyle{Ramify}.  Intuitively, the side condition on the \infrulestyle{Ramify} rule is a bit too strong since it prevents us from mentioning variables in the postconditions that have been modified by code $c$.
 
 We could try to weaken the side condition in \infrulestyle{Ramify} to $\big(\FV(G_2) \cap \MV(c)\big) \subseteq \FV(L_2)$, the idea being that information about modified program variables mentioned in the local postcondition $L_2$ can be carried to the global postcondition $G_2$.  Unfortunately, this idea is unsound because \li{x} cannot simultaneously be both~5 and~6, \emph{i.e.} the above entailment is vacuous.  A better idea is: % the following :
-\vspace{-1.5ex}
 \[
 \infrule{Ramify-P (Program variables)}
 {\{ L_1 \} ~ c ~ \{L_2 \} \\
@@ -67,7 +66,6 @@ Here is the definition of $\pguards{c}$, writing $\langle c \rangle$ for $\MV(c)
 In other words, $\pguards{c}$ is exactly the universal modal operator~$\Box$ over the relation that considers equivalent all states that differ only on program values modified by $c$.  Since $\stackrel{\langle c \rangle}{\cong}$ is an equivalence relation, $\pguards{c}$ forms an S5 modal logic.
 
 Note that \infrulestyle{Ramify-P} has no free variable side condition, which is unnecessary because $\forall P.~ \pguards{c}P \text{ ignores } \MV(c)$.  However, in practice this side condition reappears because to actually prove a ramification entailment containing $\pguards{c}$ one typically applies the following \infrulestyle{Solve Ramify-P} rule:
-\vspace{-2ex}
 \[
 \infrule{Solve Ramify-P}
 {G_1 |- L_1 * F \\
