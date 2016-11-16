@@ -252,4 +252,4 @@ Proof.
   apply (mark1_mark_left_mark_right g g1 g2 g3 (ValidPointer b i) l r); auto.
 Time Qed. (* 358 secs. *)
 
-Print Assumptions body_mark.
+(* Print Assumptions body_mark. *)
