@@ -1,50 +1,43 @@
-Here we upgrade the \infrulestyle{Ramify} rule in two important respects.  The first is the treatment of modified program variables.  Although prosaic, a robust treatment of modified variables is essential to verifying programs of any length.  The second is better handling of existential variables in the postconditions of localization blocks, which occur frequently when using a relational specifications style.  For example, in lines~\ref{code:beforemarkl}--\ref{code:aftermarkl} of Figure~\ref{fig:markgraph} badly need to ``extract'' the existentially-quantified~$\gamma''$ from inside the localization block to outside it.  Surprisingly, it turns out that these two improvements are related: to enable robust treatment of modified program variables we need to extract existentially-quantified variables from localization blocks.  Accordingly, we develop the \infrulestyle{Ramify-PQ} rule that can robustly handle both modified \underline{p}rogram variables as well as existential \underline{q}uantifiers.
+Here we upgrade the \infrulestyle{Ramify} rule in two important respects.  The first is the treatment of modified program variables.  Although prosaic, a robust treatment of modified variables is essential to verifying programs of any length.  The second is better handling of existential variables in the postconditions of localization blocks, which occur frequently when using a relational specifications style.  For example, in lines~\ref{code:beforemarkl}--\ref{code:aftermarkl} of Figure~\ref{fig:markgraph} we must ``extract'' the existentially-quantified~$\gamma''$ from inside the localization block to outside it.  Moreover, rather surprisingly, robust treatment of modified program variables requires extraction of existential quantifiers from localization blocks.  Accordingly, we develop the \infrulestyle{Ramify-PQ} rule that can robustly handle both modified \underline{p}rogram variables as well as existential \underline{q}uantifiers.
 
 Hobor and Villard noted that their \infrulestyle{Ramify} rule handled modified program variables poorly~\cite{hobor:ramification} and proposed two solutions: using ``variables as resource''~\cite{bornat:var} and making local program transformations.  While these solutions are reasonable in a pen-and-paper context, both fall well short in mechanized ones.  Neither VST nor HIP/SLEEK use variables as resource, nor do they have modules to reason about program equivalence; moreover, most other mechanized verification systems do not support these solutions either~\cite{Beckert:2007,DistefanoP08,bengtson:charge}.  We want a solution that is widely applicable to tools as they actually exist today; in~\S\ref{sec:development} we will see that our modifications to VST and H/S are approximately 1.4\% of their respective codebases.
-\vspace{-0.75ex}
+
 \subsection{The program variable bugaboo}
 \label{sec:freevars}
-\vspace{-0.75ex}
+
 \infrulestyle{Frame}'s side condition ``$F \text{ ignores } \MV(c)$'' can be defined in two ways.
 In the more traditional syntactic style, it means that $\FV(F) \cap \MV(c) = \emptyset$.
 By ``syntactic style'' we mean that the side condition is written using a function $\FV(F)$ that takes an arbitrary formula and returns the set of free variables within that formula.  To define this $\FV(F)$ function
 we need a fixed inductive \textbf{syntax} for formulas.  In contrast, in this paper we follow a ``semantic style'' in which formulas are not given a fixed syntax in advance but can be defined \textbf{semantically} on the fly using an appropriate model~\cite{appel:programlogics}.  In a semantic style, the side condition on the frame rule is defined as:
-\vspace{-1.5ex}
 \[
 \begin{array}{ll}
 \sigma \stackrel{S}{\cong} \sigma' & \stackrel{\Delta}{=} ~~ \sigma \text{ and } \sigma' \text{ coincide everywhere except } S\\
 P \text{ ignores } S & \stackrel{\Delta}{=} ~~ \forall \sigma, \sigma'.~ \sigma \stackrel{S}{\cong} \sigma' => \null \\
 & \qquad ~~ (\sigma |= P) <=> (\sigma' |= P)
 \end{array}
-\vspace{-1.5ex}
 \]
 That is, we consider two program states $\sigma$ and $\sigma'$ equivalent up to program variable set $S$ when they agree everywhere except on the values of $S$ (typically, a state $\sigma$ is a pair of a heap $h$ and program variables $\rho$).  A predicate $P$ ignores $S$ when its truth is independent of all program variables in $S$.  %{\color{magenta} Notice both the syntactic and semantic styles use the $\MV(c)$ function defined via straightforward recursive case analysis on program syntax; programming languages typically do have a fixed syntactic structure.}
 
 
 Now consider using ramification to verify this program:
-\vspace{-1.25ex}
 \begin{lstlisting}
 // $\{ \tx{x} = 5 /| A \} \searrow \{\tx{x} = 5 /| B \}$
       ...; x = x + 1; ...;
 // $\{ \tx{x} = 6 /| D \} \swarrow \{\tx{x} = 6 /| C \}$
 \end{lstlisting}
-\vspace{-1.25ex}
 Suppose that other (elided) lines of the program make localization desirable, even though it is overkill for a single assignment.  The key issue is that the program variable {\li{x}} appears in all four positions in the ramification entailment
-\vspace{-1.25ex}
+\vspace{-1ex}
 \[
 \overbrace{(\li{x} \! = \! 5 /| A)}^{G_1} \vdash \overbrace{(\li{x} \! = \! 5 /| B)}^{L_1} * \big(\overbrace{(\li{x} \! = \! 6 /| C)}^{L_2} --* \overbrace{(\li{x} \! = \! 6 /| D)}^{G_2}\big)
-\vspace{-1ex}
 \]
 One problem is that $L_2 --* G_2$ does \textbf{not} ignore the modified program variable \tx{x}, preventing us from applying \infrulestyle{Ramify}.  Intuitively, the side condition on the \infrulestyle{Ramify} rule is a bit too strong since it prevents us from mentioning variables in the postconditions that have been modified by code $c$.
 
 We could try to weaken the side condition in \infrulestyle{Ramify} to $\big(\FV(G_2) \cap \MV(c)\big) \subseteq \FV(L_2)$, the idea being that information about modified program variables mentioned in the local postcondition $L_2$ can be carried to the global postcondition $G_2$.  Unfortunately, this idea is unsound because \li{x} cannot simultaneously be both~5 and~6, \emph{i.e.} the above entailment is vacuous.  A better idea is: % the following :
-\vspace{-1.25ex}
 \[
 \infrule{Ramify-P (Program variables)}
 {\{ L_1 \} ~ c ~ \{L_2 \} \\
  G_1 \vdash L_1 * \pguards{c}  (L_2 --* G_2)}
 {\{ G_1 \} ~ c ~ \{ G_2 \}}{}
-\vspace{-2ex}
 \]
 The ramification entailment now incorporates a new (universal/boxy) modal operator $\pguards{c}$.  The intuitive meaning of $\pguards{c}$ is that program variables modified by command $c$ can change value inside its scope.    Note that it is vital that $L_2$ appears as the antecedent of a (spatial) implication since the change in program variables is universally quantified.  This means that if we want to say anything specific about modified program variables in the global postcondition $G_2$ then we had better say something about them in the local postcondition $L_2$.
 
@@ -58,10 +51,11 @@ Let us return to our earlier entailment:
 Since \li{x} is modified, its value can change from the first line, in which \li{x} must be 5, to the second, in which \li{x} must be 6.
 
 Here is the definition of $\pguards{c}$, writing $\langle c \rangle$ for $\MV(c)$:
-\vspace{-1.5ex}
 \[
+%\begin{array}{lcl}
+%\langle c \rangle & \stackrel{\Delta}{=} & \MV(c) \\
 \sigma |= \pguards{c} P ~~ \stackrel{\Delta}{=} ~~ \forall \sigma'.~ (\sigma \stackrel{\langle c \rangle}{\cong} \sigma') => (\sigma' |= P)% ~~~~ \text{where $\mathsf{MV}(c)$ is $\MV(c)$}\\
-\vspace{-1ex}
+%\end{array}
 \]
 In other words, $\pguards{c}$ is exactly the universal modal operator~$\Box$ over the relation that considers equivalent all states that differ only on program values modified by $c$.  Since $\stackrel{\langle c \rangle}{\cong}$ is an equivalence relation, $\pguards{c}$ forms an S5 modal logic.
 
@@ -77,10 +71,7 @@ F |- L_2 --* G_2
 \]
 We can handle the $\pguards{c}$ by breaking apart the single entailment into a pair.  Using two entailments allows modified program variables to change between the preconditions and postconditions\footnote{Entailment procedures for separation logic may prefer to use $F * L_2 |- G_2$ as the second premise of \infrulestyle{Solve Ramify-P} because it is free from $--*$.}.  To connect the pair, we must choose a suitable predicate~$F$ that ignores modified variables in~$c$.
 
-With \infrulestyle{Ramify-P} and \infrulestyle{Solve Ramify-P} we can
-prove the \infrulestyle{Frame} rule with its canonical side condition
-as follows (this justifies our point in \S\ref{sec:localizations} that our new localization notation can also be used for frames):
-\vspace{-1ex}
+With \infrulestyle{Ramify-P} and \infrulestyle{Solve Ramify-P} we can prove the \infrulestyle{Frame} rule with its canonical side condition as follows:
 \[
 \infrule{}{\raisebox{1.4ex}{$\infrule{}{P * F |- P * F \\ F |- Q --* (Q * F)}
 {\raisebox{-4pt}[0pt][0pt]{$P * F |- P * \pguards{c}\big(Q --* (Q * F)\big)$}}
@@ -88,8 +79,8 @@ as follows (this justifies our point in \S\ref{sec:localizations} that our new l
 \\ \{P\}~c~\{Q\}}
 {\{P * F\}~c~\{Q * F\}}
 {}
-\vspace{-1ex}
 \]
+This justifies our point in \S\ref{sec:localizations} that our new localization notation can also be used for frames.
 
 Choosing $F$ in a concrete setting is a little delicate.  For our example, we can just substitute\footnote{In a semantic setting, substitution is defined with a modal operator rather than textual replacement, but the net effect is the same.}~\li{x} for~$6$ in $L_2 --* G_2$:
 \[
@@ -234,7 +225,8 @@ and omitted line~\ref{code:aftermarkl} entirely.
 
 %\ref{code:postmark1}]
 
-Although our technique to handle modified program variables is rather intricate, it can be done mechanically/automatically (\S\ref{sec:vst}).  Our \li{localize} and \li{unlocalize} tactics use \infrulestyle{Ramify-PQ} since it is the most general rule.
+Although our technique to handle modified program variables is rather intricate, it is done mechanically by our \li{localize} and \li{unlocalize} tactics, which use \infrulestyle{Ramify-PQ}.
+% since it is the most general rule.
 
 \subsection{Soundness of our rules}
 
