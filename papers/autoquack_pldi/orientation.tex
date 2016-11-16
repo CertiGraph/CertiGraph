@@ -5,6 +5,7 @@ verify concrete programs.  The modules interlock so there are no ``gaps'' in the
 
 %\vspace*{-0.75ex}
 \subsection{Marking a graph in VST}
+\label{sec:vstgraphmark}
 %\vspace*{-0.75ex}
 
 \input{mark_listing.tex}
@@ -135,6 +136,7 @@ New notation:
 \end{minipage}
 \vspace{-0.75ex}
 \subsection{Localizations in VST with \li{localize} and \li{unlocalize}}
+\label{sec:vstlocalunlocal}
 \vspace{-0.75ex}
 Floyd presents users with a pleasant ``decorated program'' visualization for Hoare proofs, in which users work from the top of the program to the bottom even though the formal proof is maintained as applications of inference rules.  For example, suppose the proof goal is $\triple{P_1}{c_1\li{;}c_2}{P_5}$ and VST's user tells Floyd to apply a Hoare rule for $c_1$, \emph{e.g.}~$\triple{P_1}{c_1}{P_2}$.  Floyd will then automatically apply the \infrulestyle{Sequence} rule and show the user $\triple{P_2}{c_2}{P_5}$ as the remaining goal.
 When the user is in the middle of a verification, the decorated program is partially done (\emph{i.e.} the proof is finished from the top to ``the current program point'') and the inference tree is also partially done (\emph{i.e.} with holes that are represented by the remaining proof goals in Coq).
