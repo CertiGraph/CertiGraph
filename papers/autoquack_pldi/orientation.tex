@@ -1,12 +1,11 @@
 \label{sec:vst}
 
-\vspace*{-1ex}
 The Verified Software Toolchain (VST) is a series of machine-checked modules written in Coq whose focus is reasoning about C programs~\cite{appel:programlogics}, especially those programs that can be compiled with the CompCert compiler~\cite{leroy:compcert}.  One of VST's modules, ``Floyd'', is a separation-logic based engine to help users
 verify concrete programs.  The modules interlock so there are no ``gaps'' in the end-to-end certified results; accordingly all of the rules employed by Floyd have been proved sound with respect to the underlying semantics used by CompCert.  Floyd is written in a combination of Ltac and Gallina and is designed to help users verify the full functional correctness of their programs.  Although Floyd devotes considerable effort to make this task simpler, it prefers expressibility and completeness to more automated tools like HIP/SLEEK.
 
-\vspace*{-0.75ex}
+%\vspace*{-0.75ex}
 \subsection{Marking a graph in VST}
-\vspace*{-0.75ex}
+%\vspace*{-0.75ex}
 
 \input{mark_listing.tex}
 
@@ -19,10 +18,10 @@ Accordingly, there is an unbroken certified chain from our specification of \li{
 % but the overall structure is the same.
 
 The specification we certify (lines \ref{code:markstart} and \ref{code:markend}) is
-\vspace*{-1ex}
+%\vspace*{-1ex}
 \[
 \{\p{graph}(\li{x},\gamma)\}~\li{mark(x)}~\{\exists \gamma'.~ \p{graph}(\li{x},\gamma') /| \m{mark}(\gamma, \li{x}, \gamma')\}
-\vspace*{-1ex}
+%\vspace*{-1ex}
 \]
 The specification is for full functional correctness, stated using \emph{mathematical} graphs~$\gamma$; until \S\ref{sec:mathgraph} consider $\gamma$ to be a function that maps a vertex $v \in V$ to triples $(m,l,r)$, where $m$ is a ``mark'' bit (0 or 1) and $\{l,r\} \subseteq V \uplus \{0\}$ are the neighbors of $v$.
 The \emph{spatial} \p{graph} predicate describes how the mathematical graph $\gamma$ is implemented in the heap.  Until~\S\ref{sec:spacegraph} it is enough to know that \p{graph} satisfies the fold/unfold relationship in
