@@ -72,6 +72,10 @@ struct Node * copy(struct Node * x) {
 & \forall e, f_V(d(\gamma_1, e)) = d(\gamma_2, f_E(e)) 
   \end{split} \\
   \begin{split}
+  \m{v\_copy1}(\gamma_1, x, \gamma_2, \gamma_2')\defeq  \exists x'. & x \neq 0 /| \m{mark1}(\gamma_1,x, \gamma_2) /| \\
+    & x \xleftrightarrow{\gamma_2} x' /| \gamma_2' = \{x_0\}
+  \end{split}\\
+  \begin{split}
   \m{copy}(\gamma_1, x, \gamma_2, \gamma_2')\defeq &\m{mark}(\gamma_1,x, \gamma_2) /| \\
    & \exists f_V f_E. \m{iso}(f_V, f_E,  \gamma_2\!\uparrow(\lambda v. x\mathrel{{\stackrel{\gamma_2~}{\leadsto^{\star}_{0}}}} v), \gamma_2') /| \\
    & \forall x x'. f_V(x) = x' \Leftrightarrow x \xleftrightarrow{\gamma_2} x'
@@ -81,6 +85,10 @@ struct Node * copy(struct Node * x) {
   & \m{mark}(\gamma_1,x, \gamma_2) /| \exists f_V f_E.  \\
    & \m{iso}(f_V, f_E,  \{e\} +\gamma_2\!\uparrow(\lambda v. x\mathrel{{\stackrel{\gamma_2~}{\leadsto^{\star}_{0}}}} v), \gamma_2'') /| \\
    & \forall x x'. f_V(x) = x' \Leftrightarrow x \xleftrightarrow{\gamma_2} x'
+  \end{split}\\
+  \begin{split}
+&\text{Here, when we mention \m{mark} and \m{mark1}, the value 1s in the} \\
+&\text{original definition are changed to non-zero values.}
   \end{split}\\
 \end{gather*}
 \caption{Proof sketch for bigraph copy - part 2}
