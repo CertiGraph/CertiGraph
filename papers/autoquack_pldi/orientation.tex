@@ -35,7 +35,7 @@ Third, \eqref{eqn:bigraphintrofoldunfold} illustrates how industrial-strength se
 
 Notice that the postcondition of \li{mark} is specified \emph{relationally}, \emph{i.e.} $\{\exists \gamma'.~ \p{graph}(\li{x},\gamma') /| \m{mark}(\gamma, \li{x}, \gamma')\}$ instead of \emph{functionally}, \emph{i.e.} $\{\p{graph}\big(\li{x},\m{mark}(\gamma, \li{x})\big)\}$. In the first case $\m{mark}$ is a relation that specifies that~$\gamma'$ is the result of correctly marking~$\gamma$ from~\li{x}, whereas in the second $\m{mark}$ is a function that \textbf{computes} the result of marking~$\gamma$ from~\li{x}. For both theoretical and practical reasons a relational approach is better.
 Theoretically, relations are preferable because they are more general.  For example, relations allow ``inputs'' to have no ``outputs'' (\emph{i.e.} be partial) or alternatively have many outputs (\emph{i.e.} be nondeterministic).  Our graph \li{copy} algorithm is specified nondeterministically to avoid specifying how \li{malloc} allocates fresh blocks of memory.  Relations are also preferable to functions because they are more compositional.
-We take advantage of compositionality by using $\m{mark}(\gamma,x,\gamma') /| \ldots$ to specify both our ``spanning tree'' and ``graph copy'' algorithms in~\S\ref{sec:application}, which also mark nodes while carrying out their primary task.
+We take advantage of compositionality by using $\m{mark}(\gamma,x,\gamma') /| \ldots$ to specify both our ``spanning tree'' and ``graph copy'' algorithms in~\S\ref{sec:application}, which also mark nodes while carrying out their primary tasks.
 
 \begin{figure}
 \[

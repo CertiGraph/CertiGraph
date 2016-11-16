@@ -27,7 +27,7 @@ Now consider using ramification to verify this program:
       ...; x = x + 1; ...;
 // $\{ \tx{x} = 6 /| D \} \swarrow \{\tx{x} = 6 /| C \}$
 \end{lstlisting}
-Suppose that the other (elided) lines of the program make localization desirable, even though it is overkill for a single assignment.  The key issue is that the program variable {\li{x}} appears in all four positions in the ramification entailment
+Suppose that other (elided) lines of the program make localization desirable, even though it is overkill for a single assignment.  The key issue is that the program variable {\li{x}} appears in all four positions in the ramification entailment
 \vspace{-1ex}
 \[
 \overbrace{(\li{x} \! = \! 5 /| A)}^{G_1} \vdash \overbrace{(\li{x} \! = \! 5 /| B)}^{L_1} * \big(\overbrace{(\li{x} \! = \! 6 /| C)}^{L_2} --* \overbrace{(\li{x} \! = \! 6 /| D)}^{G_2}\big)

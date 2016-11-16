@@ -72,9 +72,8 @@ than focusing on the nitty-gritty details.
 \caption{Structure of the Mathematical Graph Library}\label{fig:graphs}
 \end{figure}
 
-Figure~\ref{fig:graphs} gives the overall architecture of our mathematical graphs.
-The most basic kind of graph is PreGraph, out of which we build LabeledGraphs, and which in turn are used
-to build GeneralGraphs.  Each kind has some lemmas and also inherits the lemmas of the previous kind.  The dashed box represents a ``plugin'' system for attaching arbitrary properties to LabeledGraphs and will be discussed later. %We will consider each in turn.
+Figure~\ref{fig:graphs} gives the overall architecture of our mathematical graph library. The most basic kind of graph is PreGraph, out of which we build LabeledGraphs, and which in turn are used
+to build GeneralGraphs.  Each kind has some lemmas and also inherits the lemmas of the previous kind.  The dashed box represents a ``plugin'' system for attaching arbitrary properties to LabeledGraphs (\ref{subsec:graphplugins}). %and will be discussed later. %We will consider each in turn.
 
 \begin{figure}[t]
 \centering
@@ -126,13 +125,13 @@ to build GeneralGraphs.  Each kind has some lemmas and also inherits the lemmas 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \iftrue
 \paragraph{Pregraphs.} A PreGraph is a hextuple $(V, E, \phi_V, \phi_E, s, d)$,
-where $V$ and $E$ are the underlying carrier set of vertices and edges.  Not every $v \in V$ or $e \in E$ is actually ``in'' the graph, so we provide the predicates $\phi_V$ and $\phi_E$ to classify vertices and edges as \emph{valid} (in) or not (out).  Finally, $s$ and $d : E -> V$ are functions that map an edges to their source and destination respectively; this model means that PreGraphs are directed rather than undirected.  By design, there are no requirements for \emph{e.g.} how the validities of edges and vertices relate.  As shown in Figure \ref{fig:pregraph}, a PreGraph can contain invalid nodes and edges in an arbitrary configuration.
+where $V$ and $E$ are the underlying carrier sets of vertices and edges.  Not every $v \in V$ or $e \in E$ is actually ``in'' the graph, so we provide the predicates $\phi_V$ and $\phi_E$ to classify vertices and edges as \emph{valid} (in) or not (out).  Finally, $s$ and $d : E -> V$ are functions that map an edges to their source and destination respectively; this model means that PreGraphs are directed rather than undirected.  By design, there are no requirements for \emph{e.g.} how the validities of edges and vertices relate.  As shown in Figure \ref{fig:pregraph}, a PreGraph can contain invalid nodes and edges in an arbitrary configuration.
 
-Designing a graph type that can reason about missing vertices and edges is convenient for verifying real programs.  For example, consider the difference of two graphs, $\gamma_1 - \gamma_2$.  Even if both of these graphs are ``well-formed'' to begin with, in the sense that valid nodes have only valid edges and vice versa, their difference may not since there may be dangling edges pointing to the now-removed vertices of $\gamma_2$.
+Designing a graph type that can reason about missing vertices and edges is convenient for verifying real programs.  For example, consider the difference of two graphs, $\gamma_1 - \gamma_2$.  Even if both of these graphs are ``well-formed'' to begin with, in the sense that valid nodes have only valid edges and vice versa, their difference may not be since there may be dangling edges pointing to the now-removed vertices of $\gamma_2$.
 
 Many graph concepts such as \emph{path}, \emph{reachability}, and \emph{subgraph} are defined on PreGraphs.  We write $\p{reachable}(\gamma,v)$ to represent set of all reachable vertices from $v$.
-In \S\ref{sec:spacegraph} we will tie mathematical graphs $\gamma$ to a spatial graph predicate
-$\p{graph}(x, \gamma)$.   As we will see, $\p{graph}$ ``owns'' only the
+In \S\ref{sec:spacegraph} we will tie a mathematical graph $\gamma$ to a spatial graph predicate
+$\p{graph}(x, \gamma)$.   As we will see, a $\p{graph}$ ``owns'' only the
 spatial portion of $\gamma$ that is reachable
 from $x$ even though $\gamma$ may have other valid vertices.
 \fi
@@ -165,7 +164,7 @@ The advantage of designing a graph type that can reason about missing vertices a
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \iftrue
 \paragraph{LabeledGraph.}
-A LabeldGraph is a PreGraph with labels, e.g. the ``mark bit'' used in Figure~\ref{fig:markgraph} are labels.
+A LabeledGraph is a PreGraph with labels, e.g. the ``mark bit'' used in Figure~\ref{fig:markgraph} are labels.
 \fi
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%% Edit 2: Qinxiang's proposal ends
@@ -188,7 +187,7 @@ on LabeledGraphs.
 GeneralGraphs augment LabeledGraphs by adding a soundness condition, indicated in Figure~\ref{fig:graphs} by a dashed border.  These ``plugins'' can specify many different properties which in turn can be used to prove lemmas about the associated GeneralGraph.
 
 \subsection{Graph plugins}
-
+\label{subsec:graphplugins}
 Many theorems about graphs require certain properties, \emph{e.g.}:
 \begin{itemize}
 \item A graph may be finite (\p{FiniteGraph}), meaning that the sets of valid vertices and valid edges are both finite.
@@ -204,10 +203,10 @@ Many theorems about graphs require certain properties, \emph{e.g.}:
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%% Edit 3: Qinxiang's proposal ends
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\item More subtly, consider that many real data structures use special null values to represent unused edges.  The \p{MathGraph} property introduces this concept---\emph{i.e.} some invalid nodes that are nonetheless allowed to appear as destinations for valid edges.
+\item More subtly, consider that many real data structures use special null values to represent unused nodes.  The \p{MathGraph} property introduces this concept---\emph{i.e.} some invalid nodes that are nonetheless allowed to appear as destinations for valid edges.
 \item Many of our verified algorithms have only two outgoing edges per node.  The \p{BiGraph} property lets us reason about this common special case in a convenient manner.
 \end{itemize}
-We have a number of other properties in our codebase, but these four are the most important basic ones.
+We have a number of other properties in our codebase, but these three are the most important basic ones.
 
 \begin{figure}[t]
 \centering
@@ -245,10 +244,10 @@ We have a number of other properties in our codebase, but these four are the mos
 
 We use Coq's typeclass system to manage our plugins smoothly, essentially to enable the diagram in Figure~\ref{fig:properties}.  The idea is that if we have two properties, each of which come with some already-proved lemmas, we can combine these plugins to prove the emergent lemmas that result from the combination, and then treat the new combination as a new plugin.  Since the system is compositional, we can easily mix many different properties together.  For example, we compose \p{BiGraph}, \p{MathGraph}, and \p{FiniteGraph} together into a new plugin we call \p{BiMaFin}.  \p{BiMaFin} is the actual soundness condition used to verify the program in Figure~\ref{fig:markgraph}.
 
-We can apply our framework to define related structures such as DAGs and trees.
-For example, a DAG has the additional property that for any $x$ and $y$,
-if $x$ is reachable from $y$, then $x = y$ or $y$ is not reachable
-from $x$.
+%% We can apply our framework to define related structures such as DAGs and trees.
+%% For example, a DAG has the additional property that for any $x$ and $y$,
+%% if $x$ is reachable from $y$, then $x = y$ or $y$ is not reachable
+%% from $x$.
 %  Similarly, we define tree by saying that for any reachable node $n$ there is
 %a unique path from the root to $n$.
 
