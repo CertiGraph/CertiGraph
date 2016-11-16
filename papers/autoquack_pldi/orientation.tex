@@ -1,7 +1,7 @@
 \label{sec:vst}
 
 The Verified Software Toolchain (VST) is a series of machine-checked modules written in Coq whose focus is reasoning about C programs~\cite{appel:programlogics}, especially those programs that can be compiled with the CompCert compiler~\cite{leroy:compcert}.  One of VST's modules, ``Floyd'', is a separation-logic based engine to help users
-verify concrete programs.  The modules interlock so there are no ``gaps'' in the end-to-end certified results; accordingly all of the rules employed by Floyd have been proved sound with respect to the underlying semantics used by CompCert.  Floyd is written in a combination of Ltac and Gallina and is designed to help users verify the full functional correctness of their programs.  Although Floyd devotes considerable effort to make this task simpler, it prefers expressibility and completeness to more automated tools like HIP/SLEEK.
+verify concrete programs.  The modules interlock so there are no ``gaps'' in the end-to-end certified results; accordingly all of the rules employed by Floyd have been proved sound with respect to the underlying semantics used by CompCert.  Floyd is written in Ltac and Gallina and is designed to help users verify the full functional correctness of their programs.  Although Floyd devotes considerable effort to make this task simpler, it prefers expressibility and completeness to more automated tools like HIP/SLEEK.
 
 %\vspace*{-0.75ex}
 \subsection{Marking a graph in VST}
@@ -18,10 +18,10 @@ Accordingly, there is an unbroken certified chain from our specification of \li{
 % but the overall structure is the same.
 
 The specification we certify (lines \ref{code:markstart} and \ref{code:markend}) is
-%\vspace*{-1ex}
+\vspace*{-1ex}
 \[
 \{\p{graph}(\li{x},\gamma)\}~\li{mark(x)}~\{\exists \gamma'.~ \p{graph}(\li{x},\gamma') /| \m{mark}(\gamma, \li{x}, \gamma')\}
-%\vspace*{-1ex}
+\vspace*{-1ex}
 \]
 The specification is for full functional correctness, stated using \emph{mathematical} graphs~$\gamma$; until \S\ref{sec:mathgraph} consider $\gamma$ to be a function that maps a vertex $v \in V$ to triples $(m,l,r)$, where $m$ is a ``mark'' bit (0 or 1) and $\{l,r\} \subseteq V \uplus \{0\}$ are the neighbors of $v$.
 The \emph{spatial} \p{graph} predicate describes how the mathematical graph $\gamma$ is implemented in the heap.  Until~\S\ref{sec:spacegraph} it is enough to know that \p{graph} satisfies the fold/unfold relationship in
@@ -50,10 +50,10 @@ We take advantage of compositionality by using $\m{mark}(\gamma,x,\gamma') /| \l
 (\sigma_1 |= P) /| (\sigma_2 |= Q)
 \end{array}
 \]
-\vspace{-3ex}
+\vspace*{-1.5em}
 \caption{Separation logic connectives; $\oplus$ is the join operation on states, usually some kind of disjoint union on heaps}
 \label{fig:seplogsem}
-\vspace{-4ex}
+\vspace*{-1em}
 \end{figure}
 
 Practically, it is painful to define computational functions over graphs in a proof assistant like Coq, and portions of this pain are overkill.  For example, Coq requires that all functions terminate, a nontrivial proof obligation over cyclic structures like graphs, but our verification of \li{mark} is only for partial correctness.  Defining relations is much easier because \emph{e.g.} one can use quantifiers and does not have to prove termination.
@@ -66,6 +66,7 @@ In lines~\ref{code:beforerootmark}--\ref{code:afterrootmark}, imagine unfolding 
 
 To define localization blocks formally we need to first understand the \infrulestyle{Frame} and \infrulestyle{Ramify} rules.
 
+\vspace*{-0.75ex}
 \subsection{Frames and ramifications are localizations}
 %\label{sec:localizations}
 \vspace*{-0.75ex}
@@ -204,10 +205,9 @@ $\{\ \ P_6 \ \ \}$
   ...
 \end{lstlisting}
 \end{minipage}
-\vspace{-2ex}
+%\vspace{-ex}
 \caption{Front and back ends of \li{localize} and \li{unlocalize}}
 \label{figure:backend}
-\vspace{-3ex}
 \end{figure}
 
 Figure~\ref{figure:backend} has four partially-decorated ``proofs in progress'', from both the user's (front end) and Floyd's (back end) points of view.  In the first column, from the user's point of view, they saw the assertion $P_2$ (line~\ref{code:localglobalin}) and decided to use the \li{localize} tactic to zoom into $P_3$ (line~\ref{code:locallocalin}).  They then applied some proof rules to move past $c_2$ to reach the assertion $P_4$ (line~\ref{code:localsndcmd}).  At this point, Floyd does not know when the corresponding \li{unlocalize} tactic will execute, so it does not know which commands will be inside the block or what the final local and global postconditions will be.
