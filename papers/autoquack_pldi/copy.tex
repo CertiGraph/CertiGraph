@@ -63,17 +63,25 @@ struct Node * copy(struct Node * x) {
   \small
 \begin{gather*}
   \p{holegraph}(x, \gamma)\defeq \underset{v\in\p{reachable}(\gamma, \tx x) - \{x\}}{\bigstar}v \mapsto \gamma(v)\\
-%  \begin{split}
-%  \m{span}(\gamma_1, \tx x, \gamma_2)\defeq &\m{mark}(\gamma_1,\tx x, \gamma_2) /| \gamma_1\!\uparrow(\lambda v. x\mathrel{{\stackrel{\gamma_1~}{\leadsto^{\star}_{0}}}} v) \text{ is a tree} /| \null\\
-%  & \gamma_1\!\uparrow\!(\lambda v.\neg x\mathrel{{\stackrel{\gamma_1~}{\leadsto^{\star}_{0}}}} v) = \gamma_2\!\uparrow\!(\lambda v.\neg x\mathrel{{\stackrel{\gamma_1~}{\leadsto^{\star}_{0}}}} v) /| \null\\
-%  & (\forall v.~x\mathrel{{\stackrel{\gamma_1~}{\leadsto^{\star}_{0}}}} v => \gamma_2\models x \leadsto v) /| \null\\
-%  & (\forall a,b.~x\mathrel{{\stackrel{\gamma_1~}{\leadsto^{\star}_{0}}}} a => \neg x\mathrel{{\stackrel{\gamma_1~}{\leadsto^{\star}_{0}}}} b => \neg \gamma_2\models a \leadsto b)\\
-%  \end{split}\\
-%  \m{e\_span}(\gamma_1, e, \gamma_2)\defeq
-%  \begin{cases}
-%    \gamma_1 - e = \gamma_2  & t(\gamma_1,e)=1\\
-%    \m{span}(\gamma_1, t(\gamma_1,e), \gamma_2) & t(\gamma_1,e)=0\\
-%  \end{cases}
+\, \\
+  \begin{split}
+  \m{iso}(f_V, f_E, \gamma_1, \gamma_2) \defeq 
+& f_V \text{ is a bijection between $\phi_V(\gamma_1)$ and $\phi_V(\gamma_2)$} /| \\
+& f_E \text{ is a bijection between $\phi_E(\gamma_1)$ and $\phi_E(\gamma_2)$}  /| \\
+& \forall e, f_V(s(\gamma_1, e)) = s(\gamma_2, f_E(e)) /| \\
+& \forall e, f_V(d(\gamma_1, e)) = d(\gamma_2, f_E(e)) 
+  \end{split} \\
+  \begin{split}
+  \m{copy}(\gamma_1, x, \gamma_2, \gamma_2')\defeq &\m{mark}(\gamma_1,x, \gamma_2) /| \\
+   & \exists f_V f_E. \m{iso}(f_V, f_E,  \gamma_2\!\uparrow(\lambda v. x\mathrel{{\stackrel{\gamma_2~}{\leadsto^{\star}_{0}}}} v), \gamma_2') /| \\
+   & \forall x x'. f_V(x) = x' \Leftrightarrow x \xleftrightarrow{\gamma_2} x'
+  \end{split}\\
+  \begin{split}
+  \m{e\_copy}(\gamma_1, \gamma_1', e, \gamma_2, \gamma_2')\defeq & \exists \gamma_2''. \gamma_2' = \gamma_1' + \gamma_2'' /| \\
+  & \m{mark}(\gamma_1,x, \gamma_2) /| \exists f_V f_E.  \\
+   & \m{iso}(f_V, f_E,  \{e\} +\gamma_2\!\uparrow(\lambda v. x\mathrel{{\stackrel{\gamma_2~}{\leadsto^{\star}_{0}}}} v), \gamma_2'') /| \\
+   & \forall x x'. f_V(x) = x' \Leftrightarrow x \xleftrightarrow{\gamma_2} x'
+  \end{split}\\
 \end{gather*}
 \caption{Proof sketch for bigraph copy - part 2}
 \label{fig:copy-part2}
