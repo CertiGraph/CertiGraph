@@ -1,5 +1,5 @@
-\paragraph{Comparison with Hobor and Villard.}
-The most direct ancestor of our work is \cite{hobor:ramification}, which focused on verifying graph algorithms using and introduced the \infrulestyle{Ramify} rule.  We have generalized this rule to better handle modified program variables and existential quantifiers in postconditions; they hacked their way around these issues by proposing a variant of \infrulestyle{Ramify} called \infrulestyle{RamifyAssign}, which could reason about the special case of a single assignment $\li{x=}f(\ldots)$, assuming the verifier can make the local program translation to $\li{x'=}f(\ldots)\li{; x=x'}$, where \li{x'} is fresh.  They proposed no way to verify unmodified program code, to modify program variables inside nested localization blocks, or to do a ramification across multiple assignments as we do in lines~\ref{code:markbeforetripleramify}--\ref{code:markaftertripleramify} of figure~\ref{fig:markgraph}.  Hobor and Villard avoided existentials in localized postconditions because they defined all of their mathematical operations (\emph{e.g.} $\m{mark}$, $\m{mark1}$) as functions rather than as relations.
+\paragraph{Comparison with Hobor and Villard \cite{hobor:ramification}.}
+Hobor and Villiard verified graph algorithms using the \infrulestyle{Ramify} rule.  We have upgraded this rule to better handle modified program variables and existential quantifiers in postconditions; they hacked their way around these issues by proposing a variant of \infrulestyle{Ramify} called \infrulestyle{RamifyAssign}, which could reason about the special case of a single assignment $\li{x=}f(\ldots)$, assuming the verifier can make the local program translation to $\li{x'=}f(\ldots)\li{; x=x'}$, where \li{x'} is fresh.  They proposed no way to verify unmodified program code, to modify program variables inside nested localization blocks, or to do a ramification across multiple assignments as in lines~\ref{code:markbeforetripleramify}--\ref{code:markaftertripleramify} of figure~\ref{fig:markgraph}.  Hobor and Villard avoided existentials in localized postconditions by defining all their mathematical operations (\emph{e.g.} $\m{mark}$) as functions rather than as relations.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%% Edit 1
@@ -8,7 +8,7 @@ The most direct ancestor of our work is \cite{hobor:ramification}, which focused
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \iffalse
 Our development is entirely machine-checked~(\S\ref{sec:development}) which revealed some tricky technique details. Hobor and Villard fell into the trap of defining spatial graphs recursively~(\S\ref{sec:fixpointfail}); unfortunately other members of the research community have since followed them in.  We exposed this error and provided a sound, general, and highly modular graph framework that works smoothly in a mechanized context~(\S\ref{sec:mathgraph},\S\ref{sec:spacegraph}).
-% and quite general 
+% and quite general
 %definition for \p{graph}~(\S\ref{sec:goodgraph}) that recovers fold/unfold reasoning.
 \fi
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -42,7 +42,7 @@ Our work heavily interacts with the Floyd~\cite{appel:programlogics} and HIP/SLE
 
 Many automated verification tools also use separation logic in a forward reasoning style as does HIP/SLEEK, including Smallfoot~\cite{berdine:smallfoot}, jStar~\cite{DistefanoP08}, and Verifast~\cite{jacobs:verifast}.  One of HIP/SLEEK's distinguishing features is good support for user-defined inductive predicates rather than a library of pre-defined predicates for lists, trees etc.
 
-Dafny~\cite{Leino10} and KeY~\cite{Beckert:2007} are two notable verifiers not based on separation logic; KeY uses an interactive verifier while Dafny pursues more automation by using the SMT solver Z3~\cite{Moura2008}.
+Dafny~\cite{Leino10} and KeY~\cite{Beckert:2007} are two notable verifiers not based on separation logic; KeY uses an interactive verifier while Dafny pursues more automation with Z3~\cite{Moura2008}.
 
 \vspace{-1ex}
 \paragraph{Mechanized mathematical graph theory.} There is a long history,
@@ -51,12 +51,12 @@ graphs~\cite{wong1991}.  The most famous mechanically verified ``graph theorem''
 is the Four Color Theorem~\cite{gonthier2005computer}; however
 the development actually uses hypermaps instead of graphs.
 Noschinski built a graph library in Isabelle/HOL whose formalization
-is the most similar to ours~\cite{Noschinski2015}, \emph{e.g.} supporting
+is the closest to ours~\cite{Noschinski2015}, \emph{e.g.} supporting
 graphs with labeled and parallel arcs.
 
 Noschinski and Dubois \emph{et al.} used proof assistants to design verifiable
 checkers for solutions to graph problems~\cite{noschinski2015formalizing,dubois2015graphes}.
-Yamamoto \emph{et al.} and Bauer and Nipkow use an alternative inductive
+Yamamoto \emph{et al.} and Bauer and Nipkow use an inductive
 encoding of graphs to formalize planar graph theory~\cite{yamamoto1995formalization,bauer20025}.
 
 
