@@ -18,8 +18,8 @@ Accordingly, in this section we will present our framework
 at a high level to communicate the overall architecture rather
 than focusing on the nitty-gritty details.
 
-\vspace{-0.75ex}
 \subsection{Structure of the mathematical graph framework}\label{sec:mathinfra}
+\vspace{-0.75ex}
 
 \begin{figure}[t]
 \centering
@@ -190,9 +190,8 @@ on LabeledGraphs.
 \paragraph{GeneralGraph.}
 GeneralGraphs augment LabeledGraphs by adding a soundness condition, indicated in Figure~\ref{fig:graphs} by a dashed border.  These ``plugins'' can specify many different properties which in turn can be used to prove lemmas about the associated GeneralGraph.
 
-\vspace{-0.75ex}
 \subsection{Graph plugins}
-\vspace{-0.75ex}
+
 \label{subsec:graphplugins}
 Many theorems about graphs require certain properties, \emph{e.g.}:
 \begin{itemize}
@@ -249,9 +248,8 @@ We use Coq's typeclass system to manage our plugins smoothly, essentially to ena
 %  Similarly, we define tree by saying that for any reachable node $n$ there is
 %a unique path from the root to $n$.
 
-\vspace{-0.75ex}
 \subsection{Reasoning about relations between graphs} %Using our framework to reasonApplication of the framework}
-\vspace{-0.75ex}
+
 In Figure~\ref{fig:markgraph} we defined the relation $\m{mark}(\gamma, \tx x, \gamma')$
 for the graph marking algorithm.  Similarly, we define $\m{span}$ for the spanning tree program
 and $\m{copy}$ for the graph copy program.
