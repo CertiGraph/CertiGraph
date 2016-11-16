@@ -241,13 +241,12 @@ and omitted line~\ref{code:aftermarkl} entirely.
 Although our technique to handle modified program variables is rather intricate, it is done mechanically by our \li{localize} and \li{unlocalize} tactics, which use \infrulestyle{Ramify-PQ}.
 % since it is the most general rule.
 
-\vspace*{-0.75ex}
 \subsection{Soundness of our rules}
-\vspace*{-0.75ex}
+
 In Appendix~\ref{apx:ruleproofs} we sketch the soundness proofs for \infrulestyle{Ramify-P} and \infrulestyle{Ramify-PQ}.  \infrulestyle{Ramify-P} requires only \infrulestyle{Frame} and \infrulestyle{Consequence} to prove, along with some basic properties of $\pguards{c}$.  \infrulestyle{Ramify-PQ} is built on top of \infrulestyle{Ramify-P} with some complicated logical maneuvers.  Systems of separation logic that do not wish to add $\pguards{c}$ to their logical formulae might consider adding a rule that packages the \infrulestyle{Ramify-PQ} and \infrulestyle{Solve Ramify-PQ} rules together.
-\vspace*{-0.75ex}
+
 \subsection{Forward ramification}
-\vspace*{-0.75ex}
+
 As we saw in \S\ref{sec:hipsleek}, the forward style of reasoning employed by HIP/SLEEK uses the existential wand $--o$ to express ramifications instead of the more typical universal wand $--*$.  The standard $--*$ form of ramification is weaker, but the strongest postcondition style using $--o$ can also get the job done without too much extra work since:
 \vspace*{0.25ex}
 \[\infrulestyle{WandToEwand}~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\]
