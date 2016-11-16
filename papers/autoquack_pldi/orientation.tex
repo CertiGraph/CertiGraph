@@ -82,7 +82,7 @@ The key rule of separation logic is \infrulestyle{Frame}~\cite{rey02}:
 \]
 The reason \infrulestyle{Frame} is so important is because it enables local verifications.  That is, a verifier can focus on the portions of the heap that are relevant to command $c$ and ``frame away'' the rest.  The side condition ``$F \textrm{ ignores } \MV(c)$'' relates to modified program variables and will be discussed in \S\ref{sec:freevars}.
 
-Hobor and Villard observed that \infrulestyle{Frame} is bit rigid because it forces verifiers to split program assertions into syntactically $*$-separated parts~\cite{hobor:ramification}.  This rigidity is particularly unpleasant when verifying programs that manipulate data structures with intrinsic unspecified sharing such as DAGs and graphs.  Hobor and Villard proposed the \infrulestyle{Ramify} rule to circumvent this rigidity:
+Hobor and Villard observed that \infrulestyle{Frame} is bit rigid because it forces verifiers to split program assertions into syntactically $*$-separated parts~\cite{hobor:ramification}.  This rigidity is particularly troublesome when verifying programs that manipulate data structures with intrinsic unspecified sharing such as DAGs and graphs.  Hobor and Villard proposed the \infrulestyle{Ramify} rule to circumvent this rigidity:
 \vspace{-1.5ex}
 \[
 \infrule{Ramify}
@@ -224,7 +224,7 @@ In the third column, the user has advanced past $c_3$ to reach the local postcon
 In addition to \li{mark} for graphs, we have also verified the same program for DAGs.
 More interestingly, we have verified two algorithms that modify the link structure:
 \li{spanning} for graphs, which prunes a graph into its spanning tree, and \li{copy}
-for graphs, which makes a structure-preserving copy.  For space reasons we put 
+for graphs, which makes a structure-preserving copy.  For space reasons we put
 \li{spanning} and \li{copy} in Appendix~\ref{apx:spanning}.
 
 

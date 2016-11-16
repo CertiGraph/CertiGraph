@@ -246,7 +246,7 @@ We have a number of other properties in our codebase, but these three are the mo
 \caption{Combining plugins}\label{fig:properties}
 \end{figure}
 
-We use Coq's typeclass system to manage our plugins smoothly, essentially to enable the diagram in Figure~\ref{fig:properties}.  The idea is that if we have two properties, each of which come with some already-proved lemmas, we can combine these plugins to prove the emergent lemmas that result from the combination, and then treat the new combination as a new plugin.  Since the system is compositional, we can easily mix many different properties together.  For example, we compose \p{BiGraph}, \p{MathGraph}, and \p{FiniteGraph} together into a new plugin we call \p{BiMaFin}.  \p{BiMaFin} is the actual soundness condition used to verify the program in Figure~\ref{fig:markgraph}.
+We use Coq's typeclass system to manage our plugins smoothly, essentially to enable the diagram in Figure~\ref{fig:properties}.  The idea is that if we have two properties, each of which come with some already-proved lemmas, we can combine these plugins to prove the emergent lemmas that result from the combination, and then treat the new combination as a new plugin, \emph{i.e.} the system is compositional.  For example, we compose \p{BiGraph}, \p{MathGraph}, and \p{FiniteGraph} together into a new plugin we call \p{BiMaFin}.  \p{BiMaFin} is the actual soundness condition used to verify the program in Figure~\ref{fig:markgraph}.
 
 %% We can apply our framework to define related structures such as DAGs and trees.
 %% For example, a DAG has the additional property that for any $x$ and $y$,

@@ -98,7 +98,7 @@ See Figure~\ref{fig:rampqproofs} for the proofs of \infrulestyle{Ramify-P} and \
 \label{fig:badcycle}
 \end{figure*}
 
-See Figure \ref{fig:badcycle} for an attempt to prove the entailment $100 |-> 42,100,0 ~ |- ~ \graphkt(100,\hat{\gamma})$.
+See Figure \ref{fig:badcycle} for an attempt to prove the entailment $100 |-> 42,100,0 ~ |- ~ \graphkt(100,\hat{\gamma})$.  Part of the problem is that the recursive structure interacts very badly with $**$: if the recursion involved $*$ then it \textbf{would} be provable, by induction on the finite memory (each ``recursive call'' would be on a strictly smaller subheap).  This is why Knaster-Tarski works so well with list, tree, and DAG predicates in separation logic.
 
 \section{Problem with Appel and McAllester's fixpoint}
 \label{apx:appelfixpiont}

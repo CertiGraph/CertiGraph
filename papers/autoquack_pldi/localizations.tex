@@ -1,4 +1,4 @@
-Here we upgrade the \infrulestyle{Ramify} rule in two important respects.  The first is the treatment of modified program variables.  Although prosaic, a robust treatment of modified variables is essential to verifying programs of any length.  The second is better handling of existential variables in the postconditions of localization blocks, which occur frequently when using a relational specifications style.  For example, in lines~\ref{code:beforemarkl}--\ref{code:aftermarkl} of Figure~\ref{fig:markgraph} we must ``extract'' the existentially-quantified~$\gamma''$ from inside the localization block to outside it.  Moreover, rather surprisingly, robust treatment of modified program variables requires extraction of existential quantifiers from localization blocks.  Accordingly, we develop the \infrulestyle{Ramify-PQ} rule that can robustly handle both modified \underline{p}rogram variables as well as existential \underline{q}uantifiers.
+Here we upgrade the \infrulestyle{Ramify} rule in two important respects.  The first is the treatment of modified program variables.  Although prosaic, a robust treatment of modified variables is essential to verifying programs of any length.  The second is better handling of existential variables in the postconditions of localization blocks, which occur frequently when using relations in specifications.  For example, in lines~\ref{code:beforemarkl}--\ref{code:aftermarkl} of Figure~\ref{fig:markgraph} we must ``extract'' the existentially-quantified~$\gamma''$ from inside the localization block to outside it.  Moreover, rather surprisingly, robust treatment of modified program variables requires extraction of existential quantifiers from localization blocks.  Accordingly, we develop the \infrulestyle{Ramify-PQ} rule that can robustly handle both modified \underline{p}rogram variables as well as existential \underline{q}uantifiers.
 
 Hobor and Villard noted that their \infrulestyle{Ramify} rule handled modified program variables poorly~\cite{hobor:ramification} and proposed two solutions: using ``variables as resource''~\cite{bornat:var} and making local program transformations.  While these solutions are reasonable in a pen-and-paper context, both fall well short in mechanized ones.  Neither VST nor HIP/SLEEK use variables as resource, nor do they have modules to reason about program equivalence; moreover, most other mechanized verification systems do not support these solutions either~\cite{Beckert:2007,DistefanoP08,bengtson:charge}.  We want a solution that is widely applicable to tools as they actually exist today; in~\S\ref{sec:development} we will see that our modifications to VST and H/S are approximately 1.4\% of their respective codebases.
 
@@ -141,7 +141,7 @@ What happens when we \textbf{cannot} calculate a substitution using globally-sco
 // $\label{toycode:localpost}\swarrow \{ \big((\tx{x} |-> {-} /| \tx{y} = 1) |/ (\tx{x} = 0 /| \tx{y} = 0)\big) * C \}$
 // $\label{toycode:globalpost}\{ (\tx{y} = 1 /| D_1) |/  (\tx{y} = 0 /| D_2) \}$
 \end{lstlisting}
-Within a localization block we call the nondeterministically specified function \li{malloc} and use the program variable~\li{y} as a flag to keep track of whether the allocation succeeded.  Call the postconditions in lines~\ref{toycode:localpost} and~\ref{toycode:globalpost} just above $L_2$ and $G_2$ respectively.
+Within a localization block we call the nondeterministically specified function \li{malloc} and use the program variable~\li{y} as a flag to keep track of whether the allocation succeeded.  Call the postconditions in lines~\ref{toycode:localpost} and~\ref{toycode:globalpost} just above $L_2$ and $G_2$. %respectively.
 
 Now the choice of $F$ is not very straightforward because we do not know the values to substitute for \li{x} or \li{y}:
 \vspace*{-0.75ex}
@@ -155,14 +155,14 @@ Now the choice of $F$ is not very straightforward because we do not know the val
 \vspace*{-0.75ex}
 \end{equation}
 
-We can avoid this roadblock as follows.  First, rewrite the postconditions in lines~\ref{toycode:localpost} and~\ref{toycode:globalpost} just above to introduce fresh existentially-quantified  variables $x$ and $y$ and bind them to \li{x} and \li{y}:
+We proceed as follows.  First, rewrite the postconditions in lines~\ref{toycode:localpost} and~\ref{toycode:globalpost} just above to introduce fresh existentially-quantified  variables $x$ and $y$ and bind them to \li{x} and \li{y}:
 \begin{lstlisting}[firstnumber=4]
 //   $\;\{ L_2 \}$
 // $\label{code:L2p}\swarrow \{\exists x,y. ~ x = \tx{x} /| y = \tx{y} /| [\tx{x} |-> x][\tx{y} |-> y] L_2 \}$
 // $\label{code:G2p}\{\exists x,y. ~ x = \tx{x} /| y = \tx{y} /| [\tx{x} |-> x][\tx{y} |-> y] G_2\}$
 // $\{ G_2 \}$
 \end{lstlisting}
-Call these equivalent postconditions $L_2'$ (line~\ref{code:L2p}) and $G_2'$ (line~\ref{code:G2p}).
+Call these equivalent postconditions $L_2'$ and $G_2'$ (lines~\ref{code:L2p}\&\ref{code:G2p}).
 
 
 %\begin{lstlisting}[firstnumber=4]
@@ -218,7 +218,8 @@ F |- \forall x.~ (L_2 --* G_2)
 }
 {G_1 \vdash L_1 * \pguards{c}  \big(\forall x.~ (L_2 --* G_2)\big)}{\begin{array}{c}F \textrm{ ignores} \\ \MV(c)\end{array}} \qquad \qquad \quad
 \]
-Since we use a relational style to verify graph algorithms (\emph{e.g.} in Figure~\ref{fig:markgraph}), existentials appear frequently and a smooth treatment is very helpful in practice.  To make this point a little more clearly we were more explicit about existentials in \emph{e.g.} lines~\ref{code:beforemarkl}--\ref{code:aftermarkl} than is typical in pen-and-paper proofs.  However, fortified by the \infrulestyle{Ramify-PQ} rule, we could very reasonably have \emph{e.g.} written line~\ref{code:postmark1} as \begin{lstlisting}[firstnumber=25]
+%Since we use a relational style to verify graph algorithms (\emph{e.g.} in Figure~\ref{fig:markgraph}), existentials appear frequently and a smooth treatment is very helpful in practice.  To make this point a little more clearly 
+We were more explicit about existentials in \emph{e.g.} lines~\ref{code:beforemarkl}--\ref{code:aftermarkl} than is typical so that we could prove that we handle them correctly.  Fortified by the \infrulestyle{Ramify-PQ} rule, we could reasonably-albeit-less-formally have \emph{e.g.} written line~\ref{code:postmark1} as: \begin{lstlisting}[firstnumber=25]
 // $\swarrow \{\p{graph}(\tx l, \gamma'') /| \m{mark}(\gamma', \tx{l}, \gamma'')\}$
 \end{lstlisting}
 and omitted line~\ref{code:aftermarkl} entirely.
