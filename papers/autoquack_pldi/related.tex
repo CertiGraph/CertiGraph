@@ -36,9 +36,16 @@ Almost a decade after Yang verified Schorr-Waite on paper, Dafny automated its v
 %Appel and McAllester defined an alternative ``contractive'' fixpoint that is sometimes used to define recursive predicates in separation
 %logic~\cite{appel:fixpoint}.  In Appendix~\ref{apx:appelfixpiont} we explain why Appel and McAllester's  is also unsuitable to define graphs.
 
-\paragraph{Local variables.}
-An alternative way to avoid local variable issues is to use ``variables as resource''~\cite{bornat:var}.
-However, most mechanized verification systems do not use variables as resource~\cite{Beckert:2007,DistefanoP08,chin:hipsleek,Leino10,bengtson:charge,appel:programlogics}.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%% Edit 2
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%% Edit 2: Qinxiang's proposal: delete the follow paragraph. Moved to the head of 4.1
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%\paragraph{Local variables.}
+%An alternative way to avoid local variable issues is to use ``variables as resource''~\cite{bornat:var}.
+%However, most mechanized verification systems do not use variables as resource~\cite{Beckert:2007,DistefanoP08,chin:hipsleek,Leino10,bengtson:charge,appel:programlogics}.
 
 \paragraph{Verification tools.}
 Our work heavily interacts with the Floyd~\cite{appel:programlogics} and HIP/SLEEK~\cite{chin:hipsleek} verification tools.  Like Floyd, Charge! uses Coq tactics to work with a shallow embedding of higher order separation logic, but focuses on OO programs written in Java/C\#~\cite{bengtson:charge}.  A  more automated approach to verification of low level programs using Coq is implemented in the Bedrock framework \cite{chlipala:bedrock}.

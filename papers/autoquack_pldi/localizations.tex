@@ -1,5 +1,8 @@
 
-BLAH variables are important BLAH
+As mentioned in \S\ref{sec:orientation},  \infrulestyle{Ramify} has a side condition that $(L_2 \wand G_2) \text{ ignores } \MV(c)$. However, when the local program $c$ contains local variable operation, this side condition is usually not true. One potential way to avoid this local variable issues is to use ``variables as resource''~\cite{bornat:var}.
+However, neither VST nor HIP/SLEEK use variables as resource. Most other mechanized verification systems do not use variables as resource either ~\cite{Beckert:2007,DistefanoP08,bengtson:charge}.
+
+In this section, we present \infrulestyle{Ramify-P}, a generalized version of \infrulestyle{Ramify}, to handle this local variables.
 
 \subsection{The program variable bugaboo}
 \label{sec:freevars}
