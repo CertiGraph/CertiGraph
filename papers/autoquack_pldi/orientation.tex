@@ -70,10 +70,8 @@ To define localization blocks formally we need to first understand the \infrules
 %\label{sec:localizations}
 
 The key rule of separation logic is \infrulestyle{Frame}~\cite{rey02}:
-\[\infrulestyle{Frame}~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\,\,\]
-\vspace{-9ex}
 \[
-\infrule{}
+\infrule{Frame}
 {\{ P \} ~ c ~ \{Q \}}
 {\{P * F \} ~ c ~ \{ Q * F \}}
 {\begin{array}{c}F \textrm{ ignores } \MV(c) \end{array}} \qquad \qquad
