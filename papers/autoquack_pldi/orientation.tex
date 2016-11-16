@@ -66,10 +66,9 @@ In lines~\ref{code:beforerootmark}--\ref{code:afterrootmark}, imagine unfolding 
 
 To define localization blocks formally we need to first understand the \infrulestyle{Frame} and \infrulestyle{Ramify} rules.
 
-\vspace*{-0.75ex}
 \subsection{Frames and ramifications are localizations}
 %\label{sec:localizations}
-\vspace*{-0.75ex}
+
 The key rule of separation logic is \infrulestyle{Frame}~\cite{rey02}:
 \[\infrulestyle{Frame}~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\,\,\]
 \vspace{-9ex}
@@ -216,10 +215,10 @@ Accordingly, the \li{localize} tactic builds an incremental proof in the underly
 The second column of Figure~\ref{figure:backend} shows the back end with the unknown frame $?F$, which will eventually be instantiated by \li{unlocalize}.
 
 In the third column, the user has advanced past $c_3$ to reach the local postcondition $P_5$ and now wishes to \li{unlocalize} to~$P_6$.  Afterwards, the internal state looks like the fourth column, and so to a first approximation, \li{unlocalize} can instantiate $?F$ with $P_5 \wand P_6$.  In truth, $?F$ is chosen more subtly to properly handle both existential variables and modified program variables; \li{unlocalize} then automatically simplifies the goals to present a cleaner interface to the user.  These transformations require some additional theory given in \S\ref{sec:localizations}.
-\vspace{-0.75ex}
+
 \subsection{Additional verified examples}
 \label{sec:application}
-\vspace{-0.75ex}
+
 In addition to \li{mark} for graphs, we have also verified the same program for DAGs.
 More interestingly, we have verified two algorithms that modify the link structure:
 \li{spanning} for graphs, which prunes a graph into its spanning tree, and \li{copy}

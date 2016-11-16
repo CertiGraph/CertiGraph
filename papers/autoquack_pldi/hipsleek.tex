@@ -1,4 +1,4 @@
-\vspace{-0.75ex}
+
 HIP/SLEEK is a toolset for verifying programs using separation logic~\cite{chin:hipsleek}.  As compared to VST, H/S has a heavier focus on automation: \emph{e.g.}, users need only specify loop invariants and the pre/postconditions of methods, rather than describing each program point.  H/S has two interlocking components.  HIP applies Hoare rules using forward reasoning to verify programs, \emph{i.e.} each entailment is of the form $P |- Q * R$, where the heap from the antecedent~$P$ is matched with the consequent $Q$ and a frame/residue $R$. To check these separation logic entailments and calculate~$R$, HIP calls SLEEK.  SLEEK handles spatial operators such as~$*$ and $|->$ before handing any remaining pure entailments to a variety of external solvers such as Z3.  One of H/S's distinguishing features is support for user-defined recursive predicates.  HIP/SLEEK has been used to verify programs manipulating data structures like lists, arrays, and trees.
 
 \begin{figure}[t]
