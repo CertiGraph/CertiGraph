@@ -2,7 +2,7 @@ Here we upgrade the \infrulestyle{Ramify} rule in two important respects.  The f
 
 Hobor and Villard noted that their \infrulestyle{Ramify} rule handled modified program variables poorly~\cite{hobor:ramification} and proposed two solutions: using ``variables as resource''~\cite{bornat:var} and making local program transformations.  While these solutions are reasonable in a pen-and-paper context, both fall well short in mechanized ones.  Neither VST nor HIP/SLEEK use variables as resource, nor do they have modules to reason about program equivalence; moreover, most other mechanized verification systems do not support these solutions either~\cite{Beckert:2007,DistefanoP08,bengtson:charge}.  We want a solution that is widely applicable to tools as they actually exist today; in~\S\ref{sec:development} we will see that our modifications to VST and H/S are approximately 1.4\% of their respective codebases.
 
-\subsection{The program variable bugaboo}
+\subsection{Modified program variables}
 \label{sec:freevars}
 
 \infrulestyle{Frame}'s side condition ``$F \text{ ignores } \MV(c)$'' can be defined in two ways.
@@ -92,7 +92,7 @@ The first premise of \infrulestyle{Solve Ramify-P} is
 \li{x} = 5 /| A ~ |- ~ (\li{x} = 5 /| B) * \null \\ \qquad \big((6 = 6 /| [\li{x} |-> 6]C) --* (6 = 6 /| [\li{x} |-> 6]D)\big)
 \end{array}
 \]
-This entailment is the key proof that our localization was sound.  Generally speaking this entailment is solved by using a ramification library (\S\ref{sec:ramifylib}); as previously explained we sometimes use $\ramify(n)$ to explicitly reference a library lemma.
+This entailment is the key proof that our localization was sound.  To solve it we first substitute away the remaining program variables (\emph{e.g.} replace \li{x} with 5) to obtain a program-variable-free and modality-free entailment and then apply our ramification library (\S\ref{sec:ramifylib}); as previously explained we sometimes use $\ramify(n)$ to explicitly reference a library lemma.
 
 Meanwhile, the second premise looks like this:
 \vspace*{-0.75ex}
@@ -130,7 +130,7 @@ Pen and paper Hoare proofs are often a little casual with existentials, \emph{e.
 %Conversely, we can also prove \infrulestyle{Ramify-P} from \infrulestyle{Frame} and \infrulestyle{Consequence}:
 
 
-\subsection{The existential ogre}
+\subsection{Existential quantifiers in postconditions}
 \label{sec:existentials}
 
 What happens when we \textbf{cannot} calculate a substitution using globally-scoped metavariables?  Consider the following: %example:
