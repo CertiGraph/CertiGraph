@@ -142,7 +142,7 @@ We are now ready to give a good \p{graph} predicate:
   \p{graph}(x, \gamma) ~~ \defeq ~~ \underset{v \in \mathit{reach}(\gamma, x)}{\bigstar} v\mapsto\gamma(v)
 \vspace{-1.5ex}
 \end{equation}
-$\gamma$ is a GeneralGraph and ``$x |-> \gamma(x)$'' is a predicate that describes how single nodes fit in memory; in Figure~\ref{fig:markgraph} it was:
+$\gamma$ is a GeneralGraph and ``$x |-> \gamma(x)$'' is a predicate that says how a single node fits in memory; in Figure~\ref{fig:markgraph} it was:
 \[
 \exists m,l,r.~\gamma(x) = (m,l,r) /| x |-> m,-,l,r /| x\ \p{mod}\ 16 = 0
 \]
@@ -231,7 +231,7 @@ Above the Logic layer we have three towers, each three levels high.  The leftmos
 {\underset{x\in A}{\bigstar} P(x) *   \underset{x\in B}{\bigstar} P(x) \Leftrightarrow \underset{x\in A \cup B}{\bigstar} P(x)}{}
 \]
 
-The middle tower is more interesting in that it is entirely focused on ramification entailments.  A robust library of ramification entailments is essential to making ramification work smoothly in practice.  The lowest level contains lemmas like:
+The middle tower is more interesting in that it is entirely focused on ramification entailments.  A robust library of ramification entailments is essential to make ramification work smoothly in practice.  The lowest level contains lemmas like:
 \[
 %\infrule{Ramify-Q-SPLIT}
 \infrule{}
