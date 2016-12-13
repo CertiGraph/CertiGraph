@@ -1,0 +1,2 @@
+coqide -async-proofs-j 4 `cat .loadpath` $* &
+
