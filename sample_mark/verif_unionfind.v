@@ -78,26 +78,26 @@ Proof.
      LOCAL (temp _p (pointer_val_val pa); temp _x (pointer_val_val x))
      SEP  (graph sh x g)).
   Grab Existential Variables.
-  - unfold semax_ram.
-    forward_if_tac
-      (EX g': Graph, EX rt : pointer_val,
-        PROP (uf_equiv g g' /\ uf_root g' x rt)
-        LOCAL(temp ret_temp (pointer_val_val rt))
-        SEP (graph sh x g')); [apply ADMIT | | gather_current_goal_with_evar ..].
-    localize
-      (PROP (vvalid g pa)
-       LOCAL (temp _p (pointer_val_val pa))
-       SEP (graph sh pa g)).
+  Focus 2. {
+    simplify_ramif. rewrite <- H0. simpl.
+    apply (@va_reachable_root_stable_ramify _ _ _ _ SGBA_VST _ _ _ _ _ (SGA_VST sh) g x (r, pa)); auto.
+  } Unfocus.
+  unfold semax_ram.
+  forward_if_tac
+    (EX g': Graph, EX rt : pointer_val,
+     PROP (uf_equiv g g' /\ uf_root g' x rt)
+     LOCAL(temp ret_temp (pointer_val_val rt))
+     SEP (graph sh x g')); [apply ADMIT | | gather_current_goal_with_evar ..].
+  localize
+    (PROP (vvalid g pa)
+     LOCAL (temp _p (pointer_val_val pa))
+     SEP (graph sh pa g)).
     1: admit.
+    apply -> ram_seq_assoc.
     eapply semax_ram_seq'.
     + subst RamFrame RamFrame0; unfold abbreviate;
         repeat apply eexists_add_stats_cons; constructor.
     + semax_ram_call_body (sh, g, pa).
-    + semax_ram_after_call; intros g'; repeat (apply ram_extract_PROP; intro).
-
-  - simplify_ramif. rewrite <- H0. simpl.
-    apply (@va_reachable_root_stable_ramify _ _ _ _ SGBA_VST _ _ _ _ _ (SGA_VST sh) g x (r, pa)); auto.
-  
   
 Qed.
 
