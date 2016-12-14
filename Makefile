@@ -48,6 +48,9 @@ SAMPLE_MARK_FILES = \
 HIP_FILES = \
   hip_graphmark.v hip_graphmark_proofs.v spanningtree.v
 
+CERTIGC_FILES = \
+  gc.v
+  
 CLIGHT_FILES = sample_mark/mark_bi.v sample_mark/garbage_collector.v sample_mark/dispose_bi.v sample_mark/copy_bi.v
 
 C_FILES = $(CLIGHT_FILES:%.v=%.c)
@@ -62,6 +65,7 @@ NORMAL_FILES = \
   $(SAMPLE_MARK_FILES:%.v=sample_mark/%.v) \
   $(HIP_FILES:%.v=hip/%.v) \
   $(GRAPH_FILES:%.v=graph/%.v) \
+  $(CERTIGC_FILES:%.v=CertiGC/%.v) \
   $(LIB_FILES:%.v=lib/%.v)
 
 $(NORMAL_FILES:%.v=%.vo): %.vo: %.v
