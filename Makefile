@@ -49,7 +49,7 @@ HIP_FILES = \
   hip_graphmark.v hip_graphmark_proofs.v spanningtree.v
 
 CERTIGC_FILES = \
-  gc.v
+  gc.v data_at_test.v
   
 CLIGHT_FILES = sample_mark/mark_bi.v sample_mark/garbage_collector.v sample_mark/dispose_bi.v sample_mark/copy_bi.v
 
