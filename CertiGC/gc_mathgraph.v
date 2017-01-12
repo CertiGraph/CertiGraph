@@ -72,7 +72,7 @@ Definition right_number_edges (g : raw_GC_graph) (lfg : LocalFiniteGraph g) : Pr
 
 Context {le : V -> V -> Prop}.
 Local Notation "v1 <= v2" := (le v1 v2).
-Local Notation "v1 <= v2 <= v3" := (le v1 v2 /\ le v2 v3).
+Local Notation "v1 <= v2 <= v3" := (v1 <= v2 /\ v2 <= v3).
 Local Notation "v1 < v2" := (v1 <= v2 /\ v1 <> v2).
 
 Context {sub : V -> V -> nat}.
@@ -92,14 +92,14 @@ Definition allocated (s : space) (x : V) : Prop :=
   start s <= x /\ x < next s.
 
 Definition available (s : space) (x : V) : Prop :=
-  next s <= x <= limit s.
+  next s <= x /\ x < limit s.
 
 Definition in_space (s : space) (x : V) : Prop :=
   allocated s x \/ available s x.
 
 Lemma in_space_bounds: forall s x,
   in_space s x ->
-  start s <= x <= limit s.
+  start s <= x /\ x < limit s.
 Proof.
   destruct s. unfold in_space, allocated, available. simpl.
 (* destruct space_order0. *)
@@ -118,8 +118,8 @@ Definition spaces_ok (l : list space) : Prop :=
   (forall i j s1 s2,
     List.nth_error l i = Some s1 ->
     List.nth_error l j = Some s2 ->
-      limit s1 < start s2 \/
-      limit s2 < start s1 \/
+      limit s1 <= start s2 \/
+      limit s2 <= start s1 \/
       i = j) /\
   (* Spaces double in size *)
   (forall i s1 s2,
