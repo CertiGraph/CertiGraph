@@ -56,7 +56,7 @@ Pure Facts Part
 *********************************************************)
 
 Context {pSGG_Bi: pSpatialGraph_Graph_Bi}.
-Context {DV DE: Type}.
+Context {DV DE DG: Type}.
 
 Class BiMaFin (g: PreGraph addr (addr * LR)) := {
   bi: BiGraph g (fun x => (x, L)) (fun x => (x, R));
@@ -64,20 +64,20 @@ Class BiMaFin (g: PreGraph addr (addr * LR)) := {
   fin: FiniteGraph g
 }.
 
-Definition Graph := (GeneralGraph addr (addr * LR) DV DE (fun g => BiMaFin (pg_lg g))).
-Definition LGraph := (LabeledGraph addr (addr * LR) DV DE).
+Definition Graph := (GeneralGraph addr (addr * LR) DV DE DG (fun g => BiMaFin (pg_lg g))).
+Definition LGraph := (LabeledGraph addr (addr * LR) DV DE DG).
 Definition SGraph := (SpatialGraph addr (addr * LR) (DV * addr * addr) unit).
 
-Instance SGC_Bi: SpatialGraphConstructor addr (addr * LR) DV DE (DV * addr * addr) unit.
+Instance SGC_Bi: SpatialGraphConstructor addr (addr * LR) DV DE DG (DV * addr * addr) unit.
 Proof.
-  refine (Build_SpatialGraphConstructor _ _ _ _ _ _ SGBA _ _).
+  refine (Build_SpatialGraphConstructor _ _ _ _ _ _ _ SGBA _ _).
   + exact (fun G v => (vlabel G v, dst (pg_lg G) (v, L), dst (pg_lg G) (v, R))).
   + exact (fun _ _ => tt).
 Defined.
 
-Instance L_SGC_Bi: Local_SpatialGraphConstructor addr (addr * LR) DV DE (DV * addr * addr) unit.
+Instance L_SGC_Bi: Local_SpatialGraphConstructor addr (addr * LR) DV DE DG (DV * addr * addr) unit.
 Proof.
-  refine (Build_Local_SpatialGraphConstructor _ _ _ _ _ _ SGBA SGC_Bi
+  refine (Build_Local_SpatialGraphConstructor _ _ _ _ _ _ _ SGBA SGC_Bi
     (fun G v => evalid (pg_lg G) (v, L) /\ evalid (pg_lg G) (v, R) /\
                 src (pg_lg G) (v, L) = v /\ src (pg_lg G) (v, R) = v) _
     (fun _ _ => True) _).
@@ -102,13 +102,13 @@ Local Identity Coercion SGraph_SpatialGraph: SGraph >-> SpatialGraph.
 Local Coercion pg_lg: LabeledGraph >-> PreGraph.
 
 Instance biGraph (G: Graph): BiGraph G (fun x => (x, L)) (fun x => (x, R)) :=
-  @bi G (@sound_gg _ _ _ _ _ _ _ G).
+  @bi G (@sound_gg _ _ _ _ _ _ _ _ G).
 
 Instance maGraph(G: Graph): MathGraph G is_null_SGBA :=
-  @ma G (@sound_gg _ _ _ _ _ _ _ G).
+  @ma G (@sound_gg _ _ _ _ _ _ _ _ G).
 
 Instance finGraph (G: Graph): FiniteGraph G :=
-  @fin G (@sound_gg _ _ _ _ _ _ _ G).
+  @fin G (@sound_gg _ _ _ _ _ _ _ _ G).
 
 Instance RGF (G: Graph): ReachableFiniteGraph G.
   apply Build_ReachableFiniteGraph.
@@ -154,8 +154,8 @@ Defined.
 Definition empty_sound: BiMaFin (empty_pregraph (fun e => fst e) (fun e => null)) :=
   Build_BiMaFin _ empty_BiGraph empty_MathGraph empty_FiniteGraph.
 
-Definition empty_Graph (default_v: DV) (default_e: DE) : Graph :=
-  Build_GeneralGraph _ _ _ (empty_labeledgraph (fun e => fst e) (fun e => null) default_v default_e) empty_sound.
+Definition empty_Graph (default_v: DV) (default_e: DE) (default_g : DG) : Graph :=
+  Build_GeneralGraph _ _ _ _ (empty_labeledgraph (fun e => fst e) (fun e => null) default_v default_e default_g) empty_sound.
 
 Definition is_BiMaFin (g: LGraph): Prop := exists X: BiMaFin (pg_lg g), True.
 
@@ -533,9 +533,9 @@ Proof.
   exists sound_gg; auto.
 Qed.
 
-Lemma single_vertex_guarded_BiMaFin: forall (x0: addr) dv de,
+Lemma single_vertex_guarded_BiMaFin: forall (x0: addr) dv de dg,
   is_guarded_BiMaFin (fun v : addr => x0 <> v) (fun _ : addr * LR => ~ False)
-    (single_vertex_labeledgraph x0 dv de).
+    (single_vertex_labeledgraph x0 dv de dg).
 Proof.
   intros.
   constructor; auto.
@@ -693,7 +693,7 @@ Lemma is_BiMaFin_LGraph_Graph: forall (g: LGraph) (P: LGraph -> pred),
 Proof.
   intros.
   destruct H as [X _].
-  apply (exp_right (Build_GeneralGraph _ _ BiMaFin g X)).
+  apply (exp_right (Build_GeneralGraph _ _ _ BiMaFin g X)).
   simpl.
   auto.
 Qed.
@@ -712,7 +712,7 @@ Proof.
   + unfold Included, Ensembles.In.
     intros x0 ?.
     destruct H0 as [X _].
-    pose (g0 := Build_GeneralGraph _ _ (fun g => BiMaFin (pg_lg g)) _ X: Graph).
+    pose (g0 := Build_GeneralGraph _ _ _ (fun g => BiMaFin (pg_lg g)) _ X: Graph).
     assert (vvalid g0 x0) by auto.
     apply vvalid_vguard in H0.
     simpl in H0 |- *.
@@ -721,7 +721,7 @@ Proof.
   + unfold Included, Ensembles.In.
     intros x0 ?.
     destruct H0 as [X _].
-    pose (g0 := Build_GeneralGraph _ _ (fun g => BiMaFin (pg_lg g)) _ X: Graph).
+    pose (g0 := Build_GeneralGraph _ _ _ (fun g => BiMaFin (pg_lg g)) _ X: Graph).
     assert (vvalid g0 x0) by auto.
     apply vvalid_vguard in H0.
     simpl in H0 |- *.
@@ -753,7 +753,7 @@ Spatial Facts (with Strong Assumption) Part
 
   Context {SGSA: SpatialGraphStrongAssum SGP}.
 
-  Notation graph x g := (@reachable_vertices_at _ _ _ _ _ _ _ (_) _ (@SGP pSGG_Bi DV DE sSGG_Bi) _ x g).
+  Notation graph x g := (@reachable_vertices_at _ _ _ _ _ _ _ _ (_) _ (@SGP pSGG_Bi DV DE sSGG_Bi) _ x g).
 
   Lemma bi_graph_unfold: forall (g: Graph) x d l r,
       vvalid g x -> vgamma g x = (d, l, r) ->

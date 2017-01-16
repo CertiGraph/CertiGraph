@@ -19,7 +19,7 @@ Section AUXILIARY_COMPONENT_CONSTR.
 Context {V E: Type}.
 Context {EV: EqDec V eq}.
 Context {EE: EqDec E eq}.
-Context {DV DE: Type}.
+Context {DV DE DG: Type}.
 
 (******************)
 (* Definitions    *)
@@ -583,36 +583,38 @@ Section LABELED_GRAPH_GEN.
 Context {V E: Type}.
 Context {EV: EqDec V eq}.
 Context {EE: EqDec E eq}.
-Context {DV DE: Type}.
+Context {DV DE DG: Type}.
 
-Notation Graph := (LabeledGraph V E DV DE).
+Notation Graph := (LabeledGraph V E DV DE DG).
 
 Local Coercion pg_lg : LabeledGraph >-> PreGraph.
 
-Definition empty_labeledgraph (src0 dst0: E -> V) (v_default: DV) (e_default: DE): Graph :=
-  @Build_LabeledGraph V E EV EE DV DE (empty_pregraph src0 dst0) (fun v => v_default) (fun e => e_default).
+Definition empty_labeledgraph (src0 dst0: E -> V) (v_default: DV) (e_default: DE) (g_default : DG) : Graph :=
+  @Build_LabeledGraph V E EV EE DV DE DG (empty_pregraph src0 dst0) (fun v => v_default) (fun e => e_default) (g_default).
 
-Definition single_vertex_labeledgraph (v0: V) (v_default: DV) (e_default: DE): Graph :=
-  @Build_LabeledGraph V E EV EE DV DE (single_vertex_pregraph v0) (fun v => v_default) (fun e => e_default).
+Definition single_vertex_labeledgraph (v0: V) (v_default: DV) (e_default: DE) (g_default : DG) : Graph :=
+  @Build_LabeledGraph V E EV EE DV DE DG (single_vertex_pregraph v0) (fun v => v_default) (fun e => e_default) (g_default).
 
-Definition labeledgraph_vgen (g: Graph) (x: V) (a: DV) : Graph := Build_LabeledGraph _ _ g (update_vlabel (vlabel g) x a) (elabel g).
+Definition labeledgraph_vgen (g: Graph) (x: V) (a: DV) : Graph := Build_LabeledGraph _ _ _ g (update_vlabel (vlabel g) x a) (elabel g) (glabel g).
 
-Definition labeledgraph_egen (g: Graph) (e: E) (d: DE) : Graph := Build_LabeledGraph _ _ g (vlabel g) (update_elabel (elabel g) e d).
+Definition labeledgraph_egen (g: Graph) (e: E) (d: DE) : Graph := Build_LabeledGraph _ _ _ g (vlabel g) (update_elabel (elabel g) e d) (glabel g).
+
+Definition labeledgraph_ggen (g: Graph) (m: DG) : Graph := Build_LabeledGraph _ _ _ g (vlabel g) (elabel g) m.
 
 Definition labeledgraph_add_edge (g : Graph) (e : E) (o t : V) (d: DE) :=
-  Build_LabeledGraph _ _ (pregraph_add_edge g e o t) (vlabel g) (update_elabel (elabel g) e d).
+  Build_LabeledGraph _ _ _ (pregraph_add_edge g e o t) (vlabel g) (update_elabel (elabel g) e d) (glabel g).
 
 Definition labeledgraph_gen_dst (g : Graph) (e : E) (t : V) :=
-  Build_LabeledGraph _ _ (pregraph_gen_dst g e t) (vlabel g) (elabel g).
+  Build_LabeledGraph _ _ _ (pregraph_gen_dst g e t) (vlabel g) (elabel g) (glabel g).
 
 Definition gpredicate_sub_labeledgraph (PV: V -> Prop) (PE: E -> Prop) (g: Graph): Graph :=
-  Build_LabeledGraph _ _ (gpredicate_subgraph PV PE g) (vlabel g) (elabel g).
+  Build_LabeledGraph _ _ _ (gpredicate_subgraph PV PE g) (vlabel g) (elabel g) (glabel g).
 
 Definition predicate_sub_labeledgraph (g: Graph) (p: V -> Prop) :=
-  Build_LabeledGraph _ _ (predicate_subgraph g p) (vlabel g) (elabel g).
+  Build_LabeledGraph _ _ _ (predicate_subgraph g p) (vlabel g) (elabel g) (glabel g).
 
 Definition predicate_partial_labeledgraph (g: Graph) (p: V -> Prop) :=
-  Build_LabeledGraph _ _ (predicate_partialgraph g p) (vlabel g) (elabel g).
+  Build_LabeledGraph _ _ _ (predicate_partialgraph g p) (vlabel g) (elabel g) (glabel g).
 
 Instance sub_labeledgraph_proper: Proper (labeled_graph_equiv ==> @Same_set V ==> labeled_graph_equiv) predicate_sub_labeledgraph.
 Proof.
@@ -769,9 +771,9 @@ Section GENERAL_GRAPH_GEN.
 Context {V E: Type}.
 Context {EV: EqDec V eq}.
 Context {EE: EqDec E eq}.
-Context {DV DE: Type}.
+Context {DV DE DG: Type}.
 
-Class NormalGeneralGraph (P: LabeledGraph V E DV DE -> Type): Type := {
+Class NormalGeneralGraph (P: LabeledGraph V E DV DE DG -> Type): Type := {
   lge_preserved: forall g1 g2, labeled_graph_equiv g1 g2 -> P g1 -> P g2;
   join_preserved: forall g (PV1 PV2 PV: V -> Prop) (PE1 PE2 PE: E -> Prop),
     Prop_join PV1 PV2 PV ->
@@ -781,20 +783,22 @@ Class NormalGeneralGraph (P: LabeledGraph V E DV DE -> Type): Type := {
     P (gpredicate_sub_labeledgraph PV PE g)
 }.
 
-Context {P: LabeledGraph V E DV DE -> Type}.
+Context {P: LabeledGraph V E DV DE DG -> Type}.
 
-Notation Graph := (GeneralGraph V E DV DE P).
+Notation Graph := (GeneralGraph V E DV DE DG P).
 
 Local Coercion pg_lg : LabeledGraph >-> PreGraph.
 Local Coercion lg_gg : GeneralGraph >-> LabeledGraph.
 
-Definition generalgraph_vgen (g: Graph) (x: V) (d: DV) (sound': P _): Graph := @Build_GeneralGraph V E EV EE DV DE P (labeledgraph_vgen g x d) sound'.
+Definition generalgraph_vgen (g: Graph) (x: V) (d: DV) (sound': P _): Graph := @Build_GeneralGraph V E EV EE DV DE DG P (labeledgraph_vgen g x d) sound'.
 
-Definition generalgraph_egen (g: Graph) (e: E) (d: DE) (sound': P _): Graph := @Build_GeneralGraph V E EV EE DV DE P (labeledgraph_egen g e d) sound'.
+Definition generalgraph_egen (g: Graph) (e: E) (d: DE) (sound': P _): Graph := @Build_GeneralGraph V E EV EE DV DE DG P (labeledgraph_egen g e d) sound'.
+
+Definition generalgraph_ggen (g: Graph) (m: DG) (sound': P _): Graph := @Build_GeneralGraph V E EV EE DV DE DG P (labeledgraph_ggen g m) sound'.
 
 Definition generalgraph_gen_dst (g: Graph) (e : E) (t : V)
            (sound' : P _) : Graph :=
-  @Build_GeneralGraph V E EV EE DV DE P (labeledgraph_gen_dst g e t) sound'.
+  @Build_GeneralGraph V E EV EE DV DE DG P (labeledgraph_gen_dst g e t) sound'.
 
 End GENERAL_GRAPH_GEN.
 

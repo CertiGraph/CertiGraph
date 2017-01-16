@@ -34,8 +34,8 @@ Module GraphMark <: Mgraphmark.
   Definition null_node : node := null.
   Definition valid : formula -> Prop := fun f => TT |-- f.
   Definition ptto_node : node -> bool -> node -> node -> formula := fun v d l r => vertex_at v (d, l, r).
-  Definition A : Type := (@Graph _ bool unit).
-  Definition graph : node -> A -> formula := fun x g => (@reachable_vertices_at _ _ _ _ _ _ _ _ _ SGP _ x (Graph_LGraph g)).
+  Definition A : Type := (@Graph _ bool unit unit).
+  Definition graph : node -> A -> formula := fun x g => (@reachable_vertices_at _ _ _ _ _ _ _ _ _ _ SGP _ x (Graph_LGraph g)).
   Definition star : formula -> formula -> formula := sepcon.
   Definition and : formula -> formula -> formula := andp.
   Definition imp : formula -> formula -> formula := imp.

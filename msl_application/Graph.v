@@ -95,18 +95,18 @@ Class SpatialGraphStrongAssum {V E GV GE Pred: Type} (SGP: SpatialGraphPred V E 
 
 Existing Instances SGP_PSL SGP_OSL SGP_DSL SGP_COSL VP_MSL VP_sMSL EP_MSL EP_sMSL.
 
-Class SpatialGraphConstructor (V E DV DE GV GE: Type) {SGBA: SpatialGraphBasicAssum V E}:= {
-  compute_vgamma: LabeledGraph V E DV DE -> V -> GV;
-  compute_egamma: LabeledGraph V E DV DE -> E -> GE
+Class SpatialGraphConstructor (V E DV DE DG GV GE: Type) {SGBA: SpatialGraphBasicAssum V E}:= {
+  compute_vgamma: LabeledGraph V E DV DE DG -> V -> GV;
+  compute_egamma: LabeledGraph V E DV DE DG -> E -> GE
 }.
 
 Section Local_SpatialGraphConstructor.
 
 Local Coercion pg_lg: LabeledGraph >-> PreGraph.
 
-Class Local_SpatialGraphConstructor (V E DV DE GV GE: Type) {SGBA: SpatialGraphBasicAssum V E} {SGC: SpatialGraphConstructor V E DV DE GV GE} := {
-  vguard: LabeledGraph V E DV DE -> V -> Prop;
-  compute_vgamma_local: forall (G1 G2: LabeledGraph V E DV DE) (x: V),
+Class Local_SpatialGraphConstructor (V E DV DE DG GV GE: Type) {SGBA: SpatialGraphBasicAssum V E} {SGC: SpatialGraphConstructor V E DV DE DG GV GE} := {
+  vguard: LabeledGraph V E DV DE DG -> V -> Prop;
+  compute_vgamma_local: forall (G1 G2: LabeledGraph V E DV DE DG) (x: V),
     vguard G1 x ->
     vguard G2 x ->
     vlabel G1 x = vlabel G2 x ->
@@ -114,8 +114,8 @@ Class Local_SpatialGraphConstructor (V E DV DE GV GE: Type) {SGBA: SpatialGraphB
     (forall e, evalid G1 e -> src G1 e = x -> evalid G2 e -> src G2 e = x -> dst G1 e = dst G2 e) ->
     (forall e, evalid G1 e -> src G1 e = x -> evalid G2 e -> src G2 e = x -> elabel G1 e = elabel G2 e) ->
     compute_vgamma G1 x = compute_vgamma G2 x;
-  eguard: LabeledGraph V E DV DE -> E -> Prop;
-  compute_egamma_local: forall (G1 G2: LabeledGraph V E DV DE) (e: E),
+  eguard: LabeledGraph V E DV DE DG -> E -> Prop;
+  compute_egamma_local: forall (G1 G2: LabeledGraph V E DV DE DG) (e: E),
     eguard G1 e ->
     eguard G2 e ->
     elabel G1 e = elabel G2 e ->
@@ -610,16 +610,16 @@ Section SPATIAL_CONSTRUCTOR.
 
 Local Coercion pg_lg: LabeledGraph >-> PreGraph.
 
-Context {DV DE: Type}.
-Context {SGC: SpatialGraphConstructor V E DV DE GV GE}.
-Context {L_SGC: Local_SpatialGraphConstructor V E DV DE GV GE}.
+Context {DV DE DG: Type}.
+Context {SGC: SpatialGraphConstructor V E DV DE DG GV GE}.
+Context {L_SGC: Local_SpatialGraphConstructor V E DV DE DG GV GE}.
 
 Section PURE_FACTS.
 
-Definition Graph_SpatialGraph (G: LabeledGraph V E DV DE) : SpatialGraph V E GV GE :=
+Definition Graph_SpatialGraph (G: LabeledGraph V E DV DE DG) : SpatialGraph V E GV GE :=
   Build_SpatialGraph _ _ _ _ _ _ G (compute_vgamma G) (compute_egamma G).
 
-Lemma GSG_VGenPreserve: forall P (G: LabeledGraph V E DV DE) x lx gx,
+Lemma GSG_VGenPreserve: forall P (G: LabeledGraph V E DV DE DG) x lx gx,
   gx = vgamma (Graph_SpatialGraph (labeledgraph_vgen G x lx)) x ->
   Included P (vguard G) ->
   Included P (vguard (labeledgraph_vgen G x lx)) ->
@@ -642,7 +642,7 @@ Proof.
 Qed.
 
 (* The counterpart of subgraph version is not true. *)
-Lemma GSG_PartialGraphPreserve: forall P (G1 G2: LabeledGraph V E DV DE),
+Lemma GSG_PartialGraphPreserve: forall P (G1 G2: LabeledGraph V E DV DE DG),
   Included P (vguard G1) ->
   Included P (vguard G2) ->
   Included P (vvalid G1) ->
@@ -669,7 +669,7 @@ Proof.
     firstorder.
 Qed.
 
-Lemma GSG_PartialGraphPreserve2: forall P1 P2 (G1 G2: LabeledGraph V E DV DE),
+Lemma GSG_PartialGraphPreserve2: forall P1 P2 (G1 G2: LabeledGraph V E DV DE DG),
   Included P1 (vguard G1) ->
   Included P2 (vguard G2) ->
   Included P1 (vvalid G1) ->
@@ -696,7 +696,7 @@ Section SPATIAL_FACTS.
 Context {Pred: Type}.
 Context {SGP: SpatialGraphPred V E GV GE Pred}.
 Context {SGA: SpatialGraphAssum SGP}.
-Notation Graph := (LabeledGraph V E DV DE).
+Notation Graph := (LabeledGraph V E DV DE DG).
 
 Definition full_vertices_at (g: Graph): Pred := vertices_at (vvalid g) (Graph_SpatialGraph g).
 

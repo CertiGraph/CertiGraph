@@ -47,7 +47,7 @@ Existing Instances SGP SGA SGAvs.
 Section GRAPH_GList.
 
   Context {pSGG: pSpatialGraph_GList}.
-  Context {DV DE: Type}.
+  Context {DV DE DG: Type}.
 
   Class LiMaFin (g: PreGraph addr (addr * unit)) :=
     {
@@ -56,21 +56,21 @@ Section GRAPH_GList.
       fin: FiniteGraph g
     }.
 
-  Definition Graph := (GeneralGraph addr (addr * unit) DV DE (fun g => LiMaFin (pg_lg g))).
-  Definition LGraph := (LabeledGraph addr (addr * unit) DV DE).
+  Definition Graph := (GeneralGraph addr (addr * unit) DV DE DG (fun g => LiMaFin (pg_lg g))).
+  Definition LGraph := (LabeledGraph addr (addr * unit) DV DE DG).
   Definition SGraph := (SpatialGraph addr (addr * unit) (DV * addr) unit).
 
-  Instance SGC_GList: SpatialGraphConstructor addr (addr * unit) DV DE (DV * addr) unit.
+  Instance SGC_GList: SpatialGraphConstructor addr (addr * unit) DV DE DG (DV * addr) unit.
   Proof.
-    refine (Build_SpatialGraphConstructor _ _ _ _ _ _ SGBA _ _).
+    refine (Build_SpatialGraphConstructor _ _ _ _ _ _ _ SGBA _ _).
     + exact (fun G v => (vlabel G v, v)).
     + exact (fun _ _ => tt).
   Defined.
 
-  Instance L_SGC_GList: Local_SpatialGraphConstructor addr (addr * unit) DV DE (DV * addr) unit.
+  Instance L_SGC_GList: Local_SpatialGraphConstructor addr (addr * unit) DV DE DG (DV * addr) unit.
   Proof.
     refine (Build_Local_SpatialGraphConstructor
-              _ _ _ _ _ _ SGBA SGC_GList
+              _ _ _ _ _ _ _ SGBA SGC_GList
               (fun G v => evalid (pg_lg G) (v, tt) /\ src (pg_lg G) (v, tt) = v) _
               (fun _ _ => True) _).
     + intros.
@@ -93,9 +93,9 @@ Section GRAPH_GList.
   Local Identity Coercion SGraph_SpatialGraph: SGraph >-> SpatialGraph.
   Local Coercion pg_lg: LabeledGraph >-> PreGraph.
 
-  Instance maGraph(G: Graph): MathGraph G is_null_SGBA := @ma G (@sound_gg _ _ _ _ _ _ _ G).
-  Instance finGraph (G: Graph): FiniteGraph G := @fin G (@sound_gg _ _ _ _ _ _ _ G).
-  Instance liGraph (G: Graph):  LstGraph G (fun x => (x, tt)) := @li G (@sound_gg _ _ _ _ _ _ _ G).
+  Instance maGraph(G: Graph): MathGraph G is_null_SGBA := @ma G (@sound_gg _ _ _ _ _ _ _ _ G).
+  Instance finGraph (G: Graph): FiniteGraph G := @fin G (@sound_gg _ _ _ _ _ _ _ _ G).
+  Instance liGraph (G: Graph):  LstGraph G (fun x => (x, tt)) := @li G (@sound_gg _ _ _ _ _ _ _ _ G).
 
   Instance RGF (G: Graph): ReachableFiniteGraph G.
   Proof.

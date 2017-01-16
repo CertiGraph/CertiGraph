@@ -11,11 +11,12 @@ Require Import RamifyCoq.graph.graph_relation.
 Require Import RamifyCoq.graph.subgraph2.
 Require Import RamifyCoq.graph.graph_morphism.
 
-Class GraphMorphismSetting (DV DE V' E' DV' DE': Type): Type := {
+Class GraphMorphismSetting (DV DE DG V' E' DV' DE' DG': Type): Type := {
   co_vertex: DV -> V';
   co_edge: DE -> E';
   default_DV': DV';
-  default_DE': DE'
+  default_DE': DE';
+  default_DG': DG'
 }.
 
 Module LocalGraphCopy.
@@ -29,12 +30,12 @@ Context {EV: EqDec V eq}.
 Context {EE: EqDec E eq}.
 Context {EV': EqDec V' eq}.
 Context {EE': EqDec E' eq}.
-Context {DV DE DV' DE': Type}.
+Context {DV DE DG DV' DE' DG': Type}.
 
-Context {GMS: GraphMorphismSetting DV DE V' E' DV' DE'}.
+Context {GMS: GraphMorphismSetting DV DE DG V' E' DV' DE' DG'}.
 
-Notation Graph := (LabeledGraph V E DV DE).
-Notation Graph' := (LabeledGraph V' E' DV' DE').
+Notation Graph := (LabeledGraph V E DV DE DG).
+Notation Graph' := (LabeledGraph V' E' DV' DE' DG').
 Local Coercion pg_lg : LabeledGraph >-> PreGraph.
 
 Definition vmap (g: Graph): V -> V' := fun v => co_vertex (vlabel g v).
@@ -47,7 +48,7 @@ Definition vcopy1 root (g1 g2: Graph) (g2': Graph') :=
   g1 ~=~ g2 /\
   guarded_pointwise_relation (Complement _ PV_root) eq (vmap g1) (vmap g2) /\
   guarded_pointwise_relation (Complement _ PE_root) eq (emap g1) (emap g2) /\
-  g2' = single_vertex_labeledgraph (vmap g2 root) default_DV' default_DE'.
+  g2' = single_vertex_labeledgraph (vmap g2 root) default_DV' default_DE' default_DG'.
 
 Definition ecopy1 e (p1 p2: Graph * Graph') :=
   let (g1, g1') := p1 in
@@ -202,7 +203,7 @@ Proof.
 Qed.
 
 Lemma labeledgraph_vgen_vcopy1: forall (G: Graph) x x0,
-  vcopy1 x G (labeledgraph_vgen G x x0) (single_vertex_labeledgraph (vmap (labeledgraph_vgen G x x0) x) default_DV' default_DE') /\ co_vertex x0 = vmap (labeledgraph_vgen G x x0) x.
+  vcopy1 x G (labeledgraph_vgen G x x0) (single_vertex_labeledgraph (vmap (labeledgraph_vgen G x x0) x) default_DV' default_DE' default_DG') /\ co_vertex x0 = vmap (labeledgraph_vgen G x x0) x.
 Proof.
   intros.
   split.
@@ -725,7 +726,7 @@ Qed.
 
 Lemma copy_invalid_refl: forall (g: Graph) M root (src0 dst0: E' -> V'),
   ~ vvalid g root ->
-  copy M root g g (empty_labeledgraph src0 dst0 default_DV' default_DE').
+  copy M root g g (empty_labeledgraph src0 dst0 default_DV' default_DE' default_DG').
 Proof.
   intros.
   unfold copy.
@@ -757,7 +758,7 @@ Qed.
 
 Lemma copy_marked_root_refl: forall (g: Graph) (M: V -> Prop) root (src0 dst0: E' -> V'),
   M root ->
-  copy M root g g (empty_labeledgraph src0 dst0 default_DV' default_DE').
+  copy M root g g (empty_labeledgraph src0 dst0 default_DV' default_DE' default_DG').
 Proof.
   intros.
   unfold copy.

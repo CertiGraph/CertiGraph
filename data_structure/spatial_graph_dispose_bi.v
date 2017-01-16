@@ -45,7 +45,7 @@ Section SPATIAL_GRAPH_DISPOSE_BI.
   Local Identity Coercion SGraph_SpatialGraph: SGraph >-> SpatialGraph.
   Local Coercion pg_lg: LabeledGraph >-> PreGraph.
 
-  Notation Graph := (@Graph pSGG_Bi bool unit).
+  Notation Graph := (@Graph pSGG_Bi bool unit unit).
 
   Lemma vgamma_is_true: forall (g : Graph) (x l r : addr), vgamma g x = (true, l, r) -> marked g x.
   Proof. intros. simpl in H. simpl. destruct (vlabel g x) eqn:? . auto. inversion H. Qed.

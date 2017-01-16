@@ -25,14 +25,15 @@ Record PreGraph {EV: EqDec Vertex eq} {EE: EqDec Edge eq} := {
 Context {EV: EqDec Vertex eq}.
 Context {EE: EqDec Edge eq}.
 
-Record LabeledGraph {DV DE: Type} := {
+Record LabeledGraph {DV DE DG: Type} := {
   pg_lg: PreGraph;
   vlabel: Vertex -> DV;
-  elabel: Edge -> DE
+  elabel: Edge -> DE;
+  glabel: DG
 }.
 
-Record GeneralGraph {DV DE: Type} {P: @LabeledGraph DV DE -> Type} := {
-  lg_gg: @LabeledGraph DV DE;
+Record GeneralGraph {DV DE DG: Type} {P: @LabeledGraph DV DE DG -> Type} := {
+  lg_gg: @LabeledGraph DV DE DG;
   sound_gg: P lg_gg
 }.
 
@@ -64,8 +65,8 @@ Definition node_pred_dec (P: NodePred) (x: Vertex): {P x} + {~ P x} := projT2 P 
 End GRAPH_DEF.
 
 Arguments PreGraph _ _ {_} {_}.
-Arguments LabeledGraph _ _ {_} {_} _ _.
-Arguments GeneralGraph _ _ {_} {_} _ _ _.
+Arguments LabeledGraph _ _ {_} {_} _ _ _.
+Arguments GeneralGraph _ _ {_} {_} _ _ _ _.
 Arguments NodePred : clear implicits.
 
 Notation " pg |= n1 ~> n2 " := (edge pg n1 n2) (at level 1).
@@ -290,8 +291,8 @@ Definition gremove_edge (g1: PreGraph Vertex Edge) (e0: Edge) (g2: PreGraph Vert
 
 Section LABELED_GRAPH_EQUIV.
 
-Context {DV DE: Type}.
-Notation Graph := (@LabeledGraph Vertex Edge EV EE DV DE).
+Context {DV DE DG: Type}.
+Notation Graph := (@LabeledGraph Vertex Edge EV EE DV DE DG).
 
 Local Coercion pg_lg: LabeledGraph >-> PreGraph.
 
