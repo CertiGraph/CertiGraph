@@ -22,8 +22,8 @@ Local Identity Coercion LGraph_LabeledGraph: LGraph >-> LabeledGraph.
 Local Identity Coercion SGraph_SpatialGraph: SGraph >-> SpatialGraph.
 Local Coercion pg_lg: LabeledGraph >-> PreGraph.
 
-Notation dag sh x g := (@reachable_dag_vertices_at _ _ _ _ _ _ _ _ _ (@SGP pSGG_VST bool unit (sSGG_VST sh)) _ x g).
-Notation Graph := (@Graph pSGG_VST bool unit).
+Notation dag sh x g := (@reachable_dag_vertices_at _ _ _ _ _ _ _ _ _ _ (@SGP pSGG_VST bool unit (sSGG_VST sh)) _ x g).
+Notation Graph := (@Graph pSGG_VST bool unit unit).
 Existing Instances MGS biGraph maGraph finGraph RGF.
 
 Definition mark_spec :=

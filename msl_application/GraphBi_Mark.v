@@ -38,7 +38,7 @@ Local Identity Coercion LGraph_LabeledGraph: LGraph >-> LabeledGraph.
 Local Identity Coercion SGraph_SpatialGraph: SGraph >-> SpatialGraph.
 Local Coercion pg_lg: LabeledGraph >-> PreGraph.
 
-Notation Graph := (@Graph pSGG_Bi bool unit).
+Notation Graph := (@Graph pSGG_Bi bool unit unit).
 
 (* TODO: move this lemma into Graph_Mark.v. *)
 Lemma vlabel_eq: forall (g1 g2: Graph) x1 x2, (WeakMarkGraph.marked g1 x1 <-> WeakMarkGraph.marked g2 x2) -> vlabel g1 x1 = vlabel g2 x2.
@@ -65,7 +65,7 @@ Qed.
 Lemma Graph_vgen_true_mark1: forall (G: Graph) (x: addr) l r,
   vgamma G x = (false, l, r) ->
   vvalid G x ->
-  mark1 x (G: LabeledGraph _ _ _ _) (Graph_vgen G x true: LabeledGraph _ _ _ _).
+  mark1 x (G: LabeledGraph _ _ _ _ _) (Graph_vgen G x true: LabeledGraph _ _ _ _ _).
 Proof.
   intros.
   apply WeakMarkGraph.vertex_update_mark1.
@@ -164,7 +164,7 @@ Proof.
     eapply gamma_step_list; eauto.
   + split_relation_list ((lg_gg g1) :: nil); auto.
     unfold mark_list. simpl map.
-    split_relation_list (@nil (LabeledGraph _ _ bool unit)); auto.
+    split_relation_list (@nil (LabeledGraph _ _ bool unit unit)); auto.
   + unfold Included, Ensembles.In; intros.
     apply vvalid_vguard.
     rewrite Intersection_spec in H3; destruct H3.

@@ -720,9 +720,9 @@ Section PartialLabeledGraph.
 Context {V E: Type}.
 Context {EV: EqDec V eq}.
 Context {EE: EqDec E eq}.
-Context {DV DE: Type}.
+Context {DV DE DG: Type}.
 
-Notation Graph := (LabeledGraph V E DV DE).
+Notation Graph := (LabeledGraph V E DV DE DG).
 
 Local Coercion pg_lg: LabeledGraph >-> PreGraph.
 
@@ -739,7 +739,7 @@ Section GRAPH_DISJOINT_UNION.
   Context {V E: Type}.
   Context {EV: EqDec V eq}.
   Context {EE: EqDec E eq}.
-  Context {DV DE: Type}.
+  Context {DV DE DG: Type}.
 
   Local Coercion pg_lg: LabeledGraph >-> PreGraph.
 
@@ -748,11 +748,11 @@ Section GRAPH_DISJOINT_UNION.
 
   (* In assumption, why need decidability in Type? Because we need at least an existence (in Prop) of a function, which requires decidability in Type. *)
   (* In conclusion, it is possible to generate this stronger existential (In Type) property. *) 
-  Definition disjointed_union_labeledgraph_sig_ll: forall (G1 G2: LabeledGraph V E DV DE),
+  Definition disjointed_union_labeledgraph_sig_ll: forall (G1 G2: LabeledGraph V E DV DE DG),
     disjointed_guard (vvalid G1) (vvalid G2) (evalid G1) (evalid G2) ->
     (forall v, Decidable (vvalid G1 v)) ->
     (forall e, Decidable (evalid G1 e)) ->
-    { G: LabeledGraph V E DV DE | 
+    { G: LabeledGraph V E DV DE DG | 
       guarded_labeled_graph_equiv (vvalid G1) (evalid G1) G1 G /\
       guarded_labeled_graph_equiv (vvalid G2) (evalid G2) G2 G /\
       Prop_join (vvalid G1) (vvalid G2) (vvalid G) /\
@@ -760,14 +760,15 @@ Section GRAPH_DISJOINT_UNION.
   Proof.
     intros.
     exists
-      (Build_LabeledGraph _ _
+      (Build_LabeledGraph _ _ _
         (@Build_PreGraph V E _ _
           (fun v => vvalid G1 v \/ vvalid G2 v)
           (fun e => evalid G1 e \/ evalid G2 e)
           (fun e => if (X0 e) then src G1 e else src G2 e)
           (fun e => if (X0 e) then dst G1 e else dst G2 e))
         (fun v => if (X v) then vlabel G1 v else vlabel G2 v)
-        (fun e => if (X0 e) then elabel G1 e else elabel G2 e)).
+        (fun e => if (X0 e) then elabel G1 e else elabel G2 e)
+        (glabel G1)).
     split; [| split; [| split]].
     + rewrite guarded_lge_spec.
       simpl; split; [split; [| split; [| split]] | split].
@@ -870,11 +871,11 @@ Section GRAPH_DISJOINT_UNION.
     tauto.
   Qed.
 
-  Definition disjointed_union_labeledgraph_exists_ll: forall (G1 G2: LabeledGraph V E DV DE),
+  Definition disjointed_union_labeledgraph_exists_ll: forall (G1 G2: LabeledGraph V E DV DE DG),
     disjointed_guard (vvalid G1) (vvalid G2) (evalid G1) (evalid G2) ->
     (exists f: forall v, Decidable (vvalid G1 v), True) ->
     (exists f: forall e, Decidable (evalid G1 e), True) ->
-    exists G: LabeledGraph V E DV DE,
+    exists G: LabeledGraph V E DV DE DG,
       guarded_labeled_graph_equiv (vvalid G1) (evalid G1) G1 G /\
       guarded_labeled_graph_equiv (vvalid G2) (evalid G2) G2 G /\
       Prop_join (vvalid G1) (vvalid G2) (vvalid G) /\

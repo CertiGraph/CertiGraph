@@ -26,8 +26,8 @@ Local Identity Coercion SGraph_SpatialGraph: SGraph >-> SpatialGraph.
 Local Coercion pg_lg: LabeledGraph >-> PreGraph.
 
 Notation vertices_at sh g P := (@vertices_at _ _ _ _ _ _ (@SGP pSGG_VST bool unit (sSGG_VST sh)) _ g P).
-Notation graph sh x g := (@reachable_vertices_at _ _ _ _ _ _ _ _ _ (@SGP pSGG_VST bool unit (sSGG_VST sh)) _ x g).
-Notation Graph := (@Graph pSGG_VST bool unit).
+Notation graph sh x g := (@reachable_vertices_at _ _ _ _ _ _ _ _ _ _ (@SGP pSGG_VST bool unit (sSGG_VST sh)) _ x g).
+Notation Graph := (@Graph pSGG_VST bool unit unit).
 Existing Instances MGS biGraph maGraph finGraph RGF.
 
 Definition mark_spec :=
@@ -181,14 +181,14 @@ Proof.
   } Unfocus.
   rewrite Heqdlr. simpl vgamma2cdata at 1.
   assert ((Vint (Int.repr (if (@vlabel pointer_val (prod pointer_val LR) PointerVal_EqDec
-           PointerValLR_EqDec bool unit (@Graph_LGraph pSGG_VST bool unit g1)
+           PointerValLR_EqDec bool unit unit (@Graph_LGraph pSGG_VST bool unit unit g1)
            l) then 1 else 0))) =
           (Vint (Int.repr (if node_pred_dec (marked g1) l then 1 else 0)))). {
     simpl. f_equal. f_equal.
     change (vlabel (lg_gg g1) l) with (vlabel g1 l).
     simpl.
     destruct (@vlabel pointer_val (prod pointer_val LR) PointerVal_EqDec
-           PointerValLR_EqDec bool unit (@Graph_LGraph pSGG_VST bool unit g1)
+           PointerValLR_EqDec bool unit unit (@Graph_LGraph pSGG_VST bool unit unit g1)
            l); auto.
   }
   rewrite H5. clear H5.
@@ -209,7 +209,7 @@ Proof.
       destruct H5; auto. hnf in H5. subst. exfalso; intuition.
     }
     unfold vgamma2cdata.
-    apply (@va_reachable_internal_stable_ramify pSGG_VST _ _ (sSGG_VST sh) g1 x l (dd, ll, rr)); auto.
+    apply (@va_reachable_internal_stable_ramify pSGG_VST _ _ _ (sSGG_VST sh) g1 x l (dd, ll, rr)); auto.
     apply (gamma_left_reachable_included g1 _ _ _ _ H3 H_GAMMA_g1 l).
     apply reachable_by_refl; auto.
   } Unfocus.
@@ -383,12 +383,12 @@ Proof.
   } Unfocus.
   rewrite Heqdlr. simpl vgamma2cdata at 1.
   assert ((Vint (Int.repr (if (@vlabel pointer_val (prod pointer_val LR) PointerVal_EqDec
-           PointerValLR_EqDec bool unit (@Graph_LGraph pSGG_VST bool unit g2)
+           PointerValLR_EqDec bool unit unit (@Graph_LGraph pSGG_VST bool unit unit g2)
            r) then 1 else 0)))
           = (Vint (Int.repr (if node_pred_dec (marked g2) r then 1 else 0)))). {
     simpl. do 2 f_equal.
     destruct (@vlabel pointer_val (prod pointer_val LR) PointerVal_EqDec
-           PointerValLR_EqDec bool unit (@Graph_LGraph pSGG_VST bool unit g2)
+           PointerValLR_EqDec bool unit unit (@Graph_LGraph pSGG_VST bool unit unit g2)
            r); auto.
   } rewrite H7. clear H7.
   unlocalize

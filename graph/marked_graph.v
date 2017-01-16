@@ -761,11 +761,11 @@ Section MarkGraph.
 Context {V E: Type}.
 Context {EV: EqDec V eq}.
 Context {EE: EqDec E eq}.
-Context {DV DE: Type}.
+Context {DV DE DG: Type}.
 Context {MGS: MarkGraphSetting DV}.
-Context {P: LabeledGraph V E DV DE -> Type}.
+Context {P: LabeledGraph V E DV DE DG -> Type}.
 
-Notation Graph := (GeneralGraph V E DV DE P).
+Notation Graph := (GeneralGraph V E DV DE DG P).
 Local Coercion pg_lg : LabeledGraph >-> PreGraph.
 Local Coercion lg_gg : GeneralGraph >-> LabeledGraph.
 

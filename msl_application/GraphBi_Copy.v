@@ -45,17 +45,18 @@ Local Identity Coercion LGraph_LabeledGraph: LGraph >-> LabeledGraph.
 Local Identity Coercion SGraph_SpatialGraph: SGraph >-> SpatialGraph.
 Local Coercion pg_lg: LabeledGraph >-> PreGraph.
 
-Notation Graph := (@Graph pSGG_Bi addr (addr * LR)).
+Notation Graph := (@Graph pSGG_Bi addr (addr * LR) unit).
 
-Instance CCS: CompactCopySetting addr (addr * LR).
-  apply (Build_CompactCopySetting _ _ null (null, L)).
+Instance CCS: CompactCopySetting addr (addr * LR) unit.
+  apply (Build_CompactCopySetting _ _ _ null (null, L) tt).
 Defined.
 
 Global Existing Instance CCS.
 
-Definition empty_Graph: Graph := empty_Graph null (null, L).
+Definition empty_Graph: Graph := empty_Graph null (null, L) tt.
 
-Definition initial_copied_Graph (x x0: addr) (g: Graph): LGraph := single_vertex_labeledgraph (LocalGraphCopy.vmap (Graph_vgen g x x0) x) null (null, L).
+Definition initial_copied_Graph (x x0: addr) (g: Graph): LGraph 
+  := single_vertex_labeledgraph (LocalGraphCopy.vmap (Graph_vgen g x x0) x) null (null, L) tt.
 
 Opaque empty_Graph initial_copied_Graph.
 
@@ -324,7 +325,7 @@ Proof.
       apply reachable_foot_valid in H7; auto.
 Qed.
 
-Lemma is_BiMaFin_disjoint_guard: forall (g1':  @LGraph pSGG_Bi (@addr pSGG_Bi) (prod (@addr pSGG_Bi) LR)) (g2'': Graph) x0 es0,
+Lemma is_BiMaFin_disjoint_guard: forall (g1':  @LGraph pSGG_Bi (@addr pSGG_Bi) (prod (@addr pSGG_Bi) LR) unit) (g2'': Graph) x0 es0,
   is_guarded_BiMaFin (fun v => x0 <> v) (fun e => ~ In e es0) g1' ->
   vvalid g1' x0 ->
   (forall e, In e es0 -> fst e = x0) ->
@@ -343,7 +344,7 @@ Proof.
     rewrite left_right_sound0 by auto.
     subst; auto.
   + destruct H as [X _].
-    pose (pg1 := Build_GeneralGraph _ _ (fun g: LGraph => BiMaFin g) (gpredicate_sub_labeledgraph (fun v => x0 <> v) (fun e => ~ In e es0) g1') X: Graph).
+    pose (pg1 := Build_GeneralGraph _ _ _ (fun g: LGraph => BiMaFin g) (gpredicate_sub_labeledgraph (fun v => x0 <> v) (fun e => ~ In e es0) g1') X: Graph).
     assert (evalid pg1 (v, lr)) by (simpl; rewrite Intersection_spec; split; auto).
     assert (src g2'' (v, lr) = src pg1 (v, lr)) by (rewrite !left_right_sound0; auto).
     apply (@valid_graph _ _ _ _ pg1 _ (maGraph _)) in H.
@@ -352,7 +353,7 @@ Proof.
     destruct H; auto.
 Qed.
 
-Lemma is_BiMaFin_not_evalid: forall (g1': @LGraph pSGG_Bi (@addr pSGG_Bi) (prod (@addr pSGG_Bi) LR))x0 es0 e0,
+Lemma is_BiMaFin_not_evalid: forall (g1': @LGraph pSGG_Bi (@addr pSGG_Bi) (prod (@addr pSGG_Bi) LR) unit)x0 es0 e0,
   is_guarded_BiMaFin (fun v => x0 <> v) (fun e => ~ In e es0) g1' ->
   vvalid g1' x0 ->
   (forall e, In e es0 -> fst e = x0) ->
@@ -363,7 +364,7 @@ Proof.
   intros.
   intro.
   destruct H as [X ?].
-  set (G := (Build_GeneralGraph _ _ (fun g => BiMaFin (pg_lg g)) _ X: Graph)).
+  set (G := (Build_GeneralGraph _ _ _ (fun g => BiMaFin (pg_lg g)) _ X: Graph)).
   assert (evalid G e0).
   Focus 1. {
     simpl.
@@ -397,7 +398,7 @@ Proof.
   intros.
   rename H5 into BMF.
   inversion H0.
-  pose proof @vcopy1_edge_copy_list_weak_copy_extended_copy' _ _ _ _ _ _ _ _ _ BiMaFin_Normal x ((x, L) :: (x, R) :: nil) nil (x, L) ((x, R) :: nil) g g1 g1 g1' g1' g2 g2'' x0 H.
+  pose proof @vcopy1_edge_copy_list_weak_copy_extended_copy' _ _ _ _ _ _ _ _ _ _ BiMaFin_Normal x ((x, L) :: (x, R) :: nil) nil (x, L) ((x, R) :: nil) g g1 g1 g1' g1' g2 g2'' x0 H.
   spec H5; [simpl; unfold Complement, Ensembles.In; congruence |].
   spec H5; [reflexivity |].
   spec H5; [intros; apply (biGraph_out_edges g (biGraph _)); auto |].
@@ -468,7 +469,7 @@ Proof.
     apply H13.
     - unfold Included, Ensembles.In; intros.
       destruct BMF as [BMF _].
-      pose (pg1 := Build_GeneralGraph _ _ (fun g: LGraph => BiMaFin g) (gpredicate_sub_labeledgraph (fun v => x0 <> v) (fun e : addr * LR => ~ In e nil) g1') BMF: Graph).
+      pose (pg1 := Build_GeneralGraph _ _ _ (fun g: LGraph => BiMaFin g) (gpredicate_sub_labeledgraph (fun v => x0 <> v) (fun e : addr * LR => ~ In e nil) g1') BMF: Graph).
       assert (vvalid pg1 x1) by (simpl; auto).
       apply vvalid_vguard in H16.
       simpl in H16.
@@ -476,7 +477,7 @@ Proof.
       simpl; tauto.
     - unfold Included, Ensembles.In; intros.
       destruct H9 as [X _].
-      pose (pg2 := Build_GeneralGraph _ _ (fun g: LGraph => BiMaFin g) (gpredicate_sub_labeledgraph (fun v => x0 <> v) (fun e : addr * LR => ~ In e nil) g2') X: Graph).
+      pose (pg2 := Build_GeneralGraph _ _ _ (fun g: LGraph => BiMaFin g) (gpredicate_sub_labeledgraph (fun v => x0 <> v) (fun e : addr * LR => ~ In e nil) g2') X: Graph).
       assert (vvalid pg2 x1). simpl. rewrite Intersection_spec in H15 |- *. rewrite (proj1 HPJ); tauto.
       apply vvalid_vguard in H9.
       simpl in H9.
@@ -489,7 +490,7 @@ Proof.
     - intros ? ?; apply vvalid_vguard; auto.
     - unfold Included, Ensembles.In; intros.
       destruct H9 as [X _].
-      pose (pg2 := Build_GeneralGraph _ _ (fun g: LGraph => BiMaFin g) (gpredicate_sub_labeledgraph (fun v => x0 <> v) (fun e : addr * LR => ~ In e nil) g2') X: Graph).
+      pose (pg2 := Build_GeneralGraph _ _ _ (fun g: LGraph => BiMaFin g) (gpredicate_sub_labeledgraph (fun v => x0 <> v) (fun e : addr * LR => ~ In e nil) g2') X: Graph).
       assert (vvalid pg2 x1). simpl. rewrite (proj1 HPJ1). tauto.
       apply vvalid_vguard in H9.
       simpl in H9.
@@ -624,7 +625,7 @@ Proof.
   intros.
   rename H8 into BMF.
   inversion H0.
-  pose proof @vcopy1_edge_copy_list_weak_copy_extended_copy' _ _ _ _ _ _ _ _ _ BiMaFin_Normal x ((x, L) :: (x, R) :: nil) ((x, L) :: nil) (x, R) nil g g1 g3 g1' g3' g4 g4'' x0 H.
+  pose proof @vcopy1_edge_copy_list_weak_copy_extended_copy' _ _ _ _ _ _ _ _ _ _ BiMaFin_Normal x ((x, L) :: (x, R) :: nil) ((x, L) :: nil) (x, R) nil g g1 g3 g1' g3' g4 g4'' x0 H.
   spec H8; [simpl; unfold Complement, Ensembles.In; congruence |].
   spec H8; [reflexivity |].
   spec H8; [intros; apply (biGraph_out_edges g (biGraph _)); auto |].
@@ -633,7 +634,7 @@ Proof.
   spec H8.
   Focus 1. {
     unfold edge_copy_list; simpl map.
-    split_relation_list (@nil (@LGraph _ addr (addr * LR) * @LGraph _ addr (addr * LR))).
+    split_relation_list (@nil (@LGraph _ addr (addr * LR) unit * @LGraph _ addr (addr * LR) unit)).
     unfold edge_copy.
     split_relation_list ((g2: LGraph, g2') :: nil); auto.
     rewrite H10; auto.
@@ -688,14 +689,14 @@ Proof.
   spec H18.
   Focus 1. {
     unfold edge_copy_list; simpl map.
-    split_relation_list (@nil (@LGraph _ addr (addr * LR) * @LGraph _ addr (addr * LR))).
+    split_relation_list (@nil (@LGraph _ addr (addr * LR) unit * @LGraph _ addr (addr * LR) unit)).
     unfold edge_copy.
     split_relation_list ((g2: LGraph, g2') :: nil); auto.
     rewrite H10; auto.
   } Unfocus.
   spec H18; [subst r; auto |].
   rewrite H6.
-  replace ((@LocalGraphCopy.emap _ _ _ _ _ _ _ _ _ _ GMS g3 (x, L)) :: nil) with (LocalGraphCopy.emap g4 (x, L) :: nil) by (symmetry; auto).
+  replace ((@LocalGraphCopy.emap _ _ _ _ _ _ _ _ _ _ _ _ GMS g3 (x, L)) :: nil) with (LocalGraphCopy.emap g4 (x, L) :: nil) by (symmetry; auto).
   simpl in H18.
 
   apply andp_right; [apply prop_right; split; auto | rewrite sepcon_assoc; apply sepcon_derives; auto].
@@ -725,7 +726,7 @@ Proof.
     apply H16.
     - unfold Included, Ensembles.In; intros.
       destruct BMF as [BMF _].
-      pose (pg1 := Build_GeneralGraph _ _ (fun g: LGraph => BiMaFin g) (gpredicate_sub_labeledgraph (fun v => x0 <> v) (fun e : addr * LR => ~ In e (LocalGraphCopy.emap g3 (x, L) :: nil)) g3') BMF: Graph).
+      pose (pg1 := Build_GeneralGraph _ _ _ (fun g: LGraph => BiMaFin g) (gpredicate_sub_labeledgraph (fun v => x0 <> v) (fun e : addr * LR => ~ In e (LocalGraphCopy.emap g3 (x, L) :: nil)) g3') BMF: Graph).
       assert (vvalid pg1 x1) by (simpl; auto).
       apply vvalid_vguard in H21.
       simpl in H21.
@@ -733,7 +734,7 @@ Proof.
       simpl; tauto.
     - unfold Included, Ensembles.In; intros.
       destruct H12 as [X _].
-      pose (pg2 := Build_GeneralGraph _ _ (fun g: LGraph => BiMaFin g) (gpredicate_sub_labeledgraph (fun v => x0 <> v) (fun e : addr * LR => ~ In e (LocalGraphCopy.emap g4 (x, L) :: nil)) g4') X: Graph).
+      pose (pg2 := Build_GeneralGraph _ _ _ (fun g: LGraph => BiMaFin g) (gpredicate_sub_labeledgraph (fun v => x0 <> v) (fun e : addr * LR => ~ In e (LocalGraphCopy.emap g4 (x, L) :: nil)) g4') X: Graph).
       assert (vvalid pg2 x1). simpl. rewrite (proj1 HPJ1); tauto.
       apply vvalid_vguard in H12.
       simpl in H12.
@@ -746,7 +747,7 @@ Proof.
     - intros ? ?; apply vvalid_vguard; auto.
     - unfold Included, Ensembles.In; intros.
       destruct H12 as [X _].
-      pose (pg2 := Build_GeneralGraph _ _ (fun g: LGraph => BiMaFin g) (gpredicate_sub_labeledgraph (fun v => x0 <> v) (fun e : addr * LR => ~ In e _) g4') X: Graph).
+      pose (pg2 := Build_GeneralGraph _ _ _ (fun g: LGraph => BiMaFin g) (gpredicate_sub_labeledgraph (fun v => x0 <> v) (fun e : addr * LR => ~ In e _) g4') X: Graph).
       assert (vvalid pg2 x1). simpl. rewrite (proj1 HPJ1). tauto.
       apply vvalid_vguard in H12.
       simpl in H12.

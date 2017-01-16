@@ -29,8 +29,8 @@ Section SpatialGraph_Mark.
 Context {V E: Type}.
 Context {GV GE Pred: Type}.
 Context {SGBA: SpatialGraphBasicAssum V E}.
-Context {SGC: SpatialGraphConstructor V E bool unit GV GE}.
-Context {L_SGC: Local_SpatialGraphConstructor V E bool unit GV GE}.
+Context {SGC: SpatialGraphConstructor V E bool unit unit GV GE}.
+Context {L_SGC: Local_SpatialGraphConstructor V E bool unit unit GV GE}.
 Context {SGP: SpatialGraphPred V E GV GE Pred}.
 Context {SGA: SpatialGraphAssum SGP}.
 
@@ -42,7 +42,7 @@ Defined.
 
 Global Existing Instance MGS.
 
-Notation Graph := (LabeledGraph V E bool unit).
+Notation Graph := (LabeledGraph V E bool unit unit).
 Notation SGraph := (SpatialGraph V E GV GE).
 
 Local Coercion pg_lg: LabeledGraph >-> PreGraph.

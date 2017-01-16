@@ -28,21 +28,22 @@ Import RamifyCoq.msl_ext.seplog.OconNotation.
 
 Local Open Scope logic.
 
-Class CompactCopySetting V E := {
+Class CompactCopySetting V E M := {
   default_v: V;
-  default_e: E
+  default_e: E;
+  default_g: M
 }.
 
 Section SpatialGraph_Copy.
 
-Context {V E: Type}.
+Context {V E M: Type}.
 Context {SGBA: SpatialGraphBasicAssum V E}.
-Context {CCS: CompactCopySetting V E}.
+Context {CCS: CompactCopySetting V E M}.
 Context {GV GE Pred: Type}.
 Context {SGP: SpatialGraphPred V E GV GE Pred}.
 Context {SGA: SpatialGraphAssum SGP}.
-Context {SGC: SpatialGraphConstructor V E V E GV GE}.
-Context {L_SGC: Local_SpatialGraphConstructor V E V E GV GE}.
+Context {SGC: SpatialGraphConstructor V E V E M GV GE}.
+Context {L_SGC: Local_SpatialGraphConstructor V E V E M GV GE}.
 Context {SGA_vn: SpatialGraphAssum_vn SGP default_v}.
 Context {SGA_vs: SpatialGraphAssum_vs SGP}.
 
@@ -54,12 +55,12 @@ Defined.
 
 Global Existing Instance MGS.
 
-Instance GMS: GraphMorphismSetting V E V E V E :=
-  Build_GraphMorphismSetting _ _ _ _ _ _ (fun v => v) (fun e => e) default_v default_e.
+Instance GMS: GraphMorphismSetting V E M V E V E M :=
+  Build_GraphMorphismSetting _ _ _ _ _ _ _ _ (fun v => v) (fun e => e) default_v default_e default_g.
 
 Global Existing Instance GMS.
 
-Notation Graph := (LabeledGraph V E V E).
+Notation Graph := (LabeledGraph V E V E M).
 Notation SGraph := (SpatialGraph V E V E).
 
 Local Coercion pg_lg: LabeledGraph >-> PreGraph.
@@ -92,9 +93,9 @@ Definition edge_copy g e := relation_list ((extended_copy (dst g e)) :: (ecopy1 
 
 Definition edge_copy_list g es := relation_list (map (edge_copy g) es).
 
-Lemma copy_invalid_refl: forall (g: Graph) (root: V) (src0 dst0: E -> V) (default_v: V) (default_e: E),
+Lemma copy_invalid_refl: forall (g: Graph) (root: V) (src0 dst0: E -> V) (default_v: V) (default_e: E) (default_g : M),
   ~ vvalid g root ->
-  copy root g g (empty_labeledgraph src0 dst0 default_v default_e).
+  copy root g g (empty_labeledgraph src0 dst0 default_v default_e default_g).
 Proof.
   intros.
   split; [| split].
@@ -103,9 +104,9 @@ Proof.
   + apply LocalGraphCopy.copy_invalid_refl; auto.
 Qed.
 
-Lemma marked_root_copy_refl: forall (g: Graph) (root: V) (src0 dst0: E -> V) (default_v: V) (default_e: E),
+Lemma marked_root_copy_refl: forall (g: Graph) (root: V) (src0 dst0: E -> V) (default_v: V) (default_e: E) (default_g : M),
   WeakMarkGraph.marked g root ->
-  copy root g g (empty_labeledgraph src0 dst0 default_v default_e).
+  copy root g g (empty_labeledgraph src0 dst0 default_v default_e default_g).
 Proof.
   intros.
   split; [| split].
@@ -633,7 +634,7 @@ Proof.
     destruct H4 as [_ [_ ?]].
     eapply LocalGraphCopy.vcopy1_copied_root_valid in H4; eauto.
   + replace (map (@LocalGraphCopy.emap V E V E (@SGBA_VE V E SGBA)
-                    (@SGBA_EE V E SGBA) V E V E GMS g4) es_done) with (map (LocalGraphCopy.emap g3) es_done)
+                    (@SGBA_EE V E SGBA) V E M V E M GMS g4) es_done) with (map (LocalGraphCopy.emap g3) es_done)
       by (apply (extend_copy_emap_root g1 g2 g3 g4 g2' g3' g4' root es es_done e0 es_later); auto).
     destruct H11 as [_ [_ HH]].
     destruct HH as [_ [_ [_ [HH _]]]].
@@ -736,7 +737,7 @@ Proof.
       destruct H4 as [_ [_ ?]].
       eapply LocalGraphCopy.vcopy1_copied_root_valid in H4; eauto.
     + replace (map (@LocalGraphCopy.emap V E V E (@SGBA_VE V E SGBA)
-                      (@SGBA_EE V E SGBA) V E V E GMS g4) es_done) with (map (LocalGraphCopy.emap g3) es_done)
+                      (@SGBA_EE V E SGBA) V E M V E M GMS g4) es_done) with (map (LocalGraphCopy.emap g3) es_done)
         by (apply (extend_copy_emap_root g1 g2 g3 g4 g2' g3' g4' root es es_done e0 es_later); auto).
       destruct H11 as [_ [_ HH]].
       destruct HH as [_ [_ [_ [HH _]]]].
