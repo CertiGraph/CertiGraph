@@ -22,9 +22,23 @@ Local Identity Coercion SGraph_SpatialGraph: SGraph >-> SpatialGraph.
 Local Coercion pg_lg: LabeledGraph >-> PreGraph.
 
 Notation vertices_at sh g P := (@vertices_at _ _ _ _ _ _ (@SGP pSGG_VST nat unit (sSGG_VST sh)) _ g P).
-Notation graph sh x g := (@reachable_vertices_at _ _ _ _ _ _ _ _ _ (@SGP pSGG_VST nat unit (sSGG_VST sh)) _ x g).
-Notation Graph := (@Graph pSGG_VST nat unit).
+Notation graph sh x g := (@reachable_vertices_at _ _ _ _ _ _ _ _ _ _ (@SGP pSGG_VST nat unit (sSGG_VST sh)) _ x g).
+Notation Graph := (@Graph pSGG_VST nat unit unit).
 Existing Instances maGraph finGraph liGraph RGF.
+
+Definition mallocN_spec :=
+ DECLARE _mallocN
+  WITH sh: wshare, n:Z
+  PRE [ 67%positive OF tint]
+     PROP (0 <= n <= Int.max_signed) 
+     LOCAL (temp 67%positive (Vint (Int.repr n)))
+     SEP ()
+  POST [ tptr tvoid ] 
+     EX v: addr,
+     PROP ()
+     LOCAL (temp ret_temp (pointer_val_val v)) 
+     SEP (data_at sh node_type (pointer_val_val null, (Vint (Int.repr 0)))
+              (pointer_val_val v)).
 
 Definition find_spec :=
  DECLARE _find
@@ -52,12 +66,47 @@ Definition unionS_spec :=
         LOCAL()
         SEP (graph sh x g').
 
+Definition makeSet_spec :=
+  DECLARE _makeSet
+  WITH sh: wshare
+    PRE []
+      PROP ()
+      LOCAL ()
+      SEP ()
+    POST [tptr (Tstruct _Node noattr)]
+      EX g: Graph, EX rt: pointer_val,
+      PROP (uf_graph g)
+      LOCAL (temp ret_temp (pointer_val_val rt))
+      SEP (graph sh rt g).
+
 Definition Vprog : varspecs := nil.
 
-Definition Gprog : funspecs := find_spec :: unionS_spec ::nil.
+Definition Gprog : funspecs := mallocN_spec :: makeSet_spec :: find_spec :: unionS_spec ::nil.
 
 Lemma ADMIT: forall P: Prop, P.
 Admitted.
+
+Lemma body_makeSet: semax_body Vprog Gprog f_makeSet makeSet_spec.
+Proof.
+  start_function.
+  forward_call (sh, 8).
+  - compute. split; intros; inversion H.
+  - Intros x. 
+    assert_PROP (x <> null) as x_not_null by
+          (entailer !; destruct H0 as [? _]; apply H0).
+    forward. forward. forward.
+    change (@field_at CompSpecs sh node_type [] (Vint (Int.repr 0), pointer_val_val x)) with
+    (@data_at CompSpecs sh node_type (Vint (Int.repr 0), pointer_val_val x)).
+    apply (exp_right (single_Graph x x_not_null O tt tt)). entailer.
+    apply (exp_right x). entailer !.
+    + simpl. apply single_uf_is_uf.
+    + unfold reachable_vertices_at. simpl. unfold vertices_at. unfold iter_sepcon.pred_sepcon.
+      apply (exp_right (x:: nil)). entailer !.
+      * simpl. split.
+        -- intros. rewrite reachabel_single_uf. intuition.
+        -- constructor. intuition. constructor.
+      * simpl. entailer !.
+Qed.
 
 Lemma body_find: semax_body Vprog Gprog f_find find_spec.
 Proof.
@@ -80,7 +129,7 @@ Proof.
   Grab Existential Variables.
   Focus 2. {
     simplify_ramif. rewrite <- H0. simpl.
-    apply (@va_reachable_root_stable_ramify _ _ _ _ SGBA_VST _ _ _ _ _ (SGA_VST sh) g x (r, pa)); auto.
+    apply (@va_reachable_root_stable_ramify _ _ _ _ SGBA_VST _ _ _ _ _ _ (SGA_VST sh) g x (r, pa)); auto.
   } Unfocus.
   unfold semax_ram.
   forward_if_tac
@@ -97,7 +146,10 @@ Proof.
     eapply semax_ram_seq'.
     + subst RamFrame RamFrame0; unfold abbreviate;
         repeat apply eexists_add_stats_cons; constructor.
-    + semax_ram_call_body (sh, g, pa).
+    + eapply semax_seq'. semax_ram_call_body (sh, g, pa). admit.
+    + semax_ram_after_call.
+
+    
   
 Qed.
 
