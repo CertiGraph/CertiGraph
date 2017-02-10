@@ -24,7 +24,7 @@ Section UNION_FIND.
   Definition replaceSelfPointingGraph (g: PreGraph Vertex Edge) (null_node: Vertex) : PreGraph Vertex Edge :=
     Build_PreGraph EV EE (vvalid g) (evalid g) (src g) (fun e => if equiv_dec (dst g e) (src g e) then null_node else dst g e).
 
-  Definition uf_graph (pg: PreGraph Vertex Edge) : Prop := forall x n, vvalid pg n -> ~ vvalid pg n -> is_list (replaceSelfPointingGraph pg n) x.
+  Definition uf_graph (pg: PreGraph Vertex Edge) : Prop := forall x n, vvalid pg x -> ~ vvalid pg n -> is_list (replaceSelfPointingGraph pg n) x.
 
   Definition uf_root (pg: PreGraph Vertex Edge) (x root: Vertex) : Prop := reachable pg x root /\ (forall y, reachable pg root y -> root = y).
 
