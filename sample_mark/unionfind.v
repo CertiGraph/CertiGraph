@@ -50,21 +50,53 @@ Definition ___i64_udiv : ident := 24%positive.
 Definition ___i64_umod : ident := 26%positive.
 Definition ___i64_utod : ident := 20%positive.
 Definition ___i64_utof : ident := 22%positive.
-Definition _find : ident := 55%positive.
-Definition _main : ident := 62%positive.
-Definition _p : ident := 53%positive.
-Definition _p0 : ident := 54%positive.
+Definition _find : ident := 57%positive.
+Definition _main : ident := 64%positive.
+Definition _makeSet : ident := 54%positive.
+Definition _mallocN : ident := 52%positive.
+Definition _p : ident := 55%positive.
+Definition _p0 : ident := 56%positive.
 Definition _parent : ident := 3%positive.
 Definition _rank : ident := 1%positive.
-Definition _unionS : ident := 61%positive.
-Definition _x : ident := 52%positive.
-Definition _xRank : ident := 59%positive.
-Definition _xRoot : ident := 57%positive.
-Definition _y : ident := 56%positive.
-Definition _yRank : ident := 60%positive.
-Definition _yRoot : ident := 58%positive.
-Definition _t'1 : ident := 63%positive.
-Definition _t'2 : ident := 64%positive.
+Definition _unionS : ident := 63%positive.
+Definition _x : ident := 53%positive.
+Definition _xRank : ident := 61%positive.
+Definition _xRoot : ident := 59%positive.
+Definition _y : ident := 58%positive.
+Definition _yRank : ident := 62%positive.
+Definition _yRoot : ident := 60%positive.
+Definition _t'1 : ident := 65%positive.
+Definition _t'2 : ident := 66%positive.
+
+Definition f_makeSet := {|
+  fn_return := (tptr (Tstruct _Node noattr));
+  fn_callconv := cc_default;
+  fn_params := nil;
+  fn_vars := nil;
+  fn_temps := ((_x, (tptr (Tstruct _Node noattr))) :: (_t'1, (tptr tvoid)) ::
+               nil);
+  fn_body :=
+(Ssequence
+  (Ssequence
+    (Scall (Some _t'1)
+      (Evar _mallocN (Tfunction (Tcons tint Tnil) (tptr tvoid) cc_default))
+      ((Esizeof (Tstruct _Node noattr) tuint) :: nil))
+    (Sset _x
+      (Ecast (Etempvar _t'1 (tptr tvoid)) (tptr (Tstruct _Node noattr)))))
+  (Ssequence
+    (Sassign
+      (Efield
+        (Ederef (Etempvar _x (tptr (Tstruct _Node noattr)))
+          (Tstruct _Node noattr)) _parent (tptr (Tstruct _Node noattr)))
+      (Etempvar _x (tptr (Tstruct _Node noattr))))
+    (Ssequence
+      (Sassign
+        (Efield
+          (Ederef (Etempvar _x (tptr (Tstruct _Node noattr)))
+            (Tstruct _Node noattr)) _rank tint)
+        (Econst_int (Int.repr 0) tint))
+      (Sreturn (Some (Etempvar _x (tptr (Tstruct _Node noattr))))))))
+|}.
 
 Definition f_find := {|
   fn_return := (tptr (Tstruct _Node noattr));
@@ -408,23 +440,29 @@ prog_defs :=
                      {|cc_vararg:=true; cc_unproto:=false; cc_structret:=false|}))
      (Tcons tint Tnil) tvoid
      {|cc_vararg:=true; cc_unproto:=false; cc_structret:=false|})) ::
- (_find, Gfun(Internal f_find)) :: (_unionS, Gfun(Internal f_unionS)) :: nil);
+ (_mallocN,
+   Gfun(External (EF_external "mallocN"
+                   (mksignature (AST.Tint :: nil) (Some AST.Tint) cc_default))
+     (Tcons tint Tnil) (tptr tvoid) cc_default)) ::
+ (_makeSet, Gfun(Internal f_makeSet)) :: (_find, Gfun(Internal f_find)) ::
+ (_unionS, Gfun(Internal f_unionS)) :: nil);
 prog_public :=
-(_unionS :: _find :: ___builtin_debug :: ___builtin_nop ::
- ___builtin_write32_reversed :: ___builtin_write16_reversed ::
- ___builtin_read32_reversed :: ___builtin_read16_reversed ::
- ___builtin_fnmsub :: ___builtin_fnmadd :: ___builtin_fmsub ::
- ___builtin_fmadd :: ___builtin_fmin :: ___builtin_fmax ::
- ___builtin_fsqrt :: ___builtin_ctzll :: ___builtin_ctzl :: ___builtin_ctz ::
- ___builtin_clzll :: ___builtin_clzl :: ___builtin_clz ::
- ___builtin_bswap16 :: ___builtin_bswap32 :: ___builtin_bswap ::
- ___i64_sar :: ___i64_shr :: ___i64_shl :: ___i64_umod :: ___i64_smod ::
- ___i64_udiv :: ___i64_sdiv :: ___i64_utof :: ___i64_stof :: ___i64_utod ::
- ___i64_stod :: ___i64_dtou :: ___i64_dtos :: ___compcert_va_composite ::
- ___compcert_va_float64 :: ___compcert_va_int64 :: ___compcert_va_int32 ::
- ___builtin_va_end :: ___builtin_va_copy :: ___builtin_va_arg ::
- ___builtin_va_start :: ___builtin_membar :: ___builtin_annot_intval ::
- ___builtin_annot :: ___builtin_memcpy_aligned :: ___builtin_fabs :: nil);
+(_unionS :: _find :: _makeSet :: _mallocN :: ___builtin_debug ::
+ ___builtin_nop :: ___builtin_write32_reversed ::
+ ___builtin_write16_reversed :: ___builtin_read32_reversed ::
+ ___builtin_read16_reversed :: ___builtin_fnmsub :: ___builtin_fnmadd ::
+ ___builtin_fmsub :: ___builtin_fmadd :: ___builtin_fmin ::
+ ___builtin_fmax :: ___builtin_fsqrt :: ___builtin_ctzll ::
+ ___builtin_ctzl :: ___builtin_ctz :: ___builtin_clzll :: ___builtin_clzl ::
+ ___builtin_clz :: ___builtin_bswap16 :: ___builtin_bswap32 ::
+ ___builtin_bswap :: ___i64_sar :: ___i64_shr :: ___i64_shl :: ___i64_umod ::
+ ___i64_smod :: ___i64_udiv :: ___i64_sdiv :: ___i64_utof :: ___i64_stof ::
+ ___i64_utod :: ___i64_stod :: ___i64_dtou :: ___i64_dtos ::
+ ___compcert_va_composite :: ___compcert_va_float64 ::
+ ___compcert_va_int64 :: ___compcert_va_int32 :: ___builtin_va_end ::
+ ___builtin_va_copy :: ___builtin_va_arg :: ___builtin_va_start ::
+ ___builtin_membar :: ___builtin_annot_intval :: ___builtin_annot ::
+ ___builtin_memcpy_aligned :: ___builtin_fabs :: nil);
 prog_main := _main;
 prog_types := composites;
 prog_comp_env := make_composite_env composites;

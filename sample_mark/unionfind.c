@@ -1,7 +1,17 @@
+extern void * mallocN (int n);
+
 struct Node {
     int rank;
     struct Node * parent;
 };
+
+struct Node* makeSet() {
+    struct Node * x;
+    x = (struct Node *) mallocN (sizeof (struct Node));
+    x -> parent = x;
+    x -> rank = 0;
+    return x;
+}
 
 struct Node* find(struct Node* x) {
     struct Node *p, *p0;
