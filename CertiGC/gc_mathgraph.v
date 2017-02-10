@@ -263,7 +263,7 @@ Proof.
   intros.
   generalize (rne0 x H); intro.
   simpl in *.
-  replace (g_lfg
+  change (g_lfg
              (@Build_GeneralGraph V E EV EE LV LE
                 LG GC_graph lg_gg
                 (Build_GC_graph lg_gg ma0 fin0
@@ -281,14 +281,15 @@ Proof.
   destruct l. discriminate.
   inversion H3. subst f.
   simpl in H2. discriminate.
-  admit. (* Shengyi? *)
-Admitted.
+Qed.
 
 Definition copyEdge (g : Graph) (x : V) (Pf0 : vvalid g x) (Pf1 : mark (vlabel g x) = true) : E :=
   match edge_func g x as l return l = edge_func g x -> E with
    | (e :: _)%list => fun _ => e
-   | nil => fun Pf2 => match (copyEdge_contr _ _ Pf0 Pf1 Pf2) with end
+   | nil => fun Pf2 => match copyEdge_contr _ _ Pf0 Pf1 Pf2 with end
   end eq_refl.
+
+(*
 
 Section Cheney.
 
@@ -380,5 +381,7 @@ Lemma num_edges_data: forall l,
 Proof.
   intro. generalize (edges_le_fields l). unfold num_data. omega.
 Qed.
+
+*)
 
 End GC_Graph.
