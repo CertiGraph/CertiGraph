@@ -3,6 +3,10 @@
 *)
 
 Require Import Setoid.
+Require Import EquivDec.
+(*
+Require Import VST.msl.eq_dec. (* Wish this had fewer dependencies *)
+*)
 
 (* Orders *)
 Delimit Scope ord with ord.
@@ -83,6 +87,8 @@ Qed.
 
 Hint Resolve @sord_neq @sord_leq @sord_ord_trans1 @sord_ord_trans2 @sord_antirefl: ord.
 
+(* Comparability *)
+
 Definition comparable {A} `{Ord A} (a b: A) : Prop :=
   a <= b \/ b <= a.
 Notation "x ~ y" := (comparable x y) (at level 70, no associativity) : ord.
@@ -115,6 +121,59 @@ Add Parametric Relation {A} `{Ord A} `{ComparableTrans A} : A comparable
   transitivity proved by comparable_trans
   as comparable_rel'.
 
+(* Decidability *)
+
+Class COrd (A : Type) `{Ord A} : Type :=
+  { ord_dec: forall a b, {a <= b} + {~ a <= b} }.
+
+Lemma sord_dec {A : Type} `{O : Ord A} `{@EqDec A eq _} `{@COrd A O} :
+  forall a b, {a < b} + {~ a < b}.
+Proof.
+  intros. case (ord_dec a b); intro.
+  case (H a b); intro.
+  right. intro. destruct H1.
+  contradiction.
+  left. split; auto.
+  right. intro.
+  destruct H1.
+  contradiction.
+Qed.
+
+Lemma tord_dec {A : Type} `{O : Ord A} `{@TOrd A O} `{@COrd A O} :
+  forall a b, {a <= b} + {b <= a}.
+Proof.
+  intros.
+  case (ord_dec a b). left. trivial.
+  right. specialize (H a b). destruct H; auto. contradiction.
+Qed.
+
+Lemma tsord_dec {A : Type} `{O : Ord A} `{@EqDec A eq _} `{@TOrd A O} `{@COrd A O} :
+  forall a b, {a < b} + {a = b} + {b < a}.
+Proof.
+  intros.
+  case (H a b); intro.
+  left. right. trivial.
+  case (sord_dec a b); intro.
+  left. left. trivial.
+  right.
+  specialize (H0 a b).
+  destruct H0. exfalso.
+  apply n. split; trivial. 
+  split; trivial. intro. apply c. symmetry. trivial.
+Qed.
+
+Lemma comp_dec {A : Type} `{O : Ord A} `{@COrd A O}:
+  forall a b, {a ~ b} + {~ (a ~ b)}.
+Proof.
+  intros.
+  case (ord_dec a b); intro.
+  left. left. trivial.
+  case (ord_dec b a); intro.
+  left. right. trivial.
+  right. intro.
+  destruct H0; contradiction.
+Qed.
+
 (* Examples of orders *)
 
 Require Import Arith.
@@ -131,6 +190,16 @@ Qed.
 Instance nat_comptrans : ComparableTrans nat.
 Proof.
   intros a b c ? ?. unfold comparable, ord in *. simpl in *. omega.
+Qed.
+
+Instance nat_orddec : COrd nat.
+Proof.
+  constructor.
+  intros ? ?.
+  case (le_gt_dec a b); intro.
+  left. trivial.
+  right. intro.
+  unfold sord, ord in *. simpl in *. omega.
 Qed.
 
 (*
