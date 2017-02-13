@@ -28,6 +28,7 @@ Context {V : Type} {EV : EquivDec.EqDec V eq}.
 Context {null : V}.
 
 Context {OLE : Ord V}. Existing Instance OLE.
+Context {COLE : @COrd V OLE}. Existing Instance COLE.
 Context {CTV: ComparableTrans V}. Existing Instance CTV.
 
 (* These might be CompCert addresses, or perhaps other choices. *)
@@ -204,7 +205,8 @@ Definition in_generation (l : list space) (x : V) (n : nat) : Prop :=
   exists s, List.nth_error l n = Some s /\ allocated s x.
 
 Definition valid_in_generation (g : raw_GC_graph) : Prop :=
-  forall x, vvalid g x -> exists n, in_generation (glabel g) x n.
+  forall x, vvalid g x -> 
+    exists n, in_generation (glabel g) x n.
 
 Lemma unallocated_not_valid: forall g n s,
   spaces_disjoint g ->
@@ -252,6 +254,7 @@ Definition Graph : Type := GeneralGraph V E LV LE LG GC_graph.
 Definition g_lfg (g : Graph) : LocalFiniteGraph g :=
   @fin g (sound_gg g).
 Local Coercion g_lfg : Graph >-> LocalFiniteGraph.
+Existing Instance g_lfg.
 
 Lemma copyEdge_contr: forall (g : Graph) x,
   vvalid g x ->
@@ -289,41 +292,232 @@ Definition copyEdge (g : Graph) (x : V) (Pf0 : vvalid g x) (Pf1 : mark (vlabel g
    | nil => fun Pf2 => match copyEdge_contr _ _ Pf0 Pf1 Pf2 with end
   end eq_refl.
 
-(*
+Lemma copyEdge_src: forall (g : Graph) x Pf0 Pf1,
+  src g (copyEdge g x Pf0 Pf1) = x.
+Proof.
+  intros.
+  admit. (* Shengyi? *)
+Admitted.
+
+Definition in_gen (g : Graph) (n : nat) (x : V) : Prop :=
+  exists s, List.nth_error (glabel g) n = Some s /\ allocated s x.
+
+Lemma in_gen_dec (g : Graph) (n : nat) (x : V) :
+  {in_gen g n x} + {~ in_gen g n x}.
+Proof.
+  unfold in_gen. remember (glabel g). clear Heqy.
+  revert n. induction y; intro.
+  + right. intro. destruct H as [? [? _]].
+    destruct n; inversion H.
+  + destruct n.
+    * simpl. clear IHy.
+      destruct a; simpl in *.
+      case (ord_dec start0 x); intro.
+      - case (sord_dec x next0); intro.
+        left. eexists. split. reflexivity.
+        red. simpl. split; trivial.
+        right. intro. destruct H as [s [? ?]].
+        inversion H. subst s. red in H0. 
+        simpl in H0. destruct H0; contradiction.
+      - right. intro. destruct H as [s [? ?]].
+        inversion H. subst s. red in H0.
+        simpl in H0. destruct H0. contradiction.
+    * simpl. apply IHy.
+Qed.
+
+Definition from_space (gen : nat) : nat := gen.
+Definition to_space (gen : nat) : nat := S gen.
+
+Definition in_from (g : Graph) (n : nat) (x : V) :=
+  in_gen g (from_space n) x.
+Lemma in_from_dec: forall g n x,
+  {in_from g n x} + {~in_from g n x}.
+Proof. apply in_gen_dec. Qed.
+
+Definition in_to (g : Graph) (n : nat) (x : V) :=
+  in_gen g (to_space n) x.
+Lemma in_to_dec: forall g n x,
+  {in_to g n x} + {~in_to g n x}.
+Proof. intros. apply in_gen_dec. Qed.
 
 Section Cheney.
+Require Import RamifyCoq.lib.Morphisms_ext.
 
 Variables (G G' : Graph).
 
 Variables (PV : V -> Prop) (PE : E -> Prop) (vmap : V -> V) (emap : E -> E).
 
-Record guarded_Cheney_morphism: Prop := {
-  vvalid_Cpreserved: forall v, PV v -> (vvalid G v <-> vvalid G' (vmap v));
-  evalid_Cpreserved: forall e, PE e -> (evalid G e <-> evalid G' (emap e));
-  src_Cpreserved: forall e, PE e -> PV (src G e) -> evalid G e ->
+(*
+Variables (vmap_inj : is_guarded_inj PV vmap) (emap_inj : is_guarded_inj PE emap).
+*)
+
+Record guarded_Cheney_morphism (gen : nat) : Prop := {
+  Cvvalid_preserved: forall v, PV v -> vvalid G v -> vvalid G' v /\ vvalid G' (vmap v);
+
+  Cevalid_preserved: forall e, PE e -> evalid G e -> evalid G' e /\ evalid G' (emap e);
+
+  Csrc_preserved: forall e, PE e -> PV (src G e) -> evalid G e ->
                    vmap (src G e) = src G' (emap e);
-  dst_Cpreserved: forall e, PE e -> PV (dst G e) -> evalid G e -> vmap (dst G e) = dst G' (emap e)
+
+  Cdst_preserved: forall e, PE e -> PV (dst G e) -> evalid G e -> 
+                   vmap (dst G e) = dst G' (emap e) \/
+                   dst G e        = dst G' (emap e);
+
+  Cnon_from_vmap: forall v, PV v -> vvalid G v -> 
+                   ~in_from G gen v -> 
+                    vmap v = v;
+
+  Cmarked_nodes: forall v, PV v -> forall (H0 : vvalid G' v) (H1 : mark (vlabel G' v) = true),
+                   vmap v = dst G' (copyEdge G' v H0 H1);
+(*  marked_nodes: forall v (H: PV v) (H0 : vvalid G v) (H1 : mark (vlabel G' v) = true),
+                   vmap v = dst G' (copyEdge G' v (proj1 (vvalid_Cpreserved v H H0)) H1) *)
+
+  Cvlabels_preserved: forall v, PV v -> vvalid G v -> 
+                   vlabel G v = vlabel G' (vmap v);
+
+(* We might comment this one out
+  Celabels_preserved: forall e, PE e -> evalid G e ->
+                   elabel G e = elabel G' (emap e);
+*)
+  Cglabel_preserved:
+    (forall n, n <> to_space gen -> List.nth_error (glabel G) n = List.nth_error (glabel G') n) /\
+    (exists s, exists s', List.nth_error (glabel G) (to_space gen) = Some s /\
+                          List.nth_error (glabel G') (to_space gen) = Some s' /\
+                          start s = start s' /\
+                          limit s = limit s' /\
+                          next s <= next s')
 }.
 
+End Cheney.
 
+Definition unmarked_everywhere (g : Graph) : Prop :=
+  forall v, vvalid g v -> mark (vlabel g v) = false.
+
+Definition generation_valid_from_space (g : Graph) (gen : nat) : Prop :=
+  List.nth_error (glabel g) (to_space gen) <> None.
+
+Lemma guarded_Cheney_morphism_refl: forall G PV PE gen,
+  unmarked_everywhere G ->
+  generation_valid_from_space G gen ->
+  guarded_Cheney_morphism G G PV PE id id gen.
+Proof.
+  unfold id. intros. constructor; intros; intuition.
+  * specialize (H v H2). rewrite H3 in H. discriminate.
+  * red in H0. destruct (List.nth_error (glabel G) (to_space gen)).
+    exists s. exists s. intuition. 
+    destruct H0. trivial.
+Qed.
+
+Inductive stepish (g g' : Graph) (gen : nat) : Prop :=
+  | copyitem: forall v v',
+      in_from g gen v -> (* target is in from space *)
+      ~vvalid g v' ->    (* v' unused *)
+      vvalid g' v' ->
+      forall (Pf0 :  vvalid g' v)
+             (Pf1 : mark (vlabel g' v) = true),
+      dst g' (copyEdge g' v Pf0 Pf1) = v' ->
+      vlabel g v = vlabel g' v' ->
+(*      fields (vlabel g v) = fields (vlabel g' v) -> (* too strong *) *)
+      (forall v'', v'' <> v -> v'' <> v' -> 
+         (vvalid g v'' <-> vvalid g' v'') /\
+         vlabel g v'' = vlabel g' v'' /\
+         edge_func g v'' = edge_func g' v'') ->
+      stepish g g' gen.
+
+Lemma stepish_guarded_Cheney_morphism: forall Ga G G' PV PE vmap emap gen,
+  guarded_Cheney_morphism Ga G PV PE vmap emap gen ->
+  stepish G G' gen ->
+  exists vmap', exists emap',
+    guarded_Cheney_morphism Ga G' PV PE vmap' emap' gen.
+Proof.
+  intros.
+  destruct H.
+  destruct H0.
+  exists (fun v0 => if EV v0 v then v' else vmap v0).
+  exists emap.
+  constructor.
+  * intros.
+    case (EV v0 v'); intro.
+    + red in e. subst v0.
+      destruct (Cvvalid_preserved0 v'); tauto.
+    + compute in c.
+      case (EV v0 v); intro.
+      - red in e. subst v0.
+        split; trivial.
+      - split. specialize (H4 v0 c0 c). 
+               specialize (Cvvalid_preserved0 v0). 
+               tauto.
+        case (EV (vmap v0) v); intro.
+        compute in e. rewrite e. trivial.
+        case (EV (vmap v0) v'); intro.
+        compute in e. rewrite e. trivial.
+        specialize (H4 (vmap v0)).
+        specialize (Cvvalid_preserved0 v0). 
+        tauto.
+  * admit.
+  * admit.
+  * admit.
+  * intros.
+    case (EV v0 v); intro. red in e. subst v0.
+    destruct Cglabel_preserved0.
+    specialize (H8 (from_space gen)).
+    unfold in_from, in_gen in H, H7.
+    rewrite H8 in H7.
+    contradiction.
+    unfold from_space, to_space. intro. clear -H10. induction gen; auto. discriminate.
+    admit.
+  * admit.
+  * intros.
+    case (EV v0 v); intro.
+    red in e. subst v0. rewrite <- H3.
+    admit.
+(*
+    apply Cvlabels_preserved0.
+*)
+    admit.
+  * admit.
+Admitted.
+
+Require Import RamifyCoq.graph.graph_morphism.
+
+Goal forall G G' PV PE vmap emap gen,
+  guarded_Cheney_morphism G G' PV PE vmap emap gen ->
+  GraphMorphism.guarded_morphism 
+    (fun v => PV v /\ vvalid G v) 
+    (fun e => PE e /\ evalid G e) vmap emap G G'.
+Proof.
+  intros.
+  destruct H.
+  constructor. firstorder. firstorder. firstorder.
+  intros ? [? ?] [? ?] ?.
+  specialize (Cdst_preserved0 _ H H1 H3).
+  destruct Cdst_preserved0; auto.
+  case (in_from_dec G gen (dst G e)); intro.
+  * (* dst G e in from space, but dst G' (emap e) must not be in from space *)
+    admit.
+  * specialize (Cnon_from_vmap0 _ H1 H2 n).
+    rewrite Cnon_from_vmap0.
+    rewrite H4.
+    trivial.
+Admitted.
+
+
+(* From graph morphisms:
+
+Record guarded_morphism: Prop := {
   vvalid_preserved: forall v, PV v -> (vvalid G v <-> vvalid G' (vmap v));
   evalid_preserved: forall e, PE e -> (evalid G e <-> evalid G' (emap e));
+  src_preserved: forall e, PE e -> PV (src G e) -> evalid G e ->
+                   vmap (src G e) = src G' (emap e);
+  dst_preserved: forall e, PE e -> PV (dst G e) -> evalid G e -> vmap (dst G e) = dst G' (emap e)
+}.
 
-
-  forall v, vvalid g1 v -> 
-
-Print reachable_subgraph.
-
-Print reachable_through_set.
-
-Print reachable.
-
-Print reachable_by.
-
-Definition CheneyIsomorphic (g1 g2 : Graph) 
-                            (roots : list V) : Prop :=
-  forall v, vvalid g1 v ->
-
+Record guarded_bij: Prop := {
+  vmap_inj: is_guarded_inj PV vmap;
+  emap_inj: is_guarded_inj PE emap;
+  bij_is_morphism :> guarded_morphism
+}.
+*)
 
 Record subspaces : Type := {
   inspace : space;
@@ -334,12 +528,8 @@ Record subspaces : Type := {
                    scan <= next inspace
 }.
 
-Definition 
-
 (*
 Definition P0 (n: nat) (g: Graph) (s: subspaces) : Prop := spaces
-*)
-
 
 Definition P0 (n : nat) (s1 s2 : subspaces) (g : Graph) (g' : Graph) : Prop :=
   exists s, exists s',
@@ -358,6 +548,7 @@ Definition P0 (n : nat) (s1 s2 : subspaces) (g : Graph) (g' : Graph) : Prop :=
         (vlabel g x = vlabel g' x) /\
         (@edge_func _ _ _ _ g g x = @edge_func _ _ _ _ g' g' x) /\
         (forall e, src g e = x -> dst g e = dst g' e) ).
+*)
 
 Require Import Omega.
 
@@ -381,7 +572,5 @@ Lemma num_edges_data: forall l,
 Proof.
   intro. generalize (edges_le_fields l). unfold num_data. omega.
 Qed.
-
-*)
 
 End GC_Graph.
