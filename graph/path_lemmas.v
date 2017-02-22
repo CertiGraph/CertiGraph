@@ -208,6 +208,12 @@ Proof.
     destruct ((e :: p1) ++ p2); intuition.
 Qed.
 
+Lemma valid_path_app_first: forall g v p1 p2, valid_path g (v, p1 ++ p2) -> valid_path g (v, p1).
+Proof.
+  intros. assert (paths_meet g (v, p1) (pfoot g (v, p1), p2)) by (exists (pfoot g (v, p1)); split; auto).
+  pose proof (valid_path_split _ _ _ H0). unfold path_glue, fst, snd in H1. apply H1 in H. destruct H; auto.
+Qed.
+
 Lemma valid_path_merge: forall (g : Gph) p1 p2,
                           paths_meet g p1 p2 -> valid_path g p1 -> valid_path g p2 -> valid_path g (p1 +++ p2).
 Proof.
