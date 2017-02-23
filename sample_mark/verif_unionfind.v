@@ -187,11 +187,9 @@ Proof.
       - simpl in H1. inversion H1.
     } subst pa. split; [|split]; auto.
     - apply (uf_equiv_refl _  (liGraph g)).
-    - hnf.
-  }
-    
-    
+    - apply uf_root_vgamma with (n := r); auto.
+  } Unfocus.
   
-Qed.
+Abort.
 
 

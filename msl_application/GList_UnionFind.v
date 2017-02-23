@@ -37,4 +37,14 @@ Section GList_UnionFind.
   Lemma valid_parent: forall (g: Graph) v n p, vvalid g v -> vgamma g v = (n, p) -> vvalid g p.
   Proof. intros. unfold vgamma in H0. simpl in H0. inversion H0. apply (@all_valid _ _ _ _ g _ (liGraph g)) in H. auto. Qed.
 
+  Lemma parent_loop: forall (g: Graph) v n y, vgamma g v = (n, v) -> reachable g v y -> v = y.
+  Proof. intros. apply (lst_self_loop _ (liGraph g)) in H0; auto. unfold vgamma in H. simpl in H. inversion H. rewrite H3. auto. Qed.
+
+  Lemma uf_root_vgamma: forall (g: Graph) v n, vvalid g v -> vgamma g v = (n, v) -> uf_root g v v.
+  Proof.
+    intros. split.
+    - apply reachable_refl; auto.
+    - intros. apply (parent_loop g _ n); auto.
+  Qed.
+
 End GList_UnionFind.
