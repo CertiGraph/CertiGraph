@@ -49,26 +49,54 @@ Section LstGraph.
 
   Class LstGraph (pg: PreGraph Vertex Edge) (out_edge: Vertex -> Edge): Prop :=
     {
-      only_one_edge: forall x e, vvalid pg x -> (src pg e = x /\ evalid pg e <-> e = out_edge x)
+      only_one_edge: forall x e, vvalid pg x -> (src pg e = x /\ evalid pg e <-> e = out_edge x);
+      all_valid: forall x, vvalid pg x -> vvalid pg (dst pg (out_edge x))
     }.
 
   Variable (g: PreGraph Vertex Edge).
   Context {out_edge: Vertex -> Edge}.
-  Context {gLst: LstGraph g out_edge}.
+  Context (gLst: LstGraph g out_edge).
+
+  Lemma lst_valid_path_unique: forall v p1 p2, valid_path g (v, p1) -> valid_path g (v, p2) -> length p1 <= length p2 -> exists p3, p2 = p1 ++ p3.
+  Proof.
+    intros. revert p1 H H1.
+    apply (rev_ind (fun p1 => (valid_path g (v, p1) -> length p1 <= length p2 -> exists p3 : list Edge, p2 = p1 ++ p3))); intros.
+    - exists p2. simpl. auto.
+    - pose proof H1. apply valid_path_app in H3. destruct H3 as [? _]. apply H in H3.
+      + destruct H3 as [p4 ?]. destruct p4.
+        * rewrite app_nil_r in H3. subst p2. rewrite app_length in H2. simpl in H2. exfalso; intuition.
+        * exists p4. subst p2. rewrite <- app_assoc. simpl. f_equal. f_equal. clear H H2. pose proof H1. pose proof H0. apply pfoot_split in H. apply pfoot_split in H2.
+          assert (strong_evalid g x) by (apply (valid_path_strong_evalid _ _ _ _ H1); rewrite in_app_iff; right; intuition). destruct H3 as [? _].
+          assert (strong_evalid g e) by (apply (valid_path_strong_evalid _ _ _ _ H0); rewrite in_app_iff; right; intuition). destruct H4 as [? [? _]]. rewrite <- H2 in H5.
+          assert (x = out_edge (pfoot g (v, l))) by (apply only_one_edge; auto). assert (e = out_edge (pfoot g (v, l))) by (apply only_one_edge; auto).
+          rewrite <- H6 in H7. auto.
+      + rewrite app_length in H2. simpl in H2. intuition.
+  Qed.
+  
+  Lemma lst_reachable_unique:
+    forall p1 p2 x r1 r2 P, g |= p1 is x ~o~> r1 satisfying P -> g |= p2 is x ~o~> r2 satisfying P -> length (snd p1) <= length (snd p2) -> g |= r1 ~o~> r2 satisfying P.
+  Proof.
+    intros. destruct H as [[? ?] ?]. destruct H0 as [[? ?] ?]. destruct p1 as [v1 p1]. destruct p2 as [v2 p2]. simpl in H, H0, H1. subst v1 v2.
+    pose proof H3. pose proof H5. destruct H as [? _]. destruct H0 as [? _]. destruct (lst_valid_path_unique _ _ _ H H0 H1) as [p3 ?]. clear H H0.
+    exists (r1, p3). split; [split |].
+    - simpl. auto.
+    - destruct p3.
+      + rewrite app_nil_r in H6. subst p2. simpl. rewrite H2 in H4. auto.
+      + rewrite H6 in H4. rewrite pfoot_app_cons with (v2 := r1) in H4. auto.
+    - subst p2. apply good_path_app in H5. destruct H5 as [_ ?]. rewrite H2 in H. auto.
+  Qed.
+
+  Lemma lst_reachable_or: forall x r1 r2, reachable g x r1 -> reachable g x r2 -> reachable g r1 r2 \/ reachable g r2 r1.
+  Proof.
+    intros. destruct H as [p1 ?]. destruct H0 as [p2 ?]. destruct (le_dec (length (snd p1)) (length (snd p2))); [left | right].
+    - apply (lst_reachable_unique p1 p2 x); auto.
+    - apply (lst_reachable_unique p2 p1 x); intuition.
+  Qed.
+
+  Lemma uf_equiv_refl: uf_equiv g g. Proof. hnf; split; intros; intuition. destruct H0, H1. destruct (lst_reachable_or _ _ _ H0 H1); [apply H2 | symmetry; apply H3]; auto. Qed.
 
   Context {is_null: DecidablePred Vertex}.
   Context {MA: MathGraph g is_null}.
-
-  Fixpoint findRoot (limit: nat) (v: Vertex) : Vertex :=
-    let next := (dst g (out_edge v)) in
-    if (projT2 is_null) next
-    then v
-    else if (equiv_dec v next)
-         then v
-         else match limit with
-              | O => v
-              | S n => findRoot n next
-              end.
   
   Fixpoint findList (bound: nat) (v: Vertex) (l: list Edge) : list Edge :=
     let next := (dst g (out_edge v)) in
@@ -119,8 +147,7 @@ Section LstGraph.
     - simpl in H1. destruct (projT2 is_null (dst g (out_edge v))); [|destruct (equiv_dec v (dst g (out_edge v)))]; [rewrite <- in_rev in H1; apply H0; auto .. |].
       specialize (IHb (dst g (out_edge v)) (out_edge v :: l)). destruct is_null as [is_nullP ?]. destruct MA. simpl in *. destruct gLst. rename only_one_edge0 into H2.
       specialize (H2 v (out_edge v) H). assert (out_edge v = out_edge v) by auto. rewrite <- H2 in H3. clear H2. destruct H3. apply IHb; auto.
-      + apply valid_graph in H3. destruct H3. destruct H4; [exfalso |]; auto.
-      + intros. destruct H4. 2: apply H0; auto. subst e0. rewrite H2. auto.
+      intros. destruct H4. 2: apply H0; auto. subst e0. rewrite H2. auto.
   Qed.
 
   Lemma valid_path_replaceSPG: forall n p, valid_path g p -> (forall e, In e (snd p) -> src g e <> dst g e) -> valid_path (replaceSelfPointingGraph g n) p.

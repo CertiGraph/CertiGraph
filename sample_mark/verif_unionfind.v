@@ -7,6 +7,7 @@ Require Import RamifyCoq.graph.GraphAsList.
 Require Import RamifyCoq.graph.reachable_computable.
 Require Import RamifyCoq.msl_application.Graph.
 Require Import RamifyCoq.msl_application.GList.
+Require Import RamifyCoq.msl_application.GList_UnionFind.
 Require Import RamifyCoq.floyd_ext.share.
 Require Import RamifyCoq.sample_mark.spatial_graph_glist.
 
@@ -50,7 +51,7 @@ Definition find_spec :=
   POST [ tptr (Tstruct _Node noattr) ]
         EX g': Graph, EX rt : pointer_val,
         PROP (uf_equiv g g' /\ uf_root g' x rt)
-        LOCAL(temp ret_temp (pointer_val_val rt))
+        LOCAL (temp ret_temp (pointer_val_val rt))
         SEP (graph sh x g').
 
 Definition unionS_spec :=
@@ -65,6 +66,21 @@ Definition unionS_spec :=
         PROP (uf_union g x y g')
         LOCAL()
         SEP (graph sh x g').
+
+(*
+Definition makeSet_spec :=
+  DECLARE _makeSet
+  WITH g : Graph, l : list pointer_val, sh: wshare
+    PRE []
+      PROP (uf_graph g)
+      LOCAL ()
+      SEP (graphs sh g l)
+    POST [tptr (Tstruct _Node noattr)]
+      EX g': Graph, EX rt: pointer_val,
+      PROP (uf_graph g' /\ new_singleton g g' rt)
+      LOCAL (temp ret_temp (pointer_val_val rt))
+      SEP (graphs sh g' [rt :: l]).
+ *)
 
 Definition makeSet_spec :=
   DECLARE _makeSet
@@ -105,7 +121,8 @@ Proof.
       * simpl. split.
         -- intros. rewrite reachabel_single_uf. intuition.
         -- constructor. intuition. constructor.
-      * simpl. entailer !.
+      * simpl. unfold graph_vcell. unfold vgamma. simpl. unfold graph_gen.updateEdgeFunc.
+        destruct (EquivDec.equiv_dec (x, tt) (x, tt)); entailer !.
 Qed.
 
 Lemma body_find: semax_body Vprog Gprog f_find find_spec.
@@ -135,20 +152,44 @@ Proof.
   forward_if_tac
     (EX g': Graph, EX rt : pointer_val,
      PROP (uf_equiv g g' /\ uf_root g' x rt)
-     LOCAL(temp ret_temp (pointer_val_val rt))
+     LOCAL (temp _p (pointer_val_val rt))
      SEP (graph sh x g')); [apply ADMIT | | gather_current_goal_with_evar ..].
   localize
     (PROP (vvalid g pa)
      LOCAL (temp _p (pointer_val_val pa))
      SEP (graph sh pa g)).
-    1: admit.
-    apply -> ram_seq_assoc.
-    eapply semax_ram_seq'.
-    + subst RamFrame RamFrame0; unfold abbreviate;
-        repeat apply eexists_add_stats_cons; constructor.
-    + eapply semax_seq'. semax_ram_call_body (sh, g, pa). admit.
-    + semax_ram_after_call.
-
+  1: symmetry in H0; apply valid_parent in H0; auto.
+  eapply semax_ram_seq;
+    [subst RamFrame RamFrame0; unfold abbreviate;
+        repeat apply eexists_add_stats_cons; constructor
+    | semax_ram_call_body (sh, g, pa)
+    | semax_ram_after_call; intros [g' x']; simpl fst; simpl snd;
+      apply ram_extract_PROP; intros]. destruct H3.
+    unlocalize
+      (PROP ()
+       LOCAL (temp _p0 (pointer_val_val x'); temp _p (pointer_val_val pa))
+       SEP (graph sh pa g'))
+    using [H3; H4]%RamAssu
+    binding [g'; x']%RamBind.
+  Grab Existential Variables.
+  Focus 3. {
+    Intros g' rt. forward. apply (exp_right g'). entailer !.
+    apply (exp_right rt). entailer !.
+  } Unfocus.
+  Focus 3. {
+    forward. apply (exp_right g). apply (exp_right x). entailer !.
+    assert (pa = x). {
+      hnf in H1. destruct pa, x; inversion H1; auto. simpl in H1. clear H5.
+      unfold sem_cmp_pp in H1. simpl in H1. destruct (eq_block b b0).
+      - destruct (Int.eq i i0) eqn:? .
+        + symmetry in Heqb1. apply binop_lemmas2.int_eq_true in Heqb1. subst; auto.
+        + simpl in H1. inversion H1.
+      - simpl in H1. inversion H1.
+    } subst pa. split; [|split]; auto.
+    - apply (uf_equiv_refl _  (liGraph g)).
+    - hnf.
+  }
+    
     
   
 Qed.
