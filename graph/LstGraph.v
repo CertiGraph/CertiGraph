@@ -95,6 +95,20 @@ Section LstGraph.
 
   Lemma uf_equiv_refl: uf_equiv g g. Proof. hnf; split; intros; intuition. destruct H0, H1. destruct (lst_reachable_or _ _ _ H0 H1); [apply H2 | symmetry; apply H3]; auto. Qed.
 
+  Lemma lst_self_loop: forall x y, dst g (out_edge x) = x -> reachable g x y -> x = y.
+  Proof.
+    intros. destruct H0 as [[v p] ?]. assert (v = x) by (destruct H0 as [[? _] _]; simpl in H0; auto). subst v. induction p.
+    - destruct H0 as [[_ ?] _]. simpl in H0. auto.
+    - assert (g |= (dst g a, p) is (dst g a) ~o~> y satisfying (fun _ => True)). {
+        clear IHp. destruct H0 as [[? ?] [? ?]]. pose proof H2. apply valid_path_cons in H4. split; split; auto.
+        - rewrite pfoot_cons in H1. auto.
+        - rewrite path_prop_equiv; intros; auto. }
+      assert (dst g a = x). {
+        destruct H0 as [_ [? _]]. simpl in H0. destruct H0. assert (strong_evalid g a) by (destruct p; intuition). clear H2. destruct H3 as [? [? ?]]. rewrite <- H0 in H3.
+        assert (a = out_edge x) by (apply only_one_edge; auto). rewrite <- H5 in H. auto.
+      } apply IHp. rewrite H2 in H1. auto.
+  Qed.
+  
   Context {is_null: DecidablePred Vertex}.
   Context {MA: MathGraph g is_null}.
   
