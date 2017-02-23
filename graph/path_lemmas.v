@@ -208,11 +208,8 @@ Proof.
     destruct ((e :: p1) ++ p2); intuition.
 Qed.
 
-Lemma valid_path_app_first: forall g v p1 p2, valid_path g (v, p1 ++ p2) -> valid_path g (v, p1).
-Proof.
-  intros. assert (paths_meet g (v, p1) (pfoot g (v, p1), p2)) by (exists (pfoot g (v, p1)); split; auto).
-  pose proof (valid_path_split _ _ _ H0). unfold path_glue, fst, snd in H1. apply H1 in H. destruct H; auto.
-Qed.
+Lemma valid_path_app: forall g v p1 p2, valid_path g (v, p1 ++ p2) -> valid_path g (v, p1) /\ valid_path g (pfoot g (v, p1), p2).
+Proof. intros. assert (paths_meet g (v, p1) (pfoot g (v, p1), p2)) by (exists (pfoot g (v, p1)); split; auto). apply valid_path_split; auto. Qed.
 
 Lemma valid_path_merge: forall (g : Gph) p1 p2,
                           paths_meet g p1 p2 -> valid_path g p1 -> valid_path g p2 -> valid_path g (p1 +++ p2).
@@ -289,10 +286,10 @@ Proof.
   destruct H. subst v. destruct l0; inversion H0; auto.
 Qed.
 
-Lemma pfoot_app_cons: forall g v e l1 l2, pfoot g (v, l1 ++ e :: l2) = pfoot g (v, e :: l2).
+Lemma pfoot_app_cons: forall g v1 v2 e l1 l2, pfoot g (v1, l1 ++ e :: l2) = pfoot g (v2, e :: l2).
 Proof.
   intros. induction l1.
-  + rewrite app_nil_l. auto.
+  + rewrite app_nil_l. apply pfoot_head_irrel.
   + rewrite <- app_comm_cons. rewrite <- IHl1. simpl. destruct (l1 ++ e :: l2) eqn:? ; auto.
     destruct l1; inversion Heql.
 Qed.
@@ -340,7 +337,7 @@ Proof.
       replace (L1 ++ a :: L2 +:: a) with ((L1 ++ a :: L2) +:: a) in H1.
       * apply epath_to_vpath_pfoot in H1. rewrite H2 in H1. auto.
       * rewrite <- app_assoc. rewrite app_comm_cons. auto.
-    - rewrite pfoot_app_cons. rewrite app_assoc in H2. rewrite pfoot_app_cons in H2. auto.
+    - rewrite pfoot_app_cons with (v2 := v1). rewrite app_assoc in H2. rewrite pfoot_app_cons with (v2 := v1) in H2. auto.
   + apply valid_path_merge; auto. exists a. split. apply epath_to_vpath_pfoot in H5. auto.
     apply epath_to_vpath_phead in H11; auto.
 Qed.
@@ -445,12 +442,18 @@ Proof.
     split; intros; apply H1; apply in_or_app; [left | right]; auto.
 Qed.
 
+Lemma path_prop_app: forall g v p1 p2 P, valid_path g (v, p1 ++ p2) -> path_prop g P (v, p1 ++ p2) -> path_prop g P (v, p1) /\ path_prop g P (pfoot g (v, p1), p2).
+Proof. intros. assert (paths_meet g (v, p1) (pfoot g (v, p1), p2)) by (exists (pfoot g (v, p1)); split; auto). apply path_prop_split; auto. Qed.
+
 Lemma good_path_split: forall (g: Gph) p1 p2 P, paths_meet g p1 p2 -> good_path g P (p1 +++ p2) -> (good_path g P p1) /\ (good_path g P p2).
 Proof.
   intros. destruct H0. apply path_prop_split in H1; auto. destruct H1.
   apply valid_path_split in H0; auto. destruct H0.
   unfold good_path. split; split; auto.
 Qed.
+
+Lemma good_path_app: forall g v p1 p2 P, good_path g P (v, p1 ++ p2) -> good_path g P (v, p1) /\ good_path g P (pfoot g (v, p1), p2).
+Proof. intros. assert (paths_meet g (v, p1) (pfoot g (v, p1), p2)) by (exists (pfoot g (v, p1)); split; auto). apply good_path_split; auto. Qed.
 
 Lemma path_prop_merge: forall (g: Gph) p1 p2 P, paths_meet g p1 p2 -> path_prop g P p1 -> path_prop g P p2 -> path_prop g P (p1 +++ p2).
 Proof.
@@ -546,7 +549,7 @@ Proof.
     clear H2 H3. destruct p1 as [v1 p1]. destruct p2 as [v2 p2].
     unfold path_glue, fst, snd in * |-. destruct p2.
     - rewrite app_nil_r in * |-. simpl in *. rewrite H in H1. subst v2. auto.
-    - rewrite pfoot_app_cons in H1. rewrite pfoot_head_irrel with (v2 := v2) in H1. auto.
+    - rewrite pfoot_app_cons with (v2 := v1) in H1. rewrite pfoot_head_irrel with (v2 := v2) in H1. auto.
   + exists n; auto.
 Qed.
 

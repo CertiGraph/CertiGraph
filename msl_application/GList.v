@@ -63,7 +63,7 @@ Section GRAPH_GList.
   Instance SGC_GList: SpatialGraphConstructor addr (addr * unit) DV DE DG (DV * addr) unit.
   Proof.
     refine (Build_SpatialGraphConstructor _ _ _ _ _ _ _ SGBA _ _).
-    + exact (fun G v => (vlabel G v, v)).
+    + exact (fun G v => (vlabel G v, dst (pg_lg G) (v, tt))).
     + exact (fun _ _ => tt).
   Defined.
 
@@ -173,7 +173,11 @@ Section GRAPH_GList.
   Defined.
 
   Definition single_uf_LstGraph (v: addr): LstGraph (single_uf_pregraph v) (fun x => (x, tt)).
-  Proof. constructor; simpl; intros. unfold updateEdgeFunc, addValidFunc. subst. destruct (equiv_dec (x, tt) e); intuition. Defined.
+  Proof.
+    constructor; simpl; intros; unfold updateEdgeFunc.
+    - unfold addValidFunc. subst. destruct (equiv_dec (x, tt) e); intuition.
+    - destruct (equiv_dec (v, tt) (x, tt)); auto.
+  Defined.
 
   Definition single_sound (v: addr) (H: v <> null) : LiMaFin (single_uf_pregraph v) :=
     Build_LiMaFin _ (single_uf_LstGraph v) (single_uf_MathGraph v H) (single_uf_FiniteGraph v).
