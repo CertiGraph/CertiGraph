@@ -1,9 +1,12 @@
 (* General includes? *)
+Require Import List.
 Require Import RamifyCoq.lib.Coqlib.
 Require Import RamifyCoq.lib.EquivDec_ext.
 
 (* Mathematical model for graphs *)
 Require Import RamifyCoq.graph.graph_model.
+Require Import RamifyCoq.msl_application.Graph.
+
 Require Import RamifyCoq.graph.weak_mark_lemmas.
 Require Import RamifyCoq.graph.path_lemmas.
 Require Import RamifyCoq.graph.subgraph2.
@@ -32,11 +35,12 @@ Context {COLE : @COrd V OLE}. Existing Instance COLE.
 Context {CTV: ComparableTrans V}. Existing Instance CTV.
 
 (* These might be CompCert addresses, or perhaps other choices. *)
-Context {E : Type} {EE : EquivDec.EqDec E eq}.
 (*
+Context {E : Type} {EE : EquivDec.EqDec E eq}.
+*)
 Definition E : Type := V * nat.
 Instance EE : EquivDec.EqDec E eq := prod_eqdec EV nat_eq_eqdec.
-*)
+(* *)
 
 Context {val : Type}. (* CompCert val, plus perhaps other information e.g. shares *)
 
@@ -63,6 +67,57 @@ Record space : Type := {
 Definition LG : Type := list space.
 
 Definition raw_GC_graph : Type := LabeledGraph V E LV LE LG.
+
+(* Spatial GC graph *)
+
+Inductive efield : Type :=
+  | epointer : E -> efield
+  | edata : val -> efield.
+
+Fixpoint getfields (lf : list field_type) (v : V) (n : nat) : list efield :=
+  match lf with
+   | nil => nil
+   | data d :: lf' => edata d :: getfields lf' v (1 + n)
+   | pointer :: lf' => epointer (v, n) :: getfields lf' v (1 + n)
+  end.
+
+(*
+Fixpoint meldfields (lf : list field_type) (le : list E) : list efield :=
+  match lf, le with
+   | nil, _  | pointer :: _, nil => nil
+   | data v :: lf', le => edata v :: meldfields lf' le
+   | pointer :: lf', e :: le' => epointer e :: meldfields lf' le'
+  end.
+*)
+
+Definition vfields (g : raw_GC_graph) (v : V) : bool * list efield :=
+  (mark (vlabel g v), 
+   getfields (fields (vlabel g v)) v 0).
+
+Instance SGBA_GCgraph: SpatialGraphBasicAssum V E.
+  constructor. apply EV. apply EE.
+Defined.
+
+Instance SGC_GCgraph: SpatialGraphConstructor V E LV LE LG (bool * list efield) unit.
+  constructor. exact vfields. exact (fun _ _ => tt).
+Defined.
+
+Definition SG_GCgraph := SpatialGraph V E (bool * list efield) unit.
+(*
+Local Identity Coercion SGGCgraph : SG_GCgraph >-> SpatialGraph.
+*)
+Definition rawGCgraph_SGgraph (G : raw_GC_graph) : SG_GCgraph := Graph_SpatialGraph G.
+
+Instance LSGC_GCgraph : Local_SpatialGraphConstructor V E LV LE LG (bool * list efield) unit.
+  refine (Build_Local_SpatialGraphConstructor _ _ _ _ _ _ _ SGBA_GCgraph SGC_GCgraph 
+          (fun G v => True) _
+          (fun G e => True) _).
+  intros. clear -H1. simpl in *.
+  unfold vfields. rewrite H1; trivial.
+  simpl. trivial.
+Defined.
+
+Global Existing Instances SGC_GCgraph LSGC_GCgraph.
 
 (* General GC graph *)
 
@@ -95,44 +150,6 @@ Definition available (s : space) (x : V) : Prop :=
 
 Definition in_space (s : space) (x : V) : Prop :=
   allocated s x \/ available s x.
-
-Lemma in_space_bounds: forall s x,
-  in_space s x ->
-  start s <= x < limit s.
-Proof.
-  destruct s. unfold in_space, allocated, available. simpl. intros.
-  destruct H as [[? ?] | [? ?]]; split; trivial.
-  apply sord_ord_trans1 with next0. tauto.
-  rewrite <- H. tauto.
-Qed.
-
-Lemma bounds_in_space: forall s x,
-  start s <= x < limit s ->
-  in_space s x.
-Proof.
-  intros.
-  destruct H.
-  destruct s.
-  red. unfold available, allocated. simpl in *.
-  destruct space_order0.
-  case (EV x next0); unfold equiv, complement; intro.
-  subst. right.
-  auto with ord.
-  assert (x ~ start0) by (red; tauto).
-  assert (start0 ~ next0) by (red; tauto).
-  rewrite <- H3 in H4.
-  destruct H4.
-  left; split; red; tauto.
-  right. tauto.
-Qed.
-
-Lemma not_allocated_available: forall s x,
-  ~(allocated s x /\ available s x).
-Proof.
-  intros ? ? [[_ ?] [? _]].
-  apply sord_antirefl with x.
-  eauto with ord.
-Qed.
 
 (* There's probably a better way to write this definition... *)
 Definition is_pointer : DecidablePred field_type :=
@@ -183,23 +200,6 @@ Definition spaces_double (g : raw_GC_graph) : Prop :=
     space_size s2 n2 ->
     n2 = n1 + n1.
 
-Lemma spaces_empty_intersection: forall g,
-  spaces_disjoint g ->
-  forall i j s1 s2,
-    List.nth_error (glabel g) i = Some s1 ->
-    List.nth_error (glabel g) j = Some s2 ->
-    ~(in_space s1 (start s2)).
-Proof.
-  repeat intro.
-  assert (in_space s2 (start s2)). 
-    { apply bounds_in_space. split. reflexivity.
-      destruct s2. simpl in *. 
-  apply in_space_bounds in H2.
-  admit. }
-  specialize (H i j s1 s2 H0 H1 _ H2 H3). subst j.
-  admit.
-Admitted.
-
 (* Between START and NEXT *)
 Definition in_generation (l : list space) (x : V) (n : nat) : Prop :=
   exists s, List.nth_error l n = Some s /\ allocated s x.
@@ -207,23 +207,6 @@ Definition in_generation (l : list space) (x : V) (n : nat) : Prop :=
 Definition valid_in_generation (g : raw_GC_graph) : Prop :=
   forall x, vvalid g x -> 
     exists n, in_generation (glabel g) x n.
-
-Lemma unallocated_not_valid: forall g n s,
-  spaces_disjoint g ->
-  valid_in_generation g ->
-  List.nth_error (glabel g) n = Some s ->
-  forall x, available s x ->
-    ~vvalid g x.
-Proof.
-  repeat intro.
-  specialize (H0 x H3). destruct H0 as [n' [s' [? ?]]].
-  specialize (H n n' s s' H1 H0 x).
-  assert (in_space s x) by (right; trivial).
-  assert (in_space s' x) by (left; trivial).
-  specialize (H H5 H6).
-  subst n'. rewrite H1 in H0. inversion H0. subst s'.
-  eapply not_allocated_available; eauto.
-Qed.
 
 (* We should make this a common definition maybe? *)
 Definition is_null : DecidablePred V := 
@@ -255,6 +238,81 @@ Definition g_lfg (g : Graph) : LocalFiniteGraph g :=
   @fin g (sound_gg g).
 Local Coercion g_lfg : Graph >-> LocalFiniteGraph.
 Existing Instance g_lfg.
+
+Lemma in_space_bounds: forall s x,
+  in_space s x ->
+  start s <= x < limit s.
+Proof.
+  destruct s. unfold in_space, allocated, available. simpl. intros.
+  destruct H as [[? ?] | [? ?]]; split; trivial.
+  apply sord_ord_trans1 with next0. tauto.
+  rewrite <- H. tauto.
+Qed.
+
+Lemma bounds_in_space: forall s x,
+  start s <= x < limit s ->
+  in_space s x.
+Proof.
+  intros.
+  destruct H.
+  destruct s.
+  red. unfold available, allocated. simpl in *.
+  destruct space_order0.
+  case (EV x next0); unfold equiv, complement; intro.
+  subst. right.
+  auto with ord.
+  assert (x ~ start0) by (red; tauto).
+  assert (start0 ~ next0) by (red; tauto).
+  rewrite <- H3 in H4.
+  destruct H4.
+  left; split; red; tauto.
+  right. tauto.
+Qed.
+
+Lemma not_allocated_available: forall s x,
+  ~(allocated s x /\ available s x).
+Proof.
+  intros ? ? [[_ ?] [? _]].
+  apply sord_antirefl with x.
+  eauto with ord.
+Qed.
+
+Lemma spaces_empty_intersection: forall (g : Graph),
+  forall i j s1 s2,
+    List.nth_error (glabel g) i = Some s1 ->
+    List.nth_error (glabel g) j = Some s2 ->
+    ~(in_space s1 (start s2)).
+Proof.
+(*
+  repeat intro.
+  assert (in_space s2 (start s2)). 
+    { apply bounds_in_space. split. reflexivity.
+      destruct s2. simpl in *. 
+  apply in_space_bounds in H2.
+  admit. }
+  specialize (H i j s1 s2 H0 H1 _ H2 H3). subst j.
+  admit.
+*)
+Admitted.
+
+Lemma unallocated_not_valid: forall (g : Graph) n s,
+  List.nth_error (glabel g) n = Some s ->
+  forall x, available s x ->
+    ~vvalid g x.
+Proof.
+  repeat intro.
+(*  generalize (ssj n H).
+  destruct g. destruct sound_gg. simpl in *.
+  specialize (H0 x H3). destruct H0 as [n' [s' [? ?]]].
+  specialize (H n n' s s' H1 H0 x).
+  assert (in_space s x) by (right; trivial).
+  assert (in_space s' x) by (left; trivial).
+  specialize (H H5 H6).
+  subst n'. rewrite H1 in H0. inversion H0. subst s'.
+  eapply not_allocated_available; eauto.
+Qed.
+*)
+Admitted.
 
 Lemma copyEdge_contr: forall (g : Graph) x,
   vvalid g x ->
@@ -295,8 +353,6 @@ Definition copyEdge (g : Graph) (x : V) (Pf0 : vvalid g x) (Pf1 : mark (vlabel g
 Lemma copyEdge_src: forall (g : Graph) x Pf0 Pf1,
   src g (copyEdge g x Pf0 Pf1) = x.
 Proof.
-  intros.
-  admit. (* Shengyi? *)
 Admitted.
 
 Definition in_gen (g : Graph) (n : nat) (x : V) : Prop :=
