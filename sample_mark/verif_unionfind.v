@@ -22,7 +22,7 @@ Local Identity Coercion LGraph_LabeledGraph: LGraph >-> LabeledGraph.
 Local Identity Coercion SGraph_SpatialGraph: SGraph >-> SpatialGraph.
 Local Coercion pg_lg: LabeledGraph >-> PreGraph.
 
-Notation vertices_at sh g P := (@vertices_at _ _ _ _ _ _ (@SGP pSGG_VST nat unit (sSGG_VST sh)) _ g P).
+Notation vertices_at sh P g:= (@vertices_at _ _ _ _ _ _ (@SGP pSGG_VST nat unit (sSGG_VST sh)) _ P g).
 Notation graph sh x g := (@reachable_vertices_at _ _ _ _ _ _ _ _ _ _ (@SGP pSGG_VST nat unit (sSGG_VST sh)) _ x g).
 Notation Graph := (@Graph pSGG_VST nat unit unit).
 Existing Instances maGraph finGraph liGraph RGF.
@@ -50,9 +50,9 @@ Definition find_spec :=
           SEP   (graph sh x g)
   POST [ tptr (Tstruct _Node noattr) ]
         EX g': Graph, EX rt : pointer_val,
-        PROP (uf_equiv g g' /\ uf_root g' x rt)
+        PROP (uf_equiv g g' /\ uf_root g' x rt /\ rank_unchanged g g')
         LOCAL (temp ret_temp (pointer_val_val rt))
-        SEP (graph sh x g').
+        SEP (vertices_at sh (reachable g x) g').
 
 Definition unionS_spec :=
  DECLARE _unionS
@@ -151,9 +151,10 @@ Proof.
   unfold semax_ram.
   forward_if_tac
     (EX g': Graph, EX rt : pointer_val,
-     PROP (uf_equiv g g' /\ uf_root g' x rt)
+     PROP (uf_equiv g g' /\ uf_root g' x rt /\ rank_unchanged g g')
      LOCAL (temp _p (pointer_val_val rt))
-     SEP (graph sh x g')); [apply ADMIT | | gather_current_goal_with_evar ..].
+     SEP (vertices_at sh (reachable g x) g'));
+    [apply ADMIT | | gather_current_goal_with_evar ..].
   localize
     (PROP (vvalid g pa)
      LOCAL (temp _p (pointer_val_val pa))
@@ -164,12 +165,12 @@ Proof.
         repeat apply eexists_add_stats_cons; constructor
     | semax_ram_call_body (sh, g, pa)
     | semax_ram_after_call; intros [g' x']; simpl fst; simpl snd;
-      apply ram_extract_PROP; intros]. destruct H3.
+      apply ram_extract_PROP; intros]. destruct H3 as [? [? ?]].
     unlocalize
       (PROP ()
        LOCAL (temp _p0 (pointer_val_val x'); temp _p (pointer_val_val pa))
-       SEP (graph sh pa g'))
-    using [H3; H4]%RamAssu
+       SEP (vertices_at sh (reachable g x) g'))
+    using [H3; H4; H5]%RamAssu
     binding [g'; x']%RamBind.
   Grab Existential Variables.
   Focus 3. {
@@ -185,10 +186,13 @@ Proof.
         + symmetry in Heqb1. apply binop_lemmas2.int_eq_true in Heqb1. subst; auto.
         + simpl in H1. inversion H1.
       - simpl in H1. inversion H1.
-    } subst pa. split; [|split]; auto.
+    } subst pa. split; [|split; [split |]]; auto.
     - apply (uf_equiv_refl _  (liGraph g)).
     - apply uf_root_vgamma with (n := r); auto.
+    - repeat intro; auto.
   } Unfocus.
+  Focus 2. {
+    simplify_ramif. 
   
 Abort.
 
