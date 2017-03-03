@@ -18,6 +18,7 @@ Require Import RamifyCoq.graph.reachable_computable.
 Require Export RamifyCoq.graph.FiniteGraph.
 Require Export RamifyCoq.graph.MathGraph.
 Require Export RamifyCoq.graph.LstGraph.
+Require Export RamifyCoq.graph.UnionFind.
 Require Import RamifyCoq.msl_application.Graph.
 
 Local Open Scope logic.
@@ -184,5 +185,43 @@ Section GRAPH_GList.
     
   Definition single_Graph (v: addr) (H: v <> null) (default_dv: DV) (default_de: DE) (default_dg: DG): Graph :=
     Build_GeneralGraph _ _ _ _ (single_uf_LabeledGraph v default_dv default_de default_dg) (single_sound v H).
+
+  Lemma valid_parent: forall (g: Graph) v n p, vvalid g v -> vgamma g v = (n, p) -> vvalid g p.
+  Proof. intros. unfold vgamma in H0. simpl in H0. inversion H0. apply (@all_valid _ _ _ _ g _ (liGraph g)) in H. auto. Qed.
+
+  Lemma parent_loop: forall (g: Graph) v n y, vgamma g v = (n, v) -> reachable g v y -> v = y.
+  Proof. intros. apply (lst_self_loop _ (liGraph g)) in H0; auto. unfold vgamma in H. simpl in H. inversion H. rewrite H3. auto. Qed.
+
+  Lemma gamma_step: forall (g : Graph) x r pa, vvalid g x -> vgamma g x = (r, pa) -> forall y, step g x y <-> y = pa.
+  Proof.
+    intros. simpl in H0. inversion H0. rewrite step_spec; split; intros.
+    - destruct H1 as [e [? [? ?]]]. pose proof (only_one_edge x e H). simpl in H6. pose proof (proj1 H6 (conj H4 H1)). subst e. auto.
+    - exists (x, tt). subst y. pose proof (only_one_edge x (x, tt) H). simpl in H1. assert ((x, tt) = (x, tt)) by auto. rewrite <- H1 in H4. intuition.
+  Qed.
+
+  Lemma gamma_parent_reachable_included: forall (g: Graph) x r pa, vvalid g x -> vgamma g x = (r, pa) -> Included (reachable g pa) (reachable g x).
+  Proof.
+    intros. intro y; intros. apply edge_reachable_by with pa; auto. split; auto. split.
+    + apply reachable_head_valid in H1; auto.
+    + rewrite (gamma_step _ _ _ _ H H0). auto.
+  Qed.
+
+  Lemma Prop_join_reachable_parent: forall (g: Graph) x r pa,
+      vvalid g x ->
+      vgamma g x = (r, pa) ->
+      Prop_join
+        (reachable g pa)
+        (Intersection _ (reachable g x) (Complement addr (reachable g pa)))
+        (reachable g x).
+  Proof.
+    intros.
+    apply Ensemble_join_Intersection_Complement.
+    - eapply gamma_parent_reachable_included; eauto.
+    - intros. apply decidable_prop_decidable. pose proof (finGraph g).
+      apply (@reachable_decidable_prime _ _ _ _ _ _ (maGraph g)).
+      + apply LocalFiniteGraph_FiniteGraph; auto.
+      + apply (valid_parent _ x r); auto.
+      + apply FiniteGraph_EnumCovered; auto.
+  Qed.
 
 End GRAPH_GList.
