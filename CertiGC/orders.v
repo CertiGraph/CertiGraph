@@ -4,9 +4,6 @@
 
 Require Import Setoid.
 Require Import EquivDec.
-(*
-Require Import VST.msl.eq_dec. (* Wish this had fewer dependencies *)
-*)
 
 (* Orders *)
 Delimit Scope ord with ord.
@@ -32,9 +29,59 @@ Implicit Arguments ord_antisym [[A] [Ord]].
 
 Hint Resolve @ord_refl @ord_antisym @ord_trans : ord.
 
+(* Comparability *)
+
+Definition comparable {A} `{Ord A} (a b: A) : Prop :=
+  a <= b \/ b <= a.
+Notation "x ~ y" := (comparable x y) (at level 70, no associativity) : ord.
+
+Lemma comparable_leq {A} `{Ord A}: forall a b,
+  a <= b -> 
+  a ~ b.
+Proof. left. trivial. Qed.
+
+Lemma comparable_refl {A} `{Ord A}: forall a : A,
+  a ~ a.
+Proof.
+  left. reflexivity.
+Qed.
+
+Lemma comparable_symm {A} `{Ord A}: forall a b,
+  a ~ b ->
+  b ~ a.
+Proof.
+  unfold comparable. intros. tauto.
+Qed.
+
+Add Parametric Relation {A} `{Ord A} : A comparable
+  reflexivity proved by comparable_refl
+  symmetry proved by comparable_symm
+  as comparable_rel.
+
+Hint Resolve @comparable_leq @comparable_refl @comparable_symm : ord.
+
+Class ComparableTrans (A : Type) `{O: Ord A} : Type :=
+  comparable_trans : forall a b c, a ~ b -> b ~ c -> a ~ c.
+Implicit Arguments comparable_trans [[A] [O] [ComparableTrans]].
+
+Add Parametric Relation {A} `{ComparableTrans A} : A comparable
+(*  reflexivity proved by comparable_refl
+  symmetry proved by comparable_symm *)
+  transitivity proved by comparable_trans
+  as comparable_rel'.
+
+Hint Resolve @comparable_trans : ord.
+
 Class TOrd (A : Type) `{O: Ord A} : Type :=
-  tord_total : forall x y : A, (x <= y) \/ (y <= x).
+  ord_total : forall x y : A, x ~ y.
 Implicit Arguments TOrd [[O]].
+
+Instance tord_ctrans {A} `{O : TOrd A} : ComparableTrans A.
+  repeat intro.
+  apply ord_total.
+Qed.
+
+Hint Resolve @ord_total : ord.
 
 Definition sord {A} `{Ord A} (a1 a2 : A) : Prop :=
   a1 <= a2 /\ a1 <> a2.
@@ -85,58 +132,53 @@ Proof.
   repeat intro. destruct H0. tauto.
 Qed.
 
+(* EqDec is a little too strong; we only need
+     forall x y, x = y \/ x <> y
+*)
+Lemma sord_total {A} `{TOrd A} `{EqDec A eq} : forall x y, x < y \/ x = y \/ y < x.
+Proof.
+  intros. destruct (H0 x y).
+  right. left. trivial.
+  destruct (ord_total x y);
+  [left | right; right]; split; trivial. intro. subst. apply c. reflexivity.
+Qed.
+
 Hint Resolve @sord_neq @sord_leq @sord_ord_trans1 @sord_ord_trans2 @sord_antirefl: ord.
-
-(* Comparability *)
-
-Definition comparable {A} `{Ord A} (a b: A) : Prop :=
-  a <= b \/ b <= a.
-Notation "x ~ y" := (comparable x y) (at level 70, no associativity) : ord.
-
-Lemma comparable_refl {A} `{Ord A}: forall a : A,
-  a ~ a.
-Proof.
-  left. reflexivity.
-Qed.
-
-Lemma comparable_symm {A} `{Ord A}: forall a b,
-  a ~ b ->
-  b ~ a.
-Proof.
-  unfold comparable. intros. tauto.
-Qed.
-
-Add Parametric Relation {A} `{Ord A} : A comparable
-  reflexivity proved by comparable_refl
-  symmetry proved by comparable_symm
-  as comparable_rel.
-
-Class ComparableTrans (A : Type) `{O: Ord A} : Type :=
-  comparable_trans : forall a b c, a ~ b -> b ~ c -> a ~ c.
-Implicit Arguments comparable_trans [[A] [O] [ComparableTrans]].
-
-Add Parametric Relation {A} `{Ord A} `{ComparableTrans A} : A comparable
-(*  reflexivity proved by comparable_refl
-  symmetry proved by comparable_symm *)
-  transitivity proved by comparable_trans
-  as comparable_rel'.
 
 (* Decidability *)
 
 Class COrd (A : Type) `{Ord A} : Type :=
-  { ord_dec: forall a b, {a <= b} + {~ a <= b} }.
+  ord_dec: forall a b, {a <= b} + {~ a <= b}.
 
-Lemma sord_dec {A : Type} `{O : Ord A} `{@EqDec A eq _} `{@COrd A O} :
+Instance cord_eqdec {A} `{COrd A} : EqDec A eq.
+  do 2 intro.
+  case (ord_dec x y); intro.
+  case (ord_dec y x); intro.
+  left. red. eauto with ord.
+  right. intro. apply n. red in H1. subst. eauto with ord.
+  right. intro. apply n. red in H1. subst. eauto with ord.
+Qed.
+
+Lemma sord_dec {A : Type} `{O : Ord A} `{@COrd A O} :
   forall a b, {a < b} + {~ a < b}.
 Proof.
-  intros. case (ord_dec a b); intro.
-  case (H a b); intro.
-  right. intro. destruct H1.
-  contradiction.
-  left. split; auto.
+  intros. case (equiv_dec a b); intro.
+  * red in e. subst. right. auto with ord.
+  * case (ord_dec a b).
+    + left. split; trivial.
+    + right. intro. destruct H0. auto.
+Qed.
+
+Lemma comp_dec {A : Type} `{COrd A}:
+  forall a b, {a ~ b} + {~ (a ~ b)}.
+Proof.
+  intros.
+  case (ord_dec a b); intro.
+  left. left. trivial.
+  case (ord_dec b a); intro.
+  left. right. trivial.
   right. intro.
-  destruct H1.
-  contradiction.
+  destruct H1; contradiction.
 Qed.
 
 Lemma tord_dec {A : Type} `{O : Ord A} `{@TOrd A O} `{@COrd A O} :
@@ -147,34 +189,89 @@ Proof.
   right. specialize (H a b). destruct H; auto. contradiction.
 Qed.
 
-Lemma tsord_dec {A : Type} `{O : Ord A} `{@EqDec A eq _} `{@TOrd A O} `{@COrd A O} :
+Lemma tsord_dec {A : Type} `{O : Ord A} `{@TOrd A O} `{@COrd A O} :
   forall a b, {a < b} + {a = b} + {b < a}.
 Proof.
-  intros.
-  case (H a b); intro.
-  left. right. trivial.
-  case (sord_dec a b); intro.
-  left. left. trivial.
-  right.
-  specialize (H0 a b).
-  destruct H0. exfalso.
-  apply n. split; trivial. 
-  split; trivial. intro. apply c. symmetry. trivial.
-Qed.
-
-Lemma comp_dec {A : Type} `{O : Ord A} `{@COrd A O}:
-  forall a b, {a ~ b} + {~ (a ~ b)}.
-Proof.
-  intros.
-  case (ord_dec a b); intro.
-  left. left. trivial.
-  case (ord_dec b a); intro.
-  left. right. trivial.
-  right. intro.
-  destruct H0; contradiction.
+  intros. case (equiv_dec a b); intro.
+  tauto.
+  case (tord_dec a b); intro.
+  left. left. split; trivial.
+  right. split; trivial. symmetry in c. trivial.
 Qed.
 
 (* Examples of orders *)
+
+Definition trivial_ord A : Ord A.
+  refine (Build_Ord _ eq _ _ _); auto.
+  intros. congruence.
+Defined.
+
+Lemma trivial_not_total: exists A,
+  ~@TOrd A (trivial_ord A).
+Proof.
+  exists nat. intro.
+  specialize (H 0 1). simpl in H. destruct H; inversion H.
+Qed.
+
+Instance trivial_cord {A} `{EqDec A eq}: @COrd A (trivial_ord A).
+Proof.
+  apply H.
+Qed.
+
+Instance trivial_comptrans {A} : @ComparableTrans A (trivial_ord A).
+Proof.
+  repeat intro. unfold comparable in *. simpl in *. left. destruct H; destruct H0; congruence.
+Qed.
+
+Definition lex_ord A B `{Ord A} `{Ord B} : Ord (A * B).
+  refine (Build_Ord _ (fun p1 p2 => match p1, p2 with
+                        (x1,x2), (y1,y2) => 
+                               (x1 < y1) \/
+                               (x1 = y1 /\ x2 <= y2) end) _ _ _).
+  + intros. destruct x. right. split; reflexivity.
+  + intros [? ?] [? ?] [? ?]. intros. destruct H1; destruct H2.
+    * left. rewrite H1. trivial.
+    * destruct H2. subst. auto.
+    * destruct H1. subst. auto.
+    * destruct H1. destruct H2. subst. right. eauto with ord.
+  + intros [? ?] [? ?] [? | [? ?]] [? | [? ?]].
+    * destruct H1. destruct H2. destruct H3. apply ord_antisym; auto.
+    * subst. destruct H1. destruct H2. auto.
+    * subst. destruct H3. destruct H3. auto.
+    * subst a0. f_equal. apply ord_antisym; auto.
+Defined.
+
+Instance lex_tord {A} {B} `{TOrd A} `{EqDec A eq} `{TOrd B} : @TOrd _ (lex_ord A B).
+Proof.
+  intros [? ?] [? ?].
+  destruct (sord_total a a0).
+  left. left. trivial.
+  destruct H2. subst.
+  destruct (ord_total b b0);
+  [left | right]; right; auto.
+  right. left. trivial.
+Qed.
+
+Instance lex_cord {A} {B} `{COrd A} `{COrd B} : @COrd _ (lex_ord A B).
+Proof.
+  intros [? ?] [? ?]. simpl.
+  destruct (equiv_dec a a0).
+  * red in e. subst a0.
+    destruct (ord_dec b b0); auto.
+    right. intro. destruct H3; destruct H3; tauto.
+  * destruct (ord_dec a a0); auto.
+    + left. left. split; auto.
+    + right. intro. destruct H3; destruct H3; auto.
+Qed.
+
+(*
+Instance lex_comptrans {A} {B} `{EqDec A eq} `{ComparableTrans A} `{ComparableTrans B} : @ComparableTrans _ (lex_ord A B).
+Proof.
+  intros [? ?] [? ?] [? ?] ? ?. unfold comparable in *; simpl in *.
+  destruct H2; destruct H2 as [? | [? ?]]; destruct H3; destruct H3 as [? | [? ?]]; subst; eauto with ord.
+  * left; left. eauto with ord.
+  * destruct (H a a1). red in e. subst a1. destruct H2. destruct 
+*)
 
 Require Import Arith.
 Require Import Omega.
@@ -184,7 +281,7 @@ Instance nat_ord : Ord nat :=
 
 Instance nat_tord : TOrd nat.
 Proof.
-  intros x y. unfold ord. simpl. omega.
+  intros x y. red. simpl. omega.
 Qed.
 
 Instance nat_comptrans : ComparableTrans nat.
@@ -194,13 +291,32 @@ Qed.
 
 Instance nat_orddec : COrd nat.
 Proof.
-  constructor.
-  intros ? ?.
-  case (le_gt_dec a b); intro.
-  left. trivial.
-  right. intro.
-  unfold sord, ord in *. simpl in *. omega.
+  intros ? ?. simpl.
+  case (le_gt_dec a b); intro;
+  [left | right]; omega.
 Qed.
+
+Instance Z_ord : Ord Z.
+  refine (Build_Ord _ (fun x z => (x <= z)%Z) _ _ _); intros; omega.
+Defined.
+
+Instance Z_tord : TOrd Z.
+Proof.
+  intros ? ?. red. simpl. omega.
+Qed.
+
+Instance Z_comptrans : ComparableTrans Z.
+Proof.
+  intros a b c ? ?. unfold comparable, ord in *. simpl in *. omega.
+Qed.
+
+Instance Z_cord : COrd Z.
+Proof.
+  intros ? ?. simpl.
+  case (Ztrichotomy_inf a b);
+  [left; destruct s | right]; omega.
+Qed.
+
 
 (*
 Other material, for another day... 
