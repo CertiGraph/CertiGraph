@@ -264,14 +264,36 @@ Proof.
     + right. intro. destruct H3; destruct H3; auto.
 Qed.
 
-(*
-Instance lex_comptrans {A} {B} `{EqDec A eq} `{ComparableTrans A} `{ComparableTrans B} : @ComparableTrans _ (lex_ord A B).
+(* It seems we require that B have a total ordering here.  Otherwise:
+
+      H1: (a1, b1) <= (a2, b2)
+      H2: (a1, b1) <= (a2, b3)
+      --------- wts
+      (a2, b2) <= (a2, b3) \/ (a2, b3) <= (a2, b2)
+
+      which is the same as
+
+      b2 <= b3 \/ b3 <= b2
+
+      But that does not follow from H1 and H2 when a1 < a2.
+
+      One possibility is that we can strengthen the first case of the definition of <=:
+
+      (a1, b1) <= (a2, b2) == (a1 < a2 /\ b1 ~ b2) \/ (a1 = a2 /\ b1 <= b2)
+
+      Not clear if that's better or worse, as a definition. *)
+Instance lex_comptrans {A} {B} `{EqDec A eq} `{ComparableTrans A} `{TOrd B} : @ComparableTrans _ (lex_ord A B).
 Proof.
-  intros [? ?] [? ?] [? ?] ? ?. unfold comparable in *; simpl in *.
-  destruct H2; destruct H2 as [? | [? ?]]; destruct H3; destruct H3 as [? | [? ?]]; subst; eauto with ord.
-  * left; left. eauto with ord.
-  * destruct (H a a1). red in e. subst a1. destruct H2. destruct 
-*)
+  intros [? ?] [? ?] [? ?] ? ?. unfold comparable in *; simpl in *; unfold sord in *.
+  assert (a ~ a1). {
+    eapply comparable_trans with a0; red; 
+    intuition; 
+    repeat (subst; auto with ord). }
+  red in H4.
+  destruct (equiv_dec a a1); unfold equiv, complement in *; subst.
+  2: clear H2 H3; assert (a1 <> a); auto; tauto.
+  destruct (ord_total b b1); tauto.
+Qed.
 
 Require Import Arith.
 Require Import Omega.
