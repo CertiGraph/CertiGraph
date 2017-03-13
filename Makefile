@@ -23,7 +23,7 @@ MSL_EXT_FILES = \
   overlapping_direct.v precise_direct.v alg_seplog_direct.v
 
 MSL_APPLICATION_FILES = \
-  Graph.v Graph_Mark.v GraphBi.v GraphBi_Mark.v DagBi_Mark.v Graph_Copy.v GraphBi_Copy.v GList.v GList_UnionFind.v
+  Graph.v Graph_Mark.v GraphBi.v GraphBi_Mark.v DagBi_Mark.v Graph_Copy.v GraphBi_Copy.v GList.v
 
 VERIC_EXT_FILES = \
   res_predicates.v seplog.v SeparationLogic.v
@@ -49,7 +49,7 @@ HIP_FILES = \
   hip_graphmark.v hip_graphmark_proofs.v spanningtree.v
 
 CERTIGC_FILES = \
-  gc.v gc_mathgraph.v orders.v data_at_test.v
+  gc.v gc_mathgraph.v orders.v cc_orders.v data_at_test.v
   
 CLIGHT_FILES = sample_mark/mark_bi.v sample_mark/garbage_collector.v sample_mark/dispose_bi.v sample_mark/copy_bi.v
 
