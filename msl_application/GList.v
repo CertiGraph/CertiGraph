@@ -7,6 +7,7 @@ Require Import RamifyCoq.lib.Coqlib.
 Require Import RamifyCoq.lib.Ensembles_ext.
 Require Import RamifyCoq.lib.EquivDec_ext.
 Require Import RamifyCoq.lib.Relation_ext.
+Require Import RamifyCoq.lib.List_ext.
 Require Import RamifyCoq.msl_ext.seplog.
 Require Import RamifyCoq.graph.graph_model.
 Require Import RamifyCoq.graph.weak_mark_lemmas.
@@ -64,7 +65,7 @@ Section GRAPH_GList.
   Instance SGC_GList: SpatialGraphConstructor addr (addr * unit) DV DE DG (DV * addr) unit.
   Proof.
     refine (Build_SpatialGraphConstructor _ _ _ _ _ _ _ SGBA _ _).
-    + exact (fun G v => (vlabel G v, dst (pg_lg G) (v, tt))).
+    + exact (fun G v => (vlabel G v, let target := dst (pg_lg G) (v, tt) in if (SGBA_VE target null) then v else target)).
     + exact (fun _ _ => tt).
   Defined.
 
@@ -74,12 +75,9 @@ Section GRAPH_GList.
               _ _ _ _ _ _ _ SGBA SGC_GList
               (fun G v => evalid (pg_lg G) (v, tt) /\ src (pg_lg G) (v, tt) = v) _
               (fun _ _ => True) _).
-    + intros.
-      simpl.
-      destruct H as [? ?], H0 as [? ?].
-      f_equal; auto.
-    + intros; simpl.
-      auto.
+    - intros. simpl. destruct H as [? ?], H0 as [? ?]. f_equal; auto. pose proof (H3 _ H H5 H0 H6). rewrite <- !H7. clear H7.
+      destruct (SGBA_VE (dst (pg_lg G1) (x, tt)) null); auto.
+    - intros; simpl. auto.
   Defined.
 
   Global Existing Instances SGC_GList L_SGC_GList.
@@ -110,45 +108,33 @@ Section GRAPH_GList.
   Defined.
 
   Definition single_uf_pregraph (v: addr) : PreGraph addr (addr * unit) :=
-    pregraph_add_edge (single_vertex_pregraph v) (v, tt) v v.
+    pregraph_add_edge (single_vertex_pregraph v) (v, tt) v null.
 
-  Lemma single_uf_is_uf: forall v, uf_graph (single_uf_pregraph v).
+  Lemma single_uf_is_uf: forall v, v <> null -> uf_graph (single_uf_pregraph v).
   Proof.
     intros. hnf. intros. hnf. exists (v, nil). split.
     - hnf. auto.
-    - intros. hnf in H1. hnf in H. subst v. destruct H1 as [[v p] [[? ?] [? ?]]]. simpl in H. subst v. destruct p.
+    - intros. hnf in H0. subst v. destruct H1 as [[v p] [[? ?] [? ?]]]. simpl in H0. subst v. destruct p.
       + simpl in *. subst y. exists (x, nil). split.
-        * hnf. split; [split; split|]; simpl; auto.
-          intros. destruct H as [[? ?] [? ?]]. clear H5. destruct x'. simpl in H. subst a. destruct l. auto.
-          destruct H4 as [_ ?]. destruct p. simpl in H. destruct l.
-          -- hnf in H. simpl in H. unfold updateEdgeFunc in H. destruct H as [_ [_ ?]].
-             destruct (equiv_dec (x, tt) (a, u)); destruct (equiv_dec x x); [|hnf in c | |hnf in c]; exfalso; auto.
-          -- unfold updateEdgeFunc in H. destruct H as [_ [? _]].
-             assert ((if equiv_dec (x, tt) p then x else x) = x) by (destruct (equiv_dec (x, tt) p); auto). rewrite H4 in H. clear H4.
-             destruct (equiv_dec (x, tt) (a, u)); destruct (equiv_dec x x); [|hnf in c| | hnf in c]; exfalso; auto.
+        * split; [split; split|]; simpl; auto. intros. destruct H0 as [[? ?] [? ?]]. destruct x'. simpl in H0. subst a. destruct l; auto. clear H5. exfalso.
+          destruct H4 as [_ ?]. simpl in H0. assert (strong_evalid (single_uf_pregraph x) p) by (destruct l; intuition). clear H0. rename H4 into H0.
+          hnf in H0. simpl in H0. unfold updateEdgeFunc in H0. destruct H0 as [? [_ ?]]. unfold addValidFunc in H0. destruct H0; auto. subst p.
+          destruct (equiv_dec (x, tt) (x, tt)); [| compute in c]; intuition.
         * apply Subpath_refl.
-      + exfalso. clear H3. simpl in H0. simpl in H2. destruct H2 as [_ ?]. destruct p0.
-        * hnf in H. simpl in H. unfold updateEdgeFunc in H. destruct H as [_ [_ ?]].
-          destruct (equiv_dec (x, tt) p); destruct (equiv_dec x x); [|hnf in c| | hnf in c]; exfalso; auto.
-        * unfold updateEdgeFunc in H. destruct H as [_ [? _]].
-          assert ((if equiv_dec (x, tt) p0 then x else x) = x) by (destruct (equiv_dec (x, tt) p0); auto). rewrite H2 in H. clear H2.
-          destruct (equiv_dec (x, tt) p); destruct (equiv_dec x x); [|hnf in c| | hnf in c]; exfalso; auto.
+      + exfalso. clear H3. simpl in H2. destruct H2 as [_ ?]. assert (strong_evalid (single_uf_pregraph x) p) by (destruct p0; intuition). clear H0. rename H2 into H0.
+        hnf in H0. simpl in H0. unfold updateEdgeFunc in H0. destruct H0 as [? [_ ?]]. unfold addValidFunc in H0. destruct H0; auto. subst p.
+        destruct (equiv_dec (x, tt) (x, tt)); [| compute in c]; intuition.
   Qed.
 
-  Lemma reachabel_single_uf: forall x y, reachable (single_uf_pregraph x) x y <-> x = y.
+  Lemma reachabel_single_uf: forall x y, x <> null -> reachable (single_uf_pregraph x) x y <-> x = y.
   Proof.
     intros. split; intros.
-    - destruct H as [[? ?] [[? ?] [? _]]]. simpl in H. subst a. induction l.
-      + simpl in H0. auto.
-      + destruct a as [? ?].
-        assert (a = x). {
-          clear H0 IHl. simpl in H1. destruct l.
-          - destruct H1 as [_ ?]. hnf in H. simpl in H. unfold addValidFunc in H. destruct H as [[? | ?] _]; [exfalso | inversion H]; auto.
-          - destruct H1 as [_ [? _]]. hnf in H. simpl in H. unfold addValidFunc in H. destruct H as [[? | ?] _]; [exfalso | inversion H]; auto.
-        } subst a. rewrite pfoot_cons in H0. apply valid_path_cons in H1.
-        assert (dst (single_uf_pregraph x) (x, u) = x) by (simpl; unfold updateEdgeFunc; destruct (equiv_dec (x, tt) (x, u)); auto). rewrite H in *.
-        apply IHl; auto.
-    - subst y. apply reachable_refl. simpl. auto.        
+    - destruct H0 as [[? ?] [[? ?] [? _]]]. simpl in H0. subst a. destruct l.
+      + simpl in H1. auto.
+      + destruct H2. simpl in H2. assert (strong_evalid (single_uf_pregraph x) p) by (destruct l; intuition). clear H2. exfalso.
+        hnf in H3. simpl in H3. unfold updateEdgeFunc in H3. destruct H3 as [? [_ ?]]. unfold addValidFunc in H2. destruct H2; auto. subst p.
+        destruct (equiv_dec (x, tt) (x, tt)); [|compute in c]; auto.
+    - subst y. apply reachable_refl. simpl. auto.
   Qed.
 
   Definition single_uf_LabeledGraph (v: addr) (default_dv: DV) (default_de: DE) (default_dg: DG) : LGraph :=
@@ -173,37 +159,44 @@ Section GRAPH_GList.
       + intros. simpl. unfold In, addValidFunc. intuition.
   Defined.
 
-  Definition single_uf_LstGraph (v: addr): LstGraph (single_uf_pregraph v) (fun x => (x, tt)).
+  Definition single_uf_LstGraph (v: addr) (H: v <> null): LstGraph (single_uf_pregraph v) (fun x => (x, tt)).
   Proof.
     constructor; simpl; intros; unfold updateEdgeFunc.
     - unfold addValidFunc. subst. destruct (equiv_dec (x, tt) e); intuition.
-    - destruct (equiv_dec (v, tt) (x, tt)); auto.
+    - destruct H0 as [[? _] [? _]]. destruct p as [p l]. simpl in *. subst p.
+      destruct l; auto. destruct H1. clear H0. simpl in H1. assert (strong_evalid (single_uf_pregraph v) p) by (destruct l; [|destruct H1]; auto). clear H1.
+      hnf in H0. simpl in H0. unfold addValidFunc, updateEdgeFunc in H0. destruct H0 as [? [_ ?]]. exfalso. destruct H0; auto. subst p.
+      destruct (equiv_dec (v, tt) (v, tt)); auto. compute in c. apply c; auto.
   Defined.
 
   Definition single_sound (v: addr) (H: v <> null) : LiMaFin (single_uf_pregraph v) :=
-    Build_LiMaFin _ (single_uf_LstGraph v) (single_uf_MathGraph v H) (single_uf_FiniteGraph v).
+    Build_LiMaFin _ (single_uf_LstGraph v H) (single_uf_MathGraph v H) (single_uf_FiniteGraph v).
     
   Definition single_Graph (v: addr) (H: v <> null) (default_dv: DV) (default_de: DE) (default_dg: DG): Graph :=
     Build_GeneralGraph _ _ _ _ (single_uf_LabeledGraph v default_dv default_de default_dg) (single_sound v H).
 
   Lemma valid_parent: forall (g: Graph) v n p, vvalid g v -> vgamma g v = (n, p) -> vvalid g p.
-  Proof. intros. unfold vgamma in H0. simpl in H0. inversion H0. apply (@all_valid _ _ _ _ g _ (liGraph g)) in H. auto. Qed.
+  Proof.
+    intros. unfold vgamma in H0. simpl in H0. inversion H0. clear H0 H2. destruct (SGBA_VE (dst g (v, tt)) null); auto.
+    unfold complement, Equivalence.equiv in c. pose proof (only_one_edge v (v, tt) H). simpl in H0. assert ((v, tt) = (v, tt)) by auto. rewrite <- H0 in H1. destruct H1.
+    pose proof (valid_graph _ _ H2). destruct H4 as [_ [? | ?]]; auto. simpl in H4. exfalso; auto.
+  Qed.
 
   Lemma parent_loop: forall (g: Graph) v n y, vgamma g v = (n, v) -> reachable g v y -> v = y.
-  Proof. intros. apply (lst_self_loop _ (liGraph g)) in H0; auto. unfold vgamma in H. simpl in H. inversion H. rewrite H3. auto. Qed.
-
-  Lemma gamma_step: forall (g : Graph) x r pa, vvalid g x -> vgamma g x = (r, pa) -> forall y, step g x y <-> y = pa.
   Proof.
-    intros. simpl in H0. inversion H0. rewrite step_spec; split; intros.
-    - destruct H1 as [e [? [? ?]]]. pose proof (only_one_edge x e H). simpl in H6. pose proof (proj1 H6 (conj H4 H1)). subst e. auto.
-    - exists (x, tt). subst y. pose proof (only_one_edge x (x, tt) H). simpl in H1. assert ((x, tt) = (x, tt)) by auto. rewrite <- H1 in H4. intuition.
+    intros. unfold vgamma in H. simpl in H. destruct (SGBA_VE (dst g (v, tt)) null).
+    - unfold Equivalence.equiv in e. assert (~ reachable g null y) by (intro; apply reachable_head_valid in H1; apply (valid_not_null g null H1); simpl; auto).
+      apply (lst_out_edge_only_one g _ v null y); auto.
+    - apply (lst_self_loop _ (liGraph g)) in H0; auto. inversion H. rewrite H3. auto.
   Qed.
 
   Lemma gamma_parent_reachable_included: forall (g: Graph) x r pa, vvalid g x -> vgamma g x = (r, pa) -> Included (reachable g pa) (reachable g x).
   Proof.
-    intros. intro y; intros. apply edge_reachable_by with pa; auto. split; auto. split.
-    + apply reachable_head_valid in H1; auto.
-    + rewrite (gamma_step _ _ _ _ H H0). auto.
+    intros. intro y; intros. unfold vgamma in H0. simpl in H0. destruct (SGBA_VE (dst g (x, tt)) null).
+    - inversion H0. auto.
+    - apply edge_reachable_by with pa; auto. split; auto. split.
+      + apply reachable_head_valid in H1; auto.
+      + inversion H0. rewrite H4. rewrite (dst_step _ (liGraph g) _ _ H H4). auto.
   Qed.
 
   Lemma Prop_join_reachable_parent: forall (g: Graph) x r pa,
@@ -223,5 +216,51 @@ Section GRAPH_GList.
       + apply (valid_parent _ x r); auto.
       + apply FiniteGraph_EnumCovered; auto.
   Qed.
+
+  Lemma no_edge_gen_dst: forall (g: Graph) x pa p a b,
+      ~ List.In (x, tt) (snd p) -> (pregraph_gen_dst g (x, tt) pa) |= p is a ~o~> b satisfying (fun _ => True) -> g |= p is a ~o~> b satisfying (fun _ => True).
+  Proof.
+    intros. destruct H0 as [[? ?] [? ?]]. split; split; auto; clear H0 H3.
+    - clear H2. destruct p as [p l]. simpl in H. revert p H1 H. induction l; intros.
+      + simpl. auto.
+      + rewrite pfoot_cons in H1. remember (dst (pregraph_gen_dst g (x, tt) pa) a0).
+        simpl in Heqy. unfold updateEdgeFunc in Heqy. simpl in H. destruct (equiv_dec (x, tt) a0).
+        * exfalso. apply H. left. auto.
+        * rewrite pfoot_cons. apply IHl.
+          -- subst y. apply H1.
+          -- intro. apply H. right. auto.
+    - clear H1. destruct p as [p l]. simpl in H. revert p H2 H. induction l; intros.
+      + simpl in *. apply H2.
+      + rewrite valid_path_cons_iff in H2 |-* . destruct H2 as [? [? ?]]. split; [|split].
+        * simpl in H0. apply H0.
+        * clear H0 H2. hnf in H1. simpl in H1. unfold updateEdgeFunc in H1. destruct (equiv_dec (x, tt) a0).
+          -- simpl in H. exfalso. apply H. left. auto.
+          -- hnf. apply H1.
+        * remember (dst (pregraph_gen_dst g (x, tt) pa) a0). simpl in Heqy. unfold updateEdgeFunc in Heqy. simpl in H. destruct (equiv_dec (x, tt) a0).
+          -- exfalso. apply H. left. auto.
+          -- subst y. apply IHl; auto.
+  Qed.
+
+  Lemma gen_dst_preserve_lst: forall (g: Graph) x pa, ~ reachable g pa x -> vvalid g x -> LstGraph (pregraph_gen_dst g (x, tt) pa) (fun y : addr => (y, tt)).
+  Proof.
+    intros. constructor. 1: simpl; apply only_one_edge. intro y; intros. destruct (in_dec SGBA_EE (x, tt) (snd p)).
+    - destruct p as [p l]. simpl in i. apply (in_split_not_in_first SGBA_EE) in i. destruct i as [l1 [l2 [? ?]]]. rewrite H2 in H1. apply reachable_by_path_app_cons in H1.
+      destruct H1. simpl src in H1. simpl dst in H4. unfold updateEdgeFunc in H4. destruct (equiv_dec (x, tt) (x, tt)). 2: compute in c; exfalso; apply c; auto. clear e.
+      apply no_edge_gen_dst in H1. 2: simpl; auto. assert ((x, tt) = (x, tt)) by auto. rewrite <- (@only_one_edge _ _ _ _ g _ (liGraph g)) in H5; auto. destruct H5.
+      rewrite H5 in H1. destruct (in_dec SGBA_EE (x, tt) l2).
+      + apply (in_split_not_in_last SGBA_EE) in i. destruct i as [l3 [l4 [? ?]]]. rewrite H7 in H4. apply reachable_by_path_app_cons in H4. destruct H4 as [_ ?].
+        simpl in H4. unfold updateEdgeFunc in H4. destruct (equiv_dec (x, tt) (x, tt)). 2: compute in c; exfalso; apply c; auto. clear e. apply no_edge_gen_dst in H4.
+        2: simpl; auto. pose proof (reachable_by_path_merge _ _ _ _ _ _ _ H4 H1). apply reachable_by_path_is_reachable in H9. exfalso; auto.
+      + apply no_edge_gen_dst in H4. 2: simpl; auto. pose proof (reachable_by_path_merge _ _ _ _ _ _ _ H4 H1). apply reachable_by_path_is_reachable in H7. exfalso; auto.
+    - apply no_edge_gen_dst in H1; auto. apply no_loop_path in H1. auto.
+  Qed.
+
+  Definition Graph_gen_redirect_parent (g: Graph) (x: addr) (pa: addr) (H: weak_valid g pa) (Hv: vvalid g x) (Hn: ~ reachable g pa x): Graph.
+  Proof.
+    refine (generalgraph_gen_dst g (x, tt) pa _). constructor.
+    - simpl. apply gen_dst_preserve_lst; auto.
+    - apply (gen_dst_preserve_math g (x, tt) pa (maGraph g) H).
+    - apply (gen_dst_preserve_finite g (x, tt) pa (finGraph g)).
+  Defined.
 
 End GRAPH_GList.

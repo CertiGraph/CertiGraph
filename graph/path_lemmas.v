@@ -563,6 +563,15 @@ Proof.
     - rewrite pfoot_head_irrel with (v2 := v) in IHp1. apply IHp1.
 Qed.
 
+Lemma reachable_by_path_app_cons: forall (g: Gph) v p1 e p2 n1 n2 P,
+    g |= (v, p1 ++ e :: p2) is n1 ~o~> n2 satisfying P -> g |= (v, p1) is n1 ~o~> (src g e) satisfying P /\ g |= (dst g e, p2) is (dst g e) ~o~> n2 satisfying P.
+Proof.
+  intros. pose proof (reachable_by_path_split_glue g P (v, p1) (src g e, e :: p2) n1 n2 (src g e)).
+  assert (paths_meet_at g (v, p1) (src g e, e :: p2) (src g e)) by (hnf; split; [apply (pfoot_split g v p1 e p2); destruct H as [_ [? _]] | simpl]; auto).
+  specialize (H0 H1 H). destruct H0. split; auto.  pose proof (reachable_by_path_split_glue g P (src g e, e :: nil) (dst g e, p2) (src g e) n2 (dst g e)).
+  assert (paths_meet_at g (src g e, e :: nil) (dst g e, p2) (dst g e)) by (hnf; simpl; auto). specialize (H3 H4 H2). destruct H3. auto.
+Qed.
+
 Lemma in_path_split: forall g p n, In_path g n p -> valid_path g p -> exists p1 p2, p = p1 +++ p2 /\ paths_meet_at g p1 p2 n.
 Proof.
   intros. destruct p as [v p]. hnf in H. simpl in H. destruct H.
