@@ -4,6 +4,7 @@ Require Import RamifyCoq.lib.List_ext.
 Require Import RamifyCoq.lib.Ensembles_ext.
 Require Import RamifyCoq.graph.graph_model.
 Require Import RamifyCoq.graph.path_lemmas.
+Require Import RamifyCoq.graph.graph_gen.
 Require Import RamifyCoq.graph.GraphAsList.
 Require Import RamifyCoq.graph.MathGraph.
 Require Import RamifyCoq.graph.LstGraph.
@@ -21,7 +22,7 @@ Section UNION_FIND.
   Definition replaceSelfPointingGraph (g: PreGraph Vertex Edge) (null_node: Vertex) : PreGraph Vertex Edge :=
     Build_PreGraph EV EE (vvalid g) (evalid g) (src g) (fun e => if equiv_dec (dst g e) (src g e) then null_node else dst g e).
 
-  Definition uf_graph (pg: PreGraph Vertex Edge) : Prop := forall x n, vvalid pg x -> ~ vvalid pg n -> is_list (replaceSelfPointingGraph pg n) x.
+  Definition uf_graph (pg: PreGraph Vertex Edge) : Prop := forall x, vvalid pg x -> is_list pg x.
 
   Definition uf_root (pg: PreGraph Vertex Edge) (x root: Vertex) : Prop := reachable pg x root /\ (forall y, reachable pg root y -> root = y).
 
@@ -38,7 +39,7 @@ Section UNION_FIND.
   Variable (g: PreGraph Vertex Edge).
   Context {out_edge: Vertex -> Edge}.
   Context (gLst: LstGraph g out_edge).
-
+    
   Lemma uf_equiv_refl: uf_equiv g g.
   Proof. hnf; split; intros; intuition. destruct H0, H1. destruct (@lst_reachable_or _ _ _ _ _ _ gLst _ _ _ H0 H1); [apply H2 | symmetry; apply H3]; auto. Qed.
 
@@ -83,5 +84,8 @@ Section UNION_FIND.
   Local Coercion lg_gg : GeneralGraph >-> LabeledGraph.
 
   Definition rank_unchanged (g1 g2: Graph) : Prop := forall v, vvalid g1 v -> vvalid g2 v -> vlabel g1 v = vlabel g2 v.
+
+  Definition findS (g1: Graph) (x: Vertex) (g2: Graph) := 
+    (predicate_partialgraph g1 (fun n => ~ reachable g1 x n)) ~=~ (predicate_partialgraph g2 (fun n => ~ reachable g1 x n)) /\ uf_equiv g1 g2 /\ rank_unchanged g1 g2.
   
 End UNION_FIND.

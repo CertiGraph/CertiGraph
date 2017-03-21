@@ -830,3 +830,22 @@ Proof.
    apply IHj. omega.
 Qed.
 
+Lemma in_split_not_in_first: forall {A} (eq_dec: forall x y : A, {x = y} + {x <> y}) (x: A) (l: list A), In x l -> exists l1 l2, l = l1 ++ x :: l2 /\ ~ In x l1.
+Proof.
+  intros ? ? ?. induction l; intros.
+  - inversion H.
+  - simpl in H. destruct (eq_dec a x).
+    + exists nil, l. rewrite app_nil_l. subst a. split; auto.
+    + destruct H. 1: exfalso; auto. specialize (IHl H). destruct IHl as [l1 [l2 [? ?]]]. exists (a :: l1), l2. simpl. rewrite H0. split; auto.
+      intro. destruct H2; auto.
+Qed.
+
+Lemma in_split_not_in_last: forall {A} (eq_dec: forall x y : A, {x = y} + {x <> y}) (x: A) (l: list A), In x l -> exists l1 l2, l = l1 ++ x :: l2 /\ ~ In x l2.
+Proof.
+  intros ? ? ? ?. rev_induction l. 1: inversion H. destruct (eq_dec x0 x).
+  - exists l, nil. subst x0. split; auto.
+  - rewrite in_app_iff in H0. destruct H0.
+    + specialize (H H0). destruct H as [l1 [l2 [? ?]]]. exists l1, (l2 +:: x0). rewrite H. rewrite <- app_assoc. simpl. split; auto.
+      intro. rewrite in_app_iff in H2. destruct H2; auto. simpl in H2. destruct H2; auto.
+    + simpl in H0. destruct H0; exfalso; auto.
+Qed.

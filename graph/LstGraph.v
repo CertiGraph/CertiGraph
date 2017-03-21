@@ -21,7 +21,7 @@ Section LstGraph.
   Class LstGraph (pg: PreGraph Vertex Edge) (out_edge: Vertex -> Edge): Prop :=
     {
       only_one_edge: forall x e, vvalid pg x -> (src pg e = x /\ evalid pg e <-> e = out_edge x);
-      all_valid: forall x, vvalid pg x -> vvalid pg (dst pg (out_edge x))
+      no_loop_path: forall x p, pg |= p is x ~o~> x satisfying (fun _ => True) -> p = (x, nil)
     }.
 
   Variable (g: PreGraph Vertex Edge).
@@ -85,6 +85,24 @@ Section LstGraph.
     subst z'. exfalso; auto.
   Qed.
 
+  Lemma dst_step: forall x pa, vvalid g x -> dst g (out_edge x) =  pa -> forall y, step g x y <-> y = pa.
+  Proof.
+    intros. subst pa. rewrite step_spec; split; intros.
+    - destruct H0 as [e [? [? ?]]]. pose proof (only_one_edge x e H). simpl in H3. pose proof (proj1 H3 (conj H1 H0)). subst e. auto.
+    - exists (out_edge x). subst y. pose proof (only_one_edge x (out_edge x) H). simpl in H0. assert ((out_edge x) = (out_edge x)) by auto. rewrite <- H0 in H1. intuition.
+  Qed.
+
+  Lemma dst_not_reachable: forall x pa y, vvalid g x -> dst g (out_edge x) = pa -> reachable g pa y -> ~ reachable g y x.
+  Proof.
+    intros. intro. assert (g |= (x, (out_edge x) :: nil) is x ~o~> pa satisfying (fun _ => True)). {
+      split; split; auto.
+      - simpl. unfold strong_evalid. rewrite H0. assert (out_edge x = out_edge x) by auto. rewrite <- only_one_edge in H3; auto. destruct H3. rewrite H3.
+        split; [|split; [|split]]; auto. apply reachable_head_valid in H1. auto.
+      - simpl. unfold path_prop'. rewrite Forall_forall. intros; auto.
+    } assert (reachable g pa x) by (apply reachable_trans with y; auto). destruct H4 as [ppa ?].
+    pose proof (reachable_by_path_merge _ _ _ _ _ _ _ H3 H4). apply no_loop_path in H5. unfold path_glue in H5. simpl in H5. inversion H5.
+  Qed.
+
   Context {is_null: DecidablePred Vertex}.
   Context {MA: MathGraph g is_null}.
   
@@ -137,7 +155,7 @@ Section LstGraph.
     - simpl in H1. destruct (projT2 is_null (dst g (out_edge v))); [|destruct (equiv_dec v (dst g (out_edge v)))]; [rewrite <- in_rev in H1; apply H0; auto .. |].
       specialize (IHb (dst g (out_edge v)) (out_edge v :: l)). destruct is_null as [is_nullP ?]. destruct MA. simpl in *. destruct gLst. rename only_one_edge0 into H2.
       specialize (H2 v (out_edge v) H). assert (out_edge v = out_edge v) by auto. rewrite <- H2 in H3. clear H2. destruct H3. apply IHb; auto.
-      intros. destruct H4. 2: apply H0; auto. subst e0. rewrite H2. auto.
+      destruct (valid_graph _ H3). destruct H5; [exfalso|]; auto. intros. destruct H4. 2: apply H0; auto. subst e0. rewrite H2. auto.
   Qed.
 
   Instance MA_vva: ValidVertexAccessible g.
