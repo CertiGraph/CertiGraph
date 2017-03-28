@@ -39,6 +39,40 @@ Section UNION_FIND.
   Variable (g: PreGraph Vertex Edge).
   Context {out_edge: Vertex -> Edge}.
   Context (gLst: LstGraph g out_edge).
+
+  Lemma uf_root_unique: forall x r1 r2, uf_root g x r1 -> uf_root g x r2 -> r1 = r2.
+  Proof. intros. destruct H, H0. pose proof (lst_reachable_or _ _ _ _ _ H H0). destruct H3; [apply H1 | symmetry; apply H2]; auto. Qed.
+
+  Lemma uf_root_reachable: forall x pa root, reachable g x pa -> uf_root g pa root -> uf_root g x root.
+  Proof. intros. destruct H0. split; intros; [apply reachable_trans with pa | apply H1]; auto. Qed.
+
+  Lemma uf_root_edge: forall x pa root, vvalid g x -> dst g (out_edge x) = pa -> uf_root g pa root -> uf_root g x root.
+  Proof.
+    intros. apply (uf_root_reachable x pa); auto. apply reachable_edge with x.
+    - apply reachable_refl; auto.
+    - hnf. split; [|split]; auto.
+      + destruct H1. apply reachable_head_valid in H1. auto.
+      + rewrite step_spec. exists (out_edge x). pose proof (vvalid_src_evalid _ _ _ H). destruct H2. split; auto.
+  Qed.
+
+  Lemma uf_root_gen_dst: forall x y pa, uf_root g x pa -> ~ reachable g pa x -> reachable g y x -> uf_root (pregraph_gen_dst g (out_edge x) pa) y pa.
+  Proof.
+    intros ? ? ? Hv Hn. assert (vvalid g x) by (destruct Hv; apply reachable_head_valid in H; auto). split; intros.
+    - destruct H0 as [[p l] ?]. exists (p, l +:: (out_edge x)).
+      assert ((p, l +:: out_edge x) = path_glue (p, l) (x, (out_edge x) :: nil)) by (unfold path_glue; simpl; auto). rewrite H1. clear H1. apply reachable_by_path_merge with x. 
+      + rewrite no_edge_gen_dst_equiv; auto. intro. simpl in H1. apply in_split in H1. destruct H1 as [l1 [l2 ?]]. subst l.
+        assert (paths_meet_at g (p, l1) (x, out_edge x :: l2) x). {
+          hnf; split. 2: simpl; auto. destruct H0 as [_ [? _]]. apply pfoot_split in H0. pose proof (vvalid_src_evalid _ _ _ H). destruct H1. rewrite H1 in H0. auto.
+        } assert ((p, l1 ++ out_edge x :: l2) = path_glue (p, l1) (x, (out_edge x) :: l2)) by (unfold path_glue; simpl; auto). rewrite H2 in H0; clear H2.
+        apply reachable_by_path_split_glue with (n := x) in H0; auto. clear H1. destruct H0. apply no_loop_path in H1. inversion H1.
+      + assert (valid_path (pregraph_gen_dst g (out_edge x) pa) (x, out_edge x :: nil)). {
+          simpl. unfold strong_evalid. simpl. unfold updateEdgeFunc. destruct (equiv_dec (out_edge x) (out_edge x)). 2: compute in c; exfalso; apply c; auto.
+          pose proof (vvalid_src_evalid _ _ _ H). destruct H1. rewrite H1. split; [|split; [|split]]; auto. destruct Hv. apply reachable_foot_valid in H3; auto.
+        } split; split; auto.
+        * simpl. unfold updateEdgeFunc. destruct (equiv_dec (out_edge x) (out_edge x)); auto. compute in c; exfalso; apply c; auto.
+        * rewrite path_prop_equiv; auto.
+    - destruct Hv. apply H3. rewrite not_reachable_gen_dst_equiv in H1; auto. pose proof (vvalid_src_evalid _ _ _ H). destruct H4. rewrite H4; auto.
+  Qed.
     
   Lemma uf_equiv_refl: uf_equiv g g.
   Proof. hnf; split; intros; intuition. destruct H0, H1. destruct (@lst_reachable_or _ _ _ _ _ _ gLst _ _ _ H0 H1); [apply H2 | symmetry; apply H3]; auto. Qed.

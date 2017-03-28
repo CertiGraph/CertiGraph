@@ -217,50 +217,20 @@ Section GRAPH_GList.
       + apply FiniteGraph_EnumCovered; auto.
   Qed.
 
-  Lemma no_edge_gen_dst: forall (g: Graph) x pa p a b,
-      ~ List.In (x, tt) (snd p) -> (pregraph_gen_dst g (x, tt) pa) |= p is a ~o~> b satisfying (fun _ => True) -> g |= p is a ~o~> b satisfying (fun _ => True).
-  Proof.
-    intros. destruct H0 as [[? ?] [? ?]]. split; split; auto; clear H0 H3.
-    - clear H2. destruct p as [p l]. simpl in H. revert p H1 H. induction l; intros.
-      + simpl. auto.
-      + rewrite pfoot_cons in H1. remember (dst (pregraph_gen_dst g (x, tt) pa) a0).
-        simpl in Heqy. unfold updateEdgeFunc in Heqy. simpl in H. destruct (equiv_dec (x, tt) a0).
-        * exfalso. apply H. left. auto.
-        * rewrite pfoot_cons. apply IHl.
-          -- subst y. apply H1.
-          -- intro. apply H. right. auto.
-    - clear H1. destruct p as [p l]. simpl in H. revert p H2 H. induction l; intros.
-      + simpl in *. apply H2.
-      + rewrite valid_path_cons_iff in H2 |-* . destruct H2 as [? [? ?]]. split; [|split].
-        * simpl in H0. apply H0.
-        * clear H0 H2. hnf in H1. simpl in H1. unfold updateEdgeFunc in H1. destruct (equiv_dec (x, tt) a0).
-          -- simpl in H. exfalso. apply H. left. auto.
-          -- hnf. apply H1.
-        * remember (dst (pregraph_gen_dst g (x, tt) pa) a0). simpl in Heqy. unfold updateEdgeFunc in Heqy. simpl in H. destruct (equiv_dec (x, tt) a0).
-          -- exfalso. apply H. left. auto.
-          -- subst y. apply IHl; auto.
-  Qed.
-
-  Lemma gen_dst_preserve_lst: forall (g: Graph) x pa, ~ reachable g pa x -> vvalid g x -> LstGraph (pregraph_gen_dst g (x, tt) pa) (fun y : addr => (y, tt)).
-  Proof.
-    intros. constructor. 1: simpl; apply only_one_edge. intro y; intros. destruct (in_dec SGBA_EE (x, tt) (snd p)).
-    - destruct p as [p l]. simpl in i. apply (in_split_not_in_first SGBA_EE) in i. destruct i as [l1 [l2 [? ?]]]. rewrite H2 in H1. apply reachable_by_path_app_cons in H1.
-      destruct H1. simpl src in H1. simpl dst in H4. unfold updateEdgeFunc in H4. destruct (equiv_dec (x, tt) (x, tt)). 2: compute in c; exfalso; apply c; auto. clear e.
-      apply no_edge_gen_dst in H1. 2: simpl; auto. assert ((x, tt) = (x, tt)) by auto. rewrite <- (@only_one_edge _ _ _ _ g _ (liGraph g)) in H5; auto. destruct H5.
-      rewrite H5 in H1. destruct (in_dec SGBA_EE (x, tt) l2).
-      + apply (in_split_not_in_last SGBA_EE) in i. destruct i as [l3 [l4 [? ?]]]. rewrite H7 in H4. apply reachable_by_path_app_cons in H4. destruct H4 as [_ ?].
-        simpl in H4. unfold updateEdgeFunc in H4. destruct (equiv_dec (x, tt) (x, tt)). 2: compute in c; exfalso; apply c; auto. clear e. apply no_edge_gen_dst in H4.
-        2: simpl; auto. pose proof (reachable_by_path_merge _ _ _ _ _ _ _ H4 H1). apply reachable_by_path_is_reachable in H9. exfalso; auto.
-      + apply no_edge_gen_dst in H4. 2: simpl; auto. pose proof (reachable_by_path_merge _ _ _ _ _ _ _ H4 H1). apply reachable_by_path_is_reachable in H7. exfalso; auto.
-    - apply no_edge_gen_dst in H1; auto. apply no_loop_path in H1. auto.
-  Qed.
-
   Definition Graph_gen_redirect_parent (g: Graph) (x: addr) (pa: addr) (H: weak_valid g pa) (Hv: vvalid g x) (Hn: ~ reachable g pa x): Graph.
   Proof.
     refine (generalgraph_gen_dst g (x, tt) pa _). constructor.
-    - simpl. apply gen_dst_preserve_lst; auto.
+    - simpl. apply (gen_dst_preserve_lst g (liGraph g)); auto.
     - apply (gen_dst_preserve_math g (x, tt) pa (maGraph g) H).
     - apply (gen_dst_preserve_finite g (x, tt) pa (finGraph g)).
   Defined.
+
+  Lemma Graph_reachable_dec: forall (G: Graph) x, Decidable (vvalid G x) -> forall y, Decidable (reachable G x y).
+  Proof.
+    intros. apply reachable_decidable with (is_null := is_null_SGBA); auto.
+    + apply maGraph.
+    + apply LocalFiniteGraph_FiniteGraph, finGraph.
+    + apply FiniteGraph_EnumCovered, finGraph.
+  Qed.
 
 End GRAPH_GList.
