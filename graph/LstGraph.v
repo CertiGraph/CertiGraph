@@ -7,6 +7,7 @@ Require Import RamifyCoq.lib.EnumEnsembles.
 Require Import RamifyCoq.lib.List_ext.
 Require Import RamifyCoq.graph.graph_model.
 Require Import RamifyCoq.graph.path_lemmas.
+Require Import RamifyCoq.graph.graph_gen.
 Require Import RamifyCoq.graph.GraphAsList.
 Require Import RamifyCoq.graph.MathGraph.
 Require Import RamifyCoq.graph.FiniteGraph.
@@ -92,17 +93,34 @@ Section LstGraph.
     - exists (out_edge x). subst y. pose proof (only_one_edge x (out_edge x) H). simpl in H0. assert ((out_edge x) = (out_edge x)) by auto. rewrite <- H0 in H1. intuition.
   Qed.
 
+  Lemma vvalid_src_evalid: forall x, vvalid g x -> src g (out_edge x) = x /\ evalid g (out_edge x).
+  Proof. intros. assert ((out_edge x) = (out_edge x)) by auto. pose proof (only_one_edge x (out_edge x) H). rewrite <- H1 in H0. auto. Qed.
+
   Lemma dst_not_reachable: forall x pa y, vvalid g x -> dst g (out_edge x) = pa -> reachable g pa y -> ~ reachable g y x.
   Proof.
     intros. intro. assert (g |= (x, (out_edge x) :: nil) is x ~o~> pa satisfying (fun _ => True)). {
       split; split; auto.
-      - simpl. unfold strong_evalid. rewrite H0. assert (out_edge x = out_edge x) by auto. rewrite <- only_one_edge in H3; auto. destruct H3. rewrite H3.
+      - simpl. unfold strong_evalid. rewrite H0. pose proof (vvalid_src_evalid x H). destruct H3. rewrite H3.
         split; [|split; [|split]]; auto. apply reachable_head_valid in H1. auto.
       - simpl. unfold path_prop'. rewrite Forall_forall. intros; auto.
     } assert (reachable g pa x) by (apply reachable_trans with y; auto). destruct H4 as [ppa ?].
     pose proof (reachable_by_path_merge _ _ _ _ _ _ _ H3 H4). apply no_loop_path in H5. unfold path_glue in H5. simpl in H5. inversion H5.
   Qed.
 
+  Lemma gen_dst_preserve_lst: forall x pa, ~ reachable g pa x -> vvalid g x -> LstGraph (pregraph_gen_dst g (out_edge x) pa) out_edge.
+  Proof.
+    intros. constructor. 1: simpl; apply only_one_edge. intro y; intros. destruct (in_dec EE (out_edge x) (snd p)).
+    - destruct p as [p l]. simpl in i. apply (in_split_not_in_first EE) in i. destruct i as [l1 [l2 [? ?]]]. rewrite H2 in H1. apply reachable_by_path_app_cons in H1.
+      destruct H1. simpl src in H1. simpl dst in H4. unfold updateEdgeFunc in H4. destruct (equiv_dec (out_edge x) (out_edge x)).
+      2: compute in c; exfalso; apply c; auto. clear e. rewrite no_edge_gen_dst_equiv in H1. 2: simpl; auto.
+      pose proof (vvalid_src_evalid x H0). destruct H5. rewrite H5 in H1. destruct (in_dec EE (out_edge x) l2).
+      + apply (in_split_not_in_last EE) in i. destruct i as [l3 [l4 [? ?]]]. rewrite H7 in H4. apply reachable_by_path_app_cons in H4. destruct H4 as [_ ?].
+        simpl in H4. unfold updateEdgeFunc in H4. destruct (equiv_dec (out_edge x) (out_edge x)). 2: compute in c; exfalso; apply c; auto. clear e.
+        rewrite no_edge_gen_dst_equiv in H4. 2: simpl; auto. pose proof (reachable_by_path_merge _ _ _ _ _ _ _ H4 H1). apply reachable_by_path_is_reachable in H9. exfalso; auto.
+      + rewrite no_edge_gen_dst_equiv in H4. 2: simpl; auto. pose proof (reachable_by_path_merge _ _ _ _ _ _ _ H4 H1). apply reachable_by_path_is_reachable in H7. exfalso; auto.
+    - rewrite no_edge_gen_dst_equiv in H1; auto. apply no_loop_path in H1. auto.
+  Qed.
+  
   Context {is_null: DecidablePred Vertex}.
   Context {MA: MathGraph g is_null}.
   

@@ -168,13 +168,13 @@ Proof.
         repeat apply eexists_add_stats_cons; constructor
     | semax_ram_call_body (sh, g, pa)
     | semax_ram_after_call; intros [g' x']; simpl fst; simpl snd;
-      apply ram_extract_PROP; intros]. destruct H3 as [? [? ?]].
+      apply ram_extract_PROP; intros]. destruct H3 as [? ?].
     unlocalize
       (PROP ()
        LOCAL (temp _p0 (pointer_val_val x'); temp _p (pointer_val_val pa);
               temp _x (pointer_val_val x))
        SEP (vertices_at sh (reachable g x) g'))
-    using [H3; H4; H5]%RamAssu
+    using [H3; H4]%RamAssu
     binding [g'; x']%RamBind.
   Grab Existential Variables.
   Focus 3. {
@@ -202,17 +202,17 @@ Proof.
   unfold semax_ram.
   forward.
   assert (pa <> x). {
-    hnf in H1. destruct pa, x; inversion H1; [|intro; inversion H6..].
-    simpl in H1. clear H7. unfold sem_cmp_pp in H1.
+    hnf in H1. destruct pa, x; inversion H1; [|intro; inversion H5..].
+    simpl in H1. clear H6. unfold sem_cmp_pp in H1.
     simpl in H1. destruct (eq_block b b0).
     - destruct (Int.eq i i0) eqn:? .
       + simpl in H1. inversion H1.
-      + subst b0. apply int_eq_false_e in Heqb1. intro. inversion H6. auto.
-    - intro. inversion H6. auto.
-  } assert (weak_valid g' x') by (right; apply reachable_foot_valid in H4; auto).
+      + subst b0. apply int_eq_false_e in Heqb1. intro. inversion H5. auto.
+    - intro. inversion H5. auto.
+  } assert (weak_valid g' x') by (right; destruct H4; apply reachable_foot_valid in H4; auto).
   assert (vvalid g' x) by (destruct H3 as [_ [[? _] _]]; rewrite <- H3; apply H).
   assert ((vgamma g' x) = (r, pa)) by (apply (findS_preserves_vgamma g); auto).
-  assert (~ reachable g' x' x) by (apply (vgamma_not_reachable' _ _ r pa); auto).
+  assert (~ reachable g' x' x) by (destruct H4; apply (vgamma_not_reachable' _ _ r pa); auto).
   localize
    (PROP  ()
     LOCAL (temp _p (pointer_val_val x'); temp _x (pointer_val_val x))
@@ -225,23 +225,25 @@ Proof.
     | abbreviate_semax_ram].
     assert (force_val (sem_cast_neutral (pointer_val_val x')) = pointer_val_val x'). {
       destruct x'; simpl; auto.
-    } rewrite H11. clear H11.
+    } rewrite H10. clear H10.
     change (@field_at CompSpecs sh node_type [] (Vint (Int.repr (Z.of_nat r)), pointer_val_val x') (pointer_val_val x)) with
     (@data_at CompSpecs sh node_type (Vint (Int.repr (Z.of_nat r)), pointer_val_val x') (pointer_val_val x)).
     unlocalize
       (PROP ()
        LOCAL (temp _p (pointer_val_val x'); temp _x (pointer_val_val x))
-       SEP (vertices_at sh (reachable g x) (Graph_gen_redirect_parent g' x x' H7 H8 H10))).
+       SEP (vertices_at sh (reachable g x) (Graph_gen_redirect_parent g' x x' H6 H7 H9))).
     Grab Existential Variables.
     Focus 2. {
-      simplify_ramif. apply (@graph_gen_redirect_parent_ramify _ (sSGG_VST sh)); auto.
+      simplify_ramif. apply (@graph_gen_redirect_parent_ramify _ (sSGG_VST sh)); auto. destruct H4.
       apply reachable_foot_valid in H4. intro. subst x'. apply (valid_not_null g' null H4). simpl. auto.
     } Unfocus.
     unfold semax_ram.
-    forward. remember (Graph_gen_redirect_parent g' x x' H7 H8 H10) as g3. apply (exp_right g3).
-    apply (exp_right x'). entailer !.
+    forward. remember (Graph_gen_redirect_parent g' x x' H6 H7 H9) as g3. apply (exp_right g3).
+    apply (exp_right x'). entailer !. split.
+  - apply (graph_gen_redirect_parent_findS g g' x r pa x' H6 H7 H9); auto.
+  - simpl. apply (uf_root_gen_dst g' (liGraph g') x x x'); auto.
+    + apply (uf_root_edge _ (liGraph g') _ pa); auto. apply vgamma_not_dst with r; auto.
+    + apply reachable_refl; auto.
+Qed. (* 85.7 secs *)
 
-  
-Abort.
-
-
+(* Print Assumptions body_find. *)
