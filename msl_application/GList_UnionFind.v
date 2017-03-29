@@ -45,13 +45,13 @@ Section GList_UnionFind.
 
   Lemma vgamma_not_edge: forall (g: Graph) x r pa, vvalid g x -> vgamma g x = (r, pa) -> pa <> x -> g |= x ~> pa.
   Proof.
-    intros. assert (vvalid g pa) by (apply valid_parent in H0; auto). hnf. split; [|split]; auto. simpl in H0.
-    destruct (SGBA_VE (dst g (x, tt)) null); inversion H0; [exfalso |]; auto. rewrite step_spec. exists (x, tt).
+    intros. assert (vvalid g pa) by (apply valid_parent in H0; auto). hnf. split; [|split]; auto.
+    apply (vgamma_not_dst g x r) in H1; auto. rewrite step_spec. exists (x, tt).
     pose proof (vvalid_src_evalid _ (liGraph g) _ H). destruct H3. split; auto.
   Qed.
 
   Lemma vgamma_not_reachable': forall (g: Graph) x r pa y, vvalid g x -> vgamma g x = (r, pa) -> pa <> x -> reachable g pa y -> ~ reachable g y x.
-  Proof. intros. apply (dst_not_reachable _ (liGraph g) _ pa); auto. simpl in H0. destruct (SGBA_VE (dst g (x, tt)) null); inversion H0; [exfalso |]; auto. Qed.
+  Proof. intros. apply (dst_not_reachable _ (liGraph g) _ pa); auto. apply (vgamma_not_dst g x r); auto. Qed.
 
   Lemma vgamma_not_reachable: forall (g: Graph) x r pa, vvalid g x -> vgamma g x = (r, pa) -> pa <> x -> ~ reachable g pa x.
   Proof. intros. assert (vvalid g pa) by (apply valid_parent in H0; auto). apply (vgamma_not_reachable' g x r pa pa); auto. apply reachable_refl; auto. Qed.
@@ -120,9 +120,7 @@ Section GList_UnionFind.
       assert (forall v, ~ reachable (lg_gg g1) pa v <-> ~ reachable (lg_gg g1) x v \/ x = v). {
         intros. split; intros.
         - destruct_eq_dec x v; [right | left]; auto. intro. apply H9. apply reachable_ind.reachable_ind in H11. destruct H11. 1: exfalso; auto.
-          destruct H11 as [z [[_ [_ ?]] [? ?]]]. rewrite (dst_step g1 (liGraph g1) x pa) in H11; auto.
-          + subst pa. auto.
-          + simpl in H1. destruct (SGBA_VE (dst g1 (x, tt)) null); inversion H1; [exfalso |]; auto.
+          destruct H11 as [z [[_ [_ ?]] [? ?]]]. rewrite (dst_step g1 (liGraph g1) x pa) in H11; auto; [subst pa | apply (vgamma_not_dst g1 x r)]; auto.
         - destruct H9.
           + apply H8; auto.
           + subst v. apply vgamma_not_reachable with r; auto.
@@ -142,9 +140,8 @@ Section GList_UnionFind.
         * destruct H13, H14. apply H8 in H15. apply H8 in H16. apply H12; auto.
     - hnf. simpl. split; intro y; destruct H6. 1: apply H6. intros. assert (Decidable (reachable g2 y x)) by (apply Graph_reachable_dec; left; rewrite <- H6; auto).
       apply decidable_prop_decidable in H12. destruct H12.
-      + assert (uf_root g2 x pa'). {
-          apply (uf_root_edge g2 (liGraph g2) x pa); auto. simpl in H3. destruct (SGBA_VE (dst g2 (x, tt)) null); inversion H3; [exfalso |]; auto.
-        } pose proof (uf_root_gen_dst g2 (liGraph g2) _ _ _ H13 Hn H12). simpl in H14.
+      + assert (uf_root g2 x pa') by (apply (uf_root_edge g2 (liGraph g2) x pa); auto; apply (vgamma_not_dst g2 x r); auto).
+        pose proof (uf_root_gen_dst g2 (liGraph g2) _ _ _ H13 Hn H12). simpl in H14.
         pose proof (uf_root_unique _ (gen_dst_preserve_lst g2 (liGraph g2) _ _ Hn Hv) _ _ _ H11 H14). subst pa'. apply (H8 y); auto.
         apply uf_root_reachable with x; auto.
       + assert (uf_root (lg_gg g2) y r2). {
