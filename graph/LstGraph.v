@@ -44,25 +44,54 @@ Section LstGraph.
           rewrite <- H6 in H7. auto.
       + rewrite app_length in H2. simpl in H2. intuition.
   Qed.
-  
-  Lemma lst_reachable_unique:
-    forall p1 p2 x r1 r2 P, g |= p1 is x ~o~> r1 satisfying P -> g |= p2 is x ~o~> r2 satisfying P -> length (snd p1) <= length (snd p2) -> g |= r1 ~o~> r2 satisfying P.
+
+  Lemma lst_reachable_unique: forall v1 p1 v2 p2 x r1 r2 P,
+      g |= (v1, p1) is x ~o~> r1 satisfying P -> g |= (v2, p2) is x ~o~> r2 satisfying P -> length p1 <= length p2 ->
+      exists p3, p2 = p1 ++ p3 /\ g |= (r1, p3) is r1 ~o~> r2 satisfying P.
   Proof.
-    intros. destruct H as [[? ?] ?]. destruct H0 as [[? ?] ?]. destruct p1 as [v1 p1]. destruct p2 as [v2 p2]. simpl in H, H0, H1. subst v1 v2.
+    intros. destruct H as [[? ?] ?]. destruct H0 as [[? ?] ?]. simpl in H, H0. subst v1 v2.
     pose proof H3. pose proof H5. destruct H as [? _]. destruct H0 as [? _]. destruct (lst_valid_path_unique _ _ _ H H0 H1) as [p3 ?]. clear H H0.
-    exists (r1, p3). split; [split |].
+    exists p3. split; auto. split; [split |].
     - simpl. auto.
     - destruct p3.
       + rewrite app_nil_r in H6. subst p2. simpl. rewrite H2 in H4. auto.
       + rewrite H6 in H4. rewrite pfoot_app_cons with (v2 := r1) in H4. auto.
     - subst p2. apply good_path_app in H5. destruct H5 as [_ ?]. rewrite H2 in H. auto.
   Qed.
+  
+  Lemma lst_reachable_unique':
+    forall p1 p2 x r1 r2 P, g |= p1 is x ~o~> r1 satisfying P -> g |= p2 is x ~o~> r2 satisfying P -> length (snd p1) <= length (snd p2) -> g |= r1 ~o~> r2 satisfying P.
+  Proof.
+    intros. destruct p1 as [v1 p1]. destruct p2 as [v2 p2]. simpl in H1. destruct (lst_reachable_unique v1 p1 v2 p2 x r1 r2 P H H0 H1) as [p3 [? ?]]. exists (r1, p3); auto.
+  Qed.
+
+  Lemma lst_src_dst_determine_path: forall p x y P, g |= p is x ~o~> y satisfying P -> unique (fun pa : path => g |= pa is x ~o~> y satisfying P) p.
+  Proof.
+    intros. hnf. split; auto. intros p2 ?. destruct p as [v1 p1]. destruct p2 as [v2 p2]. f_equal.
+    - destruct H as [[? _] _]. destruct H0 as [[? _] _]. simpl in H, H0. subst v1 v2; auto.
+    - destruct (le_dec (length p1) (length p2)).
+      + destruct (lst_reachable_unique v1 p1 v2 p2 x y y P H H0 l) as [p3 [? ?]].
+        assert (g |= (y, p3) is y ~o~> y satisfying (fun _ => True)) by (apply reachable_by_path_weaken with P; auto; unfold Included, Ensembles.In; intros; auto).
+        apply no_loop_path in H3. inversion H3. subst p3 p2. rewrite app_nil_r; auto.
+      + assert (length p2 <= length p1) by intuition. rename H1 into l. destruct (lst_reachable_unique v2 p2 v1 p1 x y y P H0 H l) as [p3 [? ?]].
+        assert (g |= (y, p3) is y ~o~> y satisfying (fun _ => True)) by (apply reachable_by_path_weaken with P; auto; unfold Included, Ensembles.In; intros; auto).
+        apply no_loop_path in H3. inversion H3. subst p3 p1. rewrite app_nil_r; auto.
+  Qed.
+
+  Lemma lst_path_NoDup: forall p x y P, g |= p is x ~o~> y satisfying P -> NoDup (snd p).
+  Proof.
+    intros. destruct p as [v p]. simpl. destruct (ListDec.NoDup_dec EE p); auto. exfalso. destruct (Dup_cyclic _ n) as [e [p1 [p2 [p3 ?]]]]. subst p. clear n. simpl in H.
+    pose proof H. apply reachable_by_path_app_cons in H0. destruct H0 as [? _]. replace (p1 ++ e :: p2 ++ e :: p3) with ((p1 ++ e :: p2) ++ e :: p3) in H.
+    - apply reachable_by_path_app_cons in H. destruct H as [? _]. apply lst_src_dst_determine_path in H0. destruct H0. apply H1 in H. inversion H.
+      rewrite <- (app_nil_r p1) in H3 at 1. apply app_inv_head in H3. inversion H3.
+    - rewrite <- app_assoc. simpl. auto.
+  Qed.
 
   Lemma lst_reachable_or: forall x r1 r2, reachable g x r1 -> reachable g x r2 -> reachable g r1 r2 \/ reachable g r2 r1.
   Proof.
     intros. destruct H as [p1 ?]. destruct H0 as [p2 ?]. destruct (le_dec (length (snd p1)) (length (snd p2))); [left | right].
-    - apply (lst_reachable_unique p1 p2 x); auto.
-    - apply (lst_reachable_unique p2 p1 x); intuition.
+    - apply (lst_reachable_unique' p1 p2 x); auto.
+    - apply (lst_reachable_unique' p2 p1 x); intuition.
   Qed.
 
   Lemma lst_self_loop: forall x y, dst g (out_edge x) = x -> reachable g x y -> x = y.
@@ -120,7 +149,7 @@ Section LstGraph.
       + rewrite no_edge_gen_dst_equiv in H4. 2: simpl; auto. pose proof (reachable_by_path_merge _ _ _ _ _ _ _ H4 H1). apply reachable_by_path_is_reachable in H7. exfalso; auto.
     - rewrite no_edge_gen_dst_equiv in H1; auto. apply no_loop_path in H1. auto.
   Qed.
-  
+(*  
   Context {is_null: DecidablePred Vertex}.
   Context {MA: MathGraph g is_null}.
   
@@ -185,7 +214,7 @@ Section LstGraph.
       destruct H. destruct H0; intuition.
     - destruct (s (dst g e)); auto. specialize (valid_not_null (dst g e)). exfalso; apply valid_not_null; auto.
   Qed.
-
+*)
 End LstGraph.
 
-Global Existing Instance MA_vva.
+(* Global Existing Instance MA_vva. *)
