@@ -34,6 +34,9 @@ Section UNION_FIND_SINGLE.
     forall (S1 S2: uf_set), S1 e1 -> S2 e2 -> uf_set_in g1 S1 -> uf_set_in g1 S2 ->
                             uf_set_in g2 (Union Vertex S1 S2) /\ (forall S, ~ Same_set S S1 -> ~ Same_set S S2 -> uf_set_in g1 S -> uf_set_in g2 S) /\
                             (forall S, uf_set_in g2 S -> Same_set S (Union Vertex S1 S2) \/ uf_set_in g1 S).
+
+  Lemma uf_equiv_sym: forall g1 g2, uf_equiv g1 g2 -> uf_equiv g2 g1.
+  Proof. intros. destruct H. split; intros; [specialize (H x); intuition | specialize (H0 x r2 r1); symmetry; apply H0; auto]. Qed.
   
   Variable (g: PreGraph Vertex Edge).
   Context {out_edge: Vertex -> Edge}.
@@ -218,26 +221,30 @@ Section UNION_FIND_SINGLE.
   Lemma uf_root_always_exists: forall x, EnumCovered Edge (evalid g) -> vvalid g x -> exists root, uf_root g x root.
   Proof. intros.  apply is_list_uf_root_exists; auto. apply graph_is_list; auto. Qed.
 
+  Context {FIN: FiniteGraph g}.
+
+  Lemma uf_equiv_uf_root: forall (g': PreGraph Vertex Edge) x root, uf_equiv g' g -> uf_root g' x root -> uf_root g x root.
+  Proof.
+    intros. destruct H. assert (exists r, uf_root g x r). {
+      apply uf_root_always_exists; [apply Enumerable_is_EnumCovered, finiteE | rewrite <- H; destruct H0; apply reachable_head_valid in H0; auto].
+    } destruct H2. specialize (H1 _ _ _ H0 H2). subst x0; auto.
+  Qed.
+
+  Lemma uf_equiv_trans: forall g1 g2, uf_equiv g1 g -> uf_equiv g g2 -> uf_equiv g1 g2.
+  Proof.
+    intros. split; intros.
+    - destruct H, H0. rewrite <- H0. apply H.
+    - pose proof (uf_equiv_uf_root _ _ _ H H1). destruct H0. apply (H4 x); auto.
+  Qed.
+
 End UNION_FIND_SINGLE.
 
-  (*Lemma lstGraph_is_list: forall root null, EnumCovered Vertex (reachable g root) -> vvalid g root -> is_null null -> is_list (replaceSelfPointingGraph g null) root.
-  Proof.
-    intros. hnf. exists (root, (findList (length (proj1_sig X)) root nil)). split.
-    - apply valid_path_replaceSPG.
-      + unfold valid_path. destruct (findList (length (proj1_sig X)) root nil) eqn:? ; auto. split.
-        * remember (length (proj1_sig X)) as n. destruct n; simpl in Heql.
-          -- destruct (projT2 is_null (dst g (out_edge root))). 1: inversion Heql. destruct (equiv_dec root (dst g (out_edge root))); inversion Heql.
-          -- destruct (projT2 is_null (dst g (out_edge root))). 1: inversion Heql. destruct (equiv_dec root (dst g (out_edge root))). 1: inversion Heql.
-             destruct (findList_foreside n (dst g (out_edge root)) (out_edge root :: nil)) as [l' ?]. rewrite H1 in Heql. simpl in Heql. inversion Heql.
-             destruct gLst. rename only_one_edge0 into H2. specialize (H2 root (out_edge root) H). assert (out_edge root = out_edge root) by auto.
-             rewrite <- H2 in H5. destruct H5; auto.
-        * rewrite <- Heql. apply valid_path'_findList; simpl; auto.
-      + simpl. apply findList_preserve_NSP; auto.
-    - intros. pose proof H1. destruct H2 as [py ?]. exists py. split.
-      + hnf. split; auto. intros py' ?. destruct py as [h1 ?]. destruct py' as [h2 l']. assert (h1 = root) by (destruct H2 as [[? _] _]; simpl in H2; auto).
-        assert (h2 = root) by (destruct H3 as [[? _] _]; simpl in H3; auto). subst h1 h2. f_equal. revert l' l H3 H2. induction l'; intros.
-        * destruct l; auto.
-  Abort.*)
+Class FML_General (Vertex : Type) (Edge : Type) {EV : EqDec Vertex eq} {EE: EqDec Edge eq} (DV: Type) (DE: Type) (DG: Type)
+      (P: LabeledGraph Vertex Edge DV DE DG -> Type) (out_edge: Vertex -> Edge) (is_null: DecidablePred Vertex) := {
+    P_Lst: forall g, P g -> LstGraph (pg_lg g) out_edge;
+    P_Math: forall g, P g -> MathGraph (pg_lg g) is_null;
+    P_Finite: forall g, P g -> FiniteGraph (pg_lg g);
+  }.
 
 Section UNION_FIND_GENERAL.
 
@@ -257,44 +264,39 @@ Section UNION_FIND_GENERAL.
   Definition findS (g1: Graph) (x: Vertex) (g2: Graph) := 
     (predicate_partialgraph g1 (fun n => ~ reachable g1 x n)) ~=~ (predicate_partialgraph g2 (fun n => ~ reachable g1 x n)) /\ uf_equiv g1 g2 /\ rank_unchanged g1 g2.
 
-  Lemma findS_the_same_root: forall g1 x g2 y root, findS g1 x g2 -> uf_root g1 y root <-> uf_root g2 y root.
-  Proof.
-    intros. destruct H as [_ [[_ ?] _]]. split; intro.
-  Abort.
-
   Context {out_edge: Vertex -> Edge}.
-
-  Hypothesis P_contains_Lst: forall g, P g -> LstGraph g out_edge.
+  Context {is_null: DecidablePred Vertex}.
+  Context {fml: FML_General Vertex Edge DV DE DG P out_edge is_null}.
+  
+  Lemma uf_equiv_the_same_root: forall (g1 g2: Graph) x root, uf_equiv g1 g2 -> uf_root g1 x root <-> uf_root g2 x root.
+  Proof.
+    intros. split.
+    - specialize (P_Lst g2 (sound_gg g2)). specialize (P_Math g2 (sound_gg g2)). specialize (P_Finite g2 (sound_gg g2)); intros.
+      apply (@uf_equiv_uf_root _ _ _ _ g2 out_edge _ is_null _ _ g1); auto.
+    - apply uf_equiv_sym in H. specialize (P_Lst g1 (sound_gg g1)). specialize (P_Math g1 (sound_gg g1)). specialize (P_Finite g1 (sound_gg g1)); intros.
+      apply (@uf_equiv_uf_root _ _ _ _ g1 out_edge _ is_null _ _ g2); auto.
+  Qed.
 
   Lemma same_root_union: forall (g g1 g2: Graph) x y root,
       vvalid g x -> vvalid g y -> findS g x g1 -> findS g1 y g2 -> uf_root g1 x root -> uf_root g2 y root -> uf_union g x y g2.
   Proof.
-    repeat intro. split; [|split]; intros.
+    repeat intro. assert (uf_equiv g g2). {
+      specialize (P_Lst g1 (sound_gg g1)). specialize (P_Math g1 (sound_gg g1)). specialize (P_Finite g1 (sound_gg g1)); intros.
+      apply (@uf_equiv_trans _ _ _ _ g1 out_edge _ is_null _ _ g g2); [destruct H1 as [_ [? _]] | destruct H2 as [_ [? _]]]; auto.
+    } split; [|split]; intros.
     - unfold uf_set_in in *. destruct H7, H8.
       + left. rewrite H7. rewrite H8. rewrite Union_Empty_left. reflexivity.
       + right. destruct H8 as [rt [? ?]]. exists rt. assert (Same_set (Union Vertex S1 S2) S2) by (rewrite H7, Union_Empty_left; reflexivity).
-        pose proof (app_same_set H10). clear H10. split.
-        * rewrite H11; auto.
-        * intro z. rewrite H11, H9.
-  Abort.
+        pose proof (app_same_set H11). clear H11. split; [rewrite H12 | intro z; rewrite H12, H10; apply uf_equiv_the_same_root]; auto.
+      + right. destruct H7 as [rt [? ?]]. exists rt. assert (Same_set (Union Vertex S1 S2) S1) by (rewrite H8, Union_Empty_right; reflexivity).
+        pose proof (app_same_set H11). clear H11. split; [rewrite H12 | intro z; rewrite H12, H10; apply uf_equiv_the_same_root]; auto.
+      + destruct H7 as [rt1 [? ?]]. destruct H8 as [rt2 [? ?]]. assert (rt1 = root). {
+          rewrite H10 in H5. destruct H1 as [_ [? _]]. pose proof H5. rewrite (uf_equiv_the_same_root g g1) in H5; auto. destruct H1. apply (H13 x); auto.
+        } subst rt1. assert (rt2 = root) by (rewrite H11 in H6; pose proof H6; rewrite (uf_equiv_the_same_root g g2) in H6; auto; destruct H9; apply (H13 y); auto).
+        subst rt2. right. exists root. split. 1: apply Union_introl; unfold In; auto. intro z. rewrite Union_spec. rewrite <- (uf_equiv_the_same_root g g2); auto.
+        rewrite H10, H11. intuition.
+    - destruct H12; [left | right]; auto. destruct H12 as [rt [? ?]]. exists rt. split; auto. intro z. rewrite H13. apply uf_equiv_the_same_root; auto.
+    - right. destruct H10; [left | right]; auto. destruct H10 as [rt [? ?]]. exists rt. split; auto. intro z. rewrite H11. symmetry. apply uf_equiv_the_same_root; auto.
+  Qed.
 
-  (* assert (forall g': Graph, LstGraph g' out_edge) by (intros; apply P_contains_Lst, sound_gg). pose proof (H5 g). pose proof (H5 g1). pose proof (H5 g2). clear H5. *)
 End UNION_FIND_GENERAL.
-
-  (* H : vvalid g x *)
-  (* H0 : vvalid g y *)
-  (* g1 : Graph *)
-  (* x_root : pointer_val *)
-  (* H1 : findS g x g1 *)
-  (* H2 : uf_root g1 x x_root *)
-  (* H3 : vvalid g1 y *)
-  (* Delta := abbreviate : tycontext *)
-  (* g2 : Graph *)
-  (* H4 : findS g1 y g2 *)
-  (* H8 : is_pointer_or_null (pointer_val_val x_root) *)
-  (* H9 : is_pointer_or_null (pointer_val_val x) *)
-  (* H10 : is_pointer_or_null (pointer_val_val y) *)
-  (* H5 : uf_root g2 y x_root *)
-  (* H7 : is_pointer_or_null (pointer_val_val x_root) *)
-
-(* uf_union g x y g2 *)
