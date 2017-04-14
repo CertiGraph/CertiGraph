@@ -56,6 +56,10 @@ Section GList_UnionFind.
   Lemma vgamma_not_reachable: forall (g: Graph) x r pa, vvalid g x -> vgamma g x = (r, pa) -> pa <> x -> ~ reachable g pa x.
   Proof. intros. assert (vvalid g pa) by (apply valid_parent in H0; auto). apply (vgamma_not_reachable' g x r pa pa); auto. apply reachable_refl; auto. Qed.
 
+  Instance fml : FML_General addr (addr * unit) nat unit unit LiMaFin (fun x => (x, tt)) is_null_SGBA. Proof. constructor; intros; destruct X; auto. Defined.
+
+  Global Existing Instance fml.
+
   Lemma findS_preserves_vgamma: forall (g1 g2: Graph) x r pa, vvalid g1 x -> vgamma g1 x = (r, pa) -> pa <> x -> findS g1 pa g2 -> vgamma g2 x = (r, pa).
   Proof.
     intros. assert (Hr: ~ reachable g1 pa x) by (apply vgamma_not_reachable with r; auto). simpl in *. destruct (SGBA_VE (dst g1 (x, tt)) null). 1: inversion H0; exfalso; auto.
@@ -151,5 +155,9 @@ Section GList_UnionFind.
         } apply (H8 y); auto.
     - apply H7. 
   Qed.
+
+  Lemma the_same_root_union: forall (g g1 g2: Graph) x y root,
+      vvalid g x -> vvalid g y -> findS g x g1 -> findS g1 y g2 -> uf_root g1 x root -> uf_root g2 y root -> uf_union g x y g2.
+  Proof. intros. apply (same_root_union g g1 g2 x y root); auto. Qed.
 
 End GList_UnionFind.

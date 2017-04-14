@@ -261,6 +261,53 @@ Proof.
      LOCAL (temp _yRoot (pointer_val_val y_root); temp _xRoot (pointer_val_val x_root);
      temp _x (pointer_val_val x); temp _y (pointer_val_val y))
      SEP (vertices_at sh (vvalid g2) g2)). 1: apply ADMIT.
-  Focus 1. {
-    forward. apply (exp_right g2). entailer !; auto. apply true_Ceq_eq in H6. subst y_root.
+  Focus 1. { forward. apply (exp_right g2). entailer !; auto. apply true_Ceq_eq in H6. subst y_root. apply (the_same_root_union g g1 g2 x y x_root); auto. } Unfocus.
+  Focus 1. { forward. entailer !. } Unfocus.
+
+  (* xRank = xRoot -> rank; *)
+  remember (vgamma g2 x_root) as rpa eqn:?H. destruct rpa as [rankXRoot paXRoot]. symmetry in H6.
+  localize
+    (PROP  ()
+     LOCAL (temp _xRoot (pointer_val_val x_root))
+     SEP  (data_at sh node_type (vgamma2cdata (vgamma g2 x_root)) (pointer_val_val x_root))).
+  rewrite H6. simpl vgamma2cdata. apply -> ram_seq_assoc.
+  eapply semax_ram_seq;
+  [subst RamFrame RamFrame0; unfold abbreviate;
+   repeat apply eexists_add_stats_cons; constructor
+  | load_tac 
+  | abbreviate_semax_ram].
+  unlocalize
+    (PROP  ()
+     LOCAL (temp _xRank (Vint (Int.repr (Z.of_nat rankXRoot))); temp _xRoot (pointer_val_val x_root); temp _yRoot (pointer_val_val y_root);
+            temp _x (pointer_val_val x); temp _y (pointer_val_val y))
+     SEP  (whole_graph sh g2)).
+  Grab Existential Variables.
+  Focus 2. {
+    simplify_ramif. rewrite H6. simpl. apply (@vertices_at_ramif_1_stable _ _ _ _ SGBA_VST _ _ (SGA_VST sh) g2 (vvalid g2) x_root (rankXRoot, paXRoot)); auto.
+    destruct H4 as [_ [[? _] _]]. rewrite <- H4. destruct H2. apply reachable_foot_valid in H2. apply H2.
+  } Unfocus.
+
+  (* yRank = yRoot -> rank; *)
+  remember (vgamma g2 y_root) as rpa eqn:?H. destruct rpa as [rankYRoot paYRoot]. symmetry in H7.
+  localize
+    (PROP  ()
+     LOCAL (temp _yRoot (pointer_val_val y_root))
+     SEP  (data_at sh node_type (vgamma2cdata (vgamma g2 y_root)) (pointer_val_val y_root))).
+  rewrite H7. simpl vgamma2cdata. apply -> ram_seq_assoc.
+  eapply semax_ram_seq;
+  [subst RamFrame RamFrame0; unfold abbreviate;
+   repeat apply eexists_add_stats_cons; constructor
+  | load_tac 
+  | abbreviate_semax_ram].
+  unlocalize
+    (PROP  ()
+     LOCAL (temp _xRank (Vint (Int.repr (Z.of_nat rankXRoot))); temp _yRank (Vint (Int.repr (Z.of_nat rankYRoot))); temp _xRoot (pointer_val_val x_root);
+            temp _yRoot (pointer_val_val y_root); temp _x (pointer_val_val x); temp _y (pointer_val_val y))
+     SEP  (whole_graph sh g2)).
+  Grab Existential Variables.
+  Focus 2. {
+    simplify_ramif. rewrite H7. simpl. apply (@vertices_at_ramif_1_stable _ _ _ _ SGBA_VST _ _ (SGA_VST sh) g2 (vvalid g2) y_root (rankYRoot, paYRoot)); auto.
+    destruct H5. apply reachable_foot_valid in H5. apply H5.
+  } Unfocus.
+    
 Abort.
