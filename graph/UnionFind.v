@@ -10,6 +10,7 @@ Require Import RamifyCoq.graph.GraphAsList.
 Require Import RamifyCoq.graph.MathGraph.
 Require Import RamifyCoq.graph.LstGraph.
 Require Import RamifyCoq.graph.FiniteGraph.
+Require Import RamifyCoq.graph.reachable_computable.
 
 Section UNION_FIND_SINGLE.
 
@@ -37,7 +38,17 @@ Section UNION_FIND_SINGLE.
 
   Lemma uf_equiv_sym: forall g1 g2, uf_equiv g1 g2 -> uf_equiv g2 g1.
   Proof. intros. destruct H. split; intros; [specialize (H x); intuition | specialize (H0 x r2 r1); symmetry; apply H0; auto]. Qed.
-  
+
+  Lemma uf_union_sym: forall g1 g2 e1 e2, uf_union g1 e1 e2 g2 -> uf_union g1 e2 e1 g2.
+  Proof.
+    intros. repeat intro. specialize (H S2 S1 H1 H0 H3 H2). assert (Same_set (Union Vertex S1 S2) (Union Vertex S2 S1)). {
+      rewrite Same_set_spec. hnf. intros. split; intro; destruct H4; [right | left | right | left]; auto.
+    } destruct H as [? [? ?]]. split; [|split].
+    - destruct H; [left; rewrite H4; auto | right]. destruct H as [rt [? ?]]. pose proof (app_same_set H4). exists rt. split; [rewrite H8 | intros; rewrite H8]; auto.
+    - intros. apply H5; auto.
+    - intros. specialize (H6 _ H7). destruct H6; [left; rewrite H4 | right]; auto.
+  Qed.
+
   Variable (g: PreGraph Vertex Edge).
   Context {out_edge: Vertex -> Edge}.
   Context (gLst: LstGraph g out_edge).
@@ -48,6 +59,9 @@ Section UNION_FIND_SINGLE.
   Lemma uf_root_reachable: forall x pa root, reachable g x pa -> uf_root g pa root -> uf_root g x root.
   Proof. intros. destruct H0. split; intros; [apply reachable_trans with pa | apply H1]; auto. Qed.
 
+  Lemma uf_root_reachable2: forall x y root, uf_root g x root -> reachable g y root -> uf_root g y root.
+  Proof. intros. apply uf_root_reachable with root; auto. destruct H. split; [apply reachable_refl; apply reachable_foot_valid in H; auto | apply H1]. Qed.
+
   Lemma uf_root_edge: forall x pa root, vvalid g x -> dst g (out_edge x) = pa -> uf_root g pa root -> uf_root g x root.
   Proof.
     intros. apply (uf_root_reachable x pa); auto. apply reachable_edge with x.
@@ -57,23 +71,60 @@ Section UNION_FIND_SINGLE.
       + rewrite step_spec. exists (out_edge x). pose proof (vvalid_src_evalid _ _ _ H). destruct H2. split; auto.
   Qed.
 
-  Lemma uf_root_gen_dst: forall x y pa, uf_root g x pa -> ~ reachable g pa x -> reachable g y x -> uf_root (pregraph_gen_dst g (out_edge x) pa) y pa.
+  Lemma uf_root_gen_dst: forall x z y root, uf_root g y root -> ~ reachable g y x -> reachable g z x -> uf_root (pregraph_gen_dst g (out_edge x) y) z root.
   Proof.
-    intros ? ? ? Hv Hn. assert (vvalid g x) by (destruct Hv; apply reachable_head_valid in H; auto). split; intros.
-    - destruct H0 as [[p l] ?]. exists (p, l +:: (out_edge x)).
-      assert ((p, l +:: out_edge x) = path_glue (p, l) (x, (out_edge x) :: nil)) by (unfold path_glue; simpl; auto). rewrite H1. clear H1. apply reachable_by_path_merge with x. 
-      + rewrite no_edge_gen_dst_equiv; auto. intro. simpl in H1. apply in_split in H1. destruct H1 as [l1 [l2 ?]]. subst l.
-        assert (paths_meet_at g (p, l1) (x, out_edge x :: l2) x). {
-          hnf; split. 2: simpl; auto. destruct H0 as [_ [? _]]. apply pfoot_split in H0. pose proof (vvalid_src_evalid _ _ _ H). destruct H1. rewrite H1 in H0. auto.
-        } assert ((p, l1 ++ out_edge x :: l2) = path_glue (p, l1) (x, (out_edge x) :: l2)) by (unfold path_glue; simpl; auto). rewrite H2 in H0; clear H2.
-        apply reachable_by_path_split_glue with (n := x) in H0; auto. clear H1. destruct H0. apply no_loop_path in H1. inversion H1.
-      + assert (valid_path (pregraph_gen_dst g (out_edge x) pa) (x, out_edge x :: nil)). {
-          simpl. unfold strong_evalid. simpl. unfold updateEdgeFunc. destruct (equiv_dec (out_edge x) (out_edge x)). 2: compute in c; exfalso; apply c; auto.
-          pose proof (vvalid_src_evalid _ _ _ H). destruct H1. rewrite H1. split; [|split; [|split]]; auto. destruct Hv. apply reachable_foot_valid in H3; auto.
-        } split; split; auto.
-        * simpl. unfold updateEdgeFunc. destruct (equiv_dec (out_edge x) (out_edge x)); auto. compute in c; exfalso; apply c; auto.
-        * rewrite path_prop_equiv; auto.
-    - destruct Hv. apply H3. rewrite not_reachable_gen_dst_equiv in H1; auto. pose proof (vvalid_src_evalid _ _ _ H). destruct H4. rewrite H4; auto.
+    intros. assert (vvalid g x) by (apply reachable_foot_valid in H1; auto). assert (vvalid g y) by (destruct H; apply reachable_head_valid in H; auto). split; intros.
+    - destruct H1 as [[p l1] ?]. destruct H as [[[q l2] ?] ?]. exists (p, l1 ++ (out_edge x) :: l2).
+      assert ((p, l1 ++ (out_edge x) :: l2) = path_glue (p, l1) (x, (out_edge x) :: l2)) by (unfold path_glue; simpl; auto).
+      rewrite H5. clear H5. apply reachable_by_path_merge with x.
+      + rewrite no_edge_gen_dst_equiv; auto. intro. simpl in H5. apply in_split in H5. destruct H5 as [l3 [l4 ?]]. subst l1.
+        assert (paths_meet_at g (p, l3) (x, out_edge x :: l4) x). {
+          hnf; split. 2: simpl; auto. destruct H1 as [_ [? _]]. apply pfoot_split in H1. pose proof (vvalid_src_evalid _ _ _ H2). destruct H5. rewrite H5 in H1. auto.
+        } assert ((p, l3 ++ out_edge x :: l4) = path_glue (p, l3) (x, (out_edge x) :: l4)) by (unfold path_glue; simpl; auto). rewrite H6 in H1; clear H6.
+        apply reachable_by_path_split_glue with (n := x) in H1; auto. clear H5. destruct H1. apply no_loop_path in H5. inversion H5.
+      + assert ((x, out_edge x :: l2) = path_glue (x, out_edge x :: nil) (y, l2)) by (unfold path_glue; simpl; auto).
+        rewrite H5; clear H5. apply reachable_by_path_merge with y.
+        * assert (valid_path (pregraph_gen_dst g (out_edge x) y) (x, out_edge x :: nil)). {
+            simpl. unfold strong_evalid. simpl. unfold updateEdgeFunc. destruct (equiv_dec (out_edge x) (out_edge x)). 2: compute in c; exfalso; apply c; auto.
+            pose proof (vvalid_src_evalid _ _ _ H2). destruct H5. rewrite H5. split; [|split; [|split]]; auto. 
+          } split; split; auto.
+          -- simpl. unfold updateEdgeFunc. destruct (equiv_dec (out_edge x) (out_edge x)); auto. compute in c; exfalso; apply c; auto.
+          -- rewrite path_prop_equiv; auto.
+        * assert (q = y) by (destruct H as [[? _] _]; simpl in H; auto). subst q. rewrite no_edge_gen_dst_equiv; auto. intro. simpl in H5.
+          apply H0. apply (reachable_path_in g (y, l2) _ root); auto. right; simpl; exists (out_edge x); split; auto; left.
+          pose proof (vvalid_src_evalid _ _ _ H2); destruct H6; auto.
+    - destruct H. apply H5. rewrite not_reachable_gen_dst_equiv in H4; auto. pose proof (vvalid_src_evalid _ _ _ H2).
+      destruct H6. rewrite H6. intro; apply H0. apply reachable_trans with root; auto.
+  Qed.
+
+  Lemma uf_root_gen_dst_preserve: forall x y z root, vvalid g x -> ~ reachable g z x -> uf_root g z root -> uf_root (pregraph_gen_dst g (out_edge x) y) z root.
+  Proof.
+    intros. split; intros.
+    - destruct H1 as [[[p l] ?] ?]. assert (p = z) by (destruct H1 as [[? _] _]; simpl in H0; auto). subst p. exists (z, l).
+      rewrite no_edge_gen_dst_equiv; auto. simpl. intro. apply H0. apply (reachable_path_in g (z, l) _ root); auto. right; simpl. exists (out_edge x). split; auto; left.
+      pose proof (vvalid_src_evalid _ _ _ H). destruct H4; auto.
+    - destruct H1. apply H3. rewrite not_reachable_gen_dst_equiv in H2; auto. pose proof (vvalid_src_evalid _ _ _ H). destruct H4. rewrite H4. intro. apply H0.
+      apply reachable_trans with root; auto.
+  Qed.
+
+  Lemma uf_root_gen_dst_same: forall x y pa, uf_root g x pa -> ~ reachable g pa x -> reachable g y x -> uf_root (pregraph_gen_dst g (out_edge x) pa) y pa.
+  Proof. intros. apply uf_root_gen_dst; auto. destruct H. split; [|apply H2]. apply reachable_refl. apply reachable_foot_valid in H; auto. Qed.
+
+  Lemma uf_root_gen_dst_diff: forall x y x_root y_root z,
+      uf_root g x x_root -> uf_root g y y_root -> x_root <> y_root -> uf_root g z x_root -> uf_root (pregraph_gen_dst g (out_edge x_root) y_root) z y_root.
+  Proof.
+    intros. apply uf_root_gen_dst.
+    - destruct H0. split; [apply reachable_refl; apply reachable_foot_valid with y; auto | apply H3].
+    - intro. apply H1. destruct H0. symmetry. apply H4; auto.
+    - destruct H2; auto.
+  Qed.
+
+  Lemma uf_root_gen_dst_diff_preserve: forall x y x_root y_root z,
+      uf_root g x x_root -> uf_root g y y_root -> x_root <> y_root -> uf_root g z y_root -> uf_root (pregraph_gen_dst g (out_edge x_root) y_root) z y_root.
+  Proof.
+    intros. apply uf_root_gen_dst_preserve; auto.
+    - destruct H. apply reachable_foot_valid in H; auto.
+    - intro. apply H1. destruct H2. destruct (lst_reachable_or g _ _ _ _ H3 H2); [destruct H | destruct H0; symmetry]; apply H6; auto.
   Qed.
     
   Lemma uf_equiv_refl: uf_equiv g g.
@@ -277,26 +328,94 @@ Section UNION_FIND_GENERAL.
       apply (@uf_equiv_uf_root _ _ _ _ g1 out_edge _ is_null _ _ g2); auto.
   Qed.
 
-  Lemma same_root_union: forall (g g1 g2: Graph) x y root,
-      vvalid g x -> vvalid g y -> findS g x g1 -> findS g1 y g2 -> uf_root g1 x root -> uf_root g2 y root -> uf_union g x y g2.
+  Lemma uf_equiv_uf_set_in: forall (g1 g2: Graph) s, uf_equiv g1 g2 -> uf_set_in g1 s -> uf_set_in g2 s.
+  Proof. intros. destruct H0; [left | right]; auto. destruct H0 as [rt [? ?]]. exists rt. split; auto. intros. rewrite H1. apply uf_equiv_the_same_root; auto. Qed.
+
+  Lemma uf_set_in_equiv: forall (g1 g2: Graph) s, uf_equiv g1 g2 -> uf_set_in g1 s <-> uf_set_in g2 s.
+  Proof. intros. split; apply uf_equiv_uf_set_in; [|apply uf_equiv_sym]; auto. Qed.
+
+  Lemma uf_union_refl: forall (g: Graph) x y root, uf_root g x root -> uf_root g y root -> uf_union g x y g.
   Proof.
-    repeat intro. assert (uf_equiv g g2). {
+    intros. split; [|split]; intros; auto. unfold uf_set_in in *. destruct H3, H4.
+    - left. rewrite H3. rewrite H4. rewrite Union_Empty_left. reflexivity.
+    - pose proof (app_same_set H3). rewrite H5 in H1. inversion H1.
+    - pose proof (app_same_set H4). rewrite H5 in H2. inversion H2.
+    - destruct H3 as [rt1 [? ?]]. destruct H4 as [rt2 [? ?]]. assert (rt1 = root). {
+        rewrite H5 in H1. apply (@uf_root_unique _ _ _ _ g _ (P_Lst g (sound_gg g)) x); auto.
+      } subst rt1. assert (rt2 = root) by (rewrite H6 in H2; apply (@uf_root_unique _ _ _ _ g _ (P_Lst g (sound_gg g)) y); auto).
+      subst rt2. right. exists root. split. 1: apply Union_introl; unfold In; auto. intro z. rewrite Union_spec. rewrite H5, H6. intuition.
+  Qed.
+
+  Lemma uf_equiv_union: forall (g1 g2 g: Graph) x y, uf_equiv g1 g2 -> uf_union g2 x y g -> uf_union g1 x y g.
+  Proof.
+    repeat intro. specialize (H0 S1 S2 H1 H2). rewrite (uf_set_in_equiv g1 g2 _ H) in H3. rewrite (uf_set_in_equiv g1 g2 _ H) in H4. specialize (H0 H3 H4).
+    destruct H0 as [? [? ?]]. split; [|split]; intros; auto.
+    - rewrite (uf_set_in_equiv g1 g2 _ H) in H9. apply H5; auto.
+    - specialize (H6 _ H7). destruct H6; [left | right; rewrite (uf_set_in_equiv g1 g2 _ H)]; auto. 
+  Qed.
+
+  Lemma uf_equiv_union_equiv: forall (g1 g2 g: Graph) x y, uf_equiv g1 g2 -> uf_union g1 x y g <-> uf_union g2 x y g.
+  Proof. intros. split; intro; [apply (uf_equiv_union g2 g1); auto; apply uf_equiv_sym | apply (uf_equiv_union g1 g2)]; auto. Qed.
+
+  Lemma same_root_union: forall (g g1 g2: Graph) x y root, findS g x g1 -> findS g1 y g2 -> uf_root g1 x root -> uf_root g2 y root -> uf_union g x y g2.
+  Proof.
+    intros. assert (uf_equiv g g2). {
       specialize (P_Lst g1 (sound_gg g1)). specialize (P_Math g1 (sound_gg g1)). specialize (P_Finite g1 (sound_gg g1)); intros.
-      apply (@uf_equiv_trans _ _ _ _ g1 out_edge _ is_null _ _ g g2); [destruct H1 as [_ [? _]] | destruct H2 as [_ [? _]]]; auto.
-    } split; [|split]; intros.
-    - unfold uf_set_in in *. destruct H7, H8.
-      + left. rewrite H7. rewrite H8. rewrite Union_Empty_left. reflexivity.
-      + right. destruct H8 as [rt [? ?]]. exists rt. assert (Same_set (Union Vertex S1 S2) S2) by (rewrite H7, Union_Empty_left; reflexivity).
-        pose proof (app_same_set H11). clear H11. split; [rewrite H12 | intro z; rewrite H12, H10; apply uf_equiv_the_same_root]; auto.
-      + right. destruct H7 as [rt [? ?]]. exists rt. assert (Same_set (Union Vertex S1 S2) S1) by (rewrite H8, Union_Empty_right; reflexivity).
-        pose proof (app_same_set H11). clear H11. split; [rewrite H12 | intro z; rewrite H12, H10; apply uf_equiv_the_same_root]; auto.
-      + destruct H7 as [rt1 [? ?]]. destruct H8 as [rt2 [? ?]]. assert (rt1 = root). {
-          rewrite H10 in H5. destruct H1 as [_ [? _]]. pose proof H5. rewrite (uf_equiv_the_same_root g g1) in H5; auto. destruct H1. apply (H13 x); auto.
-        } subst rt1. assert (rt2 = root) by (rewrite H11 in H6; pose proof H6; rewrite (uf_equiv_the_same_root g g2) in H6; auto; destruct H9; apply (H13 y); auto).
-        subst rt2. right. exists root. split. 1: apply Union_introl; unfold In; auto. intro z. rewrite Union_spec. rewrite <- (uf_equiv_the_same_root g g2); auto.
-        rewrite H10, H11. intuition.
-    - destruct H12; [left | right]; auto. destruct H12 as [rt [? ?]]. exists rt. split; auto. intro z. rewrite H13. apply uf_equiv_the_same_root; auto.
-    - right. destruct H10; [left | right]; auto. destruct H10 as [rt [? ?]]. exists rt. split; auto. intro z. rewrite H11. symmetry. apply uf_equiv_the_same_root; auto.
+      apply (@uf_equiv_trans _ _ _ _ g1 out_edge _ is_null _ _ g g2); [destruct H as [_ [? _]] | destruct H0 as [_ [? _]]]; auto.
+    } rewrite (uf_equiv_union_equiv g g2 g2); auto. apply uf_union_refl with root; auto. rewrite <- (uf_equiv_the_same_root g1); auto. destruct H0 as [_ [? _]]; auto.
+  Qed.
+
+  Lemma gen_dst_uf_root: forall (g: Graph) x y z root,
+      vvalid g x -> ~ reachable g root x -> uf_root (pregraph_gen_dst g (out_edge x) y) z root -> reachable g z x \/ uf_root g z root.
+  Proof.
+    intros. assert (vvalid g z) by (destruct H1; apply reachable_head_valid in H1; simpl in H1; auto).
+    assert (forall w, {reachable g z w} + {~ reachable g z w}). {
+      apply (@reachable_decidable_prime _ _ _ _ g is_null); auto;
+        [exact (P_Math g (sound_gg g)) | apply LocalFiniteGraph_FiniteGraph | apply FiniteGraph_EnumCovered]; exact (P_Finite g (sound_gg g)).
+    } destruct (X x); [left; auto | right]. destruct H1. pose proof (P_Lst g (sound_gg g)). pose proof (vvalid_src_evalid g _ _ H). destruct H5 as [? _]. split.
+    - rewrite not_reachable_gen_dst_equiv in H1; auto. rewrite H5; auto.
+    - intro w. intros. apply H3. rewrite not_reachable_gen_dst_equiv; auto. rewrite H5; auto.
+  Qed.
+
+  Lemma diff_root_union: forall (g: Graph) x y x_root y_root,
+      uf_root g x x_root -> uf_root g y y_root -> x_root <> y_root -> uf_union g x y (pregraph_gen_dst g (out_edge x_root) y_root).
+  Proof.
+    repeat intro. destruct H4; [pose proof (app_same_set H4); rewrite H6 in H2; inversion H2 |]. destruct H5; [pose proof (app_same_set H5); rewrite H6 in H3; inversion H3 |].
+    pose proof (P_Lst g (sound_gg g)). rename H6 into gLst.
+    destruct H4 as [rt1 [? ?]]. assert (rt1 = x_root) by (rewrite H6 in H2; apply (@uf_root_unique _ _ _ _ g _ gLst x); auto). subst rt1.
+    destruct H5 as [rt2 [? ?]]. assert (rt2 = y_root) by (rewrite H7 in H3; apply (@uf_root_unique _ _ _ _ g _ gLst y); auto). subst rt2.
+    assert (forall z, Union Vertex S1 S2 z <-> uf_root (pregraph_gen_dst g (out_edge x_root) y_root) z y_root). {
+      intro z; split; intro.
+      - inversion H8; subst x0; unfold In in H9.
+        + rewrite H6 in H9. apply (uf_root_gen_dst_diff _ gLst x y); auto.
+        + rewrite H7 in H9. apply (uf_root_gen_dst_diff_preserve _ gLst x y); auto.
+      - assert (~ reachable g y_root x_root) by (intro; apply H1; symmetry; destruct H0; apply H10; auto).
+        assert (vvalid g x_root) by (destruct H; apply reachable_foot_valid in H; auto). apply gen_dst_uf_root in H8; auto. destruct H8; [left | right; rewrite H7; auto].
+        rewrite H6. split; auto. destruct H. apply H11.
+    } assert (vvalid g x_root) by (destruct H; apply reachable_foot_valid in H; auto).
+    assert (LstGraph (pregraph_gen_dst g (out_edge x_root) y_root) out_edge). apply gen_dst_preserve_lst; auto; intro; apply H1; destruct H0; symmetry. apply H11; auto.
+    split; [|split]; intros.
+    - right. exists y_root. split. 1: apply Union_intror; unfold In; auto. apply H8.
+    - unfold uf_set_in in *. destruct H13; [left | right]; auto. destruct H13 as [rt [? ?]]. exists rt; split; auto. intro z. rewrite H14.
+      assert (forall m, uf_root g m rt -> ~ reachable g m x_root). {
+        repeat intro. pose proof (uf_root_reachable2 _ _ _ _ H H16). pose proof (uf_root_unique g gLst _ _ _ H15 H17). subst rt. clear H17 H16. apply H11.
+        rewrite Same_set_spec. hnf. intro. rewrite H14. rewrite H6. intuition.
+      } split; intro.
+      + apply uf_root_gen_dst_preserve; auto. 
+      + pose proof H16. apply gen_dst_uf_root in H16; auto. 2: apply H15; rewrite H14 in H13; auto. destruct H16; auto. exfalso. pose proof (uf_root_reachable2 _ _ _ _ H H16).
+        assert (uf_root (pregraph_gen_dst g (out_edge x_root) y_root) z y_root) by (apply (uf_root_gen_dst_diff _ gLst x y); auto).
+        pose proof (uf_root_unique _ H10 _ _ _ H17 H19). subst rt. clear H18 H19. apply H12. rewrite Same_set_spec. hnf. intro. rewrite H14. rewrite H7. intuition.
+    - unfold uf_set_in in H11. destruct H11. 1: right; left; auto. destruct H11 as [rt [? ?]]. destruct_eq_dec rt y_root; [left | right].
+      + subst rt. rewrite Same_set_spec. hnf. intro z. rewrite H8, H12. intuition.
+      + right. exists rt. split; auto. intro z. rewrite H12. 
+        assert (forall m, uf_root (pregraph_gen_dst g (out_edge x_root) y_root) m rt -> ~ reachable g m x_root). {
+          repeat intro. pose proof (uf_root_reachable2 _ _ _ _ H H15). pose proof (uf_root_gen_dst_diff g gLst _ _ _ _ _ H H0 H1 H16).
+          pose proof (uf_root_unique _ H10 _ _ _ H14 H17). auto.
+        } split; intro.
+        * pose proof H15. apply gen_dst_uf_root in H15; auto. 2: rewrite H12 in H11; apply H14; auto. destruct H15; auto. exfalso. apply H14 in H16. auto.
+        * apply uf_root_gen_dst_preserve; auto. intro. pose proof (uf_root_reachable2 _ _ _ _ H H16). pose proof (uf_root_unique g gLst _ _ _ H15 H17). subst rt.
+          clear H14 H16 H17. rewrite H12 in H11. assert (uf_root g x_root x_root) by (destruct H; split; [apply reachable_refl | apply H14]; auto).
+          pose proof (uf_root_gen_dst_diff g gLst _ _ _ _ _ H H0 H1 H14). pose proof (uf_root_unique _ H10 _ _ _ H11 H16). auto.
   Qed.
 
 End UNION_FIND_GENERAL.

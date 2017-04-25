@@ -145,7 +145,7 @@ Section GList_UnionFind.
     - hnf. simpl. split; intro y; destruct H6. 1: apply H6. intros. assert (vvalid (lg_gg g1) y) by (destruct H9 as [? _]; apply reachable_head_valid in H9; auto).
       assert (Decidable (reachable g2 y x)). (apply Graph_reachable_dec; left; rewrite <- H6; auto). apply decidable_prop_decidable in H12. destruct H12.
       + assert (uf_root g2 x pa') by (apply (uf_root_edge g2 (liGraph g2) x pa); auto; apply (vgamma_not_dst g2 x r); auto).
-        pose proof (uf_root_gen_dst g2 (liGraph g2) _ _ _ H13 Hn H12). simpl in H14.
+        pose proof (uf_root_gen_dst_same g2 (liGraph g2) _ _ _ H13 Hn H12). simpl in H14.
         pose proof (uf_root_unique _ (gen_dst_preserve_lst g2 (liGraph g2) _ _ Hn Hv) _ _ _ H10 H14). subst pa'. apply (H8 y); auto.
         apply uf_root_reachable with x; auto.
       + assert (uf_root (lg_gg g2) y r2). {
@@ -159,5 +159,49 @@ Section GList_UnionFind.
   Lemma the_same_root_union: forall (g g1 g2: Graph) x y root,
       vvalid g x -> vvalid g y -> findS g x g1 -> findS g1 y g2 -> uf_root g1 x root -> uf_root g2 y root -> uf_union g x y g2.
   Proof. intros. apply (same_root_union g g1 g2 x y root); auto. Qed.
+
+  Lemma uf_equiv_root_the_same: forall (g1 g2: Graph) x root, uf_equiv g1 g2 -> uf_root g1 x root <-> uf_root g2 x root.
+  Proof. intros. pose proof (@uf_equiv_the_same_root _ _ _ _ _ _ _ _ (fun x: addr => (x, tt)) is_null_SGBA fml g1 g2 x root H). apply H0. Qed.
+          
+  Lemma diff_root_union_1: forall (g g1 g2: Graph) x y x_root y_root,
+      findS g x g1 -> uf_root g1 x x_root -> findS g1 y g2 -> uf_root g2 y y_root -> x_root <> y_root -> (@weak_valid _ _ _ _ g2 _ (maGraph g2) y_root) -> vvalid g2 x_root ->
+      ~ reachable g2 y_root x_root -> uf_union g x y (pregraph_gen_dst g2 (x_root, tt) y_root).
+  Proof.
+    intros. destruct H1 as [_ [? _]]. assert (uf_equiv g g2) by (destruct H as [_ [? _]]; apply (@uf_equiv_trans _ _ _ _ g1 _ (liGraph g1) _ (maGraph g1) (finGraph g1)); auto).
+    pose proof (uf_equiv_union g g2 (Graph_gen_redirect_parent g2 x_root y_root H4 H5 H6) x y H7). simpl in H8. apply H8.
+    apply (@diff_root_union _ _ _ _ _ _ _ _ (fun x: addr => (x, tt)) is_null_SGBA fml); auto. apply (uf_equiv_root_the_same g1); auto.
+  Qed.
+
+  Lemma diff_root_union_2: forall (g g1 g2: Graph) x y x_root y_root,
+      findS g x g1 -> uf_root g1 x x_root -> findS g1 y g2 -> uf_root g2 y y_root -> x_root <> y_root -> (@weak_valid _ _ _ _ g2 _ (maGraph g2) x_root) -> vvalid g2 y_root ->
+      ~ reachable g2 x_root y_root -> uf_union g x y (pregraph_gen_dst g2 (y_root, tt) x_root).
+  Proof.
+    intros. destruct H1 as [_ [? _]]. assert (uf_equiv g g2) by (destruct H as [_ [? _]]; apply (@uf_equiv_trans _ _ _ _ g1 _ (liGraph g1) _ (maGraph g1) (finGraph g1)); auto).
+    pose proof (uf_equiv_union g g2 (Graph_gen_redirect_parent g2 y_root x_root H4 H5 H6) y x H7). simpl in H8. apply uf_union_sym. apply H8.
+    apply (@diff_root_union _ _ _ _ _ _ _ _ (fun x: addr => (x, tt)) is_null_SGBA fml); auto. apply (uf_equiv_root_the_same g1); auto.
+  Qed.
+
+  Lemma graph_gen_redirect_parent_vgamma: forall (g1 g2: Graph) x r pa y (H: weak_valid g1 x) (Hv: vvalid g1 y) (Hn: ~ reachable g1 x y),
+      vgamma g1 x = (r, pa) -> g2 = (Graph_gen_redirect_parent g1 y x H Hv Hn) -> vgamma g2 x = (r, pa).
+  Proof.
+    intros. rewrite H1. clear H1. simpl in *. inversion H0. f_equal. unfold updateEdgeFunc.
+    destruct (equiv_dec (y, tt) (x, tt)); [hnf in e; inversion e; subst; exfalso; apply Hn; apply reachable_refl|]; auto.
+  Qed.
+
+  Lemma graph_vgen_ramify: forall (g: Graph) x r1 r2 pa,
+      vvalid g x -> vgamma g x = (r1, pa) -> (vertices_at (vvalid g) g: pred) |-- vertex_at x (r1, pa) * (vertex_at x (r2, pa) -* vertices_at (vvalid g) (Graph_vgen g x r2)).
+  Proof.
+    intros. assert (vgamma (Graph_vgen g x r2) x = (r2, pa)). {
+      simpl in *. inversion H0. f_equal. unfold update_vlabel. destruct (equiv_dec x x); auto. compute in c. exfalso; auto.
+    } apply vertices_at_ramif_1; auto. eexists. split; [|split].
+    - apply Ensemble_join_Intersection_Complement.
+      + unfold Included, In; intro y. intros. subst. auto.
+      + intros; destruct_eq_dec x x0; auto.
+    - apply Ensemble_join_Intersection_Complement.
+      + unfold Included, In; intro y. intros. subst. auto.
+      + intros; destruct_eq_dec x x0; auto.
+    - rewrite vertices_identical_spec. simpl. intros. change (lg_gg g) with (g: LGraph).
+      rewrite Intersection_spec in H2. destruct H2. unfold Complement, In in H3. unfold update_vlabel. f_equal. destruct (equiv_dec x x0); auto. hnf in e. exfalso; auto.
+  Qed.
 
 End GList_UnionFind.
