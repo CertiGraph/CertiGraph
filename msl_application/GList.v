@@ -233,4 +233,6 @@ Section GRAPH_GList.
     + apply FiniteGraph_EnumCovered, finGraph.
   Qed.
 
+  Definition Graph_vgen (G: Graph) (x: addr) (d: DV) : Graph := generalgraph_vgen G x d (sound_gg G).
+
 End GRAPH_GList.
