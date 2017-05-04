@@ -24,6 +24,16 @@ struct Node* find(struct Node* x) {
     return p;
 };
 
+struct Node* find_ext(struct Node* x) {
+    struct Node *p, *p0;
+    p = x -> parent;
+    if (p != x) {
+        p0 = find_ext(p);
+        p = p0;
+        x -> parent = p;
+    }
+    return p;
+};
 
 void unionS(struct Node* x, struct Node* y) {
     struct Node *xRoot, *yRoot;
