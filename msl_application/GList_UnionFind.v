@@ -162,6 +162,28 @@ Section GList_UnionFind.
 
   Lemma uf_equiv_root_the_same: forall (g1 g2: Graph) x root, uf_equiv g1 g2 -> uf_root g1 x root <-> uf_root g2 x root.
   Proof. intros. pose proof (@uf_equiv_the_same_root _ _ _ _ _ _ _ _ (fun x: addr => (x, tt)) is_null_SGBA fml g1 g2 x root H). apply H0. Qed.
+
+  Lemma uf_equiv_not_reachable: forall (g1 g2: Graph) x r pa root,
+      vvalid g1 x -> vgamma g1 x = (r, pa) -> pa <> x -> uf_equiv g1 g2 -> uf_root g2 pa root -> ~ reachable g2 root x.
+  Proof.
+    intros. pose proof H3. rewrite <- (uf_equiv_root_the_same _ _ pa root H2) in H4. destruct H3. intro. apply H5 in H6. subst x.
+    pose proof (vgamma_not_reachable g1 root r pa H H0 H1). destruct H4. auto.
+  Qed.
+
+  Lemma graph_gen_redirect_parent_equiv: forall (g1 g2: Graph) x r pa root (Hv: vvalid g2 x) (Hn: ~ reachable g2 root x),
+      vvalid g1 x -> vgamma g1 x = (r, pa) -> pa <> x -> uf_equiv g1 g2 -> uf_root g2 pa root -> uf_equiv g1 (pregraph_gen_dst g2 (x, tt) root).
+  Proof.
+    intros. apply (@uf_equiv_trans _ _ _ _ g2 _ (liGraph g2) _ (maGraph g2) (finGraph g2)); auto. split; intro y; simpl; [intuition |]. intros.
+    assert (Decidable (reachable g2 y x)) by (apply Graph_reachable_dec; left; destruct H4; apply reachable_head_valid in H4; auto).
+    apply decidable_prop_decidable in H6. destruct H6.
+    - assert (uf_root g2 x root). {
+        rewrite <- (uf_equiv_root_the_same g1); auto.
+        apply (uf_root_edge g1 (liGraph g1) x pa); [| apply (vgamma_not_dst g1 x r) | rewrite (uf_equiv_root_the_same g1 g2)]; auto.
+      } pose proof (uf_root_gen_dst_same g2 (liGraph g2) _ _ _ H7 Hn H6). simpl in H8.
+      pose proof (uf_root_unique _ (gen_dst_preserve_lst g2 (liGraph g2) _ _ Hn Hv) _ _ _ H5 H8). subst r2.
+      pose proof (uf_root_reachable _ _ _ _ H6 H7). apply (uf_root_unique g2 (liGraph g2) _ _ _ H4 H9).
+    - apply (uf_root_unique _ (gen_dst_preserve_lst g2 (liGraph g2) _ _ Hn Hv) y); auto. apply (uf_root_gen_dst_preserve g2 (liGraph g2)); auto.
+  Qed.
           
   Lemma diff_root_union_1: forall (g g1 g2: Graph) x y x_root y_root,
       findS g x g1 -> uf_root g1 x x_root -> findS g1 y g2 -> uf_root g2 y y_root -> x_root <> y_root -> (@weak_valid _ _ _ _ g2 _ (maGraph g2) y_root) -> vvalid g2 x_root ->
