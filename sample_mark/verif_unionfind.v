@@ -3,6 +3,7 @@ Require Import RamifyCoq.sample_mark.env_unionfind.
 Require Import RamifyCoq.graph.graph_model.
 Require Import RamifyCoq.graph.path_lemmas.
 Require Import RamifyCoq.graph.subgraph2.
+Require Import RamifyCoq.graph.graph_relation.
 Require Import RamifyCoq.graph.GraphAsList.
 Require Import RamifyCoq.graph.reachable_computable.
 Require Import RamifyCoq.msl_application.Graph.
@@ -81,22 +82,9 @@ Definition unionS_spec :=
         LOCAL()
         SEP (whole_graph sh g').
 
-(*
-Definition makeSet_spec :=
-  DECLARE _makeSet
-  WITH g : Graph, l : list pointer_val, sh: wshare
-    PRE []
-      PROP (uf_graph g)
-      LOCAL ()
-      SEP (graphs sh g l)
-    POST [tptr (Tstruct _Node noattr)]
-      EX g': Graph, EX rt: pointer_val,
-      PROP (uf_graph g' /\ new_singleton g g' rt)
-      LOCAL (temp ret_temp (pointer_val_val rt))
-      SEP (graphs sh g' [rt :: l]).
- *)
+(* ******************** OLD DEFINTION OF MAKESET ******************** *)
 
-Definition makeSet_spec :=
+(*Definition makeSet_spec :=
   DECLARE _makeSet
   WITH sh: wshare
     PRE []
@@ -108,13 +96,6 @@ Definition makeSet_spec :=
       PROP (uf_graph g)
       LOCAL (temp ret_temp (pointer_val_val rt))
       SEP (graph sh rt g).
-
-Definition Vprog : varspecs := nil.
-
-Definition Gprog : funspecs := mallocN_spec :: makeSet_spec :: find_spec :: find_ext_spec :: unionS_spec ::nil.
-
-Lemma ADMIT: forall P: Prop, P.
-Admitted.
 
 Lemma body_makeSet: semax_body Vprog Gprog f_makeSet makeSet_spec.
 Proof.
@@ -140,6 +121,52 @@ Proof.
         rewrite H2. assert ((if SGBA_VE null null then x else null) = x). {
           Transparent pSGG_VST. compute. Opaque pSGG_VST. destruct (PV_eq_dec NullPointer NullPointer); [|exfalso]; auto.
         } rewrite H3. entailer !.
+Qed. *)
+
+(* ******************** OLD DEFINTION OF MAKESET ******************** *)
+
+Definition makeSet_spec :=
+  DECLARE _makeSet
+  WITH sh: wshare, g: Graph
+    PRE []
+      PROP ()
+      LOCAL ()
+      SEP (whole_graph sh g)
+    POST [tptr (Tstruct _Node noattr)]
+      EX g': Graph, EX rt: pointer_val,
+      PROP (~ vvalid g rt /\ vvalid g' rt /\ is_partial_graph g g')
+      LOCAL (temp ret_temp (pointer_val_val rt))
+      SEP (whole_graph sh g').
+
+Definition Vprog : varspecs := nil.
+
+Definition Gprog : funspecs := mallocN_spec :: makeSet_spec :: find_spec :: find_ext_spec :: unionS_spec ::nil.
+
+Lemma body_makeSet: semax_body Vprog Gprog f_makeSet makeSet_spec.
+Proof.
+  start_function.
+  forward_call (sh, 8).
+  - compute. split; intros; inversion H.
+  - Intros x. 
+    assert_PROP (x <> null) as x_not_null by (entailer !; destruct H0 as [? _]; apply H0).
+    assert_PROP (~ vvalid g x) by (entailer; apply (@vertices_at_sepcon_unique_1x _ _ _ _ SGBA_VST _ _ (SGA_VST sh) (SGAvs_VST sh) g x (vvalid g) (O, null))).
+    forward. forward. forward.
+    change (@field_at CompSpecs sh node_type [] (Vint (Int.repr 0), pointer_val_val x)) with (@data_at CompSpecs sh node_type (Vint (Int.repr 0), pointer_val_val x)).
+    apply (exp_right (make_set_Graph O tt tt x g x_not_null H)). entailer. apply (exp_right x). entailer !.
+    + split; simpl; [right | apply is_partial_make_set_pregraph]; auto.
+    + assert (Coqlib.Prop_join (vvalid g) (eq x) (vvalid (make_set_Graph 0%nat tt tt x g x_not_null H))). {
+        simpl; hnf; split; intros; [unfold graph_gen.addValidFunc | subst a]; intuition.
+      } assert (vgamma (make_set_Graph O tt tt x g x_not_null H) x = (O, x)). {
+        simpl. f_equal.
+        - destruct (SGBA_VE x x); [| hnf in c; unfold Equivalence.equiv in c; exfalso]; auto.
+        - unfold graph_gen.updateEdgeFunc. destruct (EquivDec.equiv_dec (x, tt) (x, tt)). 2: compute in c; exfalso; auto. destruct (SGBA_VE null null); auto.
+          hnf in c. unfold Equivalence.equiv in c. exfalso; auto.
+      } rewrite <- (vertices_at_sepcon_1x (make_set_Graph 0%nat tt tt x g x_not_null H) x (vvalid g) _ (O, x)); auto. apply sepcon_derives. 1: entailer !.
+      assert (vertices_at sh (vvalid g) g = vertices_at sh (vvalid g) (make_set_Graph O tt tt x g x_not_null H)). {
+        apply vertices_at_vertices_identical. simpl. hnf. intros. destruct a as [y ?]. unfold Morphisms_ext.app_sig. simpl. unfold graph_gen.updateEdgeFunc. f_equal.
+        - destruct (SGBA_VE y x); [hnf in e; subst y; exfalso |]; auto.
+        - destruct (EquivDec.equiv_dec (x, tt) (y, tt)); auto. hnf in e. inversion e. subst y. exfalso; auto.
+      } rewrite <- H5. entailer.
 Qed.
 
 Lemma false_Cne_eq: forall x y, typed_false tint (force_val (sem_cmp_pp Cne (pointer_val_val x) (pointer_val_val y))) -> x = y.
@@ -159,6 +186,9 @@ Proof.
     + subst b0. apply int_eq_false_e in Heqb1. intro. inversion H0. auto.
   - intro. inversion H0. auto.
 Qed.
+
+Lemma ADMIT: forall P: Prop, P.
+Admitted.
 
 Lemma body_find_ext: semax_body Vprog Gprog f_find_ext find_ext_spec.
 Proof.
@@ -236,7 +266,7 @@ Proof.
   - simpl. apply (uf_root_gen_dst_same g' (liGraph g') x x root); auto.
     + rewrite <- (uf_equiv_root_the_same g); auto. apply (uf_root_edge _ (liGraph g) _ pa); [| apply vgamma_not_dst with r | rewrite (uf_equiv_root_the_same g g')]; auto.
     + apply reachable_refl; auto.
-Qed. (* 47.715 secs *)
+Qed.
 
 Lemma body_find: semax_body Vprog Gprog f_find find_spec.
 Proof.
