@@ -217,60 +217,27 @@ Section UNION_FIND_SINGLE.
           } rewrite H9 in H6. auto.
   Qed.
 
-  Lemma graph_is_list: forall x, EnumCovered Edge (evalid g) -> vvalid g x -> is_list g x.
-  Proof.
-    intros. hnf. exists (x, (find_list (length (proj1_sig X)) x nil)). split.
-    - unfold valid_path. destruct (find_list (length (proj1_sig X)) x nil) eqn:? ; auto. split.
-      + remember (length (proj1_sig X)) as n. destruct n; simpl in Heql.
-        * destruct (projT2 is_null (dst g (out_edge x))). 1: inversion Heql. inversion Heql.
-        * destruct (projT2 is_null (dst g (out_edge x))). 1: inversion Heql. destruct (find_list_foreside n (dst g (out_edge x)) (out_edge x :: nil)) as [l' ?].
-          rewrite H0 in Heql. simpl in Heql. inversion Heql. rewrite H2. symmetry in H2. rewrite <- (only_one_edge x e H) in H2. destruct H2; auto.
-      + rewrite <- Heql. apply valid_path'_find_list; simpl; auto.
-    - intros. pose proof H0. destruct H1 as [py ?]. exists py. split.
-      + apply (@lst_src_dst_determine_path _ _ _ _ g _ gLst); auto.
-      + destruct py as [v py]. assert (v = x) by (destruct H1 as [[? _] _]; simpl in H1; auto). subst v. hnf. simpl. split.
-        * remember (find_list (length (proj1_sig X)) x nil) as r.
-          assert (valid_path g (x, r)) by (rewrite Heqr; change x with (edge_list_head nil x); apply valid_path_find_list; simpl; auto).
-          assert (valid_path g (x, py)) by (destruct H1 as [_ [? _]]; auto). destruct (Compare_dec.le_dec (length py) (length r)).
-          -- apply (lst_valid_path_unique g gLst x) in l; auto. destruct l as [p3 ?]. rewrite H4. apply incl_appl, incl_refl.
-          -- exfalso. pose proof Heqr. apply find_list_length in H4; simpl; auto. destruct H4.
-             ++ simpl in H4. destruct X as [lr [? ?]]. simpl length in *. unfold In in i. rewrite H4 in n.
-                assert (incl py lr) by (repeat intro; apply (valid_path_evalid g x) in H5; auto). apply (lst_path_NoDup _ _) in H1. simpl in H1.
-                pose proof (NoDup_incl_length H1 H5). intuition.
-             ++ assert (length r <= length py) by intuition. apply (lst_valid_path_unique g gLst x) in H5; auto. destruct H5 as [p3 ?]. simpl in H4.
-                destruct p3. 1: rewrite app_nil_r in H5; subst py; intuition. subst py. pose proof H1. apply reachable_by_path_is_reachable in H5. specialize (H4 _ H5).
-                apply reachable_by_path_split in H1. pose proof (pfoot_split _ _ _ _ _ H3). rewrite H6 in *. destruct H1.
-                apply (reachable_by_path_split_in _ _ _ _ _ _ H1) in H4. destruct H4 as [p1 [p2 [? [? ?]]]]. destruct p2 as [v p2].
-                pose proof (reachable_by_path_merge _ _ _ _ _ _ _ H7 H9). unfold path_glue in H10. simpl in H10. apply (no_loop_path _ _) in H10. inversion H10.
-        * hnf. simpl; left; auto.
-  Qed.
-  
-  Lemma is_list_uf_root_exists: forall x, vvalid g x -> is_list g x -> exists root, uf_root g x root.
-  Proof.
-    intros. destruct H0 as [p [? ?]]. exists (pfoot g p).
-    assert (In_path g x p). {
-      assert (reachable g x x) by (apply reachable_refl; auto). specialize (H1 x H2). destruct H1 as [py [[? ?] ?]].
-      assert (g |= (x, nil) is x ~o~> x satisfying (fun _ : Vertex => True)) by (split; split; simpl; auto).
-      specialize (H3 _ H5). subst py. clear H5. destruct H4. simpl in H4; auto.
-    } assert (reachable g x (pfoot g p)) by (apply (reachable_path_in' g p (phead p) (pfoot g p)); auto; split; split; auto; rewrite path_prop_equiv; intros; auto).
-    split; auto. intros. apply reachable_ind.reachable_ind in H4. destruct H4; auto. destruct H4 as [z [? [? ?]]]. destruct H4 as [? [? ?]]. rewrite step_spec in H8.
-    destruct H8 as [e [? [? ?]]]. destruct H6 as [[? py] ?]. assert (v = z) by (destruct H6 as [[? _] _]; simpl in H6; auto). subst v.
-    assert (g |= (pfoot g p, e :: py) is pfoot g p ~o~> y satisfying (fun _ => True)). {
-      assert ((pfoot g p, e :: py) = path_glue (pfoot g p, e :: nil) (z, py)) by (unfold path_glue; simpl; auto). rewrite H11. apply reachable_by_path_merge with z; auto.
-      split; split; simpl; auto. 2: hnf; rewrite Forall_forall; intros; auto. unfold strong_evalid. split; auto. rewrite H9, H10. split; auto.
-    } destruct H3 as [[? px] ?]. assert (v = x) by (destruct H3 as [[? _] _]; simpl in H3; auto). subst v. pose proof (reachable_by_path_merge _ _ _ _ _ _ _ H3 H11).
-    unfold path_glue in H12. simpl in H12. pose proof (reachable_by_path_is_reachable _ _ _ _ _ H12). apply H1 in H13. destruct H13 as [ppy [[? ?] ?]]. specialize (H14 _ H12).
-    subst ppy. assert (In_path g y p). {
-      destruct H11 as [[_ ?] _]. apply pfoot_in in H11. clear -H11 H15. destruct H11.
-      - simpl in H. subst y. apply pfoot_in; auto.
-      - simpl in H. destruct H as [e' [? ?]]. right. destruct H15 as [? _]. simpl in H1. exists e'. split; auto. apply H1. rewrite in_app_iff. right; simpl; auto.
-    } assert (reachable g y (pfoot g p)) by (apply (reachable_path_in' g p (phead p) (pfoot g p)); auto; split; split; auto; rewrite path_prop_equiv; intros; auto).
-    destruct H16 as [ppy ?]. pose proof (reachable_by_path_merge _ _ _ _ _ _ _ H16 H11). unfold path_glue in H17. simpl in H17. apply no_loop_path in H17. clear -H17.
-    inversion H17. destruct ppy as [? ?]. simpl in H1. destruct l; inversion H1.
-  Qed.
-  
   Lemma uf_root_always_exists: forall x, EnumCovered Edge (evalid g) -> vvalid g x -> exists root, uf_root g x root.
-  Proof. intros.  apply is_list_uf_root_exists; auto. apply graph_is_list; auto. Qed.
+  Proof.
+    intros. remember (find_list (length (proj1_sig X)) x nil). remember (pfoot g (x, l)) as r. exists r.
+    assert (valid_path g (x, l)) by (rewrite Heql; change x with (edge_list_head nil x); apply valid_path_find_list; simpl; auto). split; auto.
+    - apply (reachable_path_in' g (x, l) x); [|left; simpl; auto]. split; split; auto. rewrite path_prop_equiv; intros; auto.
+    - intros. apply reachable_ind.reachable_ind in H1. destruct H1; auto. assert (pfoot' g (rev nil) x = x) by (simpl; auto). assert (valid_path' g (rev nil)) by (simpl; auto).
+      pose proof (find_list_length (length (proj1_sig X)) x l nil H H2 H3 Heql). clear H2 H3. rename H4 into H2. simpl in H2. rewrite PeanoNat.Nat.add_0_r in H2.
+      destruct H1 as [z [? [? ?]]]. destruct H1 as [? [? ?]]. rewrite step_spec in H6. destruct H6 as [e [? [? ?]]].
+      assert (g |= (r, e :: nil) is r ~o~> z satisfying (fun _ => True)) by
+          (split; split; simpl; auto; [unfold strong_evalid; rewrite H7, H8; intuition | hnf; rewrite Forall_forall; intros; auto]). exfalso.
+      assert (g |= (x, l) is x ~o~> r satisfying (fun _ => True)) by (split; split; [| | | rewrite path_prop_equiv]; auto).
+      assert (g |= (x, l +:: e) is x ~o~> z satisfying (fun _ => True)). {
+        pose proof (reachable_by_path_merge _ _ _ _ _ _ _ H10 H9). unfold path_glue in H11. simpl in H11. auto. } destruct H2.
+      + destruct X as [li [? ?]]. simpl in Heql, H2. unfold In in i. pose proof (lst_path_NoDup _ _ _ _ _ _ H11). simpl in H12. assert (incl (l +:: e) li) by
+            (repeat intro; apply i; rewrite in_app_iff in H13; destruct H13 as [? | [? | ?]]; [apply (valid_path_evalid g x) in H13 | subst a | exfalso]; auto).
+        pose proof (NoDup_incl_length H12 H13). rewrite app_length in H14. simpl in H14. intuition.
+      + assert (In_path g z (x, l)) by (apply H2; exists (x, l +:: e); auto). pose proof (reachable_path_in' _ _ _ _ H10 _ H12). destruct H13 as [[v li] ?].
+        assert (g |= (v, li +:: e) is z ~o~> z satisfying (fun _ => True)). {
+          pose proof (reachable_by_path_merge _ _ _ _ _ _ _ H13 H9). unfold path_glue in H14. simpl in H14; auto.
+        } apply no_loop_path in H14. inversion H14. destruct li; inversion H17.
+  Qed.
 
   Context {FIN: FiniteGraph g}.
 
