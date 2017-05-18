@@ -157,7 +157,7 @@ Section GList_UnionFind.
   Qed.
 
   Lemma the_same_root_union: forall (g g1 g2: Graph) x y root,
-      vvalid g x -> vvalid g y -> findS g x g1 -> findS g1 y g2 -> uf_root g1 x root -> uf_root g2 y root -> uf_union g x y g2.
+      vvalid g x -> vvalid g y -> uf_equiv g g1 -> uf_equiv g1 g2 -> uf_root g1 x root -> uf_root g2 y root -> uf_union g x y g2.
   Proof. intros. apply (same_root_union g g1 g2 x y root); auto. Qed.
 
   Lemma uf_equiv_root_the_same: forall (g1 g2: Graph) x root, uf_equiv g1 g2 -> uf_root g1 x root <-> uf_root g2 x root.
@@ -186,19 +186,20 @@ Section GList_UnionFind.
   Qed.
           
   Lemma diff_root_union_1: forall (g g1 g2: Graph) x y x_root y_root,
-      findS g x g1 -> uf_root g1 x x_root -> findS g1 y g2 -> uf_root g2 y y_root -> x_root <> y_root -> (@weak_valid _ _ _ _ g2 _ (maGraph g2) y_root) -> vvalid g2 x_root ->
+      uf_equiv g g1 -> uf_root g1 x x_root -> uf_equiv g1 g2 -> uf_root g2 y y_root -> x_root <> y_root ->
+      (@weak_valid _ _ _ _ g2 _ (maGraph g2) y_root) -> vvalid g2 x_root ->
       ~ reachable g2 y_root x_root -> uf_union g x y (pregraph_gen_dst g2 (x_root, tt) y_root).
   Proof.
-    intros. destruct H1 as [_ [? _]]. assert (uf_equiv g g2) by (destruct H as [_ [? _]]; apply (@uf_equiv_trans _ _ _ _ g1 _ (liGraph g1) _ (maGraph g1) (finGraph g1)); auto).
+    intros. assert (uf_equiv g g2) by (apply (@uf_equiv_trans _ _ _ _ g1 _ (liGraph g1) _ (maGraph g1) (finGraph g1)); auto).
     pose proof (uf_equiv_union g g2 (Graph_gen_redirect_parent g2 x_root y_root H4 H5 H6) x y H7). simpl in H8. apply H8.
     apply (@diff_root_union _ _ _ _ _ _ _ _ (fun x: addr => (x, tt)) is_null_SGBA fml); auto. apply (uf_equiv_root_the_same g1); auto.
   Qed.
 
   Lemma diff_root_union_2: forall (g g1 g2: Graph) x y x_root y_root,
-      findS g x g1 -> uf_root g1 x x_root -> findS g1 y g2 -> uf_root g2 y y_root -> x_root <> y_root -> (@weak_valid _ _ _ _ g2 _ (maGraph g2) x_root) -> vvalid g2 y_root ->
+      uf_equiv g g1 -> uf_root g1 x x_root -> uf_equiv g1 g2 -> uf_root g2 y y_root -> x_root <> y_root -> (@weak_valid _ _ _ _ g2 _ (maGraph g2) x_root) -> vvalid g2 y_root ->
       ~ reachable g2 x_root y_root -> uf_union g x y (pregraph_gen_dst g2 (y_root, tt) x_root).
   Proof.
-    intros. destruct H1 as [_ [? _]]. assert (uf_equiv g g2) by (destruct H as [_ [? _]]; apply (@uf_equiv_trans _ _ _ _ g1 _ (liGraph g1) _ (maGraph g1) (finGraph g1)); auto).
+    intros. assert (uf_equiv g g2) by (apply (@uf_equiv_trans _ _ _ _ g1 _ (liGraph g1) _ (maGraph g1) (finGraph g1)); auto).
     pose proof (uf_equiv_union g g2 (Graph_gen_redirect_parent g2 y_root x_root H4 H5 H6) y x H7). simpl in H8. apply uf_union_sym. apply H8.
     apply (@diff_root_union _ _ _ _ _ _ _ _ (fun x: addr => (x, tt)) is_null_SGBA fml); auto. apply (uf_equiv_root_the_same g1); auto.
   Qed.
