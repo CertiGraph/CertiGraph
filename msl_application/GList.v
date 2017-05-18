@@ -202,22 +202,6 @@ Section GRAPH_GList.
   Definition single_uf_pregraph (v: addr) : PreGraph addr (addr * unit) :=
     pregraph_add_edge (single_vertex_pregraph v) (v, tt) v null.
 
-  Lemma single_uf_is_uf: forall v, v <> null -> uf_graph (single_uf_pregraph v).
-  Proof.
-    intros. hnf. intros. hnf. exists (v, nil). split.
-    - hnf. auto.
-    - intros. hnf in H0. subst v. destruct H1 as [[v p] [[? ?] [? ?]]]. simpl in H0. subst v. destruct p.
-      + simpl in *. subst y. exists (x, nil). split.
-        * split; [split; split|]; simpl; auto. intros. destruct H0 as [[? ?] [? ?]]. destruct x'. simpl in H0. subst a. destruct l; auto. clear H5. exfalso.
-          destruct H4 as [_ ?]. simpl in H0. assert (strong_evalid (single_uf_pregraph x) p) by (destruct l; intuition). clear H0. rename H4 into H0.
-          hnf in H0. simpl in H0. unfold updateEdgeFunc in H0. destruct H0 as [? [_ ?]]. unfold addValidFunc in H0. destruct H0; auto. subst p.
-          destruct (equiv_dec (x, tt) (x, tt)); [| compute in c]; intuition.
-        * apply Subpath_refl.
-      + exfalso. clear H3. simpl in H2. destruct H2 as [_ ?]. assert (strong_evalid (single_uf_pregraph x) p) by (destruct p0; intuition). clear H0. rename H2 into H0.
-        hnf in H0. simpl in H0. unfold updateEdgeFunc in H0. destruct H0 as [? [_ ?]]. unfold addValidFunc in H0. destruct H0; auto. subst p.
-        destruct (equiv_dec (x, tt) (x, tt)); [| compute in c]; intuition.
-  Qed.
-
   Lemma reachabel_single_uf: forall x y, x <> null -> reachable (single_uf_pregraph x) x y <-> x = y.
   Proof.
     intros. split; intros.

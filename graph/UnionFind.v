@@ -6,7 +6,6 @@ Require Import RamifyCoq.lib.EnumEnsembles.
 Require Import RamifyCoq.graph.graph_model.
 Require Import RamifyCoq.graph.path_lemmas.
 Require Import RamifyCoq.graph.graph_gen.
-Require Import RamifyCoq.graph.GraphAsList.
 Require Import RamifyCoq.graph.MathGraph.
 Require Import RamifyCoq.graph.LstGraph.
 Require Import RamifyCoq.graph.FiniteGraph.
@@ -21,8 +20,6 @@ Section UNION_FIND_SINGLE.
   Context {Edge: Type}.
   Context {EV: EqDec Vertex eq}.
   Context {EE: EqDec Edge eq}.
-
-  Definition uf_graph (pg: PreGraph Vertex Edge) : Prop := forall x, vvalid pg x -> is_list pg x.
 
   Definition uf_root (pg: PreGraph Vertex Edge) (x root: Vertex) : Prop := reachable pg x root /\ (forall y, reachable pg root y -> root = y).
 
@@ -324,13 +321,21 @@ Section UNION_FIND_GENERAL.
   Lemma uf_equiv_union_equiv: forall (g1 g2 g: Graph) x y, uf_equiv g1 g2 -> uf_union g1 x y g <-> uf_union g2 x y g.
   Proof. intros. split; intro; [apply (uf_equiv_union g2 g1); auto; apply uf_equiv_sym | apply (uf_equiv_union g1 g2)]; auto. Qed.
 
-  Lemma same_root_union: forall (g g1 g2: Graph) x y root, findS g x g1 -> findS g1 y g2 -> uf_root g1 x root -> uf_root g2 y root -> uf_union g x y g2.
+  Lemma same_root_union: forall (g g1 g2: Graph) x y root, uf_equiv g g1 -> uf_equiv g1 g2 -> uf_root g1 x root -> uf_root g2 y root -> uf_union g x y g2.
   Proof.
     intros. assert (uf_equiv g g2). {
       specialize (P_Lst g1 (sound_gg g1)). specialize (P_Math g1 (sound_gg g1)). specialize (P_Finite g1 (sound_gg g1)); intros.
-      apply (@uf_equiv_trans _ _ _ _ g1 out_edge _ is_null _ _ g g2); [destruct H as [_ [? _]] | destruct H0 as [_ [? _]]]; auto.
-    } rewrite (uf_equiv_union_equiv g g2 g2); auto. apply uf_union_refl with root; auto. rewrite <- (uf_equiv_the_same_root g1); auto. destruct H0 as [_ [? _]]; auto.
+      apply (@uf_equiv_trans _ _ _ _ g1 out_edge _ is_null _ _ g g2); auto.
+    } rewrite (uf_equiv_union_equiv g g2 g2); auto. apply uf_union_refl with root; auto. rewrite <- (uf_equiv_the_same_root g1); auto.
   Qed.
+
+  (* Lemma same_root_union: forall (g g1 g2: Graph) x y root, findS g x g1 -> findS g1 y g2 -> uf_root g1 x root -> uf_root g2 y root -> uf_union g x y g2. *)
+  (* Proof. *)
+  (*   intros. assert (uf_equiv g g2). { *)
+  (*     specialize (P_Lst g1 (sound_gg g1)). specialize (P_Math g1 (sound_gg g1)). specialize (P_Finite g1 (sound_gg g1)); intros. *)
+  (*     apply (@uf_equiv_trans _ _ _ _ g1 out_edge _ is_null _ _ g g2); [destruct H as [_ [? _]] | destruct H0 as [_ [? _]]]; auto. *)
+  (*   } rewrite (uf_equiv_union_equiv g g2 g2); auto. apply uf_union_refl with root; auto. rewrite <- (uf_equiv_the_same_root g1); auto. destruct H0 as [_ [? _]]; auto. *)
+  (* Qed. *)
 
   Lemma gen_dst_uf_root: forall (g: Graph) x y z root,
       vvalid g x -> ~ reachable g root x -> uf_root (pregraph_gen_dst g (out_edge x) y) z root -> reachable g z x \/ uf_root g z root.
