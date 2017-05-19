@@ -329,14 +329,6 @@ Section UNION_FIND_GENERAL.
     } rewrite (uf_equiv_union_equiv g g2 g2); auto. apply uf_union_refl with root; auto. rewrite <- (uf_equiv_the_same_root g1); auto.
   Qed.
 
-  (* Lemma same_root_union: forall (g g1 g2: Graph) x y root, findS g x g1 -> findS g1 y g2 -> uf_root g1 x root -> uf_root g2 y root -> uf_union g x y g2. *)
-  (* Proof. *)
-  (*   intros. assert (uf_equiv g g2). { *)
-  (*     specialize (P_Lst g1 (sound_gg g1)). specialize (P_Math g1 (sound_gg g1)). specialize (P_Finite g1 (sound_gg g1)); intros. *)
-  (*     apply (@uf_equiv_trans _ _ _ _ g1 out_edge _ is_null _ _ g g2); [destruct H as [_ [? _]] | destruct H0 as [_ [? _]]]; auto. *)
-  (*   } rewrite (uf_equiv_union_equiv g g2 g2); auto. apply uf_union_refl with root; auto. rewrite <- (uf_equiv_the_same_root g1); auto. destruct H0 as [_ [? _]]; auto. *)
-  (* Qed. *)
-
   Lemma gen_dst_uf_root: forall (g: Graph) x y z root,
       vvalid g x -> ~ reachable g root x -> uf_root (pregraph_gen_dst g (out_edge x) y) z root -> reachable g z x \/ uf_root g z root.
   Proof.

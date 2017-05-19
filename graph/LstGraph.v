@@ -8,7 +8,6 @@ Require Import RamifyCoq.lib.List_ext.
 Require Import RamifyCoq.graph.graph_model.
 Require Import RamifyCoq.graph.path_lemmas.
 Require Import RamifyCoq.graph.graph_gen.
-Require Import RamifyCoq.graph.GraphAsList.
 Require Import RamifyCoq.graph.MathGraph.
 Require Import RamifyCoq.graph.FiniteGraph.
 
@@ -149,72 +148,5 @@ Section LstGraph.
       + rewrite no_edge_gen_dst_equiv in H4. 2: simpl; auto. pose proof (reachable_by_path_merge _ _ _ _ _ _ _ H4 H1). apply reachable_by_path_is_reachable in H7. exfalso; auto.
     - rewrite no_edge_gen_dst_equiv in H1; auto. apply no_loop_path in H1. auto.
   Qed.
-(*  
-  Context {is_null: DecidablePred Vertex}.
-  Context {MA: MathGraph g is_null}.
-  
-  Fixpoint findList (bound: nat) (v: Vertex) (l: list Edge) : list Edge :=
-    let next := (dst g (out_edge v)) in
-    if (projT2 is_null) next
-    then rev l
-    else if (equiv_dec v next)
-         then rev l
-         else match bound with
-              | O => rev l
-              | S n => findList n next (out_edge v :: l)
-              end.
 
-  Definition edge_list_head (l : list Edge) (v: Vertex) : Prop :=
-    match l with
-    | nil => True
-    | x :: _ => dst g x = v
-    end.
-
-  Lemma findList_foreside: forall b v l, exists l', findList b v l = rev l ++ l'.
-  Proof.
-    induction b; intros; simpl.
-    - exists nil. rewrite app_nil_r. destruct (projT2 is_null (dst g (out_edge v))); [|destruct (equiv_dec v (dst g (out_edge v)))]; auto.
-    - destruct (projT2 is_null (dst g (out_edge v))); [|destruct (equiv_dec v (dst g (out_edge v)))]; [exists nil; rewrite app_nil_r; auto .. | ].
-      specialize (IHb (dst g (out_edge v)) (out_edge v :: l)). destruct IHb as [l1 ?]. simpl in H. rewrite <- app_assoc in H. exists ((out_edge v :: nil) ++ l1). apply H.
-  Qed.
-
-  Lemma valid_path'_findList: forall bound v l, vvalid g v -> edge_list_head l v -> valid_path' g (rev l) -> valid_path' g (findList bound v l).
-  Proof.
-    induction bound; intros.
-    - assert (findList 0 v l = rev l) by (simpl; destruct (projT2 is_null (dst g (out_edge v))); auto; destruct (equiv_dec v (dst g (out_edge v))); auto). rewrite H2. auto.
-    - simpl. destruct (projT2 is_null (dst g (out_edge v))); auto. destruct (equiv_dec v (dst g (out_edge v))); auto.
-      assert (vvalid g (dst g (out_edge v)) /\ src g (out_edge v) = v /\ evalid g (out_edge v)). {
-        destruct is_null as [is_nullP ?]. simpl in *. pose proof (only_one_edge v (out_edge v) H). assert (out_edge v = out_edge v) by auto. rewrite <- H2 in H3. clear H2.
-        split; auto. destruct H3. destruct MA. apply valid_graph in H3. simpl in *. destruct H3. destruct H4; auto. exfalso; auto.
-      } destruct H2 as [? [? ?]]. apply IHbound; simpl; auto. destruct l; simpl in *.
-      + unfold strong_evalid. rewrite H3. split; [|split]; auto.
-      + remember (rev l) as l'. clear Heql' l. induction l'.
-        * simpl in *. split; auto. rewrite H0, H3. split; auto. unfold strong_evalid. rewrite H3. split; auto.
-        * simpl in *. destruct ((l' +:: e) +:: out_edge v) eqn:? . 1: destruct l'; inversion Heql.
-          destruct (l' +:: e) eqn:? . 1: destruct l'; inversion Heql0. inversion Heql. subst e1. destruct H1 as [? [? ?]]. split; [|split]; auto. rewrite H7. apply IHl'. auto.
-  Qed.
-
-  Lemma findList_preserve_NSP: forall b v l, vvalid g v -> (forall e, In e l -> src g e <> dst g e) -> forall e, In e (findList b v l) -> src g e <> dst g e.
-  Proof.
-    induction b; intros.
-    - assert (findList 0 v l = rev l) by (simpl; destruct (projT2 is_null (dst g (out_edge v))); auto; destruct (equiv_dec v (dst g (out_edge v))); auto).
-      rewrite H2 in H1. rewrite <- in_rev in H1. apply H0; auto.
-    - simpl in H1. destruct (projT2 is_null (dst g (out_edge v))); [|destruct (equiv_dec v (dst g (out_edge v)))]; [rewrite <- in_rev in H1; apply H0; auto .. |].
-      specialize (IHb (dst g (out_edge v)) (out_edge v :: l)). destruct is_null as [is_nullP ?]. destruct MA. simpl in *. destruct gLst. rename only_one_edge0 into H2.
-      specialize (H2 v (out_edge v) H). assert (out_edge v = out_edge v) by auto. rewrite <- H2 in H3. clear H2. destruct H3. apply IHb; auto.
-      destruct (valid_graph _ H3). destruct H5; [exfalso|]; auto. intros. destruct H4. 2: apply H0; auto. subst e0. rewrite H2. auto.
-  Qed.
-
-  Instance MA_vva: ValidVertexAccessible g.
-  Proof.
-    apply (Build_ValidVertexAccessible _ (fun l => filter (fun e => if (projT2 is_null) (dst g e) then false else true) l)).
-    intros. destruct is_null as [is_nullP ?]. simpl. destruct MA. simpl in *.
-    rewrite filter_In. intuition.
-    - destruct (s (dst g e)). inversion H2. specialize (valid_not_null (dst g e)). rewrite Forall_forall in H. specialize (H _ H1). apply valid_graph in H.
-      destruct H. destruct H0; intuition.
-    - destruct (s (dst g e)); auto. specialize (valid_not_null (dst g e)). exfalso; apply valid_not_null; auto.
-  Qed.
-*)
 End LstGraph.
-
-(* Global Existing Instance MA_vva. *)
