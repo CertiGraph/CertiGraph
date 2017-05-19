@@ -212,7 +212,7 @@ Proof.
         (EX x0 : Graph, (EX x1 : pointer_val, (PROP (findS g x x0 /\ uf_root x0 x x1) LOCAL (temp _p (pointer_val_val x1); temp _x (pointer_val_val x)) SEP
                                                     (vertices_at sh (vvalid x0) x0)))). apply (exp_right (Graph_gen_redirect_parent g' x root H5 H6 H8)).
     apply (exp_right root). rewrite H9. entailer !. split.
-  - apply (graph_gen_redirect_parent_findS g g' x r pa root H5 H6 H8); auto.
+  - apply (graph_gen_redirect_parent_findS g g' x r r pa root H5 H6 H8); auto.
   - simpl. apply (uf_root_gen_dst_same g' (liGraph g') x x root); auto.
     + apply (uf_root_edge _ (liGraph g') _ pa); auto. apply vgamma_not_dst with r; auto.
     + apply reachable_refl; auto.
