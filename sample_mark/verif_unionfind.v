@@ -32,13 +32,13 @@ Definition mallocN_spec :=
  DECLARE _mallocN
   WITH sh: wshare, n:Z
   PRE [ 67%positive OF tint]
-     PROP (0 <= n <= Int.max_signed) 
+     PROP (0 <= n <= Int.max_signed)
      LOCAL (temp 67%positive (Vint (Int.repr n)))
      SEP ()
-  POST [ tptr tvoid ] 
+  POST [ tptr tvoid ]
      EX v: addr,
      PROP ()
-     LOCAL (temp ret_temp (pointer_val_val v)) 
+     LOCAL (temp ret_temp (pointer_val_val v))
      SEP (data_at sh node_type (pointer_val_val null, (Vint (Int.repr 0)))
               (pointer_val_val v)).
 
@@ -90,7 +90,7 @@ Proof.
   start_function.
   forward_call (sh, 8).
   - compute. split; intros; inversion H.
-  - Intros x. 
+  - Intros x.
     assert_PROP (x <> null) as x_not_null by (entailer !; destruct H0 as [? _]; apply H0).
     assert_PROP (~ vvalid g x) by (entailer; apply (@vertices_at_sepcon_unique_1x _ _ _ _ SGBA_VST _ _ (SGA_VST sh) (SGAvs_VST sh) g x (vvalid g) (O, null))).
     forward. forward. forward.
@@ -146,7 +146,7 @@ Proof.
   eapply semax_ram_seq;
     [ subst RamFrame RamFrame0; unfold abbreviate;
       repeat apply eexists_add_stats_cons; constructor
-    | load_tac 
+    | load_tac
     | abbreviate_semax_ram].
   unlocalize
     (PROP  ()
@@ -184,7 +184,7 @@ Proof.
     eapply semax_ram_seq';
     [ subst RamFrame RamFrame0; unfold abbreviate;
       repeat apply eexists_add_stats_cons; constructor
-    | store_tac 
+    | store_tac
     | abbreviate_semax_ram].
     assert (force_val (sem_cast_neutral (pointer_val_val root)) = pointer_val_val root) by (destruct root; simpl; auto). rewrite H10. clear H10.
     change (@field_at CompSpecs sh node_type [] (Vint (Int.repr (Z.of_nat r)), pointer_val_val root) (pointer_val_val x)) with
@@ -263,7 +263,7 @@ Proof.
   eapply semax_ram_seq;
   [subst RamFrame RamFrame0; unfold abbreviate;
    repeat apply eexists_add_stats_cons; constructor
-  | load_tac 
+  | load_tac
   | abbreviate_semax_ram].
   unlocalize
     (PROP  ()
@@ -286,7 +286,7 @@ Proof.
   eapply semax_ram_seq;
   [subst RamFrame RamFrame0; unfold abbreviate;
    repeat apply eexists_add_stats_cons; constructor
-  | load_tac 
+  | load_tac
   | abbreviate_semax_ram].
   unlocalize
     (PROP  ()
@@ -315,7 +315,7 @@ Proof.
   assert (vertices_at sh (vvalid (Graph_gen_redirect_parent g2 x_root y_root H10 H11 H12)) (Graph_gen_redirect_parent g2 x_root y_root H10 H11 H12) =
           vertices_at sh (vvalid g2) (Graph_gen_redirect_parent g2 x_root y_root H10 H11 H12)). {
     apply vertices_at_Same_set. unfold Ensembles.Same_set, Ensembles.Included, Ensembles.In. simpl. intuition. }
-  
+
   (* xRoot -> parent = yRoot; *)
   localize
    (PROP  ()
@@ -325,7 +325,7 @@ Proof.
   eapply semax_ram_seq';
     [ subst RamFrame RamFrame0; unfold abbreviate;
       repeat apply eexists_add_stats_cons; constructor
-    | store_tac 
+    | store_tac
     | abbreviate_semax_ram].
   assert (force_val (sem_cast_neutral (pointer_val_val y_root)) = pointer_val_val y_root) by (destruct y_root; simpl; auto). rewrite H14. clear H14.
   change (@field_at CompSpecs sh node_type [] (Vint (Int.repr (Z.of_nat rankXRoot)), pointer_val_val y_root) (pointer_val_val x_root)) with
@@ -361,7 +361,7 @@ Proof.
      SEP (whole_graph sh g')).
   Focus 3. { unfold POSTCONDITION. unfold abbreviate. rewrite overridePost_overridePost. intros. apply andp_left2. auto. } Unfocus.
   Focus 2. { gather_current_goal_with_evar. } Unfocus.
-  
+
   (* yRoot -> parent = xRoot; *)
   localize
    (PROP  ()
@@ -371,7 +371,7 @@ Proof.
   eapply semax_ram_seq';
     [ subst RamFrame RamFrame0; unfold abbreviate;
       repeat apply eexists_add_stats_cons; constructor
-    | store_tac 
+    | store_tac
     | abbreviate_semax_ram].
   assert (force_val (sem_cast_neutral (pointer_val_val x_root)) = pointer_val_val x_root) by (destruct x_root; simpl; auto). rewrite H15. clear H15.
   change (@field_at CompSpecs sh node_type [] (Vint (Int.repr (Z.of_nat rankYRoot)), pointer_val_val x_root) (pointer_val_val y_root)) with
@@ -401,7 +401,7 @@ Proof.
   eapply semax_ram_seq;
     [ subst RamFrame RamFrame0; unfold abbreviate;
       repeat apply eexists_add_stats_cons; constructor
-    | store_tac 
+    | store_tac
     | abbreviate_semax_ram].
   assert (force_val (sem_cast_neutral (pointer_val_val x_root)) = pointer_val_val x_root) by (destruct x_root; simpl; auto). rewrite H15. clear H15.
   change (@field_at CompSpecs sh node_type [] (Vint (Int.repr (Z.of_nat rankYRoot)), pointer_val_val x_root) (pointer_val_val y_root)) with
@@ -429,7 +429,7 @@ Proof.
   eapply semax_ram_seq';
     [ subst RamFrame RamFrame0; unfold abbreviate;
       repeat apply eexists_add_stats_cons; constructor
-    | store_tac 
+    | store_tac
     | abbreviate_semax_ram].
   rewrite add_repr. replace (Z.of_nat rankXRoot + 1) with (Z.of_nat (rankXRoot + 1)). 2: rewrite Nat2Z.inj_add; simpl; auto.
   change (@field_at CompSpecs sh node_type [] (Vint (Int.repr (Z.of_nat (rankXRoot + 1))), pointer_val_val paXRoot) (pointer_val_val x_root)) with
