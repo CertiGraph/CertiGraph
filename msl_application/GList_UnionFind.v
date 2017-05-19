@@ -66,7 +66,7 @@ Section GList_UnionFind.
     unfold complement, Equivalence.equiv in c. rewrite <- H0. destruct H2 as [? [[? ?] ?]]. f_equal.
     - assert (vvalid g2 x) by (rewrite <- H3; auto). specialize (H5 x H H6). unfold Graph_LGraph. rewrite H5. auto.
     - assert (evalid (predicate_partialgraph (lg_gg g1) (fun n : addr => ~ reachable (lg_gg g1) pa n)) (x, tt)). {
-        simpl. hnf. pose proof (vvalid_src_evalid _ (liGraph g1) _ H). unfold Graph_LGraph in H6. destruct H6. rewrite H6. split; auto. 
+        simpl. hnf. pose proof (vvalid_src_evalid _ (liGraph g1) _ H). unfold Graph_LGraph in H6. destruct H6. rewrite H6. split; auto.
       } destruct H2 as [_ [? [_ ?]]]. pose proof H6. rewrite H2 in H8. clear H2. specialize (H7 _ H6 H8). simpl in H7. unfold Graph_LGraph. rewrite <- H7.
       destruct (SGBA_VE (dst (lg_gg g1) (x, tt)) null); [exfalso |]; auto.
   Qed.
@@ -90,48 +90,6 @@ Section GList_UnionFind.
     - rewrite vertices_identical_spec. simpl. intros. change (lg_gg g) with (g: LGraph).
       rewrite Intersection_spec in H3. destruct H3. unfold Complement, In in H4. unfold updateEdgeFunc.
       destruct (equiv_dec (x, tt) (x0, tt)); auto. compute in e. exfalso. inversion e. auto.
-  Qed.
-
-  Lemma graph_gen_redirect_parent_findS: forall (g1 g2: Graph) x r1 r2 pa pa' (H: weak_valid g2 pa') (Hv: vvalid g2 x) (Hn: ~ reachable g2 pa' x),
-      vvalid g1 x -> vgamma g1 x = (r1, pa) -> pa <> x -> vgamma g2 x = (r2, pa) -> findS g1 pa g2 -> uf_root g2 pa pa' ->
-      findS g1 x (Graph_gen_redirect_parent g2 x pa' H Hv Hn).
-  Proof.
-    intros. hnf. simpl. destruct H4 as [? [? ?]]. hnf in H4. simpl in H4. unfold predicate_vvalid, predicate_weak_evalid in H4. split; [|split].
-    - assert (forall v, ~ reachable (lg_gg g1) x v -> ~ reachable (lg_gg g1) pa v). {
-        intros. intro. apply H8. pose proof (gamma_parent_reachable_included g1 x r1 pa H0 H1). apply H10. auto. }
-      assert (forall v, ~ reachable (lg_gg g1) pa v <-> ~ reachable (lg_gg g1) x v \/ x = v). {
-        intros. split; intros.
-        - destruct_eq_dec x v; [right | left]; auto. intro. apply H9. apply reachable_ind.reachable_ind in H11. destruct H11. 1: exfalso; auto.
-          destruct H11 as [z [[_ [_ ?]] [? ?]]]. rewrite (dst_step g1 (liGraph g1) x pa) in H11; auto; [subst pa | apply (vgamma_not_dst g1 x r1)]; auto.
-        - destruct H9.
-          + apply H8; auto.
-          + subst v. apply vgamma_not_reachable with r1; auto.
-      } hnf. simpl. unfold predicate_vvalid, predicate_weak_evalid. simpl. destruct H4 as [? [? [? ?]]]. split; [|split; [|split]]; intros.
-      + split; intros; destruct H13; split; auto; apply H8 in H14; pose proof (conj H13 H14); [rewrite H4 in H15 | rewrite <- H4 in H15]; destruct H15; auto.
-      + split; intros; destruct H13.
-        * pose proof (H8 _ H14). pose proof (conj H13 H15). rewrite H10 in H16. destruct H16. rewrite H9 in H17. destruct H17. 1: split; auto. symmetry in H17.
-          pose proof (conj H17 H16). rewrite (@only_one_edge _ _ _ _ g2 _ (liGraph g2)) in H18; auto. subst e. pose proof (vvalid_src_evalid _ (liGraph g1) _ H0).
-          destruct H18 as [? _]. unfold Graph_LGraph in H18. rewrite H18 in H14. exfalso. apply H14. apply reachable_refl. auto.
-        * pose proof (H8 _ H14). pose proof (conj H13 H15). rewrite <- H10 in H16. destruct H16. rewrite H9 in H17. destruct H17. 1: split; auto. symmetry in H17.
-          pose proof (conj H17 H16). rewrite (@only_one_edge _ _ _ _ g1 _ (liGraph g1)) in H18; auto. subst e. pose proof (vvalid_src_evalid _ (liGraph g2) _ Hv).
-          destruct H18 as [? _]. unfold Graph_LGraph in H18. rewrite H18 in H14. exfalso. apply H14. apply reachable_refl. auto.
-      + destruct H13, H14. apply H8 in H15. apply H8 in H16. apply H11; auto.
-      + unfold updateEdgeFunc. destruct (equiv_dec (x, tt) e).
-        * unfold Equivalence.equiv in e0. subst e. pose proof (vvalid_src_evalid _ (liGraph g1) _ H0).
-          destruct H15. unfold Graph_LGraph in H15. destruct H13. exfalso. apply H17. rewrite H15. apply reachable_refl; auto.
-        * destruct H13, H14. apply H8 in H15. apply H8 in H16. apply H12; auto.
-    - hnf. simpl. split; intro y; destruct H6. 1: apply H6. intros. assert (vvalid (lg_gg g1) y) by (destruct H9 as [? _]; apply reachable_head_valid in H9; auto).
-      assert (Decidable (reachable g2 y x)). (apply Graph_reachable_dec; left; rewrite <- H6; auto). apply decidable_prop_decidable in H12. destruct H12.
-      + assert (uf_root g2 x pa') by (apply (uf_root_edge g2 (liGraph g2) x pa); auto; apply (vgamma_not_dst g2 x r2); auto).
-        pose proof (uf_root_gen_dst_same g2 (liGraph g2) _ _ _ H13 Hn H12). simpl in H14.
-        pose proof (uf_root_unique _ (gen_dst_preserve_lst g2 (liGraph g2) _ _ Hn Hv) _ _ _ H10 H14). subst pa'. apply (H8 y); auto.
-        apply uf_root_reachable with x; auto.
-      + assert (uf_root (lg_gg g2) y r3). {
-          pose proof (vvalid_src_evalid _ (liGraph g2) _ Hv). destruct H13 as [? _]. unfold Graph_LGraph in H13. destruct H10.
-          assert (reachable (lg_gg g2) y r3) by (rewrite <- (not_reachable_gen_dst_equiv (lg_gg g2) y (x, tt) pa'); auto; rewrite H13; auto). split; auto; intros.
-          apply H14. rewrite not_reachable_gen_dst_equiv; auto. rewrite H13. intro. apply H12. apply reachable_trans with r3; auto.
-        } apply (H8 y); auto.
-    - apply H7.
   Qed.
 
   Lemma the_same_root_union: forall (g g1 g2: Graph) x y root,
@@ -162,7 +120,39 @@ Section GList_UnionFind.
       pose proof (uf_root_reachable _ _ _ _ H6 H7). apply (uf_root_unique g2 (liGraph g2) _ _ _ H4 H9).
     - apply (uf_root_unique _ (gen_dst_preserve_lst g2 (liGraph g2) _ _ Hn Hv) y); auto. apply (uf_root_gen_dst_preserve g2 (liGraph g2)); auto.
   Qed.
-          
+
+  Lemma graph_gen_redirect_parent_findS: forall (g1 g2: Graph) x r1 r2 pa pa' (H: weak_valid g2 pa') (Hv: vvalid g2 x) (Hn: ~ reachable g2 pa' x),
+      vvalid g1 x -> vgamma g1 x = (r1, pa) -> pa <> x -> vgamma g2 x = (r2, pa) -> findS g1 pa g2 -> uf_root g2 pa pa' ->
+      findS g1 x (Graph_gen_redirect_parent g2 x pa' H Hv Hn).
+  Proof.
+    intros. hnf. simpl. destruct H4 as [? [? ?]]. hnf in H4. simpl in H4. unfold predicate_vvalid, predicate_weak_evalid in H4. split; [|split].
+    - assert (forall v, ~ reachable (lg_gg g1) x v -> ~ reachable (lg_gg g1) pa v). {
+        intros. intro. apply H8. pose proof (gamma_parent_reachable_included g1 x r1 pa H0 H1). apply H10. auto. }
+      assert (forall v, ~ reachable (lg_gg g1) pa v <-> ~ reachable (lg_gg g1) x v \/ x = v). {
+        intros. split; intros.
+        - destruct_eq_dec x v; [right | left]; auto. intro. apply H9. apply reachable_ind.reachable_ind in H11. destruct H11. 1: exfalso; auto.
+          destruct H11 as [z [[_ [_ ?]] [? ?]]]. rewrite (dst_step g1 (liGraph g1) x pa) in H11; auto; [subst pa | apply (vgamma_not_dst g1 x r1)]; auto.
+        - destruct H9.
+          + apply H8; auto.
+          + subst v. apply vgamma_not_reachable with r1; auto.
+      } hnf. simpl. unfold predicate_vvalid, predicate_weak_evalid. simpl. destruct H4 as [? [? [? ?]]]. split; [|split; [|split]]; intros.
+      + split; intros; destruct H13; split; auto; apply H8 in H14; pose proof (conj H13 H14); [rewrite H4 in H15 | rewrite <- H4 in H15]; destruct H15; auto.
+      + split; intros; destruct H13.
+        * pose proof (H8 _ H14). pose proof (conj H13 H15). rewrite H10 in H16. destruct H16. rewrite H9 in H17. destruct H17. 1: split; auto. symmetry in H17.
+          pose proof (conj H17 H16). rewrite (@only_one_edge _ _ _ _ g2 _ (liGraph g2)) in H18; auto. subst e. pose proof (vvalid_src_evalid _ (liGraph g1) _ H0).
+          destruct H18 as [? _]. unfold Graph_LGraph in H18. rewrite H18 in H14. exfalso. apply H14. apply reachable_refl. auto.
+        * pose proof (H8 _ H14). pose proof (conj H13 H15). rewrite <- H10 in H16. destruct H16. rewrite H9 in H17. destruct H17. 1: split; auto. symmetry in H17.
+          pose proof (conj H17 H16). rewrite (@only_one_edge _ _ _ _ g1 _ (liGraph g1)) in H18; auto. subst e. pose proof (vvalid_src_evalid _ (liGraph g2) _ Hv).
+          destruct H18 as [? _]. unfold Graph_LGraph in H18. rewrite H18 in H14. exfalso. apply H14. apply reachable_refl. auto.
+      + destruct H13, H14. apply H8 in H15. apply H8 in H16. apply H11; auto.
+      + unfold updateEdgeFunc. destruct (equiv_dec (x, tt) e).
+        * unfold Equivalence.equiv in e0. subst e. pose proof (vvalid_src_evalid _ (liGraph g1) _ H0).
+          destruct H15. unfold Graph_LGraph in H15. destruct H13. exfalso. apply H17. rewrite H15. apply reachable_refl; auto.
+        * destruct H13, H14. apply H8 in H15. apply H8 in H16. apply H12; auto.
+    - apply (graph_gen_redirect_parent_equiv _ _ _ r1 pa); auto.
+    - apply H7.
+  Qed.
+
   Lemma diff_root_union_1: forall (g g1 g2: Graph) x y x_root y_root,
       uf_equiv g g1 -> uf_root g1 x x_root -> uf_equiv g1 g2 -> uf_root g2 y y_root -> x_root <> y_root ->
       (@weak_valid _ _ _ _ g2 _ (maGraph g2) y_root) -> vvalid g2 x_root ->

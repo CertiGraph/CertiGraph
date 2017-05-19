@@ -198,7 +198,7 @@ Section GRAPH_GList.
 
   Definition make_set_Graph (default_dv: DV) (default_de: DE) (default_dg: DG) (v: addr) (g: Graph) (Hn: v <> null) (Hi: ~ vvalid g v) : Graph :=
     Build_GeneralGraph _ _ _ _ (make_set_LabeledGraph v g default_dv default_de default_dg) (make_set_sound v g Hn Hi (sound_gg g)).
-  
+
   Definition single_uf_pregraph (v: addr) : PreGraph addr (addr * unit) :=
     pregraph_add_edge (single_vertex_pregraph v) (v, tt) v null.
 
@@ -247,7 +247,7 @@ Section GRAPH_GList.
 
   Definition single_sound (v: addr) (H: v <> null) : LiMaFin (single_uf_pregraph v) :=
     Build_LiMaFin _ (single_uf_LstGraph v H) (single_uf_MathGraph v H) (single_uf_FiniteGraph v).
-    
+
   Definition single_Graph (v: addr) (H: v <> null) (default_dv: DV) (default_de: DE) (default_dg: DG): Graph :=
     Build_GeneralGraph _ _ _ _ (single_uf_LabeledGraph v default_dv default_de default_dg) (single_sound v H).
 
