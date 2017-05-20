@@ -37,20 +37,20 @@ HEAP_MODEL_DIRECT_FILES = \
 GRAPH_FILES = \
   graph_model.v path_lemmas.v graph_gen.v graph_relation.v reachable_computable.v find_not_in.v reachable_ind.v subgraph2.v \
   spanning_tree.v dag.v marked_graph.v weak_mark_lemmas.v dual_graph.v graph_morphism.v \
-  local_graph_copy.v tree_model.v list_model.v BiGraph.v MathGraph.v FiniteGraph.v GraphAsList.v LstGraph.v
+  local_graph_copy.v tree_model.v list_model.v BiGraph.v MathGraph.v FiniteGraph.v GraphAsList.v LstGraph.v UnionFind.v
 
 DATA_STRUCTURE_FILES = \
   spatial_graph_unaligned_bi_VST.v spatial_graph_dispose_bi.v
 
 SAMPLE_MARK_FILES = \
-  env_mark_bi.v verif_mark_bi.v env_garbage_collector.v env_dispose_bi.v verif_dispose_bi.v verif_mark_bi_dag.v env_copy_bi.v verif_copy_bi.v spatial_graph_bi_mark.v spatial_graph_bi_copy.v unionfind.v env_unionfind.v spatial_graph_glist.v
+  env_mark_bi.v verif_mark_bi.v env_garbage_collector.v env_dispose_bi.v verif_dispose_bi.v verif_mark_bi_dag.v env_copy_bi.v verif_copy_bi.v spatial_graph_bi_mark.v spatial_graph_bi_copy.v unionfind.v env_unionfind.v spatial_graph_glist.v verif_unionfind.v verif_unionfind_slim.v
 
 HIP_FILES = \
   hip_graphmark.v hip_graphmark_proofs.v spanningtree.v
 
 CERTIGC_FILES = \
   orders.v bounded_numbers.v bitwise_encoding.v cc_orders.v cc_bitwise_encoding.v gc.v gc_mathgraph.v data_at_test.v
-  
+
 CLIGHT_FILES = sample_mark/mark_bi.v sample_mark/garbage_collector.v sample_mark/dispose_bi.v sample_mark/copy_bi.v
 
 C_FILES = $(CLIGHT_FILES:%.v=%.c)

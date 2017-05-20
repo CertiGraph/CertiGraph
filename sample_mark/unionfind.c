@@ -24,7 +24,6 @@ struct Node* find(struct Node* x) {
     return p;
 };
 
-
 void unionS(struct Node* x, struct Node* y) {
     struct Node *xRoot, *yRoot;
     int xRank, yRank;
