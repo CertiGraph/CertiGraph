@@ -7,20 +7,14 @@ Require Import RamifyCoq.lib.EquivDec_ext.
 Require Import RamifyCoq.graph.graph_model.
 Require Import RamifyCoq.msl_application.Graph.
 
-Require Import RamifyCoq.graph.weak_mark_lemmas.
-Require Import RamifyCoq.graph.path_lemmas.
-Require Import RamifyCoq.graph.subgraph2.
 Require Import RamifyCoq.graph.reachable_computable.
 Require Import RamifyCoq.graph.MathGraph.
 Require Import RamifyCoq.graph.FiniteGraph.
 
 Require Import RamifyCoq.CertiGC.orders.
+Require Import RamifyCoq.CertiGC.bounded_numbers.
 
 Section GC_Graph.
-
-Local Coercion pg_lg : LabeledGraph >-> PreGraph.
-Local Coercion lg_gg : GeneralGraph >-> LabeledGraph.
-Local Coercion LocalFiniteGraph_FiniteGraph : FiniteGraph >-> LocalFiniteGraph.
 
 Open Local Scope ord.
 
@@ -32,27 +26,33 @@ Context {null : V}.
 
 Context {OLE : Ord V}. Existing Instance OLE.
 Context {COLE : @COrd V OLE}. Existing Instance COLE.
-Context {CTV: ComparableTrans V}. Existing Instance CTV.
+Context {CTV: @ComparableTrans V OLE}. Existing Instance CTV.
 
-(* These might be CompCert addresses, or perhaps other choices. *)
+Context {size : V -> V -> nat -> Prop}.
 (*
-Context {E : Type} {EE : EquivDec.EqDec E eq}.
+Lemma size_ord {A} `{Ord A} : forall v1 v2 v3 n1 n2,
+  v1 <= v2 <= v3 ->
+  size v1 v3 (n1 + n2) <-> size v1 v2 n1 /\ size v2 v3 n2.
+Admitted.
 *)
-Definition E : Type := V * nat.
-Instance EE : EquivDec.EqDec E eq := prod_eqdec EV nat_eq_eqdec.
-(* *)
 
 Context {val : Type}. (* CompCert val, plus perhaps other information e.g. shares *)
+Context {max_fields : nat}.
 
-Inductive field_type : Type :=
-  | data : val -> field_type
-  | pointer : field_type.
+(* NO MORE CONTEXTS *)
+
+Definition E : Type := V * nat.
+Instance EE : EquivDec.EqDec E eq := prod_eqdec EV nat_eq_eqdec.
+
+Inductive raw_field : Type :=
+  | raw_data : val -> raw_field
+  | raw_pointer : raw_field.
 
 Record LV : Type := {
 (* We might need to have a share here. *)
-  mark   : bool;
-  fields : list field_type;
-  non_empty : List.length fields > 0
+  raw_mark   : bool;
+  raw_fields : list raw_field;
+  raw_fieldsbound : 0 < List.length raw_fields < max_fields
 }.
 
 Definition LE : Type := unit.
@@ -66,78 +66,97 @@ Record space : Type := {
 
 Definition LG : Type := list space.
 
-Definition raw_GC_graph : Type := LabeledGraph V E LV LE LG.
+Definition raw_GCgraph : Type := LabeledGraph V E LV LE LG.
 
 (* Spatial GC graph *)
 
-Inductive efield : Type :=
-  | epointer : E -> efield
-  | edata : val -> efield.
+Definition mark (g : raw_GCgraph) (v : V) : bool :=
+  raw_mark (vlabel g v).
 
-Fixpoint getfields (lf : list field_type) (v : V) (n : nat) : list efield :=
+Inductive field : Type :=
+  | pointer : E -> field
+  | data : val -> field.
+
+Fixpoint make_fields (lf : list raw_field) (v : V) (n : nat) : list field :=
   match lf with
    | nil => nil
-   | data d :: lf' => edata d :: getfields lf' v (1 + n)
-   | pointer :: lf' => epointer (v, n) :: getfields lf' v (1 + n)
+   | raw_data d :: lf' => data d :: make_fields lf' v (1 + n)
+   | raw_pointer :: lf' => pointer (v, n) :: make_fields lf' v (1 + n)
   end.
 
-(*
-Fixpoint meldfields (lf : list field_type) (le : list E) : list efield :=
-  match lf, le with
-   | nil, _  | pointer :: _, nil => nil
-   | data v :: lf', le => edata v :: meldfields lf' le
-   | pointer :: lf', e :: le' => epointer e :: meldfields lf' le'
-  end.
-*)
+Definition fields (g : raw_GCgraph) (v : V) : list field :=
+  make_fields (raw_fields (vlabel g v)) v 0.
 
-Definition vfields (g : raw_GC_graph) (v : V) : bool * list efield :=
-  (mark (vlabel g v), 
-   getfields (fields (vlabel g v)) v 0).
+Definition label (g : raw_GCgraph) (v : V) : bool * { list field :=
+  (mark g v, fields g v).
+
+Section size.
+Import ZArith.
+
+Definition nodesize (rpa : bool * list field) : Z :=
+  1 + Z.of_nat (length (snd rpa)). (* We need 1 word for the header *)
+
+End size.
+
+Lemma fields_nth_pointer: forall g v n e,
+  nth_error (fields g v) n = Some (pointer e) ->
+  e = (v,n).
+Proof.
+  unfold fields. intros.
+  cut (forall n m l, nth_error (make_fields l v m) n = Some (pointer e) -> e = (v, m + n)); intro.  
+  specialize (H0 n 0 (raw_fields (vlabel g v))); auto.
+  clear. induction n0; intros.
+  icase l. simpl in H. icase r. inversion H. auto with arith.
+  icase l; icase r; specialize (IHn0 (S m) l H); rewrite IHn0; f_equal; 
+  rewrite <- plus_n_Sm; trivial.
+Qed.
 
 Instance SGBA_GCgraph: SpatialGraphBasicAssum V E.
   constructor. apply EV. apply EE.
 Defined.
 
-Instance SGC_GCgraph: SpatialGraphConstructor V E LV LE LG (bool * list efield) unit.
-  constructor. exact vfields. exact (fun _ _ => tt).
+Instance SGC_GCgraph: SpatialGraphConstructor V E LV LE LG (bool * list field) unit.
+  constructor. exact label. exact (fun _ _ => tt).
 Defined.
 
-Definition SG_GCgraph := SpatialGraph V E (bool * list efield) unit.
-(*
-Local Identity Coercion SGGCgraph : SG_GCgraph >-> SpatialGraph.
-*)
-Definition rawGCgraph_SGgraph (G : raw_GC_graph) : SG_GCgraph := Graph_SpatialGraph G.
+Definition SG_GCgraph := SpatialGraph V E (bool * list field) unit.
+Definition rawGCgraph_SGgraph (G : raw_GCgraph) : SG_GCgraph := Graph_SpatialGraph G.
 
-Instance LSGC_GCgraph : Local_SpatialGraphConstructor V E LV LE LG (bool * list efield) unit.
+Instance LSGC_GCgraph : Local_SpatialGraphConstructor V E LV LE LG (bool * list field) unit.
   refine (Build_Local_SpatialGraphConstructor _ _ _ _ _ _ _ SGBA_GCgraph SGC_GCgraph 
           (fun G v => True) _
-          (fun G e => True) _).
-  intros. clear -H1. simpl in *.
-  unfold vfields. rewrite H1; trivial.
-  simpl. trivial.
+          (fun G e => True) _); trivial.
+  simpl in *. unfold label, mark, fields. intros. rewrite H1. auto.
 Defined.
 
 Global Existing Instances SGC_GCgraph LSGC_GCgraph.
 
 (* General GC graph *)
 
-Definition copied_pointer_active (g : raw_GC_graph) : Prop :=
+Local Coercion pg_lg : LabeledGraph >-> PreGraph.
+Local Coercion lg_gg : GeneralGraph >-> LabeledGraph.
+Local Coercion LocalFiniteGraph_FiniteGraph : FiniteGraph >-> LocalFiniteGraph.
+(*
+Local Identity Coercion SGGCgraph : SG_GCgraph >-> SpatialGraph.
+*)
+
+Definition copied_pointer_active (g : raw_GCgraph) : Prop :=
   (* If we've been copied then our first field must be a pointer *)
   forall x, 
     vvalid g x -> 
-    mark (vlabel g x) = true ->
-    List.nth_error (fields (vlabel g x)) 0 = Some pointer.
+    raw_mark (vlabel g x) = true ->
+    List.nth_error (raw_fields (vlabel g x)) 0 = Some raw_pointer.
 
 Definition num_fields (l : LV) : nat :=
-  List.length (fields l).
+  List.length (raw_fields l).
 
 Definition num_edges (l : LV) : nat :=
-  List.length (List.filter (fun x => match x with pointer => true | _ => false end) (fields l)).
+  List.length (List.filter (fun x => match x with raw_pointer => true | _ => false end) (raw_fields l)).
 
 Definition num_data (l : LV) : nat :=
   num_fields l - num_edges l.
 
-Definition right_number_edges (g : raw_GC_graph) (lfg : LocalFiniteGraph g) : Prop :=
+Definition right_number_edges (g : raw_GCgraph) (lfg : LocalFiniteGraph g) : Prop :=
   forall x,
     vvalid g x ->
     num_edges (vlabel g x) = List.length (edge_func g x).
@@ -151,22 +170,19 @@ Definition available (s : space) (x : V) : Prop :=
 Definition in_space (s : space) (x : V) : Prop :=
   allocated s x \/ available s x.
 
+(*
 (* There's probably a better way to write this definition... *)
-Definition is_pointer : DecidablePred field_type :=
-  existT (fun P => forall a, {P a} + {~P a}) (fun x => x = pointer)
+Definition is_pointer : DecidablePred raw_field :=
+  existT (fun P => forall a, {P a} + {~P a}) (fun x => x = raw_pointer)
   (fun x => match x with 
-     | pointer => left eq_refl
-     | data n => right (fun H : data n = pointer => 
-                          eq_ind (data n) (fun e => match e with data _ => True | pointer => False end)
-                          I pointer H)
+     | raw_pointer => left eq_refl
+     | raw_data n => right (fun H : raw_data n = raw_pointer => 
+                          eq_ind (data n) (fun e => match e with data _ => True | pointer _ => False end)
+                          I raw_pointer H)
    end).
+*)
 
 (* Facts about size? *)
-Context {size : V -> V -> nat -> Prop}.
-Lemma size_ord {A} `{Ord A} : forall v1 v2 v3 n1 n2,
-  v1 <= v2 <= v3 ->
-  size v1 v3 (n1 + n2) <-> size v1 v2 n1 /\ size v2 v3 n2.
-Admitted.
 
 Definition allocated_size (s : space) (n : nat) : Prop :=
   size (start s) (next s) n.
@@ -180,7 +196,7 @@ Definition size (s : space) : nat :=
   sub (limit s) (start s). (* Notation doesn't work for some reason *)
 *)
 
-Definition spaces_disjoint (g : raw_GC_graph) : Prop :=
+Definition spaces_disjoint (g : raw_GCgraph) : Prop :=
   (* Spaces are disjoint *)
   forall i j s1 s2,
     List.nth_error (glabel g) i = Some s1 ->
@@ -190,7 +206,7 @@ Definition spaces_disjoint (g : raw_GC_graph) : Prop :=
       in_space s2 x ->
       i = j.
 
-Definition spaces_double (g : raw_GC_graph) : Prop :=
+Definition spaces_double (g : raw_GCgraph) : Prop :=
   (* Spaces double in size *)
   forall i s1 s2,
     List.nth_error (glabel g) i = Some s1 ->
@@ -204,7 +220,7 @@ Definition spaces_double (g : raw_GC_graph) : Prop :=
 Definition in_generation (l : list space) (x : V) (n : nat) : Prop :=
   exists s, List.nth_error l n = Some s /\ allocated s x.
 
-Definition valid_in_generation (g : raw_GC_graph) : Prop :=
+Definition valid_in_generation (g : raw_GCgraph) : Prop :=
   forall x, vvalid g x -> 
     exists n, in_generation (glabel g) x n.
 
@@ -212,7 +228,7 @@ Definition valid_in_generation (g : raw_GC_graph) : Prop :=
 Definition is_null : DecidablePred V := 
   existT (fun P => forall a, {P a} + {~P a}) (fun x => x = null) (fun x => EV x null).
 
-Definition acyclic_generations (g : raw_GC_graph) : Prop :=
+Definition acyclic_generations (g : raw_GCgraph) : Prop :=
   forall x, vvalid g x -> 
     forall e, src g e = x ->
       is_null (dst g e) \/ forall n n',
@@ -221,7 +237,7 @@ Definition acyclic_generations (g : raw_GC_graph) : Prop :=
         (n <= n')%nat.
 (* This won't be true in the middle of a collection.  Maybe allow it to be marked? *)
 
-Class GC_graph (g : raw_GC_graph) : Type := {
+Class GC_graph (g : raw_GCgraph) : Type := {
   ma : MathGraph g is_null; (* Is this general enough for the subgraphs, edges can be external but non-null? *)
   fin: FiniteGraph g;
   cpa : copied_pointer_active g;
@@ -316,7 +332,7 @@ Admitted.
 
 Lemma copyEdge_contr: forall (g : Graph) x,
   vvalid g x ->
-  mark (vlabel g x) = true ->
+  raw_mark (vlabel g x) = true ->
   nil = (@edge_func _ _ _ _ g (g_lfg g) x) ->
   False.
 Proof.
@@ -338,12 +354,15 @@ Proof.
   simpl in H2.
   generalize (cpa0 x H H0); intro.
   unfold num_edges in H2.
-  remember (fields (vlabel lg_gg x)).
+  remember (raw_fields (vlabel lg_gg x)).
   destruct l. discriminate.
-  inversion H3. subst f.
+  inversion H3. subst r.
   simpl in H2. discriminate.
 Qed.
 
+Definition copyEdge (x : V) : E := (x,0).
+
+(*
 Definition copyEdge (g : Graph) (x : V) (Pf0 : vvalid g x) (Pf1 : mark (vlabel g x) = true) : E :=
   match edge_func g x as l return l = edge_func g x -> E with
    | (e :: _)%list => fun _ => e
@@ -354,6 +373,7 @@ Lemma copyEdge_src: forall (g : Graph) x Pf0 Pf1,
   src g (copyEdge g x Pf0 Pf1) = x.
 Proof.
 Admitted.
+*)
 
 Definition in_gen (g : Graph) (n : nat) (x : V) : Prop :=
   exists s, List.nth_error (glabel g) n = Some s /\ allocated s x.
@@ -423,8 +443,8 @@ Record guarded_Cheney_morphism (gen : nat) : Prop := {
                    ~in_from G gen v -> 
                     vmap v = v;
 
-  Cmarked_nodes: forall v, PV v -> forall (H0 : vvalid G' v) (H1 : mark (vlabel G' v) = true),
-                   vmap v = dst G' (copyEdge G' v H0 H1);
+  Cmarked_nodes: forall v, PV v -> vvalid G' v -> raw_mark (vlabel G' v) = true ->
+                   vmap v = dst G' (copyEdge v);
 (*  marked_nodes: forall v (H: PV v) (H0 : vvalid G v) (H1 : mark (vlabel G' v) = true),
                    vmap v = dst G' (copyEdge G' v (proj1 (vvalid_Cpreserved v H H0)) H1) *)
 
@@ -447,7 +467,7 @@ Record guarded_Cheney_morphism (gen : nat) : Prop := {
 End Cheney.
 
 Definition unmarked_everywhere (g : Graph) : Prop :=
-  forall v, vvalid g v -> mark (vlabel g v) = false.
+  forall v, vvalid g v -> raw_mark (vlabel g v) = false.
 
 Definition generation_valid_from_space (g : Graph) (gen : nat) : Prop :=
   List.nth_error (glabel g) (to_space gen) <> None.
@@ -469,9 +489,9 @@ Inductive stepish (g g' : Graph) (gen : nat) : Prop :=
       in_from g gen v -> (* target is in from space *)
       ~vvalid g v' ->    (* v' unused *)
       vvalid g' v' ->
-      forall (Pf0 :  vvalid g' v)
-             (Pf1 : mark (vlabel g' v) = true),
-      dst g' (copyEdge g' v Pf0 Pf1) = v' ->
+      vvalid g' v ->
+      raw_mark (vlabel g' v) = true ->
+      dst g' (copyEdge v) = v' ->
       vlabel g v = vlabel g' v' ->
 (*      fields (vlabel g v) = fields (vlabel g' v) -> (* too strong *) *)
       (forall v'', v'' <> v -> v'' <> v' -> 
@@ -486,6 +506,7 @@ Lemma stepish_guarded_Cheney_morphism: forall Ga G G' PV PE vmap emap gen,
   exists vmap', exists emap',
     guarded_Cheney_morphism Ga G' PV PE vmap' emap' gen.
 Proof.
+(*
   intros.
   destruct H.
   destruct H0.
@@ -532,6 +553,7 @@ Proof.
 *)
     admit.
   * admit.
+*)
 Admitted.
 
 Require Import RamifyCoq.graph.graph_morphism.
