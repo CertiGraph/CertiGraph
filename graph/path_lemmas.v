@@ -510,6 +510,10 @@ Lemma reachable_by_path_is_reachable_by (g: Gph):
   forall p n1 n2 P, g |= p is n1 ~o~> n2 satisfying P -> g |= n1 ~o~> n2 satisfying P.
 Proof. intros. exists p; auto. Qed.
 
+Lemma reachable_by_path_weaken (g: Gph):
+  forall p n1 n2 P1 P2, Included P1 P2 -> g |= p is n1 ~o~> n2 satisfying P1 -> g |= p is n1 ~o~> n2 satisfying P2.
+Proof. intros. destruct H0 as [? ?]. split; auto. apply good_path_weaken with P1; auto. Qed.
+
 Lemma reachable_by_path_is_reachable (g: Gph):
   forall p n1 n2 P, g |= p is n1 ~o~> n2 satisfying P -> reachable g n1 n2.
 Proof. intros. apply reachable_by_path_is_reachable_by in H. apply reachable_by_is_reachable with P. auto. Qed.
@@ -561,6 +565,19 @@ Proof.
     apply valid_path_cons in H. specialize (IHp1 H). simpl. destruct p1.
     - simpl in IHp1. auto.
     - rewrite pfoot_head_irrel with (v2 := v) in IHp1. apply IHp1.
+Qed.
+
+Lemma reachable_by_path_split: forall (g: Gph) v p1 p2 n1 n2 P,
+    g |= (v, p1 ++ p2) is n1 ~o~> n2 satisfying P -> g |= (v, p1) is n1 ~o~> pfoot g (v, p1) satisfying P /\ g |= (pfoot g (v, p1), p2) is pfoot g (v, p1) ~o~> n2 satisfying P.
+Proof. intros. apply reachable_by_path_split_glue; [unfold paths_meet_at; simpl | unfold path_glue; unfold fst, snd]; auto. Qed.
+
+Lemma reachable_by_path_app_cons: forall (g: Gph) v p1 e p2 n1 n2 P,
+    g |= (v, p1 ++ e :: p2) is n1 ~o~> n2 satisfying P -> g |= (v, p1) is n1 ~o~> (src g e) satisfying P /\ g |= (dst g e, p2) is (dst g e) ~o~> n2 satisfying P.
+Proof.
+  intros. pose proof (reachable_by_path_split_glue g P (v, p1) (src g e, e :: p2) n1 n2 (src g e)).
+  assert (paths_meet_at g (v, p1) (src g e, e :: p2) (src g e)) by (hnf; split; [apply (pfoot_split g v p1 e p2); destruct H as [_ [? _]] | simpl]; auto).
+  specialize (H0 H1 H). destruct H0. split; auto.  pose proof (reachable_by_path_split_glue g P (src g e, e :: nil) (dst g e, p2) (src g e) n2 (dst g e)).
+  assert (paths_meet_at g (src g e, e :: nil) (dst g e, p2) (dst g e)) by (hnf; simpl; auto). specialize (H3 H4 H2). destruct H3. auto.
 Qed.
 
 Lemma in_path_split: forall g p n, In_path g n p -> valid_path g p -> exists p1 p2, p = p1 +++ p2 /\ paths_meet_at g p1 p2 n.
@@ -666,6 +683,9 @@ Proof.
     - subst. destruct H. subst. simpl in H0. destruct p; [|destruct H0 as [H0 _]]; destruct H0 as [_ [? _]]; auto.
     - apply valid_path_cons in H. apply (IHp (dst g a)); auto.
 Qed.
+
+Lemma valid_path_evalid: forall (g : Gph) v p e, valid_path g (v, p) -> In e p -> evalid g e.
+Proof. intros. apply (valid_path_strong_evalid g v) in H0; auto. destruct H0; auto. Qed.
 
 Lemma pfoot_in: forall g p n, pfoot g p = n -> In_path g n p.
 Proof.

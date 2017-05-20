@@ -576,6 +576,44 @@ Proof.
     apply H4; simpl; rewrite !Intersection_spec in *; tauto.
 Qed.
 
+Lemma no_edge_gen_dst_equiv: forall e p (g: Graph) pa x y,
+    ~ In e (snd p) -> (pregraph_gen_dst g e pa) |= p is x ~o~> y satisfying (fun _ => True) <-> g |= p is x ~o~> y satisfying (fun _ => True).
+Proof.
+  intros. destruct p as [p l]. simpl in H. split; intro; destruct H0 as [[? ?] [? ?]]; split; split; auto; clear H0 H3.
+  - clear H2. revert p H H1. induction l; intros. 1: simpl in *; auto. rewrite pfoot_cons in H1. remember (dst (pregraph_gen_dst g e pa) a) as w.
+    simpl in Heqw. unfold updateEdgeFunc in Heqw. destruct (equiv_dec e a).
+    + unfold Equivalence.equiv in e0; exfalso; apply H; left; auto.
+    + rewrite pfoot_cons. apply IHl.
+      * intro. apply H; right; auto.
+      * subst w. auto.
+  - clear H1. revert p H H2. induction l; intros. 1: simpl in *; auto. rewrite valid_path_cons_iff in H2 |-* . destruct H2 as [? [? ?]]. split; [|split].
+    + simpl in H0. auto.
+    + hnf in H1. simpl in H1. unfold updateEdgeFunc in H1. destruct (equiv_dec e a). 1: unfold Equivalence.equiv in e0; exfalso; apply H; left; auto. apply H1.
+    + remember (dst (pregraph_gen_dst g e pa) a) as w. simpl in Heqw. unfold updateEdgeFunc in Heqw. destruct (equiv_dec e a). 1: exfalso; apply H; left; auto.
+      subst w. apply IHl; auto. intro; apply H; right; auto.
+  - clear H2. revert p H H1. induction l; intros. 1: simpl; auto. rewrite pfoot_cons. remember (dst (pregraph_gen_dst g e pa) a) as w. simpl in Heqw.
+    unfold updateEdgeFunc in Heqw. destruct (equiv_dec e a). 1: exfalso; apply H; left; auto. subst w. apply IHl.
+    + intro; apply H; right; auto.
+    + rewrite pfoot_cons in H1. auto.
+  - clear H1. revert p H H2. induction l; intros. 1: simpl in *; auto. rewrite valid_path_cons_iff in H2 |-* . destruct H2 as [? [? ?]]. split; [|split].
+    + simpl; auto.
+    + hnf. simpl. unfold updateEdgeFunc. destruct (equiv_dec e a). 1: unfold Equivalence.equiv in e0; exfalso; apply H; left; auto. apply H1.
+    + remember (dst (pregraph_gen_dst g e pa) a) as w. simpl in Heqw. unfold updateEdgeFunc in Heqw. destruct (equiv_dec e a). 1: exfalso; apply H; left; auto.
+      subst w. apply IHl; auto. intro; apply H; right; auto.
+Qed.
+
+Lemma not_reachable_gen_dst_equiv: forall (g: Graph) x e y z, ~ reachable g x (src g e) -> reachable (pregraph_gen_dst g e y) x z <-> reachable g x z.
+Proof.
+  intros. split; intro.
+  - destruct H0 as [[p l] ?]. assert (~ In e l). {
+      intro. apply (in_split_not_in_first EE) in H1. destruct H1 as [l1 [l2 [? ?]]]. subst l. apply reachable_by_path_app_cons in H0. destruct H0 as [? _].
+      rewrite no_edge_gen_dst_equiv in H0. 2: simpl; auto. simpl src in H0. apply H. exists (p, l1). auto.
+    } rewrite no_edge_gen_dst_equiv in H0. 2: simpl; auto. exists (p, l). auto.
+  - destruct H0 as [[p l] ?]. assert (~ In e l). {
+      intro. apply in_split in H1. destruct H1 as [l1 [l2 ?]]. subst l. apply reachable_by_path_app_cons in H0. destruct H0 as [? _]. apply H. exists (p, l1). auto.
+    } exists (p, l). rewrite no_edge_gen_dst_equiv; auto.
+Qed.
+
 End PREGRAPH_GEN.
 
 Section LABELED_GRAPH_GEN.
@@ -796,9 +834,7 @@ Definition generalgraph_egen (g: Graph) (e: E) (d: DE) (sound': P _): Graph := @
 
 Definition generalgraph_ggen (g: Graph) (m: DG) (sound': P _): Graph := @Build_GeneralGraph V E EV EE DV DE DG P (labeledgraph_ggen g m) sound'.
 
-Definition generalgraph_gen_dst (g: Graph) (e : E) (t : V)
-           (sound' : P _) : Graph :=
-  @Build_GeneralGraph V E EV EE DV DE DG P (labeledgraph_gen_dst g e t) sound'.
+Definition generalgraph_gen_dst (g: Graph) (e : E) (t : V) (sound' : P _): Graph := @Build_GeneralGraph V E EV EE DV DE DG P (labeledgraph_gen_dst g e t) sound'.
 
 End GENERAL_GRAPH_GEN.
 

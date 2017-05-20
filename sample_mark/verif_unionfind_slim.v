@@ -51,7 +51,7 @@ Definition find_spec :=
           SEP   (whole_graph sh g)
   POST [ tptr (Tstruct _Node noattr) ]
         EX g': Graph, EX rt : pointer_val,
-        PROP (findS g x g' /\ uf_root g' x rt)
+        PROP (uf_equiv g g' /\ uf_root g' x rt)
         LOCAL (temp ret_temp (pointer_val_val rt))
         SEP (whole_graph sh g').
 
@@ -161,25 +161,25 @@ Proof.
   (* if (p != x) { *)
   forward_if_tac
     (EX g': Graph, EX rt : pointer_val,
-     PROP (findS g x g' /\ uf_root g' x rt)
+     PROP (uf_equiv g g' /\ uf_root g' x rt)
      LOCAL (temp _p (pointer_val_val rt); temp _x (pointer_val_val x))
      SEP (whole_graph sh g'));
     [apply ADMIT | | gather_current_goal_with_evar ..].
   (* p0 = find(p); *)
   forward_call (sh, g, pa). 1: symmetry in H0; apply valid_parent in H0; auto.
-  Intros vret. destruct vret as [g' root]. simpl in *. forward.
+  Intros vret. destruct vret as [g' root]. simpl fst in *. simpl snd in *. forward. symmetry in H0.
   pose proof (true_Cne_neq _ _ H1).
   assert (weak_valid g' root) by (right; destruct H3; apply reachable_foot_valid in H3; auto).
-  assert (vvalid g' x) by (destruct H2 as [_ [[? _] _]]; rewrite <- H2; apply H).
-  assert ((vgamma g' x) = (r, pa)) by (apply (findS_preserves_vgamma g); auto).
-  assert (~ reachable g' root x) by (destruct H3; apply (vgamma_not_reachable' _ _ r pa); auto).
-  assert (vertices_at sh (vvalid (Graph_gen_redirect_parent g' x root H5 H6 H8)) (Graph_gen_redirect_parent g' x root H5 H6 H8) =
-          vertices_at sh (vvalid g') (Graph_gen_redirect_parent g' x root H5 H6 H8)). {
+  assert (vvalid g' x) by (destruct H2 as [? _]; rewrite <- H2; apply H).
+  assert (~ reachable g' root x) by (apply (uf_equiv_not_reachable g g' x r pa root); auto).
+  assert (vertices_at sh (vvalid (Graph_gen_redirect_parent g' x root H5 H6 H7)) (Graph_gen_redirect_parent g' x root H5 H6 H7) =
+          vertices_at sh (vvalid g') (Graph_gen_redirect_parent g' x root H5 H6 H7)). {
     apply vertices_at_Same_set. unfold Ensembles.Same_set, Ensembles.Included, Ensembles.In. simpl. intuition. }
+  remember (vgamma g' x) as rpa eqn:?H. destruct rpa as [r' pa']. symmetry in H9.
   localize
    (PROP  ()
     LOCAL (temp _p (pointer_val_val root); temp _x (pointer_val_val x))
-    SEP   (data_at sh node_type (Vint (Int.repr (Z.of_nat r)), pointer_val_val pa)
+    SEP   (data_at sh node_type (Vint (Int.repr (Z.of_nat r')), pointer_val_val pa')
                    (pointer_val_val x))).
     eapply semax_ram_seq';
     [ subst RamFrame RamFrame0; unfold abbreviate;
@@ -187,36 +187,29 @@ Proof.
     | store_tac
     | abbreviate_semax_ram].
     assert (force_val (sem_cast_neutral (pointer_val_val root)) = pointer_val_val root) by (destruct root; simpl; auto). rewrite H10. clear H10.
-    change (@field_at CompSpecs sh node_type [] (Vint (Int.repr (Z.of_nat r)), pointer_val_val root) (pointer_val_val x)) with
-        (@data_at CompSpecs sh node_type (Vint (Int.repr (Z.of_nat r)), pointer_val_val root) (pointer_val_val x)).
-    unlocalize
-      (PROP ()
-       LOCAL (temp _p (pointer_val_val root); temp _x (pointer_val_val x))
-       SEP (whole_graph sh (Graph_gen_redirect_parent g' x root H5 H6 H8))).
-    Grab Existential Variables.
-    Focus 3. { Intros g' rt. forward. apply (exp_right g'). entailer !. apply (exp_right rt). entailer !. } Unfocus.
-    Focus 3. {
-      forward. apply (exp_right g). apply (exp_right x). entailer ! . apply false_Cne_eq in H1. subst pa. split; split; [|split| |]; auto.
-      - reflexivity.
-      - apply (uf_equiv_refl _  (liGraph g)).
-      - repeat intro; auto.
-      - apply uf_root_vgamma with (n := r); auto.
-    } Unfocus.
-    Focus 2. {
-      simplify_ramif. rewrite H9. apply (@graph_gen_redirect_parent_ramify _ (sSGG_VST sh)); auto. destruct H3.
-      apply reachable_foot_valid in H3. intro. subst root. apply (valid_not_null g' null H3). simpl. auto.
-    } Unfocus.
-    rewrite H9. unfold semax_ram. forward.
-    change (fun a : environ => (EX x0 : Graph, (EX x1 : pointer_val, (PROP (findS g x x0 /\ uf_root x0 x x1) LOCAL (temp _p (pointer_val_val x1); temp _x (pointer_val_val x))
-                                                                           SEP (vertices_at sh (vvalid x0) x0)) a))%logic) with
-        (EX x0 : Graph, (EX x1 : pointer_val, (PROP (findS g x x0 /\ uf_root x0 x x1) LOCAL (temp _p (pointer_val_val x1); temp _x (pointer_val_val x)) SEP
-                                                    (vertices_at sh (vvalid x0) x0)))). apply (exp_right (Graph_gen_redirect_parent g' x root H5 H6 H8)).
-    apply (exp_right root). rewrite H9. entailer !. split.
-  - apply (graph_gen_redirect_parent_findS g g' x r r pa root H5 H6 H8); auto.
+    change (@field_at CompSpecs sh node_type [] (Vint (Int.repr (Z.of_nat r')), pointer_val_val root) (pointer_val_val x)) with
+        (@data_at CompSpecs sh node_type (Vint (Int.repr (Z.of_nat r')), pointer_val_val root) (pointer_val_val x)).
+  unlocalize
+   (PROP ()
+    LOCAL (temp _p (pointer_val_val root); temp _x (pointer_val_val x))
+    SEP (whole_graph sh (Graph_gen_redirect_parent g' x root H5 H6 H7))).
+  Grab Existential Variables.
+  Focus 3. { Intros g' rt. forward. apply (exp_right g'). entailer !. apply (exp_right rt). entailer !. } Unfocus.
+  Focus 3. {
+    forward. apply (exp_right g). apply (exp_right x). entailer ! . apply false_Cne_eq in H1. subst pa. split; [|split]; auto.
+    - apply (uf_equiv_refl _  (liGraph g)).
+    - apply uf_root_vgamma with (n := r); auto.
+  } Unfocus.
+  Focus 2. {
+    simplify_ramif. rewrite H8. apply (@graph_gen_redirect_parent_ramify _ (sSGG_VST sh)); auto. destruct H3.
+    apply reachable_foot_valid in H3. intro. subst root. apply (valid_not_null g' null H3). simpl. auto.
+  } Unfocus.
+  rewrite H8. unfold semax_ram. forward. apply (exp_right (Graph_gen_redirect_parent g' x root H5 H6 H7)). apply (exp_right root). rewrite H8. entailer !. split.
+  - apply (graph_gen_redirect_parent_equiv g g' x r pa); auto.
   - simpl. apply (uf_root_gen_dst_same g' (liGraph g') x x root); auto.
-    + apply (uf_root_edge _ (liGraph g') _ pa); auto. apply vgamma_not_dst with r; auto.
+    + rewrite <- (uf_equiv_root_the_same g); auto. apply (uf_root_edge _ (liGraph g) _ pa); [| apply vgamma_not_dst with r | rewrite (uf_equiv_root_the_same g g')]; auto.
     + apply reachable_refl; auto.
-Qed. (* 47.715 secs *)
+Qed.
 
 (* Print Assumptions body_find. *)
 
@@ -243,8 +236,8 @@ Proof.
   start_function.
   destruct H.
   forward_call (sh, g, x). Intros vret. destruct vret as [g1 x_root]. simpl fst in *. simpl snd in *.
-  assert (vvalid g1 y) by (destruct H1 as [_ [[? _] _]]; rewrite <- H1; apply H0).
-  forward_call (sh, g1, y). Intros vret. destruct vret as [g2 y_root]. simpl fst in *. simpl snd in *. destruct H1 as [_ [? _]]. destruct H4 as [_ [? _]].
+  assert (vvalid g1 y) by (destruct H1 as [? _]; rewrite <- H1; apply H0).
+  forward_call (sh, g1, y). Intros vret. destruct vret as [g2 y_root]. simpl fst in *. simpl snd in *.
   forward_if_tac
     (PROP (x_root <> y_root)
      LOCAL (temp _yRoot (pointer_val_val y_root); temp _xRoot (pointer_val_val x_root);
