@@ -33,6 +33,8 @@ Section UNION_FIND_SINGLE.
                             uf_set_in g2 (Union Vertex S1 S2) /\ (forall S, ~ Same_set S S1 -> ~ Same_set S S2 -> uf_set_in g1 S -> uf_set_in g2 S) /\
                             (forall S, uf_set_in g2 S -> Same_set S (Union Vertex S1 S2) \/ uf_set_in g1 S).
 
+  Definition uf_bound (g: PreGraph Vertex Edge) (root: Vertex) (h: nat): Prop := forall p, valid_path g p -> pfoot g p = root -> length (snd p) <= h. 
+
   Lemma uf_equiv_sym: forall g1 g2, uf_equiv g1 g2 -> uf_equiv g2 g1.
   Proof. intros. destruct H. split; intros; [specialize (H x); intuition | specialize (H0 x r2 r1); symmetry; apply H0; auto]. Qed.
 
@@ -255,7 +257,7 @@ Section UNION_FIND_SINGLE.
 End UNION_FIND_SINGLE.
 
 Class FML_General (Vertex : Type) (Edge : Type) {EV : EqDec Vertex eq} {EE: EqDec Edge eq} (DV: Type) (DE: Type) (DG: Type)
-      (P: LabeledGraph Vertex Edge DV DE DG -> Type) (out_edge: Vertex -> Edge) (is_null: DecidablePred Vertex) := {
+      (P: LabeledGraph Vertex Edge DV DE DG -> Type) (out_edge: Vertex -> Edge) (is_null: DecidablePred Vertex) :={
     P_Lst: forall g, P g -> LstGraph (pg_lg g) out_edge;
     P_Math: forall g, P g -> MathGraph (pg_lg g) is_null;
     P_Finite: forall g, P g -> FiniteGraph (pg_lg g);
@@ -282,6 +284,8 @@ Section UNION_FIND_GENERAL.
   Context {out_edge: Vertex -> Edge}.
   Context {is_null: DecidablePred Vertex}.
   Context {fml: FML_General Vertex Edge DV DE DG P out_edge is_null}.
+
+  Definition uf_under_bound (extract: DV -> nat) (g: Graph) : Prop := forall v, vvalid g v -> uf_bound g v (extract (vlabel g v)).
   
   Lemma uf_equiv_the_same_root: forall (g1 g2: Graph) x root, uf_equiv g1 g2 -> uf_root g1 x root <-> uf_root g2 x root.
   Proof.
