@@ -195,4 +195,27 @@ Section GList_UnionFind.
       rewrite Intersection_spec in H2. destruct H2. unfold Complement, In in H3. unfold update_vlabel. f_equal. destruct (equiv_dec x x0); auto. hnf in e. exfalso; auto.
   Qed.
 
+  Lemma uf_under_bound_redirect_parent: forall (g: Graph) root x (Hw : weak_valid g root) (Hv : vvalid g x) (Hr: ~ reachable g root x),
+      uf_root g x root -> uf_under_bound id g -> uf_under_bound id (Graph_gen_redirect_parent g x root Hw Hv Hr).
+  Proof.
+    intros. hnf in H0 |-* . simpl. unfold uf_bound, id in *. intros. destruct p as [p l].
+    assert ((pregraph_gen_dst (lg_gg g) (x, tt) root) |= (p, l) is p ~o~> v satisfying (fun _ => True)) by (split; split; auto; rewrite path_prop_equiv; intros; auto).
+    destruct (in_dec SGBA_EE (x, tt) (snd (p, l))). 2: rewrite no_edge_gen_dst_equiv in H4; auto; destruct H4 as [[_ ?] [? _]]; apply H0; auto.
+    pose proof (gen_dst_preserve_lst g (liGraph g) _ _ Hr Hv). simpl in H5. pose proof (lst_path_NoDup _ H5 _ _ _ _ H4). simpl snd in *.
+    simpl in i. apply in_split in i. destruct i as [l1 [l2 ?]]. rewrite H7 in H3. rewrite List_ext.app_cons_assoc in H7. rewrite H7 in H2. apply valid_path_app in H2.
+    destruct H2. rewrite pfoot_last in H8. rewrite (pfoot_app_cons _ _ root) in H3. rewrite pfoot_cons in H3. simpl dst in *. unfold updateEdgeFunc in *.
+    destruct (equiv_dec (x, tt) (x, tt)). 2: compute in c; exfalso; apply c; auto. rewrite <- List_ext.app_cons_assoc in H7. rewrite H7 in H6. apply NoDup_remove_2 in H6.
+    assert ((pregraph_gen_dst (lg_gg g) (x, tt) root) |= (root, l2) is root ~o~> v satisfying (fun _ => True)) by (split; split; auto; rewrite path_prop_equiv; intros; auto).
+    assert (~ List.In (x, tt) l1 /\ ~ List.In (x, tt) l2) by (split; intro; apply H6; rewrite in_app_iff; [left | right]; auto). clear H6. destruct H10.
+    rewrite no_edge_gen_dst_equiv in H9; auto. destruct H. assert (root = v) by (apply H11; exists (root, l2); auto). subst v. rewrite <- H12 in *.
+    apply (@no_loop_path _ _ _ _ _ _ (liGraph g)) in H9. inversion H9. subst l2. clear H12 H9 H10 H8. pose proof (pfoot_split _ _ _ _ _ H2). simpl src in H3.
+    apply valid_path_app in H2. destruct H2. pose proof (@only_one_edge _ _ _ _ _ _ (liGraph g) _ (x, tt) Hv). simpl in H9. assert ((x, tt) = (x, tt)) by auto.
+    rewrite <- H9 in H10. clear H9. destruct H10. simpl in H9. unfold Graph_LGraph in H9. rewrite H9 in H3.
+    assert ((pregraph_gen_dst (lg_gg g) (x, tt) root) |= (p, l1) is p ~o~> x satisfying (fun _ => True)) by (split; split; auto; rewrite path_prop_equiv; intros; auto).
+    rewrite no_edge_gen_dst_equiv in H12; auto. destruct H as [l2 ?]. destruct l2 as [? l2]. assert (a = x) by (destruct H as [[? _] ?]; simpl in H; auto). subst a.
+    destruct l2. 1: destruct H as [[_ ?] ?]; simpl in H; subst root; exfalso; apply Hr; apply reachable_refl; auto. pose proof (reachable_by_path_merge _ _ _ _ _ _ _ H12 H).
+    unfold path_glue in H13. simpl in H13. destruct H13 as [[_ ?] [? _]]. pose proof (H0 _ H1 _ H14 H13). simpl in H15. subst l. clear -H15.
+    rewrite app_length in *. simpl in *. intuition.
+  Qed.
+
 End GList_UnionFind.
