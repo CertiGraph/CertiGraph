@@ -56,6 +56,27 @@ Section GList_UnionFind.
   Lemma vgamma_not_reachable: forall (g: Graph) x r pa, vvalid g x -> vgamma g x = (r, pa) -> pa <> x -> ~ reachable g pa x.
   Proof. intros. assert (vvalid g pa) by (apply valid_parent in H0; auto). apply (vgamma_not_reachable' g x r pa pa); auto. apply reachable_refl; auto. Qed.
 
+  Lemma uf_root_not_eq_root_vgamma: forall (g: Graph) x r pa root, vgamma g x = (r, pa) -> uf_root g x root -> x <> root -> x <> pa.
+  Proof.
+    intros. simpl in H. destruct (SGBA_VE (dst g (x, tt)) null).
+    - hnf in e. destruct H0. apply reachable_ind.reachable_ind in H0. destruct H0. 1: exfalso; auto. destruct H0 as [z [[? [? ?]] [? ?]]]. rewrite step_spec in H4.
+      destruct H4 as [ed [? [? ?]]]. pose proof (conj H7 H4). rewrite (@only_one_edge _ _ _ _ g _ (liGraph g)) in H9; auto. subst ed. rewrite H8 in e.
+      exfalso. apply (@valid_not_null _ _ _ _ g _ (maGraph g)) in H3; auto.
+    - unfold complement, Equivalence.equiv in c. inversion H. clear H H3. assert (vvalid g x) by (destruct H0; apply reachable_head_valid in H; auto).
+      assert (g |= (x, (x, tt) :: nil) is x ~o~> pa satisfying (fun _ => True)). {
+        split; split; intros; hnf; simpl; auto. unfold strong_evalid. assert ((x, tt) = (x, tt)) by auto. rewrite <- (@only_one_edge _ _ _ _ g _ (liGraph g)) in H2; auto.
+        destruct H2. split; [|split]; auto. rewrite H2. split; auto. apply (@valid_graph _ _ _ _ g _ (maGraph g)) in H3. destruct H3 as [_ [? | ?]]; auto.
+        hnf in H3. exfalso; auto.
+      } rewrite H4. intro. rewrite <- H3 in H2. apply (@no_loop_path _ _ _ _ g _ (liGraph g)) in H2. inversion H2.
+  Qed.
+
+  Lemma vgamma_uf_root: forall (g: Graph) x r pa root, vvalid g x -> vgamma g x = (r, pa) -> uf_root g x root -> x <> root -> uf_root g pa root.
+  Proof.
+    intros. pose proof (uf_root_not_eq_root_vgamma g _ _ _ _ H0 H1 H2). destruct H1. split; auto. pose proof (valid_parent g _ _ _ H H0).  
+    assert (Decidable (reachable g pa root)) by (apply Graph_reachable_dec; left; auto). apply decidable_prop_decidable in H6. destruct H6; auto. exfalso.
+    pose proof (lst_out_edge_only_one g (liGraph g) x pa root). simpl in H7. apply H2. apply H7; auto. apply (vgamma_not_dst _ _ r); auto.
+  Qed.
+
   Instance fml : FML_General addr (addr * unit) nat unit unit LiMaFin (fun x => (x, tt)) is_null_SGBA. Proof. constructor; intros; destruct X; auto. Defined.
 
   Global Existing Instance fml.
@@ -106,19 +127,23 @@ Section GList_UnionFind.
     pose proof (vgamma_not_reachable g1 root r pa H H0 H1). destruct H4. auto.
   Qed.
 
+  Lemma graph_gen_redirect_parent_equiv': forall (g1 g2: Graph) x root,
+      uf_equiv g1 g2 -> vvalid g2 x -> (~ reachable g2 root x) -> uf_root g2 x root -> uf_equiv g1 (pregraph_gen_dst g2 (x, tt) root).
+  Proof.
+    intros. apply (@uf_equiv_trans _ _ _ _ g2 _ (liGraph g2) _ (maGraph g2) (finGraph g2)); auto. split; intro y; simpl; [intuition |]. intros.
+    assert (Decidable (reachable g2 y x)) by (apply Graph_reachable_dec; left; destruct H3; apply reachable_head_valid in H3; auto).
+    apply decidable_prop_decidable in H5. destruct H5.
+    - pose proof (uf_root_gen_dst_same g2 (liGraph g2) _ _ _ H2 H1 H5). simpl in H6.
+      pose proof (uf_root_unique _ (gen_dst_preserve_lst g2 (liGraph g2) _ _ H1 H0) _ _ _ H4 H6). subst r2.
+      pose proof (uf_root_reachable _ _ _ _ H5 H2). apply (uf_root_unique g2 (liGraph g2) _ _ _ H3 H7).
+    - apply (uf_root_unique _ (gen_dst_preserve_lst g2 (liGraph g2) _ _ H1 H0) y); auto. apply (uf_root_gen_dst_preserve g2 (liGraph g2)); auto.
+  Qed.
+
   Lemma graph_gen_redirect_parent_equiv: forall (g1 g2: Graph) x r pa root (Hv: vvalid g2 x) (Hn: ~ reachable g2 root x),
       vvalid g1 x -> vgamma g1 x = (r, pa) -> pa <> x -> uf_equiv g1 g2 -> uf_root g2 pa root -> uf_equiv g1 (pregraph_gen_dst g2 (x, tt) root).
   Proof.
-    intros. apply (@uf_equiv_trans _ _ _ _ g2 _ (liGraph g2) _ (maGraph g2) (finGraph g2)); auto. split; intro y; simpl; [intuition |]. intros.
-    assert (Decidable (reachable g2 y x)) by (apply Graph_reachable_dec; left; destruct H4; apply reachable_head_valid in H4; auto).
-    apply decidable_prop_decidable in H6. destruct H6.
-    - assert (uf_root g2 x root). {
-        rewrite <- (uf_equiv_root_the_same g1); auto.
-        apply (uf_root_edge g1 (liGraph g1) x pa); [| apply (vgamma_not_dst g1 x r) | rewrite (uf_equiv_root_the_same g1 g2)]; auto.
-      } pose proof (uf_root_gen_dst_same g2 (liGraph g2) _ _ _ H7 Hn H6). simpl in H8.
-      pose proof (uf_root_unique _ (gen_dst_preserve_lst g2 (liGraph g2) _ _ Hn Hv) _ _ _ H5 H8). subst r2.
-      pose proof (uf_root_reachable _ _ _ _ H6 H7). apply (uf_root_unique g2 (liGraph g2) _ _ _ H4 H9).
-    - apply (uf_root_unique _ (gen_dst_preserve_lst g2 (liGraph g2) _ _ Hn Hv) y); auto. apply (uf_root_gen_dst_preserve g2 (liGraph g2)); auto.
+    intros. apply graph_gen_redirect_parent_equiv'; auto. rewrite <- (uf_equiv_root_the_same g1); auto.
+    apply (uf_root_edge g1 (liGraph g1) x pa); [| apply (vgamma_not_dst g1 x r) | rewrite (uf_equiv_root_the_same g1 g2)]; auto.
   Qed.
 
   Lemma graph_gen_redirect_parent_findS: forall (g1 g2: Graph) x r1 r2 pa pa' (H: weak_valid g2 pa') (Hv: vvalid g2 x) (Hn: ~ reachable g2 pa' x),
