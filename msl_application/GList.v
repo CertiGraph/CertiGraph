@@ -144,6 +144,36 @@ Section GRAPH_GList.
       + exists ((v, tt) :: el). split; [constructor; auto|]. intros. simpl. rewrite H2. intuition.
   Defined.
 
+  Lemma make_set_valid_path_pfoot: forall (v: addr) (g: PreGraph addr (addr * unit)) x p (Hn: v <> null) (Hi: ~ vvalid g v) (Hm: MathGraph g is_null_SGBA),
+      x <> v -> pfoot (make_set_pregraph v g) p = x -> valid_path (make_set_pregraph v g) p -> pfoot g p = x /\ valid_path g p.
+  Proof.
+    intros. destruct p as [p l]. assert (forall e, List.In e l -> e <> (v, tt)). {
+      intros. apply (valid_path_strong_evalid _ _ _ e) in H1; auto. hnf in H1. simpl in H1. unfold addValidFunc, updateEdgeFunc in H1.
+      destruct H1 as [? [? ?]]. intro. destruct (equiv_dec (v, tt) e). 2: compute in c; auto. destruct H4; auto. destruct Hm. apply valid_not_null in H4; simpl; auto.
+    } split.
+    - clear H1. revert p H0. induction l; intros. 1: simpl in H0 |-* ; auto.
+      assert (forall e : addr * unit, List.In e l -> e <> (v, tt)) by (intros; apply H2; right; auto). specialize (IHl H1). clear H1.
+      rewrite pfoot_cons in H0 |-* . simpl dst in H0. unfold updateEdgeFunc in H0. destruct (equiv_dec (v, tt) a).
+      + hnf in e. assert (a <> (v, tt)) by (apply H2; left; auto). exfalso; auto.
+      + apply IHl; auto.
+    - assert (p <> v). {
+        intro. subst p. destruct l. 1: simpl in H0; auto. simpl in H1. destruct H1. assert (strong_evalid (make_set_pregraph v g) p) by (destruct l; [|destruct H3]; auto).
+        clear H3. hnf in H4. simpl in H4. unfold addValidFunc, updateEdgeFunc in H1, H4. destruct H4 as [? _]. assert (p <> (v, tt)) by (apply H2; left; auto).
+        destruct (equiv_dec (v, tt) p). 1: hnf in e; auto. destruct H3; auto. destruct Hm. apply valid_graph in H3. destruct H3 as [? _]. rewrite <- H1 in H3. auto.
+      } clear H0. revert p H1 H3. induction l; intros.
+      + simpl in H1. unfold addValidFunc in H1. simpl. destruct H1; [|exfalso]; auto.
+      + assert (forall e : addr * unit, List.In e l -> e <> (v, tt)) by (intros; apply H2; right; auto). specialize (IHl H0). clear H0.
+        assert (a <> (v, tt)) by (apply H2; left; auto). rewrite valid_path_cons_iff in H1 |-* . destruct H1 as [? [? ?]]. split; [|split].
+        * simpl in H1. unfold updateEdgeFunc in H1. destruct (equiv_dec (v, tt) a); [exfalso|]; auto.
+        * hnf in H4. simpl in H4. unfold addValidFunc, updateEdgeFunc in H4. destruct H4 as [? [? ?]].
+          destruct (equiv_dec (v, tt) a); [hnf in e; exfalso|]; auto. destruct H4; [|exfalso]; auto. clear c.
+          destruct H6. 2: destruct Hm; apply valid_graph in H4; destruct H4; rewrite H6 in H4; exfalso; auto.
+          destruct H7. 2: destruct Hm; apply valid_graph in H4; destruct H4; hnf in H8; simpl in H8; rewrite H7 in H8; exfalso; destruct H8; auto. hnf. split; auto.
+        * simpl dst in H5. unfold updateEdgeFunc in H5. destruct (equiv_dec (v, tt) a); [hnf in e; exfalso|]; auto. apply IHl; auto.
+          destruct H4 as [? _]. simpl in H4. unfold addValidFunc in H4. destruct H4; [|exfalso]; auto. destruct Hm. apply valid_graph in H4. destruct H4 as [_ ?].
+          hnf in H4. simpl in H4. intro. rewrite H6 in H4. destruct H4; auto.
+  Qed.
+
   Definition make_set_LstGraph (v: addr) (g: PreGraph addr (addr * unit)) (Hn: v <> null) (Hi: ~ vvalid g v) (Hm: MathGraph g is_null_SGBA)
              (Hl: LstGraph g (fun x => (x, tt))): LstGraph (make_set_pregraph v g) (fun x => (x, tt)).
   Proof.
@@ -169,28 +199,8 @@ Section GRAPH_GList.
         destruct H2 as [? [? ?]]. destruct (equiv_dec (v, tt) p).
         * exfalso. destruct H4; auto. destruct Hm. apply valid_not_null in H4; simpl; auto.
         * compute in c. exfalso. destruct H2; auto. destruct Hm. apply valid_graph in H2. destruct H2. subst v. auto.
-      + destruct p as [p l]. assert (forall e, List.In e l -> e <> (v, tt)). {
-          destruct H as [_ [? _]]. intros. apply (valid_path_strong_evalid _ _ _ e) in H; auto. hnf in H. simpl in H. unfold addValidFunc, updateEdgeFunc in H.
-          destruct H as [? [? ?]]. intro. destruct (equiv_dec (v, tt) e). 2: compute in c; auto. destruct H3; auto. destruct Hm. apply valid_not_null in H3; simpl; auto.
-        } destruct Hl. apply no_loop_path. destruct H as [[? ?] [? ?]]. split; split; auto.
-        * clear H H3 H4. revert p H2. induction l; intros. 1: simpl in H2 |-* ; auto.
-          assert (forall e : addr * unit, List.In e l -> e <> (v, tt)) by (intros; apply H1; right; auto). specialize (IHl H). clear H.
-          rewrite pfoot_cons in H2 |-* . simpl dst in H2. unfold updateEdgeFunc in H2. destruct (equiv_dec (v, tt) a).
-          -- hnf in e. assert (a <> (v, tt)) by (apply H1; left; auto). exfalso; auto.
-          -- apply IHl; auto.
-        * assert (p <> v) by (simpl in H; subst p; auto). clear H H2 H4. revert p H3 H5. induction l; intros.
-          -- simpl in H3. unfold addValidFunc in H3. simpl. destruct H3; [|exfalso]; auto.
-          -- assert (forall e : addr * unit, List.In e l -> e <> (v, tt)) by (intros; apply H1; right; auto). specialize (IHl H). clear H.
-             assert (a <> (v, tt)) by (apply H1; left; auto). rewrite valid_path_cons_iff in H3 |-* . destruct H3 as [? [? ?]]. split; [|split].
-             ++ simpl in H2. unfold updateEdgeFunc in H2. destruct (equiv_dec (v, tt) a); [exfalso|]; auto.
-             ++ hnf in H3. simpl in H3. unfold addValidFunc, updateEdgeFunc in H3. destruct H3 as [? [? ?]].
-                destruct (equiv_dec (v, tt) a); [hnf in e; exfalso|]; auto. destruct H3; [|exfalso]; auto. clear c.
-                destruct H6. 2: destruct Hm; apply valid_graph in H3; destruct H3; rewrite H6 in H3; exfalso; auto.
-                destruct H7. 2: destruct Hm; apply valid_graph in H3; destruct H3; hnf in H8; simpl in H8; rewrite H7 in H8; exfalso; destruct H8; auto.
-                hnf. split; auto.
-             ++ simpl dst in H4. unfold updateEdgeFunc in H4. destruct (equiv_dec (v, tt) a); [hnf in e; exfalso|]; auto. apply IHl; auto.
-                destruct H3 as [? _]. simpl in H3. unfold addValidFunc in H3. destruct H3; [|exfalso]; auto. destruct Hm. apply valid_graph in H3. destruct H3 as [_ ?].
-                hnf in H3. simpl in H3. intro. rewrite H6 in H3. destruct H3; auto.
+      + destruct Hl. apply no_loop_path. destruct H as [[? ?] [? ?]]. assert (pfoot g p = x /\ valid_path g p) by (apply (make_set_valid_path_pfoot v); auto).
+        destruct H4. split; split; auto.
   Defined.
 
   Definition make_set_sound (v: addr)  (g: PreGraph addr (addr * unit)) (Hn: v <> null) (Hi: ~ vvalid g v) (Hlmf: LiMaFin g) : LiMaFin (make_set_pregraph v g) :=
@@ -198,6 +208,18 @@ Section GRAPH_GList.
 
   Definition make_set_Graph (default_dv: DV) (default_de: DE) (default_dg: DG) (v: addr) (g: Graph) (Hn: v <> null) (Hi: ~ vvalid g v) : Graph :=
     Build_GeneralGraph _ _ _ _ (make_set_LabeledGraph v g default_dv default_de default_dg) (make_set_sound v g Hn Hi (sound_gg g)).
+
+  Lemma uf_under_bound_make_set_graph: forall (default_dv: DV) (default_de: DE) (default_dg: DG) (v: addr) (g: Graph) (Hn: v <> null) (Hi: ~ vvalid g v) (extract: DV -> nat),
+      extract default_dv = O -> uf_under_bound extract g -> uf_under_bound extract (make_set_Graph default_dv default_de default_dg v g Hn Hi).
+  Proof.
+    intros. hnf in H0 |-* . simpl. intro x; intros. unfold addValidFunc in H1. destruct (SGBA_VE x v).
+    - hnf in e. subst v. destruct H1; [exfalso; auto |]. clear H1. hnf. intros. rewrite H. destruct p as [p l]. destruct l; simpl; auto. exfalso.
+      apply pfoot_in_cons in H2. destruct H2 as [e [? ?]]. simpl in H3. unfold updateEdgeFunc in H3. pose proof (valid_path_strong_evalid _ _ _ _ H1 H2). hnf in H4.
+      simpl in H4. unfold addValidFunc, updateEdgeFunc in H4. destruct H4 as [? [? ?]]. destruct (equiv_dec (x, tt) e). 1: exfalso; auto. compute in c.
+      destruct H4; auto. destruct (@valid_graph _ _ _ _ g _ (maGraph g) _ H4) as [_ ?]. rewrite H3 in H7. destruct H7; auto.
+    - compute in c. destruct H1; [|exfalso; auto]. hnf. intros. assert (pfoot g p = x /\ valid_path g p) by (apply (make_set_valid_path_pfoot v); auto; exact (maGraph g)).
+      destruct H4. unfold uf_bound in H0. apply H0; auto.
+  Qed.
 
   Definition single_uf_pregraph (v: addr) : PreGraph addr (addr * unit) :=
     pregraph_add_edge (single_vertex_pregraph v) (v, tt) v null.
