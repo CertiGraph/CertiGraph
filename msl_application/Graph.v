@@ -263,6 +263,14 @@ Definition edges_identical2 (PE1 PE2: Ensemble E) (g1 g2: SpatialGraph V E GV GE
   Same_set PE1 PE2 /\
   guarded_pointwise_relation PE1 eq (egamma g1) (egamma g2).
 
+Instance edges_identical_proper: Proper (Same_set ==> eq ==> eq ==> iff) edges_identical.
+Proof.
+  hnf; intros. hnf; intros G1 G1' ?; subst G1'. hnf; intros G2 G2' ?; subst G2'. unfold edges_identical, respectful_relation. split; intros.
+  + rewrite guarded_pointwise_relation_spec in H0 |- *. intros; apply H0. rewrite (app_same_set H); auto.
+  + rewrite guarded_pointwise_relation_spec in H0 |- *. intros; apply H0. rewrite <- (app_same_set H); auto.
+Qed.
+Global Existing Instance edges_identical_proper.
+
 (* TODO: add some properties for edges_identical. *)
 
 Lemma spacialgraph_gen_vgamma: forall (g: SpatialGraph V E GV GE) (x: V) (d: GV), vgamma (spatialgraph_vgen g x d) x = d.
