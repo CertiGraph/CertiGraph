@@ -3,14 +3,14 @@ Require Import VST.msl.log_normalize.
 Require Import RamifyCoq.msl_ext.seplog.
 Require Import RamifyCoq.msl_ext.log_normalize.
 
-Require Export veric.base.
-Require Import veric.rmaps.
-Require Import veric.rmaps_lemmas.
-Require Import veric.compcert_rmaps.
-Require Import veric.slice.
-Require Import veric.res_predicates.
-Require Import veric.tycontext.
-Require Import veric.expr.
+Require Export VST.veric.base.
+Require Import VST.veric.rmaps.
+Require Import VST.veric.rmaps_lemmas.
+Require Import VST.veric.compcert_rmaps.
+Require Import VST.veric.slice.
+Require Import VST.veric.res_predicates.
+Require Import VST.veric.tycontext.
+Require Import VST.veric.expr.
 Require Import VST.veric.address_conflict.
 Require Import VST.veric.seplog.
 
