@@ -7,9 +7,9 @@ COQC=$(COQBIN)coqc
 COQDEP=$(COQBIN)coqdep
 
 DIRS = lib msl_ext msl_application graph heap_model_direct
-INCLUDE_COMPCERT = -R $(COMPCERT_DIR) compcert
-INCLUDE_VST = -R $(VST_DIR) VST
-INCLUDE_RAMIFYCOQ = $(foreach d, $(DIRS), -R $(d) RamifyCoq.$(d)) -R "." RamifyCoq
+INCLUDE_COMPCERT = -Q $(COMPCERT_DIR) compcert
+INCLUDE_VST = -Q $(VST_DIR) VST
+INCLUDE_RAMIFYCOQ = $(foreach d, $(DIRS), -Q $(d) RamifyCoq.$(d)) -Q "." RamifyCoq
 NORMAL_FLAG = $(INCLUDE_RAMIFYCOQ) $(INCLUDE_VST) $(INCLUDE_COMPCERT)
 CLIGHT_FLAG = $(INCLUDE_COMPCERT) $(INCLUDE_RAMIFYCOQ)
 
