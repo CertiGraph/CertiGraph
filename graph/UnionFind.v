@@ -52,6 +52,13 @@ Section UNION_FIND_SINGLE.
   Context {out_edge: Vertex -> Edge}.
   Context (gLst: LstGraph g out_edge).
 
+  Lemma uf_root_refl: forall x, vvalid g x -> ~ vvalid g (dst g (out_edge x)) -> uf_root g x x.
+  Proof.
+    intros. split; intros. 1: apply reachable_refl; auto. destruct H1 as [[? ?] ?]. destruct H1 as [[? ?] [? _]]. simpl in H1. subst v. destruct l. 1: simpl in H2; auto.
+    simpl in H3. destruct H3. assert (strong_evalid g e) by (destruct l;[|destruct H3]; auto). clear H3. destruct H4 as [? [? ?]]. symmetry in H1.
+    destruct (only_one_edge _ e H) as [? _]. specialize (H6 (conj H1 H3)). subst e. exfalso; auto.
+  Qed.    
+
   Lemma uf_root_unique: forall x r1 r2, uf_root g x r1 -> uf_root g x r2 -> r1 = r2.
   Proof. intros. destruct H, H0. pose proof (lst_reachable_or _ _ _ _ _ H H0). destruct H3; [apply H1 | symmetry; apply H2]; auto. Qed.
 

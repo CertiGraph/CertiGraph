@@ -20,6 +20,7 @@ Local Coercion Graph_LGraph: Graph >-> LGraph.
 Local Identity Coercion Graph_GeneralGraph: Graph >-> GeneralGraph.
 Local Identity Coercion LGraph_LabeledGraph: LGraph >-> LabeledGraph.
 Local Coercion pg_lg: LabeledGraph >-> PreGraph.
+Existing Instances maGraph finGraph liGraph.
 
 Definition mallocN_spec :=
  DECLARE _mallocN
@@ -58,7 +59,7 @@ Definition find_spec :=
       SEP (whole_graph sh g subsets)
     POST [tint]
       EX g': Graph, EX rt: Z,
-      PROP (findS g i g' /\ uf_root g' i rt)
+      PROP (uf_equiv g g' /\ uf_root g' i rt)
       LOCAL (temp ret_temp (Vint (Int.repr rt)))
       SEP (whole_graph sh g' subsets).
 
@@ -79,21 +80,21 @@ Definition Vprog : varspecs := nil.
 
 Definition Gprog : funspecs := mallocN_spec :: makeSet_spec :: find_spec :: union_spec ::nil.
 
-Lemma whole_graph_empty: forall sh rt n, 0 <= n -> malloc_compatible n (pointer_val_val rt) -> whole_graph sh (makeSet_discrete_Graph 0) rt = emp.
-Proof.
-  intros. unfold whole_graph, full_graph_at. simpl. unfold graph_vcell_at. simpl. unfold vgamma. simpl. unfold vcell_array_at. unfold SAG_VST. apply pred_ext.
-  - apply exp_left. intro l. Intros. destruct l. 2: exfalso; rewrite <- (H1 z); left; auto. simpl. unfold data_at, field_at. simpl. Intros.
-    unfold at_offset. rewrite data_at_rec_eq. simpl. unfold unfold_reptype. simpl. rewrite array_pred_len_0; auto.
-  - apply (exp_right nil). simpl. apply andp_right; [apply andp_right|]; [apply prop_right_emp ..|]; [intros; intuition | constructor |].
-    unfold data_at. unfold field_at. apply andp_right.
-    + apply prop_right_emp. apply malloc_compatible_field_compatible. simpl.
-      * unfold malloc_compatible in *. destruct (pointer_val_val rt); auto. destruct H0. split; auto. omega.
-      * unfold legal_alignas_type, nested_pred. simpl. auto.
-      * unfold legal_cosu_type, nested_pred. simpl. auto.
-      * simpl. auto.
-      * simpl. exists 2. simpl. auto.
-    + unfold at_offset. rewrite data_at_rec_eq. simpl. unfold unfold_reptype. simpl. rewrite array_pred_len_0; auto.
-Qed.
+(* Lemma whole_graph_empty: forall sh rt n, 0 <= n -> malloc_compatible n (pointer_val_val rt) -> whole_graph sh (makeSet_discrete_Graph 0) rt = emp. *)
+(* Proof. *)
+(*   intros. unfold whole_graph, full_graph_at. simpl. unfold graph_vcell_at. simpl. unfold vgamma. simpl. unfold vcell_array_at. unfold SAG_VST. apply pred_ext. *)
+(*   - apply exp_left. intro l. Intros. destruct l. 2: exfalso; rewrite <- (H1 z); left; auto. simpl. unfold data_at, field_at. simpl. Intros. *)
+(*     unfold at_offset. rewrite data_at_rec_eq. simpl. unfold unfold_reptype. simpl. rewrite array_pred_len_0; auto. *)
+(*   - apply (exp_right nil). simpl. apply andp_right; [apply andp_right|]; [apply prop_right_emp ..|]; [intros; intuition | constructor |]. *)
+(*     unfold data_at. unfold field_at. apply andp_right. *)
+(*     + apply prop_right_emp. apply malloc_compatible_field_compatible. simpl. *)
+(*       * unfold malloc_compatible in *. destruct (pointer_val_val rt); auto. destruct H0. split; auto. omega. *)
+(*       * unfold legal_alignas_type, nested_pred. simpl. auto. *)
+(*       * unfold legal_cosu_type, nested_pred. simpl. auto. *)
+(*       * simpl. auto. *)
+(*       * simpl. exists 2. simpl. auto. *)
+(*     + unfold at_offset. rewrite data_at_rec_eq. simpl. unfold unfold_reptype. simpl. rewrite array_pred_len_0; auto. *)
+(* Qed. *)
 
 Fixpoint prog_list_helper (i: nat) (n: nat) : list (val * val) :=
   match n with
@@ -146,27 +147,6 @@ Proof.
   - exfalso. assert (Z.to_nat i > V)%nat by omega. apply inj_gt in H0. rewrite Z2Nat.id in H0; omega.
 Qed.
 
-Fixpoint nat_inc_list (n: nat) : list Z :=
-  match n with
-  | O => nil
-  | S n' => nat_inc_list n' ++ (Z.of_nat n' :: nil)
-  end.
-
-Lemma nat_inc_list_in_iff: forall n v, In v (nat_inc_list n) <-> 0 <= v < Z.of_nat n.
-Proof.
-  induction n; intros; [simpl; intuition|]. rewrite Nat2Z.inj_succ. unfold Z.succ. simpl. rewrite in_app.
-  assert (0 <= v < Z.of_nat n + 1 <-> 0 <= v < Z.of_nat n \/ v = Z.of_nat n) by omega. rewrite H. clear H. rewrite IHn. simpl. intuition.
-Qed.
-
-Lemma nat_inc_list_NoDup: forall n, NoDup (nat_inc_list n).
-Proof.
-  induction n; simpl; [constructor|]. apply NoDup_app_inv; auto.
-  - constructor; auto. constructor.
-  - intros. rewrite nat_inc_list_in_iff in H. simpl. omega.
-Qed.
-
-Lemma nat_inc_list_length: forall n, length (nat_inc_list n) = n. Proof. induction n; simpl; auto. rewrite app_length. simpl. rewrite IHn. intuition. Qed.
-
 Lemma progressive_nat_inc_list: forall n i, (i >= n)%nat -> map (fun x : Z => (Vint (Int.repr x), Vint (Int.repr 0))) (nat_inc_list n) = progressive_list i n.
 Proof.
   induction n; intros; unfold progressive_list in *; simpl; auto. destruct (le_dec i n). 1: exfalso; omega. rewrite map_app. simpl. rewrite <- IHn; intuition.
@@ -200,16 +180,76 @@ Proof.
     + Opaque Znth. forward. remember (Znth i (progressive_list (Z.to_nat i) (Z.to_nat V)) (Vundef, Vundef)) as lll. destruct lll. forward.
       assert (0 <= i < Zlength (progressive_list (Z.to_nat i) (Z.to_nat V))) by (split; [|rewrite Zlength_correct, progressive_list_length, Z2Nat.id]; omega).
       rewrite upd_Znth_same, upd_Znth_twice; [|auto ..]. unfold progressive_array, data_at.
-      rewrite upd_Znth_progressive_list. 2: rewrite Z2Nat.id; omega. entailer.
+      rewrite upd_Znth_progressive_list. 2: rewrite Z2Nat.id; omega. entailer. Transparent Znth.
     + forward. apply (exp_right (makeSet_discrete_Graph (Z.to_nat V))). entailer. apply (exp_right rt). entailer. apply andp_right.
       * apply prop_right. intros. simpl. rewrite makeSet_vvalid. rewrite Z2Nat.id; omega.
-      * unfold whole_graph, full_graph_at. simpl. unfold graph_vcell_at. apply (exp_right (nat_inc_list (Z.to_nat V))).
-        apply andp_right; [apply andp_right; apply prop_right |]; intros.
-        -- rewrite makeSet_vvalid. rewrite nat_inc_list_in_iff. intuition.
-        -- apply nat_inc_list_NoDup.
+      * unfold whole_graph, full_graph_at. simpl. apply (exp_right (Z.to_nat V)). apply andp_right; intros; [apply andp_right; apply prop_right|].
+        -- intros. rewrite makeSet_vvalid. intuition.
+        -- rewrite Z2Nat.id; omega.
         -- simpl. unfold vcell_array_at, SAG_VST. rewrite map_length, nat_inc_list_length. rewrite Z2Nat.id. 2: intuition.
            assert (map (fun x : Z => vgamma (makeSet_discrete_LabeledGraph (Z.to_nat V)) x) (nat_inc_list (Z.to_nat V)) =
                    map (fun x => (0%nat, x)) (nat_inc_list (Z.to_nat V))). {
              apply list_map_exten. intros. unfold vgamma. simpl. rewrite makeSet_dst. simpl. auto.
            } rewrite H6. clear H6. rewrite list_map_compose. unfold vgamma2cdata. simpl. rewrite <- progressive_nat_inc_list; intuition. 
 Qed.
+
+Lemma whole_graph_fold: forall n sh g p,
+    (forall v : Z, 0 <= v < Z.of_nat n <-> vvalid (lg_gg g) v) -> Z.of_nat n <= Int.max_signed / 8 ->
+    data_at sh (tarray vertex_type (Z.of_nat n)) (map (fun x : Z => vgamma2cdata (vgamma (lg_gg g) x)) (nat_inc_list n)) (pointer_val_val p) = whole_graph sh g p.
+Proof.
+  intros. apply pred_ext; unfold whole_graph, full_graph_at, vcell_array_at, SAG_VST; [apply (exp_right n)|Intros n']; rewrite map_length, nat_inc_list_length, list_map_compose.
+  - apply andp_right; auto. apply andp_right; apply prop_right; auto.
+  - destruct (lt_eq_lt_dec n n') as [[? | ?] | ?]; [exfalso | subst n' | exfalso]; auto.
+    + assert (vvalid (lg_gg g) (Z.of_nat n)) by (rewrite <- H1; intuition). rewrite <- H in H3. intuition.
+    + assert (vvalid (lg_gg g) (Z.of_nat n')) by (rewrite <- H; intuition). rewrite <- H1 in H3. intuition.
+Qed.
+
+Lemma whole_graph_unfold: forall sh g p,
+    whole_graph sh g p =
+    EX n: nat, !! (forall v : Z, 0 <= v < Z.of_nat n <-> vvalid (lg_gg g) v) && !!(Z.of_nat n <= Int.max_signed / 8) &&
+                  (data_at sh (tarray vertex_type (Z.of_nat n)) (map (fun x : Z => vgamma2cdata (vgamma (lg_gg g) x)) (nat_inc_list n)) (pointer_val_val p)).
+Proof.
+  intros. unfold whole_graph, full_graph_at, vcell_array_at, SAG_VST.
+  apply pred_ext; Intros n; apply (exp_right n); apply andp_right; [apply andp_right; apply prop_right| |apply andp_right; apply prop_right|];
+    auto; rewrite map_length, nat_inc_list_length, list_map_compose; auto.
+Qed.
+
+Lemma Znth_nat_inc_list: forall {A: Type} n (f: Z -> A) i a, 0 <= i < Z.of_nat n -> Znth i (map f (nat_inc_list n)) a = f i.
+Proof.
+  intros. rewrite Znth_map with (d' := 0); auto. 2: rewrite Zlength_correct, nat_inc_list_length; auto. f_equal. induction n.
+  - exfalso. simpl in H. intuition.
+  - simpl. assert (0 <= i < Z.of_nat n \/ i = Z.of_nat n). {
+      rewrite Nat2Z.inj_succ in H. destruct H. rewrite Z.lt_succ_r, Z.lt_eq_cases in H0. destruct H0; [left | right]; auto.
+    } assert (Zlength (nat_inc_list n) = Z.of_nat n) by (rewrite Zlength_correct, nat_inc_list_length; auto). destruct H0.
+    + rewrite app_Znth1. 2: rewrite H1; destruct H0; auto. apply IHn; auto.
+    + rewrite app_Znth2. 2: rewrite H1; intuition. rewrite H0, H1. replace (Z.of_nat n - Z.of_nat n) with 0 by omega. rewrite Znth_0_cons. auto.
+Qed.
+
+Lemma body_find: semax_body Vprog Gprog f_find find_spec.
+Proof.
+  start_function. rewrite whole_graph_unfold. Intros n. forward.
+  - entailer. rewrite Znth_nat_inc_list. 2: rewrite H0; auto. apply prop_right. compute. auto.
+  - apply prop_right. rewrite H0. auto.
+  - rewrite Znth_nat_inc_list. 2: rewrite H0; auto. unfold vgamma2cdata at 1. unfold vgamma at 1.
+    forward_if_tac
+      (EX g': Graph, EX rt: Z,
+       PROP (uf_equiv g g' /\ uf_root g' i rt)
+       LOCAL (temp _p (Vint (Int.repr rt)); temp _subsets (pointer_val_val subsets); temp _i (Vint (Int.repr i)))
+       SEP (whole_graph sh g' subsets)).
+    + admit.
+    + forward. rewrite whole_graph_fold; [|intuition..]. apply (exp_right g). rewrite H2. apply (exp_right i). entailer !.
+      split. 1: apply (uf_equiv_refl _  (liGraph g)). destruct (Z_lt_dec (dst (lg_gg g) i) 0).
+      * split. 1: apply reachable_refl; auto. intros. destruct H4 as [[? ?] ?]. destruct H4 as [[? ?] [? ?]]. simpl in H4. subst z. destruct l0.
+        -- simpl in H5. auto.
+        -- simpl in H6. destruct H6. assert (strong_evalid g z) by (destruct l0; [|destruct H6]; auto). destruct H8 as [? [? ?]]. symmetry in H4.
+           destruct (@only_one_edge _ _ _ _ _ _ (liGraph g) _ z H) as [? _]. specialize (H11 (conj H4 H8)). simpl in H11. subst z. rewrite <- H0 in H10.
+           destruct H10. assert (dst g i < 0) by apply l. exfalso; omega.
+      * destruct (vvalid_src_evalid _ (liGraph g) i H) as [_ ?]. destruct (valid_graph g _ H4) as [_ [? | ?]]. 1: simpl in H5; exfalso; auto. simpl id in *.
+        rewrite <- H0 in H5. rewrite <- H0 in H. apply repr_inj_unsigned in H2.
+        -- exfalso. rewrite H0 in H. assert (reachable g i i) by (apply reachable_refl; auto). pose proof (dst_not_reachable _ (liGraph g) _ _ _ H H2 H6). auto.
+        -- split. 1: omega. rewrite Z.lt_eq_cases. left. apply Z.lt_trans with (Int.max_signed / 8). 2: reflexivity. destruct H5. apply Z.lt_le_trans with (Z.of_nat n); auto. 
+        -- split. 1: omega. rewrite Z.lt_eq_cases. left. apply Z.lt_trans with (Int.max_signed / 8). 2: compute; auto. destruct H. apply Z.lt_le_trans with (Z.of_nat n); auto.
+    + Intros g' rt. rewrite <- H0 in H. forward. apply (exp_right g'). entailer !.
+      * admit.
+      * apply (exp_right rt). entailer !.
+Abort.
