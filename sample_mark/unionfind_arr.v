@@ -1,8 +1,8 @@
 
 Require Import Clightdefs.
 Local Open Scope Z_scope.
-Definition _Union : ident := 60%positive.
-Definition _V : ident := 61%positive.
+Definition _Union : ident := 61%positive.
+Definition _V : ident := 62%positive.
 Definition ___builtin_annot : ident := 6%positive.
 Definition ___builtin_annot_intval : ident := 7%positive.
 Definition ___builtin_bswap : ident := 30%positive.
@@ -51,22 +51,23 @@ Definition ___i64_udiv : ident := 24%positive.
 Definition ___i64_umod : ident := 26%positive.
 Definition ___i64_utod : ident := 20%positive.
 Definition ___i64_utof : ident := 22%positive.
-Definition _find : ident := 55%positive.
+Definition _find : ident := 56%positive.
 Definition _i : ident := 54%positive.
-Definition _main : ident := 64%positive.
-Definition _makeSet : ident := 63%positive.
+Definition _main : ident := 65%positive.
+Definition _makeSet : ident := 64%positive.
 Definition _mallocN : ident := 52%positive.
+Definition _p : ident := 55%positive.
 Definition _parent : ident := 1%positive.
 Definition _rank : ident := 2%positive.
 Definition _subset : ident := 3%positive.
 Definition _subsets : ident := 53%positive.
-Definition _v : ident := 62%positive.
-Definition _x : ident := 56%positive.
-Definition _xroot : ident := 58%positive.
-Definition _y : ident := 57%positive.
-Definition _yroot : ident := 59%positive.
-Definition _t'1 : ident := 65%positive.
-Definition _t'2 : ident := 66%positive.
+Definition _v : ident := 63%positive.
+Definition _x : ident := 57%positive.
+Definition _xroot : ident := 59%positive.
+Definition _y : ident := 58%positive.
+Definition _yroot : ident := 60%positive.
+Definition _t'1 : ident := 66%positive.
+Definition _t'2 : ident := 67%positive.
 
 Definition f_find := {|
   fn_return := tint;
@@ -74,41 +75,38 @@ Definition f_find := {|
   fn_params := ((_subsets, (tptr (Tstruct _subset noattr))) :: (_i, tint) ::
                 nil);
   fn_vars := nil;
-  fn_temps := ((_t'1, tint) :: nil);
+  fn_temps := ((_p, tint) :: (_t'1, tint) :: nil);
   fn_body :=
 (Ssequence
-  (Sifthenelse (Ebinop One
-                 (Efield
-                   (Ederef
-                     (Ebinop Oadd
-                       (Etempvar _subsets (tptr (Tstruct _subset noattr)))
-                       (Etempvar _i tint) (tptr (Tstruct _subset noattr)))
-                     (Tstruct _subset noattr)) _parent tint)
-                 (Etempvar _i tint) tint)
-    (Ssequence
-      (Scall (Some _t'1)
-        (Evar _find (Tfunction
-                      (Tcons (tptr (Tstruct _subset noattr))
-                        (Tcons tint Tnil)) tint cc_default))
-        ((Etempvar _subsets (tptr (Tstruct _subset noattr))) ::
-         (Efield
-           (Ederef
-             (Ebinop Oadd (Etempvar _subsets (tptr (Tstruct _subset noattr)))
-               (Etempvar _i tint) (tptr (Tstruct _subset noattr)))
-             (Tstruct _subset noattr)) _parent tint) :: nil))
-      (Sassign
-        (Efield
-          (Ederef
-            (Ebinop Oadd (Etempvar _subsets (tptr (Tstruct _subset noattr)))
-              (Etempvar _i tint) (tptr (Tstruct _subset noattr)))
-            (Tstruct _subset noattr)) _parent tint) (Etempvar _t'1 tint)))
-    Sskip)
-  (Sreturn (Some (Efield
-                   (Ederef
-                     (Ebinop Oadd
-                       (Etempvar _subsets (tptr (Tstruct _subset noattr)))
-                       (Etempvar _i tint) (tptr (Tstruct _subset noattr)))
-                     (Tstruct _subset noattr)) _parent tint))))
+  (Sset _p
+    (Efield
+      (Ederef
+        (Ebinop Oadd (Etempvar _subsets (tptr (Tstruct _subset noattr)))
+          (Etempvar _i tint) (tptr (Tstruct _subset noattr)))
+        (Tstruct _subset noattr)) _parent tint))
+  (Ssequence
+    (Sifthenelse (Ebinop One (Etempvar _p tint) (Etempvar _i tint) tint)
+      (Ssequence
+        (Scall (Some _t'1)
+          (Evar _find (Tfunction
+                        (Tcons (tptr (Tstruct _subset noattr))
+                          (Tcons tint Tnil)) tint cc_default))
+          ((Etempvar _subsets (tptr (Tstruct _subset noattr))) ::
+           (Etempvar _p tint) :: nil))
+        (Sassign
+          (Efield
+            (Ederef
+              (Ebinop Oadd
+                (Etempvar _subsets (tptr (Tstruct _subset noattr)))
+                (Etempvar _i tint) (tptr (Tstruct _subset noattr)))
+              (Tstruct _subset noattr)) _parent tint) (Etempvar _t'1 tint)))
+      Sskip)
+    (Sreturn (Some (Efield
+                     (Ederef
+                       (Ebinop Oadd
+                         (Etempvar _subsets (tptr (Tstruct _subset noattr)))
+                         (Etempvar _i tint) (tptr (Tstruct _subset noattr)))
+                       (Tstruct _subset noattr)) _parent tint)))))
 |}.
 
 Definition f_Union := {|

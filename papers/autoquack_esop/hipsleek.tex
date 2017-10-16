@@ -1,7 +1,7 @@
 
 HIP/SLEEK is a toolset for verifying programs using separation logic~\cite{chin:hipsleek}.  As compared to VST, H/S has a heavier focus on automation: \emph{e.g.}, users need only specify loop invariants and the pre/postconditions of methods, rather than describing each program point.  H/S has two interlocking components.  HIP applies Hoare rules using forward reasoning to verify programs, \emph{i.e.} each entailment is of the form $P |- Q * R$, where the heap from the antecedent~$P$ is matched with the consequent $Q$ and a frame/residue $R$. To check these separation logic entailments and calculate~$R$, HIP calls SLEEK.  SLEEK handles spatial operators such as~$*$ and $|->$ before handing any remaining pure entailments to a variety of external solvers such as Z3.  One of H/S's distinguishing features is support for user-defined recursive predicates.  HIP/SLEEK has been used to verify programs manipulating data structures like lists, arrays, and trees.
 
-\begin{figure}[t]
+\begin{figure}[htbp]
 \lstset{otherkeywords={data,relation,rlemma,abstract,axiom,self,null,or}}
   \begin{lstlisting}
 $\label{code:hipdatanode}$data node { int val; node left; node right; }
@@ -67,7 +67,7 @@ applied in program verifications.  In contrast, our new lemmas are still user de
 
 The first step to adding such lemmas is to add abstract relations; the relations used by the \li{mark} verification are in lines~\ref{code:hipstartrelation}--\ref{code:hipendrelation}.  We have already met \li{lookup}; lines~\ref{code:hipmark1relation} and~\ref{code:hipmarkrelation} are how H/S models \m{mark1} and \m{mark}, respectively.  Users do not provide any definitions for these relations, but we do give H/S some axioms for how they behave: \emph{e.g.} line~\ref{code:hipaxiom} tells H/S that if the root of a graph is marked then we can consider the whole graph marked.  This axiom is used on line~\ref{ifcondmark} to safely \li{$\tx{return}$} once we encounter an already-marked \li{node}.  Users also provide spatial ramification rules as in lines~\ref{code:hipbeginlemma}--\ref{code:hipendlemma}.  %H/S only supports first order quantification so these are a little unpleasant to state, being essentially very concrete versions of the ramification library~(\S\ref{sec:ramifylib}).
 
-\begin{figure}[t]
+\begin{figure}[htbp]
 \lstset{deletekeywords={union},otherkeywords={Module,Type,Prop,Parameter,Axiom,End,forall},numbers=none}
   \begin{lstlisting}
 Module Type Mgraphmark.

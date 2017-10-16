@@ -20,7 +20,7 @@ than focusing on the nitty-gritty details.
 
 \subsection{Structure of the mathematical graph framework}\label{sec:mathinfra}
 
-\begin{figure}[t]
+\begin{figure}[htbp]
 \centering
 \beginpgfgraphicnamed{variousgraph}
 \begin{tikzpicture}
@@ -69,13 +69,13 @@ than focusing on the nitty-gritty details.
 \end{tikzpicture}
 \endpgfgraphicnamed
 \vspace{1ex}
-\caption{Structure of the Mathematical Graph Library}\label{fig:graphs}
+\caption[ ] {Structure of the Mathematical Graph Library}\label{fig:graphs}
 \end{figure}
 
 Figure~\ref{fig:graphs} gives the overall architecture of our mathematical graph library. The most basic kind of graph is PreGraph, out of which we build LabeledGraphs, and which in turn are used
 to build GeneralGraphs.  Each kind has some lemmas and also inherits the lemmas of the previous kind.  The dashed box represents a ``plugin'' system for attaching arbitrary properties to LabeledGraphs (\ref{subsec:graphplugins}). %and will be discussed later. %We will consider each in turn.
 
-\begin{figure}[t]
+\begin{figure}[htbp]
 \centering
 \beginpgfgraphicnamed{pregraphexp}
 \begin{tikzpicture}
@@ -204,7 +204,7 @@ Many theorems about graphs require certain properties, \emph{e.g.}:
 \end{itemize}
 We have a number of other properties in our codebase, but these three are the most important basic ones.
 
-\begin{figure}[t]
+\begin{figure}[htbp]
 \centering
 \beginpgfgraphicnamed{graphproperty}
 \begin{tikzpicture}

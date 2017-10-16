@@ -4,6 +4,7 @@ Require Import Coq.Sets.Ensembles.
 Require Import Coq.ZArith.ZArith.
 Require Import VST.msl.seplog.
 Require Import VST.msl.log_normalize.
+Require Import compcert.lib.Integers.
 Require Import RamifyCoq.lib.Coqlib.
 Require Import RamifyCoq.lib.Ensembles_ext.
 Require Import RamifyCoq.lib.EquivDec_ext.
@@ -27,10 +28,9 @@ Local Open Scope Z_scope.
 
 Instance Z_EqDec : EqDec Z eq. Proof. hnf. intros. apply Z.eq_dec. Defined.
 
-
 Definition is_null_Z: DecidablePred Z := existT (fun P : Z -> Prop => forall a : Z, {P a} + {~ P a}) (fun x : Z => x < 0) (fun a : Z => Z_lt_dec a 0).
 
-Class LiMaFin (g: PreGraph Z Z) : Prop :=
+Class LiMaFin (g: PreGraph Z Z) :=
   {
     li: LstGraph g id;
     ma: MathGraph g is_null_Z;
@@ -38,10 +38,17 @@ Class LiMaFin (g: PreGraph Z Z) : Prop :=
   }.
 
 Definition Graph := GeneralGraph Z Z nat unit unit (fun g => LiMaFin (pg_lg g)).
-
 Definition LGraph := LabeledGraph Z Z nat unit unit.
-
 Definition Graph_LGraph (G: Graph): LGraph := lg_gg G.
+
+Local Coercion Graph_LGraph: Graph >-> LGraph.
+Local Identity Coercion Graph_GeneralGraph: Graph >-> GeneralGraph.
+Local Identity Coercion LGraph_LabeledGraph: LGraph >-> LabeledGraph.
+Local Coercion pg_lg: LabeledGraph >-> PreGraph.
+
+Instance maGraph(G: Graph): MathGraph G is_null_Z := @ma G (@sound_gg _ _ _ _ _ _ _ _ G).
+Instance finGraph (G: Graph): FiniteGraph G := @fin G (@sound_gg _ _ _ _ _ _ _ _ G).
+Instance liGraph (G: Graph):  LstGraph G id := @li G (@sound_gg _ _ _ _ _ _ _ _ G).
 
 Definition vgamma (g: LGraph) (x: Z) : nat * Z := (vlabel g x, let target := dst (pg_lg g) x in if (Z_lt_dec target 0) then x else target).
 
@@ -148,6 +155,27 @@ Class SpatialArrayGraph (Addr: Type) (Pred: Type) := vcell_array_at: Addr -> lis
 
 Existing Instances SGP_ND SGP_SL SGP_ClSL SGP_CoSL.
 
+Fixpoint nat_inc_list (n: nat) : list Z :=
+  match n with
+  | O => nil
+  | S n' => nat_inc_list n' ++ (Z.of_nat n' :: nil)
+  end.
+
+Lemma nat_inc_list_in_iff: forall n v, List.In v (nat_inc_list n) <-> 0 <= v < Z.of_nat n.
+Proof.
+  induction n; intros; [simpl; intuition|]. rewrite Nat2Z.inj_succ. unfold Z.succ. simpl. rewrite in_app_iff.
+  assert (0 <= v < Z.of_nat n + 1 <-> 0 <= v < Z.of_nat n \/ v = Z.of_nat n) by omega. rewrite H. clear H. rewrite IHn. simpl. intuition.
+Qed.
+
+Lemma nat_inc_list_NoDup: forall n, NoDup (nat_inc_list n).
+Proof.
+  induction n; simpl; [constructor|]. apply NoDup_app_inv; auto.
+  - constructor; auto. constructor.
+  - intros. rewrite nat_inc_list_in_iff in H. simpl. omega.
+Qed.
+
+Lemma nat_inc_list_length: forall n, length (nat_inc_list n) = n. Proof. induction n; simpl; auto. rewrite app_length. simpl. rewrite IHn. intuition. Qed.
+
 Section SpaceArrayGraph.
 
   Context {Pred: Type}.
@@ -161,6 +189,7 @@ Section SpaceArrayGraph.
   Definition graph_vcell_at (g: Graph) (P: Z -> Prop) (x: Addr) :=
     EX l: list Z, !!(forall v, List.In v l <-> P v) && !! NoDup l && vcell_array_at x (map (fun x => vgamma (lg_gg g) x) l).
 
-  Definition full_graph_at (g: Graph) (x: Addr) := graph_vcell_at g (vvalid (pg_lg (lg_gg g))) x.
+  Definition full_graph_at (g: Graph) (x: Addr) :=
+    EX n: nat, !!(forall v, 0 <= v < Z.of_nat n <-> vvalid (pg_lg (lg_gg g)) v) && !!(Z.of_nat n <= Int.max_signed / 8) && vcell_array_at x (map (fun x => vgamma (lg_gg g) x) (nat_inc_list n)).
 
 End SpaceArrayGraph.

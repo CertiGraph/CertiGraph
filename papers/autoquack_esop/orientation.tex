@@ -37,7 +37,7 @@ Notice that the postcondition of \li{mark} is specified \emph{relationally}, \em
 Theoretically, relations are preferable because they are more general.  For example, relations allow ``inputs'' to have no ``outputs'' (\emph{i.e.} be partial) or alternatively have many outputs (\emph{i.e.} be nondeterministic).  Our graph \li{copy} algorithm is specified nondeterministically to avoid specifying how \li{malloc} allocates fresh blocks of memory.  Relations are also preferable to functions because they are more compositional.
 We take advantage of compositionality by using $\m{mark}(\gamma,x,\gamma') /| \ldots$ to specify both our ``spanning tree'' and ``graph copy'' algorithms in~\S\ref{sec:application}, which also mark nodes while carrying out their primary tasks.
 
-\begin{figure}
+\begin{figure}[htbp]
 \[
 \begin{array}{lcl}
 \sigma |= P * Q & \defeq & \exists \sigma_1, \sigma_2.~ \sigma_1 \oplus \sigma_2 = \sigma /| \null \\ && ~~ (\sigma_1 |= P) /| (\sigma_2 |= 2)\\
@@ -143,7 +143,7 @@ When the user is in the middle of a verification, the decorated program is parti
 
 We wish to preserve this ``decorated program'' view while extending Floyd to support ramification.  Our task therefore is to construct a proof in Coq's underlying logic that allows a localization block to be constructed in this manner---that is, we wish to enter a localization block without requiring the user to specify the ``exit point'' in advance.  The engineering is tricky because the proof Floyd is constructing (\emph{i.e.} applications of inference rules) has holes in places where the user's ``top to bottom'' view of things has not yet arrived.
 
-\begin{figure}[t]
+\begin{figure}[htbp]
 \begin{minipage}{.1\textwidth}
 \begin{lstlisting}
 $\{\ \ P_1 \ \ \}$
