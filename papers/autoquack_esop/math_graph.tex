@@ -22,54 +22,8 @@ than focusing on the nitty-gritty details.
 
 \begin{figure}[htbp]
 \centering
-\beginpgfgraphicnamed{variousgraph}
-\begin{tikzpicture}
-[->/.style={thick,arrows={-Stealth}},
--->/.style={thick,arrows={-Stealth}, decorate, decoration={snake, amplitude=.4mm,segment length=2mm,post length=2mm}},
-   realG/.style={shape=rectangle, rounded corners=4pt, draw, fill=gray!40},
-   propG/.style={shape=rectangle, rounded corners=4pt, draw}]
-\node[realG] (PG) at (0, 0) {\small PreGraph};
-\node[realG] (LG) [right=0.8 of PG] {\small LabeledGraph};
-\node[realG] (GG) [right=2 of LG] {\small GeneralGraph};
-\draw [double, ->] (PG) -- (LG) node [pos=0.5, above] {\small Label} ;
-\draw [double, ->] (LG) -- (GG) node (SC) [pos=0.5, above, align=center]
-{\small Soundness \\ \small Condition};
-\node[propG] (Prop) [below=0.6 of SC] {\small Property};
-\node[propG] (PropL) [below=0.4 of Prop] {\small Property Lemmas};
-\node[propG] (PGL) [below=2 of PG, align=center] {\small PreGraph \\\small Lemmas};
-\node[propG] (LGL) [below=2 of LG, align=center] {\small LabeledGraph \\\small Lemmas};
-\node[propG] (GGL) [below=2 of GG, align=center] {\small GeneralGraph \\\small Lemmas};
-\draw [double, ->] (PGL) to (LGL);
-%% \draw [double, ->] (LGL) to (GGL);
-\draw [->] (PG) to (PGL);
-\draw [->] (Prop) to (PropL);
-\draw [-->] (Prop) to (SC);
-\coordinate [left=0.2 of LG.south] (LGs1);
-\coordinate [left=0.2 of LGL.north] (LGLn1);
-\draw [->] (LGs1) to (LGLn1);
-\coordinate [right=0.2 of LG.south] (LGs2);
-\coordinate [right=0.2 of LGL.north] (LGLn2);
-\draw [->] (LGs2) |- (Prop);
-\draw [double, ->] (LGLn2) |- (PropL);
-\coordinate [right=0.2 of GG.south] (GGs);
-\coordinate [left=0.2 of GGL.north] (GGLn1);
-\coordinate [right=0.2 of GGL.north] (GGLn2);
-\draw [double, ->] (PropL) -| (GGLn1);
-\draw [->] (GGs) to (GGLn2);
-\node [draw, thick, rectangle, dashed, fit=(Prop) (PropL)] {};
-\node (legend1) [below right=0.2 and -0.3 of PGL] {\small Dependence};
-\coordinate[left=0.8 of legend1]  (l1);
-\draw [->] (l1) to (legend1);
-\node (legend2) [right=1 of legend1] {\small Inheritance};
-\coordinate[left=0.8 of legend2]  (l2);
-\draw [double, ->] (l2) to (legend2);
-\node (legend3) [right=1 of legend2] {\small Instantialize};
-\coordinate[left=0.8 of legend3]  (l3);
-\draw [-->] (l3) to (legend3);
-\end{tikzpicture}
-\endpgfgraphicnamed
-\vspace{1ex}
-\caption[ ] {Structure of the Mathematical Graph Library}\label{fig:graphs}
+\includegraphics{variousgraph.pdf}
+\caption{Structure of the Mathematical Graph Library}\label{fig:graphs}
 \end{figure}
 
 Figure~\ref{fig:graphs} gives the overall architecture of our mathematical graph library. The most basic kind of graph is PreGraph, out of which we build LabeledGraphs, and which in turn are used
@@ -77,44 +31,7 @@ to build GeneralGraphs.  Each kind has some lemmas and also inherits the lemmas 
 
 \begin{figure}[htbp]
 \centering
-\beginpgfgraphicnamed{pregraphexp}
-\begin{tikzpicture}
-[vad/.style={circle, fill=black, inner sep=0pt, minimum size=4pt},
- inv/.style={circle, draw=black, thick, inner sep=0pt, minimum size=4pt},
- ->/.style={thick, arrows={-Stealth}}]
-\node[vad] (n1) at (0, 0) {};
-\node[vad] (n2) at (1, 1) {};
-\node[inv] (n3) at (1, -1) {};
-\node[vad] (n4) at (-2,2) {};
-\node[vad] (n5) at (-2,-2) {};
-\node[vad] (n6) at (-3,0) {};
-\node[vad] (n7) at (3,1.5) {};
-\node[inv] (n8) at (3,-1.5) {};
-\node[vad] (n9) at (3.5, 1) {};
-\node[inv] (n10) at (3.5, 0.5) {};
-\node at (3.5, 1) [right=1.5pt] {\small Valid node};
-\node at (3.5, 0.5) [right=1.5pt] {\small Invalid node};
-\node at (3.5, 0) [right=1.5pt] {\small Valid edge};
-\node at (3.5, -0.5) [right=1.5pt] {\small Invalid edge};
-\draw[->] (n1) to (n2);
-\draw[->,dashed] (n1) to (n3);
-\draw[->,dashed] (n3) to (n5);
-\draw[->] (n2) to (n3);
-\draw[->] (n2) to (n7);
-\draw[->] (n2) to (n8);
-\draw[->,dashed] (n3) to (n8);
-\draw[->] (n4) to (n1);
-\draw[->] (n1) to (n5);
-\draw[->] (n2) to (n4);
-\draw[->] (n1) to [bend left=20] (n6);
-\draw[->] (n6) to (n5);
-\draw[->] (n8) to [bend left=20] (n7);
-\draw[->] (n4) to [bend right=35] (n1);
-\draw[->] (3.0, 0) -- (3.6, 0);
-\draw[->,dashed] (3.0, -0.5) -- (3.6, -0.5);
-\end{tikzpicture}
-\endpgfgraphicnamed
-\vspace{1ex}
+\includegraphics{pregraphexp.pdf}
 \caption{A PreGraph with invalid nodes and edges.}\label{fig:pregraph}
 \end{figure}
 
@@ -206,35 +123,7 @@ We have a number of other properties in our codebase, but these three are the mo
 
 \begin{figure}[htbp]
 \centering
-\beginpgfgraphicnamed{graphproperty}
-\begin{tikzpicture}
-[->/.style={thick,arrows={-Stealth}},
-   group/.style={shape=rectangle, draw, thick, dashed},
-   propG/.style={shape=rectangle, rounded corners=4pt, draw}]
-\node[propG] (PL12) at (0, 0) {\footnotesize Lemmas of Property 1 and 2};
-\coordinate [left=1.2 of PL12.north] (PL12n1);
-\coordinate [right=1.2 of PL12.north] (PL12n2);
-\node[propG] (PL1) [above=0.5 of PL12n1, align=center] {\footnotesize Property 1 \\\footnotesize Lemmas};
-\node[propG] (PL2) [above=0.5 of PL12n2, align=center] {\footnotesize Property 2 \\\footnotesize Lemmas};
-\node[propG] (P1) [above=0.5 of PL1] {\footnotesize Property 1};
-\node[propG] (P2) [above=0.5 of PL2] {\footnotesize Property 2};
-\draw [->] (P1) to (PL1);
-\draw [->] (P2) to (PL2);
-\draw [double, ->] (PL1) to (PL12n1);
-\draw [double, ->] (PL2) to (PL12n2);
-\draw [->] (P1.west) to [bend right=45] (PL12.west);
-\draw [->] (P2.east) to [bend left=45] (PL12.east);
-\node (R1) [group, fit=(P1) (PL1)] {};
-\node (R2) [group, fit=(P2) (PL2)] {};
-\node (R3) [group, fit=(current bounding box)] {};
-\node [propG] (P1P2) [above right=-1.1 and 1.2 of R3, align=left] {\footnotesize Property 1$/|$ \\\footnotesize Property 2};
-\node [propG] (PL1PL2) [below=0.5 of P1P2, align=center] {\footnotesize Prop. 1 Lemmas \\\footnotesize Prop. 2 Lemmas \\\footnotesize Prop. 1$/|$2 Lemmas};
-\draw [->] (P1P2) to (PL1PL2);
-\node (R4) [group, fit=(P1P2) (PL1PL2)] {};
-\node (EQ) [right=0 of R3] {\bf \Large $\mapsto$};
-\end{tikzpicture}
-\endpgfgraphicnamed
-\vspace{1ex}
+\includegraphics{graphproperty.pdf}
 \caption{Combining plugins}\label{fig:properties}
 \end{figure}
 

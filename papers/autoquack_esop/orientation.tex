@@ -93,7 +93,7 @@ Hobor and Villard observed that \infrulestyle{Frame} is bit rigid because it for
 That is, we can verify a ``global'' specification $\{G_1\}~c~\{G_2\}$ by combining a ``local'' specification $\{L_1\}~c~\{L_2\}$ with a \emph{ramification entailment} $G_1 |- L_1 * (L_2--* G_2)$.  This entailment uses the ``magic wand'' operator $--*$ of separation logic\footnote{$--*$ is the adjunct of $*$, \emph{i.e.} $(P * Q |- R) <=> (P |- Q --* R)$.} to express a notion of ``substate update'': inside $G_1$ replace $L_1$ with $L_2$ to reach $G_2$.  Essentially the ramification entailment ensures that the change in state specified locally fits properly into the global context.  In exchange for proving the ramification entailment, a verifier can use \infrulestyle{Ramify} at any time, \emph{i.e.} they need not worry about syntactically matching their assertions with the $*$ in the \infrulestyle{Frame} rule.  Although the ramification entailments can appear difficult, Hobor and Villard observed that in many practical cases they can be handled easily using a ``ramification library''.
 
 We are now ready to give a formal meaning to the ``localization'' pattern employed in Figure~\ref{fig:markgraph}.  When we write:
-\vspace{-4ex}
+\vspace{-1ex}
 \begin{lstlisting}
 // $\label{code:prelocal}\{ G_1 \}$
 // $\label{code:inlocal}\searrow \{ L_1 \}$
@@ -110,7 +110,7 @@ Hobor and Villard pointed out that \infrulestyle{Ramify} implies \infrulestyle{F
 
 \vspace{5pt}
 
-\begin{minipage}{.19\textwidth}
+\begin{minipage}{.3\textwidth}
 Old notation:
 \begin{lstlisting}
 // $\{ P_1 * F_1 * F_2 * F_3 \}$
@@ -122,7 +122,7 @@ Old notation:
 // $\{ P_4 * F_1 * F_2 * F_3 \}$
 \end{lstlisting}
 \end{minipage} \vline ~~~
-\begin{minipage}{.2\textwidth}
+\begin{minipage}{.3\textwidth}
 New notation:
 \begin{lstlisting}[numbers=none]
 // $\{ P_1 * F_1 * F_2 * F_3 \} \searrow \{ P_1 \}$
@@ -144,7 +144,7 @@ When the user is in the middle of a verification, the decorated program is parti
 We wish to preserve this ``decorated program'' view while extending Floyd to support ramification.  Our task therefore is to construct a proof in Coq's underlying logic that allows a localization block to be constructed in this manner---that is, we wish to enter a localization block without requiring the user to specify the ``exit point'' in advance.  The engineering is tricky because the proof Floyd is constructing (\emph{i.e.} applications of inference rules) has holes in places where the user's ``top to bottom'' view of things has not yet arrived.
 
 \begin{figure}[htbp]
-\begin{minipage}{.1\textwidth}
+\begin{minipage}{.16\textwidth}
 \begin{lstlisting}
 $\{\ \ P_1 \ \ \}$
     c1
@@ -159,7 +159,7 @@ $~~\,\{\ \ P_4 \ \ \}\label{code:localsndcmd}$
 
 \end{lstlisting}
 \end{minipage} \vline ~
-\begin{minipage}{.11\textwidth}
+\begin{minipage}{.16\textwidth}
 \begin{lstlisting}[numbers=none]
 $\{\ \ P_1 \ \ \}$
     c1
@@ -174,7 +174,7 @@ $\{\ \ ?F * P_4 \ \}$
 
 \end{lstlisting}
 \end{minipage} \vline ~
-\begin{minipage}{.11\textwidth}
+\begin{minipage}{.16\textwidth}
 \begin{lstlisting}[numbers=none]
 $\{\ \ P_1 \ \ \}$
     c1
@@ -189,7 +189,7 @@ $\{\ \ P_6 \ \ \}$
     ...
 \end{lstlisting}
 \end{minipage} \vline ~
-\begin{minipage}{.11\textwidth}
+\begin{minipage}{.16\textwidth}
 \begin{lstlisting}[numbers=none]
 $\{\ \ P_1 \ \ \}$
     c1

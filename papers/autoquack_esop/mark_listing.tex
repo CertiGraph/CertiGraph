@@ -26,20 +26,19 @@ $\label{code:markram2}\ramify(\ref{lem:updategraphnode})$      r = x -> r;
 // $\searrow \{\p{graph}(\tx l, \gamma')\}$
 $\label{code:markram3}\ramify(\ref{lem:updatesubgraph})$      mark(l);
 // $\label{code:postmark1}\swarrow \{\exists \gamma''.~ \p{graph}(\tx l, \gamma'') /| \m{mark}(\gamma', \tx{l}, \gamma'')\}$
-// $\label{code:aftermarkl}\left\{\!\!\!\begin{array}{l@{}}\exists \gamma''.~ \p{graph}(\tx x,\gamma'') /| \gamma(\tx{x}) = (0,\tx{l},\tx{r}) /| \null \\ \m{mark1}(\gamma, \tx{x}, \gamma') /| \m{mark}(\gamma', \tx{l}, \gamma'')\end{array}\right\}$
-// $\left\{\!\!\!\begin{array}{l@{}}\p{graph}(\tx x,\gamma'') /| \gamma(\tx{x}) = (0,\tx{l},\tx{r}) /| \null \\ \m{mark1}(\gamma, \tx{x}, \gamma') /| \m{mark}(\gamma', \tx{l}, \gamma'')\end{array}\right\}$
+// $\label{code:aftermarkl}\{\exists \gamma''.~ \p{graph}(\tx x,\gamma'') /| \gamma(\tx{x}) = (0,\tx{l},\tx{r}) /| \m{mark1}(\gamma, \tx{x}, \gamma') /| \m{mark}(\gamma', \tx{l}, \gamma'')\}$
+// $\{\p{graph}(\tx x,\gamma'') /| \gamma(\tx{x}) = (0,\tx{l},\tx{r}) /|\m{mark1}(\gamma, \tx{x}, \gamma') /| \m{mark}(\gamma', \tx{l}, \gamma'')\}$
 // $\searrow \{\p{graph}(\tx r, \gamma'')\}$
 $\label{code:markram4}\ramify(\ref{lem:updatesubgraph})$      mark(r);
 // $\swarrow \{\exists \gamma'''.~ \p{graph}(\tx r, \gamma''') /| \m{mark}(\gamma'', \tx{r}, \gamma''')\}$
-// $\label{code:outmark}\left\{\!\!\!\begin{array}{l@{}}\exists \gamma'''.~ \p{graph}(\tx x,\gamma''') /| \gamma(\tx{x}) = (0,\tx{l},\tx{r}) /| \null \\ \m{mark1}(\gamma, \tx{x}, \gamma') /| \m{mark}(\gamma', \tx{l}, \gamma'') /| \m{mark}(\gamma'', \tx{r}, \gamma''')\end{array}\right\}$
+// $\label{code:outmark}\left\{\begin{array}{l@{}}\exists \gamma'''.~ \p{graph}(\tx x,\gamma''') /| \gamma(\tx{x}) = (0,\tx{l},\tx{r}) /| \null \\ \m{mark1}(\gamma, \tx{x}, \gamma') /| \m{mark}(\gamma', \tx{l}, \gamma'') /| \m{mark}(\gamma'', \tx{r}, \gamma''')\end{array}\right\}$
 } // $\label{code:markend}\{\exists \gamma'''.~ \p{graph}(\tx x,\gamma''') /| \m{mark}(\gamma, \tx{x}, \gamma''')\}$
 \end{lstlisting}
 \begin{equation}
 \label{eqn:bigraphintrofoldunfold}
 \begin{array}{@{}l@{}}
-\p{graph}(x, \gamma) ~ <=> ~ (x = 0 /| \p{emp}) |/ \null \\
-\quad \exists m,l,r.~ \gamma(x)=(m,l,r) /| x~\mathsf{mod}~16 = 0 /| \null \\
-\quad \qquad \quad ~~ x |-> m,-,l,r ** \p{graph}(l, \gamma) ** \p{graph}(r, \gamma)
+  \p{graph}(x, \gamma) ~ <=> ~ (x = 0 /| \p{emp}) |/ \exists m,l,r.~ \gamma(x)=(m,l,r) /| \null \\
+  \quad x~\mathsf{mod}~16 = 0 /| x |-> m,-,l,r ** \p{graph}(l, \gamma) ** \p{graph}(r, \gamma)
 \end{array}
 \end{equation}
 \[

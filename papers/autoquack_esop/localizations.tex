@@ -12,8 +12,7 @@ we need a fixed inductive \textbf{syntax} for formulas.  In contrast, in this pa
 \[
 \begin{array}{ll}
 \sigma \stackrel{S}{\cong} \sigma' & \stackrel{\Delta}{=} ~~ \sigma \text{ and } \sigma' \text{ coincide everywhere except } S\\
-P \text{ ignores } S & \stackrel{\Delta}{=} ~~ \forall \sigma, \sigma'.~ \sigma \stackrel{S}{\cong} \sigma' => \null \\
-& \qquad ~~ (\sigma |= P) <=> (\sigma' |= P)
+P \text{ ignores } S & \stackrel{\Delta}{=} ~~ \forall \sigma, \sigma'.~ \sigma \stackrel{S}{\cong} \sigma' => (\sigma |= P) <=> (\sigma' |= P)
 \end{array}
 \]
 That is, we consider two program states $\sigma$ and $\sigma'$ equivalent up to program variable set $S$ when they agree everywhere except on the values of $S$ (typically, a state $\sigma$ is a pair of a heap $h$ and program variables $\rho$).  A predicate $P$ ignores $S$ when its truth is independent of all program variables in $S$.  %{\color{magenta} Notice both the syntactic and semantic styles use the $\MV(c)$ function defined via straightforward recursive case analysis on program syntax; programming languages typically do have a fixed syntactic structure.}
@@ -97,9 +96,7 @@ F ~~ \defeq ~~ (6 = 6 /| [\li{x} |-> 6]C) --* (6 = 6 /| [\li{x} |-> 6]D)
 \]
 The first premise of \infrulestyle{Solve Ramify-P} is
 \[
-\begin{array} {l}
-\li{x} = 5 /| A ~ |- ~ (\li{x} = 5 /| B) * \null \\ \qquad \big((6 = 6 /| [\li{x} |-> 6]C) --* (6 = 6 /| [\li{x} |-> 6]D)\big)
-\end{array}
+\li{x} = 5 /| A ~ |- ~ (\li{x} = 5 /| B) * \big((6 = 6 /| [\li{x} |-> 6]C) --* (6 = 6 /| [\li{x} |-> 6]D)\big)
 \]
 This entailment is the key proof that our localization was sound.  To solve it we first substitute away the remaining program variables (\emph{e.g.} replace \li{x} with 5) to obtain a program-variable-free and modality-free entailment and then apply our ramification library (\S\ref{sec:ramifylib}); as previously explained we sometimes use $\ramify(n)$ to explicitly reference a library lemma.
 
@@ -107,9 +104,7 @@ Meanwhile, the second premise looks like this:
 \vspace*{-0.75ex}
 \begin{equation}
 \label{eqn:sndpremisetauto}
-\begin{array}{l}
-(6 = 6 /| [\li{x} |-> 6]C) --* (6 = 6 /| [\li{x} |-> 6]D) ~ |- ~ \\ \qquad (\li{x} = 6 /| C) --* (\li{x} = 6 /| D)
-\end{array}
+(6 = 6 /| [\li{x} |-> 6]C) --* (6 = 6 /| [\li{x} |-> 6]D) ~ |- ~ (\li{x} = 6 /| C) --* (\li{x} = 6 /| D)
 \vspace*{-0.75ex}
 \end{equation}
 Although it may not be readily apparent, this is in fact a tautology using $(P * Q |- R) <=> (P |- Q --* R)$.
@@ -142,7 +137,7 @@ Pen and paper Hoare proofs are often a little casual with existentials, \emph{e.
 \label{sec:existentials}
 
 What happens when we \textbf{cannot} calculate a substitution using globally-scoped metavariables?  Consider the following: %example:
-\vspace*{-3.5ex}
+\vspace*{-1.5ex}
 \begin{lstlisting}
 // $\{ A \} \searrow \{ B \}$
       ...; x = malloc(sizeof(int));
