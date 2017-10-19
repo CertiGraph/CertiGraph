@@ -23,14 +23,12 @@ typically written pseudodefinition (``$\defeq$'').
 %fun x w => forall P: B -> pred A, (forall x, F P x |-- P x) -> P x w.
 
 Suppose we define a graph predicate $\graphkt$ this way, \emph{e.g.} along the lines of the fold/unfold definition in Figure~\ref{fig:markgraph}: %, \emph{i.e.}
-\vspace{-1ex}
 \[
 \begin{array}{@{}l@{}l@{}}
 \graphkt(x, \gamma) \stackrel{\Delta}{=} & (x = 0 /| \p{emp}) |/ \null \\
 & \exists m,l,r.~ \gamma(x)=(m,l,r) /| \null \\
 & ~~  x |-> m,l,r ** \graphkt(l, \gamma) ** \graphkt(r, \gamma)
 \end{array}
-\vspace{-1ex}
 \]
 %We have removed the alignment-related portions of equation~\eqref{eqn:bigraphintrofoldunfold} to focus on a more serious issue, even though as we will explain in~\S\ref{sec:goodgraph} alignment concerns are also necessary for the fold/unfold relationship to hold in C-like memory models.
 The functional needed to define $\graphkt$ is covariant, so we can apply Knaster-Tarski; however, the result is hard to use.
@@ -137,10 +135,8 @@ We are now ready to give a good \p{graph} predicate:
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%% Edit1: Original version ends
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\vspace{-1.5ex}
 \begin{equation}\label{eqn:iter_def}
   \p{graph}(x, \gamma) ~~ \defeq ~~ \underset{v \in \mathit{reach}(\gamma, x)}{\bigstar} v\mapsto\gamma(v)
-\vspace{-1.5ex}
 \end{equation}
 $\gamma$ is a GeneralGraph and ``$x |-> \gamma(x)$'' is a predicate that says how a single node fits in memory; in Figure~\ref{fig:markgraph} it was:
 \[
@@ -149,14 +145,12 @@ $\gamma$ is a GeneralGraph and ``$x |-> \gamma(x)$'' is a predicate that says ho
 $\gamma$ need not be a bigraph, but \emph{e.g.} can have many edges.
 
 Our definition of \p{graph} is flat in the sense that there is no obvious way to follow the link structure recursively.  Happily, we can recover a general recursive fold/unfold (if $x |-> \gamma(x)$ and the GeneralGraph have the necessary properties):
-\vspace{-1ex}
 \begin{equation}
 \label{eqn:unfold_graph}
 \hspace{-1em}\begin{array}{@{}lc@{\hspace{1pt}}c@{\hspace{1pt}}l@{}}
 \p{graph}(x,\gamma)  <=>  x |-> \gamma(x) ** \big(\!\!\!\!\!\!\!\!\!\!\!\!\!\underset{n \in \p{neighbors}(\gamma,x)}{\raisebox{-0.3ex}{\resizebox{0.75em}{!}{$\scon$}} \hspace{-2.18ex} \bigcup}\!\!\!\!\!\!\!\!\!\!\!\! \p{graph}(\gamma,n) \big) \\
 [2pt]
 \text{~~~ where ~~ }\underset{l_1,\dots,l_n}{\raisebox{-0.3ex}{\resizebox{0.75em}{!}{$\scon$}}\hspace{-2.18ex} \bigcup} \! \! P  \defeq  P(l_1) ** \ldots ** P(l_n) \end{array}
-\vspace{-1ex}
 \end{equation}
 
 The proof of the $<=$ direction requires care. The difficulty is that if two nodes $x |-> \gamma(x)$ and $x' |-> \gamma(x')$ are \emph{skewed}, \emph{i.e.} ``partially overlapping'' with some---but not all---of $x$'s memory cells shared with $x'$, then the $\bigstar$ on the left hand side cannot separate them.  To avoid skewing we require $x |-> \gamma(x)$ be \emph{alignable}.  A predicate $P$ is alignable when

@@ -100,20 +100,17 @@ End Mgraphmark.
 \end{figure}
 
 The lemmas and axioms that HIP/SLEEK has used still need to be checked.  Accordingly, HIP/SLEEK generates a Coq file with a \li{Module Type} specifying them.  The \li{Module Type} generated for \li{mark} is given in Figure~\ref{fig:hipcoqfile} to illustrate this process.  To obtain a complete verification for \li{mark}, users must build a Coq \li{Module} that satisfies \li{Mgraphmark} using definitions for the abstract relations that they think are reasonable (in particular, for the \li{mark} relation, since it is used in the specification of the algorithm).
-\vspace{-1.5ex}
+
 \subsection{Automatic localizations in HIP/SLEEK}
-\vspace{-0.75ex}
+
 HIP/SLEEK reasons about graph algorithms using three key ideas.  First, H/S uses fold/unfold relationships whenever it needs to reason about a recursive predicate during the entailment checking that occurs during forward reasoning. For example, to check the dereference in line \ref{ifcondmark}, the \li{x::graph<G>} predicate is unfolded to reach\footnote{We will write predicates in a more conventional mathematical style rather than the ASCII format used by H/S.}
-\vspace{-1.5ex}
 \begin{equation*}
 \exists m,l,r.~ \gamma(\li{x}) \! = \! (m,l,r) /| \li{x} \! |-> \! m,l,r ** \p{graph}(l, \gamma) ** \p{graph}(r, \gamma)
 \end{equation*}
 %% \vspace{-1.5ex}
 Second, once HIP/SLEEK realizes that its forward reasoning needs to isolate a predicate that is $**$-shared, it uses the existential wand ``septraction'' operator~$\septraction$~(defined in Figure~\ref{fig:seplogsem}) to reach the strongest post condition.  The existential wand $--o$ is simpler to introduce than the universal one $--*$ during forward reasoning because H/S already knows $G_1$ and $L_1$ when it needs to calculate a residual frame~$R$.  For example, the precondition at line~\ref{beforemarkleft} is
-\vspace{-1.5ex}
 \[
 \gamma(\li{x}) = (0,\li{l},\li{r}) /| \m{mark1}(\gamma,\li{x},\gamma') /| \li{x} |-> 1,\li{l},\li{r} ** \p{graph}(\li{l}, \gamma') ** \p{graph}(\li{r}, \gamma')
-\vspace{-1.5ex}
 \]
 and since H/S knows the call to \li{mark(l)} requires $\p{graph}(\li{l}, \gamma')$, it can calculate the frame residue $R$ as $Q --o P$ since\footnote{We omit pure conjuncts \emph{e.g.} $\m{mark1}(\gamma,\li{x},\gamma')$ from both $P$ and $R$.}
 \begin{gather*}
@@ -137,13 +134,11 @@ The final step is to use lemmas to eliminate $\septraction$. After line~\ref{bef
 \gamma'(x)=(m1,l,r)\bigg) => \big(x \mapsto m1,l,r \ocon \p{graph}(l, \gamma') \ocon \p{graph}(r, \gamma')\big)
 \end{gather*}
 This lemma does not mention $\m{mark}$ explicitly, allowing it to be reused in other algorithms.  The connection between the \m{mark}, \m{subset\_reach}, and \m{eqnot\_reach} relations is given by the axiom on lines~\ref{code:hipmarkramconnect}--\ref{code:hipmarkramconnectend}; other (elided) lemmas connect \m{mark1} as well.  H/S must apply all of them, guided by structural matching, to eliminate the $--o$ to reach the following relatively pleasant-looking postcondition of line~\ref{beforemarkleft}
-\vspace{-1.5ex}
 \[
 \begin{array}{l}
 \gamma(\li{x}) = (0,\li{l},\li{r}) /| \m{mark1}(\gamma,\li{x},\gamma') /| \m{mark}(\gamma',\li{l},\gamma'') /| \null \\
 \quad \li{x} |-> 1,\li{l},\li{r} ** \p{graph}(\li{l}, \gamma'') ** \p{graph}(\li{r}, \gamma'')
 \end{array}
-\vspace{-1.5ex}
 \]
 H/S now continues the verification with \li{mark(r)}.
 

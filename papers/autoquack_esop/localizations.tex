@@ -27,10 +27,8 @@ Now consider using ramification to verify this program:
 \end{lstlisting}
 \vspace{-1ex}
 Suppose that other (elided) lines of the program make localization desirable, even though it is overkill for a single assignment.  The key issue is that the program variable {\li{x}} appears in all four positions in the ramification entailment
-\vspace{-1ex}
 \[
 \overbrace{(\li{x} \! = \! 5 /| A)}^{G_1} \vdash \overbrace{(\li{x} \! = \! 5 /| B)}^{L_1} * \big(\overbrace{(\li{x} \! = \! 6 /| C)}^{L_2} --* \overbrace{(\li{x} \! = \! 6 /| D)}^{G_2}\big)
-\vspace{-1ex}
 \]
 One problem is that $L_2 --* G_2$ does \textbf{not} ignore the modified program variable \tx{x}, preventing us from applying \infrulestyle{Ramify}.  Intuitively, the side condition on the \infrulestyle{Ramify} rule is a bit too strong since it prevents us from mentioning variables in the postconditions that have been modified by code $c$.
 
@@ -40,7 +38,6 @@ We could try to weaken the side condition in \infrulestyle{Ramify} to $\big(\FV(
 {\{ L_1 \} ~ c ~ \{L_2 \} \\
  G_1 \vdash L_1 * \pguards{c}  (L_2 --* G_2)}
 {\{ G_1 \} ~ c ~ \{ G_2 \}}{}
-\vspace{-1.5ex}
 \]
 The ramification entailment now incorporates a new (universal/boxy) modal operator $\pguards{c}$.  The intuitive meaning of $\pguards{c}$ is that program variables modified by command $c$ can change value inside its scope.    Note that it is vital that $L_2$ appears as the antecedent of a (spatial) implication since the change in program variables is universally quantified.  This means that if we want to say anything specific about modified program variables in the global postcondition $G_2$ then we had better say something about them in the local postcondition $L_2$.
 
@@ -54,13 +51,11 @@ Let us return to our earlier entailment:
 Since \li{x} is modified, its value can change from the first line, in which \li{x} must be 5, to the second, in which \li{x} must be 6.
 
 Here is the definition of $\pguards{c}$, writing $\langle c \rangle$ for $\MV(c)$:
-\vspace{-1ex}
 \[
 %\begin{array}{lcl}
 %\langle c \rangle & \stackrel{\Delta}{=} & \MV(c) \\
 \sigma |= \pguards{c} P ~~ \stackrel{\Delta}{=} ~~ \forall \sigma'.~ (\sigma \stackrel{\langle c \rangle}{\cong} \sigma') => (\sigma' |= P)% ~~~~ \text{where $\mathsf{MV}(c)$ is $\MV(c)$}\\
 %\end{array}
-\vspace{-1ex}
 \]
 In other words, $\pguards{c}$ is exactly the universal modal operator~$\Box$ over the relation that considers equivalent all states that differ only on program values modified by $c$.  Since $\stackrel{\langle c \rangle}{\cong}$ is an equivalence relation, $\pguards{c}$ forms an S5 modal logic.
 
@@ -73,12 +68,10 @@ F |- L_2 --* G_2
 %F * L_2 |- G_2
 }
 {G_1 \vdash L_1 * \pguards{c}  (L_2 --* G_2)}{F \textrm{ ignores } \MV(c)} \qquad \qquad \qquad \qquad
-\vspace{-2ex}
 \]
 We can handle the $\pguards{c}$ by breaking apart the single entailment into a pair.  Using two entailments allows modified program variables to change between the preconditions and postconditions\footnote{Entailment procedures for separation logic may prefer to use $F * L_2 |- G_2$ as the second premise of \infrulestyle{Solve Ramify-P} because it is free from $--*$.}.  To connect the pair, we must choose a suitable predicate~$F$ that ignores modified variables in~$c$.
 
 With \infrulestyle{Ramify-P} and \infrulestyle{Solve Ramify-P} we can prove the \infrulestyle{Frame} rule with its canonical side condition as follows:
-\vspace{-2ex}
 \[
 \infrule{}{\raisebox{1.4ex}{$\infrule{}{P * F |- P * F \\ F |- Q --* (Q * F)}
 {\raisebox{-4pt}[0pt][0pt]{$P * F |- P * \pguards{c}\big(Q --* (Q * F)\big)$}}
@@ -86,7 +79,6 @@ With \infrulestyle{Ramify-P} and \infrulestyle{Solve Ramify-P} we can prove the 
 \\ \{P\}~c~\{Q\}}
 {\{P * F\}~c~\{Q * F\}}
 {}
-\vspace{-2ex}
 \]
 This justifies our point in \S\ref{sec:localizations} that our new localization notation can also be used for frames.
 
@@ -101,11 +93,9 @@ The first premise of \infrulestyle{Solve Ramify-P} is
 This entailment is the key proof that our localization was sound.  To solve it we first substitute away the remaining program variables (\emph{e.g.} replace \li{x} with 5) to obtain a program-variable-free and modality-free entailment and then apply our ramification library (\S\ref{sec:ramifylib}); as previously explained we sometimes use $\ramify(n)$ to explicitly reference a library lemma.
 
 Meanwhile, the second premise looks like this:
-\vspace*{-0.75ex}
 \begin{equation}
 \label{eqn:sndpremisetauto}
 (6 = 6 /| [\li{x} |-> 6]C) --* (6 = 6 /| [\li{x} |-> 6]D) ~ |- ~ (\li{x} = 6 /| C) --* (\li{x} = 6 /| D)
-\vspace*{-0.75ex}
 \end{equation}
 Although it may not be readily apparent, this is in fact a tautology using $(P * Q |- R) <=> (P |- Q --* R)$.
 
@@ -137,7 +127,7 @@ Pen and paper Hoare proofs are often a little casual with existentials, \emph{e.
 \label{sec:existentials}
 
 What happens when we \textbf{cannot} calculate a substitution using globally-scoped metavariables?  Consider the following: %example:
-\vspace*{-0.5ex}
+\vspace*{-1ex}
 \begin{lstlisting}
 // $\{ A \} \searrow \{ B \}$
       ...; x = malloc(sizeof(int));
@@ -145,11 +135,10 @@ What happens when we \textbf{cannot} calculate a substitution using globally-sco
 // $\label{toycode:localpost}\swarrow \{ \big((\tx{x} |-> {-} /| \tx{y} = 1) |/ (\tx{x} = 0 /| \tx{y} = 0)\big) * C \}$
 // $\label{toycode:globalpost}\{ (\tx{y} = 1 /| D_1) |/  (\tx{y} = 0 /| D_2) \}$
 \end{lstlisting}
-\vspace*{-0.5ex}
+\vspace*{-1ex}
 Within a localization block we call the nondeterministically specified function \li{malloc} and use the program variable~\li{y} as a flag to keep track of whether the allocation succeeded.  Call the postconditions in lines~\ref{toycode:localpost} and~\ref{toycode:globalpost} just above $L_2$ and $G_2$. %respectively.
 
 Now the choice of $F$ is not very straightforward because we do not know the values to substitute for \li{x} or \li{y}:
-\vspace*{-1.5ex}
 \begin{equation}
 \label{eqn:unclearsubst}
 [\li{x} |-> ?][\li{y} |-> ?] (L_2 --* G_2)
@@ -157,7 +146,6 @@ Now the choice of $F$ is not very straightforward because we do not know the val
 %\Big(\big((? |-> {-} /| ? = 1) |/ (? = 0 /| ? = 0)\big) * [\li{x} |-> ?][\li{y} |-> ?]C\Big) \\
 %--* \! (? = 1 \! /| \! [\li{x} |-> ?][\li{y} |-> ?]D_1) \! |/ \! (? = 0 \! /| \! [\li{x} |-> ?][\li{y} |-> ?]D_2)
 %\end{array}
-\vspace*{-1.5ex}
 \end{equation}
 
 We proceed as follows.  First, rewrite the postconditions in lines~\ref{toycode:localpost} and~\ref{toycode:globalpost} just above to introduce fresh existentially-quantified  variables $x$ and $y$ and bind them to \li{x} and \li{y}:
@@ -182,10 +170,8 @@ Call these equivalent postconditions $L_2'$ and $G_2'$ (lines~\ref{code:L2p}\&\r
 %\end{array}
 %\]
 Next apply \infrulestyle{Ramify-P} and \infrulestyle{Solve Ramify-P} with $F \defeq \null$
-\vspace*{-0.75ex}
 \[
 \forall x, y.~ [\tx{x} |-> x][\tx{y} |-> y](L_2 --* G_2)
-\vspace*{-0.75ex}
 \]
 In other words, replace the ``?'' from \eqref{eqn:unclearsubst} with universally-quantified metavariables $x$ and $y$ scoped over the entire $--*$.
 
@@ -241,7 +227,6 @@ In Appendix~B\hide{\ref{apx:ruleproofs}} we sketch the soundness proofs for \inf
 \subsection{Forward ramification}
 
 As we saw in \S\ref{sec:hipsleek}, the forward style of reasoning employed by HIP/SLEEK uses the existential wand $--o$ to express ramifications instead of the more typical universal wand $--*$.  The standard $--*$ form of ramification is weaker, but the strongest postcondition style using $--o$ can also get the job done without too much extra work since:
-\vspace*{0.25ex}
 \[\infrulestyle{WandToEwand}~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\]
 \vspace*{-8ex}
 \[

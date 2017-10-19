@@ -73,19 +73,16 @@ The key rule of separation logic is \infrulestyle{Frame}~\cite{rey02}:
 {\{ P \} ~ c ~ \{Q \}}
 {\{P * F \} ~ c ~ \{ Q * F \}}
 {\begin{array}{c}F \textrm{ ignores } \MV(c) \end{array}} \qquad \qquad
-\vspace{-0.75ex}
 \]
 The reason \infrulestyle{Frame} is so important is because it enables local verifications.  That is, a verifier can focus on the portions of the heap that are relevant to command $c$ and ``frame away'' the rest.  The side condition ``$F \textrm{ ignores } \MV(c)$'' relates to modified program variables and will be discussed in \S\ref{sec:freevars}.
 
 Hobor and Villard observed that \infrulestyle{Frame} is bit rigid because it forces verifiers to split program assertions into syntactically $*$-separated parts~\cite{hobor:ramification}.  This rigidity is particularly troublesome when verifying programs that manipulate data structures with intrinsic unspecified sharing such as DAGs and graphs.  Hobor and Villard proposed the \infrulestyle{Ramify} rule to circumvent this rigidity:
-\vspace{-1.5ex}
 \[
 \infrule{Ramify}
 {\{L_1\} ~ c ~ \{L_2\} \\ G_1 |- L_1 * (L_2--* G_2)}
 {\{G_1\} ~ c ~ \{G_2\}}
 {\begin{array}{c}(L_2 --* G_2) \textrm{ ignores } \MV(c) \end{array}} \qquad \qquad \qquad \qquad \qquad \qquad
 %{$\begin{array}{l}\m{fv}(Q --* R') \cap \null \\ \m{modif}(c) = \emptyset\end{array}$} \qquad \qquad \qquad
-\vspace{-1.5ex}
 \]
 That is, we can verify a ``global'' specification $\{G_1\}~c~\{G_2\}$ by combining a ``local'' specification $\{L_1\}~c~\{L_2\}$ with a \emph{ramification entailment} $G_1 |- L_1 * (L_2--* G_2)$.  This entailment uses the ``magic wand'' operator $--*$ of separation logic\footnote{$--*$ is the adjunct of $*$, \emph{i.e.} $(P * Q |- R) <=> (P |- Q --* R)$.} to express a notion of ``substate update'': inside $G_1$ replace $L_1$ with $L_2$ to reach $G_2$.  Essentially the ramification entailment ensures that the change in state specified locally fits properly into the global context.  In exchange for proving the ramification entailment, a verifier can use \infrulestyle{Ramify} at any time, \emph{i.e.} they need not worry about syntactically matching their assertions with the $*$ in the \infrulestyle{Frame} rule.  Although the ramification entailments can appear difficult, Hobor and Villard observed that in many practical cases they can be handled easily using a ``ramification library''.
 
