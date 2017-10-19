@@ -110,14 +110,10 @@ GeneralGraphs augment LabeledGraphs by adding a soundness condition, indicated i
 
 \label{subsec:graphplugins}
 Many theorems about graphs require certain properties, \emph{e.g.}:
-\begin{itemize}
-\vspace{-1ex}
+\begin{itemize}[itemsep=0pt, topsep=0pt]
 \item A graph may be finite (\p{FiniteGraph}), meaning that the sets of valid vertices and valid edges are both finite.
-\vspace{-1ex}
 \item More subtly, consider that many real data structures use special null values to represent unused nodes.  The \p{MathGraph} property introduces this concept---\emph{i.e.} some invalid nodes that are nonetheless allowed to appear as destinations for valid edges.
-\vspace{-1ex}
 \item Many of our verified algorithms have only two outgoing edges per node.  The \p{BiGraph} property lets us reason about this common special case in a convenient manner.
-\vspace{-1ex}
 \end{itemize}
 We have a number of other properties in our codebase, but these three are the most important basic ones.
 

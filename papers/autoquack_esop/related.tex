@@ -17,7 +17,7 @@ Our development is entirely machine-checked~(\S\ref{sec:development}) which reve
 %%%%%% Edit 1: Original version starts
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \iftrue
-Hobor and Villard treated mathematical graphs very simply, as triples $(V,E,L)$ of vertices, edges, and a labeling function on vertices.  Vertices had no more than two neighbors.  In contrast, our mathematical graph framework~(\S\ref{sec:mathgraph}) is very modular and general and has been tuned to work smoothly in a mechanized context.
+Hobor and Villard treated math graphs very simply, as triples $(V,E,L)$ of vertices, edges, and a labeling function on vertices.  Vertices had no more than two neighbors.  In contrast, our mathematical graph framework~(\S\ref{sec:mathgraph}) is very modular and general and has been tuned to work smoothly in a mechanized context.
 
 Hobor and Villard erroneously defined spatial graphs recursively~(\S\ref{sec:fixpointfail}); unfortunately other members of the research community have since followed them in, \emph{e.g.}~\cite{RaadVG15}.  We exposed this error and provided a sound and quite general definition for \p{graph}~(\S\ref{sec:goodgraph}) that recovers fold/unfold reasoning.  We developed a much more general and more modular set of related lemmas and connect our spatial reasoning to two very different verification tools~(\S\ref{sec:ramifylib}), VST~(\S\ref{sec:vst}) and HIP/SLEEK~(\S\ref{sec:hipsleek}).  Our development is entirely machine-checked~(\S\ref{sec:development}) whereas they used only pen and paper.
 \fi
@@ -38,7 +38,7 @@ Almost a decade after Yang verified Schorr-Waite on paper, Dafny automated its v
 
 \vspace{-1ex}
 \paragraph{Verification tools.}
-Our work heavily interacts with the Floyd~\cite{appel:programlogics} and HIP/SLEEK~\cite{chin:hipsleek} verification tools.  Like Floyd, Charge! uses Coq tactics to work with a shallow embedding of higher order separation logic, but focuses on OO programs written in Java/C\#~\cite{bengtson:charge}.  A  more automated approach to verification of low level programs using Coq is implemented in the Bedrock framework \cite{chlipala:bedrock}.
+Our work heavily interacts with the Floyd~\cite{appel:programlogics} and HIP/SLEEK \cite{chin:hipsleek} verification tools.  Like Floyd, Charge! uses Coq tactics to work with a shallow embedding of higher order separation logic, but focuses on OO programs written in Java/C\#~\cite{bengtson:charge}.  A  more automated approach to verification of low level programs using Coq is implemented in the Bedrock framework \cite{chlipala:bedrock}.
 
 Many automated verification tools also use separation logic in a forward reasoning style as does HIP/SLEEK, including Smallfoot~\cite{berdine:smallfoot}, jStar~\cite{DistefanoP08}, and Verifast~\cite{jacobs:verifast}.  One of HIP/SLEEK's distinguishing features is good support for user-defined inductive predicates rather than a library of pre-defined predicates for lists, trees etc.
 

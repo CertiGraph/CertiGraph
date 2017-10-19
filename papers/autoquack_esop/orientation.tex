@@ -19,11 +19,9 @@ Accordingly, there is an unbroken certified chain from our specification of \li{
 % but the overall structure is the same.
 
 The specification we certify (lines \ref{code:markstart} and \ref{code:markend}) is
-\vspace*{-1ex}
-\[
+\begin{equation*}
 \{\p{graph}(\li{x},\gamma)\}~\li{mark(x)}~\{\exists \gamma'.~ \p{graph}(\li{x},\gamma') /| \m{mark}(\gamma, \li{x}, \gamma')\}
-\vspace*{-1ex}
-\]
+\end{equation*}
 The specification is for full functional correctness, stated using \emph{mathematical} graphs~$\gamma$; until \S\ref{sec:mathgraph} consider $\gamma$ to be a function that maps a vertex $v \in V$ to triples $(m,l,r)$, where $m$ is a ``mark'' bit (0 or 1) and $\{l,r\} \subseteq V \uplus \{0\}$ are the neighbors of $v$.
 The \emph{spatial} \p{graph} predicate describes how the mathematical graph $\gamma$ is implemented in the heap.  Until~\S\ref{sec:spacegraph} it is enough to know that \p{graph} satisfies the fold/unfold relationship in
 equation~\eqref{eqn:bigraphintrofoldunfold}, located just under the code in Figure~\ref{fig:markgraph}.
@@ -33,10 +31,9 @@ First, as we explain in~\S\ref{sec:fixpointfail}, it is probably a mistake to wr
 Third, \eqref{eqn:bigraphintrofoldunfold} illustrates how industrial-strength settings complicate verification.  Lines~\mbox{\ref{code:nodedefstart}--\ref{code:nodedefend}} define the data type \li{Node} used by \li{mark}.  The \li{_Alignas($n$)} directives tell CompCert to align fields on $n$-byte boundaries.  As explained in~\S\ref{sec:goodgraph}, this alignment is necessary in C-like memory models to prove fold-unfold \eqref{eqn:bigraphintrofoldunfold}, which is why \eqref{eqn:bigraphintrofoldunfold} includes an alignment restriction $x~\mathsf{mod}~16 = 0$ and an existentially-quantified ``blank'' second field for the root $x \mapsto m,-,l,r$.
 %{\color{magenta}(In our Floyd proofs the alignment restriction and blank second field are nicely hidden ``behind the scenes''.)}
 
-Notice that the postcondition of \li{mark} is specified \emph{relationally}, \emph{i.e.} $\{\exists \gamma'.~ \p{graph}(\li{x},\gamma') /| \m{mark}(\gamma, \li{x}, \gamma')\}$ instead of \emph{functionally}, \emph{i.e.} $\{\p{graph}\big(\li{x},\m{mark}(\gamma, \li{x})\big)\}$. In the first case $\m{mark}$ is a relation that specifies that~$\gamma'$ is the result of correctly marking~$\gamma$ from~\li{x}, whereas in the second $\m{mark}$ is a function that \textbf{computes} the result of marking~$\gamma$ from~\li{x}. For both theoretical and practical reasons a relational approach is better.
+It should be noticed that the postcondition of \li{mark} is specified \emph{relationally}, \emph{i.e.} $\{\exists \gamma'.~ \p{graph}(\li{x},\gamma') /| \m{mark}(\gamma, \li{x}, \gamma')\}$ instead of being specified \emph{functionally}, \emph{i.e.} $\{\p{graph}\big(\li{x},\m{mark}(\gamma, \li{x})\big)\}$. In the first case $\m{mark}$ is a relation that specifies that~$\gamma'$ is the result of correctly marking~$\gamma$ from~\li{x}, whereas in the second $\m{mark}$ is a function that \textbf{computes} the result of marking~$\gamma$ from~\li{x}. For both theoretical and practical reasons a relational approach is better.
 Theoretically, relations are preferable because they are more general.  For example, relations allow ``inputs'' to have no ``outputs'' (\emph{i.e.} be partial) or alternatively have many outputs (\emph{i.e.} be nondeterministic).  Our graph \li{copy} algorithm is specified nondeterministically to avoid specifying how \li{malloc} allocates fresh blocks of memory.  Relations are also preferable to functions because they are more compositional.
 We take advantage of compositionality by using $\m{mark}(\gamma,x,\gamma') /| \ldots$ to specify both our ``spanning tree'' and ``graph copy'' algorithms in~\S\ref{sec:application}, which also mark nodes while carrying out their primary tasks.
-
 \begin{figure}[htbp]
 \[
 \begin{array}{lcl}
@@ -86,7 +83,7 @@ Hobor and Villard observed that \infrulestyle{Frame} is bit rigid because it for
 \infrule{Ramify}
 {\{L_1\} ~ c ~ \{L_2\} \\ G_1 |- L_1 * (L_2--* G_2)}
 {\{G_1\} ~ c ~ \{G_2\}}
-{\begin{array}{c}(L_2 --* G_2) \\ \textrm{ignores} \\ \MV(c) \end{array}} \qquad \qquad \qquad
+{\begin{array}{c}(L_2 --* G_2) \textrm{ ignores } \MV(c) \end{array}} \qquad \qquad \qquad \qquad \qquad \qquad
 %{$\begin{array}{l}\m{fv}(Q --* R') \cap \null \\ \m{modif}(c) = \emptyset\end{array}$} \qquad \qquad \qquad
 \vspace{-1.5ex}
 \]

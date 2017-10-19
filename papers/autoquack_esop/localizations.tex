@@ -82,7 +82,7 @@ With \infrulestyle{Ramify-P} and \infrulestyle{Solve Ramify-P} we can prove the 
 \[
 \infrule{}{\raisebox{1.4ex}{$\infrule{}{P * F |- P * F \\ F |- Q --* (Q * F)}
 {\raisebox{-4pt}[0pt][0pt]{$P * F |- P * \pguards{c}\big(Q --* (Q * F)\big)$}}
-{\hspace{-1.1ex}\raisebox{0.9ex}{$\begin{array}{c}F \text{ ignores} \\ \MV(c)\end{array}$}}$}
+{\hspace{-1.1ex}\raisebox{0.5ex}{$\begin{array}{c}F \text{ ignores } \MV(c)\end{array}$}}$}
 \\ \{P\}~c~\{Q\}}
 {\{P * F\}~c~\{Q * F\}}
 {}
@@ -137,7 +137,7 @@ Pen and paper Hoare proofs are often a little casual with existentials, \emph{e.
 \label{sec:existentials}
 
 What happens when we \textbf{cannot} calculate a substitution using globally-scoped metavariables?  Consider the following: %example:
-\vspace*{-1.5ex}
+\vspace*{-0.5ex}
 \begin{lstlisting}
 // $\{ A \} \searrow \{ B \}$
       ...; x = malloc(sizeof(int));
@@ -145,7 +145,7 @@ What happens when we \textbf{cannot} calculate a substitution using globally-sco
 // $\label{toycode:localpost}\swarrow \{ \big((\tx{x} |-> {-} /| \tx{y} = 1) |/ (\tx{x} = 0 /| \tx{y} = 0)\big) * C \}$
 // $\label{toycode:globalpost}\{ (\tx{y} = 1 /| D_1) |/  (\tx{y} = 0 /| D_2) \}$
 \end{lstlisting}
-\vspace*{-1.5ex}
+\vspace*{-0.5ex}
 Within a localization block we call the nondeterministically specified function \li{malloc} and use the program variable~\li{y} as a flag to keep track of whether the allocation succeeded.  Call the postconditions in lines~\ref{toycode:localpost} and~\ref{toycode:globalpost} just above $L_2$ and $G_2$. %respectively.
 
 Now the choice of $F$ is not very straightforward because we do not know the values to substitute for \li{x} or \li{y}:

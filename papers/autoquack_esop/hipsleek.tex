@@ -99,7 +99,7 @@ End Mgraphmark.
 \label{fig:hipcoqfile}
 \end{figure}
 
-The lemmas and axioms that HIP/SLEEK has used in the verification still need to be checked.  Accordingly, HIP/SLEEK generates a Coq file with a \li{Module Type} specifying them.  The \li{Module Type} generated for \li{mark} is given in Figure~\ref{fig:hipcoqfile} to illustrate this process.  To obtain a complete verification for \li{mark}, users must build a Coq \li{Module} that satisfies \li{Mgraphmark} using definitions for the abstract relations that they think are reasonable (in particular, for the \li{mark} relation, since it is used in the specification of the algorithm).
+The lemmas and axioms that HIP/SLEEK has used still need to be checked.  Accordingly, HIP/SLEEK generates a Coq file with a \li{Module Type} specifying them.  The \li{Module Type} generated for \li{mark} is given in Figure~\ref{fig:hipcoqfile} to illustrate this process.  To obtain a complete verification for \li{mark}, users must build a Coq \li{Module} that satisfies \li{Mgraphmark} using definitions for the abstract relations that they think are reasonable (in particular, for the \li{mark} relation, since it is used in the specification of the algorithm).
 \vspace{-1.5ex}
 \subsection{Automatic localizations in HIP/SLEEK}
 \vspace{-0.75ex}
