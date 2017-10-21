@@ -6,6 +6,7 @@
 %
 %% \documentclass[pldi]{sigplanconf-pldi15}
 \documentclass{llncs}
+\usepackage{titlesec}
 
 %
 % the following standard packages may be helpful, but are not required
@@ -19,8 +20,8 @@
 \usepackage{listings}          % format code
 \usepackage{stmaryrd}
 \usepackage{relsize}
-\usepackage{setspace}
-%% \usepackage[small,compact]{titlesec}
+%% \usepackage{setspace}
+\usepackage{titlesec}
 
 \usepackage{amssymb}
 \usepackage{mathabx}
@@ -36,7 +37,7 @@
 \long\def\beginpgfgraphicnamed#1#2\endpgfgraphicnamed{\includegraphics{#1}}
 %% \usetikzlibrary{arrows.meta, positioning, decorations.pathmorphing, fit}
 %% \pgfrealjobname{autoquack}
-\usepackage{fancybox}
+\usepackage{fancyvrb}
 \usepackage{multicol}
 \usepackage{semantic}
 \newcommand{\triple}[3]{\{#1\}\,#2\,\{#3\}}
@@ -155,13 +156,17 @@
   boxpos=t,
 }
 
+\titlespacing{\paragraph}{0pt}{0pt}{1ex}
 
 %\lstset{language=C,basicstyle=\small,mathescape=true,columns=fullflexible}
 \begin{document}
-\setlength\abovedisplayskip{1pt}
-\setlength\belowdisplayskip{1pt}
-\setlength\abovedisplayshortskip{1pt}
-\setlength\belowdisplayshortskip{1pt}
+\setlength\abovedisplayskip{2pt}
+\setlength\belowdisplayskip{2pt}
+\setlength\abovedisplayshortskip{2pt}
+\setlength\belowdisplayshortskip{2pt}
+\setlength{\abovecaptionskip}{0pt}
+%% \setlength{\intextsep}{5pt}%
+%% \setlength{\belowcaptionskip}{\baselineskip}
 %% \special{papersize=8.5in,11in}
 %% \setlength{\pdfpageheight}{\paperheight}
 %% \setlength{\pdfpagewidth}{\paperwidth}
@@ -176,11 +181,13 @@
 
 %\title{The Ramifications of Mechanizing Verification}
 \title{The Ramifications of \\ Mechanized Localizations within Data Structures}
-\author{Shengyi Wang\inst{1} \and Qinxiang Cao\inst{2} \and Asankhaya Sharma\inst{1} \and Aquinas Hobor\inst{1}}
+%% \author{Shengyi Wang\inst{1} \and Qinxiang Cao\inst{2} \and Asankhaya Sharma\inst{1} \and Aquinas Hobor\inst{1}}
+\author{\null}
+\institute{\null}
 %{}
-\institute{National University of Singapore
-  \and Princeton University
-}
+%% \institute{National University of Singapore
+%%   \and Princeton University
+%% }
 %{School of Computing$^{*}$ and Yale-NUS College$^{\dagger}$, National University of Singapore; Princeton University$^{+}$}
 %% \authorinfo{} {} {}
 \maketitle
@@ -284,7 +291,4 @@ how to connect this setup to a general theory of graphs in separation logic.  We
 %~
 
 %\newpage
-
-%\input{appendix.tex}
-
 \end{document}

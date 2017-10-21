@@ -61,13 +61,14 @@ In other words, $\pguards{c}$ is exactly the universal modal operator~$\Box$ ove
 
 Note that \infrulestyle{Ramify-P} has no free variable side condition, which is unnecessary because $\forall P.~ \pguards{c}P \text{ ignores } \MV(c)$.  However, in practice this side condition reappears because to actually prove a ramification entailment containing $\pguards{c}$ one typically applies the following \infrulestyle{Solve Ramify-P} rule:
 \[
-\infrule{Solve Ramify-P}
+\textsc{\small Solve Ramify-P}\;
+\inferrule
 {G_1 |- L_1 * F \\
 F |- L_2 --* G_2
 %{\color{magenta} F |- L_2 --* G_2}
 %F * L_2 |- G_2
 }
-{G_1 \vdash L_1 * \pguards{c}  (L_2 --* G_2)}{F \textrm{ ignores } \MV(c)} \qquad \qquad \qquad \qquad
+{G_1 \vdash L_1 * \pguards{c}  (L_2 --* G_2)}{F \textrm{ ignores } \MV(c)}
 \]
 We can handle the $\pguards{c}$ by breaking apart the single entailment into a pair.  Using two entailments allows modified program variables to change between the preconditions and postconditions\footnote{Entailment procedures for separation logic may prefer to use $F * L_2 |- G_2$ as the second premise of \infrulestyle{Solve Ramify-P} because it is free from $--*$.}.  To connect the pair, we must choose a suitable predicate~$F$ that ignores modified variables in~$c$.
 
@@ -201,13 +202,14 @@ We package all of this reasoning into the following rule:
 \]
 Essentially \infrulestyle{Ramify-PQ} allows us to shift existential variables from the local context to the global one in a smooth way, especially in conjunction with the following rule:
 \[
-\infrule{Solve Ramify-PQ}
+\textsc{\small Solve Ramify-PQ}\;
+\inferrule
 {G_1 |- L_1 * F \\
 F |- \forall x.~ (L_2 --* G_2)
 %{\color{magenta} F |- L_2 --* G_2}
 %F * L_2 |- G_2
 }
-{G_1 \vdash L_1 * \pguards{c}  \big(\forall x.~ (L_2 --* G_2)\big)}{\begin{array}{c}F \textrm{ ignores} \\ \MV(c)\end{array}} \qquad \qquad \quad
+{G_1 \vdash L_1 * \pguards{c}  \big(\forall x.~ (L_2 --* G_2)\big)}{\begin{array}{c}F \textrm{ ignores} \\ \MV(c)\end{array}}
 \]
 %Since we use a relational style to verify graph algorithms (\emph{e.g.} in Figure~\ref{fig:markgraph}), existentials appear frequently and a smooth treatment is very helpful in practice.  To make this point a little more clearly
 We were more explicit about existentials in \emph{e.g.} lines~\ref{code:beforemarkl}--\ref{code:aftermarkl} than is typical so that we could prove that we handle them correctly.  Fortified by the \infrulestyle{Ramify-PQ} rule, we could reasonably-albeit-less-formally have \emph{e.g.} written line~\ref{code:postmark1} as: \begin{lstlisting}[firstnumber=25]

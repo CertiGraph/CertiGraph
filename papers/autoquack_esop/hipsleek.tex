@@ -6,48 +6,34 @@ HIP/SLEEK is a toolset for verifying programs using separation logic~\cite{chin:
   \begin{lstlisting}
 $\label{code:hipdatanode}$data node { int val; node left; node right; }
 
-$\label{code:hipstartrelation}$relation lookup(abstract G, node x,
-  int d, node l, node r).
-$\label{code:hipmark1relation}$relation update(abstract G, node x, int d,
-  abstract G1).
+$\label{code:hipstartrelation}$relation lookup(abstract G, node x, int d, node l, node r).
+$\label{code:hipmark1relation}$relation update(abstract G, node x, int d, abstract G1).
 $\label{code:hipmarkrelation}$relation mark(abstract G, node x, abstract G1).
-relation
-  subset_reach(abstract G, node x, abstract G1).
-relation
-$\label{code:hipendrelation}$ eq_notreach(abstract G, node x, abstract G1).
+relation subset_reach(abstract G, node x, abstract G1).
+$\label{code:hipendrelation}$relation eq_notreach(abstract G, node x, abstract G1).
 
 $\label{code:hipaxiom}$axiom lookup(G,x,1,l,r) ==> mark(G,x,G).
-$\label{code:hipmarkramconnect}$axiom mark(G,x,G1) & lookup(G,y,v,l,r) ==>
-  subset_reach(G,x,G1) & eq_notreach(G,x,G1) &
-$\label{code:hipmarkramconnectend}$  lookup(G1,y,_,l,r).
+$\label{code:hipmarkramconnect}$axiom mark(G,x,G1) & lookup(G,y,v,l,r) ==> subset_reach(G,x,G1) &
+$\label{code:hipmarkramconnectend}$eq_notreach(G,x,G1) & lookup(G1,y,_,l,r).
 // ... other $\color{red!80!black}\tx{axioms elided ...}$
 
-$\label{code:hipbegingraphdef}$graph<G> == self = null or
- self::node<v,l,r> U* l::graph<G> U* r::graph<G>
+$\label{code:hipbegingraphdef}$graph<G> == self = null or self::node<v,l,r> U* l::graph<G> U* r::graph<G>
 $\label{code:hipendgraphdef}$ & lookup(G,self,v,l,r);
 
-$\label{code:hipbeginlemma}$rlemma "subgraphupdate_l" l::graph<G1> *
- (l::graph<G> --@ (x::node<v,l,r> U*
- (l::graph<G> U* r::graph<G>))) &
- subset_reach(G,l,G1) & eq_notreach(G,l,G1)
- & lookup(G,x,v,l,r) & lookup(G1,x,v1,l,r)
-  -> x::node<v1,l,r> U*
+$\label{code:hipbeginlemma}$rlemma "subgraphupdate_l" l::graph<G1> * (l::graph<G> --@ (x::node<v,l,r> U*
+ (l::graph<G> U* r::graph<G>))) & subset_reach(G,l,G1) & eq_notreach(G,l,G1)
+ & lookup(G,x,v,l,r) & lookup(G1,x,v1,l,r) -> x::node<v1,l,r> U*
 $\label{code:hipendlemma}$   (l::graph<G1> U* r::graph<G1>);
 // ... other ramification lemmas elided ...
 
-void mark(node x)
-requires x::graph<G> $\label{code:hipmarkstart}$
-ensures x::graph<G1> & mark(G,x,G1); { $\label{code:hipmarkend}$
+$\label{code:hipmarkstart}$ void mark(node x) requires x::graph<G> ensures x::graph<G1> & mark(G,x,G1); {
   node l, r;
   if (x == null) return;
   else {
     if (x.val == 1) return; $\label{ifcondmark}$
-    l = x.left;
-    r = x.right;
-    x.val = 1;
+    l = x.left; r = x.right; x.val = 1;
     mark(l);$\label{beforemarkleft}$
-    mark(r);
-} } $\label{code:hipmarkstop}$
+    mark(r); } } $\label{code:hipmarkstop}$
 \end{lstlisting}
 %% \vspace{-8pt}
 \caption{Bigraph marking in HIP/SLEEK}
@@ -56,7 +42,7 @@ ensures x::graph<G1> & mark(G,x,G1); { $\label{code:hipmarkend}$
 %% \hspace{-1.5ex}
 \end{figure}
 
-Figure~\ref{fig:hipmarkgraph} gives most of the HIP/SLEEK file used to verify \li{mark} (we have elided about 15 lines to save space).  We specify the pre- and postcondition of \li{mark} in line~\ref{code:hipmarkstart} and~\ref{code:hipmarkend}) respectively; notice that this is the same specification we verified in VST in Figure~\ref{fig:markgraph}.  It is quite unusual for H/S to verify the full functional correctness of an algorithm since its focus on heavier automation tends to trade off proving very exact specifications (\emph{e.g.} H/S proofs about lists usually treat their values as multisets instead of sequences).  We do not give H/S any ``hints'' at intermediate program points.
+Figure~\ref{fig:hipmarkgraph} gives most of the HIP/SLEEK file used to verify \li{mark} (we have elided about 15 lines to save space).  We specify the pre- and postcondition of \li{mark} in line~\ref{code:hipmarkstart}); notice that this is the same specification we verified in VST in Figure~\ref{fig:markgraph}.  It is quite unusual for H/S to verify the full functional correctness of an algorithm since its focus on heavier automation tends to trade off proving very exact specifications (\emph{e.g.} H/S proofs about lists usually treat their values as multisets instead of sequences).  We do not give H/S any ``hints'' at intermediate program points.
 
 Line~\ref{code:hipdatanode} defines the recursive data structure \li{node} and lines~\ref{code:hipbegingraphdef}--\ref{code:hipendgraphdef} use H/S's normal user-defined recursive predicate feature to define the \li{graph} predicate.
 H/S uses the keyword \li{self} to refer to the object being defined; in other words H/S's definition is very close to the fold/unfold relationship given as equation~\eqref{eqn:bigraphintrofoldunfold} in Figure~\ref{fig:markgraph} and we can justify its soundness as in \S\ref{sec:goodgraph}.  H/S uses the \li{::} operator for $|->$ and to provide the root pointer for a recursive predicate, \li{U*} for $**$ and automatically quantifies free variables existentially.  H/S does not need alignment restrictions because it enjoys a Java-like memory model with objects and fields: \emph{i.e.} it is not possible to have a pointer pointing into the ``middle'' of a record.  The last line of the \li{graph} predicate definition~(\ref{code:hipendgraphdef}) includes the \li{lookup} abstract relation.  In Figure~\ref{fig:markgraph}, this would be written $\gamma(\li{self})= (v,l,r)$.
@@ -77,18 +63,13 @@ Module Type Mgraphmark.
  Parameter graph : node -> G -> formula.
  Parameter mark : G -> node -> G -> formula.
  ...
- Axiom axiom_3 : forall l r x G,
-   valid (imp (lookup G x true l r) (mark G x G)).
+ Axiom axiom_3 : forall l r x G, valid (imp (lookup G x true l r) (mark G x G)).
  ...
- Axiom subgraphupdate_l : forall G v G1 x v1 l r,
-  valid (imp (and (star (graph l G1)
-  (mwand (graph l G) (union (ptto_node x v l r)
-  (union (graph l G) (graph r G)))))
-  (and (subset_reach G l G1) (and
-  (eq_notreach G l G1) (and (lookup G x v l r)
-  (lookup G1 x v1 l r)))))
-  (union (ptto_node x v1 l r) (union (graph l G1)
-  (graph r G1)))).
+ Axiom subgraphupdate_l : forall G v G1 x v1 l r, valid (imp
+  (and (star (graph l G1) (mwand (graph l G) (union (ptto_node x v l r)
+  (union (graph l G) (graph r G))))) (and (subset_reach G l G1)
+  (and (eq_notreach G l G1) (and (lookup G x v l r) (lookup G1 x v1 l r)))))
+  (union (ptto_node x v1 l r) (union (graph l G1) (graph r G1)))).
  ...
 End Mgraphmark.
 \end{lstlisting}
