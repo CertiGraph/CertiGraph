@@ -6,6 +6,7 @@ Require Import RamifyCoq.graph.subgraph2.
 Require Import RamifyCoq.graph.graph_relation.
 Require Import RamifyCoq.graph.reachable_computable.
 Require Import RamifyCoq.msl_application.Graph.
+Require Import RamifyCoq.msl_application.UnionFindGraph.
 Require Import RamifyCoq.msl_application.GList.
 Require Import RamifyCoq.msl_application.GList_UnionFind.
 Require Import RamifyCoq.floyd_ext.share.
@@ -15,17 +16,17 @@ Local Open Scope logic.
 
 Arguments SingleFrame' {l} {g} {s}.
 
-Local Coercion Graph_LGraph: Graph >-> LGraph.
+Local Coercion UGraph_LGraph: Graph >-> LGraph.
 Local Coercion LGraph_SGraph: LGraph >-> SGraph.
-Local Identity Coercion Graph_GeneralGraph: Graph >-> GeneralGraph.
-Local Identity Coercion LGraph_LabeledGraph: LGraph >-> LabeledGraph.
-Local Identity Coercion SGraph_SpatialGraph: SGraph >-> SpatialGraph.
+Local Identity Coercion ULGraph_LGraph: LGraph >-> UnionFindGraph.LGraph.
+Local Identity Coercion LGraph_LabeledGraph: UnionFindGraph.LGraph >-> LabeledGraph.
+Local Identity Coercion SGraph_PointwiseGraph: SGraph >-> PointwiseGraph.
 Local Coercion pg_lg: LabeledGraph >-> PreGraph.
 
 Notation vertices_at sh P g:= (@vertices_at _ _ _ _ _ _ (@SGP pSGG_VST nat unit (sSGG_VST sh)) _ P g).
 Notation whole_graph sh g := (vertices_at sh (vvalid g) g).
 Notation graph sh x g := (@reachable_vertices_at _ _ _ _ _ _ _ _ _ _ (@SGP pSGG_VST nat unit (sSGG_VST sh)) _ x g).
-Notation Graph := (@Graph pSGG_VST nat unit unit).
+Notation Graph := (@Graph pSGG_VST).
 Existing Instances maGraph finGraph liGraph RGF.
 
 Definition mallocN_spec :=
@@ -100,13 +101,14 @@ Proof.
     + assert (Coqlib.Prop_join (vvalid g) (eq x) (vvalid (make_set_Graph 0%nat tt tt x g x_not_null H))). {
         simpl; hnf; split; intros; [unfold graph_gen.addValidFunc | subst a]; intuition.
       } assert (vgamma (make_set_Graph O tt tt x g x_not_null H) x = (O, x)). {
-        simpl. f_equal.
+        unfold vgamma, UnionFindGraph.vgamma. simpl. f_equal.
         - destruct (SGBA_VE x x); [| hnf in c; unfold Equivalence.equiv in c; exfalso]; auto.
         - unfold graph_gen.updateEdgeFunc. destruct (EquivDec.equiv_dec (x, tt) (x, tt)). 2: compute in c; exfalso; auto. destruct (SGBA_VE null null); auto.
           hnf in c. unfold Equivalence.equiv in c. exfalso; auto.
       } rewrite <- (vertices_at_sepcon_1x (make_set_Graph 0%nat tt tt x g x_not_null H) x (vvalid g) _ (O, x)); auto. apply sepcon_derives. 1: entailer !.
       assert (vertices_at sh (vvalid g) g = vertices_at sh (vvalid g) (make_set_Graph O tt tt x g x_not_null H)). {
-        apply vertices_at_vertices_identical. simpl. hnf. intros. destruct a as [y ?]. unfold Morphisms_ext.app_sig. simpl. unfold graph_gen.updateEdgeFunc. f_equal.
+        apply vertices_at_vertices_identical. simpl. hnf. intros. destruct a as [y ?]. unfold Morphisms_ext.app_sig. simpl.
+        unfold UnionFindGraph.vgamma. simpl. unfold graph_gen.updateEdgeFunc. f_equal.
         - destruct (SGBA_VE y x); [hnf in e; subst y; exfalso |]; auto.
         - destruct (EquivDec.equiv_dec (x, tt) (y, tt)); auto. hnf in e. inversion e. subst y. exfalso; auto.
       } rewrite <- H5. entailer.
@@ -214,7 +216,7 @@ Proof.
     apply (exp_right root). rewrite H9. entailer !. split.
   - apply (graph_gen_redirect_parent_findS g g' x r r pa root H5 H6 H8); auto.
   - simpl. apply (uf_root_gen_dst_same g' (liGraph g') x x root); auto.
-    + apply (uf_root_edge _ (liGraph g') _ pa); auto. apply vgamma_not_dst with r; auto.
+    + apply (uf_root_edge _ (liGraph g') _ pa); auto. apply (vgamma_not_dst g' x r pa); auto.
     + apply reachable_refl; auto.
 Qed. (* 47.715 secs *)
 
@@ -449,6 +451,7 @@ Proof.
     } rewrite H15. clear H15. rewrite H7. simpl vgamma2cdata. apply (@graph_vgen_ramify _ (sSGG_VST sh)).
     - rewrite Heqg3. simpl. destruct H4 as [? _]; rewrite <- H4; destruct H2; apply reachable_foot_valid in H2; apply H2.
     - apply (graph_gen_redirect_parent_vgamma _ _ _ rankXRoot paXRoot) in Heqg3; auto.
+      intros. inversion H15. auto.
   } Unfocus.
   unfold semax_ram. forward. apply (exp_right (Graph_vgen g3 x_root (rankXRoot + 1)%nat)). entailer !.
 Qed. (* 205.811 secs *)

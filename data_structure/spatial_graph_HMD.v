@@ -20,8 +20,8 @@ Require Import Coq.ZArith.Znumtheory.
 Local Open Scope nat.
 Local Open Scope pred.
 
-Instance SGS_HMD: SpatialGraphSetting.
-  apply (Build_SpatialGraphSetting adr 0 eq_nat_dec).
+Instance SGS_HMD: PointwiseGraphSetting.
+  apply (Build_PointwiseGraphSetting adr 0 eq_nat_dec).
 Defined.
 
 Definition trinode x (dlr: bool * nat * nat) :=
@@ -237,6 +237,6 @@ Proof.
   apply trinode_inj.
 Defined.
 
-Instance SGA_HMD: SpatialGraphAssum.
-  apply (Build_SpatialGraphAssum (pred world) _ _ _ _ _ _ _ _ SGS_HMD trinode _ _ (* nMSLdirect *)).
+Instance SGA_HMD: PointwiseGraphAssum.
+  apply (Build_PointwiseGraphAssum (pred world) _ _ _ _ _ _ _ _ SGS_HMD trinode _ _ (* nMSLdirect *)).
 Defined.

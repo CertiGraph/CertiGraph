@@ -27,16 +27,16 @@ Import RamifyCoq.msl_ext.seplog.OconNotation.
 
 Open Scope logic.
 
-Section SpatialGraph_Mark_Bi.
+Section PointwiseGraph_Mark_Bi.
 
-Context {pSGG_Bi: pSpatialGraph_Graph_Bi}.
-Context {sSGG_Bi: sSpatialGraph_Graph_Bi bool unit}.
+Context {pSGG_Bi: pPointwiseGraph_Graph_Bi}.
+Context {sSGG_Bi: sPointwiseGraph_Graph_Bi bool unit}.
 
 Local Coercion Graph_LGraph: Graph >-> LGraph.
 Local Coercion LGraph_SGraph: LGraph >-> SGraph.
 Local Identity Coercion Graph_GeneralGraph: Graph >-> GeneralGraph.
 Local Identity Coercion LGraph_LabeledGraph: LGraph >-> LabeledGraph.
-Local Identity Coercion SGraph_SpatialGraph: SGraph >-> SpatialGraph.
+Local Identity Coercion SGraph_PointwiseGraph: SGraph >-> PointwiseGraph.
 Local Coercion pg_lg: LabeledGraph >-> PreGraph.
 
 Notation Graph := (@Graph pSGG_Bi bool unit unit).
@@ -141,6 +141,6 @@ Proof.
   auto.
 Qed.
 
-End SpatialGraph_Mark_Bi.
+End PointwiseGraph_Mark_Bi.
 
 
