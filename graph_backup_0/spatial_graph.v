@@ -17,7 +17,7 @@ Instance natEqDec : EqDec nat := { t_eq_dec := eq_nat_dec }.
 
 Definition trinode x d l r := !!(3 | x) && ((mapsto x d) * (mapsto (x+1) l) * (mapsto (x+2) r)).
 
-Section SpatialGraph.
+Section PointwiseGraph.
 
   Definition graph_cell (bi : @BiGraph adr nat natEqDec) (v : adr) : pred world :=
     let (dl, r) := gamma bi v in let (d, l) := dl in trinode v d l r.
@@ -1353,4 +1353,4 @@ Section SpatialGraph.
       graphs S1' g' * (graphs S1 g -⊛ graphs S1 g ⊗ graphs S2 g) |-- graphs S1' g' ⊗ graphs S2 g'.
   Proof. intros. apply wand_ewand. apply precise_graphs. apply subgraph_update; auto. Qed.
 
-End SpatialGraph.
+End PointwiseGraph.

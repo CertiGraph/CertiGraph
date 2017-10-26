@@ -31,10 +31,10 @@ Import RamifyCoq.msl_ext.seplog.OconNotation.
 
 Open Scope logic.
 
-Section SpatialGraph_Copy_Bi.
+Section PointwiseGraph_Copy_Bi.
 
-Context {pSGG_Bi: pSpatialGraph_Graph_Bi}.
-Context {sSGG_Bi: sSpatialGraph_Graph_Bi addr (addr * LR)}.
+Context {pSGG_Bi: pPointwiseGraph_Graph_Bi}.
+Context {sSGG_Bi: sPointwiseGraph_Graph_Bi addr (addr * LR)}.
 
 Existing Instances pSGG_Bi sSGG_Bi.
 
@@ -42,7 +42,7 @@ Local Coercion Graph_LGraph: Graph >-> LGraph.
 Local Coercion LGraph_SGraph: LGraph >-> SGraph.
 Local Identity Coercion Graph_GeneralGraph: Graph >-> GeneralGraph.
 Local Identity Coercion LGraph_LabeledGraph: LGraph >-> LabeledGraph.
-Local Identity Coercion SGraph_SpatialGraph: SGraph >-> SpatialGraph.
+Local Identity Coercion SGraph_PointwiseGraph: SGraph >-> PointwiseGraph.
 Local Coercion pg_lg: LabeledGraph >-> PreGraph.
 
 Notation Graph := (@Graph pSGG_Bi addr (addr * LR) unit).
@@ -409,8 +409,8 @@ Proof.
   spec H5; [subst l; auto |].
 
   unfold reachable_vertices_at.
-  pose proof vertices_at_sepcon_unique_1x (Graph_SpatialGraph g2'') x0 (reachable g2'' l0) d0.
-  pose proof vertices_at_sepcon_unique_xx g1' (Graph_SpatialGraph g2'') (Intersection _ (vvalid g1') (fun x => x0 <> x)) (reachable g2'' l0).
+  pose proof vertices_at_sepcon_unique_1x (Graph_PointwiseGraph g2'') x0 (reachable g2'' l0) d0.
+  pose proof vertices_at_sepcon_unique_xx g1' (Graph_PointwiseGraph g2'') (Intersection _ (vvalid g1') (fun x => x0 <> x)) (reachable g2'' l0).
 
   rewrite sepcon_assoc, (add_andp _ _ H10); normalize.
   rewrite (sepcon_comm (vertices_at _ _)), <- sepcon_assoc, (add_andp _ _ H9); normalize.
@@ -458,7 +458,7 @@ Proof.
     eapply vcopy1_copied_root_valid in H1; auto.
     rewrite H3; auto.
   } Unfocus.
-  rewrite (vertices_at_vertices_identical (Graph_SpatialGraph g2'') (LGraph_SGraph g2')).
+  rewrite (vertices_at_vertices_identical (Graph_PointwiseGraph g2'') (LGraph_SGraph g2')).
   rewrite (vertices_at_vertices_identical (LGraph_SGraph g1') (LGraph_SGraph g2')).
   + erewrite vertices_at_sepcon_xx; [apply derives_refl |].
     rewrite Prop_join_comm.
@@ -643,8 +643,8 @@ Proof.
   spec H8; [subst r; auto |].
 
   unfold reachable_vertices_at.
-  pose proof vertices_at_sepcon_unique_1x (Graph_SpatialGraph g4'') x0 (reachable g4'' r0) d0.
-  pose proof vertices_at_sepcon_unique_xx g3' (Graph_SpatialGraph g4'') (Intersection _ (vvalid g3') (fun x => x0 <> x)) (reachable g4'' r0).
+  pose proof vertices_at_sepcon_unique_1x (Graph_PointwiseGraph g4'') x0 (reachable g4'' r0) d0.
+  pose proof vertices_at_sepcon_unique_xx g3' (Graph_PointwiseGraph g4'') (Intersection _ (vvalid g3') (fun x => x0 <> x)) (reachable g4'' r0).
 
   rewrite sepcon_assoc, (add_andp _ _ H13); normalize.
   rewrite (sepcon_comm (vertices_at _ _)), <- sepcon_assoc, (add_andp _ _ H12); normalize.
@@ -715,7 +715,7 @@ Proof.
     eapply vcopy1_copied_root_valid in H1; auto.
     rewrite H5; auto.
   } Unfocus.
-  rewrite (vertices_at_vertices_identical (Graph_SpatialGraph g4'') (LGraph_SGraph g4')).
+  rewrite (vertices_at_vertices_identical (Graph_PointwiseGraph g4'') (LGraph_SGraph g4')).
   rewrite (vertices_at_vertices_identical (LGraph_SGraph g3') (LGraph_SGraph g4')).
   + erewrite vertices_at_sepcon_xx; [apply derives_refl |].
     rewrite Prop_join_comm.
@@ -907,6 +907,6 @@ Proof.
   intros.
 Admitted.
 
-End SpatialGraph_Copy_Bi.
+End PointwiseGraph_Copy_Bi.
 
 

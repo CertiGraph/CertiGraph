@@ -34,18 +34,18 @@ Class CompactCopySetting V E M := {
   default_g: M
 }.
 
-Section SpatialGraph_Copy.
+Section PointwiseGraph_Copy.
 
 Context {V E M: Type}.
-Context {SGBA: SpatialGraphBasicAssum V E}.
+Context {SGBA: PointwiseGraphBasicAssum V E}.
 Context {CCS: CompactCopySetting V E M}.
 Context {GV GE Pred: Type}.
-Context {SGP: SpatialGraphPred V E GV GE Pred}.
-Context {SGA: SpatialGraphAssum SGP}.
-Context {SGC: SpatialGraphConstructor V E V E M GV GE}.
-Context {L_SGC: Local_SpatialGraphConstructor V E V E M GV GE}.
-Context {SGA_vn: SpatialGraphAssum_vn SGP default_v}.
-Context {SGA_vs: SpatialGraphAssum_vs SGP}.
+Context {SGP: PointwiseGraphPred V E GV GE Pred}.
+Context {SGA: PointwiseGraphAssum SGP}.
+Context {SGC: PointwiseGraphConstructor V E V E M GV GE}.
+Context {L_SGC: Local_PointwiseGraphConstructor V E V E M GV GE}.
+Context {SGA_vn: PointwiseGraphAssum_vn SGP default_v}.
+Context {SGA_vs: PointwiseGraphAssum_vs SGP}.
 
 Instance MGS: WeakMarkGraph.MarkGraphSetting V.
 Proof.
@@ -61,7 +61,7 @@ Instance GMS: GraphMorphismSetting V E M V E V E M :=
 Global Existing Instance GMS.
 
 Notation Graph := (LabeledGraph V E V E M).
-Notation SGraph := (SpatialGraph V E V E).
+Notation SGraph := (PointwiseGraph V E V E).
 
 Local Coercion pg_lg: LabeledGraph >-> PreGraph.
 
@@ -505,13 +505,13 @@ Lemma vcopy1_edge_copy_list_copy_extended_copy': forall root es es_done e0 es_la
   disjointed_guard (vvalid g4'') (vvalid g3') (evalid g4'') (evalid g3') ->
   exists g4': Graph,
   extended_copy (dst g1 e0) (g3, g3') (g4, g4') /\
-  (Included (vvalid g4'') (vguard g4'') -> Included (vvalid g4'') (vguard g4') -> vertices_identical (vvalid g4'') (Graph_SpatialGraph g4'') (Graph_SpatialGraph g4')) /\
+  (Included (vvalid g4'') (vguard g4'') -> Included (vvalid g4'') (vguard g4') -> vertices_identical (vvalid g4'') (Graph_PointwiseGraph g4'') (Graph_PointwiseGraph g4')) /\
   (Included
      (Intersection _ (vvalid g3') (fun x1 => LocalGraphCopy.vmap g2 root <> x1)) 
      (vguard g3') -> Included
      (Intersection _ (vvalid g3') (fun x1 => LocalGraphCopy.vmap g2 root <> x1)) 
      (vguard g4') -> vertices_identical
-     (Intersection _ (vvalid g3') (fun x1 => LocalGraphCopy.vmap g2 root <> x1)) (Graph_SpatialGraph g3') (Graph_SpatialGraph g4')).
+     (Intersection _ (vvalid g3') (fun x1 => LocalGraphCopy.vmap g2 root <> x1)) (Graph_PointwiseGraph g3') (Graph_PointwiseGraph g4')).
 Proof.
   intros.
   unfold reachable_vertices_at.
@@ -674,13 +674,13 @@ Lemma vcopy1_edge_copy_list_weak_copy_extended_copy': forall {P: Graph -> Type} 
   (exists Pg4': P (gpredicate_sub_labeledgraph
                     (fun v' => root0 <> v')
                     (fun e' => ~ In e' (map (LocalGraphCopy.emap g4) es_done)) g4'), True) /\
-  (Included (vvalid g4'') (vguard g4'') -> Included (vvalid g4'') (vguard g4') -> vertices_identical (vvalid g4'') (Graph_SpatialGraph g4'') (Graph_SpatialGraph g4')) /\
+  (Included (vvalid g4'') (vguard g4'') -> Included (vvalid g4'') (vguard g4') -> vertices_identical (vvalid g4'') (Graph_PointwiseGraph g4'') (Graph_PointwiseGraph g4')) /\
   (Included
      (Intersection _ (vvalid g3') (fun x1 => LocalGraphCopy.vmap g2 root <> x1)) 
      (vguard g3') -> Included
      (Intersection _ (vvalid g3') (fun x1 => LocalGraphCopy.vmap g2 root <> x1)) 
      (vguard g4') -> vertices_identical
-     (Intersection _ (vvalid g3') (fun x1 => LocalGraphCopy.vmap g2 root <> x1)) (Graph_SpatialGraph g3') (Graph_SpatialGraph g4')).
+     (Intersection _ (vvalid g3') (fun x1 => LocalGraphCopy.vmap g2 root <> x1)) (Graph_PointwiseGraph g3') (Graph_PointwiseGraph g4')).
 Proof.
   intros.
   pose proof vcopy1_edge_copy_list_copy_extended_copy root es es_done e0 es_later g1 g2 g3 g2' g3' g4 g4''.
@@ -796,6 +796,6 @@ Proof.
   } Unfocus.
 Qed.
 
-End SpatialGraph_Copy.
+End PointwiseGraph_Copy.
 
 

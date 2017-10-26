@@ -27,22 +27,22 @@ Inductive LR :=
   | L
   | R.
 
-Class pSpatialGraph_Graph_Bi: Type := {
+Class pPointwiseGraph_Graph_Bi: Type := {
   addr: Type;
   null: addr;
   pred: Type;
-  SGBA: SpatialGraphBasicAssum addr (addr * LR)
+  SGBA: PointwiseGraphBasicAssum addr (addr * LR)
 }.
 
 Existing Instance SGBA.
 
-Definition is_null_SGBA {pSGGB: pSpatialGraph_Graph_Bi} : DecidablePred addr := (existT (fun P => forall a, {P a} + {~ P a}) (fun x => x = null) (fun x => SGBA_VE x null)).
+Definition is_null_SGBA {pSGGB: pPointwiseGraph_Graph_Bi} : DecidablePred addr := (existT (fun P => forall a, {P a} + {~ P a}) (fun x => x = null) (fun x => SGBA_VE x null)).
 
-Class sSpatialGraph_Graph_Bi {pSGG_Bi: pSpatialGraph_Graph_Bi} (DV DE: Type): Type := {
-  SGP: SpatialGraphPred addr (addr * LR) (DV * addr * addr) unit pred;
-  SGA: SpatialGraphAssum SGP;
-  SGAvs: SpatialGraphAssum_vs SGP;
-  SGAvn: SpatialGraphAssum_vn SGP null
+Class sPointwiseGraph_Graph_Bi {pSGG_Bi: pPointwiseGraph_Graph_Bi} (DV DE: Type): Type := {
+  SGP: PointwiseGraphPred addr (addr * LR) (DV * addr * addr) unit pred;
+  SGA: PointwiseGraphAssum SGP;
+  SGAvs: PointwiseGraphAssum_vs SGP;
+  SGAvn: PointwiseGraphAssum_vn SGP null
 }.
 
 Existing Instances SGP SGA SGAvs.
@@ -55,7 +55,7 @@ Pure Facts Part
 
 *********************************************************)
 
-Context {pSGG_Bi: pSpatialGraph_Graph_Bi}.
+Context {pSGG_Bi: pPointwiseGraph_Graph_Bi}.
 Context {DV DE DG: Type}.
 
 Class BiMaFin (g: PreGraph addr (addr * LR)) := {
@@ -66,18 +66,18 @@ Class BiMaFin (g: PreGraph addr (addr * LR)) := {
 
 Definition Graph := (GeneralGraph addr (addr * LR) DV DE DG (fun g => BiMaFin (pg_lg g))).
 Definition LGraph := (LabeledGraph addr (addr * LR) DV DE DG).
-Definition SGraph := (SpatialGraph addr (addr * LR) (DV * addr * addr) unit).
+Definition SGraph := (PointwiseGraph addr (addr * LR) (DV * addr * addr) unit).
 
-Instance SGC_Bi: SpatialGraphConstructor addr (addr * LR) DV DE DG (DV * addr * addr) unit.
+Instance SGC_Bi: PointwiseGraphConstructor addr (addr * LR) DV DE DG (DV * addr * addr) unit.
 Proof.
-  refine (Build_SpatialGraphConstructor _ _ _ _ _ _ _ SGBA _ _).
+  refine (Build_PointwiseGraphConstructor _ _ _ _ _ _ _ SGBA _ _).
   + exact (fun G v => (vlabel G v, dst (pg_lg G) (v, L), dst (pg_lg G) (v, R))).
   + exact (fun _ _ => tt).
 Defined.
 
-Instance L_SGC_Bi: Local_SpatialGraphConstructor addr (addr * LR) DV DE DG (DV * addr * addr) unit.
+Instance L_SGC_Bi: Local_PointwiseGraphConstructor addr (addr * LR) DV DE DG (DV * addr * addr) unit.
 Proof.
-  refine (Build_Local_SpatialGraphConstructor _ _ _ _ _ _ _ SGBA SGC_Bi
+  refine (Build_Local_PointwiseGraphConstructor _ _ _ _ _ _ _ SGBA SGC_Bi
     (fun G v => evalid (pg_lg G) (v, L) /\ evalid (pg_lg G) (v, R) /\
                 src (pg_lg G) (v, L) = v /\ src (pg_lg G) (v, R) = v) _
     (fun _ _ => True) _).
@@ -92,13 +92,13 @@ Defined.
 Global Existing Instances SGC_Bi L_SGC_Bi.
 
 Definition Graph_LGraph (G: Graph): LGraph := lg_gg G.
-Definition LGraph_SGraph (G: LGraph): SGraph := Graph_SpatialGraph G.
+Definition LGraph_SGraph (G: LGraph): SGraph := Graph_PointwiseGraph G.
 
 Local Coercion Graph_LGraph: Graph >-> LGraph.
 Local Coercion LGraph_SGraph: LGraph >-> SGraph.
 Local Identity Coercion Graph_GeneralGraph: Graph >-> GeneralGraph.
 Local Identity Coercion LGraph_LabeledGraph: LGraph >-> LabeledGraph.
-Local Identity Coercion SGraph_SpatialGraph: SGraph >-> SpatialGraph.
+Local Identity Coercion SGraph_PointwiseGraph: SGraph >-> PointwiseGraph.
 Local Coercion pg_lg: LabeledGraph >-> PreGraph.
 
 Instance biGraph (G: Graph): BiGraph G (fun x => (x, L)) (fun x => (x, R)) :=
@@ -612,7 +612,7 @@ Spatial Facts Part
 
 *********************************************************)
 
-Context {sSGG_Bi: sSpatialGraph_Graph_Bi DV DE}.
+Context {sSGG_Bi: sPointwiseGraph_Graph_Bi DV DE}.
 
 Lemma va_reachable_dag_unfold: forall (g: Graph) x d l r,
   vvalid g x ->
@@ -703,9 +703,9 @@ Lemma va_labeledgraph_add_edge_eq: forall (g: LGraph) es e s d data,
   is_guarded_BiMaFin (fun x => s <> x) (fun e => ~ In e es) g ->
   let g' := labeledgraph_add_edge g e s d data in
   @vertices_at _ _ _ _ _ _ SGP _
-   (Intersection _ (vvalid g) (fun x => s <> x)) (Graph_SpatialGraph g) =
+   (Intersection _ (vvalid g) (fun x => s <> x)) (Graph_PointwiseGraph g) =
   @vertices_at _ _ _ _ _ _ SGP _
-   (Intersection _ (vvalid g') (fun x => s <> x)) (Graph_SpatialGraph g').
+   (Intersection _ (vvalid g') (fun x => s <> x)) (Graph_PointwiseGraph g').
 Proof.
   intros.
   apply va_labeledgraph_add_edge_eq; auto.
@@ -735,9 +735,9 @@ Qed.
 
 Lemma va_labeledgraph_egen_eq: forall (g: LGraph) e data P,
   @vertices_at _ _ _ _ _ _ SGP _
-   P (Graph_SpatialGraph g) =
+   P (Graph_PointwiseGraph g) =
   @vertices_at _ _ _ _ _ _ SGP _
-   P (Graph_SpatialGraph (labeledgraph_egen g e data)).
+   P (Graph_PointwiseGraph (labeledgraph_egen g e data)).
 Proof.
   intros.
   apply vertices_at_vertices_identical.
@@ -751,7 +751,7 @@ Spatial Facts (with Strong Assumption) Part
 
 *********************************************************)
 
-  Context {SGSA: SpatialGraphStrongAssum SGP}.
+  Context {SGSA: PointwiseGraphStrongAssum SGP}.
 
   Notation graph x g := (@reachable_vertices_at _ _ _ _ _ _ _ _ (_) _ (@SGP pSGG_Bi DV DE sSGG_Bi) _ x g).
 
@@ -760,7 +760,7 @@ Spatial Facts (with Strong Assumption) Part
       graph x g = vertex_at x (d, l, r) ⊗ graph l g ⊗ graph r g.
   Proof.
     intros. rewrite graph_unfold with (S := (l :: r :: nil)); auto.
-    + change (Graph_SpatialGraph g) with (LGraph_SGraph g).
+    + change (Graph_PointwiseGraph g) with (LGraph_SGraph g).
       rewrite H0. simpl. rewrite ocon_emp. rewrite <- ocon_assoc. auto.
     + apply RGF.
     + intros. apply weak_valid_vvalid_dec. simpl in H1.
@@ -804,7 +804,7 @@ Spatial Facts (with Strong Assumption) Part
         (predicate_partial_labeledgraph g' (Complement addr (reachable_through_set g' S1')))%LabeledGraph ->
       vertices_identical2 (reachable_through_set (predicate_partialgraph g (Intersection addr (vvalid g) (Complement addr (reachable_through_set g S1)))) S2)
                           (reachable_through_set (predicate_partialgraph g' (Intersection addr (vvalid g') (Complement addr (reachable_through_set g' S1')))) S2)
-                          (Graph_SpatialGraph g) (Graph_SpatialGraph g').
+                          (Graph_PointwiseGraph g) (Graph_PointwiseGraph g').
   Proof.
   intros.
   apply GSG_PartialGraphPreserve2.

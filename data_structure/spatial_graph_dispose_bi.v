@@ -32,8 +32,8 @@ Defined.
 
 Section SPATIAL_GRAPH_DISPOSE_BI.
 
-  Context {pSGG_Bi: pSpatialGraph_Graph_Bi}.
-  Context {sSGG_Bi: sSpatialGraph_Graph_Bi bool unit}.
+  Context {pSGG_Bi: pPointwiseGraph_Graph_Bi}.
+  Context {sSGG_Bi: sPointwiseGraph_Graph_Bi bool unit}.
 
   Existing Instances maGraph biGraph finGraph.
 
@@ -42,7 +42,7 @@ Section SPATIAL_GRAPH_DISPOSE_BI.
   Local Coercion LGraph_SGraph: LGraph >-> SGraph.
   Local Identity Coercion Graph_GeneralGraph: Graph >-> GeneralGraph.
   Local Identity Coercion LGraph_LabeledGraph: LGraph >-> LabeledGraph.
-  Local Identity Coercion SGraph_SpatialGraph: SGraph >-> SpatialGraph.
+  Local Identity Coercion SGraph_PointwiseGraph: SGraph >-> PointwiseGraph.
   Local Coercion pg_lg: LabeledGraph >-> PreGraph.
 
   Notation Graph := (@Graph pSGG_Bi bool unit unit).

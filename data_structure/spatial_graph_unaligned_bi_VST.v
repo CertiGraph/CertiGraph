@@ -25,12 +25,12 @@ Instance PointerValLR_EqDec: EquivDec.EqDec (pointer_val * LR) eq.
   + destruct (PV_eq_dec p p0); [left | right]; congruence.
 Defined.
 
-Instance SGBA_VST: SpatialGraphBasicAssum pointer_val (pointer_val * LR).
-  refine (Build_SpatialGraphBasicAssum pointer_val (pointer_val * LR) _ _).
+Instance SGBA_VST: PointwiseGraphBasicAssum pointer_val (pointer_val * LR).
+  refine (Build_PointwiseGraphBasicAssum pointer_val (pointer_val * LR) _ _).
 Defined.
 
-Instance pSGG_VST: pSpatialGraph_Graph_Bi.
-  refine (Build_pSpatialGraph_Graph_Bi pointer_val NullPointer mpred _).
+Instance pSGG_VST: pPointwiseGraph_Graph_Bi.
+  refine (Build_pPointwiseGraph_Graph_Bi pointer_val NullPointer mpred _).
 Defined.
 
 Definition vgamma2cdata (dlr : bool * addr * addr) : reptype node_type :=
@@ -41,8 +41,8 @@ Definition vgamma2cdata (dlr : bool * addr * addr) : reptype node_type :=
 Definition trinode (sh: share) (p: addr) (dlr: bool * addr * addr): mpred :=
   data_at sh node_type (vgamma2cdata dlr) (pointer_val_val p).
 
-Instance SGP_VST (sh: share) : SpatialGraphPred addr (addr * LR) (bool * addr * addr) unit pred.
-  refine (Build_SpatialGraphPred _ _ _ _ _ (trinode sh) (fun _ _ => emp)).
+Instance SGP_VST (sh: share) : PointwiseGraphPred addr (addr * LR) (bool * addr * addr) unit pred.
+  refine (Build_PointwiseGraphPred _ _ _ _ _ (trinode sh) (fun _ _ => emp)).
 Defined.
 
 Instance MSLstandard sh : MapstoSepLog (AAV (SGP_VST sh)) (trinode sh).
@@ -128,15 +128,15 @@ Proof.
 Abort.
 *)
 
-Instance SGA_VST (sh: share) : SpatialGraphAssum (SGP_VST sh).
-  refine (Build_SpatialGraphAssum _ _ _ _ _ _ _ _ _ _ _).
+Instance SGA_VST (sh: share) : PointwiseGraphAssum (SGP_VST sh).
+  refine (Build_PointwiseGraphAssum _ _ _ _ _ _ _ _ _ _ _).
 Defined.
 
-Instance SGAvs_VST (sh: wshare): SpatialGraphAssum_vs (SGP_VST sh).
+Instance SGAvs_VST (sh: wshare): PointwiseGraphAssum_vs (SGP_VST sh).
   apply sepcon_unique_vertex_at; auto.
 Defined.
 
-Instance SGAvn_VST (sh: wshare): SpatialGraphAssum_vn (SGP_VST sh) NullPointer.
+Instance SGAvn_VST (sh: wshare): PointwiseGraphAssum_vn (SGP_VST sh) NullPointer.
   intros [[? ?] ?].
   simpl.
   unfold trinode.
@@ -144,7 +144,7 @@ Instance SGAvn_VST (sh: wshare): SpatialGraphAssum_vn (SGP_VST sh) NullPointer.
   normalize.
 Defined.
 
-Instance sSGG_VST (sh: wshare): @sSpatialGraph_Graph_Bi pSGG_VST bool unit.
-  refine (Build_sSpatialGraph_Graph_Bi pSGG_VST _ _ (SGP_VST sh) (SGA_VST sh) (SGAvs_VST sh) (SGAvn_VST sh)).
+Instance sSGG_VST (sh: wshare): @sPointwiseGraph_Graph_Bi pSGG_VST bool unit.
+  refine (Build_sPointwiseGraph_Graph_Bi pSGG_VST _ _ (SGP_VST sh) (SGA_VST sh) (SGAvs_VST sh) (SGAvn_VST sh)).
 Defined.
 

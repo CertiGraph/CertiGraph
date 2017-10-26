@@ -24,9 +24,9 @@ Require Import RamifyCoq.msl_application.GraphBi_Mark.
 Require Import RamifyCoq.data_structure.spatial_graph_dispose_bi.
 Import RamifyCoq.msl_ext.seplog.OconNotation.
 
-Context {pSGG_Bi: pSpatialGraph_Graph_Bi}.
-Context {sSGG_Bi: sSpatialGraph_Graph_Bi bool unit}.
-Context {SGSA: SpatialGraphStrongAssum SGP}.
+Context {pSGG_Bi: pPointwiseGraph_Graph_Bi}.
+Context {sSGG_Bi: sPointwiseGraph_Graph_Bi bool unit}.
+Context {SGSA: PointwiseGraphStrongAssum SGP}.
 
 Tactic Notation "LEM" constr(v) := (destruct (classic v); auto).
 

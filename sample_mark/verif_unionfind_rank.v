@@ -6,6 +6,7 @@ Require Import RamifyCoq.graph.subgraph2.
 Require Import RamifyCoq.graph.graph_relation.
 Require Import RamifyCoq.graph.reachable_computable.
 Require Import RamifyCoq.msl_application.Graph.
+Require Import RamifyCoq.msl_application.UnionFindGraph.
 Require Import RamifyCoq.msl_application.GList.
 Require Import RamifyCoq.msl_application.GList_UnionFind.
 Require Import RamifyCoq.floyd_ext.share.
@@ -15,17 +16,17 @@ Local Open Scope logic.
 
 Arguments SingleFrame' {l} {g} {s}.
 
-Local Coercion Graph_LGraph: Graph >-> LGraph.
+Local Coercion UGraph_LGraph: Graph >-> LGraph.
 Local Coercion LGraph_SGraph: LGraph >-> SGraph.
-Local Identity Coercion Graph_GeneralGraph: Graph >-> GeneralGraph.
-Local Identity Coercion LGraph_LabeledGraph: LGraph >-> LabeledGraph.
-Local Identity Coercion SGraph_SpatialGraph: SGraph >-> SpatialGraph.
+Local Identity Coercion ULGraph_LGraph: LGraph >-> UnionFindGraph.LGraph.
+Local Identity Coercion LGraph_LabeledGraph: UnionFindGraph.LGraph >-> LabeledGraph.
+Local Identity Coercion SGraph_PointwiseGraph: SGraph >-> PointwiseGraph.
 Local Coercion pg_lg: LabeledGraph >-> PreGraph.
 
 Notation vertices_at sh P g:= (@vertices_at _ _ _ _ _ _ (@SGP pSGG_VST nat unit (sSGG_VST sh)) _ P g).
 Notation whole_graph sh g := (vertices_at sh (vvalid g) g).
 Notation graph sh x g := (@reachable_vertices_at _ _ _ _ _ _ _ _ _ _ (@SGP pSGG_VST nat unit (sSGG_VST sh)) _ x g).
-Notation Graph := (@Graph pSGG_VST nat unit unit).
+Notation Graph := (@Graph pSGG_VST).
 Notation uf_under_bound g := (uf_under_bound id g).
 Existing Instances maGraph finGraph liGraph RGF.
 
@@ -106,13 +107,14 @@ Proof.
     + assert (Coqlib.Prop_join (vvalid g) (eq x) (vvalid (make_set_Graph 0%nat tt tt x g x_not_null H0))). {
         simpl; hnf; split; intros; [unfold graph_gen.addValidFunc | subst a]; intuition.
       } assert (vgamma (make_set_Graph O tt tt x g x_not_null H0) x = (O, x)). {
-        simpl. f_equal.
+        unfold vgamma, UnionFindGraph.vgamma. simpl. f_equal.
         - destruct (SGBA_VE x x); [| hnf in c; unfold Equivalence.equiv in c; exfalso]; auto.
         - unfold graph_gen.updateEdgeFunc. destruct (EquivDec.equiv_dec (x, tt) (x, tt)). 2: compute in c; exfalso; auto. destruct (SGBA_VE null null); auto.
           hnf in c. unfold Equivalence.equiv in c. exfalso; auto.
       } rewrite <- (vertices_at_sepcon_1x (make_set_Graph 0%nat tt tt x g x_not_null H0) x (vvalid g) _ (O, x)); auto. apply sepcon_derives. 1: entailer !.
       assert (vertices_at sh (vvalid g) g = vertices_at sh (vvalid g) (make_set_Graph O tt tt x g x_not_null H0)). {
-        apply vertices_at_vertices_identical. simpl. hnf. intros. destruct a as [y ?]. unfold Morphisms_ext.app_sig. simpl. unfold graph_gen.updateEdgeFunc. f_equal.
+        apply vertices_at_vertices_identical. simpl. hnf. intros. destruct a as [y ?]. unfold Morphisms_ext.app_sig. simpl.
+        unfold UnionFindGraph.vgamma. simpl. unfold graph_gen.updateEdgeFunc. f_equal.
         - destruct (SGBA_VE y x); [hnf in e; subst y; exfalso |]; auto.
         - destruct (EquivDec.equiv_dec (x, tt) (y, tt)); auto. hnf in e. inversion e. subst y. exfalso; auto.
       } rewrite <- H6. entailer.
@@ -213,7 +215,7 @@ Proof.
   } Unfocus.
   rewrite H11. unfold semax_ram. forward. apply (exp_right (Graph_gen_redirect_parent g' x root H8 H9 H10)). apply (exp_right root). rewrite H11. entailer !.
   assert (uf_root g' x root). {
-    rewrite <- (uf_equiv_root_the_same g); auto. apply (uf_root_edge _ (liGraph g) _ pa); [| apply vgamma_not_dst with r | rewrite (uf_equiv_root_the_same g g')]; auto.
+    rewrite <- (uf_equiv_root_the_same g g' x root); auto. apply (uf_root_edge _ (liGraph g) _ pa); [| apply (vgamma_not_dst g x r pa) | rewrite (uf_equiv_root_the_same g g')]; auto.
   } split; [|split].
   - apply (graph_gen_redirect_parent_equiv g g' x r pa); auto.
   - simpl. apply (uf_root_gen_dst_same g' (liGraph g') x x root); auto. apply reachable_refl; auto.
@@ -459,7 +461,7 @@ Proof.
       apply vertices_at_Same_set. unfold Ensembles.Same_set, Ensembles.Included, Ensembles.In. simpl. intuition.
     } rewrite H19. clear H19. rewrite H13. simpl vgamma2cdata. apply (@graph_vgen_ramify _ (sSGG_VST sh)).
     - rewrite Heqg3. simpl. destruct H8 as [? _]. rewrite <- H8. destruct H4; apply reachable_foot_valid in H4; apply H4.
-    - apply (graph_gen_redirect_parent_vgamma _ _ _ rankXRoot paXRoot) in Heqg3; auto.
+    - apply (graph_gen_redirect_parent_vgamma _ _ _ rankXRoot paXRoot) in Heqg3; auto. intros. inversion H19; auto.
   } Unfocus.
   unfold semax_ram. forward. apply (exp_right (Graph_vgen g3 x_root (rankXRoot + 1)%nat)). entailer !.
   rewrite H1 in *; rewrite H2 in *. assert (Z.of_nat (vlabel g2 x_root) = Z.of_nat (vlabel g2 y_root)) by (clear -H5 H18; intuition). apply Nat2Z.inj in H23.

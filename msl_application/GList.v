@@ -21,80 +21,63 @@ Require Export RamifyCoq.graph.MathGraph.
 Require Export RamifyCoq.graph.LstGraph.
 Require Export RamifyCoq.graph.UnionFind.
 Require Import RamifyCoq.msl_application.Graph.
+Require Import RamifyCoq.msl_application.UnionFindGraph.
 
 Local Open Scope logic.
 
-Class pSpatialGraph_GList: Type :=
+Class pPointwiseGraph_GList: Type :=
   {
     addr: Type;
     null: addr;
     pred: Type;
-    SGBA: SpatialGraphBasicAssum addr (addr * unit)
+    SGBA: PointwiseGraphBasicAssum addr (addr * unit)
   }.
 
 Existing Instance SGBA.
 
-Definition is_null_SGBA {pSGG: pSpatialGraph_GList} : DecidablePred addr := (existT (fun P => forall a, {P a} + {~ P a}) (fun x => x = null) (fun x => SGBA_VE x null)).
+Definition is_null_SGBA {pSGG: pPointwiseGraph_GList} : DecidablePred addr := (existT (fun P => forall a, {P a} + {~ P a}) (fun x => x = null) (fun x => SGBA_VE x null)).
 
-Class sSpatialGraph_GList {pSGG_Bi: pSpatialGraph_GList} (DV DE: Type): Type :=
+Class sPointwiseGraph_GList {pSGG_Bi: pPointwiseGraph_GList} (DV DE: Type): Type :=
   {
-    SGP: SpatialGraphPred addr (addr * unit) (DV * addr) unit pred;
-    SGA: SpatialGraphAssum SGP;
-    SGAvs: SpatialGraphAssum_vs SGP;
-    SGAvn: SpatialGraphAssum_vn SGP null
+    SGP: PointwiseGraphPred addr (addr * unit) (DV * addr) unit pred;
+    SGA: PointwiseGraphAssum SGP;
+    SGAvs: PointwiseGraphAssum_vs SGP;
+    SGAvn: PointwiseGraphAssum_vn SGP null
   }.
 
 Existing Instances SGP SGA SGAvs.
 
 Section GRAPH_GList.
 
-  Context {pSGG: pSpatialGraph_GList}.
+  Context {pSGG: pPointwiseGraph_GList}.
   Context {DV DE DG: Type}.
 
-  Class LiMaFin (g: PreGraph addr (addr * unit)) :=
-    {
-      li: LstGraph g (fun x => (x, tt));
-      ma: MathGraph g is_null_SGBA;
-      fin: FiniteGraph g
-    }.
-
-  Definition Graph := (GeneralGraph addr (addr * unit) DV DE DG (fun g => LiMaFin (pg_lg g))).
-  Definition LGraph := (LabeledGraph addr (addr * unit) DV DE DG).
-  Definition SGraph := (SpatialGraph addr (addr * unit) (DV * addr) unit).
-
-  Instance SGC_GList: SpatialGraphConstructor addr (addr * unit) DV DE DG (DV * addr) unit.
+  Instance SGC_GList: PointwiseGraphConstructor addr (addr * unit) DV DE DG (DV * addr) unit.
   Proof.
-    refine (Build_SpatialGraphConstructor _ _ _ _ _ _ _ SGBA _ _).
-    + exact (fun G v => (vlabel G v, let target := dst (pg_lg G) (v, tt) in if (SGBA_VE target null) then v else target)).
+    refine (Build_PointwiseGraphConstructor _ _ _ _ _ _ _ SGBA _ _).
+    + exact (@vgamma addr (addr * unit) SGBA_VE SGBA_EE is_null_SGBA (fun x => (x, tt)) DV DE DG).
     + exact (fun _ _ => tt).
   Defined.
 
-  Instance L_SGC_GList: Local_SpatialGraphConstructor addr (addr * unit) DV DE DG (DV * addr) unit.
+  Instance L_SGC_GList: Local_PointwiseGraphConstructor addr (addr * unit) DV DE DG (DV * addr) unit.
   Proof.
-    refine (Build_Local_SpatialGraphConstructor
+    refine (Build_Local_PointwiseGraphConstructor
               _ _ _ _ _ _ _ SGBA SGC_GList
               (fun G v => evalid (pg_lg G) (v, tt) /\ src (pg_lg G) (v, tt) = v) _
               (fun _ _ => True) _).
-    - intros. simpl. destruct H as [? ?], H0 as [? ?]. f_equal; auto. pose proof (H3 _ H H5 H0 H6). rewrite <- !H7. clear H7.
+    - intros. simpl. unfold vgamma.  simpl. destruct H as [? ?], H0 as [? ?]. f_equal; auto. pose proof (H3 _ H H5 H0 H6). rewrite <- !H7. clear H7.
       destruct (SGBA_VE (dst (pg_lg G1) (x, tt)) null); auto.
     - intros; simpl. auto.
   Defined.
 
   Global Existing Instances SGC_GList L_SGC_GList.
 
-  Definition Graph_LGraph (G: Graph): LGraph := lg_gg G.
-  Definition LGraph_SGraph (G: LGraph): SGraph := Graph_SpatialGraph G.
-
   Local Coercion Graph_LGraph: Graph >-> LGraph.
-  Local Coercion LGraph_SGraph: LGraph >-> SGraph.
-  Local Identity Coercion Graph_GeneralGraph: Graph >-> GeneralGraph.
   Local Identity Coercion LGraph_LabeledGraph: LGraph >-> LabeledGraph.
-  Local Identity Coercion SGraph_SpatialGraph: SGraph >-> SpatialGraph.
   Local Coercion pg_lg: LabeledGraph >-> PreGraph.
 
-  Instance maGraph(G: Graph): MathGraph G is_null_SGBA := @ma G (@sound_gg _ _ _ _ _ _ _ _ G).
-  Instance finGraph (G: Graph): FiniteGraph G := @fin G (@sound_gg _ _ _ _ _ _ _ _ G).
-  Instance liGraph (G: Graph):  LstGraph G (fun x => (x, tt)) := @li G (@sound_gg _ _ _ _ _ _ _ _ G).
+  Notation Graph := (@Graph addr (addr * unit) _ _ is_null_SGBA (fun x => (x, tt)) DV DE DG).
+  Notation LGraph := (@LGraph addr (addr * unit) _ _ DV DE DG).
 
   Instance RGF (G: Graph): ReachableFiniteGraph G.
   Proof.
@@ -113,10 +96,10 @@ Section GRAPH_GList.
   Proof.
     intros. hnf. simpl. unfold addValidFunc, updateEdgeFunc. split; [|split; [|split]]; intros; [left; auto..| |].
     - destruct (equiv_dec (x, tt) e); auto. hnf in e0. subst e. pose proof (@only_one_edge _ _ _ _ g _ (liGraph g) (src g (x, tt)) (x, tt) H1). simpl in H2.
-      assert (src g (x, tt) = src g (x, tt) /\ evalid g (x, tt)) by (split; auto). rewrite H2 in H3. inversion H3. exfalso. rewrite <- H5 in H1. auto.
+      assert (src g (x, tt) = src g (x, tt) /\ evalid g (x, tt)) by (split; auto). rewrite H2 in H3. inversion H3. exfalso. rewrite H5 in H. intuition.
     - destruct (equiv_dec (x, tt) e); auto. hnf in e0. subst e. destruct (@valid_graph _ _ _ _ g _ (maGraph g) _ H0) as [? _].
       pose proof (@only_one_edge _ _ _ _ g _ (liGraph g) (src g (x, tt)) (x, tt) H2). assert (src g (x, tt) = src g (x, tt) /\ evalid g (x, tt)) by (split; auto).
-      rewrite H3 in H4. inversion H4. exfalso. rewrite <- H6 in H2. auto.
+      rewrite H3 in H4. inversion H4. exfalso. rewrite H6 in H. intuition.
   Qed.
 
   Definition make_set_LabeledGraph (v: addr) (g: LabeledGraph addr (addr * unit) DV DE DG) (default_dv: DV) (default_de: DE) (default_dg: DG) : LGraph :=
@@ -272,65 +255,5 @@ Section GRAPH_GList.
 
   Definition single_Graph (v: addr) (H: v <> null) (default_dv: DV) (default_de: DE) (default_dg: DG): Graph :=
     Build_GeneralGraph _ _ _ _ (single_uf_LabeledGraph v default_dv default_de default_dg) (single_sound v H).
-
-  Lemma valid_parent: forall (g: Graph) v n p, vvalid g v -> vgamma g v = (n, p) -> vvalid g p.
-  Proof.
-    intros. unfold vgamma in H0. simpl in H0. inversion H0. clear H0 H2. destruct (SGBA_VE (dst g (v, tt)) null); auto.
-    unfold complement, Equivalence.equiv in c. pose proof (only_one_edge v (v, tt) H). simpl in H0. assert ((v, tt) = (v, tt)) by auto. rewrite <- H0 in H1. destruct H1.
-    pose proof (valid_graph _ _ H2). destruct H4 as [_ [? | ?]]; auto. simpl in H4. exfalso; auto.
-  Qed.
-
-  Lemma parent_loop: forall (g: Graph) v n y, vgamma g v = (n, v) -> reachable g v y -> v = y.
-  Proof.
-    intros. unfold vgamma in H. simpl in H. destruct (SGBA_VE (dst g (v, tt)) null).
-    - unfold Equivalence.equiv in e. assert (~ reachable g null y) by (intro; apply reachable_head_valid in H1; apply (valid_not_null g null H1); simpl; auto).
-      apply (lst_out_edge_only_one g _ v null y); auto.
-    - apply (lst_self_loop _ (liGraph g)) in H0; auto. inversion H. rewrite H3. auto.
-  Qed.
-
-  Lemma gamma_parent_reachable_included: forall (g: Graph) x r pa, vvalid g x -> vgamma g x = (r, pa) -> Included (reachable g pa) (reachable g x).
-  Proof.
-    intros. intro y; intros. unfold vgamma in H0. simpl in H0. destruct (SGBA_VE (dst g (x, tt)) null).
-    - inversion H0. auto.
-    - apply edge_reachable_by with pa; auto. split; auto. split.
-      + apply reachable_head_valid in H1; auto.
-      + inversion H0. rewrite H4. rewrite (dst_step _ (liGraph g) _ _ H H4). auto.
-  Qed.
-
-  Lemma Prop_join_reachable_parent: forall (g: Graph) x r pa,
-      vvalid g x ->
-      vgamma g x = (r, pa) ->
-      Prop_join
-        (reachable g pa)
-        (Intersection _ (reachable g x) (Complement addr (reachable g pa)))
-        (reachable g x).
-  Proof.
-    intros.
-    apply Ensemble_join_Intersection_Complement.
-    - eapply gamma_parent_reachable_included; eauto.
-    - intros. apply decidable_prop_decidable. pose proof (finGraph g).
-      apply (@reachable_decidable_prime _ _ _ _ _ _ (maGraph g)).
-      + apply LocalFiniteGraph_FiniteGraph; auto.
-      + apply (valid_parent _ x r); auto.
-      + apply FiniteGraph_EnumCovered; auto.
-  Qed.
-
-  Definition Graph_gen_redirect_parent (g: Graph) (x: addr) (pa: addr) (H: weak_valid g pa) (Hv: vvalid g x) (Hn: ~ reachable g pa x): Graph.
-  Proof.
-    refine (generalgraph_gen_dst g (x, tt) pa _). constructor.
-    - simpl. apply (gen_dst_preserve_lst g (liGraph g)); auto.
-    - apply (gen_dst_preserve_math g (x, tt) pa (maGraph g) H).
-    - apply (gen_dst_preserve_finite g (x, tt) pa (finGraph g)).
-  Defined.
-
-  Lemma Graph_reachable_dec: forall (G: Graph) x, Decidable (vvalid G x) -> forall y, Decidable (reachable G x y).
-  Proof.
-    intros. apply reachable_decidable with (is_null := is_null_SGBA); auto.
-    + apply maGraph.
-    + apply LocalFiniteGraph_FiniteGraph, finGraph.
-    + apply FiniteGraph_EnumCovered, finGraph.
-  Qed.
-
-  Definition Graph_vgen (G: Graph) (x: addr) (d: DV) : Graph := generalgraph_vgen G x d (sound_gg G).
 
 End GRAPH_GList.

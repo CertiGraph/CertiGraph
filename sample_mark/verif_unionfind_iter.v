@@ -6,6 +6,7 @@ Require Import RamifyCoq.graph.subgraph2.
 Require Import RamifyCoq.graph.graph_relation.
 Require Import RamifyCoq.graph.reachable_computable.
 Require Import RamifyCoq.msl_application.Graph.
+Require Import RamifyCoq.msl_application.UnionFindGraph.
 Require Import RamifyCoq.msl_application.GList.
 Require Import RamifyCoq.msl_application.GList_UnionFind.
 Require Import RamifyCoq.floyd_ext.share.
@@ -15,17 +16,17 @@ Local Open Scope logic.
 
 Arguments SingleFrame' {l} {g} {s}.
 
-Local Coercion Graph_LGraph: Graph >-> LGraph.
+Local Coercion UGraph_LGraph: Graph >-> LGraph.
 Local Coercion LGraph_SGraph: LGraph >-> SGraph.
-Local Identity Coercion Graph_GeneralGraph: Graph >-> GeneralGraph.
-Local Identity Coercion LGraph_LabeledGraph: LGraph >-> LabeledGraph.
-Local Identity Coercion SGraph_SpatialGraph: SGraph >-> SpatialGraph.
+Local Identity Coercion ULGraph_LGraph: LGraph >-> UnionFindGraph.LGraph.
+Local Identity Coercion LGraph_LabeledGraph: UnionFindGraph.LGraph >-> LabeledGraph.
+Local Identity Coercion SGraph_PointwiseGraph: SGraph >-> PointwiseGraph.
 Local Coercion pg_lg: LabeledGraph >-> PreGraph.
 
 Notation vertices_at sh P g:= (@vertices_at _ _ _ _ _ _ (@SGP pSGG_VST nat unit (sSGG_VST sh)) _ P g).
 Notation whole_graph sh g := (vertices_at sh (vvalid g) g).
 Notation graph sh x g := (@reachable_vertices_at _ _ _ _ _ _ _ _ _ _ (@SGP pSGG_VST nat unit (sSGG_VST sh)) _ x g).
-Notation Graph := (@Graph pSGG_VST nat unit unit).
+Notation Graph := (@Graph pSGG_VST).
 Existing Instances maGraph finGraph liGraph RGF.
 
 Definition find_spec :=
@@ -127,14 +128,14 @@ Proof.
   Focus 2. {
     unfold semax_ram. forward. apply (exp_right (ppa, mgpa)). simpl fst. simpl snd. assert (mr = vlabel g ppa) by (simpl in H3; inversion H3; auto). rewrite <- H4. entailer !.
     apply reachable_edge with p; auto. apply (vgamma_not_edge g p (vlabel g p)); auto. apply reachable_foot_valid in H1; auto.
-  } Unfocus. destruct H1. apply false_Cne_eq in HRE. subst ppa. assert (uf_root g x p) by (split; intros; auto; eapply parent_loop; eauto).
+  } Unfocus. destruct H1. apply false_Cne_eq in HRE. subst ppa. assert (uf_root g x p) by (split; intros; auto; apply (parent_loop g p (vlabel g p) y); auto).
   
   forward_while (EX g': Graph, EX tmp: pointer_val, EX xv: pointer_val,
   PROP (uf_equiv g g' /\ uf_root g' xv p)
   LOCAL (temp _p (pointer_val_val p); temp _tmp (pointer_val_val tmp); temp _x (pointer_val_val xv))
   SEP (whole_graph sh g')); [|apply ADMIT| |].
   Focus 1. { apply (exp_right g). apply (exp_right p). apply (exp_right x). entailer !. apply (uf_equiv_refl _  (liGraph g)). } Unfocus.
-  Focus 2. { destruct H4. forward. apply (exp_right g'). entailer !. apply (exp_right p). entailer !. rewrite <- uf_equiv_root_the_same; eauto. } Unfocus.
+  Focus 2. { destruct H4. forward. apply (exp_right g'). entailer !. apply (exp_right p). entailer !. rewrite <- (uf_equiv_root_the_same g g' x p); auto. } Unfocus.
   destruct H4 as [? ?]. apply true_Cne_neq in HRE. remember (vgamma g' xv) as rpa eqn:?H. destruct rpa as [xr xpa]. symmetry in H6.
   localize
     (PROP  ()
@@ -183,7 +184,7 @@ Proof.
     apply reachable_foot_valid in H1. intro. subst p. apply (valid_not_null g null H1). simpl. auto.
   } Unfocus.
   unfold semax_ram. forward. apply (exp_right (((Graph_gen_redirect_parent g' xv p H7 H8 H9), xpa), xpa)). simpl fst. simpl snd. entailer !. split.
-  - apply graph_gen_redirect_parent_equiv'; auto.
+  - apply (graph_gen_redirect_parent_equiv' g g' xv p); auto.
   - apply (uf_root_gen_dst_preserve g' (liGraph g')); auto.
     + apply (vgamma_not_reachable _ _ xr); auto. pose proof (uf_root_not_eq_root_vgamma g' _ _ _ _ H6 H5 HRE). auto.
     + apply (vgamma_uf_root g' xv xr xpa p); auto.

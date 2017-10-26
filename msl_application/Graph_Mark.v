@@ -24,15 +24,15 @@ Import RamifyCoq.msl_ext.seplog.OconNotation.
 
 Local Open Scope logic.
 
-Section SpatialGraph_Mark.
+Section PointwiseGraph_Mark.
 
 Context {V E: Type}.
 Context {GV GE Pred: Type}.
-Context {SGBA: SpatialGraphBasicAssum V E}.
-Context {SGC: SpatialGraphConstructor V E bool unit unit GV GE}.
-Context {L_SGC: Local_SpatialGraphConstructor V E bool unit unit GV GE}.
-Context {SGP: SpatialGraphPred V E GV GE Pred}.
-Context {SGA: SpatialGraphAssum SGP}.
+Context {SGBA: PointwiseGraphBasicAssum V E}.
+Context {SGC: PointwiseGraphConstructor V E bool unit unit GV GE}.
+Context {L_SGC: Local_PointwiseGraphConstructor V E bool unit unit GV GE}.
+Context {SGP: PointwiseGraphPred V E GV GE Pred}.
+Context {SGA: PointwiseGraphAssum SGP}.
 
 Instance MGS: WeakMarkGraph.MarkGraphSetting bool.
 Proof.
@@ -43,7 +43,7 @@ Defined.
 Global Existing Instance MGS.
 
 Notation Graph := (LabeledGraph V E bool unit unit).
-Notation SGraph := (SpatialGraph V E GV GE).
+Notation SGraph := (PointwiseGraph V E GV GE).
 
 Local Coercion pg_lg: LabeledGraph >-> PreGraph.
 
@@ -140,7 +140,7 @@ Proof.
 Qed.
 
 Lemma root_stable_ramify: forall (g: Graph) (x: V) (gx: GV),
-  vgamma (Graph_SpatialGraph g) x = gx ->
+  vgamma (Graph_PointwiseGraph g) x = gx ->
   vvalid g x ->
   @derives Pred _
     (reachable_vertices_at x g)
@@ -149,8 +149,8 @@ Proof. apply va_reachable_root_stable_ramify. Qed.
 
 Lemma root_update_ramify: forall (g: Graph) (x: V) (lx: bool) (gx gx': GV),
   vvalid g x ->
-  vgamma (Graph_SpatialGraph g) x = gx ->
-  vgamma (Graph_SpatialGraph (labeledgraph_vgen g x lx)) x = gx' ->
+  vgamma (Graph_PointwiseGraph g) x = gx ->
+  vgamma (Graph_PointwiseGraph (labeledgraph_vgen g x lx)) x = gx' ->
   Included (Intersection V (reachable g x) (Complement V (eq x))) (vguard g) ->
   Included (Intersection V (reachable g x) (Complement V (eq x))) (vguard (labeledgraph_vgen g x lx)) ->
   @derives Pred _
@@ -239,5 +239,5 @@ Proof.
     rewrite in_app_iff. right. apply in_eq.
 Qed.
 
-End SpatialGraph_Mark.
+End PointwiseGraph_Mark.
 

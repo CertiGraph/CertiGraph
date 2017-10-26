@@ -22,9 +22,9 @@ Require Import RamifyCoq.msl_application.Graph_Mark.
 Require Import RamifyCoq.msl_application.GraphBi_Mark.
 Import RamifyCoq.msl_ext.seplog.OconNotation.
 
-Context {pSGG_Bi: pSpatialGraph_Graph_Bi}.
-Context {sSGG_Bi: sSpatialGraph_Graph_Bi bool unit}.
-Context {SGSA: SpatialGraphStrongAssum SGP}.
+Context {pSGG_Bi: pPointwiseGraph_Graph_Bi}.
+Context {sSGG_Bi: sPointwiseGraph_Graph_Bi bool unit}.
+Context {SGSA: PointwiseGraphStrongAssum SGP}.
 
 Tactic Notation "LEM" constr(v) := (destruct (classic v); auto).
 
