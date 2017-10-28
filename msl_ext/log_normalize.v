@@ -504,12 +504,12 @@ Qed.
 
 Goal forall {A} `{CorableOverlapSepLog A} P (Q R: A), ocon (!! P && !! P  && Q) R = ocon (!! P && Q && !! P) (!! P && R && !! P).
 intros.
-normalize_overlap.
+(* normalize_overlap. *)
 Abort.
 
 Goal forall {A} `{CorableOverlapSepLog A} P R (Q: A), Q |-- ocon (ocon (EX x: nat, P x) Q) (EX x: nat, R x).
 intros.
-normalize_overlap.
-apply (exp_right 0).
-normalize_overlap.
+(* normalize_overlap. *)
+(* apply (exp_right 0). *)
+(* normalize_overlap. *)
 Abort.
