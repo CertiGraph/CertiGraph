@@ -108,12 +108,12 @@ Ltac equate_precise x1 x2 :=
       rewrite Heq in *; clear H3 H4 H5 Heq x2
   end.
 
-Ltac equate_precise_through P x1 x2 :=
-  match goal with
-    | [H1: precise P, H2: P x1, H3: P x2, H4: join_sub x1 ?w, H5: join_sub x2 ?w |- _] =>
-      generalize (H1 w x2 x1 H3 H2 H5 H4); intro Heq;
-      rewrite Heq in *; clear H3 H4 H5 Heq x2
-  end.
+(* Ltac equate_precise_through P x1 x2 := *)
+(*   match goal with *)
+(*     | [H1: precise P, H2: P x1, H3: P x2, H4: join_sub x1 ?w, H5: join_sub x2 ?w |- _] => *)
+(*       generalize (H1 w x2 x1 H3 H2 H5 H4); intro Heq; *)
+(*       rewrite Heq in *; clear H3 H4 H5 Heq x2 *)
+(*   end. *)
 
 Ltac equate_canc x1 x2 :=
   let Heq := fresh "Heq" in
