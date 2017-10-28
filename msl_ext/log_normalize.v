@@ -488,7 +488,7 @@ Ltac normalize_overlap :=
      | |- context [ocon ?Q (?R && ?P)] => rewrite (corable_ocon_andp2 P Q R) by (auto with norm)
      | |- context [ocon (exp ?P) ?Q] => rewrite (exp_ocon1 _ P Q)
      | |- context [ocon ?P (exp ?Q)] => rewrite (exp_ocon2 _ P Q)
-     | |- _ => eauto with typeclass
+     | |- _ => eauto with typeclass_instances
     end;
   repeat rewrite <- andp_assoc;
   try normalize.
