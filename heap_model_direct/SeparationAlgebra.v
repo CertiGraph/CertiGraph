@@ -22,7 +22,7 @@ Instance Sep_world : Sep_alg world. apply Sep_fpm. Qed.
 
 Instance Canc_world : Canc_alg world. apply Canc_fpm; [intuition | repeat intro; inversion H]. Qed.
 
-Instance Disj_world : Disj_alg world. apply Disj_fpm; repeat intro; inversion H. Qed.
+Instance Disj_world : Disj_alg world. apply Disj_fpm; repeat intro; [apply Perm_discrete | |]; inversion H. Qed.
 
 Instance Cross_world : Cross_alg world. apply Cross_fpm; [apply Perm_discrete | apply psa_discrete | repeat intro; inv H]. Qed.
 
