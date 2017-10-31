@@ -22,6 +22,7 @@ Require Import RamifyCoq.graph.reachable_computable.
 Require Export RamifyCoq.graph.FiniteGraph.
 Require Export RamifyCoq.graph.MathGraph.
 Require Export RamifyCoq.graph.LstGraph.
+Require Import RamifyCoq.msl_application.UnionFindGraph.
 
 Local Open Scope logic.
 Local Open Scope Z_scope.
@@ -30,27 +31,20 @@ Instance Z_EqDec : EqDec Z eq. Proof. hnf. intros. apply Z.eq_dec. Defined.
 
 Definition is_null_Z: DecidablePred Z := existT (fun P : Z -> Prop => forall a : Z, {P a} + {~ P a}) (fun x : Z => x < 0) (fun a : Z => Z_lt_dec a 0).
 
-Class LiMaFin (g: PreGraph Z Z) :=
-  {
-    li: LstGraph g id;
-    ma: MathGraph g is_null_Z;
-    fin: FiniteGraph g
-  }.
+Definition Graph := (@Graph Z Z _ _ is_null_Z id nat unit unit).
+Definition LGraph := (@LGraph Z Z _ _ nat unit unit).
+Definition UGraph_LGraph (G: Graph): LGraph := lg_gg G.
 
-Definition Graph := GeneralGraph Z Z nat unit unit (fun g => LiMaFin (pg_lg g)).
-Definition LGraph := LabeledGraph Z Z nat unit unit.
-Definition Graph_LGraph (G: Graph): LGraph := lg_gg G.
-
-Local Coercion Graph_LGraph: Graph >-> LGraph.
-Local Identity Coercion Graph_GeneralGraph: Graph >-> GeneralGraph.
-Local Identity Coercion LGraph_LabeledGraph: LGraph >-> LabeledGraph.
+Local Coercion UGraph_LGraph: Graph >-> LGraph.
+Local Identity Coercion ULGraph_LGraph: LGraph >-> UnionFindGraph.LGraph.
+Local Identity Coercion LGraph_LabeledGraph: UnionFindGraph.LGraph >-> LabeledGraph.
 Local Coercion pg_lg: LabeledGraph >-> PreGraph.
 
-Instance maGraph(G: Graph): MathGraph G is_null_Z := @ma G (@sound_gg _ _ _ _ _ _ _ _ G).
-Instance finGraph (G: Graph): FiniteGraph G := @fin G (@sound_gg _ _ _ _ _ _ _ _ G).
-Instance liGraph (G: Graph):  LstGraph G id := @li G (@sound_gg _ _ _ _ _ _ _ _ G).
+Instance maGraph(G: Graph): MathGraph G is_null_Z := maGraph G.
+Instance finGraph (G: Graph): FiniteGraph G := finGraph G.
+Instance liGraph (G: Graph):  LstGraph G id := liGraph G.
 
-Definition vgamma (g: LGraph) (x: Z) : nat * Z := (vlabel g x, let target := dst (pg_lg g) x in if (Z_lt_dec target 0) then x else target).
+Definition vgamma := (@vgamma Z Z _ _ is_null_Z id nat unit unit).
 
 Class SpatialArrayGraphAssum (Pred : Type):=
   {
@@ -144,7 +138,7 @@ Proof.
   - rewrite makeSet_discrete_list_iff, makeSet_evalid. intuition.
 Qed.
 
-Definition makeSet_discrete_sound (size: nat) : LiMaFin (makeSet_discrete_PreGraph size).
+Definition makeSet_discrete_sound (size: nat) : @LiMaFin _ _ _ _ is_null_Z id (makeSet_discrete_PreGraph size).
 Proof. constructor. exact (makeSet_discrete_LstGraph size). exact (makeSet_discrete_MathGraph size). exact (makeSet_discrete_FiniteGraph size). Qed.
 
 Definition makeSet_discrete_LabeledGraph (size: nat) : LGraph := Build_LabeledGraph _ _ _ (makeSet_discrete_PreGraph size) (fun _ => O) (fun _ => tt) tt.
