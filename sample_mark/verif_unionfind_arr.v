@@ -8,6 +8,7 @@ Require Import RamifyCoq.graph.subgraph2.
 Require Import RamifyCoq.graph.graph_relation.
 Require Import RamifyCoq.graph.reachable_computable.
 Require Import RamifyCoq.graph.UnionFind.
+Require Import RamifyCoq.msl_application.UnionFindGraph.
 Require Import RamifyCoq.msl_application.ArrayGraph.
 Require Import RamifyCoq.floyd_ext.share.
 Require Import RamifyCoq.sample_mark.spatial_array_graph.
@@ -16,9 +17,10 @@ Local Open Scope logic.
 
 Arguments SingleFrame' {l} {g} {s}.
 
-Local Coercion Graph_LGraph: Graph >-> LGraph.
-Local Identity Coercion Graph_GeneralGraph: Graph >-> GeneralGraph.
-Local Identity Coercion LGraph_LabeledGraph: LGraph >-> LabeledGraph.
+Local Coercion UGraph_LGraph: Graph >-> LGraph.
+(* Local Identity Coercion Graph_GeneralGraph: Graph >-> GeneralGraph. *)
+Local Identity Coercion ULGraph_LGraph: LGraph >-> UnionFindGraph.LGraph.
+Local Identity Coercion LGraph_LabeledGraph: UnionFindGraph.LGraph >-> LabeledGraph.
 Local Coercion pg_lg: LabeledGraph >-> PreGraph.
 Existing Instances maGraph finGraph liGraph.
 
@@ -189,7 +191,7 @@ Proof.
         -- simpl. unfold vcell_array_at, SAG_VST. rewrite map_length, nat_inc_list_length. rewrite Z2Nat.id. 2: intuition.
            assert (map (fun x : Z => vgamma (makeSet_discrete_LabeledGraph (Z.to_nat V)) x) (nat_inc_list (Z.to_nat V)) =
                    map (fun x => (0%nat, x)) (nat_inc_list (Z.to_nat V))). {
-             apply list_map_exten. intros. unfold vgamma. simpl. rewrite makeSet_dst. simpl. auto.
+             apply list_map_exten. intros. unfold vgamma, UnionFindGraph.vgamma. simpl. rewrite makeSet_dst. simpl. auto.
            } rewrite H6. clear H6. rewrite list_map_compose. unfold vgamma2cdata. simpl. rewrite <- progressive_nat_inc_list; intuition. 
 Qed.
 
@@ -230,15 +232,15 @@ Proof.
   start_function. rewrite whole_graph_unfold. Intros n. forward.
   - entailer. rewrite Znth_nat_inc_list. 2: rewrite H0; auto. apply prop_right. compute. auto.
   - apply prop_right. rewrite H0. auto.
-  - rewrite Znth_nat_inc_list. 2: rewrite H0; auto. unfold vgamma2cdata at 1. unfold vgamma at 1.
+  - rewrite Znth_nat_inc_list. 2: rewrite H0; auto. unfold vgamma2cdata at 1. unfold vgamma at 1. unfold UnionFindGraph.vgamma.
     forward_if_tac
       (EX g': Graph, EX rt: Z,
        PROP (uf_equiv g g' /\ uf_root g' i rt)
        LOCAL (temp _p (Vint (Int.repr rt)); temp _subsets (pointer_val_val subsets); temp _i (Vint (Int.repr i)))
        SEP (whole_graph sh g' subsets)).
     + admit.
-    + forward. rewrite whole_graph_fold; [|intuition..]. apply (exp_right g). rewrite H2. apply (exp_right i). entailer !.
-      split. 1: apply (uf_equiv_refl _  (liGraph g)). destruct (Z_lt_dec (dst (lg_gg g) i) 0).
+    + forward. rewrite whole_graph_fold; [|intuition..]. apply (exp_right g). simpl projT2. simpl id. apply (exp_right i). entailer !.
+      split; [|split]. 1: apply (uf_equiv_refl _  (liGraph g)). 2: rewrite <- H2; reflexivity. destruct (Z_lt_dec (dst (lg_gg g) i) 0).
       * split. 1: apply reachable_refl; auto. intros. destruct H4 as [[? ?] ?]. destruct H4 as [[? ?] [? ?]]. simpl in H4. subst z. destruct l0.
         -- simpl in H5. auto.
         -- simpl in H6. destruct H6. assert (strong_evalid g z) by (destruct l0; [|destruct H6]; auto). destruct H8 as [? [? ?]]. symmetry in H4.
