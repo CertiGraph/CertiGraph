@@ -12,9 +12,11 @@ struct subset
 int find(struct subset subsets[], int i)
 {
     // find root and make root as parent of i (path compression)
+    int p0 = 0;
     int p = subsets[i].parent;
     if (p != i) {
-        p = find(subsets, p);
+        p0 = find(subsets, p);
+        p = p0;
         subsets[i].parent = p;
     }
  
@@ -23,14 +25,24 @@ int find(struct subset subsets[], int i)
 
 void Union(struct subset subsets[], int x, int y)
 {
-    int xroot = find(subsets, x);
-    int yroot = find(subsets, y);
+    int xroot, yroot;
+    int xRank, yRank;
+
+    xroot = find(subsets, x);
+    yroot = find(subsets, y);
+ 
+    if (xroot == yroot) {
+        return;
+    }
+
+    xRank = subsets[xroot].rank;
+    yRank = subsets[yroot].rank;
  
     // Attach smaller rank tree under root of high rank tree
     // (Union by Rank)
-    if (subsets[xroot].rank < subsets[yroot].rank)
+    if (xRank < yRank)
         subsets[xroot].parent = yroot;
-    else if (subsets[xroot].rank > subsets[yroot].rank)
+    else if (xRank > yRank)
         subsets[yroot].parent = xroot;
  
     // If ranks are same, then make one as root and increment
@@ -38,7 +50,7 @@ void Union(struct subset subsets[], int x, int y)
     else
     {
         subsets[yroot].parent = xroot;
-        subsets[xroot].rank++;
+        subsets[xroot].rank = xRank + 1;
     }
 }
 
