@@ -70,7 +70,7 @@ Definition union_spec :=
   WITH sh: wshare, g: Graph, subsets: pointer_val, x: Z, y: Z
   PRE [ _subsets OF (tptr vertex_type), _x OF tint, _y OF tint]
           PROP  (vvalid g x /\ vvalid g y)
-          LOCAL (temp _subsets (pointer_val_val subsets); temp _x (Vint (Int.repr x)); temp _y (Vint (Int.repr x)))
+          LOCAL (temp _subsets (pointer_val_val subsets); temp _x (Vint (Int.repr x)); temp _y (Vint (Int.repr y)))
           SEP   (whole_graph sh g subsets)
   POST [ Tvoid ]
         EX g': Graph,
@@ -227,19 +227,74 @@ Proof.
     + rewrite app_Znth2. 2: rewrite H1; intuition. rewrite H0, H1. replace (Z.of_nat n - Z.of_nat n) with 0 by omega. rewrite Znth_0_cons. auto.
 Qed.
 
+Lemma graph_same_size: forall (g g': Graph) n n', (forall x : Z, vvalid g x <-> vvalid g' x) -> (forall v : Z, 0 <= v < Z.of_nat n' <-> vvalid (lg_gg g') v) ->
+                                                  (forall v : Z, 0 <= v < Z.of_nat n <-> vvalid (lg_gg g) v) -> n = n'.
+Proof.
+  intros. assert (forall v, 0 <= v < Z.of_nat n' <-> 0 <= v < Z.of_nat n). intros. rewrite H0. rewrite H1. symmetry. apply H. clear -H2.
+  destruct (lt_eq_lt_dec n n'); [destruct s|]; auto; exfalso.
+  - specialize (H2 (Z.of_nat n)). omega.
+  - specialize (H2 (Z.of_nat n')). omega.
+Qed.
+
+Lemma list_eq_Znth {A}: forall (l1 l2: list A) n d, length l1 = n -> length l2 = n -> (forall j, 0 <= j < Z.of_nat n -> Znth j l1 d = Znth j l2 d) -> l1 = l2.
+Proof.
+  intros l1 l2 n. revert l1 l2. induction n; intros.
+  - simpl in *. destruct l1, l2; simpl in *; [auto | exfalso; intuition..].
+  - destruct l1, l2; simpl in H, H0; [exfalso; intuition..| ]. assert (a = a0) by (specialize (H1 0); rewrite !Znth_0_cons in H1; apply H1; rewrite Nat2Z.inj_succ; omega).
+    subst a0. cut (l1 = l2); intros. 1: subst l2; auto. inversion H. inversion H0. apply (IHn _ _ d); auto. intros. specialize (H1 (j + 1)).
+    assert (0 < j + 1) by omega. assert (j + 1 - 1 = j) by omega. rewrite !Znth_pos_cons in H1; auto. rewrite !H6 in H1. apply H1. rewrite Nat2Z.inj_succ. omega.
+Qed.
+
 Lemma body_find: semax_body Vprog Gprog f_find find_spec.
 Proof.
-  start_function. rewrite whole_graph_unfold. Intros n. forward.
+  start_function. rewrite whole_graph_unfold. Intros n. forward. forward.
   - entailer. rewrite Znth_nat_inc_list. 2: rewrite H0; auto. apply prop_right. compute. auto.
   - apply prop_right. rewrite H0. auto.
-  - rewrite Znth_nat_inc_list. 2: rewrite H0; auto. unfold vgamma2cdata at 1. unfold vgamma at 1. unfold UnionFindGraph.vgamma.
+  - rewrite Znth_nat_inc_list. 2: rewrite H0; auto. (*  *)
     forward_if_tac
       (EX g': Graph, EX rt: Z,
        PROP (uf_equiv g g' /\ uf_root g' i rt)
        LOCAL (temp _p (Vint (Int.repr rt)); temp _subsets (pointer_val_val subsets); temp _i (Vint (Int.repr i)))
        SEP (whole_graph sh g' subsets)).
-    + admit.
-    + forward. rewrite whole_graph_fold; [|intuition..]. apply (exp_right g). simpl projT2. simpl id. apply (exp_right i). entailer !.
+    + rewrite whole_graph_fold; [|intuition..]. destruct (vgamma (lg_gg g) i) eqn: ?. forward_call (sh, g, subsets, z).
+      * unfold vgamma, UnionFindGraph.vgamma in Heqp. inversion Heqp. clear Heqp. destruct (Z_lt_dec (dst (lg_gg g) i) 0). 1: exfalso; apply H2; auto. 
+        destruct ((proj2 (@only_one_edge _ _ _ _ _ _ (liGraph g) _ i H)) (eq_refl i)) as [_ ?]. destruct (valid_graph g _ H3) as [_ [? | ?]]; auto.
+        hnf in H6. exfalso. apply n1. auto.
+      * Intros vret. destruct vret as [g' root]. simpl fst in *. simpl snd in *. rewrite whole_graph_unfold. Intros n'. forward. Opaque Znth. forward. Transparent Znth.
+        -- apply prop_right. rewrite H5. destruct H3. rewrite <- H3. auto.
+        -- assert (n' = n). {
+             destruct H3, (lt_eq_lt_dec n n'); [destruct s|]; auto; exfalso.
+             - specialize (H3 (Z.of_nat n)). specialize (H0 (Z.of_nat n)). specialize (H5 (Z.of_nat n)). rewrite <- H0 in H3. rewrite <- H3 in H5. omega.
+             - specialize (H3 (Z.of_nat n')). specialize (H0 (Z.of_nat n')). specialize (H5 (Z.of_nat n')). rewrite <- H0 in H3. rewrite <- H3 in H5. omega.
+           } subst n'. assert (z <> i) by (unfold vgamma, UnionFindGraph.vgamma in Heqp; inversion Heqp; intro; apply H2; rewrite H9 in H7; rewrite H9; subst i; auto).
+           assert (weak_valid g' root) by (right; destruct H4; apply reachable_foot_valid in H4; auto).
+           assert (vvalid g' i) by (destruct H3 as [? _]; rewrite <- H3; apply H).
+           assert (~ reachable g' root i) by (apply (uf_equiv_not_reachable g g' i n0 z root); auto).
+           apply (exp_right (Graph_gen_redirect_parent g' i root H8 H9 H10)). apply (exp_right root). rewrite Znth_nat_inc_list. 2: rewrite H0; auto.
+           Opaque vgamma2cdata. Opaque vgamma. entailer !; [split|]. Transparent vgamma. Transparent vgamma2cdata.
+           ++ apply (graph_gen_redirect_parent_equiv g g' i n0 z); auto.
+           ++ apply (uf_root_gen_dst_same g' (liGraph g') i i root); auto.
+              ** rewrite <- (uf_equiv_root_the_same g g' i root); auto.
+                 apply (uf_root_edge _ (liGraph g) _ z); [| apply (vgamma_not_dst g i n0 z) | rewrite (uf_equiv_root_the_same g g')]; auto.
+              ** apply reachable_refl; auto.
+           ++ rewrite whole_graph_unfold. apply (exp_right n). entailer. unfold vgamma2cdata at 2. unfold vgamma at 2. unfold UnionFindGraph.vgamma.
+              cut ((upd_Znth i (map (fun x : Z => vgamma2cdata (vgamma (lg_gg g') x)) (nat_inc_list n))
+                             (Vint (Int.repr root), Vint (Int.repr (Z.of_nat (vlabel (lg_gg g') i))))) =
+                   (map (fun x : Z => vgamma2cdata (vgamma (lg_gg (Graph_gen_redirect_parent g' i root H8 H9 H10)) x)) (nat_inc_list n))); intros.
+              ** rewrite <- H14. entailer.
+              ** rewrite <- H0 in H. destruct H4. apply reachable_foot_valid in H4. rewrite <- H5 in H4. clear -H H4.
+                 assert (Zlength (map (fun x : Z => vgamma2cdata (vgamma (lg_gg g') x)) (nat_inc_list n)) = Z.of_nat n). {
+                   rewrite Zlength_map, Zlength_correct, nat_inc_list_length; auto.
+                 } apply (list_eq_Znth _ _ n (Vint (Int.repr 0), Vint (Int.repr 0))).
+                 --- rewrite <- (Nat2Z.id n) at 2. rewrite <- Zlength_length. 2: omega. rewrite upd_Znth_Zlength; auto. rewrite <- H0 in H. auto.
+                 --- rewrite list_length_map, nat_inc_list_length; auto.
+                 --- intros. rewrite Znth_nat_inc_list; auto. rewrite (upd_Znth_lookup' (Z.of_nat n)); auto. rewrite Znth_nat_inc_list; auto.
+                     unfold vgamma2cdata, vgamma, UnionFindGraph.vgamma. simpl. unfold graph_gen.updateEdgeFunc. unfold EquivDec.equiv_dec, Z_EqDec, zeq.
+                     destruct (Z.eq_dec j i).
+                     +++ subst j. destruct (Z.eq_dec i i). 2: exfalso; apply n0; auto. f_equal. destruct (Z_lt_dec root 0); [exfalso; omega | auto].
+                     +++ f_equal. destruct (Z.eq_dec i j). 1: exfalso; intuition. auto.
+    + unfold vgamma2cdata at 1. unfold vgamma at 1. unfold UnionFindGraph.vgamma. forward. rewrite whole_graph_fold; [|intuition..]. apply (exp_right g).
+      simpl projT2. simpl id. apply (exp_right i). entailer !.
       split; [|split]. 1: apply (uf_equiv_refl _  (liGraph g)). 2: rewrite <- H2; reflexivity. destruct (Z_lt_dec (dst (lg_gg g) i) 0).
       * split. 1: apply reachable_refl; auto. intros. destruct H4 as [[? ?] ?]. destruct H4 as [[? ?] [? ?]]. simpl in H4. subst z. destruct l0.
         -- simpl in H5. auto.
@@ -251,7 +306,14 @@ Proof.
         -- exfalso. rewrite H0 in H. assert (reachable g i i) by (apply reachable_refl; auto). pose proof (dst_not_reachable _ (liGraph g) _ _ _ H H2 H6). auto.
         -- split. 1: omega. rewrite Z.lt_eq_cases. left. apply Z.lt_trans with (Int.max_signed / 8). 2: reflexivity. destruct H5. apply Z.lt_le_trans with (Z.of_nat n); auto. 
         -- split. 1: omega. rewrite Z.lt_eq_cases. left. apply Z.lt_trans with (Int.max_signed / 8). 2: compute; auto. destruct H. apply Z.lt_le_trans with (Z.of_nat n); auto.
-    + Intros g' rt. rewrite <- H0 in H. forward. apply (exp_right g'). entailer !.
-      * admit.
-      * apply (exp_right rt). entailer !.
+    + Intros g' rt. forward. apply (exp_right g'). apply (exp_right rt). entailer !.
+Qed.
+
+Lemma body_union: semax_body Vprog Gprog f_Union union_spec.
+Proof.
+  start_function. destruct H.
+  forward_call (sh, g, subsets, x). Intros vret. destruct vret as [g1 x_root]. simpl fst in *. simpl snd in *.
+  assert (vvalid g1 y) by (destruct H1 as [? _]; rewrite <- H1; apply H0).
+  forward_call (sh, g1, subsets, y). Intros vret. destruct vret as [g2 y_root]. simpl fst in *. simpl snd in *.
+
 Abort.
