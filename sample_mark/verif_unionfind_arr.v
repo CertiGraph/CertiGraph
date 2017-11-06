@@ -389,5 +389,3 @@ Proof.
       * unfold POSTCONDITION. unfold abbreviate. rewrite overridePost_overridePost. intros. apply andp_left2. auto.
     + Intros g'. forward. apply (exp_right g'). entailer.
 Qed.
-
-Print Assumptions body_union.
