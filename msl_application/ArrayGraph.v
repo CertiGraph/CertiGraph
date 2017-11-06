@@ -45,6 +45,8 @@ Instance finGraph (G: Graph): FiniteGraph G := finGraph G.
 Instance liGraph (G: Graph):  LstGraph G id := liGraph G.
 
 Definition vgamma := (@vgamma Z Z _ _ is_null_Z id nat unit unit).
+Definition Graph_gen_redirect_parent (g: Graph) (x: Z) (pa: Z) (H: weak_valid g pa) (Hv: vvalid g x) (Hn: ~ reachable g pa x): Graph :=
+    Graph_gen_redirect_parent g x pa H Hv Hn.
 
 Class SpatialArrayGraphAssum (Pred : Type):=
   {
