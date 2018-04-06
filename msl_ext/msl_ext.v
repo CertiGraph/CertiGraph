@@ -10,11 +10,11 @@ Proof.
   intros; try_join h2 h3 h23'; equate_join i23 h23'; try_join i2 i3 i23'; equate_join i23 i23'.
   destruct (cross_split h1 h2 i1 i2 i12 H H2) as [[[[h1i1 h1i2] h2i1] h2i2] [? [? [? ?]]]].
   try_join h1i2 i3 i3'; try_join i3 h2i2 i23'; try_join h1i2 h1 h1'; try_join h1i2 h1i2 x.
-  generalize (join_self H17); intro Heq; rewrite <- Heq in *; clear Heq x;
+  generalize (join_self' H17); intro Heq. rewrite <- Heq in *; clear Heq x;
   assert (Hid1: unit_for h1i2 h1i2) by apply H17; rewrite <- identity_unit_equiv in Hid1.
 
   try_join h2i1 h3 h3'; try_join h3 h2i2 h23; try_join h2i1 i1 i1'; try_join h2i1 h2i1 x;
-  generalize (join_self H25); intro Heq; rewrite <- Heq in *; clear Heq x;
+  generalize (join_self' H25); intro Heq; rewrite <- Heq in *; clear Heq x;
   assert (Hid2: unit_for h2i1 h2i1) by apply H25; rewrite <- identity_unit_equiv in Hid2.
   repeat match goal with
            | [H1: identity ?X, H2: join ?X _ _ |- _] => apply H1 in H2; rewrite H2 in *; clear H2
@@ -36,7 +36,7 @@ Lemma join_together {A} {JA : Join A} {PA : Perm_alg A} {SA: Sep_alg A}
       {CaA : Canc_alg A} {CrA : Cross_alg A} {DA : Disj_alg A}:
   forall p q m n w i, join p q w -> join m n w -> join p m i -> exists j, join i j w.
 Proof.
-  intros; destruct_cross w. try_join pm m pmm. try_join pm pm pmpm. apply join_self in H8. subst. apply join_comm in H6.
+  intros; destruct_cross w. try_join pm m pmm. try_join pm pm pmpm. apply join_self' in H8. subst. apply join_comm in H6.
   generalize (join_canc H9 H6); intro. subst. equate_join m pmm. apply unit_identity in H4. apply (join_unit1_e pn p H4) in H2.
   subst. try_join p m i'. equate_join i i'. apply join_comm in H8. exists qn. auto.
 Qed.

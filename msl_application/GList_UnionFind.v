@@ -60,7 +60,7 @@ Section GList_UnionFind.
     intros. assert (vgamma (Graph_gen_redirect_parent g x root H Hv Hn) x = (r, root)). {
       simpl in *. remember (updateEdgeFunc (dst (lg_gg g)) (x, tt) root (x, tt)).
       inversion H0. unfold vgamma, UnionFindGraph.vgamma. simpl. f_equal. unfold updateEdgeFunc in *. destruct (equiv_dec (x, tt) (x, tt)).
-      2: compute in c; exfalso; apply c; auto. subst y. destruct (SGBA_VE root null); [exfalso| ]; auto. 
+      2: compute in c; exfalso; apply c; auto. subst a. destruct (SGBA_VE root null); [exfalso| ]; auto.
     } apply vertices_at_ramif_1; auto. eexists. split; [|split].
     - apply Ensemble_join_Intersection_Complement.
       + unfold Included, In; intro y. intros. subst. auto.
@@ -99,7 +99,8 @@ Section GList_UnionFind.
     - destruct H5. apply H0; auto.
     - destruct H5 as [? [l1 [? ?]]]. subst l. subst v. simpl. destruct H as [l2 ?]. destruct l2 as [? l2]. assert (a = x) by (destruct H as [[? _] ?]; simpl in H; auto).
       subst a. destruct l2. 1: destruct H as [[_ ?] ?]; simpl in H; subst root; exfalso; apply Hr; apply reachable_refl; auto.
-      pose proof (reachable_by_path_merge _ _ _ _ _ _ _ H7 H). unfold path_glue in H5. simpl in H5. destruct H5 as [[_ ?] [? _]]. pose proof (H0 _ H1 _ H6 H5). simpl in H8.
+      pose proof (reachable_by_path_merge _ _ _ _ _ _ _ H7 H). unfold path_glue in H3. simpl in H3. destruct H3 as [[_ ?] [? _]].
+      rewrite <- H5 in H3. pose proof (H0 _ H1 _ H6 H3). simpl in H8.
       clear -H8. rewrite app_length in *. simpl in *. intuition.
   Qed.
 
@@ -108,7 +109,7 @@ Section GList_UnionFind.
   Proof.
     intros. hnf in H1 |-* . simpl. unfold uf_bound, id in *. intros. destruct p as [p l]. destruct (redirect_to_root g (liGraph g) _ _ _ _ _ Hv Hr H0 H3 H4).
     - destruct H5; apply H1; auto.
-    - destruct H5 as [? [l1 [? ?]]]. subst l. subst v. simpl. destruct H7 as [[_ ?] [? _]]. specialize (H1 _ Hv _ H6 H5). simpl in H1. rewrite app_length. simpl.
+    - destruct H5 as [? [l1 [? ?]]]. subst l. clear H4. subst v. simpl. destruct H7 as [[_ ?] [? _]]. specialize (H1 _ Hv _ H5 H4). simpl in H1. rewrite app_length. simpl length.
       clear - H H1. unfold Graph_LGraph in H. assert (vlabel (lg_gg g) x < vlabel (lg_gg g) root) by intuition. intuition.
   Qed.
 
@@ -118,8 +119,8 @@ Section GList_UnionFind.
   Proof.
     intros. hnf in H1 |-* . simpl. unfold uf_bound, id, update_vlabel in *. intros. destruct p as [p l]. destruct (redirect_to_root g (liGraph g) _ _ _ _ _ Hv Hr H0 H3 H4).
     - destruct H5. specialize (H1 _ H2 _ H5 H6). simpl in H1 |-* . clear -H1. destruct (equiv_dec root v); [hnf in e; subst v |]; intuition.
-    - destruct H5 as [? [l1 [? ?]]]. subst l. subst v. destruct (equiv_dec root root). 2: compute in c; exfalso; apply c; auto. simpl. destruct H7 as [[_ ?] [? _]].
-      specialize (H1 _ Hv _ H6 H5). simpl in H1. rewrite app_length. simpl. clear -H H1. unfold Graph_LGraph in *. assert (vlabel (lg_gg g) x = vlabel g root) by intuition. intuition.
+    - destruct H5 as [? [l1 [? ?]]]. subst l. clear H4. subst v. destruct (equiv_dec root root). 2: compute in c; exfalso; apply c; auto. simpl. destruct H7 as [[_ ?] [? _]].
+      specialize (H1 _ Hv _ H5 H4). simpl in H1. rewrite app_length. simpl. clear -H H1. unfold Graph_LGraph in *. assert (vlabel (lg_gg g) x = vlabel g root) by intuition. intuition.
   Qed.
 
   Definition make_set_Graph (default_dv: nat) (default_de: unit) (default_dg: unit) (v: addr) (g: Graph) (Hn: v <> null) (Hi: ~ vvalid g v) : Graph := make_set_Graph default_dv default_de default_dg v g Hn Hi.
