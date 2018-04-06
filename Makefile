@@ -65,7 +65,7 @@ NORMAL_FILES = \
   $(SAMPLE_MARK_FILES:%.v=sample_mark/%.v) \
   $(HIP_FILES:%.v=hip/%.v) \
   $(GRAPH_FILES:%.v=graph/%.v) \
-  $(CERTIGC_FILES:%.v=CertiGC/%.v) \
+  # $(CERTIGC_FILES:%.v=CertiGC/%.v) \
   $(LIB_FILES:%.v=lib/%.v)
 
 $(NORMAL_FILES:%.v=%.vo): %.vo: %.v
