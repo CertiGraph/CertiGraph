@@ -402,7 +402,7 @@ Proof.
   spec H5; [simpl; unfold Complement, Ensembles.In; congruence |].
   spec H5; [reflexivity |].
   spec H5; [intros; apply (biGraph_out_edges g (biGraph _)); auto |].
-  spec H5; [repeat constructor; [intros [|[]]; intro HH; inversion HH | intros []] |].
+  spec H5; [repeat constructor; intro HH; inversion HH; inversion H9 |].
   spec H5; [auto |].
   spec H5; [hnf; auto |].
   spec H5; [auto |].
@@ -629,7 +629,7 @@ Proof.
   spec H8; [simpl; unfold Complement, Ensembles.In; congruence |].
   spec H8; [reflexivity |].
   spec H8; [intros; apply (biGraph_out_edges g (biGraph _)); auto |].
-  spec H8; [repeat constructor; [intros [|[]]; intro HH; inversion HH | intros []] |].
+  spec H8; [repeat constructor; intro HH; inversion HH; inversion H12 |].
   spec H8; [auto |].
   spec H8.
   Focus 1. {
@@ -684,7 +684,7 @@ Proof.
   spec H18; [simpl; unfold Complement, Ensembles.In; congruence |].
   spec H18; [reflexivity |].
   spec H18; [intros; apply (biGraph_out_edges g (biGraph _)); auto |].
-  spec H18; [repeat constructor; [intros [|[]]; intro HH; inversion HH | intros []] |].
+  spec H18; [repeat constructor; intro HH; inversion HH; inversion H19 |].
   spec H18; [auto |].
   spec H18.
   Focus 1. {

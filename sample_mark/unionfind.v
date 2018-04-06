@@ -1,5 +1,5 @@
+Require Import compcert.exportclight.Clightdefs.
 
-Require Import Clightdefs.
 Local Open Scope Z_scope.
 Definition _Node : ident := 2%positive.
 Definition ___builtin_annot : ident := 6%positive.

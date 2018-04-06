@@ -1,5 +1,5 @@
+Require Import compcert.exportclight.Clightdefs.
 
-Require Import Clightdefs.
 Local Open Scope Z_scope.
 Definition _Union : ident := 64%positive.
 Definition _V : ident := 65%positive.
