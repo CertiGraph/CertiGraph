@@ -17,10 +17,11 @@ LIB_FILES = \
   Coqlib.v Equivalence_ext.v List_Func_ext.v Ensembles_ext.v List_ext.v EnumEnsembles.v Relation_ext.v relation_list.v EquivDec_ext.v Morphisms_ext.v
 
 MSL_EXT_FILES = \
-  abs_addr.v seplog.v log_normalize.v ramify_tactics.v msl_ext.v iter_sepcon.v \
-  sepalg.v ramification_lemmas.v \
-  overlapping.v precise.v alg_seplog.v \
-  overlapping_direct.v precise_direct.v alg_seplog_direct.v
+  log_normalize.v iter_sepcon.v ramification_lemmas.v
+  # abs_addr.v seplog.v log_normalize.v ramify_tactics.v msl_ext.v iter_sepcon.v \
+  # sepalg.v ramification_lemmas.v \
+  # overlapping.v precise.v alg_seplog.v \
+  # overlapping_direct.v precise_direct.v alg_seplog_direct.v
 
 MSL_APPLICATION_FILES = \
   Graph.v Graph_Mark.v GraphBi.v GraphBi_Mark.v DagBi_Mark.v Graph_Copy.v GraphBi_Copy.v GList.v GList_UnionFind.v ArrayGraph.v UnionFindGraph.v
@@ -28,8 +29,8 @@ MSL_APPLICATION_FILES = \
 VERIC_EXT_FILES = \
   res_predicates.v seplog.v SeparationLogic.v
 
-FLOYD_EXT_FILES = \
-  MapstoSL.v DataatSL.v semax_ram_lemmas.v semax_ram_tac.v exists_trick.v closed_lemmas.v comparable.v ramification.v share.v
+FLOYD_EXT_FILES = closed_lemmas.v share.v
+  # MapstoSL.v DataatSL.v semax_ram_lemmas.v semax_ram_tac.v exists_trick.v closed_lemmas.v ramification.v share.v
 
 HEAP_MODEL_DIRECT_FILES = \
   SeparationAlgebra.v mapsto.v SeparationLogic.v
@@ -43,7 +44,7 @@ DATA_STRUCTURE_FILES = \
   spatial_graph_unaligned_bi_VST.v spatial_graph_dispose_bi.v
 
 SAMPLE_MARK_FILES = \
-  env_mark_bi.v verif_mark_bi.v env_garbage_collector.v env_dispose_bi.v verif_dispose_bi.v verif_mark_bi_dag.v env_copy_bi.v verif_copy_bi.v spatial_graph_bi_mark.v spatial_graph_bi_copy.v unionfind.v env_unionfind.v spatial_graph_glist.v verif_unionfind.v verif_unionfind_slim.v verif_unionfind_rank.v unionfind_iter.v env_unionfind_iter.v spatial_graph_uf_iter.v verif_unionfind_iter.v verif_unionfind_iter_rank.v unionfind_arr.v env_unionfind_arr.v spatial_array_graph.v verif_unionfind_arr.v
+  env_mark_bi.v verif_mark_bi.v env_garbage_collector.v env_dispose_bi.v verif_dispose_bi.v verif_mark_bi_dag.v env_copy_bi.v spatial_graph_bi_mark.v spatial_graph_bi_copy.v unionfind.v env_unionfind.v spatial_graph_glist.v verif_unionfind.v verif_unionfind_slim.v verif_unionfind_rank.v unionfind_iter.v env_unionfind_iter.v spatial_graph_uf_iter.v verif_unionfind_iter.v verif_unionfind_iter_rank.v unionfind_arr.v env_unionfind_arr.v spatial_array_graph.v verif_unionfind_arr.v
 
 HIP_FILES = \
   hip_graphmark.v hip_graphmark_proofs.v spanningtree.v
@@ -58,14 +59,10 @@ C_FILES = $(CLIGHT_FILES:%.v=%.c)
 NORMAL_FILES = \
   $(MSL_EXT_FILES:%.v=msl_ext/%.v) \
   $(MSL_APPLICATION_FILES:%.v=msl_application/%.v) \
-  $(VERIC_EXT_FILES:%.v=veric_ext/%.v) \
   $(FLOYD_EXT_FILES:%.v=floyd_ext/%.v) \
-  $(HEAP_MODEL_DIRECT_FILES:%.v=heap_model_direct/%.v) \
   $(DATA_STRUCTURE_FILES:%.v=data_structure/%.v) \
   $(SAMPLE_MARK_FILES:%.v=sample_mark/%.v) \
-  $(HIP_FILES:%.v=hip/%.v) \
   $(GRAPH_FILES:%.v=graph/%.v) \
-  # $(CERTIGC_FILES:%.v=CertiGC/%.v) \
   $(LIB_FILES:%.v=lib/%.v)
 
 $(NORMAL_FILES:%.v=%.vo): %.vo: %.v

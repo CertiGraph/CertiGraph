@@ -4,7 +4,8 @@ Require Import VST.floyd.assert_lemmas.
 Require Import VST.floyd.client_lemmas.
 Require Import VST.floyd.reptype_lemmas. (* Related things should be moved to other files. *)
 Require Import VST.floyd.semax_tactics.
-Require Import VST.floyd.local2ptree.
+Require Import VST.floyd.local2ptree_denote.
+Require Import VST.floyd.local2ptree_eval.
 Require Import VST.floyd.call_lemmas.
 Require Import VST.floyd.diagnosis.
 Require Import VST.floyd.forward.
@@ -14,7 +15,7 @@ Require Import RamifyCoq.floyd_ext.ramification.
 Require Import RamifyCoq.floyd_ext.semax_ram_lemmas.
 Require Import RamifyCoq.floyd_ext.exists_trick.
 Require Import RamifyCoq.floyd_ext.closed_lemmas.
-Require Import RamifyCoq.floyd_ext.comparable.
+(* Require Import RamifyCoq.floyd_ext.comparable. *)
 
 Local Open Scope logic.
 

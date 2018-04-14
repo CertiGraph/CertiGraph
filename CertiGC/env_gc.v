@@ -5,7 +5,7 @@ Require Export RamifyCoq.floyd_ext.semax_ram_lemmas.
 Require Export RamifyCoq.floyd_ext.semax_ram_tac.
 Require Export RamifyCoq.floyd_ext.exists_trick.
 Require Export RamifyCoq.floyd_ext.closed_lemmas.
-Require Export RamifyCoq.floyd_ext.comparable.
+(* Require Export RamifyCoq.floyd_ext.comparable. *)
 Require Export RamifyCoq.CertiGC.gc.
 
 Local Open Scope logic.

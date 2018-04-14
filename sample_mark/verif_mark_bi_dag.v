@@ -1,5 +1,4 @@
 Require Import RamifyCoq.lib.Coqlib.
-Require Import RamifyCoq.lib.EquivDec_ext.
 Require Export VST.floyd.proofauto.
 Require Import RamifyCoq.sample_mark.env_mark_bi.
 Require Import RamifyCoq.graph.graph_model.
@@ -11,9 +10,11 @@ Require Import RamifyCoq.msl_application.Graph.
 Require Import RamifyCoq.msl_application.GraphBi.
 Require Import RamifyCoq.msl_application.Graph_Mark.
 Require Import RamifyCoq.msl_application.DagBi_Mark.
+Require Import RamifyCoq.floyd_ext.share.
 Require Import RamifyCoq.sample_mark.spatial_graph_bi_mark.
-
-Local Open Scope logic.
+Require Import VST.msl.wand_frame.
+Require Import VST.floyd.reassoc_seq.
+Require Import VST.floyd.field_at_wand.
 
 Local Coercion Graph_LGraph: Graph >-> LGraph.
 Local Coercion LGraph_SGraph: LGraph >-> SGraph.
@@ -41,16 +42,18 @@ Definition mark_spec :=
 
 Definition main_spec :=
  DECLARE _main
-  WITH u : unit
+  WITH u : globals
   PRE  [] main_pre prog nil u
   POST [ tint ] main_post prog nil u.
 
-Definition Vprog : varspecs := (_hd, tptr (Tstruct _Node noattr))::(_n, (Tstruct _Node noattr))::nil.
+Definition Gprog : funspecs := ltac:(with_library prog [mark_spec ; main_spec]).
 
-Definition Gprog : funspecs := mark_spec :: main_spec::nil.
-
-Lemma ADMIT: forall P: Prop, P.
-Admitted.
+Lemma dag_local_facts: forall sh x (g: Graph), weak_valid g x -> dag sh x g |-- valid_pointer (pointer_val_val x).
+Proof.
+  intros. destruct H.
+  - simpl in H. subst x. entailer!.
+  - destruct (vgamma g x) as [[d l] r] eqn:? . erewrite root_unfold; eauto. simpl vertex_at. entailer!.
+Qed.
 
 Lemma body_mark: semax_body Vprog Gprog f_mark mark_spec.
 Proof.
@@ -60,157 +63,73 @@ Proof.
   rename H0 into H_GAMMA_g; symmetry in H_GAMMA_g.
   rename H into H_weak_valid.
 
-  forward_if_tac  (* if (x == 0) *)
+  forward_if  (* if (x == 0) *)
     (PROP  (pointer_val_val x <> nullval)
      LOCAL (temp _x (pointer_val_val x))
      SEP   (dag sh x g)).
-  apply ADMIT. (* type checking for pointer comparable. VST will fix it. *)
-  Focus 1. { (* if-then branch *)
-    destruct_pointer_val x.
-    forward. (* return *)
-    apply (exp_right g); entailer!; auto.
-    apply (mark_null_refl g).
-  } Unfocus.
-  Focus 1. { (* if-else branch *)
-    forward. (* skip; *)
-    entailer!.
-  } Unfocus.
-  normalize.
-  assert (vvalid g x) as gx_vvalid.
-  Focus 1. {
-    destruct H_weak_valid; [| auto].
-    unfold is_null_SGBA in H0; simpl in H0; subst x.
-    exfalso.
-    apply H. auto.
-  } Unfocus.
-  destruct_pointer_val x. clear H0 H_weak_valid.
-
-  erewrite root_unfold by eauto.
-  normalize.
-  change (vertex_at x (d, l, r)) with
-    (@data_at CompSpecs sh node_type
-       (Vint (Int.repr (if d then 1 else 0)), (pointer_val_val l, pointer_val_val r)) (pointer_val_val x)).
-
-  forward. (* root_mark = x -> m; *)
-
-  eapply semax_pre with 
-    (PROP  ()
-     LOCAL 
-      (temp _root_mark (Vint (Int.repr (if d then 1 else 0)));
-      temp _x (pointer_val_val x))
-     SEP  (dag sh x g)).
-  Focus 1. {
-    erewrite root_unfold by eauto.
-    entailer!.
-  } Unfocus.
-  
-  forward_if_tac  (* if (root_mark == 1) *)
-    (PROP   (d = false)
-      LOCAL (temp _x (pointer_val_val x))
-      SEP   (dag sh x g)).
-  Focus 1. { (* if-then branch *)
-    forward. (* return *)
-    apply (exp_right g).
-    entailer!; auto.
-    eapply (mark_vgamma_true_refl g); eauto.
-    clear - H0; destruct d; [auto | inversion H0].
-  } Unfocus.
-  Focus 1. { (* if-else branch *)
-    forward. (* skip; *)
-    entailer!.
-    clear - H0; destruct d; congruence.
-  } Unfocus.
-
-  erewrite root_unfold by eauto.
-  normalize.
-  change (vertex_at x (false, l, r)) with
-    (@data_at CompSpecs sh node_type
-       (Vint (Int.repr 0), (pointer_val_val l, pointer_val_val r)) (pointer_val_val x)).
-
-  forward. (* l = x -> l; *)
-  forward. (* r = x -> r; *)
-  forward. (* x -> d = 1; *)
-
-  pose proof Graph_vgen_true_mark1 g x _ _ H_GAMMA_g gx_vvalid.
-  apply semax_pre with
-   (PROP  ()
-    LOCAL (temp _r (pointer_val_val r);
-           temp _l (pointer_val_val l);
-           temp _x (pointer_val_val x))
-    SEP (dag sh x (Graph_vgen g x true))).
-  Focus 1. {
-    erewrite root_update_unfold by eauto.
-    entailer!.
-  } Unfocus.
-
-  forget (Graph_vgen g x true) as g1.
-
-  localize
-   (PROP  (weak_valid g1 l)
-    LOCAL (temp _l (pointer_val_val l))
-    SEP   (dag sh l g1)).
-  1: eapply left_weak_valid; eauto.  
-  (* localize *)
-
-  rewrite <- ram_seq_assoc.
-  eapply semax_ram_seq;
-  [ subst RamFrame RamFrame0; unfold abbreviate;
-    repeat apply eexists_add_stats_cons; constructor
-  | semax_ram_call_body (sh, g1, l) 
-  | semax_ram_after_call; intros g2;
-    repeat (apply ram_extract_PROP; intro)].
-
-  unlocalize
-   (PROP  ()
-    LOCAL (temp _r (pointer_val_val r);
-           temp _l (pointer_val_val l);
-           temp _x (pointer_val_val x))
-    SEP (dag sh x g2))
-  using [H3]%RamAssu
-  binding [g2]%RamBind.
-  Grab Existential Variables.
-  Focus 2. {
-    simplify_ramif.
-    subst.
-    eapply (@dag_ramify_left _ (sSGG_VST sh) _ g); eauto.
-  } Unfocus.
-  (* unlocalize *)
-
-  unfold semax_ram. (* should not need this *)
-  localize
-   (PROP  (weak_valid g2 r)
-    LOCAL (temp _r (pointer_val_val r))
-    SEP   (dag sh r g2)).
-  1: eapply right_weak_valid; eauto.  
-  (* localize *)
-  
-  eapply semax_ram_seq;
-  [ subst RamFrame RamFrame0; unfold abbreviate;
-    repeat apply eexists_add_stats_cons; constructor
-  | semax_ram_call_body (sh, g2, r) 
-  | semax_ram_after_call; intros g3;
-    repeat (apply ram_extract_PROP; intro) ].
-  (* mark(r); *)
-
-  unlocalize
-   (PROP  ()
-    LOCAL (temp _r (pointer_val_val r);
-           temp _l (pointer_val_val l);
-           temp _x (pointer_val_val x))
-    SEP (dag sh x g3))
-  using [H5]%RamAssu
-  binding [g3]%RamBind.
-  Grab Existential Variables.
-  Focus 2. {
-    simplify_ramif.
-    subst.
-    eapply (@dag_ramify_right _ (sSGG_VST sh) _ g); eauto.
-  } Unfocus.
-  (* Unlocalize *)
-
-  unfold semax_ram.
-  forward. (* ( return; ) *)
-  apply (exp_right g3); entailer!; auto.
-  apply (mark1_mark_left_mark_right g g1 g2 g3 (ValidPointer b i) l r); auto.
-Time Qed. (* Takes 114 seconds. *)
+  - apply denote_tc_test_eq_split. 2: entailer!. apply dag_local_facts; auto.
+  - (* return *) forward. Exists g. entailer!. destruct x. 1: simpl in H; inversion H. apply (mark_null_refl g).
+  - (* skip *) forward. entailer!.
+  - Intros. assert (vvalid g x) as gx_vvalid. {
+      destruct H_weak_valid; [| auto].
+      unfold is_null_SGBA in H0; simpl in H0; subst x.
+      exfalso. apply H. auto.
+    } assert (isptr (pointer_val_val x) /\ exists b i, x = ValidPointer b i). {
+      destruct x. 2: exfalso; apply H; reflexivity. split; simpl; auto.
+      exists b, i. reflexivity.
+    } destruct H0 as [? [b [i ?]]]. clear H0 H_weak_valid.
+    erewrite root_unfold by eauto. Intros.
+    change (vertex_at x (d, l, r)) with
+        (@data_at CompSpecs sh node_type
+                  (Vint (Int.repr (if d then 1 else 0)), (pointer_val_val l, pointer_val_val r)) (pointer_val_val x)).
+    forward. (* root_mark = x -> m; *)
+    eapply semax_pre with 
+        (PROP  ()
+               LOCAL 
+               (temp _root_mark (Vint (Int.repr (if d then 1 else 0)));
+                temp _x (pointer_val_val x))
+               SEP  (dag sh x g)).
+    1: erewrite root_unfold by eauto; entailer!.
+    forward_if  (* if (root_mark == 1) *)
+      (PROP (d = false)
+            LOCAL (temp _x (pointer_val_val x))
+            SEP (dag sh x g)).
+    + forward. (* return *) Exists g. entailer!.
+      eapply (mark_vgamma_true_refl g); eauto.
+      clear - H0; destruct d; [auto | inversion H0].
+    + forward. (* skip; *) entailer!. clear - H0; destruct d; congruence.
+    + erewrite root_unfold by eauto. Intros. subst d.
+      change (vertex_at x (false, l, r)) with
+          (@data_at CompSpecs sh node_type
+                    (Vint (Int.repr 0), (pointer_val_val l, pointer_val_val r)) (pointer_val_val x)).
+      forward. (* l = x -> l; *) 1: entailer!; destruct l; simpl; auto.
+      forward. (* r = x -> r; *) 1: entailer!; destruct r; simpl; auto.
+      forward. (* x -> d = 1; *)
+      pose proof Graph_vgen_true_mark1 g x _ _ H_GAMMA_g gx_vvalid.
+      apply semax_pre with
+          (PROP  ()
+                 LOCAL (temp _r (pointer_val_val r);
+                        temp _l (pointer_val_val l);
+                        temp _x (pointer_val_val x))
+                 SEP (dag sh x (Graph_vgen g x true))).
+      1: erewrite root_update_unfold by eauto; entailer!.
+      forget (Graph_vgen g x true) as g1.
+      assert (weak_valid g1 l) by (eapply left_weak_valid; eauto).
+      (* mark(l); *)
+      localize [dag sh l g1].
+      forward_call (sh, g1, l).
+      Intros g2.
+      unlocalize [dag sh x g2] using g2 assuming H3.
+      1: subst; eapply (@dag_ramify_left _ (sSGG_VST sh) g); eauto.
+      assert (weak_valid g2 r) by (eapply right_weak_valid; eauto).
+      (* mark(r); *)
+      localize [dag sh r g2].
+      forward_call (sh, g2, r).
+      Intros g3.
+      unlocalize [dag sh x g3] using g3 assuming H5.
+      1: subst; eapply (@dag_ramify_right _ (sSGG_VST sh) g); eauto.
+      forward. (* ( return; ) *)
+      Exists g3. entailer!.
+      apply (mark1_mark_left_mark_right g g1 g2 g3 (ValidPointer b i) l r); auto.
+Qed. (* Original: 114 seconds; VST 2.*: 2.739 secs *)
 

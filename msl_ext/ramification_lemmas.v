@@ -23,8 +23,8 @@ Context {CoSL: CorableSepLog A}.
 Variable M: Env -> Env -> Prop.
 Context {EqM: Equivalence M}.
 
-Definition EnvironBox (P: Env -> A) : Env -> A :=
-  fun rho: Env => (ALL rho': Env, !! M rho rho' --> P rho').
+(* Definition EnvironBox (P: Env -> A) : Env -> A := *)
+(*   fun rho: Env => (ALL rho': Env, !! M rho rho' --> P rho'). *)
 
 Definition EnvironStable (P: Env -> A) : Prop :=
   forall rho rho', M rho rho' -> P rho = P rho'.
@@ -42,6 +42,7 @@ Proof.
   f_equal; auto.
 Qed.
 
+(*
 Lemma EnvironBox_EnvironStable: forall P, EnvironStable (EnvironBox P).
 (* This lemma is the reason why EqM is required. *)
 Proof.
@@ -415,8 +416,10 @@ Proof.
   rewrite H.
   auto.
 Qed.
-  
+*)  
 End Ramification_P.
+
+(*
 
 Lemma EnvironBox_allp: forall {A B Env : Type} {ND : NatDed A} (M: Env -> Env -> Prop) P, EnvironBox M (@allp _ _ B P) = ALL x: B, (EnvironBox M (P x)).
 Proof.
@@ -463,6 +466,8 @@ Proof.
   + apply H in H0.
     rewrite <- H0; auto.
 Qed.
+
+*)
 
 Ltac solve_ramify_Q_with Fr :=
   match goal with

@@ -1,4 +1,3 @@
-Require Import VST.floyd.proofauto.
 Require Import RamifyCoq.sample_mark.env_unionfind.
 Require Import RamifyCoq.graph.graph_model.
 Require Import RamifyCoq.graph.path_lemmas.
@@ -11,10 +10,6 @@ Require Import RamifyCoq.msl_application.GList.
 Require Import RamifyCoq.msl_application.GList_UnionFind.
 Require Import RamifyCoq.floyd_ext.share.
 Require Import RamifyCoq.sample_mark.spatial_graph_glist.
-
-Local Open Scope logic.
-
-Arguments SingleFrame' {l} {g} {s}.
 
 Local Coercion UGraph_LGraph: Graph >-> LGraph.
 Local Coercion LGraph_SGraph: LGraph >-> SGraph.
@@ -82,9 +77,7 @@ Definition makeSet_spec :=
       LOCAL (temp ret_temp (pointer_val_val rt))
       SEP (whole_graph sh g').
 
-Definition Vprog : varspecs := nil.
-
-Definition Gprog : funspecs := mallocN_spec :: makeSet_spec :: find_spec :: unionS_spec ::nil.
+Definition Gprog : funspecs := ltac:(with_library prog [mallocN_spec; makeSet_spec; find_spec; unionS_spec]).
 
 Lemma body_makeSet: semax_body Vprog Gprog f_makeSet makeSet_spec.
 Proof.
@@ -95,8 +88,7 @@ Proof.
     assert_PROP (x <> null) as x_not_null by (entailer !; destruct H0 as [? _]; apply H0).
     assert_PROP (~ vvalid g x) by (entailer; apply (@vertices_at_sepcon_unique_1x _ _ _ _ SGBA_VST _ _ (SGA_VST sh) (SGAvs_VST sh) g x (vvalid g) (O, null))).
     forward. forward. forward.
-    change (@field_at CompSpecs sh node_type [] (Vint (Int.repr 0), pointer_val_val x)) with (@data_at CompSpecs sh node_type (Vint (Int.repr 0), pointer_val_val x)).
-    apply (exp_right (make_set_Graph O tt tt x g x_not_null H)). entailer. apply (exp_right x). entailer !.
+    Exists (make_set_Graph O tt tt x g x_not_null H). Exists x. entailer!.
     + split; simpl; [right | apply is_partial_make_set_pregraph]; auto.
     + assert (Coqlib.Prop_join (vvalid g) (eq x) (vvalid (make_set_Graph 0%nat tt tt x g x_not_null H))). {
         simpl; hnf; split; intros; [unfold graph_gen.addValidFunc | subst a]; intuition.
@@ -105,15 +97,16 @@ Proof.
         - destruct (SGBA_VE x x); [| hnf in c; unfold Equivalence.equiv in c; exfalso]; auto.
         - unfold graph_gen.updateEdgeFunc. destruct (EquivDec.equiv_dec (x, tt) (x, tt)). 2: compute in c; exfalso; auto. destruct (SGBA_VE null null); auto.
           hnf in c. unfold Equivalence.equiv in c. exfalso; auto.
-      } rewrite <- (vertices_at_sepcon_1x (make_set_Graph 0%nat tt tt x g x_not_null H) x (vvalid g) _ (O, x)); auto. apply sepcon_derives. 1: entailer !.
+      } rewrite <- (vertices_at_sepcon_1x (make_set_Graph 0%nat tt tt x g x_not_null H) x (vvalid g) _ (O, x)); auto. apply sepcon_derives. 1: apply derives_refl.
       assert (vertices_at sh (vvalid g) g = vertices_at sh (vvalid g) (make_set_Graph O tt tt x g x_not_null H)). {
         apply vertices_at_vertices_identical. simpl. hnf. intros. destruct a as [y ?]. unfold Morphisms_ext.app_sig. simpl.
         unfold UnionFindGraph.vgamma. simpl. unfold graph_gen.updateEdgeFunc. f_equal.
         - destruct (SGBA_VE y x); [hnf in e; subst y; exfalso |]; auto.
         - destruct (EquivDec.equiv_dec (x, tt) (y, tt)); auto. hnf in e. inversion e. subst y. exfalso; auto.
-      } rewrite <- H5. entailer.
+      } rewrite <- H6. entailer!.
 Qed.
 
+(*
 Lemma false_Cne_eq: forall x y, typed_false tint (force_val (sem_cmp_pp Cne (pointer_val_val x) (pointer_val_val y))) -> x = y.
 Proof.
   intros. hnf in H. destruct x, y; inversion H; auto. simpl in H. clear H1. unfold sem_cmp_pp in H. simpl in H. destruct (eq_block b b0).
@@ -132,40 +125,38 @@ Proof.
   - intro. inversion H0. auto.
 Qed.
 
-Lemma ADMIT: forall P: Prop, P.
-Admitted.
+ *)
+
+Lemma graph_local_facts: forall sh x (g: Graph), vvalid g x -> whole_graph sh g |-- valid_pointer (pointer_val_val x).
+Proof.
+  intros. eapply derives_trans; [apply (@vertices_at_ramif_1_stable _ _ _ _ SGBA_VST _ _ (SGA_VST sh) g (vvalid g) x (vgamma g x)); auto |].
+  simpl vertex_at at 1. unfold binode. entailer!.
+Qed.
+
+Lemma graph_parent_local_facts: forall sh x (g: Graph) r pa, vvalid g x -> (r, pa) = vgamma g x -> whole_graph sh g |-- valid_pointer (pointer_val_val pa).
+Proof.
+  intros. eapply derives_trans; [apply (@graph_vgen_ramify _ (sSGG_VST sh) g x r r pa); auto |].
+  Transparent sSGG_VST. simpl vertex_at at 1. unfold binode. 
+Qed.
 
 Lemma body_find: semax_body Vprog Gprog f_find find_spec.
 Proof.
   start_function.
   remember (vgamma g x) as rpa eqn:?H. destruct rpa as [r pa].
   (* p = x -> parent; *)
-  localize
-    (PROP  ()
-     LOCAL (temp _x (pointer_val_val x))
-     SEP  (data_at sh node_type (vgamma2cdata (vgamma g x)) (pointer_val_val x))).
-  rewrite <- H0. simpl vgamma2cdata.
-  eapply semax_ram_seq;
-    [ subst RamFrame RamFrame0; unfold abbreviate;
-      repeat apply eexists_add_stats_cons; constructor
-    | load_tac
-    | abbreviate_semax_ram].
-  unlocalize
-    (PROP  ()
-     LOCAL (temp _p (pointer_val_val pa); temp _x (pointer_val_val x))
-     SEP  (whole_graph sh g)).
-  Grab Existential Variables.
-  Focus 2. {
-    simplify_ramif. rewrite <- H0. simpl.
-    apply (@vertices_at_ramif_1_stable _ _ _ _ SGBA_VST _ _ (SGA_VST sh) g (vvalid g) x (r, pa)); auto.
-  } Unfocus.
-  unfold semax_ram.
+  localize [data_at sh node_type (vgamma2cdata (vgamma g x)) (pointer_val_val x)]. rewrite <- H0. simpl vgamma2cdata.
+  forward. 1: entailer!; destruct pa; simpl; auto.
+  unlocalize [whole_graph sh g].
+  1: rewrite <- H0; simpl vgamma2cdata; apply (@vertices_at_ramif_1_stable _ _ _ _ SGBA_VST _ _ (SGA_VST sh) g (vvalid g) x (r, pa)); auto.
   (* if (p != x) { *)
-  forward_if_tac
+  forward_if
     (EX g': Graph, EX rt : pointer_val,
      PROP (findS g x g' /\ uf_root g' x rt)
      LOCAL (temp _p (pointer_val_val rt); temp _x (pointer_val_val x))
-     SEP (whole_graph sh g'));
+     SEP (whole_graph sh g')).
+  - apply denote_tc_test_eq_split. admit. apply graph_local_facts; auto.
+
+    
     [apply ADMIT | | gather_current_goal_with_evar ..].
   (* p0 = find(p); *)
   forward_call (sh, g, pa). 1: symmetry in H0; apply valid_parent in H0; auto.
