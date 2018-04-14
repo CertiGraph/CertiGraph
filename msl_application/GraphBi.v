@@ -4,8 +4,6 @@ Require Import VST.msl.seplog.
 Require Import VST.msl.log_normalize.
 Require Import RamifyCoq.lib.Coqlib.
 Require Import RamifyCoq.lib.EquivDec_ext.
-Require Import RamifyCoq.msl_ext.abs_addr.
-Require Import RamifyCoq.msl_ext.seplog.
 Require Import RamifyCoq.msl_ext.log_normalize.
 Require Import RamifyCoq.msl_ext.iter_sepcon.
 Require Import RamifyCoq.graph.graph_model.
@@ -19,7 +17,6 @@ Require Export RamifyCoq.graph.MathGraph.
 Require Export RamifyCoq.graph.FiniteGraph.
 Require Import RamifyCoq.msl_application.Graph.
 Require Import Coq.Logic.Classical.
-Import RamifyCoq.msl_ext.seplog.OconNotation.
 
 Local Open Scope logic.
 
@@ -30,7 +27,6 @@ Inductive LR :=
 Class pPointwiseGraph_Graph_Bi: Type := {
   addr: Type;
   null: addr;
-  pred: Type;
   SGBA: PointwiseGraphBasicAssum addr (addr * LR)
 }.
 
@@ -39,6 +35,7 @@ Existing Instance SGBA.
 Definition is_null_SGBA {pSGGB: pPointwiseGraph_Graph_Bi} : DecidablePred addr := (existT (fun P => forall a, {P a} + {~ P a}) (fun x => x = null) (fun x => SGBA_VE x null)).
 
 Class sPointwiseGraph_Graph_Bi {pSGG_Bi: pPointwiseGraph_Graph_Bi} (DV DE: Type): Type := {
+  pred: Type;
   SGP: PointwiseGraphPred addr (addr * LR) (DV * addr * addr) unit pred;
   SGA: PointwiseGraphAssum SGP;
   SGAvs: PointwiseGraphAssum_vs SGP;
@@ -751,6 +748,7 @@ Spatial Facts (with Strong Assumption) Part
 
 *********************************************************)
 
+(*
   Context {SGSA: PointwiseGraphStrongAssum SGP}.
 
   Notation graph x g := (@reachable_vertices_at _ _ _ _ _ _ _ _ (_) _ (@SGP pSGG_Bi DV DE sSGG_Bi) _ x g).
@@ -878,5 +876,7 @@ Spatial Facts (with Strong Assumption) Part
         destruct H0; auto.
       - intro v; apply vvalid_vguard.
   Qed.
+
+*)
 
 End GRAPH_BI.

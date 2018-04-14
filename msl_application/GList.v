@@ -8,7 +8,6 @@ Require Import RamifyCoq.lib.Ensembles_ext.
 Require Import RamifyCoq.lib.EquivDec_ext.
 Require Import RamifyCoq.lib.Relation_ext.
 Require Import RamifyCoq.lib.List_ext.
-Require Import RamifyCoq.msl_ext.seplog.
 Require Import RamifyCoq.graph.graph_model.
 Require Import RamifyCoq.graph.weak_mark_lemmas.
 Require Import RamifyCoq.graph.path_lemmas.
@@ -29,7 +28,6 @@ Class pPointwiseGraph_GList: Type :=
   {
     addr: Type;
     null: addr;
-    pred: Type;
     SGBA: PointwiseGraphBasicAssum addr (addr * unit)
   }.
 
@@ -39,6 +37,7 @@ Definition is_null_SGBA {pSGG: pPointwiseGraph_GList} : DecidablePred addr := (e
 
 Class sPointwiseGraph_GList {pSGG_Bi: pPointwiseGraph_GList} (DV DE: Type): Type :=
   {
+    pred: Type;
     SGP: PointwiseGraphPred addr (addr * unit) (DV * addr) unit pred;
     SGA: PointwiseGraphAssum SGP;
     SGAvs: PointwiseGraphAssum_vs SGP;

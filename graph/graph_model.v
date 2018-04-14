@@ -69,6 +69,14 @@ Arguments LabeledGraph _ _ {_} {_} _ _ _.
 Arguments GeneralGraph _ _ {_} {_} _ _ _ _.
 Arguments NodePred : clear implicits.
 
+(* Require Import VST.veric.SeparationLogic. *)
+
+(* Definition temp_spec := *)
+(* NDmk_funspec (nil, Tvoid) cc_default (Ensemble nat) (fun x => TT) (fun x => TT). *)
+
+(* Definition temp_spec := *)
+(* NDmk_funspec (nil, Tvoid) cc_default (@PreGraph _ _ EquivDec.nat_eq_eqdec EquivDec.nat_eq_eqdec) (fun x => TT) (fun x => TT). *)
+
 Notation " pg |= n1 ~> n2 " := (edge pg n1 n2) (at level 1).
 
 (******************************************

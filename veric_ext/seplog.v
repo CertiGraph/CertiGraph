@@ -3,14 +3,14 @@ Require Import VST.msl.log_normalize.
 Require Import RamifyCoq.msl_ext.seplog.
 Require Import RamifyCoq.msl_ext.log_normalize.
 
-Require Export veric.base.
-Require Import veric.rmaps.
-Require Import veric.rmaps_lemmas.
-Require Import veric.compcert_rmaps.
-Require Import veric.slice.
-Require Import veric.res_predicates.
-Require Import veric.tycontext.
-Require Import veric.expr.
+Require Export VST.veric.base.
+Require Import VST.veric.rmaps.
+Require Import VST.veric.rmaps_lemmas.
+Require Import VST.veric.compcert_rmaps.
+Require Import VST.veric.slice.
+Require Import VST.veric.res_predicates.
+Require Import VST.veric.tycontext.
+Require Import VST.veric.expr.
 Require Import VST.veric.address_conflict.
 Require Import VST.veric.seplog.
 
@@ -21,6 +21,8 @@ Require Import RamifyCoq.veric_ext.res_predicates.
 
 Local Open Scope pred.
 
+(*
+
 Lemma exp_mapsto_precise: forall sh t p, precise (EX v: val, mapsto sh t p v).
 Proof.
   intros.
@@ -30,19 +32,17 @@ Proof.
   destruct p; try apply @exp_FF_precise with (H := algPreciseSepLog _).
   if_tac.
   + apply derives_precise with (exp (fun v0 =>
-            address_mapsto m v0 (Share.unrel Share.Lsh sh)
-              (Share.unrel Share.Rsh sh) (b, Int.unsigned i))); [| apply address_mapsto__precise].
+            address_mapsto m v0 sh (b, Ptrofs.unsigned i))); [| apply address_mapsto__precise].
     apply exp_left; intro v.
     apply orp_left.
-    - apply andp_left2, (exp_right v).
-      auto.
+    - apply andp_left2, (exp_right v). auto.
     - apply andp_left2; auto.
-  + apply derives_precise with (nonlock_permission_bytes sh (b, Int.unsigned i) (size_chunk m)).
-    - apply exp_left; intro.
-      apply andp_left2.
-      auto.
+  + apply derives_precise with (nonlock_permission_bytes sh (b, Ptrofs.unsigned i) (size_chunk m)).
+    - apply exp_left; intro. apply andp_left2. auto.
     - apply nonlock_permission_bytes_precise.
 Qed.
+
+ *)
 
 Definition BV_sizeof t :=
   match access_mode t with
@@ -67,6 +67,7 @@ Proof.
   apply eq_sym, size_chunk_sizeof; auto.
 Qed.
 
+(*
 Lemma disj_mapsto_: forall {cs: composite_env} sh t1 t2 p1 p2,
   ~ pointer_range_overlap p1 (sizeof t1) p2 (sizeof t2) ->
   disjointed (EX v1: val, mapsto sh t1 p1 v1) (EX v2: val, mapsto sh t2 p2 v2).
@@ -110,6 +111,8 @@ Proof.
       repeat split; auto.
 Qed.
 
+ *)
+
 Lemma BV_sizeof_pos: forall t m, access_mode t = By_value m -> BV_sizeof t > 0.
 Proof.
   intros.
@@ -149,6 +152,7 @@ Proof.
   auto.
 Qed.
 
+(*
 Lemma memory_block_precise: forall sh p n, precise (memory_block sh n p).
 Proof.
   intros.
@@ -166,6 +170,10 @@ Transparent Z.le. (* A bug of Coq here ? *)
   + apply VALspec_range_precise.
   + apply nonlock_permission_bytes_precise.
 Qed.
+
+ *)
+
+(*
 
 Lemma disj_memory_block: forall sh p1 n1 p2 n2, ~ pointer_range_overlap p1 n1 p2 n2 -> disjointed (memory_block sh n1 p1) (memory_block sh n2 p2).
 Proof.
@@ -206,3 +214,5 @@ Transparent Z.le. (* A bug of Coq here ? *)
     rewrite !Coqlib.nat_of_Z_eq in H2 by omega.
     auto.
 Qed.
+
+*)

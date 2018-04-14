@@ -9,8 +9,6 @@ Require Import RamifyCoq.lib.List_ext.
 Require Import RamifyCoq.lib.Relation_ext.
 Require Import RamifyCoq.lib.Equivalence_ext.
 Require Import RamifyCoq.lib.Morphisms_ext.
-Require Import RamifyCoq.msl_ext.abs_addr.
-Require Import RamifyCoq.msl_ext.seplog.
 Require Import RamifyCoq.msl_ext.log_normalize.
 Require Import RamifyCoq.msl_ext.iter_sepcon.
 Require Import RamifyCoq.msl_ext.ramification_lemmas.
@@ -22,7 +20,6 @@ Require Import RamifyCoq.graph.reachable_ind.
 Require Import RamifyCoq.graph.subgraph2.
 Require Import RamifyCoq.graph.dag.
 Require Import RamifyCoq.graph.FiniteGraph.
-Import RamifyCoq.msl_ext.seplog.OconNotation.
 
 Local Open Scope logic.
 
@@ -69,6 +66,7 @@ Class PointwiseGraphAssum_vn {V E GV GE Pred: Type} (SGP: PointwiseGraphPred V E
 Class PointwiseGraphAssum_en {V E GV GE Pred: Type} (SGP: PointwiseGraphPred V E GV GE Pred) {SGBA: PointwiseGraphBasicAssum V E} {SGA: PointwiseGraphAssum SGP} (enull: E) :=
   edge_at_not_null: forall ge, @derives Pred _ (edge_at enull ge) FF.
 
+(*
 Instance AAV {V E GV GE Pred: Type} (SGP: PointwiseGraphPred V E GV GE Pred) {SGBA: PointwiseGraphBasicAssum V E} : AbsAddr V GV.
   apply (mkAbsAddr V GV (fun x y => if equiv_dec x y then true else false)); simpl; intros.
   + destruct_eq_dec p1 p2; destruct_eq_dec p2 p1; congruence.
@@ -94,6 +92,7 @@ Class PointwiseGraphStrongAssum {V E GV GE Pred: Type} (SGP: PointwiseGraphPred 
 }.
 
 Existing Instances SGP_PSL SGP_OSL SGP_DSL SGP_COSL VP_MSL VP_sMSL EP_MSL EP_sMSL.
+ *)
 
 Class PointwiseGraphConstructor (V E DV DE DG GV GE: Type) {SGBA: PointwiseGraphBasicAssum V E}:= {
   compute_vgamma: LabeledGraph V E DV DE DG -> V -> GV;
@@ -588,6 +587,7 @@ Proof.
   apply H; auto.
 Qed.
 
+(*
 Section SPATIAL_FACTS_STRONG_ASSU.
 
 Context {SGSA: PointwiseGraphStrongAssum SGP}.
@@ -611,6 +611,7 @@ Proof.
 Qed.  
 
 End SPATIAL_FACTS_STRONG_ASSU.
+ *)
 
 End SPATIAL_FACTS.
 
@@ -1058,7 +1059,9 @@ Proof.
   apply vertices_at_ramify1; auto.
   apply reachable_refl; auto.
 Qed.
-*)
+ *)
+
+(*
 
 Context {SGSA: PointwiseGraphStrongAssum SGP}.
 
@@ -1194,6 +1197,8 @@ Proof.
   2: intros; apply X; rewrite in_app_iff; left; auto.
   apply partialgraph_update; auto.
 Qed.
+
+ *)
 
 End SPATIAL_FACTS.
 

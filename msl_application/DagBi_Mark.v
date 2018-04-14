@@ -6,8 +6,6 @@ Require Import VST.msl.Coqlib2.
 Require Import RamifyCoq.lib.Coqlib.
 Require Import RamifyCoq.lib.EquivDec_ext.
 Require Import RamifyCoq.lib.relation_list.
-Require Import RamifyCoq.msl_ext.abs_addr.
-Require Import RamifyCoq.msl_ext.seplog.
 Require Import RamifyCoq.msl_ext.log_normalize.
 Require Import RamifyCoq.msl_ext.iter_sepcon.
 Require Import RamifyCoq.graph.graph_model.
@@ -23,7 +21,6 @@ Require Import RamifyCoq.msl_application.Graph_Mark.
 Require Import RamifyCoq.msl_application.GraphBi.
 Require Export RamifyCoq.msl_application.GraphBi_Mark.
 Require Import Coq.Logic.Classical.
-Import RamifyCoq.msl_ext.seplog.OconNotation.
 
 Open Scope logic.
 
@@ -55,16 +52,16 @@ Proof. intros. eapply va_reachable_dag_update_unfold; eauto. Qed.
 
 (* TODO: More modularized way to prove these two RamificationPremise? 
  For example, handling pure facts? *)
-Lemma dag_ramify_left: forall {RamUnit: Type} (g g1: Graph) x l r,
+Lemma dag_ramify_left: forall (g g1: Graph) x l r,
   vvalid g x ->
   vgamma g x = (false, l, r) ->
   mark1 x g g1 ->
   @derives pred _
     (reachable_dag_vertices_at x g1)
     (reachable_dag_vertices_at l g1 *
-     (ALL a: RamUnit * Graph,
-       !! (mark l g1 (snd a)) -->
-       (reachable_dag_vertices_at l (snd a) -* reachable_dag_vertices_at x (snd a)))).
+     (ALL g': Graph,
+       !! (mark l g1 g') -->
+       (reachable_dag_vertices_at l g' -* reachable_dag_vertices_at x g'))).
 Proof.
   intros.
   unfold reachable_dag_vertices_at.
@@ -81,13 +78,13 @@ Proof.
   match goal with
   | |- _ |-- _ * ?A =>
     replace A with
-   (ALL  a : RamUnit * Graph ,
-      (!!mark l g1 (snd a):pred) -->
-      (vertices_at (reachable (snd a) l) (snd a) -*
-       vertices_at (reachable (snd a) x) (snd a)))
+   (ALL g' : Graph ,
+      (!!mark l g1 g':pred) -->
+      (vertices_at (reachable g' l) g' -*
+       vertices_at (reachable g' x) g'))
   end.
   Focus 2. {
-    apply allp_congr; unfold snd; intros [_ g2].
+    apply allp_congr; intros g2.
     apply imp_prop_ext; [reflexivity |].
     intros [_ ?].
     rewrite prop_true_andp by (rewrite <- H5; auto).
@@ -97,18 +94,18 @@ Proof.
   eapply graph_ramify_left; eauto.
 Qed.
 
-Lemma dag_ramify_right: forall {RamUnit: Type} (g g1 g2: Graph) x l r,
+Lemma dag_ramify_right: forall (g g1 g2: Graph) x l r,
   vvalid g x ->
   vgamma g x = (false, l, r) ->
   mark1 x g g1 ->
   mark l g1 g2 ->
   (reachable_dag_vertices_at x g2: pred) |-- reachable_dag_vertices_at r g2 *
-   (ALL a: RamUnit * Graph,
-     !! (mark r g2 (snd a)) -->
-     (reachable_dag_vertices_at r (snd a) -* reachable_dag_vertices_at x (snd a))).
+   (ALL g':Graph,
+     !! (mark r g2 g') -->
+     (reachable_dag_vertices_at r g' -* reachable_dag_vertices_at x g')).
 Proof.
   intros.
-  pose proof @graph_ramify_right _ _ RamUnit g g1 g2 x l r H H0 H1 H2.
+  pose proof @graph_ramify_right _ _ g g1 g2 x l r H H0 H1 H2.
   unfold reachable_dag_vertices_at.
   normalize.
   destruct H1 as [? _].
@@ -125,13 +122,13 @@ Proof.
   match goal with
   | |- _ |-- _ * ?A =>
     replace A with
-   (ALL  a : RamUnit * Graph ,
-      (!!mark r g2 (snd a):pred) -->
-      (vertices_at (reachable (snd a) r) (snd a) -*
-       vertices_at (reachable (snd a) x) (snd a)))
+   (ALL  g' : Graph ,
+      (!!mark r g2 g':pred) -->
+      (vertices_at (reachable g' r) g' -*
+       vertices_at (reachable g' x) g'))
   end.
   Focus 2. {
-    apply allp_congr; unfold snd; intros [_ g3].
+    apply allp_congr; intros g3.
     apply imp_prop_ext; [reflexivity |].
     intros [_ ?].
     rewrite prop_true_andp by (rewrite <- H6; auto).
@@ -142,5 +139,3 @@ Proof.
 Qed.
 
 End PointwiseGraph_Mark_Bi.
-
-

@@ -130,10 +130,10 @@ Section SPATIAL_GRAPH_DISPOSE_BI.
       apply invalid_null.
   Qed.
 
-  Lemma graph_ramify_aux1_left: forall {RamUnit: Type} (g: Graph) x d l r,
+  Lemma graph_ramify_aux1_left: forall (g: Graph) x d l r,
       vvalid g x -> vgamma g x = (d, l, r) ->
       (reachable_vertices_at x g : pred) |-- reachable_vertices_at l g *
-      (ALL  a : RamUnit * Graph , !!spanning_tree g l (snd a) --> (vertices_at (reachable g l) (snd a) -* vertices_at (reachable g x) (snd a))).
+      (ALL  g' : Graph , !!spanning_tree g l g' --> (vertices_at (reachable g l) g' -* vertices_at (reachable g x) g')).
   Proof.
     intros. eapply vertices_at_ramif_xQ; auto.
     eexists; split; [| split].
@@ -198,21 +198,21 @@ Section SPATIAL_GRAPH_DISPOSE_BI.
       - apply vgamma_is_true in H0. auto.
       - intros; apply Graph_reachable_by_dec, weak_valid_vvalid_dec; right; auto.
   Qed.
-
-  Lemma graph_ramify_aux1_left_weak: forall {RamUnit: Type} (g: Graph) x l r,
+(*
+  Lemma graph_ramify_aux1_left_weak: forall (g: Graph) x l r,
       vvalid g x -> vgamma g x = (true, l, r) -> totally_unmarked g l ->
       (reachable_vertices_at x g : pred) |-- reachable_vertices_at l g *
-      (ALL  a : RamUnit * Graph , !!spanning_tree g l (snd a) --> (reachable_vertices_at l (snd a) -* reachable_vertices_at x (snd a))).
+      (ALL  g' : Graph , !!spanning_tree g l g' --> (reachable_vertices_at l g' -* reachable_vertices_at x g')).
   Proof.
-    intros. pose proof (@graph_ramify_aux1_left RamUnit g x true l r H H0).
+    intros. pose proof (@graph_ramify_aux1_left g x true l r H H0).
     eapply log_normalize.sepcon_weaken. 2: apply H2. clear H2.
     apply allp_derives. intros p. destruct p as [? g2]. simpl.
     rewrite <- imp_andp_adjoint. apply derives_extract_prop'. intros.
     rewrite prop_imp; auto. apply wand_derives.
-    - rewrite totally_unmarked_root_ST_reachable_eq; auto.
+    - rewrite <- totally_unmarked_root_ST_reachable_eq; auto.
     - rewrite (totally_unmarked_parent_ST_reachable_eq _ _ _ l r); auto.
   Qed.
-
+*)
   Lemma edge_spanning_tree_left_vvalid: forall (g1 g2: Graph) x n,
       vvalid g1 x -> edge_spanning_tree g1 (x, L) g2 -> (vvalid g1 n <-> vvalid g2 n).
   Proof.
@@ -340,15 +340,15 @@ Section SPATIAL_GRAPH_DISPOSE_BI.
       - apply (edge_spanning_tree_left_reachable_vvalid g1 g2 x true l r); auto.
         unfold Ensembles.In . apply reachable_by_refl; auto.
   Qed.
-                
-  Lemma graph_ramify_aux1_right: forall {RamUnit: Type} (g1 g2: Graph) x l r,
+
+  Lemma graph_ramify_aux1_right: forall (g1 g2: Graph) x l r,
       vvalid g1 x -> vgamma g1 x = (true, l, r) ->
       edge_spanning_tree g1 (x, L) g2 ->
       (vertices_at (reachable g1 x) g2: pred) |-- reachable_vertices_at r g2 *
-      (ALL  a : RamUnit * Graph ,
-                !!spanning_tree g2 r (snd a) -->
-                  (vertices_at (reachable g2 r) (snd a) -*
-                               vertices_at (reachable g1 x) (snd a))).
+      (ALL  g' : Graph ,
+                !!spanning_tree g2 r g' -->
+                  (vertices_at (reachable g2 r) g' -*
+                               vertices_at (reachable g1 x) g')).
   Proof.
     intros. eapply vertices_at_ramif_xQ; auto.
     eexists; split; [| split].
