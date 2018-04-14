@@ -244,7 +244,7 @@ Proof.
       * (* if (root_mark == 0) { *)
         Opaque node_pred_dec.
         Opaque pSGG_VST.
-        forward_if_tac
+        forward_if
           (EX g3: Graph,
            PROP  (edge_spanning_tree g2 (x, R) g3)
            LOCAL (temp _r (pointer_val_val r);
