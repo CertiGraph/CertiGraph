@@ -1,7 +1,7 @@
 extern void * mallocN (int n);
 
 struct Node {
-    int rank;
+    unsigned int rank;
     struct Node * parent;
 };
 
@@ -26,7 +26,7 @@ struct Node* find(struct Node* x) {
 
 void unionS(struct Node* x, struct Node* y) {
     struct Node *xRoot, *yRoot;
-    int xRank, yRank;
+    unsigned int xRank, yRank;
     xRoot = find(x);
     yRoot = find(y);
     if (xRoot == yRoot) {

@@ -97,7 +97,7 @@ Definition f_makeSet := {|
       (Sassign
         (Efield
           (Ederef (Etempvar _x (tptr (Tstruct _Node noattr)))
-            (Tstruct _Node noattr)) _rank tint)
+            (Tstruct _Node noattr)) _rank tuint)
         (Econst_int (Int.repr 0) tint))
       (Sreturn (Some (Etempvar _x (tptr (Tstruct _Node noattr))))))))
 |}.
@@ -145,8 +145,8 @@ Definition f_unionS := {|
                 (_y, (tptr (Tstruct _Node noattr))) :: nil);
   fn_vars := nil;
   fn_temps := ((_xRoot, (tptr (Tstruct _Node noattr))) ::
-               (_yRoot, (tptr (Tstruct _Node noattr))) :: (_xRank, tint) ::
-               (_yRank, tint) :: (_t'2, (tptr (Tstruct _Node noattr))) ::
+               (_yRoot, (tptr (Tstruct _Node noattr))) :: (_xRank, tuint) ::
+               (_yRank, tuint) :: (_t'2, (tptr (Tstruct _Node noattr))) ::
                (_t'1, (tptr (Tstruct _Node noattr))) :: nil);
   fn_body :=
 (Ssequence
@@ -173,22 +173,22 @@ Definition f_unionS := {|
         (Sset _xRank
           (Efield
             (Ederef (Etempvar _xRoot (tptr (Tstruct _Node noattr)))
-              (Tstruct _Node noattr)) _rank tint))
+              (Tstruct _Node noattr)) _rank tuint))
         (Ssequence
           (Sset _yRank
             (Efield
               (Ederef (Etempvar _yRoot (tptr (Tstruct _Node noattr)))
-                (Tstruct _Node noattr)) _rank tint))
-          (Sifthenelse (Ebinop Olt (Etempvar _xRank tint)
-                         (Etempvar _yRank tint) tint)
+                (Tstruct _Node noattr)) _rank tuint))
+          (Sifthenelse (Ebinop Olt (Etempvar _xRank tuint)
+                         (Etempvar _yRank tuint) tint)
             (Sassign
               (Efield
                 (Ederef (Etempvar _xRoot (tptr (Tstruct _Node noattr)))
                   (Tstruct _Node noattr)) _parent
                 (tptr (Tstruct _Node noattr)))
               (Etempvar _yRoot (tptr (Tstruct _Node noattr))))
-            (Sifthenelse (Ebinop Ogt (Etempvar _xRank tint)
-                           (Etempvar _yRank tint) tint)
+            (Sifthenelse (Ebinop Ogt (Etempvar _xRank tuint)
+                           (Etempvar _yRank tuint) tint)
               (Sassign
                 (Efield
                   (Ederef (Etempvar _yRoot (tptr (Tstruct _Node noattr)))
@@ -205,14 +205,14 @@ Definition f_unionS := {|
                 (Sassign
                   (Efield
                     (Ederef (Etempvar _xRoot (tptr (Tstruct _Node noattr)))
-                      (Tstruct _Node noattr)) _rank tint)
-                  (Ebinop Oadd (Etempvar _xRank tint)
-                    (Econst_int (Int.repr 1) tint) tint))))))))))
+                      (Tstruct _Node noattr)) _rank tuint)
+                  (Ebinop Oadd (Etempvar _xRank tuint)
+                    (Econst_int (Int.repr 1) tint) tuint))))))))))
 |}.
 
 Definition composites : list composite_definition :=
 (Composite _Node Struct
-   ((_rank, tint) :: (_parent, (tptr (Tstruct _Node noattr))) :: nil)
+   ((_rank, tuint) :: (_parent, (tptr (Tstruct _Node noattr))) :: nil)
    noattr :: nil).
 
 Definition global_definitions : list (ident * globdef fundef type) :=

@@ -1,4 +1,5 @@
 Require Export VST.floyd.proofauto.
+Require Export VST.floyd.library.
 Require Export RamifyCoq.floyd_ext.closed_lemmas.
 Require Export RamifyCoq.sample_mark.unionfind.
 
