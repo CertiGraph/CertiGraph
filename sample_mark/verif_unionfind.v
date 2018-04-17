@@ -57,7 +57,7 @@ Definition unionS_spec :=
  DECLARE _unionS
   WITH sh: wshare, g: Graph, x: pointer_val, y: pointer_val
   PRE [ _x OF (tptr (Tstruct _Node noattr)), _y OF (tptr (Tstruct _Node noattr))]
-          PROP  (vvalid g x /\ vvalid g y /\ vlabel_in_bound g)
+          PROP  (vvalid g x /\ vvalid g y)
           LOCAL (temp _x (pointer_val_val x); temp _y (pointer_val_val y))
           SEP   (whole_graph sh g)
   POST [ Tvoid ]
@@ -221,7 +221,7 @@ Proof.
      temp _x (pointer_val_val x); temp _y (pointer_val_val y))
      SEP (vertices_at sh (vvalid g2) g2)).
   - apply denote_tc_test_eq_split; apply graph_local_facts; auto.
-  - forward. apply (exp_right g2). entailer !; auto. apply true_Ceq_eq in H6. subst y_root. apply (the_same_root_union g g1 g2 x y x_root); auto.
+  - forward. Exists g2. entailer !; auto. apply true_Ceq_eq in H6. subst y_root. apply (the_same_root_union g g1 g2 x y x_root); auto.
   - forward. apply false_Ceq_neq in H6. entailer!.
   - Intros. (* xRank = xRoot -> rank; *)
     remember (vgamma g2 x_root) as rpa eqn:?H. destruct rpa as [rankXRoot paXRoot]. symmetry in H7.
