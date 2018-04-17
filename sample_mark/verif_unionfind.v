@@ -207,7 +207,7 @@ Qed.
 Lemma body_unionS: semax_body Vprog Gprog f_unionS unionS_spec.
 Proof.
   start_function.
-  destruct H as [? [? H_BOUND]].
+  destruct H.
   forward_call (sh, g, x). Intros vret. destruct vret as [g1 x_root]. simpl fst in *. simpl snd in *.
   assert (vvalid g1 y) by (destruct H1 as [_ [[? _] _]]; rewrite <- H1; apply H0).
   forward_call (sh, g1, y). Intros vret. destruct vret as [g2 y_root]. simpl fst in *. simpl snd in *. destruct H1 as [_ [? _]]. destruct H4 as [_ [? _]].
