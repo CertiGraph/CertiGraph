@@ -4,7 +4,7 @@ extern void * mallocN (int n);
 struct subset
 {
     int parent;
-    int rank;
+    unsigned int rank;
 };
  
 // A utility function to find set of an element i
@@ -26,7 +26,7 @@ int find(struct subset subsets[], int i)
 void Union(struct subset subsets[], int x, int y)
 {
     int xroot, yroot;
-    int xRank, yRank;
+    unsigned int xRank, yRank;
 
     xroot = find(subsets, x);
     yroot = find(subsets, y);
