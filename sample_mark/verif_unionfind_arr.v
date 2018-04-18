@@ -133,16 +133,14 @@ Qed.
 Lemma body_makeSet: semax_body Vprog Gprog f_makeSet makeSet_spec.
 Proof.
   start_function. forward_call (sh, Z.mul V 8).
-  - assert (Int.min_signed <= 8 <= Int.max_signed) by (compute; intuition; inversion H).
+  - assert (Int.min_signed <= 8 <= Int.max_signed) by rep_omega.
     assert (Int.min_signed <= V <= Int.max_signed). {
       split; rewrite Z.le_lteq; left.
-      - apply Z.lt_le_trans with 0; [apply Int.min_signed_neg | omega].
+      - rep_omega. 
       - apply Z.le_lt_trans with (Int.max_signed / 8); [intuition | apply Z.div_lt; omega].
     } rewrite !Int.signed_repr; auto. split. 1: omega.
-    assert (Z.mul 8 (Int.max_signed /8) <= Int.max_signed) by (apply Z_mult_div_ge; intuition).
-    apply Z.le_trans with (Z.mul 8 (Int.max_signed /8)); omega.
-  - split. 1: omega. assert (Z.mul 8 (Int.max_signed /8) <= Int.max_signed) by (apply Z_mult_div_ge; intuition).
-    apply Z.le_trans with Int.max_signed. 1: omega. rewrite Z.lt_eq_cases; left; apply Int.max_signed_unsigned.
+    assert (Z.mul 8 (Int.max_signed /8) <= Int.max_signed) by (apply Z_mult_div_ge; intuition). rep_omega.
+  - split. 1: omega. assert (Z.mul 8 (Int.max_signed /8) <= Int.max_signed) by (apply Z_mult_div_ge; intuition). rep_omega.
   - Intros rt.
     assert (memory_block sh (V * 8) (pointer_val_val rt) = data_at_ sh (tarray vertex_type V) (pointer_val_val rt)). {
       assert (memory_block sh (V * 8) (pointer_val_val rt) = memory_block sh (sizeof (tarray vertex_type V)) (pointer_val_val rt)). {
