@@ -152,8 +152,8 @@ Proof.
      SEP (whole_graph sh g')).
   - apply denote_tc_test_eq_split; apply graph_local_facts; auto.
   - (* p0 = find(p); *)
-    forward_call (sh, g, pa). Intros vret. destruct vret as [g' root]. simpl in *.
-    Opaque pointer_val_val. forward. Transparent pointer_val_val.
+    forward_call (sh, g, pa). Intros vret. destruct vret as [g' root]. simpl fst in *.
+    simpl snd in *. Opaque pointer_val_val. forward. Transparent pointer_val_val.
     pose proof (true_Cne_neq _ _ H1).
     assert (weak_valid g' root) by (right; destruct H3; apply reachable_foot_valid in H3; auto).
     assert (vvalid g' x) by (destruct H2 as [_ [[? _] _]]; rewrite <- H2; apply H).
@@ -163,11 +163,8 @@ Proof.
             vertices_at sh (vvalid g') (Graph_gen_redirect_parent g' x root H5 H6 H8)). {
       apply vertices_at_Same_set. unfold Ensembles.Same_set, Ensembles.Included, Ensembles.In. simpl. intuition. }
     localize [data_at sh node_type (Vint (Int.repr (Z.of_nat r)), pointer_val_val pa) (pointer_val_val x)].
-    forward.
-    change (fun a : environ => (EX x0 : Graph, (EX x1 : pointer_val, (PROP (findS g x x0 /\ uf_root x0 x x1) LOCAL (temp _p (pointer_val_val x1); temp _x (pointer_val_val x))
-                                                                           SEP (vertices_at sh (vvalid x0) x0)) a))%logic) with
-        (EX x0 : Graph, (EX x1 : pointer_val, (PROP (findS g x x0 /\ uf_root x0 x x1) LOCAL (temp _p (pointer_val_val x1); temp _x (pointer_val_val x)) SEP
-                                                    (vertices_at sh (vvalid x0) x0)))). rewrite force_val_pointer.
+    
+    forward. rewrite force_val_pointer.
     unlocalize [whole_graph sh (Graph_gen_redirect_parent g' x root H5 H6 H8)].
     + rewrite H9. apply (@graph_gen_redirect_parent_ramify _ (sSGG_VST sh)); auto. destruct H3.
       apply reachable_foot_valid in H3. intro. subst root. apply (valid_not_null g' null H3). simpl. auto.
