@@ -4,6 +4,16 @@ Open Local Scope Z.
 
 Definition boundZ (n : nat) : Type := {z : Z | 0 <= z < two_power_nat n}.
 
+(*
+Compute boundZ 4.
+Program Definition abz : boundZ 4 := exist _ 5 _.
+Next Obligation.
+  unfold two_power_nat. simpl.
+  omega.
+Qed.
+Compute (proj1_sig abz).
+*)
+
 Definition boundZ_Z n : boundZ n -> Z := 
   fun bz => proj1_sig bz.
 Coercion boundZ_Z : boundZ >-> Z.

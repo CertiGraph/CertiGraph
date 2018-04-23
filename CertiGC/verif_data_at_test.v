@@ -18,7 +18,6 @@ Definition fiddle_spec :=
         PROP () LOCAL()
            SEP (TT).
 
-
 Definition Gprog : funspecs := 
         ltac:(with_library prog [fiddle_spec]).
 

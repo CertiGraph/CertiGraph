@@ -24,31 +24,31 @@ Require Import RamifyCoq.msl_application.Graph.
 
 Local Open Scope logic.
 
-Class pSpatialGraph_GList: Type :=
+Class pPointwiseGraph_GList: Type :=
   {
     addr: Type;
     null: addr;
     pred: Type;
-    SGBA: SpatialGraphBasicAssum addr (addr * unit)
+    SGBA: PointwiseGraphBasicAssum addr (addr * unit)
   }.
 
 Existing Instance SGBA.
 
-Definition is_null_SGBA {pSGG: pSpatialGraph_GList} : DecidablePred addr := (existT (fun P => forall a, {P a} + {~ P a}) (fun x => x = null) (fun x => SGBA_VE x null)).
+Definition is_null_SGBA {pSGG: pPointwiseGraph_GList} : DecidablePred addr := (existT (fun P => forall a, {P a} + {~ P a}) (fun x => x = null) (fun x => SGBA_VE x null)).
 
-Class sSpatialGraph_GList {pSGG_Bi: pSpatialGraph_GList} (DV DE: Type): Type :=
+Class sPointwiseGraph_GList {pSGG_Bi: pPointwiseGraph_GList} (DV DE: Type): Type :=
   {
-    SGP: SpatialGraphPred addr (addr * unit) (DV * addr) unit pred;
-    SGA: SpatialGraphAssum SGP;
-    SGAvs: SpatialGraphAssum_vs SGP;
-    SGAvn: SpatialGraphAssum_vn SGP null
+    SGP: PointwiseGraphPred addr (addr * unit) (DV * addr) unit pred;
+    SGA: PointwiseGraphAssum SGP;
+    SGAvs: PointwiseGraphAssum_vs SGP;
+    SGAvn: PointwiseGraphAssum_vn SGP null
   }.
 
 Existing Instances SGP SGA SGAvs.
 
 Section GRAPH_GList.
 
-  Context {pSGG: pSpatialGraph_GList}.
+  Context {pSGG: pPointwiseGraph_GList}.
   Context {DV DE DG: Type}.
 
   Class LiMaFin (g: PreGraph addr (addr * unit)) :=
@@ -60,18 +60,18 @@ Section GRAPH_GList.
 
   Definition Graph := (GeneralGraph addr (addr * unit) DV DE DG (fun g => LiMaFin (pg_lg g))).
   Definition LGraph := (LabeledGraph addr (addr * unit) DV DE DG).
-  Definition SGraph := (SpatialGraph addr (addr * unit) (DV * addr) unit).
+  Definition SGraph := (PointwiseGraph addr (addr * unit) (DV * addr) unit).
 
-  Instance SGC_GList: SpatialGraphConstructor addr (addr * unit) DV DE DG (DV * addr) unit.
+  Instance SGC_GList: PointwiseGraphConstructor addr (addr * unit) DV DE DG (DV * addr) unit.
   Proof.
-    refine (Build_SpatialGraphConstructor _ _ _ _ _ _ _ SGBA _ _).
+    refine (Build_PointwiseGraphConstructor _ _ _ _ _ _ _ SGBA _ _).
     + exact (fun G v => (vlabel G v, let target := dst (pg_lg G) (v, tt) in if (SGBA_VE target null) then v else target)).
     + exact (fun _ _ => tt).
   Defined.
 
-  Instance L_SGC_GList: Local_SpatialGraphConstructor addr (addr * unit) DV DE DG (DV * addr) unit.
+  Instance L_SGC_GList: Local_PointwiseGraphConstructor addr (addr * unit) DV DE DG (DV * addr) unit.
   Proof.
-    refine (Build_Local_SpatialGraphConstructor
+    refine (Build_Local_PointwiseGraphConstructor
               _ _ _ _ _ _ _ SGBA SGC_GList
               (fun G v => evalid (pg_lg G) (v, tt) /\ src (pg_lg G) (v, tt) = v) _
               (fun _ _ => True) _).
@@ -83,13 +83,13 @@ Section GRAPH_GList.
   Global Existing Instances SGC_GList L_SGC_GList.
 
   Definition Graph_LGraph (G: Graph): LGraph := lg_gg G.
-  Definition LGraph_SGraph (G: LGraph): SGraph := Graph_SpatialGraph G.
+  Definition LGraph_SGraph (G: LGraph): SGraph := Graph_PointwiseGraph G.
 
   Local Coercion Graph_LGraph: Graph >-> LGraph.
   Local Coercion LGraph_SGraph: LGraph >-> SGraph.
   Local Identity Coercion Graph_GeneralGraph: Graph >-> GeneralGraph.
   Local Identity Coercion LGraph_LabeledGraph: LGraph >-> LabeledGraph.
-  Local Identity Coercion SGraph_SpatialGraph: SGraph >-> SpatialGraph.
+  Local Identity Coercion SGraph_PointwiseGraph: SGraph >-> PointwiseGraph.
   Local Coercion pg_lg: LabeledGraph >-> PreGraph.
 
   Instance maGraph(G: Graph): MathGraph G is_null_SGBA := @ma G (@sound_gg _ _ _ _ _ _ _ _ G).

@@ -46,6 +46,7 @@ struct heap {
   struct space spaces[MAX_SPACES];
 };
 
+
 #ifdef DEBUG
 
 int in_heap(struct heap *h, value v) {
@@ -103,7 +104,7 @@ void abort_with(char *s) {
   exit(1);
 }
 
-#define Is_from(from_start, from_limit, v)			\
+#define Is_from(from_start, from_limit, v)			
    (from_start <= (value*)(v) && (value*)(v) < from_limit)
 /* Assuming v is a pointer (Is_block(v)), tests whether v points
    somewhere into the "from-space" defined by from_start and from_limit */
@@ -165,7 +166,7 @@ void forward_roots (value *from_start,  /* beginning of from-space */
   
   for(i = 0; i < n; i++)
     forward(from_start, from_limit, next, args+roots[i], DEPTH);
-}  
+}
 
 #define No_scan_tag 251
 #define No_scan(t) ((t) >= No_scan_tag)
@@ -203,10 +204,10 @@ void do_generation (struct space *from,  /* descriptor of from-space */
    using fi and ti to determine the roots of liveness. */
 {
   assert(from->next-from->start <= to->limit-to->next);
-  forward_roots(from->start, from->limit, &to->next, fi, ti);
+  forward_roots(n, &to->next, fi, ti);
   do_scan(from->start, from->limit, to->start, &to->next);
   from->next=from->start;
-}  
+}
 
 #if 0
 /* This "gensize" function is only useful if the desired ratio is >2,
@@ -287,7 +288,7 @@ void resume(fun_info fi, struct thread_info *ti)
 void garbage_collect(fun_info fi, struct thread_info *ti)
 /* See the header file for the interface-spec of this function. */
 {
-  struct heap *h = ti->heap;
+  struct heap *h = ti->heap;  
   if (h==NULL) {
     /* If the heap has not yet been initialized, create it and resume */
     h = create_heap();

@@ -49,7 +49,7 @@ HIP_FILES = \
   hip_graphmark.v hip_graphmark_proofs.v spanningtree.v
 
 CERTIGC_FILES = \
-  orders.v bounded_numbers.v bitwise_encoding.v cc_orders.v cc_bitwise_encoding.v gc.v gc_mathgraph.v data_at_test.v spatial_graph_gc.v env_gc.v GList.v GList_GC.v
+  orders.v bounded_numbers.v bitwise_encoding.v cc_orders.v cc_bitwise_encoding.v gc.v gc_mathgraph.v data_at_test.v spatial_graph_gc.v env_gc.v GList.v
 
 CLIGHT_FILES = sample_mark/mark_bi.v sample_mark/garbage_collector.v sample_mark/dispose_bi.v sample_mark/copy_bi.v
 

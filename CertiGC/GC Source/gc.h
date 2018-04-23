@@ -100,7 +100,7 @@ struct thread_info {
   value *args;   /* Where is the args array */
   int argc;      /* How many slots in the args array */
   value **alloc; /* pointer to the alloc pointer  */
-  value **limit; /* pointer to the limit pointer */
+  value **limit; /* pointer     to the limit pointer */
   struct heap *heap;  /* Description of the generations in the heap */
 };
 
