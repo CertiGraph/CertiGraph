@@ -23,6 +23,19 @@ Require Import RamifyCoq.CertiGC.bitwise_encoding.
 
 Require Import RamifyCoq.CertiGC.cc_orders.
 Require Import RamifyCoq.CertiGC.cc_bitwise_encoding.
+Require Import RamifyCoq.graph.graph_model.
+
+Definition fieldbits : nat := 22.
+Definition tagbits : nat := 8.
+  
+Definition fieldnum : Type := boundZ fieldbits.
+Definition tagnum : Type := boundZ tagbits.
+
+Definition addr : Type := pointer_val.
+Definition null : addr := NullPointer.
+
+Definition maxfields_nat := Z.to_nat (two_power_nat fieldbits).
+Definition maxtags_nat := Z.to_nat (two_power_nat tagbits).
 
 (* **** *)
 
@@ -30,7 +43,7 @@ Section pSGG_VST.
 
 (* From gc.h, a description of how the objects are laid out in memory.
 
- 31   10 9       8 7        0
+       31   10 9       8 7        0
       +-------+---------+----------+
       | size  |  color  | tag byte |
       +-------+---------+----------+
@@ -46,205 +59,168 @@ v --> |              value[0]      |
       +----------------------------+
 *)
 
-(* The various magic constants below are from the above diagram. *)
+(* The various magic constants here are from the above diagram. *)
 Section MagicConstants.
 
-Definition fieldnum : Type := boundZ 22.
-Definition tagnum : Type := boundZ 8.
-
 Instance gc_tc : tagcode (bool * tagnum * fieldnum) :=
-  prodswap_tc (boundZ_tc 22) (prod_tc (padleft_tc 1 bool_tc) (boundZ_tc 8)).
+  tag_prodswap (tag_boundZ fieldbits) (tag_prod (tag_padleft 1 tag_bool) (tag_boundZ tagbits)).
 
 Instance tc_bitsize_ill : tagint_lossless gc_tc.
 Proof. red. trivial. Qed.
 
 End MagicConstants.
 
-Definition addr : Type := pointer_val.
-Definition null : addr := NullPointer.
+Existing Instance gc_tc.
 
-Definition node_rep : Type := bool * list (@field addr val). (* The RHS of spatial graph *)
+Local Open Scope nat_scope.
 
-Definition tag_field (rpa : node_rep) : int :=
-  int_of_tag (fst rpa, List.length (snd rpa)).
+Parameter odd : int -> Prop.
 
 
+Definition valid_data (v : val) : Prop :=
+  match v with Vint i => odd i | Vptr b o => False | _ => False end.
 
-add_repr:
-  forall i j : Z,
-  Int.add (Int.repr i) (Int.repr j) =
-  Int.repr (i + j)
-mul_repr:
-  forall x y : Z,
-  Int.mul (Int.repr x) (Int.repr y) =
-  Int.repr (x * y)
-sub_repr:
-  forall i j : Z,
-  Int.sub (Int.repr i) (Int.repr j) =
-  Int.repr (i - j)
-repr_inj_unsigned:
-  forall i j : Z,
-  0 <= i <= Int.max_unsigned ->
-  0 <= j <= Int.max_unsigned ->
-  Int.repr i = Int.repr j -> i = j
+Definition data_val : Type := {v : val | valid_data v}.
 
- 0 then false else true.
+Definition my_node_rep := @node_rep addr val maxfields_nat tagnum.
 
-Definition tag_size_Z (sz : Z) : Z := Z.mul tag_size_loc (nodesize rpa).
+Definition nodesize (nr : my_node_rep) : Z :=
+  1 + Z.of_nat (length (nr_fields nr)).
+(* the fields, plus one word for the header *)
 
+Definition value := tuint. (* this is going to prove inadequate soon. We need to make a decision about what this will actually be. *)
 
+(* 
+This is where we move from "value" to something more correct. 
+I'm not sure if my choice of type is correct, though. 
+Right now it's a pointer to value. That's because, in the C, value = intnat = long.
 
-Definition value := tuint.
-Definition node_type (rpa : node_rep) : type := 
-  tarray value (nodesize rpa).
+We'd like the recursive...
+Definition node_type (nr : node_rep) : type := 
+  tarray (Tpointer node_type noattr) (nodesize nr).
 
-D
-Definition tag_int (rpa : node_rep) : int :=
-  match rpa with
-   (b, fl) => Int.repr (Z.mul (nodesize rpa) 1024 + if b then 1 else 0)
-  end.
-Definition int_tag (t : int) : bool * Z :=
-  (Z.div t 1024)
+Or even more correctly, we'd like...
+Definition node_type (nr : node_rep) : type := 
+  tarray (Type_OR (tuint) (Tpointer node_type noattr)) (nodesize nr).
 
-Check .
-
-Definition gcnode (sh: share) (p: addr) (rpa: nat * addr): mpred :=
-  data_at sh (node_type (nodesize rpa)) 
-
-
-node_type (vgamma2cdata rpa) (pointer_val_val p).
-
-Definition fiddle_spec :=
- DECLARE _fiddle
-  WITH p: val, n: Z, tag: Z, contents: list Z
-  PRE [  ]
-          PROP  (Z.div tag 1024 = n)
-          LOCAL (temp _p p)
-          SEP (data_at Ews (tarray value (1+n)) 
-                      (map Vint (map Int.repr (tag::contents)))
-                      (offset_val (-sizeof value) p))
-
-
-
-Definition G := @SG_GCgraph pointer_val _ val.
-
-Print field.
-Print reptype.
-Print nodesize.
-
-Definition gcnode (sh : share) (p : addr) (rpa : bool * list field) : reptype (node_type (nodesize rpa)).
-
-Definition vgamma2cdata (rpa : bool * list val) : reptype node_type :=
-  match rpa with
-  | (r, pa) => (Vint (Int.repr (Z.of_nat r)), pointer_val_val pa)
-  end.
-
-  Definition binode (sh: share) (p: addr) (rpa: nat * addr): mpred :=
-    data_at sh node_type (vgamma2cdata rpa) (pointer_val_val p).
-
-
-
-Class pGCgraph : Type := {
-  addr : Type;
-  null : addr;
-  pred : Type;
-  SGBA : SpatialGraphBasicAssum addr (addr * nat)
-}.
-
-Existing Instance SGBA_GCgraph.
-
-Instance pSGG_VST: pGCgraph.
-  refine (Build_pGCgraph pointer_val NullPointer mpred _).
-Defined.
-
-
-
-Goal 
-
-(*
-Instance PointerValE_EqDec: EquivDec.EqDec (pointer_val * nat) eq.
-  hnf; intros. destruct x, y. 
-  destruct (PV_eq_dec p p0); destruct (nat_eq_dec n n0); subst;
-  [left | right..]; try reflexivity; intro; inversion H; contradiction.
-Defined.
-
-Instance SGBA_VST: SpatialGraphBasicAssum pointer_val (pointer_val * nat).
-  refine (Build_SpatialGraphBasicAssum pointer_val (pointer_val * nat) _ _).
-Defined.
+But for now, we settle with what is below...
 *)
+Definition node_type (nr : node_rep) : type := 
+  tarray (Tpointer Tvoid noattr) (nodesize nr).
 
+Local Close Scope nat_scope.
+
+(* if the two addresses are in the same block, 
+checks that the difference is as proposed *) 
+Definition size (a1 a2 : addr) (diff : nat) : Prop :=
+  match a1, a2 with
+  | ValidPointer b1 o1, ValidPointer b2 o2 => b1 = b2 /\ Int.sub o1 o2 = Int.repr (Z.of_nat diff)
+  | _, _ => False
+  end.
+
+Definition env_Graph := @Graph addr _ null _ size val maxfields_nat tagnum.
+
+Local Coercion pg_lg : LabeledGraph >-> PreGraph.
+Local Coercion lg_gg : GeneralGraph >-> LabeledGraph.
+
+Definition make_nr (g: env_Graph) (v: addr) : my_node_rep.
+  remember (vlabel g v) as l.
+  refine (Build_node_rep
+             (raw_mark l)
+             (raw_tag l)          
+             (fields g v)
+             _).
+  destruct l.
+  unfold fields; rewrite make_fields_length.
+  rewrite <- Heql; simpl. apply raw_fieldsbound.
+Defined.  
+
+  
+(* given a nr, we extract the length of the field and show that it is a fieldnum *)
+Program Definition nat_fieldnum (nr : my_node_rep) : fieldnum :=
+                    exist _ (Z.of_nat (length (nr_fields nr))) _.
+Next Obligation.
+  destruct nr. simpl. split. 
+  - omega. 
+  - destruct nr_fields_bound.
+    clear H.
+    unfold maxfields_nat in H0.
+    assert (Z.of_nat (Datatypes.length nr_fields) < Z.of_nat (Z.to_nat (two_power_nat fieldbits))) by (apply inj_lt; auto).
+    rewrite Z2Nat.id in H. apply H.
+    apply two_power_nat_nonneg.
+Admitted. (* it's done, but Defined causes StackOverflow. Maybe try with Definition instead of Program Definition. *)
+
+Definition followEdge (g: env_Graph) (f : @field addr val) : val :=
+  match f with
+  | data d => (* proj1_sig *) d
+  | pointer e => match (dst g e) with
+                 |  ValidPointer blk offset => Vptr blk offset
+                 |  NullPointer => Vint (Int.repr 0)
+                end
+  end.
+
+(* vgamma2cdata + point to that c data *)
+(* "vgamma2cdata" was a bit of a misnomer *)
+Definition nr2gctc (nr : my_node_rep) : (bool * tagnum * fieldnum) :=
+  (nr_color nr, nr_tag nr, nat_fieldnum nr).
+
+Program Definition node_pred (sh: share) (g: env_Graph) (p: addr) (nr : my_node_rep) : mpred :=
+  data_at
+          sh
+          (node_type nr)
+          ((Vint (int_of_tag (nr2gctc nr))) ::
+           (map (followEdge g) (nr_fields nr)))
+          (offset_val (-sizeof value) (pointer_val_val p)).
+
+Instance SGP_VST (sh: share) (g: env_Graph) :
+  PointwiseGraphPred addr (addr * nat)  my_node_rep unit mpred.
+(* val (and possibly unit) are not obivously correct. see addr and _ in other file *)
+refine (@Build_PointwiseGraphPred
+          _ _ _ _ _
+          (node_pred sh g) 
+          (fun _ _ => emp)).
+Defined.
+
+Instance SGA_VST (sh: share) (g : env_Graph) : @PointwiseGraphAssum addr (addr * nat) _ _ mpred (SGP_VST sh g)
+           (@SGBA_GCgraph addr _).
+  refine (Build_PointwiseGraphAssum _ _ _ _ _ _ _ _ _ _ _).
+Defined.
 
 
 End pSGG_VST.
 
-(* In some other file for some reason? *)
+Definition my_space := @space addr _.
 
+(* this is a stub of massive proportions; it needs to actually do a BFS or something and get the vertices of the space *)
+Definition get_space_vertices (s : space) :=
+  (start s) :: (limit s) :: [].
 
+Definition space_size (s : space) :=
+  match (start s), (limit s) with
+  | ValidPointer b1 o1, ValidPointer b2 o2 => if eq_block b1 b2 then Some (Int.sub o1 o2) else None
+  | _, _ => None
+  end.
 
+(* unsigned ok? *)
+(* to discuss with Aquinas: having the option int makes sense, but that means that reptype space_type becomes a beast. It's much easier if space_type just always returns a tarray and never a Tvoid. where to compromise? *)
+Definition space_type (s: my_space) : type :=
+  match (space_size s) with
+  | None => Tvoid (* this is trouble *)
+  (* | None => tarray (Tpointer Tvoid noattr) 0  *)
+  | Some sz => tarray (Tpointer Tvoid noattr) (Int.unsigned sz)
+  end.
 
+Definition space_type' (s: my_space) : type :=
+  tarray (Tpointer Tvoid noattr) 2048.
 
+Definition space_pred' (sh: share) (p: addr) (s: my_space) : mpred :=
+  data_at
+    sh
+    (space_type' s)
+    (map pointer_val_val (get_space_vertices s))
+    (pointer_val_val p).
 
-
-
-
-
-
-Section sSGG_VST.
-
-  Definition binode (sh: share) (p: addr) (rpa: nat * addr): mpred :=
-    data_at sh node_type (vgamma2cdata rpa) (pointer_val_val p).
-
-  Instance SGP_VST (sh: share) : SpatialGraphPred addr (addr * unit) (nat * addr) unit pred.
-  refine (Build_SpatialGraphPred _ _ _ _ _ (binode sh) (fun _ _ => emp)).
-  Defined.
-
-  Instance MSLstandard sh : MapstoSepLog (AAV (SGP_VST sh)) (binode sh).
-  Proof.
-    intros. apply mkMapstoSepLog. intros.
-    apply derives_precise with (memory_block sh (sizeof node_type) (pointer_val_val p)); [| apply memory_block_precise].
-    apply exp_left; intros [? ?]. unfold binode. apply data_at_memory_block.
-  Defined.
-
-  Lemma sepcon_unique_vertex_at sh: writable_share sh -> sepcon_unique2 (@vertex_at _ _ _ _ _ (SGP_VST sh)).
-  Proof.
-    intros. hnf; intros. simpl.
-    destruct y1 as [? ?], y2 as [? ?].
-    unfold binode.
-    rewrite data_at_isptr.
-    normalize.
-    apply data_at_conflict.
-    + apply sepalg.nonidentity_nonunit.
-      apply readable_nonidentity, writable_readable.
-      auto.
-    + change (sizeof node_type) with 8.
-      apply pointer_range_overlap_refl; auto; omega.
-  Qed.
-
-Instance SGA_VST (sh: share) : SpatialGraphAssum (SGP_VST sh).
-  refine (Build_SpatialGraphAssum _ _ _ _ _ _ _ _ _ _ _).
-Defined.
-
-Instance SGAvs_VST (sh: wshare): SpatialGraphAssum_vs (SGP_VST sh).
-  apply sepcon_unique_vertex_at; auto.
-Defined.
-
-Instance SGAvn_VST (sh: wshare): SpatialGraphAssum_vn (SGP_VST sh) NullPointer.
-  intros [? ?].
-  simpl.
-  unfold binode.
-  rewrite data_at_isptr.
-  normalize.
-Defined.
-
-End sSGG_VST.
-
-Hint Extern 10 (@sepcon_unique2 _ _ _ _ _ (@vertex_at _ _ _ _ _ _)) => apply sepcon_unique_vertex_at; auto.
-
-Instance sSGG_VST (sh: wshare): @sSpatialGraph_GList pSGG_VST nat unit.
-  refine (Build_sSpatialGraph_GList pSGG_VST _ _ (SGP_VST sh) (SGA_VST sh) (SGAvs_VST sh) (SGAvn_VST sh)).
-Defined.
-
-Global Opaque pSGG_VST sSGG_VST.
-
-
-Definition node_type := Tstruct _Node noattr.
+(* thought: getting the vertices of the space may not be the way to go. Maybe just make a silly little map from addresses to vertices, making no promises about the vertices. *)
+Definition makeverts (Vs : list addr) : list val:=
+  repeat Vundef (length Vs). 
+   
