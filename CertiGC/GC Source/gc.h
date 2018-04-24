@@ -9,7 +9,7 @@ https://realworldocaml.org/v1/en/html/memory-representation-of-values.html
 
 That is:
 
- 31   10 9       8 7        0
+       31   10 9       8 7        0
       +-------+---------+----------+
       | size  |  color  | tag byte |
       +-------+---------+----------+
@@ -96,31 +96,16 @@ typedef const uintnat *fun_info;
 
 struct heap;     /* abstract, opaque */
 
+#define MAX_ARGS 1024
+
 struct thread_info {
-  value *args;   /* Where is the args array */
-  int argc;      /* How many slots in the args array */
-  value **alloc; /* pointer to the alloc pointer  */
-  value **limit; /* pointer to the limit pointer */
+  value *alloc; /* alloc pointer  */
+  value *limit; /* limit pointer */
   struct heap *heap;  /* Description of the generations in the heap */
+  value args[MAX_ARGS];   /* the args array */
 };
 
-/* The "heap" field should be initialized to NULL by the mutator;
-  the garbage collector will fill it in at the first call to
-  garbage_collect().
-
-  Note that BOTH of these structures can be fully populated
-  statically (at link time) by the mutator, as none rely on
-  dynamic (run time) values.  (Except "heap", which will be NULL
-  at link time.)
-
-  Example of a link-time mutator-created thread_info:
-value my_args[987];
-value bogus[1];
-value *my_start=bogus;
-value *my_limit=bogus;
-struct thread_info my_thread_info = 
-    {my_args, 987, &my_start, &my_limit, NULL};
-*/
+struct thread_info *make_tinfo(void);
 
 void garbage_collect(fun_info fi, struct thread_info *ti);
 /* Performs one garbage collection; 
@@ -149,4 +134,21 @@ void reset_heap(struct heap *h);
  * done in the first garbage_collect() call of the next execution.
  */
 
+/* which slot of the args array has the answer of a certicoq program */
+#define answer_index 1
+
+value* extract_answer(struct thread_info *ti);
+/* y=extract_answer(x,ti) copies the dag rooted at ti->args[answer_index]
+  into a compact data structure starting at y[1], outside the heap,
+  in a single malloc'ed (therefore freeable) object at address y.
+  All within-the-heap pointers will now be within the object y.
+  If (the answer within) the heap pointed to records outside
+  the heap, then those will point at their original locations
+  outside the object y. 
+
+  Note that the start is *(y+1), not (y+1); that is, there's an
+  extra wrapper-record round the object.  That's so that the
+  root-within-the-heap and the root-outside-the-heap (or root-unboxed)
+  can be treated uniformly by the caller of extract_answer().
+*/
 

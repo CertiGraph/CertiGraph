@@ -1,4 +1,5 @@
 (* General includes? *)
+Require Import ZArith.
 Require Import List.
 Require Import RamifyCoq.lib.Coqlib.
 Require Import RamifyCoq.lib.EquivDec_ext.
@@ -13,6 +14,9 @@ Require Import RamifyCoq.graph.FiniteGraph.
 
 Require Import RamifyCoq.CertiGC.orders.
 Require Import RamifyCoq.CertiGC.bounded_numbers.
+
+Require Export VST.floyd.reptype_lemmas.
+Require Import compcert.cfrontend.Ctypes.
 
 Section GC_Graph.
 
@@ -29,6 +33,7 @@ Context {COLE : @COrd V OLE}. Existing Instance COLE.
 Context {CTV: @ComparableTrans V OLE}. Existing Instance CTV.
 
 Context {size : V -> V -> nat -> Prop}.
+
 (*
 Lemma size_ord {A} `{Ord A} : forall v1 v2 v3 n1 n2,
   v1 <= v2 <= v3 ->
@@ -36,67 +41,101 @@ Lemma size_ord {A} `{Ord A} : forall v1 v2 v3 n1 n2,
 Admitted.
 *)
 
-Context {val : Type}. (* CompCert val, plus perhaps other information e.g. shares *)
+Context {val : Type}. (* CompCert val, plus perhaps other info, e.g. shares *)
 Context {max_fields : nat}.
+Context {max_tags : nat}.
+Context {tagnum_ty : Type}.
+Context {max_spaces : nat}.
 
 (* NO MORE CONTEXTS *)
 
+Definition addr : Type := pointer_val.
+(* Definition null : addr := NullPointer. *)
+ 
 Definition E : Type := V * nat.
 Instance EE : EquivDec.EqDec E eq := prod_eqdec EV nat_eq_eqdec.
+Definition LE : Type := unit.
 
 Inductive raw_field : Type :=
   | raw_data : val -> raw_field
   | raw_pointer : raw_field.
 
+Local Open Scope nat_scope.
+
 Record LV : Type := {
 (* We might need to have a share here. *)
   raw_mark   : bool;
   raw_fields : list raw_field;
-  raw_fieldsbound : 0 < List.length raw_fields < max_fields
+  raw_fieldsbound : 0 < List.length raw_fields < max_fields;
+  raw_tag : tagnum_ty
 }.
 
-Definition LE : Type := unit.
+Local Close Scope nat_scope.
 
 Record space : Type := {
   start : V;
   next : V;
   limit : V;
-  space_order : start <= next <= limit
+  space_order : start <= next <= limit;
+  non_empty: start < limit
+}.
+
+Record heap : Type := {
+  spaces : list space;
+  spaces_bound : length spaces <= max_spaces
+}.
+
+(* the type of args is not exactly right. 
+   ideally it would be something like ''list (Type_OR V nat)'' 
+*)
+Record thread_info : Type := {
+    args: list V;
+    argc: nat;
+    ti_alloc: V;
+    ti_limit: V;
+    ti_heap: heap
 }.
 
 Definition LG : Type := list space.
 
 Definition raw_GCgraph : Type := LabeledGraph V E LV LE LG.
 
-(* Spatial GC graph *)
+(* Pointwise GC graph *)
 
-Definition mark (g : raw_GCgraph) (v : V) : bool :=
+Definition mark (g : raw_GCgraph) (v : V) : bool := 
   raw_mark (vlabel g v).
 
 Inductive field : Type :=
-  | pointer : E -> field
+  | pointer : E -> field (* reminder: E := V * nat *)
   | data : val -> field.
 
 Fixpoint make_fields (lf : list raw_field) (v : V) (n : nat) : list field :=
   match lf with
    | nil => nil
-   | raw_data d :: lf' => data d :: make_fields lf' v (1 + n)
-   | raw_pointer :: lf' => pointer (v, n) :: make_fields lf' v (1 + n)
+   | raw_data d :: lf' => data d :: make_fields lf' v (n+1)
+   | raw_pointer :: lf' => pointer (v, n) :: make_fields lf' v (n+1)
   end.
 
 Definition fields (g : raw_GCgraph) (v : V) : list field :=
   make_fields (raw_fields (vlabel g v)) v 0.
 
-Definition label (g : raw_GCgraph) (v : V) : bool * { list field :=
+Lemma make_fields_length: forall lf v n,
+    length (make_fields lf v n) = length lf.
+Proof.
+  induction lf.
+  - reflexivity.
+  - intros; simpl; destruct a; simpl; rewrite IHlf; reflexivity. 
+Qed.
+
+Definition label (g : raw_GCgraph) (v : V) : bool * list field :=
   (mark g v, fields g v).
 
-Section size.
-Import ZArith.
+Local Open Scope nat_scope.
 
-Definition nodesize (rpa : bool * list field) : Z :=
-  1 + Z.of_nat (length (snd rpa)). (* We need 1 word for the header *)
-
-End size.
+(* there probably exists a lemma for this; just hacking it up for now *)
+Lemma succ_is_plus_one: forall n : nat, S n = n + 1.
+  induction n; omega.
+  Qed.
 
 Lemma fields_nth_pointer: forall g v n e,
   nth_error (fields g v) n = Some (pointer e) ->
@@ -107,27 +146,55 @@ Proof.
   specialize (H0 n 0 (raw_fields (vlabel g v))); auto.
   clear. induction n0; intros.
   icase l. simpl in H. icase r. inversion H. auto with arith.
-  icase l; icase r; specialize (IHn0 (S m) l H); rewrite IHn0; f_equal; 
-  rewrite <- plus_n_Sm; trivial.
+  icase l; icase r; specialize (IHn0 (S m) l); simpl in H; rewrite IHn0; f_equal; try rewrite <- plus_n_Sm; trivial; rewrite <- succ_is_plus_one in H; apply H. 
 Qed.
 
-Instance SGBA_GCgraph: SpatialGraphBasicAssum V E.
+
+Instance SGBA_GCgraph: PointwiseGraphBasicAssum V E.
   constructor. apply EV. apply EE.
 Defined.
 
-Instance SGC_GCgraph: SpatialGraphConstructor V E LV LE LG (bool * list field) unit.
-  constructor. exact label. exact (fun _ _ => tt).
+Record node_rep : Type :=
+{
+  nr_color : bool;
+  nr_tag : tagnum_ty;
+  nr_fields: list field;
+  nr_fields_bound : 0 < List.length nr_fields < max_fields;
+  (* nr_numfields: fieldnum *)
+}.
+
+Local Close Scope nat_scope.
+
+(* just writing out the type of the pointwise graph that will soon be generated *)
+Definition SG_GCgraph := PointwiseGraph V E node_rep unit.
+
+(* This is for the use of PointwiseGraphConstructor, by way of "exact" *)
+Definition make_rpa (g: raw_GCgraph) (v: V) : node_rep.
+  refine (Build_node_rep (raw_mark (vlabel g v)) (raw_tag (vlabel g v)) (fields g v) _).
+  (* we've filled all holes but one. now we must provide a proof of length bound. it is below.*)
+  remember (vlabel g v) as l.
+  unfold fields.
+  rewrite make_fields_length.
+  rewrite <- Heql.
+  generalize (raw_fieldsbound l); intro. apply H.
 Defined.
 
-Definition SG_GCgraph := SpatialGraph V E (bool * list field) unit.
-Definition rawGCgraph_SGgraph (G : raw_GCgraph) : SG_GCgraph := Graph_SpatialGraph G.
+Instance SGC_GCgraph: PointwiseGraphConstructor V E LV LE LG node_rep unit.
+  constructor. exact make_rpa. exact (fun _ _ => tt).
+Defined.
 
-Instance LSGC_GCgraph : Local_SpatialGraphConstructor V E LV LE LG (bool * list field) unit.
-  refine (Build_Local_SpatialGraphConstructor _ _ _ _ _ _ _ SGBA_GCgraph SGC_GCgraph 
+Definition rawGCgraph_SGgraph (G : raw_GCgraph) : SG_GCgraph := Graph_PointwiseGraph G.
+
+Instance LSGC_GCgraph : Local_PointwiseGraphConstructor V E LV LE LG node_rep unit.
+refine (Build_Local_PointwiseGraphConstructor _ _ _ _ _ _ _
+          SGBA_GCgraph SGC_GCgraph 
           (fun G v => True) _
           (fun G e => True) _); trivial.
-  simpl in *. unfold label, mark, fields. intros. rewrite H1. auto.
-Defined.
+  simpl in *. intros.
+  unfold make_rpa. simpl.
+  unfold fields. rewrite H1.
+  trivial.
+Qed.
 
 Global Existing Instances SGC_GCgraph LSGC_GCgraph.
 
@@ -137,7 +204,7 @@ Local Coercion pg_lg : LabeledGraph >-> PreGraph.
 Local Coercion lg_gg : GeneralGraph >-> LabeledGraph.
 Local Coercion LocalFiniteGraph_FiniteGraph : FiniteGraph >-> LocalFiniteGraph.
 (*
-Local Identity Coercion SGGCgraph : SG_GCgraph >-> SpatialGraph.
+Local Identity Coercion SGGCgraph : SG_GCgraph >-> PointwiseGraph.
 *)
 
 Definition copied_pointer_active (g : raw_GCgraph) : Prop :=
@@ -193,7 +260,7 @@ Definition free_size (s : space) (n : nat) : Prop :=
 
 (*
 Definition size (s : space) : nat :=
-  sub (limit s) (start s). (* Notation doesn't work for some reason *)
+  sub (limit s) (start s).
 *)
 
 Definition spaces_disjoint (g : raw_GCgraph) : Prop :=
@@ -205,6 +272,8 @@ Definition spaces_disjoint (g : raw_GCgraph) : Prop :=
       in_space s1 x ->
       in_space s2 x ->
       i = j.
+
+Local Open Scope nat_scope. 
 
 Definition spaces_double (g : raw_GCgraph) : Prop :=
   (* Spaces double in size *)
@@ -237,7 +306,9 @@ Definition acyclic_generations (g : raw_GCgraph) : Prop :=
         (n <= n')%nat.
 (* This won't be true in the middle of a collection.  Maybe allow it to be marked? *)
 
-Class GC_graph (g : raw_GCgraph) : Type := {
+Parameter (addl_condition: LG -> (V -> LV) -> Prop).
+  
+Class GC_graph (g : raw_GCgraph)  : Type := {
   ma : MathGraph g is_null; (* Is this general enough for the subgraphs, edges can be external but non-null? *)
   fin: FiniteGraph g;
   cpa : copied_pointer_active g;
@@ -245,15 +316,27 @@ Class GC_graph (g : raw_GCgraph) : Type := {
   ssj : spaces_disjoint g;
   ssz : spaces_double g;
   vig : valid_in_generation g;
-  acycg : acyclic_generations g
+  acycg : acyclic_generations g;
+  addl : addl_condition (glabel g) (vlabel g) 
 }.
 
-Definition Graph : Type := GeneralGraph V E LV LE LG GC_graph.
+Definition Graph : Type := @GeneralGraph V E _ _ LV LE LG GC_graph.
+ 
+Definition g_fg (g : Graph) : FiniteGraph g :=
+  @fin g (sound_gg g).
+Local Coercion g_fg : Graph >-> FiniteGraph.
 
 Definition g_lfg (g : Graph) : LocalFiniteGraph g :=
   @fin g (sound_gg g).
 Local Coercion g_lfg : Graph >-> LocalFiniteGraph.
 Existing Instance g_lfg.
+
+Definition get_space (g: Graph) (gen : nat) : option space := List.nth_error (glabel g) gen.             
+(* TODO: 
+ * 1. Maybe we can have a lemma saying that this will always return Some. That way we can remove the option. 
+ *)
+
+Local Close Scope nat_scope.
 
 Lemma in_space_bounds: forall s x,
   in_space s x ->
@@ -265,7 +348,7 @@ Proof.
   rewrite <- H. tauto.
 Qed.
 
-Lemma bounds_in_space: forall s x,
+Lemma bounds_in_space: forall (s:space) x,
   start s <= x < limit s ->
   in_space s x.
 Proof.
@@ -277,8 +360,8 @@ Proof.
   case (EV x next0); unfold equiv, complement; intro.
   subst. right.
   auto with ord.
-  assert (x ~ start0) by (red; tauto).
-  assert (start0 ~ next0) by (red; tauto).
+  assert (comparable x start0) by (red; tauto).
+  assert (comparable start0 next0) by (red; tauto).
   rewrite <- H3 in H4.
   destruct H4.
   left; split; red; tauto.
@@ -293,31 +376,43 @@ Proof.
   eauto with ord.
 Qed.
 
+Lemma in_space_start: forall (g: Graph),
+    forall i s1,
+      List.nth_error (glabel g) i = Some s1 ->
+      in_space s1 (start s1).
+Proof.
+  intros. apply bounds_in_space.
+  split; try reflexivity.
+  destruct s1. apply non_empty0.
+Qed.
+
 Lemma spaces_empty_intersection: forall (g : Graph),
   forall i j s1 s2,
     List.nth_error (glabel g) i = Some s1 ->
     List.nth_error (glabel g) j = Some s2 ->
+    i <> j -> 
     ~(in_space s1 (start s2)).
 Proof.
-(*
   repeat intro.
-  assert (in_space s2 (start s2)). 
-    { apply bounds_in_space. split. reflexivity.
-      destruct s2. simpl in *. 
-  apply in_space_bounds in H2.
-  admit. }
-  specialize (H i j s1 s2 H0 H1 _ H2 H3). subst j.
-  admit.
-*)
-Admitted.
-
+  assert (in_space s2 (start s2)) by 
+    (apply (in_space_start g j); auto).
+  assert (i = j).
+  {
+    destruct g; destruct sound_gg; simpl in H, H0.
+    apply (ssj0 i j s1 s2 H H0 (start s2)); auto.
+  }
+  auto.
+Qed.
+  
 Lemma unallocated_not_valid: forall (g : Graph) n s,
   List.nth_error (glabel g) n = Some s ->
   forall x, available s x ->
     ~vvalid g x.
 Proof.
   repeat intro.
-(*  generalize (ssj n H).
+  destruct g; destruct sound_gg; simpl in *.
+(*
+  generalize (ssj n H).
   destruct g. destruct sound_gg. simpl in *.
   specialize (H0 x H3). destruct H0 as [n' [s' [? ?]]].
   specialize (H n n' s s' H1 H0 x).
@@ -345,7 +440,7 @@ Proof.
                 LG GC_graph lg_gg
                 (Build_GC_graph lg_gg ma0 fin0
                    cpa0 rne0 ssj0 ssz0 vig0
-                   acycg0))) with
+                   acycg0 addl0))) with
         (@LocalFiniteGraph_FiniteGraph V E
                 EV EE
                 (@pg_lg V E EV EE LV LE LG lg_gg)
@@ -360,6 +455,7 @@ Proof.
   simpl in H2. discriminate.
 Qed.
 
+Local Open Scope nat_scope.
 Definition copyEdge (x : V) : E := (x,0).
 
 (*
@@ -381,7 +477,7 @@ Definition in_gen (g : Graph) (n : nat) (x : V) : Prop :=
 Lemma in_gen_dec (g : Graph) (n : nat) (x : V) :
   {in_gen g n x} + {~ in_gen g n x}.
 Proof.
-  unfold in_gen. remember (glabel g). clear Heqy.
+  unfold in_gen. remember (glabel g). clear Heql. rename l into y.
   revert n. induction y; intro.
   + right. intro. destruct H as [? [? _]].
     destruct n; inversion H.
@@ -425,7 +521,9 @@ Variables (PV : V -> Prop) (PE : E -> Prop) (vmap : V -> V) (emap : E -> E).
 
 (*
 Variables (vmap_inj : is_guarded_inj PV vmap) (emap_inj : is_guarded_inj PE emap).
-*)
+ *)
+
+Local Close Scope nat_scope.
 
 Record guarded_Cheney_morphism (gen : nat) : Prop := {
   Cvvalid_preserved: forall v, PV v -> vvalid G v -> vvalid G' v /\ vvalid G' (vmap v);
@@ -506,7 +604,7 @@ Lemma stepish_guarded_Cheney_morphism: forall Ga G G' PV PE vmap emap gen,
   exists vmap', exists emap',
     guarded_Cheney_morphism Ga G' PV PE vmap' emap' gen.
 Proof.
-(*
+  (*
   intros.
   destruct H.
   destruct H0.
@@ -521,7 +619,7 @@ Proof.
       case (EV v0 v); intro.
       - red in e. subst v0.
         split; trivial.
-      - split. specialize (H4 v0 c0 c). 
+      - split. specialize (H4, v0, c0, c). 
                specialize (Cvvalid_preserved0 v0). 
                tauto.
         case (EV (vmap v0) v); intro.
@@ -597,6 +695,8 @@ Record guarded_bij: Prop := {
 }.
 *)
 
+Local Close Scope nat_scope.
+
 Record subspaces : Type := {
   inspace : space;
   init_scan : V;
@@ -630,6 +730,8 @@ Definition P0 (n : nat) (s1 s2 : subspaces) (g : Graph) (g' : Graph) : Prop :=
 
 Require Import Omega.
 
+Local Open Scope nat_scope.
+
 Lemma filter_length_le: forall A P (l : list A),
   List.length l >= List.length (List.filter P l).
 Proof.
@@ -639,7 +741,7 @@ Proof.
 Qed.
 
 Lemma edges_le_fields: forall l,
-  (num_edges l <= num_fields l)%nat.
+  num_edges l <= num_fields l.
 Proof.
   intro. unfold num_edges, num_fields.
   apply filter_length_le.
@@ -647,7 +749,7 @@ Qed.
 
 Lemma num_edges_data: forall l,
   num_edges l + num_data l = num_fields l.
-Proof.
+  Proof.
   intro. generalize (edges_le_fields l). unfold num_data. omega.
 Qed.
 
