@@ -320,36 +320,7 @@ Class GC_graph (g : raw_GCgraph)  : Type := {
   addl : addl_condition (glabel g) (vlabel g) 
 }.
 
-Definition Graph : Type := GeneralGraph V E LV LE LG GC_graph.
-
-Definition get_space (g: LG) (gen : nat) : option space :=
-  List.nth_error g gen.
-(* TODO: 
- * 1. Maybe we can have a lemma saying that this will always return Some. That way we can remove the option.
- * 2. Maybe bring in the coercion from Graph to LG so that the above can just take Graph. 
- *)
-
-
-(* 
-This is a little Prop which we go into the forward spec. Just a space for simple facts about start, next, limit, p, etc. Currently very silly stub.
-
-Issues:
-It wants type addr when it has type V. 
-Interesting, since we will later claim them to be the same. 
-I can simply put this in the env file, where Vs are addrs. But I am more interested in seeing how it has figured out that it's going to be addr. Like, is there somewhere I've accidentally mentioned addr already? 
- *)
-Definition cleared_for_forward (g: LG) (gen: nat) (st nxt lim p : addr) :=
-  match get_space g gen, get_space g (gen+1) with
-  | None, _ => False
-  | _, None => False
-  | Some sp, Some sp' => True
-(*   
-    (st = start sp) /\
-    (lim = limit sp) /\
-    (st <= p <= lim) /\
-    (start sp' <= nxt <= limit sp')
-*)
-  end.
+Definition Graph : Type := @GeneralGraph V E _ _ LV LE LG GC_graph.
  
 Definition g_fg (g : Graph) : FiniteGraph g :=
   @fin g (sound_gg g).
@@ -359,6 +330,11 @@ Definition g_lfg (g : Graph) : LocalFiniteGraph g :=
   @fin g (sound_gg g).
 Local Coercion g_lfg : Graph >-> LocalFiniteGraph.
 Existing Instance g_lfg.
+
+Definition get_space (g: Graph) (gen : nat) : option space := List.nth_error (glabel g) gen.             
+(* TODO: 
+ * 1. Maybe we can have a lemma saying that this will always return Some. That way we can remove the option. 
+ *)
 
 Local Close Scope nat_scope.
 
