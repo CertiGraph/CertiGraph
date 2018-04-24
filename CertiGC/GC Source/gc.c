@@ -13,7 +13,7 @@ struct space {
    or start <= next <= limit.  The words in start..next  are allocated
    and initialized, and the words from next..limit are available to allocate. */
 
-#define MAX_SPACES 10  /* how many generations */
+#define MAX_SPACES 12  /* how many generations */
 
 #ifndef RATIO
 #define RATIO 2   /* size of generation i+1 / size of generation i */
@@ -21,7 +21,7 @@ struct space {
 #endif
 
 #ifndef NURSERY_SIZE
-#define NURSERY_SIZE ((1<<21)/sizeof(value))  /* 2 megabytes */
+#define NURSERY_SIZE (1<<16)
 #endif
 /* The size of generation 0 (the "nursery") should approximately match the 
    size of the level-2 cache of the machine, according to:
@@ -33,8 +33,8 @@ struct space {
      (which is the size of the Intel Core i7 per-core L2 cache).
     http://www.tomshardware.com/reviews/Intel-i7-nehalem-cpu,2041-10.html
     https://en.wikipedia.org/wiki/Nehalem_(microarchitecture)
-  Notwithstanding those results, empirical measurements show that 
-   2 megabytes works fastest.
+   Empirical measurements show that 64k works well 
+    (or anything in the range from 32k to 128k).
 */
 
 #ifndef DEPTH
@@ -163,8 +163,10 @@ void forward_roots (value *from_start,  /* beginning of from-space */
    n = fi[1];
    args = ti->args;
   
-  for(i = 0; i < n; i++)
-    forward(from_start, from_limit, next, args+roots[i], DEPTH);
+   for(i = 0; i < n; i++) {
+     assert (roots[i] < MAX_ARGS);
+     forward(from_start, from_limit, next, args+roots[i], DEPTH);
+   }
 }  
 
 #define No_scan_tag 251
@@ -202,9 +204,12 @@ void do_generation (struct space *from,  /* descriptor of from-space */
 /* Copy the live objects out of the "from" space, into the "to" space,
    using fi and ti to determine the roots of liveness. */
 {
+  value *p = to->next;
   assert(from->next-from->start <= to->limit-to->next);
   forward_roots(from->start, from->limit, &to->next, fi, ti);
-  do_scan(from->start, from->limit, to->start, &to->next);
+  do_scan(from->start, from->limit, p, &to->next);
+  if(0)  fprintf(stderr,"%5.3f%% occupancy\n",
+	  (to->next-p)/(double)(from->next-from->start));
   from->next=from->start;
 }  
 
@@ -264,6 +269,25 @@ struct heap *create_heap()
   return h;
 }
 
+struct thread_info *make_tinfo(void) {
+  struct heap *h;
+  struct thread_info *tinfo;
+  h = create_heap();
+  tinfo = (struct thread_info *)malloc(sizeof(struct thread_info));
+  if (!tinfo) {
+    fprintf(stderr, "Could not allocate thread_info struct\n");
+    exit(1);
+  }
+  
+
+    
+  tinfo->heap=h;
+  tinfo->alloc=h->spaces[0].start;
+  tinfo->limit=h->spaces[0].limit;
+
+  return tinfo;
+}
+
 void resume(fun_info fi, struct thread_info *ti)
 /* When the garbage collector is all done, it does not "return"
    to the mutator; instead, it uses this function (which does not return)
@@ -280,8 +304,8 @@ void resume(fun_info fi, struct thread_info *ti)
   hi = h->spaces[0].limit;
   if (hi-lo < num_allocs)
     abort_with ("Nursery is too small for function's num_allocs\n");
-  *ti->alloc = lo;
-  *ti->limit = hi;
+  ti->alloc = lo;
+  ti->limit = hi;
 }  
 
 void garbage_collect(fun_info fi, struct thread_info *ti)
@@ -296,8 +320,8 @@ void garbage_collect(fun_info fi, struct thread_info *ti)
     return;
   } else {
     int i;
-    assert (h->spaces[0].limit == *ti->limit);
-    h->spaces[0].next = *ti->alloc; /* this line is probably unnecessary */
+    assert (h->spaces[0].limit == ti->limit);  
+    h->spaces[0].next = ti->alloc; /* this line is probably unnecessary */
     for (i=0; i<MAX_SPACES-1; i++) {
       /* Starting with the youngest generation, collect each generation
          into the next-older generation.  Usually, when doing that,
@@ -310,6 +334,8 @@ void garbage_collect(fun_info fi, struct thread_info *ti)
 	create_space(h->spaces+(i+1), RATIO*w);
       }
       /* Copy all the objects in generation i, into generation i+1 */
+  if(0)
+      fprintf(stderr, "Generation %d:  ", i);
       do_generation(h->spaces+i, h->spaces+(i+1), fi, ti);
       /* If there's enough space in gen i+1 to guarantee that the
          NEXT collection into i+1 will succeed, we can stop here */
@@ -336,6 +362,7 @@ void garbage_collect(fun_info fi, struct thread_info *ti)
  */
 
 void reset_heap (struct heap *h) {
+  fprintf(stderr, "Debug: in reset_heap\n");
   int i;
   for (i=0; i<MAX_SPACES; i++)
     h->spaces[i].next = h->spaces[i].start;
@@ -343,6 +370,7 @@ void reset_heap (struct heap *h) {
   
 
 void free_heap (struct heap *h) {
+  fprintf(stderr, "Debug: in free_heap\n");
   int i;
   for (i=0; i<MAX_SPACES; i++) {
     value *p = h->spaces[i].start;

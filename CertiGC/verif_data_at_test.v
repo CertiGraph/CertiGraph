@@ -8,7 +8,7 @@ Definition value := tuint.
 Definition fiddle_spec :=
  DECLARE _fiddle
   WITH p: val, n: Z, tag: Z, contents: list Z
-  PRE [  ]
+  PRE [ _p OF (tptr tuint) ]
           PROP  (Z.div tag 1024 = n)
           LOCAL (temp _p p)
           SEP (data_at Ews (tarray value (1+n)) 
@@ -17,7 +17,6 @@ Definition fiddle_spec :=
   POST [ tint ]
         PROP () LOCAL()
            SEP (TT).
-
 
 Definition Gprog : funspecs := 
         ltac:(with_library prog [fiddle_spec]).

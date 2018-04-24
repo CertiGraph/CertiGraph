@@ -50,7 +50,7 @@ HIP_FILES = \
   hip_graphmark.v hip_graphmark_proofs.v spanningtree.v
 
 CERTIGC_FILES = \
-  orders.v bounded_numbers.v bitwise_encoding.v cc_orders.v cc_bitwise_encoding.v gc.v gc_mathgraph.v data_at_test.v spatial_graph_gc.v env_gc.v GList.v GList_GC.v
+  orders.v bounded_numbers.v bitwise_encoding.v cc_orders.v cc_bitwise_encoding.v gc.v gc_mathgraph.v data_at_test.v spatial_graph_gc.v env_gc.v
 
 CLIGHT_FILES = sample_mark/mark_bi.v sample_mark/garbage_collector.v sample_mark/dispose_bi.v sample_mark/copy_bi.v
 
@@ -61,6 +61,7 @@ NORMAL_FILES = \
   $(MSL_APPLICATION_FILES:%.v=msl_application/%.v) \
   $(FLOYD_EXT_FILES:%.v=floyd_ext/%.v) \
   $(DATA_STRUCTURE_FILES:%.v=data_structure/%.v) \
+  $(CERTIGC_FILES:%.v=CertiGC/%.v) \
   $(SAMPLE_MARK_FILES:%.v=sample_mark/%.v) \
   $(GRAPH_FILES:%.v=graph/%.v) \
   $(LIB_FILES:%.v=lib/%.v)

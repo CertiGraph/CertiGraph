@@ -6,30 +6,26 @@ Require Import RamifyCoq.CertiGC.orders.
 
 Open Local Scope ord.
 
-Lemma unsigned_eq_eq: forall i j, Int.unsigned i = Int.unsigned j -> i = j.
-Proof.
-  intros.
-  rewrite <- (Int.repr_unsigned i), <- (Int.repr_unsigned j).
-  rewrite H.
-  reflexivity.
-Qed.
+Lemma ptrofs_int_val_eq: forall i j, Ptrofs.intval i = Ptrofs.intval j -> i = j.
+Proof. intros [i] [j]. simpl; intros. apply Ptrofs.mkint_eq. auto. Qed.
 
-Instance int_ord : Ord int.
-  refine (Build_Ord _ (fun x y => Int.unsigned x <= Int.unsigned y) _ _ _).
-  reflexivity. intros. rewrite H. trivial. intros; apply unsigned_eq_eq, ord_antisym; trivial.
+Instance ptrofs_ord : Ord ptrofs.
+  refine (Build_Ord _ (fun x y => Ptrofs.intval x <= Ptrofs.intval y) _ _ _).
+  reflexivity. intros. rewrite H. trivial. intros; apply ptrofs_int_val_eq, ord_antisym; trivial.
 Defined.
 
-Instance int_cord : COrd int.
+Instance ptrofs_cord : COrd ptrofs.
 Proof.
-  intros ? ?. destruct (ord_dec (Int.unsigned a) (Int.unsigned b)); simpl in *; auto.
+  intros ? ?. destruct (ord_dec (Ptrofs.intval a) (Ptrofs.intval b)); simpl in *; auto.
 Qed.
 
-Instance int_tord: TOrd int.
+Instance ptrofs_tord: TOrd ptrofs.
 Proof.
   intros ? ?. red. simpl. omega.
 Qed.
 
 Instance PV_ord : Ord pointer_val.
+Proof.
   refine (Build_Ord _ (fun x z => match  x,z with 
                         | ValidPointer bx ofsx, ValidPointer bz ofsy => bx = bz /\ ofsx <= ofsy
                         | NullPointer, NullPointer => True
@@ -56,6 +52,6 @@ Instance PV_comptrans: ComparableTrans pointer_val.
 Proof.
   intros ? ? ?. unfold comparable. simpl; intros.
   icase a; icase b; icase c. 2: destruct H; contradiction.
-  assert (Int.unsigned i <= Int.unsigned i1 \/ Int.unsigned i1 <= Int.unsigned i)%Z by omega.
+  assert (Ptrofs.intval i <= Ptrofs.intval i1 \/ Ptrofs.intval i1 <= Ptrofs.intval i)%Z by omega.
   destruct H as [[? ?] | [? ?]]; destruct H0 as [[? ?] | [? ?]]; do 2 subst; tauto.
 Qed.
