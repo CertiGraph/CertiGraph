@@ -9,6 +9,7 @@ Require Import RamifyCoq.floyd_ext.share.
 Require Import RamifyCoq.graph.FiniteGraph.
 Require Import RamifyCoq.CertiGC.gc_mathgraph.
 Require Import RamifyCoq.CertiGC.env_gc. 
+Require Import RamifyCoq.CertiGC.orders.
 
 Local Open Scope logic.
 
@@ -22,6 +23,12 @@ Parameter DE : Type.
 Parameter DG : Type.
 
 Definition max_spaces : nat := 10.
+
+Context {OLE : Ord V}. Existing Instance OLE.
+Context {COLE : @COrd V OLE}. Existing Instance COLE.
+Context {CTV: @ComparableTrans V OLE}. Existing Instance CTV.
+
+Close Scope Z_scope.
 
 Definition reachable_through_vertices_at (S: list addr) (g: env_Graph): mpred :=
   @vertices_at addr E _ _
@@ -56,9 +63,32 @@ Definition get_roots (fi : list nat) (args : list addr) : list addr :=
   | _ => [] (* bad news *)
   end.
 
+
+Open Local Scope ord.
+
+
 (* 
-Questions:
+This is a little Prop which we go into the forward spec. Just a space for simple facts about start, next, limit, p, etc. Currently very silly.
+ *)
+Definition cleared_for_forward (g: env_Graph) (gen: nat) (st nxt lim p : addr) :=
+  match get_space g gen, get_space g (gen+1) with
+  | None, _ => False
+  | _, None => False
+  | Some sp, Some sp' => 
+    (st = start sp) /\
+    (lim = limit sp) /\
+    (st <= p <= lim) /\
+    (start sp' <= nxt <= limit sp')
+  end.
+
+
+Local Close Scope nat_scope.
+
+(* 
+Issues:
 1. can I just take a space, and then get the parameters from inside the space and then hook up those parameters to the function arguments when linking in PRE?
+2. Need an array mpred in PRE SEP. It's "sepcon (array mpred) (graph mpred)". Probably worth defining outside in a function because we'll need to cook up many such mpreds.
+3. unclear how exactly the "gen : nat" will come into the picture (see WITH).
 *)
 Definition forward_spec :=
  DECLARE _forward
@@ -76,29 +106,25 @@ Definition forward_spec :=
   	_from_limit OF tptr (Tlong Unsigned noattr),
   	_next OF tptr (tptr (Tlong Unsigned noattr)),
   	_p OF tptr (Tlong Unsigned noattr) ]
-  EX roots,
-    PROP (cleared_for_forward g gen start next limit p) (* Props of Coq type Prop, describing things that are forever true *)
+  EX roots : list addr,
+    PROP (cleared_for_forward g gen start next limit p)
     LOCAL ( temp _from_start (pointer_val_val start); 
   	    temp _from_limit (pointer_val_val limit);
   	    temp _next (pointer_val_val next);(* *)
   	    temp _p (pointer_val_val p) )
-  	SEP (tarray roots_locs roots * graph_pred g roots) 
+  	SEP ((*tarray roots_locs roots *) gc_graph_pred roots g) 
   POST [Tvoid]
-  EX g' : Graph,
-  EX roots,
-
-          EX v: pointer_val, EX v': pointer_val, (* also, gen : nat *)
-        PROP ()
-(*((~(vvalid g \/) -> g = g' ) /\ (* etc *)
-  	       ~ in_from g gen v \/ (* slightly off (re: quantifiers) *)
-  	       (* "already copied" - adding a case to stepish *)
-  	       (* update: seems there is no need; copyitem may cover it. *)
-  	      copyitem g g' gen v v')*)
-               (* strengthen stepish? *)
+  EX g' : Graph, EX roots: list addr,
+  EX v: pointer_val, EX v': pointer_val,
+  PROP ()
+       (* 
+Here we probably want to appeal to stepish from gc_mathgraph. This whole thing is probably just a case of stepish called copyitem. Anyway, some ideas are below...  
+       ((~(vvalid g \/)) -> g = g' ) /\ (* etc *)
+        ~ in_from g gen v \/ (* check quantifiers? *) 
+        copyitem g g' gen v v') (* strengthen stepish?*)  
+*)
   	LOCAL ()
-  	SEP (graph_pred g' roots).
-
-
+  	SEP (gc_graph_pred roots g').
 
 
 Definition forward_roots_spec :=

@@ -40,7 +40,7 @@ Defined.
 
 Section sSGG_VST.
 
-
+(*
 Instance MSLstandard sh g nr p : MapstoSepLog (AAV (SGP_VST sh g)) (node_pred sh g p nr).
   Proof.
     intros. apply mkMapstoSepLog. intros.
@@ -88,3 +88,5 @@ Instance sSGG_VST (sh: wshare): @sPointwiseGraph_GList pSGG_VST nat unit.
 Defined.
 
 Global Opaque pSGG_VST sSGG_VST.
+ *)
+  End sSGG_VST.
