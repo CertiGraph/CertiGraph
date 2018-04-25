@@ -21,7 +21,7 @@ Require Import RamifyCoq.graph.graph_model.
 
 Definition fieldbits : nat := 22.
 Definition tagbits : nat := 8.
-  
+
 Definition fieldnum : Type := boundZ fieldbits.
 Definition tagnum : Type := boundZ tagbits.
 
@@ -84,28 +84,28 @@ Definition nodesize (nr : my_node_rep) : Z :=
 
 Definition value := tuint. (* this is going to prove inadequate soon. We need to make a decision about what this will actually be. *)
 
-(* 
-This is where we move from "value" to something more correct. 
-I'm not sure if my choice of type is correct, though. 
+(*
+This is where we move from "value" to something more correct.
+I'm not sure if my choice of type is correct, though.
 Right now it's a pointer to value. That's because, in the C, value = intnat = long.
 
 We'd like the recursive...
-Definition node_type (nr : node_rep) : type := 
+Definition node_type (nr : node_rep) : type :=
   tarray (Tpointer node_type noattr) (nodesize nr).
 
 Or even more correctly, we'd like...
-Definition node_type (nr : node_rep) : type := 
+Definition node_type (nr : node_rep) : type :=
   tarray (Type_OR (tuint) (Tpointer node_type noattr)) (nodesize nr).
 
 But for now, we settle with what is below...
 *)
-Definition node_type (nr : node_rep) : type := 
+Definition node_type (nr : node_rep) : type :=
   tarray (Tpointer Tvoid noattr) (nodesize nr).
 
 Local Close Scope nat_scope.
 
-(* if the two addresses are in the same block, 
-checks that the difference is as proposed *) 
+(* if the two addresses are in the same block,
+checks that the difference is as proposed *)
 Definition size (a1 a2 : addr) (diff : nat) : Prop :=
   match a1, a2 with
   | ValidPointer b1 o1, ValidPointer b2 o2 =>
@@ -122,28 +122,29 @@ Definition make_nr (g: env_Graph) (v: addr) : my_node_rep.
   remember (vlabel g v) as l.
   refine (Build_node_rep
              (raw_mark l)
-             (raw_tag l)          
+             (raw_tag l)
              (fields g v)
              _).
   destruct l.
   unfold fields; rewrite make_fields_length.
   rewrite <- Heql; simpl. apply raw_fieldsbound.
-Defined.  
+Defined.
 
-  
+Opaque two_power_nat.
 (* given a nr, we extract the length of the field and show that it is a fieldnum *)
 Program Definition nat_fieldnum (nr : my_node_rep) : fieldnum :=
                     exist _ (Z.of_nat (length (nr_fields nr))) _.
 Next Obligation.
-  destruct nr. simpl. split. 
-  - omega. 
+  destruct nr. simpl. split.
+  - omega.
   - destruct nr_fields_bound.
     clear H.
     unfold maxfields_nat in H0.
     assert (Z.of_nat (Datatypes.length nr_fields) < Z.of_nat (Z.to_nat (two_power_nat fieldbits))) by (apply inj_lt; auto).
     rewrite Z2Nat.id in H. apply H.
     apply two_power_nat_nonneg.
-Admitted. (* it's done, but Defined causes StackOverflow. Maybe try with Definition instead of Program Definition. *)
+Defined.
+Transparent two_power_nat.
 
 Definition followEdge (g: env_Graph) (f : @field addr val) : val :=
   match f with
@@ -172,7 +173,7 @@ Instance SGP_VST (sh: share) (g: env_Graph) :
 (* val (and possibly unit) are not obivously correct. see addr and _ in other file *)
 refine (@Build_PointwiseGraphPred
           _ _ _ _ _
-          (node_pred sh g) 
+          (node_pred sh g)
           (fun _ _ => emp)).
 Defined.
 
@@ -217,5 +218,5 @@ Definition space_pred' (sh: share) (p: addr) (s: my_space) : mpred :=
 
 (* thought: getting the vertices of the space may not be the way to go. Maybe just make a silly little map from addresses to vertices, making no promises about the vertices. *)
 Definition makeverts (Vs : list addr) : list val:=
-  repeat Vundef (length Vs). 
+  repeat Vundef (length Vs).
    
