@@ -2,8 +2,36 @@
 #include <stdio.h>
 #include <assert.h>
 #include "config.h"
-#include "values.h"
 #include "gc.h"
+
+/* The following 5 functions should (in practice) compile correctly in CompCert,
+   but the CompCert correctness specification does not _require_ that
+   they compile correctly:  their semantics is "undefined behavior" in
+   CompCert C (and in C11), but in practice they will work in any compiler. */
+
+int test_int_or_ptr (value x) /* returns 1 if int, 0 if aligned ptr */ {
+    return (int)(((intnat)x)&1);
+}
+
+intnat int_or_ptr_to_int (value x) /* precondition: is int */ {
+    return (intnat)x;
+}
+
+void * int_or_ptr_to_ptr (value x) /* precond: is aligned ptr */ {
+    return (void *)x;
+}
+
+value int_to_int_or_ptr(intnat x) /* precondition: is odd */ {
+    return (value)x;
+}
+
+value ptr_to_int_or_ptr(void *x) /* precondition: is aligned */ {
+    return (value)x;
+}
+
+int Is_block(value x) {
+    return test_int_or_ptr(x) == 0;
+}
 
 /* A "space" describes one generation of the generational collector. */
 struct space {
@@ -103,8 +131,12 @@ void abort_with(char *s) {
   exit(1);
 }
 
-#define Is_from(from_start, from_limit, v)			\
-   (from_start <= (value*)(v) && (value*)(v) < from_limit)
+int Is_from(value* from_start, value * from_limit,  value * v) {
+    return (from_start <= v && v < from_limit);
+}
+
+/* #define Is_from(from_start, from_limit, v)			\ */
+/*    (from_start <= (value*)(v) && (value*)(v) < from_limit) */
 /* Assuming v is a pointer (Is_block(v)), tests whether v points
    somewhere into the "from-space" defined by from_start and from_limit */
 
@@ -124,8 +156,10 @@ void forward (value *from_start,  /* beginning of from-space */
    may improve the cache locality of the copied graph.
 */
  {
-  value v = *p;
-  if(Is_block(v)) {
+    value * v;
+    value va = *p;
+    if(Is_block(va)) {
+        v = (value*)int_or_ptr_to_ptr(va);
     if(Is_from(from_start, from_limit, v)) {
       header_t hd = Hd_val(v); 
       if(hd == 0) { /* already forwarded */
@@ -141,8 +175,8 @@ void forward (value *from_start,  /* beginning of from-space */
 	  Field(new, i) = Field(v, i);
 	}
 	Hd_val(v) = 0;
-	Field(v, 0) = (value)new;
-	*p = (value)new;
+	Field(v, 0) = ptr_to_int_or_ptr((void *)new);
+	*p = ptr_to_int_or_ptr((void *)new);
 	if (depth>0)
 	  for (i=0; i<sz; i++)
 	    forward(from_start, from_limit, next, &Field(new,i), depth-1);
@@ -184,7 +218,7 @@ void do_scan(value *from_start,  /* beginning of from-space */
   value *s;
   s = scan;
   while(s < *next) {
-    header_t hd = *s;
+    header_t hd = int_or_ptr_to_int(*s);
     mlsize_t sz = Wosize_hd(hd);
     int tag = Tag_hd(hd);
     if (!No_scan(tag)) {
