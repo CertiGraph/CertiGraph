@@ -1,8 +1,6 @@
 Require Import Coq.Logic.Classical.
 Require Import Coq.Lists.List.
 Require Import Coq.Sets.Ensembles.
-Require Import VST.msl.seplog.
-Require Import VST.msl.log_normalize.
 Require Import RamifyCoq.lib.Coqlib.
 Require Import RamifyCoq.lib.Ensembles_ext.
 Require Import RamifyCoq.lib.EquivDec_ext.
