@@ -15,9 +15,6 @@ Require Import RamifyCoq.graph.FiniteGraph.
 Require Import RamifyCoq.CertiGC.orders.
 Require Import RamifyCoq.CertiGC.bounded_numbers.
 
-Require Export VST.floyd.reptype_lemmas.
-Require Import compcert.cfrontend.Ctypes.
-
 Section GC_Graph.
 
 Open Local Scope ord.
@@ -48,9 +45,6 @@ Context {tagnum_ty : Type}.
 Context {max_spaces : nat}.
 
 (* NO MORE CONTEXTS *)
-
-Definition addr : Type := pointer_val.
-(* Definition null : addr := NullPointer. *)
  
 Definition E : Type := V * nat.
 Instance EE : EquivDec.EqDec E eq := prod_eqdec EV nat_eq_eqdec.
