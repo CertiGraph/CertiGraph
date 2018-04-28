@@ -286,10 +286,10 @@ Section PointwiseGraph.
         rewrite (iter_sepcon_ocon t_eq_dec); auto. apply (exp_right (remove_dup t_eq_dec (la ++ lS))).
         rewrite <- andp_assoc, <- prop_and. apply andp_right.
         * apply prop_right. split.
-          Focus 1. {
+          1: {
             unfold well_defined_list in *. intros. simpl in H5.
-            destruct H5; [subst | apply H0]; auto. } Unfocus.
-          Focus 1. {
+            destruct H5; [subst | apply H0]; auto. }
+          1: {
             unfold reachable_set_list in *.
             unfold reachable_list in *. intros.
             rewrite <- remove_dup_in_inv.
@@ -297,17 +297,17 @@ Section PointwiseGraph.
             specialize (H1 x). specialize (H2 x).
             split; intro; [apply in_or_app | apply in_app_or in H5];
             destruct H5; [left | right | left | right]; tauto.
-          } Unfocus.
+          }
         * auto.
         * apply precise_graph_cell.
         * apply joinable_graph_cell.
       - normalize.
         assert (In a (a :: S)) by apply in_eq.
-        assert (weak_valid a). Focus 1. {
+        assert (weak_valid a). 1: {
           unfold well_defined_list in H.
           specialize (H a).
           destruct (H H1); apply weak_valid_spec; [left | right]; auto.
-        } Unfocus.
+        }
         destruct (reachable_through_single_reachable g _ _ H0 a H1 H2) as [la [? ?]].
         normalize_overlap. apply (exp_right la).
         assert (Sublist S (a :: S)) by (intro s; intros; apply in_cons; auto).
@@ -431,16 +431,16 @@ Section PointwiseGraph.
           } rewrite H in H4. tauto.
         * unfold reachable_list in *. intros. specialize (H3 y).
           specialize (H y). rewrite H3. split; intros.
-          Focus 1. {
+          1: {
             apply reachable_valid_and_through_single in H4.
             rewrite H in H4. destruct H4. destruct H5 as [s [? ?]].
             simpl in H5. destruct H5. subst; auto. tauto.
-          } Unfocus.
-          Focus 1. {
+          }
+          1: {
             apply reachable_valid_and_through_single in H4.
             rewrite <- H in H4. destruct H4. destruct H5 as [s [? ?]].
             simpl in H5. destruct H5. subst; auto. tauto.
-          } Unfocus.
+          }
       - assert (forall z, In z l -> valid (reachable_subgraph g1 (x :: nil)) z). {
           intros. simpl. hnf. hnf in H3. rewrite H3 in H4. split.
           + apply reachable_foot_valid in H4; auto.

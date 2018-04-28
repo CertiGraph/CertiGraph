@@ -115,11 +115,11 @@ Proof.
   unfold extended_copy.
   rewrite H.
   assert ((forall v : V, M1 v \/ ~ M1 v) <-> (forall v : V, M2 v \/ ~ M2 v)).
-  Focus 1. {
+  1: {
     rewrite Same_set_spec in H.
     hnf in H; clear - H.
     firstorder.
-  } Unfocus.
+  }
   tauto.
 Qed.
 Global Existing Instance extended_copy_proper.
@@ -133,11 +133,11 @@ Proof.
   unfold extended_copy.
   rewrite H.
   assert ((forall v : V, M1 v \/ ~ M1 v) <-> (forall v : V, M2 v \/ ~ M2 v)).
-  Focus 1. {
+  1: {
     rewrite Same_set_spec in H.
     hnf in H; clear - H.
     firstorder.
-  } Unfocus.
+  }
   tauto.
 Qed.
 Global Existing Instance extended_copy_proper'.
@@ -731,11 +731,11 @@ Proof.
   intros.
   unfold copy.
   assert (Same_set (reachable_by g root (Complement V M)) (Empty_set _)).
-  Focus 1. {
+  1: {
     rewrite Same_set_spec; intros ?.
     rewrite Empty_set_spec.
     pose proof reachable_by_head_valid g root a (Complement V M); tauto.
-  } Unfocus.
+  }
   rewrite H0.
   rewrite weak_edge_prop_Empty, Intersection_Empty_left.
   rewrite !image_Empty.
@@ -763,13 +763,13 @@ Proof.
   intros.
   unfold copy.
   assert (Same_set (reachable_by g root (Complement V M)) (Empty_set _)).
-  Focus 1. {
+  1: {
     rewrite Same_set_spec; intros ?.
     rewrite Empty_set_spec.
     pose proof reachable_by_head_prop g root a (Complement V M).
     unfold Complement at 2, Ensembles.In in H0.
     tauto.
-  } Unfocus.
+  }
   rewrite H0.
   rewrite weak_edge_prop_Empty, Intersection_Empty_left.
   rewrite !image_Empty.
@@ -835,31 +835,31 @@ Proof.
   rewrite <- (weak_edge_prop_si _ _ _ PRE_si) in COPY_bij.
 
   apply guarded_pointwise_relation_weaken with (P2 := Union V PV1 (eq root)) in COPY_gprv.
-  Focus 2. {
+  2: {
     apply Included_Complement_Disjoint.
     apply Union_left_Disjoint.
     split; [eapply (aux06 PV1 PV0) | eapply (aux08 root PV0)];
     first [eassumption | reflexivity].
-  } Unfocus.
+  }
 
   apply guarded_pointwise_relation_weaken with (P2 := Union E PE1 PE1_root) in COPY_gpre.
-  Focus 2. {
+  2: {
     apply Included_Complement_Disjoint.
     apply Union_left_Disjoint.
     split; [eapply (aux07 PE1 PE0) | eapply (aux09 PE1_root PE0)];
     first [eassumption | reflexivity].
-  } Unfocus.
+  }
   rewrite COPY_gprv in PRE_bij, PRE_vvalid.
   rewrite COPY_gpre in PRE_bij, PRE_evalid.
 
   assert (guarded_bij PV0 PE0 (vmap g2) (emap g2) g g2').
-  Focus 1. {
+  1: {
     eapply guarded_bij_proper_aux1; [| reflexivity | exact COPY_bij].
     apply si_guarded_si; symmetry; auto.
-  } Unfocus.
+  }
 
   assert (guarded_bij (Union _ PV1 (eq root)) (Union _ PE1 PE1_root) (vmap g2) (emap g2) g2 g2').
-  Focus 1. {
+  1: {
     eapply guarded_bij_proper_aux1; [| | exact PRE_bij].
     1: apply si_guarded_si; rewrite <- COPY_si; symmetry; auto.
     pose proof pregraph_join_guarded_si _ _ _ _ COPY_pj.
@@ -872,7 +872,7 @@ Proof.
       destruct COPY_pj as [_ [? _]].
       apply Prop_join_Disjoint in H0.
       rewrite PRE_evalid in H0; auto.
-  } Unfocus.
+  }
 
   apply guarded_bij_disjointed_union; auto.
   + destruct COPY_pj as [? [? _]].
@@ -973,42 +973,42 @@ Proof.
   rewrite Intersection_spec in H0; destruct H0.
   rewrite Union_spec in H; destruct H.
   + assert (evalid g e).
-    Focus 1. {
+    1: {
       rewrite Union_spec in H.
       destruct H; revert H; [eapply aux21 | eapply aux22]; eauto; reflexivity.
-    } Unfocus.
+    }
     assert (vvalid g (dst g1 e)) as H_EXTRA'.
-    Focus 1. {
+    1: {
       rewrite (proj1 (proj2 PRE_si)) in H2.
       rewrite (si_dst1 _ _ _ COPY_si) by auto.
       auto.
-    } Unfocus.
+    }
     rewrite (proj1 (proj2 PRE_si)) in H2.
     erewrite <- si_dst1 in H0, H1 |- * by eauto.
     rewrite guarded_pointwise_relation_spec in COPY_gprv.
     rewrite <- COPY_gprv by auto.
     rewrite PRE_consi by auto.
     apply guarded_pointwise_relation_weaken with (P2 := Union E PE1 PE1_root) in COPY_gpre.
-    Focus 2. {
+    2: {
       apply Included_Complement_Disjoint.
       apply Union_left_Disjoint; split.
       + eapply aux07; eauto; reflexivity.
       + eapply aux09; eauto; reflexivity.
-    } Unfocus.
+    }
     rewrite guarded_pointwise_relation_spec in COPY_gpre.
     rewrite COPY_gpre by auto.
     pose proof pregraph_join_guarded_si _ _ _ _ COPY_pj.
     eapply guarded_si_weaken in H3; [| apply Included_refl |].
-    Focus 2. {
+    2: {
       apply Included_Complement_Disjoint.
       destruct COPY_pj as [_ [? _]].
       eapply Prop_join_Disjoint; eauto.
-    } Unfocus.
+    }
     assert (evalid g1' (emap g2 e)).
-    Focus 1. {
+    1: {
       rewrite <- COPY_gpre by auto.
       apply (evalid_preserved PRE_bij); auto.
-    } Unfocus.
+    }
     eapply guarded_si_dst1; eauto.
   + apply COPY_consi; auto.
     rewrite <- PRE_si in COPY_si.
@@ -1130,20 +1130,20 @@ Proof.
   rewrite <- (weak_edge_prop_si _ _ _ PRE_si) in COPY_pj.
 
   apply guarded_pointwise_relation_weaken with (P2 := Union V PV1 (eq root)) in COPY_gprv.
-  Focus 2. {
+  2: {
     apply Included_Complement_Disjoint.
     apply Union_left_Disjoint.
     split; [eapply (aux06 PV1 PV0) | eapply (aux08 root PV0)];
     first [eassumption | reflexivity].
-  } Unfocus.
+  }
 
   apply guarded_pointwise_relation_weaken with (P2 := Union E PE1 PE1_root) in COPY_gpre.
-  Focus 2. {
+  2: {
     apply Included_Complement_Disjoint.
     apply Union_left_Disjoint.
     split; [eapply (aux07 PE1 PE0) | eapply (aux09 PE1_root PE0)];
     first [eassumption | reflexivity].
-  } Unfocus.
+  }
   rewrite COPY_gprv in PRE_vvalid.
   rewrite COPY_gpre in PRE_evalid.
 
@@ -1219,11 +1219,11 @@ Proof.
   unfold PE2, weak_edge_prop in H1.
   rewrite Intersection_spec in H1; destruct H1 as [? _].
   replace (src g e0) with root in H1.
-  Focus 2. {
+  2: {
     assert (In e0 es) by (rewrite H0, in_app_iff; simpl; tauto).
     rewrite H in H2.
     destruct H2; congruence.
-  } Unfocus.
+  }
   unfold PV2 in H1.
   apply reachable_by_through_set_foot_prop in H1.
   unfold P0 in H1; rewrite Intersection_spec in H1.
@@ -1256,12 +1256,12 @@ Proof.
   destruct ECOPY as [ECOPY_si [ECOPY_prv [ECOPY_gpre [ECOPY_pj [? ?]]]]].
   apply guarded_pointwise_relation_pointwise_relation with (P := Union V PV3 (eq root)) in ECOPY_prv.
   apply guarded_pointwise_relation_weaken with (P2 := Union E PE3 PE1_root) in ECOPY_gpre.
-  Focus 2. {
+  2: {
     apply Included_Complement_Disjoint.
     apply Union_left_Disjoint; split.
     + eapply aux10; eauto; reflexivity.
     + eapply aux11; eauto; reflexivity.
-  } Unfocus.
+  }
   rewrite ECOPY_prv in PRE_vvalid, PRE_bij.
   rewrite ECOPY_gpre in PRE_evalid, PRE_bij.
   rewrite <- (Union_Empty_right (Union V PV3 (eq root))).
@@ -1289,19 +1289,19 @@ Proof.
     - inversion H1.
     - subst e.
       assert (evalid g3 e0).
-      Focus 1. {
+      1: {
         assert (In e0 es) by (rewrite H_ES, in_app_iff; simpl; tauto).
         rewrite H_OUT_EDGES in H1.
         destruct H1 as [? _].
         rewrite <- PRE_si in ECOPY_si.
         rewrite <- (proj1 (proj2 ECOPY_si)); auto.
-      } Unfocus.
+      }
       assert (evalid g3' (emap g3 e0)).
-      Focus 1. {
+      1: {
         destruct ECOPY_pj as [_ [[? _] _]].
         specialize (H2 (emap g3 e0)).
         tauto.
-      } Unfocus.
+      }
       tauto.
     - inversion H2.
     - inversion H2.
@@ -1363,35 +1363,35 @@ Proof.
   erewrite app_same_set in H1 by (eapply (aux20 e0 PE1_root PE3 PE3_root); eauto; reflexivity).
   rewrite Union_spec in H1; destruct H1.
   + assert (evalid g e).
-    Focus 1. {
+    1: {
       rewrite Union_spec in H1; destruct H1;
       [eapply aux23 | eapply aux22]; eauto; reflexivity.
-    } Unfocus.
+    }
     assert (vvalid g (dst g2 e)) as H_EXTRA'.
-    Focus 1. {
+    1: {
       rewrite (proj1 (proj2 PRE_si)) in H3.
       rewrite (si_dst1 _ _ _ ECOPY_si) by auto.
       auto.
-    } Unfocus.
+    }
     rewrite (proj1 (proj2 PRE_si)) in H3.
     erewrite <- si_dst1 in H2 |- * by eauto.
     rewrite <- ECOPY_prv.
     apply guarded_pointwise_relation_weaken with (P2 := Union E PE3 PE1_root) in ECOPY_gpre.
-    Focus 2. {
+    2: {
       apply Included_Complement_Disjoint.
       apply Union_left_Disjoint; split;
       [eapply aux10 | eapply aux11]; eauto; reflexivity.
-    } Unfocus.
+    }
     rewrite guarded_pointwise_relation_spec in ECOPY_gpre.
     rewrite <- ECOPY_gpre by auto.
     rewrite PRE_consi by auto.
     pose proof pregraph_join_guarded_si _ _ _ _ ECOPY_pj.
     eapply guarded_si_weaken in H4; [| apply Included_refl |].
-    Focus 2. {
+    2: {
       apply Included_Complement_Disjoint.
       destruct ECOPY_pj as [_ [? _]].
       eapply Prop_join_Disjoint; eauto.
-    } Unfocus.
+    }
     assert (evalid g2' (emap g2 e)) by (apply (evalid_preserved PRE_bij); auto).
     eapply guarded_si_dst1; eauto.
   + subst e.
@@ -1472,12 +1472,12 @@ Proof.
   apply guarded_pointwise_relation_pointwise_relation with (P := Union V PV3 (eq root)) in ECOPY_prv.
   rewrite ECOPY_prv in PRE_vvalid.
   apply guarded_pointwise_relation_weaken with (P2 := Union E PE3 PE1_root) in ECOPY_gpre.
-  Focus 2. {
+  2: {
     apply Included_Complement_Disjoint.
     apply Union_left_Disjoint; split.
     + eapply aux10; eauto; reflexivity.
     + eapply aux11; eauto; reflexivity.
-  } Unfocus.
+  }
   rewrite ECOPY_gpre in PRE_evalid.
   
   split.
@@ -1598,7 +1598,7 @@ Lemma triple_final: forall (g g1: Graph) (g1': Graph') (M: V -> Prop) root es,
 Proof.
   intros.
   assert (step_list g root (map (dst g) es)).
-  Focus 1. {
+  1: {
     intro x.
     rewrite in_map_iff.
     split.
@@ -1611,18 +1611,18 @@ Proof.
       exists e.
       rewrite H1.
       unfold out_edges; auto.
-  } Unfocus.
+  }
   destruct H3 as [?PRE [?PRE [?PRE [?PRE [?PRE ?PRE]]]]].
   assert (Same_set (reachable_by g root (Complement _ M)) (Union _ PV1 (eq root))).
-  Focus 1. {
+  1: {
     rewrite Same_set_spec.
     intro v.
     erewrite reachable_by_ind_equiv by eauto.
     rewrite Union_spec, Intersection_Complement.
     tauto.
-  } Unfocus.
+  }
   assert (Same_set (Intersection E (weak_edge_prop (reachable_by g root (Complement _ M)) g) (evalid g)) (Union _ PE1 PE1_root)).
-  Focus 1. {
+  1: {
     rewrite Same_set_spec.
     intro e.
     rewrite Intersection_spec; unfold weak_edge_prop.
@@ -1634,7 +1634,7 @@ Proof.
     unfold out_edges.
     assert (root = src g e <-> src g e = root) by (split; intro; congruence).
     tauto.
-  } Unfocus.
+  }
   unfold copy.
   split; [| split; [| split; [| split; [| split; [| split]]]]].
   + auto.
@@ -1689,28 +1689,28 @@ Proof.
     guarded_pointwise_relation (Complement E PE) eq (emap g) (emap g1) /\
     Same_set (vvalid g1') (image_set (Union _ PV1 (eq root)) (vmap g1)) /\
     Same_set (evalid g1') (image_set (Union _ PE1 PE1_root) (emap g1))).
-  Focus 1. {
+  1: {
     pose proof triple_vcopy1 _ _ _ _ H H5.
     intros.
     assert (Same_set PV1 (Empty_set _)).
-    Focus 1. {
+    1: {
       rewrite Same_set_spec; intro v.
       split; [intros [? [? ?]] | intros []].
       inv H8.
-    } Unfocus.
+    }
     assert (Same_set PE1 (Empty_set _)).
-    Focus 1. {
+    1: {
       rewrite Same_set_spec; intro v.
       split; [intro | intros []].
       unfold PE1 in H9; rewrite Intersection_spec in H9.
       destruct H9 as [[? [? ?]] ?].
       inv H9.
-    } Unfocus.
+    }
     assert (Same_set PE1_root (Empty_set _)).
-    Focus 1. {
+    1: {
       rewrite Same_set_spec; intro v.
       split; [intros [] | intros []].
-    } Unfocus.
+    }
     split; [| split; [| split; [| split; [| split]]]].
     + rewrite H8, H9, H10.
       rewrite !Union_Empty_left.
@@ -1742,7 +1742,7 @@ Proof.
         simpl.
         rewrite Same_set_spec; intro e.
         tauto.
-  } Unfocus.
+  }
   clear H5.
 
   revert g2 g2' es_later H3 H6; rev_induction es_done; intros.
@@ -1826,15 +1826,15 @@ Proof.
   rewrite COPY_vvalid.
   destruct H.
   assert (Same_set (reachable_by g1 x (Complement V M)) (Empty_set _)).
-  Focus 1. {
+  1: {
     rewrite Same_set_spec; intros v; rewrite Empty_set_spec.
     pose proof reachable_by_head_valid g1 x v (Complement V M); tauto.
-  } Unfocus.
+  }
   assert (Same_set (reachable g2'' x0) (Empty_set _)).
-  Focus 1. {
+  1: {
     rewrite Same_set_spec; intros v; rewrite Empty_set_spec.
     pose proof reachable_head_valid g2'' x0 v; tauto.
-  } Unfocus.
+  }
   rewrite H1, H2.
   apply image_Empty.
 Qed.
@@ -1848,15 +1848,15 @@ Lemma copy_evalid_weak_eq: forall (g1 g2: Graph) (g2'': Graph') (M: V -> Prop) x
   destruct H0 as [COPY_si [COPY_gprv [COPY_gpre [COPY_vvalid [COPY_evalid [COPY_consi COPY_bij]]]]]].
   rewrite COPY_evalid.
   assert (Same_set (reachable_by g1 x (Complement V M)) (Empty_set _)).
-  Focus 1. {
+  1: {
     rewrite Same_set_spec; intros v; rewrite Empty_set_spec.
     pose proof reachable_by_head_valid g1 x v (Complement V M); tauto.
-  } Unfocus.
+  }
   assert (Same_set (reachable g2'' x0) (Empty_set _)).
-  Focus 1. {
+  1: {
     rewrite Same_set_spec; intros v; rewrite Empty_set_spec.
     pose proof reachable_head_valid g2'' x0 v; tauto.
-  } Unfocus.
+  }
   rewrite H0, H1, weak_edge_prop_Empty, !Intersection_Empty_left.
   rewrite image_Empty, Intersection_Empty_right.
   reflexivity.
@@ -1888,7 +1888,7 @@ Proof.
   pose proof disjointed_union_labeledgraph_exists_ll g' g2' H6.
   destruct H5 as [COPY_si [COPY_gprv [COPY_gpre [COPY_vvalid [COPY_evalid [COPY_consi COPY_bij]]]]]].
   spec H8.
-  Focus 1. {
+  1: {
     destruct (guarded_bij_vmap_image_dec _ _ _ _ _ _ COPY_bij) as [X _].
     refine (ex_intro _ _ I).
     intros v'; specialize (X v').
@@ -1897,9 +1897,9 @@ Proof.
       rewrite (COPY_vvalid v'); auto.
     + rewrite Same_set_spec in COPY_vvalid.
       rewrite (COPY_vvalid v'); auto.
-  } Unfocus.
+  }
   spec H8.
-  Focus 1. {
+  1: {
     destruct (guarded_bij_emap_image_dec _ _ _ _ _ _ COPY_bij) as [X _].
     refine (ex_intro _ _ I).
     intros e'; specialize (X e').
@@ -1908,7 +1908,7 @@ Proof.
       rewrite (COPY_evalid e'); auto.
     + rewrite Same_set_spec in COPY_evalid.
       rewrite (COPY_evalid e'); auto.
-  } Unfocus.
+  }
   destruct H8 as [g3' [? [? [? ?]]]]; exists g3'.
   split; [| split]; auto.
   split; [| split; [| split; [| split; [| split; [| split]]]]]; auto.
@@ -1963,14 +1963,14 @@ Proof.
   intros.
   destruct H7 as [COPY_si [COPY_gprv [COPY_gpre [COPY_vvalid [COPY_evalid [COPY_consi COPY_bij]]]]]].
   assert (Prop_join (vvalid g2') (vvalid g3'') (vvalid g3') /\ Prop_join (evalid g2') (evalid g3'') (evalid g3') ) as [? ?].
-  Focus 1. {
+  1: {
     destruct H10 as [_ [_ [_ [? _]]]].
     destruct H7 as [? [? _]].
     rewrite <- COPY_vvalid in H7.
     rewrite <- COPY_evalid in H10; auto.
-  } Unfocus.
+  }
   split; [| split; [| split]]; auto.
-  Focus 1. {
+  1: {
     rewrite !predicate_partial_labeledgraph_gpredicate_sub_labeledgraph.
     assert (Same_set (Intersection E' (weak_edge_prop (vvalid g3'') g3') (evalid g3')) (Intersection E' (weak_edge_prop (vvalid g3'') g3'') (evalid g3''))).
     + rewrite Same_set_spec; intros e.
@@ -1979,7 +1979,7 @@ Proof.
       split; [intros [? [? | ?]] | intros].
       - exfalso.
         assert (Included (evalid g2') (weak_edge_prop (vvalid g2') g2')) as HE_g2'.
-        Focus 1. {
+        1: {
           pose proof triple_vcopy1_edge_copy_list _ _ _ _ _ _ _ _ _ _ H H0 H1 H2 H3 H4 H5 H6.
           destruct H16 as [? [? [_ [_ [_ [? ?]]]]]].
           rewrite H18, H19.
@@ -2003,7 +2003,7 @@ Proof.
             pose proof (proj1 H1 (or_introl H20)).
             destruct H21.
             rewrite (proj1 (proj2 H17)) in H21; auto.
-        } Unfocus.
+        }
         assert (vvalid g2' (src g2' e)) by (apply HE_g2'; auto).
         unfold guarded_labeled_graph_equiv, respectful_relation in H12.
         rewrite gpredicate_sub_labeledgraph_self in H12.
@@ -2022,8 +2022,8 @@ Proof.
       eapply stronger_gpredicate_sub_labeledgraph_simple; [| | exact H11].
       - apply Included_refl.
       - apply Intersection2_Included, Included_refl.
-  } Unfocus.
-  Focus 1. {
+  }
+  1: {
     rewrite !predicate_partial_labeledgraph_gpredicate_sub_labeledgraph.
     assert (Same_set (Intersection E' (weak_edge_prop (vvalid g2') g3') (evalid g3')) (Intersection E' (weak_edge_prop (vvalid g2') g2') (evalid g2'))).
     + rewrite Same_set_spec; intros e.
@@ -2036,14 +2036,14 @@ Proof.
         auto.
       - exfalso.
         assert (Included (evalid g3'') (weak_edge_prop (vvalid g3'') g3'')) as HE_g3''.
-        Focus 1. {
+        1: {
           rewrite COPY_vvalid, COPY_evalid.
           eapply guarded_morphism_weak_edge_prop; [apply COPY_bij | |].
           + rewrite weak_edge_prop_si by exact COPY_si.
             apply Intersection1_Included, Included_refl.
           + rewrite weak_edge_prop_si by exact COPY_si.
             apply Intersection2_Included, Included_refl.
-        } Unfocus.
+        }
         assert (vvalid g3'' (src g3'' e)) by (apply HE_g3''; auto).
         unfold guarded_labeled_graph_equiv, respectful_relation in H11.
         rewrite gpredicate_sub_labeledgraph_self in H11.
@@ -2058,7 +2058,7 @@ Proof.
       eapply stronger_gpredicate_sub_labeledgraph_simple; [| | exact H12].
       - apply Included_refl.
       - apply Intersection2_Included, Included_refl.
-  } Unfocus.
+  }
 Qed.
 
 Lemma extend_copy_emap_root: forall (g g1 g2 g3: Graph) (g1' g2' g3': Graph') root es es_done e0 es_later (M: V -> Prop),
@@ -2096,13 +2096,13 @@ Proof.
   unfold weak_edge_prop in H10; apply reachable_by_foot_prop in H10.
   rewrite <- (si_src2 _ _ _ H12) in H10 by auto.
   assert (src g e = root).
-  Focus 1. {
+  1: {
     rewrite H3 in H1.
     specialize (H1 e).
     rewrite in_app_iff in H1.
     pose proof (proj1 H1 (or_introl H9)).
     destruct H19; auto.
-  } Unfocus.
+  }
   rewrite H19 in H10.
   apply H10.
   clear.

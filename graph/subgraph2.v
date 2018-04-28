@@ -412,11 +412,11 @@ Lemma reachable_by_partialgraph_reachable_by_equiv (g: PreGraph V E) (P p0: V ->
 Proof.
   intros.
   assert (Same_set (reachable_by g n p0) (reachable (predicate_partialgraph g p0) n)).
-  Focus 1. {
+  1: {
     rewrite Same_set_spec.
     hnf; intros.
     apply reachable_by_eq_partialgraph_reachable; auto.
-  } Unfocus.
+  }
   rewrite H0 in H |- *.
   apply reachable_partialgraph_reachable_equiv in H.
   rewrite H.
@@ -499,22 +499,22 @@ Proof.
   intros.
   rewrite reachable_by_eq_subgraph_reachable in H1 |- *.
   assert (forall x, vvalid (predicate_subgraph g1 p1) x <-> vvalid (predicate_subgraph g2 p2) x).
-  Focus 1. {
+  1: {
     intros; simpl; unfold predicate_vvalid.
     destruct H as [? _].
     specialize (H x0).
     specialize (H0 x0).
     hnf in H0.
     tauto.
-  } Unfocus.
+  }
   assert (forall x y, edge (predicate_subgraph g1 p1) x y <-> edge (predicate_subgraph g2 p2) x y).
-  Focus 1. {
+  1: {
     apply si_subgraph_edge.
     + auto.
     + intros.
       specialize (H0 x0).
       tauto.
-  } Unfocus.
+  }
   pose proof (edge_equiv_reachable_equiv (predicate_subgraph g1 p1) (predicate_subgraph g2 p2) H2 H3).
   destruct (H4 x) as [? _].
   apply H5.
@@ -558,12 +558,12 @@ Proof.
   + destruct H1 as [m [? ?]].
     exists m; split; auto.
     assert (forall m, g |= m ~o~> n satisfying P -> ~ reachable_by_through_set g l1 P m).
-    Focus 1. {
+    1: {
       intros m0 ? [s [? ?]].
       apply H0; exists s.
       split; auto.
       apply reachable_by_trans with m0; auto.
-    } Unfocus.
+    }
     rewrite reachable_by_eq_partialgraph_reachable in H2 |- *.
     rewrite partial_partialgraph.
     clear H1.
@@ -576,18 +576,18 @@ Proof.
       rewrite Intersection_spec.
       split; [auto | destruct H1; auto].
     - assert (Complement V (reachable_by_through_set g l1 P) x).
-      Focus 1. {
+      1: {
         apply H3.
         rewrite reachable_by_eq_partialgraph_reachable, reachable_ind_reachable.
         apply ind.reachable_cons with y; auto.
-      } Unfocus.
+      }
       assert (vvalid (predicate_partialgraph g
        (Intersection V (Complement V (reachable_by_through_set g l1 P)) P)) x).
-      Focus 1. {
+      1: {
         split; [destruct H1 as [[? _] _]; auto |].
         rewrite Intersection_spec.
         split; [auto | destruct H1 as [[_ ?] _]; auto].
-      } Unfocus.
+      }
       assert ((predicate_partialgraph g
         (Intersection V (Complement V (reachable_by_through_set g l1 P)) P)) ~=~
            (predicate_partialgraph
@@ -667,11 +667,11 @@ Proof.
     rewrite partial_partialgraph, Intersection_comm, <- partial_partialgraph, <- reachable_by_through_set_eq_partialgraph_reachable_through_set.
     assert (Same_set (fun x : V => ~ reachable_by_through_set g l1 P x)
       (Complement _ (reachable_through_set (predicate_partialgraph g P) l1))).
-    Focus 1. {
+    1: {
       rewrite Same_set_spec; intro v.
       pose proof reachable_by_through_set_eq_partialgraph_reachable_through_set g P l1 v.
       unfold Complement, Ensembles.In; tauto.
-    } Unfocus.
+    }
     rewrite H0; clear H0.
     remember (predicate_partialgraph g P) as g'.
     clear g Heqg'.

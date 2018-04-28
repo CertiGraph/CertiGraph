@@ -481,11 +481,11 @@ Lemma vertices_at1: forall (g: Graph) P x0 d,
 Proof.
   intros.
   replace (@vertex_at _ _ _ _ _ SGP x0 d) with (graph_vcell g x0).
-  Focus 2. {
+  2: {
     simpl.
     unfold graph_vcell; simpl.
     rewrite H0; auto.
-  } Unfocus.
+  }
   erewrite vertices_at_Same_set.
   + apply pred_sepcon1.
   + rewrite Same_set_spec.

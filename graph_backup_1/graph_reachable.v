@@ -637,8 +637,8 @@ Section GraphReachable.
           unfold reachable in H3. generalize H3; intro Hv.
           rewrite reachable_acyclic in H3.
           destruct H3 as [p [? ?]]. destruct p.
-          Focus 1. { destruct H3 as [[? ?] _]. inversion H3. } Unfocus.
-          Focus 1. {
+          1: { destruct H3 as [[? ?] _]. inversion H3. }
+          1: {
             generalize H3; intro Hr. destruct Hr as [[? _] _].
 
             simpl in H4. inversion H4. subst. clear H4.
@@ -654,7 +654,7 @@ Section GraphReachable.
               split. apply reachable_head_valid in Hv. simpl in Hv. auto.
               unfold change_edge_func. destruct (t_eq_dec x x). auto. tauto.
               apply reachable_head_valid in Hv. simpl in Hv. auto.
-          } Unfocus.
+          }
         * subst. exfalso. apply H.
           destruct H3 as [p ?].
           apply (@update_reachable_path_in pg bi ma x d l r p s x); auto.

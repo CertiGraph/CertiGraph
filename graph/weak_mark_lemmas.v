@@ -149,7 +149,7 @@ Qed.
 Lemma eq_do_nothing: forall n, inclusion _ eq (nothing n).
 Proof.
   intros; hnf; intros.
-  destruct H as [? [? ?]].
+  destruct H.
   split.
   + reflexivity.
   + intros.
@@ -326,12 +326,12 @@ Proof.
     unfold Complement at 2 in H3; unfold Ensembles.In in H3.
     assert ((marked g1) v \/ ~ (marked g1) v) by (destruct (node_pred_dec (marked g1) v); auto).
     assert (marked' v \/ ~ marked' v).
-    Focus 1. {
+    1: {
       unfold marked'.
       rewrite Union_spec.
       destruct (node_pred_dec (marked g) v); destruct_eq_dec root v; auto.
       tauto.
-    } Unfocus.
+    }
     pose proof Full_intro _ v.
     unfold Ensembles.In in H.
     tauto.
@@ -379,13 +379,13 @@ Proof.
   intros.
   destruct H2.
   assert (Same_set (reachable_by g root (unmarked g)) (Union _ (eq root) PV1)).
-  Focus 1. {
+  1: {
     rewrite Same_set_spec.
     intro. rewrite Union_spec.
     unfold PV1, marked'.
     rewrite <- Intersection_Complement.
     apply reachable_by_ind_equiv; auto.
-  } Unfocus.
+  }
   split.
   + eapply si_stronger_partialgraph_simple; [| exact H2].
     apply Complement_Included_rev.
@@ -507,12 +507,12 @@ Proof.
   assert ((marked g3) x /\ step g3 x y /\ vvalid g3 x);
     [| apply step_reachable with y; tauto].
   assert (step g2 x y).
-  Focus 1. {
+  1: {
     destruct H1 as [? _].
     rewrite <- step_si by eassumption.
     specialize (H0 y);
     rewrite in_app_iff in H0; simpl in H0; tauto.
-  } Unfocus.
+  }
   assert (vvalid g2 x) by (rewrite <- (proj1 (proj1 H1)); auto).
   destruct H1 as [_ [? _]].
   clear - H1 H2 H4 H5.
@@ -541,7 +541,7 @@ Locate partialgraph_edge.
       
     destruct H as [? _].
     assert (marked g2 x) by destru
-    Focus 1. {
+    1: {
       destruct H1.
 SearchAbout reachable Proper.
 

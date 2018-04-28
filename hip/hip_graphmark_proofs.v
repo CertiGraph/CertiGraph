@@ -200,10 +200,10 @@ Locate si_stronger_partialgraph.
       rewrite Intersection_spec in H8; destruct H8.
       f_equal; [f_equal |].
       - assert (~ reachable_by (pg_lg (Graph_LGraph G)) x (WeakMarkGraph.unmarked (Graph_LGraph G)) x0).
-        Focus 1. {
+        1: {
           intro.
           apply reachable_by_is_reachable in H10; auto.
-        } Unfocus.
+        }
         assert (true <> false) by congruence.
         destruct (vlabel (Graph_LGraph G) x0), (vlabel (Graph_LGraph G1) x0); try tauto.
       - apply (si_dst1 _ _ _ H6).

@@ -118,19 +118,19 @@ Proof.
   destruct (proj1 (guarded_si_spec _ _ _ _) H) as [? [? [? ?]]].
   destruct (proj1 (guarded_si_spec _ _ _ _) H0) as [? [? [? ?]]].
   assert (forall v : V, PV v -> (vvalid G2 v <-> vvalid G2' (vmap v))).
-  Focus 1. {
+  1: {
     intros.
     rewrite <- H2 by auto.
     rewrite <- H6 by (constructor; auto).
     apply (vvalid_preserved H1); auto.
-  } Unfocus.
+  }
   assert (forall e : E, PE e -> (evalid G2 e <-> evalid G2' (emap e))).
-  Focus 1. {
+  1: {
     intros.
     rewrite <- H3 by auto.
     rewrite <- H7 by (constructor; auto).
     apply (evalid_preserved H1); auto.
-  } Unfocus.
+  }
   split; auto; intros.
   + assert (evalid G1 e) by (rewrite H3 by auto; auto).
     rewrite <- H8.
@@ -430,7 +430,7 @@ Proof.
   pose proof vmap_inj H.
   destruct H0 as [f ?].
   assert (forall v, Decidable (image_set PV vmap v)).
-  Focus 1. {
+  1: {
     intros.
     specialize (H0 v).
     destruct (f v) eqn:?H; [left | right]; rewrite image_set_spec.
@@ -441,7 +441,7 @@ Proof.
     + intros [v0 [? ?]].
       apply (H0 v0 H2).
       symmetry; auto.
-  } Unfocus.
+  }
   exists X; auto.
 Qed.
 
@@ -453,7 +453,7 @@ Proof.
   pose proof emap_inj H.
   destruct H0 as [f ?].
   assert (forall e, Decidable (image_set PE emap e)).
-  Focus 1. {
+  1: {
     intros.
     specialize (H0 e).
     destruct (f e) eqn:?H; [left | right]; rewrite image_set_spec.
@@ -464,7 +464,7 @@ Proof.
     + intros [e0 [? ?]].
       apply (H0 e0 H2).
       symmetry; auto.
-  } Unfocus.
+  }
   exists X; auto.
 Qed.
 

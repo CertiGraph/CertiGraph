@@ -168,7 +168,7 @@ Proof.
     rewrite <- (ocon_assoc (iter_sepcon i2 p)).
     rewrite <- precise_ocon_self by (apply precise_iter_sepcon; auto).
     assert (Permutation l (i1 ++ i2 ++ i3)).
-    Focus 1. {
+    1: {
       apply NoDup_Permutation; auto.
       intros. rewrite JOINABLE. rewrite !in_app_iff.
       pose proof (Permutation_in x H0).
@@ -176,7 +176,7 @@ Proof.
       pose proof (Permutation_in x (Permutation_sym H0)).
       pose proof (Permutation_in x (Permutation_sym H1)).
       rewrite in_app_iff in *. tauto.
-    } Unfocus.
+    }
     rewrite (iter_sepcon_permutation _ H3).
     rewrite !iter_sepcon_app_sepcon.
     eapply derives_trans;
@@ -212,13 +212,13 @@ Lemma precise_exp_iter_sepcon: forall (P : B -> A) (Q: list B -> Prop),
 Proof.
   intros.
   replace (EX  l : list B, !!Q l && iter_sepcon l P) with (EX  l : list B, !! (Q l /\ NoDup l) && iter_sepcon l P).
-  Focus 2. {
+  2: {
     f_equal.
     extensionality l.
     rewrite (add_andp _ _ (iter_sepcon_unique_nodup l H)) at 2.
     rewrite (andp_comm _ (!! NoDup l)), <- andp_assoc, prop_and.
     reflexivity.
-  } Unfocus.
+  }
   apply precise_exp_prop_andp.
   1: assumption.
   1: apply precise_iter_sepcon; auto.
@@ -268,7 +268,7 @@ Proof.
     destruct H2 as [l1 [l2 ?]].
     specialize (IHl' (l1 ++ l2)).
     spec IHl'.
-    Focus 1. {
+    1: {
       clear - H2 H1 H4.
       intros x ?H.
       specialize (H1 x).
@@ -278,7 +278,7 @@ Proof.
       rewrite in_app_iff.
       assert (a = x -> False) by (intros; subst; tauto).
       tauto.
-    } Unfocus.
+    }
     subst.
     rewrite iter_sepcon_app_sepcon in *.
     simpl.

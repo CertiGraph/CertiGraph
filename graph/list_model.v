@@ -213,7 +213,7 @@ Section LIST_MODEL.
             destruct (construct_reachable_tail_preserve (length ss) l0 (root :: nil)) as [l' ?]. rewrite <- Heql in H9. rewrite H9 in H4.
             rewrite rev_unit in H4. simpl in H4. inversion H4. auto.
           } subst v. simpl in H8. destruct H8.
-          Focus 1. {
+          1: {
             subst d. destruct H0 as [pf [? ?]]. apply H8 in H5. clear H8. destruct H5 as [pr [[? ?] ?]].
             assert (G |= (root, nil) is root ~o~> root satisfying (fun _ => True)) by (split; split; simpl; auto).
             destruct H7 as [[vr ps] ?]. destruct H6 as [? [? ?]]. rewrite step_spec in H12. destruct H12 as [e [? [? ?]]].
@@ -223,14 +223,14 @@ Section LIST_MODEL.
               + hnf. rewrite Forall_forall; intros; auto.
             } pose proof (reachable_by_path_merge _ _ _ _ _ _ _ H7 H15). unfold path_glue, fst, snd in H16. apply H8 in H10. apply H8 in H16. rewrite H10 in H16.
             inversion H16. destruct ps; simpl in H19; inversion H19.
-          } Unfocus.
-          Focus 1. {
+          }
+          1: {
             apply in_split in H8. destruct H8 as [l0 [l2 ?]]. subst l1. assert (root :: l0 <> nil) by (intro HS; inversion HS). apply exists_last in H8.
             destruct H8 as [l' [a ?]]. rewrite app_comm_cons, e in H4. rewrite <- app_cons_assoc, <- app_assoc in H4. simpl in H4. specialize (H3 _ _ _ _ H4).
             assert (a = s) by (apply (is_list_edge_src_the_same root _ d); auto; rewrite <- H1, in_rev, H4, in_app_iff; right; apply in_eq). subst a.
             assert (NoDup (rev l)) by (apply Permutation_NoDup with (l := l); auto; apply Permutation_rev). rewrite H4 in H8. apply NoDup_app_r in H8.
             apply NoDup_cons_2 in H8. apply H8. simpl. right. rewrite in_app_iff. right. apply in_eq.
-          } Unfocus.
+          }
         * specialize (H3 _ _ _ _ H4). assert (d = v) by (apply (is_list_edge_dst_the_same root s); auto). subst v. exists l2; auto.
       - destruct H4 as [l1 [l2 ?]]. split; [|split]; [apply H1; rewrite in_rev; rewrite H4; rewrite in_app_iff; right ..|]; [apply in_eq | right; apply in_eq |].
         apply (H3 l1 l2); auto.

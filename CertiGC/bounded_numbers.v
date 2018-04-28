@@ -1,6 +1,6 @@
 Require Import ZArith.
 
-Open Local Scope Z.
+Local Open Scope Z.
 
 Definition boundZ (n : nat) : Type := {z : Z | 0 <= z < two_power_nat n}.
 

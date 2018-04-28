@@ -391,21 +391,21 @@ Section REACHABLE_COMPUTABLE.
       destruct H3.
       specialize (H1 (nodup equiv_dec (rch2 i0) ++ rch3 i0)).
       spec H1.
-      Focus 1. {
+      1: {
         apply NoDup_app_inv.
         + apply NoDup_nodup.
         + auto.
         + intros; intro.
           rewrite nodup_In in H7.
           eapply H6; eauto.
-      } Unfocus.
+      }
       spec H1.
-      Focus 1. {
+      1: {
         apply Forall_app_iff; split; auto.
         rewrite Forall_forall in H2 |- *; intros.
         rewrite nodup_In in H7.
         apply H2; auto.
-      } Unfocus.
+      }
       rewrite app_length in H1.
       assert (length (nodup equiv_dec (rch2 i0)) = 0) by omega.
       clear - H7. remember (rch2 i0). clear Heql. induction l; auto.
@@ -602,11 +602,11 @@ Section REACHABLE_COMPUTABLE.
   Proof.
     intros.
     destruct H as [H | H].
-    Focus 2. {
+    2: {
       right.
       intro; apply reachable_by_is_reachable in H0.
       apply reachable_head_valid in H0; tauto.
-    } Unfocus.
+    }
     remember (predicate_subgraph G p) as pdg.
     destruct (node_pred_dec p x).
     + assert (vvalid pdg x) by (subst; split; auto).
