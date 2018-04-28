@@ -39,12 +39,12 @@ Proof.
       (mapsto x (if (fst (fst dlr)) then 1 else 0) * mapsto (x + 1) (snd (fst dlr)) *
        mapsto (x + 2) (snd dlr))) =
    !! Z.divide 3 (Z.of_nat x) && ((EX d: bool, (mapsto x (if d then 1 else 0))) * seplog.exp (mapsto (x + 1)) * seplog.exp (mapsto (x + 2))))%logic.
-  Focus 2. {
+  2: {
     f_equal.
     simpl.
     f_equal.
     extensionality dlr; destruct dlr as [[? ?] ?]. reflexivity.
-  } Unfocus.
+  }
   rewrite <- log_normalize.exp_andp2.
   f_equal.
   repeat rewrite exp_curry; simpl fst; simpl snd.
@@ -113,12 +113,12 @@ Proof.
     rewrite <- (Nat2Z.id x).
     rewrite H.
     assert (0 <= k)%Z.
-    Focus 1. {
+    1: {
       destruct (Z_lt_le_dec k 0%Z); auto.
       assert (k * 3 < 0 * 3)%Z by (apply Z.mul_lt_mono_pos_r; omega).
       simpl in H0.
       omega.
-    } Unfocus.
+    }
     apply Z2Nat.inj_mul; omega.
   + exists (Z.of_nat k).
     rewrite H.

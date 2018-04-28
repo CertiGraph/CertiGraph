@@ -80,18 +80,18 @@ Section SPATIAL_GRAPH_DISPOSE_BI.
   Proof.
     intros.
     replace (@vertex_at _ _ _ _ _ SGP x (d, l, r)) with (graph_vcell g x).
-    Focus 2. {
+    2: {
       unfold graph_vcell; simpl.
       simpl in H0; rewrite H0; auto.
-    } Unfocus.
+    }
     replace (@vertex_at _ _ _ _ _ SGP x (d, null, r)) with (graph_vcell (Graph_gen_left_null g x) x).
-    Focus 2. {
+    2: {
       unfold graph_vcell; simpl.
       unfold updateEdgeFunc.
       destruct_eq_dec (x, L) (x, L). 2: exfalso; auto.
       destruct_eq_dec (x, L) (x, R). inversion H2.
       simpl in H0; inversion H0; auto.
-    } Unfocus.
+    }
     apply vertices_at_ramif_1; auto.
     eexists; split; [| split].
     + apply Ensemble_join_Intersection_Complement.
@@ -365,11 +365,11 @@ Section SPATIAL_GRAPH_DISPOSE_BI.
         unfold predicate_weak_evalid in H2. destruct H2 as [_ [? [_ ?]]].
         specialize (H2 (x0, L)). specialize (H5 (x0, L)).
         assert (src g2 (x0, L) = x0).
-        Focus 1. {
+        1: {
           apply (@left_sound _ _ _ _ _ _ g2 (biGraph g2) x0).
           rewrite <- (edge_spanning_tree_left_vvalid g1 g2 x x0 H H1).
           apply reachable_foot_valid in H3; auto.
-        } Unfocus.
+        }
         change (lg_gg g2) with (g2: LGraph) in *.
         rewrite H6 in *.
         assert (evalid g2 (x0, L) /\ ~ g2 |= r ~o~> x0 satisfying (unmarked g2)). {
@@ -383,11 +383,11 @@ Section SPATIAL_GRAPH_DISPOSE_BI.
         unfold predicate_weak_evalid in H2. destruct H2 as [_ [? [_ ?]]].
         specialize (H2 (x0, R)). specialize (H5 (x0, R)).
         assert (src g2 (x0, R) = x0).
-        Focus 1. {
+        1: {
           apply (@right_sound _ _ _ _ _ _ g2 (biGraph g2) x0).
           rewrite <- (edge_spanning_tree_left_vvalid g1 g2 x x0 H H1).
           apply reachable_foot_valid in H3; auto.
-        } Unfocus.
+        }
         change (lg_gg g2) with (g2: LGraph) in *.
         rewrite H6 in *.
         assert (evalid g2 (x0, R) /\ ~ g2 |= r ~o~> x0 satisfying (unmarked g2)). {
@@ -406,18 +406,18 @@ Section SPATIAL_GRAPH_DISPOSE_BI.
   Proof.
     intros.
     replace (@vertex_at _ _ _ _ _ SGP x (d, l, r)) with (graph_vcell g2 x).
-    Focus 2. {
+    2: {
       unfold graph_vcell; simpl.
       simpl in H0; rewrite H0; auto.
-    } Unfocus.
+    }
     replace (@vertex_at _ _ _ _ _ SGP x (d, l, null)) with (graph_vcell (Graph_gen_right_null g2 x) x).
-    Focus 2. {
+    2: {
       unfold graph_vcell; simpl.
       unfold updateEdgeFunc.
       destruct_eq_dec (x, R) (x, L). inversion H1.
       destruct_eq_dec (x, R) (x, R). 2: exfalso; apply H2; auto.
       simpl in H0; inversion H0; auto.
-    } Unfocus.
+    }
     apply vertices_at_ramif_1; auto.
     eexists; split; [| split].
     + apply Ensemble_join_Intersection_Complement.

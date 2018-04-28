@@ -120,10 +120,10 @@ Proof.
   forward. 1: entailer!; destruct r; simpl; auto.
   forward.
   unlocalize [graph sh x (Graph_vgen g x true)].
-  Focus 1. {
+  1: {
     apply (@root_update_ramify _ (sSGG_VST sh) g x _ (false, l, r) (true, l, r)); auto.
     eapply Graph_vgen_vgamma; eauto.
-  } Unfocus.
+  }
   (* if (l) { *)
   symmetry in H1.
   pose proof Graph_vgen_true_mark1 g x _ _ H1 H.
@@ -146,12 +146,12 @@ Proof.
     destruct dlr as [[dd ll] rr]. 
     forward. simpl vgamma2cdata at 1.
     replace (if dd then 1 else 0) with (if node_pred_dec (marked g1) l then 1 else 0).
-    Focus 2. {
+    2: {
       destruct (node_pred_dec (marked g1)); destruct dd; auto; symmetry in Heqdlr.
       apply vgamma_is_false in Heqdlr. simpl in a. unfold unmarked in Heqdlr. hnf in Heqdlr.
       unfold Ensembles.In in Heqdlr. simpl in Heqdlr. apply Heqdlr in a. exfalso; auto.
       apply vgamma_is_true in Heqdlr. exfalso; auto.
-    } Unfocus.
+    }
     rewrite Heqdlr. clear dd ll rr Heqdlr.
     unlocalize [graph sh x g1].
     + destruct (vgamma g1 l) as [[dd ll] rr] eqn:? .
@@ -227,12 +227,12 @@ Proof.
       remember (vgamma g2 r) as dlr in |-*. destruct dlr as [[dd ll] rr].
       forward. simpl vgamma2cdata at 1.
       replace (if dd then 1 else 0) with (if node_pred_dec (marked g2) r then 1 else 0).
-      Focus 2. {
+      2: {
         destruct (node_pred_dec (marked g2)); destruct dd; auto; symmetry in Heqdlr.
         apply vgamma_is_false in Heqdlr. simpl in a. unfold unmarked in Heqdlr. hnf in Heqdlr.
         unfold Ensembles.In in Heqdlr. simpl in Heqdlr. apply Heqdlr in a. exfalso; auto.
         apply vgamma_is_true in Heqdlr. exfalso; auto.
-      } Unfocus. rewrite Heqdlr. clear dd ll rr Heqdlr.
+      } rewrite Heqdlr. clear dd ll rr Heqdlr.
       unlocalize [vertices_at sh (reachable g1 x) g2].
       * destruct (vgamma g2 r) as [[dd ll] rr] eqn:? .
         assert (vvalid g1 r). {

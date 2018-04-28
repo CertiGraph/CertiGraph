@@ -120,7 +120,7 @@ Proof.
       rewrite field_at_data_at. unfold node_type. simpl field_address.
       simpl field_address in H1.
   apply ADMIT. (* type checking for pointer comparable. VST will fix it. *)
-  Focus 1. { (* if-then branch *)
+  1: { (* if-then branch *)
     forward. (* return x0; *)
     apply (exp_right (d, g, empty_Graph)).
     simpl.
@@ -132,12 +132,12 @@ Proof.
     + right.
       inversion H_GAMMA_g; auto.
     + rewrite va_reachable_invalid; auto.
-  } Unfocus.
-  Focus 1. { (* if-else branch *)
+  }
+  1: { (* if-else branch *)
     forward. (* skip; *)
     entailer!.
     clear - H0. destruct d; inversion H0. auto.
-  } Unfocus.
+  }
 
   Intros.
   subst d.
@@ -193,11 +193,11 @@ Proof.
          holegraph sh x0 (initial_copied_Graph x x0 g);
          graph sh x (Graph_vgen g x x0))).
   Grab Existential Variables.
-  Focus 2. {
+  2: {
     simplify_ramif.
     apply (@root_update_ramify _ (sSGG_VST sh) g x x0 _ (null, l, r) (x0, l, r)); auto.
     eapply Graph_vgen_vgamma; eauto.
-  } Unfocus.
+  }
   (* unlocalize *)
 
   unfold semax_ram. (* should not need this *)
@@ -240,10 +240,10 @@ Proof.
   using [H_copy; H_l0]%RamAssu
   binding [l0; g2; g2'']%RamBind.
   Grab Existential Variables.
-  Focus 2. {
+  2: {
     simplify_ramif.
     eapply (@graph_ramify_left _ (sSGG_VST sh) RamUnit g); eauto.
-  } Unfocus.
+  }
   (* unlocalize *)
 
   unfold semax_ram. (* should not need this *)
@@ -255,10 +255,10 @@ Proof.
           (data_at sh node_type
             (pointer_val_val null, (pointer_val_val null, pointer_val_val null)) (pointer_val_val x0) *
            holegraph sh x0 g2')).
-  Focus 1. {
+  1: {
     entailer.
     apply (@extend_copy_left _ (sSGG_VST sh) g g1 g2 g1' g2'' (ValidPointer b i) l r (vmap g1 (ValidPointer b i)) l0 (null, null, null)); auto.
-  } Unfocus.
+  }
   Opaque extended_copy.
   rewrite extract_exists_in_SEP. (* should be able to use tactic directly *)
   Transparent extended_copy.
@@ -307,10 +307,10 @@ Proof.
   using [H_copy; H_r0]%RamAssu
   binding [r0; g4; g4'']%RamBind.
   Grab Existential Variables.
-  Focus 2. {
+  2: {
     simplify_ramif.
     eapply (@graph_ramify_right _ (sSGG_VST sh) RamUnit g); eauto.
-  } Unfocus.
+  }
   (* Unlocalize *)
 
   unfold semax_ram. (* should not need this *)
@@ -322,10 +322,10 @@ Proof.
           (data_at sh node_type
             (pointer_val_val null, (pointer_val_val l0, pointer_val_val null)) (pointer_val_val x0) *
            holegraph sh x0 g4')).
-  Focus 1. {
+  1: {
     entailer.
     apply (@extend_copy_right _ (sSGG_VST sh) g g1 g2 g3 g4 g1' g2' g3' g4''(ValidPointer b i) l r (vmap g1 (ValidPointer b i)) r0 (null, l0, null)); auto.
-  } Unfocus.
+  }
   Opaque extended_copy.
   rewrite extract_exists_in_SEP. (* should be able to use tactic directly *)
   Transparent extended_copy.
@@ -344,10 +344,10 @@ Proof.
 
   gather_SEP 0 1.
   replace_SEP 0 (EX gg5': Graph, !! (@copy _ _ _ _ CCS x g g5 gg5' /\ x0 = vmap g5 x) && graph sh x0 gg5').
-  Focus 1. {
+  1: {
     entailer!.
     eapply (@copy_final pSGG_VST (sSGG_VST sh) g g1 g2 g3 g4 g5 g1' g2' g3' g4' g5'); [| | | | | | | | eassumption ..]; eauto.
-  } Unfocus.
+  }
 
   forward. (* return x0; *)
   rewrite H7.

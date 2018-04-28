@@ -116,12 +116,12 @@ Section SIMPLE_MARK_GRAPH.
     intros. destruct ((node_pred_dec m) x).
     + exists m. split; auto. split; [exact a |]. intros; reflexivity.
     + assert (forall y, {y = x \/ m y} + {~ (y = x \/ m y)}).
-      Focus 1. {
+      1: {
         intros.
         apply sumbool_dec_or.
         + apply equiv_dec.
         + apply node_pred_dec.
-      } Unfocus.
+      }
       exists (existT _ (fun y => y = x \/ m y) X). split.
       * auto.
       * split; [simpl; auto |].
@@ -379,7 +379,7 @@ Section SIMPLE_MARK_GRAPH.
         * intros; apply V_DEC; right; auto.
         * destruct H0 as [? _]; auto.
       - destruct (V_DEC v (or_introl eq_refl)).
-        Focus 1. {
+        1: {
           apply (mark_unmarked m v m') in H3; auto; [| apply R_DEC; left; auto].
           destruct H3.
           + apply (H z); auto.
@@ -389,8 +389,8 @@ Section SIMPLE_MARK_GRAPH.
               * apply R_DEC; right; auto.
               * apply R_DEC; left; auto.
             - intros; apply V_DEC; right; auto.
-        } Unfocus.
-        Focus 1. {
+        }
+        1: {
           pose proof (mark_invalid m v m' n0 H0).
           apply (H z); auto.
           erewrite si_reachable_by in H3; [exact H3 | reflexivity |].
@@ -399,7 +399,7 @@ Section SIMPLE_MARK_GRAPH.
           specialize (H4 x).
           rewrite !negateP_spec.
           tauto.
-        } Unfocus.
+        }
   Qed.
 
   Lemma mark_list_preserve_marked: forall m1 l m2
@@ -582,32 +582,32 @@ Section SIMPLE_MARK_GRAPH.
     + apply H0.
       pose proof partialgraph_si_node_prop n g g' _ _ H.
       spec H3.
-      Focus 1. {
+      1: {
         intros ? ?.
         apply reachable_by_foot_valid in H4.
         auto.
-      } Unfocus.
+      }
       spec H3.
-      Focus 1. {
+      1: {
         intros ? ?.
         apply reachable_by_foot_valid in H4.
         auto.
-      } Unfocus.
+      }
       tauto.
     + apply H2.
       pose proof partialgraph_si_node_prop n g g' _ _ H.
       spec H3.
-      Focus 1. {
+      1: {
         intros ? ?.
         apply reachable_by_foot_valid in H4.
         auto.
-      } Unfocus.
+      }
       spec H3.
-      Focus 1. {
+      1: {
         intros ? ?.
         apply reachable_by_foot_valid in H4.
         auto.
-      } Unfocus.
+      }
       tauto.
   Qed.
 
@@ -666,32 +666,32 @@ Section SIMPLE_MARK_GRAPH.
           apply R_DEC0; simpl; auto.
         * assert (reachable_by_through_set g'0 l0 (negateP m') v0 <->
             reachable_by_through_set g0 l0 (negateP m') v0).
-          Focus 1. {
+          1: {
             apply ex_iff; intro.
             apply and_iff_compat_l_weak; intro.
             pose proof reachable_by_partialgraph_reachable_by_equiv g0 (reachable_by_through_set g0 (v :: l0) (negateP m)) (negateP m') x.
             spec H5.
-            Focus 1. {
+            1: {
               intro; intros; exists x.
               split; [simpl; auto |].
               eapply reachable_by_weaken; eauto.
               apply Complement_Included_rev; intro; eapply mark_marked; [eauto |].
               apply R_DEC0; simpl; auto.
-            } Unfocus.
+            }
             pose proof reachable_by_partialgraph_reachable_by_equiv g'0 (reachable_by_through_set g'0 (v :: l0) (negateP m)) (negateP m') x.
             spec H6.
-            Focus 1. {
+            1: {
               intro; intros; exists x.
               split; [simpl; auto |].
               eapply reachable_by_weaken; eauto.
               apply Complement_Included_rev; intro; eapply mark_marked; [eauto |].
               apply R_DEC0; simpl; auto.
-            } Unfocus.
+            }
             rewrite H3 in H5.
             rewrite <- H5 in H6.
             rewrite Same_set_spec in H6.
             clear H5; apply H6.
-          } Unfocus.
+          }
           assert (reachable_by_through_set g'0 l0 (negateP m') v0 ->
             reachable_by_through_set g'0 (v :: l0) (negateP m) v0); [clear H4; intro | tauto].
           destruct H4 as [vv [? ?]]; exists vv; split; [simpl |]; auto.
@@ -1083,21 +1083,21 @@ Lemma mark_list_inj: forall (g1 g2: Graph) (vs: list V)
 Proof.
   intros.
   assert (forall x : V, In x vs -> Decidable (vvalid g1 x /\ unmarked g1 x)).
-  Focus 1. {
+  1: {
     intros.
     apply sumbool_dec_and; [apply V_DEC; auto |].
     apply node_pred_dec.
-  } Unfocus.
+  }
   clear V_DEC; rename X into V_DEC.
   induction H.
   - split; [destruct H; rewrite <- H; reflexivity |].
     constructor.
     apply inj_proper; auto.
   - spec IHmark_list.
-    Focus 1. {
+    1: {
       intros.
       eapply V_DEC_mark; [exact H | |]; apply V_DEC; simpl; auto.
-    } Unfocus.
+    }
     rewrite mark_inj in H.
     split;
     [transitivity (predicate_partialgraph g0 (Complement _ (reachable_by_through_set g (v :: vs) (unmarked g)))) |].

@@ -19,15 +19,15 @@ Proof.
   intros.
   simpl in H2, H3. destruct H2, H3.
   assert (identity h2).
-  Focus 1. {
+  1: {
     apply all_resource_at_identity.
     intros l; specialize (H2 l); specialize (H3 l).
     assert (identity (h12 @ l) \/ identity (h23 @ l)).
-    Focus 1. {
+    1: {
       destruct (adr_range_dec l1 n1 l), (adr_range_dec l2 n2 l); try tauto.
       specialize (H (ex_intro _ _ (conj a a0))).
       tauto.
-    } Unfocus.
+    }
     destruct H6; [clear - H0 H6 | clear - H1 H6].
     + pose proof (resource_at_join _ _ _ l H0).
       apply join_comm in H.
@@ -36,7 +36,7 @@ Proof.
       apply split_identity in H; auto.
     + clear H2 H3. apply ghost_of_join in H1.
       apply split_identity in H1; auto.
-  } Unfocus.
+  }
   split; auto.
   pose proof H6 _ _ H1.
   pose proof H6 _ _ (join_comm H0).
@@ -69,15 +69,15 @@ Proof.
   unfold nonlock_permission_bytes, disjointed; intros.
   simpl in H2, H3. destruct H2, H3.
   assert (identity h2).
-  Focus 1. {
+  1: {
     apply all_resource_at_identity.
     intros l; specialize (H2 l); specialize (H3 l).
     assert (identity (h12 @ l) \/ identity (h23 @ l)).
-    Focus 1. {
+    1: {
       destruct (adr_range_dec l1 n1 l), (adr_range_dec l2 n2 l); try tauto.
       specialize (H (ex_intro _ _ (conj a a0))).
       tauto.
-    } Unfocus.
+    }
     destruct H6; [clear - H0 H6 | clear - H1 H6].
     + pose proof (resource_at_join _ _ _ l H0).
       apply join_comm in H.
@@ -86,7 +86,7 @@ Proof.
       apply split_identity in H; auto.
     + clear H2 H3. apply ghost_of_join in H1.
       apply split_identity in H1; auto.
-  } Unfocus.
+  }
   split; auto.
   pose proof H6 _ _ H1.
   pose proof H6 _ _ (join_comm H0).

@@ -440,7 +440,7 @@ Module SIMPLE_SPANNING_TREE.
           * intro. apply H5. destruct H6 as [s [? ?]]. exists s. split; auto.
             rewrite Coqlib.list_append_map. apply in_or_app. left; auto.
           * clear H1 H2 IHspanning_list' H. induction H0.
-            Focus 1. {
+            1: {
               rewrite app_nil_l in *. simpl. intro. apply H5. clear H5.
               assert (map (dst g0) es = map (dst g1) es). {
                 clear H0.
@@ -455,8 +455,8 @@ Module SIMPLE_SPANNING_TREE.
               rewrite (si_reachable_by_through_set g1 g0 _ _
                                                    (fun x0 : V => P x0 /\ ~ reachable_by_through_set g1 nil P x0)); auto.
               hnf. intros. simpl. rewrite reachable_by_through_nil. intuition.
-            } Unfocus.
-            Focus 1. {
+            }
+            1: {
               assert (Forall (evalid g1) (es0 ++ es)). {
                 rewrite Forall_forall in H3 |-* . intros.
                 apply H3. apply in_app_or in H1. apply in_or_app.
@@ -887,19 +887,19 @@ Module SIMPLE_SPANNING_TREE.
           apply (spanning_tree_root_vvalid _ _ _ _ H14); auto.
         - destruct H14 as [_ [_ [? _]]]. rewrite <- H16. apply H14.
           destruct H5 as [[? ?] | [? ?]].
-          Focus 1. {
+          1: {
             destruct H17 as [? _]. destruct H9 as [p ?]. exists p.
             eapply (ppg_reachable_by_path_to g1 g2); eauto.
             intros. simpl. destruct H9 as [_ [? ?]].
             rewrite path_prop_equiv in H19; auto. 
             specialize (H19 _ H18). destruct H19; auto.
-          } Unfocus.
-          Focus 1. {
+          }
+          1: {
             destruct H9 as [p ?]. exists p. apply (gremove_reachable_by_derive g1 e1 g2); auto.
             repeat intro. subst. destruct H9 as [_ [? ?]]. rewrite path_prop_equiv in H19; auto.
             assert (In_path g1 (src g1 e1) p) by (right; exists e1; split; auto). specialize (H19 _ H20).
             destruct H19 as [[_ ?] _]. destruct H3. subst root. auto.
-          } Unfocus.
+          }
     Qed.
 
     Lemma spanning_bi_tree: forall (P: V -> Prop) g1 root g2 g3 (e1 e2 : E),
@@ -1617,13 +1617,13 @@ Section SPANNING.
       specialize (IHspanning_list H6 H7 H8). destruct IHspanning_list. split.
       - unfold componded_mark_list. simpl. split_relation_list ((lg_gg g2) :: nil); auto.
         * hnf in H4. destruct (node_pred_dec (marked g1) (dst g1 e)).
-          Focus 1. {
+          1: {
             destruct H4. apply gremove_is_componded_mark; auto.
             apply Forall_inv in H1. auto.
-          } Unfocus.
-          Focus 1. {
+          }
+          1: {
             apply spanning_tree_is_componded_mark; auto.
-          } Unfocus.
+          }
         * unfold componded_mark_list in H9.
           assert (map (dst g1) rest = map (dst g2) rest). {
             apply NoDup_cons_2 in H0. apply Forall_tl in H1.
@@ -1650,16 +1650,16 @@ Section SPANNING.
   Proof.
     intros. rewrite spanning_tree_inj.
     apply (spanning_list_inj _ _ _ root) in H4.
-    Focus 2. { destruct H3 as [_ [? _]]; auto. } Unfocus.
-    Focus 2. {
+    2: { destruct H3 as [_ [? _]]; auto. }
+    2: {
       constructor.
       + intro. apply H. simpl in H5. destruct H5; [|exfalso]; auto.
       + constructor. intro. inversion H5. constructor.
-    } Unfocus.
-    Focus 2. {
+    }
+    2: {
       rewrite Forall_forall. intros. rewrite H0 in H5.
       destruct H3. apply (out_edges_si _ _ root x) in H3. intuition.
-    } Unfocus.
+    }
     destruct H4. split.
     + assert (step_list g root (map (dst g1) (e1 :: e2 :: nil))). {
         hnf. destruct H3. intros.

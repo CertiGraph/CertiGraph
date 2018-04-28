@@ -942,33 +942,33 @@ Section ADD_GRAPH_GEN.
           rewrite only_two_edges. right; auto. specialize (H0 x); intuition.
         * simpl. destruct H1. right; specialize (H0 x); intuition. destruct BI.
           rewrite only_two_edges in H1. destruct H1.
-          Focus 1. { right. subst e1. subst x. auto. } Unfocus.
-          Focus 1. { left. subst e2. subst x. auto. } Unfocus.
+          1: { right. subst e1. subst x. auto. }
+          1: { left. subst e2. subst x. auto. }
       - remember (left_out_edge v) as e1. remember (right_out_edge v) as e2. exists (e1 :: l0).
         split. constructor; auto. intro; split; intro.
         * destruct H1; [right | left]. subst x. subst e1. destruct BI.
           rewrite only_two_edges. left; auto. specialize (H0 x); intuition.
         * simpl. destruct H1. right; specialize (H0 x); intuition. destruct BI.
           rewrite only_two_edges in H1. destruct H1.
-          Focus 1. { left. subst e1. subst x. auto. } Unfocus.
-          Focus 1. { right. subst e2. subst x. auto. } Unfocus.
+          1: { left. subst e1. subst x. auto. }
+          1: { right. subst e2. subst x. auto. }
       - remember (left_out_edge v) as e1. remember (right_out_edge v) as e2. exists (e1 :: e2 :: l0). split.
         * constructor. intro. destruct H1; auto. destruct BI.
           specialize (bi_consist v). subst. auto. constructor; auto.
         * intro. split; intro.
-          Focus 1. {
+          1: {
             simpl in H1. destruct H1; [|destruct H1].
             + right. subst x. subst e1. destruct BI. rewrite only_two_edges. left; auto.
             + right. subst x. subst e2. destruct BI. rewrite only_two_edges. right; auto.
             + left. specialize (H0 x). intuition.
-          } Unfocus.
-          Focus 1. {
+          }
+          1: {
             destruct H1.
             + simpl. right; right. specialize (H0 x). intuition.
             + destruct BI. rewrite only_two_edges in H1. simpl. destruct H1.
               - left. subst x. subst e1. auto.
               - right; left. subst x. subst e2. auto.
-          } Unfocus.
+          }
   Qed.
 *)
 End ADD_GRAPH_GEN.

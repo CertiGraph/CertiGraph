@@ -2,7 +2,7 @@ Require Import VST.msl.Extensionality.
 Require Import RamifyCoq.CertiGC.bounded_numbers.
 Require Import ZArith.
 
-Open Local Scope Z.
+Local Open Scope Z.
 
 Lemma two_power_nat_pos: forall n,
   0 < two_power_nat n.

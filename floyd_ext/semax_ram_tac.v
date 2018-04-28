@@ -263,12 +263,12 @@ Proof.
   assert (forall a,
             EnvironStable (vars_relation (modifiedvars s)) (LOCALx (QG1' a) TT) /\
             LOCALx (QG' a) TT = LOCALx (QG1' a) TT && LOCALx (QG2' a) TT).
-  Focus 1. {
+  1: {
     intro a; clear - H.
     destruct (H a) as [? [? [? [? ?]]]].
     subst.
     apply split_by_closed_spec; auto.
-  } Unfocus.
+  }
   pose proof (fun a => (proj1 (H4 a))).
   pose proof (fun a => (proj2 (H4 a))).
   clear H H4.
@@ -286,7 +286,7 @@ Proof.
       (fun a: A => LOCALx (QL' a) TT --> LOCALx (QG2' a) TT) && 
       (fun a: A => 
        (!!Pure a --> (SEPx (RL' a) -* SEPx (RG' a)))))).
-  Focus 1. {
+  1: {
     apply allp_derives; intro a.
     change
      (((fun a0 : A => LOCALx (QG1' a0) TT) &&
@@ -307,32 +307,32 @@ Proof.
     eapply derives_trans; [| apply wand_corable_andp; apply corable_LOCAL].
     apply andp_derives; auto.
     apply corable_andp_wand_corable_andp; apply corable_LOCAL.
-  } Unfocus.
+  }
 
   rewrite !allp_andp.
   rewrite !@EnvironBox_andp.
   rewrite andp_assoc, corable_sepcon_andp1
     by (apply EnvironBox_corable, @corable_allp; intro; apply corable_LOCAL).
   apply andp_derives.
-  Focus 1. {
+  1: {
     rewrite @EnvironStable_EnvironBox.
     + apply allp_right; intro a; auto.
     + apply vars_relation_Equivalence.
     + apply EnvironStable_allp; auto.
-  } Unfocus.
+  }
 
   rewrite corable_sepcon_andp1
     by (apply EnvironBox_corable, @corable_allp; intro;
         apply corable_imp; apply corable_LOCAL).
   apply andp_right.
-  Focus 1. {
+  1: {
     apply derives_trans with TT; [apply TT_right |].
     rewrite <- (@EnvironBox_TT _ _ _ (vars_relation (modifiedvars s))) at 1.
     apply EnvironBox_derives.
     apply allp_right; intro a.
     apply imp_andp_adjoint.
     apply andp_left2; auto.
-   } Unfocus.      
+   }      
 
    auto.
 Qed.
@@ -347,10 +347,10 @@ Proof.
   intros.
   apply sepcon_EnvironBox_weaken with
    (ALL  a : A , !!Pure a --> (SEPx (L' a) -* SEPx (G' a))).
-  Focus 1. {
+  1: {
     apply allp_derives; intro a.
     auto.
-  } Unfocus.
+  }
 
   intro rho; unfold SEPx at 1 2; simpl.
   fold (ModBox s); rewrite go_lower_ModBox.

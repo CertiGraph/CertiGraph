@@ -17,7 +17,7 @@ Require Import RamifyCoq.CertiGC.bounded_numbers.
 
 Section GC_Graph.
 
-Open Local Scope ord.
+Local Open Scope ord.
 
 (* RawGraph: Vertices, Edges, Labels *)
 

@@ -979,13 +979,13 @@ Proof.
       unfold Ensembles.In. exists y.
       split; [apply in_eq | apply reachable_by_refl; [|hnf]; trivial].
     - assert (Same_set (reachable_through_set g (a :: S)) (reachable_through_set g S)).
-      Focus 1. {
+      1: {
         split.
         + apply Extensionality_Ensembles in H; rewrite H.
           intro x; intro. inversion H2.
         + intro; intros. destruct H2 as [s [? ?]]. 
           exists s; split; trivial; apply in_cons; trivial.
-      } Unfocus.
+      }
       rewrite <- H2 in IHS. pose proof (IHS H y).
       apply H3; trivial.
   + intros. split; repeat intro.

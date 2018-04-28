@@ -108,7 +108,7 @@ Proof.
   rewrite !(sepcon_comm F).
   apply RAMIF_PLAIN.frame.
   assert (vertices_at (Intersection _ (vvalid (initial_copied_Graph x x0 g)) (fun u : addr => x0 <> u)) (initial_copied_Graph x x0 g) = emp).
-  Focus 1. {
+  1: {
     erewrite <- vertices_at_False.
     apply vertices_at_Same_set.
     rewrite Same_set_spec; intros ?.
@@ -116,7 +116,7 @@ Transparent initial_copied_Graph. simpl. Opaque initial_copied_Graph.
     unfold update_vlabel.
     if_tac; [| congruence].
     split; [intros [? ?]; congruence | tauto].
-  } Unfocus.
+  }
   rewrite H2, emp_sepcon.
   apply va_reachable_root_update_ramify; auto.
 Qed.
@@ -155,11 +155,11 @@ Proof.
     unfold update_vlabel; simpl.
     destruct_eq_dec x x; [auto | congruence].
   + assert (LocalGraphCopy.vmap (Graph_vgen G x x0) x = x0).
-    Focus 1. {
+    1: {
       simpl.
       unfold update_vlabel; simpl.
       destruct_eq_dec x x; auto; congruence.
-    } Unfocus.
+    }
     pattern x0 at 1; rewrite <- H2.
     apply single_vertex_guarded_BiMaFin.
 Qed.
@@ -363,10 +363,10 @@ Proof.
   destruct H as [X ?].
   set (G := (Build_GeneralGraph _ _ _ (fun g => BiMaFin (pg_lg g)) _ X: Graph)).
   assert (evalid G e0).
-  Focus 1. {
+  1: {
     simpl.
     rewrite Intersection_spec; auto.
-  } Unfocus.
+  }
   pose proof @valid_graph _ _ _ _ G _ (maGraph _) _ H5.
   destruct H6.
   destruct e0.
@@ -413,7 +413,7 @@ Proof.
   rewrite (sepcon_comm (vertices_at _ _)), <- sepcon_assoc, (add_andp _ _ H9); normalize.
   clear H9 H10.
   spec H5.
-  Focus 1. {
+  1: {
     apply is_BiMaFin_disjoint_guard with (x0 := x0) (es0 := nil); auto.
     + eapply vcopy1_copied_root_valid in H1; auto.
       subst x0; auto.
@@ -422,7 +422,7 @@ Proof.
       rewrite (copy_vvalid_weak_eq g1 g2 g2'' l l0 H4 H2).
       apply Disjoint_comm.
       apply (Disjoint_x1' _ _ _ H11 H12).
-  } Unfocus.
+  }
 
   unfold map in H5; rewrite H3 in BMF.
   rewrite <- H3 in BMF;
@@ -433,28 +433,28 @@ Proof.
   apply (exp_right g2').
 
   destruct_eq_dec x0 null.
-  Focus 1. {
+  1: {
     clear - H14.
     subst x0.
     pose proof @vertex_at_not_null _ _ _ _ _ _ _ _ null SGAvn d0.
     rewrite (add_andp _ _ H).
     normalize.
-  } Unfocus.
+  }
   
   apply andp_right; [apply prop_right; split; auto | rewrite sepcon_assoc; apply sepcon_derives; auto].
   assert (Prop_join (vvalid g1') (vvalid g2'') (vvalid g2')) as HPJ.
-  Focus 1. {
+  1: {
     eapply copy_and_extended_copy; eauto.
     rewrite <- H7; auto.
-  } Unfocus.
+  }
   assert (Prop_join (Intersection addr (vvalid g1') (fun x1 : addr => x0 <> x1))
                 (vvalid g2'')
                 (Intersection addr (vvalid g2') (fun x1 : addr => x0 <> x1))) as HPJ1.
-  Focus 1. {
+  1: {
     apply Prop_join_shrink1; auto.
     eapply vcopy1_copied_root_valid in H1; auto.
     rewrite H3; auto.
-  } Unfocus.
+  }
   rewrite (vertices_at_vertices_identical (Graph_PointwiseGraph g2'') (LGraph_SGraph g2')).
   rewrite (vertices_at_vertices_identical (LGraph_SGraph g1') (LGraph_SGraph g2')).
   + erewrite vertices_at_sepcon_xx; [apply derives_refl |].
@@ -513,22 +513,22 @@ Proof.
   intros.
   unfold ecopy1.
   assert (~ evalid g2' (x0, L)) as HH.
-  Focus 1. {
+  1: {
     eapply is_BiMaFin_not_evalid; eauto; [| intros ? []].
     eapply extended_copy_vvalid_mono in H2; [exact H2 |].
     eapply vcopy1_copied_root_valid in H1; auto.
     subst x0; auto.
-  } Unfocus.
+  }
   split; [split; [| split] | split].
   + reflexivity.
   + apply WeakMarkGraph.labeledgraph_egen_do_nothing.
   + assert (g ~=~ g2) as HH0.
-    Focus 1. {
+    1: {
       destruct H1 as [? _], H2 as [? _].
       rewrite <- H2, <- H1; reflexivity.
-    } Unfocus.
+    }
     assert (x0 = LocalGraphCopy.vmap g2 (src g2 (x, L))) as HH1.
-    Focus 1. {
+    1: {
       rewrite left_right_sound by (rewrite <- (proj1 HH0); auto).
       destruct H1 as [_ [? _]], H2 as [_ [_ ?]].
       subst x0.
@@ -539,7 +539,7 @@ Proof.
       apply reachable_by_foot_prop in H3.
       apply H3.
       destruct H1 as [_ [? _]]; auto.
-    } Unfocus.
+    }
     destruct H4.
     - pose proof LocalGraphCopy.labeledgraph_egen_ecopy1_not_vvalid g2 g2' (x, L) (x0, L) x0 l0.
       apply H7; clear H7; auto.
@@ -629,13 +629,13 @@ Proof.
   spec H8; [repeat constructor; intro HH; inversion HH; inversion H12 |].
   spec H8; [auto |].
   spec H8.
-  Focus 1. {
+  1: {
     unfold edge_copy_list; simpl map.
     split_relation_list (@nil (@LGraph _ addr (addr * LR) unit * @LGraph _ addr (addr * LR) unit)).
     unfold edge_copy.
     split_relation_list ((g2: LGraph, g2') :: nil); auto.
     rewrite H10; auto.
-  } Unfocus.
+  }
   spec H8; [subst r; auto |].
   spec H8; [subst r; auto |].
 
@@ -647,7 +647,7 @@ Proof.
   rewrite (sepcon_comm (vertices_at _ _)), <- sepcon_assoc, (add_andp _ _ H12); normalize.
   clear H12 H13.
   spec H8.
-  Focus 1. {
+  1: {
     apply is_BiMaFin_disjoint_guard with (x0 := x0) (es0 := (x0, L) :: nil); auto.
     + eapply ecopy1_vvalid_mono in H3; [exact H3 |].
       eapply extended_copy_vvalid_mono in H2; [exact H2 |].
@@ -659,7 +659,7 @@ Proof.
       rewrite (copy_vvalid_weak_eq g3 g4 g4'' r r0 H7 H4).
       apply Disjoint_comm.
       apply (Disjoint_x1' _ _ _ H14 H15).
-  } Unfocus.
+  }
 
   unfold map in H8. rewrite H6 in BMF.
   specialize (H8 BMF).
@@ -669,13 +669,13 @@ Proof.
   apply (exp_right g4').
 
   destruct_eq_dec x0 null.
-  Focus 1. {
+  1: {
     clear - H17.
     subst x0.
     pose proof @vertex_at_not_null _ _ _ _ _ _ _ _ null SGAvn d0.
     rewrite (add_andp _ _ H).
     normalize.
-  } Unfocus.
+  }
 
   pose proof (extend_copy_emap_root g g1 g3 g4 g1' g3' g4' x ((x, L) :: (x, R) :: nil) ((x, L) :: nil) (x, R) nil H).
   spec H18; [simpl; unfold Complement, Ensembles.In; congruence |].
@@ -684,13 +684,13 @@ Proof.
   spec H18; [repeat constructor; intro HH; inversion HH; inversion H19 |].
   spec H18; [auto |].
   spec H18.
-  Focus 1. {
+  1: {
     unfold edge_copy_list; simpl map.
     split_relation_list (@nil (@LGraph _ addr (addr * LR) unit * @LGraph _ addr (addr * LR) unit)).
     unfold edge_copy.
     split_relation_list ((g2: LGraph, g2') :: nil); auto.
     rewrite H10; auto.
-  } Unfocus.
+  }
   spec H18; [subst r; auto |].
   rewrite H6.
   replace ((@LocalGraphCopy.emap _ _ _ _ _ _ _ _ _ _ _ _ GMS g3 (x, L)) :: nil) with (LocalGraphCopy.emap g4 (x, L) :: nil) by (symmetry; auto).
@@ -698,20 +698,20 @@ Proof.
 
   apply andp_right; [apply prop_right; split; auto | rewrite sepcon_assoc; apply sepcon_derives; auto].
   assert (Prop_join (vvalid g3') (vvalid g4'') (vvalid g4')).
-  Focus 1. {
+  1: {
     eapply copy_and_extended_copy; eauto.
     rewrite <- H11; auto.
-  } Unfocus.
+  }
   assert (Prop_join (Intersection addr (vvalid g3') (fun x1 : addr => x0 <> x1))
                 (vvalid g4'')
                 (Intersection addr (vvalid g4') (fun x1 : addr => x0 <> x1))) as HPJ1.
-  Focus 1. {
+  1: {
     apply Prop_join_shrink1; auto.
     eapply ecopy1_vvalid_mono in H3; [exact H3 |].
     eapply extended_copy_vvalid_mono in H2; [exact H2 |].
     eapply vcopy1_copied_root_valid in H1; auto.
     rewrite H5; auto.
-  } Unfocus.
+  }
   rewrite (vertices_at_vertices_identical (Graph_PointwiseGraph g4'') (LGraph_SGraph g4')).
   rewrite (vertices_at_vertices_identical (LGraph_SGraph g3') (LGraph_SGraph g4')).
   + erewrite vertices_at_sepcon_xx; [apply derives_refl |].
@@ -773,7 +773,7 @@ Proof.
   intros.
   unfold ecopy1.
   assert (~ evalid g4' (x0, R)) as HH.
-  Focus 1. {
+  1: {
     eapply is_BiMaFin_not_evalid; eauto.
     + eapply extended_copy_vvalid_mono in H4; [exact H4 |].
       eapply ecopy1_vvalid_mono in H3; [exact H3 |].
@@ -784,35 +784,35 @@ Proof.
       subst e; auto.
     + intros [? | []].
       inversion H10.
-  } Unfocus.
+  }
   split; [split; [| split] | split].
   + reflexivity.
   + apply WeakMarkGraph.labeledgraph_egen_do_nothing.
   + assert (g ~=~ g4) as HH0.
-    Focus 1. {
+    1: {
       destruct H1 as [? _], H2 as [? _], H3 as [? _], H4 as [? _].
       rewrite <- H4, <- H3, <- H2, <- H1; reflexivity.
-    } Unfocus.
+    }
     assert (x0 = LocalGraphCopy.vmap g4 (src g4 (x, R))) as HH1.
-    Focus 1. {
+    1: {
       rewrite left_right_sound by (rewrite <- (proj1 HH0); auto).
       subst x0.
       assert (WeakMarkGraph.marked g1 x).
-      Focus 1. {
+      1: {
         destruct H1 as [_ [? _]].
         destruct H1 as [_ [? _]]; auto.
-      } Unfocus.
+      }
       assert (WeakMarkGraph.marked g3 x).
-      Focus 1. {
+      1: {
         destruct H3 as [_ [? _]].
         rewrite <- (proj2 H3).
         eapply WeakMarkGraph.mark_marked; [destruct H2 as [_ [H2 _]]; exact H2 | auto].
-      } Unfocus.
+      }
       rewrite (extended_copy_vmap_root g1 g2 g1' g2' l x) by auto.
       rewrite (ecopy1_vmap_root g2 g3 g2' g3' (x, L) x H3).
       rewrite (extended_copy_vmap_root g3 g4 g3' g4' r x) by auto.
       reflexivity.
-    } Unfocus.
+    }
     destruct H7.
     - pose proof LocalGraphCopy.labeledgraph_egen_ecopy1_not_vvalid g4 g4' (x, R) (x0, R) x0 r0.
       apply H10; clear H10; auto.

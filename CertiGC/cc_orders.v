@@ -4,7 +4,7 @@ Require Import RamifyCoq.lib.Coqlib.
 Require Import VST.floyd.proofauto. (* It would be nice to trim this down at some point. *)
 Require Import RamifyCoq.CertiGC.orders.
 
-Open Local Scope ord.
+Local Open Scope ord.
 
 Lemma ptrofs_int_val_eq: forall i j, Ptrofs.intval i = Ptrofs.intval j -> i = j.
 Proof. intros [i] [j]. simpl; intros. apply Ptrofs.mkint_eq. auto. Qed.

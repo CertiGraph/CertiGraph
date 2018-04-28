@@ -5,6 +5,8 @@ Require Import RamifyCoq.lib.List_ext.
 Require Import RamifyCoq.lib.relation_list.
 Require Import RamifyCoq.lib.Equivalence_ext.
 Require Import RamifyCoq.graph.graph_model.
+Require Import RamifyCoq.graph.graph_gen.
+Require Import RamifyCoq.graph.path_lemmas.
 
 Section FiniteGraph.
 
@@ -78,8 +80,6 @@ Proof.
   + revert Y; apply Enumerable_Same_set.
     destruct H as [_ [? _]]; rewrite Same_set_spec; auto.
 Qed.
-
-Require Import RamifyCoq.graph.graph_gen.
 
 Lemma gen_dst_preserve_finite: forall (g: PreGraph V E) e t, FiniteGraph g -> FiniteGraph (pregraph_gen_dst g e t).
 Proof.
@@ -222,8 +222,6 @@ Proof.
       unfold Ensembles.In; simpl; rewrite !Intersection_spec.
       destruct H0 as [? _]; specialize (H0 e); tauto.
 Qed.
-
-Require Import RamifyCoq.graph.path_lemmas.
 
 Lemma FiniteGraph_EnumCovered: forall (g: PreGraph V E) (fin: FiniteGraph g) x, EnumCovered V (reachable g x).
 Proof.

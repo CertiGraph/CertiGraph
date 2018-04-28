@@ -69,11 +69,11 @@ Proof.
   pose proof proj1 H1.
   rewrite <- H3 in H2.
   assert (localDag g1 l).
-  Focus 1. {
+  1: {
     rewrite <- H3.
     eapply local_dag_step; eauto.
     eapply gamma_step; eauto.
-  } Unfocus.
+  }
   rewrite prop_true_andp by auto.
   match goal with
   | |- _ |-- _ * ?A =>
@@ -83,14 +83,14 @@ Proof.
       (vertices_at (reachable g' l) g' -*
        vertices_at (reachable g' x) g'))
   end.
-  Focus 2. {
+  2: {
     apply allp_congr; intros g2.
     apply imp_prop_ext; [reflexivity |].
     intros [_ ?].
     rewrite prop_true_andp by (rewrite <- H5; auto).
     rewrite prop_true_andp by (rewrite <- H5, <- H3; auto).
     reflexivity.
-  } Unfocus.
+  }
   eapply graph_ramify_left; eauto.
 Qed.
 
@@ -112,11 +112,11 @@ Proof.
   destruct H2 as [_ ?].
   rewrite <- H2, <- H1 in H4.
   assert (localDag g2 r).
-  Focus 1. {
+  1: {
     rewrite <- H2, <- H1.
     eapply local_dag_step; eauto.
     eapply gamma_step; eauto.
-  } Unfocus.
+  }
   rewrite prop_true_andp by auto.
 
   match goal with
@@ -127,14 +127,14 @@ Proof.
       (vertices_at (reachable g' r) g' -*
        vertices_at (reachable g' x) g'))
   end.
-  Focus 2. {
+  2: {
     apply allp_congr; intros g3.
     apply imp_prop_ext; [reflexivity |].
     intros [_ ?].
     rewrite prop_true_andp by (rewrite <- H6; auto).
     rewrite prop_true_andp by (rewrite <- H6, <- H2, <- H1; auto).
     reflexivity.
-  } Unfocus.
+  }
   auto.
 Qed.
 

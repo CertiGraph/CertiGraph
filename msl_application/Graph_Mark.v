@@ -121,11 +121,11 @@ Proof.
     simpl in *; intros.
     specialize (H0 v).
     assert (~ g |= x ~o~> v satisfying (WeakMarkGraph.unmarked g)).
-    Focus 1. {
+    1: {
       destruct H1.
       intro; apply H3.
       apply reachable_by_is_reachable in H4; auto.
-    } Unfocus.
+    }
     clear - H0 H3.
     destruct (vlabel g v), (vlabel g' v).
     - auto.
@@ -183,10 +183,10 @@ Lemma mark_neighbor_ramify: forall {A} (g1: Graph) (g2: A -> Graph) x y,
 Proof.
   intros.
   assert (Included (reachable g1 y) (reachable g1 x)).
-  Focus 1. {
+  1: {
     hnf; unfold Ensembles.In; intros.
     apply step_reachable with y; auto.
-  } Unfocus.  
+  }  
   apply vertices_at_ramif_xQ. eexists. split; [|split].
   + apply Ensemble_join_Intersection_Complement; auto. 
   + intros. destruct H5 as [_ ?].
