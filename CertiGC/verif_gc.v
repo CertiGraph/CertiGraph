@@ -76,11 +76,11 @@ Definition cleared_for_forward (g: env_Graph) (gen: nat) (sta nxt lim p : addr) 
 Local Close Scope ord. 
 
 
+
 (* 
 Known Issues/Comments:
 1. can I just take a space, and then get the parameters from inside the space and then hook up those parameters to the function arguments when linking in PRE?
-2. Need an array mpred in PRE SEP. It's something like "sepcon (array mpred) (graph mpred)". Probably worth defining outside in a function because we'll need to cook up many such mpreds.
-3. If you see the WITH, you'll see that we have a "gen : nat" in there. The idea is that the caller (or the caller's caller) will know the generation number, (it will just be the i in the for loop) and so it should be possible for forward to know what the i is. If this is actually the case, we'll benefit greatly because we'll know the current generation number for free.
+2. If you see the WITH, you'll see that we have a "gen : nat" in there. The idea is that the caller (or the caller's caller) will know the generation number, (it will just be the i in the for loop) and so it should be possible for forward to know what the i is. If this is actually the case, we'll benefit greatly because we'll know the current generation number for free.
 *)
 Definition forward_spec :=
  DECLARE _forward
@@ -92,7 +92,7 @@ Definition forward_spec :=
   	p: pointer_val,
         depth : nat,
         gen : nat, (* implicit, thanks to the caller *)
-        roots_locs: list pointer_val 
+        roots_locs: pointer_val 
                                
   PRE [ _from_start OF tptr (Tlong Unsigned noattr),
   	_from_limit OF tptr (Tlong Unsigned noattr),
@@ -104,7 +104,7 @@ Definition forward_spec :=
   	    temp _from_limit (pointer_val_val limit);
   	    temp _next (pointer_val_val next);(* *)
   	    temp _p (pointer_val_val p) )
-  	SEP ((*tarray roots_locs roots *) gc_graph_pred roots g) 
+  	SEP ((array_pred sh roots roots_locs) * (gc_graph_pred roots g)) 
   POST [Tvoid]
   EX g' : Graph, EX roots: list addr,
   EX v: pointer_val, EX v': pointer_val,
@@ -123,6 +123,7 @@ Here we probably want to appeal to stepish from gc_mathgraph. This whole thing i
 (* The stuff below is not currently maintained *)
 (* *********************************************)
 
+(*
 Definition forward_roots_spec :=
  DECLARE _forward_roots
   WITH  sh: wshare,
@@ -250,3 +251,5 @@ Definition forward_roots_spec :=
         no_pointers_from  (*live roots slots of the args array *) (*from_start*) (*from_limit*))
      LOCAL ()
      SEP ().
+
+*)

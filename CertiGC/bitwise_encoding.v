@@ -60,11 +60,11 @@ Class tagcode (A : Type) : Type := {
   tag_encode_range  : forall a, (0 <= tag_encode a < two_power_nat tag_bitsize);
   tag_decode_encode : forall a, tag_decode (tag_encode a) = a
 }.
-Implicit Arguments tag_bitsize [A].
-Implicit Arguments tag_encode [A].
-Implicit Arguments tag_decode [A].
-Implicit Arguments tag_encode_range [A].
-Implicit Arguments tag_decode_encode [A].
+Arguments tag_bitsize [A].
+Arguments tag_encode [A].
+Arguments tag_decode [A].
+Arguments tag_encode_range [A].
+Arguments tag_decode_encode [A].
 
 Program Definition tag_boundZ (n : nat) : tagcode (boundZ n) :=
   Build_tagcode (boundZ n) n (fun bz => proj1_sig bz) 

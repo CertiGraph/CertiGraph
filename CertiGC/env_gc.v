@@ -30,6 +30,7 @@ Definition null : addr := NullPointer.
 
 Definition maxfields_nat := Z.to_nat (two_power_nat fieldbits).
 Definition maxtags_nat := Z.to_nat (two_power_nat tagbits).
+Definition max_spaces := 12. (* This is temporary; I'll fetch it properly later! *)
 
 (* **** *)
 
@@ -113,7 +114,7 @@ Definition size (a1 a2 : addr) (diff : nat) : Prop :=
   | _, _ => False
   end.
 
-Definition env_Graph := @Graph addr _ null _ size val maxfields_nat tagnum.
+Definition env_Graph := @Graph addr _ null _ size val maxfields_nat tagnum (Z.to_nat max_spaces).
 
 Local Coercion pg_lg : LabeledGraph >-> PreGraph.
 Local Coercion lg_gg : GeneralGraph >-> LabeledGraph.
@@ -160,6 +161,14 @@ Definition followEdge (g: env_Graph) (f : @field addr val) : val :=
 Definition nr2gctc (nr : my_node_rep) : (bool * tagnum * fieldnum) :=
   (nr_color nr, nr_tag nr, nat_fieldnum nr).
 
+(* Possible TODO: Take roots : list int and make the conversion to val in this function *)
+Program Definition array_pred (sh: share) (roots: list addr) (roots_loc : pointer_val) : mpred :=
+  data_at
+    sh
+    (Tarray (Tint I32 Unsigned noattr) (Z.of_nat (length roots)) noattr)
+    (map pointer_val_val roots)
+    (pointer_val_val roots_loc).
+    
 Program Definition node_pred (sh: share) (g: env_Graph) (p: addr) (nr : my_node_rep) : mpred :=
   data_at
           sh
