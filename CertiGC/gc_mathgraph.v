@@ -75,7 +75,7 @@ Record space : Type := {
 }.
 
 Record heap : Type := {
-  spaces : list space;
+  spaces :> list space;
   spaces_bound : length spaces <= max_spaces
 }.
 
@@ -90,7 +90,7 @@ Record thread_info : Type := {
     ti_heap: heap
 }.
 
-Definition LG : Type := list space.
+Definition LG : Type := heap.
 
 Definition raw_GCgraph : Type := LabeledGraph V E LV LE LG.
 
@@ -472,11 +472,11 @@ Lemma in_gen_dec (g : Graph) (n : nat) (x : V) :
   {in_gen g n x} + {~ in_gen g n x}.
 Proof.
   unfold in_gen. remember (glabel g). clear Heql. rename l into y.
-  revert n. induction y; intro.
-  + right. intro. destruct H as [? [? _]].
-    destruct n; inversion H.
+  revert n. destruct y. induction spaces; intro.
+  + right. intro.
+    destruct n; destruct H; destruct H; inversion H.
   + destruct n.
-    * simpl. clear IHy.
+    * simpl. clear IHl.
       destruct a; simpl in *.
       case (ord_dec start0 x); intro.
       - case (sord_dec x next0); intro.
@@ -488,7 +488,7 @@ Proof.
       - right. intro. destruct H as [s [? ?]].
         inversion H. subst s. red in H0.
         simpl in H0. destruct H0. contradiction.
-    * simpl. apply IHy.
+    * simpl. apply IHl.
 Qed.
 
 Definition from_space (gen : nat) : nat := gen.
