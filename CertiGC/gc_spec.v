@@ -54,6 +54,9 @@ Definition all_string_constants (gv: globals) : mpred :=
   cstring (map init_data2byte (gvar_init v___stringlit_14)) (gv ___stringlit_14) *
   cstring (map init_data2byte (gvar_init v___stringlit_15)) (gv ___stringlit_15) *
   cstring (map init_data2byte (gvar_init v___stringlit_16)) (gv ___stringlit_16).
+
+Definition MAX_SPACES: Z := 12.
+Definition NURSERY_SIZE: Z := Z.shiftl 1 16.
   
 Definition test_int_or_ptr_spec :=
  DECLARE _test_int_or_ptr
@@ -207,19 +210,27 @@ Definition create_space_spec :=
     EX p: val,
     PROP () LOCAL ()
     SEP (all_string_constants gv;
-         malloc_token Tsh (Tarray int_or_ptr_type n noattr) p;
-         data_at_ Tsh (Tarray int_or_ptr_type n noattr) p;
+         malloc_token Tsh (tarray int_or_ptr_type n) p;
+         data_at_ Tsh (tarray int_or_ptr_type n) p;
          data_at sh space_type (p, (p, (offset_val (4 * n) p))) s).
+
+Definition zero_triple: (val * (val * val)) :=
+  (Vint (Int.repr 0), (Vint (Int.repr 0), Vint (Int.repr 0))).
 
 Definition create_heap_spec :=
   DECLARE _create_heap
-  WITH sh: share, gv: globals
+  WITH gv: globals
   PRE []
-    PROP (writable_share sh) LOCAL (gvars gv) SEP (all_string_constants gv)
+    PROP () LOCAL (gvars gv) SEP (all_string_constants gv)
   POST [tptr heap_type]
-    EX h: val,
+    EX h: val, EX p: val,
     PROP () LOCAL (temp ret_temp h)
-    SEP (all_string_constants gv; data_at_ sh heap_type h).
+    SEP (all_string_constants gv; malloc_token Tsh heap_type h;
+         data_at Tsh heap_type
+                 ((p, (p, (offset_val (4 * NURSERY_SIZE) p)))
+                    :: list_repeat (Z.to_nat (MAX_SPACES - 1)) zero_triple) h; 
+         malloc_token Tsh (tarray int_or_ptr_type NURSERY_SIZE) p;
+         data_at_ Tsh (tarray int_or_ptr_type NURSERY_SIZE) p).
 
 Definition make_tinfo_spec :=
   DECLARE _make_tinfo

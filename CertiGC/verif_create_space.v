@@ -30,5 +30,5 @@ Proof.
                           data_at_ sh space_type s)).
       * contradiction.
       * forward. entailer!.
-      * forward. forward. forward. forward. Exists p. entailer!.
+      * forward. forward. forward. forward. Exists p. unfold tarray. entailer!.
 Qed.
