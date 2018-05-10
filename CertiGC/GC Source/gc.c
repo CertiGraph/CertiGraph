@@ -308,12 +308,8 @@ struct thread_info *make_tinfo(void) {
   struct thread_info *tinfo;
   h = create_heap();
   tinfo = (struct thread_info *)malloc(sizeof(struct thread_info));
-  if (!tinfo) {
-    fprintf(stderr, "Could not allocate thread_info struct\n");
-    exit(1);
-  }
-  
-
+  if (!tinfo)
+    abort_with("Could not allocate thread_info struct\n");
     
   tinfo->heap=h;
   tinfo->alloc=h->spaces[0].start;

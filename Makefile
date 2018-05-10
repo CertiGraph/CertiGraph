@@ -49,9 +49,11 @@ SAMPLE_MARK_FILES = \
 HIP_FILES = \
   hip_graphmark.v hip_graphmark_proofs.v spanningtree.v
 
+# Using "clightgen -DCOMPCERT -normalize gc.c" to generate gc.v
+
 CERTIGC_FILES = \
   orders.v bounded_numbers.v bitwise_encoding.v cc_orders.v cc_bitwise_encoding.v gc.v gc_mathgraph.v data_at_test.v spatial_graph_gc.v env_gc.v verif_gc.v \
-  gc_spec.v verif_create_space.v verif_create_heap.v
+  gc_spec.v verif_create_space.v verif_create_heap.v verif_make_tinfo.v
 
 CLIGHT_FILES = sample_mark/mark_bi.v sample_mark/garbage_collector.v sample_mark/dispose_bi.v sample_mark/copy_bi.v
 
