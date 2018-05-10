@@ -56,7 +56,19 @@ Definition all_string_constants (gv: globals) : mpred :=
   cstring (map init_data2byte (gvar_init v___stringlit_16)) (gv ___stringlit_16).
 
 Definition MAX_SPACES: Z := 12.
+Lemma MAX_SPACES_eq: MAX_SPACES = 12. Proof. reflexivity. Qed.
+Hint Rewrite MAX_SPACES_eq: rep_omega.
+Global Opaque MAX_SPACES.
+
 Definition NURSERY_SIZE: Z := Z.shiftl 1 16.
+Lemma NURSERY_SIZE_eq: NURSERY_SIZE = Z.shiftl 1 16. Proof. reflexivity. Qed.
+Hint Rewrite NURSERY_SIZE_eq: rep_omega.
+Global Opaque NURSERY_SIZE.
+
+Definition MAX_ARGS: Z := 1024.
+Lemma MAX_ARGS_eq: MAX_ARGS = 1024. Proof. reflexivity. Qed.
+Hint Rewrite MAX_ARGS_eq: rep_omega.
+Global Opaque MAX_ARGS.
   
 Definition test_int_or_ptr_spec :=
  DECLARE _test_int_or_ptr
@@ -214,8 +226,7 @@ Definition create_space_spec :=
          data_at_ Tsh (tarray int_or_ptr_type n) p;
          data_at sh space_type (p, (p, (offset_val (4 * n) p))) s).
 
-Definition zero_triple: (val * (val * val)) :=
-  (Vint (Int.repr 0), (Vint (Int.repr 0), Vint (Int.repr 0))).
+Definition zero_triple: (val * (val * val)) := (nullval, (nullval, nullval)).
 
 Definition create_heap_spec :=
   DECLARE _create_heap
@@ -234,12 +245,23 @@ Definition create_heap_spec :=
 
 Definition make_tinfo_spec :=
   DECLARE _make_tinfo
-  WITH u: unit
+  WITH gv: globals
   PRE []
-    PROP () LOCAL () SEP ()
+    PROP () LOCAL (gvars gv) SEP (all_string_constants gv)
   POST [tptr thread_info_type]
-    EX t: val,
-  PROP () LOCAL (temp ret_temp t) SEP ().
+    EX t: val, EX h: val, EX p: val,
+    PROP () LOCAL (temp ret_temp t)
+    SEP (all_string_constants gv;
+         malloc_token Tsh thread_info_type t;
+         data_at Tsh thread_info_type
+                 (p, (offset_val (4 * NURSERY_SIZE) p,
+                      (h, list_repeat (Z.to_nat MAX_ARGS) Vundef))) t;
+         malloc_token Tsh heap_type h;
+         data_at Tsh heap_type
+                 ((p, (p, (offset_val (4 * NURSERY_SIZE) p)))
+                    :: list_repeat (Z.to_nat (MAX_SPACES - 1)) zero_triple) h; 
+         malloc_token Tsh (tarray int_or_ptr_type NURSERY_SIZE) p;
+         data_at_ Tsh (tarray int_or_ptr_type NURSERY_SIZE) p).
 
 Definition resume_spec :=
   DECLARE _resume
