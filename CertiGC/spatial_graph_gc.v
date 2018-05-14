@@ -1,86 +1,82 @@
 Require Import RamifyCoq.msl_ext.iter_sepcon.
 Require Import RamifyCoq.msl_application.Graph.
-Require Import RamifyCoq.msl_application.GList.
+Require Import RamifyCoq.CertiGC.GraphGC.
 Require Import VST.veric.SeparationLogic.
-Require Import RamifyCoq.CertiGC.env_gc.
+Require Import RamifyCoq.CertiGC.env_graph_gc.
 Require Import RamifyCoq.floyd_ext.share.
 
-Local Open Scope logic.
+Section pPGG_VST.
 
-Section pSGG_VST.
+  Instance Val_EqDec: EquivDec.EqDec val eq. Proof. hnf. intros. apply Val.eq. Defined.
 
-Instance PointerVal_EqDec: EquivDec.EqDec pointer_val eq.
-  hnf; intros.
-  apply PV_eq_dec.
-Defined.
-
-Instance PointerValE_EqDec: EquivDec.EqDec (pointer_val * unit) eq.
-  hnf; intros. destruct x, y. 
-  destruct u, u0. destruct (PV_eq_dec p p0); [left | right]; congruence.
-Defined.
-
-Instance SGBA_VST: PointwiseGraphBasicAssum pointer_val (pointer_val * unit).
-  refine (Build_PointwiseGraphBasicAssum pointer_val (pointer_val * unit) _ _).
-Defined.
-
-End pSGG_VST.
-
-Instance pSGG_VST: pPointwiseGraph_GList.
-  refine (Build_pPointwiseGraph_GList pointer_val NullPointer SGBA_VST).
-Defined.
-
-(* Eval cbv in (reptype node_type). *)
-
-
-Section sSGG_VST.
-
-(*
-Instance MSLstandard sh g nr p : MapstoSepLog (AAV (SGP_VST sh g)) (node_pred sh g p nr).
+  Instance ValNat_EqDec: EquivDec.EqDec (val * nat) eq.
   Proof.
-    intros. apply mkMapstoSepLog. intros.
-    apply derives_precise with (memory_block sh (sizeof node_type) (pointer_val_val p)); [| apply memory_block_precise].
-    apply exp_left; intros [? ?]. unfold binode. apply data_at_memory_block.
+    hnf. intros. destruct x, y. destruct (Val.eq v v0). 2: right; congruence.
+    destruct (NPeano.Nat.eq_dec n n0); [left | right]; congruence.
   Defined.
 
-  Lemma sepcon_unique_vertex_at sh: writable_share sh -> sepcon_unique2 (@vertex_at _ _ _ _ _ (SGP_VST sh)).
+  Instance SGBA_VST: PointwiseGraphBasicAssum val (val * nat).
+  Proof. apply (Build_PointwiseGraphBasicAssum val (val * nat) _ _). Defined.
+
+End pPGG_VST.
+
+Existing Instance SGBA_VST.
+
+Instance pPGG_VST: pPointwiseGraph_GC.
+Proof. apply (Build_pPointwiseGraph_GC val nullval SGBA_VST). Defined.
+
+Definition vertex_block_to_fields_body (v: vertex_block): list val := v_fields v.
+
+Definition vertex_block_size (v: vertex_block) := (Z.of_nat (length (v_fields v))).
+
+Definition vertex_block_to_fields_head (v: vertex_block): val :=
+  Vint (Int.repr (vertex_block_size v)).
+
+Section sPGG_VST.
+
+  Definition block_rep (sh: share) (p: val) (v: vertex_block) : mpred :=
+    data_at sh tint (vertex_block_to_fields_head v)
+            (offset_val (-sizeof int_or_ptr_type) p) *
+    data_at sh (tarray int_or_ptr_type (vertex_block_size v))
+            (vertex_block_to_fields_body v) p.
+
+  Instance PGP_VST (sh: share):
+    PointwiseGraphPred val (val * nat) vertex_block unit mpred.
+  Proof.
+    apply (Build_PointwiseGraphPred _ _ _ _ _ (block_rep sh) (fun _ _ => emp)).
+  Defined.
+
+  Lemma sepcon_unique_vertex_at sh:
+    writable_share sh -> sepcon_unique2 (@vertex_at _ _ _ _ _ (PGP_VST sh)).
   Proof.
     intros. hnf; intros. simpl.
-    destruct y1 as [? ?], y2 as [? ?].
-    unfold binode.
-    rewrite data_at_isptr.
-    normalize.
-    apply data_at_conflict.
-    + apply sepalg.nonidentity_nonunit.
-      apply readable_nonidentity, writable_readable.
-      auto.
-    + change (sizeof node_type) with 12.
-      apply pointer_range_overlap_refl; auto; omega.
+    unfold block_rep. simpl.
+    rewrite <- sepcon_assoc, sepcon_comm. apply sepcon_FF_derives'.
+    rewrite sepcon_assoc, sepcon_comm, sepcon_assoc. apply sepcon_FF_derives'.
+    rewrite data_at_isptr. Intros. apply data_at_conflict.
+    + apply readable_nonidentity, writable_readable. auto.
+    + change (sizeof tint) with 4. omega.
   Qed.
 
-Instance SGA_VST (sh: share) : PointwiseGraphAssum (SGP_VST sh).
-  refine (Build_PointwiseGraphAssum _ _ _ _ _ _ _ _ _ _ _).
-Defined.
+  Instance PGA_VST (sh: share): PointwiseGraphAssum (PGP_VST sh).
+  Proof. apply (Build_PointwiseGraphAssum _ _ _ _ _ _ _ _ _ _ _). Defined.
 
-Instance SGAvs_VST (sh: wshare): PointwiseGraphAssum_vs (SGP_VST sh).
-  apply sepcon_unique_vertex_at; auto.
-Defined.
+  Instance PGAvs_VST (sh: wshare): PointwiseGraphAssum_vs (PGP_VST sh).
+  Proof. apply sepcon_unique_vertex_at; auto. Defined.
 
-Instance SGAvn_VST (sh: wshare): PointwiseGraphAssum_vn (SGP_VST sh) NullPointer.
-  intros [? ?].
-  simpl.
-  unfold binode.
-  rewrite data_at_isptr.
-  normalize.
-Defined.
+  Instance PGAvn_VST (sh: wshare): PointwiseGraphAssum_vn (PGP_VST sh) nullval.
+  Proof.
+    intros [? ?]. simpl. unfold block_rep. rewrite data_at_isptr. normalize.
+  Defined.
 
-End sSGG_VST.
+End sPGG_VST.
 
 Hint Extern 10 (@sepcon_unique2 _ _ _ _ _ (@vertex_at _ _ _ _ _ _)) => apply sepcon_unique_vertex_at; auto.
 
-Instance sSGG_VST (sh: wshare): @sPointwiseGraph_GList pSGG_VST nat unit.
-  refine (Build_sPointwiseGraph_GList pSGG_VST _ _ (SGP_VST sh) (SGA_VST sh) (SGAvs_VST sh) (SGAvn_VST sh)).
+Instance sPGG_VST (sh: wshare): @sPointwiseGraph_GraphGC pPGG_VST.
+Proof.
+  refine (Build_sPointwiseGraph_GraphGC
+            _ (PGP_VST sh) (PGA_VST sh) (PGAvs_VST sh) (PGAvn_VST sh)).
 Defined.
 
-Global Opaque pSGG_VST sSGG_VST.
- *)
-End sSGG_VST.
+Global Opaque pPGG_VST sPGG_VST.

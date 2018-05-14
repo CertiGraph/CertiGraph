@@ -1,9 +1,4 @@
-Require Export VST.floyd.proofauto.
-Require Export VST.floyd.library.
-Require Export RamifyCoq.CertiGC.gc.
-
-Instance CompSpecs : compspecs. make_compspecs prog. Defined.
-Definition Vprog : varspecs. mk_varspecs prog. Defined.
+Require Export RamifyCoq.CertiGC.env_graph_gc.
 
 Definition valid_int_or_ptr (x: val) :=
  match x with
@@ -26,10 +21,6 @@ rewrite <- Zmod_div_mod; try omega.
 - compute; reflexivity.
 - exists (Z.div Int.modulus 2). reflexivity.
 Qed.
-
-Definition thread_info_type : type := Tstruct _thread_info noattr.
-Definition space_type : type := Tstruct _space noattr.
-Definition heap_type: type := Tstruct _heap noattr.
 
 Definition init_data2byte (d: init_data) : byte :=
   match d with
