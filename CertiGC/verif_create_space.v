@@ -18,13 +18,13 @@ Proof.
     + subst p. forward_if False.
       * unfold all_string_constants. Intros.
         forward_call ((gv ___stringlit_6),
-                      (map init_data2byte (gvar_init v___stringlit_6))).
+                      (map init_data2byte (gvar_init v___stringlit_6)), rsh).
         exfalso; assumption.
       * inversion H0.
     + Intros. forward_if (
                      PROP ( )
                      LOCAL (temp _p p; temp _s s; temp _n (Vint (Int.repr n)))
-                     SEP (all_string_constants gv;
+                     SEP (all_string_constants rsh gv;
                           malloc_token Tsh (Tarray int_or_ptr_type n noattr) p;
                           data_at_ Tsh (Tarray int_or_ptr_type n noattr) p;
                           data_at_ sh space_type s)).

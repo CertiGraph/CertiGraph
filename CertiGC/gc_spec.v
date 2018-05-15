@@ -28,23 +28,23 @@ Definition init_data2byte (d: init_data) : byte :=
   | _ => Byte.one
   end.
 
-Definition all_string_constants (gv: globals) : mpred :=
-  cstring (map init_data2byte (gvar_init v___stringlit_1)) (gv ___stringlit_1) *
-  cstring (map init_data2byte (gvar_init v___stringlit_2)) (gv ___stringlit_2) *
-  cstring (map init_data2byte (gvar_init v___stringlit_3)) (gv ___stringlit_3) *
-  cstring (map init_data2byte (gvar_init v___stringlit_4)) (gv ___stringlit_4) *
-  cstring (map init_data2byte (gvar_init v___stringlit_5)) (gv ___stringlit_5) *
-  cstring (map init_data2byte (gvar_init v___stringlit_6)) (gv ___stringlit_6) *
-  cstring (map init_data2byte (gvar_init v___stringlit_7)) (gv ___stringlit_7) *
-  cstring (map init_data2byte (gvar_init v___stringlit_8)) (gv ___stringlit_8) *
-  cstring (map init_data2byte (gvar_init v___stringlit_9)) (gv ___stringlit_9) *
-  cstring (map init_data2byte (gvar_init v___stringlit_10)) (gv ___stringlit_10) *
-  cstring (map init_data2byte (gvar_init v___stringlit_11)) (gv ___stringlit_11) *
-  cstring (map init_data2byte (gvar_init v___stringlit_12)) (gv ___stringlit_12) *
-  cstring (map init_data2byte (gvar_init v___stringlit_13)) (gv ___stringlit_13) *
-  cstring (map init_data2byte (gvar_init v___stringlit_14)) (gv ___stringlit_14) *
-  cstring (map init_data2byte (gvar_init v___stringlit_15)) (gv ___stringlit_15) *
-  cstring (map init_data2byte (gvar_init v___stringlit_16)) (gv ___stringlit_16).
+Definition all_string_constants (sh: share) (gv: globals) : mpred :=
+  cstring sh (map init_data2byte (gvar_init v___stringlit_1)) (gv ___stringlit_1) *
+  cstring sh (map init_data2byte (gvar_init v___stringlit_2)) (gv ___stringlit_2) *
+  cstring sh (map init_data2byte (gvar_init v___stringlit_3)) (gv ___stringlit_3) *
+  cstring sh (map init_data2byte (gvar_init v___stringlit_4)) (gv ___stringlit_4) *
+  cstring sh (map init_data2byte (gvar_init v___stringlit_5)) (gv ___stringlit_5) *
+  cstring sh (map init_data2byte (gvar_init v___stringlit_6)) (gv ___stringlit_6) *
+  cstring sh (map init_data2byte (gvar_init v___stringlit_7)) (gv ___stringlit_7) *
+  cstring sh (map init_data2byte (gvar_init v___stringlit_8)) (gv ___stringlit_8) *
+  cstring sh (map init_data2byte (gvar_init v___stringlit_9)) (gv ___stringlit_9) *
+  cstring sh (map init_data2byte (gvar_init v___stringlit_10)) (gv ___stringlit_10) *
+  cstring sh (map init_data2byte (gvar_init v___stringlit_11)) (gv ___stringlit_11) *
+  cstring sh (map init_data2byte (gvar_init v___stringlit_12)) (gv ___stringlit_12) *
+  cstring sh (map init_data2byte (gvar_init v___stringlit_13)) (gv ___stringlit_13) *
+  cstring sh (map init_data2byte (gvar_init v___stringlit_14)) (gv ___stringlit_14) *
+  cstring sh (map init_data2byte (gvar_init v___stringlit_15)) (gv ___stringlit_15) *
+  cstring sh (map init_data2byte (gvar_init v___stringlit_16)) (gv ___stringlit_16).
 
 Definition MAX_SPACES: Z := 12.
 Lemma MAX_SPACES_eq: MAX_SPACES = 12. Proof. reflexivity. Qed.
@@ -117,32 +117,36 @@ Definition Is_block_spec :=
     PROP() 
     LOCAL(temp ret_temp 
                (Vint (Int.repr (match x with
-                                | Vint _ => 0
-                                | _ => 1
+                                | Vptr _ _ => 1
+                                | _ => 0
                                 end))))
     SEP().
 
 Definition abort_with_spec :=
   DECLARE _abort_with
-  WITH s: val, str: list byte
+  WITH s: val, str: list byte, sh: share
   PRE [ _s OF tptr tschar]
-    PROP () LOCAL (temp _s s) SEP (cstring  str s)
+    PROP (readable_share sh) LOCAL (temp _s s) SEP (cstring sh str s)
   POST [ tvoid ]
     PROP (False) LOCAL() SEP().
 
+Definition v_in_range (v: val) (start: val) (n: Z): Prop :=
+  exists i, 0 <= i < n /\ v = offset_val i start.
+
 Definition Is_from_spec :=
   DECLARE _Is_from
-  WITH start : val, n: Z, v: val
+  WITH sh: share, start : val, n: Z, v: val
   PRE [ _from_start OF (tptr int_or_ptr_type),
         _from_limit OF (tptr int_or_ptr_type),
         _v OF (tptr int_or_ptr_type)]
     PROP ()
     LOCAL (temp _from_start start; temp _from_limit (offset_val n start); temp _v v)
-    SEP ()
+    SEP (memory_block sh n start)
   POST [tint]
+    EX b: {v_in_range v start n} + {~ v_in_range v start n},
     PROP ()
-    LOCAL (temp ret_temp (Vint (Int.repr 0)))
-    SEP ().
+    LOCAL (temp ret_temp (Vint (Int.repr (if b then 1 else 0))))
+    SEP (memory_block sh n start).
 
 Definition forward_spec :=
   DECLARE _forward
@@ -203,16 +207,16 @@ Definition do_generation_spec :=
 
 Definition create_space_spec :=
   DECLARE _create_space
-  WITH sh: share, s: val, n: Z, gv: globals
+  WITH sh: share, s: val, n: Z, gv: globals, rsh: share
   PRE [ _s OF (tptr space_type),
         _n OF tuint]
-    PROP (writable_share sh; 0 <= n <= Int.max_unsigned / 4)
+    PROP (writable_share sh; readable_share rsh; 0 <= n <= Int.max_unsigned / 4)
     LOCAL (temp _s s; temp _n (Vint (Int.repr n)); gvars gv)
-    SEP (all_string_constants gv; data_at_ sh space_type s)
+    SEP (all_string_constants rsh gv; data_at_ sh space_type s)
   POST [tvoid]
     EX p: val,
     PROP () LOCAL ()
-    SEP (all_string_constants gv;
+    SEP (all_string_constants rsh gv;
          malloc_token Tsh (tarray int_or_ptr_type n) p;
          data_at_ Tsh (tarray int_or_ptr_type n) p;
          data_at sh space_type (p, (p, (offset_val (4 * n) p))) s).
@@ -221,13 +225,13 @@ Definition zero_triple: (val * (val * val)) := (nullval, (nullval, nullval)).
 
 Definition create_heap_spec :=
   DECLARE _create_heap
-  WITH gv: globals
+  WITH sh: share, gv: globals
   PRE []
-    PROP () LOCAL (gvars gv) SEP (all_string_constants gv)
+    PROP (readable_share sh) LOCAL (gvars gv) SEP (all_string_constants sh gv)
   POST [tptr heap_type]
     EX h: val, EX p: val,
     PROP () LOCAL (temp ret_temp h)
-    SEP (all_string_constants gv; malloc_token Tsh heap_type h;
+    SEP (all_string_constants sh gv; malloc_token Tsh heap_type h;
          data_at Tsh heap_type
                  ((p, (p, (offset_val (4 * NURSERY_SIZE) p)))
                     :: list_repeat (Z.to_nat (MAX_SPACES - 1)) zero_triple) h; 
@@ -236,13 +240,13 @@ Definition create_heap_spec :=
 
 Definition make_tinfo_spec :=
   DECLARE _make_tinfo
-  WITH gv: globals
+  WITH sh: share, gv: globals
   PRE []
-    PROP () LOCAL (gvars gv) SEP (all_string_constants gv)
+    PROP (readable_share sh) LOCAL (gvars gv) SEP (all_string_constants sh gv)
   POST [tptr thread_info_type]
     EX t: val, EX h: val, EX p: val,
     PROP () LOCAL (temp ret_temp t)
-    SEP (all_string_constants gv;
+    SEP (all_string_constants sh gv;
          malloc_token Tsh thread_info_type t;
          data_at Tsh thread_info_type
                  (p, (offset_val (4 * NURSERY_SIZE) p,
