@@ -1,4 +1,48 @@
+Require Export RamifyCoq.msl_ext.iter_sepcon.
 Require Export RamifyCoq.CertiGC.env_graph_gc.
+Require Export RamifyCoq.graph.graph_model.
+Require Export RamifyCoq.msl_application.Graph.
+Require Export RamifyCoq.CertiGC.GraphGC.
+Require Export RamifyCoq.CertiGC.spatial_graph_gc.
+Require Export RamifyCoq.floyd_ext.share.
+
+Definition MAX_SPACES: Z := 12.
+Lemma MAX_SPACES_eq: MAX_SPACES = 12. Proof. reflexivity. Qed.
+Hint Rewrite MAX_SPACES_eq: rep_omega.
+Global Opaque MAX_SPACES.
+
+Definition NURSERY_SIZE: Z := Z.shiftl 1 16.
+Lemma NURSERY_SIZE_eq: NURSERY_SIZE = Z.shiftl 1 16. Proof. reflexivity. Qed.
+Hint Rewrite NURSERY_SIZE_eq: rep_omega.
+Global Opaque NURSERY_SIZE.
+
+Definition MAX_ARGS: Z := 1024.
+Lemma MAX_ARGS_eq: MAX_ARGS = 1024. Proof. reflexivity. Qed.
+Hint Rewrite MAX_ARGS_eq: rep_omega.
+Global Opaque MAX_ARGS.
+
+Definition fun_info_rep (sh: share) (fsize: Z) (l: list Z) (p: val) : mpred :=
+  data_at sh (tarray tuint (Zlength l + 2))
+          (map Vint (map Int.repr (fsize :: Zlength l :: l))) p.
+
+Definition space_rest_rep (sp: space): mpred :=
+  if (EquivDec.equiv_dec (space_start sp) nullval)
+  then emp
+  else data_at_ Tsh (tarray int_or_ptr_type (total_space sp - used_space sp))
+                (offset_val (used_space sp) (space_start sp)).
+
+Definition heap_rest_rep (hp: heap): mpred := iter_sepcon (spaces hp) space_rest_rep.
+
+Coercion Graph_LGraph: Graph >-> LGraph.
+Coercion LGraph_SGraph: LGraph >-> SGraph.
+Identity Coercion Graph_GeneralGraph: Graph >-> GeneralGraph.
+Identity Coercion LGraph_LabeledGraph: LGraph >-> LabeledGraph.
+Identity Coercion SGraph_PointwiseGraph: SGraph >-> PointwiseGraph.
+Coercion pg_lg: LabeledGraph >-> PreGraph.
+
+Definition vertices_at (sh: wshare) (P: val -> Prop) (g: Graph): mpred :=
+  (@vertices_at _ _ _ _ _ _ (@PGP pPGG_VST (sPGG_VST sh)) PGA P g).
+Definition whole_graph (sh: wshare) (g: Graph) := (vertices_at sh (vvalid g) g).
 
 Definition valid_int_or_ptr (x: val) :=
  match x with
@@ -45,21 +89,6 @@ Definition all_string_constants (sh: share) (gv: globals) : mpred :=
   cstring sh (map init_data2byte (gvar_init v___stringlit_14)) (gv ___stringlit_14) *
   cstring sh (map init_data2byte (gvar_init v___stringlit_15)) (gv ___stringlit_15) *
   cstring sh (map init_data2byte (gvar_init v___stringlit_16)) (gv ___stringlit_16).
-
-Definition MAX_SPACES: Z := 12.
-Lemma MAX_SPACES_eq: MAX_SPACES = 12. Proof. reflexivity. Qed.
-Hint Rewrite MAX_SPACES_eq: rep_omega.
-Global Opaque MAX_SPACES.
-
-Definition NURSERY_SIZE: Z := Z.shiftl 1 16.
-Lemma NURSERY_SIZE_eq: NURSERY_SIZE = Z.shiftl 1 16. Proof. reflexivity. Qed.
-Hint Rewrite NURSERY_SIZE_eq: rep_omega.
-Global Opaque NURSERY_SIZE.
-
-Definition MAX_ARGS: Z := 1024.
-Lemma MAX_ARGS_eq: MAX_ARGS = 1024. Proof. reflexivity. Qed.
-Hint Rewrite MAX_ARGS_eq: rep_omega.
-Global Opaque MAX_ARGS.
   
 Definition test_int_or_ptr_spec :=
  DECLARE _test_int_or_ptr
@@ -150,7 +179,7 @@ Definition Is_from_spec :=
 
 Definition forward_spec :=
   DECLARE _forward
-  WITH start: val, n: Z, next: val, p: val, depth: Z
+  WITH start: val, n: Z, next: val, p: val, depth: Z, g: Graph, sh: wshare
   PRE [ _from_start OF (tptr int_or_ptr_type),
         _from_limit OF (tptr int_or_ptr_type),
         _next OF (tptr int_or_ptr_type),
@@ -159,7 +188,7 @@ Definition forward_spec :=
     PROP ()
     LOCAL (temp _from_start start; temp _from_limit (offset_val n start);
            temp _next next; temp _p p; temp _depth (Vint (Int.repr depth)))
-    SEP ()
+    SEP (whole_graph sh g; heap_rest_rep (glabel g))
   POST [tvoid]
   PROP () LOCAL () SEP ().
 
