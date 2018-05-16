@@ -41,9 +41,9 @@ Section GC_Graph.
 
   Record space: Type :=
     { 
-      start: val;
-      used_space: nat;
-      rest_space: nat;
+      space_start: val;
+      used_space: Z;
+      total_space: Z;
     }.
 
   Record heap: Type :=
@@ -130,9 +130,10 @@ Section GC_Graph.
 
   Instance SGC_GC: PointwiseGraphConstructor
                      val (val * nat) raw_vertex_block unit heap vertex_block unit.
-  Proof.
-    constructor. exact gen_vertex_gamma. exact (fun _ _ => tt).
-  Defined.
+  Proof. constructor. exact gen_vertex_gamma. exact (fun _ _ => tt). Defined.
+
+  Definition Graph_LGraph (G: Graph): LGraph := lg_gg G.
+  Definition LGraph_SGraph (G: LGraph): SGraph := Graph_PointwiseGraph G.
 
   Instance LSGC_GC: Local_PointwiseGraphConstructor val (val * nat) raw_vertex_block unit heap vertex_block unit.
   Proof.

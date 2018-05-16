@@ -93,6 +93,7 @@ Proof.
       change (12 - 1) with 11 at 2. gather_SEP 1 2.
       remember (p0, (p0, offset_val (4 * Z.shiftl 1 16) p0)) as vh.
       remember (vh :: list_repeat (Z.to_nat 11) vn) as vl.
+      change (Values.val) with (@val pPGG_VST) in *.
       replace [vh] with (sublist 0 1 vl). 2: {
         subst vl; rewrite sublist_one; try omega.
         - rewrite Znth_0_cons; auto.
@@ -132,7 +133,5 @@ Proof.
         rewrite app_nil_r. change 12 with MAX_SPACES at 2. thaw FR.
         change (Z.shiftl 1 16) with NURSERY_SIZE in *.
         assert (v0 = zero_triple) by (subst v0; unfold zero_triple; reflexivity).
-        rewrite H2. Opaque MAX_SPACES. Opaque NURSERY_SIZE. forward.
-        Exists h p0. entailer!.
-        Transparent NURSERY_SIZE. Transparent MAX_SPACES. Transparent Znth.
+        rewrite H2. forward. Exists h p0. entailer!. Transparent Znth.
 Qed.
