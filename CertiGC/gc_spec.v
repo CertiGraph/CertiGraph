@@ -21,9 +21,17 @@ Lemma MAX_ARGS_eq: MAX_ARGS = 1024. Proof. reflexivity. Qed.
 Hint Rewrite MAX_ARGS_eq: rep_omega.
 Global Opaque MAX_ARGS.
 
-Definition fun_info_rep (sh: share) (fsize: Z) (l: list Z) (p: val) : mpred :=
-  data_at sh (tarray tuint (Zlength l + 2))
-          (map Vint (map Int.repr (fsize :: Zlength l :: l))) p.
+Record fun_info : Type :=
+  {
+    fun_word_size: Z;
+    live_roots_indices: list Z;
+  }.
+
+Definition fun_info_rep (sh: share) (fi: fun_info) (p: val) : mpred :=
+  let len := Zlength (live_roots_indices fi) in
+  data_at
+    sh (tarray tuint (len + 2))
+    (map Vint (map Int.repr (fun_word_size fi :: len :: live_roots_indices fi))) p.
 
 Definition space_rest_rep (sp: space): mpred :=
   if (EquivDec.equiv_dec (space_start sp) nullval)
@@ -32,6 +40,21 @@ Definition space_rest_rep (sp: space): mpred :=
                 (offset_val (used_space sp) (space_start sp)).
 
 Definition heap_rest_rep (hp: heap): mpred := iter_sepcon (spaces hp) space_rest_rep.
+
+Definition space_reptype (sp: space): (reptype space_type) :=
+  let s := space_start sp in (s, (offset_val (4 * (used_space sp)) s,
+                                  offset_val (4 * (total_space sp)) s)).
+
+Definition heap_struct_rep (hp: heap) (h: val): mpred :=
+  data_at Tsh heap_type (map space_reptype (spaces hp)) h.
+
+Record thread_info: Type :=
+  {
+    ti_used_space: Z;
+    ti_heap_p: val;
+    ti_heap: heap;
+    ti_args: list val;
+  }.
 
 Coercion Graph_LGraph: Graph >-> LGraph.
 Coercion LGraph_SGraph: LGraph >-> SGraph.
@@ -298,12 +321,13 @@ Definition resume_spec :=
 
 Definition garbage_collect_spec :=
   DECLARE _garbage_collect
-  WITH fi: val, ti: val
+  WITH fi: val, ti: val, rsh: rshare, f_info: fun_info
   PRE [ _fi OF (tptr tuint),
         _ti OF (tptr thread_info_type)]
-    PROP () LOCAL (temp _fi fi; temp _ti ti) SEP ()
+    PROP () LOCAL (temp _fi fi; temp _ti ti)
+    SEP (fun_info_rep rsh f_info fi)
   POST [tvoid]
-  PROP () LOCAL () SEP ().
+    PROP () LOCAL () SEP ().
 
 Definition reset_heap_spec :=
   DECLARE _reset_heap
