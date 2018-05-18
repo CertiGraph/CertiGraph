@@ -6,21 +6,6 @@ Require Export RamifyCoq.CertiGC.GraphGC.
 Require Export RamifyCoq.CertiGC.spatial_graph_gc.
 Require Export RamifyCoq.floyd_ext.share.
 
-Definition MAX_SPACES: Z := 12.
-Lemma MAX_SPACES_eq: MAX_SPACES = 12. Proof. reflexivity. Qed.
-Hint Rewrite MAX_SPACES_eq: rep_omega.
-Global Opaque MAX_SPACES.
-
-Definition NURSERY_SIZE: Z := Z.shiftl 1 16.
-Lemma NURSERY_SIZE_eq: NURSERY_SIZE = Z.shiftl 1 16. Proof. reflexivity. Qed.
-Hint Rewrite NURSERY_SIZE_eq: rep_omega.
-Global Opaque NURSERY_SIZE.
-
-Definition MAX_ARGS: Z := 1024.
-Lemma MAX_ARGS_eq: MAX_ARGS = 1024. Proof. reflexivity. Qed.
-Hint Rewrite MAX_ARGS_eq: rep_omega.
-Global Opaque MAX_ARGS.
-
 Record fun_info : Type :=
   {
     fun_word_size: Z;
@@ -34,27 +19,31 @@ Definition fun_info_rep (sh: share) (fi: fun_info) (p: val) : mpred :=
     (map Vint (map Int.repr (fun_word_size fi :: len :: live_roots_indices fi))) p.
 
 Definition space_rest_rep (sp: space): mpred :=
-  if (EquivDec.equiv_dec (space_start sp) nullval)
+  if (EquivDec.equiv_dec sp.(space_start) nullval)
   then emp
-  else data_at_ Tsh (tarray int_or_ptr_type (total_space sp - used_space sp))
-                (offset_val (used_space sp) (space_start sp)).
+  else data_at_ Tsh (tarray int_or_ptr_type (sp.(total_space) - sp.(used_space)))
+                (offset_val sp.(used_space) sp.(space_start)).
 
-Definition heap_rest_rep (hp: heap): mpred := iter_sepcon (spaces hp) space_rest_rep.
+Definition heap_rest_rep (hp: heap): mpred := iter_sepcon hp.(spaces) space_rest_rep.
 
 Definition space_reptype (sp: space): (reptype space_type) :=
-  let s := space_start sp in (s, (offset_val (4 * (used_space sp)) s,
-                                  offset_val (4 * (total_space sp)) s)).
+  let s := space_start sp in (s, (offset_val (WORD_SIZE * sp.(used_space)) s,
+                                  offset_val (WORD_SIZE * sp.(total_space)) s)).
 
 Definition heap_struct_rep (hp: heap) (h: val): mpred :=
-  data_at Tsh heap_type (map space_reptype (spaces hp)) h.
+  data_at Tsh heap_type (map space_reptype hp.(spaces)) h.
 
-Record thread_info: Type :=
-  {
-    ti_used_space: Z;
-    ti_heap_p: val;
-    ti_heap: heap;
-    ti_args: list val;
-  }.
+Definition thread_info_rep (ti: thread_info) (t: val) :=
+  if EquivDec.equiv_dec (ti_heap_p ti) nullval
+  then data_at_ Tsh thread_info_type t
+  else let nursery := heap_head ti.(ti_heap) in
+       let p := nursery.(space_start) in
+       data_at Tsh thread_info_type
+               (offset_val (WORD_SIZE * ti.(ti_used_space)) p,
+                (offset_val (WORD_SIZE * nursery.(total_space)) p,
+                 (ti.(ti_heap_p), ti.(ti_args)))) t *
+       heap_struct_rep ti.(ti_heap) ti.(ti_heap_p) *
+       heap_rest_rep ti.(ti_heap).
 
 Coercion Graph_LGraph: Graph >-> LGraph.
 Coercion LGraph_SGraph: LGraph >-> SGraph.
@@ -112,15 +101,15 @@ Definition all_string_constants (sh: share) (gv: globals) : mpred :=
   cstring sh (map init_data2byte (gvar_init v___stringlit_14)) (gv ___stringlit_14) *
   cstring sh (map init_data2byte (gvar_init v___stringlit_15)) (gv ___stringlit_15) *
   cstring sh (map init_data2byte (gvar_init v___stringlit_16)) (gv ___stringlit_16).
-  
+
 Definition test_int_or_ptr_spec :=
  DECLARE _test_int_or_ptr
  WITH x : val
  PRE [ _x OF int_or_ptr_type ]
    PROP(valid_int_or_ptr x) LOCAL(temp _x x) SEP()
  POST [ tint ]
-   PROP() 
-   LOCAL(temp ret_temp 
+   PROP()
+   LOCAL(temp ret_temp
           (Vint (Int.repr (match x with
                     | Vint _ => 1
                     | _ => 0
@@ -166,8 +155,8 @@ Definition Is_block_spec :=
   PRE [ _x OF int_or_ptr_type ]
     PROP(valid_int_or_ptr x) LOCAL(temp _x x) SEP()
   POST [ tint ]
-    PROP() 
-    LOCAL(temp ret_temp 
+    PROP()
+    LOCAL(temp ret_temp
                (Vint (Int.repr (match x with
                                 | Vptr _ _ => 1
                                 | _ => 0
@@ -211,7 +200,7 @@ Definition forward_spec :=
     PROP ()
     LOCAL (temp _from_start start; temp _from_limit (offset_val n start);
            temp _next next; temp _p p; temp _depth (Vint (Int.repr depth)))
-    SEP (whole_graph sh g; heap_rest_rep (glabel g))
+    SEP (whole_graph sh g; heap_rest_rep (glabel g).(ti_heap))
   POST [tvoid]
   PROP () LOCAL () SEP ().
 
@@ -262,7 +251,9 @@ Definition create_space_spec :=
   WITH sh: share, s: val, n: Z, gv: globals, rsh: share
   PRE [ _s OF (tptr space_type),
         _n OF tuint]
-    PROP (writable_share sh; readable_share rsh; 0 <= n <= Int.max_unsigned / 4)
+    PROP (writable_share sh;
+          readable_share rsh;
+          0 <= n <= Int.max_unsigned / WORD_SIZE)
     LOCAL (temp _s s; temp _n (Vint (Int.repr n)); gvars gv)
     SEP (all_string_constants rsh gv; data_at_ sh space_type s)
   POST [tvoid]
@@ -271,7 +262,7 @@ Definition create_space_spec :=
     SEP (all_string_constants rsh gv;
          malloc_token Tsh (tarray int_or_ptr_type n) p;
          data_at_ Tsh (tarray int_or_ptr_type n) p;
-         data_at sh space_type (p, (p, (offset_val (4 * n) p))) s).
+         data_at sh space_type (p, (p, (offset_val (WORD_SIZE * n) p))) s).
 
 Definition zero_triple: (val * (val * val)) := (nullval, (nullval, nullval)).
 
@@ -285,8 +276,8 @@ Definition create_heap_spec :=
     PROP () LOCAL (temp ret_temp h)
     SEP (all_string_constants sh gv; malloc_token Tsh heap_type h;
          data_at Tsh heap_type
-                 ((p, (p, (offset_val (4 * NURSERY_SIZE) p)))
-                    :: list_repeat (Z.to_nat (MAX_SPACES - 1)) zero_triple) h; 
+                 ((p, (p, (offset_val (WORD_SIZE * NURSERY_SIZE) p)))
+                    :: list_repeat (Z.to_nat (MAX_SPACES - 1)) zero_triple) h;
          malloc_token Tsh (tarray int_or_ptr_type NURSERY_SIZE) p;
          data_at_ Tsh (tarray int_or_ptr_type NURSERY_SIZE) p).
 
@@ -301,12 +292,12 @@ Definition make_tinfo_spec :=
     SEP (all_string_constants sh gv;
          malloc_token Tsh thread_info_type t;
          data_at Tsh thread_info_type
-                 (p, (offset_val (4 * NURSERY_SIZE) p,
+                 (p, (offset_val (WORD_SIZE * NURSERY_SIZE) p,
                       (h, list_repeat (Z.to_nat MAX_ARGS) Vundef))) t;
          malloc_token Tsh heap_type h;
          data_at Tsh heap_type
-                 ((p, (p, (offset_val (4 * NURSERY_SIZE) p)))
-                    :: list_repeat (Z.to_nat (MAX_SPACES - 1)) zero_triple) h; 
+                 ((p, (p, (offset_val (WORD_SIZE * NURSERY_SIZE) p)))
+                    :: list_repeat (Z.to_nat (MAX_SPACES - 1)) zero_triple) h;
          malloc_token Tsh (tarray int_or_ptr_type NURSERY_SIZE) p;
          data_at_ Tsh (tarray int_or_ptr_type NURSERY_SIZE) p).
 
@@ -321,11 +312,11 @@ Definition resume_spec :=
 
 Definition garbage_collect_spec :=
   DECLARE _garbage_collect
-  WITH fi: val, ti: val, rsh: rshare, f_info: fun_info
+  WITH fi: val, ti: val, rsh: rshare, f_info: fun_info, g: Graph, sh: wshare
   PRE [ _fi OF (tptr tuint),
         _ti OF (tptr thread_info_type)]
     PROP () LOCAL (temp _fi fi; temp _ti ti)
-    SEP (fun_info_rep rsh f_info fi)
+    SEP (fun_info_rep rsh f_info fi; whole_graph sh g; thread_info_rep (glabel g) ti)
   POST [tvoid]
     PROP () LOCAL () SEP ().
 

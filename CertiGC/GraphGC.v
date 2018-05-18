@@ -10,6 +10,26 @@ Require Import RamifyCoq.graph.reachable_computable.
 Require Import RamifyCoq.graph.MathGraph.
 Require Import RamifyCoq.graph.FiniteGraph.
 
+Definition MAX_SPACES: Z := 12%Z.
+Lemma MAX_SPACES_eq: MAX_SPACES = 12%Z. Proof. reflexivity. Qed.
+Hint Rewrite MAX_SPACES_eq: rep_omega.
+Global Opaque MAX_SPACES.
+
+Definition NURSERY_SIZE: Z := Z.shiftl 1 16.
+Lemma NURSERY_SIZE_eq: NURSERY_SIZE = Z.shiftl 1 16. Proof. reflexivity. Qed.
+Hint Rewrite NURSERY_SIZE_eq: rep_omega.
+Global Opaque NURSERY_SIZE.
+
+Definition MAX_ARGS: Z := 1024%Z.
+Lemma MAX_ARGS_eq: MAX_ARGS = 1024%Z. Proof. reflexivity. Qed.
+Hint Rewrite MAX_ARGS_eq: rep_omega.
+Global Opaque MAX_ARGS.
+
+Definition WORD_SIZE: Z := 4%Z.
+Lemma WORD_SIZE_eq: WORD_SIZE = 4%Z. Proof. reflexivity. Qed.
+Hint Rewrite WORD_SIZE_eq: rep_omega.
+Global Opaque WORD_SIZE.
+
 Class pPointwiseGraph_GC: Type :=
   {
     val: Type;
@@ -44,14 +64,35 @@ Section GC_Graph.
       space_start: val;
       used_space: Z;
       total_space: Z;
+      space_order: (0 <= used_space < total_space)%Z;
     }.
 
   Record heap: Type :=
     {
       spaces: list space;
+      spaces_size: Zlength spaces = MAX_SPACES;
     }.
 
-  Definition LGraph := LabeledGraph val (val * nat) raw_vertex_block unit heap.
+  Lemma heap_spaces_nil: forall h: heap, nil = spaces h -> False.
+  Proof.
+    intros. pose proof (spaces_size h). rewrite <- H, Zlength_nil in H0. discriminate.
+  Qed.
+
+  Definition heap_head (h: heap) : space :=
+    match h.(spaces) as l return (l = spaces h -> space) with
+    | nil => fun m => False_rect space (heap_spaces_nil h m)
+    | s :: _ => fun _ => s
+    end eq_refl.
+
+  Record thread_info: Type :=
+  {
+    ti_used_space: Z;
+    ti_heap_p: val;
+    ti_heap: heap;
+    ti_args: list val;
+  }.
+
+  Definition LGraph := LabeledGraph val (val * nat) raw_vertex_block unit thread_info.
 
   Fixpoint get_edges' (lf: list raw_field) (v: val) (n: nat) : list (val * nat) :=
     match lf with
@@ -97,7 +138,8 @@ Section GC_Graph.
     }.
 
   Definition Graph :=
-    GeneralGraph val (val * nat) raw_vertex_block unit heap (fun g => SoundGCGraph g).
+    GeneralGraph val (val * nat)
+                 raw_vertex_block unit thread_info (fun g => SoundGCGraph g).
 
   Record vertex_block :=
     {
@@ -128,14 +170,17 @@ Section GC_Graph.
                        (raw_color (vlabel g v))
                        (raw_tag (vlabel g v)).
 
-  Instance SGC_GC: PointwiseGraphConstructor
-                     val (val * nat) raw_vertex_block unit heap vertex_block unit.
+  Instance SGC_GC:
+    PointwiseGraphConstructor
+      val (val * nat) raw_vertex_block unit thread_info vertex_block unit.
   Proof. constructor. exact gen_vertex_gamma. exact (fun _ _ => tt). Defined.
 
   Definition Graph_LGraph (G: Graph): LGraph := lg_gg G.
   Definition LGraph_SGraph (G: LGraph): SGraph := Graph_PointwiseGraph G.
 
-  Instance LSGC_GC: Local_PointwiseGraphConstructor val (val * nat) raw_vertex_block unit heap vertex_block unit.
+  Instance LSGC_GC:
+    Local_PointwiseGraphConstructor
+      val (val * nat) raw_vertex_block unit thread_info vertex_block unit.
   Proof.
     refine (Build_Local_PointwiseGraphConstructor
               _ _ _ _ _ _ _ SGBA SGC_GC
