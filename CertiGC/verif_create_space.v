@@ -9,8 +9,8 @@ Proof.
   - entailer!. replace (n * 4) with (4 * n) by omega. reflexivity.
   - split; [|split].
     + simpl. destruct H. replace (Z.max 0 n) with n.
-      * split. 1: omega. transitivity (4 * (Int.max_unsigned / 4)). 1: omega.
-        apply Z.mul_div_le. omega.
+      * split. 1: omega. transitivity (4 * (Int.max_unsigned / WORD_SIZE)). 1: omega.
+        apply Z.mul_div_le. rep_omega.
       * symmetry. apply Z.max_r. assumption.
     + simpl; tauto.
     + compute; tauto.
