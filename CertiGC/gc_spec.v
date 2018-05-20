@@ -34,8 +34,9 @@ Definition heap_struct_rep (hp: heap) (h: val): mpred :=
   data_at Tsh heap_type (map space_reptype hp.(spaces)) h.
 
 Definition thread_info_rep (ti: thread_info) (t: val) :=
-  if EquivDec.equiv_dec (ti_heap_p ti) nullval
-  then data_at_ Tsh thread_info_type t
+  if EquivDec.equiv_dec ti.(ti_heap_p) nullval
+  then data_at Tsh thread_info_type
+               (Vundef, (Vundef, (nullval, list_repeat (Z.to_nat MAX_ARGS) Vundef))) t
   else let nursery := heap_head ti.(ti_heap) in
        let p := nursery.(space_start) in
        data_at Tsh thread_info_type
@@ -312,11 +313,15 @@ Definition resume_spec :=
 
 Definition garbage_collect_spec :=
   DECLARE _garbage_collect
-  WITH fi: val, ti: val, rsh: rshare, f_info: fun_info, g: Graph, sh: wshare
+  WITH fi: val, ti: val, rsh: rshare, f_info: fun_info,
+       g: Graph, sh: wshare, gv: globals
   PRE [ _fi OF (tptr tuint),
         _ti OF (tptr thread_info_type)]
-    PROP () LOCAL (temp _fi fi; temp _ti ti)
-    SEP (fun_info_rep rsh f_info fi; whole_graph sh g; thread_info_rep (glabel g) ti)
+    PROP () LOCAL (temp _fi fi; temp _ti ti; gvars gv)
+    SEP (all_string_constants (proj1_sig rsh) gv;
+         fun_info_rep rsh f_info fi;
+         whole_graph sh g;
+         thread_info_rep (glabel g) ti)
   POST [tvoid]
     PROP () LOCAL () SEP ().
 
