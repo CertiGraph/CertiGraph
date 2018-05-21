@@ -1,5 +1,7 @@
 Require Import Coq.ZArith.ZArith.
 Require Import Coq.Lists.List.
+Require Import compcert.common.Values.
+Require Import VST.veric.Clight_lemmas.
 Require Import RamifyCoq.lib.Coqlib.
 Require Import RamifyCoq.lib.EquivDec_ext.
 
@@ -30,22 +32,18 @@ Lemma WORD_SIZE_eq: WORD_SIZE = 4%Z. Proof. reflexivity. Qed.
 Hint Rewrite WORD_SIZE_eq: rep_omega.
 Global Opaque WORD_SIZE.
 
-Class pPointwiseGraph_GC: Type :=
-  {
-    val: Type;
-    null: val;
-    SGBA: PointwiseGraphBasicAssum val (val * nat)
-  }.
+Instance Val_EqDec: EqDec val eq. Proof. hnf. intros. apply Val.eq. Defined.
 
-Existing Instance SGBA.
+Instance ValNat_EqDec: EqDec (val * nat) eq.
+Proof.
+  hnf. intros. destruct x, y. destruct (Val.eq v v0). 2: right; congruence.
+  destruct (NPeano.Nat.eq_dec n n0); [left | right]; congruence.
+Defined.
 
-Definition is_null_SGBA {pSGG: pPointwiseGraph_GC} : DecidablePred val :=
-  (existT (fun P => forall a, {P a} + {~ P a})
-          (fun x => x = null) (fun x => SGBA_VE x null)).
+Instance PGBA: PointwiseGraphBasicAssum val (val * nat).
+Proof. apply (Build_PointwiseGraphBasicAssum val (val * nat) _ _). Defined.
 
 Section GC_Graph.
-
-  Context {pPG_GC: pPointwiseGraph_GC}.
 
   Inductive raw_field : Type :=
   | raw_data : val -> raw_field
@@ -183,7 +181,7 @@ Section GC_Graph.
       val (val * nat) raw_vertex_block unit thread_info vertex_block unit.
   Proof.
     refine (Build_Local_PointwiseGraphConstructor
-              _ _ _ _ _ _ _ SGBA SGC_GC
+              _ _ _ _ _ _ _ PGBA SGC_GC
               (fun G v => forall e, In e (get_edges G v) -> evalid G e /\ src G e = v)
               _ (fun G e => True) _); trivial.
     simpl. intros. unfold gen_vertex_gamma. rewrite H1. f_equal.
@@ -199,7 +197,7 @@ Section GC_Graph.
       PGP: PointwiseGraphPred val (val * nat) vertex_block unit pred;
       PGA: PointwiseGraphAssum PGP;
       PGAvs: PointwiseGraphAssum_vs PGP;
-      PGAvn: PointwiseGraphAssum_vn PGP null
+      PGAvn: PointwiseGraphAssum_vn PGP nullval
     }.
 
 End GC_Graph.
