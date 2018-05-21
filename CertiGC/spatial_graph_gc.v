@@ -5,26 +5,6 @@ Require Import VST.veric.SeparationLogic.
 Require Import RamifyCoq.CertiGC.env_graph_gc.
 Require Import RamifyCoq.floyd_ext.share.
 
-Section pPGG_VST.
-
-  Instance Val_EqDec: EquivDec.EqDec val eq. Proof. hnf. intros. apply Val.eq. Defined.
-
-  Instance ValNat_EqDec: EquivDec.EqDec (val * nat) eq.
-  Proof.
-    hnf. intros. destruct x, y. destruct (Val.eq v v0). 2: right; congruence.
-    destruct (NPeano.Nat.eq_dec n n0); [left | right]; congruence.
-  Defined.
-
-  Instance SGBA_VST: PointwiseGraphBasicAssum val (val * nat).
-  Proof. apply (Build_PointwiseGraphBasicAssum val (val * nat) _ _). Defined.
-
-End pPGG_VST.
-
-Existing Instance SGBA_VST.
-
-Instance pPGG_VST: pPointwiseGraph_GC.
-Proof. apply (Build_pPointwiseGraph_GC val nullval SGBA_VST). Defined.
-
 Definition vertex_block_to_fields_body (v: vertex_block): list val := v_fields v.
 
 Definition vertex_block_size (v: vertex_block) := (Z.of_nat (length (v_fields v))).
@@ -73,10 +53,10 @@ End sPGG_VST.
 
 Hint Extern 10 (@sepcon_unique2 _ _ _ _ _ (@vertex_at _ _ _ _ _ _)) => apply sepcon_unique_vertex_at; auto.
 
-Instance sPGG_VST (sh: wshare): @sPointwiseGraph_GraphGC pPGG_VST.
+Instance sPGG_VST (sh: wshare): sPointwiseGraph_GraphGC.
 Proof.
   refine (Build_sPointwiseGraph_GraphGC
             _ (PGP_VST sh) (PGA_VST sh) (PGAvs_VST sh) (PGAvn_VST sh)).
 Defined.
 
-Global Opaque pPGG_VST sPGG_VST.
+Global Opaque sPGG_VST.

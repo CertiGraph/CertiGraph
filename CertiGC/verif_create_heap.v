@@ -93,7 +93,6 @@ Proof.
       change (12 - 1) with 11 at 2. gather_SEP 1 2.
       remember (p0, (p0, offset_val (WORD_SIZE * Z.shiftl 1 16) p0)) as vh.
       remember (vh :: list_repeat (Z.to_nat 11) vn) as vl.
-      change (Values.val) with (@val pPGG_VST) in *.
       replace [vh] with (sublist 0 1 vl). 2: {
         subst vl; rewrite sublist_one; try omega.
         - rewrite Znth_0_cons; auto.

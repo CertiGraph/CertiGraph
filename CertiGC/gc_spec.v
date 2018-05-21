@@ -54,7 +54,7 @@ Identity Coercion SGraph_PointwiseGraph: SGraph >-> PointwiseGraph.
 Coercion pg_lg: LabeledGraph >-> PreGraph.
 
 Definition vertices_at (sh: wshare) (P: val -> Prop) (g: Graph): mpred :=
-  (@vertices_at _ _ _ _ _ _ (@PGP pPGG_VST (sPGG_VST sh)) PGA P g).
+  (@vertices_at _ _ _ _ _ _ (@PGP (sPGG_VST sh)) PGA P g).
 Definition whole_graph (sh: wshare) (g: Graph) := (vertices_at sh (vvalid g) g).
 
 Definition valid_int_or_ptr (x: val) :=
@@ -304,10 +304,16 @@ Definition make_tinfo_spec :=
 
 Definition resume_spec :=
   DECLARE _resume
-  WITH fi: val, ti: val
+  WITH fi: val, ti: val, rsh: rshare, f_info: fun_info,
+       g: Graph, sh: wshare, gv: globals
   PRE [ _fi OF (tptr tuint),
         _ti OF (tptr thread_info_type)]
-    PROP () LOCAL (temp _fi fi; temp _ti ti) SEP ()
+    PROP ((glabel g).(ti_heap_p) <> nullval)
+    LOCAL (temp _fi fi; temp _ti ti; gvars gv)
+    SEP (all_string_constants (proj1_sig rsh) gv;
+         fun_info_rep rsh f_info fi;
+         whole_graph sh g;
+         thread_info_rep (glabel g) ti)
   POST [tvoid]
   PROP () LOCAL () SEP ().
 
