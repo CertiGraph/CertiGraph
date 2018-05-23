@@ -48,14 +48,18 @@ Section GC_Graph.
   Inductive raw_field : Type :=
   | raw_data : val -> raw_field
   | raw_pointer : raw_field.
-  
+
+Local Open Scope Z_scope.  
   Record raw_vertex_block : Type :=
     {
       raw_mark: bool;
       raw_fields: list raw_field;
       raw_color: Z;
       raw_tag: Z;
+      raw_color_bound: 0 <= raw_color < two_power_nat 8;
+      raw_tag_bound: 0 <= raw_tag < two_power_nat 8;
     }.
+Local Close Scope Z_scope.    
 
   Record space: Type :=
     { 
@@ -139,13 +143,17 @@ Section GC_Graph.
     GeneralGraph val (val * nat)
                  raw_vertex_block unit thread_info (fun g => SoundGCGraph g).
 
-  Record vertex_block :=
+Local Open Scope Z_scope.  
+    Record vertex_block :=
     {
       v_mark: bool;
       v_fields: list val;
       v_color: Z;
       v_tag: Z;
+      v_color_bound: 0 <= v_color < two_power_nat 8;
+      v_tag_bound: 0 <= v_tag < two_power_nat 8;
     }.
+Local Close Scope Z_scope.
 
   Definition SGraph := PointwiseGraph val (val * nat) vertex_block unit.
 
@@ -166,7 +174,9 @@ Section GC_Graph.
     Build_vertex_block (raw_mark (vlabel g v))
                        (make_fields g v)
                        (raw_color (vlabel g v))
-                       (raw_tag (vlabel g v)).
+                       (raw_tag (vlabel g v))
+                       (raw_color_bound (vlabel g v))
+                       (raw_tag_bound (vlabel g v)).
 
   Instance SGC_GC:
     PointwiseGraphConstructor

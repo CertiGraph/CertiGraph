@@ -60,6 +60,9 @@ Section MagicConstants.
 Instance gc_tc : tagcode (bool * tagnum * fieldnum) :=
   tag_prodswap (tag_boundZ fieldbits) (tag_prod (tag_padleft 1 tag_bool) (tag_boundZ tagbits)).
 
+Instance gc_tc_new : tagcode (bool * tagnum * tagnum) :=
+  tag_prodswap (tag_boundZ tagbits) (tag_prod (tag_padleft 1 tag_bool) (tag_boundZ tagbits)).
+
 Instance tc_bitsize_ill : tagint_lossless gc_tc.
 Proof. red. trivial. Qed.
 

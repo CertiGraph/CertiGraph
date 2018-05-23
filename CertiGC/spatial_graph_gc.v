@@ -3,8 +3,18 @@ Require Import RamifyCoq.msl_application.Graph.
 Require Import RamifyCoq.CertiGC.GraphGC.
 Require Import VST.veric.SeparationLogic.
 Require Import RamifyCoq.CertiGC.env_graph_gc.
+Require Import RamifyCoq.CertiGC.env_gc.
+Require Import RamifyCoq.CertiGC.cc_bitwise_encoding.
+Require Import RamifyCoq.CertiGC.bitwise_encoding.
 Require Import RamifyCoq.floyd_ext.share.
 
+Program Definition vertex_block_header_to_val (v: vertex_block) :=
+  Vint (@int_of_tag _ gc_tc_new (v_mark v, v_color v, v_tag v)).
+Next Obligation.
+  destruct v; simpl; apply v_color_bound. Qed.
+  Next Obligation.
+  destruct v; simpl; apply v_tag_bound. Qed.
+  
 Definition vertex_block_to_fields_body (v: vertex_block): list val := v_fields v.
 
 Definition vertex_block_size (v: vertex_block) := (Z.of_nat (length (v_fields v))).
@@ -15,7 +25,7 @@ Definition vertex_block_to_fields_head (v: vertex_block): val :=
 Section sPGG_VST.
 
   Definition block_rep (sh: share) (p: val) (v: vertex_block) : mpred :=
-    data_at sh tint (vertex_block_to_fields_head v)
+    data_at sh tint (vertex_block_header_to_val v)
             (offset_val (-sizeof int_or_ptr_type) p) *
     data_at sh (tarray int_or_ptr_type (vertex_block_size v))
             (vertex_block_to_fields_body v) p.
