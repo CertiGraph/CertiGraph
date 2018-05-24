@@ -1,61 +1,16 @@
 Require Export RamifyCoq.msl_ext.iter_sepcon.
 Require Export RamifyCoq.CertiGC.env_graph_gc.
 Require Export RamifyCoq.graph.graph_model.
-Require Export RamifyCoq.msl_application.Graph.
-Require Export RamifyCoq.CertiGC.GraphGC.
-Require Export RamifyCoq.CertiGC.spatial_graph_gc.
-Require Export RamifyCoq.floyd_ext.share.
-
-Record fun_info : Type :=
-  {
-    fun_word_size: Z;
-    live_roots_indices: list Z;
-  }.
-
-Definition fun_info_rep (sh: share) (fi: fun_info) (p: val) : mpred :=
-  let len := Zlength (live_roots_indices fi) in
-  data_at
-    sh (tarray tuint (len + 2))
-    (map Vint (map Int.repr (fun_word_size fi :: len :: live_roots_indices fi))) p.
-
-Definition space_rest_rep (sp: space): mpred :=
-  if (EquivDec.equiv_dec sp.(space_start) nullval)
-  then emp
-  else data_at_ Tsh (tarray int_or_ptr_type (sp.(total_space) - sp.(used_space)))
-                (offset_val sp.(used_space) sp.(space_start)).
-
-Definition heap_rest_rep (hp: heap): mpred := iter_sepcon hp.(spaces) space_rest_rep.
-
-Definition space_reptype (sp: space): (reptype space_type) :=
-  let s := space_start sp in (s, (offset_val (WORD_SIZE * sp.(used_space)) s,
-                                  offset_val (WORD_SIZE * sp.(total_space)) s)).
-
-Definition heap_struct_rep (hp: heap) (h: val): mpred :=
-  data_at Tsh heap_type (map space_reptype hp.(spaces)) h.
-
-Definition thread_info_rep (ti: thread_info) (t: val) :=
-  if EquivDec.equiv_dec ti.(ti_heap_p) nullval
-  then data_at Tsh thread_info_type
-               (Vundef, (Vundef, (nullval, list_repeat (Z.to_nat MAX_ARGS) Vundef))) t
-  else let nursery := heap_head ti.(ti_heap) in
-       let p := nursery.(space_start) in
-       data_at Tsh thread_info_type
-               (offset_val (WORD_SIZE * ti.(ti_used_space)) p,
-                (offset_val (WORD_SIZE * nursery.(total_space)) p,
-                 (ti.(ti_heap_p), ti.(ti_args)))) t *
-       heap_struct_rep ti.(ti_heap) ti.(ti_heap_p) *
-       heap_rest_rep ti.(ti_heap).
+Require Export RamifyCoq.CertiGC.GCGraph.
+Require Export RamifyCoq.CertiGC.spatial_gcgraph.
 
 Coercion Graph_LGraph: Graph >-> LGraph.
-Coercion LGraph_SGraph: LGraph >-> SGraph.
 Identity Coercion Graph_GeneralGraph: Graph >-> GeneralGraph.
 Identity Coercion LGraph_LabeledGraph: LGraph >-> LabeledGraph.
-Identity Coercion SGraph_PointwiseGraph: SGraph >-> PointwiseGraph.
 Coercion pg_lg: LabeledGraph >-> PreGraph.
 
-Definition vertices_at (sh: wshare) (P: val -> Prop) (g: Graph): mpred :=
-  (@vertices_at _ _ _ _ _ _ (@PGP (sPGG_VST sh)) PGA P g).
-Definition whole_graph (sh: wshare) (g: Graph) := (vertices_at sh (vvalid g) g).
+Definition graph_rep (sh: share) (g: Graph) : mpred :=
+  (@graph_rep _ _ (@SGG_VST sh) g).
 
 Definition valid_int_or_ptr (x: val) :=
  match x with
@@ -192,7 +147,7 @@ Definition Is_from_spec :=
 
 Definition forward_spec :=
   DECLARE _forward
-  WITH start: val, n: Z, next: val, p: val, depth: Z, g: Graph, sh: wshare
+  WITH start: val, n: Z, next: val, p: val, depth: Z, g: Graph, sh: share
   PRE [ _from_start OF (tptr int_or_ptr_type),
         _from_limit OF (tptr int_or_ptr_type),
         _next OF (tptr int_or_ptr_type),
@@ -201,7 +156,7 @@ Definition forward_spec :=
     PROP ()
     LOCAL (temp _from_start start; temp _from_limit (offset_val n start);
            temp _next next; temp _p p; temp _depth (Vint (Int.repr depth)))
-    SEP (whole_graph sh g; heap_rest_rep (glabel g).(ti_heap))
+    SEP (graph_rep sh g)
   POST [tvoid]
   PROP () LOCAL () SEP ().
 
@@ -304,30 +259,34 @@ Definition make_tinfo_spec :=
 
 Definition resume_spec :=
   DECLARE _resume
-  WITH fi: val, ti: val, rsh: rshare, f_info: fun_info,
-       g: Graph, sh: wshare, gv: globals
+  WITH rsh: share, sh: share, fi: val, f_info: fun_info, ti: val, t_info: thread_info,
+       g: Graph, gv: globals
   PRE [ _fi OF (tptr tuint),
         _ti OF (tptr thread_info_type)]
-    PROP ((glabel g).(ti_heap_p) <> nullval)
+    PROP (readable_share rsh; writable_share sh;
+          graph_thread_info_compatible g t_info;
+          ti_heap_p t_info <> nullval)
     LOCAL (temp _fi fi; temp _ti ti; gvars gv)
-    SEP (all_string_constants (proj1_sig rsh) gv;
+    SEP (all_string_constants rsh gv;
          fun_info_rep rsh f_info fi;
-         whole_graph sh g;
-         thread_info_rep (glabel g) ti)
+         graph_rep sh g;
+         thread_info_rep t_info ti)
   POST [tvoid]
   PROP () LOCAL () SEP ().
 
 Definition garbage_collect_spec :=
   DECLARE _garbage_collect
-  WITH fi: val, ti: val, rsh: rshare, f_info: fun_info,
-       g: Graph, sh: wshare, gv: globals
+  WITH rsh: share, sh: share, fi: val, f_info: fun_info, ti: val, t_info: thread_info,
+       g: Graph, gv: globals
   PRE [ _fi OF (tptr tuint),
         _ti OF (tptr thread_info_type)]
-    PROP () LOCAL (temp _fi fi; temp _ti ti; gvars gv)
-    SEP (all_string_constants (proj1_sig rsh) gv;
+    PROP (readable_share rsh; writable_share sh;
+          graph_thread_info_compatible g t_info)
+    LOCAL (temp _fi fi; temp _ti ti; gvars gv)
+    SEP (all_string_constants rsh gv;
          fun_info_rep rsh f_info fi;
-         whole_graph sh g;
-         thread_info_rep (glabel g) ti)
+         graph_rep sh g;
+         thread_info_rep t_info ti)
   POST [tvoid]
     PROP () LOCAL () SEP ().
 
