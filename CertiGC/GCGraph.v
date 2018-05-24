@@ -60,9 +60,7 @@ Defined.
 
 Inductive GC_Pointer := | GCPtr: block -> ptrofs -> GC_Pointer.
 
-Inductive raw_field : Type :=
-| raw_data : Z + GC_Pointer -> raw_field
-| raw_pointer : raw_field.
+Definition raw_field: Type := option (Z + GC_Pointer).
 
 Definition Z2val (x: Z) : val := Vint (Int.repr x).
 
@@ -110,9 +108,6 @@ Fixpoint previous_vertices_size (g: LGraph) (gen i: nat): Z :=
 Definition vertex_offset (g: LGraph) (v: VType): Z :=
   previous_vertices_size g (vgeneration v) (vindex v) + 1.
 
-Definition all_occupied (g: LGraph) (v: VType): Z :=
-  previous_vertices_size g (vgeneration v) (vindex v + 1).
-
 Definition vertex_start_address (g: LGraph) (v: VType): val :=
   (nth (vgeneration v) g.(glabel) null_info).(start_address).
 
@@ -128,11 +123,8 @@ Definition make_header (g: LGraph) (v: VType): Z:=
 Fixpoint make_fields' (g: LGraph) (l_raw: list raw_field) (v: VType) (n: nat) :=
   match l_raw with
   | nil => nil
-  | x :: l => match x with
-              | raw_data d => raw_data2val d :: make_fields' g l v (n + 1)
-              | raw_pointer =>
-                vertex_address g (dst g (v, n)) :: make_fields' g l v (n + 1)
-              end
+  | Some d :: l => raw_data2val d :: make_fields' g l v (n + 1)
+  | None :: l => vertex_address g (dst g (v, n)) :: make_fields' g l v (n + 1)
   end.
 
 Definition make_fields (g: LGraph) (v: VType): list val :=
@@ -141,10 +133,8 @@ Definition make_fields (g: LGraph) (v: VType): list val :=
 Fixpoint get_edges' (lf: list raw_field) (v: VType) (n: nat) : list EType :=
   match lf with
   | nil => nil
-  | cons x lf' => match x with
-                  | raw_data _ => get_edges' lf' v (n + 1)
-                  | raw_pointer => (v, n) :: get_edges' lf' v (n + 1)
-                  end
+  | Some _ :: lf' => get_edges' lf' v (n + 1)
+  | None :: lf' => (v, n) :: get_edges' lf' v (n + 1)
   end.
 
 Definition get_edges (g: LGraph) (v: VType): list EType :=
@@ -166,6 +156,8 @@ Definition Graph :=
   GeneralGraph VType EType raw_vertex_block unit graph_info (fun g => SoundGCGraph g).
 
 Local Coercion lg_gg : GeneralGraph >-> LabeledGraph.
+
+Definition Graph_LGraph (g: Graph): LGraph := lg_gg g.
 
 Class SpatialGCGraphAssum (Pred : Type):=
   {
@@ -234,7 +226,7 @@ Proof.
 Qed.
 
 Lemma get_edges'_nth: forall n l a m v,
-    n < length l -> nth n l a = raw_pointer <-> In (v, n + m) (get_edges' l v m).
+    n < length l -> nth n l a = None <-> In (v, n + m) (get_edges' l v m).
 Proof.
   induction n.
   - induction l; simpl; intros. 1: inversion H. destruct a.
@@ -243,7 +235,7 @@ Proof.
   - destruct l; simpl; intros. 1: inversion H. assert (n < length l) by omega.
     specialize (IHn l a (m + 1) v H0).
     replace (n + (m + 1)) with (S (n + m)) in IHn by omega. rewrite IHn.
-    destruct r; intuition. simpl in H3. destruct H3; auto. inversion H3. omega.
+    destruct o; intuition. simpl in H3. destruct H3; auto. inversion H3. omega.
 Qed.
 
 Record space: Type :=
@@ -273,12 +265,30 @@ Definition heap_head (h: heap) : space :=
 
 Record thread_info: Type :=
   {
-    ti_used_space: Z;
     ti_heap_p: val;
     ti_heap: heap;
     ti_args: list val;
   }.
 
+Record fun_info : Type :=
+  {
+    fun_word_size: Z;
+    live_roots_indices: list Z;
+  }.
+
+Definition generation_space_compatible (g: LGraph)
+           (tri: nat * generation_info * space) : Prop :=
+  match tri with
+  | (gen, gi, sp) =>
+    gi.(start_address) = sp.(space_start) /\
+    previous_vertices_size g gen gi.(number_of_vertices) = sp.(used_space) /\
+    gi.(limit_of_generation) = sp.(total_space)
+  end.
+
 Definition graph_thread_info_compatible (g: Graph) (ti: thread_info): Prop :=
-  (g.(glabel) = nil <-> ti.(ti_heap_p) = nullval) 
-  (* /\ MORE CONDITIONS *).
+  (g.(glabel) = nil <-> ti.(ti_heap_p) = nullval) /\
+  Forall (generation_space_compatible g)
+         (combine (combine (nat_inc_list (length g.(glabel))) g.(glabel))
+                  ti.(ti_heap).(spaces)) /\
+  Forall (eq nullval)
+         (skipn (length g.(glabel)) (map space_start ti.(ti_heap).(spaces))).

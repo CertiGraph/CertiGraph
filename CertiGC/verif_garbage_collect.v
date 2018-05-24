@@ -5,8 +5,8 @@ Lemma body_garbage_collect:
 Proof.
   start_function.
   unfold thread_info_rep. if_tac.
-  - forward. forward_if. 2: inversion H0.
-    forward_call (proj1_sig rsh, gv). Intros hp. destruct hp as [h p].
+  - forward. forward_if. 2: inversion H1.
+    forward_call (rsh, gv). Intros hp. destruct hp as [h p].
     simpl fst. simpl snd. forward.
     admit.
   - Intros. forward. entailer!.
