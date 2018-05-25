@@ -1,11 +1,12 @@
 Require Import Coq.ZArith.ZArith.
 Require Import Coq.Lists.List.
+Require Export Coq.Program.Basics.
 Require Import compcert.lib.Integers.
 Require Import compcert.common.Values.
 Require Import VST.veric.Clight_lemmas.
 Require Import VST.veric.val_lemmas.
 Require Import VST.msl.seplog.
-Require Import RamifyCoq.lib.Coqlib.
+Require Import VST.floyd.sublist.
 Require Import RamifyCoq.lib.EquivDec_ext.
 Require Import RamifyCoq.lib.List_ext.
 Require Import RamifyCoq.graph.graph_model.
@@ -96,6 +97,38 @@ Definition LGraph := LabeledGraph VType EType raw_vertex_block unit graph_info.
 
 Local Coercion pg_lg: LabeledGraph >-> PreGraph.
 
+Record space: Type :=
+  { 
+    space_start: val;
+    used_space: Z;
+    total_space: Z;
+  }.
+
+Record heap: Type :=
+  {
+    spaces: list space;
+    spaces_size: Zlength spaces = MAX_SPACES;
+  }.
+
+Lemma heap_spaces_nil: forall h: heap, nil = spaces h -> False.
+Proof.
+  intros. pose proof (spaces_size h). rewrite <- H, Zlength_nil in H0. discriminate.
+Qed.
+
+Definition heap_head (h: heap) : space :=
+  match h.(spaces) as l return (l = spaces h -> space) with
+  | nil => fun m => False_rect space (heap_spaces_nil h m)
+  | s :: _ => fun _ => s
+  end eq_refl.
+
+Record thread_info: Type :=
+  {
+    ti_heap_p: val;
+    ti_heap: heap;
+    ti_args: list val;
+    arg_size: Zlength ti_args = MAX_ARGS;
+  }.
+
 Definition single_vertex_size (g: LGraph) (v: VType): Z :=
   Zlength (vlabel g v).(raw_fields) + 1.
 
@@ -104,6 +137,36 @@ Fixpoint previous_vertices_size (g: LGraph) (gen i: nat): Z :=
   | O => 0
   | S n => single_vertex_size g (gen, n) + previous_vertices_size g gen n
   end.
+
+Definition generation_space_compatible (g: LGraph)
+           (tri: nat * generation_info * space) : Prop :=
+  match tri with
+  | (gen, gi, sp) =>
+    gi.(start_address) = sp.(space_start) /\
+    previous_vertices_size g gen gi.(number_of_vertices) = sp.(used_space) /\
+    gi.(limit_of_generation) = sp.(total_space)
+  end.
+
+Fixpoint nat_inc_list (n: nat) : list nat :=
+  match n with
+  | O => nil
+  | S n' => nat_inc_list n' ++ (n' :: nil)
+  end.
+
+Definition graph_thread_info_compatible (g: LGraph) (ti: thread_info): Prop :=
+  (g.(glabel) = nil <-> ti.(ti_heap_p) = nullval) /\
+  Forall (generation_space_compatible g)
+         (combine (combine (nat_inc_list (length g.(glabel))) g.(glabel))
+                  ti.(ti_heap).(spaces)) /\
+  Forall (eq nullval)
+         (skipn (length g.(glabel)) (map space_start ti.(ti_heap).(spaces))).
+
+Record fun_info : Type :=
+  {
+    fun_word_size: Z;
+    live_roots_indices: list Z;
+    fi_index_range: forall i, In i live_roots_indices -> (0 <= i < MAX_ARGS)%Z;
+  }.
 
 Definition vertex_offset (g: LGraph) (v: VType): Z :=
   previous_vertices_size g (vgeneration v) (vindex v) + 1.
@@ -114,21 +177,39 @@ Definition vertex_start_address (g: LGraph) (v: VType): val :=
 Definition vertex_address (g: LGraph) (v: VType): val :=
   offset_val (WORD_SIZE * vertex_offset g v) (vertex_start_address g v).
 
-Definition make_header (g: LGraph) (v: VType): Z:=
-  let vb := vlabel g v in if vb.(raw_mark)
-                          then 0 else
-                            vb.(raw_tag) + (Z.shiftl vb.(raw_color) 8) +
-                            (Z.shiftl (Zlength vb.(raw_fields)) 10).
-
-Fixpoint make_fields' (g: LGraph) (l_raw: list raw_field) (v: VType) (n: nat) :=
-  match l_raw with
-  | nil => nil
-  | Some d :: l => raw_data2val d :: make_fields' g l v (n + 1)
-  | None :: l => vertex_address g (dst g (v, n)) :: make_fields' g l v (n + 1)
+Definition ptr_or_v_2val (g: LGraph) (e: GC_Pointer + VType) : val :=
+  match e with
+  | inl (GCPtr b z) => Vptr b z
+  | inr v => vertex_address g v
   end.
 
-Definition make_fields (g: LGraph) (v: VType): list val :=
-  make_fields' g (vlabel g v).(raw_fields) v O.
+Definition roots_t: Type := list (GC_Pointer + VType).
+
+Definition outlier_t: Type := list GC_Pointer.
+
+Instance Inhabitant_val: Inhabitant val := nullval.
+
+Definition fun_thread_arg_compatible
+           (g: LGraph) (ti: thread_info) (fi: fun_info) (roots: roots_t) : Prop :=
+  map (ptr_or_v_2val g) roots = map ((flip Znth) ti.(ti_args)) fi.(live_roots_indices).
+
+Definition roots_compatible (g: LGraph) (outlier: outlier_t) (roots: roots_t): Prop :=
+  incl (filter_sum_left roots) outlier /\ Forall (vvalid g) (filter_sum_right roots).
+
+Definition outlier_compatible (g: LGraph) (outlier: outlier_t): Prop :=
+  forall v,
+    vvalid g v ->
+    incl (filter_sum_right (filter_option (vlabel g v).(raw_fields))) outlier.
+
+Definition
+  super_compatible
+  (g: LGraph) (ti: thread_info) (fi: fun_info) (r: roots_t) (out: outlier_t) : Prop :=
+  graph_thread_info_compatible g ti /\
+  fun_thread_arg_compatible g ti fi r /\
+  roots_compatible g out r /\
+  outlier_compatible g out.
+
+(*
 
 Fixpoint get_edges' (lf: list raw_field) (v: VType) (n: nat) : list EType :=
   match lf with
@@ -139,6 +220,28 @@ Fixpoint get_edges' (lf: list raw_field) (v: VType) (n: nat) : list EType :=
 
 Definition get_edges (g: LGraph) (v: VType): list EType :=
   get_edges' (raw_fields (vlabel g v)) v O.
+
+Lemma get_edges'_range: forall v n l m,
+    In (v, n) (get_edges' l v m) -> m <= n < m + length l.
+Proof.
+  intros v n l. revert v n. induction l; simpl; intros. 1: exfalso; auto.
+  specialize (IHl v n (m + 1)). destruct a. 1: apply IHl in H; omega.
+  simpl in H. destruct H. 1: inversion H; omega. apply IHl in H. omega.
+Qed.
+
+Lemma get_edges'_nth: forall n l a m v,
+    n < length l -> nth n l a = None <-> In (v, n + m) (get_edges' l v m).
+Proof.
+  induction n.
+  - induction l; simpl; intros. 1: inversion H. destruct a.
+    + split; intros. inversion H0. apply get_edges'_range in H0. exfalso; omega.
+    + simpl. intuition.
+  - destruct l; simpl; intros. 1: inversion H. assert (n < length l) by omega.
+    specialize (IHn l a (m + 1) v H0).
+    replace (n + (m + 1)) with (S (n + m)) in IHn by omega. rewrite IHn.
+    destruct o; intuition. simpl in H3. destruct H3; auto. inversion H3. omega.
+Qed.
+
 
 Class SoundGCGraph (g: LGraph) :=
   {
@@ -159,6 +262,24 @@ Local Coercion lg_gg : GeneralGraph >-> LabeledGraph.
 
 Definition Graph_LGraph (g: Graph): LGraph := lg_gg g.
 
+ *)
+
+Definition make_header (g: LGraph) (v: VType): Z:=
+  let vb := vlabel g v in if vb.(raw_mark)
+                          then 0 else
+                            vb.(raw_tag) + (Z.shiftl vb.(raw_color) 8) +
+                            (Z.shiftl (Zlength vb.(raw_fields)) 10).
+
+Fixpoint make_fields' (g: LGraph) (l_raw: list raw_field) (v: VType) (n: nat) :=
+  match l_raw with
+  | nil => nil
+  | Some d :: l => raw_data2val d :: make_fields' g l v (n + 1)
+  | None :: l => vertex_address g (dst g (v, n)) :: make_fields' g l v (n + 1)
+  end.
+
+Definition make_fields (g: LGraph) (v: VType): list val :=
+  make_fields' g (vlabel g v).(raw_fields) v O.
+
 Class SpatialGCGraphAssum (Pred : Type):=
   {
     SGP_ND: NatDed Pred;
@@ -170,12 +291,6 @@ Class SpatialGCGraphAssum (Pred : Type):=
 Existing Instances SGP_ND SGP_SL SGP_ClSL SGP_CoSL.
 
 Class SpatialGCGraph (Pred: Type) := vertex_at: val -> Z -> list val -> Pred.
-
-Fixpoint nat_inc_list (n: nat) : list nat :=
-  match n with
-  | O => nil
-  | S n' => nat_inc_list n' ++ (n' :: nil)
-  end.
 
 Lemma nat_inc_list_in_iff: forall n v, In v (nat_inc_list n) <-> 0 <= v < n.
 Proof.
@@ -202,93 +317,17 @@ Section SpaceGCGraph.
   Context {SGGAP: SpatialGCGraphAssum Pred}.
   Context {SGGP: SpatialGCGraph Pred}.
 
-  Definition vertex_rep (g: Graph) (v: VType): Pred :=
+  Definition vertex_rep (g: LGraph) (v: VType): Pred :=
     vertex_at (vertex_address g v) (make_header g v) (make_fields g v).
 
-  Definition generation_rep (g: Graph) (gen_and_num: nat * nat): Pred :=
+  Definition generation_rep (g: LGraph) (gen_and_num: nat * nat): Pred :=
     match gen_and_num with
     | pair gen num =>
       iter_sepcon (map (fun x => (gen, x)) (nat_inc_list num)) (vertex_rep g)
     end.
 
-  Definition graph_rep (g: Graph): Pred :=
+  Definition graph_rep (g: LGraph): Pred :=
     let up := map number_of_vertices g.(glabel) in 
     iter_sepcon (combine (nat_inc_list (length up)) up) (generation_rep g).
 
 End SpaceGCGraph.
-
-Lemma get_edges'_range: forall v n l m,
-    In (v, n) (get_edges' l v m) -> m <= n < m + length l.
-Proof.
-  intros v n l. revert v n. induction l; simpl; intros. 1: exfalso; auto.
-  specialize (IHl v n (m + 1)). destruct a. 1: apply IHl in H; omega.
-  simpl in H. destruct H. 1: inversion H; omega. apply IHl in H. omega.
-Qed.
-
-Lemma get_edges'_nth: forall n l a m v,
-    n < length l -> nth n l a = None <-> In (v, n + m) (get_edges' l v m).
-Proof.
-  induction n.
-  - induction l; simpl; intros. 1: inversion H. destruct a.
-    + split; intros. inversion H0. apply get_edges'_range in H0. exfalso; omega.
-    + simpl. intuition.
-  - destruct l; simpl; intros. 1: inversion H. assert (n < length l) by omega.
-    specialize (IHn l a (m + 1) v H0).
-    replace (n + (m + 1)) with (S (n + m)) in IHn by omega. rewrite IHn.
-    destruct o; intuition. simpl in H3. destruct H3; auto. inversion H3. omega.
-Qed.
-
-Record space: Type :=
-  { 
-    space_start: val;
-    used_space: Z;
-    total_space: Z;
-    space_order: (0 <= used_space < total_space)%Z;
-  }.
-
-Record heap: Type :=
-  {
-    spaces: list space;
-    spaces_size: Zlength spaces = MAX_SPACES;
-  }.
-
-Lemma heap_spaces_nil: forall h: heap, nil = spaces h -> False.
-Proof.
-  intros. pose proof (spaces_size h). rewrite <- H, Zlength_nil in H0. discriminate.
-Qed.
-
-Definition heap_head (h: heap) : space :=
-  match h.(spaces) as l return (l = spaces h -> space) with
-  | nil => fun m => False_rect space (heap_spaces_nil h m)
-  | s :: _ => fun _ => s
-  end eq_refl.
-
-Record thread_info: Type :=
-  {
-    ti_heap_p: val;
-    ti_heap: heap;
-    ti_args: list val;
-  }.
-
-Record fun_info : Type :=
-  {
-    fun_word_size: Z;
-    live_roots_indices: list Z;
-  }.
-
-Definition generation_space_compatible (g: LGraph)
-           (tri: nat * generation_info * space) : Prop :=
-  match tri with
-  | (gen, gi, sp) =>
-    gi.(start_address) = sp.(space_start) /\
-    previous_vertices_size g gen gi.(number_of_vertices) = sp.(used_space) /\
-    gi.(limit_of_generation) = sp.(total_space)
-  end.
-
-Definition graph_thread_info_compatible (g: Graph) (ti: thread_info): Prop :=
-  (g.(glabel) = nil <-> ti.(ti_heap_p) = nullval) /\
-  Forall (generation_space_compatible g)
-         (combine (combine (nat_inc_list (length g.(glabel))) g.(glabel))
-                  ti.(ti_heap).(spaces)) /\
-  Forall (eq nullval)
-         (skipn (length g.(glabel)) (map space_start ti.(ti_heap).(spaces))).
