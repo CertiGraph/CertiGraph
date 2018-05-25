@@ -45,3 +45,6 @@ Definition thread_info_rep (ti: thread_info) (t: val) :=
          ((p, (Vundef, n_lim))
             :: map space_rep (tl ti.(ti_heap).(spaces))) ti.(ti_heap_p) *
        heap_rest_rep ti.(ti_heap).
+
+Definition outlier_rep (outlier: outlier_t) :=
+  fold_right andp TT (map (compose valid_pointer GC_Pointer2val) outlier).

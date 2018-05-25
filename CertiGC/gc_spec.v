@@ -4,12 +4,10 @@ Require Export RamifyCoq.graph.graph_model.
 Require Export RamifyCoq.CertiGC.GCGraph.
 Require Export RamifyCoq.CertiGC.spatial_gcgraph.
 
-Coercion Graph_LGraph: Graph >-> LGraph.
-Identity Coercion Graph_GeneralGraph: Graph >-> GeneralGraph.
 Identity Coercion LGraph_LabeledGraph: LGraph >-> LabeledGraph.
 Coercion pg_lg: LabeledGraph >-> PreGraph.
 
-Definition graph_rep (sh: share) (g: Graph) : mpred :=
+Definition graph_rep (sh: share) (g: LGraph) : mpred :=
   (@graph_rep _ _ (@SGG_VST sh) g).
 
 Definition valid_int_or_ptr (x: val) :=
@@ -147,7 +145,7 @@ Definition Is_from_spec :=
 
 Definition forward_spec :=
   DECLARE _forward
-  WITH start: val, n: Z, next: val, p: val, depth: Z, g: Graph, sh: share
+  WITH start: val, n: Z, next: val, p: val, depth: Z, g: LGraph, sh: share
   PRE [ _from_start OF (tptr int_or_ptr_type),
         _from_limit OF (tptr int_or_ptr_type),
         _next OF (tptr int_or_ptr_type),
@@ -259,12 +257,14 @@ Definition make_tinfo_spec :=
 
 Definition resume_spec :=
   DECLARE _resume
-  WITH rsh: share, sh: share, fi: val, f_info: fun_info, ti: val, t_info: thread_info,
-       g: Graph, gv: globals
+  WITH rsh: share, sh: share, gv: globals, fi: val, ti: val,
+       g: LGraph, t_info: thread_info, f_info: fun_info,
+       roots : roots_t
   PRE [ _fi OF (tptr tuint),
         _ti OF (tptr thread_info_type)]
     PROP (readable_share rsh; writable_share sh;
           graph_thread_info_compatible g t_info;
+          fun_thread_arg_compatible g t_info f_info roots;
           ti_heap_p t_info <> nullval)
     LOCAL (temp _fi fi; temp _ti ti; gvars gv)
     SEP (all_string_constants rsh gv;
@@ -276,15 +276,17 @@ Definition resume_spec :=
 
 Definition garbage_collect_spec :=
   DECLARE _garbage_collect
-  WITH rsh: share, sh: share, fi: val, f_info: fun_info, ti: val, t_info: thread_info,
-       g: Graph, gv: globals
+  WITH rsh: share, sh: share, gv: globals, fi: val, ti: val,
+       g: LGraph, t_info: thread_info, f_info: fun_info,
+       roots : roots_t, outlier: outlier_t
   PRE [ _fi OF (tptr tuint),
         _ti OF (tptr thread_info_type)]
     PROP (readable_share rsh; writable_share sh;
-          graph_thread_info_compatible g t_info)
+          super_compatible g t_info f_info roots outlier)
     LOCAL (temp _fi fi; temp _ti ti; gvars gv)
     SEP (all_string_constants rsh gv;
          fun_info_rep rsh f_info fi;
+         outlier_rep outlier;  
          graph_rep sh g;
          thread_info_rep t_info ti)
   POST [tvoid]

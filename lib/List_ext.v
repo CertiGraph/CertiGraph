@@ -849,3 +849,24 @@ Proof.
       intro. rewrite in_app_iff in H2. destruct H2; auto. simpl in H2. destruct H2; auto.
     + simpl in H0. destruct H0; exfalso; auto.
 Qed.
+
+Fixpoint filter_sum_left {A B} (l: list (A + B)) : list A :=
+  match l with
+  | nil => nil
+  | inl x :: l' => x :: filter_sum_left l'
+  | inr _ :: l' => filter_sum_left l'
+  end.
+
+Fixpoint filter_sum_right {A B} (l: list (A + B)) : list B :=
+  match l with
+  | nil => nil
+  | inl _ :: l' => filter_sum_right l'
+  | inr x :: l' => x :: filter_sum_right l'
+  end.
+
+Fixpoint filter_option {A} (l: list (option A)) : list A :=
+  match l with
+  | nil => nil
+  | Some x :: l' => x :: filter_option l'
+  | None :: l' => filter_option l'
+  end.
