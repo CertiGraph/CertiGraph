@@ -7,9 +7,6 @@ Require Export RamifyCoq.CertiGC.spatial_gcgraph.
 Identity Coercion LGraph_LabeledGraph: LGraph >-> LabeledGraph.
 Coercion pg_lg: LabeledGraph >-> PreGraph.
 
-Definition graph_rep (sh: share) (g: LGraph) : mpred :=
-  (@graph_rep _ _ (@SGG_VST sh) g).
-
 Definition valid_int_or_ptr (x: val) :=
  match x with
  | Vint i => Int.testbit i 0 = true

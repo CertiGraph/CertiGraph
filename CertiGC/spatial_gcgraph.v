@@ -1,14 +1,24 @@
 Require Import RamifyCoq.msl_ext.iter_sepcon.
+Require Import RamifyCoq.graph.graph_model.
 Require Import RamifyCoq.CertiGC.GCGraph.
 Require Export RamifyCoq.CertiGC.env_graph_gc.
 
-Instance SGGA_VST: SpatialGCGraphAssum mpred.
-Proof. apply (Build_SpatialGCGraphAssum _ _ _ _ _). Defined.
+Definition vertex_at (sh: share) (p: val) (header: Z) (lst_fields: list val) :=
+  data_at sh tint (Vint (Int.repr header)) (offset_val (- WORD_SIZE) p) *
+  data_at sh (tarray int_or_ptr_type (Zlength lst_fields)) lst_fields p.
 
-Instance SGG_VST (sh: share): SpatialGCGraph mpred :=
-  fun p header lst_fields =>
-    data_at sh tint (Vint (Int.repr header)) (offset_val (- WORD_SIZE) p) *
-    data_at sh (tarray int_or_ptr_type (Zlength lst_fields)) lst_fields p.
+Definition vertex_rep (sh: share) (g: LGraph) (v: VType): mpred :=
+  vertex_at sh (vertex_address g v) (make_header g v) (make_fields g v).
+
+Definition generation_rep (sh: share) (g: LGraph) (gen_and_num: nat * nat): mpred :=
+  match gen_and_num with
+  | pair gen num =>
+    iter_sepcon (map (fun x => (gen, x)) (nat_inc_list num)) (vertex_rep sh g)
+  end.
+
+Definition graph_rep (sh: share) (g: LGraph): mpred :=
+  let up := map number_of_vertices g.(glabel) in 
+  iter_sepcon (combine (nat_inc_list (length up)) up) (generation_rep sh g).
 
 Definition fun_info_rep (sh: share) (fi: fun_info) (p: val) : mpred :=
   let len := Zlength (live_roots_indices fi) in
