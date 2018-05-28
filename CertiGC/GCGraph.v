@@ -11,6 +11,7 @@ Require Import RamifyCoq.lib.EquivDec_ext.
 Require Import RamifyCoq.lib.List_ext.
 Require Import RamifyCoq.graph.graph_model.
 Require Import RamifyCoq.msl_ext.iter_sepcon.
+Import ListNotations.
 
 Local Open Scope Z_scope.
 
@@ -87,9 +88,15 @@ Record generation_info: Type :=
     start_address: val;
     number_of_vertices: nat;
     limit_of_generation: Z;
+    start_isptr: isptr start_address;
   }.
 
-Definition null_info: generation_info := Build_generation_info nullval O Z.zero.
+Definition IMPOSSIBLE_VAL := Vptr xH Ptrofs.zero.
+Lemma IMPOSSIBLE_ISPTR: isptr IMPOSSIBLE_VAL. Proof. exact I. Qed.
+Global Opaque IMPOSSIBLE_VAL.
+
+Definition null_info: generation_info :=
+  Build_generation_info IMPOSSIBLE_VAL O Z.zero IMPOSSIBLE_ISPTR.
 
 Definition graph_info := list generation_info.
 
@@ -98,7 +105,7 @@ Definition LGraph := LabeledGraph VType EType raw_vertex_block unit graph_info.
 Local Coercion pg_lg: LabeledGraph >-> PreGraph.
 
 Record space: Type :=
-  { 
+  {
     space_start: val;
     used_space: Z;
     total_space: Z;
@@ -132,11 +139,23 @@ Record thread_info: Type :=
 Definition single_vertex_size (g: LGraph) (v: VType): Z :=
   Zlength (vlabel g v).(raw_fields) + 1.
 
+Lemma single_vertex_size_gt_zero: forall g v, (0 < single_vertex_size g v)%Z.
+Proof.
+  intros. unfold single_vertex_size.
+  pose proof (Zlength_nonneg (raw_fields (vlabel g v))). omega.
+Qed.
+
 Fixpoint previous_vertices_size (g: LGraph) (gen i: nat): Z :=
   match i with
   | O => 0
   | S n => single_vertex_size g (gen, n) + previous_vertices_size g gen n
   end.
+
+Lemma previous_size_ge_zero: forall g gen i, (0 <= previous_vertices_size g gen i)%Z.
+Proof.
+  intros. induction i; simpl. 1: omega.
+  pose proof (single_vertex_size_gt_zero g (gen, i)). omega.
+Qed.
 
 Definition generation_space_compatible (g: LGraph)
            (tri: nat * generation_info * space) : Prop :=
@@ -147,11 +166,22 @@ Definition generation_space_compatible (g: LGraph)
     gi.(limit_of_generation) = sp.(total_space)
   end.
 
-Fixpoint nat_inc_list (n: nat) : list nat :=
-  match n with
+Fixpoint nat_seq (s: nat) (total: nat): list nat :=
+  match total with
   | O => nil
-  | S n' => nat_inc_list n' ++ (n' :: nil)
+  | S n => s :: nat_seq (S s) n
   end.
+
+Lemma nat_seq_S: forall i num, nat_seq i (S num) = nat_seq i num ++ [num + i].
+Proof.
+  intros. revert i. induction num; intros. 1: simpl; reflexivity.
+  remember (S num). simpl. rewrite (IHnum (S i)). subst. simpl. repeat f_equal. omega.
+Qed.
+
+Definition nat_inc_list (n: nat) : list nat := nat_seq O n.
+
+Lemma nat_inc_list_S: forall num, nat_inc_list (S num) = nat_inc_list num ++ [num].
+Proof. intros. unfold nat_inc_list. rewrite nat_seq_S. repeat f_equal. omega. Qed.
 
 Definition graph_thread_info_compatible (g: LGraph) (ti: thread_info): Prop :=
   (g.(glabel) = nil <-> ti.(ti_heap_p) = nullval) /\
@@ -171,11 +201,11 @@ Record fun_info : Type :=
 Definition vertex_offset (g: LGraph) (v: VType): Z :=
   previous_vertices_size g (vgeneration v) (vindex v) + 1.
 
-Definition vertex_start_address (g: LGraph) (v: VType): val :=
-  (nth (vgeneration v) g.(glabel) null_info).(start_address).
+Definition gen_start (g: LGraph) (gen: nat): val :=
+  (nth gen g.(glabel) null_info).(start_address).
 
 Definition vertex_address (g: LGraph) (v: VType): val :=
-  offset_val (WORD_SIZE * vertex_offset g v) (vertex_start_address g v).
+  offset_val (WORD_SIZE * vertex_offset g v) (gen_start g (vgeneration v)).
 
 Definition ptr_or_v_2val (g: LGraph) (e: GC_Pointer + VType) : val :=
   match e with
@@ -279,55 +309,3 @@ Fixpoint make_fields' (g: LGraph) (l_raw: list raw_field) (v: VType) (n: nat) :=
 
 Definition make_fields (g: LGraph) (v: VType): list val :=
   make_fields' g (vlabel g v).(raw_fields) v O.
-
-Class SpatialGCGraphAssum (Pred : Type):=
-  {
-    SGP_ND: NatDed Pred;
-    SGP_SL : SepLog Pred;
-    SGP_ClSL: ClassicalSep Pred;
-    SGP_CoSL: CorableSepLog Pred
-  }.
-
-Existing Instances SGP_ND SGP_SL SGP_ClSL SGP_CoSL.
-
-Class SpatialGCGraph (Pred: Type) := vertex_at: val -> Z -> list val -> Pred.
-
-Lemma nat_inc_list_in_iff: forall n v, In v (nat_inc_list n) <-> 0 <= v < n.
-Proof.
-  induction n; intros; [simpl; intuition|]. simpl. rewrite in_app_iff.
-  assert (0 <= v < S n <-> 0 <= v < n \/ v = n) by omega. rewrite H. clear H.
-  rewrite IHn. simpl. intuition.
-Qed.
-
-Lemma nat_inc_list_NoDup: forall n, NoDup (nat_inc_list n).
-Proof.
-  induction n; simpl; [constructor|]. apply NoDup_app_inv; auto.
-  - constructor; auto. constructor.
-  - intros. rewrite nat_inc_list_in_iff in H. simpl. omega.
-Qed.
-
-Lemma nat_inc_list_length: forall n, length (nat_inc_list n) = n.
-Proof.
-  induction n; simpl; auto. rewrite app_length. simpl. rewrite IHn. intuition.
-Qed.
-
-Section SpaceGCGraph.
-
-  Context {Pred: Type}.
-  Context {SGGAP: SpatialGCGraphAssum Pred}.
-  Context {SGGP: SpatialGCGraph Pred}.
-
-  Definition vertex_rep (g: LGraph) (v: VType): Pred :=
-    vertex_at (vertex_address g v) (make_header g v) (make_fields g v).
-
-  Definition generation_rep (g: LGraph) (gen_and_num: nat * nat): Pred :=
-    match gen_and_num with
-    | pair gen num =>
-      iter_sepcon (map (fun x => (gen, x)) (nat_inc_list num)) (vertex_rep g)
-    end.
-
-  Definition graph_rep (g: LGraph): Pred :=
-    let up := map number_of_vertices g.(glabel) in 
-    iter_sepcon (combine (nat_inc_list (length up)) up) (generation_rep g).
-
-End SpaceGCGraph.
