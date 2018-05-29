@@ -307,5 +307,18 @@ Fixpoint make_fields' (g: LGraph) (l_raw: list raw_field) (v: VType) (n: nat) :=
   | None :: l => vertex_address g (dst g (v, n)) :: make_fields' g l v (n + 1)
   end.
 
+Lemma make_fields'_eq_length: forall g l v n, length (make_fields' g l v n) = length l.
+Proof.
+  intros. revert n. induction l; intros; simpl. 1: reflexivity.
+  destruct a; simpl; rewrite IHl; reflexivity.
+Qed.
+
 Definition make_fields (g: LGraph) (v: VType): list val :=
   make_fields' g (vlabel g v).(raw_fields) v O.
+
+Lemma fields_eq_length: forall g v,
+    Zlength (make_fields g v) = Zlength (raw_fields (vlabel g v)).
+Proof.
+  intros. rewrite !Zlength_correct. f_equal. unfold make_fields.
+  rewrite make_fields'_eq_length. reflexivity.
+Qed.

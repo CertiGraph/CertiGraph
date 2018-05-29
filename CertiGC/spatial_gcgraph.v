@@ -58,3 +58,43 @@ Definition thread_info_rep (ti: thread_info) (t: val) :=
 
 Definition outlier_rep (outlier: outlier_t) :=
   fold_right andp TT (map (compose valid_pointer GC_Pointer2val) outlier).
+
+Lemma vertex_rep_memory_block: forall sh g v,
+    vertex_rep sh g v |--
+               memory_block sh (WORD_SIZE * single_vertex_size g v)
+               (offset_val (- WORD_SIZE) (vertex_address g v)).
+Proof.
+  intros. destruct v as [gen num].
+  unfold vertex_rep, vertex_at, vertex_address, vertex_offset. simpl.
+  assert (isptr (gen_start g gen)) by (apply start_isptr).
+  remember (gen_start g gen). destruct v; try (simpl in H; exfalso; assumption).
+  remember (previous_vertices_size g gen num). rewrite offset_offset_val.
+  assert (0 <= z) by (rewrite Heqz; apply previous_size_ge_zero).
+  replace (WORD_SIZE * (z + 1) + - WORD_SIZE) with (WORD_SIZE * z)%Z by
+      (rewrite Z.add_opp_r, Z.mul_add_distr_l, Z.mul_1_r, Z.add_simpl_r; reflexivity).
+  unfold single_vertex_size. entailer. rewrite <- fields_eq_length.
+  destruct H1 as [_ [_ [? _]]]. simpl in H1.
+  destruct H3 as [_ [_ [? _]]]. simpl in H3. rewrite <- H4 in H3.
+  remember (previous_vertices_size g gen num).
+  remember (Zlength (make_fields g (gen, num))). rewrite (Z.add_comm z0).
+  rewrite Z.mul_add_distr_l with (m := 1). rewrite Z.mul_1_r.
+  simpl offset_val. remember (Ptrofs.add i (Ptrofs.repr (WORD_SIZE * z))).
+  rewrite <- (Ptrofs.repr_unsigned i0). remember (Ptrofs.unsigned i0) as ofs.
+  assert (Ptrofs.add i (Ptrofs.repr (WORD_SIZE * (z + 1))) = Ptrofs.repr (ofs + 4)). {
+    rewrite WORD_SIZE_eq in *. rewrite Z.mul_add_distr_l, Z.mul_1_r.
+    rewrite <- ptrofs_add_repr, <- Ptrofs.add_assoc.
+    rewrite Ptrofs.add_unsigned. rewrite <- Heqi0. rewrite <- Heqofs. f_equal.
+  } assert (Ptrofs.unsigned (Ptrofs.add i (Ptrofs.repr (WORD_SIZE * (z + 1)))) =
+            ofs + 4). {
+    rewrite H6, Ptrofs.unsigned_repr_eq. apply Z.mod_small.
+    destruct (Ptrofs.unsigned_range i0). rewrite <- Heqofs in *. omega.
+  } rewrite H6. assert (0 <= z0) by (subst z0; apply Zlength_nonneg).
+  rewrite memory_block_split; [| rep_omega..].
+  sep_apply (data_at_memory_block
+               sh tint (Vint (Int.repr (make_header g (gen, num))))
+               (Vptr b (Ptrofs.repr ofs))). 
+  simpl sizeof. rewrite WORD_SIZE_eq. apply cancel_left.
+  sep_apply (data_at_memory_block
+               sh (tarray int_or_ptr_type z0) (make_fields g (gen, num))
+               (Vptr b (Ptrofs.repr (ofs + 4)))). simpl sizeof. rewrite Z.max_r; auto.
+Qed.

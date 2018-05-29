@@ -11,12 +11,14 @@ Proof.
   - simpl. rewrite memory_block_zero_Vptr. auto.
   - unfold generation_rep. rewrite nat_inc_list_S, map_app, iter_sepcon_app_sepcon.
     simpl. unfold generation_rep in IHnum. sep_apply IHnum. rewrite Z.add_comm.
-    rewrite <- (Ptrofs.repr_unsigned i) at 2. rewrite memory_block_split.
-    rewrite Ptrofs.repr_unsigned. entailer!. unfold vertex_rep, vertex_at. simpl.
-    unfold vertex_address. simpl vgeneration. rewrite <- Heqv. unfold vertex_offset.
-    simpl vgeneration. simpl vindex. rewrite offset_offset_val.
-    remember (previous_vertices_size g gen (vindex (gen, num))).
-    replace (WORD_SIZE * (z + 1) + - WORD_SIZE) with (WORD_SIZE * z)%Z.
+    rewrite <- (Ptrofs.repr_unsigned i) at 2.
+    remember (previous_vertices_size g gen num) as zp.
+    assert (0 <= zp) by (rewrite Heqzp; apply previous_size_ge_zero).
+    rewrite memory_block_split; auto.
+    2: pose proof (single_vertex_size_gt_zero g (gen, num)); omega.
+    + rewrite (Ptrofs.repr_unsigned i). apply cancel_left.
+      sep_apply (vertex_rep_memory_block sh g (gen, num)).
+      (* inv_int i. *)
 Abort.
 
 Lemma body_resume: semax_body Vprog Gprog f_resume resume_spec.
@@ -48,7 +50,10 @@ Proof.
     forward_call ((gv ___stringlit_10),
                   (map init_data2byte (gvar_init v___stringlit_10)), rsh).
     exfalso; assumption.
-  - forward. entailer!.
+  - simpl in H3. remember (space_start (heap_head th)).
+    destruct v; try (simpl in Heqv; exfalso; assumption). simpl in H3.
+    if_tac in H3. 2: exfalso; apply H4; reflexivity.
+    forward. entailer!.
   - forward. forward.
     
 Abort.
