@@ -1,26 +1,5 @@
 Require Import RamifyCoq.CertiGC.gc_spec.
 
-Lemma generation_rep_memory_block: forall sh (g: LGraph) gen num,
-    (gen < length g.(glabel))%nat ->
-    generation_rep sh g (gen, num) |--
-    memory_block sh (previous_vertices_size g gen num) (gen_start g gen).
-Proof.
-  intros. assert (isptr (gen_start g gen)) by (apply start_isptr).
-  remember (gen_start g gen). destruct v; try (simpl in H0; exfalso; assumption).
-  induction num.
-  - simpl. rewrite memory_block_zero_Vptr. auto.
-  - unfold generation_rep. rewrite nat_inc_list_S, map_app, iter_sepcon_app_sepcon.
-    simpl. unfold generation_rep in IHnum. sep_apply IHnum. rewrite Z.add_comm.
-    rewrite <- (Ptrofs.repr_unsigned i) at 2.
-    remember (previous_vertices_size g gen num) as zp.
-    assert (0 <= zp) by (rewrite Heqzp; apply previous_size_ge_zero).
-    rewrite memory_block_split; auto.
-    2: pose proof (single_vertex_size_gt_zero g (gen, num)); omega.
-    + rewrite (Ptrofs.repr_unsigned i). apply cancel_left.
-      sep_apply (vertex_rep_memory_block sh g (gen, num)).
-      (* inv_int i. *)
-Abort.
-
 Lemma body_resume: semax_body Vprog Gprog f_resume resume_spec.
 Proof.
   start_function.
