@@ -59,19 +59,25 @@ Definition thread_info_rep (ti: thread_info) (t: val) :=
 Definition outlier_rep (outlier: outlier_t) :=
   fold_right andp TT (map (compose valid_pointer GC_Pointer2val) outlier).
 
+Lemma vertex_head_address_eq: forall g gen num,
+  offset_val (- WORD_SIZE) (vertex_address g (gen, num)) =
+  offset_val (WORD_SIZE * (previous_vertices_size g gen num)) (gen_start g gen).
+Proof.
+  intros. unfold vertex_address, vertex_offset. simpl. rewrite offset_offset_val.
+  f_equal. rewrite Z.add_opp_r, Z.mul_add_distr_l, Z.mul_1_r. apply Z.add_simpl_r.
+Qed.
+
 Lemma vertex_rep_memory_block: forall sh g v,
     vertex_rep sh g v |--
                memory_block sh (WORD_SIZE * single_vertex_size g v)
                (offset_val (- WORD_SIZE) (vertex_address g v)).
 Proof.
-  intros. destruct v as [gen num].
-  unfold vertex_rep, vertex_at, vertex_address, vertex_offset. simpl.
+  intros. destruct v as [gen num]. unfold vertex_rep, vertex_at.
+  rewrite vertex_head_address_eq. unfold vertex_address, vertex_offset. simpl.
   assert (isptr (gen_start g gen)) by (apply start_isptr).
   remember (gen_start g gen). destruct v; try (simpl in H; exfalso; assumption).
-  remember (previous_vertices_size g gen num). rewrite offset_offset_val.
+  remember (previous_vertices_size g gen num). 
   assert (0 <= z) by (rewrite Heqz; apply previous_size_ge_zero).
-  replace (WORD_SIZE * (z + 1) + - WORD_SIZE) with (WORD_SIZE * z)%Z by
-      (rewrite Z.add_opp_r, Z.mul_add_distr_l, Z.mul_1_r, Z.add_simpl_r; reflexivity).
   unfold single_vertex_size. entailer. rewrite <- fields_eq_length.
   destruct H1 as [_ [_ [? _]]]. simpl in H1.
   destruct H3 as [_ [_ [? _]]]. simpl in H3. rewrite <- H4 in H3.
@@ -97,4 +103,52 @@ Proof.
   sep_apply (data_at_memory_block
                sh (tarray int_or_ptr_type z0) (make_fields g (gen, num))
                (Vptr b (Ptrofs.repr (ofs + 4)))). simpl sizeof. rewrite Z.max_r; auto.
+Qed.
+
+Lemma generation_rep_ptrofs: forall sh (g: LGraph) gen num b i,
+    Vptr b i = gen_start g gen ->
+    generation_rep sh g (gen, num) |--
+                   !! (WORD_SIZE * previous_vertices_size g gen num +
+                       Ptrofs.unsigned i < Ptrofs.modulus).
+Proof.
+  intros. induction num. 1: entailer. unfold generation_rep.
+  rewrite nat_inc_list_S, map_app, iter_sepcon_app_sepcon.
+  assert_PROP (WORD_SIZE * previous_vertices_size g gen num +
+               Ptrofs.unsigned i < Ptrofs.modulus) by
+      (unfold generation_rep in IHnum; sep_apply IHnum; entailer!). clear IHnum.
+  simpl iter_sepcon. entailer. unfold vertex_rep at 2. unfold vertex_at.
+  rewrite vertex_head_address_eq. unfold vertex_address, vertex_offset. simpl.
+  rewrite <- H. inv_int i. entailer. destruct H1 as [_ [_ [? _]]]. simpl in H1.
+  destruct H4 as [_ [_ [? _]]]. simpl in H4. rewrite <- H5 in H4. clear H3 H6 H5.
+  rewrite ptrofs_add_repr in *. apply prop_right.
+  pose proof (previous_size_ge_zero g gen num).
+  rewrite Ptrofs.unsigned_repr_eq in H1. rewrite Z.mod_small in H1 by rep_omega.
+  unfold single_vertex_size. rewrite <- fields_eq_length. rewrite WORD_SIZE_eq in *.
+  rewrite Z.mul_add_distr_l, Z.mul_1_r, Z.add_assoc in H4.
+  rewrite Ptrofs.unsigned_repr_eq in H4. rewrite Z.mod_small in H4 by rep_omega.
+  rep_omega.
+Qed.
+
+Lemma generation_rep_memory_block: forall sh (g: LGraph) gen num,
+    generation_rep sh g (gen, num) |--
+    memory_block sh (WORD_SIZE * (previous_vertices_size g gen num)) (gen_start g gen).
+Proof.
+  intros. assert (isptr (gen_start g gen)) by (apply start_isptr).
+  remember (gen_start g gen). destruct v; try (simpl in H; exfalso; assumption).
+  induction num.
+  - simpl. rewrite memory_block_zero_Vptr. auto.
+  - sep_apply (generation_rep_ptrofs sh g gen (S num) b i Heqv). Intros.
+    rename H0 into HS. simpl in HS. unfold generation_rep.
+    rewrite nat_inc_list_S, map_app, iter_sepcon_app_sepcon.
+    simpl. unfold generation_rep in IHnum. sep_apply IHnum. rewrite Z.add_comm.
+    rewrite <- (Ptrofs.repr_unsigned i) at 2.
+    remember (previous_vertices_size g gen num) as zp.
+    assert (0 <= zp) by (rewrite Heqzp; apply previous_size_ge_zero).
+    pose proof (single_vertex_size_gt_zero g (gen, num)) as HS1.
+    pose proof (Ptrofs.unsigned_range i) as HS2.
+    rewrite Z.mul_add_distr_l, memory_block_split; [|rep_omega..].
+    rewrite (Ptrofs.repr_unsigned i). apply cancel_left.
+    sep_apply (vertex_rep_memory_block sh g (gen, num)).
+    rewrite vertex_head_address_eq, <- Heqzp, <- Heqv. simpl offset_val.
+    rewrite <- ptrofs_add_repr, Ptrofs.repr_unsigned. auto.
 Qed.
