@@ -75,7 +75,7 @@ Proof.
   intros. destruct v as [gen num]. unfold vertex_rep, vertex_at.
   rewrite vertex_head_address_eq. unfold vertex_address, vertex_offset. simpl.
   assert (isptr (gen_start g gen)) by (apply start_isptr).
-  remember (gen_start g gen). destruct v; try (simpl in H; exfalso; assumption).
+  remember (gen_start g gen). destruct v; try contradiction.
   remember (previous_vertices_size g gen num). 
   assert (0 <= z) by (rewrite Heqz; apply previous_size_ge_zero).
   unfold single_vertex_size. entailer. rewrite <- fields_eq_length.
@@ -105,7 +105,7 @@ Proof.
                (Vptr b (Ptrofs.repr (ofs + 4)))). simpl sizeof. rewrite Z.max_r; auto.
 Qed.
 
-Lemma generation_rep_ptrofs: forall sh (g: LGraph) gen num b i,
+Lemma generation_rep_ptrofs: forall sh g gen num b i,
     Vptr b i = gen_start g gen ->
     generation_rep sh g (gen, num) |--
                    !! (WORD_SIZE * previous_vertices_size g gen num +
@@ -129,12 +129,12 @@ Proof.
   rep_omega.
 Qed.
 
-Lemma generation_rep_memory_block: forall sh (g: LGraph) gen num,
+Lemma generation_rep_memory_block: forall sh g gen num,
     generation_rep sh g (gen, num) |--
     memory_block sh (WORD_SIZE * (previous_vertices_size g gen num)) (gen_start g gen).
 Proof.
   intros. assert (isptr (gen_start g gen)) by (apply start_isptr).
-  remember (gen_start g gen). destruct v; try (simpl in H; exfalso; assumption).
+  remember (gen_start g gen). destruct v; try contradiction.
   induction num.
   - simpl. rewrite memory_block_zero_Vptr. auto.
   - sep_apply (generation_rep_ptrofs sh g gen (S num) b i Heqv). Intros.
@@ -151,4 +151,56 @@ Proof.
     sep_apply (vertex_rep_memory_block sh g (gen, num)).
     rewrite vertex_head_address_eq, <- Heqzp, <- Heqv. simpl offset_val.
     rewrite <- ptrofs_add_repr, Ptrofs.repr_unsigned. auto.
+Qed.
+
+Lemma generation_rep_align_compatible: forall sh g gen num,
+    generation_rep sh g (gen, num) |--
+    !! (align_compatible (tarray int_or_ptr_type (previous_vertices_size g gen num))
+                         (gen_start g gen)).
+Proof.
+  intros.  assert (isptr (gen_start g gen)) by (apply start_isptr).
+  remember (gen_start g gen). destruct v; try contradiction.
+  sep_apply (generation_rep_ptrofs sh g gen num b i Heqv). Intros. induction num.
+  - simpl previous_vertices_size. apply prop_right. constructor. intros. omega.
+  - unfold generation_rep. rewrite nat_inc_list_S, map_app, iter_sepcon_app_sepcon.
+    simpl iter_sepcon. entailer. unfold vertex_rep at 2. unfold vertex_at.
+    rename H0 into HS. rewrite vertex_head_address_eq. entailer!. clear H1 H2 H3 H4.
+    destruct H0 as [_ [_ [_ [? _]]]]. rewrite <- Heqv in H0. inv_int i.
+    hnf in H0. rewrite ptrofs_add_repr in H0. inv H0. simpl in H1. inv H1.
+    simpl in H3. simpl in HS. pose proof (single_vertex_size_gt_zero g (gen, num)).
+    pose proof (previous_size_ge_zero g gen num).
+    rewrite Ptrofs.unsigned_repr_eq in H3. rewrite Z.mod_small in H3 by rep_omega.
+    rewrite Z.add_comm in H3. apply Z.divide_add_cancel_r in H3.
+    2: rewrite WORD_SIZE_eq; apply Z.divide_factor_l. constructor. intros.
+    rewrite Ptrofs.unsigned_repr_eq. rewrite Z.mod_small by omega. simpl sizeof.
+    apply align_compatible_rec_by_value with Mptr. 1: reflexivity. simpl.
+    apply Z.divide_add_r; [assumption | apply Z.divide_factor_l].
+Qed.
+
+Lemma sizeof_tarray_int_or_ptr: forall n,
+    0 <= n -> sizeof (tarray int_or_ptr_type n) = (WORD_SIZE * n)%Z.
+Proof. intros. simpl. rewrite Z.max_r by assumption. rep_omega. Qed.
+
+Lemma generation_rep_field_compatible: forall sh g gen num,
+    generation_rep sh g (gen, num) |--
+    !! (field_compatible (tarray int_or_ptr_type (previous_vertices_size g gen num))
+                         [] (gen_start g gen)).
+Proof.
+  intros. assert (isptr (gen_start g gen)) by (apply start_isptr).
+  remember (gen_start g gen). destruct v; try contradiction.
+  unfold field_compatible. entailer. unfold size_compatible.
+  rewrite sizeof_tarray_int_or_ptr by apply previous_size_ge_zero.
+  sep_apply (generation_rep_ptrofs sh g gen num b i Heqv). entailer. rewrite Heqv.
+  sep_apply (generation_rep_align_compatible sh g gen num). entailer!.
+Qed.
+
+Lemma generation_rep_data_at_: forall sh g gen num,
+    generation_rep sh g (gen, num) |--
+    data_at_ sh (tarray int_or_ptr_type (previous_vertices_size g gen num))
+             (gen_start g gen).
+Proof.
+  intros. sep_apply (generation_rep_field_compatible sh g gen num). Intros.
+  sep_apply (generation_rep_memory_block sh g gen num).
+  rewrite <- sizeof_tarray_int_or_ptr by apply previous_size_ge_zero.
+  rewrite memory_block_data_at_; auto.
 Qed.
