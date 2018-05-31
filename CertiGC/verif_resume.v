@@ -6,7 +6,7 @@ Proof.
   unfold thread_info_rep. destruct (Val.eq (ti_heap_p t_info) nullval).
   1: hnf in e; exfalso; tauto. clear n. Intros. unfold heap_struct_rep. forward. 
   unfold fun_info_rep. forward. 1: entailer!. rewrite Znth_0_cons.
-  replace_SEP 1 (fun_info_rep rsh f_info fi) by unfold fun_info_rep; entailer!.
+  replace_SEP 1 (fun_info_rep rsh f_info fi) by (unfold fun_info_rep; entailer!).
   forward_if True; [forward; entailer!|exfalso; destruct t_info; simpl in *; tauto|].
   Intros. remember (ti_heap_p t_info) as h. remember (ti_heap t_info) as th.
   assert_PROP (isptr (space_start (heap_head th))). {
@@ -23,16 +23,14 @@ Proof.
     } rewrite H17. assumption.
   } forward. rewrite Znth_0_cons. forward. rewrite Znth_0_cons. forward_if True.
   - remember (space_start (heap_head (ti_heap t_info))).
-    destruct v0; try (simpl in Heqv0; exfalso; assumption). unfold denote_tc_samebase.
-    simpl. entailer!.
+    destruct v0; try contradiction. unfold denote_tc_samebase. simpl. entailer!.
   - unfold all_string_constants. Intros.
     forward_call ((gv ___stringlit_10),
                   (map init_data2byte (gvar_init v___stringlit_10)), rsh).
     exfalso; assumption.
-  - simpl in H3. remember (space_start (heap_head th)).
-    destruct v; try (simpl in Heqv; exfalso; assumption). simpl in H3.
-    if_tac in H3. 2: exfalso; apply H4; reflexivity.
-    forward. entailer!.
-  - forward. forward.
+  - remember (space_start (heap_head th)). destruct v; try contradiction.
+    simpl in H3. if_tac in H3. 2: contradiction. inv_int i.
+    rewrite ptrofs_add_repr, ptrofs_sub_repr, Z.add_comm, Z.add_simpl_r in H3.
+    simpl in H3.
     
 Abort.
