@@ -128,6 +128,12 @@ Definition heap_head (h: heap) : space :=
   | s :: _ => fun _ => s
   end eq_refl.
 
+Lemma heap_head_cons: forall h, exists s l, spaces h = s :: l /\ heap_head h = s.
+Proof.
+  intros. destruct h eqn:? . simpl. unfold heap_head. simpl. destruct spaces0.
+  1: inversion spaces_size0. exists s, spaces0. split; reflexivity.
+Qed.
+
 Record thread_info: Type :=
   {
     ti_heap_p: val;
