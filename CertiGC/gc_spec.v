@@ -51,7 +51,8 @@ Definition all_string_constants (sh: share) (gv: globals) : mpred :=
   cstring sh (map init_data2byte (gvar_init v___stringlit_13)) (gv ___stringlit_13) *
   cstring sh (map init_data2byte (gvar_init v___stringlit_14)) (gv ___stringlit_14) *
   cstring sh (map init_data2byte (gvar_init v___stringlit_15)) (gv ___stringlit_15) *
-  cstring sh (map init_data2byte (gvar_init v___stringlit_16)) (gv ___stringlit_16).
+  cstring sh (map init_data2byte (gvar_init v___stringlit_16)) (gv ___stringlit_16) *
+  cstring sh (map init_data2byte (gvar_init v___stringlit_17)) (gv ___stringlit_17).
 
 Definition test_int_or_ptr_spec :=
  DECLARE _test_int_or_ptr
@@ -204,7 +205,7 @@ Definition create_space_spec :=
         _n OF tuint]
     PROP (writable_share sh;
           readable_share rsh;
-          0 <= n <= Int.max_unsigned / WORD_SIZE)
+          0 <= n < MAX_SPACE_SIZE)
     LOCAL (temp _s s; temp _n (Vint (Int.repr n)); gvars gv)
     SEP (all_string_constants rsh gv; data_at_ sh space_type s)
   POST [tvoid]

@@ -61,20 +61,21 @@ Definition ___sbuf : ident := 3%positive.
 Definition ___stderrp : ident := 89%positive.
 Definition ___stringlit_1 : ident := 118%positive.
 Definition ___stringlit_10 : ident := 143%positive.
-Definition ___stringlit_11 : ident := 146%positive.
+Definition ___stringlit_11 : ident := 144%positive.
 Definition ___stringlit_12 : ident := 147%positive.
 Definition ___stringlit_13 : ident := 148%positive.
 Definition ___stringlit_14 : ident := 149%positive.
-Definition ___stringlit_15 : ident := 151%positive.
-Definition ___stringlit_16 : ident := 153%positive.
+Definition ___stringlit_15 : ident := 150%positive.
+Definition ___stringlit_16 : ident := 152%positive.
+Definition ___stringlit_17 : ident := 154%positive.
 Definition ___stringlit_2 : ident := 119%positive.
 Definition ___stringlit_3 : ident := 120%positive.
 Definition ___stringlit_4 : ident := 128%positive.
 Definition ___stringlit_5 : ident := 129%positive.
 Definition ___stringlit_6 : ident := 131%positive.
-Definition ___stringlit_7 : ident := 134%positive.
-Definition ___stringlit_8 : ident := 137%positive.
-Definition ___stringlit_9 : ident := 142%positive.
+Definition ___stringlit_7 : ident := 132%positive.
+Definition ___stringlit_8 : ident := 135%positive.
+Definition ___stringlit_9 : ident := 138%positive.
 Definition __base : ident := 1%positive.
 Definition __bf : ident := 9%positive.
 Definition __blksize : ident := 23%positive.
@@ -101,8 +102,8 @@ Definition _abort : ident := 91%positive.
 Definition _abort_with : ident := 101%positive.
 Definition _alloc : ident := 26%positive.
 Definition _args : ident := 29%positive.
-Definition _create_heap : ident := 135%positive.
-Definition _create_space : ident := 132%positive.
+Definition _create_heap : ident := 136%positive.
+Definition _create_space : ident := 133%positive.
 Definition _depth : ident := 107%positive.
 Definition _do_generation : ident := 130%positive.
 Definition _do_scan : ident := 125%positive.
@@ -112,34 +113,34 @@ Definition _forward : ident := 113%positive.
 Definition _forward_roots : ident := 121%positive.
 Definition _fprintf : ident := 90%positive.
 Definition _free : ident := 87%positive.
-Definition _free_heap : ident := 154%positive.
+Definition _free_heap : ident := 155%positive.
 Definition _from : ident := 126%positive.
 Definition _from_limit : ident := 103%positive.
 Definition _from_start : ident := 102%positive.
-Definition _garbage_collect : ident := 150%positive.
-Definition _h : ident := 133%positive.
+Definition _garbage_collect : ident := 151%positive.
+Definition _h : ident := 134%positive.
 Definition _hd : ident := 109%positive.
 Definition _heap : ident := 28%positive.
-Definition _hi : ident := 140%positive.
+Definition _hi : ident := 141%positive.
 Definition _i : ident := 110%positive.
 Definition _int_or_ptr_to_int : ident := 95%positive.
 Definition _int_or_ptr_to_ptr : ident := 96%positive.
 Definition _int_to_int_or_ptr : ident := 97%positive.
 Definition _j : ident := 124%positive.
 Definition _limit : ident := 27%positive.
-Definition _lo : ident := 139%positive.
-Definition _main : ident := 155%positive.
-Definition _make_tinfo : ident := 138%positive.
+Definition _lo : ident := 140%positive.
+Definition _main : ident := 156%positive.
+Definition _make_tinfo : ident := 139%positive.
 Definition _malloc : ident := 88%positive.
 Definition _n : ident := 116%positive.
 Definition _new : ident := 112%positive.
 Definition _next : ident := 32%positive.
-Definition _num_allocs : ident := 141%positive.
+Definition _num_allocs : ident := 142%positive.
 Definition _p : ident := 106%positive.
 Definition _printf : ident := 92%positive.
 Definition _ptr_to_int_or_ptr : ident := 98%positive.
-Definition _reset_heap : ident := 152%positive.
-Definition _resume : ident := 144%positive.
+Definition _reset_heap : ident := 153%positive.
+Definition _resume : ident := 145%positive.
 Definition _roots : ident := 117%positive.
 Definition _s : ident := 100%positive.
 Definition _scan : ident := 122%positive.
@@ -151,28 +152,28 @@ Definition _tag : ident := 123%positive.
 Definition _test_int_or_ptr : ident := 94%positive.
 Definition _thread_info : ident := 30%positive.
 Definition _ti : ident := 115%positive.
-Definition _tinfo : ident := 136%positive.
+Definition _tinfo : ident := 137%positive.
 Definition _to : ident := 127%positive.
 Definition _v : ident := 104%positive.
 Definition _va : ident := 108%positive.
-Definition _w : ident := 145%positive.
+Definition _w : ident := 146%positive.
 Definition _x : ident := 93%positive.
-Definition _t'1 : ident := 156%positive.
-Definition _t'10 : ident := 165%positive.
-Definition _t'11 : ident := 166%positive.
-Definition _t'12 : ident := 167%positive.
-Definition _t'13 : ident := 168%positive.
-Definition _t'14 : ident := 169%positive.
-Definition _t'2 : ident := 157%positive.
-Definition _t'3 : ident := 158%positive.
-Definition _t'4 : ident := 159%positive.
-Definition _t'5 : ident := 160%positive.
-Definition _t'6 : ident := 161%positive.
-Definition _t'7 : ident := 162%positive.
-Definition _t'8 : ident := 163%positive.
-Definition _t'9 : ident := 164%positive.
+Definition _t'1 : ident := 157%positive.
+Definition _t'10 : ident := 166%positive.
+Definition _t'11 : ident := 167%positive.
+Definition _t'12 : ident := 168%positive.
+Definition _t'13 : ident := 169%positive.
+Definition _t'14 : ident := 170%positive.
+Definition _t'2 : ident := 158%positive.
+Definition _t'3 : ident := 159%positive.
+Definition _t'4 : ident := 160%positive.
+Definition _t'5 : ident := 161%positive.
+Definition _t'6 : ident := 162%positive.
+Definition _t'7 : ident := 163%positive.
+Definition _t'8 : ident := 164%positive.
+Definition _t'9 : ident := 165%positive.
 
-Definition v___stringlit_16 := {|
+Definition v___stringlit_17 := {|
   gvar_info := (tarray tschar 21);
   gvar_init := (Init_int8 (Int.repr 68) :: Init_int8 (Int.repr 101) ::
                 Init_int8 (Int.repr 98) :: Init_int8 (Int.repr 117) ::
@@ -198,7 +199,7 @@ Definition v___stringlit_2 := {|
   gvar_volatile := false
 |}.
 
-Definition v___stringlit_15 := {|
+Definition v___stringlit_16 := {|
   gvar_info := (tarray tschar 22);
   gvar_init := (Init_int8 (Int.repr 68) :: Init_int8 (Int.repr 101) ::
                 Init_int8 (Int.repr 98) :: Init_int8 (Int.repr 117) ::
@@ -215,7 +216,7 @@ Definition v___stringlit_15 := {|
   gvar_volatile := false
 |}.
 
-Definition v___stringlit_10 := {|
+Definition v___stringlit_11 := {|
   gvar_info := (tarray tschar 48);
   gvar_init := (Init_int8 (Int.repr 78) :: Init_int8 (Int.repr 117) ::
                 Init_int8 (Int.repr 114) :: Init_int8 (Int.repr 115) ::
@@ -245,7 +246,7 @@ Definition v___stringlit_10 := {|
   gvar_volatile := false
 |}.
 
-Definition v___stringlit_6 := {|
+Definition v___stringlit_7 := {|
   gvar_info := (tarray tschar 38);
   gvar_init := (Init_int8 (Int.repr 67) :: Init_int8 (Int.repr 111) ::
                 Init_int8 (Int.repr 117) :: Init_int8 (Int.repr 108) ::
@@ -286,6 +287,34 @@ Definition v___stringlit_1 := {|
   gvar_volatile := false
 |}.
 
+Definition v___stringlit_6 := {|
+  gvar_info := (tarray tschar 43);
+  gvar_init := (Init_int8 (Int.repr 84) :: Init_int8 (Int.repr 104) ::
+                Init_int8 (Int.repr 101) :: Init_int8 (Int.repr 32) ::
+                Init_int8 (Int.repr 103) :: Init_int8 (Int.repr 101) ::
+                Init_int8 (Int.repr 110) :: Init_int8 (Int.repr 101) ::
+                Init_int8 (Int.repr 114) :: Init_int8 (Int.repr 97) ::
+                Init_int8 (Int.repr 116) :: Init_int8 (Int.repr 105) ::
+                Init_int8 (Int.repr 111) :: Init_int8 (Int.repr 110) ::
+                Init_int8 (Int.repr 32) :: Init_int8 (Int.repr 105) ::
+                Init_int8 (Int.repr 115) :: Init_int8 (Int.repr 32) ::
+                Init_int8 (Int.repr 116) :: Init_int8 (Int.repr 111) ::
+                Init_int8 (Int.repr 111) :: Init_int8 (Int.repr 32) ::
+                Init_int8 (Int.repr 108) :: Init_int8 (Int.repr 97) ::
+                Init_int8 (Int.repr 114) :: Init_int8 (Int.repr 103) ::
+                Init_int8 (Int.repr 101) :: Init_int8 (Int.repr 32) ::
+                Init_int8 (Int.repr 116) :: Init_int8 (Int.repr 111) ::
+                Init_int8 (Int.repr 32) :: Init_int8 (Int.repr 98) ::
+                Init_int8 (Int.repr 101) :: Init_int8 (Int.repr 32) ::
+                Init_int8 (Int.repr 99) :: Init_int8 (Int.repr 114) ::
+                Init_int8 (Int.repr 101) :: Init_int8 (Int.repr 97) ::
+                Init_int8 (Int.repr 116) :: Init_int8 (Int.repr 101) ::
+                Init_int8 (Int.repr 100) :: Init_int8 (Int.repr 10) ::
+                Init_int8 (Int.repr 0) :: nil);
+  gvar_readonly := true;
+  gvar_volatile := false
+|}.
+
 Definition v___stringlit_3 := {|
   gvar_info := (tarray tschar 30);
   gvar_init := (Init_int8 (Int.repr 37) :: Init_int8 (Int.repr 115) ::
@@ -307,7 +336,7 @@ Definition v___stringlit_3 := {|
   gvar_volatile := false
 |}.
 
-Definition v___stringlit_12 := {|
+Definition v___stringlit_13 := {|
   gvar_info := (tarray tschar 17);
   gvar_init := (Init_int8 (Int.repr 71) :: Init_int8 (Int.repr 101) ::
                 Init_int8 (Int.repr 110) :: Init_int8 (Int.repr 101) ::
@@ -338,7 +367,7 @@ Definition v___stringlit_5 := {|
   gvar_volatile := false
 |}.
 
-Definition v___stringlit_7 := {|
+Definition v___stringlit_8 := {|
   gvar_info := (tarray tschar 27);
   gvar_init := (Init_int8 (Int.repr 67) :: Init_int8 (Int.repr 111) ::
                 Init_int8 (Int.repr 117) :: Init_int8 (Int.repr 108) ::
@@ -358,7 +387,7 @@ Definition v___stringlit_7 := {|
   gvar_volatile := false
 |}.
 
-Definition v___stringlit_8 := {|
+Definition v___stringlit_9 := {|
   gvar_info := (tarray tschar 39);
   gvar_init := (Init_int8 (Int.repr 67) :: Init_int8 (Int.repr 111) ::
                 Init_int8 (Int.repr 117) :: Init_int8 (Int.repr 108) ::
@@ -413,7 +442,7 @@ Definition v___stringlit_4 := {|
   gvar_volatile := false
 |}.
 
-Definition v___stringlit_11 := {|
+Definition v___stringlit_12 := {|
   gvar_info := (tarray tschar 32);
   gvar_init := (Init_int8 (Int.repr 104) :: Init_int8 (Int.repr 45) ::
                 Init_int8 (Int.repr 62) :: Init_int8 (Int.repr 115) ::
@@ -435,21 +464,21 @@ Definition v___stringlit_11 := {|
   gvar_volatile := false
 |}.
 
-Definition v___stringlit_14 := {|
+Definition v___stringlit_15 := {|
   gvar_info := (tarray tschar 2);
   gvar_init := (Init_int8 (Int.repr 48) :: Init_int8 (Int.repr 0) :: nil);
   gvar_readonly := true;
   gvar_volatile := false
 |}.
 
-Definition v___stringlit_9 := {|
+Definition v___stringlit_10 := {|
   gvar_info := (tarray tschar 2);
   gvar_init := (Init_int8 (Int.repr 104) :: Init_int8 (Int.repr 0) :: nil);
   gvar_readonly := true;
   gvar_volatile := false
 |}.
 
-Definition v___stringlit_13 := {|
+Definition v___stringlit_14 := {|
   gvar_info := (tarray tschar 24);
   gvar_init := (Init_int8 (Int.repr 82) :: Init_int8 (Int.repr 97) ::
                 Init_int8 (Int.repr 110) :: Init_int8 (Int.repr 32) ::
@@ -856,7 +885,7 @@ Definition f_forward_roots := {|
                                       {|cc_vararg:=true; cc_unproto:=false; cc_structret:=false|}))
                       ((Evar ___stringlit_3 (tarray tschar 30)) ::
                        (Evar ___stringlit_2 (tarray tschar 5)) ::
-                       (Econst_int (Int.repr 201) tint) ::
+                       (Econst_int (Int.repr 209) tint) ::
                        (Evar ___stringlit_1 (tarray tschar 20)) :: nil))
                     (Scall None
                       (Evar _abort (Tfunction Tnil tvoid cc_default)) nil))))
@@ -1051,7 +1080,7 @@ Definition f_do_generation := {|
                                   {|cc_vararg:=true; cc_unproto:=false; cc_structret:=false|}))
                   ((Evar ___stringlit_3 (tarray tschar 30)) ::
                    (Evar ___stringlit_2 (tarray tschar 5)) ::
-                   (Econst_int (Int.repr 242) tint) ::
+                   (Econst_int (Int.repr 250) tint) ::
                    (Evar ___stringlit_4 (tarray tschar 45)) :: nil))
                 (Scall None (Evar _abort (Tfunction Tnil tvoid cc_default))
                   nil)))))))
@@ -1184,42 +1213,54 @@ Definition f_create_space := {|
                (_t'1, (tptr tvoid)) :: nil);
   fn_body :=
 (Ssequence
+  (Sifthenelse (Ebinop Oge (Etempvar _n tuint)
+                 (Ebinop Oshl (Econst_int (Int.repr 1) tint)
+                   (Econst_int (Int.repr 29) tint) tint) tint)
+    (Scall None
+      (Evar _abort_with (Tfunction (Tcons (tptr tschar) Tnil) tvoid
+                          cc_default))
+      ((Evar ___stringlit_6 (tarray tschar 43)) :: nil))
+    Sskip)
   (Ssequence
-    (Scall (Some _t'1)
-      (Evar _malloc (Tfunction (Tcons tuint Tnil) (tptr tvoid) cc_default))
-      ((Ebinop Omul (Etempvar _n tuint)
-         (Esizeof (talignas 2%N (tptr tvoid)) tuint) tuint) :: nil))
-    (Sset _p
-      (Ecast (Etempvar _t'1 (tptr tvoid)) (tptr (talignas 2%N (tptr tvoid))))))
-  (Ssequence
-    (Sifthenelse (Ebinop Oeq (Etempvar _p (tptr (talignas 2%N (tptr tvoid))))
-                   (Ecast (Econst_int (Int.repr 0) tint) (tptr tvoid)) tint)
-      (Scall None
-        (Evar _abort_with (Tfunction (Tcons (tptr tschar) Tnil) tvoid
-                            cc_default))
-        ((Evar ___stringlit_6 (tarray tschar 38)) :: nil))
-      Sskip)
     (Ssequence
-      (Sassign
-        (Efield
-          (Ederef (Etempvar _s (tptr (Tstruct _space noattr)))
-            (Tstruct _space noattr)) _start
-          (tptr (talignas 2%N (tptr tvoid))))
-        (Etempvar _p (tptr (talignas 2%N (tptr tvoid)))))
+      (Scall (Some _t'1)
+        (Evar _malloc (Tfunction (Tcons tuint Tnil) (tptr tvoid) cc_default))
+        ((Ebinop Omul (Etempvar _n tuint)
+           (Esizeof (talignas 2%N (tptr tvoid)) tuint) tuint) :: nil))
+      (Sset _p
+        (Ecast (Etempvar _t'1 (tptr tvoid))
+          (tptr (talignas 2%N (tptr tvoid))))))
+    (Ssequence
+      (Sifthenelse (Ebinop Oeq
+                     (Etempvar _p (tptr (talignas 2%N (tptr tvoid))))
+                     (Ecast (Econst_int (Int.repr 0) tint) (tptr tvoid))
+                     tint)
+        (Scall None
+          (Evar _abort_with (Tfunction (Tcons (tptr tschar) Tnil) tvoid
+                              cc_default))
+          ((Evar ___stringlit_7 (tarray tschar 38)) :: nil))
+        Sskip)
       (Ssequence
         (Sassign
           (Efield
             (Ederef (Etempvar _s (tptr (Tstruct _space noattr)))
-              (Tstruct _space noattr)) _next
+              (Tstruct _space noattr)) _start
             (tptr (talignas 2%N (tptr tvoid))))
           (Etempvar _p (tptr (talignas 2%N (tptr tvoid)))))
-        (Sassign
-          (Efield
-            (Ederef (Etempvar _s (tptr (Tstruct _space noattr)))
-              (Tstruct _space noattr)) _limit
-            (tptr (talignas 2%N (tptr tvoid))))
-          (Ebinop Oadd (Etempvar _p (tptr (talignas 2%N (tptr tvoid))))
-            (Etempvar _n tuint) (tptr (talignas 2%N (tptr tvoid)))))))))
+        (Ssequence
+          (Sassign
+            (Efield
+              (Ederef (Etempvar _s (tptr (Tstruct _space noattr)))
+                (Tstruct _space noattr)) _next
+              (tptr (talignas 2%N (tptr tvoid))))
+            (Etempvar _p (tptr (talignas 2%N (tptr tvoid)))))
+          (Sassign
+            (Efield
+              (Ederef (Etempvar _s (tptr (Tstruct _space noattr)))
+                (Tstruct _space noattr)) _limit
+              (tptr (talignas 2%N (tptr tvoid))))
+            (Ebinop Oadd (Etempvar _p (tptr (talignas 2%N (tptr tvoid))))
+              (Etempvar _n tuint) (tptr (talignas 2%N (tptr tvoid))))))))))
 |}.
 
 Definition f_create_heap := {|
@@ -1243,7 +1284,7 @@ Definition f_create_heap := {|
       (Scall None
         (Evar _abort_with (Tfunction (Tcons (tptr tschar) Tnil) tvoid
                             cc_default))
-        ((Evar ___stringlit_7 (tarray tschar 27)) :: nil))
+        ((Evar ___stringlit_8 (tarray tschar 27)) :: nil))
       Sskip)
     (Ssequence
       (Scall None
@@ -1346,7 +1387,7 @@ Definition f_make_tinfo := {|
         (Scall None
           (Evar _abort_with (Tfunction (Tcons (tptr tschar) Tnil) tvoid
                               cc_default))
-          ((Evar ___stringlit_8 (tarray tschar 39)) :: nil))
+          ((Evar ___stringlit_9 (tarray tschar 39)) :: nil))
         Sskip)
       (Ssequence
         (Sassign
@@ -1429,8 +1470,8 @@ Definition f_resume := {|
                             {|cc_vararg:=true; cc_unproto:=false; cc_structret:=false|}))
             ((Evar ___stringlit_3 (tarray tschar 30)) ::
              (Evar ___stringlit_2 (tarray tschar 5)) ::
-             (Econst_int (Int.repr 332) tint) ::
-             (Evar ___stringlit_9 (tarray tschar 2)) :: nil))
+             (Econst_int (Int.repr 342) tint) ::
+             (Evar ___stringlit_10 (tarray tschar 2)) :: nil))
           (Scall None (Evar _abort (Tfunction Tnil tvoid cc_default)) nil)))
       (Ssequence
         (Sset _lo
@@ -1465,7 +1506,7 @@ Definition f_resume := {|
               (Scall None
                 (Evar _abort_with (Tfunction (Tcons (tptr tschar) Tnil) tvoid
                                     cc_default))
-                ((Evar ___stringlit_10 (tarray tschar 48)) :: nil))
+                ((Evar ___stringlit_11 (tarray tschar 48)) :: nil))
               Sskip)
             (Ssequence
               (Sassign
@@ -1563,8 +1604,8 @@ Definition f_garbage_collect := {|
                                   {|cc_vararg:=true; cc_unproto:=false; cc_structret:=false|}))
                   ((Evar ___stringlit_3 (tarray tschar 30)) ::
                    (Evar ___stringlit_2 (tarray tschar 5)) ::
-                   (Econst_int (Int.repr 353) tint) ::
-                   (Evar ___stringlit_11 (tarray tschar 32)) :: nil))
+                   (Econst_int (Int.repr 363) tint) ::
+                   (Evar ___stringlit_12 (tarray tschar 32)) :: nil))
                 (Scall None (Evar _abort (Tfunction Tnil tvoid cc_default))
                   nil)))))
         (Ssequence
@@ -1681,7 +1722,7 @@ Definition f_garbage_collect := {|
                                              tint
                                              {|cc_vararg:=true; cc_unproto:=false; cc_structret:=false|}))
                             ((Etempvar _t'8 (tptr (Tstruct ___sFILE noattr))) ::
-                             (Evar ___stringlit_12 (tarray tschar 17)) ::
+                             (Evar ___stringlit_13 (tarray tschar 17)) ::
                              (Etempvar _i tint) :: nil)))
                         Sskip)
                       (Ssequence
@@ -1803,7 +1844,7 @@ Definition f_garbage_collect := {|
             (Scall None
               (Evar _abort_with (Tfunction (Tcons (tptr tschar) Tnil) tvoid
                                   cc_default))
-              ((Evar ___stringlit_13 (tarray tschar 24)) :: nil))))))
+              ((Evar ___stringlit_14 (tarray tschar 24)) :: nil))))))
     (Sifthenelse (Econst_int (Int.repr 0) tint)
       Sskip
       (Ssequence
@@ -1812,8 +1853,8 @@ Definition f_garbage_collect := {|
                           {|cc_vararg:=true; cc_unproto:=false; cc_structret:=false|}))
           ((Evar ___stringlit_3 (tarray tschar 30)) ::
            (Evar ___stringlit_2 (tarray tschar 5)) ::
-           (Econst_int (Int.repr 382) tint) ::
-           (Evar ___stringlit_14 (tarray tschar 2)) :: nil))
+           (Econst_int (Int.repr 392) tint) ::
+           (Evar ___stringlit_15 (tarray tschar 2)) :: nil))
         (Scall None (Evar _abort (Tfunction Tnil tvoid cc_default)) nil)))))
 |}.
 
@@ -1834,7 +1875,7 @@ Definition f_reset_heap := {|
                          (Tcons (tptr tschar) Tnil)) tint
                        {|cc_vararg:=true; cc_unproto:=false; cc_structret:=false|}))
       ((Etempvar _t'2 (tptr (Tstruct ___sFILE noattr))) ::
-       (Evar ___stringlit_15 (tarray tschar 22)) :: nil)))
+       (Evar ___stringlit_16 (tarray tschar 22)) :: nil)))
   (Ssequence
     (Sset _i (Econst_int (Int.repr 0) tint))
     (Sloop
@@ -1886,7 +1927,7 @@ Definition f_free_heap := {|
                          (Tcons (tptr tschar) Tnil)) tint
                        {|cc_vararg:=true; cc_unproto:=false; cc_structret:=false|}))
       ((Etempvar _t'1 (tptr (Tstruct ___sFILE noattr))) ::
-       (Evar ___stringlit_16 (tarray tschar 21)) :: nil)))
+       (Evar ___stringlit_17 (tarray tschar 21)) :: nil)))
   (Ssequence
     (Ssequence
       (Sset _i (Econst_int (Int.repr 0) tint))
@@ -1966,22 +2007,23 @@ Definition composites : list composite_definition :=
    noattr :: nil).
 
 Definition global_definitions : list (ident * globdef fundef type) :=
-((___stringlit_16, Gvar v___stringlit_16) ::
+((___stringlit_17, Gvar v___stringlit_17) ::
  (___stringlit_2, Gvar v___stringlit_2) ::
+ (___stringlit_16, Gvar v___stringlit_16) ::
+ (___stringlit_11, Gvar v___stringlit_11) ::
+ (___stringlit_7, Gvar v___stringlit_7) ::
+ (___stringlit_1, Gvar v___stringlit_1) ::
+ (___stringlit_6, Gvar v___stringlit_6) ::
+ (___stringlit_3, Gvar v___stringlit_3) ::
+ (___stringlit_13, Gvar v___stringlit_13) ::
+ (___stringlit_5, Gvar v___stringlit_5) ::
+ (___stringlit_8, Gvar v___stringlit_8) ::
+ (___stringlit_9, Gvar v___stringlit_9) ::
+ (___stringlit_4, Gvar v___stringlit_4) ::
+ (___stringlit_12, Gvar v___stringlit_12) ::
  (___stringlit_15, Gvar v___stringlit_15) ::
  (___stringlit_10, Gvar v___stringlit_10) ::
- (___stringlit_6, Gvar v___stringlit_6) ::
- (___stringlit_1, Gvar v___stringlit_1) ::
- (___stringlit_3, Gvar v___stringlit_3) ::
- (___stringlit_12, Gvar v___stringlit_12) ::
- (___stringlit_5, Gvar v___stringlit_5) ::
- (___stringlit_7, Gvar v___stringlit_7) ::
- (___stringlit_8, Gvar v___stringlit_8) ::
- (___stringlit_4, Gvar v___stringlit_4) ::
- (___stringlit_11, Gvar v___stringlit_11) ::
  (___stringlit_14, Gvar v___stringlit_14) ::
- (___stringlit_9, Gvar v___stringlit_9) ::
- (___stringlit_13, Gvar v___stringlit_13) ::
  (___builtin_bswap,
    Gfun(External (EF_builtin "__builtin_bswap"
                    (mksignature (AST.Tint :: nil) (Some AST.Tint) cc_default))

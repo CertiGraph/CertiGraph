@@ -7,6 +7,7 @@ Require Import VST.veric.Clight_lemmas.
 Require Import VST.veric.val_lemmas.
 Require Import VST.msl.seplog.
 Require Import VST.floyd.sublist.
+Require Import VST.floyd.coqlib3.
 Require Import RamifyCoq.lib.EquivDec_ext.
 Require Import RamifyCoq.lib.List_ext.
 Require Import RamifyCoq.graph.graph_model.
@@ -34,6 +35,50 @@ Definition WORD_SIZE: Z := 4.
 Lemma WORD_SIZE_eq: WORD_SIZE = 4. Proof. reflexivity. Qed.
 Hint Rewrite WORD_SIZE_eq: rep_omega.
 Global Opaque WORD_SIZE.
+
+Definition MAX_SPACE_SIZE: Z := Z.shiftl 1 29.
+Lemma MAX_SPACE_SIZE_eq: MAX_SPACE_SIZE = Z.shiftl 1 29. Proof. reflexivity. Qed.
+Hint Rewrite MAX_SPACE_SIZE_eq: rep_omega.
+Global Opaque MAX_SPACE_SIZE.
+
+Lemma MSS_eq_unsigned:
+  Int.unsigned (Int.shl (Int.repr 1) (Int.repr 29)) = MAX_SPACE_SIZE.
+Proof.
+  rewrite Int.shl_mul_two_p.
+  rewrite (Int.unsigned_repr 29) by (compute; split; discriminate).
+  rewrite mul_repr, MAX_SPACE_SIZE_eq. rewrite Int.Zshiftl_mul_two_p by omega.
+  rewrite !Z.mul_1_l, Int.unsigned_repr;
+    [reflexivity | compute; split; intro S; discriminate].
+Qed.
+
+Lemma MSS_max_unsigned_range: forall n,
+    0 <= n < MAX_SPACE_SIZE -> 0 <= n <= Int.max_unsigned.
+Proof.
+  intros. destruct H. split. 1: assumption. rewrite Z.lt_eq_cases. left.
+  transitivity MAX_SPACE_SIZE. 1: assumption.  rewrite MAX_SPACE_SIZE_eq.
+  compute; reflexivity.
+Qed.
+
+Lemma MSS_max_4_unsigned_range: forall n,
+    0 <= n < MAX_SPACE_SIZE -> 0 <= 4 * n <= Int.max_unsigned.
+Proof.
+  intros. destruct H. split. 1: omega.
+  rewrite Z.lt_eq_cases. left. transitivity (4 * MAX_SPACE_SIZE). 1: omega.
+  rewrite MAX_SPACE_SIZE_eq. compute; reflexivity.
+Qed.
+
+Lemma MSS_max_4_signed_range: forall n,
+    0 <= n < MAX_SPACE_SIZE -> Ptrofs.min_signed <= WORD_SIZE * n <= Ptrofs.max_signed.
+Proof.
+  intros. destruct H. rewrite WORD_SIZE_eq. split.
+  - transitivity 0. 2: omega. rewrite Z.le_lteq. left. apply Ptrofs.min_signed_neg.
+  - rewrite Z.lt_le_pred in H0. rewrite Z.le_lteq. left.
+    apply Z.le_lt_trans with (4 * Z.pred MAX_SPACE_SIZE). 1: omega.
+    rewrite Z.mul_pred_r, MAX_SPACE_SIZE_eq.
+    unfold Ptrofs.max_signed, Ptrofs.half_modulus, Ptrofs.modulus, Ptrofs.wordsize,
+    Wordsize_Ptrofs.wordsize. destruct Archi.ptr64 eqn:? .
+    inversion Heqb. simpl. omega.
+Qed.
 
 Local Close Scope Z_scope.
 
@@ -87,7 +132,6 @@ Record generation_info: Type :=
   {
     start_address: val;
     number_of_vertices: nat;
-    limit_of_generation: Z;
     start_isptr: isptr start_address;
   }.
 
@@ -96,7 +140,7 @@ Lemma IMPOSSIBLE_ISPTR: isptr IMPOSSIBLE_VAL. Proof. exact I. Qed.
 Global Opaque IMPOSSIBLE_VAL.
 
 Definition null_info: generation_info :=
-  Build_generation_info IMPOSSIBLE_VAL O Z.zero IMPOSSIBLE_ISPTR.
+  Build_generation_info IMPOSSIBLE_VAL O IMPOSSIBLE_ISPTR.
 
 Definition graph_info := list generation_info.
 
@@ -109,7 +153,23 @@ Record space: Type :=
     space_start: val;
     used_space: Z;
     total_space: Z;
+    space_order: (0 <= used_space <= total_space)%Z;
+    space_upper_bound: (total_space < MAX_SPACE_SIZE)%Z;
   }.
+
+Lemma total_space_tight_range: forall sp, (0 <= total_space sp < MAX_SPACE_SIZE)%Z.
+Proof.
+  intros. split.
+  - destruct (space_order sp). transitivity (used_space sp); assumption.
+  - apply space_upper_bound.
+Qed.
+
+Lemma total_space_range: forall sp, (0 <= total_space sp <= Int.max_unsigned)%Z.
+Proof. intros. apply MSS_max_unsigned_range, total_space_tight_range. Qed.
+
+Lemma total_space_signed_range: forall sp,
+    (Ptrofs.min_signed <= WORD_SIZE * (total_space sp) <= Ptrofs.max_signed)%Z.
+Proof. intros. apply MSS_max_4_signed_range, total_space_tight_range. Qed.
 
 Record heap: Type :=
   {
@@ -168,8 +228,7 @@ Definition generation_space_compatible (g: LGraph)
   match tri with
   | (gen, gi, sp) =>
     gi.(start_address) = sp.(space_start) /\
-    previous_vertices_size g gen gi.(number_of_vertices) = sp.(used_space) /\
-    gi.(limit_of_generation) = sp.(total_space)
+    previous_vertices_size g gen gi.(number_of_vertices) = sp.(used_space)
   end.
 
 Fixpoint nat_seq (s: nat) (total: nat): list nat :=
@@ -202,6 +261,7 @@ Record fun_info : Type :=
     fun_word_size: Z;
     live_roots_indices: list Z;
     fi_index_range: forall i, In i live_roots_indices -> (0 <= i < MAX_ARGS)%Z;
+    word_size_range: (0 <= fun_word_size <= Int.max_unsigned)%Z;
   }.
 
 Definition vertex_offset (g: LGraph) (v: VType): Z :=
