@@ -69,6 +69,14 @@ struct space {
 #define DEPTH 0  /* how much depth-first search to do */
 #endif
 
+#ifndef MAX_SPACE_SIZE
+#define MAX_SPACE_SIZE (1 << 29)
+#endif
+/* The restriction of max space size is required by pointer
+   subtraction.  If the space is larger than this restriction, the
+   behavior of pointer subtraction is undefined.
+*/
+
 struct heap {
   /* A heap is an array of generations; generation 0 must be already-created */
   struct space spaces[MAX_SPACES];
@@ -277,6 +285,8 @@ void create_space(struct space *s,  /* which generation to create */
 
  {
   value *p;
+  if (n >= MAX_SPACE_SIZE)
+      abort_with("The generation is too large to be created\n");
   p = (value *)malloc(n * sizeof(value));
   if (p==NULL)
     abort_with ("Could not create the next generation\n");

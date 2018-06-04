@@ -10,8 +10,8 @@ Proof.
   - Intros t. if_tac.
     + subst t. forward_if False; [|inversion H].
       unfold all_string_constants; Intros;
-        forward_call ((gv ___stringlit_8),
-                      (map init_data2byte (gvar_init v___stringlit_8)), sh);
+        forward_call ((gv ___stringlit_9),
+                      (map init_data2byte (gvar_init v___stringlit_9)), sh);
         exfalso; assumption.
     + Intros. forward_if True; [contradiction | forward; entailer! |]. Intros.
       change (data_at_ Tsh thread_info_type t) with
