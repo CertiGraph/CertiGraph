@@ -268,7 +268,7 @@ Definition resume_spec :=
     SEP (all_string_constants rsh gv;
          fun_info_rep rsh f_info fi;
          graph_rep sh g;
-         thread_info_rep t_info ti)
+         thread_info_rep sh t_info ti)
   POST [tvoid]
   PROP () LOCAL () SEP ().
 
@@ -286,7 +286,7 @@ Definition garbage_collect_spec :=
          fun_info_rep rsh f_info fi;
          outlier_rep outlier;  
          graph_rep sh g;
-         thread_info_rep t_info ti)
+         thread_info_rep sh t_info ti)
   POST [tvoid]
     PROP () LOCAL () SEP ().
 

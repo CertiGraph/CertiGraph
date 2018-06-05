@@ -305,6 +305,80 @@ Definition
   roots_compatible g out r /\
   outlier_compatible g out.
 
+Definition reset_generation_info (gi: generation_info) : generation_info :=
+  Build_generation_info (start_address gi) O (start_isptr gi).
+
+Fixpoint reset_nth_generation_info (n: nat) (gi: graph_info) : graph_info :=
+  match n with
+  | O => match gi with
+         | nil => nil
+         | g :: l => reset_generation_info g :: l
+         end
+  | S m => match gi with
+           | nil => nil
+           | g :: l => g :: reset_nth_generation_info m l
+           end
+  end.
+
+Definition reset_nth_gen_graph (n: nat) (g: LGraph) : LGraph :=
+  Build_LabeledGraph _ _ _ (pg_lg g) (vlabel g) (elabel g)
+                     (reset_nth_generation_info n (glabel g)).
+
+Lemma reset_space_order: forall sp, (0 <= 0 <= total_space sp)%Z.
+Proof. intros. pose proof (space_order sp). omega. Qed.
+
+Definition reset_space (sp: space) : space :=
+  Build_space (space_start sp) 0 (total_space sp) (reset_space_order sp)
+              (space_upper_bound sp).
+
+Fixpoint reset_nth_space (n: nat) (s: list space): list space :=
+  match n with
+  | O => match s with
+         | nil => nil
+         | sp :: l => reset_space sp :: l
+         end
+  | S m => match s with
+           | nil => nil
+           | sp :: l => sp :: reset_nth_space m l
+           end
+  end.
+
+Lemma reset_nth_space_Zlength: forall n s, Zlength s = Zlength (reset_nth_space n s).
+Proof.
+  induction n; intros; simpl.
+  - destruct s; simpl; [|rewrite !Zlength_cons]; reflexivity.
+  - destruct s; [|rewrite !Zlength_cons, (IHn s0)]; reflexivity.
+Qed.
+
+Lemma reset_nth_heap_Zlength: forall n h,
+    Zlength (reset_nth_space n (spaces h)) = MAX_SPACES.
+Proof. intros. rewrite <- reset_nth_space_Zlength. apply spaces_size. Qed.
+
+Definition reset_nth_heap (n: nat) (h: heap) : heap :=
+  Build_heap (reset_nth_space n (spaces h)) (reset_nth_heap_Zlength n h).
+
+Definition reset_nth_heap_thread_info (n: nat) (ti: thread_info) :=
+  Build_thread_info (ti_heap_p ti) (reset_nth_heap n (ti_heap ti))
+                    (ti_args ti) (arg_size ti).
+
+Definition resume_graph_relation (g1 g2: LGraph): Prop :=
+  g1.(pg_lg) = g2.(pg_lg) /\
+  g1.(vlabel) = g2.(vlabel) /\
+  g1.(elabel) = g2.(elabel) /\
+  tl (glabel g1) = tl (glabel g2) /\
+  let h1 := hd null_info (glabel g1) in
+  let h2 := hd null_info (glabel g2) in
+  start_address h1 = start_address h2 /\ number_of_vertices h2 = O.
+
+Definition resume_thread_info_relation (t1 t2: thread_info): Prop :=
+  t1.(ti_heap_p) = t2.(ti_heap_p) /\
+  t1.(ti_args) = t2.(ti_args) /\
+  tl t1.(ti_heap).(spaces) = tl t2.(ti_heap).(spaces) /\
+  let h1 := heap_head t1.(ti_heap) in
+  let h2 := heap_head t2.(ti_heap) in
+  h1.(space_start) = h2.(space_start) /\ h1.(total_space) = h2.(total_space) /\
+  h2.(used_space) = 0%Z.
+
 (*
 
 Fixpoint get_edges' (lf: list raw_field) (v: VType) (n: nat) : list EType :=
