@@ -36,5 +36,16 @@ Proof.
     unfold Val.of_bool in H9. destruct b; simpl in H9. 1: discriminate.
     symmetry in Heqb. apply ltu_repr_false in Heqb;
                         [omega | apply total_space_range | apply word_size_range].
-  - Intros. forward. forward.    
+  - Intros. forward. forward. deadvars. unfold graph_rep. rewrite Heqg0, map_cons.
+    simpl length. simpl combine. simpl iter_sepcon. Intros.
+    replace_SEP 2 (generation_rep sh g (O, number_of_vertices g0)) by entailer!.
+    sep_apply (generation_rep_data_at_ sh g O (number_of_vertices g0)). rewrite H7.
+    unfold gen_start. rewrite Heqg0. simpl nth. rewrite <- Heqv. unfold heap_rest_rep.
+    rewrite H4. simpl iter_sepcon. Intros. unfold space_rest_rep at 1. rewrite <- H6.
+    rewrite if_false. 2: discriminate. freeze [1; 2; 3; 4; 5] FR. gather_SEP 1 2.
+    assert (0 <= used_space hs <= total_space hs) by (apply space_order).
+    sep_apply (data_at__tarray_value_join
+                 sh (total_space hs) (used_space hs) (Vptr b i) H10).
+
+    
 Abort.
