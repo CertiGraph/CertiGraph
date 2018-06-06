@@ -262,7 +262,6 @@ Definition resume_spec :=
         _ti OF (tptr thread_info_type)]
     PROP (readable_share rsh; writable_share sh;
           graph_thread_info_compatible g t_info;
-          fun_thread_arg_compatible g t_info f_info roots;
           ti_heap_p t_info <> nullval)
     LOCAL (temp _fi fi; temp _ti ti; gvars gv)
     SEP (all_string_constants rsh gv;
@@ -270,7 +269,15 @@ Definition resume_spec :=
          graph_rep sh g;
          thread_info_rep sh t_info ti)
   POST [tvoid]
-  PROP () LOCAL () SEP ().
+    EX g': LGraph, EX t_info': thread_info,  
+    PROP (fun_word_size f_info <= total_space (heap_head (ti_heap t_info));
+          resume_graph_relation g g';
+          resume_thread_info_relation t_info t_info')
+    LOCAL ()
+    SEP (all_string_constants rsh gv;
+         fun_info_rep rsh f_info fi;
+         graph_rep sh g';
+         thread_info_rep sh t_info' ti).
 
 Definition garbage_collect_spec :=
   DECLARE _garbage_collect

@@ -243,6 +243,13 @@ Proof.
   remember (S num). simpl. rewrite (IHnum (S i)). subst. simpl. repeat f_equal. omega.
 Qed.
 
+Lemma nat_seq_In_prop: forall s n i, In i (nat_seq s n) -> s <= i.
+Proof.
+  intros. revert s H. induction n; intros; simpl in H. 1: contradiction. destruct H.
+  - rewrite Nat.le_lteq. right; assumption.
+  - specialize (IHn _ H). clear H. omega.
+Qed.
+
 Definition nat_inc_list (n: nat) : list nat := nat_seq O n.
 
 Lemma nat_inc_list_S: forall num, nat_inc_list (S num) = nat_inc_list num ++ [num].
@@ -379,6 +386,23 @@ Definition resume_thread_info_relation (t1 t2: thread_info): Prop :=
   h1.(space_start) = h2.(space_start) /\ h1.(total_space) = h2.(total_space) /\
   h2.(used_space) = 0%Z.
 
+Lemma reset_resume_g_relation: forall g,
+    resume_graph_relation g (reset_nth_gen_graph O g).
+Proof.
+  intros. hnf. unfold reset_nth_gen_graph. simpl. remember (glabel g) as l.
+  destruct l; simpl; tauto.
+Qed.
+
+Lemma reset_resume_t_relation: forall t,
+    resume_thread_info_relation t (reset_nth_heap_thread_info O t).
+Proof.
+  intros. hnf. unfold reset_nth_heap_thread_info. simpl.
+  destruct (heap_head_cons (ti_heap t)) as [s [l [? ?]]]. rewrite H0, H. simpl.
+  destruct (heap_head_cons (reset_nth_heap 0 (ti_heap t))) as [s' [l' [? ?]]].
+  rewrite H2. unfold reset_nth_heap in H1. simpl in H1. rewrite H in H1.
+  inversion H1. subst l' s'. unfold reset_space. simpl. tauto.
+Qed.
+
 (*
 
 Fixpoint get_edges' (lf: list raw_field) (v: VType) (n: nat) : list EType :=
@@ -461,4 +485,49 @@ Lemma fields_eq_length: forall g v,
 Proof.
   intros. rewrite !Zlength_correct. f_equal. unfold make_fields.
   rewrite make_fields'_eq_length. reflexivity.
+Qed.
+
+Lemma vertex_address_the_same: forall (g1 g2: LGraph) v,
+    (forall v, g1.(vlabel) v = g2.(vlabel) v) ->
+    map start_address g1.(glabel) = map start_address g2.(glabel) ->
+    vertex_address g1 v = vertex_address g2 v.
+Proof.
+  intros. unfold vertex_address. f_equal.
+  - f_equal. unfold vertex_offset. f_equal. remember (vindex v). clear Heqn.
+    induction n; simpl; auto. rewrite IHn. f_equal. unfold single_vertex_size.
+    rewrite H. reflexivity.
+  - unfold gen_start. rewrite <- !(map_nth start_address), H0. reflexivity.
+Qed.
+
+Lemma make_fields_the_same: forall (g1 g2: LGraph) v,
+    (forall e, dst g1 e = dst g2 e) ->
+    (forall v, g1.(vlabel) v = g2.(vlabel) v) ->
+    map start_address g1.(glabel) = map start_address g2.(glabel) ->
+    make_fields g1 v = make_fields g2 v.
+Proof.
+  intros. unfold make_fields. remember O. clear Heqn. rewrite H0.
+  remember (raw_fields (vlabel g2 v)) as l. clear Heql. revert n.
+  induction l; intros; simpl; auto. destruct a; rewrite IHl. 1: reflexivity.
+  rewrite H, (vertex_address_the_same g1 g2); [reflexivity | assumption..].
+Qed.
+
+Lemma start_address_reset: forall n l,
+    map start_address l = map start_address (reset_nth_generation_info n l).
+Proof.
+  intros. revert n.
+  induction l; intros; simpl; destruct n; simpl; [| | | rewrite <- IHl]; reflexivity.
+Qed.
+
+Lemma vertex_address_reset: forall (g: LGraph) v n,
+    vertex_address g v = vertex_address (reset_nth_gen_graph n g) v.
+Proof.
+  intros. apply vertex_address_the_same; unfold reset_nth_gen_graph;
+            simpl; [intro | rewrite <- start_address_reset]; reflexivity.
+Qed.
+
+Lemma make_fields_reset: forall (g: LGraph) v n,
+    make_fields g v = make_fields (reset_nth_gen_graph n g) v.
+Proof.
+  intros. apply make_fields_the_same; unfold reset_nth_gen_graph; simpl;
+            [intros; reflexivity..| apply start_address_reset].
 Qed.
