@@ -373,6 +373,7 @@ Definition resume_graph_relation (g1 g2: LGraph): Prop :=
   g1.(vlabel) = g2.(vlabel) /\
   g1.(elabel) = g2.(elabel) /\
   tl (glabel g1) = tl (glabel g2) /\
+  length (glabel g1) = length (glabel g2) /\
   let h1 := hd null_info (glabel g1) in
   let h2 := hd null_info (glabel g2) in
   start_address h1 = start_address h2 /\ number_of_vertices h2 = O.
@@ -530,4 +531,37 @@ Lemma make_fields_reset: forall (g: LGraph) v n,
 Proof.
   intros. apply make_fields_the_same; unfold reset_nth_gen_graph; simpl;
             [intros; reflexivity..| apply start_address_reset].
+Qed.
+
+Lemma resume_preverse_graph_thread_info_compatible: forall (g g': LGraph) t t',
+    graph_thread_info_compatible g t ->
+    resume_graph_relation g g' ->
+    resume_thread_info_relation t t' ->
+    graph_thread_info_compatible g' t'.
+Proof.
+  intros. hnf in *. destruct H as [? [? ?]]. destruct H0 as [? [? [? [? [? ?]]]]].
+  cbn in H8. destruct H8. destruct H1 as [? [? [? ?]]]. cbn in H12.
+  destruct H12 as [? [? ?]]. split.
+  - rewrite <- H1, <- H. destruct (glabel g'), (glabel g); simpl in H7;
+                           [tauto | discriminate..| split; intro S; inversion S].
+  - rewrite <- H7. remember (glabel g) as gl. remember (glabel g') as gl'.
+    destruct (heap_head_cons (ti_heap t')) as [h' [l' [? ?]]]. rewrite H15 in *.
+    simpl. destruct (heap_head_cons (ti_heap t)) as [h [l [? ?]]]. rewrite H17 in *.
+    simpl in H11. subst l'. simpl in *. rewrite H16, H18 in *. destruct gl; simpl.
+    + split. 1: constructor. simpl in H3. constructor.
+      * apply Forall_inv in H3. rewrite H3. assumption.
+      * apply Forall_tl in H3. assumption.
+    + destruct gl'. 1: simpl in H7; inversion H7. simpl in H6. subst gl'. simpl in *.
+      split. 2: assumption. constructor.
+      * apply Forall_inv in H2. hnf in H2 |- *. destruct H2. split.
+        -- rewrite <- H8, <- H12. assumption.
+        -- rewrite H9, H14. simpl. reflexivity.
+      * apply Forall_tl in H2.
+        remember (combine (combine (nat_seq 1 (length gl)) gl) l) as hl.
+        rewrite Forall_forall in H2 |- *. intros. destruct x as [[gen gi] sp].
+        specialize (H2 _ H6). hnf in H2 |- *. destruct H2. split. 1: assumption.
+        rewrite <- H11. remember (number_of_vertices gi) as n. clear Heqn.
+        clear -H4. assert (forall v, vlabel g v = vlabel g' v) by
+            (intro; rewrite H4; reflexivity). induction n; simpl; auto. rewrite IHn.
+        f_equal. unfold single_vertex_size. rewrite H. reflexivity.
 Qed.
