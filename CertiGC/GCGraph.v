@@ -5,7 +5,9 @@ Require Import compcert.lib.Integers.
 Require Import compcert.common.Values.
 Require Import VST.veric.Clight_lemmas.
 Require Import VST.veric.val_lemmas.
+Require Import VST.veric.shares.
 Require Import VST.msl.seplog.
+Require Import VST.msl.shares.
 Require Import VST.floyd.sublist.
 Require Import VST.floyd.coqlib3.
 Require Import RamifyCoq.lib.EquivDec_ext.
@@ -132,7 +134,9 @@ Record generation_info: Type :=
   {
     start_address: val;
     number_of_vertices: nat;
+    generation_sh: share;
     start_isptr: isptr start_address;
+    generation_share_writable: writable_share generation_sh;
   }.
 
 Definition IMPOSSIBLE_VAL := Vptr xH Ptrofs.zero.
@@ -140,7 +144,7 @@ Lemma IMPOSSIBLE_ISPTR: isptr IMPOSSIBLE_VAL. Proof. exact I. Qed.
 Global Opaque IMPOSSIBLE_VAL.
 
 Definition null_info: generation_info :=
-  Build_generation_info IMPOSSIBLE_VAL O IMPOSSIBLE_ISPTR.
+  Build_generation_info IMPOSSIBLE_VAL O Tsh IMPOSSIBLE_ISPTR writable_share_top.
 
 Definition graph_info := list generation_info.
 
@@ -153,6 +157,7 @@ Record space: Type :=
     space_start: val;
     used_space: Z;
     total_space: Z;
+    space_sh: share;
     space_order: (0 <= used_space <= total_space)%Z;
     space_upper_bound: (total_space < MAX_SPACE_SIZE)%Z;
   }.
@@ -228,6 +233,7 @@ Definition generation_space_compatible (g: LGraph)
   match tri with
   | (gen, gi, sp) =>
     gi.(start_address) = sp.(space_start) /\
+    gi.(generation_sh) = sp.(space_sh) /\
     previous_vertices_size g gen gi.(number_of_vertices) = sp.(used_space)
   end.
 
@@ -313,7 +319,8 @@ Definition
   outlier_compatible g out.
 
 Definition reset_generation_info (gi: generation_info) : generation_info :=
-  Build_generation_info (start_address gi) O (start_isptr gi).
+  Build_generation_info (start_address gi) O (generation_sh gi) (start_isptr gi)
+                        (generation_share_writable gi).
 
 Fixpoint reset_nth_generation_info (n: nat) (gi: graph_info) : graph_info :=
   match n with
@@ -335,7 +342,7 @@ Lemma reset_space_order: forall sp, (0 <= 0 <= total_space sp)%Z.
 Proof. intros. pose proof (space_order sp). omega. Qed.
 
 Definition reset_space (sp: space) : space :=
-  Build_space (space_start sp) 0 (total_space sp) (reset_space_order sp)
+  Build_space (space_start sp) 0 (total_space sp) (space_sh sp) (reset_space_order sp)
               (space_upper_bound sp).
 
 Fixpoint reset_nth_space (n: nat) (s: list space): list space :=
@@ -376,7 +383,8 @@ Definition resume_graph_relation (g1 g2: LGraph): Prop :=
   length (glabel g1) = length (glabel g2) /\
   let h1 := hd null_info (glabel g1) in
   let h2 := hd null_info (glabel g2) in
-  start_address h1 = start_address h2 /\ number_of_vertices h2 = O.
+  start_address h1 = start_address h2 /\
+  generation_sh h1 = generation_sh h2 /\ number_of_vertices h2 = O.
 
 Definition resume_thread_info_relation (t1 t2: thread_info): Prop :=
   t1.(ti_heap_p) = t2.(ti_heap_p) /\
@@ -385,7 +393,7 @@ Definition resume_thread_info_relation (t1 t2: thread_info): Prop :=
   let h1 := heap_head t1.(ti_heap) in
   let h2 := heap_head t2.(ti_heap) in
   h1.(space_start) = h2.(space_start) /\ h1.(total_space) = h2.(total_space) /\
-  h2.(used_space) = 0%Z.
+  h1.(space_sh) = h2.(space_sh) /\ h2.(used_space) = 0%Z.
 
 Lemma reset_resume_g_relation: forall g,
     resume_graph_relation g (reset_nth_gen_graph O g).
@@ -540,28 +548,30 @@ Lemma resume_preverse_graph_thread_info_compatible: forall (g g': LGraph) t t',
     graph_thread_info_compatible g' t'.
 Proof.
   intros. hnf in *. destruct H as [? [? ?]]. destruct H0 as [? [? [? [? [? ?]]]]].
-  cbn in H8. destruct H8. destruct H1 as [? [? [? ?]]]. cbn in H12.
-  destruct H12 as [? [? ?]]. split.
+  cbn in H8. destruct H8 as [? [? ?]]. destruct H1 as [? [? [? ?]]]. cbn in H13.
+  destruct H13 as [? [? [? ?]]]. split.
   - rewrite <- H1, <- H. destruct (glabel g'), (glabel g); simpl in H7;
                            [tauto | discriminate..| split; intro S; inversion S].
   - rewrite <- H7. remember (glabel g) as gl. remember (glabel g') as gl'.
-    destruct (heap_head_cons (ti_heap t')) as [h' [l' [? ?]]]. rewrite H15 in *.
-    simpl. destruct (heap_head_cons (ti_heap t)) as [h [l [? ?]]]. rewrite H17 in *.
-    simpl in H11. subst l'. simpl in *. rewrite H16, H18 in *. destruct gl; simpl.
+    destruct (heap_head_cons (ti_heap t')) as [h' [l' [? ?]]]. rewrite H17 in *.
+    simpl. destruct (heap_head_cons (ti_heap t)) as [h [l [? ?]]]. rewrite H19 in *.
+    simpl in H12. subst l'. simpl in *. rewrite H18, H20 in *. destruct gl; simpl.
     + split. 1: constructor. simpl in H3. constructor.
       * apply Forall_inv in H3. rewrite H3. assumption.
       * apply Forall_tl in H3. assumption.
     + destruct gl'. 1: simpl in H7; inversion H7. simpl in H6. subst gl'. simpl in *.
       split. 2: assumption. constructor.
-      * apply Forall_inv in H2. hnf in H2 |- *. destruct H2. split.
-        -- rewrite <- H8, <- H12. assumption.
-        -- rewrite H9, H14. simpl. reflexivity.
+      * apply Forall_inv in H2. hnf in *. destruct H2 as [? [? ?]]. split; [|split].
+        -- rewrite <- H8, <- H13. assumption.
+        -- rewrite <- H9, <- H15. assumption.
+        -- rewrite H10, H16. simpl. reflexivity.
       * apply Forall_tl in H2.
         remember (combine (combine (nat_seq 1 (length gl)) gl) l) as hl.
         rewrite Forall_forall in H2 |- *. intros. destruct x as [[gen gi] sp].
-        specialize (H2 _ H6). hnf in H2 |- *. destruct H2. split. 1: assumption.
-        rewrite <- H11. remember (number_of_vertices gi) as n. clear Heqn.
-        clear -H4. assert (forall v, vlabel g v = vlabel g' v) by
+        specialize (H2 _ H6). hnf in H2 |- *. destruct H2 as [? [? ?]].
+        split; [|split]; [assumption..|].
+        rewrite <- H21. remember (number_of_vertices gi) as n. clear -H4.
+        assert (forall v, vlabel g v = vlabel g' v) by
             (intro; rewrite H4; reflexivity). induction n; simpl; auto. rewrite IHn.
         f_equal. unfold single_vertex_size. rewrite H. reflexivity.
 Qed.

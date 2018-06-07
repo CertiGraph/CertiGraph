@@ -152,7 +152,7 @@ Definition forward_spec :=
     PROP ()
     LOCAL (temp _from_start start; temp _from_limit (offset_val n start);
            temp _next next; temp _p p; temp _depth (Vint (Int.repr depth)))
-    SEP (graph_rep sh g)
+    SEP (graph_rep g)
   POST [tvoid]
   PROP () LOCAL () SEP ().
 
@@ -266,7 +266,7 @@ Definition resume_spec :=
     LOCAL (temp _fi fi; temp _ti ti; gvars gv)
     SEP (all_string_constants rsh gv;
          fun_info_rep rsh f_info fi;
-         graph_rep sh g;
+         graph_rep g;
          thread_info_rep sh t_info ti)
   POST [tvoid]
     EX g': LGraph, EX t_info': thread_info,  
@@ -276,7 +276,7 @@ Definition resume_spec :=
     LOCAL ()
     SEP (all_string_constants rsh gv;
          fun_info_rep rsh f_info fi;
-         graph_rep sh g';
+         graph_rep g';
          thread_info_rep sh t_info' ti).
 
 Definition garbage_collect_spec :=
@@ -292,7 +292,7 @@ Definition garbage_collect_spec :=
     SEP (all_string_constants rsh gv;
          fun_info_rep rsh f_info fi;
          outlier_rep outlier;  
-         graph_rep sh g;
+         graph_rep g;
          thread_info_rep sh t_info ti)
   POST [tvoid]
     PROP () LOCAL () SEP ().

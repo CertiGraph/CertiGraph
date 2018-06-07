@@ -10,15 +10,16 @@ Definition vertex_at (sh: share) (p: val) (header: Z) (lst_fields: list val) :=
 Definition vertex_rep (sh: share) (g: LGraph) (v: VType): mpred :=
   vertex_at sh (vertex_address g v) (make_header g v) (make_fields g v).
 
-Definition generation_rep (sh: share) (g: LGraph) (gen_and_num: nat * nat): mpred :=
-  match gen_and_num with
-  | pair gen num =>
+Definition generation_rep (g: LGraph) (gen_num_sh_triple: nat * nat * share): mpred :=
+  match gen_num_sh_triple with
+  | (gen, num, sh) =>
     iter_sepcon (map (fun x => (gen, x)) (nat_inc_list num)) (vertex_rep sh g)
   end.
 
-Definition graph_rep (sh: share) (g: LGraph): mpred :=
-  let up := map number_of_vertices g.(glabel) in 
-  iter_sepcon (combine (nat_inc_list (length up)) up) (generation_rep sh g).
+Definition graph_rep (g: LGraph): mpred :=
+  let up := map number_of_vertices g.(glabel) in
+  let shs := map generation_sh g.(glabel) in
+  iter_sepcon (combine (combine (nat_inc_list (length up)) up) shs) (generation_rep g).
 
 Definition fun_info_rep (sh: share) (fi: fun_info) (p: val) : mpred :=
   let len := Zlength (live_roots_indices fi) in
@@ -26,16 +27,17 @@ Definition fun_info_rep (sh: share) (fi: fun_info) (p: val) : mpred :=
     sh (tarray tuint (len + 2))
     (map Vint (map Int.repr (fun_word_size fi :: len :: live_roots_indices fi))) p.
 
-Definition space_rest_rep (sh: share) (sp: space): mpred :=
+Definition space_rest_rep (sp: space): mpred :=
   if (Val.eq sp.(space_start) nullval)
   then emp
-  else data_at_ sh (tarray int_or_ptr_type (sp.(total_space) - sp.(used_space)))
+  else data_at_ (space_sh sp)
+                (tarray int_or_ptr_type (sp.(total_space) - sp.(used_space)))
                 (offset_val (WORD_SIZE * used_space sp) sp.(space_start)).
 
-Definition heap_rest_rep (sh: share) (hp: heap): mpred :=
-  iter_sepcon hp.(spaces) (space_rest_rep sh).
+Definition heap_rest_rep (hp: heap): mpred :=
+  iter_sepcon hp.(spaces) space_rest_rep.
 
-Definition space_rep (sp: space): (reptype space_type) :=
+Definition space_tri (sp: space): (reptype space_type) :=
   let s := sp.(space_start) in (s, (offset_val (WORD_SIZE * sp.(used_space)) s,
                                     offset_val (WORD_SIZE * sp.(total_space)) s)).
 
@@ -54,8 +56,8 @@ Definition thread_info_rep (sh: share) (ti: thread_info) (t: val) :=
                 (n_lim, (ti.(ti_heap_p), ti.(ti_args)))) t *
        heap_struct_rep
          sh ((p, (Vundef, n_lim))
-               :: map space_rep (tl ti.(ti_heap).(spaces))) ti.(ti_heap_p) *
-       heap_rest_rep sh ti.(ti_heap).
+               :: map space_tri (tl ti.(ti_heap).(spaces))) ti.(ti_heap_p) *
+       heap_rest_rep ti.(ti_heap).
 
 Definition outlier_rep (outlier: outlier_t) :=
   fold_right andp TT (map (compose valid_pointer GC_Pointer2val) outlier).
@@ -108,7 +110,7 @@ Qed.
 
 Lemma generation_rep_ptrofs: forall sh g gen num b i,
     Vptr b i = gen_start g gen ->
-    generation_rep sh g (gen, num) |--
+    generation_rep g (gen, num, sh) |--
                    !! (WORD_SIZE * previous_vertices_size g gen num +
                        Ptrofs.unsigned i < Ptrofs.modulus).
 Proof.
@@ -131,7 +133,7 @@ Proof.
 Qed.
 
 Lemma generation_rep_memory_block: forall sh g gen num,
-    generation_rep sh g (gen, num) |--
+    generation_rep g (gen, num, sh) |--
     memory_block sh (WORD_SIZE * (previous_vertices_size g gen num)) (gen_start g gen).
 Proof.
   intros. assert (isptr (gen_start g gen)) by (apply start_isptr).
@@ -155,7 +157,7 @@ Proof.
 Qed.
 
 Lemma generation_rep_align_compatible: forall sh g gen num,
-    generation_rep sh g (gen, num) |--
+    generation_rep g (gen, num, sh) |--
     !! (align_compatible (tarray int_or_ptr_type (previous_vertices_size g gen num))
                          (gen_start g gen)).
 Proof.
@@ -183,7 +185,7 @@ Lemma sizeof_tarray_int_or_ptr: forall n,
 Proof. intros. simpl. rewrite Z.max_r by assumption. rep_omega. Qed.
 
 Lemma generation_rep_field_compatible: forall sh g gen num,
-    generation_rep sh g (gen, num) |--
+    generation_rep g (gen, num, sh) |--
     !! (field_compatible (tarray int_or_ptr_type (previous_vertices_size g gen num))
                          [] (gen_start g gen)).
 Proof.
@@ -196,7 +198,7 @@ Proof.
 Qed.
 
 Lemma generation_rep_data_at_: forall sh g gen num,
-    generation_rep sh g (gen, num) |--
+    generation_rep g (gen, num, sh) |--
     data_at_ sh (tarray int_or_ptr_type (previous_vertices_size g gen num))
              (gen_start g gen).
 Proof.
