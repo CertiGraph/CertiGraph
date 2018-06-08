@@ -40,8 +40,6 @@ Definition find_spec :=
 
 Definition Gprog : funspecs := ltac:(with_library prog [find_spec]).
 
-Lemma force_val_pointer: forall p, (force_val (sem_cast_pointer (pointer_val_val p)) = pointer_val_val p). Proof. destruct p; simpl; reflexivity. Qed.
-
 Lemma false_Cne_eq: forall x y, typed_false tint (force_val (sem_cmp_pp Cne (pointer_val_val x) (pointer_val_val y))) -> x = y.
 Proof.
   intros. hnf in H. destruct x, y; inversion H; auto. simpl in H. clear H1. unfold sem_cmp_pp in H. simpl in H. destruct (eq_block b b0).
@@ -115,8 +113,7 @@ Proof.
         apply vertices_at_Same_set. unfold Ensembles.Same_set, Ensembles.Included, Ensembles.In. simpl. intuition. }
       assert (H_P_NOT_NULL: p <> null) by (apply reachable_foot_valid in H2; intro; subst p; apply (valid_not_null g null H2); simpl; auto).
       localize [data_at sh node_type (Vint (Int.repr (Z.of_nat xr)), pointer_val_val xpa) (pointer_val_val xv)].
-      forward. rewrite force_val_pointer.
-      unlocalize [whole_graph sh (Graph_gen_redirect_parent g' xv p H10 H11 H12)].
+      forward. unlocalize [whole_graph sh (Graph_gen_redirect_parent g' xv p H10 H11 H12)].
       1: rewrite H13; apply (@graph_gen_redirect_parent_ramify _ (sSGG_VST sh)); auto.
       Opaque pointer_val_val. forward. Transparent pointer_val_val.
       Exists (((Graph_gen_redirect_parent g' xv p H10 H11 H12), xpa), xpa). simpl fst. simpl snd. entailer !. split; [|split].

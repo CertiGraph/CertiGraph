@@ -10,7 +10,5 @@ Proof.
             (Tpointer Tvoid {| attr_volatile := false; attr_alignas := Some 2%N |})
             int_or_ptr_type = true) by
       (rewrite eqb_type_spec; unfold int_or_ptr_type; f_equal). forward_call x.
-  - hif_tac H1. 2: inversion H0. entailer!. f_equal.
-    destruct x; simpl in *; auto; exfalso; auto.
-  - forward. hif_tac H1. 2: inversion H0. destruct x; simpl in *; entailer!.
+  forward. hif_tac H1. 2: inversion H0. destruct x; simpl in *; entailer!.
 Qed.

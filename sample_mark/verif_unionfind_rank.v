@@ -85,8 +85,6 @@ Definition makeSet_spec :=
 
 Definition Gprog : funspecs := ltac:(with_library prog [mallocN_spec; makeSet_spec; find_spec; unionS_spec]).
 
-Lemma force_val_pointer: forall p, (force_val (sem_cast_pointer (pointer_val_val p)) = pointer_val_val p). Proof. destruct p; simpl; reflexivity. Qed.
-
 Lemma body_makeSet: semax_body Vprog Gprog f_makeSet makeSet_spec.
 Proof.
   start_function.
@@ -95,7 +93,7 @@ Proof.
   - Intros x.
     assert_PROP (x <> null) as x_not_null by (entailer !; destruct H1 as [? _]; apply H1).
     assert_PROP (~ vvalid g x) by (entailer; apply (@vertices_at_sepcon_unique_1x _ _ _ _ SGBA_VST _ _ (SGA_VST sh) (SGAvs_VST sh) g x (vvalid g) (O, null))).
-    forward. rewrite force_val_pointer. forward. forward.
+    forward. forward. forward.
     Exists (make_set_Graph O tt tt x g x_not_null H0) x. entailer !.
     + split; [|split]; simpl; [right | apply is_partial_make_set_pregraph | apply uf_under_bound_make_set_graph]; auto.
     + assert (Coqlib.Prop_join (vvalid g) (eq x) (vvalid (make_set_Graph 0%nat tt tt x g x_not_null H0))). {
@@ -167,8 +165,7 @@ Proof.
       apply vertices_at_Same_set. unfold Ensembles.Same_set, Ensembles.Included, Ensembles.In. simpl. intuition. }
     remember (vgamma g' x) as rpa eqn:?H. destruct rpa as [r' pa']. symmetry in H12.
     localize [data_at sh node_type (Vint (Int.repr (Z.of_nat r')), pointer_val_val pa') (pointer_val_val x)].
-    forward. rewrite force_val_pointer.
-    unlocalize [whole_graph sh (Graph_gen_redirect_parent g' x root H8 H9 H10)].
+    forward. unlocalize [whole_graph sh (Graph_gen_redirect_parent g' x root H8 H9 H10)].
     + rewrite H11. apply (@graph_gen_redirect_parent_ramify _ (sSGG_VST sh)); auto. destruct H4.
       apply reachable_foot_valid in H4. intro. subst root. apply (valid_not_null g' null H4). simpl. auto.
     + Exists (Graph_gen_redirect_parent g' x root H8 H9 H10) root. rewrite H11. entailer!.
@@ -256,8 +253,7 @@ Proof.
         apply vertices_at_Same_set. unfold Ensembles.Same_set, Ensembles.Included, Ensembles.In. simpl. intuition. }
       (* xRoot -> parent = yRoot; *)
       localize [data_at sh node_type (vgamma2cdata (vgamma g2 x_root)) (pointer_val_val x_root)].
-      rewrite H13. simpl vgamma2cdata. forward. rewrite force_val_pointer.
-      unlocalize [whole_graph sh (Graph_gen_redirect_parent g2 x_root y_root H6 H15 H11)].
+      rewrite H13. simpl vgamma2cdata. forward. unlocalize [whole_graph sh (Graph_gen_redirect_parent g2 x_root y_root H6 H15 H11)].
       1: rewrite H13; simpl vgamma2cdata; rewrite H16; apply (@graph_gen_redirect_parent_ramify _ (sSGG_VST sh)); auto.
       Exists (Graph_gen_redirect_parent g2 x_root y_root H6 H15 H11). entailer !. split.
       * apply (diff_root_union_1 g g1 g2 x y x_root y_root); auto.
@@ -276,8 +272,7 @@ Proof.
        SEP (whole_graph sh g')).
       * (* yRoot -> parent = xRoot; *)
         localize [data_at sh node_type (vgamma2cdata (vgamma g2 y_root)) (pointer_val_val y_root)].
-        rewrite H14. simpl vgamma2cdata. forward. rewrite force_val_pointer.
-        unlocalize [whole_graph sh (Graph_gen_redirect_parent g2 y_root x_root H6 H11 H16)].
+        rewrite H14. simpl vgamma2cdata. forward. unlocalize [whole_graph sh (Graph_gen_redirect_parent g2 y_root x_root H6 H11 H16)].
         1: rewrite H14; simpl vgamma2cdata; rewrite H17; apply (@graph_gen_redirect_parent_ramify _ (sSGG_VST sh)); auto.
         Exists (Graph_gen_redirect_parent g2 y_root x_root H6 H11 H16). entailer!. split.
         -- apply (diff_root_union_2 g g1 g2 x y x_root y_root); auto.
@@ -285,8 +280,7 @@ Proof.
            rewrite (uf_equiv_root_the_same g1 g2) in H4; auto. destruct H4. auto.
       * (* yRoot -> parent = xRoot; *)
         localize [data_at sh node_type (vgamma2cdata (vgamma g2 y_root)) (pointer_val_val y_root)].
-        rewrite H14. simpl vgamma2cdata. forward. rewrite force_val_pointer.
-        unlocalize [whole_graph sh (Graph_gen_redirect_parent g2 y_root x_root H6 H11 H16)].
+        rewrite H14. simpl vgamma2cdata. forward. unlocalize [whole_graph sh (Graph_gen_redirect_parent g2 y_root x_root H6 H11 H16)].
         1: rewrite H14; simpl vgamma2cdata; rewrite H17; apply (@graph_gen_redirect_parent_ramify _ (sSGG_VST sh)); auto.
         set (g3 := Graph_gen_redirect_parent g2 y_root x_root H6 H11 H16).
         assert (uf_union g x y g3) by (subst g3; simpl; apply (diff_root_union_2 g g1 g2 x y x_root y_root); auto).
