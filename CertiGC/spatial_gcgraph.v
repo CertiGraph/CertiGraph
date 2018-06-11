@@ -4,7 +4,7 @@ Require Import RamifyCoq.CertiGC.GCGraph.
 Require Export RamifyCoq.CertiGC.env_graph_gc.
 
 Definition vertex_at (sh: share) (p: val) (header: Z) (lst_fields: list val) :=
-  data_at sh tint (Vint (Int.repr header)) (offset_val (- WORD_SIZE) p) *
+  data_at sh tint (Z2val header) (offset_val (- WORD_SIZE) p) *
   data_at sh (tarray int_or_ptr_type (Zlength lst_fields)) lst_fields p.
 
 Definition vertex_rep (sh: share) (g: LGraph) (v: VType): mpred :=
@@ -25,7 +25,7 @@ Definition fun_info_rep (sh: share) (fi: fun_info) (p: val) : mpred :=
   let len := Zlength (live_roots_indices fi) in
   data_at
     sh (tarray tuint (len + 2))
-    (map Vint (map Int.repr (fun_word_size fi :: len :: live_roots_indices fi))) p.
+    (map Z2val (fun_word_size fi :: len :: live_roots_indices fi)) p.
 
 Definition space_rest_rep (sp: space): mpred :=
   if (Val.eq sp.(space_start) nullval)

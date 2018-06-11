@@ -302,13 +302,14 @@ Definition gen_start (g: LGraph) (gen: nat): val :=
 Definition vertex_address (g: LGraph) (v: VType): val :=
   offset_val (WORD_SIZE * vertex_offset g v) (gen_start g (vgeneration v)).
 
-Definition ptr_or_v_2val (g: LGraph) (e: GC_Pointer + VType) : val :=
+Definition root2val (g: LGraph) (e: Z + GC_Pointer + VType) : val :=
   match e with
-  | inl (GCPtr b z) => Vptr b z
+  | inl (inl z) => Z2val z
+  | inl (inr (GCPtr b z)) => Vptr b z
   | inr v => vertex_address g v
   end.
 
-Definition roots_t: Type := list (GC_Pointer + VType).
+Definition roots_t: Type := list (Z + GC_Pointer + VType).
 
 Definition outlier_t: Type := list GC_Pointer.
 
@@ -316,10 +317,11 @@ Instance Inhabitant_val: Inhabitant val := nullval.
 
 Definition fun_thread_arg_compatible
            (g: LGraph) (ti: thread_info) (fi: fun_info) (roots: roots_t) : Prop :=
-  map (ptr_or_v_2val g) roots = map ((flip Znth) ti.(ti_args)) fi.(live_roots_indices).
+  map (root2val g) roots = map ((flip Znth) ti.(ti_args)) fi.(live_roots_indices).
 
 Definition roots_compatible (g: LGraph) (outlier: outlier_t) (roots: roots_t): Prop :=
-  incl (filter_sum_left roots) outlier /\ Forall (vvalid g) (filter_sum_right roots).
+  incl (filter_sum_right (filter_sum_left roots)) outlier /\
+  Forall (vvalid g) (filter_sum_right roots).
 
 Definition outlier_compatible (g: LGraph) (outlier: outlier_t): Prop :=
   forall v,
