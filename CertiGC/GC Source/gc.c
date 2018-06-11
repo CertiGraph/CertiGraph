@@ -352,45 +352,38 @@ void garbage_collect(fun_info fi, struct thread_info *ti)
 /* See the header file for the interface-spec of this function. */
 {
   struct heap *h = ti->heap;
-  if (h==NULL) {
-    /* If the heap has not yet been initialized, create it and resume */
-    h = create_heap();
-    ti->heap = h;
-    resume(fi,ti);
-    return;
-  } else {
-    int i;
-    assert (h->spaces[0].limit == ti->limit);  
-    h->spaces[0].next = ti->alloc; /* this line is probably unnecessary */
-    for (i=0; i<MAX_SPACES-1; i++) {
-      /* Starting with the youngest generation, collect each generation
-         into the next-older generation.  Usually, when doing that,
-         there will be enough space left in the next-older generation
-         so that we can break the loop by resuming the mutator. */
-
-      /* If the next generation does not yet exist, create it */
-      if (h->spaces[i+1].start==NULL) {
-	int w = h->spaces[i].limit-h->spaces[i].start;
-	create_space(h->spaces+(i+1), RATIO*w);
-      }
-      /* Copy all the objects in generation i, into generation i+1 */
-  if(0)
+  int i;
+  assert (h->spaces[0].limit == ti->limit);  
+  h->spaces[0].next = ti->alloc; /* this line is probably unnecessary */
+  for (i=0; i<MAX_SPACES-1; i++) {
+    /* Starting with the youngest generation, collect each generation
+       into the next-older generation.  Usually, when doing that,
+       there will be enough space left in the next-older generation
+       so that we can break the loop by resuming the mutator. */
+      
+    /* If the next generation does not yet exist, create it */
+    if (h->spaces[i+1].start==NULL) {
+      int w = h->spaces[i].limit-h->spaces[i].start;
+      create_space(h->spaces+(i+1), RATIO*w);
+    }
+    /* Copy all the objects in generation i, into generation i+1 */
+    if(0)
       fprintf(stderr, "Generation %d:  ", i);
       do_generation(h->spaces+i, h->spaces+(i+1), fi, ti);
       /* If there's enough space in gen i+1 to guarantee that the
          NEXT collection into i+1 will succeed, we can stop here */
       if (h->spaces[i].limit - h->spaces[i].start
 	  <= h->spaces[i+1].limit - h->spaces[i+1].next) {
-	 resume(fi,ti);
-	 return;
+          resume(fi,ti);
+          return;
       }
-    }
-    /* If we get to i==MAX_SPACES, that's bad news */
-    abort_with("Ran out of generations\n");
   }
+    /* If we get to i==MAX_SPACES, that's bad news */
+  abort_with("Ran out of generations\n");
+
   /* Can't reach this point */
   assert(0);
-} 
+}
 
 /* REMARK.  The generation-management policy in the garbage_collect function
    has a potential flaw.  Whenever a record is copied, it is promoted to

@@ -261,8 +261,7 @@ Definition resume_spec :=
   PRE [ _fi OF (tptr tuint),
         _ti OF (tptr thread_info_type)]
     PROP (readable_share rsh; writable_share sh;
-          graph_thread_info_compatible g t_info;
-          ti_heap_p t_info <> nullval)
+          graph_thread_info_compatible g t_info)
     LOCAL (temp _fi fi; temp _ti ti; gvars gv)
     SEP (all_string_constants rsh gv;
          fun_info_rep rsh f_info fi;
