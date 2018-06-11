@@ -51,8 +51,7 @@ Definition all_string_constants (sh: share) (gv: globals) : mpred :=
   cstring sh (map init_data2byte (gvar_init v___stringlit_13)) (gv ___stringlit_13) *
   cstring sh (map init_data2byte (gvar_init v___stringlit_14)) (gv ___stringlit_14) *
   cstring sh (map init_data2byte (gvar_init v___stringlit_15)) (gv ___stringlit_15) *
-  cstring sh (map init_data2byte (gvar_init v___stringlit_16)) (gv ___stringlit_16) *
-  cstring sh (map init_data2byte (gvar_init v___stringlit_17)) (gv ___stringlit_17).
+  cstring sh (map init_data2byte (gvar_init v___stringlit_16)) (gv ___stringlit_16).
 
 Definition test_int_or_ptr_spec :=
  DECLARE _test_int_or_ptr
@@ -187,7 +186,9 @@ Definition do_scan_spec :=
 
 Definition do_generation_spec :=
   DECLARE _do_generation
-  WITH from: val, to: val, fi: val, ti: val
+  WITH rsh: share, sh: share, gv: globals, fi: val, ti: val, from: val, to: val,
+       g: LGraph, t_info: thread_info, f_info: fun_info,
+       roots : roots_t, outlier: outlier_t
   PRE [ _from OF (tptr space_type),
         _to OF (tptr space_type),
         _fi OF (tptr tuint),
@@ -294,7 +295,14 @@ Definition garbage_collect_spec :=
          graph_rep g;
          thread_info_rep sh t_info ti)
   POST [tvoid]
-    PROP () LOCAL () SEP ().
+    EX g': LGraph, EX t_info': thread_info, EX roots': roots_t,
+    PROP (super_compatible g' t_info' f_info roots' outlier)
+    LOCAL ()
+    SEP (all_string_constants rsh gv;
+         fun_info_rep rsh f_info fi;
+         outlier_rep outlier;
+         graph_rep g';
+         thread_info_rep sh t_info' ti).
 
 Definition reset_heap_spec :=
   DECLARE _reset_heap

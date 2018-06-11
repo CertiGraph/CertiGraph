@@ -353,7 +353,7 @@ void garbage_collect(fun_info fi, struct thread_info *ti)
 {
   struct heap *h = ti->heap;
   int i;
-  assert (h->spaces[0].limit == ti->limit);  
+  /* assert (h->spaces[0].limit == ti->limit);   */
   h->spaces[0].next = ti->alloc; /* this line is probably unnecessary */
   for (i=0; i<MAX_SPACES-1; i++) {
     /* Starting with the youngest generation, collect each generation
