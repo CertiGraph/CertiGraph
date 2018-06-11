@@ -17,8 +17,8 @@ Definition generation_rep (g: LGraph) (gen_num_sh_triple: nat * nat * share): mp
   end.
 
 Definition graph_rep (g: LGraph): mpred :=
-  let up := map number_of_vertices g.(glabel) in
-  let shs := map generation_sh g.(glabel) in
+  let up := map number_of_vertices g.(glabel).(g_gen) in
+  let shs := map generation_sh g.(glabel).(g_gen) in
   iter_sepcon (combine (combine (nat_inc_list (length up)) up) shs) (generation_rep g).
 
 Definition fun_info_rep (sh: share) (fi: fun_info) (p: val) : mpred :=
@@ -45,19 +45,16 @@ Definition heap_struct_rep (sh: share) (sp_reps: list (reptype space_type)) (h: 
   mpred := data_at sh heap_type sp_reps h.
 
 Definition thread_info_rep (sh: share) (ti: thread_info) (t: val) :=
-  if Val.eq ti.(ti_heap_p) nullval
-  then data_at sh thread_info_type
-               (Vundef, (Vundef, (nullval, list_repeat (Z.to_nat MAX_ARGS) Vundef))) t
-  else let nursery := heap_head ti.(ti_heap) in
-       let p := nursery.(space_start) in
-       let n_lim := offset_val (WORD_SIZE * nursery.(total_space)) p in
-       data_at sh thread_info_type
-               (offset_val (WORD_SIZE * nursery.(used_space)) p,
-                (n_lim, (ti.(ti_heap_p), ti.(ti_args)))) t *
-       heap_struct_rep
-         sh ((p, (Vundef, n_lim))
-               :: map space_tri (tl ti.(ti_heap).(spaces))) ti.(ti_heap_p) *
-       heap_rest_rep ti.(ti_heap).
+  let nursery := heap_head ti.(ti_heap) in
+  let p := nursery.(space_start) in
+  let n_lim := offset_val (WORD_SIZE * nursery.(total_space)) p in
+  data_at sh thread_info_type
+          (offset_val (WORD_SIZE * nursery.(used_space)) p,
+           (n_lim, (ti.(ti_heap_p), ti.(ti_args)))) t *
+  heap_struct_rep
+    sh ((p, (Vundef, n_lim))
+          :: map space_tri (tl ti.(ti_heap).(spaces))) ti.(ti_heap_p) *
+  heap_rest_rep ti.(ti_heap).
 
 Definition outlier_rep (outlier: outlier_t) :=
   fold_right andp TT (map (compose valid_pointer GC_Pointer2val) outlier).
@@ -79,7 +76,7 @@ Proof.
   rewrite vertex_head_address_eq. unfold vertex_address, vertex_offset. simpl.
   assert (isptr (gen_start g gen)) by (apply start_isptr).
   remember (gen_start g gen). destruct v; try contradiction.
-  remember (previous_vertices_size g gen num). 
+  remember (previous_vertices_size g gen num).
   assert (0 <= z) by (rewrite Heqz; apply previous_size_ge_zero).
   unfold single_vertex_size. entailer. rewrite <- fields_eq_length.
   destruct H1 as [_ [_ [? _]]]. simpl in H1.
@@ -101,7 +98,7 @@ Proof.
   rewrite memory_block_split; [| rep_omega..].
   sep_apply (data_at_memory_block
                sh tint (Vint (Int.repr (make_header g (gen, num))))
-               (Vptr b (Ptrofs.repr ofs))). 
+               (Vptr b (Ptrofs.repr ofs))).
   simpl sizeof. rewrite WORD_SIZE_eq. apply cancel_left.
   sep_apply (data_at_memory_block
                sh (tarray int_or_ptr_type z0) (make_fields g (gen, num))
@@ -239,7 +236,7 @@ Proof.
 Qed.
 
 Lemma data_at__tarray_value_join: forall sh n n1 p,
-    0 <= n1 <= n -> 
+    0 <= n1 <= n ->
     data_at_ sh (tarray int_or_ptr_type n1) p *
     data_at_ sh (tarray int_or_ptr_type (n - n1)) (offset_val (WORD_SIZE * n1) p) |--
              data_at_ sh (tarray int_or_ptr_type n) p.
@@ -256,7 +253,7 @@ Proof.
     + unfold field_compatible0. simpl. destruct H0. intuition.
   - assumption.
   - instantiate (1:=list_repeat (Z.to_nat n) Vundef). list_solve.
-  - unfold default_val. simpl. autorewrite with sublist. apply JMeq_refl. 
-  - unfold default_val. simpl. autorewrite with sublist. apply JMeq_refl. 
+  - unfold default_val. simpl. autorewrite with sublist. apply JMeq_refl.
+  - unfold default_val. simpl. autorewrite with sublist. apply JMeq_refl.
   - unfold default_val. simpl. autorewrite with sublist. apply JMeq_refl.
 Qed.

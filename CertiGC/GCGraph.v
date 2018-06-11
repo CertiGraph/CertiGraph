@@ -146,7 +146,24 @@ Global Opaque IMPOSSIBLE_VAL.
 Definition null_info: generation_info :=
   Build_generation_info IMPOSSIBLE_VAL O Tsh IMPOSSIBLE_ISPTR writable_share_top.
 
-Definition graph_info := list generation_info.
+Record graph_info : Type :=
+  {
+    g_gen: list generation_info;
+    g_gen_not_nil: g_gen <> nil;
+  }.
+
+Definition graph_info_head (gi: graph_info): generation_info :=
+  match gi.(g_gen) as l return (g_gen gi = l -> generation_info) with
+  | nil => fun m => False_rect generation_info (g_gen_not_nil gi m)
+  | s :: _ => fun _ => s
+  end eq_refl.
+
+Lemma graph_info_head_cons:
+  forall gi, exists s l, g_gen gi = s :: l /\ graph_info_head gi = s.
+Proof.
+  intros. destruct gi eqn:? . simpl. unfold graph_info_head. simpl. destruct g_gen0.
+  1: contradiction. exists g, g_gen0. split; reflexivity.
+Qed.
 
 Definition LGraph := LabeledGraph VType EType raw_vertex_block unit graph_info.
 
@@ -262,12 +279,11 @@ Lemma nat_inc_list_S: forall num, nat_inc_list (S num) = nat_inc_list num ++ [nu
 Proof. intros. unfold nat_inc_list. rewrite nat_seq_S. repeat f_equal. omega. Qed.
 
 Definition graph_thread_info_compatible (g: LGraph) (ti: thread_info): Prop :=
-  (g.(glabel) = nil <-> ti.(ti_heap_p) = nullval) /\
   Forall (generation_space_compatible g)
-         (combine (combine (nat_inc_list (length g.(glabel))) g.(glabel))
-                  ti.(ti_heap).(spaces)) /\
+         (combine (combine (nat_inc_list (length g.(glabel).(g_gen)))
+                           g.(glabel).(g_gen)) ti.(ti_heap).(spaces)) /\
   Forall (eq nullval)
-         (skipn (length g.(glabel)) (map space_start ti.(ti_heap).(spaces))).
+         (skipn (length g.(glabel).(g_gen)) (map space_start ti.(ti_heap).(spaces))).
 
 Record fun_info : Type :=
   {
@@ -281,7 +297,7 @@ Definition vertex_offset (g: LGraph) (v: VType): Z :=
   previous_vertices_size g (vgeneration v) (vindex v) + 1.
 
 Definition gen_start (g: LGraph) (gen: nat): val :=
-  (nth gen g.(glabel) null_info).(start_address).
+  (nth gen g.(glabel).(g_gen) null_info).(start_address).
 
 Definition vertex_address (g: LGraph) (v: VType): val :=
   offset_val (WORD_SIZE * vertex_offset g v) (gen_start g (vgeneration v)).
@@ -322,7 +338,8 @@ Definition reset_generation_info (gi: generation_info) : generation_info :=
   Build_generation_info (start_address gi) O (generation_sh gi) (start_isptr gi)
                         (generation_share_writable gi).
 
-Fixpoint reset_nth_generation_info (n: nat) (gi: graph_info) : graph_info :=
+Fixpoint reset_nth_gen_info
+         (n: nat) (gi: list generation_info) : list generation_info :=
   match n with
   | O => match gi with
          | nil => nil
@@ -330,13 +347,30 @@ Fixpoint reset_nth_generation_info (n: nat) (gi: graph_info) : graph_info :=
          end
   | S m => match gi with
            | nil => nil
-           | g :: l => g :: reset_nth_generation_info m l
+           | g :: l => g :: reset_nth_gen_info m l
            end
   end.
 
+Lemma reset_nth_gen_info_preserve_length: forall n gl,
+    length (reset_nth_gen_info n gl) = length gl.
+Proof.
+  intros. revert n. induction gl; simpl; intros; destruct n; simpl;
+                      [| | | rewrite IHgl]; reflexivity.
+Qed.
+
+Lemma reset_nth_gen_info_not_nil: forall n g, reset_nth_gen_info n (g_gen g) <> nil.
+Proof.
+  intros. pose proof (g_gen_not_nil g). destruct (g_gen g).
+  - contradiction.
+  - destruct n; simpl; discriminate.
+Qed.
+ 
+Definition reset_nth_graph_info (n: nat) (g: graph_info) : graph_info :=
+  Build_graph_info (reset_nth_gen_info n g.(g_gen)) (reset_nth_gen_info_not_nil n g).
+
 Definition reset_nth_gen_graph (n: nat) (g: LGraph) : LGraph :=
   Build_LabeledGraph _ _ _ (pg_lg g) (vlabel g) (elabel g)
-                     (reset_nth_generation_info n (glabel g)).
+                     (reset_nth_graph_info n (glabel g)).
 
 Lemma reset_space_order: forall sp, (0 <= 0 <= total_space sp)%Z.
 Proof. intros. pose proof (space_order sp). omega. Qed.
@@ -379,10 +413,9 @@ Definition resume_graph_relation (g1 g2: LGraph): Prop :=
   g1.(pg_lg) = g2.(pg_lg) /\
   g1.(vlabel) = g2.(vlabel) /\
   g1.(elabel) = g2.(elabel) /\
-  tl (glabel g1) = tl (glabel g2) /\
-  length (glabel g1) = length (glabel g2) /\
-  let h1 := hd null_info (glabel g1) in
-  let h2 := hd null_info (glabel g2) in
+  tl (glabel g1).(g_gen) = tl (glabel g2).(g_gen) /\
+  let h1 := graph_info_head g1.(glabel) in
+  let h2 := graph_info_head g2.(glabel) in
   start_address h1 = start_address h2 /\
   generation_sh h1 = generation_sh h2 /\ number_of_vertices h2 = O.
 
@@ -398,8 +431,12 @@ Definition resume_thread_info_relation (t1 t2: thread_info): Prop :=
 Lemma reset_resume_g_relation: forall g,
     resume_graph_relation g (reset_nth_gen_graph O g).
 Proof.
-  intros. hnf. unfold reset_nth_gen_graph. simpl. remember (glabel g) as l.
-  destruct l; simpl; tauto.
+  intros. hnf. unfold reset_nth_gen_graph. simpl.
+  destruct (graph_info_head_cons (glabel g)) as [s [l [? ?]]]. rewrite H, H0. simpl.
+  destruct (graph_info_head_cons (reset_nth_graph_info 0 (glabel g))) as
+      [s' [l' [? ?]]]. rewrite H2. unfold reset_nth_graph_info in H1. simpl in H1.
+  rewrite H in H1. inversion H1. subst l' s'.
+  unfold reset_generation_info. simpl. tauto.
 Qed.
 
 Lemma reset_resume_t_relation: forall t,
@@ -498,7 +535,7 @@ Qed.
 
 Lemma vertex_address_the_same: forall (g1 g2: LGraph) v,
     (forall v, g1.(vlabel) v = g2.(vlabel) v) ->
-    map start_address g1.(glabel) = map start_address g2.(glabel) ->
+    map start_address g1.(glabel).(g_gen) = map start_address g2.(glabel).(g_gen) ->
     vertex_address g1 v = vertex_address g2 v.
 Proof.
   intros. unfold vertex_address. f_equal.
@@ -511,7 +548,7 @@ Qed.
 Lemma make_fields_the_same: forall (g1 g2: LGraph) v,
     (forall e, dst g1 e = dst g2 e) ->
     (forall v, g1.(vlabel) v = g2.(vlabel) v) ->
-    map start_address g1.(glabel) = map start_address g2.(glabel) ->
+    map start_address g1.(glabel).(g_gen) = map start_address g2.(glabel).(g_gen) ->
     make_fields g1 v = make_fields g2 v.
 Proof.
   intros. unfold make_fields. remember O. clear Heqn. rewrite H0.
@@ -521,7 +558,7 @@ Proof.
 Qed.
 
 Lemma start_address_reset: forall n l,
-    map start_address l = map start_address (reset_nth_generation_info n l).
+    map start_address l = map start_address (reset_nth_gen_info n l).
 Proof.
   intros. revert n.
   induction l; intros; simpl; destruct n; simpl; [| | | rewrite <- IHl]; reflexivity.
@@ -547,31 +584,26 @@ Lemma resume_preverse_graph_thread_info_compatible: forall (g g': LGraph) t t',
     resume_thread_info_relation t t' ->
     graph_thread_info_compatible g' t'.
 Proof.
-  intros. hnf in *. destruct H as [? [? ?]]. destruct H0 as [? [? [? [? [? ?]]]]].
-  cbn in H8. destruct H8 as [? [? ?]]. destruct H1 as [? [? [? ?]]]. cbn in H13.
-  destruct H13 as [? [? [? ?]]]. split.
-  - rewrite <- H1, <- H. destruct (glabel g'), (glabel g); simpl in H7;
-                           [tauto | discriminate..| split; intro S; inversion S].
-  - rewrite <- H7. remember (glabel g) as gl. remember (glabel g') as gl'.
-    destruct (heap_head_cons (ti_heap t')) as [h' [l' [? ?]]]. rewrite H17 in *.
-    simpl. destruct (heap_head_cons (ti_heap t)) as [h [l [? ?]]]. rewrite H19 in *.
-    simpl in H12. subst l'. simpl in *. rewrite H18, H20 in *. destruct gl; simpl.
-    + split. 1: constructor. simpl in H3. constructor.
-      * apply Forall_inv in H3. rewrite H3. assumption.
-      * apply Forall_tl in H3. assumption.
-    + destruct gl'. 1: simpl in H7; inversion H7. simpl in H6. subst gl'. simpl in *.
-      split. 2: assumption. constructor.
-      * apply Forall_inv in H2. hnf in *. destruct H2 as [? [? ?]]. split; [|split].
-        -- rewrite <- H8, <- H13. assumption.
-        -- rewrite <- H9, <- H15. assumption.
-        -- rewrite H10, H16. simpl. reflexivity.
-      * apply Forall_tl in H2.
-        remember (combine (combine (nat_seq 1 (length gl)) gl) l) as hl.
-        rewrite Forall_forall in H2 |- *. intros. destruct x as [[gen gi] sp].
-        specialize (H2 _ H6). hnf in H2 |- *. destruct H2 as [? [? ?]].
-        split; [|split]; [assumption..|].
-        rewrite <- H21. remember (number_of_vertices gi) as n. clear -H4.
-        assert (forall v, vlabel g v = vlabel g' v) by
-            (intro; rewrite H4; reflexivity). induction n; simpl; auto. rewrite IHn.
-        f_equal. unfold single_vertex_size. rewrite H. reflexivity.
+  intros. hnf in *. destruct H. destruct H0 as [? [? [? [? [? ?]]]]]. cbn in H7.
+  destruct H7. destruct H1 as [? [? [? ?]]]. cbn in H11.
+  destruct H11 as [? [? [? ?]]].
+  destruct (graph_info_head_cons (glabel g')) as [gi' [gl' [? ?]]].
+  rewrite H15, H16 in *.
+  destruct (graph_info_head_cons (glabel g)) as [gi [gl [? ?]]]. rewrite H17, H18 in *.
+  destruct (heap_head_cons (ti_heap t')) as [h' [l' [? ?]]]. rewrite H19, H20 in *.
+  destruct (heap_head_cons (ti_heap t)) as [h [l [? ?]]]. rewrite H21, H22 in *.
+  simpl in *. subst gl'. subst l'. split. 2: apply H2. constructor.
+  - apply Forall_inv in H. hnf in *. destruct H as [? [? ?]]. split; [|split].
+    + rewrite <- H6, <- H11. assumption.
+    + rewrite <- H7, <- H13. assumption.
+    + rewrite H8, H14. simpl. reflexivity.
+  - apply Forall_tl in H.
+    remember (combine (combine (nat_seq 1 (length gl)) gl) l) as hl.
+    rewrite Forall_forall in H |- *. intros. destruct x as [[gen gin] sp].
+    specialize (H _ H5). hnf in H |- *. destruct H as [? [? ?]].
+    split; [|split]; [assumption..|].
+    rewrite <- H23. remember (number_of_vertices gin) as n. clear -H3.
+    assert (forall v, vlabel g v = vlabel g' v) by
+        (intro; rewrite H3; reflexivity). induction n; simpl; auto. rewrite IHn.
+    f_equal. unfold single_vertex_size. rewrite H. reflexivity.
 Qed.
