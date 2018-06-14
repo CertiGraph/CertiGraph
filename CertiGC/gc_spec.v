@@ -287,7 +287,7 @@ Definition garbage_collect_spec :=
   PRE [ _fi OF (tptr tuint),
         _ti OF (tptr thread_info_type)]
     PROP (readable_share rsh; writable_share sh;
-          super_compatible g t_info f_info roots outlier)
+          super_compatible (g, t_info, roots) f_info outlier)
     LOCAL (temp _fi fi; temp _ti ti; gvars gv)
     SEP (all_string_constants rsh gv;
          fun_info_rep rsh f_info fi;
@@ -296,7 +296,7 @@ Definition garbage_collect_spec :=
          thread_info_rep sh t_info ti)
   POST [tvoid]
     EX g': LGraph, EX t_info': thread_info, EX roots': roots_t,
-    PROP (super_compatible g' t_info' f_info roots' outlier)
+    PROP (super_compatible (g', t_info', roots') f_info outlier)
     LOCAL ()
     SEP (all_string_constants rsh gv;
          fun_info_rep rsh f_info fi;

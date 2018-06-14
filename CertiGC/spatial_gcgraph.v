@@ -8,7 +8,7 @@ Definition vertex_at (sh: share) (p: val) (header: Z) (lst_fields: list val) :=
   data_at sh (tarray int_or_ptr_type (Zlength lst_fields)) lst_fields p.
 
 Definition vertex_rep (sh: share) (g: LGraph) (v: VType): mpred :=
-  vertex_at sh (vertex_address g v) (make_header g v) (make_fields g v).
+  vertex_at sh (vertex_address g v) (make_header g v) (make_fields_vals g v).
 
 Definition generation_rep (g: LGraph) (gen_num_sh_triple: nat * nat * share): mpred :=
   match gen_num_sh_triple with
@@ -82,7 +82,7 @@ Proof.
   destruct H1 as [_ [_ [? _]]]. simpl in H1.
   destruct H3 as [_ [_ [? _]]]. simpl in H3. rewrite <- H4 in H3.
   remember (previous_vertices_size g gen num).
-  remember (Zlength (make_fields g (gen, num))). rewrite (Z.add_comm z0).
+  remember (Zlength (make_fields_vals g (gen, num))). rewrite (Z.add_comm z0).
   rewrite Z.mul_add_distr_l with (m := 1). rewrite Z.mul_1_r.
   simpl offset_val. remember (Ptrofs.add i (Ptrofs.repr (WORD_SIZE * z))).
   rewrite <- (Ptrofs.repr_unsigned i0). remember (Ptrofs.unsigned i0) as ofs.
@@ -101,7 +101,7 @@ Proof.
                (Vptr b (Ptrofs.repr ofs))).
   simpl sizeof. rewrite WORD_SIZE_eq. apply cancel_left.
   sep_apply (data_at_memory_block
-               sh (tarray int_or_ptr_type z0) (make_fields g (gen, num))
+               sh (tarray int_or_ptr_type z0) (make_fields_vals g (gen, num))
                (Vptr b (Ptrofs.repr (ofs + 4)))). simpl sizeof. rewrite Z.max_r; auto.
 Qed.
 
