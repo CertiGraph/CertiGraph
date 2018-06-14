@@ -13,6 +13,7 @@ Require Import VST.floyd.coqlib3.
 Require Import RamifyCoq.lib.EquivDec_ext.
 Require Import RamifyCoq.lib.List_ext.
 Require Import RamifyCoq.graph.graph_model.
+Require Import RamifyCoq.graph.graph_gen.
 Require Import RamifyCoq.msl_ext.iter_sepcon.
 Import ListNotations.
 
@@ -116,19 +117,28 @@ Definition Z2val (x: Z) : val := Vint (Int.repr x).
 Definition GC_Pointer2val (x: GC_Pointer) : val :=
   match x with | GCPtr b z => Vptr b z end.
 
-Definition raw_data2val (x: Z + GC_Pointer) : val :=
-  match x with
-  | inl n => Z2val n
-  | inr p => GC_Pointer2val p
-  end.
-  
 Record raw_vertex_block : Type :=
   {
     raw_mark: bool;
+    copied_vertex: VType;
     raw_fields: list raw_field;
     raw_color: Z;
     raw_tag: Z;
+    raw_fields_not_nil: raw_fields <> nil;
   }.
+
+Definition raw_fields_head (rvb: raw_vertex_block): raw_field :=
+  match rvb.(raw_fields) as l return (raw_fields rvb = l -> raw_field) with
+  | nil => fun m => False_rect _ (raw_fields_not_nil _ m)
+  | r :: _ => fun _ => r
+  end eq_refl.
+
+Lemma raw_fields_head_cons:
+  forall rvb, exists r l, raw_fields rvb = r :: l /\ raw_fields_head rvb = r.
+Proof.
+  intros. destruct rvb eqn:? . simpl. unfold raw_fields_head; simpl.
+  destruct raw_fields0. 1: contradiction. exists r, raw_fields0. split; reflexivity.
+Qed.
 
 Record generation_info: Type :=
   {
@@ -154,7 +164,7 @@ Record graph_info : Type :=
 
 Definition graph_info_head (gi: graph_info): generation_info :=
   match gi.(g_gen) as l return (g_gen gi = l -> generation_info) with
-  | nil => fun m => False_rect generation_info (g_gen_not_nil gi m)
+  | nil => fun m => False_rect _ (g_gen_not_nil _ m)
   | s :: _ => fun _ => s
   end eq_refl.
 
@@ -302,14 +312,16 @@ Definition gen_start (g: LGraph) (gen: nat): val :=
 Definition vertex_address (g: LGraph) (v: VType): val :=
   offset_val (WORD_SIZE * vertex_offset g v) (gen_start g (vgeneration v)).
 
-Definition root2val (g: LGraph) (e: Z + GC_Pointer + VType) : val :=
-  match e with
+Definition root_t: Type := Z + GC_Pointer + VType.
+
+Definition root2val (g: LGraph) (fd: root_t) : val :=
+  match fd with
   | inl (inl z) => Z2val z
-  | inl (inr (GCPtr b z)) => Vptr b z
+  | inl (inr p) => GC_Pointer2val p
   | inr v => vertex_address g v
   end.
 
-Definition roots_t: Type := list (Z + GC_Pointer + VType).
+Definition roots_t: Type := list root_t.
 
 Definition outlier_t: Type := list GC_Pointer.
 
@@ -330,7 +342,9 @@ Definition outlier_compatible (g: LGraph) (outlier: outlier_t): Prop :=
 
 Definition
   super_compatible
-  (g: LGraph) (ti: thread_info) (fi: fun_info) (r: roots_t) (out: outlier_t) : Prop :=
+  (g_ti_r: LGraph * thread_info * roots_t) (fi: fun_info) (out: outlier_t) : Prop :=
+  let (g_ti, r) := g_ti_r in
+  let (g, ti) := g_ti in
   graph_thread_info_compatible g ti /\
   fun_thread_arg_compatible g ti fi r /\
   roots_compatible g out r /\
@@ -366,7 +380,7 @@ Proof.
   - contradiction.
   - destruct n; simpl; discriminate.
 Qed.
- 
+
 Definition reset_nth_graph_info (n: nat) (g: graph_info) : graph_info :=
   Build_graph_info (reset_nth_gen_info n g.(g_gen)) (reset_nth_gen_info_not_nil n g).
 
@@ -451,8 +465,6 @@ Proof.
   inversion H1. subst l' s'. unfold reset_space. simpl. tauto.
 Qed.
 
-(*
-
 Fixpoint get_edges' (lf: list raw_field) (v: VType) (n: nat) : list EType :=
   match lf with
   | nil => nil
@@ -484,7 +496,7 @@ Proof.
     destruct o; intuition. simpl in H3. destruct H3; auto. inversion H3. omega.
 Qed.
 
-
+(*
 Class SoundGCGraph (g: LGraph) :=
   {
     field_decided_edges: forall v e,
@@ -512,27 +524,49 @@ Definition make_header (g: LGraph) (v: VType): Z:=
                             vb.(raw_tag) + (Z.shiftl vb.(raw_color) 8) +
                             (Z.shiftl (Zlength vb.(raw_fields)) 10).
 
-Fixpoint make_fields' (g: LGraph) (l_raw: list raw_field) (v: VType) (n: nat) :=
+Definition field_t: Type := Z + GC_Pointer + EType.
+
+Definition field2val (g: LGraph) (fd: field_t) : val :=
+  match fd with
+  | inl (inl z) => Z2val z
+  | inl (inr p) => GC_Pointer2val p
+  | inr e => vertex_address g (dst g e)
+  end.
+
+Fixpoint make_fields' (g: LGraph) (l_raw: list raw_field)
+         (v: VType) (n: nat): list field_t :=
   match l_raw with
   | nil => nil
-  | Some d :: l => raw_data2val d :: make_fields' g l v (n + 1)
-  | None :: l => vertex_address g (dst g (v, n)) :: make_fields' g l v (n + 1)
+  | Some (inl z) :: l => inl (inl z) :: make_fields' g l v (n + 1)
+  | Some (inr ptr) :: l => inl (inr ptr) :: make_fields' g l v (n + 1)
+  | None :: l => inr (v, n) :: make_fields' g l v (n + 1)
   end.
 
 Lemma make_fields'_eq_length: forall g l v n, length (make_fields' g l v n) = length l.
 Proof.
   intros. revert n. induction l; intros; simpl. 1: reflexivity.
-  destruct a; simpl; rewrite IHl; reflexivity.
+  destruct a; [destruct s|]; simpl; rewrite IHl; reflexivity.
 Qed.
 
-Definition make_fields (g: LGraph) (v: VType): list val :=
+Definition make_fields (g: LGraph) (v: VType): list field_t :=
   make_fields' g (vlabel g v).(raw_fields) v O.
 
+Definition make_fields_vals (g: LGraph) (v: VType): list val :=
+  let vb := vlabel g v in
+  let original_fields_val := map (field2val g) (make_fields g v) in
+  if vb.(raw_mark)
+  then vertex_address g vb.(copied_vertex) :: tl original_fields_val
+  else original_fields_val. 
+
 Lemma fields_eq_length: forall g v,
-    Zlength (make_fields g v) = Zlength (raw_fields (vlabel g v)).
+    Zlength (make_fields_vals g v) = Zlength (raw_fields (vlabel g v)).
 Proof.
-  intros. rewrite !Zlength_correct. f_equal. unfold make_fields.
-  rewrite make_fields'_eq_length. reflexivity.
+  intros. rewrite !Zlength_correct. f_equal. unfold make_fields_vals, make_fields.
+  destruct (raw_mark (vlabel g v)).
+  - destruct (raw_fields_head_cons (vlabel g v)) as [r [l [? ?]]].
+    rewrite H; simpl; destruct r; [destruct s|]; simpl;
+      rewrite map_length, make_fields'_eq_length; reflexivity.
+  - rewrite map_length, make_fields'_eq_length. reflexivity.
 Qed.
 
 Lemma vertex_address_the_same: forall (g1 g2: LGraph) v,
@@ -551,12 +585,18 @@ Lemma make_fields_the_same: forall (g1 g2: LGraph) v,
     (forall e, dst g1 e = dst g2 e) ->
     (forall v, g1.(vlabel) v = g2.(vlabel) v) ->
     map start_address g1.(glabel).(g_gen) = map start_address g2.(glabel).(g_gen) ->
-    make_fields g1 v = make_fields g2 v.
+    make_fields_vals g1 v = make_fields_vals g2 v.
 Proof.
-  intros. unfold make_fields. remember O. clear Heqn. rewrite H0.
-  remember (raw_fields (vlabel g2 v)) as l. clear Heql. revert n.
-  induction l; intros; simpl; auto. destruct a; rewrite IHl. 1: reflexivity.
-  rewrite H, (vertex_address_the_same g1 g2); [reflexivity | assumption..].
+  intros. unfold make_fields_vals, make_fields. remember O. clear Heqn. rewrite H0.
+  remember (raw_fields (vlabel g2 v)) as l. clear Heql.
+  assert (forall n, make_fields' g1 l v n = make_fields' g2 l v n). {
+    induction l; intros; simpl; auto.
+    destruct a; [destruct s|]; rewrite IHl; reflexivity.
+  } rewrite H2. cut (forall fl, map (field2val g1) fl = map (field2val g2) fl).
+  - intros. rewrite H3. rewrite (vertex_address_the_same g1 g2) by assumption.
+    reflexivity.
+  - apply map_ext. intros. unfold field2val. destruct a. 1: reflexivity.
+    rewrite H. apply vertex_address_the_same; assumption.
 Qed.
 
 Lemma start_address_reset: forall n l,
@@ -574,7 +614,7 @@ Proof.
 Qed.
 
 Lemma make_fields_reset: forall (g: LGraph) v n,
-    make_fields g v = make_fields (reset_nth_gen_graph n g) v.
+    make_fields_vals g v = make_fields_vals (reset_nth_gen_graph n g) v.
 Proof.
   intros. apply make_fields_the_same; unfold reset_nth_gen_graph; simpl;
             [intros; reflexivity..| apply start_address_reset].
@@ -609,3 +649,107 @@ Proof.
         (intro; rewrite H3; reflexivity). induction n; simpl; auto. rewrite IHn.
     f_equal. unfold single_vertex_size. rewrite H. reflexivity.
 Qed.
+
+Definition copy1v_add_edge
+           (s: VType) (g: PreGraph VType EType) (p: EType * VType):
+  PreGraph VType EType := pregraph_add_edge g (fst p) s (snd p).
+
+Definition pregraph_copy1v (g: LGraph) (old_v new_v: VType) : PreGraph VType EType :=
+  let old_edges := get_edges g old_v in
+  let new_edges := combine (repeat new_v (length old_edges)) (map snd old_edges) in
+  let new_edge_dst_l := combine new_edges (map (dst g) old_edges) in
+  fold_left (copy1v_add_edge new_v) new_edge_dst_l (pregraph_add_vertex g new_v).
+
+Definition copy1v_mod_rvb (rvb: raw_vertex_block) (new_v: VType) : raw_vertex_block :=
+  Build_raw_vertex_block true new_v (raw_fields rvb) (raw_color rvb) (raw_tag rvb)
+                         (raw_fields_not_nil rvb).
+
+Definition copy1v_update_vlabel (g: LGraph) (old_v new_v: VType) :=
+  let old_rvb := vlabel g old_v in
+  update_vlabel (update_vlabel (vlabel g) old_v (copy1v_mod_rvb old_rvb new_v))
+                new_v old_rvb.
+
+Definition copy1v_mod_gen_info (gi: generation_info) : generation_info :=
+  Build_generation_info (start_address gi) (number_of_vertices gi + 1)
+                        (generation_sh gi) (start_isptr gi)
+                        (generation_share_writable gi).
+
+Definition copy1v_mod_gen_info_list
+           (l: list generation_info) (to: nat) : list generation_info :=
+  firstn to l ++ copy1v_mod_gen_info (nth to l null_info) :: skipn (to + 1) l.
+
+Lemma copy1v_mod_gen_no_nil: forall l to, copy1v_mod_gen_info_list l to <> nil.
+Proof.
+  repeat intro. unfold copy1v_mod_gen_info_list in H. apply app_eq_nil in H.
+  destruct H. inversion H0.
+Qed.
+
+Definition copy1v_update_glabel (gi: graph_info) (to: nat): graph_info :=
+  Build_graph_info (copy1v_mod_gen_info_list (g_gen gi) to)
+                   (copy1v_mod_gen_no_nil (g_gen gi) to).
+
+Definition copy1v_new_v (g: LGraph) (to: nat): VType :=
+  (to, number_of_vertices (nth to g.(glabel).(g_gen) null_info)).
+
+Definition lgraph_copy1v (g: LGraph) (v: VType) (to: nat): LGraph :=
+  let new_v := copy1v_new_v g to in
+  Build_LabeledGraph _ _ _ (pregraph_copy1v g v new_v)
+                     (copy1v_update_vlabel g v new_v)
+                     (elabel g) (copy1v_update_glabel (glabel g) to).
+
+Definition forward_t: Type := Z + GC_Pointer + VType + EType.
+
+Definition root2forward (r: root_t): forward_t :=
+  match r with
+  | inl (inl z) => inl (inl (inl z))
+  | inl (inr p) => inl (inl (inr p))
+  | inr v => inl (inr v)
+  end.
+
+Definition field2forward (f: field_t): forward_t :=
+  match f with
+  | inl (inl z) => inl (inl (inl z))
+  | inl (inr p) => inl (inl (inr p))
+  | inr e => inr e
+  end.
+
+Inductive forward_relation (from to: nat):
+  nat -> forward_t -> LGraph -> LGraph -> Prop :=
+| fr_z: forall depth z g, forward_relation from to depth (inl (inl (inl z))) g g
+| fr_p: forall depth p g, forward_relation from to depth (inl (inl (inr p))) g g
+| fr_v_not_in: forall depth v g,
+    vgeneration v <> from -> forward_relation from to depth (inl (inr v)) g g
+| fr_v_in_forwarded: forall depth v g,
+    vgeneration v = from -> (vlabel g v).(raw_mark) = true ->
+    forward_relation from to depth (inl (inr v)) g g
+| fr_e_to_forwarded: forall depth e (g: LGraph),
+    vgeneration (dst g e) = from -> (vlabel g (dst g e)).(raw_mark) = true ->
+    let new_g := labeledgraph_gen_dst g e (vlabel g (dst g e)).(copied_vertex) in
+    forward_relation from to depth (inr e) g new_g
+| fr_e_not_to: forall depth e (g: LGraph),
+    vgeneration (dst g e) <> from -> forward_relation from to depth (inr e) g g
+| fr_v_in_not_forwarded_O: forall v g,
+    vgeneration v = from -> (vlabel g v).(raw_mark) = false ->
+    forward_relation from to O (inl (inr v)) g (lgraph_copy1v g v to)
+| fr_e_to_not_forwarded_O: forall e (g: LGraph),
+    vgeneration (dst g e) = from -> (vlabel g (dst g e)).(raw_mark) = true ->
+    let new_g := labeledgraph_gen_dst (lgraph_copy1v g (dst g e) to) e
+                                      (copy1v_new_v g to) in
+    forward_relation from to O (inr e) g new_g
+| fr_v_in_not_forwarded_Sn: forall depth v g g',
+    vgeneration v = from -> (vlabel g v).(raw_mark) = false ->
+    let new_g := lgraph_copy1v g v to in
+    forward_loop from to depth (make_fields new_g (copy1v_new_v g to)) new_g g' ->
+    forward_relation from to (S depth) (inl (inr v)) g g'
+| fr_e_to_not_forwarded_Sn: forall depth e (g g': LGraph),
+    vgeneration (dst g e) = from -> (vlabel g (dst g e)).(raw_mark) = true ->
+    let new_g := labeledgraph_gen_dst (lgraph_copy1v g (dst g e) to) e
+                                      (copy1v_new_v g to) in
+    forward_loop from to depth (make_fields new_g (copy1v_new_v g to)) new_g g' -> 
+    forward_relation from to (S depth) (inr e) g g'
+with
+forward_loop (from to: nat): nat -> list field_t -> LGraph -> LGraph -> Prop :=
+| fl_nil: forall depth g, forward_loop from to depth nil g g
+| fl_cons: forall depth g1 g2 g3 f fl,
+    forward_relation from to depth (field2forward f) g1 g2 ->
+    forward_loop from to depth fl g2 g3 -> forward_loop from to depth (f :: fl) g1 g3.
