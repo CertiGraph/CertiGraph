@@ -189,6 +189,13 @@ Record space: Type :=
     space_upper_bound: (total_space < MAX_SPACE_SIZE)%Z;
   }.
 
+Definition null_space: space.
+Proof.
+  refine (Build_space nullval 0 0 emptyshare _ _).
+  - split; apply Z.le_refl.
+  - rewrite MAX_SPACE_SIZE_eq. compute; reflexivity.
+Defined.
+
 Lemma total_space_tight_range: forall sp, (0 <= total_space sp < MAX_SPACE_SIZE)%Z.
 Proof.
   intros. split.
@@ -313,6 +320,8 @@ Definition vertex_address (g: LGraph) (v: VType): val :=
   offset_val (WORD_SIZE * vertex_offset g v) (gen_start g (vgeneration v)).
 
 Definition root_t: Type := Z + GC_Pointer + VType.
+
+Instance root_t_inhabitant: Inhabitant root_t := inl (inl Z.zero).
 
 Definition root2val (g: LGraph) (fd: root_t) : val :=
   match fd with
@@ -526,6 +535,8 @@ Definition make_header (g: LGraph) (v: VType): Z:=
 
 Definition field_t: Type := Z + GC_Pointer + EType.
 
+Instance field_t_inhabitant: Inhabitant field_t := inl (inl Z.zero).
+
 Definition field2val (g: LGraph) (fd: field_t) : val :=
   match fd with
   | inl (inl z) => Z2val z
@@ -556,7 +567,7 @@ Definition make_fields_vals (g: LGraph) (v: VType): list val :=
   let original_fields_val := map (field2val g) (make_fields g v) in
   if vb.(raw_mark)
   then vertex_address g vb.(copied_vertex) :: tl original_fields_val
-  else original_fields_val. 
+  else original_fields_val.
 
 Lemma fields_eq_length: forall g v,
     Zlength (make_fields_vals g v) = Zlength (raw_fields (vlabel g v)).
@@ -745,7 +756,7 @@ Inductive forward_relation (from to: nat):
     vgeneration (dst g e) = from -> (vlabel g (dst g e)).(raw_mark) = true ->
     let new_g := labeledgraph_gen_dst (lgraph_copy1v g (dst g e) to) e
                                       (copy1v_new_v g to) in
-    forward_loop from to depth (make_fields new_g (copy1v_new_v g to)) new_g g' -> 
+    forward_loop from to depth (make_fields new_g (copy1v_new_v g to)) new_g g' ->
     forward_relation from to (S depth) (inr e) g g'
 with
 forward_loop (from to: nat): nat -> list field_t -> LGraph -> LGraph -> Prop :=
@@ -753,3 +764,11 @@ forward_loop (from to: nat): nat -> list field_t -> LGraph -> LGraph -> Prop :=
 | fl_cons: forall depth g1 g2 g3 f fl,
     forward_relation from to depth (field2forward f) g1 g2 ->
     forward_loop from to depth fl g2 g3 -> forward_loop from to depth (f :: fl) g1 g3.
+
+Definition graph_gen_has (g: LGraph) (n: nat): Prop := n < length g.(glabel).(g_gen).
+
+Definition nth_space (t_info: thread_info) (n: nat): space :=
+  nth n t_info.(ti_heap).(spaces) null_space.
+
+Definition gen_size (t_info: thread_info) (n: nat): Z :=
+  total_space (nth_space t_info n).
