@@ -140,20 +140,65 @@ Definition Is_from_spec :=
     LOCAL (temp ret_temp (Vint (Int.repr (if b then 1 else 0))))
     SEP (memory_block sh n start).
 
+Definition forward_p_type: Type := Z + (VType * Z).
+
+Definition forward_p_address
+           (p: forward_p_type) (ti: val) (f_info: fun_info) (g: LGraph) :=
+  match p with
+  | inl root_index => field_address
+                        thread_info_type
+                        [ArraySubsc (Znth root_index (live_roots_indices f_info));
+                           StructField _args] ti
+  | inr (v, n) => offset_val (WORD_SIZE * n) (vertex_address g v)
+  end.
+
+Definition forward_p2forward_t
+           (p: forward_p_type) (roots: roots_t) (g: LGraph): forward_t :=
+  match p with
+  | inl root_index => root2forward (Znth root_index roots)
+  | inr (v, n) => field2forward (Znth n (make_fields g v))
+  end.
+
 Definition forward_spec :=
   DECLARE _forward
-  WITH start: val, n: Z, next: val, p: val, depth: Z, g: LGraph, sh: share
+  WITH rsh: share, sh: share, gv: globals, fi: val, ti: val,
+       g: LGraph, t_info: thread_info, f_info: fun_info,
+       roots : roots_t, outlier: outlier_t,
+       from: nat, to: nat, depth: Z, forward_p: forward_p_type
   PRE [ _from_start OF (tptr int_or_ptr_type),
         _from_limit OF (tptr int_or_ptr_type),
-        _next OF (tptr int_or_ptr_type),
+        _next OF (tptr (tptr int_or_ptr_type)),
         _p OF (tptr int_or_ptr_type),
         _depth OF tint]
-    PROP ()
-    LOCAL (temp _from_start start; temp _from_limit (offset_val n start);
-           temp _next next; temp _p p; temp _depth (Vint (Int.repr depth)))
-    SEP (graph_rep g)
+    PROP (readable_share rsh; writable_share sh;
+          super_compatible (g, t_info, roots) f_info outlier;
+          graph_gen_has g from; graph_gen_has g to)
+    LOCAL (temp _from_start (gen_start g from);
+           temp _from_limit (offset_val (gen_size t_info from) (gen_start g from));
+           temp
+             _next
+             (field_address heap_type
+              [StructField _next;
+                 ArraySubsc (Z.of_nat to); StructField _spaces] (ti_heap_p t_info));
+           temp _p (forward_p_address forward_p ti f_info g);
+           temp _depth (Vint (Int.repr depth)))
+    SEP (all_string_constants rsh gv;
+         fun_info_rep rsh f_info fi;
+         outlier_rep outlier;  
+         graph_rep g;
+         thread_info_rep sh t_info ti)
   POST [tvoid]
-  PROP () LOCAL () SEP ().
+    EX g': LGraph, EX t_info': thread_info, EX roots': roots_t,
+    PROP (super_compatible (g, t_info, roots) f_info outlier;
+          forward_relation from to (Z.to_nat depth)
+                           (forward_p2forward_t forward_p roots g) g g';
+          graph_gen_has g' from; graph_gen_has g' to)
+    LOCAL ()
+    SEP (all_string_constants rsh gv;
+         fun_info_rep rsh f_info fi;
+         outlier_rep outlier;  
+         graph_rep g';
+         thread_info_rep sh t_info' ti).
 
 Definition forward_roots_spec :=
   DECLARE _forward_roots
