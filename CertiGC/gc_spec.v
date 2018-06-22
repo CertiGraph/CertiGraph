@@ -159,6 +159,16 @@ Definition forward_p2forward_t
   | inr (v, n) => field2forward (Znth n (make_fields g v))
   end.
 
+Definition forward_p_compatible
+           (p: forward_p_type) (roots: roots_t) (g: LGraph): Prop :=
+  match p with
+  | inl root_index => 0 <= root_index < Zlength roots
+  | inr (v, n) => graph_gen_has g (vgeneration v) /\
+                  (vindex v < number_of_vertices (nth_gen g (vgeneration v)))%nat /\
+                  0 <= n < Zlength (vlabel g v).(raw_fields) /\
+                  Znth n (vlabel g v).(raw_fields) = None
+  end.
+
 Definition forward_spec :=
   DECLARE _forward
   WITH rsh: share, sh: share, gv: globals, fi: val, ti: val,
@@ -172,6 +182,7 @@ Definition forward_spec :=
         _depth OF tint]
     PROP (readable_share rsh; writable_share sh;
           super_compatible (g, t_info, roots) f_info outlier;
+          forward_p_compatible forward_p roots g;  
           graph_gen_has g from; graph_gen_has g to)
     LOCAL (temp _from_start (gen_start g from);
            temp _from_limit (offset_val (gen_size t_info from) (gen_start g from));

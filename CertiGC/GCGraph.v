@@ -10,6 +10,7 @@ Require Import VST.msl.seplog.
 Require Import VST.msl.shares.
 Require Import VST.floyd.sublist.
 Require Import VST.floyd.coqlib3.
+Require Import VST.floyd.functional_base.
 Require Import RamifyCoq.lib.EquivDec_ext.
 Require Import RamifyCoq.lib.List_ext.
 Require Import RamifyCoq.graph.graph_model.
@@ -111,6 +112,8 @@ Defined.
 Inductive GC_Pointer := | GCPtr: block -> ptrofs -> GC_Pointer.
 
 Definition raw_field: Type := option (Z + GC_Pointer).
+
+Instance raw_field_inhabitant: Inhabitant raw_field := None.
 
 Definition Z2val (x: Z) : val := Vint (Int.repr x).
 
@@ -313,8 +316,10 @@ Record fun_info : Type :=
 Definition vertex_offset (g: LGraph) (v: VType): Z :=
   previous_vertices_size g (vgeneration v) (vindex v) + 1.
 
-Definition gen_start (g: LGraph) (gen: nat): val :=
-  (nth gen g.(glabel).(g_gen) null_info).(start_address).
+Definition nth_gen (g: LGraph) (gen: nat): generation_info :=
+  nth gen g.(glabel).(g_gen) null_info.
+
+Definition gen_start (g: LGraph) (gen: nat): val := start_address (nth_gen g gen).
 
 Definition vertex_address (g: LGraph) (v: VType): val :=
   offset_val (WORD_SIZE * vertex_offset g v) (gen_start g (vgeneration v)).
@@ -333,8 +338,6 @@ Definition root2val (g: LGraph) (fd: root_t) : val :=
 Definition roots_t: Type := list root_t.
 
 Definition outlier_t: Type := list GC_Pointer.
-
-Instance Inhabitant_val: Inhabitant val := nullval.
 
 Definition fun_thread_arg_compatible
            (g: LGraph) (ti: thread_info) (fi: fun_info) (roots: roots_t) : Prop :=
@@ -589,7 +592,7 @@ Proof.
   - f_equal. unfold vertex_offset. f_equal. remember (vindex v). clear Heqn.
     induction n; simpl; auto. rewrite IHn. f_equal. unfold single_vertex_size.
     rewrite H. reflexivity.
-  - unfold gen_start. rewrite <- !(map_nth start_address), H0. reflexivity.
+  - unfold gen_start, nth_gen. rewrite <- !(map_nth start_address), H0. reflexivity.
 Qed.
 
 Lemma make_fields_the_same: forall (g1 g2: LGraph) v,
@@ -700,7 +703,7 @@ Definition copy1v_update_glabel (gi: graph_info) (to: nat): graph_info :=
                    (copy1v_mod_gen_no_nil (g_gen gi) to).
 
 Definition copy1v_new_v (g: LGraph) (to: nat): VType :=
-  (to, number_of_vertices (nth to g.(glabel).(g_gen) null_info)).
+  (to, number_of_vertices (nth_gen g to)).
 
 Definition lgraph_copy1v (g: LGraph) (v: VType) (to: nat): LGraph :=
   let new_v := copy1v_new_v g to in
