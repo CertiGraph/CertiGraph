@@ -67,9 +67,9 @@ Proof.
       remember (generation_sh g0) as sh0.
       replace_SEP 2 (generation_rep g (O, number_of_vertices g0, sh0)) by entailer!.
       sep_apply (generation_rep_data_at_ sh0 g O (number_of_vertices g0)). rewrite H5.
-      unfold gen_start. rewrite Heql. simpl nth. rewrite <- Heqv. unfold heap_rest_rep.
-      rewrite H1. simpl iter_sepcon. Intros. unfold space_rest_rep at 1.
-      rewrite <- H3, <- H4, if_false. 2: discriminate.
+      unfold gen_start, nth_gen. rewrite Heql. simpl nth. rewrite <- Heqv.
+      unfold heap_rest_rep. rewrite H1. simpl iter_sepcon. Intros.
+      unfold space_rest_rep at 1. rewrite <- H3, <- H4, if_false. 2: discriminate.
       freeze [1; 2; 3; 4; 5] FR. gather_SEP 1 2.
       assert (0 <= used_space hs <= total_space hs) by (apply space_order).
       sep_apply (data_at__tarray_value_join
