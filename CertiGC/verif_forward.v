@@ -16,6 +16,6 @@ Proof.
       destruct H13 as [x [? ?]]. unfold Inhabitant_val in H13. rewrite H13.
       destruct x as [[? | ?] | ?]; simpl; auto.
       * destruct g0. simpl. exact I.
-      * unfold vertex_address.
+      * unfold vertex_address. unfold gen_start.
       
 Abort.
