@@ -66,8 +66,10 @@ Proof.
       simpl length. simpl combine. simpl iter_sepcon. Intros.
       remember (generation_sh g0) as sh0.
       replace_SEP 2 (generation_rep g (O, number_of_vertices g0, sh0)) by entailer!.
-      sep_apply (generation_rep_data_at_ sh0 g O (number_of_vertices g0)). rewrite H5.
-      unfold gen_start, nth_gen. rewrite Heql. simpl nth. rewrite <- Heqv.
+      sep_apply (generation_rep_data_at_
+                   sh0 g O (number_of_vertices g0) (graph_has_gen_O g)). rewrite H5.
+      unfold gen_start, nth_gen. if_tac. 2: exfalso; apply H8; apply graph_has_gen_O.
+      clear H8. rewrite Heql. simpl nth. rewrite <- Heqv.
       unfold heap_rest_rep. rewrite H1. simpl iter_sepcon. Intros.
       unfold space_rest_rep at 1. rewrite <- H3, <- H4, if_false. 2: discriminate.
       freeze [1; 2; 3; 4; 5] FR. gather_SEP 1 2.

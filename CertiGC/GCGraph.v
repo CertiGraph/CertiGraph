@@ -319,7 +319,23 @@ Definition vertex_offset (g: LGraph) (v: VType): Z :=
 Definition nth_gen (g: LGraph) (gen: nat): generation_info :=
   nth gen g.(glabel).(g_gen) null_info.
 
-Definition gen_start (g: LGraph) (gen: nat): val := start_address (nth_gen g gen).
+Definition graph_has_gen (g: LGraph) (n: nat): Prop := n < length g.(glabel).(g_gen).
+
+Lemma graph_has_gen_O: forall g, graph_has_gen g O.
+Proof.
+  intros. hnf. destruct (g_gen (glabel g)) eqn:? ; simpl; try omega.
+  pose proof (g_gen_not_nil (glabel g)). contradiction.
+Qed.
+
+Definition graph_has_gen_dec g n: {graph_has_gen g n} + {~ graph_has_gen g n} :=
+  lt_dec n (length (g_gen (glabel g))).
+
+Definition gen_start (g: LGraph) (gen: nat): val :=
+  if graph_has_gen_dec g gen then start_address (nth_gen g gen) else Vundef.
+
+Lemma graph_has_gen_start_isptr: forall g n,
+    graph_has_gen g n -> isptr (gen_start g n).
+Proof. intros. unfold gen_start. if_tac; [apply start_isptr | contradiction]. Qed.
 
 Definition vertex_address (g: LGraph) (v: VType): val :=
   offset_val (WORD_SIZE * vertex_offset g v) (gen_start g (vgeneration v)).
@@ -592,7 +608,13 @@ Proof.
   - f_equal. unfold vertex_offset. f_equal. remember (vindex v). clear Heqn.
     induction n; simpl; auto. rewrite IHn. f_equal. unfold single_vertex_size.
     rewrite H. reflexivity.
-  - unfold gen_start, nth_gen. rewrite <- !(map_nth start_address), H0. reflexivity.
+  - assert (forall gen, graph_has_gen g1 gen <-> graph_has_gen g2 gen). {
+      intros. unfold graph_has_gen.
+      cut (length (g_gen (glabel g1)) = length (g_gen (glabel g2))).
+      - intros. rewrite H1. reflexivity.
+      - do 2 rewrite <- (map_length start_address). rewrite H0. reflexivity.
+    } unfold gen_start. do 2 if_tac; [|rewrite H1 in H2; contradiction.. |reflexivity].
+    unfold nth_gen. rewrite <- !(map_nth start_address), H0. reflexivity.
 Qed.
 
 Lemma make_fields_the_same: forall (g1 g2: LGraph) v,
@@ -767,8 +789,6 @@ forward_loop (from to: nat): nat -> list field_t -> LGraph -> LGraph -> Prop :=
 | fl_cons: forall depth g1 g2 g3 f fl,
     forward_relation from to depth (field2forward f) g1 g2 ->
     forward_loop from to depth fl g2 g3 -> forward_loop from to depth (f :: fl) g1 g3.
-
-Definition graph_gen_has (g: LGraph) (n: nat): Prop := n < length g.(glabel).(g_gen).
 
 Definition nth_space (t_info: thread_info) (n: nat): space :=
   nth n t_info.(ti_heap).(spaces) null_space.

@@ -67,14 +67,23 @@ Proof.
   f_equal. rewrite Z.add_opp_r, Z.mul_add_distr_l, Z.mul_1_r. apply Z.add_simpl_r.
 Qed.
 
+Lemma vertex_rep_isptr: forall sh g v,
+    vertex_rep sh g v |-- !! (isptr (gen_start g (vgeneration v))).
+Proof.
+  intros. destruct v as [gen num]. unfold vertex_rep, vertex_at.
+  rewrite vertex_head_address_eq. simpl. rewrite data_at_isptr. Intros.
+  apply prop_right. unfold offset_val in H.
+  destruct (gen_start g gen); try contradiction. exact I.
+Qed.
+
 Lemma vertex_rep_memory_block: forall sh g v,
     vertex_rep sh g v |--
                memory_block sh (WORD_SIZE * single_vertex_size g v)
                (offset_val (- WORD_SIZE) (vertex_address g v)).
 Proof.
-  intros. destruct v as [gen num]. unfold vertex_rep, vertex_at.
+  intros. sep_apply (vertex_rep_isptr sh g v). Intros.
+  destruct v as [gen num]. unfold vertex_rep, vertex_at. simpl in H.
   rewrite vertex_head_address_eq. unfold vertex_address, vertex_offset. simpl.
-  assert (isptr (gen_start g gen)) by (apply start_isptr).
   remember (gen_start g gen). destruct v; try contradiction.
   remember (previous_vertices_size g gen num).
   assert (0 <= z) by (rewrite Heqz; apply previous_size_ge_zero).
@@ -130,12 +139,12 @@ Proof.
 Qed.
 
 Lemma generation_rep_memory_block: forall sh g gen num,
+    graph_has_gen g gen ->
     generation_rep g (gen, num, sh) |--
     memory_block sh (WORD_SIZE * (previous_vertices_size g gen num)) (gen_start g gen).
 Proof.
-  intros. assert (isptr (gen_start g gen)) by (apply start_isptr).
-  remember (gen_start g gen). destruct v; try contradiction.
-  induction num.
+  intros. apply graph_has_gen_start_isptr in H.
+  remember (gen_start g gen). destruct v; try contradiction. induction num.
   - simpl. rewrite memory_block_zero_Vptr. auto.
   - sep_apply (generation_rep_ptrofs sh g gen (S num) b i Heqv). Intros.
     rename H0 into HS. simpl in HS. unfold generation_rep.
@@ -154,11 +163,12 @@ Proof.
 Qed.
 
 Lemma generation_rep_align_compatible: forall sh g gen num,
+    graph_has_gen g gen ->
     generation_rep g (gen, num, sh) |--
     !! (align_compatible (tarray int_or_ptr_type (previous_vertices_size g gen num))
                          (gen_start g gen)).
 Proof.
-  intros.  assert (isptr (gen_start g gen)) by (apply start_isptr).
+  intros. apply graph_has_gen_start_isptr in H.
   remember (gen_start g gen). destruct v; try contradiction.
   sep_apply (generation_rep_ptrofs sh g gen num b i Heqv). Intros. induction num.
   - simpl previous_vertices_size. apply prop_right. constructor. intros. omega.
@@ -182,25 +192,27 @@ Lemma sizeof_tarray_int_or_ptr: forall n,
 Proof. intros. simpl. rewrite Z.max_r by assumption. rep_omega. Qed.
 
 Lemma generation_rep_field_compatible: forall sh g gen num,
+    graph_has_gen g gen ->
     generation_rep g (gen, num, sh) |--
     !! (field_compatible (tarray int_or_ptr_type (previous_vertices_size g gen num))
                          [] (gen_start g gen)).
 Proof.
-  intros. assert (isptr (gen_start g gen)) by (apply start_isptr).
+  intros. pose proof H. apply graph_has_gen_start_isptr in H.
   remember (gen_start g gen). destruct v; try contradiction.
   unfold field_compatible. entailer. unfold size_compatible.
   rewrite sizeof_tarray_int_or_ptr by apply previous_size_ge_zero.
   sep_apply (generation_rep_ptrofs sh g gen num b i Heqv). entailer. rewrite Heqv.
-  sep_apply (generation_rep_align_compatible sh g gen num). entailer!.
+  sep_apply (generation_rep_align_compatible sh g gen num H0). entailer!.
 Qed.
 
 Lemma generation_rep_data_at_: forall sh g gen num,
+    graph_has_gen g gen ->
     generation_rep g (gen, num, sh) |--
     data_at_ sh (tarray int_or_ptr_type (previous_vertices_size g gen num))
              (gen_start g gen).
 Proof.
-  intros. sep_apply (generation_rep_field_compatible sh g gen num). Intros.
-  sep_apply (generation_rep_memory_block sh g gen num).
+  intros. sep_apply (generation_rep_field_compatible sh g gen num H). Intros.
+  sep_apply (generation_rep_memory_block sh g gen num H).
   rewrite <- sizeof_tarray_int_or_ptr by apply previous_size_ge_zero.
   rewrite memory_block_data_at_; auto.
 Qed.

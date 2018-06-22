@@ -163,7 +163,7 @@ Definition forward_p_compatible
            (p: forward_p_type) (roots: roots_t) (g: LGraph): Prop :=
   match p with
   | inl root_index => 0 <= root_index < Zlength roots
-  | inr (v, n) => graph_gen_has g (vgeneration v) /\
+  | inr (v, n) => graph_has_gen g (vgeneration v) /\
                   (vindex v < number_of_vertices (nth_gen g (vgeneration v)))%nat /\
                   0 <= n < Zlength (vlabel g v).(raw_fields) /\
                   Znth n (vlabel g v).(raw_fields) = None
@@ -183,7 +183,7 @@ Definition forward_spec :=
     PROP (readable_share rsh; writable_share sh;
           super_compatible (g, t_info, roots) f_info outlier;
           forward_p_compatible forward_p roots g;  
-          graph_gen_has g from; graph_gen_has g to)
+          graph_has_gen g from; graph_has_gen g to)
     LOCAL (temp _from_start (gen_start g from);
            temp _from_limit (offset_val (gen_size t_info from) (gen_start g from));
            temp
@@ -203,7 +203,7 @@ Definition forward_spec :=
     PROP (super_compatible (g, t_info, roots) f_info outlier;
           forward_relation from to (Z.to_nat depth)
                            (forward_p2forward_t forward_p roots g) g g';
-          graph_gen_has g' from; graph_gen_has g' to)
+          graph_has_gen g' from; graph_has_gen g' to)
     LOCAL ()
     SEP (all_string_constants rsh gv;
          fun_info_rep rsh f_info fi;
