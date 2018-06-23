@@ -115,10 +115,12 @@ Definition raw_field: Type := option (Z + GC_Pointer).
 
 Instance raw_field_inhabitant: Inhabitant raw_field := None.
 
+Definition odd_Z2val (x: Z) : val := Vint (Int.repr (2 * x + 1)%Z).
+
 Definition Z2val (x: Z) : val := Vint (Int.repr x).
 
 Definition GC_Pointer2val (x: GC_Pointer) : val :=
-  match x with | GCPtr b z => Vptr b z end.
+  match x with | GCPtr b z => Vptr b (Ptrofs.add z z) end.
 
 Record raw_vertex_block : Type :=
   {
@@ -321,6 +323,12 @@ Definition nth_gen (g: LGraph) (gen: nat): generation_info :=
 
 Definition graph_has_gen (g: LGraph) (n: nat): Prop := n < length g.(glabel).(g_gen).
 
+Definition gen_has_index (g: LGraph) (gen index: nat): Prop :=
+  index < number_of_vertices (nth_gen g gen).
+
+Definition graph_has_v (g: LGraph) (v: VType): Prop :=
+  graph_has_gen g (vgeneration v) /\ gen_has_index g (vgeneration v) (vindex v).
+
 Lemma graph_has_gen_O: forall g, graph_has_gen g O.
 Proof.
   intros. hnf. destruct (g_gen (glabel g)) eqn:? ; simpl; try omega.
@@ -346,7 +354,7 @@ Instance root_t_inhabitant: Inhabitant root_t := inl (inl Z.zero).
 
 Definition root2val (g: LGraph) (fd: root_t) : val :=
   match fd with
-  | inl (inl z) => Z2val z
+  | inl (inl z) => odd_Z2val z
   | inl (inr p) => GC_Pointer2val p
   | inr v => vertex_address g v
   end.
@@ -361,11 +369,11 @@ Definition fun_thread_arg_compatible
 
 Definition roots_compatible (g: LGraph) (outlier: outlier_t) (roots: roots_t): Prop :=
   incl (filter_sum_right (filter_sum_left roots)) outlier /\
-  Forall (vvalid g) (filter_sum_right roots).
+  Forall (graph_has_v g) (filter_sum_right roots).
 
 Definition outlier_compatible (g: LGraph) (outlier: outlier_t): Prop :=
   forall v,
-    vvalid g v ->
+    graph_has_v g v ->
     incl (filter_sum_right (filter_option (vlabel g v).(raw_fields))) outlier.
 
 Definition
@@ -558,7 +566,7 @@ Instance field_t_inhabitant: Inhabitant field_t := inl (inl Z.zero).
 
 Definition field2val (g: LGraph) (fd: field_t) : val :=
   match fd with
-  | inl (inl z) => Z2val z
+  | inl (inl z) => odd_Z2val z
   | inl (inr p) => GC_Pointer2val p
   | inr e => vertex_address g (dst g e)
   end.

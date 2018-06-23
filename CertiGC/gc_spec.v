@@ -1,3 +1,4 @@
+Require Export RamifyCoq.lib.List_ext.
 Require Export RamifyCoq.msl_ext.iter_sepcon.
 Require Export RamifyCoq.CertiGC.env_graph_gc.
 Require Export RamifyCoq.graph.graph_model.
@@ -163,8 +164,7 @@ Definition forward_p_compatible
            (p: forward_p_type) (roots: roots_t) (g: LGraph): Prop :=
   match p with
   | inl root_index => 0 <= root_index < Zlength roots
-  | inr (v, n) => graph_has_gen g (vgeneration v) /\
-                  (vindex v < number_of_vertices (nth_gen g (vgeneration v)))%nat /\
+  | inr (v, n) => graph_has_v g v /\
                   0 <= n < Zlength (vlabel g v).(raw_fields) /\
                   Znth n (vlabel g v).(raw_fields) = None
   end.
