@@ -466,7 +466,7 @@ Lemma nodup_remove_perm: forall {A : Type} (eq_dec : forall x y : A, {x = y} + {
                            NoDup l -> In x l -> Permutation l (x :: remove eq_dec x l).
 Proof.
   intros. apply in_split in H0. destruct H0 as [l1 [l2 ?]]. subst.
-  rewrite (remove_middle eq_dec _ _ _ H). rewrite app_cons_assoc. 
+  rewrite (remove_middle eq_dec _ _ _ H). rewrite app_cons_assoc.
   apply (@Permutation_app_tail _ _ (x :: l1) l2), Permutation_sym, Permutation_cons_append.
 Qed.
 
@@ -493,7 +493,7 @@ Lemma spec_or_list_split: forall {A} (l: list A) P Q,
     NoDup l -> (forall x, In x l <-> P x \/ Q x) ->
     exists lp lq,
       NoDup lp /\
-      NoDup lq /\     
+      NoDup lq /\
       (forall x, In x lp -> P x) /\
       (forall x, In x lq -> Q x) /\
       (forall x, In x l <-> In x lp \/ In x lq).
@@ -567,7 +567,7 @@ Lemma or_dec_prop_list_split: forall {A} (l: list A) P Q,
     (forall x, In x l <-> P x \/ Q x) ->
     exists lp lq,
       NoDup lp /\
-      NoDup lq /\     
+      NoDup lq /\
       (forall x, In x lp <-> P x) /\
       (forall x, In x lq <-> Q x) /\
       (forall x, In x l <-> In x lp \/ In x lq).
@@ -870,3 +870,36 @@ Fixpoint filter_option {A} (l: list (option A)) : list A :=
   | Some x :: l' => x :: filter_option l'
   | None :: l' => filter_option l'
   end.
+
+Lemma filter_sum_right_In_iff {A B}: forall e (l: list (A + B)),
+    In (inr e) l <-> In e (filter_sum_right l).
+Proof.
+  intros. induction l; simpl; intuition.
+  - inversion H2.
+  - inversion H2. simpl. left; reflexivity.
+  - simpl in H1. destruct H1.
+    + subst b. left; reflexivity.
+    + right. apply H0. assumption.
+Qed.
+
+Lemma filter_sum_left_In_iff {A B}: forall e (l: list (A + B)),
+    In (inl e) l <-> In e (filter_sum_left l).
+Proof.
+  intros. induction l; simpl; intuition.
+  - inversion H2. simpl. left; reflexivity.
+  - simpl in H1. destruct H1.
+    + subst a0. left; reflexivity.
+    + right. apply H0. assumption.
+  - inversion H2.
+Qed.
+
+Lemma filter_option_In_iff {A}: forall e (l: list (option A)),
+    In (Some e) l <-> In e (filter_option l).
+Proof.
+  intros. induction l; simpl; try reflexivity. destruct a; intuition.
+  - inversion H2. simpl. left; reflexivity.
+  - simpl in H1. destruct H1.
+    + subst a. left; reflexivity.
+    + right. apply H0. assumption.
+  - inversion H2.
+Qed.
