@@ -282,23 +282,38 @@ Fixpoint nat_seq (s: nat) (total: nat): list nat :=
   | S n => s :: nat_seq (S s) n
   end.
 
+Lemma nat_seq_length: forall s n, length (nat_seq s n) = n.
+Proof. intros. revert s. induction n; intros; simpl; [|rewrite IHn]; reflexivity. Qed.
+
 Lemma nat_seq_S: forall i num, nat_seq i (S num) = nat_seq i num ++ [num + i].
 Proof.
   intros. revert i. induction num; intros. 1: simpl; reflexivity.
   remember (S num). simpl. rewrite (IHnum (S i)). subst. simpl. repeat f_equal. omega.
 Qed.
 
-Lemma nat_seq_In_prop: forall s n i, In i (nat_seq s n) -> s <= i.
+Lemma nat_seq_In_iff: forall s n i, In i (nat_seq s n) <-> s <= i < s + n.
+Proof. intros. revert s. induction n; intros; simpl; [|rewrite IHn]; omega. Qed.
+
+Lemma nat_seq_nth: forall s num n a, n < num -> nth n (nat_seq s num) a = s + n.
 Proof.
-  intros. revert s H. induction n; intros; simpl in H. 1: contradiction. destruct H.
-  - rewrite Nat.le_lteq. right; assumption.
-  - specialize (IHn _ H). clear H. omega.
+  intros. revert s n H. induction num; intros. 1: exfalso; omega. simpl. destruct n.
+  1: omega. specialize (IHnum (S s) n). replace (s + S n) with (S s + n) by omega.
+  rewrite IHnum; [reflexivity | omega].
 Qed.
 
 Definition nat_inc_list (n: nat) : list nat := nat_seq O n.
 
+Lemma nat_inc_list_length: forall num, length (nat_inc_list num) = num.
+Proof. intros. unfold nat_inc_list. rewrite nat_seq_length. reflexivity. Qed.
+
 Lemma nat_inc_list_S: forall num, nat_inc_list (S num) = nat_inc_list num ++ [num].
 Proof. intros. unfold nat_inc_list. rewrite nat_seq_S. repeat f_equal. omega. Qed.
+
+Lemma nat_inc_list_In_iff: forall i n, In i (nat_inc_list n) <-> i < n.
+Proof. intros. unfold nat_inc_list. rewrite nat_seq_In_iff. intuition. Qed.
+
+Lemma nat_inc_list_nth: forall i n a, i < n -> nth i (nat_inc_list n) a = i.
+Proof. intros. unfold nat_inc_list. rewrite nat_seq_nth; [omega | assumption]. Qed.
 
 Definition graph_thread_info_compatible (g: LGraph) (ti: thread_info): Prop :=
   Forall (generation_space_compatible g)
@@ -766,25 +781,25 @@ Inductive forward_relation (from to: nat):
 | fr_v_in_forwarded: forall depth v g,
     vgeneration v = from -> (vlabel g v).(raw_mark) = true ->
     forward_relation from to depth (inl (inr v)) g g
-| fr_e_to_forwarded: forall depth e (g: LGraph),
-    vgeneration (dst g e) = from -> (vlabel g (dst g e)).(raw_mark) = true ->
-    let new_g := labeledgraph_gen_dst g e (vlabel g (dst g e)).(copied_vertex) in
-    forward_relation from to depth (inr e) g new_g
-| fr_e_not_to: forall depth e (g: LGraph),
-    vgeneration (dst g e) <> from -> forward_relation from to depth (inr e) g g
 | fr_v_in_not_forwarded_O: forall v g,
     vgeneration v = from -> (vlabel g v).(raw_mark) = false ->
     forward_relation from to O (inl (inr v)) g (lgraph_copy1v g v to)
-| fr_e_to_not_forwarded_O: forall e (g: LGraph),
-    vgeneration (dst g e) = from -> (vlabel g (dst g e)).(raw_mark) = true ->
-    let new_g := labeledgraph_gen_dst (lgraph_copy1v g (dst g e) to) e
-                                      (copy1v_new_v g to) in
-    forward_relation from to O (inr e) g new_g
 | fr_v_in_not_forwarded_Sn: forall depth v g g',
     vgeneration v = from -> (vlabel g v).(raw_mark) = false ->
     let new_g := lgraph_copy1v g v to in
     forward_loop from to depth (make_fields new_g (copy1v_new_v g to)) new_g g' ->
     forward_relation from to (S depth) (inl (inr v)) g g'
+| fr_e_not_to: forall depth e (g: LGraph),
+    vgeneration (dst g e) <> from -> forward_relation from to depth (inr e) g g
+| fr_e_to_forwarded: forall depth e (g: LGraph),
+    vgeneration (dst g e) = from -> (vlabel g (dst g e)).(raw_mark) = true ->
+    let new_g := labeledgraph_gen_dst g e (vlabel g (dst g e)).(copied_vertex) in
+    forward_relation from to depth (inr e) g new_g
+| fr_e_to_not_forwarded_O: forall e (g: LGraph),
+    vgeneration (dst g e) = from -> (vlabel g (dst g e)).(raw_mark) = true ->
+    let new_g := labeledgraph_gen_dst (lgraph_copy1v g (dst g e) to) e
+                                      (copy1v_new_v g to) in
+    forward_relation from to O (inr e) g new_g
 | fr_e_to_not_forwarded_Sn: forall depth e (g g': LGraph),
     vgeneration (dst g e) = from -> (vlabel g (dst g e)).(raw_mark) = true ->
     let new_g := labeledgraph_gen_dst (lgraph_copy1v g (dst g e) to) e

@@ -269,3 +269,86 @@ Proof.
   - unfold default_val. simpl. autorewrite with sublist. apply JMeq_refl.
   - unfold default_val. simpl. autorewrite with sublist. apply JMeq_refl.
 Qed.
+
+Definition valid_int_or_ptr (x: val) :=
+ match x with
+ | Vint i => Int.testbit i 0 = true
+ | Vptr b z => Ptrofs.testbit z 0 = false
+ | _ => False
+ end.
+
+Lemma valid_int_or_ptr_ii1:
+ forall i, valid_int_or_ptr (Vint (Int.repr (i + i + 1))).
+Proof.
+intros.
+simpl.
+rewrite Int.unsigned_repr_eq.
+rewrite Zodd_mod.
+apply Zeq_is_eq_bool.
+replace (i+i) with (2*i)%Z by omega.
+rewrite <- Zmod_div_mod; try omega.
+- rewrite Z.mul_comm, Z.add_comm, Z_mod_plus_full. reflexivity.
+- compute; reflexivity.
+- exists (Z.div Int.modulus 2). reflexivity.
+Qed.
+
+Lemma vertex_rep_valid_int_or_ptr: forall sh g v,
+    vertex_rep sh g v |-- !! (valid_int_or_ptr (vertex_address g v)).
+Proof.
+  intros. sep_apply (vertex_rep_isptr sh g v). Intros.
+  unfold vertex_rep, vertex_at, vertex_address.
+  remember (gen_start g (vgeneration v)) as vv. destruct vv; try contradiction.
+  inv_int i. simpl. rewrite !ptrofs_add_repr. entailer!.
+  destruct H3 as [_ [_ [_ [? _]]]]. clear -H3. hnf in H3. inv H3.
+  1: simpl in H; inversion H. assert (0 <= 0 < Zlength (make_fields_vals g v)). {
+    split; [omega|]. rewrite fields_eq_length.
+    destruct (raw_fields_head_cons (vlabel g v)) as [r [l [? _]]]. rewrite H.
+    rewrite Zlength_cons. pose proof (Zlength_nonneg l). omega.
+  } apply H4 in H. rewrite Z.mul_0_r, Z.add_0_r in H. clear H4. inv H. inv H0.
+  simpl in H1. rewrite Zodd_mod. apply Zdivide_mod in H1.
+  remember (Ptrofs.unsigned (Ptrofs.repr (ofs + WORD_SIZE * vertex_offset g v))).
+  clear Heqz. rewrite Zmod_divides in H1 by omega. destruct H1.
+  replace (4 * x)%Z with (2 * x * 2)%Z in H by omega. subst. rewrite Z_mod_mult.
+  unfold Zeq_bool. simpl. reflexivity.
+Qed.
+
+Lemma graph_rep_vertex_rep: forall g v,
+    graph_has_v g v -> graph_rep g |-- EX sh: share, vertex_rep sh g v * TT.
+Proof.
+  intros. unfold graph_rep. destruct H. hnf in H. remember (g_gen (glabel g)).
+  rewrite map_length. remember (vgeneration v) as gen.
+  remember (nat_inc_list (length l)). remember (map number_of_vertices l).
+  remember (map generation_sh l).
+  assert (length l0 = length l1) by
+      (subst; rewrite nat_inc_list_length, map_length; reflexivity).
+  assert (length (combine l0 l1) = length l) by
+      (subst; rewrite combine_length, H1, Nat.min_id, map_length; reflexivity).
+  assert (length (combine l0 l1) = length l2) by
+      (subst; rewrite combine_length, H1, Nat.min_id, !map_length; reflexivity).
+  assert (length (combine (combine l0 l1) l2) = length l). {
+    rewrite combine_length, H2. subst l2. rewrite map_length, Nat.min_id. reflexivity.
+  } apply (combine_nth _ _ gen (O, O) emptyshare) in H3.
+  apply (combine_nth _ _ gen O O) in H1. rewrite H1 in H3. clear H1.
+  assert (In (nth gen (combine (combine l0 l1) l2) (0%nat, 0%nat, emptyshare))
+             (combine (combine l0 l1) l2)) by (apply nth_In; rewrite H4; omega).
+  sep_apply (iter_sepcon_in_true (generation_rep g) _ _ H1). rewrite H3. clear H1 H3.
+  rewrite Heql0. rewrite nat_inc_list_nth by omega. remember (nth gen l2 emptyshare).
+  unfold generation_rep. hnf in H0. unfold nth_gen in H0.
+  rewrite <- map_nth, <-Heql, <- Heql1 in H0. simpl in H0.
+  assert (nth (vindex v)
+              (map (fun x : nat => (gen, x)) (nat_inc_list (nth gen l1 0%nat)))
+              (gen, O) = v). {
+    change (gen, O) with ((fun x: nat => (gen, x)) O). rewrite map_nth.
+    rewrite nat_inc_list_nth by omega. subst gen. destruct v; reflexivity.
+  } assert (In v (map (fun x : nat => (gen, x)) (nat_inc_list (nth gen l1 0%nat)))). {
+    rewrite <- H1. apply nth_In. rewrite map_length, nat_inc_list_length. omega.
+  } pose proof (iter_sepcon_in_true (vertex_rep s g) _ _ H3). unfold VType in H5.
+  sep_apply H5. Exists s. entailer!.
+Qed.
+
+Lemma graph_rep_valid_int_or_ptr: forall g v,
+    graph_has_v g v -> graph_rep g |-- !! (valid_int_or_ptr (vertex_address g v)).
+Proof.
+  intros. sep_apply (graph_rep_vertex_rep g v H). Intros sh.
+  sep_apply (vertex_rep_valid_int_or_ptr sh g v). entailer!.
+Qed.

@@ -8,28 +8,6 @@ Require Export RamifyCoq.CertiGC.spatial_gcgraph.
 Identity Coercion LGraph_LabeledGraph: LGraph >-> LabeledGraph.
 Coercion pg_lg: LabeledGraph >-> PreGraph.
 
-Definition valid_int_or_ptr (x: val) :=
- match x with
- | Vint i => Int.testbit i 0 = true
- | Vptr b z => Ptrofs.testbit z 0 = false
- | _ => False
- end.
-
-Lemma valid_int_or_ptr_ii1:
- forall i, valid_int_or_ptr (Vint (Int.repr (i + i + 1))).
-Proof.
-intros.
-simpl.
-rewrite Int.unsigned_repr_eq.
-rewrite Zodd_mod.
-apply Zeq_is_eq_bool.
-replace (i+i) with (2*i)%Z by omega.
-rewrite <- Zmod_div_mod; try omega.
-- rewrite Z.mul_comm, Z.add_comm, Z_mod_plus_full. reflexivity.
-- compute; reflexivity.
-- exists (Z.div Int.modulus 2). reflexivity.
-Qed.
-
 Definition init_data2byte (d: init_data) : byte :=
   match d with
   | Init_int8 m => Byte.repr (Int.intval m)
@@ -200,7 +178,7 @@ Definition forward_spec :=
          thread_info_rep sh t_info ti)
   POST [tvoid]
     EX g': LGraph, EX t_info': thread_info, EX roots': roots_t,
-    PROP (super_compatible (g, t_info, roots) f_info outlier;
+    PROP (super_compatible (g', t_info', roots') f_info outlier;
           forward_relation from to (Z.to_nat depth)
                            (forward_p2forward_t forward_p roots g) g g';
           graph_has_gen g' from; graph_has_gen g' to)
