@@ -12,7 +12,7 @@ Proof.
                              (map number_of_vertices g1)) (map generation_sh g1)) as l.
   assert (forall i, In i l -> (1 <= fst (fst i))%nat). {
     intros. subst l. destruct i as [[x y] z]. do 2 apply in_combine_l in H0.
-    apply nat_seq_In_prop in H0. simpl. assumption.
+    rewrite nat_seq_In_iff in H0. simpl. destruct H0. assumption.
   } clear Heql. revert H0. induction l; intros; simpl; auto.
   assert (forall i, In i l -> (1 <= fst (fst i))%nat) by
       (intros; apply H0; right; assumption). rewrite (IHl H1). f_equal.
