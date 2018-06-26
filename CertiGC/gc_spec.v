@@ -1,9 +1,10 @@
+Require Export VST.veric.rmaps.
 Require Export RamifyCoq.lib.List_ext.
 Require Export RamifyCoq.msl_ext.iter_sepcon.
-Require Export RamifyCoq.CertiGC.env_graph_gc.
 Require Export RamifyCoq.graph.graph_model.
 Require Export RamifyCoq.CertiGC.GCGraph.
 Require Export RamifyCoq.CertiGC.spatial_gcgraph.
+Require Export RamifyCoq.CertiGC.env_graph_gc.
 
 Identity Coercion LGraph_LabeledGraph: LGraph >-> LabeledGraph.
 Coercion pg_lg: LabeledGraph >-> PreGraph.
@@ -104,20 +105,45 @@ Definition abort_with_spec :=
 Definition v_in_range (v: val) (start: val) (n: Z): Prop :=
   exists i, 0 <= i < n /\ v = offset_val i start.
 
-Definition Is_from_spec :=
+Definition IS_FROM_TYPE :=
+  ProdType (ProdType (ProdType
+                        (ProdType (ConstType share) (ConstType val))
+                        (ConstType Z)) (ConstType val)) Mpred.
+
+Program Definition Is_from_spec :=
   DECLARE _Is_from
-  WITH sh: share, start : val, n: Z, v: val
+  TYPE IS_FROM_TYPE
+  WITH sh: share, start : val, n: Z, v: val, P: mpred
   PRE [ _from_start OF (tptr int_or_ptr_type),
         _from_limit OF (tptr int_or_ptr_type),
         _v OF (tptr int_or_ptr_type)]
     PROP ()
     LOCAL (temp _from_start start; temp _from_limit (offset_val n start); temp _v v)
-    SEP (memory_block sh n start)
+    SEP (weak_derives P (memory_block sh n start * TT) && emp;
+         weak_derives P (valid_pointer v * TT) && emp; P)
   POST [tint]
     EX b: {v_in_range v start n} + {~ v_in_range v start n},
     PROP ()
     LOCAL (temp ret_temp (Vint (Int.repr (if b then 1 else 0))))
-    SEP (memory_block sh n start).
+    SEP (P).
+Next Obligation.
+Proof.
+  repeat intro.
+  destruct x as ((((?, ?), ?), ?), ?); simpl.
+  unfold PROPx, LOCALx, SEPx; simpl; rewrite !approx_andp; f_equal; f_equal.
+  rewrite !sepcon_emp, ?approx_sepcon, ?approx_idem, ?approx_andp.
+  f_equal; f_equal.
+  - rewrite derives_nonexpansive. admit.
+  - f_equal. rewrite derives_nonexpansive. admit.
+Admitted.
+Next Obligation.
+Proof.
+  repeat intro.
+  destruct x as ((((?, ?), ?), ?), ?); simpl.
+  rewrite !approx_exp. apply f_equal; extensionality t.
+  unfold PROPx, LOCALx, SEPx; simpl; rewrite !approx_andp; f_equal; f_equal.
+  rewrite !sepcon_emp, approx_idem. reflexivity.
+Qed.
 
 Definition forward_p_type: Type := Z + (VType * Z).
 
@@ -160,7 +186,7 @@ Definition forward_spec :=
         _depth OF tint]
     PROP (readable_share rsh; writable_share sh;
           super_compatible (g, t_info, roots) f_info outlier;
-          forward_p_compatible forward_p roots g;  
+          forward_p_compatible forward_p roots g;
           graph_has_gen g from; graph_has_gen g to)
     LOCAL (temp _from_start (gen_start g from);
            temp _from_limit (offset_val (gen_size t_info from) (gen_start g from));
@@ -173,7 +199,7 @@ Definition forward_spec :=
            temp _depth (Vint (Int.repr depth)))
     SEP (all_string_constants rsh gv;
          fun_info_rep rsh f_info fi;
-         outlier_rep outlier;  
+         outlier_rep outlier;
          graph_rep g;
          thread_info_rep sh t_info ti)
   POST [tvoid]
@@ -185,7 +211,7 @@ Definition forward_spec :=
     LOCAL ()
     SEP (all_string_constants rsh gv;
          fun_info_rep rsh f_info fi;
-         outlier_rep outlier;  
+         outlier_rep outlier;
          graph_rep g';
          thread_info_rep sh t_info' ti).
 
@@ -303,7 +329,7 @@ Definition resume_spec :=
          graph_rep g;
          thread_info_rep sh t_info ti)
   POST [tvoid]
-    EX g': LGraph, EX t_info': thread_info,  
+    EX g': LGraph, EX t_info': thread_info,
     PROP (fun_word_size f_info <= total_space (heap_head (ti_heap t_info));
           resume_graph_relation g g';
           resume_thread_info_relation t_info t_info')
@@ -325,7 +351,7 @@ Definition garbage_collect_spec :=
     LOCAL (temp _fi fi; temp _ti ti; gvars gv)
     SEP (all_string_constants rsh gv;
          fun_info_rep rsh f_info fi;
-         outlier_rep outlier;  
+         outlier_rep outlier;
          graph_rep g;
          thread_info_rep sh t_info ti)
   POST [tvoid]

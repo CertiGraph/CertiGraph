@@ -25,11 +25,10 @@ Proof.
     assert (Zlength roots = Zlength (live_roots_indices f_info)). {
       rewrite <- (Zlength_map _ _ (flip Znth (ti_args t_info))), <- H3, Zlength_map.
       reflexivity.
-    } rewrite H6 in H0.
-    pose proof (in_map (flip Znth (ti_args t_info))
-                       (live_roots_indices f_info) _ (Znth_In _ _ H0)).
-    unfold flip in H7 at 1. rewrite <- H3 in H7. apply list_in_map_inv in H7.
-    destruct H7 as [root [? ?]]. unfold Inhabitant_val in H7.
+    } pose proof (Znth_map _ (root2val g) _ H0). rewrite H6 in H0.
+    rewrite H3, Znth_map in H7 by assumption. unfold flip in H7.
+    remember (Znth z roots) as root. rewrite <- H6 in H0. pose proof (Znth_In _ _ H0).
+    rewrite <- Heqroot in H8. rewrite H6 in H0. unfold Inhabitant_val in H7.
     assert (is_pointer_or_integer (root2val g root)). {
       destruct root as [[? | ?] | ?]; simpl; auto.
       - destruct g0. simpl. exact I.
@@ -41,5 +40,17 @@ Proof.
     } forward. 1: apply prop_right, (fi_index_range f_info), Znth_In; assumption.
     1: entailer!; rewrite H7; assumption. rewrite H7.
     destruct H4. sep_apply (root_valid_int_or_ptr g roots root H8 H10). Intros.
-    forward_call (root2val g root).
+    forward_call (root2val g root). destruct root as [[? | ?] | ?]; simpl root2val.
+    + unfold odd_Z2val. forward_if True.
+      1: exfalso; apply H12'. reflexivity. 1: forward; entailer!.
+      forward. Exists g t_info roots. entailer!.
+      * unfold roots_compatible. intuition. rewrite <- Heqroot. simpl. constructor.
+      * unfold thread_info_rep. entailer!.
+    + unfold GC_Pointer2val. destruct g0. forward_if True.
+      2: exfalso; apply Int.one_not_zero in H12; assumption.
+      * forward_call (Vptr b (Ptrofs.add i i)). admit.
+      * forward. Exists g t_info roots. entailer!.
+        -- unfold roots_compatible. intuition. rewrite <- Heqroot. simpl. constructor.
+        -- unfold thread_info_rep. entailer!.
+    +
 Abort.
