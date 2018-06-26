@@ -107,7 +107,7 @@ Proof.
         12
         (EX i: Z,
          PROP ( )
-         LOCAL (temp _h h; gvar ___stringlit_8 (gv ___stringlit_8); gvars gv)
+         LOCAL (temp _h h; gvars gv)
          SEP (data_at Tsh heap_type
                       (vh :: list_repeat (Z.to_nat (i - 1)) v0 ++
                           list_repeat (Z.to_nat (12 - i)) vn) h; FRZL FR))%assert.
