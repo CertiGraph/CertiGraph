@@ -84,8 +84,8 @@ Proof.
       rewrite H1. simpl tl. unfold heap_rest_rep. simpl.
       rewrite H1. simpl iter_sepcon. cancel.
       destruct (heap_head_cons (reset_nth_heap 0 (ti_heap t_info))) as [rs [rl [? ?]]].
-      rewrite H18. unfold reset_nth_heap in H2. simpl in H2. rewrite H1 in H2.
-      inversion H2. subst rl. clear rs H2 H18 H20.
+      rewrite H14. unfold reset_nth_heap in H2. simpl in H2. rewrite H1 in H2.
+      inversion H2. subst rl. clear rs H2 H14 H16.
       remember (heap_head (ti_heap t_info)).
       unfold reset_space. simpl. unfold space_rest_rep. simpl. rewrite <- H3.
       if_tac. 1: discriminate.
