@@ -1,3 +1,5 @@
+Require Import VST.veric.compcert_rmaps.
+Require Export VST.progs.conclib.
 Require Import RamifyCoq.msl_ext.iter_sepcon.
 Require Import RamifyCoq.graph.graph_model.
 Require Import RamifyCoq.CertiGC.GCGraph.
@@ -351,4 +353,46 @@ Lemma graph_rep_valid_int_or_ptr: forall g v,
 Proof.
   intros. sep_apply (graph_rep_vertex_rep g v H). Intros sh.
   sep_apply (vertex_rep_valid_int_or_ptr sh g v). entailer!.
+Qed.
+
+(* weak derives for use in funspecs *)
+Program Definition weak_derives (P Q: mpred): mpred :=
+  fun w => predicates_hered.derives (approx (S (level w)) P) (approx (S (level w)) Q).
+Next Obligation.
+  repeat intro.
+  destruct H1.
+  apply age_level in H.
+  lapply (H0 a0); [|split; auto; omega].
+  intro HQ; destruct HQ.
+  eexists; eauto.
+Defined.
+
+Lemma derives_nonexpansive: forall P Q n,
+  approx n (weak_derives P Q) = approx n (weak_derives (approx n P) (approx n Q)).
+Proof.
+  apply nonexpansive2_super_non_expansive; repeat intro.
+  - split; intros ??%necR_level Hshift ? HP;
+      destruct (Hshift _ HP); destruct HP; eexists;  eauto; eapply H; auto; omega.
+  - split; intros ??%necR_level Hshift ? []; apply Hshift;
+      split; auto; apply (H a0); auto; omega.
+Qed.
+
+Lemma derives_weak: forall P Q, P |-- Q -> TT |-- weak_derives P Q.
+Proof.
+  intros.
+  change (predicates_hered.derives TT (weak_derives P Q)).
+  intros w _ ? [? HP].
+  specialize (H _ HP).
+  eexists; eauto.
+Qed.
+
+Lemma apply_derives: forall P Q, (weak_derives P Q && emp) * P |-- Q.
+Proof.
+  intros.
+  change (predicates_hered.derives ((weak_derives P Q && emp) * P) Q).
+  intros ? (? & ? & ? & [Hderives Hemp] & HP).
+  destruct (join_level _ _ _ H).
+  apply Hemp in H; subst.
+  lapply (Hderives a); [|split; auto; omega].
+  intro X; destruct X; eauto 7.
 Qed.
