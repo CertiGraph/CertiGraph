@@ -267,9 +267,9 @@ Proof.
     + unfold field_compatible0. simpl. destruct H0. intuition.
   - assumption.
   - instantiate (1:=list_repeat (Z.to_nat n) Vundef). list_solve.
-  - unfold default_val. simpl. autorewrite with sublist. apply JMeq_refl.
-  - unfold default_val. simpl. autorewrite with sublist. apply JMeq_refl.
-  - unfold default_val. simpl. autorewrite with sublist. apply JMeq_refl.
+  - unfold default_val. simpl. autorewrite with sublist. reflexivity. 
+  - unfold default_val. simpl. autorewrite with sublist. reflexivity.
+  - unfold default_val. simpl. autorewrite with sublist. reflexivity.
 Qed.
 
 Definition valid_int_or_ptr (x: val) :=

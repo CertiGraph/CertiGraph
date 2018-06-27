@@ -20,13 +20,13 @@ Proof.
   intros. pose proof (split2_data_at_Tarray sh space_type n n1) as HS.
   apply HS with (v' := v); auto.
   - rewrite Z.le_lteq. right; auto.
-  - autorewrite with sublist. apply JMeq_refl.
+  - autorewrite with sublist. reflexivity.
 Qed.
 
 Lemma space_array_1_eq: forall (sh: share) (v: (val * (val * val))) (p: val),
     data_at sh (tarray space_type 1) [v] p = data_at sh space_type v p.
 Proof.
-  intros. pose proof (data_at_singleton_array_eq sh space_type). apply H, JMeq_refl.
+  intros. pose proof (data_at_singleton_array_eq sh space_type). apply H. reflexivity.
 Qed.
 
 Lemma list_repeat_cons {t: Type}: forall i (v: t),
