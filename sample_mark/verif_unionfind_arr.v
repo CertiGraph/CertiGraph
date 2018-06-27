@@ -172,7 +172,7 @@ Proof.
            assert (map (fun x : Z => vgamma (makeSet_discrete_LabeledGraph (Z.to_nat V)) x) (nat_inc_list (Z.to_nat V)) =
                    map (fun x => (0%nat, x)) (nat_inc_list (Z.to_nat V))). {
              apply list_map_exten. intros. unfold vgamma, UnionFindGraph.vgamma. simpl. rewrite makeSet_dst. simpl. auto.
-           } rewrite H7. clear H7. rewrite list_map_compose. unfold vgamma2cdata. simpl. rewrite <- progressive_nat_inc_list; intuition. 
+           } rewrite H6. clear H6. rewrite list_map_compose. unfold vgamma2cdata. simpl. rewrite <- progressive_nat_inc_list; intuition. 
 Qed.
 
 Lemma whole_graph_fold: forall n sh g p,
@@ -277,7 +277,7 @@ Proof.
               cut ((upd_Znth i (map (fun x : Z => vgamma2cdata (vgamma (lg_gg g') x)) (nat_inc_list n))
                              (Vint (Int.repr root), Vint (Int.repr (Z.of_nat (vlabel (lg_gg g') i))))) =
                    (map (fun x : Z => vgamma2cdata (vgamma (lg_gg (Graph_gen_redirect_parent g' i root H8 H9 H10)) x)) (nat_inc_list n))); intros.
-              ** rewrite <- H17. apply derives_refl.
+              ** rewrite <- H15. apply derives_refl.
               ** rewrite <- H0 in H. destruct H4. apply reachable_foot_valid in H4. rewrite <- H5 in H4. clear -H H4. rewrite <- upd_Znth_Graph_redirect_parent; auto.
     + unfold vgamma2cdata at 1. unfold vgamma at 1. unfold UnionFindGraph.vgamma. forward. rewrite whole_graph_fold; [|intuition..]. apply (exp_right g).
       simpl projT2. simpl id. apply (exp_right i). entailer !.
