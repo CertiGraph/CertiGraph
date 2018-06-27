@@ -48,7 +48,20 @@ Proof.
       * unfold thread_info_rep. entailer!.
     + unfold GC_Pointer2val. destruct g0. forward_if True.
       2: exfalso; apply Int.one_not_zero in H12; assumption.
-      * forward_call (Vptr b (Ptrofs.add i i)). admit.
+      * forward_call (Vptr b (Ptrofs.add i i)).
+        gather_SEP 0 6 3. rewrite <- sepcon_assoc.
+        remember (graph_rep g * heap_rest_rep (ti_heap t_info) * outlier_rep outlier)
+          as P. remember (nth_gen g from).(generation_sh) as fsh.
+        remember (gen_start g from) as fp. remember (gen_size t_info from) as fn.
+        assert (P |-- (weak_derives P (memory_block fsh fn fp * TT) && emp) * P). {
+          subst. cancel. apply andp_right. 2: cancel.
+          assert (HS: emp |-- TT) by entailer; sep_apply HS; clear HS.
+          apply derives_weak. admit.
+        } replace_SEP 0 ((weak_derives P (memory_block fsh fn fp * TT) && emp) * P) by
+            (entailer; assumption).
+        Intros.
+
+        admit.
       * forward. Exists g t_info roots. entailer!.
         -- unfold roots_compatible. intuition. rewrite <- Heqroot. simpl. constructor.
         -- unfold thread_info_rep. entailer!.
