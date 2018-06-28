@@ -1,5 +1,6 @@
 Require Import VST.veric.compcert_rmaps.
 Require Export VST.progs.conclib.
+Require Import RamifyCoq.lib.List_ext.
 Require Import RamifyCoq.msl_ext.iter_sepcon.
 Require Import RamifyCoq.graph.graph_model.
 Require Import RamifyCoq.CertiGC.GCGraph.
@@ -412,17 +413,63 @@ Proof.
   intro X; destruct X; eauto 7.
 Qed.
 
+Lemma heap_rest_rep_data_at_: forall (g: LGraph) (t_info: thread_info) gen n1,
+    graph_has_gen g gen ->
+    graph_thread_info_compatible g t_info ->
+    n1 = previous_vertices_size g gen (number_of_vertices (nth_gen g gen)) ->
+    0 <= n1 <= total_space (nth_space t_info gen) /\
+    heap_rest_rep (ti_heap t_info) |--
+                  data_at_ (generation_sh (nth_gen g gen))
+                  (tarray int_or_ptr_type (total_space (nth_space t_info gen) - n1))
+                  (offset_val (WORD_SIZE * n1) (gen_start g gen)) * TT.
+Proof.
+  intros. subst n1. destruct H0 as [? [? ?]]. unfold graph_has_gen in H.
+  rewrite Forall_forall in H0. remember (g_gen (glabel g)).
+  remember (nat_inc_list (length l)). remember (spaces (ti_heap t_info)).
+  assert (length (combine l0 l) = length l) by
+      (subst; rewrite combine_length, nat_inc_list_length, Nat.min_id; reflexivity).
+  assert (length (combine (combine l0 l) l1) = length l) by
+      (rewrite combine_length, H3, min_l by assumption; reflexivity).
+  assert (generation_space_compatible
+            g (nth gen (combine (combine l0 l) l1) (O, null_info, null_space))) by
+      (apply H0, nth_In; rewrite H4; assumption).
+  rewrite combine_nth_lt in H5; [|rewrite H3; omega | omega].
+  rewrite combine_nth in H5 by (subst l0; rewrite nat_inc_list_length; reflexivity).
+  rewrite Heql0 in H5. rewrite nat_inc_list_nth in H5 by assumption.
+  unfold heap_rest_rep. rewrite <- Heql1. assert (In (nth gen l1 null_space) l1). {
+    apply nth_In, Nat.lt_le_trans with (length l); assumption.
+  } rewrite Heql in H5.
+  change (nth gen (g_gen (glabel g)) null_info) with (nth_gen g gen) in H5.
+  subst l1. change (nth gen (spaces (ti_heap t_info)) null_space) with
+                (nth_space t_info gen) in *. destruct H5 as [? [? ?]]. split.
+  - rewrite H8. apply space_order.
+  - sep_apply (iter_sepcon_in_true space_rest_rep _ (nth_space t_info gen) H6).
+    unfold space_rest_rep. rewrite <- H5. if_tac.
+    + pose proof (start_isptr (nth_gen g gen)). rewrite H9 in H10. inversion H10.
+    + rewrite <- H7, <- H8.
+      replace (start_address (nth_gen g gen)) with (gen_start g gen).
+      * cancel.
+      * unfold gen_start. if_tac. reflexivity. unfold graph_has_gen in H10.
+        subst l; exfalso; omega.
+Qed.
+
 Lemma graph_and_heap_rest_memory_block: forall (g: LGraph) (t_info: thread_info) gen,
     graph_has_gen g gen ->
     graph_thread_info_compatible g t_info ->
-    graph_rep g * heap_rest_rep (ti_heap t_info) |--
-                                memory_block (generation_sh (nth_gen g gen))
-                                (gen_size t_info gen) (gen_start g gen) * TT.
+    graph_rep g * heap_rest_rep
+                    (ti_heap t_info) |--
+                    memory_block (generation_sh (nth_gen g gen))
+                    (WORD_SIZE * gen_size t_info gen) (gen_start g gen) * TT.
 Proof.
   intros. sep_apply (graph_rep_generation_rep g gen H).
+  remember (previous_vertices_size g gen (number_of_vertices (nth_gen g gen))) as n1.
+  destruct (heap_rest_rep_data_at_ g t_info gen n1 H H0 Heqn1). sep_apply H2. clear H2.
   remember (number_of_vertices (nth_gen g gen)) as num.
   remember (generation_sh (nth_gen g gen)) as sh.
-  sep_apply (generation_rep_data_at_ sh g gen num H). destruct H0. 
-  unfold graph_has_gen in H. rewrite Forall_forall in H0.
-Abort.
-
+  sep_apply (generation_rep_data_at_ sh g gen num H). rewrite <- Heqn1.
+  remember (total_space (nth_space t_info gen)) as n.
+  sep_apply (data_at__tarray_value_join sh n n1 (gen_start g gen) H1).
+    sep_apply (data_at__memory_block_cancel
+                 sh (tarray int_or_ptr_type n) (gen_start g gen)).
+  rewrite sizeof_tarray_int_or_ptr by omega. subst n. unfold gen_size. cancel.
+Qed.

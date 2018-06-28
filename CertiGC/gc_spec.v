@@ -189,10 +189,10 @@ Definition forward_spec :=
           forward_p_compatible forward_p roots g;
           graph_has_gen g from; graph_has_gen g to)
     LOCAL (temp _from_start (gen_start g from);
-           temp _from_limit (offset_val (gen_size t_info from) (gen_start g from));
-           temp
-             _next
-             (field_address heap_type
+           temp _from_limit
+                (offset_val (WORD_SIZE * gen_size t_info from)
+                            (gen_start g from));
+           temp _next (field_address heap_type
               [StructField _next;
                  ArraySubsc (Z.of_nat to); StructField _spaces] (ti_heap_p t_info));
            temp _p (forward_p_address forward_p ti f_info g);

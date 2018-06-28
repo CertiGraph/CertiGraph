@@ -52,15 +52,23 @@ Proof.
         gather_SEP 0 6 3. rewrite <- sepcon_assoc.
         remember (graph_rep g * heap_rest_rep (ti_heap t_info) * outlier_rep outlier)
           as P. remember (nth_gen g from).(generation_sh) as fsh.
-        remember (gen_start g from) as fp. remember (gen_size t_info from) as fn.
+        remember (gen_start g from) as fp.
+        remember (WORD_SIZE * gen_size t_info from)%Z as fn.
         assert (P |-- (weak_derives P (memory_block fsh fn fp * TT) && emp) * P). {
           subst. cancel. apply andp_right. 2: cancel.
           assert (HS: emp |-- TT) by entailer; sep_apply HS; clear HS.
-          apply derives_weak. admit.
+          apply derives_weak.
+          sep_apply (graph_and_heap_rest_memory_block _ _ _ H1 H). cancel.
         } replace_SEP 0 ((weak_derives P (memory_block fsh fn fp * TT) && emp) * P) by
-            (entailer; assumption).
-        Intros.
-
+            (entailer; assumption). clear H13. Intros. simpl root2val in *.
+        assert (P |-- (weak_derives P (valid_pointer (Vptr b (Ptrofs.add i i)) * TT) &&
+                                    emp) * P). {
+          subst. cancel. apply andp_right. 2: cancel.
+          assert (HS: emp |-- TT) by entailer; sep_apply HS; clear HS.
+          apply derives_weak. admit.
+        } replace_SEP
+          1 ((weak_derives P (valid_pointer (Vptr b (Ptrofs.add i i)) * TT) &&
+                           emp) * P) by (entailer; assumption).
         admit.
       * forward. Exists g t_info roots. entailer!.
         -- unfold roots_compatible. intuition. rewrite <- Heqroot. simpl. constructor.
