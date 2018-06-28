@@ -2,8 +2,18 @@ Require Import VST.msl.Extensionality.
 Require Import VST.msl.simple_CCC.
 Require Import VST.msl.seplog.
 Require Import VST.msl.log_normalize.
+Require Import Coq.Lists.List.
 
 Local Open Scope logic.
+
+Lemma fold_right_andp {A} `{NatDed A}: forall (l: list A) (P: A),
+    In P l -> exists Q: A, fold_right andp TT l = P && Q.
+Proof.
+  induction l; intros; simpl. 1: inversion H0. simpl in H0. destruct H0.
+  - subst a. exists (fold_right andp TT l). reflexivity.
+  - apply IHl in H0. destruct H0 as [QQ ?]. rewrite H0.
+    rewrite andp_comm, andp_assoc. exists (QQ && a). reflexivity.
+Qed.
 
 Lemma exp_uncurry: forall {A} `{NatDed A} (S T: Type) (P: S -> T -> A),
   exp (fun s => exp (P s)) = exp (fun st => P (fst st) (snd st)).
