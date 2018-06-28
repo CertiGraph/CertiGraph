@@ -903,3 +903,14 @@ Proof.
     + right. apply H0. assumption.
   - inversion H2.
 Qed.
+
+Lemma combine_nth_lt {A B}: forall (l1: list A) (l2: list B) n x y,
+    n < length l1 -> n < length l2 ->
+    nth n (combine l1 l2) (x, y) = (nth n l1 x, nth n l2 y).
+Proof.
+  induction l1; intros.
+  - simpl in *. exfalso. omega.
+  - destruct l2.
+    + simpl in H0. exfalso. omega.
+    + simpl. destruct n; [|simpl in *; rewrite IHl1 by omega]; reflexivity.
+Qed.

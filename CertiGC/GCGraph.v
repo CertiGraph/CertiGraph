@@ -320,7 +320,8 @@ Definition graph_thread_info_compatible (g: LGraph) (ti: thread_info): Prop :=
          (combine (combine (nat_inc_list (length g.(glabel).(g_gen)))
                            g.(glabel).(g_gen)) ti.(ti_heap).(spaces)) /\
   Forall (eq nullval)
-         (skipn (length g.(glabel).(g_gen)) (map space_start ti.(ti_heap).(spaces))).
+         (skipn (length g.(glabel).(g_gen)) (map space_start ti.(ti_heap).(spaces))) /\
+  length g.(glabel).(g_gen) <= length ti.(ti_heap).(spaces).
 
 Record fun_info : Type :=
   {
