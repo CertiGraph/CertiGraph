@@ -65,10 +65,13 @@ Proof.
                                     emp) * P). {
           subst. cancel. apply andp_right. 2: cancel.
           assert (HS: emp |-- TT) by entailer; sep_apply HS; clear HS.
-          apply derives_weak. admit.
+          apply derives_weak.
+          sep_apply (outlier_rep_valid_pointer roots outlier (GCPtr b i) H8 H4).
+          simpl GC_Pointer2val. cancel.
         } replace_SEP
           1 ((weak_derives P (valid_pointer (Vptr b (Ptrofs.add i i)) * TT) &&
-                           emp) * P) by (entailer; assumption).
+                           emp) * P) by (entailer; assumption). Intros. clear H13.
+        forward_call (fsh, fp, fn, (Vptr b (Ptrofs.add i i)), P). Intros v.
         admit.
       * forward. Exists g t_info roots. entailer!.
         -- unfold roots_compatible. intuition. rewrite <- Heqroot. simpl. constructor.

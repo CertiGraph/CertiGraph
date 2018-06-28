@@ -388,6 +388,7 @@ Definition Gprog: funspecs :=
                       int_to_int_or_ptr_spec;
                       ptr_to_int_or_ptr_spec;
                       Is_block_spec;
+                      Is_from_spec;
                       abort_with_spec;
                       forward_spec;
                       forward_roots_spec;

@@ -1,6 +1,7 @@
 Require Import VST.veric.compcert_rmaps.
 Require Export VST.progs.conclib.
 Require Import RamifyCoq.lib.List_ext.
+Require Import RamifyCoq.msl_ext.log_normalize.
 Require Import RamifyCoq.msl_ext.iter_sepcon.
 Require Import RamifyCoq.graph.graph_model.
 Require Import RamifyCoq.CertiGC.GCGraph.
@@ -60,7 +61,7 @@ Definition thread_info_rep (sh: share) (ti: thread_info) (t: val) :=
   heap_rest_rep ti.(ti_heap).
 
 Definition outlier_rep (outlier: outlier_t) :=
-  fold_right andp TT (map (compose valid_pointer GC_Pointer2val) outlier).
+  fold_right andp TT (map (valid_pointer oo GC_Pointer2val) outlier).
 
 Lemma vertex_head_address_eq: forall g gen num,
   offset_val (- WORD_SIZE) (vertex_address g (gen, num)) =
@@ -472,4 +473,17 @@ Proof.
     sep_apply (data_at__memory_block_cancel
                  sh (tarray int_or_ptr_type n) (gen_start g gen)).
   rewrite sizeof_tarray_int_or_ptr by omega. subst n. unfold gen_size. cancel.
+Qed.
+
+Lemma outlier_rep_valid_pointer: forall (roots: roots_t) outlier p,
+    In (inl (inr p)) roots ->
+    incl (filter_sum_right (filter_sum_left roots)) outlier ->
+    outlier_rep outlier |-- valid_pointer (GC_Pointer2val p) * TT.
+Proof.
+  intros. assert (In p outlier). {
+    apply H0. rewrite <- filter_sum_right_In_iff, <- filter_sum_left_In_iff.
+    assumption. } unfold outlier_rep.
+  apply (in_map (valid_pointer oo GC_Pointer2val)) in H1. apply fold_right_andp in H1.
+  destruct H1 as [Q ?]. rewrite H1. simpl. apply andp_left1.
+  rewrite <- (sepcon_emp (valid_pointer (GC_Pointer2val p))) at 1. cancel.
 Qed.
