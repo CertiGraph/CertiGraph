@@ -132,10 +132,8 @@ Proof.
   destruct x as ((((?, ?), ?), ?), ?); simpl.
   unfold PROPx, LOCALx, SEPx; simpl; rewrite !approx_andp; f_equal; f_equal.
   rewrite !sepcon_emp, ?approx_sepcon, ?approx_idem, ?approx_andp.
-  f_equal; f_equal.
-  - rewrite derives_nonexpansive. admit.
-  - f_equal. rewrite derives_nonexpansive. admit.
-Admitted.
+  f_equal; f_equal; [|f_equal]; rewrite derives_nonexpansive_l; reflexivity.
+Qed.
 Next Obligation.
 Proof.
   repeat intro.
