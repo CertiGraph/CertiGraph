@@ -51,28 +51,30 @@ Proof.
       * forward_call (Vptr b (Ptrofs.add i i)).
         gather_SEP 0 6 3. rewrite <- sepcon_assoc.
         remember (graph_rep g * heap_rest_rep (ti_heap t_info) * outlier_rep outlier)
-          as P. remember (nth_gen g from).(generation_sh) as fsh.
+          as P.
+        pose proof (outlier_rep_valid_pointer roots outlier (GCPtr b i) H8 H4).
+        pose proof (graph_and_heap_rest_memory_block _ _ _ H1 H).
+        remember (nth_gen g from).(generation_sh) as fsh.
         remember (gen_start g from) as fp.
         remember (WORD_SIZE * gen_size t_info from)%Z as fn.
         assert (P |-- (weak_derives P (memory_block fsh fn fp * TT) && emp) * P). {
           subst. cancel. apply andp_right. 2: cancel.
           assert (HS: emp |-- TT) by entailer; sep_apply HS; clear HS.
-          apply derives_weak.
-          sep_apply (graph_and_heap_rest_memory_block _ _ _ H1 H). cancel.
+          apply derives_weak. sep_apply H14. cancel.
         } replace_SEP 0 ((weak_derives P (memory_block fsh fn fp * TT) && emp) * P) by
-            (entailer; assumption). clear H13. Intros. simpl root2val in *.
+            (entailer; assumption). clear H15. Intros. simpl root2val in *.
         assert (P |-- (weak_derives P (valid_pointer (Vptr b (Ptrofs.add i i)) * TT) &&
                                     emp) * P). {
           subst. cancel. apply andp_right. 2: cancel.
           assert (HS: emp |-- TT) by entailer; sep_apply HS; clear HS.
-          apply derives_weak.
-          sep_apply (outlier_rep_valid_pointer roots outlier (GCPtr b i) H8 H4).
-          simpl GC_Pointer2val. cancel.
-        } replace_SEP
-          1 ((weak_derives P (valid_pointer (Vptr b (Ptrofs.add i i)) * TT) &&
-                           emp) * P) by (entailer; assumption). Intros. clear H13.
-        forward_call (fsh, fp, fn, (Vptr b (Ptrofs.add i i)), P). Intros v.
-        admit.
+          apply derives_weak. sep_apply H13. simpl GC_Pointer2val. cancel. }
+        replace_SEP
+        1 ((weak_derives P (valid_pointer (Vptr b (Ptrofs.add i i)) * TT) &&
+                         emp) * P) by (entailer; assumption). Intros. clear H15.
+        forward_call (fsh, fp, fn, (Vptr b (Ptrofs.add i i)), P). Intros v. destruct v.
+        -- subst P. Intros. gather_SEP 0 1. sep_apply H14. sep_apply H13. Intros.
+           simpl GC_Pointer2val. gather_SEP 0 2. admit.
+        -- forward_if. 1: exfalso; apply H15'; reflexivity. forward. entailer!.
       * forward. Exists g t_info roots. entailer!.
         -- unfold roots_compatible. intuition. rewrite <- Heqroot. simpl. constructor.
         -- unfold thread_info_rep. entailer!.

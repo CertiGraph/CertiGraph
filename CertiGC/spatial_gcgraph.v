@@ -394,6 +394,26 @@ Proof.
       split; auto; apply (H a0); auto; omega.
 Qed.
 
+Lemma derives_nonexpansive_l: forall P Q n,
+  approx n (weak_derives P Q) = approx n (weak_derives (approx n P) Q).
+Proof.
+  repeat intro.
+  apply (nonexpansive_super_non_expansive (fun P => weak_derives P Q)); repeat intro.
+  split; intros ??%necR_level Hshift ? [];
+    apply Hshift; split; auto; apply (H a0); auto; omega.
+Qed.
+
+Lemma derives_nonexpansive_r: forall P Q n,
+  approx n (weak_derives P Q) = approx n (weak_derives P (approx n Q)).
+Proof.
+  repeat intro.
+  apply (nonexpansive_super_non_expansive (fun Q => weak_derives P Q)); repeat intro.
+  split; intros ??%necR_level Hshift ? HP;
+      destruct (Hshift _ HP); destruct HP;
+      eexists;  eauto;
+      eapply H; auto; omega.
+Qed.
+
 Lemma derives_weak: forall P Q, P |-- Q -> TT |-- weak_derives P Q.
 Proof.
   intros.
