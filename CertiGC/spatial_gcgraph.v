@@ -60,8 +60,12 @@ Definition thread_info_rep (sh: share) (ti: thread_info) (t: val) :=
           :: map space_tri (tl ti.(ti_heap).(spaces))) ti.(ti_heap_p) *
   heap_rest_rep ti.(ti_heap).
 
+Definition single_outlier_rep (p: GC_Pointer) :=
+  EX sh: share, !!(readable_share sh) &&
+                  (data_at_ sh (tptr tvoid) (GC_Pointer2val p) * TT).
+
 Definition outlier_rep (outlier: outlier_t) :=
-  fold_right andp TT (map (valid_pointer oo GC_Pointer2val) outlier).
+  fold_right andp TT (map single_outlier_rep outlier).
 
 Lemma vertex_head_address_eq: forall g gen num,
   offset_val (- WORD_SIZE) (vertex_address g (gen, num)) =
@@ -221,7 +225,7 @@ Proof.
   rewrite memory_block_data_at_; auto.
 Qed.
 
-Lemma data_at__tarray_value_join_local_fact: forall sh n n1 p,
+Lemma data_at__tarray_value_fold_local_fact: forall sh n n1 p,
     0 <= n1 <= n ->
     data_at_ sh (tarray int_or_ptr_type n1) p *
     data_at_ sh (tarray int_or_ptr_type (n - n1)) (offset_val (WORD_SIZE * n1) p) |--
@@ -251,17 +255,17 @@ Proof.
     apply Z.divide_add_cancel_r in H10; [assumption | apply Z.divide_factor_l].
 Qed.
 
-Lemma data_at__tarray_value_join: forall sh n n1 p,
+Lemma data_at__tarray_value_fold: forall sh n n1 p,
     0 <= n1 <= n ->
     data_at_ sh (tarray int_or_ptr_type n1) p *
     data_at_ sh (tarray int_or_ptr_type (n - n1)) (offset_val (WORD_SIZE * n1) p) |--
              data_at_ sh (tarray int_or_ptr_type n) p.
 Proof.
   intros. unfold data_at_ at 3; unfold field_at_. rewrite field_at_data_at.
-  erewrite (@split2_data_at_Tarray CompSpecs sh int_or_ptr_type n n1).
+  erewrite (split2_data_at_Tarray sh int_or_ptr_type n n1).
   - instantiate (1:= list_repeat (Z.to_nat (n-n1)) Vundef).
     instantiate (1:= list_repeat (Z.to_nat n1) Vundef). unfold field_address. simpl.
-    sep_apply (data_at__tarray_value_join_local_fact sh n n1 p H). Intros.
+    sep_apply (data_at__tarray_value_fold_local_fact sh n n1 p H). Intros.
     rewrite if_true; trivial. entailer!. unfold data_at_. unfold field_at_.
     rewrite field_at_data_at. unfold field_address0. rewrite if_true.
     + simpl. unfold field_address. rewrite if_true; trivial. simpl.
@@ -272,6 +276,37 @@ Proof.
   - unfold default_val. simpl. autorewrite with sublist. reflexivity. 
   - unfold default_val. simpl. autorewrite with sublist. reflexivity.
   - unfold default_val. simpl. autorewrite with sublist. reflexivity.
+Qed.
+
+Lemma data_at__tarray_value_unfold: forall sh n n1 p,
+    0 <= n1 <= n ->
+    data_at_ sh (tarray int_or_ptr_type n) p |--
+    data_at_ sh (tarray int_or_ptr_type n1) p *
+    data_at_ sh (tarray int_or_ptr_type (n - n1)) (offset_val (WORD_SIZE * n1) p).
+Proof.
+  intros. rewrite data_at__eq at 1. entailer!.
+  erewrite (split2_data_at_Tarray sh int_or_ptr_type n n1).
+  - instantiate (1:= list_repeat (Z.to_nat (n-n1)) Vundef).
+    instantiate (1:= list_repeat (Z.to_nat n1) Vundef). unfold field_address0.
+    simpl. replace (0 + 4 * n1) with (WORD_SIZE * n1)%Z by rep_omega.
+    rewrite if_true. 1: entailer!. unfold field_compatible0. simpl.
+    destruct H0. intuition.
+  - assumption.
+  - instantiate (1:=list_repeat (Z.to_nat n) Vundef). list_solve.
+  - unfold default_val. simpl. autorewrite with sublist. reflexivity. 
+  - unfold default_val. simpl. autorewrite with sublist. reflexivity.
+  - unfold default_val. simpl. autorewrite with sublist. reflexivity.
+Qed.
+
+Lemma data_at__tarray_value: forall sh n n1 p,
+    0 <= n1 <= n ->
+    data_at_ sh (tarray int_or_ptr_type n) p =
+    data_at_ sh (tarray int_or_ptr_type n1) p *
+    data_at_ sh (tarray int_or_ptr_type (n - n1)) (offset_val (WORD_SIZE * n1) p).
+Proof.
+  intros. apply pred_ext.
+  - apply data_at__tarray_value_unfold; assumption.
+  - apply data_at__tarray_value_fold; assumption.
 Qed.
 
 Definition valid_int_or_ptr (x: val) :=
@@ -296,6 +331,13 @@ rewrite <- Zmod_div_mod; try omega.
 - exists (Z.div Int.modulus 2). reflexivity.
 Qed.
 
+Lemma four_divided_odd_false: forall z, (4 | z) -> Z.odd z = false.
+Proof.
+  intros. rewrite Zodd_mod. apply Zdivide_mod in H. rewrite Zmod_divides in H by omega.
+  destruct H. replace (4 * x)%Z with (2 * x * 2)%Z in H by omega. subst.
+  rewrite Z_mod_mult. unfold Zeq_bool. simpl. reflexivity.
+Qed.
+
 Lemma vertex_rep_valid_int_or_ptr: forall sh g v,
     vertex_rep sh g v |-- !! (valid_int_or_ptr (vertex_address g v)).
 Proof.
@@ -309,11 +351,7 @@ Proof.
     destruct (raw_fields_head_cons (vlabel g v)) as [r [l [? _]]]. rewrite H.
     rewrite Zlength_cons. pose proof (Zlength_nonneg l). omega.
   } apply H4 in H. rewrite Z.mul_0_r, Z.add_0_r in H. clear H4. inv H. inv H0.
-  simpl in H1. rewrite Zodd_mod. apply Zdivide_mod in H1.
-  remember (Ptrofs.unsigned (Ptrofs.repr (ofs + WORD_SIZE * vertex_offset g v))).
-  clear Heqz. rewrite Zmod_divides in H1 by omega. destruct H1.
-  replace (4 * x)%Z with (2 * x * 2)%Z in H by omega. subst. rewrite Z_mod_mult.
-  unfold Zeq_bool. simpl. reflexivity.
+  simpl in H1. apply four_divided_odd_false; assumption.
 Qed.
 
 Lemma graph_rep_generation_rep: forall g gen,
@@ -474,13 +512,14 @@ Proof.
         subst l; exfalso; omega.
 Qed.
 
-Lemma graph_and_heap_rest_memory_block: forall (g: LGraph) (t_info: thread_info) gen,
+Lemma graph_and_heap_rest_data_at_: forall (g: LGraph) (t_info: thread_info) gen,
     graph_has_gen g gen ->
     graph_thread_info_compatible g t_info ->
     graph_rep g * heap_rest_rep
                     (ti_heap t_info) |--
-                    memory_block (generation_sh (nth_gen g gen))
-                    (WORD_SIZE * gen_size t_info gen) (gen_start g gen) * TT.
+                    data_at_ (generation_sh (nth_gen g gen))
+                    (tarray int_or_ptr_type (gen_size t_info gen))
+                    (gen_start g gen) * TT.
 Proof.
   intros. sep_apply (graph_rep_generation_rep g gen H).
   remember (previous_vertices_size g gen (number_of_vertices (nth_gen g gen))) as n1.
@@ -488,11 +527,30 @@ Proof.
   remember (number_of_vertices (nth_gen g gen)) as num.
   remember (generation_sh (nth_gen g gen)) as sh.
   sep_apply (generation_rep_data_at_ sh g gen num H). rewrite <- Heqn1.
-  remember (total_space (nth_space t_info gen)) as n.
-  sep_apply (data_at__tarray_value_join sh n n1 (gen_start g gen) H1).
-    sep_apply (data_at__memory_block_cancel
-                 sh (tarray int_or_ptr_type n) (gen_start g gen)).
-  rewrite sizeof_tarray_int_or_ptr by omega. subst n. unfold gen_size. cancel.
+  remember (total_space (nth_space t_info gen)) as n. rewrite <- sepcon_assoc.
+  rewrite <- (data_at__tarray_value sh n n1 (gen_start g gen) H1). unfold gen_size.
+  entailer!.
+Qed.
+
+Lemma outlier_rep_single_rep: forall (roots: roots_t) outlier p,
+    In (inl (inr p)) roots ->
+    incl (filter_sum_right (filter_sum_left roots)) outlier ->
+    outlier_rep outlier |-- single_outlier_rep p * TT.
+Proof.
+  intros. assert (In p outlier). {
+    apply H0. rewrite <- filter_sum_right_In_iff, <- filter_sum_left_In_iff.
+    assumption. } unfold outlier_rep.
+  apply (in_map single_outlier_rep) in H1. apply fold_right_andp in H1.
+  destruct H1 as [Q ?]. rewrite H1. apply andp_left1. cancel.
+Qed.
+
+Lemma single_outlier_rep_valid_pointer: forall p,
+    single_outlier_rep p |-- valid_pointer (GC_Pointer2val p) * TT.
+Proof.
+  intros. unfold single_outlier_rep. Intros sh. remember (GC_Pointer2val p) as pp.
+  sep_apply (data_at__memory_block_cancel sh (tptr tvoid) pp). simpl sizeof.
+  sep_apply (memory_block_valid_ptr sh 4 pp);
+    [apply readable_nonidentity; assumption | omega | apply derives_refl].
 Qed.
 
 Lemma outlier_rep_valid_pointer: forall (roots: roots_t) outlier p,
@@ -500,10 +558,15 @@ Lemma outlier_rep_valid_pointer: forall (roots: roots_t) outlier p,
     incl (filter_sum_right (filter_sum_left roots)) outlier ->
     outlier_rep outlier |-- valid_pointer (GC_Pointer2val p) * TT.
 Proof.
-  intros. assert (In p outlier). {
-    apply H0. rewrite <- filter_sum_right_In_iff, <- filter_sum_left_In_iff.
-    assumption. } unfold outlier_rep.
-  apply (in_map (valid_pointer oo GC_Pointer2val)) in H1. apply fold_right_andp in H1.
-  destruct H1 as [Q ?]. rewrite H1. simpl. apply andp_left1.
-  rewrite <- (sepcon_emp (valid_pointer (GC_Pointer2val p))) at 1. cancel.
+  intros. sep_apply (outlier_rep_single_rep _ _ _ H H0).
+  sep_apply (single_outlier_rep_valid_pointer p). cancel.
+Qed.
+
+Lemma single_outlier_rep_valid_int_or_ptr: forall p,
+    single_outlier_rep p |-- !! (valid_int_or_ptr (GC_Pointer2val p)).
+Proof.
+  intros. unfold single_outlier_rep. Intros sh. remember (GC_Pointer2val p) as pp.
+  clear Heqpp. entailer!. destruct H0 as [? [_ [_ [? _]]]].
+  destruct pp; try contradiction. unfold align_compatible in H1. inv H1.
+  inv H2. simpl in H3. simpl. apply four_divided_odd_false; assumption.
 Qed.

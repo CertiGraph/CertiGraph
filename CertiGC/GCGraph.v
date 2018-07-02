@@ -120,7 +120,7 @@ Definition odd_Z2val (x: Z) : val := Vint (Int.repr (2 * x + 1)%Z).
 Definition Z2val (x: Z) : val := Vint (Int.repr x).
 
 Definition GC_Pointer2val (x: GC_Pointer) : val :=
-  match x with | GCPtr b z => Vptr b (Ptrofs.add z z) end.
+  match x with | GCPtr b z => Vptr b z end.
 
 Record raw_vertex_block : Type :=
   {
