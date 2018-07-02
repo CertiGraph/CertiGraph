@@ -1,5 +1,6 @@
 Require Import VST.veric.compcert_rmaps.
 Require Export VST.progs.conclib.
+Require Import VST.msl.shares.
 Require Import RamifyCoq.lib.List_ext.
 Require Import RamifyCoq.msl_ext.log_normalize.
 Require Import RamifyCoq.msl_ext.iter_sepcon.
@@ -569,4 +570,28 @@ Proof.
   clear Heqpp. entailer!. destruct H0 as [? [_ [_ [? _]]]].
   destruct pp; try contradiction. unfold align_compatible in H1. inv H1.
   inv H2. simpl in H3. simpl. apply four_divided_odd_false; assumption.
+Qed.
+
+Import Share.
+
+Lemma writable_readable_share_common: forall rsh wsh,
+  readable_share rsh -> writable_share wsh ->
+  exists sh, nonunit sh /\ join_sub sh rsh /\ join_sub sh wsh.
+Proof.
+  intros. assert (join (glb Lsh rsh) (glb Rsh rsh) rsh). {
+    apply (comp_parts_join comp_Lsh_Rsh).
+    - rewrite glb_twice, <- glb_assoc, glb_Lsh_Rsh, (glb_commute bot), glb_bot.
+      apply join_comm, bot_join_eq.
+    - rewrite <- glb_assoc, (glb_commute Rsh), glb_Lsh_Rsh,
+      (glb_commute bot), glb_bot, glb_twice. apply bot_join_eq.
+  } assert (join (glb Rsh rsh) (glb Rsh (comp rsh)) Rsh). {
+    rewrite !(glb_commute Rsh). apply (@comp_parts_join rsh (comp rsh)); auto.
+    - rewrite glb_twice, <- glb_assoc, comp2, (glb_commute bot), glb_bot.
+      apply join_comm, bot_join_eq.
+    - rewrite <- glb_assoc, (glb_commute (comp _)), comp2, (glb_commute bot), glb_bot,
+      glb_twice. apply bot_join_eq.
+  } exists (glb Rsh rsh). split; [|split].
+  - red in H. apply nonidentity_nonunit, H.
+  - apply join_comm in H1. exists (glb Lsh rsh). assumption.
+  - apply join_sub_trans with Rsh; [exists (glb Rsh (comp rsh))|]; assumption.
 Qed.
