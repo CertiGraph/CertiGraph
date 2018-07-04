@@ -396,12 +396,13 @@ Proof.
 Qed.
 
 Lemma graph_rep_vertex_rep: forall g v,
-    graph_has_v g v -> graph_rep g |-- EX sh: share, vertex_rep sh g v * TT.
+    graph_has_v g v -> graph_rep g |-- EX sh: share, !!(writable_share sh) &&
+                                                       vertex_rep sh g v * TT.
 Proof.
   intros. destruct H. sep_apply (graph_rep_generation_rep g (vgeneration v) H).
   unfold gen_has_index in H0. remember (generation_sh (nth_gen g (vgeneration v))).
   sep_apply (generation_rep_vertex_rep g (vgeneration v) _ _ s H0).
-  Exists s. destruct v. simpl. cancel.
+  Exists s. destruct v. simpl. entailer!. apply generation_share_writable.
 Qed.
 
 Lemma graph_rep_valid_int_or_ptr: forall g v,
@@ -595,3 +596,6 @@ Proof.
   - apply join_comm in H1. exists (glb Lsh rsh). assumption.
   - apply join_sub_trans with Rsh; [exists (glb Rsh (comp rsh))|]; assumption.
 Qed.
+
+Definition v_in_range (v: val) (start: val) (n: Z): Prop :=
+  exists i, 0 <= i < n /\ v = offset_val i start.

@@ -102,9 +102,6 @@ Definition abort_with_spec :=
   POST [ tvoid ]
     PROP (False) LOCAL() SEP().
 
-Definition v_in_range (v: val) (start: val) (n: Z): Prop :=
-  exists i, 0 <= i < n /\ v = offset_val i start.
-
 Definition IS_FROM_TYPE :=
   ProdType (ProdType (ProdType
                         (ProdType (ConstType share) (ConstType val))
