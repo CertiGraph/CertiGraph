@@ -145,6 +145,13 @@ Proof.
   destruct raw_fields0. 1: contradiction. exists r, raw_fields0. split; reflexivity.
 Qed.
 
+Lemma raw_field_Zlength_lt: forall rvb, (0 < Zlength (raw_fields rvb))%Z.
+Proof.
+  intros. destruct (raw_fields rvb) eqn:? .
+  - exfalso. apply (raw_fields_not_nil rvb). assumption.
+  - rewrite Zlength_cons. pose proof (Zlength_nonneg l). omega.
+Qed.
+
 Record generation_info: Type :=
   {
     start_address: val;
