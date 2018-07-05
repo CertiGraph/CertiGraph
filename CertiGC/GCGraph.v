@@ -1,5 +1,4 @@
 Require Import Coq.ZArith.ZArith.
-Require Import Coq.Lists.List.
 Require Export Coq.Program.Basics.
 Require Import compcert.lib.Integers.
 Require Import compcert.common.Values.
@@ -145,7 +144,9 @@ Proof.
   destruct raw_fields0. 1: contradiction. exists r, raw_fields0. split; reflexivity.
 Qed.
 
-Lemma raw_field_Zlength_lt: forall rvb, (0 < Zlength (raw_fields rvb))%Z.
+Local Open Scope Z_scope.
+
+Lemma raw_field_Zlength_lt: forall rvb, 0 < Zlength (raw_fields rvb).
 Proof.
   intros. destruct (raw_fields rvb) eqn:? .
   - exfalso. apply (raw_fields_not_nil rvb). assumption.
@@ -197,8 +198,8 @@ Record space: Type :=
     used_space: Z;
     total_space: Z;
     space_sh: share;
-    space_order: (0 <= used_space <= total_space)%Z;
-    space_upper_bound: (total_space < MAX_SPACE_SIZE)%Z;
+    space_order: 0 <= used_space <= total_space;
+    space_upper_bound: total_space < MAX_SPACE_SIZE;
   }.
 
 Definition null_space: space.
@@ -208,18 +209,18 @@ Proof.
   - rewrite MAX_SPACE_SIZE_eq. compute; reflexivity.
 Defined.
 
-Lemma total_space_tight_range: forall sp, (0 <= total_space sp < MAX_SPACE_SIZE)%Z.
+Lemma total_space_tight_range: forall sp, 0 <= total_space sp < MAX_SPACE_SIZE.
 Proof.
   intros. split.
   - destruct (space_order sp). transitivity (used_space sp); assumption.
   - apply space_upper_bound.
 Qed.
 
-Lemma total_space_range: forall sp, (0 <= total_space sp <= Int.max_unsigned)%Z.
+Lemma total_space_range: forall sp, 0 <= total_space sp <= Int.max_unsigned.
 Proof. intros. apply MSS_max_unsigned_range, total_space_tight_range. Qed.
 
 Lemma total_space_signed_range: forall sp,
-    (Ptrofs.min_signed <= WORD_SIZE * (total_space sp) <= Ptrofs.max_signed)%Z.
+    Ptrofs.min_signed <= WORD_SIZE * (total_space sp) <= Ptrofs.max_signed.
 Proof. intros. apply MSS_max_4_signed_range, total_space_tight_range. Qed.
 
 Record heap: Type :=
@@ -256,32 +257,11 @@ Record thread_info: Type :=
 Definition single_vertex_size (g: LGraph) (v: VType): Z :=
   Zlength (vlabel g v).(raw_fields) + 1.
 
-Lemma single_vertex_size_gt_zero: forall g v, (0 < single_vertex_size g v)%Z.
+Lemma svs_gt_one: forall g v, 1 < single_vertex_size g v.
 Proof.
   intros. unfold single_vertex_size.
-  pose proof (Zlength_nonneg (raw_fields (vlabel g v))). omega.
+  pose proof (raw_field_Zlength_lt (vlabel g v)). omega.
 Qed.
-
-Fixpoint previous_vertices_size (g: LGraph) (gen i: nat): Z :=
-  match i with
-  | O => 0
-  | S n => single_vertex_size g (gen, n) + previous_vertices_size g gen n
-  end.
-
-Lemma previous_size_ge_zero: forall g gen i, (0 <= previous_vertices_size g gen i)%Z.
-Proof.
-  intros. induction i; simpl. 1: omega.
-  pose proof (single_vertex_size_gt_zero g (gen, i)). omega.
-Qed.
-
-Definition generation_space_compatible (g: LGraph)
-           (tri: nat * generation_info * space) : Prop :=
-  match tri with
-  | (gen, gi, sp) =>
-    gi.(start_address) = sp.(space_start) /\
-    gi.(generation_sh) = sp.(space_sh) /\
-    previous_vertices_size g gen gi.(number_of_vertices) = sp.(used_space)
-  end.
 
 Fixpoint nat_seq (s: nat) (total: nat): list nat :=
   match total with
@@ -292,20 +272,29 @@ Fixpoint nat_seq (s: nat) (total: nat): list nat :=
 Lemma nat_seq_length: forall s n, length (nat_seq s n) = n.
 Proof. intros. revert s. induction n; intros; simpl; [|rewrite IHn]; reflexivity. Qed.
 
-Lemma nat_seq_S: forall i num, nat_seq i (S num) = nat_seq i num ++ [num + i].
+Lemma nat_seq_S: forall i num, nat_seq i (S num) = nat_seq i num ++ [(num + i)%nat].
 Proof.
   intros. revert i. induction num; intros. 1: simpl; reflexivity.
   remember (S num). simpl. rewrite (IHnum (S i)). subst. simpl. repeat f_equal. omega.
 Qed.
 
-Lemma nat_seq_In_iff: forall s n i, In i (nat_seq s n) <-> s <= i < s + n.
+Lemma nat_seq_In_iff: forall s n i, In i (nat_seq s n) <-> (s <= i < s + n)%nat.
 Proof. intros. revert s. induction n; intros; simpl; [|rewrite IHn]; omega. Qed.
+
+Local Close Scope Z_scope.
 
 Lemma nat_seq_nth: forall s num n a, n < num -> nth n (nat_seq s num) a = s + n.
 Proof.
   intros. revert s n H. induction num; intros. 1: exfalso; omega. simpl. destruct n.
   1: omega. specialize (IHnum (S s) n). replace (s + S n) with (S s + n) by omega.
   rewrite IHnum; [reflexivity | omega].
+Qed.
+
+Lemma nat_seq_app: forall s n m, nat_seq s (n + m) = nat_seq s n ++ nat_seq (s + n) m.
+Proof.
+  intros. revert s; induction n; simpl; intros.
+  - rewrite Nat.add_0_r. reflexivity.
+  - f_equal. rewrite IHn. replace (S s + n) with (s + S n) by omega. reflexivity.
 Qed.
 
 Definition nat_inc_list (n: nat) : list nat := nat_seq O n.
@@ -321,6 +310,47 @@ Proof. intros. unfold nat_inc_list. rewrite nat_seq_In_iff. intuition. Qed.
 
 Lemma nat_inc_list_nth: forall i n a, i < n -> nth i (nat_inc_list n) a = i.
 Proof. intros. unfold nat_inc_list. rewrite nat_seq_nth; [omega | assumption]. Qed.
+
+Lemma nat_inc_list_app: forall n m,
+    nat_inc_list (n + m) = nat_inc_list n ++ nat_seq n m.
+Proof. intros. unfold nat_inc_list. rewrite nat_seq_app. reflexivity. Qed.
+
+Local Open Scope Z_scope.
+
+Definition vertex_size_accum g gen (s: Z) (n: nat) :=
+  s + single_vertex_size g (gen, n).
+
+Definition previous_vertices_size (g: LGraph) (gen i: nat): Z :=
+  fold_left (vertex_size_accum g gen) (nat_inc_list i) 0.
+
+Lemma vs_accum_list_ge: forall g gen s l, s <= fold_left (vertex_size_accum g gen) l s.
+Proof.
+  intros. revert s. rev_induction l. 1: simpl; intuition.
+  rewrite fold_left_app. simpl. unfold vertex_size_accum at 1.
+  pose proof (svs_gt_one g (gen, x)). specialize (H s). omega.
+Qed.
+
+Lemma pvs_S: forall g gen i,
+    previous_vertices_size g gen (S i) =
+    previous_vertices_size g gen i + single_vertex_size g (gen, i).
+Proof.
+  intros. unfold previous_vertices_size at 1. rewrite nat_inc_list_S, fold_left_app.
+  fold (previous_vertices_size g gen i). simpl. reflexivity.
+Qed.
+
+Lemma pvs_ge_zero: forall g gen i, 0 <= previous_vertices_size g gen i.
+Proof. intros. unfold previous_vertices_size. apply vs_accum_list_ge. Qed.
+
+Definition generation_space_compatible (g: LGraph)
+           (tri: nat * generation_info * space) : Prop :=
+  match tri with
+  | (gen, gi, sp) =>
+    gi.(start_address) = sp.(space_start) /\
+    gi.(generation_sh) = sp.(space_sh) /\
+    previous_vertices_size g gen gi.(number_of_vertices) = sp.(used_space)
+  end.
+
+Local Close Scope Z_scope.
 
 Definition graph_thread_info_compatible (g: LGraph) (ti: thread_info): Prop :=
   Forall (generation_space_compatible g)
@@ -343,6 +373,9 @@ Definition vertex_offset (g: LGraph) (v: VType): Z :=
 
 Definition nth_gen (g: LGraph) (gen: nat): generation_info :=
   nth gen g.(glabel).(g_gen) null_info.
+
+Definition generation_size g gen :=
+  previous_vertices_size g gen (number_of_vertices (nth_gen g gen)).
 
 Definition graph_has_gen (g: LGraph) (n: nat): Prop := n < length g.(glabel).(g_gen).
 
@@ -637,7 +670,7 @@ Lemma vertex_address_the_same: forall (g1 g2: LGraph) v,
 Proof.
   intros. unfold vertex_address. f_equal.
   - f_equal. unfold vertex_offset. f_equal. remember (vindex v). clear Heqn.
-    induction n; simpl; auto. rewrite IHn. f_equal. unfold single_vertex_size.
+    induction n; simpl; auto. rewrite !pvs_S, IHn. f_equal. unfold single_vertex_size.
     rewrite H. reflexivity.
   - assert (forall gen, graph_has_gen g1 gen <-> graph_has_gen g2 gen). {
       intros. unfold graph_has_gen.
@@ -713,8 +746,8 @@ Proof.
     split; [|split]; [assumption..|].
     rewrite <- H23. remember (number_of_vertices gin) as n. clear -H3.
     assert (forall v, vlabel g v = vlabel g' v) by
-        (intro; rewrite H3; reflexivity). induction n; simpl; auto. rewrite IHn.
-    f_equal. unfold single_vertex_size. rewrite H. reflexivity.
+        (intro; rewrite H3; reflexivity). induction n; simpl; auto.
+    rewrite !pvs_S, IHn. f_equal. unfold single_vertex_size. rewrite H. reflexivity.
 Qed.
 
 Definition copy1v_add_edge
@@ -826,3 +859,63 @@ Definition nth_space (t_info: thread_info) (n: nat): space :=
 
 Definition gen_size (t_info: thread_info) (n: nat): Z :=
   total_space (nth_space t_info n).
+
+Lemma graph_thread_generation_space_compatible:
+  forall (g: LGraph) (t_info: thread_info) gen,
+    graph_has_gen g gen -> graph_thread_info_compatible g t_info ->
+    generation_space_compatible g (gen, nth_gen g gen, nth_space t_info gen).
+Proof.
+  intros. destruct H0 as [? [? ?]]. red in H. rewrite Forall_forall in H0.
+  remember (g_gen (glabel g)). remember (nat_inc_list (length l)).
+  remember (spaces (ti_heap t_info)).
+  assert (length (combine l0 l) = length l) by
+      (subst; rewrite combine_length, nat_inc_list_length, Nat.min_id; reflexivity).
+  assert (length (combine (combine l0 l) l1) = length l) by
+      (rewrite combine_length, H3, min_l by assumption; reflexivity).
+  assert (generation_space_compatible
+            g (nth gen (combine (combine l0 l) l1) (O, null_info, null_space))) by
+      (apply H0, nth_In; rewrite H4; assumption).
+  rewrite combine_nth_lt in H5; [|rewrite H3; omega | omega].
+  rewrite combine_nth in H5 by (subst l0; rewrite nat_inc_list_length; reflexivity).
+  rewrite Heql0 in H5. rewrite nat_inc_list_nth in H5 by assumption.
+   rewrite Heql in H5. unfold nth_gen. unfold nth_space. rewrite Heql1 in H5. apply H5.
+Qed.
+
+Lemma pvs_mono: forall g gen i j,
+    i <= j -> (previous_vertices_size g gen i <= previous_vertices_size g gen j)%Z.
+Proof.
+  intros. assert (j = i + (j - i)) by omega. rewrite H0. remember (j - i). subst j.
+  unfold previous_vertices_size. rewrite nat_inc_list_app, fold_left_app.
+  apply vs_accum_list_ge.
+Qed.
+
+Lemma vo_lt_gs: forall g v,
+    gen_has_index g (vgeneration v) (vindex v) ->
+    (vertex_offset g v < generation_size g (vgeneration v))%Z.
+Proof.
+  intros. unfold vertex_offset, generation_size. red in H.
+  remember (number_of_vertices (nth_gen g (vgeneration v))). remember (vgeneration v).
+  assert (S (vindex v) <= n) by omega.
+  apply Z.lt_le_trans with (previous_vertices_size g n0 (S (vindex v))).
+  - rewrite pvs_S. apply Zplus_lt_compat_l, svs_gt_one.
+  - apply pvs_mono; assumption.
+Qed.
+
+Definition v_in_range (v: val) (start: val) (n: Z): Prop :=
+  exists i, (0 <= i < n)%Z /\ v = offset_val i start.
+
+Lemma graph_thread_v_in_range: forall g t_info v,
+    graph_thread_info_compatible g t_info -> graph_has_v g v ->
+    v_in_range (vertex_address g v) (gen_start g (vgeneration v))
+               (WORD_SIZE * gen_size t_info (vgeneration v)).
+Proof.
+  intros. red. unfold vertex_address. exists (WORD_SIZE * vertex_offset g v)%Z.
+  split. 2: reflexivity. unfold gen_size. destruct H0. remember (vgeneration v). split.
+  - unfold vertex_offset.
+    pose proof (pvs_ge_zero g (vgeneration v) (vindex v)). rep_omega.
+  - apply Zmult_lt_compat_l. 1: rep_omega.
+    apply Z.lt_le_trans with (used_space (nth_space t_info n)).
+    2: apply (proj2 (space_order (nth_space t_info n))).
+    destruct (graph_thread_generation_space_compatible _ _ _ H0 H) as [? [? ?]].
+    rewrite <- H4, Heqn. apply vo_lt_gs. subst n. assumption.
+Qed.

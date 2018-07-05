@@ -95,7 +95,7 @@ Proof.
   rewrite vertex_head_address_eq. unfold vertex_address, vertex_offset. simpl.
   remember (gen_start g gen). destruct v; try contradiction.
   remember (previous_vertices_size g gen num).
-  assert (0 <= z) by (rewrite Heqz; apply previous_size_ge_zero).
+  assert (0 <= z) by (rewrite Heqz; apply pvs_ge_zero).
   unfold single_vertex_size. entailer. rewrite <- fields_eq_length.
   destruct H1 as [_ [_ [? _]]]. simpl in H1.
   destruct H3 as [_ [_ [? _]]]. simpl in H3. rewrite <- H4 in H3.
@@ -139,8 +139,8 @@ Proof.
   rewrite <- H. inv_int i. entailer. destruct H1 as [_ [_ [? _]]]. simpl in H1.
   destruct H4 as [_ [_ [? _]]]. simpl in H4. rewrite <- H5 in H4. clear H3 H6 H5.
   rewrite ptrofs_add_repr in *. apply prop_right.
-  pose proof (previous_size_ge_zero g gen num).
-  rewrite Ptrofs.unsigned_repr_eq in H1. rewrite Z.mod_small in H1 by rep_omega.
+  pose proof (pvs_ge_zero g gen num). rewrite Ptrofs.unsigned_repr_eq in H1.
+  rewrite Z.mod_small in H1 by rep_omega. rewrite pvs_S.
   unfold single_vertex_size. rewrite <- fields_eq_length. rewrite WORD_SIZE_eq in *.
   rewrite Z.mul_add_distr_l, Z.mul_1_r, Z.add_assoc in H4.
   rewrite Ptrofs.unsigned_repr_eq in H4. rewrite Z.mod_small in H4 by rep_omega.
@@ -158,13 +158,13 @@ Proof.
   - sep_apply (generation_rep_ptrofs sh g gen (S num) b i Heqv). Intros.
     rename H0 into HS. simpl in HS. unfold generation_rep.
     rewrite nat_inc_list_S, map_app, iter_sepcon_app_sepcon.
-    simpl. unfold generation_rep in IHnum. sep_apply IHnum. rewrite Z.add_comm.
+    simpl. unfold generation_rep in IHnum. sep_apply IHnum. rewrite pvs_S, Z.add_comm.
     rewrite <- (Ptrofs.repr_unsigned i) at 2.
     remember (previous_vertices_size g gen num) as zp.
-    assert (0 <= zp) by (rewrite Heqzp; apply previous_size_ge_zero).
-    pose proof (single_vertex_size_gt_zero g (gen, num)) as HS1.
-    pose proof (Ptrofs.unsigned_range i) as HS2.
-    rewrite Z.mul_add_distr_l, memory_block_split; [|rep_omega..].
+    assert (0 <= zp) by (rewrite Heqzp; apply pvs_ge_zero).
+    pose proof (svs_gt_one g (gen, num)) as HS1.
+    pose proof (Ptrofs.unsigned_range i) as HS2. rewrite pvs_S in HS.
+    rewrite Z.add_comm, Z.mul_add_distr_l, memory_block_split; [|rep_omega..].
     rewrite (Ptrofs.repr_unsigned i). apply cancel_left.
     sep_apply (vertex_rep_memory_block sh g (gen, num)).
     rewrite vertex_head_address_eq, <- Heqzp, <- Heqv. simpl offset_val.
@@ -180,14 +180,15 @@ Proof.
   intros. apply graph_has_gen_start_isptr in H.
   remember (gen_start g gen). destruct v; try contradiction.
   sep_apply (generation_rep_ptrofs sh g gen num b i Heqv). Intros. induction num.
-  - simpl previous_vertices_size. apply prop_right. constructor. intros. omega.
+  - unfold previous_vertices_size. simpl fold_left. apply prop_right.
+    constructor. intros. omega.
   - unfold generation_rep. rewrite nat_inc_list_S, map_app, iter_sepcon_app_sepcon.
     simpl iter_sepcon. entailer. unfold vertex_rep at 2. unfold vertex_at.
     rename H0 into HS. rewrite vertex_head_address_eq. entailer!. clear H1 H2 H3 H4.
     destruct H0 as [_ [_ [_ [? _]]]]. rewrite <- Heqv in H0. inv_int i.
     hnf in H0. rewrite ptrofs_add_repr in H0. inv H0. simpl in H1. inv H1.
-    simpl in H3. simpl in HS. pose proof (single_vertex_size_gt_zero g (gen, num)).
-    pose proof (previous_size_ge_zero g gen num).
+    simpl in H3. simpl in HS. pose proof (svs_gt_one g (gen, num)).
+    pose proof (pvs_ge_zero g gen num). rewrite pvs_S in HS.
     rewrite Ptrofs.unsigned_repr_eq in H3. rewrite Z.mod_small in H3 by rep_omega.
     rewrite Z.add_comm in H3. apply Z.divide_add_cancel_r in H3.
     2: rewrite WORD_SIZE_eq; apply Z.divide_factor_l. constructor. intros.
@@ -209,7 +210,7 @@ Proof.
   intros. pose proof H. apply graph_has_gen_start_isptr in H.
   remember (gen_start g gen). destruct v; try contradiction.
   unfold field_compatible. entailer. unfold size_compatible.
-  rewrite sizeof_tarray_int_or_ptr by apply previous_size_ge_zero.
+  rewrite sizeof_tarray_int_or_ptr by apply pvs_ge_zero.
   sep_apply (generation_rep_ptrofs sh g gen num b i Heqv). entailer. rewrite Heqv.
   sep_apply (generation_rep_align_compatible sh g gen num H0). entailer!.
 Qed.
@@ -222,7 +223,7 @@ Lemma generation_rep_data_at_: forall sh g gen num,
 Proof.
   intros. sep_apply (generation_rep_field_compatible sh g gen num H). Intros.
   sep_apply (generation_rep_memory_block sh g gen num H).
-  rewrite <- sizeof_tarray_int_or_ptr by apply previous_size_ge_zero.
+  rewrite <- sizeof_tarray_int_or_ptr by apply pvs_ge_zero.
   rewrite memory_block_data_at_; auto.
 Qed.
 
@@ -477,41 +478,27 @@ Qed.
 Lemma heap_rest_rep_data_at_: forall (g: LGraph) (t_info: thread_info) gen n1,
     graph_has_gen g gen ->
     graph_thread_info_compatible g t_info ->
-    n1 = previous_vertices_size g gen (number_of_vertices (nth_gen g gen)) ->
+    n1 = generation_size g gen ->
     0 <= n1 <= total_space (nth_space t_info gen) /\
     heap_rest_rep (ti_heap t_info) |--
                   data_at_ (generation_sh (nth_gen g gen))
                   (tarray int_or_ptr_type (total_space (nth_space t_info gen) - n1))
                   (offset_val (WORD_SIZE * n1) (gen_start g gen)) * TT.
 Proof.
-  intros. subst n1. destruct H0 as [? [? ?]]. unfold graph_has_gen in H.
-  rewrite Forall_forall in H0. remember (g_gen (glabel g)).
-  remember (nat_inc_list (length l)). remember (spaces (ti_heap t_info)).
-  assert (length (combine l0 l) = length l) by
-      (subst; rewrite combine_length, nat_inc_list_length, Nat.min_id; reflexivity).
-  assert (length (combine (combine l0 l) l1) = length l) by
-      (rewrite combine_length, H3, min_l by assumption; reflexivity).
-  assert (generation_space_compatible
-            g (nth gen (combine (combine l0 l) l1) (O, null_info, null_space))) by
-      (apply H0, nth_In; rewrite H4; assumption).
-  rewrite combine_nth_lt in H5; [|rewrite H3; omega | omega].
-  rewrite combine_nth in H5 by (subst l0; rewrite nat_inc_list_length; reflexivity).
-  rewrite Heql0 in H5. rewrite nat_inc_list_nth in H5 by assumption.
-  unfold heap_rest_rep. rewrite <- Heql1. assert (In (nth gen l1 null_space) l1). {
-    apply nth_In, Nat.lt_le_trans with (length l); assumption.
-  } rewrite Heql in H5.
-  change (nth gen (g_gen (glabel g)) null_info) with (nth_gen g gen) in H5.
-  subst l1. change (nth gen (spaces (ti_heap t_info)) null_space) with
-                (nth_space t_info gen) in *. destruct H5 as [? [? ?]]. split.
-  - rewrite H8. apply space_order.
-  - sep_apply (iter_sepcon_in_true space_rest_rep _ (nth_space t_info gen) H6).
-    unfold space_rest_rep. rewrite <- H5. if_tac.
-    + pose proof (start_isptr (nth_gen g gen)). rewrite H9 in H10. inversion H10.
-    + rewrite <- H7, <- H8.
-      replace (start_address (nth_gen g gen)) with (gen_start g gen).
-      * cancel.
-      * unfold gen_start. if_tac. reflexivity. unfold graph_has_gen in H10.
-        subst l; exfalso; omega.
+  intros. subst n1. pose proof (graph_thread_generation_space_compatible _ _ _ H H0).
+  red in H. destruct H1 as [? [? ?]]. unfold generation_size. rewrite H3.
+  split; [apply space_order|].
+  unfold heap_rest_rep. remember (spaces (ti_heap t_info)). destruct H0 as [? [? ?]].
+  assert (In (nth_space t_info gen) l). {
+    unfold nth_space. rewrite <- Heql.
+    apply nth_In, Nat.lt_le_trans with (length (g_gen (glabel g)));
+      [|rewrite Heql]; assumption. }
+  sep_apply (iter_sepcon_in_true space_rest_rep _ (nth_space t_info gen) H6).
+  unfold space_rest_rep. rewrite <- H1. if_tac.
+  - pose proof (start_isptr (nth_gen g gen)). rewrite H7 in H8. inversion H8.
+  - rewrite H2. replace (start_address (nth_gen g gen)) with (gen_start g gen).
+    + cancel.
+    + unfold gen_start. if_tac. reflexivity. unfold graph_has_gen in H8. contradiction.
 Qed.
 
 Lemma graph_and_heap_rest_data_at_: forall (g: LGraph) (t_info: thread_info) gen,
@@ -597,5 +584,15 @@ Proof.
   - apply join_sub_trans with Rsh; [exists (glb Rsh (comp rsh))|]; assumption.
 Qed.
 
-Definition v_in_range (v: val) (start: val) (n: Z): Prop :=
-  exists i, 0 <= i < n /\ v = offset_val i start.
+Lemma graph_and_heap_rest_v_in_range_iff: forall g t_info gen v,
+    graph_thread_info_compatible g t_info ->
+    graph_has_gen g gen -> graph_has_v g v ->
+    graph_rep g * heap_rest_rep (ti_heap t_info) |--
+    !! (v_in_range (vertex_address g v) (gen_start g gen)
+                   (WORD_SIZE * gen_size t_info gen) <-> vgeneration v = gen).
+Proof.
+  intros. unfold iff. rewrite and_comm. apply prop_and_right.
+  - intros. rewrite <- H2. apply graph_thread_v_in_range; assumption.
+  - rewrite prop_impl, <- imp_andp_adjoint; Intros.
+    destruct (Nat.eq_dec (vgeneration v) gen). 1: apply prop_right; assumption.
+Abort.
