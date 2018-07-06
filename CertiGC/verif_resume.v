@@ -1,27 +1,20 @@
 Require Import RamifyCoq.CertiGC.gc_spec.
 
-Lemma reset_0_graph_rep_eq: forall (g: LGraph) g0 g1,
-    g_gen (glabel g) = g0 :: g1 ->
-    iter_sepcon (combine (combine (nat_seq 1 (length (map number_of_vertices g1)))
-                                  (map number_of_vertices g1)) (map generation_sh g1))
-                (generation_rep g) = graph_rep (reset_nth_gen_graph 0 g).
+Lemma reset_0_graph_rep_eq: forall (g: LGraph) g0 l,
+    g_gen (glabel g) = g0 :: l ->
+    iter_sepcon (nat_seq 1 (length l)) (generation_rep g) = 
+    graph_rep (reset_nth_gen_graph 0 g).
 Proof.
   intros. unfold graph_rep. unfold reset_nth_gen_graph at 1. simpl. rewrite H. simpl.
-  rewrite emp_sepcon.
-  remember (combine (combine (nat_seq 1 (length (map number_of_vertices g1)))
-                             (map number_of_vertices g1)) (map generation_sh g1)) as l.
-  assert (forall i, In i l -> (1 <= fst (fst i))%nat). {
-    intros. subst l. destruct i as [[x y] z]. do 2 apply in_combine_l in H0.
-    rewrite nat_seq_In_iff in H0. simpl. destruct H0. assumption.
-  } clear Heql. revert H0. induction l; intros; simpl; auto.
-  assert (forall i, In i l -> (1 <= fst (fst i))%nat) by
-      (intros; apply H0; right; assumption). rewrite (IHl H1). f_equal.
-  assert (1 <= fst (fst a))%nat by (apply H0; left; reflexivity). clear -H2 H.
-  destruct a as [[gen num] sh]. unfold generation_rep. simpl in H2.
-  apply iter_sepcon_func_strong. intros. apply list_in_map_inv in H0.
-  destruct H0 as [n [? ?]]. subst x. unfold vertex_rep. f_equal.
-  - apply vertex_address_reset.
-  - apply make_fields_reset.
+  unfold generation_rep at 2. unfold reset_nth_gen_graph at 1. unfold nth_gen at 1.
+  simpl. rewrite H. simpl. rewrite emp_sepcon. apply iter_sepcon_func_strong. intros.
+  rewrite nat_seq_In_iff in H0. unfold generation_rep.
+  replace (nth_gen (reset_nth_gen_graph 0 g) x) with (nth_gen g x).
+  - apply iter_sepcon_func_strong. intros. apply list_in_map_inv in H1.
+    destruct H1 as [n [? ?]]. subst x0. unfold vertex_rep. f_equal.
+    + apply vertex_address_reset.
+    + apply make_fields_reset.
+  - unfold nth_gen. simpl. rewrite H. simpl. destruct x; [exfalso; omega|reflexivity].
 Qed.
 
 Lemma body_resume: semax_body Vprog Gprog f_resume resume_spec.
@@ -62,17 +55,15 @@ Proof.
       unfold Val.of_bool in H7. destruct b; simpl in H7. 1: discriminate.
       symmetry in Heqb. apply ltu_repr_false in Heqb;
                           [omega | apply total_space_range | apply word_size_range].
-    + Intros. forward. forward. deadvars. unfold graph_rep. rewrite Heql, map_cons.
-      simpl length. simpl combine. simpl iter_sepcon. Intros.
-      remember (generation_sh g0) as sh0.
-      replace_SEP 2 (generation_rep g (O, number_of_vertices g0, sh0)) by entailer!.
-      sep_apply (generation_rep_data_at_
-                   sh0 g O (number_of_vertices g0) (graph_has_gen_O g)). rewrite H5.
+    + Intros. forward. forward. deadvars. unfold graph_rep. rewrite Heql. simpl length.
+      unfold nat_inc_list. simpl nat_seq. simpl iter_sepcon. Intros.
+      sep_apply (generation_rep_data_at_ g O  (graph_has_gen_O g)).
+      unfold generation_size. unfold nth_gen. rewrite Heql. simpl nth. rewrite H5.
       unfold gen_start, nth_gen. if_tac. 2: exfalso; apply H8; apply graph_has_gen_O.
       clear H8. rewrite Heql. simpl nth. rewrite <- Heqv.
       unfold heap_rest_rep. rewrite H1. simpl iter_sepcon. Intros.
       unfold space_rest_rep at 1. rewrite <- H3, <- H4, if_false. 2: discriminate.
-      freeze [1; 2; 3; 4; 5] FR. gather_SEP 1 2.
+      freeze [1; 2; 3; 4; 5] FR. gather_SEP 1 2. remember (generation_sh g0) as sh0.
       assert (0 <= used_space hs <= total_space hs) by (apply space_order).
       sep_apply (data_at__tarray_value_fold
                    sh0 (total_space hs) (used_space hs) (Vptr b i) H8). thaw FR.
