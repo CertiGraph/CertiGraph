@@ -232,18 +232,20 @@ Qed.
 Lemma iter_sepcon_func: forall l P Q, (forall x, P x = Q x) -> iter_sepcon l P = iter_sepcon l Q.
 Proof. intros. induction l; simpl; [|f_equal]; auto. Qed.
 
-Lemma iter_sepcon_func_strong: forall l P Q, (forall x, In x l -> P x = Q x) -> iter_sepcon l P = iter_sepcon l Q.
+Lemma iter_sepcon_func_derives: forall l P Q, (forall x, In x l -> P x |-- Q x) ->
+                                              iter_sepcon l P |-- iter_sepcon l Q.
 Proof.
   intros. induction l.
-  + reflexivity.
-  + simpl.
-    f_equal.
-    - apply H.
-      simpl; auto.
-    - apply IHl.
-      intros; apply H.
-      simpl; auto.
-Qed. 
+  - apply derives_refl.
+  - simpl. apply sepcon_derives.
+    + apply H. simpl; auto.
+    + apply IHl. intros; apply H. simpl; auto.
+Qed.
+
+Lemma iter_sepcon_func_strong: forall l P Q, (forall x, In x l -> P x = Q x) -> iter_sepcon l P = iter_sepcon l Q.
+Proof.
+  intros. apply pred_ext; apply iter_sepcon_func_derives; intros; rewrite H; auto.
+Qed.
 
 Instance iter_sepcon_permutation_proper : Proper ((@Permutation B) ==> (pointwise_relation B eq) ==> eq) iter_sepcon.
 Proof.
@@ -309,7 +311,7 @@ Definition pred_sepcon (P: B -> Prop) (p: B -> A): A :=
   EX l: list B, !! (forall x, In x l <-> P x) && !! NoDup l && iter_sepcon l p.
 
 Lemma pred_sepcon_eq: forall (P: B -> Prop) (p: B -> A),
-    pred_sepcon P p = 
+    pred_sepcon P p =
     (EX l: list B, !! ((forall x, In x l <-> P x) /\ NoDup l) && iter_sepcon l p).
 Proof.
   intros. unfold pred_sepcon. f_equal. extensionality l. rewrite prop_and. auto.
@@ -555,7 +557,7 @@ Proof.
   apply pred_ext.
   + apply exp_left; intros.
     normalize.
-    destruct x; [simpl; auto |]. 
+    destruct x; [simpl; auto |].
     specialize (H b); simpl in H; tauto.
   + apply (exp_right nil).
     normalize. simpl.
@@ -591,7 +593,7 @@ Section OconIterSepCon.
 
   Lemma pred_sepcon_ocon:
     forall (P Q R: B -> Prop) p (eq_dec : forall x y : B, {x = y} + {x <> y}),
-      (forall x, Decidable (P x)) -> (forall x, Decidable (Q x)) -> 
+      (forall x, Decidable (P x)) -> (forall x, Decidable (Q x)) ->
       (forall a, P a \/ Q a <-> R a) ->
       (forall x : B, precise (p x)) ->
       joinable p ->
@@ -600,7 +602,7 @@ Section OconIterSepCon.
     intros. unfold pred_sepcon. apply pred_ext.
     + normalize_overlap; intro lP.
       do 2 normalize_overlap. rename x into lQ.
-      apply (exp_right (nodup eq_dec (lP ++ lQ))). 
+      apply (exp_right (nodup eq_dec (lP ++ lQ))).
       rewrite (iter_sepcon_ocon eq_dec); auto. rewrite <- prop_and.
       apply andp_right; auto. apply prop_right. split; intros.
       2: apply NoDup_nodup. split; intros.
@@ -619,7 +621,7 @@ Section OconIterSepCon.
 
   Lemma pred_sepcon_ocon1:
     forall (Q R: B -> Prop) p z (eq_dec : forall x y : B, {x = y} + {x <> y}),
-      (forall x, Decidable (Q x)) -> 
+      (forall x, Decidable (Q x)) ->
       (forall a, a = z \/ Q a <-> R a) ->
       (forall x : B, precise (p x)) ->
       joinable p ->

@@ -861,11 +861,13 @@ Definition gen_size (t_info: thread_info) (n: nat): Z :=
   total_space (nth_space t_info n).
 
 Lemma graph_thread_generation_space_compatible:
-  forall (g: LGraph) (t_info: thread_info) gen,
-    graph_has_gen g gen -> graph_thread_info_compatible g t_info ->
-    generation_space_compatible g (gen, nth_gen g gen, nth_space t_info gen).
+  forall (g: LGraph) (t_info: thread_info),
+    graph_thread_info_compatible g t_info ->
+    forall gen,
+      graph_has_gen g gen -> 
+      generation_space_compatible g (gen, nth_gen g gen, nth_space t_info gen).
 Proof.
-  intros. destruct H0 as [? [? ?]]. red in H. rewrite Forall_forall in H0.
+  intros. destruct H as [? [? ?]]. red in H0. rewrite Forall_forall in H.
   remember (g_gen (glabel g)). remember (nat_inc_list (length l)).
   remember (spaces (ti_heap t_info)).
   assert (length (combine l0 l) = length l) by
@@ -874,7 +876,7 @@ Proof.
       (rewrite combine_length, H3, min_l by assumption; reflexivity).
   assert (generation_space_compatible
             g (nth gen (combine (combine l0 l) l1) (O, null_info, null_space))) by
-      (apply H0, nth_In; rewrite H4; assumption).
+      (apply H, nth_In; rewrite H4; assumption).
   rewrite combine_nth_lt in H5; [|rewrite H3; omega | omega].
   rewrite combine_nth in H5 by (subst l0; rewrite nat_inc_list_length; reflexivity).
   rewrite Heql0 in H5. rewrite nat_inc_list_nth in H5 by assumption.
@@ -916,6 +918,6 @@ Proof.
   - apply Zmult_lt_compat_l. 1: rep_omega.
     apply Z.lt_le_trans with (used_space (nth_space t_info n)).
     2: apply (proj2 (space_order (nth_space t_info n))).
-    destruct (graph_thread_generation_space_compatible _ _ _ H0 H) as [? [? ?]].
+    destruct (graph_thread_generation_space_compatible _ _ H _ H0) as [? [? ?]].
     rewrite <- H4, Heqn. apply vo_lt_gs. subst n. assumption.
 Qed.
