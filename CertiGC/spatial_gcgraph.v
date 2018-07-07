@@ -639,6 +639,50 @@ Proof.
   - apply join_sub_trans with Rsh; [exists (glb Rsh (comp rsh))|]; assumption.
 Qed.
 
+Lemma readable_writable_memory_block_FF: forall rsh wsh m1 m2 p,
+    readable_share rsh -> writable_share wsh ->
+    0 < m1 <= Ptrofs.max_unsigned -> 0 < m2 <= Ptrofs.max_unsigned ->
+    memory_block rsh m1 p * memory_block wsh m2 p |-- FF.
+Proof.
+  intros.
+  destruct (writable_readable_share_common _ _ H H0) as [sh [? [[shr ?] [shw ?]]]].
+  rewrite <- (memory_block_share_join _ _ _ _ _ H4).
+  rewrite <- (memory_block_share_join _ _ _ _ _ H5).
+  rewrite <- sepcon_assoc, (sepcon_comm (memory_block sh m1 p)),
+  (sepcon_assoc (memory_block shr m1 p)).
+  sep_apply (memory_block_conflict sh _ _ p H3 H1 H2). entailer!.
+Qed.
+
+Lemma v_in_range_data_at_: forall v p n sh,
+    v_in_range v p (WORD_SIZE * n) ->
+    data_at_ sh (tarray int_or_ptr_type n) p |--
+             EX m: Z, !!(0 < m <= Ptrofs.max_unsigned) && memory_block sh m v * TT.
+Proof.
+  intros. destruct H as [o [? ?]]. rewrite data_at__memory_block. Intros.
+  destruct H1 as [? [_ [? _]]]. destruct p; try contradiction. inv_int i.
+  simpl offset_val in H0. rewrite ptrofs_add_repr in H0.
+  assert (0 <= n)%Z by rep_omega. rewrite sizeof_tarray_int_or_ptr by assumption.
+  simpl in H2. rewrite Ptrofs.unsigned_repr in H2 by rep_omega.
+  rewrite Z.max_r in H2 by assumption. rewrite WORD_SIZE_eq in *. 
+  assert (4 * n = o + (4 * n - o))%Z by omega. remember (4 * n - o) as m.
+  rewrite H5 in *. rewrite (memory_block_split sh b ofs o m) by omega.
+  clear Heqm n H5 H3. assert (0 < m <= Ptrofs.max_unsigned) by rep_omega.
+  rewrite <- H0. Exists m. entailer!.
+Qed.
+
+Lemma single_outlier_rep_memory_block_FF: forall gp p n wsh,
+    writable_share wsh -> v_in_range (GC_Pointer2val gp) p (WORD_SIZE * n) ->
+    single_outlier_rep gp * data_at_ wsh (tarray int_or_ptr_type n) p |-- FF.
+Proof.
+  intros. unfold single_outlier_rep. Intros rsh. remember (GC_Pointer2val gp) as ggp.
+  clear gp Heqggp. rename ggp into gp.
+  sep_apply (v_in_range_data_at_ _ _ _ wsh H0). Intros m.
+  sep_apply (data_at__memory_block_cancel rsh (tptr tvoid) gp). simpl sizeof.
+  rewrite <- sepcon_assoc.
+  sep_apply (readable_writable_memory_block_FF _ _ 4 m gp H1 H); auto;
+    [rep_omega | entailer].
+Qed.
+
 Lemma graph_and_heap_rest_v_in_range_iff: forall g t_info gen v,
     graph_thread_info_compatible g t_info ->
     graph_has_gen g gen -> graph_has_v g v ->
@@ -650,4 +694,25 @@ Proof.
   - intros. rewrite <- H2. apply graph_thread_v_in_range; assumption.
   - rewrite prop_impl, <- imp_andp_adjoint; Intros.
     destruct (Nat.eq_dec (vgeneration v) gen). 1: apply prop_right; assumption.
-Abort.
+    sep_apply (graph_heap_rest_iter_sepcon _ _ H).
+    pose proof (graph_thread_v_in_range _ _ _ H H1). destruct H1.
+    assert (NoDup [vgeneration v; gen]) by
+        (constructor; [|constructor; [|constructor]]; intro HS;
+         simpl in HS; destruct HS; auto).
+    assert (incl [vgeneration v; gen] (nat_inc_list (length (g_gen (glabel g))))) by
+        (apply incl_cons; [|apply incl_cons];
+         [rewrite nat_inc_list_In_iff; assumption..| apply incl_nil]).
+    sep_apply (iter_sepcon_incl_true (generation_data_at_ g t_info) H5 H6); simpl.
+    rewrite sepcon_emp. unfold generation_data_at_.
+    remember (generation_sh (nth_gen g (vgeneration v))) as sh1.
+    remember (generation_sh (nth_gen g gen)) as sh2.
+    sep_apply (v_in_range_data_at_ _ _ _ sh1 H3). Intros m1.
+    sep_apply (v_in_range_data_at_ _ _ _ sh2 H2). Intros m2.
+    remember (vertex_address g v) as p.
+    rewrite <- sepcon_assoc, (sepcon_comm (memory_block sh2 m2 p)),
+    (sepcon_assoc TT).
+    sep_apply (readable_writable_memory_block_FF sh2 sh1 m2 m1 p); auto.
+    + apply writable_readable. subst. apply generation_share_writable.
+    + subst. apply generation_share_writable.
+    + entailer!.
+Qed.

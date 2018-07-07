@@ -14,32 +14,6 @@ Proof.
     apply H1 in H. simpl. sep_apply (graph_rep_valid_int_or_ptr _ _ H). entailer!.
 Qed.
 
-Lemma single_outlier_rep_memory_block_FF: forall gp p n wsh,
-    writable_share wsh -> v_in_range (GC_Pointer2val gp) p (WORD_SIZE * n) ->
-    single_outlier_rep gp * data_at_ wsh (tarray int_or_ptr_type n) p |-- FF.
-Proof.
-  intros. unfold single_outlier_rep. Intros rsh. remember (GC_Pointer2val gp) as ggp.
-  clear gp Heqggp. rename ggp into gp. destruct H0 as [o [? ?]].
-  rewrite !data_at__memory_block. Intros. clear H3. destruct H4 as [? [_ [? _]]].
-  destruct p; try contradiction. subst gp. inv_int i. simpl offset_val.
-  assert (0 <= n) by rep_omega. rewrite ptrofs_add_repr.
-  rewrite sizeof_tarray_int_or_ptr by assumption. simpl sizeof. simpl in H4.
-  rewrite Ptrofs.unsigned_repr in H4 by rep_omega. rewrite Z.max_r in H4 by assumption.
-  rewrite WORD_SIZE_eq in *. rewrite sepcon_assoc, (sepcon_comm TT), <- sepcon_assoc.
-  assert (4 * n = o + (4 * n - o))%Z by omega. remember (4 * n - o) as m.
-  rewrite H6 in *. rewrite (memory_block_split wsh b ofs o m) by omega.
-  clear Heqm n H6 H2. assert (0 < m <= Ptrofs.max_unsigned) by rep_omega.
-  assert (0 < 4 <= Ptrofs.max_unsigned) by rep_omega.
-  rewrite (sepcon_comm (memory_block wsh o (Vptr b (Ptrofs.repr ofs)))),
-  <- sepcon_assoc. remember (Vptr b (Ptrofs.repr (ofs + o))) as p.
-  destruct (writable_readable_share_common _ _ H1 H) as [sh [? [[shr ?] [shw ?]]]].
-  rewrite <- (memory_block_share_join _ _ _ _ _ H8).
-  rewrite <- (memory_block_share_join _ _ _ _ _ H9).
-  rewrite <- sepcon_assoc, (sepcon_assoc (memory_block sh 4 p)),
-  (sepcon_comm (memory_block shr 4 p)), <- sepcon_assoc.
-  sep_apply (memory_block_conflict sh 4 m p H7 H6 H2). entailer!.
-Qed.
-
 Lemma weak_derives_strong: forall (P Q: mpred),
     P |-- Q -> P |-- (weak_derives P Q && emp) * P.
 Proof.
@@ -138,10 +112,14 @@ Proof.
         - rewrite Heqv0; cancel. }
       replace_SEP 1 (weak_derives P (valid_pointer (Vptr b i) * TT) && emp * P)
         by (entailer; assumption). clear H14. Intros. rewrite <- Heqv0 in *.
-      forward_call (fsh, fp, fn, (vertex_address g v), P). Intros vv. destruct vv.
-      * rewrite HeqP. Intros. admit.
-      * apply semax_if_seq. forward_if. 1: exfalso; apply H14'; reflexivity.
-        forward. Exists g t_info roots. entailer!.
-        -- rewrite <- Heqroot. simpl. constructor. admit.
+      forward_call (fsh, fp, fn, (vertex_address g v), P). Intros vv. rewrite HeqP.
+      sep_apply (graph_and_heap_rest_v_in_range_iff _ _ _ _ H H1 H13). Intros.
+      rewrite <- Heqfp, <- Heqgn, <- Heqfn in H14. destruct vv.
+      * Intros. rewrite H14 in v0. clear H14. apply semax_if_seq. forward_if.
+        2: exfalso; inversion H14. admit.
+      * apply semax_if_seq. forward_if. 1: exfalso; apply H15'; reflexivity.
+        rewrite H14 in n. forward. rewrite <- Heqroot.
+        Exists g t_info roots. simpl. entailer!.
+        -- constructor. assumption.
         -- unfold thread_info_rep. entailer!.
 Abort.
