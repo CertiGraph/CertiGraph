@@ -475,7 +475,7 @@ Definition heap_rest_gen_data_at_ (g: LGraph) (t_info: thread_info) (gen: nat) :
                    (total_space (nth_space t_info gen) - generation_size g gen))
            (offset_val (WORD_SIZE * generation_size g gen) (gen_start g gen)).
 
-Lemma heap_rest_rep_iter_sepcon_data_at_: forall g t_info,
+Lemma heap_rest_rep_iter_sepcon: forall g t_info,
     graph_thread_info_compatible g t_info ->
     heap_rest_rep (ti_heap t_info) =
     iter_sepcon (nat_inc_list (length (g_gen (glabel g))))
@@ -495,7 +495,7 @@ Proof.
   } rewrite H3.
   replace (firstn (length (g_gen (glabel g))) (spaces (ti_heap t_info)))
     with (map (nth_space t_info) (nat_inc_list (length (g_gen (glabel g))))).
-  - rewrite <- iter_sepcon_map, sepcon_comm, emp_sepcon.
+  - rewrite <- iter_sepcon_map, sepcon_emp.
     apply iter_sepcon_func_strong. intros gen ?.
     unfold space_rest_rep, heap_rest_gen_data_at_. rewrite nat_inc_list_In_iff in H4.
     specialize (H0 _ H4). destruct H0 as [? [? ?]]. rewrite <- H0, if_false.
@@ -517,31 +517,63 @@ Lemma heap_rest_rep_data_at_: forall (g: LGraph) (t_info: thread_info) gen,
     graph_thread_info_compatible g t_info ->
     heap_rest_rep (ti_heap t_info) |-- heap_rest_gen_data_at_ g t_info gen * TT.
 Proof.
-  intros. rewrite (heap_rest_rep_iter_sepcon_data_at_ g) by assumption.
+  intros. rewrite (heap_rest_rep_iter_sepcon g) by assumption.
   sep_apply (iter_sepcon_in_true (heap_rest_gen_data_at_ g t_info)
                                  (nat_inc_list (length (g_gen (glabel g)))) gen).
   - rewrite nat_inc_list_In_iff. assumption.
   - apply derives_refl.
 Qed.
 
-Lemma graph_and_heap_rest_data_at_: forall (g: LGraph) (t_info: thread_info) gen,
+Definition generation_data_at_ g t_info gen :=
+  data_at_ (generation_sh (nth_gen g gen))
+           (tarray int_or_ptr_type (gen_size t_info gen)) (gen_start g gen).
+
+Lemma gr_hrgda_data_at_: forall g t_info gen,
     graph_has_gen g gen ->
     graph_thread_info_compatible g t_info ->
-    graph_rep g * heap_rest_rep
-                    (ti_heap t_info) |--
-                    data_at_ (generation_sh (nth_gen g gen))
-                    (tarray int_or_ptr_type (gen_size t_info gen))
-                    (gen_start g gen) * TT.
+    generation_rep g gen *
+    heap_rest_gen_data_at_ g t_info gen |-- generation_data_at_ g t_info gen.
 Proof.
-  intros. sep_apply (graph_rep_generation_rep g gen H).
-  sep_apply (heap_rest_rep_data_at_ g t_info gen H H0).
-  sep_apply (generation_rep_data_at_ g gen H). unfold heap_rest_gen_data_at_.
-  remember (generation_sh (nth_gen g gen)) as sh. rewrite <- sepcon_assoc.
+  intros. sep_apply (generation_rep_data_at_ g gen H).
+  unfold heap_rest_gen_data_at_, generation_data_at_.
+  remember (generation_sh (nth_gen g gen)) as sh.
   rewrite <- (data_at__tarray_value sh _ _ (gen_start g gen)).
   - unfold gen_size. entailer!.
   - unfold generation_size.
     destruct (graph_thread_generation_space_compatible _ _ H0 _ H) as [_ [_ ?]].
     rewrite H1. apply space_order.
+Qed.
+
+Lemma graph_heap_rest_iter_sepcon: forall g t_info,
+    graph_thread_info_compatible g t_info ->
+    graph_rep g * heap_rest_rep (ti_heap t_info) |--
+                                iter_sepcon (nat_inc_list (length (g_gen (glabel g))))
+                                (generation_data_at_ g t_info).
+Proof.
+  intros. unfold graph_rep. rewrite (heap_rest_rep_iter_sepcon _ _ H).
+  assert (forall gen,
+             In gen (nat_inc_list (length (g_gen (glabel g)))) -> graph_has_gen g gen)
+    by (intros; rewrite nat_inc_list_In_iff in H0; assumption).
+  remember (length (g_gen (glabel g))). clear Heqn. revert H0. induction n; intros.
+  - simpl. rewrite emp_sepcon. apply derives_refl.
+  - rewrite nat_inc_list_S. rewrite !iter_sepcon_app_sepcon. simpl.
+    rewrite !sepcon_emp. pull_left (generation_rep g n). rewrite <- sepcon_assoc.
+    rewrite (sepcon_assoc (generation_rep g n)). sep_apply IHn.
+    + intros. apply H0. rewrite nat_inc_list_S, in_app_iff. left; assumption.
+    + cancel. sep_apply (gr_hrgda_data_at_ g t_info n); auto.
+      apply H0. rewrite nat_inc_list_S, in_app_iff. right. left. reflexivity.
+Qed.
+
+Lemma graph_and_heap_rest_data_at_: forall (g: LGraph) (t_info: thread_info) gen,
+    graph_has_gen g gen ->
+    graph_thread_info_compatible g t_info ->
+    graph_rep g * heap_rest_rep (ti_heap t_info) |--
+                                generation_data_at_ g t_info gen * TT.
+Proof.
+  intros. sep_apply (graph_heap_rest_iter_sepcon _ _ H0).
+  sep_apply (iter_sepcon_in_true (generation_data_at_ g t_info)
+                                 (nat_inc_list (length (g_gen (glabel g)))) gen);
+    [rewrite nat_inc_list_In_iff; assumption | apply derives_refl].
 Qed.
 
 Lemma outlier_rep_single_rep: forall (roots: roots_t) outlier p,
