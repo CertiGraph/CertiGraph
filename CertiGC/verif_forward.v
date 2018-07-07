@@ -78,11 +78,12 @@ Proof.
     forward_call (root2val g root).
     remember (graph_rep g * heap_rest_rep (ti_heap t_info) * outlier_rep outlier)
       as P. pose proof (graph_and_heap_rest_data_at_ _ _ _ H1 H).
+    unfold generation_data_at_ in H12. remember (gen_start g from) as fp.
     remember (nth_gen g from).(generation_sh) as fsh.
-    remember (gen_start g from) as fp. remember (gen_size t_info from) as gn.
-    remember (WORD_SIZE * gn)%Z as fn.
+    remember (gen_size t_info from) as gn. remember (WORD_SIZE * gn)%Z as fn.
     assert (P |-- (weak_derives P (memory_block fsh fn fp * TT) && emp) * P). {
-      apply weak_derives_strong. subst. sep_apply H12. rewrite data_at__memory_block.
+      apply weak_derives_strong. subst. sep_apply H12.
+      rewrite data_at__memory_block.
       rewrite sizeof_tarray_int_or_ptr; [Intros; cancel | unfold gen_size].
       destruct (total_space_tight_range (nth_space t_info from)). assumption. }
     destruct root as [[? | ?] | ?]; simpl root2val.
@@ -110,7 +111,7 @@ Proof.
         sep_apply (outlier_rep_single_rep _ _ _ H8 H4). Intros. gather_SEP 0 2.
         change (Vptr b i) with (GC_Pointer2val (GCPtr b i)) in v.
         pose proof (generation_share_writable (nth_gen g from)).
-        rewrite <- Heqfsh in H13.
+        rewrite <- Heqfsh in H13. unfold generation_data_at_.
         sep_apply (single_outlier_rep_memory_block_FF (GCPtr b i) fp gn fsh H13 v).
         assert_PROP False by entailer!. contradiction.
       * apply semax_if_seq. forward_if. 1: exfalso; apply H13'; reflexivity.
