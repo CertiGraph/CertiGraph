@@ -1,9 +1,11 @@
 Require Import VST.veric.compcert_rmaps.
 Require Export VST.progs.conclib.
 Require Import VST.msl.shares.
+Require Export VST.msl.wand_frame.
 Require Import RamifyCoq.lib.List_ext.
 Require Import RamifyCoq.msl_ext.log_normalize.
 Require Import RamifyCoq.msl_ext.iter_sepcon.
+Require Import RamifyCoq.msl_ext.ramification_lemmas.
 Require Import RamifyCoq.graph.graph_model.
 Require Import RamifyCoq.CertiGC.GCGraph.
 Require Export RamifyCoq.CertiGC.env_graph_gc.
@@ -16,9 +18,9 @@ Definition vertex_rep (sh: share) (g: LGraph) (v: VType): mpred :=
   vertex_at sh (vertex_address g v) (make_header g v) (make_fields_vals g v).
 
 Definition generation_rep (g: LGraph) (gen: nat): mpred :=
-  let gtn := nth_gen g gen in
-  iter_sepcon (map (fun x => (gen, x)) (nat_inc_list gtn.(number_of_vertices)))
-              (vertex_rep gtn.(generation_sh) g).
+  iter_sepcon (map (fun x => (gen, x))
+                   (nat_inc_list (nth_gen g gen).(number_of_vertices)))
+              (vertex_rep (nth_sh g gen) g).
 
 Definition graph_rep (g: LGraph): mpred :=
   iter_sepcon (nat_inc_list (length g.(glabel).(g_gen))) (generation_rep g).
@@ -154,14 +156,14 @@ Proof. intros. apply (iter_sepcon_vertex_rep_ptrofs g gen b i). assumption. Qed.
 Lemma generation_rep_memory_block: forall g gen,
     graph_has_gen g gen ->
     generation_rep g gen |--
-    memory_block (generation_sh (nth_gen g gen)) (WORD_SIZE * generation_size g gen)
+    memory_block (nth_sh g gen) (WORD_SIZE * generation_size g gen)
     (gen_start g gen).
 Proof.
   intros. apply graph_has_gen_start_isptr in H.
   remember (gen_start g gen). destruct v; try contradiction.
   unfold generation_rep, generation_size.
   remember (number_of_vertices (nth_gen g gen)) as num. clear Heqnum.
-  remember (generation_sh (nth_gen g gen)) as sh. clear Heqsh. induction num.
+  remember (nth_sh g gen) as sh. clear Heqsh. induction num.
   - simpl. rewrite memory_block_zero_Vptr. auto.
   - sep_apply (iter_sepcon_vertex_rep_ptrofs g gen b i sh (S num) Heqv). Intros.
     rename H0 into HS. simpl in HS. unfold generation_rep.
@@ -190,7 +192,7 @@ Proof.
   sep_apply (generation_rep_ptrofs g gen b i Heqv). Intros.
   unfold generation_rep, generation_size in *.
   remember (number_of_vertices (nth_gen g gen)) as num. clear Heqnum.
-  remember (generation_sh (nth_gen g gen)) as sh. clear Heqsh. induction num.
+  remember (nth_sh g gen) as sh. clear Heqsh. induction num.
   - unfold previous_vertices_size. simpl fold_left. apply prop_right.
     constructor. intros. omega.
   - unfold generation_rep. rewrite nat_inc_list_S, map_app, iter_sepcon_app_sepcon.
@@ -229,7 +231,7 @@ Qed.
 Lemma generation_rep_data_at_: forall g gen,
     graph_has_gen g gen ->
     generation_rep g gen |--
-                   data_at_ (generation_sh (nth_gen g gen))
+                   data_at_ (nth_sh g gen)
                    (tarray int_or_ptr_type (generation_size g gen))
                    (gen_start g gen).
 Proof.
@@ -376,17 +378,18 @@ Proof.
 Qed.
 
 Lemma generation_rep_vertex_rep: forall g gen index,
-    (index < number_of_vertices (nth_gen g gen))%nat ->
+    gen_has_index g gen index ->
     generation_rep g gen |--
-                   vertex_rep (generation_sh (nth_gen g gen)) g (gen, index) * TT.
+                   vertex_rep (nth_sh g gen) g (gen, index) * TT.
 Proof.
   intros. unfold generation_rep. remember (number_of_vertices (nth_gen g gen)) as num.
   assert (nth index (map (fun x : nat => (gen, x)) (nat_inc_list num))
               (gen, O) = (gen, index)). {
-    change (gen, O) with ((fun x: nat => (gen, x)) O). rewrite map_nth.
+    change (gen, O) with ((fun x: nat => (gen, x)) O). rewrite map_nth. red in H.
     rewrite nat_inc_list_nth by omega. reflexivity.
   } assert (In (gen, index) (map (fun x : nat => (gen, x)) (nat_inc_list num))). {
-    rewrite <- H0. apply nth_In. rewrite map_length, nat_inc_list_length. assumption.
+    rewrite <- H0. apply nth_In. rewrite map_length, nat_inc_list_length.
+    red in H. subst num. assumption.
   } apply (iter_sepcon_in_true (vertex_rep _ g) _ _ H1).
 Qed.
 
@@ -396,7 +399,7 @@ Lemma graph_rep_vertex_rep: forall g v,
 Proof.
   intros. destruct H. sep_apply (graph_rep_generation_rep g (vgeneration v) H).
   red in H0. sep_apply (generation_rep_vertex_rep g (vgeneration v) _ H0).
-  Exists (generation_sh (nth_gen g (vgeneration v))). destruct v. simpl. entailer!.
+  Exists (nth_sh g (vgeneration v)). destruct v. simpl. entailer!.
   apply generation_share_writable.
 Qed.
 
@@ -470,7 +473,7 @@ Proof.
 Qed.
 
 Definition heap_rest_gen_data_at_ (g: LGraph) (t_info: thread_info) (gen: nat) :=
-  data_at_ (generation_sh (nth_gen g gen))
+  data_at_ (nth_sh g gen)
            (tarray int_or_ptr_type
                    (total_space (nth_space t_info gen) - generation_size g gen))
            (offset_val (WORD_SIZE * generation_size g gen) (gen_start g gen)).
@@ -525,7 +528,7 @@ Proof.
 Qed.
 
 Definition generation_data_at_ g t_info gen :=
-  data_at_ (generation_sh (nth_gen g gen))
+  data_at_ (nth_sh g gen)
            (tarray int_or_ptr_type (gen_size t_info gen)) (gen_start g gen).
 
 Lemma gr_hrgda_data_at_: forall g t_info gen,
@@ -536,7 +539,7 @@ Lemma gr_hrgda_data_at_: forall g t_info gen,
 Proof.
   intros. sep_apply (generation_rep_data_at_ g gen H).
   unfold heap_rest_gen_data_at_, generation_data_at_.
-  remember (generation_sh (nth_gen g gen)) as sh.
+  remember (nth_sh g gen) as sh.
   rewrite <- (data_at__tarray_value sh _ _ (gen_start g gen)).
   - unfold gen_size. entailer!.
   - unfold generation_size.
@@ -704,8 +707,7 @@ Proof.
          [rewrite nat_inc_list_In_iff; assumption..| apply incl_nil]).
     sep_apply (iter_sepcon_incl_true (generation_data_at_ g t_info) H5 H6); simpl.
     rewrite sepcon_emp. unfold generation_data_at_.
-    remember (generation_sh (nth_gen g (vgeneration v))) as sh1.
-    remember (generation_sh (nth_gen g gen)) as sh2.
+    remember (nth_sh g (vgeneration v)) as sh1. remember (nth_sh g gen) as sh2.
     sep_apply (v_in_range_data_at_ _ _ _ sh1 H3). Intros m1.
     sep_apply (v_in_range_data_at_ _ _ _ sh2 H2). Intros m2.
     remember (vertex_address g v) as p.
@@ -715,4 +717,34 @@ Proof.
     + apply writable_readable. subst. apply generation_share_writable.
     + subst. apply generation_share_writable.
     + entailer!.
+Qed.
+
+Lemma graph_gen_ramif_stable: forall g gen,
+    graph_has_gen g gen ->
+    graph_rep g |-- generation_rep g gen * (generation_rep g gen -* graph_rep g).
+Proof.
+  intros. unfold graph_rep. remember (nat_inc_list (length (g_gen (glabel g)))).
+  apply iter_sepcon_ramif_stable_1. subst l. rewrite nat_inc_list_In_iff. assumption.
+Qed.
+
+Lemma gen_vertex_ramif_stable: forall g gen index,
+    gen_has_index g gen index ->
+    generation_rep g gen |--
+                   vertex_rep (nth_sh g gen) g (gen, index) *
+    (vertex_rep (nth_sh g gen) g (gen, index) -* generation_rep g gen).
+Proof.
+  intros. unfold generation_rep. remember (nth_sh g gen) as sh.
+  apply iter_sepcon_ramif_stable_1.
+  change (gen, index) with ((fun x : nat => (gen, x)) index). apply in_map.
+  rewrite nat_inc_list_In_iff. assumption.
+Qed.
+
+Lemma graph_vertex_ramif_stable: forall g v,
+    graph_has_v g v ->
+    graph_rep g |-- vertex_rep (nth_sh g (vgeneration v)) g v *
+    (vertex_rep (nth_sh g (vgeneration v)) g v -* graph_rep g).
+Proof.
+  intros. destruct H. sep_apply (graph_gen_ramif_stable _ _ H).
+  sep_apply (gen_vertex_ramif_stable _ _ _ H0). destruct v as [gen index].
+  simpl. cancel. apply wand_frame_ver.
 Qed.

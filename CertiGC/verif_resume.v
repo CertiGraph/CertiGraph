@@ -8,7 +8,7 @@ Proof.
   intros. unfold graph_rep. unfold reset_nth_gen_graph at 1. simpl. rewrite H. simpl.
   unfold generation_rep at 2. unfold reset_nth_gen_graph at 1. unfold nth_gen at 1.
   simpl. rewrite H. simpl. rewrite emp_sepcon. apply iter_sepcon_func_strong. intros.
-  rewrite nat_seq_In_iff in H0. unfold generation_rep.
+  rewrite nat_seq_In_iff in H0. unfold generation_rep. unfold nth_sh.
   replace (nth_gen (reset_nth_gen_graph 0 g) x) with (nth_gen g x).
   - apply iter_sepcon_func_strong. intros. apply list_in_map_inv in H1.
     destruct H1 as [n [? ?]]. subst x0. unfold vertex_rep. f_equal.
@@ -55,15 +55,18 @@ Proof.
       unfold Val.of_bool in H7. destruct b; simpl in H7. 1: discriminate.
       symmetry in Heqb. apply ltu_repr_false in Heqb;
                           [omega | apply total_space_range | apply word_size_range].
-    + Intros. forward. forward. deadvars. unfold graph_rep. rewrite Heql. simpl length.
-      unfold nat_inc_list. simpl nat_seq. simpl iter_sepcon. Intros.
+    + Intros. forward. forward. deadvars!. unfold graph_rep. rewrite Heql.
+      simpl length. unfold nat_inc_list. simpl nat_seq. simpl iter_sepcon. Intros.
       sep_apply (generation_rep_data_at_ g O  (graph_has_gen_O g)).
       unfold generation_size. unfold nth_gen. rewrite Heql. simpl nth. rewrite H5.
       unfold gen_start, nth_gen. if_tac. 2: exfalso; apply H8; apply graph_has_gen_O.
       clear H8. rewrite Heql. simpl nth. rewrite <- Heqv.
       unfold heap_rest_rep. rewrite H1. simpl iter_sepcon. Intros.
       unfold space_rest_rep at 1. rewrite <- H3, <- H4, if_false. 2: discriminate.
-      freeze [1; 2; 3; 4; 5] FR. gather_SEP 1 2. remember (generation_sh g0) as sh0.
+      freeze [1; 2; 3; 4; 5] FR. gather_SEP 1 2.
+      replace (nth_sh g 0) with (generation_sh g0) by
+          (unfold nth_sh, nth_gen; rewrite Heql; simpl; reflexivity).
+      remember (generation_sh g0) as sh0.
       assert (0 <= used_space hs <= total_space hs) by (apply space_order).
       sep_apply (data_at__tarray_value_fold
                    sh0 (total_space hs) (used_space hs) (Vptr b i) H8). thaw FR.
