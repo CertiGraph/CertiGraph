@@ -699,6 +699,13 @@ Proof.
   split; [| split]; intros; auto.
 Qed.
 
+Lemma iter_sepcon_ramif_stable_1: forall P (g: list B) (x: B),
+    In x g -> iter_sepcon g P |-- P x * (P x -* iter_sepcon g P).
+Proof.
+  intros. apply In_Permutation_cons in H. destruct H as [f ?].
+  apply iter_sepcon_ramif_pred_1. exists f. split; [assumption|intros; reflexivity]. 
+Qed.
+
 Lemma iter_sepcon_ramif_pred_x: forall P P' (g l: list B),
   (exists f,
     Permutation g (l ++ f) /\

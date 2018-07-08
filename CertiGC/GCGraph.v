@@ -921,3 +921,5 @@ Proof.
     destruct (graph_thread_generation_space_compatible _ _ H _ H0) as [? [? ?]].
     rewrite <- H4, Heqn. apply vo_lt_gs. subst n. assumption.
 Qed.
+
+Definition nth_sh g gen := generation_sh (nth_gen g gen).
