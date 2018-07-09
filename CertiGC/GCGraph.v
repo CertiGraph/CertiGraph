@@ -83,8 +83,6 @@ Proof.
     inversion Heqb. simpl. omega.
 Qed.
 
-Local Close Scope Z_scope.
-
 Definition VType: Type := nat * nat.
 Definition EType: Type := VType * nat.
 Definition vgeneration: VType -> nat := fst.
@@ -128,8 +126,19 @@ Record raw_vertex_block : Type :=
     raw_fields: list raw_field;
     raw_color: Z;
     raw_tag: Z;
-    raw_fields_not_nil: raw_fields <> nil;
+    raw_tag_range: 0 <= raw_tag < 256;
+    raw_color_range: 0 <= raw_color < 4;
+    raw_fields_range: 0 < Zlength raw_fields < two_power_nat 22;
   }.
+
+Local Close Scope Z_scope.
+
+Lemma raw_fields_not_nil: forall rvb, raw_fields rvb <> nil.
+Proof.
+  intros. pose proof (raw_fields_range rvb). destruct (raw_fields rvb).
+  - simpl in H. rewrite Zlength_nil in H. exfalso; omega.
+  - intro. inversion H0.
+Qed.
 
 Definition raw_fields_head (rvb: raw_vertex_block): raw_field :=
   match rvb.(raw_fields) as l return (raw_fields rvb = l -> raw_field) with
@@ -141,7 +150,9 @@ Lemma raw_fields_head_cons:
   forall rvb, exists r l, raw_fields rvb = r :: l /\ raw_fields_head rvb = r.
 Proof.
   intros. destruct rvb eqn:? . simpl. unfold raw_fields_head; simpl.
-  destruct raw_fields0. 1: contradiction. exists r, raw_fields0. split; reflexivity.
+  destruct raw_fields0.
+  - exfalso. clear Heqr. rewrite Zlength_nil in raw_fields_range0. omega.
+  - exists r, raw_fields0. split; reflexivity.
 Qed.
 
 Local Open Scope Z_scope.
@@ -616,6 +627,36 @@ Definition make_header (g: LGraph) (v: VType): Z:=
                             vb.(raw_tag) + (Z.shiftl vb.(raw_color) 8) +
                             (Z.shiftl (Zlength vb.(raw_fields)) 10).
 
+Local Open Scope Z_scope.
+
+Lemma make_header_mark_iff: forall g v,
+    make_header g v = 0 <-> raw_mark (vlabel g v) = true.
+Proof.
+  intros. unfold make_header. destruct (raw_mark (vlabel g v)). 1: intuition.
+  split; intros. 2: inversion H. exfalso.
+  destruct (raw_tag_range (vlabel g v)) as [? _].
+  assert (0 <= Z.shiftl (raw_color (vlabel g v)) 8). {
+    rewrite Z.shiftl_nonneg. apply (proj1 (raw_color_range (vlabel g v))).
+  } assert (Z.shiftl (Zlength (raw_fields (vlabel g v))) 10 <= 0) by omega.
+  clear -H2. assert (0 <= Z.shiftl (Zlength (raw_fields (vlabel g v))) 10) by
+      (rewrite Z.shiftl_nonneg; apply Zlength_nonneg).
+  assert (Z.shiftl (Zlength (raw_fields (vlabel g v))) 10 = 0) by omega. clear -H0.
+  rewrite Z.shiftl_eq_0_iff in H0 by omega.
+  pose proof (proj1 (raw_fields_range (vlabel g v))). omega.
+Qed.
+
+Lemma make_header_range: forall g v, 0 <= make_header g v < two_power_nat 32.
+Proof.
+  intros. unfold make_header. destruct (raw_mark (vlabel g v)).
+  - pose proof (two_power_nat_pos 32). omega.
+  - pose proof (raw_tag_range (vlabel g v)). rewrite two_power_nat_two_p.
+    simpl Z.of_nat.
+
+    (* Int.Z_mod_modulus (make_header g v) = 0 *)
+Abort.
+
+Local Close Scope Z_scope.
+
 Definition field_t: Type := Z + GC_Pointer + EType.
 
 Instance field_t_inhabitant: Inhabitant field_t := inl (inl Z.zero).
@@ -761,8 +802,9 @@ Definition pregraph_copy1v (g: LGraph) (old_v new_v: VType) : PreGraph VType ETy
   fold_left (copy1v_add_edge new_v) new_edge_dst_l (pregraph_add_vertex g new_v).
 
 Definition copy1v_mod_rvb (rvb: raw_vertex_block) (new_v: VType) : raw_vertex_block :=
-  Build_raw_vertex_block true new_v (raw_fields rvb) (raw_color rvb) (raw_tag rvb)
-                         (raw_fields_not_nil rvb).
+  Build_raw_vertex_block
+    true new_v (raw_fields rvb) (raw_color rvb) (raw_tag rvb)
+    (raw_tag_range rvb) (raw_color_range rvb) (raw_fields_range rvb).
 
 Definition copy1v_update_vlabel (g: LGraph) (old_v new_v: VType) :=
   let old_rvb := vlabel g old_v in
