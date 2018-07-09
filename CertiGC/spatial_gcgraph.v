@@ -11,7 +11,7 @@ Require Import RamifyCoq.CertiGC.GCGraph.
 Require Export RamifyCoq.CertiGC.env_graph_gc.
 
 Definition vertex_at (sh: share) (p: val) (header: Z) (lst_fields: list val) :=
-  data_at sh tint (Z2val header) (offset_val (- WORD_SIZE) p) *
+  data_at sh tuint (Z2val header) (offset_val (- WORD_SIZE) p) *
   data_at sh (tarray int_or_ptr_type (Zlength lst_fields)) lst_fields p.
 
 Definition vertex_rep (sh: share) (g: LGraph) (v: VType): mpred :=
@@ -114,7 +114,7 @@ Proof.
   } rewrite H6. assert (0 <= z0) by (subst z0; apply Zlength_nonneg).
   rewrite memory_block_split; [| rep_omega..].
   sep_apply (data_at_memory_block
-               sh tint (Vint (Int.repr (make_header g (gen, num))))
+               sh tuint (Vint (Int.repr (make_header g (gen, num))))
                (Vptr b (Ptrofs.repr ofs))).
   simpl sizeof. rewrite WORD_SIZE_eq. apply cancel_left.
   sep_apply (data_at_memory_block

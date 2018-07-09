@@ -119,8 +119,23 @@ Proof.
       * Intros. rewrite H14 in v0. clear H14. apply semax_if_seq. forward_if.
         2: exfalso; inversion H14. deadvars!. freeze [1; 2; 3; 4; 5; 6] FR.
         localize [vertex_rep (nth_sh g (vgeneration v)) g v].
+        unfold vertex_rep, vertex_at. Intros. rewrite v0.
+        assert (readable_share (nth_sh g from)). {
+          unfold nth_sh. apply writable_readable, generation_share_writable. }
+        assert_PROP (force_val
+                       (sem_add_ptr_int tuint Signed (vertex_address g v)
+                                        (eval_unop Oneg tint (vint 1))) =
+                     field_address tuint []
+                                   (offset_val (- WORD_SIZE) (vertex_address g v))). {
+          rewrite WORD_SIZE_eq. entailer!. unfold field_address.
+          rewrite if_true by assumption. simpl. rewrite offset_offset_val.
+          reflexivity. } forward.
+        gather_SEP 0 1. replace_SEP 0 (vertex_rep (nth_sh g (vgeneration v)) g v) by
+            (unfold vertex_rep, vertex_at; entailer!).
         unlocalize [graph_rep g]. 1: apply (graph_vertex_ramif_stable _ _ H13).
-        admit.
+        apply semax_if_seq. forward_if.
+        -- inversion H17. admit.
+        -- admit.
       * apply semax_if_seq. forward_if. 1: exfalso; apply H15'; reflexivity.
         rewrite H14 in n. forward. rewrite <- Heqroot.
         Exists g t_info roots. simpl. entailer!.
