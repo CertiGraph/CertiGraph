@@ -157,13 +157,6 @@ Qed.
 
 Local Open Scope Z_scope.
 
-Lemma raw_field_Zlength_lt: forall rvb, 0 < Zlength (raw_fields rvb).
-Proof.
-  intros. destruct (raw_fields rvb) eqn:? .
-  - exfalso. apply (raw_fields_not_nil rvb). assumption.
-  - rewrite Zlength_cons. pose proof (Zlength_nonneg l). omega.
-Qed.
-
 Record generation_info: Type :=
   {
     start_address: val;
@@ -270,8 +263,7 @@ Definition single_vertex_size (g: LGraph) (v: VType): Z :=
 
 Lemma svs_gt_one: forall g v, 1 < single_vertex_size g v.
 Proof.
-  intros. unfold single_vertex_size.
-  pose proof (raw_field_Zlength_lt (vlabel g v)). omega.
+  intros. unfold single_vertex_size. pose proof (raw_fields_range (vlabel g v)). omega.
 Qed.
 
 Fixpoint nat_seq (s: nat) (total: nat): list nat :=
@@ -442,6 +434,10 @@ Definition outlier_compatible (g: LGraph) (outlier: outlier_t): Prop :=
   forall v,
     graph_has_v g v ->
     incl (filter_sum_right (filter_option (vlabel g v).(raw_fields))) outlier.
+
+Definition copy_compatible (g: LGraph): Prop :=
+  forall v, graph_has_v g v -> (vlabel g v).(raw_mark) = true ->
+            graph_has_v g (vlabel g v).(copied_vertex).
 
 Definition
   super_compatible
@@ -649,12 +645,37 @@ Lemma make_header_range: forall g v, 0 <= make_header g v < two_power_nat 32.
 Proof.
   intros. unfold make_header. destruct (raw_mark (vlabel g v)).
   - pose proof (two_power_nat_pos 32). omega.
-  - pose proof (raw_tag_range (vlabel g v)). rewrite two_power_nat_two_p.
-    simpl Z.of_nat.
+  - pose proof (raw_tag_range (vlabel g v)). pose proof (raw_color_range (vlabel g v)).
+    pose proof (raw_fields_range (vlabel g v)). remember (raw_tag (vlabel g v)) as z1.
+    clear Heqz1. remember (raw_color (vlabel g v)) as z2. clear Heqz2.
+    remember (Zlength (raw_fields (vlabel g v))) as z3. clear Heqz3.
+    assert (0 <= 8) by omega. apply (Int.Zshiftl_mul_two_p z2) in H2. rewrite H2.
+    clear H2. assert (0 <= 10) by omega. apply (Int.Zshiftl_mul_two_p z3) in H2.
+    rewrite H2. clear H2. rewrite two_power_nat_two_p in *. simpl Z.of_nat in *.
+    assert (two_p 10 > 0) by (apply two_p_gt_ZERO; omega).
+    assert (two_p 8 > 0) by (apply two_p_gt_ZERO; omega). split.
+    + assert (0 <= z2 * two_p 8) by (apply Z.mul_nonneg_nonneg; omega).
+      assert (0 <= z3 * two_p 10) by (apply Z.mul_nonneg_nonneg; omega). omega.
+    + destruct H as [_ ?]. destruct H0 as [_ ?]. destruct H1 as [_ ?].
+      change 256 with (two_p 8) in H. change 4 with (two_p 2) in H0.
+      assert (z1 <= two_p 8 - 1) by omega. clear H.
+      assert (z2 <= two_p 2 - 1) by omega. clear H0.
+      assert (z3 <= two_p 22 - 1) by omega. clear H1.
+      apply Z.mul_le_mono_nonneg_r with (p := two_p 8) in H. 2: omega.
+      apply Z.mul_le_mono_nonneg_r with (p := two_p 10) in H0. 2: omega.
+      rewrite Z.mul_sub_distr_r in H, H0.
+      rewrite <- two_p_is_exp in H, H0 by omega. simpl Z.add in H, H0. omega.
+Qed.
 
-    (* Int.Z_mod_modulus (make_header g v) = 0 *)
-Abort.
-
+Lemma make_header_int_rep_mark_iff: forall g v,
+    Int.repr (make_header g v) = Int.repr 0 <-> raw_mark (vlabel g v) = true.
+Proof.
+  intros. rewrite <- make_header_mark_iff. split; intros; [|rewrite H; reflexivity].
+  Transparent Int.repr. inversion H. Opaque Int.repr. clear H. rewrite H1.
+  rewrite Int.Z_mod_modulus_eq, Z.mod_small in H1 by apply make_header_range.
+  assumption.
+Qed.
+                                      
 Definition field_t: Type := Z + GC_Pointer + EType.
 
 Instance field_t_inhabitant: Inhabitant field_t := inl (inl Z.zero).

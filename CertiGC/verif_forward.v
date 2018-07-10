@@ -25,7 +25,7 @@ Qed.
 Lemma body_forward: semax_body Vprog Gprog f_forward forward_spec.
 Proof.
   start_function.
-  unfold forward_p_address. destruct forward_p.
+  rename H3 into HC. unfold forward_p_address. destruct forward_p.
   - unfold thread_info_rep. Intros. hnf in H0. destruct H as [? [? [? ?]]]. hnf in H3.
     assert (Zlength roots = Zlength (live_roots_indices f_info)). {
       rewrite <- (Zlength_map _ _ (flip Znth (ti_args t_info))), <- H3, Zlength_map.
@@ -43,10 +43,10 @@ Proof.
     assert (is_pointer_or_integer (root2val g root)). {
       destruct root as [[? | ?] | ?]; simpl; auto.
       - destruct g0. simpl. exact I.
-      - specialize (H9 _ H8). remember (vertex_address g v) as vv.
-        destruct vv; try contradiction. simpl. exact I. }
-    forward. 1: apply prop_right, (fi_index_range f_info), Znth_In; assumption.
-    1: entailer!; rewrite H7; assumption. rewrite H7.
+      - specialize (H9 _ H8). apply isptr_is_pointer_or_integer. assumption. }
+    assert (HB: 0 <= Znth z (live_roots_indices f_info) < 1024) by
+        (apply (fi_index_range f_info), Znth_In; assumption).
+    forward; rewrite H7. 1: entailer!.
     assert_PROP (valid_int_or_ptr (root2val g root)). {
       gather_SEP 3 2. sep_apply (root_valid_int_or_ptr _ _ _ _ H8 H4). entailer!. }
     forward_call (root2val g root).
@@ -109,7 +109,7 @@ Proof.
                                      (vertex_address g v)).
         - apply readable_nonidentity, writable_readable_share. assumption.
         - subst l. simpl. rewrite fields_eq_length.
-          rewrite Z.max_r; pose proof (raw_field_Zlength_lt (vlabel g v)); omega.
+          rewrite Z.max_r; pose proof (raw_fields_range (vlabel g v)); omega.
         - rewrite Heqv0; cancel. }
       replace_SEP 1 (weak_derives P (valid_pointer (Vptr b i) * TT) && emp * P)
         by (entailer; assumption). clear H14. Intros. rewrite <- Heqv0 in *.
@@ -118,10 +118,11 @@ Proof.
       rewrite <- Heqfp, <- Heqgn, <- Heqfn in H14. destruct vv.
       * Intros. rewrite H14 in v0. clear H14. apply semax_if_seq. forward_if.
         2: exfalso; inversion H14. deadvars!. freeze [1; 2; 3; 4; 5; 6] FR.
+        clear H14 H14'.
         localize [vertex_rep (nth_sh g (vgeneration v)) g v].
         unfold vertex_rep, vertex_at. Intros. rewrite v0.
-        assert (readable_share (nth_sh g from)). {
-          unfold nth_sh. apply writable_readable, generation_share_writable. }
+        assert (readable_share (nth_sh g from)) by
+            (unfold nth_sh; apply writable_readable, generation_share_writable).
         assert_PROP (force_val
                        (sem_add_ptr_int tuint Signed (vertex_address g v)
                                         (eval_unop Oneg tint (vint 1))) =
@@ -133,8 +134,24 @@ Proof.
         gather_SEP 0 1. replace_SEP 0 (vertex_rep (nth_sh g (vgeneration v)) g v) by
             (unfold vertex_rep, vertex_at; entailer!).
         unlocalize [graph_rep g]. 1: apply (graph_vertex_ramif_stable _ _ H13).
-        apply semax_if_seq. forward_if.
-        -- inversion H17. admit.
+        apply semax_if_seq. forward_if; rewrite make_header_int_rep_mark_iff in H16.
+        -- deadvars!. localize [vertex_rep (nth_sh g (vgeneration v)) g v]. rewrite v0.
+           unfold vertex_rep, vertex_at. Intros. unfold make_fields_vals at 2.
+           rewrite H16. assert (0 <= 0 < Zlength (make_fields_vals g v)). {
+             split. 1: omega. rewrite fields_eq_length.
+             apply (proj1 (raw_fields_range (vlabel g v))). }
+           assert (is_pointer_or_integer
+                     (vertex_address g (copied_vertex (vlabel g v)))). {
+             apply isptr_is_pointer_or_integer. unfold vertex_address.
+             rewrite isptr_offset_val.
+             apply graph_has_gen_start_isptr, HC; assumption. }
+           forward. rewrite Znth_0_cons. gather_SEP 0 1.
+           replace_SEP 0 (vertex_rep (nth_sh g (vgeneration v)) g v). {
+             unfold vertex_rep, vertex_at. unfold make_fields_vals at 3.
+             rewrite H16. entailer!. }
+           unlocalize [graph_rep g]. 1: apply (graph_vertex_ramif_stable _ _ H13).
+           thaw FR. forward. admit.
+
         -- admit.
       * apply semax_if_seq. forward_if. 1: exfalso; apply H15'; reflexivity.
         rewrite H14 in n. forward. rewrite <- Heqroot. rewrite if_false by assumption.
