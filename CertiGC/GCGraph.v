@@ -929,6 +929,37 @@ Definition forwarded_roots (from to: nat)
                  end
   end.
 
+(* 
+Goes over all the roots, and forwards those that point to the from space. The graph relation proposed is that between g_alpha and g_omega. Borrows heavily from forward_relation. Perhaps forward_relation itself can be changed to accept both root_t and field_t in the forward loop?
+*)
+Inductive forward_roots_loop (from to: nat):
+  nat -> roots_t -> LGraph -> LGraph -> Prop :=
+| frl_nil: forall depth g, forward_roots_loop from to depth nil g g
+| frl_cons: forall depth g1 g2 g3 f rl,
+    forward_relation from to depth (root2forward f) g1 g2 ->
+    forward_roots_loop from to depth rl g2 g3 ->
+    forward_roots_loop from to depth (f :: rl) g1 g3.
+
+(* 
+Forwards all roots that are pointing at the from space. Borrows heavily from forwarded_roots above. 
+*)
+Fixpoint forward_all_roots (from to: nat) (roots: roots_t) (g: LGraph) : roots_t :=
+  match roots with
+  | [] => []
+  | r :: roots' =>
+    let tail := forward_all_roots from to roots' g in
+    match r with
+    | inl (inl z) => r :: tail 
+    | inl (inr p) => r :: tail
+    | inr v =>
+        if Nat.eq_dec (vgeneration v) from
+        then if (vlabel g v).(raw_mark)
+             then (inr (vlabel g v).(copied_vertex)) :: tail
+             else (inr (copy1v_new_v g to)) :: tail
+        else r :: tail
+    end
+  end.
+
 Definition nth_space (t_info: thread_info) (n: nat): space :=
   nth n t_info.(ti_heap).(spaces) null_space.
 
