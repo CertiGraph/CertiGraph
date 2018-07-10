@@ -655,8 +655,6 @@ Proof.
     (* Int.Z_mod_modulus (make_header g v) = 0 *)
 Abort.
 
-Local Close Scope Z_scope.
-
 Definition field_t: Type := Z + GC_Pointer + EType.
 
 Instance field_t_inhabitant: Inhabitant field_t := inl (inl Z.zero).
@@ -879,12 +877,12 @@ Inductive forward_relation (from to: nat):
     let new_g := labeledgraph_gen_dst g e (vlabel g (dst g e)).(copied_vertex) in
     forward_relation from to depth (inr e) g new_g
 | fr_e_to_not_forwarded_O: forall e (g: LGraph),
-    vgeneration (dst g e) = from -> (vlabel g (dst g e)).(raw_mark) = true ->
+    vgeneration (dst g e) = from -> (vlabel g (dst g e)).(raw_mark) = false ->
     let new_g := labeledgraph_gen_dst (lgraph_copy1v g (dst g e) to) e
                                       (copy1v_new_v g to) in
     forward_relation from to O (inr e) g new_g
 | fr_e_to_not_forwarded_Sn: forall depth e (g g': LGraph),
-    vgeneration (dst g e) = from -> (vlabel g (dst g e)).(raw_mark) = true ->
+    vgeneration (dst g e) = from -> (vlabel g (dst g e)).(raw_mark) = false ->
     let new_g := labeledgraph_gen_dst (lgraph_copy1v g (dst g e) to) e
                                       (copy1v_new_v g to) in
     forward_loop from to depth (make_fields new_g (copy1v_new_v g to)) new_g g' ->
@@ -895,6 +893,41 @@ forward_loop (from to: nat): nat -> list field_t -> LGraph -> LGraph -> Prop :=
 | fl_cons: forall depth g1 g2 g3 f fl,
     forward_relation from to depth (field2forward f) g1 g2 ->
     forward_loop from to depth fl g2 g3 -> forward_loop from to depth (f :: fl) g1 g3.
+
+Definition forward_p_type: Type := Z + (VType * Z).
+
+Definition forward_p2forward_t
+           (p: forward_p_type) (roots: roots_t) (g: LGraph): forward_t :=
+  match p with
+  | inl root_index => root2forward (Znth root_index roots)
+  | inr (v, n) => field2forward (Znth n (make_fields g v))
+  end.
+
+Definition forward_p_compatible
+           (p: forward_p_type) (roots: roots_t) (g: LGraph): Prop :=
+  match p with
+  | inl root_index => 0 <= root_index < Zlength roots
+  | inr (v, n) => graph_has_v g v /\ 0 <= n < Zlength (vlabel g v).(raw_fields)
+  end.
+
+Local Close Scope Z_scope.
+
+Definition forwarded_roots (from to: nat)
+           (forward_p: forward_p_type) (g: LGraph) (roots: roots_t): roots_t :=
+  match forward_p with
+  | inr _ => roots
+  | inl index => match Znth index roots with
+                 | inl (inl z) => roots
+                 | inl (inr p) => roots
+                 | inr v => if Nat.eq_dec (vgeneration v) from
+                            then if (vlabel g v).(raw_mark)
+                                 then upd_Znth index roots
+                                               (inr (vlabel g v).(copied_vertex))
+                                 else upd_Znth index roots
+                                               (inr (copy1v_new_v g to))
+                            else roots
+                 end
+  end.
 
 Definition nth_space (t_info: thread_info) (n: nat): space :=
   nth n t_info.(ti_heap).(spaces) null_space.

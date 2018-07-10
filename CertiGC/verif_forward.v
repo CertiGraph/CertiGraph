@@ -63,8 +63,8 @@ Proof.
     destruct root as [[? | ?] | ?]; simpl root2val.
     + unfold odd_Z2val. apply semax_if_seq. forward_if.
       1: exfalso; apply H14'; reflexivity.
-      forward. Exists g t_info roots. entailer!.
-      * unfold roots_compatible. intuition. rewrite <- Heqroot. simpl. constructor.
+      forward. Exists g t_info roots. rewrite <- Heqroot. entailer!.
+      * simpl. constructor.
       * unfold thread_info_rep. entailer!.
     + unfold GC_Pointer2val. destruct g0. apply semax_if_seq. forward_if.
       2: exfalso; apply Int.one_not_zero in H14; assumption.
@@ -90,8 +90,8 @@ Proof.
         sep_apply (single_outlier_rep_memory_block_FF (GCPtr b i) fp gn fsh H13 v).
         assert_PROP False by entailer!. contradiction.
       * apply semax_if_seq. forward_if. 1: exfalso; apply H13'; reflexivity.
-        forward. Exists g t_info roots. entailer!.
-        -- unfold roots_compatible. intuition. rewrite <- Heqroot. simpl. constructor.
+        forward. Exists g t_info roots. rewrite <- Heqroot. entailer!.
+        -- unfold roots_compatible. intuition. simpl. constructor.
         -- unfold thread_info_rep. entailer!.
     + specialize (H9 _ H8). destruct (vertex_address g v) eqn:? ; try contradiction.
       apply semax_if_seq. forward_if.
@@ -137,7 +137,7 @@ Proof.
         -- inversion H17. admit.
         -- admit.
       * apply semax_if_seq. forward_if. 1: exfalso; apply H15'; reflexivity.
-        rewrite H14 in n. forward. rewrite <- Heqroot.
+        rewrite H14 in n. forward. rewrite <- Heqroot. rewrite if_false by assumption.
         Exists g t_info roots. simpl. entailer!.
         -- constructor. assumption.
         -- unfold thread_info_rep. entailer!.
