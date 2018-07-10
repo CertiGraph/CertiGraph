@@ -140,8 +140,6 @@ Proof.
   rewrite !sepcon_emp, approx_idem. reflexivity.
 Qed.
 
-Definition forward_p_type: Type := Z + (VType * Z).
-
 Definition forward_p_address
            (p: forward_p_type) (ti: val) (f_info: fun_info) (g: LGraph) :=
   match p with
@@ -150,22 +148,6 @@ Definition forward_p_address
                         [ArraySubsc (Znth root_index (live_roots_indices f_info));
                            StructField _args] ti
   | inr (v, n) => offset_val (WORD_SIZE * n) (vertex_address g v)
-  end.
-
-Definition forward_p2forward_t
-           (p: forward_p_type) (roots: roots_t) (g: LGraph): forward_t :=
-  match p with
-  | inl root_index => root2forward (Znth root_index roots)
-  | inr (v, n) => field2forward (Znth n (make_fields g v))
-  end.
-
-Definition forward_p_compatible
-           (p: forward_p_type) (roots: roots_t) (g: LGraph): Prop :=
-  match p with
-  | inl root_index => 0 <= root_index < Zlength roots
-  | inr (v, n) => graph_has_v g v /\
-                  0 <= n < Zlength (vlabel g v).(raw_fields) /\
-                  Znth n (vlabel g v).(raw_fields) = None
   end.
 
 Definition forward_spec :=
@@ -200,6 +182,7 @@ Definition forward_spec :=
   POST [tvoid]
     EX g': LGraph, EX t_info': thread_info, EX roots': roots_t,
     PROP (super_compatible (g', t_info', roots') f_info outlier;
+          roots' = forwarded_roots from to forward_p g roots;
           forward_relation from to (Z.to_nat depth)
                            (forward_p2forward_t forward_p roots g) g g';
           graph_has_gen g' from; graph_has_gen g' to)
