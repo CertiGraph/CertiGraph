@@ -748,3 +748,6 @@ Proof.
   sep_apply (gen_vertex_ramif_stable _ _ _ H0). destruct v as [gen index].
   simpl. cancel. apply wand_frame_ver.
 Qed.
+
+Lemma isptr_is_pointer_or_integer: forall p, isptr p -> is_pointer_or_integer p.
+Proof. intros. destruct p; try contradiction. exact I. Qed.
