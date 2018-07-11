@@ -157,12 +157,12 @@ Proof.
                        t_info
                        (Znth z (live_roots_indices f_info))
                        (vertex_address g (copied_vertex (vlabel g v))) HB)
-                  (upd_Znth z roots (inr (copied_vertex (vlabel g v)))).
+                  (upd_bunch z f_info roots (inr (copied_vertex (vlabel g v)))).
            unfold thread_info_rep. simpl. entailer!. split; [split|].
-           ++ red. unfold upd_thread_info_arg. simpl. admit.
-           ++ admit.
+           ++ apply upd_fun_thread_arg_compatible. assumption.
+           ++ specialize (HC _ H13 H16). apply upd_roots_compatible; assumption.
            ++ apply fr_v_in_forwarded; [reflexivity | assumption].
-        -- admit.
+        -- forward. deadvars!. admit.
       * apply semax_if_seq. forward_if. 1: exfalso; apply H15'; reflexivity.
         rewrite H14 in n. forward. rewrite <- Heqroot. rewrite if_false by assumption.
         Exists g t_info roots. simpl. entailer!.

@@ -183,7 +183,7 @@ Definition forward_spec :=
   POST [tvoid]
     EX g': LGraph, EX t_info': thread_info, EX roots': roots_t,
     PROP (super_compatible (g', t_info', roots') f_info outlier;
-          roots' = forwarded_roots from to forward_p g roots;
+          roots' = forwarded_roots from to forward_p g roots f_info;
           forward_relation from to (Z.to_nat depth)
                            (forward_p2forward_t forward_p roots g) g g';
           graph_has_gen g' from; graph_has_gen g' to;

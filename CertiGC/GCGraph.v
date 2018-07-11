@@ -931,10 +931,255 @@ Definition forward_p_compatible
   | inr (v, n) => graph_has_v g v /\ 0 <= n < Zlength (vlabel g v).(raw_fields)
   end.
 
+Fixpoint collect_Z_indices {A} (eqdec: forall (a b: A), {a = b} + {a <> b})
+         (target: A) (l: list A) (ind: Z) : list Z :=
+  match l with
+  | nil => nil
+  | li :: l => if eqdec target li
+               then ind :: collect_Z_indices eqdec target l (ind + 1)
+               else collect_Z_indices eqdec target l (ind + 1)
+  end.
+
+Lemma collect_Z_indices_spec:
+  forall {A} {d: Inhabitant A} eqdec (target: A) (l: list A) (ind: Z) c,
+    l = skipn (Z.to_nat ind) c -> 0 <= ind ->
+    forall j, In j (collect_Z_indices eqdec target l ind) <->
+              ind <= j < Zlength c /\ Znth j c = target.
+Proof.
+  intros. revert ind H H0 j. induction l; intros.
+  - simpl. split; intros. 1: exfalso; assumption. pose proof (Zlength_skipn ind c).
+    destruct H1. rewrite <- H, Zlength_nil, (Z.max_r _ _ H0) in H2. symmetry in H2.
+    rewrite Z.max_l_iff in H2. omega.
+  - assert (l = skipn (Z.to_nat (ind + 1)) c). {
+      clear -H H0. rewrite Z2Nat.inj_add by omega. simpl Z.to_nat at 2.
+      remember (Z.to_nat ind). clear ind Heqn H0.
+      replace (n + 1)%nat with (S n) by omega. revert a l c H.
+      induction n; intros; simpl in H; destruct c; [inversion H | | inversion H|].
+      - simpl. inversion H; reflexivity.
+      - apply IHn in H. rewrite H. simpl. destruct c; reflexivity. }
+    assert (0 <= ind + 1) by omega. specialize (IHl _ H1 H2). simpl.
+    assert (Znth ind c = a). {
+      clear -H H0. apply Z2Nat.id in H0. remember (Z.to_nat ind). rewrite <- H0.
+      clear ind Heqn H0. revert a l c H.
+      induction n; intros; simpl in H; destruct c; [inversion H | | inversion H|].
+      - simpl. inversion H. rewrite Znth_0_cons. reflexivity.
+      - rewrite Nat2Z.inj_succ, Znth_pos_cons by omega. apply IHn in H.
+        replace (Z.succ (Z.of_nat n) - 1) with (Z.of_nat n) by omega.
+        assumption. }
+    destruct (eqdec target a).
+    + simpl. rewrite IHl. clear IHl. split; intros; destruct H4; [|intuition|].
+      * subst j. split; [split|]; [omega | | rewrite <- e in H3; assumption].
+        pose proof (Zlength_skipn ind c). rewrite <- H in H4.
+        rewrite Zlength_cons in H4. pose proof (Zlength_nonneg l).
+        destruct (Z.max_spec 0 (Zlength c - Z.max 0 ind)). 2: exfalso; omega.
+        destruct H6 as [? _]. rewrite Z.max_r in H6; omega.
+      * assert (ind = j \/ ind + 1 <= j < Zlength c) by omega.
+        destruct H6; [left | right; split]; assumption.
+    + rewrite IHl; split; intros; destruct H4; split;
+        [omega | assumption | | assumption].
+      assert (ind = j \/ ind + 1 <= j < Zlength c) by omega. clear H4. destruct H6.
+      2: assumption. exfalso; subst j. rewrite H5 in H3. rewrite H3 in n.
+      apply n; reflexivity.
+Qed.
+
+Definition get_roots_indices (index: Z) (live_indices: list Z) :=
+  collect_Z_indices Z.eq_dec (Znth index live_indices) live_indices 0.
+
+Definition upd_bunch (index: Z) (f_info: fun_info)
+           (roots: roots_t) (v: root_t): roots_t :=
+  fold_right (fun i rs => upd_Znth i rs v) roots
+             (get_roots_indices index (live_roots_indices f_info)).
+
+Lemma fold_right_upd_Znth_Zlength {A}: forall (l: list Z) (roots: list A) (v: A),
+    (forall j, In j l -> 0 <= j < Zlength roots) ->
+    Zlength (fold_right (fun (i : Z) (rs : list A) => upd_Znth i rs v) roots l) =
+    Zlength roots.
+Proof.
+  induction l; intros; simpl. 1: reflexivity. rewrite upd_Znth_Zlength.
+  - apply IHl. intros. apply H. right. assumption.
+  - rewrite IHl; intros; apply H; [left; reflexivity | right; assumption]. 
+Qed.
+
+Lemma get_roots_indices_spec: forall (l: list Z) (z j : Z),
+    In j (get_roots_indices z l) <-> 0 <= j < Zlength l /\ Znth j l = Znth z l.
+Proof.
+  intros. unfold get_roots_indices. remember (Znth z l) as p. clear Heqp z.
+  apply collect_Z_indices_spec. 2: omega. rewrite skipn_0. reflexivity.
+Qed.
+
+Lemma upd_bunch_Zlength: forall (f_info : fun_info) (roots : roots_t) (z : Z),
+    Zlength roots = Zlength (live_roots_indices f_info) ->
+    forall r : root_t, Zlength (upd_bunch z f_info roots r) = Zlength roots.
+Proof.
+  intros. unfold upd_bunch. apply fold_right_upd_Znth_Zlength.
+  intros. rewrite H. rewrite get_roots_indices_spec in H0. destruct H0; assumption.
+Qed.
+
+Lemma fold_right_upd_Znth_same {A} {d: Inhabitant A}:
+  forall (l: list Z) (roots: list A) (v: A),
+    (forall j, In j l -> 0 <= j < Zlength roots) ->
+    forall j,
+      In j l ->
+      Znth j (fold_right (fun (i : Z) (rs : list A) => upd_Znth i rs v) roots l) = v.
+Proof.
+  intros. induction l; simpl in H0. 1: exfalso; assumption.
+  assert (Zlength (fold_right (fun (i : Z) (rs : list A) => upd_Znth i rs v) roots l) =
+          Zlength roots) by
+      (apply fold_right_upd_Znth_Zlength; intros; apply H; right; assumption).
+  simpl. destruct H0.
+  - subst a. rewrite upd_Znth_same. reflexivity. rewrite H1. apply H.
+    left; reflexivity.
+  - destruct (Z.eq_dec j a).
+    + subst a. rewrite upd_Znth_same. reflexivity. rewrite H1. apply H.
+      left; reflexivity.
+    + rewrite upd_Znth_diff; [|rewrite H1; apply H; intuition..| assumption].
+      apply IHl; [intros; apply H; right |]; assumption. 
+Qed.
+
+Lemma upd_bunch_same: forall f_info roots z j r,
+    0 <= j < Zlength roots ->
+    Zlength roots = Zlength (live_roots_indices f_info) ->
+    Znth j (live_roots_indices f_info) = Znth z (live_roots_indices f_info) ->
+    Znth j (upd_bunch z f_info roots r) = r.
+Proof.
+  intros. unfold upd_bunch. apply fold_right_upd_Znth_same.
+  - intros. rewrite get_roots_indices_spec in H2. destruct H2. rewrite H0; assumption. 
+  - rewrite get_roots_indices_spec. split; [rewrite <- H0|]; assumption.
+Qed.
+
+Lemma fold_right_upd_Znth_diff {A} {d: Inhabitant A}:
+  forall (l: list Z) (roots: list A) (v: A),
+    (forall j, In j l -> 0 <= j < Zlength roots) ->
+    forall j,
+      ~ In j l -> 0 <= j < Zlength roots ->
+      Znth j (fold_right (fun (i : Z) (rs : list A) => upd_Znth i rs v) roots l) =
+      Znth j roots.
+Proof.
+  intros. induction l; simpl. 1: reflexivity.
+  assert (Zlength (fold_right (fun (i : Z) (rs : list A) => upd_Znth i rs v) roots l) =
+          Zlength roots) by
+      (apply fold_right_upd_Znth_Zlength; intros; apply H; right; assumption).
+  assert (j <> a) by (intro; apply H0; left; rewrite H3; reflexivity).
+  rewrite upd_Znth_diff; [ | rewrite H2.. | assumption];
+    [|assumption | apply H; intuition].
+  apply IHl; repeat intro; [apply H | apply H0]; right; assumption.
+Qed.
+
+Lemma upd_bunch_diff: forall f_info roots z j r,
+    0 <= j < Zlength roots ->
+    Zlength roots = Zlength (live_roots_indices f_info) ->
+    Znth j (live_roots_indices f_info) <> Znth z (live_roots_indices f_info) ->
+    Znth j (upd_bunch z f_info roots r) = Znth j roots.
+Proof.
+  intros. unfold upd_bunch. apply fold_right_upd_Znth_diff. 3: assumption.
+  - intros. rewrite get_roots_indices_spec in H2. destruct H2. rewrite H0; assumption. 
+  - rewrite get_roots_indices_spec. intro. destruct H2. apply H1. assumption.
+Qed.
+
+Lemma Znth_list_eq {X: Type} {d: Inhabitant X}: forall (l1 l2: list X),
+    l1 = l2 <-> (Zlength l1 = Zlength l2 /\
+                 forall j, 0 <= j < Zlength l1 -> Znth j l1 = Znth j l2).
+Proof.
+  induction l1; destruct l2; split; intros.
+  - split; intros; reflexivity.
+  - reflexivity.
+  - inversion H.
+  - destruct H. rewrite Zlength_nil, Zlength_cons in H. exfalso; rep_omega.
+  - inversion H.
+  - destruct H. rewrite Zlength_nil, Zlength_cons in H. exfalso; rep_omega.
+  - inversion H. subst a. subst l1. split; intros; reflexivity.
+  - destruct H. assert (0 <= 0 < Zlength (a :: l1)) by
+        (rewrite Zlength_cons; rep_omega). apply H0 in H1. rewrite !Znth_0_cons in H1.
+    subst a. rewrite !Zlength_cons in H. f_equal. rewrite IHl1. split. 1: rep_omega.
+    intros. assert (0 < j + 1) by omega.
+    assert (0 <= j + 1 < Zlength (x :: l1)) by (rewrite Zlength_cons; rep_omega).
+    specialize (H0 _ H3). rewrite !Znth_pos_cons in H0 by assumption.
+    replace (j + 1 - 1) with j in H0 by omega. assumption.
+Qed.
+
+Lemma upd_thread_info_Zlength: forall (t: thread_info) (i: Z) (v: val),
+    0 <= i < 1024 -> Zlength (upd_Znth i (ti_args t) v) = MAX_ARGS.
+Proof.
+  intros. rewrite upd_Znth_Zlength; [apply arg_size | rewrite arg_size; rep_omega].
+Qed.
+
+Definition upd_thread_info_arg
+           (t: thread_info) (i: Z) (v: val) (H: 0 <= i < 1024) : thread_info :=
+  Build_thread_info (ti_heap_p t) (ti_heap t) (upd_Znth i (ti_args t) v)
+                    (upd_thread_info_Zlength t i v H).
+
+Lemma upd_fun_thread_arg_compatible: forall g t_info f_info roots z,
+    fun_thread_arg_compatible g t_info f_info roots ->
+    forall (v : VType) (HB : 0 <= Znth z (live_roots_indices f_info) < 1024),
+      fun_thread_arg_compatible
+        g (upd_thread_info_arg t_info (Znth z (live_roots_indices f_info))
+                               (vertex_address g v) HB) f_info
+        (upd_bunch z f_info roots (inr v)).
+Proof.
+  intros. red in H |-* . unfold upd_thread_info_arg. simpl. rewrite Znth_list_eq in H.
+  destruct H. rewrite !Zlength_map in H. rewrite Zlength_map in H0.
+  assert (Zlength (upd_bunch z f_info roots (inr v)) = Zlength roots) by
+      (rewrite upd_bunch_Zlength; [reflexivity | assumption]).
+  rewrite Znth_list_eq. split. 1: rewrite !Zlength_map, H1; assumption. intros.
+  rewrite Zlength_map, H1 in H2.
+  rewrite !Znth_map; [|rewrite <- H | rewrite H1]; [|assumption..].
+  specialize (H0 _ H2). rewrite !Znth_map in H0; [|rewrite <- H| ]; [|assumption..].
+  unfold flip in *.
+  destruct (Z.eq_dec (Znth j (live_roots_indices f_info))
+                     (Znth z (live_roots_indices f_info))).
+  - rewrite e, upd_Znth_same. 2: rewrite arg_size; rep_omega.
+    rewrite upd_bunch_same; [|assumption..]. reflexivity.
+  - rewrite upd_Znth_diff. 4: assumption. 3: rewrite arg_size; rep_omega.
+    + rewrite <- H0. rewrite upd_bunch_diff; [|assumption..]. reflexivity.
+    + rewrite arg_size. apply (fi_index_range f_info), Znth_In.
+      rewrite <- H. assumption.
+Qed.
+
+Lemma In_Znth {A} {d: Inhabitant A}: forall (e: A) l,
+    In e l -> exists i, 0 <= i < Zlength l /\ Znth i l = e.
+Proof.
+  intros. apply In_nth with (d := d) in H. destruct H as [n [? ?]].
+  exists (Z.of_nat n). assert (0 <= Z.of_nat n < Zlength l) by
+      (rewrite Zlength_correct; omega). split. 1: assumption.
+  rewrite <- nth_Znth by assumption. rewrite Nat2Z.id. assumption.
+Qed.
+
+Lemma upd_Znth_In {A}: forall (e: A) l i v, In v (upd_Znth i l e) -> In v l \/ v = e.
+Proof.
+  intros. unfold upd_Znth in H. rewrite in_app_iff in H. simpl in H.
+  destruct H as [? | [? | ?]]; [|right; rewrite H; reflexivity|];
+    apply sublist_In in H; left; assumption.
+Qed.
+
+Lemma fold_right_upd_Znth_In {A}: forall (l: list Z) (roots: list A) (v: A) e,
+      In e (fold_right (fun (i : Z) (rs : list A) => upd_Znth i rs v) roots l) ->
+      In e roots \/ e = v.
+Proof.
+  induction l; intros; simpl in H. 1: left; assumption.
+  apply upd_Znth_In in H. destruct H; [apply IHl | right]; assumption.
+Qed.
+    
+Lemma upd_roots_compatible: forall g f_info roots outlier z,
+    roots_compatible g outlier roots ->
+    forall v : VType, graph_has_v g v ->
+                      roots_compatible g outlier (upd_bunch z f_info roots (inr v)).
+Proof.
+  intros. destruct H. split.
+  - red in H |-* . clear H1. intros.
+    rewrite <- filter_sum_right_In_iff, <- filter_sum_left_In_iff in H1.
+    unfold upd_bunch in H1. apply fold_right_upd_Znth_In in H1. destruct H1.
+    2: inversion H1. apply H.
+    rewrite <- filter_sum_right_In_iff, <- filter_sum_left_In_iff. assumption.
+  - clear H. rewrite Forall_forall in H1 |-* . intros.
+    rewrite <- filter_sum_right_In_iff in H. unfold upd_bunch in H.
+    apply fold_right_upd_Znth_In in H. destruct H. 2: inversion H; assumption.
+    apply H1. rewrite <- filter_sum_right_In_iff. assumption.
+Qed.
+
 Local Close Scope Z_scope.
 
-Definition forwarded_roots (from to: nat)
-           (forward_p: forward_p_type) (g: LGraph) (roots: roots_t): roots_t :=
+Definition forwarded_roots (from to: nat) (forward_p: forward_p_type)
+           (g: LGraph) (roots: roots_t) (f_info: fun_info): roots_t :=
   match forward_p with
   | inr _ => roots
   | inl index => match Znth index roots with
@@ -942,10 +1187,10 @@ Definition forwarded_roots (from to: nat)
                  | inl (inr p) => roots
                  | inr v => if Nat.eq_dec (vgeneration v) from
                             then if (vlabel g v).(raw_mark)
-                                 then upd_Znth index roots
-                                               (inr (vlabel g v).(copied_vertex))
-                                 else upd_Znth index roots
-                                               (inr (copy1v_new_v g to))
+                                 then upd_bunch index f_info roots
+                                                (inr (vlabel g v).(copied_vertex))
+                                 else upd_bunch index f_info roots
+                                                (inr (copy1v_new_v g to))
                             else roots
                  end
   end.
@@ -1052,35 +1297,3 @@ Proof.
 Qed.
 
 Definition nth_sh g gen := generation_sh (nth_gen g gen).
-
-Lemma upd_thread_info_Zlength: forall (t: thread_info) (i: Z) (v: val),
-    0 <= i < 1024 -> Zlength (upd_Znth i (ti_args t) v) = MAX_ARGS.
-Proof.
-  intros. rewrite upd_Znth_Zlength; [apply arg_size | rewrite arg_size; rep_omega].
-Qed.
-
-Definition upd_thread_info_arg
-           (t: thread_info) (i: Z) (v: val) (H: 0 <= i < 1024) : thread_info :=
-  Build_thread_info (ti_heap_p t) (ti_heap t) (upd_Znth i (ti_args t) v)
-                    (upd_thread_info_Zlength t i v H).
-
-Lemma Znth_list_eq {X: Type} {d: Inhabitant X}: forall (l1 l2: list X),
-    l1 = l2 <-> (Zlength l1 = Zlength l2 /\
-                 forall j, 0 <= j < Zlength l1 -> Znth j l1 = Znth j l2).
-Proof.
-  induction l1; destruct l2; split; intros.
-  - split; intros; reflexivity.
-  - reflexivity.
-  - inversion H.
-  - destruct H. rewrite Zlength_nil, Zlength_cons in H. exfalso; rep_omega.
-  - inversion H.
-  - destruct H. rewrite Zlength_nil, Zlength_cons in H. exfalso; rep_omega.
-  - inversion H. subst a. subst l1. split; intros; reflexivity.
-  - destruct H. assert (0 <= 0 < Zlength (a :: l1)) by
-        (rewrite Zlength_cons; rep_omega). apply H0 in H1. rewrite !Znth_0_cons in H1.
-    subst a. rewrite !Zlength_cons in H. f_equal. rewrite IHl1. split. 1: rep_omega.
-    intros. assert (0 < j + 1) by omega.
-    assert (0 <= j + 1 < Zlength (x :: l1)) by (rewrite Zlength_cons; rep_omega).
-    specialize (H0 _ H3). rewrite !Znth_pos_cons in H0 by assumption.
-    replace (j + 1 - 1) with j in H0 by omega. assumption.
-Qed.
