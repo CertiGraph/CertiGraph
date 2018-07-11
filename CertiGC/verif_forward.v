@@ -135,9 +135,10 @@ Proof.
             (unfold vertex_rep, vertex_at; entailer!).
         unlocalize [graph_rep g]. 1: apply (graph_vertex_ramif_stable _ _ H13).
         apply semax_if_seq. forward_if; rewrite make_header_int_rep_mark_iff in H16.
-        -- deadvars!. localize [vertex_rep (nth_sh g (vgeneration v)) g v]. rewrite v0.
-           unfold vertex_rep, vertex_at. Intros. unfold make_fields_vals at 2.
-           rewrite H16. assert (0 <= 0 < Zlength (make_fields_vals g v)). {
+        -- deadvars!. localize [vertex_rep (nth_sh g (vgeneration v)) g v].
+           rewrite v0. unfold vertex_rep, vertex_at. Intros.
+           unfold make_fields_vals at 2. rewrite H16.
+           assert (0 <= 0 < Zlength (make_fields_vals g v)). {
              split. 1: omega. rewrite fields_eq_length.
              apply (proj1 (raw_fields_range (vlabel g v))). }
            assert (is_pointer_or_integer
@@ -150,8 +151,17 @@ Proof.
              unfold vertex_rep, vertex_at. unfold make_fields_vals at 3.
              rewrite H16. entailer!. }
            unlocalize [graph_rep g]. 1: apply (graph_vertex_ramif_stable _ _ H13).
-           thaw FR. forward. admit.
-
+           thaw FR. forward. forward. rewrite <- Heqroot.
+           rewrite if_true by reflexivity. rewrite H16.
+           Exists g (upd_thread_info_arg
+                       t_info
+                       (Znth z (live_roots_indices f_info))
+                       (vertex_address g (copied_vertex (vlabel g v))) HB)
+                  (upd_Znth z roots (inr (copied_vertex (vlabel g v)))).
+           unfold thread_info_rep. simpl. entailer!. split; [split|].
+           ++ red. unfold upd_thread_info_arg. simpl. admit.
+           ++ admit.
+           ++ apply fr_v_in_forwarded; [reflexivity | assumption].
         -- admit.
       * apply semax_if_seq. forward_if. 1: exfalso; apply H15'; reflexivity.
         rewrite H14 in n. forward. rewrite <- Heqroot. rewrite if_false by assumption.

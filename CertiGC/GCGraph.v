@@ -1018,27 +1018,29 @@ Proof.
   apply vs_accum_list_ge.
 Qed.
 
+Local Open Scope Z_scope.
+
 Lemma vo_lt_gs: forall g v,
     gen_has_index g (vgeneration v) (vindex v) ->
-    (vertex_offset g v < generation_size g (vgeneration v))%Z.
+    vertex_offset g v < generation_size g (vgeneration v).
 Proof.
   intros. unfold vertex_offset, generation_size. red in H.
   remember (number_of_vertices (nth_gen g (vgeneration v))). remember (vgeneration v).
-  assert (S (vindex v) <= n) by omega.
+  assert (S (vindex v) <= n)%nat by omega.
   apply Z.lt_le_trans with (previous_vertices_size g n0 (S (vindex v))).
   - rewrite pvs_S. apply Zplus_lt_compat_l, svs_gt_one.
   - apply pvs_mono; assumption.
 Qed.
 
 Definition v_in_range (v: val) (start: val) (n: Z): Prop :=
-  exists i, (0 <= i < n)%Z /\ v = offset_val i start.
+  exists i, 0 <= i < n /\ v = offset_val i start.
 
 Lemma graph_thread_v_in_range: forall g t_info v,
     graph_thread_info_compatible g t_info -> graph_has_v g v ->
     v_in_range (vertex_address g v) (gen_start g (vgeneration v))
                (WORD_SIZE * gen_size t_info (vgeneration v)).
 Proof.
-  intros. red. unfold vertex_address. exists (WORD_SIZE * vertex_offset g v)%Z.
+  intros. red. unfold vertex_address. exists (WORD_SIZE * vertex_offset g v).
   split. 2: reflexivity. unfold gen_size. destruct H0. remember (vgeneration v). split.
   - unfold vertex_offset.
     pose proof (pvs_ge_zero g (vgeneration v) (vindex v)). rep_omega.
@@ -1050,3 +1052,35 @@ Proof.
 Qed.
 
 Definition nth_sh g gen := generation_sh (nth_gen g gen).
+
+Lemma upd_thread_info_Zlength: forall (t: thread_info) (i: Z) (v: val),
+    0 <= i < 1024 -> Zlength (upd_Znth i (ti_args t) v) = MAX_ARGS.
+Proof.
+  intros. rewrite upd_Znth_Zlength; [apply arg_size | rewrite arg_size; rep_omega].
+Qed.
+
+Definition upd_thread_info_arg
+           (t: thread_info) (i: Z) (v: val) (H: 0 <= i < 1024) : thread_info :=
+  Build_thread_info (ti_heap_p t) (ti_heap t) (upd_Znth i (ti_args t) v)
+                    (upd_thread_info_Zlength t i v H).
+
+Lemma Znth_list_eq {X: Type} {d: Inhabitant X}: forall (l1 l2: list X),
+    l1 = l2 <-> (Zlength l1 = Zlength l2 /\
+                 forall j, 0 <= j < Zlength l1 -> Znth j l1 = Znth j l2).
+Proof.
+  induction l1; destruct l2; split; intros.
+  - split; intros; reflexivity.
+  - reflexivity.
+  - inversion H.
+  - destruct H. rewrite Zlength_nil, Zlength_cons in H. exfalso; rep_omega.
+  - inversion H.
+  - destruct H. rewrite Zlength_nil, Zlength_cons in H. exfalso; rep_omega.
+  - inversion H. subst a. subst l1. split; intros; reflexivity.
+  - destruct H. assert (0 <= 0 < Zlength (a :: l1)) by
+        (rewrite Zlength_cons; rep_omega). apply H0 in H1. rewrite !Znth_0_cons in H1.
+    subst a. rewrite !Zlength_cons in H. f_equal. rewrite IHl1. split. 1: rep_omega.
+    intros. assert (0 < j + 1) by omega.
+    assert (0 <= j + 1 < Zlength (x :: l1)) by (rewrite Zlength_cons; rep_omega).
+    specialize (H0 _ H3). rewrite !Znth_pos_cons in H0 by assumption.
+    replace (j + 1 - 1) with j in H0 by omega. assumption.
+Qed.
