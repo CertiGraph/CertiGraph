@@ -205,8 +205,9 @@ Definition forward_roots_spec :=
         _ti OF (tptr thread_info_type)]
   PROP (readable_share rsh; writable_share sh;
           super_compatible (g, t_info, roots) f_info outlier;
-        (*  forward_roots_compatible...?  *)
-          graph_has_gen g from; graph_has_gen g to)
+          forward_roots_compatible from to g t_info;
+          graph_has_gen g from; graph_has_gen g to;
+          copy_compatible g)
   LOCAL (temp _from_start (gen_start g from);
          temp _from_limit (offset_val (gen_size t_info from) (gen_start g from));
          temp _next (field_address heap_type [StructField _next; ArraySubsc (Z.of_nat to); StructField _spaces] (ti_heap_p t_info));
@@ -221,7 +222,8 @@ Definition forward_roots_spec :=
     PROP (super_compatible (g', t_info', roots') f_info outlier;
           forward_roots_loop from to depth roots g g';
           roots' = forward_all_roots from to roots g;
-         graph_has_gen g' from; graph_has_gen g' to)
+          graph_has_gen g' from; graph_has_gen g' to;
+          copy_compatible g')
   LOCAL ()
   SEP (all_string_constants rsh gv;
          fun_info_rep rsh f_info fi;
@@ -231,13 +233,16 @@ Definition forward_roots_spec :=
 
 Definition do_scan_spec :=
   DECLARE _do_scan
-  WITH rsh: share, sh: share, gv: globals, start: val, next: val, scan: val, g: LGraph, outlier: outlier_t, from: nat, to: nat, depth: Z, t_info: thread_info
+  WITH rsh: share, sh: share, gv: globals, start: val, next: val, scan: val, g: LGraph, outlier: outlier_t, from: nat, to: nat, depth: Z, t_info: thread_info(*, f_info : fun_info*)
   PRE [ _from_start OF (tptr int_or_ptr_type),
         _from_limit OF (tptr int_or_ptr_type),
         _scan OF (tptr int_or_ptr_type),
         _next OF (tptr (tptr int_or_ptr_type))]
-    PROP (readable_share rsh; writable_share rsh;
-        graph_has_gen g from; graph_has_gen g to)
+  PROP (readable_share rsh; writable_share rsh;
+        graph_thread_info_compatible g t_info;
+        outlier_compatible g outlier;
+        graph_has_gen g from; graph_has_gen g to;
+        copy_compatible g)
     LOCAL (temp _from_start (gen_start g from);
            temp _from_limit (offset_val (gen_size t_info from) (gen_start g from));
            temp _scan scan;
@@ -247,12 +252,15 @@ Definition do_scan_spec :=
          graph_rep g)
     POST [tvoid]
     EX g': LGraph, 
-           PROP ((*do_scan_relation from to g g'*)
-               graph_has_gen g' from; graph_has_gen g' to)
-    LOCAL ()
-    SEP (all_string_constants rsh gv;
-         outlier_rep outlier;
-         graph_rep g').
+       PROP (do_scan_relation from to (Z.to_nat depth) (val2nat g to scan) (val2nat g to next) g g';
+             graph_thread_info_compatible g' t_info;
+             outlier_compatible g' outlier;
+             graph_has_gen g' from; graph_has_gen g' to;
+             copy_compatible g')
+      LOCAL ()
+      SEP (all_string_constants rsh gv;
+           outlier_rep outlier;
+           graph_rep g').
 
 Definition do_generation_spec :=
   DECLARE _do_generation

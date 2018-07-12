@@ -938,6 +938,23 @@ forward_loop (from to: nat): nat -> list field_t -> LGraph -> LGraph -> Prop :=
     forward_relation from to depth (field2forward f) g1 g2 ->
     forward_loop from to depth fl g2 g3 -> forward_loop from to depth (f :: fl) g1 g3.
 
+(* ugly, plus we need additional proofs that we won't actully hit the 0 branches. I would have made it with Option but even that's unnecessary in the end. *)
+Definition val2nat (g: LGraph) (gen: nat) (v: val) : nat :=
+  let start := gen_start g gen in
+  match start, v with
+  | Vptr b1 o1, Vptr b2 o2 =>
+      if (eq_dec b1 b2) then Z.to_nat (Ptrofs.unsigned o2 - Ptrofs.unsigned o1) else 0
+  | _,_ => 0
+  end.
+ 
+Local Open Scope nat_scope.
+Inductive do_scan_relation (from to depth scan next: nat) (g g': LGraph) : Prop :=
+  | DSR : scan < next -> forall g_i,
+            forward_loop from to depth (make_fields g (to, scan)) g g_i ->
+            do_scan_relation from to depth (S scan) (number_of_vertices (nth_gen g_i to)) g_i g' ->
+            do_scan_relation from to depth scan next g g'.
+Local Close Scope nat_scope.
+
 Definition forward_p_type: Type := Z + (VType * Z).
 
 Definition forward_p2forward_t
@@ -1277,6 +1294,14 @@ Proof.
   rewrite Heql0 in H5. rewrite nat_inc_list_nth in H5 by assumption.
    rewrite Heql in H5. unfold nth_gen. unfold nth_space. rewrite Heql1 in H5. apply H5.
 Qed.
+
+Local Open Scope Z_scope.
+
+Definition forward_roots_compatible (from to: nat) (g: LGraph) (ti : thread_info) : Prop :=
+  (nth_space ti from).(used_space) <= (nth_space ti to).(total_space) - (nth_space ti to).(used_space).
+
+Local Close Scope Z_scope.
+Local Open Scope nat_scope.
 
 Lemma pvs_mono: forall g gen i j,
     i <= j -> (previous_vertices_size g gen i <= previous_vertices_size g gen j)%Z.
