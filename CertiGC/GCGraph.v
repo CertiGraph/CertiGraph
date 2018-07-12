@@ -213,6 +213,8 @@ Proof.
   - rewrite MAX_SPACE_SIZE_eq. compute; reflexivity.
 Defined.
 
+Instance space_inhabitant: Inhabitant space := null_space.
+
 Lemma total_space_tight_range: forall sp, 0 <= total_space sp < MAX_SPACE_SIZE.
 Proof.
   intros. split.
@@ -1272,7 +1274,7 @@ Definition nth_space (t_info: thread_info) (n: nat): space :=
 Definition gen_size (t_info: thread_info) (n: nat): Z :=
   total_space (nth_space t_info n).
 
-Lemma graph_thread_generation_space_compatible:
+Lemma gt_gs_compatible:
   forall (g: LGraph) (t_info: thread_info),
     graph_thread_info_compatible g t_info ->
     forall gen,
@@ -1340,8 +1342,17 @@ Proof.
   - apply Zmult_lt_compat_l. 1: rep_omega.
     apply Z.lt_le_trans with (used_space (nth_space t_info n)).
     2: apply (proj2 (space_order (nth_space t_info n))).
-    destruct (graph_thread_generation_space_compatible _ _ H _ H0) as [? [? ?]].
+    destruct (gt_gs_compatible _ _ H _ H0) as [? [? ?]].
     rewrite <- H4, Heqn. apply vo_lt_gs. subst n. assumption.
 Qed.
 
 Definition nth_sh g gen := generation_sh (nth_gen g gen).
+
+Lemma Znth_tl {A} {d: Inhabitant A}: forall (l: list A) i,
+    0 <= i -> Znth i (tl l) = Znth (i + 1) l.
+Proof.
+  intros. destruct l; simpl.
+  - unfold Znth; if_tac; if_tac; try omega; destruct (Z.to_nat (i + 1));
+      destruct (Z.to_nat i); simpl; reflexivity.
+  - rewrite Znth_pos_cons by omega. replace (i + 1 - 1) with i by omega. reflexivity.
+Qed.

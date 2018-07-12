@@ -22,10 +22,23 @@ Proof.
   apply derives_weak. assumption.
 Qed.
 
+Lemma sapi_ptr_val: forall p m n,
+    isptr p ->
+    (force_val
+       (sem_add_ptr_int
+          (Tpointer tvoid {| attr_volatile := false; attr_alignas := Some 2%N |})
+          Signed (offset_val (WORD_SIZE * m) p)
+          (vint n))) = offset_val (WORD_SIZE * (m + n)) p.
+Proof.
+  intros. rewrite sem_add_pi_ptr_special.
+  - simpl. rewrite offset_offset_val. f_equal. rep_omega.
+  - rewrite isptr_offset_val. assumption.
+Qed.
+
 Lemma body_forward: semax_body Vprog Gprog f_forward forward_spec.
 Proof.
   start_function.
-  rename H3 into HC. unfold forward_p_address. destruct forward_p.
+  rename H3 into HC. rename H4 into HT. unfold forward_p_address. destruct forward_p.
   - unfold thread_info_rep. Intros. hnf in H0. destruct H as [? [? [? ?]]]. hnf in H3.
     assert (Zlength roots = Zlength (live_roots_indices f_info)). {
       rewrite <- (Zlength_map _ _ (flip Znth (ti_args t_info))), <- H3, Zlength_map.
@@ -164,7 +177,33 @@ Proof.
            ++ apply fr_v_in_forwarded; [reflexivity | assumption].
         -- forward. deadvars!. thaw FR. freeze [0; 1; 2; 3; 4; 5] FR.
            rewrite make_header_Wosize by (apply not_true_is_false; assumption).
-           unfold heap_struct_rep. admit.
+           assert (0 <= Z.of_nat to < 12). {
+             clear -H H2. destruct H as [_ [_ ?]]. red in H2.
+             pose proof (spaces_size (ti_heap t_info)).
+             rewrite Zlength_correct in H0. rep_omega. }
+           assert (0 < Z.of_nat to) by omega. unfold heap_struct_rep.
+           remember (Znth (Z.of_nat to) (spaces (ti_heap t_info))) as sp_to.
+           assert (isptr (space_start sp_to)). {
+             destruct (gt_gs_compatible _ _ H _ H2) as [? _]. subst sp_to.
+             rewrite <- conclib.nth_Znth. unfold nth_space in H19.
+             change default with null_space. rewrite <- H19. apply start_isptr. }
+           remember ((space_start (heap_head (ti_heap t_info)),
+                      (Vundef,
+                       offset_val
+                         (WORD_SIZE * total_space (heap_head (ti_heap t_info)))
+                         (space_start (heap_head (ti_heap t_info)))))
+                       :: map space_tri (tl (spaces (ti_heap t_info)))).
+           assert ((let (x, _) := let (_, y) := Znth (Z.of_nat to) l in y in x) =
+                   offset_val (WORD_SIZE * used_space sp_to) (space_start sp_to)). {
+             subst l sp_to. rewrite Znth_pos_cons by assumption.
+             rewrite map_tl, Znth_tl by omega.
+             replace (Z.of_nat to - 1 + 1) with (Z.of_nat to) by omega.
+             rewrite Znth_map by (rewrite spaces_size; rep_omega).
+             unfold space_tri. reflexivity. }
+           unfold Inhabitant_pair, Inhabitant_val, Inhabitant in H20.
+           forward; rewrite H20. 1: entailer!. forward. simpl sem_binary_operation'.
+           rewrite sapi_ptr_val by assumption. Opaque Znth. forward. Transparent Znth.
+           rewrite sapi_ptr_val by assumption. admit.
       * apply semax_if_seq. forward_if. 1: exfalso; apply H15'; reflexivity.
         rewrite H14 in n. forward. rewrite <- Heqroot. rewrite if_false by assumption.
         Exists g t_info roots. simpl. entailer!.
