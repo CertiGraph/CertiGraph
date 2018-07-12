@@ -675,7 +675,30 @@ Proof.
   rewrite Int.Z_mod_modulus_eq, Z.mod_small in H1 by apply make_header_range.
   assumption.
 Qed.
-                                      
+
+Lemma make_header_Wosize: forall g v,
+    raw_mark (vlabel g v) = false ->
+    Int.shru (Int.repr (make_header g v)) (Int.repr 10) =
+    Int.repr (Zlength (raw_fields (vlabel g v))).
+Proof.
+  intros. rewrite Int.shru_div_two_p, !Int.unsigned_repr.
+  - f_equal. unfold make_header. remember (vlabel g v). clear Heqr.
+    rewrite H, !Int.Zshiftl_mul_two_p by omega. rewrite Z.div_add. 2: compute; omega.
+    pose proof (raw_tag_range r). pose proof (raw_color_range r).
+    cut ((raw_tag r + raw_color r * two_p 8) / two_p 10 = 0). 1: intros; omega.
+    apply Z.div_small. change 256 with (two_p 8) in H0. change 4 with (two_p 2) in H1.
+    assert (0 <= raw_tag r <= two_p 8 - 1) by omega. clear H0. destruct H2.
+    assert (0 <= raw_color r <= two_p 2 - 1) by omega. clear H1. destruct H3.
+    assert (two_p 8 > 0) by (apply two_p_gt_ZERO; omega). split.
+    + assert (0 <= raw_color r * two_p 8) by (apply Z.mul_nonneg_nonneg; omega). omega.
+    + apply Z.mul_le_mono_nonneg_r with (p := two_p 8) in H3. 2: omega.
+      rewrite Z.mul_sub_distr_r, <- two_p_is_exp in H3 by omega. simpl Z.add in H3.
+      omega.
+  - rep_omega.
+  - pose proof (make_header_range g v). unfold Int.max_unsigned, Int.modulus.
+    rep_omega.
+Qed.
+
 Definition field_t: Type := Z + GC_Pointer + EType.
 
 Instance field_t_inhabitant: Inhabitant field_t := inl (inl Z.zero).
@@ -997,7 +1020,7 @@ Lemma fold_right_upd_Znth_Zlength {A}: forall (l: list Z) (roots: list A) (v: A)
 Proof.
   induction l; intros; simpl. 1: reflexivity. rewrite upd_Znth_Zlength.
   - apply IHl. intros. apply H. right. assumption.
-  - rewrite IHl; intros; apply H; [left; reflexivity | right; assumption]. 
+  - rewrite IHl; intros; apply H; [left; reflexivity | right; assumption].
 Qed.
 
 Lemma get_roots_indices_spec: forall (l: list Z) (z j : Z),
@@ -1033,7 +1056,7 @@ Proof.
     + subst a. rewrite upd_Znth_same. reflexivity. rewrite H1. apply H.
       left; reflexivity.
     + rewrite upd_Znth_diff; [|rewrite H1; apply H; intuition..| assumption].
-      apply IHl; [intros; apply H; right |]; assumption. 
+      apply IHl; [intros; apply H; right |]; assumption.
 Qed.
 
 Lemma upd_bunch_same: forall f_info roots z j r,
@@ -1043,7 +1066,7 @@ Lemma upd_bunch_same: forall f_info roots z j r,
     Znth j (upd_bunch z f_info roots r) = r.
 Proof.
   intros. unfold upd_bunch. apply fold_right_upd_Znth_same.
-  - intros. rewrite get_roots_indices_spec in H2. destruct H2. rewrite H0; assumption. 
+  - intros. rewrite get_roots_indices_spec in H2. destruct H2. rewrite H0; assumption.
   - rewrite get_roots_indices_spec. split; [rewrite <- H0|]; assumption.
 Qed.
 
@@ -1072,7 +1095,7 @@ Lemma upd_bunch_diff: forall f_info roots z j r,
     Znth j (upd_bunch z f_info roots r) = Znth j roots.
 Proof.
   intros. unfold upd_bunch. apply fold_right_upd_Znth_diff. 3: assumption.
-  - intros. rewrite get_roots_indices_spec in H2. destruct H2. rewrite H0; assumption. 
+  - intros. rewrite get_roots_indices_spec in H2. destruct H2. rewrite H0; assumption.
   - rewrite get_roots_indices_spec. intro. destruct H2. apply H1. assumption.
 Qed.
 
@@ -1158,7 +1181,7 @@ Proof.
   induction l; intros; simpl in H. 1: left; assumption.
   apply upd_Znth_In in H. destruct H; [apply IHl | right]; assumption.
 Qed.
-    
+
 Lemma upd_roots_compatible: forall g f_info roots outlier z,
     roots_compatible g outlier roots ->
     forall v : VType, graph_has_v g v ->
@@ -1195,7 +1218,7 @@ Definition forwarded_roots (from to: nat) (forward_p: forward_p_type)
                  end
   end.
 
-(* 
+(*
 Goes over all the roots, and forwards those that point to the from space. The graph relation proposed is that between g_alpha and g_omega. Borrows heavily from forward_relation. Perhaps forward_relation itself can be changed to accept both root_t and field_t in the forward loop?
 *)
 Inductive forward_roots_loop (from to: nat):
@@ -1206,8 +1229,8 @@ Inductive forward_roots_loop (from to: nat):
     forward_roots_loop from to depth rl g2 g3 ->
     forward_roots_loop from to depth (f :: rl) g1 g3.
 
-(* 
-Forwards all roots that are pointing at the from space. Borrows heavily from forwarded_roots above. 
+(*
+Forwards all roots that are pointing at the from space. Borrows heavily from forwarded_roots above.
 *)
 Fixpoint forward_all_roots (from to: nat) (roots: roots_t) (g: LGraph) : roots_t :=
   match roots with
@@ -1215,7 +1238,7 @@ Fixpoint forward_all_roots (from to: nat) (roots: roots_t) (g: LGraph) : roots_t
   | r :: roots' =>
     let tail := forward_all_roots from to roots' g in
     match r with
-    | inl (inl z) => r :: tail 
+    | inl (inl z) => r :: tail
     | inl (inr p) => r :: tail
     | inr v =>
         if Nat.eq_dec (vgeneration v) from
@@ -1236,7 +1259,7 @@ Lemma graph_thread_generation_space_compatible:
   forall (g: LGraph) (t_info: thread_info),
     graph_thread_info_compatible g t_info ->
     forall gen,
-      graph_has_gen g gen -> 
+      graph_has_gen g gen ->
       generation_space_compatible g (gen, nth_gen g gen, nth_space t_info gen).
 Proof.
   intros. destruct H as [? [? ?]]. red in H0. rewrite Forall_forall in H.
