@@ -162,7 +162,9 @@ Proof.
            ++ apply upd_fun_thread_arg_compatible. assumption.
            ++ specialize (HC _ H13 H16). apply upd_roots_compatible; assumption.
            ++ apply fr_v_in_forwarded; [reflexivity | assumption].
-        -- forward. deadvars!. admit.
+        -- forward. deadvars!. thaw FR. freeze [0; 1; 2; 3; 4; 5] FR.
+           rewrite make_header_Wosize by (apply not_true_is_false; assumption).
+           unfold heap_struct_rep. admit.
       * apply semax_if_seq. forward_if. 1: exfalso; apply H15'; reflexivity.
         rewrite H14 in n. forward. rewrite <- Heqroot. rewrite if_false by assumption.
         Exists g t_info roots. simpl. entailer!.
