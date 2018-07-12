@@ -165,7 +165,7 @@ Definition forward_spec :=
           super_compatible (g, t_info, roots) f_info outlier;
           forward_p_compatible forward_p roots g;
           graph_has_gen g from; graph_has_gen g to;
-          copy_compatible g)
+          copy_compatible g; to <> O)
     LOCAL (temp _from_start (gen_start g from);
            temp _from_limit
                 (offset_val (WORD_SIZE * gen_size t_info from)

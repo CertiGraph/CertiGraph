@@ -914,3 +914,6 @@ Proof.
     + simpl in H0. exfalso. omega.
     + simpl. destruct n; [|simpl in *; rewrite IHl1 by omega]; reflexivity.
 Qed.
+
+Lemma map_tl {A B: Type}: forall (f: A -> B) (l: list A), map f (tl l) = tl (map f l).
+Proof. intros; destruct l; simpl; reflexivity. Qed.

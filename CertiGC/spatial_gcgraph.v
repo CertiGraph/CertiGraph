@@ -485,7 +485,7 @@ Lemma heap_rest_rep_iter_sepcon: forall g t_info,
                 (heap_rest_gen_data_at_ g t_info).
 Proof.
   intros. unfold heap_rest_rep.
-  pose proof (graph_thread_generation_space_compatible _ _ H). destruct H as [? [? ?]].
+  pose proof (gt_gs_compatible _ _ H). destruct H as [? [? ?]].
   rewrite <- (firstn_skipn (length (g_gen (glabel g))) (spaces (ti_heap t_info))).
   rewrite iter_sepcon_app_sepcon. rewrite <- map_skipn in H1.
   remember (skipn (length (g_gen (glabel g))) (spaces (ti_heap t_info))).
@@ -542,8 +542,7 @@ Proof.
   remember (nth_sh g gen) as sh.
   rewrite <- (data_at__tarray_value sh _ _ (gen_start g gen)).
   - unfold gen_size. entailer!.
-  - unfold generation_size.
-    destruct (graph_thread_generation_space_compatible _ _ H0 _ H) as [_ [_ ?]].
+  - unfold generation_size. destruct (gt_gs_compatible _ _ H0 _ H) as [_ [_ ?]].
     rewrite H1. apply space_order.
 Qed.
 
