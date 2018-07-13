@@ -185,25 +185,26 @@ Proof.
            remember (Znth (Z.of_nat to) (spaces (ti_heap t_info))) as sp_to.
            assert (isptr (space_start sp_to)). {
              destruct (gt_gs_compatible _ _ H _ H2) as [? _]. subst sp_to.
-             rewrite <- conclib.nth_Znth. unfold nth_space in H19.
-             change default with null_space. rewrite <- H19. apply start_isptr. }
+             rewrite nth_space_Znth in H19. rewrite <- H19. apply start_isptr. }
            remember ((space_start (heap_head (ti_heap t_info)),
                       (Vundef,
                        offset_val
                          (WORD_SIZE * total_space (heap_head (ti_heap t_info)))
                          (space_start (heap_head (ti_heap t_info)))))
                        :: map space_tri (tl (spaces (ti_heap t_info)))).
-           assert ((let (x, _) := let (_, y) := Znth (Z.of_nat to) l in y in x) =
-                   offset_val (WORD_SIZE * used_space sp_to) (space_start sp_to)). {
+           assert (Znth (Z.of_nat to) l = space_tri sp_to). {
              subst l sp_to. rewrite Znth_pos_cons by assumption.
              rewrite map_tl, Znth_tl by omega.
              replace (Z.of_nat to - 1 + 1) with (Z.of_nat to) by omega.
-             rewrite Znth_map by (rewrite spaces_size; rep_omega).
-             unfold space_tri. reflexivity. }
+             rewrite Znth_map by (rewrite spaces_size; rep_omega). reflexivity. }
            unfold Inhabitant_pair, Inhabitant_val, Inhabitant in H20.
-           forward; rewrite H20. 1: entailer!. forward. simpl sem_binary_operation'.
+           forward; rewrite H20; unfold space_tri. 1: entailer!.
+           forward. simpl sem_binary_operation'.
            rewrite sapi_ptr_val by assumption. Opaque Znth. forward. Transparent Znth.
-           rewrite sapi_ptr_val by assumption. admit.
+           rewrite sapi_ptr_val by assumption. rewrite H20. unfold space_tri.
+           rewrite <- Z.add_assoc.
+           replace (1 + Zlength (raw_fields (vlabel g v))) with (vertex_size g v) by
+               (unfold vertex_size; omega). admit.
       * apply semax_if_seq. forward_if. 1: exfalso; apply H15'; reflexivity.
         rewrite H14 in n. forward. rewrite <- Heqroot. rewrite if_false by assumption.
         Exists g t_info roots. simpl. entailer!.

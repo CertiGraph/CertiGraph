@@ -86,7 +86,7 @@ Qed.
 
 Lemma vertex_rep_memory_block: forall sh g v,
     vertex_rep sh g v |--
-               memory_block sh (WORD_SIZE * single_vertex_size g v)
+               memory_block sh (WORD_SIZE * vertex_size g v)
                (offset_val (- WORD_SIZE) (vertex_address g v)).
 Proof.
   intros. sep_apply (vertex_rep_isptr sh g v). Intros.
@@ -95,7 +95,7 @@ Proof.
   remember (gen_start g gen). destruct v; try contradiction.
   remember (previous_vertices_size g gen num).
   assert (0 <= z) by (rewrite Heqz; apply pvs_ge_zero).
-  unfold single_vertex_size. entailer. rewrite <- fields_eq_length.
+  unfold vertex_size. entailer. rewrite <- fields_eq_length.
   destruct H1 as [_ [_ [? _]]]. simpl in H1.
   destruct H3 as [_ [_ [? _]]]. simpl in H3. rewrite <- H4 in H3.
   remember (previous_vertices_size g gen num).
@@ -140,7 +140,7 @@ Proof.
   rewrite ptrofs_add_repr in *. apply prop_right.
   pose proof (pvs_ge_zero g gen num). rewrite Ptrofs.unsigned_repr_eq in H1.
   rewrite Z.mod_small in H1 by rep_omega. rewrite pvs_S.
-  unfold single_vertex_size. rewrite <- fields_eq_length. rewrite WORD_SIZE_eq in *.
+  unfold vertex_size. rewrite <- fields_eq_length. rewrite WORD_SIZE_eq in *.
   rewrite Z.mul_add_distr_l, Z.mul_1_r, Z.add_assoc in H4.
   rewrite Ptrofs.unsigned_repr_eq in H4. rewrite Z.mod_small in H4 by rep_omega.
   rep_omega.
@@ -149,19 +149,19 @@ Qed.
 Lemma generation_rep_ptrofs: forall g gen b i,
     Vptr b i = gen_start g gen ->
     generation_rep g gen |--
-                   !! (WORD_SIZE * generation_size g gen +
+                   !! (WORD_SIZE * graph_gen_size g gen +
                        Ptrofs.unsigned i < Ptrofs.modulus).
 Proof. intros. apply (iter_sepcon_vertex_rep_ptrofs g gen b i). assumption. Qed.
 
 Lemma generation_rep_memory_block: forall g gen,
     graph_has_gen g gen ->
     generation_rep g gen |--
-    memory_block (nth_sh g gen) (WORD_SIZE * generation_size g gen)
+    memory_block (nth_sh g gen) (WORD_SIZE * graph_gen_size g gen)
     (gen_start g gen).
 Proof.
   intros. apply graph_has_gen_start_isptr in H.
   remember (gen_start g gen). destruct v; try contradiction.
-  unfold generation_rep, generation_size.
+  unfold generation_rep, graph_gen_size.
   remember (number_of_vertices (nth_gen g gen)) as num. clear Heqnum.
   remember (nth_sh g gen) as sh. clear Heqsh. induction num.
   - simpl. rewrite memory_block_zero_Vptr. auto.
@@ -184,13 +184,13 @@ Qed.
 Lemma generation_rep_align_compatible: forall g gen,
     graph_has_gen g gen ->
     generation_rep g gen |--
-    !! (align_compatible (tarray int_or_ptr_type (generation_size g gen))
+    !! (align_compatible (tarray int_or_ptr_type (graph_gen_size g gen))
                          (gen_start g gen)).
 Proof.
   intros. apply graph_has_gen_start_isptr in H.
   remember (gen_start g gen). destruct v; try contradiction.
   sep_apply (generation_rep_ptrofs g gen b i Heqv). Intros.
-  unfold generation_rep, generation_size in *.
+  unfold generation_rep, graph_gen_size in *.
   remember (number_of_vertices (nth_gen g gen)) as num. clear Heqnum.
   remember (nth_sh g gen) as sh. clear Heqsh. induction num.
   - unfold previous_vertices_size. simpl fold_left. apply prop_right.
@@ -217,7 +217,7 @@ Proof. intros. simpl. rewrite Z.max_r by assumption. rep_omega. Qed.
 Lemma generation_rep_field_compatible: forall g gen,
     graph_has_gen g gen ->
     generation_rep g gen |--
-    !! (field_compatible (tarray int_or_ptr_type (generation_size g gen))
+    !! (field_compatible (tarray int_or_ptr_type (graph_gen_size g gen))
                          [] (gen_start g gen)).
 Proof.
   intros. pose proof H. apply graph_has_gen_start_isptr in H.
@@ -232,7 +232,7 @@ Lemma generation_rep_data_at_: forall g gen,
     graph_has_gen g gen ->
     generation_rep g gen |--
                    data_at_ (nth_sh g gen)
-                   (tarray int_or_ptr_type (generation_size g gen))
+                   (tarray int_or_ptr_type (graph_gen_size g gen))
                    (gen_start g gen).
 Proof.
   intros. sep_apply (generation_rep_field_compatible g gen H). Intros.
@@ -475,8 +475,8 @@ Qed.
 Definition heap_rest_gen_data_at_ (g: LGraph) (t_info: thread_info) (gen: nat) :=
   data_at_ (nth_sh g gen)
            (tarray int_or_ptr_type
-                   (total_space (nth_space t_info gen) - generation_size g gen))
-           (offset_val (WORD_SIZE * generation_size g gen) (gen_start g gen)).
+                   (total_space (nth_space t_info gen) - graph_gen_size g gen))
+           (offset_val (WORD_SIZE * graph_gen_size g gen) (gen_start g gen)).
 
 Lemma heap_rest_rep_iter_sepcon: forall g t_info,
     graph_thread_info_compatible g t_info ->
@@ -542,7 +542,7 @@ Proof.
   remember (nth_sh g gen) as sh.
   rewrite <- (data_at__tarray_value sh _ _ (gen_start g gen)).
   - unfold gen_size. entailer!.
-  - unfold generation_size. destruct (gt_gs_compatible _ _ H0 _ H) as [_ [_ ?]].
+  - unfold graph_gen_size. destruct (gt_gs_compatible _ _ H0 _ H) as [_ [_ ?]].
     rewrite H1. apply space_order.
 Qed.
 
