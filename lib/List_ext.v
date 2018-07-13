@@ -917,3 +917,43 @@ Qed.
 
 Lemma map_tl {A B: Type}: forall (f: A -> B) (l: list A), map f (tl l) = tl (map f l).
 Proof. intros; destruct l; simpl; reflexivity. Qed.
+
+Lemma fold_left_comm: forall {A B} (f: A -> B -> A) l1 l2 init,
+    (forall a b1 b2, f (f a b1) b2  = f (f a b2) b1) ->
+    Permutation l1 l2 -> fold_left f l1 init = fold_left f l2 init.
+Proof.
+  intros. remember (length l1). assert (length l1 <= n) by omega. clear Heqn.
+  revert init l1 l2 H1 H0. induction n; intros; destruct l1.
+  - apply Permutation_nil in H0. subst l2. simpl. reflexivity.
+  - simpl in H1; exfalso; omega. 
+  - apply Permutation_nil in H0. subst l2. simpl. reflexivity.
+  - simpl in H1. assert (length l1 <= n) by omega. clear H1.
+    assert (In b l2) by
+        (apply Permutation_in with (x := b) in H0; [assumption | left; reflexivity]).
+    apply in_split in H1. destruct H1 as [l3 [l4 ?]]. subst l2.
+    apply Permutation_cons_app_inv in H0. simpl.
+    rewrite IHn with (l2 := l3 ++ l4) by assumption. rewrite !fold_left_app. simpl.
+    f_equal. clear -H. revert b init. rev_induction l3; simpl. 1: reflexivity.
+    rewrite !fold_left_app. simpl. rewrite H. f_equal. apply H0.
+Qed.
+
+Local Open Scope Z_scope.
+
+Lemma fold_left_Z_mono: forall {A} (f: Z -> A -> Z) (l1 l2 l3: list A) s,
+    (forall a b, a <= f a b) -> (forall a b1 b2, f (f a b1) b2  = f (f a b2) b1) ->
+    Permutation (l1 ++ l2) l3 -> fold_left f l1 s <= fold_left f l3 s.
+Proof.
+  intros. rewrite <- (fold_left_comm _ _ _ _ H0 H1). rewrite fold_left_app.
+  remember (fold_left f l1 s). clear -H. rev_induction l2. 1: simpl; intuition.
+  rewrite fold_left_app. simpl. transitivity (fold_left f l z); [apply H0 | apply H].
+Qed.
+
+Lemma fold_left_mono_filter: forall {A} (f: Z -> A -> Z) (l: list A) (h: A -> bool) s,
+    (forall a b, a <= f a b) -> (forall a b1 b2, f (f a b1) b2  = f (f a b2) b1) ->
+    fold_left f (filter h l) s <= fold_left f l s.
+Proof.
+  intros. remember (fun x: A => negb (h x)) as g.
+  assert (Permutation (filter h l ++ filter g l) l) by
+      (symmetry; apply filter_perm; intros; subst; apply Bool.negb_involutive_reverse).
+  apply (fold_left_Z_mono f _ _ _ s H H0 H1).
+Qed.

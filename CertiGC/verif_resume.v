@@ -58,7 +58,7 @@ Proof.
     + Intros. forward. forward. deadvars!. unfold graph_rep. rewrite Heql.
       simpl length. unfold nat_inc_list. simpl nat_seq. simpl iter_sepcon. Intros.
       sep_apply (generation_rep_data_at_ g O  (graph_has_gen_O g)).
-      unfold generation_size. unfold nth_gen. rewrite Heql. simpl nth. rewrite H5.
+      unfold graph_gen_size, nth_gen. rewrite Heql. simpl nth. rewrite H5.
       unfold gen_start, nth_gen. if_tac. 2: exfalso; apply H8; apply graph_has_gen_O.
       clear H8. rewrite Heql. simpl nth. rewrite <- Heqv.
       unfold heap_rest_rep. rewrite H1. simpl iter_sepcon. Intros.
