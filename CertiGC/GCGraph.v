@@ -956,8 +956,9 @@ Definition val2nat (g: LGraph) (gen: nat) (v: val) : nat :=
       if (eq_dec b1 b2) then Z.to_nat (Ptrofs.unsigned o2 - Ptrofs.unsigned o1) else 0
   | _,_ => 0
   end.
- 
+
 Local Open Scope nat_scope.
+
 Inductive do_scan_relation (from to depth scan next: nat) (g g': LGraph) : Prop :=
   | DSR : scan < next -> forall g_i,
             forward_loop from to depth (make_fields g (to, scan)) g g_i ->
@@ -1373,7 +1374,7 @@ Qed.
 
 Definition unmarked_gen_size (g: LGraph) (gen: nat) :=
   fold_left (vertex_size_accum g gen)
-            (filter (fun i => (vlabel g (gen, i)).(raw_mark))
+            (filter (fun i => negb (vlabel g (gen, i)).(raw_mark))
                     (nat_inc_list (number_of_vertices (nth_gen g gen)))) 0.
 
 Lemma unmarked_gen_size_le: forall g n, unmarked_gen_size g n <= graph_gen_size g n.
@@ -1381,3 +1382,32 @@ Proof.
   intros g gen. unfold unmarked_gen_size, graph_gen_size, previous_vertices_size.
   apply fold_left_mono_filter; [apply vsa_mono | apply vsa_comm].
 Qed.
+
+Lemma single_unmarked_le: forall g v,
+    graph_has_v g v -> raw_mark (vlabel g v) = false ->
+    vertex_size g v <= unmarked_gen_size g (vgeneration v).
+Proof.
+  intros. unfold unmarked_gen_size.
+  remember (filter (fun i : nat => negb (raw_mark (vlabel g (vgeneration v, i))))
+                   (nat_inc_list (number_of_vertices (nth_gen g (vgeneration v))))).
+  assert (In (vindex v) l). {
+    subst l. rewrite filter_In. split.
+    - rewrite nat_inc_list_In_iff. apply (proj2 H).
+    - destruct v; simpl. rewrite negb_true_iff. apply H0. }
+  apply In_Permutation_cons in H1. destruct H1 as [l1 ?]. symmetry in H1.
+  change (vindex v :: l1) with ([vindex v] ++ l1) in H1.
+  transitivity (fold_left (vertex_size_accum g (vgeneration v)) [vindex v] 0).
+  - simpl. destruct v; simpl. apply Z.le_refl.
+  - apply (fold_left_Z_mono (vertex_size_accum g (vgeneration v)) [vindex v] l1 l 0);
+      [apply vsa_mono | apply vsa_comm | apply H1].
+Qed.
+
+Definition rest_gen_size (t_info: thread_info) (gen: nat): Z :=
+  total_space (nth_space t_info gen) - used_space (nth_space t_info gen).
+
+Definition enough_space_to_copy g t_info from to: Prop :=
+  unmarked_gen_size g from <= rest_gen_size t_info to.
+
+Definition forward_condition g t_info from to: Prop :=
+  enough_space_to_copy g t_info from to /\
+  graph_has_gen g from /\ graph_has_gen g to /\ copy_compatible g.
