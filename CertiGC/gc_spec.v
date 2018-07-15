@@ -164,8 +164,7 @@ Definition forward_spec :=
     PROP (readable_share rsh; writable_share sh;
           super_compatible (g, t_info, roots) f_info outlier;
           forward_p_compatible forward_p roots g;
-          graph_has_gen g from; graph_has_gen g to;
-          copy_compatible g; to <> O)
+          forward_condition g t_info from to; to <> O)
     LOCAL (temp _from_start (gen_start g from);
            temp _from_limit
                 (offset_val (WORD_SIZE * gen_size t_info from)
@@ -186,8 +185,7 @@ Definition forward_spec :=
           roots' = forwarded_roots from to forward_p g roots f_info;
           forward_relation from to (Z.to_nat depth)
                            (forward_p2forward_t forward_p roots g) g g';
-          graph_has_gen g' from; graph_has_gen g' to;
-          copy_compatible g')
+          forward_condition g' t_info' from to)
     LOCAL ()
     SEP (all_string_constants rsh gv;
          fun_info_rep rsh f_info fi;
@@ -227,9 +225,9 @@ Definition forward_roots_spec :=
   LOCAL ()
   SEP (all_string_constants rsh gv;
          fun_info_rep rsh f_info fi;
-         outlier_rep outlier;  
+         outlier_rep outlier;
          graph_rep g';
-         thread_info_rep sh t_info' ti). 
+         thread_info_rep sh t_info' ti).
 
 Definition do_scan_spec :=
   DECLARE _do_scan
@@ -251,7 +249,7 @@ Definition do_scan_spec :=
          outlier_rep outlier;
          graph_rep g)
     POST [tvoid]
-    EX g': LGraph, 
+    EX g': LGraph,
        PROP (do_scan_relation from to (Z.to_nat depth) (val2nat g to scan) (val2nat g to next) g g';
              graph_thread_info_compatible g' t_info;
              outlier_compatible g' outlier;
