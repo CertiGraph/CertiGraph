@@ -1,10 +1,10 @@
 Require Export VST.veric.rmaps.
 Require Export RamifyCoq.lib.List_ext.
-Require Export RamifyCoq.msl_ext.iter_sepcon.
 Require Export RamifyCoq.graph.graph_model.
 Require Export RamifyCoq.CertiGC.GCGraph.
 Require Export RamifyCoq.CertiGC.spatial_gcgraph.
 Require Export RamifyCoq.CertiGC.env_graph_gc.
+Require Export RamifyCoq.msl_ext.iter_sepcon.
 
 Identity Coercion LGraph_LabeledGraph: LGraph >-> LabeledGraph.
 Coercion pg_lg: LabeledGraph >-> PreGraph.
