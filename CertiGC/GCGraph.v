@@ -1411,3 +1411,67 @@ Definition enough_space_to_copy g t_info from to: Prop :=
 Definition forward_condition g t_info from to: Prop :=
   enough_space_to_copy g t_info from to /\
   graph_has_gen g from /\ graph_has_gen g to /\ copy_compatible g.
+
+Definition has_space (sp: space) (s: Z): Prop :=
+  0 <= s <= total_space sp - used_space sp.
+
+Lemma cut_space_order: forall (sp : space) (s : Z),
+    has_space sp s -> 0 <= used_space sp + s <= total_space sp.
+Proof. intros. pose proof (space_order sp). red in H. omega. Qed.
+
+Definition cut_space (sp: space) (s: Z) (H: has_space sp s): space :=
+  Build_space (space_start sp) (used_space sp + s) (total_space sp)
+              (space_sh sp) (cut_space_order sp s H) (space_upper_bound sp).
+
+Lemma cut_heap_size:
+  forall (h : heap) (i s : Z) (H : has_space (Znth i (spaces h)) s),
+    0 <= i < Zlength (spaces h) ->
+    Zlength (upd_Znth i (spaces h) (cut_space (Znth i (spaces h)) s H)) = MAX_SPACES.
+Proof. intros. rewrite upd_Znth_Zlength; [apply spaces_size | assumption]. Qed.
+
+Definition cut_heap (h: heap) (i s: Z) (H1: 0 <= i < Zlength (spaces h))
+           (H2: has_space (Znth i (spaces h)) s): heap :=
+  Build_heap (upd_Znth i (spaces h) (cut_space (Znth i (spaces h)) s H2))
+             (cut_heap_size h i s H2 H1).
+
+Lemma heap_head_cut_thread_info: forall
+    h i s (H1: 0 <= i < Zlength (spaces h)) (H2: has_space (Znth i (spaces h)) s),
+    i <> 0 -> heap_head (cut_heap h i s H1 H2) = heap_head h.
+Proof.
+  intros. destruct (heap_head_cons h) as [hs1 [l1 [? ?]]].
+  destruct (heap_head_cons (cut_heap h i s H1 H2)) as [hs2 [l2 [? ?]]].
+  rewrite H3, H5. simpl in H4.
+  pose proof (split3_full_length_list
+                0 i _ _ H1 (Zminus_0_l_reverse (Zlength (spaces h)))).
+  replace (i - 0) with i in H6 by omega. simpl in H6.
+  remember (firstn (Z.to_nat i) (spaces h)) as ls1.
+  remember (skipn (Z.to_nat (i + 1)) (spaces h)) as ls2.
+  assert (Zlength ls1 = i). {
+    rewrite Zlength_length by omega. subst ls1. apply firstn_length_le.
+    clear H5. rewrite Zlength_correct in H1. rep_omega. }
+  rewrite H6 in H4 at 1. rewrite (upd_Znth_char _ _ _ _ _ H7) in H4.
+  rewrite H6 in H0. clear -H0 H4 H H7. destruct ls1.
+  - rewrite Zlength_nil in H7. exfalso. apply H. subst i. reflexivity.
+  - simpl in H0, H4. inversion H0. subst hs1. inversion H4. reflexivity.
+Qed.
+
+Definition cut_thread_info (t: thread_info) (i s: Z)
+           (H1: 0 <= i < Zlength (spaces (ti_heap t)))
+           (H2: has_space (Znth i (spaces (ti_heap t))) s) : thread_info :=
+  Build_thread_info (ti_heap_p t) (cut_heap (ti_heap t) i s H1 H2) (ti_args t)
+                    (arg_size t).
+
+Lemma upd_Znth_tl {A}: forall (i: Z) (l: list A) (x: A),
+    0 <= i -> l <> nil -> tl (upd_Znth (i + 1) l x) = upd_Znth i (tl l) x.
+Proof.
+  intros. destruct l; simpl. 1: contradiction.
+  unfold upd_Znth. unfold sublist. replace (i - 0) with i by omega.
+  replace (i + 1 - 0) with (i + 1) by omega. simpl.
+  assert (forall j, 0 <= j -> Z.to_nat (j + 1) = S (Z.to_nat j)) by
+      (intros; rewrite <- Z2Nat.inj_succ; rep_omega).
+  rewrite (H1 _ H). simpl tl. do 3 f_equal.
+  - f_equal. rewrite Zlength_cons. omega.
+  - remember (S (Z.to_nat i)). replace (Z.to_nat (i + 1 + 1)) with (S n).
+    + simpl. reflexivity.
+    + do 2 rewrite H1 by omega. subst n. reflexivity.
+Qed.

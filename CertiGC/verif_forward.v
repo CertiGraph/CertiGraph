@@ -208,7 +208,35 @@ Proof.
            rewrite sapi_ptr_val by assumption. rewrite H24. unfold space_tri.
            rewrite <- Z.add_assoc.
            replace (1 + Zlength (raw_fields (vlabel g v))) with (vertex_size g v) by
-               (unfold vertex_size; omega). admit.
+               (unfold vertex_size; omega). thaw FR. freeze [0; 2; 3; 4; 5; 6] FR.
+           assert (Hi : 0 <= Z.of_nat to < Zlength (spaces (ti_heap t_info))) by
+               (rewrite spaces_size; rep_omega).
+           assert (Hh: has_space (Znth (Z.of_nat to) (spaces (ti_heap t_info)))
+                                 (vertex_size g v)). {
+             red. split. 1: pose proof (svs_gt_one g v); omega.
+             transitivity (unmarked_gen_size g (vgeneration v)).
+             - apply single_unmarked_le; [|apply not_true_is_false]; assumption.
+             - red in H1. unfold rest_gen_size in H1. subst from.
+               rewrite nth_space_Znth in H1. assumption. }
+           assert (Hn: space_start (Znth (Z.of_nat to) (spaces (ti_heap t_info))) <>
+                       nullval). {
+             rewrite <- Heqsp_to. destruct (space_start sp_to); try contradiction.
+             intro Hn. inversion Hn. }
+           rewrite (heap_rest_rep_cut
+                      (ti_heap t_info) (Z.of_nat to) (vertex_size g v) Hi Hh Hn).
+           rewrite <- Heqsp_to. thaw FR. gather_SEP 4 5 7.
+           replace_SEP 0 (thread_info_rep sh (cut_thread_info t_info _ _ Hi Hh) ti).
+           ++ entailer. unfold thread_info_rep. simpl ti_heap. cancel.
+              rewrite heap_head_cut_thread_info by omega. cancel.
+              rewrite upd_Znth_cons by omega. rewrite !map_tl. unfold cut_heap.
+              simpl spaces. rewrite <- upd_Znth_map. unfold cut_space.
+              unfold space_tri at 3. simpl total_space. simpl space_start.
+              simpl used_space. rewrite <- upd_Znth_tl. 2: omega. 2: {
+                intro Hs. apply map_eq_nil in Hs.
+                apply (heap_spaces_nil (ti_heap t_info)). rewrite Hs. reflexivity. }
+              replace (Z.of_nat to - 1 + 1) with (Z.of_nat to) by omega.
+              unfold cut_thread_info, heap_struct_rep. simpl ti_heap_p. entailer!.
+           ++ admit.
       * apply semax_if_seq. forward_if. 1: exfalso; apply H19'; reflexivity.
         rewrite H18 in n. forward. rewrite <- Heqroot. rewrite if_false by assumption.
         Exists g t_info roots. simpl. entailer!.
