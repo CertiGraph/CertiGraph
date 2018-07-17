@@ -236,7 +236,40 @@ Proof.
                 apply (heap_spaces_nil (ti_heap t_info)). rewrite Hs. reflexivity. }
               replace (Z.of_nat to - 1 + 1) with (Z.of_nat to) by omega.
               unfold cut_thread_info, heap_struct_rep. simpl ti_heap_p. entailer!.
-           ++ admit.
+           ++ sep_apply (graph_vertex_ramif_stable _ _ H17). Intros.
+              freeze [1; 2; 3; 4; 5] FR. deadvars!. rewrite v0.
+              remember (nth_sh g from) as shv.
+              assert (writable_share (space_sh sp_to)). {
+                destruct (gt_gs_compatible _ _ H _ H7) as [_ [? _]]. subst sp_to.
+                rewrite nth_space_Znth in H25. rewrite <- H25.
+                apply generation_share_writable. }
+              remember (space_sh sp_to) as sht. rename i into j.
+              assert (vertex_size g v - (-1 + 1) = vertex_size g v) by omega.
+              assert (used_space sp_to + -1 + 1 = used_space sp_to) by omega.
+              forward_for_simple_bound
+                (Zlength (raw_fields (vlabel g v)))
+                (EX i: Z,
+                 PROP (-1 <= i)
+                 LOCAL (temp _new
+                             (offset_val (WORD_SIZE * (used_space sp_to + 1))
+                                         (space_start sp_to));
+                        temp _sz (vint (Zlength (raw_fields (vlabel g v))));
+                        temp _v (vertex_address g v))
+                 SEP (vertex_rep shv g v;
+                      data_at_ sht (tarray int_or_ptr_type (vertex_size g v - (i + 1)))
+                               (offset_val (WORD_SIZE * (used_space sp_to + i + 1))
+                                           (space_start sp_to));
+                      FRZL FR))%assert.
+              ** pose proof (raw_fields_range (vlabel g v)). split. 1: rep_omega.
+                 transitivity (two_power_nat 22). 1: omega.
+                 compute; intro s; inversion s.
+              ** forward. Exists (-1). rewrite H26, H27. entailer!.
+              ** Intros. assert (i = -1 \/ 0 <= i < Zlength (raw_fields (vlabel g v)))
+                   by omega. clear H28 H29. destruct H30.
+                 --- subst i. rewrite H26, H27. unfold vertex_rep, vertex_at. Intros.
+                     admit.
+                 --- admit.
+              ** admit.
       * apply semax_if_seq. forward_if. 1: exfalso; apply H19'; reflexivity.
         rewrite H18 in n. forward. rewrite <- Heqroot. rewrite if_false by assumption.
         Exists g t_info roots. simpl. entailer!.
