@@ -51,17 +51,17 @@ struct space {
 #ifndef NURSERY_SIZE
 #define NURSERY_SIZE (1<<16)
 #endif
-/* The size of generation 0 (the "nursery") should approximately match the 
+/* The size of generation 0 (the "nursery") should approximately match the
    size of the level-2 cache of the machine, according to:
-      Cache Performance of Fast-Allocating Programs, 
-      by Marcelo J. R. Goncalves and Andrew W. Appel. 
+      Cache Performance of Fast-Allocating Programs,
+      by Marcelo J. R. Goncalves and Andrew W. Appel.
       7th Int'l Conf. on Functional Programming and Computer Architecture,
       pp. 293-305, ACM Press, June 1995.
-   We estimate this as 256 kilobytes 
+   We estimate this as 256 kilobytes
      (which is the size of the Intel Core i7 per-core L2 cache).
     http://www.tomshardware.com/reviews/Intel-i7-nehalem-cpu,2041-10.html
     https://en.wikipedia.org/wiki/Nehalem_(microarchitecture)
-   Empirical measurements show that 64k works well 
+   Empirical measurements show that 64k works well
     (or anything in the range from 32k to 128k).
 */
 
@@ -123,14 +123,14 @@ void printroots (FILE *f, struct heap *h,
    roots = fi+2;
    n = fi[1];
    args = ti->args;
-  
+
   for(i = 0; i < n; i++) {
     fprintf(f,"%d[%8x]:",roots[i],args[roots[i]]);
     printtree(f, h, args[roots[i]]);
     fprintf(f,"\n");
   }
   fprintf(f,"\n");
-}  
+}
 
 #endif
 
@@ -157,7 +157,7 @@ void forward (value *from_start,  /* beginning of from-space */
    then make *p point at the corresponding object in to-space.
    If such an object did not already exist, create it at address *next
     (and increment *next by the size of the object).
-   If *p is not a pointer into from-space, then leave it alone. 
+   If *p is not a pointer into from-space, then leave it alone.
 
    The depth parameter may be set to 0 for ordinary breadth-first
    collection.  Setting depth to a small integer (perhaps 10)
@@ -169,7 +169,7 @@ void forward (value *from_start,  /* beginning of from-space */
     if(Is_block(va)) {
         v = (value*)int_or_ptr_to_ptr(va);
     if(Is_from(from_start, from_limit, v)) {
-      header_t hd = Hd_val(v); 
+      header_t hd = Hd_val(v);
       if(hd == 0) { /* already forwarded */
 	*p = Field(v,0);
       } else {
@@ -178,8 +178,9 @@ void forward (value *from_start,  /* beginning of from-space */
 	value *new;
         sz = Wosize_hd(hd);
 	new = *next+1;
-	*next = new+sz; 
-	for(i = -1; i < sz; i++) {
+        *next = new+sz;
+        Hd_val(new) = hd;
+	for(i = 0; i < sz; i++) {
 	  Field(new, i) = Field(v, i);
 	}
 	Hd_val(v) = 0;
@@ -204,12 +205,12 @@ void forward_roots (value *from_start,  /* beginning of from-space */
    const uintnat *roots = fi+2;
    n = fi[1];
    args = ti->args;
-  
+
    for(i = 0; i < n; i++) {
      assert (roots[i] < MAX_ARGS);
      forward(from_start, from_limit, next, args+roots[i], DEPTH);
    }
-}  
+}
 
 #define No_scan_tag 251
 #define No_scan(t) ((t) >= No_scan_tag)
@@ -220,7 +221,7 @@ void do_scan(value *from_start,  /* beginning of from-space */
  	     value **next)       /* next available spot in to-space */
 /* Forward each word in the to-space between scan and *next.
   In the process, next may increase, so keep doing it until scan catches up.
-  Leave alone:  header words, and "no_scan" (nonpointer) data. 
+  Leave alone:  header words, and "no_scan" (nonpointer) data.
 */
 {
   value *s;
@@ -238,7 +239,7 @@ void do_scan(value *from_start,  /* beginning of from-space */
     s += 1+sz;
   }
 }
-	     
+	
 void do_generation (struct space *from,  /* descriptor of from-space */
 		    struct space *to,    /* descriptor of to-space */
 		    fun_info fi,         /* which args contain live roots? */
@@ -253,7 +254,7 @@ void do_generation (struct space *from,  /* descriptor of from-space */
   if(0)  fprintf(stderr,"%5.3f%% occupancy\n",
 	  (to->next-p)/(double)(from->next-from->start));
   from->next=from->start;
-}  
+}
 
 #if 0
 /* This "gensize" function is only useful if the desired ratio is >2,
@@ -274,7 +275,7 @@ uintnat gensize(uintnat words)
   n = d*RATIO;
   assert (n >= 2*words);
   return n;
-}  
+}
 #endif
 
 void create_space(struct space *s,  /* which generation to create */
@@ -320,7 +321,7 @@ struct thread_info *make_tinfo(void) {
   tinfo = (struct thread_info *)malloc(sizeof(struct thread_info));
   if (!tinfo)
     abort_with("Could not allocate thread_info struct\n");
-    
+
   tinfo->heap=h;
   tinfo->alloc=h->spaces[0].start;
   tinfo->limit=h->spaces[0].limit;
@@ -331,7 +332,7 @@ struct thread_info *make_tinfo(void) {
 void resume(fun_info fi, struct thread_info *ti)
 /* When the garbage collector is all done, it does not "return"
    to the mutator; instead, it uses this function (which does not return)
-   to resume the mutator by invoking the continuation, fi->fun.  
+   to resume the mutator by invoking the continuation, fi->fun.
    But first, "resume" informs the mutator
    of the new values for the alloc and limit pointers.
 */
@@ -346,7 +347,7 @@ void resume(fun_info fi, struct thread_info *ti)
     abort_with ("Nursery is too small for function's num_allocs\n");
   ti->alloc = lo;
   ti->limit = hi;
-}  
+}
 
 void garbage_collect(fun_info fi, struct thread_info *ti)
 /* See the header file for the interface-spec of this function. */
@@ -360,7 +361,7 @@ void garbage_collect(fun_info fi, struct thread_info *ti)
        into the next-older generation.  Usually, when doing that,
        there will be enough space left in the next-older generation
        so that we can break the loop by resuming the mutator. */
-      
+
     /* If the next generation does not yet exist, create it */
     if (h->spaces[i+1].start==NULL) {
       int w = h->spaces[i].limit-h->spaces[i].start;
@@ -400,7 +401,6 @@ void reset_heap (struct heap *h) {
   for (i=0; i<MAX_SPACES; i++)
     h->spaces[i].next = h->spaces[i].start;
 }
-  
 
 void free_heap (struct heap *h) {
   fprintf(stderr, "Debug: in free_heap\n");

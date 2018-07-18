@@ -574,37 +574,6 @@ Proof.
   inversion H1. subst l' s'. unfold reset_space. simpl. tauto.
 Qed.
 
-Fixpoint get_edges' (lf: list raw_field) (v: VType) (n: nat) : list EType :=
-  match lf with
-  | nil => nil
-  | Some _ :: lf' => get_edges' lf' v (n + 1)
-  | None :: lf' => (v, n) :: get_edges' lf' v (n + 1)
-  end.
-
-Definition get_edges (g: LGraph) (v: VType): list EType :=
-  get_edges' (raw_fields (vlabel g v)) v O.
-
-Lemma get_edges'_range: forall v n l m,
-    In (v, n) (get_edges' l v m) -> m <= n < m + length l.
-Proof.
-  intros v n l. revert v n. induction l; simpl; intros. 1: exfalso; auto.
-  specialize (IHl v n (m + 1)). destruct a. 1: apply IHl in H; omega.
-  simpl in H. destruct H. 1: inversion H; omega. apply IHl in H. omega.
-Qed.
-
-Lemma get_edges'_nth: forall n l a m v,
-    n < length l -> nth n l a = None <-> In (v, n + m) (get_edges' l v m).
-Proof.
-  induction n.
-  - induction l; simpl; intros. 1: inversion H. destruct a.
-    + split; intros. inversion H0. apply get_edges'_range in H0. exfalso; omega.
-    + simpl. intuition.
-  - destruct l; simpl; intros. 1: inversion H. assert (n < length l) by omega.
-    specialize (IHn l a (m + 1) v H0).
-    replace (n + (m + 1)) with (S (n + m)) in IHn by omega. rewrite IHn.
-    destruct o; intuition. simpl in H3. destruct H3; auto. inversion H3. omega.
-Qed.
-
 (*
 Class SoundGCGraph (g: LGraph) :=
   {
@@ -737,6 +706,9 @@ Qed.
 
 Definition make_fields (g: LGraph) (v: VType): list field_t :=
   make_fields' g (vlabel g v).(raw_fields) v O.
+
+Definition get_edges (g: LGraph) (v: VType): list EType :=
+  filter_sum_right (make_fields g v).
 
 Definition make_fields_vals (g: LGraph) (v: VType): list val :=
   let vb := vlabel g v in
@@ -1408,9 +1380,14 @@ Definition rest_gen_size (t_info: thread_info) (gen: nat): Z :=
 Definition enough_space_to_copy g t_info from to: Prop :=
   unmarked_gen_size g from <= rest_gen_size t_info to.
 
+Definition no_dangling_dst (g: LGraph): Prop :=
+  forall v, graph_has_v g v ->
+            forall e, In e (get_edges g v) -> graph_has_v g (dst g e).
+
 Definition forward_condition g t_info from to: Prop :=
   enough_space_to_copy g t_info from to /\
-  graph_has_gen g from /\ graph_has_gen g to /\ copy_compatible g.
+  graph_has_gen g from /\ graph_has_gen g to /\
+  copy_compatible g /\ no_dangling_dst g.
 
 Definition has_space (sp: space) (s: Z): Prop :=
   0 <= s <= total_space sp - used_space sp.
@@ -1474,4 +1451,32 @@ Proof.
   - remember (S (Z.to_nat i)). replace (Z.to_nat (i + 1 + 1)) with (S n).
     + simpl. reflexivity.
     + do 2 rewrite H1 by omega. subst n. reflexivity.
+Qed.
+
+Lemma isptr_is_pointer_or_integer: forall p, isptr p -> is_pointer_or_integer p.
+Proof. intros. destruct p; try contradiction. exact I. Qed.
+
+Lemma mfv_unmarked_all_is_ptr_or_int: forall (g : LGraph) (v : VType),
+    no_dangling_dst g -> graph_has_v g v ->
+    Forall is_pointer_or_integer (map (field2val g) (make_fields g v)).
+Proof.
+  intros. rewrite Forall_forall. intros f ?. apply list_in_map_inv in H1.
+  destruct H1 as [x [? ?]]. destruct x as [[? | ?] | ?]; simpl in H1; subst.
+  - unfold odd_Z2val. exact I.
+  - destruct g0. exact I.
+  - apply isptr_is_pointer_or_integer. unfold vertex_address.
+    rewrite isptr_offset_val. apply graph_has_gen_start_isptr.
+    apply filter_sum_right_In_iff, H in H2; [destruct H2|]; assumption.
+Qed.
+
+Lemma mfv_all_is_ptr_or_int: forall g v,
+    copy_compatible g -> no_dangling_dst g -> graph_has_v g v ->
+    Forall is_pointer_or_integer (make_fields_vals g v).
+Proof.
+  intros. rewrite Forall_forall. intros f ?. unfold make_fields_vals in H2.
+  pose proof (mfv_unmarked_all_is_ptr_or_int _ _ H0 H1). rewrite Forall_forall in H3.
+  specialize (H3 f). destruct (raw_mark (vlabel g v)) eqn:? . 2: apply H3; assumption.
+  simpl in H2. destruct H2. 2: apply H3, In_tail; assumption.
+  subst f. unfold vertex_address. apply isptr_is_pointer_or_integer.
+  rewrite isptr_offset_val. apply graph_has_gen_start_isptr, (proj1 (H _ H1 Heqb)).
 Qed.
