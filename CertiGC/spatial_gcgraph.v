@@ -748,9 +748,6 @@ Proof.
   simpl. cancel. apply wand_frame_ver.
 Qed.
 
-Lemma isptr_is_pointer_or_integer: forall p, isptr p -> is_pointer_or_integer p.
-Proof. intros. destruct p; try contradiction. exact I. Qed.
-
 Lemma heap_rest_rep_cut: forall (h: heap) i s (H1: 0 <= i < Zlength (spaces h))
                                 (H2: has_space (Znth i (spaces h)) s),
     space_start (Znth i (spaces h)) <> nullval ->
@@ -783,4 +780,11 @@ Proof.
       (total_space sp - (used_space sp + s)) by omega.
   replace (WORD_SIZE * used_space sp + WORD_SIZE * s) with
       (WORD_SIZE * (used_space sp + s))%Z by rep_omega. reflexivity.
+Qed.
+
+Lemma data_at__singleton_array_eq:
+  forall sh tp p, data_at_ sh (tarray tp 1) p = data_at_ sh tp p.
+Proof.
+  intros. rewrite data_at__tarray. simpl.
+  rewrite data_at__eq, (data_at_singleton_array_eq _ _ (default_val tp)); reflexivity.
 Qed.

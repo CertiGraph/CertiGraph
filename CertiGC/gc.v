@@ -2,6 +2,19 @@ From Coq Require Import String List ZArith.
 From compcert Require Import Coqlib Integers Floats AST Ctypes Cop Clight Clightdefs.
 Local Open Scope Z_scope.
 
+Module Info.
+  Definition version := "3.3"%string.
+  Definition build_number := ""%string.
+  Definition build_tag := ""%string.
+  Definition arch := "x86"%string.
+  Definition model := "32sse2"%string.
+  Definition abi := "macosx"%string.
+  Definition bitsize := 32.
+  Definition big_endian := false.
+  Definition source_file := "gc.c"%string.
+  Definition normalized := true.
+End Info.
+
 Definition _Is_block : ident := 99%positive.
 Definition _Is_from : ident := 105%positive.
 Definition ___builtin_annot : ident := 41%positive.
@@ -657,7 +670,9 @@ Definition f_forward := {|
                   (Sset _t'8
                     (Ederef
                       (Ebinop Oadd
-                        (Etempvar _v (tptr (talignas 2%N (tptr tvoid))))
+                        (Ecast
+                          (Etempvar _v (tptr (talignas 2%N (tptr tvoid))))
+                          (tptr (talignas 2%N (tptr tvoid))))
                         (Econst_int (Int.repr 0) tint)
                         (tptr (talignas 2%N (tptr tvoid))))
                       (talignas 2%N (tptr tvoid))))
@@ -691,67 +706,60 @@ Definition f_forward := {|
                           (Etempvar _sz tint)
                           (tptr (talignas 2%N (tptr tvoid)))))
                       (Ssequence
+                        (Sassign
+                          (Ederef
+                            (Ebinop Oadd
+                              (Ecast
+                                (Etempvar _new (tptr (talignas 2%N (tptr tvoid))))
+                                (tptr tuint))
+                              (Eunop Oneg (Econst_int (Int.repr 1) tint)
+                                tint) (tptr tuint)) tuint)
+                          (Etempvar _hd tuint))
                         (Ssequence
-                          (Sset _i
-                            (Eunop Oneg (Econst_int (Int.repr 1) tint) tint))
-                          (Sloop
-                            (Ssequence
-                              (Sifthenelse (Ebinop Olt (Etempvar _i tint)
-                                             (Etempvar _sz tint) tint)
-                                Sskip
-                                Sbreak)
-                              (Ssequence
-                                (Sset _t'6
-                                  (Ederef
-                                    (Ebinop Oadd
-                                      (Etempvar _v (tptr (talignas 2%N (tptr tvoid))))
-                                      (Etempvar _i tint)
-                                      (tptr (talignas 2%N (tptr tvoid))))
-                                    (talignas 2%N (tptr tvoid))))
-                                (Sassign
-                                  (Ederef
-                                    (Ebinop Oadd
-                                      (Etempvar _new (tptr (talignas 2%N (tptr tvoid))))
-                                      (Etempvar _i tint)
-                                      (tptr (talignas 2%N (tptr tvoid))))
-                                    (talignas 2%N (tptr tvoid)))
-                                  (Etempvar _t'6 (talignas 2%N (tptr tvoid))))))
-                            (Sset _i
-                              (Ebinop Oadd (Etempvar _i tint)
-                                (Econst_int (Int.repr 1) tint) tint))))
-                        (Ssequence
-                          (Sassign
-                            (Ederef
-                              (Ebinop Oadd
-                                (Ecast
-                                  (Etempvar _v (tptr (talignas 2%N (tptr tvoid))))
-                                  (tptr tuint))
-                                (Eunop Oneg (Econst_int (Int.repr 1) tint)
-                                  tint) (tptr tuint)) tuint)
-                            (Econst_int (Int.repr 0) tint))
                           (Ssequence
-                            (Ssequence
-                              (Scall (Some _t'2)
-                                (Evar _ptr_to_int_or_ptr (Tfunction
-                                                           (Tcons
-                                                             (tptr tvoid)
-                                                             Tnil)
-                                                           (talignas 2%N (tptr tvoid))
-                                                           cc_default))
-                                ((Ecast
-                                   (Etempvar _new (tptr (talignas 2%N (tptr tvoid))))
-                                   (tptr tvoid)) :: nil))
-                              (Sassign
-                                (Ederef
-                                  (Ebinop Oadd
+                            (Sset _i (Econst_int (Int.repr 0) tint))
+                            (Sloop
+                              (Ssequence
+                                (Sifthenelse (Ebinop Olt (Etempvar _i tint)
+                                               (Etempvar _sz tint) tint)
+                                  Sskip
+                                  Sbreak)
+                                (Ssequence
+                                  (Sset _t'6
+                                    (Ederef
+                                      (Ebinop Oadd
+                                        (Ecast
+                                          (Etempvar _v (tptr (talignas 2%N (tptr tvoid))))
+                                          (tptr (talignas 2%N (tptr tvoid))))
+                                        (Etempvar _i tint)
+                                        (tptr (talignas 2%N (tptr tvoid))))
+                                      (talignas 2%N (tptr tvoid))))
+                                  (Sassign
+                                    (Ederef
+                                      (Ebinop Oadd
+                                        (Ecast
+                                          (Etempvar _new (tptr (talignas 2%N (tptr tvoid))))
+                                          (tptr (talignas 2%N (tptr tvoid))))
+                                        (Etempvar _i tint)
+                                        (tptr (talignas 2%N (tptr tvoid))))
+                                      (talignas 2%N (tptr tvoid)))
+                                    (Etempvar _t'6 (talignas 2%N (tptr tvoid))))))
+                              (Sset _i
+                                (Ebinop Oadd (Etempvar _i tint)
+                                  (Econst_int (Int.repr 1) tint) tint))))
+                          (Ssequence
+                            (Sassign
+                              (Ederef
+                                (Ebinop Oadd
+                                  (Ecast
                                     (Etempvar _v (tptr (talignas 2%N (tptr tvoid))))
-                                    (Econst_int (Int.repr 0) tint)
-                                    (tptr (talignas 2%N (tptr tvoid))))
-                                  (talignas 2%N (tptr tvoid)))
-                                (Etempvar _t'2 (talignas 2%N (tptr tvoid)))))
+                                    (tptr tuint))
+                                  (Eunop Oneg (Econst_int (Int.repr 1) tint)
+                                    tint) (tptr tuint)) tuint)
+                              (Econst_int (Int.repr 0) tint))
                             (Ssequence
                               (Ssequence
-                                (Scall (Some _t'3)
+                                (Scall (Some _t'2)
                                   (Evar _ptr_to_int_or_ptr (Tfunction
                                                              (Tcons
                                                                (tptr tvoid)
@@ -763,49 +771,77 @@ Definition f_forward := {|
                                      (tptr tvoid)) :: nil))
                                 (Sassign
                                   (Ederef
-                                    (Etempvar _p (tptr (talignas 2%N (tptr tvoid))))
+                                    (Ebinop Oadd
+                                      (Ecast
+                                        (Etempvar _v (tptr (talignas 2%N (tptr tvoid))))
+                                        (tptr (talignas 2%N (tptr tvoid))))
+                                      (Econst_int (Int.repr 0) tint)
+                                      (tptr (talignas 2%N (tptr tvoid))))
                                     (talignas 2%N (tptr tvoid)))
-                                  (Etempvar _t'3 (talignas 2%N (tptr tvoid)))))
-                              (Sifthenelse (Ebinop Ogt (Etempvar _depth tint)
-                                             (Econst_int (Int.repr 0) tint)
-                                             tint)
+                                  (Etempvar _t'2 (talignas 2%N (tptr tvoid)))))
+                              (Ssequence
                                 (Ssequence
-                                  (Sset _i (Econst_int (Int.repr 0) tint))
-                                  (Sloop
-                                    (Ssequence
-                                      (Sifthenelse (Ebinop Olt
-                                                     (Etempvar _i tint)
-                                                     (Etempvar _sz tint)
-                                                     tint)
-                                        Sskip
-                                        Sbreak)
-                                      (Scall None
-                                        (Evar _forward (Tfunction
-                                                         (Tcons
-                                                           (tptr (talignas 2%N (tptr tvoid)))
+                                  (Scall (Some _t'3)
+                                    (Evar _ptr_to_int_or_ptr (Tfunction
+                                                               (Tcons
+                                                                 (tptr tvoid)
+                                                                 Tnil)
+                                                               (talignas 2%N (tptr tvoid))
+                                                               cc_default))
+                                    ((Ecast
+                                       (Etempvar _new (tptr (talignas 2%N (tptr tvoid))))
+                                       (tptr tvoid)) :: nil))
+                                  (Sassign
+                                    (Ederef
+                                      (Etempvar _p (tptr (talignas 2%N (tptr tvoid))))
+                                      (talignas 2%N (tptr tvoid)))
+                                    (Etempvar _t'3 (talignas 2%N (tptr tvoid)))))
+                                (Sifthenelse (Ebinop Ogt
+                                               (Etempvar _depth tint)
+                                               (Econst_int (Int.repr 0) tint)
+                                               tint)
+                                  (Ssequence
+                                    (Sset _i (Econst_int (Int.repr 0) tint))
+                                    (Sloop
+                                      (Ssequence
+                                        (Sifthenelse (Ebinop Olt
+                                                       (Etempvar _i tint)
+                                                       (Etempvar _sz tint)
+                                                       tint)
+                                          Sskip
+                                          Sbreak)
+                                        (Scall None
+                                          (Evar _forward (Tfunction
                                                            (Tcons
                                                              (tptr (talignas 2%N (tptr tvoid)))
                                                              (Tcons
-                                                               (tptr (tptr (talignas 2%N (tptr tvoid))))
+                                                               (tptr (talignas 2%N (tptr tvoid)))
                                                                (Tcons
-                                                                 (tptr (talignas 2%N (tptr tvoid)))
-                                                                 (Tcons tint
-                                                                   Tnil)))))
-                                                         tvoid cc_default))
-                                        ((Etempvar _from_start (tptr (talignas 2%N (tptr tvoid)))) ::
-                                         (Etempvar _from_limit (tptr (talignas 2%N (tptr tvoid)))) ::
-                                         (Etempvar _next (tptr (tptr (talignas 2%N (tptr tvoid))))) ::
-                                         (Ebinop Oadd
-                                           (Etempvar _new (tptr (talignas 2%N (tptr tvoid))))
-                                           (Etempvar _i tint)
-                                           (tptr (talignas 2%N (tptr tvoid)))) ::
-                                         (Ebinop Osub (Etempvar _depth tint)
-                                           (Econst_int (Int.repr 1) tint)
-                                           tint) :: nil)))
-                                    (Sset _i
-                                      (Ebinop Oadd (Etempvar _i tint)
-                                        (Econst_int (Int.repr 1) tint) tint))))
-                                Sskip))))))))))
+                                                                 (tptr (tptr (talignas 2%N (tptr tvoid))))
+                                                                 (Tcons
+                                                                   (tptr (talignas 2%N (tptr tvoid)))
+                                                                   (Tcons
+                                                                    tint
+                                                                    Tnil)))))
+                                                           tvoid cc_default))
+                                          ((Etempvar _from_start (tptr (talignas 2%N (tptr tvoid)))) ::
+                                           (Etempvar _from_limit (tptr (talignas 2%N (tptr tvoid)))) ::
+                                           (Etempvar _next (tptr (tptr (talignas 2%N (tptr tvoid))))) ::
+                                           (Ebinop Oadd
+                                             (Ecast
+                                               (Etempvar _new (tptr (talignas 2%N (tptr tvoid))))
+                                               (tptr (talignas 2%N (tptr tvoid))))
+                                             (Etempvar _i tint)
+                                             (tptr (talignas 2%N (tptr tvoid)))) ::
+                                           (Ebinop Osub
+                                             (Etempvar _depth tint)
+                                             (Econst_int (Int.repr 1) tint)
+                                             tint) :: nil)))
+                                      (Sset _i
+                                        (Ebinop Oadd (Etempvar _i tint)
+                                          (Econst_int (Int.repr 1) tint)
+                                          tint))))
+                                  Sskip)))))))))))
             Sskip)))
       Sskip)))
 |}.
@@ -862,7 +898,7 @@ Definition f_forward_roots := {|
                                       {|cc_vararg:=true; cc_unproto:=false; cc_structret:=false|}))
                       ((Evar ___stringlit_3 (tarray tschar 30)) ::
                        (Evar ___stringlit_2 (tarray tschar 5)) ::
-                       (Econst_int (Int.repr 209) tint) ::
+                       (Econst_int (Int.repr 210) tint) ::
                        (Evar ___stringlit_1 (tarray tschar 20)) :: nil))
                     (Scall None
                       (Evar _abort (Tfunction Tnil tvoid cc_default)) nil))))
@@ -972,7 +1008,9 @@ Definition f_do_scan := {|
                          (Etempvar _from_limit (tptr (talignas 2%N (tptr tvoid)))) ::
                          (Etempvar _next (tptr (tptr (talignas 2%N (tptr tvoid))))) ::
                          (Ebinop Oadd
-                           (Etempvar _s (tptr (talignas 2%N (tptr tvoid))))
+                           (Ecast
+                             (Etempvar _s (tptr (talignas 2%N (tptr tvoid))))
+                             (tptr (talignas 2%N (tptr tvoid))))
                            (Etempvar _j tint)
                            (tptr (talignas 2%N (tptr tvoid)))) ::
                          (Econst_int (Int.repr 0) tint) :: nil)))
@@ -1057,7 +1095,7 @@ Definition f_do_generation := {|
                                   {|cc_vararg:=true; cc_unproto:=false; cc_structret:=false|}))
                   ((Evar ___stringlit_3 (tarray tschar 30)) ::
                    (Evar ___stringlit_2 (tarray tschar 5)) ::
-                   (Econst_int (Int.repr 250) tint) ::
+                   (Econst_int (Int.repr 251) tint) ::
                    (Evar ___stringlit_4 (tarray tschar 45)) :: nil))
                 (Scall None (Evar _abort (Tfunction Tnil tvoid cc_default))
                   nil)))))))
@@ -1447,7 +1485,7 @@ Definition f_resume := {|
                             {|cc_vararg:=true; cc_unproto:=false; cc_structret:=false|}))
             ((Evar ___stringlit_3 (tarray tschar 30)) ::
              (Evar ___stringlit_2 (tarray tschar 5)) ::
-             (Econst_int (Int.repr 342) tint) ::
+             (Econst_int (Int.repr 343) tint) ::
              (Evar ___stringlit_10 (tarray tschar 2)) :: nil))
           (Scall None (Evar _abort (Tfunction Tnil tvoid cc_default)) nil)))
       (Ssequence
@@ -1761,7 +1799,7 @@ Definition f_garbage_collect := {|
                               {|cc_vararg:=true; cc_unproto:=false; cc_structret:=false|}))
               ((Evar ___stringlit_3 (tarray tschar 30)) ::
                (Evar ___stringlit_2 (tarray tschar 5)) ::
-               (Econst_int (Int.repr 385) tint) ::
+               (Econst_int (Int.repr 386) tint) ::
                (Evar ___stringlit_14 (tarray tschar 2)) :: nil))
             (Scall None (Evar _abort (Tfunction Tnil tvoid cc_default)) nil)))))))
 |}.

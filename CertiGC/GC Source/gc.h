@@ -98,7 +98,7 @@ typedef uintnat color_t;
 typedef uintnat mark_t;
 
 #define Hd_val(val) (((header_t *) (val)) [-1])        /* Also an l-value. */
-#define Field(x, i) ((x)[i])           /* Also an l-value. */
+#define Field(x, i) (((value *)(x)) [i])           /* Also an l-value. */
 #define PROFINFO_SHIFT (64 - PROFINFO_WIDTH)
 #define PROFINFO_MASK ((1ull << PROFINFO_WIDTH) - 1ull)
 
