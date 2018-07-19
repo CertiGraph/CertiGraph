@@ -241,13 +241,15 @@ Proof.
   rewrite memory_block_data_at_; auto.
 Qed.
 
-Lemma data_at__tarray_value_fold_local_fact: forall sh n n1 p,
+Lemma field_compatible_tarray_value:
+  forall (n n1 : Z) (p : val),
     0 <= n1 <= n ->
-    data_at_ sh (tarray int_or_ptr_type n1) p *
-    data_at_ sh (tarray int_or_ptr_type (n - n1)) (offset_val (WORD_SIZE * n1) p) |--
-             !!(field_compatible (tarray int_or_ptr_type n) [] p).
+    field_compatible (tarray int_or_ptr_type n1) [] p ->
+    field_compatible (tarray int_or_ptr_type (n - n1)) []
+                     (offset_val (WORD_SIZE * n1) p) ->
+    field_compatible (tarray int_or_ptr_type n) [] p.
 Proof.
-  intros. entailer!. unfold field_compatible. simpl. destruct H0 as [? [_ [? [? _]]]].
+  intros. unfold field_compatible. simpl. destruct H0 as [? [_ [? [? _]]]].
   destruct H1 as [_ [_ [? [? _]]]]. destruct p; try contradiction. clear H0.
   simpl isptr. inv_int i. unfold size_compatible in *. simpl in H1.
   rewrite sizeof_tarray_int_or_ptr in * by omega. rewrite WORD_SIZE_eq in *.
@@ -271,47 +273,53 @@ Proof.
     apply Z.divide_add_cancel_r in H10; [assumption | apply Z.divide_factor_l].
 Qed.
 
-Lemma data_at__tarray_value_fold: forall sh n n1 p,
+Lemma data_at_tarray_value_fold: forall sh n n1 p (v v' v1 v2: list val),
     0 <= n1 <= n ->
-    data_at_ sh (tarray int_or_ptr_type n1) p *
-    data_at_ sh (tarray int_or_ptr_type (n - n1)) (offset_val (WORD_SIZE * n1) p) |--
-             data_at_ sh (tarray int_or_ptr_type n) p.
+    n <= Zlength v' ->
+    v = sublist 0 n v' ->
+    v1 = sublist 0 n1 v' ->
+    v2 = sublist n1 n v' ->
+    data_at sh (tarray int_or_ptr_type n1) v1 p *
+    data_at sh (tarray int_or_ptr_type (n - n1)) v2 (offset_val (WORD_SIZE * n1) p) |--
+            data_at sh (tarray int_or_ptr_type n) v p.
 Proof.
-  intros. unfold data_at_ at 3; unfold field_at_. rewrite field_at_data_at.
-  erewrite (split2_data_at_Tarray sh int_or_ptr_type n n1).
-  - instantiate (1:= list_repeat (Z.to_nat (n-n1)) Vundef).
-    instantiate (1:= list_repeat (Z.to_nat n1) Vundef). unfold field_address. simpl.
-    sep_apply (data_at__tarray_value_fold_local_fact sh n n1 p H). Intros.
-    rewrite if_true; trivial. entailer!. unfold data_at_. unfold field_at_.
-    rewrite field_at_data_at. unfold field_address0. rewrite if_true.
-    + simpl. unfold field_address. rewrite if_true; trivial. simpl.
-      rewrite offset_offset_val. entailer!.
-    + unfold field_compatible0. simpl. destruct H0. intuition.
-  - assumption.
-  - instantiate (1:=list_repeat (Z.to_nat n) Vundef). list_solve.
-  - unfold default_val. simpl. autorewrite with sublist. reflexivity.
-  - unfold default_val. simpl. autorewrite with sublist. reflexivity.
-  - unfold default_val. simpl. autorewrite with sublist. reflexivity.
+  intros. rewrite (split2_data_at_Tarray sh int_or_ptr_type n n1 v v' v1 v2);
+            [|assumption..]. entailer!. unfold field_address0. rewrite if_true.
+  - simpl nested_field_offset. entailer!.
+  - pose proof (field_compatible_tarray_value n _ p H H4 H6). clear -H1 H.
+    red in H1. red. simpl in *. intuition.
 Qed.
 
-Lemma data_at__tarray_value_unfold: forall sh n n1 p,
+Lemma data_at_tarray_value_unfold: forall sh n n1 p (v v' v1 v2: list val),
     0 <= n1 <= n ->
-    data_at_ sh (tarray int_or_ptr_type n) p |--
-    data_at_ sh (tarray int_or_ptr_type n1) p *
-    data_at_ sh (tarray int_or_ptr_type (n - n1)) (offset_val (WORD_SIZE * n1) p).
+    n <= Zlength v' ->
+    v = sublist 0 n v' ->
+    v1 = sublist 0 n1 v' ->
+    v2 = sublist n1 n v' ->
+    data_at sh (tarray int_or_ptr_type n) v p |--
+            data_at sh (tarray int_or_ptr_type n1) v1 p *
+    data_at sh (tarray int_or_ptr_type (n - n1)) v2 (offset_val (WORD_SIZE * n1) p).
 Proof.
-  intros. rewrite data_at__eq at 1. entailer!.
-  erewrite (split2_data_at_Tarray sh int_or_ptr_type n n1).
-  - instantiate (1:= list_repeat (Z.to_nat (n-n1)) Vundef).
-    instantiate (1:= list_repeat (Z.to_nat n1) Vundef). unfold field_address0.
-    simpl. replace (0 + 4 * n1) with (WORD_SIZE * n1)%Z by rep_omega.
-    rewrite if_true. 1: entailer!. unfold field_compatible0. simpl.
-    destruct H0. intuition.
-  - assumption.
-  - instantiate (1:=list_repeat (Z.to_nat n) Vundef). list_solve.
-  - unfold default_val. simpl. autorewrite with sublist. reflexivity.
-  - unfold default_val. simpl. autorewrite with sublist. reflexivity.
-  - unfold default_val. simpl. autorewrite with sublist. reflexivity.
+  intros. sep_apply (data_at_local_facts sh (tarray int_or_ptr_type n) v p).
+  Intros. rewrite (split2_data_at_Tarray sh int_or_ptr_type n n1 v v' v1 v2);
+            [|assumption..]. cancel. unfold field_address0. rewrite if_true.
+  - simpl nested_field_offset. entailer!.
+  - clear -H H4. red. red in H4. simpl in *. intuition.
+Qed.
+
+Lemma data_at_tarray_value: forall sh n n1 p (v v' v1 v2: list val),
+    0 <= n1 <= n ->
+    n <= Zlength v' ->
+    v = sublist 0 n v' ->
+    v1 = sublist 0 n1 v' ->
+    v2 = sublist n1 n v' ->
+    data_at sh (tarray int_or_ptr_type n) v p =
+    data_at sh (tarray int_or_ptr_type n1) v1 p *
+    data_at sh (tarray int_or_ptr_type (n - n1)) v2 (offset_val (WORD_SIZE * n1) p).
+Proof.
+  intros. apply pred_ext.
+  - apply data_at_tarray_value_unfold with v'; assumption.
+  - apply data_at_tarray_value_fold with v'; assumption.
 Qed.
 
 Lemma data_at__tarray_value: forall sh n n1 p,
@@ -320,9 +328,10 @@ Lemma data_at__tarray_value: forall sh n n1 p,
     data_at_ sh (tarray int_or_ptr_type n1) p *
     data_at_ sh (tarray int_or_ptr_type (n - n1)) (offset_val (WORD_SIZE * n1) p).
 Proof.
-  intros. apply pred_ext.
-  - apply data_at__tarray_value_unfold; assumption.
-  - apply data_at__tarray_value_fold; assumption.
+  intros. rewrite !data_at__eq.
+  apply data_at_tarray_value with (default_val (tarray int_or_ptr_type n));
+    [assumption | unfold default_val; simpl; autorewrite with sublist..];
+    [omega | reflexivity..].
 Qed.
 
 Definition valid_int_or_ptr (x: val) :=
@@ -787,4 +796,20 @@ Lemma data_at__singleton_array_eq:
 Proof.
   intros. rewrite data_at__tarray. simpl.
   rewrite data_at__eq, (data_at_singleton_array_eq _ _ (default_val tp)); reflexivity.
+Qed.
+
+Lemma field_compatible_int_or_ptr_tuint_iff: forall p,
+    field_compatible int_or_ptr_type [] p <-> field_compatible tuint [] p.
+Proof.
+  intros. unfold field_compatible. simpl.
+  intuition; unfold align_compatible in *; destruct p; try constructor; inv H2;
+    inv H3; apply align_compatible_rec_by_value with (ch := Mint32); try reflexivity;
+      simpl in *; assumption.
+Qed.
+
+Lemma data_at__int_or_ptr_tuint: forall sh p,
+    data_at_ sh (tarray int_or_ptr_type 1) p = data_at_ sh tuint p.
+Proof.
+  intros. rewrite data_at__singleton_array_eq, !data_at__memory_block,
+          field_compatible_int_or_ptr_tuint_iff. reflexivity.
 Qed.
