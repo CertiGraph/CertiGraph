@@ -854,11 +854,11 @@ Definition copy1v_update_glabel (gi: graph_info) (to: nat): graph_info :=
   Build_graph_info (copy1v_mod_gen_info_list (g_gen gi) to)
                    (copy1v_mod_gen_no_nil (g_gen gi) to).
 
-Definition copy1v_new_v (g: LGraph) (to: nat): VType :=
+Definition new_copied_v (g: LGraph) (to: nat): VType :=
   (to, number_of_vertices (nth_gen g to)).
 
 Definition lgraph_copy1v (g: LGraph) (v: VType) (to: nat): LGraph :=
-  let new_v := copy1v_new_v g to in
+  let new_v := new_copied_v g to in
   Build_LabeledGraph _ _ _ (pregraph_copy1v g v new_v)
                      (copy1v_update_vlabel g v new_v)
                      (elabel g) (copy1v_update_glabel (glabel g) to).
@@ -894,7 +894,7 @@ Inductive forward_relation (from to: nat):
 | fr_v_in_not_forwarded_Sn: forall depth v g g',
     vgeneration v = from -> (vlabel g v).(raw_mark) = false ->
     let new_g := lgraph_copy1v g v to in
-    forward_loop from to depth (make_fields new_g (copy1v_new_v g to)) new_g g' ->
+    forward_loop from to depth (make_fields new_g (new_copied_v g to)) new_g g' ->
     forward_relation from to (S depth) (inl (inr v)) g g'
 | fr_e_not_to: forall depth e (g: LGraph),
     vgeneration (dst g e) <> from -> forward_relation from to depth (inr e) g g
@@ -905,13 +905,13 @@ Inductive forward_relation (from to: nat):
 | fr_e_to_not_forwarded_O: forall e (g: LGraph),
     vgeneration (dst g e) = from -> (vlabel g (dst g e)).(raw_mark) = false ->
     let new_g := labeledgraph_gen_dst (lgraph_copy1v g (dst g e) to) e
-                                      (copy1v_new_v g to) in
+                                      (new_copied_v g to) in
     forward_relation from to O (inr e) g new_g
 | fr_e_to_not_forwarded_Sn: forall depth e (g g': LGraph),
     vgeneration (dst g e) = from -> (vlabel g (dst g e)).(raw_mark) = false ->
     let new_g := labeledgraph_gen_dst (lgraph_copy1v g (dst g e) to) e
-                                      (copy1v_new_v g to) in
-    forward_loop from to depth (make_fields new_g (copy1v_new_v g to)) new_g g' ->
+                                      (new_copied_v g to) in
+    forward_loop from to depth (make_fields new_g (new_copied_v g to)) new_g g' ->
     forward_relation from to (S depth) (inr e) g g'
 with
 forward_loop (from to: nat): nat -> list field_t -> LGraph -> LGraph -> Prop :=
@@ -1213,7 +1213,7 @@ Definition forwarded_roots (from to: nat) (forward_p: forward_p_type)
                                  then upd_bunch index f_info roots
                                                 (inr (vlabel g v).(copied_vertex))
                                  else upd_bunch index f_info roots
-                                                (inr (copy1v_new_v g to))
+                                                (inr (new_copied_v g to))
                             else roots
                  end
   end.
@@ -1244,7 +1244,7 @@ Fixpoint forward_all_roots (from to: nat) (roots: roots_t) (g: LGraph) : roots_t
         if Nat.eq_dec (vgeneration v) from
         then if (vlabel g v).(raw_mark)
              then (inr (vlabel g v).(copied_vertex)) :: tail
-             else (inr (copy1v_new_v g to)) :: tail
+             else (inr (new_copied_v g to)) :: tail
         else r :: tail
     end
   end.
@@ -1286,8 +1286,10 @@ Qed.
 
 Local Open Scope Z_scope.
 
-Definition forward_roots_compatible (from to: nat) (g: LGraph) (ti : thread_info) : Prop :=
-  (nth_space ti from).(used_space) <= (nth_space ti to).(total_space) - (nth_space ti to).(used_space).
+Definition forward_roots_compatible
+           (from to: nat) (g: LGraph) (ti : thread_info): Prop :=
+  (nth_space ti from).(used_space) <= (nth_space ti to).(total_space) -
+                                      (nth_space ti to).(used_space).
 
 Local Close Scope Z_scope.
 Local Open Scope nat_scope.
