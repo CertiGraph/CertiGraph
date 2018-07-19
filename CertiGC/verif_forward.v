@@ -61,6 +61,10 @@ Proof.
   - rewrite sublist_one; [reflexivity | omega..].
 Qed.
 
+Lemma data_at__value_0_size: forall sh p,
+    data_at_ sh (tarray int_or_ptr_type 0) p |-- emp.
+Proof. intros. rewrite data_at__eq. apply data_at_zero_array_inv; reflexivity. Qed.
+
 Lemma body_forward: semax_body Vprog Gprog f_forward forward_spec.
 Proof.
   start_function.
@@ -213,10 +217,10 @@ Proof.
              pose proof (spaces_size (ti_heap t_info)).
              rewrite Zlength_correct in H0. rep_omega. }
            assert (0 < Z.of_nat to) by omega. unfold heap_struct_rep.
+           destruct (gt_gs_compatible _ _ H _ H7) as [? [? ?]].
+           rewrite nth_space_Znth in *.
            remember (Znth (Z.of_nat to) (spaces (ti_heap t_info))) as sp_to.
-           assert (isptr (space_start sp_to)). {
-             destruct (gt_gs_compatible _ _ H _ H7) as [? _]. subst sp_to.
-             rewrite nth_space_Znth in H24. rewrite <- H24. apply start_isptr. }
+           assert (isptr (space_start sp_to)) by (rewrite <- H24; apply start_isptr).
            remember ((space_start (heap_head (ti_heap t_info)),
                       (Vundef,
                        offset_val
@@ -228,11 +232,11 @@ Proof.
              rewrite map_tl, Znth_tl by omega.
              replace (Z.of_nat to - 1 + 1) with (Z.of_nat to) by omega.
              rewrite Znth_map by (rewrite spaces_size; rep_omega). reflexivity. }
-           unfold Inhabitant_pair, Inhabitant_val, Inhabitant in H25.
-           forward; rewrite H25; unfold space_tri. 1: entailer!.
+           unfold Inhabitant_pair, Inhabitant_val, Inhabitant in H28.
+           forward; rewrite H28; unfold space_tri. 1: entailer!.
            forward. simpl sem_binary_operation'.
            rewrite sapi_ptr_val by assumption. Opaque Znth. forward. Transparent Znth.
-           rewrite sapi_ptr_val by assumption. rewrite H25. unfold space_tri.
+           rewrite sapi_ptr_val by assumption. rewrite H28. unfold space_tri.
            rewrite <- Z.add_assoc.
            replace (1 + Zlength (raw_fields (vlabel g v))) with (vertex_size g v) by
                (unfold vertex_size; omega). thaw FR. freeze [0; 2; 3; 4; 5; 6] FR.
@@ -252,104 +256,123 @@ Proof.
            rewrite (heap_rest_rep_cut
                       (ti_heap t_info) (Z.of_nat to) (vertex_size g v) Hi Hh Hn).
            rewrite <- Heqsp_to. thaw FR. gather_SEP 4 5 7.
-           replace_SEP 0 (thread_info_rep sh (cut_thread_info t_info _ _ Hi Hh) ti).
-           ++ entailer. unfold thread_info_rep. simpl ti_heap. cancel.
-              rewrite heap_head_cut_thread_info by omega. cancel.
-              rewrite upd_Znth_cons by omega. rewrite !map_tl. unfold cut_heap.
-              simpl spaces. rewrite <- upd_Znth_map. unfold cut_space.
-              unfold space_tri at 3. simpl total_space. simpl space_start.
-              simpl used_space. rewrite <- upd_Znth_tl. 2: omega. 2: {
-                intro Hs. apply map_eq_nil in Hs.
-                apply (heap_spaces_nil (ti_heap t_info)). rewrite Hs. reflexivity. }
-              replace (Z.of_nat to - 1 + 1) with (Z.of_nat to) by omega.
-              unfold cut_thread_info, heap_struct_rep. simpl ti_heap_p. entailer!.
-           ++ sep_apply (graph_vertex_ramif_stable _ _ H18). Intros.
-              freeze [1; 2; 3; 4; 5] FR. deadvars!. rewrite v0.
-              remember (nth_sh g from) as shv.
-              assert (writable_share (space_sh sp_to)). {
-                destruct (gt_gs_compatible _ _ H _ H7) as [_ [? _]]. subst sp_to.
-                rewrite nth_space_Znth in H26. rewrite <- H26.
-                apply generation_share_writable. }
-              remember (space_sh sp_to) as sht.
-              rewrite (data_at__tarray_value _ _ 1). 2: unfold vertex_size; rep_omega.
-              Intros.
-              remember (offset_val (WORD_SIZE * used_space sp_to) (space_start sp_to)).
-              rewrite (data_at__int_or_ptr_tuint sht v1).
-              assert_PROP
-                (force_val (sem_add_ptr_int
-                              tuint Signed
-                              (offset_val (WORD_SIZE * (used_space sp_to + 1))
-                                          (space_start sp_to))
-                              (eval_unop Oneg tint (vint 1))) =
-                 field_address tuint [] v1). {
-                subst v1. rewrite WORD_SIZE_eq. entailer!. unfold field_address.
-                rewrite if_true by assumption. simpl. rewrite offset_offset_val.
-                f_equal. omega. }
-              forward. sep_apply (field_at_data_at_cancel
-                                    sht tuint (Z2val (make_header g v)) v1).
-              subst v1. rewrite offset_offset_val.
-              replace (vertex_size g v - 1) with (Zlength (raw_fields (vlabel g v)))
-                by (unfold vertex_size; omega).
-              replace (WORD_SIZE * used_space sp_to + WORD_SIZE * 1) with
-                  (WORD_SIZE * (used_space sp_to + 1))%Z by rep_omega.
-              remember (offset_val (WORD_SIZE * (used_space sp_to + 1))
-                                   (space_start sp_to)) as nv.
-              thaw FR. freeze [0; 1; 2; 3; 4; 5] FR. rename i into j. deadvars!.
-              remember (Zlength (raw_fields (vlabel g v))) as n.
-              assert (isptr nv) by (subst nv; rewrite isptr_offset_val; assumption).
-              forward_for_simple_bound
-                n
-                (EX i: Z,
-                 PROP ( )
-                 LOCAL (temp _new nv;
-                        temp _sz (vint n);
-                        temp _v (vertex_address g v))
-                 SEP (vertex_rep shv g v;
-                      data_at sht (tarray int_or_ptr_type i)
-                              (sublist 0 i (make_fields_vals g v)) nv;
-                      data_at_ sht (tarray int_or_ptr_type (n - i))
-                               (offset_val (WORD_SIZE * i) nv);
-                      FRZL FR))%assert.
-              ** pose proof (raw_fields_range (vlabel g v)). subst n.
-                 transitivity (two_power_nat 22). 1: omega.
-                 compute; intro s; inversion s.
-              ** rewrite sublist_nil. replace (n - 0) with n by omega.
-                 replace (WORD_SIZE * 0)%Z with 0 by omega.
-                 rewrite isptr_offset_val_zero by assumption.
-                 rewrite data_at_zero_array_eq;
-                   [|reflexivity | assumption | reflexivity]. entailer!.
-              ** unfold vertex_rep, vertex_at. Intros.
-                 rewrite fields_eq_length, <- Heqn. forward.
-                 --- entailer!. pose proof (mfv_all_is_ptr_or_int _ _ H8 H9 H18).
-                     rewrite Forall_forall in H40. apply H40, Znth_In.
-                     rewrite fields_eq_length. assumption.
-                 --- rewrite (data_at__tarray_value _ _ 1) by omega. Intros.
-                     rewrite data_at__singleton_array_eq.
-                     assert_PROP
-                       (field_compatible int_or_ptr_type []
-                                         (offset_val (WORD_SIZE * i) nv)) by
-                         (sep_apply (data_at__local_facts
-                                       sht int_or_ptr_type
-                                       (offset_val (WORD_SIZE * i) nv)); entailer!).
-                     assert_PROP
-                       (force_val (sem_add_ptr_int int_or_ptr_type
-                                                   Signed nv (vint i)) =
-                        field_address int_or_ptr_type []
-                                      (offset_val (WORD_SIZE * i) nv)). {
-                       unfold field_address. rewrite if_true by assumption.
-                       clear. entailer!. }
-                     gather_SEP 0 1. replace_SEP 0 (vertex_rep shv g v) by
-                         (unfold vertex_rep, vertex_at;
-                          rewrite fields_eq_length; entailer!). forward.
-                     rewrite offset_offset_val.
-                     replace (n - i - 1) with (n - (i + 1)) by omega.
-                     replace (WORD_SIZE * i + WORD_SIZE * 1) with
-                         (WORD_SIZE * (i + 1))%Z by rep_omega.
-                     gather_SEP 1 2. rewrite data_at_mfs_eq. 2: assumption.
-                     2: subst n; assumption. entailer!.
-              ** thaw FR. rewrite v0, <- Heqshv. gather_SEP 0 4.
-                 replace_SEP 0 (graph_rep g) by (entailer!; apply wand_frame_elim).
-                 admit.
+           replace_SEP 0 (thread_info_rep
+                            sh (cut_thread_info t_info _ _ Hi Hh) ti). {
+             entailer. unfold thread_info_rep. simpl ti_heap. cancel.
+             rewrite heap_head_cut_thread_info by omega. cancel.
+             rewrite upd_Znth_cons by omega. rewrite !map_tl. unfold cut_heap.
+             simpl spaces. rewrite <- upd_Znth_map. unfold cut_space.
+             unfold space_tri at 3. simpl total_space. simpl space_start.
+             simpl used_space. rewrite <- upd_Znth_tl. 2: omega. 2: {
+               intro Hs. apply map_eq_nil in Hs.
+               apply (heap_spaces_nil (ti_heap t_info)). rewrite Hs. reflexivity. }
+             replace (Z.of_nat to - 1 + 1) with (Z.of_nat to) by omega.
+             unfold cut_thread_info, heap_struct_rep. simpl ti_heap_p. entailer!. }
+           sep_apply (graph_vertex_ramif_stable _ _ H18). Intros.
+           freeze [1; 2; 3; 4; 5] FR. deadvars!. rewrite v0.
+           remember (nth_sh g from) as shv.
+           assert (writable_share (space_sh sp_to)) by
+               (rewrite <- H25; apply generation_share_writable).
+           remember (space_sh sp_to) as sht.
+           rewrite (data_at__tarray_value _ _ 1). 2: unfold vertex_size; rep_omega.
+           Intros.
+           remember (offset_val (WORD_SIZE * used_space sp_to) (space_start sp_to)).
+           rewrite (data_at__int_or_ptr_tuint sht v1).
+           assert_PROP
+             (force_val (sem_add_ptr_int
+                           tuint Signed
+                           (offset_val (WORD_SIZE * (used_space sp_to + 1))
+                                       (space_start sp_to))
+                           (eval_unop Oneg tint (vint 1))) =
+              field_address tuint [] v1). {
+             subst v1. rewrite WORD_SIZE_eq. entailer!. unfold field_address.
+             rewrite if_true by assumption. simpl. rewrite offset_offset_val.
+             f_equal. omega. }
+           forward. sep_apply (field_at_data_at_cancel
+                                 sht tuint (Z2val (make_header g v)) v1).
+           subst v1. rewrite offset_offset_val.
+           replace (vertex_size g v - 1) with (Zlength (raw_fields (vlabel g v)))
+             by (unfold vertex_size; omega).
+           replace (WORD_SIZE * used_space sp_to + WORD_SIZE * 1) with
+               (WORD_SIZE * (used_space sp_to + 1))%Z by rep_omega.
+           remember (offset_val (WORD_SIZE * (used_space sp_to + 1))
+                                (space_start sp_to)) as nv.
+           thaw FR. freeze [0; 1; 2; 3; 4; 5] FR. rename i into j. deadvars!.
+           remember (Zlength (raw_fields (vlabel g v))) as n.
+           assert (isptr nv) by (subst nv; rewrite isptr_offset_val; assumption).
+           forward_for_simple_bound
+             n
+             (EX i: Z,
+              PROP ( )
+              LOCAL (temp _new nv;
+                     temp _sz (vint n);
+                     temp _v (vertex_address g v))
+              SEP (vertex_rep shv g v;
+                   data_at sht (tarray int_or_ptr_type i)
+                           (sublist 0 i (make_fields_vals g v)) nv;
+                   data_at_ sht (tarray int_or_ptr_type (n - i))
+                            (offset_val (WORD_SIZE * i) nv); FRZL FR))%assert.
+           ++ pose proof (raw_fields_range (vlabel g v)). subst n.
+              transitivity (two_power_nat 22). 1: omega.
+              compute; intro s; inversion s.
+           ++ rewrite sublist_nil. replace (n - 0) with n by omega.
+              replace (WORD_SIZE * 0)%Z with 0 by omega.
+              rewrite isptr_offset_val_zero by assumption.
+              rewrite data_at_zero_array_eq;
+                [|reflexivity | assumption | reflexivity]. entailer!.
+           ++ unfold vertex_rep, vertex_at. Intros.
+              rewrite fields_eq_length, <- Heqn. forward.
+              ** entailer!. pose proof (mfv_all_is_ptr_or_int _ _ H8 H9 H18).
+                 rewrite Forall_forall in H43. apply H43, Znth_In.
+                 rewrite fields_eq_length. assumption.
+              ** rewrite (data_at__tarray_value _ _ 1) by omega. Intros.
+                 rewrite data_at__singleton_array_eq.
+                 assert_PROP
+                   (field_compatible int_or_ptr_type []
+                                     (offset_val (WORD_SIZE * i) nv)) by
+                     (sep_apply (data_at__local_facts
+                                   sht int_or_ptr_type
+                                   (offset_val (WORD_SIZE * i) nv)); entailer!).
+                 assert_PROP
+                   (force_val (sem_add_ptr_int int_or_ptr_type
+                                               Signed nv (vint i)) =
+                    field_address int_or_ptr_type []
+                                  (offset_val (WORD_SIZE * i) nv)). {
+                   unfold field_address. rewrite if_true by assumption.
+                   clear. entailer!. }
+                 gather_SEP 0 1. replace_SEP 0 (vertex_rep shv g v) by
+                     (unfold vertex_rep, vertex_at;
+                      rewrite fields_eq_length; entailer!). forward.
+                 rewrite offset_offset_val.
+                 replace (n - i - 1) with (n - (i + 1)) by omega.
+                 replace (WORD_SIZE * i + WORD_SIZE * 1) with
+                     (WORD_SIZE * (i + 1))%Z by rep_omega.
+                 gather_SEP 1 2. rewrite data_at_mfs_eq. 2: assumption.
+                 2: subst n; assumption. entailer!.
+           ++ thaw FR. rewrite v0, <- Heqshv. gather_SEP 0 4.
+              replace_SEP 0 (graph_rep g) by (entailer!; apply wand_frame_elim).
+              rewrite sublist_all by (rewrite fields_eq_length; omega).
+              replace_SEP 2 emp. {
+                replace (n - n) with 0 by omega. clear. entailer.
+                apply data_at__value_0_size. }
+              assert (nv = vertex_address g (new_copied_v g to)). {
+                subst nv. unfold vertex_address. unfold new_copied_v. simpl. f_equal.
+                - unfold vertex_offset. simpl. rewrite H26. reflexivity.
+                - unfold gen_start. rewrite if_true by assumption.
+                  rewrite H24. reflexivity. }
+              gather_SEP 1 2 3.
+              replace_SEP
+                0 (vertex_at (nth_sh g to)
+                             (vertex_address g (new_copied_v g to))
+                             (make_header g v) (make_fields_vals g v)). {
+                normalize. rewrite <- H25.
+                change (generation_sh (nth_gen g to)) with (nth_sh g to).
+                rewrite <- fields_eq_length in Heqn.
+                replace (offset_val (WORD_SIZE * used_space sp_to) (space_start sp_to))
+                  with (offset_val (- WORD_SIZE) nv) by
+                    (rewrite Heqnv; rewrite offset_offset_val; f_equal; rep_omega).
+                rewrite <- H32. unfold vertex_at; entailer!. }
+              admit.
       * apply semax_if_seq. forward_if. 1: exfalso; apply H20'; reflexivity.
         rewrite H19 in n. forward. rewrite <- Heqroot. rewrite if_false by assumption.
         Exists g t_info roots. simpl. entailer!.
