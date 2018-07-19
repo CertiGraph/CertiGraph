@@ -25,25 +25,40 @@ Qed.
 Lemma sapi_ptr_val: forall p m n,
     isptr p ->
     (force_val
-       (sem_add_ptr_int
-          (Tpointer tvoid {| attr_volatile := false; attr_alignas := Some 2%N |})
-          Signed (offset_val (WORD_SIZE * m) p)
-          (vint n))) = offset_val (WORD_SIZE * (m + n)) p.
+       (sem_add_ptr_int int_or_ptr_type Signed (offset_val (WORD_SIZE * m) p)
+                        (vint n))) = offset_val (WORD_SIZE * (m + n)) p.
 Proof.
   intros. rewrite sem_add_pi_ptr_special.
   - simpl. rewrite offset_offset_val. f_equal. rep_omega.
   - rewrite isptr_offset_val. assumption.
 Qed.
-  
-Lemma data_at__int_or_ptr_tuint: forall sh p,
-    data_at_ sh (tarray int_or_ptr_type 1) p |-- data_at_ sh tuint p.
+
+Lemma data_at_mfs_eq: forall g v i sh nv,
+    field_compatible int_or_ptr_type [] (offset_val (WORD_SIZE * i) nv) ->
+    0 <= i < Zlength (raw_fields (vlabel g v)) ->
+    data_at sh (tarray int_or_ptr_type i) (sublist 0 i (make_fields_vals g v)) nv *
+    field_at sh int_or_ptr_type [] (Znth i (make_fields_vals g v))
+             (offset_val (WORD_SIZE * i) nv) =
+    data_at sh (tarray int_or_ptr_type (i + 1))
+            (sublist 0 (i + 1) (make_fields_vals g v)) nv.
 Proof.
-  intros. rewrite data_at__singleton_array_eq, !data_at__memory_block. Intros.
-  apply andp_right. 2: simpl sizeof; cancel.
-  apply prop_right. red in H. red. simpl in *. intuition. red. red in H2.
-  destruct p; try contradiction. inversion H2. subst. simpl in H3. inversion H3. subst.
-  simpl in H5. apply align_compatible_rec_by_value with (ch := Mint32). 1: reflexivity.
-  simpl. assumption.
+  intros. rewrite field_at_data_at. unfold field_address.
+  rewrite if_true by assumption. simpl nested_field_type.
+  simpl nested_field_offset. rewrite offset_offset_val.
+  replace (WORD_SIZE * i + 0) with (WORD_SIZE * i)%Z by omega.
+  rewrite <- (data_at_singleton_array_eq
+                sh int_or_ptr_type _ [Znth i (make_fields_vals g v)]) by reflexivity.
+  rewrite <- fields_eq_length in H0.
+  rewrite (data_at_tarray_value
+             sh (i + 1) i nv (sublist 0 (i + 1) (make_fields_vals g v))
+             (make_fields_vals g v) (sublist 0 i (make_fields_vals g v))
+             [Znth i (make_fields_vals g v)]).
+  - replace (i + 1 - i) with 1 by omega. reflexivity.
+  - omega.
+  - omega.
+  - autorewrite with sublist. reflexivity.
+  - reflexivity.
+  - rewrite sublist_one; [reflexivity | omega..].
 Qed.
 
 Lemma body_forward: semax_body Vprog Gprog f_forward forward_spec.
@@ -259,7 +274,7 @@ Proof.
               rewrite (data_at__tarray_value _ _ 1). 2: unfold vertex_size; rep_omega.
               Intros.
               remember (offset_val (WORD_SIZE * used_space sp_to) (space_start sp_to)).
-              sep_apply (data_at__int_or_ptr_tuint sht v1).
+              rewrite (data_at__int_or_ptr_tuint sht v1).
               assert_PROP
                 (force_val (sem_add_ptr_int
                               tuint Signed
@@ -311,18 +326,18 @@ Proof.
                  --- rewrite (data_at__tarray_value _ _ 1) by omega. Intros.
                      rewrite data_at__singleton_array_eq.
                      assert_PROP
-                       (force_val
-                          (sem_add_ptr_int int_or_ptr_type Signed nv (vint i)) =
+                       (field_compatible int_or_ptr_type []
+                                         (offset_val (WORD_SIZE * i) nv)) by
+                         (sep_apply (data_at__local_facts
+                                       sht int_or_ptr_type
+                                       (offset_val (WORD_SIZE * i) nv)); entailer!).
+                     assert_PROP
+                       (force_val (sem_add_ptr_int int_or_ptr_type
+                                                   Signed nv (vint i)) =
                         field_address int_or_ptr_type []
                                       (offset_val (WORD_SIZE * i) nv)). {
-                       assert_PROP
-                         (field_compatible int_or_ptr_type []
-                                           (offset_val (WORD_SIZE * i) nv)) by
-                           (sep_apply (data_at__local_facts
-                                        sht int_or_ptr_type
-                                        (offset_val (WORD_SIZE * i) nv)); entailer!).
                        unfold field_address. rewrite if_true by assumption.
-                       entailer!. }
+                       clear. entailer!. }
                      gather_SEP 0 1. replace_SEP 0 (vertex_rep shv g v) by
                          (unfold vertex_rep, vertex_at;
                           rewrite fields_eq_length; entailer!). forward.
@@ -330,8 +345,11 @@ Proof.
                      replace (n - i - 1) with (n - (i + 1)) by omega.
                      replace (WORD_SIZE * i + WORD_SIZE * 1) with
                          (WORD_SIZE * (i + 1))%Z by rep_omega.
-                     admit.
-              ** admit.
+                     gather_SEP 1 2. rewrite data_at_mfs_eq. 2: assumption.
+                     2: subst n; assumption. entailer!.
+              ** thaw FR. rewrite v0, <- Heqshv. gather_SEP 0 4.
+                 replace_SEP 0 (graph_rep g) by (entailer!; apply wand_frame_elim).
+                 admit.
       * apply semax_if_seq. forward_if. 1: exfalso; apply H20'; reflexivity.
         rewrite H19 in n. forward. rewrite <- Heqroot. rewrite if_false by assumption.
         Exists g t_info roots. simpl. entailer!.

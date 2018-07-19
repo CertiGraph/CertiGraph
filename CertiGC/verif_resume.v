@@ -68,8 +68,8 @@ Proof.
           (unfold nth_sh, nth_gen; rewrite Heql; simpl; reflexivity).
       remember (generation_sh g0) as sh0.
       assert (0 <= used_space hs <= total_space hs) by (apply space_order).
-      sep_apply (data_at__tarray_value_fold
-                   sh0 (total_space hs) (used_space hs) (Vptr b i) H8). thaw FR.
+      rewrite <- (data_at__tarray_value
+                    sh0 (total_space hs) (used_space hs) (Vptr b i) H8). thaw FR.
       forward. Exists (reset_nth_gen_graph O g) (reset_nth_heap_thread_info O t_info).
       entailer!.
       1: split; [apply reset_resume_g_relation | apply reset_resume_t_relation].
