@@ -689,23 +689,22 @@ Definition field2val (g: LGraph) (fd: field_t) : val :=
   | inr e => vertex_address g (dst g e)
   end.
 
-Fixpoint make_fields' (g: LGraph) (l_raw: list raw_field)
-         (v: VType) (n: nat): list field_t :=
+Fixpoint make_fields' (l_raw: list raw_field) (v: VType) (n: nat): list field_t :=
   match l_raw with
   | nil => nil
-  | Some (inl z) :: l => inl (inl z) :: make_fields' g l v (n + 1)
-  | Some (inr ptr) :: l => inl (inr ptr) :: make_fields' g l v (n + 1)
-  | None :: l => inr (v, n) :: make_fields' g l v (n + 1)
+  | Some (inl z) :: l => inl (inl z) :: make_fields' l v (n + 1)
+  | Some (inr ptr) :: l => inl (inr ptr) :: make_fields' l v (n + 1)
+  | None :: l => inr (v, n) :: make_fields' l v (n + 1)
   end.
 
-Lemma make_fields'_eq_length: forall g l v n, length (make_fields' g l v n) = length l.
+Lemma make_fields'_eq_length: forall l v n, length (make_fields' l v n) = length l.
 Proof.
   intros. revert n. induction l; intros; simpl. 1: reflexivity.
   destruct a; [destruct s|]; simpl; rewrite IHl; reflexivity.
 Qed.
 
 Definition make_fields (g: LGraph) (v: VType): list field_t :=
-  make_fields' g (vlabel g v).(raw_fields) v O.
+  make_fields' (vlabel g v).(raw_fields) v O.
 
 Definition get_edges (g: LGraph) (v: VType): list EType :=
   filter_sum_right (make_fields g v).
@@ -754,11 +753,8 @@ Lemma make_fields_the_same: forall (g1 g2: LGraph) v,
 Proof.
   intros. unfold make_fields_vals, make_fields. remember O. clear Heqn. rewrite H0.
   remember (raw_fields (vlabel g2 v)) as l. clear Heql.
-  assert (forall n, make_fields' g1 l v n = make_fields' g2 l v n). {
-    induction l; intros; simpl; auto.
-    destruct a; [destruct s|]; rewrite IHl; reflexivity.
-  } rewrite H2. cut (forall fl, map (field2val g1) fl = map (field2val g2) fl).
-  - intros. rewrite H3. rewrite (vertex_address_the_same g1 g2) by assumption.
+  cut (forall fl, map (field2val g1) fl = map (field2val g2) fl).
+  - intros. rewrite H2. rewrite (vertex_address_the_same g1 g2) by assumption.
     reflexivity.
   - apply map_ext. intros. unfold field2val. destruct a. 1: reflexivity.
     rewrite H. apply vertex_address_the_same; assumption.
@@ -815,53 +811,60 @@ Proof.
     rewrite !pvs_S, IHn. f_equal. unfold vertex_size. rewrite H. reflexivity.
 Qed.
 
-Definition copy1v_add_edge
+Definition copy_v_add_edge
            (s: VType) (g: PreGraph VType EType) (p: EType * VType):
   PreGraph VType EType := pregraph_add_edge g (fst p) s (snd p).
 
-Definition pregraph_copy1v (g: LGraph) (old_v new_v: VType) : PreGraph VType EType :=
+Definition pregraph_copy_v (g: LGraph) (old_v new_v: VType) : PreGraph VType EType :=
   let old_edges := get_edges g old_v in
   let new_edges := combine (repeat new_v (length old_edges)) (map snd old_edges) in
   let new_edge_dst_l := combine new_edges (map (dst g) old_edges) in
-  fold_left (copy1v_add_edge new_v) new_edge_dst_l (pregraph_add_vertex g new_v).
+  fold_left (copy_v_add_edge new_v) new_edge_dst_l (pregraph_add_vertex g new_v).
 
-Definition copy1v_mod_rvb (rvb: raw_vertex_block) (new_v: VType) : raw_vertex_block :=
+Definition copy_v_mod_rvb (rvb: raw_vertex_block) (new_v: VType) : raw_vertex_block :=
   Build_raw_vertex_block
     true new_v (raw_fields rvb) (raw_color rvb) (raw_tag rvb)
     (raw_tag_range rvb) (raw_color_range rvb) (raw_fields_range rvb).
 
-Definition copy1v_update_vlabel (g: LGraph) (old_v new_v: VType) :=
-  let old_rvb := vlabel g old_v in
-  update_vlabel (update_vlabel (vlabel g) old_v (copy1v_mod_rvb old_rvb new_v))
-                new_v old_rvb.
+Definition update_copied_new_vlabel (g: LGraph) (old_v new_v: VType) :=
+  update_vlabel (vlabel g) new_v (vlabel g old_v).
 
-Definition copy1v_mod_gen_info (gi: generation_info) : generation_info :=
+Definition update_copied_old_vlabel (g: LGraph) (old_v new_v: VType) :=
+  update_vlabel (vlabel g) old_v (copy_v_mod_rvb (vlabel g old_v) new_v).
+
+Definition copy_v_mod_gen_info (gi: generation_info) : generation_info :=
   Build_generation_info (start_address gi) (number_of_vertices gi + 1)
                         (generation_sh gi) (start_isptr gi)
                         (generation_share_writable gi).
 
-Definition copy1v_mod_gen_info_list
+Definition copy_v_mod_gen_info_list
            (l: list generation_info) (to: nat) : list generation_info :=
-  firstn to l ++ copy1v_mod_gen_info (nth to l null_info) :: skipn (to + 1) l.
+  firstn to l ++ copy_v_mod_gen_info (nth to l null_info) :: skipn (to + 1) l.
 
-Lemma copy1v_mod_gen_no_nil: forall l to, copy1v_mod_gen_info_list l to <> nil.
+Lemma copy_v_mod_gen_no_nil: forall l to, copy_v_mod_gen_info_list l to <> nil.
 Proof.
-  repeat intro. unfold copy1v_mod_gen_info_list in H. apply app_eq_nil in H.
+  repeat intro. unfold copy_v_mod_gen_info_list in H. apply app_eq_nil in H.
   destruct H. inversion H0.
 Qed.
 
-Definition copy1v_update_glabel (gi: graph_info) (to: nat): graph_info :=
-  Build_graph_info (copy1v_mod_gen_info_list (g_gen gi) to)
-                   (copy1v_mod_gen_no_nil (g_gen gi) to).
+Definition copy_v_update_glabel (gi: graph_info) (to: nat): graph_info :=
+  Build_graph_info (copy_v_mod_gen_info_list (g_gen gi) to)
+                   (copy_v_mod_gen_no_nil (g_gen gi) to).
 
 Definition new_copied_v (g: LGraph) (to: nat): VType :=
   (to, number_of_vertices (nth_gen g to)).
 
-Definition lgraph_copy1v (g: LGraph) (v: VType) (to: nat): LGraph :=
+Definition lgraph_add_copied_v (g: LGraph) (v: VType) (to: nat): LGraph :=
   let new_v := new_copied_v g to in
-  Build_LabeledGraph _ _ _ (pregraph_copy1v g v new_v)
-                     (copy1v_update_vlabel g v new_v)
-                     (elabel g) (copy1v_update_glabel (glabel g) to).
+  Build_LabeledGraph _ _ _ (pregraph_copy_v g v new_v)
+                     (update_copied_new_vlabel g v new_v)
+                     (elabel g) (copy_v_update_glabel (glabel g) to).
+
+Definition lgraph_copy_v (g: LGraph) (v: VType) (to: nat): LGraph :=
+  let added_g := lgraph_add_copied_v g v to in
+  Build_LabeledGraph _ _ _ (pg_lg added_g)
+                     (update_copied_old_vlabel added_g v (new_copied_v g to))
+                     (elabel added_g) (glabel added_g).
 
 Definition forward_t: Type := Z + GC_Pointer + VType + EType.
 
@@ -890,10 +893,10 @@ Inductive forward_relation (from to: nat):
     forward_relation from to depth (inl (inr v)) g g
 | fr_v_in_not_forwarded_O: forall v g,
     vgeneration v = from -> (vlabel g v).(raw_mark) = false ->
-    forward_relation from to O (inl (inr v)) g (lgraph_copy1v g v to)
+    forward_relation from to O (inl (inr v)) g (lgraph_copy_v g v to)
 | fr_v_in_not_forwarded_Sn: forall depth v g g',
     vgeneration v = from -> (vlabel g v).(raw_mark) = false ->
-    let new_g := lgraph_copy1v g v to in
+    let new_g := lgraph_copy_v g v to in
     forward_loop from to depth (make_fields new_g (new_copied_v g to)) new_g g' ->
     forward_relation from to (S depth) (inl (inr v)) g g'
 | fr_e_not_to: forall depth e (g: LGraph),
@@ -904,12 +907,12 @@ Inductive forward_relation (from to: nat):
     forward_relation from to depth (inr e) g new_g
 | fr_e_to_not_forwarded_O: forall e (g: LGraph),
     vgeneration (dst g e) = from -> (vlabel g (dst g e)).(raw_mark) = false ->
-    let new_g := labeledgraph_gen_dst (lgraph_copy1v g (dst g e) to) e
+    let new_g := labeledgraph_gen_dst (lgraph_copy_v g (dst g e) to) e
                                       (new_copied_v g to) in
     forward_relation from to O (inr e) g new_g
 | fr_e_to_not_forwarded_Sn: forall depth e (g g': LGraph),
     vgeneration (dst g e) = from -> (vlabel g (dst g e)).(raw_mark) = false ->
-    let new_g := labeledgraph_gen_dst (lgraph_copy1v g (dst g e) to) e
+    let new_g := labeledgraph_gen_dst (lgraph_copy_v g (dst g e) to) e
                                       (new_copied_v g to) in
     forward_loop from to depth (make_fields new_g (new_copied_v g to)) new_g g' ->
     forward_relation from to (S depth) (inr e) g g'
@@ -929,14 +932,15 @@ Definition val2nat (g: LGraph) (gen: nat) (v: val) : nat :=
   | _,_ => 0
   end.
 
-Local Open Scope nat_scope.
+Local Close Scope Z_scope.
 
 Inductive do_scan_relation (from to depth scan next: nat) (g g': LGraph) : Prop :=
   | DSR : scan < next -> forall g_i,
             forward_loop from to depth (make_fields g (to, scan)) g g_i ->
             do_scan_relation from to depth (S scan) (number_of_vertices (nth_gen g_i to)) g_i g' ->
             do_scan_relation from to depth scan next g g'.
-Local Close Scope nat_scope.
+
+Local Open Scope Z_scope.
 
 Definition forward_p_type: Type := Z + (VType * Z).
 
@@ -1284,16 +1288,6 @@ Proof.
    rewrite Heql in H5. unfold nth_gen. unfold nth_space. rewrite Heql1 in H5. apply H5.
 Qed.
 
-Local Open Scope Z_scope.
-
-Definition forward_roots_compatible
-           (from to: nat) (g: LGraph) (ti : thread_info): Prop :=
-  (nth_space ti from).(used_space) <= (nth_space ti to).(total_space) -
-                                      (nth_space ti to).(used_space).
-
-Local Close Scope Z_scope.
-Local Open Scope nat_scope.
-
 Lemma pvs_mono: forall g gen i j,
     i <= j -> (previous_vertices_size g gen i <= previous_vertices_size g gen j)%Z.
 Proof.
@@ -1303,6 +1297,11 @@ Proof.
 Qed.
 
 Local Open Scope Z_scope.
+
+Definition forward_roots_compatible
+           (from to: nat) (g: LGraph) (ti : thread_info): Prop :=
+  (nth_space ti from).(used_space) <= (nth_space ti to).(total_space) -
+                                      (nth_space ti to).(used_space).
 
 Lemma vo_lt_gs: forall g v,
     gen_has_index g (vgeneration v) (vindex v) ->
@@ -1482,3 +1481,88 @@ Proof.
   subst f. unfold vertex_address. apply isptr_is_pointer_or_integer.
   rewrite isptr_offset_val. apply graph_has_gen_start_isptr, (proj1 (H _ H1 Heqb)).
 Qed.
+
+Local Close Scope Z_scope.
+
+Lemma cvmgil_length: forall l to,
+    to < length l -> length (copy_v_mod_gen_info_list l to) = length l.
+Proof.
+  intros. unfold copy_v_mod_gen_info_list. rewrite app_length. simpl.
+  rewrite firstn_length_le by omega. rewrite skipn_length. omega.
+Qed.
+
+Lemma cvmgil_not_eq: forall to n l,
+    n <> to -> to < length l ->
+    nth n (copy_v_mod_gen_info_list l to) null_info = nth n l null_info.
+Proof.
+  intros. unfold copy_v_mod_gen_info_list.
+  assert (length (firstn to l) = to) by (rewrite firstn_length_le; omega).
+  destruct (Nat.lt_ge_cases n to).
+  - rewrite app_nth1 by omega. apply nth_firstn. assumption.
+  - rewrite Nat.lt_eq_cases in H2. destruct H2. 2: exfalso; intuition.
+    rewrite <- (firstn_skipn (to + 1) l) at 4. rewrite app_cons_assoc, !app_nth2.
+    + do 2 f_equal. rewrite app_length, H1, firstn_length_le by omega. reflexivity.
+    + rewrite firstn_length_le; omega.
+    + rewrite app_length, H1. simpl. omega.
+Qed.
+
+Lemma lacv_nth_gen: forall g v to n,
+    n <> to -> graph_has_gen g to ->
+    nth_gen (lgraph_add_copied_v g v to) n = nth_gen g n.
+Proof.
+  intros. unfold lgraph_add_copied_v, nth_gen. simpl. remember (g_gen (glabel g)).
+  apply cvmgil_not_eq; [|subst l]; assumption. 
+Qed.
+
+Lemma lacv_has_gen: forall g v to n,
+    graph_has_gen g to ->
+    graph_has_gen (lgraph_add_copied_v g v to) n <-> graph_has_gen g n.
+Proof.
+  intros. unfold graph_has_gen. simpl.
+  rewrite cvmgil_length by assumption. reflexivity.
+Qed.
+
+Lemma lacv_vlabel: forall (g : LGraph) (v : VType) (to n m: nat),
+    n <> to -> vlabel (lgraph_add_copied_v g v to) (n, m) = vlabel g (n, m).
+Proof.
+  intros. simpl.
+  unfold update_copied_new_vlabel, graph_gen.update_vlabel, new_copied_v.
+  rewrite if_false. 1: reflexivity. unfold Equivalence.equiv; intro S; apply H.
+  inversion S; reflexivity.
+Qed.
+
+Lemma lacv_vertex_address: forall (g : LGraph) (v : VType) (to n m: nat),
+    n <> to -> graph_has_gen g to ->
+    vertex_address (lgraph_add_copied_v g v to) (n, m) = vertex_address g (n, m).
+Proof.
+  intros. unfold vertex_address. simpl. f_equal.
+  - f_equal. unfold vertex_offset. simpl. f_equal. unfold previous_vertices_size.
+    apply fold_left_ext. intros. unfold vertex_size_accum. f_equal. unfold vertex_size.
+    f_equal. rewrite lacv_vlabel by assumption. reflexivity.
+  - unfold gen_start. rewrite lacv_nth_gen by assumption.
+    do 2 if_tac; try reflexivity; rewrite lacv_has_gen in H1 by assumption;
+      contradiction.
+Qed.
+
+Lemma lacv_make_header: forall (g : LGraph) (v : VType) (to n m : nat),
+    n <> to -> make_header (lgraph_add_copied_v g v to) (n, m) = make_header g (n, m).
+Proof. intros. unfold make_header. rewrite lacv_vlabel by assumption. reflexivity. Qed.
+
+Lemma lacv_make_fields:  forall (g : LGraph) (v : VType) (to n m : nat),
+    n <> to -> graph_has_gen g to ->
+    map (field2val (lgraph_add_copied_v g v to))
+        (make_fields (lgraph_add_copied_v g v to) (n, m)) =
+    map (field2val g) (make_fields g (n, m)).
+Proof.
+  intros. unfold make_fields. rewrite lacv_vlabel by assumption.
+  apply map_ext_in. intros [[? | ?] | ?] ?; simpl; try reflexivity.
+  unfold new_copied_v, pregraph_copy_v.
+Abort.
+
+Lemma lacv_make_fields_vals: forall (g : LGraph) (v : VType) (to n m: nat),
+    n <> to -> graph_has_gen g to ->
+    make_fields_vals (lgraph_add_copied_v g v to) (n, m) = make_fields_vals g (n, m).
+Proof.
+  intros. unfold make_fields_vals. rewrite lacv_vlabel by assumption.
+  destruct (raw_mark (vlabel g (n, m))) eqn:? .
+Abort.

@@ -957,3 +957,11 @@ Proof.
       (symmetry; apply filter_perm; intros; subst; apply Bool.negb_involutive_reverse).
   apply (fold_left_Z_mono f _ _ _ s H H0 H1).
 Qed.
+
+Lemma fold_left_ext: forall {A B} (f g: A -> B -> A) l init,
+    (forall x y, In y l -> f x y = g x y) -> fold_left f l init = fold_left g l init.
+Proof.
+  intros. revert init. rev_induction l; intros; simpl. 1: reflexivity.
+  rewrite !fold_left_app. simpl.
+  rewrite H; intros; apply H0; rewrite in_app_iff; intuition.
+Qed.
