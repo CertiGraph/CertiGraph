@@ -813,3 +813,30 @@ Proof.
   intros. rewrite data_at__singleton_array_eq, !data_at__memory_block,
           field_compatible_int_or_ptr_tuint_iff. reflexivity.
 Qed.
+
+Lemma lacv_generation_rep: forall g v to n,
+    n <> to -> graph_has_gen g to ->
+    generation_rep (lgraph_add_copied_v g v to) n = generation_rep g n.
+Proof.
+  intros. unfold generation_rep. rewrite lacv_nth_gen by assumption.
+  apply iter_sepcon_func_strong. intros. apply list_in_map_inv in H1.
+  destruct H1 as [m [? ?]]. unfold nth_sh. rewrite lacv_nth_gen by assumption.
+  remember (generation_sh (nth_gen g n)) as sh. unfold vertex_rep. subst x. f_equal.
+  - apply lacv_vertex_address; assumption.
+  - apply lacv_make_header; assumption.
+  - unfold make_fields_vals.
+Abort.
+
+Local Close Scope Z_scope.
+
+Lemma copied_v_derives_new_g: forall g v to,
+    graph_has_gen g to ->
+    vertex_at (nth_sh g to) (vertex_address g (new_copied_v g to))
+              (make_header g v) (make_fields_vals g v) *
+    graph_rep g |-- graph_rep (lgraph_add_copied_v g v to).
+Proof.
+  intros. unfold graph_rep. unfold lgraph_add_copied_v at 1. simpl. red in H.
+  rewrite cvmgil_length by assumption. remember (length (g_gen (glabel g))).
+  assert (n = to + (n - to)) by omega. assert (0 < n - to) by omega.
+  remember (n - to) as m. rewrite H0, nat_inc_list_app.
+Abort.
