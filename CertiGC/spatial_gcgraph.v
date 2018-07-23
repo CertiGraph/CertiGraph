@@ -829,8 +829,8 @@ Proof.
     - exfalso. unfold nth_gen in H4. rewrite nth_overflow in H4 by assumption.
       simpl in H4. omega. } f_equal.
   - apply lacv_vertex_address_old; assumption.
-  - apply lacv_make_header. intro S; inversion S. contradiction.
-  - apply lacv_make_fields_vals; assumption.
+  - apply lacv_make_header_old. intro S; inversion S. contradiction.
+  - apply lacv_make_fields_vals_old; assumption.
 Qed.
 
 Lemma lacv_icgr_not_eq: forall l g v to,
@@ -845,12 +845,12 @@ Proof.
 Qed.
                  
 Lemma lacv_generation_rep_eq: forall g v to,
-    graph_has_gen g to ->
+    graph_has_v g v -> graph_has_gen g to -> no_dangling_dst g -> copy_compatible g ->
     generation_rep (lgraph_add_copied_v g v to) to =
     vertex_at (nth_sh g to) (vertex_address g (new_copied_v g to)) 
               (make_header g v) (make_fields_vals g v) * generation_rep g to.
 Proof.
-  intros. unfold generation_rep. rewrite lacv_nth_sh_eq by assumption.
+  intros. unfold generation_rep. rewrite lacv_nth_sh by assumption.
   remember (number_of_vertices (nth_gen g to)).
   unfold lgraph_add_copied_v at 1. unfold nth_gen. simpl.
   rewrite cvmgil_eq by assumption. simpl. unfold nth_gen in Heqn. rewrite <- Heqn.
@@ -860,29 +860,38 @@ Proof.
   - simpl. normalize. replace (to, n) with (new_copied_v g to) by
         (unfold new_copied_v; subst n; reflexivity). unfold vertex_rep. f_equal.
     + apply lacv_vertex_address_new. assumption.
-    + unfold make_header. rewrite lacv_vlabel_new. reflexivity.
-    +
-Abort.
-                                                              
-
+    + apply lacv_make_header_new.
+    + apply lacv_make_fields_vals_new; assumption.
+  - apply iter_sepcon_func_strong. intros. destruct x as [m x].
+    apply list_in_map_inv in H3. destruct H3 as [? [? ?]]. inversion H3. subst x0.
+    subst m. clear H3. remember (nth_sh g to) as sh. subst n.
+    rewrite nat_inc_list_In_iff in H4. unfold vertex_rep.
+    assert (graph_has_v g (to, x)) by (split; simpl; assumption).
+    rewrite lacv_vertex_address_old, lacv_make_header_old, lacv_make_fields_vals_old;
+      [reflexivity | try assumption..].
+    unfold new_copied_v. intro. inversion H5. omega.
+Qed.
 
 Local Close Scope Z_scope.
 
 Lemma copied_v_derives_new_g: forall g v to,
-    graph_has_gen g to -> no_dangling_dst g -> copy_compatible g ->
+    graph_has_gen g to -> no_dangling_dst g -> copy_compatible g -> graph_has_v g v ->
     vertex_at (nth_sh g to) (vertex_address g (new_copied_v g to))
               (make_header g v) (make_fields_vals g v) *
-    graph_rep g |-- graph_rep (lgraph_add_copied_v g v to).
+    graph_rep g = graph_rep (lgraph_add_copied_v g v to).
 Proof.
   intros. unfold graph_rep. unfold lgraph_add_copied_v at 1. simpl. red in H.
   rewrite cvmgil_length by assumption. remember (length (g_gen (glabel g))).
   assert (n = to + (n - to)) by omega. assert (0 < n - to) by omega.
-  remember (n - to) as m. rewrite H2, nat_inc_list_app, !iter_sepcon_app_sepcon.
+  remember (n - to) as m. rewrite H3, nat_inc_list_app, !iter_sepcon_app_sepcon.
   rewrite (lacv_icgr_not_eq (nat_inc_list to) g v to); try assumption.
-  3: subst n; apply H. 2: intro; rewrite nat_inc_list_In_iff in H4; omega. cancel.
-  assert (m = 1 + (m - 1)) by omega. rewrite H4, nat_seq_app, !iter_sepcon_app_sepcon.
-  assert (nat_seq to 1 = [to]) by reflexivity. rewrite H5. clear H5.
+  3: subst n; apply H. 2: intro; rewrite nat_inc_list_In_iff in H5; omega.
+  rewrite sepcon_comm, sepcon_assoc. f_equal. assert (m = 1 + (m - 1)) by omega.
+  rewrite H5, nat_seq_app, !iter_sepcon_app_sepcon.
+  assert (nat_seq to 1 = [to]) by reflexivity. rewrite H6. clear H6.
   rewrite (lacv_icgr_not_eq (nat_seq (to + 1) (m - 1)) g v to); try assumption.
-  3: subst n; apply H. 2: intro; rewrite nat_seq_In_iff in H5; omega. cancel.
-  simpl iter_sepcon. normalize. clear m Heqm H2 H3 H4.
-Abort.
+  3: subst n; apply H. 2: intro; rewrite nat_seq_In_iff in H6; omega.
+  rewrite sepcon_assoc, sepcon_comm, sepcon_assoc, sepcon_comm. f_equal.
+  simpl iter_sepcon. normalize. clear m Heqm H3 H4 H5. subst n.
+  rewrite <- lacv_generation_rep_eq; [reflexivity | assumption..].
+Qed.
