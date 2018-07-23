@@ -965,3 +965,12 @@ Proof.
   rewrite !fold_left_app. simpl.
   rewrite H; intros; apply H0; rewrite in_app_iff; intuition.
 Qed.
+
+Lemma NoDup_combine_r: forall {A B} (l1: list A) (l2: list B),
+    NoDup l2 -> NoDup (combine l1 l2).
+Proof.
+  intros. revert l2 H. induction l1; intros; simpl. 1: constructor.
+  destruct l2; constructor.
+  - intro. apply in_combine_r in H0. apply NoDup_cons_2 in H. contradiction.
+  - apply IHl1. apply NoDup_cons_1 in H. assumption.
+Qed.

@@ -1506,6 +1506,16 @@ Proof.
     + rewrite app_length, H1. simpl. omega.
 Qed.
 
+Lemma cvmgil_eq: forall to l,
+    to < length l -> nth to (copy_v_mod_gen_info_list l to) null_info =
+                     copy_v_mod_gen_info (nth to l null_info).
+Proof.
+  intros. unfold copy_v_mod_gen_info_list.
+  assert (length (firstn to l) = to) by (rewrite firstn_length_le; omega).
+  rewrite app_nth2 by omega. rewrite H0. replace (to - to) with O by omega.
+  simpl. reflexivity.
+Qed.
+
 Lemma lacv_nth_gen: forall g v to n,
     n <> to -> graph_has_gen g to ->
     nth_gen (lgraph_add_copied_v g v to) n = nth_gen g n.
@@ -1522,47 +1532,202 @@ Proof.
   rewrite cvmgil_length by assumption. reflexivity.
 Qed.
 
-Lemma lacv_vlabel: forall (g : LGraph) (v : VType) (to n m: nat),
-    n <> to -> vlabel (lgraph_add_copied_v g v to) (n, m) = vlabel g (n, m).
+Lemma lacv_gen_start: forall g v to n,
+    graph_has_gen g to -> gen_start (lgraph_add_copied_v g v to) n = gen_start g n.
+Proof.
+  intros. unfold gen_start. do 2 if_tac.
+  - destruct (Nat.eq_dec n to).
+    + subst n. unfold nth_gen. simpl. rewrite cvmgil_eq by assumption.
+      simpl. reflexivity.
+    + rewrite lacv_nth_gen by assumption. reflexivity.
+  - rewrite lacv_has_gen in H0 by assumption. contradiction.
+  - exfalso. apply H0. rewrite lacv_has_gen; assumption.
+  - reflexivity.
+Qed.
+
+Lemma lacv_vlabel_old: forall (g : LGraph) (v : VType) (to: nat) x,
+    x <> new_copied_v g to -> vlabel (lgraph_add_copied_v g v to) x = vlabel g x.
 Proof.
   intros. simpl.
-  unfold update_copied_new_vlabel, graph_gen.update_vlabel, new_copied_v.
+  unfold update_copied_new_vlabel, graph_gen.update_vlabel.
   rewrite if_false. 1: reflexivity. unfold Equivalence.equiv; intro S; apply H.
   inversion S; reflexivity.
 Qed.
 
 Lemma lacv_vertex_address: forall (g : LGraph) (v : VType) (to n m: nat),
-    n <> to -> graph_has_gen g to ->
+    graph_has_gen g n -> m <= number_of_vertices (nth_gen g n) ->
+    graph_has_gen g to ->
     vertex_address (lgraph_add_copied_v g v to) (n, m) = vertex_address g (n, m).
 Proof.
-  intros. unfold vertex_address. simpl. f_equal.
-  - f_equal. unfold vertex_offset. simpl. f_equal. unfold previous_vertices_size.
-    apply fold_left_ext. intros. unfold vertex_size_accum. f_equal. unfold vertex_size.
-    f_equal. rewrite lacv_vlabel by assumption. reflexivity.
-  - unfold gen_start. rewrite lacv_nth_gen by assumption.
-    do 2 if_tac; try reflexivity; rewrite lacv_has_gen in H1 by assumption;
-      contradiction.
+  intros. unfold vertex_address. f_equal.
+  - f_equal. unfold vertex_offset. f_equal. unfold previous_vertices_size.
+    simpl. apply fold_left_ext. intros. unfold vertex_size_accum. f_equal.
+    unfold vertex_size. f_equal. rewrite lacv_vlabel_old. 1: reflexivity.
+    intro. unfold new_copied_v in H3. inversion H3.
+    rewrite nat_inc_list_In_iff in H2. subst n. omega.
+  - simpl. apply lacv_gen_start. assumption.
 Qed.
 
-Lemma lacv_make_header: forall (g : LGraph) (v : VType) (to n m : nat),
-    n <> to -> make_header (lgraph_add_copied_v g v to) (n, m) = make_header g (n, m).
-Proof. intros. unfold make_header. rewrite lacv_vlabel by assumption. reflexivity. Qed.
-
-Lemma lacv_make_fields:  forall (g : LGraph) (v : VType) (to n m : nat),
-    n <> to -> graph_has_gen g to ->
-    map (field2val (lgraph_add_copied_v g v to))
-        (make_fields (lgraph_add_copied_v g v to) (n, m)) =
-    map (field2val g) (make_fields g (n, m)).
+Lemma lacv_vertex_address_old: forall (g : LGraph) (v : VType) (to: nat) x,
+    graph_has_v g x -> graph_has_gen g to ->
+    vertex_address (lgraph_add_copied_v g v to) x = vertex_address g x.
 Proof.
-  intros. unfold make_fields. rewrite lacv_vlabel by assumption.
-  apply map_ext_in. intros [[? | ?] | ?] ?; simpl; try reflexivity.
-  unfold new_copied_v, pregraph_copy_v.
+  intros. destruct x as [n m]. destruct H. apply lacv_vertex_address; try assumption.
+  red in H1. simpl in H1. omega.
+Qed.
+
+Lemma lacv_vertex_address_new: forall (g : LGraph) (v : VType) (to: nat),
+    graph_has_gen g to ->
+    vertex_address (lgraph_add_copied_v g v to) (new_copied_v g to) =
+    vertex_address g (new_copied_v g to).
+Proof.
+  intros. unfold new_copied_v. apply lacv_vertex_address; try assumption. omega.
+Qed.
+
+Lemma lacv_make_header: forall (g : LGraph) (v : VType) (to : nat) x,
+    x <> new_copied_v g to ->
+    make_header (lgraph_add_copied_v g v to) x = make_header g x.
+Proof.
+  intros. unfold make_header. rewrite lacv_vlabel_old by assumption. reflexivity.
+Qed.
+
+Lemma e_in_make_fields': forall l v n e,
+    In (inr e) (make_fields' l v n) -> exists s, e = (v, s).
+Proof.
+  induction l; intros; simpl in *. 1: exfalso; assumption. destruct a; [destruct s|].
+  - simpl in H. destruct H. 1: inversion H. apply IHl with (n + 1). assumption.
+  - simpl in H. destruct H. 1: inversion H. apply IHl with (n + 1). assumption.
+  - simpl in H. destruct H.
+    + inversion H. exists n. reflexivity.
+    + apply IHl with (n + 1). assumption.
+Qed.
+
+Lemma flcvae_dst_old: forall g new (l: list (EType * VType)) e,
+    ~ In e (map fst l) -> dst (fold_left (copy_v_add_edge new) l g) e = dst g e.
+Proof.
+  intros. revert g H. induction l; intros; simpl. 1: reflexivity.
+  rewrite IHl. 2: intro; apply H; simpl; right; assumption. simpl.
+  unfold updateEdgeFunc. rewrite if_false. 1: reflexivity. unfold equiv. intro.
+  apply H. simpl. left; assumption.
+Qed.
+
+Lemma flcvae_dst_new: forall g new (l: list (EType * VType)) e v,
+    NoDup (map fst l) -> In (e, v) l ->
+    dst (fold_left (copy_v_add_edge new) l g) e = v.
+Proof.
+  intros. revert g. induction l. 1: simpl in H; exfalso; assumption.
+  intros. simpl in *. destruct H0.
+  - subst a. rewrite flcvae_dst_old.
+    + simpl. unfold updateEdgeFunc. rewrite if_true; reflexivity.
+    + simpl in H. apply NoDup_cons_2 in H. assumption.
+  - apply IHl; [apply NoDup_cons_1 in H|]; assumption.
+Qed.
+
+Lemma pcv_dst_old: forall g old new e,
+    fst e <> new -> dst (pregraph_copy_v g old new) e = dst g e.
+Proof.
+  intros. unfold pregraph_copy_v. rewrite flcvae_dst_old. 1: simpl; reflexivity.
+  intro. apply H. rewrite map_fst_combine in H0.
+  - destruct e. simpl in *. apply in_combine_l, repeat_spec in H0. assumption.
+  - unfold EType. rewrite combine_length, repeat_length, !map_length, Nat.min_id.
+    reflexivity.
+Qed.
+
+Lemma pcv_dst_new: forall g old new n,
+    In n (map snd (get_edges g old)) ->
+    dst (pregraph_copy_v g old new) (new, n) = dst g (old, n).
+Proof.
+  intros. unfold pregraph_copy_v. rewrite flcvae_dst_new with (v := dst g (old, n)).
+  - reflexivity.
+  - rewrite map_fst_combine.
+    + apply NoDup_combine_r. clear H. unfold get_edges. unfold make_fields.
+      remember (raw_fields (vlabel g old)). clear Heql. remember 0 as m. clear Heqm.
+      revert m. induction l; intros. simpl. 1: constructor.
+      simpl. destruct a; [destruct s|]; simpl; try apply IHl. constructor.
+      2: apply IHl. clear.
+      cut (forall a b,
+              In a (map snd (filter_sum_right (make_fields' l old b))) -> b <= a).
+      * repeat intro. apply H in H0. omega.
+      * induction l; intros; simpl in H. 1: exfalso; assumption.
+        destruct a; [destruct s|]; simpl in H; try (apply IHl in H; omega).
+        destruct H; [|apply IHl in H]; omega.
+    + unfold EType. rewrite combine_length, repeat_length, !map_length, Nat.min_id.
+      reflexivity.
+  - apply list_in_map_inv in H. destruct H as [[x ?] [? ?]]. simpl in H. subst n0.
+    assert (x = old). {
+      unfold get_edges in H0. rewrite <- filter_sum_right_In_iff in H0.
+      unfold make_fields in H0. apply e_in_make_fields' in H0. destruct H0 as [s ?].
+      inversion H. reflexivity. } subst x. remember (get_edges g old). clear Heql.
+    induction l; simpl in *. 1: assumption. destruct H0.
+    + subst a. simpl. left; reflexivity.
+    + right. apply IHl. assumption.
+Qed.
+
+Lemma graph_has_v_not_eq: forall g to x,
+    graph_has_v g x -> x <> new_copied_v g to.
+Proof.
+  intros. destruct H. unfold new_copied_v. destruct x as [gen idx]. simpl in *.
+  destruct (Nat.eq_dec gen to).
+  - subst gen. intro S; inversion S. red in H0. omega.
+  - intro S; inversion S. apply n; assumption.
+Qed.
+
+Lemma lacv_make_fields:  forall (g : LGraph) (v : VType) (to : nat) x,
+    graph_has_v g x -> graph_has_gen g to -> no_dangling_dst g ->
+    map (field2val (lgraph_add_copied_v g v to))
+        (make_fields (lgraph_add_copied_v g v to) x) =
+    map (field2val g) (make_fields g x).
+Proof.
+  intros. unfold make_fields. pose proof (graph_has_v_not_eq _ to _ H).
+  rewrite lacv_vlabel_old by assumption. apply map_ext_in.
+  intros [[? | ?] | ?] ?; simpl; try reflexivity. unfold new_copied_v.
+  rewrite pcv_dst_old.
+  - apply lacv_vertex_address_old. 2: assumption. specialize (H1 _ H). apply H1.
+    unfold get_edges. rewrite <- filter_sum_right_In_iff. assumption.
+  - apply e_in_make_fields' in H3. destruct H3 as [s ?]. subst e. simpl. intro.
+    unfold new_copied_v in H2. contradiction.
+Qed.
+
+Lemma lacv_make_fields_vals: forall (g : LGraph) (v : VType) (to: nat) x,
+    graph_has_v g x -> graph_has_gen g to -> no_dangling_dst g -> copy_compatible g ->
+    make_fields_vals (lgraph_add_copied_v g v to) x = make_fields_vals g x.
+Proof.
+  intros. pose proof (lacv_make_fields _ v _ _ H H0 H1). unfold make_fields_vals.
+  pose proof (graph_has_v_not_eq g to x H). rewrite lacv_vlabel_old by assumption.
+  rewrite H3. destruct (raw_mark (vlabel g x)) eqn:? ; [f_equal | reflexivity].
+  apply lacv_vertex_address_old; [apply H2|]; assumption.
+Qed.
+
+Lemma lacv_nth_sh_eq: forall (g : LGraph) (v : VType) (to : nat),
+    graph_has_gen g to -> nth_sh (lgraph_add_copied_v g v to) to = nth_sh g to.
+Proof.
+  intros. unfold nth_sh, nth_gen. simpl. rewrite cvmgil_eq by assumption.
+  simpl. reflexivity.
+Qed.
+
+Lemma lacv_vlabel_new: forall g v to,
+    vlabel (lgraph_add_copied_v g v to) (new_copied_v g to) = vlabel g v.
+Proof.
+  intros. simpl. unfold update_copied_new_vlabel, graph_gen.update_vlabel.
+  rewrite if_true; reflexivity.
+Qed.
+
+Lemma lacv_make_fields_new: forall g v to,
+    map (field2val (lgraph_add_copied_v g v to))
+        (make_fields (lgraph_add_copied_v g v to) (new_copied_v g to)) =
+    map (field2val g) (make_fields g v).
+Proof.
+  intros. unfold make_fields. rewrite lacv_vlabel_new.
+  remember (raw_fields (vlabel g v)). clear Heql. remember 0 as n. clear Heqn.
+  revert n. induction l; intros; simpl. 1: reflexivity. destruct a; [destruct s|].
+  - simpl. rewrite IHl. reflexivity.
+  - simpl. rewrite IHl. reflexivity.
+  - simpl. rewrite IHl. f_equal. rewrite pcv_dst_new.
 Abort.
 
-Lemma lacv_make_fields_vals: forall (g : LGraph) (v : VType) (to n m: nat),
-    n <> to -> graph_has_gen g to ->
-    make_fields_vals (lgraph_add_copied_v g v to) (n, m) = make_fields_vals g (n, m).
+Lemma lacv_make_fields_vals_new: forall g v to,
+    make_fields_vals (lgraph_add_copied_v g v to) (new_copied_v g to) =
+    make_fields_vals g v.
 Proof.
-  intros. unfold make_fields_vals. rewrite lacv_vlabel by assumption.
-  destruct (raw_mark (vlabel g (n, m))) eqn:? .
+  intros. unfold make_fields_vals. rewrite lacv_vlabel_new.
 Abort.
