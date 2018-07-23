@@ -65,6 +65,16 @@ Lemma data_at__value_0_size: forall sh p,
     data_at_ sh (tarray int_or_ptr_type 0) p |-- emp.
 Proof. intros. rewrite data_at__eq. apply data_at_zero_array_inv; reflexivity. Qed.
 
+Lemma data_at_minus1_address: forall sh v p,
+    data_at sh tuint v (offset_val (- WORD_SIZE) p) |--
+   !! (force_val (sem_add_ptr_int tuint Signed p (eval_unop Oneg tint (vint 1))) =
+       field_address tuint [] (offset_val (- WORD_SIZE) p)).
+Proof.
+  intros. unfold eval_unop. simpl. rewrite WORD_SIZE_eq. entailer!.
+  unfold field_address. rewrite if_true by assumption. rewrite offset_offset_val.
+  simpl. reflexivity.
+Qed.
+
 Lemma body_forward: semax_body Vprog Gprog f_forward forward_spec.
 Proof.
   start_function.
@@ -169,15 +179,10 @@ Proof.
         unfold vertex_rep, vertex_at. Intros. rewrite v0.
         assert (readable_share (nth_sh g from)) by
             (unfold nth_sh; apply writable_readable, generation_share_writable).
-        assert_PROP (force_val
-                       (sem_add_ptr_int tuint Signed (vertex_address g v)
-                                        (eval_unop Oneg tint (vint 1))) =
-                     field_address tuint []
-                                   (offset_val (- WORD_SIZE) (vertex_address g v))). {
-          rewrite WORD_SIZE_eq. entailer!. unfold field_address.
-          rewrite if_true by assumption. simpl. rewrite offset_offset_val.
-          reflexivity. } forward.
-        gather_SEP 0 1. replace_SEP 0 (vertex_rep (nth_sh g (vgeneration v)) g v) by
+        sep_apply (data_at_minus1_address (nth_sh g from) (Z2val (make_header g v))
+                                          (vertex_address g v)).
+        Intros. forward. gather_SEP 0 1.
+        replace_SEP 0 (vertex_rep (nth_sh g (vgeneration v)) g v) by
             (unfold vertex_rep, vertex_at; entailer!).
         unlocalize [graph_rep g]. 1: apply (graph_vertex_ramif_stable _ _ H18).
         apply semax_if_seq. forward_if; rewrite make_header_int_rep_mark_iff in H21.
@@ -372,7 +377,29 @@ Proof.
                   with (offset_val (- WORD_SIZE) nv) by
                     (rewrite Heqnv; rewrite offset_offset_val; f_equal; rep_omega).
                 rewrite <- H32. unfold vertex_at; entailer!. }
-              admit.
+              gather_SEP 0 1. rewrite (copied_v_derives_new_g g v to) by assumption.
+              freeze [1; 2; 3; 4] FR. remember (lgraph_add_copied_v g v to) as g'.
+              assert (vertex_address g' v = vertex_address g v) by
+                  (subst g'; apply lacv_vertex_address_old; assumption).
+              assert (vertex_address g' (new_copied_v g to) =
+                      vertex_address g (new_copied_v g to)) by
+                  (subst g'; apply lacv_vertex_address_new; assumption).
+              rewrite <- H33. rewrite <- H34 in H32.
+              assert (writable_share (nth_sh g' (vgeneration v))) by
+                  (unfold nth_sh; apply generation_share_writable).
+              assert (graph_has_v g' (new_copied_v g to)) by
+                  (subst g'; apply lacv_graph_has_v_new; assumption).
+              sep_apply (graph_rep_valid_int_or_ptr _ _ H36). Intros.
+              rewrite <- H32 in H37.
+              localize [vertex_rep (nth_sh g' (vgeneration v)) g' v].
+               unfold vertex_rep, vertex_at. Intros.
+              sep_apply (data_at_minus1_address
+                           (nth_sh g' (vgeneration v)) (Z2val (make_header g' v))
+                           (vertex_address g' v)). Intros. forward.
+              sep_apply (field_at_data_at_cancel
+                           (nth_sh g' (vgeneration v)) tuint (vint 0)
+                           (offset_val (- WORD_SIZE) (vertex_address g' v))).
+              forward_call (nv). admit.
       * apply semax_if_seq. forward_if. 1: exfalso; apply H20'; reflexivity.
         rewrite H19 in n. forward. rewrite <- Heqroot. rewrite if_false by assumption.
         Exists g t_info roots. simpl. entailer!.

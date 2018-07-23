@@ -1524,7 +1524,7 @@ Proof.
   apply cvmgil_not_eq; [|subst l]; assumption. 
 Qed.
 
-Lemma lacv_has_gen: forall g v to n,
+Lemma lacv_graph_has_gen: forall g v to n,
     graph_has_gen g to ->
     graph_has_gen (lgraph_add_copied_v g v to) n <-> graph_has_gen g n.
 Proof.
@@ -1540,8 +1540,8 @@ Proof.
     + subst n. unfold nth_gen. simpl. rewrite cvmgil_eq by assumption.
       simpl. reflexivity.
     + rewrite lacv_nth_gen by assumption. reflexivity.
-  - rewrite lacv_has_gen in H0 by assumption. contradiction.
-  - exfalso. apply H0. rewrite lacv_has_gen; assumption.
+  - rewrite lacv_graph_has_gen in H0 by assumption. contradiction.
+  - exfalso. apply H0. rewrite lacv_graph_has_gen; assumption.
   - reflexivity.
 Qed.
 
@@ -1584,7 +1584,7 @@ Proof.
   intros. unfold new_copied_v. apply lacv_vertex_address; try assumption. omega.
 Qed.
 
-Lemma lacv_make_header: forall (g : LGraph) (v : VType) (to : nat) x,
+Lemma lacv_make_header_old: forall (g : LGraph) (v : VType) (to : nat) x,
     x <> new_copied_v g to ->
     make_header (lgraph_add_copied_v g v to) x = make_header g x.
 Proof.
@@ -1672,7 +1672,7 @@ Proof.
   - intro S; inversion S. apply n; assumption.
 Qed.
 
-Lemma lacv_make_fields:  forall (g : LGraph) (v : VType) (to : nat) x,
+Lemma lacv_make_fields_old:  forall (g : LGraph) (v : VType) (to : nat) x,
     graph_has_v g x -> graph_has_gen g to -> no_dangling_dst g ->
     map (field2val (lgraph_add_copied_v g v to))
         (make_fields (lgraph_add_copied_v g v to) x) =
@@ -1688,21 +1688,22 @@ Proof.
     unfold new_copied_v in H2. contradiction.
 Qed.
 
-Lemma lacv_make_fields_vals: forall (g : LGraph) (v : VType) (to: nat) x,
+Lemma lacv_make_fields_vals_old: forall (g : LGraph) (v : VType) (to: nat) x,
     graph_has_v g x -> graph_has_gen g to -> no_dangling_dst g -> copy_compatible g ->
     make_fields_vals (lgraph_add_copied_v g v to) x = make_fields_vals g x.
 Proof.
-  intros. pose proof (lacv_make_fields _ v _ _ H H0 H1). unfold make_fields_vals.
+  intros. pose proof (lacv_make_fields_old _ v _ _ H H0 H1). unfold make_fields_vals.
   pose proof (graph_has_v_not_eq g to x H). rewrite lacv_vlabel_old by assumption.
   rewrite H3. destruct (raw_mark (vlabel g x)) eqn:? ; [f_equal | reflexivity].
   apply lacv_vertex_address_old; [apply H2|]; assumption.
 Qed.
 
-Lemma lacv_nth_sh_eq: forall (g : LGraph) (v : VType) (to : nat),
-    graph_has_gen g to -> nth_sh (lgraph_add_copied_v g v to) to = nth_sh g to.
+Lemma lacv_nth_sh: forall (g : LGraph) (v : VType) (to : nat) n,
+    graph_has_gen g to -> nth_sh (lgraph_add_copied_v g v to) n = nth_sh g n.
 Proof.
-  intros. unfold nth_sh, nth_gen. simpl. rewrite cvmgil_eq by assumption.
-  simpl. reflexivity.
+  intros. unfold nth_sh, nth_gen. simpl. destruct (Nat.eq_dec n to).
+  - subst n. rewrite cvmgil_eq by assumption. simpl. reflexivity.
+  - rewrite cvmgil_not_eq by assumption. reflexivity.
 Qed.
 
 Lemma lacv_vlabel_new: forall g v to,
@@ -1712,22 +1713,63 @@ Proof.
   rewrite if_true; reflexivity.
 Qed.
 
+Lemma lacv_make_header_new: forall g v to,
+    make_header (lgraph_add_copied_v g v to) (new_copied_v g to) = make_header g v.
+Proof. intros. unfold make_header. rewrite lacv_vlabel_new. reflexivity. Qed.
+
 Lemma lacv_make_fields_new: forall g v to,
+    graph_has_v g v -> graph_has_gen g to -> no_dangling_dst g ->
     map (field2val (lgraph_add_copied_v g v to))
         (make_fields (lgraph_add_copied_v g v to) (new_copied_v g to)) =
     map (field2val g) (make_fields g v).
 Proof.
   intros. unfold make_fields. rewrite lacv_vlabel_new.
-  remember (raw_fields (vlabel g v)). clear Heql. remember 0 as n. clear Heqn.
-  revert n. induction l; intros; simpl. 1: reflexivity. destruct a; [destruct s|].
-  - simpl. rewrite IHl. reflexivity.
-  - simpl. rewrite IHl. reflexivity.
-  - simpl. rewrite IHl. f_equal. rewrite pcv_dst_new.
-Abort.
+  remember (raw_fields (vlabel g v)). remember 0 as n.
+  assert (forall m, In m (map snd (filter_sum_right (make_fields' l v n))) ->
+                    In m (map snd (get_edges g v))). {
+    unfold get_edges, make_fields. subst. intuition. }
+  clear Heql Heqn. revert n H2. induction l; intros; simpl. 1: reflexivity.
+  destruct a; [destruct s|].
+  - simpl in *. rewrite IHl; [reflexivity | assumption].
+  - simpl in *. rewrite IHl; [reflexivity | assumption].
+  - simpl in *. rewrite IHl.
+    + assert (In n (map snd (get_edges g v))) by (apply H2; left; reflexivity).
+      f_equal. rewrite pcv_dst_new by assumption. apply lacv_vertex_address_old.
+      2: assumption. red in H1. apply (H1 v). 1: assumption. apply in_map_iff in H3.
+      destruct H3 as [[x ?] [? ?]]. simpl in H3. subst n0. clear -H4. pose proof H4.
+      unfold get_edges in H4. rewrite <- filter_sum_right_In_iff in H4.
+      unfold make_fields in H4. apply e_in_make_fields' in H4. destruct H4 as [s ?].
+      inversion H0. subst. assumption.
+    + intros. apply H2. right; assumption.
+Qed.
 
 Lemma lacv_make_fields_vals_new: forall g v to,
+    graph_has_v g v -> graph_has_gen g to -> no_dangling_dst g -> copy_compatible g ->
     make_fields_vals (lgraph_add_copied_v g v to) (new_copied_v g to) =
     make_fields_vals g v.
 Proof.
   intros. unfold make_fields_vals. rewrite lacv_vlabel_new.
-Abort.
+  rewrite (lacv_make_fields_new _ _ _ H H0 H1).
+  destruct (raw_mark (vlabel g v)) eqn:? . 2: reflexivity. f_equal.
+  apply lacv_vertex_address_old. 2: assumption. apply H2; assumption.
+Qed.
+
+Lemma lacv_graph_has_v_old: forall g v to x,
+    graph_has_gen g to -> graph_has_v g x ->
+    graph_has_v (lgraph_add_copied_v g v to) x.
+Proof.
+  intros. destruct H0. split.
+  - rewrite lacv_graph_has_gen; assumption.
+  - red. destruct (Nat.eq_dec (vgeneration x) to).
+    + rewrite e in *. unfold nth_gen. simpl. rewrite cvmgil_eq by assumption.
+      simpl. red in H1. unfold nth_gen in H1. omega.
+    + rewrite lacv_nth_gen; assumption.
+Qed.
+
+Lemma lacv_graph_has_v_new: forall g v to,
+    graph_has_gen g to -> graph_has_v (lgraph_add_copied_v g v to) (new_copied_v g to).
+Proof.
+  intros. split; simpl.
+  - red. simpl. rewrite cvmgil_length; assumption.
+  - red. unfold nth_gen. simpl. rewrite cvmgil_eq by assumption. simpl. omega.
+Qed.
