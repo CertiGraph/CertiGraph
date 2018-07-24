@@ -912,3 +912,39 @@ Proof.
     replace (Z.succ (Zlength l) - 1) with (Zlength l) by omega.
     autorewrite with sublist. reflexivity.
 Qed.
+
+Lemma mark_copied_vertex_rep: forall sh g v new_v,
+    vertex_rep sh (lgraph_mark_copied g v new_v) v =
+    data_at sh tuint (Vint (Int.repr 0))
+            (offset_val (- WORD_SIZE) (vertex_address g v)) *
+    data_at sh int_or_ptr_type (vertex_address g new_v)
+             (vertex_address g v) *
+    data_at sh (tarray int_or_ptr_type (Zlength (make_fields_vals g v) - 1))
+            (tl (make_fields_vals g v)) (offset_val WORD_SIZE (vertex_address g v)).
+Proof.
+  intros. unfold vertex_rep. rewrite lmc_vertex_address. unfold vertex_at.
+  rewrite sepcon_assoc. f_equal.
+  - f_equal. unfold make_header. simpl vlabel at 1.
+    unfold update_copied_old_vlabel, graph_gen.update_vlabel.
+    rewrite if_true by reflexivity. simpl. unfold Z2val. reflexivity.
+  - rewrite lmc_make_fields_vals_new, data_at_tarray_value_split_1.
+    + simpl hd. f_equal. simpl tl.
+      replace (Zlength (vertex_address g new_v :: tl (make_fields_vals g v)) - 1)
+        with (Zlength (make_fields_vals g v) - 1). 1: reflexivity.
+      transitivity (Zlength (tl (make_fields_vals g v))).
+      2: rewrite Zlength_cons; rep_omega.
+      assert (0 < Zlength (make_fields_vals g v)) by
+          (rewrite fields_eq_length; apply (proj1 (raw_fields_range (vlabel g v)))).
+      remember (make_fields_vals g v). destruct l.
+      1: rewrite Zlength_nil in H; omega. rewrite Zlength_cons. simpl. omega.
+    + rewrite Zlength_cons. rep_omega.
+Qed.
+
+Lemma graph_vertex_lmc_ramif: forall g v new_v,
+    graph_rep g |-- vertex_rep (nth_sh g (vgeneration v)) g v *
+    (vertex_rep (nth_sh g (vgeneration v))
+                (lgraph_mark_copied g v new_v) v -*
+                graph_rep (lgraph_mark_copied g v new_v)).
+Proof.
+  intros.
+Abort.
