@@ -860,11 +860,12 @@ Definition lgraph_add_copied_v (g: LGraph) (v: VType) (to: nat): LGraph :=
                      (update_copied_new_vlabel g v new_v)
                      (elabel g) (copy_v_update_glabel (glabel g) to).
 
+Definition lgraph_mark_copied (g: LGraph) (old new: VType): LGraph :=
+  Build_LabeledGraph _ _ _ (pg_lg g)
+                     (update_copied_old_vlabel g old new) (elabel g) (glabel g).
+
 Definition lgraph_copy_v (g: LGraph) (v: VType) (to: nat): LGraph :=
-  let added_g := lgraph_add_copied_v g v to in
-  Build_LabeledGraph _ _ _ (pg_lg added_g)
-                     (update_copied_old_vlabel added_g v (new_copied_v g to))
-                     (elabel added_g) (glabel added_g).
+  lgraph_mark_copied (lgraph_add_copied_v g v to) v (new_copied_v g to).
 
 Definition forward_t: Type := Z + GC_Pointer + VType + EType.
 
@@ -1772,4 +1773,40 @@ Proof.
   intros. split; simpl.
   - red. simpl. rewrite cvmgil_length; assumption.
   - red. unfold nth_gen. simpl. rewrite cvmgil_eq by assumption. simpl. omega.
+Qed.
+
+Lemma lmc_vertex_address: forall g v new_v x,
+    vertex_address (lgraph_mark_copied g v new_v) x = vertex_address g x.
+Proof.
+  intros. unfold vertex_address. f_equal.
+  f_equal. unfold vertex_offset. f_equal. unfold previous_vertices_size.
+  apply fold_left_ext. intros. unfold vertex_size_accum. f_equal. unfold vertex_size.
+  f_equal. simpl. unfold update_copied_old_vlabel, graph_gen.update_vlabel.
+  destruct (EquivDec.equiv_dec v (vgeneration x, y)).
+  - unfold Equivalence.equiv in e. rewrite <- e. simpl. reflexivity.
+  - reflexivity.
+Qed.
+
+Lemma lmc_make_fields: forall (g : LGraph) (v new_v x: VType),
+    map (field2val (lgraph_mark_copied g v new_v))
+        (make_fields (lgraph_mark_copied g v new_v) x) =
+    map (field2val g) (make_fields g x).
+Proof.
+  intros. unfold make_fields. simpl.
+  unfold update_copied_old_vlabel, graph_gen.update_vlabel.
+  if_tac; [unfold Equivalence.equiv in H; subst v|]; simpl; apply map_ext; intros.
+  - destruct a; [destruct s|]; simpl; [| |rewrite lmc_vertex_address]; reflexivity.
+  - destruct a; [destruct s|]; simpl; [| |rewrite lmc_vertex_address]; reflexivity.
+Qed.
+
+Lemma lmc_make_fields_vals_new: forall (g : LGraph) (v new_v : VType),
+    make_fields_vals (lgraph_mark_copied g v new_v) v =
+    vertex_address g new_v :: tl (make_fields_vals g v).
+Proof.
+  intros. unfold make_fields_vals at 1. simpl.
+  unfold update_copied_old_vlabel, graph_gen.update_vlabel.
+  rewrite if_true by reflexivity. simpl. rewrite lmc_vertex_address.
+  assert (tl (make_fields_vals g v) = tl (map (field2val g) (make_fields g v))) by
+      (unfold make_fields_vals; destruct (raw_mark (vlabel g v)); simpl; reflexivity).
+  rewrite H. clear H. do 2 f_equal. apply lmc_make_fields.
 Qed.
