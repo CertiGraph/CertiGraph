@@ -399,7 +399,18 @@ Proof.
               sep_apply (field_at_data_at_cancel
                            (nth_sh g' (vgeneration v)) tuint (vint 0)
                            (offset_val (- WORD_SIZE) (vertex_address g' v))).
-              forward_call (nv). admit.
+              forward_call (nv). remember (nth_sh g' (vgeneration v)) as sh'.
+              remember (make_fields_vals g' v) as l'.
+              assert (0 < Zlength l'). {
+                subst l'. rewrite fields_eq_length.
+                apply (proj1 (raw_fields_range (vlabel g' v))). }
+              rewrite data_at_tarray_value_split_1 by assumption. Intros.
+              assert_PROP (force_val (sem_add_ptr_int int_or_ptr_type Signed
+                                                      (vertex_address g' v) (vint 0)) =
+                           field_address int_or_ptr_type [] (vertex_address g' v)). {
+                clear. entailer!. unfold field_address. rewrite if_true by assumption.
+                simpl. rewrite isptr_offset_val_zero. 1: reflexivity.
+                destruct H42. assumption. } forward. admit.
       * apply semax_if_seq. forward_if. 1: exfalso; apply H20'; reflexivity.
         rewrite H19 in n. forward. rewrite <- Heqroot. rewrite if_false by assumption.
         Exists g t_info roots. simpl. entailer!.

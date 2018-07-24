@@ -674,7 +674,7 @@ Proof.
   simpl offset_val in H0. rewrite ptrofs_add_repr in H0.
   assert (0 <= n)%Z by rep_omega. rewrite sizeof_tarray_int_or_ptr by assumption.
   simpl in H2. rewrite Ptrofs.unsigned_repr in H2 by rep_omega.
-  rewrite Z.max_r in H2 by assumption. rewrite WORD_SIZE_eq in *. 
+  rewrite Z.max_r in H2 by assumption. rewrite WORD_SIZE_eq in *.
   assert (4 * n = o + (4 * n - o))%Z by omega. remember (4 * n - o) as m.
   rewrite H5 in *. rewrite (memory_block_split sh b ofs o m) by omega.
   clear Heqm n H5 H3. assert (0 < m <= Ptrofs.max_unsigned) by rep_omega.
@@ -843,11 +843,11 @@ Proof.
     intro. apply H. left. assumption.
   - intro. apply H. right. assumption.
 Qed.
-                 
+
 Lemma lacv_generation_rep_eq: forall g v to,
     graph_has_v g v -> graph_has_gen g to -> no_dangling_dst g -> copy_compatible g ->
     generation_rep (lgraph_add_copied_v g v to) to =
-    vertex_at (nth_sh g to) (vertex_address g (new_copied_v g to)) 
+    vertex_at (nth_sh g to) (vertex_address g (new_copied_v g to))
               (make_header g v) (make_fields_vals g v) * generation_rep g to.
 Proof.
   intros. unfold generation_rep. rewrite lacv_nth_sh by assumption.
@@ -872,8 +872,6 @@ Proof.
     unfold new_copied_v. intro. inversion H5. omega.
 Qed.
 
-Local Close Scope Z_scope.
-
 Lemma copied_v_derives_new_g: forall g v to,
     graph_has_gen g to -> no_dangling_dst g -> copy_compatible g -> graph_has_v g v ->
     vertex_at (nth_sh g to) (vertex_address g (new_copied_v g to))
@@ -882,11 +880,11 @@ Lemma copied_v_derives_new_g: forall g v to,
 Proof.
   intros. unfold graph_rep. unfold lgraph_add_copied_v at 1. simpl. red in H.
   rewrite cvmgil_length by assumption. remember (length (g_gen (glabel g))).
-  assert (n = to + (n - to)) by omega. assert (0 < n - to) by omega.
-  remember (n - to) as m. rewrite H3, nat_inc_list_app, !iter_sepcon_app_sepcon.
+  assert (n = to + (n - to))%nat by omega. assert (0 < n - to)%nat by omega.
+  remember (n - to)%nat as m. rewrite H3, nat_inc_list_app, !iter_sepcon_app_sepcon.
   rewrite (lacv_icgr_not_eq (nat_inc_list to) g v to); try assumption.
   3: subst n; apply H. 2: intro; rewrite nat_inc_list_In_iff in H5; omega.
-  rewrite sepcon_comm, sepcon_assoc. f_equal. assert (m = 1 + (m - 1)) by omega.
+  rewrite sepcon_comm, sepcon_assoc. f_equal. assert (m = 1 + (m - 1))%nat by omega.
   rewrite H5, nat_seq_app, !iter_sepcon_app_sepcon.
   assert (nat_seq to 1 = [to]) by reflexivity. rewrite H6. clear H6.
   rewrite (lacv_icgr_not_eq (nat_seq (to + 1) (m - 1)) g v to); try assumption.
@@ -894,4 +892,23 @@ Proof.
   rewrite sepcon_assoc, sepcon_comm, sepcon_assoc, sepcon_comm. f_equal.
   simpl iter_sepcon. normalize. clear m Heqm H3 H4 H5. subst n.
   rewrite <- lacv_generation_rep_eq; [reflexivity | assumption..].
+Qed.
+
+Lemma data_at_tarray_value_split_1: forall sh p (l: list val),
+    0 < Zlength l ->
+    data_at sh (tarray int_or_ptr_type (Zlength l)) l p =
+    data_at sh int_or_ptr_type (hd nullval l) p *
+    data_at sh (tarray int_or_ptr_type (Zlength l-1)) (tl l) (offset_val WORD_SIZE p).
+Proof.
+  intros. rewrite (data_at_tarray_value sh (Zlength l) 1 p l l [hd nullval l] (tl l)).
+  - replace (WORD_SIZE * 1)%Z with WORD_SIZE by omega. f_equal.
+    rewrite (data_at_singleton_array_eq _ int_or_ptr_type (hd nullval l)); reflexivity.
+  - omega.
+  - omega.
+  - autorewrite with sublist; reflexivity.
+  - destruct l. 1: rewrite Zlength_nil in H; omega. simpl. compute. reflexivity.
+  - destruct l. 1: rewrite Zlength_nil in H; omega. simpl.
+    rewrite sublist_1_cons, Zlength_cons.
+    replace (Z.succ (Zlength l) - 1) with (Zlength l) by omega.
+    autorewrite with sublist. reflexivity.
 Qed.

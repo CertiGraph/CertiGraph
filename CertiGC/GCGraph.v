@@ -1521,7 +1521,7 @@ Lemma lacv_nth_gen: forall g v to n,
     nth_gen (lgraph_add_copied_v g v to) n = nth_gen g n.
 Proof.
   intros. unfold lgraph_add_copied_v, nth_gen. simpl. remember (g_gen (glabel g)).
-  apply cvmgil_not_eq; [|subst l]; assumption. 
+  apply cvmgil_not_eq; [|subst l]; assumption.
 Qed.
 
 Lemma lacv_graph_has_gen: forall g v to n,
