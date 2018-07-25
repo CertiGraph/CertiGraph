@@ -1135,19 +1135,19 @@ Proof.
 Qed.
 
 Lemma upd_thread_info_Zlength: forall (t: thread_info) (i: Z) (v: val),
-    0 <= i < 1024 -> Zlength (upd_Znth i (ti_args t) v) = MAX_ARGS.
+    0 <= i < MAX_ARGS -> Zlength (upd_Znth i (ti_args t) v) = MAX_ARGS.
 Proof.
-  intros. rewrite upd_Znth_Zlength; [apply arg_size | rewrite arg_size; rep_omega].
+  intros. rewrite upd_Znth_Zlength; [apply arg_size | rewrite arg_size; assumption].
 Qed.
 
 Definition upd_thread_info_arg
-           (t: thread_info) (i: Z) (v: val) (H: 0 <= i < 1024) : thread_info :=
+           (t: thread_info) (i: Z) (v: val) (H: 0 <= i < MAX_ARGS) : thread_info :=
   Build_thread_info (ti_heap_p t) (ti_heap t) (upd_Znth i (ti_args t) v)
                     (upd_thread_info_Zlength t i v H).
 
 Lemma upd_fun_thread_arg_compatible: forall g t_info f_info roots z,
     fun_thread_arg_compatible g t_info f_info roots ->
-    forall (v : VType) (HB : 0 <= Znth z (live_roots_indices f_info) < 1024),
+    forall (v : VType) (HB : 0 <= Znth z (live_roots_indices f_info) < MAX_ARGS),
       fun_thread_arg_compatible
         g (upd_thread_info_arg t_info (Znth z (live_roots_indices f_info))
                                (vertex_address g v) HB) f_info
@@ -1491,6 +1491,17 @@ Proof.
   subst f. unfold vertex_address. apply isptr_is_pointer_or_integer.
   rewrite isptr_offset_val. apply graph_has_gen_start_isptr, (proj1 (H _ H1 Heqb)).
 Qed.
+
+Lemma upd_tf_arg_Zlength: forall (t: thread_info) (index: Z) (v: val),
+    0 <= index < MAX_ARGS -> Zlength (upd_Znth index (ti_args t) v) = MAX_ARGS.
+Proof.
+  intros. rewrite upd_Znth_Zlength; [apply arg_size | rewrite arg_size; assumption].
+Qed.
+
+Definition update_thread_info_arg (t: thread_info) (index: Z)
+           (v: val) (H: 0 <= index < MAX_ARGS): thread_info :=
+  Build_thread_info (ti_heap_p t) (ti_heap t) (upd_Znth index (ti_args t) v)
+                    (upd_tf_arg_Zlength t index v H).
 
 Local Close Scope Z_scope.
 
