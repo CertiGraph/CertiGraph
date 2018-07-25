@@ -286,6 +286,12 @@ Qed.
 Lemma nat_seq_In_iff: forall s n i, In i (nat_seq s n) <-> (s <= i < s + n)%nat.
 Proof. intros. revert s. induction n; intros; simpl; [|rewrite IHn]; omega. Qed.
 
+Lemma nat_seq_NoDup: forall s n, NoDup (nat_seq s n).
+Proof.
+  intros. revert s. induction n; intros; simpl; constructor. 2: apply IHn.
+  intro. rewrite nat_seq_In_iff in H. omega.
+Qed.
+
 Local Close Scope Z_scope.
 
 Lemma nat_seq_nth: forall s num n a, n < num -> nth n (nat_seq s num) a = s + n.
@@ -319,6 +325,9 @@ Proof. intros. unfold nat_inc_list. rewrite nat_seq_nth; [omega | assumption]. Q
 Lemma nat_inc_list_app: forall n m,
     nat_inc_list (n + m) = nat_inc_list n ++ nat_seq n m.
 Proof. intros. unfold nat_inc_list. rewrite nat_seq_app. reflexivity. Qed.
+
+Lemma nat_inc_list_NoDup: forall n, NoDup (nat_inc_list n).
+Proof. intros. unfold nat_inc_list. apply nat_seq_NoDup. Qed.
 
 Local Open Scope Z_scope.
 
@@ -1799,7 +1808,22 @@ Proof.
   - destruct a; [destruct s|]; simpl; [| |rewrite lmc_vertex_address]; reflexivity.
 Qed.
 
-Lemma lmc_make_fields_vals_new: forall (g : LGraph) (v new_v : VType),
+Lemma lmc_vlabel_not_eq: forall g v new_v x,
+    x <> v -> vlabel (lgraph_mark_copied g v new_v) x = vlabel g x.
+Proof.
+  intros. unfold lgraph_mark_copied, update_copied_old_vlabel, update_vlabel. simpl.
+  rewrite if_false. 1: reflexivity. unfold equiv. intuition.
+Qed.
+
+Lemma lmc_make_fields_vals_not_eq: forall (g : LGraph) (v new_v : VType) x,
+    x <> v -> make_fields_vals (lgraph_mark_copied g v new_v) x = make_fields_vals g x.
+Proof.
+  intros. unfold make_fields_vals.
+  rewrite lmc_make_fields, lmc_vlabel_not_eq, lmc_vertex_address;
+    [reflexivity | assumption].
+Qed.
+
+Lemma lmc_make_fields_vals_eq: forall (g : LGraph) (v new_v : VType),
     make_fields_vals (lgraph_mark_copied g v new_v) v =
     vertex_address g new_v :: tl (make_fields_vals g v).
 Proof.

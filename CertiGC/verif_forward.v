@@ -390,9 +390,10 @@ Proof.
               assert (graph_has_v g' (new_copied_v g to)) by
                   (subst g'; apply lacv_graph_has_v_new; assumption).
               sep_apply (graph_rep_valid_int_or_ptr _ _ H34). Intros.
-              rewrite <- H30 in H35.
-              localize [vertex_rep (nth_sh g' (vgeneration v)) g' v].
-               unfold vertex_rep, vertex_at. Intros.
+              rewrite <- H30 in H35. assert (graph_has_v g' v) by
+                  (subst g'; apply lacv_graph_has_v_old; assumption).
+              sep_apply (graph_vertex_lmc_ramif g' v (new_copied_v g to) H36).
+              Intros. freeze [1; 2] FR1. unfold vertex_rep, vertex_at. Intros.
               sep_apply (data_at_minus1_address
                            (nth_sh g' (vgeneration v)) (Z2val (make_header g' v))
                            (vertex_address g' v)). Intros. forward. clear H36.
@@ -410,13 +411,17 @@ Proof.
                            field_address int_or_ptr_type [] (vertex_address g' v)). {
                 clear. entailer!. unfold field_address. rewrite if_true by assumption.
                 simpl. rewrite isptr_offset_val_zero. 1: reflexivity.
-                destruct H40. assumption. } forward. clear H37.
+                destruct H3. assumption. } forward. clear H37.
               sep_apply (field_at_data_at_cancel
                            sh' int_or_ptr_type nv (vertex_address g' v)).
-              gather_SEP 1 0 2. rewrite H30. subst l'.
-              rewrite <- sepcon_assoc, <- mark_copied_vertex_rep. subst sh'.
-              unlocalize [graph_rep (lgraph_mark_copied g' v (new_copied_v g to))].
-              admit. admit.
+              gather_SEP 1 0 3. rewrite H30. subst l'.
+              rewrite <- sepcon_assoc, <- lmc_vertex_rep_eq. subst sh'.
+              thaw FR1. gather_SEP 0 1.
+              sep_apply (wand_frame_elim
+                           (vertex_rep (nth_sh g' (vgeneration v))
+                                       (lgraph_mark_copied g' v (new_copied_v g to)) v)
+                           (graph_rep (lgraph_mark_copied g' v (new_copied_v g to)))).
+              admit.
       * apply semax_if_seq. forward_if. 1: exfalso; apply H20'; reflexivity.
         rewrite H19 in n. forward. rewrite <- Heqroot. rewrite if_false by assumption.
         Exists g t_info roots. simpl. entailer!.

@@ -913,7 +913,7 @@ Proof.
     autorewrite with sublist. reflexivity.
 Qed.
 
-Lemma mark_copied_vertex_rep: forall sh g v new_v,
+Lemma lmc_vertex_rep_eq: forall sh g v new_v,
     vertex_rep sh (lgraph_mark_copied g v new_v) v =
     data_at sh tuint (Vint (Int.repr 0))
             (offset_val (- WORD_SIZE) (vertex_address g v)) *
@@ -927,7 +927,7 @@ Proof.
   - f_equal. unfold make_header. simpl vlabel at 1.
     unfold update_copied_old_vlabel, graph_gen.update_vlabel.
     rewrite if_true by reflexivity. simpl. unfold Z2val. reflexivity.
-  - rewrite lmc_make_fields_vals_new, data_at_tarray_value_split_1.
+  - rewrite lmc_make_fields_vals_eq, data_at_tarray_value_split_1.
     + simpl hd. f_equal. simpl tl.
       replace (Zlength (vertex_address g new_v :: tl (make_fields_vals g v)) - 1)
         with (Zlength (make_fields_vals g v) - 1). 1: reflexivity.
@@ -940,11 +940,70 @@ Proof.
     + rewrite Zlength_cons. rep_omega.
 Qed.
 
+Lemma lmc_vertex_rep_not_eq: forall sh g v new_v x,
+    x <> v -> vertex_rep sh (lgraph_mark_copied g v new_v) x = vertex_rep sh g x.
+Proof.
+  intros. unfold vertex_rep. rewrite lmc_vertex_address, lmc_make_fields_vals_not_eq.
+  2: assumption. f_equal. unfold make_header. rewrite lmc_vlabel_not_eq by assumption.
+  reflexivity.
+Qed.
+
+Lemma lmc_generation_rep_not_eq: forall (g : LGraph) (v new_v : VType) (x : nat),
+    x <> vgeneration v ->
+    generation_rep g x = generation_rep (lgraph_mark_copied g v new_v) x.
+Proof.
+  intros. unfold generation_rep. unfold nth_sh, nth_gen. simpl.
+  remember (nat_inc_list (number_of_vertices (nth x (g_gen (glabel g)) null_info))).
+  apply iter_sepcon_func_strong. intros. destruct x0 as [n m].
+  apply list_in_map_inv in H0. destruct H0 as [x0 [? ?]]. inversion H0. subst n x0.
+  clear H0. remember (generation_sh (nth x (g_gen (glabel g)) null_info)) as sh.
+  rewrite lmc_vertex_rep_not_eq. 1: reflexivity. intro. destruct v. simpl in *.
+  inversion H0. subst. contradiction.
+Qed.
+
+Lemma graph_gen_lmc_ramif: forall g v new_v,
+    graph_has_gen g (vgeneration v) ->
+    graph_rep g |-- generation_rep g (vgeneration v) *
+    (generation_rep (lgraph_mark_copied g v new_v) (vgeneration v) -*
+                    graph_rep (lgraph_mark_copied g v new_v)).
+Proof.
+  intros. unfold graph_rep. simpl. apply iter_sepcon_ramif_pred_1.
+  red in H. rewrite <- nat_inc_list_In_iff in H. apply In_Permutation_cons in H.
+  destruct H as [f ?]. exists f. split. 1: assumption. intros.
+  assert (NoDup (vgeneration v :: f)) by
+      (apply (Permutation_NoDup H), nat_inc_list_NoDup). apply NoDup_cons_2 in H1.
+  rewrite <- lmc_generation_rep_not_eq. 1: reflexivity. intro. subst. contradiction.
+Qed.
+
+Lemma gen_vertex_lmc_ramif: forall g gen index new_v,
+    gen_has_index g gen index ->
+    generation_rep g gen |-- vertex_rep (nth_sh g gen) g (gen, index) *
+    (vertex_rep (nth_sh g gen) (lgraph_mark_copied g (gen, index) new_v)
+                (gen, index) -*
+                generation_rep (lgraph_mark_copied g (gen, index) new_v) gen).
+Proof.
+  intros. unfold generation_rep. unfold nth_gen. simpl. apply iter_sepcon_ramif_pred_1.
+  change (nth gen (g_gen (glabel g)) null_info) with (nth_gen g gen).
+  remember (map (fun x : nat => (gen, x))
+                (nat_inc_list (number_of_vertices (nth_gen g gen)))).
+  assert (In (gen, index) l) by
+      (subst l; apply in_map; rewrite nat_inc_list_In_iff; assumption).
+  apply In_Permutation_cons in H0. destruct H0 as [f ?]. exists f. split.
+  1: assumption. intros. unfold nth_sh, nth_gen. simpl. rewrite lmc_vertex_rep_not_eq.
+  1: reflexivity. assert (NoDup l). {
+    subst l. apply FinFun.Injective_map_NoDup. 2: apply nat_inc_list_NoDup.
+    red. intros. inversion H2. reflexivity. }
+  apply (Permutation_NoDup H0), NoDup_cons_2 in H2. intro. subst. contradiction.
+Qed.
+
 Lemma graph_vertex_lmc_ramif: forall g v new_v,
+    graph_has_v g v ->
     graph_rep g |-- vertex_rep (nth_sh g (vgeneration v)) g v *
     (vertex_rep (nth_sh g (vgeneration v))
                 (lgraph_mark_copied g v new_v) v -*
                 graph_rep (lgraph_mark_copied g v new_v)).
 Proof.
-  intros.
-Abort.
+  intros. destruct H. sep_apply (graph_gen_lmc_ramif g v new_v H).
+  destruct v as [gen index]. simpl vgeneration in *. simpl vindex in *.
+  sep_apply (gen_vertex_lmc_ramif g gen index new_v H0). cancel. apply wand_frame_ver.
+Qed.
