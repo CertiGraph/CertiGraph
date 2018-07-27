@@ -3,7 +3,7 @@ VST_DIR = "../VST"
 CURRENT_DIR = "./"
 -include CONFIGURE
 
-COQC=$(COQBIN)coqc
+COQC=$(COQBIN)coqc -w -overriding-logical-loadpath
 COQDEP=$(COQBIN)coqdep
 
 DIRS = lib msl_ext msl_application graph heap_model_direct
