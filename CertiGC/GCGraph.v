@@ -1845,3 +1845,87 @@ Proof.
       (unfold make_fields_vals; destruct (raw_mark (vlabel g v)); simpl; reflexivity).
   rewrite H. clear H. do 2 f_equal. apply lmc_make_fields.
 Qed.
+
+Lemma lcv_graph_has_gen: forall g v to x,
+    graph_has_gen g to -> graph_has_gen g x -> graph_has_gen (lgraph_copy_v g v to) x.
+Proof. unfold graph_has_gen. intros. simpl. rewrite cvmgil_length; assumption. Qed.
+
+Lemma lmc_graph_has_v: forall g old new x,
+    graph_has_v g x <-> graph_has_v (lgraph_mark_copied g old new) x.
+Proof.
+  intros. unfold graph_has_v, graph_has_gen, gen_has_index, nth_gen. reflexivity.
+Qed.
+
+Lemma lmc_copy_compatible: forall g old new,
+    graph_has_v g new -> copy_compatible g ->
+    copy_compatible (lgraph_mark_copied g old new).
+Proof.
+  repeat intro. destruct (V_EqDec old v).
+  - compute in e. subst old. rewrite <- lmc_graph_has_v. simpl.
+    unfold update_copied_old_vlabel, update_vlabel. rewrite if_true by reflexivity.
+    simpl. assumption.
+  - assert (v <> old) by intuition. clear c.
+    rewrite lmc_vlabel_not_eq, <- lmc_graph_has_v in * by assumption.
+    apply H0; assumption.
+Qed.
+
+Lemma lacv_graph_has_v_inv: forall (g : LGraph) (v : VType) (to : nat) (x : VType),
+    graph_has_gen g to -> graph_has_v (lgraph_add_copied_v g v to) x ->
+    graph_has_v g x \/ x = new_copied_v g to.
+Proof.
+  intros. destruct (V_EqDec x (new_copied_v g to)).
+  - unfold equiv in e; right; assumption.
+  - left. destruct H0. split.
+    + rewrite lacv_graph_has_gen in H0; assumption.
+    + assert (x <> (new_copied_v g to)) by intuition. clear c H0.
+      unfold gen_has_index in *. unfold nth_gen, lgraph_add_copied_v in H1.
+      simpl in H1. destruct x as [gen index]. simpl in *. unfold new_copied_v in H2.
+      destruct (Nat.eq_dec gen to).
+      * subst gen. rewrite cvmgil_eq in H1 by assumption. simpl in H1.
+        change (nth to (g_gen (glabel g)) null_info) with (nth_gen g to) in H1.
+        remember (number_of_vertices (nth_gen g to)).
+        assert (index <> n) by (intro; apply H2; f_equal; assumption). omega.
+      * rewrite cvmgil_not_eq in H1; assumption.
+Qed.
+
+Lemma lacv_copy_compatible: forall (g : LGraph) (v : VType) (to : nat),
+    graph_has_v g v -> graph_has_gen g to -> copy_compatible g ->
+    copy_compatible (lgraph_add_copied_v g v to).
+Proof.
+  repeat intro. destruct (V_EqDec v0 (new_copied_v g to)).
+  - unfold equiv in e. subst v0. rewrite lacv_vlabel_new in *.
+    apply lacv_graph_has_v_old; [|apply H1]; assumption.
+  - assert (v0 <> (new_copied_v g to)) by intuition. clear c.
+    rewrite lacv_vlabel_old in * by assumption.
+    apply lacv_graph_has_v_old; [|apply H1]; try assumption.
+    apply lacv_graph_has_v_inv in H2. 2: assumption. destruct H2. 1: assumption.
+    contradiction.
+Qed.
+
+Lemma lcv_copy_compatible: forall g v to,
+    graph_has_v g v -> graph_has_gen g to -> copy_compatible g ->
+    copy_compatible (lgraph_copy_v g v to).
+Proof.
+  intros. unfold lgraph_copy_v. apply lmc_copy_compatible.
+  - apply lacv_graph_has_v_new. assumption.
+  - apply lacv_copy_compatible; assumption.
+Qed.
+
+(*
+  Hi : 0 <= Z.of_nat to < Zlength (spaces (ti_heap t_info))
+  Hh : has_space (Znth (Z.of_nat to) (spaces (ti_heap t_info))) (vertex_size g v)
+  H16 : 0 <= Znth z (live_roots_indices f_info) < MAX_ARGS
+  Heqg' : g' = lgraph_copy_v g v to
+  Heqt_info' : t_info' =
+               update_thread_info_arg
+                 (cut_thread_info t_info (Z.of_nat to) (vertex_size g v) Hi Hh)
+                 (Znth z (live_roots_indices f_info))
+                 (vertex_address g' (new_copied_v g to)) H16
+  Heqroots' : roots' = upd_bunch z f_info roots (inr (new_copied_v g to))
+
+  graph_thread_info_compatible g' t_info' /\
+  (fun_thread_arg_compatible g' t_info' f_info roots' /\
+  roots_compatible g' outlier roots' /\ outlier_compatible g' outlier) /\
+  forward_condition g' t_info' (vgeneration v) to
+
+ *)
