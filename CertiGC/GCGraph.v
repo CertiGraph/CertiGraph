@@ -1693,7 +1693,15 @@ Proof.
   - intro S; inversion S. apply n; assumption.
 Qed.
 
-Lemma lacv_make_fields_old:  forall (g : LGraph) (v : VType) (to : nat) x,
+Lemma lacv_make_fields_not_eq: forall (g : LGraph) (v : VType) (to : nat) x,
+    x <> new_copied_v g to ->
+    make_fields (lgraph_add_copied_v g v to) x = make_fields g x.
+Proof.
+  intros. unfold make_fields. simpl. unfold update_copied_new_vlabel, update_vlabel.
+  rewrite if_false. 1: reflexivity. intuition.
+Qed.
+
+Lemma lacv_field2val_make_fields_old:  forall (g : LGraph) (v : VType) (to : nat) x,
     graph_has_v g x -> graph_has_gen g to -> no_dangling_dst g ->
     map (field2val (lgraph_add_copied_v g v to))
         (make_fields (lgraph_add_copied_v g v to) x) =
@@ -1713,9 +1721,10 @@ Lemma lacv_make_fields_vals_old: forall (g : LGraph) (v : VType) (to: nat) x,
     graph_has_v g x -> graph_has_gen g to -> no_dangling_dst g -> copy_compatible g ->
     make_fields_vals (lgraph_add_copied_v g v to) x = make_fields_vals g x.
 Proof.
-  intros. pose proof (lacv_make_fields_old _ v _ _ H H0 H1). unfold make_fields_vals.
-  pose proof (graph_has_v_not_eq g to x H). rewrite lacv_vlabel_old by assumption.
-  rewrite H3. destruct (raw_mark (vlabel g x)) eqn:? ; [f_equal | reflexivity].
+  intros. pose proof (lacv_field2val_make_fields_old _ v _ _ H H0 H1).
+  unfold make_fields_vals. pose proof (graph_has_v_not_eq g to x H).
+  rewrite lacv_vlabel_old by assumption. rewrite H3.
+  destruct (raw_mark (vlabel g x)) eqn:? ; [f_equal | reflexivity].
   apply lacv_vertex_address_old; [apply H2|]; assumption.
 Qed.
 
@@ -1738,7 +1747,7 @@ Lemma lacv_make_header_new: forall g v to,
     make_header (lgraph_add_copied_v g v to) (new_copied_v g to) = make_header g v.
 Proof. intros. unfold make_header. rewrite lacv_vlabel_new. reflexivity. Qed.
 
-Lemma lacv_make_fields_new: forall g v to,
+Lemma lacv_field2val_make_fields_new: forall g v to,
     graph_has_v g v -> graph_has_gen g to -> no_dangling_dst g ->
     map (field2val (lgraph_add_copied_v g v to))
         (make_fields (lgraph_add_copied_v g v to) (new_copied_v g to)) =
@@ -1770,7 +1779,7 @@ Lemma lacv_make_fields_vals_new: forall g v to,
     make_fields_vals g v.
 Proof.
   intros. unfold make_fields_vals. rewrite lacv_vlabel_new.
-  rewrite (lacv_make_fields_new _ _ _ H H0 H1).
+  rewrite (lacv_field2val_make_fields_new _ _ _ H H0 H1).
   destruct (raw_mark (vlabel g v)) eqn:? . 2: reflexivity. f_equal.
   apply lacv_vertex_address_old. 2: assumption. apply H2; assumption.
 Qed.
@@ -1807,16 +1816,20 @@ Proof.
   - reflexivity.
 Qed.
 
-Lemma lmc_make_fields: forall (g : LGraph) (v new_v x: VType),
+Lemma lmc_make_fields: forall (g : LGraph) (old new v: VType),
+    make_fields (lgraph_mark_copied g old new) v = make_fields g v.
+Proof.
+  intros. unfold make_fields. simpl. unfold update_copied_old_vlabel, update_vlabel.
+  if_tac; [unfold equiv in H; subst v |]; reflexivity.
+Qed.
+
+Lemma lmc_field2val_make_fields: forall (g : LGraph) (v new_v x: VType),
     map (field2val (lgraph_mark_copied g v new_v))
         (make_fields (lgraph_mark_copied g v new_v) x) =
     map (field2val g) (make_fields g x).
 Proof.
-  intros. unfold make_fields. simpl.
-  unfold update_copied_old_vlabel, graph_gen.update_vlabel.
-  if_tac; [unfold Equivalence.equiv in H; subst v|]; simpl; apply map_ext; intros.
-  - destruct a; [destruct s|]; simpl; [| |rewrite lmc_vertex_address]; reflexivity.
-  - destruct a; [destruct s|]; simpl; [| |rewrite lmc_vertex_address]; reflexivity.
+  intros. rewrite lmc_make_fields. apply map_ext; intros.
+  destruct a; [destruct s|]; simpl; [| |rewrite lmc_vertex_address]; reflexivity.
 Qed.
 
 Lemma lmc_vlabel_not_eq: forall g v new_v x,
@@ -1830,7 +1843,7 @@ Lemma lmc_make_fields_vals_not_eq: forall (g : LGraph) (v new_v : VType) x,
     x <> v -> make_fields_vals (lgraph_mark_copied g v new_v) x = make_fields_vals g x.
 Proof.
   intros. unfold make_fields_vals.
-  rewrite lmc_make_fields, lmc_vlabel_not_eq, lmc_vertex_address;
+  rewrite lmc_field2val_make_fields, lmc_vlabel_not_eq, lmc_vertex_address;
     [reflexivity | assumption].
 Qed.
 
@@ -1843,7 +1856,7 @@ Proof.
   rewrite if_true by reflexivity. simpl. rewrite lmc_vertex_address.
   assert (tl (make_fields_vals g v) = tl (map (field2val g) (make_fields g v))) by
       (unfold make_fields_vals; destruct (raw_mark (vlabel g v)); simpl; reflexivity).
-  rewrite H. clear H. do 2 f_equal. apply lmc_make_fields.
+  rewrite H. clear H. do 2 f_equal. apply lmc_field2val_make_fields.
 Qed.
 
 Lemma lcv_graph_has_gen: forall g v to x,
@@ -1910,6 +1923,83 @@ Proof.
   - apply lacv_graph_has_v_new. assumption.
   - apply lacv_copy_compatible; assumption.
 Qed.
+
+Lemma get_edges_In: forall g v s,
+    In (v, s) (get_edges g v) <-> In s (map snd (get_edges g v)).
+Proof.
+  intros. unfold get_edges, make_fields. remember (raw_fields (vlabel g v)).
+  remember 0 as n. clear Heqn Heql. revert n. induction l; intros; simpl.
+  1: reflexivity. destruct a; [destruct s0 |]; simpl; rewrite IHl; try reflexivity.
+  intuition. inversion H0. left; reflexivity.
+Qed.
+
+Lemma get_edges_fst: forall g v e, In e (get_edges g v) -> fst e = v.
+Proof.
+  intros g v e. unfold get_edges, make_fields. remember (raw_fields (vlabel g v)).
+  remember 0 as n. clear Heqn Heql. revert n. induction l; intros; simpl in *.
+  - exfalso; assumption.
+  - destruct a; [destruct s|]; simpl in *;
+      [| | destruct H; [subst e; simpl; reflexivity|]]; apply IHl in H; assumption.
+Qed.
+
+Lemma lmc_no_dangling_dst: forall g old new,
+    no_dangling_dst g -> no_dangling_dst (lgraph_mark_copied g old new).
+Proof.
+  repeat intro. simpl. rewrite <- lmc_graph_has_v in *.
+  unfold get_edges in H1. rewrite lmc_make_fields in H1. apply (H v); assumption.
+Qed.
+
+Lemma lacv_get_edges_new: forall g v to,
+  map snd (get_edges (lgraph_add_copied_v g v to) (new_copied_v g to)) =
+  map snd (get_edges g v).
+Proof.
+  intros. unfold get_edges, make_fields. rewrite lacv_vlabel_new.
+  remember (raw_fields (vlabel g v)). remember 0. clear Heql Heqn. revert n.
+  induction l; intros; simpl. 1: reflexivity.
+  destruct a; [destruct s|]; simpl; rewrite IHl; reflexivity.
+Qed.
+
+Lemma lacv_no_dangling_dst: forall (g : LGraph) (v : VType) (to : nat),
+    no_dangling_dst g -> graph_has_gen g to -> graph_has_v g v ->
+    no_dangling_dst (lgraph_add_copied_v g v to).
+Proof.
+  intros; intro x; intros. simpl. destruct (V_EqDec x (new_copied_v g to)).
+  - unfold equiv in e0. subst x. pose proof H3. remember (new_copied_v g to) as new.
+    apply get_edges_fst in H3. destruct e as [? s]. simpl in H3. subst v0.
+    rewrite get_edges_In, Heqnew, lacv_get_edges_new in H4. rewrite pcv_dst_new.
+    2: assumption. apply lacv_graph_has_v_old. 1: assumption.
+    apply (H v); [|rewrite get_edges_In]; assumption.
+  - assert (x <> new_copied_v g to) by intuition. clear c. rewrite pcv_dst_old.
+    + apply lacv_graph_has_v_old. 1: assumption. apply lacv_graph_has_v_inv in H2.
+      2: assumption. destruct H2. 2: contradiction. apply (H x). 1: assumption.
+      unfold get_edges in *. rewrite lacv_make_fields_not_eq in H3; assumption.
+    + unfold get_edges in H3. rewrite <- filter_sum_right_In_iff in H3.
+      apply e_in_make_fields' in H3. destruct H3 as [s ?]. subst e. simpl. assumption.
+Qed.
+
+Lemma lcv_no_dangling_dst: forall g v to,
+    no_dangling_dst g -> graph_has_gen g to -> graph_has_v g v ->
+    no_dangling_dst (lgraph_copy_v g v to).
+Proof.
+  intros. unfold lgraph_copy_v.
+  apply lmc_no_dangling_dst, lacv_no_dangling_dst; assumption.
+Qed.
+
+Lemma lmc_outlier_compatible: forall g outlier old new,
+    outlier_compatible g outlier ->
+    outlier_compatible (lgraph_mark_copied g old new) outlier.
+Proof.
+  intros. intro v. intros. rewrite <- lmc_graph_has_v in H0.
+  unfold lgraph_mark_copied, update_copied_old_vlabel, update_vlabel; simpl.
+  if_tac; simpl; apply H; [unfold equiv in H1; subst|]; assumption.
+Qed.
+
+Lemma lcv_outlier_compatible: forall g outlier v to,
+    outlier_compatible g outlier ->
+    outlier_compatible (lgraph_copy_v g v to) outlier.
+Proof.
+  intros. apply lmc_outlier_compatible.
+Abort.
 
 (*
   Hi : 0 <= Z.of_nat to < Zlength (spaces (ti_heap t_info))
