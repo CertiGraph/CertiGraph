@@ -333,7 +333,7 @@ Proof.
            ++ unfold vertex_rep, vertex_at. Intros.
               rewrite fields_eq_length, <- Heqn. forward.
               ** entailer!. pose proof (mfv_all_is_ptr_or_int _ _ H9 H10 H19).
-                 rewrite Forall_forall in H42. apply H42, Znth_In.
+                 rewrite Forall_forall in H44. apply H44, Znth_In.
                  rewrite fields_eq_length. assumption.
               ** rewrite (data_at__tarray_value _ _ 1) by omega. Intros.
                  rewrite data_at__singleton_array_eq.
@@ -417,7 +417,7 @@ Proof.
                            field_address int_or_ptr_type [] (vertex_address g' v)). {
                 clear. entailer!. unfold field_address. rewrite if_true by assumption.
                 simpl. rewrite isptr_offset_val_zero. 1: reflexivity.
-                destruct H3. assumption. } forward. clear H39.
+                destruct H5. assumption. } forward. clear H39.
               sep_apply (field_at_data_at_cancel
                            sh' int_or_ptr_type nv (vertex_address g' v)).
               gather_SEP 1 0 3. rewrite H31. subst l'.
@@ -441,18 +441,18 @@ Proof.
                 unfold thread_info_rep. simpl heap_head. simpl ti_heap_p.
                 simpl ti_args. simpl ti_heap. clear Heqt_info'. entailer!. }
               remember (update_thread_info_arg t_info' lz nv H16) as t. subst t_info'.
-              rename t into t_info'.
+              rename t into t_info'. rewrite H31 in H33.
               assert (forward_relation from to 0 (inl (inr v)) g g') by
                   (subst g'; constructor; assumption).
               apply semax_if_seq. forward_if.
               ** admit.
               ** assert (depth = 0) by omega. subst depth. clear H40.
-                 deadvars!. clear Heqnv H33. forward.
+                 deadvars!. clear Heqnv. forward.
                  rewrite <- Heqroot. rewrite if_true by reflexivity. rewrite H21.
-                 remember (Znth z (live_roots_indices f_info)) as lz.
-                 remember (vertex_address (lgraph_copy_v g v to) (new_copied_v g to))
-                   as nv. remember (cut_thread_info
-                                      t_info (Z.of_nat to) (vertex_size g v) Hi Hh).
+                 remember (Znth z (live_roots_indices f_info)) as lz. rewrite H33.
+                 remember (vertex_address g (new_copied_v g to)) as nv.
+                 remember (cut_thread_info
+                             t_info (Z.of_nat to) (vertex_size g v) Hi Hh).
                  Exists (lgraph_copy_v g v to) (update_thread_info_arg t lz nv H16)
                         (upd_bunch z f_info roots (inr (new_copied_v g to))).
                  simpl root2forward. entailer!.
@@ -461,7 +461,7 @@ Proof.
                              (cut_thread_info t_info (Z.of_nat to)
                                               (vertex_size g v) Hi Hh)
                              (Znth z (live_roots_indices f_info))
-                             (vertex_address g' (new_copied_v g to)) H16) as t_info'.
+                             (vertex_address g (new_copied_v g to)) H16) as t_info'.
                  remember (upd_bunch z f_info roots (inr (new_copied_v g to)))
                    as roots'. admit.
       * apply semax_if_seq. forward_if. 1: exfalso; apply H21'; reflexivity.
