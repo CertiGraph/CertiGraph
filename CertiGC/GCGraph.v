@@ -1994,11 +1994,40 @@ Proof.
   if_tac; simpl; apply H; [unfold equiv in H1; subst|]; assumption.
 Qed.
 
-Lemma lcv_outlier_compatible: forall g outlier v to,
-    outlier_compatible g outlier ->
-    outlier_compatible (lgraph_copy_v g v to) outlier.
+Lemma lacv_outlier_compatible: forall (g : LGraph) outlier (v : VType) (to : nat),
+    graph_has_gen g to -> graph_has_v g v -> outlier_compatible g outlier ->
+    outlier_compatible (lgraph_add_copied_v g v to) outlier.
 Proof.
-  intros. apply lmc_outlier_compatible.
+  intros. intros x ?. apply lacv_graph_has_v_inv in H2. 2: assumption. destruct H2.
+  - rewrite lacv_vlabel_old; [apply H1 | apply graph_has_v_not_eq]; assumption.
+  - subst x. rewrite lacv_vlabel_new. apply H1; assumption.
+Qed.
+
+Lemma lcv_outlier_compatible: forall g outlier v to,
+    graph_has_gen g to -> graph_has_v g v -> outlier_compatible g outlier ->
+    outlier_compatible (lgraph_copy_v g v to) outlier.
+Proof. intros. apply lmc_outlier_compatible, lacv_outlier_compatible; assumption. Qed.
+
+Lemma utia_estc: forall g t_info from to index v (H : (0 <= index < MAX_ARGS)%Z),
+    enough_space_to_copy g t_info from to ->
+    enough_space_to_copy g (update_thread_info_arg t_info index v H) from to.
+Proof.
+  unfold enough_space_to_copy. intros. unfold rest_gen_size, nth_space in *. apply H0.
+Qed.
+
+Lemma forward_estc: forall
+    g t_info v to index uv
+    (Hi : (0 <= Z.of_nat to < Zlength (spaces (ti_heap t_info)))%Z)
+    (Hh : has_space (Znth (Z.of_nat to) (spaces (ti_heap t_info))) (vertex_size g v))
+    (Hm : (0 <= index < MAX_ARGS)%Z),
+    enough_space_to_copy g t_info (vgeneration v) to ->
+    enough_space_to_copy
+      (lgraph_copy_v g v to)
+      (update_thread_info_arg
+         (cut_thread_info t_info (Z.of_nat to) (vertex_size g v) Hi Hh) index uv Hm)
+      (vgeneration v) to.
+Proof.
+  intros. apply utia_estc. clear index uv Hm.
 Abort.
 
 (*
@@ -2010,12 +2039,11 @@ Abort.
                update_thread_info_arg
                  (cut_thread_info t_info (Z.of_nat to) (vertex_size g v) Hi Hh)
                  (Znth z (live_roots_indices f_info))
-                 (vertex_address g' (new_copied_v g to)) H16
+                 (vertex_address g (new_copied_v g to)) H16
   Heqroots' : roots' = upd_bunch z f_info roots (inr (new_copied_v g to))
 
   graph_thread_info_compatible g' t_info' /\
   (fun_thread_arg_compatible g' t_info' f_info roots' /\
   roots_compatible g' outlier roots' /\ outlier_compatible g' outlier) /\
   forward_condition g' t_info' (vgeneration v) to
-
  *)
