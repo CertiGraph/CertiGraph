@@ -1449,6 +1449,14 @@ Definition cut_thread_info (t: thread_info) (i s: Z)
   Build_thread_info (ti_heap_p t) (cut_heap (ti_heap t) i s H1 H2) (ti_args t)
                     (arg_size t).
 
+Lemma cti_eq: forall t i s1 s2 (H1: 0 <= i < Zlength (spaces (ti_heap t)))
+                     (Hs1: has_space (Znth i (spaces (ti_heap t))) s1)
+                     (Hs2: has_space (Znth i (spaces (ti_heap t))) s2),
+    s1 = s2 -> cut_thread_info t i s1 H1 Hs1 = cut_thread_info t i s2 H1 Hs2.
+Proof.
+  intros. unfold cut_thread_info. f_equal. subst s1. f_equal. apply proof_irr.
+Qed.
+
 Lemma upd_Znth_tl {A}: forall (i: Z) (l: list A) (x: A),
     0 <= i -> l <> nil -> tl (upd_Znth (i + 1) l x) = upd_Znth i (tl l) x.
 Proof.
@@ -2015,11 +2023,106 @@ Proof.
   unfold enough_space_to_copy. intros. unfold rest_gen_size, nth_space in *. apply H0.
 Qed.
 
+Lemma lacv_unmarked_gen_size: forall g v to from,
+    from <> to -> graph_has_gen g to ->
+    unmarked_gen_size g from = unmarked_gen_size (lgraph_add_copied_v g v to) from.
+Proof.
+  intros. unfold unmarked_gen_size. rewrite lacv_nth_gen by assumption.
+  remember (nat_inc_list (number_of_vertices (nth_gen g from))) as l.
+  assert (forall i, (from, i) <> new_copied_v g to). {
+    intros. intro. inversion H1. apply H. assumption. }
+  assert (filter (fun i : nat => negb (raw_mark (vlabel g (from, i)))) l =
+          filter (fun i : nat =>
+                    negb(raw_mark(vlabel(lgraph_add_copied_v g v to) (from,i)))) l). {
+    apply filter_ext. intros. rewrite lacv_vlabel_old by apply H1. reflexivity. }
+  rewrite <- H2. apply fold_left_ext. intros. unfold vertex_size_accum. f_equal.
+  unfold vertex_size. rewrite lacv_vlabel_old by apply H1. reflexivity.
+Qed.
+
+Lemma lacv_estc: forall g t_info from to v,
+    from <> to -> graph_has_gen g to ->
+    enough_space_to_copy g t_info from to ->
+    enough_space_to_copy (lgraph_add_copied_v g v to) t_info from to.
+Proof.
+  unfold enough_space_to_copy. intros. rewrite <- lacv_unmarked_gen_size; assumption.
+Qed.
+
+Lemma vsa_fold_left:
+  forall (g : LGraph) (gen : nat) (l : list nat) (z1 z2 : Z),
+    fold_left (vertex_size_accum g gen) l (z2 + z1)%Z =
+    (fold_left (vertex_size_accum g gen) l z2 + z1)%Z.
+Proof.
+  intros. revert z1 z2. induction l; intros; simpl. 1: reflexivity.
+  rewrite <- IHl. f_equal. unfold vertex_size_accum. omega.
+Qed.
+
+Lemma lmc_unmarked_gen_size: forall g v v',
+    graph_has_v g v -> raw_mark (vlabel g v) = false ->
+    unmarked_gen_size g (vgeneration v) =
+    (unmarked_gen_size (lgraph_mark_copied g v v') (vgeneration v) +
+     vertex_size g v)%Z.
+Proof.
+  intros. unfold unmarked_gen_size. unfold nth_gen. simpl glabel.
+  destruct v as [gen index]. simpl vgeneration.
+  change (nth gen (g_gen (glabel g)) null_info) with (nth_gen g gen).
+  remember (nat_inc_list (number_of_vertices (nth_gen g gen))).
+  rewrite (fold_left_ext (vertex_size_accum (lgraph_mark_copied g (gen, index) v') gen)
+                         (vertex_size_accum g gen)).
+  - simpl. remember (fun i : nat => negb (raw_mark (vlabel g (gen, i)))) as f1.
+    remember (fun i : nat =>
+                negb (raw_mark (update_copied_old_vlabel g (gen, index) v' (gen, i))))
+      as f2. cut (Permutation (filter f1 l) (index :: filter f2 l)).
+    + intros. rewrite (fold_left_comm _ _ (index :: filter f2 l)). 3: assumption.
+      * simpl. rewrite <- vsa_fold_left. f_equal.
+      * apply vsa_comm.
+    + apply filter_singular_perm; subst.
+      * intros. unfold update_copied_old_vlabel, update_vlabel.
+        rewrite if_false. 1: reflexivity. unfold equiv. intro. apply H2.
+        inversion H3. reflexivity.
+      * rewrite nat_inc_list_In_iff. destruct H. simpl in *. assumption.
+      * unfold update_copied_old_vlabel, update_vlabel. rewrite if_true; reflexivity.
+      * rewrite H0. reflexivity.
+      * apply nat_inc_list_NoDup.
+  - intros. unfold vertex_size_accum. f_equal. unfold vertex_size. f_equal.
+    simpl. unfold update_copied_old_vlabel, update_vlabel. if_tac. 2: reflexivity.
+    simpl. unfold equiv in H2. rewrite H2. reflexivity.
+Qed.
+
+Lemma cti_rest_gen_size:
+  forall t_info to s
+         (Hi : (0 <= Z.of_nat to < Zlength (spaces (ti_heap t_info)))%Z)
+         (Hh : has_space (Znth (Z.of_nat to) (spaces (ti_heap t_info))) s),
+  rest_gen_size t_info to =
+  (rest_gen_size (cut_thread_info t_info (Z.of_nat to) s Hi Hh) to + s)%Z.
+Proof.
+  intros. unfold rest_gen_size. rewrite !nth_space_Znth. unfold cut_thread_info. simpl.
+  rewrite upd_Znth_same by assumption. simpl. omega.
+Qed.
+
+Lemma lmc_estc:
+  forall (g : LGraph) (t_info : thread_info) (v v': VType) (to : nat)
+         (Hi : (0 <= Z.of_nat to < Zlength (spaces (ti_heap t_info)))%Z),
+    enough_space_to_copy g t_info (vgeneration v) to ->
+    graph_has_v g v -> raw_mark (vlabel g v) = false ->
+    forall
+      Hh : has_space (Znth (Z.of_nat to) (spaces (ti_heap t_info))) (vertex_size g v),
+      enough_space_to_copy (lgraph_mark_copied g v v')
+                           (cut_thread_info
+                              t_info (Z.of_nat to) (vertex_size g v) Hi Hh)
+                           (vgeneration v) to.
+Proof.
+  unfold enough_space_to_copy. intros.
+  rewrite (lmc_unmarked_gen_size g v v') in H by assumption.
+  rewrite (cti_rest_gen_size _ _ (vertex_size g v) Hi Hh) in H. omega.
+Qed.
+
 Lemma forward_estc: forall
     g t_info v to index uv
     (Hi : (0 <= Z.of_nat to < Zlength (spaces (ti_heap t_info)))%Z)
     (Hh : has_space (Znth (Z.of_nat to) (spaces (ti_heap t_info))) (vertex_size g v))
     (Hm : (0 <= index < MAX_ARGS)%Z),
+    vgeneration v <> to -> graph_has_gen g to ->
+    graph_has_v g v -> raw_mark (vlabel g v) = false ->
     enough_space_to_copy g t_info (vgeneration v) to ->
     enough_space_to_copy
       (lgraph_copy_v g v to)
@@ -2027,8 +2130,22 @@ Lemma forward_estc: forall
          (cut_thread_info t_info (Z.of_nat to) (vertex_size g v) Hi Hh) index uv Hm)
       (vgeneration v) to.
 Proof.
-  intros. apply utia_estc. clear index uv Hm.
-Abort.
+  intros. apply utia_estc. clear index uv Hm. unfold lgraph_copy_v.
+  apply (lacv_estc _ _ _ _ v) in H3; [| assumption..].
+  assert (vertex_size g v = vertex_size (lgraph_add_copied_v g v to) v). {
+    unfold vertex_size. rewrite lacv_vlabel_old. 1: reflexivity.
+    intro. destruct v as [gen index]. simpl in H. unfold new_copied_v in H4.
+    inversion H4. apply H. assumption. }
+  remember (lgraph_add_copied_v g v to) as g'.
+  pose proof Hh as Hh'. rewrite H4 in Hh'.
+  replace (cut_thread_info t_info (Z.of_nat to) (vertex_size g v) Hi Hh) with
+      (cut_thread_info t_info (Z.of_nat to) (vertex_size g' v) Hi Hh') by
+      (apply cti_eq; symmetry; assumption).
+  apply lmc_estc.
+  - assumption.
+  - subst g'. apply lacv_graph_has_v_old; assumption.
+  - subst g'. rewrite lacv_vlabel_old; [| apply graph_has_v_not_eq]; assumption.
+Qed.
 
 (*
   Hi : 0 <= Z.of_nat to < Zlength (spaces (ti_heap t_info))

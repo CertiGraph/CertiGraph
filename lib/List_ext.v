@@ -925,7 +925,7 @@ Proof.
   intros. remember (length l1). assert (length l1 <= n) by omega. clear Heqn.
   revert init l1 l2 H1 H0. induction n; intros; destruct l1.
   - apply Permutation_nil in H0. subst l2. simpl. reflexivity.
-  - simpl in H1; exfalso; omega. 
+  - simpl in H1; exfalso; omega.
   - apply Permutation_nil in H0. subst l2. simpl. reflexivity.
   - simpl in H1. assert (length l1 <= n) by omega. clear H1.
     assert (In b l2) by
@@ -973,4 +973,32 @@ Proof.
   destruct l2; constructor.
   - intro. apply in_combine_r in H0. apply NoDup_cons_2 in H. contradiction.
   - apply IHl1. apply NoDup_cons_1 in H. assumption.
+Qed.
+
+Lemma filter_ext: forall {A} (f g: A -> bool) l,
+    (forall i, In i l -> f i = g i) -> filter f l = filter g l.
+Proof.
+  intros. induction l; simpl. 1: reflexivity.
+  assert (f a = g a) by (apply H; left; reflexivity).
+  assert (forall i : A, In i l -> f i = g i) by (intros; apply H; right; assumption).
+  destruct (f a), (g a); [|inversion H0.. |]; rewrite IHl by assumption; reflexivity.
+Qed.
+
+Lemma filter_singular_perm: forall {A} (f g: A -> bool) l x,
+    (forall i, In i l -> i <> x -> f i = g i) -> In x l ->
+    g x = false -> f x = true -> NoDup l ->
+    Permutation (filter f l) (x :: filter g l).
+Proof.
+  intros. induction l. 1: inversion H0. simpl. simpl in H0. destruct H0.
+  - subst a. rewrite H1. rewrite H2. constructor. cut (filter f l = filter g l).
+    + intros. rewrite H0. reflexivity.
+    + apply filter_ext. intros. apply H.
+      * simpl; right; assumption.
+      * apply NoDup_cons_2 in H3. intro. subst i. contradiction.
+  - assert (a <> x) by (apply NoDup_cons_2 in H3; intro; subst a; contradiction).
+    assert (f a = g a) by (apply H; [left; reflexivity | assumption]).
+    assert (Permutation (filter f l) (x :: filter g l)). {
+      apply IHl; [intros; apply H; [right|] | |apply NoDup_cons_1 in H3]; assumption. }
+    destruct (f a); destruct (g a); try discriminate; clear H5;
+      [transitivity (a :: x :: filter g l); constructor|]; assumption.
 Qed.
