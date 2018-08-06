@@ -2147,6 +2147,27 @@ Proof.
   - subst g'. rewrite lacv_vlabel_old; [| apply graph_has_v_not_eq]; assumption.
 Qed.
 
+Lemma lcv_forward_condition: forall
+    g t_info v to index uv
+    (Hi : (0 <= Z.of_nat to < Zlength (spaces (ti_heap t_info)))%Z)
+    (Hh : has_space (Znth (Z.of_nat to) (spaces (ti_heap t_info))) (vertex_size g v))
+    (Hm : (0 <= index < MAX_ARGS)%Z),
+    vgeneration v <> to -> graph_has_v g v -> raw_mark (vlabel g v) = false ->
+    forward_condition g t_info (vgeneration v) to ->
+    forward_condition
+      (lgraph_copy_v g v to)
+      (update_thread_info_arg
+         (cut_thread_info t_info (Z.of_nat to) (vertex_size g v) Hi Hh) index uv Hm)
+      (vgeneration v) to.
+Proof.
+  intros. destruct H2 as [? [? [? [? ?]]]]. split; [|split; [|split; [|split]]].
+  - apply forward_estc; assumption.
+  - apply lcv_graph_has_gen; assumption.
+  - apply lcv_graph_has_gen; assumption.
+  - apply lcv_copy_compatible; assumption.
+  - apply lcv_no_dangling_dst; assumption.
+Qed.
+
 (*
   Hi : 0 <= Z.of_nat to < Zlength (spaces (ti_heap t_info))
   Hh : has_space (Znth (Z.of_nat to) (spaces (ti_heap t_info))) (vertex_size g v)
