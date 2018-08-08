@@ -472,4 +472,23 @@ Proof.
         Exists g t_info roots. simpl. entailer!.
         -- split; [constructor; assumption | hnf; intuition].
         -- unfold thread_info_rep. entailer!.
+  - destruct p as [v n]. destruct H0. freeze [0; 1; 2; 4] FR.
+    localize [vertex_rep (nth_sh g (vgeneration v)) g v].
+    remember (nth_sh g (vgeneration v)) as shv.
+    unfold vertex_rep, vertex_at. Intros. rewrite fields_eq_length.
+    assert_PROP (offset_val (WORD_SIZE * n) (vertex_address g v) =
+                 field_address (tarray int_or_ptr_type
+                                       (Zlength (raw_fields (vlabel g v))))
+                               [ArraySubsc n] (vertex_address g v)). {
+      entailer!. unfold field_address. rewrite if_true. 1: simpl; f_equal.
+      clear -H19 H12. unfold field_compatible in *. simpl in *. intuition. }
+    assert (readable_share shv). {
+      subst shv. apply writable_readable. apply generation_share_writable. }
+    assert (is_pointer_or_integer (Znth n (make_fields_vals g v))). {
+      pose proof (mfv_all_is_ptr_or_int g v H10 H11 H0). rewrite Forall_forall in H15.
+      apply H15, Znth_In. rewrite fields_eq_length. assumption. } forward.
+    rewrite <- fields_eq_length. gather_SEP 0 1. replace_SEP 0 (vertex_rep shv g v).
+    1: unfold vertex_rep, vertex_at; entailer!. subst shv.
+    unlocalize [graph_rep g]. 1: apply graph_vertex_ramif_stable; assumption. thaw FR.
+    forward_call (Znth n (make_fields_vals g v)).
 Abort.
