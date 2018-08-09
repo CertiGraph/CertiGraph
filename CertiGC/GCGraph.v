@@ -2168,6 +2168,57 @@ Proof.
   - apply lcv_no_dangling_dst; assumption.
 Qed.
 
+Lemma lcv_roots_compatible: forall g roots outlier v to f_info z,
+    graph_has_gen g to ->
+    roots_compatible g outlier roots ->
+    roots_compatible (lgraph_copy_v g v to) outlier
+                     (upd_bunch z f_info roots (inr (new_copied_v g to))).
+Proof.
+  intros. unfold lgraph_copy_v. apply upd_roots_compatible.
+  - unfold roots_compatible in *. destruct H0. split. 1: assumption.
+    rewrite Forall_forall in H1 |-* . intros. specialize (H1 _ H2).
+    rewrite <- lmc_graph_has_v. apply lacv_graph_has_v_old; assumption.
+  - rewrite <- lmc_graph_has_v. apply lacv_graph_has_v_new; assumption.
+Qed.
+
+Lemma lcv_vertex_address_new: forall g v to,
+    graph_has_gen g to ->
+    vertex_address (lgraph_copy_v g v to) (new_copied_v g to) =
+    vertex_address g (new_copied_v g to).
+Proof.
+  intros. unfold lgraph_copy_v.
+  rewrite lmc_vertex_address, lacv_vertex_address_new; [reflexivity | assumption].
+Qed.
+
+Lemma lcv_vertex_address_old: forall g v to x,
+    graph_has_gen g to -> graph_has_v g x ->
+    vertex_address (lgraph_copy_v g v to) x = vertex_address g x.
+Proof.
+  intros. unfold lgraph_copy_v.
+  rewrite lmc_vertex_address, lacv_vertex_address_old; [reflexivity | assumption..].
+Qed.
+
+Lemma lcv_fun_thread_arg_compatible: forall g t_info f_info roots z v to i s
+    (Hi : (0 <= i < Zlength (spaces (ti_heap t_info)))%Z)
+    (Hh : has_space (Znth i (spaces (ti_heap t_info))) s)
+    (Hm : (0 <= Znth z (live_roots_indices f_info) < MAX_ARGS)%Z),
+    graph_has_gen g to -> Forall (graph_has_v g) (filter_sum_right roots) ->
+    fun_thread_arg_compatible g t_info f_info roots ->
+    fun_thread_arg_compatible
+      (lgraph_copy_v g v to)
+      (update_thread_info_arg
+         (cut_thread_info t_info i s Hi Hh) (Znth z (live_roots_indices f_info))
+         (vertex_address g (new_copied_v g to)) Hm)
+      f_info (upd_bunch z f_info roots (inr (new_copied_v g to))).
+Proof.
+  intros. rewrite <- (lcv_vertex_address_new g v to H).
+  apply upd_fun_thread_arg_compatible with (HB := Hm).
+  unfold fun_thread_arg_compatible in *. simpl. rewrite <- H1. apply map_ext_in.
+  intros. destruct a; [destruct s0|]; [reflexivity..| simpl].
+  apply lcv_vertex_address_old. 1: assumption. rewrite Forall_forall in H0.
+  apply H0. rewrite <- filter_sum_right_In_iff. assumption.
+Qed.
+
 (*
   Hi : 0 <= Z.of_nat to < Zlength (spaces (ti_heap t_info))
   Hh : has_space (Znth (Z.of_nat to) (spaces (ti_heap t_info))) (vertex_size g v)
