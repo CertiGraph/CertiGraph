@@ -447,26 +447,23 @@ Proof.
               assert (forward_condition g' t_info' from to). {
                 subst g' t_info' from. apply lcv_forward_condition; try assumption.
                 red. intuition. }
+              remember (upd_bunch z f_info roots (inr (new_copied_v g to))) as roots'.
+              assert (super_compatible (g', t_info', roots') f_info outlier). {
+                subst g' t_info' roots' lz. rewrite H32, H34.
+                apply lcv_super_compatible; try assumption. red. intuition. }
               apply semax_if_seq. forward_if.
               ** admit.
-              ** assert (depth = 0) by omega. subst depth. clear H42.
+              ** assert (depth = 0) by omega. subst depth. clear H43.
                  deadvars!. clear Heqnv. forward.
                  rewrite <- Heqroot. rewrite if_true by reflexivity. rewrite H22.
-                 remember (Znth z (live_roots_indices f_info)) as lz. rewrite H34.
-                 remember (vertex_address g (new_copied_v g to)) as nv.
+                 remember (Znth z (live_roots_indices f_info)) as lz.
+                 remember (vertex_address (lgraph_copy_v g v to) (new_copied_v g to))
+                          as nv.
                  remember (cut_thread_info
                              t_info (Z.of_nat to) (vertex_size g v) Hi Hh).
                  Exists (lgraph_copy_v g v to) (update_thread_info_arg t lz nv H17)
                         (upd_bunch z f_info roots (inr (new_copied_v g to))).
                  simpl root2forward. entailer!.
-                 remember (lgraph_copy_v g v to) as g'.
-                 remember (update_thread_info_arg
-                             (cut_thread_info t_info (Z.of_nat to)
-                                              (vertex_size g v) Hi Hh)
-                             (Znth z (live_roots_indices f_info))
-                             (vertex_address g (new_copied_v g to)) H17) as t_info'.
-                 remember (upd_bunch z f_info roots (inr (new_copied_v g to)))
-                   as roots'. admit.
       * apply semax_if_seq. forward_if. 1: exfalso; apply H22'; reflexivity.
         rewrite H21 in n. forward. rewrite <- Heqroot. rewrite if_false by assumption.
         Exists g t_info roots. simpl. entailer!.

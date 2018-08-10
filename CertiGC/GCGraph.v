@@ -1275,6 +1275,46 @@ Qed.
 
 Definition gen_size t_info n := total_space (nth_space t_info n).
 
+Lemma gsc_iff: forall g t_info,
+    length (g_gen (glabel g)) <= length (spaces (ti_heap t_info)) ->
+    Forall (generation_space_compatible g)
+           (combine (combine (nat_inc_list (length (g_gen (glabel g))))
+                             (g_gen (glabel g))) (spaces (ti_heap t_info))) <->
+    forall gen,
+      graph_has_gen g gen ->
+      generation_space_compatible g (gen, nth_gen g gen, nth_space t_info gen).
+Proof.
+  intros. rewrite Forall_forall. remember (g_gen (glabel g)).
+  remember (nat_inc_list (length l)). remember (spaces (ti_heap t_info)).
+  assert (length (combine l0 l) = length l) by
+      (subst; rewrite combine_length, nat_inc_list_length, Nat.min_id; reflexivity).
+  assert (length (combine (combine l0 l) l1) = length l) by
+      (rewrite combine_length, H0, min_l by assumption; reflexivity).
+  cut (forall x, In x (combine (combine l0 l) l1) <->
+                    exists gen, graph_has_gen g gen /\
+                                x = (gen, nth_gen g gen, nth_space t_info gen)).
+  - intros. split; intros.
+    + apply H3. rewrite H2. exists gen. intuition.
+    + rewrite H2 in H4. destruct H4 as [gen [? ?]]. subst x. apply H3. assumption.
+  - intros.
+    assert (forall gen,
+               graph_has_gen g gen ->
+               nth gen (combine (combine l0 l) l1) (0, null_info, null_space) =
+               (gen, nth_gen g gen, nth_space t_info gen)). {
+      intros. red in H2. rewrite <- Heql in H2.
+      rewrite combine_nth_lt; [|rewrite H0; omega | omega].
+      rewrite combine_nth by (subst l0; rewrite nat_inc_list_length; reflexivity).
+      rewrite Heql0. rewrite nat_inc_list_nth by assumption.
+      rewrite Heql. unfold nth_gen, nth_space. rewrite Heql1. reflexivity. }    
+    split; intros.
+    + apply (In_nth (combine (combine l0 l) l1) x (O, null_info, null_space)) in H3.
+      destruct H3 as [gen [? ?]]. exists gen. rewrite H1 in H3.
+      assert (graph_has_gen g gen) by (subst l; assumption). split. 1: assumption.
+      rewrite H2 in H4 by assumption. subst x. reflexivity.
+    + destruct H3 as [gen [? ?]]. rewrite <- H2 in H4 by assumption. subst x.
+      apply nth_In. rewrite H1. subst l. assumption.
+Qed.
+
 Lemma gt_gs_compatible:
   forall (g: LGraph) (t_info: thread_info),
     graph_thread_info_compatible g t_info ->
@@ -1282,20 +1322,8 @@ Lemma gt_gs_compatible:
       graph_has_gen g gen ->
       generation_space_compatible g (gen, nth_gen g gen, nth_space t_info gen).
 Proof.
-  intros. destruct H as [? [? ?]]. red in H0. rewrite Forall_forall in H.
-  remember (g_gen (glabel g)). remember (nat_inc_list (length l)).
-  remember (spaces (ti_heap t_info)).
-  assert (length (combine l0 l) = length l) by
-      (subst; rewrite combine_length, nat_inc_list_length, Nat.min_id; reflexivity).
-  assert (length (combine (combine l0 l) l1) = length l) by
-      (rewrite combine_length, H3, min_l by assumption; reflexivity).
-  assert (generation_space_compatible
-            g (nth gen (combine (combine l0 l) l1) (O, null_info, null_space))) by
-      (apply H, nth_In; rewrite H4; assumption).
-  rewrite combine_nth_lt in H5; [|rewrite H3; omega | omega].
-  rewrite combine_nth in H5 by (subst l0; rewrite nat_inc_list_length; reflexivity).
-  rewrite Heql0 in H5. rewrite nat_inc_list_nth in H5 by assumption.
-   rewrite Heql in H5. unfold nth_gen. unfold nth_space. rewrite Heql1 in H5. apply H5.
+  intros. destruct H as [? [_ ?]]. rewrite gsc_iff in H by assumption.
+  apply H. assumption.
 Qed.
 
 Lemma pvs_mono: forall g gen i j,
@@ -1868,8 +1896,8 @@ Proof.
 Qed.
 
 Lemma lcv_graph_has_gen: forall g v to x,
-    graph_has_gen g to -> graph_has_gen g x -> graph_has_gen (lgraph_copy_v g v to) x.
-Proof. unfold graph_has_gen. intros. simpl. rewrite cvmgil_length; assumption. Qed.
+    graph_has_gen g to -> graph_has_gen g x <-> graph_has_gen (lgraph_copy_v g v to) x.
+Proof. unfold graph_has_gen. intros. simpl. rewrite cvmgil_length; intuition. Qed.
 
 Lemma lmc_graph_has_v: forall g old new x,
     graph_has_v g x <-> graph_has_v (lgraph_mark_copied g old new) x.
@@ -2016,7 +2044,9 @@ Lemma lcv_outlier_compatible: forall g outlier v to,
     outlier_compatible (lgraph_copy_v g v to) outlier.
 Proof. intros. apply lmc_outlier_compatible, lacv_outlier_compatible; assumption. Qed.
 
-Lemma utia_estc: forall g t_info from to index v (H : (0 <= index < MAX_ARGS)%Z),
+Local Open Scope Z_scope.
+
+Lemma utia_estc: forall g t_info from to index v (H : 0 <= index < MAX_ARGS),
     enough_space_to_copy g t_info from to ->
     enough_space_to_copy g (update_thread_info_arg t_info index v H) from to.
 Proof.
@@ -2049,8 +2079,8 @@ Qed.
 
 Lemma vsa_fold_left:
   forall (g : LGraph) (gen : nat) (l : list nat) (z1 z2 : Z),
-    fold_left (vertex_size_accum g gen) l (z2 + z1)%Z =
-    (fold_left (vertex_size_accum g gen) l z2 + z1)%Z.
+    fold_left (vertex_size_accum g gen) l (z2 + z1) =
+    fold_left (vertex_size_accum g gen) l z2 + z1.
 Proof.
   intros. revert z1 z2. induction l; intros; simpl. 1: reflexivity.
   rewrite <- IHl. f_equal. unfold vertex_size_accum. omega.
@@ -2059,8 +2089,8 @@ Qed.
 Lemma lmc_unmarked_gen_size: forall g v v',
     graph_has_v g v -> raw_mark (vlabel g v) = false ->
     unmarked_gen_size g (vgeneration v) =
-    (unmarked_gen_size (lgraph_mark_copied g v v') (vgeneration v) +
-     vertex_size g v)%Z.
+    unmarked_gen_size (lgraph_mark_copied g v v') (vgeneration v) +
+     vertex_size g v.
 Proof.
   intros. unfold unmarked_gen_size. unfold nth_gen. simpl glabel.
   destruct v as [gen index]. simpl vgeneration.
@@ -2090,10 +2120,10 @@ Qed.
 
 Lemma cti_rest_gen_size:
   forall t_info to s
-         (Hi : (0 <= Z.of_nat to < Zlength (spaces (ti_heap t_info)))%Z)
+         (Hi : 0 <= Z.of_nat to < Zlength (spaces (ti_heap t_info)))
          (Hh : has_space (Znth (Z.of_nat to) (spaces (ti_heap t_info))) s),
   rest_gen_size t_info to =
-  (rest_gen_size (cut_thread_info t_info (Z.of_nat to) s Hi Hh) to + s)%Z.
+  rest_gen_size (cut_thread_info t_info (Z.of_nat to) s Hi Hh) to + s.
 Proof.
   intros. unfold rest_gen_size. rewrite !nth_space_Znth. unfold cut_thread_info. simpl.
   rewrite upd_Znth_same by assumption. simpl. omega.
@@ -2101,7 +2131,7 @@ Qed.
 
 Lemma lmc_estc:
   forall (g : LGraph) (t_info : thread_info) (v v': VType) (to : nat)
-         (Hi : (0 <= Z.of_nat to < Zlength (spaces (ti_heap t_info)))%Z),
+         (Hi : 0 <= Z.of_nat to < Zlength (spaces (ti_heap t_info))),
     enough_space_to_copy g t_info (vgeneration v) to ->
     graph_has_v g v -> raw_mark (vlabel g v) = false ->
     forall
@@ -2118,9 +2148,9 @@ Qed.
 
 Lemma forward_estc: forall
     g t_info v to index uv
-    (Hi : (0 <= Z.of_nat to < Zlength (spaces (ti_heap t_info)))%Z)
+    (Hi : 0 <= Z.of_nat to < Zlength (spaces (ti_heap t_info)))
     (Hh : has_space (Znth (Z.of_nat to) (spaces (ti_heap t_info))) (vertex_size g v))
-    (Hm : (0 <= index < MAX_ARGS)%Z),
+    (Hm : 0 <= index < MAX_ARGS),
     vgeneration v <> to -> graph_has_gen g to ->
     graph_has_v g v -> raw_mark (vlabel g v) = false ->
     enough_space_to_copy g t_info (vgeneration v) to ->
@@ -2149,9 +2179,9 @@ Qed.
 
 Lemma lcv_forward_condition: forall
     g t_info v to index uv
-    (Hi : (0 <= Z.of_nat to < Zlength (spaces (ti_heap t_info)))%Z)
+    (Hi : 0 <= Z.of_nat to < Zlength (spaces (ti_heap t_info)))
     (Hh : has_space (Znth (Z.of_nat to) (spaces (ti_heap t_info))) (vertex_size g v))
-    (Hm : (0 <= index < MAX_ARGS)%Z),
+    (Hm : 0 <= index < MAX_ARGS),
     vgeneration v <> to -> graph_has_v g v -> raw_mark (vlabel g v) = false ->
     forward_condition g t_info (vgeneration v) to ->
     forward_condition
@@ -2198,10 +2228,11 @@ Proof.
   rewrite lmc_vertex_address, lacv_vertex_address_old; [reflexivity | assumption..].
 Qed.
 
-Lemma lcv_fun_thread_arg_compatible: forall g t_info f_info roots z v to i s
-    (Hi : (0 <= i < Zlength (spaces (ti_heap t_info)))%Z)
+Lemma lcv_fun_thread_arg_compatible: forall
+    g t_info f_info roots z v to i s
+    (Hi : 0 <= i < Zlength (spaces (ti_heap t_info)))
     (Hh : has_space (Znth i (spaces (ti_heap t_info))) s)
-    (Hm : (0 <= Znth z (live_roots_indices f_info) < MAX_ARGS)%Z),
+    (Hm : 0 <= Znth z (live_roots_indices f_info) < MAX_ARGS),
     graph_has_gen g to -> Forall (graph_has_v g) (filter_sum_right roots) ->
     fun_thread_arg_compatible g t_info f_info roots ->
     fun_thread_arg_compatible
@@ -2219,16 +2250,166 @@ Proof.
   apply H0. rewrite <- filter_sum_right_In_iff. assumption.
 Qed.
 
+Lemma upd_Znth_unchanged: forall {A : Type} {d : Inhabitant A} (i : Z) (l : list A),
+    0 <= i < Zlength l -> upd_Znth i l (Znth i l) = l.
+Proof.
+  intros. assert (Zlength (upd_Znth i l (Znth i l)) = Zlength l) by
+      (rewrite upd_Znth_Zlength; [reflexivity | assumption]). rewrite Znth_list_eq.
+  split. 1: assumption. intros. rewrite H0 in H1. destruct (Z.eq_dec j i).
+  - subst j. rewrite upd_Znth_same; [reflexivity | assumption].
+  - rewrite upd_Znth_diff; [reflexivity | assumption..].
+Qed.
+
+Instance share_inhabitant: Inhabitant share := emptyshare.
+
+Lemma lcv_nth_gen: forall g v to n,
+    n <> to -> graph_has_gen g to -> nth_gen (lgraph_copy_v g v to) n = nth_gen g n.
+Proof.
+  intros. unfold lgraph_copy_v, nth_gen. simpl.
+  rewrite cvmgil_not_eq; [reflexivity | assumption..].
+Qed.
+
+Lemma lcv_vertex_size_new: forall (g : LGraph) (v : VType) (to : nat),
+    vertex_size (lgraph_copy_v g v to) (new_copied_v g to) = vertex_size g v.
+Proof.
+  intros. unfold vertex_size, lgraph_copy_v. simpl.
+  unfold update_copied_old_vlabel, update_vlabel. if_tac.
+  - simpl. unfold update_copied_new_vlabel, update_vlabel. if_tac; reflexivity.
+  - rewrite lacv_vlabel_new. reflexivity.
+Qed.
+
+Lemma lcv_vertex_size_old: forall (g : LGraph) (v : VType) (to : nat) x,
+        graph_has_gen g to -> graph_has_v g x ->
+        vertex_size (lgraph_copy_v g v to) x = vertex_size g x.
+Proof.
+  intros. unfold vertex_size, lgraph_copy_v. simpl.
+  unfold update_copied_old_vlabel, update_vlabel. if_tac.
+  - simpl. unfold update_copied_new_vlabel, update_vlabel. unfold equiv in H1. subst.
+    if_tac; reflexivity.
+  - rewrite lacv_vlabel_old. 1: reflexivity. apply graph_has_v_not_eq. assumption.
+Qed.
+
+Lemma lcv_pvs_same: forall g v to,
+    graph_has_gen g to ->
+    previous_vertices_size (lgraph_copy_v g v to) to
+                           (number_of_vertices (nth_gen (lgraph_copy_v g v to) to)) =
+    previous_vertices_size g to (number_of_vertices (nth_gen g to)) + vertex_size g v.
+Proof.
+  intros. unfold nth_gen. simpl. rewrite cvmgil_eq by assumption. simpl.
+  remember (number_of_vertices (nth to (g_gen (glabel g)) null_info)).
+  replace (n + 1)%nat with (S n) by omega. rewrite pvs_S. f_equal.
+  - unfold previous_vertices_size. apply fold_left_ext. intros.
+    unfold vertex_size_accum. f_equal. apply lcv_vertex_size_old. 1: assumption.
+    rewrite nat_inc_list_In_iff in H0; subst; split; simpl; assumption.
+  - assert ((to, n) = new_copied_v g to) by
+        (unfold new_copied_v, nth_gen; subst n; reflexivity). rewrite H0.
+    apply lcv_vertex_size_new.
+Qed.
+
+Lemma lcv_pvs_old: forall g v to gen,
+    gen <> to -> graph_has_gen g to -> graph_has_gen g gen ->
+    previous_vertices_size (lgraph_copy_v g v to) gen
+                           (number_of_vertices (nth_gen (lgraph_copy_v g v to) gen)) =
+    previous_vertices_size g gen (number_of_vertices (nth_gen g gen)).
+Proof.
+  intros. unfold nth_gen. simpl. rewrite cvmgil_not_eq by assumption.
+  remember (number_of_vertices (nth gen (g_gen (glabel g)) null_info)).
+  unfold previous_vertices_size. apply fold_left_ext. intros.
+  unfold vertex_size_accum. f_equal. apply lcv_vertex_size_old. 1: assumption.
+  rewrite nat_inc_list_In_iff in H2. subst. split; simpl; assumption.
+Qed.
+
+Lemma lcv_graph_thread_info_compatible: forall
+    g t_info v to index adr
+    (Hi : 0 <= Z.of_nat to < Zlength (spaces (ti_heap t_info)))
+    (Hh : has_space (Znth (Z.of_nat to) (spaces (ti_heap t_info))) (vertex_size g v))
+    (Hm : 0 <= index < MAX_ARGS),
+    graph_has_gen g to ->
+    graph_thread_info_compatible g t_info ->
+    graph_thread_info_compatible 
+      (lgraph_copy_v g v to)
+      (update_thread_info_arg (cut_thread_info t_info (Z.of_nat to) (vertex_size g v)
+                                               Hi Hh) index adr Hm).
+Proof.
+  unfold graph_thread_info_compatible. intros. destruct H0 as [? [? ?]].
+  assert (map space_start (spaces (ti_heap t_info)) =
+          map space_start
+              (upd_Znth (Z.of_nat to) (spaces (ti_heap t_info))
+                        (cut_space
+                           (Znth (Z.of_nat to) (spaces (ti_heap t_info)))
+                           (vertex_size g v) Hh))). {
+    rewrite <- upd_Znth_map. simpl. rewrite <- Znth_map by assumption.
+    rewrite upd_Znth_unchanged; [reflexivity | rewrite Zlength_map; assumption]. }
+  split; [|split]; [|simpl; rewrite cvmgil_length by assumption..].
+  - rewrite gsc_iff in *; simpl. 2: assumption.
+    + intros. unfold nth_space. simpl.
+      rewrite <- lcv_graph_has_gen in H4 by assumption. specialize (H0 _ H4).
+      simpl in H0. destruct H0 as [? [? ?]]. split; [|split].
+      * clear -H0 H3 H. rewrite <- map_nth, <- H3, map_nth. clear H3.
+        unfold nth_gen, nth_space in *. simpl. destruct (Nat.eq_dec gen to).
+        -- subst gen. rewrite cvmgil_eq; simpl; assumption.
+        -- rewrite cvmgil_not_eq; assumption.
+      * assert (map space_sh
+                    (upd_Znth (Z.of_nat to) (spaces (ti_heap t_info))
+                              (cut_space
+                                 (Znth (Z.of_nat to) (spaces (ti_heap t_info)))
+                                 (vertex_size g v) Hh)) =
+                map space_sh (spaces (ti_heap t_info))). {
+          rewrite <- upd_Znth_map. simpl. rewrite <- Znth_map by assumption.
+          rewrite upd_Znth_unchanged; [reflexivity|rewrite Zlength_map; assumption]. }
+        rewrite <- map_nth, H7, map_nth. clear -H5 H. unfold nth_gen, nth_space in *.
+        simpl. destruct (Nat.eq_dec gen to).
+        -- subst gen. rewrite cvmgil_eq; simpl; assumption.
+        -- rewrite cvmgil_not_eq; assumption.
+      * assert (0 <= Z.of_nat gen < Zlength (spaces (ti_heap t_info))). {
+          split. 1: apply Nat2Z.is_nonneg. rewrite Zlength_correct.
+          apply inj_lt. red in H4. omega. }       
+        rewrite <- (Nat2Z.id gen) at 3. rewrite nth_Znth.
+        2: rewrite upd_Znth_Zlength; assumption. destruct (Nat.eq_dec gen to).
+        -- subst gen. rewrite upd_Znth_same by assumption. simpl.
+           rewrite lcv_pvs_same by assumption.
+           rewrite H6, nth_space_Znth. reflexivity.
+        -- assert (Z.of_nat gen <> Z.of_nat to) by
+              (intro; apply n, Nat2Z.inj; assumption).
+           rewrite upd_Znth_diff, <- nth_space_Znth, lcv_pvs_old; assumption.
+    + rewrite cvmgil_length, <- !ZtoNat_Zlength, upd_Znth_Zlength, !ZtoNat_Zlength;
+        assumption.
+  - intros. rewrite <- H3. assumption.
+  - rewrite <- !ZtoNat_Zlength, upd_Znth_Zlength, !ZtoNat_Zlength; assumption.
+Qed.
+
+Lemma lcv_super_compatible: forall
+    g t_info roots f_info outlier to v z
+    (Hi : 0 <= Z.of_nat to < Zlength (spaces (ti_heap t_info)))
+    (Hh : has_space (Znth (Z.of_nat to) (spaces (ti_heap t_info))) (vertex_size g v))
+    (Hm : 0 <= Znth z (live_roots_indices f_info) < MAX_ARGS),
+    graph_has_gen g to -> graph_has_v g v ->
+    super_compatible (g, t_info, roots) f_info outlier ->
+    super_compatible
+      (lgraph_copy_v g v to,
+       update_thread_info_arg
+         (cut_thread_info t_info (Z.of_nat to) (vertex_size g v) Hi Hh)
+         (Znth z (live_roots_indices f_info))
+         (vertex_address g (new_copied_v g to)) Hm,
+       upd_bunch z f_info roots (inr (new_copied_v g to))) f_info outlier.
+Proof.
+  intros. destruct H1 as [? [? [? ?]]]. split; [|split; [|split]].
+  - apply lcv_graph_thread_info_compatible; assumption.
+  - destruct H3. apply lcv_fun_thread_arg_compatible; assumption.
+  - apply lcv_roots_compatible; assumption.
+  - apply lcv_outlier_compatible; assumption.
+Qed.
+
 (*
   Hi : 0 <= Z.of_nat to < Zlength (spaces (ti_heap t_info))
   Hh : has_space (Znth (Z.of_nat to) (spaces (ti_heap t_info))) (vertex_size g v)
-  H16 : 0 <= Znth z (live_roots_indices f_info) < MAX_ARGS
+  Hm : 0 <= Znth z (live_roots_indices f_info) < MAX_ARGS
   Heqg' : g' = lgraph_copy_v g v to
   Heqt_info' : t_info' =
                update_thread_info_arg
                  (cut_thread_info t_info (Z.of_nat to) (vertex_size g v) Hi Hh)
                  (Znth z (live_roots_indices f_info))
-                 (vertex_address g (new_copied_v g to)) H16
+                 (vertex_address g (new_copied_v g to)) Hm
   Heqroots' : roots' = upd_bunch z f_info roots (inr (new_copied_v g to))
 
   graph_thread_info_compatible g' t_info' /\
