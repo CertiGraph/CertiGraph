@@ -2400,6 +2400,42 @@ Proof.
   - apply lcv_outlier_compatible; assumption.
 Qed.
 
+Lemma lmc_gen_start: forall g old new n,
+    gen_start (lgraph_mark_copied g old new) n = gen_start g n.
+Proof.
+  intros. unfold gen_start. do 2 if_tac.
+  - unfold nth_gen. simpl. reflexivity.
+  - unfold graph_has_gen in *. simpl in *. contradiction.
+  - unfold graph_has_gen in *. simpl in *. contradiction.
+  - reflexivity.
+Qed.
+
+Lemma lcv_gen_start: forall g v to n,
+    graph_has_gen g to -> gen_start (lgraph_copy_v g v to) n = gen_start g n.
+Proof.
+  intros. unfold lgraph_copy_v.
+  rewrite lmc_gen_start, lacv_gen_start; [reflexivity | assumption].
+Qed.
+
+Lemma utiacti_gen_size: forall t_info i1 i2 s ad n
+    (Hi : 0 <= i1 < Zlength (spaces (ti_heap t_info)))
+    (Hh : has_space (Znth i1 (spaces (ti_heap t_info))) s)
+    (Hm : 0 <= i2 < MAX_ARGS),
+    0 <= Z.of_nat n < Zlength (spaces (ti_heap t_info)) ->
+    gen_size (update_thread_info_arg (cut_thread_info t_info i1 s Hi Hh) i2 ad Hm) n =
+    gen_size t_info n.
+Proof.
+  intros. unfold gen_size, nth_space. simpl. rewrite <- (Nat2Z.id n) at 1.
+  rewrite nth_Znth.
+  - destruct (Z.eq_dec (Z.of_nat n) i1).
+    + rewrite <- (Nat2Z.id n) at 2. rewrite nth_Znth by assumption. rewrite e.
+      rewrite upd_Znth_same by assumption. simpl. reflexivity.
+    + rewrite upd_Znth_diff; [|assumption..]. rewrite <- (Nat2Z.id n) at 2.
+      rewrite nth_Znth by assumption. reflexivity.
+  - rewrite upd_Znth_Zlength; assumption.
+Qed.
+
+
 (*
   Hi : 0 <= Z.of_nat to < Zlength (spaces (ti_heap t_info))
   Hh : has_space (Znth (Z.of_nat to) (spaces (ti_heap t_info))) (vertex_size g v)
