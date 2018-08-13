@@ -79,7 +79,7 @@ Lemma body_forward: semax_body Vprog Gprog f_forward forward_spec.
 Proof.
   start_function.
   destruct H as [? [? [? ?]]]. destruct H1 as [? [? [? [? ?]]]].
-  unfold forward_p_address. destruct forward_p.
+  unfold limit_address, next_address, forward_p_address. destruct forward_p.
   - unfold thread_info_rep. Intros.
     assert (Zlength roots = Zlength (live_roots_indices f_info)). {
       rewrite <- (Zlength_map _ _ (flip Znth (ti_args t_info))), <- H5, Zlength_map.
@@ -308,6 +308,9 @@ Proof.
            remember (field_address thread_info_type
                                    [ArraySubsc (Znth z (live_roots_indices f_info));
                                     StructField _args] ti) as p_addr.
+           remember (field_address heap_type
+                                   [StructField _next; ArraySubsc (Z.of_nat to);
+                                    StructField _spaces] (ti_heap_p t_info)) as n_addr.
            forward_for_simple_bound
              n
              (EX i: Z,
@@ -315,6 +318,9 @@ Proof.
               LOCAL (temp _new nv;
                      temp _sz (vint n);
                      temp _v (vertex_address g v);
+                     temp _from_start fp;
+                     temp _from_limit (offset_val fn fp);
+                     temp _next n_addr;
                      temp _p p_addr;
                      temp _depth (vint depth))
               SEP (vertex_rep shv g v;
@@ -333,7 +339,7 @@ Proof.
            ++ unfold vertex_rep, vertex_at. Intros.
               rewrite fields_eq_length, <- Heqn. forward.
               ** entailer!. pose proof (mfv_all_is_ptr_or_int _ _ H10 H11 H20).
-                 rewrite Forall_forall in H45. apply H45, Znth_In.
+                 rewrite Forall_forall in H47. apply H47, Znth_In.
                  rewrite fields_eq_length. assumption.
               ** rewrite (data_at__tarray_value _ _ 1) by omega. Intros.
                  rewrite data_at__singleton_array_eq.
@@ -417,7 +423,7 @@ Proof.
                            field_address int_or_ptr_type [] (vertex_address g' v)). {
                 clear. entailer!. unfold field_address. rewrite if_true by assumption.
                 simpl. rewrite isptr_offset_val_zero. 1: reflexivity.
-                destruct H5. assumption. } forward. clear H40.
+                destruct H7. assumption. } forward. clear H40.
               sep_apply (field_at_data_at_cancel
                            sh' int_or_ptr_type nv (vertex_address g' v)).
               gather_SEP 1 0 3. rewrite H32. subst l'.
@@ -487,5 +493,5 @@ Proof.
     rewrite <- fields_eq_length. gather_SEP 0 1. replace_SEP 0 (vertex_rep shv g v).
     1: unfold vertex_rep, vertex_at; entailer!. subst shv.
     unlocalize [graph_rep g]. 1: apply graph_vertex_ramif_stable; assumption. thaw FR.
-    forward_call (Znth n (make_fields_vals g v)).
+
 Abort.

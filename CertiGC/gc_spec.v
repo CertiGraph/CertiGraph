@@ -150,6 +150,14 @@ Definition forward_p_address
   | inr (v, n) => offset_val (WORD_SIZE * n) (vertex_address g v)
   end.
 
+Definition limit_address g t_info from :=
+  offset_val (WORD_SIZE * gen_size t_info from) (gen_start g from).
+
+Definition next_address t_info to :=
+  field_address heap_type
+                [StructField _next;
+                   ArraySubsc (Z.of_nat to); StructField _spaces] (ti_heap_p t_info).
+
 Definition forward_spec :=
   DECLARE _forward
   WITH rsh: share, sh: share, gv: globals, fi: val, ti: val,
@@ -169,12 +177,8 @@ Definition forward_spec :=
           0 <= depth <= Int.max_signed;
           from <> to)
     LOCAL (temp _from_start (gen_start g from);
-           temp _from_limit
-                (offset_val (WORD_SIZE * gen_size t_info from)
-                            (gen_start g from));
-           temp _next (field_address heap_type
-              [StructField _next;
-                 ArraySubsc (Z.of_nat to); StructField _spaces] (ti_heap_p t_info));
+           temp _from_limit (limit_address g t_info from);
+           temp _next (next_address t_info to);
            temp _p (forward_p_address forward_p ti f_info g);
            temp _depth (Vint (Int.repr depth)))
     SEP (all_string_constants rsh gv;
