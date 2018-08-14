@@ -456,8 +456,8 @@ Definition outlier_compatible (g: LGraph) (outlier: outlier_t): Prop :=
 
 Definition copy_compatible (g: LGraph): Prop :=
   forall v, graph_has_v g v -> (vlabel g v).(raw_mark) = true ->
-            graph_has_v g (vlabel g v).(copied_vertex).
-
+            graph_has_v g (vlabel g v).(copied_vertex) /\
+            vgeneration v <> vgeneration (vlabel g v).(copied_vertex).
 Definition
   super_compatible
   (g_ti_r: LGraph * thread_info * roots_t) (fi: fun_info) (out: outlier_t) : Prop :=
@@ -892,6 +892,21 @@ Definition field2forward (f: field_t): forward_t :=
   | inr e => inr e
   end.
 
+Definition forward_p_type: Type := Z + (VType * Z).
+
+Definition forward_p2forward_t
+           (p: forward_p_type) (roots: roots_t) (g: LGraph): forward_t :=
+  match p with
+  | inl root_index => root2forward (Znth root_index roots)
+  | inr (v, n) => if (vlabel g v).(raw_mark) && (n =? 0)
+                  then (inl (inr (vlabel g v).(copied_vertex)))
+                  else field2forward (Znth n (make_fields g v))
+  end.
+
+Definition vertex_pos_pairs (g: LGraph) (old new: VType) : list (forward_p_type) :=
+  map (fun x => inr (new, Z.of_nat x))
+      (nat_inc_list (length (raw_fields (vlabel g new)))).
+
 Inductive forward_relation (from to: nat):
   nat -> forward_t -> LGraph -> LGraph -> Prop :=
 | fr_z: forall depth z g, forward_relation from to depth (inl (inl (inl z))) g g
@@ -907,7 +922,7 @@ Inductive forward_relation (from to: nat):
 | fr_v_in_not_forwarded_Sn: forall depth v g g',
     vgeneration v = from -> (vlabel g v).(raw_mark) = false ->
     let new_g := lgraph_copy_v g v to in
-    forward_loop from to depth (make_fields new_g (new_copied_v g to)) new_g g' ->
+    forward_loop from to depth (vertex_pos_pairs g v (new_copied_v g to)) new_g g' ->
     forward_relation from to (S depth) (inl (inr v)) g g'
 | fr_e_not_to: forall depth e (g: LGraph),
     vgeneration (dst g e) <> from -> forward_relation from to depth (inr e) g g
@@ -924,13 +939,14 @@ Inductive forward_relation (from to: nat):
     vgeneration (dst g e) = from -> (vlabel g (dst g e)).(raw_mark) = false ->
     let new_g := labeledgraph_gen_dst (lgraph_copy_v g (dst g e) to) e
                                       (new_copied_v g to) in
-    forward_loop from to depth (make_fields new_g (new_copied_v g to)) new_g g' ->
+    forward_loop from to depth
+                 (vertex_pos_pairs g (dst g e) (new_copied_v g to)) new_g g' ->
     forward_relation from to (S depth) (inr e) g g'
 with
-forward_loop (from to: nat): nat -> list field_t -> LGraph -> LGraph -> Prop :=
+forward_loop (from to: nat): nat -> list forward_p_type -> LGraph -> LGraph -> Prop :=
 | fl_nil: forall depth g, forward_loop from to depth nil g g
 | fl_cons: forall depth g1 g2 g3 f fl,
-    forward_relation from to depth (field2forward f) g1 g2 ->
+    forward_relation from to depth (forward_p2forward_t f nil g1) g1 g2 ->
     forward_loop from to depth fl g2 g3 -> forward_loop from to depth (f :: fl) g1 g3.
 
 (* ugly, plus we need additional proofs that we won't actully hit the 0 branches. I would have made it with Option but even that's unnecessary in the end. *)
@@ -940,25 +956,6 @@ Definition val2nat (g: LGraph) (gen: nat) (v: val) : nat :=
   | Vptr b1 o1, Vptr b2 o2 =>
       if (eq_dec b1 b2) then Z.to_nat (Ptrofs.unsigned o2 - Ptrofs.unsigned o1) else 0
   | _,_ => 0
-  end.
-
-Local Close Scope Z_scope.
-
-Inductive do_scan_relation (from to depth scan next: nat) (g g': LGraph) : Prop :=
-  | DSR : scan < next -> forall g_i,
-            forward_loop from to depth (make_fields g (to, scan)) g g_i ->
-            do_scan_relation from to depth (S scan) (number_of_vertices (nth_gen g_i to)) g_i g' ->
-            do_scan_relation from to depth scan next g g'.
-
-Local Open Scope Z_scope.
-
-Definition forward_p_type: Type := Z + (VType * Z).
-
-Definition forward_p2forward_t
-           (p: forward_p_type) (roots: roots_t) (g: LGraph): forward_t :=
-  match p with
-  | inl root_index => root2forward (Znth root_index roots)
-  | inr (v, n) => field2forward (Znth n (make_fields g v))
   end.
 
 Definition forward_p_compatible
@@ -1305,7 +1302,7 @@ Proof.
       rewrite combine_nth_lt; [|rewrite H0; omega | omega].
       rewrite combine_nth by (subst l0; rewrite nat_inc_list_length; reflexivity).
       rewrite Heql0. rewrite nat_inc_list_nth by assumption.
-      rewrite Heql. unfold nth_gen, nth_space. rewrite Heql1. reflexivity. }    
+      rewrite Heql. unfold nth_gen, nth_space. rewrite Heql1. reflexivity. }
     split; intros.
     + apply (In_nth (combine (combine l0 l) l1) x (O, null_info, null_space)) in H3.
       destruct H3 as [gen [? ?]]. exists gen. rewrite H1 in H3.
@@ -1906,16 +1903,16 @@ Proof.
 Qed.
 
 Lemma lmc_copy_compatible: forall g old new,
-    graph_has_v g new -> copy_compatible g ->
+    graph_has_v g new -> vgeneration old <> vgeneration new -> copy_compatible g ->
     copy_compatible (lgraph_mark_copied g old new).
 Proof.
   repeat intro. destruct (V_EqDec old v).
   - compute in e. subst old. rewrite <- lmc_graph_has_v. simpl.
     unfold update_copied_old_vlabel, update_vlabel. rewrite if_true by reflexivity.
-    simpl. assumption.
+    simpl. split; assumption.
   - assert (v <> old) by intuition. clear c.
     rewrite lmc_vlabel_not_eq, <- lmc_graph_has_v in * by assumption.
-    apply H0; assumption.
+    apply H1; assumption.
 Qed.
 
 Lemma lacv_graph_has_v_inv: forall (g : LGraph) (v : VType) (to : nat) (x : VType),
@@ -1938,24 +1935,26 @@ Proof.
 Qed.
 
 Lemma lacv_copy_compatible: forall (g : LGraph) (v : VType) (to : nat),
-    graph_has_v g v -> graph_has_gen g to -> copy_compatible g ->
-    copy_compatible (lgraph_add_copied_v g v to).
+    graph_has_v g v -> raw_mark (vlabel g v) = false -> graph_has_gen g to ->
+    copy_compatible g -> copy_compatible (lgraph_add_copied_v g v to).
 Proof.
   repeat intro. destruct (V_EqDec v0 (new_copied_v g to)).
   - unfold equiv in e. subst v0. rewrite lacv_vlabel_new in *.
-    apply lacv_graph_has_v_old; [|apply H1]; assumption.
+    rewrite H4 in H0. inversion H0.
   - assert (v0 <> (new_copied_v g to)) by intuition. clear c.
     rewrite lacv_vlabel_old in * by assumption.
-    apply lacv_graph_has_v_old; [|apply H1]; try assumption.
-    apply lacv_graph_has_v_inv in H2. 2: assumption. destruct H2. 1: assumption.
-    contradiction.
+    assert (graph_has_v g v0). {
+      apply lacv_graph_has_v_inv in H3. 2: assumption. destruct H3. 1: assumption.
+      contradiction. } split.
+    + apply lacv_graph_has_v_old; [|apply H2]; assumption.
+    + apply H2; assumption.
 Qed.
 
 Lemma lcv_copy_compatible: forall g v to,
-    graph_has_v g v -> graph_has_gen g to -> copy_compatible g ->
-    copy_compatible (lgraph_copy_v g v to).
+    graph_has_v g v -> raw_mark (vlabel g v) = false -> graph_has_gen g to ->
+    vgeneration v <> to -> copy_compatible g -> copy_compatible (lgraph_copy_v g v to).
 Proof.
-  intros. unfold lgraph_copy_v. apply lmc_copy_compatible.
+  intros. unfold lgraph_copy_v. apply lmc_copy_compatible. 2: simpl; assumption.
   - apply lacv_graph_has_v_new. assumption.
   - apply lacv_copy_compatible; assumption.
 Qed.
@@ -2326,7 +2325,7 @@ Lemma lcv_graph_thread_info_compatible: forall
     (Hm : 0 <= index < MAX_ARGS),
     graph_has_gen g to ->
     graph_thread_info_compatible g t_info ->
-    graph_thread_info_compatible 
+    graph_thread_info_compatible
       (lgraph_copy_v g v to)
       (update_thread_info_arg (cut_thread_info t_info (Z.of_nat to) (vertex_size g v)
                                                Hi Hh) index adr Hm).
@@ -2363,7 +2362,7 @@ Proof.
         -- rewrite cvmgil_not_eq; assumption.
       * assert (0 <= Z.of_nat gen < Zlength (spaces (ti_heap t_info))). {
           split. 1: apply Nat2Z.is_nonneg. rewrite Zlength_correct.
-          apply inj_lt. red in H4. omega. }       
+          apply inj_lt. red in H4. omega. }
         rewrite <- (Nat2Z.id gen) at 3. rewrite nth_Znth.
         2: rewrite upd_Znth_Zlength; assumption. destruct (Nat.eq_dec gen to).
         -- subst gen. rewrite upd_Znth_same by assumption. simpl.
@@ -2435,6 +2434,13 @@ Proof.
   - rewrite upd_Znth_Zlength; assumption.
 Qed.
 
+Definition parameter_relation (g g': LGraph) (t_info t_info': thread_info) from :=
+  gen_start g from = gen_start g' from /\
+  gen_size t_info from = gen_size t_info' from /\
+  ti_heap_p t_info = ti_heap_p t_info'.
+
+Lemma pr_id: forall g t_info from, parameter_relation g g t_info t_info from.
+Proof. intros. unfold parameter_relation. intuition. Qed.
 
 (*
   Hi : 0 <= Z.of_nat to < Zlength (spaces (ti_heap t_info))

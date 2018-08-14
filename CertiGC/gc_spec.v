@@ -192,7 +192,8 @@ Definition forward_spec :=
           roots' = forwarded_roots from to forward_p g roots f_info;
           forward_relation from to (Z.to_nat depth)
                            (forward_p2forward_t forward_p roots g) g g';
-          forward_condition g' t_info' from to)
+          forward_condition g' t_info' from to;
+          parameter_relation g g' t_info t_info' from)
     LOCAL ()
     SEP (all_string_constants rsh gv;
          fun_info_rep rsh f_info fi;
@@ -257,8 +258,7 @@ Definition do_scan_spec :=
          graph_rep g)
     POST [tvoid]
     EX g': LGraph,
-       PROP (do_scan_relation from to (Z.to_nat depth) (val2nat g to scan) (val2nat g to next) g g';
-             graph_thread_info_compatible g' t_info;
+       PROP (graph_thread_info_compatible g' t_info;
              outlier_compatible g' outlier;
              graph_has_gen g' from; graph_has_gen g' to;
              copy_compatible g')
