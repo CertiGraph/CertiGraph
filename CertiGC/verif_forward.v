@@ -118,7 +118,7 @@ Proof.
     + unfold odd_Z2val. apply semax_if_seq. forward_if.
       1: exfalso; apply H21'; reflexivity.
       forward. Exists g t_info roots. rewrite <- Heqroot. entailer!.
-      * simpl. split; [constructor | split; [hnf; intuition | apply pr_id]].
+      * simpl. split; [constructor | split; [hnf; intuition | apply tir_id]].
       * unfold thread_info_rep. entailer!.
     + unfold GC_Pointer2val. destruct g0. apply semax_if_seq. forward_if.
       2: exfalso; apply Int.one_not_zero in H21; assumption.
@@ -149,7 +149,7 @@ Proof.
            ++ unfold roots_compatible. split; assumption.
            ++ simpl; constructor.
            ++ hnf; intuition.
-           ++ apply pr_id.
+           ++ apply tir_id.
         -- unfold thread_info_rep. entailer!.
     + specialize (H15 _ H14). destruct (vertex_address g v) eqn:? ; try contradiction.
       apply semax_if_seq. forward_if.
@@ -459,23 +459,19 @@ Proof.
               assert (super_compatible (g', t_info', roots') f_info outlier). {
                 subst g' t_info' roots' lz. rewrite H32, H34.
                 apply lcv_super_compatible; try assumption. red. intuition. }
-              assert (parameter_relation g g' t_info t_info' from). {
-                split; [|split].
-                - subst g'. rewrite lcv_gen_start; [reflexivity | assumption].
-                - subst t_info'. rewrite utiacti_gen_size. 1: reflexivity.
-                  clear -H H8. destruct H as [_ [_ ?]]. 
-                  rewrite Zlength_correct. split. 1: apply Nat2Z.is_nonneg.
-                  apply inj_lt. red in H8. omega.
-                - subst t_info'. reflexivity. }
+              assert (thread_info_relation t_info t_info' from). {
+                subst t_info'. split; [|reflexivity]. rewrite utiacti_gen_size.
+                1: reflexivity. clear -H H8. destruct H as [_ [_ ?]].
+                rewrite Zlength_correct. split. 1: apply Nat2Z.is_nonneg.
+                apply inj_lt. red in H8. omega. }
               apply semax_if_seq. forward_if.
-              ** destruct H43 as [? [? ?]].
-                 replace fp with (gen_start g' from) by
-                     (subst fp; rewrite H43; reflexivity).
+              ** destruct H43. replace fp with (gen_start g' from) by
+                     (subst fp g'; apply lcv_gen_start; assumption).
                  replace (offset_val fn (gen_start g' from)) with
                      (limit_address g' t_info' from) by
-                     (subst fn gn; rewrite H45; reflexivity).
+                     (subst fn gn; rewrite H43; reflexivity).
                  replace n_addr with (next_address t_info' to) by
-                     (subst n_addr; rewrite H46; reflexivity).
+                     (subst n_addr; rewrite H45; reflexivity).
                  forward_for_simple_bound
                    n
                    (EX i: Z, EX g3: LGraph, EX t_info3: thread_info,
@@ -485,7 +481,7 @@ Proof.
                             (sublist 0 i (vertex_pos_pairs g v (new_copied_v g to)))
                             g' g3;
                           forward_condition g3 t_info3 from to;
-                          parameter_relation g' g3 t_info' t_info3 from)
+                          thread_info_relation t_info' t_info3 from)
                     LOCAL (temp _new nv;
                            temp _sz (vint n);
                            temp _from_start (gen_start g3 from);
@@ -497,24 +493,30 @@ Proof.
                          outlier_rep outlier;
                          graph_rep g3;
                          thread_info_rep sh t_info3 ti))%assert.
-                 --- subst n. pose proof (raw_fields_range (vlabel g v)). clear -H47.
-                     destruct H47. rewrite Z.le_lteq. left.
+                 --- subst n. pose proof (raw_fields_range (vlabel g v)). clear -H46.
+                     destruct H46. rewrite Z.le_lteq. left.
                      apply Z.lt_le_trans with (two_power_nat 22). 1: assumption.
                      compute. intro. inversion H1.
                  --- Exists g' t_info'. autorewrite with sublist.
                      assert (forward_loop from to (Z.to_nat (depth - 1)) [] g' g') by
-                         constructor. unfold parameter_relation. entailer!.
+                         constructor. unfold thread_info_relation. entailer!.
                  --- change (Tpointer tvoid {| attr_volatile := false;
                                                attr_alignas := Some 2%N |})
-                            with (int_or_ptr_type).
+                            with (int_or_ptr_type). Intros.
                      forward_call (rsh, sh, gv, fi, ti, g3, t_info3, f_info, roots',
                                    outlier, from, to, depth - 1,
                                    (@inr Z _ (new_copied_v g to, i))).
                      +++ simpl. apply prop_right. do 3 split; [|reflexivity].
                          f_equal. rewrite H32. rewrite sem_add_pi_ptr_special.
-                         simpl. f_equal. admit. admit.
-                     +++ admit.
-                     +++ admit.
+                         *** simpl. f_equal. admit.
+                         *** rewrite <- H32. assumption.
+                     +++ do 3 (split; [assumption |]). split.
+                         *** simpl. admit.
+                         *** do 2 (split; [assumption|]). split; [omega | assumption].
+                     +++ Intros vret. destruct vret as [[g4 t_info4] roots4].
+                         simpl fst in *. simpl snd in *. Exists g4 t_info4.
+                         simpl in H54. subst roots4.
+                         admit.
                  --- admit.
               ** assert (depth = 0) by omega. subst depth. clear H44.
                  deadvars!. clear Heqnv. forward.
@@ -530,7 +532,7 @@ Proof.
       * apply semax_if_seq. forward_if. 1: exfalso; apply H22'; reflexivity.
         rewrite H21 in n. forward. rewrite <- Heqroot. rewrite if_false by assumption.
         Exists g t_info roots. simpl. entailer!.
-        -- split; [constructor; assumption | split; [hnf; intuition | apply pr_id]].
+        -- split; [constructor; assumption | split; [hnf; intuition | apply tir_id]].
         -- unfold thread_info_rep. entailer!.
   - destruct p as [v n]. destruct H0. freeze [0; 1; 2; 4] FR.
     localize [vertex_rep (nth_sh g (vgeneration v)) g v].

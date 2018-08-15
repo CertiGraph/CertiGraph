@@ -1608,12 +1608,15 @@ Proof.
   inversion S; reflexivity.
 Qed.
 
-Lemma lacv_vertex_address: forall (g : LGraph) (v : VType) (to n m: nat),
-    graph_has_gen g n -> m <= number_of_vertices (nth_gen g n) ->
-    graph_has_gen g to ->
-    vertex_address (lgraph_add_copied_v g v to) (n, m) = vertex_address g (n, m).
+Definition closure_has_v (g: LGraph) (v: VType): Prop :=
+  graph_has_gen g (vgeneration v) /\
+  vindex v <= number_of_vertices (nth_gen g (vgeneration v)).
+
+Lemma lacv_vertex_address: forall (g : LGraph) (v : VType) (to: nat) x,
+    closure_has_v g x -> graph_has_gen g to ->
+    vertex_address (lgraph_add_copied_v g v to) x = vertex_address g x.
 Proof.
-  intros. unfold vertex_address. f_equal.
+  intros. destruct x as [n m]. destruct H. simpl in *. unfold vertex_address. f_equal.
   - f_equal. unfold vertex_offset. f_equal. unfold previous_vertices_size.
     simpl. apply fold_left_ext. intros. unfold vertex_size_accum. f_equal.
     unfold vertex_size. f_equal. rewrite lacv_vlabel_old. 1: reflexivity.
@@ -1622,12 +1625,17 @@ Proof.
   - simpl. apply lacv_gen_start. assumption.
 Qed.
 
+Lemma graph_has_v_in_closure: forall g v, graph_has_v g v -> closure_has_v g v.
+Proof.
+  intros g v. destruct v as [gen index].
+  unfold graph_has_v, closure_has_v, gen_has_index. simpl. intros. intuition.
+Qed.
+
 Lemma lacv_vertex_address_old: forall (g : LGraph) (v : VType) (to: nat) x,
     graph_has_v g x -> graph_has_gen g to ->
     vertex_address (lgraph_add_copied_v g v to) x = vertex_address g x.
 Proof.
-  intros. destruct x as [n m]. destruct H. apply lacv_vertex_address; try assumption.
-  red in H1. simpl in H1. omega.
+  intros. apply lacv_vertex_address; [apply graph_has_v_in_closure |]; assumption.
 Qed.
 
 Lemma lacv_vertex_address_new: forall (g : LGraph) (v : VType) (to: nat),
@@ -1635,7 +1643,8 @@ Lemma lacv_vertex_address_new: forall (g : LGraph) (v : VType) (to: nat),
     vertex_address (lgraph_add_copied_v g v to) (new_copied_v g to) =
     vertex_address g (new_copied_v g to).
 Proof.
-  intros. unfold new_copied_v. apply lacv_vertex_address; try assumption. omega.
+  intros. unfold new_copied_v. apply lacv_vertex_address. 2: assumption.
+  red. simpl.  split; [assumption | apply Nat.le_refl].
 Qed.
 
 Lemma lacv_make_header_old: forall (g : LGraph) (v : VType) (to : nat) x,
@@ -2210,21 +2219,28 @@ Proof.
   - rewrite <- lmc_graph_has_v. apply lacv_graph_has_v_new; assumption.
 Qed.
 
+Lemma lcv_vertex_address: forall g v to x, 
+    graph_has_gen g to -> closure_has_v g x ->
+    vertex_address (lgraph_copy_v g v to) x = vertex_address g x.
+Proof.
+  intros. unfold lgraph_copy_v.
+  rewrite lmc_vertex_address, lacv_vertex_address; [reflexivity | assumption..].
+Qed.
+
 Lemma lcv_vertex_address_new: forall g v to,
     graph_has_gen g to ->
     vertex_address (lgraph_copy_v g v to) (new_copied_v g to) =
     vertex_address g (new_copied_v g to).
 Proof.
-  intros. unfold lgraph_copy_v.
-  rewrite lmc_vertex_address, lacv_vertex_address_new; [reflexivity | assumption].
+  intros.
+  apply lcv_vertex_address;  [| red; simpl; split]; [assumption..| apply Nat.le_refl].
 Qed.
 
 Lemma lcv_vertex_address_old: forall g v to x,
     graph_has_gen g to -> graph_has_v g x ->
     vertex_address (lgraph_copy_v g v to) x = vertex_address g x.
 Proof.
-  intros. unfold lgraph_copy_v.
-  rewrite lmc_vertex_address, lacv_vertex_address_old; [reflexivity | assumption..].
+  intros. apply lcv_vertex_address; [|apply graph_has_v_in_closure]; assumption.
 Qed.
 
 Lemma lcv_fun_thread_arg_compatible: forall
@@ -2434,13 +2450,149 @@ Proof.
   - rewrite upd_Znth_Zlength; assumption.
 Qed.
 
-Definition parameter_relation (g g': LGraph) (t_info t_info': thread_info) from :=
-  gen_start g from = gen_start g' from /\
-  gen_size t_info from = gen_size t_info' from /\
-  ti_heap_p t_info = ti_heap_p t_info'.
+Definition thread_info_relation t t' from :=
+  gen_size t from = gen_size t' from /\ ti_heap_p t = ti_heap_p t'.
 
-Lemma pr_id: forall g t_info from, parameter_relation g g t_info t_info from.
-Proof. intros. unfold parameter_relation. intuition. Qed.
+Lemma tir_id: forall t from, thread_info_relation t t from.
+Proof. intros. red. split; reflexivity. Qed.
+
+Lemma lgd_graph_has_gen: forall g e v x,
+    graph_has_gen (labeledgraph_gen_dst g e v) x <-> graph_has_gen g x.
+Proof. intros. unfold graph_has_gen. simpl. intuition. Qed.
+
+Lemma lgd_gen_start: forall g e v x,
+    gen_start (labeledgraph_gen_dst g e v) x = gen_start g x.
+Proof.
+  intros. unfold gen_start.
+  do 2 if_tac; rewrite lgd_graph_has_gen in H; try contradiction;
+    [unfold nth_gen; simpl |]; reflexivity.
+Qed.
+
+Lemma fr_O_gen_start: forall from to p g g',
+    graph_has_gen g to -> forward_relation from to O p g g' ->
+    forall x, gen_start g x = gen_start g' x.
+Proof.
+  intros. inversion H0; subst; try reflexivity.
+  - rewrite lcv_gen_start; [reflexivity | assumption].
+  - subst new_g. rewrite lgd_gen_start, lcv_gen_start; [reflexivity | assumption].
+Qed.
+
+Lemma fr_O_graph_has_gen: forall from to p g g',
+    graph_has_gen g to -> forward_relation from to O p g g' ->
+    forall x, graph_has_gen g x <-> graph_has_gen g' x.
+Proof.
+  intros. inversion H0; subst; try reflexivity.
+  - rewrite <- lcv_graph_has_gen; [reflexivity | assumption].
+  - subst new_g. rewrite lgd_graph_has_gen. apply lcv_graph_has_gen. assumption.
+Qed.
+
+Lemma fr_graph_has_gen: forall depth from to p g g',
+    graph_has_gen g to -> forward_relation from to depth p g g' ->
+    forall x, graph_has_gen g x <-> graph_has_gen g' x.
+Proof.
+  induction depth; intros.
+  - apply (fr_O_graph_has_gen from to p); assumption.
+  - assert (forall l from to g1 g2,
+               graph_has_gen g1 to -> forward_loop from to depth l g1 g2 ->
+               graph_has_gen g1 x <-> graph_has_gen g2 x). {
+      induction l; intros; inversion H2. 1: reflexivity.
+      subst. assert (forall y, graph_has_gen g1 y <-> graph_has_gen g3 y) by
+          (intros; apply (IHdepth _ _ _ _ _ H1 H6)).
+      transitivity (graph_has_gen g3 x). 1: apply H3. rewrite H3 in H1.
+      apply (IHl from0 to0 g3 g2); assumption. }
+    inversion H0; subst; try reflexivity.
+    + assert (forall y, graph_has_gen g y <-> graph_has_gen new_g y) by
+            (subst new_g; intros; apply lcv_graph_has_gen; assumption).
+      transitivity (graph_has_gen new_g x). 1: apply H2. rewrite H2 in H.
+      apply (H1 _ _ _ _ _ H H5).
+    + assert (forall y, graph_has_gen g y <-> graph_has_gen new_g y). {
+        subst new_g. intros. rewrite lgd_graph_has_gen.
+        apply lcv_graph_has_gen; assumption. }
+      transitivity (graph_has_gen new_g x). 1: apply H2. rewrite H2 in H.
+      apply (H1 _ _ _ _ _ H H5).
+Qed.
+  
+Lemma fl_graph_has_gen: forall from to depth l g g',
+    graph_has_gen g to -> forward_loop from to depth l g g' ->
+    forall x, graph_has_gen g x <-> graph_has_gen g' x.
+Proof.
+  intros. revert g g' H H0 x. induction l; intros; inversion H0. 1: reflexivity.
+  subst. assert (forall y, graph_has_gen g y <-> graph_has_gen g2 y) by
+      (intros; apply (fr_graph_has_gen _ _ _ _ _ _ H H4)).
+  transitivity (graph_has_gen g2 x). 1: apply H1. rewrite H1 in H.
+  apply IHl; assumption.
+Qed.
+
+Lemma fr_gen_start: forall depth from to p g g',
+    graph_has_gen g to -> forward_relation from to depth p g g' ->
+    forall x, gen_start g x = gen_start g' x.
+Proof.
+  induction depth; intros. 1: apply (fr_O_gen_start from to p); assumption.
+  assert (forall l from to g1 g2,
+               graph_has_gen g1 to -> forward_loop from to depth l g1 g2 ->
+               gen_start g1 x = gen_start g2 x). {
+    induction l; intros; inversion H2. 1: reflexivity. subst.
+    transitivity (gen_start g3 x).
+    - apply (IHdepth _ _ _ _ _ H1 H6).
+    - assert (graph_has_gen g3 to0) by
+          (rewrite <- (fr_graph_has_gen _ _ _ _ _ _ H1 H6); assumption).
+      apply (IHl _ _ _ _ H3 H9). }
+  inversion H0; subst; try reflexivity.
+  - transitivity (gen_start new_g x).
+    + subst new_g; rewrite lcv_gen_start; [reflexivity | assumption].
+    + assert (graph_has_gen new_g to) by
+          (subst new_g; rewrite <- lcv_graph_has_gen; assumption).
+      apply (H1 _ _ _ _ _ H2 H5).
+  - transitivity (gen_start new_g x).
+    + subst new_g. rewrite lgd_gen_start, lcv_gen_start; [reflexivity | assumption].
+    + assert (graph_has_gen new_g to) by
+          (subst new_g; rewrite lgd_graph_has_gen, <- lcv_graph_has_gen; assumption).
+      apply (H1 _ _ _ _ _ H2 H5).
+Qed.
+
+Lemma fl_gen_start: forall from to depth l g g',
+    graph_has_gen g to -> forward_loop from to depth l g g' ->
+    forall x, gen_start g x = gen_start g' x.
+Proof.
+  intros. revert g g' H H0 x. induction l; intros; inversion H0. 1: reflexivity.
+  subst. transitivity (gen_start g2 x).
+  - apply (fr_gen_start _ _ _ _ _ _ H H4).
+  - assert (graph_has_gen g2 to) by
+        (rewrite <- (fr_graph_has_gen _ _ _ _ _ _ H H4); assumption).
+    apply IHl; assumption.
+Qed.
+
+Lemma lgd_vertex_address: forall g e v x,
+    vertex_address (labeledgraph_gen_dst g e v) x = vertex_address g x.
+Proof. intros. reflexivity. Qed.
+
+Lemma fr_O_vertex_address: forall from to p g g',
+    graph_has_gen g to -> forward_relation from to O p g g' ->
+    forall v, closure_has_v g v -> vertex_address g v = vertex_address g' v.
+Proof.
+  intros. inversion H0; subst; try reflexivity;
+            [|subst new_g; rewrite lgd_vertex_address]; rewrite lcv_vertex_address;
+              try reflexivity; assumption.
+Qed.
+
+Lemma fr_vertex_address: forall depth from to p g g',
+    graph_has_gen g to -> forward_relation from to depth p g g' ->
+    forall v, closure_has_v g v -> vertex_address g v = vertex_address g' v.
+Proof.
+  induction depth; intros. 1: apply (fr_O_vertex_address from to p); assumption.
+  assert (forall l from to g1 g2,
+             graph_has_gen g1 to -> forward_loop from to depth l g1 g2 ->
+             forall v, closure_has_v g v ->
+                       vertex_address g1 v = vertex_address g2 v). {
+    induction l; intros; inversion H3. 1: reflexivity. subst.
+Abort.    
+
+Lemma lcv_graph_has_v_new: forall g v to,
+    graph_has_gen g to -> graph_has_v (lgraph_copy_v g v to) (new_copied_v g to).
+Proof.
+  intros. unfold lgraph_copy_v. rewrite <- lmc_graph_has_v.
+  apply lacv_graph_has_v_new. assumption.
+Qed.
 
 (*
   Hi : 0 <= Z.of_nat to < Zlength (spaces (ti_heap t_info))
