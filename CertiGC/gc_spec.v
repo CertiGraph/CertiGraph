@@ -193,7 +193,7 @@ Definition forward_spec :=
           forward_relation from to (Z.to_nat depth)
                            (forward_p2forward_t forward_p roots g) g g';
           forward_condition g' t_info' from to;
-          parameter_relation g g' t_info t_info' from)
+          thread_info_relation t_info t_info' from)
     LOCAL ()
     SEP (all_string_constants rsh gv;
          fun_info_rep rsh f_info fi;
