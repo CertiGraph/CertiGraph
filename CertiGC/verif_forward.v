@@ -502,21 +502,48 @@ Proof.
                          constructor. unfold thread_info_relation. entailer!.
                  --- change (Tpointer tvoid {| attr_volatile := false;
                                                attr_alignas := Some 2%N |})
-                            with (int_or_ptr_type). Intros.
+                       with (int_or_ptr_type). Intros.
+                     assert (graph_has_gen g' to) by
+                         (rewrite Heqg', <- lcv_graph_has_gen; assumption).
+                     assert (graph_has_v g' (new_copied_v g to)) by
+                         (rewrite Heqg'; apply lcv_graph_has_v_new; assumption).
                      forward_call (rsh, sh, gv, fi, ti, g3, t_info3, f_info, roots',
                                    outlier, from, to, depth - 1,
                                    (@inr Z _ (new_copied_v g to, i))).
                      +++ simpl. apply prop_right. do 3 split; [|reflexivity].
                          f_equal. rewrite H32. rewrite sem_add_pi_ptr_special.
-                         *** simpl. f_equal. admit.
+                         *** simpl. f_equal. erewrite fl_vertex_address; eauto.
+                             subst g'. apply graph_has_v_in_closure. assumption.
                          *** rewrite <- H32. assumption.
                      +++ do 3 (split; [assumption |]). split.
-                         *** simpl. admit.
+                         *** simpl. split.
+                             ---- destruct H41 as [_ [_ [? _]]].
+                                  apply (fl_graph_has_v _ _ _ _ _ _ H41 H48 _ H52).
+                             ---- erewrite <- fl_raw_fields; eauto. subst g'.
+                                  unfold lgraph_copy_v. subst n.
+                                  rewrite <- lmc_raw_fields, lacv_vlabel_new.
+                                  assumption.
                          *** do 2 (split; [assumption|]). split; [omega | assumption].
                      +++ Intros vret. destruct vret as [[g4 t_info4] roots4].
                          simpl fst in *. simpl snd in *. Exists g4 t_info4.
                          simpl in H54. subst roots4.
-                         admit.
+                         assert (gen_start g3 from = gen_start g4 from). {
+                           eapply fr_gen_start; eauto.
+                           erewrite <- fl_graph_has_gen; eauto. } rewrite H54.
+                         assert (limit_address g3 t_info3 from =
+                                 limit_address g4 t_info4 from). {
+                           unfold limit_address. f_equal. 2: assumption. f_equal.
+                           destruct H57; assumption. } rewrite H58.
+                         assert (next_address t_info3 to = next_address t_info4 to). {
+                           unfold next_address. f_equal. destruct H57. assumption. }
+                         rewrite H59. clear H54 H58 H59.
+                         assert (thread_info_relation t_info' t_info4 from) by
+                             (apply tir_trans with t_info3; assumption).
+                         assert (forward_loop
+                                   from to (Z.to_nat (depth - 1))
+                                   (sublist 0 (i + 1)
+                                            (vertex_pos_pairs g v (new_copied_v g to)))
+                                   g' g4) by admit. entailer!.
                  --- admit.
               ** assert (depth = 0) by omega. subst depth. clear H44.
                  deadvars!. clear Heqnv. forward.
