@@ -478,7 +478,7 @@ Proof.
                     PROP (super_compatible (g3, t_info3, roots') f_info outlier;
                           forward_loop
                             from to (Z.to_nat (depth - 1))
-                            (sublist 0 i (vertex_pos_pairs g v (new_copied_v g to)))
+                            (sublist 0 i (vertex_pos_pairs g' (new_copied_v g to)))
                             g' g3;
                           forward_condition g3 t_info3 from to;
                           thread_info_relation t_info' t_info3 from)
@@ -542,9 +542,25 @@ Proof.
                          assert (forward_loop
                                    from to (Z.to_nat (depth - 1))
                                    (sublist 0 (i + 1)
-                                            (vertex_pos_pairs g v (new_copied_v g to)))
-                                   g' g4) by admit. entailer!.
-                 --- admit.
+                                            (vertex_pos_pairs g' (new_copied_v g to)))
+                                   g' g4). {
+                           eapply forward_loop_add_tail_vpp; eauto. subst n g' from.
+                           rewrite lcv_vlabel_new; assumption. }
+                         entailer!.
+                 --- Intros g3 t_info3.
+                     assert (thread_info_relation t_info t_info3 from) by
+                         (apply tir_trans with t_info'; [split |]; assumption).
+                     rewrite sublist_all in H47. clear Heqt.
+                     2: { rewrite Z.le_lteq. right. subst n g' from.
+                          rewrite vpp_Zlength, lcv_vlabel_new; auto. }
+                     Opaque super_compatible. forward. clear H51 H52 H53 H54.
+                     rewrite <- Heqroot, H22, if_true by reflexivity.
+                     remember (upd_bunch z f_info roots (inr (new_copied_v g to)))
+                       as roots'. Exists g3 t_info3 roots'. simpl. entailer!.
+                     replace (Z.to_nat depth) with (S (Z.to_nat (depth - 1))) by
+                         (rewrite <- Z2Nat.inj_succ; [f_equal|]; omega).
+                     constructor; [reflexivity | assumption..].
+                     Transparent super_compatible.
               ** assert (depth = 0) by omega. subst depth. clear H44.
                  deadvars!. clear Heqnv. forward.
                  rewrite <- Heqroot. rewrite if_true by reflexivity. rewrite H22.

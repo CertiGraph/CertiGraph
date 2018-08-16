@@ -903,9 +903,9 @@ Definition forward_p2forward_t
                   else field2forward (Znth n (make_fields g v))
   end.
 
-Definition vertex_pos_pairs (g: LGraph) (old new: VType) : list (forward_p_type) :=
-  map (fun x => inr (new, Z.of_nat x))
-      (nat_inc_list (length (raw_fields (vlabel g new)))).
+Definition vertex_pos_pairs (g: LGraph) (v: VType) : list (forward_p_type) :=
+  map (fun x => inr (v, Z.of_nat x))
+      (nat_inc_list (length (raw_fields (vlabel g v)))).
 
 Inductive forward_relation (from to: nat):
   nat -> forward_t -> LGraph -> LGraph -> Prop :=
@@ -922,7 +922,7 @@ Inductive forward_relation (from to: nat):
 | fr_v_in_not_forwarded_Sn: forall depth v g g',
     vgeneration v = from -> (vlabel g v).(raw_mark) = false ->
     let new_g := lgraph_copy_v g v to in
-    forward_loop from to depth (vertex_pos_pairs g v (new_copied_v g to)) new_g g' ->
+    forward_loop from to depth (vertex_pos_pairs new_g (new_copied_v g to)) new_g g' ->
     forward_relation from to (S depth) (inl (inr v)) g g'
 | fr_e_not_to: forall depth e (g: LGraph),
     vgeneration (dst g e) <> from -> forward_relation from to depth (inr e) g g
@@ -939,8 +939,7 @@ Inductive forward_relation (from to: nat):
     vgeneration (dst g e) = from -> (vlabel g (dst g e)).(raw_mark) = false ->
     let new_g := labeledgraph_gen_dst (lgraph_copy_v g (dst g e) to) e
                                       (new_copied_v g to) in
-    forward_loop from to depth
-                 (vertex_pos_pairs g (dst g e) (new_copied_v g to)) new_g g' ->
+    forward_loop from to depth (vertex_pos_pairs new_g (new_copied_v g to)) new_g g' ->
     forward_relation from to (S depth) (inr e) g g'
 with
 forward_loop (from to: nat): nat -> list forward_p_type -> LGraph -> LGraph -> Prop :=
@@ -2219,7 +2218,7 @@ Proof.
   - rewrite <- lmc_graph_has_v. apply lacv_graph_has_v_new; assumption.
 Qed.
 
-Lemma lcv_vertex_address: forall g v to x, 
+Lemma lcv_vertex_address: forall g v to x,
     graph_has_gen g to -> closure_has_v g x ->
     vertex_address (lgraph_copy_v g v to) x = vertex_address g x.
 Proof.
@@ -2729,20 +2728,54 @@ Lemma tir_trans: forall t1 t2 t3 from,
     thread_info_relation t1 t3 from.
 Proof. intros. destruct H, H0. split; [rewrite H | rewrite H1]; assumption. Qed.
 
-(*
-  Hi : 0 <= Z.of_nat to < Zlength (spaces (ti_heap t_info))
-  Hh : has_space (Znth (Z.of_nat to) (spaces (ti_heap t_info))) (vertex_size g v)
-  Hm : 0 <= Znth z (live_roots_indices f_info) < MAX_ARGS
-  Heqg' : g' = lgraph_copy_v g v to
-  Heqt_info' : t_info' =
-               update_thread_info_arg
-                 (cut_thread_info t_info (Z.of_nat to) (vertex_size g v) Hi Hh)
-                 (Znth z (live_roots_indices f_info))
-                 (vertex_address g (new_copied_v g to)) Hm
-  Heqroots' : roots' = upd_bunch z f_info roots (inr (new_copied_v g to))
+Lemma forward_loop_add_tail: forall from to depth l x g1 g2 g3 roots,
+    forward_loop from to depth l g1 g2 ->
+    forward_relation from to depth (forward_p2forward_t (inr x) roots g2) g2 g3 ->
+    forward_loop from to depth (l +:: (inr x)) g1 g3.
+Proof.
+  intros. revert x g1 g2 g3 H H0. induction l; intros.
+  - simpl. inversion H. subst. apply fl_cons with g3. 2: constructor. apply H0.
+  - inversion H. subst. clear H. simpl app. apply fl_cons with g4. 1: assumption.
+    apply IHl with g2; assumption.
+Qed.
 
-  graph_thread_info_compatible g' t_info' /\
-  (fun_thread_arg_compatible g' t_info' f_info roots' /\
-  roots_compatible g' outlier roots' /\ outlier_compatible g' outlier) /\
-  forward_condition g' t_info' (vgeneration v) to
- *)
+Lemma vpp_Zlength: forall g x,
+    Zlength (vertex_pos_pairs g x) = Zlength (raw_fields (vlabel g x)).
+Proof.
+  intros. unfold vertex_pos_pairs.
+  rewrite Zlength_map, !Zlength_correct, nat_inc_list_length. reflexivity.
+Qed.
+
+Instance forward_p_type_Inhabitant: Inhabitant forward_p_type := inl 0.
+
+Lemma vpp_Znth: forall (x : VType) (g : LGraph) (i : Z),
+    0 <= i < Zlength (raw_fields (vlabel g x)) ->
+    Znth i (vertex_pos_pairs g x) = inr (x, i).
+Proof.
+  intros. unfold vertex_pos_pairs.
+  assert (0 <= i < Zlength (nat_inc_list (length (raw_fields (vlabel g x))))) by
+      (rewrite Zlength_correct, nat_inc_list_length, <- Zlength_correct; assumption).
+  rewrite Znth_map by assumption. do 2 f_equal. rewrite <- nth_Znth by assumption.
+  rewrite nat_inc_list_nth. 1: rewrite Z2Nat.id; omega.
+  rewrite <- ZtoNat_Zlength, <- Z2Nat.inj_lt; omega.
+Qed.
+
+Lemma forward_loop_add_tail_vpp: forall from to depth x g g1 g2 g3 roots i,
+    0 <= i < Zlength (raw_fields (vlabel g x)) ->
+    forward_loop from to depth (sublist 0 i (vertex_pos_pairs g x)) g1 g2 ->
+    forward_relation from to depth (forward_p2forward_t (inr (x, i)) roots g2) g2 g3 ->
+    forward_loop from to depth (sublist 0 (i + 1) (vertex_pos_pairs g x)) g1 g3.
+Proof.
+  intros. rewrite <- vpp_Zlength in H. rewrite sublist_last_1; [|omega..].
+  rewrite vpp_Zlength in H. rewrite vpp_Znth by assumption.
+  apply forward_loop_add_tail with (g2 := g2) (roots := roots); assumption.
+Qed.
+
+Lemma lcv_vlabel_new: forall g v to,
+    vgeneration v <> to ->
+    vlabel (lgraph_copy_v g v to) (new_copied_v g to) = vlabel g v.
+Proof.
+  intros. unfold lgraph_copy_v.
+  rewrite lmc_vlabel_not_eq, lacv_vlabel_new;
+    [| unfold new_copied_v; intro; apply H; inversion H0; simpl]; reflexivity.
+Qed.
