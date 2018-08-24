@@ -23,7 +23,7 @@ Proof.
 Qed.
 
 Lemma sapi_ptr_val: forall p m n,
-    isptr p ->
+    isptr p -> Int.min_signed <= n <= Int.max_signed ->
     (force_val
        (sem_add_ptr_int int_or_ptr_type Signed (offset_val (WORD_SIZE * m) p)
                         (vint n))) = offset_val (WORD_SIZE * (m + n)) p.
@@ -31,6 +31,7 @@ Proof.
   intros. rewrite sem_add_pi_ptr_special.
   - simpl. rewrite offset_offset_val. f_equal. rep_omega.
   - rewrite isptr_offset_val. assumption.
+  - assumption.
 Qed.
 
 Lemma data_at_mfs_eq: forall g v i sh nv,
@@ -242,7 +243,14 @@ Proof.
            unfold Inhabitant_pair, Inhabitant_val, Inhabitant in H29.
            forward; rewrite H29; unfold space_tri. 1: entailer!.
            forward. simpl sem_binary_operation'.
-           rewrite sapi_ptr_val by assumption. Opaque Znth. forward. Transparent Znth.
+           rewrite sapi_ptr_val; [|assumption | rep_omega].
+           Opaque Znth. forward. Transparent Znth.
+           assert (Hr: Int.min_signed <= Zlength (raw_fields (vlabel g v)) <=
+                       Int.max_signed). {
+             pose proof (raw_fields_range (vlabel g v)). destruct H30. split.
+             - rep_omega.
+             - transitivity (two_power_nat 22). 1: omega.
+               compute; intro s; inversion s. }
            rewrite sapi_ptr_val by assumption. rewrite H29. unfold space_tri.
            rewrite <- Z.add_assoc.
            replace (1 + Zlength (raw_fields (vlabel g v))) with (vertex_size g v) by
@@ -330,9 +338,6 @@ Proof.
                            (sublist 0 i (make_fields_vals g v)) nv;
                    data_at_ sht (tarray int_or_ptr_type (n - i))
                             (offset_val (WORD_SIZE * i) nv); FRZL FR))%assert.
-           ++ pose proof (raw_fields_range (vlabel g v)). subst n.
-              transitivity (two_power_nat 22). 1: omega.
-              compute; intro s; inversion s.
            ++ rewrite sublist_nil. replace (n - 0) with n by omega.
               replace (WORD_SIZE * 0)%Z with 0 by omega.
               rewrite isptr_offset_val_zero by assumption.
@@ -493,10 +498,6 @@ Proof.
                          outlier_rep outlier;
                          graph_rep g3;
                          thread_info_rep sh t_info3 ti))%assert.
-                 --- subst n. pose proof (raw_fields_range (vlabel g v)). clear -H46.
-                     destruct H46. rewrite Z.le_lteq. left.
-                     apply Z.lt_le_trans with (two_power_nat 22). 1: assumption.
-                     compute. intro. inversion H1.
                  --- Exists g' t_info'. autorewrite with sublist.
                      assert (forward_loop from to (Z.to_nat (depth - 1)) [] g' g') by
                          constructor. unfold thread_info_relation. entailer!.
@@ -515,6 +516,7 @@ Proof.
                          *** simpl. f_equal. erewrite fl_vertex_address; eauto.
                              subst g'. apply graph_has_v_in_closure. assumption.
                          *** rewrite <- H32. assumption.
+                         *** subst n. clear -H46 Hr. rep_omega.
                      +++ do 3 (split; [assumption |]). split.
                          *** simpl. split.
                              ---- destruct H41 as [_ [_ [? _]]].
