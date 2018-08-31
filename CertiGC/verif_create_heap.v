@@ -20,7 +20,7 @@ Proof.
   intros. pose proof (split2_data_at_Tarray sh space_type n n1) as HS.
   apply HS with (v' := v); auto.
   - rewrite Z.le_lteq. right; auto.
-  - autorewrite with sublist. reflexivity.
+  - rewrite sublist_all; [|apply Z.eq_le_incl; rewrite H0]; reflexivity.
 Qed.
 
 Lemma space_array_1_eq: forall (sh: share) (v: (val * (val * val))) (p: val),
