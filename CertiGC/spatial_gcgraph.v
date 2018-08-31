@@ -9,6 +9,7 @@ Require Import RamifyCoq.graph.graph_model.
 Require Import RamifyCoq.CertiGC.GCGraph.
 Require Export RamifyCoq.CertiGC.env_graph_gc.
 Require Import RamifyCoq.msl_ext.iter_sepcon.
+Require Import Coq.Lists.List.
 
 Definition vertex_at (sh: share) (p: val) (header: Z) (lst_fields: list val) :=
   data_at sh tuint (Z2val header) (offset_val (- WORD_SIZE) p) *
@@ -112,6 +113,10 @@ Proof.
     rewrite H6, Ptrofs.unsigned_repr_eq. apply Z.mod_small.
     destruct (Ptrofs.unsigned_range i0). rewrite <- Heqofs in *. omega.
   } rewrite H6. assert (0 <= z0) by (subst z0; apply Zlength_nonneg).
+  assert ((@Zlength (@reptype CompSpecs int_or_ptr_type)
+                    (make_fields_vals g (gen, num))) =
+          (@Zlength val (make_fields_vals g (gen, num)))) by reflexivity.
+  rewrite H9 in H3. clear H9. rewrite <- Heqz0 in *.
   rewrite memory_block_split; [| rep_omega..].
   sep_apply (data_at_memory_block
                sh tuint (Vint (Int.repr (make_header g (gen, num))))
@@ -143,7 +148,10 @@ Proof.
   unfold vertex_size. rewrite <- fields_eq_length. rewrite WORD_SIZE_eq in *.
   rewrite Z.mul_add_distr_l, Z.mul_1_r, Z.add_assoc in H4.
   rewrite Ptrofs.unsigned_repr_eq in H4. rewrite Z.mod_small in H4 by rep_omega.
-  rep_omega.
+  assert ((@Zlength (@reptype CompSpecs int_or_ptr_type)
+                    (make_fields_vals g (gen, num))) =
+          (@Zlength val (make_fields_vals g (gen, num)))) by reflexivity.
+  rewrite H5 in *. rep_omega.
 Qed.
 
 Lemma generation_rep_ptrofs: forall g gen b i,
