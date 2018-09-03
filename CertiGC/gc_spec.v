@@ -203,22 +203,23 @@ Definition forward_spec :=
 
 Definition forward_roots_spec :=
   DECLARE _forward_roots
-  WITH rsh: share, sh: share, gv: globals, fi: val, ti: val, g: LGraph, t_info: thread_info, f_info: fun_info, roots: roots_t, outlier: outlier_t, from: nat, to: nat, depth: nat
+  WITH rsh: share, sh: share, gv: globals, fi: val, ti: val,
+       g: LGraph, t_info: thread_info, f_info: fun_info,
+       roots: roots_t, outlier: outlier_t, from: nat, to: nat
   PRE [ _from_start OF (tptr int_or_ptr_type),
         _from_limit OF (tptr int_or_ptr_type),
-        _next OF (tptr int_or_ptr_type),
+        _next OF (tptr (tptr int_or_ptr_type)),
         _fi OF (tptr tuint),
         _ti OF (tptr thread_info_type)]
-  PROP (readable_share rsh; writable_share sh;
+    PROP (readable_share rsh; writable_share sh;
           super_compatible (g, t_info, roots) f_info outlier;
-          forward_roots_compatible from to g t_info;
-          graph_has_gen g from; graph_has_gen g to;
-          copy_compatible g)
-  LOCAL (temp _from_start (gen_start g from);
-         temp _from_limit (offset_val (gen_size t_info from) (gen_start g from));
-         temp _next (field_address heap_type [StructField _next; ArraySubsc (Z.of_nat to); StructField _spaces] (ti_heap_p t_info));
-         temp _fi fi; temp _ti ti)
-  SEP (all_string_constants rsh gv;
+          forward_condition g t_info from to;
+          to <> O; from <> to)
+    LOCAL (temp _from_start (gen_start g from);
+           temp _from_limit (limit_address g t_info from);
+           temp _next (next_address t_info to);
+           temp _fi fi; temp _ti ti)
+    SEP (all_string_constants rsh gv;
          fun_info_rep rsh f_info fi;
          outlier_rep outlier;
          graph_rep g;
@@ -226,12 +227,12 @@ Definition forward_roots_spec :=
   POST [tvoid]
     EX g' : LGraph, EX t_info': thread_info, EX roots': roots_t,
     PROP (super_compatible (g', t_info', roots') f_info outlier;
-          forward_roots_loop from to depth roots g g';
-          roots' = forward_all_roots from to roots g;
-          graph_has_gen g' from; graph_has_gen g' to;
-          copy_compatible g')
-  LOCAL ()
-  SEP (all_string_constants rsh gv;
+          forward_roots_loop from to roots g g';
+          roots' = forward_all_roots from to roots g f_info;
+          forward_condition g' t_info' from to;
+          thread_info_relation t_info t_info' from)
+    LOCAL ()
+    SEP (all_string_constants rsh gv;
          fun_info_rep rsh f_info fi;
          outlier_rep outlier;
          graph_rep g';
@@ -239,33 +240,36 @@ Definition forward_roots_spec :=
 
 Definition do_scan_spec :=
   DECLARE _do_scan
-  WITH rsh: share, sh: share, gv: globals, start: val, next: val, scan: val, g: LGraph, outlier: outlier_t, from: nat, to: nat, depth: Z, t_info: thread_info(*, f_info : fun_info*)
+  WITH rsh: share, sh: share, gv: globals, fi: val, ti: val,
+       g: LGraph, t_info: thread_info, f_info: fun_info,
+       roots : roots_t, outlier: outlier_t,
+       from: nat, to: nat, to_index: nat
   PRE [ _from_start OF (tptr int_or_ptr_type),
         _from_limit OF (tptr int_or_ptr_type),
         _scan OF (tptr int_or_ptr_type),
         _next OF (tptr (tptr int_or_ptr_type))]
-  PROP (readable_share rsh; writable_share rsh;
-        graph_thread_info_compatible g t_info;
-        outlier_compatible g outlier;
-        graph_has_gen g from; graph_has_gen g to;
-        copy_compatible g)
+    PROP (readable_share rsh; writable_share sh;
+          super_compatible (g, t_info, roots) f_info outlier;
+          forward_condition g t_info from to;
+          to <> O; from <> to)
     LOCAL (temp _from_start (gen_start g from);
-           temp _from_limit (offset_val (gen_size t_info from) (gen_start g from));
-           temp _scan scan;
-           temp _next next)
+           temp _from_limit (limit_address g t_info from);
+           temp _scan (offset_val (- WORD_SIZE) (vertex_address g (to, to_index)));
+           temp _next (next_address t_info to))
     SEP (all_string_constants rsh gv;
          outlier_rep outlier;
-         graph_rep g)
-    POST [tvoid]
-    EX g': LGraph,
-       PROP (graph_thread_info_compatible g' t_info;
-             outlier_compatible g' outlier;
-             graph_has_gen g' from; graph_has_gen g' to;
-             copy_compatible g')
-      LOCAL ()
-      SEP (all_string_constants rsh gv;
-           outlier_rep outlier;
-           graph_rep g').
+         graph_rep g;
+         thread_info_rep sh t_info ti)
+  POST [tvoid]
+    EX g': LGraph, EX t_info': thread_info,
+    PROP (super_compatible (g', t_info', roots) f_info outlier;
+          forward_condition g' t_info' from to;
+          thread_info_relation t_info t_info' from)
+    LOCAL ()
+    SEP (all_string_constants rsh gv;
+         outlier_rep outlier;
+         graph_rep g';
+         thread_info_rep sh t_info' ti).
 
 Definition do_generation_spec :=
   DECLARE _do_generation
