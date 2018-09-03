@@ -44,6 +44,11 @@ Lemma MAX_SPACE_SIZE_eq: MAX_SPACE_SIZE = Z.shiftl 1 29. Proof. reflexivity. Qed
 Hint Rewrite MAX_SPACE_SIZE_eq: rep_omega.
 Global Opaque MAX_SPACE_SIZE.
 
+Definition NO_SCAN_TAG: Z := 251.
+Lemma NO_SCAN_TAG_eq: NO_SCAN_TAG = 251. Proof. reflexivity. Qed.
+Hint Rewrite NO_SCAN_TAG_eq: rep_omega.
+Global Opaque NO_SCAN_TAG.
+
 Lemma MSS_eq_unsigned:
   Int.unsigned (Int.shl (Int.repr 1) (Int.repr 29)) = MAX_SPACE_SIZE.
 Proof.
@@ -2777,3 +2782,21 @@ Inductive scan_vertex_loop (from to: nat) (v: VType):
   forward_relation
     from to O (forward_p2forward_t (inr (v, (Z.of_nat i))) nil g1) g1 g2 ->
   scan_vertex_loop from to v il g2 g3 -> scan_vertex_loop from to v (i :: il) g1 g3.
+
+Definition no_scan (g: LGraph) (v: VType): Prop :=
+  NO_SCAN_TAG <= (vlabel g v).(raw_tag).
+
+Inductive do_scan_relation (from to: nat): nat -> LGraph -> LGraph -> Prop :=
+| do_scan_nil: forall g to_index,
+    ~ gen_has_index g to to_index -> do_scan_relation from to to_index g g
+| do_scan_no_scan: forall g g' to_index,
+    gen_has_index g to to_index -> no_scan g (to, to_index) ->
+    do_scan_relation from to (S to_index) g g' ->
+    do_scan_relation from to to_index g g'
+| do_scan_forward: forall g1 g2 g3 to_index,
+    gen_has_index g1 to to_index -> ~ no_scan g1 (to, to_index) ->
+    scan_vertex_loop
+      from to (to, to_index)
+      (nat_inc_list (length (vlabel g1 (to, to_index)).(raw_fields))) g1 g2 ->
+    do_scan_relation from to (S to_index) g2 g3 ->
+    do_scan_relation from to to_index g1 g2.

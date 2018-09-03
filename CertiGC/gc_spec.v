@@ -264,6 +264,7 @@ Definition do_scan_spec :=
     EX g': LGraph, EX t_info': thread_info,
     PROP (super_compatible (g', t_info', roots) f_info outlier;
           forward_condition g' t_info' from to;
+          do_scan_relation from to to_index g g';  
           thread_info_relation t_info t_info' from)
     LOCAL ()
     SEP (all_string_constants rsh gv;
