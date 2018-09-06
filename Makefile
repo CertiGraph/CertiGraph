@@ -17,7 +17,7 @@ LIB_FILES = \
   Coqlib.v Equivalence_ext.v List_Func_ext.v Ensembles_ext.v List_ext.v EnumEnsembles.v Relation_ext.v relation_list.v EquivDec_ext.v Morphisms_ext.v
 
 MSL_EXT_FILES = \
-  log_normalize.v iter_sepcon.v ramification_lemmas.v
+  log_normalize.v iter_sepcon.v ramification_lemmas.v weak_valid_pointer.v
   # abs_addr.v seplog.v log_normalize.v ramify_tactics.v msl_ext.v iter_sepcon.v \
   # sepalg.v ramification_lemmas.v \
   # overlapping.v precise.v alg_seplog.v \
@@ -29,7 +29,7 @@ MSL_APPLICATION_FILES = \
 VERIC_EXT_FILES = \
   res_predicates.v seplog.v SeparationLogic.v
 
-FLOYD_EXT_FILES = closed_lemmas.v share.v
+FLOYD_EXT_FILES = closed_lemmas.v share.v weak_valid_pointer.v
   # MapstoSL.v DataatSL.v semax_ram_lemmas.v semax_ram_tac.v exists_trick.v closed_lemmas.v ramification.v share.v
 
 HEAP_MODEL_DIRECT_FILES = \
