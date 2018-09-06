@@ -1602,9 +1602,11 @@ Proof.
   inversion S; reflexivity.
 Qed.
 
+Definition closure_has_index (g: LGraph) (gen index: nat) :=
+  index <= number_of_vertices (nth_gen g gen).
+
 Definition closure_has_v (g: LGraph) (v: VType): Prop :=
-  graph_has_gen g (vgeneration v) /\
-  vindex v <= number_of_vertices (nth_gen g (vgeneration v)).
+  graph_has_gen g (vgeneration v) /\ closure_has_index g (vgeneration v) (vindex v).
 
 Lemma lacv_vertex_address: forall (g : LGraph) (v : VType) (to: nat) x,
     closure_has_v g x -> graph_has_gen g to ->
@@ -1615,14 +1617,15 @@ Proof.
     simpl. apply fold_left_ext. intros. unfold vertex_size_accum. f_equal.
     unfold vertex_size. f_equal. rewrite lacv_vlabel_old. 1: reflexivity.
     intro. unfold new_copied_v in H3. inversion H3.
-    rewrite nat_inc_list_In_iff in H2. subst n. omega.
+    rewrite nat_inc_list_In_iff in H2. subst n. red in H1. omega.
   - simpl. apply lacv_gen_start. assumption.
 Qed.
-
+  
 Lemma graph_has_v_in_closure: forall g v, graph_has_v g v -> closure_has_v g v.
 Proof.
   intros g v. destruct v as [gen index].
-  unfold graph_has_v, closure_has_v, gen_has_index. simpl. intros. intuition.
+  unfold graph_has_v, closure_has_v, closure_has_index, gen_has_index.
+  simpl. intros. intuition.
 Qed.
 
 Lemma lacv_vertex_address_old: forall (g : LGraph) (v : VType) (to: nat) x,
@@ -2591,9 +2594,9 @@ Proof.
   intros. unfold closure_has_v in *. destruct x as [gen index]. simpl in *.
   destruct H0. split. 1: rewrite <- lcv_graph_has_gen; assumption.
   destruct (Nat.eq_dec gen to).
-  - subst gen. unfold nth_gen. simpl. rewrite cvmgil_eq by assumption.
-    simpl. unfold nth_gen in H1. omega.
-  - rewrite lcv_nth_gen; assumption.
+  - subst gen. red. unfold nth_gen. simpl. rewrite cvmgil_eq by assumption.
+    simpl. red in H1. unfold nth_gen in H1. omega.
+  - red. rewrite lcv_nth_gen; assumption.
 Qed.
 
 Lemma fr_closure_has_v: forall depth from to p g g',

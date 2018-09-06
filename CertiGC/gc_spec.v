@@ -251,7 +251,7 @@ Definition do_scan_spec :=
     PROP (readable_share rsh; writable_share sh;
           super_compatible (g, t_info, roots) f_info outlier;
           forward_condition g t_info from to;
-          to <> O; from <> to)
+          to <> O; from <> to; closure_has_index g to to_index)
     LOCAL (temp _from_start (gen_start g from);
            temp _from_limit (limit_address g t_info from);
            temp _scan (offset_val (- WORD_SIZE) (vertex_address g (to, to_index)));
