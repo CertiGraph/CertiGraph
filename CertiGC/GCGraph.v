@@ -2433,24 +2433,23 @@ Lemma utiacti_gen_size: forall t_info i1 i2 s ad n
     (Hi : 0 <= i1 < Zlength (spaces (ti_heap t_info)))
     (Hh : has_space (Znth i1 (spaces (ti_heap t_info))) s)
     (Hm : 0 <= i2 < MAX_ARGS),
-    0 <= Z.of_nat n < Zlength (spaces (ti_heap t_info)) ->
     gen_size (update_thread_info_arg (cut_thread_info t_info i1 s Hi Hh) i2 ad Hm) n =
     gen_size t_info n.
 Proof.
-  intros. unfold gen_size, nth_space. simpl. rewrite <- (Nat2Z.id n) at 1.
-  rewrite nth_Znth.
-  - destruct (Z.eq_dec (Z.of_nat n) i1).
-    + rewrite <- (Nat2Z.id n) at 2. rewrite nth_Znth by assumption. rewrite e.
-      rewrite upd_Znth_same by assumption. simpl. reflexivity.
-    + rewrite upd_Znth_diff; [|assumption..]. rewrite <- (Nat2Z.id n) at 2.
-      rewrite nth_Znth by assumption. reflexivity.
-  - rewrite upd_Znth_Zlength; assumption.
+  intros. unfold gen_size. rewrite !nth_space_Znth. simpl.
+  pose proof (Nat2Z.is_nonneg n). remember (Z.of_nat n). clear Heqz.
+  remember (spaces (ti_heap t_info)). destruct (Z_lt_le_dec z (Zlength l)).
+  - assert (0 <= z < Zlength l) by omega. destruct (Z.eq_dec z i1).
+    + rewrite e. rewrite upd_Znth_same by assumption. simpl. reflexivity.
+    + rewrite upd_Znth_diff; [|assumption..]. reflexivity.
+  - rewrite !Znth_overflow;
+      [reflexivity | | rewrite upd_Znth_Zlength by assumption]; omega.
 Qed.
 
-Definition thread_info_relation t t' from :=
-  gen_size t from = gen_size t' from /\ ti_heap_p t = ti_heap_p t'.
+Definition thread_info_relation t t':=
+  ti_heap_p t = ti_heap_p t' /\ forall n, gen_size t n = gen_size t' n.
 
-Lemma tir_id: forall t from, thread_info_relation t t from.
+Lemma tir_id: forall t, thread_info_relation t t.
 Proof. intros. red. split; reflexivity. Qed.
 
 Lemma lgd_graph_has_gen: forall g e v x,
@@ -2721,10 +2720,12 @@ Proof.
     + eapply fr_graph_has_v; eauto.
 Qed.
 
-Lemma tir_trans: forall t1 t2 t3 from,
-    thread_info_relation t1 t2 from -> thread_info_relation t2 t3 from ->
-    thread_info_relation t1 t3 from.
-Proof. intros. destruct H, H0. split; [rewrite H | rewrite H1]; assumption. Qed.
+Lemma tir_trans: forall t1 t2 t3,
+    thread_info_relation t1 t2 -> thread_info_relation t2 t3 ->
+    thread_info_relation t1 t3.
+Proof. intros. destruct H, H0.
+       split; [rewrite H; assumption | intros; rewrite H1; apply H2].
+Qed.
 
 Lemma forward_loop_add_tail: forall from to depth l x g1 g2 g3 roots,
     forward_loop from to depth l g1 g2 ->

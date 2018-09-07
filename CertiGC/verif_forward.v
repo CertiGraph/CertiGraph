@@ -464,19 +464,17 @@ Proof.
               assert (super_compatible (g', t_info', roots') f_info outlier). {
                 subst g' t_info' roots' lz. rewrite H32, H34.
                 apply lcv_super_compatible; try assumption. red. intuition. }
-              assert (thread_info_relation t_info t_info' from). {
-                subst t_info'. split; [|reflexivity]. rewrite utiacti_gen_size.
-                1: reflexivity. clear -H H8. destruct H as [_ [_ ?]].
-                rewrite Zlength_correct. split. 1: apply Nat2Z.is_nonneg.
-                apply inj_lt. red in H8. omega. }
+              assert (thread_info_relation t_info t_info'). {
+                subst t_info'. split; [reflexivity|]. intros m.
+                rewrite utiacti_gen_size. 1: reflexivity. }
               apply semax_if_seq. forward_if.
               ** destruct H43. replace fp with (gen_start g' from) by
                      (subst fp g'; apply lcv_gen_start; assumption).
                  replace (offset_val fn (gen_start g' from)) with
                      (limit_address g' t_info' from) by
-                     (subst fn gn; rewrite H43; reflexivity).
+                     (subst fn gn; rewrite H45; reflexivity).
                  replace n_addr with (next_address t_info' to) by
-                     (subst n_addr; rewrite H45; reflexivity).
+                     (subst n_addr; rewrite H43; reflexivity).
                  forward_for_simple_bound
                    n
                    (EX i: Z, EX g3: LGraph, EX t_info3: thread_info,
@@ -486,7 +484,7 @@ Proof.
                             (sublist 0 i (vertex_pos_pairs g' (new_copied_v g to)))
                             g' g3;
                           forward_condition g3 t_info3 from to;
-                          thread_info_relation t_info' t_info3 from)
+                          thread_info_relation t_info' t_info3)
                     LOCAL (temp _new nv;
                            temp _sz (vint n);
                            temp _from_start (gen_start g3 from);
@@ -535,11 +533,11 @@ Proof.
                          assert (limit_address g3 t_info3 from =
                                  limit_address g4 t_info4 from). {
                            unfold limit_address. f_equal. 2: assumption. f_equal.
-                           destruct H57; assumption. } rewrite H58.
+                           destruct H57. rewrite H58. reflexivity. } rewrite H58.
                          assert (next_address t_info3 to = next_address t_info4 to). {
                            unfold next_address. f_equal. destruct H57. assumption. }
                          rewrite H59. clear H54 H58 H59.
-                         assert (thread_info_relation t_info' t_info4 from) by
+                         assert (thread_info_relation t_info' t_info4) by
                              (apply tir_trans with t_info3; assumption).
                          assert (forward_loop
                                    from to (Z.to_nat (depth - 1))
@@ -550,7 +548,7 @@ Proof.
                            rewrite lcv_vlabel_new; assumption. }
                          entailer!.
                  --- Intros g3 t_info3.
-                     assert (thread_info_relation t_info t_info3 from) by
+                     assert (thread_info_relation t_info t_info3) by
                          (apply tir_trans with t_info'; [split |]; assumption).
                      rewrite sublist_all in H47. clear Heqt.
                      2: { rewrite Z.le_lteq. right. subst n g' from.
