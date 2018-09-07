@@ -88,7 +88,7 @@ a thread_info, as follows. */
 
 typedef void  * value
 #ifdef COMPCERT
-  _Alignas (void *)
+  __attribute((aligned(_Alignof(void *))))
 #endif
   ;
 typedef uintnat header_t;

@@ -193,7 +193,7 @@ Definition forward_spec :=
           forward_relation from to (Z.to_nat depth)
                            (forward_p2forward_t forward_p roots g) g g';
           forward_condition g' t_info' from to;
-          thread_info_relation t_info t_info' from)
+          thread_info_relation t_info t_info')
     LOCAL ()
     SEP (all_string_constants rsh gv;
          fun_info_rep rsh f_info fi;
@@ -230,7 +230,7 @@ Definition forward_roots_spec :=
           forward_roots_loop from to roots g g';
           roots' = forward_all_roots from to roots g f_info;
           forward_condition g' t_info' from to;
-          thread_info_relation t_info t_info' from)
+          thread_info_relation t_info t_info')
     LOCAL ()
     SEP (all_string_constants rsh gv;
          fun_info_rep rsh f_info fi;
@@ -251,7 +251,8 @@ Definition do_scan_spec :=
     PROP (readable_share rsh; writable_share sh;
           super_compatible (g, t_info, roots) f_info outlier;
           forward_condition g t_info from to;
-          to <> O; from <> to; closure_has_index g to to_index)
+          to <> O; from <> to; closure_has_index g to to_index;
+          0 < total_space (nth_space t_info to))
     LOCAL (temp _from_start (gen_start g from);
            temp _from_limit (limit_address g t_info from);
            temp _scan (offset_val (- WORD_SIZE) (vertex_address g (to, to_index)));
@@ -265,7 +266,7 @@ Definition do_scan_spec :=
     PROP (super_compatible (g', t_info', roots) f_info outlier;
           forward_condition g' t_info' from to;
           do_scan_relation from to to_index g g';  
-          thread_info_relation t_info t_info' from)
+          thread_info_relation t_info t_info')
     LOCAL ()
     SEP (all_string_constants rsh gv;
          outlier_rep outlier;
