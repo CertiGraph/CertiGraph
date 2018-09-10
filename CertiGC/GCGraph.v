@@ -1325,6 +1325,14 @@ Proof.
   apply vs_accum_list_ge.
 Qed.
 
+Lemma pvs_lt_rev: forall g gen i j,
+    (previous_vertices_size g gen i < previous_vertices_size g gen j)%Z -> i < j.
+Proof.
+  intros. destruct (le_lt_dec j i).
+  - apply (pvs_mono g gen) in l. exfalso. omega.
+  - assumption.
+Qed.
+
 Local Open Scope Z_scope.
 
 Definition forward_roots_compatible
