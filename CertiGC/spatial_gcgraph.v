@@ -595,6 +595,18 @@ Proof.
     [rewrite nat_inc_list_In_iff; assumption | apply derives_refl].
 Qed.
 
+Lemma generation_data_at__ptrofs: forall g t_info gen b i,
+    Vptr b i = gen_start g gen ->
+    generation_data_at_ g t_info gen |--
+                        !! (WORD_SIZE * gen_size t_info gen + Ptrofs.unsigned i <=
+                            Ptrofs.max_unsigned).
+Proof.
+  intros. unfold generation_data_at_. rewrite <- H. entailer!.
+  destruct H0 as [_ [_ [? _]]]. red in H0. simpl sizeof in H0.
+  rewrite Z.max_r in H0; [rep_omega |
+                          unfold gen_size; apply (proj1 (total_space_range _))].
+Qed.
+
 Lemma outlier_rep_single_rep: forall (roots: roots_t) outlier p,
     In (inl (inr p)) roots ->
     incl (filter_sum_right (filter_sum_left roots)) outlier ->
