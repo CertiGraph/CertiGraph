@@ -626,21 +626,39 @@ Proof.
         replace (2 * z + 1) with (z + z + 1) by omega.
         entailer!. apply valid_int_or_ptr_ii1.
       - unfold field2val.
-        assert (In g0 outlier). {
-          clear -H7 H0 H16 H17 Heqf.
-          unfold outlier_compatible in H7.
-          apply H7 in H0; clear H7. apply H0; clear H0.
+        assert (In g0 outlier). { (* will make into a lemma later *)
+          apply H7 in H0; clear H7.
+          apply H0; clear H0.
+          
           unfold make_fields in Heqf.
-          rewrite <- filter_sum_right_In_iff.
-          rewrite <- filter_option_In_iff.
-          destruct make_fields' in Heqf. 
-          1: rewrite Znth_nil in Heqf; inversion Heqf.
-          (* stuck... this seems like it should be much easier. will ask Shengyi *)
-          admit.
+          
+          remember (raw_fields (vlabel g v)).
+          (* maybe generalise to make_fields? *)
+          assert (forall l v n gcptr,
+          0 <= n < Zlength l ->
+          Znth n (make_fields' l v 0) = inl (inr gcptr) ->
+          Znth n l = Some (inr gcptr)).
+          {
+            clear.
+            intros.
+            unfold make_fields' in H0.
+            destruct l.
+            1: rewrite Znth_nil in H0; inversion H0.
+            rewrite <- nth_Znth. rewrite <- nth_Znth in H0.
+            3: assumption.
+            2: { destruct r; [destruct s|]; rewrite Zlength_cons in *; rewrite make_fields'_eq_Zlength; assumption. }               induction (Z.to_nat n). 
+
+            destruct r; [destruct s|]; simpl in *; inversion H0; reflexivity.
+          admit. }
+          apply H0 in Heqf.
+          rewrite <- filter_sum_right_In_iff, <- filter_option_In_iff.
+          rewrite <- Heqf. apply Znth_In; assumption.
+          assumption.
         }
+        
         unfold outlier_rep. apply (in_map single_outlier_rep) in H18.
         replace_SEP 3 (single_outlier_rep g0). {
-          entailer!. clear -H18.
+          entailer!. clear -H18. 
           apply (list_in_map_inv single_outlier_rep) in H18. destruct H18 as [? [? ?]].
           rewrite H; clear H.
           apply (in_map single_outlier_rep) in H0.
@@ -656,7 +674,7 @@ Proof.
         unfold get_edges. 
         rewrite <- filter_sum_right_In_iff.
         rewrite <- Heqf. apply Znth_In.
-        admit. (*very easy.*)
+        rewrite make_fields_eq_length; assumption.
     }
     remember (graph_rep g * heap_rest_rep (ti_heap t_info) * outlier_rep outlier) as P.
     pose proof (graph_and_heap_rest_data_at_ _ _ _ H8 H).
@@ -677,7 +695,8 @@ Proof.
       forward. Exists g t_info roots. entailer!. split.
       * rewrite Heqf. clear -H16. destruct H16.
         -- rewrite H; simpl; constructor.
-        -- (* some simple rewrite; constructor *) admit. 
+        -- rewrite andb_false_intro2. constructor.
+           rewrite Z.eqb_neq; assumption.
       * unfold forward_condition, thread_info_relation.
         split; auto; split; reflexivity.
     + (* GC_Pointer *)
@@ -714,8 +733,8 @@ Proof.
              (single_outlier_rep g0) x0
              (valid_pointer (GC_Pointer2val g0) * TT).
         apply H in H2; clear H.
-        (* some easy tactic... *)
-        admit.
+        remember (GC_Pointer2val g0).
+        eapply derives_trans; [apply sepcon_derives; [eassumption | apply TT_right] |]; cancel.
       }
       replace_SEP 1 ((weak_derives P (valid_pointer (Vptr b i) * TT) && emp) * P) by
           (entailer; assumption). Intros. clear H20.
@@ -723,16 +742,27 @@ Proof.
       Intros vret. destruct vret. (* is_from *) 
       * (* yes *)
         rewrite HeqP. Intros. gather_SEP 0 1. sep_apply H19. rewrite Heqfn in v0.
-        (* using a bit of magic below, but there will be a little helper function for this soon. this is just the third time proving it so I'm skipping it for once. *)
-        replace_SEP 3 (single_outlier_rep (GCPtr b i) * TT).
-        1: admit.
+(* same admit, third time *)
+        assert (In (GCPtr b i) outlier) by admit.
+        replace_SEP 1 (single_outlier_rep (GCPtr b i) * TT).
+        {
+          unfold outlier_rep. apply (in_map single_outlier_rep) in H20.
+          entailer!. clear -H20. 
+          apply (list_in_map_inv single_outlier_rep) in H20. destruct H20 as [? [? ?]].
+          rewrite H; clear H.
+          apply (in_map single_outlier_rep) in H0.
+          destruct (log_normalize.fold_right_andp
+                     (map single_outlier_rep outlier)
+                     (single_outlier_rep x) H0).
+          rewrite H. apply andp_left1; cancel.
+        }
         Intros. gather_SEP 2 0.
         (* end of magic *)
         change (Vptr b i) with (GC_Pointer2val (GCPtr b i)) in v0.
         pose proof (generation_share_writable (nth_gen g from)).
-        change (generation_sh (nth_gen g from)) with (nth_sh g from) in H20.
-        rewrite <- Heqfsh in H20. unfold generation_data_at_.
-        sep_apply (single_outlier_rep_memory_block_FF (GCPtr b i) fp gn fsh H20 v0).
+        change (generation_sh (nth_gen g from)) with (nth_sh g from) in H23.
+        rewrite <- Heqfsh in H23. unfold generation_data_at_.
+        sep_apply (single_outlier_rep_memory_block_FF (GCPtr b i) fp gn fsh H23 v0).
         assert_PROP False by entailer!. contradiction. 
       * (* no *)
         apply semax_if_seq. forward_if.
@@ -740,7 +770,11 @@ Proof.
         forward. Exists g t_info roots. entailer!.
         -- split; [|split].
            ++ unfold roots_compatible. split; assumption.
-           ++ simpl. rewrite Heqf. admit. (*constructor.*)
+           ++ simpl. rewrite Heqf.
+              destruct H16.
+              ** rewrite H16; simpl; constructor.
+              ** rewrite andb_false_intro2. constructor.
+                 rewrite Z.eqb_neq; assumption.
            ++ hnf; intuition;
               unfold forward_condition, thread_info_relation; auto.
         -- unfold thread_info_rep. entailer!.
@@ -759,8 +793,9 @@ Proof.
           rewrite  Heqn', Heqv'. assumption.
           unfold get_edges.
           rewrite <- filter_sum_right_In_iff.
-          rewrite <- Heqf. apply Znth_In. admit.
-          (* will add lemma *)
+          rewrite <- Heqf. apply Znth_In.
+          clear -H12.
+          rewrite make_fields_eq_length; assumption.
         }
         pose proof (graph_has_gen_start_isptr g n' H21).
         destruct (gen_start g n'); try contradiction; auto.
@@ -780,8 +815,8 @@ Proof.
         apply H11 with (e:=e) in H0. assumption.
         unfold get_edges.
         rewrite <- filter_sum_right_In_iff.
-        rewrite <- Heqf. apply Znth_In. admit.
-        (* very easy, and proved elsewhere... will make lemma. *)
+        rewrite <- Heqf. apply Znth_In.
+        rewrite make_fields_eq_length; assumption.
       }
       assert (P |-- (weak_derives P (valid_pointer (Vptr b i) * TT) && emp) * P). {
         apply weak_derives_strong. subst.
@@ -793,8 +828,23 @@ Proof.
                   (Z2val (make_header g v'))
                   (offset_val (- WORD_SIZE) (vertex_address g v'))).
         - apply readable_nonidentity, writable_readable_share. assumption.
-        - subst l. simpl. omega. 
-        - rewrite <- Heqv0. (* hrm, must ask Shengyi. *)
+        - simpl. omega. 
+        - (* unfold field2val in H18; rewrite <- Heqv' in H18; rewrite Heqv0 in H18; simpl in H18. *)
+          
+       (* 
+ Lemma single_outlier_rep_valid_pointer: forall p,
+    single_outlier_rep p |-- valid_pointer (GC_Pointer2val p) * TT.
+Proof.
+  intros. unfold single_outlier_rep. Intros sh. remember (GC_Pointer2val p) as pp.
+  sep_apply (data_at__memory_block_cancel sh (tptr tvoid) pp). simpl sizeof.
+  sep_apply (memory_block_valid_ptr sh 4 pp);
+    [apply readable_nonidentity; assumption | omega | apply derives_refl].
+Qed.
+Lemma outlier_rep_valid_pointer: forall (roots: roots_t) out  intros. sep_apply (outlier_rep_single_rep _ _ _ H H0).
+  sep_apply (single_outlier_rep_valid_pointer p). cancel.
+Qed.
+*)
+          (* hrm, must ask Shengyi. *)
           admit.
       } 
       replace_SEP 1 (weak_derives P
@@ -824,7 +874,8 @@ Proof.
         unlocalize [graph_rep g]. 1: apply (graph_vertex_ramif_stable _ _ H20).
         apply semax_if_seq. forward_if; rewrite make_header_int_rep_mark_iff in H23.
         -- (* yes, already forwarded *)
-          deadvars!. localize [vertex_rep (nth_sh g (vgeneration v')) g v'].
+          deadvars!. 
+          localize [vertex_rep (nth_sh g (vgeneration v')) g v']. change (Tpointer tvoid {| attr_volatile := false; attr_alignas := Some 2%N |}) with int_or_ptr_type.
            rewrite v0. unfold vertex_rep, vertex_at. Intros.
            unfold make_fields_vals at 2. rewrite H23.
            assert (0 <= 0 < Zlength (make_fields_vals g v')). {
@@ -839,12 +890,63 @@ Proof.
            replace_SEP 0 (vertex_rep (nth_sh g (vgeneration v')) g v'). {
              unfold vertex_rep, vertex_at. unfold make_fields_vals at 3.
              rewrite H23. entailer!. }
-
-           (* time to actually modify p *)
-           admit. (**)
-
-           (* Shengyi's code, just for reference...
            unlocalize [graph_rep g]. 1: apply (graph_vertex_ramif_stable _ _ H20).
+
+           (* here comes trouble... *)
+           localize [vertex_rep (nth_sh g (vgeneration v)) g v].
+           unfold vertex_rep, vertex_at. Intros.
+           rewrite (data_at_tarray_value
+             (nth_sh g (vgeneration v))
+             (Zlength (make_fields_vals g v))
+             n
+             (vertex_address g v)
+             (make_fields_vals g v)
+             (make_fields_vals g v)
+             (sublist 0 n (make_fields_vals g v))
+             (sublist n (Zlength (make_fields_vals g v)) (make_fields_vals g v))); auto.
+           2: rewrite fields_eq_length; rep_omega.
+           2: omega.
+           2: autorewrite with sublist; reflexivity.
+           Intros.
+           assert (Zlength (make_fields_vals g v) - n =
+                   Zlength (sublist n (Zlength (make_fields_vals g v))
+                   (make_fields_vals g v))). {
+             symmetry; apply Zlength_sublist_correct;
+             rewrite fields_eq_length; rep_omega.
+           }
+           rewrite H26. rewrite data_at_tarray_value_split_1. Intros.
+           assert (writable_share (nth_sh g (vgeneration v))) by (unfold nth_sh; apply generation_share_writable).
+           freeze [0;1;3;4;5;6] FR.
+           remember (offset_val (WORD_SIZE * n) (vertex_address g v)).
+           forward.
+           admit.
+
+          
+(* floundering...           
+           unlocalize [graph_rep g].
+           1: apply (graph_vertex_ramif_stable _ _ H0).
+           forward.
+           localize [data_at_ Tsh int_or_ptr_type (offset_val (WORD_SIZE * n) (vertex_address g v))].
+           remember (offset_val (WORD_SIZE * n) (vertex_address g v)).
+           store_tac.
+           forward.
+           localize [field_at Tsh int_or_ptr_type [] (nullval) (offset_val (WORD_SIZE * n) (vertex_address g v))].
+           forward.
+           search_field_at_in_SEP.
+           forward.
+           clear.
+           localize [vertex_rep (nth_sh g (vgeneration v)) g v]. unfold vertex_rep, vertex_at.
+           localize [data_at Tsh val (vint 0) (offset_val (WORD_SIZE * n) (vertex_address g v))].
+           forward.
+           vertex_rep (nth_sh g (vgeneration v)) g v].
+           unfold vertex_rep, vertex_at. Intros.
+           
+           1: admit. 
+           (* time to actually modify p *)
+ *)
+
+           (* shengyi's code... 
+
            thaw FR. forward. forward. rewrite <- Heqroot.
            rewrite if_true by reflexivity. rewrite H22.
            Exists g (upd_thread_info_arg
@@ -858,7 +960,8 @@ Proof.
               apply upd_roots_compatible; assumption.
            ++ apply fr_v_in_forwarded; [reflexivity | assumption].
            ++ hnf. intuition.
-            *)
+            
+end of shengyi's code *)
            
         -- (* not yet forwarded *)
           forward. thaw FR.  freeze [0; 1; 2; 3; 4; 5] FR. 
@@ -1051,7 +1154,7 @@ old code:
                     (rewrite Heqnv; rewrite offset_offset_val; f_equal; rep_omega).
                 rewrite <- H33. unfold vertex_at; entailer!. }
               gather_SEP 0 1. rewrite (copied_v_derives_new_g g v' to) by assumption.
-              freeze [1; 2; 3; 4] FR. remember (lgraph_add_copied_v g v' to) as g'.
+              freeze [1; 2; 3; 4] FR. remember (lgraph_add_copied_v g v' to) as g'. (* punchline! *)
               assert (vertex_address g' v' = vertex_address g v') by
                   (subst g'; apply lacv_vertex_address_old; assumption).
               assert (vertex_address g' (new_copied_v g to) =
@@ -1066,7 +1169,7 @@ old code:
               rewrite <- H33 in H38. assert (graph_has_v g' v') by
                   (subst g'; apply lacv_graph_has_v_old; assumption).
               remember (nth_sh g' (vgeneration v')) as sh'.
-              sep_apply (graph_vertex_lmc_ramif g' v' (new_copied_v g to) H39).
+              sep_apply (graph_vertex_lmc_ramif g' v' (new_copied_v g to) H39). (* punchline #2 *)
               rewrite <- Heqsh'. Intros. freeze [1; 2] FR1.
               unfold vertex_rep, vertex_at. Intros.
               sep_apply (data_at_minus1_address
