@@ -741,6 +741,21 @@ Proof.
   - rewrite map_length, make_fields'_eq_length. reflexivity.
 Qed.
 
+Lemma make_fields'_eq_Zlength: forall l v n,
+    Zlength (make_fields' l v n) = Zlength l.
+Proof.
+  intros. revert n. induction l; try reflexivity.
+  intros; simpl. destruct a; [destruct s|]; simpl;
+  repeat rewrite Zlength_cons; rewrite IHl; reflexivity.
+Qed.
+
+Lemma make_fields_eq_length: forall g v,
+    Zlength (make_fields g v) = Zlength (raw_fields (vlabel g v)).
+Proof.
+  unfold make_fields. intros.
+  rewrite make_fields'_eq_Zlength; reflexivity.
+Qed.
+
 Lemma vertex_address_the_same: forall (g1 g2: LGraph) v,
     (forall v, g1.(vlabel) v = g2.(vlabel) v) ->
     map start_address g1.(glabel).(g_gen) = map start_address g2.(glabel).(g_gen) ->
