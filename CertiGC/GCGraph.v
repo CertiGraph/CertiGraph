@@ -10,6 +10,7 @@ Require Import VST.msl.shares.
 Require Import VST.floyd.sublist.
 Require Import VST.floyd.coqlib3.
 Require Import VST.floyd.functional_base.
+Require Import VST.floyd.data_at_rec_lemmas.
 Require Import RamifyCoq.lib.EquivDec_ext.
 Require Import RamifyCoq.lib.List_ext.
 Require Import RamifyCoq.graph.graph_model.
@@ -754,6 +755,65 @@ Lemma make_fields_eq_length: forall g v,
 Proof.
   unfold make_fields. intros.
   rewrite make_fields'_eq_Zlength; reflexivity.
+Qed.
+
+Lemma make_fields'_n_doesnt_matter: forall i l v n m gcptr,
+    nth i (make_fields' l v n) field_t_inhabitant = inl (inr gcptr) ->
+    nth i (make_fields' l v m) field_t_inhabitant = inl (inr gcptr).
+Proof.
+  intros.
+  unfold make_fields' in *.
+  generalize dependent i.
+  generalize dependent n.
+  generalize dependent m.
+  induction l.
+  + intros; assumption.
+  + induction i.
+    - destruct a; [destruct s|]; simpl; intros; try assumption; try inversion H.
+    - destruct a; [destruct s|]; simpl; intro;
+        apply IHl with (m:=(m+1)%nat) in H; assumption.
+Qed.
+
+Lemma make_fields'_item_was_in_list: forall l v n gcptr,
+    0 <= n < Zlength l ->
+    Znth n (make_fields' l v 0) = inl (inr gcptr) ->
+    Znth n l = Some (inr gcptr).
+Proof.
+  intros.
+  rewrite <- nth_Znth; rewrite <- nth_Znth in H0;
+    try rewrite make_fields'_eq_Zlength; try assumption.
+  generalize dependent n.
+  induction l.
+  - intros. rewrite nth_Znth in H0; try assumption.
+    unfold make_fields' in H0; rewrite Znth_nil in H0; inversion H0.
+  - intro n. induction (Z.to_nat n) eqn:?.
+    + intros. destruct a; [destruct s|]; simpl in *; try inversion H0; try reflexivity.
+    + intros. simpl in *. clear IHn0.
+      replace n0 with (Z.to_nat (Z.of_nat n0)) by apply Nat2Z.id.
+      assert (0 <= Z.of_nat n0 < Zlength l). {
+        split; try omega.
+        destruct H; rewrite Zlength_cons in H1.
+        apply Zsucc_lt_reg; rewrite <- Nat2Z.inj_succ.
+        rewrite <- Heqn0; rewrite Z2Nat.id; try assumption.
+      }
+      destruct a; [destruct s|]; simpl in H0; apply IHl;
+        try assumption; apply make_fields'_n_doesnt_matter with (n:=1%nat);
+        rewrite Nat2Z.id; try assumption.
+Qed.      
+
+Lemma in_gcptr_outlier: forall g gcptr outlier n v,
+    graph_has_v g v ->
+    outlier_compatible g outlier ->
+    0 <= n < Zlength (raw_fields (vlabel g v)) ->
+    Znth n (make_fields g v) = inl (inr gcptr) ->
+    In gcptr outlier.
+Proof.
+  intros.
+  apply H0 in H; apply H; clear H; clear H0.
+  unfold make_fields in H2.
+  apply make_fields'_item_was_in_list in H2; try assumption.
+  rewrite <- filter_sum_right_In_iff, <- filter_option_In_iff.
+  rewrite <- H2; apply Znth_In; assumption.
 Qed.
 
 Lemma vertex_address_the_same: forall (g1 g2: LGraph) v,

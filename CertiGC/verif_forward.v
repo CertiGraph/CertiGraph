@@ -625,41 +625,12 @@ Proof.
       - unfold field2val; unfold odd_Z2val.
         replace (2 * z + 1) with (z + z + 1) by omega.
         entailer!. apply valid_int_or_ptr_ii1.
-      - unfold field2val.
-        assert (In g0 outlier). { (* will make into a lemma later *)
-          apply H7 in H0; clear H7.
-          apply H0; clear H0.
-          
-          unfold make_fields in Heqf.
-          
-          remember (raw_fields (vlabel g v)).
-          (* maybe generalise to make_fields? *)
-          assert (forall l v n gcptr,
-          0 <= n < Zlength l ->
-          Znth n (make_fields' l v 0) = inl (inr gcptr) ->
-          Znth n l = Some (inr gcptr)).
-          {
-            clear.
-            intros.
-            unfold make_fields' in H0.
-            destruct l.
-            1: rewrite Znth_nil in H0; inversion H0.
-            rewrite <- nth_Znth. rewrite <- nth_Znth in H0.
-            3: assumption.
-            2: { destruct r; [destruct s|]; rewrite Zlength_cons in *; rewrite make_fields'_eq_Zlength; assumption. }               induction (Z.to_nat n). 
-
-            destruct r; [destruct s|]; simpl in *; inversion H0; reflexivity.
-          admit. }
-          apply H0 in Heqf.
-          rewrite <- filter_sum_right_In_iff, <- filter_option_In_iff.
-          rewrite <- Heqf. apply Znth_In; assumption.
-          assumption.
-        }
-        
-        unfold outlier_rep. apply (in_map single_outlier_rep) in H18.
+      - unfold field2val, outlier_rep.
+        apply in_gcptr_outlier with (gcptr:= g0) (outlier:=outlier) (n:=n) in H0; try assumption.
+        apply (in_map single_outlier_rep outlier g0) in H0.
         replace_SEP 3 (single_outlier_rep g0). {
-          entailer!. clear -H18. 
-          apply (list_in_map_inv single_outlier_rep) in H18. destruct H18 as [? [? ?]].
+          entailer!. clear -H0. 
+          apply (list_in_map_inv single_outlier_rep) in H0. destruct H0 as [? [? ?]].
           rewrite H; clear H.
           apply (in_map single_outlier_rep) in H0.
           destruct (log_normalize.fold_right_andp
@@ -715,13 +686,10 @@ Proof.
         assert (HS: emp |-- TT) by entailer; sep_apply HS; clear HS.
         apply derives_weak.
         remember (GCPtr b i) as g0.
-        assert (In g0 outlier). {
-          admit.
-          (* same as before *)
-        }
-        unfold outlier_rep. apply (in_map single_outlier_rep) in H20; clear -H20.
-        apply (list_in_map_inv single_outlier_rep) in H20.
-        destruct H20 as [? [? ?]].
+        apply in_gcptr_outlier with (gcptr:= g0) (outlier:=outlier) (n:=n) in H0; try assumption. 
+        unfold outlier_rep. apply (in_map single_outlier_rep) in H0; clear -H0.
+        apply (list_in_map_inv single_outlier_rep) in H0.
+        destruct H0 as [? [? ?]].
         apply (in_map single_outlier_rep) in H0.
         destruct (log_normalize.fold_right_andp
                      (map single_outlier_rep outlier)
@@ -742,8 +710,7 @@ Proof.
       Intros vret. destruct vret. (* is_from *) 
       * (* yes *)
         rewrite HeqP. Intros. gather_SEP 0 1. sep_apply H19. rewrite Heqfn in v0.
-(* same admit, third time *)
-        assert (In (GCPtr b i) outlier) by admit.
+        pose proof in_gcptr_outlier g (GCPtr b i) outlier n v H0 H7 H12 Heqf.
         replace_SEP 1 (single_outlier_rep (GCPtr b i) * TT).
         {
           unfold outlier_rep. apply (in_map single_outlier_rep) in H20.
@@ -757,7 +724,6 @@ Proof.
           rewrite H. apply andp_left1; cancel.
         }
         Intros. gather_SEP 2 0.
-        (* end of magic *)
         change (Vptr b i) with (GC_Pointer2val (GCPtr b i)) in v0.
         pose proof (generation_share_writable (nth_gen g from)).
         change (generation_sh (nth_gen g from)) with (nth_sh g from) in H23.
@@ -914,14 +880,19 @@ Qed.
              symmetry; apply Zlength_sublist_correct;
              rewrite fields_eq_length; rep_omega.
            }
-           rewrite H26. rewrite data_at_tarray_value_split_1. Intros.
+           rewrite H26. rewrite data_at_tarray_value_split_1.
+           2: rewrite <- H26; rewrite fields_eq_length; omega.
+
+
+           Intros.
            assert (writable_share (nth_sh g (vgeneration v))) by (unfold nth_sh; apply generation_share_writable).
            freeze [0;1;3;4;5;6] FR.
            remember (offset_val (WORD_SIZE * n) (vertex_address g v)).
+           
            (* forward. *)
-           admit. admit.
-
-          
+           
+           admit. 
+           
 (* floundering...           
            unlocalize [graph_rep g].
            1: apply (graph_vertex_ramif_stable _ _ H0).
@@ -935,7 +906,7 @@ Qed.
            search_field_at_in_SEP.
            forward.
            clear.
-           localize [vertex_rep (nth_sh g (vgeneration v)) g v]. unfold vertex_rep, vertex_at.
+           localize [vertex_rep (nth_sh g (vgeneration v)) g v]. unfold vertex_reptex_rep, vertex_at.
            localize [data_at Tsh val (vint 0) (offset_val (WORD_SIZE * n) (vertex_address g v))].
            forward.
            vertex_rep (nth_sh g (vgeneration v)) g v].
