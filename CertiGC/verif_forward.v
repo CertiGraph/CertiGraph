@@ -918,8 +918,8 @@ Qed.
            assert (writable_share (nth_sh g (vgeneration v))) by (unfold nth_sh; apply generation_share_writable).
            freeze [0;1;3;4;5;6] FR.
            remember (offset_val (WORD_SIZE * n) (vertex_address g v)).
-           forward.
-           admit.
+           (* forward. *)
+           admit. admit.
 
           
 (* floundering...           
