@@ -577,7 +577,7 @@ Proof.
         Exists g t_info roots. simpl. entailer!.
         -- split; [constructor; assumption | split; [hnf; intuition | apply tir_id]].
         -- unfold thread_info_rep. entailer!.
-           
+          
   (* p is Vtype * Z, ie located in graph *)
   - destruct p as [v n]. destruct H0. freeze [0; 1; 2; 4] FR.
     localize [vertex_rep (nth_sh g (vgeneration v)) g v].
@@ -793,26 +793,32 @@ Proof.
         sep_apply (data_at_valid_ptr shh tuint
                   (Z2val (make_header g v'))
                   (offset_val (- WORD_SIZE) (vertex_address g v'))).
-        - apply readable_nonidentity, writable_readable_share. assumption.
+        - apply readable_nonidentity, writable_readable_share; assumption.
         - simpl. omega. 
-        - (* unfold field2val in H18; rewrite <- Heqv' in H18; rewrite Heqv0 in H18; simpl in H18. *)
-          
-       (* 
- Lemma single_outlier_rep_valid_pointer: forall p,
-    single_outlier_rep p |-- valid_pointer (GC_Pointer2val p) * TT.
-Proof.
-  intros. unfold single_outlier_rep. Intros sh. remember (GC_Pointer2val p) as pp.
-  sep_apply (data_at__memory_block_cancel sh (tptr tvoid) pp). simpl sizeof.
-  sep_apply (memory_block_valid_ptr sh 4 pp);
-    [apply readable_nonidentity; assumption | omega | apply derives_refl].
-Qed.
-Lemma outlier_rep_valid_pointer: forall (roots: roots_t) out  intros. sep_apply (outlier_rep_single_rep _ _ _ H H0).
-  sep_apply (single_outlier_rep_valid_pointer p). cancel.
-Qed.
-*)
-          (* hrm, must ask Shengyi. *)
-          admit.
-      } 
+        - destruct l eqn:?.
+          + rewrite Zlength_nil. 
+            rewrite <- Heqv0.
+            assert ([] = (raw_fields (vlabel g v'))). {
+              clear -Heql.
+              unfold make_fields_vals, make_fields, make_fields' in Heql.
+              destruct (raw_mark (vlabel g v')); inversion Heql.
+              symmetry in Heql. apply map_eq_nil in Heql.
+              destruct (raw_fields (vlabel g v')); try reflexivity.
+              destruct r; [destruct s|]; inversion Heql.
+            }
+            pose proof (raw_fields_not_nil (vlabel g v')).
+            rewrite <- H23 in H24. destruct H24; reflexivity.
+          + rewrite Heqv0.
+            sep_apply (data_at_valid_ptr
+                       shh
+                       (tarray int_or_ptr_type (Zlength (v0::l0)))
+                       (v0::l0)
+                       (Vptr b i)).
+            * apply readable_nonidentity, writable_readable_share; assumption.
+            * simpl. rewrite Zlength_cons. 
+              rewrite Zmax0r; rep_omega.
+            * entailer!.
+      }
       replace_SEP 1 (weak_derives P
          (valid_pointer (Vptr b i) * TT) && emp * P) by entailer!. 
       clear H22. Intros.
