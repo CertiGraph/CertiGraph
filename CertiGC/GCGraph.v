@@ -1041,7 +1041,8 @@ Definition forward_p_compatible
            (p: forward_p_type) (roots: roots_t) (g: LGraph): Prop :=
   match p with
   | inl root_index => 0 <= root_index < Zlength roots
-  | inr (v, n) => graph_has_v g v /\ 0 <= n < Zlength (vlabel g v).(raw_fields)
+  | inr (v, n) => graph_has_v g v /\ 0 <= n < Zlength (vlabel g v).(raw_fields) /\
+                  (vlabel g v).(raw_mark) = false
   end.
 
 Fixpoint collect_Z_indices {A} (eqdec: forall (a b: A), {a = b} + {a <> b})
@@ -2597,31 +2598,35 @@ Proof.
   apply IHl; assumption.
 Qed.
 
-Lemma fr_general_prop: forall depth from to p g g' A (Q: LGraph -> A -> Prop)
+Lemma fr_general_prop: forall depth from to p g g' A (Q: LGraph -> A -> nat -> Prop)
                                (P: LGraph -> LGraph -> A -> Prop),
     graph_has_gen g to -> (forall g v, P g g v) ->
     (forall g1 g2 g3 v, P g1 g2 v -> P g2 g3 v -> P g1 g3 v) ->
     (forall g e v x, P g (labeledgraph_gen_dst g e v) x) ->
-    (forall g v to x, graph_has_gen g to -> Q g x -> P g (lgraph_copy_v g v to) x) ->
+    (forall from g v to x,
+        graph_has_gen g to -> Q g x from -> vgeneration v = from ->
+        P g (lgraph_copy_v g v to) x) ->
     (forall depth from to p g g',
         graph_has_gen g to -> forward_relation from to depth p g g' ->
-        forall v, Q g v -> Q g' v) ->
-    (forall g v to x, graph_has_gen g to -> Q g x -> Q (lgraph_copy_v g v to) x) ->
-    (forall g e v x, Q g x -> Q (labeledgraph_gen_dst g e v) x) ->
+        forall v, Q g v from -> Q g' v from) ->
+    (forall g v to x from, graph_has_gen g to -> Q g x from ->
+                           Q (lgraph_copy_v g v to) x from) ->
+    (forall g e v x from, Q g x from -> Q (labeledgraph_gen_dst g e v) x from) ->
     forward_relation from to depth p g g' ->
-    forall v, Q g v -> P g g' v.
+    forall v, Q g v from -> P g g' v.
 Proof.
   induction depth; intros.
   - inversion H7; subst; try (specialize (H0 g' v); assumption).
-    + apply H3; assumption.
+    + apply (H3 (vgeneration v0)); [assumption.. | reflexivity].
     + subst new_g. apply H2.
     + subst new_g. remember (lgraph_copy_v g (dst g e) to) as g1.
       remember (labeledgraph_gen_dst g1 e (new_copied_v g to)) as g2.
       cut (P g1 g2 v). 2: subst; apply H2. intros. apply (H1 g g1 g2).
-      2: assumption. subst g1. apply H3; assumption.
+      2: assumption. subst g1.
+      apply (H3 (vgeneration (dst g e))); [assumption.. | reflexivity].
   - assert (forall l from to g1 g2,
                graph_has_gen g1 to -> forward_loop from to depth l g1 g2 ->
-               forall v, Q g1 v -> P g1 g2 v). {
+               forall v, Q g1 v from -> P g1 g2 v). {
       induction l; intros; inversion H10. 1: apply H0. subst.
       specialize (IHdepth _ _ _ _ _ _ _ _ H9 H0 H1 H2 H3 H4 H5 H6 H15 _ H11).
       apply (H4 _ _ _ _ _ _ H9 H15) in H11.
@@ -2633,7 +2638,7 @@ Proof.
         assert (graph_has_gen new_g to) by
             (subst new_g; rewrite <- lcv_graph_has_gen; assumption).
         apply (H9 _ _ _ _ _ H11 H13). subst new_g. apply H5; assumption.
-      * subst new_g. apply H3; assumption.
+      * subst new_g. apply (H3 (vgeneration v0)); [assumption.. | reflexivity].
     + subst new_g. apply H2.
     + cut (P g new_g v).
       * intros. apply (H1 g new_g g'). 1: assumption.
@@ -2643,14 +2648,15 @@ Proof.
       * subst new_g. remember (lgraph_copy_v g (dst g e) to) as g1.
         remember (labeledgraph_gen_dst g1 e (new_copied_v g to)) as g2.
         cut (P g1 g2 v). 2: subst; apply H2. intros. apply (H1 g g1 g2).
-        2: assumption. subst g1. apply H3; assumption.
+        2: assumption. subst g1.
+        apply (H3 (vgeneration (dst g e))); [assumption.. | reflexivity].
 Qed.
 
 Lemma fr_gen_start: forall depth from to p g g',
     graph_has_gen g to -> forward_relation from to depth p g g' ->
     forall x, gen_start g x = gen_start g' x.
 Proof.
-  intros. remember (fun (g: LGraph) (v: nat) => True) as Q.
+  intros. remember (fun (g: LGraph) (v: nat) (x: nat) => True) as Q.
   remember (fun g1 g2 x => gen_start g1 x = gen_start g2 x) as P.
   pose proof (fr_general_prop depth from to p g g' _ Q P). subst Q P.
   apply H1; clear H1; intros; try assumption; try reflexivity.
@@ -2685,7 +2691,7 @@ Lemma fr_closure_has_v: forall depth from to p g g',
     graph_has_gen g to -> forward_relation from to depth p g g' ->
     forall v, closure_has_v g v -> closure_has_v g' v.
 Proof.
-  intros. remember (fun (g: LGraph) (v: VType) => True) as Q.
+  intros. remember (fun (g: LGraph) (v: VType) (x: nat) => True) as Q.
   remember (fun g1 g2 v => closure_has_v g1 v -> closure_has_v g2 v) as P.
   pose proof (fr_general_prop depth from to p g g' _ Q P). subst Q P.
   apply H2; clear H2; intros; try assumption; try reflexivity.
@@ -2697,7 +2703,7 @@ Lemma fr_graph_has_v: forall depth from to p g g',
     graph_has_gen g to -> forward_relation from to depth p g g' ->
     forall v, graph_has_v g v -> graph_has_v g' v.
 Proof.
-  intros. remember (fun (g: LGraph) (v: VType) => True) as Q.
+  intros. remember (fun (g: LGraph) (v: VType) (x: nat) => True) as Q.
   remember (fun g1 g2 v => graph_has_v g1 v -> graph_has_v g2 v) as P.
   pose proof (fr_general_prop depth from to p g g' _ Q P). subst Q P.
   apply H2; clear H2; intros; try assumption; try reflexivity.
@@ -2722,7 +2728,7 @@ Lemma fr_vertex_address: forall depth from to p g g',
     graph_has_gen g to -> forward_relation from to depth p g g' ->
     forall v, closure_has_v g v -> vertex_address g v = vertex_address g' v.
 Proof.
-  intros. remember (fun g v => closure_has_v g v) as Q.
+  intros. remember (fun g v (x: nat) => closure_has_v g v) as Q.
   remember (fun g1 g2 v => vertex_address g1 v = vertex_address g2 v) as P.
   pose proof (fr_general_prop depth from to p g g' _ Q P). subst Q P.
   apply H2; clear H2; intros; try assumption; try reflexivity.
@@ -2780,7 +2786,7 @@ Lemma fr_raw_fields: forall depth from to p g g',
     graph_has_gen g to -> forward_relation from to depth p g g' ->
     forall v, graph_has_v g v -> raw_fields (vlabel g v) = raw_fields (vlabel g' v).
 Proof.
-  intros. remember (fun (g: LGraph) (v: VType) => graph_has_v g v) as Q.
+  intros. remember (fun (g: LGraph) (v: VType) (x: nat) => graph_has_v g v) as Q.
   remember (fun (g1 g2: LGraph) v =>
               raw_fields (vlabel g1 v) = raw_fields (vlabel g2 v)) as P.
   pose proof (fr_general_prop depth from to p g g' _ Q P). subst Q P.
@@ -2799,6 +2805,56 @@ Proof.
   1: reflexivity. transitivity (raw_fields (vlabel g2 v)).
   - apply (fr_raw_fields _ _ _ _ _ _ H H5 _ H1).
   - apply IHl; [|assumption|].
+    + erewrite <- fr_graph_has_gen; eauto.
+    + eapply fr_graph_has_v; eauto.
+Qed.
+
+Lemma lmc_raw_mark: forall g old new x,
+    x <> old -> raw_mark (vlabel g x) =
+                raw_mark (vlabel (lgraph_mark_copied g old new) x).
+Proof.
+  intros. destruct (V_EqDec x old).
+  - unfold equiv in e. contradiction.
+  - rewrite lmc_vlabel_not_eq; [reflexivity | assumption].
+Qed.
+
+Lemma lcv_raw_mark: forall g v to x,
+    x <> v -> graph_has_gen g to -> graph_has_v g x ->
+    raw_mark (vlabel g x) = raw_mark (vlabel (lgraph_copy_v g v to) x).
+Proof.
+  intros. unfold lgraph_copy_v. rewrite <- lmc_raw_mark by assumption.
+  rewrite lacv_vlabel_old. 1: reflexivity. apply graph_has_v_not_eq; assumption.
+Qed.
+
+Lemma fr_raw_mark: forall depth from to p g g',
+    graph_has_gen g to -> forward_relation from to depth p g g' ->
+    forall v, graph_has_v g v -> vgeneration v <> from ->
+              raw_mark (vlabel g v) = raw_mark (vlabel g' v).
+Proof.
+  intros. remember (fun (g: LGraph) (v: VType) (x: nat) =>
+                      graph_has_v g v /\ vgeneration v <> x) as Q.
+  remember (fun (g1 g2: LGraph) v =>
+              raw_mark (vlabel g1 v) = raw_mark (vlabel g2 v)) as P.
+  pose proof (fr_general_prop depth from to p g g' _ Q P). subst Q P.
+  apply H3; clear H3; intros; try assumption; try reflexivity.
+  - rewrite H3. apply H4.
+  - destruct H4. rewrite <- lcv_raw_mark; [reflexivity | try assumption..].
+    destruct x, v0. simpl in *. intro. inversion H7. subst. contradiction.
+  - destruct H5. split. 2: assumption.
+    apply (fr_graph_has_v _ _ _ _ _ _ H3 H4 _ H5).
+  - destruct H4. split. 2: assumption. apply lcv_graph_has_v_old; assumption.
+  - split; assumption.
+Qed.
+
+Lemma fl_raw_mark: forall depth from to l g g',
+    graph_has_gen g to -> forward_loop from to depth l g g' ->
+    forall v, graph_has_v g v -> vgeneration v <> from ->
+              raw_mark (vlabel g v) = raw_mark (vlabel g' v).
+Proof.
+  intros. revert g g' H H0 v H1 H2. induction l; intros; inversion H0; subst.
+  1: reflexivity. transitivity (raw_mark (vlabel g2 v)).
+  - apply (fr_raw_mark _ _ _ _ _ _ H H6 _ H1 H2).
+  - apply IHl; [|assumption| |assumption].
     + erewrite <- fr_graph_has_gen; eauto.
     + eapply fr_graph_has_v; eauto.
 Qed.
