@@ -799,7 +799,7 @@ Proof.
       destruct a; [destruct s|]; simpl in H0; apply IHl;
         try assumption; apply make_fields'_n_doesnt_matter with (n:=1%nat);
         rewrite Nat2Z.id; try assumption.
-Qed.      
+Qed.
 
 Lemma in_gcptr_outlier: forall g gcptr outlier n v,
     graph_has_v g v ->
@@ -1704,7 +1704,7 @@ Proof.
     rewrite nat_inc_list_In_iff in H2. subst n. red in H1. omega.
   - simpl. apply lacv_gen_start. assumption.
 Qed.
-  
+
 Lemma graph_has_v_in_closure: forall g v, graph_has_v g v -> closure_has_v g v.
 Proof.
   intros g v. destruct v as [gen index].
@@ -2918,28 +2918,33 @@ Proof.
     [| unfold new_copied_v; intro; apply H; inversion H0; simpl]; reflexivity.
 Qed.
 
-Inductive scan_vertex_loop (from to: nat) (v: VType):
+Inductive scan_vertex_for_loop (from to: nat) (v: VType):
   list nat -> LGraph -> LGraph -> Prop :=
-| svl_nil: forall g, scan_vertex_loop from to v nil g g
-| svl_cons: forall g1 g2 g3 i il,
+| svl_nil: forall g, scan_vertex_for_loop from to v nil g g
+| svl_no_scan: forall g1 g2 g3 i il,
   forward_relation
     from to O (forward_p2forward_t (inr (v, (Z.of_nat i))) nil g1) g1 g2 ->
-  scan_vertex_loop from to v il g2 g3 -> scan_vertex_loop from to v (i :: il) g1 g3.
+  scan_vertex_for_loop from to v il g2 g3 ->
+  scan_vertex_for_loop from to v (i :: il) g1 g3.
 
 Definition no_scan (g: LGraph) (v: VType): Prop :=
   NO_SCAN_TAG <= (vlabel g v).(raw_tag).
 
-Inductive do_scan_relation (from to: nat): nat -> LGraph -> LGraph -> Prop :=
-| do_scan_nil: forall g to_index,
-    ~ gen_has_index g to to_index -> do_scan_relation from to to_index g g
-| do_scan_no_scan: forall g g' to_index,
-    gen_has_index g to to_index -> no_scan g (to, to_index) ->
-    do_scan_relation from to (S to_index) g g' ->
-    do_scan_relation from to to_index g g'
-| do_scan_forward: forall g1 g2 g3 to_index,
-    gen_has_index g1 to to_index -> ~ no_scan g1 (to, to_index) ->
-    scan_vertex_loop
-      from to (to, to_index)
-      (nat_inc_list (length (vlabel g1 (to, to_index)).(raw_fields))) g1 g2 ->
-    do_scan_relation from to (S to_index) g2 g3 ->
-    do_scan_relation from to to_index g1 g2.
+Inductive scan_vertex_while_loop (from to: nat):
+  list nat -> LGraph -> LGraph -> Prop :=
+| svwl_nil: forall g, scan_vertex_while_loop from to nil g g
+| svwl_no_scan: forall g1 g2 i il,
+    gen_has_index g1 to i -> no_scan g1 (to, i) ->
+    scan_vertex_while_loop from to il g1 g2 ->
+    scan_vertex_while_loop from to (i :: il) g1 g2
+| svwl_scan: forall g1 g2 g3 i il,
+    gen_has_index g1 to i -> ~ no_scan g1 (to, i) ->
+    scan_vertex_for_loop
+      from to (to, i)
+      (nat_inc_list (length (vlabel g1 (to, i)).(raw_fields))) g1 g2 ->
+    scan_vertex_while_loop from to il g2 g3 ->
+    scan_vertex_while_loop from to (i :: il) g1 g3.
+
+Definition do_scan_relation (from to to_index: nat) (g1 g2: LGraph) : Prop :=
+  exists n, scan_vertex_while_loop from to (nat_seq to_index n) g1 g2 /\
+            ~ gen_has_index g2 to (to_index + n).
