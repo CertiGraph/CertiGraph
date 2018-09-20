@@ -28,7 +28,7 @@ Proof.
                     LOCAL (temp _p p; temp _s s; temp _n (Vint (Int.repr n)))
                     SEP (all_string_constants rsh gv;
                          malloc_token Tsh (Tarray int_or_ptr_type n noattr) p;
-                         data_at_ Tsh (Tarray int_or_ptr_type n noattr) p;
+                         data_at_ Ews (Tarray int_or_ptr_type n noattr) p;
                          data_at_ sh space_type s)).
         -- contradiction.
         -- forward. entailer!.

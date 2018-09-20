@@ -303,7 +303,7 @@ Definition create_space_spec :=
     PROP () LOCAL ()
     SEP (all_string_constants rsh gv;
          malloc_token Tsh (tarray int_or_ptr_type n) p;
-         data_at_ Tsh (tarray int_or_ptr_type n) p;
+         data_at_ Ews (tarray int_or_ptr_type n) p;
          data_at sh space_type (p, (p, (offset_val (WORD_SIZE * n) p))) s).
 
 Definition zero_triple: (val * (val * val)) := (nullval, (nullval, nullval)).
@@ -317,11 +317,11 @@ Definition create_heap_spec :=
     EX h: val, EX p: val,
     PROP () LOCAL (temp ret_temp h)
     SEP (all_string_constants sh gv; malloc_token Tsh heap_type h;
-         data_at Tsh heap_type
+         data_at Ews heap_type
                  ((p, (p, (offset_val (WORD_SIZE * NURSERY_SIZE) p)))
                     :: list_repeat (Z.to_nat (MAX_SPACES - 1)) zero_triple) h;
          malloc_token Tsh (tarray int_or_ptr_type NURSERY_SIZE) p;
-         data_at_ Tsh (tarray int_or_ptr_type NURSERY_SIZE) p).
+         data_at_ Ews (tarray int_or_ptr_type NURSERY_SIZE) p).
 
 Definition make_tinfo_spec :=
   DECLARE _make_tinfo
@@ -333,15 +333,15 @@ Definition make_tinfo_spec :=
     PROP () LOCAL (temp ret_temp t)
     SEP (all_string_constants sh gv;
          malloc_token Tsh thread_info_type t;
-         data_at Tsh thread_info_type
+         data_at Ews thread_info_type
                  (p, (offset_val (WORD_SIZE * NURSERY_SIZE) p,
                       (h, list_repeat (Z.to_nat MAX_ARGS) Vundef))) t;
          malloc_token Tsh heap_type h;
-         data_at Tsh heap_type
+         data_at Ews heap_type
                  ((p, (p, (offset_val (WORD_SIZE * NURSERY_SIZE) p)))
                     :: list_repeat (Z.to_nat (MAX_SPACES - 1)) zero_triple) h;
          malloc_token Tsh (tarray int_or_ptr_type NURSERY_SIZE) p;
-         data_at_ Tsh (tarray int_or_ptr_type NURSERY_SIZE) p).
+         data_at_ Ews (tarray int_or_ptr_type NURSERY_SIZE) p).
 
 Definition resume_spec :=
   DECLARE _resume
