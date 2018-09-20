@@ -72,12 +72,31 @@ Proof.
            rewrite <- H19; reflexivity). rewrite H25 in H24.
       sep_apply (generation_data_at__ptrofs g' t_info' to b i H24). entailer!.
       unfold gen_size in H26. rewrite nth_space_Znth in H26. assumption. }
+    assert_PROP (force_val
+                   (sem_cmp_pp Clt (offset_val index_offset (space_start sp_to))
+                               (offset_val used_offset (space_start sp_to))) =
+                 Vint (if if zlt index_offset used_offset then true else false
+                       then Int.one else Int.zero)). {
+      remember (space_start sp_to). destruct v; try contradiction. inv_int i.
+      specialize (H24 b (Ptrofs.repr ofs) eq_refl).
+      rewrite Ptrofs.unsigned_repr in H24 by rep_omega. sep_apply H24. Intros.
+      assert (0 <= ofs + used_offset <= Ptrofs.max_unsigned). {
+        subst.
+        pose proof (space_order (Znth (Z.of_nat to) (spaces (ti_heap t_info')))).
+        rep_omega. }
+      assert (0 <= ofs + index_offset <= Ptrofs.max_unsigned). {
+        subst. red in H8. pose proof (pvs_ge_zero g' to (to_index + n)%nat).
+        pose proof (pvs_mono g' to _ _ H8). rep_omega. } apply prop_right.
+      rewrite force_sem_cmp_pp; [|rewrite isptr_offset_val; assumption..].
+      simpl. rewrite !ptrofs_add_repr, if_true. 2: reflexivity.
+      unfold Ptrofs.ltu. rewrite !Ptrofs.unsigned_repr; auto. f_equal.
+      if_tac; if_tac; try reflexivity; omega. }
     forward_if (gen_has_index g' to index).
     + remember (Znth (Z.of_nat to) (spaces (ti_heap t_info'))) as sp_to.
       sep_apply (graph_and_heap_rest_data_at_ _ _ _ H14 H5).
       unfold generation_data_at_.
       assert (gen_start g' to = space_start sp_to) by
-          (subst; unfold gen_start; rewrite if_true; assumption). rewrite H31.
+          (subst; unfold gen_start; rewrite if_true; assumption). rewrite H32.
       rewrite data_at__memory_block. Intros. rewrite sizeof_tarray_int_or_ptr.
       2: unfold gen_size; apply (proj1 (total_space_range (nth_space t_info' to))).
       remember (WORD_SIZE * used_space sp_to)%Z as used_offset.
@@ -98,43 +117,34 @@ Proof.
         sep_apply (memory_block_weak_valid_pointer
                      (nth_sh g' to) (WORD_SIZE * gen_size t_info' to)
                      (Vptr b i) offset); auto. 3: apply extend_weak_valid_pointer.
-        - subst. unfold gen_size. split. 1: apply (proj1 H34).
+        - subst. unfold gen_size. split. 1: apply (proj1 H35).
           transitivity (WORD_SIZE * used_space (nth_space t_info' to))%Z.
-          + rewrite nth_space_Znth. apply (proj2 H34).
+          + rewrite nth_space_Znth. apply (proj2 H35).
           + apply Zmult_le_compat_l. apply (proj2 (space_order _)). rep_omega.
         - unfold gen_size. clear -H4 H7. destruct H7. unfold gen_size in H0.
           rewrite <- H0. rewrite nth_space_Znth. rep_omega. }
-      apply andp_right; apply H34.
+      apply andp_right; apply H35.
       * subst. split. 1: pose proof (pvs_ge_zero g' to (to_index + n)%nat); rep_omega.
         apply Zmult_le_compat_l. 2: rep_omega. rewrite <- H21.
         apply pvs_mono. assumption.
       * split. 2: omega. subst. apply Z.mul_nonneg_nonneg. 1: rep_omega.
         apply (proj1 (space_order _)).
-    + assert_PROP (index_offset < used_offset). {
-        remember (space_start sp_to). destruct v; try contradiction. inv_int i.
-        specialize (H24 b (Ptrofs.repr ofs) eq_refl).
-        rewrite Ptrofs.unsigned_repr in H24 by rep_omega. sep_apply H24. Intros.
-        assert (0 <= ofs + used_offset <= Ptrofs.max_unsigned). {
-          subst. pose proof
-                      (space_order (Znth (Z.of_nat to) (spaces (ti_heap t_info')))).
-          rep_omega. }
-        assert (0 <= ofs + index_offset <= Ptrofs.max_unsigned). {
-          subst. red in H8. pose proof (pvs_ge_zero g' to (to_index + n)%nat).
-          pose proof (pvs_mono g' to _ _ H8). rep_omega. }
-        rewrite force_sem_cmp_pp in H25; [|rewrite isptr_offset_val; assumption..].
-        simpl in H25. rewrite !ptrofs_add_repr in H25.
-        rewrite if_true in H25. 2: reflexivity. unfold typed_true in H25.
-        destruct (Ptrofs.ltu (Ptrofs.repr (ofs + index_offset))
-                             (Ptrofs.repr (ofs + used_offset))) eqn: ?; simpl in H25.
-        2: inversion H25. unfold Ptrofs.ltu in Heqb0.
-        rewrite !Ptrofs.unsigned_repr in Heqb0; auto.
-        if_tac in Heqb0. 1: apply prop_right; omega. inversion Heqb0. }
-      forward. entailer!. red. rewrite <- H21 in H26.
-      rewrite <- Z.mul_lt_mono_pos_l in H26 by rep_omega.
-      apply pvs_lt_rev in H26. assumption.
-    + forward. thaw FR. unfold thread_info_rep, heap_struct_rep.
+    + assert (index_offset < used_offset). {
+        rewrite H25 in H26. unfold typed_true in H26. simpl in H26.
+        destruct (zlt index_offset used_offset). 1: assumption.
+        simpl in H26. inversion H26. }
+      forward. entailer!. red. rewrite <- H21 in H27.
+      rewrite <- Z.mul_lt_mono_pos_l in H27 by rep_omega.
+      apply pvs_lt_rev in H27. assumption.
+    + assert (~ index_offset < used_offset). {
+        rewrite H25 in H26. unfold typed_false in H26. simpl in H26.
+        destruct (zlt index_offset used_offset). 2: assumption.
+        simpl in H26. inversion H26. }
+      forward. thaw FR. unfold thread_info_rep, heap_struct_rep.
       Exists g' t_info'. unfold forward_condition. entailer!. exists n. split.
-      1: assumption. admit.
-    + admit.
+      1: assumption. unfold gen_has_index. rewrite <- H21 in H27.
+      rewrite <- Z.mul_lt_mono_pos_l in H27 by rep_omega. intro; apply H27.
+      apply pvs_mono_strict. assumption.
+    + clear H8 H24 H25. Intros. admit.
   - Intros g' t_info'. forward. Exists g' t_info'. entailer!.
 Abort.

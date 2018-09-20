@@ -939,6 +939,16 @@ Qed.
 
 Local Open Scope Z_scope.
 
+Lemma fold_left_Z_mono_strict: forall {A} (f: Z -> A -> Z) (l1 l2 l3: list A) s,
+    (forall a b, a < f a b) -> (forall a b1 b2, f (f a b1) b2  = f (f a b2) b1) ->
+    l2 <> nil -> Permutation (l1 ++ l2) l3 -> fold_left f l1 s < fold_left f l3 s.
+Proof.
+  intros. rewrite <- (fold_left_comm _ _ _ _ H0 H2). rewrite fold_left_app.
+  remember (fold_left f l1 s). clear -H H1. rev_induction l2. 1: contradiction.
+  rewrite fold_left_app. simpl. destruct l. 1: simpl; apply H.
+  transitivity (fold_left f (a :: l) z); [apply H0; intro; inversion H2 | apply H].
+Qed.
+
 Lemma fold_left_Z_mono: forall {A} (f: Z -> A -> Z) (l1 l2 l3: list A) s,
     (forall a b, a <= f a b) -> (forall a b1 b2, f (f a b1) b2  = f (f a b2) b1) ->
     Permutation (l1 ++ l2) l3 -> fold_left f l1 s <= fold_left f l3 s.

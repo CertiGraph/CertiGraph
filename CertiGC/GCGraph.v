@@ -342,7 +342,7 @@ Definition vertex_size_accum g gen (s: Z) (n: nat) := s + vertex_size g (gen, n)
 Definition previous_vertices_size (g: LGraph) (gen i: nat): Z :=
   fold_left (vertex_size_accum g gen) (nat_inc_list i) 0.
 
-Lemma vsa_mono: forall g gen s n, s <= vertex_size_accum g gen s n.
+Lemma vsa_mono: forall g gen s n, s < vertex_size_accum g gen s n.
 Proof.
   intros. unfold vertex_size_accum. pose proof (svs_gt_one g (gen, n)). omega.
 Qed.
@@ -352,10 +352,18 @@ Lemma vsa_comm: forall g gen s n1 n2,
     vertex_size_accum g gen (vertex_size_accum g gen s n2) n1.
 Proof. intros. unfold vertex_size_accum. omega. Qed.
 
-Lemma vs_accum_list_ge: forall g gen s l, s <= fold_left (vertex_size_accum g gen) l s.
+Lemma vs_accum_list_lt: forall g gen s l,
+    l <> nil -> s < fold_left (vertex_size_accum g gen) l s.
 Proof.
-  intros; apply (fold_left_Z_mono (vertex_size_accum g gen) nil l l);
-    [apply vsa_mono | apply vsa_comm | apply Permutation_refl].
+  intros; apply (fold_left_Z_mono_strict (vertex_size_accum g gen) nil l l);
+    [apply vsa_mono | apply vsa_comm | assumption | apply Permutation_refl].
+Qed.
+
+Lemma vs_accum_list_le: forall g gen s l, s <= fold_left (vertex_size_accum g gen) l s.
+Proof.
+  intros. destruct l. 1: simpl; omega. rename l into l1. remember (n :: l1).
+  assert (l <> nil) by (subst; intro S; inversion S). rewrite Z.le_lteq. left.
+  apply vs_accum_list_lt. assumption.
 Qed.
 
 Lemma pvs_S: forall g gen i,
@@ -367,7 +375,7 @@ Proof.
 Qed.
 
 Lemma pvs_ge_zero: forall g gen i, 0 <= previous_vertices_size g gen i.
-Proof. intros. unfold previous_vertices_size. apply vs_accum_list_ge. Qed.
+Proof. intros. unfold previous_vertices_size. apply vs_accum_list_le. Qed.
 
 Definition generation_space_compatible (g: LGraph)
            (tri: nat * generation_info * space) : Prop :=
@@ -1393,12 +1401,21 @@ Proof.
   apply H. assumption.
 Qed.
 
-Lemma pvs_mono: forall g gen i j,
-    i <= j -> (previous_vertices_size g gen i <= previous_vertices_size g gen j)%Z.
+Lemma pvs_mono_strict: forall g gen i j,
+    i < j -> (previous_vertices_size g gen i < previous_vertices_size g gen j)%Z.
 Proof.
   intros. assert (j = i + (j - i)) by omega. rewrite H0. remember (j - i). subst j.
   unfold previous_vertices_size. rewrite nat_inc_list_app, fold_left_app.
-  apply vs_accum_list_ge.
+  apply vs_accum_list_lt. pose proof (nat_seq_length i n). destruct (nat_seq i n).
+  - simpl in H0. omega.
+  - intro S; inversion S.
+Qed.
+
+Lemma pvs_mono: forall g gen i j,
+    i <= j -> (previous_vertices_size g gen i <= previous_vertices_size g gen j)%Z.
+Proof.
+  intros. rewrite Nat.le_lteq in H. destruct H. 2: subst; omega.
+  rewrite Z.le_lteq. left. apply pvs_mono_strict. assumption.
 Qed.
 
 Lemma pvs_lt_rev: forall g gen i j,
@@ -1466,7 +1483,8 @@ Definition unmarked_gen_size (g: LGraph) (gen: nat) :=
 Lemma unmarked_gen_size_le: forall g n, unmarked_gen_size g n <= graph_gen_size g n.
 Proof.
   intros g gen. unfold unmarked_gen_size, graph_gen_size, previous_vertices_size.
-  apply fold_left_mono_filter; [apply vsa_mono | apply vsa_comm].
+  apply fold_left_mono_filter;
+    [intros; rewrite Z.le_lteq; left; apply vsa_mono | apply vsa_comm].
 Qed.
 
 Lemma single_unmarked_le: forall g v,
@@ -1485,7 +1503,7 @@ Proof.
   transitivity (fold_left (vertex_size_accum g (vgeneration v)) [vindex v] 0).
   - simpl. destruct v; simpl. apply Z.le_refl.
   - apply (fold_left_Z_mono (vertex_size_accum g (vgeneration v)) [vindex v] l1 l 0);
-      [apply vsa_mono | apply vsa_comm | apply H1].
+      [intros; apply Z.le_lteq; left; apply vsa_mono | apply vsa_comm | apply H1].
 Qed.
 
 Definition rest_gen_size (t_info: thread_info) (gen: nat): Z :=
