@@ -76,16 +76,16 @@ Proof.
     (* make "data_at sh space_type v h " in SEP *)
     assert_PROP (isptr h) by entailer!. remember (Vundef, (Vundef, Vundef)) as vn.
     assert_PROP (field_compatible heap_type [StructField _spaces] h) by entailer!.
-    replace_SEP 1 (data_at Tsh heap_type (default_val heap_type) h) by entailer!.
+    replace_SEP 1 (data_at Ews heap_type (default_val heap_type) h) by entailer!.
     change (default_val heap_type) with
         (list_repeat (Z.to_nat 12) (Vundef, (Vundef, Vundef))).
     rewrite <- Heqvn. rewrite data_at_heaptype_eq; auto.
-    rewrite (split2_data_at_Tarray_space_type Tsh 12 1);
+    rewrite (split2_data_at_Tarray_space_type Ews 12 1);
       [| omega | rewrite Zlength_list_repeat; omega].
     rewrite sublist_list_repeat by omega. simpl list_repeat at 1.
-    rewrite space_array_1_eq. Intros. forward_call (Tsh, h, Z.shiftl 1 16, gv, sh).
+    rewrite space_array_1_eq. Intros. forward_call (Ews, h, Z.shiftl 1 16, gv, sh).
     (* make succeed *)
-    + split; [apply writable_share_top|split; [assumption|]].
+    + split; [apply writable_Ews | split; [assumption|]].
       rewrite MAX_SPACE_SIZE_eq. compute; split; [discriminate | reflexivity].
     + Intros p0. freeze [0;1;2;4] FR.
       (* change back to "data_at sh heap_type v h" *)
@@ -108,7 +108,7 @@ Proof.
         (EX i: Z,
          PROP ( )
          LOCAL (temp _h h; gvars gv)
-         SEP (data_at Tsh heap_type
+         SEP (data_at Ews heap_type
                       (vh :: list_repeat (Z.to_nat (i - 1)) v0 ++
                           list_repeat (Z.to_nat (12 - i)) vn) h; FRZL FR))%assert.
       * entailer!.
