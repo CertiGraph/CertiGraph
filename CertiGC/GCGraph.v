@@ -2967,5 +2967,107 @@ Definition do_scan_relation (from to to_index: nat) (g1 g2: LGraph) : Prop :=
   exists n, scan_vertex_while_loop from to (nat_seq to_index n) g1 g2 /\
             ~ gen_has_index g2 to (to_index + n).
 
-Definition scan_unmarked (g: LGraph) (to: nat): Prop :=
-  forall idx, gen_has_index g to idx -> (vlabel g (to, idx)).(raw_mark) = false.
+Definition gen_unmarked (g: LGraph) (gen: nat): Prop :=
+  graph_has_gen g gen ->
+  forall idx, gen_has_index g gen idx -> (vlabel g (gen, idx)).(raw_mark) = false.
+
+Lemma lcv_graph_has_v_inv: forall (g : LGraph) (v : VType) (to : nat) (x : VType),
+    graph_has_gen g to -> graph_has_v (lgraph_copy_v g v to) x ->
+    graph_has_v g x \/ x = new_copied_v g to.
+Proof.
+  intros. unfold lgraph_copy_v in H0. rewrite <- lmc_graph_has_v in H0.
+  apply (lacv_graph_has_v_inv g v); assumption.
+Qed.
+
+Lemma lgd_gen_has_index: forall (g: LGraph) (e : EType) (v : VType) (gen idx : nat),
+    gen_has_index (labeledgraph_gen_dst g e v) gen idx <-> gen_has_index g gen idx.
+Proof.
+  intros. unfold labeledgraph_gen_dst, gen_has_index, nth_gen. simpl. reflexivity.
+Qed.
+
+Lemma lgd_vlabel: forall (g: LGraph) (e : EType) (v x : VType),
+    vlabel (labeledgraph_gen_dst g e v) x = vlabel g x.
+Proof. intros. simpl. reflexivity. Qed.
+
+Lemma lcv_gen_unmarked: forall (to : nat) (g : LGraph) (v : VType),
+    vgeneration v <> to -> graph_has_gen g to -> gen_unmarked g to ->
+    raw_mark (vlabel g v) = false -> gen_unmarked (lgraph_copy_v g v to) to.
+Proof.
+  intros. assert (forward_relation
+                    (vgeneration v) to 0 (inl (inr v)) g (lgraph_copy_v g v to)) by
+      (constructor; [reflexivity | assumption]).
+  unfold gen_unmarked in *. intros. specialize (H1 H0 idx).
+  assert (graph_has_v (lgraph_copy_v g v to) (to, idx)) by (split; assumption).
+  apply lcv_graph_has_v_inv in H6. 2: assumption. destruct H6.
+  * pose proof H6. destruct H6. simpl in * |-. specialize (H1 H8). rewrite <- H1.
+    symmetry. apply (fr_raw_mark _ _ _ _ _ _ H0 H3); [assumption | simpl; omega].
+  * rewrite H6. rewrite lcv_vlabel_new; assumption.
+Qed.
+
+Lemma lgd_gen_unmarked: forall (g: LGraph) (e : EType) (v : VType) (gen : nat),
+    gen_unmarked (labeledgraph_gen_dst g e v) gen <-> gen_unmarked g gen.
+Proof.
+  intros. unfold gen_unmarked. rewrite lgd_graph_has_gen. split; intros.
+  - specialize (H H0 idx). rewrite lgd_gen_has_index in H. specialize (H H1).
+    rewrite lgd_vlabel in H. assumption.
+  - rewrite lgd_gen_has_index in H1. rewrite lgd_vlabel. apply H; assumption.
+Qed.
+
+Lemma fr_gen_unmarked: forall from to depth t g g',
+    from <> to -> graph_has_gen g to -> forward_relation from to depth t g g' ->
+    gen_unmarked g to -> gen_unmarked g' to.
+Proof.
+  intros ? ? ?. revert from to. induction depth; intros.
+  - inversion H1; subst; try assumption.
+    + eapply lcv_gen_unmarked; eauto.
+    + subst new_g. rewrite lgd_gen_unmarked. eapply lcv_gen_unmarked; eauto.
+  - assert (forall l from to g1 g2,
+               from <> to -> graph_has_gen g1 to -> gen_unmarked g1 to ->
+               forward_loop from to depth l g1 g2 -> gen_unmarked g2 to). {
+    induction l; intros; inversion H6; subst; try assumption.
+    specialize (IHdepth _ _ _ _ _ H3 H4 H10 H5).
+    rewrite (fr_graph_has_gen _ _ _ _ _ _ H4 H10) in H4.
+    specialize (IHl _ _ _ _ H3 H4 IHdepth H13). assumption. }
+    clear IHdepth. inversion H1; subst; try assumption.
+    + assert (graph_has_gen new_g to) by
+          (subst new_g; rewrite <- lcv_graph_has_gen; assumption).
+      assert (gen_unmarked new_g to) by
+          (subst new_g; apply lcv_gen_unmarked; assumption).
+      eapply (H3 _ _ _ new_g); eauto.
+    + assert (graph_has_gen new_g to) by
+          (subst new_g; rewrite lgd_graph_has_gen, <- lcv_graph_has_gen; assumption).
+      assert (gen_unmarked new_g to) by
+          (subst new_g; rewrite lgd_gen_unmarked; apply lcv_gen_unmarked; assumption).
+      eapply (H3 _ _ _ new_g); eauto.
+Qed.
+
+Lemma svfl_graph_has_gen: forall from to v l g g',
+    graph_has_gen g to -> scan_vertex_for_loop from to v l g g' ->
+    forall x, graph_has_gen g x <-> graph_has_gen g' x.
+Proof.
+  intros from to v l. revert from to v. induction l; intros; inversion H0; subst.
+  1: reflexivity. transitivity (graph_has_gen g2 x).
+  - eapply fr_graph_has_gen; eauto.
+  - apply (IHl from to v). 2: assumption. rewrite <- fr_graph_has_gen; eauto.
+Qed.
+
+Lemma svfl_graph_unmarked: forall from to v l g g',
+    from <> to -> graph_has_gen g to -> scan_vertex_for_loop from to v l g g' ->
+    gen_unmarked g to -> gen_unmarked g' to.
+Proof.
+  intros from to v l. revert from to v.
+  induction l; intros; inversion H1; subst; try assumption.
+  eapply (IHl from to _ g2); eauto.
+  - rewrite <- fr_graph_has_gen; eauto.
+  - eapply fr_gen_unmarked; eauto.
+Qed.
+
+Lemma svwl_gen_unmarked: forall from to l g g',
+    from <> to -> graph_has_gen g to ->
+    gen_unmarked g to -> scan_vertex_while_loop from to l g g' -> gen_unmarked g' to.
+Proof.
+  intros. revert g H H0 H1 H2. induction l; intros; inversion H2; subst;
+                                 [| apply (IHl g) | apply (IHl g2)]; try assumption.
+  - rewrite <- svfl_graph_has_gen; eauto.
+  - eapply svfl_graph_unmarked; eauto.
+Qed.
