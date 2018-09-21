@@ -3071,3 +3071,32 @@ Proof.
   - rewrite <- svfl_graph_has_gen; eauto.
   - eapply svfl_graph_unmarked; eauto.
 Qed.
+
+Lemma make_header_tag: forall g v,
+    raw_mark (vlabel g v) = false ->
+    Int.and (Int.repr (make_header g v)) (Int.repr 255) =
+    Int.repr (raw_tag (vlabel g v)).
+Proof.
+  intros. replace (Int.repr 255) with (Int.sub (Int.repr 256) Int.one) by
+      (vm_compute; reflexivity).
+  assert (Int.is_power2 (Int.repr 256) = Some (Int.repr 8)) by
+      (vm_compute; reflexivity).
+  rewrite <- (Int.modu_and _ _ (Int.repr 8)) by assumption.
+  rewrite Int.modu_divu by (vm_compute; intro S; inversion S).
+  rewrite (Int.divu_pow2 _ _ (Int.repr 8)) by assumption.
+  rewrite (Int.mul_pow2 _ _ (Int.repr 8)) by assumption.
+  assert (0 <= make_header g v <= Int.max_unsigned). {
+    pose proof (make_header_range g v). unfold Int.max_unsigned, Int.modulus.
+    rep_omega. }
+  rewrite Int.shru_div_two_p, !Int.unsigned_repr; [| rep_omega | assumption].
+  rewrite Int.shl_mul_two_p, Int.unsigned_repr by rep_omega.
+  unfold make_header in *. remember (vlabel g v). clear Heqr.
+  rewrite H, !Int.Zshiftl_mul_two_p in * by omega. rewrite <- Z.add_assoc.
+  replace (raw_color r * two_p 8 + Zlength (raw_fields r) * two_p 10)
+    with ((raw_color r + Zlength (raw_fields r) * two_p 2) * two_p 8) by
+      (rewrite Z.mul_add_distr_r, <- Z.mul_assoc, <- two_p_is_exp by omega;
+       reflexivity). rewrite Z.div_add by (vm_compute; intros S; inversion S).
+  assert (raw_tag r / two_p 8 = 0) by (apply Z.div_small, raw_tag_range).
+  rewrite H2, Z.add_0_l, mul_repr, sub_repr,
+  <- Z.add_sub_assoc, Z.sub_diag, Z.add_0_r. reflexivity.
+Qed.
