@@ -145,6 +145,23 @@ Proof.
       1: assumption. unfold gen_has_index. rewrite <- H21 in H27.
       rewrite <- Z.mul_lt_mono_pos_l in H27 by rep_omega. intro; apply H27.
       apply pvs_mono_strict. assumption.
-    + clear H8 H24 H25. Intros. admit.
+    + clear H8 H24 H25. Intros. thaw FR. freeze [1;2;3;4;5] FR.
+      assert (graph_has_v g' (to, index)) by (split; simpl; assumption).
+      localize [vertex_rep (nth_sh g' to) g' (to, index)].
+      assert (readable_share (nth_sh g' to)) by
+          (unfold nth_sh; apply writable_readable_share, generation_share_writable).
+      unfold vertex_rep, vertex_at. Intros.
+      assert (offset_val (- WORD_SIZE) (vertex_address g' (to, index)) =
+              offset_val index_offset (space_start sp_to)). {
+        unfold vertex_address. rewrite offset_offset_val. unfold vertex_offset.
+        simpl vgeneration. simpl vindex.
+        replace (WORD_SIZE * (previous_vertices_size g' to index + 1) + - WORD_SIZE)
+          with index_offset by rep_omega. unfold gen_start.
+        rewrite if_true by assumption. rewrite H19. reflexivity. }
+      rewrite H26. forward. rewrite <- H26. gather_SEP 0 1.
+      replace_SEP 0 (vertex_rep (nth_sh g' to) g' (to, index)) by
+          (unfold vertex_rep, vertex_at; entailer!).
+      unlocalize [graph_rep g']. 1: apply graph_vertex_ramif_stable; assumption.
+      forward. forward. admit.
   - Intros g' t_info'. forward. Exists g' t_info'. entailer!.
 Abort.

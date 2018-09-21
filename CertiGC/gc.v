@@ -940,36 +940,28 @@ Definition f_do_scan := {|
                 (_next, (tptr (tptr (talignas 2%N (tptr tvoid))))) :: nil);
   fn_vars := nil;
   fn_temps := ((_s, (tptr (talignas 2%N (tptr tvoid)))) :: (_hd, tuint) ::
-               (_sz, tuint) :: (_tag, tint) :: (_j, tint) :: (_t'1, tint) ::
-               (_t'3, (tptr (talignas 2%N (tptr tvoid)))) ::
-               (_t'2, (talignas 2%N (tptr tvoid))) :: nil);
+               (_sz, tuint) :: (_tag, tint) :: (_j, tint) ::
+               (_t'1, (tptr (talignas 2%N (tptr tvoid)))) :: nil);
   fn_body :=
 (Ssequence
   (Sset _s (Etempvar _scan (tptr (talignas 2%N (tptr tvoid)))))
   (Sloop
     (Ssequence
       (Ssequence
-        (Sset _t'3
+        (Sset _t'1
           (Ederef (Etempvar _next (tptr (tptr (talignas 2%N (tptr tvoid)))))
             (tptr (talignas 2%N (tptr tvoid)))))
         (Sifthenelse (Ebinop Olt
                        (Etempvar _s (tptr (talignas 2%N (tptr tvoid))))
-                       (Etempvar _t'3 (tptr (talignas 2%N (tptr tvoid))))
+                       (Etempvar _t'1 (tptr (talignas 2%N (tptr tvoid))))
                        tint)
           Sskip
           Sbreak))
       (Ssequence
-        (Ssequence
-          (Ssequence
-            (Sset _t'2
-              (Ederef (Etempvar _s (tptr (talignas 2%N (tptr tvoid))))
-                (talignas 2%N (tptr tvoid))))
-            (Scall (Some _t'1)
-              (Evar _int_or_ptr_to_int (Tfunction
-                                         (Tcons (talignas 2%N (tptr tvoid))
-                                           Tnil) tint cc_default))
-              ((Etempvar _t'2 (talignas 2%N (tptr tvoid))) :: nil)))
-          (Sset _hd (Etempvar _t'1 tint)))
+        (Sset _hd
+          (Ederef
+            (Ecast (Etempvar _s (tptr (talignas 2%N (tptr tvoid))))
+              (tptr tuint)) tuint))
         (Ssequence
           (Sset _sz
             (Ecast

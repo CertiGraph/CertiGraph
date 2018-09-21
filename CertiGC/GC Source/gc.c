@@ -227,7 +227,7 @@ void do_scan(value *from_start,  /* beginning of from-space */
   value *s;
   s = scan;
   while(s < *next) {
-    header_t hd = int_or_ptr_to_int(*s);
+    header_t hd = *((header_t *) s);
     mlsize_t sz = Wosize_hd(hd);
     int tag = Tag_hd(hd);
     if (!No_scan(tag)) {
