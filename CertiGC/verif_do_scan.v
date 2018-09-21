@@ -165,7 +165,11 @@ Proof.
       forward. forward. assert (gen_unmarked g' to). {
         eapply (svwl_gen_unmarked from to _ g); eauto.
         destruct H0 as [_ [_ [? _]]]. assumption. } specialize (H28 H15 _ H9).
-      rewrite make_header_Wosize, make_header_tag by assumption.
+      rewrite make_header_Wosize, make_header_tag by assumption. deadvars!.
+      fold (next_address t_info' to). thaw FR.
+      fold (heap_struct_rep sh l (ti_heap_p t_info')).
+      gather_SEP 4 5 1. replace_SEP 0 (thread_info_rep sh t_info' ti) by
+          (unfold thread_info_rep; entailer!).
       admit.
   - Intros g' t_info'. forward. Exists g' t_info'. entailer!.
 Abort.

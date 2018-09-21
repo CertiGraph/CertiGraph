@@ -2938,8 +2938,8 @@ Qed.
 
 Inductive scan_vertex_for_loop (from to: nat) (v: VType):
   list nat -> LGraph -> LGraph -> Prop :=
-| svl_nil: forall g, scan_vertex_for_loop from to v nil g g
-| svl_no_scan: forall g1 g2 g3 i il,
+| svfl_nil: forall g, scan_vertex_for_loop from to v nil g g
+| svfl_cons: forall g1 g2 g3 i il,
   forward_relation
     from to O (forward_p2forward_t (inr (v, (Z.of_nat i))) nil g1) g1 g2 ->
   scan_vertex_for_loop from to v il g2 g3 ->
