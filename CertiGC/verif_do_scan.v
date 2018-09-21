@@ -165,7 +165,7 @@ Proof.
       forward. forward. assert (gen_unmarked g' to). {
         eapply (svwl_gen_unmarked from to _ g); eauto.
         destruct H0 as [_ [_ [? _]]]. assumption. } specialize (H28 H15 _ H9).
-      rewrite make_header_Wosize by assumption.
+      rewrite make_header_Wosize, make_header_tag by assumption.
       admit.
   - Intros g' t_info'. forward. Exists g' t_info'. entailer!.
 Abort.
