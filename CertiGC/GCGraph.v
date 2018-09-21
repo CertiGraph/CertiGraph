@@ -2966,3 +2966,6 @@ Inductive scan_vertex_while_loop (from to: nat):
 Definition do_scan_relation (from to to_index: nat) (g1 g2: LGraph) : Prop :=
   exists n, scan_vertex_while_loop from to (nat_seq to_index n) g1 g2 /\
             ~ gen_has_index g2 to (to_index + n).
+
+Definition scan_unmarked (g: LGraph) (to: nat): Prop :=
+  forall idx, gen_has_index g to idx -> (vlabel g (to, idx)).(raw_mark) = false.
