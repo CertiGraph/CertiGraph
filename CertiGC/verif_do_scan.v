@@ -1,6 +1,45 @@
 Require Import RamifyCoq.CertiGC.gc_spec.
 Require Import RamifyCoq.floyd_ext.weak_valid_pointer.
 
+Lemma typed_true_tag: forall (to : nat) (g : LGraph) (index : nat),
+    typed_true tint
+               (force_val
+                  (option_map (fun b : bool => Val.of_bool (negb b))
+                              (bool_val_i
+                                 (Val.of_bool
+                                    (negb (Int.lt (Int.repr (raw_tag
+                                                               (vlabel g (to, index))))
+                                                  (Int.repr 251))))))) ->
+    ~ no_scan g (to, index).
+Proof.
+  intros. remember (Int.lt (Int.repr (raw_tag (vlabel g (to, index))))
+                           (Int.repr 251)). unfold typed_true in H.
+  destruct b; simpl in H. 2: inversion H. symmetry in Heqb. apply lt_repr in Heqb.
+  - unfold no_scan. rep_omega.
+  - red. pose proof (raw_tag_range (vlabel g (to, index))). rep_omega.
+  - red. rep_omega.
+Qed.
+
+Lemma typed_false_tag: forall (to : nat) (g : LGraph) (index : nat),
+    typed_false tint
+               (force_val
+                  (option_map (fun b : bool => Val.of_bool (negb b))
+                              (bool_val_i
+                                 (Val.of_bool
+                                    (negb (Int.lt (Int.repr (raw_tag
+                                                               (vlabel g (to, index))))
+                                                  (Int.repr 251))))))) ->
+    no_scan g (to, index).
+Proof.
+  intros. remember (Int.lt (Int.repr (raw_tag (vlabel g (to, index))))
+                           (Int.repr 251)). unfold typed_false in H.
+  destruct b; simpl in H. 1: inversion H. symmetry in Heqb.
+  apply lt_repr_false in Heqb.
+  - unfold no_scan. rep_omega.
+  - red. pose proof (raw_tag_range (vlabel g (to, index))). rep_omega.
+  - red. rep_omega.
+Qed.
+
 Lemma body_do_scan: semax_body Vprog Gprog f_do_scan do_scan_spec.
 Proof.
   start_function.
@@ -17,16 +56,16 @@ Proof.
                  temp _from_start (gen_start g' from);
                  temp _from_limit (limit_address g' t_info' from);
                  temp _next (next_address t_info' to))
-                SEP (all_string_constants rsh gv; outlier_rep outlier;
-                     graph_rep g'; thread_info_rep sh t_info' ti))
+                SEP (all_string_constants rsh gv; fun_info_rep rsh f_info fi;
+               outlier_rep outlier; graph_rep g'; thread_info_rep sh t_info' ti))
   break: (EX g' : LGraph, EX t_info' : thread_info,
           PROP (super_compatible (g', t_info', roots) f_info outlier;
                 forward_condition g' t_info' from to;
                 do_scan_relation from to to_index g g';
                 thread_info_relation t_info t_info')
           LOCAL ()
-          SEP (all_string_constants rsh gv; outlier_rep outlier;
-               graph_rep g'; thread_info_rep sh t_info' ti)).
+          SEP (all_string_constants rsh gv; fun_info_rep rsh f_info fi;
+               outlier_rep outlier; graph_rep g'; thread_info_rep sh t_info' ti)).
   - Exists O g t_info. destruct H as [? [? [? ?]]].
     replace (to_index + 0)%nat with to_index by omega. entailer!.
     split; [apply tir_id | constructor].
@@ -60,7 +99,7 @@ Proof.
     unfold gen_start at 1. rewrite if_true by assumption. rewrite H20.
     remember (WORD_SIZE * used_space sp_to)%Z as used_offset.
     remember (WORD_SIZE * previous_vertices_size g' to index)%Z as index_offset.
-    freeze [0; 1; 3; 4] FR. gather_SEP 1 2.
+    freeze [0; 1; 2; 4; 5] FR. gather_SEP 1 2.
     assert (
         forall b i,
           Vptr b i = space_start sp_to ->
@@ -145,7 +184,7 @@ Proof.
       1: assumption. unfold gen_has_index. rewrite <- H22 in H28.
       rewrite <- Z.mul_lt_mono_pos_l in H28 by rep_omega. intro; apply H28.
       apply pvs_mono_strict. assumption.
-    + clear H9 H25 H26. Intros. thaw FR. freeze [1;2;3;4;5] FR.
+    + clear H9 H25 H26. Intros. thaw FR. freeze [1;2;3;4;5;6] FR.
       assert (graph_has_v g' (to, index)) by (split; simpl; assumption).
       localize [vertex_rep (nth_sh g' to) g' (to, index)].
       assert (readable_share (nth_sh g' to)) by
@@ -168,8 +207,95 @@ Proof.
       rewrite make_header_Wosize, make_header_tag by assumption. deadvars!.
       fold (next_address t_info' to). thaw FR.
       fold (heap_struct_rep sh l (ti_heap_p t_info')).
-      gather_SEP 4 5 1. replace_SEP 0 (thread_info_rep sh t_info' ti) by
+      gather_SEP 5 6 1. replace_SEP 0 (thread_info_rep sh t_info' ti) by
           (unfold thread_info_rep; entailer!).
-      admit.
+      forward_if
+        (EX g'': LGraph, EX t_info'': thread_info,
+         PROP (super_compatible (g'', t_info'', roots) f_info outlier;
+               forward_condition g'' t_info'' from to;
+               thread_info_relation t_info t_info'';
+               (no_scan g' (to, index) /\ g'' = g') \/
+               (~ no_scan g' (to, index) /\
+                scan_vertex_for_loop
+                  from to (to, index)
+                  (nat_inc_list (length (vlabel g' (to, index)).(raw_fields))) g' g''))
+         LOCAL (temp _tag (vint (raw_tag (vlabel g' (to, index))));
+                temp _sz (vint (Zlength (raw_fields (vlabel g' (to, index)))));
+                temp _s (offset_val (- WORD_SIZE) (vertex_address g' (to, index)));
+                temp _from_start (gen_start g'' from);
+                temp _from_limit (limit_address g'' t_info'' from);
+                temp _next (next_address t_info'' to))
+         SEP (thread_info_rep sh t_info'' ti; graph_rep g'';
+              fun_info_rep rsh f_info fi;
+              all_string_constants rsh gv; outlier_rep outlier)).
+      * apply typed_true_tag in H29.
+        remember (Zlength (raw_fields (vlabel g' (to, index)))).
+        assert (1 <= z < Int.max_signed). {
+          subst z. pose proof (raw_fields_range (vlabel g' (to, index))). split.
+          1: omega. transitivity (two_power_nat 22). 1: omega.
+          vm_compute; reflexivity. }
+        forward_loop
+          (EX i: Z, EX g3: LGraph, EX t_info3: thread_info,
+           PROP (scan_vertex_for_loop
+                   from to (to, index)
+                   (sublist 0 (i - 1)
+                            (nat_inc_list
+                               (length (vlabel g' (to, index)).(raw_fields)))) g' g3;
+                super_compatible (g3, t_info3, roots) f_info outlier;
+                forward_condition g3 t_info3 from to;
+                thread_info_relation t_info t_info3;
+                1 <= i <= z + 1)
+           LOCAL (temp _tag (vint (raw_tag (vlabel g' (to, index))));
+                  temp _j (vint i);
+                  temp _sz (vint z);
+                  temp _s (offset_val (- WORD_SIZE) (vertex_address g' (to, index)));
+                  temp _from_start (gen_start g3 from);
+                  temp _from_limit (limit_address g3 t_info3 from);
+                  temp _next (next_address t_info3 to))
+           SEP (all_string_constants rsh gv;
+                outlier_rep outlier;
+                fun_info_rep rsh f_info fi;
+                graph_rep g3;
+                thread_info_rep sh t_info3 ti))
+          continue: (EX i: Z, EX g3: LGraph, EX t_info3: thread_info,
+           PROP (scan_vertex_for_loop
+                   from to (to, index)
+                   (sublist 0 i
+                            (nat_inc_list
+                               (length (vlabel g' (to, index)).(raw_fields)))) g' g3;
+                super_compatible (g3, t_info3, roots) f_info outlier;
+                forward_condition g3 t_info3 from to;
+                thread_info_relation t_info t_info3;
+                1 <= i + 1 <= z + 1)
+           LOCAL (temp _tag (vint (raw_tag (vlabel g' (to, index))));
+                  temp _j (vint i);
+                  temp _sz (vint z);
+                  temp _s (offset_val (- WORD_SIZE) (vertex_address g' (to, index)));
+                  temp _from_start (gen_start g3 from);
+                  temp _from_limit (limit_address g3 t_info3 from);
+                  temp _next (next_address t_info3 to))
+           SEP (all_string_constants rsh gv;
+                fun_info_rep rsh f_info fi;
+                outlier_rep outlier;
+                graph_rep g3;
+                thread_info_rep sh t_info3 ti)).
+        -- forward. Exists 1 g' t_info'. replace (1 - 1) with 0 by omega.
+           autorewrite with sublist. unfold forward_condition. entailer!. constructor.
+        -- Intros i g3 t_info3. forward_if (i <= z).
+           ++ forward. entailer!.
+           ++ forward. assert (i = z + 1) by omega. subst i. clear H35 H36.
+              replace (z + 1 - 1) with z in H31 by omega.
+              remember (raw_fields (vlabel g' (to, index))) as r.
+              replace (sublist 0 z (nat_inc_list (Datatypes.length r))) with
+                  (nat_inc_list (Datatypes.length r)) in H31.
+              ** Exists g3 t_info3. entailer!.
+              ** rewrite sublist_all. 1: reflexivity. rewrite Z.le_lteq. right.
+                 subst z. rewrite !Zlength_correct, nat_inc_list_length. reflexivity.
+           ++ Intros. admit.
+        -- Intros i g3 t_info3. forward. rewrite add_repr. Exists (i + 1) g3 t_info3.
+           replace (i + 1 - 1) with i by omega. entailer!.
+      * apply typed_false_tag in H29. forward. Exists g' t_info'.
+        unfold forward_condition. entailer!.
+      * admit.
   - Intros g' t_info'. forward. Exists g' t_info'. entailer!.
 Abort.
