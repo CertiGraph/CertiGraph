@@ -258,6 +258,7 @@ Definition do_scan_spec :=
            temp _scan (offset_val (- WORD_SIZE) (vertex_address g (to, to_index)));
            temp _next (next_address t_info to))
     SEP (all_string_constants rsh gv;
+         fun_info_rep rsh f_info fi;
          outlier_rep outlier;
          graph_rep g;
          thread_info_rep sh t_info ti)
@@ -269,6 +270,7 @@ Definition do_scan_spec :=
           thread_info_relation t_info t_info')
     LOCAL ()
     SEP (all_string_constants rsh gv;
+         fun_info_rep rsh f_info fi;
          outlier_rep outlier;
          graph_rep g';
          thread_info_rep sh t_info' ti).
