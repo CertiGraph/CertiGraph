@@ -81,6 +81,7 @@ Proof.
   start_function.
   destruct H as [? [? [? ?]]]. destruct H1 as [? [? [? [? ?]]]].
   unfold limit_address, next_address, forward_p_address. destruct forward_p.
+
   - unfold thread_info_rep. Intros.
     assert (Zlength roots = Zlength (live_roots_indices f_info)). {
       rewrite <- (Zlength_map _ _ (flip Znth (ti_args t_info))), <- H5, Zlength_map.
@@ -579,12 +580,12 @@ Proof.
         Exists g t_info roots. simpl. entailer!.
         -- split; [constructor; assumption | split; [hnf; intuition | apply tir_id]].
         -- unfold thread_info_rep. entailer!.
-          
+        
   (* p is Vtype * Z, ie located in graph *)
   - destruct p as [v n]. destruct H0 as [? [? ?]]. freeze [0; 1; 2; 4] FR.
     localize [vertex_rep (nth_sh g (vgeneration v)) g v].
     remember (nth_sh g (vgeneration v)) as shv.
-    unfold vertex_rep, vertex_at. Intros. rewrite fields_eq_length.
+    unfold vertex_rep, vertex_at. Intros. rewrite fields_eq_length. 
     assert_PROP (offset_val (WORD_SIZE * n) (vertex_address g v) =
                  field_address (tarray int_or_ptr_type
                                        (Zlength (raw_fields (vlabel g v))))
@@ -592,7 +593,7 @@ Proof.
       entailer!. unfold field_address. rewrite if_true. 1: simpl; f_equal.
       clear -H20 H12. unfold field_compatible in *. simpl in *. intuition. }
     assert (readable_share shv). {
-      subst shv. apply writable_readable. apply generation_share_writable. }
+      subst shv. apply writable_readable. apply generation_share_writable. } 
     assert (is_pointer_or_integer (Znth n (make_fields_vals g v))). {
       pose proof (mfv_all_is_ptr_or_int g v H10 H11 H0). rewrite Forall_forall in H16.
       apply H16, Znth_In. rewrite fields_eq_length. assumption. } forward.
@@ -611,8 +612,7 @@ Proof.
       + pose proof Pos2Z.neg_is_neg; destruct H12; contradiction.  
     }
     destruct H17.
-    1: admit.
-    (* We aren't dealing with this yet, but the first branch of the disjunction in H16 shows that p is already forwarded. This case will collapse back in in about 4 lines time, but, annoyingly, it looks like we'll have to deal with it a few lines earlier. Hopefully we can avoid that. Working on it with Shengyi soon. *)
+    1: destruct H17. rewrite H13 in H17; inversion H17.
     assert (Znth n (make_fields_vals g v) = Znth n (map (field2val g) (make_fields g v))). {
       unfold make_fields_vals. destruct (raw_mark (vlabel g v)); destruct H17; try reflexivity.
       1: inversion H17. 
@@ -896,7 +896,6 @@ Proof.
            assert (writable_share (nth_sh g (vgeneration v))) by (unfold nth_sh; apply generation_share_writable).
            freeze [0;1;3;4;5;6] FR.
            remember (offset_val (WORD_SIZE * n) (vertex_address g v)).
-           
            (* forward. *)
            
            admit. 
@@ -919,28 +918,8 @@ Proof.
            forward.
            vertex_rep (nth_sh g (vgeneration v)) g v].
            unfold vertex_rep, vertex_at. Intros.
-           
-           1: admit. 
-           (* time to actually modify p *)
- *)
+*)
 
-           (* shengyi's code... 
-
-           thaw FR. forward. forward. rewrite <- Heqroot.
-           rewrite if_true by reflexivity. rewrite H22.
-           Exists g (upd_thread_info_arg
-                       t_info
-                       (Znth z (live_roots_indices f_info))
-                       (vertex_address g (copied_vertex (vlabel g v))) H17)
-                  (upd_bunch z f_info roots (inr (copied_vertex (vlabel g v)))).
-           unfold thread_info_rep. simpl. entailer!. split; split.
-           ++ apply upd_fun_thread_arg_compatible. assumption.
-           ++ specialize (H10 _ H20 H22).
-              apply upd_roots_compatible; assumption.
-           ++ apply fr_v_in_forwarded; [reflexivity | assumption].
-           ++ hnf. intuition.
-            
-end of shengyi's code *)
            
         -- (* not yet forwarded *)
           forward. thaw FR.  freeze [0; 1; 2; 3; 4; 5] FR. 
@@ -970,7 +949,7 @@ end of shengyi's code *)
            forward; rewrite H31; unfold space_tri. 1: entailer!.
            forward. simpl sem_binary_operation'. 
            rewrite sapi_ptr_val; [| assumption | rep_omega].
-           Opaque Znth. forward. Transparent Znth.
+           Opaque Znth.  forward. Transparent Znth.
            assert (Hr: Int.min_signed <= Zlength (raw_fields (vlabel g v')) <=
                        Int.max_signed). {
              pose proof (raw_fields_range (vlabel g v')). destruct H32. split.
@@ -1042,19 +1021,6 @@ end of shengyi's code *)
            thaw FR. freeze [0; 1; 2; 3; 4; 5] FR. rename i into j. deadvars!.
            remember (Zlength (raw_fields (vlabel g v'))) as n'.
            assert (isptr nv) by (subst nv; rewrite isptr_offset_val; assumption).
-(*
-old code:
-           remember (field_address thread_info_type
-                                   [ArraySubsc (Znth z (live_roots_indices f_info));
-                                    StructField _args] ti) as p_addr.
- *)
-(* much more likely: 
-          (offset_val (WORD_SIZE * n) (vertex_address g v) =
-                 field_address (tarray int_or_ptr_type
-                                       (Zlength (raw_fields (vlabel g v))))
-                               [ArraySubsc n] (vertex_address g v))
-*) 
-
            remember (field_address heap_type
                                    [StructField _next; ArraySubsc (Z.of_nat to);
                                     StructField _spaces] (ti_heap_p t_info)) as n_addr.
@@ -1167,7 +1133,8 @@ old code:
                            field_address int_or_ptr_type [] (vertex_address g' v')). {
                 clear. entailer!. unfold field_address. rewrite if_true by assumption.
                 simpl. rewrite isptr_offset_val_zero. 1: reflexivity.
-                destruct H7. assumption. } forward. clear H42.
+                destruct H7. assumption. }
+              forward. clear H42.
               sep_apply (field_at_data_at_cancel
                            sh' int_or_ptr_type nv (vertex_address g' v')).
               gather_SEP 1 0 3. rewrite H34. subst l'.
@@ -1182,7 +1149,63 @@ old code:
                         (lgraph_add_copied_v g v' to) v' (new_copied_v g to))
                 with (lgraph_copy_v g v' to) in *.
               remember (lgraph_copy_v g v' to) as g'. rewrite <- H34 in *. thaw FR.
+              assert (vertex_address g' v' = vertex_address g v') by
+              (subst g'; apply lcv_vertex_address_old; assumption).
+              assert (vertex_address g' (new_copied_v g to) =
+                      vertex_address g (new_copied_v g to)) by
+                  (subst g'; apply lcv_vertex_address_new; assumption).
+              (* rewrite <- H42. rewrite <- H43 in H36. *)
+              assert (writable_share (nth_sh g' (vgeneration v'))) by
+                  (unfold nth_sh; apply generation_share_writable).
+              assert (graph_has_v g' (new_copied_v g to)) by
+                  (subst g'; apply lcv_graph_has_v_new; assumption).
+              (* can use
+                 rewrite lacv_vertex_address.
+to clean up the address of _v *)
               forward_call (nv).
+              
+              localize [vertex_rep (nth_sh g (vgeneration v)) g v]. 
+              unfold vertex_rep, vertex_at. Intros.
+              remember (nth_sh g (vgeneration v)) as shh.
+              remember (make_fields_vals g v) as mfv.
+              assert (writable_share shh) by (rewrite Heqshh; unfold nth_sh; apply generation_share_writable).
+              assert ((Zlength mfv) - n =
+                   Zlength (sublist n (Zlength mfv) mfv)). {
+                rewrite Heqmfv;
+                  symmetry; apply Zlength_sublist_correct;
+                    rewrite fields_eq_length; rep_omega.
+              }
+              rewrite (data_at_tarray_value
+                         shh (Zlength mfv) n
+                         (vertex_address g v) mfv mfv
+                         (sublist 0 n mfv)
+                         (sublist n (Zlength mfv) mfv));
+              auto. rewrite H47; rewrite data_at_tarray_value_split_1.
+              2: rewrite <- H47,  Heqmfv, fields_eq_length; omega.
+              2: rewrite Heqmfv, fields_eq_length; rep_omega.
+              2: omega.
+              2: autorewrite with sublist; reflexivity.
+              Intros.
+              freeze [0;1;3;4;5;6] FR.
+              remember (offset_val (WORD_SIZE * n) (vertex_address g v)).
+              (* maybe time to simplify the hd *)
+              destruct (sublist n (Zlength mfv) mfv) eqn:?.
+              1: exfalso; subst mfv;
+                rewrite fields_eq_length, Zlength_nil in H47; omega.
+              simpl hd. (*forward.
+              unfold data_at.
+              subst nv.
+
+              forward.
+
+              
+                by omega.
+           
+           forward.
+              
+*)   
+
+              
            
     
 Abort.
