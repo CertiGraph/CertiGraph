@@ -3100,3 +3100,93 @@ Proof.
   rewrite H2, Z.add_0_l, mul_repr, sub_repr,
   <- Z.add_sub_assoc, Z.sub_diag, Z.add_0_r. reflexivity.
 Qed.
+
+Lemma svfl_vertex_address: forall from to v l g g',
+    graph_has_gen g to -> scan_vertex_for_loop from to v l g g' ->
+    forall x, closure_has_v g x -> vertex_address g x = vertex_address g' x.
+Proof.
+  do 4 intro. revert from to v. induction l; intros; simpl; inversion H0; subst.
+  1: reflexivity. assert (graph_has_gen g2 to) by
+      (eapply fr_graph_has_gen in H4; [rewrite <- H4 |]; assumption).
+  assert (closure_has_v g2 x) by (eapply fr_closure_has_v in H4; eauto).
+  eapply (IHl from to _ g2) in H7; eauto. rewrite <- H7.
+  eapply fr_vertex_address; eauto.
+Qed.
+
+Lemma svfl_graph_has_v: forall from to v l g g',
+    graph_has_gen g to -> scan_vertex_for_loop from to v l g g' ->
+    forall x, graph_has_v g x -> graph_has_v g' x.
+Proof.
+  do 4 intro. revert from to v. induction l; intros; simpl; inversion H0; subst.
+  1: assumption. assert (graph_has_gen g2 to) by
+      (eapply fr_graph_has_gen in H4; [rewrite <- H4 |]; assumption).
+  assert (graph_has_v g2 x) by (eapply fr_graph_has_v in H4; eauto).
+  eapply (IHl from to _ g2) in H7; eauto.
+Qed.
+
+Lemma svfl_raw_fields: forall from to v l g g',
+    graph_has_gen g to -> scan_vertex_for_loop from to v l g g' ->
+    forall x, graph_has_v g x -> raw_fields (vlabel g x) = raw_fields (vlabel g' x).
+Proof.
+  do 4 intro. revert from to v. induction l; intros; simpl; inversion H0; subst.
+  1: reflexivity. assert (graph_has_gen g2 to) by
+      (eapply fr_graph_has_gen in H4; [rewrite <- H4 |]; assumption).
+  assert (graph_has_v g2 x) by (eapply fr_graph_has_v in H4; eauto).
+  eapply (IHl from to _ g2) in H7; eauto. rewrite <- H7.
+  eapply fr_raw_fields; eauto.
+Qed.
+
+Lemma svfl_raw_mark: forall from to v l g g',
+    graph_has_gen g to -> scan_vertex_for_loop from to v l g g' ->
+    forall x, graph_has_v g x -> vgeneration x <> from ->
+              raw_mark (vlabel g x) = raw_mark (vlabel g' x).
+Proof.
+  do 4 intro. revert from to v. induction l; intros; simpl; inversion H0; subst.
+  1: reflexivity. assert (graph_has_gen g2 to) by
+      (eapply fr_graph_has_gen in H5; [rewrite <- H5 |]; assumption).
+  assert (graph_has_v g2 x) by (eapply fr_graph_has_v in H5; eauto).
+  eapply (IHl from to _ g2) in H8; eauto. rewrite <- H8.
+  eapply fr_raw_mark; eauto.
+Qed.
+
+Lemma forward_p2t_inr_roots: forall v n roots g,
+    forward_p2forward_t (inr (v, n)) roots g = forward_p2forward_t (inr (v, n)) nil g.
+Proof. intros. simpl. reflexivity. Qed.
+
+Lemma svfl_add_tail: forall from to v l roots i g1 g2 g3,
+    scan_vertex_for_loop from to v l g1 g2 ->
+    forward_relation from to 0
+                     (forward_p2forward_t (inr (v, Z.of_nat i)) roots g2) g2 g3 ->
+    scan_vertex_for_loop from to v (l +:: i) g1 g3.
+Proof.
+  do 4 intro. revert from to v. induction l; intros; inversion H; subst.
+  - simpl. rewrite forward_p2t_inr_roots in H0.
+    apply svfl_cons with g3. 1: assumption. constructor.
+  - simpl app. apply svfl_cons with g4. 1: assumption.
+    apply IHl with roots g2; assumption.
+Qed.
+
+Lemma svwl_add_tail_no_scan: forall from to l g1 g2 i,
+    scan_vertex_while_loop from to l g1 g2 -> gen_has_index g2 to i ->
+    no_scan g2 (to, i) -> scan_vertex_while_loop from to (l +:: i) g1 g2.
+Proof.
+  do 3 intro. revert from to. induction l; intros; inversion H; subst.
+  - simpl. apply svwl_no_scan; assumption.
+  - simpl app. apply svwl_no_scan; try assumption. apply IHl; assumption.
+  - simpl app. apply svwl_scan with g3; try assumption. apply IHl; assumption.
+Qed.
+
+Lemma svwl_add_tail_scan: forall from to l g1 g2 g3 i,
+    scan_vertex_while_loop from to l g1 g2 -> gen_has_index g2 to i ->
+    ~ no_scan g2 (to, i) ->
+    scan_vertex_for_loop
+      from to (to, i)
+      (nat_inc_list (length (raw_fields (vlabel g2 (to, i)))))
+      g2 g3 ->
+    scan_vertex_while_loop from to (l +:: i) g1 g3.
+Proof.
+  do 3 intro. revert from to. induction l; intros; inversion H; subst.
+  - simpl. apply svwl_scan with g3; try assumption. constructor.
+  - simpl app. apply svwl_no_scan; try assumption. apply IHl with g2; assumption.
+  - simpl app. apply svwl_scan with g4; try assumption. apply IHl with g2; assumption.
+Qed.

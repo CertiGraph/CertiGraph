@@ -221,7 +221,7 @@ Proof.
                   (nat_inc_list (length (vlabel g' (to, index)).(raw_fields))) g' g''))
          LOCAL (temp _tag (vint (raw_tag (vlabel g' (to, index))));
                 temp _sz (vint (Zlength (raw_fields (vlabel g' (to, index)))));
-                temp _s (offset_val (- WORD_SIZE) (vertex_address g' (to, index)));
+                temp _s (offset_val (- WORD_SIZE) (vertex_address g'' (to, index)));
                 temp _from_start (gen_start g'' from);
                 temp _from_limit (limit_address g'' t_info'' from);
                 temp _next (next_address t_info'' to))
@@ -248,7 +248,7 @@ Proof.
            LOCAL (temp _tag (vint (raw_tag (vlabel g' (to, index))));
                   temp _j (vint i);
                   temp _sz (vint z);
-                  temp _s (offset_val (- WORD_SIZE) (vertex_address g' (to, index)));
+                  temp _s (offset_val (- WORD_SIZE) (vertex_address g3 (to, index)));
                   temp _from_start (gen_start g3 from);
                   temp _from_limit (limit_address g3 t_info3 from);
                   temp _next (next_address t_info3 to))
@@ -270,7 +270,7 @@ Proof.
            LOCAL (temp _tag (vint (raw_tag (vlabel g' (to, index))));
                   temp _j (vint i);
                   temp _sz (vint z);
-                  temp _s (offset_val (- WORD_SIZE) (vertex_address g' (to, index)));
+                  temp _s (offset_val (- WORD_SIZE) (vertex_address g3 (to, index)));
                   temp _from_start (gen_start g3 from);
                   temp _from_limit (limit_address g3 t_info3 from);
                   temp _next (next_address t_info3 to))
@@ -291,11 +291,115 @@ Proof.
               ** Exists g3 t_info3. entailer!.
               ** rewrite sublist_all. 1: reflexivity. rewrite Z.le_lteq. right.
                  subst z. rewrite !Zlength_correct, nat_inc_list_length. reflexivity.
-           ++ Intros. admit.
+           ++ Intros.
+              change (Tpointer tvoid {| attr_volatile := false;
+                                        attr_alignas := Some 2%N |}) with
+                  int_or_ptr_type.
+              assert (isptr (vertex_address g3 (to, index))). {
+                erewrite <- svfl_vertex_address; eauto. rewrite <- H20 in H23.
+                2: apply graph_has_v_in_closure; assumption. clear -H23 H15.
+                unfold vertex_address. unfold gen_start. simpl.
+                rewrite if_true by assumption. rewrite isptr_offset_val. assumption. }
+              assert (graph_has_gen g3 to) by
+                  (eapply svfl_graph_has_gen in H31; [rewrite <- H31|]; assumption).
+              assert (graph_has_v g3 (to, index)) by
+                  (eapply svfl_graph_has_v in H31; [apply H31| assumption..]).
+              forward_call (rsh, sh, gv, fi, ti, g3, t_info3, f_info, roots,
+                            outlier, from, to, 0, (@inr Z _ ((to, index), i - 1))).
+              ** simpl snd. apply prop_right.
+                 split; [split; [split|]|]; [|reflexivity..].
+                 rewrite sem_add_pi_ptr_special;
+                   [| rewrite isptr_offset_val; assumption | rep_omega]. simpl.
+                 rewrite offset_offset_val. do 2 f_equal. rep_omega.
+              ** split; [|split; [|split; [|split; [|split; [|split; [|split]]]]]];
+                   try assumption. 2: rep_omega. red. split; [|split].
+                 --- assumption.
+                 --- eapply svfl_raw_fields in H31;
+                       [rewrite <- H31; omega | assumption..].
+                 --- rewrite <- H28. symmetry.
+                     eapply svfl_raw_mark in H31; [apply H31 | assumption..|].
+                     simpl. omega.
+              ** Intros vret. destruct vret as [[g4 t_info4] roots']. simpl fst in *.
+                 simpl snd in *. simpl in H39. subst roots'. Exists i g4 t_info4.
+                 destruct H40 as [? [? [? ?]]].
+                 assert (gen_start g3 from = gen_start g4 from) by
+                     (eapply fr_gen_start; eauto).
+                 assert (limit_address g3 t_info3 from =
+                         limit_address g4 t_info4 from). {
+                   unfold limit_address. rewrite H47.
+                   do 2 f_equal. apply (proj2 H44). }
+                 assert (next_address t_info3 to = next_address t_info4 to) by
+                     (unfold next_address; f_equal; apply (proj1 H44)). entailer!.
+                 split; [|split].
+                 --- remember (nat_inc_list
+                                 (Datatypes.length
+                                    (raw_fields (vlabel g' (to,
+                                                            (to_index + n)%nat))))).
+                     assert (i <= Zlength l). {
+                       subst l. rewrite Zlength_correct, nat_inc_list_length.
+                       rewrite Zlength_correct in H36. omega. }
+                     rewrite (sublist_split 0 (i - 1) i) by omega.
+                     rewrite (sublist_one (i - 1) i) by omega.
+                     apply svfl_add_tail with roots g3. 1: assumption.
+                     assert (Z.of_nat (Znth (i - 1) l) = i - 1). {
+                       rewrite <- nth_Znth by omega. subst l.
+                       rewrite nat_inc_list_nth. 1: rewrite Z2Nat.id; omega.
+                       rewrite <- ZtoNat_Zlength. rewrite Zlength_correct in H54.
+                       rewrite nat_inc_list_length in H54. rewrite Nat2Z.inj_lt.
+                       rewrite !Z2Nat.id; omega. } rewrite H55. assumption.
+                 --- apply tir_trans with t_info3; assumption.
+                 --- f_equal. symmetry. eapply fr_vertex_address; eauto.
+                     apply graph_has_v_in_closure; assumption.
         -- Intros i g3 t_info3. forward. rewrite add_repr. Exists (i + 1) g3 t_info3.
            replace (i + 1 - 1) with i by omega. entailer!.
       * apply typed_false_tag in H29. forward. Exists g' t_info'.
         unfold forward_condition. entailer!.
-      * admit.
+      * Intros g'' t_info''. assert (isptr (vertex_address g'' (to, index))). {
+          assert (isptr (vertex_address g' (to, index))). {
+            unfold vertex_address. rewrite isptr_offset_val. unfold gen_start.
+            rewrite <- H20 in H23. rewrite if_true; assumption. }
+          destruct H32 as [[? ?] | [? ?]]. 1: subst g''; assumption.
+          eapply svfl_vertex_address in H34;
+            [rewrite <- H34 | | apply graph_has_v_in_closure]; assumption. }
+        pose proof (raw_fields_range (vlabel g' (to, index))). forward.
+        -- entailer!. split. 1: rep_omega.
+           assert (two_power_nat 22 < Int.max_signed) by (vm_compute; reflexivity).
+           rewrite Int.signed_repr; rep_omega.
+        -- change (Tpointer tvoid {| attr_volatile := false;
+                                     attr_alignas := Some 2%N |}) with int_or_ptr_type.
+           simpl sem_binary_operation'. rewrite add_repr.
+           assert (force_val (sem_add_ptr_int
+                                int_or_ptr_type Unsigned
+                                (offset_val (- WORD_SIZE)
+                                            (vertex_address g'' (to, index)))
+                                (vint (1 + Zlength
+                                             (raw_fields (vlabel g' (to, index))))))
+                   = offset_val (- WORD_SIZE)
+                                (vertex_address g''
+                                                (to, (to_index + (n + 1))%nat))). {
+             rewrite sem_add_pi_ptr_special.
+             - assert (Zlength (raw_fields (vlabel g' (to, index))) =
+                       Zlength (raw_fields (vlabel g'' (to, index)))). {
+                 destruct H32 as [[? ?] | [? ?]]. 1: subst g''; reflexivity.
+                 erewrite svfl_raw_fields; eauto. } rewrite H35.
+               simpl. replace (to_index + (n + 1))%nat with (S index) by omega.
+               unfold vertex_address. rewrite !offset_offset_val.
+               unfold vertex_offset. simpl vgeneration. simpl vindex. f_equal.
+               rewrite pvs_S. unfold vertex_size. rep_omega.
+             - rewrite isptr_offset_val. assumption.
+             - split. 1: rep_omega.
+               assert (two_power_nat 22 < Int.max_unsigned) by
+                   (vm_compute; reflexivity). omega. } rewrite H35. clear H35.
+           assert (closure_has_index g'' to (to_index + (n + 1))). {
+             replace (to_index + (n + 1))%nat with (index + 1)%nat by omega.
+             cut (gen_has_index g'' to index). 1: red; intros; red in H35; omega.
+             destruct H32 as [[? ?] | [? ?]].
+             - subst g''. destruct H25. assumption.
+             - eapply svfl_graph_has_v in H35; eauto. destruct H35. assumption. }
+           Exists (n + 1)%nat g'' t_info''. destruct H29 as [? [? [? ?]]]. entailer!.
+           clear H39 H40 H41 H42. replace (n + 1)%nat with (S n) by omega.
+           rewrite nat_seq_S, Nat.add_comm. destruct H32 as [[? ?] | [? ?]].
+           ++ subst g''. apply svwl_add_tail_no_scan; assumption.
+           ++ apply svwl_add_tail_scan with g'; assumption.
   - Intros g' t_info'. forward. Exists g' t_info'. entailer!.
-Abort.
+Qed.
