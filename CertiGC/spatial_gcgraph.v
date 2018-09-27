@@ -281,6 +281,46 @@ Proof.
     apply Z.divide_add_cancel_r in H10; [assumption | apply Z.divide_factor_l].
 Qed.
 
+Lemma field_compatible_tarray_value_tuint:
+  forall (n n1 : Z) (p : val),
+    0 <= n1 <= n ->
+    field_compatible (tarray tuint n1) [] p ->
+    field_compatible (tarray tuint (n - n1)) []
+                     (offset_val (WORD_SIZE * n1) p) ->
+    field_compatible (tarray tuint n) [] p.
+Proof.
+  intros. unfold field_compatible. simpl. destruct H0 as [? [_ [? [? _]]]].
+  destruct H1 as [_ [_ [? [? _]]]]. destruct p; try contradiction. clear H0.
+  simpl isptr. inv_int i. unfold size_compatible in *. simpl in H1.
+  simpl sizeof in *.
+  replace (Z.max 0 n1) with n1 in *.
+  2: symmetry; apply Z.max_r; destruct H; assumption. 
+  replace (Z.max 0 n) with n in *.
+  2: symmetry; apply Z.max_r; omega. 
+  replace (Z.max 0 (n-n1)) with (n-n1) in *.
+  2: symmetry; apply Z.max_r; omega.
+  rewrite WORD_SIZE_eq in *.
+  rewrite ptrofs_add_repr in H1. do 2 rewrite Ptrofs.unsigned_repr in * by rep_omega. 
+  replace (Z.max 0 (n - n1)) with (n - n1) in H1 by (rewrite Z.max_r; omega).
+  assert (ofs + 4 * n < Ptrofs.modulus) by omega. intuition.
+  constructor. intros.
+  simpl sizeof. rewrite Ptrofs.unsigned_repr by rep_omega.
+  apply align_compatible_rec_by_value with Mptr. 1: reflexivity. simpl.
+  apply Z.divide_add_r. 2: apply Z.divide_factor_l. simpl offset_val in H4.
+  rewrite ptrofs_add_repr in H4. unfold align_compatible in *.
+  rewrite Ptrofs.unsigned_repr in * by rep_omega.
+  pose proof (align_compatible_rec_Tarray_inv _ _ _ _ _ H3).
+  pose proof (align_compatible_rec_Tarray_inv _ _ _ _ _ H4). simpl sizeof in *.
+  rewrite Z.le_lteq in H6. destruct H6.
+  - assert (0 <= 0 < n1) by omega. specialize (H9 _ H11).
+    apply (align_compatible_rec_by_value_inv _ _ Mptr) in H9. 2: reflexivity.
+    simpl in H9. rewrite Z.add_0_r in H9. assumption.
+  - subst n1. rewrite Z.sub_0_r in H10. specialize (H10 _ H5).
+    apply (align_compatible_rec_by_value_inv _ _ Mptr) in H10. 2: reflexivity.
+    simpl in H10. rewrite Z.add_0_r, Z.add_comm in H10.
+    apply Z.divide_add_cancel_r in H10; [assumption | apply Z.divide_factor_l].
+Qed.
+
 Lemma data_at_tarray_value_fold: forall sh n n1 p (v v' v1 v2: list val),
     0 <= n1 <= n ->
     n <= Zlength v' ->
@@ -295,6 +335,23 @@ Proof.
             [|assumption..]. entailer!. unfold field_address0. rewrite if_true.
   - simpl nested_field_offset. entailer!.
   - pose proof (field_compatible_tarray_value n _ p H H4 H6). clear -H1 H.
+    red in H1. red. simpl in *. intuition.
+Qed.
+
+Lemma data_at_tarray_value_fold_tuint: forall sh n n1 p (v v' v1 v2: list val),
+    0 <= n1 <= n ->
+    n <= Zlength v' ->
+    v = sublist 0 n v' ->
+    v1 = sublist 0 n1 v' ->
+    v2 = sublist n1 n v' ->
+    data_at sh (tarray tuint n1) v1 p *
+    data_at sh (tarray tuint (n - n1)) v2 (offset_val (WORD_SIZE * n1) p) |--
+            data_at sh (tarray tuint n) v p.
+Proof.
+  intros. rewrite (split2_data_at_Tarray sh tuint n n1 v v' v1 v2);
+            [|assumption..]. entailer!. unfold field_address0. rewrite if_true.
+  - simpl nested_field_offset. entailer!.
+  - pose proof (field_compatible_tarray_value_tuint n _ p H H4 H6). clear -H1 H.
     red in H1. red. simpl in *. intuition.
 Qed.
 
@@ -315,6 +372,23 @@ Proof.
   - clear -H H4. red. red in H4. simpl in *. intuition.
 Qed.
 
+Lemma data_at_tarray_value_unfold_tuint: forall sh n n1 p (v v' v1 v2: list val),
+    0 <= n1 <= n ->
+    n <= Zlength v' ->
+    v = sublist 0 n v' ->
+    v1 = sublist 0 n1 v' ->
+    v2 = sublist n1 n v' ->
+    data_at sh (tarray tuint n) v p |--
+            data_at sh (tarray tuint n1) v1 p *
+    data_at sh (tarray tuint (n - n1)) v2 (offset_val (WORD_SIZE * n1) p).
+Proof.
+  intros. sep_apply (data_at_local_facts sh (tarray tuint n) v p).
+  Intros. rewrite (split2_data_at_Tarray sh tuint n n1 v v' v1 v2);
+            [|assumption..]. cancel. unfold field_address0. rewrite if_true.
+  - simpl nested_field_offset. entailer!.
+  - clear -H H4. red. red in H4. simpl in *. intuition.
+Qed.
+
 Lemma data_at_tarray_value: forall sh n n1 p (v v' v1 v2: list val),
     0 <= n1 <= n ->
     n <= Zlength v' ->
@@ -328,6 +402,21 @@ Proof.
   intros. apply pred_ext.
   - apply data_at_tarray_value_unfold with v'; assumption.
   - apply data_at_tarray_value_fold with v'; assumption.
+Qed.
+
+Lemma data_at_tarray_value_tuint: forall sh n n1 p (v v' v1 v2: list val),
+    0 <= n1 <= n ->
+    n <= Zlength v' ->
+    v = sublist 0 n v' ->
+    v1 = sublist 0 n1 v' ->
+    v2 = sublist n1 n v' ->
+    data_at sh (tarray tuint n) v p =
+    data_at sh (tarray tuint n1) v1 p *
+    data_at sh (tarray tuint (n - n1)) v2 (offset_val (WORD_SIZE * n1) p).
+Proof.
+  intros. apply pred_ext.
+  - apply data_at_tarray_value_unfold_tuint with v'; assumption.
+  - apply data_at_tarray_value_fold_tuint with v'; assumption.
 Qed.
 
 Lemma data_at__tarray_value: forall sh n n1 p,
@@ -923,6 +1012,25 @@ Proof.
   intros. rewrite (data_at_tarray_value sh (Zlength l) 1 p l l [hd nullval l] (tl l)).
   - replace (WORD_SIZE * 1)%Z with WORD_SIZE by omega. f_equal.
     rewrite (data_at_singleton_array_eq _ int_or_ptr_type (hd nullval l)); reflexivity.
+  - omega.
+  - omega.
+  - autorewrite with sublist; reflexivity.
+  - destruct l. 1: rewrite Zlength_nil in H; omega. simpl. compute. reflexivity.
+  - destruct l. 1: rewrite Zlength_nil in H; omega. simpl.
+    rewrite sublist_1_cons, Zlength_cons.
+    replace (Z.succ (Zlength l) - 1) with (Zlength l) by omega.
+    autorewrite with sublist. reflexivity.
+Qed.
+
+Lemma data_at_tarray_value_split_1_tuint: forall sh p (l: list val),
+    0 < Zlength l ->
+    data_at sh (tarray tuint (Zlength l)) l p =
+    data_at sh tuint (hd nullval l) p *
+    data_at sh (tarray tuint (Zlength l-1)) (tl l) (offset_val WORD_SIZE p).
+Proof.
+  intros. rewrite (data_at_tarray_value_tuint sh (Zlength l) 1 p l l [hd nullval l] (tl l)).
+  - replace (WORD_SIZE * 1)%Z with WORD_SIZE by omega. f_equal.
+    rewrite (data_at_singleton_array_eq _ tuint (hd nullval l)); reflexivity.
   - omega.
   - omega.
   - autorewrite with sublist; reflexivity.
