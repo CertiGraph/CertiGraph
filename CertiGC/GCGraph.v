@@ -750,19 +750,11 @@ Proof.
   - rewrite map_length, make_fields'_eq_length. reflexivity.
 Qed.
 
-Lemma make_fields'_eq_Zlength: forall l v n,
-    Zlength (make_fields' l v n) = Zlength l.
-Proof.
-  intros. revert n. induction l; try reflexivity.
-  intros; simpl. destruct a; [destruct s|]; simpl;
-  repeat rewrite Zlength_cons; rewrite IHl; reflexivity.
-Qed.
-
 Lemma make_fields_eq_length: forall g v,
     Zlength (make_fields g v) = Zlength (raw_fields (vlabel g v)).
 Proof.
   unfold make_fields. intros.
-  rewrite make_fields'_eq_Zlength; reflexivity.
+  rewrite !Zlength_correct, make_fields'_eq_length. reflexivity.
 Qed.
 
 Lemma make_fields'_n_doesnt_matter: forall i l v n m gcptr,
@@ -788,8 +780,8 @@ Lemma make_fields'_item_was_in_list: forall l v n gcptr,
     Znth n l = Some (inr gcptr).
 Proof.
   intros.
-  rewrite <- nth_Znth; rewrite <- nth_Znth in H0;
-    try rewrite make_fields'_eq_Zlength; try assumption.
+  rewrite <- nth_Znth; rewrite <- nth_Znth in H0; [| rewrite Zlength_correct in *..];
+    try rewrite make_fields'_eq_length; [|assumption..].
   generalize dependent n.
   induction l.
   - intros. rewrite nth_Znth in H0; try assumption.
