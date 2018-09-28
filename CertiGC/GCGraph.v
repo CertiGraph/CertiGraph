@@ -3190,3 +3190,11 @@ Proof.
   - simpl app. apply svwl_no_scan; try assumption. apply IHl with g2; assumption.
   - simpl app. apply svwl_scan with g4; try assumption. apply IHl with g2; assumption.
 Qed.
+
+Lemma root_in_outlier: forall (roots: roots_t) outlier p,
+    In (inl (inr p)) roots ->
+    incl (filter_sum_right (filter_sum_left roots)) outlier -> In p outlier.
+Proof.
+  intros. apply H0. rewrite <- filter_sum_right_In_iff, <- filter_sum_left_In_iff.
+  assumption.
+Qed.
