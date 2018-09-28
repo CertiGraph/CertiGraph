@@ -294,13 +294,13 @@ Proof.
   simpl isptr. inv_int i. unfold size_compatible in *. simpl in H1.
   simpl sizeof in *.
   replace (Z.max 0 n1) with n1 in *.
-  2: symmetry; apply Z.max_r; destruct H; assumption. 
+  2: symmetry; apply Z.max_r; destruct H; assumption.
   replace (Z.max 0 n) with n in *.
-  2: symmetry; apply Z.max_r; omega. 
+  2: symmetry; apply Z.max_r; omega.
   replace (Z.max 0 (n-n1)) with (n-n1) in *.
   2: symmetry; apply Z.max_r; omega.
   rewrite WORD_SIZE_eq in *.
-  rewrite ptrofs_add_repr in H1. do 2 rewrite Ptrofs.unsigned_repr in * by rep_omega. 
+  rewrite ptrofs_add_repr in H1. do 2 rewrite Ptrofs.unsigned_repr in * by rep_omega.
   replace (Z.max 0 (n - n1)) with (n - n1) in H1 by (rewrite Z.max_r; omega).
   assert (ofs + 4 * n < Ptrofs.modulus) by omega. intuition.
   constructor. intros.
@@ -696,17 +696,20 @@ Proof.
                           unfold gen_size; apply (proj1 (total_space_range _))].
 Qed.
 
-Lemma outlier_rep_single_rep: forall (roots: roots_t) outlier p,
+Lemma outlier_rep_single_rep: forall outlier p,
+    In p outlier ->
+    outlier_rep outlier |-- single_outlier_rep p * TT.
+Proof.
+  intros. unfold outlier_rep. apply (in_map single_outlier_rep) in H.
+  apply fold_right_andp in H. destruct H as [Q ?]. rewrite H.
+  apply andp_left1. cancel.
+Qed.
+
+Lemma roots_outlier_rep_single_rep: forall (roots: roots_t) outlier p,
     In (inl (inr p)) roots ->
     incl (filter_sum_right (filter_sum_left roots)) outlier ->
     outlier_rep outlier |-- single_outlier_rep p * TT.
-Proof.
-  intros. assert (In p outlier). {
-    apply H0. rewrite <- filter_sum_right_In_iff, <- filter_sum_left_In_iff.
-    assumption. } unfold outlier_rep.
-  apply (in_map single_outlier_rep) in H1. apply fold_right_andp in H1.
-  destruct H1 as [Q ?]. rewrite H1. apply andp_left1. cancel.
-Qed.
+Proof. intros. apply outlier_rep_single_rep. eapply root_in_outlier; eauto. Qed.
 
 Lemma single_outlier_rep_valid_pointer: forall p,
     single_outlier_rep p |-- valid_pointer (GC_Pointer2val p) * TT.
@@ -717,14 +720,19 @@ Proof.
     [apply readable_nonidentity; assumption | omega | apply derives_refl].
 Qed.
 
-Lemma outlier_rep_valid_pointer: forall (roots: roots_t) outlier p,
+Lemma outlier_rep_valid_pointer: forall outlier p,
+    In p outlier ->
+    outlier_rep outlier |-- valid_pointer (GC_Pointer2val p) * TT.
+Proof.
+  intros. sep_apply (outlier_rep_single_rep _ _ H).
+  sep_apply (single_outlier_rep_valid_pointer p). cancel.
+Qed.
+
+Lemma roots_outlier_rep_valid_pointer: forall (roots: roots_t) outlier p,
     In (inl (inr p)) roots ->
     incl (filter_sum_right (filter_sum_left roots)) outlier ->
     outlier_rep outlier |-- valid_pointer (GC_Pointer2val p) * TT.
-Proof.
-  intros. sep_apply (outlier_rep_single_rep _ _ _ H H0).
-  sep_apply (single_outlier_rep_valid_pointer p). cancel.
-Qed.
+Proof. intros. apply outlier_rep_valid_pointer. eapply root_in_outlier; eauto. Qed.
 
 Lemma single_outlier_rep_valid_int_or_ptr: forall p,
     single_outlier_rep p |-- !! (valid_int_or_ptr (GC_Pointer2val p)).
