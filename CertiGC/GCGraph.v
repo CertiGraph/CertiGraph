@@ -3190,3 +3190,9 @@ Proof.
   intros. apply H0. rewrite <- filter_sum_right_In_iff, <- filter_sum_left_In_iff.
   assumption.
 Qed.
+
+Definition do_generation_relation (from to: nat) (roots: roots_t)
+           (g g': LGraph): Prop := exists g1 g2,
+    forward_roots_loop from to roots g g1 /\
+    do_scan_relation from to (S (number_of_vertices (nth_gen g to))) g1 g2 /\
+    g' = reset_nth_gen_graph from g2.
