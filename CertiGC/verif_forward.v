@@ -786,28 +786,36 @@ Proof.
            assert (writable_share (nth_sh g (vgeneration v))) by
                (unfold nth_sh; apply generation_share_writable).
            forward.
-           admit.
 
-(* floundering...
-           unlocalize [graph_rep g].
-           1: apply (graph_vertex_ramif_stable _ _ H0).
-           forward.
-           localize [data_at_ Tsh int_or_ptr_type (offset_val (WORD_SIZE * n) (vertex_address g v))].
-           remember (offset_val (WORD_SIZE * n) (vertex_address g v)).
-           store_tac.
-           forward.
-           localize [field_at Tsh int_or_ptr_type [] (nullval) (offset_val (WORD_SIZE * n) (vertex_address g v))].
-           forward.
-           search_field_at_in_SEP.
-           forward.
-           clear.
-           localize [vertex_rep (nth_sh g (vgeneration v)) g v]. unfold vertex_reptex_rep, vertex_at.
-           localize [data_at Tsh val (vint 0) (offset_val (WORD_SIZE * n) (vertex_address g v))].
-           forward.
-           vertex_rep (nth_sh g (vgeneration v)) g v].
-           unfold vertex_rep, vertex_at. Intros.
+           sep_apply (field_at_data_at_cancel
+                        (nth_sh g (vgeneration v))
+                        (tarray int_or_ptr_type (Zlength (make_fields_vals g v)))
+                        (upd_Znth n (make_fields_vals g v)
+                        (vertex_address g (copied_vertex (vlabel g v')))) 
+                        (vertex_address g v)).
+           gather_SEP 1 0. 
+           remember (labeledgraph_gen_dst g e (vlabel g (dst g e)).(copied_vertex)) as g'.
+           replace_SEP 0 (vertex_rep
+                            (nth_sh g' (vgeneration v))
+                            g' v). { admit. }
+ (* 
+    game plan: 
+
+           get, in SEP, soemthing with vertex_rep v g'
+
+           unlocalize [graph_rep g']
+                                       
+           ramification obligation
+           
+           forward. (* return *)
+
+           remember fgdgd as g'
+           
+           Exists g' t_info roots.
+           
+           prove postcondition
 *)
-
+           admit.
 
         -- (* not yet forwarded *)
           forward. thaw FR.  freeze [0; 1; 2; 3; 4; 5] FR.

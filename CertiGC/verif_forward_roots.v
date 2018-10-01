@@ -18,18 +18,21 @@ Proof.
     (EX i: Z,
      EX g' : LGraph,
      EX t_info': thread_info,
+     (*EX roots' : roots_t,*)
      PROP (
-       forward_roots_loop from to (sublist 0 i roots) g g';
-       super_compatible (g', t_info', roots) f_info outlier;
-       forward_condition g' t_info' from to
+         forward_roots_loop from to (sublist 0 i roots) g g';
+         (*roots' = forwarded_roots from to forward_p g roots f_info;*)
+         thread_info_relation t_info t_info';
+         (*super_compatible (g', t_info', roots') f_info outlier;*)
+         forward_condition g' t_info' from to
      )
      LOCAL (
        temp _args (offset_val 12 ti);
        temp _n (Z2val n);
        temp _roots (force_val (sem_add_ptr_int tuint Signed fi (vint 2)));
-       temp _from_start (gen_start g from);
-       temp _from_limit (limit_address g t_info from);
-       temp _next (next_address t_info to);
+       temp _from_start (gen_start g' from);
+       temp _from_limit (limit_address g' t_info' from);
+       temp _next (next_address t_info' to);
        temp _fi fi;
        temp _ti ti
      )
@@ -41,131 +44,47 @@ Proof.
        thread_info_rep sh t_info' ti
      )
     )%assert.
-  - admit.
+  - pose proof lri_range f_info; subst n; omega.
   - Exists g t_info. autorewrite with sublist.
-    entailer!; try entailer. split; constructor.
-    assumption. repeat (split; try assumption).
+    entailer!; try entailer.
+    split; try split; try constructor; try reflexivity.
+    assumption.
+    repeat (split; try assumption).
   - unfold fun_info_rep.
-    remember (map Z2val (fun_word_size f_info ::
-      Zlength (live_roots_indices f_info) ::
-      live_roots_indices f_info)) as l.
-    assert (Zlength l = (Zlength (live_roots_indices f_info) + 2)) by
-        (subst l; rewrite Zlength_map;
-         do 2 (rewrite Zlength_cons); omega).
-    rewrite <- H14.
-    assert (Zlength (tl l) = Zlength l - 1) by admit.
-    rewrite data_at_tarray_value_split_1_tuint. rewrite <- H15.
-    rewrite data_at_tarray_value_split_1_tuint. Intros. freeze [0;1;2;4;5;6;7] FR. rewrite Heql. simpl tl.
-    replace (Zlength
-             (Z2val (Zlength (live_roots_indices f_info))
-                    :: map Z2val (live_roots_indices f_info)) - 1) with (Zlength (map Z2val (live_roots_indices f_info))) by (rewrite Zlength_cons; omega).
-    remember (map Z2val (live_roots_indices f_info)) as roots_l.
-    assert ((Zlength roots_l) - i =
-            Zlength (sublist i (Zlength roots_l) roots_l)) by (rewrite Heqroots_l; symmetry;
-      apply Zlength_sublist_correct;
-      rewrite Zlength_map; omega; omega).
-    rewrite (data_at_tarray_value_tuint
-               rsh
-               (Zlength roots_l) i
-               (offset_val WORD_SIZE (offset_val WORD_SIZE fi))
-               roots_l roots_l
-               (sublist 0 i roots_l)
-               (sublist i (Zlength roots_l) roots_l));
-      auto. rewrite H19. rewrite data_at_tarray_value_split_1_tuint.
-    thaw FR; Intros. freeze [0;1;2;3;4;5;6;8;9;10] FR.
-
-
-
-    (*assert_PROP (field_compatible tuint []
-                                  (offset_val WORD_SIZE (offset_val WORD_SIZE fi))). {
-      sep_apply (data_at__local_facts rsh tuint (offset_val WORD_SIZE (offset_val WORD_SIZE (offset_val WORD_SIZE fi)))).
-
-
-
-    
-    destruct (sublist i (Zlength roots_l) roots_l) eqn:?.
-    1: { exfalso; subst roots_l.
-         rewrite Zlength_nil in H19. rewrite Zlength_map in H19. rewrite <- Heqn in H19. omega. }
-    simpl hd.
-    assert_PROP (field_compatible tuint []
-                                  (offset_val WORD_SIZE (offset_val WORD_SIZE fi))). {
-      sep_apply (data_at__local_facts rsh tuint (offset_val WORD_SIZE (offset_val WORD_SIZE (offset_val WORD_SIZE fi)))).
-
-      the p I need: (offset_val WORD_SIZE (offset_val WORD_SIZE fi))
-
-      the p I have: 
-
-                                                            (offset_val WORD_SIZE fi))).
-
-
-
-      (field_compatible tuint [] (offset_val (4 * (i + 2)) fi)). {
-      sep_apply (data_at__local_facts rsh tuint (offset_val (4 * (i + 2)) fi)).
-*)
-
-(*        field_compatible tuint []
-                (offset_val (WORD_SIZE * (i + 2)) fi)). {
-        (sep_apply (data_at__local_facts rsh tuint
-                   (offset_val (WORD_SIZE * (i+2) fi)); entailer!). *)
-    (*assert_PROP
-      (force_val (sem_add_ptr_int tuint Unsigned
-                                  (force_val (sem_add_ptr_int tuint Signed fi (vint 2))) (vint i)) = field_address tuint [] (offset_val WORD_SIZE (offset_val WORD_SIZE fi))).
-    {
-      
-      unfold field_address.  entailer!.
-
-
-      unfold field_address.
-             rewrite if_true by assumption. simpl. rewrite offset_offset_val.
-             f_equal. omega.
+    assert ((force_val (sem_add_ptr_int tuint Signed fi (vint 2))) =
+            offset_val (WORD_SIZE * 2) fi). {
+      rewrite sem_add_pi_ptr_special'.
+      3: assumption. 2: reflexivity.
+      simpl. f_equal; rep_omega.
     }
-    
-
+    assert_PROP (force_val (sem_add_ptr_int tuint
+      Unsigned (offset_val (WORD_SIZE * 2) fi) (vint i)) =
+        field_address (tarray tuint (Zlength
+        (live_roots_indices f_info) + 2))
+        [ArraySubsc (i+2)] fi). {
+      entailer!. simpl. unfold field_address.
+      rewrite if_true; simpl. f_equal; rep_omega.
+      unfold field_compatible in *.
+      intuition. red. intuition. red. simpl. omega.
+    }
+    rewrite H14.
     forward.
+    apply semax_if_seq.
+    forward_if.
+    2: { replace (i+2) with (i+1+1) in H19 by omega.
+         do 2 (rewrite <- Znth_tl in H19 by rep_omega). simpl in H19.
+         exfalso.
+         assert (0 <= i < Zlength (live_roots_indices f_info)) by
+             (rewrite <- Heqn; assumption).
+         pose proof Znth_In i (live_roots_indices f_info) H20. 
+         pose proof fi_index_range f_info
+              (Znth i (live_roots_indices f_info)) H21.
+         rewrite Int.unsigned_repr in H19; rep_omega.
+    }
+    forward.
+    replace (i+2) with (i+1+1) by omega.
+    do 2 (rewrite <- Znth_tl by rep_omega). simpl tl.
+(*    
+    forward_call (rsh, sh, gv, fi, ti, g', t_info', f_info, roots', outlier, from, to, 0, (@inl _ (VType*Z) i)) *)
+Abort.
 
-    simpl.
-
-    
-    
-
-    constructor; try assumption.
-    assu
-
-
-    [constructor ; constructor | assumption].
-  
-
- 
-
-forward_for_simple_bound
-        n
-        (EX i: Z,
-         PROP ( )
-         LOCAL (temp _h h; gvars gv)
-         SEP (data_at Ews heap_type
-                      (vh :: list_repeat (Z.to_nat (i - 1)) v0 ++
-                          list_repeat (Z.to_nat (12 - i)) vn) h; FRZL FR))%assert.
-
-  
-  forward.
-
-
-
-    start_function. destruct H as [? [? [? ?]]].
-  destruct H0 as [? [? [? [? ?]]]].
-  unfold fun_info_rep, thread_info_rep.
-  assert_PROP (isptr fi) by entailer.
-  assert_PROP (isptr ti) by entailer.
-  assert (0 <= 1 < Zlength (live_roots_indices f_info) + 2) by (split; rep_omega).
-  Intros.
-  do 3 forward.
-
-  
-  
-  forward.
-  unfold fun_info_rep.
-    
-  forward.
-  
-  1: { entailer.*)
-    Abort.

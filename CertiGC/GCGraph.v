@@ -14,7 +14,7 @@ Require Import VST.floyd.data_at_rec_lemmas.
 Require Import RamifyCoq.lib.EquivDec_ext.
 Require Import RamifyCoq.lib.List_ext.
 Require Import RamifyCoq.graph.graph_model.
-Require Import RamifyCoq.graph.graph_gen.
+Require Export RamifyCoq.graph.graph_gen.
 Require Import RamifyCoq.msl_ext.iter_sepcon.
 Import ListNotations.
 
@@ -401,6 +401,7 @@ Record fun_info : Type :=
     fun_word_size: Z;
     live_roots_indices: list Z;
     fi_index_range: forall i, In i live_roots_indices -> (0 <= i < MAX_ARGS)%Z;
+    lri_range: (Zlength (live_roots_indices) <= Int.max_unsigned - 2)%Z;
     word_size_range: (0 <= fun_word_size <= Int.max_unsigned)%Z;
   }.
 
