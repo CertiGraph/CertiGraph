@@ -275,20 +275,43 @@ Definition do_scan_spec :=
          graph_rep g';
          thread_info_rep sh t_info' ti).
 
+Definition space_address (t_info: thread_info) (gen: nat) :=
+  offset_val (12 * Z.of_nat gen) (ti_heap_p t_info).
+
 Definition do_generation_spec :=
   DECLARE _do_generation
-  WITH rsh: share, sh: share, gv: globals, fi: val, ti: val, from: val, to: val,
+  WITH rsh: share, sh: share, gv: globals, fi: val, ti: val,
        g: LGraph, t_info: thread_info, f_info: fun_info,
-       roots : roots_t, outlier: outlier_t
+       roots: roots_t, outlier: outlier_t, from: nat, to: nat
   PRE [ _from OF (tptr space_type),
         _to OF (tptr space_type),
         _fi OF (tptr tuint),
         _ti OF (tptr thread_info_type)]
-    PROP ()
-    LOCAL (temp _from from; temp _to to; temp _fi fi; temp _ti ti)
-    SEP ()
+    PROP (readable_share rsh; writable_share sh;
+          super_compatible (g, t_info, roots) f_info outlier;
+          forward_condition g t_info from to;
+          to <> O; from <> to)
+    LOCAL (temp _from (space_address t_info from);
+           temp _to (space_address t_info to);
+           temp _fi fi; temp _ti ti)
+    SEP (all_string_constants rsh gv;
+         fun_info_rep rsh f_info fi;
+         outlier_rep outlier;
+         graph_rep g;
+         thread_info_rep sh t_info ti)
   POST [tvoid]
-  PROP () LOCAL () SEP ().
+    EX g' : LGraph, EX t_info': thread_info, EX roots': roots_t,    
+    PROP (super_compatible (g', t_info', roots') f_info outlier;
+          roots' = forward_all_roots from to roots g f_info;
+          forward_condition g' t_info' from to;
+          thread_info_relation t_info t_info';
+          do_generation_relation from to roots g g')
+    LOCAL ()
+    SEP (all_string_constants rsh gv;
+         fun_info_rep rsh f_info fi;
+         outlier_rep outlier;
+         graph_rep g';
+         thread_info_rep sh t_info' ti).
 
 Definition create_space_spec :=
   DECLARE _create_space
