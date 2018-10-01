@@ -1143,3 +1143,76 @@ Proof.
   destruct v as [gen index]. simpl vgeneration in *. simpl vindex in *.
   sep_apply (gen_vertex_lmc_ramif g gen index new_v H0). cancel. apply wand_frame_ver.
 Qed.
+
+Definition full_thread_info_rep (sh: share) (ti: thread_info) (t: val) :=
+  let nursery := heap_head ti.(ti_heap) in
+  let p := nursery.(space_start) in
+  let n_lim := offset_val (WORD_SIZE * nursery.(total_space)) p in
+  data_at sh thread_info_type
+          (offset_val (WORD_SIZE * nursery.(used_space)) p,
+           (n_lim, (ti.(ti_heap_p), ti.(ti_args)))) t *
+  heap_struct_rep
+    sh (map space_tri ti.(ti_heap).(spaces)) ti.(ti_heap_p) *
+  heap_rest_rep ti.(ti_heap).
+
+Lemma full_thread_info_rep_derives: forall sh ti t,
+    full_thread_info_rep sh ti t |-- thread_info_rep sh ti t.
+Proof.
+  intros. unfold full_thread_info_rep, thread_info_rep. cancel.
+  unfold heap_struct_rep. do 2 (unfold_data_at 1%nat). rewrite !field_at_data_at.
+  simpl nested_field_type.
+  remember (field_address heap_type [StructField _spaces] (ti_heap_p ti)).
+  remember (map space_tri (spaces (ti_heap ti))) as l1.
+  assert (Zlength l1 = 12) by
+      (subst l1; rewrite Zlength_map, spaces_size, MAX_SPACES_eq; reflexivity).
+  unfold space_type in H.
+  rewrite (split2_data_at_Tarray sh (Tstruct _space noattr) 12 1 l1
+                                 l1 (sublist 0 1 l1) (sublist 1 12 l1));
+    try rep_omega; try reflexivity. 2: autorewrite with sublist; reflexivity.
+  remember ((space_start (heap_head (ti_heap ti)),
+             (Vundef,
+              offset_val
+                (WORD_SIZE * total_space (heap_head (ti_heap ti)))
+                (space_start (heap_head (ti_heap ti)))))
+              :: map space_tri (tl (spaces (ti_heap ti)))) as l2.
+  assert (Zlength l2 = 12). {
+    subst l2. rewrite Zlength_cons, Zlength_map.
+    pose proof (spaces_size (ti_heap ti)). rewrite MAX_SPACES_eq in H0.
+    destruct (spaces (ti_heap ti)). 1: rewrite Zlength_nil in H0; inversion H0.
+    rewrite Zlength_cons in H0. simpl. assumption. }
+  pose proof (split2_data_at_Tarray sh (Tstruct _space noattr)).
+  vm_compute reptype in H1.
+  specialize (H1 12 1 l2 l2 (sublist 0 1 l2) (sublist 1 12 l2)).
+  rewrite H1; try rep_omega; try reflexivity.
+  2: autorewrite with sublist; reflexivity. clear H1.
+  assert (sublist 1 12 l1 = sublist 1 12 l2). {
+    subst l2. destruct l1. 1: rewrite Zlength_nil in H; inversion H. 
+    rewrite !sublist_1_cons, map_tl, <- Heql1. simpl. reflexivity. }  
+  rewrite H1. cancel. subst l2. rewrite sublist_0_cons by omega. simpl Z.sub.
+  rewrite sublist_nil. clear H0 H1. subst l1.
+  destruct (heap_head_cons (ti_heap ti)) as [s [l [? ?]]]. rewrite H0, H1.
+  rewrite map_cons, sublist_0_cons by omega. simpl Z.sub. rewrite sublist_nil.
+  change (Tarray (Tstruct _space noattr) 1 noattr) with
+      (tarray (Tstruct _space noattr) 1).
+  rewrite (data_at_singleton_array_eq sh (Tstruct _space noattr) (space_tri s))
+    by reflexivity.
+  pose proof (data_at_singleton_array_eq
+                sh (Tstruct _space noattr)
+                (space_start s,
+                 (Vundef, offset_val (WORD_SIZE * total_space s) (space_start s)))).
+  rewrite H2 by reflexivity. do 2 unfold_data_at 1%nat. cancel.
+Qed.
+
+Definition do_generation_ti_rep (from: nat) (sh: share) (ti: thread_info) (t: val) :=
+  if Nat.eq_dec from O then full_thread_info_rep sh ti t else thread_info_rep sh ti t.
+
+Lemma do_generation_ti_rep_derives: forall from sh ti t,
+    thread_info_rep sh ti t |-- do_generation_ti_rep (S from) sh ti t.
+Proof. intros. unfold do_generation_ti_rep. rewrite if_false by omega. cancel. Qed.
+
+Lemma full_derives_do_generation: forall from sh ti t,
+    full_thread_info_rep sh ti t |-- do_generation_ti_rep from sh ti t.
+Proof.
+  intros. unfold do_generation_ti_rep. if_tac. 1: cancel.
+  apply full_thread_info_rep_derives.
+Qed.

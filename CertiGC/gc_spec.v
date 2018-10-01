@@ -298,7 +298,7 @@ Definition do_generation_spec :=
          fun_info_rep rsh f_info fi;
          outlier_rep outlier;
          graph_rep g;
-         thread_info_rep sh t_info ti)
+         do_generation_ti_rep from sh t_info ti)
   POST [tvoid]
     EX g' : LGraph, EX t_info': thread_info, EX roots': roots_t,    
     PROP (super_compatible (g', t_info', roots') f_info outlier;
