@@ -266,7 +266,7 @@ Definition do_scan_spec :=
     EX g': LGraph, EX t_info': thread_info,
     PROP (super_compatible (g', t_info', roots) f_info outlier;
           forward_condition g' t_info' from to;
-          do_scan_relation from to to_index g g';  
+          do_scan_relation from to to_index g g';
           thread_info_relation t_info t_info')
     LOCAL ()
     SEP (all_string_constants rsh gv;
@@ -274,9 +274,6 @@ Definition do_scan_spec :=
          outlier_rep outlier;
          graph_rep g';
          thread_info_rep sh t_info' ti).
-
-Definition space_address (t_info: thread_info) (gen: nat) :=
-  offset_val (12 * Z.of_nat gen) (ti_heap_p t_info).
 
 Definition do_generation_spec :=
   DECLARE _do_generation
@@ -300,7 +297,7 @@ Definition do_generation_spec :=
          graph_rep g;
          do_generation_ti_rep from sh t_info ti)
   POST [tvoid]
-    EX g' : LGraph, EX t_info': thread_info, EX roots': roots_t,    
+    EX g' : LGraph, EX t_info': thread_info, EX roots': roots_t,
     PROP (super_compatible (g', t_info', roots') f_info outlier;
           roots' = forward_all_roots from to roots g f_info;
           forward_condition g' t_info' from to;

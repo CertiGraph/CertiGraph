@@ -281,7 +281,7 @@ Proof.
     apply Z.divide_add_cancel_r in H10; [assumption | apply Z.divide_factor_l].
 Qed.
 
-Lemma field_compatible_tarray_value_tuint:
+Lemma field_compatible_tarray_tuint:
   forall (n n1 : Z) (p : val),
     0 <= n1 <= n ->
     field_compatible (tarray tuint n1) [] p ->
@@ -338,7 +338,7 @@ Proof.
     red in H1. red. simpl in *. intuition.
 Qed.
 
-Lemma data_at_tarray_value_fold_tuint: forall sh n n1 p (v v' v1 v2: list val),
+Lemma data_at_tarray_tuint_fold: forall sh n n1 p (v v' v1 v2: list val),
     0 <= n1 <= n ->
     n <= Zlength v' ->
     v = sublist 0 n v' ->
@@ -351,7 +351,7 @@ Proof.
   intros. rewrite (split2_data_at_Tarray sh tuint n n1 v v' v1 v2);
             [|assumption..]. entailer!. unfold field_address0. rewrite if_true.
   - simpl nested_field_offset. entailer!.
-  - pose proof (field_compatible_tarray_value_tuint n _ p H H4 H6). clear -H1 H.
+  - pose proof (field_compatible_tarray_tuint n _ p H H4 H6). clear -H1 H.
     red in H1. red. simpl in *. intuition.
 Qed.
 
@@ -404,7 +404,7 @@ Proof.
   - apply data_at_tarray_value_fold with v'; assumption.
 Qed.
 
-Lemma data_at_tarray_value_tuint: forall sh n n1 p (v v' v1 v2: list val),
+Lemma data_at_tarray_tuint: forall sh n n1 p (v v' v1 v2: list val),
     0 <= n1 <= n ->
     n <= Zlength v' ->
     v = sublist 0 n v' ->
@@ -416,7 +416,7 @@ Lemma data_at_tarray_value_tuint: forall sh n n1 p (v v' v1 v2: list val),
 Proof.
   intros. apply pred_ext.
   - apply data_at_tarray_value_unfold_tuint with v'; assumption.
-  - apply data_at_tarray_value_fold_tuint with v'; assumption.
+  - apply data_at_tarray_tuint_fold with v'; assumption.
 Qed.
 
 Lemma data_at__tarray_value: forall sh n n1 p,
@@ -1030,13 +1030,13 @@ Proof.
     autorewrite with sublist. reflexivity.
 Qed.
 
-Lemma data_at_tarray_value_split_1_tuint: forall sh p (l: list val),
+Lemma data_at_tarray_tuint_split_1: forall sh p (l: list val),
     0 < Zlength l ->
     data_at sh (tarray tuint (Zlength l)) l p =
     data_at sh tuint (hd nullval l) p *
     data_at sh (tarray tuint (Zlength l-1)) (tl l) (offset_val WORD_SIZE p).
 Proof.
-  intros. rewrite (data_at_tarray_value_tuint sh (Zlength l) 1 p l l [hd nullval l] (tl l)).
+  intros. rewrite (data_at_tarray_tuint sh (Zlength l) 1 p l l [hd nullval l] (tl l)).
   - replace (WORD_SIZE * 1)%Z with WORD_SIZE by omega. f_equal.
     rewrite (data_at_singleton_array_eq _ tuint (hd nullval l)); reflexivity.
   - omega.
@@ -1186,8 +1186,8 @@ Proof.
   rewrite H1; try rep_omega; try reflexivity.
   2: autorewrite with sublist; reflexivity. clear H1.
   assert (sublist 1 12 l1 = sublist 1 12 l2). {
-    subst l2. destruct l1. 1: rewrite Zlength_nil in H; inversion H. 
-    rewrite !sublist_1_cons, map_tl, <- Heql1. simpl. reflexivity. }  
+    subst l2. destruct l1. 1: rewrite Zlength_nil in H; inversion H.
+    rewrite !sublist_1_cons, map_tl, <- Heql1. simpl. reflexivity. }
   rewrite H1. cancel. subst l2. rewrite sublist_0_cons by omega. simpl Z.sub.
   rewrite sublist_nil. clear H0 H1. subst l1.
   destruct (heap_head_cons (ti_heap ti)) as [s [l [? ?]]]. rewrite H0, H1.
@@ -1216,3 +1216,87 @@ Proof.
   intros. unfold do_generation_ti_rep. if_tac. 1: cancel.
   apply full_thread_info_rep_derives.
 Qed.
+
+Definition space_struct_rep (sh: share) (tinfo: thread_info) (gen: nat) :=
+  data_at sh space_type (space_tri (nth_space tinfo gen)) (space_address tinfo gen).
+
+Lemma heap_struct_rep_eq: forall sh l p,
+    heap_struct_rep sh l p = data_at sh (tarray space_type 12) l p.
+Proof.
+  intros. unfold heap_struct_rep. apply pred_ext; rewrite data_at_isptr; Intros.
+  - unfold_data_at 1%nat. entailer!. clear H0. rewrite field_at_data_at.
+    unfold field_address. rewrite if_true by assumption. simpl.
+    entailer!.
+  - unfold_data_at 2%nat. entailer!. clear H0 H1. rewrite field_at_data_at.
+    unfold field_address. rewrite if_true.
+    + simpl. rewrite isptr_offset_val_zero by assumption. entailer!.
+    + unfold field_compatible in *. simpl in *. intuition.
+      * destruct p; try contradiction. clear -H2. unfold align_compatible in *.
+        unfold heap_type.
+        remember {|
+           co_su := Struct;
+           co_members := [(_spaces, tarray (Tstruct _space noattr) 12)];
+           co_attr := noattr;
+           co_sizeof := 144;
+           co_alignof := 4;
+           co_rank := 2;
+           co_sizeof_pos := Zgeb0_ge0 144 eq_refl;
+           co_alignof_two_p := prove_alignof_two_p 4 eq_refl;
+           co_sizeof_alignof := prove_Zdivide 4 144 eq_refl |}.
+        apply (align_compatible_rec_Tstruct cenv_cs _heap noattr c _); subst c.
+        1: reflexivity. simpl co_members. intros. simpl in H.
+        if_tac in H; inversion H. subst. clear H. inversion H0. subst z0.
+        rewrite Z.add_0_r. apply H2.
+      * red. simpl. left; reflexivity.
+Qed.
+
+Lemma sizeof_tarray_space: forall n,
+    (0 <= n)%Z -> sizeof (tarray space_type n) = (SPACE_STRUCT_SIZE * n)%Z.
+Proof. intros. simpl. rewrite Z.max_r by assumption. rep_omega. Qed.
+
+Lemma heap_struct_rep_split: forall sh l tinfo i1 i2,
+    Z.of_nat i1 < MAX_SPACES -> Z.of_nat i2 < MAX_SPACES -> (i1 < i2)%nat ->
+    heap_struct_rep sh l (ti_heap_p tinfo) =
+    data_at sh space_type (nth i1 l (space_tri null_space)) (space_address tinfo i1) *
+    TT.
+Proof.
+  intros. rewrite heap_struct_rep_eq.
+Abort.
+
+Lemma full_thread_info_rep_ramif_stable: forall sh tinfo ti gen,
+    gen <> O -> Z.of_nat gen < MAX_SPACES ->
+    full_thread_info_rep sh tinfo ti |--
+                         (space_struct_rep sh tinfo O *
+                          space_struct_rep sh tinfo gen) *
+    ((space_struct_rep sh tinfo O * space_struct_rep sh tinfo gen)
+       -* full_thread_info_rep sh tinfo ti).
+Proof.
+  intros. unfold full_thread_info_rep.
+  remember (@data_at
+              CompSpecs sh thread_info_type
+              (@pair val (prod val (prod val (list val)))
+                     (offset_val (WORD_SIZE * (used_space (heap_head (ti_heap tinfo))))
+                                 (space_start (heap_head (ti_heap tinfo))))
+                     (@pair val (prod val (list val))
+                            (offset_val
+                               (WORD_SIZE * (total_space (heap_head (ti_heap tinfo))))
+                               (space_start (heap_head (ti_heap tinfo))))
+                            (@pair val (list val)
+                                   (ti_heap_p tinfo) (ti_args tinfo)))) ti) as P.
+  remember (heap_rest_rep (ti_heap tinfo)) as Q.
+  rewrite (sepcon_comm P), sepcon_assoc. remember (P * Q) as R.
+  clear P HeqP Q HeqQ HeqR. unfold heap_struct_rep. rewrite data_at_isptr at 1. Intros.
+  unfold_data_at 1%nat. entailer!. clear H3. rewrite field_at_data_at.
+  unfold field_address. rewrite if_true by assumption. simpl.
+  rewrite isptr_offset_val_zero by assumption.
+Abort.
+
+Lemma do_generation_ti_rep_ramif_stable: forall from sh tinfo ti gen1 gen2,
+    gen1 <> gen2 -> Z.of_nat gen1 < MAX_SPACES -> Z.of_nat gen2 < MAX_SPACES ->
+    do_generation_ti_rep from sh tinfo ti |--
+                         (space_struct_rep sh tinfo gen1 *
+                          space_struct_rep sh tinfo gen2) *
+    ((space_struct_rep sh tinfo gen1 * space_struct_rep sh tinfo gen2)
+       -* do_generation_ti_rep from sh tinfo ti).
+Proof.
+Abort.
