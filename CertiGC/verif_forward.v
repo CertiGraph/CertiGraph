@@ -786,18 +786,73 @@ Proof.
            assert (writable_share (nth_sh g (vgeneration v))) by
                (unfold nth_sh; apply generation_share_writable).
            forward.
-
            sep_apply (field_at_data_at_cancel
                         (nth_sh g (vgeneration v))
                         (tarray int_or_ptr_type (Zlength (make_fields_vals g v)))
                         (upd_Znth n (make_fields_vals g v)
                         (vertex_address g (copied_vertex (vlabel g v')))) 
                         (vertex_address g v)).
-           gather_SEP 1 0. 
-           remember (labeledgraph_gen_dst g e (vlabel g (dst g e)).(copied_vertex)) as g'.
+           gather_SEP 1 0.
+           remember (copied_vertex (vlabel g v')).
+           remember (labeledgraph_gen_dst g e v1) as g'.
+           assert ((nth_sh g (vgeneration v)) =
+                   (nth_sh g' (vgeneration v))) by
+               (unfold nth_sh, nth_gen; subst g'; reflexivity).
+           assert (Zlength (make_fields_vals g v) =
+                   (Zlength (make_fields_vals g' v))). {
+             subst g'; subst v1; unfold make_fields_vals.
+             simpl; rewrite H13; repeat rewrite Zlength_map.
+             unfold make_fields; unfold labeledgraph_gen_dst; reflexivity.
+           }  (* lemma *)
+
+           assert (raw_mark (vlabel g' v) = false) by
+               (subst g'; subst v1; simpl; assumption).
+
+           assert (gen_start g (vgeneration v) = (gen_start (labeledgraph_gen_dst g e (copied_vertex (vlabel g (dst g e)))) (vgeneration v))).
+           {
+             unfold gen_start. do 2 if_tac.
+             - unfold nth_gen. reflexivity.
+             - unfold graph_has_gen in *; simpl in *. contradiction.
+             - unfold graph_has_gen in *; simpl in *. contradiction.
+             - reflexivity.
+           } (* lemma in GCGraph.v *)
+
+           assert (vertex_address g v = vertex_address g' v). {
+           subst g'. subst v1. subst v'.
+           unfold vertex_address.
+           rewrite H29.
+           f_equal.
+           } (* lemma *)
+
+           assert ((upd_Znth n (make_fields_vals g v)
+             (vertex_address g v1)) =
+                   (make_fields_vals g' v)). {
+             unfold make_fields_vals; rewrite H28, H13.
+             subst g'; subst v1; subst v'.
+             (*
+
+
+             (* Heqf : Znth n (make_fields g v) = inr e *)
+             unfold labeledgraph_gen_dst, pregraph_gen_dst.
+
+
+             
+             simpl. unfold updateEdgeFuncsimpl.
+             unfold fie                
+             
+             unfold make_fields; simpl.
+              *)
+             admit. }
+           
+             
            replace_SEP 0 (vertex_rep
                             (nth_sh g' (vgeneration v))
-                            g' v). { admit. }
+                            g' v).
+           1: unfold vertex_rep, vertex_at.
+           rewrite <- H26, <- H27, <- H30.
+           entailer!.
+
+   
  (* 
     game plan: 
 
