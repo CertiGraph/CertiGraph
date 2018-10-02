@@ -50,6 +50,11 @@ Lemma NO_SCAN_TAG_eq: NO_SCAN_TAG = 251. Proof. reflexivity. Qed.
 Hint Rewrite NO_SCAN_TAG_eq: rep_omega.
 Global Opaque NO_SCAN_TAG.
 
+Definition SPACE_STRUCT_SIZE: Z := 12.
+Lemma SPACE_STRUCT_SIZE_eq: SPACE_STRUCT_SIZE = 12. Proof. reflexivity. Qed.
+Hint Rewrite SPACE_STRUCT_SIZE_eq: rep_omega.
+Global Opaque SPACE_STRUCT_SIZE.
+
 Lemma MSS_eq_unsigned:
   Int.unsigned (Int.shl (Int.repr 1) (Int.repr 29)) = MAX_SPACE_SIZE.
 Proof.
@@ -3197,3 +3202,6 @@ Definition do_generation_relation (from to: nat) (roots: roots_t)
     forward_roots_loop from to roots g g1 /\
     do_scan_relation from to (S (number_of_vertices (nth_gen g to))) g1 g2 /\
     g' = reset_nth_gen_graph from g2.
+
+Definition space_address (t_info: thread_info) (gen: nat) :=
+  offset_val (SPACE_STRUCT_SIZE * Z.of_nat gen) (ti_heap_p t_info).
