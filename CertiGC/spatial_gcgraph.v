@@ -249,144 +249,84 @@ Proof.
   rewrite memory_block_data_at_; auto.
 Qed.
 
-Lemma field_compatible_tarray_value:
-  forall (n n1 : Z) (p : val),
-    0 <= n1 <= n ->
-    field_compatible (tarray int_or_ptr_type n1) [] p ->
-    field_compatible (tarray int_or_ptr_type (n - n1)) []
-                     (offset_val (WORD_SIZE * n1) p) ->
-    field_compatible (tarray int_or_ptr_type n) [] p.
+Lemma field_compatible_tarray_join:
+  forall (n n1 : Z) (p : val) (t: type),
+    0 <= n1 <= n -> complete_legal_cosu_type t = true ->
+    field_compatible (tarray t n1) [] p ->
+    field_compatible (tarray t (n - n1)) []
+                     (offset_val (sizeof t * n1) p) ->
+    field_compatible (tarray t n) [] p.
 Proof.
-  intros. unfold field_compatible. simpl. destruct H0 as [? [_ [? [? _]]]].
-  destruct H1 as [_ [_ [? [? _]]]]. destruct p; try contradiction. clear H0.
-  simpl isptr. inv_int i. unfold size_compatible in *. simpl in H1.
-  rewrite sizeof_tarray_int_or_ptr in * by omega. rewrite WORD_SIZE_eq in *.
-  rewrite ptrofs_add_repr in H1. do 2 rewrite Ptrofs.unsigned_repr in * by rep_omega.
-  replace (Z.max 0 (n - n1)) with (n - n1) in H1 by (rewrite Z.max_r; omega).
-  assert (ofs + 4 * n < Ptrofs.modulus) by omega. intuition. constructor. intros.
-  simpl sizeof. rewrite Ptrofs.unsigned_repr by rep_omega.
-  apply align_compatible_rec_by_value with Mptr. 1: reflexivity. simpl.
-  apply Z.divide_add_r. 2: apply Z.divide_factor_l. simpl offset_val in H4.
-  rewrite ptrofs_add_repr in H4. unfold align_compatible in *.
+  intros. unfold field_compatible. simpl. destruct H1 as [? [_ [? [? _]]]].
+  destruct H2 as [_ [_ [? [? _]]]]. destruct p; try contradiction. clear H1.
+  simpl isptr. inv_int i. unfold size_compatible in *. simpl in H2.
+  simpl sizeof in *. rewrite Z.max_r in * by omega. pose proof (sizeof_pos t).
+  remember (sizeof t) as S. rewrite ptrofs_add_repr in H2.
   rewrite Ptrofs.unsigned_repr in * by rep_omega.
-  pose proof (align_compatible_rec_Tarray_inv _ _ _ _ _ H3).
-  pose proof (align_compatible_rec_Tarray_inv _ _ _ _ _ H4). simpl sizeof in *.
-  rewrite Z.le_lteq in H6. destruct H6.
-  - assert (0 <= 0 < n1) by omega. specialize (H9 _ H11).
-    apply (align_compatible_rec_by_value_inv _ _ Mptr) in H9. 2: reflexivity.
-    simpl in H9. rewrite Z.add_0_r in H9. assumption.
-  - subst n1. rewrite Z.sub_0_r in H10. specialize (H10 _ H5).
-    apply (align_compatible_rec_by_value_inv _ _ Mptr) in H10. 2: reflexivity.
-    simpl in H10. rewrite Z.add_0_r, Z.add_comm in H10.
-    apply Z.divide_add_cancel_r in H10; [assumption | apply Z.divide_factor_l].
+  assert (0 <= ofs + S * n1 <= Ptrofs.max_unsigned). {
+    destruct H, H6. split. 2: rep_omega. apply Z.add_nonneg_nonneg. 1: omega.
+    apply Z.mul_nonneg_nonneg; omega. }
+  rewrite Ptrofs.unsigned_repr in * by assumption.
+  assert (forall i, ofs + S * n1 + S * (i - n1) = ofs + S * i). {
+    intros. rewrite <- Z.add_assoc. rewrite <- Z.mul_add_distr_l.
+    do 2 f_equal. omega. } rewrite H8 in H2. do 4 (split; auto). constructor. intros.
+    unfold tarray in *. inversion H4; subst. 1: simpl in H10; inversion H10.
+    inversion H5; subst. 1: simpl in H10; inversion H10. remember (sizeof t) as S.
+    rewrite ptrofs_add_repr in H15. rewrite Ptrofs.unsigned_repr in * by rep_omega.
+    assert (0 <= i < n1 \/ n1 <= i < n) by omega. destruct H10.
+    1: apply H14; assumption. assert (0 <= i - n1 < n - n1) by omega.
+    specialize (H15 _ H11). rewrite H8 in H15. assumption.
 Qed.
 
-Lemma field_compatible_tarray_tuint:
-  forall (n n1 : Z) (p : val),
-    0 <= n1 <= n ->
-    field_compatible (tarray tuint n1) [] p ->
-    field_compatible (tarray tuint (n - n1)) []
-                     (offset_val (WORD_SIZE * n1) p) ->
-    field_compatible (tarray tuint n) [] p.
-Proof.
-  intros. unfold field_compatible. simpl. destruct H0 as [? [_ [? [? _]]]].
-  destruct H1 as [_ [_ [? [? _]]]]. destruct p; try contradiction. clear H0.
-  simpl isptr. inv_int i. unfold size_compatible in *. simpl in H1.
-  simpl sizeof in *.
-  replace (Z.max 0 n1) with n1 in *.
-  2: symmetry; apply Z.max_r; destruct H; assumption.
-  replace (Z.max 0 n) with n in *.
-  2: symmetry; apply Z.max_r; omega.
-  replace (Z.max 0 (n-n1)) with (n-n1) in *.
-  2: symmetry; apply Z.max_r; omega.
-  rewrite WORD_SIZE_eq in *.
-  rewrite ptrofs_add_repr in H1. do 2 rewrite Ptrofs.unsigned_repr in * by rep_omega.
-  replace (Z.max 0 (n - n1)) with (n - n1) in H1 by (rewrite Z.max_r; omega).
-  assert (ofs + 4 * n < Ptrofs.modulus) by omega. intuition.
-  constructor. intros.
-  simpl sizeof. rewrite Ptrofs.unsigned_repr by rep_omega.
-  apply align_compatible_rec_by_value with Mptr. 1: reflexivity. simpl.
-  apply Z.divide_add_r. 2: apply Z.divide_factor_l. simpl offset_val in H4.
-  rewrite ptrofs_add_repr in H4. unfold align_compatible in *.
-  rewrite Ptrofs.unsigned_repr in * by rep_omega.
-  pose proof (align_compatible_rec_Tarray_inv _ _ _ _ _ H3).
-  pose proof (align_compatible_rec_Tarray_inv _ _ _ _ _ H4). simpl sizeof in *.
-  rewrite Z.le_lteq in H6. destruct H6.
-  - assert (0 <= 0 < n1) by omega. specialize (H9 _ H11).
-    apply (align_compatible_rec_by_value_inv _ _ Mptr) in H9. 2: reflexivity.
-    simpl in H9. rewrite Z.add_0_r in H9. assumption.
-  - subst n1. rewrite Z.sub_0_r in H10. specialize (H10 _ H5).
-    apply (align_compatible_rec_by_value_inv _ _ Mptr) in H10. 2: reflexivity.
-    simpl in H10. rewrite Z.add_0_r, Z.add_comm in H10.
-    apply Z.divide_add_cancel_r in H10; [assumption | apply Z.divide_factor_l].
-Qed.
-
-Lemma data_at_tarray_value_fold: forall sh n n1 p (v v' v1 v2: list val),
+Lemma data_at_tarray_fold: forall sh n n1 p t (v v' v1 v2: list (reptype t)),
     0 <= n1 <= n ->
     n <= Zlength v' ->
     v = sublist 0 n v' ->
     v1 = sublist 0 n1 v' ->
     v2 = sublist n1 n v' ->
-    data_at sh (tarray int_or_ptr_type n1) v1 p *
-    data_at sh (tarray int_or_ptr_type (n - n1)) v2 (offset_val (WORD_SIZE * n1) p) |--
-            data_at sh (tarray int_or_ptr_type n) v p.
+    complete_legal_cosu_type t = true ->
+    data_at sh (tarray t n1) v1 p *
+    data_at sh (tarray t (n - n1)) v2 (offset_val (sizeof t * n1) p) |--
+            data_at sh (tarray t n) v p.
 Proof.
-  intros. rewrite (split2_data_at_Tarray sh int_or_ptr_type n n1 v v' v1 v2);
+  intros. rewrite (split2_data_at_Tarray sh t n n1 v v' v1 v2);
             [|assumption..]. entailer!. unfold field_address0. rewrite if_true.
   - simpl nested_field_offset. entailer!.
-  - pose proof (field_compatible_tarray_value n _ p H H4 H6). clear -H1 H.
+  - pose proof (field_compatible_tarray_join n _ p _ H H4 H5 H7). clear -H1 H.
     red in H1. red. simpl in *. intuition.
 Qed.
 
-Lemma data_at_tarray_tuint_fold: forall sh n n1 p (v v' v1 v2: list val),
+Lemma data_at_tarray_unfold: forall sh n n1 p t (v v' v1 v2: list (reptype t)),
     0 <= n1 <= n ->
     n <= Zlength v' ->
     v = sublist 0 n v' ->
     v1 = sublist 0 n1 v' ->
     v2 = sublist n1 n v' ->
-    data_at sh (tarray tuint n1) v1 p *
-    data_at sh (tarray tuint (n - n1)) v2 (offset_val (WORD_SIZE * n1) p) |--
-            data_at sh (tarray tuint n) v p.
+    data_at sh (tarray t n) v p |--
+            data_at sh (tarray t n1) v1 p *
+    data_at sh (tarray t (n - n1)) v2 (offset_val (sizeof t * n1) p).
 Proof.
-  intros. rewrite (split2_data_at_Tarray sh tuint n n1 v v' v1 v2);
-            [|assumption..]. entailer!. unfold field_address0. rewrite if_true.
-  - simpl nested_field_offset. entailer!.
-  - pose proof (field_compatible_tarray_tuint n _ p H H4 H6). clear -H1 H.
-    red in H1. red. simpl in *. intuition.
-Qed.
-
-Lemma data_at_tarray_value_unfold: forall sh n n1 p (v v' v1 v2: list val),
-    0 <= n1 <= n ->
-    n <= Zlength v' ->
-    v = sublist 0 n v' ->
-    v1 = sublist 0 n1 v' ->
-    v2 = sublist n1 n v' ->
-    data_at sh (tarray int_or_ptr_type n) v p |--
-            data_at sh (tarray int_or_ptr_type n1) v1 p *
-    data_at sh (tarray int_or_ptr_type (n - n1)) v2 (offset_val (WORD_SIZE * n1) p).
-Proof.
-  intros. sep_apply (data_at_local_facts sh (tarray int_or_ptr_type n) v p).
-  Intros. rewrite (split2_data_at_Tarray sh int_or_ptr_type n n1 v v' v1 v2);
+  intros. sep_apply (data_at_local_facts sh (tarray t n) v p).
+  Intros. rewrite (split2_data_at_Tarray sh t n n1 v v' v1 v2);
             [|assumption..]. cancel. unfold field_address0. rewrite if_true.
   - simpl nested_field_offset. entailer!.
   - clear -H H4. red. red in H4. simpl in *. intuition.
 Qed.
 
-Lemma data_at_tarray_value_unfold_tuint: forall sh n n1 p (v v' v1 v2: list val),
+Lemma data_at_tarray_split: forall sh n n1 p t (v v' v1 v2: list (reptype t)),
     0 <= n1 <= n ->
     n <= Zlength v' ->
     v = sublist 0 n v' ->
     v1 = sublist 0 n1 v' ->
     v2 = sublist n1 n v' ->
-    data_at sh (tarray tuint n) v p |--
-            data_at sh (tarray tuint n1) v1 p *
-    data_at sh (tarray tuint (n - n1)) v2 (offset_val (WORD_SIZE * n1) p).
+    complete_legal_cosu_type t = true ->
+    data_at sh (tarray t n) v p =
+    data_at sh (tarray t n1) v1 p *
+    data_at sh (tarray t (n - n1)) v2 (offset_val (sizeof t * n1) p).
 Proof.
-  intros. sep_apply (data_at_local_facts sh (tarray tuint n) v p).
-  Intros. rewrite (split2_data_at_Tarray sh tuint n n1 v v' v1 v2);
-            [|assumption..]. cancel. unfold field_address0. rewrite if_true.
-  - simpl nested_field_offset. entailer!.
-  - clear -H H4. red. red in H4. simpl in *. intuition.
+  intros. apply pred_ext.
+  - apply data_at_tarray_unfold with v'; assumption.
+  - apply data_at_tarray_fold with v'; assumption.
 Qed.
 
 Lemma data_at_tarray_value: forall sh n n1 p (v v' v1 v2: list val),
@@ -398,11 +338,7 @@ Lemma data_at_tarray_value: forall sh n n1 p (v v' v1 v2: list val),
     data_at sh (tarray int_or_ptr_type n) v p =
     data_at sh (tarray int_or_ptr_type n1) v1 p *
     data_at sh (tarray int_or_ptr_type (n - n1)) v2 (offset_val (WORD_SIZE * n1) p).
-Proof.
-  intros. apply pred_ext.
-  - apply data_at_tarray_value_unfold with v'; assumption.
-  - apply data_at_tarray_value_fold with v'; assumption.
-Qed.
+Proof. intros. eapply data_at_tarray_split; eauto. Qed.
 
 Lemma data_at_tarray_tuint: forall sh n n1 p (v v' v1 v2: list val),
     0 <= n1 <= n ->
@@ -413,10 +349,18 @@ Lemma data_at_tarray_tuint: forall sh n n1 p (v v' v1 v2: list val),
     data_at sh (tarray tuint n) v p =
     data_at sh (tarray tuint n1) v1 p *
     data_at sh (tarray tuint (n - n1)) v2 (offset_val (WORD_SIZE * n1) p).
+Proof. intros. eapply data_at_tarray_split; eauto. Qed.
+
+Lemma data_at_tarray_space: forall sh n n1 p (v: list (reptype space_type)),
+    0 <= n1 <= n ->
+    n = Zlength v ->
+    data_at sh (tarray space_type n) v p =
+    data_at sh (tarray space_type n1) (sublist 0 n1 v) p *
+    data_at sh (tarray space_type (n - n1)) (sublist n1 n v)
+            (offset_val (SPACE_STRUCT_SIZE * n1) p).
 Proof.
-  intros. apply pred_ext.
-  - apply data_at_tarray_value_unfold_tuint with v'; assumption.
-  - apply data_at_tarray_tuint_fold with v'; assumption.
+  intros. eapply data_at_tarray_split; eauto. 1: omega.
+  autorewrite with sublist. reflexivity.
 Qed.
 
 Lemma data_at__tarray_value: forall sh n n1 p,
@@ -1011,23 +955,39 @@ Proof.
   rewrite <- lacv_generation_rep_eq; [reflexivity | assumption..].
 Qed.
 
+Lemma data_at_tarray_split_1:
+  forall sh p (tt: type) (v: reptype tt) (l: list (reptype tt)),
+    complete_legal_cosu_type tt = true ->
+    data_at sh (tarray tt (Zlength l + 1)) (v :: l) p =
+    data_at sh tt v p *
+    data_at sh (tarray tt (Zlength l)) l (offset_val (sizeof tt) p).
+Proof.
+  intros.
+  rewrite (data_at_tarray_split sh (Zlength l + 1) 1 p tt (v :: l) (v :: l) [v] l).
+  - replace (sizeof tt * 1)%Z with (sizeof tt) by omega.
+    replace (Zlength l + 1 - 1) with (Zlength l) by omega. f_equal.
+    rewrite (data_at_singleton_array_eq _ tt v); reflexivity.
+  - rep_omega.
+  - rewrite Zlength_cons. omega.
+  - autorewrite with sublist; reflexivity.
+  - simpl. vm_compute. reflexivity.
+  - simpl. rewrite sublist_1_cons.
+    replace (Zlength l + 1 - 1) with (Zlength l) by omega.
+    autorewrite with sublist. reflexivity.
+  - assumption.
+Qed.
+
 Lemma data_at_tarray_value_split_1: forall sh p (l: list val),
     0 < Zlength l ->
     data_at sh (tarray int_or_ptr_type (Zlength l)) l p =
     data_at sh int_or_ptr_type (hd nullval l) p *
     data_at sh (tarray int_or_ptr_type (Zlength l-1)) (tl l) (offset_val WORD_SIZE p).
 Proof.
-  intros. rewrite (data_at_tarray_value sh (Zlength l) 1 p l l [hd nullval l] (tl l)).
-  - replace (WORD_SIZE * 1)%Z with WORD_SIZE by omega. f_equal.
-    rewrite (data_at_singleton_array_eq _ int_or_ptr_type (hd nullval l)); reflexivity.
-  - omega.
-  - omega.
-  - autorewrite with sublist; reflexivity.
-  - destruct l. 1: rewrite Zlength_nil in H; omega. simpl. compute. reflexivity.
-  - destruct l. 1: rewrite Zlength_nil in H; omega. simpl.
-    rewrite sublist_1_cons, Zlength_cons.
-    replace (Z.succ (Zlength l) - 1) with (Zlength l) by omega.
-    autorewrite with sublist. reflexivity.
+  intros. destruct l. 1: rewrite Zlength_nil in H; omega. clear H. simpl hd.
+  simpl tl. rewrite Zlength_cons.
+  replace (Z.succ (Zlength l)) with (Zlength l + 1) by omega.
+  replace (Zlength l + 1 - 1) with (Zlength l) by omega.
+  eapply data_at_tarray_split_1; eauto.
 Qed.
 
 Lemma data_at_tarray_tuint_split_1: forall sh p (l: list val),
@@ -1036,17 +996,11 @@ Lemma data_at_tarray_tuint_split_1: forall sh p (l: list val),
     data_at sh tuint (hd nullval l) p *
     data_at sh (tarray tuint (Zlength l-1)) (tl l) (offset_val WORD_SIZE p).
 Proof.
-  intros. rewrite (data_at_tarray_tuint sh (Zlength l) 1 p l l [hd nullval l] (tl l)).
-  - replace (WORD_SIZE * 1)%Z with WORD_SIZE by omega. f_equal.
-    rewrite (data_at_singleton_array_eq _ tuint (hd nullval l)); reflexivity.
-  - omega.
-  - omega.
-  - autorewrite with sublist; reflexivity.
-  - destruct l. 1: rewrite Zlength_nil in H; omega. simpl. compute. reflexivity.
-  - destruct l. 1: rewrite Zlength_nil in H; omega. simpl.
-    rewrite sublist_1_cons, Zlength_cons.
-    replace (Z.succ (Zlength l) - 1) with (Zlength l) by omega.
-    autorewrite with sublist. reflexivity.
+  intros. destruct l. 1: rewrite Zlength_nil in H; omega. clear H. simpl hd.
+  simpl tl. rewrite Zlength_cons.
+  replace (Z.succ (Zlength l)) with (Zlength l + 1) by omega.
+  replace (Zlength l + 1 - 1) with (Zlength l) by omega.
+  eapply data_at_tarray_split_1; eauto.
 Qed.
 
 Lemma lmc_vertex_rep_eq: forall sh g v new_v,
@@ -1250,18 +1204,69 @@ Proof.
       * red. simpl. left; reflexivity.
 Qed.
 
-Lemma sizeof_tarray_space: forall n,
-    (0 <= n)%Z -> sizeof (tarray space_type n) = (SPACE_STRUCT_SIZE * n)%Z.
-Proof. intros. simpl. rewrite Z.max_r by assumption. rep_omega. Qed.
+Lemma heap_struct_rep_split_lt: forall sh l tinfo i1 i2,
+    i1 < MAX_SPACES -> i2 < MAX_SPACES -> 0 <= i1 < i2 -> Zlength l = MAX_SPACES ->
+    exists B,
+      heap_struct_rep sh l (ti_heap_p tinfo) =
+      data_at sh space_type (Znth i1 l) (space_address tinfo (Z.to_nat i1)) *
+      data_at sh space_type (Znth i2 l) (space_address tinfo (Z.to_nat i2)) * B.
+Proof.
+  intros.
+  exists (@data_at CompSpecs sh
+                   (tarray space_type
+                           (@Zlength (@reptype CompSpecs space_type)
+                                     (@sublist (@reptype CompSpecs space_type)
+                                               (i2 + 1) 12 l)))
+                   (@sublist (@reptype CompSpecs space_type) (i2 + 1) 12 l)
+                   (offset_val (SPACE_STRUCT_SIZE * (i2 + 1)) (ti_heap_p tinfo)) *
+          @data_at CompSpecs sh (tarray space_type i1)
+                   (@sublist (@reptype CompSpecs space_type) 0 i1 l)
+                   (ti_heap_p tinfo) *
+          @data_at CompSpecs sh (tarray space_type (i2 - i1 - 1))
+                   (@sublist (@reptype CompSpecs space_type) (i1 + 1) i2 l)
+                   (offset_val (SPACE_STRUCT_SIZE * (i1 + 1)) (ti_heap_p tinfo))).
+  rewrite heap_struct_rep_eq. rewrite (data_at_tarray_space sh 12 i1) by rep_omega.
+  rewrite (sublist_next i1 12 l) by rep_omega.
+  replace (12 - i1) with (Zlength (sublist (i1 + 1) 12 l) + 1) by
+      (rewrite Zlength_sublist; rep_omega).
+  rewrite data_at_tarray_split_1 by reflexivity. unfold space_address.
+  rewrite Z2Nat.id by omega. rewrite sepcon_comm, !sepcon_assoc. f_equal.
+  rewrite offset_offset_val. rewrite Z2Nat.id by omega.
+  replace (SPACE_STRUCT_SIZE * i1 + sizeof space_type) with
+      (SPACE_STRUCT_SIZE * (i1 + 1))%Z by (simpl sizeof; rep_omega).
+  assert (Zlength (sublist (i1 + 1) 12 l) = 11 - i1) by
+      (rewrite Zlength_sublist; rep_omega). rewrite H3.
+  rewrite (data_at_tarray_space sh (11 - i1) (i2 - i1 - 1)).
+  3: rewrite H3; reflexivity. 2: rep_omega. rewrite !sublist_sublist by rep_omega.
+  replace (0 + (i1 + 1)) with (i1 + 1) by omega.
+  replace (i2 - i1 - 1 + (i1 + 1)) with i2 by omega.
+  replace (11 - i1 - (i2 - i1 - 1)) with (12 - i2) by omega.
+  replace (11 - i1 + (i1 + 1)) with 12 by omega.
+  rewrite offset_offset_val, <- Z.mul_add_distr_l.
+  replace (i1 + 1 + (i2 - i1 - 1)) with i2 by omega.
+  rewrite (sublist_next i2 12 l) by rep_omega.
+  replace (12 - i2) with (Zlength (sublist (i2 + 1) 12 l) + 1) by
+      (rewrite Zlength_sublist; rep_omega).
+  rewrite data_at_tarray_split_1 by reflexivity.
+  rewrite sepcon_assoc, sepcon_comm, !sepcon_assoc. f_equal.
+  rewrite <- !sepcon_assoc. rewrite offset_offset_val. simpl sizeof.
+  replace (SPACE_STRUCT_SIZE * i2 + 12) with (SPACE_STRUCT_SIZE * (i2 + 1))%Z by
+      rep_omega. reflexivity.
+Qed.
 
 Lemma heap_struct_rep_split: forall sh l tinfo i1 i2,
-    Z.of_nat i1 < MAX_SPACES -> Z.of_nat i2 < MAX_SPACES -> (i1 < i2)%nat ->
+    0 <= i1 < MAX_SPACES -> 0 <= i2 < MAX_SPACES ->
+    i1 <> i2 -> Zlength l = MAX_SPACES -> exists B,
     heap_struct_rep sh l (ti_heap_p tinfo) =
-    data_at sh space_type (nth i1 l (space_tri null_space)) (space_address tinfo i1) *
-    TT.
+    data_at sh space_type (Znth i1 l) (space_address tinfo (Z.to_nat i1)) *
+    data_at sh space_type (Znth i2 l) (space_address tinfo (Z.to_nat i2)) * B.
 Proof.
-  intros. rewrite heap_struct_rep_eq.
-Abort.
+  intros. destruct H, H0. destruct (Z_dec i1 i2) as [[? | ?] | ?]. 3: contradiction.
+  - destruct (heap_struct_rep_split_lt sh l tinfo i1 i2) as [B ?]; try rep_omega.
+    exists B. assumption.
+  - destruct (heap_struct_rep_split_lt sh l tinfo i2 i1) as [B ?]; try rep_omega.
+    exists B. rewrite H5. f_equal. rewrite sepcon_comm. reflexivity.
+Qed.
 
 Lemma full_thread_info_rep_ramif_stable: forall sh tinfo ti gen,
     gen <> O -> Z.of_nat gen < MAX_SPACES ->
@@ -1285,18 +1290,79 @@ Proof.
                                    (ti_heap_p tinfo) (ti_args tinfo)))) ti) as P.
   remember (heap_rest_rep (ti_heap tinfo)) as Q.
   rewrite (sepcon_comm P), sepcon_assoc. remember (P * Q) as R.
-  clear P HeqP Q HeqQ HeqR. unfold heap_struct_rep. rewrite data_at_isptr at 1. Intros.
-  unfold_data_at 1%nat. entailer!. clear H3. rewrite field_at_data_at.
-  unfold field_address. rewrite if_true by assumption. simpl.
-  rewrite isptr_offset_val_zero by assumption.
-Abort.
+  clear P HeqP Q HeqQ HeqR. remember (map space_tri (spaces (ti_heap tinfo))).
+  assert (0 <= 0 < MAX_SPACES) by rep_omega. assert (0 <> Z.of_nat gen) by omega.
+  assert (0 <= Z.of_nat gen < MAX_SPACES) by rep_omega.
+  assert (Zlength l = MAX_SPACES) by (subst; rewrite Zlength_map; apply spaces_size).
+  destruct (heap_struct_rep_split sh l tinfo 0 (Z.of_nat gen) H1 H3 H2 H4) as [B ?].
+  rewrite H5, !Nat2Z.id. simpl. replace 0 with (Z.of_nat O) by (simpl; reflexivity).
+  assert (forall i, 0 <= Z.of_nat i < MAX_SPACES ->
+                    data_at sh space_type (Znth (Z.of_nat i) l)
+                            (space_address tinfo i) = space_struct_rep sh tinfo i). {
+    intros. unfold space_struct_rep. subst l. rewrite Zlength_map in H4.
+    rewrite nth_space_Znth, Znth_map by rep_omega. reflexivity. }
+  rewrite !H6 by rep_omega. rewrite (sepcon_assoc _ B R).
+  cancel. apply wand_frame_intro.
+Qed.
 
-Lemma do_generation_ti_rep_ramif_stable: forall from sh tinfo ti gen1 gen2,
-    gen1 <> gen2 -> Z.of_nat gen1 < MAX_SPACES -> Z.of_nat gen2 < MAX_SPACES ->
-    do_generation_ti_rep from sh tinfo ti |--
+Lemma thread_info_rep_ramif_stable: forall sh tinfo ti gen1 gen2,
+    gen1 <> O -> gen2 <> O -> gen1 <> gen2 ->
+    Z.of_nat gen1 < MAX_SPACES -> Z.of_nat gen2 < MAX_SPACES ->
+    thread_info_rep sh tinfo ti |--
                          (space_struct_rep sh tinfo gen1 *
                           space_struct_rep sh tinfo gen2) *
     ((space_struct_rep sh tinfo gen1 * space_struct_rep sh tinfo gen2)
+       -* thread_info_rep sh tinfo ti).
+Proof.
+  intros. unfold thread_info_rep.
+  remember (@data_at
+              CompSpecs sh thread_info_type
+              (@pair val (prod val (prod val (list val)))
+                     (offset_val (WORD_SIZE * (used_space (heap_head (ti_heap tinfo))))
+                                 (space_start (heap_head (ti_heap tinfo))))
+                     (@pair val (prod val (list val))
+                            (offset_val
+                               (WORD_SIZE * (total_space (heap_head (ti_heap tinfo))))
+                               (space_start (heap_head (ti_heap tinfo))))
+                            (@pair val (list val)
+                                   (ti_heap_p tinfo) (ti_args tinfo)))) ti) as P.
+  remember (heap_rest_rep (ti_heap tinfo)) as Q.
+  rewrite (sepcon_comm P), sepcon_assoc. remember (P * Q) as R.
+  clear P HeqP Q HeqQ HeqR. remember (spaces (ti_heap tinfo)) as l1.
+  remember ((space_start (heap_head (ti_heap tinfo)),
+             (Vundef,
+              offset_val (WORD_SIZE * total_space (heap_head (ti_heap tinfo)))
+                         (space_start (heap_head (ti_heap tinfo)))))
+              :: map space_tri (tl l1)) as l2.
+  assert (Zlength (tl l1) = 11). {
+    subst. pose proof (spaces_size (ti_heap tinfo)).
+    destruct (spaces (ti_heap tinfo)). 1: rewrite Zlength_nil in H4; omega. simpl tl.
+    rewrite Zlength_cons in H4. rep_omega. }
+  assert (Zlength l2 = MAX_SPACES) by
+      (subst l2; rewrite Zlength_cons, Zlength_map; rep_omega).
+  destruct (heap_struct_rep_split sh l2 tinfo (Z.of_nat gen1) (Z.of_nat gen2))
+    as [B ?]; try rep_omega; try assumption. rewrite H6, !Nat2Z.id. clear H6.
+    assert (forall i, 0 < Z.of_nat i < MAX_SPACES ->
+                      data_at sh space_type (Znth (Z.of_nat i) l2)
+                              (space_address tinfo i) = space_struct_rep sh tinfo i). {
+      intros. unfold space_struct_rep. subst l2.
+      assert (Z.of_nat i = Z.of_nat i - 1 + 1) by omega. rewrite H7.
+      rewrite <- Znth_tl by omega. simpl tl. rewrite Znth_map by rep_omega.
+      rewrite Znth_tl by omega. subst l1.
+      rewrite <- H7, nth_space_Znth. reflexivity. } rewrite !H6 by rep_omega.
+    rewrite (sepcon_assoc _ B R). cancel. apply wand_frame_intro.
+Qed.
+
+Lemma do_generation_ti_rep_ramif_stable: forall from sh tinfo ti gen,
+    from <> gen -> gen <> O ->
+    Z.of_nat from < MAX_SPACES -> Z.of_nat gen < MAX_SPACES ->
+    do_generation_ti_rep from sh tinfo ti |--
+                         (space_struct_rep sh tinfo from *
+                          space_struct_rep sh tinfo gen) *
+    ((space_struct_rep sh tinfo from * space_struct_rep sh tinfo gen)
        -* do_generation_ti_rep from sh tinfo ti).
 Proof.
-Abort.
+  intros. unfold do_generation_ti_rep. destruct (Nat.eq_dec from O).
+  - subst from. apply full_thread_info_rep_ramif_stable; assumption.
+  - apply thread_info_rep_ramif_stable; assumption.
+Qed.
