@@ -1079,15 +1079,6 @@ forward_loop (from to: nat): nat -> list forward_p_type -> LGraph -> LGraph -> P
     forward_relation from to depth (forward_p2forward_t f nil g1) g1 g2 ->
     forward_loop from to depth fl g2 g3 -> forward_loop from to depth (f :: fl) g1 g3.
 
-(* ugly, plus we need additional proofs that we won't actully hit the 0 branches. I would have made it with Option but even that's unnecessary in the end. *)
-Definition val2nat (g: LGraph) (gen: nat) (v: val) : nat :=
-  let start := gen_start g gen in
-  match start, v with
-  | Vptr b1 o1, Vptr b2 o2 =>
-      if (eq_dec b1 b2) then Z.to_nat (Ptrofs.unsigned o2 - Ptrofs.unsigned o1) else 0
-  | _,_ => 0
-  end.
-
 Definition forward_p_compatible
            (p: forward_p_type) (roots: roots_t) (g: LGraph): Prop :=
   match p with
@@ -1343,7 +1334,7 @@ Qed.
 
 Local Close Scope Z_scope.
 
-Definition forwarded_roots (from to: nat) (forward_p: forward_p_type)
+Definition upd_roots (from to: nat) (forward_p: forward_p_type)
            (g: LGraph) (roots: roots_t) (f_info: fun_info): roots_t :=
   match forward_p with
   | inr _ => roots
@@ -1360,11 +1351,10 @@ Definition forwarded_roots (from to: nat) (forward_p: forward_p_type)
                  end
   end.
 
-(* Goes over all the roots, and forwards those that point to the from *)
-(* space. The graph relation proposed is that between g_alpha and *)
-(* g_omega. Borrows heavily from forward_relation. Perhaps *)
-(* forward_relation itself can be changed to accept both root_t and *)
-(* field_t in the forward loop? *)
+Definition upd_all_roots (from to: nat) (roots: roots_t)
+           (g: LGraph) (f_info: fun_info) : roots_t :=
+  fold_left (fun rts i => upd_roots from to (inl (Z.of_nat i)) g rts f_info)
+            (nat_inc_list (length roots)) roots.
 
 Inductive forward_roots_loop (from to: nat): roots_t -> LGraph -> LGraph -> Prop :=
 | frl_nil: forall g, forward_roots_loop from to nil g g
@@ -1372,14 +1362,6 @@ Inductive forward_roots_loop (from to: nat): roots_t -> LGraph -> LGraph -> Prop
     forward_relation from to O (root2forward f) g1 g2 ->
     forward_roots_loop from to rl g2 g3 ->
     forward_roots_loop from to (f :: rl) g1 g3.
-
-(* Forwards all roots that are pointing at the from space. Borrows *)
-(* heavily from forwarded_roots above. *)
-
-Definition forward_all_roots (from to: nat) (roots: roots_t)
-           (g: LGraph) (f_info: fun_info) : roots_t :=
-  fold_left (fun rts i => forwarded_roots from to (inl (Z.of_nat i)) g rts f_info)
-            (nat_inc_list (length roots)) roots.
 
 Definition nth_space (t_info: thread_info) (n: nat): space :=
   nth n t_info.(ti_heap).(spaces) null_space.
