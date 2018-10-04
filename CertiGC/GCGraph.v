@@ -774,8 +774,7 @@ Qed.
 
 Lemma make_fields'_eq_Zlength: forall l v n, Zlength (make_fields' l v n) = Zlength l.
 Proof.
-  intros. revert n. induction l; intros; simpl. 1: reflexivity.
-  destruct a; [destruct s|]; simpl; repeat rewrite Zlength_cons; rewrite IHl; reflexivity.
+  intros. rewrite !Zlength_correct. rewrite make_fields'_eq_length. reflexivity.
 Qed.
 
 Definition make_fields (g: LGraph) (v: VType): list field_t :=
