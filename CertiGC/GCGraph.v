@@ -772,6 +772,12 @@ Proof.
   destruct a; [destruct s|]; simpl; rewrite IHl; reflexivity.
 Qed.
 
+Lemma make_fields'_eq_Zlength: forall l v n, Zlength (make_fields' l v n) = Zlength l.
+Proof.
+  intros. revert n. induction l; intros; simpl. 1: reflexivity.
+  destruct a; [destruct s|]; simpl; repeat rewrite Zlength_cons; rewrite IHl; reflexivity.
+Qed.
+
 Definition make_fields (g: LGraph) (v: VType): list field_t :=
   make_fields' (vlabel g v).(raw_fields) v O.
 
