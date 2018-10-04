@@ -88,20 +88,27 @@ Proof.
         rep_omega. } thaw FR.
     forward_call (rsh, sh, gv, fi, ti, g, t_info, f_info, roots, outlier, from, to).
     1: intuition. Intros vret. destruct vret as [[g1 t_info1] roots1]. simpl fst in *.
-    simpl snd in *. freeze [0;1;2;3] FR.
+    simpl snd in *. freeze [0;1;2;3] FR. deadvars!.
     replace (space_address t_info from) with (space_address t_info1 from) by
         (unfold space_address; rewrite (proj1 H25); reflexivity).
-    assert (isptr (space_start (nth_space t_info1 from))). {
+    assert (space_start (nth_space t_info1 from) = gen_start g1 from). {
       destruct H21 as [? _]. destruct H24 as [_ [? _]].
       destruct (gt_gs_compatible _ _ H21 _ H24) as [? _]. rewrite <- H26.
-      apply start_isptr. }
+      unfold gen_start. rewrite if_true by assumption. reflexivity. }
+    assert (isptr (space_start (nth_space t_info1 from))). {
+      rewrite H26. unfold gen_start. destruct H24 as [_ [? _]].
+      rewrite if_true by assumption. apply start_isptr. }
     localize [space_struct_rep_gen sh t_info1 from].
     unfold space_struct_rep_gen, space_tri_gen. do 2 forward.
     replace_SEP 0 (space_struct_rep_gen sh t_info1 from) by
         (unfold space_struct_rep_gen, space_tri_gen; entailer!).
     unlocalize [thread_info_rep sh t_info1 ti].
-    1: apply thread_info_rep_ramif_stable_1; assumption. thaw FR.
+    1: apply thread_info_rep_ramif_stable_1; assumption.
+    thaw FR. rewrite H26.
+    replace (offset_val (WORD_SIZE * total_space (nth_space t_info1 from))
+                        (gen_start g1 from)) with (limit_address g1 t_info1 from) by
+        (unfold limit_address, gen_size; reflexivity).
     forward_call (rsh, sh, gv, fi, ti, g1, t_info1, f_info, roots1, outlier,
-                  from, to, S (number_of_vertices (nth_gen g to))).
+                  from, to, number_of_vertices (nth_gen g to)).
     1: { simpl snd.
 Abort.
