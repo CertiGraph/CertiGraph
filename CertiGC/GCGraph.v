@@ -241,6 +241,45 @@ Lemma total_space_signed_range: forall sp,
     Ptrofs.min_signed <= WORD_SIZE * (total_space sp) <= Ptrofs.max_signed.
 Proof. intros. apply MSS_max_4_signed_range, total_space_tight_range. Qed.
 
+Lemma used_space_signed_range: forall sp,
+    Ptrofs.min_signed <= WORD_SIZE * used_space sp <= Ptrofs.max_signed.
+Proof.
+  intros. apply MSS_max_4_signed_range. destruct (space_order sp). split.
+  1: assumption. apply Z.le_lt_trans with (total_space sp). 1: assumption.
+  apply (proj2 (total_space_tight_range sp)).
+Qed.
+
+Lemma rest_space_signed_range: forall sp,
+    Ptrofs.min_signed <=
+    WORD_SIZE * total_space sp - WORD_SIZE * used_space sp <=
+    Ptrofs.max_signed.
+Proof.
+  intros. rewrite <- Z.mul_sub_distr_l. apply MSS_max_4_signed_range.
+  destruct (space_order sp). pose proof (total_space_tight_range sp). omega.
+Qed.
+
+Lemma signed_range_repable_signed: forall z,
+    Ptrofs.min_signed <= z <= Ptrofs.max_signed <-> repable_signed z.
+Proof.
+  intros. unfold repable_signed.
+  replace Ptrofs.max_signed with Int.max_signed by (vm_compute; reflexivity).
+  replace Ptrofs.min_signed with Int.min_signed by (vm_compute; reflexivity).
+  reflexivity.
+Qed.
+
+Lemma used_space_repable_signed: forall sp, repable_signed (used_space sp).
+Proof.
+  intros. rewrite <- signed_range_repable_signed.
+  pose proof (used_space_signed_range sp). rep_omega.
+Qed.
+
+Lemma rest_space_repable_signed: forall sp,
+    repable_signed (total_space sp - used_space sp).
+Proof.
+  intros. rewrite <- signed_range_repable_signed.
+  pose proof (rest_space_signed_range sp). rep_omega.
+Qed.
+
 Record heap: Type :=
   {
     spaces: list space;
@@ -3206,3 +3245,18 @@ Definition do_generation_relation (from to: nat) (roots: roots_t)
 
 Definition space_address (t_info: thread_info) (gen: nat) :=
   offset_val (SPACE_STRUCT_SIZE * Z.of_nat gen) (ti_heap_p t_info).
+
+Definition enough_space_to_have_all g t_info from to: Prop :=
+  graph_gen_size g from <= rest_gen_size t_info to.
+
+Definition do_generation_condition g t_info from to: Prop :=
+  enough_space_to_have_all g t_info from to /\
+  graph_has_gen g from /\ graph_has_gen g to /\
+  copy_compatible g /\ no_dangling_dst g.
+
+Lemma dgc_imply_fc: forall g t_info from to, 
+    do_generation_condition g t_info from to -> forward_condition g t_info from to.
+Proof.
+  intros. destruct H. split; auto. clear H0. red in H |-* .
+  transitivity (graph_gen_size g from); [apply unmarked_gen_size_le | assumption].
+Qed.
