@@ -286,7 +286,7 @@ Definition do_generation_spec :=
         _ti OF (tptr thread_info_type)]
     PROP (readable_share rsh; writable_share sh;
           super_compatible (g, t_info, roots) f_info outlier;
-          forward_condition g t_info from to;
+          do_generation_condition g t_info from to;
           to <> O; from <> to)
     LOCAL (temp _from (space_address t_info from);
            temp _to (space_address t_info to);
