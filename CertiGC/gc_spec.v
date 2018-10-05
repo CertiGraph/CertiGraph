@@ -227,8 +227,7 @@ Definition forward_roots_spec :=
   POST [tvoid]
     EX g' : LGraph, EX t_info': thread_info, EX roots': roots_t,
     PROP (super_compatible (g', t_info', roots') f_info outlier;
-          forward_roots_loop from to roots g g';
-          roots' = upd_all_roots from to roots g f_info;
+          forward_roots_relation from to f_info roots g roots' g';
           forward_condition g' t_info' from to;
           thread_info_relation t_info t_info')
     LOCAL ()
@@ -299,10 +298,9 @@ Definition do_generation_spec :=
   POST [tvoid]
     EX g' : LGraph, EX t_info': thread_info, EX roots': roots_t,
     PROP (super_compatible (g', t_info', roots') f_info outlier;
-          roots' = upd_all_roots from to roots g f_info;
           forward_condition g' t_info' from to;
           thread_info_relation t_info t_info';
-          do_generation_relation from to roots g g')
+          do_generation_relation from to f_info roots roots' g g')
     LOCAL ()
     SEP (all_string_constants rsh gv;
          fun_info_rep rsh f_info fi;

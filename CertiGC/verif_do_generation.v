@@ -90,13 +90,13 @@ Proof.
     1: intuition. Intros vret. destruct vret as [[g1 t_info1] roots1]. simpl fst in *.
     simpl snd in *. freeze [0;1;2;3] FR. deadvars!.
     replace (space_address t_info from) with (space_address t_info1 from) by
-        (unfold space_address; rewrite (proj1 H25); reflexivity).
+        (unfold space_address; rewrite (proj1 H24); reflexivity).
     assert (space_start (nth_space t_info1 from) = gen_start g1 from). {
-      destruct H21 as [? _]. destruct H24 as [_ [? _]].
-      destruct (gt_gs_compatible _ _ H21 _ H24) as [? _]. rewrite <- H26.
+      destruct H21 as [? _]. destruct H23 as [_ [? _]].
+      destruct (gt_gs_compatible _ _ H21 _ H23) as [? _]. rewrite <- H25.
       unfold gen_start. rewrite if_true by assumption. reflexivity. }
     assert (isptr (space_start (nth_space t_info1 from))). {
-      rewrite H26. unfold gen_start. destruct H24 as [_ [? _]].
+      rewrite H25. unfold gen_start. destruct H23 as [_ [? _]].
       rewrite if_true by assumption. apply start_isptr. }
     localize [space_struct_rep_gen sh t_info1 from].
     unfold space_struct_rep_gen, space_tri_gen. do 2 forward.
@@ -104,7 +104,7 @@ Proof.
         (unfold space_struct_rep_gen, space_tri_gen; entailer!).
     unlocalize [thread_info_rep sh t_info1 ti].
     1: apply thread_info_rep_ramif_stable_1; assumption.
-    thaw FR. rewrite H26.
+    thaw FR. rewrite H25.
     replace (offset_val (WORD_SIZE * total_space (nth_space t_info1 from))
                         (gen_start g1 from)) with (limit_address g1 t_info1 from) by
         (unfold limit_address, gen_size; reflexivity).
