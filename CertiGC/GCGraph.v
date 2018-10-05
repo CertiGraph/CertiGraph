@@ -1351,17 +1351,18 @@ Definition upd_roots (from to: nat) (forward_p: forward_p_type)
                  end
   end.
 
-Definition upd_all_roots (from to: nat) (roots: roots_t)
-           (g: LGraph) (f_info: fun_info) : roots_t :=
-  fold_left (fun rts i => upd_roots from to (inl (Z.of_nat i)) g rts f_info)
-            (nat_inc_list (length roots)) roots.
+Inductive forward_roots_loop (from to: nat) (f_info: fun_info):
+  list nat -> roots_t -> LGraph -> roots_t -> LGraph -> Prop :=
+| frl_nil: forall g roots, forward_roots_loop from to f_info nil roots g roots g
+| frl_cons: forall g1 g2 g3 i il roots1 roots3,
+    forward_relation from to O (root2forward (Znth (Z.of_nat i) roots1)) g1 g2 ->
+    forward_roots_loop from to f_info il
+                       (upd_roots from to (inl (Z.of_nat i)) g1 roots1 f_info)
+                       g2 roots3 g3 ->
+    forward_roots_loop from to f_info (i :: il) roots1 g1 roots3 g3.
 
-Inductive forward_roots_loop (from to: nat): roots_t -> LGraph -> LGraph -> Prop :=
-| frl_nil: forall g, forward_roots_loop from to nil g g
-| frl_cons: forall g1 g2 g3 f rl,
-    forward_relation from to O (root2forward f) g1 g2 ->
-    forward_roots_loop from to rl g2 g3 ->
-    forward_roots_loop from to (f :: rl) g1 g3.
+Definition forward_roots_relation from to f_info roots1 g1 roots2 g2 :=
+  forward_roots_loop from to f_info (nat_inc_list (length roots1)) roots1 g1 roots2 g2.
 
 Definition nth_space (t_info: thread_info) (n: nat): space :=
   nth n t_info.(ti_heap).(spaces) null_space.
@@ -3224,9 +3225,9 @@ Proof.
   assumption.
 Qed.
 
-Definition do_generation_relation (from to: nat) (roots: roots_t)
-           (g g': LGraph): Prop := exists g1 g2,
-    forward_roots_loop from to roots g g1 /\
+Definition do_generation_relation (from to: nat) (f_info: fun_info)
+           (roots roots': roots_t) (g g': LGraph): Prop := exists g1 g2,
+    forward_roots_relation from to f_info roots g roots' g1 /\
     do_scan_relation from to (S (number_of_vertices (nth_gen g to))) g1 g2 /\
     g' = reset_nth_gen_graph from g2.
 
@@ -3241,9 +3242,41 @@ Definition do_generation_condition g t_info from to: Prop :=
   graph_has_gen g from /\ graph_has_gen g to /\
   copy_compatible g /\ no_dangling_dst g.
 
-Lemma dgc_imply_fc: forall g t_info from to, 
+Lemma dgc_imply_fc: forall g t_info from to,
     do_generation_condition g t_info from to -> forward_condition g t_info from to.
 Proof.
   intros. destruct H. split; auto. clear H0. red in H |-* .
   transitivity (graph_gen_size g from); [apply unmarked_gen_size_le | assumption].
+Qed.
+
+Lemma upd_roots_Zlength: forall from to p g roots f_info,
+    Zlength roots = Zlength (live_roots_indices f_info) ->
+    Zlength (upd_roots from to p g roots f_info) = Zlength roots.
+Proof.
+  intros. unfold upd_roots. destruct p. 2: reflexivity.
+  destruct (Znth z roots). 1: destruct s; reflexivity. if_tac. 2: reflexivity.
+  destruct (raw_mark (vlabel g v)); rewrite upd_bunch_Zlength; auto.
+Qed.
+
+Lemma frl_roots_Zlength: forall from to f_info l roots g roots' g',
+    Zlength roots = Zlength (live_roots_indices f_info) ->
+    forward_roots_loop from to f_info l roots g roots' g' ->
+    Zlength roots' = Zlength roots.
+Proof.
+  intros. induction H0. 1: reflexivity. rewrite IHforward_roots_loop.
+  - apply upd_roots_Zlength; assumption.
+  - rewrite upd_roots_Zlength; assumption.
+Qed.
+
+Lemma frl_add_tail: forall from to f_info l i g1 g2 g3 roots1 roots2,
+    forward_roots_loop from to f_info l roots1 g1 roots2 g2 ->
+    forward_relation from to O (root2forward (Znth (Z.of_nat i) roots2)) g2 g3 ->
+    forward_roots_loop
+      from to f_info (l +:: i) roots1 g1
+      (upd_roots from to (inl (Z.of_nat i)) g2 roots2 f_info) g3.
+Proof.
+  intros ? ? ? ?. induction l; intros. Opaque upd_roots.
+  - simpl. inversion H. subst. apply frl_cons with g3. 2: constructor. apply H0.
+  - inversion H. subst. clear H. simpl app. apply frl_cons with g4. 1: assumption.
+    apply IHl; assumption.
 Qed.
