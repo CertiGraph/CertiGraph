@@ -779,8 +779,6 @@ Proof.
              unfold vertex_rep, vertex_at. unfold make_fields_vals at 3.
              rewrite H22. entailer!. }
            unlocalize [graph_rep g]. 1: apply (graph_vertex_ramif_stable _ _ H19).
-
-           (* here comes trouble... *)
            localize [vertex_rep (nth_sh g (vgeneration v)) g v].
            unfold vertex_rep, vertex_at. Intros.
            assert (writable_share (nth_sh g (vgeneration v))) by
@@ -795,149 +793,25 @@ Proof.
            gather_SEP 1 0.
            remember (copied_vertex (vlabel g v')).
            remember (labeledgraph_gen_dst g e v1) as g'.
-           assert ((nth_sh g (vgeneration v)) =
-                   (nth_sh g' (vgeneration v))) by
-               (unfold nth_sh, nth_gen; subst g'; reflexivity).
-           assert (Zlength (make_fields_vals g v) =
-                   (Zlength (make_fields_vals g' v))). {
-             subst g'; subst v1; unfold make_fields_vals.
-             simpl; rewrite H13; repeat rewrite Zlength_map.
-             unfold make_fields; unfold labeledgraph_gen_dst; reflexivity.
-           }  (* lemma *)
 
-           assert (raw_mark (vlabel g' v) = false) by
-               (subst g'; subst v1; simpl; assumption).
-
-           assert (gen_start g (vgeneration v) = (gen_start (labeledgraph_gen_dst g e (copied_vertex (vlabel g (dst g e)))) (vgeneration v))).
-           {
-             unfold gen_start. do 2 if_tac.
-             - unfold nth_gen. reflexivity.
-             - unfold graph_has_gen in *; simpl in *. contradiction.
-             - unfold graph_has_gen in *; simpl in *. contradiction.
-             - reflexivity.
-           } (* lemma in GCGraph.v *)
-
-           assert (vertex_address g v = vertex_address g' v). {
-           subst g'. subst v1. subst v'.
-           unfold vertex_address.
-           rewrite H29.
-           f_equal.
-           } (* lemma *)
-
-           assert (forall g v e v2, vertex_address g v = vertex_address (labeledgraph_gen_dst g e v2) v) by reflexivity.
-
-           assert (forall g e v v1, make_fields g v = make_fields (labeledgraph_gen_dst g e v1) v) by reflexivity.
-
-           assert (forall g n v e,
-                               0 <= n < Zlength (make_fields g v) ->
-                               Znth n (make_fields g v) = inr e -> e = (v , Z.to_nat n)). {
-                      clear. intros.
-                      rewrite <- nth_Znth in H0 by assumption.
-                      unfold make_fields in *.
-
-                      assert (n = Z.of_nat (Z.to_nat n)) by rep_omega.
-                      rewrite H1 in H0, H.
-                      remember (Z.to_nat n).
-                      clear Heqn0.
-                      clear n H1.
-                      remember O as i.
-                      replace n0 with (n0 + i)%nat by rep_omega.
-                      clear Heqi.
-                      revert i H H0.
-                      induction n0.
-                      - intros. rewrite Nat2Z.id in H0.
-                        unfold make_fields' in H0.
-                        induction (raw_fields (vlabel g v)).
-                        + inversion H0.
-                        + apply IHl. clear -H.
-                          split; try omega.
-                          rewrite make_fields'_eq_Zlength.
-                          admit. admit.
-                      - admit.
-                    }
-
-           assert (forall g fd e v2,
-               fd <> (inr e) -> 
-               field2val g fd =
-               field2val (labeledgraph_gen_dst g e v2) fd). {
-               intros. unfold field2val.
-               simpl. unfold updateEdgeFunc.
-               destruct fd; [destruct s|]; try reflexivity. 
-               unfold not in H32. 
-               assert(e1 = e0 -> False) by admit.
-               destruct (EquivDec.equiv_dec e0 e1).
-               - inversion e2; exfalso.
-                 rewrite H36 in H35. contradiction.
-               - apply H31.
-             } (* lemma *)
-           
-           assert ((upd_Znth n (make_fields_vals g v)
-             (vertex_address g v1)) =
-                   (make_fields_vals g' v)). {
-             subst g'.
-             rewrite (Znth_list_eq
-                        (upd_Znth n (make_fields_vals g v)
-                                  (vertex_address g v1))
-                        (make_fields_vals
-                           (labeledgraph_gen_dst g e v1) v)).
-             split; 
-             rewrite upd_Znth_Zlength; try assumption;
-             rewrite fields_eq_length; try assumption.
-             unfold make_fields_vals; rewrite H28, H13.
-             intros.
-             rewrite Znth_map.
-             2: { rewrite make_fields_eq_length.
-                  repeat rewrite fields_eq_length in H27.
-                  rewrite <- H27. assumption.
-                  }
-             assert (j = n \/ j <> n) by omega.
-             destruct H36.
-             - subst j. rewrite upd_Znth_same.
-               2: { rewrite Zlength_map. rewrite make_fields_eq_length; assumption. }
-               unfold field2val; simpl.
-               rewrite (H32 g e v v1) in Heqf; rewrite Heqf.
-               unfold updateEdgeFunc.
-(* wow, so very ugly *)
-               destruct (EquivDec.equiv_dec e e).
-               apply H31.
-               unfold Equivalence.equiv in c. unfold complement in c.
-
-               assert (e = e) by reflexivity.
-               apply c in H36. exfalso. assumption. 
-             - rewrite upd_Znth_diff';
-                 try (rewrite Zlength_map; rewrite make_fields_eq_length); try assumption.
-               rewrite Znth_map.
-               2: rewrite make_fields_eq_length; assumption.
-               rewrite <- H34.
-               reflexivity.
-               rewrite <- H32.
-               apply H33 in Heqf;
-                 try (rewrite make_fields_eq_length; assumption).
-               unfold not. intro.
-               apply H33 in H37; try (rewrite make_fields_eq_length; assumption).
-               rewrite H37 in Heqf.
-               inversion Heqf.
-               apply Z2Nat.inj in H39; rep_omega.
-           }
-           
-             
            replace_SEP 0 (vertex_rep
                             (nth_sh g' (vgeneration v))
                             g' v).
-           1: { unfold vertex_rep, vertex_at;
-                rewrite <- H26, <- H27, <- H30; entailer!. }
+           1: { unfold vertex_rep, vertex_at.
+                rewrite (lgd_sh_unchanged g v e v1).
+                rewrite (lgd_mfv_length_unchanged g v e v1).
+                rewrite <- fields_eq_length in H12.
+                rewrite (lgd_mfv_change_in_one_spot g v e v1 n); try assumption. 
+                entailer!. }
 
-           
+           subst g'; subst v1.
+           unlocalize [graph_rep (labeledgraph_gen_dst g e (copied_vertex (vlabel g v')))].
 
-           
+
 
    
  (* 
     game plan: 
-
-           get, in SEP, soemthing with vertex_rep v g'
-
-           unlocalize [graph_rep g']
                                        
            ramification obligation
            
@@ -949,7 +823,7 @@ Proof.
            
            prove postcondition
 *)
-           admit.
+           admit. admit.
 
         -- (* not yet forwarded *)
           forward. thaw FR.  freeze [0; 1; 2; 3; 4; 5] FR.
