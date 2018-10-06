@@ -160,8 +160,7 @@ Proof.
           transitivity (WORD_SIZE * used_space (nth_space t_info' to))%Z.
           + rewrite nth_space_Znth. apply (proj2 H36).
           + apply Zmult_le_compat_l. apply (proj2 (space_order _)). rep_omega.
-        - unfold gen_size. clear -H4 H8. destruct H8. unfold gen_size in H0.
-          rewrite <- H0. rewrite nth_space_Znth. rep_omega. }
+        - clear -H4 H8. destruct H8. rewrite <- H0. rep_omega. }
       apply andp_right; apply H36.
       * subst. split. 1: pose proof (pvs_ge_zero g' to (to_index + n)%nat); rep_omega.
         apply Zmult_le_compat_l. 2: rep_omega. rewrite <- H22.

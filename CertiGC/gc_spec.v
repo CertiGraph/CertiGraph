@@ -251,7 +251,7 @@ Definition do_scan_spec :=
           super_compatible (g, t_info, roots) f_info outlier;
           forward_condition g t_info from to;
           to <> O; from <> to; closure_has_index g to to_index;
-          0 < total_space (nth_space t_info to); gen_unmarked g to)
+          0 < gen_size t_info to; gen_unmarked g to)
     LOCAL (temp _from_start (gen_start g from);
            temp _from_limit (limit_address g t_info from);
            temp _scan (offset_val (- WORD_SIZE) (vertex_address g (to, to_index)));
