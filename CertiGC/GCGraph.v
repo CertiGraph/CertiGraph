@@ -3280,3 +3280,18 @@ Proof.
   - inversion H. subst. clear H. simpl app. apply frl_cons with g4. 1: assumption.
     apply IHl; assumption.
 Qed.
+
+Lemma frl_vertex_address: forall from to f_info l roots1 g1 roots2 g2,
+    graph_has_gen g1 to -> forward_roots_loop from to f_info l roots1 g1 roots2 g2 ->
+    forall v, closure_has_v g1 v -> vertex_address g1 v = vertex_address g2 v.
+Proof.
+  intros. induction H0. 1: reflexivity. rewrite <- IHforward_roots_loop.
+  - eapply fr_vertex_address; eauto.
+  - rewrite <- fr_graph_has_gen; eauto.
+  - eapply fr_closure_has_v; eauto.
+Qed.
+
+Lemma frr_vertex_address: forall from to f_info roots1 g1 root2 g2,
+    graph_has_gen g1 to -> forward_roots_relation from to f_info roots1 g1 root2 g2 ->
+    forall v, closure_has_v g1 v -> vertex_address g1 v = vertex_address g2 v.
+Proof. intros. red in H0. eapply frl_vertex_address; eauto. Qed.

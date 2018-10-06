@@ -108,7 +108,22 @@ Proof.
     replace (offset_val (WORD_SIZE * total_space (nth_space t_info1 from))
                         (gen_start g1 from)) with (limit_address g1 t_info1 from) by
         (unfold limit_address, gen_size; reflexivity).
+    assert_PROP (offset_val 4 (space_address t_info to) = next_address t_info1 to). {
+      unfold thread_info_rep. unfold heap_struct_rep. entailer!.
+      unfold space_address, next_address, field_address. rewrite (proj1 H24), if_true.
+      - simpl. rewrite offset_offset_val. f_equal.
+      - clear -H34 H16. unfold field_compatible in *. simpl.
+        unfold in_members. simpl. intuition. }
+    assert (closure_has_v g (to, number_of_vertices (nth_gen g to))) by
+        (red; simpl; unfold closure_has_index; split; [assumption | omega]).
+    replace (offset_val to_used to_p) with
+        (offset_val (- WORD_SIZE)
+                    (vertex_address g1 (to, number_of_vertices (nth_gen g to)))) by
+        (rewrite <- (frr_vertex_address _ _ _ _ _ _ _ H6 H22 _ H28); subst;
+         unfold vertex_address, vertex_offset, gen_start; simpl;
+         rewrite offset_offset_val, H12, H10, if_true by assumption;
+         f_equal; rep_omega). 
     forward_call (rsh, sh, gv, fi, ti, g1, t_info1, f_info, roots1, outlier,
                   from, to, number_of_vertices (nth_gen g to)).
-    1: { simpl snd.
+    1: { intuition.
 Abort.
