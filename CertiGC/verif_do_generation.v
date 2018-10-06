@@ -1,6 +1,6 @@
 Require Import RamifyCoq.CertiGC.gc_spec.
 
-Lemma body_do_scan: semax_body Vprog Gprog f_do_generation do_generation_spec.
+Lemma body_do_generation: semax_body Vprog Gprog f_do_generation do_generation_spec.
 Proof.
   start_function.
   pose proof H. pose proof H0. destruct H3 as [? _]. destruct H4 as [? [? [? _]]].
@@ -68,8 +68,8 @@ Proof.
     replace_SEP 0 (space_struct_rep_gen sh t_info from) by
         (unfold space_struct_rep_gen, space_tri_gen; entailer!).
     unlocalize [thread_info_rep sh t_info ti].
-    1: apply thread_info_rep_ramif_stable_1; assumption.
-    apply dgc_imply_fc in H0. rewrite <- Heqfrom_p.
+    1: apply thread_info_rep_ramif_stable_1; assumption. apply dgc_imply_fc in H0.
+    destruct H0 as [? [? ?]]. rewrite <- Heqfrom_p.
     replace from_p with (gen_start g from) by
         (subst; unfold gen_start; rewrite if_true; assumption).
     replace (offset_val (WORD_SIZE * total_space (nth_space t_info from))
@@ -82,7 +82,7 @@ Proof.
       unfold thread_info_rep. unfold heap_struct_rep. Intros. entailer!.
       unfold space_address, next_address, field_address. rewrite if_true.
       - simpl. rewrite offset_offset_val. f_equal.
-      - destruct H as [[_ [_ ?]] _]. clear -H H6 H27. unfold field_compatible in *.
+      - destruct H as [[_ [_ ?]] _]. clear -H H6 H29. unfold field_compatible in *.
         simpl in *. unfold in_members. simpl. intuition. red in H6.
         pose proof (spaces_size (ti_heap t_info)). rewrite Zlength_correct in H4.
         rep_omega. } thaw FR.
@@ -90,40 +90,58 @@ Proof.
     1: intuition. Intros vret. destruct vret as [[g1 t_info1] roots1]. simpl fst in *.
     simpl snd in *. freeze [0;1;2;3] FR. deadvars!.
     replace (space_address t_info from) with (space_address t_info1 from) by
-        (unfold space_address; rewrite (proj1 H24); reflexivity).
+        (unfold space_address; rewrite (proj1 H26); reflexivity).
     assert (space_start (nth_space t_info1 from) = gen_start g1 from). {
-      destruct H21 as [? _]. destruct H23 as [_ [? _]].
-      destruct (gt_gs_compatible _ _ H21 _ H23) as [? _]. rewrite <- H25.
+      destruct H23 as [? _]. destruct H25 as [_ [? _]].
+      destruct (gt_gs_compatible _ _ H23 _ H25) as [? _]. rewrite <- H27.
       unfold gen_start. rewrite if_true by assumption. reflexivity. }
     assert (isptr (space_start (nth_space t_info1 from))). {
-      rewrite H25. unfold gen_start. destruct H23 as [_ [? _]].
+      rewrite H27. unfold gen_start. destruct H25 as [_ [? _]].
       rewrite if_true by assumption. apply start_isptr. }
     localize [space_struct_rep_gen sh t_info1 from].
     unfold space_struct_rep_gen, space_tri_gen. do 2 forward.
     replace_SEP 0 (space_struct_rep_gen sh t_info1 from) by
         (unfold space_struct_rep_gen, space_tri_gen; entailer!).
     unlocalize [thread_info_rep sh t_info1 ti].
-    1: apply thread_info_rep_ramif_stable_1; assumption.
-    thaw FR. rewrite H25.
+    1: apply thread_info_rep_ramif_stable_1; assumption. thaw FR. rewrite H27.
     replace (offset_val (WORD_SIZE * total_space (nth_space t_info1 from))
                         (gen_start g1 from)) with (limit_address g1 t_info1 from) by
         (unfold limit_address, gen_size; reflexivity).
     assert_PROP (offset_val 4 (space_address t_info to) = next_address t_info1 to). {
       unfold thread_info_rep. unfold heap_struct_rep. entailer!.
-      unfold space_address, next_address, field_address. rewrite (proj1 H24), if_true.
+      unfold space_address, next_address, field_address. rewrite (proj1 H26), if_true.
       - simpl. rewrite offset_offset_val. f_equal.
-      - clear -H34 H16. unfold field_compatible in *. simpl.
+      - clear -H36 H16. unfold field_compatible in *. simpl.
         unfold in_members. simpl. intuition. }
     assert (closure_has_v g (to, number_of_vertices (nth_gen g to))) by
         (red; simpl; unfold closure_has_index; split; [assumption | omega]).
     replace (offset_val to_used to_p) with
         (offset_val (- WORD_SIZE)
                     (vertex_address g1 (to, number_of_vertices (nth_gen g to)))) by
-        (rewrite <- (frr_vertex_address _ _ _ _ _ _ _ H6 H22 _ H28); subst;
+        (rewrite <- (frr_vertex_address _ _ _ _ _ _ _ H6 H24 _ H30); subst;
          unfold vertex_address, vertex_offset, gen_start; simpl;
          rewrite offset_offset_val, H12, H10, if_true by assumption;
-         f_equal; rep_omega). 
+         f_equal; rep_omega). eapply frr_closure_has_v in H30; eauto.
+    destruct H30. simpl in H30, H31.
+    assert (0 < gen_size t_info1 to) by (rewrite <- (proj2 H26); assumption).
+    assert (gen_unmarked g1 to) by (eapply frr_gen_unmarked; eauto).
     forward_call (rsh, sh, gv, fi, ti, g1, t_info1, f_info, roots1, outlier,
-                  from, to, number_of_vertices (nth_gen g to)).
-    1: { intuition.
+                  from, to, number_of_vertices (nth_gen g to)). 1: intuition.
+    Intros vret. destruct vret as [g2 t_info2]. simpl fst in *. simpl snd in *.
+    deadvars!. forward_if True; Intros; [contradiction | forward; entailer! |].
+    replace (space_address t_info1 from) with (space_address t_info2 from) in * by
+        (unfold space_address; rewrite (proj1 H37); reflexivity).
+    assert (space_start (nth_space t_info2 from) = gen_start g2 from). {
+      destruct H34 as [? _]. destruct H35 as [_ [? _]].
+      destruct (gt_gs_compatible _ _ H34 _ H35) as [? _]. rewrite <- H38.
+      unfold gen_start. rewrite if_true by assumption. reflexivity. }
+    assert (isptr (space_start (nth_space t_info2 from))). {
+      rewrite H38. unfold gen_start. destruct H35 as [_ [? _]].
+      rewrite if_true by assumption. apply start_isptr. }
+    freeze [0;1;2;3] FR. localize [space_struct_rep_gen sh t_info2 from].
+    unfold space_struct_rep_gen, space_tri_gen. forward.
+    replace_SEP 0 (space_struct_rep_gen sh t_info2 from) by
+        (unfold space_struct_rep_gen, space_tri_gen; entailer!).
+    unlocalize [thread_info_rep sh t_info2 ti].
+    1: apply thread_info_rep_ramif_stable_1; assumption. thaw FR.
 Abort.

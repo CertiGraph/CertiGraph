@@ -794,7 +794,7 @@ Proof.
           (rewrite Zlength_cons, Nat2Z.inj_succ in H; omega).
       assert (nth n' (make_fields' l_raw v (S i)) field_t_inhabitant = inr e) by
         (destruct r; [destruct s|]; simpl in H2;
-        replace (i + 1)%nat with (S i) in H2 by omega; assumption). 
+        replace (i + 1)%nat with (S i) in H2 by omega; assumption).
       destruct r; [destruct s|]; simpl; apply IHn'; try assumption.
 Qed.
 
@@ -804,7 +804,7 @@ Lemma make_fields'_same_edges_have_same_index: forall n m l_raw v i e,
     0 <= m < Zlength l_raw ->
     Znth m (make_fields' l_raw v i) = inr e ->
     n = m.
-  {
+Proof.
     intros.
     assert (0 <= Z.of_nat (Z.to_nat n) < Zlength l_raw) by
         (destruct H; split; rewrite Z2Nat.id; assumption).
@@ -817,9 +817,8 @@ Lemma make_fields'_same_edges_have_same_index: forall n m l_raw v i e,
     pose proof (make_fields'_edge_depends_on_index
                   (Z.to_nat m) l_raw i v e H4 H2).
     rewrite H5 in H6. inversion H6.
-    clear -H8. 
-    admit.
-Admitted.
+    rewrite Nat.add_cancel_r, Z2Nat.inj_iff in H8 by omega. assumption.
+Qed.
 
 Definition make_fields (g: LGraph) (v: VType): list field_t :=
   make_fields' (vlabel g v).(raw_fields) v O.
@@ -2646,11 +2645,10 @@ Lemma lgd_nonedges_unchanged: forall g fd e v2,
 Proof.
   intros; unfold field2val; simpl.
   destruct fd; [destruct s|]; try reflexivity.
-  unfold updateEdgeFunc. admit.
-             (* this is really too ugly how it is. 
-I want to find out how to play with EquivDec and then clear 
-it up using the fact that VAs don't change *)
-Admitted.
+  unfold updateEdgeFunc. if_tac.
+  - exfalso. apply H. rewrite H0. reflexivity.
+  - reflexivity.
+Qed.
 
 Lemma upd_Znth_diff' : forall {A}{d: Inhabitant A} i j l (u : A),
     0 <= j < Zlength l -> i <> j ->
@@ -2717,7 +2715,7 @@ Proof.
       unfold not. intro. unfold make_fields in H1, H5.
       pose proof (make_fields'_same_edges_have_same_index n j
         (raw_fields (vlabel g v)) v 0 _ H H1 H2 H6). omega.
-Qed.               
+Qed.
 
 Lemma fr_general_prop_bootstrap: forall depth from to p g g'
                                         (P: nat -> LGraph -> LGraph -> Prop),
@@ -3373,14 +3371,15 @@ Definition enough_space_to_have_all g t_info from to: Prop :=
   graph_gen_size g from <= rest_gen_size t_info to.
 
 Definition do_generation_condition g t_info from to: Prop :=
-  enough_space_to_have_all g t_info from to /\
-  graph_has_gen g from /\ graph_has_gen g to /\
-  copy_compatible g /\ no_dangling_dst g.
+  enough_space_to_have_all g t_info from to /\  graph_has_gen g from /\
+  graph_has_gen g to /\ copy_compatible g /\ no_dangling_dst g /\
+  0 < gen_size t_info to /\ gen_unmarked g to.
 
 Lemma dgc_imply_fc: forall g t_info from to,
-    do_generation_condition g t_info from to -> forward_condition g t_info from to.
+    do_generation_condition g t_info from to ->
+    forward_condition g t_info from to /\ 0 < gen_size t_info to /\ gen_unmarked g to.
 Proof.
-  intros. destruct H. split; auto. clear H0. red in H |-* .
+  intros. destruct H. do 2 (split; [|intuition]). clear H0. red in H |-* .
   transitivity (graph_gen_size g from); [apply unmarked_gen_size_le | assumption].
 Qed.
 
@@ -3416,8 +3415,8 @@ Proof.
     apply IHl; assumption.
 Qed.
 
-Lemma frl_vertex_address: forall from to f_info l roots1 g1 roots2 g2,
-    graph_has_gen g1 to -> forward_roots_loop from to f_info l roots1 g1 roots2 g2 ->
+Lemma frr_vertex_address: forall from to f_info roots1 g1 root2 g2,
+    graph_has_gen g1 to -> forward_roots_relation from to f_info roots1 g1 root2 g2 ->
     forall v, closure_has_v g1 v -> vertex_address g1 v = vertex_address g2 v.
 Proof.
   intros. induction H0. 1: reflexivity. rewrite <- IHforward_roots_loop.
@@ -3426,7 +3425,20 @@ Proof.
   - eapply fr_closure_has_v; eauto.
 Qed.
 
-Lemma frr_vertex_address: forall from to f_info roots1 g1 root2 g2,
+Lemma frr_closure_has_v: forall from to f_info roots1 g1 root2 g2,
     graph_has_gen g1 to -> forward_roots_relation from to f_info roots1 g1 root2 g2 ->
-    forall v, closure_has_v g1 v -> vertex_address g1 v = vertex_address g2 v.
-Proof. intros. red in H0. eapply frl_vertex_address; eauto. Qed.
+    forall v, closure_has_v g1 v -> closure_has_v g2 v.
+Proof.
+  intros. induction H0. 1: assumption. apply IHforward_roots_loop.
+  - rewrite <- fr_graph_has_gen; eauto.
+  - eapply fr_closure_has_v; eauto.
+Qed.
+
+Lemma frr_gen_unmarked: forall from to f_info roots1 g1 root2 g2,
+    from <> to -> forward_roots_relation from to f_info roots1 g1 root2 g2 ->
+    graph_has_gen g1 to -> gen_unmarked g1 to -> gen_unmarked g2 to.
+Proof.
+  intros. induction H0. 1: assumption. apply IHforward_roots_loop.
+  - rewrite <- fr_graph_has_gen; eauto.
+  - eapply fr_gen_unmarked; eauto.
+Qed.
