@@ -15,7 +15,7 @@ Instance natEqDec : EqDec nat := { t_eq_dec := eq_nat_dec }.
 
 Definition trinode x d l r := !!(3 | x) && (mapsto x d) * (mapsto (x+1) l) * (mapsto (x+2) r).
 
-Section SpatialGraph.
+Section PointwiseGraph.
 
   Variable pg : @PreGraph nat nat natEqDec.
   Variable bi : BiGraph pg.
@@ -716,4 +716,4 @@ Section SpatialGraph.
   Qed.
 
 
-End SpatialGraph.
+End PointwiseGraph.

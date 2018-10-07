@@ -113,6 +113,15 @@ Proof.
       exists y. rewrite reachable_ind_reachable in *; auto.
 Qed.
 
+Lemma reachable_same_or_edge: forall x y, vvalid G x -> reachable G x y <-> x = y \/ exists z, edge G x z /\ x <> z /\ reachable G z y.
+Proof.
+  intros. split; intros.
+  - apply reachable_ind; auto.
+  - destruct H0.
+    + subst y. apply reachable_refl. auto.
+    + destruct H0 as [z [? [? ?]]]. apply edge_reachable with z; auto.
+Qed.
+
 Lemma reachable_ind': forall x S y, vvalid G x -> step_list G x S -> (reachable G x y <-> x = y \/ reachable_through_set G S y).
 Proof.
   intros.
@@ -131,6 +140,17 @@ Proof.
       apply edge_reachable with x0; auto.
       split; [| split]; auto.
       apply reachable_head_valid in H2; auto.
+Qed.
+
+Lemma step_list_step_reachable: forall root s d l, reachable G root s -> reachable G root d -> G |= s ~> d -> step_list G root l -> reachable_through_set G l d.
+Proof.
+  intros. rewrite (reachable_ind' _ l) in H; auto. 2: apply reachable_head_valid in H0; auto. destruct H.
+  + subst s. exists d. split.
+    - hnf in H2. rewrite H2. destruct H1 as [? [? ?]]. auto.
+    - apply reachable_by_refl; auto. apply reachable_foot_valid in H0. auto.
+  + apply reachable_through_set_step with s; auto.
+    - apply reachable_foot_valid in H0; auto.
+    - destruct H1 as [? [? ?]]; auto.
 Qed.
 
 Lemma closed_edge_closed_reachable: forall l,
@@ -168,6 +188,34 @@ Proof.
       * hnf; auto.
       * split; auto. split. apply reachable_head_valid in H3; auto. rewrite H2; auto.
       * apply H3.
+Qed.
+
+Lemma reachable_general_ind: forall (P: V -> Prop),
+  (forall x y, edge G x y -> P x -> P y) ->
+  forall x y,
+  reachable G x y ->
+  P x ->
+  P y.
+Proof.
+  intros.
+  rewrite reachable_ind_reachable in H0.
+  induction H0.
+  + auto.
+  + firstorder.
+Qed.
+
+Lemma reachable_through_general_ind: forall (P: V -> Prop),
+  (forall x y, edge G x y -> P x -> P y) ->
+  forall S y,
+  reachable_through_set G S y ->
+  Forall P S ->
+  P y.
+Proof.
+  intros.
+  destruct H0 as [x [? ?]].
+  rewrite Forall_forall in H1.
+  specialize (H1 _ H0).
+  eapply reachable_general_ind; eauto.
 Qed.
 
 Lemma edge_preserved_rev_foot: forall (P: V -> Prop),

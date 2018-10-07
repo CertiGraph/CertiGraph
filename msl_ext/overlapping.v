@@ -220,11 +220,11 @@ Proof.
   equate_precise y h12.
   try_join z h1 h3'. equate_canc h3 h3'.
   assert (identity h1).
-  Focus 1. {
+  1: {
     try_join h1 h3 h_temp.
     assertSub h1 h3 H12.
     eapply join_sub_joins_identity; eauto.
-  } Unfocus.
+  }
   apply join_comm in H4.
   apply H9 in H10; apply H9 in H4.
   subst.
@@ -321,14 +321,14 @@ Proof.
   try_join hp1 hp2 hp1p2.
   try_join hr1 hr2 hr1r2.
   assert (join hp1p2 hr1r2 h12).
-  Focus 1. {
+  1: {
     try_join hp1 h2 hp1p2r2.
     destruct (join_assoc (join_comm H14) (join_comm H22)) as [hp1p2' [? ?]].
     equate_join hp1p2 hp1p2'.
     destruct (join_assoc (join_comm H25) (join_comm H23)) as [hr1r2' [? ?]].
     equate_join hr1r2 hr1r2'.
     auto.
-  } Unfocus.
+  }
 
   try_join hP hp3 hPp3.
   assert (identity hp1p2 /\ joins hPp3 hr1r2) as [? ?] by (apply H with hPp h12; auto).

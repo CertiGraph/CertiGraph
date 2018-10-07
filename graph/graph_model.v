@@ -1,5 +1,5 @@
 Require Import Coq.Logic.ProofIrrelevance.
-Require Import RamifyCoq.lib.EnumEnsembles.
+Require Import RamifyCoq.lib.Ensembles_ext.
 Require Import RamifyCoq.lib.EquivDec_ext.
 Require Import RamifyCoq.lib.List_ext.
 Require Import RamifyCoq.lib.relation_list.
@@ -25,14 +25,15 @@ Record PreGraph {EV: EqDec Vertex eq} {EE: EqDec Edge eq} := {
 Context {EV: EqDec Vertex eq}.
 Context {EE: EqDec Edge eq}.
 
-Record LabeledGraph {DV DE: Type} := {
+Record LabeledGraph {DV DE DG: Type} := {
   pg_lg: PreGraph;
   vlabel: Vertex -> DV;
-  elabel: Edge -> DE
+  elabel: Edge -> DE;
+  glabel: DG
 }.
 
-Record GeneralGraph {DV DE: Type} {P: @LabeledGraph DV DE -> Type} := {
-  lg_gg: @LabeledGraph DV DE;
+Record GeneralGraph {DV DE DG: Type} {P: @LabeledGraph DV DE DG -> Type} := {
+  lg_gg: @LabeledGraph DV DE DG;
   sound_gg: P lg_gg
 }.
 
@@ -61,52 +62,20 @@ Coercion app_node_pred : NodePred >-> Funclass.
 
 Definition node_pred_dec (P: NodePred) (x: Vertex): {P x} + {~ P x} := projT2 P x.
 
-Class MathGraph (pg: PreGraph) := {
-  is_null: Vertex -> Prop;
-  is_null_dec: forall x, {is_null x} + {~ is_null x};
-  weak_valid: Vertex -> Prop := fun p => is_null p \/ vvalid pg p;
-  valid_graph: forall e, evalid pg e -> vvalid pg (src pg e) /\ weak_valid (dst pg e);
-  valid_not_null: forall x, vvalid pg x -> is_null x -> False
-}.
-
-Definition well_defined_list (pg: PreGraph) {ma: MathGraph pg} (l : list Vertex) := forall x, In x l -> weak_valid x.
-
-Class FiniteGraph (pg: PreGraph) :=
-{
-  finiteV: Enumerable Vertex (vvalid pg);
-  finiteE: Enumerable Edge (evalid pg)
-}.
-
-Class LocalFiniteGraph (pg: PreGraph) :=
-{
-  local_enumerable: forall x, Enumerable Edge (out_edges pg x)
-}.
-
-Definition edge_func (pg: PreGraph) {lfg: LocalFiniteGraph pg} x := projT1 (local_enumerable x).
-
-Class BiGraph (pg: PreGraph) (left_out_edge right_out_edge: Vertex -> Edge) :=
-{
-  left_valid: forall x, vvalid pg x -> evalid pg (left_out_edge x);
-  right_valid: forall x, vvalid pg x -> evalid pg (right_out_edge x);
-  bi_consist: forall x, left_out_edge x <> right_out_edge x;
-  only_two_edges: forall x e, src pg e = x <-> e = left_out_edge x \/ e = right_out_edge x
-}.
-
 End GRAPH_DEF.
 
 Arguments PreGraph _ _ {_} {_}.
-Arguments LabeledGraph _ _ {_} {_} _ _.
-Arguments GeneralGraph _ _ {_} {_} _ _ _.
+Arguments LabeledGraph _ _ {_} {_} _ _ _.
+Arguments GeneralGraph _ _ {_} {_} _ _ _ _.
 Arguments NodePred : clear implicits.
-Arguments is_null {_} {_} {_} {_} _ {_} _.
-Arguments is_null_dec {_} {_} {_} {_} _ {_} _.
-Arguments weak_valid {_} {_} {_} {_} _ {_} _.
-Arguments valid_graph {_} {_} {_} {_} _ {_} _ _.
-Arguments valid_not_null {_} {_} {_} {_} _ {_} _ _ _. 
-Arguments left_valid {_} {_} {_} {_} _ {_} {_} {_} _ _.
-Arguments right_valid {_} {_} {_} {_} _ {_} {_} {_} _ _.
-Arguments bi_consist {_} {_} {_} {_} _ {_} {_} {_} _ _.
-Arguments only_two_edges {_} {_} {_} {_} _ {_} {_} {_} _ _.
+
+(* Require Import VST.veric.SeparationLogic. *)
+
+(* Definition temp_spec := *)
+(* NDmk_funspec (nil, Tvoid) cc_default (Ensemble nat) (fun x => TT) (fun x => TT). *)
+
+(* Definition temp_spec := *)
+(* NDmk_funspec (nil, Tvoid) cc_default (@PreGraph _ _ EquivDec.nat_eq_eqdec EquivDec.nat_eq_eqdec) (fun x => TT) (fun x => TT). *)
 
 Notation " pg |= n1 ~> n2 " := (edge pg n1 n2) (at level 1).
 
@@ -160,49 +129,6 @@ Proof.
     split; auto.
 Qed.
   
-Lemma valid_step: forall (pg: PreGraph Vertex Edge) {ma: MathGraph pg} x y, step pg x y -> vvalid pg x /\ weak_valid pg y.
-Proof.
-  intros.
-  rewrite step_spec in H.
-  destruct H as [? [? [? ?]]].
-  subst.
-  apply valid_graph; auto.
-Qed.
-
-Lemma edge_func_spec: forall {pg : PreGraph Vertex Edge} {lfg: LocalFiniteGraph pg} e x,
-  In e (edge_func pg x) <-> evalid pg e /\ src pg e = x.
-Proof.
-  intros.
-  unfold edge_func.
-  destruct (local_enumerable x) as [? [?H ?H]]; simpl.
-  specialize (H0 e).
-  rewrite H0; unfold out_edges.
-  clear - H0.
-  unfold Ensembles.In; tauto.
-Qed.
-
-Lemma edge_func_step: forall {pg : PreGraph Vertex Edge} {lfg: LocalFiniteGraph pg} x y,
-  step pg x y <-> In y (map (dst pg) (edge_func pg x)).
-Proof.
-  intros.
-  rewrite step_spec.
-  rewrite in_map_iff.
-  apply Morphisms_Prop.ex_iff_morphism.
-  hnf; cbv beta; intro e.
-  rewrite edge_func_spec.
-  clear - e.
-  tauto.
-Qed.
-
-Lemma null_or_valid: forall (pg: PreGraph Vertex Edge) {ma: MathGraph pg} x,
-  weak_valid pg x -> {is_null pg x} + {vvalid pg x}.
-Proof.
-  intros.
-  destruct (is_null_dec pg x); [left | right]; auto.
-  unfold weak_valid in H.
-  tauto.
-Qed.
-
 Definition negateP (p : NodePred Vertex) : NodePred Vertex.
 Proof.
   exists (Complement Vertex (projT1 p)).
@@ -222,23 +148,6 @@ Proof.
   destruct p; simpl. split; intros; destruct (s x); try tauto.
   intro. hnf in H0. tauto.
 Qed.
-
-Instance LocalFiniteGraph_FiniteGraph (g: PreGraph Vertex Edge) (fg: FiniteGraph g): LocalFiniteGraph g.
-Proof.
-  intros.
-  destruct fg as [[vs [?H ?H]] [es [?H ?H]]].
-  constructor.
-  intros.
-  exists (filter (fun e => if equiv_dec (src g e) x then true else false) es).
-  split.
-  + apply NoDup_filter; auto.
-  + intro e.
-    rewrite filter_In.
-    rewrite H2.
-    unfold Ensembles.In, out_edges.
-    destruct_eq_dec (src g e) x; [tauto |].
-    assert (~ false = true) by congruence; tauto.
-Defined.
 
 Definition node_pred_equiv (m1 m2: NodePred Vertex) := forall n, m1 n <-> m2 n.
 
@@ -275,61 +184,6 @@ Proof.
   symmetry.
   auto.
 Qed.
-
-Section BIGRAPH_LEM.
-
-Context {left_out_edge right_out_edge: Vertex -> Edge}.
-
-Lemma left_sound (pg: PreGraph Vertex Edge) {bi: BiGraph pg left_out_edge right_out_edge}: forall x, src pg (left_out_edge x) = x.
-Proof.
-  intros.
-  pose proof only_two_edges pg x (left_out_edge x).
-  tauto.
-Qed.
-
-Lemma right_sound (pg: PreGraph Vertex Edge) {bi: BiGraph pg left_out_edge right_out_edge}: forall x, src pg (right_out_edge x) = x.
-Proof.
-  intros.
-  pose proof only_two_edges pg x (right_out_edge x).
-  tauto.
-Qed.
-
-Lemma left_or_right (pg: PreGraph Vertex Edge) (bi: BiGraph pg left_out_edge right_out_edge): forall x e, src pg e = x -> {e = left_out_edge x} + {e = right_out_edge x}.
-Proof.
-  intros.
-  pose proof only_two_edges pg x e.
-  destruct_eq_dec e (left_out_edge x); [left | right]; tauto.
-Qed.
-
-Lemma biGraph_out_edges (pg: PreGraph Vertex Edge) (bi: BiGraph pg left_out_edge right_out_edge): forall x e, vvalid pg x -> (In e (left_out_edge x :: right_out_edge x :: nil) <-> out_edges pg x e).
-Proof.
-  intros.
-  unfold out_edges.
-  simpl.
-  pose proof only_two_edges pg x e.
-  assert (left_out_edge x = e -> evalid pg e) by (pose proof left_valid pg x H; intros; subst; auto).
-  assert (right_out_edge x = e -> evalid pg e) by (pose proof right_valid pg x H; intros; subst; auto).
-  firstorder.
-Qed.
-
-Definition biEdge (pg : PreGraph Vertex Edge) {bi: BiGraph pg left_out_edge right_out_edge} (v: Vertex) : Vertex * Vertex := (dst pg (left_out_edge v), dst pg (right_out_edge v)).
-
-Lemma biEdge_only2 (pg : PreGraph Vertex Edge) {bi: BiGraph pg left_out_edge right_out_edge} :
-  forall v v1 v2 n, vvalid pg v -> biEdge pg v = (v1 ,v2) -> (step pg v n <-> n = v1 \/ n = v2).
-Proof.
-  intros; unfold biEdge in H.
-  split; intros.
-  + inversion H1; subst.
-    inversion H0; subst.
-    assert (e = left_out_edge (src pg e) \/ e = right_out_edge (src pg e)) by (rewrite <- only_two_edges; eauto).
-    destruct H3; rewrite <- H3; auto.
-  + rewrite step_spec; inversion H0; subst.
-    destruct H1; [exists (left_out_edge v) | exists (right_out_edge v)]; subst.
-    - split; [| split]; [eapply left_valid | rewrite left_sound |]; eauto.
-    - split; [| split]; [eapply right_valid | rewrite right_sound |]; eauto.
-Qed.
-
-End BIGRAPH_LEM.
 
 (******************************************
 
@@ -445,8 +299,8 @@ Definition gremove_edge (g1: PreGraph Vertex Edge) (e0: Edge) (g2: PreGraph Vert
 
 Section LABELED_GRAPH_EQUIV.
 
-Context {DV DE: Type}.
-Notation Graph := (@LabeledGraph Vertex Edge EV EE DV DE).
+Context {DV DE DG: Type}.
+Notation Graph := (@LabeledGraph Vertex Edge EV EE DV DE DG).
 
 Local Coercion pg_lg: LabeledGraph >-> PreGraph.
 

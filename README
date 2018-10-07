@@ -2,7 +2,7 @@ HOW TO SET UP YOUR ENVIRMENT
 
 1. Download and Unpack
 1.1. Download CompCert 2.6 and unpack it into your CompCert folder.
-1.2. Download VST of master branch (commit 5ef4d8a6afecd6799bb16ad915be9d2a86d6c8bd) and unpack it into your VST folder.
+1.2. Download VST of master branch (commit 4fd994630bd25eb15417cdccb1a28d54663d7190) and unpack it into your VST folder.
 1.3. Download RamifyCoq and unpack it into your Ramify folder.
 1.4. It is not necessary for your folder names to be CompCert, VST and/or Ramify, you can feel free to name them in your own way.
 
@@ -11,10 +11,9 @@ HOW TO SET UP YOUR ENVIRMENT
 2.2. Run "make all" and "make clightgen" in your CompCert folder.
 
 2. Build VST
-2.1. Copy the file VST-Makefile in your RamifyCoq folder into your VST folder.
-2.2. Create a file CONFIGURE in your VST folder with two lines of text in it: "COMPCERT=[Your CompCert Folder]" and "LIBPREFIX=VST"
-2.3. If this is the first time you use VST, you can ignore this line. Do "make clean" in your VST folder.
-2.4. Run "make -kj3" or "make -kj7" to build VST. There will be some error. That would be fine, don't worry.
+2.1. Create a file CONFIGURE in your VST folder with two lines of text in it: "COMPCERT=[Your CompCert Folder]" and "LIBPREFIX=VST"
+2.2. If this is the first time you use VST, you can ignore this line. Do "make clean" in your VST folder.
+2.3. Run "make -kj3" or "make -kj7" to build VST. There will be some error. That would be fine, don't worry.
 
 3. Build RamifyCoq
 3.1. Create a file CONFIGURE in your RamifyCoq folder with these two lines in it:

@@ -4,11 +4,17 @@ Require Export Coq.Classes.Equivalence.
 Require Export Coq.Sets.Ensembles.
 Require Import Coq.Sets.Constructive_sets.
 Require Import RamifyCoq.lib.Coqlib.
+Require Import RamifyCoq.lib.EquivDec_ext.
 
-Lemma Full_set_spec: forall A (v: A), Full_set A v.
+Lemma Full_set_spec: forall A (v: A), Full_set A v <-> True.
 Proof.
   intros.
-  constructor.
+  split; intros; constructor.
+Qed.
+
+Lemma Empty_set_spec: forall A (v: A), Empty_set A v <-> False.
+  intros.
+  split; intros [].
 Qed.
 
 Lemma Intersection_spec: forall A (v: A) P Q, Intersection _ P Q v <-> P v /\ Q v.
@@ -43,7 +49,7 @@ Lemma Included_Full_set: forall A P, Included A P (Full_set A).
 Proof.
   intros.
   hnf; unfold In; intros.
-  apply Full_set_spec.
+  apply Full_set_spec; auto.
 Qed.
 
 Lemma Intersection_Complement: forall A (P Q: Ensemble A),
@@ -266,11 +272,75 @@ Proof.
   tauto.
 Qed.
 
+Lemma Intersection_Empty_left {A: Type}: forall P, Same_set (Intersection _ (Empty_set A) P) (Empty_set A).
+Proof.
+  intros.
+  rewrite Same_set_spec.
+  hnf; intros.
+  rewrite Intersection_spec.
+  pose proof Empty_set_spec A a.
+  tauto.
+Qed.
+
+Lemma Intersection_Empty_right {A: Type}: forall P, Same_set (Intersection _ P (Empty_set A)) (Empty_set A).
+Proof.
+  intros.
+  rewrite Same_set_spec.
+  hnf; intros.
+  rewrite Intersection_spec.
+  pose proof Empty_set_spec A a.
+  tauto.
+Qed.
+
+Lemma Intersection_absort_right: forall U (A B: Ensemble U), Included A B -> Same_set (Intersection _ A B) A.
+Proof.
+  intros.
+  rewrite Same_set_spec; intro x.
+  rewrite Intersection_spec.
+  specialize (H x); unfold Ensembles.In in H.
+  tauto.
+Qed.
+
+Lemma Intersection_absort_left: forall U (A B: Ensemble U), Included B A -> Same_set (Intersection _ A B) B.
+Proof.
+  intros.
+  rewrite Same_set_spec; intro x.
+  rewrite Intersection_spec.
+  specialize (H x); unfold Ensembles.In in H.
+  tauto.
+Qed.
+
 Lemma Complement_Included_rev: forall (U: Type) P Q, Included P Q -> Included (Complement U Q) (Complement U P).
 Proof.
   unfold Included, Complement, Ensembles.In.
   intros.
   firstorder.
+Qed.
+
+Lemma Prop_join_shrink: forall {U} (A B C R: Ensemble U),
+  Included B R ->
+  Prop_join A B C ->
+  Prop_join (Intersection _ A R) B (Intersection _ C R).
+Proof.
+  unfold Prop_join, Included, Ensembles.In.
+  intros.
+  split; intros; rewrite !Intersection_spec in *; auto.
+  + split; firstorder.
+  + firstorder.
+Qed.
+
+Lemma Prop_join_shrink1: forall {U} (A B C: Ensemble U) (x: U),
+  A x ->
+  Prop_join A B C ->
+  Prop_join (Intersection _ A (fun x0 => x <> x0)) B (Intersection _ C (fun x0 => x <> x0)).
+Proof.
+  intros.
+  apply Prop_join_shrink; auto.
+  unfold Included, In; intros.
+  intro.
+  subst x0.
+  destruct H0.
+  apply (H2 x); auto.
 Qed.
 
 Lemma Ensemble_join_Intersection_Complement: forall {A} P Q,
@@ -366,6 +436,31 @@ Proof.
   apply Constructive_sets.Included_Empty.
 Qed.
 
+Lemma Disjoint_x1: forall {U} {UE: EqDec U eq} (A B: Ensemble U) (x0: U),
+  Disjoint U (fun x: U => A x /\ x0 <> x) B ->
+  ~ B x0 ->
+  Disjoint U A B.
+Proof.
+  intros.
+  rewrite Disjoint_spec in H |- *.
+  intros.
+  specialize (H x).
+  destruct_eq_dec x0 x; [subst |]; tauto.
+Qed.
+
+Lemma Disjoint_x1': forall {U} {UE: EqDec U eq} (A B: Ensemble U) (x0: U),
+  Disjoint U (Intersection _ A (fun x: U => x0 <> x)) B ->
+  ~ B x0 ->
+  Disjoint U A B.
+Proof.
+  intros.
+  rewrite Disjoint_spec in H |- *.
+  intros.
+  specialize (H x).
+  rewrite Intersection_spec in H.
+  destruct_eq_dec x0 x; [subst |]; tauto.
+Qed.
+
 Lemma Included_trans: forall {A} (P Q R: Ensemble A), Included P Q -> Included Q R -> Included P R.
 Proof.
   unfold Included, Ensembles.In.
@@ -434,10 +529,31 @@ Proof.
   + auto.
 Qed.
 
+Lemma Prop_join_Empty: forall {U} (A: Ensemble U), Prop_join A (Empty_set _) A.
+Proof.
+  intros.
+  split; intros.
+  + rewrite Empty_set_spec.
+    tauto.
+  + rewrite Empty_set_spec in H0; auto.
+Qed.
+
+Lemma Prop_join_x1: forall {U} (A: Ensemble U) (a: U),
+  ~ A a ->
+  Prop_join A (eq a) (fun x => A x \/ x = a).
+Proof.
+  intros.
+  split; intros.
+  + assert (a = a0 <-> a0 = a) by (split; intros; congruence).
+    tauto.
+  + subst; auto.
+Qed.
+
 Definition app_same_set {A: Type} {P Q: Ensemble A} (H: Same_set P Q) (x: A): P x <-> Q x := proj1 (Same_set_spec A P Q) H x.
 
 Coercion app_same_set : Same_set >-> Funclass.
 
+(* TODO: rename it into preimage set *)
 Definition respectful_set {A B: Type} (X: Ensemble B) (f: A -> B): Ensemble A := fun x => X (f x).
 
 Inductive image_set {A B: Type}: Ensemble A -> (A -> B) -> Ensemble B :=
@@ -634,6 +750,41 @@ Proof.
   rewrite image_set_spec.
   split; intros; eauto.
   destruct H as [? [? ?]]; subst; auto.
+Qed.
+
+Definition Countable_Union (A: Type) (P: nat -> Ensemble A) : Ensemble A :=
+  fun x => exists i, P i x.
+
+Definition Non_Empty {U: Type} (A: Ensemble U): Prop := exists x, A x.
+
+Definition Binart_set_list (U: Type) (A B: Ensemble U): nat -> Ensemble U :=
+  fun n => match n with | 0 => A | 1 => B | _ => Empty_set _ end.
+
+Lemma Union_is_Countable_Union: forall {U: Type} (A B: Ensemble U),
+  Same_set (Union _ A B) (Countable_Union _ (Binart_set_list _ A B)).
+Proof.
+  intros.
+  rewrite Same_set_spec.
+  intros x.
+  rewrite Union_spec; unfold Countable_Union.
+  split.
+  + intros [? | ?].
+    - exists 0; auto.
+    - exists 1; auto.
+  + intros [[ | [ | ]] ?].
+    - left; auto.
+    - right; auto.
+    - intros; inversion H.
+Qed.
+
+Lemma Intersection_is_Complement_Union (classic: forall P: Prop, P \/ ~ P): forall {U: Type} (A B: Ensemble U),
+  Same_set (Intersection _ A B) (Complement _ (Union _ (Complement _ A) (Complement _ B))).
+Proof.
+  intros.
+  rewrite Same_set_spec.
+  intros x; unfold Complement, Ensembles.In.
+  rewrite Union_spec, Intersection_spec.
+  destruct (classic (A x)), (classic (B x)); tauto.
 Qed.
 
 (*

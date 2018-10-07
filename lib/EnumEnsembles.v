@@ -9,6 +9,17 @@ Definition Enumerable U (A: Ensemble U) := {l: list U | NoDup l /\ forall x, In 
 
 Definition EnumCovered U (A: Ensemble U) := {l: list U | NoDup l /\ forall x, Ensembles.In U A x -> In x l}.
 
+Definition sizeOfEnum {U} {A: Ensemble U} (H: Enumerable U A) : nat := length (proj1_sig H).
+
+Lemma Enumerable_Same_set: forall {U} (A B: Ensemble U), Same_set A B -> Enumerable U A -> Enumerable U B.
+Proof.
+  intros.
+  destruct X.
+  exists x.
+  destruct a; split; auto.
+  unfold Ensembles.In in *; firstorder.
+Qed.
+
 Lemma EnumCovered_strengthen: forall U A B,
   Included A B -> EnumCovered U B -> EnumCovered U A.
 Proof.
@@ -81,3 +92,5 @@ Proof.
     - intros x; simpl; specialize (H x); tauto.
 Qed.
 
+Lemma Enumerable_is_EnumCovered: forall U A, Enumerable U A -> EnumCovered U A.
+Proof. intros. destruct X as [l [? ?]]. exists l. firstorder. Qed.

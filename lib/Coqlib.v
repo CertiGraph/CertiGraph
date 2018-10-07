@@ -66,6 +66,12 @@ Proof.
   destruct H; [left | right]; auto.
 Qed.
 
+Definition DecidablePred (A: Type): Type := {P : A -> Prop & forall a, {P a} + {~ P a}}.
+
+Definition app_DecidablePred {A: Type} (P: DecidablePred A) (a: A) := projT1 P a.
+
+Coercion app_DecidablePred: DecidablePred >-> Funclass.
+
 Tactic Notation "spec" hyp(H) :=
   match type of H with ?a -> _ =>
     let H1 := fresh in (assert (H1: a); [|generalize (H H1); clear H H1; intro H]) end.
@@ -76,6 +82,7 @@ Tactic Notation "inv" hyp(H) := inversion H; clear H; subst.
 Tactic Notation  "icase" constr(v) := (destruct v; disc; contr; auto).
 Tactic Notation "copy" hyp(H) := (generalize H; intro).
 
+(* TODO: This tactic is now duplicated here and in VST.msl.Coqlib2. *)
 Ltac super_pattern t x :=
   let t0 := fresh "t" in
   set (t0 := t);

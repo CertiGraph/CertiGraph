@@ -6,8 +6,10 @@ Require Import RamifyCoq.lib.Morphisms_ext.
 Require Import RamifyCoq.lib.List_ext.
 Require Import RamifyCoq.graph.graph_model.
 Require Import RamifyCoq.graph.path_lemmas. Import RamifyCoq.graph.path_lemmas.PathNotation.
+Require Import RamifyCoq.graph.reachable_ind.
 Require Import RamifyCoq.graph.subgraph2.
 Require Import RamifyCoq.graph.graph_gen.
+Require Import RamifyCoq.graph.graph_relation.
 
 Module GraphMorphism.
 
@@ -116,19 +118,19 @@ Proof.
   destruct (proj1 (guarded_si_spec _ _ _ _) H) as [? [? [? ?]]].
   destruct (proj1 (guarded_si_spec _ _ _ _) H0) as [? [? [? ?]]].
   assert (forall v : V, PV v -> (vvalid G2 v <-> vvalid G2' (vmap v))).
-  Focus 1. {
+  1: {
     intros.
     rewrite <- H2 by auto.
     rewrite <- H6 by (constructor; auto).
     apply (vvalid_preserved H1); auto.
-  } Unfocus.
+  }
   assert (forall e : E, PE e -> (evalid G2 e <-> evalid G2' (emap e))).
-  Focus 1. {
+  1: {
     intros.
     rewrite <- H3 by auto.
     rewrite <- H7 by (constructor; auto).
     apply (evalid_preserved H1); auto.
-  } Unfocus.
+  }
   split; auto; intros.
   + assert (evalid G1 e) by (rewrite H3 by auto; auto).
     rewrite <- H8.
@@ -287,6 +289,65 @@ Proof.
 Qed.
 Global Existing Instance guarded_bij_proper3.
 
+Lemma guarded_morphism_step: forall {PV: V -> Prop} {PE: E -> Prop} {vmap emap n m} {g: PreGraph V E} {g': PreGraph V' E'},
+  guarded_morphism PV PE vmap emap g g' ->
+  Included (Intersection _ (weak_edge_prop PV g) (evalid g)) PE ->
+  PV n ->
+  PV m ->
+  step g n m ->
+  step g' (vmap n) (vmap m).
+Proof.
+  intros.
+  rewrite !@step_spec in H3 |- *.
+  destruct H3 as [e [? [? ?]]].
+  exists (emap e).
+  assert (PE e) by
+   (apply H0; unfold Ensembles.In; rewrite Intersection_spec; subst; auto).
+  split; [| split].
+  + eapply (evalid_preserved H); eauto.
+  + symmetry; subst; eapply (src_preserved H); eauto.
+  + symmetry; subst; eapply (dst_preserved H); eauto.
+Qed.
+
+Lemma guarded_morphism_edge: forall {PV: V -> Prop} {PE: E -> Prop} {vmap emap n m} {g: PreGraph V E} {g': PreGraph V' E'},
+  guarded_morphism PV PE vmap emap g g' ->
+  Included (Intersection _ (weak_edge_prop PV g) (evalid g)) PE ->
+  PV n ->
+  PV m ->
+  edge g n m ->
+  edge g' (vmap n) (vmap m).
+Proof.
+  unfold edge.
+  intros.
+  destruct H3 as [? [? ?]].
+  split; [| split].
+  + eapply (vvalid_preserved H); eauto.
+  + eapply (vvalid_preserved H); eauto.
+  + eapply guarded_morphism_step; eauto.
+Qed.
+
+Lemma guarded_morphism_reachable: forall {PV: V -> Prop} {PE: E -> Prop} {vmap emap n m} {g: PreGraph V E} {g': PreGraph V' E'},
+  guarded_morphism PV PE vmap emap g g' ->
+  Included (Intersection _ (weak_edge_prop PV g) (evalid g)) PE ->
+  reachable_by g n PV m ->
+  reachable g' (vmap n) (vmap m).
+Proof.
+  intros.
+  rewrite reachable_by_eq_partialgraph_reachable in H1.
+  pattern m.
+  eapply (@reachable_general_ind V E) with (x := n); [| exact H1 |].
+  + intros.
+    apply reachable_edge with (vmap x); auto.
+    rewrite <- partialgraph_edge_iff in H2.
+    destruct H2 as [? [? ?]].
+    eapply guarded_morphism_edge; eauto.
+  + apply reachable_refl.
+    rewrite <- reachable_by_eq_partialgraph_reachable in H1.
+    eapply (vvalid_preserved H); eauto.
+    - apply reachable_by_head_prop in H1; auto.
+    - apply reachable_by_head_valid in H1; auto.
+Qed.
+
 End GraphMorphism1.
 
 Lemma disjointed_guard_left_union: forall {V E} (PV1 PV2 PV3: V -> Prop) (PE1 PE2 PE3: E -> Prop),
@@ -334,6 +395,25 @@ Proof.
 Qed.
 Global Existing Instance boundary_dst_consistent_proper.
 
+Lemma boundary_dst_consistent_si: forall (PE1: E -> Prop) (PV1 PV2: V -> Prop) vmap emap G G1' G2',
+  guarded_morphism PV1 PE1 vmap emap G G1' ->
+  guarded_morphism PV1 PE1 vmap emap G G2' ->
+  boundary_dst_consistent PE1 PV2 vmap emap G G1' ->
+  guarded_structurally_identical (image_set PV1 vmap) (image_set PE1 emap) G1' G2' ->
+  boundary_dst_consistent PE1 PV2 vmap emap G G2'.
+Proof.
+  intros.
+  hnf in H |- *.
+  intros.
+  rewrite (H1 e) by auto; clear H1.
+  rewrite guarded_si_spec in H2.
+  destruct H2 as [? [? [? ?]]].
+  apply H7.
+  + constructor; auto.
+  + rewrite <- (evalid_preserved H); auto.
+  + rewrite <- (evalid_preserved H0); auto.
+Qed.
+
 Definition boundary_edge_consistent (PE1: E -> Prop) (PV2: V -> Prop) vmap emap (G: PreGraph V E) (G': PreGraph V' E') := 
   boundary_src_consistent PE1 PV2 vmap emap G G' /\
   boundary_dst_consistent PE1 PV2 vmap emap G G'.
@@ -341,6 +421,52 @@ Definition boundary_edge_consistent (PE1: E -> Prop) (PV2: V -> Prop) vmap emap 
 Definition boundary_consistent (PV1 PV2: V -> Prop) (PE1 PE2: E -> Prop) vmap emap (G: PreGraph V E) (G': PreGraph V' E') := 
   boundary_edge_consistent PE1 PV2 vmap emap G G' /\
   boundary_edge_consistent PE2 PV1 vmap emap G G'.
+
+Lemma guarded_bij_vmap_image_dec: forall (PV: V -> Prop) (PE: E -> Prop) vmap emap (G: PreGraph V E) (G': PreGraph V' E'),
+  guarded_bij PV PE vmap emap G G' ->
+  exists f: forall v, Decidable (image_set PV vmap v), True.
+Proof.
+  intros.
+  pose proof vmap_inj H.
+  destruct H0 as [f ?].
+  assert (forall v, Decidable (image_set PV vmap v)).
+  1: {
+    intros.
+    specialize (H0 v).
+    destruct (f v) eqn:?H; [left | right]; rewrite image_set_spec.
+    + exists v0.
+      destruct H0; split; auto.
+      specialize (H2 _ H0).
+      symmetry; apply H2; auto.
+    + intros [v0 [? ?]].
+      apply (H0 v0 H2).
+      symmetry; auto.
+  }
+  exists X; auto.
+Qed.
+
+Lemma guarded_bij_emap_image_dec: forall (PV: V -> Prop) (PE: E -> Prop) vmap emap (G: PreGraph V E) (G': PreGraph V' E'),
+  guarded_bij PV PE vmap emap G G' ->
+  exists f: forall e, Decidable (image_set PE emap e), True.
+Proof.
+  intros.
+  pose proof emap_inj H.
+  destruct H0 as [f ?].
+  assert (forall e, Decidable (image_set PE emap e)).
+  1: {
+    intros.
+    specialize (H0 e).
+    destruct (f e) eqn:?H; [left | right]; rewrite image_set_spec.
+    + exists e0.
+      destruct H0; split; auto.
+      specialize (H2 _ H0).
+      symmetry; apply H2; auto.
+    + intros [e0 [? ?]].
+      apply (H0 e0 H2).
+      symmetry; auto.
+  }
+  exists X; auto.
+Qed.
 
 Lemma guarded_bij_empty_empty: forall vmap emap (G: PreGraph V E) (G': PreGraph V' E'),
   guarded_bij (Empty_set V) (Empty_set E) vmap emap G G'.

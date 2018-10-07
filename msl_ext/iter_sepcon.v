@@ -1,5 +1,3 @@
-Require Import RamifyCoq.msl_ext.abs_addr.
-Require Import RamifyCoq.msl_ext.seplog.
 Require Import RamifyCoq.msl_ext.log_normalize.
 Require Import RamifyCoq.lib.Coqlib.
 Require Import RamifyCoq.lib.Ensembles_ext.
@@ -11,7 +9,6 @@ Require Import VST.msl.log_normalize.
 Require Import Coq.Lists.List.
 Require Import Coq.Sorting.Permutation.
 Require Export Coq.Classes.Morphisms.
-Import RamifyCoq.msl_ext.seplog.OconNotation.
 
 Local Open Scope logic.
 
@@ -30,10 +27,10 @@ Section IterSepCon.
   Context {ND : NatDed A}.
   Context {SL : SepLog A}.
   Context {ClS: ClassicalSep A}.
-  Context {PSL : PreciseSepLog A}.
+  (* Context {PSL : PreciseSepLog A}. *)
   Context {CoSL: CorableSepLog A}.
-  Context {OSL: OverlapSepLog A}.
-  Context {DSL : DisjointedSepLog A}.
+  (* Context {OSL: OverlapSepLog A}. *)
+  (* Context {DSL : DisjointedSepLog A}. *)
 
 Fixpoint iter_sepcon (l : list B) (p : B -> A) : A :=
   match l with
@@ -58,13 +55,23 @@ Proof.
   + rewrite IHPermutation1. auto.
 Qed.
 
+(*
 Lemma precise_iter_sepcon: forall (p : B -> A), (forall z, precise (p z)) -> forall (l : list B), precise (iter_sepcon l p).
 Proof. intros; induction l; simpl. apply precise_emp. apply precise_sepcon; auto. Qed.
+ *)
 
 Lemma iter_sepcon_in_true: forall (p : B -> A) (l : list B) x, In x l -> iter_sepcon l p |-- p x * TT.
 Proof.
   intros. apply in_split in H. destruct H as [l1 [l2 ?]]. subst.
   rewrite iter_sepcon_app_comm. rewrite <- app_comm_cons. simpl.
+  apply sepcon_derives; auto. apply TT_right.
+Qed.
+
+Lemma iter_sepcon_incl_true: forall (p : B -> A) (l s: list B),
+    NoDup s -> incl s l -> iter_sepcon l p |-- iter_sepcon s p * TT.
+Proof.
+  intros. destruct (incl_Permutation l s H H0) as [l' ?].
+  apply (iter_sepcon_permutation p) in H1. rewrite H1, iter_sepcon_app_sepcon.
   apply sepcon_derives; auto. apply TT_right.
 Qed.
 
@@ -85,6 +92,8 @@ Proof.
   - apply andp_right; auto. apply sepcon_left2_corable_right; auto with norm.
   - normalize. constructor; auto.
 Qed.
+
+(*
 
 Definition joinable (p : B -> A): Prop := forall x y, x <> y -> disjointed (p x) (p y).
 
@@ -109,6 +118,8 @@ Proof.
     - apply disj_comm, IHl1. intros; apply H0, in_cons; auto.
 Qed.
 
+*)
+
 (*
 Fixpoint iter_ocon (l : list B) (p : B -> A) : A :=
   match l with
@@ -129,7 +140,7 @@ Lemma iter_ocon_app_ocon:
 Proof.
   induction l1; intros; simpl. rewrite emp_ocon; auto. rewrite (IHl1 l2). rewrite ocon_assoc. auto.
 Qed.
-*)
+
 
 Lemma iter_sepcon_ocon' (eq_dec: forall x y : B, {x = y} + {x <> y}):
   forall l l1 l2 p,
@@ -157,21 +168,15 @@ Proof.
     rewrite <- (ocon_assoc (iter_sepcon i2 p)).
     rewrite <- precise_ocon_self by (apply precise_iter_sepcon; auto).
     assert (Permutation l (i1 ++ i2 ++ i3)).
-    Focus 1. {
-      apply eq_as_set_permutation; auto.
-      rewrite H.
-      apply eq_as_set_spec; intro x.
-      unfold eq_as_set, Sublist.
+    1: {
+      apply NoDup_Permutation; auto.
+      intros. rewrite JOINABLE. rewrite !in_app_iff.
       pose proof (Permutation_in x H0).
       pose proof (Permutation_in x H1).
       pose proof (Permutation_in x (Permutation_sym H0)).
       pose proof (Permutation_in x (Permutation_sym H1)).
-      pose proof (in_app_iff i1 i2 x).
-      pose proof (in_app_iff i2 i3 x).
-      pose proof (in_app_iff i1 (i2 ++ i3) x).
-      pose proof (in_app_iff l1 l2 x).
-      tauto.
-    } Unfocus.
+      rewrite in_app_iff in *. tauto.
+    }
     rewrite (iter_sepcon_permutation _ H3).
     rewrite !iter_sepcon_app_sepcon.
     eapply derives_trans;
@@ -187,13 +192,13 @@ Lemma iter_sepcon_ocon (eq_dec: forall x y : B, {x = y} + {x <> y}):
   forall l1 l2 p,
     NoDup l1 -> NoDup l2 ->
     (forall x, precise (p x)) -> joinable p ->
-    iter_sepcon l1 p ⊗ iter_sepcon l2 p = iter_sepcon (remove_dup eq_dec (l1 ++ l2)) p.
+    iter_sepcon l1 p ⊗ iter_sepcon l2 p = iter_sepcon (nodup eq_dec (l1 ++ l2)) p.
 Proof.
   intros.
   symmetry; apply iter_sepcon_ocon'; auto.
-  + apply remove_dup_nodup; auto.
+  + apply NoDup_nodup; auto.
   + intros.
-    rewrite <- remove_dup_in_inv.
+    rewrite nodup_In.
     rewrite in_app_iff.
     tauto.
 Qed.
@@ -207,13 +212,13 @@ Lemma precise_exp_iter_sepcon: forall (P : B -> A) (Q: list B -> Prop),
 Proof.
   intros.
   replace (EX  l : list B, !!Q l && iter_sepcon l P) with (EX  l : list B, !! (Q l /\ NoDup l) && iter_sepcon l P).
-  Focus 2. {
+  2: {
     f_equal.
     extensionality l.
     rewrite (add_andp _ _ (iter_sepcon_unique_nodup l H)) at 2.
     rewrite (andp_comm _ (!! NoDup l)), <- andp_assoc, prop_and.
     reflexivity.
-  } Unfocus.
+  }
   apply precise_exp_prop_andp.
   1: assumption.
   1: apply precise_iter_sepcon; auto.
@@ -223,21 +228,24 @@ Proof.
   tauto.
 Qed.
 
+*)
 Lemma iter_sepcon_func: forall l P Q, (forall x, P x = Q x) -> iter_sepcon l P = iter_sepcon l Q.
 Proof. intros. induction l; simpl; [|f_equal]; auto. Qed.
 
-Lemma iter_sepcon_func_strong: forall l P Q, (forall x, In x l -> P x = Q x) -> iter_sepcon l P = iter_sepcon l Q.
+Lemma iter_sepcon_func_derives: forall l P Q, (forall x, In x l -> P x |-- Q x) ->
+                                              iter_sepcon l P |-- iter_sepcon l Q.
 Proof.
   intros. induction l.
-  + reflexivity.
-  + simpl.
-    f_equal.
-    - apply H.
-      simpl; auto.
-    - apply IHl.
-      intros; apply H.
-      simpl; auto.
-Qed. 
+  - apply derives_refl.
+  - simpl. apply sepcon_derives.
+    + apply H. simpl; auto.
+    + apply IHl. intros; apply H. simpl; auto.
+Qed.
+
+Lemma iter_sepcon_func_strong: forall l P Q, (forall x, In x l -> P x = Q x) -> iter_sepcon l P = iter_sepcon l Q.
+Proof.
+  intros. apply pred_ext; apply iter_sepcon_func_derives; intros; rewrite H; auto.
+Qed.
 
 Instance iter_sepcon_permutation_proper : Proper ((@Permutation B) ==> (pointwise_relation B eq) ==> eq) iter_sepcon.
 Proof.
@@ -247,7 +255,7 @@ Proof.
   + apply iter_sepcon_permutation. auto.
 Qed.
 
-Lemma iter_sepcon_emp: forall (p : B -> A) (l l' : list B), (forall x, p x |-- emp) -> NoDup l' -> Sublist l' l -> iter_sepcon l p |-- iter_sepcon l' p.
+Lemma iter_sepcon_emp: forall (p : B -> A) (l l' : list B), (forall x, p x |-- emp) -> NoDup l' -> incl l' l -> iter_sepcon l p |-- iter_sepcon l' p.
 Proof.
   intros.
   revert l H1; induction l'; intros.
@@ -262,7 +270,7 @@ Proof.
     destruct H2 as [l1 [l2 ?]].
     specialize (IHl' (l1 ++ l2)).
     spec IHl'.
-    Focus 1. {
+    1: {
       clear - H2 H1 H4.
       intros x ?H.
       specialize (H1 x).
@@ -272,13 +280,16 @@ Proof.
       rewrite in_app_iff.
       assert (a = x -> False) by (intros; subst; tauto).
       tauto.
-    } Unfocus.
+    }
     subst.
     rewrite iter_sepcon_app_sepcon in *.
     simpl.
     rewrite (sepcon_comm (p a)), <- sepcon_assoc, (sepcon_comm _ (p a)).
     apply sepcon_derives; auto.
 Qed.
+
+Lemma iter_sepcon_nil: forall (p : B -> A), iter_sepcon nil p = emp.
+Proof. intros; reflexivity. Qed.
 
 End IterSepCon.
 
@@ -300,7 +311,7 @@ Definition pred_sepcon (P: B -> Prop) (p: B -> A): A :=
   EX l: list B, !! (forall x, In x l <-> P x) && !! NoDup l && iter_sepcon l p.
 
 Lemma pred_sepcon_eq: forall (P: B -> Prop) (p: B -> A),
-    pred_sepcon P p = 
+    pred_sepcon P p =
     (EX l: list B, !! ((forall x, In x l <-> P x) /\ NoDup l) && iter_sepcon l p).
 Proof.
   intros. unfold pred_sepcon. f_equal. extensionality l. rewrite prop_and. auto.
@@ -373,6 +384,7 @@ Proof.
       rewrite sepcon_emp; auto.
 Qed.
 
+(* TODO: change this name to pred_sepcon_sepcon_xx. *)
 Lemma pred_sepcon_sepcon: forall (P Q R: B -> Prop) p,
   Prop_join P Q R ->
   pred_sepcon P p * pred_sepcon Q p = pred_sepcon R p.
@@ -403,6 +415,8 @@ Proof.
     rewrite H7, iter_sepcon_app_sepcon; auto.
 Qed.
 
+(* TODO: change this name to pred_sepcon_sepcon_x1. *)
+(* TODO: add a lemma pred_sepcon_sepcon_1x. *)
 Lemma pred_sepcon_sepcon1: forall (P P': B -> Prop) p x0,
   (forall x, P' x <-> P x \/ x = x0) ->
   ~ P x0 ->
@@ -458,6 +472,27 @@ Proof.
   + apply prop_imp_prop_left.
 Qed.
 
+Lemma neg_pure_from_pred_sepcon: forall (P Q: B -> Prop) p,
+  (forall x, Q x -> p x |-- FF) ->
+  pred_sepcon P p |-- !! (Disjoint _ P Q).
+Proof.
+  intros.
+  unfold pred_sepcon; normalize; intros.
+  rename x into l.
+  normalize.
+  eapply derives_trans with (!! (forall x, P x -> Q x -> False)).
+  2: apply prop_derives; rewrite Disjoint_spec; auto.
+  rewrite prop_forall_allp.
+  apply allp_right; intro x.
+  rewrite !prop_impl_imp.
+  apply imp_andp_adjoint; normalize.
+  apply imp_andp_adjoint; normalize.
+  rewrite <- H0 in H2.
+  eapply derives_trans; [eapply iter_sepcon_in_true; eauto |].
+  eapply derives_trans; [apply sepcon_derives; [apply H; auto | apply derives_refl] |].
+  normalize.
+Qed.
+
 (* TODO: Maybe delete this one, this is not general enough.
   it only requires p x0 to be conflict with q x0. *)
 Lemma pred_sepcon_unique_sepcon_seg: forall (P Q: B -> Prop) p,
@@ -496,7 +531,53 @@ Proof.
   eapply iter_sepcon_in_true; auto.
 Qed.
 
+Lemma pred_sepcon_prop_true_weak:
+  forall (P Q: B -> Prop) (qdec: forall x, Decidable (Q x)) p,
+    (forall x, Q x -> P x) -> pred_sepcon P p |-- pred_sepcon Q p * TT.
+Proof.
+  intros. unfold pred_sepcon. normalize.
+  apply (exp_right (filter (fun x => if (qdec x) then true else false) l)).
+  rewrite <- prop_and, sepcon_andp_prop'.
+  remember (filter (fun x0 : B => if qdec x0 then true else false) l) as l'.
+  assert (forall x : B, In x l' <-> Q x). {
+    intros. subst l'. rewrite filter_In. destruct (qdec x); split; intros; auto.
+    - split; auto. apply H in H2. rewrite H0. auto.
+    - destruct H2; inversion H3.
+    - exfalso; auto.
+  } assert (NoDup l') by (subst l'; apply NoDup_filter; auto). apply andp_right.
+  - apply prop_right. split; auto.
+  - apply iter_sepcon_incl_true; auto. intro. rewrite H0, H2. apply H.
+Qed.
+
+Lemma pred_sepcon_False: forall p,
+  pred_sepcon (fun _ => False) p = emp.
+Proof.
+  intros.
+  unfold pred_sepcon.
+  apply pred_ext.
+  + apply exp_left; intros.
+    normalize.
+    destruct x; [simpl; auto |].
+    specialize (H b); simpl in H; tauto.
+  + apply (exp_right nil).
+    normalize. simpl.
+    apply andp_right; auto.
+    apply prop_right; constructor.
+Qed.
+
+Lemma pred_sepcon_Empty: forall p,
+  pred_sepcon (Empty_set _) p = emp.
+Proof.
+  intros.
+  rewrite <- pred_sepcon_False with p.
+  apply pred_sepcon_proper; [| reflexivity].
+  intros ?.
+  rewrite Empty_set_spec; tauto.
+Qed.
+
 End IterPredSepCon.
+
+(*
 
 Section OconIterSepCon.
 
@@ -512,7 +593,7 @@ Section OconIterSepCon.
 
   Lemma pred_sepcon_ocon:
     forall (P Q R: B -> Prop) p (eq_dec : forall x y : B, {x = y} + {x <> y}),
-      (forall x, Decidable (P x)) -> (forall x, Decidable (Q x)) -> 
+      (forall x, Decidable (P x)) -> (forall x, Decidable (Q x)) ->
       (forall a, P a \/ Q a <-> R a) ->
       (forall x : B, precise (p x)) ->
       joinable p ->
@@ -521,13 +602,13 @@ Section OconIterSepCon.
     intros. unfold pred_sepcon. apply pred_ext.
     + normalize_overlap; intro lP.
       do 2 normalize_overlap. rename x into lQ.
-      apply (exp_right (remove_dup eq_dec (lP ++ lQ))). 
+      apply (exp_right (nodup eq_dec (lP ++ lQ))).
       rewrite (iter_sepcon_ocon eq_dec); auto. rewrite <- prop_and.
       apply andp_right; auto. apply prop_right. split; intros.
-      2: apply remove_dup_nodup. split; intros.
-      - rewrite <- remove_dup_in_inv in H6. rewrite <- H.
+      2: apply NoDup_nodup. split; intros.
+      - rewrite nodup_In in H6. rewrite <- H.
         rewrite in_app_iff in H6. rewrite H2 in H6. rewrite H4 in H6. auto.
-      - rewrite <- remove_dup_in_inv. rewrite <- H in H6.
+      - rewrite nodup_In. rewrite <- H in H6.
         rewrite in_app_iff. rewrite H2. rewrite H4. auto.
     + normalize. intro lR; intros. normalize. normalize_overlap.
       assert (forall a, In a lR <-> P a \/ Q a) by (clear -H H2; firstorder).
@@ -540,7 +621,7 @@ Section OconIterSepCon.
 
   Lemma pred_sepcon_ocon1:
     forall (Q R: B -> Prop) p z (eq_dec : forall x y : B, {x = y} + {x <> y}),
-      (forall x, Decidable (Q x)) -> 
+      (forall x, Decidable (Q x)) ->
       (forall a, a = z \/ Q a <-> R a) ->
       (forall x : B, precise (p x)) ->
       joinable p ->
@@ -552,3 +633,4 @@ Section OconIterSepCon.
   Qed.
 
 End OconIterSepCon.
+ *)

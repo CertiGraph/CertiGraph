@@ -8,6 +8,7 @@ Require Import VST.msl.base.
 Require Import VST.msl.simple_CCC.
 Require Import VST.msl.seplog.
 Require Import VST.msl.log_normalize.
+Require Import VST.msl.Coqlib2.
 Require Import VST.msl.ramification_lemmas.
 
 Local Open Scope logic.
@@ -22,8 +23,8 @@ Context {CoSL: CorableSepLog A}.
 Variable M: Env -> Env -> Prop.
 Context {EqM: Equivalence M}.
 
-Definition EnvironBox (P: Env -> A) : Env -> A :=
-  fun rho: Env => (ALL rho': Env, !! M rho rho' --> P rho').
+(* Definition EnvironBox (P: Env -> A) : Env -> A := *)
+(*   fun rho: Env => (ALL rho': Env, !! M rho rho' --> P rho'). *)
 
 Definition EnvironStable (P: Env -> A) : Prop :=
   forall rho rho', M rho rho' -> P rho = P rho'.
@@ -41,6 +42,7 @@ Proof.
   f_equal; auto.
 Qed.
 
+(*
 Lemma EnvironBox_EnvironStable: forall P, EnvironStable (EnvironBox P).
 (* This lemma is the reason why EqM is required. *)
 Proof.
@@ -399,8 +401,25 @@ Proof.
   apply andp_left1.
   auto.
 Qed.
-  
+
+Lemma reduce_frame_from_ramification: forall F Q, EnvironStable F -> F |-- EnvironBox (Q -* Q * F).
+Proof.
+  intros.
+  unfold EnvironBox.
+  simpl; intros rho.
+  apply allp_right; intros rho'.
+  apply imp_andp_adjoint.
+  normalize.
+  apply wand_sepcon_adjoint.
+  rewrite sepcon_comm.
+  specialize (H _ _ H0).
+  rewrite H.
+  auto.
+Qed.
+*)  
 End Ramification_P.
+
+(*
 
 Lemma EnvironBox_allp: forall {A B Env : Type} {ND : NatDed A} (M: Env -> Env -> Prop) P, EnvironBox M (@allp _ _ B P) = ALL x: B, (EnvironBox M (P x)).
 Proof.
@@ -448,6 +467,8 @@ Proof.
     rewrite <- H0; auto.
 Qed.
 
+*)
+
 Ltac solve_ramify_Q_with Fr :=
   match goal with
   | |- @derives ?Pred _ ?g (?l * @allp ?Pred _ ?T ?Func) =>
@@ -477,6 +498,19 @@ Ltac solve_ramify_Q_with Fr :=
 
 Section Ramification_PredSepCon.
 
+(******************************************
+
+The purpose of these lemmas are specifying ramification premises, such that
+spatial predicates and items (or pure predicates) can be modified from the
+left side to the right side.
+
+However, the frame part should be part-wise equivalent, i.e. spatial predicates
+must be equivalent and items (or pure predicates) must be equivalent. E.g. 
+F = G and a = b is acceptable but only F a = G b is not. To prove a ramification
+premise of latter situation should use iter_sepcon_map/pred_sepcon_map first.
+
+******************************************)
+
 Context {A : Type}.
 Context {B : Type}.
 Context {ND : NatDed A}.
@@ -484,181 +518,434 @@ Context {SL : SepLog A}.
 Context {ClS: ClassicalSep A}.
 Context {CoSL: CorableSepLog A}.
 
-Lemma iter_sepcon_ramification: forall P (g g' l l': list B),
-  (exists f, Permutation g (l ++ f) /\ Permutation g' (l' ++ f)) ->
+(******************************************
+
+Ramification Premises with iter_sepcon
+
+******************************************)
+
+Lemma iter_sepcon_ramif_1Q: forall {T: Type} (Pure: T -> Prop) (P: B -> A) (P': T -> B -> A) (g: list B) (g': T -> list B) (x: B) (x': T -> B),
+  (exists f,
+    Permutation g (x :: f) /\
+    (forall a, Pure a -> Permutation (g' a) (x' a :: f)) /\
+    (forall a, Pure a -> forall x, In x f -> P x = (P' a) x)) ->
+  iter_sepcon g P |-- P x *
+    (ALL a: T, !! Pure a -->
+      ((P' a) (x' a) -* iter_sepcon (g' a) (P' a))).
+Proof.
+  intros.
+  destruct H as [f [? [? ?]]].
+  RAMIF_Q'.formalize.
+  apply RAMIF_Q'.solve with (iter_sepcon f P).
+  + simpl; auto.
+  + rewrite H; simpl; auto.
+  + intros a; normalize.
+    specialize (H0 _ H2).
+    specialize (H1 _ H2).
+    rewrite H0.
+    rewrite sepcon_comm.
+    apply derives_refl'; simpl; f_equal.
+    apply iter_sepcon_func_strong; auto.
+Qed.
+
+Lemma iter_sepcon_ramif_xQ: forall {T: Type} (Pure: T -> Prop) (P: B -> A) (P': T -> B -> A) (g l: list B) (g' l': T -> list B),
+  (exists f,
+    Permutation g (l ++ f) /\
+    (forall a, Pure a -> Permutation (g' a) (l' a ++ f)) /\
+    (forall a, Pure a -> forall x, In x f -> P x = (P' a) x)) ->
+  iter_sepcon g P |-- iter_sepcon l P *
+    (ALL a: T, !! Pure a -->
+      (iter_sepcon (l' a) (P' a) -* iter_sepcon (g' a) (P' a))).
+Proof.
+  intros.
+  destruct H as [f [? [? ?]]].
+  RAMIF_Q'.formalize.
+  apply RAMIF_Q'.solve with (iter_sepcon f P).
+  + simpl; auto.
+  + rewrite H.
+    apply derives_refl'.
+    apply iter_sepcon_app_sepcon.
+  + intros a; normalize.
+    specialize (H0 _ H2).
+    specialize (H1 _ H2).
+    rewrite H0.
+    rewrite sepcon_comm.
+    apply derives_refl'.
+    rewrite iter_sepcon_app_sepcon; f_equal.
+    apply iter_sepcon_func_strong; auto.
+Qed.
+
+Lemma iter_sepcon_ramif_item_1Q: forall {T: Type} (Pure: T -> Prop) (P: B -> A) (g: list B) (g': T -> list B) (x: B) (x': T -> B),
+  (exists f,
+    Permutation g (x :: f) /\
+    (forall a, Pure a -> Permutation (g' a) (x' a :: f))) ->
+  iter_sepcon g P |-- P x *
+    (ALL a: T, !! Pure a -->
+      (P (x' a) -* iter_sepcon (g' a) P)).
+Proof.
+  intros.
+  apply (iter_sepcon_ramif_1Q Pure P (fun _ => P)).
+  destruct H as [f [? ?]].
+  exists f; split; [| split]; intros; auto.
+Qed.
+
+Lemma iter_sepcon_ramif_item_xQ: forall {T: Type} (Pure: T -> Prop) (P: B -> A) (g l: list B) (g' l': T -> list B),
+  (exists f,
+    Permutation g (l ++ f) /\
+    (forall a, Pure a -> Permutation (g' a) (l' a ++ f))) ->
+  iter_sepcon g P |-- iter_sepcon l P *
+    (ALL a: T, !! Pure a -->
+      (iter_sepcon (l' a) P -* iter_sepcon (g' a) P)).
+Proof.
+  intros.
+  apply (iter_sepcon_ramif_xQ Pure P (fun _ => P)).
+  destruct H as [f [? ?]].
+  exists f; split; [| split]; intros; auto.
+Qed.
+
+Lemma iter_sepcon_ramif_pred_1Q: forall {T: Type} (Pure: T -> Prop) (P: B -> A) (P': T -> B -> A) (g: list B) (x: B),
+  (exists f,
+    Permutation g (x :: f) /\
+    (forall a, Pure a -> forall x, In x f -> P x = (P' a) x)) ->
+  iter_sepcon g P |-- P x *
+    (ALL a: T, !! Pure a -->
+      ((P' a) x -* iter_sepcon g (P' a))).
+Proof.
+  intros.
+  apply (iter_sepcon_ramif_1Q _ _ _ g (fun _ => g) x (fun _ => x)).
+  destruct H as [f [? ?]].
+  exists f; split; [| split]; intros; auto.
+Qed.
+
+Lemma iter_sepcon_ramif_pred_xQ: forall {T: Type} (Pure: T -> Prop) (P: B -> A) (P': T -> B -> A) (g l: list B),
+  (exists f,
+    Permutation g (l ++ f) /\
+    (forall a, Pure a -> forall x, In x f -> P x = (P' a) x)) ->
+  iter_sepcon g P |-- iter_sepcon l P *
+    (ALL a: T, !! Pure a -->
+      (iter_sepcon l (P' a) -* iter_sepcon g (P' a))).
+Proof.
+  intros.
+  apply (iter_sepcon_ramif_xQ _ _ _ g l (fun _ => g) (fun _ => l)).
+  destruct H as [f [? ?]].
+  exists f; split; [| split]; intros; auto.
+Qed.
+
+Lemma iter_sepcon_ramif_1: forall P P' (g g': list B) (x x': B),
+  (exists f,
+    Permutation g (x :: f) /\
+    Permutation g' (x' :: f) /\
+    (forall x, In x f -> P x = P' x)) ->
+  iter_sepcon g P |-- P x * (P' x' -* iter_sepcon g' P').
+Proof.
+  intros.
+  pose proof iter_sepcon_ramif_1Q (fun x: unit => True) P (fun _ => P') g (fun _ => g') x (fun _ => x').
+  rewrite allp_unit in H0.
+  rewrite prop_imp in H0 by auto.
+  apply H0.
+  destruct H as [f [? [? ?]]]; exists f.
+  split; [| split]; intros; auto.
+Qed.
+
+Lemma iter_sepcon_ramif_x: forall P P' (g g' l l': list B),
+  (exists f,
+    Permutation g (l ++ f) /\
+    Permutation g' (l' ++ f) /\
+    (forall x, In x f -> P x = P' x)) ->
+  iter_sepcon g P |-- iter_sepcon l P * (iter_sepcon l' P' -* iter_sepcon g' P').
+Proof.
+  intros.
+  pose proof iter_sepcon_ramif_xQ (fun x: unit => True) P (fun _ => P') g l (fun _ => g') (fun _ => l').
+  rewrite allp_unit in H0.
+  rewrite prop_imp in H0 by auto.
+  apply H0.
+  destruct H as [f [? [? ?]]]; exists f.
+  split; [| split]; intros; auto.
+Qed.
+
+Lemma iter_sepcon_ramif_item_1: forall P (g g': list B) (x x': B),
+  (exists f,
+    Permutation g (x :: f) /\
+    Permutation g' (x' :: f)) ->
+  iter_sepcon g P |-- P x * (P x' -* iter_sepcon g' P).
+Proof.
+  intros.
+  apply iter_sepcon_ramif_1.
+  destruct H as [f [? ?]]; exists f.
+  split; [| split]; intros; auto.
+Qed.
+
+Lemma iter_sepcon_ramif_item_x: forall P (g g' l l': list B),
+  (exists f,
+    Permutation g (l ++ f) /\
+    Permutation g' (l' ++ f)) ->
   iter_sepcon g P |-- iter_sepcon l P * (iter_sepcon l' P -* iter_sepcon g' P).
 Proof.
   intros.
-  destruct H as [f [? ?]].
-  rewrite (iter_sepcon_permutation _ H).
-  rewrite (iter_sepcon_permutation _ H0).
-  rewrite !iter_sepcon_app_sepcon.
-  apply sepcon_derives; auto.
-  apply wand_sepcon_adjoint.
-  rewrite sepcon_comm.
-  auto.
+  apply iter_sepcon_ramif_x.
+  destruct H as [f [? ?]]; exists f.
+  split; [| split]; intros; auto.
 Qed.
 
-Lemma exists_iter_sepcon_ramification:
-  forall (T: Type) (PureF: T -> Prop) P g l (g' l': T -> list B),
-  (exists f, Permutation g (l ++ f) /\
-     forall t, PureF t -> Permutation (g' t) ((l' t) ++ f)) ->
-  iter_sepcon g P |-- iter_sepcon l P *
-   ((EX t: T, !! PureF t && iter_sepcon (l' t) P) -*
-    (EX t: T, !! PureF t && iter_sepcon (g' t) P)).
+Lemma iter_sepcon_ramif_pred_1: forall P P' (g: list B) (x: B),
+  (exists f,
+    Permutation g (x :: f) /\
+    (forall x, In x f -> P x = P' x)) ->
+  iter_sepcon g P |-- P x * (P' x -* iter_sepcon g P').
 Proof.
   intros.
-  destruct H as [f [? ?]].
-  rewrite (iter_sepcon_permutation _ H).
-  rewrite iter_sepcon_app_sepcon.
-  apply sepcon_derives; auto.
-  apply wand_sepcon_adjoint.
-  normalize.
-  apply (exp_right t).
-  normalize.
-  apply H0 in H1.
-  rewrite (iter_sepcon_permutation _ H1).
-  rewrite iter_sepcon_app_sepcon.  
-  rewrite sepcon_comm.
-  auto.
+  apply iter_sepcon_ramif_1.
+  destruct H as [f [? ?]]; exists f.
+  split; [| split]; intros; auto.
 Qed.
 
-Lemma pred_sepcon_ramify1: forall {EqB: EqDec B eq} (P1 P2: B -> Prop) p1 p2 x,
-  P1 x ->
-  (forall y, P1 y <-> P2 y) ->
-  (forall y, y <> x -> p1 y = p2 y) ->
-  pred_sepcon P1 p1 |-- p1 x * (p2 x -* pred_sepcon P2 p2).
+Lemma iter_sepcon_ramif_stable_1: forall P (g: list B) (x: B),
+    In x g -> iter_sepcon g P |-- P x * (P x -* iter_sepcon g P).
+Proof.
+  intros. apply In_Permutation_cons in H. destruct H as [f ?].
+  apply iter_sepcon_ramif_pred_1. exists f. split; [assumption|intros; reflexivity]. 
+Qed.
+
+Lemma iter_sepcon_ramif_pred_x: forall P P' (g l: list B),
+  (exists f,
+    Permutation g (l ++ f) /\
+    (forall x, In x f -> P x = P' x)) ->
+  iter_sepcon g P |-- iter_sepcon l P * (iter_sepcon l P' -* iter_sepcon g P').
 Proof.
   intros.
-  apply RAMIF_PLAIN.solve with (pred_sepcon (fun u => P1 u /\ u <> x) p1).
-  + rewrite sepcon_comm,  <- pred_sepcon_sepcon1 with (P' := P1); [auto | |tauto].
-    intros.
-    destruct_eq_dec x0 x; try subst; tauto.
-  + replace (pred_sepcon (fun u : B => P1 u /\ u <> x) p1)
-      with (pred_sepcon (fun u : B => P1 u /\ u <> x) p2).
-    - assert (pointwise_relation _ iff P1 P2) by auto.
-      rewrite <- H2.
-      rewrite <- pred_sepcon_sepcon1 with (P' := P1); [auto | | tauto].
-      intros.
-      destruct_eq_dec x0 x; try subst; tauto.
-    - apply pred_sepcon_strong_proper.
-      * intros; reflexivity.
-      * intros.
-        symmetry; apply H1.
-        tauto.
+  apply iter_sepcon_ramif_x.
+  destruct H as [f [? ?]]; exists f.
+  split; [| split]; intros; auto.
 Qed.
 
-Lemma pred_sepcon_ramify1_simpl: forall {EqB: EqDec B eq} (P: B -> Prop) p1 p2 x,
-  P x ->
-  (forall y, y <> x -> p1 y = p2 y) ->
-  pred_sepcon P p1 |-- p1 x * (p2 x -* pred_sepcon P p2).
-Proof.
-  intros.
-  apply pred_sepcon_ramify1; auto.
-  intros; reflexivity.
-Qed.
+(******************************************
 
-Lemma pred_sepcon_ramify_pred: forall (Pg1 Pl1 Pg2 Pl2 PF: B -> Prop) p1 p2,
-  Prop_join Pl1 PF Pg1 ->
-  Prop_join Pl2 PF Pg2 ->
-  (forall x, PF x -> p1 x = p2 x) ->
-  pred_sepcon Pg1 p1 |-- pred_sepcon Pl1 p1 * (pred_sepcon Pl2 p2 -* pred_sepcon Pg2 p2).
-Proof.
-  intros.
-  apply RAMIF_PLAIN.solve with (pred_sepcon PF p1).
-  + rewrite pred_sepcon_sepcon with (R := Pg1); auto.
-  + replace (pred_sepcon PF p1) with (pred_sepcon PF p2).
-    - rewrite sepcon_comm, pred_sepcon_sepcon with (R := Pg2); auto.
-    - apply pred_sepcon_strong_proper.
-      * intros; reflexivity.
-      * intros; symmetry; apply H1; auto.
-Qed.
+Ramification Premises with pred_sepcon
 
-Lemma pred_sepcon_ramify_pred_Q: forall {C: Type} (Pg1 Pl1 PF: B -> Prop) (PureF: C -> Prop) (Pg2 Pl2: C -> B -> Prop) (p1: B -> A) (p2: C -> B -> A),
-  Prop_join Pl1 PF Pg1 ->
-  (forall c, PureF c -> Prop_join (Pl2 c) PF (Pg2 c)) ->
-  (forall c x, PureF c -> PF x -> p1 x = p2 c x) ->
-  pred_sepcon Pg1 p1 |-- pred_sepcon Pl1 p1 * 
-    (ALL c: C, !! PureF c -->
-      (pred_sepcon (Pl2 c) (p2 c) -*
-       pred_sepcon (Pg2 c) (p2 c))).
-Proof.
-  intros.
-  solve_ramify_Q_with (pred_sepcon PF p1).
-  + intro; simpl; apply corable_prop.
-  + rewrite pred_sepcon_sepcon with (R := Pg1); auto.
-  + intro c.
-    normalize.
-    replace (pred_sepcon PF p1) with (pred_sepcon PF (p2 c)).
-    - rewrite sepcon_comm, pred_sepcon_sepcon with (R := Pg2 c); auto.
-    - apply pred_sepcon_strong_proper.
-      * intros; reflexivity.
-      * intros; symmetry; apply H1; auto.
-Qed.
+******************************************)
 
-Lemma existential_pred_sepcon_ramify_pred': forall {C: Type} (Pg1 Pl1 PF: B -> Prop) (PureF PureF': C -> Prop)
-                                                   (Pg2 Pl2: C -> B -> Prop) (p1: B -> A) (p2: C -> B -> A),
-  (forall x, Pg1 x -> {Pl1 x} + {PF x}) ->
-  (forall x, Pg1 x <-> Pl1 x \/ PF x) ->
-  (forall x, Pl1 x -> PF x -> False) ->
-  (forall c x, PureF c -> (Pg2 c x <-> Pl2 c x \/ PF x)) ->
-  (forall c x, PureF c -> Pl2 c x -> PF x -> False) ->
-  (forall c x, PureF c -> PF x -> p1 x = p2 c x) ->
-  (forall c, PureF c -> PureF' c) ->
-  pred_sepcon Pg1 p1 |-- pred_sepcon Pl1 p1 *
-   ((EX c: C, !! PureF c && pred_sepcon (Pl2 c) (p2 c)) -*
-    (EX c: C, !! PureF' c && pred_sepcon (Pg2 c) (p2 c))).
+(* A better way to prove it is using RAMIF_Q'.solve and sepcon properties of pred_sepcon.
+Unfolding into iter_sepcon needs handling quatifiers, which is in convenient. The following
+proof script only shows that it is doable. *)
+Lemma pred_sepcon_ramif_1Q: forall {T: Type} (Pure: T -> Prop) (P: B -> Prop) (P': T -> B -> Prop) (p: B -> A) (p': T -> B -> A) (x: B) (x' : T -> B),
+  (exists Pf,
+    Prop_join (eq x) Pf P /\
+    (forall a, Pure a -> Prop_join (eq (x' a)) Pf (P' a)) /\
+    (forall a, Pure a -> (forall y, Pf y -> p y = (p' a) y))) ->
+  pred_sepcon P p |-- p x *
+    (ALL a: T, !! Pure a -->
+      ((p' a) (x' a) -* pred_sepcon (P' a) (p' a))).
 Proof.
   intros.
   unfold pred_sepcon.
-  normalize.
-  assert (Enumerable _ Pg1) by (exists l; auto).
-  pose proof EnumSplit _ Pg1 Pl1 PF.
-  spec X1; [auto |].
-  spec X1; [split; auto |].
-  spec X1; [auto |].
-  destruct X1 as [[l0 [? ?]] [lF [? ?]]]; clear X0; unfold Ensembles.In in *.
-  apply (exp_right l0).
-  normalize.
-  apply RAMIF_PLAIN.solve with (iter_sepcon lF p1).
-  + rewrite <- iter_sepcon_app_sepcon.
-    erewrite iter_sepcon_permutation; [apply derives_refl |].
-    apply NoDup_Permutation; auto.
-    - apply NoDup_app_inv; auto.
-      intro x; rewrite H8, H10.
-      exact (H0 x).
-    - intro x; rewrite in_app_iff, H5, H8, H10.
-      apply H.
-  + normalize.
-    intros l' ?.
-    normalize.
-    apply (exp_right c); normalize.
-    apply (exp_right (lF ++ l')); apply andp_right.
-    apply prop_right. apply H4; auto.
-    apply andp_right; [apply andp_right; apply prop_right|].
-    - intro x; rewrite in_app_iff, H10, H12.
-      specialize (H1 c x H11); tauto.
-    - apply NoDup_app_inv; auto.
-      intro x; rewrite H10, H12.
-      specialize (H2 c x H11); tauto.
-    - replace (iter_sepcon lF p1) with (iter_sepcon lF (p2 c)).
-      * rewrite <- iter_sepcon_app_sepcon; auto.
-      * apply iter_sepcon_func_strong.
-        intros.
-        symmetry; apply H3; auto.
-        rewrite <- H10; auto.
+  normalize; intros; normalize; rename x0 into g.
+  destruct H as [Pf [? [? ?]]].
+  destruct (Permutation_spec_Prop_join g P Pf x H (conj H0 H1)) as [f [? [? ?]]].
+  evar (pp : T -> A). evar (ll: T -> A). evar (gg: list B -> T -> A).
+  assert ((fun a : T =>
+   !! Pure a -->
+   (p' a (x' a) -*
+    (EX l : list B,
+            !! (forall x0 : B, In x0 l <-> P' a x0) && !! NoDup l && iter_sepcon l (p' a)))) = (pp --> (ll -* exp gg))). {
+    extensionality x0.
+    super_pattern (!! Pure x0) x0. super_pattern (p' x0 (x' x0)) x0.
+    super_pattern (fun l => !! (forall x1 : B, In x1 l <-> P' x0 x1) && !! NoDup l && iter_sepcon l (p' x0)) x0.
+    instantiate (1 := (fun t : T => !! Pure t)) in (Value of pp).
+    instantiate (1 := (fun t : T => p' t (x' t))) in (Value of ll).
+    instantiate (1 := (fun (l : list B) (t : T) => !! (forall x1 : B, In x1 l <-> P' t x1) && !! NoDup l && iter_sepcon l (p' t))) in (Value of gg).
+    subst pp gg ll. reflexivity.
+  }
+  subst pp gg ll. rewrite H7. clear H7.
+  apply (RAMIF_Q'.exp_right (fun a => x' a :: f)); [simpl; auto |].
+  pose proof iter_sepcon_ramif_1Q Pure p p' g (fun a => x' a :: f) x x'.
+  spec H7; [clear H7 |].
+  + exists f.
+    split; auto.
+    split; intros.
+    - reflexivity.
+    - apply (H3 _ H7).
+      rewrite <- H5; auto.
+  + eapply derives_trans; [exact H7 |]; clear H7.
+    apply sepcon_derives; auto.
+    apply allp_right; intros a.
+    apply (allp_left _ a).
+    simpl.
+    apply imp_andp_adjoint; normalize.
+    unfold TT; rewrite prop_imp by auto.
+    apply wand_derives; auto.
+    apply andp_right; auto.
+    specialize (H2 _ H7).
+    specialize (H3 _ H7).
+    apply andp_right; apply prop_right.
+    - intro y.
+      rewrite H5.
+      destruct H2 as [? _].
+      symmetry; apply H2.
+    - apply NoDup_cons; auto.
+      destruct H2 as [_ ?].
+      specialize (H2 (x' a) eq_refl).
+      rewrite H5; auto.
 Qed.
 
-Lemma existential_pred_sepcon_ramify_pred: forall {C: Type} (Pg1 Pl1 PF: B -> Prop) (PureF: C -> Prop) (Pg2 Pl2: C -> B -> Prop) (p1: B -> A) (p2: C -> B -> A),
-  (forall x, Pg1 x -> {Pl1 x} + {PF x}) ->
-  (forall x, Pg1 x <-> Pl1 x \/ PF x) ->
-  (forall x, Pl1 x -> PF x -> False) ->
-  (forall c x, PureF c -> (Pg2 c x <-> Pl2 c x \/ PF x)) ->
-  (forall c x, PureF c -> Pl2 c x -> PF x -> False) ->
-  (forall c x, PureF c -> PF x -> p1 x = p2 c x) ->
-  pred_sepcon Pg1 p1 |-- pred_sepcon Pl1 p1 *
-   ((EX c: C, !! PureF c && pred_sepcon (Pl2 c) (p2 c)) -*
-    (EX c: C, !! PureF c && pred_sepcon (Pg2 c) (p2 c))).
-Proof. intros. eapply existential_pred_sepcon_ramify_pred'; eauto. Qed.
+Lemma pred_sepcon_ramif_xQ: forall {T: Type} (Pure: T -> Prop) (G L: B -> Prop) (L' G': T -> B -> Prop) (p: B -> A) (p': T -> B -> A),
+  (exists Pf,
+    Prop_join L Pf G /\
+    (forall a, Pure a -> Prop_join (L' a) Pf (G' a)) /\
+    (forall a, Pure a -> (forall y, Pf y -> p y = (p' a) y))) ->
+  pred_sepcon G p |-- pred_sepcon L p *
+    (ALL a: T, !! Pure a -->
+      (pred_sepcon (L' a) (p' a) -* pred_sepcon (G' a) (p' a))).
+Proof.
+  intros.
+  destruct H as [Pf [? [? ?]]].
+  RAMIF_Q'.formalize.
+  apply RAMIF_Q'.solve with (pred_sepcon Pf p).
+  + simpl; auto.
+  + apply derives_refl'; symmetry.
+    apply pred_sepcon_sepcon; auto.
+  + intros.
+    normalize.
+    specialize (H0 _ H2).
+    specialize (H1 _ H2).
+    apply derives_refl'.
+    rewrite (pred_sepcon_strong_proper Pf Pf p (p' x)) by (auto; intros; tauto).
+    rewrite sepcon_comm; apply pred_sepcon_sepcon; auto.
+Qed.
+
+Lemma pred_sepcon_ramif_pred_1Q: forall {T: Type} (Pure: T -> Prop) (P: B -> Prop) (p: B -> A) (p': T -> B -> A) (x: B),
+  (exists Pf,
+    Prop_join (eq x) Pf P /\
+    (forall a, Pure a -> (forall y, Pf y -> p y = (p' a) y))) ->
+  pred_sepcon P p |-- p x *
+    (ALL a: T, !! Pure a -->
+      ((p' a) x -* pred_sepcon P (p' a))).
+Proof.
+  intros.
+  apply pred_sepcon_ramif_1Q.
+  destruct H as [f [? ?]]; exists f.
+  split; [| split]; auto.
+Qed.
+
+Lemma pred_sepcon_ramif_pred_xQ: forall {T: Type} (Pure: T -> Prop) (G L: B -> Prop) (p: B -> A) (p': T -> B -> A),
+  (exists Pf,
+    Prop_join L Pf G /\
+    (forall a, Pure a -> (forall y, Pf y -> p y = (p' a) y))) ->
+  pred_sepcon G p |-- pred_sepcon L p *
+    (ALL a: T, !! Pure a -->
+      (pred_sepcon L (p' a) -* pred_sepcon G (p' a))).
+Proof.
+  intros.
+  apply pred_sepcon_ramif_xQ.
+  destruct H as [f [? ?]]; exists f.
+  split; [| split]; auto.
+Qed.
+
+Lemma pred_sepcon_ramif_item_1Q: forall {T: Type} (Pure: T -> Prop) (P: B -> Prop) (P': T -> B -> Prop) (p: B -> A) (x: B) (x' : T -> B),
+  (exists Pf,
+    Prop_join (eq x) Pf P /\
+    (forall a, Pure a -> Prop_join (eq (x' a)) Pf (P' a))) ->
+  pred_sepcon P p |-- p x *
+    (ALL a: T, !! Pure a -->
+      (p (x' a) -* pred_sepcon (P' a) p)).
+Proof.
+  intros.
+  apply pred_sepcon_ramif_1Q.
+  destruct H as [f [? ?]]; exists f.
+  split; [| split]; auto.
+Qed.
+
+Lemma pred_sepcon_ramif_item_xQ: forall {T: Type} (Pure: T -> Prop) (G L: B -> Prop) (L' G': T -> B -> Prop) (p: B -> A),
+  (exists Pf,
+    Prop_join L Pf G /\
+    (forall a, Pure a -> Prop_join (L' a) Pf (G' a))) ->
+  pred_sepcon G p |-- pred_sepcon L p *
+    (ALL a: T, !! Pure a -->
+      (pred_sepcon (L' a) p -* pred_sepcon (G' a) p)).
+Proof.
+  intros.
+  apply pred_sepcon_ramif_xQ.
+  destruct H as [f [? ?]]; exists f.
+  split; [| split]; auto.
+Qed.
+
+Lemma pred_sepcon_ramif_1: forall (P P': B -> Prop) (p p': B -> A) (x x': B),
+  (exists Pf,
+    Prop_join (eq x) Pf P /\
+    Prop_join (eq x') Pf P' /\
+    (forall y, Pf y -> p y = p' y)) ->
+  pred_sepcon P p |-- p x * (p' x' -* pred_sepcon P' p').
+Proof.
+  intros.
+  pose proof pred_sepcon_ramif_1Q (fun _: unit => True) P (fun _ => P') p (fun _ => p') x (fun _ => x').
+  rewrite allp_unit in H0.
+  rewrite prop_imp in H0 by auto.
+  apply H0.
+  destruct H as [f [? [? ?]]]; exists f.
+  split; [| split]; auto.
+Qed.
+
+Lemma pred_sepcon_ramif_x: forall (G L L' G': B -> Prop) (p p': B -> A),
+  (exists Pf,
+    Prop_join L Pf G /\
+    Prop_join L' Pf G' /\
+    (forall y, Pf y -> p y = p' y)) ->
+  pred_sepcon G p |-- pred_sepcon L p * (pred_sepcon L' p' -* pred_sepcon G' p').
+Proof.
+  intros.
+  pose proof pred_sepcon_ramif_xQ (fun _: unit => True) G L (fun _ => L') (fun _ => G') p (fun _ => p').
+  rewrite allp_unit in H0.
+  rewrite prop_imp in H0 by auto.
+  apply H0.
+  destruct H as [f [? [? ?]]]; exists f.
+  split; [| split]; auto.
+Qed.
+
+Lemma pred_sepcon_ramif_pred_1: forall (P: B -> Prop) (p p': B -> A) (x: B),
+  (exists Pf,
+    Prop_join (eq x) Pf P /\
+    (forall y, Pf y -> p y = p' y)) ->
+  pred_sepcon P p |-- p x * (p' x -* pred_sepcon P p').
+Proof.
+  intros.
+  apply pred_sepcon_ramif_1.
+  destruct H as [f [? ?]]; exists f.
+  split; [| split]; auto.
+Qed.
+
+Lemma pred_sepcon_ramif_pred_x: forall (G L: B -> Prop) (p p': B -> A),
+  (exists Pf,
+    Prop_join L Pf G /\
+    (forall y, Pf y -> p y = p' y)) ->
+  pred_sepcon G p |-- pred_sepcon L p * (pred_sepcon L p' -* pred_sepcon G p').
+Proof.
+  intros.
+  apply pred_sepcon_ramif_x.
+  destruct H as [f [? ?]]; exists f.
+  split; [| split]; auto.
+Qed.
+
+Lemma pred_sepcon_ramif_item_1: forall (P P': B -> Prop) (p: B -> A) (x x': B),
+  (exists Pf,
+    Prop_join (eq x) Pf P /\
+    Prop_join (eq x') Pf P') ->
+  pred_sepcon P p |-- p x * (p x' -* pred_sepcon P' p).
+Proof.
+  intros.
+  apply pred_sepcon_ramif_1.
+  destruct H as [f [? ?]]; exists f.
+  split; [| split]; auto.
+Qed.
+
+Lemma pred_sepcon_ramif_item_x: forall (G L L' G': B -> Prop) (p: B -> A),
+  (exists Pf,
+    Prop_join L Pf G /\
+    Prop_join L' Pf G') ->
+  pred_sepcon G p |-- pred_sepcon L p * (pred_sepcon L' p -* pred_sepcon G' p).
+Proof.
+  intros.
+  apply pred_sepcon_ramif_x.
+  destruct H as [f [? ?]]; exists f.
+  split; [| split]; auto.
+Qed.
 
 End Ramification_PredSepCon.

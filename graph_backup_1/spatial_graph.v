@@ -23,7 +23,7 @@ Proof.
   + exfalso; auto.
 Qed.
 
-Class SpatialGraphSetting: Type := {
+Class PointwiseGraphSetting: Type := {
   Data: Type;
   addr: Type;
   null: addr;
@@ -31,7 +31,7 @@ Class SpatialGraphSetting: Type := {
   addr_eqb: addr -> addr -> bool := fun x y => if addr_eq_dec x y then true else false
 }.
 
-Instance AV_SGraph `{SpatialGraphSetting} : AbsAddr.
+Instance AV_SGraph `{PointwiseGraphSetting} : AbsAddr.
   apply (mkAbsAddr addr (Data * addr * addr) (fun x y => addr_eqb x y)); simpl; intros.
   + unfold addr_eqb.
     destruct (addr_eq_dec p1 p2), (addr_eq_dec p2 p1); try congruence.
@@ -39,12 +39,12 @@ Instance AV_SGraph `{SpatialGraphSetting} : AbsAddr.
     destruct (addr_eq_dec p1 p1); congruence.
 Defined.
 
-Instance AddrDec `{SpatialGraphSetting}: EqDec Addr. apply Build_EqDec. intros. apply (addr_eq_dec t1 t2). Defined.
+Instance AddrDec `{PointwiseGraphSetting}: EqDec Addr. apply Build_EqDec. intros. apply (addr_eq_dec t1 t2). Defined.
 Opaque AddrDec.
 
-Definition Null {SGS: SpatialGraphSetting} : (@Addr AV_SGraph) := null.
+Definition Null {SGS: PointwiseGraphSetting} : (@Addr AV_SGraph) := null.
 
-Class Graph {SGS: SpatialGraphSetting} : Type := {
+Class Graph {SGS: PointwiseGraphSetting} : Type := {
   pg: PreGraph Addr Data;
   bi: BiGraph pg;
   ma: MathGraph pg Null
@@ -56,25 +56,25 @@ Coercion bi : Graph >-> BiGraph.
  
 Coercion ma : Graph >-> MathGraph.
  
-Instance single_graph_double {SGS: SpatialGraphSetting} v d (Hn: v <> Null): Graph := {
+Instance single_graph_double {SGS: PointwiseGraphSetting} v d (Hn: v <> Null): Graph := {
   pg := single_PreGraph _ v d v v;
   bi := single_BiGraph _ v d v v;
   ma := single_MathGraph_double _ _ v d Hn
 }.
  
-Instance single_graph_left {SGS: SpatialGraphSetting} v d (Hn: v <> Null): Graph := {
+Instance single_graph_left {SGS: PointwiseGraphSetting} v d (Hn: v <> Null): Graph := {
   pg := single_PreGraph _ v d v Null;
   bi := single_BiGraph _ v d v Null;
   ma := single_MathGraph_left _ _ v d Hn
 }.
  
-Instance single_graph_right {SGS: SpatialGraphSetting} v d (Hn: v <> Null): Graph := {
+Instance single_graph_right {SGS: PointwiseGraphSetting} v d (Hn: v <> Null): Graph := {
   pg := single_PreGraph _ v d Null v;
   bi := single_BiGraph _ v d Null v;
   ma := single_MathGraph_right _ _ v d Hn
 }.
 
-Class SpatialGraphAssum: Type := {
+Class PointwiseGraphAssum: Type := {
   SGA_Pred: Type;
   SGA_ND: NatDed SGA_Pred;
   SGA_SL : SepLog SGA_Pred;
@@ -85,7 +85,7 @@ Class SpatialGraphAssum: Type := {
   SGA_DSL : DisjointedSepLog SGA_Pred;
   SGA_COSL: CorableOverlapSepLog SGA_Pred;
 
-  SG_Setting: SpatialGraphSetting;
+  SG_Setting: PointwiseGraphSetting;
   trinode : Addr -> Val -> SGA_Pred;
   SGA_MSL: MapstoSepLog AV_SGraph trinode;
   SGA_sMSL: StaticMapstoSepLog AV_SGraph trinode(* ; *)
@@ -98,9 +98,9 @@ Hint Resolve SGA_ND SGA_SL SGA_ClSL SGA_PSL SGA_CoSL SGA_OSL SGA_DSL SGA_COSL SG
 
 Local Open Scope logic.
 
-Section SpatialGraph.
+Section PointwiseGraph.
 
-  Context {SGA : SpatialGraphAssum}.
+  Context {SGA : PointwiseGraphAssum}.
 
   Definition graph_cell (g: Graph) (v : Addr) : SGA_Pred := trinode v (gamma g v).
 
@@ -286,10 +286,10 @@ Section SpatialGraph.
         rewrite (iter_sepcon_ocon t_eq_dec); auto. apply (exp_right (remove_dup t_eq_dec (la ++ lS))).
         rewrite <- andp_assoc, <- prop_and. apply andp_right.
         * apply prop_right. split.
-          Focus 1. {
+          1: {
             unfold well_defined_list in *. intros. simpl in H5.
-            destruct H5; [subst | apply H0]; auto. } Unfocus.
-          Focus 1. {
+            destruct H5; [subst | apply H0]; auto. }
+          1: {
             unfold reachable_set_list in *.
             unfold reachable_list in *. intros.
             rewrite <- remove_dup_in_inv.
@@ -297,17 +297,17 @@ Section SpatialGraph.
             specialize (H1 x). specialize (H2 x).
             split; intro; [apply in_or_app | apply in_app_or in H5];
             destruct H5; [left | right | left | right]; tauto.
-          } Unfocus.
+          }
         * auto.
         * apply precise_graph_cell.
         * apply joinable_graph_cell.
       - normalize.
         assert (In a (a :: S)) by apply in_eq.
-        assert (weak_valid a). Focus 1. {
+        assert (weak_valid a). 1: {
           unfold well_defined_list in H.
           specialize (H a).
           destruct (H H1); apply weak_valid_spec; [left | right]; auto.
-        } Unfocus.
+        }
         destruct (reachable_through_single_reachable g _ _ H0 a H1 H2) as [la [? ?]].
         normalize_overlap. apply (exp_right la).
         assert (Sublist S (a :: S)) by (intro s; intros; apply in_cons; auto).
@@ -431,16 +431,16 @@ Section SpatialGraph.
           } rewrite H in H4. tauto.
         * unfold reachable_list in *. intros. specialize (H3 y).
           specialize (H y). rewrite H3. split; intros.
-          Focus 1. {
+          1: {
             apply reachable_valid_and_through_single in H4.
             rewrite H in H4. destruct H4. destruct H5 as [s [? ?]].
             simpl in H5. destruct H5. subst; auto. tauto.
-          } Unfocus.
-          Focus 1. {
+          }
+          1: {
             apply reachable_valid_and_through_single in H4.
             rewrite <- H in H4. destruct H4. destruct H5 as [s [? ?]].
             simpl in H5. destruct H5. subst; auto. tauto.
-          } Unfocus.
+          }
       - assert (forall z, In z l -> valid (reachable_subgraph g1 (x :: nil)) z). {
           intros. simpl. hnf. hnf in H3. rewrite H3 in H4. split.
           + apply reachable_foot_valid in H4; auto.
@@ -565,4 +565,4 @@ Instance update_graph (g: Graph) v d l r (Hi: in_math g v l r) (Hn: v <> Null): 
     Implicit Arguments only_two_neighbours [[Vertex] [Data] [EV] [BiGraph]].
   Qed.
 
-End SpatialGraph.
+End PointwiseGraph.
