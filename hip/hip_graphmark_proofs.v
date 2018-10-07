@@ -22,9 +22,9 @@ Require Import RamifyCoq.msl_application.Graph_Mark.
 Require Import RamifyCoq.msl_application.GraphBi_Mark.
 Import RamifyCoq.msl_ext.seplog.OconNotation.
 
-Context {pSGG_Bi: pSpatialGraph_Graph_Bi}.
-Context {sSGG_Bi: sSpatialGraph_Graph_Bi bool unit}.
-Context {SGSA: SpatialGraphStrongAssum SGP}.
+Context {pSGG_Bi: pPointwiseGraph_Graph_Bi}.
+Context {sSGG_Bi: sPointwiseGraph_Graph_Bi bool unit}.
+Context {SGSA: PointwiseGraphStrongAssum SGP}.
 
 Tactic Notation "LEM" constr(v) := (destruct (classic v); auto).
 
@@ -34,8 +34,8 @@ Module GraphMark <: Mgraphmark.
   Definition null_node : node := null.
   Definition valid : formula -> Prop := fun f => TT |-- f.
   Definition ptto_node : node -> bool -> node -> node -> formula := fun v d l r => vertex_at v (d, l, r).
-  Definition A : Type := (@Graph _ bool unit).
-  Definition graph : node -> A -> formula := fun x g => (@reachable_vertices_at _ _ _ _ _ _ _ _ _ SGP _ x (Graph_LGraph g)).
+  Definition A : Type := (@Graph _ bool unit unit).
+  Definition graph : node -> A -> formula := fun x g => (@reachable_vertices_at _ _ _ _ _ _ _ _ _ _ SGP _ x (Graph_LGraph g)).
   Definition star : formula -> formula -> formula := sepcon.
   Definition and : formula -> formula -> formula := andp.
   Definition imp : formula -> formula -> formula := imp.
@@ -48,7 +48,7 @@ Module GraphMark <: Mgraphmark.
   Definition mark : A -> node -> A -> formula := fun g1 n g2 => prop (mark n (Graph_LGraph g1) (Graph_LGraph g2)).
 
   Definition eq_notreach : A -> node -> A -> formula :=
-    fun g1 n g2 => prop ((predicate_partialgraph (pg_lg (Graph_LGraph g1)) (Complement _ (reachable (pg_lg (Graph_LGraph g1)) n))) ~=~ (predicate_partialgraph (pg_lg (Graph_LGraph g2)) (Complement _ (reachable (pg_lg (Graph_LGraph g2)) n)))).
+    fun g1 n g2 => prop ((predicate_partial_labeledgraph (Graph_LGraph g1) (Complement _ (reachable (pg_lg (Graph_LGraph g1)) n))) ~=~ (predicate_partial_labeledgraph (Graph_LGraph g2) (Complement _ (reachable (pg_lg (Graph_LGraph g2)) n)))%LabeledGraph).
 
   Definition subset_reach : A -> node -> A -> formula := fun g1 n g2 => prop (Included (reachable (pg_lg (Graph_LGraph g1)) n) (reachable (pg_lg (Graph_LGraph g2)) n)).
 
@@ -172,7 +172,20 @@ Module GraphMark <: Mgraphmark.
     + apply TT_prop_right. destruct H. apply (reachable_ind.si_reachable _ _ x) in H6.
       destruct H6. auto.
     + apply TT_prop_right. destruct H.
-      rewrite H6; reflexivity.
+      destruct H.
+      split; [| split].
+      - simpl. rewrite H6; reflexivity.
+      - simpl; intros ? [? ?] [? ?].
+        apply vlabel_eq.
+        rewrite H7.
+        assert (~ (pg_lg (Graph_LGraph G)) |= x ~o~> v0
+          satisfying (WeakMarkGraph.unmarked (Graph_LGraph G))); [| tauto].
+        intro.
+        apply reachable_by_is_reachable in H12.
+        apply H9; auto.
+      - simpl; intros ? [? ?] [? ?].
+        match goal with | |- ?A = ?B => destruct A, B; auto end.
+      (* rewrite H6; reflexivity. *)
 (*
 SearchAbout predicate_partialgraph (_ ~=~ _).
 Locate si_stronger_partialgraph.
@@ -187,10 +200,10 @@ Locate si_stronger_partialgraph.
       rewrite Intersection_spec in H8; destruct H8.
       f_equal; [f_equal |].
       - assert (~ reachable_by (pg_lg (Graph_LGraph G)) x (WeakMarkGraph.unmarked (Graph_LGraph G)) x0).
-        Focus 1. {
+        1: {
           intro.
           apply reachable_by_is_reachable in H10; auto.
-        } Unfocus.
+        }
         assert (true <> false) by congruence.
         destruct (vlabel (Graph_LGraph G) x0), (vlabel (Graph_LGraph G1) x0); try tauto.
       - apply (si_dst1 _ _ _ H6).

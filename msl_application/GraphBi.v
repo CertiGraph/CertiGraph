@@ -4,8 +4,6 @@ Require Import VST.msl.seplog.
 Require Import VST.msl.log_normalize.
 Require Import RamifyCoq.lib.Coqlib.
 Require Import RamifyCoq.lib.EquivDec_ext.
-Require Import RamifyCoq.msl_ext.abs_addr.
-Require Import RamifyCoq.msl_ext.seplog.
 Require Import RamifyCoq.msl_ext.log_normalize.
 Require Import RamifyCoq.msl_ext.iter_sepcon.
 Require Import RamifyCoq.graph.graph_model.
@@ -19,7 +17,6 @@ Require Export RamifyCoq.graph.MathGraph.
 Require Export RamifyCoq.graph.FiniteGraph.
 Require Import RamifyCoq.msl_application.Graph.
 Require Import Coq.Logic.Classical.
-Import RamifyCoq.msl_ext.seplog.OconNotation.
 
 Local Open Scope logic.
 
@@ -27,22 +24,22 @@ Inductive LR :=
   | L
   | R.
 
-Class pSpatialGraph_Graph_Bi: Type := {
+Class pPointwiseGraph_Graph_Bi: Type := {
   addr: Type;
   null: addr;
-  pred: Type;
-  SGBA: SpatialGraphBasicAssum addr (addr * LR)
+  SGBA: PointwiseGraphBasicAssum addr (addr * LR)
 }.
 
 Existing Instance SGBA.
 
-Definition is_null_SGBA {pSGGB: pSpatialGraph_Graph_Bi} : DecidablePred addr := (existT (fun P => forall a, {P a} + {~ P a}) (fun x => x = null) (fun x => SGBA_VE x null)).
+Definition is_null_SGBA {pSGGB: pPointwiseGraph_Graph_Bi} : DecidablePred addr := (existT (fun P => forall a, {P a} + {~ P a}) (fun x => x = null) (fun x => SGBA_VE x null)).
 
-Class sSpatialGraph_Graph_Bi {pSGG_Bi: pSpatialGraph_Graph_Bi} (DV DE: Type): Type := {
-  SGP: SpatialGraphPred addr (addr * LR) (DV * addr * addr) unit pred;
-  SGA: SpatialGraphAssum SGP;
-  SGAvs: SpatialGraphAssum_vs SGP;
-  SGAvn: SpatialGraphAssum_vn SGP null
+Class sPointwiseGraph_Graph_Bi {pSGG_Bi: pPointwiseGraph_Graph_Bi} (DV DE: Type): Type := {
+  pred: Type;
+  SGP: PointwiseGraphPred addr (addr * LR) (DV * addr * addr) unit pred;
+  SGA: PointwiseGraphAssum SGP;
+  SGAvs: PointwiseGraphAssum_vs SGP;
+  SGAvn: PointwiseGraphAssum_vn SGP null
 }.
 
 Existing Instances SGP SGA SGAvs.
@@ -55,8 +52,8 @@ Pure Facts Part
 
 *********************************************************)
 
-Context {pSGG_Bi: pSpatialGraph_Graph_Bi}.
-Context {DV DE: Type}.
+Context {pSGG_Bi: pPointwiseGraph_Graph_Bi}.
+Context {DV DE DG: Type}.
 
 Class BiMaFin (g: PreGraph addr (addr * LR)) := {
   bi: BiGraph g (fun x => (x, L)) (fun x => (x, R));
@@ -64,20 +61,20 @@ Class BiMaFin (g: PreGraph addr (addr * LR)) := {
   fin: FiniteGraph g
 }.
 
-Definition Graph := (GeneralGraph addr (addr * LR) DV DE (fun g => BiMaFin (pg_lg g))).
-Definition LGraph := (LabeledGraph addr (addr * LR) DV DE).
-Definition SGraph := (SpatialGraph addr (addr * LR) (DV * addr * addr) unit).
+Definition Graph := (GeneralGraph addr (addr * LR) DV DE DG (fun g => BiMaFin (pg_lg g))).
+Definition LGraph := (LabeledGraph addr (addr * LR) DV DE DG).
+Definition SGraph := (PointwiseGraph addr (addr * LR) (DV * addr * addr) unit).
 
-Instance SGC_Bi: SpatialGraphConstructor addr (addr * LR) DV DE (DV * addr * addr) unit.
+Instance SGC_Bi: PointwiseGraphConstructor addr (addr * LR) DV DE DG (DV * addr * addr) unit.
 Proof.
-  refine (Build_SpatialGraphConstructor _ _ _ _ _ _ SGBA _ _).
+  refine (Build_PointwiseGraphConstructor _ _ _ _ _ _ _ SGBA _ _).
   + exact (fun G v => (vlabel G v, dst (pg_lg G) (v, L), dst (pg_lg G) (v, R))).
   + exact (fun _ _ => tt).
 Defined.
 
-Instance L_SGC_Bi: Local_SpatialGraphConstructor addr (addr * LR) DV DE (DV * addr * addr) unit.
+Instance L_SGC_Bi: Local_PointwiseGraphConstructor addr (addr * LR) DV DE DG (DV * addr * addr) unit.
 Proof.
-  refine (Build_Local_SpatialGraphConstructor _ _ _ _ _ _ SGBA SGC_Bi
+  refine (Build_Local_PointwiseGraphConstructor _ _ _ _ _ _ _ SGBA SGC_Bi
     (fun G v => evalid (pg_lg G) (v, L) /\ evalid (pg_lg G) (v, R) /\
                 src (pg_lg G) (v, L) = v /\ src (pg_lg G) (v, R) = v) _
     (fun _ _ => True) _).
@@ -92,23 +89,23 @@ Defined.
 Global Existing Instances SGC_Bi L_SGC_Bi.
 
 Definition Graph_LGraph (G: Graph): LGraph := lg_gg G.
-Definition LGraph_SGraph (G: LGraph): SGraph := Graph_SpatialGraph G.
+Definition LGraph_SGraph (G: LGraph): SGraph := Graph_PointwiseGraph G.
 
 Local Coercion Graph_LGraph: Graph >-> LGraph.
 Local Coercion LGraph_SGraph: LGraph >-> SGraph.
 Local Identity Coercion Graph_GeneralGraph: Graph >-> GeneralGraph.
 Local Identity Coercion LGraph_LabeledGraph: LGraph >-> LabeledGraph.
-Local Identity Coercion SGraph_SpatialGraph: SGraph >-> SpatialGraph.
+Local Identity Coercion SGraph_PointwiseGraph: SGraph >-> PointwiseGraph.
 Local Coercion pg_lg: LabeledGraph >-> PreGraph.
 
 Instance biGraph (G: Graph): BiGraph G (fun x => (x, L)) (fun x => (x, R)) :=
-  @bi G (@sound_gg _ _ _ _ _ _ _ G).
+  @bi G (@sound_gg _ _ _ _ _ _ _ _ G).
 
 Instance maGraph(G: Graph): MathGraph G is_null_SGBA :=
-  @ma G (@sound_gg _ _ _ _ _ _ _ G).
+  @ma G (@sound_gg _ _ _ _ _ _ _ _ G).
 
 Instance finGraph (G: Graph): FiniteGraph G :=
-  @fin G (@sound_gg _ _ _ _ _ _ _ G).
+  @fin G (@sound_gg _ _ _ _ _ _ _ _ G).
 
 Instance RGF (G: Graph): ReachableFiniteGraph G.
   apply Build_ReachableFiniteGraph.
@@ -154,8 +151,8 @@ Defined.
 Definition empty_sound: BiMaFin (empty_pregraph (fun e => fst e) (fun e => null)) :=
   Build_BiMaFin _ empty_BiGraph empty_MathGraph empty_FiniteGraph.
 
-Definition empty_Graph (default_v: DV) (default_e: DE) : Graph :=
-  Build_GeneralGraph _ _ _ (empty_labeledgraph (fun e => fst e) (fun e => null) default_v default_e) empty_sound.
+Definition empty_Graph (default_v: DV) (default_e: DE) (default_g : DG) : Graph :=
+  Build_GeneralGraph _ _ _ _ (empty_labeledgraph (fun e => fst e) (fun e => null) default_v default_e default_g) empty_sound.
 
 Definition is_BiMaFin (g: LGraph): Prop := exists X: BiMaFin (pg_lg g), True.
 
@@ -533,9 +530,9 @@ Proof.
   exists sound_gg; auto.
 Qed.
 
-Lemma single_vertex_guarded_BiMaFin: forall (x0: addr) dv de,
+Lemma single_vertex_guarded_BiMaFin: forall (x0: addr) dv de dg,
   is_guarded_BiMaFin (fun v : addr => x0 <> v) (fun _ : addr * LR => ~ False)
-    (single_vertex_labeledgraph x0 dv de).
+    (single_vertex_labeledgraph x0 dv de dg).
 Proof.
   intros.
   constructor; auto.
@@ -587,18 +584,18 @@ Proof.
   + intros; simpl.
     specialize (H0 e0).
     rewrite !Intersection_spec in *.
-    unfold add_evalid.
+    unfold addValidFunc.
     rewrite H0.
     destruct_eq_dec e0 e; [subst |]; try tauto.
   + simpl; intros.
-    unfold update_src.
+    unfold updateEdgeFunc.
     destruct_eq_dec e e0; auto; subst.
     specialize (H0 e0).
     rewrite Intersection_spec in *.
     destruct H3.
     tauto.
   + simpl; intros.
-    unfold update_dst.
+    unfold updateEdgeFunc.
     destruct_eq_dec e e0; auto; subst.
     specialize (H0 e0).
     rewrite Intersection_spec in *.
@@ -612,7 +609,7 @@ Spatial Facts Part
 
 *********************************************************)
 
-Context {sSGG_Bi: sSpatialGraph_Graph_Bi DV DE}.
+Context {sSGG_Bi: sPointwiseGraph_Graph_Bi DV DE}.
 
 Lemma va_reachable_dag_unfold: forall (g: Graph) x d l r,
   vvalid g x ->
@@ -693,7 +690,7 @@ Lemma is_BiMaFin_LGraph_Graph: forall (g: LGraph) (P: LGraph -> pred),
 Proof.
   intros.
   destruct H as [X _].
-  apply (exp_right (Build_GeneralGraph _ _ BiMaFin g X)).
+  apply (exp_right (Build_GeneralGraph _ _ _ BiMaFin g X)).
   simpl.
   auto.
 Qed.
@@ -702,14 +699,17 @@ Lemma va_labeledgraph_add_edge_eq: forall (g: LGraph) es e s d data,
   ~ evalid g e ->
   is_guarded_BiMaFin (fun x => s <> x) (fun e => ~ In e es) g ->
   let g' := labeledgraph_add_edge g e s d data in
-  vertices_at (Intersection _ (vvalid g) (fun x => s <> x)) (Graph_SpatialGraph g) = vertices_at (Intersection _ (vvalid g') (fun x => s <> x)) (Graph_SpatialGraph g').
+  @vertices_at _ _ _ _ _ _ SGP _
+   (Intersection _ (vvalid g) (fun x => s <> x)) (Graph_PointwiseGraph g) =
+  @vertices_at _ _ _ _ _ _ SGP _
+   (Intersection _ (vvalid g') (fun x => s <> x)) (Graph_PointwiseGraph g').
 Proof.
   intros.
   apply va_labeledgraph_add_edge_eq; auto.
   + unfold Included, Ensembles.In.
     intros x0 ?.
     destruct H0 as [X _].
-    pose (g0 := Build_GeneralGraph _ _ (fun g => BiMaFin (pg_lg g)) _ X: Graph).
+    pose (g0 := Build_GeneralGraph _ _ _ (fun g => BiMaFin (pg_lg g)) _ X: Graph).
     assert (vvalid g0 x0) by auto.
     apply vvalid_vguard in H0.
     simpl in H0 |- *.
@@ -718,12 +718,12 @@ Proof.
   + unfold Included, Ensembles.In.
     intros x0 ?.
     destruct H0 as [X _].
-    pose (g0 := Build_GeneralGraph _ _ (fun g => BiMaFin (pg_lg g)) _ X: Graph).
+    pose (g0 := Build_GeneralGraph _ _ _ (fun g => BiMaFin (pg_lg g)) _ X: Graph).
     assert (vvalid g0 x0) by auto.
     apply vvalid_vguard in H0.
     simpl in H0 |- *.
     rewrite !Intersection_spec in H0.
-    unfold add_evalid, update_src.
+    unfold addValidFunc, updateEdgeFunc.
     split; [| split]; [tauto | tauto |].
     destruct_eq_dec e (x0, L); subst; [tauto |].
     destruct_eq_dec e (x0, R); subst; [tauto |].
@@ -731,30 +731,34 @@ Proof.
 Qed.
 
 Lemma va_labeledgraph_egen_eq: forall (g: LGraph) e data P,
-  vertices_at P (Graph_SpatialGraph g) = vertices_at P (Graph_SpatialGraph (labeledgraph_egen g e data)).
+  @vertices_at _ _ _ _ _ _ SGP _
+   P (Graph_PointwiseGraph g) =
+  @vertices_at _ _ _ _ _ _ SGP _
+   P (Graph_PointwiseGraph (labeledgraph_egen g e data)).
 Proof.
   intros.
   apply vertices_at_vertices_identical.
   rewrite vertices_identical_spec; intros.
   simpl; auto.
 Qed.
-    
+
 (*********************************************************
 
 Spatial Facts (with Strong Assumption) Part
 
 *********************************************************)
 
-  Context {SGSA: SpatialGraphStrongAssum SGP}.
+(*
+  Context {SGSA: PointwiseGraphStrongAssum SGP}.
 
-  Notation graph x g := (@reachable_vertices_at _ _ _ _ _ _ _ (_) _ (@SGP pSGG_Bi DV DE sSGG_Bi) _ x g).
+  Notation graph x g := (@reachable_vertices_at _ _ _ _ _ _ _ _ (_) _ (@SGP pSGG_Bi DV DE sSGG_Bi) _ x g).
 
   Lemma bi_graph_unfold: forall (g: Graph) x d l r,
       vvalid g x -> vgamma g x = (d, l, r) ->
       graph x g = vertex_at x (d, l, r) ⊗ graph l g ⊗ graph r g.
   Proof.
     intros. rewrite graph_unfold with (S := (l :: r :: nil)); auto.
-    + change (Graph_SpatialGraph g) with (LGraph_SGraph g).
+    + change (Graph_PointwiseGraph g) with (LGraph_SGraph g).
       rewrite H0. simpl. rewrite ocon_emp. rewrite <- ocon_assoc. auto.
     + apply RGF.
     + intros. apply weak_valid_vvalid_dec. simpl in H1.
@@ -784,49 +788,76 @@ Spatial Facts (with Strong Assumption) Part
     rewrite H0 in H3. apply H3.
   Qed.
 
-Lemma unreachable_partialgraph_si_vertices_identical: forall (g g': Graph) (S1 S1' S2: list addr),
-  (predicate_partialgraph g (Complement addr (reachable_through_set g S1))) ~=~
-  (predicate_partialgraph g' (Complement addr (reachable_through_set g' S1'))) ->
-  vertices_identical2
-     (reachable_through_set
-        (predicate_partialgraph g
-           (Intersection addr (vvalid g)
-              (Complement addr (reachable_through_set g S1)))) S2)
-     (reachable_through_set
-        (predicate_partialgraph g'
-           (Intersection addr (vvalid g')
-              (Complement addr (reachable_through_set g' S1')))) S2)
-     (Graph_SpatialGraph g) (Graph_SpatialGraph g').
-Proof.
+  Lemma reachable_through_set_unreachable: forall (g: Graph) (S1 S2: list addr) (v: addr),
+      reachable_through_set (predicate_partialgraph g (Intersection addr (vvalid g) (Complement addr (reachable_through_set g S1)))) S2 v ->
+      Complement addr (reachable_through_set g S1) v.
+  Proof.
+    intros. hnf in H. destruct H as [s [? ?]]. unfold Complement. unfold Ensembles.In . rewrite <- reachable_by_eq_partialgraph_reachable in H0.
+    apply reachable_by_foot_prop in H0. rewrite Intersection_spec in H0. destruct H0. unfold Complement, Ensembles.In in H1. auto.
+  Qed.
+
+  Lemma unreachable_partialgraph_si_vertices_identical: forall (g g': Graph) (S1 S1' S2: list addr),
+      (predicate_partial_labeledgraph g (Complement addr (reachable_through_set g S1)))
+        ~=~
+        (predicate_partial_labeledgraph g' (Complement addr (reachable_through_set g' S1')))%LabeledGraph ->
+      vertices_identical2 (reachable_through_set (predicate_partialgraph g (Intersection addr (vvalid g) (Complement addr (reachable_through_set g S1)))) S2)
+                          (reachable_through_set (predicate_partialgraph g' (Intersection addr (vvalid g') (Complement addr (reachable_through_set g' S1')))) S2)
+                          (Graph_PointwiseGraph g) (Graph_PointwiseGraph g').
+  Proof.
   intros.
   apply GSG_PartialGraphPreserve2.
-  + unfold Included, Ensembles.In.
+  - unfold Included, Ensembles.In.
     intros.
     apply vvalid_vguard.
     apply reachable_through_set_foot_valid in H0.
     destruct H0; auto.
-  + unfold Included, Ensembles.In.
+  - unfold Included, Ensembles.In.
     intros.
     apply vvalid_vguard.
     apply reachable_through_set_foot_valid in H0.
     destruct H0; auto.
-  + unfold Included, Ensembles.In.
+  - unfold Included, Ensembles.In.
     intros.
     apply reachable_through_set_foot_valid in H0.
     destruct H0; auto.
-  + unfold Included, Ensembles.In.
+  - unfold Included, Ensembles.In.
     intros.
     apply reachable_through_set_foot_valid in H0.
     destruct H0; auto.
-  + admit.
-Qed.
+  - assert ((predicate_partialgraph g (Intersection addr (vvalid g) (Complement addr (reachable_through_set g S1))))
+              ~=~
+              (predicate_partialgraph g' (Intersection addr (vvalid g') (Complement addr (reachable_through_set g' S1'))))). {
+      destruct H as [[? [? [? ?]]] _]. hnf. simpl in *. unfold predicate_vvalid in *. unfold predicate_weak_evalid in *.
+      split; [|split; [|split]]; intros; rewrite !Intersection_spec in *.
+      - clear -H. specialize (H v). intuition.
+      - clear H2. specialize (H0 e). specialize (H1 e). intuition.
+        + rewrite <- H2 in *. specialize (H (src g e)). intuition.
+        + rewrite H2 in *. specialize (H (src g' e)). intuition.
+      - apply H1; intuition.
+      - apply H2; intuition.
+    } rewrite <- H0. destruct H as [[? [? [? ?]]] [? ?]]. hnf. unfold structurally_identical. simpl in *. unfold predicate_vvalid in *. unfold predicate_weak_evalid in *.
+    split; [split; [|split; [|split]] |split]; intros.
+    + clear -H H0. intuition.
+      * apply reachable_through_set_unreachable in H3. specialize (H v). intuition.
+      * rewrite H0 in H3. apply reachable_through_set_unreachable in H3. specialize (H v). intuition.
+    + clear -H1 H2 H0. specialize (H1 e). specialize (H2 e). intuition.
+      * apply reachable_through_set_unreachable in H5. apply H1 in H5. intuition.
+      * pose proof H5. apply reachable_through_set_unreachable in H5. specialize (H3 H5). specialize (H1 H5). specialize (H3 H1). rewrite <- H3. auto.
+      * rewrite H0 in H5. apply reachable_through_set_unreachable in H5. specialize (H3 H5). intuition.
+      * pose proof H5. rewrite H0 in H5. apply reachable_through_set_unreachable in H5. specialize (H3 H5). destruct H3. specialize (H1 H3 H6).
+        assert (src g e = src g' e) by (apply H1; auto). rewrite H7. auto.
+    + destruct H6, H7. rewrite H0 in H9. apply reachable_through_set_unreachable in H8. apply reachable_through_set_unreachable in H9. apply H2; auto.
+    + destruct H6, H7. rewrite H0 in H9. apply reachable_through_set_unreachable in H8. apply reachable_through_set_unreachable in H9. apply H3; auto.
+    + destruct H6, H7. rewrite H0 in H9. apply reachable_through_set_unreachable in H8. apply reachable_through_set_unreachable in H9. apply H4; auto.
+    + destruct H6, H7. rewrite H0 in H9. apply reachable_through_set_unreachable in H8. apply reachable_through_set_unreachable in H9. apply H5; auto.
+  Qed.
 
   Lemma subgraph_update:
     forall (g g': Graph) (S1 S1' S2: list addr),
       (forall x : addr, In x (S1 ++ S2) -> Decidable (vvalid g x)) ->
       (forall x : addr, In x (S1' ++ S2) -> Decidable (vvalid g' x)) ->
-      (predicate_partialgraph g (Complement addr (reachable_through_set g S1))) ~=~
-      (predicate_partialgraph g' (Complement addr (reachable_through_set g' S1'))) ->
+      (predicate_partial_labeledgraph g (Complement addr (reachable_through_set g S1))) ~=~
+      (predicate_partial_labeledgraph g' (Complement addr (reachable_through_set g' S1')))%LabeledGraph ->
       @derives pred _ (graphs S1 g ⊗ graphs S2 g) (graphs S1 g * (graphs S1' g' -* graphs S1' g' ⊗ graphs S2 g')).
   Proof.
     intros.
@@ -844,6 +875,8 @@ Qed.
         apply reachable_through_set_foot_valid in H0.
         destruct H0; auto.
       - intro v; apply vvalid_vguard.
-Qed.
+  Qed.
+
+*)
 
 End GRAPH_BI.

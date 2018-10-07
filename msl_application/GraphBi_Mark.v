@@ -6,8 +6,6 @@ Require Import VST.msl.Coqlib2.
 Require Import RamifyCoq.lib.Coqlib.
 Require Import RamifyCoq.lib.EquivDec_ext.
 Require Import RamifyCoq.lib.relation_list.
-Require Import RamifyCoq.msl_ext.abs_addr.
-Require Import RamifyCoq.msl_ext.seplog.
 Require Import RamifyCoq.msl_ext.log_normalize.
 Require Import RamifyCoq.msl_ext.iter_sepcon.
 Require Import RamifyCoq.graph.graph_model.
@@ -22,23 +20,22 @@ Require Import RamifyCoq.msl_application.Graph.
 Require Import RamifyCoq.msl_application.Graph_Mark.
 Require Import RamifyCoq.msl_application.GraphBi.
 Require Import Coq.Logic.Classical.
-Import RamifyCoq.msl_ext.seplog.OconNotation.
 
 Open Scope logic.
 
-Section SpatialGraph_Mark_Bi.
+Section PointwiseGraph_Mark_Bi.
 
-Context {pSGG_Bi: pSpatialGraph_Graph_Bi}.
-Context {sSGG_Bi: sSpatialGraph_Graph_Bi bool unit}.
+Context {pSGG_Bi: pPointwiseGraph_Graph_Bi}.
+Context {sSGG_Bi: sPointwiseGraph_Graph_Bi bool unit}.
 
 Local Coercion Graph_LGraph: Graph >-> LGraph.
 Local Coercion LGraph_SGraph: LGraph >-> SGraph.
 Local Identity Coercion Graph_GeneralGraph: Graph >-> GeneralGraph.
 Local Identity Coercion LGraph_LabeledGraph: LGraph >-> LabeledGraph.
-Local Identity Coercion SGraph_SpatialGraph: SGraph >-> SpatialGraph.
+Local Identity Coercion SGraph_PointwiseGraph: SGraph >-> PointwiseGraph.
 Local Coercion pg_lg: LabeledGraph >-> PreGraph.
 
-Notation Graph := (@Graph pSGG_Bi bool unit).
+Notation Graph := (@Graph pSGG_Bi bool unit unit).
 
 (* TODO: move this lemma into Graph_Mark.v. *)
 Lemma vlabel_eq: forall (g1 g2: Graph) x1 x2, (WeakMarkGraph.marked g1 x1 <-> WeakMarkGraph.marked g2 x2) -> vlabel g1 x1 = vlabel g2 x2.
@@ -65,7 +62,7 @@ Qed.
 Lemma Graph_vgen_true_mark1: forall (G: Graph) (x: addr) l r,
   vgamma G x = (false, l, r) ->
   vvalid G x ->
-  mark1 x (G: LabeledGraph _ _ _ _) (Graph_vgen G x true: LabeledGraph _ _ _ _).
+  mark1 x (G: LabeledGraph _ _ _ _ _) (Graph_vgen G x true: LabeledGraph _ _ _ _ _).
 Proof.
   intros.
   apply WeakMarkGraph.vertex_update_mark1.
@@ -117,16 +114,16 @@ Lemma root_update_ramify: forall (g: Graph) (x: addr) (lx: bool) (gx gx': bool *
       (vertex_at x gx' -* reachable_vertices_at x (Graph_vgen g x lx))).
 Proof. intros; apply va_reachable_root_update_ramify; auto. Qed.
 
-Lemma graph_ramify_left: forall {RamUnit: Type} (g g1: Graph) x l r,
+Lemma graph_ramify_left: forall (g g1: Graph) x l r,
   vvalid g x ->
   vgamma g x = (false, l, r) ->
   mark1 x g g1 ->
   @derives pred _
     (reachable_vertices_at x g1)
     (reachable_vertices_at l g1 *
-      (ALL a: RamUnit * Graph,
-        !! (mark l g1 (snd a)) -->
-        (reachable_vertices_at l (snd a) -* reachable_vertices_at x (snd a)))).
+      (ALL g': Graph,
+        !! (mark l g1 g') -->
+        (reachable_vertices_at l g' -* reachable_vertices_at x g'))).
 Proof.
   intros.
   apply (mark_list_mark_ramify g g1 _ _ nil _ (r :: nil)); auto.
@@ -147,15 +144,15 @@ Proof.
     rewrite <- H2; auto.
 Qed.
 
-Lemma graph_ramify_right: forall {RamUnit: Type} (g g1 g2: Graph) x l r,
+Lemma graph_ramify_right: forall (g g1 g2: Graph) x l r,
   vvalid g x ->
   vgamma g x = (false, l, r) ->
   mark1 x g g1 ->
   mark l g1 g2 ->
   (reachable_vertices_at x g2: pred) |-- reachable_vertices_at r g2 *
-   (ALL a: RamUnit * Graph,
-     !! (mark r g2 (snd a)) -->
-     (reachable_vertices_at r (snd a) -* reachable_vertices_at x (snd a))).
+   (ALL g': Graph,
+     !! (mark r g2 g') -->
+     (reachable_vertices_at r g' -* reachable_vertices_at x g')).
 Proof.
   intros.
   apply (mark_list_mark_ramify g g2 _ _ (l :: nil) _ nil); auto.
@@ -164,7 +161,7 @@ Proof.
     eapply gamma_step_list; eauto.
   + split_relation_list ((lg_gg g1) :: nil); auto.
     unfold mark_list. simpl map.
-    split_relation_list (@nil (LabeledGraph _ _ bool unit)); auto.
+    split_relation_list (@nil (LabeledGraph _ _ bool unit unit)); auto.
   + unfold Included, Ensembles.In; intros.
     apply vvalid_vguard.
     rewrite Intersection_spec in H3; destruct H3.
@@ -203,6 +200,6 @@ Proof.
     split_relation_list ((lg_gg g3) :: nil); eauto.
 Qed.
 
-End SpatialGraph_Mark_Bi.
+End PointwiseGraph_Mark_Bi.
 
 

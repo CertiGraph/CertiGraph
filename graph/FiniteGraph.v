@@ -5,6 +5,8 @@ Require Import RamifyCoq.lib.List_ext.
 Require Import RamifyCoq.lib.relation_list.
 Require Import RamifyCoq.lib.Equivalence_ext.
 Require Import RamifyCoq.graph.graph_model.
+Require Import RamifyCoq.graph.graph_gen.
+Require Import RamifyCoq.graph.path_lemmas.
 
 Section FiniteGraph.
 
@@ -21,7 +23,7 @@ Class LocalFiniteGraph (pg: PreGraph V E) :=
   local_enumerable: forall x, Enumerable E (out_edges pg x)
 }.
 
-Definition edge_func (pg: PreGraph V E) {lfg: LocalFiniteGraph pg} x := projT1 (local_enumerable x).
+Definition edge_func (pg: PreGraph V E) {lfg: LocalFiniteGraph pg} x := proj1_sig (local_enumerable x).
 
 Lemma edge_func_spec: forall {pg : PreGraph V E} {lfg: LocalFiniteGraph pg} e x,
   In e (edge_func pg x) <-> evalid pg e /\ src pg e = x.
@@ -78,8 +80,6 @@ Proof.
   + revert Y; apply Enumerable_Same_set.
     destruct H as [_ [? _]]; rewrite Same_set_spec; auto.
 Qed.
-
-Require Import RamifyCoq.graph.graph_gen.
 
 Lemma gen_dst_preserve_finite: forall (g: PreGraph V E) e t, FiniteGraph g -> FiniteGraph (pregraph_gen_dst g e t).
 Proof.
@@ -223,8 +223,6 @@ Proof.
       destruct H0 as [? _]; specialize (H0 e); tauto.
 Qed.
 
-Require Import RamifyCoq.graph.path_lemmas.
-
 Lemma FiniteGraph_EnumCovered: forall (g: PreGraph V E) (fin: FiniteGraph g) x, EnumCovered V (reachable g x).
 Proof.
   intros.
@@ -291,13 +289,13 @@ Proof.
       right; auto.
     - destruct IHS as [l2 ?H].
       destruct (construct_reachable_list g a (V_DEC a (or_introl eq_refl))) as [l1 ?H].
-      exists (remove_dup equiv_dec (l1 ++ l2)).
-      split; [apply remove_dup_nodup |].
+      exists (nodup equiv_dec (l1 ++ l2)).
+      split; [apply NoDup_nodup |].
       destruct H as [_ ?].
       destruct H0 as [_ ?].
       unfold reachable_set_list, reachable_list in *.
       intros.
-      rewrite <- remove_dup_in_inv.
+      rewrite nodup_In.
       rewrite in_app_iff, reachable_through_set_eq.
       specialize (H x).
       specialize (H0 x).

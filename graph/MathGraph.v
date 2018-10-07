@@ -5,6 +5,7 @@ Require Import RamifyCoq.lib.List_ext.
 Require Import RamifyCoq.lib.relation_list.
 Require Import RamifyCoq.lib.Equivalence_ext.
 Require Import RamifyCoq.graph.graph_model.
+Require Import RamifyCoq.graph.graph_gen.
 
 Section MathGraph.
 
@@ -70,15 +71,13 @@ Proof.
     apply (valid_not_null g1 x); auto.
 Qed.
 
-Require Import RamifyCoq.graph.graph_gen.
-
 Lemma gen_dst_preserve_math: forall (g: PreGraph V E) e t (M: MathGraph g is_null),
     weak_valid g t -> MathGraph (pregraph_gen_dst g e t) is_null.
 Proof.
   intros. refine (Build_MathGraph (pregraph_gen_dst g e t) is_null _ (valid_not_null g)).
   simpl. intros. apply (valid_graph g) in H0. destruct H0. split.
   + auto.
-  + unfold update_dst.
+  + unfold updateEdgeFunc.
     destruct_eq_dec e e0.
     - apply H.
     - apply H1.

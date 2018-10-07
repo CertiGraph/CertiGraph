@@ -1,32 +1,18 @@
-Require Import RamifyCoq.msl_ext.abs_addr.
-Require Import RamifyCoq.msl_ext.seplog.
 Require Import VST.msl.Extensionality.
 Require Import VST.msl.simple_CCC.
 Require Import VST.msl.seplog.
 Require Import VST.msl.log_normalize.
+Require Import Coq.Lists.List.
 
 Local Open Scope logic.
 
-Lemma exp_unit: forall {A} `{NatDed A} (P: unit -> A),
-  exp P = P tt.
+Lemma fold_right_andp {A} `{NatDed A}: forall (l: list A) (P: A),
+    In P l -> exists Q: A, fold_right andp TT l = P && Q.
 Proof.
-  intros.
-  apply pred_ext.
-  + apply exp_left; intro x.
-    destruct x.
-    auto.
-  + apply (exp_right tt); auto.
-Qed.
-
-Lemma allp_unit: forall {A} `{NatDed A} (P: unit -> A),
-  allp P = P tt.
-Proof.
-  intros.
-  apply pred_ext.
-  + apply (allp_left _ tt); auto.
-  + apply allp_right; intro x.
-    destruct x.
-    auto.
+  induction l; intros; simpl. 1: inversion H0. simpl in H0. destruct H0.
+  - subst a. exists (fold_right andp TT l). reflexivity.
+  - apply IHl in H0. destruct H0 as [QQ ?]. rewrite H0.
+    rewrite andp_comm, andp_assoc. exists (QQ && a). reflexivity.
 Qed.
 
 Lemma exp_uncurry: forall {A} `{NatDed A} (S T: Type) (P: S -> T -> A),
@@ -141,6 +127,7 @@ Proof.
   auto.
 Qed.
 
+(*
 Lemma ocon_sep_true: forall {A} `{OverlapSepLog A} (P Q: A), ocon P Q |-- P * TT.
 Proof.
   intros.
@@ -149,6 +136,7 @@ Proof.
   + rewrite ocon_TT.
     apply derives_refl.
 Qed.
+*)
 
 Lemma exp_allp: forall {A} `{NatDed A} (S T: Type) (P: S -> T -> A),
     exp (fun s => allp (P s)) |-- allp (fun t => exp (fun s => P s t)).
@@ -170,6 +158,7 @@ Proof.
   apply H.
 Qed.
 
+(*
 Lemma precise_andp_left: forall {A} `{PreciseSepLog A} P Q, precise P -> precise (P && Q).
 Proof.
   intros.
@@ -247,6 +236,7 @@ Proof.
       specialize (H0 (ex_intro _ x H3)); tauto.
     - apply FF_precise.
 Qed.
+ *)
 
 Lemma exp_sepcon: forall {A} `{SepLog A} {B} (P Q: B -> A), exp (P * Q) |-- exp P * exp Q.
 Proof.
@@ -265,6 +255,7 @@ Proof.
   apply modus_ponens_wand.
 Qed.
 
+(*
 Lemma precise_left_sepcon_andp_sepcon: forall {A} `{PreciseSepLog A} P Q R, precise P -> (P * Q) && (P * R) |-- P * (Q && R).
 Proof.
   intros.
@@ -460,6 +451,7 @@ Proof.
   eapply CCC_exp_prod2.
   apply ocon_owand_CCC.
 Qed.
+ *)
 
 (* Can be moved into VST/msl/log_normalize. *)
 Lemma CCC_expo_expo_comm': forall A prod expo {ND: NatDed A} {CCC: CCCviaNatDed A prod expo},
@@ -499,6 +491,7 @@ Proof.
   apply sepcon_derives; auto.
 Qed.
 
+(*
 Ltac normalize_overlap :=
   repeat
     match goal with
@@ -510,10 +503,11 @@ Ltac normalize_overlap :=
      | |- context [ocon ?Q (?R && ?P)] => rewrite (corable_ocon_andp2 P Q R) by (auto with norm)
      | |- context [ocon (exp ?P) ?Q] => rewrite (exp_ocon1 _ P Q)
      | |- context [ocon ?P (exp ?Q)] => rewrite (exp_ocon2 _ P Q)
-     | |- _ => eauto with typeclass
+     | |- _ => eauto with typeclass_instances
     end;
   repeat rewrite <- andp_assoc;
   try normalize.
+ *)
 
 Lemma exp_emp: forall {A B} `{ClassicalSep B} (P: A -> B), EX x:A, P x * emp = EX x: A, P x.
 Proof.
@@ -523,15 +517,3 @@ Proof.
   rewrite sepcon_emp.
   auto.
 Qed.
-
-Goal forall {A} `{CorableOverlapSepLog A} P (Q R: A), ocon (!! P && !! P  && Q) R = ocon (!! P && Q && !! P) (!! P && R && !! P).
-intros.
-normalize_overlap.
-Abort.
-
-Goal forall {A} `{CorableOverlapSepLog A} P R (Q: A), Q |-- ocon (ocon (EX x: nat, P x) Q) (EX x: nat, R x).
-intros.
-normalize_overlap.
-apply (exp_right 0).
-normalize_overlap.
-Abort.

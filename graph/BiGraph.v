@@ -5,6 +5,8 @@ Require Import RamifyCoq.lib.List_ext.
 Require Import RamifyCoq.lib.relation_list.
 Require Import RamifyCoq.lib.Equivalence_ext.
 Require Import RamifyCoq.graph.graph_model.
+Require Import RamifyCoq.graph.graph_gen.
+Require Import RamifyCoq.graph.MathGraph.
 
 Section BiGraph.
 
@@ -104,8 +106,6 @@ Proof.
     reflexivity.
 Qed.
 
-Require Import RamifyCoq.graph.graph_gen.
-
 Lemma gen_dst_preserve_bi: forall (g: PreGraph V E) e t,
     BiGraph g left_out_edge right_out_edge -> BiGraph (pregraph_gen_dst g e t) left_out_edge right_out_edge.
 Proof.
@@ -113,8 +113,6 @@ Proof.
   + apply bi_consist; auto.
   + simpl. apply (only_two_edges); auto.
 Qed.
-
-Require Import RamifyCoq.graph.MathGraph.
 
 Context {is_null: DecidablePred V}.
 
