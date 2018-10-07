@@ -173,7 +173,6 @@ Definition forward_spec :=
           super_compatible (g, t_info, roots) f_info outlier;
           forward_p_compatible forward_p roots g;
           forward_condition g t_info from to;
-          to <> O;
           0 <= depth <= Int.max_signed;
           from <> to)
     LOCAL (temp _from_start (gen_start g from);
