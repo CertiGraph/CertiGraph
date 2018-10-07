@@ -41,6 +41,7 @@ Proof.
   hnf; intros.
   rewrite same_relation_spec in *.
   unfold pointwise_relation in *.
+  intros a b. specialize (H a b). specialize (H0 a b).
   firstorder.
 Qed.
 

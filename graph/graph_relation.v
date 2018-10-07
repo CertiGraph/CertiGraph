@@ -34,10 +34,10 @@ Section GuardedIdentical.
 Context {V E: Type}.
 Context {EV: EqDec V eq}.
 Context {EE: EqDec E eq}.
-Context {DV DE: Type}.
+Context {DV DE DG: Type}.
 
 Notation PGraph := (PreGraph V E).
-Notation LGraph := (LabeledGraph V E DV DE).
+Notation LGraph := (LabeledGraph V E DV DE DG).
 
 Definition guarded_structurally_identical PV PE: relation PGraph := respectful_relation (gpredicate_subgraph PV PE) structurally_identical.
 

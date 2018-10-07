@@ -158,7 +158,7 @@ Proof.
     erewrite !(app_same_relation (relation_list _)) by apply relation_list_tail.
     intro.
     destruct H1.
-    assert (relation_list (map R' l) x y).
+    assert (relation_list (map R' l) x0 y).
     - apply H; auto.
       clear - H0.
       intros; apply (H0 bs_done); auto.

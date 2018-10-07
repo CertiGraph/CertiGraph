@@ -136,7 +136,7 @@ Proof.
   intros.
   intro y.
   specialize (H2 y).
-  rewrite remove_in_3.
+  rewrite remove_In_iff.
   rewrite H2.
   rewrite (reachable_ind' g x S y H H1).
   assert (x = y <-> y = x) by (split; intros; congruence).

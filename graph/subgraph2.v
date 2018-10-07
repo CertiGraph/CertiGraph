@@ -247,6 +247,13 @@ Section IS_PARTIAL_GRAPH.
       is_partial_graph g1 g2 -> reachable g1 n n' -> reachable g2 n n'.
   Proof. intros. apply is_partial_graph_reachable_by with g1; auto. Qed.
 
+  Lemma pregraph_gen_dst_is_partial_graph: forall (g: PreGraph V E) e v,
+      ~ vvalid g v -> is_partial_graph (pregraph_gen_dst g e v) g.
+  Proof.
+    intros. hnf. simpl. unfold updateEdgeFunc.
+    split; [|split; [|split]]; intros; auto. destruct_eq_dec e e0; [exfalso|]; auto.
+  Qed.
+
 End IS_PARTIAL_GRAPH.
 
 Section SI_EQUIV.
@@ -405,11 +412,11 @@ Lemma reachable_by_partialgraph_reachable_by_equiv (g: PreGraph V E) (P p0: V ->
 Proof.
   intros.
   assert (Same_set (reachable_by g n p0) (reachable (predicate_partialgraph g p0) n)).
-  Focus 1. {
+  1: {
     rewrite Same_set_spec.
     hnf; intros.
     apply reachable_by_eq_partialgraph_reachable; auto.
-  } Unfocus.
+  }
   rewrite H0 in H |- *.
   apply reachable_partialgraph_reachable_equiv in H.
   rewrite H.
@@ -492,22 +499,22 @@ Proof.
   intros.
   rewrite reachable_by_eq_subgraph_reachable in H1 |- *.
   assert (forall x, vvalid (predicate_subgraph g1 p1) x <-> vvalid (predicate_subgraph g2 p2) x).
-  Focus 1. {
+  1: {
     intros; simpl; unfold predicate_vvalid.
     destruct H as [? _].
     specialize (H x0).
     specialize (H0 x0).
     hnf in H0.
     tauto.
-  } Unfocus.
+  }
   assert (forall x y, edge (predicate_subgraph g1 p1) x y <-> edge (predicate_subgraph g2 p2) x y).
-  Focus 1. {
+  1: {
     apply si_subgraph_edge.
     + auto.
     + intros.
       specialize (H0 x0).
       tauto.
-  } Unfocus.
+  }
   pose proof (edge_equiv_reachable_equiv (predicate_subgraph g1 p1) (predicate_subgraph g2 p2) H2 H3).
   destruct (H4 x) as [? _].
   apply H5.
@@ -551,12 +558,12 @@ Proof.
   + destruct H1 as [m [? ?]].
     exists m; split; auto.
     assert (forall m, g |= m ~o~> n satisfying P -> ~ reachable_by_through_set g l1 P m).
-    Focus 1. {
+    1: {
       intros m0 ? [s [? ?]].
       apply H0; exists s.
       split; auto.
       apply reachable_by_trans with m0; auto.
-    } Unfocus.
+    }
     rewrite reachable_by_eq_partialgraph_reachable in H2 |- *.
     rewrite partial_partialgraph.
     clear H1.
@@ -569,18 +576,18 @@ Proof.
       rewrite Intersection_spec.
       split; [auto | destruct H1; auto].
     - assert (Complement V (reachable_by_through_set g l1 P) x).
-      Focus 1. {
+      1: {
         apply H3.
         rewrite reachable_by_eq_partialgraph_reachable, reachable_ind_reachable.
         apply ind.reachable_cons with y; auto.
-      } Unfocus.
+      }
       assert (vvalid (predicate_partialgraph g
        (Intersection V (Complement V (reachable_by_through_set g l1 P)) P)) x).
-      Focus 1. {
+      1: {
         split; [destruct H1 as [[? _] _]; auto |].
         rewrite Intersection_spec.
         split; [auto | destruct H1 as [[_ ?] _]; auto].
-      } Unfocus.
+      }
       assert ((predicate_partialgraph g
         (Intersection V (Complement V (reachable_by_through_set g l1 P)) P)) ~=~
            (predicate_partialgraph
@@ -660,11 +667,11 @@ Proof.
     rewrite partial_partialgraph, Intersection_comm, <- partial_partialgraph, <- reachable_by_through_set_eq_partialgraph_reachable_through_set.
     assert (Same_set (fun x : V => ~ reachable_by_through_set g l1 P x)
       (Complement _ (reachable_through_set (predicate_partialgraph g P) l1))).
-    Focus 1. {
+    1: {
       rewrite Same_set_spec; intro v.
       pose proof reachable_by_through_set_eq_partialgraph_reachable_through_set g P l1 v.
       unfold Complement, Ensembles.In; tauto.
-    } Unfocus.
+    }
     rewrite H0; clear H0.
     remember (predicate_partialgraph g P) as g'.
     clear g Heqg'.
@@ -713,9 +720,9 @@ Section PartialLabeledGraph.
 Context {V E: Type}.
 Context {EV: EqDec V eq}.
 Context {EE: EqDec E eq}.
-Context {DV DE: Type}.
+Context {DV DE DG: Type}.
 
-Notation Graph := (LabeledGraph V E DV DE).
+Notation Graph := (LabeledGraph V E DV DE DG).
 
 Local Coercion pg_lg: LabeledGraph >-> PreGraph.
 
@@ -732,7 +739,7 @@ Section GRAPH_DISJOINT_UNION.
   Context {V E: Type}.
   Context {EV: EqDec V eq}.
   Context {EE: EqDec E eq}.
-  Context {DV DE: Type}.
+  Context {DV DE DG: Type}.
 
   Local Coercion pg_lg: LabeledGraph >-> PreGraph.
 
@@ -741,11 +748,11 @@ Section GRAPH_DISJOINT_UNION.
 
   (* In assumption, why need decidability in Type? Because we need at least an existence (in Prop) of a function, which requires decidability in Type. *)
   (* In conclusion, it is possible to generate this stronger existential (In Type) property. *) 
-  Definition disjointed_union_labeledgraph_sig_ll: forall (G1 G2: LabeledGraph V E DV DE),
+  Definition disjointed_union_labeledgraph_sig_ll: forall (G1 G2: LabeledGraph V E DV DE DG),
     disjointed_guard (vvalid G1) (vvalid G2) (evalid G1) (evalid G2) ->
     (forall v, Decidable (vvalid G1 v)) ->
     (forall e, Decidable (evalid G1 e)) ->
-    { G: LabeledGraph V E DV DE | 
+    { G: LabeledGraph V E DV DE DG | 
       guarded_labeled_graph_equiv (vvalid G1) (evalid G1) G1 G /\
       guarded_labeled_graph_equiv (vvalid G2) (evalid G2) G2 G /\
       Prop_join (vvalid G1) (vvalid G2) (vvalid G) /\
@@ -753,14 +760,15 @@ Section GRAPH_DISJOINT_UNION.
   Proof.
     intros.
     exists
-      (Build_LabeledGraph _ _
+      (Build_LabeledGraph _ _ _
         (@Build_PreGraph V E _ _
           (fun v => vvalid G1 v \/ vvalid G2 v)
           (fun e => evalid G1 e \/ evalid G2 e)
           (fun e => if (X0 e) then src G1 e else src G2 e)
           (fun e => if (X0 e) then dst G1 e else dst G2 e))
         (fun v => if (X v) then vlabel G1 v else vlabel G2 v)
-        (fun e => if (X0 e) then elabel G1 e else elabel G2 e)).
+        (fun e => if (X0 e) then elabel G1 e else elabel G2 e)
+        (glabel G1)).
     split; [| split; [| split]].
     + rewrite guarded_lge_spec.
       simpl; split; [split; [| split; [| split]] | split].
@@ -863,11 +871,11 @@ Section GRAPH_DISJOINT_UNION.
     tauto.
   Qed.
 
-  Definition disjointed_union_labeledgraph_exists_ll: forall (G1 G2: LabeledGraph V E DV DE),
+  Definition disjointed_union_labeledgraph_exists_ll: forall (G1 G2: LabeledGraph V E DV DE DG),
     disjointed_guard (vvalid G1) (vvalid G2) (evalid G1) (evalid G2) ->
     (exists f: forall v, Decidable (vvalid G1 v), True) ->
     (exists f: forall e, Decidable (evalid G1 e), True) ->
-    exists G: LabeledGraph V E DV DE,
+    exists G: LabeledGraph V E DV DE DG,
       guarded_labeled_graph_equiv (vvalid G1) (evalid G1) G1 G /\
       guarded_labeled_graph_equiv (vvalid G2) (evalid G2) G2 G /\
       Prop_join (vvalid G1) (vvalid G2) (vvalid G) /\

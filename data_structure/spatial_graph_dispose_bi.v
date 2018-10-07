@@ -32,8 +32,8 @@ Defined.
 
 Section SPATIAL_GRAPH_DISPOSE_BI.
 
-  Context {pSGG_Bi: pSpatialGraph_Graph_Bi}.
-  Context {sSGG_Bi: sSpatialGraph_Graph_Bi bool unit}.
+  Context {pSGG_Bi: pPointwiseGraph_Graph_Bi}.
+  Context {sSGG_Bi: sPointwiseGraph_Graph_Bi bool unit}.
 
   Existing Instances maGraph biGraph finGraph.
 
@@ -42,10 +42,10 @@ Section SPATIAL_GRAPH_DISPOSE_BI.
   Local Coercion LGraph_SGraph: LGraph >-> SGraph.
   Local Identity Coercion Graph_GeneralGraph: Graph >-> GeneralGraph.
   Local Identity Coercion LGraph_LabeledGraph: LGraph >-> LabeledGraph.
-  Local Identity Coercion SGraph_SpatialGraph: SGraph >-> SpatialGraph.
+  Local Identity Coercion SGraph_PointwiseGraph: SGraph >-> PointwiseGraph.
   Local Coercion pg_lg: LabeledGraph >-> PreGraph.
 
-  Notation Graph := (@Graph pSGG_Bi bool unit).
+  Notation Graph := (@Graph pSGG_Bi bool unit unit).
 
   Lemma vgamma_is_true: forall (g : Graph) (x l r : addr), vgamma g x = (true, l, r) -> marked g x.
   Proof. intros. simpl in H. simpl. destruct (vlabel g x) eqn:? . auto. inversion H. Qed.
@@ -64,9 +64,9 @@ Section SPATIAL_GRAPH_DISPOSE_BI.
     hnf. change (lg_gg g) with (g: LGraph). destruct (node_pred_dec (marked g) (dst g (x, L))). 2: subst l; exfalso; auto.
     split.
     + hnf. simpl. split; [| split; [|split; [| split]]]; [tauto | tauto | tauto | | ].
-      - intros. unfold graph_gen.update_dst.
+      - intros. unfold updateEdgeFunc.
         destruct (equiv_dec (x, L) e); intuition.
-      - right. unfold graph_gen.update_dst.
+      - right. unfold updateEdgeFunc.
         destruct (equiv_dec (x, L) (x, L)); intuition.
         * apply (valid_not_null g) in H3; auto. reflexivity.
         * apply (@left_valid _ _ _ _ _ _ g (biGraph g)) in H; auto.
@@ -80,18 +80,18 @@ Section SPATIAL_GRAPH_DISPOSE_BI.
   Proof.
     intros.
     replace (@vertex_at _ _ _ _ _ SGP x (d, l, r)) with (graph_vcell g x).
-    Focus 2. {
+    2: {
       unfold graph_vcell; simpl.
       simpl in H0; rewrite H0; auto.
-    } Unfocus.
+    }
     replace (@vertex_at _ _ _ _ _ SGP x (d, null, r)) with (graph_vcell (Graph_gen_left_null g x) x).
-    Focus 2. {
+    2: {
       unfold graph_vcell; simpl.
-      unfold graph_gen.update_dst.
+      unfold updateEdgeFunc.
       destruct_eq_dec (x, L) (x, L). 2: exfalso; auto.
       destruct_eq_dec (x, L) (x, R). inversion H2.
       simpl in H0; inversion H0; auto.
-    } Unfocus.
+    }
     apply vertices_at_ramif_1; auto.
     eexists; split; [| split].
     + apply Ensemble_join_Intersection_Complement.
@@ -105,19 +105,35 @@ Section SPATIAL_GRAPH_DISPOSE_BI.
       change (lg_gg g) with (g: LGraph).
       rewrite Intersection_spec in H1.
       destruct H1; unfold Complement, Ensembles.In in H2.
-      simpl. unfold graph_gen.update_dst.
+      simpl. unfold updateEdgeFunc.
       destruct_eq_dec (x, L) (x0, L).
       - inversion H3. exfalso; auto.
       - destruct_eq_dec (x, L) (x0, R). inversion H4. auto.
   Qed.
 
-  Lemma graph_ramify_aux1_left: forall {RamUnit: Type} (g: Graph) x d l r,
+  Lemma graph_gen_left_null_ramify_weak:
+    forall (g: Graph) (x : addr) d (l r : addr),
+      vvalid g x -> vgamma g x = (d, l, r) ->
+      (reachable_vertices_at x g : pred) |-- vertex_at x (d, l, r) * (vertex_at x (d, null, r) -* (reachable_vertices_at x (Graph_gen_left_null g x) * TT)).
+  Proof.
+    intros. pose proof (graph_gen_left_null_ramify g x d l r H H0).
+    apply log_normalize.sepcon_weaken with (vertex_at x (d, null, r) -* vertices_at (reachable g x) (Graph_gen_left_null g x)); auto.
+    apply wand_derives; auto. unfold reachable_vertices_at.
+    cut ((vertices_at (reachable g x) (Graph_gen_left_null g x) : pred)
+                     |-- vertices_at (reachable (Graph_gen_left_null g x) x)
+                     (Graph_gen_left_null g x) * TT). auto. unfold vertices_at.
+    apply iter_sepcon.pred_sepcon_prop_true_weak.
+    - apply Graph_reachable_dec, weak_valid_vvalid_dec. right.
+      unfold Graph_gen_left_null. simpl. apply H.
+    - intro y. unfold Graph_gen_left_null. simpl.
+      apply is_partial_graph_reachable, pregraph_gen_dst_is_partial_graph.
+      apply invalid_null.
+  Qed.
+
+  Lemma graph_ramify_aux1_left: forall (g: Graph) x d l r,
       vvalid g x -> vgamma g x = (d, l, r) ->
       (reachable_vertices_at x g : pred) |-- reachable_vertices_at l g *
-      (ALL  a : RamUnit * Graph ,
-                !!spanning_tree g l (snd a) -->
-                  (vertices_at (reachable g l) (snd a) -*
-                               vertices_at (reachable g x) (snd a))).
+      (ALL  g' : Graph , !!spanning_tree g l g' --> (vertices_at (reachable g l) g' -* vertices_at (reachable g x) g')).
   Proof.
     intros. eapply vertices_at_ramif_xQ; auto.
     eexists; split; [| split].
@@ -158,6 +174,45 @@ Section SPATIAL_GRAPH_DISPOSE_BI.
         } apply H4; intuition.
   Qed.
 
+  Lemma totally_unmarked_root_ST_reachable_eq: forall (g1 g2: Graph) root,
+      totally_unmarked g1 root -> spanning_tree g1 root g2 ->
+      vertices_at (reachable g1 root) g2 = reachable_vertices_at root g2.
+  Proof.
+    intros. apply vertices_at_Same_set. rewrite Same_set_spec. hnf.
+    apply spanning_tree_totally_unmarked_root_reachable; auto. intros.
+    apply Graph_reachable_by_dec, weak_valid_vvalid_dec; right; auto.
+  Qed.
+
+  Lemma totally_unmarked_parent_ST_reachable_eq: forall (g1 g2: Graph) x l r,
+      vvalid g1 x -> vgamma g1 x = (true, l, r) -> totally_unmarked g1 l ->
+      spanning_tree g1 l g2 ->
+      vertices_at (reachable g1 x) g2 = reachable_vertices_at x g2.
+  Proof.
+    intros. apply vertices_at_Same_set. rewrite Same_set_spec. hnf.
+    assert (l = dst (lg_gg g1) (x, L)) by (simpl in H0; inversion H0; auto).
+    apply spanning_tree_totally_unmarked_parent_reachable with (e := (x, L));
+      auto; try rewrite <- H3; auto.
+      - hnf. split.
+        + apply (@left_valid _ _ _ _ _ _ g1 (biGraph g1)); auto.
+        + apply (@left_sound _ _ _ _ _ _ g1 (biGraph g1) x); auto.
+      - apply vgamma_is_true in H0. auto.
+      - intros; apply Graph_reachable_by_dec, weak_valid_vvalid_dec; right; auto.
+  Qed.
+(*
+  Lemma graph_ramify_aux1_left_weak: forall (g: Graph) x l r,
+      vvalid g x -> vgamma g x = (true, l, r) -> totally_unmarked g l ->
+      (reachable_vertices_at x g : pred) |-- reachable_vertices_at l g *
+      (ALL  g' : Graph , !!spanning_tree g l g' --> (reachable_vertices_at l g' -* reachable_vertices_at x g')).
+  Proof.
+    intros. pose proof (@graph_ramify_aux1_left g x true l r H H0).
+    eapply log_normalize.sepcon_weaken. 2: apply H2. clear H2.
+    apply allp_derives. intros p. destruct p as [? g2]. simpl.
+    rewrite <- imp_andp_adjoint. apply derives_extract_prop'. intros.
+    rewrite prop_imp; auto. apply wand_derives.
+    - rewrite <- totally_unmarked_root_ST_reachable_eq; auto.
+    - rewrite (totally_unmarked_parent_ST_reachable_eq _ _ _ l r); auto.
+  Qed.
+*)
   Lemma edge_spanning_tree_left_vvalid: forall (g1 g2: Graph) x n,
       vvalid g1 x -> edge_spanning_tree g1 (x, L) g2 -> (vvalid g1 n <-> vvalid g2 n).
   Proof.
@@ -285,15 +340,15 @@ Section SPATIAL_GRAPH_DISPOSE_BI.
       - apply (edge_spanning_tree_left_reachable_vvalid g1 g2 x true l r); auto.
         unfold Ensembles.In . apply reachable_by_refl; auto.
   Qed.
-                
-  Lemma graph_ramify_aux1_right: forall {RamUnit: Type} (g1 g2: Graph) x l r,
+
+  Lemma graph_ramify_aux1_right: forall (g1 g2: Graph) x l r,
       vvalid g1 x -> vgamma g1 x = (true, l, r) ->
       edge_spanning_tree g1 (x, L) g2 ->
       (vertices_at (reachable g1 x) g2: pred) |-- reachable_vertices_at r g2 *
-      (ALL  a : RamUnit * Graph ,
-                !!spanning_tree g2 r (snd a) -->
-                  (vertices_at (reachable g2 r) (snd a) -*
-                               vertices_at (reachable g1 x) (snd a))).
+      (ALL  g' : Graph ,
+                !!spanning_tree g2 r g' -->
+                  (vertices_at (reachable g2 r) g' -*
+                               vertices_at (reachable g1 x) g')).
   Proof.
     intros. eapply vertices_at_ramif_xQ; auto.
     eexists; split; [| split].
@@ -310,11 +365,11 @@ Section SPATIAL_GRAPH_DISPOSE_BI.
         unfold predicate_weak_evalid in H2. destruct H2 as [_ [? [_ ?]]].
         specialize (H2 (x0, L)). specialize (H5 (x0, L)).
         assert (src g2 (x0, L) = x0).
-        Focus 1. {
+        1: {
           apply (@left_sound _ _ _ _ _ _ g2 (biGraph g2) x0).
           rewrite <- (edge_spanning_tree_left_vvalid g1 g2 x x0 H H1).
           apply reachable_foot_valid in H3; auto.
-        } Unfocus.
+        }
         change (lg_gg g2) with (g2: LGraph) in *.
         rewrite H6 in *.
         assert (evalid g2 (x0, L) /\ ~ g2 |= r ~o~> x0 satisfying (unmarked g2)). {
@@ -328,11 +383,11 @@ Section SPATIAL_GRAPH_DISPOSE_BI.
         unfold predicate_weak_evalid in H2. destruct H2 as [_ [? [_ ?]]].
         specialize (H2 (x0, R)). specialize (H5 (x0, R)).
         assert (src g2 (x0, R) = x0).
-        Focus 1. {
+        1: {
           apply (@right_sound _ _ _ _ _ _ g2 (biGraph g2) x0).
           rewrite <- (edge_spanning_tree_left_vvalid g1 g2 x x0 H H1).
           apply reachable_foot_valid in H3; auto.
-        } Unfocus.
+        }
         change (lg_gg g2) with (g2: LGraph) in *.
         rewrite H6 in *.
         assert (evalid g2 (x0, R) /\ ~ g2 |= r ~o~> x0 satisfying (unmarked g2)). {
@@ -351,18 +406,18 @@ Section SPATIAL_GRAPH_DISPOSE_BI.
   Proof.
     intros.
     replace (@vertex_at _ _ _ _ _ SGP x (d, l, r)) with (graph_vcell g2 x).
-    Focus 2. {
+    2: {
       unfold graph_vcell; simpl.
       simpl in H0; rewrite H0; auto.
-    } Unfocus.
+    }
     replace (@vertex_at _ _ _ _ _ SGP x (d, l, null)) with (graph_vcell (Graph_gen_right_null g2 x) x).
-    Focus 2. {
+    2: {
       unfold graph_vcell; simpl.
-      unfold graph_gen.update_dst.
+      unfold updateEdgeFunc.
       destruct_eq_dec (x, R) (x, L). inversion H1.
       destruct_eq_dec (x, R) (x, R). 2: exfalso; apply H2; auto.
       simpl in H0; inversion H0; auto.
-    } Unfocus.
+    }
     apply vertices_at_ramif_1; auto.
     eexists; split; [| split].
     + apply Ensemble_join_Intersection_Complement.
@@ -376,12 +431,30 @@ Section SPATIAL_GRAPH_DISPOSE_BI.
       change (lg_gg g2) with (g2: LGraph).
       rewrite Intersection_spec in H1.
       destruct H1; unfold Complement, Ensembles.In in H2.
-      simpl. unfold graph_gen.update_dst.
+      simpl. unfold updateEdgeFunc.
       destruct_eq_dec (x, R) (x0, L).
       - inversion H3.
       - destruct_eq_dec (x, R) (x0, R).
         * inversion H4. exfalso; auto.
         * auto.
+  Qed.
+
+  Lemma graph_gen_right_null_ramify_weak: forall (g2: Graph) (x : addr) d (l r : addr),
+      vvalid g2 x -> vgamma g2 x = (d, l, r) ->
+      (reachable_vertices_at x g2 : pred) |-- vertex_at x (d, l, r) * (vertex_at x (d, l, null) -* (reachable_vertices_at x (Graph_gen_right_null g2 x) * TT)).
+  Proof.
+    intros. pose proof (graph_gen_right_null_ramify g2 g2 x d l r H H0).
+    apply log_normalize.sepcon_weaken with (vertex_at x (d, l, null) -* vertices_at (reachable g2 x) (Graph_gen_right_null g2 x)); auto.
+    apply wand_derives; auto. unfold reachable_vertices_at.
+    cut ((vertices_at (reachable g2 x) (Graph_gen_right_null g2 x): pred)
+           |-- vertices_at (reachable (Graph_gen_right_null g2 x) x)
+           (Graph_gen_right_null g2 x) * TT). auto. unfold vertices_at.
+    apply iter_sepcon.pred_sepcon_prop_true_weak.
+    - apply Graph_reachable_dec, weak_valid_vvalid_dec. right.
+      unfold Graph_gen_left_null. simpl. apply H.
+    - intro y. unfold Graph_gen_left_null. simpl.
+      apply is_partial_graph_reachable, pregraph_gen_dst_is_partial_graph.
+      apply invalid_null.
   Qed.
 
   Lemma edge_spanning_tree_right_null:
@@ -393,9 +466,9 @@ Section SPATIAL_GRAPH_DISPOSE_BI.
     change (lg_gg g) with (g: LGraph). destruct (node_pred_dec (marked g) (dst g (x, R))). 2: subst r; exfalso; auto.
     split.
     + hnf. simpl. split; [| split; [|split; [| split]]]; [tauto | tauto | tauto | | ].
-      - intros. unfold graph_gen.update_dst.
+      - intros. unfold updateEdgeFunc.
         destruct (equiv_dec (x, R) e); intuition.
-      - right. split; auto. unfold graph_gen.update_dst.
+      - right. split; auto. unfold updateEdgeFunc.
         destruct (equiv_dec (x, R) (x, R)); intuition.
         * apply (valid_not_null g) in H3; auto. reflexivity.
         * split; auto. apply (@right_valid _ _ _ _ _ _ g (biGraph g)) in H; auto.

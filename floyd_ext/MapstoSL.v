@@ -85,7 +85,7 @@ Proof.
   + intros [p1 t1] [p2 t2] ?.
     simpl in H; unfold adr_conflict in H.
     if_tac in H.
-    Focus 1. {
+    1: {
      destruct (pointer_range_overlap_dec p1 (BV_sizeof t1) p2 (BV_sizeof t2)); [congruence |].
      destruct (pointer_range_overlap_dec p1 (@sizeof (PTree.empty _) t1) p2 (@sizeof (PTree.empty _) t2)).
       - apply pointer_range_overlap_sizeof with (sh0 := sh) in p.
@@ -98,15 +98,15 @@ Proof.
           pose proof log_normalize.disj_FF.
           simpl in H2; apply H2.
       - apply @disj_mapsto_ with (PTree.empty _); auto.
-    } Unfocus.
-    Focus 1. {
+    }
+    1: {
       unfold mapsto_.
       simpl.
       eapply disj_derives.
       + apply exp_left; intro; apply mapsto_memory_block.mapsto_not_nonunit; auto.
       + apply exp_left; intro; apply mapsto_memory_block.mapsto_not_nonunit; auto.
       + apply (@emp_disj _ Nveric).
-    } Unfocus.
+    }
 Defined.
 
 End Mapsto.

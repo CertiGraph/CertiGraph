@@ -9,8 +9,6 @@ Require Import RamifyCoq.lib.List_ext.
 Require Import RamifyCoq.lib.Relation_ext.
 Require Import RamifyCoq.lib.Equivalence_ext.
 Require Import RamifyCoq.lib.Morphisms_ext.
-Require Import RamifyCoq.msl_ext.abs_addr.
-Require Import RamifyCoq.msl_ext.seplog.
 Require Import RamifyCoq.msl_ext.log_normalize.
 Require Import RamifyCoq.msl_ext.iter_sepcon.
 Require Import RamifyCoq.msl_ext.ramification_lemmas.
@@ -22,11 +20,10 @@ Require Import RamifyCoq.graph.reachable_ind.
 Require Import RamifyCoq.graph.subgraph2.
 Require Import RamifyCoq.graph.dag.
 Require Import RamifyCoq.graph.FiniteGraph.
-Import RamifyCoq.msl_ext.seplog.OconNotation.
 
 Local Open Scope logic.
 
-Class SpatialGraph (V E: Type) {VE: EqDec V eq} {EE: EqDec E eq} (GV GE: Type): Type := {
+Class PointwiseGraph (V E: Type) {VE: EqDec V eq} {EE: EqDec E eq} (GV GE: Type): Type := {
   pg_sg: PreGraph V E;
   vgamma: V -> GV;
   egamma: E -> GE
@@ -36,19 +33,19 @@ Arguments pg_sg {V E _ _ GV GE} _.
 Arguments vgamma {V E _ _ GV GE} _ _.
 Arguments egamma {V E _ _ GV GE} _ _.
 
-Class SpatialGraphPred (V E GV GE Pred: Type): Type := {
+Class PointwiseGraphPred (V E GV GE Pred: Type): Type := {
   vertex_at: V -> GV -> Pred;
   edge_at: E -> GE -> Pred
 }.
 
-Class SpatialGraphBasicAssum (V E: Type) := {
+Class PointwiseGraphBasicAssum (V E: Type) := {
   SGBA_VE: EqDec V eq;
   SGBA_EE: EqDec E eq
 }.
 
 Existing Instances SGBA_VE SGBA_EE.
 
-Class SpatialGraphAssum {V E GV GE Pred: Type} (SGP: SpatialGraphPred V E GV GE Pred) {SGBA: SpatialGraphBasicAssum V E}:= {
+Class PointwiseGraphAssum {V E GV GE Pred: Type} (SGP: PointwiseGraphPred V E GV GE Pred) {SGBA: PointwiseGraphBasicAssum V E}:= {
   SGP_ND: NatDed Pred;
   SGP_SL : SepLog Pred;
   SGP_ClSL: ClassicalSep Pred;
@@ -57,31 +54,32 @@ Class SpatialGraphAssum {V E GV GE Pred: Type} (SGP: SpatialGraphPred V E GV GE 
 
 Existing Instances SGP_ND SGP_SL SGP_ClSL SGP_CoSL.
 
-Class SpatialGraphAssum_vs {V E GV GE Pred: Type} (SGP: SpatialGraphPred V E GV GE Pred) {SGBA: SpatialGraphBasicAssum V E} {SGA: SpatialGraphAssum SGP} :=
+Class PointwiseGraphAssum_vs {V E GV GE Pred: Type} (SGP: PointwiseGraphPred V E GV GE Pred) {SGBA: PointwiseGraphBasicAssum V E} {SGA: PointwiseGraphAssum SGP} :=
   vertex_at_sep: sepcon_unique2 (@vertex_at _ _ _ _ _ SGP).
 
-Class SpatialGraphAssum_es {V E GV GE Pred: Type} (SGP: SpatialGraphPred V E GV GE Pred) {SGBA: SpatialGraphBasicAssum V E} {SGA: SpatialGraphAssum SGP} :=
+Class PointwiseGraphAssum_es {V E GV GE Pred: Type} (SGP: PointwiseGraphPred V E GV GE Pred) {SGBA: PointwiseGraphBasicAssum V E} {SGA: PointwiseGraphAssum SGP} :=
   edge_at_sep: sepcon_unique2 (@edge_at _ _ _ _ _ SGP).
 
-Class SpatialGraphAssum_vn {V E GV GE Pred: Type} (SGP: SpatialGraphPred V E GV GE Pred) {SGBA: SpatialGraphBasicAssum V E} {SGA: SpatialGraphAssum SGP} (vnull: V) :=
+Class PointwiseGraphAssum_vn {V E GV GE Pred: Type} (SGP: PointwiseGraphPred V E GV GE Pred) {SGBA: PointwiseGraphBasicAssum V E} {SGA: PointwiseGraphAssum SGP} (vnull: V) :=
   vertex_at_not_null: forall gx, @derives Pred _ (vertex_at vnull gx) FF.
 
-Class SpatialGraphAssum_en {V E GV GE Pred: Type} (SGP: SpatialGraphPred V E GV GE Pred) {SGBA: SpatialGraphBasicAssum V E} {SGA: SpatialGraphAssum SGP} (enull: E) :=
+Class PointwiseGraphAssum_en {V E GV GE Pred: Type} (SGP: PointwiseGraphPred V E GV GE Pred) {SGBA: PointwiseGraphBasicAssum V E} {SGA: PointwiseGraphAssum SGP} (enull: E) :=
   edge_at_not_null: forall ge, @derives Pred _ (edge_at enull ge) FF.
 
-Instance AAV {V E GV GE Pred: Type} (SGP: SpatialGraphPred V E GV GE Pred) {SGBA: SpatialGraphBasicAssum V E} : AbsAddr V GV.
+(*
+Instance AAV {V E GV GE Pred: Type} (SGP: PointwiseGraphPred V E GV GE Pred) {SGBA: PointwiseGraphBasicAssum V E} : AbsAddr V GV.
   apply (mkAbsAddr V GV (fun x y => if equiv_dec x y then true else false)); simpl; intros.
   + destruct_eq_dec p1 p2; destruct_eq_dec p2 p1; congruence.
   + destruct_eq_dec p1 p1; destruct_eq_dec p1 p2; congruence.
 Defined.
 
-Instance AAE {V E GV GE Pred: Type} (SGP: SpatialGraphPred V E GV GE Pred) {SGBA: SpatialGraphBasicAssum V E} : AbsAddr E GE.
+Instance AAE {V E GV GE Pred: Type} (SGP: PointwiseGraphPred V E GV GE Pred) {SGBA: PointwiseGraphBasicAssum V E} : AbsAddr E GE.
   apply (mkAbsAddr E GE (fun x y => if equiv_dec x y then true else false)); simpl; intros.
   + destruct_eq_dec p1 p2; destruct_eq_dec p2 p1; congruence.
   + destruct_eq_dec p1 p1; destruct_eq_dec p1 p2; congruence.
 Defined.
 
-Class SpatialGraphStrongAssum {V E GV GE Pred: Type} (SGP: SpatialGraphPred V E GV GE Pred) {SGBA: SpatialGraphBasicAssum V E} {SGA: SpatialGraphAssum SGP} := {
+Class PointwiseGraphStrongAssum {V E GV GE Pred: Type} (SGP: PointwiseGraphPred V E GV GE Pred) {SGBA: PointwiseGraphBasicAssum V E} {SGA: PointwiseGraphAssum SGP} := {
   SGP_PSL: PreciseSepLog Pred;
   SGP_OSL: OverlapSepLog Pred;
   SGP_DSL: DisjointedSepLog Pred;
@@ -94,19 +92,20 @@ Class SpatialGraphStrongAssum {V E GV GE Pred: Type} (SGP: SpatialGraphPred V E 
 }.
 
 Existing Instances SGP_PSL SGP_OSL SGP_DSL SGP_COSL VP_MSL VP_sMSL EP_MSL EP_sMSL.
+ *)
 
-Class SpatialGraphConstructor (V E DV DE GV GE: Type) {SGBA: SpatialGraphBasicAssum V E}:= {
-  compute_vgamma: LabeledGraph V E DV DE -> V -> GV;
-  compute_egamma: LabeledGraph V E DV DE -> E -> GE
+Class PointwiseGraphConstructor (V E DV DE DG GV GE: Type) {SGBA: PointwiseGraphBasicAssum V E}:= {
+  compute_vgamma: LabeledGraph V E DV DE DG -> V -> GV;
+  compute_egamma: LabeledGraph V E DV DE DG -> E -> GE
 }.
 
-Section Local_SpatialGraphConstructor.
+Section Local_PointwiseGraphConstructor.
 
 Local Coercion pg_lg: LabeledGraph >-> PreGraph.
 
-Class Local_SpatialGraphConstructor (V E DV DE GV GE: Type) {SGBA: SpatialGraphBasicAssum V E} {SGC: SpatialGraphConstructor V E DV DE GV GE} := {
-  vguard: LabeledGraph V E DV DE -> V -> Prop;
-  compute_vgamma_local: forall (G1 G2: LabeledGraph V E DV DE) (x: V),
+Class Local_PointwiseGraphConstructor (V E DV DE DG GV GE: Type) {SGBA: PointwiseGraphBasicAssum V E} {SGC: PointwiseGraphConstructor V E DV DE DG GV GE} := {
+  vguard: LabeledGraph V E DV DE DG -> V -> Prop;
+  compute_vgamma_local: forall (G1 G2: LabeledGraph V E DV DE DG) (x: V),
     vguard G1 x ->
     vguard G2 x ->
     vlabel G1 x = vlabel G2 x ->
@@ -114,8 +113,8 @@ Class Local_SpatialGraphConstructor (V E DV DE GV GE: Type) {SGBA: SpatialGraphB
     (forall e, evalid G1 e -> src G1 e = x -> evalid G2 e -> src G2 e = x -> dst G1 e = dst G2 e) ->
     (forall e, evalid G1 e -> src G1 e = x -> evalid G2 e -> src G2 e = x -> elabel G1 e = elabel G2 e) ->
     compute_vgamma G1 x = compute_vgamma G2 x;
-  eguard: LabeledGraph V E DV DE -> E -> Prop;
-  compute_egamma_local: forall (G1 G2: LabeledGraph V E DV DE) (e: E),
+  eguard: LabeledGraph V E DV DE DG -> E -> Prop;
+  compute_egamma_local: forall (G1 G2: LabeledGraph V E DV DE DG) (e: E),
     eguard G1 e ->
     eguard G2 e ->
     elabel G1 e = elabel G2 e ->
@@ -124,22 +123,22 @@ Class Local_SpatialGraphConstructor (V E DV DE GV GE: Type) {SGBA: SpatialGraphB
     compute_egamma G1 e = compute_egamma G2 e
 }.
 
-End Local_SpatialGraphConstructor.
+End Local_PointwiseGraphConstructor.
 
 Section GENERAL_SPATIAL_GRAPH.
 
 Context {V E GV GE: Type}.
-Context {SGBA: SpatialGraphBasicAssum V E}.
+Context {SGBA: PointwiseGraphBasicAssum V E}.
 
 Section PURE_FACTS.
 
-Definition vertices_identical (PV: Ensemble V): relation (SpatialGraph V E GV GE) :=
+Definition vertices_identical (PV: Ensemble V): relation (PointwiseGraph V E GV GE) :=
   respectful_relation vgamma (guarded_pointwise_relation PV eq).
 
-Definition vertices_identical0: relation (SpatialGraph V E GV GE) :=
+Definition vertices_identical0: relation (PointwiseGraph V E GV GE) :=
   vertices_identical (fun _ => True).
 
-Definition vertices_identical2 (PV1 PV2: Ensemble V) (g1 g2: SpatialGraph V E GV GE) : Prop :=
+Definition vertices_identical2 (PV1 PV2: Ensemble V) (g1 g2: PointwiseGraph V E GV GE) : Prop :=
   Same_set PV1 PV2 /\ vertices_identical PV1 g1 g2.
 
 Instance vertices_identical_proper: Proper (Same_set ==> eq ==> eq ==> iff) vertices_identical.
@@ -228,11 +227,11 @@ Proof.
   tauto.
 Qed.
 
-Definition spatialgraph_vgen (g: SpatialGraph V E GV GE) (x: V) (a: GV) : SpatialGraph V E GV GE := Build_SpatialGraph _ _ _ _ _ _ (pg_sg g) (fun v => if (equiv_dec x v) then a else vgamma g v) (egamma g).
+Definition spatialgraph_vgen (g: PointwiseGraph V E GV GE) (x: V) (a: GV) : PointwiseGraph V E GV GE := Build_PointwiseGraph _ _ _ _ _ _ (pg_sg g) (fun v => if (equiv_dec x v) then a else vgamma g v) (egamma g).
 
-Definition single_vertex_spatialgraph (x: V) (a: GV) (default_e: GE) : SpatialGraph V E GV GE := Build_SpatialGraph _ _ _ _ _ _ (single_vertex_pregraph x) (fun _ => a) (fun _ => default_e).
+Definition single_vertex_spatialgraph (x: V) (a: GV) (default_e: GE) : PointwiseGraph V E GV GE := Build_PointwiseGraph _ _ _ _ _ _ (single_vertex_pregraph x) (fun _ => a) (fun _ => default_e).
 
-Lemma update_self: forall (g: SpatialGraph V E GV GE) (x: V) (d: GV), vgamma g x = d -> vertices_identical0 g (spatialgraph_vgen g x d).
+Lemma update_self: forall (g: PointwiseGraph V E GV GE) (x: V) (d: GV), vgamma g x = d -> vertices_identical0 g (spatialgraph_vgen g x d).
 Proof.
   intros.
   unfold vertices_identical0.
@@ -242,7 +241,7 @@ Proof.
   destruct_eq_dec x x0; subst; auto.
 Qed.
 
-Lemma update_irr: forall (PV: Ensemble V) (g: SpatialGraph V E GV GE) (x: V) (d: GV), ~ PV x -> vertices_identical PV g (spatialgraph_vgen g x d).
+Lemma update_irr: forall (PV: Ensemble V) (g: PointwiseGraph V E GV GE) (x: V) (d: GV), ~ PV x -> vertices_identical PV g (spatialgraph_vgen g x d).
 Proof.
   intros.
   unfold vertices_identical0.
@@ -253,19 +252,27 @@ Proof.
   tauto.
 Qed.
 
-Definition edges_identical (PE: Ensemble E) (g1 g2: SpatialGraph V E GV GE) : Prop :=
+Definition edges_identical (PE: Ensemble E) (g1 g2: PointwiseGraph V E GV GE) : Prop :=
   guarded_pointwise_relation PE eq (egamma g1) (egamma g2).
 
-Definition edges_identical0 (g1 g2: SpatialGraph V E GV GE) : Prop :=
+Definition edges_identical0 (g1 g2: PointwiseGraph V E GV GE) : Prop :=
   pointwise_relation _ eq (egamma g1) (egamma g2).
 
-Definition edges_identical2 (PE1 PE2: Ensemble E) (g1 g2: SpatialGraph V E GV GE) : Prop :=
+Definition edges_identical2 (PE1 PE2: Ensemble E) (g1 g2: PointwiseGraph V E GV GE) : Prop :=
   Same_set PE1 PE2 /\
   guarded_pointwise_relation PE1 eq (egamma g1) (egamma g2).
 
+Instance edges_identical_proper: Proper (Same_set ==> eq ==> eq ==> iff) edges_identical.
+Proof.
+  hnf; intros. hnf; intros G1 G1' ?; subst G1'. hnf; intros G2 G2' ?; subst G2'. unfold edges_identical, respectful_relation. split; intros.
+  + rewrite guarded_pointwise_relation_spec in H0 |- *. intros; apply H0. rewrite (app_same_set H); auto.
+  + rewrite guarded_pointwise_relation_spec in H0 |- *. intros; apply H0. rewrite <- (app_same_set H); auto.
+Qed.
+Global Existing Instance edges_identical_proper.
+
 (* TODO: add some properties for edges_identical. *)
 
-Lemma spacialgraph_gen_vgamma: forall (g: SpatialGraph V E GV GE) (x: V) (d: GV), vgamma (spatialgraph_vgen g x d) x = d.
+Lemma spacialgraph_gen_vgamma: forall (g: PointwiseGraph V E GV GE) (x: V) (d: GV), vgamma (spatialgraph_vgen g x d) x = d.
 Proof.
   intros.
   simpl.
@@ -278,9 +285,9 @@ End PURE_FACTS.
 Section SPATIAL_FACTS.
 
 Context {Pred: Type}.
-Context {SGP: SpatialGraphPred V E GV GE Pred}.
-Context {SGA: SpatialGraphAssum SGP}.
-Notation Graph := (SpatialGraph V E GV GE).
+Context {SGP: PointwiseGraphPred V E GV GE Pred}.
+Context {SGA: PointwiseGraphAssum SGP}.
+Notation Graph := (PointwiseGraph V E GV GE).
 
 Definition graph_vcell (g: Graph) (v : V) : Pred := vertex_at v (vgamma g v).
 Definition graph_ecell (g: Graph) (e : E) : Pred := edge_at e (egamma g e).
@@ -474,11 +481,11 @@ Lemma vertices_at1: forall (g: Graph) P x0 d,
 Proof.
   intros.
   replace (@vertex_at _ _ _ _ _ SGP x0 d) with (graph_vcell g x0).
-  Focus 2. {
+  2: {
     simpl.
     unfold graph_vcell; simpl.
     rewrite H0; auto.
-  } Unfocus.
+  }
   erewrite vertices_at_Same_set.
   + apply pred_sepcon1.
   + rewrite Same_set_spec.
@@ -519,7 +526,7 @@ Proof.
   apply pred_sepcon_sepcon; auto.
 Qed.
 
-Lemma sepcon_unique_graph_vcell {SGA_vs: SpatialGraphAssum_vs SGP}:
+Lemma sepcon_unique_graph_vcell {SGA_vs: PointwiseGraphAssum_vs SGP}:
   sepcon_unique1 graph_vcell.
 Proof.
   pose proof vertex_at_sep.
@@ -529,7 +536,7 @@ Proof.
   apply H.
 Qed.
 
-Lemma vertices_at_sepcon_unique_x1 {SGA_vs: SpatialGraphAssum_vs SGP}: forall (g: Graph) x P d,
+Lemma vertices_at_sepcon_unique_x1 {SGA_vs: PointwiseGraphAssum_vs SGP}: forall (g: Graph) x P d,
   vertices_at P g * vertex_at x d |-- !! (~ P x).
 Proof.
   intros.
@@ -541,7 +548,7 @@ Proof.
   normalize.
 Qed.
 
-Lemma vertices_at_sepcon_unique_1x {SGA_vs: SpatialGraphAssum_vs SGP}: forall (g: Graph) x P d,
+Lemma vertices_at_sepcon_unique_1x {SGA_vs: PointwiseGraphAssum_vs SGP}: forall (g: Graph) x P d,
   vertex_at x d * vertices_at P g |-- !! (~ P x).
 Proof.
   intros.
@@ -549,7 +556,7 @@ Proof.
   apply vertices_at_sepcon_unique_x1; auto.
 Qed.
 
-Lemma vertices_at_sepcon_unique_xx {SGA_vs: SpatialGraphAssum_vs SGP}: forall (g1 g2: Graph) P1 P2,
+Lemma vertices_at_sepcon_unique_xx {SGA_vs: PointwiseGraphAssum_vs SGP}: forall (g1 g2: Graph) P1 P2,
   vertices_at P1 g1 * vertices_at P2 g2 |-- !! Disjoint _ P1 P2.
 Proof.
   intros.
@@ -580,9 +587,10 @@ Proof.
   apply H; auto.
 Qed.
 
+(*
 Section SPATIAL_FACTS_STRONG_ASSU.
 
-Context {SGSA: SpatialGraphStrongAssum SGP}.
+Context {SGSA: PointwiseGraphStrongAssum SGP}.
 
 Lemma precise_graph_cell: forall g v, precise (graph_vcell g v).
 Proof. intros. unfold graph_vcell. apply (@mapsto_precise _ _ _ _ _ _ _ _ VP_MSL). Qed.  
@@ -603,6 +611,7 @@ Proof.
 Qed.  
 
 End SPATIAL_FACTS_STRONG_ASSU.
+ *)
 
 End SPATIAL_FACTS.
 
@@ -610,20 +619,20 @@ Section SPATIAL_CONSTRUCTOR.
 
 Local Coercion pg_lg: LabeledGraph >-> PreGraph.
 
-Context {DV DE: Type}.
-Context {SGC: SpatialGraphConstructor V E DV DE GV GE}.
-Context {L_SGC: Local_SpatialGraphConstructor V E DV DE GV GE}.
+Context {DV DE DG: Type}.
+Context {SGC: PointwiseGraphConstructor V E DV DE DG GV GE}.
+Context {L_SGC: Local_PointwiseGraphConstructor V E DV DE DG GV GE}.
 
 Section PURE_FACTS.
 
-Definition Graph_SpatialGraph (G: LabeledGraph V E DV DE) : SpatialGraph V E GV GE :=
-  Build_SpatialGraph _ _ _ _ _ _ G (compute_vgamma G) (compute_egamma G).
+Definition Graph_PointwiseGraph (G: LabeledGraph V E DV DE DG) : PointwiseGraph V E GV GE :=
+  Build_PointwiseGraph _ _ _ _ _ _ G (compute_vgamma G) (compute_egamma G).
 
-Lemma GSG_VGenPreserve: forall P (G: LabeledGraph V E DV DE) x lx gx,
-  gx = vgamma (Graph_SpatialGraph (labeledgraph_vgen G x lx)) x ->
+Lemma GSG_VGenPreserve: forall P (G: LabeledGraph V E DV DE DG) x lx gx,
+  gx = vgamma (Graph_PointwiseGraph (labeledgraph_vgen G x lx)) x ->
   Included P (vguard G) ->
   Included P (vguard (labeledgraph_vgen G x lx)) ->
-  vertices_identical P (Graph_SpatialGraph (labeledgraph_vgen G x lx)) (spatialgraph_vgen (Graph_SpatialGraph G) x gx).
+  vertices_identical P (Graph_PointwiseGraph (labeledgraph_vgen G x lx)) (spatialgraph_vgen (Graph_PointwiseGraph G) x gx).
 Proof.
   intros.
   rewrite vertices_identical_spec.
@@ -642,13 +651,13 @@ Proof.
 Qed.
 
 (* The counterpart of subgraph version is not true. *)
-Lemma GSG_PartialGraphPreserve: forall P (G1 G2: LabeledGraph V E DV DE),
+Lemma GSG_PartialGraphPreserve: forall P (G1 G2: LabeledGraph V E DV DE DG),
   Included P (vguard G1) ->
   Included P (vguard G2) ->
   Included P (vvalid G1) ->
   Included P (vvalid G2) ->
   ((predicate_partial_labeledgraph G1 P) ~=~ (predicate_partial_labeledgraph G2 P))%LabeledGraph ->
-  vertices_identical P (Graph_SpatialGraph G1) (Graph_SpatialGraph G2).
+  vertices_identical P (Graph_PointwiseGraph G1) (Graph_PointwiseGraph G2).
 Proof.
   intros.
   unfold vertices_identical, respectful_relation.
@@ -669,13 +678,13 @@ Proof.
     firstorder.
 Qed.
 
-Lemma GSG_PartialGraphPreserve2: forall P1 P2 (G1 G2: LabeledGraph V E DV DE),
+Lemma GSG_PartialGraphPreserve2: forall P1 P2 (G1 G2: LabeledGraph V E DV DE DG),
   Included P1 (vguard G1) ->
   Included P2 (vguard G2) ->
   Included P1 (vvalid G1) ->
   Included P2 (vvalid G2) ->
   ((predicate_partial_labeledgraph G1 P1) ~=~ (predicate_partial_labeledgraph G2 P2))%LabeledGraph ->
-  vertices_identical2 P1 P2 (Graph_SpatialGraph G1) (Graph_SpatialGraph G2).
+  vertices_identical2 P1 P2 (Graph_PointwiseGraph G1) (Graph_PointwiseGraph G2).
 Proof.
   intros.
   assert (Same_set P1 P2).
@@ -694,19 +703,21 @@ End PURE_FACTS.
 Section SPATIAL_FACTS.
 
 Context {Pred: Type}.
-Context {SGP: SpatialGraphPred V E GV GE Pred}.
-Context {SGA: SpatialGraphAssum SGP}.
-Notation Graph := (LabeledGraph V E DV DE).
+Context {SGP: PointwiseGraphPred V E GV GE Pred}.
+Context {SGA: PointwiseGraphAssum SGP}.
+Notation Graph := (LabeledGraph V E DV DE DG).
 
-Definition full_vertices_at (g: Graph): Pred := vertices_at (vvalid g) (Graph_SpatialGraph g).
+Definition full_vertices_at (g: Graph): Pred := vertices_at (vvalid g) (Graph_PointwiseGraph g).
 
-Definition reachable_vertices_at (x : V) (g: Graph): Pred := vertices_at (reachable g x) (Graph_SpatialGraph g).
+Definition reachable_vertices_at (x : V) (g: Graph): Pred := vertices_at (reachable g x) (Graph_PointwiseGraph g).
 
-Definition reachable_dag_vertices_at (x: V) (g: Graph): Pred := !! localDag g x && vertices_at (reachable g x) (Graph_SpatialGraph g).
+Definition reachable_vertices_at' (x : V) (g1 g2: Graph): Pred := vertices_at (reachable g2 x) (Graph_PointwiseGraph g1).
 
-Definition reachable_through_vertices_at (S : list V) (g : Graph): Pred := vertices_at (reachable_through_set g S) (Graph_SpatialGraph g).
+Definition reachable_dag_vertices_at (x: V) (g: Graph): Pred := !! localDag g x && vertices_at (reachable g x) (Graph_PointwiseGraph g).
 
-Definition reachable_through_dag_vertices_at (S : list V) (g : Graph): Pred := !! (Forall (localDag g) S) && vertices_at (reachable_through_set g S) (Graph_SpatialGraph g).
+Definition reachable_through_vertices_at (S : list V) (g : Graph): Pred := vertices_at (reachable_through_set g S) (Graph_PointwiseGraph g).
+
+Definition reachable_through_dag_vertices_at (S : list V) (g : Graph): Pred := !! (Forall (localDag g) S) && vertices_at (reachable_through_set g S) (Graph_PointwiseGraph g).
 
 Lemma va_reachable_reachable_through: forall g x, reachable_vertices_at x g = reachable_through_vertices_at (x :: nil) g.
 Proof.
@@ -719,7 +730,7 @@ Proof.
 Qed.
 
 Lemma va_reachable_vertices_identical2: forall (g1 g2 : Graph) x,
-  vertices_identical2 (reachable g1 x) (reachable g2 x) (Graph_SpatialGraph g1) (Graph_SpatialGraph g2) ->
+  vertices_identical2 (reachable g1 x) (reachable g2 x) (Graph_PointwiseGraph g1) (Graph_PointwiseGraph g2) ->
   reachable_vertices_at x g1 = reachable_vertices_at x g2.
 Proof.
   intros.
@@ -755,7 +766,7 @@ Proof.
 Qed.
 
 Lemma va_reachable_through_vertices_identical2: forall (g1 g2 : Graph) S,
-  vertices_identical2 (reachable_through_set g1 S) (reachable_through_set g2 S) (Graph_SpatialGraph g1) (Graph_SpatialGraph g2) ->
+  vertices_identical2 (reachable_through_set g1 S) (reachable_through_set g2 S) (Graph_PointwiseGraph g1) (Graph_PointwiseGraph g2) ->
   reachable_through_vertices_at S g1 = reachable_through_vertices_at S g2.
 Proof.
   intros.
@@ -802,7 +813,7 @@ Proof.
   apply reachable_head_valid in H0; auto.
 Qed.
 
-Lemma localDag_vertices_unfold: forall (g: Graph) x S, vvalid g x -> localDag g x -> step_list g x S -> reachable_vertices_at x g = vertex_at x (vgamma (Graph_SpatialGraph g) x) * reachable_through_vertices_at S g.
+Lemma localDag_vertices_unfold: forall (g: Graph) x S, vvalid g x -> localDag g x -> step_list g x S -> reachable_vertices_at x g = vertex_at x (vgamma (Graph_PointwiseGraph g) x) * reachable_through_vertices_at S g.
 Proof.
   intros.
   symmetry.
@@ -830,10 +841,10 @@ Proof.
   apply H8; auto.
 Qed.
 
-Lemma va_reachable_dag_unfold {SGA_vs: SpatialGraphAssum_vs SGP}: forall (g: Graph) x S d,
+Lemma va_reachable_dag_unfold {SGA_vs: PointwiseGraphAssum_vs SGP}: forall (g: Graph) x S d,
   vvalid g x ->
   step_list g x S ->
-  vgamma (Graph_SpatialGraph g) x = d ->
+  vgamma (Graph_PointwiseGraph g) x = d ->
   reachable_dag_vertices_at x g = vertex_at x d * reachable_through_dag_vertices_at S g.
 Proof.
   intros.
@@ -847,7 +858,7 @@ Proof.
       rewrite (H0 x0) in H2; auto.
     - apply derives_refl'.
       apply localDag_vertices_unfold; auto.
-  + assert ((vertex_at x (vgamma (Graph_SpatialGraph g) x): Pred) * vertices_at (reachable_through_set g S) (Graph_SpatialGraph g)
+  + assert ((vertex_at x (vgamma (Graph_PointwiseGraph g) x): Pred) * vertices_at (reachable_through_set g S) (Graph_PointwiseGraph g)
    |-- !!localDag g x).
     - eapply derives_trans; [apply vertices_at_sepcon_unique_1x; auto |].
       apply prop_derives; intro.
@@ -857,10 +868,10 @@ Proof.
       symmetry; apply localDag_vertices_unfold; auto.
 Qed.
 
-Lemma va_reachable_dag_update_unfold {SGA_vs: SpatialGraphAssum_vs SGP}: forall (g: Graph) x S d d',
+Lemma va_reachable_dag_update_unfold {SGA_vs: PointwiseGraphAssum_vs SGP}: forall (g: Graph) x S d d',
   vvalid g x ->
   step_list g x S ->
-  vgamma (Graph_SpatialGraph (labeledgraph_vgen g x d)) x = d' ->
+  vgamma (Graph_PointwiseGraph (labeledgraph_vgen g x d)) x = d' ->
   Included (reachable_through_set g S) (vguard g) ->
   Included (reachable_through_set g S) (vguard (labeledgraph_vgen g x d)) ->
   reachable_dag_vertices_at x (labeledgraph_vgen g x d) = vertex_at x d' * reachable_through_dag_vertices_at S g.
@@ -871,7 +882,7 @@ Proof.
   normalize.
   f_equal.
   rewrite (add_andp _ _ (vertices_at_sepcon_unique_1x _ _ _ _)).
-  rewrite (add_andp _ _ (vertices_at_sepcon_unique_1x (Graph_SpatialGraph g) _ _ d')).
+  rewrite (add_andp _ _ (vertices_at_sepcon_unique_1x (Graph_PointwiseGraph g) _ _ d')).
   rewrite !(andp_comm _ (!! _)).
   apply andp_prop_ext; [reflexivity |].
   intros.
@@ -890,7 +901,7 @@ Proof.
 Qed.
 
 Lemma va_reachable_root_stable_ramify: forall (g: Graph) (x: V) (gx: GV),
-  vgamma (Graph_SpatialGraph g) x = gx ->
+  vgamma (Graph_PointwiseGraph g) x = gx ->
   vvalid g x ->
   @derives Pred _
     (reachable_vertices_at x g)
@@ -905,8 +916,8 @@ Qed.
 
 Lemma va_reachable_root_update_ramify: forall (g: Graph) (x: V) (lx: DV) (gx gx': GV),
   vvalid g x ->
-  vgamma (Graph_SpatialGraph g) x = gx ->
-  vgamma (Graph_SpatialGraph (labeledgraph_vgen g x lx)) x = gx' ->
+  vgamma (Graph_PointwiseGraph g) x = gx ->
+  vgamma (Graph_PointwiseGraph (labeledgraph_vgen g x lx)) x = gx' ->
   Included (Intersection V (reachable g x) (Complement V (eq x))) (vguard g) ->
   Included (Intersection V (reachable g x) (Complement V (eq x))) (vguard (labeledgraph_vgen g x lx)) ->
   @derives Pred _
@@ -948,7 +959,7 @@ Qed.
 
 Lemma va_reachable_internal_stable_ramify: forall (g: Graph) (x y: V) (gy: GV),
   vvalid g y ->
-  vgamma (Graph_SpatialGraph g) y = gy ->
+  vgamma (Graph_PointwiseGraph g) y = gy ->
   reachable g x y ->
   @derives _ _
     (reachable_vertices_at x g)
@@ -964,10 +975,10 @@ Lemma va_labeledgraph_add_edge_eq: forall (g: Graph) e s d data,
   ~ evalid g e ->
   let g' := labeledgraph_add_edge g e s d data in
 (*  vertices_identical (Intersection V (vvalid g) (fun x : V => s <> x))
-     (Graph_SpatialGraph g) (Graph_SpatialGraph g') -> *)
+     (Graph_PointwiseGraph g) (Graph_PointwiseGraph g') -> *)
   Included (Intersection _ (vvalid g) (fun x => s <> x)) (vguard g) ->
   Included (Intersection _ (vvalid g') (fun x => s <> x)) (vguard g') ->
-  vertices_at (Intersection _ (vvalid g) (fun x => s <> x)) (Graph_SpatialGraph g) = vertices_at (Intersection _ (vvalid g') (fun x => s <> x)) (Graph_SpatialGraph g').
+  vertices_at (Intersection _ (vvalid g) (fun x => s <> x)) (Graph_PointwiseGraph g) = vertices_at (Intersection _ (vvalid g') (fun x => s <> x)) (Graph_PointwiseGraph g').
 Proof.
   intros.
   apply vertices_at_vertices_identical2.
@@ -979,17 +990,17 @@ Proof.
   + reflexivity.
   + intros.
     simpl.
-    unfold add_evalid, update_src.
+    unfold addValidFunc, updateEdgeFunc.
     rewrite Intersection_spec in H2.
     destruct H2.
     destruct_eq_dec e e0.
     - subst e0; tauto.
     - assert (e0 <> e) by congruence; tauto.
-  + simpl; unfold add_evalid, update_src, update_dst; intros.
+  + simpl; unfold addValidFunc, updateEdgeFunc; intros.
     destruct_eq_dec e e0.
     - subst e0; exfalso; tauto.
     - reflexivity.
-  + simpl; unfold add_evalid, update_src, update_dst, update_elabel; intros.
+  + simpl; unfold addValidFunc, updateEdgeFunc, update_elabel; intros.
     destruct_eq_dec e e0.
     - subst e0; exfalso; tauto.
     - reflexivity.
@@ -997,7 +1008,7 @@ Qed.
 
 Lemma partialgraph_update:
   forall (g g': Graph) (S1 S1' S2: list V),
-    (vertices_identical2 (reachable_through_set (predicate_partialgraph g (Intersection _ (vvalid g) (Complement _ (reachable_through_set g S1)))) S2) (reachable_through_set (predicate_partialgraph g' (Intersection _ (vvalid g') (Complement _ (reachable_through_set g' S1')))) S2) (Graph_SpatialGraph g) (Graph_SpatialGraph g')) ->
+    (vertices_identical2 (reachable_through_set (predicate_partialgraph g (Intersection _ (vvalid g) (Complement _ (reachable_through_set g S1)))) S2) (reachable_through_set (predicate_partialgraph g' (Intersection _ (vvalid g') (Complement _ (reachable_through_set g' S1')))) S2) (Graph_PointwiseGraph g) (Graph_PointwiseGraph g')) ->
     Included (reachable_through_set (predicate_partialgraph g (Intersection _ (vvalid g) (Complement _ (reachable_through_set g S1)))) S2) (vguard g) ->
     Included (reachable_through_set (predicate_partialgraph g' (Intersection _ (vvalid g') (Complement _ (reachable_through_set g' S1')))) S2) (vguard g') ->
     reachable_through_vertices_at (S1 ++ S2) g |-- reachable_through_vertices_at S1 g * (reachable_through_vertices_at S1' g' -* reachable_through_vertices_at (S1' ++ S2) g').
@@ -1048,9 +1059,11 @@ Proof.
   apply vertices_at_ramify1; auto.
   apply reachable_refl; auto.
 Qed.
-*)
+ *)
 
-Context {SGSA: SpatialGraphStrongAssum SGP}.
+(*
+
+Context {SGSA: PointwiseGraphStrongAssum SGP}.
 
 Fixpoint graphs (l : list V) (g: Graph) :=
   match l with
@@ -1084,21 +1097,21 @@ Proof.
     unfold reachable_through_vertices_at, reachable_vertices_at, vertices_at, pred_sepcon. clear IHS. apply pred_ext.
     - normalize_overlap. intros. rename x into la.
       normalize_overlap. rename x into lS. normalize_overlap.
-      rewrite (add_andp _ _ (iter_sepcon_unique_nodup la (sepcon_unique_graph_cell (Graph_SpatialGraph g)))).
-      rewrite (add_andp _ _ (iter_sepcon_unique_nodup lS (sepcon_unique_graph_cell (Graph_SpatialGraph g)))).
+      rewrite (add_andp _ _ (iter_sepcon_unique_nodup la (sepcon_unique_graph_cell (Graph_PointwiseGraph g)))).
+      rewrite (add_andp _ _ (iter_sepcon_unique_nodup lS (sepcon_unique_graph_cell (Graph_PointwiseGraph g)))).
       normalize_overlap.
-      rewrite (iter_sepcon_ocon equiv_dec); auto. apply (exp_right (remove_dup equiv_dec (la ++ lS))).
+      rewrite (iter_sepcon_ocon equiv_dec); auto. apply (exp_right (nodup equiv_dec (la ++ lS))).
       apply andp_right; [apply andp_right |].
       * apply prop_right.
         unfold reachable_set_list in *.
         unfold reachable_list in *. intros.
-        rewrite <- remove_dup_in_inv.
+        rewrite nodup_In.
         rewrite reachable_through_set_eq.
         specialize (H1 x). specialize (H x).
         split; intro; [apply in_app_or in H3 | apply in_or_app];
         destruct H3; [left | right | left | right]; tauto.
       * apply prop_right.
-        apply remove_dup_nodup.
+        apply NoDup_nodup.
       * auto.
       * apply precise_graph_cell.
       * apply joinable_graph_cell.
@@ -1107,13 +1120,13 @@ Proof.
       normalize_overlap. apply (exp_right la).
       destruct (construct_reachable_set_list g S) as [lS [? ?]]; [intros; apply V_DEC; right; auto |].
       normalize_overlap. apply (exp_right lS). normalize_overlap.
-      rewrite (add_andp _ _ (iter_sepcon_unique_nodup l (sepcon_unique_graph_cell (Graph_SpatialGraph g)))).
+      rewrite (add_andp _ _ (iter_sepcon_unique_nodup l (sepcon_unique_graph_cell (Graph_PointwiseGraph g)))).
       normalize. rewrite (iter_sepcon_ocon equiv_dec); auto.
       2: apply precise_graph_cell.
       2: apply joinable_graph_cell.
-      rewrite iter_sepcon_permutation with (l2 := remove_dup equiv_dec (la ++ lS)); auto.
-      apply NoDup_Permutation; auto. apply remove_dup_nodup.
-      intros. rewrite <- remove_dup_in_inv. clear -H H2 H5.
+      rewrite iter_sepcon_permutation with (l2 := nodup equiv_dec (la ++ lS)); auto.
+      apply NoDup_Permutation; auto. apply NoDup_nodup.
+      intros. rewrite nodup_In. clear -H H2 H5.
       specialize (H x). specialize (H2 x). specialize (H5 x). rewrite H.
       rewrite reachable_through_set_eq. rewrite in_app_iff. tauto.
 Qed.
@@ -1123,10 +1136,10 @@ Lemma graph_unfold:
          (V_DEC: forall x : V, In x S -> Decidable (vvalid g x)),
     vvalid g x ->
     step_list g x S ->
-    reachable_vertices_at x g = vertex_at x (vgamma (Graph_SpatialGraph g) x) ⊗ graphs S g.
+    reachable_vertices_at x g = vertex_at x (vgamma (Graph_PointwiseGraph g) x) ⊗ graphs S g.
 Proof.
   intros. rewrite graphs_graphs'; auto. unfold reachable_vertices_at. unfold reachable_through_vertices_at.
-  change (vertex_at x (vgamma (Graph_SpatialGraph g) x)) with (graph_vcell (Graph_SpatialGraph g) x).
+  change (vertex_at x (vgamma (Graph_PointwiseGraph g) x)) with (graph_vcell (Graph_PointwiseGraph g) x).
   assert (forall y, reachable g x y <-> x = y \/ reachable_through_set g S y). {
     intros. rewrite (reachable_ind' g x S); intuition.
   } symmetry. apply pred_sepcon_ocon1; intros.
@@ -1146,9 +1159,8 @@ Proof.
   + destruct (construct_reachable_list g x H) as [l [? ?]].
     left; exists l. intuition.
   + apply precise_graph_cell.
-  + intros. apply eq_as_set_permutation; auto. 1: apply SGBA_VE.
-    destruct H0, H1. hnf. unfold Sublist.
-    split; intros; specialize (H0 a); specialize (H1 a); intuition.
+  + intros. apply NoDup_Permutation; auto. 
+    destruct H0, H1. split; intros; specialize (H0 x0); specialize (H1 x0); intuition.
 Qed.
 
 Lemma subgraph_update:
@@ -1164,7 +1176,7 @@ Lemma subgraph_update:
         (predicate_partialgraph g'
            (Intersection V (vvalid g')
               (Complement V (reachable_through_set g' S1')))) S2)
-     (Graph_SpatialGraph g) (Graph_SpatialGraph g') ->
+     (Graph_PointwiseGraph g) (Graph_PointwiseGraph g') ->
     Included
      (reachable_through_set
         (predicate_partialgraph g
@@ -1185,6 +1197,8 @@ Proof.
   2: intros; apply X; rewrite in_app_iff; left; auto.
   apply partialgraph_update; auto.
 Qed.
+
+ *)
 
 End SPATIAL_FACTS.
 

@@ -19,7 +19,7 @@ Section AUXILIARY_COMPONENT_CONSTR.
 Context {V E: Type}.
 Context {EV: EqDec V eq}.
 Context {EE: EqDec E eq}.
-Context {DV DE: Type}.
+Context {DV DE DG: Type}.
 
 (******************)
 (* Definitions    *)
@@ -51,7 +51,8 @@ Definition predicate_evalid (g: PreGraph V E) (p: V -> Prop): Ensemble E :=
 Definition predicate_weak_evalid (g: PreGraph V E) (p: V -> Prop): Ensemble E :=
   fun e => evalid g e /\ p (src g e).
 
-Definition add_evalid (evalid: E -> Prop) (e0: E): E -> Prop := fun e => evalid e \/ e = e0.
+Definition addValidFunc {T: Type} (v: T) (validFunc: Ensemble T) : Ensemble T :=
+  fun n => validFunc n \/ n = v.
 
 Definition update_vlabel (vlabel: V -> DV) (x: V) (d: DV) :=
   fun v => if equiv_dec x v then d else vlabel v.
@@ -59,11 +60,8 @@ Definition update_vlabel (vlabel: V -> DV) (x: V) (d: DV) :=
 Definition update_elabel (elabel: E -> DE) (e0: E) (d: DE) :=
   fun e => if equiv_dec e0 e then d else elabel e.
 
-Definition update_src (source : E -> V) (e : E) (origin: V) :=
-  fun v => if equiv_dec e v then origin else source v.
-
-Definition update_dst (destination : E -> V) (e : E) (target: V) :=
-  fun v => if equiv_dec e v then target else destination v.
+Definition updateEdgeFunc (edgeFunc: E -> V) (e: E) (v: V) :
+  E -> V := fun n => if equiv_dec e n then v else edgeFunc n.
 
 (******************)
 (* Properties     *)
@@ -145,11 +143,37 @@ Definition empty_pregraph (src0 dst0: E -> V): Graph :=
 Definition single_vertex_pregraph (v0: V): Graph :=
   @Build_PreGraph V E EV EE (eq v0) (fun e => False) (fun e => v0) (fun e => v0).
 
+Definition pregraph_add_vertex (g: Graph) (v: V) : Graph :=
+  @Build_PreGraph V E EV EE (addValidFunc v (vvalid g)) (evalid g) (src g) (dst g).
+
+Lemma addVertex_preserve_vvalid: forall g v v', vvalid g v -> vvalid (pregraph_add_vertex g v') v. Proof. intros; hnf; left; auto. Qed.
+
+Lemma addVertex_add_vvalid: forall g v, vvalid (pregraph_add_vertex g v) v. Proof. intros. hnf. right; auto. Qed.
+
+Lemma addVertex_preserve_evalid: forall g e v, evalid g e -> evalid (pregraph_add_vertex g v) e. Proof. intros; simpl; auto. Qed.
+
 Definition pregraph_add_edge (g : Graph) (e : E) (o t : V) :=
-  @Build_PreGraph V E EV EE (vvalid g) (add_evalid (evalid g) e) (update_src (src g) e o) (update_dst (dst g) e t).
+  @Build_PreGraph V E EV EE (vvalid g) (addValidFunc e (evalid g)) (updateEdgeFunc (src g) e o) (updateEdgeFunc (dst g) e t).
+
+Definition pregraph_add_whole_edge (g: Graph) (e: E) (s t: V) : Graph :=
+  Build_PreGraph _ _ (addValidFunc t (vvalid g)) (addValidFunc e (evalid g)) (updateEdgeFunc (src g) e s) (updateEdgeFunc (dst g) e t).
+
+Lemma addEdge_preserve_vvalid: forall g v e s t, vvalid g v -> vvalid (pregraph_add_whole_edge g e s t) v. Proof. intros. hnf; left; auto. Qed.
+
+Lemma addEdge_preserve_evalid: forall g e e' s t, evalid g e -> evalid (pregraph_add_whole_edge g e' s t) e. Proof. intros. hnf; left; auto. Qed.
+
+Lemma addEdge_add_vvalid: forall g e s t, vvalid (pregraph_add_whole_edge g e s t) t. Proof. intros. hnf. right; auto. Qed.
+
+Lemma addEdge_add_evalid: forall g e s t, evalid (pregraph_add_whole_edge g e s t) e. Proof. intros. hnf. right; auto. Qed.
+
+Lemma addEdge_src_iff: forall g e s t e' x, src (pregraph_add_whole_edge g e s t) e' = x <-> ((e <> e' /\ src g e' = x) \/ (e = e' /\ s = x)).
+Proof. intros. simpl. unfold updateEdgeFunc. destruct (equiv_dec e e'); intuition. Qed.
+
+Lemma addEdge_dst_iff: forall g e s t e' x, dst (pregraph_add_whole_edge g e s t) e' = x <-> ((e <> e' /\ dst g e' = x) \/ (e = e' /\ t = x)).
+Proof. intros. simpl. unfold updateEdgeFunc. destruct (equiv_dec e e'); intuition. Qed.
 
 Definition pregraph_gen_dst (g : Graph) (e : E) (t : V) :=
-  @Build_PreGraph V E EV EE (vvalid g) (evalid g) (src g) (update_dst (dst g) e t).
+  @Build_PreGraph V E EV EE (vvalid g) (evalid g) (src g) (updateEdgeFunc (dst g) e t).
 
 Definition union_pregraph (PV : V -> Prop) (PE: E -> Prop) (PVD: forall v, Decidable (PV v)) (PED: forall e, Decidable (PE e)) (g1 g2: Graph): Graph :=
   @Build_PreGraph V E EV EE
@@ -552,6 +576,44 @@ Proof.
     apply H4; simpl; rewrite !Intersection_spec in *; tauto.
 Qed.
 
+Lemma no_edge_gen_dst_equiv: forall e p (g: Graph) pa x y,
+    ~ In e (snd p) -> (pregraph_gen_dst g e pa) |= p is x ~o~> y satisfying (fun _ => True) <-> g |= p is x ~o~> y satisfying (fun _ => True).
+Proof.
+  intros. destruct p as [p l]. simpl in H. split; intro; destruct H0 as [[? ?] [? ?]]; split; split; auto; clear H0 H3.
+  - clear H2. revert p H H1. induction l; intros. 1: simpl in *; auto. rewrite pfoot_cons in H1. remember (dst (pregraph_gen_dst g e pa) a) as w.
+    simpl in Heqw. unfold updateEdgeFunc in Heqw. destruct (equiv_dec e a).
+    + unfold Equivalence.equiv in e0; exfalso; apply H; left; auto.
+    + rewrite pfoot_cons. apply IHl.
+      * intro. apply H; right; auto.
+      * subst w. auto.
+  - clear H1. revert p H H2. induction l; intros. 1: simpl in *; auto. rewrite valid_path_cons_iff in H2 |-* . destruct H2 as [? [? ?]]. split; [|split].
+    + simpl in H0. auto.
+    + hnf in H1. simpl in H1. unfold updateEdgeFunc in H1. destruct (equiv_dec e a). 1: unfold Equivalence.equiv in e0; exfalso; apply H; left; auto. apply H1.
+    + remember (dst (pregraph_gen_dst g e pa) a) as w. simpl in Heqw. unfold updateEdgeFunc in Heqw. destruct (equiv_dec e a). 1: exfalso; apply H; left; auto.
+      subst w. apply IHl; auto. intro; apply H; right; auto.
+  - clear H2. revert p H H1. induction l; intros. 1: simpl; auto. rewrite pfoot_cons. remember (dst (pregraph_gen_dst g e pa) a) as w. simpl in Heqw.
+    unfold updateEdgeFunc in Heqw. destruct (equiv_dec e a). 1: exfalso; apply H; left; auto. subst w. apply IHl.
+    + intro; apply H; right; auto.
+    + rewrite pfoot_cons in H1. auto.
+  - clear H1. revert p H H2. induction l; intros. 1: simpl in *; auto. rewrite valid_path_cons_iff in H2 |-* . destruct H2 as [? [? ?]]. split; [|split].
+    + simpl; auto.
+    + hnf. simpl. unfold updateEdgeFunc. destruct (equiv_dec e a). 1: unfold Equivalence.equiv in e0; exfalso; apply H; left; auto. apply H1.
+    + remember (dst (pregraph_gen_dst g e pa) a) as w. simpl in Heqw. unfold updateEdgeFunc in Heqw. destruct (equiv_dec e a). 1: exfalso; apply H; left; auto.
+      subst w. apply IHl; auto. intro; apply H; right; auto.
+Qed.
+
+Lemma not_reachable_gen_dst_equiv: forall (g: Graph) x e y z, ~ reachable g x (src g e) -> reachable (pregraph_gen_dst g e y) x z <-> reachable g x z.
+Proof.
+  intros. split; intro.
+  - destruct H0 as [[p l] ?]. assert (~ In e l). {
+      intro. apply (in_split_not_in_first EE) in H1. destruct H1 as [l1 [l2 [? ?]]]. subst l. apply reachable_by_path_app_cons in H0. destruct H0 as [? _].
+      rewrite no_edge_gen_dst_equiv in H0. 2: simpl; auto. simpl src in H0. apply H. exists (p, l1). auto.
+    } rewrite no_edge_gen_dst_equiv in H0. 2: simpl; auto. exists (p, l). auto.
+  - destruct H0 as [[p l] ?]. assert (~ In e l). {
+      intro. apply in_split in H1. destruct H1 as [l1 [l2 ?]]. subst l. apply reachable_by_path_app_cons in H0. destruct H0 as [? _]. apply H. exists (p, l1). auto.
+    } exists (p, l). rewrite no_edge_gen_dst_equiv; auto.
+Qed.
+
 End PREGRAPH_GEN.
 
 Section LABELED_GRAPH_GEN.
@@ -559,36 +621,38 @@ Section LABELED_GRAPH_GEN.
 Context {V E: Type}.
 Context {EV: EqDec V eq}.
 Context {EE: EqDec E eq}.
-Context {DV DE: Type}.
+Context {DV DE DG: Type}.
 
-Notation Graph := (LabeledGraph V E DV DE).
+Notation Graph := (LabeledGraph V E DV DE DG).
 
 Local Coercion pg_lg : LabeledGraph >-> PreGraph.
 
-Definition empty_labeledgraph (src0 dst0: E -> V) (v_default: DV) (e_default: DE): Graph :=
-  @Build_LabeledGraph V E EV EE DV DE (empty_pregraph src0 dst0) (fun v => v_default) (fun e => e_default).
+Definition empty_labeledgraph (src0 dst0: E -> V) (v_default: DV) (e_default: DE) (g_default : DG) : Graph :=
+  @Build_LabeledGraph V E EV EE DV DE DG (empty_pregraph src0 dst0) (fun v => v_default) (fun e => e_default) (g_default).
 
-Definition single_vertex_labeledgraph (v0: V) (v_default: DV) (e_default: DE): Graph :=
-  @Build_LabeledGraph V E EV EE DV DE (single_vertex_pregraph v0) (fun v => v_default) (fun e => e_default).
+Definition single_vertex_labeledgraph (v0: V) (v_default: DV) (e_default: DE) (g_default : DG) : Graph :=
+  @Build_LabeledGraph V E EV EE DV DE DG (single_vertex_pregraph v0) (fun v => v_default) (fun e => e_default) (g_default).
 
-Definition labeledgraph_vgen (g: Graph) (x: V) (a: DV) : Graph := Build_LabeledGraph _ _ g (update_vlabel (vlabel g) x a) (elabel g).
+Definition labeledgraph_vgen (g: Graph) (x: V) (a: DV) : Graph := Build_LabeledGraph _ _ _ g (update_vlabel (vlabel g) x a) (elabel g) (glabel g).
 
-Definition labeledgraph_egen (g: Graph) (e: E) (d: DE) : Graph := Build_LabeledGraph _ _ g (vlabel g) (update_elabel (elabel g) e d).
+Definition labeledgraph_egen (g: Graph) (e: E) (d: DE) : Graph := Build_LabeledGraph _ _ _ g (vlabel g) (update_elabel (elabel g) e d) (glabel g).
+
+Definition labeledgraph_ggen (g: Graph) (m: DG) : Graph := Build_LabeledGraph _ _ _ g (vlabel g) (elabel g) m.
 
 Definition labeledgraph_add_edge (g : Graph) (e : E) (o t : V) (d: DE) :=
-  Build_LabeledGraph _ _ (pregraph_add_edge g e o t) (vlabel g) (update_elabel (elabel g) e d).
+  Build_LabeledGraph _ _ _ (pregraph_add_edge g e o t) (vlabel g) (update_elabel (elabel g) e d) (glabel g).
 
 Definition labeledgraph_gen_dst (g : Graph) (e : E) (t : V) :=
-  Build_LabeledGraph _ _ (pregraph_gen_dst g e t) (vlabel g) (elabel g).
+  Build_LabeledGraph _ _ _ (pregraph_gen_dst g e t) (vlabel g) (elabel g) (glabel g).
 
 Definition gpredicate_sub_labeledgraph (PV: V -> Prop) (PE: E -> Prop) (g: Graph): Graph :=
-  Build_LabeledGraph _ _ (gpredicate_subgraph PV PE g) (vlabel g) (elabel g).
+  Build_LabeledGraph _ _ _ (gpredicate_subgraph PV PE g) (vlabel g) (elabel g) (glabel g).
 
 Definition predicate_sub_labeledgraph (g: Graph) (p: V -> Prop) :=
-  Build_LabeledGraph _ _ (predicate_subgraph g p) (vlabel g) (elabel g).
+  Build_LabeledGraph _ _ _ (predicate_subgraph g p) (vlabel g) (elabel g) (glabel g).
 
 Definition predicate_partial_labeledgraph (g: Graph) (p: V -> Prop) :=
-  Build_LabeledGraph _ _ (predicate_partialgraph g p) (vlabel g) (elabel g).
+  Build_LabeledGraph _ _ _ (predicate_partialgraph g p) (vlabel g) (elabel g) (glabel g).
 
 Instance sub_labeledgraph_proper: Proper (labeled_graph_equiv ==> @Same_set V ==> labeled_graph_equiv) predicate_sub_labeledgraph.
 Proof.
@@ -745,9 +809,9 @@ Section GENERAL_GRAPH_GEN.
 Context {V E: Type}.
 Context {EV: EqDec V eq}.
 Context {EE: EqDec E eq}.
-Context {DV DE: Type}.
+Context {DV DE DG: Type}.
 
-Class NormalGeneralGraph (P: LabeledGraph V E DV DE -> Type): Type := {
+Class NormalGeneralGraph (P: LabeledGraph V E DV DE DG -> Type): Type := {
   lge_preserved: forall g1 g2, labeled_graph_equiv g1 g2 -> P g1 -> P g2;
   join_preserved: forall g (PV1 PV2 PV: V -> Prop) (PE1 PE2 PE: E -> Prop),
     Prop_join PV1 PV2 PV ->
@@ -757,20 +821,20 @@ Class NormalGeneralGraph (P: LabeledGraph V E DV DE -> Type): Type := {
     P (gpredicate_sub_labeledgraph PV PE g)
 }.
 
-Context {P: LabeledGraph V E DV DE -> Type}.
+Context {P: LabeledGraph V E DV DE DG -> Type}.
 
-Notation Graph := (GeneralGraph V E DV DE P).
+Notation Graph := (GeneralGraph V E DV DE DG P).
 
 Local Coercion pg_lg : LabeledGraph >-> PreGraph.
 Local Coercion lg_gg : GeneralGraph >-> LabeledGraph.
 
-Definition generalgraph_vgen (g: Graph) (x: V) (d: DV) (sound': P _): Graph := @Build_GeneralGraph V E EV EE DV DE P (labeledgraph_vgen g x d) sound'.
+Definition generalgraph_vgen (g: Graph) (x: V) (d: DV) (sound': P _): Graph := @Build_GeneralGraph V E EV EE DV DE DG P (labeledgraph_vgen g x d) sound'.
 
-Definition generalgraph_egen (g: Graph) (e: E) (d: DE) (sound': P _): Graph := @Build_GeneralGraph V E EV EE DV DE P (labeledgraph_egen g e d) sound'.
+Definition generalgraph_egen (g: Graph) (e: E) (d: DE) (sound': P _): Graph := @Build_GeneralGraph V E EV EE DV DE DG P (labeledgraph_egen g e d) sound'.
 
-Definition generalgraph_gen_dst (g: Graph) (e : E) (t : V)
-           (sound' : P _) : Graph :=
-  @Build_GeneralGraph V E EV EE DV DE P (labeledgraph_gen_dst g e t) sound'.
+Definition generalgraph_ggen (g: Graph) (m: DG) (sound': P _): Graph := @Build_GeneralGraph V E EV EE DV DE DG P (labeledgraph_ggen g m) sound'.
+
+Definition generalgraph_gen_dst (g: Graph) (e : E) (t : V) (sound' : P _): Graph := @Build_GeneralGraph V E EV EE DV DE DG P (labeledgraph_gen_dst g e t) sound'.
 
 End GENERAL_GRAPH_GEN.
 
@@ -878,33 +942,33 @@ Section ADD_GRAPH_GEN.
           rewrite only_two_edges. right; auto. specialize (H0 x); intuition.
         * simpl. destruct H1. right; specialize (H0 x); intuition. destruct BI.
           rewrite only_two_edges in H1. destruct H1.
-          Focus 1. { right. subst e1. subst x. auto. } Unfocus.
-          Focus 1. { left. subst e2. subst x. auto. } Unfocus.
+          1: { right. subst e1. subst x. auto. }
+          1: { left. subst e2. subst x. auto. }
       - remember (left_out_edge v) as e1. remember (right_out_edge v) as e2. exists (e1 :: l0).
         split. constructor; auto. intro; split; intro.
         * destruct H1; [right | left]. subst x. subst e1. destruct BI.
           rewrite only_two_edges. left; auto. specialize (H0 x); intuition.
         * simpl. destruct H1. right; specialize (H0 x); intuition. destruct BI.
           rewrite only_two_edges in H1. destruct H1.
-          Focus 1. { left. subst e1. subst x. auto. } Unfocus.
-          Focus 1. { right. subst e2. subst x. auto. } Unfocus.
+          1: { left. subst e1. subst x. auto. }
+          1: { right. subst e2. subst x. auto. }
       - remember (left_out_edge v) as e1. remember (right_out_edge v) as e2. exists (e1 :: e2 :: l0). split.
         * constructor. intro. destruct H1; auto. destruct BI.
           specialize (bi_consist v). subst. auto. constructor; auto.
         * intro. split; intro.
-          Focus 1. {
+          1: {
             simpl in H1. destruct H1; [|destruct H1].
             + right. subst x. subst e1. destruct BI. rewrite only_two_edges. left; auto.
             + right. subst x. subst e2. destruct BI. rewrite only_two_edges. right; auto.
             + left. specialize (H0 x). intuition.
-          } Unfocus.
-          Focus 1. {
+          }
+          1: {
             destruct H1.
             + simpl. right; right. specialize (H0 x). intuition.
             + destruct BI. rewrite only_two_edges in H1. simpl. destruct H1.
               - left. subst x. subst e1. auto.
               - right; left. subst x. subst e2. auto.
-          } Unfocus.
+          }
   Qed.
 *)
 End ADD_GRAPH_GEN.

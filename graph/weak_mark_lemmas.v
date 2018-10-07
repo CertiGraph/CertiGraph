@@ -54,10 +54,10 @@ Section WeakMarkGraph.
 Context {V E: Type}.
 Context {EV: EqDec V eq}.
 Context {EE: EqDec E eq}.
-Context {DV DE: Type}.
+Context {DV DE DG: Type}.
 Context {MGS: MarkGraphSetting DV}.
 
-Notation Graph := (LabeledGraph V E DV DE).
+Notation Graph := (LabeledGraph V E DV DE DG).
 Local Coercion pg_lg : LabeledGraph >-> PreGraph.
 
 Definition marked (g: Graph) : NodePred V.
@@ -67,6 +67,9 @@ Definition marked (g: Graph) : NodePred V.
 Defined.
 
 Definition unmarked (g: Graph) : NodePred V := negateP (marked g).
+
+Definition totally_unmarked (g: Graph) (x: V) :=
+  forall y, reachable g x y -> g |= x ~o~> y satisfying (unmarked g).
 
 Hypothesis R_DEC: forall (g: Graph) x, vvalid g x -> ReachDecidable g x (unmarked g).
 
@@ -146,7 +149,7 @@ Qed.
 Lemma eq_do_nothing: forall n, inclusion _ eq (nothing n).
 Proof.
   intros; hnf; intros.
-  destruct H as [? [? ?]].
+  destruct H.
   split.
   + reflexivity.
   + intros.
@@ -323,12 +326,12 @@ Proof.
     unfold Complement at 2 in H3; unfold Ensembles.In in H3.
     assert ((marked g1) v \/ ~ (marked g1) v) by (destruct (node_pred_dec (marked g1) v); auto).
     assert (marked' v \/ ~ marked' v).
-    Focus 1. {
+    1: {
       unfold marked'.
       rewrite Union_spec.
       destruct (node_pred_dec (marked g) v); destruct_eq_dec root v; auto.
       tauto.
-    } Unfocus.
+    }
     pose proof Full_intro _ v.
     unfold Ensembles.In in H.
     tauto.
@@ -376,13 +379,13 @@ Proof.
   intros.
   destruct H2.
   assert (Same_set (reachable_by g root (unmarked g)) (Union _ (eq root) PV1)).
-  Focus 1. {
+  1: {
     rewrite Same_set_spec.
     intro. rewrite Union_spec.
     unfold PV1, marked'.
     rewrite <- Intersection_Complement.
     apply reachable_by_ind_equiv; auto.
-  } Unfocus.
+  }
   split.
   + eapply si_stronger_partialgraph_simple; [| exact H2].
     apply Complement_Included_rev.
@@ -429,7 +432,7 @@ Proof.
     rename g3 into g1, g4 into g5.
     apply compond_relation_spec in H4; destruct H4 as [g2 [? ?]].
     cbv zeta in H2.
-    specialize (H2 g2 (a :: l_later) H3 H4).
+    specialize (H2 g2 (x :: l_later) H3 H4).
     rename H2 into PRE; clear H4.
 
     unfold componded in H5.
@@ -438,7 +441,7 @@ Proof.
     apply compond_relation_spec in H2.
     destruct H2 as [g3 [? ?]].
     apply (triple_nothing _ g2 g3 root _ _ _ H H0 H1 H3) in PRE; [| auto].
-    apply (triple_nothing _ g4 g5 root l (l_done ++ a :: nil) l_later H H0 H1); [rewrite <- app_assoc; exact H3 | | auto].
+    apply (triple_nothing _ g4 g5 root l (l_done ++ x :: nil) l_later H H0 H1); [rewrite <- app_assoc; exact H3 | | auto].
     
     split.
     - eapply triple1_mark; eauto.
@@ -504,12 +507,12 @@ Proof.
   assert ((marked g3) x /\ step g3 x y /\ vvalid g3 x);
     [| apply step_reachable with y; tauto].
   assert (step g2 x y).
-  Focus 1. {
+  1: {
     destruct H1 as [? _].
     rewrite <- step_si by eassumption.
     specialize (H0 y);
     rewrite in_app_iff in H0; simpl in H0; tauto.
-  } Unfocus.
+  }
   assert (vvalid g2 x) by (rewrite <- (proj1 (proj1 H1)); auto).
   destruct H1 as [_ [? _]].
   clear - H1 H2 H4 H5.
@@ -538,7 +541,7 @@ Locate partialgraph_edge.
       
     destruct H as [? _].
     assert (marked g2 x) by destru
-    Focus 1. {
+    1: {
       destruct H1.
 SearchAbout reachable Proper.
 
