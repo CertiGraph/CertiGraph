@@ -1103,88 +1103,6 @@ Proof.
   sep_apply (gen_vertex_lmc_ramif g gen index new_v H0). cancel. apply wand_frame_ver.
 Qed.
 
-(*
-Definition full_thread_info_rep (sh: share) (ti: thread_info) (t: val) :=
-  let nursery := heap_head ti.(ti_heap) in
-  let p := nursery.(space_start) in
-  let n_lim := offset_val (WORD_SIZE * nursery.(total_space)) p in
-  data_at sh thread_info_type
-          (offset_val (WORD_SIZE * nursery.(used_space)) p,
-           (n_lim, (ti.(ti_heap_p), ti.(ti_args)))) t *
-  heap_struct_rep
-    sh (map space_tri ti.(ti_heap).(spaces)) ti.(ti_heap_p) *
-  heap_rest_rep ti.(ti_heap).
-
-
-Lemma full_thread_info_rep_derives: forall sh ti t,
-    thread_info_rep sh ti t |-- before_gc_thread_info_rep sh ti t.
-Proof.
-  intros. unfold full_thread_info_rep, thread_info_rep. cancel.
-  unfold heap_struct_rep. do 2 (unfold_data_at 1%nat). rewrite !field_at_data_at.
-  simpl nested_field_type.
-  remember (field_address heap_type [StructField _spaces] (ti_heap_p ti)).
-  remember (map space_tri (spaces (ti_heap ti))) as l1.
-  assert (Zlength l1 = 12) by
-      (subst l1; rewrite Zlength_map, spaces_size, MAX_SPACES_eq; reflexivity).
-  unfold space_type in H.
-  rewrite (split2_data_at_Tarray sh (Tstruct _space noattr) 12 1 l1
-                                 l1 (sublist 0 1 l1) (sublist 1 12 l1));
-    try rep_omega; try reflexivity. 2: autorewrite with sublist; reflexivity.
-  remember ((space_start (heap_head (ti_heap ti)),
-             (Vundef,
-              offset_val
-                (WORD_SIZE * total_space (heap_head (ti_heap ti)))
-                (space_start (heap_head (ti_heap ti)))))
-              :: map space_tri (tl (spaces (ti_heap ti)))) as l2.
-  assert (Zlength l2 = 12). {
-    subst l2. rewrite Zlength_cons, Zlength_map.
-    pose proof (spaces_size (ti_heap ti)). rewrite MAX_SPACES_eq in H0.
-    destruct (spaces (ti_heap ti)). 1: rewrite Zlength_nil in H0; inversion H0.
-    rewrite Zlength_cons in H0. simpl. assumption. }
-  pose proof (split2_data_at_Tarray sh (Tstruct _space noattr)).
-  vm_compute reptype in H1.
-  specialize (H1 12 1 l2 l2 (sublist 0 1 l2) (sublist 1 12 l2)).
-  rewrite H1; try rep_omega; try reflexivity.
-  2: autorewrite with sublist; reflexivity. clear H1.
-  assert (sublist 1 12 l1 = sublist 1 12 l2). {
-    subst l2. destruct l1. 1: rewrite Zlength_nil in H; inversion H.
-    rewrite !sublist_1_cons, map_tl, <- Heql1. simpl. reflexivity. }
-  rewrite H1. cancel. subst l2. rewrite sublist_0_cons by omega. simpl Z.sub.
-  rewrite sublist_nil. clear H0 H1. subst l1.
-  destruct (heap_head_cons (ti_heap ti)) as [s [l [? ?]]]. rewrite H0, H1.
-  rewrite map_cons, sublist_0_cons by omega. simpl Z.sub. rewrite sublist_nil.
-  change (Tarray (Tstruct _space noattr) 1 noattr) with
-      (tarray (Tstruct _space noattr) 1).
-  rewrite (data_at_singleton_array_eq sh (Tstruct _space noattr) (space_tri s))
-    by reflexivity.
-  pose proof (data_at_singleton_array_eq
-                sh (Tstruct _space noattr)
-                (space_start s,
-                 (Vundef, offset_val (WORD_SIZE * total_space s) (space_start s)))).
-  rewrite H2 by reflexivity. do 2 unfold_data_at 1%nat. cancel.
-Qed.
-
-Definition do_generation_ti_rep (from: nat) (sh: share) (ti: thread_info) (t: val) :=
-  if Nat.eq_dec from O then full_thread_info_rep sh ti t else thread_info_rep sh ti t.
-
-Definition do_generation_derives_thread: forall from sh ti t,
-    do_generation_ti_rep from sh ti t |-- thread_info_rep sh ti t.
-Proof.
-  intros. unfold do_generation_ti_rep.
-  if_tac; [apply full_thread_info_rep_derives | apply derives_refl].
-Qed.
-
-Lemma thread_derives_dogeneration: forall from sh ti t,
-    thread_info_rep sh ti t |-- do_generation_ti_rep (S from) sh ti t.
-Proof. intros. unfold do_generation_ti_rep. rewrite if_false by omega. cancel. Qed.
-
-Lemma full_derives_do_generation: forall from sh ti t,
-    full_thread_info_rep sh ti t |-- do_generation_ti_rep from sh ti t.
-Proof.
-  intros. unfold do_generation_ti_rep. if_tac. 1: cancel.
-  apply full_thread_info_rep_derives.
-Qed. *)
-
 Definition space_struct_rep (sh: share) (tinfo: thread_info) (gen: nat) :=
   data_at sh space_type (space_tri (nth_space tinfo gen)) (space_address tinfo gen).
 
@@ -1282,105 +1200,38 @@ Proof.
     exists B. rewrite H5. f_equal. rewrite sepcon_comm. reflexivity.
 Qed.
 
-(*
-Lemma full_thread_info_rep_ramif_stable: forall sh tinfo ti gen,
-    gen <> O -> Z.of_nat gen < MAX_SPACES ->
-    full_thread_info_rep sh tinfo ti |--
-                         (space_struct_rep sh tinfo O *
-                          space_struct_rep sh tinfo gen) *
-    ((space_struct_rep sh tinfo O * space_struct_rep sh tinfo gen)
-       -* full_thread_info_rep sh tinfo ti).
-Proof.
-  intros. unfold full_thread_info_rep.
-  remember (@data_at
-              CompSpecs sh thread_info_type
-              (@pair val (prod val (prod val (list val)))
-                     (offset_val (WORD_SIZE * (used_space (heap_head (ti_heap tinfo))))
-                                 (space_start (heap_head (ti_heap tinfo))))
-                     (@pair val (prod val (list val))
-                            (offset_val
-                               (WORD_SIZE * (total_space (heap_head (ti_heap tinfo))))
-                               (space_start (heap_head (ti_heap tinfo))))
-                            (@pair val (list val)
-                                   (ti_heap_p tinfo) (ti_args tinfo)))) ti) as P.
-  remember (heap_rest_rep (ti_heap tinfo)) as Q.
-  rewrite (sepcon_comm P), sepcon_assoc. remember (P * Q) as R.
-  clear P HeqP Q HeqQ HeqR. remember (map space_tri (spaces (ti_heap tinfo))).
-  assert (0 <= 0 < MAX_SPACES) by rep_omega. assert (0 <> Z.of_nat gen) by omega.
-  assert (0 <= Z.of_nat gen < MAX_SPACES) by rep_omega.
-  assert (Zlength l = MAX_SPACES) by (subst; rewrite Zlength_map; apply spaces_size).
-  destruct (heap_struct_rep_split sh l tinfo 0 (Z.of_nat gen) H1 H3 H2 H4) as [B ?].
-  rewrite H5, !Nat2Z.id. simpl. replace 0 with (Z.of_nat O) by (simpl; reflexivity).
-  assert (forall i, 0 <= Z.of_nat i < MAX_SPACES ->
-                    data_at sh space_type (Znth (Z.of_nat i) l)
-                            (space_address tinfo i) = space_struct_rep sh tinfo i). {
-    intros. unfold space_struct_rep. subst l. rewrite Zlength_map in H4.
-    rewrite nth_space_Znth, Znth_map by rep_omega. reflexivity. }
-  rewrite !H6 by rep_omega. rewrite (sepcon_assoc _ B R).
-  cancel. apply wand_frame_intro.
-Qed.
-
 Lemma thread_info_rep_ramif_stable: forall sh tinfo ti gen1 gen2,
-    gen1 <> O -> gen2 <> O -> gen1 <> gen2 ->
-    Z.of_nat gen1 < MAX_SPACES -> Z.of_nat gen2 < MAX_SPACES ->
+    gen1 <> gen2 -> Z.of_nat gen1 < MAX_SPACES -> Z.of_nat gen2 < MAX_SPACES ->
     thread_info_rep sh tinfo ti |--
-                    (space_struct_rep sh tinfo gen1 *
-                     space_struct_rep sh tinfo gen2) *
+                         (space_struct_rep sh tinfo gen1 *
+                          space_struct_rep sh tinfo gen2) *
     ((space_struct_rep sh tinfo gen1 * space_struct_rep sh tinfo gen2)
        -* thread_info_rep sh tinfo ti).
 Proof.
   intros. unfold thread_info_rep.
   remember (@data_at
               CompSpecs sh thread_info_type
-              (@pair val (prod val (prod val (list val)))
-                     (offset_val (WORD_SIZE * (used_space (heap_head (ti_heap tinfo))))
-                                 (space_start (heap_head (ti_heap tinfo))))
-                     (@pair val (prod val (list val))
-                            (offset_val
-                               (WORD_SIZE * (total_space (heap_head (ti_heap tinfo))))
-                               (space_start (heap_head (ti_heap tinfo))))
+              (@pair val (prod val (prod val (list val))) Vundef
+                     (@pair val (prod val (list val)) Vundef
                             (@pair val (list val)
                                    (ti_heap_p tinfo) (ti_args tinfo)))) ti) as P.
   remember (heap_rest_rep (ti_heap tinfo)) as Q.
   rewrite (sepcon_comm P), sepcon_assoc. remember (P * Q) as R.
-  clear P HeqP Q HeqQ HeqR. remember (spaces (ti_heap tinfo)) as l1.
-  remember ((space_start (heap_head (ti_heap tinfo)),
-             (Vundef,
-              offset_val (WORD_SIZE * total_space (heap_head (ti_heap tinfo)))
-                         (space_start (heap_head (ti_heap tinfo)))))
-              :: map space_tri (tl l1)) as l2.
-  assert (Zlength (tl l1) = 11). {
-    subst. pose proof (spaces_size (ti_heap tinfo)).
-    destruct (spaces (ti_heap tinfo)). 1: rewrite Zlength_nil in H4; omega. simpl tl.
-    rewrite Zlength_cons in H4. rep_omega. }
-  assert (Zlength l2 = MAX_SPACES) by
-      (subst l2; rewrite Zlength_cons, Zlength_map; rep_omega).
-  destruct (heap_struct_rep_split sh l2 tinfo (Z.of_nat gen1) (Z.of_nat gen2))
-    as [B ?]; try rep_omega; try assumption. rewrite H6, !Nat2Z.id. clear H6.
-  assert (forall i, 0 < Z.of_nat i < MAX_SPACES ->
-                    data_at sh space_type (Znth (Z.of_nat i) l2)
+  clear P HeqP Q HeqQ HeqR. remember (map space_tri (spaces (ti_heap tinfo))).
+  assert (0 <= Z.of_nat gen1 < MAX_SPACES) by rep_omega.
+  assert (0 <= Z.of_nat gen2 < MAX_SPACES) by rep_omega.
+  assert (Z.of_nat gen1 <> Z.of_nat gen2) by omega.
+  assert (Zlength l = MAX_SPACES) by (subst; rewrite Zlength_map; apply spaces_size).
+  destruct (heap_struct_rep_split sh l tinfo _ _ H2 H3 H4 H5) as [B ?].
+  rewrite H6, !Nat2Z.id.
+  assert (forall i, 0 <= Z.of_nat i < MAX_SPACES ->
+                    data_at sh space_type (Znth (Z.of_nat i) l)
                             (space_address tinfo i) = space_struct_rep sh tinfo i). {
-    intros. unfold space_struct_rep. subst l2.
-    assert (Z.of_nat i = Z.of_nat i - 1 + 1) by omega. rewrite H7.
-    rewrite <- Znth_tl by omega. simpl tl. rewrite Znth_map by rep_omega.
-    rewrite Znth_tl by omega. subst l1.
-    rewrite <- H7, nth_space_Znth. reflexivity. } rewrite !H6 by rep_omega.
-  rewrite (sepcon_assoc _ B R). cancel. apply wand_frame_intro.
+    intros. unfold space_struct_rep. subst l. rewrite Zlength_map in H5.
+    rewrite nth_space_Znth, Znth_map by rep_omega. reflexivity. }
+  rewrite !H7 by rep_omega. rewrite (sepcon_assoc _ B R).
+  cancel. apply wand_frame_intro.
 Qed.
-
-Lemma do_generation_ti_rep_ramif_stable: forall from sh tinfo ti gen,
-    from <> gen -> gen <> O ->
-    Z.of_nat from < MAX_SPACES -> Z.of_nat gen < MAX_SPACES ->
-    do_generation_ti_rep from sh tinfo ti |--
-                         (space_struct_rep sh tinfo from *
-                          space_struct_rep sh tinfo gen) *
-    ((space_struct_rep sh tinfo from * space_struct_rep sh tinfo gen)
-       -* do_generation_ti_rep from sh tinfo ti).
-Proof.
-  intros. unfold do_generation_ti_rep. destruct (Nat.eq_dec from O).
-  - subst from. apply full_thread_info_rep_ramif_stable; assumption.
-  - apply thread_info_rep_ramif_stable; assumption.
-Qed. *)
 
 Lemma heap_struct_rep_split_single: forall sh l tinfo i,
     0 <= i < MAX_SPACES -> Zlength l = MAX_SPACES ->
@@ -1407,61 +1258,30 @@ Proof.
   rewrite Z2Nat.id by omega. rewrite sepcon_comm, !sepcon_assoc. reflexivity.
 Qed.
 
-(*
-Definition space_tri_gen (gen: nat) (sp: space) : (reptype space_type) :=
-  let s := space_start sp in
-  (s, (if Nat.eq_dec gen O then Vundef else offset_val (WORD_SIZE * sp.(used_space)) s,
-       offset_val (WORD_SIZE * sp.(total_space)) s)).
-
-Definition space_struct_rep_gen (sh: share) (tinfo: thread_info) (gen: nat) :=
-  data_at sh space_type (space_tri_gen gen (nth_space tinfo gen))
-          (space_address tinfo gen).
-
 Lemma thread_info_rep_ramif_stable_1: forall sh tinfo ti gen,
     Z.of_nat gen < MAX_SPACES ->
     thread_info_rep sh tinfo ti |--
-                    space_struct_rep_gen sh tinfo gen *
-    (space_struct_rep_gen sh tinfo gen -* thread_info_rep sh tinfo ti).
+                    space_struct_rep sh tinfo gen *
+    (space_struct_rep sh tinfo gen -* thread_info_rep sh tinfo ti).
 Proof.
   intros. unfold thread_info_rep.
   remember (@data_at
               CompSpecs sh thread_info_type
-              (@pair val (prod val (prod val (list val)))
-                     (offset_val (WORD_SIZE * (used_space (heap_head (ti_heap tinfo))))
-                                 (space_start (heap_head (ti_heap tinfo))))
-                     (@pair val (prod val (list val))
-                            (offset_val
-                               (WORD_SIZE * (total_space (heap_head (ti_heap tinfo))))
-                               (space_start (heap_head (ti_heap tinfo))))
+              (@pair val (prod val (prod val (list val))) Vundef
+                     (@pair val (prod val (list val)) Vundef
                             (@pair val (list val)
                                    (ti_heap_p tinfo) (ti_args tinfo)))) ti) as P.
   remember (heap_rest_rep (ti_heap tinfo)) as Q.
   rewrite (sepcon_comm P), sepcon_assoc. remember (P * Q) as R.
-  clear P HeqP Q HeqQ HeqR. remember (spaces (ti_heap tinfo)) as l1.
-  remember ((space_start (heap_head (ti_heap tinfo)),
-             (Vundef,
-              offset_val (WORD_SIZE * total_space (heap_head (ti_heap tinfo)))
-                         (space_start (heap_head (ti_heap tinfo)))))
-              :: map space_tri (tl l1)) as l2.
-  assert (Zlength (tl l1) = 11). {
-    subst. pose proof (spaces_size (ti_heap tinfo)).
-    destruct (spaces (ti_heap tinfo)). 1: rewrite Zlength_nil in H0; omega. simpl tl.
-    rewrite Zlength_cons in H0. rep_omega. }
-  assert (Zlength l2 = MAX_SPACES) by
-      (subst l2; rewrite Zlength_cons, Zlength_map; rep_omega).
-  destruct (heap_struct_rep_split_single sh l2 tinfo (Z.of_nat gen))
-    as [B ?]; try rep_omega; try assumption. rewrite H2, !Nat2Z.id. clear H2.
+  clear P HeqP Q HeqQ HeqR. remember (map space_tri (spaces (ti_heap tinfo))).
+  assert (Zlength l = MAX_SPACES) by (subst; rewrite Zlength_map; apply spaces_size).
+  destruct (heap_struct_rep_split_single sh l tinfo (Z.of_nat gen))
+    as [B ?]; try rep_omega; try assumption. rewrite H1, !Nat2Z.id. clear H1.
   assert (data_at sh space_type
                   (@Znth _ (@Inhabitant_reptype CompSpecs space_type)
-                         (Z.of_nat gen) l2) (space_address tinfo gen) =
-          space_struct_rep_gen sh tinfo gen). {
-    intros. unfold space_struct_rep_gen. subst l2. unfold space_tri_gen. if_tac.
-    - subst gen. pose proof (heap_head_cons (ti_heap tinfo)) as [s [l [? ?]]].
-      rewrite nth_space_Znth. simpl Z.of_nat. rewrite H2, H3, !Znth_0_cons.
-      reflexivity.
-    - assert (Z.of_nat gen = Z.of_nat gen - 1 + 1) by omega. rewrite H3.
-      rewrite <- Znth_tl by omega. simpl tl. rewrite Znth_map by rep_omega.
-      rewrite Znth_tl by omega. subst l1.
-      rewrite <- H3, nth_space_Znth. reflexivity. } rewrite !H2.
+                         (Z.of_nat gen) l) (space_address tinfo gen) =
+          space_struct_rep sh tinfo gen). {
+    intros. unfold space_struct_rep. subst l. rewrite Zlength_map in H0.
+    rewrite Znth_map by rep_omega. rewrite nth_space_Znth. reflexivity. } rewrite !H1.
   rewrite (sepcon_assoc _ B R). cancel. apply wand_frame_intro.
-Qed.  *)
+Qed.
