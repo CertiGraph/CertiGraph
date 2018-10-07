@@ -3442,3 +3442,6 @@ Proof.
   - rewrite <- fr_graph_has_gen; eauto.
   - eapply fr_gen_unmarked; eauto.
 Qed.
+
+Definition graph_gen_clear (g: LGraph) (gen: nat) :=
+  number_of_vertices (nth_gen g gen) = O.

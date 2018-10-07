@@ -49,7 +49,7 @@ Definition space_tri (sp: space): (reptype space_type) :=
 Definition heap_struct_rep (sh: share) (sp_reps: list (reptype space_type)) (h: val):
   mpred := data_at sh heap_type sp_reps h.
 
-Definition thread_info_rep (sh: share) (ti: thread_info) (t: val) :=
+Definition before_gc_thread_info_rep (sh: share) (ti: thread_info) (t: val) :=
   let nursery := heap_head ti.(ti_heap) in
   let p := nursery.(space_start) in
   let n_lim := offset_val (WORD_SIZE * nursery.(total_space)) p in
@@ -59,6 +59,11 @@ Definition thread_info_rep (sh: share) (ti: thread_info) (t: val) :=
   heap_struct_rep
     sh ((p, (Vundef, n_lim))
           :: map space_tri (tl ti.(ti_heap).(spaces))) ti.(ti_heap_p) *
+  heap_rest_rep ti.(ti_heap).
+
+Definition thread_info_rep (sh: share) (ti: thread_info) (t: val) :=
+  data_at sh thread_info_type (Vundef, (Vundef, (ti.(ti_heap_p), ti.(ti_args)))) t *
+  heap_struct_rep sh (map space_tri ti.(ti_heap).(spaces)) ti.(ti_heap_p) *
   heap_rest_rep ti.(ti_heap).
 
 Definition single_outlier_rep (p: GC_Pointer) :=
@@ -1098,6 +1103,7 @@ Proof.
   sep_apply (gen_vertex_lmc_ramif g gen index new_v H0). cancel. apply wand_frame_ver.
 Qed.
 
+(*
 Definition full_thread_info_rep (sh: share) (ti: thread_info) (t: val) :=
   let nursery := heap_head ti.(ti_heap) in
   let p := nursery.(space_start) in
@@ -1109,8 +1115,9 @@ Definition full_thread_info_rep (sh: share) (ti: thread_info) (t: val) :=
     sh (map space_tri ti.(ti_heap).(spaces)) ti.(ti_heap_p) *
   heap_rest_rep ti.(ti_heap).
 
+
 Lemma full_thread_info_rep_derives: forall sh ti t,
-    full_thread_info_rep sh ti t |-- thread_info_rep sh ti t.
+    thread_info_rep sh ti t |-- before_gc_thread_info_rep sh ti t.
 Proof.
   intros. unfold full_thread_info_rep, thread_info_rep. cancel.
   unfold heap_struct_rep. do 2 (unfold_data_at 1%nat). rewrite !field_at_data_at.
@@ -1176,7 +1183,7 @@ Lemma full_derives_do_generation: forall from sh ti t,
 Proof.
   intros. unfold do_generation_ti_rep. if_tac. 1: cancel.
   apply full_thread_info_rep_derives.
-Qed.
+Qed. *)
 
 Definition space_struct_rep (sh: share) (tinfo: thread_info) (gen: nat) :=
   data_at sh space_type (space_tri (nth_space tinfo gen)) (space_address tinfo gen).
@@ -1275,6 +1282,7 @@ Proof.
     exists B. rewrite H5. f_equal. rewrite sepcon_comm. reflexivity.
 Qed.
 
+(*
 Lemma full_thread_info_rep_ramif_stable: forall sh tinfo ti gen,
     gen <> O -> Z.of_nat gen < MAX_SPACES ->
     full_thread_info_rep sh tinfo ti |--
@@ -1372,7 +1380,7 @@ Proof.
   intros. unfold do_generation_ti_rep. destruct (Nat.eq_dec from O).
   - subst from. apply full_thread_info_rep_ramif_stable; assumption.
   - apply thread_info_rep_ramif_stable; assumption.
-Qed.
+Qed. *)
 
 Lemma heap_struct_rep_split_single: forall sh l tinfo i,
     0 <= i < MAX_SPACES -> Zlength l = MAX_SPACES ->
@@ -1399,6 +1407,7 @@ Proof.
   rewrite Z2Nat.id by omega. rewrite sepcon_comm, !sepcon_assoc. reflexivity.
 Qed.
 
+(*
 Definition space_tri_gen (gen: nat) (sp: space) : (reptype space_type) :=
   let s := space_start sp in
   (s, (if Nat.eq_dec gen O then Vundef else offset_val (WORD_SIZE * sp.(used_space)) s,
@@ -1455,4 +1464,4 @@ Proof.
       rewrite Znth_tl by omega. subst l1.
       rewrite <- H3, nth_space_Znth. reflexivity. } rewrite !H2.
   rewrite (sepcon_assoc _ B R). cancel. apply wand_frame_intro.
-Qed.
+Qed.  *)
