@@ -4,7 +4,8 @@ Require Import VST.floyd.assert_lemmas.
 Require Import VST.floyd.client_lemmas.
 Require Import VST.floyd.reptype_lemmas. (* Related things should be moved to other files. *)
 Require Import VST.floyd.semax_tactics.
-Require Import VST.floyd.local2ptree.
+Require Import VST.floyd.local2ptree_denote.
+Require Import VST.floyd.local2ptree_eval.
 Require Import VST.floyd.call_lemmas.
 Require Import VST.floyd.diagnosis.
 Require Import VST.floyd.forward.
@@ -14,7 +15,7 @@ Require Import RamifyCoq.floyd_ext.ramification.
 Require Import RamifyCoq.floyd_ext.semax_ram_lemmas.
 Require Import RamifyCoq.floyd_ext.exists_trick.
 Require Import RamifyCoq.floyd_ext.closed_lemmas.
-Require Import RamifyCoq.floyd_ext.comparable.
+(* Require Import RamifyCoq.floyd_ext.comparable. *)
 
 Local Open Scope logic.
 
@@ -233,12 +234,11 @@ Proof.
   eapply check_specs_lemma'; eauto.
 Qed.
 
-Lemma canonical_ram_reduce0: forall {A B C} {NA: NatDed A} (P Q: C -> B -> A),
-  allp Q |-- allp P ->
-  allp (fun x => Q (fst x) (snd x)) |-- allp (allp P).
+Lemma canonical_ram_reduce0: forall {A B C} {NA: NatDed A} (P: C -> B -> A),
+  allp (fun x => P (fst x) (snd x)) |-- allp (allp P).
 Proof.
   intros.
-  eapply derives_trans; [| apply allp_derives; intro; apply H].
+  eapply derives_trans; [| apply allp_derives; intro; apply derives_refl].
   rewrite allp_uncurry.
   apply derives_refl.
 Qed.
@@ -263,12 +263,12 @@ Proof.
   assert (forall a,
             EnvironStable (vars_relation (modifiedvars s)) (LOCALx (QG1' a) TT) /\
             LOCALx (QG' a) TT = LOCALx (QG1' a) TT && LOCALx (QG2' a) TT).
-  Focus 1. {
+  1: {
     intro a; clear - H.
     destruct (H a) as [? [? [? [? ?]]]].
     subst.
     apply split_by_closed_spec; auto.
-  } Unfocus.
+  }
   pose proof (fun a => (proj1 (H4 a))).
   pose proof (fun a => (proj2 (H4 a))).
   clear H H4.
@@ -286,7 +286,7 @@ Proof.
       (fun a: A => LOCALx (QL' a) TT --> LOCALx (QG2' a) TT) && 
       (fun a: A => 
        (!!Pure a --> (SEPx (RL' a) -* SEPx (RG' a)))))).
-  Focus 1. {
+  1: {
     apply allp_derives; intro a.
     change
      (((fun a0 : A => LOCALx (QG1' a0) TT) &&
@@ -307,32 +307,32 @@ Proof.
     eapply derives_trans; [| apply wand_corable_andp; apply corable_LOCAL].
     apply andp_derives; auto.
     apply corable_andp_wand_corable_andp; apply corable_LOCAL.
-  } Unfocus.
+  }
 
   rewrite !allp_andp.
   rewrite !@EnvironBox_andp.
   rewrite andp_assoc, corable_sepcon_andp1
     by (apply EnvironBox_corable, @corable_allp; intro; apply corable_LOCAL).
   apply andp_derives.
-  Focus 1. {
+  1: {
     rewrite @EnvironStable_EnvironBox.
     + apply allp_right; intro a; auto.
     + apply vars_relation_Equivalence.
     + apply EnvironStable_allp; auto.
-  } Unfocus.
+  }
 
   rewrite corable_sepcon_andp1
     by (apply EnvironBox_corable, @corable_allp; intro;
         apply corable_imp; apply corable_LOCAL).
   apply andp_right.
-  Focus 1. {
+  1: {
     apply derives_trans with TT; [apply TT_right |].
     rewrite <- (@EnvironBox_TT _ _ _ (vars_relation (modifiedvars s))) at 1.
     apply EnvironBox_derives.
     apply allp_right; intro a.
     apply imp_andp_adjoint.
     apply andp_left2; auto.
-   } Unfocus.      
+   }      
 
    auto.
 Qed.
@@ -347,10 +347,10 @@ Proof.
   intros.
   apply sepcon_EnvironBox_weaken with
    (ALL  a : A , !!Pure a --> (SEPx (L' a) -* SEPx (G' a))).
-  Focus 1. {
+  1: {
     apply allp_derives; intro a.
     auto.
-  } Unfocus.
+  }
 
   intro rho; unfold SEPx at 1 2; simpl.
   fold (ModBox s); rewrite go_lower_ModBox.
@@ -492,7 +492,7 @@ Ltac localize L :=
 Ltac solve_split_by_closed :=
   repeat first
     [ apply split_by_closed_nil
-    | apply split_by_closed_cons_closed; solve [repeat constructor; auto with closed]
+    | apply split_by_closed_cons_closed; [solve [repeat constructor; auto with closed] |]
     | apply split_by_closed_cons_unclosed].
 
 Ltac super_solve_split :=
@@ -570,10 +570,17 @@ Tactic Notation "unlocalize" constr(G') "binding" constr(bind) :=
 Tactic Notation "unlocalize" constr(G') :=
   unlocalize' G' []%RamAssu []%RamBind.
 
+Ltac canonical_ram_reduce0 :=
+  match goal with
+  | |- _ |-- allp (allp (allp _)) =>
+            (eapply derives_trans; [| apply allp_derives'; canonical_ram_reduce0]);
+            canonical_ram_reduce0
+  | |- _ |-- allp (allp _) => apply canonical_ram_reduce0
+  | |- _ |-- _ => apply derives_refl
+  end.
+
 Ltac simplify_ramif :=
-  eapply sepcon_EnvironBox_weaken;
-  [ repeat first [apply canonical_ram_reduce0 | apply derives_refl]
-  | cbv beta ];
+  eapply sepcon_EnvironBox_weaken; [canonical_ram_reduce0 | cbv beta];
   
   match goal with
   | |- _ |-- _ * EnvironBox _ (allp ?Frame) =>
@@ -649,6 +656,7 @@ Ltac semax_ram_call_body witness :=
         | forward_call_id00_wow witness].
 
 Ltac semax_ram_after_call2 :=
+      cbv beta iota delta [delete_temp_from_locals]; 
       cbv beta iota; 
       try rewrite <- no_post_exists0;
       unfold_app;

@@ -6,6 +6,8 @@ Require Import RamifyCoq.lib.List_ext.
 Require Import RamifyCoq.lib.relation_list.
 Require Import RamifyCoq.graph.graph_model.
 Require Import RamifyCoq.graph.path_lemmas.
+Require Import RamifyCoq.graph.graph_gen.
+Require Import RamifyCoq.graph.graph_relation.
 Require Import RamifyCoq.graph.subgraph2.
 Require Import RamifyCoq.graph.reachable_ind.
 Require Import Coq.Logic.Classical.
@@ -85,17 +87,7 @@ Module SIMPLE_SPANNING_TREE.
         rewrite <- H0 in H2. tauto.
     Qed.
 
-    Lemma spanning_tree_vvalid: forall (g1 : Graph) (root : V) (P: V -> Prop) (g2 : Graph) x,
-        ReachDecidable g1 root P -> spanning_tree g1 root P g2 -> (vvalid g1 x <-> vvalid g2 x).
-    Proof.
-      intros. destruct (X x).
-      + destruct H as [? [? [? ?]]]. split; intros.
-        - specialize (H1 _ r). apply reachable_foot_valid in H1. auto.
-        - apply reachable_by_foot_valid in r. auto.
-      + eapply not_reachable_ST_vvalid; eauto.
-    Qed.
-
-    Lemma spanning_tree_vvalid':
+    Lemma spanning_tree_vvalid:
       forall (g1 : Graph) (root : V) (P: V -> Prop) (g2 : Graph) x,
         spanning_tree g1 root P g2 -> (vvalid g1 x <-> vvalid g2 x).
     Proof.
@@ -114,20 +106,12 @@ Module SIMPLE_SPANNING_TREE.
       specialize (H _ H2). apply reachable_head_valid in H. auto.
     Qed.
 
-    Lemma edge_spanning_tree_vvalid: forall (g1: Graph) e (P: V -> Prop) (g2: Graph) x,
-        ReachDecidable g1 (dst g1 e) P -> edge_spanning_tree g1 e P g2 -> (vvalid g1 x <-> vvalid g2 x).
-    Proof.
-      intros. destruct H as [[_ ?]|[_ [? _]]].
-      + apply (spanning_tree_vvalid g1 (dst g1 e) P g2); auto.
-      + apply H.
-    Qed.
-
-    Lemma edge_spanning_tree_vvalid':
+    Lemma edge_spanning_tree_vvalid:
       forall (g1: Graph) e (P: V -> Prop) (g2: Graph) x,
         edge_spanning_tree g1 e P g2 -> (vvalid g1 x <-> vvalid g2 x).
     Proof.
       intros. destruct H as [[_ ?]|[_ [? _]]].
-      + apply (spanning_tree_vvalid' g1 (dst g1 e) P g2); auto.
+      + apply (spanning_tree_vvalid g1 (dst g1 e) P g2); auto.
       + apply H.
     Qed.
 
@@ -140,7 +124,7 @@ Module SIMPLE_SPANNING_TREE.
     Qed.
 
     Lemma edge_spanning_tree_reachable_vvalid: forall (g1 g2: Graph) e (P: V -> Prop),
-        ReachDecidable g1 (dst g1 e) P -> edge_spanning_tree g1 e P g2 -> Included (reachable g1 (src g1 e)) (vvalid g2).
+        edge_spanning_tree g1 e P g2 -> Included (reachable g1 (src g1 e)) (vvalid g2).
     Proof.
       intros. intro y; unfold Ensembles.In; intros. apply reachable_foot_valid in H0.
       rewrite <- edge_spanning_tree_vvalid; eauto.
@@ -456,7 +440,7 @@ Module SIMPLE_SPANNING_TREE.
           * intro. apply H5. destruct H6 as [s [? ?]]. exists s. split; auto.
             rewrite Coqlib.list_append_map. apply in_or_app. left; auto.
           * clear H1 H2 IHspanning_list' H. induction H0.
-            Focus 1. {
+            1: {
               rewrite app_nil_l in *. simpl. intro. apply H5. clear H5.
               assert (map (dst g0) es = map (dst g1) es). {
                 clear H0.
@@ -471,8 +455,8 @@ Module SIMPLE_SPANNING_TREE.
               rewrite (si_reachable_by_through_set g1 g0 _ _
                                                    (fun x0 : V => P x0 /\ ~ reachable_by_through_set g1 nil P x0)); auto.
               hnf. intros. simpl. rewrite reachable_by_through_nil. intuition.
-            } Unfocus.
-            Focus 1. {
+            }
+            1: {
               assert (Forall (evalid g1) (es0 ++ es)). {
                 rewrite Forall_forall in H3 |-* . intros.
                 apply H3. apply in_app_or in H1. apply in_or_app.
@@ -616,7 +600,7 @@ Module SIMPLE_SPANNING_TREE.
         g2 |= x ~> y -> g1 |= x ~> y.
     Proof.
       intros. destruct H1 as [? [? ?]]. hnf.
-      split; [|split]; [rewrite spanning_tree_vvalid'; eauto ..|].
+      split; [|split]; [rewrite spanning_tree_vvalid; eauto ..|].
       rewrite step_spec in H3 |-* . destruct H3 as [e [? [? ?]]].
       destruct H as [? _]. hnf in H. simpl in H.
       unfold predicate_weak_evalid in H. destruct H as [_ [? [? ?]]].
@@ -903,19 +887,19 @@ Module SIMPLE_SPANNING_TREE.
           apply (spanning_tree_root_vvalid _ _ _ _ H14); auto.
         - destruct H14 as [_ [_ [? _]]]. rewrite <- H16. apply H14.
           destruct H5 as [[? ?] | [? ?]].
-          Focus 1. {
+          1: {
             destruct H17 as [? _]. destruct H9 as [p ?]. exists p.
             eapply (ppg_reachable_by_path_to g1 g2); eauto.
             intros. simpl. destruct H9 as [_ [? ?]].
             rewrite path_prop_equiv in H19; auto. 
             specialize (H19 _ H18). destruct H19; auto.
-          } Unfocus.
-          Focus 1. {
+          }
+          1: {
             destruct H9 as [p ?]. exists p. apply (gremove_reachable_by_derive g1 e1 g2); auto.
             repeat intro. subst. destruct H9 as [_ [? ?]]. rewrite path_prop_equiv in H19; auto.
             assert (In_path g1 (src g1 e1) p) by (right; exists e1; split; auto). specialize (H19 _ H20).
             destruct H19 as [[_ ?] _]. destruct H3. subst root. auto.
-          } Unfocus.
+          }
     Qed.
 
     Lemma spanning_bi_tree: forall (P: V -> Prop) g1 root g2 g3 (e1 e2 : E),
@@ -1056,7 +1040,7 @@ Module SIMPLE_SPANNING_TREE.
               destruct H21 as [? [? ?]]. pose proof H6.
               apply (EST_the_same_dst _ _ root _ _ e1) in H24; auto.
               - rewrite H24 in *.
-                apply (edge_spanning_tree_vvalid' _ _ _ _ (dst g3 e1)) in H6.
+                apply (edge_spanning_tree_vvalid _ _ _ _ (dst g3 e1)) in H6.
                 rewrite <- H6 in H18. auto.
               - intro. destruct H25 as [[_ ?] _]; auto.
               - split; auto.
@@ -1089,8 +1073,8 @@ Module SIMPLE_SPANNING_TREE.
             assert (g1 |= dst g3 e1 ~o~> dst g3 e1
                          satisfying (fun x : V => P x /\ x <> root)). {
               apply reachable_by_refl; auto.
-              rewrite <- (edge_spanning_tree_vvalid' _ _ _ _ _ H6) in H13.
-              rewrite <- (edge_spanning_tree_vvalid' _ _ _ _ _ H18) in H13.
+              rewrite <- (edge_spanning_tree_vvalid _ _ _ _ _ H6) in H13.
+              rewrite <- (edge_spanning_tree_vvalid _ _ _ _ _ H18) in H13.
               auto.
             }
             assert (forall v, In_path g3 v (dst g3 e1, ms) ->
@@ -1150,7 +1134,7 @@ Module SIMPLE_SPANNING_TREE.
                           ~ g1 |= dst g1 e1 ~o~> x
                             satisfying (fun x0 : V => P x0 /\ x0 <> root))). {
               apply reachable_by_refl; auto.
-              rewrite <- (spanning_tree_vvalid' _ _ _ _ _ H19) in H13. auto.
+              rewrite <- (spanning_tree_vvalid _ _ _ _ _ H19) in H13. auto.
             }
             assert (forall v,
                        In_path g3 v (dst g3 e2, ms) ->
@@ -1216,7 +1200,7 @@ Module SIMPLE_SPANNING_TREE.
                          ~ g1 |= dst g1 e1 ~o~> x
                            satisfying (fun x0 : V => P x0 /\ x0 <> root))). {
               rewrite H30 in *. apply reachable_by_refl; auto.
-              rewrite <- (spanning_tree_vvalid' _ _ _ _ _ H31) in H27; auto.
+              rewrite <- (spanning_tree_vvalid _ _ _ _ _ H31) in H27; auto.
             } rewrite H30 in *.
             specialize (H6 _ _ H33 H32). exfalso; apply H6.
             apply reachable_by_path_is_reachable in H21; auto.
@@ -1244,7 +1228,7 @@ Module SIMPLE_SPANNING_TREE.
                          ~ g1 |= dst g1 e1 ~o~> x
                            satisfying (fun x0 : V => P x0 /\ x0 <> root))). {
               rewrite <- H30 in *. apply reachable_by_refl; auto.
-              rewrite <- (spanning_tree_vvalid' _ _ _ _ _ H31) in H23; auto.
+              rewrite <- (spanning_tree_vvalid _ _ _ _ _ H31) in H23; auto.
             } rewrite <- H30 in *.
             specialize (H6 _ _ H33 H32). exfalso; apply H6.
             apply reachable_by_path_is_reachable in H20; auto.
@@ -1411,10 +1395,10 @@ Section SPANNING.
   Context {V E: Type}.
   Context {EV: EqDec V eq}.
   Context {EE: EqDec E eq}.
-  Context {DV DE: Type}.
+  Context {DV DE DG: Type}.
   Context {MGS: MarkGraphSetting DV}.
-  Context {P: LabeledGraph V E DV DE -> Type}.
-  Notation Graph := (GeneralGraph V E DV DE P).
+  Context {P: LabeledGraph V E DV DE DG -> Type}.
+  Notation Graph := (GeneralGraph V E DV DE DG P).
   Local Coercion pg_lg : LabeledGraph >-> PreGraph.
   Local Coercion lg_gg : GeneralGraph >-> LabeledGraph.
 
@@ -1486,21 +1470,21 @@ Section SPANNING.
   Qed.
 
   Lemma spanning_tree_vvalid: forall (g1 : Graph) (root : V) (g2 : Graph) x,
-      ReachDecidable g1 root (unmarked g1) -> spanning_tree g1 root g2 -> (vvalid g1 x <-> vvalid g2 x).
+      spanning_tree g1 root g2 -> (vvalid g1 x <-> vvalid g2 x).
   Proof.
     intros. rewrite spanning_tree_inj in H. destruct H.
     apply (SIMPLE_SPANNING_TREE.spanning_tree_vvalid _ root (unmarked g1)); auto.
   Qed.
 
   Lemma edge_spanning_tree_vvalid: forall (g1 g2: Graph) e x,
-      ReachDecidable g1 (dst g1 e) (unmarked g1) -> edge_spanning_tree g1 e g2 -> (vvalid g1 x <-> vvalid g2 x).
+      edge_spanning_tree g1 e g2 -> (vvalid g1 x <-> vvalid g2 x).
   Proof.
     intros. rewrite edge_spanning_tree_inj in H. destruct H.
     apply (SIMPLE_SPANNING_TREE.edge_spanning_tree_vvalid _ e (unmarked g1)); auto.
   Qed.
 
   Lemma edge_spanning_tree_reachable_vvalid: forall (g1 g2: Graph) e,
-      ReachDecidable g1 (dst g1 e) (unmarked g1) -> edge_spanning_tree g1 e g2 ->
+      edge_spanning_tree g1 e g2 ->
       Included (reachable g1 (src g1 e)) (vvalid g2).
   Proof.
     intros. rewrite edge_spanning_tree_inj in H. destruct H.
@@ -1633,13 +1617,13 @@ Section SPANNING.
       specialize (IHspanning_list H6 H7 H8). destruct IHspanning_list. split.
       - unfold componded_mark_list. simpl. split_relation_list ((lg_gg g2) :: nil); auto.
         * hnf in H4. destruct (node_pred_dec (marked g1) (dst g1 e)).
-          Focus 1. {
+          1: {
             destruct H4. apply gremove_is_componded_mark; auto.
             apply Forall_inv in H1. auto.
-          } Unfocus.
-          Focus 1. {
+          }
+          1: {
             apply spanning_tree_is_componded_mark; auto.
-          } Unfocus.
+          }
         * unfold componded_mark_list in H9.
           assert (map (dst g1) rest = map (dst g2) rest). {
             apply NoDup_cons_2 in H0. apply Forall_tl in H1.
@@ -1666,16 +1650,16 @@ Section SPANNING.
   Proof.
     intros. rewrite spanning_tree_inj.
     apply (spanning_list_inj _ _ _ root) in H4.
-    Focus 2. { destruct H3 as [_ [? _]]; auto. } Unfocus.
-    Focus 2. {
+    2: { destruct H3 as [_ [? _]]; auto. }
+    2: {
       constructor.
       + intro. apply H. simpl in H5. destruct H5; [|exfalso]; auto.
       + constructor. intro. inversion H5. constructor.
-    } Unfocus.
-    Focus 2. {
+    }
+    2: {
       rewrite Forall_forall. intros. rewrite H0 in H5.
       destruct H3. apply (out_edges_si _ _ root x) in H3. intuition.
-    } Unfocus.
+    }
     destruct H4. split.
     + assert (step_list g root (map (dst g1) (e1 :: e2 :: nil))). {
         hnf. destruct H3. intros.
@@ -1721,6 +1705,62 @@ Section SPANNING.
         * reflexivity.
         * hnf. intros. rewrite H6; intuition.
       - apply (SIMPLE_SPANNING_TREE.spanning_list_derive (unmarked g1)); auto.
+  Qed.
+
+  Lemma spanning_tree_root_reachable: forall (g1 g2: Graph) (root: V),
+      ReachDecidable g1 root (unmarked g1) ->
+      spanning_tree g1 root g2 ->
+      forall x, reachable g2 root x -> reachable g1 root x.
+  Proof.
+    intros. destruct (X x).
+    - apply reachable_by_is_reachable in r. auto.
+    - apply spanning_tree_inj in H. destruct H.
+      apply (SIMPLE_SPANNING_TREE.spanning_tree_not_reachable_derive
+               _ root (unmarked g1) g2); auto.
+  Qed.
+
+  Lemma spanning_tree_totally_unmarked_root_reachable:
+    forall (g1 g2: Graph) (root: V),
+      totally_unmarked g1 root ->
+      (vvalid g1 root -> ReachDecidable g1 root (unmarked g1)) ->
+      spanning_tree g1 root g2 ->
+      forall x, reachable g1 root x <-> reachable g2 root x.
+  Proof.
+    intros. split; intro.
+    - apply H in H1. apply spanning_tree_inj in H0.
+      destruct H0 as [_ [_ [_ [? _]]]]. apply H0; auto.
+    - apply spanning_tree_root_reachable with g2; auto.
+      apply X. rewrite (spanning_tree_vvalid g1 root g2); auto.
+      apply reachable_head_valid in H1; auto.
+  Qed.
+
+  Lemma spanning_tree_totally_unmarked_parent_reachable:
+    forall (g1 g2: Graph) (root: V) (e: E),
+      out_edges g1 root e -> vvalid g1 root -> marked g1 root ->
+      totally_unmarked g1 (dst g1 e) ->
+      (vvalid g1 (dst g1 e) -> ReachDecidable g1 (dst g1 e) (unmarked g1)) ->
+      spanning_tree g1 (dst g1 e) g2 ->
+      forall x, reachable g1 root x <-> reachable g2 root x.
+  Proof.
+    intros. pose proof (spanning_tree_totally_unmarked_root_reachable _ g2 _ H2 X H3). destruct (classic (reachable g1 (dst g1 e) x)).
+    - pose proof H5. rewrite H4 in H6. split; intros; apply edge_reachable with (dst g1 e); auto; destruct H; hnf; rewrite step_spec; split; [|split | |split]; auto.
+      + rewrite <- (spanning_tree_vvalid g1 (dst g1 e)); auto.
+      + apply reachable_head_valid in H6; auto.
+      + exists e. destruct H3 as [_ [[_ [? [? ?]]] _]]. simpl in *. unfold predicate_weak_evalid in *.
+        specialize (H3 e). specialize (H9 e). specialize (H10 e). rewrite H8 in *.
+        assert (evalid g1 e /\ ~ g1 |= dst g1 e ~o~> root satisfying (unmarked g1)) by (split; auto; intro; apply reachable_by_foot_prop in H11; exfalso; auto).
+        pose proof H11. rewrite H3 in H12. split; [|split]; intuition.
+      + apply reachable_head_valid in H5; auto.
+      + exists e. auto.
+    - assert (~ g1 |= (dst g1 e) ~o~> x satisfying (unmarked g1)) by (intro; apply H5; apply reachable_by_is_reachable in H6; auto). split; intros.
+      + assert (~ reachable g1 (dst g1 e) x) by (intro; apply H6; apply H2; auto).
+        assert (g1 |= root ~o~> x satisfying (Complement V (reachable_by g1 (dst g1 e) (unmarked g1)))). {
+          destruct H7 as [p ?]. pose proof H7. destruct H7 as [? [? ?]]. exists p. split; [|split]; auto. rewrite path_prop_equiv; auto.
+          intros. unfold Complement, Ensembles.In . intro. apply (reachable_path_in' g1 _ root x) in H12; auto. apply reachable_by_is_reachable in H13.
+          apply H8. apply reachable_trans with n; auto.
+        } rewrite reachable_by_eq_partialgraph_reachable in H9. destruct H3 as [_ [? _]]. rewrite H3 in H9.
+        rewrite <- reachable_by_eq_partialgraph_reachable in H9. apply reachable_by_is_reachable in H9. auto.
+      + apply spanning_tree_inj in H3. destruct H3. eapply SIMPLE_SPANNING_TREE.spanning_tree_not_reachable_derive; eauto.
   Qed.
 
   (* Print Assumptions spanning_list_spanning_tree2. *)

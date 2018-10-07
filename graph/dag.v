@@ -3,6 +3,7 @@ Require Import Coq.Sets.Ensembles.
 Require Import Coq.Sets.Finite_sets.
 Require Import Coq.Lists.List.
 Require Import Coq.Classes.Morphisms.
+Require Import RamifyCoq.lib.Coqlib.
 Require Import RamifyCoq.lib.List_ext.
 Require Import RamifyCoq.lib.EquivDec_ext.
 Require Import VST.msl.Coqlib2.
@@ -109,6 +110,22 @@ Proof.
     intro; subst; tauto.
 Qed.
 
+Lemma localDag_reachable_spec': forall g x S,
+  vvalid g x ->
+  localDag g x ->
+  step_list g x S ->
+  Prop_join (reachable_through_set g S) (eq x) (reachable g x).
+Proof.
+  intros.
+  destruct (localDag_reachable_spec _ _ _ H H0 H1).
+  split.
+  + intros y; specialize (H2 y).
+    rewrite H2; clear.
+    firstorder.
+  + intros y; specialize (H3 y).
+    firstorder.
+Qed.
+
 Lemma localDag_reachable_list_spec: forall g x S l,
   vvalid g x ->
   localDag g x ->
@@ -119,7 +136,7 @@ Proof.
   intros.
   intro y.
   specialize (H2 y).
-  rewrite remove_in_3.
+  rewrite remove_In_iff.
   rewrite H2.
   rewrite (reachable_ind' g x S y H H1).
   assert (x = y <-> y = x) by (split; intros; congruence).

@@ -1,10 +1,10 @@
 Require Import RamifyCoq.lib.Equivalence_ext.
 Require Import RamifyCoq.veric_ext.SeparationLogic.
-Require Import floyd.base.
-Require Import floyd.client_lemmas.
-Require Import floyd.assert_lemmas.
-Require Import floyd.closed_lemmas.
-Require Import floyd.forward_lemmas.
+Require Import VST.floyd.base.
+Require Import VST.floyd.client_lemmas.
+Require Import VST.floyd.assert_lemmas.
+Require Import VST.floyd.closed_lemmas.
+Require Import VST.floyd.forward_lemmas.
 Local Open Scope logic.
 
 Section RAMIFICATION.
