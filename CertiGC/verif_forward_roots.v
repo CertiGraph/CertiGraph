@@ -47,8 +47,8 @@ Proof.
       entailer!. simpl. unfold field_address. rewrite if_true; simpl.
       1: f_equal; omega. unfold field_compatible in *. intuition. red. split; auto.
       simpl. omega. } forward. do 2 rewrite Znth_pos_cons by omega.
-    replace (i + 2 - 1 - 1) with i by omega. apply semax_if_seq. rewrite Heqn in H7.
-    pose proof (fi_index_range _ _ (Znth_In _ _ H7)). forward_if.
+    replace (i + 2 - 1 - 1) with i by omega. apply semax_if_seq. rewrite Heqn in H6.
+    pose proof (fi_index_range _ _ (Znth_In _ _ H6)). forward_if.
     + deadvars!. forward. do 2 rewrite Znth_pos_cons by omega.
       replace (i + 2 - 1 - 1) with i by omega.
       remember (Znth i (live_roots_indices f_info)).
@@ -63,31 +63,31 @@ Proof.
         rewrite if_true. 1: simpl; rewrite offset_offset_val; reflexivity.
         unfold field_compatible in *. simpl. unfold in_members. simpl. intuition. }
       assert (Zlength roots' = Zlength roots) by
-          (apply frl_roots_Zlength in H9; assumption).
+          (apply frl_roots_Zlength in H8; assumption).
       forward_call (rsh, sh, gv, fi, ti, g', t_info', f_info, roots', outlier, from,
                     to, 0, (@inl _ (VType*Z) i)).
       * simpl snd. apply prop_right.
         change (Tpointer tvoid {| attr_volatile := false; attr_alignas := Some 2%N |})
-          with int_or_ptr_type. rewrite H15. rewrite <- Heqz. clear. intuition.
-      * intuition. red. rewrite H16, H6. split; assumption.
+          with int_or_ptr_type. rewrite H14. rewrite <- Heqz. clear. intuition.
+      * intuition. red. rewrite H15, H5. split; assumption.
       * Intros vret. destruct vret as [[g2 t_info2] roots2]. simpl fst in *.
-        simpl snd in *. simpl forward_p2forward_t in H17. Exists g2 t_info2 roots2.
+        simpl snd in *. simpl forward_p2forward_t in H16. Exists g2 t_info2 roots2.
         assert (thread_info_relation t_info t_info2) by (eapply tir_trans; eauto).
         assert (gen_start g' from = gen_start g2 from). {
-          eapply fr_gen_start; eauto. destruct H12 as [_ [_ [? _]]].
+          eapply fr_gen_start; eauto. destruct H11 as [_ [_ [? _]]].
           assumption. }
         assert (limit_address g2 t_info2 from = limit_address g' t_info' from) by
-            (unfold limit_address; rewrite H23; rewrite (proj2 H21); reflexivity).
+            (unfold limit_address; rewrite H22; rewrite (proj2 H20); reflexivity).
         assert (next_address t_info2 to = next_address t_info' to) by
-            (unfold next_address; rewrite (proj1 H21); reflexivity).
-        destruct H17 as [? [? [? ?]]]. entailer!.
+            (unfold next_address; rewrite (proj1 H20); reflexivity).
+        destruct H16 as [? [? [? ?]]]. entailer!.
         replace (Z.to_nat (i + 1)) with (S (Z.to_nat i)) by
             (rewrite Z2Nat.inj_add by omega; simpl; omega).
         rewrite nat_inc_list_S. remember (Z.to_nat i) as n.
         replace i with (Z.of_nat n) in * by (subst n;rewrite Z2Nat.id; omega).
-        simpl in H19. apply frl_add_tail; assumption.
+        simpl in H18. apply frl_add_tail; assumption.
     + exfalso. rep_omega.
   - Intros g' t_info' roots'. forward. Exists g' t_info' roots'.
-    destruct H9 as [? [? [? ?]]]. entailer!. rewrite <- H6, ZtoNat_Zlength in H7.
-    apply H7.
+    destruct H8 as [? [? [? ?]]]. entailer!. rewrite <- H5, ZtoNat_Zlength in H6.
+    apply H6.
 Qed.

@@ -213,7 +213,7 @@ Definition forward_roots_spec :=
     PROP (readable_share rsh; writable_share sh;
           super_compatible (g, t_info, roots) f_info outlier;
           forward_condition g t_info from to;
-          to <> O; from <> to)
+          from <> to)
     LOCAL (temp _from_start (gen_start g from);
            temp _from_limit (limit_address g t_info from);
            temp _next (next_address t_info to);
@@ -249,7 +249,7 @@ Definition do_scan_spec :=
     PROP (readable_share rsh; writable_share sh;
           super_compatible (g, t_info, roots) f_info outlier;
           forward_condition g t_info from to;
-          to <> O; from <> to; closure_has_index g to to_index;
+          from <> to; closure_has_index g to to_index;
           0 < gen_size t_info to; gen_unmarked g to)
     LOCAL (temp _from_start (gen_start g from);
            temp _from_limit (limit_address g t_info from);
@@ -285,7 +285,7 @@ Definition do_generation_spec :=
     PROP (readable_share rsh; writable_share sh;
           super_compatible (g, t_info, roots) f_info outlier;
           do_generation_condition g t_info from to;
-          to <> O; from <> to)
+          from <> to)
     LOCAL (temp _from (space_address t_info from);
            temp _to (space_address t_info to);
            temp _fi fi; temp _ti ti)
