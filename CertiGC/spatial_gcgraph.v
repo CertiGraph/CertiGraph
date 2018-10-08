@@ -1285,3 +1285,17 @@ Proof.
     rewrite Znth_map by rep_omega. rewrite nth_space_Znth. reflexivity. } rewrite !H1.
   rewrite (sepcon_assoc _ B R). cancel. apply wand_frame_intro.
 Qed.
+
+Lemma generation_rep_rest_diff: forall (g: LGraph) i j,
+    i <> j ->
+    generation_rep g i = generation_rep (reset_nth_gen_graph j g) i.
+Proof.
+  intros. unfold generation_rep. unfold reset_nth_gen_graph, nth_sh, nth_gen. simpl.
+Abort.
+
+Lemma graph_rep_reset: forall (g: LGraph) (gen: nat),
+    graph_has_gen g gen ->
+    graph_rep g |-- graph_rep (reset_nth_gen_graph gen g) * TT.
+Proof.
+  intros. unfold graph_rep. simpl. rewrite reset_nth_gen_info_preserve_length.
+Abort.

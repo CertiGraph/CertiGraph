@@ -136,11 +136,21 @@ Proof.
       unfold gen_start. rewrite if_true by assumption. reflexivity. }
     assert (isptr (space_start (nth_space t_info2 from))). {
       rewrite H37. unfold gen_start. destruct H34 as [_ [? _]].
-      rewrite if_true by assumption. apply start_isptr. }
+      rewrite if_true by assumption. apply start_isptr. } deadvars!.
     freeze [0;1;2;3] FR. localize [space_struct_rep sh t_info2 from].
     unfold space_struct_rep, space_tri. forward.
     replace_SEP 0 (space_struct_rep sh t_info2 from) by
         (unfold space_struct_rep, space_tri; entailer!).
     unlocalize [thread_info_rep sh t_info2 ti].
     1: apply thread_info_rep_ramif_stable_1; assumption. thaw FR.
+    unfold thread_info_rep. Intros. freeze [0;2;3;4;6] FR. rewrite heap_struct_rep_eq.
+    assert_PROP (space_address t_info2 from =
+                 field_address (tarray space_type 12) [ArraySubsc (Z.of_nat from)]
+                               (ti_heap_p t_info2)). {
+      entailer!. unfold space_address. unfold field_address. rewrite if_true.
+      - simpl. f_equal.
+      - clear -H14 H41. unfold field_compatible in *. simpl in *. intuition. }
+    rewrite H39. clear H39. Opaque Znth. forward. Transparent Znth. 1: entailer!.
+    rewrite Znth_map by (rewrite spaces_size; rep_omega).
+    rewrite <- nth_space_Znth. unfold space_tri at 2 3. thaw FR.
 Abort.
