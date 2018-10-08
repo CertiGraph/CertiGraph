@@ -185,6 +185,8 @@ Global Opaque IMPOSSIBLE_VAL.
 Definition null_info: generation_info :=
   Build_generation_info IMPOSSIBLE_VAL O Tsh IMPOSSIBLE_ISPTR writable_share_top.
 
+Instance gen_info_inhabitant: Inhabitant generation_info := null_info.
+
 Record graph_info : Type :=
   {
     g_gen: list generation_info;
@@ -528,7 +530,7 @@ Definition
   roots_compatible g out r /\
   outlier_compatible g out.
 
-Definition reset_generation_info (gi: generation_info) : generation_info :=
+Definition reset_gen_info (gi: generation_info) : generation_info :=
   Build_generation_info (start_address gi) O (generation_sh gi) (start_isptr gi)
                         (generation_share_writable gi).
 
@@ -537,7 +539,7 @@ Fixpoint reset_nth_gen_info
   match n with
   | O => match gi with
          | nil => nil
-         | g :: l => reset_generation_info g :: l
+         | g :: l => reset_gen_info g :: l
          end
   | S m => match gi with
            | nil => nil
@@ -557,6 +559,58 @@ Proof.
   intros. pose proof (g_gen_not_nil g). destruct (g_gen g).
   - contradiction.
   - destruct n; simpl; discriminate.
+Qed.
+
+Lemma reset_nth_gen_info_diff: forall gl i j a,
+    i <> j -> nth i (reset_nth_gen_info j gl) a = nth i gl a.
+Proof.
+  intros ? ? ?. revert gl i. induction j; intros; simpl; destruct gl; try reflexivity.
+  - destruct i. 1: contradiction. simpl. reflexivity.
+  - destruct i. 1: reflexivity. simpl. apply IHj. omega.
+Qed.
+
+Lemma reset_nth_gen_info_same: forall gl i a,
+    0 <= i < length gl ->
+    nth i (reset_nth_gen_info i gl) a = reset_gen_info (nth i gl a).
+Proof.
+  intros. revert gl H. induction i; intros; destruct gl; simpl in *; try omega.
+  - reflexivity.
+  - apply IHi. omega.
+Qed.
+
+Lemma sublist_pos_cons: forall {A: Type} (lo hi: Z) (al: list A) v,
+    (0 < lo)%Z -> sublist lo hi (v :: al) = sublist (lo - 1) (hi - 1) al.
+Proof.
+  intros. unfold sublist. f_equal. 1: f_equal; omega.
+  replace (Z.to_nat lo) with (S (Z.to_nat (lo - 1))) by
+      (zify; rewrite !Z2Nat.id; omega). simpl. reflexivity.
+Qed.
+
+Lemma upd_Znth_pos_cons: forall {A: Type} (i: Z) (l: list A) v x,
+    (0 < i <= Zlength l)%Z -> upd_Znth i (v :: l) x = v :: upd_Znth (i - 1) l x.
+Proof.
+  intros. unfold upd_Znth.
+  rewrite (sublist_split 0 1 i); [| |rewrite Zlength_cons]; [| omega..].
+  unfold sublist at 1. simpl. rewrite !sublist_pos_cons by omega. do 4 f_equal.
+  1: omega. rewrite Zlength_cons; omega.
+Qed.
+
+Lemma reset_nth_gen_info_Znth: forall gl i,
+    0 <= i < length gl ->
+    reset_nth_gen_info i gl = upd_Znth (Z.of_nat i) gl
+                                       (reset_gen_info (Znth (Z.of_nat i) gl)).
+Proof.
+  intros ? ?. revert gl. induction i; intros; destruct gl; simpl in H; try omega.
+  - simpl.
+    rewrite upd_Znth0, Znth_0_cons, sublist_1_cons, sublist_same; try reflexivity.
+    rewrite Zlength_cons. omega.
+  - replace (Z.of_nat (S i)) with (Z.of_nat i + 1)%Z by (zify; omega).
+    rewrite Znth_pos_cons by omega.
+    replace (Z.of_nat i + 1 - 1)%Z with (Z.of_nat i) by omega. simpl.
+    rewrite upd_Znth_pos_cons.
+    + replace (Z.of_nat i + 1 - 1)%Z with (Z.of_nat i) by omega.
+      rewrite <- IHi; [reflexivity | omega].
+    + rewrite Zlength_correct. omega.
 Qed.
 
 Definition reset_nth_graph_info (n: nat) (g: graph_info) : graph_info :=
@@ -603,44 +657,11 @@ Definition reset_nth_heap_thread_info (n: nat) (ti: thread_info) :=
   Build_thread_info (ti_heap_p ti) (reset_nth_heap n (ti_heap ti))
                     (ti_args ti) (arg_size ti).
 
-Definition resume_graph_relation (g1 g2: LGraph): Prop :=
-  g1.(pg_lg) = g2.(pg_lg) /\
-  g1.(vlabel) = g2.(vlabel) /\
-  g1.(elabel) = g2.(elabel) /\
-  tl (glabel g1).(g_gen) = tl (glabel g2).(g_gen) /\
-  let h1 := graph_info_head g1.(glabel) in
-  let h2 := graph_info_head g2.(glabel) in
-  start_address h1 = start_address h2 /\
-  generation_sh h1 = generation_sh h2 /\ number_of_vertices h2 = O.
-
-Definition resume_thread_info_relation (t1 t2: thread_info): Prop :=
-  t1.(ti_heap_p) = t2.(ti_heap_p) /\
-  t1.(ti_args) = t2.(ti_args) /\
-  tl t1.(ti_heap).(spaces) = tl t2.(ti_heap).(spaces) /\
-  let h1 := heap_head t1.(ti_heap) in
-  let h2 := heap_head t2.(ti_heap) in
-  h1.(space_start) = h2.(space_start) /\ h1.(total_space) = h2.(total_space) /\
-  h1.(space_sh) = h2.(space_sh) /\ h2.(used_space) = 0%Z.
-
-Lemma reset_resume_g_relation: forall g,
-    resume_graph_relation g (reset_nth_gen_graph O g).
+Lemma reset_nth_gen_diff: forall g i j,
+    i <> j -> nth_gen (reset_nth_gen_graph j g) i = nth_gen g i.
 Proof.
-  intros. hnf. unfold reset_nth_gen_graph. simpl.
-  destruct (graph_info_head_cons (glabel g)) as [s [l [? ?]]]. rewrite H, H0. simpl.
-  destruct (graph_info_head_cons (reset_nth_graph_info 0 (glabel g))) as
-      [s' [l' [? ?]]]. rewrite H2. unfold reset_nth_graph_info in H1. simpl in H1.
-  rewrite H in H1. inversion H1. subst l' s'.
-  unfold reset_generation_info. simpl. tauto.
-Qed.
-
-Lemma reset_resume_t_relation: forall t,
-    resume_thread_info_relation t (reset_nth_heap_thread_info O t).
-Proof.
-  intros. hnf. unfold reset_nth_heap_thread_info. simpl.
-  destruct (heap_head_cons (ti_heap t)) as [s [l [? ?]]]. rewrite H0, H. simpl.
-  destruct (heap_head_cons (reset_nth_heap 0 (ti_heap t))) as [s' [l' [? ?]]].
-  rewrite H2. unfold reset_nth_heap in H1. simpl in H1. rewrite H in H1.
-  inversion H1. subst l' s'. unfold reset_space. simpl. tauto.
+  intros. unfold nth_gen, reset_nth_gen_graph. simpl.
+  apply reset_nth_gen_info_diff. assumption.
 Qed.
 
 (*
@@ -962,36 +983,6 @@ Lemma make_fields_reset: forall (g: LGraph) v n,
 Proof.
   intros. apply make_fields_the_same; unfold reset_nth_gen_graph; simpl;
             [intros; reflexivity..| apply start_address_reset].
-Qed.
-
-Lemma resume_preverse_graph_thread_info_compatible: forall (g g': LGraph) t t',
-    graph_thread_info_compatible g t ->
-    resume_graph_relation g g' ->
-    resume_thread_info_relation t t' ->
-    graph_thread_info_compatible g' t'.
-Proof.
-  intros. hnf in *. destruct H. destruct H0 as [? [? [? [? [? ?]]]]]. cbn in H7.
-  destruct H7. destruct H1 as [? [? [? ?]]]. cbn in H11.
-  destruct H11 as [? [? [? ?]]].
-  destruct (graph_info_head_cons (glabel g')) as [gi' [gl' [? ?]]].
-  rewrite H15, H16 in *.
-  destruct (graph_info_head_cons (glabel g)) as [gi [gl [? ?]]]. rewrite H17, H18 in *.
-  destruct (heap_head_cons (ti_heap t')) as [h' [l' [? ?]]]. rewrite H19, H20 in *.
-  destruct (heap_head_cons (ti_heap t)) as [h [l [? ?]]]. rewrite H21, H22 in *.
-  simpl in *. subst gl'. subst l'. split. 2: apply H2. constructor.
-  - apply Forall_inv in H. hnf in *. destruct H as [? [? ?]]. split; [|split].
-    + rewrite <- H6, <- H11. assumption.
-    + rewrite <- H7, <- H13. assumption.
-    + rewrite H8, H14. simpl. reflexivity.
-  - apply Forall_tl in H.
-    remember (combine (combine (nat_seq 1 (length gl)) gl) l) as hl.
-    rewrite Forall_forall in H |- *. intros. destruct x as [[gen gin] sp].
-    specialize (H _ H5). hnf in H |- *. destruct H as [? [? ?]].
-    split; [|split]; [assumption..|].
-    rewrite <- H23. remember (number_of_vertices gin) as n. clear -H3.
-    assert (forall v, vlabel g v = vlabel g' v) by
-        (intro; rewrite H3; reflexivity). induction n; simpl; auto.
-    rewrite !pvs_S, IHn. f_equal. unfold vertex_size. rewrite H. reflexivity.
 Qed.
 
 Definition copy_v_add_edge
