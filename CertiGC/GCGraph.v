@@ -816,7 +816,7 @@ Proof.
       assert (nth n' (make_fields' l_raw v (S i)) field_t_inhabitant = inr e) by
         (destruct r; [destruct s|]; simpl in H2;
         replace (i + 1)%nat with (S i) in H2 by omega; assumption).
-      destruct r; [destruct s|]; simpl; apply IHn'; try assumption.
+      destruct r; [destruct s|]; simpl; apply IHn'; assumption.
 Qed.
 
 Lemma make_fields'_same_edges_have_same_index: forall n m l_raw v i e,
@@ -909,11 +909,11 @@ Proof.
         split; try omega.
         destruct H; rewrite Zlength_cons in H1.
         apply Zsucc_lt_reg; rewrite <- Nat2Z.inj_succ.
-        rewrite <- Heqn0; rewrite Z2Nat.id; try assumption.
+        rewrite <- Heqn0; rewrite Z2Nat.id; assumption.
       }
       destruct a; [destruct s|]; simpl in H0; apply IHl;
         try assumption; apply make_fields'_n_doesnt_matter with (n:=1%nat);
-        rewrite Nat2Z.id; try assumption.
+        rewrite Nat2Z.id; assumption.
 Qed.
 
 Lemma in_gcptr_outlier: forall g gcptr outlier n v,
@@ -2641,7 +2641,7 @@ Proof.
   - reflexivity.
 Qed.
 
-Lemma upd_Znth_diff' : forall {A}{d: Inhabitant A} i j l (u : A),
+Lemma upd_Znth_diff_strong : forall {A}{d: Inhabitant A} i j l (u : A),
     0 <= j < Zlength l -> i <> j ->
   Znth i (upd_Znth j l u) = Znth i l.
 Proof.
@@ -2697,7 +2697,7 @@ Proof.
     assert (e = e) by reflexivity.
     apply c in H5. exfalso. assumption.
   - rewrite fields_eq_length in H.
-    rewrite upd_Znth_diff';
+    rewrite upd_Znth_diff_strong;
       try (rewrite Zlength_map; rewrite make_fields_eq_length);
       try assumption.
       rewrite Znth_map. 2: rewrite make_fields_eq_length; assumption.
