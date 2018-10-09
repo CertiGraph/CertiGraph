@@ -361,6 +361,17 @@ Proof.
   - f_equal. rewrite IHn. replace (S s + n) with (s + S n) by omega. reflexivity.
 Qed.
 
+Lemma nat_seq_Permutation_cons: forall s i n,
+    i < n -> exists l, Permutation (nat_seq s n) (s + i :: l).
+Proof.
+  intros. induction n. 1: omega. replace (S n) with (n + 1) by omega.
+  rewrite nat_seq_app. simpl. destruct (Nat.eq_dec i n).
+  - subst i. exists (nat_seq s n). symmetry. apply Permutation_cons_append.
+  - assert (i < n) by omega. apply IHn in H0. destruct H0 as [l ?].
+    exists (l +:: (s + n)). rewrite app_comm_cons. apply Permutation_app_tail.
+    assumption.
+Qed.
+
 Definition nat_inc_list (n: nat) : list nat := nat_seq O n.
 
 Lemma nat_inc_list_length: forall num, length (nat_inc_list num) = num.
@@ -381,6 +392,13 @@ Proof. intros. unfold nat_inc_list. rewrite nat_seq_app. reflexivity. Qed.
 
 Lemma nat_inc_list_NoDup: forall n, NoDup (nat_inc_list n).
 Proof. intros. unfold nat_inc_list. apply nat_seq_NoDup. Qed.
+
+Lemma nat_inc_list_Permutation_cons: forall i n,
+    i < n -> exists l, Permutation (nat_inc_list n) (i :: l).
+Proof.
+  intros. unfold nat_inc_list. replace i with (O + i) by omega.
+  apply nat_seq_Permutation_cons. assumption.
+Qed.
 
 Local Open Scope Z_scope.
 
@@ -965,25 +983,29 @@ Proof.
 Qed.
 
 Lemma start_address_reset: forall n l,
-    map start_address l = map start_address (reset_nth_gen_info n l).
+   map start_address (reset_nth_gen_info n l) = map start_address l.
 Proof.
   intros. revert n.
-  induction l; intros; simpl; destruct n; simpl; [| | | rewrite <- IHl]; reflexivity.
+  induction l; intros; simpl; destruct n; simpl; [| | | rewrite IHl]; reflexivity.
 Qed.
 
 Lemma vertex_address_reset: forall (g: LGraph) v n,
-    vertex_address g v = vertex_address (reset_nth_gen_graph n g) v.
+    vertex_address (reset_nth_gen_graph n g) v = vertex_address g v.
 Proof.
   intros. apply vertex_address_the_same; unfold reset_nth_gen_graph;
-            simpl; [intro | rewrite <- start_address_reset]; reflexivity.
+            simpl; [intro | rewrite start_address_reset]; reflexivity.
 Qed.
 
 Lemma make_fields_reset: forall (g: LGraph) v n,
-    make_fields_vals g v = make_fields_vals (reset_nth_gen_graph n g) v.
+    make_fields_vals (reset_nth_gen_graph n g) v = make_fields_vals g v.
 Proof.
   intros. apply make_fields_the_same; unfold reset_nth_gen_graph; simpl;
             [intros; reflexivity..| apply start_address_reset].
 Qed.
+
+Lemma make_header_reset: forall (g: LGraph) v n,
+    make_header (reset_nth_gen_graph n g) v = make_header g v.
+Proof. intros. reflexivity. Qed.
 
 Definition copy_v_add_edge
            (s: VType) (g: PreGraph VType EType) (p: EType * VType):
@@ -1525,6 +1547,20 @@ Proof.
 Qed.
 
 Definition nth_sh g gen := generation_sh (nth_gen g gen).
+
+Lemma reset_nth_sh_diff: forall g i j,
+    i <> j -> nth_sh (reset_nth_gen_graph j g) i = nth_sh g i.
+Proof. intros. unfold nth_sh. rewrite reset_nth_gen_diff; auto. Qed.
+
+Lemma reset_nth_sh: forall g i j,
+    (0 <= i < length (g_gen (glabel g)))%nat ->
+    nth_sh (reset_nth_gen_graph j g) i = nth_sh g i.
+Proof.
+  intros. destruct (Nat.eq_dec i j).
+  - subst. unfold reset_nth_gen_graph, nth_sh, nth_gen. simpl.
+    rewrite reset_nth_gen_info_same; [reflexivity | assumption].
+  - apply reset_nth_sh_diff. assumption.
+Qed.
 
 Lemma Znth_tl {A} {d: Inhabitant A}: forall (l: list A) i,
     0 <= i -> Znth i (tl l) = Znth (i + 1) l.
