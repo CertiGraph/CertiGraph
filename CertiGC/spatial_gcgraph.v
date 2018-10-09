@@ -1286,16 +1286,54 @@ Proof.
   rewrite (sepcon_assoc _ B R). cancel. apply wand_frame_intro.
 Qed.
 
-Lemma generation_rep_rest_diff: forall (g: LGraph) i j,
-    i <> j ->
-    generation_rep g i = generation_rep (reset_nth_gen_graph j g) i.
+Lemma vertex_rep_reset: forall g i j x sh,
+    vertex_rep sh (reset_nth_gen_graph j g) (i, x) = vertex_rep sh g (i, x).
 Proof.
-  intros. unfold generation_rep. unfold reset_nth_gen_graph, nth_sh, nth_gen. simpl.
-Abort.
+  intros. unfold vertex_rep.
+  rewrite vertex_address_reset, make_header_reset, make_fields_reset. reflexivity.
+Qed.
+
+Lemma generation_rep_reset_diff: forall (g: LGraph) i j,
+    i <> j -> generation_rep (reset_nth_gen_graph j g) i = generation_rep g i.
+Proof.
+  intros. unfold generation_rep. rewrite <- !iter_sepcon_map.
+  rewrite reset_nth_gen_diff, reset_nth_sh_diff by assumption.
+  apply iter_sepcon_func; intros. apply vertex_rep_reset.
+Qed.
+
+Lemma generation_rep_reset_same: forall (g: LGraph) i,
+    graph_has_gen g i -> generation_rep (reset_nth_gen_graph i g) i = emp.
+Proof.
+  intros. unfold generation_rep. rewrite <- !iter_sepcon_map.
+  unfold nth_gen, reset_nth_gen_graph at 1. simpl.
+  rewrite reset_nth_gen_info_same.
+  - simpl. reflexivity.
+  - red in H. omega.
+Qed.
 
 Lemma graph_rep_reset: forall (g: LGraph) (gen: nat),
     graph_has_gen g gen ->
-    graph_rep g |-- graph_rep (reset_nth_gen_graph gen g) * TT.
+    graph_rep g = graph_rep (reset_nth_gen_graph gen g) * generation_rep g gen.
 Proof.
   intros. unfold graph_rep. simpl. rewrite reset_nth_gen_info_preserve_length.
+  remember (length (g_gen (glabel g))). pose proof H as HS. red in H.
+  rewrite <- Heqn in H. destruct (nat_inc_list_Permutation_cons _ _ H) as [l ?].
+  rewrite !(iter_sepcon_permutation _ H0). simpl.
+  assert (iter_sepcon l (generation_rep (reset_nth_gen_graph gen g)) =
+          iter_sepcon l (generation_rep g)). {
+    apply iter_sepcon_func_strong. intros. rewrite generation_rep_reset_diff.
+    1: reflexivity. pose proof (nat_inc_list_NoDup n).
+    apply (Permutation_NoDup H0) in H2. apply NoDup_cons_2 in H2.
+    intro. subst. contradiction. } rewrite H1. clear H1.
+  rewrite generation_rep_reset_same by assumption.
+  rewrite emp_sepcon, sepcon_comm. reflexivity.
+Qed.
+
+Lemma heap_rest_rep_reset: forall (g: LGraph) t_info gen,
+    graph_thread_info_compatible g t_info -> graph_has_gen g gen ->
+    heap_rest_rep (ti_heap t_info) *
+    generation_rep g gen |-- heap_rest_rep
+                   (ti_heap (reset_nth_heap_thread_info gen t_info)).
+Proof.
+  intros. unfold heap_rest_rep. simpl.
 Abort.

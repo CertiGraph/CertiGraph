@@ -153,4 +153,6 @@ Proof.
     rewrite H39. clear H39. Opaque Znth. forward. Transparent Znth. 1: entailer!.
     rewrite Znth_map by (rewrite spaces_size; rep_omega).
     rewrite <- nth_space_Znth. unfold space_tri at 2 3. thaw FR.
+    assert (graph_has_gen g2 from) by (destruct H34 as [_ [? _]]; assumption).
+    rewrite (graph_rep_reset g2 from) by assumption. Intros.
 Abort.
