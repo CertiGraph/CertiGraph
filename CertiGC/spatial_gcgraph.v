@@ -1336,4 +1336,22 @@ Lemma heap_rest_rep_reset: forall (g: LGraph) t_info gen,
                    (ti_heap (reset_nth_heap_thread_info gen t_info)).
 Proof.
   intros. unfold heap_rest_rep. simpl.
-Abort.
+  assert (gen < length (spaces (ti_heap t_info)))%nat by
+      (red in H0; destruct H as [_ [_ ?]]; omega).
+  destruct (reset_nth_space_Permutation _ _ H1) as [l [? ?]].
+  rewrite (iter_sepcon_permutation _ H3). rewrite (iter_sepcon_permutation _ H2).
+  simpl. cancel. destruct (gt_gs_compatible _ _ H _ H0) as [? [? ?]].
+  fold (nth_space t_info gen). unfold space_rest_rep. unfold reset_space at 1.
+  assert (isptr (space_start (nth_space t_info gen))) by
+      (rewrite <- H4; apply start_isptr).
+  assert (space_start (nth_space t_info gen) <> nullval). {
+    destruct (space_start (nth_space t_info gen)); try contradiction.
+    intro; inversion H8. } simpl space_start. rewrite !if_false by assumption.
+  sep_apply (generation_rep_data_at_ g gen H0). unfold graph_gen_size. rewrite H6.
+  unfold gen_start. rewrite if_true by assumption. rewrite H4. unfold nth_sh.
+  rewrite H5. simpl. remember (nth_space t_info gen).
+  replace (WORD_SIZE * 0)%Z with 0 by omega.
+  rewrite isptr_offset_val_zero by assumption.
+  replace (total_space s - 0) with (total_space s) by omega.
+  rewrite <- data_at__tarray_value by apply space_order. cancel.
+Qed.

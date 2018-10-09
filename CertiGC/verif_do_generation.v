@@ -154,5 +154,17 @@ Proof.
     rewrite Znth_map by (rewrite spaces_size; rep_omega).
     rewrite <- nth_space_Znth. unfold space_tri at 2 3. thaw FR.
     assert (graph_has_gen g2 from) by (destruct H34 as [_ [? _]]; assumption).
-    rewrite (graph_rep_reset g2 from) by assumption. Intros.
+    rewrite (graph_rep_reset g2 from) by assumption. Intros. gather_SEP 1 4.
+    sep_apply (heap_rest_rep_reset g2 t_info2 from (proj1 H33) H39).
+    rewrite <- heap_struct_rep_eq. gather_SEP 2 5 0.
+    replace_SEP 0 (thread_info_rep sh (reset_nth_heap_thread_info from t_info2) ti).
+    + unfold thread_info_rep. simpl ti_heap_p. simpl ti_args. entailer!.
+      assert (0 <= from < length (spaces (ti_heap t_info2)))%nat by
+          (destruct H33 as [[_ [_ ?]] _]; red in H39; omega).
+      rewrite (reset_nth_space_Znth _ _ H44), <- nth_space_Znth, <- upd_Znth_map.
+      unfold space_tri at 3. simpl. replace (WORD_SIZE * 0)%Z with 0 by omega.
+      rewrite isptr_offset_val_zero by assumption. cancel.
+    + forward. remember (reset_nth_heap_thread_info from t_info2) as t_info3.
+      remember (reset_nth_gen_graph from g2) as g3. Exists g3 t_info3 roots1.
+      entailer!.
 Abort.

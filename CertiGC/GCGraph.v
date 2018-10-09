@@ -613,24 +613,6 @@ Proof.
   1: omega. rewrite Zlength_cons; omega.
 Qed.
 
-Lemma reset_nth_gen_info_Znth: forall gl i,
-    0 <= i < length gl ->
-    reset_nth_gen_info i gl = upd_Znth (Z.of_nat i) gl
-                                       (reset_gen_info (Znth (Z.of_nat i) gl)).
-Proof.
-  intros ? ?. revert gl. induction i; intros; destruct gl; simpl in H; try omega.
-  - simpl.
-    rewrite upd_Znth0, Znth_0_cons, sublist_1_cons, sublist_same; try reflexivity.
-    rewrite Zlength_cons. omega.
-  - replace (Z.of_nat (S i)) with (Z.of_nat i + 1)%Z by (zify; omega).
-    rewrite Znth_pos_cons by omega.
-    replace (Z.of_nat i + 1 - 1)%Z with (Z.of_nat i) by omega. simpl.
-    rewrite upd_Znth_pos_cons.
-    + replace (Z.of_nat i + 1 - 1)%Z with (Z.of_nat i) by omega.
-      rewrite <- IHi; [reflexivity | omega].
-    + rewrite Zlength_correct. omega.
-Qed.
-
 Definition reset_nth_graph_info (n: nat) (g: graph_info) : graph_info :=
   Build_graph_info (reset_nth_gen_info n g.(g_gen)) (reset_nth_gen_info_not_nil n g).
 
@@ -667,6 +649,38 @@ Qed.
 Lemma reset_nth_heap_Zlength: forall n h,
     Zlength (reset_nth_space n (spaces h)) = MAX_SPACES.
 Proof. intros. rewrite <- reset_nth_space_Zlength. apply spaces_size. Qed.
+
+Lemma reset_nth_space_Permutation: forall n s,
+    n < length s -> exists l, Permutation (reset_nth_space n s)
+                                          (reset_space (nth n s null_space) :: l) /\
+                              Permutation s (nth n s null_space :: l).
+Proof.
+  induction n; intros; destruct s; simpl in *; try omega.
+  - exists s0. split; constructor; reflexivity.
+  - assert (n < length s0) by omega. destruct (IHn _ H0) as [ll [? ?]].
+    exists (s :: ll). split.
+    + transitivity (s :: reset_space (nth n s0 null_space) :: ll).
+      1: constructor; assumption. apply perm_swap.
+    + transitivity (s :: nth n s0 null_space :: ll).
+      1: constructor; assumption. apply perm_swap.
+Qed.
+
+Lemma reset_nth_space_Znth: forall s i,
+    0 <= i < length s ->
+    reset_nth_space i s = upd_Znth (Z.of_nat i) s (reset_space (Znth (Z.of_nat i) s)).
+Proof.
+  intros ? ?. revert s. induction i; intros; destruct s; simpl in H; try omega.
+  - simpl.
+    rewrite upd_Znth0, Znth_0_cons, sublist_1_cons, sublist_same; try reflexivity.
+    rewrite Zlength_cons. omega.
+  - replace (Z.of_nat (S i)) with (Z.of_nat i + 1)%Z by (zify; omega).
+    rewrite Znth_pos_cons by omega.
+    replace (Z.of_nat i + 1 - 1)%Z with (Z.of_nat i) by omega. simpl.
+    rewrite upd_Znth_pos_cons.
+    + replace (Z.of_nat i + 1 - 1)%Z with (Z.of_nat i) by omega.
+      rewrite <- IHi; [reflexivity | omega].
+    + rewrite Zlength_correct. omega.
+Qed.
 
 Definition reset_nth_heap (n: nat) (h: heap) : heap :=
   Build_heap (reset_nth_space n (spaces h)) (reset_nth_heap_Zlength n h).
