@@ -565,7 +565,7 @@ Fixpoint reset_nth_gen_info
            end
   end.
 
-Lemma reset_nth_gen_info_preserve_length: forall n gl,
+Lemma reset_nth_gen_info_length: forall n gl,
     length (reset_nth_gen_info n gl) = length gl.
 Proof.
   intros. revert n. induction gl; simpl; intros; destruct n; simpl;
@@ -588,12 +588,18 @@ Proof.
 Qed.
 
 Lemma reset_nth_gen_info_same: forall gl i a,
-    0 <= i < length gl ->
-    nth i (reset_nth_gen_info i gl) a = reset_gen_info (nth i gl a).
+    i < length gl -> nth i (reset_nth_gen_info i gl) a = reset_gen_info (nth i gl a).
 Proof.
   intros. revert gl H. induction i; intros; destruct gl; simpl in *; try omega.
   - reflexivity.
   - apply IHi. omega.
+Qed.
+
+Lemma reset_nth_gen_info_overflow: forall gl i,
+    length gl <= i -> reset_nth_gen_info i gl = gl.
+Proof.
+  intros ? ?. revert gl. induction i; intros; destruct gl; simpl in *; try reflexivity.
+  1: omega. rewrite IHi; [reflexivity | omega].
 Qed.
 
 Lemma sublist_pos_cons: forall {A: Type} (lo hi: Z) (al: list A) v,
@@ -620,6 +626,23 @@ Definition reset_nth_gen_graph (n: nat) (g: LGraph) : LGraph :=
   Build_LabeledGraph _ _ _ (pg_lg g) (vlabel g) (elabel g)
                      (reset_nth_graph_info n (glabel g)).
 
+Lemma reset_nth_gen_graph_overflow: forall n (g: LGraph),
+    length (g_gen (glabel g)) <= n -> reset_nth_gen_graph n g = g.
+Proof.
+  intros. unfold reset_nth_gen_graph. destruct g. f_equal.
+  simpl. unfold reset_nth_graph_info. destruct glabel. simpl in *.
+  assert (g_gen0 = reset_nth_gen_info n g_gen0) by
+      (rewrite reset_nth_gen_info_overflow; [reflexivity | assumption]).
+  apply EqdepFacts.f_eq_dep_non_dep, EqdepFacts.eq_dep1_dep.
+  apply (EqdepFacts.eq_dep1_intro _ _ _ _ _ _ H0). apply proof_irr.
+Qed.
+
+Lemma reset_graph_has_gen: forall n (g: LGraph) i,
+    graph_has_gen (reset_nth_gen_graph n g) i <-> graph_has_gen g i.
+Proof.
+  intros. unfold graph_has_gen. simpl. rewrite reset_nth_gen_info_length. reflexivity.
+Qed.
+
 Lemma reset_space_order: forall sp, (0 <= 0 <= total_space sp)%Z.
 Proof. intros. pose proof (space_order sp). omega. Qed.
 
@@ -639,12 +662,15 @@ Fixpoint reset_nth_space (n: nat) (s: list space): list space :=
            end
   end.
 
-Lemma reset_nth_space_Zlength: forall n s, Zlength s = Zlength (reset_nth_space n s).
+Lemma reset_nth_space_length: forall n s, length (reset_nth_space n s) = length s.
 Proof.
   induction n; intros; simpl.
-  - destruct s; simpl; [|rewrite !Zlength_cons]; reflexivity.
-  - destruct s; [|rewrite !Zlength_cons, (IHn s0)]; reflexivity.
+  - destruct s; simpl; reflexivity.
+  - destruct s; [|simpl; rewrite (IHn s0)]; reflexivity.
 Qed.
+
+Lemma reset_nth_space_Zlength: forall n s, Zlength s = Zlength (reset_nth_space n s).
+Proof. intros. rewrite !Zlength_correct, reset_nth_space_length. reflexivity. Qed.
 
 Lemma reset_nth_heap_Zlength: forall n h,
     Zlength (reset_nth_space n (spaces h)) = MAX_SPACES.
@@ -666,7 +692,7 @@ Proof.
 Qed.
 
 Lemma reset_nth_space_Znth: forall s i,
-    0 <= i < length s ->
+    i < length s ->
     reset_nth_space i s = upd_Znth (Z.of_nat i) s (reset_space (Znth (Z.of_nat i) s)).
 Proof.
   intros ? ?. revert s. induction i; intros; destruct s; simpl in H; try omega.
@@ -682,6 +708,29 @@ Proof.
     + rewrite Zlength_correct. omega.
 Qed.
 
+Lemma reset_nth_space_overflow: forall s i, length s <= i -> reset_nth_space i s = s.
+Proof.
+  intros ? ?. revert s.
+  induction i; intros; destruct s; simpl in *; try omega; try reflexivity.
+  rewrite IHi; [reflexivity | omega].
+Qed.
+
+Lemma reset_nth_space_diff: forall gl i j a,
+    i <> j -> nth i (reset_nth_space j gl) a = nth i gl a.
+Proof.
+  intros ? ? ?. revert gl i. induction j; intros; simpl; destruct gl; try reflexivity.
+  - destruct i. 1: contradiction. simpl. reflexivity.
+  - destruct i. 1: reflexivity. simpl. apply IHj. omega.
+Qed.
+
+Lemma reset_nth_space_same: forall gl i a,
+    i < length gl -> nth i (reset_nth_space i gl) a = reset_space (nth i gl a).
+Proof.
+  intros. revert gl H. induction i; intros; destruct gl; simpl in *; try omega.
+  - reflexivity.
+  - apply IHi. omega.
+Qed.
+
 Definition reset_nth_heap (n: nat) (h: heap) : heap :=
   Build_heap (reset_nth_space n (spaces h)) (reset_nth_heap_Zlength n h).
 
@@ -694,6 +743,17 @@ Lemma reset_nth_gen_diff: forall g i j,
 Proof.
   intros. unfold nth_gen, reset_nth_gen_graph. simpl.
   apply reset_nth_gen_info_diff. assumption.
+Qed.
+
+Lemma reset_thread_info_overflow: forall n ti,
+    length (spaces (ti_heap ti)) <= n -> reset_nth_heap_thread_info n ti = ti.
+Proof.
+  intros. unfold reset_nth_heap_thread_info. destruct ti. f_equal.
+  simpl. unfold reset_nth_heap. destruct ti_heap0. simpl in *.
+  assert (spaces0 = reset_nth_space n spaces0) by
+      (rewrite reset_nth_space_overflow; [reflexivity | assumption]).
+  apply EqdepFacts.f_eq_dep_non_dep, EqdepFacts.eq_dep1_dep.
+  apply (EqdepFacts.eq_dep1_intro _ _ _ _ _ _ H0). apply proof_irr.
 Qed.
 
 (*
@@ -1446,7 +1506,7 @@ Qed.
 
 Definition gen_size t_info n := total_space (nth_space t_info n).
 
-Lemma gsc_iff: forall g t_info,
+Lemma gsc_iff: forall (g: LGraph) t_info,
     length (g_gen (glabel g)) <= length (spaces (ti_heap t_info)) ->
     Forall (generation_space_compatible g)
            (combine (combine (nat_inc_list (length (g_gen (glabel g))))
@@ -1567,7 +1627,7 @@ Lemma reset_nth_sh_diff: forall g i j,
 Proof. intros. unfold nth_sh. rewrite reset_nth_gen_diff; auto. Qed.
 
 Lemma reset_nth_sh: forall g i j,
-    (0 <= i < length (g_gen (glabel g)))%nat ->
+    (i < length (g_gen (glabel g)))%nat ->
     nth_sh (reset_nth_gen_graph j g) i = nth_sh g i.
 Proof.
   intros. destruct (Nat.eq_dec i j).
@@ -3486,3 +3546,37 @@ Qed.
 
 Definition graph_gen_clear (g: LGraph) (gen: nat) :=
   number_of_vertices (nth_gen g gen) = O.
+
+Lemma graph_thread_info_compatible_reset: forall g t_info gen,
+    graph_thread_info_compatible g t_info ->
+    graph_thread_info_compatible (reset_nth_gen_graph gen g)
+                                 (reset_nth_heap_thread_info gen t_info).
+Proof.
+  intros. destruct H as [? [? ?]].
+  split; [|split]; [|simpl; rewrite reset_nth_gen_info_length..].
+  - rewrite gsc_iff by
+        (simpl; rewrite reset_nth_space_length, reset_nth_gen_info_length; assumption).
+    intros n ?. rewrite gsc_iff in H by assumption. rewrite reset_graph_has_gen in H2.
+    specialize (H _ H2). red in H.
+    simpl. unfold nth_gen, nth_space in *. simpl. destruct (Nat.eq_dec n gen).
+    + subst gen. red in H2. rewrite reset_nth_gen_info_same by assumption.
+      rewrite reset_nth_space_same by omega. intuition.
+    + rewrite reset_nth_gen_info_diff, reset_nth_space_diff by assumption. intuition.
+  - destruct (le_lt_dec (length (spaces (ti_heap t_info))) gen).
+    + rewrite reset_nth_space_overflow; assumption.
+    + rewrite reset_nth_space_Znth by assumption. rewrite <- upd_Znth_map. simpl.
+      remember (spaces (ti_heap t_info)).
+      assert (0 <= Z.of_nat gen < Zlength l0) by (rewrite Zlength_correct; omega).
+      replace (space_start (Znth (Z.of_nat gen) l0))
+        with (Znth (Z.of_nat gen) (map space_start l0)) by (rewrite Znth_map; auto).
+      rewrite upd_Znth_unchanged; [|rewrite Zlength_map]; assumption.
+  - rewrite reset_nth_space_length. assumption.
+Qed.
+
+Lemma fta_compatible_reset: forall g t_info fi r gen,
+    fun_thread_arg_compatible g t_info fi r ->
+    fun_thread_arg_compatible (reset_nth_gen_graph gen g)
+                              (reset_nth_heap_thread_info gen t_info) fi r.
+Proof.
+  intros. unfold fun_thread_arg_compatible in *. simpl.
+Abort.
