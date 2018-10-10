@@ -787,8 +787,7 @@ Proof.
                entailer!. }
           subst g'; subst v1.
           unlocalize [graph_rep (labeledgraph_gen_dst g e (copied_vertex (vlabel g v')))].
-          1: admit. (*rewrite <- lgd_sh_unchanged; 
-                      apply (graph_vertex_lgd_ramif _ _ _ _ H0). *)
+          1: apply (graph_vertex_lgd_ramif g v e (copied_vertex (vlabel g v')) n); try (rewrite make_fields_eq_length); assumption.
           forward.
           Exists (labeledgraph_gen_dst g e (copied_vertex (vlabel g (dst g e)))) t_info roots. 
           entailer!.
@@ -796,169 +795,27 @@ Proof.
           split; [|split; [|split]]; try reflexivity.
           ++ rewrite H12; simpl.
              rewrite Heqf. constructor; [reflexivity | assumption].
-          ++ constructor. assumption.
-             split; [|split; [|split]]; try assumption.
-             clear -H10.
-             repeat intro. simpl.
+          ++ split; [|split; [|split; [|split]]]; try assumption.
+             simpl in *.
+             clear -H0 H7 H8 H9 H10 H3 Heqf H18 H21.
+             unfold copy_compatible in H9.
+             intro. intro.
+             rewrite <- lgd_graph_has_v in *.
+             unfold no_dangling_dst in H10.
+             simpl.
+             unfold updateEdgeFunc.
+             intros.
+             if_tac.
+             apply (H9 (dst g e) H18 H21).
+             rewrite <- lgd_graph_has_v in *.
+             
+             (* apply (H9 (dst g e0) H18 H21). *)
+             
              admit.
-             (*
-               rewrite <- lgd_graph_has_v in *.
-               unfold no_dangling_dst in H10.
-               unfold updateEdgeFunc. 
-              *)
+        (* Shengyi says this should be very easy
+           Or that we can add something like this if needeed *)
              
 
-
-Lemma lgd_graph_has_v: forall g e v v',
-    graph_has_v g v <-> graph_has_v (labeledgraph_gen_dst g e v') v.
-Proof. reflexivity. Qed.
-
-Lemma lgd_vertex_address: forall g e v' x,
-    vertex_address (labeledgraph_gen_dst g e v') x = vertex_address g x.
-Proof. reflexivity. Qed.
-
-Lemma lgd_make_fields: forall (g : LGraph) (v v': VType) e,
-    make_fields (labeledgraph_gen_dst g e v') v = make_fields g v.
-Proof. reflexivity. Qed.
-
-Lemma lgd_vlabel_eq: forall (g: LGraph) (v' x : VType) e,
-    vlabel (labeledgraph_gen_dst g e v') x = vlabel g x.
-Proof. reflexivity. Qed.
-
-Lemma lgd_make_header_eq: forall g e v' x,
-    make_header g x =
-    make_header (labeledgraph_gen_dst g e v') x.
-Proof. reflexivity. Qed.
-
-Lemma lgd_raw_mark_eq: forall (g: LGraph) e (v v' : VType),
-    raw_mark (vlabel g v) =
-    raw_mark (vlabel (labeledgraph_gen_dst g e v') v).
-Proof. reflexivity. Qed.
-
-Lemma lgd_make_fields_vals_unchanged_except_one: forall g v v' e n,
-    0 <= n < Zlength (make_fields g v) -> 
-    raw_mark (vlabel g v) = false ->
-    Znth n (make_fields g v) <> inr e ->
-    Znth n (make_fields_vals g v) =
-    Znth n (make_fields_vals (labeledgraph_gen_dst g e v') v).
-Proof.
-  intros. unfold make_fields_vals.
-  rewrite lgd_make_fields, <- lgd_raw_mark_eq, H0.
-  repeat rewrite Znth_map by assumption.
-  apply lgd_nonedges_unchanged; assumption. 
-Qed.
-
-Lemma lgd_make_f2v_unchanged_except_one: forall g v v' e j,
-    0 <= j < Zlength (make_fields g v) ->
-    Znth j (make_fields g v) <> inr e ->
-    Znth j (map (field2val (labeledgraph_gen_dst g e v'))
-                (make_fields (labeledgraph_gen_dst g e v') v)) =
-    Znth j (map (field2val g) (make_fields g v)).
-Proof.
-  intros. repeat rewrite Znth_map by assumption. symmetry.
-  apply lgd_nonedges_unchanged; rewrite lgd_make_fields; assumption.
-Qed.
-
-Lemma lgd_vertex_rep_not_eq: forall sh g v' v e,
-    (* some conditions *)
-    (* for example "v <> (fst e)" *)
-    raw_mark (vlabel g v) = false ->
-    vertex_rep sh (labeledgraph_gen_dst g e v') v = vertex_rep sh g v.
-Proof.
-  intros. unfold vertex_rep. rewrite lgd_vertex_address, <- lgd_make_header_eq.
-  f_equal. (* ??? *)
-  unfold make_fields_vals.
-  rewrite <- lgd_raw_mark_eq; rewrite H.
-  rewrite Znth_list_eq.
-  split. 1: repeat rewrite Zlength_map; reflexivity.
-  intros. apply lgd_make_f2v_unchanged_except_one.
-  1: rewrite Zlength_map in H0; assumption.
-  (* hard to claim something like this as a condition,
-     because we only meet j halfway through the proof.
-   *)
-Abort.
-
-Lemma lgd_generation_rep_eq: forall (g : LGraph) (v' : VType) (x : nat) e,
-    (* some conditions *)
-     generation_rep g x = generation_rep (labeledgraph_gen_dst g e v') x.
-Proof.
-  intros. unfold generation_rep. unfold nth_sh, nth_gen. simpl.
-  remember (nat_inc_list (number_of_vertices (nth x (g_gen (glabel g)) null_info))).
-  apply iter_sepcon_func_strong. intros v H.
-  (* destruct x0 as [n m]. *)
-  apply list_in_map_inv in H.
-  destruct H as [x1 [? ?]]. inversion H.
-  (* subst n x1. *)
-  clear H. remember (generation_sh (nth x (g_gen (glabel g)) null_info)) as sh.
-  (* want to call lgd_vertex_rep_not_eq *)
-  (* and then prove conditions from above call *)
-Abort.
-
-Lemma graph_gen_lgd_ramif: forall g v v' e,
-    graph_has_gen g (vgeneration v) ->
-    graph_rep g |-- generation_rep g (vgeneration v) *
-    (generation_rep (labeledgraph_gen_dst g e v') (vgeneration v) -*
-                    graph_rep (labeledgraph_gen_dst g e v')).
-Proof.
-  intros. unfold graph_rep. simpl. apply iter_sepcon_ramif_pred_1.
-  red in H. rewrite <- nat_inc_list_In_iff in H. apply In_Permutation_cons in H.
-  destruct H as [f ?]. exists f. split. 1: assumption. intros.
-  assert (NoDup (vgeneration v :: f)) by
-      (apply (Permutation_NoDup H), nat_inc_list_NoDup). apply NoDup_cons_2 in H1.
-  assert (x <> vgeneration v) by 
-    (unfold not; intro; subst; contradiction). 
-  (* rewrite <- lgd_generation_rep_eq; reflexivity.  *)
-Abort.
-
-Lemma gen_vertex_lgd_ramif: forall g gen index e v',
-    gen_has_index g gen index ->
-    generation_rep g gen |-- vertex_rep (nth_sh g gen) g (gen, index) *
-    (vertex_rep (nth_sh g gen) (labeledgraph_gen_dst g e v')
-                (gen, index) -*
-                generation_rep (labeledgraph_gen_dst g e v') gen). 
-Proof.
-intros. unfold generation_rep. unfold nth_gen. simpl. apply iter_sepcon_ramif_pred_1.
-  change (nth gen (g_gen (glabel g)) null_info) with (nth_gen g gen).
-  remember (map (fun x : nat => (gen, x))
-                (nat_inc_list (number_of_vertices (nth_gen g gen)))).
-  assert (In (gen, index) l) by
-      (subst l; apply in_map; rewrite nat_inc_list_In_iff; assumption).
-  apply In_Permutation_cons in H0. destruct H0 as [f ?]. exists f. split.
-  1: assumption. intros. unfold nth_sh, nth_gen. simpl.
-  (* rewrite lgd_vertex_rep_not_eq; reflexivity. *)
-  (* prove the conditions of lgd_vertex_rep_not_eq. *)
-Abort.
-
-Lemma graph_vertex_lgd_ramif: forall g v e v',
-    graph_has_v g v ->
-    graph_rep g |-- vertex_rep (nth_sh g (vgeneration v)) g v *
-    (vertex_rep (nth_sh g (vgeneration v))
-                (labeledgraph_gen_dst g e v') v -*
-                graph_rep (labeledgraph_gen_dst g e v')).
-Abort.
-(*  
-Proof.
-intros. destruct H. sep_apply (graph_gen_lgd_ramif g v v' e H).
-  destruct v as [gen index]. simpl vgeneration in *. simpl vindex in *.
-  sep_apply (gen_vertex_lgd_ramif g gen index e v' H0). cancel. apply wand_frame_ver.
-Qed.
- *)
-(* the above proof body works if the two lemmata work *)
-
-
- (* 
-    game plan: 
-                                       
-           ramification obligation
-           
-           forward. (* return *)
-
-           remember fgdgd as g'
-           
-           Exists g' t_info roots.
-           
-           prove postcondition
-*)
         -- (* not yet forwarded *)
           forward. thaw FR.  freeze [0; 1; 2; 3; 4; 5] FR.
            apply not_true_is_false in H21. rewrite make_header_Wosize by assumption.

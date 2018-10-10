@@ -1103,6 +1103,112 @@ Proof.
   sep_apply (gen_vertex_lmc_ramif g gen index new_v H0). cancel. apply wand_frame_ver.
 Qed.
 
+Lemma lgd_vertex_rep_not_eq: forall sh g v' v v1 e n,
+    0 <= n < Zlength (make_fields g v) ->
+    Znth n (make_fields g v) = inr e ->
+    v1 <> v ->
+    vertex_rep sh g v1 = vertex_rep sh
+                                    (labeledgraph_gen_dst g e v') v1. 
+Proof.
+  intros. unfold vertex_rep.
+  rewrite lgd_vertex_address, <- lgd_make_header_eq.
+  f_equal. unfold make_fields_vals.
+  rewrite <- lgd_raw_mark_eq.
+  simple_if_tac; [f_equal |];
+    rewrite (lgd_map_f2v_diff_vert_unchanged g v v' v1 e n);
+    try reflexivity; assumption.
+Qed.
+  
+Lemma lgd_generation_rep_eq: forall (g : LGraph) (v v' : VType) (x : nat) e n,
+    0 <= n < Zlength (make_fields g v) ->
+    Znth n (make_fields g v) = inr e ->
+    x <> vgeneration v ->
+     generation_rep g x = generation_rep (labeledgraph_gen_dst g e v') x.
+Proof.
+  intros. unfold generation_rep.
+  unfold nth_sh, nth_gen. simpl.
+  remember (nat_inc_list (number_of_vertices
+                            (nth x (g_gen (glabel g)) null_info))).
+  apply iter_sepcon_func_strong. intros v1 H2.
+  apply list_in_map_inv in H2.
+  destruct H2 as [x1 [? ?]]. 
+  remember (generation_sh (nth x (g_gen (glabel g)) null_info)) as sh.
+  assert (v1 <> v). {
+    intro. unfold vgeneration in H1.
+    rewrite H4 in H2. rewrite H2 in H1. unfold not in H1.
+    simpl in H1. omega. }
+  apply (lgd_vertex_rep_not_eq sh g v' v v1 e n);
+                      try assumption.
+Qed.
+
+Lemma graph_gen_lgd_ramif: forall g v v' e n,
+    0 <= n < Zlength (make_fields g v) ->
+    Znth n (make_fields g v) = inr e ->
+    graph_has_gen g (vgeneration v) ->
+    graph_rep g |-- generation_rep g (vgeneration v) *
+    (generation_rep (labeledgraph_gen_dst g e v') (vgeneration v) -*
+                    graph_rep (labeledgraph_gen_dst g e v')).
+Proof.
+  intros. unfold graph_rep. simpl.
+  apply iter_sepcon_ramif_pred_1.
+  red in H1. rewrite <- nat_inc_list_In_iff in H1.
+  apply In_Permutation_cons in H1.
+  destruct H1 as [f ?]. exists f. split. 1: assumption. intros.
+  assert (NoDup (vgeneration v :: f)) by
+      (apply (Permutation_NoDup H1), nat_inc_list_NoDup).
+  apply NoDup_cons_2 in H3.
+  assert (x <> vgeneration v) by 
+      (unfold not; intro; subst; contradiction).
+  apply (lgd_generation_rep_eq g v v' x e n); try assumption.
+Qed.
+
+Lemma gen_vertex_lgd_ramif: forall g gen index new_v v n e,
+    gen_has_index g gen index ->
+0 <= n < Zlength (make_fields g v) ->
+       Znth n (make_fields g v) = inr e ->
+       v = (gen, index) ->
+    generation_rep g gen |-- vertex_rep (nth_sh g gen) g (gen, index) *
+    (vertex_rep (nth_sh g gen) (labeledgraph_gen_dst g e new_v)
+                (gen, index) -*
+                generation_rep (labeledgraph_gen_dst g e new_v) gen).
+Proof.
+  intros. unfold generation_rep. unfold nth_gen.
+  simpl. apply iter_sepcon_ramif_pred_1.
+  change (nth gen (g_gen (glabel g)) null_info) with (nth_gen g gen).
+  remember (map (fun x : nat => (gen, x))
+                (nat_inc_list (number_of_vertices (nth_gen g gen)))).
+  assert (In (gen, index) l) by
+      (subst l; apply in_map; rewrite nat_inc_list_In_iff; assumption).
+  apply In_Permutation_cons in H3. destruct H3 as [f ?]. exists f. split.
+  1: assumption. intros. unfold nth_sh, nth_gen. simpl.
+  remember (generation_sh (nth gen (g_gen (glabel g)) null_info)) as sh.
+  rewrite (lgd_vertex_rep_not_eq sh g new_v v x e n);
+    try reflexivity; try assumption.
+  assert (NoDup l). {
+    subst l. apply FinFun.Injective_map_NoDup. 2: apply nat_inc_list_NoDup.
+    red. intros. inversion H5. reflexivity. }
+  apply (Permutation_NoDup H3), NoDup_cons_2 in H5. intro.
+  rewrite H2 in H6. rewrite H6 in H4. intuition.
+  Qed.
+
+Lemma graph_vertex_lgd_ramif: forall g v e v' n,
+    0 <= n < Zlength (make_fields g v) ->
+    Znth n (make_fields g v) = inr e ->
+    graph_has_v g v ->
+    graph_rep g |-- vertex_rep (nth_sh g (vgeneration v)) g v *
+    (vertex_rep (nth_sh g (vgeneration v))
+                (labeledgraph_gen_dst g e v') v -*
+                graph_rep (labeledgraph_gen_dst g e v')).  
+Proof.
+  intros. destruct H1. sep_apply (graph_gen_lgd_ramif g v v' e n);
+                         try assumption.
+  destruct v as [gen index] eqn:?. simpl vgeneration in *.
+  simpl vindex in *. rewrite <- Heqv0 in H, H0.
+  sep_apply (gen_vertex_lgd_ramif g gen index v' v n e);
+    try assumption.
+  cancel. apply wand_frame_ver.
+Qed.
+
 Definition space_struct_rep (sh: share) (tinfo: thread_info) (gen: nat) :=
   data_at sh space_type (space_tri (nth_space tinfo gen)) (space_address tinfo gen).
 
