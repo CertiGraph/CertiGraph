@@ -3863,24 +3863,47 @@ Proof.
   - exact (O, O).
 Qed.
 
-Lemma fr_roots_compatible: forall depth from to p g g' roots f_info outlier,
+Lemma lgd_roots_compatible: forall g outlier roots e v,
+    roots_compatible g outlier roots ->
+    roots_compatible (labeledgraph_gen_dst g e v) outlier roots.
+Proof.
+  intros. destruct H. split; [assumption|]. rewrite Forall_forall in *. intros.
+  rewrite <- lgd_graph_has_v. apply H0. assumption.
+Qed.
+
+Lemma lcv_roots_compatible_unchanged: forall g roots outlier v to,
     graph_has_gen g to ->
+    roots_compatible g outlier roots ->
+    roots_compatible (lgraph_copy_v g v to) outlier roots.
+Proof.
+  intros. destruct H0. split; [assumption|]. rewrite Forall_forall in *. intros.
+  apply lcv_graph_has_v_old; [|apply H1]; assumption.
+Qed.
+
+Lemma fr_roots_compatible: forall depth from to p g g' roots f_info outlier,
+    graph_has_gen g to -> forward_p_compatible p roots g ->
     forward_relation from to depth (forward_p2forward_t p roots g) g g' ->
     roots_compatible g outlier roots ->
     roots_compatible g' outlier (upd_roots from to p g roots f_info).
 Proof.
   intros. destruct p.
-  - simpl in *. destruct (Znth z roots).
-    + simpl in H0. destruct s; inversion H0; subst; assumption.
-    + simpl in H0.
-      inversion H0; destruct (Nat.eq_dec (vgeneration v) from);
+  - simpl in *. destruct (Znth z roots); simpl in H1.
+    + destruct s; inversion H1; subst; assumption.
+    + inversion H1; destruct (Nat.eq_dec (vgeneration v) from);
         try contradiction; subst; try assumption.
-      * destruct (raw_mark (vlabel g' v)) eqn:? . 2: inversion H5.
+      * destruct (raw_mark (vlabel g' v)) eqn:? . 2: inversion H6.
         apply upd_roots_compatible. 1: assumption. admit.
-      * destruct (raw_mark (vlabel g v)) eqn:? . 1: inversion H5.
+      * destruct (raw_mark (vlabel g v)) eqn:? . 1: inversion H6.
         apply lcv_roots_compatible; assumption.
-      * destruct (raw_mark (vlabel g v)) eqn:? . 1: inversion H4. admit.
-  - simpl in *.
+      * destruct (raw_mark (vlabel g v)) eqn:? . 1: inversion H5. admit.
+  - simpl in *. destruct p. destruct H0 as [? [? ?]]. rewrite H4 in H1. simpl in H1.
+    destruct (Znth z (make_fields g v)); simpl in H1.
+    + destruct s; inversion H1; subst; assumption.
+    + inversion H1; subst. 1: assumption.
+      * apply lgd_roots_compatible. assumption.
+      * subst new_g.
+        apply lgd_roots_compatible, lcv_roots_compatible_unchanged; assumption.
+      *
 Abort.
 
 Lemma frl_not_pointing: forall from to f_info outlier l roots1 g1 roots2 g2,
