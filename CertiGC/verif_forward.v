@@ -673,7 +673,6 @@ Proof.
     + (* EType *)
       unfold field2val. remember (dst g e) as v'.
       assert (isptr (vertex_address g v')). {
-        (* need this to try contradiction later... *)
         unfold vertex_address; unfold offset_val.
         remember (vgeneration v') as n'.
         assert (graph_has_gen g n'). {
@@ -1010,33 +1009,71 @@ Proof.
               change (lgraph_mark_copied
                         (lgraph_add_copied_v g v' to) v' (new_copied_v g to))
                 with (lgraph_copy_v g v' to) in *.
-              remember (lgraph_copy_v g v' to) as g'. rewrite <- H30 in *. thaw FR.
+              remember (lgraph_copy_v g v' to) as g'.
               assert (vertex_address g' v' = vertex_address g v') by
               (subst g'; apply lcv_vertex_address_old; assumption).
               assert (vertex_address g' (new_copied_v g to) =
                       vertex_address g (new_copied_v g to)) by
                   (subst g'; apply lcv_vertex_address_new; assumption).
-              (* rewrite <- H42. rewrite <- H43 in H36. *)
               assert (writable_share (nth_sh g' (vgeneration v'))) by
                   (unfold nth_sh; apply generation_share_writable).
               assert (graph_has_v g' (new_copied_v g to)) by
                   (subst g'; apply lcv_graph_has_v_new; assumption).
-                 (* can use  *)
-                 (* rewrite lacv_vertex_address. *)
-                 (* to clean up the address of _v *)
               forward_call (nv).
+              rewrite <- H30 in *.
+              rewrite lacv_vertex_address;
+                [|apply graph_has_v_in_closure|]; try assumption.
+              rewrite <- H31.
+              rewrite <- (lcv_vertex_address g v' to v); try rewrite <- (lcv_vertex_address g v' to v) in H13; try apply graph_has_v_in_closure; try assumption.
+              rewrite (lcv_mfv_Zlen_eq g v v' to H8 H0) in H13. rewrite <- Heqg' in *.
 
-(*
-              
+              assert (0 <= n < Zlength (make_fields_vals g' v)) by
+                  (subst g'; rewrite fields_eq_length, <- lcv_raw_fields; assumption).
+              assert (v <> v'). {
+                admit.
+              }
+              assert (raw_mark (vlabel g' v) = false) by
+                  (subst g'; rewrite <- lcv_raw_mark; assumption).
+              assert (Znth n (make_fields g' v) = inr e) by
+                  (subst g'; unfold make_fields in *; rewrite <- lcv_raw_fields; assumption).
+              assert (0 <= n < Zlength (make_fields g' v)) by (rewrite make_fields_eq_length; rewrite fields_eq_length in H42; assumption).
+              assert (graph_has_v g' v) by
+                  (subst g'; apply lcv_graph_has_v_old; assumption).     
               localize [vertex_rep (nth_sh g' (vgeneration v)) g' v].
               unfold vertex_rep, vertex_at. Intros.
-              remember (nth_sh g (vgeneration v)) as shh.
-              remember (make_fields_vals g v) as mfv.
+              remember (nth_sh g' (vgeneration v)) as shh.
+              remember (make_fields_vals g' v) as mfv.
               assert (writable_share shh) by
                   (rewrite Heqshh; unfold nth_sh; apply generation_share_writable).
+              rewrite Heqmfv in *.
               forward.
-             remember labeledgraph_gen_dst g' e v' as g.
+              remember (new_copied_v g to).
+              rewrite H30.
+              sep_apply (field_at_data_at_cancel
+                           shh
+                           (tarray int_or_ptr_type (Zlength (make_fields_vals g' v)))
+                           (upd_Znth n (make_fields_vals g' v) (vertex_address g' v1))
+                           (vertex_address g' v)).
+              gather_SEP 1 0.
+              remember (labeledgraph_gen_dst g' e v1) as g1.
+              replace_SEP 0 (vertex_rep (nth_sh g1 (vgeneration v)) g1 v).
+              1: { unfold vertex_rep, vertex_at.
+                   rewrite (lgd_sh_eq g1 v e v1).
+                   rewrite (lgd_mfv_length_eq g' v e v1).
+                   rewrite (lgd_mfv_change_in_one_spot g' v e v1 n); try assumption.
+                   entailer!. }
+              subst g1; subst v1.
+              unlocalize [graph_rep (labeledgraph_gen_dst g' e (new_copied_v g to))].
+              1: apply (graph_vertex_lgd_ramif g' v e (new_copied_v g to) n); assumption.
 
+
+              
+(*
+TODO
+check if lgd_mfv_change_in_one_spot's precons can be weakened.
+in particular, see if marked needs to be specified.
+1 admit
 *)
+        
               
 Abort.

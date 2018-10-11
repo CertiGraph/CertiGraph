@@ -2798,6 +2798,46 @@ Proof.
     rewrite upd_Znth_Zlength; auto. }
 Qed.
 
+Lemma lgd_f2v_eq_after_update: forall g v v' e n j,
+  0 <= n < Zlength (make_fields_vals g v) ->
+  Znth n (make_fields g v) = inr e ->
+  0 <= j < Zlength (raw_fields (vlabel g v)) ->
+  Zlength (raw_fields (vlabel g v)) =
+       Zlength (raw_fields (vlabel (labeledgraph_gen_dst g e v') v)) ->
+  Znth j (upd_Znth n (map (field2val g) (make_fields g v)) (vertex_address g v')) =
+  Znth j
+    (map (field2val (labeledgraph_gen_dst g e v'))
+       (make_fields (labeledgraph_gen_dst g e v') v)).
+Proof.
+  intros.
+  rewrite Znth_map.
+  2: { unfold make_fields. rewrite make_fields'_eq_Zlength.
+       rewrite <- H2; assumption. }
+  assert (j = n \/ j <> n) by omega.
+  destruct H3.
+  + subst j. rewrite upd_Znth_same.
+    2: { rewrite Zlength_map.
+         rewrite make_fields_eq_length; assumption. }
+    unfold field2val; simpl.
+    replace (make_fields (labeledgraph_gen_dst g e v') v)
+      with (make_fields g v) by reflexivity.
+    rewrite H0. unfold updateEdgeFunc. if_tac.
+    1: reflexivity. unfold complement in H3.
+    assert (e = e) by reflexivity.
+    apply H3 in H4. exfalso; assumption.
+    + rewrite fields_eq_length in H.
+    rewrite upd_Znth_diff_strong;
+      try (rewrite Zlength_map; rewrite make_fields_eq_length);
+      try assumption.
+      rewrite Znth_map. 2: rewrite make_fields_eq_length; assumption.
+      rewrite <- (lgd_f2v_eq_except_one g
+           (Znth j (make_fields g v))). 1: reflexivity.
+      unfold not. intro. unfold make_fields in H0, H4.
+      pose proof (make_fields'_same_edges_have_same_vertex_index n j
+                 (raw_fields (vlabel g v)) (raw_fields (vlabel g v))
+                                          v v 0 _ H H1 H0 H4). omega.
+Qed.
+
 Lemma lgd_mfv_change_in_one_spot: forall g v e v' n,
     0 <= n < Zlength (make_fields_vals g v) ->
     raw_mark (vlabel g v) = false ->
@@ -2814,42 +2854,52 @@ Proof.
 
   rewrite upd_Znth_Zlength; try assumption;
   rewrite fields_eq_length; try assumption.
-  split. 1: { rewrite fields_eq_length. reflexivity. }
+  split. 1: rewrite fields_eq_length; reflexivity.
   intros.
-  assert (raw_mark (vlabel (labeledgraph_gen_dst g e v') v)
-          = false) by (simpl; assumption).
   assert (Zlength (raw_fields (vlabel g v)) =
           Zlength (raw_fields (vlabel
           (labeledgraph_gen_dst g e v') v))) by reflexivity.
-  unfold make_fields_vals. rewrite H0, H3.
-  rewrite Znth_map.
-  2: { unfold make_fields. rewrite make_fields'_eq_Zlength.
-       rewrite <- H4; assumption. }
-  assert (j = n \/ j <> n) by omega.
-  destruct H5.
-  - subst j. rewrite upd_Znth_same.
-    2: { rewrite Zlength_map.
-         rewrite make_fields_eq_length; assumption. }
-    unfold field2val; simpl.
-    replace (make_fields (labeledgraph_gen_dst g e v') v)
-      with (make_fields g v) by reflexivity.
-    rewrite H1. unfold updateEdgeFunc. if_tac.
-    1: reflexivity. unfold complement in H5.
-    assert (e = e) by reflexivity.
-    apply H5 in H6. exfalso; assumption.
-  - rewrite fields_eq_length in H.
-    rewrite upd_Znth_diff_strong;
-      try (rewrite Zlength_map; rewrite make_fields_eq_length);
-      try assumption.
-      rewrite Znth_map. 2: rewrite make_fields_eq_length; assumption.
-      rewrite <- (lgd_f2v_eq_except_one g
-           (Znth j (make_fields g v))). 1: reflexivity.
-      unfold not. intro. unfold make_fields in H1, H5.
-      pose proof (make_fields'_same_edges_have_same_vertex_index n j
-                 (raw_fields (vlabel g v)) (raw_fields (vlabel g v))
-                                          v v 0 _ H H2 H1 H6). omega.
+  unfold make_fields_vals.
+  replace (raw_mark (vlabel (labeledgraph_gen_dst g e v') v)) with (raw_mark (vlabel g v)) by reflexivity.
+  rewrite H0.
+  apply lgd_f2v_eq_after_update; assumption.
 Qed.
 
+Lemma Zlength_tl: forall A (l: list A),
+    Zlength l > 0 ->
+    Zlength l = Z.succ (Zlength (tl l)).
+Proof.
+  induction l.
+  - intro. rewrite Zlength_nil in H; inversion H.
+  - intro. rewrite Zlength_cons. f_equal.
+Qed.
+
+Lemma lgd_mfv_change_in_one_spot_working_version: forall g v e v' n,
+    0 <= n < Zlength (make_fields_vals g v) ->
+    Znth n (make_fields g v) = inr e ->
+    upd_Znth n (make_fields_vals g v) (vertex_address g v') =
+    (make_fields_vals (labeledgraph_gen_dst g e v') v).
+Proof.
+  intros.
+  rewrite (Znth_list_eq
+             (upd_Znth n (make_fields_vals g v)
+                       (vertex_address g v'))
+                         (make_fields_vals
+                       (labeledgraph_gen_dst g e v') v)).
+  rewrite upd_Znth_Zlength; try assumption;
+  rewrite fields_eq_length; try assumption.
+  split. 1: rewrite fields_eq_length; reflexivity.
+  intros.
+  assert (Zlength (raw_fields (vlabel g v)) =
+          Zlength (raw_fields (vlabel
+          (labeledgraph_gen_dst g e v') v))) by reflexivity.
+  unfold make_fields_vals.
+  replace (raw_mark (vlabel (labeledgraph_gen_dst g e v') v)) with (raw_mark (vlabel g v)) by reflexivity.
+  destruct (raw_mark (vlabel g v)) eqn:?.
+  2: apply lgd_f2v_eq_after_update; assumption.
+  assert (j = n \/ j <> n) by omega.
+  destruct H3.
+Abort.
 
 Lemma lgd_vertex_address_eq: forall g e v' x,
     vertex_address (labeledgraph_gen_dst g e v') x = vertex_address g x.
@@ -3182,6 +3232,16 @@ Lemma lcv_raw_fields: forall g v to x,
 Proof.
   intros. unfold lgraph_copy_v. rewrite <- lmc_raw_fields, lacv_vlabel_old.
   1: reflexivity. apply graph_has_v_not_eq; assumption.
+Qed.
+
+Lemma lcv_mfv_Zlen_eq: forall g v v' to,
+    graph_has_gen g to ->
+    graph_has_v g v ->
+    Zlength (make_fields_vals g v) =
+    Zlength (make_fields_vals (lgraph_copy_v g v' to) v).
+Proof.
+  intros. repeat rewrite fields_eq_length.
+  rewrite <- lcv_raw_fields by assumption; reflexivity.
 Qed.
 
 Lemma fr_raw_fields: forall depth from to p g g',
