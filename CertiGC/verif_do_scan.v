@@ -1,5 +1,4 @@
 Require Import RamifyCoq.CertiGC.gc_spec.
-Require Import RamifyCoq.floyd_ext.weak_valid_pointer.
 
 Lemma typed_true_tag: forall (to : nat) (g : LGraph) (index : nat),
     typed_true tint
