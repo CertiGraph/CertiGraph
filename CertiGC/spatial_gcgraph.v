@@ -1103,23 +1103,22 @@ Proof.
   sep_apply (gen_vertex_lmc_ramif g gen index new_v H0). cancel. apply wand_frame_ver.
 Qed.
 
-Lemma lgd_vertex_rep_not_eq: forall sh g v' v v1 e n,
+Lemma lgd_vertex_rep_eq_in_diff_vert: forall sh g v' v v1 e n,
     0 <= n < Zlength (make_fields g v) ->
     Znth n (make_fields g v) = inr e ->
     v1 <> v ->
-    vertex_rep sh g v1 = vertex_rep sh
-                                    (labeledgraph_gen_dst g e v') v1. 
+    vertex_rep sh g v1 = vertex_rep sh (labeledgraph_gen_dst g e v') v1. 
 Proof.
   intros. unfold vertex_rep.
-  rewrite lgd_vertex_address, <- lgd_make_header_eq.
+  rewrite lgd_vertex_address_eq, <- lgd_make_header_eq.
   f_equal. unfold make_fields_vals.
   rewrite <- lgd_raw_mark_eq.
   simple_if_tac; [f_equal |];
-    rewrite (lgd_map_f2v_diff_vert_unchanged g v v' v1 e n);
+    rewrite (lgd_map_f2v_diff_vert_eq g v v' v1 e n);
     try reflexivity; assumption.
 Qed.
   
-Lemma lgd_generation_rep_eq: forall (g : LGraph) (v v' : VType) (x : nat) e n,
+Lemma lgd_gen_rep_eq_in_diff_gen: forall (g : LGraph) (v v' : VType) (x : nat) e n,
     0 <= n < Zlength (make_fields g v) ->
     Znth n (make_fields g v) = inr e ->
     x <> vgeneration v ->
@@ -1137,8 +1136,7 @@ Proof.
     intro. unfold vgeneration in H1.
     rewrite H4 in H2. rewrite H2 in H1. unfold not in H1.
     simpl in H1. omega. }
-  apply (lgd_vertex_rep_not_eq sh g v' v v1 e n);
-                      try assumption.
+  apply (lgd_vertex_rep_eq_in_diff_vert sh g v' v v1 e n); assumption.
 Qed.
 
 Lemma graph_gen_lgd_ramif: forall g v v' e n,
@@ -1159,7 +1157,7 @@ Proof.
   apply NoDup_cons_2 in H3.
   assert (x <> vgeneration v) by 
       (unfold not; intro; subst; contradiction).
-  apply (lgd_generation_rep_eq g v v' x e n); try assumption.
+  apply (lgd_gen_rep_eq_in_diff_gen g v v' x e n); assumption.
 Qed.
 
 Lemma gen_vertex_lgd_ramif: forall g gen index new_v v n e,
@@ -1182,14 +1180,14 @@ Proof.
   apply In_Permutation_cons in H3. destruct H3 as [f ?]. exists f. split.
   1: assumption. intros. unfold nth_sh, nth_gen. simpl.
   remember (generation_sh (nth gen (g_gen (glabel g)) null_info)) as sh.
-  rewrite (lgd_vertex_rep_not_eq sh g new_v v x e n);
+  rewrite (lgd_vertex_rep_eq_in_diff_vert sh g new_v v x e n);
     try reflexivity; try assumption.
   assert (NoDup l). {
     subst l. apply FinFun.Injective_map_NoDup. 2: apply nat_inc_list_NoDup.
     red. intros. inversion H5. reflexivity. }
   apply (Permutation_NoDup H3), NoDup_cons_2 in H5. intro.
   rewrite H2 in H6. rewrite H6 in H4. intuition.
-  Qed.
+Qed.
 
 Lemma graph_vertex_lgd_ramif: forall g v e v' n,
     0 <= n < Zlength (make_fields g v) ->

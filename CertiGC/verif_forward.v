@@ -778,44 +778,26 @@ Proof.
           gather_SEP 1 0.
           remember (copied_vertex (vlabel g v')).
           remember (labeledgraph_gen_dst g e v1) as g'.
-          replace_SEP 0 (vertex_rep (nth_sh g' (vgeneration v))g' v).
+          replace_SEP 0 (vertex_rep (nth_sh g' (vgeneration v)) g' v).
           1: { unfold vertex_rep, vertex_at.
-               rewrite (lgd_sh_unchanged g v e v1).
-               rewrite (lgd_mfv_length_unchanged g v e v1).
+               rewrite (lgd_sh_eq g v e v1).
+               rewrite (lgd_mfv_length_eq g v e v1).
                rewrite <- fields_eq_length in H11.
                rewrite (lgd_mfv_change_in_one_spot g v e v1 n); try assumption. 
                entailer!. }
           subst g'; subst v1.
           unlocalize [graph_rep (labeledgraph_gen_dst g e (copied_vertex (vlabel g v')))].
-          1: apply (graph_vertex_lgd_ramif g v e (copied_vertex (vlabel g v')) n); try (rewrite make_fields_eq_length); assumption.
+          1: apply (graph_vertex_lgd_ramif g v e (copied_vertex (vlabel g v')) n);
+            try (rewrite make_fields_eq_length); assumption.
           forward.
           Exists (labeledgraph_gen_dst g e (copied_vertex (vlabel g (dst g e)))) t_info roots. 
           entailer!.
           2: unfold thread_info_rep; thaw FR; entailer!.
+          pose proof (lgd_no_dangling_dst g e (dst g e) H9 H18 H21 H10). 
           split; [|split; [|split]]; try reflexivity.
           ++ rewrite H12; simpl.
              rewrite Heqf. constructor; [reflexivity | assumption].
-          ++ split; [|split; [|split; [|split]]]; try assumption.
-             simpl in *.
-             clear -H0 H7 H8 H9 H10 H3 Heqf H18 H21.
-             unfold copy_compatible in H9.
-             intro. intro.
-             rewrite <- lgd_graph_has_v in *.
-             unfold no_dangling_dst in H10.
-             simpl.
-             unfold updateEdgeFunc.
-             intros.
-             if_tac.
-             apply (H9 (dst g e) H18 H21).
-             rewrite <- lgd_graph_has_v in *.
-             
-             (* apply (H9 (dst g e0) H18 H21). *)
-             
-             admit.
-        (* Shengyi says this should be very easy
-           Or that we can add something like this if needeed *)
-             
-
+          ++ split; [|split; [|split; [|split]]]; assumption.        
         -- (* not yet forwarded *)
           forward. thaw FR.  freeze [0; 1; 2; 3; 4; 5] FR.
            apply not_true_is_false in H21. rewrite make_header_Wosize by assumption.
@@ -1039,16 +1021,22 @@ Proof.
                   (unfold nth_sh; apply generation_share_writable).
               assert (graph_has_v g' (new_copied_v g to)) by
                   (subst g'; apply lcv_graph_has_v_new; assumption).
-              (* can use
-                 rewrite lacv_vertex_address.
-to clean up the address of _v *)
+                 (* can use  *)
+                 (* rewrite lacv_vertex_address. *)
+                 (* to clean up the address of _v *)
               forward_call (nv).
 
-              localize [vertex_rep (nth_sh g (vgeneration v)) g v].
+(*
+              
+              localize [vertex_rep (nth_sh g' (vgeneration v)) g' v].
               unfold vertex_rep, vertex_at. Intros.
               remember (nth_sh g (vgeneration v)) as shh.
               remember (make_fields_vals g v) as mfv.
               assert (writable_share shh) by
                   (rewrite Heqshh; unfold nth_sh; apply generation_share_writable).
               forward.
+             remember labeledgraph_gen_dst g' e v' as g.
+
+*)
+              
 Abort.
