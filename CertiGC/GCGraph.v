@@ -2743,6 +2743,17 @@ Definition thread_info_relation t t':=
 Lemma tir_id: forall t, thread_info_relation t t.
 Proof. intros. red. split; reflexivity. Qed.
 
+Lemma lgd_gen_has_index: forall (g: LGraph) (e : EType) (v : VType) (gen idx : nat),
+    gen_has_index (labeledgraph_gen_dst g e v) gen idx <-> gen_has_index g gen idx.
+Proof.
+  intros. unfold labeledgraph_gen_dst, gen_has_index, nth_gen. simpl. reflexivity.
+Qed.
+
+Lemma lgd_vlabel: forall (g: LGraph) (e : EType) (v x : VType),
+    vlabel (labeledgraph_gen_dst g e v) x = vlabel g x.
+Proof. intros. simpl. reflexivity. Qed.
+
+
 Lemma lgd_graph_has_v: forall g e v v',
     graph_has_v g v <-> graph_has_v (labeledgraph_gen_dst g e v') v.
 Proof. reflexivity. Qed.
@@ -2751,18 +2762,18 @@ Lemma lgd_graph_has_gen: forall g e v x,
     graph_has_gen (labeledgraph_gen_dst g e v) x <-> graph_has_gen g x.
 Proof. intros. unfold graph_has_gen. simpl. intuition. Qed.
 
-Lemma lgd_sh_unchanged: forall g v e v',
+Lemma lgd_sh_eq: forall g v e v',
     nth_sh g (vgeneration v) =
     nth_sh (labeledgraph_gen_dst g e v') (vgeneration v).
 Proof. unfold nth_sh, nth_gen; reflexivity. Qed.
 
-Lemma lgd_mfv_length_unchanged: forall g v e v',
+Lemma lgd_mfv_length_eq: forall g v e v',
     Zlength (make_fields_vals g v) =
     Zlength (make_fields_vals
                (labeledgraph_gen_dst g e v') v).
 Proof. intros; repeat rewrite fields_eq_length; reflexivity. Qed.
 
-Lemma lgd_nonedges_unchanged: forall g fd e v2,
+Lemma lgd_f2v_eq_except_one: forall g fd e v2,
     fd <> (inr e) ->
     field2val g fd =
     field2val (labeledgraph_gen_dst g e v2) fd.
@@ -2831,7 +2842,7 @@ Proof.
       try (rewrite Zlength_map; rewrite make_fields_eq_length);
       try assumption.
       rewrite Znth_map. 2: rewrite make_fields_eq_length; assumption.
-      rewrite <- (lgd_nonedges_unchanged g
+      rewrite <- (lgd_f2v_eq_except_one g
            (Znth j (make_fields g v))). 1: reflexivity.
       unfold not. intro. unfold make_fields in H1, H5.
       pose proof (make_fields'_same_edges_have_same_vertex_index n j
@@ -2840,17 +2851,17 @@ Proof.
 Qed.
 
 
-Lemma lgd_vertex_address: forall g e v' x,
+Lemma lgd_vertex_address_eq: forall g e v' x,
     vertex_address (labeledgraph_gen_dst g e v') x = vertex_address g x.
 Proof. reflexivity. Qed.
 
-Lemma lgd_make_fields: forall (g : LGraph) (v v': VType) e,
+Lemma lgd_make_fields_eq: forall (g : LGraph) (v v': VType) e,
     make_fields (labeledgraph_gen_dst g e v') v = make_fields g v.
 Proof. reflexivity. Qed.
 
-Lemma lgd_vlabel_eq: forall (g: LGraph) (v' x : VType) e,
-    vlabel (labeledgraph_gen_dst g e v') x = vlabel g x.
-Proof. reflexivity. Qed.
+(* Lemma lgd_vlabel_eq: forall (g: LGraph) (v' x : VType) e, *)
+(*     vlabel (labeledgraph_gen_dst g e v') x = vlabel g x. *)
+(* Proof. reflexivity. Qed. *)
 
 Lemma lgd_make_header_eq: forall g e v' x,
     make_header g x =
@@ -2862,7 +2873,14 @@ Lemma lgd_raw_mark_eq: forall (g: LGraph) e (v v' : VType),
     raw_mark (vlabel (labeledgraph_gen_dst g e v') v).
 Proof. reflexivity. Qed.
 
-Lemma lgd_make_f2v_unchanged_except_one: forall g v v' e j,
+Lemma lgd_get_edges_eq: forall g e v v',
+    get_edges (labeledgraph_gen_dst g e v') v = get_edges g v.
+Proof.
+  intros; unfold get_edges in *;
+    rewrite lgd_make_fields_eq in *; reflexivity.
+Qed.
+
+Lemma lgd_map_f2v_eq_except_one: forall g v v' e j,
     0 <= j < Zlength (make_fields g v) ->
     Znth j (make_fields g v) <> inr e ->
     Znth j (map (field2val (labeledgraph_gen_dst g e v'))
@@ -2871,10 +2889,10 @@ Lemma lgd_make_f2v_unchanged_except_one: forall g v v' e j,
     Znth j (map (field2val g) (make_fields g v)).
 Proof.
   intros. repeat rewrite Znth_map by assumption. symmetry.
-  apply lgd_nonedges_unchanged; rewrite lgd_make_fields; assumption.
+  apply lgd_f2v_eq_except_one; rewrite lgd_make_fields_eq; assumption.
 Qed.
 
-Lemma lgd_map_f2v_diff_vert_unchanged: forall g v v' v1 e n,
+Lemma lgd_map_f2v_diff_vert_eq: forall g v v' v1 e n,
     0 <= n < Zlength (make_fields g v) -> 
     Znth n (make_fields g v) = inr e ->
     v1 <> v ->
@@ -2883,21 +2901,19 @@ Lemma lgd_map_f2v_diff_vert_unchanged: forall g v v' v1 e n,
         (make_fields (labeledgraph_gen_dst g e v') v1).
 Proof.
     intros.
-    rewrite lgd_make_fields.
-       apply Znth_list_eq. split.
-       1: repeat rewrite Zlength_map; reflexivity.
-       intros.
-       rewrite Zlength_map in H2.
-       repeat rewrite Znth_map by assumption.
-       apply lgd_nonedges_unchanged.
-       intro.
-       pose proof (make_fields_edge_unique g e v
-                                           v1 n j H H2 H0 H3).
-       destruct H4. unfold not in H1. symmetry in H5.
-       apply (H1 H5).
-       Qed.
+    rewrite lgd_make_fields_eq.
+    apply Znth_list_eq. split.
+    1: repeat rewrite Zlength_map; reflexivity.
+    intros. rewrite Zlength_map in H2.
+    repeat rewrite Znth_map by assumption.
+    apply lgd_f2v_eq_except_one. intro.
+    pose proof (make_fields_edge_unique g e v
+                                        v1 n j H H2 H0 H3).
+    destruct H4. unfold not in H1. symmetry in H5.
+    apply (H1 H5).
+Qed.
 
-Lemma lgd_make_fields_vals_unchanged_except_one: forall g v v' e j,
+Lemma lgd_mfv_eq_except_one: forall g v v' e j,
     0 <= j < Zlength (make_fields g v) -> 
     raw_mark (vlabel g v) = false ->
     Znth j (make_fields g v) <> inr e ->
@@ -2906,9 +2922,24 @@ Lemma lgd_make_fields_vals_unchanged_except_one: forall g v v' e j,
               (labeledgraph_gen_dst g e v') v).
 Proof. 
   intros. unfold make_fields_vals.
-  rewrite lgd_make_fields, <- lgd_raw_mark_eq, H0.
+  rewrite lgd_make_fields_eq, <- lgd_raw_mark_eq, H0.
   repeat rewrite Znth_map by assumption.
-  apply lgd_nonedges_unchanged. assumption.
+  apply lgd_f2v_eq_except_one. assumption.
+Qed.
+
+Lemma lgd_no_dangling_dst: forall g e v,
+    copy_compatible g ->
+    graph_has_v g v ->
+    raw_mark (vlabel g v) = true ->
+    no_dangling_dst g ->
+    no_dangling_dst (labeledgraph_gen_dst g e (copied_vertex (vlabel g v))).
+Proof.
+  intros; repeat intro.
+  unfold copy_compatible in H.
+  rewrite <- lgd_graph_has_v in *.
+  unfold no_dangling_dst in H2.
+  simpl. unfold updateEdgeFunc.
+  intros; if_tac; [apply (H v H0 H1) | apply (H2 v0); assumption].
 Qed.
 
 Lemma fr_general_prop_bootstrap: forall depth from to p g g'
@@ -3331,16 +3362,6 @@ Proof.
   intros. unfold lgraph_copy_v in H0. rewrite <- lmc_graph_has_v in H0.
   apply (lacv_graph_has_v_inv g v); assumption.
 Qed.
-
-Lemma lgd_gen_has_index: forall (g: LGraph) (e : EType) (v : VType) (gen idx : nat),
-    gen_has_index (labeledgraph_gen_dst g e v) gen idx <-> gen_has_index g gen idx.
-Proof.
-  intros. unfold labeledgraph_gen_dst, gen_has_index, nth_gen. simpl. reflexivity.
-Qed.
-
-Lemma lgd_vlabel: forall (g: LGraph) (e : EType) (v x : VType),
-    vlabel (labeledgraph_gen_dst g e v) x = vlabel g x.
-Proof. intros. simpl. reflexivity. Qed.
 
 Lemma lcv_gen_unmarked: forall (to : nat) (g : LGraph) (v : VType),
     vgeneration v <> to -> graph_has_gen g to -> gen_unmarked g to ->
