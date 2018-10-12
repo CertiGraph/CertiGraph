@@ -587,12 +587,11 @@ Proof.
   - destruct i. 1: reflexivity. simpl. apply IHj. omega.
 Qed.
 
-Lemma reset_nth_gen_info_same: forall gl i a,
-    i < length gl -> nth i (reset_nth_gen_info i gl) a = reset_gen_info (nth i gl a).
+Lemma reset_nth_gen_info_same: forall gl i,
+    nth i (reset_nth_gen_info i gl) null_info = reset_gen_info (nth i gl null_info).
 Proof.
-  intros. revert gl H. induction i; intros; destruct gl; simpl in *; try omega.
-  - reflexivity.
-  - apply IHi. omega.
+  intros. revert gl. induction i; intros; destruct gl; simpl in *; try reflexivity.
+  apply IHi.
 Qed.
 
 Lemma reset_nth_gen_info_overflow: forall gl i,
@@ -637,8 +636,8 @@ Proof.
   apply (EqdepFacts.eq_dep1_intro _ _ _ _ _ _ H0). apply proof_irr.
 Qed.
 
-Lemma reset_graph_has_gen: forall n (g: LGraph) i,
-    graph_has_gen (reset_nth_gen_graph n g) i <-> graph_has_gen g i.
+Lemma graph_has_gen_reset: forall (g: LGraph) gen1 gen2,
+    graph_has_gen (reset_nth_gen_graph gen1 g) gen2 <-> graph_has_gen g gen2.
 Proof.
   intros. unfold graph_has_gen. simpl. rewrite reset_nth_gen_info_length. reflexivity.
 Qed.
@@ -1646,12 +1645,11 @@ Lemma reset_nth_sh_diff: forall g i j,
 Proof. intros. unfold nth_sh. rewrite reset_nth_gen_diff; auto. Qed.
 
 Lemma reset_nth_sh: forall g i j,
-    (i < length (g_gen (glabel g)))%nat ->
     nth_sh (reset_nth_gen_graph j g) i = nth_sh g i.
 Proof.
   intros. destruct (Nat.eq_dec i j).
   - subst. unfold reset_nth_gen_graph, nth_sh, nth_gen. simpl.
-    rewrite reset_nth_gen_info_same; [reflexivity | assumption].
+    rewrite reset_nth_gen_info_same. reflexivity.
   - apply reset_nth_sh_diff. assumption.
 Qed.
 
@@ -2943,7 +2941,7 @@ Proof.
 Qed.
 
 Lemma lgd_map_f2v_diff_vert_eq: forall g v v' v1 e n,
-    0 <= n < Zlength (make_fields g v) -> 
+    0 <= n < Zlength (make_fields g v) ->
     Znth n (make_fields g v) = inr e ->
     v1 <> v ->
     map (field2val g) (make_fields g v1) =
@@ -2964,13 +2962,13 @@ Proof.
 Qed.
 
 Lemma lgd_mfv_eq_except_one: forall g v v' e j,
-    0 <= j < Zlength (make_fields g v) -> 
+    0 <= j < Zlength (make_fields g v) ->
     raw_mark (vlabel g v) = false ->
     Znth j (make_fields g v) <> inr e ->
     Znth j (make_fields_vals g v) =
     Znth j (make_fields_vals
               (labeledgraph_gen_dst g e v') v).
-Proof. 
+Proof.
   intros. unfold make_fields_vals.
   rewrite lgd_make_fields_eq, <- lgd_raw_mark_eq, H0.
   repeat rewrite Znth_map by assumption.
@@ -3749,10 +3747,10 @@ Proof.
   split; [|split]; [|simpl; rewrite reset_nth_gen_info_length..].
   - rewrite gsc_iff by
         (simpl; rewrite reset_nth_space_length, reset_nth_gen_info_length; assumption).
-    intros n ?. rewrite gsc_iff in H by assumption. rewrite reset_graph_has_gen in H2.
+    intros n ?. rewrite gsc_iff in H by assumption. rewrite graph_has_gen_reset in H2.
     specialize (H _ H2). red in H.
     simpl. unfold nth_gen, nth_space in *. simpl. destruct (Nat.eq_dec n gen).
-    + subst gen. red in H2. rewrite reset_nth_gen_info_same by assumption.
+    + subst gen. red in H2. rewrite reset_nth_gen_info_same.
       rewrite reset_nth_space_same by omega. intuition.
     + rewrite reset_nth_gen_info_diff, reset_nth_space_diff by assumption. intuition.
   - destruct (le_lt_dec (length (spaces (ti_heap t_info))) gen).
@@ -4021,66 +4019,121 @@ Proof.
   apply vertex_address_reset.
 Qed.
 
-Lemma graph_has_gen_reset: forall (g: LGraph) gen1 gen2,
-    graph_has_gen (reset_nth_gen_graph gen1 g) gen2 <-> graph_has_gen g gen2.
-Proof.
-  intros. unfold graph_has_gen. simpl. rewrite reset_nth_gen_info_length. reflexivity.
-Qed.
-
 Lemma gen_has_index_reset: forall (g: LGraph) gen1 gen2 idx,
-    graph_has_gen g gen1 ->
     gen_has_index (reset_nth_gen_graph gen1 g) gen2 idx <->
     gen_has_index g gen2 idx /\ gen1 <> gen2.
 Proof.
-  intros. red in H. unfold gen_has_index. unfold nth_gen. simpl.
+  intros. unfold gen_has_index. unfold nth_gen. simpl.
   destruct (Nat.eq_dec gen1 gen2).
-  - subst. rewrite reset_nth_gen_info_same by assumption. simpl. intuition.
+  - subst. rewrite reset_nth_gen_info_same. simpl. intuition.
   - rewrite reset_nth_gen_info_diff by auto. intuition.
 Qed.
 
-Lemma graph_has_v_reset_inv: forall (g: LGraph) gen v,
-    graph_has_gen g gen -> graph_has_v (reset_nth_gen_graph gen g) v ->
-    graph_has_v g v.
+Lemma graph_has_v_reset: forall (g: LGraph) gen v,
+    graph_has_v (reset_nth_gen_graph gen g) v <->
+    graph_has_v g v /\ gen <> vgeneration v.
 Proof.
-  intros. destruct v, H0. split; simpl in *.
-  - rewrite graph_has_gen_reset in H0; assumption.
-  - rewrite gen_has_index_reset in H1 by assumption. destruct H1. assumption.
+  intros. split; intros; destruct v; unfold graph_has_v in *; simpl in *.
+  - rewrite graph_has_gen_reset, gen_has_index_reset in H. intuition.
+  - rewrite graph_has_gen_reset, gen_has_index_reset. intuition.
 Qed.
 
 Lemma roots_compatible_reset: forall g gen outlier roots,
-    roots_compatible g outlier roots -> graph_has_gen g gen ->
+    roots_compatible g outlier roots ->
     roots_have_no_gen roots gen ->
     roots_compatible (reset_nth_gen_graph gen g) outlier roots.
 Proof.
   intros. destruct H. split. 1: assumption. rewrite Forall_forall in *. intros.
-  specialize (H2 _ H3). destruct H2. split.
+  specialize (H1 _ H2). destruct H1. split.
   - rewrite graph_has_gen_reset. assumption.
-  - rewrite gen_has_index_reset by assumption. split. 1: assumption.
-    rewrite <- filter_sum_right_In_iff in H3. apply H1 in H3. auto.
+  - rewrite gen_has_index_reset. split. 1: assumption.
+    rewrite <- filter_sum_right_In_iff in H2. apply H0 in H2. auto.
 Qed.
 
 Lemma outlier_compatible_reset: forall g outlier gen,
-    graph_has_gen g gen -> outlier_compatible g outlier ->
+    outlier_compatible g outlier ->
     outlier_compatible (reset_nth_gen_graph gen g) outlier.
 Proof.
-  intros. unfold outlier_compatible in *. intros. simpl. apply H0.
-  apply graph_has_v_reset_inv in H1; assumption.
+  intros. unfold outlier_compatible in *. intros. simpl. apply H.
+  rewrite graph_has_v_reset in H0. destruct H0. assumption.
 Qed.
 
 Lemma super_compatible_reset: forall g t_info roots f_info outlier gen,
-    graph_has_gen g gen -> roots_have_no_gen roots gen ->
+    roots_have_no_gen roots gen ->
     super_compatible (g, t_info, roots) f_info outlier ->
     super_compatible (reset_nth_gen_graph gen g,
                       reset_nth_heap_thread_info gen t_info, roots) f_info outlier.
 Proof.
-  intros. destruct H1 as [? [? [? ?]]]. split; [|split; [|split]].
+  intros. destruct H0 as [? [? [? ?]]]. split; [|split; [|split]].
   - apply graph_thread_info_compatible_reset; assumption.
   - apply fta_compatible_reset; assumption.
   - apply roots_compatible_reset; assumption.
   - apply outlier_compatible_reset; assumption.
 Qed.
 
-  (* forward_condition (reset_nth_gen_graph from g2) *)
-  (*   (reset_nth_heap_thread_info from t_info2) from to /\ *)
-  (* thread_info_relation t_info (reset_nth_heap_thread_info from t_info2) /\ *)
-  (* do_generation_relation from to f_info roots roots1 g (reset_nth_gen_graph from g2) *)
+Lemma tir_reset: forall t_info gen,
+    thread_info_relation t_info (reset_nth_heap_thread_info gen t_info).
+Proof.
+  intros. split; simpl. 1: reflexivity. intros.
+  unfold gen_size, nth_space.  simpl.
+  destruct (le_lt_dec (length (spaces (ti_heap t_info))) gen).
+  - rewrite reset_nth_space_overflow; [reflexivity | assumption].
+  - destruct (Nat.eq_dec n gen).
+    + subst. rewrite reset_nth_space_same; simpl; [reflexivity | assumption].
+    + rewrite reset_nth_space_diff; [reflexivity | assumption].
+Qed.
+
+Lemma frr_graph_has_gen: forall from to f_info roots1 g1 roots2 g2,
+    graph_has_gen g1 to ->
+    forward_roots_relation from to f_info roots1 g1 roots2 g2 ->
+    forall gen, graph_has_gen g1 gen <-> graph_has_gen g2 gen.
+Proof.
+  intros. induction H0. 1: reflexivity. rewrite <- IHforward_roots_loop.
+  - eapply fr_graph_has_gen; eauto.
+  - rewrite <- fr_graph_has_gen; eauto.
+Qed.
+
+Lemma svwl_graph_has_gen: forall from to l g1 g2,
+    graph_has_gen g1 to ->
+    scan_vertex_while_loop from to l g1 g2 ->
+    forall gen, graph_has_gen g1 gen <-> graph_has_gen g2 gen.
+Proof.
+  intros ? ? ?. induction l; intros; inversion H0; subst. 1: reflexivity.
+  - apply IHl; assumption.
+  - transitivity (graph_has_gen g3 gen).
+    + eapply svfl_graph_has_gen; eauto.
+    + apply IHl. 2: assumption. rewrite <- svfl_graph_has_gen; eauto.
+Qed.
+
+Lemma do_gen_graph_has_gen: forall from to f_info roots roots' g g',
+    graph_has_gen g to ->
+    do_generation_relation from to f_info roots roots' g g' ->
+    forall gen, graph_has_gen g gen <-> graph_has_gen g' gen.
+Proof.
+  intros. destruct H0 as [g1 [g2 [? [? ?]]]]. transitivity (graph_has_gen g1 gen).
+  - eapply frr_graph_has_gen; eauto.
+  - transitivity (graph_has_gen g2 gen).
+    + destruct H1 as [n [? ?]]. eapply svwl_graph_has_gen; eauto.
+      rewrite <- frr_graph_has_gen; eauto.
+    + subst g'. rewrite graph_has_gen_reset. reflexivity.
+Qed.
+
+Lemma copy_compatible_reset: forall g gen,
+    copy_compatible g -> copy_compatible (reset_nth_gen_graph gen g).
+Proof.
+  intros. unfold copy_compatible in *. intros. simpl in *.
+  rewrite graph_has_v_reset in H0. destruct H0. specialize (H _ H0 H1).
+  destruct H. rewrite graph_has_v_reset. split. 2: assumption. split. 1: assumption.
+Abort.
+
+Lemma do_gen_copy_compatible: forall from to f_info roots roots' g g',
+    from  <> to -> graph_has_gen g to ->
+    do_generation_relation from to f_info roots roots' g g' ->
+    copy_compatible g -> copy_compatible g'.
+Proof.
+  intros. destruct H1 as [g1 [g2 [? [? ?]]]]. cut (copy_compatible g1).
+  - intros. cut (copy_compatible g2).
+    + intros. subst g'. admit.
+    + admit.
+  - admit.
+Abort.

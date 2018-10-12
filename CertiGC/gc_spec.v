@@ -297,7 +297,6 @@ Definition do_generation_spec :=
   POST [tvoid]
     EX g' : LGraph, EX t_info': thread_info, EX roots': roots_t,
     PROP (super_compatible (g', t_info', roots') f_info outlier;
-          forward_condition g' t_info' from to;
           thread_info_relation t_info t_info';
           do_generation_relation from to f_info roots roots' g g')
     LOCAL ()
