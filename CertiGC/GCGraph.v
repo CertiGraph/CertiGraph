@@ -3429,55 +3429,32 @@ Proof.
 Qed.
 
 Lemma lcv_gen_unmarked: forall (to : nat) (g : LGraph) (v : VType),
-    vgeneration v <> to -> graph_has_gen g to -> gen_unmarked g to ->
-    raw_mark (vlabel g v) = false -> gen_unmarked (lgraph_copy_v g v to) to.
+    graph_has_gen g to -> raw_mark (vlabel g v) = false ->
+    forall gen, vgeneration v <> gen ->
+                gen_unmarked g gen -> gen_unmarked (lgraph_copy_v g v to) gen.
 Proof.
-  intros. assert (forward_relation
-                    (vgeneration v) to 0 (inl (inr v)) g (lgraph_copy_v g v to)) by
-      (constructor; [reflexivity | assumption]).
-  unfold gen_unmarked in *. intros. specialize (H1 H0 idx).
-  assert (graph_has_v (lgraph_copy_v g v to) (to, idx)) by (split; assumption).
-  apply lcv_graph_has_v_inv in H6. 2: assumption. destruct H6.
-  * pose proof H6. destruct H6. simpl in * |-. specialize (H1 H8). rewrite <- H1.
-    symmetry. apply (fr_raw_mark _ _ _ _ _ _ H0 H3); [assumption | simpl; omega].
-  * rewrite H6. rewrite lcv_vlabel_new; assumption.
+  intros. unfold gen_unmarked in *. intros.
+  assert (graph_has_v (lgraph_copy_v g v to) (gen, idx)) by (split; assumption).
+  apply lcv_graph_has_v_inv in H5. 2: assumption. destruct H5.
+  - pose proof H5. destruct H6. simpl in * |- . specialize (H2 H6 _ H7).
+    rewrite <- lcv_raw_mark; try assumption. destruct v. simpl in *. intro. apply H1.
+    inversion H8. reflexivity.
+  - rewrite H5. rewrite lcv_vlabel_new; try assumption. unfold new_copied_v in H5.
+    inversion H5. subst. assumption.
 Qed.
 
-Lemma lgd_gen_unmarked: forall (g: LGraph) (e : EType) (v : VType) (gen : nat),
-    gen_unmarked (labeledgraph_gen_dst g e v) gen <-> gen_unmarked g gen.
+Lemma fr_gen_unmarked: forall from to depth p g g',
+    graph_has_gen g to -> forward_relation from to depth p g g' ->
+    forall gen, from  <> gen -> gen_unmarked g gen -> gen_unmarked g' gen.
 Proof.
-  intros. unfold gen_unmarked. rewrite lgd_graph_has_gen. split; intros.
-  - specialize (H H0 idx). rewrite lgd_gen_has_index in H. specialize (H H1).
-    rewrite lgd_vlabel in H. assumption.
-  - rewrite lgd_gen_has_index in H1. rewrite lgd_vlabel. apply H; assumption.
-Qed.
-
-Lemma fr_gen_unmarked: forall from to depth t g g',
-    from <> to -> graph_has_gen g to -> forward_relation from to depth t g g' ->
-    gen_unmarked g to -> gen_unmarked g' to.
-Proof.
-  intros ? ? ?. revert from to. induction depth; intros.
-  - inversion H1; subst; try assumption.
-    + eapply lcv_gen_unmarked; eauto.
-    + subst new_g. rewrite lgd_gen_unmarked. eapply lcv_gen_unmarked; eauto.
-  - assert (forall l from to g1 g2,
-               from <> to -> graph_has_gen g1 to -> gen_unmarked g1 to ->
-               forward_loop from to depth l g1 g2 -> gen_unmarked g2 to). {
-    induction l; intros; inversion H6; subst; try assumption.
-    specialize (IHdepth _ _ _ _ _ H3 H4 H10 H5).
-    rewrite (fr_graph_has_gen _ _ _ _ _ _ H4 H10) in H4.
-    specialize (IHl _ _ _ _ H3 H4 IHdepth H13). assumption. }
-    clear IHdepth. inversion H1; subst; try assumption.
-    + assert (graph_has_gen new_g to) by
-          (subst new_g; rewrite <- lcv_graph_has_gen; assumption).
-      assert (gen_unmarked new_g to) by
-          (subst new_g; apply lcv_gen_unmarked; assumption).
-      eapply (H3 _ _ _ new_g); eauto.
-    + assert (graph_has_gen new_g to) by
-          (subst new_g; rewrite lgd_graph_has_gen, <- lcv_graph_has_gen; assumption).
-      assert (gen_unmarked new_g to) by
-          (subst new_g; rewrite lgd_gen_unmarked; apply lcv_gen_unmarked; assumption).
-      eapply (H3 _ _ _ new_g); eauto.
+  intros. remember (fun (g: LGraph) (gen: nat) (x: nat) => x <> gen) as Q.
+  remember (fun (g1 g2: LGraph) gen =>
+              gen_unmarked g1 gen -> gen_unmarked g2 gen) as P.
+  remember (fun (x1 x2: nat) => True) as R.
+  pose proof (fr_general_prop depth from to p g g' _ Q P R). subst Q P R.
+  apply H3; clear H3; intros; try assumption; try reflexivity.
+  - apply H4, H3. assumption.
+  - rewrite <- H7 in H4. apply lcv_gen_unmarked; assumption.
 Qed.
 
 Lemma svfl_graph_has_gen: forall from to v l g g',
@@ -3490,25 +3467,25 @@ Proof.
   - apply (IHl from to v). 2: assumption. rewrite <- fr_graph_has_gen; eauto.
 Qed.
 
-Lemma svfl_graph_unmarked: forall from to v l g g',
-    from <> to -> graph_has_gen g to -> scan_vertex_for_loop from to v l g g' ->
-    gen_unmarked g to -> gen_unmarked g' to.
+Lemma svfl_gen_unmarked: forall from to v l g g',
+    graph_has_gen g to -> scan_vertex_for_loop from to v l g g' ->
+    forall gen, from <> gen -> gen_unmarked g gen -> gen_unmarked g' gen.
 Proof.
   intros from to v l. revert from to v.
-  induction l; intros; inversion H1; subst; try assumption.
+  induction l; intros; inversion H0; subst; try assumption.
   eapply (IHl from to _ g2); eauto.
   - rewrite <- fr_graph_has_gen; eauto.
   - eapply fr_gen_unmarked; eauto.
 Qed.
 
 Lemma svwl_gen_unmarked: forall from to l g g',
-    from <> to -> graph_has_gen g to ->
-    gen_unmarked g to -> scan_vertex_while_loop from to l g g' -> gen_unmarked g' to.
+    graph_has_gen g to -> scan_vertex_while_loop from to l g g' ->
+    forall gen, from <> gen -> gen_unmarked g gen -> gen_unmarked g' gen.
 Proof.
-  intros. revert g H H0 H1 H2. induction l; intros; inversion H2; subst;
-                                 [| apply (IHl g) | apply (IHl g2)]; try assumption.
+  do 3 intro. induction l; intros; inversion H0; subst;
+                [| apply (IHl g) | apply (IHl g2)]; try assumption.
   - rewrite <- svfl_graph_has_gen; eauto.
-  - eapply svfl_graph_unmarked; eauto.
+  - eapply svfl_gen_unmarked; eauto.
 Qed.
 
 Lemma make_header_tag: forall g v,
@@ -3727,8 +3704,8 @@ Proof.
 Qed.
 
 Lemma frr_gen_unmarked: forall from to f_info roots1 g1 root2 g2,
-    from <> to -> forward_roots_relation from to f_info roots1 g1 root2 g2 ->
-    graph_has_gen g1 to -> gen_unmarked g1 to -> gen_unmarked g2 to.
+    graph_has_gen g1 to -> forward_roots_relation from to f_info roots1 g1 root2 g2 ->
+    forall gen, gen <> from -> gen_unmarked g1 gen -> gen_unmarked g2 gen.
 Proof.
   intros. induction H0. 1: assumption. apply IHforward_roots_loop.
   - rewrite <- fr_graph_has_gen; eauto.
@@ -4126,14 +4103,50 @@ Proof.
   destruct H. rewrite graph_has_v_reset. split. 2: assumption. split. 1: assumption.
 Abort.
 
-Lemma do_gen_copy_compatible: forall from to f_info roots roots' g g',
-    from  <> to -> graph_has_gen g to ->
-    do_generation_relation from to f_info roots roots' g g' ->
-    copy_compatible g -> copy_compatible g'.
+Definition graph_unmarked (g: LGraph): Prop := forall v,
+    graph_has_v g v -> raw_mark (vlabel g v) = false.
+
+Lemma graph_gen_unmarked_iff: forall g,
+    graph_unmarked g <-> forall gen, gen_unmarked g gen.
 Proof.
-  intros. destruct H1 as [g1 [g2 [? [? ?]]]]. cut (copy_compatible g1).
-  - intros. cut (copy_compatible g2).
-    + intros. subst g'. admit.
-    + admit.
-  - admit.
-Abort.
+  intros. unfold graph_unmarked, gen_unmarked. split; intros.
+  - apply H. unfold graph_has_v. simpl. split; assumption.
+  - destruct v as [gen idx]. destruct H0. simpl in *. apply H; assumption.
+Qed.
+
+Lemma graph_unmarked_copy_compatible: forall g,
+    graph_unmarked g -> copy_compatible g.
+Proof.
+  intros. red in H |-* . intros. apply H in H0. rewrite H0 in H1. inversion H1.
+Qed.
+
+Lemma gen_unmarked_reset_same: forall g gen,
+    gen_unmarked (reset_nth_gen_graph gen g) gen.
+Proof.
+  intros. red. intros. rewrite graph_has_gen_reset in H.
+  rewrite gen_has_index_reset in H0. destruct H0. contradiction.
+Qed.
+
+Lemma gen_unmarked_reset_diff: forall g gen1 gen2,
+    gen_unmarked g gen2 -> gen_unmarked (reset_nth_gen_graph gen1 g) gen2.
+Proof.
+  intros. unfold gen_unmarked in *. intros. rewrite graph_has_gen_reset in H0.
+  rewrite gen_has_index_reset in H1. destruct H1. specialize (H H0 _ H1). simpl.
+  assumption.
+Qed.
+
+Lemma do_gen_graph_unmarked: forall from to f_info roots roots' g g',
+    graph_has_gen g to ->
+    do_generation_relation from to f_info roots roots' g g' ->
+    graph_unmarked g -> graph_unmarked g'.
+Proof.
+  intros. destruct H0 as [g1 [g2 [? [? ?]]]]. rewrite graph_gen_unmarked_iff in H1.
+  assert (forall gen, from <> gen -> gen_unmarked g1 gen) by
+      (intros; eapply frr_gen_unmarked; eauto).
+  assert (forall gen, from <> gen -> gen_unmarked g2 gen). {
+    intros. destruct H2 as [n [? ?]]. eapply (svwl_gen_unmarked _ _ _ g1 g2); eauto.
+    rewrite <- frr_graph_has_gen; eauto. } subst g'.
+  rewrite graph_gen_unmarked_iff. intros. destruct (Nat.eq_dec from gen).
+  - subst. apply gen_unmarked_reset_same.
+  - apply gen_unmarked_reset_diff. apply H5. assumption.
+Qed.
