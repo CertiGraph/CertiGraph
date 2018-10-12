@@ -68,7 +68,7 @@ Proof.
         (unfold space_struct_rep, space_tri; entailer!).
     unlocalize [thread_info_rep sh t_info ti].
     1: apply thread_info_rep_ramif_stable_1; assumption. apply dgc_imply_fc in H0.
-    destruct H0 as [? [? ?]]. rewrite <- Heqfrom_p.
+    destruct H0 as [? [? [? ?]]]. rewrite <- Heqfrom_p.
     replace from_p with (gen_start g from) by
         (subst; unfold gen_start; rewrite if_true; assumption).
     replace (offset_val (WORD_SIZE * total_space (nth_space t_info from))
@@ -81,7 +81,7 @@ Proof.
       unfold thread_info_rep. unfold heap_struct_rep. Intros. entailer!.
       unfold space_address, next_address, field_address. rewrite if_true.
       - simpl. rewrite offset_offset_val. f_equal.
-      - destruct H as [[_ [_ ?]] _]. clear -H H5 H28. unfold field_compatible in *.
+      - destruct H as [[_ [_ ?]] _]. clear -H H5 H29. unfold field_compatible in *.
         simpl in *. unfold in_members. simpl. intuition. red in H5.
         pose proof (spaces_size (ti_heap t_info)). rewrite Zlength_correct in H4.
         rep_omega. } thaw FR.
@@ -89,53 +89,53 @@ Proof.
     1: intuition. Intros vret. destruct vret as [[g1 t_info1] roots1]. simpl fst in *.
     simpl snd in *. freeze [0;1;2;3] FR. deadvars!.
     replace (space_address t_info from) with (space_address t_info1 from) by
-        (unfold space_address; rewrite (proj1 H25); reflexivity).
+        (unfold space_address; rewrite (proj1 H26); reflexivity).
     assert (space_start (nth_space t_info1 from) = gen_start g1 from). {
-      destruct H22 as [? _]. destruct H24 as [_ [? _]].
-      destruct (gt_gs_compatible _ _ H22 _ H24) as [? _]. rewrite <- H26.
+      destruct H23 as [? _]. destruct H25 as [_ [? _]].
+      destruct (gt_gs_compatible _ _ H23 _ H25) as [? _]. rewrite <- H27.
       unfold gen_start. rewrite if_true by assumption. reflexivity. }
     assert (isptr (space_start (nth_space t_info1 from))). {
-      rewrite H26. unfold gen_start. destruct H24 as [_ [? _]].
+      rewrite H27. unfold gen_start. destruct H25 as [_ [? _]].
       rewrite if_true by assumption. apply start_isptr. }
     localize [space_struct_rep sh t_info1 from].
     unfold space_struct_rep, space_tri. do 2 forward.
     replace_SEP 0 (space_struct_rep sh t_info1 from) by
         (unfold space_struct_rep, space_tri; entailer!).
     unlocalize [thread_info_rep sh t_info1 ti].
-    1: apply thread_info_rep_ramif_stable_1; assumption. thaw FR. rewrite H26.
+    1: apply thread_info_rep_ramif_stable_1; assumption. thaw FR. rewrite H27.
     replace (offset_val (WORD_SIZE * total_space (nth_space t_info1 from))
                         (gen_start g1 from)) with (limit_address g1 t_info1 from) by
         (unfold limit_address, gen_size; reflexivity).
     assert_PROP (offset_val 4 (space_address t_info to) = next_address t_info1 to). {
       unfold thread_info_rep. unfold heap_struct_rep. entailer!.
-      unfold space_address, next_address, field_address. rewrite (proj1 H25), if_true.
+      unfold space_address, next_address, field_address. rewrite (proj1 H26), if_true.
       - simpl. rewrite offset_offset_val. f_equal.
-      - clear -H35 H15. unfold field_compatible in *. simpl.
+      - clear -H36 H15. unfold field_compatible in *. simpl.
         unfold in_members. simpl. intuition. }
     assert (closure_has_v g (to, number_of_vertices (nth_gen g to))) by
         (red; simpl; unfold closure_has_index; split; [assumption | omega]).
     replace (offset_val to_used to_p) with
         (offset_val (- WORD_SIZE)
                     (vertex_address g1 (to, number_of_vertices (nth_gen g to)))) by
-        (rewrite <- (frr_vertex_address _ _ _ _ _ _ _ H5 H23 _ H29); subst;
+        (rewrite <- (frr_vertex_address _ _ _ _ _ _ _ H5 H24 _ H30); subst;
          unfold vertex_address, vertex_offset, gen_start; simpl;
          rewrite offset_offset_val, H11, H9, if_true by assumption;
-         f_equal; rep_omega). eapply frr_closure_has_v in H29; eauto.
-    destruct H29. simpl in H29, H30.
-    assert (0 < gen_size t_info1 to) by (rewrite <- (proj2 H25); assumption).
+         f_equal; rep_omega). eapply frr_closure_has_v in H30; eauto.
+    destruct H30. simpl in H30, H31.
+    assert (0 < gen_size t_info1 to) by (rewrite <- (proj2 H26); assumption).
     assert (gen_unmarked g1 to) by (eapply frr_gen_unmarked; eauto).
     forward_call (rsh, sh, gv, fi, ti, g1, t_info1, f_info, roots1, outlier,
                   from, to, number_of_vertices (nth_gen g to)). 1: intuition.
     Intros vret. destruct vret as [g2 t_info2]. simpl fst in *. simpl snd in *.
     deadvars!. forward_if True; Intros; [contradiction | forward; entailer! |].
     replace (space_address t_info1 from) with (space_address t_info2 from) in * by
-        (unfold space_address; rewrite (proj1 H36); reflexivity).
+        (unfold space_address; rewrite (proj1 H37); reflexivity).
     assert (space_start (nth_space t_info2 from) = gen_start g2 from). {
-      destruct H33 as [? _]. destruct H34 as [_ [? _]].
-      destruct (gt_gs_compatible _ _ H33 _ H34) as [? _]. rewrite <- H37.
+      destruct H34 as [? _]. destruct H35 as [_ [? _]].
+      destruct (gt_gs_compatible _ _ H34 _ H35) as [? _]. rewrite <- H38.
       unfold gen_start. rewrite if_true by assumption. reflexivity. }
     assert (isptr (space_start (nth_space t_info2 from))). {
-      rewrite H37. unfold gen_start. destruct H34 as [_ [? _]].
+      rewrite H38. unfold gen_start. destruct H35 as [_ [? _]].
       rewrite if_true by assumption. apply start_isptr. } deadvars!.
     freeze [0;1;2;3] FR. localize [space_struct_rep sh t_info2 from].
     unfold space_struct_rep, space_tri. forward.
@@ -149,22 +149,30 @@ Proof.
                                (ti_heap_p t_info2)). {
       entailer!. unfold space_address. unfold field_address. rewrite if_true.
       - simpl. f_equal.
-      - clear -H14 H41. unfold field_compatible in *. simpl in *. intuition. }
-    rewrite H39. clear H39. Opaque Znth. forward. Transparent Znth. 1: entailer!.
+      - clear -H14 H42. unfold field_compatible in *. simpl in *. intuition. }
+    rewrite H40. clear H40. Opaque Znth. forward. Transparent Znth. 1: entailer!.
     rewrite Znth_map by (rewrite spaces_size; rep_omega).
     rewrite <- nth_space_Znth. unfold space_tri at 2 3. thaw FR.
-    assert (graph_has_gen g2 from) by (destruct H34 as [_ [? _]]; assumption).
+    assert (graph_has_gen g2 from) by (destruct H35 as [_ [? _]]; assumption).
     rewrite (graph_rep_reset g2 from) by assumption. Intros. gather_SEP 1 4.
-    sep_apply (heap_rest_rep_reset g2 t_info2 from (proj1 H33) H39).
+    sep_apply (heap_rest_rep_reset g2 t_info2 from (proj1 H34) H40).
     rewrite <- heap_struct_rep_eq. gather_SEP 2 5 0.
     replace_SEP 0 (thread_info_rep sh (reset_nth_heap_thread_info from t_info2) ti).
     + unfold thread_info_rep. simpl ti_heap_p. simpl ti_args. entailer!.
       assert (from < length (spaces (ti_heap t_info2)))%nat by
-          (destruct H33 as [[_ [_ ?]] _]; red in H39; omega).
-      rewrite (reset_nth_space_Znth _ _ H44), <- nth_space_Znth, <- upd_Znth_map.
+          (destruct H34 as [[_ [_ ?]] _]; red in H40; omega).
+      rewrite (reset_nth_space_Znth _ _ H45), <- nth_space_Znth, <- upd_Znth_map.
       unfold space_tri at 3. simpl. replace (WORD_SIZE * 0)%Z with 0 by omega.
       rewrite isptr_offset_val_zero by assumption. cancel.
-    + forward. remember (reset_nth_heap_thread_info from t_info2) as t_info3.
-      remember (reset_nth_gen_graph from g2) as g3. Exists g3 t_info3 roots1.
-      entailer!. simpl.
+    + apply super_compatible_reset with (gen := from) in H34. 2: assumption.
+      2: { apply (frr_not_pointing from to f_info roots g roots1 g1 outlier); auto.
+           - clear -H0. destruct H0 as [_ [_ [_ [? _]]]]. assumption.
+           - clear -H. destruct H as [_ [_ [? _]]]. assumption. } forward.
+      remember (reset_nth_heap_thread_info from t_info2) as t_info3.
+      remember (reset_nth_gen_graph from g2) as g3.
+      assert (do_generation_relation from to f_info roots roots1 g g3). {
+        red. exists g1, g2. intuition. }
+
+      Exists g3 t_info3 roots1.
+      destruct H34 as [? [? [? ?]]]. entailer!. simpl.
 Abort.
