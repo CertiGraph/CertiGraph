@@ -1410,9 +1410,7 @@ Lemma generation_rep_reset_same: forall (g: LGraph) i,
 Proof.
   intros. unfold generation_rep. rewrite <- !iter_sepcon_map.
   unfold nth_gen, reset_nth_gen_graph at 1. simpl.
-  rewrite reset_nth_gen_info_same.
-  - simpl. reflexivity.
-  - red in H. omega.
+  rewrite reset_nth_gen_info_same. simpl. reflexivity.
 Qed.
 
 Lemma graph_rep_reset: forall (g: LGraph) (gen: nat),

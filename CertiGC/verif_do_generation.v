@@ -164,15 +164,18 @@ Proof.
       rewrite (reset_nth_space_Znth _ _ H45), <- nth_space_Znth, <- upd_Znth_map.
       unfold space_tri at 3. simpl. replace (WORD_SIZE * 0)%Z with 0 by omega.
       rewrite isptr_offset_val_zero by assumption. cancel.
-    + apply super_compatible_reset with (gen := from) in H34. 2: assumption.
+    + apply super_compatible_reset with (gen := from) in H34.
       2: { apply (frr_not_pointing from to f_info roots g roots1 g1 outlier); auto.
            - clear -H0. destruct H0 as [_ [_ [_ [? _]]]]. assumption.
            - clear -H. destruct H as [_ [_ [? _]]]. assumption. } forward.
       remember (reset_nth_heap_thread_info from t_info2) as t_info3.
       remember (reset_nth_gen_graph from g2) as g3.
-      assert (do_generation_relation from to f_info roots roots1 g g3). {
-        red. exists g1, g2. intuition. }
-
+      assert (do_generation_relation from to f_info roots roots1 g g3) by
+          (exists g1, g2; split; [|split]; assumption).
+      assert (thread_info_relation t_info t_info3). {
+        apply tir_trans with t_info2.
+        - apply tir_trans with t_info1; assumption.
+        - subst t_info3. apply tir_reset. }
       Exists g3 t_info3 roots1.
-      destruct H34 as [? [? [? ?]]]. entailer!. simpl.
-Abort.
+      destruct H34 as [? [? [? ?]]]. entailer!.
+Qed.
