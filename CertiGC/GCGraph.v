@@ -16,7 +16,6 @@ Require Import RamifyCoq.lib.EquivDec_ext.
 Require Import RamifyCoq.lib.List_ext.
 Require Import RamifyCoq.graph.graph_model.
 Require Export RamifyCoq.graph.graph_gen.
-Require Import RamifyCoq.msl_ext.iter_sepcon.
 Import ListNotations.
 
 Local Open Scope Z_scope.
@@ -754,28 +753,6 @@ Proof.
   apply EqdepFacts.f_eq_dep_non_dep, EqdepFacts.eq_dep1_dep.
   apply (EqdepFacts.eq_dep1_intro _ _ _ _ _ _ H0). apply proof_irr.
 Qed.
-
-(*
-Class SoundGCGraph (g: LGraph) :=
-  {
-    field_decided_edges: forall v e,
-      vvalid g v -> (src g e = v /\ evalid g e <-> In e (get_edges g v));
-    generation_limit: (Zlength g.(glabel) <= MAX_SPACES)%Z;
-    vertex_valid: forall v,
-        vvalid g v <->
-        vgeneration v < length g.(glabel) /\
-        vindex v < (nth (vgeneration v) g.(glabel) null_info).(number_of_vertices);
-    (* Other constraints would be added later *)
-  }.
-
-Definition Graph :=
-  GeneralGraph VType EType raw_vertex_block unit graph_info (fun g => SoundGCGraph g).
-
-Local Coercion lg_gg : GeneralGraph >-> LabeledGraph.
-
-Definition Graph_LGraph (g: Graph): LGraph := lg_gg g.
-
- *)
 
 Definition make_header (g: LGraph) (v: VType): Z:=
   let vb := vlabel g v in if vb.(raw_mark)
@@ -4223,3 +4200,54 @@ Proof.
   - subst. apply gen_unmarked_reset_same.
   - apply gen_unmarked_reset_diff. apply H5. assumption.
 Qed.
+
+Definition graph_has_e (g: LGraph) (e: EType): Prop :=
+  let v := fst e in
+  let idx := snd e in
+  let flds := raw_fields (vlabel g v) in
+  graph_has_v g v /\ (idx <= length flds)%nat /\ nth idx flds None = None.
+
+Definition gen_no_edge_to (g: LGraph) (gen1 gen2: nat): Prop :=
+  forall vidx eidx, let e := (gen1, vidx, eidx) in
+                    graph_has_e g e -> vgeneration (dst g e) <> gen2.
+
+Definition no_edge_to (g: LGraph) (gen: nat): Prop :=
+  forall another, another <> gen -> gen_no_edge_to g another gen.
+
+Definition egeneration (g: LGraph) (e: EType): nat := vgeneration (fst e).
+
+Lemma graph_has_e_reset: forall g gen e,
+    graph_has_e (reset_nth_gen_graph gen g) e <->
+    graph_has_e g e /\ gen <> egeneration g e.
+Proof.
+  intros. unfold graph_has_e, egeneration. destruct e as [v idx]. simpl.
+  rewrite graph_has_v_reset. intuition.
+Qed.
+
+Lemma gen_no_edge_to_reset_inv: forall g gen1 gen2 gen3,
+    gen1 <> gen2 -> gen_no_edge_to (reset_nth_gen_graph gen1 g) gen2 gen3 ->
+    gen_no_edge_to g gen2 gen3.
+Proof.
+  intros. unfold gen_no_edge_to. intros. apply H0.
+  rewrite graph_has_e_reset. unfold egeneration. simpl. split; assumption.
+Qed.
+
+Lemma gen_no_edge_to_reset: forall g gen1 gen2 gen3,
+    gen_no_edge_to g gen2 gen3 ->
+    gen_no_edge_to (reset_nth_gen_graph gen1 g) gen2 gen3.
+Proof.
+  intros. unfold gen_no_edge_to. intros. simpl. apply H.
+  rewrite graph_has_e_reset in H0. destruct H0. assumption.
+Qed.
+
+Lemma do_gen_no_edge_to: forall from to f_info roots roots' g g',
+    graph_has_gen g to ->
+    do_generation_relation from to f_info roots roots' g g' ->
+    no_edge_to g from -> no_edge_to g' from.
+Proof.
+  intros. destruct H0 as [g1 [g2 [? [? ?]]]]. unfold no_edge_to in *. intros.
+  subst g'. apply gen_no_edge_to_reset.
+  destruct (Nat.eq_dec another to).
+  - subst. admit.
+  - unfold gen_no_edge_to. intros.
+Abort.
