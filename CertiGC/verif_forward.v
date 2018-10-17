@@ -564,9 +564,8 @@ Proof.
         -- split; [constructor; assumption | split; [hnf; intuition | apply tir_id]].
         -- unfold thread_info_rep. entailer!.
   (* p is Vtype * Z, ie located in graph *)
-  - destruct p as [v n]. destruct H0 as [? [? [? ?]]].
-    sep_apply (graph_vertex_ramif_stable _ _ H0). Intros. freeze [1; 2; 3; 4; 5] FR.
-    remember (nth_sh g (vgeneration v)) as shv.
+  - destruct p as [v n]. destruct H0 as [? [? [? ?]]]. freeze [0; 1; 2; 4] FR.
+    localize [vertex_rep (nth_sh g (vgeneration v)) g v].
     unfold vertex_rep, vertex_at. Intros.
     assert_PROP (offset_val (WORD_SIZE * n) (vertex_address g v) =
                  field_address (tarray int_or_ptr_type
@@ -575,14 +574,14 @@ Proof.
       entailer!. unfold field_address. rewrite if_true. 1: simpl; f_equal.
       clear -H20 H11. unfold field_compatible in *. simpl in *. intuition.
       rewrite fields_eq_length. assumption. }
-    assert (readable_share shv). {
-      subst shv. apply writable_readable. apply generation_share_writable. }
+    assert (readable_share (nth_sh g (vgeneration v))). {
+      apply writable_readable. apply generation_share_writable. }
     assert (is_pointer_or_integer (Znth n (make_fields_vals g v))). {
       pose proof (mfv_all_is_ptr_or_int g v H9 H10 H0). rewrite Forall_forall in H16.
       apply H16, Znth_In. rewrite fields_eq_length. assumption. } forward.
-    gather_SEP 1 2. replace_SEP 0 (vertex_rep shv g v).
-    1: unfold vertex_rep, vertex_at; entailer!. subst shv. thaw FR. gather_SEP 0 1.
-    replace_SEP 0 (graph_rep g) by (entailer!; apply wand_frame_elim).
+    gather_SEP 0 1. replace_SEP 0 (vertex_rep (nth_sh g (vgeneration v)) g v).
+    1: unfold vertex_rep, vertex_at; entailer!.
+    unlocalize [graph_rep g]. 1: apply graph_vertex_ramif_stable; assumption. thaw FR.
     unfold make_fields_vals. rewrite H12, Znth_map.
     assert_PROP (valid_int_or_ptr (field2val g (Znth n (make_fields g v)))). {
       destruct (Znth n (make_fields g v)) eqn:?; [destruct s|].
