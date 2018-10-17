@@ -1230,11 +1230,11 @@ forward_loop (from to: nat): nat -> list forward_p_type -> LGraph -> LGraph -> P
     forward_loop from to depth fl g2 g3 -> forward_loop from to depth (f :: fl) g1 g3.
 
 Definition forward_p_compatible
-           (p: forward_p_type) (roots: roots_t) (g: LGraph): Prop :=
+           (p: forward_p_type) (roots: roots_t) (g: LGraph) (from: nat): Prop :=
   match p with
   | inl root_index => 0 <= root_index < Zlength roots
   | inr (v, n) => graph_has_v g v /\ 0 <= n < Zlength (vlabel g v).(raw_fields) /\
-                  (vlabel g v).(raw_mark) = false
+                  (vlabel g v).(raw_mark) = false /\ vgeneration v <> from
   end.
 
 Fixpoint collect_Z_indices {A} (eqdec: forall (a b: A), {a = b} + {a <> b})
@@ -3011,18 +3011,18 @@ Proof.
        (vertex_address g (copied_vertex (vlabel g v))
         :: tl (map (field2val g) (make_fields g v))))
     (vertex_address g (copied_vertex (vlabel g v))
-                    :: tl (map (field2val g) (make_fields g v)))) 
+                    :: tl (map (field2val g) (make_fields g v))))
                     with (tl (map (field2val g) (make_fields g v))).
       f_equal. admit.
 *)
   (* This part is where I've been dying all this while.
 Turns out this is for good reason: we can't be here.
-See that n = 0 /\ raw_mark (vlabel g v) = true. 
-We've discussed before that this is impossible. 
+See that n = 0 /\ raw_mark (vlabel g v) = true.
+We've discussed before that this is impossible.
 I need Shengyi's help to show this, but that should be fine.
      *)
   rewrite upd_Znth_pos_cons.
-  2: split; try assumption; 
+  2: split; try assumption;
        destruct H; apply Zlength_tl_leq;
          rewrite Zlength_map, Zlength_mfv_mf_same; omega.
   rewrite <- upd_Znth_tl; [|omega|].
@@ -3034,12 +3034,12 @@ I need Shengyi's help to show this, but that should be fine.
     repeat rewrite make_fields_eq_length;
     [|rewrite fields_eq_length in H]; assumption.
   intros.
-  rewrite upd_Znth_Zlength, Zlength_map, make_fields_eq_length in H3 by 
+  rewrite upd_Znth_Zlength, Zlength_map, make_fields_eq_length in H3 by
   (rewrite Zlength_map, Zlength_mfv_mf_same; assumption).
   rewrite <- lgd_f2v_eq_after_update with (n:=n);
     try reflexivity; try assumption.
 Admitted.
-  
+
 Lemma fr_general_prop_bootstrap: forall depth from to p g g'
                                         (P: nat -> LGraph -> LGraph -> Prop),
     (forall to g, P to g g) ->
@@ -3907,11 +3907,11 @@ Proof.
 Qed.
 
 Lemma fr_right_roots_compatible: forall depth from to e g g' roots outlier,
-    graph_has_gen g to -> forward_p_compatible (inr e) roots g ->
+    graph_has_gen g to -> forward_p_compatible (inr e) roots g from ->
     forward_relation from to depth (forward_p2forward_t (inr e) [] g) g g' ->
     roots_compatible g outlier roots -> roots_compatible g' outlier roots.
 Proof.
-  intros. simpl in H1, H0. destruct e. destruct H0 as [_ [_ ?]]. rewrite H0 in H1.
+  intros. simpl in H1, H0. destruct e. destruct H0 as [_ [_ [? _]]]. rewrite H0 in H1.
   simpl in H1. remember (fun (g: LGraph) (v: nat) (x: nat) => True) as Q.
   remember (fun g1 g2 (x: nat) => roots_compatible g1 outlier roots ->
                                   roots_compatible g2 outlier roots) as P.
@@ -3944,7 +3944,7 @@ Proof.
 Qed.
 
 Lemma fr_roots_compatible: forall depth from to p g g' roots f_info outlier,
-    graph_has_gen g to -> forward_p_compatible p roots g -> copy_compatible g ->
+    graph_has_gen g to -> forward_p_compatible p roots g from -> copy_compatible g ->
     forward_relation from to depth (forward_p2forward_t p roots g) g g' ->
     roots_compatible g outlier roots -> from <> to ->
     roots_compatible g' outlier (upd_roots from to p g roots f_info).
@@ -4202,52 +4202,135 @@ Proof.
 Qed.
 
 Definition graph_has_e (g: LGraph) (e: EType): Prop :=
-  let v := fst e in
-  let idx := snd e in
-  let flds := raw_fields (vlabel g v) in
-  graph_has_v g v /\ (idx <= length flds)%nat /\ nth idx flds None = None.
+  let v := fst e in graph_has_v g v /\ In e (get_edges g v).
 
-Definition gen_no_edge_to (g: LGraph) (gen1 gen2: nat): Prop :=
+Definition gen2gen_no_edge (g: LGraph) (gen1 gen2: nat): Prop :=
   forall vidx eidx, let e := (gen1, vidx, eidx) in
                     graph_has_e g e -> vgeneration (dst g e) <> gen2.
 
-Definition no_edge_to (g: LGraph) (gen: nat): Prop :=
-  forall another, another <> gen -> gen_no_edge_to g another gen.
+Definition no_edge2gen (g: LGraph) (gen: nat): Prop :=
+  forall another, another <> gen -> gen2gen_no_edge g another gen.
 
-Definition egeneration (g: LGraph) (e: EType): nat := vgeneration (fst e).
+Definition egeneration (e: EType): nat := vgeneration (fst e).
 
 Lemma graph_has_e_reset: forall g gen e,
     graph_has_e (reset_nth_gen_graph gen g) e <->
-    graph_has_e g e /\ gen <> egeneration g e.
+    graph_has_e g e /\ gen <> egeneration e.
 Proof.
   intros. unfold graph_has_e, egeneration. destruct e as [v idx]. simpl.
   rewrite graph_has_v_reset. intuition.
 Qed.
 
-Lemma gen_no_edge_to_reset_inv: forall g gen1 gen2 gen3,
-    gen1 <> gen2 -> gen_no_edge_to (reset_nth_gen_graph gen1 g) gen2 gen3 ->
-    gen_no_edge_to g gen2 gen3.
+Lemma gen2gen_no_edge_reset_inv: forall g gen1 gen2 gen3,
+    gen1 <> gen2 -> gen2gen_no_edge (reset_nth_gen_graph gen1 g) gen2 gen3 ->
+    gen2gen_no_edge g gen2 gen3.
 Proof.
-  intros. unfold gen_no_edge_to. intros. apply H0.
+  intros. unfold gen2gen_no_edge. intros. apply H0.
   rewrite graph_has_e_reset. unfold egeneration. simpl. split; assumption.
 Qed.
 
-Lemma gen_no_edge_to_reset: forall g gen1 gen2 gen3,
-    gen_no_edge_to g gen2 gen3 ->
-    gen_no_edge_to (reset_nth_gen_graph gen1 g) gen2 gen3.
+Lemma gen2gen_no_edge_reset: forall g gen1 gen2 gen3,
+    gen2gen_no_edge g gen2 gen3 ->
+    gen2gen_no_edge (reset_nth_gen_graph gen1 g) gen2 gen3.
 Proof.
-  intros. unfold gen_no_edge_to. intros. simpl. apply H.
+  intros. unfold gen2gen_no_edge. intros. simpl. apply H.
   rewrite graph_has_e_reset in H0. destruct H0. assumption.
 Qed.
 
-Lemma do_gen_no_edge_to: forall from to f_info roots roots' g g',
+Lemma fr_O_dst_no_change_root: forall from to r g g',
+    forward_relation from to O (root2forward r) g g' ->
+    forall e, graph_has_v g (fst e) -> dst g e = dst g' e.
+Proof.
+  intros. destruct r; [destruct s|]; simpl in H; inversion H; subst; try reflexivity.
+  simpl. rewrite pcv_dst_old. 1: reflexivity. destruct e as [[gen vidx] eidx].
+  unfold graph_has_v in H0. unfold new_copied_v. simpl in *. destruct H0. intro.
+  inversion H2. subst. red in H1. omega.
+Qed.
+
+Lemma frr_dst_no_change: forall from to f_info roots1 g1 roots2 g2,
+    graph_has_gen g1 to -> forward_roots_relation from to f_info roots1 g1 roots2 g2 ->
+    forall e, graph_has_v g1 (fst e) -> dst g1 e = dst g2 e.
+Proof.
+  intros. induction H0. 1: reflexivity. rewrite <- IHforward_roots_loop.
+  - eapply fr_O_dst_no_change_root; eauto.
+  - rewrite <- fr_graph_has_gen; eauto.
+  - eapply fr_graph_has_v; eauto.
+Qed.
+
+Lemma fr_O_graph_has_v_inv: forall from to p g g',
+    graph_has_gen g to -> forward_relation from to O p g g' ->
+    forall v, graph_has_v g' v -> graph_has_v g v \/
+                                  (vgeneration v = to /\
+                                  ~ gen_has_index g (vgeneration v) (vindex v)).
+Proof.
+  intros. inversion H0; subst; try (left; assumption).
+  - apply lcv_graph_has_v_inv in H1. 2: assumption. destruct H1.
+    + left; assumption.
+    + right. unfold new_copied_v in H1. subst. simpl. unfold gen_has_index. omega.
+  - subst new_g. rewrite <- lgd_graph_has_v in H1. apply lcv_graph_has_v_inv in H1.
+    2: assumption. destruct H1.
+    + left; assumption.
+    + right. unfold new_copied_v in H1. subst. simpl. unfold gen_has_index. omega.
+Qed.
+
+Lemma frr_graph_has_v_inv: forall from to f_info roots1 g1 roots2 g2,
+    graph_has_gen g1 to -> forward_roots_relation from to f_info roots1 g1 roots2 g2 ->
+    forall v, graph_has_v g2 v -> graph_has_v g1 v \/
+                                  (vgeneration v = to /\
+                                  ~ gen_has_index g1 (vgeneration v) (vindex v)).
+Proof.
+  intros. induction H0. 1: left; assumption.
+  assert (graph_has_gen g2 to) by (rewrite <- fr_graph_has_gen; eauto).
+  specialize (IHforward_roots_loop H3 H1). destruct IHforward_roots_loop.
+  - eapply fr_O_graph_has_v_inv; eauto.
+  - right. destruct H4. split. 1: assumption. intro. apply H5.
+    assert (graph_has_v g1 v) by (split; [rewrite H4|]; assumption).
+    eapply fr_graph_has_v in H7; eauto. destruct H7. assumption.
+Qed.
+
+Lemma frr_raw_fields: forall from to f_info roots1 g1 roots2 g2,
+    graph_has_gen g1 to -> forward_roots_relation from to f_info roots1 g1 roots2 g2 ->
+    forall v, graph_has_v g1 v -> raw_fields (vlabel g1 v) = raw_fields (vlabel g2 v).
+Proof.
+  intros. induction H0. 1: reflexivity. rewrite <- IHforward_roots_loop.
+  - eapply fr_raw_fields; eauto.
+  - rewrite <- fr_graph_has_gen; eauto.
+  - eapply fr_graph_has_v; eauto.
+Qed.
+
+Lemma frr_gen2gen_no_edge: forall from to f_info roots1 g1 roots2 g2,
+    graph_has_gen g1 to -> forward_roots_relation from to f_info roots1 g1 roots2 g2 ->
+    forall gen, gen <> to -> gen2gen_no_edge g1 gen from ->
+                gen2gen_no_edge g2 gen from.
+Proof.
+  intros. unfold gen2gen_no_edge in *. intros. 
+  cut (graph_has_e g1 (gen, vidx, eidx)).
+  - intros. erewrite <- frr_dst_no_change; eauto. destruct H4. assumption.
+  - destruct H3. eapply frr_graph_has_v_inv in H3; eauto. destruct H3 as [? | [? ?]].
+    2: simpl in H3; contradiction. split. 1: simpl; assumption. simpl in *.
+    cut (get_edges g1 (gen, vidx) = get_edges g2 (gen, vidx)).
+    + intros; rewrite H5; assumption.
+    + unfold get_edges. unfold make_fields. erewrite frr_raw_fields; eauto.
+Qed.
+
+Lemma svwl_gen2gen_no_edge: forall from to l g1 g2,
+    graph_has_gen g1 to ->
+    scan_vertex_while_loop from to l g1 g2 ->
+    forall gen, gen <> to -> gen2gen_no_edge g1 gen from ->
+                gen2gen_no_edge g2 gen from.
+Proof.
+  intros.
+Abort.
+
+Lemma do_gen_no_edge2gen: forall from to f_info roots roots' g g',
     graph_has_gen g to ->
     do_generation_relation from to f_info roots roots' g g' ->
-    no_edge_to g from -> no_edge_to g' from.
+    no_edge2gen g from -> no_edge2gen g' from.
 Proof.
-  intros. destruct H0 as [g1 [g2 [? [? ?]]]]. unfold no_edge_to in *. intros.
-  subst g'. apply gen_no_edge_to_reset.
+  intros. destruct H0 as [g1 [g2 [? [? ?]]]]. unfold no_edge2gen in *. intros.
+  subst g'. apply gen2gen_no_edge_reset.
   destruct (Nat.eq_dec another to).
   - subst. admit.
-  - unfold gen_no_edge_to. intros.
+  - specialize (H1 _ H4). eapply (frr_gen2gen_no_edge _ _ _ _ g _ g1) in H1; eauto.
+    destruct H2 as [m [? ?]].
 Abort.

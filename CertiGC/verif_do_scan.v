@@ -304,13 +304,14 @@ Proof.
                    [| rewrite isptr_offset_val; assumption | rep_omega]. simpl.
                  rewrite offset_offset_val. do 2 f_equal. rep_omega.
               ** split; [|split; [|split; [|split; [|split; [|split]]]]];
-                   try assumption. 2: rep_omega. red. split; [|split].
+                   try assumption. 2: rep_omega. red. split; [|split;[|split]].
                  --- assumption.
                  --- eapply svfl_raw_fields in H29;
                        [rewrite <- H29; omega | assumption..].
                  --- rewrite <- H26. symmetry.
                      eapply svfl_raw_mark in H29; [apply H29 | assumption..|].
                      simpl. omega.
+                 --- simpl; auto.
               ** Intros vret. destruct vret as [[g4 t_info4] roots']. simpl fst in *.
                  simpl snd in *. simpl in H37. subst roots'. Exists i g4 t_info4.
                  destruct H38 as [? [? [? ?]]].

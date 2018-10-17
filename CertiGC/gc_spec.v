@@ -171,7 +171,7 @@ Definition forward_spec :=
         _depth OF tint]
     PROP (readable_share rsh; writable_share sh;
           super_compatible (g, t_info, roots) f_info outlier;
-          forward_p_compatible forward_p roots g;
+          forward_p_compatible forward_p roots g from;
           forward_condition g t_info from to;
           0 <= depth <= Int.max_signed;
           from <> to)
