@@ -44,7 +44,7 @@ Definition surjective {A B} (f: A -> B): Prop := forall y, exists x, f x = y.
 
 Definition bijective {A B} (f : A -> B): Prop := injective f /\ surjective f.
 
-Definition graph_iso (g1 g2: PreGraph VType EType)
+Definition graph_iso (g1 g2: LGraph)
            (vmap: VType -> VType) (emap: EType -> EType): Prop :=
     bijective vmap /\ bijective emap /\
     (forall v: VType, vvalid g1 v <-> vvalid g2 (vmap v)) /\
@@ -54,11 +54,13 @@ Definition graph_iso (g1 g2: PreGraph VType EType)
     (forall (e: EType) (v: VType),
         evalid g1 e -> dst g1 e = v -> dst g2 (emap e) = vmap v).
 
-Definition gc_graph_iso (g1: PreGraph VType EType) (roots1: roots_t)
-           (g2: PreGraph VType EType) (roots2: roots_t): Prop :=
+Definition gc_graph_iso (g1: LGraph) (roots1: roots_t)
+           (g2: LGraph) (roots2: roots_t): Prop :=
   let vertices1 := filter_sum_right roots1 in
   let vertices2 := filter_sum_right roots2 in
+  let sub_g1 := reachable_sub_labeledgraph g1 vertices1 in
+  let sub_g2 := reachable_sub_labeledgraph g2 vertices2 in
   exists vmap emap,
+    (forall v, vvalid sub_g1 v -> vlabel sub_g1 v = vlabel sub_g2 (vmap v)) /\
     vertices2 = map vmap vertices1 /\
-    graph_iso (reachable_subgraph g1 vertices1)
-              (reachable_subgraph g2 vertices2) vmap emap.
+    graph_iso sub_g1 sub_g2 vmap emap.
