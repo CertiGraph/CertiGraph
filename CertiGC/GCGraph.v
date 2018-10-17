@@ -4441,13 +4441,72 @@ Proof.
     + unfold get_edges. unfold make_fields. erewrite frr_raw_fields; eauto.
 Qed.
 
+Lemma lgd_dst_old: forall (g: LGraph) e v e',
+    e <> e' -> dst (labeledgraph_gen_dst g e v) e' = dst g e'.
+Proof.
+  intros. simpl. unfold updateEdgeFunc. rewrite if_false. 1: reflexivity. auto.
+Qed.
+
+Lemma lgd_dst_new: forall (g: LGraph) e v,
+    dst (labeledgraph_gen_dst g e v) e = v.
+Proof. intros. simpl. unfold updateEdgeFunc. rewrite if_true; reflexivity. Qed.
+
+Lemma make_fields_Znth_edge: forall g v n e,
+    0 <= n < Zlength (raw_fields (vlabel g v)) -> Znth n (make_fields g v) = inr e ->
+    e = (v, Z.to_nat n).
+Proof.
+  intros. rewrite <- nth_Znth in H0. 2: rewrite make_fields_eq_length; assumption.
+  apply make_fields'_edge_depends_on_index in H0.
+  - rewrite Nat.add_0_r in H0; assumption.
+  - rewrite Z2Nat.id; [assumption | omega].
+Qed.
+
+Lemma fr_O_dst_no_change_field: forall from to v n g g',
+    forward_p_compatible (inr (v, Z.of_nat n)) [] g from ->
+    forward_relation from to O (forward_p2forward_t (inr (v, Z.of_nat n)) [] g) g g' ->
+    forall e, graph_has_v g (fst e) -> e <> (v, n) -> dst g e = dst g' e.
+Proof.
+  intros. simpl in *. destruct H as [? [? [? ?]]]. rewrite H4 in H0. simpl in H0.
+  remember (Znth (Z.of_nat n) (make_fields g v)).
+  assert (forall e0, inr e0 = Znth (Z.of_nat n) (make_fields g v) -> e0 <> e). {
+    intros. symmetry in H6. apply make_fields_Znth_edge in H6. 2: assumption.
+    rewrite Nat2Z.id in H6. rewrite <- H6 in H2. auto. }
+  destruct f; [destruct s |]; simpl in H0; inversion H0; subst; try reflexivity.
+  - subst new_g. rewrite lgd_dst_old. 1: reflexivity. apply H6; assumption.
+  - subst new_g. rewrite lgd_dst_old. 2: apply H6; assumption. simpl.
+    rewrite pcv_dst_old. 1: reflexivity. intro. rewrite H7 in H1. destruct H1.
+    unfold new_copied_v in H8. simpl in H8. red in H8. omega.
+Qed.
+
+Lemma svfl_dst_no_change: forall from to v l g1 g2,
+    graph_has_v g1 v -> raw_mark (vlabel g1 v) = false -> vgeneration v <> from ->
+    (forall i,  In i l -> (i < length (raw_fields (vlabel g1 v)))%nat) ->
+    graph_has_gen g1 to -> scan_vertex_for_loop from to v l g1 g2 ->
+    forall e, graph_has_v g1 (fst e) -> (forall i, In i l -> e <> (v, i)) ->
+              dst g1 e = dst g2 e.
+Proof.
+  intros ? ? ? ?. induction l; intros; inversion H4; subst. 1: reflexivity.
+  transitivity (dst g3 e).
+  - eapply fr_O_dst_no_change_field; eauto.
+    + simpl. intuition. rewrite Zlength_correct. apply inj_lt. apply H2.
+      left; reflexivity.
+    + apply H6. left; reflexivity.
+  - apply IHl; auto.
+    + eapply fr_graph_has_v; eauto.
+    + erewrite <- fr_raw_mark; eauto.
+    + intros. erewrite <- fr_raw_fields; eauto. apply H2. right; assumption.
+    + erewrite <- fr_graph_has_gen; eauto.
+    + eapply fr_graph_has_v; eauto.
+    + intros. apply H6. right; assumption.
+Qed.
+
 Lemma svwl_gen2gen_no_edge: forall from to l g1 g2,
     graph_has_gen g1 to ->
     scan_vertex_while_loop from to l g1 g2 ->
     forall gen, gen <> to -> gen2gen_no_edge g1 gen from ->
                 gen2gen_no_edge g2 gen from.
 Proof.
-  intros.
+  intros. unfold gen2gen_no_edge in *. intros.
 Abort.
 
 Lemma do_gen_no_edge2gen: forall from to f_info roots roots' g g',
