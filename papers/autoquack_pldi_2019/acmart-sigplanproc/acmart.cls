@@ -209,7 +209,7 @@ Computing Machinery]
   \fi
 \fi
 \ClassInfo{\@classname}{Using fontsize \ACM@fontsize}
-\LoadClass[\ACM@fontsize, reqno]{amsart}
+\LoadClass[\ACM@fontsize, reqno, tbtags]{amsart}
 \RequirePackage{microtype}
 \RequirePackage{etoolbox}
 \RequirePackage{refcount}
