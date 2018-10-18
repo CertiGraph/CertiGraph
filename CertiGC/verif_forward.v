@@ -88,7 +88,8 @@ Proof.
       reflexivity. }
     pose proof (Znth_map _ (root2val g) _ H0). hnf in H0. rewrite H11 in H0.
     rewrite H4, Znth_map in H12 by assumption. unfold flip in H12.
-    remember (Znth z roots) as root. rewrite <- H11 in H0. pose proof (Znth_In _ _ H0).
+    remember (Znth z roots) as root. rewrite <- H11 in H0.
+    pose proof (Znth_In _ _ H0).
     rewrite <- Heqroot in H13. rewrite H11 in H0. unfold Inhabitant_val in H12.
     assert (forall v, In (inr v) roots -> isptr (vertex_address g v)). {
       intros. destruct H5. unfold vertex_address. rewrite Forall_forall in H15.
@@ -779,20 +780,26 @@ Proof.
           remember (labeledgraph_gen_dst g e v1) as g'.
           replace_SEP 0 (vertex_rep (nth_sh g' (vgeneration v)) g' v).
           1: { unfold vertex_rep, vertex_at.
-               rewrite (lgd_sh_eq g v e v1).
-               rewrite (lgd_mfv_length_eq g v e v1).
-               rewrite <- fields_eq_length in H11.
-               rewrite (lgd_mfv_change_in_one_spot g v e v1 n); try assumption. 
+               replace (nth_sh g' (vgeneration v)) with
+                   (nth_sh g (vgeneration v)) by (subst g'; reflexivity).
+               replace (Zlength (make_fields_vals g' v)) with
+                   (Zlength (make_fields_vals g v)) by
+                   (subst g'; repeat rewrite fields_eq_length;
+                    apply lgd_raw_fld_length_eq).
+               rewrite (lgd_mfv_change_in_one_spot g v e v1 n);
+                 [|rewrite make_fields_eq_length| | ]; try assumption. 
                entailer!. }
           subst g'; subst v1.
-          unlocalize [graph_rep (labeledgraph_gen_dst g e (copied_vertex (vlabel g v')))].
+          unlocalize [graph_rep (labeledgraph_gen_dst g e
+                                                      (copied_vertex (vlabel g v')))].
           1: apply (graph_vertex_lgd_ramif g v e (copied_vertex (vlabel g v')) n);
             try (rewrite make_fields_eq_length); assumption.
           forward.
-          Exists (labeledgraph_gen_dst g e (copied_vertex (vlabel g (dst g e)))) t_info roots. 
+          Exists (labeledgraph_gen_dst g e (copied_vertex (vlabel g (dst g e))))
+                 t_info roots. 
           entailer!.
           2: unfold thread_info_rep; thaw FR; entailer!.
-          pose proof (lgd_no_dangling_dst g e (dst g e) H9 H19 H22 H10).
+          pose proof (lgd_no_dangling_dst_copied_vert g e (dst g e) H9 H19 H22 H10).
           split; [|split; [|split]]; try reflexivity.
           ++ rewrite H12; simpl.
              rewrite Heqf. constructor; [reflexivity | assumption].
@@ -1026,25 +1033,30 @@ Proof.
               rewrite lacv_vertex_address;
                 [|apply graph_has_v_in_closure|]; try assumption.
               rewrite <- H32.
-              rewrite <- (lcv_vertex_address g v' to v); try rewrite <- (lcv_vertex_address g v' to v) in H14; try apply graph_has_v_in_closure; try assumption.
+              rewrite <- (lcv_vertex_address g v' to v);
+                try rewrite <- (lcv_vertex_address g v' to v) in H14;
+                try apply graph_has_v_in_closure; try assumption.
               rewrite (lcv_mfv_Zlen_eq g v v' to H8 H0) in H14. rewrite <- Heqg' in *.
-
+              remember (nth_sh g' (vgeneration v)) as shh.
+              remember (make_fields_vals g' v) as mfv.
+              remember (new_copied_v g to).
+              remember (labeledgraph_gen_dst g' e v1) as g1.              
               assert (0 <= n < Zlength (make_fields_vals g' v)) by
                   (subst g'; rewrite fields_eq_length, <- lcv_raw_fields; assumption).
               assert (Znth n (make_fields g' v) = inr e) by
-                  (subst g'; unfold make_fields in *; rewrite <- lcv_raw_fields; assumption).
-              assert (0 <= n < Zlength (make_fields g' v)) by (rewrite make_fields_eq_length; rewrite fields_eq_length in H43; assumption).
+                  (subst g'; unfold make_fields in *;
+                   rewrite <- lcv_raw_fields; assumption).
+              assert (0 <= n < Zlength (make_fields g' v)) by
+                  (rewrite make_fields_eq_length;
+                   rewrite fields_eq_length in H43; assumption).
               assert (graph_has_v g' v) by
                   (subst g'; apply lcv_graph_has_v_old; assumption).
-              assert (raw_mark (vlabel g' v) = false). {
-                assert (v <> v') by (intro; subst v; clear -v0 H13; omega).
-                subst g'; rewrite <- lcv_raw_mark; assumption. }
-              remember (nth_sh g' (vgeneration v)) as shh.
-              remember (make_fields_vals g' v) as mfv.
+              assert (v <> v') by
+                  (intro; subst v; clear -v0 H13; omega).
+              assert (raw_mark (vlabel g' v) = false) by
+                (subst g'; rewrite <- lcv_raw_mark; assumption). 
               assert (writable_share shh) by
                   (rewrite Heqshh; unfold nth_sh; apply generation_share_writable).
-              remember (new_copied_v g to).
-              remember (labeledgraph_gen_dst g' e v1) as g1.              
               localize [vertex_rep (nth_sh g' (vgeneration v)) g' v].
               unfold vertex_rep, vertex_at. Intros.
               rewrite Heqmfv in *; rewrite <- Heqshh.
@@ -1058,26 +1070,30 @@ Proof.
               gather_SEP 1 0.
               replace_SEP 0 (vertex_rep (nth_sh g1 (vgeneration v)) g1 v).
               1: { unfold vertex_rep, vertex_at.
-                   rewrite (lgd_sh_eq g1 v e v1).
-                   rewrite (lgd_mfv_length_eq g' v e v1).
-                   rewrite (lgd_mfv_change_in_one_spot g' v e v1 n); try assumption. entailer!. }
+                   replace (nth_sh g1 (vgeneration v)) with shh by
+                       (subst shh g1; reflexivity).
+                   replace (Zlength (make_fields_vals g1 v)) with
+                       (Zlength (make_fields_vals g' v)) by
+                       (subst g1; repeat rewrite fields_eq_length;
+                        apply lgd_raw_fld_length_eq).
+                   rewrite (lgd_mfv_change_in_one_spot g' v e v1 n);
+                     try assumption. entailer!. }
               subst g1; subst v1.
               unlocalize [graph_rep (labeledgraph_gen_dst g' e (new_copied_v g to))].
-              1: apply (graph_vertex_lgd_ramif g' v e (new_copied_v g to) n); assumption.
+              1: apply (graph_vertex_lgd_ramif g' v e (new_copied_v g to) n);
+                assumption.
               remember (new_copied_v g to).
               remember (labeledgraph_gen_dst g' e v1) as g1.
               thaw FR.
               remember (cut_thread_info t_info (Z.of_nat to) (vertex_size g v') Hi Hh)
                 as t_info'.
               unfold thread_info_rep. Intros.
-              assert (0 <= 0 < MAX_ARGS) by rep_omega.
-              remember (Znth 0 (ti_args t_info')).
-              assert (0 <= 0 < Zlength (ti_args t_info')) by (rewrite arg_size; omega).
+              assert (0 <= 0 < Zlength (ti_args t_info')) by
+                  (rewrite arg_size; rep_omega).
               gather_SEP 1 2 3.
               replace_SEP 0 (thread_info_rep sh t_info' ti).
               { unfold thread_info_rep. simpl heap_head. simpl ti_heap_p.
-                simpl ti_args. simpl ti_heap. entailer!.
-              }
+                simpl ti_args. simpl ti_heap. entailer!. }
               rewrite H31 in H33.
                 assert (forward_relation from to 0 (inr e) g g1) by
                     (subst g1 g' v1 v'; constructor; assumption).
@@ -1091,22 +1107,21 @@ Proof.
                 assert (forward_condition g1 t_info' from to). {
                   subst g1 g' t_info' from v'.
                   apply lgd_forward_condition; try assumption.
-                  apply lcv_forward_condition with (index:=0) (uv:=v2) (Hm:=H49); try assumption. red; intuition. }
+                  apply lcv_forward_condition_unchanged; try assumption.
+                  red. intuition. }
                 remember roots as roots'.
                 assert (super_compatible (g1, t_info', roots') f_info outlier). {
                   
                   subst g1 g' t_info' roots'.
-                  apply lgd_super_compatible, lcv_super_compatible_unchanged; try assumption.
+                  apply lgd_super_compatible, lcv_super_compatible_unchanged;
+                    try assumption.
                   red; intuition. }
               assert (thread_info_relation t_info t_info'). {
                 subst t_info'. split; [reflexivity|]. intros m.
                 rewrite cti_gen_size. reflexivity. }
                 apply semax_if_seq. forward_if.
-              ** destruct H55. replace fp with (gen_start g1 from).
-                 2: { subst fp g1. rewrite lgd_gen_start; subst g'.
-                      2: apply lcv_graph_has_gen; assumption.
-                      apply lcv_gen_start; assumption.
-                   }
+              ** destruct H55. replace fp with (gen_start g1 from) by
+                     (subst fp g1 g'; apply lcv_gen_start; assumption).
                  replace (offset_val fn (gen_start g1 from)) with
                      (limit_address g1 t_info' from) by 
                      (subst fn gn; rewrite H57; reflexivity).
@@ -1228,6 +1243,7 @@ Proof.
       * apply semax_if_seq. forward_if. 1: exfalso; apply H22'; reflexivity.
         rewrite H21 in n0. forward. rewrite H12. simpl.
         Exists g t_info roots. simpl. entailer!.
-        -- rewrite Heqf. split; [constructor; assumption | split; [hnf; intuition | apply tir_id]].
+        -- rewrite Heqf. split; [constructor; assumption | split;
+                                                 [hnf; intuition | apply tir_id]].
         -- unfold thread_info_rep. entailer!.
 Qed.
