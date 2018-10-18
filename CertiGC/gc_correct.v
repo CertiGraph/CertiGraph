@@ -44,6 +44,8 @@ Definition surjective {A B} (f: A -> B): Prop := forall y, exists x, f x = y.
 
 Definition bijective {A B} (f : A -> B): Prop := injective f /\ surjective f.
 
+(* graph_iso defines graph isomorphism between two graphs *)
+
 Definition graph_iso (g1 g2: LGraph)
            (vmap: VType -> VType) (emap: EType -> EType): Prop :=
     bijective vmap /\ bijective emap /\
@@ -54,13 +56,22 @@ Definition graph_iso (g1 g2: LGraph)
     (forall (e: EType) (v: VType),
         evalid g1 e -> dst g1 e = v -> dst g2 (emap e) = vmap v).
 
+Definition root_eq (vmap: VType -> VType) (root_pair: root_t * root_t): Prop :=
+  let (root1, root2) := root_pair in
+  match root1 with
+  | inl (inl z) => root2 = inl (inl z)
+  | inl (inr gc) => root2 = inl (inr gc)
+  | inr r => root2 = inr (vmap r)
+  end.
+
 Definition gc_graph_iso (g1: LGraph) (roots1: roots_t)
            (g2: LGraph) (roots2: roots_t): Prop :=
   let vertices1 := filter_sum_right roots1 in
   let vertices2 := filter_sum_right roots2 in
   let sub_g1 := reachable_sub_labeledgraph g1 vertices1 in
   let sub_g2 := reachable_sub_labeledgraph g2 vertices2 in
+  length roots1 = length roots2 /\
   exists vmap emap,
+    Forall (root_eq vmap) (combine roots1 roots2) /\
     (forall v, vvalid sub_g1 v -> vlabel sub_g1 v = vlabel sub_g2 (vmap v)) /\
-    vertices2 = map vmap vertices1 /\
     graph_iso sub_g1 sub_g2 vmap emap.
