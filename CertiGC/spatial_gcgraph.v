@@ -713,7 +713,8 @@ Proof.
   } exists (glb Rsh rsh). split; [|split].
   - red in H. apply nonidentity_nonunit, H.
   - apply join_comm in H1. exists (glb Lsh rsh). assumption.
-  - apply join_sub_trans with Rsh; [exists (glb Rsh (comp rsh))|]; assumption.
+  - apply join_sub_trans with Rsh; [exists (glb Rsh (comp rsh))|destruct H0];
+      assumption.
 Qed.
 
 Lemma readable_writable_memory_block_FF: forall rsh wsh m1 m2 p,
@@ -1107,7 +1108,7 @@ Lemma lgd_vertex_rep_eq_in_diff_vert: forall sh g v' v v1 e n,
     0 <= n < Zlength (make_fields g v) ->
     Znth n (make_fields g v) = inr e ->
     v1 <> v ->
-    vertex_rep sh g v1 = vertex_rep sh (labeledgraph_gen_dst g e v') v1. 
+    vertex_rep sh g v1 = vertex_rep sh (labeledgraph_gen_dst g e v') v1.
 Proof.
   intros. unfold vertex_rep.
   rewrite lgd_vertex_address_eq, <- lgd_make_header_eq.
@@ -1117,7 +1118,7 @@ Proof.
     rewrite (lgd_map_f2v_diff_vert_eq g v v' v1 e n);
     try reflexivity; assumption.
 Qed.
-  
+
 Lemma lgd_gen_rep_eq_in_diff_gen: forall (g : LGraph) (v v' : VType) (x : nat) e n,
     0 <= n < Zlength (make_fields g v) ->
     Znth n (make_fields g v) = inr e ->
@@ -1130,7 +1131,7 @@ Proof.
                             (nth x (g_gen (glabel g)) null_info))).
   apply iter_sepcon_func_strong. intros v1 H2.
   apply list_in_map_inv in H2.
-  destruct H2 as [x1 [? ?]]. 
+  destruct H2 as [x1 [? ?]].
   remember (generation_sh (nth x (g_gen (glabel g)) null_info)) as sh.
   assert (v1 <> v). {
     intro. unfold vgeneration in H1.
@@ -1155,7 +1156,7 @@ Proof.
   assert (NoDup (vgeneration v :: f)) by
       (apply (Permutation_NoDup H1), nat_inc_list_NoDup).
   apply NoDup_cons_2 in H3.
-  assert (x <> vgeneration v) by 
+  assert (x <> vgeneration v) by
       (unfold not; intro; subst; contradiction).
   apply (lgd_gen_rep_eq_in_diff_gen g v v' x e n); assumption.
 Qed.
@@ -1196,7 +1197,7 @@ Lemma graph_vertex_lgd_ramif: forall g v e v' n,
     graph_rep g |-- vertex_rep (nth_sh g (vgeneration v)) g v *
     (vertex_rep (nth_sh g (vgeneration v))
                 (labeledgraph_gen_dst g e v') v -*
-                graph_rep (labeledgraph_gen_dst g e v')).  
+                graph_rep (labeledgraph_gen_dst g e v')).
 Proof.
   intros. destruct H1. sep_apply (graph_gen_lgd_ramif g v v' e n);
                          try assumption.
