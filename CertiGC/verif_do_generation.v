@@ -165,9 +165,9 @@ Proof.
       unfold space_tri at 3. simpl. replace (WORD_SIZE * 0)%Z with 0 by omega.
       rewrite isptr_offset_val_zero by assumption. cancel.
     + apply super_compatible_reset with (gen := from) in H34.
-      2: { apply (frr_not_pointing from to f_info roots g roots1 g1 outlier); auto.
+      2: { apply (frr_not_pointing from to f_info roots g roots1 g1); auto.
            - clear -H0. destruct H0 as [_ [_ [_ [? _]]]]. assumption.
-           - clear -H. destruct H as [_ [_ [? _]]]. assumption. } forward.
+           - clear -H. destruct H as [_ [_ [[_ ?] _]]]. assumption. } forward.
       remember (reset_nth_heap_thread_info from t_info2) as t_info3.
       remember (reset_nth_gen_graph from g2) as g3.
       assert (do_generation_relation from to f_info roots roots1 g g3) by
