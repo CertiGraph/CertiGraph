@@ -452,10 +452,11 @@ Proof.
                 subst g' t_info' roots' lz. rewrite H30, H32.
                 apply lcv_super_compatible; try assumption. red. intuition. }
               assert (thread_info_relation t_info t_info'). {
-                subst t_info'. split; [reflexivity|]. intros m.
-                rewrite utiacti_gen_size. 1: reflexivity. }
+                subst t_info'. split; [|split]; [reflexivity| |]; intros m.
+                - rewrite utiacti_gen_size. reflexivity.
+                - rewrite utiacti_space_start. reflexivity. }
               apply semax_if_seq. forward_if.
-              ** destruct H41. replace fp with (gen_start g' from) by
+              ** destruct H41 as [? [? ?]]. replace fp with (gen_start g' from) by
                      (subst fp g'; apply lcv_gen_start; assumption).
                  replace (offset_val fn (gen_start g' from)) with
                      (limit_address g' t_info' from) by
@@ -501,11 +502,11 @@ Proof.
                          *** simpl. f_equal. erewrite fl_vertex_address; eauto.
                              subst g'. apply graph_has_v_in_closure. assumption.
                          *** rewrite <- H30. assumption.
-                         *** subst n. clear -H44 Hr. rep_omega.
+                         *** subst n. clear -H45 Hr. rep_omega.
                      +++ do 3 (split; [assumption |]). split.
                          *** simpl. split; [|split; [|split]]; auto.
                              ---- destruct H39 as [_ [_ [? _]]].
-                                  apply (fl_graph_has_v _ _ _ _ _ _ H39 H46 _ H50).
+                                  apply (fl_graph_has_v _ _ _ _ _ _ H39 H47 _ H51).
                              ---- erewrite <- fl_raw_fields; eauto. subst g'.
                                   unfold lgraph_copy_v. subst n.
                                   rewrite <- lmc_raw_fields, lacv_vlabel_new.
@@ -515,17 +516,18 @@ Proof.
                          *** split; [assumption|]. split; [omega | assumption].
                      +++ Intros vret. destruct vret as [[g4 t_info4] roots4].
                          simpl fst in *. simpl snd in *. Exists g4 t_info4.
-                         simpl in H52. subst roots4.
+                         simpl in H53. subst roots4.
                          assert (gen_start g3 from = gen_start g4 from). {
                            eapply fr_gen_start; eauto.
-                           erewrite <- fl_graph_has_gen; eauto. } rewrite H52.
+                           erewrite <- fl_graph_has_gen; eauto. } rewrite H53.
                          assert (limit_address g3 t_info3 from =
                                  limit_address g4 t_info4 from). {
                            unfold limit_address. f_equal. 2: assumption. f_equal.
-                           destruct H55. rewrite H56. reflexivity. } rewrite H56.
+                           destruct H56 as [? [? _]]. rewrite H57. reflexivity. }
+                         rewrite H57.
                          assert (next_address t_info3 to = next_address t_info4 to). {
-                           unfold next_address. f_equal. destruct H55. assumption. }
-                         rewrite H57. clear H52 H56 H57.
+                           unfold next_address. f_equal. destruct H56. assumption. }
+                         rewrite H58. clear H53 H57 H58.
                          assert (thread_info_relation t_info' t_info4) by
                              (apply tir_trans with t_info3; assumption).
                          assert (forward_loop
@@ -538,11 +540,12 @@ Proof.
                          entailer!.
                  --- Intros g3 t_info3.
                      assert (thread_info_relation t_info t_info3) by
-                         (apply tir_trans with t_info'; [split |]; assumption).
-                     rewrite sublist_all in H45. clear Heqt.
+                         (apply tir_trans with t_info';
+                          [split; [|split]|]; assumption).
+                     rewrite sublist_all in H46. clear Heqt.
                      2: { rewrite Z.le_lteq. right. subst n g' from.
                           rewrite vpp_Zlength, lcv_vlabel_new; auto. }
-                     Opaque super_compatible. forward. clear H49 H50 H51 H52.
+                     Opaque super_compatible. forward. clear H50 H51 H52 H53.
                      rewrite <- Heqroot, H21, if_true by reflexivity.
                      remember (upd_bunch z f_info roots (inr (new_copied_v g to)))
                        as roots'. Exists g3 t_info3 roots'. simpl. entailer!.
@@ -802,7 +805,7 @@ Proof.
           entailer!.
           2: unfold thread_info_rep; thaw FR; entailer!.
           pose proof (lgd_no_dangling_dst_copied_vert g e (dst g e) H9 H19 H22 H10).
-          split; [|split; [|split]]; try reflexivity.
+          split; [|split; [|split; [|split]]]; try reflexivity.
           ++ rewrite H12; simpl.
              rewrite Heqf. constructor; [reflexivity | assumption].
           ++ split; [|split; [|split; [|split]]]; assumption.
@@ -1119,10 +1122,11 @@ Proof.
                     try assumption.
                   red; intuition. }
               assert (thread_info_relation t_info t_info'). {
-                subst t_info'. split; [reflexivity|]. intros m.
-                rewrite cti_gen_size. reflexivity. }
+                subst t_info'. split; [|split]; [reflexivity| |]; intros m.
+                - rewrite cti_gen_size. reflexivity.
+                - rewrite cti_space_start. reflexivity. }
                 apply semax_if_seq. forward_if.
-              ** destruct H55. replace fp with (gen_start g1 from) by
+              ** destruct H55 as [? [? ?]]. replace fp with (gen_start g1 from) by
                      (subst fp g1 g'; apply lcv_gen_start; assumption).
                  replace (offset_val fn (gen_start g1 from)) with
                      (limit_address g1 t_info' from) by
@@ -1173,14 +1177,14 @@ Proof.
                              rewrite <- (lgd_vertex_address_eq g' e v1).
                              rewrite <- Heqg1.
                              subst v1.
-                             apply (fl_vertex_address _ _ _ _ _ _ H63 H60).
+                             apply (fl_vertex_address _ _ _ _ _ _ H64 H61).
                              apply graph_has_v_in_closure; assumption.
                          *** rewrite <- H31. assumption.
-                         *** subst n'. clear -H58 Hr. rep_omega.
+                         *** subst n'. clear -H59 Hr. rep_omega.
                      +++ do 3 (split; [assumption |]). split.
                          *** simpl. split; [|split].
                              ---- destruct H53 as [_ [_ [? _]]].
-                                  apply (fl_graph_has_v _ _ _ _ _ _ H63 H60 _ H64).
+                                  apply (fl_graph_has_v _ _ _ _ _ _ H64 H61 _ H65).
                              ---- erewrite <- fl_raw_fields; eauto. subst g1.
                                   unfold lgraph_copy_v. subst n'.
                                   rewrite <- lgd_raw_fld_length_eq.
@@ -1193,17 +1197,18 @@ Proof.
                          *** split; [assumption|]. split; [omega | assumption].
                      +++ Intros vret. destruct vret as [[g4 t_info4] roots4].
                          simpl fst in *. simpl snd in *. Exists g4 t_info4.
-                         simpl in H66. subst roots4.
+                         simpl in H67. subst roots4.
                          assert (gen_start g3 from = gen_start g4 from). {
                            eapply fr_gen_start; eauto.
-                           erewrite <- fl_graph_has_gen; eauto. } rewrite H66.
+                           erewrite <- fl_graph_has_gen; eauto. } rewrite H67.
                          assert (limit_address g3 t_info3 from =
                                  limit_address g4 t_info4 from). {
                            unfold limit_address. f_equal. 2: assumption. f_equal.
-                           destruct H69. rewrite H70. reflexivity. } rewrite H70.
+                           destruct H70 as [? [? _]]. rewrite H71. reflexivity. }
+                         rewrite H71.
                          assert (next_address t_info3 to = next_address t_info4 to). {
-                           unfold next_address. f_equal. destruct H69. assumption. }
-                         rewrite H71. clear H66 H70 H71.
+                           unfold next_address. f_equal. destruct H70. assumption. }
+                         rewrite H72. clear H67 H71 H72.
                          assert (thread_info_relation t_info' t_info4) by
                              (apply tir_trans with t_info3; assumption).
                          assert (forward_loop
@@ -1217,12 +1222,13 @@ Proof.
                          entailer!.
                  --- Intros g3 t_info3.
                      assert (thread_info_relation t_info t_info3) by
-                         (apply tir_trans with t_info'; [split |]; assumption).
-                     rewrite sublist_all in H59.
+                         (apply tir_trans with t_info';
+                          [split; [| split]|]; assumption).
+                     rewrite sublist_all in H60.
                      2: { rewrite Z.le_lteq. right. subst n' g1 from.
                           rewrite vpp_Zlength,  <- lgd_raw_fld_length_eq.
                           subst g'; rewrite lcv_vlabel_new; auto. }
-                     Opaque super_compatible. forward. clear H63 H64 H65 H66.
+                     Opaque super_compatible. forward. clear H64 H65 H66 H67.
                      rewrite H12. simpl.
                      Exists g3 t_info3 roots. simpl. entailer!.
                      replace (Z.to_nat depth) with (S (Z.to_nat (depth - 1))) by
@@ -1245,7 +1251,7 @@ Proof.
       * apply semax_if_seq. forward_if. 1: exfalso; apply H22'; reflexivity.
         rewrite H21 in n0. forward. rewrite H12. simpl.
         Exists g t_info roots. simpl. entailer!.
-        -- rewrite Heqf. split; [constructor; assumption | split;
-                                                 [hnf; intuition | apply tir_id]].
+        -- rewrite Heqf. split; [constructor; assumption |
+                                 split; [hnf; intuition | apply tir_id]].
         -- unfold thread_info_rep. entailer!.
 Qed.

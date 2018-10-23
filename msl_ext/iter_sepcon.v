@@ -242,9 +242,23 @@ Proof.
     + apply IHl. intros; apply H. simpl; auto.
 Qed.
 
-Lemma iter_sepcon_func_strong: forall l P Q, (forall x, In x l -> P x = Q x) -> iter_sepcon l P = iter_sepcon l Q.
+Lemma iter_sepcon_func_strong: forall l P Q,
+    (forall x, In x l -> P x = Q x) -> iter_sepcon l P = iter_sepcon l Q.
 Proof.
   intros. apply pred_ext; apply iter_sepcon_func_derives; intros; rewrite H; auto.
+Qed.
+
+Lemma iter_sepcon_pointwise_eq: forall (l1 l2: list B) (P Q: B -> A) (x y: B),
+    length l1 = length l2 ->
+    (forall i, i < length l1 -> P (nth i l1 x) = Q (nth i l2 y)) ->
+    iter_sepcon l1 P = iter_sepcon l2 Q.
+Proof.
+  induction l1; intros.
+  - destruct l2. 2: simpl in H; inversion H. simpl. reflexivity.
+  - destruct l2. 1: simpl in H; inversion H. simpl. f_equal.
+    + specialize (H0 O). simpl in H0. apply H0. apply NPeano.Nat.lt_0_succ.
+    + simpl in H. apply (IHl1 _ _ _ x y); eauto. intros. specialize (H0 (S i)).
+      simpl in H0. apply H0. apply Lt.lt_n_S. assumption.
 Qed.
 
 Instance iter_sepcon_permutation_proper : Proper ((@Permutation B) ==> (pointwise_relation B eq) ==> eq) iter_sepcon.
