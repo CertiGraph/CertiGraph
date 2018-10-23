@@ -320,7 +320,7 @@ Definition create_space_spec :=
     EX p: val,
     PROP () LOCAL ()
     SEP (all_string_constants rsh gv;
-         malloc_token Tsh (tarray int_or_ptr_type n) p;
+         malloc_token Ews (tarray int_or_ptr_type n) p;
          data_at_ Ews (tarray int_or_ptr_type n) p;
          data_at sh space_type (p, (p, (offset_val (WORD_SIZE * n) p))) s).
 
@@ -334,11 +334,11 @@ Definition create_heap_spec :=
   POST [tptr heap_type]
     EX h: val, EX p: val,
     PROP () LOCAL (temp ret_temp h)
-    SEP (all_string_constants sh gv; malloc_token Tsh heap_type h;
+    SEP (all_string_constants sh gv; malloc_token Ews heap_type h;
          data_at Ews heap_type
                  ((p, (p, (offset_val (WORD_SIZE * NURSERY_SIZE) p)))
                     :: list_repeat (Z.to_nat (MAX_SPACES - 1)) zero_triple) h;
-         malloc_token Tsh (tarray int_or_ptr_type NURSERY_SIZE) p;
+         malloc_token Ews (tarray int_or_ptr_type NURSERY_SIZE) p;
          data_at_ Ews (tarray int_or_ptr_type NURSERY_SIZE) p).
 
 Definition make_tinfo_spec :=
@@ -350,15 +350,15 @@ Definition make_tinfo_spec :=
     EX t: val, EX h: val, EX p: val,
     PROP () LOCAL (temp ret_temp t)
     SEP (all_string_constants sh gv;
-         malloc_token Tsh thread_info_type t;
+         malloc_token Ews thread_info_type t;
          data_at Ews thread_info_type
                  (p, (offset_val (WORD_SIZE * NURSERY_SIZE) p,
                       (h, list_repeat (Z.to_nat MAX_ARGS) Vundef))) t;
-         malloc_token Tsh heap_type h;
+         malloc_token Ews heap_type h;
          data_at Ews heap_type
                  ((p, (p, (offset_val (WORD_SIZE * NURSERY_SIZE) p)))
                     :: list_repeat (Z.to_nat (MAX_SPACES - 1)) zero_triple) h;
-         malloc_token Tsh (tarray int_or_ptr_type NURSERY_SIZE) p;
+         malloc_token Ews (tarray int_or_ptr_type NURSERY_SIZE) p;
          data_at_ Ews (tarray int_or_ptr_type NURSERY_SIZE) p).
 
 Definition resume_spec :=
@@ -392,7 +392,8 @@ Definition garbage_collect_spec :=
   PRE [ _fi OF (tptr tuint),
         _ti OF (tptr thread_info_type)]
     PROP (readable_share rsh; writable_share sh;
-          super_compatible (g, t_info, roots) f_info outlier)
+          super_compatible (g, t_info, roots) f_info outlier;
+          garbage_collect_condition g t_info roots f_info)
     LOCAL (temp _fi fi; temp _ti ti; gvars gv)
     SEP (all_string_constants rsh gv;
          fun_info_rep rsh f_info fi;
@@ -401,7 +402,9 @@ Definition garbage_collect_spec :=
          before_gc_thread_info_rep sh t_info ti)
   POST [tvoid]
     EX g': LGraph, EX t_info': thread_info, EX roots': roots_t,
-    PROP (super_compatible (g', t_info', roots') f_info outlier)
+    PROP (super_compatible (g', t_info', roots') f_info outlier;
+          thread_info_relation t_info t_info';
+          garbage_collect_relation f_info roots roots' g g')
     LOCAL ()
     SEP (all_string_constants rsh gv;
          fun_info_rep rsh f_info fi;

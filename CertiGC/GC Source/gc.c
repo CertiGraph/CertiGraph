@@ -370,14 +370,14 @@ void garbage_collect(fun_info fi, struct thread_info *ti)
     /* Copy all the objects in generation i, into generation i+1 */
     if(0)
       fprintf(stderr, "Generation %d:  ", i);
-      do_generation(h->spaces+i, h->spaces+(i+1), fi, ti);
-      /* If there's enough space in gen i+1 to guarantee that the
-         NEXT collection into i+1 will succeed, we can stop here */
-      if (h->spaces[i].limit - h->spaces[i].start
-	  <= h->spaces[i+1].limit - h->spaces[i+1].next) {
-          resume(fi,ti);
-          return;
-      }
+    do_generation(h->spaces+i, h->spaces+(i+1), fi, ti);
+    /* If there's enough space in gen i+1 to guarantee that the
+       NEXT collection into i+1 will succeed, we can stop here */
+    if (h->spaces[i].limit - h->spaces[i].start
+        <= h->spaces[i+1].limit - h->spaces[i+1].next) {
+        resume(fi,ti);
+        return;
+    }
   }
     /* If we get to i==MAX_SPACES, that's bad news */
   abort_with("Ran out of generations\n");

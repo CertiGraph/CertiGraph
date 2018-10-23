@@ -1012,3 +1012,6 @@ Proof.
     destruct (f a); destruct (g a); try discriminate; clear H5;
       [transitivity (a :: x :: filter g l); constructor|]; assumption.
 Qed.
+
+Lemma app_not_nil: forall {A} (l: list A) (a: A), l ++ (a :: nil) <> nil.
+Proof. intros. destruct l; intro; simpl in H; inversion H. Qed.

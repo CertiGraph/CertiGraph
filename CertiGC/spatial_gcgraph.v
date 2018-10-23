@@ -633,6 +633,28 @@ Proof.
     [rewrite nat_inc_list_In_iff; assumption | apply derives_refl].
 Qed.
 
+Lemma graph_and_heap_rest_valid_ptr: forall (g: LGraph) (t_info: thread_info) gen,
+    graph_has_gen g gen -> ti_size_spec t_info ->
+    graph_thread_info_compatible g t_info ->
+    graph_rep g * heap_rest_rep (ti_heap t_info) |--
+                                valid_pointer (space_start (nth_space t_info gen)).
+Proof.
+  intros. sep_apply (graph_and_heap_rest_data_at_ _ _ _ H H1).
+  unfold generation_data_at_. destruct (gt_gs_compatible _ _ H1 _ H) as [? [? ?]].
+  sep_apply (data_at__memory_block_cancel
+               (nth_sh g gen)
+               (tarray int_or_ptr_type (gen_size t_info gen)) (gen_start g gen)).
+  simpl sizeof. rewrite Z.max_r by
+      (unfold gen_size; apply (proj1 (total_space_range (nth_space t_info gen)))).
+  unfold gen_start. if_tac. 2: contradiction.
+  rewrite H2. sep_apply (memory_block_valid_ptr
+                           (nth_sh g gen) (4 * gen_size t_info gen)
+                           (space_start (nth_space t_info gen))); [| |entailer!].
+  - unfold nth_sh. apply readable_nonidentity, writable_readable,
+                   generation_share_writable.
+  - cut (0 < gen_size t_info gen). 1: omega. eapply ti_size_gt_0; eauto.
+Qed.
+  
 Lemma generation_data_at__ptrofs: forall g t_info gen b i,
     Vptr b i = gen_start g gen ->
     generation_data_at_ g t_info gen |--
