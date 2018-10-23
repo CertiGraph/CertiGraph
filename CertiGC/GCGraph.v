@@ -4400,9 +4400,10 @@ Proof.
   eapply space_start_isptr in g0; eauto. rewrite H1 in g0. inversion g0.
 Qed.
 
-Lemma ti_size_gt_0: forall (g : LGraph) (t_info : thread_info) (gen : nat),
+Lemma ti_size_gen: forall (g : LGraph) (t_info : thread_info) (gen : nat),
     graph_thread_info_compatible g t_info ->
-    graph_has_gen g gen -> ti_size_spec t_info -> 0 < gen_size t_info gen.
+    graph_has_gen g gen -> ti_size_spec t_info ->
+    gen_size t_info gen = nth_gen_size gen.
 Proof.
   intros. red in H1. rewrite Forall_forall in H1.
   assert (0 <= (Z.of_nat gen) < Zlength (spaces (ti_heap t_info))). {
@@ -4411,12 +4412,18 @@ Proof.
   assert (nth_gen_size_spec t_info gen). {
     apply H1. rewrite nat_inc_list_In_iff. destruct H as [_ [_ ?]]. red in H0.
     rewrite <- (spaces_size (ti_heap t_info)), ZtoNat_Zlength. omega. } red in H3.
-  destruct (Val.eq (space_start (nth_space t_info gen)) nullval).
-  - rewrite nth_space_Znth in e. erewrite <- space_start_isnull_iff in e; eauto.
-    unfold graph_has_gen in e. exfalso; apply e. rewrite Nat2Z.id. assumption.
-  - rewrite H3. unfold nth_gen_size. apply Z.mul_pos_pos.
-    + rewrite NURSERY_SIZE_eq. vm_compute. reflexivity.
-    + cut (two_p (Z.of_nat gen) > 0). 1: omega. apply two_p_gt_ZERO. omega.
+  destruct (Val.eq (space_start (nth_space t_info gen)) nullval). 2: assumption.
+  rewrite nth_space_Znth in e. erewrite <- space_start_isnull_iff in e; eauto.
+  unfold graph_has_gen in e. exfalso; apply e. rewrite Nat2Z.id. assumption.
+Qed.
+
+Lemma ti_size_gt_0: forall (g : LGraph) (t_info : thread_info) (gen : nat),
+    graph_thread_info_compatible g t_info ->
+    graph_has_gen g gen -> ti_size_spec t_info -> 0 < gen_size t_info gen.
+Proof.
+  intros. erewrite ti_size_gen; eauto. unfold nth_gen_size. apply Z.mul_pos_pos.
+  - rewrite NURSERY_SIZE_eq. vm_compute. reflexivity.
+  - cut (two_p (Z.of_nat gen) > 0). 1: omega. apply two_p_gt_ZERO. omega.
 Qed.
 
 Local Close Scope Z_scope.
