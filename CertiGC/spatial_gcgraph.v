@@ -1480,3 +1480,21 @@ Proof.
   replace (total_space s - 0) with (total_space s) by omega.
   rewrite <- data_at__tarray_value by apply space_order. cancel.
 Qed.
+
+Definition space_token_rep (sp: space): mpred :=
+  if Val.eq (space_start sp) nullval then emp
+  else malloc_token Ews (tarray int_or_ptr_type (total_space sp)) (space_start sp).
+
+Definition ti_token_rep (ti: thread_info): mpred :=
+  malloc_token Ews heap_type (ti_heap_p ti) *
+  iter_sepcon (spaces (ti_heap ti)) space_token_rep.
+
+Lemma ti_rel_token_the_same: forall (t1 t2: thread_info),
+    thread_info_relation t1 t2 -> ti_token_rep t1 = ti_token_rep t2.
+Proof.
+  intros. destruct H as [? [? ?]]. unfold ti_token_rep. rewrite H. f_equal.
+  apply (iter_sepcon_pointwise_eq _ _ _ _ null_space null_space).
+  - rewrite <- !ZtoNat_Zlength, !spaces_size. reflexivity.
+  - intros. fold (nth_space t1 i). fold (nth_space t2 i). unfold gen_size in H0.
+    unfold space_token_rep. rewrite H0, H1. reflexivity.
+Qed.

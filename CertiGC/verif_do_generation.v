@@ -122,7 +122,7 @@ Proof.
          rewrite offset_offset_val, H11, H9, if_true by assumption;
          f_equal; rep_omega). eapply frr_closure_has_v in H30; eauto.
     destruct H30. simpl in H30, H31.
-    assert (0 < gen_size t_info1 to) by (rewrite <- (proj2 H26); assumption).
+    assert (0 < gen_size t_info1 to) by (rewrite <- (proj1 (proj2 H26)); assumption).
     assert (gen_unmarked g1 to) by (eapply (frr_gen_unmarked _ _ _ _ g _ g1); eauto).
     forward_call (rsh, sh, gv, fi, ti, g1, t_info1, f_info, roots1, outlier,
                   from, to, number_of_vertices (nth_gen g to)). 1: intuition.

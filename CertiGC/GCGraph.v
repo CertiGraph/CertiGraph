@@ -2826,6 +2826,57 @@ Proof.
   rewrite lmc_gen_start, lacv_gen_start; [reflexivity | assumption].
 Qed.
 
+Lemma utia_ti_heap: forall t_info i ad (Hm : 0 <= i < MAX_ARGS),
+    ti_heap (update_thread_info_arg t_info i ad Hm) = ti_heap t_info.
+Proof. intros. simpl. reflexivity. Qed.
+
+Lemma cti_space_not_eq: forall t_info i s n
+    (Hi : 0 <= i < Zlength (spaces (ti_heap t_info)))
+    (Hh : has_space (Znth i (spaces (ti_heap t_info))) s),
+    (Z.of_nat n) <> i ->
+    nth_space (cut_thread_info t_info i s Hi Hh) n = nth_space t_info n.
+Proof.
+  intros. rewrite !nth_space_Znth. simpl.
+  pose proof (Nat2Z.is_nonneg n). remember (Z.of_nat n). clear Heqz.
+  remember (spaces (ti_heap t_info)). destruct (Z_lt_le_dec z (Zlength l)).
+  - assert (0 <= z < Zlength l) by omega.
+    rewrite upd_Znth_diff; [reflexivity |assumption..].
+  - rewrite !Znth_overflow;
+      [reflexivity | | rewrite upd_Znth_Zlength by assumption]; omega.
+Qed.
+
+Lemma cti_space_eq: forall t_info i s
+    (Hi : 0 <= Z.of_nat i < Zlength (spaces (ti_heap t_info)))
+    (Hh : has_space (Znth (Z.of_nat i) (spaces (ti_heap t_info))) s),
+    nth_space (cut_thread_info t_info (Z.of_nat i) s Hi Hh) i =
+    cut_space (Znth (Z.of_nat i) (spaces (ti_heap t_info))) s Hh.
+Proof.
+  intros. rewrite nth_space_Znth. simpl. rewrite upd_Znth_same by assumption.
+  reflexivity.
+Qed.
+
+Lemma cti_gen_size: forall t_info i s n
+    (Hi : 0 <= i < Zlength (spaces (ti_heap t_info)))
+    (Hh : has_space (Znth i (spaces (ti_heap t_info))) s),
+    gen_size (cut_thread_info t_info i s Hi Hh) n =
+    gen_size t_info n.
+Proof.
+  intros. unfold gen_size. destruct (Z.eq_dec (Z.of_nat n) i).
+  - subst i. rewrite cti_space_eq. simpl. rewrite nth_space_Znth. reflexivity.
+  - rewrite cti_space_not_eq; [reflexivity | assumption].
+Qed.
+
+Lemma cti_space_start: forall t_info i s  n
+    (Hi : 0 <= i < Zlength (spaces (ti_heap t_info)))
+    (Hh : has_space (Znth i (spaces (ti_heap t_info))) s),
+    space_start (nth_space (cut_thread_info t_info i s Hi Hh) n) =
+    space_start (nth_space t_info n).
+Proof.
+  intros. destruct (Z.eq_dec (Z.of_nat n) i).
+  - subst i. rewrite cti_space_eq. simpl. rewrite nth_space_Znth. reflexivity.
+  - rewrite cti_space_not_eq; [reflexivity | assumption].
+Qed.
+
 Lemma utiacti_gen_size: forall t_info i1 i2 s ad n
     (Hi : 0 <= i1 < Zlength (spaces (ti_heap t_info)))
     (Hh : has_space (Znth i1 (spaces (ti_heap t_info))) s)
@@ -2833,37 +2884,24 @@ Lemma utiacti_gen_size: forall t_info i1 i2 s ad n
     gen_size (update_thread_info_arg (cut_thread_info t_info i1 s Hi Hh) i2 ad Hm) n =
     gen_size t_info n.
 Proof.
-  intros. unfold gen_size. rewrite !nth_space_Znth. simpl.
-  pose proof (Nat2Z.is_nonneg n). remember (Z.of_nat n). clear Heqz.
-  remember (spaces (ti_heap t_info)). destruct (Z_lt_le_dec z (Zlength l)).
-  - assert (0 <= z < Zlength l) by omega. destruct (Z.eq_dec z i1).
-    + rewrite e. rewrite upd_Znth_same by assumption. simpl. reflexivity.
-    + rewrite upd_Znth_diff; [|assumption..]. reflexivity.
-  - rewrite !Znth_overflow;
-      [reflexivity | | rewrite upd_Znth_Zlength by assumption]; omega.
+  intros. unfold gen_size, nth_space. rewrite utia_ti_heap. apply cti_gen_size.
 Qed.
 
-Lemma cti_gen_size: forall t_info i1 s  n
+Lemma utiacti_space_start: forall t_info i1 i2 s ad n
     (Hi : 0 <= i1 < Zlength (spaces (ti_heap t_info)))
-    (Hh : has_space (Znth i1 (spaces (ti_heap t_info))) s),
-    gen_size (cut_thread_info t_info i1 s Hi Hh) n =
-    gen_size t_info n.
-Proof.
-  intros. unfold gen_size. rewrite !nth_space_Znth. simpl.
-  pose proof (Nat2Z.is_nonneg n). remember (Z.of_nat n). clear Heqz.
-  remember (spaces (ti_heap t_info)). destruct (Z_lt_le_dec z (Zlength l)).
-  - assert (0 <= z < Zlength l) by omega. destruct (Z.eq_dec z i1).
-    + rewrite e. rewrite upd_Znth_same by assumption. simpl. reflexivity.
-    + rewrite upd_Znth_diff; [|assumption..]. reflexivity.
-  - rewrite !Znth_overflow;
-      [reflexivity | | rewrite upd_Znth_Zlength by assumption]; omega.
-Qed.
+    (Hh : has_space (Znth i1 (spaces (ti_heap t_info))) s)
+    (Hm : 0 <= i2 < MAX_ARGS),
+    space_start
+      (nth_space (update_thread_info_arg (cut_thread_info t_info i1 s Hi Hh) i2 ad Hm)
+                 n) = space_start (nth_space t_info n).
+Proof. intros. unfold nth_space. rewrite utia_ti_heap. apply cti_space_start. Qed.
 
 Definition thread_info_relation t t':=
-  ti_heap_p t = ti_heap_p t' /\ forall n, gen_size t n = gen_size t' n.
+  ti_heap_p t = ti_heap_p t' /\ (forall n, gen_size t n = gen_size t' n) /\
+  forall n, space_start (nth_space t n) = space_start (nth_space t' n).
 
 Lemma tir_id: forall t, thread_info_relation t t.
-Proof. intros. red. split; reflexivity. Qed.
+Proof. intros. red. split; [|split]; reflexivity. Qed.
 
 Lemma upd_Znth_diff_strong : forall {A}{d: Inhabitant A} i j l (u : A),
     0 <= j < Zlength l -> i <> j ->
@@ -3423,8 +3461,10 @@ Qed.
 Lemma tir_trans: forall t1 t2 t3,
     thread_info_relation t1 t2 -> thread_info_relation t2 t3 ->
     thread_info_relation t1 t3.
-Proof. intros. destruct H, H0.
-       split; [rewrite H; assumption | intros; rewrite H1; apply H2].
+Proof.
+  intros. destruct H as [? [? ?]], H0 as [? [? ?]].
+  split; [|split]; [rewrite H; assumption | intros; rewrite H1; apply H3|
+                   intros; rewrite H2; apply H4].
 Qed.
 
 Lemma forward_loop_add_tail: forall from to depth l x g1 g2 g3 roots,
@@ -4156,11 +4196,13 @@ Qed.
 Lemma tir_reset: forall t_info gen,
     thread_info_relation t_info (reset_nth_heap_thread_info gen t_info).
 Proof.
-  intros. split; simpl. 1: reflexivity. intros.
-  unfold gen_size, nth_space.  simpl.
+  intros. split; simpl. 1: reflexivity.
+  unfold gen_size, nth_space. simpl.
   destruct (le_lt_dec (length (spaces (ti_heap t_info))) gen).
-  - rewrite reset_nth_space_overflow; [reflexivity | assumption].
-  - destruct (Nat.eq_dec n gen).
+  - rewrite reset_nth_space_overflow by assumption. split; intros; reflexivity.
+  - split; intros; destruct (Nat.eq_dec n gen).
+    + subst. rewrite reset_nth_space_same; simpl; [reflexivity | assumption].
+    + rewrite reset_nth_space_diff; [reflexivity | assumption].
     + subst. rewrite reset_nth_space_same; simpl; [reflexivity | assumption].
     + rewrite reset_nth_space_diff; [reflexivity | assumption].
 Qed.
@@ -5033,4 +5075,3 @@ Definition garbage_collect_condition (g: LGraph) (t_info : thread_info)
            (roots : roots_t) (f_info : fun_info) : Prop :=
   graph_unmarked g /\ safe_to_copy g /\ no_dangling_dst g /\
   roots_fi_compatible roots f_info /\ ti_size_spec t_info.
-

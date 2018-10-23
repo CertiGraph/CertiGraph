@@ -77,7 +77,8 @@ Proof.
           eapply fr_gen_start; eauto. destruct H11 as [_ [_ [? _]]].
           assumption. }
         assert (limit_address g2 t_info2 from = limit_address g' t_info' from) by
-            (unfold limit_address; rewrite H22; rewrite (proj2 H20); reflexivity).
+            (unfold limit_address; rewrite H22;
+             rewrite (proj1 (proj2 H20)); reflexivity).
         assert (next_address t_info2 to = next_address t_info' to) by
             (unfold next_address; rewrite (proj1 H20); reflexivity).
         destruct H16 as [? [? [? ?]]]. entailer!.
