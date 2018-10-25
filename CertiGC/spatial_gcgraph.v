@@ -654,7 +654,7 @@ Proof.
                    generation_share_writable.
   - cut (0 < gen_size t_info gen). 1: omega. eapply ti_size_gt_0; eauto.
 Qed.
-  
+
 Lemma generation_data_at__ptrofs: forall g t_info gen b i,
     Vptr b i = gen_start g gen ->
     generation_data_at_ g t_info gen |--
@@ -1360,6 +1360,30 @@ Proof.
   cancel. apply wand_frame_intro.
 Qed.
 
+Lemma hsr_single_explicit: forall sh l tinfo i,
+    0 <= i < MAX_SPACES -> Zlength l = MAX_SPACES ->
+      heap_struct_rep sh l (ti_heap_p tinfo) =
+      data_at sh space_type (Znth i l) (space_address tinfo (Z.to_nat i)) *
+      (@data_at
+         CompSpecs sh
+         (tarray space_type
+                 (@Zlength (@reptype CompSpecs space_type)
+                           (@sublist (@reptype CompSpecs space_type) (i + 1) 12 l)))
+         (@sublist (@reptype CompSpecs space_type) (i + 1) 12 l)
+         (offset_val (@sizeof (@cenv_cs CompSpecs) space_type)
+                     (offset_val (SPACE_STRUCT_SIZE * i) (ti_heap_p tinfo))) *
+       @data_at CompSpecs sh (tarray space_type i)
+                (@sublist (@reptype CompSpecs space_type) 0 i l) (ti_heap_p tinfo)).
+Proof.
+  intros. rewrite heap_struct_rep_eq.
+  rewrite (data_at_tarray_space sh 12 i) by rep_omega.
+  rewrite (sublist_next i 12 l) by rep_omega.
+  replace (12 - i) with (Zlength (sublist (i + 1) 12 l) + 1) by
+      (rewrite Zlength_sublist; rep_omega).
+  rewrite data_at_tarray_split_1 by reflexivity. unfold space_address.
+  rewrite Z2Nat.id by omega. rewrite sepcon_comm, !sepcon_assoc. reflexivity.
+Qed.
+
 Lemma heap_struct_rep_split_single: forall sh l tinfo i,
     0 <= i < MAX_SPACES -> Zlength l = MAX_SPACES ->
     exists B,
@@ -1377,12 +1401,7 @@ Proof.
                         (offset_val (SPACE_STRUCT_SIZE * i) (ti_heap_p tinfo))) *
           @data_at CompSpecs sh (tarray space_type i)
                    (@sublist (@reptype CompSpecs space_type) 0 i l) (ti_heap_p tinfo)).
-  rewrite heap_struct_rep_eq. rewrite (data_at_tarray_space sh 12 i) by rep_omega.
-  rewrite (sublist_next i 12 l) by rep_omega.
-  replace (12 - i) with (Zlength (sublist (i + 1) 12 l) + 1) by
-      (rewrite Zlength_sublist; rep_omega).
-  rewrite data_at_tarray_split_1 by reflexivity. unfold space_address.
-  rewrite Z2Nat.id by omega. rewrite sepcon_comm, !sepcon_assoc. reflexivity.
+  erewrite hsr_single_explicit; eauto.
 Qed.
 
 Lemma thread_info_rep_ramif_stable_1: forall sh tinfo ti gen,
@@ -1512,4 +1531,71 @@ Proof.
   rewrite (sublist_next i) by omega. simpl. cancel. subst l.
   unfold space_token_rep at 1. rewrite H. rewrite if_true by reflexivity.
   unfold space_token_rep. rewrite if_false by assumption. cancel.
+Qed.
+
+Lemma heap_struct_rep_add: forall tinfo sh sp i (Hs: 0 <= i < MAX_SPACES),
+    data_at sh space_type (space_tri sp) (space_address tinfo (Z.to_nat i)) *
+    (@data_at
+       CompSpecs sh
+       (tarray space_type
+               (@Zlength (@reptype CompSpecs space_type)
+                         (@sublist (@reptype CompSpecs space_type) (i + 1) 12
+                                   (map space_tri (spaces (ti_heap tinfo))))))
+       (@sublist (@reptype CompSpecs space_type) (i + 1) 12
+                 (map space_tri (spaces (ti_heap tinfo))))
+       (offset_val (@sizeof (@cenv_cs CompSpecs) space_type)
+                   (offset_val (SPACE_STRUCT_SIZE * i) (ti_heap_p tinfo))) *
+     @data_at CompSpecs sh (tarray space_type i)
+              (@sublist (@reptype CompSpecs space_type) 0 i
+                        (map space_tri (spaces (ti_heap tinfo)))) (ti_heap_p tinfo)) =
+    (heap_struct_rep
+       sh (map space_tri (spaces (ti_heap (ti_add_new_space tinfo sp i Hs))))
+       (ti_heap_p (ti_add_new_space tinfo sp i Hs))).
+Proof.
+  intros. assert (Zlength (map space_tri (spaces (ti_heap tinfo))) = MAX_SPACES) by
+      (rewrite Zlength_map, spaces_size; reflexivity).
+  assert (Zlength (map space_tri (spaces (ti_heap (ti_add_new_space tinfo sp i Hs)))) =
+          MAX_SPACES) by (rewrite Zlength_map, spaces_size; reflexivity).
+  rewrite hsr_single_explicit with (i := i) by assumption. simpl.
+  rewrite <- !upd_Znth_map, upd_Znth_same, ans_space_address by omega.
+  rewrite sublist_upd_Znth_r; [| omega | pose proof Hs; rep_omega].
+  rewrite sublist_upd_Znth_l by omega. reflexivity.
+Qed.
+
+Lemma heap_rest_rep_add: forall tinfo sp i (Hs: 0 <= i < MAX_SPACES),
+    space_start (Znth i (spaces (ti_heap tinfo))) = nullval ->
+    heap_rest_rep (ti_heap tinfo) * space_rest_rep sp =
+    heap_rest_rep (ti_heap (ti_add_new_space tinfo sp i Hs)).
+Proof.
+  intros. unfold heap_rest_rep. simpl. remember (spaces (ti_heap tinfo)).
+  rewrite <- (sublist_all (Zlength l) l) at 1 by omega. unfold upd_Znth.
+  assert (Zlength l = MAX_SPACES) by (subst; rewrite spaces_size; reflexivity).
+  rewrite <- (sublist_rejoin 0 i) by omega. rewrite !iter_sepcon_app_sepcon.
+  rewrite sepcon_assoc. f_equal. rewrite (sublist_next i) by omega. simpl.
+  rewrite sepcon_comm. f_equal. subst l. unfold space_rest_rep at 1.
+  rewrite if_true by assumption. rewrite emp_sepcon. reflexivity.
+Qed.
+
+Lemma vertex_rep_add: forall (g : LGraph) (gi : generation_info) v sh,
+    graph_has_v g v -> copy_compatible g -> no_dangling_dst g ->
+    vertex_rep sh g v = vertex_rep sh (lgraph_add_new_gen g gi) v.
+Proof.
+  intros. unfold vertex_rep. rewrite ang_vertex_address_old; auto.
+  rewrite <- ans_make_header, <- ans_make_fields_vals_old; auto.
+Qed.
+
+Lemma graph_rep_add: forall (g : LGraph) (gi : generation_info),
+    number_of_vertices gi = O -> copy_compatible g -> no_dangling_dst g ->
+    graph_rep g = graph_rep (lgraph_add_new_gen g gi).
+Proof.
+  intros. unfold graph_rep. simpl. rewrite app_length. simpl.
+  rewrite Nat.add_1_r, nat_inc_list_S, iter_sepcon_app_sepcon. simpl.
+  unfold generation_rep at 3. unfold nth_gen. simpl. rewrite app_nth2 by omega.
+  replace (length (g_gen (glabel g)) - length (g_gen (glabel g)))%nat with O by omega.
+  simpl. rewrite H. simpl. rewrite !sepcon_emp. apply iter_sepcon_func_strong. intros.
+  rewrite nat_inc_list_In_iff in H2. unfold generation_rep. unfold nth_sh.
+  rewrite !ang_nth_old by assumption. apply iter_sepcon_func_strong. intros v ?.
+  rewrite in_map_iff in H3. destruct H3 as [idx [? ?]].
+  rewrite nat_inc_list_In_iff in H4. apply vertex_rep_add; auto.
+  split; subst; simpl; assumption.
 Qed.
