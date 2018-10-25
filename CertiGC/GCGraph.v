@@ -5302,10 +5302,35 @@ Proof.
   - rewrite !ans_nth_old; assumption.
 Qed.
 
-Lemma firstn_gen_clear_add: forall g gi i,    
+Lemma firstn_gen_clear_add: forall g gi i,
     graph_has_gen g (Z.to_nat i) -> firstn_gen_clear g (Z.to_nat i) ->
     firstn_gen_clear (lgraph_add_new_gen g gi) (Z.to_nat i).
 Proof.
   intros. unfold firstn_gen_clear, graph_gen_clear in *. intros. specialize (H0 _ H1).
   rewrite ang_nth_old; auto. unfold graph_has_gen in *. omega.
+Qed.
+
+Lemma ans_space_address: forall ti sp i (Hs: 0 <= i < MAX_SPACES) j,
+    space_address (ti_add_new_space ti sp i Hs) (Z.to_nat j) =
+    space_address ti (Z.to_nat j).
+Proof. intros. unfold space_address. simpl. reflexivity. Qed.
+
+Lemma ans_make_header: forall g gi v,
+    make_header g v = make_header (lgraph_add_new_gen g gi) v.
+Proof. intros. unfold make_header. reflexivity. Qed.
+
+Lemma ans_make_fields_vals_old: forall g gi v,
+    graph_has_v g v -> copy_compatible g -> no_dangling_dst g ->
+    make_fields_vals g v = make_fields_vals (lgraph_add_new_gen g gi) v.
+Proof.
+  intros. unfold make_fields_vals. simpl.
+  assert (map (field2val g) (make_fields g v) =
+          map (field2val (lgraph_add_new_gen g gi))
+              (make_fields (lgraph_add_new_gen g gi) v)). {
+    unfold make_fields. simpl. apply map_ext_in. intros.
+    destruct a; [destruct s|]; simpl; auto. rewrite ang_vertex_address_old; auto.
+    red in H1. apply (H1 v); auto. unfold get_edges.
+    rewrite <- filter_sum_right_In_iff. assumption. } rewrite <- H2.
+  destruct (raw_mark (vlabel g v)) eqn:?; auto. f_equal.
+  rewrite ang_vertex_address_old; auto. destruct (H0 _ H Heqb). assumption.
 Qed.
