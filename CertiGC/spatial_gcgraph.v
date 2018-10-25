@@ -1498,3 +1498,18 @@ Proof.
   - intros. fold (nth_space t1 i). fold (nth_space t2 i). unfold gen_size in H0.
     unfold space_token_rep. rewrite H0, H1. reflexivity.
 Qed.
+
+Lemma ti_token_rep_add: forall ti sp i (Hs: 0 <= i < MAX_SPACES),
+    space_start (Znth i (spaces (ti_heap ti))) = nullval ->
+    space_start sp <> nullval ->
+    malloc_token Ews (tarray int_or_ptr_type (total_space sp)) (space_start sp) *
+    ti_token_rep ti |-- ti_token_rep (ti_add_new_space ti sp i Hs).
+Proof.
+  intros. unfold ti_token_rep. simpl. cancel. remember (spaces (ti_heap ti)).
+  rewrite <- (sublist_all (Zlength l) l) at 1 by omega. unfold upd_Znth.
+  assert (Zlength l = MAX_SPACES) by (subst; rewrite spaces_size; reflexivity).
+  rewrite <- (sublist_rejoin 0 i) by omega. rewrite !iter_sepcon_app_sepcon. cancel.
+  rewrite (sublist_next i) by omega. simpl. cancel. subst l.
+  unfold space_token_rep at 1. rewrite H. rewrite if_true by reflexivity.
+  unfold space_token_rep. rewrite if_false by assumption. cancel.
+Qed.
