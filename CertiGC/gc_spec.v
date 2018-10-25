@@ -399,18 +399,19 @@ Definition garbage_collect_spec :=
          fun_info_rep rsh f_info fi;
          outlier_rep outlier;
          graph_rep g;
-         before_gc_thread_info_rep sh t_info ti)
+         before_gc_thread_info_rep sh t_info ti;
+         ti_token_rep t_info)
   POST [tvoid]
     EX g': LGraph, EX t_info': thread_info, EX roots': roots_t,
     PROP (super_compatible (g', t_info', roots') f_info outlier;
-          thread_info_relation t_info t_info';
           garbage_collect_relation f_info roots roots' g g')
     LOCAL ()
     SEP (all_string_constants rsh gv;
          fun_info_rep rsh f_info fi;
          outlier_rep outlier;
          graph_rep g';
-         thread_info_rep sh t_info' ti).
+         thread_info_rep sh t_info' ti;
+         ti_token_rep t_info').
 
 Definition reset_heap_spec :=
   DECLARE _reset_heap

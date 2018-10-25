@@ -52,7 +52,8 @@ Proof.
           all_string_constants rsh gv;
           fun_info_rep rsh f_info fi;
           outlier_rep outlier;
-          graph_rep g')).
+          graph_rep g';
+          ti_token_rep t_info')).
   - Exists g roots t_info. destruct H1 as [? [? [? ?]]]. destruct H0 as [?[?[?[? ?]]]].
     pose proof (graph_has_gen_O g). entailer!. split.
     + red. intros. omega.
@@ -67,10 +68,12 @@ Proof.
       (EX g1: LGraph, EX t_info1: thread_info,
        PROP (super_compatible (g1, t_info1, roots') f_info outlier;
              firstn_gen_clear g1 (Z.to_nat i);
-             new_gen_relation (Z.to_nat (i + 1)) g' g1)
+             new_gen_relation (Z.to_nat (i + 1)) g' g1;
+             ti_size_spec t_info1)
        LOCAL (temp _h (ti_heap_p t_info1); temp _fi fi; temp _ti ti;
             gvars gv)
        SEP (thread_info_rep sh t_info1 ti;
+            ti_token_rep t_info1;
             all_string_constants rsh gv;
             fun_info_rep rsh f_info fi;
             outlier_rep outlier;
@@ -103,4 +106,56 @@ Proof.
       rewrite sem_sub_pp_total_space by assumption. subst s.
       pose proof (ti_size_gen _ _ _ (proj1 H7) H11 H10). unfold gen_size in H17.
       rewrite nth_space_Znth, Z2Nat.id in H17 by omega. rewrite H17. clear H17.
+      assert_PROP (isptr (ti_heap_p t_info')) by entailer!. gather_SEP 0 1 2.
+      replace_SEP 0 (thread_info_rep sh t_info' ti) by
+          (unfold thread_info_rep, heap_struct_rep; entailer!). freeze [2;3;4] FR.
+      localize [ti_token_rep t_info'; all_string_constants rsh gv;
+                space_struct_rep sh t_info' (Z.to_nat (i + 1))].
+      unfold space_struct_rep.
+      sep_apply (data_at_data_at_
+                   sh space_type (space_tri (nth_space t_info' (Z.to_nat (i + 1))))
+                   (space_address t_info' (Z.to_nat (i + 1)))).
+      assert (force_val
+                (sem_add_ptr_int space_type Signed
+                                 (offset_val 0 (ti_heap_p t_info')) (vint (i + 1))) =
+              space_address t_info' (Z.to_nat (i + 1))). {
+        rewrite isptr_offset_val_zero by assumption.
+        rewrite sem_add_pi_ptr_special'; auto. unfold space_address.
+        rewrite Z2Nat.id by omega. simpl. f_equal. }
+      assert (0 <= 2 * nth_gen_size (Z.to_nat i) < MAX_SPACE_SIZE) by
+          (rewrite ngs_S by omega; apply ngs_range; rep_omega).
+      forward_call (sh, (space_address t_info' (Z.to_nat (i + 1))),
+                    (2 * nth_gen_size (Z.to_nat i))%Z, gv, rsh).
+      * rewrite Int.signed_repr by (apply ngs_int_singed_range; rep_omega).
+        rewrite ngs_S by omega. apply ngs_int_singed_range. rep_omega.
+      * rewrite ngs_S by omega. Intros p. rewrite ngs_S in H19 by omega.
+        assert (Hso: 0 <= 0 <= (nth_gen_size (Z.to_nat (i + 1)))) by omega.
+        rewrite data_at__isptr. Intros.
+        remember (Build_space p 0
+                              (nth_gen_size (Z.to_nat (i + 1))) Ews Hso (proj2 H19))
+          as sp. remember (Build_generation_info p O Ews Pp writable_Ews) as gi.
+        assert (forall (gr: LGraph) (gen: nat),
+                   generation_space_compatible gr (gen, gi, sp)) by
+            (intros; red; rewrite Heqsp, Heqgi; simpl; intuition).
+        remember (lgraph_add_new_gen g' gi) as g1. pose proof H12.
+        rewrite spaces_size in H21.
+        remember (ti_add_new_space t_info' sp _ H21) as t_info1. pose proof H14.
+        rewrite <- (space_start_isnull_iff g') in H14; auto. 2: apply (proj1 H7).
+        assert (super_compatible (g1, t_info1, roots') f_info outlier). {
+          subst g1 t_info1. apply super_compatible_add; auto.
+          - replace (i + 1 - 1) with i by omega. assumption.
+          - subst gi. simpl. reflexivity. }
+        assert (ti_size_spec t_info1) by
+            (subst t_info1; apply ti_size_spec_add; auto; subst; simpl; reflexivity).
+        assert (firstn_gen_clear g1 (Z.to_nat i)) by
+            (subst g1; apply firstn_gen_clear_add; assumption).
+        assert (new_gen_relation (Z.to_nat (i + 1)) g' g1). {
+          subst g1. red. rewrite if_false by assumption. exists gi. split.
+          2: reflexivity. subst gi; simpl; reflexivity. } gather_SEP 1 4.
+        assert (total_space sp = nth_gen_size (Z.to_nat (i + 1))) by
+            (subst sp; simpl; reflexivity). rewrite <- H27.
+        assert (space_start sp = p) by (subst sp; simpl; reflexivity). rewrite <- H28.
+        assert (space_start sp <> nullval) by
+            (rewrite H28; destruct p; try contradiction; intro; inversion H29).
+        sep_apply (ti_token_rep_add t_info' sp (i + 1) H21); auto.
 Abort.

@@ -4275,14 +4275,6 @@ Proof.
     + subst g'. rewrite graph_has_gen_reset. reflexivity.
 Qed.
 
-Lemma copy_compatible_reset: forall g gen,
-    copy_compatible g -> copy_compatible (reset_nth_gen_graph gen g).
-Proof.
-  intros. unfold copy_compatible in *. intros. simpl in *.
-  rewrite graph_has_v_reset in H0. destruct H0. specialize (H _ H0 H1).
-  destruct H. rewrite graph_has_v_reset. split. 2: assumption. split. 1: assumption.
-Abort.
-
 Definition graph_unmarked (g: LGraph): Prop := forall v,
     graph_has_v g v -> raw_mark (vlabel g v) = false.
 
@@ -4411,6 +4403,35 @@ Definition ti_size_spec (tinfo: thread_info): Prop :=
 Definition safe_to_copy_gen g from to: Prop :=
   nth_gen_size from <= nth_gen_size to - graph_gen_size g to.
 
+Lemma ngs_range: forall i,
+    0 <= i < MAX_SPACES -> 0 <= nth_gen_size (Z.to_nat i) < MAX_SPACE_SIZE.
+Proof.
+  intros. unfold nth_gen_size. rewrite MAX_SPACES_eq in H.
+  rewrite Z2Nat.id, NURSERY_SIZE_eq, Int.Zshiftl_mul_two_p,
+  Z.mul_1_l, <- two_p_is_exp by omega. split.
+  - cut (two_p (16 + i) > 0). 1: intros; omega. apply two_p_gt_ZERO. omega.
+  - transitivity (two_p 28). 1: apply two_p_monotone_strict; omega.
+    vm_compute. reflexivity.
+Qed.
+
+Lemma ngs_int_singed_range: forall i,
+    0 <= i < MAX_SPACES ->
+    Int.min_signed <= nth_gen_size (Z.to_nat i) <= Int.max_signed.
+Proof.
+  intros. apply ngs_range in H. destruct H. split.
+  - transitivity 0. 2: assumption. vm_compute. intro HS; inversion HS.
+  - apply Z.lt_le_incl. transitivity MAX_SPACE_SIZE. 1: assumption.
+    vm_compute. reflexivity.
+Qed.
+
+Lemma ngs_S: forall i,
+    0 <= i -> 2 * nth_gen_size (Z.to_nat i) = nth_gen_size (Z.to_nat (i + 1)).
+Proof.
+  intros. unfold nth_gen_size. rewrite !Z2Nat.id by omega.
+  rewrite Z.mul_comm, <- Z.mul_assoc, (Z.mul_comm (two_p i)), <- two_p_S by assumption.
+  reflexivity.
+Qed.
+
 Lemma space_start_isptr: forall (g: LGraph) (t_info: thread_info) i,
     graph_thread_info_compatible g t_info ->
     0 <= i < Zlength (spaces (ti_heap t_info)) ->
@@ -4442,7 +4463,7 @@ Qed.
 
 Lemma space_start_is_pointer_or_null: forall (g: LGraph) (t_info: thread_info) i,
     graph_thread_info_compatible g t_info ->
-    0 <= i < Zlength (spaces (ti_heap t_info)) -> 
+    0 <= i < Zlength (spaces (ti_heap t_info)) ->
     is_pointer_or_null (space_start (Znth i (spaces (ti_heap t_info)))).
 Proof.
   intros. destruct (graph_has_gen_dec g (Z.to_nat i)).
@@ -5088,7 +5109,7 @@ Definition new_gen_relation (gen: nat) (g1 g2: LGraph): Prop :=
   if graph_has_gen_dec g1 gen then g1 = g2
   else exists gen_i: generation_info, number_of_vertices gen_i = O /\
                                       g2 = lgraph_add_new_gen g1 gen_i.
-                                        
+
 Inductive garbage_collect_loop (f_info : fun_info)
   : list nat -> roots_t -> LGraph -> roots_t -> LGraph -> Prop :=
   gcl_nil: forall g roots, garbage_collect_loop f_info nil roots g roots g
@@ -5108,3 +5129,183 @@ Definition garbage_collect_condition (g: LGraph) (t_info : thread_info)
            (roots : roots_t) (f_info : fun_info) : Prop :=
   graph_unmarked g /\ safe_to_copy g /\ no_dangling_dst g /\
   roots_fi_compatible roots f_info /\ ti_size_spec t_info.
+
+Local Open Scope Z_scope.
+
+Lemma upd_heap_Zlength: forall (hp : heap) (sp : space) (i : Z),
+    0 <= i < MAX_SPACES -> Zlength (upd_Znth i (spaces hp) sp) = MAX_SPACES.
+Proof.
+  intros. rewrite upd_Znth_Zlength; rewrite spaces_size; [reflexivity | assumption].
+Qed.
+
+Definition add_new_space (hp: heap) (sp: space) i (Hs: 0 <= i < MAX_SPACES): heap :=
+  Build_heap (upd_Znth i (spaces hp) sp) (upd_heap_Zlength hp sp i Hs).
+
+Definition ti_add_new_space (ti: thread_info) (sp: space) i
+           (Hs: 0 <= i < MAX_SPACES): thread_info :=
+  Build_thread_info (ti_heap_p ti) (add_new_space (ti_heap ti) sp i Hs)
+                    (ti_args ti) (arg_size ti).
+
+Lemma ang_nth_old: forall g gi gen,
+    graph_has_gen g gen -> nth_gen (lgraph_add_new_gen g gi) gen = nth_gen g gen.
+Proof. intros. unfold nth_gen. simpl. rewrite app_nth1; [reflexivity|assumption]. Qed.
+
+Lemma ang_nth_new: forall g gi,
+    nth_gen (lgraph_add_new_gen g gi) (length (g_gen (glabel g))) = gi.
+Proof.
+  intros. unfold nth_gen. simpl. rewrite app_nth2 by omega. rewrite Nat.sub_diag.
+  simpl. reflexivity.
+Qed.
+
+Lemma ans_nth_old: forall ti sp i (Hs: 0 <= i < MAX_SPACES) gen,
+    gen <> Z.to_nat i -> nth_space (ti_add_new_space ti sp i Hs) gen =
+                         nth_space ti gen.
+Proof.
+  intros. rewrite !nth_space_Znth. simpl. rewrite upd_Znth_diff_strong.
+  - reflexivity.
+  - rewrite spaces_size. assumption.
+  - intro. apply H. subst. rewrite Nat2Z.id. reflexivity.
+Qed.
+
+Lemma ans_nth_new: forall ti sp i (Hs: 0 <= i < MAX_SPACES),
+    nth_space (ti_add_new_space ti sp i Hs) (Z.to_nat i) = sp.
+Proof.
+  intros. rewrite nth_space_Znth. simpl. rewrite Z2Nat.id by omega.
+  rewrite upd_Znth_same; [reflexivity | rewrite spaces_size; assumption].
+Qed.
+
+Lemma ang_graph_has_gen: forall g gi gen,
+    graph_has_gen (lgraph_add_new_gen g gi) gen <->
+    graph_has_gen g gen \/ gen = length (g_gen (glabel g)).
+Proof.
+  intros. unfold graph_has_gen. simpl. rewrite app_length. simpl. omega.
+Qed.
+
+Lemma gti_compatible_add: forall g ti gi sp i (Hs: 0 <= i < MAX_SPACES),
+    graph_thread_info_compatible g ti ->
+    ~ graph_has_gen g (Z.to_nat i) -> graph_has_gen g (Z.to_nat (i - 1)) ->
+    (forall (gr: LGraph), generation_space_compatible gr (Z.to_nat i, gi, sp)) ->
+    graph_thread_info_compatible (lgraph_add_new_gen g gi)
+                                 (ti_add_new_space ti sp i Hs).
+Proof.
+  intros. unfold graph_thread_info_compatible in *. destruct H as [? [? ?]].
+  assert (length (g_gen (glabel g)) = Z.to_nat i). {
+    clear -H0 H1. unfold graph_has_gen in *.
+    rewrite Z2Nat.inj_sub in H1 by omega. simpl in H1. omega. }
+  pose proof (spaces_size (ti_heap ti)).
+  assert (length (g_gen (glabel (lgraph_add_new_gen g gi))) <=
+          length (spaces (ti_heap (ti_add_new_space ti sp i Hs))))%nat. {
+    simpl. rewrite <- !ZtoNat_Zlength, upd_Znth_Zlength by omega.
+    rewrite H6, ZtoNat_Zlength, app_length, H5. simpl. change (S O) with (Z.to_nat 1).
+    rewrite <- Z2Nat.inj_add, <- Z2Nat.inj_le by omega. omega. }
+  split; [|split]; auto.
+  - rewrite gsc_iff in H |- * by assumption. intros.
+    apply ang_graph_has_gen in H8. destruct H8.
+    + rewrite ang_nth_old by assumption. rewrite ans_nth_old.
+      1: apply H; assumption. red in H8. rewrite H5 in H8. omega.
+    + subst gen. rewrite ang_nth_new, H5, ans_nth_new. apply H2.
+  - simpl. rewrite <- upd_Znth_map. rewrite app_length. rewrite H5 in *. simpl.
+    change (S O) with (Z.to_nat 1).
+    rewrite <- Z2Nat.inj_add, <- sublist_skip in * by omega.
+    rewrite upd_Znth_Zlength; rewrite Zlength_map, spaces_size in *. 2: assumption.
+    rewrite sublist_upd_Znth_r. 2: omega. 2: rewrite Zlength_map, spaces_size; omega.
+    apply Forall_incl with
+        (sublist i MAX_SPACES (map space_start (spaces (ti_heap ti)))). 2: assumption.
+    rewrite Z.add_comm. replace MAX_SPACES with (MAX_SPACES - i + i) at 1 by omega.
+    rewrite <- sublist_sublist with (j := MAX_SPACES) by omega.
+    unfold incl. intro a. apply sublist_In.
+Qed.
+
+Lemma ang_graph_has_v: forall g gi v,
+    graph_has_v g v -> graph_has_v (lgraph_add_new_gen g gi) v.
+Proof.
+  intros. destruct v as [gen idx]. destruct H; split; simpl in *.
+  - unfold graph_has_gen in *. simpl. rewrite app_length. simpl. omega.
+  - unfold gen_has_index in *. rewrite ang_nth_old; assumption.
+Qed.
+
+Lemma ang_roots_graph_compatible: forall roots g gi,
+    roots_graph_compatible roots g ->
+    roots_graph_compatible roots (lgraph_add_new_gen g gi).
+Proof.
+  intros. unfold roots_graph_compatible in *. rewrite Forall_forall in *. intros.
+  apply ang_graph_has_v. apply H. assumption.
+Qed.
+
+Lemma ang_roots_compatible: forall roots out g gi,
+    roots_compatible g out roots ->
+    roots_compatible (lgraph_add_new_gen g gi) out roots.
+Proof. intros. destruct H. split; auto. apply ang_roots_graph_compatible. auto. Qed.
+
+Lemma ang_graph_has_v_inv: forall g gi v,
+    number_of_vertices gi = O -> graph_has_v (lgraph_add_new_gen g gi) v ->
+    graph_has_v g v.
+Proof.
+  intros. destruct v as [gen idx]. destruct H0; split; simpl in *.
+  - apply ang_graph_has_gen in H0. destruct H0; auto. red in H1. exfalso. subst.
+    rewrite ang_nth_new, H in H1. omega.
+  - apply ang_graph_has_gen in H0. red in H1. destruct H0.
+    + rewrite ang_nth_old in H1; assumption.
+    + exfalso. subst. rewrite ang_nth_new, H in H1. omega.
+Qed.
+
+Lemma ang_outlier_compatible: forall g gi out,
+    number_of_vertices gi = O -> outlier_compatible g out ->
+    outlier_compatible (lgraph_add_new_gen g gi) out.
+Proof.
+  intros. unfold outlier_compatible in *. intros.
+  apply ang_graph_has_v_inv in H1; auto. simpl. apply H0. assumption.
+Qed.
+
+Lemma ang_vertex_address_old: forall (g : LGraph) (gi : generation_info) (v : VType),
+    graph_has_v g v ->
+    vertex_address (lgraph_add_new_gen g gi) v = vertex_address g v.
+Proof.
+  intros. unfold vertex_address. f_equal. unfold gen_start. destruct H.
+  rewrite if_true by (rewrite ang_graph_has_gen; left; assumption).
+  rewrite if_true by assumption. rewrite ang_nth_old by assumption. reflexivity.
+Qed.
+
+Lemma fta_compatible_add: forall g ti gi sp i (Hs: 0 <= i < MAX_SPACES) fi roots,
+    fun_thread_arg_compatible g ti fi roots -> roots_graph_compatible roots g ->
+    fun_thread_arg_compatible (lgraph_add_new_gen g gi)
+                              (ti_add_new_space ti sp i Hs) fi roots.
+Proof.
+  intros. unfold fun_thread_arg_compatible in *. simpl. rewrite <- H.
+  apply map_ext_in. intros. destruct a; [destruct s|]; simpl; try reflexivity.
+  apply ang_vertex_address_old. red in H0. rewrite Forall_forall in H0. apply H0.
+  rewrite <- filter_sum_right_In_iff. assumption.
+Qed.
+
+Lemma super_compatible_add: forall g ti gi sp i (Hs: 0 <= i < MAX_SPACES) fi roots out,
+    ~ graph_has_gen g (Z.to_nat i) -> graph_has_gen g (Z.to_nat (i - 1)) ->
+    (forall (gr: LGraph), generation_space_compatible gr (Z.to_nat i, gi, sp)) ->
+    number_of_vertices gi = O -> super_compatible (g, ti, roots) fi out ->
+    super_compatible (lgraph_add_new_gen g gi, ti_add_new_space ti sp i Hs, roots)
+                     fi out.
+Proof.
+  intros. destruct H3 as [? [? [? ?]]]. split; [|split; [|split]].
+  - apply gti_compatible_add; assumption.
+  - apply fta_compatible_add; [|destruct H5]; assumption.
+  - apply ang_roots_compatible; assumption.
+  - apply ang_outlier_compatible; assumption.
+Qed.
+
+Lemma ti_size_spec_add: forall ti sp i (Hs: 0 <= i < MAX_SPACES),
+    total_space sp = nth_gen_size (Z.to_nat i) -> ti_size_spec ti ->
+    ti_size_spec (ti_add_new_space ti sp i Hs).
+Proof.
+  intros. unfold ti_size_spec in *. rewrite Forall_forall in *. intros.
+  specialize (H0 _ H1). unfold nth_gen_size_spec in *.
+  destruct (Nat.eq_dec x (Z.to_nat i)); unfold gen_size.
+  - subst x. rewrite !ans_nth_new. if_tac; auto.
+  - rewrite !ans_nth_old; assumption.
+Qed.
+
+Lemma firstn_gen_clear_add: forall g gi i,    
+    graph_has_gen g (Z.to_nat i) -> firstn_gen_clear g (Z.to_nat i) ->
+    firstn_gen_clear (lgraph_add_new_gen g gi) (Z.to_nat i).
+Proof.
+  intros. unfold firstn_gen_clear, graph_gen_clear in *. intros. specialize (H0 _ H1).
+  rewrite ang_nth_old; auto. unfold graph_has_gen in *. omega.
+Qed.
