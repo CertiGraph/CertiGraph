@@ -5084,8 +5084,18 @@ Definition no_backward_edge (g: LGraph): Prop :=
 Definition firstn_gen_clear (g: LGraph) (n: nat): Prop :=
   forall i, i < n -> graph_gen_clear g i.
 
+Definition safe_to_copy_to_except (g: LGraph) (gen: nat): Prop :=
+  forall n, n <> O -> n <> gen -> graph_has_gen g n -> safe_to_copy_gen g (pred n) n .
+
 Definition safe_to_copy (g: LGraph): Prop :=
   forall n, graph_has_gen g (S n) -> safe_to_copy_gen g n (S n).
+
+Lemma stc_stcte_O_iff: forall g, safe_to_copy g <-> safe_to_copy_to_except g O.
+Proof.
+  intros. unfold safe_to_copy, safe_to_copy_to_except. split; intros.
+  - destruct n. 1: contradiction. simpl. apply H; assumption.
+  - specialize (H (S n)). simpl in H. apply H; auto.
+Qed.
 
 Lemma fgc_nbe_no_edge2gen: forall g n,
     firstn_gen_clear g n -> no_backward_edge g -> no_edge2gen g n.
@@ -5127,7 +5137,7 @@ Definition garbage_collect_relation (f_info: fun_info)
 
 Definition garbage_collect_condition (g: LGraph) (t_info : thread_info)
            (roots : roots_t) (f_info : fun_info) : Prop :=
-  graph_unmarked g /\ safe_to_copy g /\ no_dangling_dst g /\
+  graph_unmarked g /\ no_backward_edge g /\ no_dangling_dst g /\
   roots_fi_compatible roots f_info /\ ti_size_spec t_info.
 
 Local Open Scope Z_scope.
@@ -5315,11 +5325,11 @@ Lemma ans_space_address: forall ti sp i (Hs: 0 <= i < MAX_SPACES) j,
     space_address ti (Z.to_nat j).
 Proof. intros. unfold space_address. simpl. reflexivity. Qed.
 
-Lemma ans_make_header: forall g gi v,
+Lemma ang_make_header: forall g gi v,
     make_header g v = make_header (lgraph_add_new_gen g gi) v.
 Proof. intros. unfold make_header. reflexivity. Qed.
 
-Lemma ans_make_fields_vals_old: forall g gi v,
+Lemma ang_make_fields_vals_old: forall g gi v,
     graph_has_v g v -> copy_compatible g -> no_dangling_dst g ->
     make_fields_vals g v = make_fields_vals (lgraph_add_new_gen g gi) v.
 Proof.
@@ -5333,4 +5343,75 @@ Proof.
     rewrite <- filter_sum_right_In_iff. assumption. } rewrite <- H2.
   destruct (raw_mark (vlabel g v)) eqn:?; auto. f_equal.
   rewrite ang_vertex_address_old; auto. destruct (H0 _ H Heqb). assumption.
+Qed.
+
+Lemma ang_graph_gen_size_old: forall g gi gen,
+    graph_has_gen g gen -> graph_gen_size g gen =
+                           graph_gen_size (lgraph_add_new_gen g gi) gen.
+Proof.
+  intros. unfold graph_gen_size. rewrite ang_nth_old by assumption.
+  apply fold_left_ext. intros. unfold vertex_size_accum. reflexivity.
+Qed.
+
+Lemma stcte_add: forall g gi i,
+    number_of_vertices gi = O -> safe_to_copy_to_except g i ->
+    safe_to_copy_to_except (lgraph_add_new_gen g gi) i.
+Proof.
+  intros. unfold safe_to_copy_to_except in *. intros. rewrite ang_graph_has_gen in H3.
+  destruct H3.
+  - specialize (H0 _ H1 H2 H3). unfold safe_to_copy_gen in *.
+    rewrite <- ang_graph_gen_size_old; assumption.
+  - unfold safe_to_copy_gen. simpl. unfold graph_gen_size.
+    rewrite H3 at 4. rewrite ang_nth_new, H. unfold previous_vertices_size.
+    simpl. destruct n. 1: contradiction. simpl. rewrite Z.sub_0_r.
+    unfold nth_gen_size. rewrite Nat2Z.inj_succ, two_p_S by omega.
+    assert (two_p (Z.of_nat n) > 0) by (apply two_p_gt_ZERO; omega).
+    assert (0 < NURSERY_SIZE) by (vm_compute; reflexivity).
+    rewrite Z.mul_assoc, (Z.mul_comm NURSERY_SIZE 2).
+    assert (0 < NURSERY_SIZE * two_p (Z.of_nat n)). apply Z.mul_pos_pos; omega.
+    rewrite <- Z.add_diag, Z.mul_add_distr_r. omega.
+Qed.
+
+Lemma graph_unmarked_add: forall g gi,
+    number_of_vertices gi = O -> graph_unmarked g ->
+    graph_unmarked (lgraph_add_new_gen g gi).
+Proof.
+  intros. unfold graph_unmarked in *. intros. apply ang_graph_has_v_inv in H1; auto.
+  simpl. apply H0. assumption.
+Qed.
+
+Lemma ang_get_edges: forall g gi v,
+    get_edges g v = get_edges (lgraph_add_new_gen g gi) v.
+Proof. intros. unfold get_edges, make_fields. simpl. reflexivity. Qed.
+
+Lemma no_backward_edge_add: forall g gi,
+    number_of_vertices gi = O -> no_backward_edge g ->
+    no_backward_edge (lgraph_add_new_gen g gi).
+Proof.
+  intros. unfold no_backward_edge, gen2gen_no_edge in *. intros. simpl.
+  destruct H2. simpl in *. rewrite <- ang_get_edges in H3.
+  apply ang_graph_has_v_inv in H2; auto. apply H0; auto. split; simpl; auto.
+Qed.
+
+Lemma no_dangling_dst_add: forall g gi,
+    number_of_vertices gi = O -> no_dangling_dst g ->
+    no_dangling_dst (lgraph_add_new_gen g gi).
+Proof.
+  intros. unfold no_dangling_dst in *. intros. simpl.
+  apply ang_graph_has_v_inv in H1; auto. rewrite <- ang_get_edges in H2.
+  apply ang_graph_has_v, (H0 v); auto.
+Qed.
+
+Lemma gcc_add: forall g ti gi sp i (Hs: 0 <= i < MAX_SPACES) roots fi,
+    number_of_vertices gi = O -> total_space sp = nth_gen_size (Z.to_nat i) ->
+    garbage_collect_condition g ti roots fi ->
+    garbage_collect_condition (lgraph_add_new_gen g gi)
+                              (ti_add_new_space ti sp i Hs) roots fi.
+Proof.
+  intros. destruct H1 as [? [? [? [? ?]]]]. split; [|split; [|split; [|split]]].
+  - apply graph_unmarked_add; assumption.
+  - apply no_backward_edge_add; assumption.
+  - apply no_dangling_dst_add; assumption.
+  - assumption.
+  - apply ti_size_spec_add; assumption.
 Qed.

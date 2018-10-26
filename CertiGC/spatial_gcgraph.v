@@ -1581,7 +1581,7 @@ Lemma vertex_rep_add: forall (g : LGraph) (gi : generation_info) v sh,
     vertex_rep sh g v = vertex_rep sh (lgraph_add_new_gen g gi) v.
 Proof.
   intros. unfold vertex_rep. rewrite ang_vertex_address_old; auto.
-  rewrite <- ans_make_header, <- ans_make_fields_vals_old; auto.
+  rewrite <- ang_make_header, <- ang_make_fields_vals_old; auto.
 Qed.
 
 Lemma graph_rep_add: forall (g : LGraph) (gi : generation_info),
