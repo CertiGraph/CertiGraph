@@ -1,0 +1,58 @@
+% for second branch
+
+\begin{figure}[t]
+\vspace{-1ex}
+  \begin{lstlisting}
+void forward (value *from_start,
+              value *from_limit,  
+              value **next,       
+              value *p, // $\label{code:forwardargs}\{p = (vertex, index)\}$
+              int depth) {
+  value * v;
+  // $\searrow \{p = (vertex, index)\}$
+      value va = *p; 
+  // $\swarrow \{p = (vertex, index) /| (va = integer \| va = pointer)\}$ 
+  if(Is_block(va)) {
+    // $\{p = (vertex, index) /| va = pointer\}$ 
+    v = (value*)int_or_ptr_to_ptr(va);
+    // $\{p = (vertex, index) /| va = pointer /| v = va's\ pointee\}$ 
+    if(Is_from(from_start, from_limit, v)) {
+    // ...  
+      // $\searrow \p{graph}(g)$
+          header_t hd = Hd_val(v);
+      // $\swarrow \p{graph}(g) /| hd = header\ val\ of\ v$
+      if(hd == 0) {
+        // $\searrow \searrow ... $
+            *p = Field(v,0);
+        // $\swarrow \swarrow \left\{\!\!\!\begin{array}{l@{}} \{... /| \exists g'... /| forward\_relation\ g\ g' /| \null 
+        \\ forward\_condition\ g'\ t\_info /| \null 
+        \\ thread\_info\_relation\ t\_info\ t\_info \} \end{array}\right\}$
+      } else {
+    int i; int sz; value *new;
+    sz = Wosize_hd(hd);
+    new = *next+1;
+    *next = new+sz;
+    Hd_val(new) = hd;
+    for(i = 0; i < sz; i++)
+      Field(new, i) = Field(v, i); 
+    // $\{\exists g'.~ g' = lacv\ g\ v'\}$   
+    Hd_val(v) = 0;
+    Field(v, 0) = ptr_to_int_or_ptr((void *)new);
+    // $\searrow $
+        *p = ptr_to_int_or_ptr((void *)new);
+    // $\swarrow \{\exists g''.~ g'' = lgg\ g'\ (new\_copied\_vertex\ g\ to)\}$
+    if (depth>0) //can just remove?
+    for (i=0; i<sz; i++)
+      forward(from_start, from_limit, 
+        next, &Field(new,i), depth-1);
+    // $\left\{\!\!\!\begin{array}{l@{}} \{... forward\_relation\ g\ g'' /| \null 
+        \\ forward\_condition\ g''\ t\_info' /| \null 
+        \\ thread\_info\_relation\ t\_info\ t\_info'\} \end{array}\right\}$
+} } } }
+\end{lstlisting}
+
+\vspace{-0.4em}
+\caption{Clight code and proof sketch for forward}
+\label{fig:forward}
+\vspace{-1em}
+\end{figure}

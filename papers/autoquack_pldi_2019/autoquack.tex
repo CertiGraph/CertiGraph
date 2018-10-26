@@ -5,11 +5,14 @@
 % PLDI'15 web site.
 %
 %% \documentclass[pldi]{sigplanconf-pldi15}
-% Old header from previous submission:
-\documentclass[preprint,10pt, numbers]{sigplanconf}
+%old header
+%\documentclass[preprint,10pt, numbers]{sigplanconf}
 
-% New header for 2019 submission:
+% new 2019 header
 %\documentclass[sigplan,10pt,review,anonymous]{acmart}\settopmatter{printfolios=true,printccs=false,printacmref=false}
+
+% removing "review" from new header
+\documentclass[sigplan,10pt,anonymous]{acmart}\settopmatter{printfolios=true,printccs=false,printacmref=false}
 
 
 %
@@ -35,9 +38,8 @@
 \usepackage[scaled]{helvet} % see www.ctan.org/get/macros/latex/required/psnfss/psnfss2e.pdf
 \usepackage{url}                  % format URLs
 \usepackage{enumitem}      % adjust spacing in enums
-\usepackage[colorlinks=true,allcolors=blue,breaklinks,draft=false]{hyperref}   % hyperlinks, including DOIs and URLs in bibliography
 % known bug: http://tex.stackexchange.com/questions/1522/pdfendlink-ended-up-in-different-nesting-level-than-pdfstartlink
-\usepackage{tikz}
+%\usepackage{tikz}
 \long\def\beginpgfgraphicnamed#1#2\endpgfgraphicnamed{\includegraphics{#1}}
 %% \usetikzlibrary{arrows.meta, positioning, decorations.pathmorphing, fit}
 %% \pgfrealjobname{autoquack}
@@ -168,10 +170,10 @@
 \special{papersize=8.5in,11in}
 \setlength{\pdfpageheight}{\paperheight}
 \setlength{\pdfpagewidth}{\paperwidth}
-\conferenceinfo{CONF 'yy}{Month d--d, 20yy, City, ST, Country}
-\copyrightyear{20yy}
-\copyrightdata{978-1-nnnn-nnnn-n/yy/mm}
-\copyrightdoi{nnnnnnn.nnnnnnn}
+%\conferenceinfo{CONF 'yy}{Month d--d, 20yy, City, ST, Country}
+%\copyrightyear{20yy}
+%\copyrightdata{978-1-nnnn-nnnn-n/yy/mm}
+%\copyrightdoi{nnnnnnn.nnnnnnn}
 
 %
 % any author declaration will be ignored  when using 'plid' option (for double blind review)
@@ -182,7 +184,7 @@
 %\authorinfo{Shengyi Wang$^{*}$ \qquad Qinxiang Cao$^{+}$ \qquad Asankhaya Sharma$^{*}$ \qquad Aquinas Hobor$^{\dagger,*}$}
 %{}
 %{School of Computing$^{*}$ and Yale-NUS College$^{\dagger}$, National University of Singapore; Princeton University$^{+}$}
-\authorinfo{} {} {}
+%\authorinfo{} {} {}
 \maketitle
 
 \begin{abstract}

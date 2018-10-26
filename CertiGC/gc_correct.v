@@ -153,7 +153,6 @@ Lemma sound_fr_fde_correct: forall g g' from to p,
 Proof.
   intros. destruct H as [H2 H3]; inversion H1; subst; try assumption.
   - unfold field_decided_edges in H2.
-    (* unfold vertex_valid in H3. *)
     split; intros.
     + destruct H5.
       (* reminder, I can get vertex_valid g' if I want *)
@@ -180,8 +179,8 @@ Proof.
   - replace (field_decided_edges new_g) with
         (field_decided_edges (lgraph_copy_v g (dst g e) to)) by
         (subst new_g; reflexivity).
+    (* potential for reuse of the first branch *)
     admit.
-     (* potential for reuse of the first branch, if forward_relation isn't needed in the subproof. *)
 Abort.
 
 Lemma sound_dsr_vv_correct: forall g g' from to to_index,
@@ -210,9 +209,13 @@ Lemma sound_dgr_vv_correct: forall g g' from to fi r1 r2,
     do_generation_relation from to fi r1 r2 g g' ->
     vertex_valid g'.
 Proof.
-  intros. destruct H as [H2 H3].
+  intros. assert (H':= H). destruct H as [H2 H3].
   destruct H1 as [? [? [? [? ?]]]].
   subst.
-  (* In two steps, I can get to "vertex_valid x0". 
+  (* assert (vertex_valid x) by  *)
+      (* apply (sound_frr_vv_correct _ _ _ _ _ _ _ H' H0 H). *)
+  (* In two step, just like above, I can get to "vertex_valid x0". 
      Then we need to show that the reset doesn't change anything. *)
 Abort.
+
+

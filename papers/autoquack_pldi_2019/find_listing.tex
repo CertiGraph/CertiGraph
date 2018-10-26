@@ -1,0 +1,44 @@
+\begin{figure}[t]
+\vspace{-1ex}
+  \begin{lstlisting}
+struct Node { $\label{code:nodedefstart}$
+    unsigned int rank;
+    struct Node * parent; } $\label{code:nodedefstart}$
+
+struct Node* find(struct Node* x) { // $\label{code:findstart}\{\p{graph}(\tx{x},\gamma)\}$
+  struct Node *p, *p0;
+  // $\label{code:beforeparentfind}\searrow \{\tx x|-> rank, parent \}$
+        p = x -> parent; $\label{code:findram1}$
+  // $\label{code:afterarentfind}\swarrow \{\tx x|-> rank, parent /| p = parent \}$
+  // $\label{code:findparent}\{\p{graph}(\tx{x},\gamma) /| \tx x|-> rank, parent /| p = parent\}$
+  if (p != x) {
+    // $\label{code:findbeforereassign} \{\p{graph}(\tx{x},\gamma) /| \tx x|-> rank, parent /| p = parent\}$
+    p0 = find(p); 
+    p = p0; 
+    // $\label{code:findbeforexparent}\searrow $
+          x -> parent = p;
+    // $\label{code:findafterxparent}\swarrow $
+  } // $\label{code:findafterreassign}\{\p{graph}(\tx{x},\gamma) /| \tx x|-> rank, parent /| \exists \gamma'.~ \m{findS}(\gamma, \tx{x}, \gamma')\}$   
+  return p;
+} //
+\end{lstlisting}
+
+% need to have some notion of findS down below. probably want to define it at a higher level than what I've reproduced below?
+
+%  Definition uf_root (pg: PreGraph Vertex Edge) (x root: Vertex) : Prop := reachable pg x root /\ (forall y, reachable pg root y -> root = y).
+
+%  Definition uf_equiv (g1 g2: PreGraph Vertex Edge) : Prop :=
+%    (forall x, vvalid g1 x <-> vvalid g2 x) /\ (forall x r1 r2, uf_root g1 x r1 -> uf_root g2 x r2 -> r1 = r2).
+
+%  Definition rank_unchanged (g1 g2: Graph) : Prop := forall v, vvalid g1 v -> vvalid g2 v -> vlabel g1 v = vlabel g2 v.
+
+%  Definition findS (g1: Graph) (x: Vertex) (g2: Graph) :=
+%    (predicate_partialgraph g1 (fun n => ~ reachable g1 x n)) ~=~ (predicate_partialgraph g2 (fun n => ~ reachable g1 x n)) /\ uf_equiv g1 g2 /\ rank_unchanged g1 g2.
+
+
+
+\vspace{-0.4em}
+\caption{Clight code and proof sketch for find}
+\label{fig:find}
+\vspace{-1em}
+\end{figure}
