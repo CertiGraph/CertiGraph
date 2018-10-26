@@ -110,41 +110,6 @@ Proof.
     apply sound_fr_lcv_vv; assumption.
 Qed.
 
-Lemma frl_vv_correct: forall from to fi il r1 r2 g g',
-    SoundGCGraph g ->
-    graph_has_gen g to ->
-    forward_roots_loop from to fi il r1 g r2 g' ->
-    vertex_valid g'.
-Proof.
-  intros.
-  revert r1 r2 g g' fi H H0 H1.
-  induction il.
-  - intros. destruct H as [H2 H3]; inversion H1; subst; assumption.
-  - intros. assert (H' := H); destruct H as [H2 H3]. inversion H1; subst.
-    assert (SoundGCGraph g2) by admit.
-    (* this will be reasonable to get eventually *)
-    pose proof (fr_graph_has_gen _ _ _ _ _ _ H0 H5 to).
-    pose proof (sound_fr_vv_correct _ _ _ _ _ H' H0 H5).
-    rewrite H4 in H0.
-    apply (IHil (upd_roots from to (inl (Z.of_nat a)) g r1 fi) r2 g2 g' fi H H0 H10).
-Abort. (* it works, just Aborting because of the admit. *)
-
-Lemma sound_frr_vv_correct: forall g g' from to fi r1 r2,
-    SoundGCGraph g ->
-    graph_has_gen g to ->
-    forward_roots_relation from to fi r1 g r2 g' ->
-    vertex_valid g'.
-Proof.
-  intros. assert (H' := H). destruct H as [H2 H3].
-  inversion H1; subst; try assumption.
-  pose proof (sound_fr_vv_correct _ _ _ _ _ H' H0 H4).
-  assert (SoundGCGraph g2) by admit.
-  pose proof (fr_graph_has_gen _ _ _ _ _ _ H0 H4 to).
-  rewrite H8 in H0.
-  (* apply (frl_vv_correct _ _ _ _ _ _ _ _ H7 H0 H5). *)
-  (* will work fine once the above is Qed. *)
-Abort.
-
 Lemma sound_fr_fde_correct: forall g g' from to p,
     SoundGCGraph g ->
     graph_has_gen g to ->
@@ -168,12 +133,10 @@ Proof.
         simpl in H5.
         (* stuck here because I don't know anything useful about src or evalid. *)
         admit.
-
 (* Lemma lcv_src: forall g e v v' to v0, *)
 (*     (* vvalid g v0 -> *) *)
 (*     src (pregraph_copy_v g v v0) e = v' -> *)
-(*     src g e = v' \/ src (pregraph_copy_v g v v0) e = new_copied_v g to. *)
-        
+(*     src g e = v' \/ src (pregraph_copy_v g v v0) e = new_copied_v g to. *)        
       * admit.
     + admit.
   - replace (field_decided_edges new_g) with
@@ -183,39 +146,84 @@ Proof.
     admit.
 Abort.
 
-Lemma sound_dsr_vv_correct: forall g g' from to to_index,
+Lemma sound_fr_correct: forall g g' from to p,
+    SoundGCGraph g ->
+    graph_has_gen g to ->
+    forward_relation from to 0 p g g' ->
+    SoundGCGraph g'.
+Proof.
+  intros.
+  admit.
+  (* split; [apply (sound_fr_fde_correct _ _ _ _ _ H H0 H1) | *)
+          (* apply (sound_fr_vv_correct _ _ _ _ _ H H0 H1)]. *)
+Abort.
+
+Lemma sound_frl_correct: forall g g' from to r1 r2 fi il,
+    SoundGCGraph g ->
+    graph_has_gen g to ->
+    forward_roots_loop from to fi il r1 g r2 g' ->
+    SoundGCGraph g'.
+Proof.
+  intros. revert r1 r2 g g' fi H H0 H1.
+  induction il.
+  - intros. inversion H1; subst; assumption.
+  - intros. inversion H1; subst.
+    (* pose proof (sound_fr_correct _ _ _ _ _ H H0 H4). *)
+    assert (SoundGCGraph g2) by admit.
+    rewrite (fr_graph_has_gen _ _ _ _ _ _ H0 H4 to) in H0.
+    apply (IHil (upd_roots from to (inl (Z.of_nat a)) g r1 fi) r2 g2 g' fi H2 H0 H9).
+Abort. (* works, but Aborting because it uses an admit *)
+
+Lemma sound_frr_correct: forall g g' from to fi r1 r2,
+    SoundGCGraph g ->
+    graph_has_gen g to ->
+    forward_roots_relation from to fi r1 g r2 g' ->
+    SoundGCGraph g'.
+Proof.
+  intros. inversion H1. subst; try assumption.
+  assert (SoundGCGraph g2) by admit.
+  (* pose proof (sound_fr_correct _ _ _ _ _ H H0 H3). *)
+  rewrite (fr_graph_has_gen _ _ _ _ _ _ H0 H3 to) in H0.
+  (* apply (sound_frl_correct _ _ _ _ _ _ _ _ H9 H0 H4). *)
+Abort. (* works, but Aborting because it uses an admit *)
+
+Lemma sound_dsr_correct: forall g g' from to to_index,
     SoundGCGraph g ->
     graph_has_gen g to ->
     do_scan_relation from to to_index g g' ->
-    vertex_valid g'.
+    SoundGCGraph g'.
 Proof.
-  intros ? ? ? ? ? [H1 H2] H3 [? [H4 H5]].
-  inversion H4; subst; try assumption.
-  - unfold vertex_valid in H2.
-    split; intro.
-    + apply (svwl_graph_has_v _ _ _ _ _ H3 H4).
-      apply H2. (* stuck *) admit.
-    + apply (svwl_graph_has_v_inv _ _ _ _ _ H3 H4 _) in H8.
-      destruct H8.
-      * rewrite <- H2 in H8. (* stuck *) admit.
-      * destruct H8.
-        admit.
-  - admit.
+  intros. destruct H1 as [? [? ?]].
+  inversion H1; subst; try assumption.
+  admit. admit.
 Abort.
 
-Lemma sound_dgr_vv_correct: forall g g' from to fi r1 r2,
+Lemma rngg_sound: forall g gen,
+    SoundGCGraph g -> SoundGCGraph (reset_nth_gen_graph gen g).
+Proof.
+  intros. destruct H as [H1 H2]; split.
+  - unfold field_decided_edges; simpl. intros.
+    replace (get_edges (reset_nth_gen_graph gen g) v) with
+        (get_edges g v) by reflexivity.
+    apply (H1 _ _ H).
+  - unfold vertex_valid in *. simpl. intros.
+    rewrite graph_has_v_reset.
+    (* oops, dead! *)
+    admit.
+Abort.
+
+Lemma sound_dgr_correct: forall g g' from to fi r1 r2,
     SoundGCGraph g ->
     graph_has_gen g to ->
     do_generation_relation from to fi r1 r2 g g' ->
-    vertex_valid g'.
+    SoundGCGraph g'.
 Proof.
-  intros. assert (H':= H). destruct H as [H2 H3].
+  intros.
   destruct H1 as [? [? [? [? ?]]]].
   subst.
-  (* assert (vertex_valid x) by  *)
-      (* apply (sound_frr_vv_correct _ _ _ _ _ _ _ H' H0 H). *)
-  (* In two step, just like above, I can get to "vertex_valid x0". 
-     Then we need to show that the reset doesn't change anything. *)
+  (* apply rngg_sound. *)
+  replace (SoundGCGraph (reset_nth_gen_graph from x0)) with (SoundGCGraph x0) by admit.
+  (* pose proof (sound_frr_correct _ _ _ _ _ _ _ H H0 H1). *)
+  (* rewrite (frr_graph_has_gen _ _ _ _ _ _ _ H0 H1 to) in H0. *)
+  (* apply (sound_dsr_correct _ _ _ _ _ H3 H0 H2). *)
 Abort.
-
-
