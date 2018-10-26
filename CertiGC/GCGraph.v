@@ -5415,3 +5415,37 @@ Proof.
   - assumption.
   - apply ti_size_spec_add; assumption.
 Qed.
+
+Lemma ngs_0_lt: forall i, 0 < nth_gen_size i.
+Proof.
+  intros. unfold nth_gen_size.
+  rewrite NURSERY_SIZE_eq, Int.Zshiftl_mul_two_p, Z.mul_1_l, <- two_p_is_exp by omega.
+  cut (two_p (16 + Z.of_nat i) > 0); [|apply two_p_gt_ZERO]; omega.
+Qed.
+
+
+Lemma gc_cond_implies_do_gen_cons: forall g t_info roots f_info i,
+    safe_to_copy_to_except g i ->
+    graph_has_gen g (S i) ->
+    graph_thread_info_compatible g t_info ->
+    garbage_collect_condition g t_info roots f_info ->
+    do_generation_condition g t_info roots f_info i (S i).
+Proof.
+  intros. destruct H2 as [? [? [? [? ?]]]].
+  assert (graph_has_gen g i) by (unfold graph_has_gen in H0 |-*; omega).
+  split; [|split; [|split; [|split; [|split; [|split; [|split]]]]]]; auto.
+  - unfold safe_to_copy_to_except, safe_to_copy_gen in H. red.
+    unfold rest_gen_size. specialize (H (S i)). simpl in H.
+    destruct (gt_gs_compatible _ _ H1 _ H0) as [_ [_ ?]].
+    destruct (gt_gs_compatible _ _ H1 _ H7) as [_ [_ ?]].
+    fold (graph_gen_size g (S i)) in H8. fold (graph_gen_size g i) in H9.
+    rewrite <- H8. fold (gen_size t_info (S i)).
+    destruct (space_order (nth_space t_info i)) as [_ ?].
+    fold (gen_size t_info i) in H10. rewrite <- H9 in H10.
+    transitivity (gen_size t_info i). 1: assumption.
+    rewrite (ti_size_gen _ _ _ H1 H7 H6), (ti_size_gen _ _ _ H1 H0 H6).
+    apply H; [omega.. | assumption].
+  - apply graph_unmarked_copy_compatible; assumption.
+  - rewrite (ti_size_gen _ _ _ H1 H0 H6). apply ngs_0_lt.
+  - rewrite graph_gen_unmarked_iff in H2. apply H2.
+Qed.
