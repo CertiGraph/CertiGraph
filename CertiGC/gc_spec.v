@@ -393,7 +393,8 @@ Definition garbage_collect_spec :=
         _ti OF (tptr thread_info_type)]
     PROP (readable_share rsh; writable_share sh;
           super_compatible (g, t_info, roots) f_info outlier;
-          garbage_collect_condition g t_info roots f_info)
+          garbage_collect_condition g t_info roots f_info;
+          safe_to_copy g)
     LOCAL (temp _fi fi; temp _ti ti; gvars gv)
     SEP (all_string_constants rsh gv;
          fun_info_rep rsh f_info fi;
