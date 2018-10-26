@@ -4,7 +4,7 @@ Lemma sem_sub_pp_total_space: forall s,
     isptr (space_start s) ->
     force_val
       (sem_sub_pp int_or_ptr_type
-                  (offset_val (WORD_SIZE * total_space s) (space_start s)) 
+                  (offset_val (WORD_SIZE * total_space s) (space_start s))
                   (space_start s)) = Vint (Int.repr (total_space s)).
 Proof.
   intros. destruct (space_start s); try contradiction. simpl. destruct (eq_block b b).
@@ -15,7 +15,18 @@ Proof.
   pose proof (total_space_signed_range s). unfold Ptrofs.divs.
   rewrite !Ptrofs.signed_repr by rep_omega. unfold vptrofs, Archi.ptr64.
   rewrite WORD_SIZE_eq, Z.mul_comm, Z.quot_mul, ptrofs_to_int_repr by omega.
-  reflexivity.  
+  reflexivity.
+Qed.
+
+Lemma t_info_space_address: forall t_info i,
+    0 <= i -> isptr (ti_heap_p t_info) ->
+    force_val (sem_add_ptr_int space_type Signed
+                               (offset_val 0 (ti_heap_p t_info)) (vint i)) =
+    space_address t_info (Z.to_nat i).
+Proof.
+  intros. rewrite isptr_offset_val_zero by assumption.
+  rewrite sem_add_pi_ptr_special'; auto. unfold space_address.
+  rewrite Z2Nat.id by omega. simpl. f_equal.
 Qed.
 
 Lemma body_garbage_collect:
@@ -75,7 +86,8 @@ Proof.
              firstn_gen_clear g1 (Z.to_nat i);
              new_gen_relation (Z.to_nat (i + 1)) g' g1;
              graph_has_gen g1 (Z.to_nat (i + 1)))
-       LOCAL (temp _h (ti_heap_p t_info1); temp _fi fi; temp _ti ti; gvars gv)
+       LOCAL (temp _h (ti_heap_p t_info1); temp _fi fi; temp _ti ti;
+              gvars gv; temp _i (Vint (Int.repr i)))
        SEP (thread_info_rep sh t_info1 ti;
             ti_token_rep t_info1;
             all_string_constants rsh gv;
@@ -123,13 +135,7 @@ Proof.
                    sh space_type
                    (Znth (i + 1) (map space_tri (spaces (ti_heap t_info'))))
                    (space_address t_info' (Z.to_nat (i + 1)))).
-      assert (force_val
-                (sem_add_ptr_int space_type Signed
-                                 (offset_val 0 (ti_heap_p t_info')) (vint (i + 1))) =
-              space_address t_info' (Z.to_nat (i + 1))). {
-        rewrite isptr_offset_val_zero by assumption.
-        rewrite sem_add_pi_ptr_special'; auto. unfold space_address.
-        rewrite Z2Nat.id by omega. simpl. f_equal. }
+      pose proof (t_info_space_address _ _ (proj1 H14) H19).
       assert (0 <= 2 * nth_gen_size (Z.to_nat i) < MAX_SPACE_SIZE) by
           (rewrite ngs_S by omega; apply ngs_range; rep_omega).
       forward_call (sh, (space_address t_info' (Z.to_nat (i + 1))),
@@ -207,5 +213,29 @@ Proof.
       Exists g' t_info'. entailer!. unfold thread_info_rep, heap_struct_rep.
       entailer!.
     + Intros g1 t_info1. forward_if True. 1: contradiction.
-      1: forward; Intros; entailer!.
+      1: forward; Intros; entailer!. Intros. assert_PROP (isptr (ti_heap_p t_info1))
+        by (unfold thread_info_rep, heap_struct_rep; entailer!).
+      assert (Z.to_nat (i + 1) = S (Z.to_nat i)) by
+          (rewrite Z2Nat.inj_add by omega; simpl; omega).
+      assert (do_generation_condition
+                g1 t_info1 roots' f_info (Z.to_nat i) (Z.to_nat (i + 1))) by
+          (rewrite H23 in *; apply gc_cond_implies_do_gen_cons; auto;
+           apply (proj1 H16)). pose proof (t_info_space_address _ _ (proj1 H7) H22).
+      pose proof (t_info_space_address _ _ (proj1 H14) H22).
+      forward_call (rsh, sh, gv, fi, ti, g1, t_info1, f_info, roots', outlier,
+                    (Z.to_nat i), (Z.to_nat (i + 1))).
+      1: do 4 (split; auto); rewrite H23; apply n_Sn.
+      Intros vret. destruct vret as [[g2 t_info2] roots2]. simpl fst in *.
+      localize [space_struct_rep sh t_info (Z.to_nat i);
+                space_struct_rep sh t_info (Z.to_nat (i + 1))].
+      unfold space_struct_rep, space_tri.
+      assert_PROP (offset_val
+                     8
+                     (force_val
+                        (sem_add_ptr_int (Tstruct _space noattr) Signed
+                                         (offset_val 0 (ti_heap_p t_info1)) (vint i)))
+                   = field_address space_type [StructField _limit]
+                                   (space_address t_info1 (Z.to_nat i))). {
+        change (Tstruct _space noattr) with space_type. rewrite H25.
+        unfold field_address. entailer!. rewrite if_true. 1: simpl; reflexivity.
 Abort.
