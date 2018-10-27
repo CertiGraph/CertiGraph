@@ -383,7 +383,7 @@ Qed.
 Definition valid_int_or_ptr (x: val) :=
   match x with
   | Vint i => Int.testbit i 0 = true
-  | Vptr b z => Ptrofs.testbit z 0 = false
+  | Vptr _ z => Ptrofs.testbit z 0 = false /\ Ptrofs.testbit z 1 = false
   | _ => False
   end.
 
@@ -401,12 +401,22 @@ Proof.
   - compute; reflexivity.
   - exists (Z.div Int.modulus 2). reflexivity.
 Qed.
-
+  
 Lemma four_divided_odd_false: forall z, (4 | z) -> Z.odd z = false.
 Proof.
-  intros. rewrite Zodd_mod. apply Zdivide_mod in H. rewrite Zmod_divides in H by omega.
-  destruct H. replace (4 * x)%Z with (2 * x * 2)%Z in H by omega. subst.
-  rewrite Z_mod_mult. unfold Zeq_bool. simpl. reflexivity.
+  intros. rewrite Zodd_mod. inversion H. 
+  replace (x * 4)%Z with (2 * x * 2)%Z in H0 by omega. subst.
+  rewrite Z_mod_mult; unfold Zeq_bool; reflexivity.
+Qed.
+
+Lemma four_divided_tenth_pl_false: forall i,
+    (4 | Ptrofs.unsigned i) -> Ptrofs.testbit i 1 = false.
+Proof.
+  intros. unfold Ptrofs.testbit. inversion H.
+  replace (x * 4)%Z with (2 * (x * 2))%Z in H0 by omega.
+  rewrite H0. rewrite Z.double_bits. simpl.
+  rewrite Zodd_mod; rewrite Z_mod_mult;
+  unfold Zeq_bool; reflexivity.
 Qed.
 
 Lemma vertex_rep_valid_int_or_ptr: forall sh g v,
@@ -415,14 +425,16 @@ Proof.
   intros. sep_apply (vertex_rep_isptr sh g v). Intros.
   unfold vertex_rep, vertex_at, vertex_address.
   remember (gen_start g (vgeneration v)) as vv. destruct vv; try contradiction.
-  inv_int i. simpl. rewrite !ptrofs_add_repr. entailer!.
+  inv_int i. entailer!.
   destruct H3 as [_ [_ [_ [? _]]]]. clear -H3. hnf in H3. inv H3.
   1: simpl in H; inversion H. assert (0 <= 0 < Zlength (make_fields_vals g v)). {
     split; [omega|]. rewrite fields_eq_length.
     destruct (raw_fields_head_cons (vlabel g v)) as [r [l [? _]]]. rewrite H.
     rewrite Zlength_cons. pose proof (Zlength_nonneg l). omega.
   } apply H4 in H. rewrite Z.mul_0_r, Z.add_0_r in H. clear H4. inv H. inv H0.
-  simpl in H1. apply four_divided_odd_false; assumption.
+  simpl in H1. split.
+  - simpl; rewrite !ptrofs_add_repr in *; apply four_divided_odd_false; assumption.
+  - rewrite !ptrofs_add_repr in *; apply four_divided_tenth_pl_false; assumption.
 Qed.
 
 Lemma graph_rep_generation_rep: forall g gen,
@@ -711,7 +723,9 @@ Proof.
   intros. unfold single_outlier_rep. Intros sh. remember (GC_Pointer2val p) as pp.
   clear Heqpp. entailer!. destruct H0 as [? [_ [_ [? _]]]].
   destruct pp; try contradiction. unfold align_compatible in H1. inv H1.
-  inv H2. simpl in H3. simpl. apply four_divided_odd_false; assumption.
+  inv H2. simpl in H3. split.
+  - simpl; apply four_divided_odd_false; assumption.
+  - apply four_divided_tenth_pl_false; assumption. 
 Qed.
 
 Import Share.
