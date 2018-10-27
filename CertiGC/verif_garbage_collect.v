@@ -29,6 +29,10 @@ Proof.
   rewrite Z2Nat.id by omega. simpl. f_equal.
 Qed.
 
+Ltac tc_val_Znth := entailer!; rewrite Znth_map by assumption;
+                    unfold space_tri; apply isptr_is_pointer_or_null;
+                    try assumption.
+
 Lemma body_garbage_collect:
   semax_body Vprog Gprog f_garbage_collect garbage_collect_spec.
 Proof.
@@ -226,16 +230,37 @@ Proof.
                     (Z.to_nat i), (Z.to_nat (i + 1))).
       1: do 4 (split; auto); rewrite H23; apply n_Sn.
       Intros vret. destruct vret as [[g2 t_info2] roots2]. simpl fst in *.
-      localize [space_struct_rep sh t_info (Z.to_nat i);
-                space_struct_rep sh t_info (Z.to_nat (i + 1))].
-      unfold space_struct_rep, space_tri.
-      assert_PROP (offset_val
-                     8
-                     (force_val
-                        (sem_add_ptr_int (Tstruct _space noattr) Signed
-                                         (offset_val 0 (ti_heap_p t_info1)) (vint i)))
-                   = field_address space_type [StructField _limit]
-                                   (space_address t_info1 (Z.to_nat i))). {
-        change (Tstruct _space noattr) with space_type. rewrite H25.
-        unfold field_address. entailer!. rewrite if_true. 1: simpl; reflexivity.
+      simpl snd in *. replace (ti_heap_p t_info1) with (ti_heap_p t_info2) by
+          (rewrite (proj1 H28); reflexivity). unfold thread_info_rep, heap_struct_rep.
+      Intros. assert (graph_has_gen g2 (Z.to_nat (i + 1))) by
+          (rewrite <- do_gen_graph_has_gen; eauto).
+      assert (graph_has_gen g2 (Z.to_nat i)) by (red in H30 |-* ; omega).
+      assert (isptr (space_start (Znth i (spaces (ti_heap t_info2))))). {
+        rewrite <- (Z2Nat.id i), <- nth_space_Znth,
+        <- (proj1 (gt_gs_compatible _ _ (proj1 H27) _ H31)) by omega.
+        apply start_isptr. }
+      assert (0 <= i < Zlength (spaces (ti_heap t_info2))) by
+          (rewrite spaces_size; rep_omega). forward.
+      1: tc_val_Znth; rewrite isptr_offset_val; assumption. forward. 1: tc_val_Znth.
+      rewrite Znth_map by assumption. unfold space_tri at 1 2.
+      assert (0 <= i + 1 < Zlength (spaces (ti_heap t_info2))) by
+          (rewrite spaces_size; rep_omega).
+      assert (isptr (space_start (Znth (i + 1) (spaces (ti_heap t_info2))))). {
+        rewrite <- (Z2Nat.id (i + 1)), <- nth_space_Znth,
+        <- (proj1 (gt_gs_compatible _ _ (proj1 H27) _ H30)) by omega.
+        apply start_isptr. } forward.
+      1: tc_val_Znth; rewrite isptr_offset_val; assumption. forward.
+      1: tc_val_Znth; rewrite isptr_offset_val; assumption.
+      rewrite Znth_map by assumption. unfold space_tri at 1 2. rewrite H23 in *.
+      assert (garbage_collect_condition g2 t_info2 roots2 f_info) by
+          (eapply (do_gen_gcc g1 t_info1 roots'); eauto).
+      assert (firstn_gen_clear g2 (Z.to_nat (i + 1))) by
+          (rewrite H23; eapply do_gen_firstn_gen_clear; eauto).
+      assert (safe_to_copy_to_except g2 (Z.to_nat (i + 1))) by
+          (rewrite H23; eapply do_gen_stcte; eauto).
+      forward_if True.
+      * destruct (space_start (Znth i (spaces (ti_heap t_info2)))); try contradiction.
+        destruct (space_start (Znth (i + 1) (spaces (ti_heap t_info2))));
+          try contradiction. Transparent denote_tc_samebase.
+        simpl.
 Abort.
