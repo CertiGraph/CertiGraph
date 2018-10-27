@@ -240,7 +240,7 @@ Lemma total_space_range: forall sp, 0 <= total_space sp <= Int.max_unsigned.
 Proof. intros. apply MSS_max_unsigned_range, total_space_tight_range. Qed.
 
 Lemma total_space_signed_range: forall sp,
-    Ptrofs.min_signed <= WORD_SIZE * (total_space sp) <= Ptrofs.max_signed.
+    Ptrofs.min_signed <= WORD_SIZE * total_space sp <= Ptrofs.max_signed.
 Proof. intros. apply MSS_max_4_signed_range, total_space_tight_range. Qed.
 
 Lemma used_space_signed_range: forall sp,
@@ -273,6 +273,12 @@ Lemma used_space_repable_signed: forall sp, repable_signed (used_space sp).
 Proof.
   intros. rewrite <- signed_range_repable_signed.
   pose proof (used_space_signed_range sp). rep_omega.
+Qed.
+
+Lemma total_space_repable_signed: forall sp, repable_signed (total_space sp).
+Proof.
+  intros. rewrite <- signed_range_repable_signed.
+  pose proof (total_space_signed_range sp). rep_omega.
 Qed.
 
 Lemma rest_space_repable_signed: forall sp,
@@ -5696,4 +5702,15 @@ Proof.
     eapply (svwl_stcg i (S i) _ g3); eauto.
     assert (graph_has_gen g1 n) by (erewrite frr_graph_has_gen; eauto).
     eapply (frr_stcg i (S i) _ _ g1); eauto.
+Qed.
+
+Lemma gcl_add_tail: forall l g1 roots1 g2 roots2 g3 roots3 g4 f_info i,
+    garbage_collect_loop f_info l roots1 g1 roots2 g2 ->
+    new_gen_relation (S i) g2 g3 ->
+    do_generation_relation i (S i) f_info roots2 roots3 g3 g4 ->
+    garbage_collect_loop f_info (l +:: i) roots1 g1 roots3 g4.
+Proof.
+  induction l; intros.
+  - simpl. inversion H. subst. eapply gcl_cons; eauto. constructor.
+  - inversion H. subst. clear H. simpl app. eapply gcl_cons; eauto.
 Qed.

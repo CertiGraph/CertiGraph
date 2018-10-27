@@ -18,6 +18,26 @@ Proof.
   reflexivity.
 Qed.
 
+Lemma sem_sub_pp_rest_space: forall s,
+    isptr (space_start s) ->
+    force_val
+      (sem_sub_pp int_or_ptr_type
+                  (offset_val (WORD_SIZE * total_space s) (space_start s))
+                  (offset_val (WORD_SIZE * used_space s) (space_start s))) =
+    Vint (Int.repr (total_space s - used_space s)).
+Proof.
+  intros. destruct (space_start s); try contradiction. simpl. destruct (eq_block b b).
+  2: exfalso; apply n; reflexivity. inv_int i.
+  rewrite !ptrofs_add_repr, ptrofs_sub_repr.
+  replace (ofs + WORD_SIZE * total_space s - (ofs + WORD_SIZE * used_space s)) with
+          (WORD_SIZE * (total_space s - used_space s))%Z by
+      (rewrite Z.mul_sub_distr_l; omega). simpl.
+  pose proof (rest_space_signed_range s). rewrite <- Z.mul_sub_distr_l in H0.
+  unfold Ptrofs.divs. rewrite !Ptrofs.signed_repr by rep_omega.
+  unfold vptrofs, Archi.ptr64. rewrite WORD_SIZE_eq, Z.mul_comm, Z.quot_mul,
+                               ptrofs_to_int_repr by omega. reflexivity.
+Qed.
+
 Lemma t_info_space_address: forall t_info i,
     0 <= i -> isptr (ti_heap_p t_info) ->
     force_val (sem_add_ptr_int space_type Signed
@@ -257,10 +277,39 @@ Proof.
       assert (firstn_gen_clear g2 (Z.to_nat (i + 1))) by
           (rewrite H23; eapply do_gen_firstn_gen_clear; eauto).
       assert (safe_to_copy_to_except g2 (Z.to_nat (i + 1))) by
-          (rewrite H23; eapply do_gen_stcte; eauto).
+          (rewrite H23; eapply do_gen_stcte; eauto). gather_SEP 4 5 6.
+      replace_SEP 0 (thread_info_rep sh t_info2 ti) by
+          (unfold thread_info_rep, heap_struct_rep; entailer!).
+      assert (garbage_collect_loop
+                f_info (nat_inc_list (Z.to_nat (i + 1))) roots g roots2 g2) by
+          (rewrite H23, nat_inc_list_S; eapply gcl_add_tail; eauto).
+      replace_SEP 5 (ti_token_rep t_info2) by
+          (erewrite ti_rel_token_the_same; eauto; entailer!).
       forward_if True.
       * destruct (space_start (Znth i (spaces (ti_heap t_info2)))); try contradiction.
         destruct (space_start (Znth (i + 1) (spaces (ti_heap t_info2))));
           try contradiction. Transparent denote_tc_samebase.
-        simpl.
+        unfold denote_tc_samebase. simpl. Opaque denote_tc_samebase. entailer!.
+      * change (Tpointer tvoid
+                         {| attr_volatile := false; attr_alignas := Some 2%N |})
+          with int_or_ptr_type in H39.
+        rewrite sem_sub_pp_total_space, sem_sub_pp_rest_space in H40; auto.
+        simpl in H40. apply typed_true_of_bool in H40. rewrite negb_true_iff in H40.
+        apply lt_repr_false in H40. 2: apply rest_space_repable_signed.
+        2: apply total_space_repable_signed.
+        assert (safe_to_copy_gen g2 (Z.to_nat i) (S (Z.to_nat i))). {
+          red. destruct H27 as [? _]. destruct H36 as [_ [_ [_ [_ ?]]]].
+          do 2 (erewrite <- ti_size_gen; eauto). rewrite <- H23 in *.
+          unfold gen_size, graph_gen_size. destruct (gt_gs_compatible _ _ H27 _ H30)
+            as [_ [_ ?]]. rewrite H41, !nth_space_Znth, !Z2Nat.id; omega. }
+        assert (graph_thread_info_compatible g2 t_info2) by (apply (proj1 H27)).
+        assert (graph_gen_clear g2 O) by (apply H37; rewrite H23; omega).
+        forward_call (rsh, sh, gv, fi, ti, g2, t_info2, f_info, roots2).
+        admit.
+      * forward. entailer!.
+      * Intros. Exists g2 roots2 t_info2. rewrite <- H23 in *. entailer!.
+  - Intros g2 roots2 t_info2. unfold all_string_constants. Intros.
+    forward_call ((gv ___stringlit_13),
+                  (map init_data2byte (gvar_init v___stringlit_13)), rsh).
+    exfalso; assumption.
 Abort.
