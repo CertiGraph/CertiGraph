@@ -405,7 +405,8 @@ Definition garbage_collect_spec :=
   POST [tvoid]
     EX g': LGraph, EX t_info': thread_info, EX roots': roots_t,
     PROP (super_compatible (g', t_info', roots') f_info outlier;
-          garbage_collect_relation f_info roots roots' g g')
+          garbage_collect_relation f_info roots roots' g g';
+          garbage_collect_condition g' t_info' roots' f_info)
     LOCAL ()
     SEP (all_string_constants rsh gv;
          fun_info_rep rsh f_info fi;
