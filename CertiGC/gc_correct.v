@@ -110,6 +110,25 @@ Proof.
     apply sound_fr_lcv_vv; assumption.
 Qed.
 
+Lemma lcv_src: forall g old new e v,
+    src (pregraph_copy_v g old new) e = v.
+Proof.
+  intros.
+  (* (In e new_edges_added -> v = new \/ ~ In e new_edges_added -> src g e = v). *)
+Abort.
+
+Lemma sound_fr_O_fde_correct: forall g g' from to p,
+    SoundGCGraph g -> graph_has_gen g to -> forward_relation from to 0 p g g' ->
+    field_decided_edges g'.
+Proof.
+  intros. destruct H as [?H ?H]. inversion H1; subst; try assumption.
+  - unfold field_decided_edges in *. intros ve e ?.
+    pose proof (sound_fr_lcv_vv _ v _ H2 H0). red in H5. rewrite H5 in H3. clear H5.
+    apply lcv_graph_has_v_inv in H3. 2: assumption. destruct H3.
+    + rewrite lcv_get_edges; auto. split; intros.
+      * destruct H5. simpl in H5.
+Abort.
+
 Lemma sound_fr_fde_correct: forall g g' from to p,
     SoundGCGraph g ->
     graph_has_gen g to ->
