@@ -267,6 +267,66 @@ Proof.
         localize [data_at sh node_type (vgamma2cdata (vgamma g2 y_root)) (pointer_val_val y_root)].
         rewrite H8. simpl vgamma2cdata. forward. unlocalize [whole_graph sh (Graph_gen_redirect_parent g2 y_root x_root H10 H11 H12)].
         1: rewrite H8; simpl vgamma2cdata; rewrite H13; apply (@graph_gen_redirect_parent_ramify _ (sSGG_VST sh)); auto.
+        remember (Graph_gen_redirect_parent g2 y_root x_root H10 H11 H12) as g3.
+        assert (uf_union g x y g3) by (rewrite Heqg3; simpl; apply (diff_root_union_2 g g1 g2 x y x_root y_root); auto).
+        localize [data_at sh node_type (vgamma2cdata (vgamma g2 x_root)) (pointer_val_val x_root)].
+        rewrite H7. simpl vgamma2cdata.
+        forward.
+        eapply drop_SEP_tc.
+        SearchAbout predicates_hered.boxy predicates_sl.extendM.
+        intros.
+        rewrite denote_tc_assert_andp.
+        apply extend_tc.extend_andp.
+        admit.
+        admit.
+        apply split_FRZ_in_SEP_spec; prove_split_FRZ_in_SEP.
+        entailer!.
+        admit.
+          apply extend_tc.extend_tc_expr
+        Locate extend_tc_prop.
+        intros; apply extend_tc.extend_prop.
+ intros;
+ try match goal with POSTCONDITION := @abbreviate ret_assert _ |- _ =>
+        clear POSTCONDITION
+      end;
+ try match goal with MORE_COMMANDS := @abbreviate statement _ |- _ =>
+        clear MORE_COMMANDS
+     end.
+ match goal with
+ | |- local _ && ?P |-- _ => go_lower; try simple apply empTrue
+ | |- ?P |-- _ =>
+    match type of P with
+    | ?T => unify T mpred; pull_out_props
+    end
+ | |- _ => fail "The entailer tactic works only on entailments  _ |-- _ "
+ end;
+ saturate_local.
+    repeat simplify_float2int;
+    autorewrite with gather_prop;
+    repeat (( simple apply derives_extract_prop
+                || simple apply derives_extract_prop');
+                fancy_intros true);
+    repeat erewrite unfold_reptype_elim in * by (apply JMeq_refl; reflexivity).
+
+   admit.
+    SearchAbout (_ -> _ * _ |-- !!_).
+    SearchAbout predicates_hered.boxy predicates_sl.extendM.
+(*
+   simpl_compare;
+   simpl_denote_tc;
+   subst_any;
+   try autorewrite with entailer_rewrite in *;
+   try solve_valid_pointer;
+   repeat data_at_conflict_neq.
+
+
+*)
+
+        
+        unlocalize [whole_graph sh (Graph_vgen g3 x_root (rankXRoot + 1)%nat)].
+
+
+
         set (g3 := (Graph_gen_redirect_parent g2 y_root x_root H10 H11 H12)).
         assert (uf_union g x y g3) by (subst g3; simpl; apply (diff_root_union_2 g g1 g2 x y x_root y_root); auto).
         (* xRoot -> rank = xRank + 1; *)
