@@ -5138,7 +5138,7 @@ Inductive garbage_collect_loop (f_info : fun_info)
 
 Definition garbage_collect_relation (f_info: fun_info)
            (roots1 roots2: roots_t) (g1 g2: LGraph): Prop :=
-  exists n, garbage_collect_loop f_info (nat_inc_list n) roots1 g1 roots2 g2 /\
+  exists n, garbage_collect_loop f_info (nat_inc_list (S n)) roots1 g1 roots2 g2 /\
             safe_to_copy_gen g2 n (S n).
 
 Definition garbage_collect_condition (g: LGraph) (t_info : thread_info)
@@ -5713,4 +5713,13 @@ Proof.
   induction l; intros.
   - simpl. inversion H. subst. eapply gcl_cons; eauto. constructor.
   - inversion H. subst. clear H. simpl app. eapply gcl_cons; eauto.
+Qed.
+
+Lemma safe_to_copy_complete: forall g i,
+    safe_to_copy_to_except g (S i) -> safe_to_copy_gen g i (S i) -> safe_to_copy g.
+Proof.
+  intros. unfold safe_to_copy_to_except in H. unfold safe_to_copy. intros.
+  destruct (Nat.eq_dec n i).
+  - subst. assumption.
+  - specialize (H (S n)). simpl in H. apply H; auto.
 Qed.

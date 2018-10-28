@@ -407,7 +407,7 @@ Definition garbage_collect_spec :=
     PROP (super_compatible (g', t_info', roots') f_info outlier;
           garbage_collect_relation f_info roots roots' g g';
           garbage_collect_condition g' t_info' roots' f_info;
-          safe_to_copy g)
+          safe_to_copy g')
     LOCAL ()
     SEP (all_string_constants rsh gv;
          fun_info_rep rsh f_info fi;
