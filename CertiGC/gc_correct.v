@@ -82,6 +82,22 @@ Definition gc_graph_iso (g1: LGraph) (roots1: roots_t)
     (forall v, vvalid sub_g1 v -> vlabel sub_g1 v = vlabel sub_g2 (vmap v)) /\
     graph_iso sub_g1 sub_g2 vmap emap.
 
+Lemma cvae_vvalid_eq: forall g v' l v0,
+    vvalid (fold_left (copy_v_add_edge v') l g) v0 <-> vvalid g v0.
+Proof.
+  intros. split; intro.
+  - revert g H. induction l; intros; simpl in H; [assumption|].
+    apply IHl in H; replace (vvalid (copy_v_add_edge v' g a) v0) with (vvalid g v0) in H by reflexivity; assumption.
+  - revert g H. induction l; intros; simpl; [assumption|].
+    apply IHl; replace (vvalid (copy_v_add_edge v' g a) v0) with (vvalid g v0) by reflexivity; assumption.
+Qed.
+
+Lemma lcv_vvalid_disj: forall g v v' to,
+    vvalid (lgraph_copy_v g v to) v' <-> vvalid g v' \/ v' = new_copied_v g to.
+  unfold lgraph_copy_v; simpl; unfold pregraph_copy_v.
+  intros ? ? ? ?. apply cvae_vvalid_eq.
+Qed.
+
 Lemma sound_fr_lcv_vv: forall g v to,
     vertex_valid g ->
     graph_has_gen g to ->
@@ -108,6 +124,15 @@ Proof.
   - replace (vertex_valid new_g) with
         (vertex_valid (lgraph_copy_v g (dst g e) to)) by (subst new_g; reflexivity).
     apply sound_fr_lcv_vv; assumption.
+Qed.
+
+Lemma lcv_get_edges: forall (g: LGraph) v v' to,
+    graph_has_v g v' ->
+    graph_has_gen g to ->
+    get_edges (lgraph_copy_v g v to) v' = get_edges g v'.
+Proof.
+  intros. unfold get_edges, make_fields, make_fields'.
+  rewrite <- lcv_raw_fields by assumption. reflexivity.
 Qed.
 
 Lemma lcv_src: forall g old new e v,
@@ -139,25 +164,31 @@ Proof.
   - unfold field_decided_edges in H2.
     split; intros.
     + destruct H5.
-      (* reminder, I can get vertex_valid g' if I want *)
-      assert (graph_has_v (lgraph_copy_v g v to) v0). {
-        pose proof (sound_fr_lcv_vv g v to H3 H0).
-        unfold vertex_valid in H7.
-        rewrite H7 in H; assumption.
-      }
+      (* pose proof (sound_fr_lcv_vv g v to H3 H0). *)
+      (* unfold vertex_valid in H7. *)
+      (* rewrite H7 in H. *)
       rewrite lcv_vvalid_disj in H. destruct H.
       * assert (graph_has_v g v0) by (unfold vertex_valid in H3; rewrite H3 in H; assumption).
         rewrite lcv_get_edges by assumption.
         apply H2; try assumption.
-        simpl in H5.
-        (* stuck here because I don't know anything useful about src or evalid. *)
-        admit.
+        simpl in H5. split.
+        -- admit.
+        -- unfold lgraph_copy_v in H6. simpl in H6.
+           unfold pregraph_copy_v in H6.
+           (* dead? *)
+           admit.
+      * admit.
+    + admit.
+      (* split. *)
+      (* * rewrite lcv_vvalid_disj in H. destruct H. *)
+(* addVertex_preserve_evalid: *)
+(* forall (V E : Type) (EV : EqDec V eq) (EE : EqDec E eq)  *)
+(*     (g : PreGraph V E) (e : E) (v : V), *)
+(*   evalid g e -> evalid (pregraph_add_vertex g v) e *)
 (* Lemma lcv_src: forall g e v v' to v0, *)
 (*     (* vvalid g v0 -> *) *)
 (*     src (pregraph_copy_v g v v0) e = v' -> *)
 (*     src g e = v' \/ src (pregraph_copy_v g v v0) e = new_copied_v g to. *)        
-      * admit.
-    + admit.
   - replace (field_decided_edges new_g) with
         (field_decided_edges (lgraph_copy_v g (dst g e) to)) by
         (subst new_g; reflexivity).

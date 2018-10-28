@@ -2284,14 +2284,6 @@ Proof.
       [| | destruct H; [subst e; simpl; reflexivity|]]; apply IHl in H; assumption.
 Qed.
 
-Lemma get_edges_raw_fields: forall g g' v,
-    raw_fields (vlabel g v) = raw_fields (vlabel g' v) ->
-    get_edges g v = get_edges g' v.
-Proof.
-  intros. unfold get_edges, make_fields, make_fields'.
-  rewrite H. reflexivity.
-Qed.
-
 Lemma lmc_no_dangling_dst: forall g old new,
     no_dangling_dst g -> no_dangling_dst (lgraph_mark_copied g old new).
 Proof.
@@ -2619,22 +2611,6 @@ Lemma lcv_vertex_address_old: forall g v to x,
     vertex_address (lgraph_copy_v g v to) x = vertex_address g x.
 Proof.
   intros. apply lcv_vertex_address; [|apply graph_has_v_in_closure]; assumption.
-Qed.
-
-Lemma cvae_vvalid_eq: forall g v' l v0,
-    vvalid (fold_left (copy_v_add_edge v') l g) v0 <-> vvalid g v0.
-Proof.
-  intros. split; intro.
-  - revert g H. induction l; intros; simpl in H; [assumption|].
-    apply IHl in H; replace (vvalid (copy_v_add_edge v' g a) v0) with (vvalid g v0) in H by reflexivity; assumption.
-  - revert g H. induction l; intros; simpl; [assumption|].
-    apply IHl; replace (vvalid (copy_v_add_edge v' g a) v0) with (vvalid g v0) by reflexivity; assumption.
-Qed.
-
-Lemma lcv_vvalid_disj: forall g v v' to,
-    vvalid (lgraph_copy_v g v to) v' <-> vvalid g v' \/ v' = new_copied_v g to.
-  unfold lgraph_copy_v; simpl; unfold pregraph_copy_v.
-  intros ? ? ? ?. apply cvae_vvalid_eq.
 Qed.
 
 Lemma lcv_fun_thread_arg_compatible_unchanged: forall
@@ -3397,15 +3373,6 @@ Lemma lcv_raw_fields: forall g v to x,
 Proof.
   intros. unfold lgraph_copy_v. rewrite <- lmc_raw_fields, lacv_vlabel_old.
   1: reflexivity. apply graph_has_v_not_eq; assumption.
-Qed.
-
-Lemma lcv_get_edges: forall (g: LGraph) v v' to,
-    graph_has_v g v' ->
-    graph_has_gen g to ->
-    get_edges (lgraph_copy_v g v to) v' = get_edges g v'.
-Proof.
-  intros. unfold get_edges, make_fields, make_fields'.
-  rewrite <- lcv_raw_fields by assumption. reflexivity.
 Qed.
 
 Lemma lcv_mfv_Zlen_eq: forall g v v' to,
