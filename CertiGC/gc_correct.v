@@ -18,6 +18,7 @@ Require Import RamifyCoq.graph.graph_model.
 Require Import RamifyCoq.graph.graph_gen.
 Require Import RamifyCoq.graph.path_lemmas.
 Require Import RamifyCoq.graph.subgraph2.
+Require Import RamifyCoq.graph.graph_isomorphism.
 Require Import RamifyCoq.CertiGC.GCGraph.
 Import ListNotations.
 
@@ -43,44 +44,6 @@ Definition Graph :=
   GeneralGraph VType EType raw_vertex_block unit graph_info (fun g => SoundGCGraph g).
 
 Local Coercion lg_gg : GeneralGraph >-> LabeledGraph.
-
-Definition injective {A B} (f: A -> B): Prop := forall x y, f x = f y -> x = y.
-
-Definition surjective {A B} (f: A -> B): Prop := forall y, exists x, f x = y.
-
-Definition bijective {A B} (f : A -> B): Prop := injective f /\ surjective f.
-
-(* graph_iso defines graph isomorphism between two graphs *)
-
-Definition graph_iso (g1 g2: LGraph)
-           (vmap: VType -> VType) (emap: EType -> EType): Prop :=
-  bijective vmap /\ bijective emap /\
-  (forall v: VType, vvalid g1 v <-> vvalid g2 (vmap v)) /\
-  (forall e: EType, evalid g1 e <-> evalid g2 (emap e)) /\
-  (forall (e: EType) (v: VType),
-      evalid g1 e -> src g1 e = v -> src g2 (emap e) = vmap v) /\
-  (forall (e: EType) (v: VType),
-      evalid g1 e -> dst g1 e = v -> dst g2 (emap e) = vmap v).
-
-Definition root_eq (vmap: VType -> VType) (root_pair: root_t * root_t): Prop :=
-  let (root1, root2) := root_pair in
-  match root1 with
-  | inl (inl z) => root2 = inl (inl z)
-  | inl (inr gc) => root2 = inl (inr gc)
-  | inr r => root2 = inr (vmap r)
-  end.
-
-Definition gc_graph_iso (g1: LGraph) (roots1: roots_t)
-           (g2: LGraph) (roots2: roots_t): Prop :=
-  let vertices1 := filter_sum_right roots1 in
-  let vertices2 := filter_sum_right roots2 in
-  let sub_g1 := reachable_sub_labeledgraph g1 vertices1 in
-  let sub_g2 := reachable_sub_labeledgraph g2 vertices2 in
-  length roots1 = length roots2 /\
-  exists vmap emap,
-    Forall (root_eq vmap) (combine roots1 roots2) /\
-    (forall v, vvalid sub_g1 v -> vlabel sub_g1 v = vlabel sub_g2 (vmap v)) /\
-    graph_iso sub_g1 sub_g2 vmap emap.
 
 Lemma cvae_vvalid_eq: forall g v' l v0,
     vvalid (fold_left (copy_v_add_edge v') l g) v0 <-> vvalid g v0.
@@ -395,3 +358,61 @@ Proof.
   (* rewrite (frr_graph_has_gen _ _ _ _ _ _ _ H0 H1 to) in H0. *)
   (* apply (sound_dsr_correct _ _ _ _ _ H3 H0 H2). *)
 Abort.
+
+(** GC Graph Isomorphism *)
+
+Definition root_map (vmap: VType -> VType) (r: root_t): root_t :=
+  match r with
+  | inl x => inl x
+  | inr r => inr (vmap r)
+  end.
+
+Lemma bijective_root_map: forall vmap1 vmap2,
+    bijective vmap1 vmap2 -> bijective (root_map vmap1) (root_map vmap2).
+Proof.
+  intros. destruct H. split; intros.
+  - destruct x, y; simpl in H; inversion H; try reflexivity. apply injective in H1.
+    subst; reflexivity.
+  - destruct x; simpl; try reflexivity. rewrite surjective. reflexivity.
+Qed.
+
+Definition gc_graph_iso (g1: LGraph) (roots1: roots_t)
+           (g2: LGraph) (roots2: roots_t): Prop :=
+  let vertices1 := filter_sum_right roots1 in
+  let vertices2 := filter_sum_right roots2 in
+  let sub_g1 := reachable_sub_labeledgraph g1 vertices1 in
+  let sub_g2 := reachable_sub_labeledgraph g2 vertices2 in
+  exists vmap12 vmap21 emap12 emap21,
+    roots2 = map (root_map vmap12) roots1 /\
+    label_preserving_graph_isomorphism_explicit
+      sub_g1 sub_g2 vmap12 vmap21 emap12 emap21.
+
+Lemma gc_graph_iso_refl: forall g roots, gc_graph_iso g roots g roots.
+Proof.
+  intros. red. exists id, id, id, id. split. 2: apply lp_graph_iso_exp_refl.
+  clear. induction roots; simpl; auto. rewrite <- IHroots. f_equal. destruct a; auto.
+Qed.
+
+Lemma gc_graph_iso_sym: forall g1 roots1 g2 roots2,
+    gc_graph_iso g1 roots1 g2 roots2 -> gc_graph_iso g2 roots2 g1 roots1.
+Proof.
+  intros. unfold gc_graph_iso in *.
+  destruct H as [vmap12 [vmap21 [emap12 [emap21 [? ?]]]]].
+  exists vmap21, vmap12, emap21, emap12. split.
+  - destruct H0 as [[?H _] _]. clear -H H0.
+    apply bijective_root_map, bijective_map, bijective_sym in H0. destruct H0.
+    rewrite H, surjective. reflexivity.
+  - apply lp_graph_iso_exp_sym. assumption.
+Qed.
+
+Lemma gc_graph_iso_trans: forall g1 roots1 g2 roots2 g3 roots3,
+    gc_graph_iso g1 roots1 g2 roots2 -> gc_graph_iso g2 roots2 g3 roots3 ->
+    gc_graph_iso g1 roots1 g3 roots3.
+Proof.
+  intros. unfold gc_graph_iso in *. destruct H as [v12 [v21 [e12 [e21 [? ?]]]]].
+  destruct H0 as [v23 [v32 [e23 [e32 [? ?]]]]].
+  exists (compose v23 v12), (compose v21 v32), (compose e23 e12), (compose e21 e32).
+  split. 2: eapply lp_graph_iso_exp_trans; eauto.
+  rewrite H0. rewrite H. rewrite map_map. clear. induction roots1; simpl; auto.
+  rewrite IHroots1. f_equal. destruct a; simpl; reflexivity.  
+Qed.
