@@ -135,23 +135,81 @@ Proof.
   rewrite <- lcv_raw_fields by assumption. reflexivity.
 Qed.
 
-Lemma lcv_src: forall g old new e v,
-    src (pregraph_copy_v g old new) e = v.
+Lemma cvae_src_new: forall new l g e,
+    src g e = new ->
+    src (fold_left (copy_v_add_edge new) l g) e = new.
 Proof.
-  intros.
-  (* (In e new_edges_added -> v = new \/ ~ In e new_edges_added -> src g e = v). *)
-Abort.
+  intros. revert g H. induction l.
+  1: simpl; intros; assumption.
+  intros. simpl.
+  apply IHl. simpl. unfold updateEdgeFunc.
+  if_tac; [reflexivity | assumption].
+Qed.
+
+Lemma cvae_src_disj: forall g g' new (e: EType) (l: list (EType * VType)),
+    g' = (fold_left (copy_v_add_edge new) l g) ->
+    (In e (map fst l) -> src g' e = new) /\
+    (~ In e (map fst l) -> src g' e = src g e).
+Proof.
+  intros. split.
+  - revert g H. induction l; [inversion 2|].
+    intros. simpl in H.
+    simpl in H0. destruct H0.
+    + assert (src (copy_v_add_edge new g a) e = new). {
+        simpl; rewrite H0; unfold updateEdgeFunc.
+        apply if_true; apply equiv_reflexive.
+      }
+      rewrite H. apply (cvae_src_new  _ _ _ _ H1).
+    + apply (IHl (copy_v_add_edge new g a)); assumption.
+  - revert g H. induction l.
+    1: intros; simpl in H; rewrite H; reflexivity.
+    intros. simpl in H0; unfold not in H0.
+    simpl in H; apply IHl in H.
+    2: intro; apply H0; right; assumption.
+    rewrite H; simpl; unfold updateEdgeFunc; apply if_false.
+    intro. apply H0. left. assumption. 
+Qed.
+
+Lemma pcv_src_disj: forall g old new e v,
+    src (pregraph_copy_v g old new) e = v ->
+    v = new \/ v = src g e.
+Proof.
+  intros. unfold pregraph_copy_v in H.
+  remember (combine (combine (repeat new (Datatypes.length (get_edges g old)))
+                             (map snd (get_edges g old))) (map (dst g)
+                                                               (get_edges g old))).
+  remember (fold_left (copy_v_add_edge new) l (pregraph_add_vertex g new)) as g'.
+  destruct (cvae_src_disj _ _ _ e _ Heqg').
+  rewrite <- H.
+  assert (In e (map fst l) \/ ~ In e (map fst l)) by (apply Classical_Prop.classic).
+  destruct H2; [left; apply H0; assumption | right; apply H1; assumption].
+Qed.
 
 Lemma sound_fr_O_fde_correct: forall g g' from to p,
-    SoundGCGraph g -> graph_has_gen g to -> forward_relation from to 0 p g g' ->
+    SoundGCGraph g ->
+    graph_has_gen g to ->
+    forward_relation from to 0 p g g' ->
     field_decided_edges g'.
 Proof.
   intros. destruct H as [?H ?H]. inversion H1; subst; try assumption.
   - unfold field_decided_edges in *. intros ve e ?.
     pose proof (sound_fr_lcv_vv _ v _ H2 H0). red in H5. rewrite H5 in H3. clear H5.
-    apply lcv_graph_has_v_inv in H3. 2: assumption. destruct H3.
-    + rewrite lcv_get_edges; auto. split; intros.
-      * destruct H5. simpl in H5.
+    apply lcv_graph_has_v_inv in H3. 2: assumption.
+    split; intros.
+    + destruct H5. simpl in H5.
+      apply pcv_src_disj in H5. destruct H3; destruct H5.
+      * exfalso; apply (graph_has_v_not_eq _ to) in H3;
+          unfold not in H3; apply (H3 H5).
+      * rewrite lcv_get_edges by assumption.
+        unfold vertex_valid in H2; rewrite <- H2 in H3.
+        apply (H _ _ H3).
+        split; [symmetry; assumption|].
+        unfold lgraph_copy_v in H6. simpl in H6.
+        admit. (* this is where I am right now. Admitting just to push. *)
+      * admit.
+      * admit.
+    + admit.
+  - admit.
 Abort.
 
 Lemma sound_fr_fde_correct: forall g g' from to p,
@@ -179,18 +237,18 @@ Proof.
            admit.
       * admit.
     + admit.
-      (* split. *)
-      (* * rewrite lcv_vvalid_disj in H. destruct H. *)
-(* addVertex_preserve_evalid: *)
-(* forall (V E : Type) (EV : EqDec V eq) (EE : EqDec E eq)  *)
-(*     (g : PreGraph V E) (e : E) (v : V), *)
-(*   evalid g e -> evalid (pregraph_add_vertex g v) e *)
-(* Lemma lcv_src: forall g e v v' to v0, *)
-(*     (* vvalid g v0 -> *) *)
-(*     src (pregraph_copy_v g v v0) e = v' -> *)
-(*     src g e = v' \/ src (pregraph_copy_v g v v0) e = new_copied_v g to. *)        
+  (* split. *)
+  (* * rewrite lcv_vvalid_disj in H. destruct H. *)
+  (* addVertex_preserve_evalid: *)
+  (* forall (V E : Type) (EV : EqDec V eq) (EE : EqDec E eq)  *)
+  (*     (g : PreGraph V E) (e : E) (v : V), *)
+  (*   evalid g e -> evalid (pregraph_add_vertex g v) e *)
+  (* Lemma lcv_src: forall g e v v' to v0, *)
+  (*     (* vvalid g v0 -> *) *)
+  (*     src (pregraph_copy_v g v v0) e = v' -> *)
+  (*     src g e = v' \/ src (pregraph_copy_v g v v0) e = new_copied_v g to. *)        
   - replace (field_decided_edges new_g) with
-        (field_decided_edges (lgraph_copy_v g (dst g e) to)) by
+      (field_decided_edges (lgraph_copy_v g (dst g e) to)) by
         (subst new_g; reflexivity).
     (* potential for reuse of the first branch *)
     admit.
@@ -205,7 +263,7 @@ Proof.
   intros.
   admit.
   (* split; [apply (sound_fr_fde_correct _ _ _ _ _ H H0 H1) | *)
-          (* apply (sound_fr_vv_correct _ _ _ _ _ H H0 H1)]. *)
+  (* apply (sound_fr_vv_correct _ _ _ _ _ H H0 H1)]. *)
 Abort.
 
 Lemma sound_frl_correct: forall g g' from to r1 r2 fi il,
