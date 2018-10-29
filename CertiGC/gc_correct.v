@@ -146,6 +146,19 @@ Proof.
   if_tac; [reflexivity | assumption].
 Qed.
 
+Lemma cvae_src': forall new l g e v,
+    (* some conditions, like noDup *)
+    src g e = v ->
+    src (fold_left (copy_v_add_edge new) l g) e = v.
+Proof.
+  intros. revert g H. induction l.
+  1: simpl; intros; assumption.
+  intros. simpl.
+  apply IHl. simpl. unfold updateEdgeFunc.
+  rewrite H. apply if_false.
+  intro.
+Abort.
+
 Lemma cvae_src_disj: forall g g' new (e: EType) (l: list (EType * VType)),
     g' = (fold_left (copy_v_add_edge new) l g) ->
     (In e (map fst l) -> src g' e = new) /\
@@ -185,6 +198,25 @@ Proof.
   destruct H2; [left; apply H0; assumption | right; apply H1; assumption].
 Qed.
 
+Lemma pcv_evalid: forall g old new e ,
+    (* graph_has_v g v -> *)
+    (* v = src g e -> *)
+    evalid (pregraph_copy_v g old new) e ->
+    evalid g e.
+Proof.
+  intros. unfold pregraph_copy_v in H.
+  remember (combine (combine (repeat new (Datatypes.length (get_edges g old)))
+                             (map snd (get_edges g old))) (map (dst g)
+                                                               (get_edges g old))).
+  clear Heql.
+  induction l.
+  - simpl; intros. assumption.
+  - intros. simpl in H. apply IHl. clear IHl.
+    unfold copy_v_add_edge in H at 2.
+    destruct a; simpl in H.
+    admit.
+Abort.
+
 Lemma sound_fr_O_fde_correct: forall g g' from to p,
     SoundGCGraph g ->
     graph_has_gen g to ->
@@ -205,10 +237,38 @@ Proof.
         apply (H _ _ H3).
         split; [symmetry; assumption|].
         unfold lgraph_copy_v in H6. simpl in H6.
-        admit. (* this is where I am right now. Admitting just to push. *)
-      * admit.
-      * admit.
-    + admit.
+        rewrite H2 in H3. admit.
+      * rewrite H5. unfold lgraph_copy_v. admit.
+      * exfalso.
+        assert (~ graph_has_v g ve). {
+          intro. apply (graph_has_v_not_eq _ to) in H7.
+          unfold not in H7; apply H7; assumption.
+        }
+        (* can get contradiction from these? *)
+        admit.
+    + split.
+      * destruct H3.
+        -- rewrite lcv_get_edges in H5 by assumption.
+           unfold vertex_valid in H2.
+           rewrite <- H2 in H3.
+           rewrite <- H in H5 by assumption.
+           destruct H5.
+           unfold lgraph_copy_v. simpl.
+           unfold pregraph_copy_v.
+           remember (combine
+          (combine (repeat (new_copied_v g to) (Datatypes.length (get_edges g v)))
+                   (map snd (get_edges g v))) (map (dst g) (get_edges g v))).
+           remember (pregraph_add_vertex g (new_copied_v g to)) as g'. admit.
+        -- unfold lgraph_copy_v. simpl. rewrite H3.
+           unfold pregraph_copy_v. apply cvae_src_new.
+           admit.
+      * destruct H3.
+        -- rewrite lcv_get_edges in H5 by assumption.
+           rewrite <- H in H5. destruct H5.
+           ++ unfold lgraph_copy_v. simpl. unfold pregraph_copy_v.
+              admit.
+           ++ unfold vertex_valid in H2; rewrite <- H2 in H3; assumption.
+        -- admit.
   - admit.
 Abort.
 
