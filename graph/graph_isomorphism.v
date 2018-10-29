@@ -1,4 +1,5 @@
 Require Import Coq.Program.Basics.
+Require Import Coq.Lists.List.
 Require Import RamifyCoq.graph.graph_model.
 Require Import RamifyCoq.lib.EquivDec_ext.
 
@@ -28,6 +29,15 @@ Proof.
   intros. destruct H, H0. split; intros; unfold compose in *.
   - apply injective0, injective1. assumption.
   - rewrite surjective0. apply surjective1.
+Qed.
+
+Lemma bijective_map: forall `(f: A -> B) (g: B -> A),
+    bijective f g -> bijective (map f) (map g).
+Proof.
+  intros. destruct H. split; intros.
+  - revert y H. induction x; intros; destruct y; simpl in H; [|inversion H..]; auto.
+    f_equal. 1: apply injective0; auto. apply IHx; assumption.
+  - induction x; simpl; auto. rewrite IHx. f_equal. apply surjective0.
 Qed.
 
 Record pregraph_isomorphism_explicit
