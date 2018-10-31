@@ -310,6 +310,7 @@ Definition gc_graph_quasi_iso (g1: LGraph) (roots1: roots_t)
     forall v1 v2, In (v1, v2) l ->
                   vvalid g1 v1 /\ vvalid g2 v2 /\ vgeneration v1 = from /\
                   vgeneration v2 = to /\ vlabel g1 v1 = vlabel g2 v2 /\
+                  reachable_through_set g1 (filter_sum_right roots1) v1 /\
                   (forall e1, In e1 (get_edges g1 v1) ->
                               let e2 := (v2, snd e1) in
                               In e2 (get_edges g2 v2) /\

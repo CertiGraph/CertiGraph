@@ -1473,7 +1473,8 @@ Lemma graph_rep_reset: forall (g: LGraph) (gen: nat),
     graph_has_gen g gen ->
     graph_rep g = graph_rep (reset_nth_gen_graph gen g) * generation_rep g gen.
 Proof.
-  intros. unfold graph_rep. simpl. rewrite reset_nth_gen_info_length.
+  intros. unfold graph_rep. simpl.
+  rewrite reset_nth_gen_info_length, remove_ve_glabel_unchanged.
   remember (length (g_gen (glabel g))). pose proof H as HS. red in H.
   rewrite <- Heqn in H. destruct (nat_inc_list_Permutation_cons _ _ H) as [l ?].
   rewrite !(iter_sepcon_permutation _ H0). simpl.
