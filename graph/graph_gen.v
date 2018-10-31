@@ -54,6 +54,9 @@ Definition predicate_weak_evalid (g: PreGraph V E) (p: V -> Prop): Ensemble E :=
 Definition addValidFunc {T: Type} (v: T) (validFunc: Ensemble T) : Ensemble T :=
   fun n => validFunc n \/ n = v.
 
+Definition removeValidFunc {T: Type} (v: T) (validFunc: Ensemble T) : Ensemble T :=
+  fun n => validFunc n /\ n <> v.
+
 Definition update_vlabel (vlabel: V -> DV) (x: V) (d: DV) :=
   fun v => if equiv_dec x v then d else vlabel v.
 
@@ -171,6 +174,28 @@ Proof. intros. simpl. unfold updateEdgeFunc. destruct (equiv_dec e e'); intuitio
 
 Lemma addEdge_dst_iff: forall g e s t e' x, dst (pregraph_add_whole_edge g e s t) e' = x <-> ((e <> e' /\ dst g e' = x) \/ (e = e' /\ t = x)).
 Proof. intros. simpl. unfold updateEdgeFunc. destruct (equiv_dec e e'); intuition. Qed.
+
+Definition pregraph_remove_vertex (g: Graph) (v: V) : Graph :=
+  @Build_PreGraph V E EV EE (removeValidFunc v (vvalid g)) (evalid g) (src g) (dst g).
+
+Lemma remove_vertex_preserve_vvalid: forall g v v',
+    vvalid (pregraph_remove_vertex g v') v -> vvalid g v.
+Proof. intros. hnf in H. apply (proj1 H). Qed.
+
+Lemma remove_vertex_remove_vvalid: forall g v,
+    ~ vvalid (pregraph_remove_vertex g v) v.
+Proof. repeat intro. hnf in H. apply (proj2 H). reflexivity. Qed.
+
+Definition pregraph_remove_edge (g: Graph) (e: E): Graph :=
+  @Build_PreGraph V E EV EE (vvalid g) (removeValidFunc e (evalid g)) (src g) (dst g).
+
+Lemma remove_edge_preserve_evalid: forall g e e',
+    evalid (pregraph_remove_edge g e') e -> evalid g e.
+Proof. intros. hnf in H. apply (proj1 H). Qed.
+
+Lemma remove_edge_remove_evalid: forall g e,
+    ~ evalid (pregraph_remove_edge g e) e.
+Proof. repeat intro. hnf in H. apply (proj2 H). reflexivity. Qed.
 
 Definition pregraph_gen_dst (g : Graph) (e : E) (t : V) :=
   @Build_PreGraph V E EV EE (vvalid g) (evalid g) (src g) (updateEdgeFunc (dst g) e t).
