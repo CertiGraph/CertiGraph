@@ -926,20 +926,20 @@ Definition reset_nth_glabel (n: nat) (g: LGraph) : LGraph :=
   Build_LabeledGraph _ _ _ (pg_lg g) (vlabel g) (elabel g)
                      (reset_nth_graph_info n (glabel g)).
 
-Definition reset_nth_gen_graph (n: nat) (g: LGraph) : LGraph :=
+Definition reset_graph (n: nat) (g: LGraph) : LGraph :=
   reset_nth_glabel n (remove_nth_gen_ve g n).
 
 Lemma graph_has_gen_reset: forall (g: LGraph) gen1 gen2,
-    graph_has_gen (reset_nth_gen_graph gen1 g) gen2 <-> graph_has_gen g gen2.
+    graph_has_gen (reset_graph gen1 g) gen2 <-> graph_has_gen g gen2.
 Proof.
   intros. unfold graph_has_gen. simpl. rewrite reset_nth_gen_info_length.
   rewrite remove_ve_glabel_unchanged. reflexivity.
 Qed.
 
 Lemma reset_nth_gen_diff: forall g i j,
-    i <> j -> nth_gen (reset_nth_gen_graph j g) i = nth_gen g i.
+    i <> j -> nth_gen (reset_graph j g) i = nth_gen g i.
 Proof.
-  intros. unfold nth_gen, reset_nth_gen_graph. simpl.
+  intros. unfold nth_gen, reset_graph. simpl.
   rewrite remove_ve_glabel_unchanged.
   apply reset_nth_gen_info_diff. assumption.
 Qed.
@@ -1115,24 +1115,24 @@ Proof.
 Qed.
 
 Lemma vertex_address_reset: forall (g: LGraph) v n,
-    vertex_address (reset_nth_gen_graph n g) v = vertex_address g v.
+    vertex_address (reset_graph n g) v = vertex_address g v.
 Proof.
-  intros. apply vertex_address_the_same; unfold reset_nth_gen_graph; simpl.
+  intros. apply vertex_address_the_same; unfold reset_graph; simpl.
   - intros. rewrite remove_ve_vlabel_unchanged. reflexivity.
   - rewrite remove_ve_glabel_unchanged, start_address_reset. reflexivity.
 Qed.
 
 Lemma make_fields_reset: forall (g: LGraph) v n,
-    make_fields_vals (reset_nth_gen_graph n g) v = make_fields_vals g v.
+    make_fields_vals (reset_graph n g) v = make_fields_vals g v.
 Proof.
-  intros. apply make_fields_the_same; unfold reset_nth_gen_graph; simpl; intros.
+  intros. apply make_fields_the_same; unfold reset_graph; simpl; intros.
   - apply remove_ve_dst_unchanged.
   - apply remove_ve_vlabel_unchanged.
   - rewrite remove_ve_glabel_unchanged. apply start_address_reset.
 Qed.
 
 Lemma make_header_reset: forall (g: LGraph) v n,
-    make_header (reset_nth_gen_graph n g) v = make_header g v.
+    make_header (reset_graph n g) v = make_header g v.
 Proof.
   intros. unfold make_header. simpl vlabel. rewrite remove_ve_vlabel_unchanged.
   reflexivity.
@@ -1698,14 +1698,14 @@ Qed.
 Definition nth_sh g gen := generation_sh (nth_gen g gen).
 
 Lemma reset_nth_sh_diff: forall g i j,
-    i <> j -> nth_sh (reset_nth_gen_graph j g) i = nth_sh g i.
+    i <> j -> nth_sh (reset_graph j g) i = nth_sh g i.
 Proof. intros. unfold nth_sh. rewrite reset_nth_gen_diff; auto. Qed.
 
 Lemma reset_nth_sh: forall g i j,
-    nth_sh (reset_nth_gen_graph j g) i = nth_sh g i.
+    nth_sh (reset_graph j g) i = nth_sh g i.
 Proof.
   intros. destruct (Nat.eq_dec i j).
-  - subst. unfold reset_nth_gen_graph, nth_sh, nth_gen. simpl.
+  - subst. unfold reset_graph, nth_sh, nth_gen. simpl.
     rewrite reset_nth_gen_info_same, remove_ve_glabel_unchanged. reflexivity.
   - apply reset_nth_sh_diff. assumption.
 Qed.
@@ -3804,7 +3804,7 @@ Definition do_generation_relation (from to: nat) (f_info: fun_info)
            (roots roots': roots_t) (g g': LGraph): Prop := exists g1 g2,
     forward_roots_relation from to f_info roots g roots' g1 /\
     do_scan_relation from to (number_of_vertices (nth_gen g to)) g1 g2 /\
-    g' = reset_nth_gen_graph from g2.
+    g' = reset_graph from g2.
 
 Definition space_address (t_info: thread_info) (gen: nat) :=
   offset_val (SPACE_STRUCT_SIZE * Z.of_nat gen) (ti_heap_p t_info).
@@ -3901,7 +3901,7 @@ Definition graph_gen_clear (g: LGraph) (gen: nat) :=
   number_of_vertices (nth_gen g gen) = O.
 
 Lemma pvs_reset_unchanged: forall g gen n l,
-    previous_vertices_size (reset_nth_gen_graph gen g) n l =
+    previous_vertices_size (reset_graph gen g) n l =
     previous_vertices_size g n l.
 Proof.
   intros. unfold previous_vertices_size. apply fold_left_ext. intros.
@@ -3911,7 +3911,7 @@ Qed.
 
 Lemma graph_thread_info_compatible_reset: forall g t_info gen,
     graph_thread_info_compatible g t_info ->
-    graph_thread_info_compatible (reset_nth_gen_graph gen g)
+    graph_thread_info_compatible (reset_graph gen g)
                                  (reset_nth_heap_thread_info gen t_info).
 Proof.
   intros. destruct H as [? [? ?]].
@@ -4189,7 +4189,7 @@ Qed.
 
 Lemma fta_compatible_reset: forall g t_info fi r gen,
     fun_thread_arg_compatible g t_info fi r ->
-    fun_thread_arg_compatible (reset_nth_gen_graph gen g)
+    fun_thread_arg_compatible (reset_graph gen g)
                               (reset_nth_heap_thread_info gen t_info) fi r.
 Proof.
   intros. unfold fun_thread_arg_compatible in *. rewrite Znth_list_eq in *.
@@ -4200,7 +4200,7 @@ Proof.
 Qed.
 
 Lemma gen_has_index_reset: forall (g: LGraph) gen1 gen2 idx,
-    gen_has_index (reset_nth_gen_graph gen1 g) gen2 idx <->
+    gen_has_index (reset_graph gen1 g) gen2 idx <->
     gen_has_index g gen2 idx /\ gen1 <> gen2.
 Proof.
   intros. unfold gen_has_index. unfold nth_gen. simpl.
@@ -4210,7 +4210,7 @@ Proof.
 Qed.
 
 Lemma graph_has_v_reset: forall (g: LGraph) gen v,
-    graph_has_v (reset_nth_gen_graph gen g) v <->
+    graph_has_v (reset_graph gen g) v <->
     graph_has_v g v /\ gen <> vgeneration v.
 Proof.
   intros. split; intros; destruct v; unfold graph_has_v in *; simpl in *.
@@ -4221,7 +4221,7 @@ Qed.
 Lemma rgc_reset: forall g gen roots,
     roots_graph_compatible roots g ->
     roots_have_no_gen roots gen ->
-    roots_graph_compatible roots (reset_nth_gen_graph gen g).
+    roots_graph_compatible roots (reset_graph gen g).
 Proof.
   intros. red in H |-*. rewrite Forall_forall in *. intros.
   specialize (H _ H1). destruct H. split.
@@ -4233,12 +4233,12 @@ Qed.
 Lemma roots_compatible_reset: forall g gen outlier roots,
     roots_compatible g outlier roots ->
     roots_have_no_gen roots gen ->
-    roots_compatible (reset_nth_gen_graph gen g) outlier roots.
+    roots_compatible (reset_graph gen g) outlier roots.
 Proof. intros. destruct H. split; [|apply rgc_reset]; assumption. Qed.
 
 Lemma outlier_compatible_reset: forall g outlier gen,
     outlier_compatible g outlier ->
-    outlier_compatible (reset_nth_gen_graph gen g) outlier.
+    outlier_compatible (reset_graph gen g) outlier.
 Proof.
   intros. unfold outlier_compatible in *. intros. simpl.
   rewrite remove_ve_vlabel_unchanged. apply H.
@@ -4248,7 +4248,7 @@ Qed.
 Lemma super_compatible_reset: forall g t_info roots f_info outlier gen,
     roots_have_no_gen roots gen ->
     super_compatible (g, t_info, roots) f_info outlier ->
-    super_compatible (reset_nth_gen_graph gen g,
+    super_compatible (reset_graph gen g,
                       reset_nth_heap_thread_info gen t_info, roots) f_info outlier.
 Proof.
   intros. destruct H0 as [? [? [? ?]]]. split; [|split; [|split]].
@@ -4325,14 +4325,14 @@ Proof.
 Qed.
 
 Lemma gen_unmarked_reset_same: forall g gen,
-    gen_unmarked (reset_nth_gen_graph gen g) gen.
+    gen_unmarked (reset_graph gen g) gen.
 Proof.
   intros. red. intros. rewrite graph_has_gen_reset in H.
   rewrite gen_has_index_reset in H0. destruct H0. contradiction.
 Qed.
 
 Lemma gen_unmarked_reset_diff: forall g gen1 gen2,
-    gen_unmarked g gen2 -> gen_unmarked (reset_nth_gen_graph gen1 g) gen2.
+    gen_unmarked g gen2 -> gen_unmarked (reset_graph gen1 g) gen2.
 Proof.
   intros. unfold gen_unmarked in *. intros. rewrite graph_has_gen_reset in H0.
   rewrite gen_has_index_reset in H1. destruct H1. specialize (H H0 _ H1). simpl.
@@ -4368,14 +4368,14 @@ Definition no_edge2gen (g: LGraph) (gen: nat): Prop :=
 Definition egeneration (e: EType): nat := vgeneration (fst e).
 
 Lemma get_edges_reset: forall g gen v,
-    get_edges (reset_nth_gen_graph gen g) v = get_edges g v.
+    get_edges (reset_graph gen g) v = get_edges g v.
 Proof.
   intros. unfold get_edges, make_fields. simpl. rewrite remove_ve_vlabel_unchanged.
   reflexivity.
 Qed.
 
 Lemma graph_has_e_reset: forall g gen e,
-    graph_has_e (reset_nth_gen_graph gen g) e <->
+    graph_has_e (reset_graph gen g) e <->
     graph_has_e g e /\ gen <> egeneration e.
 Proof.
   intros. unfold graph_has_e, egeneration. destruct e as [v idx]. simpl.
@@ -4383,7 +4383,7 @@ Proof.
 Qed.
 
 Lemma gen2gen_no_edge_reset_inv: forall g gen1 gen2 gen3,
-    gen1 <> gen2 -> gen2gen_no_edge (reset_nth_gen_graph gen1 g) gen2 gen3 ->
+    gen1 <> gen2 -> gen2gen_no_edge (reset_graph gen1 g) gen2 gen3 ->
     gen2gen_no_edge g gen2 gen3.
 Proof.
   intros. unfold gen2gen_no_edge. intros. red in H0. simpl in H0.
@@ -4393,7 +4393,7 @@ Qed.
 
 Lemma gen2gen_no_edge_reset: forall g gen1 gen2 gen3,
     gen2gen_no_edge g gen2 gen3 ->
-    gen2gen_no_edge (reset_nth_gen_graph gen1 g) gen2 gen3.
+    gen2gen_no_edge (reset_graph gen1 g) gen2 gen3.
 Proof.
   intros. unfold gen2gen_no_edge. intros. simpl. rewrite remove_ve_dst_unchanged.
   apply H. rewrite graph_has_e_reset in H0. destruct H0. assumption.
@@ -4990,7 +4990,7 @@ Qed.
 
 Lemma no_dangling_dst_reset: forall g gen,
     no_dangling_dst g -> no_edge2gen g gen ->
-    no_dangling_dst (reset_nth_gen_graph gen g).
+    no_dangling_dst (reset_graph gen g).
 Proof.
   intros. unfold no_dangling_dst in *. red in H0. simpl. intros.
   rewrite graph_has_v_reset in *. destruct H1. rewrite get_edges_reset in H2.
@@ -5571,7 +5571,7 @@ Proof.
 Qed.
 
 Lemma firstn_gen_clear_reset: forall g i,
-    firstn_gen_clear g i -> firstn_gen_clear (reset_nth_gen_graph i g) (S i).
+    firstn_gen_clear g i -> firstn_gen_clear (reset_graph i g) (S i).
 Proof.
   intros. unfold firstn_gen_clear, graph_gen_clear in *. intros.
   assert (i0 < i \/ i0 = i)%nat by omega. destruct H1.
@@ -5709,7 +5709,7 @@ Proof.
 Qed.
 
 Lemma reset_graph_gen_size_eq: forall g i j,
-    i <> j -> graph_gen_size (reset_nth_gen_graph i g) j = graph_gen_size g j.
+    i <> j -> graph_gen_size (reset_graph i g) j = graph_gen_size g j.
 Proof.
   intros. unfold graph_gen_size.
   rewrite pvs_reset_unchanged, reset_nth_gen_diff; auto.
@@ -5717,7 +5717,7 @@ Qed.
 
 Lemma reset_stct: forall g i gen1 gen2,
     i <> gen2 -> safe_to_copy_gen g gen1 gen2 ->
-    safe_to_copy_gen (reset_nth_gen_graph i g) gen1 gen2.
+    safe_to_copy_gen (reset_graph i g) gen1 gen2.
 Proof.
   intros. unfold safe_to_copy_gen in *. rewrite reset_graph_gen_size_eq; auto.
 Qed.
