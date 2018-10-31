@@ -92,7 +92,7 @@ Proof.
   rewrite Same_set_spec; intros x.
   rewrite !Empty_set_spec; reflexivity.
 Qed.
- 
+
 Lemma weak_edge_prop_Disjoint: forall (P1 P2: V -> Prop) (g: PreGraph V E),
   Disjoint _ P1 P2 ->
   Disjoint _ (weak_edge_prop P1 g) (weak_edge_prop P2 g).
@@ -178,24 +178,16 @@ Proof. intros. simpl. unfold updateEdgeFunc. destruct (equiv_dec e e'); intuitio
 Definition pregraph_remove_vertex (g: Graph) (v: V) : Graph :=
   @Build_PreGraph V E EV EE (removeValidFunc v (vvalid g)) (evalid g) (src g) (dst g).
 
-Lemma remove_vertex_preserve_vvalid: forall g v v',
-    vvalid (pregraph_remove_vertex g v') v -> vvalid g v.
-Proof. intros. hnf in H. apply (proj1 H). Qed.
-
-Lemma remove_vertex_remove_vvalid: forall g v,
-    ~ vvalid (pregraph_remove_vertex g v) v.
-Proof. repeat intro. hnf in H. apply (proj2 H). reflexivity. Qed.
+Lemma remove_vertex_vvalid: forall g v v',
+    vvalid (pregraph_remove_vertex g v') v <-> vvalid g v /\ v <> v'.
+Proof. intros. unfold pregraph_remove_vertex, removeValidFunc. simpl. reflexivity. Qed.
 
 Definition pregraph_remove_edge (g: Graph) (e: E): Graph :=
   @Build_PreGraph V E EV EE (vvalid g) (removeValidFunc e (evalid g)) (src g) (dst g).
 
-Lemma remove_edge_preserve_evalid: forall g e e',
-    evalid (pregraph_remove_edge g e') e -> evalid g e.
-Proof. intros. hnf in H. apply (proj1 H). Qed.
-
-Lemma remove_edge_remove_evalid: forall g e,
-    ~ evalid (pregraph_remove_edge g e) e.
-Proof. repeat intro. hnf in H. apply (proj2 H). reflexivity. Qed.
+Lemma remove_edge_evalid: forall g e e',
+    evalid (pregraph_remove_edge g e') e <-> evalid g e /\ e <> e'.
+Proof. intros. unfold pregraph_remove_edge, removeValidFunc. simpl. reflexivity. Qed.
 
 Definition pregraph_gen_dst (g : Graph) (e : E) (t : V) :=
   @Build_PreGraph V E EV EE (vvalid g) (evalid g) (src g) (updateEdgeFunc (dst g) e t).
@@ -273,7 +265,7 @@ Defined.
 
 Global Existing Instance gpredicate_subgraph_proper.
 
-Lemma predicate_partialgraph_gpredicate_subgraph (g: Graph) (p: V -> Prop): 
+Lemma predicate_partialgraph_gpredicate_subgraph (g: Graph) (p: V -> Prop):
   (predicate_partialgraph g p) ~=~ (gpredicate_subgraph p (Intersection _ (weak_edge_prop p g) (evalid g)) g).
 Proof.
   split; [| split; [| split]]; simpl; intros.
@@ -288,7 +280,7 @@ Proof.
 Qed.
 
 Lemma partial_partialgraph: forall p1 p2 (g: Graph),
-  (predicate_partialgraph (predicate_partialgraph g p1) p2) ~=~ 
+  (predicate_partialgraph (predicate_partialgraph g p1) p2) ~=~
   (predicate_partialgraph g (Intersection _ p1 p2)).
 Proof.
   intros.
@@ -372,7 +364,7 @@ Proof.
 Qed.
 
 Lemma sub_subgraph: forall p1 p2 (g: Graph),
-  (predicate_subgraph (predicate_subgraph g p1) p2) ~=~ 
+  (predicate_subgraph (predicate_subgraph g p1) p2) ~=~
   (predicate_subgraph g (Intersection _ p1 p2)).
 Proof.
   intros.
@@ -778,7 +770,7 @@ Proof.
   + intro v; specialize (H v); simpl in H; tauto.
 Qed.
 
-Lemma predicate_partial_labeledgraph_gpredicate_sub_labeledgraph (g: Graph) (p: V -> Prop): 
+Lemma predicate_partial_labeledgraph_gpredicate_sub_labeledgraph (g: Graph) (p: V -> Prop):
   (predicate_partial_labeledgraph g p) ~=~ (gpredicate_sub_labeledgraph p (Intersection _ (weak_edge_prop p g) (evalid g)) g)%LabeledGraph.
 Proof.
   split; [| split].
@@ -826,7 +818,7 @@ Proof.
     specialize (H0 e).
     apply H3; simpl; rewrite !Intersection_spec in *; tauto.
 Qed.
-    
+
 End LABELED_GRAPH_GEN.
 
 Section GENERAL_GRAPH_GEN.
@@ -872,10 +864,10 @@ Section ADD_GRAPH_GEN.
   Notation Gph := (PreGraph V E).
 
   Variable g: Gph.
-  
+
   Definition change_vvalid (v: V): Ensemble V :=
     fun n => vvalid g n \/ n = v.
-  
+
   Definition change_node_pred (P: NodePred V) (v: V) (Pv: {Pv : Prop & {Pv} + {~ Pv}}) : NodePred V.
   Proof.
     intros.
@@ -1005,7 +997,7 @@ Section ADD_LABELED_GRAPH_GEN.
   Context {EV: EqDec V eq}.
   Context {EE: EqDec E eq}.
   Context {DV DE: Type}.
-  
+
   Notation Graph := (LabeledGraph V E DV DE).
 
   Local Coercion pg_lg: LabeledGraph >-> PreGraph.
@@ -1024,14 +1016,14 @@ Section ADD_GENERAL_GRAPH_GEN.
   Context {EE: EqDec E eq}.
   Context {DV DE: Type}.
   Context {P: LabeledGraph V E DV DE -> Type}.
-  
+
   Notation Graph := (GeneralGraph V E DV DE P).
 
   Local Coercion pg_lg: LabeledGraph >-> PreGraph.
   Local Coercion lg_gg: GeneralGraph >-> LabeledGraph.
 
   Variable g: Graph.
-  
+
   Definition update_GeneralGraph (x l r: V) (sound': P _): Graph :=
     @Build_GeneralGraph V E EV EE DV DE P (update_LabeledGraph g left_out_edge right_out_edge x l r) sound'.
 

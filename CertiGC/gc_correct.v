@@ -27,12 +27,12 @@ Local Open Scope Z_scope.
 
 Local Coercion pg_lg: LabeledGraph >-> PreGraph.
 
-Definition vertex_valid (g: LGraph): Prop := forall v,  vvalid g v <-> graph_has_v g v.
+Definition vertex_valid (g: LGraph): Prop := forall v, vvalid g v <-> graph_has_v g v.
 
 Definition edge_valid (g: LGraph): Prop := forall e, evalid g e <-> graph_has_e g e.
 
 Definition src_edge (g: LGraph): Prop := forall e, src g e = fst e.
-  
+
 Lemma cvae_vvalid_eq: forall g v' l v0,
     vvalid (fold_left (copy_v_add_edge v') l g) v0 <-> vvalid g v0.
 Proof.
@@ -86,7 +86,7 @@ Proof.
   induction il.
   - intros. inversion H1; subst; assumption.
   - intros. inversion H1; subst.
-    pose proof (fr_vv_correct _ _ _ _ _ H H0 H4).    
+    pose proof (fr_vv_correct _ _ _ _ _ H H0 H4).
     rewrite (fr_graph_has_gen _ _ _ _ _ _ H0 H4 to) in H0.
     apply (IHil (upd_roots from to (inl (Z.of_nat a)) g r1 fi) r2 g2 g' fi H2 H0 H9).
 Qed.
@@ -199,7 +199,7 @@ Proof.
     simpl in H; apply IHl in H.
     2: intro; apply H0; right; assumption.
     rewrite H; simpl; unfold updateEdgeFunc; apply if_false.
-    intro. apply H0. left. assumption. 
+    intro. apply H0. left. assumption.
 Qed.
 
 Lemma pcv_src_disj: forall g old new e v,
@@ -226,6 +226,103 @@ Proof.
     + simpl; intros; assumption.
     + intros. simpl. apply IHl. simpl.
       unfold addValidFunc; left; assumption.
+Qed.
+
+(** Reset related properties *)
+
+Lemma fold_left_remove_edge_vvalid: forall (g: PreGraph VType EType) l v,
+    vvalid (fold_left pregraph_remove_edge l g) v <-> vvalid g v.
+Proof.
+  intros. revert g; induction l; intros; simpl. 1: reflexivity.
+  rewrite IHl. reflexivity.
+Qed.
+
+Lemma lrvae_vvalid: forall g v1 v2,
+    vvalid (lgraph_remove_vertex_and_edges g v1) v2 <-> vvalid g v2 /\ v1 <> v2.
+Proof.
+  intros. simpl. unfold pregraph_remove_vertex_and_edges.
+  rewrite fold_left_remove_edge_vvalid, remove_vertex_vvalid. intuition.
+Qed.
+
+Lemma fold_left_lrvae_vvalid: forall g l v,
+    vvalid (fold_left lgraph_remove_vertex_and_edges l g) v <->
+    vvalid g v /\ ~ In v l.
+Proof.
+  intros. revert g v. induction l; intros; simpl. 1: intuition.
+  rewrite IHl, lrvae_vvalid. intuition.
+Qed.
+
+Lemma vertex_valid_reset: forall g gen,
+    vertex_valid g -> vertex_valid (reset_graph gen g).
+Proof.
+  intros. unfold vertex_valid in *. intros. simpl. rewrite graph_has_v_reset.
+  unfold remove_nth_gen_ve. rewrite fold_left_lrvae_vvalid. rewrite H. intuition.
+  - apply H2. clear H2. destruct v as [vgen vidx]. simpl in *. subst vgen.
+    change (gen, vidx) with ((fun idx : nat => (gen, idx)) vidx). apply in_map.
+    rewrite nat_inc_list_In_iff. destruct H1. simpl in *. red in H1. assumption.
+  - apply H2. clear H2. apply list_in_map_inv in H0. destruct H0 as [vidx [? _]].
+    subst v. simpl. reflexivity.
+Qed.
+
+Lemma remove_ve_src_unchanged: forall g gen e,
+    src (remove_nth_gen_ve g gen) e = src g e.
+Proof.
+  intros. unfold remove_nth_gen_ve.
+  remember (map (fun idx : nat => (gen, idx))
+                (nat_inc_list (number_of_vertices (nth_gen g gen)))). clear Heql.
+  revert g e. induction l; intros; simpl. 1: reflexivity. rewrite IHl.
+  clear. simpl. unfold pregraph_remove_vertex_and_edges.
+  transitivity (src (pregraph_remove_vertex g a) e). 2: reflexivity.
+  remember (pregraph_remove_vertex g a) as g'. remember (get_edges g a) as l.
+  clear a g Heqg' Heql. rename g' into g. revert g e. induction l; intros; simpl.
+  1: reflexivity. rewrite IHl. reflexivity.
+Qed.
+
+Lemma src_edge_reset: forall g gen, src_edge g -> src_edge (reset_graph gen g).
+Proof.
+  intros. unfold src_edge in *. intros.
+  simpl. rewrite remove_ve_src_unchanged. apply H.
+Qed.
+
+Lemma fold_left_remove_edge_evalid: forall (g: PreGraph VType EType) l e,
+    evalid (fold_left pregraph_remove_edge l g) e <-> evalid g e /\ ~ In e l.
+Proof.
+  intros. revert g; induction l; intros; simpl. 1: intuition.
+  rewrite IHl, remove_edge_evalid. intuition.
+Qed.
+
+Lemma lrvae_evalid: forall g v e,
+    evalid (lgraph_remove_vertex_and_edges g v) e <->
+    evalid g e /\ ~ In e (get_edges g v).
+Proof.
+  intros. simpl. unfold pregraph_remove_vertex_and_edges.
+  rewrite fold_left_remove_edge_evalid. intuition.
+Qed.
+
+Lemma fold_left_lrvae_evalid: forall g l e,
+    evalid (fold_left lgraph_remove_vertex_and_edges l g) e <->
+    evalid g e /\ forall v, In v l -> ~ In e (get_edges g v).
+Proof.
+  intros. revert g e. induction l; intros; simpl. 1: intuition.
+  rewrite IHl, lrvae_evalid. intuition.
+  - subst. contradiction.
+  - specialize (H1 _ H4). apply H1. assumption.
+  - apply (H1 a); intuition.
+  - apply (H1 v); intuition.
+Qed.
+
+Lemma edge_valid_reset: forall g gen, edge_valid g -> edge_valid (reset_graph gen g).
+Proof.
+  intros. unfold edge_valid in *. intros. rewrite graph_has_e_reset. simpl.
+  unfold remove_nth_gen_ve. rewrite fold_left_lrvae_evalid, H. intuition.
+  - destruct e. unfold egeneration in H0. simpl in H0. apply (H2 v).
+    + destruct v as [vgen vidx]. simpl in *. subst vgen.
+      change (gen, vidx) with ((fun idx : nat => (gen, idx)) vidx). apply in_map.
+      rewrite nat_inc_list_In_iff. destruct H1 as [[_ ?] _]. simpl in H0. assumption.
+    + destruct H1. simpl in H3. assumption.
+  - apply H2. clear H2. apply get_edges_fst in H3. destruct e. simpl in *. subst v0.
+    unfold egeneration. simpl. apply list_in_map_inv in H0. destruct H0 as [x [? _]].
+    subst v. simpl. reflexivity.
 Qed.
 
 (** GC Graph Isomorphism *)
@@ -283,7 +380,7 @@ Proof.
   exists (compose v23 v12), (compose v21 v32), (compose e23 e12), (compose e21 e32).
   split. 2: eapply lp_graph_iso_exp_trans; eauto.
   rewrite H0. rewrite H. rewrite map_map. clear. induction roots1; simpl; auto.
-  rewrite IHroots1. f_equal. destruct a; simpl; reflexivity.  
+  rewrite IHroots1. f_equal. destruct a; simpl; reflexivity.
 Qed.
 
 Fixpoint look_up (l: list (VType * VType)) (key: VType): option VType :=
@@ -341,7 +438,7 @@ Abort.
 Lemma quasi_iso_reset_iso: forall g1 roots1 g2 roots2 gen,
     gc_graph_quasi_iso g1 roots1 g2 roots2 gen (S gen) ->
     no_edge2gen g2 gen -> roots_have_no_gen roots2 gen ->
-    gc_graph_iso g1 roots1 (reset_nth_gen_graph gen g2) roots2.
+    gc_graph_iso g1 roots1 (reset_graph gen g2) roots2.
 Proof.
   intros.
 Abort.
