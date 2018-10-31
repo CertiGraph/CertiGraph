@@ -64,7 +64,7 @@ Proof.
       rewrite <- H in H1; assumption.
 Qed.
 
-Lemma sound_fr_vv_correct: forall g g' from to p,
+Lemma fr_vv_correct: forall g g' from to p,
     vertex_valid g -> graph_has_gen g to ->
     forward_relation from to 0 p g g' ->
     vertex_valid g'.
@@ -75,6 +75,76 @@ Proof.
         (vertex_valid (lgraph_copy_v g (dst g e) to)) by (subst new_g; reflexivity).
     apply sound_fr_lcv_vv; assumption.
 Qed.
+
+Lemma frl_vv_correct: forall g g' from to r1 r2 fi il,
+    vertex_valid g ->
+    graph_has_gen g to ->
+    forward_roots_loop from to fi il r1 g r2 g' ->
+    vertex_valid g'.
+Proof.
+  intros. revert r1 r2 g g' fi H H0 H1.
+  induction il.
+  - intros. inversion H1; subst; assumption.
+  - intros. inversion H1; subst.
+    pose proof (fr_vv_correct _ _ _ _ _ H H0 H4).    
+    rewrite (fr_graph_has_gen _ _ _ _ _ _ H0 H4 to) in H0.
+    apply (IHil (upd_roots from to (inl (Z.of_nat a)) g r1 fi) r2 g2 g' fi H2 H0 H9).
+Qed.
+
+Lemma frr_vv_correct: forall g g' from to fi r1 r2,
+    vertex_valid g ->
+    graph_has_gen g to ->
+    forward_roots_relation from to fi r1 g r2 g' ->
+    vertex_valid g'.
+Proof.
+  intros. inversion H1; subst; try assumption.
+  pose proof (fr_vv_correct _ _ _ _ _ H H0 H3).
+  rewrite (fr_graph_has_gen _ _ _ _ _ _ H0 H3 to) in H0.
+  apply (frl_vv_correct _ _ _ _ _ _ _ _ H5 H0 H4).
+Qed.
+
+Lemma dsr_vv_correct: forall g g' from to to_index,
+    vertex_valid g ->
+    graph_has_gen g to ->
+    do_scan_relation from to to_index g g' ->
+    vertex_valid g'.
+Proof.
+  intros. destruct H1 as [? [? ?]].
+  split; intros.
+  - apply (svwl_graph_has_v _ _ _ _ _ H0 H1).
+    unfold vertex_valid in H; rewrite <- H.
+    admit.
+  - inversion H1; subst; try assumption.
+    + unfold vertex_valid in H; rewrite H; assumption.
+    + admit.
+    + admit.
+Abort.
+
+Lemma dgr_vv_correct: forall g g' from to fi r1 r2,
+    vertex_valid g ->
+    graph_has_gen g to ->
+    do_generation_relation from to fi r1 r2 g g' ->
+    vertex_valid g'.
+Proof.
+  intros.
+  destruct H1 as [? [? [? [? ?]]]].
+  subst.
+  pose proof (frr_vv_correct _ _ _ _ _ _ _ H H0 H1).
+  rewrite (frr_graph_has_gen _ _ _ _ _ _ _ H0 H1 to) in H0.
+  (* pose proof (dsr_vv_correct _ _ _ _ _ H3 H0 H2). *)
+  admit.
+Abort.
+
+Lemma gcr_vv_correct: forall g g' to fi r1 r2,
+    vertex_valid g ->
+    graph_has_gen g to ->
+    garbage_collect_relation fi r1 r2 g g' ->
+    vertex_valid g'.
+Proof.
+  intros. destruct H1 as [? [? ?]].
+  inversion H1; subst; try assumption.
+  admit.
+Abort.
 
 Lemma lcv_get_edges: forall (g: LGraph) v v' to,
     graph_has_v g v' ->
@@ -97,7 +167,6 @@ Proof.
 Qed.
 
 Lemma cvae_src': forall new l g e v,
-    (* some conditions, like noDup *)
     src g e = v ->
     src (fold_left (copy_v_add_edge new) l g) e = v.
 Proof.
@@ -106,7 +175,7 @@ Proof.
   intros. simpl.
   apply IHl. simpl. unfold updateEdgeFunc.
   rewrite H. apply if_false.
-  intro.
+  intro. admit. (* need some more conditions, like NoDup *)
 Abort.
 
 Lemma cvae_src_disj: forall g g' new (e: EType) (l: list (EType * VType)),
@@ -148,24 +217,16 @@ Proof.
   destruct H2; [left; apply H0; assumption | right; apply H1; assumption].
 Qed.
 
-Lemma pcv_evalid: forall g old new e ,
-    (* graph_has_v g v -> *)
-    (* v = src g e -> *)
-    evalid (pregraph_copy_v g old new) e ->
-    evalid g e.
+Lemma cvae_evalid: forall g new l e,
+    evalid g e ->
+    evalid (fold_left (copy_v_add_edge new) l g) e.
 Proof.
-  intros. unfold pregraph_copy_v in H.
-  remember (combine (combine (repeat new (Datatypes.length (get_edges g old)))
-                             (map snd (get_edges g old))) (map (dst g)
-                                                               (get_edges g old))).
-  clear Heql.
-  induction l.
-  - simpl; intros. assumption.
-  - intros. simpl in H. apply IHl. clear IHl.
-    unfold copy_v_add_edge in H at 2.
-    destruct a; simpl in H.
-    admit.
-Abort.
+  intros.
+  - revert g H. induction l.
+    + simpl; intros; assumption.
+    + intros. simpl. apply IHl. simpl.
+      unfold addValidFunc; left; assumption.
+Qed.
 
 (** GC Graph Isomorphism *)
 
