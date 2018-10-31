@@ -1,5 +1,6 @@
 Require Import RamifyCoq.CertiGC.gc_spec.
 Require Export RamifyCoq.CertiGC.gc.
+(* Require Import VST.compcert.cfrontend.Cstrategy. *)
 
 Lemma body1:
   semax_body Vprog Gprog f_int_or_ptr_to_int int_or_ptr_to_int_spec.
@@ -41,44 +42,75 @@ Proof.
   unfold semax.
 Abort.
 
-Lemma int_or_ptr_to_int_is_stuck: forall ge e le m v id,
-    Clight.eval_expr ge e le m
-                     (Ecast (Etempvar id (talignas 2%N (tptr tvoid))) tint)
-                     v -> False.
+Lemma int_or_ptr_to_int_is_not_stuck: forall ge e le m id id',
+    is_int I32 Signed id' ->
+    le ! id = Some id' ->
+    exists i, 
+      Clight.eval_expr ge e le m
+                       (Ecast (Etempvar id (talignas 2%N (tptr tvoid))) tint)
+                       (Vint i).
 Proof.
-  intros. inversion H; subst. simpl in H4.
-  - inversion H2; subst.   
-Abort.
+  intros. destruct id'; try contradiction.
+  exists i. econstructor.
+  - constructor; apply H0.
+  - simpl; trivial.
+Qed.
 
-Lemma int_or_ptr_to_ptr_is_stuck: forall ge e le m v id,
-    Clight.eval_expr ge e le m
-                     (Ecast (Etempvar id (talignas 2%N (tptr tvoid))) (tptr tvoid))
-                     v -> False.
+Lemma int_or_ptr_to_ptr_is_not_stuck: forall ge e le m id id',
+    isptr id' ->
+    le ! id = Some id' ->
+    exists b o,
+      Clight.eval_expr ge e le m
+                       (Ecast (Etempvar id (talignas 2%N (tptr tvoid))) (tptr tvoid))
+                       (Vptr b o).
 Proof.
-  intros. inversion H; subst.
-  - inversion H2; subst.
-    + simpl in H4.
-Abort.
+  intros. destruct id'; try contradiction.
+  exists b, i. econstructor.
+  - constructor; apply H0.
+  - simpl; trivial.
+Qed.
 
-Lemma int_to_int_or_ptr_is_stuck: forall ge e le m v id,
-    Clight.eval_expr ge e le m
-                     (Ecast (Etempvar id tint) (talignas 2%N (tptr tvoid)))
-                     v -> False.
+Lemma int_to_int_or_ptr_is_not_stuck: forall ge e le m id id',
+    valid_int_or_ptr id' ->
+    le ! id = Some id' ->
+    (exists i, 
+        Clight.eval_expr ge e le m
+                         (Ecast (Etempvar id tint) (talignas 2%N (tptr tvoid)))
+                         (Vint i)) \/
+    (exists b o,
+        Clight.eval_expr ge e le m
+                         (Ecast (Etempvar id tint) (talignas 2%N (tptr tvoid)))
+                         (Vptr b o)).
 Proof.
-  intros. inversion H; subst.
-  - inversion H2; subst.
-    + simpl in H4.
-Abort.
+  intros; destruct id'; try contradiction.
+  - left; exists i; econstructor.
+    + constructor; apply H0.
+    + simpl; trivial.
+  - right; exists b, i; econstructor.
+    + constructor; apply H0.
+    + simpl; trivial.
+Qed.
 
-Lemma ptr_to_int_or_ptr_is_stuck: forall ge e le m v id,
-    Clight.eval_expr ge e le m
-                     (Ecast (Etempvar id (tptr tvoid)) (talignas 2%N (tptr tvoid)))
-                     v -> False.
+Lemma ptr_to_int_or_ptr_is_not_stuck: forall ge e le m id id' ,
+    valid_int_or_ptr id' ->
+    le ! id = Some id' ->
+    (exists i,
+        Clight.eval_expr ge e le m
+                         (Ecast (Etempvar id (tptr tvoid)) (talignas 2%N (tptr tvoid)))
+                         (Vint i)) \/
+    (exists b o,
+        Clight.eval_expr ge e le m
+                         (Ecast (Etempvar id (tptr tvoid)) (talignas 2%N (tptr tvoid)))
+                         (Vptr b o)).
 Proof.
-  intros. inversion H; subst.
-  - inversion H2; subst.
-    + simpl in H4.
-Abort.
+  intros. destruct id'; try contradiction.
+  - left; exists i; econstructor.
+    + constructor; apply H0.
+    + simpl; trivial.
+  - right; exists b, i; econstructor.
+    + constructor; apply H0.
+    + simpl; trivial.
+Qed.
 
 Lemma test_int_or_ptr_is_stuck_on_ptr: forall ge e le m v id b o,
     le ! id = Some (Vptr b o) ->
@@ -106,13 +138,23 @@ Proof.
 Qed.
 
 (*
-Lemma is_from_is_stuck_for_ptr: ...
+Lemma is_from_is_stuck_for_ptr: forall ge e le m start limit v,
     le ! id1 = Some (Vptr b1 o1) ->
     le ! id2 = Some (Vptr b2 o2) ->
     b1 <> b1 ->
-    blah ->
+    Cstrategy.exec_stmt (Ssequence
+  (Sifthenelse (Ebinop Ole
+                 (Etempvar _from_start (tptr (talignas 2%N (tptr tvoid))))
+                 (Etempvar _v (tptr (talignas 2%N (tptr tvoid)))) tint)
+    (Sset _t'1
+      (Ecast
+        (Ebinop Olt (Etempvar _v (tptr (talignas 2%N (tptr tvoid))))
+          (Etempvar _from_limit (tptr (talignas 2%N (tptr tvoid)))) tint)
+        tbool))
+    (Sset _t'1 (Econst_int (Int.repr 0) tint)))
+  (Sreturn (Some (Etempvar _t'1 tint)))) start limit v ->
     False
-*)      
-  
-  
-  
+ *)      
+
+
+
