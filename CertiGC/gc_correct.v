@@ -18,6 +18,7 @@ Require Import RamifyCoq.graph.graph_model.
 Require Import RamifyCoq.graph.graph_gen.
 Require Import RamifyCoq.graph.path_lemmas.
 Require Import RamifyCoq.graph.subgraph2.
+Require Import RamifyCoq.graph.graph_relation.
 Require Import RamifyCoq.graph.graph_isomorphism.
 Require Import RamifyCoq.CertiGC.GCGraph.
 Import ListNotations.
@@ -26,25 +27,12 @@ Local Open Scope Z_scope.
 
 Local Coercion pg_lg: LabeledGraph >-> PreGraph.
 
-Definition vertex_valid (g: LGraph): Prop :=
-  forall v,  vvalid g v <-> graph_has_v g v.
+Definition vertex_valid (g: LGraph): Prop := forall v,  vvalid g v <-> graph_has_v g v.
 
-Definition field_decided_edges (g: LGraph): Prop :=
-  forall v e,
-    vvalid g v -> (src g e = v /\ evalid g e <-> In e (get_edges g v)).
+Definition edge_valid (g: LGraph): Prop := forall e, evalid g e <-> graph_has_e g e.
 
-Class SoundGCGraph (g: LGraph) :=
-  {
-    field_decided_edges_sgcg: field_decided_edges g;
-    vertex_valid_sgcg: vertex_valid g;
-    (* Other constraints would be added later *)
-  }.
-
-Definition Graph :=
-  GeneralGraph VType EType raw_vertex_block unit graph_info (fun g => SoundGCGraph g).
-
-Local Coercion lg_gg : GeneralGraph >-> LabeledGraph.
-
+Definition src_edge (g: LGraph): Prop := forall e, src g e = fst e.
+  
 Lemma cvae_vvalid_eq: forall g v' l v0,
     vvalid (fold_left (copy_v_add_edge v') l g) v0 <-> vvalid g v0.
 Proof.
@@ -77,12 +65,11 @@ Proof.
 Qed.
 
 Lemma sound_fr_vv_correct: forall g g' from to p,
-    SoundGCGraph g ->
-    graph_has_gen g to ->
+    vertex_valid g -> graph_has_gen g to ->
     forward_relation from to 0 p g g' ->
     vertex_valid g'.
 Proof.
-  intros. destruct H as [H2 H3]; inversion H1; subst; try assumption.
+  intros. inversion H1; subst; try assumption.
   - apply sound_fr_lcv_vv; assumption.
   - replace (vertex_valid new_g) with
         (vertex_valid (lgraph_copy_v g (dst g e) to)) by (subst new_g; reflexivity).
@@ -180,185 +167,6 @@ Proof.
     admit.
 Abort.
 
-Lemma sound_fr_O_fde_correct: forall g g' from to p,
-    SoundGCGraph g ->
-    graph_has_gen g to ->
-    forward_relation from to 0 p g g' ->
-    field_decided_edges g'.
-Proof.
-  intros. destruct H as [?H ?H]. inversion H1; subst; try assumption.
-  - unfold field_decided_edges in *. intros ve e ?.
-    pose proof (sound_fr_lcv_vv _ v _ H2 H0). red in H5. rewrite H5 in H3. clear H5.
-    apply lcv_graph_has_v_inv in H3. 2: assumption.
-    split; intros.
-    + destruct H5. simpl in H5.
-      apply pcv_src_disj in H5. destruct H3; destruct H5.
-      * exfalso; apply (graph_has_v_not_eq _ to) in H3;
-          unfold not in H3; apply (H3 H5).
-      * rewrite lcv_get_edges by assumption.
-        unfold vertex_valid in H2; rewrite <- H2 in H3.
-        apply (H _ _ H3).
-        split; [symmetry; assumption|].
-        unfold lgraph_copy_v in H6. simpl in H6.
-        rewrite H2 in H3. admit.
-      * rewrite H5. unfold lgraph_copy_v. admit.
-      * exfalso.
-        assert (~ graph_has_v g ve). {
-          intro. apply (graph_has_v_not_eq _ to) in H7.
-          unfold not in H7; apply H7; assumption.
-        }
-        (* can get contradiction from these? *)
-        admit.
-    + split.
-      * destruct H3.
-        -- rewrite lcv_get_edges in H5 by assumption.
-           unfold vertex_valid in H2.
-           rewrite <- H2 in H3.
-           rewrite <- H in H5 by assumption.
-           destruct H5.
-           unfold lgraph_copy_v. simpl.
-           unfold pregraph_copy_v.
-           remember (combine
-          (combine (repeat (new_copied_v g to) (Datatypes.length (get_edges g v)))
-                   (map snd (get_edges g v))) (map (dst g) (get_edges g v))).
-           remember (pregraph_add_vertex g (new_copied_v g to)) as g'. admit.
-        -- unfold lgraph_copy_v. simpl. rewrite H3.
-           unfold pregraph_copy_v. apply cvae_src_new.
-           admit.
-      * destruct H3.
-        -- rewrite lcv_get_edges in H5 by assumption.
-           rewrite <- H in H5. destruct H5.
-           ++ unfold lgraph_copy_v. simpl. unfold pregraph_copy_v.
-              admit.
-           ++ unfold vertex_valid in H2; rewrite <- H2 in H3; assumption.
-        -- admit.
-  - admit.
-Abort.
-
-Lemma sound_fr_fde_correct: forall g g' from to p,
-    SoundGCGraph g ->
-    graph_has_gen g to ->
-    forward_relation from to 0 p g g' ->
-    field_decided_edges g'.
-Proof.
-  intros. destruct H as [H2 H3]; inversion H1; subst; try assumption.
-  - unfold field_decided_edges in H2.
-    split; intros.
-    + destruct H5.
-      (* pose proof (sound_fr_lcv_vv g v to H3 H0). *)
-      (* unfold vertex_valid in H7. *)
-      (* rewrite H7 in H. *)
-      rewrite lcv_vvalid_disj in H. destruct H.
-      * assert (graph_has_v g v0) by (unfold vertex_valid in H3; rewrite H3 in H; assumption).
-        rewrite lcv_get_edges by assumption.
-        apply H2; try assumption.
-        simpl in H5. split.
-        -- admit.
-        -- unfold lgraph_copy_v in H6. simpl in H6.
-           unfold pregraph_copy_v in H6.
-           (* dead? *)
-           admit.
-      * admit.
-    + admit.
-  (* split. *)
-  (* * rewrite lcv_vvalid_disj in H. destruct H. *)
-  (* addVertex_preserve_evalid: *)
-  (* forall (V E : Type) (EV : EqDec V eq) (EE : EqDec E eq)  *)
-  (*     (g : PreGraph V E) (e : E) (v : V), *)
-  (*   evalid g e -> evalid (pregraph_add_vertex g v) e *)
-  (* Lemma lcv_src: forall g e v v' to v0, *)
-  (*     (* vvalid g v0 -> *) *)
-  (*     src (pregraph_copy_v g v v0) e = v' -> *)
-  (*     src g e = v' \/ src (pregraph_copy_v g v v0) e = new_copied_v g to. *)        
-  - replace (field_decided_edges new_g) with
-      (field_decided_edges (lgraph_copy_v g (dst g e) to)) by
-        (subst new_g; reflexivity).
-    (* potential for reuse of the first branch *)
-    admit.
-Abort.
-
-Lemma sound_fr_correct: forall g g' from to p,
-    SoundGCGraph g ->
-    graph_has_gen g to ->
-    forward_relation from to 0 p g g' ->
-    SoundGCGraph g'.
-Proof.
-  intros.
-  admit.
-  (* split; [apply (sound_fr_fde_correct _ _ _ _ _ H H0 H1) | *)
-  (* apply (sound_fr_vv_correct _ _ _ _ _ H H0 H1)]. *)
-Abort.
-
-Lemma sound_frl_correct: forall g g' from to r1 r2 fi il,
-    SoundGCGraph g ->
-    graph_has_gen g to ->
-    forward_roots_loop from to fi il r1 g r2 g' ->
-    SoundGCGraph g'.
-Proof.
-  intros. revert r1 r2 g g' fi H H0 H1.
-  induction il.
-  - intros. inversion H1; subst; assumption.
-  - intros. inversion H1; subst.
-    (* pose proof (sound_fr_correct _ _ _ _ _ H H0 H4). *)
-    assert (SoundGCGraph g2) by admit.
-    rewrite (fr_graph_has_gen _ _ _ _ _ _ H0 H4 to) in H0.
-    apply (IHil (upd_roots from to (inl (Z.of_nat a)) g r1 fi) r2 g2 g' fi H2 H0 H9).
-Abort. (* works, but Aborting because it uses an admit *)
-
-Lemma sound_frr_correct: forall g g' from to fi r1 r2,
-    SoundGCGraph g ->
-    graph_has_gen g to ->
-    forward_roots_relation from to fi r1 g r2 g' ->
-    SoundGCGraph g'.
-Proof.
-  intros. inversion H1. subst; try assumption.
-  assert (SoundGCGraph g2) by admit.
-  (* pose proof (sound_fr_correct _ _ _ _ _ H H0 H3). *)
-  rewrite (fr_graph_has_gen _ _ _ _ _ _ H0 H3 to) in H0.
-  (* apply (sound_frl_correct _ _ _ _ _ _ _ _ H9 H0 H4). *)
-Abort. (* works, but Aborting because it uses an admit *)
-
-Lemma sound_dsr_correct: forall g g' from to to_index,
-    SoundGCGraph g ->
-    graph_has_gen g to ->
-    do_scan_relation from to to_index g g' ->
-    SoundGCGraph g'.
-Proof.
-  intros. destruct H1 as [? [? ?]].
-  inversion H1; subst; try assumption.
-  admit. admit.
-Abort.
-
-Lemma rngg_sound: forall g gen,
-    SoundGCGraph g -> SoundGCGraph (reset_nth_gen_graph gen g).
-Proof.
-  intros. destruct H as [H1 H2]; split.
-  - unfold field_decided_edges; simpl. intros.
-    replace (get_edges (reset_nth_gen_graph gen g) v) with
-        (get_edges g v) by reflexivity.
-    apply (H1 _ _ H).
-  - unfold vertex_valid in *. simpl. intros.
-    rewrite graph_has_v_reset.
-    (* oops, dead! *)
-    admit.
-Abort.
-
-Lemma sound_dgr_correct: forall g g' from to fi r1 r2,
-    SoundGCGraph g ->
-    graph_has_gen g to ->
-    do_generation_relation from to fi r1 r2 g g' ->
-    SoundGCGraph g'.
-Proof.
-  intros.
-  destruct H1 as [? [? [? [? ?]]]].
-  subst.
-  (* apply rngg_sound. *)
-  replace (SoundGCGraph (reset_nth_gen_graph from x0)) with (SoundGCGraph x0) by admit.
-  (* pose proof (sound_frr_correct _ _ _ _ _ _ _ H H0 H1). *)
-  (* rewrite (frr_graph_has_gen _ _ _ _ _ _ _ H0 H1 to) in H0. *)
-  (* apply (sound_dsr_correct _ _ _ _ _ H3 H0 H2). *)
-Abort.
-
 (** GC Graph Isomorphism *)
 
 Definition root_map (vmap: VType -> VType) (r: root_t): root_t :=
@@ -416,3 +224,62 @@ Proof.
   rewrite H0. rewrite H. rewrite map_map. clear. induction roots1; simpl; auto.
   rewrite IHroots1. f_equal. destruct a; simpl; reflexivity.  
 Qed.
+
+Fixpoint look_up (l: list (VType * VType)) (key: VType): option VType :=
+  match l with
+  | [] => None
+  | (k, v) :: l' => if equiv_dec k key then Some v else look_up l' key
+  end.
+
+Definition vmap_list (l: list (VType * VType)) (r: VType): VType :=
+  match (look_up l r) with
+  | Some v => v
+  | None => r
+  end.
+
+Definition rev_map_list (l: list (VType * VType)) (r: VType): VType :=
+  let (left_l, right_l) := split l in
+  vmap_list (combine right_l left_l) r.
+
+Definition gc_graph_quasi_iso (g1: LGraph) (roots1: roots_t)
+           (g2: LGraph) (roots2: roots_t) (from to: nat): Prop :=
+  is_partial_lgraph g1 g2 /\
+  exists (l: list (VType * VType)),
+    roots2 = map (root_map (vmap_list l)) roots1 /\
+    forall v1 v2, In (v1, v2) l ->
+                  vvalid g1 v1 /\ vvalid g2 v2 /\ vgeneration v1 = from /\
+                  vgeneration v2 = to /\ vlabel g1 v1 = vlabel g2 v2 /\
+                  (forall e1, In e1 (get_edges g1 v1) ->
+                              let e2 := (v2, snd e1) in
+                              In e2 (get_edges g2 v2) /\
+                              (dst g2 e2 = vmap_list l (dst g1 e1) \/
+                               dst g2 e2 = dst g1 e1)).
+
+Lemma fr_O_quasi_iso: forall from to p g1 g2 roots1 roots2 g3 f_info,
+    forward_p_compatible p roots2 g2 from ->
+    gc_graph_quasi_iso g1 roots1 g2 roots2 from to ->
+    forward_relation from to O (forward_p2forward_t p roots2 g2) g2 g3 ->
+    gc_graph_quasi_iso g2 roots2 g3 (upd_roots from to p g2 roots2 f_info) from to.
+Proof.
+Abort.
+
+Lemma quasi_iso_foward_roots: forall g1 roots1 g2 roots2 gen f_info,
+    forward_roots_relation gen (S gen) f_info roots1 g1 roots2 g2 ->
+    gc_graph_quasi_iso g1 roots1 g2 roots2 gen (S gen).
+Proof.
+Abort.
+
+Lemma quasi_iso_do_scan: forall g1 roots1 g2 roots2 gen to_index g3,
+    gc_graph_quasi_iso g1 roots1 g2 roots2 gen (S gen) ->
+    do_scan_relation gen (S gen) to_index g2 g3 ->
+    gc_graph_quasi_iso g1 roots1 g3 roots2 gen (S gen).
+Proof.
+Abort.
+
+Lemma quasi_iso_reset_iso: forall g1 roots1 g2 roots2 gen,
+    gc_graph_quasi_iso g1 roots1 g2 roots2 gen (S gen) ->
+    no_edge2gen g2 gen -> roots_have_no_gen roots2 gen ->
+    gc_graph_iso g1 roots1 (reset_nth_gen_graph gen g2) roots2.
+Proof.
+  intros.
+Abort.

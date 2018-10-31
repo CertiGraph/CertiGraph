@@ -29,6 +29,20 @@ Section IS_PARTIAL_GRAPH.
 
 End IS_PARTIAL_GRAPH.
 
+Section IS_PARTIAL_LABELED_GRAPH.
+
+Context {V E: Type}.
+Context {EV: EqDec V eq}.
+Context {EE: EqDec E eq}.
+Context {DV DE DG: Type}.
+
+Definition is_partial_lgraph (g1 g2: LabeledGraph V E DV DE DG): Prop :=
+  is_partial_graph (pg_lg g1) (pg_lg g2) /\
+  (forall v, vvalid (pg_lg g1) v -> vlabel g1 v = vlabel g2 v) /\
+  (forall e, evalid (pg_lg g1) e -> elabel g1 e = elabel g2 e).
+
+End IS_PARTIAL_LABELED_GRAPH.
+
 Section GuardedIdentical.
 
 Context {V E: Type}.
