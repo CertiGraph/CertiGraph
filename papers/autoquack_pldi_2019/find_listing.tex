@@ -2,25 +2,30 @@
 \vspace{-1ex}
   \begin{lstlisting}
 struct Node { $\label{code:nodedefstart}$
-    unsigned int rank;
-    struct Node * parent; } $\label{code:nodedefstart}$
+  unsigned int rank;
+  struct Node * parent; $\label{code:nodedefstart}$
+  }
 
-struct Node* find(struct Node* x) { // $\label{code:findstart}\{\p{graph}(\tx{x},\gamma)\}$
+struct Node* find(struct Node* x) { // $\label{code:findstart}\{\p{graph}(\gamma)\}$
   struct Node *p, *p0;
-  // $\label{code:beforeparentfind}\searrow \{\tx x|-> rank, parent \}$
-        p = x -> parent; $\label{code:findram1}$
-  // $\label{code:afterarentfind}\swarrow \{\tx x|-> rank, parent /| p = parent \}$
-  // $\label{code:findparent}\{\p{graph}(\tx{x},\gamma) /| \tx x|-> rank, parent /| p = parent\}$
+// $\label{code:befparentfind}\searrow\{\tx{x} \in vertices(\gamma) /| \gamma(\tx{x}) = (rnk, par) /| \tx{x}|-> rnk,par\}$
+  p = x -> parent; $\label{code:findram1}$
+// $\label{code:aftparentfind}\swarrow\{\tx x \in vertices(\gamma) /| \gamma(\tx{x}) = (rnk, par) /| \tx{x}|-> rnk,par /| \tx{p} = par\}$ 
   if (p != x) {
-    // $\label{code:findbeforereassign} \{\p{graph}(\tx{x},\gamma) /| \tx x|-> rank, parent /| p = parent\}$
+// $\label{code:findbeforereassign} \{\tx x \in vertices(\gamma) /| \gamma(\tx{x}) = (rnk, par) /| \tx{x}|-> rnk,par /| \tx{p} \neq \tx{x}\}$
     p0 = find(p); 
-    p = p0; 
-    // $\label{code:findbeforexparent}\searrow $
-          x -> parent = p;
-    // $\label{code:findafterxparent}\swarrow $
-  } // $\label{code:findafterreassign}\{\p{graph}(\tx{x},\gamma) /| \tx x|-> rank, parent /| \exists \gamma'.~ \m{findS}(\gamma, \tx{x}, \gamma')\}$   
-  return p;
-} //
+// $\{\exists \gamma',rt.~ \m{findS}(\gamma, \tx{p}, \gamma') /| \m{uf\_root}(\gamma',\tx{p},rt) /| \tx{p0} = rt\}$
+// $\{\tx{x} \in vertices(\gamma') /| \gamma'(\tx{x}) = (rnk, par) /| \tx{x}|-> rnk,par\}$
+// $\{... /| \m{!reachable}(\gamma', rt, \tx{x}) /| ... )\}$   
+    p = p0; // what's the point of this step?
+// $\{... /| \tx{p} = rt\}$   
+// $\label{code:findbeforexparent}\searrow$
+    x -> parent = p;
+// $\label{code:findafterxparent}\swarrow\{\exists \gamma''.~ \gamma'' = \m{ggrp}(\gamma',\tx{x},rt) /|...\}$
+// $\{\m{findS}(\gamma, \tx{p}, \gamma'') /| \m{uf\_root}(\gamma'',\tx{p},rt) /| \tx{x} |-> rnk,rt\}$
+  } // $\label{code:findafterreassign}\{\exists \gamma',rt.~ \m{findS}(\gamma, \tx{x}, \gamma') /| \m{uf\_root}(\gamma',\tx{x},rt)\}$   
+  return p; // $\{\tx{p} = rt\}$
+}
 \end{lstlisting}
 
 % need to have some notion of findS down below. probably want to define it at a higher level than what I've reproduced below?
@@ -33,7 +38,7 @@ struct Node* find(struct Node* x) { // $\label{code:findstart}\{\p{graph}(\tx{x}
 %  Definition rank_unchanged (g1 g2: Graph) : Prop := forall v, vvalid g1 v -> vvalid g2 v -> vlabel g1 v = vlabel g2 v.
 
 %  Definition findS (g1: Graph) (x: Vertex) (g2: Graph) :=
-%    (predicate_partialgraph g1 (fun n => ~ reachable g1 x n)) ~=~ (predicate_partialgraph g2 (fun n => ~ reachable g1 x n)) /\ uf_equiv g1 g2 /\ rank_unchanged g1 g2.
+%    (predicate_partialgraph g1 (fun n => ~ reachable g1 x n)) ~=~ (predicate_partialgraph g2 (fun n => ~ reachable g1 x n)) /\ uf_equiv g1 g2 /\ rank_unchanged g1 g2. (**) why isn't uf_equiv enough?
 
 
 
