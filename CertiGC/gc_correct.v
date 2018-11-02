@@ -383,21 +383,225 @@ Proof.
   rewrite IHroots1. f_equal. destruct a; simpl; reflexivity.
 Qed.
 
-Fixpoint look_up (l: list (VType * VType)) (key: VType): option VType :=
+Fixpoint bi_look_up (l: list (VType * VType)) (key: VType): option VType :=
   match l with
   | [] => None
-  | (k, v) :: l' => if equiv_dec k key then Some v else look_up l' key
+  | (k, v) :: l' => if equiv_dec k key then Some v
+                    else if equiv_dec v key then Some k
+                         else bi_look_up l' key
   end.
 
 Definition vmap_list (l: list (VType * VType)) (r: VType): VType :=
-  match (look_up l r) with
+  match (bi_look_up l r) with
   | Some v => v
   | None => r
   end.
 
-Definition rev_map_list (l: list (VType * VType)) (r: VType): VType :=
-  let (left_l, right_l) := split l in
-  vmap_list (combine right_l left_l) r.
+Definition DoubleNoDup (l: list (VType * VType)): Prop :=
+  let (left_l, right_l) := split l in NoDup (left_l ++ right_l).
+
+Lemma DoubleNoDup_cons_tl: forall x l, DoubleNoDup (x :: l) -> DoubleNoDup l.
+Proof.
+  intros. destruct x as [x y]. unfold DoubleNoDup in *. simpl in H.
+  destruct (split l) as [l1 l2]. simpl in H. apply NoDup_cons_1, NoDup_remove_1 in H.
+  assumption.
+Qed.
+
+Lemma DoubleNoDup_cons_hd: forall k v l, DoubleNoDup ((k, v) :: l) -> k <> v.
+Proof.
+  intros. unfold DoubleNoDup in H. simpl in H.
+  destruct (split l) as [l1 l2]. simpl in H. apply NoDup_cons_2 in H. intro. subst.
+  apply H. rewrite in_app_iff. right. left. reflexivity.
+Qed.
+
+Definition InEither (v: VType) (l: list (VType * VType)): Prop :=
+  let (left_l, right_l) := split l in In v (left_l ++ right_l).
+
+Definition IsEither (v: VType) (a: VType * VType): Prop := v = fst a \/ v = snd a.
+
+Lemma InEither_cons_iff: forall v a l,
+    InEither v (a :: l) <-> IsEither v a \/ InEither v l.
+Proof.
+  do 3 intro. revert v a. induction l; intros.
+  - destruct a. unfold InEither at 1. simpl. unfold IsEither. simpl. intuition.
+  - rewrite IHl. unfold InEither. simpl. destruct (split l) as [l1 l2].
+    destruct a. destruct a0. unfold IsEither. simpl. rewrite !in_app_iff. simpl.
+    clear. firstorder.
+Qed.
+
+Lemma InEither_dec: forall v l, {InEither v l} + {~ InEither v l}.
+Proof.
+  intros. induction l. 1: right; intro; inversion H. destruct a as [v1 v2].
+  destruct (equiv_dec v v1); unfold equiv in *.
+  - left. rewrite InEither_cons_iff. left. red. simpl. left. assumption.
+  - destruct (equiv_dec v v2); unfold equiv in *.
+    + left. rewrite InEither_cons_iff. left. red. simpl. right. assumption.
+    + destruct IHl; [left | right].
+      * rewrite InEither_cons_iff. right. assumption.
+      * intro. apply n. clear n. rewrite InEither_cons_iff in H. destruct H; auto.
+        red in H. simpl in H. exfalso. unfold complement in *. destruct H; auto.
+Defined.
+
+Lemma vmap_list_cons_1: forall a l x,
+    ~ IsEither x a -> vmap_list (a :: l) x = vmap_list l x.
+Proof.
+  intros. unfold vmap_list. simpl. destruct a. unfold IsEither in H. simpl in H.
+  apply Decidable.not_or in H. destruct H. do 2 rewrite if_false by intuition.
+  reflexivity.
+Qed.
+
+Lemma vmap_list_not_In: forall l x, ~ InEither x l -> vmap_list l x = x.
+Proof.
+  induction l; intros. 1: unfold vmap_list; simpl; reflexivity.
+  rewrite InEither_cons_iff in H. apply Decidable.not_or in H. destruct H.
+  rewrite vmap_list_cons_1; auto.
+Qed.
+
+Lemma IsEither_dec: forall v a, {IsEither v a} + {~ IsEither v a}.
+Proof.
+  intros. destruct a. destruct (equiv_dec v v0).
+  - left. red. left. simpl. assumption.
+  - destruct (equiv_dec v v1).
+    + left. red. right; simpl; assumption.
+    + right. unfold IsEither. simpl. unfold equiv, complement in *. intuition.
+Defined.
+  
+Lemma vmap_list_In: forall l x,
+    InEither x l -> exists k v, In (k, v) l /\
+                                ((x = k /\ vmap_list l x = v) \/
+                                 (x = v /\ vmap_list l x = k)).
+Proof.
+  induction l; intros. 1: inversion H. destruct (IsEither_dec x a).
+  - destruct a. exists v, v0. simpl. split. 1: left; reflexivity. red in i.
+    simpl in i. destruct i; subst; [left | right]; split; try reflexivity;
+                  unfold vmap_list; simpl.
+    + rewrite if_true; reflexivity.
+    + destruct (equiv_dec v v0). 1: intuition. rewrite if_true; reflexivity.
+  - rewrite InEither_cons_iff in H. destruct H. 1: contradiction.
+    specialize (IHl _ H). destruct IHl as [k [v [? ?]]]. exists k, v. split.
+    + simpl. right; assumption.
+    + destruct a. unfold IsEither in n. simpl in n. apply Decidable.not_or in n.
+      destruct n. unfold vmap_list in *. simpl. rewrite !if_false by intuition.
+      assumption.
+Qed.
+
+Lemma DoubleNoDup_cons_neq: forall v1 v2 l,
+    DoubleNoDup ((v1, v2) :: l) -> ~ InEither v1 l /\ ~ InEither v2 l.
+Proof.
+  do 3 intro. revert v1 v2. induction l; intros. 1: intuition. destruct a.
+  specialize (IHl _ _ (DoubleNoDup_cons_tl _ _ H)). destruct IHl.
+  unfold DoubleNoDup in H. simpl in H. unfold InEither in *. simpl.
+  destruct (split l) as [l1 l2]. split.
+  - simpl in H. apply NoDup_cons_2 in H. simpl in *. intro. apply H. destruct H2; auto.
+    right. apply list_in_insert. assumption.
+  - apply NoDup_remove_2 in H. intro. apply H. rewrite in_app_iff in H2 |-* .
+    destruct H2; auto. left. right. assumption.
+Qed.
+
+Lemma In_InEither: forall v1 v2 l, In (v1, v2) l -> InEither v1 l /\ InEither v2 l.
+Proof.
+  do 3 intro. revert v1 v2. induction l; intros. 1: inversion H. simpl in H.
+  destruct H.
+  - subst. rewrite !InEither_cons_iff. unfold IsEither. simpl. intuition.
+  - apply IHl in H. destruct H. rewrite !InEither_cons_iff. intuition.
+Qed.
+
+Lemma DoubleNoDup_In_fst_eq: forall l k v1 v2,
+    DoubleNoDup l -> In (k, v1) l -> In (k, v2) l -> v1 = v2.
+Proof.
+  induction l; intros. 1: inversion H0. simpl in H0, H1. destruct H0, H1.
+  - rewrite H0 in H1. inversion H1. reflexivity.
+  - apply In_InEither in H1. destruct H1. subst a. apply DoubleNoDup_cons_neq in H.
+    destruct H. contradiction.
+  - apply In_InEither in H0. destruct H0. subst a. apply DoubleNoDup_cons_neq in H.
+    destruct H. contradiction.
+  - eapply IHl; eauto. eapply DoubleNoDup_cons_tl; eauto.
+Qed.
+
+Lemma DoubleNoDup_In_snd_eq: forall l k1 k2 v,
+    DoubleNoDup l -> In (k1, v) l -> In (k2, v) l -> k1 = k2.
+Proof.
+  induction l; intros. 1: inversion H0. simpl in H0, H1. destruct H0, H1.
+  - rewrite H0 in H1. inversion H1. reflexivity.
+  - apply In_InEither in H1. destruct H1. subst a. apply DoubleNoDup_cons_neq in H.
+    destruct H. contradiction.
+  - apply In_InEither in H0. destruct H0. subst a. apply DoubleNoDup_cons_neq in H.
+    destruct H. contradiction.
+  - eapply IHl; eauto. eapply DoubleNoDup_cons_tl; eauto.
+Qed.
+
+Lemma DoubleNoDup_In_fst_snd_impsb: forall l v1 v2 v,
+    DoubleNoDup l -> In (v1, v) l -> In (v, v2) l -> False.
+Proof.
+  induction l; intros. 1: inversion H0. simpl in H0, H1. destruct H0, H1.
+  - rewrite H0 in H1. inversion H1. subst.
+    apply DoubleNoDup_cons_hd in H. contradiction.
+  - apply In_InEither in H1. destruct H1. subst a. apply DoubleNoDup_cons_neq in H.
+    destruct H. contradiction.
+  - apply In_InEither in H0. destruct H0. subst a. apply DoubleNoDup_cons_neq in H.
+    destruct H. contradiction.
+  - apply (IHl v1 v2 v); auto. eapply DoubleNoDup_cons_tl; eauto.
+Qed.
+
+Lemma DoubleNoDup_bi_look_up: forall k v l,
+    DoubleNoDup l -> In (k, v) l -> bi_look_up l k = Some v /\ bi_look_up l v = Some k.
+Proof.
+  do 3 intro. induction l; intros. 1: inversion H0.
+  assert (a = (k, v) \/ a <> (k, v)). {
+    destruct a; destruct (equiv_dec v0 k); destruct (equiv_dec v1 v);
+      unfold equiv in *; unfold complement in *; simpl in *; subst;
+        [left; reflexivity | right; intro; apply c; inversion H1; reflexivity..]. }
+  destruct H1.
+  - subst. simpl. apply DoubleNoDup_cons_hd in H. rewrite if_true by reflexivity.
+    rewrite if_false by intuition. rewrite if_true by reflexivity. intuition.
+  - destruct a. simpl. destruct (equiv_dec v0 k); unfold equiv in *.
+    + exfalso. subst v0. apply H1. f_equal. eapply DoubleNoDup_In_fst_eq; eauto.
+      simpl. left; reflexivity.
+    + destruct (equiv_dec v1 k); unfold equiv in *.
+      * exfalso. subst v1. eapply (DoubleNoDup_In_fst_snd_impsb _ v0); eauto.
+        simpl. left; reflexivity.
+      * destruct (equiv_dec v0 v); unfold equiv in *.
+        -- exfalso. subst v0. eapply (DoubleNoDup_In_fst_snd_impsb _ k v1 v); eauto.
+           simpl. left; reflexivity.
+        -- destruct (equiv_dec v1 v); unfold equiv in *.
+           ++ exfalso. subst. apply H1. f_equal. eapply DoubleNoDup_In_snd_eq; eauto.
+              simpl. left; reflexivity.
+           ++ apply IHl. 1: eapply DoubleNoDup_cons_tl; eauto. simpl in H0.
+              destruct H0; auto. contradiction.
+Qed.
+
+Lemma bijective_vmap_list: forall l,
+    DoubleNoDup l -> bijective (vmap_list l) (vmap_list l).
+Proof.
+  intros. constructor; intros.
+  - destruct (InEither_dec x l).
+    + apply vmap_list_In in i. destruct i as [kx [vx [? ?]]].
+      destruct (InEither_dec y l).
+      * apply vmap_list_In in i. destruct i as [ky [vy [? ?]]].
+        destruct H2 as [[? ?] | [? ?]]; destruct H4 as [[? ?] | [? ?]];
+          rewrite H5, H6 in H0; subst.
+        -- eapply DoubleNoDup_In_snd_eq; eauto.
+        -- exfalso; eapply (DoubleNoDup_In_fst_snd_impsb _ kx); eauto.
+        -- exfalso; eapply (DoubleNoDup_In_fst_snd_impsb _ ky); eauto.
+        -- eapply DoubleNoDup_In_fst_eq; eauto.
+      * pose proof n. apply vmap_list_not_In in n. rewrite <- H0 in n.
+        destruct H2 as [[? ?] | [? ?]]; rewrite H4 in n; rewrite n in H1;
+          exfalso; apply H3; apply In_InEither in H1; destruct H1; assumption.
+    + pose proof n. apply vmap_list_not_In in n. rewrite H0 in n.
+      destruct (InEither_dec y l).
+      * apply vmap_list_In in i. destruct i as [ky [vy [? ?]]].
+        destruct H3 as [[? ?] | [? ?]]; rewrite H4 in n; rewrite n in H2;
+          exfalso; apply H1; apply In_InEither in H2; destruct H2; assumption.
+      * apply vmap_list_not_In in H1. apply vmap_list_not_In in n0.
+        rewrite H1, n0 in H0. assumption.
+  - destruct (InEither_dec x l).
+    + apply vmap_list_In in i. destruct i as [k [v [? ?]]].
+      destruct (DoubleNoDup_bi_look_up _ _ _ H H0).
+      destruct H1 as [[? ?] | [? ?]]; subst x; rewrite H4; unfold vmap_list.
+      * rewrite H3. reflexivity.
+      * rewrite H2. reflexivity.
+    + apply vmap_list_not_In in n. rewrite n. assumption.
+Qed.
 
 Definition gc_graph_quasi_iso (g1: LGraph) (roots1: roots_t)
            (g2: LGraph) (roots2: roots_t) (from to: nat): Prop :=
