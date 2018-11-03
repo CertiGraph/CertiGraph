@@ -1,44 +1,10 @@
-Require Import Coq.Program.Basics.
 Require Import Coq.Lists.List.
+Require Import Coq.Program.Basics.
+Require Import RamifyCoq.lib.Coqlib.
 Require Import RamifyCoq.graph.graph_model.
 Require Import RamifyCoq.lib.EquivDec_ext.
 
 Generalizable All Variables.
-
-Record bijective `(f: A -> B) (invf: B -> A) : Prop :=
-  {
-    injective: forall x y, f x = f y -> x = y;
-    surjective: forall x, f (invf x) = x;
-  }.
-
-Lemma bijective_refl: forall {A: Type}, @bijective A A id id.
-Proof. intros. split; auto. Qed.
-
-Lemma bijective_sym: forall `(f: A -> B) (invf: B -> A),
-    bijective f invf -> bijective invf f.
-Proof.
-  intros. destruct H as [?H ?H]. split; intros.
-  - rewrite <- (H0 x), <- (H0 y), H1, H0. reflexivity.
-  - apply H, H0.
-Qed.
-
-Lemma bijective_trans: forall `(f: A -> B) `(g: B -> C) (invf: B -> A) (invg: C -> B),
-    bijective f invf -> bijective g invg ->
-    bijective (compose g f) (compose invf invg).
-Proof.
-  intros. destruct H, H0. split; intros; unfold compose in *.
-  - apply injective0, injective1. assumption.
-  - rewrite surjective0. apply surjective1.
-Qed.
-
-Lemma bijective_map: forall `(f: A -> B) (g: B -> A),
-    bijective f g -> bijective (map f) (map g).
-Proof.
-  intros. destruct H. split; intros.
-  - revert y H. induction x; intros; destruct y; simpl in H; [|inversion H..]; auto.
-    f_equal. 1: apply injective0; auto. apply IHx; assumption.
-  - induction x; simpl; auto. rewrite IHx. f_equal. apply surjective0.
-Qed.
 
 Record pregraph_isomorphism_explicit
        `(g: @PreGraph V E EV EE) `(g': @PreGraph V' E' EV' EE')
@@ -67,13 +33,13 @@ Proof.
   - apply bijective_sym; assumption.
   - apply bijective_sym; assumption.
   - intros. destruct edge_bij0. apply evalid_bij_inv0 in H.
-    rewrite <- (surjective0 e) at 1. rewrite <- src_bij0 by assumption.
+    rewrite <- (surjective e) at 1. rewrite <- src_bij0 by assumption.
     apply bijective_sym in vertex_bij0. destruct vertex_bij0.
-    rewrite surjective1. reflexivity.
+    rewrite surjective0. reflexivity.
   - intros. destruct edge_bij0. apply evalid_bij_inv0 in H.
-    rewrite <- (surjective0 e) at 1. rewrite <- dst_bij0 by assumption.
+    rewrite <- (surjective e) at 1. rewrite <- dst_bij0 by assumption.
     apply bijective_sym in vertex_bij0. destruct vertex_bij0.
-    rewrite surjective1. reflexivity.
+    rewrite surjective0. reflexivity.
 Qed.
 
 Lemma pregraph_iso_exp_trans: forall
@@ -114,9 +80,9 @@ Proof.
   intros. destruct H. split.
   - apply pregraph_iso_exp_sym. assumption.
   - intros. destruct lp_pregraph_iso0. destruct vertex_bij0.
-    rewrite <- (surjective0 v) at 1. rewrite <- vlabel_iso0; auto.
+    rewrite <- (surjective v) at 1. rewrite <- vlabel_iso0; auto.
   - intros. destruct lp_pregraph_iso0. destruct edge_bij0.
-    rewrite <- (surjective0 e) at 1. rewrite <- elabel_iso0; auto.
+    rewrite <- (surjective e) at 1. rewrite <- elabel_iso0; auto.
 Qed.
 
 Lemma lp_graph_iso_exp_trans: forall
