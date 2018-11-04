@@ -1,18 +1,4 @@
-Require Import RamifyCoq.CertiGC.gc_spec.
 Require Import compcert.cfrontend.ClightBigstep.
-
-(* 
-Either comment out the two lines above or the 10 or so below. 
-They contain redundancies and will break.
-We are keeping the 10 lines below mostly just to have
-  a truly complete copy of gc_spec. It isn't surprising 
-  at all that they contain redundancies -- we imported 
-  gc_spec above!
-*)
-
-(*
-From here until the Abort on line 473 is a nearly-exact copy of gc_spec.
-Changes are on lines 127, 137, and 457.
 
 Require Export VST.veric.rmaps.
 Require Export RamifyCoq.lib.List_ext.
@@ -24,7 +10,6 @@ Require Export RamifyCoq.msl_ext.iter_sepcon.
 
 Identity Coercion LGraph_LabeledGraph: LGraph >-> LabeledGraph.
 Coercion pg_lg: LabeledGraph >-> PreGraph.
- *)
 
 Definition init_data2byte (d: init_data) : byte :=
   match d with
@@ -469,9 +454,50 @@ Definition Gprog: funspecs :=
 
 Lemma body_is_from_weak: semax_body Vprog Gprog f_Is_from Is_from_weak_spec.
 Proof.
-  (* start_function. *)
-Abort.
-  
+  start_dep_function. simpl.
+  destruct ts as [[[[[? fs] n] ?] ?] z].
+  forward_if
+    (EX t: val,
+    PROP ((((force_val (sem_cast_i2bool
+                            (force_val (sem_cmp_pp Cle fs (offset_val z fs))))) = Vzero /\ t = Vzero)
+              \/
+              ((force_val (sem_cast_i2bool
+                            (force_val (sem_cmp_pp Cle fs (offset_val z fs))))) = Vone)) /\ (t = (force_val (sem_cast_i2bool
+                            (force_val (sem_cmp_pp Cle (offset_val z fs) (offset_val n fs)))))))
+    LOCAL (temp _t'1 t)
+    SEP (weak_derives m (memory_block s n fs * TT) && emp;
+         weak_derives m (valid_pointer v * TT) && emp; m)).
+  1: admit.
+  - forward. 1: admit.
+    Exists (force_val
+              (sem_cast tint tbool
+                 (eval_binop Olt
+                    (tptr
+                       (Tpointer tvoid
+                          {| attr_volatile := false; attr_alignas := Some 2%N |}))
+                    (tptr
+                       (Tpointer tvoid
+                          {| attr_volatile := false; attr_alignas := Some 2%N |}))
+                    (offset_val z fs) (offset_val n fs)))). 
+    entailer!. simpl in *.
+    revert H0.
+    unfold sem_cmp_pp. simpl. unfold Val.cmpu_bool. simpl.
+    destruct fs; inversion H1; subst; simpl; [contradiction|].
+    repeat rewrite eq_block_lem; simpl.
+    remember (Ptrofs.ltu (Ptrofs.add i (Ptrofs.repr z))
+                         (Ptrofs.add i (Ptrofs.repr n))).
+    destruct b0; simpl in *.
+    + repeat rewrite Ptrofs.not_ltu. simpl.
+      rewrite <- Heqb0. simpl.
+      destruct (Ptrofs.ltu i (Ptrofs.add i (Ptrofs.repr z))).
+      * simpl. split; [|auto]. right; unfold Vone; trivial.
+      * simpl.
+        split. 2: auto.
+        destruct (Ptrofs.eq i (Ptrofs.add i (Ptrofs.repr z))); simpl.
+        -- right; auto.
+        -- (* dead *) admit.
+    Abort.
+    
 Lemma int_or_ptr_to_int_is_not_stuck: forall ge e le m id  i,
     le ! id = Some (Vint i) ->
     Clight.eval_expr ge e le m

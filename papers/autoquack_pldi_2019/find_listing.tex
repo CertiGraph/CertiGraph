@@ -6,26 +6,25 @@ struct Node { $\label{code:nodedefstart}$
   struct Node * parent; $\label{code:nodedefstart}$
   }
 
-struct Node* find(struct Node* x) { // $\label{code:findstart}\{\p{graph}(\gamma)\}$
-  struct Node *p, *p0;
-// $\label{code:befparentfind}\searrow\{\tx{x} \in vertices(\gamma) /| \gamma(\tx{x}) = (rnk, par) /| \tx{x}|-> rnk,par\}$
+struct Node* find(struct Node* x) {//$\label{code:findstart}\{\p{graph}(\gamma) /| \tx{x}\in\m{V}(\gamma)\}$
+  struct Node *p;
+// $\{\p{graph}(\gamma) /| \tx{x}\in\m{V}(\gamma) /| \exists\m{rnk},\m{par}.~\gamma(\tx{x}) = (\m{rnk}, \m{par})\}$
+// $\label{code:befparentfind}\searrow\{\tx{x}|-> \m{rnk},\m{par} /| \tx{x}\in\m{V}(\gamma) /| \gamma(\tx{x}) = (\m{rnk}, \m{par})\}$
   p = x -> parent; $\label{code:findram1}$
-// $\label{code:aftparentfind}\swarrow\{\tx x \in vertices(\gamma) /| \gamma(\tx{x}) = (rnk, par) /| \tx{x}|-> rnk,par /| \tx{p} = par\}$ 
+// $\label{code:aftparentfind}\swarrow \{\tx{x}|-> \m{rnk},\m{par} /| \tx{x}\in\m{V}(\gamma) /| \gamma(\tx{x}) = (\m{rnk}, \m{par}) /| \tx{p} = \m{par} \}$
+// $\{\p{graph}(\gamma) /| \tx{x}\in\m{V}(\gamma) /| \gamma(\tx{x}) = (\m{rnk},\m{par}) /| \tx{p} = \m{par}\}$ 
   if (p != x) {
-// $\label{code:findbeforereassign} \{\tx x \in vertices(\gamma) /| \gamma(\tx{x}) = (rnk, par) /| \tx{x}|-> rnk,par /| \tx{p} \neq \tx{x}\}$
-    p0 = find(p); 
-// $\{\exists \gamma',rt.~ \m{findS}(\gamma, \tx{p}, \gamma') /| \m{uf\_root}(\gamma',\tx{p},rt) /| \tx{p0} = rt\}$
-// $\{\tx{x} \in vertices(\gamma') /| \gamma'(\tx{x}) = (rnk, par) /| \tx{x}|-> rnk,par\}$
-// $\{... /| \m{!reachable}(\gamma', rt, \tx{x}) /| ... )\}$   
-    p = p0; // what's the point of this step?
-// $\{... /| \tx{p} = rt\}$   
-// $\label{code:findbeforexparent}\searrow$
+// $\label{code:findbeforereassign} \{\p{graph}(\gamma) /| \tx{x}\in\m{V}(\gamma) /| \gamma(\tx{x}) = (\m{rnk}, \m{par}) /| \tx{p} = \m{par} /| \m{par} \neq \tx{x}\}$
+    p = find(p); 
+// $\left\{\!\!\!\begin{array}{l@{}}\exists \gamma',\m{rt}.~\p{graph}(\gamma') /| \m{findS}(\gamma,\m{par},\gamma') /| \m{uf\_root}(\gamma',\m{par},\m{rt}) /| \null \\ \tx{x}\in\m{V}(\gamma) /| \gamma(\tx{x})=(\m{rnk},\m{par}) /| \tx{p} = \m{rt} /| \m{par} \neq \tx{x} \end{array}\right\}$
+// $\left\{\!\!\!\begin{array}{l@{}}\p{graph}(\gamma') /| \m{findS}(\gamma, \m{par}, \gamma') /| \m{uf\_root}(\gamma',\m{par},\m{rt}) /| \null \\ \tx{x}\in\m{V}(\gamma') /| \gamma'(\tx{x})=(\m{rnk}, \m{par}) /| \neg\m{reachable}(\gamma', \m{rt}, \tx{x}) /| \null \\ \tx{p} = \m{rt} /| \m{par} \neq \tx{x}\end{array}\right\}$
+// $\label{code:findbeforexparent}\searrow \left\{\!\!\!\!\begin{array}{l@{}}\tx{x} |-> \m{rnk},{par} /| \m{findS}(\gamma, \m{par}, \gamma') /| \m{uf\_root}(\gamma',\m{par},rt) /| \null \\ \tx{x}\in\m{V}(\gamma') /| \gamma'(\tx{x})=(\m{rnk}, \m{par}) /| \neg\m{reachable}(\gamma', \m{rt}, \tx{x}) /| \null \\ \tx{p} = \m{rt} /| \m{par} \neq \tx{x} \end{array}\right\}$
     x -> parent = p;
-// $\label{code:findafterxparent}\swarrow\{\exists \gamma''.~ \gamma'' = \m{ggrp}(\gamma',\tx{x},rt) /|...\}$
-// $\{\m{findS}(\gamma, \tx{p}, \gamma'') /| \m{uf\_root}(\gamma'',\tx{p},rt) /| \tx{x} |-> rnk,rt\}$
-  } // $\label{code:findafterreassign}\{\exists \gamma',rt.~ \m{findS}(\gamma, \tx{x}, \gamma') /| \m{uf\_root}(\gamma',\tx{x},rt)\}$   
-  return p; // $\{\tx{p} = rt\}$
-}
+// $\label{code:findafterxparent}\swarrow \left\{\!\!\!\!\!\begin{array}{l@{}}\tx{x} |-> \m{rnk},\m{rt} /| \exists \gamma', \gamma'',\m{rt}.~\tx{p} = \m{rt} /| \m{findS}(\gamma, \m{par}, \gamma') /| \null \\ \m{uf\_root}(\gamma',\m{par},rt) /| \m{par} \neq \tx{x} /| \tx{x}\in\m{V}(\gamma') /| \null \\ \gamma'(\tx{x})=(\m{rnk}, \m{par}) /| \neg\m{reachable}(\gamma', \m{rt}, \tx{x}) /| \null \\ \gamma'' = \m{ggrp}(\gamma',\tx{x},\m{rt}) /| \p{graph}(\gamma'') /| \m{findS}(\gamma, \tx{p}, \gamma'') /| \null \\ \m{uf\_root}(\gamma'',\tx{p},rt)\end{array}\right\}$
+// $\left\{\!\!\!\!\!\begin{array}{l@{}}\exists \gamma', \gamma'',\m{rt}.~ ??\p{graph}(\gamma'')?? /| \tx{p} = \m{rt} /| \m{findS}(\gamma, \m{par}, \gamma') /| \null \\ \m{uf\_root}(\gamma',\m{par},rt) /| \m{par} \neq \tx{x} /| \tx{x}\in\m{V}(\gamma') /| \null \\ \gamma'(\tx{x})=(\m{rnk}, \m{par}) /| \neg\m{reachable}(\gamma', \m{rt}, \tx{x}) /| \null \\ \gamma'' = \m{ggrp}(\gamma',\tx{x},\m{rt}) /| \m{findS}(\gamma, \tx{p}, \gamma'') /| \null \\ \m{uf\_root}(\gamma'',\tx{p},rt)\end{array}\right\}$
+  } 
+  return p;
+} // $\left\{\!\!\!\!\!\begin{array}{l@{}} \exists \gamma'',\m{rt}.~\p{graph}(\gamma'') /| \m{findS}(\gamma, \tx{x}, \gamma'') /| \null \\\m{uf\_root}(\gamma'',\tx{x},\m{rt}) /| \tx{ret} = \m{rt}  \end{array}\right\}$ 
 \end{lstlisting}
 
 % need to have some notion of findS down below. probably want to define it at a higher level than what I've reproduced below?
@@ -40,7 +39,7 @@ struct Node* find(struct Node* x) { // $\label{code:findstart}\{\p{graph}(\gamma
 %  Definition findS (g1: Graph) (x: Vertex) (g2: Graph) :=
 %    (predicate_partialgraph g1 (fun n => ~ reachable g1 x n)) ~=~ (predicate_partialgraph g2 (fun n => ~ reachable g1 x n)) /\ uf_equiv g1 g2 /\ rank_unchanged g1 g2. (**) why isn't uf_equiv enough?
 
-
+% can replace rnk with _ instead of ex it
 
 \vspace{-0.4em}
 \caption{Clight code and proof sketch for find}
