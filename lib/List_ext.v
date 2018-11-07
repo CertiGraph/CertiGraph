@@ -1283,4 +1283,11 @@ Section LIST_DERIVED_BIJECTION.
     - apply (H3 b); auto. rewrite InEither_cons_iff. left. right. simpl; reflexivity.
   Qed.
 
+  Lemma DoubleNoDup_list_bi_map: forall k v l,
+      DoubleNoDup l -> In (k, v) l -> list_bi_map l k = v /\ list_bi_map l v = k.
+  Proof.
+    intros. destruct (DoubleNoDup_bi_look_up _ _ _ H H0). unfold list_bi_map.
+    rewrite H1, H2. split; reflexivity.
+  Qed.
+
 End LIST_DERIVED_BIJECTION.
