@@ -117,6 +117,9 @@ Definition IS_FROM_WEAK_TYPE :=
 (* (ConstType Z)) (ConstType val)) Mpred) *)
 (* (ConstType Z). *)
 
+Axiom valid_pointer_bounds: forall v,
+    valid_pointer v |-- !!(exists b o, v = Vptr b (Ptrofs.repr o) /\ 0 <= o <= Ptrofs.max_unsigned).
+
 (* what's up with TYPE? *)
 (* see manual for spec-writing *)
 Program Definition Is_from_weak_spec :=
@@ -126,8 +129,8 @@ Program Definition Is_from_weak_spec :=
   PRE [ _from_start OF (tptr int_or_ptr_type), (* n is pos? how did we get away without this info? add? *)
         _from_limit OF (tptr int_or_ptr_type),
         _v OF (tptr int_or_ptr_type)]
-    PROP ()
-    LOCAL (temp _from_start start; temp _from_limit (offset_val n start); temp _v (offset_val m start)) (* weakened here -- gave ourselves the info that it's the same block, therefore is not stuck *)
+    PROP (v = offset_val m start; 0 < n; sepalg.nonidentity sh; 0 <= m)
+    LOCAL (temp _from_start start; temp _from_limit (offset_val n start); temp _v v) (* weakened here -- gave ourselves the info that it's the same block, therefore is not stuck *)
     SEP (weak_derives P (memory_block sh n start * TT) && emp;
          weak_derives P (valid_pointer v * TT) && emp; P)
   POST [tint]
@@ -456,47 +459,134 @@ Lemma body_is_from_weak: semax_body Vprog Gprog f_Is_from Is_from_weak_spec.
 Proof.
   start_dep_function. simpl.
   destruct ts as [[[[[? fs] n] ?] ?] z].
+  assert_PROP (isptr fs). {
+    sep_apply (apply_derives m (memory_block s n fs * TT)).
+    rewrite memory_block_isptr. Intros.
+    entailer!. } rename H into Hp.
   forward_if
-    (EX t: val,
-    PROP ((((force_val (sem_cast_i2bool
-                            (force_val (sem_cmp_pp Cle fs (offset_val z fs))))) = Vzero /\ t = Vzero)
-              \/
-              ((force_val (sem_cast_i2bool
-                            (force_val (sem_cmp_pp Cle fs (offset_val z fs))))) = Vone)) /\ (t = (force_val (sem_cast_i2bool
-                            (force_val (sem_cmp_pp Cle (offset_val z fs) (offset_val n fs)))))))
-    LOCAL (temp _t'1 t)
+    (EX b: {v_in_range v fs n} + {~ v_in_range v fs n},
+     PROP ()
+    LOCAL (temp _t'1 (Vint (Int.repr (if b then 1 else 0))))
     SEP (weak_derives m (memory_block s n fs * TT) && emp;
          weak_derives m (valid_pointer v * TT) && emp; m)).
-  1: admit.
-  - forward. 1: admit.
-    Exists (force_val
-              (sem_cast tint tbool
-                 (eval_binop Olt
-                    (tptr
-                       (Tpointer tvoid
-                          {| attr_volatile := false; attr_alignas := Some 2%N |}))
-                    (tptr
-                       (Tpointer tvoid
-                          {| attr_volatile := false; attr_alignas := Some 2%N |}))
-                    (offset_val z fs) (offset_val n fs)))). 
-    entailer!. simpl in *.
-    revert H0.
-    unfold sem_cmp_pp. simpl. unfold Val.cmpu_bool. simpl.
-    destruct fs; inversion H1; subst; simpl; [contradiction|].
-    repeat rewrite eq_block_lem; simpl.
-    remember (Ptrofs.ltu (Ptrofs.add i (Ptrofs.repr z))
-                         (Ptrofs.add i (Ptrofs.repr n))).
-    destruct b0; simpl in *.
-    + repeat rewrite Ptrofs.not_ltu. simpl.
-      rewrite <- Heqb0. simpl.
-      destruct (Ptrofs.ltu i (Ptrofs.add i (Ptrofs.repr z))).
-      * simpl. split; [|auto]. right; unfold Vone; trivial.
-      * simpl.
-        split. 2: auto.
-        destruct (Ptrofs.eq i (Ptrofs.add i (Ptrofs.repr z))); simpl.
-        -- right; auto.
-        -- (* dead *) admit.
-    Abort.
+  1: {
+    (* sep_apply (apply_derives m (memory_block s n fs * TT)). *)
+       (* rewrite memory_block_isptr. Intros. *)
+       destruct fs; try contradiction.
+       simpl denote_tc_test_order.
+       unfold test_order_ptrs.
+       unfold sameblock.
+       destruct (peq b b).
+       2: { destruct n0. reflexivity. }
+       simpl proj_sumbool.
+       Opaque weak_derives valid_pointer.
+       apply andp_right.
+       2: { eapply derives_trans.
+            2: apply valid_pointer_weak.
+            simpl offset_val.
+            sep_apply (apply_derives m (valid_pointer (Vptr b (Ptrofs.add i (Ptrofs.repr z))) * TT)). entailer!.
+       }
+       sep_apply (apply_derives m (memory_block s n (Vptr b i) * TT)).
+       sep_apply (memory_block_valid_ptr s n (Vptr b i)); auto. omega.
+       eapply derives_trans.
+       2: apply valid_pointer_weak.
+       entailer!.
+  }
+  - forward.
+    + entailer!.
+      destruct fs; try contradiction.
+      simpl denote_tc_test_order.
+      unfold test_order_ptrs.
+      unfold sameblock.
+      destruct (peq b b).
+      2: { destruct n0. reflexivity. }
+      simpl proj_sumbool.
+      Opaque weak_derives valid_pointer.
+      apply andp_right.
+      2: { simpl offset_val.
+           sep_apply (apply_derives m (memory_block s n (Vptr b i) * TT)).
+           sep_apply (memory_block_weak_valid_pointer s n (Vptr b i) n).
+           omega. auto. auto. simpl offset_val.
+           apply extend_weak_valid_pointer.
+      }
+      simpl offset_val.
+      sep_apply (apply_derives m (valid_pointer (Vptr b (Ptrofs.add i (Ptrofs.repr z))) * TT)).
+      sep_apply (valid_pointer_weak (Vptr b (Ptrofs.add i (Ptrofs.repr z)))). apply extend_weak_valid_pointer.
+
+    + subst v. unfold sem_cmp_pp.
+      change (Tpointer tvoid
+                       {| attr_volatile := false; attr_alignas := Some 2%N |}) with int_or_ptr_type.
+      destruct fs; try contradiction.
+      simpl offset_val. simpl eval_binop.
+      unfold sem_cmp_pp. unfold Archi.ptr64.
+      simpl Val.cmpu_bool.
+      unfold eq_block. destruct peq. 2: contradiction.
+      inv_int i. rewrite !ptrofs_add_repr.
+      unfold Ptrofs.ltu.
+      assert_PROP (0 <= ofs + n <= Ptrofs.max_unsigned). {
+        sep_apply (apply_derives m (memory_block s n (Vptr b (Ptrofs.repr ofs)) * TT)).
+        sep_apply (memory_block_local_facts s n (Vptr b (Ptrofs.repr ofs))). Intros. red in H0.
+        rewrite Ptrofs.unsigned_repr in H0. 2: rep_omega.
+        apply prop_right. rep_omega. }
+      assert_PROP (0 <= ofs + z <= Ptrofs.max_unsigned). {
+        sep_apply (apply_derives m (valid_pointer (Vptr b (Ptrofs.repr (ofs + z))) * TT)).
+        sep_apply (valid_pointer_bounds (Vptr b (Ptrofs.repr (ofs + z)))). Intros. apply prop_right.
+        destruct H5 as [b0 [o [? ?]]].
+        inversion H5.
+Check Ptrofs.unsigned_repr.
+        
+Search Ptrofs.Z_mod_modulus.
+        
+        generalize (Ptrofs.unsigned_repr o H6); intro Hx.
+        unfold Ptrofs.unsigned in Hx.
+        
+        Search Ptrofs.repr Ptrofs.max_unsigned.
+Print Ptrofs.unsigned.
+(* rewrite Ptrofs.unsigned_repr in H5.         *)
+        admit.
+      }
+      rewrite !Ptrofs.unsigned_repr; auto.
+      * destruct (zlt (ofs + z) (ofs + n)).
+        -- simpl force_val. apply Zplus_lt_reg_l in l.
+           simpl in H. rewrite ptrofs_add_repr in H.
+           assert (v_in_range
+                     (Vptr b (Ptrofs.repr (ofs + z))) (Vptr b (Ptrofs.repr ofs)) n). {
+             exists z. simpl. rewrite ptrofs_add_repr.
+             split; auto. }
+           Exists (@left _ (~ v_in_range (Vptr b (Ptrofs.repr (ofs + z))) (Vptr b (Ptrofs.repr ofs)) n) H6).
+           entailer!.
+        -- assert (n <= z) by omega. clear g.
+           simpl force_val.
+           assert (~ v_in_range
+                     (Vptr b (Ptrofs.repr (ofs + z))) (Vptr b (Ptrofs.repr ofs)) n). {
+             intro. destruct H7 as [i [? ?]]. simpl offset_val in H8. rewrite ptrofs_add_repr in H8.
+             inversion H8.
+             rewrite !Ptrofs.Z_mod_modulus_eq in H10.
+             rewrite !Z.mod_small in H10; [|rep_omega..].
+             apply Z.add_reg_l in H10. omega. }
+           Exists (@right (v_in_range (Vptr b (Ptrofs.repr (ofs + z))) (Vptr b (Ptrofs.repr ofs)) n) _ H7).
+           entailer!.
+  - forward. subst v. unfold sem_cmp_pp in H.
+    unfold Archi.ptr64 in H. destruct fs; try contradiction.
+    simpl in H. unfold eq_block in H.
+    destruct peq in H. 2: contradiction.
+    inv_int i. rewrite ptrofs_add_repr in H.
+    unfold Ptrofs.ltu in H.
+    assert_PROP (0 <= ofs + z <= Ptrofs.max_unsigned). {
+      admit.
+    } rewrite !Ptrofs.unsigned_repr in H; auto.
+    2: rep_omega. destruct (zlt (ofs + z) ofs).
+    1: exfalso; omega. simpl in H. unfold typed_false in H.
+    simpl in H. inversion H.
+  - Intros b. forward. Exists b. entailer.
+    rewrite <- (sepcon_emp m) at 4.
+    rewrite (sepcon_comm m emp).
+    apply sepcon_derives.
+    2: apply derives_refl.
+    rewrite <- (sepcon_emp emp) at 3.
+    apply sepcon_derives;
+      apply andp_left2, derives_refl.
+Admitted.
     
 Lemma int_or_ptr_to_int_is_not_stuck: forall ge e le m id  i,
     le ! id = Some (Vint i) ->
