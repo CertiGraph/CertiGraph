@@ -612,7 +612,7 @@ Proof. intros. red in H. rewrite H. destruct (graph_has_v_dec g v); auto. Qed.
 Lemma quasi_iso_reset_iso: forall g1 roots1 g2 roots2 gen,
     gc_graph_quasi_iso g1 roots1 g2 roots2 gen (S gen) ->
     sound_gc_graph g2 -> sound_gc_graph g1 ->
-    no_edge2gen g1 gen -> no_edge2gen g2 gen -> roots_have_no_gen roots2 gen ->
+    no_edge2gen g1 gen -> no_edge2gen g2 gen -> no_dangling_dst g1 ->
     gc_graph_iso g1 roots1 (reset_graph gen g2) roots2.
 Proof.
   intros. red in H. red. destruct H as [? [vpl [? [? ?]]]].
@@ -631,220 +631,318 @@ Proof.
     apply in_combine_r in H14. apply H10 in H14. destruct H14 as [_ ?].
     contradiction. } remember (list_bi_map vpl) as vmap.
   remember (list_bi_map (gen_edge_pair_list g1 vpl)) as emap.
+  destruct (reset_is_sound _ gen H0) as [? [? ?]]. destruct H0 as [? [? ?]].
+  destruct H1 as [? [? ?]]. unfold vertex_valid, edge_valid, src_edge in *.
+  simpl in H14, H15, H16.
   assert (Hs: forall e, evalid g1 e -> vmap (src g1 e) = src g2 (emap e)). {
-    intros. destruct H1 as [? [? ?]]. red in H1, H15, H16. rewrite H15 in H14.
-    destruct H14. rewrite H16 in *. rewrite <- H1 in H14. subst vmap emap.
-    destruct H0 as [_ [_ ?]]. red in H0. destruct (InEither_dec (fst e) vpl).
-    - specialize (H13 _ H14 i). destruct H13 as [k [v [? [? ?]]]].
-      rewrite H18, H19 in *. subst k. pose proof (gepl_key _ _ _ _ H17 H13).
-      destruct (DoubleNoDup_list_bi_map _ _ _ Hn H18) as [? _]. rewrite H20.
-      rewrite H0. simpl. reflexivity.
-    - rewrite !list_bi_map_not_In; auto. intro; apply n; apply gepl_InEither in H18.
+    intros. rewrite H19 in H21. destruct H21. rewrite H20 in *. rewrite <- H1 in H21.
+    subst vmap emap. destruct (InEither_dec (fst e) vpl).
+    - specialize (H13 _ H21 i). destruct H13 as [k [v [? [? ?]]]].
+      rewrite H23, H24 in *. subst k. pose proof (gepl_key _ _ _ _ H22 H13).
+      destruct (DoubleNoDup_list_bi_map _ _ _ Hn H23) as [? _]. rewrite H25.
+      rewrite H18. simpl. reflexivity.
+    - rewrite !list_bi_map_not_In; auto. intro; apply n; apply gepl_InEither in H23.
       auto. }
   assert (Hd: forall e,
              evalid (reachable_sub_labeledgraph g1 (filter_sum_right roots1)) e ->
              vmap (dst g1 e) = dst g2 (emap e)). {
-    intros. simpl in H14. destruct H14 as [? [? ?]].
-    destruct H1 as [? [? ?]]. red in H1, H17, H18. pose proof H14.
-    rewrite H17 in H14. destruct H14. rewrite H18 in *. rewrite <- H1 in H14.
+    intros. simpl in H21. destruct H21 as [? [? ?]]. pose proof H21.
+    rewrite H19 in H21. destruct H21. rewrite H20 in *. rewrite <- H1 in H21.
     assert (~ In (dst g1 e) to_l). {
-      intro. rewrite H10 in H21. destruct H21.
-      apply reachable_through_set_foot_valid in H16. contradiction. }
+      intro. rewrite H10 in H26. destruct H26.
+      apply reachable_through_set_foot_valid in H23. contradiction. }
     subst vmap emap. destruct (InEither_dec (fst e) vpl).
-    - specialize (H13 _ H14 i). destruct H13 as [k [v [? [? ?]]]]. subst k.
-      pose proof (gepl_key _ _ _ _ H20 H13).
-      destruct (DoubleNoDup_list_bi_map _ _ _ Hn H22) as [? _]. rewrite H24.
-      destruct (H6 _ _ H13) as [? ?]. rewrite get_edges_inv in H20.
-      destruct H20 as [idx [? ?]]. rewrite H20 in *. simpl in *.
-      specialize (H26 _ H27). destruct H26; auto. rewrite <- H20 in *.
+    - specialize (H13 _ H21 i). destruct H13 as [k [v [? [? ?]]]]. subst k.
+      pose proof (gepl_key _ _ _ _ H25 H13).
+      destruct (DoubleNoDup_list_bi_map _ _ _ Hn H27) as [? _]. rewrite H29.
+      destruct (H6 _ _ H13) as [? ?]. rewrite get_edges_inv in H25.
+      destruct H25 as [idx [? ?]]. rewrite H25 in *. simpl in *.
+      specialize (H31 _ H32). destruct H31; auto. rewrite <- H25 in *.
       destruct (InEither_dec (dst g1 e) vpl).
       2: rewrite list_bi_map_not_In; auto. red in i0. rewrite Heqp in i0.
       rewrite in_app_iff in i0. destruct i0. 2: contradiction.
-      rewrite <- H8 in H28. destruct H28 as [_ ?]. exfalso.
+      rewrite <- H8 in H33. destruct H33 as [_ ?]. exfalso.
       assert (graph_has_e g2 (v, idx)). {
         split; simpl.
         - rewrite <- H12 in H13. apply in_combine_r in H13.
-          rewrite H10 in H13. destruct H13. destruct H0 as [? _]. red in H0.
-          rewrite <- H0. assumption.
-        - apply In_snd_get_edges. apply vlabel_get_edges_snd in H25.
-          rewrite <- H25. assumption. } destruct v as [vgen vidx].
+          rewrite H10 in H13. destruct H13. rewrite <- H0. assumption.
+        - apply In_snd_get_edges. apply vlabel_get_edges_snd in H30.
+          rewrite <- H30. assumption. } destruct v as [vgen vidx].
       assert (vgen = S gen). {
         rewrite <- H12 in H13. apply in_combine_r in H13. apply N in H13.
         simpl in H13. assumption. } subst vgen.
-      assert (S gen <> gen) by omega. specialize (H3 _ H30 vidx (snd e)).
-      simpl in H3. rewrite H20 in *. simpl in *. apply H3; auto.
-      change (prod nat nat) with VType. rewrite H26; auto.
+      assert (S gen <> gen) by omega. specialize (H3 _ H35 vidx (snd e)).
+      simpl in H3. rewrite H25 in *. simpl in *. apply H3; auto.
+      change (prod nat nat) with VType. rewrite H31; auto.
     - assert (~ InEither (dst g1 e) vpl). {
-        intro. unfold InEither in H22. rewrite Heqp, in_app_iff in H22.
-        destruct H22; auto. rewrite <- H8 in H22. destruct H22 as [_ ?].
+        intro. unfold InEither in H27. rewrite Heqp, in_app_iff in H27.
+        destruct H27; auto. rewrite <- H8 in H27. destruct H27 as [_ ?].
         assert (vgeneration (fst e) <> gen). {
           intro. apply n. unfold InEither. rewrite Heqp, in_app_iff. left.
           rewrite <- H8. split; auto. }
         assert (graph_has_e g1 e) by (split; [rewrite <- H1|]; auto).
-        destruct e as [[vgen vidx] eidx] eqn:? . simpl in H23.
-        specialize (H2 _ H23 vidx eidx). simpl in H2. specialize (H2 H24).
+        destruct e as [[vgen vidx] eidx] eqn:? . simpl in H28.
+        specialize (H2 _ H28 vidx eidx). simpl in H2. specialize (H2 H29).
         contradiction. } rewrite !list_bi_map_not_In; auto.
-      2: intro; apply n; apply gepl_InEither in H23; auto.
+      2: intro; apply n; apply gepl_InEither in H28; auto.
       destruct H as [[_ [_ [_ ?]]] _]. apply H; auto.
-      apply reachable_through_set_foot_valid in H16. auto. }
+      apply reachable_through_set_foot_valid in H23. auto. }
   assert (He: forall e,
              evalid (reachable_sub_labeledgraph g1 (filter_sum_right roots1)) e ->
              evalid (remove_nth_gen_ve g2 gen) (emap e)). {
-    intros. destruct (reset_is_sound _ gen H0) as [? [? ?]]. rewrite Heqemap.
-    simpl in H14. destruct H14 as [? [? ?]]. pose proof H14. red in H16. simpl in H16.
-    rewrite H16. rewrite graph_has_e_reset. destruct H1 as [? [? ?]]. red in H21.
-    rewrite H21 in H14. destruct H14. red in H1. rewrite <- H1 in H14.
-    destruct H0 as [? [? _]]. red in H0. destruct (InEither_dec (fst e) vpl).
-    - specialize (H13 _ H14 i) as [k [v [? [? ?]]]]. subst k.
-      pose proof (gepl_key _ _ _ _ H23 H13).
-      destruct (DoubleNoDup_list_bi_map _ _ _ Hn H25) as [? _]. rewrite H27.
+    intros. rewrite Heqemap. simpl in H21. destruct H21 as [? [? ?]]. pose proof H21.
+    rewrite H15, graph_has_e_reset. rewrite H19 in H21. destruct H21.
+    rewrite <- H1 in H21. destruct (InEither_dec (fst e) vpl).
+    - specialize (H13 _ H21 i) as [k [v [? [? ?]]]]. subst k.
+      pose proof (gepl_key _ _ _ _ H25 H13).
+      destruct (DoubleNoDup_list_bi_map _ _ _ Hn H26) as [? _]. rewrite H28.
       unfold graph_has_e, egeneration. simpl. rewrite <- H0. pose proof H13.
       rewrite <- H12 in H13. apply in_combine_r in H13. pose proof H13.
-      rewrite H10 in H13. destruct H13 as [? _]. apply N in H29. rewrite H29.
-      split; [split|]; [auto | | omega]. rewrite get_edges_inv in H23.
-      destruct H23 as [idx [? ?]]. rewrite H23. simpl. apply H6 in H28.
-      destruct H28 as [? _]. apply vlabel_get_edges_snd in H28.
-      rewrite get_edges_In, <- H28. assumption.
-    - red in H24. rewrite list_bi_map_not_In, <- H24.
-      2: intro; apply n; apply gepl_InEither in H25; auto. split.
-      1: destruct H as [[_ [? _]] _]; apply H; auto. unfold egeneration. red in H22.
-      intro. rewrite H22 in H18. apply n. red. rewrite Heqp.
-      rewrite in_app_iff, <- H8. left. symmetry in H25. split; assumption. }
+      rewrite H10 in H13. destruct H13 as [? _]. apply N in H30. rewrite H30.
+      split; [split|]; [auto | | omega]. rewrite get_edges_inv in H25.
+      destruct H25 as [idx [? ?]]. rewrite H25. simpl. apply H6 in H29.
+      destruct H29 as [? _]. apply vlabel_get_edges_snd in H29.
+      rewrite get_edges_In, <- H29. assumption.
+    - rewrite list_bi_map_not_In, <- H17.
+      2: intro; apply n; apply gepl_InEither in H26; auto. split.
+      1: destruct H as [[_ [? _]] _]; apply H; auto. unfold egeneration. intro.
+      apply n. red. rewrite Heqp, in_app_iff, <- H8. left. symmetry in H26.
+      rewrite H20 in H22. split; assumption. }
   assert (Hv: forall x,
              vvalid (reachable_sub_labeledgraph g1 (filter_sum_right roots1)) x ->
              vvalid (remove_nth_gen_ve g2 gen) (vmap x)). {
-    destruct (reset_is_sound _ gen H0) as [? [? ?]].
-    intros. simpl in H17. destruct H17. rewrite Heqvmap in *.
-    specialize (H14 (list_bi_map vpl x)). simpl in H14. rewrite H14.
+    intros. simpl in H21. destruct H21. rewrite Heqvmap in *. rewrite H14.
     rewrite graph_has_v_reset. destruct (InEither_dec x vpl).
-    - specialize (H13 _ H17 i). destruct H13 as [v1 [v2 [? [? ?]]]].
-      subst x; rewrite H20. rewrite <- H12 in H13. apply in_combine_r in H13.
-      pose proof H13. apply N in H13. rewrite H10 in H19. destruct H19 as [? _].
-      destruct H0 as [? _]. red in H0. rewrite <- H0. split; auto. omega.
-    - rewrite list_bi_map_not_In; auto. destruct H as [[? _] _].
-      destruct H0 as [? _]. red in H0. rewrite <- H0. split. 1: apply H; auto.
-      intro. apply n. clear n. red. rewrite Heqp, in_app_iff. left. rewrite <- H8.
-      symmetry in H19. split; assumption. }
+    - specialize (H13 _ H21 i). destruct H13 as [v1 [v2 [? [? ?]]]].
+      subst x; rewrite H24. rewrite <- H12 in H13. apply in_combine_r in H13.
+      pose proof H13. apply N in H13. rewrite H10 in H23. destruct H23 as [? _].
+      rewrite <- H0. split; auto. omega.
+    - rewrite list_bi_map_not_In; auto. destruct H as [[? _] _]. rewrite <- H0.
+      split. 1: apply H; auto. intro. apply n. clear n. red.
+      rewrite Heqp, in_app_iff. left. rewrite <- H8. split; auto. }
   assert (Hp: forall v,
              vvalid (reachable_sub_labeledgraph g1 (filter_sum_right roots1)) v ->
              reachable_through_set (remove_nth_gen_ve g2 gen)
                                    (filter_sum_right roots2) (vmap v)). {
-    intros. destruct (reset_is_sound _ gen H0) as [? [? ?]].
-    simpl in H14. destruct H14. unfold reachable_through_set in H18 |-* .
-    destruct H18 as [s [? ?]].
+    intros. simpl in H21. destruct H21. unfold reachable_through_set in H22 |-* .
+    destruct H22 as [s [? ?]].
     assert (forall x, reachable g1 s x ->
                       reachable_through_set g1 (filter_sum_right roots1) x) by
         (intros; exists s; split; assumption).
-    rewrite <- filter_sum_right_In_iff in H18.
-    apply (in_map (root_map vmap)) in H18. rewrite <- H5 in H18.
-    simpl in H18. apply filter_sum_right_In_iff in H18. exists (vmap s).
-    split; auto. unfold reachable, reachable_by in H19. destruct H19 as [p ?].
+    rewrite <- filter_sum_right_In_iff in H22.
+    apply (in_map (root_map vmap)) in H22. rewrite <- H5 in H22.
+    simpl in H22. apply filter_sum_right_In_iff in H22. exists (vmap s).
+    split; auto. unfold reachable, reachable_by in H23. destruct H23 as [p ?].
     assert (forall e, In e (snd p) -> evalid (reachable_sub_labeledgraph
                                                 g1 (filter_sum_right roots1)) e). {
       intros. simpl. split.
-      - destruct H19 as [? [? ?]]. destruct p. eapply valid_path_evalid; eauto.
-      - destruct (reachable_path_edge_in _ _ _ _ H19 _ H21).
-        apply H20 in H22. apply H20 in H23. split; assumption. }
-    destruct H19 as [[? ?] [? ?]]. unfold reachable, reachable_by.
-    destruct p. simpl in H19. subst v0. simpl snd in *.
+      - destruct H23 as [? [? ?]]. destruct p. eapply valid_path_evalid; eauto.
+      - destruct (reachable_path_edge_in _ _ _ _ H23 _ H25).
+        apply H24 in H26. apply H24 in H27. split; assumption. }
+    destruct H23 as [[? ?] [? ?]]. unfold reachable, reachable_by.
+    destruct p. simpl in H23. subst v0. simpl snd in *.
     assert (forall e, In e l -> vmap (src g1 e) = src g2 (emap e) /\
                                 vmap (dst g1 e) = dst g2 (emap e)). {
-      intros. split; [apply Hs | apply Hd]; auto. apply H21 in H19. simpl in H19.
-      destruct H19. assumption. } clear H21. exists (vmap s, map emap l).
+      intros. split; [apply Hs | apply Hd]; auto. apply H25 in H23. simpl in H23.
+      destruct H23. assumption. } clear H25. exists (vmap s, map emap l).
     assert (Hvp: valid_path (remove_nth_gen_ve g2 gen) (vmap s, map emap l)). {
-      clear H18 H22 H24. revert s H19 H20 H23. induction l; intros.
-      - simpl in *. apply Hv. split; auto. apply H20, reachable_refl; auto.
-      - simpl map. rewrite valid_path_cons_iff in *. destruct H23 as [? [? ?]].
+      clear H22 H26 H28. revert s H23 H24 H27. induction l; intros.
+      - simpl in *. apply Hv. split; auto. apply H24, reachable_refl; auto.
+      - simpl map. rewrite valid_path_cons_iff in *. destruct H27 as [? [? ?]].
         rewrite remove_ve_src_unchanged, remove_ve_dst_unchanged.
-        assert (In a (a :: l)) by (left; reflexivity). apply H19 in H23.
-        destruct H23. rewrite H18, H23, <- H24. split; auto. split.
-        + red. red in H15, H16, H17.
-          rewrite remove_ve_src_unchanged, remove_ve_dst_unchanged, <- H23, <- H24.
-          destruct H21 as [? [? ?]]. subst s.
+        assert (In a (a :: l)) by (left; reflexivity). apply H23 in H27.
+        destruct H27. rewrite H22, H27, <- H28. split; auto. split.
+        + red. rewrite remove_ve_src_unchanged, remove_ve_dst_unchanged,<- H27, <- H28.
+          destruct H25 as [? [? ?]]. subst s.
           assert (reachable g1 (src g1 a) (src g1 a)) by
               (apply reachable_refl; auto).
           assert (reachable g1 (src g1 a) (dst g1 a)). {
             apply step_reachable with (dst g1 a); auto.
             2: apply reachable_refl; auto. exists a; auto. }
           split; [|split; apply Hv]; [apply He | | ]; simpl; split; auto.
-        + apply IHl; auto. 1: intros; apply H19; right; assumption.
-          intros. apply H20. apply step_reachable with (dst g1 a); auto.
-          2: destruct H21 as [_ [? _]]; subst s; assumption. exists a; auto.
-          destruct H21; assumption. } split; split; auto.
-    - destruct l. 1: simpl in H22 |-* ; rewrite H22; reflexivity.
+        + apply IHl; auto. 1: intros; apply H23; right; assumption.
+          intros. apply H24. apply step_reachable with (dst g1 a); auto.
+          2: destruct H25 as [_ [? _]]; subst s; assumption. exists a; auto.
+          destruct H25; assumption. } split; split; auto.
+    - destruct l. 1: simpl in H26 |-* ; rewrite H26; reflexivity.
       assert (e :: l <> nil) by (intro HS; inversion HS).
-      apply exists_last in H21. destruct H21 as [l' [a ?]]. rewrite e0 in *.
-      rewrite map_app. simpl map. rewrite pfoot_last in H22 |-* .
+      apply exists_last in H25. destruct H25 as [l' [a ?]]. rewrite e0 in *.
+      rewrite map_app. simpl map. rewrite pfoot_last in H26 |-* .
       rewrite remove_ve_dst_unchanged. assert (In a (l' +:: a)) by
-          (rewrite in_app_iff; right; left; reflexivity). apply H19 in H21.
-      destruct H21. rewrite <- H22, H25. reflexivity.
+          (rewrite in_app_iff; right; left; reflexivity). apply H23 in H25.
+      destruct H25. rewrite <- H26, H29. reflexivity.
     - rewrite path_prop_equiv; auto. }
   assert (Nv: forall x, gen <> vgeneration x -> InEither x vpl ->
                         exists k v, In (k, v) vpl /\ x = v /\ list_bi_map vpl x = k). {
-    intros. apply (list_bi_map_In vpl x) in H15. destruct H15 as [k [v [? ?]]].
-    exists k, v. destruct H16; auto. destruct H16. subst x. rewrite <- H12 in H15.
-    apply in_combine_l in H15. rewrite <- H8 in H15. destruct H15 as [_ ?].
-    exfalso. apply H14. subst gen. reflexivity. }
+    intros. apply (list_bi_map_In vpl x) in H22. destruct H22 as [k [v [? ?]]].
+    exists k, v. destruct H23; auto. destruct H23. subst x. rewrite <- H12 in H22.
+    apply in_combine_l in H22. rewrite <- H8 in H22. destruct H22 as [_ ?].
+    exfalso. apply H21. subst gen. reflexivity. }
   assert (Hv': forall v, vvalid (remove_nth_gen_ve g2 gen) v -> vvalid g1 (vmap v)). {
-    intros. destruct (reset_is_sound _ gen H0) as [? [? ?]].
-    red in H15. rewrite H15 in H14. rewrite graph_has_v_reset in H14.
-    destruct H14. destruct H0 as [? [? ?]]. red in H0. rewrite <- H0 in H14.
-    subst vmap. destruct (InEither_dec v vpl).
-    -- specialize (Nv _ H18 i). destruct Nv as [v1 [v2 [? [? ?]]]].
-       subst v. rewrite H23. rewrite <- H12 in H21. apply in_combine_l in H21.
-       rewrite <- H8 in H21. destruct H21.
-       apply reachable_through_set_foot_valid in H21. assumption.
-    -- rewrite list_bi_map_not_In; auto.
-       destruct (vvalid_lcm _ v (proj1 H1)); auto. exfalso. apply n. red.
-       rewrite Heqp, in_app_iff. right. rewrite H10. split; assumption. }
+    intros. rewrite H14 in H21. rewrite graph_has_v_reset in H21. destruct H21.
+    rewrite <- H0 in H21. subst vmap. destruct (InEither_dec v vpl).
+    - specialize (Nv _ H22 i). destruct Nv as [v1 [v2 [? [? ?]]]]. subst v.
+      rewrite H25. rewrite <- H12 in H23. apply in_combine_l in H23.
+      rewrite <- H8 in H23. destruct H23.
+      apply reachable_through_set_foot_valid in H23. assumption.
+    - rewrite list_bi_map_not_In; auto.
+      destruct (vvalid_lcm _ v H1); auto. exfalso. apply n. red.
+      rewrite Heqp, in_app_iff. right. rewrite H10. split; assumption. }
+  assert (He': forall e, evalid (remove_nth_gen_ve g2 gen) e -> evalid g1 (emap e)). {
+    intros. rewrite H15, graph_has_e_reset in H21. destruct H21 as [[? ?] ?].
+    rewrite Heqemap. destruct (InEither_dec (fst e) vpl).
+    - unfold egeneration in H23. specialize (Nv _ H23 i).
+      destruct Nv as [k [v [? [? ?]]]]; subst v. destruct (H6 _ _ H24) as [? _].
+      eapply gepl_value in H25; eauto.
+      destruct (DoubleNoDup_list_bi_map _ _ _ Hn H25) as [_ ?].
+      rewrite H19, H27. split; simpl.
+      + rewrite <- H12 in H24. apply in_combine_l in H24. rewrite <- H8 in H24.
+        destruct H24. apply reachable_through_set_foot_valid in H24.
+        rewrite <- H1. assumption.
+      + rewrite get_edges_In. rewrite get_edges_inv in H22.
+        destruct H22 as [idx [? ?]]. rewrite H22 in *. simpl in *.
+        destruct (H6 _ _ H24) as [? _]. apply vlabel_get_edges_snd in H29.
+        rewrite H29. assumption.
+    - rewrite <- H0 in H21. destruct (vvalid_lcm _ (fst e) H1).
+      2: { exfalso. apply n. red. rewrite Heqp, in_app_iff. right.
+           rewrite H10. split; assumption. } rewrite list_bi_map_not_In.
+      + rewrite H19. split; simpl. 1: rewrite <- H1. auto.
+        rewrite get_edges_inv in H22 |-* . destruct H22 as [idx [? ?]].
+        exists idx. split; auto. destruct H as [_ [? _]].
+        rewrite (vlabel_get_edges_snd _ (fst e) _ g2); auto.
+      + intro; apply n; apply gepl_InEither in H25; simpl in H25; assumption. }
+  assert (Hs': forall e, evalid (remove_nth_gen_ve g2 gen) e ->
+                         vmap (src g2 e) = src g1 (emap e)). {
+    intros. rewrite H15, graph_has_e_reset in H21. destruct H21 as [[? ?] ?].
+    rewrite H18. subst vmap emap. unfold egeneration in H23.
+    destruct (InEither_dec (fst e) vpl).
+    - specialize (Nv _ H23 i). destruct Nv as [k [v [? [? ?]]]]. rewrite <- H25 in *.
+      destruct (H6 _ _ H24) as [? _]. eapply gepl_value in H27; eauto.
+      destruct (DoubleNoDup_list_bi_map _ _ _ Hn H27) as [_ ?].
+      rewrite H20, H26, H28. simpl. reflexivity.
+    - rewrite !list_bi_map_not_In; auto. intro. apply gepl_InEither in H24. auto. }
+  assert (Hvb: bijective vmap vmap) by (subst; apply bijective_list_bi_map; auto).
+  assert (Hd': forall e,
+             evalid (reachable_sub_labeledgraph
+                       (reset_graph gen g2) (filter_sum_right roots2)) e ->
+             vmap (dst g2 e) = dst g1 (emap e)). {
+    intros. destruct H21 as [? [? ?]]. simpl in H23. pose proof H21. rename H24 into E.
+    rewrite remove_ve_dst_unchanged in H23. rewrite H15, graph_has_e_reset in H21.
+    apply reachable_through_set_foot_valid in H23. destruct H21 as [[? ?] ?].
+    rewrite H14, graph_has_v_reset in H23. destruct H23.
+    assert (~ In (dst g2 e) from_l) by
+        (intro; rewrite <- H8 in H27; destruct H27 as [_ ?]; auto).
+    subst vmap emap. unfold egeneration in H25. destruct (InEither_dec (fst e) vpl).
+    - specialize (Nv _ H25 i). destruct Nv as [k [v [? [? ?]]]]. rewrite <- H29 in *.
+      destruct (H6 _ _ H28) as [? ?]. pose proof H31. eapply gepl_value in H31; eauto.
+      destruct (DoubleNoDup_list_bi_map _ _ _ Hn H31) as [_ ?]. rewrite H34.
+      rewrite H29 in *. destruct e as [? idx]. simpl in H29. subst v0. simpl in *.
+      rewrite get_edges_In in H24. apply vlabel_get_edges_snd in H33.
+      rewrite <- H33 in H24. specialize (H32 _ H24). destruct H32.
+      2: rewrite H29, (surjective _ _ Hvb); reflexivity.
+      destruct (InEither_dec (dst g2 (v, idx)) vpl).
+      2: rewrite list_bi_map_not_In; auto. red in i0. rewrite Heqp, in_app_iff in i0.
+      destruct i0. 1: contradiction. rewrite H10 in H32. destruct H32 as [_ ?].
+      assert (graph_has_v g1 k). {
+        rewrite <- H1. rewrite <- H12 in H28. apply in_combine_l in H28.
+        rewrite <- H8 in H28. destruct H28 as [? _].
+        apply reachable_through_set_foot_valid in H28. assumption. }
+      rewrite <- get_edges_In in H24. specialize (H4 _ H35 _ H24).
+      rewrite H29 in H32. rewrite <- H1 in H4. contradiction.
+    - assert (~ InEither e (gen_edge_pair_list g1 vpl)) by
+          (intro; apply gepl_InEither in H28; auto). apply He' in E.
+      rewrite list_bi_map_not_In in E; auto. pose proof E.
+      rewrite H19 in H29. destruct H29. specialize (H4 _ H29 _ H30).
+      rewrite <- H1 in H4. destruct H as [[_ [_ [_ ?]]] _]. specialize (H _ E H4).
+      rewrite <- H. rewrite !list_bi_map_not_In; auto. rewrite H. intro. red in H31.
+      rewrite Heqp, in_app_iff in H31. destruct H31; auto. rewrite <- H in H31.
+      rewrite H10 in H31. destruct H31. contradiction. }
+  assert (Hp': forall v,
+             vvalid (reachable_sub_labeledgraph (reset_graph gen g2)
+                                                (filter_sum_right roots2)) v ->
+             reachable_through_set g1 (filter_sum_right roots1) (vmap v)). {
+    intros. simpl in H21. destruct H21. unfold reachable_through_set in H22 |-* .
+    destruct H22 as [s [? ?]].
+    assert (forall x, reachable (remove_nth_gen_ve g2 gen) s x ->
+                      reachable_through_set (remove_nth_gen_ve g2 gen)
+                                            (filter_sum_right roots2) x) by
+        (intros; exists s; split; assumption).
+    rewrite <- filter_sum_right_In_iff in H22. rewrite H5 in H22.
+    apply (in_map (root_map vmap)) in H22.
+    rewrite (surjective _ _ (bijective_map _ _ (bijective_root_map _ _ Hvb))) in H22.
+    simpl in H22. apply filter_sum_right_In_iff in H22. exists (vmap s).
+    split; auto. unfold reachable, reachable_by in H23. destruct H23 as [p ?].
+    assert (forall e,
+               In e (snd p) ->
+               evalid (reachable_sub_labeledgraph
+                         (remove_nth_gen_ve g2 gen) (filter_sum_right roots2)) e). {
+      intros. simpl. split.
+      - destruct H23 as [? [? ?]]. destruct p. eapply valid_path_evalid; eauto.
+      - destruct (reachable_path_edge_in _ _ _ _ H23 _ H25).
+        apply H24 in H26. apply H24 in H27. split; assumption. }
+    destruct H23 as [[? ?] [? ?]]. unfold reachable, reachable_by.
+    destruct p. simpl in H23. subst v0. simpl snd in *.
+    assert (forall e, In e l -> vmap (src g2 e) = src g1 (emap e) /\
+                                vmap (dst g2 e) = dst g1 (emap e)). {
+      intros. split; [apply Hs' | apply Hd']; auto. apply H25 in H23. simpl in H23.
+      destruct H23. assumption. } clear H25. exists (vmap s, map emap l).
+    assert (Hvp: valid_path g1 (vmap s, map emap l)). {
+      clear H22 H26 H28. revert s H23 H24 H27. induction l; intros.
+      - simpl in *. apply Hv'; auto.
+      - simpl map. rewrite valid_path_cons_iff in *. destruct H27 as [? [? ?]].
+        rewrite remove_ve_src_unchanged, remove_ve_dst_unchanged in *.
+        assert (In a (a :: l)) by (left; reflexivity). apply H23 in H27.
+        destruct H27. rewrite H22, H27, <- H28. split; auto. split.
+        + red. rewrite <- H27, <- H28. destruct H25 as [? [? ?]]. subst s.
+          rewrite remove_ve_src_unchanged in H29.
+          rewrite remove_ve_dst_unchanged in H30.
+          assert (reachable (remove_nth_gen_ve g2 gen) (src g2 a) (src g2 a)) by
+              (apply reachable_refl; auto).
+          assert (reachable (remove_nth_gen_ve g2 gen) (src g2 a) (dst g2 a)). {
+            apply step_reachable with (dst g2 a); auto.
+            2: apply reachable_refl; auto. exists a; auto.
+            - rewrite remove_ve_src_unchanged. reflexivity.
+            - rewrite remove_ve_dst_unchanged. reflexivity. }
+          split; [|split; apply Hv']; [apply He' | | ]; auto.
+        + apply IHl; auto. 1: intros; apply H23; right; assumption.
+          intros. apply H24. apply step_reachable with (dst g2 a); auto.
+          * exists a; auto; [destruct H25 | rewrite remove_ve_src_unchanged |
+                             rewrite remove_ve_dst_unchanged]; auto.
+          * destruct H25 as [_ [? _]]; subst s;
+              rewrite remove_ve_src_unchanged in H25; assumption. } split; split; auto.
+    - destruct l. 1: simpl in H26 |-* ; rewrite H26; reflexivity.
+      assert (e :: l <> nil) by (intro HS; inversion HS).
+      apply exists_last in H25. destruct H25 as [l' [a ?]]. rewrite e0 in *.
+      rewrite map_app. simpl map. rewrite pfoot_last in H26 |-* .
+      rewrite remove_ve_dst_unchanged in H26. assert (In a (l' +:: a)) by
+          (rewrite in_app_iff; right; left; reflexivity). apply H23 in H25.
+      destruct H25. rewrite <- H26, H29. reflexivity.
+    - rewrite path_prop_equiv; auto. }
   exists vmap, vmap, emap, emap. split; auto. constructor; intros.
-  - constructor; intros.
-    + subst. apply bijective_list_bi_map; assumption.
+  - constructor; intros; auto.
     + subst. apply bijective_list_bi_map; assumption.
     + simpl. split; [apply Hv | apply Hp]; assumption.
-    + simpl. split. 1: apply Hv'; destruct H14; assumption. admit.
+    + simpl. split; [apply Hv' | apply Hp']; auto. destruct H21; assumption.
     + simpl. split. 1: apply He; assumption.
       rewrite remove_ve_src_unchanged, remove_ve_dst_unchanged, <- Hd, <- Hs; auto.
-      2: destruct H14; auto. destruct H14 as [? [? ?]].
+      2: destruct H21; auto. destruct H21 as [? [? ?]].
       split; apply Hp; simpl; split; auto;
         eapply reachable_through_set_foot_valid; eauto.
-    + simpl. split.
-      * simpl in H14. destruct H14. destruct (reset_is_sound _ gen H0) as [? [? ?]].
-        red in H17. rewrite H17 in H14. rewrite graph_has_e_reset in H14. destruct H14.
-        destruct H14. rewrite Heqemap. destruct (InEither_dec (fst e') vpl).
-        -- unfold egeneration in H19. specialize (Nv _ H19 i).
-           destruct Nv as [k [v [? [? ?]]]]; subst v. destruct (H6 _ _ H21) as [? _].
-           eapply gepl_value in H22; eauto. destruct H1 as [? [? ?]]. red in H24.
-           destruct (DoubleNoDup_list_bi_map _ _ _ Hn H22) as [_ ?].
-           rewrite H26, H24. split; simpl.
-           ++ rewrite <- H12 in H21. apply in_combine_l in H21. rewrite <- H8 in H21.
-              destruct H21. apply reachable_through_set_foot_valid in H21.
-              red in H1. rewrite <- H1. assumption.
-           ++ rewrite get_edges_In. rewrite get_edges_inv in H20.
-              destruct H20 as [idx [? ?]]. rewrite H20 in *. simpl in *.
-              destruct (H6 _ _ H21) as [? _]. apply vlabel_get_edges_snd in H28.
-              rewrite H28. assumption.
-        -- destruct H1 as [? [? ?]]. destruct H0 as [? _]. red in H0.
-           rewrite <- H0 in H14. destruct (vvalid_lcm _ (fst e') H1).
-           2: { exfalso. apply n. red. rewrite Heqp, in_app_iff. right.
-                rewrite H10. split; assumption. } rewrite list_bi_map_not_In.
-           ++ red in H21. rewrite H21. split; simpl.
-              ** red in H1. rewrite <- H1. auto.
-              ** rewrite get_edges_inv in H20 |-* . destruct H20 as [idx [? ?]].
-                 exists idx. split; auto. destruct H as [_ [? _]].
-                 rewrite (vlabel_get_edges_snd _ (fst e') _ g2); auto.
-           ++ intro; apply n; apply gepl_InEither in H24; simpl in H24; assumption.
-      * admit.
-    + simpl. rewrite remove_ve_src_unchanged. destruct H14 as [? _]. apply Hs. auto.
+    + simpl. split; [apply He' | rewrite <- Hs', <- Hd']; auto;
+               destruct H21 as [? [? ?]]; auto. simpl src in H22. simpl dst in H23.
+      rewrite remove_ve_src_unchanged in H22. rewrite remove_ve_dst_unchanged in H23.
+      split; apply Hp'; simpl; split; auto;
+        eapply reachable_through_set_foot_valid; eauto.
+    + simpl. rewrite remove_ve_src_unchanged. destruct H21 as [? _]. apply Hs. auto.
     + simpl. rewrite remove_ve_dst_unchanged. apply Hd; auto.
-  - simpl in H14. destruct H14. simpl. rewrite remove_ve_vlabel_unchanged.
+  - simpl in H21. destruct H21. simpl. rewrite remove_ve_vlabel_unchanged.
     subst vmap. destruct (InEither_dec v vpl).
-    + specialize (H13 _ H14 i). destruct H13 as [v1 [v2 [? [? ?]]]].
-      specialize (H6 _ _ H13). subst v. rewrite H17. destruct H6; auto.
+    + specialize (H13 _ H21 i). destruct H13 as [v1 [v2 [? [? ?]]]].
+      specialize (H6 _ _ H13). subst v. rewrite H24. destruct H6; auto.
     + rewrite list_bi_map_not_In; auto. destruct H as [_ [? _]]. apply H; auto.
   - simpl. destruct (elabel g1 e).
     destruct (elabel (remove_nth_gen_ve g2 gen) (emap e)). reflexivity.
-Abort.
+Qed.
 
 Lemma fr_O_quasi_iso: forall from to p g1 g2 roots1 roots2 g3 f_info,
     forward_p_compatible p roots2 g2 from ->
