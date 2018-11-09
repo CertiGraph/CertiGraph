@@ -12,9 +12,11 @@ Definition eq_as_set {A} (L1 L2 : list A) : Prop := incl L1 L2 /\ incl L2 L1.
 
 Notation "a '~=' b" := (eq_as_set a b) (at level 1).
 
-Lemma eq_as_set_refl: forall A (L : list A), L ~= L. Proof. intros; split; apply incl_refl. Qed.
+Lemma eq_as_set_refl: forall A (L : list A), L ~= L.
+Proof. intros; split; apply incl_refl. Qed.
 
-Lemma eq_as_set_sym: forall A (L1 L2 : list A), L1 ~= L2 -> L2 ~= L1. Proof. intros; hnf in *; firstorder. Qed.
+Lemma eq_as_set_sym: forall A (L1 L2 : list A), L1 ~= L2 -> L2 ~= L1.
+Proof. intros; hnf in *; firstorder. Qed.
 
 Lemma eq_as_set_trans: forall A (L1 L2 L3 : list A), L1 ~= L2 -> L2 ~= L3 -> L1 ~= L3.
 Proof. intros; hnf in *; intuition; apply incl_tran with L2; trivial. Qed.
@@ -24,22 +26,30 @@ Add Parametric Relation {A} : (list A) eq_as_set
     symmetry proved by (eq_as_set_sym A)
     transitivity proved by (eq_as_set_trans A) as eq_as_set_rel.
 
-Lemma eq_as_set_app: forall A (L1 L2 L3 L4: list A), L1 ~= L2 -> L3 ~= L4 -> (L1 ++ L3) ~= (L2 ++ L4).
+Lemma eq_as_set_app: forall A (L1 L2 L3 L4: list A),
+    L1 ~= L2 -> L3 ~= L4 -> (L1 ++ L3) ~= (L2 ++ L4).
 Proof. intros; hnf in *; intuition; apply Sublist_app; trivial. Qed.
 
 Lemma eq_as_set_nil: forall {A} (l : list A), nil ~= l -> l = nil.
-Proof. intros; destruct l; auto. destruct H. assert (In a (a :: l)) by apply in_eq. specialize (H0 a H1). inversion H0. Qed.
-
-Lemma Forall_tl: forall {A : Type} (P : A -> Prop) (x : A) (l : list A), Forall P (x :: l) -> Forall P l.
-Proof. intros; rewrite Forall_forall in *; intros. apply H, in_cons; auto. Qed.
-
-Lemma Forall_app: forall {A : Type} (P : A -> Prop) (l1 l2 : list A), Forall P l1 -> Forall P l2 -> Forall P (l1 ++ l2).
 Proof.
-  induction l1; intros. rewrite app_nil_l; auto. generalize (Forall_inv H); intros.
-  rewrite <- app_comm_cons. apply Forall_cons; auto. apply IHl1; auto. apply Forall_tl with a; auto.
+  intros; destruct l; auto. destruct H. assert (In a (a :: l)) by apply in_eq.
+  specialize (H0 a H1). inversion H0.
 Qed.
 
-Lemma Forall_app_iff: forall {A : Type} (P : A -> Prop) (l1 l2 : list A), Forall P (l1 ++ l2) <-> Forall P l1 /\ Forall P l2.
+Lemma Forall_tl: forall {A : Type} (P : A -> Prop) (x : A) (l : list A),
+    Forall P (x :: l) -> Forall P l.
+Proof. intros; rewrite Forall_forall in *; intros. apply H, in_cons; auto. Qed.
+
+Lemma Forall_app: forall {A : Type} (P : A -> Prop) (l1 l2 : list A),
+    Forall P l1 -> Forall P l2 -> Forall P (l1 ++ l2).
+Proof.
+  induction l1; intros. rewrite app_nil_l; auto. generalize (Forall_inv H); intros.
+  rewrite <- app_comm_cons. apply Forall_cons; auto. apply IHl1; auto.
+  apply Forall_tl with a; auto.
+Qed.
+
+Lemma Forall_app_iff: forall {A : Type} (P : A -> Prop) (l1 l2 : list A),
+    Forall P (l1 ++ l2) <-> Forall P l1 /\ Forall P l2.
 Proof.
   intros; induction l1; intros.
   + simpl.
@@ -1291,3 +1301,11 @@ Section LIST_DERIVED_BIJECTION.
   Qed.
 
 End LIST_DERIVED_BIJECTION.
+
+Lemma combine_repeat_eq_map: forall {A B} (a: A) (l: list B),
+    combine (repeat a (length l)) l = map (fun b : B => (a, b)) l.
+Proof. intros. induction l; simpl; auto. rewrite IHl. reflexivity. Qed.
+
+Lemma combine_map_join: forall {A B C} (f: A -> B) (g: A -> C) (l: list A),
+    combine (map f l) (map g l) = map (fun x => (f x, g x)) l.
+Proof. intros. induction l; simpl; auto. rewrite IHl. reflexivity. Qed.
