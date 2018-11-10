@@ -3,7 +3,9 @@ tree-shaped data structures with separation logic
 \cite{berdine:smallfoot,chin:hipsleek,jacobs:verifast,chlipala:bedrock,bengtson:charge,appel:programlogics}.  Unfortunately, verifying programs that manipulate graph-shaped data structures (i.e. structures with \emph{intrinsic sharing}) has been more challenging.  Indeed, verifying such programs was formidable enough that a number of the early landmark results in separation logic devoted substantial effort to verify single example such as Schorr-Waite~\cite{hongseok:phd} or union-find~\cite{NeelThesis} with pen and paper.  More recent landmarks have been devoted to single examples---or a class of closely related examples such as garbage collectors~\cite{A,CakeMLGC,C}---in a machine-checked context.
 Due to the complexity of these examples, they tend to require a large number of custom predicates and subtle reasoning, which generally does not carry across to the verification of other graph-manipulating programs.
 
-Our focus here is to develop a general toolkit for verifying graph-manipulating programs in a machine-checked context.  Our techniques are general enough to handle a wide variety of rather different graph-manipulating programs including: union-find, visiting/marking each node in a DAG, pruning a (potentially) cyclic graph to a spanning tree, and a generational garbage collector for the CertiCoq project~\cite{blah}.  Our techniques allow for significant definition and proof reuse (for example, facts about reachability) and significant modularity between abstract mathematical graphs and how such graphs are concretized in the heap.  Our techniques are powerful enough to reason about real C code and lightweight enough to be integrated into a large existing verification toolset without significant re-engineering.  We show that our techniques scale well beyond 10-line toys with our certified garbage collector, which is approximately 400 lines of rather devilish C.  In fact, while certifying this garbage collector we identified two places where the semantics of C is too weak to define an OCaml-style garbage collector.  We also found and fixed a rather subtle overflow error in the original C code for the garbage collector, justifying the effort required to mechanically verify it.
+Our focus here is to develop a general toolkit for verifying graph-manipulating programs in a machine-checked context.  Our techniques are general enough to handle a wide variety of rather different graph-manipulating programs including: union-find, visiting/marking each node in a DAG, and pruning a (potentially) cyclic graph to a spanning tree.  Our techniques allow for significant definition and proof reuse (for example, facts about reachability) and significant modularity between abstract mathematical graphs and how such graphs are concretized in the heap.  
+Our techniques are powerful enough to reason about real C code as compiled by CompCert~\cite{blah}.  They are also lightweight enough to integrate into the Verified Software Toolchain (VST)~\cite{appel:programlogics} without significant re-engineering.
+Finally, we show that our techniques scale well beyond 10-line toys by certifying the correctness of a generational garbage collector for the CertiCoq project~\cite{blah} (approximately 400 lines of rather devilish C).
 
 Our recipe has three key ingredients.  First, we develop a ``mathematical graph library'' that is general enough to reason about a wide variety of algorithms.  We modularize this library carefully so that common ideas---\emph{e.g.} subgraphs, reachability, and isomorphism---can be used in a number of algorithms that call for these concepts.  Second, we connect these abstract graphs to
 concrete graphs in the heap using separation logic in a way facilitates the reuse of key definitions and theorems across algorithms.  Finally, we develop a notion of \emph{localization blocks} to
@@ -12,30 +14,31 @@ enable the key Hoare tuples to be proved in a modular fashion using our \textsc{
 \begin{array}{@{}l@{}}
 \infrule{}%Localize}
 {\{ L \} ~ c ~ \{ \exists x.~ L_2 \} \\
-G_1 |- L_1 * F \\
-F |- \forall x.~ (L_2 --* G_2) }
+G_1 |- L_1 * R \\
+R |- \forall x.~ (L_2 --* G_2) }
 {\{ G_1 \} ~ c ~ \{ \exists x.~ G_2 \}} {(\dagger)} \\
 [3pt]
-(\dagger)~ \mathit{freevars}(F) \cap \MV(c) = \emptyset
+(\dagger)~ \mathit{freevars}(R) \cap \MV(c) = \emptyset
 \end{array}
 \]
-Localization blocks are an upgrade to Hobor and Villard's concept of \emph{ramification}~\cite{blah} that makes two key improvements: support for existential quantifiers in postconditions and smoother treatment of modified program variables.
+Briefly, \textsc{Localize} connects the behavior of a command $c$ in a small ``local'' context $L_1$ and $L_2$ to its effect on a larger ``global'' context $G_1$ and $G_2$ using a carefully-chosen predicate $R$.  \textsc{Localize} is a more general version of the well-known \textsc{Frame} rule, which does the same task in the simpler case when $G_i = L_i \star F$ for some frame $F$ that is untouched by $c$; in this case in fact $R \defeq F$ and both entailments are immediate.  Localization blocks are an upgrade to Hobor and Villard's concept of \emph{ramification}~\cite{blah} that makes two key improvements: support for existential quantifiers in postconditions and smoother treatment of modified program variables.  We will see how all three ingredients work together on an example in~\S\ref{sec:orientation}.
 
 %as a kind of proof pattern or framework to verify graph-manipulating programs on pen and paper~\cite{hobor:ramification}.  The major focus of this paper is to develop methods to verify realistic graph programs in a mechanized context.  We do so by upgrading the theory of ramification and by developing a general and modular library for graph-related reasoning in separation logic.  We incorporate our approach into two sizeable separation logic-based verification tools: the Floyd system of the Verified Software Toolchain (VST)~\cite{appel:programlogics} and the HIP/SLEEK program verifier~\cite{chin:hipsleek}.  VST and HIP/SLEEK inhabit quite different points in the design space for verification tools, with VST primarily focusing on heavily human-guided verifications with an emphasis on end-to-end machine-checked proofs, and HIP/SLEEK focusing on more automation.  Despite these differences, the vast majority of our Coq code base is shared between them,
 %giving us hope that our work will be applicable to other tools.
 
 %% \marginpar{\color{magenta} computable mathgraphs, null, pregraphs Problem with ``later'' not being precise.}
-The structure of our paper is as follows:
+Our contributions are organized as follows:
 \begin{itemize}
-\item[\S\ref{sec:orientation}] We verify a graph marking algorithm in VST using two new Floyd tactics, \li{localize} and \li{unlocalize}.  We introduce \emph{localization blocks} as a new notation for ramification.  We discuss three additional VST-certified examples: marking a DAG, pruning a graph into a spanning tree, and making a structure-preserving copy of a graph.
-\item[\S\ref{sec:hipsleek}] We explain how we modified HIP/SLEEK to introduce ramifications when programs modify data structures with intrinsic sharing and to automatically discharge the associated obligations using Coq-verified external lemmas.
-\item[\S\ref{sec:localizations}] We upgrade Hobor and Villard's \infrulestyle{Ramify} rule to handle both modified program variables and existential quantifiers in postconditions more gracefully.
-\item[\S\ref{sec:mathgraph}] We develop a general mechanization of mathematical graphs powerful enough to support realistic verification. %{\color{magenta} What else can we say here?}
+\item[\S\ref{sec:orientation}] We use the classic ``union-find'' disjoint set algorithm to show how our three key ingredients---mathematical graphs, spatial graphs, and localization blocks---come together to verify graph-manipulating algorithms.  Although we use it primarily as a running example, this is the first machine-checked verification of this algorithm in C to the best of our knowledge. {\color{blue} Does anyone have any data on this?}  {\color{magenta} We introduce \emph{localization blocks} as a new notation for ramification. We briefly discuss three additional VST-certified examples to give a sense of the breadth of algorithms we can verify: marking a DAG, pruning a graph into a spanning tree, and making a structure-preserving copy of a graph.}
+\item[\S\ref{sec:mathgraph}] We develop a general mechanization of mathematical graphs powerful enough to support realistic verification. {\color{magenta}Should we merge this with the next section or two?} %{\color{magenta} What else can we say here?}
 \item[\S\ref{sec:spacegraph}] We suggest that the Knaster-Tarski fixpoint~\cite{tarski:fixpoint} cannot define a usable separation logic graph predicate.  We propose a better definition for general spatial graphs that still enjoys a ``recursive'' fold/unfold.  We prove general theorems about spatial graphs in a way that can be utilized in multiple flavors of separation logic. %{\color{magenta} Line about modularity?}
+\item[\S\ref{sec:localizations}] We upgrade Hobor and Villard's \infrulestyle{Ramify} rule to handle both modified program variables and existential quantifiers in postconditions more gracefully.
+%\item[\S\ref{sec:hipsleek}] We explain how we modified HIP/SLEEK to introduce ramifications when programs modify data structures with intrinsic sharing and to automatically discharge the associated obligations using Coq-verified external lemmas.
 %\item[\S\ref{sec:vst}] We explain how we integrated ramification into VST by developing .
-\item[\S\ref{sec:development}] We document some statistics related to our development.
+\item[\S\ref{sec:certigc}] We discuss the certification of the CertiCoq garbage collector. While certifying this garbage collector we identified two places where the semantics of C is too weak to define an OCaml-style garbage collector.  We also found and fixed a rather subtle overflow error in the original C code for the garbage collector, justifying the effort of developing the machine-checked proof.
+\item[\S\ref{sec:development}] We explain how we integrated our techniques into VST with two new Floyd tactics, \li{localize} and \li{unlocalize} and document some statistics related to our overall development.
 \item[\S\ref{sec:related}] We discuss related work.
 \item[\S\ref{sec:conclusion}] We discuss directions for future work and conclude.
 \end{itemize}
-All of our results are machine checked.
+All of our results are machine checked in Coq.
 
