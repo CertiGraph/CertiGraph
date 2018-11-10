@@ -285,7 +285,7 @@ Proof.
           (rewrite H23, nat_inc_list_S; eapply gcl_add_tail; eauto).
       replace_SEP 5 (ti_token_rep t_info2) by
           (erewrite ti_rel_token_the_same; eauto; entailer!).
-      forward_if True.
+      forward_if.
       * destruct (space_start (Znth i (spaces (ti_heap t_info2)))); try contradiction.
         destruct (space_start (Znth (i + 1) (spaces (ti_heap t_info2))));
           try contradiction. Transparent denote_tc_samebase.
@@ -304,12 +304,13 @@ Proof.
             as [_ [_ ?]]. rewrite H41, !nth_space_Znth, !Z2Nat.id; omega. }
         assert (graph_thread_info_compatible g2 t_info2) by (apply (proj1 H27)).
         assert (graph_gen_clear g2 O) by (apply H37; rewrite H23; omega).
-        forward_call (rsh, sh, gv, fi, ti, g2, t_info2, f_info, roots2).
-        admit.
-      * forward. entailer!.
-      * Intros. Exists g2 roots2 t_info2. rewrite <- H23 in *. entailer!.
+        forward_call (rsh, sh, gv, fi, ti, g2, t_info2, f_info, roots2). forward.
+        Exists g2 t_info2 roots2. entailer!. split.
+        -- exists (Z.to_nat i). rewrite <- H23 at 1. split; assumption.
+        -- rewrite H23 in H38. eapply safe_to_copy_complete; eauto.
+      * forward. Intros. Exists g2 roots2 t_info2. rewrite <- H23 in *. entailer!.
   - Intros g2 roots2 t_info2. unfold all_string_constants. Intros.
     forward_call ((gv ___stringlit_13),
                   (map init_data2byte (gvar_init v___stringlit_13)), rsh).
     exfalso; assumption.
-Abort.
+Qed.

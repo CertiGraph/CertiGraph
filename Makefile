@@ -38,7 +38,7 @@ HEAP_MODEL_DIRECT_FILES = \
 GRAPH_FILES = \
   graph_model.v path_lemmas.v graph_gen.v graph_relation.v reachable_computable.v find_not_in.v reachable_ind.v subgraph2.v \
   spanning_tree.v dag.v marked_graph.v weak_mark_lemmas.v dual_graph.v graph_morphism.v \
-  local_graph_copy.v tree_model.v list_model.v BiGraph.v MathGraph.v FiniteGraph.v GraphAsList.v LstGraph.v UnionFind.v
+  local_graph_copy.v tree_model.v list_model.v BiGraph.v MathGraph.v FiniteGraph.v GraphAsList.v LstGraph.v UnionFind.v graph_isomorphism.v
 
 DATA_STRUCTURE_FILES = \
   spatial_graph_unaligned_bi_VST.v spatial_graph_dispose_bi.v
@@ -54,7 +54,7 @@ HIP_FILES = \
 CERTIGC_FILES = \
   orders.v bounded_numbers.v bitwise_encoding.v cc_orders.v cc_bitwise_encoding.v gc.v gc_mathgraph.v data_at_test.v spatial_gcgraph.v env_gc.v verif_gc.v \
   gc_spec.v verif_create_space.v verif_create_heap.v verif_make_tinfo.v env_graph_gc.v verif_Is_block.v verif_garbage_collect.v verif_resume.v \
-  GCGraph.v verif_forward.v verif_do_scan.v verif_forward_roots.v verif_do_generation.v gc_correct.v
+  GCGraph.v verif_forward.v verif_do_scan.v verif_forward_roots.v verif_do_generation.v gc_correct.v stuck.v
 
 CLIGHT_FILES = sample_mark/mark_bi.v sample_mark/garbage_collector.v sample_mark/dispose_bi.v sample_mark/copy_bi.v
 

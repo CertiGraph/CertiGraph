@@ -1,5 +1,6 @@
 Require Import Coq.Relations.Relation_Definitions.
 Require Import Coq.Lists.List.
+Require Import Coq.Program.Basics.
 
 Lemma ex_iff: forall {A: Type} P Q, (forall x: A, P x <-> Q x) -> (ex P <-> ex Q).
 Proof.
@@ -89,3 +90,39 @@ Ltac super_pattern t x :=
   pattern x in t0;
   cbv beta in (type of t0);
   subst t0.
+
+Record bijective {A B} (f: A -> B) (invf: B -> A) : Prop :=
+  {
+    injective: forall x y, f x = f y -> x = y;
+    surjective: forall x, f (invf x) = x;
+  }.
+
+Lemma bijective_refl: forall {A: Type}, @bijective A A id id.
+Proof. intros. split; auto. Qed.
+
+Lemma bijective_sym: forall {A B} (f: A -> B) (invf: B -> A),
+    bijective f invf -> bijective invf f.
+Proof.
+  intros. destruct H as [?H ?H]. split; intros.
+  - rewrite <- (H0 x), <- (H0 y), H1, H0. reflexivity.
+  - apply H, H0.
+Qed.
+
+Lemma bijective_trans:
+  forall {A B C} (f: A -> B) (g: B -> C) (invf: B -> A) (invg: C -> B),
+    bijective f invf -> bijective g invg ->
+    bijective (compose g f) (compose invf invg).
+Proof.
+  intros. destruct H, H0. split; intros; unfold compose in *.
+  - apply injective0, injective1. assumption.
+  - rewrite surjective0. apply surjective1.
+Qed.
+
+Lemma bijective_map: forall {A B} (f: A -> B) (g: B -> A),
+    bijective f g -> bijective (map f) (map g).
+Proof.
+  intros. destruct H. split; intros.
+  - revert y H. induction x; intros; destruct y; simpl in H; [|inversion H..]; auto.
+    f_equal. 1: apply injective0; auto. apply IHx; assumption.
+  - induction x; simpl; auto. rewrite IHx. f_equal. apply surjective0.
+Qed.
