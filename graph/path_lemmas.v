@@ -115,7 +115,7 @@ Definition Subpath (g: Gph) (p1 p2: path): Prop := incl (snd p1) (snd p2) /\ In_
 (******************************************
 
 Path Lemmas
- 
+
 ******************************************)
 
 Lemma path_endpoints_meet: forall (g: Gph) p1 p2 n1 n2 n3,
@@ -330,7 +330,7 @@ Proof.
   + clear - H2 H7 H10. inversion H2. subst p. rewrite !app_length. apply Plus.plus_lt_compat_l. inversion H7. rewrite app_length.
     destruct p3. 1: simpl in H10 |-* ; inversion H10; destruct L2; inversion H5. simpl; intuition.
   + clear - H2 H7. inversion H2. subst p. inversion H7. split. 2: left; simpl; auto. simpl. apply incl_app.
-    * apply incl_appl, incl_refl. 
+    * apply incl_appl, incl_refl.
     * apply incl_appr, incl_appr, incl_refl.
   + inversion H2; subst. clear H2. inversion H7. subst. clear H7. destruct H. split; simpl in H; auto. destruct p4.
     - rewrite app_nil_r in *. apply epath_to_vpath_pfoot in H5. rewrite H5. simpl in H11. inversion H11. subst L3.
@@ -627,7 +627,7 @@ Proof.
   + simpl. auto.
   + simpl. destruct p.
     - simpl in H0. destruct H0 as [? [? [? ?]]]. destruct H as [? [? [? ?]]]. specialize (H4 a). apply H6; intuition.
-    - specialize (IHp (dst g1 a)). apply valid_path_cons in H0. specialize (IHp H0). 
+    - specialize (IHp (dst g1 a)). apply valid_path_cons in H0. specialize (IHp H0).
       pose proof (pfoot_head_irrel p g1 v (dst g1 a) e). pose proof (pfoot_head_irrel p g2 v (dst g1 a) e). unfold pfoot in *.
       rewrite H1, H2. apply IHp.
 Qed.
@@ -636,7 +636,7 @@ Lemma valid_path_strong_evalid: forall g v p e, valid_path g (v, p) -> In e p ->
 Proof.
   intros g v p. revert v. induction p; intros. 1: inversion H0. simpl in H0. destruct H0.
   + subst. destruct H. simpl in H0. destruct p; intuition.
-  + apply valid_path_cons in H. specialize (IHp _ _ H H0). auto.  
+  + apply valid_path_cons in H. specialize (IHp _ _ H H0). auto.
 Qed.
 
 Lemma In_path_si: forall (g1 g2: Gph) p x, g1 ~=~ g2 -> valid_path g1 p -> (In_path g1 x p <-> In_path g2 x p).
@@ -711,14 +711,14 @@ Qed.
 (******************************************
 
 Reachable Lemmas
- 
+
 ******************************************)
 
 Lemma reachable_by_refl: forall (g : Gph) n (P: V -> Prop), vvalid g n -> P n -> g |= n ~o~> n satisfying P.
 Proof.
   intros.
   exists (n, nil). split. compute. auto.
-  split. simpl. trivial. auto. 
+  split. simpl. trivial. auto.
 Qed.
 
 Lemma reachable_by_trans: forall (g: Gph) n1 n2 n3 P,
@@ -933,7 +933,7 @@ Qed.
 (******************************************
 
 Other Reachable Lemmas
- 
+
 ******************************************)
 
 Lemma reachable_acyclic: forall (g: Gph) n1 P n2,
@@ -983,7 +983,7 @@ Proof.
         split.
         + apply Extensionality_Ensembles in H; rewrite H.
           intro x; intro. inversion H2.
-        + intro; intros. destruct H2 as [s [? ?]]. 
+        + intro; intros. destruct H2 as [s [? ?]].
           exists s; split; trivial; apply in_cons; trivial.
       }
       rewrite <- H2 in IHS. pose proof (IHS H y).
@@ -1001,11 +1001,24 @@ Proof.
 Qed.
 
 Lemma reachable_path_in:
-  forall (g: Gph) (p: path) (l y : V), g |= p is l ~o~> y satisfying (fun _ : V => True) ->
-                                                   forall z, In_path g z p -> reachable g l z.
+  forall (g: Gph) (p: path) (l y : V),
+    g |= p is l ~o~> y satisfying (fun _ : V => True) ->
+    forall z, In_path g z p -> reachable g l z.
 Proof.
   intros. apply reachable_by_path_split_in with (n := z) in H; auto.
   destruct H as [p1 [p2 [? [? ?]]]]. exists p1. apply H1.
+Qed.
+
+Lemma reachable_path_edge_in:
+  forall (g: Gph) (p: path) (l y : V),
+    g |= p is l ~o~> y satisfying (fun _ : V => True) ->
+    forall e, In e (snd p) -> reachable g l (src g e) /\ reachable g l (dst g e).
+Proof.
+  intros. split.
+  - assert (In_path g (src g e) p) by (right; exists e; split; auto).
+    eapply reachable_path_in; eauto.
+  - assert (In_path g (dst g e) p) by (right; exists e; split; auto).
+    eapply reachable_path_in; eauto.
 Qed.
 
 Lemma reachable_by_path_in: forall (g: Gph) (p: path) (l y : V) (P: V -> Prop),
@@ -1061,7 +1074,7 @@ Proof.
   + apply reachable_foot_valid in H; auto.
   + exists x. split.
     - apply in_eq.
-    - auto.         
+    - auto.
 Qed.
 
 Lemma reachable_list_EnumCovered: forall (g: Gph) x l, reachable_list g x l -> EnumCovered V (reachable g x).
@@ -1344,9 +1357,9 @@ Lemma In_path_Subpath: forall g p1 p2 v, In_path g v p1 -> Subpath g p1 p2 -> In
 Proof.
   intros. destruct p1 as [v1 p1]. destruct p2 as [v2 p2]. unfold In_path in H. destruct H0. simpl in *. destruct H.
   + subst. auto.
-  + right. destruct H as [e [? ?]]. exists e. split; auto. 
+  + right. destruct H as [e [? ?]]. exists e. split; auto.
 Qed.
-  
+
 End PATH_LEM.
 
 Arguments path_glue {_ _} _ _.
