@@ -401,10 +401,10 @@ Proof.
   - compute; reflexivity.
   - exists (Z.div Int.modulus 2). reflexivity.
 Qed.
-  
+
 Lemma four_divided_odd_false: forall z, (4 | z) -> Z.odd z = false.
 Proof.
-  intros. rewrite Zodd_mod. inversion H. 
+  intros. rewrite Zodd_mod. inversion H.
   replace (x * 4)%Z with (2 * x * 2)%Z in H0 by omega. subst.
   rewrite Z_mod_mult; unfold Zeq_bool; reflexivity.
 Qed.
@@ -725,7 +725,7 @@ Proof.
   destruct pp; try contradiction. unfold align_compatible in H1. inv H1.
   inv H2. simpl in H3. split.
   - simpl; apply four_divided_odd_false; assumption.
-  - apply four_divided_tenth_pl_false; assumption. 
+  - apply four_divided_tenth_pl_false; assumption.
 Qed.
 
 Import Share.
@@ -1447,14 +1447,14 @@ Proof.
 Qed.
 
 Lemma vertex_rep_reset: forall g i j x sh,
-    vertex_rep sh (reset_nth_gen_graph j g) (i, x) = vertex_rep sh g (i, x).
+    vertex_rep sh (reset_graph j g) (i, x) = vertex_rep sh g (i, x).
 Proof.
   intros. unfold vertex_rep.
   rewrite vertex_address_reset, make_header_reset, make_fields_reset. reflexivity.
 Qed.
 
 Lemma generation_rep_reset_diff: forall (g: LGraph) i j,
-    i <> j -> generation_rep (reset_nth_gen_graph j g) i = generation_rep g i.
+    i <> j -> generation_rep (reset_graph j g) i = generation_rep g i.
 Proof.
   intros. unfold generation_rep. rewrite <- !iter_sepcon_map.
   rewrite reset_nth_gen_diff, reset_nth_sh_diff by assumption.
@@ -1462,22 +1462,23 @@ Proof.
 Qed.
 
 Lemma generation_rep_reset_same: forall (g: LGraph) i,
-    graph_has_gen g i -> generation_rep (reset_nth_gen_graph i g) i = emp.
+    graph_has_gen g i -> generation_rep (reset_graph i g) i = emp.
 Proof.
   intros. unfold generation_rep. rewrite <- !iter_sepcon_map.
-  unfold nth_gen, reset_nth_gen_graph at 1. simpl.
+  unfold nth_gen, reset_graph at 1. simpl.
   rewrite reset_nth_gen_info_same. simpl. reflexivity.
 Qed.
 
 Lemma graph_rep_reset: forall (g: LGraph) (gen: nat),
     graph_has_gen g gen ->
-    graph_rep g = graph_rep (reset_nth_gen_graph gen g) * generation_rep g gen.
+    graph_rep g = graph_rep (reset_graph gen g) * generation_rep g gen.
 Proof.
-  intros. unfold graph_rep. simpl. rewrite reset_nth_gen_info_length.
+  intros. unfold graph_rep. simpl.
+  rewrite reset_nth_gen_info_length, remove_ve_glabel_unchanged.
   remember (length (g_gen (glabel g))). pose proof H as HS. red in H.
   rewrite <- Heqn in H. destruct (nat_inc_list_Permutation_cons _ _ H) as [l ?].
   rewrite !(iter_sepcon_permutation _ H0). simpl.
-  assert (iter_sepcon l (generation_rep (reset_nth_gen_graph gen g)) =
+  assert (iter_sepcon l (generation_rep (reset_graph gen g)) =
           iter_sepcon l (generation_rep g)). {
     apply iter_sepcon_func_strong. intros. rewrite generation_rep_reset_diff.
     1: reflexivity. pose proof (nat_inc_list_NoDup n).

@@ -169,7 +169,7 @@ Proof.
            - clear -H0. destruct H0 as [_ [_ [_ [? _]]]]. assumption.
            - clear -H. destruct H as [_ [_ [[_ ?] _]]]. assumption. } forward.
       remember (reset_nth_heap_thread_info from t_info2) as t_info3.
-      remember (reset_nth_gen_graph from g2) as g3.
+      remember (reset_graph from g2) as g3.
       assert (do_generation_relation from to f_info roots roots1 g g3) by
           (exists g1, g2; split; [|split]; assumption).
       assert (thread_info_relation t_info t_info3). {
