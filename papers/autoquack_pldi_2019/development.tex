@@ -1,3 +1,92 @@
+\label{sec:vst}
+
+
+The Verified Software Toolchain (VST) is a series of machine-checked modules written in Coq whose focus is reasoning about C programs~\cite{appel:programlogics}, especially those programs that can be compiled with the CompCert compiler~\cite{leroy:compcert}.  One of VST's modules, ``Floyd'', is a separation-logic based engine to help users
+verify concrete programs.  The modules interlock so there are no ``gaps'' in the end-to-end certified results; accordingly all of the rules employed by Floyd have been proved sound with respect to the underlying semantics used by CompCert.  Floyd is written in Ltac and Gallina and is designed to help users verify the full functional correctness of their programs.  Although Floyd devotes considerable effort to make this task simpler, it prefers expressibility and completeness to more automated tools like HIP/SLEEK.
+
+
+\subsection{Localizations in VST with \li{localize} and \li{unlocalize}}
+\label{sec:vstlocalunlocal}
+\vspace{-0.75ex}
+Floyd presents users with a pleasant ``decorated program'' visualization for Hoare proofs, in which users work from the top of the program to the bottom even though the formal proof is maintained as applications of inference rules.  For example, suppose the proof goal is $\triple{P_1}{c_1\li{;}c_2}{P_5}$ and VST's user tells Floyd to apply a Hoare rule for $c_1$, \emph{e.g.}~$\triple{P_1}{c_1}{P_2}$.  Floyd will then automatically apply the \infrulestyle{Sequence} rule and show the user $\triple{P_2}{c_2}{P_5}$ as the remaining goal.
+When the user is in the middle of a verification, the decorated program is partially done (\emph{i.e.} the proof is finished from the top to ``the current program point'') and the inference tree is also partially done (\emph{i.e.} with holes that are represented by the remaining proof goals in Coq).
+
+We wish to preserve this ``decorated program'' view while extending Floyd to support ramification.  Our task therefore is to construct a proof in Coq's underlying logic that allows a localization block to be constructed in this manner---that is, we wish to enter a localization block without requiring the user to specify the ``exit point'' in advance.  The engineering is tricky because the proof Floyd is constructing (\emph{i.e.} applications of inference rules) has holes in places where the user's ``top to bottom'' view of things has not yet arrived.
+
+\begin{figure}[t]
+\begin{minipage}{.1\textwidth}
+\begin{lstlisting}
+$\{\ \ P_1 \ \ \}$
+    c1
+$\{\ \ P_2 \ \ \}\label{code:localglobalin}$
+$\searrow \{\ \ P_3 \ \ \}\label{code:locallocalin}$
+      c2;
+$~~\,\{\ \ P_4 \ \ \}\label{code:localsndcmd}$
+
+    ...
+
+
+
+\end{lstlisting}
+\end{minipage} \vline ~
+\begin{minipage}{.11\textwidth}
+\begin{lstlisting}[numbers=none]
+$\{\ \ P_1 \ \ \}$
+    c1
+$\{\ \ P_2 \ \ \}$
+$\{\ \ ?F * P_3 \ \}$
+    c2;
+$\{\ \ ?F * P_4 \ \}$
+
+  ...
+
+
+
+\end{lstlisting}
+\end{minipage} \vline ~
+\begin{minipage}{.11\textwidth}
+\begin{lstlisting}[numbers=none]
+$\{\ \ P_1 \ \ \}$
+    c1
+$\{\ \ P_2 \ \ \}$
+$\searrow \{\ \ P_3 \ \ \}$
+      c2;
+  $\,\{\ \ P_4 \ \ \}$
+      c3;
+$\swarrow\{\ \ P_5 \ \ \}$
+$\{\ \ P_6 \ \ \}$
+
+    ...
+\end{lstlisting}
+\end{minipage} \vline ~
+\begin{minipage}{.11\textwidth}
+\begin{lstlisting}[numbers=none]
+$\{\ \ P_1 \ \ \}$
+    c1
+$\{\ \ P_2 \ \ \}$
+$\{\ \ ?F * P_3 \ \}$
+    c2;
+$\{\ \ ?F * P_4 \ \}$
+    c3;
+$\{\ \ ?F * P_5 \ \}$
+$\{\ \ P_6 \ \ \}$
+
+  ...
+\end{lstlisting}
+\end{minipage}
+%\vspace{-ex}
+\caption{Front and back ends of \li{localize} and \li{unlocalize}}
+\label{figure:backend}
+\end{figure}
+
+Figure~\ref{figure:backend} has four partially-decorated ``proofs in progress'', from both the user's (front end) and Floyd's (back end) points of view.  In the first column, from the user's point of view, they saw the assertion $P_2$ (line~\ref{code:localglobalin}) and decided to use the \li{localize} tactic to zoom into $P_3$ (line~\ref{code:locallocalin}).  They then applied some proof rules to move past $c_2$ to reach the assertion $P_4$ (line~\ref{code:localsndcmd}).  At this point, Floyd does not know when the corresponding \li{unlocalize} tactic will execute, so it does not know which commands will be inside the block or what the final local and global postconditions will be.
+
+Accordingly, the \li{localize} tactic builds an incremental proof in the underlying program logic by applying \infrulestyle{Frame} with an uninstantiated metavariable.
+The second column of Figure~\ref{figure:backend} shows the back end with the unknown frame $?F$, which will eventually be instantiated by \li{unlocalize}.
+
+In the third column, the user has advanced past $c_3$ to reach the local postcondition $P_5$ and now wishes to \li{unlocalize} to~$P_6$.  Afterwards, the internal state looks like the fourth column, and so to a first approximation, \li{unlocalize} can instantiate $?F$ with $P_5 \wand P_6$.  In truth, $?F$ is chosen more subtly to properly handle both existential variables and modified program variables; \li{unlocalize} then automatically simplifies the goals to present a cleaner interface to the user.  These transformations require some additional theory given in \S\ref{sec:localizations}.
+
+
 \begin{table}[t]
 \centering
 \begin{tabular}{c|c|c}
