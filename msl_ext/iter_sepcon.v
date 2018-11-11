@@ -183,7 +183,7 @@ Proof.
     [ apply ocon_sepcon; apply disj_ocon_right
     | apply sepcon_derives; [auto | apply ocon_sepcon]];
     apply iter_sepcon_app_joinable; auto; intros;
-    apply NoDup_app_eq in H2; destruct H2 as [? [? ?]];
+    apply NoDup_app_iff in H2; destruct H2 as [? [? ?]];
     generalize (NoDup_app_not_in _ _ _  H5 x); intro; specialize (H6 x); auto;
     specialize (H6 H4); intro; apply H6; apply in_or_app; auto.
 Qed.
