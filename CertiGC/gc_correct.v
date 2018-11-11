@@ -375,11 +375,12 @@ Lemma PairGenNoDup_DoubleNoDup: forall l from to,
     from <> to -> PairGenNoDup l from to -> DoubleNoDup l.
 Proof.
   intros. red in H0 |-* . destruct (split l) as [l1 l2]. destruct H0 as [[? ?] [? ?]].
-  rewrite NoDup_app_eq. do 2 (split; auto). repeat intro. apply H1 in H4.
+  rewrite NoDup_app_iff. do 2 (split; auto). repeat intro. apply H1 in H4.
   apply H3 in H5. rewrite H4 in H5. contradiction.
 Qed.
 
-Definition from_gen_spec (g: LGraph) (roots: roots_t) (l: list VType) gen: Prop :=
+Definition from_gen_quasi_spec
+           (g: LGraph) (roots: roots_t) (l: list VType) gen: Prop :=
   NoDup l /\ forall v,
     (reachable_through_set g (filter_sum_right roots) v /\ vgeneration v = gen) <->
     In v l.
@@ -388,11 +389,14 @@ Definition to_gen_spec (g1 g2: LGraph) (l: list VType) gen: Prop :=
   NoDup l /\ (forall v, In v l <-> vvalid g2 v /\ ~ vvalid g1 v) /\
   forall v, In v l -> vgeneration v = gen.
 
+Definition roots_map (l: list (VType * VType)): roots_t -> roots_t :=
+  map (root_map (list_bi_map l)).
+
 Definition gc_graph_quasi_iso (g1: LGraph) (roots1: roots_t)
            (g2: LGraph) (roots2: roots_t) (from to: nat): Prop :=
   is_partial_graph g1 g2 /\
   exists (l: list (VType * VType)),
-    roots2 = map (root_map (list_bi_map l)) roots1 /\
+    roots2 = roots_map l roots1 /\
     (forall v1 v2,
         In (v1, v2) l ->
         vlabel g1 v1 = vlabel g2 v2 /\
@@ -400,7 +404,7 @@ Definition gc_graph_quasi_iso (g1: LGraph) (roots1: roots_t)
                     (dst g2 (v2, idx) = dst g1 (v1, idx) \/
                      dst g2 (v2, idx) = list_bi_map l (dst g1 (v1, idx)))) /\
     let (from_l, to_l) := split l in
-    from_gen_spec g1 roots1 from_l from /\ to_gen_spec g1 g2 to_l to /\
+    from_gen_quasi_spec g1 roots1 from_l from /\ to_gen_spec g1 g2 to_l to /\
     forall v, vvalid g1 v -> ~ In v from_l -> vlabel g1 v = vlabel g2 v.
 
 Definition gen_has_index_dec (g: LGraph) (gen idx: nat):
@@ -429,7 +433,7 @@ Lemma quasi_iso_reset_iso: forall g1 roots1 g2 roots2 from to,
     gc_graph_iso g1 roots1 (reset_graph from g2) roots2.
 Proof.
   intros g1 roots1 g2 roots2 from to Hfr H H0 H1 H2 H3 H4.
-  red in H. red. destruct H as [? [vpl [? [? ?]]]].
+  red in H. red. destruct H as [? [vpl [? [? ?]]]]. unfold roots_map in H5.
   destruct (split vpl) as [from_l to_l] eqn:? . destruct H7 as [[? ?] [[? [? ?N]] ?N]].
   assert (DoubleNoDup vpl). {
     apply (PairGenNoDup_DoubleNoDup _ from to). 1: omega. red. rewrite Heqp.
@@ -1028,6 +1032,29 @@ Proof.
   - apply IHl; assumption.
 Qed.
 
+Lemma pcv_src_old: forall (g : LGraph) (old new : VType) (e : VType * nat),
+    fst e <> new -> src (pregraph_copy_v g old new) e = src g e.
+Proof.
+  intros. unfold pregraph_copy_v. rewrite flcvae_src_old. 1: now simpl.
+  intro. apply H. rewrite map_fst_combine in H0.
+  - destruct e. simpl in *. apply in_combine_l, repeat_spec in H0. assumption.
+  - unfold EType. now rewrite combine_length, repeat_length, !map_length, Nat.min_id.
+Qed.
+
+Lemma pcv_src_new: forall (g : LGraph) (old new : VType) (n : nat),
+       In n (map snd (get_edges g old)) ->
+       src (pregraph_copy_v g old new) (new, n) = new.
+Proof.
+  intros. unfold pregraph_copy_v. rewrite flcvae_src_new; auto.
+  rewrite map_fst_combine.
+  - replace (length (get_edges g old)) with (length (map snd (get_edges g old))) by
+        now rewrite map_length. rewrite combine_repeat_eq_map, map_map.
+    apply list_in_map_inv in H. destruct H as [[v idx] [? ?]]. simpl in H. subst idx.
+    change (new, n) with ((fun x : VType * nat => (new, snd x)) (v, n)).
+    now apply in_map.
+  - unfold EType. now rewrite combine_length, repeat_length, !map_length, Nat.min_id.
+Qed.
+
 Lemma lcv_src_edge: forall g v to,
     src_edge g -> src_edge (lgraph_copy_v g v to).
 Proof.
@@ -1072,3 +1099,384 @@ Proof.
             [apply fr_O_sound | apply reset_sound | apply ngr_sound].
 Qed.
 
+(** Semi-Isomorphism **)
+
+Definition from_gen_semi_spec (g1 g2: LGraph) (l: list VType) (gen: nat): Prop :=
+  NoDup l /\ forall v,
+    (raw_mark (vlabel g2 v) = true /\ vvalid g1 v /\ vgeneration v = gen) <->
+    In v l.
+
+Definition gc_graph_semi_iso
+           (g1 g2: LGraph) (from to: nat) (l: list (VType * VType)): Prop :=
+  is_partial_graph g1 g2 /\
+  (forall v1 v2 : VType,
+      In (v1, v2) l ->
+      v2 = copied_vertex (vlabel g2 v1) /\
+      vlabel g1 v1 = vlabel g2 v2 /\
+      (forall idx : nat,
+          In idx (map snd (get_edges g1 v1)) ->
+          dst g2 (v2, idx) = dst g1 (v1, idx) \/
+          dst g2 (v2, idx) = list_bi_map l (dst g1 (v1, idx)))) /\
+    let (from_l, to_l) := split l in
+    from_gen_semi_spec g1 g2 from_l from /\ to_gen_spec g1 g2 to_l to /\
+    forall v, vvalid g1 v -> ~ In v from_l -> vlabel g1 v = vlabel g2 v.
+
+Lemma semi_iso_refl: forall g from to,
+    sound_gc_graph g -> gen_unmarked g from -> gc_graph_semi_iso g g from to nil.
+Proof.
+  intros. red. split; [|split]; intros.
+  - apply is_partial_graph_refl.
+  - inversion H1.
+  - destruct (split []) eqn:? . simpl in Heqp. inversion Heqp. subst. clear Heqp.
+    split; [|split].
+    + red. split. 1: constructor. intros; split; intros. 2: inversion H1.
+      destruct H1 as [? [? ?]]. destruct H as [? _]. red in H. rewrite H in H2.
+      red in H0. destruct H2. rewrite H3 in *. destruct v as [? idx]. simpl in *.
+      subst n. specialize (H0 H2 _ H4). rewrite H1 in H0. inversion H0.
+    + red. split. 1: constructor. split; [split|]; intros; intuition.
+    + intros. reflexivity.
+Qed.
+
+Lemma semi_iso_DoubleNoDup: forall g1 g2 from to l,
+    from <> to -> gc_graph_semi_iso g1 g2 from to l -> DoubleNoDup l.
+Proof.
+  intros. destruct H0 as [_ [_ ?]]. destruct (split l) as [from_l to_l] eqn: ?.
+  apply (PairGenNoDup_DoubleNoDup l from to); auto. red. rewrite Heqp.
+  destruct H0 as [[? ?] [[? [? ?]] _]]. split; split; intros; auto.
+  rewrite <- H1 in H5. destruct H5 as [_ [_ ?]]. assumption.
+Qed.
+
+Definition roots_unmarked (g: LGraph) (roots: roots_t): Prop :=
+  forall v, In (inr v) roots -> raw_mark (vlabel g v) = false.
+
+Lemma graph_roots_unmarked: forall g roots,
+    graph_unmarked g -> roots_graph_compatible roots g -> roots_unmarked g roots.
+Proof.
+  intros. red in H, H0 |-* . intros. rewrite Forall_forall in H0. apply H, H0.
+  rewrite <- filter_sum_right_In_iff. assumption.
+Qed.
+
+Lemma root_t_eq_dec: forall r1 r2: root_t, {r1 = r2} + {r1 <> r2}.
+Proof.
+  intros.
+  destruct r1; [destruct s|]; (destruct r2; [destruct s|]); try (right; discriminate).
+  - destruct (Z.eq_dec z z0). 1: subst; now left.
+    right; intro HS. inversion HS. contradiction.
+  - destruct g, g0. destruct (block_eq_dec b b0).
+    + subst. destruct (Ptrofs.eq_dec i i0). 1: subst; now left.
+      right. intro HS; apply n. inversion HS. reflexivity.
+    + right. intros HS; apply n. inversion HS. reflexivity.
+  - destruct (equiv_dec v v0); unfold equiv in *. 1: subst; now left.
+    right. intro HS. apply c. inversion HS. easy.
+Defined.
+
+Lemma fold_left_upd_Znth_Zlength: forall
+    {A : Type} {d : Inhabitant A} (f : A -> A) (ps : list Z) (l : list A),
+    (forall e : Z, In e ps -> 0 <= e < Zlength l) ->
+    Zlength
+      (fold_left (fun (il : list A) (i : Z) => upd_Znth i il (f (Znth i il))) ps l) =
+    Zlength l.
+Proof.
+  do 3 intro. induction ps; intros; simpl; auto.
+  assert (Zlength (upd_Znth a l (f (Znth a l))) = Zlength l) by
+      (rewrite upd_Znth_Zlength; auto; apply H; left; easy).
+  rewrite IHps; auto. rewrite H0. intros. apply H. now right.
+Qed.
+
+Definition restricted_map {A} {d: Inhabitant A}
+           (f: A -> A) (l: list A) (positions: list Z): list A :=
+  fold_left (fun il i => upd_Znth i il (f (Znth i il))) positions l.
+
+Lemma restricted_map_Zlength: forall {A} {d: Inhabitant A} f positions l,
+    (forall e, In e positions -> 0 <= e < Zlength l) ->
+    Zlength (restricted_map f l positions) = Zlength l.
+Proof. intros. unfold restricted_map. apply fold_left_upd_Znth_Zlength. easy. Qed.
+
+Lemma fold_left_upd_Znth_diff:
+  forall (A : Type) (X : Inhabitant A) (f : A -> A) (ps : list Z) (l : list A) (i : Z),
+    (forall e : Z, In e ps -> 0 <= e < Zlength l) -> ~ In i ps -> 0 <= i < Zlength l ->
+    Znth i
+         (fold_left (fun (il : list A) (i0 : Z) => upd_Znth i0 il (f (Znth i0 il)))
+                    ps l) = Znth i l.
+Proof.
+  do 3 intro. induction ps; intros; simpl; auto.
+  assert (Zlength (upd_Znth a l (f (Znth a l))) = Zlength l) by
+      (rewrite upd_Znth_Zlength; auto; apply H; now left). rewrite IHps.
+  - rewrite upd_Znth_diff; auto. 1: apply H; now left. intro. apply H0. now left.
+  - rewrite H2. intros. apply H. now right.
+  - intro. apply H0. now right.
+  - rewrite H2. assumption.
+Qed.
+
+Lemma restricted_map_Znth_diff: forall {A} {d: Inhabitant A} f ps l i,
+    (forall e, In e ps -> 0 <= e < Zlength l) -> ~ In i ps ->
+    0 <= i < Zlength l -> Znth i (restricted_map f l ps) = Znth i l.
+Proof. intros. unfold restricted_map. apply fold_left_upd_Znth_diff; assumption. Qed.
+
+Lemma restricted_map_Znth_same: forall {A} {d: Inhabitant A} f ps l i,
+    (forall e, In e ps -> 0 <= e < Zlength l) -> NoDup ps -> In i ps ->
+    Znth i (restricted_map f l ps) = f (Znth i l).
+Proof.
+  do 3 intro. unfold restricted_map. induction ps; intros. 1: inversion H1.
+  simpl. simpl in H1. assert (Zlength (upd_Znth a l (f (Znth a l))) = Zlength l). {
+    rewrite upd_Znth_Zlength; auto. apply H. now left. } destruct H1.
+  - subst i. rewrite fold_left_upd_Znth_diff.
+    + rewrite upd_Znth_same; auto. apply H. now left.
+    + rewrite H2. intros. apply H. now right.
+    + apply NoDup_cons_2 in H0. assumption.
+    + rewrite H2. apply H. now left.
+  - rewrite IHps; auto.
+    + rewrite upd_Znth_diff; auto; [apply H; now right | apply H; now left |].
+      apply NoDup_cons_2 in H0. intro. apply H0. subst i. assumption.
+    + intros. rewrite H2. apply H. now right.
+    + apply NoDup_cons_1 in H0. assumption.
+Qed.
+
+Definition restricted_roots_map (index: Z) (f_info: fun_info)
+           (roots: roots_t) (l: list (VType * VType)): roots_t :=
+  restricted_map (root_map (list_map l)) roots
+                 (get_roots_indices index (live_roots_indices f_info)).
+
+Lemma restricted_roots_map_Zlength: forall index f_info roots l,
+    Zlength roots = Zlength (live_roots_indices f_info) ->
+    Zlength (restricted_roots_map index f_info roots l) = Zlength roots.
+Proof.
+  intros. unfold restricted_roots_map. rewrite restricted_map_Zlength; auto.
+  intros. rewrite get_roots_indices_spec in H0. destruct H0. rewrite <- H in H0. easy.
+Qed.
+
+Lemma collect_Z_indices_In_le:
+  forall {A} {d: Inhabitant A} eqdec (target: A) (l: list A) (ind: Z) i,
+    In i (collect_Z_indices eqdec target l ind) -> ind <= i.
+Proof.
+  do 4 intro. induction l; intros; simpl in H. 1: easy. if_tac in H.
+  - simpl in H. destruct H; [|apply IHl in H]; omega.
+  - apply IHl in H. omega.
+Qed.
+
+Lemma collect_Z_indices_NoDup:
+  forall {A} {d: Inhabitant A} eqdec (target: A) (l: list A) (ind: Z),
+    NoDup (collect_Z_indices eqdec target l ind).
+Proof.
+  do 4 intro. induction l; intros; simpl. 1: constructor. if_tac. 2: apply IHl.
+  constructor. 2: apply IHl. intro; apply collect_Z_indices_In_le in H0; omega.
+Qed.
+
+Lemma restricted_roots_map_Znth_diff: forall z f_info roots l j,
+  0 <= j < Zlength roots ->
+  Zlength roots = Zlength (live_roots_indices f_info) ->
+  Znth j (live_roots_indices f_info) <> Znth z (live_roots_indices f_info) ->
+  Znth j (restricted_roots_map z f_info roots l) = Znth j roots.
+Proof.
+  intros. unfold restricted_roots_map. rewrite restricted_map_Znth_diff; auto.
+  - intros. rewrite get_roots_indices_spec in H2. destruct H2. rewrite H0. easy.
+  - intro. rewrite get_roots_indices_spec in H2. destruct H2. easy.
+Qed.
+
+Lemma get_roots_indices_NoDup: forall i l, NoDup (get_roots_indices i l).
+Proof. intros. unfold get_roots_indices. apply collect_Z_indices_NoDup. Qed.
+
+Lemma restricted_roots_map_Znth_same: forall z f_info roots l j,
+    0 <= j < Zlength roots ->
+    Zlength roots = Zlength (live_roots_indices f_info) ->
+    Znth j (live_roots_indices f_info) = Znth z (live_roots_indices f_info) ->
+    Znth j (restricted_roots_map z f_info roots l) =
+    root_map (list_map l) (Znth j roots).
+Proof.
+  intros. unfold restricted_roots_map. rewrite restricted_map_Znth_same; auto.
+  - intros. rewrite get_roots_indices_spec in H2. destruct H2. rewrite H0. easy.
+  - apply get_roots_indices_NoDup.
+  - rewrite get_roots_indices_spec. split; [rewrite <- H0 |]; easy.
+Qed.
+
+Lemma rrm_non_vertex_id: forall index f_info (roots: roots_t) l,
+    (forall v, Znth index roots <> inr v) -> 0 <= index < Zlength roots ->
+    roots_fi_compatible roots f_info ->
+    restricted_roots_map index f_info roots l = roots.
+Proof.
+  intros. apply Znth_list_eq. destruct H1. split.
+  - rewrite restricted_roots_map_Zlength; easy.
+  - intros. rewrite restricted_roots_map_Zlength in H3 by easy.
+    destruct (Z.eq_dec (Znth j (live_roots_indices f_info))
+                       (Znth index (live_roots_indices f_info))).
+    + rewrite restricted_roots_map_Znth_same; auto. destruct (Znth j roots) eqn:? .
+      * simpl. reflexivity.
+      * exfalso. apply (H v). apply H2 in e; auto. rewrite <- e. easy.
+    + rewrite restricted_roots_map_Znth_diff; auto.
+Qed.
+
+Lemma rrm_not_in_id: forall index f_info (roots: roots_t) l v,
+    Znth index roots = inr v -> ~ In v (map fst l) -> 0 <= index < Zlength roots ->
+    roots_fi_compatible roots f_info ->
+    restricted_roots_map index f_info roots l = roots.
+Proof.
+  intros. apply Znth_list_eq. destruct H2. split.
+  - rewrite restricted_roots_map_Zlength; easy.
+  - intros. rewrite restricted_roots_map_Zlength in H4 by easy.
+    destruct (Z.eq_dec (Znth j (live_roots_indices f_info))
+                       (Znth index (live_roots_indices f_info))).
+    + rewrite restricted_roots_map_Znth_same; auto. destruct (Znth j roots) eqn:? .
+      * simpl. reflexivity.
+      * apply H3 in e; auto. rewrite e, H in Heqr. inversion Heqr. subst v0.
+        simpl. now rewrite list_map_not_In.
+    + now rewrite restricted_roots_map_Znth_diff.
+Qed.
+
+Lemma rmm_eq_upd_bunch: forall z f_info (roots: roots_t) k v l,
+    Znth z roots = inr k -> In (k, v) l -> 0 <= z < Zlength roots -> 
+    roots_fi_compatible roots f_info -> NoDup (map fst l) ->
+    restricted_roots_map z f_info roots l = upd_bunch z f_info roots (inr v).
+Proof.
+  intros. destruct H2. apply Znth_list_eq. split.
+  - now rewrite restricted_roots_map_Zlength, upd_bunch_Zlength.
+  - intros. rewrite restricted_roots_map_Zlength in H5; auto.
+    destruct (Z.eq_dec (Znth j (live_roots_indices f_info))
+                       (Znth z (live_roots_indices f_info))).
+    + rewrite restricted_roots_map_Znth_same, upd_bunch_same; auto.
+      apply H4 in e; auto. rewrite e, H. simpl. now rewrite (list_map_In _ _ v).
+    + rewrite restricted_roots_map_Znth_diff, upd_bunch_diff; auto.
+Qed.
+
+Definition semi_roots_map (f_info: fun_info) (l1 l2: list (VType * VType))
+           (fp: forward_p_type) (roots: roots_t): roots_t :=
+  match fp with
+  | inl index => restricted_roots_map index f_info roots l2
+  | inr _ => roots_map l2 (roots_map l1 roots)
+  end.
+
+Lemma pcv_is_partial_graph: forall (g: LGraph) old new,
+    sound_gc_graph g -> ~ vvalid g new ->
+    is_partial_graph g (pregraph_copy_v g old new).
+Proof.
+  intros. destruct H as [? [? ?]]. red in H, H1, H2. split; [|split; [|split]]; intros.
+  - rewrite pcv_vvalid_iff. now left.
+  - rewrite pcv_evalid_iff. now left.
+  - rewrite pcv_src_old; auto. intro. now rewrite H2, H5 in H4.
+  - rewrite pcv_dst_old; auto. rewrite H1 in H3. destruct H3. rewrite <- H in H3.
+    intro. now rewrite H6 in H3.
+Qed.
+
+Lemma ucov_copied_vertex: forall g old_v new_v,
+    copied_vertex (update_copied_old_vlabel g old_v new_v old_v) = new_v.
+Proof.
+  intros. unfold update_copied_old_vlabel, update_vlabel. now rewrite if_true.
+Qed.
+
+Lemma ucov_not_eq: forall g old_v new_v x,
+    old_v <> x -> update_copied_old_vlabel g old_v new_v x = vlabel g x.
+Proof.
+  intros. unfold update_copied_old_vlabel, update_vlabel. now rewrite if_false.
+Qed.
+
+Lemma lcv_semi_iso: forall (from to: nat) (g g1: LGraph) (f_info: fun_info) l1 v,
+    from <> to -> sound_gc_graph g -> sound_gc_graph g1 ->
+    sound_gc_graph (lgraph_copy_v g1 v to) -> graph_has_gen g1 to ->
+    vvalid g1 v -> vgeneration v = from -> raw_mark (vlabel g1 v) = false ->
+    no_dangling_dst g -> gc_graph_semi_iso g g1 from to l1 ->
+    gc_graph_semi_iso g (lgraph_copy_v g1 v to) from to
+                      ((v, new_copied_v g1 to) :: l1).
+Proof.
+  intros. destruct H8 as [? [? ?]]. destruct (split l1) as [from_l to_l] eqn: ?.
+  destruct H10 as [[? ?] [[? [? ?]] ?]]. destruct H0 as [? [? ?]]. red in H0, H16, H17.
+  pose proof H1. rename H18 into N1. destruct H1 as [? [? ?]]. red in H1, H18, H19.
+  assert (vvalid g v). {
+    destruct (vvalid_lcm g v H0); auto. exfalso.
+    assert (In v to_l) by (rewrite H13; now split). apply H14 in H21.
+    now rewrite H5 in H21. } assert (~ vvalid g1 (new_copied_v g1 to)). {
+    intro. rewrite H1 in H21. now apply (graph_has_v_not_eq g1 to) in H21. }
+  assert (~ In v from_l) by
+      (intro; rewrite <- H11 in H22; destruct H22; now rewrite H6 in H22).
+  assert (N2: vlabel g v = vlabel g1 v) by now apply H15.
+  split; [|split].
+  - apply is_partial_graph_trans with g1; auto. simpl.
+    apply pcv_is_partial_graph; auto.
+  - intros. simpl in H23. destruct H23.
+    + inversion H23. subst v1 v2. split; [|split].
+      * simpl. now rewrite ucov_copied_vertex.
+      * rewrite lcv_vlabel_new; [easy | now rewrite H5].
+      * intros. simpl. rewrite pcv_dst_new. 2: erewrite <- vlabel_get_edges_snd; eauto.
+        assert (evalid g (v, idx)). {
+          rewrite H16. split; simpl; [now rewrite <- H0 | now rewrite get_edges_In]. }
+        destruct H8 as [_ [_ [_ ?]]]. left. symmetry. apply H8; auto. rewrite H0.
+        red in H7. apply (H7 v); [now rewrite <- H0 | now rewrite get_edges_In].
+    + assert (In v1 from_l). {
+        assert (exists v', In (v1, v') l1) by (now exists v2).
+        rewrite <- In_map_fst, map_fst_split, Heqp in H24. now simpl in H24. }
+      assert (In v2 to_l). {
+        assert (exists v', In (v', v2) l1) by (now exists v1).
+        rewrite <- In_map_snd, map_snd_split, Heqp in H25. now simpl in H25. }
+      assert (v2 <> new_copied_v g1 to) by
+          (rewrite H13 in H25; destruct H25; intro; now subst v2).
+      split; [|split].
+      * simpl. rewrite ucov_not_eq. 2: intro; now subst. rewrite lacv_vlabel_old.
+        1: apply (proj1 (H9 _ _ H23)). unfold new_copied_v. rewrite <- H11 in H24.
+        destruct H24 as [_ [_ ?]]. destruct v1. simpl in *. intro HS; inversion HS.
+        now rewrite H24 in H28.
+      * simpl. rewrite ucov_not_eq.
+        -- rewrite lacv_vlabel_old; auto. apply H9 in H23.
+           now destruct H23 as [_ [? _]].
+        -- apply H14 in H25. intro. destruct v, v2.
+           inversion H27; subst. now simpl in *.
+      * intros. simpl. rewrite pcv_dst_old; auto. apply H9 in H23.
+        destruct H23 as [_ [_ ?]]. specialize (H23 _ H27). destruct H23; [now left |].
+        destruct (InEither_dec (dst g (v1, idx)) l1).
+        -- rewrite list_bi_map_cons_1. 1: now right. admit.
+        -- rewrite list_bi_map_not_In in H23; [now left | easy].
+Abort.
+
+Lemma fr_O_semi_iso: forall (from to : nat) (p : forward_p_type) (g g1 g2 : LGraph) 
+                            (roots : roots_t) (f_info : fun_info) l1,
+    from <> to -> sound_gc_graph g -> sound_gc_graph g1 -> graph_has_gen g1 to ->
+    roots_fi_compatible roots f_info -> roots_graph_compatible roots g1 ->
+    gc_graph_semi_iso g g1 from to l1 -> forward_p_compatible p roots g1 from ->
+    forward_relation from to O (forward_p2forward_t p roots g1) g1 g2 ->
+    exists l2, gc_graph_semi_iso g g2 from to l2 /\ incl l1 l2 /\
+               upd_roots from to p g1 roots f_info =
+               semi_roots_map f_info l1 l2 p roots.
+Proof.
+  intros from to p g g1 g2 roots f_info l1 H Hs H0 H1 H2 Hg H3 H4 H5.
+  assert (DoubleNoDup l1) by (eapply semi_iso_DoubleNoDup; eauto).
+  assert (sound_gc_graph g2) by (eapply (fr_O_sound g1); eauto).
+  assert (bijective (roots_map l1) (roots_map l1)). {
+    unfold roots_map. apply bijective_map, bijective_root_map, bijective_list_bi_map.
+    assumption. } destruct p; simpl in H4, H5.
+  - destruct (Znth z roots) eqn:? ; [destruct s|]; simpl in *; rewrite Heqr;
+      inversion H5; subst.
+    + exists l1. split; [easy | split; [apply incl_refl|]].
+      rewrite rrm_non_vertex_id; auto. intros. now rewrite Heqr.
+    + exists l1. split; [easy | split; [apply incl_refl|]].
+      rewrite rrm_non_vertex_id; auto. intros. now rewrite Heqr.
+    + exists l1. split; [easy | split; [apply incl_refl|]]. rewrite if_false; auto.
+      erewrite rrm_not_in_id; eauto. intro. destruct H3 as [_ [_ ?]].
+      rewrite map_fst_split in H9. destruct (split l1). simpl in H9.
+      destruct H3 as [[_ ?] _]. rewrite <- H3 in H9. now destruct H9 as [_ [_ ?]].
+    + exists l1. split; [easy | split; [apply incl_refl|]].
+      rewrite if_true, H12; auto. destruct H3 as [_ [? ?]].
+      destruct (split l1) eqn:? . destruct H9 as [[? ?] [[_ [? ?]] _]].
+      erewrite rmm_eq_upd_bunch; eauto.
+      * assert (In v (map fst l1)). {
+          rewrite map_fst_split, Heqp, <- H10. do 2 (split; auto).
+          destruct (vvalid_lcm g v (proj1 Hs)). 1: easy. red in Hg.
+          rewrite Forall_forall in Hg. assert (graph_has_v g2 v). {
+            apply Hg; rewrite <- filter_sum_right_In_iff, <- Heqr;
+              now apply Znth_In. } destruct H0 as [? _]. red in H0.
+          rewrite <- H0 in H15. assert (In v l0) by now rewrite H11. exfalso.
+          now apply H13 in H16. } rewrite In_map_fst in H14. destruct H14 as [b ?].
+        destruct (H3 _ _ H14) as [? _]. now subst b.
+      * rewrite map_fst_split, Heqp. now simpl.
+    + rewrite if_true, H11; auto.
+
+      destruct H3 as [? [? ?]].
+      destruct (split l1) as [from_l to_l] eqn: ?.
+      destruct H10 as [[? ?] [[? [? ?]] ?]]. assert (NoDup (v :: map fst l1)). {
+        rewrite map_fst_split, Heqp. simpl. constructor. 2: easy. intro.
+        rewrite <- H12 in H17. destruct H17. now rewrite H11 in H17. }
+      exists ((v, (new_copied_v g1 to)) :: l1).
+      split; [|split]. 2: apply incl_tl, incl_refl.
+      * admit.
+      * erewrite rmm_eq_upd_bunch; eauto. now left.
+  - destruct p as [v n]. destruct H4 as [? [? [? ?]]]. rewrite H10 in H5. simpl in *.
+    destruct (Znth n (make_fields g1 v)) eqn:? ; [destruct s|]; simpl in H5;
+      inversion H5; subst; try (exists l1; rewrite (surjective _ _ H8);
+                                       split; [assumption | reflexivity]).
+Abort.

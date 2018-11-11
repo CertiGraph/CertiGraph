@@ -27,21 +27,25 @@ Section IS_PARTIAL_GRAPH.
     (forall e: E, evalid g1 e -> vvalid g1 (src g1 e) -> src g1 e = src g2 e) /\
     (forall e: E, evalid g1 e -> vvalid g1 (dst g1 e) -> dst g1 e = dst g2 e).
 
+  Lemma is_partial_graph_refl: forall (g: PreGraph V E),
+      is_partial_graph g g.
+  Proof. intros. split; [|split; [|split]]; intros; auto. Qed.
+
+  Lemma is_partial_graph_trans: forall (g1 g2 g3: PreGraph V E),
+      is_partial_graph g1 g2 -> is_partial_graph g2 g3 -> is_partial_graph g1 g3.
+  Proof.
+    intros. unfold is_partial_graph in *.
+    destruct H as [? [? [? ?]]], H0 as [? [? [? ?]]].
+    split; [|split; [|split]]; intros.
+    - apply H0, H; assumption.
+    - apply H4, H1; assumption.
+    - assert (src g1 e = src g2 e) by (apply H2; assumption). rewrite H9. apply H5.
+      1: apply H1; assumption. rewrite <- H9; apply H; assumption.
+    - assert (dst g1 e = dst g2 e) by (apply H3; assumption). rewrite H9. apply H6.
+      1: apply H1; assumption. rewrite <- H9; apply H; assumption.
+  Qed.
+
 End IS_PARTIAL_GRAPH.
-
-Section IS_PARTIAL_LABELED_GRAPH.
-
-Context {V E: Type}.
-Context {EV: EqDec V eq}.
-Context {EE: EqDec E eq}.
-Context {DV DE DG: Type}.
-
-Definition is_partial_lgraph (g1 g2: LabeledGraph V E DV DE DG): Prop :=
-  is_partial_graph (pg_lg g1) (pg_lg g2) /\
-  (forall v, vvalid (pg_lg g1) v -> vlabel g1 v = vlabel g2 v) /\
-  (forall e, evalid (pg_lg g1) e -> elabel g1 e = elabel g2 e).
-
-End IS_PARTIAL_LABELED_GRAPH.
 
 Section GuardedIdentical.
 
@@ -326,7 +330,7 @@ Proof.
     apply H5; tauto.
   + simpl; unfold predicate_weak_evalid; intros.
     apply H6; tauto.
-Qed.    
+Qed.
 
 Lemma pregraph_join_Empty: forall (G: Graph),pregraph_join (Empty_set _) (Empty_set _) G G.
 Proof.
@@ -412,5 +416,3 @@ Proof.
 Qed.
 
 End ExpandPartialGraph.
-
-

@@ -28,7 +28,7 @@ Add Parametric Relation {A} : (list A) eq_as_set
 
 Lemma eq_as_set_app: forall A (L1 L2 L3 L4: list A),
     L1 ~= L2 -> L3 ~= L4 -> (L1 ++ L3) ~= (L2 ++ L4).
-Proof. intros; hnf in *; intuition; apply Sublist_app; trivial. Qed.
+Proof. intros; hnf in *; intuition. Qed.
 
 Lemma eq_as_set_nil: forall {A} (l : list A), nil ~= l -> l = nil.
 Proof.
@@ -96,8 +96,9 @@ Proof.
   auto. intro y; intros. apply H1. apply in_cons. auto.
 Qed.
 
-Lemma NoDup_app_eq: forall (A : Type) (l1 l2 : list A),
-                      NoDup (l1 ++ l2) <-> NoDup l1 /\ NoDup l2 /\ (forall x, In x l1 -> ~ In x l2).
+Lemma NoDup_app_iff: forall (A : Type) (l1 l2 : list A),
+    NoDup (l1 ++ l2) <->
+    NoDup l1 /\ NoDup l2 /\ (forall x, In x l1 -> ~ In x l2).
 Proof.
   intros. split; intros. split. apply NoDup_app_l with l2. auto. split. apply NoDup_app_r with l1; auto.
   apply NoDup_app_not_in; auto. destruct H as [? [? ?]]. apply NoDup_app_inv; auto.
@@ -1262,7 +1263,7 @@ Section LIST_DERIVED_BIJECTION.
       DoubleNoDup l /\ a <> b /\ ~ InEither a l /\ ~ InEither b l.
   Proof.
     intros. unfold DoubleNoDup, InEither. simpl. destruct (split l) as [l1 l2].
-    rewrite !NoDup_app_eq, !NoDup_cons_iff, !in_app_iff. simpl. split; intros.
+    rewrite !NoDup_app_iff, !NoDup_cons_iff, !in_app_iff. simpl. split; intros.
     - destruct H as [[? ?] [[? ?] ?]]. intuition.
       + apply (H3 x); right; assumption.
       + apply (H3 b); left; auto.
@@ -1309,3 +1310,87 @@ Proof. intros. induction l; simpl; auto. rewrite IHl. reflexivity. Qed.
 Lemma combine_map_join: forall {A B C} (f: A -> B) (g: A -> C) (l: list A),
     combine (map f l) (map g l) = map (fun x => (f x, g x)) l.
 Proof. intros. induction l; simpl; auto. rewrite IHl. reflexivity. Qed.
+
+Section LIST_DERIVED_MAPPING.
+
+  Context {A: Type}.
+  Context {AE: EqDec A eq}.
+
+  Fixpoint look_up (l: list (A * A)) (key: A): option A :=
+    match l with
+    | nil => None
+    | (k, v) :: l' => if equiv_dec k key then Some v else look_up l' key
+    end.
+
+  Definition list_map (l: list (A * A)) (r: A): A :=
+    match (look_up l r) with
+    | Some v => v
+    | None => r
+    end.
+
+  Lemma list_map_cons_1: forall a l x,
+      x <> fst a -> list_map (a :: l) x = list_map l x.
+  Proof.
+    intros. unfold list_map. simpl. destruct a. simpl in *. destruct (equiv_dec a x).
+    1: unfold equiv in e; exfalso; apply H; subst; easy. reflexivity.
+  Qed.
+
+  Lemma list_map_not_In: forall l x, ~ In x (map fst l) -> list_map l x = x.
+  Proof.
+    induction l; intros. 1: unfold list_map; simpl; reflexivity. simpl in H.
+    apply Decidable.not_or in H. destruct H. rewrite list_map_cons_1. 2: intuition.
+    now apply IHl.
+  Qed.
+
+  Lemma NoDup_look_up: forall k v l,
+      NoDup (map fst l) -> In (k, v) l -> look_up l k = Some v.
+  Proof.
+    do 3 intro. induction l; intros. 1: inversion H0. simpl in *.
+    destruct a as [k0 v0]. destruct H0.
+    - inversion H0. subst. destruct (equiv_dec k k). reflexivity. exfalso. intuition.
+    - simpl in H. destruct (equiv_dec k0 k); unfold equiv in *.
+      + apply NoDup_cons_2 in H. exfalso. apply H. subst. now apply (in_map fst) in H0.
+      + apply NoDup_cons_1 in H. now apply IHl.
+  Qed.
+
+  Lemma list_map_In: forall l k v,
+      NoDup (map fst l) -> In (k, v) l -> list_map l k = v.
+  Proof. intros. unfold list_map. now rewrite (NoDup_look_up k v). Qed.
+
+End LIST_DERIVED_MAPPING.
+
+Lemma map_fst_split: forall {A B} (l: list (A * B)), map fst l = fst (split l).
+Proof.
+  intros. pose proof (split_length_l l). pose proof (split_length_r l).
+  pose proof (split_combine l). destruct (split l). simpl in *. rewrite <- H0 in H.
+  now rewrite <- H1, map_fst_combine.
+Qed.
+
+Lemma map_snd_split: forall {A B} (l: list (A * B)), map snd l = snd (split l).
+Proof.
+  intros. pose proof (split_length_l l). pose proof (split_length_r l).
+  pose proof (split_combine l). destruct (split l). simpl in *. rewrite <- H0 in H.
+  now rewrite <- H1, map_snd_combine.
+Qed.
+
+Lemma In_map_fst: forall {A B} a (l: list (A * B)),
+    In a (map fst l) <-> exists b : B, In (a, b) l.
+Proof.
+  intros. induction l; simpl. 1: intuition; now destruct H.
+  destruct a0 as [a0 b0]. simpl in *. split; intros.
+  - destruct H. 1: subst; exists b0; now left. rewrite IHl in H. destruct H as [b ?].
+    exists b. now right.
+  - destruct H as [b ?]. destruct H. 1: inversion H; now left. rewrite IHl.
+    right. now exists b.
+Qed.
+
+Lemma In_map_snd: forall {A B} b (l: list (A * B)),
+    In b (map snd l) <-> exists a : A, In (a, b) l.
+Proof.
+  intros. induction l; simpl. 1: intuition; now destruct H.
+  destruct a as [a0 b0]. simpl in *. split; intros.
+  - destruct H. 1: subst; exists a0; now left. rewrite IHl in H. destruct H as [a ?].
+    exists a. now right.
+  - destruct H as [a ?]. destruct H. 1: inversion H; now left. rewrite IHl.
+    right. now exists a.
+Qed.
