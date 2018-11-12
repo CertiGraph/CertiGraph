@@ -1,10 +1,38 @@
 \input{find_listing.tex}
 
-As an initial demonstration of our techniques, we show the decorated code of the path-compressing \texttt{find} function from the classic disjoint-set data structure~\cite{CLRS} in Figure~\ref{fig:ufcode}.  At first, union-find appears rather trivial since nodes have only one outgoing pointer and the body of \texttt{find} has only about 5 lines of code.  In fact, however, the disjoint-set data structure is notoriously difficult to reason about: indeed, the first pen-and-paper verification in separation logic required 20 pages~\cite{neelthesis}.
+As an initial demonstration of our techniques, we show the decorated code of the \texttt{find} function from the classic disjoint-set data structure~\cite{CLRS} in Figure~\ref{fig:find}.  The purpose of \texttt{find} is to return the root (ultimate parent) of \texttt{x}; for good amortised performance \texttt{find} also performs path compression (line~\ref{code:ufpathcompress}).  At first, \texttt{find} appears rather trivial since it only has about 5 lines of code and a \texttt{Nodes} has only a single outgoing pointer.  In fact, however, the disjoint-set data structure is notoriously difficult to reason about due to the rather subtle nature of path compression and the implicit sharing inherent in parent-pointers: indeed, the first pen-and-paper verification in separation logic required 20 pages~\cite{neelthesis}.
 
-Standing as we do on the shoulders of giants, we can see further and more clearly.  The invariants at each program point are natural despite only minor tidying from our machine-checked proof.  We also enjoy good separation between the spatial predicates ($\p{uf\_graph}(\gamma)$ and maps-to $|->$) and the pure predicates ($\texttt{x} \in V(\gamma)$, $\m{findS}(\gamma,\m{pa},\gamma')$, etc.).  All of this is despite our focus on verifying real C code, forcing us to prove grungy details such that the pointer comparison in line~\ref{code:ufif} is defined\footnote{Specifically, whenever \texttt{x} and \texttt{p} are both null; or when one of them is null and the other has offset between 0 and the size of the memory block into which it is pointing; or when if \texttt{x} and \texttt{p} are from the same memory block, then both of their offsets are between 0 and the size of that block; or when \texttt{x} and \texttt{p} are not in the same memory block and both have offsets between 0 and the size of their respective memory blocks \emph{minus one}.  {\color{blue} In line~\ref{code:ufif}, this fact is derived from the spatial graph predicate $\p{uf\_graph}(\gamma)$ together with the pure facts that $\texttt{x} \in V(\gamma)$ and {\color{magenta} $\gamma(\mathtt{x}) = (r,\texttt{pa})$}; we will see more about these definitions {\color{yellow} shortly}.}}.
+We use a number of basic concepts in our invariants.  We write~$\gamma$ to mean a ``mathematical'' (or ``pure'') graph: \emph{roughly}, a set of labeled vertices~$V(\gamma)$ and edges $E(\gamma)$.  When $V \in V(\gamma)$, we write $\gamma(v) = (r,p)$ to state that vertex $v$ has label $r$ and parent vertex $p$ ($r$ stores the ``rank'' of a node; it is not used in \texttt{find} but rather in \texttt{union}).  Pure predicates are written in \textit{italic}.  We explain more about mathematical graphs in~\S\ref{somewhere}. Turning our attention to the spatial predicates, each node $v \in V(\gamma)$ will be represented by $v \mapsto \gamma(v)$ in the heap, where we use the usual pen-and-paper trick of writing \emph{e.g.} $v \mapsto r,p$ to mean \mbox{$v |-> r * (v + \m{sizeof}(\texttt{unsigned int})) |-> p$} in the C memory model.  The whole graph (the entire disjoint-set forest) is then represented by $\p{uf\_graph}(\gamma)$, essentially the separating conjunction of the representations of all the individual verticies $v \in V(\gamma)$.  Spatial predicates are written in \textsf{sans-serif}.  We explain more about spatial graphs in~\S\ref{somewhereelse}.
 
-The specification we verify has its precondition on line~\ref{code:ufpre}: we require a heap representation of the mathematical union-find graph $\gamma$ ($\p{uf\_graph(\gamma)$ represents the entire disjoint-set forest) and that \texttt{x} is a vertex in $\gamma$.  The postcondition of \texttt{find} is on line~\ref{code:ufpost}: the heap is representing a new union-find graph $\gamma''$, which is mathematically related to the original graph $\gamma$ via the pure relation $\m{findS}$, which describes the action of path compression starting from node \texttt{x}.  Moreover, the function returns (\texttt{ret}) the node \m{rt}, which is the root (ultimate parent) of \texttt{x}, as specified by the pure relation $\m{uf\_root}$ (by $\m{findS}$, we know that path compression has not changed the root of any node between $\gamma$ to $\gamma''$).
+Standing as we do on the shoulders of giants, we can see further and more clearly.  The invariants at each program point are natural despite only minor tidying from our machine-checked proof.  We also enjoy good separation between the spatial predicates and pure predicates.  All of this is despite verifying real C code, forcing us to prove grungy details such that the pointer comparison in line~\ref{code:ufif} is defined\footnote{\label{footnote:pointereq}Specifically, whenever \texttt{x} and \texttt{p} are both null; or when one of them is null and the other has offset between 0 and the size of the memory block into which it is pointing; or when if \texttt{x} and \texttt{p} are from the same memory block, then both of their offsets are between 0 and the size of that block; or when \texttt{x} and \texttt{p} are not in the same memory block and both have offsets between 0 and the size of their respective memory blocks \emph{minus one}.  In line~\ref{code:ufif}, this comes from the spatial graph predicate $\p{uf\_graph}(\gamma)$ and the pure facts $\texttt{x} \in V(\gamma)$ and {\color{magenta} $\gamma(\mathtt{x}) = (r,\texttt{pa})$}.}.
+
+The precondition on line~\ref{code:findstart} says exactly that we have a disjoint-set forest representing the abstract graph $\gamma$ and that \texttt{x} is a valid vertex in $\gamma$.  The postcondition on line~\ref{code:findend}: the heap is representing a new union-find graph $\gamma''$, and \texttt{find} returns (\texttt{ret}) the node \m{rt}.  We specify that $\m{rt}$
+is the root (ultimate parent) of \texttt{x} with the pure relation $\m{uf\_root}$.  {\color{magenta} explain reachability?} We likewise describe how $\gamma''$ relates to the original graph $\gamma$ via the relation $\m{findS}$, which conservatively approximates the action of path compression.
+
+Most of the verification is straightforward: in fact, each individual line of code (\ref{code:findram1}, \ref{code:ufif}, \ref{code:ufreccall}, \ref{code:ufpathcompress}, and \ref{code:ufreturn}) is bracketed with exactly the invariants one would hope for to easily verify that line (ignoring the symbols $\searrow$ and $\swarrow$ for one paragraph).  In addition to improving human comprehensibility, this is useful because it means that the underlying verification engine (VST, in our case) can handle many grungy details (\emph{c.f.} footnote~\ref{footnote:pointereq}) for us if we provide some suitable lemmas.
+
+HERE
+
+LOCALIZE BLOCKS
+
+RAM1 (oops, side condition) and RAM2 (careful with existential)
+
+FRAME RULE
+
+READ RULE
+
+PAPER CLEANUP (...)
+
+\subsection{Additional verified examples}
+\label{sec:application}
+
+In addition to \li{mark} for graphs, we have also verified the same program for DAGs.
+More interestingly, we have verified two algorithms that modify the link structure:
+\li{spanning} for graphs, which prunes a graph into its spanning tree, and \li{copy}
+for graphs, which makes a structure-preserving copy.  For space reasons we put
+\li{spanning} and \li{copy} in Appendix~A\hide{\ref{apx:spanning}}.
+
+
 
 Turning to the body of the verification (lines~\ref{code:inmark}--\ref{code:outmark}), readers may already have noticed our new notation: blocks of proof sketch bracketed by the symbols $\searrow$ and $\swarrow$, such as lines~\ref{code:beforerootmark}--\ref{code:afterrootmark}.  We call a bracketed set of lines like this a ``localization block''; localization blocks were inspired by our new \li{localize} $\searrow$ and \li{unlocalize} $\swarrow$ tactics in Floyd (\S\ref{sec:vst}).
 The intuitive idea is that we zoom in from a larger ``global'' context to a smaller ``local'' one.  After verifying some commands locally to arrive at a local postcondition, we zoom back out to the global context.  Although we do not do so in Figure~\ref{fig:markgraph}, localization blocks can safely nest.
@@ -148,14 +176,6 @@ Turning to the body of the verification (lines~\ref{code:inmark}--\ref{code:outm
 The intuitive idea is that we zoom in from a larger ``global'' context to a smaller ``local'' one.  After verifying some commands locally to arrive at a local postcondition, we zoom back out to the global context.  Although we do not do so in Figure~\ref{fig:markgraph}, localization blocks can safely nest.
 
 
-\subsection{Additional verified examples}
-\label{sec:application}
-
-In addition to \li{mark} for graphs, we have also verified the same program for DAGs.
-More interestingly, we have verified two algorithms that modify the link structure:
-\li{spanning} for graphs, which prunes a graph into its spanning tree, and \li{copy}
-for graphs, which makes a structure-preserving copy.  For space reasons we put
-\li{spanning} and \li{copy} in Appendix~A\hide{\ref{apx:spanning}}.
 
 
 
