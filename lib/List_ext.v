@@ -1301,6 +1301,13 @@ Section LIST_DERIVED_BIJECTION.
     rewrite H1, H2. split; reflexivity.
   Qed.
 
+  Lemma DoubleNoDup_cons_InEither: forall l a b,
+      DoubleNoDup (a :: l) -> InEither b l -> ~ IsEither b a.
+  Proof.
+    intros. destruct a as [x y]. rewrite DoubleNoDup_cons_iff in H.
+    destruct H as [? [? [? ?]]]. intro. red in H4. simpl in H4. destruct H4; now subst.
+  Qed.
+
 End LIST_DERIVED_BIJECTION.
 
 Lemma combine_repeat_eq_map: forall {A B} (a: A) (l: list B),
