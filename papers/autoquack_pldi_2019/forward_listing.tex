@@ -1,52 +1,46 @@
 % for second branch
 %$\left\{\!\!\!\begin{array}{l@{}} boo \end{array}\right\}$
-
+% 
 \begin{figure}[t]
 \vspace{-1ex}
   \begin{lstlisting}
+// $\left\{\!\!\!\begin{array}{l@{}} \forall \gamma, \m{f\_info}, \m{t\_info}, \m{outlier}, \m{from}, \m{to}, \m{forp}.~ \null \\ \p{gc\_graph}(\gamma) * \p{fun\_info}(\m{f\_info}, \m{fi}) * \p{thread\_info}(\m{t\_info}, \m{ti}) /| \null \\ \m{compat}(\gamma, \m{f\_info}, \m{t\_info}, \m{outlier}, \m{from}, \m{to}, \m{forp}) /| \null \\ \tx{from\_start} = \m{gen\_start}(\gamma, \m{from}) /| \null \\ \tx{from\_limit} = \tx{from\_start} + \m{gen\_size}(\gamma, \m{from}) /| \null \\ \tx{next} = \m{nextaddr}(\m{t\_info}, \m{to}) /| \null \\ \exists \m{v},\m{n}.~\m{forp}=(\m{v},\m{n}) /| \tx{p} = \m{vaddr}(\gamma, \m{v}) + \m{n}\end{array}\right\}$
 void forward (value *from_start,
               value *from_limit,
               value **next,
               value *p,
               int depth) {
-// $\left\{\!\!\!\begin{array}{l@{}} \p{gc\_graph}(\gamma) /| \p{fun\_info}(\m{f\_info}, \m{fi}) /| \p{thread\_info}(\m{t\_info}, \m{ti}) /| \null \\ \m{comp\_ext}(\gamma, \m{f\_info}, \m{t\_info}) /| \m{comp\_int}(\gamma, \m{from}, \m{to}, \m{t\_info}) /| \null \\ \m{comp\_p}(\tx{p}, \m{roots}, \gamma, \m{from}) /| \tx{from\_start} = \m{gen\_start}(\gamma, \m{from}) /|  \null \\ \tx{from\_limit} = \m{??} /| \tx{next} = \m{??} \end{array}\right\}$
-// $\left\{\!\!\!\begin{array}{l@{}} \exists \m{v}, \m{n}.~ \tx{p} = \m{(v,n)} /| \m{vgen}(\m{v}) \neq \m{from} /| \null \\ \tx{\_p} = (\m{vert\_addr}(\gamma, v) + (\m{WO} * \m{n})) \end{array}\right\}$ 
   value * v;
-// $\{ \m{ditto} \}$  
-// $\searrow \{\p{vertex}(\gamma, \m{v}) \} $
-// $ \{\exists \m{header},\m{fields}.~\m{v} |-> \m{header},\m{fields} /| \m{ipoi}(\m{fields}[n])\}$ 
+// $\searrow \left\{\!\!\!\begin{array}{l@{}} \tx{...} \tx{p} = \m{vaddr}(\gamma, \m{v}) + \m{n} /| \null \\ \exists \m{hd},\m{flds}.~ \m{hd} = \m{mkhd}(\gamma, \m{v}) /| \m{flds} = \m{mkfv}(\gamma, \m{v}) /| \m{v} |-> \m{hd},\m{flds} \end{array}\right\}$
+// $\left\{\!\!\!\begin{array}{l@{}} \m{above} + \tx{p} = \tx{\&}(\m{flds}[\m{n}]) /| \m{iopi}(\tx{*p}) \end{array}\right\}$
   value va = *p; 
-// 
-// $\swarrow$
-// $ \{\tx{va} = \m{field2val}(\m{fields}[n]) /| \m{viop}(\m{field2val}(\m{fields}[n]))\} $
-// $ \{\m{field2val}(\m{fields}[n]) \in \m{int} \lor \m{field2val}(\m{fields}[n]) \in \m{ptr}\}$
-// $\{ /| \m{fields}[n]) \in \m{Z} \lor \m{fields}[n]) \in \m{GCptr} \lor \m{fields}[n]) \in \m{edge} \}$
-// $\{\m{fields}[n]) \in \m{edge} /| \exists \m{e}.~\m{field2val}(\m{e})\} /| \tx{va} = \m{field2val}(\m{fields}[n])$ // magic
-// $\{\m{fields}[n]) \in \m{edge} /| \exists \m{e}.~\m{field2val}(\m{e})\} /| \tx{va} = \m{field2val}(\m{fields}[n])$ 
-// $\{\exists \m{v'}.~ \m{v'} = \m{dst}(\gamma, \m{e}) /| \tx{va} = \m{vertex\_address}(\gamma, \m{v'}) \}$
-// $\{\m{v'} = \m{dst}(\gamma, \m{e}) /| \tx{va} = \m{vertex\_address}(\gamma, \m{v'}) /| \m{Is\_block}(\tx{va}) \}$
+?? $\swarrow \{\m{line\_1} + \exists...~ /| \tx{va} = \m{flds}[\m{n}] /| \m{iopi}(\tx{va})\}$
+// magic - we know that $\m{flds}[\m{n}]$ is an edge
+// $\{\exists \m{e}, \m{v'}, \m{b}, \m{i}.~ \tx{va} = \m{flds}[\m{e}] = \m{vaddr}(\gamma, \m{dst}(\gamma, \m{e})) = \m{vaddr}(\gamma, \m{v'}) = \m{Vptr}(\m{b},\m{i})\}$
   if(Is_block(va)) {
-// $\{\m{v'} = \m{dst}(\gamma, \m{e}) /| \tx{va} = \m{vertex\_address}(\gamma, \m{v'}) /| \m{Is\_block}(\tx{va}) /| \}$
-// $\{\exists \m{b}, \m{i}.~ \m{vertex\_address}(\gamma, \m{v'}) = \m{Vptr}(\m{b}, \m{i})\}$
     v = (value*)int_or_ptr_to_ptr(va);
-// $\{\tx{v} = \m{Vptr}(\m{b}, \m{i})\}$
+// $\{\tx{v} = \m{Vptr}(\m{b},\m{i}) = \m{vaddr}(\gamma, \m{v'})\}$
+// $\{(\m{Is\_from()} /| \tx{...}) \lor (\neg \m{Is\_from()} /| \tx{...})\}$
     if(Is_from(from_start, from_limit, v)) {
-}
-// $\searrow$
+// $\searrow \left\{\!\!\!\begin{array}{l@{}} \exists \m{hd'},\m{flds'}.~ \m{hd'} = \m{mkhd}(\gamma, \m{v'}) /| \m{flds'} = \m{mkfv}(\gamma, \m{v'}) /| \m{v'} |-> \m{hd'},\m{flds'} \end{array}\right\}$
       header_t hd = Hd_val(v);
-// $\swarrow$
+// $\swarrow \left\{\!\!\!\begin{array}{l@{}} \tx{hd} = \m{Z2val}(\m{hd'})  /| ((\tx{hd == 1}  /| tx{...}) \lor \null \\ (\tx{hd==0} /| \m{flds'}[0] = \m{vaddr}(\m{copvert}(\gamma, \m{v'}))))\end{array}\right\}$
       if(hd == 0) {
-// $\searrow$
-// $\searrow$
-        *p = Field(v,0);
-// $\swarrow$
-// $\swarrow$
+// $\searrow \left\{\!\!\!\begin{array}{l@{}} \exists \m{hd'},\m{flds'}.~ \m{hd'} = \m{mkhd}(\gamma, \m{v'}) /| \m{flds'} = \m{mkfv}(\gamma, \m{v'}) /| \null \\ \m{v'} |-> \m{hd'},\m{flds'} /| \m{flds'}[0] = \m{vaddr}(\m{copvert}(\gamma, \m{v'})) \end{array}\right\}$
+        t = Field(v,0);
+// $\swarrow \left\{\!\!\!\begin{array}{l@{}} \tx{t} = \m{vaddr}(\m{copvert}(\gamma, \m{v'})) \end{array}\right\}$
+// $\searrow \left\{\!\!\!\begin{array}{l@{}} \exists \m{hd},\m{flds}.~ \m{hd} = \m{mkhd}(\gamma, \m{v}) /| \m{flds} = \m{mkfv}(\gamma, \m{v}) /| \null \\ \m{v} |-> \m{hd},\m{flds} /| \tx{p} = \tx{\&}(\m{flds}[\m{n}]) \end{array}\right\}$
+        *p = t;
+?? $\left\{\!\!\!\begin{array}{l@{}} \m{v} |-> \m{hd},(\m{upd\_nth}(\m{flds}, \m{vaddr}(\m{copvert}(\gamma, \m{v'}))))\end{array}\right\}$
+// $\swarrow$ ??
+// $\left\{\!\!\!\begin{array}{l@{}} \exists \gamma'.~ \p{uf\_graph}(\gamma') /| \gamma' = \m{lgd}(\gamma,\m{e},\m{copvert}(\gamma, \m{v'})) /| \null \\ \tx{postcondition}\end{array}\right\}$
       } else {
+// remind them of old facts...
+// $\{ \tx{hd} = \m{Z2val}(\m{hd'})\}$
         int i; int sz; value *new;
-        sz = Wosize_hd(hd);
-        new = *next+1;
-        *next = new+sz;
-        Hd_val(new) = hd;
+        sz = Wosize_hd(hd); new = *next+1; *next = new+sz;
+// $\{\tx{sz} = \m{getvertsz}(\m{hd'}) = \m{lenflds}(\gamma, \m{v'}) /| \tx{new} = \m{sp\_start}(\m{to}) + \m{used}(\m{to}) + 1 /| \tx{??}\}$        
+        Hd_val(new) = hd; // ??
         for(i = 0; i < sz; i++) {
           Field(new, i) = Field(v, i);
         }

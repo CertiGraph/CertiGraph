@@ -191,43 +191,169 @@ Proof.
   assert (H_PARENT_Valid: vvalid g pa) by (eapply valid_parent; eauto).
   (* if (p != x) { *)
   forward_if
-    (EX g'': Graph, EX rt : pointer_val,
-     PROP (findS g x g'' /\ uf_root g'' x rt)
-     LOCAL (temp _p (pointer_val_val rt)) (* ; temp _x (pointer_val_val x)) *)
-     SEP (whole_graph sh g'')).
+    (EX g': Graph, EX rt : pointer_val,
+     PROP (findS g x g' /\ uf_root g' x rt)
+     LOCAL (temp _p (pointer_val_val rt); temp _x (pointer_val_val x))
+     SEP (whole_graph sh g')).
   - apply denote_tc_test_eq_split; apply graph_local_facts; auto.
   - (* p0 = find(p); *)
     forward_call (sh, g, pa). Intros vret. destruct vret as [g' root]. simpl fst in *. simpl snd in *.
     Opaque pointer_val_val. forward. Transparent pointer_val_val.
+    (* Start ramification.  We need to get a bunch of pure facts from G1 that will
+       be used both in the construction of L2 and also in the ramification entailment.
+       Thus, we need to do them here.  Probably the engineering of "localize" could
+       be improved to make this cleaner. *)
+    (* *** *)
+    
+    pose proof (true_Cne_neq _ _ H1). 
+    assert ((vgamma g' x) = (r, pa)) by (apply (findS_preserves_vgamma g); auto).
+    assert (weak_valid g' root) by (right; destruct H3; apply reachable_foot_valid in H3; auto).
+    assert (vvalid g' x) by (destruct H2 as [_ [[? _] _]]; rewrite <- H2; apply H).
+    assert (~ reachable g' root x) by (destruct H3; apply (vgamma_not_reachable' _ _ r pa); auto).
+    remember (Graph_gen_redirect_parent g' x root H6 H7 H8) as g''.
+    assert (ggrp_rel g' x root g''). { exists H6, H7, H8. trivial. }
+    clear Heqg'' H6 H7 H8.    
+    (* *** *)
     localize [data_at sh node_type (Vint (Int.repr (Z.of_nat r)), pointer_val_val pa) (pointer_val_val x)].
     forward.
-    unlocalize [EX g'' : Graph, !! (findS g x g'' /\ uf_root g'' x root) && vertices_at sh (vvalid g'') g''].
-    (* The main ramification entailment. *)
-    + pose proof (true_Cne_neq _ _ H1). 
-      assert ((vgamma g' x) = (r, pa)) by (apply (findS_preserves_vgamma g); auto).
+    Exists g''. Exists root.
+    unlocalize [vertices_at sh (vvalid g'') g''] using g'' assuming H9.
+    + assert (root <> null). {
+        destruct H3. apply reachable_foot_valid in H3. intro. subst root. apply (valid_not_null g' null H3). simpl. auto. }
+      eapply derives_trans.
+      apply (@graph_gen_redirect_parent_ramify_rel _ (sSGG_VST sh)); eauto.
+      apply sepcon_derives. apply derives_refl.
+      apply allp_right. intro g'''.
+      (* make the next 3 lines a lemma *)
+      rewrite <- imp_andp_adjoint. rewrite andp_comm. rewrite imp_andp_adjoint.
+      apply prop_left. intro Heqg''.
+      rewrite <- imp_andp_adjoint. rewrite TT_andp.
+      subst g''. apply derives_refl.
+    + entailer!. split.
+      * apply (graph_gen_redirect_parent_findS g g' x r r pa root _ _ _); auto.
+      * simpl. apply (uf_root_gen_dst_same g' (liGraph g') x x root); auto.
+        -- apply (uf_root_edge _ (liGraph g') _ pa); auto. apply (vgamma_not_dst g' x r pa); auto.
+        -- apply reachable_refl; auto.
+  - forward. Exists g x. entailer!. apply false_Cne_eq in H1. subst pa. split; split; [|split| |]; auto.
+    + reflexivity.
+    + apply (uf_equiv_refl _  (liGraph g)).
+    + repeat intro; auto.
+    + apply uf_root_vgamma with (n := r); auto.
+  - Intros g' rt. forward. Exists g' rt. entailer!.
+Qed.
+
+      assert (root <> null). {
+        destruct H3. apply reachable_foot_valid in H3. intro. subst root. apply (valid_not_null g' null H3). simpl. auto. }
+      eapply derives_trans.
+      apply (@graph_gen_redirect_parent_ramify _ (sSGG_VST sh)); eauto.
+      apply sepcon_derives. apply derives_refl.
+      apply allp_right. intro g''.
+      (* make the next 3 lines a lemma *)
+      rewrite <- imp_andp_adjoint. rewrite andp_comm. rewrite imp_andp_adjoint.
+      apply prop_left. intro Heqg''.
+      rewrite <- imp_andp_adjoint. rewrite TT_andp.
+      subst g''.
+      apply derives_refl.
+    + entailer!. split.
+      * apply (graph_gen_redirect_parent_findS g g' x r r pa root H5 H6 H8); auto.
+      * simpl. apply (uf_root_gen_dst_same g' (liGraph g') x x root); auto.
+        -- apply (uf_root_edge _ (liGraph g') _ pa); auto. apply (vgamma_not_dst g' x r pa); auto.
+        -- apply reachable_refl; auto.
+  - forward. Exists g x. entailer!. apply false_Cne_eq in H1. subst pa. split; split; [|split| |]; auto.
+    + reflexivity.
+    + apply (uf_equiv_refl _  (liGraph g)).
+    + repeat intro; auto.
+    + apply uf_root_vgamma with (n := r); auto.
+  - Intros g' rt. forward. Exists g' rt. entailer!.
+Qed.
+
+
+
+      
+    assert (vertices_at sh (vvalid (Graph_gen_redirect_parent g' x root H5 H6 H8)) (Graph_gen_redirect_parent g' x root H5 H6 H8) =
+              vertices_at sh (vvalid g') (Graph_gen_redirect_parent g' x root H5 H6 H8)). {
+      apply vertices_at_Same_set. unfold Ensembles.Same_set, Ensembles.Included, Ensembles.In. simpl. intuition. }
+(*    rewrite H9. *)
+    (* Existentialize g'', drag it from L2 to G2. *)
+    + assert (root <> null). {
+        destruct H3. apply reachable_foot_valid in H3. intro. subst root. apply (valid_not_null g' null H3). simpl. auto. }
+      eapply derives_trans.
+      apply (@graph_gen_redirect_parent_ramify _ (sSGG_VST sh)); eauto.
+      apply sepcon_derives. apply derives_refl.
+      apply allp_right. intro g''.
+      (* make the next 3 lines a lemma *)
+      rewrite <- imp_andp_adjoint. rewrite andp_comm. rewrite imp_andp_adjoint.
+      apply prop_left. intro Heqg''.
+      rewrite <- imp_andp_adjoint. rewrite TT_andp.
+      subst g''.
+      apply derives_refl.
+    + entailer!. split.
+      * apply (graph_gen_redirect_parent_findS g g' x r r pa root H5 H6 H8); auto.
+      * simpl. apply (uf_root_gen_dst_same g' (liGraph g') x x root); auto.
+        -- apply (uf_root_edge _ (liGraph g') _ pa); auto. apply (vgamma_not_dst g' x r pa); auto.
+        -- apply reachable_refl; auto.
+  - forward. Exists g x. entailer!. apply false_Cne_eq in H1. subst pa. split; split; [|split| |]; auto.
+    + reflexivity.
+    + apply (uf_equiv_refl _  (liGraph g)).
+    + repeat intro; auto.
+    + apply uf_root_vgamma with (n := r); auto.
+  - Intros g' rt. forward. Exists g' rt. entailer!.
+Qed.
+
+   apply wand_derives. apply derives_refl.
+      Exists (Graph_gen_redirect_parent g' x root H5 H6 H8).
+      apply andp_right.
+      * apply prop_right. split.
+        -- apply (graph_gen_redirect_parent_findS g g' x r r pa root H5 H6 H8); auto.
+        -- simpl. apply (uf_root_gen_dst_same g' (liGraph g') x x root); auto.
+           ++ apply (uf_root_edge _ (liGraph g') _ pa); auto. apply (vgamma_not_dst g' x r pa); auto.
+           ++ apply reachable_refl; auto.
+      * rewrite H9. apply derives_refl.
+
+        dag sh x g2] using g2 assuming H3.
+
+              
+    (* *** *)
+    unlocalize [EX g'' : Graph, !!(findS g x g'' /\ uf_root g'' x root) && (vertices_at sh (vvalid g'') g'')].
+    + (* Now for the magic: proving the ramification entailment. *)
+  (*     Lemma uf_parent_ramif: forall sh g g' r pa x root, *)
+  (*       vertices_at sh (vvalid g') g' *)
+  (* |-- data_at sh node_type (Vint (Int.repr (Z.of_nat r)), pointer_val_val pa) *)
+  (*       (pointer_val_val x) * *)
+  (*     (data_at sh node_type (Vint (Int.repr (Z.of_nat r)), pointer_val_val root) *)
+  (*        (pointer_val_val x) -* *)
+  (*      (EX g'' : Graph, *)
+  (*       !! (findS g x g'' /\ uf_root g'' x root) && vertices_at sh (vvalid g'') g'')). *)
+      pose proof (true_Cne_neq _ _ H1). 
       assert (weak_valid g' root) by (right; destruct H3; apply reachable_foot_valid in H3; auto).
       assert (vvalid g' x) by (destruct H2 as [_ [[? _] _]]; rewrite <- H2; apply H).
+      assert ((vgamma g' x) = (r, pa)) by (apply (findS_preserves_vgamma g); auto).
       assert (~ reachable g' root x) by (destruct H3; apply (vgamma_not_reachable' _ _ r pa); auto).
+      assert (vertices_at sh (vvalid (Graph_gen_redirect_parent g' x root H5 H6 H8)) (Graph_gen_redirect_parent g' x root H5 H6 H8) =
+              vertices_at sh (vvalid g') (Graph_gen_redirect_parent g' x root H5 H6 H8)). {
+        apply vertices_at_Same_set. unfold Ensembles.Same_set, Ensembles.Included, Ensembles.In. simpl. intuition. }
       assert (root <> null). {
         destruct H3. apply reachable_foot_valid in H3. intro. subst root. apply (valid_not_null g' null H3). simpl. auto. }
       eapply derives_trans.
       apply (@graph_gen_redirect_parent_ramify _ (sSGG_VST sh)); eauto.
       apply sepcon_derives. apply derives_refl.
       apply wand_derives. apply derives_refl.
-      Exists (Graph_gen_redirect_parent g' x root H6 H7 H8).
-      apply andp_right. 2: apply derives_refl. apply prop_right. split.
-      * apply (graph_gen_redirect_parent_findS g g' x r r pa root _ _ _); auto.
-      * simpl. apply (uf_root_gen_dst_same g' (liGraph g') x x root); auto.
-        -- apply (uf_root_edge _ (liGraph g') _ pa); auto. apply (vgamma_not_dst g' x r pa); auto.
-        -- apply reachable_refl; auto.
-    (* End ramification entailment. *)
-    + clear. entailer!. Exists g'' root. entailer!.
+      Exists (Graph_gen_redirect_parent g' x root H5 H6 H8).
+      apply andp_right.
+      * apply prop_right. split.
+        -- apply (graph_gen_redirect_parent_findS g g' x r r pa root H5 H6 H8); auto.
+        -- simpl. apply (uf_root_gen_dst_same g' (liGraph g') x x root); auto.
+           ++ apply (uf_root_edge _ (liGraph g') _ pa); auto. apply (vgamma_not_dst g' x r pa); auto.
+           ++ apply reachable_refl; auto.
+      * rewrite H9. apply derives_refl.
+      (* End ramification entailment. *)
+    + clear. entailer!. Exists g''. Exists root. entailer!.
   - forward. Exists g x. entailer!. apply false_Cne_eq in H1. subst pa. split; split; [|split| |]; auto.
     + reflexivity.
     + apply (uf_equiv_refl _  (liGraph g)).
     + repeat intro; auto.
     + apply uf_root_vgamma with (n := r); auto.
-  - Intros g'' rt. forward. Exists g'' rt. entailer!.
+  - Intros g' rt. forward. Exists g' rt. entailer!.
 Qed. (* Original: 47.715 secs; VST 2.*: 2.335 secs *)
 
 (* Print Assumptions body_find. *)
