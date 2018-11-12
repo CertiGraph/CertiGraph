@@ -187,17 +187,17 @@
 %\authorinfo{} {} {}
 
 \begin{abstract}
-We develop general and powerful techniques for mechanically verifying realistic programs that 
+We develop general and powerful techniques for mechanically verifying realistic programs that
 manipulate heap-represented graphs and related data structures with intrinsic sharing.
 We construct a modular and general setup for reasoning about abstract mathematical graphs
-and use separation logic to define how such abstract graphs are represented concretely in 
-the heap.  We upgrade Hobor and Villard's theory of ramification to support existential 
+and use separation logic to define how such abstract graphs are represented concretely in
+the heap.  We upgrade Hobor and Villard's theory of ramification to support existential
 quantifiers in postconditions and to smooth the treatment of modified program variables
-so that we can use it to verify real graph-manipulating C code.  We demonstrate the generality 
+so that we can use it to verify real graph-manipulating C code.  We demonstrate the generality
 and power of our techniques by integrating them into the Verified Software Toolchain and
-certifying the correctness of seven graph-manipulating programs written in CompCert C, including 
+certifying the correctness of seven graph-manipulating programs written in CompCert C, including
 a 400-line generational garbage collector for the CertiCoq project.  While doing so, we identify
-two places where the C semantics is too weak to define generational garbage collectors of the 
+two places where the C semantics is too weak to define generational garbage collectors of the
 sort used in the OCaml runtime.  Our proofs are entirely machine-checked.
 %We connect our development to two large verification tools, and HIP/SLEEK, and use these tools to mechanically verify several canonical graph algorithms. %
 \end{abstract}
@@ -210,10 +210,12 @@ sort used in the OCaml runtime.  Our proofs are entirely machine-checked.
 
 \input{intro.tex}
 
-\section{Localizations in VST}
+\section{Localizations Yield a Tidy Union-Find}
 \label{sec:orientation}
 
 \input{orientation.tex}
+
+\section{Existentials for Fun and Profit}
 
 \section{Localizations in HIP/SLEEK}
 \label{sec:hipsleek} % CHECK THIS!
