@@ -1308,6 +1308,9 @@ Section LIST_DERIVED_BIJECTION.
     destruct H as [? [? [? ?]]]. intro. red in H4. simpl in H4. destruct H4; now subst.
   Qed.
 
+  Lemma list_bi_map_nil: list_bi_map nil = id.
+  Proof. extensionality x. unfold list_bi_map. now simpl. Qed.
+
 End LIST_DERIVED_BIJECTION.
 
 Lemma combine_repeat_eq_map: forall {A B} (a: A) (l: list B),
@@ -1380,7 +1383,7 @@ Proof.
   now rewrite <- H1, map_snd_combine.
 Qed.
 
-Lemma In_map_fst: forall {A B} a (l: list (A * B)),
+Lemma In_map_fst_iff: forall {A B} a (l: list (A * B)),
     In a (map fst l) <-> exists b : B, In (a, b) l.
 Proof.
   intros. induction l; simpl. 1: intuition; now destruct H.
@@ -1391,7 +1394,7 @@ Proof.
     right. now exists b.
 Qed.
 
-Lemma In_map_snd: forall {A B} b (l: list (A * B)),
+Lemma In_map_snd_iff: forall {A B} b (l: list (A * B)),
     In b (map snd l) <-> exists a : A, In (a, b) l.
 Proof.
   intros. induction l; simpl. 1: intuition; now destruct H.
@@ -1401,3 +1404,18 @@ Proof.
   - destruct H as [a ?]. destruct H. 1: inversion H; now left. rewrite IHl.
     right. now exists a.
 Qed.
+
+Lemma In_map_fst: forall {A B} a b (l: list (A * B)),
+    In (a, b) l -> In a (map fst l).
+Proof.
+  intros. assert (exists y, In (a, y) l) by (now exists b).
+  now rewrite <- In_map_fst_iff in H0.
+Qed.
+
+Lemma In_map_snd: forall {A B} a b (l: list (A * B)),
+    In (a, b) l -> In b (map snd l).
+Proof.
+  intros. assert (exists x, In (x, b) l) by (now exists a).
+  now rewrite <- In_map_snd_iff in H0.
+Qed.
+
