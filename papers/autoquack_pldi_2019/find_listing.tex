@@ -14,10 +14,10 @@ $\ramify_1$  p = x -> parent; $\label{code:findram1}$
 // $\label{code:aftparentfind}\left\{\!\!\!\begin{array}{l@{}} \p{uf\_graph}(\gamma) /| \tx{p} = \m{pa} /| \m{pa} \neq \tx{x} /| \tx{x}\in\m{V}(\gamma) /| \null \\ \gamma(\tx{x}) = (\m{r}, \m{pa}) /| \m{pa}\in\m{V}(\gamma)\end{array}\right\}$
     p = find(p); $\label{code:ufreccall}$
 // $\label{code:ufbefram2}\left\{\!\!\!\begin{array}{l@{}}\exists \gamma',\m{rt}.~\p{uf\_graph}(\gamma') /| \tx{p} = \m{rt} /| \m{pa} \neq \tx{x} /| \m{findS}(\gamma,\m{pa},\gamma') /| \null \\ \m{uf\_root}(\gamma',\m{pa},\m{rt}) /| \tx{x}\in\m{V}(\gamma) /| \gamma(\tx{x})=(\m{r},\m{pa})\end{array}\right\}$
-// $\label{code:findbeforexparent}\searrow \left\{\!\!\!\begin{array}{l@{}}\tx{x} |-> \m{r},{pa} /| \tx{p} = \m{rt} /| \m{pa} \neq \tx{x} /| \m{findS}(\gamma, \m{pa}, \gamma') /| \null \\ \m{uf\_root}(\gamma',\m{pa},rt) /| \tx{x}\in\m{V}(\gamma) /| \gamma(\tx{x})=(\m{r}, \m{pa})\end{array}\right\}$
+// $\label{code:findbeforexparent}\searrow \left\{\!\!\!\begin{array}{l@{}}\tx{x} |-> \m{r},{pa} /| \tx{p} = \m{rt} /| \m{pa} \neq \tx{x} /| \m{findS}(\gamma, \m{pa}, \gamma') /| \null \\ \m{uf\_root}(\gamma',\m{pa},\m{rt}) /| \tx{x}\in\m{V}(\gamma) /| \gamma(\tx{x})=(\m{r}, \m{pa})\end{array}\right\}$
 $\ramify_2$    x -> parent = p; $\label{code:ufpathcompress}$
-// $\label{code:findafterxparent}\swarrow \left\{\!\!\!\begin{array}{l@{}}\tx{x} |-> \m{r},\m{rt} /| \tx{p} = \m{rt} /| \m{pa} \neq \tx{x} /| \m{findS}(\gamma, \m{pa}, \gamma') /| \null \\ \m{uf\_root}(\gamma',\m{pa},rt) /| \tx{x}\in\m{V}(\gamma) /| \gamma(\tx{x})=(\m{r}, \m{pa})\end{array}\right\}$
-// $\label{code:ufaftram2}\left\{\!\!\!\begin{array}{l@{}} \exists \gamma''.~ \p{uf\_graph}(\gamma'') /| \m{findS}(\gamma, \m{pa}, \gamma'') /| \null \\ \m{uf\_root}(\gamma'',\tx{x},rt) /| \tx{p} = \m{rt} \end{array}\right\}$
+// $\label{code:findafterxparent}\swarrow \left\{\!\!\!\begin{array}{l@{}}\tx{x} |-> \m{r},\m{rt} /| \tx{p} = \m{rt} /| \m{pa} \neq \tx{x} /| \m{findS}(\gamma, \m{pa}, \gamma') /| \null \\ \m{uf\_root}(\gamma',\m{pa},\m{rt}) /| \tx{x}\in\m{V}(\gamma) /| \gamma(\tx{x})=(\m{r}, \m{pa})\end{array}\right\}$
+// $\label{code:ufaftram2}\left\{\!\!\!\begin{array}{l@{}} \exists \gamma''.~ \p{uf\_graph}(\gamma'') /| \m{findS}(\gamma, \m{pa}, \gamma'') /| \null \\ \m{uf\_root}(\gamma'',\tx{x},\m{rt}) /| \tx{p} = \m{rt} \end{array}\right\}$
   }
   return p; $\label{code:ufreturn}$
 } // $\label{code:findend} \left\{\!\!\!\begin{array}{l@{}} \exists \gamma'',\m{rt}.~\p{uf\_graph}(\gamma'') /| \m{findS}(\gamma, \tx{x}, \gamma'') /| \null \\\m{uf\_root}(\gamma'',\tx{x},\m{rt}) /| \tx{ret} = \m{rt}  \end{array}\right\}$
@@ -25,21 +25,16 @@ $\ramify_2$    x -> parent = p; $\label{code:ufpathcompress}$
 
 \begin{equation*}
 \begin{array}{l@{\hspace{2pt}}c@{\hspace{2pt}}l}
-\m{uf\_root}(\gamma,\m{x},\m{rt}) & \defeq & \begin{cases}
-\m{x} \mathrel{{\stackrel{\gamma~}{\leadsto}}} \m{rt} \\
-\forall \m{rt'}.~\m{rt} \mathrel{{\stackrel{\gamma~}{\leadsto}}} \m{rt'} -> \m{rt} = \m{rt'}
-\end{cases} \\
+\m{uf\_root}(\gamma,\m{x},\m{rt}) \defeq \m{x} \mathrel{{\stackrel{\gamma~}{\leadsto^{\star}}}} \m{rt} /| \forall \m{rt'}.~\m{rt} \mathrel{{\stackrel{\gamma~}{\leadsto^{\star}}}} \m{rt'} => \m{rt} = \m{rt'}
 \end{array}
 \end{equation*}
 
 \begin{equation*}
 \begin{array}{l@{\hspace{2pt}}c@{\hspace{2pt}}l}
-\m{findS}(\gamma,\m{x},\gamma') & \defeq & \begin{cases}
-\forall \m{v}.~ \m{v}\in\gamma <-> \m{v}\in\gamma' \\
-\forall \m{v}, \m{r}, \m{r'}.~ \m{uf\_root}(\gamma, \m{v}, \m{r}) -> \m{uf\_root}(\gamma', \m{v}, \m{r'}) -> \m{r} = \m{r'} \\ 
-\forall \m{v}.~ \m{v}\in\gamma -> \m{v}\in\gamma' -> \gamma_\m{rank}(\m{v}) = \gamma'_\m{rank}(\m{v}) \\
-\m{subgraph}_{\m{x} \mathrel{{\stackrel{\gamma~}{\not\leadsto}}} \m{n}}(\gamma) \cong \m{subgraph}_{\m{x} \mathrel{{\stackrel{\gamma~}{\not\leadsto}}} \m{n}}(\gamma') 
-\end{cases} \\
+\m{findS}(\gamma,\m{x},\gamma') \defeq \m{subgraph}_{\m{x} \mathrel{{\stackrel{\gamma~}{\not\leadsto}}} \m{n}}(\gamma) \cong \m{subgraph}_{\m{x} \mathrel{{\stackrel{\gamma~}{\not\leadsto}}} \m{n}}(\gamma') /| \null \\ 
+\hspace{68pt} \forall \m{v}, \m{r}, \m{r'}.~ \m{v}\in\m{V}(\gamma) <=> \m{v}\in\m{V}(\gamma') /|  \null \\ 
+\hspace{68pt} \m{uf\_root}(\gamma, \m{v}, \m{r}) => \m{uf\_root}(\gamma', \m{v}, \m{r'}) => \m{r} = \m{r'} /| \null \\ 
+\hspace{68pt} \m{v}\in\m{V}(\gamma) => \gamma(\m{v}).\m{rank} = \gamma'(\m{v}).\m{rank}
 \end{array}
 \end{equation*}
 %  Definition uf_root (pg: PreGraph Vertex Edge) (x root: Vertex) : Prop := reachable pg x root /\ (forall y, reachable pg root y -> root = y).
