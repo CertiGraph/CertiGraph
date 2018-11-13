@@ -533,15 +533,10 @@ Proof.
         sep_apply (valid_pointer_bounds (Vptr b (Ptrofs.repr (ofs + z)))). Intros. apply prop_right.
         destruct H5 as [b0 [o [? ?]]].
         inversion H5.
-Check Ptrofs.unsigned_repr.
-        
-Search Ptrofs.Z_mod_modulus.
         
         generalize (Ptrofs.unsigned_repr o H6); intro Hx.
         unfold Ptrofs.unsigned in Hx.
         
-        Search Ptrofs.repr Ptrofs.max_unsigned.
-Print Ptrofs.unsigned.
 (* rewrite Ptrofs.unsigned_repr in H5.         *)
         admit.
       }

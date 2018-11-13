@@ -33,7 +33,7 @@ G_1 |- L_1 * (L_2 --* G_2)}
 (\dagger)~ \mathit{freevars}(L_2 --* G_2) \cap \MV(c) = \emptyset
 \end{array}
 \end{equation}
-For readers relatively unfamiliar with the \emph{separating implication} $--*$, \emph{a.k.a.} ``magic wand'', the key natural deduction rule is $(P * Q |- R) \Leftrightarrow (P |- Q --* R)$, which states that they two are related in the same way that $/|$ and $->$ are in propositional logic, \emph{i.e.} adjointness.  The \emph{ramification entailment} $G_1 |- L_1 * (L_2 --* G_2)}$ captures two key ideas: first, that $L_1$ is spatially contained within $G_1$; and second, that \emph{replacing} $L_1$ with $L_2$ inside $G_1$ yields $G_2$. \textsc{Ramify} essentially combines the two entailments in \textsc{Localize} into one by forcing the choice of $R \defeq L_2 --* G_2$; it also does not support the full power of existential quantifiers (quantifiers can appear \emph{within} $L_2$ and $G_2$, but \emph{the witnesses of such quantifiers cannot be related to each other}).  Although \textsc{Ramify} is sound\footnote{Use \textsc{Localize} with the equivalence $P -|- \exists x : \m{unit}.P$ for any $x$ not free in $P$.}, we shall soon see that these drawbacks are serious.
+For readers relatively unfamiliar with the \emph{separating implication} $--*$, \emph{a.k.a.} ``magic wand'', the key natural deduction rule is $(P * Q |- R) \Leftrightarrow (P |- Q --* R)$, which states that they two are related in the same way that $/|$ and $->$ are in propositional logic, \emph{i.e.} adjointness.  The \emph{ramification entailment} $G_1 |- L_1 * (L_2 --* G_2)$ captures two key ideas: first, that $L_1$ is spatially contained within $G_1$; and second, that \emph{replacing} $L_1$ with $L_2$ inside $G_1$ yields $G_2$. \textsc{Ramify} essentially combines the two entailments in \textsc{Localize} into one by forcing the choice of $R \defeq L_2 --* G_2$; it also does not support the full power of existential quantifiers (quantifiers can appear \emph{within} $L_2$ and $G_2$, but \emph{the witnesses of such quantifiers cannot be related to each other}).  Although \textsc{Ramify} is sound\footnote{Use \textsc{Localize} with the equivalence $P -|- \exists x : \m{unit}.P$ for any $x$ not free in $P$.}, we shall soon see that these drawbacks are serious.
 
 Using either \textsc{Localize} or \textsc{Ramify}, the lines adjacent to the $\searrow$ and $\swarrow$ symbols specify $G_1$ (line~\ref{code:ufbefram1}), $L_1$ (\ref{code:befparentfind}),
 $L_2$ (\ref{code:aftparentfind}), and $G_2$ (\ref{code:ufaftram1}). In fact, we have proved a variety of useful ramification entailments involving graphs in a generic and reusable way (\S\ref{spatialgraphs}).  In lines~\ref{code:ufbefram1}--\ref{code:ufaftram1}, the ramification is spatially particularly straightforward since the read does not alter the heap, so there only the ``identity replacement''; the associated lemma looks like this:
@@ -72,7 +72,7 @@ is a sound rule, but less powerful because by avoiding free choice over $R$ and 
 
 considered to range over the unit type
 
-(L_2 --* G_2)
+$(L_2 --* G_2)$
 
 
 
