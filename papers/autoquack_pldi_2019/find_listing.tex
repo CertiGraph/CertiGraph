@@ -23,13 +23,16 @@ $\ramify_2$    x -> parent = p; $\label{code:ufpathcompress}$
 } // $\label{code:findend} \left\{\!\!\!\begin{array}{l@{}} \exists \gamma'',\m{rt}.~\p{uf\_graph}(\gamma'') /| \m{findS}(\gamma, \tx{x}, \gamma'') /| \null \\\m{uf\_root}(\gamma'',\tx{x},\m{rt}) /| \tx{ret} = \m{rt}  \end{array}\right\}$
 \end{lstlisting}
 
+\begin{equation*}
 \begin{array}{l@{\hspace{2pt}}c@{\hspace{2pt}}l}
 \m{uf\_root}(\gamma,\m{x},\m{rt}) & \defeq & \begin{cases}
 \m{x} \mathrel{{\stackrel{\gamma~}{\leadsto}}} \m{rt} \\
 \forall \m{rt'}.~\m{rt} \mathrel{{\stackrel{\gamma~}{\leadsto}}} \m{rt'} -> \m{rt} = \m{rt'}
 \end{cases} \\
 \end{array}
+\end{equation*}
 
+\begin{equation*}
 \begin{array}{l@{\hspace{2pt}}c@{\hspace{2pt}}l}
 \m{findS}(\gamma,\m{x},\gamma') & \defeq & \begin{cases}
 \forall \m{v}.~ \m{v}\in\gamma <-> \m{v}\in\gamma' \\
@@ -38,7 +41,7 @@ $\ramify_2$    x -> parent = p; $\label{code:ufpathcompress}$
 \m{subgraph}_{\m{x} \mathrel{{\stackrel{\gamma~}{\not\leadsto}}} \m{n}}(\gamma) \cong \m{subgraph}_{\m{x} \mathrel{{\stackrel{\gamma~}{\not\leadsto}}} \m{n}}(\gamma') 
 \end{cases} \\
 \end{array}
-
+\end{equation*}
 %  Definition uf_root (pg: PreGraph Vertex Edge) (x root: Vertex) : Prop := reachable pg x root /\ (forall y, reachable pg root y -> root = y).
 
 %  Definition uf_equiv (g1 g2: PreGraph Vertex Edge) : Prop :=
