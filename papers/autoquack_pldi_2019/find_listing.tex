@@ -23,7 +23,21 @@ struct Node* find(struct Node* x) {
 } // $\label{code:findend} \left\{\!\!\!\begin{array}{l@{}} \exists \gamma'',\m{rt}.~\p{uf\_graph}(\gamma'') /| \m{findS}(\gamma, \tx{x}, \gamma'') /| \null \\\m{uf\_root}(\gamma'',\tx{x},\m{rt}) /| \tx{ret} = \m{rt}  \end{array}\right\}$
 \end{lstlisting}
 
-% need to have some notion of findS down below. probably want to define it at a higher level than what I've reproduced below?
+\begin{array}{l@{\hspace{2pt}}c@{\hspace{2pt}}l}
+\m{uf\_root}(\gamma,\m{x},\m{rt}) & \defeq & \begin{cases}
+\m{x} \mathrel{{\stackrel{\gamma~}{\leadsto}}} \m{rt} \\
+\forall \m{rt'}.~\m{rt} \mathrel{{\stackrel{\gamma~}{\leadsto}}} \m{rt'} -> \m{rt} = \m{rt'}
+\end{cases} \\
+\end{array}
+
+\begin{array}{l@{\hspace{2pt}}c@{\hspace{2pt}}l}
+\m{findS}(\gamma,\m{x},\gamma') & \defeq & \begin{cases}
+\forall \m{v}.~ \m{v}\in\gamma <-> \m{v}\in\gamma' \\
+\forall \m{v}, \m{r}, \m{r'}.~ \m{uf\_root}(\gamma, \m{v}, \m{r}) -> \m{uf\_root}(\gamma', \m{v}, \m{r'}) -> \m{r} = \m{r'} \\ 
+\forall \m{v}.~ \m{v}\in\gamma -> \m{v}\in\gamma' -> \gamma_\m{rank}(\m{v}) = \gamma'_\m{rank}(\m{v}) \\
+\m{subgraph}_{\m{x} \mathrel{{\stackrel{\gamma~}{\not\leadsto}}} \m{n}}(\gamma) \cong \m{subgraph}_{\m{x} \mathrel{{\stackrel{\gamma~}{\not\leadsto}}} \m{n}}(\gamma') 
+\end{cases} \\
+\end{array}
 
 %  Definition uf_root (pg: PreGraph Vertex Edge) (x root: Vertex) : Prop := reachable pg x root /\ (forall y, reachable pg root y -> root = y).
 
@@ -34,8 +48,6 @@ struct Node* find(struct Node* x) {
 
 %  Definition findS (g1: Graph) (x: Vertex) (g2: Graph) :=
 %    (predicate_partialgraph g1 (fun n => ~ reachable g1 x n)) ~=~ (predicate_partialgraph g2 (fun n => ~ reachable g1 x n)) /\ uf_equiv g1 g2 /\ rank_unchanged g1 g2. (**) why isn't uf_equiv enough?
-
-% can replace r with _ instead of ex it
 
 \vspace{-0.4em}
 \caption{Clight code and proof sketch for find}
