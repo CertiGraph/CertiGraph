@@ -10,7 +10,8 @@ Finally, we show that our techniques scale well beyond 10-line toys by certifyin
 Our recipe has three key ingredients.  First, we develop a ``mathematical graph library'' that is general enough to reason about a wide variety of algorithms.  We modularize this library carefully so that common ideas---\emph{e.g.} subgraphs, reachability, and isomorphism---can be used in a number of algorithms that call for these concepts.  Second, we connect these abstract graphs to
 concrete graphs in the heap using separation logic in a way facilitates the reuse of key definitions and theorems across algorithms.  Finally, we develop a notion of \emph{localization blocks} to
 enable the key Hoare tuples to be proved in a modular fashion using our \textsc{Localize} rule:
-\[
+\begin{equation}
+\label{eq:localize}
 \begin{array}{@{}l@{}}
 \infrule{}%Localize}
 {\{ L_1 \} ~ c ~ \{ \exists x.~ L_2 \} \\
@@ -20,7 +21,7 @@ R |- \forall x.~ (L_2 --* G_2) }
 [3pt]
 (\dagger)~ \mathit{freevars}(R) \cap \MV(c) = \emptyset
 \end{array}
-\]
+\end{equation} \marginpar{Can we typeset this a little better?}
 Briefly, \textsc{Localize} connects the behavior of a command $c$ in a ``local'' context $L_1$ and $L_2$ to its effect on a ``global'' context $G_1$ and $G_2$ using a carefully-chosen predicate~$R$.  \textsc{Localize} is a more general version of the well-known \textsc{Frame} rule, which does the same task in the simpler case when $G_i = L_i * F$ for some frame $F$ that is untouched by $c$; in this case $R \defeq F$ and both entailments are tautologies.  Localization blocks are an upgrade to Hobor and Villard's concept of \emph{ramification}~\cite{blah} that makes two key improvements: support for existential quantifiers in postconditions and smoother treatment of modified program variables.  We will see how all three ingredients work together on an example in~\S\ref{sec:orientation}.
 
 %as a kind of proof pattern or framework to verify graph-manipulating programs on pen and paper~\cite{hobor:ramification}.  The major focus of this paper is to develop methods to verify realistic graph programs in a mechanized context.  We do so by upgrading the theory of ramification and by developing a general and modular library for graph-related reasoning in separation logic.  We incorporate our approach into two sizeable separation logic-based verification tools: the Floyd system of the Verified Software Toolchain (VST)~\cite{appel:programlogics} and the HIP/SLEEK program verifier~\cite{chin:hipsleek}.  VST and HIP/SLEEK inhabit quite different points in the design space for verification tools, with VST primarily focusing on heavily human-guided verifications with an emphasis on end-to-end machine-checked proofs, and HIP/SLEEK focusing on more automation.  Despite these differences, the vast majority of our Coq code base is shared between them,
