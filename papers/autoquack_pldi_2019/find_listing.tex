@@ -11,7 +11,7 @@ $\ramify_1$  p = x -> parent; $\label{code:findram1}$
 // $\label{code:aftparentfind} \swarrow \left\{\!\!\!\begin{array}{l@{}} \tx{x}|-> \m{r},\m{pa} /| \tx{p} = \m{pa} /| \tx{x}\in\m{V}(\gamma) /| \gamma(\tx{x}) = (\m{r}, \m{pa}) /| \m{pa}\in\m{V}(\gamma)\end{array}\right\}$
 // $\label{code:ufaftram1}\left\{\!\!\!\begin{array}{l@{}} \p{uf\_graph}(\gamma) /| \tx{p} = \m{pa} /| \tx{x}\in\m{V}(\gamma) /| \gamma(\tx{x}) = (\m{r}, \m{pa}) /| \m{pa}\in\m{V}(\gamma)\end{array}\right\}$
   if (p != x) { $\label{code:ufif}$
-// $\label{code:aftparentfind}\left\{\!\!\!\begin{array}{l@{}} \p{uf\_graph}(\gamma) /| \tx{p} = \m{pa} /| \m{pa} \neq \tx{x} /| \tx{x}\in\m{V}(\gamma) /| \null \\ \gamma(\tx{x}) = (\m{r}, \m{pa}) /| \m{pa}\in\m{V}(\gamma)\end{array}\right\}$
+// $\label{code:ufaftpxeqcheck}\left\{\!\!\!\begin{array}{l@{}} \p{uf\_graph}(\gamma) /| \tx{p} = \m{pa} /| \m{pa} \neq \tx{x} /| \tx{x}\in\m{V}(\gamma) /| \null \\ \gamma(\tx{x}) = (\m{r}, \m{pa}) /| \m{pa}\in\m{V}(\gamma)\end{array}\right\}$
     p = find(p); $\label{code:ufreccall}$
 // $\label{code:ufbefram2}\left\{\!\!\!\begin{array}{l@{}}\exists \gamma',\m{rt}.~\p{uf\_graph}(\gamma') /| \tx{p} = \m{rt} /| \m{pa} \neq \tx{x} /| \m{findS}(\gamma,\m{pa},\gamma') /| \null \\ \m{uf\_root}(\gamma',\m{pa},\m{rt}) /| \tx{x}\in\m{V}(\gamma) /| \gamma(\tx{x})=(\m{r},\m{pa})\end{array}\right\}$
 // $\label{code:findbeforexparent}\searrow \left\{\!\!\!\begin{array}{l@{}}\tx{x} |-> \m{r},{pa} /| \tx{p} = \m{rt} /| \m{pa} \neq \tx{x} /| \m{findS}(\gamma, \m{pa}, \gamma') /| \null \\ \m{uf\_root}(\gamma',\m{pa},\m{rt}) /| \tx{x}\in\m{V}(\gamma) /| \gamma(\tx{x})=(\m{r}, \m{pa})\end{array}\right\}$
