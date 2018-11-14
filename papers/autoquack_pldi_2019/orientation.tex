@@ -33,64 +33,47 @@ G_1 |- L_1 * (L_2 --* G_2)}
 (\ddagger)~ \mathit{freevars}(L_2 --* G_2) \cap \MV(c) = \emptyset
 \end{array}
 \end{equation}
-For readers relatively unfamiliar with the \emph{separating implication} $--*$, \emph{a.k.a.} ``magic wand'', the key natural deduction rule is $(P * Q |- R) \Leftrightarrow (P |- Q --* R)$, which states that $*$ and $--*$ are related in the same way that $/|$ and $->$ are in propositional logic, \emph{i.e.} adjointness.  The \emph{ramification entailment} $G_1 |- L_1 * (L_2 --* G_2)$ captures two key ideas: first, that $L_1$ is spatially contained within $G_1$; and second, that \emph{replacing} $L_1$ with $L_2$ inside $G_1$ yields $G_2$. \textsc{Ramify} essentially combines the two entailments in \textsc{Localize} into one by forcing the choice of $R \defeq L_2 --* G_2$; it also does not support the full power of existential quantifiers (quantifiers can appear \emph{within} $L_2$ and $G_2$, but \emph{the witnesses of such quantifiers cannot be related to each other}).  Although \textsc{Ramify} is sound\footnote{Use \textsc{Localize} with $P -|- \exists x : \m{unit}.P$ for any $x$ not free in $P$.}, we shall soon see that these drawbacks are serious.
+The \emph{ramification entailment} $G_1 |- L_1 * (L_2 --* G_2)$ captures two key ideas: first, that $L_1$ is spatially contained within $G_1$; and second, that \emph{replacing} $L_1$ with $L_2$ inside $G_1$ yields $G_2$. \textsc{Ramify} essentially combines the two entailments in \textsc{Localize} into one by forcing the choice of $R \defeq L_2 --* G_2$; it also does not support the full power of existential quantifiers (quantifiers can appear \emph{within} $L_2$ and $G_2$, but \emph{the witnesses of such quantifiers cannot be related to each other}).  Although \textsc{Ramify} is sound\footnote{Use \textsc{Localize} with $P -|- \exists x : \m{unit}.P$ for any $x$ not free in $P$.}, we shall soon see that these drawbacks are serious.
 
 Using either \textsc{Localize} or \textsc{Ramify}, the lines adjacent to the~$\searrow$ and~$\swarrow$ symbols specify~$G_1$ (line~\ref{code:ufbefram1}), $L_1$~(\ref{code:befparentfind}),
-$L_2$~(\ref{code:aftparentfind}), and~$G_2$~(\ref{code:ufaftram1}). In lines~\ref{code:ufbefram1}--\ref{code:ufaftram1}, the spatial ramification is particularly straightforward since the read does not alter the heap, \emph{i.e.} there only the ``identity replacement'':
+$L_2$~(\ref{code:aftparentfind}), and~$G_2$~(\ref{code:ufaftram1}). 
+When we want to refer to the ramification entailment of a localization block in subsequent text we use the symbol $(\ramify_i)$ to identify it.  Accordingly, $(\ramify_1)$ refers to the ramification entailment associated with lines~\ref{code:ufbefram1}--\ref{code:ufaftram1}:
 \[
 \p{graph}(\gamma) /| x \in V(\gamma) |- x |-> \gamma(x) * \big(x |-> \gamma(x) --* \p{graph}(\gamma)\big)
 %\p{graph}(\gamma) /| x \in V(\gamma) |- x |-> \gamma(x) * (\overbrace{x |-> \gamma(x)}^{L_2'} --* \overbrace{\p{graph}(\gamma)}^{G_2'})
 \]
 Here we isolate the spatial parts of the invariants on lines~\ref{code:ufbefram1}--\ref{code:ufaftram1}.  Notice that this lemma is stated for any whole-graph predicate $\p{graph}(\gamma)$, and not merely for the special class of ``union-find graphs'' $\p{uf\_graph}(\gamma)$ (that \emph{e.g.} have only one outgoing edge per node).  That is useful because we use the same lemma to prove similar goals in all of our examples.
-In~\S\ref{spatialgraphs} we show other generic and reusable lemmas that prove ramification entailments.
+Indeed, this ``unchanged vertex'' ramification entailment is used whenever we need to read from a vertex in a graph.  In~\S\ref{spatialgraphs} we describe other generic and reusable lemmas that prove other ramification entailments.
 
 Unfortunately, we still have a problem: the ($\ddagger$) side condition requires that the free variables of $L_2 --* G_2$ have empty intersection with any local variables modified by $c$.  Inspection of lines~\ref{code:findram1}--\ref{code:ufaftram1} shows that the program variable \texttt{p} \textbf{is} modified by $c$, and \textbf{is} free in both $L_2$ and $G_2$.  This problem is fundamental: the whole point of verifying a read is to know something about the value that has been read.  Accordingly, although \textsc{Ramify} is sound, it is not strong enough to verify
 lines~\ref{code:ufbefram1}--\ref{code:ufaftram1}.  We will address this problem head-on in~\S\ref{existentials}, but for now let us content ourselves with knowing that other than the side condition ($\ddagger$), \textsc{Ramify} lets us verify lines \ref{code:ufbefram1}--\ref{code:ufaftram1}.
 
-The second localization block (lines~\ref{code:ufbefram2}--\ref{code:ufaftram2}) is both easier and harder than the first.  It is easier because \textsc{Ramify} \textbf{is} strong enough to verify it. Line~\ref{code:ufpathcompress} does not modify any local program variables, so ($\ddagger$) is trivially satisfied.  Moreover, although line~\ref{code:ufaftram2} does contain an existential, line~\ref{code:findafterxparent} does not, and so there is no need to ``link'' the two associated witnesses.  On the other hand, the second localization block is harder than the first because spatially there is more going on: we have made an update to a single node of the graph.
-Happily, the spatial ramification lemmas in \S\ref{spatialgraphs} can again handle the dirty work for us:
+The second localization block (lines~\ref{code:ufbefram2}--\ref{code:ufaftram2}) is both easier and harder than the first.  It is easier because \textsc{Ramify} \textbf{is} strong enough to verify it. Line~\ref{code:ufpathcompress} does not modify any local program variables, so ($\ddagger$) is trivially satisfied.  Moreover, although line~\ref{code:ufaftram2} does contain an existential, line~\ref{code:findafterxparent} does not, and so there is no need to ``link'' the two associated witnesses.  On the other hand, the second localization block is harder than the first because spatially there is more going on: $(\ramify_2)$ expresses an update to a single node of our graph:
 \[
 \infrule{}
 {x \in V(\gamma') \\ \gamma'' = [x -> (r,rt)]\gamma'}
 {\p{graph}(\gamma') |- x |-> \gamma'(x) * \big(x |-> \gamma''(x) --* \p{graph}(\gamma'')\big)}{}
 \]
-Here we abuse notation a little bit.  The conclusion of the ``rule'' (actually, lemma) is exactly right and appropriately generic.  However, the second premise uses a notation for ``mathematical graph node update'' that is customized for union-find graphs.  Moreover, updating a mathematical graph cannot be done willy-nilly; it is only defined when the properties that restrict the mathematical structure of $\gamma$ are preserved.  These properties are carried around via dependent types; in the case of union-find graphs, they force \emph{e.g.} acyclicity (other than at roots).
+Here we abuse notation a little bit.  The conclusion of the ``rule'' (actually, lemma) is exactly right and appropriately generic, so spatial ramification lemmas of the kind given in \S\ref{spatialgraphs} can handle the dirty spatial work for us.  However, the second premise uses a notation for ``mathematical graph node update'' that is customized for union-find graphs, since most graphs have more than a rank and single outgoing edge.  More seriously, updating a mathematical graph cannot be done willy-nilly; it is only defined when the properties that restrict the mathematical structure of $\gamma$ are preserved.  These properties are carried around via dependent types; in the case of union-find graphs, they force \emph{e.g.} acyclicity (other than at roots).
 
-In the actual proof of \texttt{find}, the bulk of the example-specific effort (as opposed to generic lemmas we reuse in other examples) is showing that this mathematical update can be done properly, \emph{i.e.} from $\texttt{x} \in V(\gamma) /| \texttt{x} \neq \m{pa}$ and 
+In the actual proof of \texttt{find}, the bulk of the example-specific effort (as opposed to generic lemmas we reuse in other examples) is indeed showing that this mathematical update can be done properly, \emph{i.e.} from $\texttt{x} \in V(\gamma) /| \gamma(\texttt{x}) = (r,\m{pa})$ and
 \[
-\gamma(\texttt{x}) = (r,\m{pa}) /| 
+\texttt{x} \neq \m{pa} /|
 \m{findS}(\gamma,\m{pa},\gamma') /| \m{uf\_root}(\gamma',\m{pa},\m{rt})
 \]
 we can prove
 \[
 \exists \gamma''.~ \gamma'' = [x -> (r,rt)]\gamma' /| \m{uf\_root}(\gamma'',\texttt{x},\m{rt}) /| & \m{findS}(\gamma,\texttt{x},\gamma'')
 \]
-Indeed, this lemma is capturing the essence of both finding the root and doing path compression: after compressing your parent, you can path compress yourself by rerouting your own parent pointer to your (soon-to-be former) parent's root.  The proof of the lemma is nontrivial, but is completely isolated from the grungy details of C.
+This lemma captures the essence of both finding the root and doing path compression: after compressing your parent and finding its root, you can path compress yourself by rerouting your own parent pointer to your (soon-to-be former) parent's root.  The proof of the lemma is nontrivial, but is completely isolated from the grungy details of C.
 
 With the second localization block complete, the remainder of the verification is straightforward.
 
-\subsection{Notes on Notation}
+\paragraph{Notes on notation.} 
 
-That is, we can verify a ``global'' specification $\{G_1\}~c~\{G_2\}$ by combining a ``local'' specification $\{L_1\}~c~\{L_2\}$ with a \emph{ramification entailment} $G_1 |- L_1 * (L_2--* G_2)$.  This entailment uses the ``magic wand'' operator $--*$ of separation logic\footnote{$--*$ is the adjunct of $*$, \emph{i.e.} $(P * Q |- R) <=> (P |- Q --* R)$.} to express a notion of ``substate update'': inside $G_1$ replace $L_1$ with $L_2$ to reach $G_2$.  Essentially the ramification entailment ensures that the change in state specified locally fits properly into the global context.  In exchange for proving the ramification entailment, a verifier can use \infrulestyle{Ramify} at any time, \emph{i.e.} they need not worry about syntactically matching their assertions with the $*$ in the \infrulestyle{Frame} rule.
+Although we do not do so in Figure~\ref{fig:find}, localization blocks can safely nest.  When the ramification entailment is not noteworthy we can omit the $\ramify_i$ reference in pen-and-paper proofs.  When we wish to save vertical space we can write $\{ G_1 \} \searrow \{ L_1 \}$ and $\{ G_2 \} \swarrow \{ L_2 \}$.
 
-Although the ramification entailments can appear difficult, Hobor and Villard observed that in many practical cases they can be handled easily using a ``ramification library''.
-
-
-We are now ready to give a formal meaning to the ``localization'' pattern employed in Figure~\ref{fig:markgraph}.  When we write:
-\vspace{-4ex}
-\begin{lstlisting}
-// $\label{code:prelocal}\{ G_1 \}$
-// $\label{code:inlocal}\searrow \{ L_1 \}$
-$\ramify(i)$      $c_1$; ... ; $c_n$;
-// $\label{code:outlocal}\swarrow \{ L_2 \}$
-// $\label{code:postlocal}\{ G_2 \}$
-\end{lstlisting}
-\vspace{-1.5ex}
-we mean apply \infrulestyle{Ramify} with $G_1 |- L_1 * (L_2 --* G_2)$.
-An advantage of this notation is crystal clarity on the predicates used in the ramification entailment.  For convenience, the optional $\ramify(i)$ specification can reference an equation or lemma number that solves the ramification entailment.  For example, in Figure \ref{fig:markgraph} line \ref{code:markram2} references Equation \eqref{lem:updategraphnode} whereas we omit $\ramify$ around line \ref{code:markram1} since the heap is unchanged and so the entailment is straightforward. To save vertical space we can compress the line pairs \ref{code:prelocal}--\ref{code:inlocal} and \ref{code:outlocal}--\ref{code:postlocal}
-to the single lines $\{ G_1 \} \searrow \{ L_1 \}$ and $\{ G_2 \} \swarrow \{ L_2 \}$ without sacrificing clarity.
-
-Hobor and Villard pointed out that \infrulestyle{Ramify} implies \infrulestyle{Frame} (modulo the modified program variables issue we fix in \S\ref{sec:freevars}), meaning that our notation can clarify uses of \infrulestyle{Frame} as well.  This is particularly useful in multi-line contexts with nontrivial $F$, for which the current popular notation to express \infrulestyle{Frame} involves a liberal use of ``\ldots'', \emph{e.g.}:
+As pointed out in \S\ref{sec:intro}, \infrulestyle{Localize} can derive \infrulestyle{Frame}.  Our notation for localization blocks clarifies pen-and-paper uses of \infrulestyle{Frame}, especially in multi-line contexts with nontrivial $F$, for which the current popular notation to express \infrulestyle{Frame} involves a liberal use of ``\ldots'', \emph{e.g.}:
 
 \vspace{5pt}
 
@@ -119,17 +102,6 @@ New notation:
 \end{lstlisting}
 \end{minipage}
 \vspace{-0.75ex}
-
-
-Although we do not do so in Figure~\ref{fig:find}, localization blocks can safely nest.
-
-RAM1 (oops, side condition) and RAM2 (careful with existential)
-
-FRAME RULE
-
-READ RULE
-
-PAPER CLEANUP (...)
 
 \subsection{Additional verified examples}
 \label{sec:application}
