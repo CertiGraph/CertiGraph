@@ -1146,16 +1146,6 @@ Proof.
   rewrite <- H1 in H5. destruct H5 as [_ [_ ?]]. assumption.
 Qed.
 
-Definition roots_unmarked (g: LGraph) (roots: roots_t): Prop :=
-  forall v, In (inr v) roots -> raw_mark (vlabel g v) = false.
-
-Lemma graph_roots_unmarked: forall g roots,
-    graph_unmarked g -> roots_graph_compatible roots g -> roots_unmarked g roots.
-Proof.
-  intros. red in H, H0 |-* . intros. rewrite Forall_forall in H0. apply H, H0.
-  rewrite <- filter_sum_right_In_iff. assumption.
-Qed.
-
 Lemma root_t_eq_dec: forall r1 r2: root_t, {r1 = r2} + {r1 <> r2}.
 Proof.
   intros.
@@ -1235,14 +1225,14 @@ Qed.
 Definition restricted_roots_map (index: Z) (f_info: fun_info)
            (roots: roots_t) (l: list (VType * VType)): roots_t :=
   restricted_map (root_map (list_map l)) roots
-                 (get_roots_indices index (live_roots_indices f_info)).
+                 (get_indices index (live_roots_indices f_info)).
 
 Lemma restricted_roots_map_Zlength: forall index f_info roots l,
     Zlength roots = Zlength (live_roots_indices f_info) ->
     Zlength (restricted_roots_map index f_info roots l) = Zlength roots.
 Proof.
   intros. unfold restricted_roots_map. rewrite restricted_map_Zlength; auto.
-  intros. rewrite get_roots_indices_spec in H0. destruct H0. rewrite <- H in H0. easy.
+  intros. rewrite get_indices_spec in H0. destruct H0. rewrite <- H in H0. easy.
 Qed.
 
 Lemma collect_Z_indices_In_le:
@@ -1269,12 +1259,12 @@ Lemma restricted_roots_map_Znth_diff: forall z f_info roots l j,
   Znth j (restricted_roots_map z f_info roots l) = Znth j roots.
 Proof.
   intros. unfold restricted_roots_map. rewrite restricted_map_Znth_diff; auto.
-  - intros. rewrite get_roots_indices_spec in H2. destruct H2. rewrite H0. easy.
-  - intro. rewrite get_roots_indices_spec in H2. destruct H2. easy.
+  - intros. rewrite get_indices_spec in H2. destruct H2. rewrite H0. easy.
+  - intro. rewrite get_indices_spec in H2. destruct H2. easy.
 Qed.
 
-Lemma get_roots_indices_NoDup: forall i l, NoDup (get_roots_indices i l).
-Proof. intros. unfold get_roots_indices. apply collect_Z_indices_NoDup. Qed.
+Lemma get_indices_NoDup: forall i l, NoDup (get_indices i l).
+Proof. intros. unfold get_indices. apply collect_Z_indices_NoDup. Qed.
 
 Lemma restricted_roots_map_Znth_same: forall z f_info roots l j,
     0 <= j < Zlength roots ->
@@ -1284,9 +1274,9 @@ Lemma restricted_roots_map_Znth_same: forall z f_info roots l j,
     root_map (list_map l) (Znth j roots).
 Proof.
   intros. unfold restricted_roots_map. rewrite restricted_map_Znth_same; auto.
-  - intros. rewrite get_roots_indices_spec in H2. destruct H2. rewrite H0. easy.
-  - apply get_roots_indices_NoDup.
-  - rewrite get_roots_indices_spec. split; [rewrite <- H0 |]; easy.
+  - intros. rewrite get_indices_spec in H2. destruct H2. rewrite H0. easy.
+  - apply get_indices_NoDup.
+  - rewrite get_indices_spec. split; [rewrite <- H0 |]; easy.
 Qed.
 
 Lemma rrm_non_vertex_id: forall index f_info (roots: roots_t) l,
@@ -1576,17 +1566,24 @@ Proof.
   - intros. apply H. now right.
 Qed.
 
-Lemma fr_O_semi_iso: forall (from to : nat) (p : forward_p_type) (g g1 g2 : LGraph)
-                            (roots : roots_t) (f_info : fun_info) l1,
+Definition rf_list_relation (roots: roots_t) (f_info: fun_info)
+           (l: list (VType * VType)) (z: Z) (n: nat): Prop :=
+  forall j, 0 <= j < Zlength roots ->
+            Znth j (live_roots_indices f_info) = Znth z (live_roots_indices f_info) ->
+            forall v, Znth j roots = inr v -> In v (map fst l) <-> vgeneration v = n.
+
+Lemma forward_relation_O_semi_iso:
+  forall (from to : nat) (p : forward_p_type) (g g1 g2 : LGraph)
+         (roots : roots_t) (f_info : fun_info) l1,
     from <> to -> sound_gc_graph g -> sound_gc_graph g1 -> graph_has_gen g1 to ->
     roots_fi_compatible roots f_info -> roots_graph_compatible roots g1 ->
     gc_graph_semi_iso g g1 from to l1 -> forward_p_compatible p roots g1 from ->
     no_dangling_dst g -> no_dangling_dst g1 -> special_edge_cond g p ->
     special_roots_cond p roots from ->
     forward_relation from to O (forward_p2forward_t p roots g1) g1 g2 ->
-    exists l2, gc_graph_semi_iso g g2 from to l2 /\ incl l1 l2 /\
+    exists l2, gc_graph_semi_iso g g2 from to (l2 ++ l1) /\
                upd_roots from to p g1 roots f_info =
-               semi_roots_map f_info l1 l2 p roots.
+               semi_roots_map f_info l1 (l2 ++ l1) p roots.
 Proof.
   intros from to p g g1 g2 roots f_info l1 H Hs H0 H1 H2 Hg H3 H4 H7 Hd Hp Hr H5.
   assert (DoubleNoDup l1) by (eapply semi_iso_DoubleNoDup; eauto).
@@ -1595,17 +1592,14 @@ Proof.
     assumption. } destruct p; simpl in H4, H5.
   - destruct (Znth z roots) eqn:? ; [destruct s|]; simpl in *; rewrite Heqr;
       inversion H5; subst.
-    + exists l1. split; [easy | split; [apply incl_refl|]].
-      rewrite rrm_non_vertex_id; auto. intros. now rewrite Heqr.
-    + exists l1. split; [easy | split; [apply incl_refl|]].
-      rewrite rrm_non_vertex_id; auto. intros. now rewrite Heqr.
-    + exists l1. split; [easy | split; [apply incl_refl|]]. rewrite if_false; auto.
-      erewrite rrm_not_in_id; eauto. intro. destruct H3 as [_ [_ ?]].
+    + exists []. split; [|rewrite rrm_non_vertex_id]; auto. intros. now rewrite Heqr.
+    + exists []. split; [|rewrite rrm_non_vertex_id]; auto. intros. now rewrite Heqr.
+    + exists []. split; [|rewrite if_false]; auto.
+      erewrite rrm_not_in_id; eauto. simpl. intro. destruct H3 as [_ [_ ?]].
       rewrite map_fst_split in H9. destruct (split l1). simpl in H9.
       destruct H3 as [[_ ?] _]. rewrite <- H3 in H9. now destruct H9 as [_ [_ ?]].
-    + exists l1. split; [easy | split; [apply incl_refl|]].
-      rewrite if_true, H12; auto. destruct H3 as [_ [? ?]].
-      destruct (split l1) eqn:? . destruct H9 as [[? ?] [[_ [? ?]] _]].
+    + exists []. split; [| rewrite if_true, H12]; auto. destruct H3 as [_ [? ?]].
+      destruct (split l1) eqn:? . destruct H9 as [[? ?] [[_ [? ?]] _]]. simpl.
       erewrite rmm_eq_upd_bunch; eauto.
       * assert (In v (map fst l1)). {
           rewrite map_fst_split, Heqp, <- H10. do 2 (split; auto).
@@ -1617,30 +1611,27 @@ Proof.
           now apply H13 in H16. } rewrite In_map_fst_iff in H14. destruct H14 as [b ?].
         destruct (H3 _ _ H14) as [? _]. now subst b.
       * rewrite map_fst_split, Heqp. now simpl.
-    + rewrite if_true, H11; auto. exists ((v, (new_copied_v g1 to)) :: l1).
-      split; [|split]. 2: apply incl_tl, incl_refl.
+    + rewrite if_true, H11; auto. exists [(v, (new_copied_v g1 to))]. simpl. split.
       * apply lcv_semi_iso; auto. red in Hg. rewrite Forall_forall in Hg.
         destruct H0. red in H0. rewrite H0. apply Hg.
         rewrite <- filter_sum_right_In_iff, <- Heqr. now apply Znth_In.
       * erewrite rmm_eq_upd_bunch; eauto. 1: now left. simpl.
-      destruct H3 as [_ [_ ?]]. destruct (split l1) as [from_l to_l] eqn: ?.
-      destruct H3 as [[? ?] _]. rewrite map_fst_split, Heqp. simpl. constructor.
-      2: easy. intro. rewrite <- H9 in H10. destruct H10. now rewrite H11 in H10.
+        destruct H3 as [_ [_ ?]]. destruct (split l1) as [from_l to_l] eqn: ?.
+        destruct H3 as [[? ?] _]. rewrite map_fst_split, Heqp. simpl. constructor.
+        2: easy. intro. rewrite <- H9 in H10. destruct H10. now rewrite H11 in H10.
   - destruct p as [v n]. destruct H4 as [? [? [? ?]]]. rewrite H10 in H5. simpl in *.
     destruct (Znth n (make_fields g1 v)) eqn:? ; [destruct s|]; simpl in H5;
       inversion H5; subst;
-        try (exists l1; split; [easy | split; [apply incl_refl|]];
-                    now rewrite (surjective _ _ H8)).
-    + exists l1. split; [|split]; [|apply incl_refl | now rewrite (surjective _ _ H8)].
+        try (exists []; split; [easy | now rewrite (surjective _ _ H8)]).
+    + exists []. split; [| now rewrite (surjective _ _ H8)].
       eapply lgd_semi_iso; eauto. simpl. intuition.
-    + exists ((dst g1 e, new_copied_v g1 to) :: l1).
+    + exists [(dst g1 e, new_copied_v g1 to)]. simpl.
       assert (Hm: gc_graph_semi_iso g (lgraph_copy_v g1 (dst g1 e) to)
                                     (vgeneration (dst g1 e)) to
                                     ((dst g1 e, new_copied_v g1 to) :: l1)). {
         apply lcv_semi_iso; auto. red in Hd. destruct H0. red in H0. rewrite H0.
         apply (Hd v); auto. unfold get_edges. rewrite <- filter_sum_right_In_iff.
-        rewrite <- Heqf. apply Znth_In. now rewrite make_fields_eq_length. }
-      split; [|split]. 2: apply incl_tl, incl_refl.
+        rewrite <- Heqf. apply Znth_In. now rewrite make_fields_eq_length. } split.
       * cut (gc_graph_semi_iso g (lgraph_copy_v g1 (dst g1 e) to)
                                (vgeneration (dst g1 e)) to
                                ((dst g1 e, new_copied_v g1 to) :: l1)). 2: assumption.
@@ -1675,3 +1666,95 @@ Proof.
            rewrite <- H13 in H12. unfold new_copied_v in H12. destruct H12.
            simpl in H15. red in H15. omega.
 Qed.
+
+Definition gather_indices (il: list Z) (live_indices: list Z) :=
+  fold_right (fun z l => get_indices z live_indices ++ l) nil il.
+
+Definition quasi_roots_map (il: list nat) (f_info: fun_info)
+           (roots: roots_t) (l: list (VType * VType)): roots_t :=
+  restricted_map (root_map (list_map l)) roots
+                 (gather_indices (map Z.of_nat il) (live_roots_indices f_info)).
+
+Lemma quasi_roots_map_cons: forall a l f_info roots il,
+  quasi_roots_map (a :: l) f_info roots il =
+  quasi_roots_map l f_info (restricted_roots_map (Z.of_nat a) f_info roots il) il.
+Proof.
+  intros. unfold quasi_roots_map. simpl.
+  remember (gather_indices (map Z.of_nat l) (live_roots_indices f_info)).
+  unfold restricted_roots_map. remember (root_map (list_map il)) as f.
+  remember (get_indices (Z.of_nat a) (live_roots_indices f_info)).
+  unfold restricted_map. now rewrite fold_left_app.
+Qed.
+
+Definition rf_list_pair_relation (roots: roots_t) (f_info: fun_info)
+           (l1 l2: list (VType * VType)) (z: Z): Prop :=
+  forall j, 0 <= j < Zlength roots ->
+            Znth j (live_roots_indices f_info) = Znth z (live_roots_indices f_info) ->
+            forall v, Znth j roots = inr v -> In v (map fst (l2 ++ l1)) ->
+                      In v (map fst l1).
+
+Lemma restricted_roots_map_incl: forall roots f_info l1 l2 i,
+    rf_list_pair_relation roots f_info l1 l2 i -> DoubleNoDup (l2 ++ l1) ->
+    Zlength roots = Zlength (live_roots_indices f_info) ->
+    restricted_roots_map i f_info roots l1 =
+    restricted_roots_map i f_info roots (l2 ++ l1).
+Proof.
+  intros roots f_info l1 l2 i Hr Hd H. apply Znth_list_eq.
+  assert (forall l, Zlength (restricted_roots_map i f_info roots l) = Zlength roots)
+    by (intros; now rewrite restricted_roots_map_Zlength). split. 1: now rewrite H0.
+  intros. rewrite H0 in H1.
+  destruct (Z.eq_dec (Znth j (live_roots_indices f_info))
+                     (Znth i (live_roots_indices f_info))).
+  - rewrite !restricted_roots_map_Znth_same; auto.
+    destruct (Znth j roots) eqn:? ; simpl; auto. f_equal.
+    apply list_map_DoubleNoDup_incl_eq; auto. intros.
+    destruct (in_dec equiv_dec v (map fst l1)); auto. eapply Hr in H2; eauto.
+  - now rewrite !restricted_roots_map_Znth_diff.
+Qed.
+
+Lemma forward_roots_loop_semi_iso: forall from to f_info g l l1 roots1 roots2 g1 g2,
+    from <> to -> sound_gc_graph g -> sound_gc_graph g1 -> graph_has_gen g1 to ->
+    roots_fi_compatible roots1 f_info -> roots_graph_compatible roots1 g1 ->
+    (forall i : nat, In i l -> (i < length roots1)%nat) ->
+    no_dangling_dst g -> no_dangling_dst g1 -> copy_compatible g1 ->
+    gc_graph_semi_iso g g1 from to l1 ->
+    forward_roots_loop from to f_info l roots1 g1 roots2 g2 ->
+    exists l2, gc_graph_semi_iso g g2 from to (l2 ++ l1) /\ 
+               roots2 = quasi_roots_map l f_info roots1 (l2 ++ l1).
+Proof.
+  do 4 intro. induction l; intros; inversion H10; subst.
+  1: (exists []; split; auto). clear H10.
+  remember (upd_roots from to (inl (Z.of_nat a)) g1 roots1 f_info) as roots3.
+  change (root2forward (Znth (Z.of_nat a) roots1)) with
+      (forward_p2forward_t (inl (Z.of_nat a)) roots1 g1) in H13. pose proof H13.
+  assert (0 <= Z.of_nat a < Zlength roots1) by
+      (rewrite Zlength_correct; split; [omega | apply inj_lt, H5; now left]).
+  eapply (forward_relation_O_semi_iso from to _ g g1) in H13; simpl; eauto.
+  destruct H13 as [l3 [? ?]]. rewrite <- Heqroots3 in H13. simpl in H13.
+  eapply IHl in H18; eauto. clear IHl.
+  - destruct H18 as [l2 [? ?]]. exists (l2 ++ l3). rewrite <- app_assoc. split; auto.
+    subst roots2. rewrite H13. rewrite quasi_roots_map_cons. f_equal.
+    assert (DoubleNoDup (l2 ++ l3 ++ l1)) by (eapply semi_iso_DoubleNoDup; eauto).
+    assert (Zlength roots1 = Zlength (live_roots_indices f_info)) by (now destruct H3).
+    apply restricted_roots_map_incl; auto. admit.
+  - eapply fr_O_sound; eauto.
+  - erewrite <- fr_graph_has_gen; eauto.
+  - subst roots3; now apply upd_roots_rf_compatible.
+  - subst roots3; eapply fr_roots_graph_compatible; eauto.
+  - intros. rewrite H13, <- ZtoNat_Zlength. destruct H3.
+    rewrite restricted_roots_map_Zlength, ZtoNat_Zlength; auto. apply H5; now right.
+  - eapply fr_O_no_dangling_dst; eauto. now simpl.
+  - eapply fr_copy_compatible; eauto.
+Abort.
+
+Lemma forward_roots_semi_iso:
+  forall (from to : nat) (f_info : fun_info) (roots1 roots2: roots_t)
+         (g1 g2 : LGraph) (p: forward_p_type),
+    from <> to -> sound_gc_graph g1 -> graph_has_gen g1 to -> gen_unmarked g1 from ->
+    roots_fi_compatible roots1 f_info -> roots_graph_compatible roots1 g1 ->
+    forward_p_compatible p roots1 g1 from -> no_dangling_dst g1 ->
+    forward_roots_relation from to f_info roots1 g1 roots2 g2 -> 
+    exists l, gc_graph_semi_iso g1 g2 from to l /\ roots2 = roots_map l roots1.
+Proof.
+  intros. pose proof (semi_iso_refl g1 from to H0 H2). red in H7.
+Abort.
