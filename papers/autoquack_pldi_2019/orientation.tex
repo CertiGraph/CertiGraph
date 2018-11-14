@@ -19,131 +19,62 @@ the pointer comparison is defined in C.
 \subsection{Localization Blocks}
 \label{sec:localblocks}
 
-It is time to explain the not-so-obvious jumps in reasoning punctuated by the symbols $\searrow$, $\ramify_i$, and $\swarrow$ (lines~\ref{code:ufbefram1}--\ref{code:ufaftram1} and~\ref{code:ufbefram2}--\ref{code:ufaftram2}).  As explained above, the verification of the command itself is entirely straightforward given its immediate neighbors (lines~\ref{code:befparentfind}--\ref{code:aftparentfind} and~\ref{code:findbeforexparent}--\ref{code:findafterxparent}).  What is not so straightforward is how \emph{e.g.} line~\ref{code:ufbefram1} leads to line~\ref{code:befparentfind} or how line~\ref{code:aftparentfind} leads to line~\ref{code:ufaftram1}.  What the $\searrow$ and $\swarrow$ symbols indicate is an application of the \textsc{Localize} rule (\ref{eq:localize}) from page~\pageref{eq:localize}.
+It is time to explain the not-so-obvious jumps in reasoning punctuated by the symbols $\searrow$, $\ramify_i$, and $\swarrow$ (lines~\ref{code:ufbefram1}--\ref{code:ufaftram1} and~\ref{code:ufbefram2}--\ref{code:ufaftram2}).  As explained above, the verification of the command itself is entirely straightforward given its immediate neighbors (lines~\ref{code:befparentfind}--\ref{code:aftparentfind} and~\ref{code:findbeforexparent}--\ref{code:findafterxparent}).  What is not so straightforward is how \emph{e.g.} line~\ref{code:ufbefram1} leads to line~\ref{code:befparentfind} or how line~\ref{code:aftparentfind} leads to line~\ref{code:ufaftram1}.  The intuitive idea is that we zoom in from a larger ``global'' context to a smaller ``local'' one.  After verifying some commands locally to arrive at a local postcondition, we zoom back out to the global context.  What the $\searrow$ and $\swarrow$ symbols formally indicate is an application of the \textsc{Localize} rule (\ref{eq:localize}) from page~\pageref{eq:localize}.
 
-Recall that \textsc{Localize} connects some ``global'' to a ``local'' one by using five predicates.  For the purposes of guiding intuition, we will use a simpler variant of \textsc{Localize} called \textsc{Ramify} for a moment:
+Recall that \textsc{Localize} connects some ``global'' to a ``local'' one by using five predicates.  For the purposes of guiding intuition in \S\ref{sec:localblocks}, we will use a simpler variant of \textsc{Localize} called \textsc{Ramify} for a moment:
 \begin{equation}
 \label{eq:ramify}
 \begin{array}{@{}l@{}}
 \infrule{}%Localize}
 {\{ L_1 \} ~ c ~ \{ L_2 \} \\
 G_1 |- L_1 * (L_2 --* G_2)}
-{\{ G_1 \} ~ c ~ \{ G_2 \}} {(\dagger)} \\
+{\{ G_1 \} ~ c ~ \{ G_2 \}} {(\ddagger)} \\
 [3pt]
-(\dagger)~ \mathit{freevars}(L_2 --* G_2) \cap \MV(c) = \emptyset
+(\ddagger)~ \mathit{freevars}(L_2 --* G_2) \cap \MV(c) = \emptyset
 \end{array}
 \end{equation}
-For readers relatively unfamiliar with the \emph{separating implication} $--*$, \emph{a.k.a.} ``magic wand'', the key natural deduction rule is $(P * Q |- R) \Leftrightarrow (P |- Q --* R)$, which states that they two are related in the same way that $/|$ and $->$ are in propositional logic, \emph{i.e.} adjointness.  The \emph{ramification entailment} $G_1 |- L_1 * (L_2 --* G_2)$ captures two key ideas: first, that $L_1$ is spatially contained within $G_1$; and second, that \emph{replacing} $L_1$ with $L_2$ inside $G_1$ yields $G_2$. \textsc{Ramify} essentially combines the two entailments in \textsc{Localize} into one by forcing the choice of $R \defeq L_2 --* G_2$; it also does not support the full power of existential quantifiers (quantifiers can appear \emph{within} $L_2$ and $G_2$, but \emph{the witnesses of such quantifiers cannot be related to each other}).  Although \textsc{Ramify} is sound\footnote{Use \textsc{Localize} with the equivalence $P -|- \exists x : \m{unit}.P$ for any $x$ not free in $P$.}, we shall soon see that these drawbacks are serious.
+For readers relatively unfamiliar with the \emph{separating implication} $--*$, \emph{a.k.a.} ``magic wand'', the key natural deduction rule is $(P * Q |- R) \Leftrightarrow (P |- Q --* R)$, which states that $*$ and $--*$ are related in the same way that $/|$ and $->$ are in propositional logic, \emph{i.e.} adjointness.  The \emph{ramification entailment} $G_1 |- L_1 * (L_2 --* G_2)$ captures two key ideas: first, that $L_1$ is spatially contained within $G_1$; and second, that \emph{replacing} $L_1$ with $L_2$ inside $G_1$ yields $G_2$. \textsc{Ramify} essentially combines the two entailments in \textsc{Localize} into one by forcing the choice of $R \defeq L_2 --* G_2$; it also does not support the full power of existential quantifiers (quantifiers can appear \emph{within} $L_2$ and $G_2$, but \emph{the witnesses of such quantifiers cannot be related to each other}).  Although \textsc{Ramify} is sound\footnote{Use \textsc{Localize} with $P -|- \exists x : \m{unit}.P$ for any $x$ not free in $P$.}, we shall soon see that these drawbacks are serious.
 
-Using either \textsc{Localize} or \textsc{Ramify}, the lines adjacent to the $\searrow$ and $\swarrow$ symbols specify $G_1$ (line~\ref{code:ufbefram1}), $L_1$ (\ref{code:befparentfind}),
-$L_2$ (\ref{code:aftparentfind}), and $G_2$ (\ref{code:ufaftram1}). In fact, we have proved a variety of useful ramification entailments involving graphs in a generic and reusable way (\S\ref{spatialgraphs}).  In lines~\ref{code:ufbefram1}--\ref{code:ufaftram1}, the ramification is spatially particularly straightforward since the read does not alter the heap, so there only the ``identity replacement''; the associated lemma looks like this:
+Using either \textsc{Localize} or \textsc{Ramify}, the lines adjacent to the~$\searrow$ and~$\swarrow$ symbols specify~$G_1$ (line~\ref{code:ufbefram1}), $L_1$~(\ref{code:befparentfind}),
+$L_2$~(\ref{code:aftparentfind}), and~$G_2$~(\ref{code:ufaftram1}). In lines~\ref{code:ufbefram1}--\ref{code:ufaftram1}, the spatial ramification is particularly straightforward since the read does not alter the heap, \emph{i.e.} there only the ``identity replacement'':
 \[
-\p{graph}(\gamma) /| x \in V(\gamma) |- x |-> \gamma(x) * (\overbrace{L_2'}{x |-> \gamma(x)} --* \overbrace{G_2'}{\p{graph}(\gamma)})
+\p{graph}(\gamma) /| x \in V(\gamma) |- x |-> \gamma(x) * \big(x |-> \gamma(x) --* \p{graph}(\gamma)\big)
+%\p{graph}(\gamma) /| x \in V(\gamma) |- x |-> \gamma(x) * (\overbrace{x |-> \gamma(x)}^{L_2'} --* \overbrace{\p{graph}(\gamma)}^{G_2'})
 \]
-Here we write $L_2'$ and $G_2'$ to indicate the spatial part only of the invariants $L_2$ (line~\ref{code:aftparentfind}) and $G_2$ (\ref{code:ufaftram1}).  This lemma is easy to apply and solves the spatial part of the entailment we need.  Unfortunately, we still have a problem: the ($\dagger$) side condition requires that the free variables of $L_2 --* G_2$ have empty intersection with any local variables modified by $c$.  Inspection of lines~\ref{code:findram1}--\ref{code:ufaftram1} shows that the program variable \texttt{p} \textbf{is} modfied by $c$, and is mentioned in both $L_2$ and $G_2$.  This problem cannot be swept under the rug: the whole point of verifying a read is to know something about the value that has been read.  Accordingly, although \textsc{Ramify} is sound, it is not strong enough to verify 
-lines~\ref{code:ufbefram1}--\ref{code:ufaftram1}.  We will address this problem head-on in~\S\ref{existentials}, but for now let us content ourselves with knowing that other than the side condition ($\dagger$), \textsc{Ramify} lets us verify lines~\ref{code:ufbefram1}--\ref{code:ufaftram1}.
+Here we isolate the spatial parts of the invariants on lines~\ref{code:ufbefram1}--\ref{code:ufaftram1}.  Notice that this lemma is stated for any while-graph predicate $\p{graph}(\gamma)$, and not merely for the special class of ``union-find graphs'' $\p{uf\_graph}(\gamma)$ (that \emph{e.g.} have only one outgoing edge per node).  That is useful because we use the same lemma to prove similar goals in all of our examples.
+In~\S\ref{spatialgraphs} we show other generic and reusable lemmas that prove ramification entailments.
 
-The second localization block (lines~\ref{code:ufbefram2}--\ref{code:ufaftram2}) is both easier and harder than the first.  It is easier because \textsc{Ramify} \textbf{is} strong enough to verify it. Line~\ref{code:ufpathcompress} does not modify any local program variables, so ($\dagger$) is trivially satisfied.  Moreover, although line~\ref{code:ufaftram2} does contain an existential, line~\ref{code:findafterxparent} does not, and so there is no need to ``link'' the two associated witnesses.  On the other hand, the second localization block is harder than the first because spatially there is more going on: we have made an update to an edge of the graph.
+Unfortunately, we still have a problem: the ($\ddagger$) side condition requires that the free variables of $L_2 --* G_2$ have empty intersection with any local variables modified by $c$.  Inspection of lines~\ref{code:findram1}--\ref{code:ufaftram1} shows that the program variable \texttt{p} \textbf{is} modified by $c$, and \textbf{is} free in both $L_2$ and $G_2$.  This problem is fundamental: the whole point of verifying a read is to know something about the value that has been read.  Accordingly, although \textsc{Ramify} is sound, it is not strong enough to verify
+lines~\ref{code:ufbefram1}--\ref{code:ufaftram1}.  We will address this problem head-on in~\S\ref{existentials}, but for now let us content ourselves with knowing that other than the side condition ($\ddagger$), \textsc{Ramify} lets us verify lines \ref{code:ufbefram1}--\ref{code:ufaftram1}.
 
-HERE
-
-we do not have to link it to any existential in .
-
-(and seemingly must be mentioned, since ) .
-
-In the case of \textsc{Ramify},
-after eliminating the existentials in~(\ref{code:ufbefram1}) the shape of the underlying entailment is relatively easy to prove since 
-
-  Accordingly, at a high level what one is really proving is that the heap-representation of the vertex \texttt{x} is spatially contained within the heap-representation of the graph $\gamma$; assuming $\p{uf\_graph}(\gamma)$ is reasonably defined this is straightforward.
-
-
-
-
-%\[
-%\overbrace{\p{uf\_graph}(\gamma) /| \tx{x}\in\m{V}(\gamma) /| \gamma(\tx{x}) = (\m{r}, \m{pa}) /| \m{pa}\in\m{V}(\gamma)}^{(\ref{code:ufbefram1})} |-
-%\overbrace{\tx{x}|-> \m{r},\m{pa} /| \tx{x}\in\m{V}(\gamma) /| \gamma(\tx{x}) = (\m{r}, \m{pa}) /| \m{pa}\in\m{V}(\gamma)}^{(\ref{code:befparentfind})} * x
-%\]
-
-give four of these predicates explicitly: for example,  is~,  is~ line~ is~, and line~ is~.
-
-
-is a sound rule, but less powerful because by avoiding free choice over $R$ and t
-
-
-considered to range over the unit type
-
-$(L_2 --* G_2)$
-
-
-
-(Assume until~\S\ref{sec:existentials} that $L_2$ and $G_2$ do not contain ``fancy'' existentials; in this case the explicit existentials in \textsc{Localize} can be ,
-which effectively makes them trivial.)  What then remains is to choose a predicate $R$ and prove the two entailments in \textsc{Localize}.  If one ignores the side condition about modified local variables
-
-(two lines separated by the $\searrow$ symbol) 
- (two lines separated by the
-
-Turning to the body of the verification (lines~\ref{code:inmark}--\ref{code:outmark}), readers may already have noticed our new notation: blocks of proof sketch bracketed 
-
-, such as lines~\ref{code:beforerootmark}--\ref{code:afterrootmark}.  We call a bracketed set of lines like this a ``localization block''; localization blocks were inspired by our new \li{localize} $\searrow$ and \li{unlocalize} $\swarrow$ tactics in Floyd (\S\ref{sec:vst}).
-The intuitive idea is that we zoom in from a larger ``global'' context to a smaller ``local'' one.  After verifying some commands locally to arrive at a local postcondition, we zoom back out to the global context.  Although we do not do so in Figure~\ref{fig:markgraph}, localization blocks can safely nest.
-
-In lines~\ref{code:beforerootmark}--\ref{code:afterrootmark}, imagine unfolding the \p{graph} predicate in line~\ref{code:globalbeforerootmark} using equation \eqref{eqn:bigraphintrofoldunfold} and then zooming in to the root node \li{x} for lines~\ref{code:beforerootmark}--\ref{code:afterrootmark}, before zooming back out in line~\ref{code:globalafterrootmark}.
-
-To define localization blocks formally we need to first understand the \infrulestyle{Frame} and \infrulestyle{Ramify} rules.
-
-
-LOCALIZE BLOCKS
-
-RAM1 (oops, side condition) and RAM2 (careful with existential)
-
-FRAME RULE
-
-READ RULE
-
-PAPER CLEANUP (...)
-
-\subsection{Additional verified examples}
-\label{sec:application}
-
-Mark for graphs (cyclic), briefly discussed in EXISTENTIALS.  
-
-In addition to \li{mark} for graphs, we have also verified the same program for DAGs.
-More interestingly, we have verified two algorithms that modify the link structure:
-\li{spanning} for graphs, which prunes a graph into its spanning tree, and \li{copy}
-for graphs, which makes a structure-preserving copy.  For space reasons we put
-\li{spanning} and \li{copy} in Appendix~A\hide{\ref{apx:spanning}}.
-
-
-
-
-In lines~\ref{code:beforerootmark}--\ref{code:afterrootmark}, imagine unfolding the \p{graph} predicate in line~\ref{code:globalbeforerootmark} using equation \eqref{eqn:bigraphintrofoldunfold} and then zooming in to the root node \li{x} for lines~\ref{code:beforerootmark}--\ref{code:afterrootmark}, before zooming back out in line~\ref{code:globalafterrootmark}.
-
-To define localization blocks formally we need to first understand the \infrulestyle{Frame} and \infrulestyle{Ramify} rules.
-
-\subsection{Frames and ramifications are localizations}
-%\label{sec:localizations}
-
-The key rule of separation logic is \infrulestyle{Frame}~\cite{rey02}:
+The second localization block (lines~\ref{code:ufbefram2}--\ref{code:ufaftram2}) is both easier and harder than the first.  It is easier because \textsc{Ramify} \textbf{is} strong enough to verify it. Line~\ref{code:ufpathcompress} does not modify any local program variables, so ($\dagger$) is trivially satisfied.  Moreover, although line~\ref{code:ufaftram2} does contain an existential, line~\ref{code:findafterxparent} does not, and so there is no need to ``link'' the two associated witnesses.  On the other hand, the second localization block is harder than the first because spatially there is more going on: we have made an update to a single node of the graph.
+Happily, the spatial ramification lemmas in \S\ref{spatialgraphs} can again handle the dirty work for us:
 \[
-\infrule{Frame}
-{\{ P \} ~ c ~ \{Q \}}
-{\{P * F \} ~ c ~ \{ Q * F \}}
-{\begin{array}{c}F \textrm{ ignores } \MV(c) \end{array}} \qquad \qquad
-\vspace{-0.75ex}
+\infrule{}
+{x \in V(\gamma') \\ \gamma'' = [x -> (r,rt)]\gamma'}
+{\p{graph}(\gamma') |- x |-> \gamma'(x) * \big(x |-> \gamma''(x) --* \p{graph}(\gamma'')\big)}{}
 \]
-The reason \infrulestyle{Frame} is so important is because it enables local verifications.  That is, a verifier can focus on the portions of the heap that are relevant to command $c$ and ``frame away'' the rest.  The side condition ``$F \textrm{ ignores } \MV(c)$'' relates to modified program variables and will be discussed in \S\ref{sec:freevars}.
+Here we abuse notation a little bit.  The conclusion of the ``rule'' (actually, lemma) is exactly right and appropriately generic.  However, the second premise uses a notation for ``mathematical graph node update'' that is customized for union-find graphs.  Moreover, updating a mathematical graph cannot be done willy-nilly; it is only defined when the properties that restrict the mathematical structure of $\gamma$ are preserved.  These properties are carried around via dependent types; in the case of union-find graphs, they force \emph{e.g.} acyclicity (other than at roots).
 
-Hobor and Villard observed that \infrulestyle{Frame} is bit rigid because it forces verifiers to split program assertions into syntactically $*$-separated parts~\cite{hobor:ramification}.  This rigidity is particularly troublesome when verifying programs that manipulate data structures with intrinsic unspecified sharing such as DAGs and graphs.  Hobor and Villard proposed the \infrulestyle{Ramify} rule to circumvent this rigidity:
-\vspace{-1.5ex}
+In the actual proof of \texttt{find}, the bulk of the example-specific effort (as opposed to generic lemmas we reuse in other examples) is showing that this mathematical update can be done properly, \emph{i.e.} from $\texttt{x} \in V(\gamma) /| \texttt{x} \neq \m{pa}$ and 
 \[
-\infrule{Ramify}
-{\{L_1\} ~ c ~ \{L_2\} \\ G_1 |- L_1 * (L_2--* G_2)}
-{\{G_1\} ~ c ~ \{G_2\}}
-{\begin{array}{c}(L_2 --* G_2) \\ \textrm{ignores} \\ \MV(c) \end{array}} \qquad \qquad \qquad
-%{$\begin{array}{l}\m{fv}(Q --* R') \cap \null \\ \m{modif}(c) = \emptyset\end{array}$} \qquad \qquad \qquad
-\vspace{-1.5ex}
+\gamma(\texttt{x}) = (r,\m{pa}) /| 
+\m{findS}(\gamma,\m{pa},\gamma') /| \m{uf\_root}(\gamma',\m{pa},\m{rt})
 \]
-That is, we can verify a ``global'' specification $\{G_1\}~c~\{G_2\}$ by combining a ``local'' specification $\{L_1\}~c~\{L_2\}$ with a \emph{ramification entailment} $G_1 |- L_1 * (L_2--* G_2)$.  This entailment uses the ``magic wand'' operator $--*$ of separation logic\footnote{$--*$ is the adjunct of $*$, \emph{i.e.} $(P * Q |- R) <=> (P |- Q --* R)$.} to express a notion of ``substate update'': inside $G_1$ replace $L_1$ with $L_2$ to reach $G_2$.  Essentially the ramification entailment ensures that the change in state specified locally fits properly into the global context.  In exchange for proving the ramification entailment, a verifier can use \infrulestyle{Ramify} at any time, \emph{i.e.} they need not worry about syntactically matching their assertions with the $*$ in the \infrulestyle{Frame} rule.  Although the ramification entailments can appear difficult, Hobor and Villard observed that in many practical cases they can be handled easily using a ``ramification library''.
+we can prove
+\[
+\exists \gamma''.~ \gamma'' = [x -> (r,rt)]\gamma' /| \m{uf\_root}(\gamma'',\texttt{x},\m{rt}) /| & \m{findS}(\gamma,\texttt{x},\gamma'')
+\]
+Indeed, this lemma is capturing the essence of both finding the root and doing path compression: after compressing your parent, you can path compress yourself by rerouting your own parent pointer to your (soon-to-be former) parent's root.  The proof of the lemma is nontrivial, but is completely isolated from the grungy details of C.
+
+With the second localization block complete, the remainder of the verification is straightforward.
+
+\subsection{Notes on Notation}
+
+That is, we can verify a ``global'' specification $\{G_1\}~c~\{G_2\}$ by combining a ``local'' specification $\{L_1\}~c~\{L_2\}$ with a \emph{ramification entailment} $G_1 |- L_1 * (L_2--* G_2)$.  This entailment uses the ``magic wand'' operator $--*$ of separation logic\footnote{$--*$ is the adjunct of $*$, \emph{i.e.} $(P * Q |- R) <=> (P |- Q --* R)$.} to express a notion of ``substate update'': inside $G_1$ replace $L_1$ with $L_2$ to reach $G_2$.  Essentially the ramification entailment ensures that the change in state specified locally fits properly into the global context.  In exchange for proving the ramification entailment, a verifier can use \infrulestyle{Ramify} at any time, \emph{i.e.} they need not worry about syntactically matching their assertions with the $*$ in the \infrulestyle{Frame} rule.
+
+Although the ramification entailments can appear difficult, Hobor and Villard observed that in many practical cases they can be handled easily using a ``ramification library''.
+
 
 We are now ready to give a formal meaning to the ``localization'' pattern employed in Figure~\ref{fig:markgraph}.  When we write:
 \vspace{-4ex}
@@ -189,6 +120,79 @@ New notation:
 \end{minipage}
 \vspace{-0.75ex}
 
+
+Although we do not do so in Figure~\ref{fig:find}, localization blocks can safely nest.
+
+RAM1 (oops, side condition) and RAM2 (careful with existential)
+
+FRAME RULE
+
+READ RULE
+
+PAPER CLEANUP (...)
+
+\subsection{Additional verified examples}
+\label{sec:application}
+
+Mark for graphs (cyclic), briefly discussed in EXISTENTIALS.
+
+In addition to \li{mark} for graphs, we have also verified the same program for DAGs.
+More interestingly, we have verified two algorithms that modify the link structure:
+\li{spanning} for graphs, which prunes a graph into its spanning tree, and \li{copy}
+for graphs, which makes a structure-preserving copy.  For space reasons we put
+\li{spanning} and \li{copy} in Appendix~A\hide{\ref{apx:spanning}}.
+
+
+\hide{
+(Assume until~\S\ref{sec:existentials} that $L_2$ and $G_2$ do not contain ``fancy'' existentials; in this case the explicit existentials in \textsc{Localize} can be ,
+which effectively makes them trivial.)  What then remains is to choose a predicate $R$ and prove the two entailments in \textsc{Localize}.  If one ignores the side condition about modified local variables
+
+Turning to the body of the verification (lines~\ref{code:inmark}--\ref{code:outmark}), readers may already have noticed our new notation: blocks of proof sketch bracketed
+
+, such as lines~\ref{code:beforerootmark}--\ref{code:afterrootmark}.  We call a bracketed set of lines like this a ``localization block''; localization blocks were inspired by our new \li{localize} $\searrow$ and \li{unlocalize} $\swarrow$ tactics in Floyd (\S\ref{sec:vst}).
+
+
+In lines~\ref{code:beforerootmark}--\ref{code:afterrootmark}, imagine unfolding the \p{graph} predicate in line~\ref{code:globalbeforerootmark} using equation \eqref{eqn:bigraphintrofoldunfold} and then zooming in to the root node \li{x} for lines~\ref{code:beforerootmark}--\ref{code:afterrootmark}, before zooming back out in line~\ref{code:globalafterrootmark}.
+
+To define localization blocks formally we need to first understand the \infrulestyle{Frame} and \infrulestyle{Ramify} rules.
+}
+
+\hide{
+
+
+
+In lines~\ref{code:beforerootmark}--\ref{code:afterrootmark}, imagine unfolding the \p{graph} predicate in line~\ref{code:globalbeforerootmark} using equation \eqref{eqn:bigraphintrofoldunfold} and then zooming in to the root node \li{x} for lines~\ref{code:beforerootmark}--\ref{code:afterrootmark}, before zooming back out in line~\ref{code:globalafterrootmark}.
+
+To define localization blocks formally we need to first understand the \infrulestyle{Frame} and \infrulestyle{Ramify} rules.
+
+\subsection{Frames and ramifications are localizations}
+%\label{sec:localizations}
+
+The key rule of separation logic is \infrulestyle{Frame}~\cite{rey02}:
+\[
+\infrule{Frame}
+{\{ P \} ~ c ~ \{Q \}}
+{\{P * F \} ~ c ~ \{ Q * F \}}
+{\begin{array}{c}F \textrm{ ignores } \MV(c) \end{array}} \qquad \qquad
+\vspace{-0.75ex}
+\]
+The reason \infrulestyle{Frame} is so important is because it enables local verifications.  That is, a verifier can focus on the portions of the heap that are relevant to command $c$ and ``frame away'' the rest.  The side condition ``$F \textrm{ ignores } \MV(c)$'' relates to modified program variables and will be discussed in \S\ref{sec:freevars}.
+
+Hobor and Villard observed that \infrulestyle{Frame} is bit rigid because it forces verifiers to split program assertions into syntactically $*$-separated parts~\cite{hobor:ramification}.  This rigidity is particularly troublesome when verifying programs that manipulate data structures with intrinsic unspecified sharing such as DAGs and graphs.  Hobor and Villard proposed the \infrulestyle{Ramify} rule to circumvent this rigidity:
+\vspace{-1.5ex}
+\[
+\infrule{Ramify}
+{\{L_1\} ~ c ~ \{L_2\} \\ G_1 |- L_1 * (L_2--* G_2)}
+{\{G_1\} ~ c ~ \{G_2\}}
+{\begin{array}{c}(L_2 --* G_2) \\ \textrm{ignores} \\ \MV(c) \end{array}} \qquad \qquad \qquad
+%{$\begin{array}{l}\m{fv}(Q --* R') \cap \null \\ \m{modif}(c) = \emptyset\end{array}$} \qquad \qquad \qquad
+\vspace{-1.5ex}
+\]
+
+}
+
+
+\hide{
 
 
 %\vspace*{-0.75ex}
@@ -255,3 +259,4 @@ The intuitive idea is that we zoom in from a larger ``global'' context to a smal
 
 
 
+}
