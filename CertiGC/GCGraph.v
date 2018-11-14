@@ -1325,13 +1325,13 @@ Proof.
       apply n; reflexivity.
 Qed.
 
-Definition get_roots_indices (index: Z) (live_indices: list Z) :=
+Definition get_indices (index: Z) (live_indices: list Z) :=
   collect_Z_indices Z.eq_dec (Znth index live_indices) live_indices 0.
 
 Definition upd_bunch (index: Z) (f_info: fun_info)
            (roots: roots_t) (v: root_t): roots_t :=
   fold_right (fun i rs => upd_Znth i rs v) roots
-             (get_roots_indices index (live_roots_indices f_info)).
+             (get_indices index (live_roots_indices f_info)).
 
 Lemma fold_right_upd_Znth_Zlength {A}: forall (l: list Z) (roots: list A) (v: A),
     (forall j, In j l -> 0 <= j < Zlength roots) ->
@@ -1343,10 +1343,10 @@ Proof.
   - rewrite IHl; intros; apply H; [left; reflexivity | right; assumption].
 Qed.
 
-Lemma get_roots_indices_spec: forall (l: list Z) (z j : Z),
-    In j (get_roots_indices z l) <-> 0 <= j < Zlength l /\ Znth j l = Znth z l.
+Lemma get_indices_spec: forall (l: list Z) (z j : Z),
+    In j (get_indices z l) <-> 0 <= j < Zlength l /\ Znth j l = Znth z l.
 Proof.
-  intros. unfold get_roots_indices. remember (Znth z l) as p. clear Heqp z.
+  intros. unfold get_indices. remember (Znth z l) as p. clear Heqp z.
   apply collect_Z_indices_spec. 2: omega. rewrite skipn_0. reflexivity.
 Qed.
 
@@ -1355,7 +1355,7 @@ Lemma upd_bunch_Zlength: forall (f_info : fun_info) (roots : roots_t) (z : Z),
     forall r : root_t, Zlength (upd_bunch z f_info roots r) = Zlength roots.
 Proof.
   intros. unfold upd_bunch. apply fold_right_upd_Znth_Zlength.
-  intros. rewrite H. rewrite get_roots_indices_spec in H0. destruct H0; assumption.
+  intros. rewrite H. rewrite get_indices_spec in H0. destruct H0; assumption.
 Qed.
 
 Lemma fold_right_upd_Znth_same {A} {d: Inhabitant A}:
@@ -1386,8 +1386,8 @@ Lemma upd_bunch_same: forall f_info roots z j r,
     Znth j (upd_bunch z f_info roots r) = r.
 Proof.
   intros. unfold upd_bunch. apply fold_right_upd_Znth_same.
-  - intros. rewrite get_roots_indices_spec in H2. destruct H2. rewrite H0; assumption.
-  - rewrite get_roots_indices_spec. split; [rewrite <- H0|]; assumption.
+  - intros. rewrite get_indices_spec in H2. destruct H2. rewrite H0; assumption.
+  - rewrite get_indices_spec. split; [rewrite <- H0|]; assumption.
 Qed.
 
 Lemma fold_right_upd_Znth_diff {A} {d: Inhabitant A}:
@@ -1415,8 +1415,8 @@ Lemma upd_bunch_diff: forall f_info roots z j r,
     Znth j (upd_bunch z f_info roots r) = Znth j roots.
 Proof.
   intros. unfold upd_bunch. apply fold_right_upd_Znth_diff. 3: assumption.
-  - intros. rewrite get_roots_indices_spec in H2. destruct H2. rewrite H0; assumption.
-  - rewrite get_roots_indices_spec. intro. destruct H2. apply H1. assumption.
+  - intros. rewrite get_indices_spec in H2. destruct H2. rewrite H0; assumption.
+  - rewrite get_indices_spec. intro. destruct H2. apply H1. assumption.
 Qed.
 
 Lemma Znth_list_eq {X: Type} {d: Inhabitant X}: forall (l1 l2: list X),
@@ -1515,7 +1515,7 @@ Proof.
   rewrite <- filter_sum_right_In_iff, <- filter_sum_left_In_iff. assumption.
 Qed.
 
-Lemma upd_roots_graph_compatible: forall g f_info roots z,
+Lemma upd_bunch_graph_compatible: forall g f_info roots z,
     roots_graph_compatible roots g ->
     forall v : VType,
       graph_has_v g v ->
@@ -1534,7 +1534,7 @@ Lemma upd_roots_compatible: forall g f_info roots outlier z,
 Proof.
   intros. destruct H. split.
   - apply upd_roots_outlier_compatible; assumption.
-  - apply upd_roots_graph_compatible; assumption.
+  - apply upd_bunch_graph_compatible; assumption.
 Qed.
 
 Local Close Scope Z_scope.
@@ -2617,7 +2617,7 @@ Lemma lcv_roots_graph_compatible: forall g roots v to f_info z,
     roots_graph_compatible (upd_bunch z f_info roots (inr (new_copied_v g to)))
                            (lgraph_copy_v g v to).
 Proof.
-  intros. apply upd_roots_graph_compatible.
+  intros. apply upd_bunch_graph_compatible.
   - apply lcv_rgc_unchanged; assumption.
   - unfold lgraph_copy_v; rewrite <- lmc_graph_has_v;
       apply lacv_graph_has_v_new; assumption.
@@ -4100,7 +4100,7 @@ Proof.
       inversion H2; destruct (Nat.eq_dec (vgeneration v) from);
         try contradiction; subst; try assumption.
       * destruct (raw_mark (vlabel g' v)) eqn:? . 2: inversion H9.
-        apply upd_roots_graph_compatible. 1: assumption. specialize (H1 _ H5 Heqb).
+        apply upd_bunch_graph_compatible. 1: assumption. specialize (H1 _ H5 Heqb).
         destruct H1; assumption.
       * destruct (raw_mark (vlabel g v)) eqn:? . 1: inversion H9.
         apply lcv_roots_graph_compatible; assumption.
