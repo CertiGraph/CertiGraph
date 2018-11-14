@@ -65,7 +65,7 @@ Qed.
 Lemma Forall_incl: forall {A : Type} (P : A -> Prop) (l1 l2 : list A), incl l1 l2 -> Forall P l2 -> Forall P l1.
 Proof. intros; hnf in *. rewrite Forall_forall in *; intro y; intros. apply H0, H; auto. Qed.
 
-Lemma map_incl: forall (A B : Type) (f : A -> B) (l1 l2 : list A), incl l1 l2 -> incl (map f l1) (map f l2).
+Lemma map_incl: forall {A B : Type} (f : A -> B) (l1 l2 : list A), incl l1 l2 -> incl (map f l1) (map f l2).
 Proof. intros; hnf in *; intros. rewrite in_map_iff in *. destruct H0 as [y [? ?]]. exists y; split; auto. Qed.
 
 Lemma NoDup_cons_1 : forall (A : Type) (x : A) (l : list A), NoDup (x :: l) -> NoDup l. Proof. intros. rewrite NoDup_cons_iff in H. destruct H; auto. Qed.
@@ -1027,6 +1027,64 @@ Qed.
 Lemma app_not_nil: forall {A} (l: list A) (a: A), l ++ (a :: nil) <> nil.
 Proof. intros. destruct l; intro; simpl in H; inversion H. Qed.
 
+Lemma combine_repeat_eq_map: forall {A B} (a: A) (l: list B),
+    combine (repeat a (length l)) l = map (fun b : B => (a, b)) l.
+Proof. intros. induction l; simpl; auto. rewrite IHl. reflexivity. Qed.
+
+Lemma combine_map_join: forall {A B C} (f: A -> B) (g: A -> C) (l: list A),
+    combine (map f l) (map g l) = map (fun x => (f x, g x)) l.
+Proof. intros. induction l; simpl; auto. rewrite IHl. reflexivity. Qed.
+
+Lemma map_fst_split: forall {A B} (l: list (A * B)), map fst l = fst (split l).
+Proof.
+  intros. pose proof (split_length_l l). pose proof (split_length_r l).
+  pose proof (split_combine l). destruct (split l). simpl in *. rewrite <- H0 in H.
+  now rewrite <- H1, map_fst_combine.
+Qed.
+
+Lemma map_snd_split: forall {A B} (l: list (A * B)), map snd l = snd (split l).
+Proof.
+  intros. pose proof (split_length_l l). pose proof (split_length_r l).
+  pose proof (split_combine l). destruct (split l). simpl in *. rewrite <- H0 in H.
+  now rewrite <- H1, map_snd_combine.
+Qed.
+
+Lemma In_map_fst_iff: forall {A B} a (l: list (A * B)),
+    In a (map fst l) <-> exists b : B, In (a, b) l.
+Proof.
+  intros. induction l; simpl. 1: intuition; now destruct H.
+  destruct a0 as [a0 b0]. simpl in *. split; intros.
+  - destruct H. 1: subst; exists b0; now left. rewrite IHl in H. destruct H as [b ?].
+    exists b. now right.
+  - destruct H as [b ?]. destruct H. 1: inversion H; now left. rewrite IHl.
+    right. now exists b.
+Qed.
+
+Lemma In_map_snd_iff: forall {A B} b (l: list (A * B)),
+    In b (map snd l) <-> exists a : A, In (a, b) l.
+Proof.
+  intros. induction l; simpl. 1: intuition; now destruct H.
+  destruct a as [a0 b0]. simpl in *. split; intros.
+  - destruct H. 1: subst; exists a0; now left. rewrite IHl in H. destruct H as [a ?].
+    exists a. now right.
+  - destruct H as [a ?]. destruct H. 1: inversion H; now left. rewrite IHl.
+    right. now exists a.
+Qed.
+
+Lemma In_map_fst: forall {A B} a b (l: list (A * B)),
+    In (a, b) l -> In a (map fst l).
+Proof.
+  intros. assert (exists y, In (a, y) l) by (now exists b).
+  now rewrite <- In_map_fst_iff in H0.
+Qed.
+
+Lemma In_map_snd: forall {A B} a b (l: list (A * B)),
+    In (a, b) l -> In b (map snd l).
+Proof.
+  intros. assert (exists x, In (x, b) l) by (now exists a).
+  now rewrite <- In_map_snd_iff in H0.
+Qed.
+
 Section LIST_DERIVED_BIJECTION.
 
   Context {A: Type}.
@@ -1311,15 +1369,19 @@ Section LIST_DERIVED_BIJECTION.
   Lemma list_bi_map_nil: list_bi_map nil = id.
   Proof. extensionality x. unfold list_bi_map. now simpl. Qed.
 
+  Lemma DoubleNoDup_fst: forall l, DoubleNoDup l -> NoDup (map fst l).
+  Proof.
+    intros. red in H. destruct (split l) eqn:? . rewrite map_fst_split, Heqp. simpl.
+    now apply NoDup_app_l in H.
+  Qed.
+
+  Lemma DoubleNoDup_snd: forall l, DoubleNoDup l -> NoDup (map snd l).
+  Proof.
+    intros. red in H. destruct (split l) eqn:? . rewrite map_snd_split, Heqp. simpl.
+    now apply NoDup_app_r in H.
+  Qed.
+
 End LIST_DERIVED_BIJECTION.
-
-Lemma combine_repeat_eq_map: forall {A B} (a: A) (l: list B),
-    combine (repeat a (length l)) l = map (fun b : B => (a, b)) l.
-Proof. intros. induction l; simpl; auto. rewrite IHl. reflexivity. Qed.
-
-Lemma combine_map_join: forall {A B C} (f: A -> B) (g: A -> C) (l: list A),
-    combine (map f l) (map g l) = map (fun x => (f x, g x)) l.
-Proof. intros. induction l; simpl; auto. rewrite IHl. reflexivity. Qed.
 
 Section LIST_DERIVED_MAPPING.
 
@@ -1367,55 +1429,35 @@ Section LIST_DERIVED_MAPPING.
       NoDup (map fst l) -> In (k, v) l -> list_map l k = v.
   Proof. intros. unfold list_map. now rewrite (NoDup_look_up k v). Qed.
 
+  Lemma list_map_NoDup_app_eq: forall l1 l2 v,
+      NoDup (map fst (l2 ++ l1)) ->
+      (~ In v (map fst l1) -> In (v, v) l2) -> list_map l1 v = list_map (l2 ++ l1) v.
+  Proof.
+    intros. destruct (in_dec equiv_dec v (map fst (l2 ++ l1))).
+    - destruct (in_dec equiv_dec v (map fst l1)).
+      + rewrite In_map_fst_iff in i0. destruct i0 as [b ?].
+        erewrite !list_map_In; eauto. 1: rewrite in_app_iff; now right.
+        rewrite map_app in H. now apply NoDup_app_r in H.
+      + rewrite list_map_not_In; auto. apply H0 in n. erewrite list_map_In; eauto.
+        rewrite in_app_iff. now left.
+    - rewrite !list_map_not_In; auto. intro. apply n. rewrite map_app, in_app_iff.
+      now right.
+  Qed.
+
+  Lemma list_map_DoubleNoDup_incl_eq: forall l1 l2 v,
+      DoubleNoDup (l2 ++ l1) -> (In v (map fst (l2 ++ l1)) -> In v (map fst l1)) ->
+      list_map l1 v = list_map (l2 ++ l1) v.
+  Proof.
+    intros. destruct (in_dec equiv_dec v (map fst (l2 ++ l1))).
+    - destruct (in_dec equiv_dec v (map fst l1)). 2: now apply H0 in i.
+      rewrite In_map_fst_iff in i0. destruct i0 as [b ?].
+      rewrite !(list_map_In _ _ b); auto.
+      + now apply DoubleNoDup_fst in H.
+      + rewrite in_app_iff. now right.
+      + rewrite DoubleNoDup_app_iff in H. destruct H as [? [? ?]].
+        now apply DoubleNoDup_fst in H2.
+    - rewrite !list_map_not_In; auto. intro. apply n. rewrite map_app, in_app_iff.
+      now right.
+  Qed.
+
 End LIST_DERIVED_MAPPING.
-
-Lemma map_fst_split: forall {A B} (l: list (A * B)), map fst l = fst (split l).
-Proof.
-  intros. pose proof (split_length_l l). pose proof (split_length_r l).
-  pose proof (split_combine l). destruct (split l). simpl in *. rewrite <- H0 in H.
-  now rewrite <- H1, map_fst_combine.
-Qed.
-
-Lemma map_snd_split: forall {A B} (l: list (A * B)), map snd l = snd (split l).
-Proof.
-  intros. pose proof (split_length_l l). pose proof (split_length_r l).
-  pose proof (split_combine l). destruct (split l). simpl in *. rewrite <- H0 in H.
-  now rewrite <- H1, map_snd_combine.
-Qed.
-
-Lemma In_map_fst_iff: forall {A B} a (l: list (A * B)),
-    In a (map fst l) <-> exists b : B, In (a, b) l.
-Proof.
-  intros. induction l; simpl. 1: intuition; now destruct H.
-  destruct a0 as [a0 b0]. simpl in *. split; intros.
-  - destruct H. 1: subst; exists b0; now left. rewrite IHl in H. destruct H as [b ?].
-    exists b. now right.
-  - destruct H as [b ?]. destruct H. 1: inversion H; now left. rewrite IHl.
-    right. now exists b.
-Qed.
-
-Lemma In_map_snd_iff: forall {A B} b (l: list (A * B)),
-    In b (map snd l) <-> exists a : A, In (a, b) l.
-Proof.
-  intros. induction l; simpl. 1: intuition; now destruct H.
-  destruct a as [a0 b0]. simpl in *. split; intros.
-  - destruct H. 1: subst; exists a0; now left. rewrite IHl in H. destruct H as [a ?].
-    exists a. now right.
-  - destruct H as [a ?]. destruct H. 1: inversion H; now left. rewrite IHl.
-    right. now exists a.
-Qed.
-
-Lemma In_map_fst: forall {A B} a b (l: list (A * B)),
-    In (a, b) l -> In a (map fst l).
-Proof.
-  intros. assert (exists y, In (a, y) l) by (now exists b).
-  now rewrite <- In_map_fst_iff in H0.
-Qed.
-
-Lemma In_map_snd: forall {A B} a b (l: list (A * B)),
-    In (a, b) l -> In b (map snd l).
-Proof.
-  intros. assert (exists x, In (x, b) l) by (now exists a).
-  now rewrite <- In_map_snd_iff in H0.
-Qed.
-
