@@ -1,19 +1,24 @@
-To verify the functional correctness of graph
-algorithms we need a framework to reason about mathematical graphs.
-As will be shown in \S\ref{sec:development}, our mathematical
+In order to verify the functional correctness of graph
+algorithms, we need a framework to reason about mathematical graphs. 
+While our development boasts some elegant custom definitions and proofs, 
+our two key contributions are more abstract:
+\hide{As will be shown in \S\ref{sec:development}, our mathematical
 graph constructions comprise a considerable fraction of our
-codebase.  Indeed, as discussed in \S\ref{sec:related},
+codebase. Indeed, as discussed in \S\ref{sec:related},
 25 years of research into mechanized graph theory can
-be summarized as ``it is a little tricky''.  While
-we have some elegant definitions and proofs,
-our two key contributions for this section are more abstract.
+be summarized as ``it is a little tricky''.}
 
-First, as demonstrated in \S\ref{sec:orientation},
+{\color{blue} This is not a very accurate summary of what we actually discuss in 
+this section. Needs tweaking. I'm not actually MAKING those tweaks because we may well 
+merge with the next section, in which case we'll need a new section intro anyway.}
+
+{\color{magenta} First, as demonstrated in \S\ref{sec:orientation},
 our development is expressive and powerful enough to verify realistic
 algorithms---that is, it actually works in an end-to-end system.
 Second, we have taken considerable care to develop a modular and
 general-purpose framework for such mathematical graphs to allow
-such verifications to be mechanized without undue pain.
+such verifications to be mechanized without undue pain.}
+
 Accordingly, in this section we will present our framework
 at a high level to communicate the overall architecture rather
 than focusing on the nitty-gritty details.
@@ -57,13 +62,13 @@ than focusing on the nitty-gritty details.
 \draw [double, ->] (PropL) -| (GGLn1);
 \draw [->] (GGs) to (GGLn2);
 \node [draw, thick, rectangle, dashed, fit=(Prop) (PropL)] {};
-\node (legend1) [below right=0.2 and -0.3 of PGL] {\small Dependence};
+\node (legend1) [below right=0.2 and -0.3 of PGL] {\small Depends};
 \coordinate[left=0.8 of legend1]  (l1);
 \draw [->] (l1) to (legend1);
-\node (legend2) [right=1 of legend1] {\small Inheritance};
+\node (legend2) [right=1 of legend1] {\small Inherits};
 \coordinate[left=0.8 of legend2]  (l2);
 \draw [double, ->] (l2) to (legend2);
-\node (legend3) [right=1 of legend2] {\small Instantialize};
+\node (legend3) [right=1 of legend2] {\small Instantializes};
 \coordinate[left=0.8 of legend3]  (l3);
 \draw [-->] (l3) to (legend3);
 \end{tikzpicture}
@@ -72,8 +77,10 @@ than focusing on the nitty-gritty details.
 \caption{Structure of the Mathematical Graph Library}\label{fig:graphs}
 \end{figure}
 
-Figure~\ref{fig:graphs} gives the overall architecture of our mathematical graph library. The most basic kind of graph is PreGraph, out of which we build LabeledGraphs, and which in turn are used
+Figure~\ref{fig:graphs} gives the overall architecture of our mathematical graph library. 
+\hide{The most basic kind of graph is PreGraph, out of which we build LabeledGraph, and which in turn are used
 to build GeneralGraphs.  Each kind has some lemmas and also inherits the lemmas of the previous kind.  The dashed box represents a ``plugin'' system for attaching arbitrary properties to LabeledGraphs (\ref{subsec:graphplugins}). %and will be discussed later. %We will consider each in turn.
+} % end hide
 
 \begin{figure}[t]
 \centering
@@ -115,7 +122,7 @@ to build GeneralGraphs.  Each kind has some lemmas and also inherits the lemmas 
 \end{tikzpicture}
 \endpgfgraphicnamed
 \vspace{1ex}
-\caption{A PreGraph with invalid nodes and edges.}\label{fig:pregraph}
+\caption{A PreGraph with valid and invalid vertices and edges.}\label{fig:pregraph}
 \end{figure}
 
 \vspace{-0.75ex}
@@ -125,12 +132,24 @@ to build GeneralGraphs.  Each kind has some lemmas and also inherits the lemmas 
 %%%%%% Edit 1: Qinxiang's proposal starts
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \iftrue
-\paragraph{Pregraphs.} A PreGraph is a hextuple $(V, E, \phi_V, \phi_E, s, d)$,
-where $V$ and $E$ are the underlying carrier sets of vertices and edges.  Not every $v \in V$ or $e \in E$ is actually ``in'' the graph, so we provide the predicates $\phi_V$ and $\phi_E$ to classify vertices and edges as \emph{valid} (in) or not (out).  Finally, $s$ and $d : E -> V$ are functions that map an edges to their source and destination respectively; this model means that PreGraphs are directed rather than undirected.  By design, there are no requirements for \emph{e.g.} how the validities of edges and vertices relate.  As shown in Figure \ref{fig:pregraph}, a PreGraph can contain invalid nodes and edges in an arbitrary configuration.
+\paragraph{Pregraph.} A PreGraph is a hextuple $(V, E, \phi_V, \phi_E, s, d)$,
+where $V$ and $E$ are the underlying carrier sets of vertices and edges. We wish to
+allow that not every $v \in V$ or $e \in E$ actually be ``in'' the graph, so we
+provide the predicates $\phi_V$ and $\phi_E$ to classify vertices and edges as 
+\emph{valid} (in) or not (out).  Finally, $s$ and $d : E -> V$ are functions that map 
+an edge to its source and destination respectively; this model means that PreGraphs 
+are directed rather than undirected. With an eye to flexibility, we make no further 
+requirements of a legal PreGraph, not even a notion of how $\phi_V$ and $\phi_E$ are 
+related. As shown in Figure \ref{fig:pregraph}, a PreGraph can contain invalid 
+vertices  and edges in an arbitrary configuration.
 
-Designing a graph type that can reason about missing vertices and edges is convenient for verifying real programs.  For example, consider the difference of two graphs, $\gamma_1 - \gamma_2$.  Even if both of these graphs are ``well-formed'' to begin with, in the sense that valid nodes have only valid edges and vice versa, their difference may not be since there may be dangling edges pointing to the now-removed vertices of $\gamma_2$.
+PreGraph's ability to reason about missing vertices and edges is convenient when 
+verifying real programs.  For example, consider the difference of two graphs, $\gamma_1
+- \gamma_2$.  Even if both of these graphs are ``well-formed'' to begin with, in the 
+sense that valid vertices have only valid edges and vice versa, their difference 
+may not be since there may be dangling edges pointing to the now-removed vertices of $\gamma_2$.
 
-Many graph concepts such as \emph{path}, \emph{reachability}, and \emph{subgraph} are defined on PreGraphs.  We write $\p{reachable}(\gamma,v)$ to represent set of all reachable vertices from $v$.
+Many graph concepts such as \emph{path}, \emph{reachability}, and \emph{subgraph} are defined on PreGraphs. For instance, we write $\p{reachable}(\gamma,v)$ to represent the set of all reachable vertices from $v$.
 In \S\ref{sec:spacegraph} we will tie a mathematical graph $\gamma$ to a spatial graph predicate
 $\p{graph}(x, \gamma)$.   As we will see, a $\p{graph}$ ``owns'' only the
 spatial portion of $\gamma$ that is reachable
@@ -159,12 +178,20 @@ The advantage of designing a graph type that can reason about missing vertices a
 
 
 \vspace{-0.75ex}
+%% Anshuman's proposal 
+\iftrue
+\paragraph{LabeledGraph.}
+A LabeledGraph is a PreGraph with the addition of \emph{labels} on 
+vertices, edges, and/or the graph as a whole. As shown in Figure~\ref{graphs}, a LabeledGraph inherits any lemmas proved about {\color{magenta}its internal PreGraph.} In addition, we can define additional lemmas that use labels, \emph{e.g.} {\color{magenta}``the vertices reachable via an unmarked path''.} {\color{blue} Replace this with an example that's in the paper.}
+\fi
+% Anshuman's proposal ends
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%% Edit 2
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%% Edit 2: Qinxiang's proposal starts
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\iftrue
+\iffalse
 \paragraph{LabeledGraph.}
 A LabeledGraph is a PreGraph with labels, e.g. the ``mark bit'' used in Figure~\ref{fig:markgraph} are labels.
 \fi
@@ -187,7 +214,10 @@ on LabeledGraphs.
 
 \vspace{-0.75ex}
 \paragraph{GeneralGraph.}
-GeneralGraphs augment LabeledGraphs by adding a soundness condition, indicated in Figure~\ref{fig:graphs} by a dashed border.  These ``plugins'' can specify many different properties which in turn can be used to prove lemmas about the associated GeneralGraph.
+GeneralGraphs augment LabeledGraphs by adding a soundness condition, indicated in 
+Figure~\ref{fig:graphs} by a dashed border. It is this soundness ``plugin'' that makes 
+a GeneralGraph truly versatile, allowing us to specify many different properties 
+which, in turn, can be used to prove lemmas about the associated GeneralGraph.
 
 \subsection{Graph plugins}
 
@@ -199,10 +229,11 @@ Many theorems about graphs require certain properties, \emph{e.g.}:
 \vspace{-1ex}
 \item More subtly, consider that many real data structures use special null values to represent unused nodes.  The \p{MathGraph} property introduces this concept---\emph{i.e.} some invalid nodes that are nonetheless allowed to appear as destinations for valid edges.
 \vspace{-1ex}
-\item Many of our verified algorithms have only two outgoing edges per node.  The \p{BiGraph} property lets us reason about this common special case in a convenient manner.
+\item {\color{blue}I want to cut this.} Many of our verified algorithms have only two outgoing edges per node.  The \p{BiGraph} property lets us reason about this common special case in a convenient manner.
+\item As an example of a more custom plugin, we can specify that a graph behaves like a list, where every vertex has exactly one out edge and there are no loops except self-loops. These properties are stated in \p{LstGraph}.
 \vspace{-1ex}
 \end{itemize}
-We have a number of other properties in our codebase, but these three are the most important basic ones.
+{\color{blue}And maybe this.} We have a number of other properties in our codebase, but these three are the most important basic ones.
 
 \begin{figure}[t]
 \centering
@@ -235,10 +266,16 @@ We have a number of other properties in our codebase, but these three are the mo
 \end{tikzpicture}
 \endpgfgraphicnamed
 \vspace{1ex}
-\caption{Combining plugins}\label{fig:properties}
+\caption{Combining plugins{\color{blue} [cut this?]}}\label{fig:properties}
 \end{figure}
 
-We use Coq's typeclass system to manage our plugins smoothly, essentially to enable the diagram in Figure~\ref{fig:properties}.  The idea is that if we have two properties, each of which come with some already-proved lemmas, we can combine these plugins to prove the emergent lemmas that result from the combination, and then treat the new combination as a new plugin, \emph{i.e.} the system is compositional.  For example, we compose \p{BiGraph}, \p{MathGraph}, and \p{FiniteGraph} together into a new plugin we call \p{BiMaFin}.  \p{BiMaFin} is the actual soundness condition used to verify the program in Figure~\ref{fig:markgraph}.
+We use Coq's typeclass system to manage our plugins smoothly, benefiting from
+the \emph{compositionality} of the system. If we have two properties, 
+each with its associated proved lemmas, we can combine them, {\color{magenta}easily} prove the {\color{magenta}emergent} lemmas that result from the combination, and then treat the new 
+combination as a new plugin. 
+For example, we compose \p{LstGraph}, \p{MathGraph}, and \p{FiniteGraph} 
+together into a new plugin we call \p{LiMaFin}.  \p{LiMaFin} is the 
+actual soundness condition used to verify the program in Figure~\ref{fig:findsketch}. 
 
 %% We can apply our framework to define related structures such as DAGs and trees.
 %% For example, a DAG has the additional property that for any $x$ and $y$,
@@ -248,6 +285,8 @@ We use Coq's typeclass system to manage our plugins smoothly, essentially to ena
 %a unique path from the root to $n$.
 
 \subsection{Reasoning about relations between graphs} %Using our framework to reasonApplication of the framework}
+
+{\color{blue}Needs revised examples based on new Orientation.}
 
 In Figure~\ref{fig:markgraph} we defined the relation $\m{mark}(\gamma, \tx x, \gamma')$
 for the graph marking algorithm.  Similarly, we define $\m{span}$ for the spanning tree program
