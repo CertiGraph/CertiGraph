@@ -126,3 +126,5 @@ Proof.
     f_equal. 1: apply injective0; auto. apply IHx; assumption.
   - induction x; simpl; auto. rewrite IHx. f_equal. apply surjective0.
 Qed.
+
+Definition idempotent {A} (f: A -> A): Prop := forall x, f (f x) = f x.
