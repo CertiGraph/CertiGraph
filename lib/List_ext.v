@@ -1460,4 +1460,69 @@ Section LIST_DERIVED_MAPPING.
       now right.
   Qed.
 
+  Lemma look_up_not_In: forall l v, ~ In v (map fst l) <-> look_up l v = None.
+  Proof.
+    induction l; intros; simpl. 1: intuition. destruct a as [k v']. simpl.
+    split; intros.
+    - apply Decidable.not_or in H. destruct H.
+      destruct (equiv_dec k v); unfold equiv in *; [contradiction | now apply IHl].
+    - destruct (equiv_dec k v). 1: inversion H. rewrite <- IHl in H. intro.
+      unfold equiv, complement in c. destruct H0; contradiction.
+  Qed.
+
+  Lemma In_look_up: forall l v a, look_up l v = Some a ->
+                                  In v (map fst l) /\ In a (map snd l).
+  Proof.
+    induction l; intros; simpl in *. 1: inversion H. destruct a as [k v']. simpl.
+    destruct (equiv_dec k v); unfold equiv in *.
+    - inversion H. subst. intuition.
+    - apply IHl in H. destruct H. split; now right.
+  Qed.
+
+  Lemma InEither_map_iff: forall v (l: list (A * A)),
+      InEither v l <-> In v (map fst l) \/ In v (map snd l).
+  Proof.
+    intros. unfold InEither. destruct (split l) eqn:? .
+    rewrite in_app_iff, map_fst_split, map_snd_split, Heqp. now simpl.
+  Qed.
+
+  Lemma In_look_up': forall l k v, look_up l k = Some v -> In (k, v) l.
+  Proof.
+    induction l; intros; simpl in *. 1: inversion H. destruct a as [k' v'].
+    destruct (equiv_dec k' k); unfold equiv in *.
+    - inversion H. subst. now left.
+    - apply IHl in H. now right.
+  Qed.
+
+  Lemma list_map_idempotent: forall l, DoubleNoDup l -> idempotent (list_map l).
+  Proof.
+    destruct l; intros; red; intros.
+    - unfold list_map. now simpl.
+    - destruct p as [k v]. rewrite DoubleNoDup_cons_iff in H.
+      destruct H as [? [? [? ?]]]. unfold list_map. simpl.
+      destruct (equiv_dec k x); unfold equiv in *.
+      + subst x. destruct (equiv_dec k v); auto.
+        destruct (look_up l v) eqn:? ; auto. apply In_look_up in Heqo. exfalso.
+        apply H2. rewrite InEither_map_iff. now left.
+      + unfold complement in c. destruct (look_up l x) eqn:? .
+        * apply In_look_up in Heqo. destruct Heqo.
+          destruct (equiv_dec k a); unfold equiv in *.
+          -- subst a. exfalso. apply H1. rewrite InEither_map_iff. now right.
+          -- destruct (look_up l a) eqn:? ; auto. apply In_look_up in Heqo.
+             destruct Heqo as [? _]. red in H. destruct (split l) eqn:? .
+             rewrite map_fst_split, Heqp in H5. rewrite map_snd_split, Heqp in H4.
+             simpl in H4, H5. rewrite NoDup_app_iff in H. destruct H as [_ [_ ?]].
+             exfalso. now apply (H a).
+        * destruct (equiv_dec k x); unfold equiv in *; [easy | now rewrite Heqo].
+  Qed.
+
+  Lemma list_map_bi_map: forall l x,
+      ~ In x (map snd l) -> list_map l x = list_bi_map l x.
+  Proof.
+    induction l; intros; unfold list_map, list_bi_map; simpl; auto.
+    destruct a as [k v]. simpl in *. apply Decidable.not_or in H. destruct H.
+    destruct (equiv_dec k x); auto. destruct (equiv_dec v x); unfold equiv in *.
+    1: easy. fold (list_map l x) (list_bi_map l x). now apply IHl.
+  Qed.
+
 End LIST_DERIVED_MAPPING.
