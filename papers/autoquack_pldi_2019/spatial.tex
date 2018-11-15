@@ -1,6 +1,9 @@
-{\color{magenta} Note that this section's old first subsection has been hidden. References to "sec:fixpointfail" will need to be altered.} To prove the functional correctness of graph-manipulating algorithms implemented in a real language, we need to connect the heap representation of graphs, the memory model of the programming language, and the mathematical properties of graphs from \S\ref{sec:mathgraph}.  The first of these turns out to be surprisingly subtle as we shall see in \S\ref{sec:fixpointfail} and \S\ref{sec:goodgraph}.  The main challenge for the others is to engineer a framework that is generic enough and modular enough to be useful in practice in a variety of settings; we cover it in~\S\ref{sec:ramifylib}.
+{\color{blue}Needs reworking because SS1 was cut. Not doing since we may merge with previous section.}
 
-\hide{\subsection{Recursive definitions yield poor \p{graph} predicates}\label{sec:fixpointfail}
+To prove the functional correctness of graph-manipulating algorithms implemented in a real language, we need to connect the heap representation of graphs, the memory model of the programming language, and the mathematical properties of graphs from \S\ref{sec:mathgraph}.  The first of these turns out to be surprisingly subtle as we shall see in \S\ref{sec:fixpointfail} and \S\ref{sec:goodgraph}.  The main challenge for the others is to engineer a framework that is generic enough and modular enough to be useful in practice in a variety of settings; we cover it in~\S\ref{sec:ramifylib}.
+
+\hide{
+\subsection{Recursive definitions yield poor \p{graph} predicates}\label{sec:fixpointfail}
 
 \newcommand{\graphkt}{\p{graph}_T}
 \newcommand{\grapham}{\p{graph}_A}
@@ -97,7 +100,7 @@ The other direction, \mbox{$\graphkt(100,\hat{\gamma}) |- 100 |-> 42,100,0$},
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%% Edit0: cut down contractive recursion
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-}
+} % end hide
 
 \subsection{Defining a good \p{graph} predicate}\label{sec:goodgraph}
 
@@ -166,7 +169,8 @@ The proof of the $<=$ direction requires care. The difficulty is that if two nod
 \]
 That is, either they are completely on top of one another or they do not interfere at all.  In a Java-like memory model such as in HIP/SLEEK this property is automatic because pointers in such a model always point to the root/beginning of an object.  In contrast, in a C-like memory model such as in VST/CompCert, this property is not automatic because pointers can point anywhere.  In such a model, alignment is most easily enforced by storing graph nodes at addresses that are multiples of an appropriate size (16 in Figure~\ref{fig:markgraph}).
 
-Some of our VST proofs do not use fold/unfold, instead preferring to use the lemmas in~\S\ref{sec:ramifylib} directly.  On the other hand, for HIP/SLEEK fold/unfold is vital, and knowing that the recursive relationship holds produces a pleasant feeling.  We also prove fold/unfold lemma for DAGs in which we get a $*$ between the root and its $\medocon$-joined neighbors. % rather than the $**$ present in \eqref{eqn:unfold_graph}.
+{\color{magenta}Some of our VST proofs do not use fold/unfold, instead preferring to use the lemmas in~\S\ref{sec:ramifylib} directly.  On the other hand, for HIP/SLEEK fold/unfold is vital, and knowing that the recursive relationship holds produces a pleasant feeling.  We also prove fold/unfold lemma for DAGs in which we get a $*$ between the root and its $\medocon$-joined neighbors. % rather than the $**$ present in \eqref{eqn:unfold_graph}.
+}
 
 \subsection{Ramification Libraries}\label{sec:ramifylib}
 

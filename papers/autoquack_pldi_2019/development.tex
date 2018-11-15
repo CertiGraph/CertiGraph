@@ -105,7 +105,8 @@ Total Development & 130 & 32,546 \\
 \label{tab:codebase}
 \end{table}
 
-All of our results in this paper have been machine-checked.  The bulk of our development was checked in Coq, although a 55-line file (shown in Figure~\ref{fig:hipmarkgraph}) was checked in HIP/SLEEK.  Our modifications to H/S itself were not machine-checked since H/S does not have a mechanized soundness proof.
+All of our results in this paper have been machine-checked.  
+%The bulk of our development was checked in Coq, although a 55-line file (shown in Figure~\ref{fig:hipmarkgraph}) was checked in HIP/SLEEK.  Our modifications to H/S itself were not machine-checked since H/S does not have a mechanized soundness proof.
 Although the size of a development does not perfectly match with that development's importance or implementation difficulty, we present it nonetheless in Table~\ref{tab:codebase}, organized roughly by the paper section corresponding to each development.  For comparison, verifying a simple list-based merge sort in VST takes 600 lines.  It took fewer than 400 lines of Coq to verify the \li{mark} algorithm in H/S, indicating that a large portion of the codebase is shared between VST and H/S.  For context, VST and H/S have approximately 140k and 179k LOC.
 
 \hide{

@@ -9,7 +9,7 @@ Our techniques are \emph{powerful} enough to reason about real C code as compile
 Finally, our techniques \emph{scale} well beyond 10-line toy programs: we certify the correctness of a generational garbage collector for the CertiCoq project~\cite{blah} ($\approx 400$ devilish lines of C).
 
 Our recipe has three key ingredients.  First, we develop a ``mathematical graph library'' that is general enough to reason about a wide variety of algorithms.  We modularize this library carefully so that common ideas---\emph{e.g.} subgraphs, reachability, and isomorphism---can be used in a number of algorithms that call for these concepts.  Second, we connect these abstract graphs to
-concrete graphs in the heap using separation logic in a way facilitates the reuse of key definitions and theorems across algorithms.  Finally, we develop a notion of \emph{localization blocks} to
+concrete graphs in the heap using separation logic in a way that facilitates the reuse of key definitions and theorems across algorithms.  Finally, we develop a notion of \emph{localization blocks} to
 enable the key Hoare tuples to be proved in a modular fashion using our \textsc{Localize} rule:
 \begin{equation}
 \label{eq:localize}

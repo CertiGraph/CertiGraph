@@ -24,19 +24,25 @@ $\ramify(\ref{findram2})$    x -> parent = p; $\label{code:ufpathcompress}$
 \end{lstlisting}
 
 \begin{equation*}
-\begin{array}{l@{\hspace{2pt}}c@{\hspace{2pt}}l}
+\label{eqn:ufgraphdefn}
+\p{graph}(x, \gamma) ~~ \defeq ~~ \underset{\m{v} \in \m{V}(\gamma)}{\bigstar} v\mapsto\gamma(\m{v})
+\end{equation*}
+
+\begin{equation*}
+\begin{array}{@{}l@{}}
 \m{uf\_root}(\gamma,\m{x},\m{rt}) \defeq \m{x} \mathrel{{\stackrel{\gamma~}{\leadsto^{\star}}}} \m{rt} /| \forall \m{rt'}.~\m{rt} \mathrel{{\stackrel{\gamma~}{\leadsto^{\star}}}} \m{rt'} => \m{rt} = \m{rt'}
 \end{array}
 \end{equation*}
 
 \begin{equation*}
-\begin{array}{l@{\hspace{2pt}}c@{\hspace{2pt}}l}
-\m{findS}(\gamma,\m{x},\gamma') \defeq \m{subgraph}_{\m{x} \mathrel{{\stackrel{\gamma~}{\not\leadsto}}} \m{n}}(\gamma) \cong \m{subgraph}_{\m{x} \mathrel{{\stackrel{\gamma~}{\not\leadsto}}} \m{n}}(\gamma') /| \null \\
-\hspace{68pt} \forall \m{v}, \m{r}, \m{r'}.~ \m{v}\in\m{V}(\gamma) <=> \m{v}\in\m{V}(\gamma') /|  \null \\
-\hspace{68pt} \m{uf\_root}(\gamma, \m{v}, \m{r}) => \m{uf\_root}(\gamma', \m{v}, \m{r'}) => \m{r} = \m{r'} /| \null \\
-\hspace{68pt} \m{v}\in\m{V}(\gamma) => \gamma(\m{v}).\m{rank} = \gamma'(\m{v}).\m{rank}
+\begin{array}{@{}l@{}}
+\m{findS}(\gamma,\m{x},\gamma') \defeq \forall \m{v}.~ \m{v}\in\m{V}(\gamma) <=> \m{v}\in\m{V}(\gamma') /| \null \\ 
+\hspace{15pt} \forall \m{v}.~ \m{v}\in\m{V}(\gamma) => \gamma(\m{v}).\m{rank} = \gamma'(\m{v}).\m{rank} /| \null \\
+\hspace{15pt} \forall \m{v}, \m{r}, \m{r'}.~ \m{uf\_root}(\gamma, \m{v}, \m{r}) => \m{uf\_root}(\gamma', \m{v}, \m{r'}) => \m{r} = \m{r'} /| \null \\ 
+\hspace{15pt} \gamma \smallsetminus (v \in \gamma \mid \m{x} \mathrel{{\stackrel{\gamma~}{\leadsto^{\star}}}} \m{v}) \cong \gamma' \smallsetminus (v \in \gamma \mid \m{x} \mathrel{{\stackrel{\gamma~}{\leadsto^{\star}}}} \m{v})
 \end{array}
 \end{equation*}
+
 %  Definition uf_root (pg: PreGraph Vertex Edge) (x root: Vertex) : Prop := reachable pg x root /\ (forall y, reachable pg root y -> root = y).
 
 %  Definition uf_equiv (g1 g2: PreGraph Vertex Edge) : Prop :=
