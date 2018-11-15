@@ -15,8 +15,8 @@ enable the key Hoare tuples to be proved in a modular fashion using our \textsc{
 \label{eq:localize}
 \begin{array}{@{}l@{}}
 \infrule{}%Localize}
-{\{ L_1 \} ~ c ~ \{ \exists x.~ L_2 \} \\
-G_1 |- L_1 * R \\
+{G_1 |- L_1 * R \\
+\{ L_1 \} ~ c ~ \{ \exists x.~ L_2 \} \\
 R |- \forall x.~ (L_2 --* G_2) }
 {\{ G_1 \} ~ c ~ \{ \exists x.~ G_2 \}} {(\dagger)} \\
 [3pt]
