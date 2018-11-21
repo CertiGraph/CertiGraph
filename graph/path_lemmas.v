@@ -208,9 +208,6 @@ Proof.
     destruct ((e :: p1) ++ p2); intuition.
 Qed.
 
-Lemma valid_path_app: forall g v p1 p2, valid_path g (v, p1 ++ p2) -> valid_path g (v, p1) /\ valid_path g (pfoot g (v, p1), p2).
-Proof. intros. assert (paths_meet g (v, p1) (pfoot g (v, p1), p2)) by (exists (pfoot g (v, p1)); split; auto). apply valid_path_split; auto. Qed.
-
 Lemma valid_path_merge: forall (g : Gph) p1 p2,
                           paths_meet g p1 p2 -> valid_path g p1 -> valid_path g p2 -> valid_path g (p1 +++ p2).
 Proof.
@@ -223,6 +220,16 @@ Proof.
     clear H1. simpl in *. destruct (p1 ++ p2) eqn:? .
     - destruct p1. auto. rewrite <- app_comm_cons in Heql. inversion Heql.
     - destruct p1; intuition.
+Qed.
+
+Lemma valid_path_app: forall g v p1 p2,
+    valid_path g (v, p1 ++ p2) <->
+    valid_path g (v, p1) /\ valid_path g (pfoot g (v, p1), p2).
+Proof.
+  intros. assert (paths_meet g (v, p1) (pfoot g (v, p1), p2)) by
+      (exists (pfoot g (v, p1)); split; auto). split; intros.
+  - apply valid_path_split; auto.
+  - destruct H0. apply valid_path_merge in H; auto.
 Qed.
 
 Lemma valid_path_si: forall (g1 g2: Gph),
@@ -1358,6 +1365,81 @@ Proof.
   intros. destruct p1 as [v1 p1]. destruct p2 as [v2 p2]. unfold In_path in H. destruct H0. simpl in *. destruct H.
   + subst. auto.
   + right. destruct H as [e [? ?]]. exists e. split; auto.
+Qed.
+
+Lemma valid_path_unique_edge: forall (g : Gph) (p : path) s t e,
+    path_endpoints g p s t -> valid_path g p -> In e (snd p) ->
+    exists p1 p2, Subpath g (s, p1 ++ e :: p2) p /\
+                  path_endpoints g (s, p1 ++ e :: p2) s t /\
+                  valid_path g (s, p1 ++ e :: p2) /\ ~ In e p1 /\ ~ In e p2.
+Proof.
+  intros g p. destruct p as [v p]. simpl snd. revert v. remember (length p).
+  assert (length p <= n) by omega. clear Heqn. revert p H. induction n; intros.
+  - assert (p = nil) by (destruct p; auto; simpl in H; omega). simpl in *.
+    subst p. inversion H2.
+  - simpl in H2. assert (v = s) by (destruct H0; now simpl in H0). subst v.
+    apply in_split in H2. destruct H2 as [l1 [l2 ?]]. subst p.
+    destruct (in_dec equiv_dec e l1).
+    + apply in_split in i. destruct i as [l1' [l3 ?]]. subst l1. rename l1' into l1.
+      assert (length (l1 ++ e :: l2) <= n) by
+          (rewrite !app_length in *; simpl length in *; omega).
+      assert (path_endpoints g (s, l1 ++ e :: l2) s t). {
+        split; [simpl; auto|]. destruct H0. now rewrite (pfoot_app_cons _ _ s) in *. }
+      assert (valid_path g (s, l1 ++ e :: l2)). {
+        clear -H1. rewrite !valid_path_app, !valid_path_cons_iff in *.
+        destruct H1 as [[? [? [? ?]]] [? [? ?]]]. split; auto. }
+      assert (In e (l1 ++ e :: l2)) by (rewrite in_app_iff; right; now left).
+      specialize (IHn _ H2 _ _ _ _ H3 H4 H5). destruct IHn as [p1 [p2 [? ?]]].
+      exists p1, p2. split; auto. apply Subpath_trans with (s, l1 ++ e :: l2); auto.
+      red. unfold In_path. simpl. split; [|now left]. apply incl_app.
+      2: now apply incl_appr. now do 2 apply incl_appl.
+    + destruct (in_dec equiv_dec e l2); [clear n0|].
+      2: exists l1, l2; split; [apply Subpath_refl | auto]. apply in_split in i.
+      destruct i as [l3 [l2' ?]]. subst l2. rename l2' into l2.
+      assert (length (l1 ++ e :: l2) <= n). {
+        rewrite app_length in *; simpl length in *. rewrite app_length in H.
+        simpl length in H. omega. }
+      assert (path_endpoints g (s, l1 ++ e :: l2) s t). {
+        split; [simpl; auto|]. destruct H0. rewrite app_comm_cons, app_assoc in H3.
+        now rewrite (pfoot_app_cons _ _ s) in *. }
+      assert (valid_path g (s, l1 ++ e :: l2)). {
+        clear -H1. rewrite valid_path_app, valid_path_cons_iff in *.
+        rewrite valid_path_app, valid_path_cons_iff in H1.
+        destruct H1 as [? [? [? [? [? [? ?]]]]]]. split; auto. }
+      assert (In e (l1 ++ e :: l2)) by (rewrite in_app_iff; right; now left).
+      specialize (IHn _ H2 _ _ _ _ H3 H4 H5). destruct IHn as [p1 [p2 [? ?]]].
+      exists p1, p2. split; auto. apply Subpath_trans with (s, l1 ++ e :: l2); auto.
+      red. unfold In_path. simpl. split; [|now left]. apply incl_app.
+      1: now apply incl_appl. rewrite app_comm_cons, app_assoc. now apply incl_appr.
+Qed.
+
+Lemma good_path_unique_edge: forall (g: Gph) P p s t e,
+    path_endpoints g p s t -> good_path g P p -> In e (snd p) ->
+    exists p1 p2, Subpath g (s, p1 ++ e :: p2) p /\
+                  path_endpoints g (s, p1 ++ e :: p2) s t /\
+                  good_path g P (s, p1 ++ e :: p2) /\ ~ In e p1 /\ ~ In e p2.
+Proof.
+  intros. destruct H0. pose proof H0. eapply valid_path_unique_edge in H0; eauto.
+  destruct H0 as [p1 [p2 [? [? [? [? ?]]]]]]. exists p1, p2. do 4 (split; auto).
+  apply path_prop_subpath with p; trivial.
+Qed.
+
+Lemma reachable_path_unique_edge: forall (g: Gph) (p: path) (s t : V) (e: E) P,
+    g |= p is s ~o~> t satisfying P -> In e (snd p) ->
+    exists p1 p2, g |= (s, p1 ++ e :: p2) is s ~o~> t satisfying P /\
+                  ~ In e p1 /\ ~ In e p2.
+Proof.
+  intros. destruct H. eapply good_path_unique_edge in H0; eauto.
+  destruct H0 as [p1 [p2 [? [? [? [? ?]]]]]]. exists p1, p2. do 2 (split; auto).
+Qed.
+
+Lemma reachable_src_no_edge: forall (g: Gph) (p: path) (s: V) (e: E) P,
+    g |= p is s ~o~> src g e satisfying P ->
+    exists p', g |= p' is s ~o~> src g e satisfying P /\  ~ In e (snd p').
+Proof.
+  intros. destruct (in_dec equiv_dec e (snd p)). 2: (exists p; now split).
+  eapply reachable_path_unique_edge in i; eauto. destruct i as [p1 [p2 [? [? ?]]]].
+  apply reachable_by_path_app_cons in H0. destruct H0. exists (s, p1). now split.
 Qed.
 
 End PATH_LEM.

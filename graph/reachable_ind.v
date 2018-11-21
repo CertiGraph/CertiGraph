@@ -100,7 +100,22 @@ Proof.
       destruct H0; tauto.
 Qed.
 
-Lemma reachable_ind: forall x y, reachable G x y -> x = y \/ exists z, edge G x z /\ x <> z /\ reachable G z y.
+Lemma reachable_ind_weak: forall x y,
+    reachable G x y -> x = y \/ exists z, edge G x z /\ reachable G z y.
+Proof.
+  intros.
+  rewrite reachable_ind_reachable in H.
+  induction H.
+  + left; auto.
+  + destruct_eq_dec x y.
+    - subst y.
+      apply IHreachable.
+    - right.
+      exists y. rewrite reachable_ind_reachable in *; auto.
+Qed.
+
+Lemma reachable_ind: forall x y,
+    reachable G x y -> x = y \/ exists z, edge G x z /\ x <> z /\ reachable G z y.
 Proof.
   intros.
   rewrite reachable_ind_reachable in H.
@@ -120,6 +135,17 @@ Proof.
   - destruct H0.
     + subst y. apply reachable_refl. auto.
     + destruct H0 as [z [? [? ?]]]. apply edge_reachable with z; auto.
+Qed.
+
+Lemma reachable_same_or_edge': forall x y,
+    vvalid G x -> reachable G x y <->
+                  x = y \/ exists z, edge G x z /\ reachable G z y.
+Proof.
+  intros. split; intros.
+  - apply reachable_ind_weak; auto.
+  - destruct H0.
+    + subst y. apply reachable_refl. auto.
+    + destruct H0 as [z [? ?]]. apply edge_reachable with z; auto.
 Qed.
 
 Lemma reachable_ind': forall x S y, vvalid G x -> step_list G x S -> (reachable G x y <-> x = y \/ reachable_through_set G S y).
