@@ -70,6 +70,15 @@ Definition updateEdgeFunc (edgeFunc: E -> V) (e: E) (v: V) :
 (* Properties     *)
 (******************)
 
+Lemma updateEdgeFunc_eq: forall edgeFunc e v, updateEdgeFunc edgeFunc e v e = v.
+Proof.
+  intros. unfold updateEdgeFunc. destruct_eq_dec e e; auto. exfalso; now apply H.
+Qed.
+
+Lemma updateEdgeFunc_neq: forall edgeFunc e v e',
+    e <> e' -> updateEdgeFunc edgeFunc e v e' = edgeFunc e'.
+Proof. intros. unfold updateEdgeFunc. destruct_eq_dec e e'; auto. easy. Qed.
+
 Lemma weak_edge_prop_si: forall (P: V -> Prop) (g1 g2: PreGraph V E),
   g1 ~=~ g2 ->
   Same_set
@@ -630,6 +639,13 @@ Proof.
       intro. apply in_split in H1. destruct H1 as [l1 [l2 ?]]. subst l. apply reachable_by_path_app_cons in H0. destruct H0 as [? _]. apply H. exists (p, l1). auto.
     } exists (p, l). rewrite no_edge_gen_dst_equiv; auto.
 Qed.
+
+Lemma pgd_dst_changed: forall (g: Graph) e x, dst (pregraph_gen_dst g e x) e = x.
+Proof. intros. simpl. unfold updateEdgeFunc. rewrite if_true; auto. easy. Qed.
+
+Lemma pgd_dst_unchanged: forall (g: Graph) e1 e2 x,
+    e1 <> e2 -> dst (pregraph_gen_dst g e1 x) e2 = dst g e2.
+Proof. intros. simpl. unfold updateEdgeFunc. rewrite if_false; auto. Qed.
 
 End PREGRAPH_GEN.
 
