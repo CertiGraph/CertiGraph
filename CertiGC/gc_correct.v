@@ -21,6 +21,7 @@ Require Import RamifyCoq.graph.path_lemmas.
 Require Import RamifyCoq.graph.subgraph2.
 Require Import RamifyCoq.graph.graph_relation.
 Require Import RamifyCoq.graph.graph_isomorphism.
+Require Import RamifyCoq.graph.reachable_ind.
 Require Import RamifyCoq.CertiGC.GCGraph.
 Import ListNotations.
 
@@ -32,7 +33,7 @@ Definition vertex_valid (g: LGraph): Prop := forall v, vvalid g v <-> graph_has_
 
 Definition edge_valid (g: LGraph): Prop := forall e, evalid g e <-> graph_has_e g e.
 
-Definition src_edge (g: LGraph): Prop := forall e, src g e = fst e.
+Definition src_edge (g: PreGraph VType EType): Prop := forall e, src g e = fst e.
 
 Definition sound_gc_graph (g: LGraph): Prop :=
   vertex_valid g /\ edge_valid g /\ src_edge g.
@@ -87,7 +88,8 @@ Proof.
   1: reflexivity. rewrite IHl. reflexivity.
 Qed.
 
-Lemma src_edge_reset: forall g gen, src_edge g -> src_edge (reset_graph gen g).
+Lemma src_edge_reset: forall (g: LGraph) gen,
+    src_edge g -> src_edge (reset_graph gen g).
 Proof.
   intros. unfold src_edge in *. intros.
   simpl. rewrite remove_ve_src_unchanged. apply H.
@@ -805,7 +807,7 @@ Proof.
     + apply ang_graph_has_v_inv in H1; assumption.
 Qed.
 
-Lemma ngr_src_edge: forall g1 g2 gen,
+Lemma ngr_src_edge: forall (g1 g2: LGraph) gen,
     src_edge g1 -> new_gen_relation gen g1 g2 -> src_edge g2.
 Proof.
   intros. red in H0. destruct (graph_has_gen_dec g1 gen).
@@ -1055,30 +1057,29 @@ Proof.
   - unfold EType. now rewrite combine_length, repeat_length, !map_length, Nat.min_id.
 Qed.
 
-Lemma lcv_src_edge: forall g v to,
-    src_edge g -> src_edge (lgraph_copy_v g v to).
+Lemma pcv_src_edge: forall (g: LGraph) v new,
+    src_edge g -> src_edge (pregraph_copy_v g v new).
 Proof.
-  intros. unfold src_edge in *. intros. simpl. unfold pregraph_copy_v.
-  remember (new_copied_v g to) as new.
+  intros. unfold src_edge in *. intros. unfold pregraph_copy_v.
   replace (length (get_edges g v)) with (length (map snd (get_edges g v))) by
       (rewrite map_length; reflexivity). remember (get_edges g v) as el.
   remember (combine (combine (repeat new (Datatypes.length (map snd el))) (map snd el))
                     (map (dst g) el)) as l. destruct (in_dec equiv_dec e (map fst l)).
-  - rewrite flcvae_src_new; auto. subst new.
+  - rewrite flcvae_src_new; auto. 
     rewrite combine_repeat_eq_map, map_map, combine_map_join in Heql.
     apply list_in_map_inv in i. destruct i as [x [? ?]]. subst l.
     apply list_in_map_inv in H1. destruct H1 as [x0 [? ?]]. subst x e. simpl. auto.
   - rewrite flcvae_src_old; auto. simpl. apply H.
 Qed.
 
-Lemma fr_O_src_edge: forall g1 g2 from to p,
+Lemma fr_O_src_edge: forall (g1 g2: LGraph) from to p,
     src_edge g1 -> forward_relation from to O p g1 g2 -> src_edge g2.
 Proof.
   intros. inversion H0; subst; try assumption.
-  - apply lcv_src_edge; assumption.
+  - apply pcv_src_edge; assumption.
   - replace (src_edge new_g) with
         (src_edge (lgraph_copy_v g1 (dst g1 e) to)) by (subst new_g; reflexivity).
-    apply lcv_src_edge; assumption.
+    apply pcv_src_edge; assumption.
 Qed.
 
 Lemma fr_O_sound: forall g1 g2 from to p,
@@ -1156,8 +1157,8 @@ Proof.
     + subst. destruct (Ptrofs.eq_dec i i0). 1: subst; now left.
       right. intro HS; apply n. inversion HS. reflexivity.
     + right. intros HS; apply n. inversion HS. reflexivity.
-  - destruct (equiv_dec v v0); unfold equiv in *. 1: subst; now left.
-    right. intro HS. apply c. inversion HS. easy.
+  - destruct_eq_dec v v0. 1: subst; now left.
+    right. intro HS. apply H. inversion HS. easy.
 Defined.
 
 Lemma fold_left_upd_Znth_Zlength: forall
@@ -1382,8 +1383,18 @@ Proof.
   intros. unfold sound_gc_graph in *. destruct H0 as [? [? ?]]. split; [|split].
   - eapply lcv_vertex_valid; eauto.
   - eapply lcv_edge_valid; eauto.
-  - eapply lcv_src_edge; eauto.
+  - eapply pcv_src_edge; eauto.
 Qed.
+
+Lemma ucov_rawmark: forall g old_v new_v,
+    raw_mark (update_copied_old_vlabel g old_v new_v old_v) = true.
+Proof.
+  intros. unfold update_copied_old_vlabel, update_vlabel. rewrite if_true; easy.
+Qed.
+
+Lemma lcv_raw_mark_old: forall g v to,
+    raw_mark (vlabel (lgraph_copy_v g v to) v) = true.
+Proof. intros. simpl. apply ucov_rawmark. Qed.
 
 Lemma lcv_semi_iso: forall (from to: nat) (g g1: LGraph) l1 v,
     from <> to -> sound_gc_graph g -> sound_gc_graph g1 ->
@@ -1455,14 +1466,13 @@ Proof.
     pose proof (NoDup_app_l _ _ _ N5). pose proof (NoDup_app_r _ _ _ N5).
     split; [|split].
     + split; auto. intros. split; intros.
-      * destruct H25 as [? [? ?]]. destruct (equiv_dec v0 v); unfold equiv in *.
+      * destruct H25 as [? [? ?]]. destruct_eq_dec v0 v.
         1: now left. rewrite <- lcv_raw_mark in H25; auto.
         -- right. rewrite <- H11. intuition.
         -- rewrite <- H1. destruct H8. now apply H8.
-      * destruct (equiv_dec v0 v); unfold equiv in *.
-        -- subst. split; [|intuition]. simpl.
-           unfold update_copied_old_vlabel, update_vlabel. rewrite if_true; now auto.
-        -- unfold complement in c. simpl in H25. destruct H25. 1: intuition.
+      * destruct_eq_dec v0 v.
+        -- subst. split; [|intuition]. apply lcv_raw_mark_old.
+        -- simpl in H25. destruct H25. 1: intuition.
            rewrite <- lcv_raw_mark; auto; rewrite <- H11 in H25; auto.
            destruct H25 as [_ [? _]]. rewrite <- H1. destruct H8. now apply H8.
     + split; auto. split.
@@ -1511,19 +1521,19 @@ Proof.
       intros. rewrite H28 in *. rewrite <- H14. do 2 (split; auto).
       red in H7. rewrite H0. apply (H7 v1). 2: now rewrite get_edges_In.
       now rewrite <- H0. }
-    destruct (equiv_dec (dst g1 (v2, idx)) (dst g (v1, idx))); unfold equiv in *.
-    + rewrite e. apply H28 in e. rewrite Hf, In_map_fst_iff in e. destruct e as [b ?].
-      destruct (DoubleNoDup_list_bi_map _ _ _ Hd H30) as [? _]. rewrite H31.
-      apply Hi in H30. destruct H30 as [? [? ?]]. subst b. now right.
-    + unfold complement in c. destruct H25. 1: easy. exfalso.
+    destruct_eq_dec (dst g1 (v2, idx)) (dst g (v1, idx)).
+    + rewrite H30. apply H28 in H30. rewrite Hf, In_map_fst_iff in H30.
+      destruct H30 as [b ?]. destruct (DoubleNoDup_list_bi_map _ _ _ Hd H30) as [? _].
+      rewrite H31. apply Hi in H30. destruct H30 as [? [? ?]]. subst b. now right.
+    + destruct H25. 1: easy. exfalso.
       destruct (InEither_dec (dst g (v1, idx)) l1).
       2: now rewrite list_bi_map_not_In in H25. red in i.
       rewrite Heqp, in_app_iff in i. destruct i.
-      * rewrite Hf, In_map_fst_iff in H30. destruct H30 as [b ?].
-        destruct (DoubleNoDup_list_bi_map _ _ _ Hd H30) as [? _]. rewrite H31 in H25.
-        rewrite <- H25 in H30. apply In_map_snd in H30. rewrite <- Ht in H30.
-        apply H17 in H30. now rewrite H4 in H30.
-      * rewrite H16 in H30. destruct H30. red in H7. apply H31. rewrite H0.
+      * rewrite Hf, In_map_fst_iff in H31. destruct H31 as [b ?].
+        destruct (DoubleNoDup_list_bi_map _ _ _ Hd H31) as [? _]. rewrite H32 in H25.
+        rewrite <- H25 in H31. apply In_map_snd in H31. rewrite <- Ht in H31.
+        apply H17 in H31. now rewrite H4 in H31.
+      * rewrite H16 in H31. destruct H31. red in H7. apply H32. rewrite H0.
         apply (H7 v1); [now rewrite <- H0 | now rewrite get_edges_In].
   - rewrite Heqp. split; [|split]; [split; auto..|]. intros; simpl; now apply H18.
 Qed.
@@ -1697,8 +1707,7 @@ Proof.
           intro. unfold new_copied_v in H15. inversion H15. subst gen idx.
           omega. } eapply (lgd_semi_iso _ _ _ _ _ v n e) in H12; eauto.
         -- subst new_g. simpl dst in H12. rewrite pcv_dst_old in H12; auto.
-           simpl in H12. unfold update_copied_old_vlabel, update_vlabel in H12.
-           rewrite if_true in H12. 2: easy. simpl in H12. assumption.
+           simpl in H12.  rewrite ucov_copied_vertex in H12. easy.
         -- now apply lcv_sound.
         -- now rewrite <- lcv_graph_has_gen.
         -- Opaque lgraph_copy_v. simpl. Transparent lgraph_copy_v.
@@ -1709,9 +1718,7 @@ Proof.
         -- simpl. rewrite pcv_dst_old; auto.
         -- unfold lgraph_copy_v. rewrite lmc_make_fields, lacv_make_fields_not_eq.
               1: easy. apply make_fields_Znth_edge in Heqf; auto. now subst e.
-        -- simpl dst. rewrite pcv_dst_old; auto. simpl.
-           unfold update_copied_old_vlabel, update_vlabel. rewrite if_true.
-           2: easy. now simpl.
+        -- simpl dst. rewrite pcv_dst_old; auto. apply lcv_raw_mark_old.
       * apply semi_iso_DoubleNoDup in Hm; auto. rewrite roots_map_map_cons; auto.
         rewrite (surjective _ _ H8), roots_map_the_same; auto. intros. red in Hr.
         specialize (Hr _ H12). intro. red in H13. simpl in H13.
@@ -1977,13 +1984,13 @@ Proof.
     1: apply H4; now right. destruct Hc; auto.
 Qed.
 
-Definition roots_reachable_in_gen (g: LGraph) (roots: roots_t)
-           (gen: nat) (v: VType): Prop :=
-  reachable_through_set g (filter_sum_right roots) v /\ vgeneration v = gen.
-
 Definition marked_in_gen (g1 g2: LGraph) (roots: roots_t)
            (gen: nat) (v: VType): Prop :=
   raw_mark (vlabel g2 v) = true /\ vvalid g1 v /\ vgeneration v = gen.
+
+Definition roots_reachable_in_gen (g: LGraph) (roots: roots_t)
+           (gen: nat) (v: VType): Prop :=
+  reachable_through_set g (filter_sum_right roots) v /\ vgeneration v = gen.
 
 Definition reachable_iff_marked (g1 g2: LGraph) (roots: roots_t) (gen: nat): Prop :=
   forall v, roots_reachable_in_gen g1 roots gen v <-> marked_in_gen g1 g2 roots gen v.
@@ -2000,6 +2007,435 @@ Proof.
     split; [|split]; auto. destruct H2. split; auto. intros. red in Hr.
     unfold roots_reachable_in_gen, marked_in_gen in Hr. now rewrite Hr, H5.
 Qed.
+
+Definition reachable_from_gen (g: LGraph) (gen: nat) (v: VType) :=
+  exists s, vvalid g s /\ vgeneration s = gen /\ reachable g s v.
+
+Definition three_cases_in_from (from to: nat) (g: LGraph)
+           (roots: roots_t) (v: VType): Prop :=
+  vgeneration v = from /\
+  (reachable_through_set g (filter_sum_right roots) v \/
+   (vvalid g v /\ (raw_mark (vlabel g v) = true \/ reachable_from_gen g to v))).
+
+Lemma reachable_from_roots: forall (g: LGraph) (roots: roots_t) v,
+    reachable_through_set g (filter_sum_right roots) v <->
+    exists i r, 0 <= i < Zlength roots /\ Znth i roots = inr r /\
+                reachable g r v.
+Proof.
+  intros. unfold reachable_through_set. split; intros.
+  - destruct H as [s [? ?]]. rewrite <- filter_sum_right_In_iff in H.
+    apply In_Znth in H. destruct H as [i [? ?]]. exists i, s. split; [|split]; auto.
+  - destruct H as [i [r [? [? ?]]]]. exists r. split; auto.
+    rewrite <- filter_sum_right_In_iff, <- H0. now apply Znth_In.
+Qed.
+
+Lemma lcv_copied_vertex: forall (g : LGraph) (v : VType) (to : nat) (x : VType),
+  x <> v -> graph_has_gen g to -> graph_has_v g x ->
+  copied_vertex (vlabel (lgraph_copy_v g v to) x) = copied_vertex (vlabel g x).
+Proof.
+  intros. unfold lgraph_copy_v. rewrite lmc_vlabel_not_eq by assumption.
+  rewrite lacv_vlabel_old; [| apply graph_has_v_not_eq]; easy.
+Qed.
+
+Lemma step_vvalid: forall g s t,
+    sound_gc_graph g -> no_dangling_dst g -> step g s t -> vvalid g t.
+Proof.
+  intros. destruct H as [? [? ?]]. red in H, H0, H2, H3. rewrite step_spec in H1.
+  destruct H1 as [e [? [? ?]]]. rewrite <- H5, H. rewrite H2 in H1. destruct H1.
+  now apply (H0 (fst e)).
+Qed.
+
+Lemma pcv_edge: forall (g: LGraph) old_v new_v z,
+    sound_gc_graph g -> no_dangling_dst g -> vvalid g old_v -> ~ vvalid g new_v ->
+    g |= old_v ~> z <-> (pregraph_copy_v g old_v new_v) |= new_v ~> z.
+Proof.
+  intros g old_v new_v z H0 Hd H H1.
+  unfold edge. destruct H0 as [? [? ?]]. red in H0, H2, H3.
+  split; intros; destruct H4 as [? [? ?]].
+  - split; [|split]; auto.
+    + apply pcv_vvalid_iff. now right.
+    + rewrite pcv_vvalid_iff. now left.
+    + rewrite step_spec in *. destruct H6 as [e [? [? ?]]]. rewrite H2 in H6.
+      destruct H6. rewrite get_edges_inv in H9. destruct H9 as [idx [? ?]].
+      destruct e as [gen i]. simpl in *. rewrite H3 in H7. simpl in *. subst gen.
+      inversion H9. subst i. clear H9. exists (new_v, idx). split; [|split].
+      * rewrite pcv_evalid_iff. right. rewrite get_edges_map_map.
+        rewrite (map_map _ (fun x : VType * nat => (new_v, snd x))). simpl.
+        change (new_v, idx) with ((fun x : nat => (new_v, x)) idx). now apply in_map.
+      * now apply pcv_src_new.
+      * now rewrite pcv_dst_new.
+  - assert (step g old_v z). {
+      rewrite step_spec in *. destruct H6 as [e [? [? ?]]].
+      rewrite pcv_evalid_iff in H6. destruct H6.
+      - exfalso. rewrite H2 in H6. destruct H6. destruct e as [gen idx]. simpl in *.
+        rewrite <- H0 in H6. destruct_eq_dec gen new_v. 1: now subst.
+        rewrite pcv_src_old in H7. 2: now simpl. rewrite H3 in H7. now simpl in H7.
+      - rewrite get_edges_map_map,
+        (map_map _ (fun x : VType * nat => (new_v, snd x))) in H6. simpl in H6.
+        rewrite in_map_iff in H6. destruct H6 as [idx [? ?]]. destruct e. inversion H6.
+        subst v n. clear H6. rewrite pcv_dst_new in H8; auto. exists (old_v, idx).
+        rewrite H3. simpl. split; auto. rewrite H2. split; simpl. 1: now rewrite <- H0.
+        now apply In_snd_get_edges. } split; [|split]; auto.
+    eapply step_vvalid; eauto. split; [|split]; easy.
+Qed.
+
+Lemma pcv_reachable_old: forall g old_v new_v s t,
+    sound_gc_graph g -> no_dangling_dst g -> ~ vvalid g new_v -> vvalid g s ->
+    reachable (pregraph_copy_v g old_v new_v) s t <-> reachable g s t.
+Proof.
+  intros g old_v new_v s t Hg Hn H H0. split; intros.
+  - unfold reachable, reachable_by in *. destruct H1 as [p [[? ?] [? ?]]].
+    destruct p as [? p]. simpl in H1. subst v. exists (s, p).
+    assert (valid_path g (s, p)). {
+      clear H4 H2. revert s H0 H3. induction p; intros. 1: simpl; easy.
+      rewrite valid_path_cons_iff in *. destruct H3 as [? [? ?]].
+      destruct Hg as [? [? ?]]. pose proof (pcv_src_edge g old_v new_v H6). red in H7.
+      destruct H2 as [? [? ?]]. rewrite H7 in *. rewrite pcv_evalid_iff in H2.
+      rewrite H6. split; auto. destruct H2.
+      - clear H8. assert (fst a <> new_v) by (intro; rewrite H8 in H1; now subst s).
+        rewrite pcv_dst_old in H9, H3; auto. unfold strong_evalid. rewrite H6, <- H1.
+        rewrite pcv_vvalid_iff in H9. destruct H9. 1: intuition. exfalso.
+        red in H5. rewrite H5 in H2. destruct H2. red in Hn. apply Hn in H10; auto.
+        red in H4. now rewrite <- H4, H9 in H10.
+      - rewrite in_map_iff in H2. destruct H2 as [x [? _]]. destruct a. inversion H2.
+        subst v. simpl in H1. now subst s. } split; split; auto.
+    destruct p. 1: now simpl in *. assert (e :: p <> nil) by (intro HS; inversion HS).
+    apply exists_last in H5. destruct H5 as [l' [a ?]]. rewrite e0 in *.
+    rewrite pfoot_last in *. rewrite pcv_dst_old in H2; auto. assert (evalid g a) by
+        (eapply valid_path_evalid; eauto; rewrite in_app_iff; now right; left).
+    destruct Hg as [? [? ?]]. red in H6, H7. rewrite H7 in H5. destruct H5.
+    rewrite <- H6 in H5. intro. now rewrite H10 in H5.
+  - apply is_partial_graph_reachable with (g1 := g); auto.
+    apply pcv_is_partial_graph; auto.
+Qed.
+
+Lemma pcv_reachable_new: forall g old_v new_v v,
+    sound_gc_graph g -> no_dangling_dst g -> vvalid g old_v -> ~ vvalid g new_v ->
+    reachable g old_v v <->
+    v = old_v \/ reachable (pregraph_copy_v g old_v new_v) new_v v /\ new_v <> v.
+Proof.
+  intros. rewrite reachable_same_or_edge'; auto.
+  rewrite (reachable_same_or_edge' (pregraph_copy_v g old_v new_v)).
+  2: rewrite pcv_vvalid_iff; now right.
+  split; intros; destruct H3; [left | right | left | ]; auto.
+  - destruct H3 as [z [? ?]]. split; [right; exists z|].
+    2: intro; apply reachable_foot_valid in H4; now subst.
+    rewrite pcv_edge in H3; eauto. split; auto.
+    eapply is_partial_graph_reachable; eauto. apply pcv_is_partial_graph; auto.
+  - destruct H3. destruct H3; [easy|]. destruct H3 as [z [? ?]]. right. exists z.
+    assert (g |= old_v ~> z) by (rewrite pcv_edge; eauto). split; auto.
+    apply pcv_reachable_old in H5; auto. now destruct H6 as [_ [? _]].
+Qed.
+
+Definition gen_reachable (gen: nat) (g: PreGraph VType EType) (s t: VType): Prop :=
+  exists p, g |= p is s ~o~> t satisfying (fun _ => True) /\
+            forall v, In_path g v p -> vgeneration v = gen.
+
+Definition copy_gen_reachable (g: LGraph) (from to: nat): Prop :=
+  forall v,
+    let copied := copied_vertex (vlabel g v) in
+    graph_has_v g v -> raw_mark (vlabel g v) = true ->
+    graph_has_v g copied /\ vgeneration copied = to /\ vgeneration v = from /\
+    forall d, (reachable g v d ->
+               raw_mark (vlabel g d) = true /\ vgeneration d = vgeneration v /\
+               gen_reachable to g copied (copied_vertex (vlabel g d)) \/
+               reachable g copied d) /\
+              (reachable g copied d ->
+               reachable g v d \/
+               exists o, reachable g v o /\ raw_mark (vlabel g o) = true /\
+                         vgeneration o = vgeneration v /\
+                         d = copied_vertex (vlabel g o)).
+
+Lemma graph_unmarked_copy_gen_reachable: forall g from to,
+    graph_unmarked g -> copy_gen_reachable g from to.
+Proof.
+  intros. unfold graph_unmarked in H. red. intros.
+  apply H in H0. rewrite H1 in H0. easy.
+Qed.
+
+Lemma lcv_copy_gen_reachable: forall (to : nat) (g : LGraph) (v : VType),
+    vgeneration v <> to -> sound_gc_graph g -> graph_has_gen g to ->
+    raw_mark (vlabel g v) = false -> no_dangling_dst g ->
+    copy_gen_reachable g (vgeneration v) to ->
+    copy_gen_reachable (lgraph_copy_v g v to) (vgeneration v) to.
+Proof.
+  intros. red. intros s; intros. red in H4. apply lcv_graph_has_v_inv in H5; auto.
+  destruct H5. 2: subst s; rewrite lcv_vlabel_new in H6; auto; now rewrite H2 in H6.
+  pose proof H0. destruct H0 as [? [? ?]]. red in H0, H8, H9.
+  assert (vvalid g s) by (now rewrite <- H0 in H5).
+  assert (~ vvalid g (new_copied_v g to)) by
+      (intro; rewrite H0 in H11; now apply (graph_has_v_not_eq g to) in H11).
+  destruct_eq_dec s v.
+  - subst s. simpl. rewrite ucov_copied_vertex. simpl. split; [|split; [|split]]; auto.
+    + apply lcv_graph_has_v_new; auto.
+    + intros. rewrite pcv_reachable_old; auto.
+      rewrite pcv_reachable_new with (new_v := new_copied_v g to); auto. split; intros.
+      * destruct H12; [left | now right]. subst d. rewrite ucov_copied_vertex. split.
+        1: apply ucov_rawmark. split; auto. exists (new_copied_v g to, nil). split.
+        -- split; split; simpl; auto. rewrite pcv_vvalid_iff. now right.
+        -- intros. red in H12. simpl in H12. destruct H12.
+           1: subst; unfold new_copied_v; now simpl. now destruct H12 as [e [? _]].
+      * destruct_eq_dec (new_copied_v g to) d; [right | left; right; now split].
+        exists v. rewrite ucov_copied_vertex. split; auto. apply reachable_refl.
+        rewrite pcv_vvalid_iff. now left.
+  - rewrite <- lcv_raw_mark in H6; auto. rewrite lcv_copied_vertex; auto.
+    specialize (H4 _ H5 H6). destruct H4 as [? [? [? ?]]].
+    split; [|split; [|split]]; [apply lcv_graph_has_v_old| | |]; auto. intros.
+    rewrite <- H0 in H4. simpl reachable. rewrite !pcv_reachable_old; auto.
+    specialize (H15 d). destruct H15. split; intros.
+    + specialize (H15 H17). destruct H15 as [[? [? ?]] | ?]; [left | now right].
+      assert (graph_has_v g d) by
+          (rewrite <- H0; now apply reachable_foot_valid in H17).
+      destruct_eq_dec d v. 1: subst; now rewrite H2 in H15.
+      rewrite <- lcv_raw_mark; auto. split; [|split]; auto. destruct H19 as [p [? ?]].
+      simpl. rewrite ucov_not_eq; auto. rewrite lacv_vlabel_old.
+      2: apply reachable_foot_valid in H17; intro; now subst. exists p. split.
+      * apply is_partial_graph_reachable_by_path with g; auto.
+        apply pcv_is_partial_graph; auto.
+      * intros. red in H23. apply H22. red. destruct H23; [left | right]; auto.
+        destruct H23 as [e [? ?]]. exists e. split; auto.
+        assert (fst e <> new_copied_v g to). {
+          destruct H19 as [_ [? _]]. destruct p as [v' p]. simpl in H23.
+          apply (valid_path_evalid g v') in H23; auto. rewrite H8 in H23.
+          destruct H23. rewrite <- H0 in H23. intro. now rewrite H26 in H23. }
+        rewrite pcv_src_old, pcv_dst_old in H24; auto.
+    + specialize (H16 H17). destruct H16; [now left|].
+      destruct H16 as [o [? [? [? ?]]]]. destruct_eq_dec o d. 1: subst o; now left.
+      right. exists o. rewrite pcv_reachable_old; auto. split; auto.
+      destruct_eq_dec o v. 1: subst o; now rewrite H2 in H18.
+      simpl. rewrite ucov_not_eq; auto. rewrite lacv_vlabel_old. 1: now split.
+      intro. subst o. now apply reachable_foot_valid in H16.
+Qed.
+
+Lemma lgd_copy_gen_reachable: forall to g e,
+    sound_gc_graph g -> no_dangling_dst g -> graph_has_gen g to ->
+    vgeneration (dst g e) <> to -> vgeneration (fst e) = to ->
+    raw_mark (vlabel g (dst g e)) = true -> evalid g e ->
+    copy_gen_reachable g (vgeneration (dst g e)) to ->
+    copy_gen_reachable
+      (labeledgraph_gen_dst g e (copied_vertex (vlabel g (dst g e))))
+      (vgeneration (dst g e)) to.
+Proof.
+  intros. unfold copy_gen_reachable in *. intro s; intros. simpl in *.
+  rewrite <- lgd_graph_has_v in *. destruct (H6 _ H7 H8) as [? [? [? ?]]].
+  split; [|split; [|split]]; auto. intros. pose proof H. rename H13 into Hs.
+  destruct H as [? [? ?]]. red in H, H13, H14. assert (graph_has_v g (dst g e)). {
+    rewrite H13 in H5. destruct H5. now apply H0 with (fst e). } split; intros.
+  - destruct H16 as [p ?]. destruct (in_dec equiv_dec e (snd p)).
+    + eapply reachable_path_unique_edge in i; eauto. destruct i as [p1 [p2 [? [? ?]]]].
+      apply reachable_by_path_app_cons in H17. destruct H17 as [? ?].
+      simpl in H17. rewrite pgd_dst_changed in H20.
+      rewrite no_edge_gen_dst_equiv in H17; auto.
+      assert (reachable g s (src g e)) by (now exists (s, p1)).
+      specialize (H12 (src g e)). destruct H12. specialize (H12 H21).
+      destruct H12 as [[? [? ?]] | ?].
+      1: rewrite H11, H14 in H23; now rewrite <- H23, H3 in H2. right.
+      remember (pregraph_gen_dst g e (copied_vertex (vlabel g (dst g e)))) as g'.
+      assert (reachable g' (copied_vertex (vlabel g s)) (src g e)). {
+        destruct H12 as [ps ?]. apply reachable_src_no_edge in H12.
+        destruct H12 as [ps' [? ?]]. exists ps'. subst g'.
+        now rewrite no_edge_gen_dst_equiv. }
+      remember (copied_vertex (vlabel g (dst g e))) as cde.
+      assert (reachable g' cde d) by (exists (cde, p2); auto).
+      assert (reachable g' (src g e) cde). {
+        apply reachable_foot_valid in H23. apply reachable_head_valid in H24.
+        apply reachable_edge with (src g e). 1: apply reachable_refl; auto.
+        red. do 2 (split; auto). rewrite step_spec. exists e. subst g'.
+        rewrite pgd_dst_changed. simpl. auto. }
+      apply reachable_trans with (src g e); auto. apply reachable_trans with cde; auto.
+    + rewrite no_edge_gen_dst_equiv in H16; auto.
+      assert (reachable g s d) by (exists p; auto). specialize (H12 d). destruct H12.
+      specialize (H12 H17). destruct H12 as [[? [? ?]] | ?].
+      * destruct H20 as [p' [? ?]]. destruct (in_dec equiv_dec e (snd p')).
+        -- assert (vgeneration (dst g e) = to) by
+              (apply H21; right; exists e; split; auto). now rewrite H22 in H2.
+        -- left; do 2 (split; auto). exists p'. rewrite no_edge_gen_dst_equiv; auto.
+           split; [easy|]. intros. red in H22. apply H21. red.
+           destruct H22; [left | right]; auto. destruct H22 as [e' [? ?]].
+           exists e'. split; auto. assert (e <> e') by (intro; now subst).
+           rewrite pgd_dst_unchanged in H23; auto.
+      * destruct H12 as [p' ?]. destruct (in_dec equiv_dec e (snd p')).
+        2: right; exists p'; rewrite no_edge_gen_dst_equiv; auto.
+        eapply reachable_path_unique_edge in i; eauto.
+        destruct i as [p1 [p2 [? [? ?]]]]. apply reachable_by_path_app_cons in H19.
+        destruct H19 as [? ?]. specialize (H6 _ H15 H4). clear H18.
+        destruct H6 as [? [? [_ ?]]]. specialize (H23 d). destruct H23 as [? _].
+        assert (reachable g (dst g e) d) by (exists (dst g e, p2); auto).
+        specialize (H23 H24). clear H24. destruct H23 as [[? [? ?]] | ?].
+        -- left.
+Abort.
+
+Lemma fr_O_copy_gen_reachable: forall from to p g1 g2 roots,
+    from <> to -> graph_has_gen g1 to -> sound_gc_graph g1 -> no_dangling_dst g1 ->
+    forward_p_compatible p roots g1 from ->
+    forward_relation from to O (forward_p2forward_t p roots g1) g1 g2 ->
+    copy_gen_reachable g1 from to -> copy_gen_reachable g2 from to.
+Proof.
+  intros. destruct p; simpl in H3, H4.
+  - destruct (Znth z roots) eqn:? ; [destruct s |]; inversion H4; subst; try easy.
+    apply lcv_copy_gen_reachable; auto.
+  - destruct p as [v n]. destruct H3 as [? [? [? ?]]]. rewrite H7 in H4. simpl in H4.
+    destruct (Znth n (make_fields g1 v)) eqn:? ; [destruct s|]; simpl in H4;
+      inversion H4; subst; try easy.
+    + subst new_g.
+      assert (fst e = v) by (apply make_fields_Znth_edge in Heqf; auto; now subst e).
+      admit.
+    + subst new_g. eapply lcv_copy_gen_reachable in H5; eauto.
+      remember (lgraph_copy_v g1 (dst g1 e) to) as g3.
+      assert (fst e = v) by (apply make_fields_Znth_edge in Heqf; auto; now subst e).
+      assert (dst g1 e = dst g3 e). {
+        subst g3. simpl. rewrite pcv_dst_old; auto. rewrite H9.
+        now apply graph_has_v_not_eq with (to := to) in H3. }
+      assert (new_copied_v g1 to = copied_vertex (vlabel g3 (dst g3 e))). {
+        rewrite <- H10. subst g3. simpl. rewrite ucov_copied_vertex. easy. }
+      rewrite H12. admit.
+Abort.
+
+Definition copied_vertex_prop (g: LGraph) (from to: nat): Prop :=
+  forall v,
+    let copied := copied_vertex (vlabel g v) in
+    graph_has_v g v -> raw_mark (vlabel g v) = true ->
+    graph_has_v g copied /\ vgeneration copied = to /\ vgeneration v = from /\
+    forall idx, In idx (map snd (get_edges g v)) ->
+                dst g (copied, idx) = dst g (v, idx) \/
+                raw_mark (vlabel g (dst g (v, idx))) = true /\
+                dst g (copied, idx) = copied_vertex (vlabel g (dst g (v, idx))).
+
+Lemma graph_unmarked_copied_vertex_prop: forall g from to,
+    graph_unmarked g -> copied_vertex_prop g from to.
+Proof.
+  intros. unfold graph_unmarked in H. red. intros.
+  apply H in H0. rewrite H1 in H0. easy.
+Qed.
+
+Lemma lcv_copied_vertex_prop: forall (to : nat) (g : LGraph) (v : VType),
+    vgeneration v <> to -> sound_gc_graph g -> graph_has_gen g to ->
+    raw_mark (vlabel g v) = false -> no_dangling_dst g ->
+    copied_vertex_prop g (vgeneration v) to ->
+    copied_vertex_prop (lgraph_copy_v g v to) (vgeneration v) to.
+Proof.
+  intros. unfold copied_vertex_prop in *. intro s; intros.
+  apply lcv_graph_has_v_inv in H5; auto. destruct H5.
+  2: subst s; rewrite lcv_vlabel_new in H6; auto; now rewrite H2 in H6.
+  pose proof H0. destruct H0 as [? [? ?]]. red in H0, H8, H9.
+  assert (vvalid g s) by (now rewrite <- H0 in H5).
+  assert (~ vvalid g (new_copied_v g to)) by
+      (intro; rewrite H0 in H11; now apply (graph_has_v_not_eq g to) in H11).
+  destruct_eq_dec s v.
+  - subst s. simpl. rewrite ucov_copied_vertex. simpl. split;[|split;[|split]]; auto.
+    + apply lcv_graph_has_v_new; auto.
+    + intros. rewrite lcv_get_edges_old in H12; auto. rewrite pcv_dst_new; auto.
+      rewrite !pcv_dst_old. 2: simpl; intro; now subst. now left.
+  - rewrite <- lcv_raw_mark in H6; auto. rewrite lcv_copied_vertex; auto.
+    destruct (H4 _ H5 H6) as [? [? [? ?]]].
+    split; [|split; [|split]]; [apply lcv_graph_has_v_old| | |]; auto. intros.
+    rewrite <- H0 in H13. rewrite lcv_get_edges_old in H17; auto. simpl dst.
+    rewrite !pcv_dst_old; [|simpl; intro; now rewrite H18 in *..].
+    specialize (H16 _ H17). destruct H16 as [? | [? ?]]; [left|]; auto.
+    assert (graph_has_v g (dst g (s, idx))). {
+      red in H3. apply H3 with s; auto. rewrite get_edges_In; auto. }
+    destruct_eq_dec (dst g (s, idx)) v. 1: now rewrite H20, H2 in H16. right.
+    rewrite <- lcv_raw_mark; auto. rewrite lcv_copied_vertex; auto.
+Qed.
+
+Lemma lgd_copied_vertex_prop: forall to g e,
+    no_dangling_dst g -> graph_has_gen g to ->
+    vgeneration (dst g e) <> to -> vgeneration (fst e) <> vgeneration (dst g e) ->
+    raw_mark (vlabel g (dst g e)) = true -> evalid g e ->
+    copied_vertex_prop g (vgeneration (dst g e)) to ->
+    copied_vertex_prop
+      (labeledgraph_gen_dst g e (copied_vertex (vlabel g (dst g e))))
+      (vgeneration (dst g e)) to.
+Proof.
+  intros. unfold copied_vertex_prop in *. intro s; intros. simpl in *.
+  rewrite <- lgd_graph_has_v in *. destruct (H5 _ H6 H7) as [? [? [? ?]]].
+  split; [|split; [|split]]; auto. intros. unfold get_edges in H12.
+  rewrite lgd_make_fields_eq in H12. fold (get_edges g s) in H12.
+  specialize (H11 _ H12). destruct_eq_dec e (s, idx).
+  1: subst e; simpl in H2; now rewrite H10 in H2.
+  rewrite (updateEdgeFunc_neq _ _ _ (s, idx)); auto.
+  destruct_eq_dec e (copied_vertex (vlabel g s), idx).
+  2: rewrite updateEdgeFunc_neq; auto. remember (copied_vertex (vlabel g s)) as cs.
+  subst e. rewrite updateEdgeFunc_eq. destruct H11 as [? | [? ?]].
+  - right. rewrite H11 in *. auto.
+  - simpl in H2. rewrite H9 in *. assert (graph_has_v g (dst g (s, idx))). {
+      red in H. apply H with s; auto. rewrite get_edges_In. auto. }
+    specialize (H5 _ H15 H11). rewrite H14 in H2. destruct H5 as [_ [? _]].
+    now rewrite H5 in H2.
+Qed.
+
+Lemma fr_O_copied_vertex_prop: forall from to p g1 g2 roots,
+    from <> to -> graph_has_gen g1 to -> sound_gc_graph g1 -> no_dangling_dst g1 ->
+    forward_p_compatible p roots g1 from ->
+    forward_relation from to O (forward_p2forward_t p roots g1) g1 g2 ->
+    copied_vertex_prop g1 from to -> copied_vertex_prop g2 from to.
+Proof.
+  intros. destruct p; simpl in H3, H4.
+  - destruct (Znth z roots) eqn:? ; [destruct s |]; inversion H4; subst; try easy.
+    apply lcv_copied_vertex_prop; auto.
+  - destruct p as [v n]. destruct H3 as [? [? [? ?]]]. rewrite H7 in H4. simpl in H4.
+    destruct (Znth n (make_fields g1 v)) eqn:? ; [destruct s|]; simpl in H4;
+      inversion H4; subst; try easy.
+    + subst new_g.
+      assert (fst e = v) by (apply make_fields_Znth_edge in Heqf; auto; now subst e).
+      assert (evalid g1 e). {
+        destruct H1 as [? [? ?]]. red in H1, H10, H11. rewrite H10. split; rewrite H9.
+        1: easy. unfold get_edges. rewrite <- filter_sum_right_In_iff, <- Heqf.
+        apply Znth_In. now rewrite make_fields_eq_length. }
+      apply lgd_copied_vertex_prop; auto. rewrite H9; auto.
+    + subst new_g. eapply lcv_copied_vertex_prop in H5; eauto.
+      remember (lgraph_copy_v g1 (dst g1 e) to) as g3.
+      assert (fst e = v) by (apply make_fields_Znth_edge in Heqf; auto; now subst e).
+      assert (dst g1 e = dst g3 e). {
+        subst g3. simpl. rewrite pcv_dst_old; auto. rewrite H9.
+        now apply graph_has_v_not_eq with (to := to) in H3. }
+      assert (new_copied_v g1 to = copied_vertex (vlabel g3 (dst g3 e))). {
+        rewrite <- H10. subst g3. simpl. rewrite ucov_copied_vertex. easy. }
+      assert (graph_has_e g1 e). { split; rewrite H9.
+        1: easy. unfold get_edges. rewrite <- filter_sum_right_In_iff, <- Heqf.
+        apply Znth_In. now rewrite make_fields_eq_length. }
+      assert (evalid g1 e). {
+        destruct H1 as [? [? ?]]. red in H1, H14, H15. now rewrite H14. }
+      rewrite H12, H10. apply lgd_copied_vertex_prop; try (now rewrite <- H10).
+      * subst g3. apply lcv_no_dangling_dst; auto. red in H2. apply H2 with v; auto.
+        destruct H13. now rewrite H9 in H15.
+      * subst g3. rewrite <- lcv_graph_has_gen; auto.
+      * now rewrite H9, <- H10.
+      * rewrite <- H10. subst g3. apply lcv_raw_mark_old.
+      * subst g3. destruct H1 as [? [? ?]]. pose proof H0.
+        apply (lcv_edge_valid _ (dst g1 e)) in H0; auto. red in H0. rewrite H0.
+        split; rewrite H9. 1: apply lcv_graph_has_v_old; auto.
+        unfold get_edges, make_fields. rewrite <- lcv_raw_fields; auto.
+        fold (make_fields g1 v). fold (get_edges g1 v). destruct H13.
+        now rewrite <- H9.
+Qed.
+
+Lemma fr_O_three_cases: forall (from to : nat) (p : forward_p_type) (g1 g2 : LGraph) 
+                               (roots : roots_t) (f_info : fun_info),
+    from <> to -> graph_has_gen g1 to -> sound_gc_graph g1 ->
+    roots_fi_compatible roots f_info -> roots_graph_compatible roots g1 ->
+    copied_vertex_prop g1 from to -> forward_p_compatible p roots g1 from ->
+    forward_relation from to O (forward_p2forward_t p roots g1) g1 g2 ->
+    forall v, three_cases_in_from from to g1 roots v <->
+              three_cases_in_from from to g2 (upd_roots from to p g1 roots f_info) v.
+Proof.
+  intros. destruct p; simpl in H5, H6.
+  - destruct (Znth z roots) eqn:? ; [destruct s|]; simpl in *; rewrite Heqr;
+      inversion H6; subst; clear H6; try easy.
+    + now rewrite if_false.
+    + rewrite if_true, H10; auto.
+      split; intros; red in H6 |-* ; destruct H6; split; auto.
+      * destruct H7; [| right]; auto. rewrite reachable_from_roots in H7.
+        destruct H7 as [i [r [? [? ?]]]]. destruct H2.
+        destruct (Z.eq_dec (Znth i (live_roots_indices f_info))
+                           (Znth z (live_roots_indices f_info))).
+        -- specialize (H11 _ _ H7 H5 e). rewrite H11, Heqr in H8. inversion H8.
+           subst v0. clear H8. apply reachable_ind in H9. destruct H9.
+           ++ subst r. right. red in H3. rewrite Forall_forall in H3. split.
+              2: now left. destruct H1. red in H1. rewrite H1. apply H3.
+              rewrite <- filter_sum_right_In_iff, <- Heqr. now apply Znth_In.
+           ++ destruct H8 as [s [? [? ?]]].
+Abort.
 
 Lemma frr_dsr_quasi_iso: forall from to f_info roots1 roots2 g1 g2 g3,
     from <> to -> sound_gc_graph g1 -> graph_has_gen g1 to -> graph_unmarked g1 ->
