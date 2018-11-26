@@ -5616,7 +5616,7 @@ Proof.
   rewrite <- H2, <- H3. assumption.
 Qed.
 
-Lemma do_gen_gcc: forall g1 t_info1 roots1 g2 t_info2  roots2 f_info i out,
+Lemma do_gen_gcc: forall g1 t_info1 roots1 g2 t_info2 roots2 f_info i out,
     super_compatible (g1, t_info1, roots1) f_info out ->
     firstn_gen_clear g1 i -> graph_has_gen g1 (S i) ->
     thread_info_relation t_info1 t_info2 ->
