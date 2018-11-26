@@ -67,7 +67,7 @@ Proof.
                outlier_rep outlier; graph_rep g'; thread_info_rep sh t_info' ti)).
   - Exists O g t_info. destruct H as [? [? [? ?]]].
     replace (to_index + 0)%nat with to_index by omega. entailer!.
-    split; [apply tir_id | constructor].
+    split; [|split]; [red; auto | apply tir_id | constructor].
   - Intros n g' t_info'. remember (to_index + n)%nat as index.
     unfold next_address, thread_info_rep. Intros.
     unfold heap_struct_rep. destruct H5 as [? [? [? ?]]].
@@ -172,7 +172,8 @@ Proof.
         destruct (zlt index_offset used_offset). 2: assumption.
         simpl in H25. inversion H25. }
       forward. thaw FR. unfold thread_info_rep, heap_struct_rep.
-      Exists g' t_info'. unfold forward_condition. entailer!. exists n. split.
+      Exists g' t_info'. unfold forward_condition. entailer!.
+      split. 1: red; auto. exists n. split.
       1: assumption. unfold gen_has_index. rewrite <- H20 in H26.
       rewrite <- Z.mul_lt_mono_pos_l in H26 by rep_omega. intro; apply H26.
       apply pvs_mono_strict. assumption.
@@ -272,7 +273,8 @@ Proof.
                 graph_rep g3;
                 thread_info_rep sh t_info3 ti)).
         -- forward. Exists 1 g' t_info'. replace (1 - 1) with 0 by omega.
-           autorewrite with sublist. unfold forward_condition. entailer!. constructor.
+           autorewrite with sublist. unfold forward_condition. entailer!.
+           split; [ apply svfl_nil | red; auto].
         -- Intros i g3 t_info3. forward_if (i <= z).
            ++ forward. entailer!.
            ++ forward. assert (i = z + 1) by omega. subst i. clear H33 H34.
@@ -323,7 +325,7 @@ Proof.
                    do 2 f_equal. apply (proj2 H42). }
                  assert (next_address t_info3 to = next_address t_info4 to) by
                      (unfold next_address; f_equal; apply (proj1 H42)). entailer!.
-                 split; [|split].
+                 split; [|split; [|split]]; try easy.
                  --- remember (nat_inc_list
                                  (Datatypes.length
                                     (raw_fields (vlabel g' (to,
@@ -346,7 +348,7 @@ Proof.
         -- Intros i g3 t_info3. forward. rewrite add_repr. Exists (i + 1) g3 t_info3.
            replace (i + 1 - 1) with i by omega. entailer!.
       * apply typed_false_tag in H27. forward. Exists g' t_info'.
-        unfold forward_condition. entailer!.
+        unfold forward_condition. entailer!. easy.
       * Intros g'' t_info''. assert (isptr (vertex_address g'' (to, index))). {
           assert (isptr (vertex_address g' (to, index))). {
             unfold vertex_address. rewrite isptr_offset_val. unfold gen_start.
@@ -392,7 +394,7 @@ Proof.
            Exists (n + 1)%nat g'' t_info''. destruct H27 as [? [? [? ?]]]. entailer!.
            clear H37 H38 H39 H40. replace (n + 1)%nat with (S n) by omega.
            rewrite nat_seq_S, Nat.add_comm. destruct H30 as [[? ?] | [? ?]].
-           ++ subst g''. apply svwl_add_tail_no_scan; assumption.
-           ++ apply svwl_add_tail_scan with g'; assumption.
+           ++ subst g''. split; [| apply svwl_add_tail_no_scan]; easy.
+           ++ split; [|apply svwl_add_tail_scan with g']; easy.
   - Intros g' t_info'. forward. Exists g' t_info'. entailer!.
 Qed.
