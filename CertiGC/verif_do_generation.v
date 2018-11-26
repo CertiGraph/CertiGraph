@@ -160,7 +160,7 @@ Proof.
     replace_SEP 0 (thread_info_rep sh (reset_nth_heap_thread_info from t_info2) ti).
     + unfold thread_info_rep. simpl ti_heap_p. simpl ti_args. entailer!.
       assert (from < length (spaces (ti_heap t_info2)))%nat by
-          (destruct H34 as [[_ [_ ?]] _]; red in H40; omega).
+          (destruct H34 as [[_ [_ ?]] _]; red in H40; omega). simpl.
       rewrite (reset_nth_space_Znth _ _ H45), <- nth_space_Znth, <- upd_Znth_map.
       unfold space_tri at 3. simpl. replace (WORD_SIZE * 0)%Z with 0 by omega.
       rewrite isptr_offset_val_zero by assumption. cancel.

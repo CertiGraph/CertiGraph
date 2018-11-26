@@ -94,9 +94,10 @@ Proof.
           graph_rep g';
           ti_token_rep t_info')).
   - Exists g roots t_info. destruct H2 as [? [? [? ?]]].
-    pose proof (graph_has_gen_O g). entailer!. split; [|split].
+    pose proof (graph_has_gen_O g). entailer!. split; [|split; [|split]].
+    + red. auto.
     + apply stc_stcte_O_iff; assumption.
-    + red. intros. omega.
+    + red. intros. simpl in H12. omega.
     + unfold nat_inc_list. simpl. constructor.
   - cbv beta. Intros g' roots' t_info'. unfold thread_info_rep. Intros.
     unfold heap_struct_rep. assert (0 <= i + 1 < Zlength (spaces (ti_heap t_info'))) by
@@ -169,6 +170,7 @@ Proof.
                     (2 * nth_gen_size (Z.to_nat i))%Z, gv, rsh).
       * rewrite Int.signed_repr by (apply ngs_int_singed_range; rep_omega).
         rewrite ngs_S by omega. apply ngs_int_singed_range. rep_omega.
+      * simpl. entailer!.
       * rewrite ngs_S by omega. Intros p. rewrite ngs_S in H22 by omega.
         assert (Hso: 0 <= 0 <= (nth_gen_size (Z.to_nat (i + 1)))) by omega.
         rewrite data_at__isptr. Intros.
@@ -250,7 +252,7 @@ Proof.
            apply (proj1 H16)). pose proof (t_info_space_address _ _ (proj1 H7) H22).
       pose proof (t_info_space_address _ _ (proj1 H14) H22).
       forward_call (rsh, sh, gv, fi, ti, g1, t_info1, f_info, roots', outlier,
-                    (Z.to_nat i), (Z.to_nat (i + 1))).
+                    (Z.to_nat i), (Z.to_nat (i + 1))). 1: simpl; entailer!.
       1: do 4 (split; auto); rewrite H23; apply n_Sn.
       Intros vret. destruct vret as [[g2 t_info2] roots2]. simpl fst in *.
       simpl snd in *. replace (ti_heap_p t_info1) with (ti_heap_p t_info2) by
