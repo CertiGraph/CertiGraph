@@ -36,8 +36,8 @@ Proof.
           graph_rep g';
           thread_info_rep sh t_info' ti)).
   - pose proof lri_range f_info; subst n; omega.
-  - Exists g t_info roots. destruct H as [? [? [? ?]]]. entailer!. split.
-    2: apply tir_id. unfold nat_inc_list. simpl. constructor.
+  - Exists g t_info roots. destruct H as [? [? [? ?]]]. entailer!.
+    split; [|split]; try easy. unfold nat_inc_list. simpl. constructor.
   - unfold fun_info_rep.
     assert_PROP (force_val (sem_add_ptr_int tuint
                                             Unsigned (offset_val 8 fi) (vint i)) =
@@ -86,7 +86,7 @@ Proof.
             (rewrite Z2Nat.inj_add by omega; simpl; omega).
         rewrite nat_inc_list_S. remember (Z.to_nat i) as n.
         replace i with (Z.of_nat n) in * by (subst n;rewrite Z2Nat.id; omega).
-        simpl in H18. apply frl_add_tail; assumption.
+        simpl in H18. split; [apply frl_add_tail|]; easy.
     + exfalso. rep_omega.
   - Intros g' t_info' roots'. forward. Exists g' t_info' roots'.
     destruct H8 as [? [? [? ?]]]. entailer!. rewrite <- H5, ZtoNat_Zlength in H6.

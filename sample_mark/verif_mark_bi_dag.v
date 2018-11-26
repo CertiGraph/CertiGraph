@@ -83,13 +83,13 @@ Proof.
         (@data_at CompSpecs sh node_type
                   (Vint (Int.repr (if d then 1 else 0)), (pointer_val_val l, pointer_val_val r)) (pointer_val_val x)).
     forward. (* root_mark = x -> m; *)
-    eapply semax_pre with 
+    eapply semax_pre with
         (PROP  ()
-               LOCAL 
+               LOCAL
                (temp _root_mark (Vint (Int.repr (if d then 1 else 0)));
                 temp _x (pointer_val_val x))
                SEP  (dag sh x g)).
-    1: erewrite root_unfold by eauto; entailer!.
+    1: erewrite root_unfold by eauto; simpl vertex_at; entailer!.
     forward_if  (* if (root_mark == 1) *)
       (PROP (d = false)
             LOCAL (temp _x (pointer_val_val x))
@@ -112,7 +112,7 @@ Proof.
                         temp _l (pointer_val_val l);
                         temp _x (pointer_val_val x))
                  SEP (dag sh x (Graph_vgen g x true))).
-      1: erewrite root_update_unfold by eauto; entailer!.
+      1: erewrite root_update_unfold by eauto; simpl vertex_at; entailer!.
       forget (Graph_vgen g x true) as g1.
       assert (weak_valid g1 l) by (eapply left_weak_valid; eauto).
       (* mark(l); *)
@@ -132,4 +132,3 @@ Proof.
       Exists g3. entailer!.
       apply (mark1_mark_left_mark_right g g1 g2 g3 (ValidPointer b i) l r); auto.
 Qed. (* Original: 114 seconds; VST 2.*: 2.739 secs *)
-

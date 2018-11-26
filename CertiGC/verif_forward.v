@@ -288,8 +288,9 @@ Proof.
                                        (space_start sp_to))
                            (eval_unop Oneg tint (vint 1))) =
               field_address tuint [] v1). {
-             subst v1. rewrite WORD_SIZE_eq. entailer!. unfold field_address.
-             rewrite if_true by assumption. simpl. rewrite offset_offset_val.
+             subst v1. rewrite WORD_SIZE_eq. entailer!. simpl. rewrite neg_repr.
+             rewrite sem_add_pi_ptr_special'; auto. simpl. unfold field_address.
+             rewrite if_true by assumption. simpl. rewrite !offset_offset_val.
              f_equal. omega. }
            forward. sep_apply (field_at_data_at_cancel
                                  sht tuint (Z2val (make_header g v)) v1). clear H29.
@@ -497,8 +498,9 @@ Proof.
                      forward_call (rsh, sh, gv, fi, ti, g3, t_info3, f_info, roots',
                                    outlier, from, to, depth - 1,
                                    (@inr Z _ (new_copied_v g to, i))).
-                     +++ simpl. apply prop_right. do 3 split; [|reflexivity].
-                         f_equal. rewrite H30. rewrite sem_add_pi_ptr_special.
+                     +++ simpl. apply prop_right. rewrite sub_repr.
+                         do 3 split; [|easy]. f_equal. rewrite H30.
+                         rewrite sem_add_pi_ptr_special.
                          *** simpl. f_equal. erewrite fl_vertex_address; eauto.
                              subst g'. apply graph_has_v_in_closure. assumption.
                          *** rewrite <- H30. assumption.
@@ -879,7 +881,8 @@ Proof.
                            (eval_unop Oneg tint (vint 1))) =
               field_address tuint [] v1). {
              subst v1. rewrite WORD_SIZE_eq. entailer!. unfold field_address.
-             rewrite if_true by assumption. simpl. rewrite offset_offset_val.
+             simpl. rewrite neg_repr. rewrite sem_add_pi_ptr_special'; auto.
+             rewrite if_true by assumption. simpl. rewrite !offset_offset_val.
              f_equal. omega. }
            forward. sep_apply (field_at_data_at_cancel
                                  sht tuint (Z2val (make_header g v')) v1). clear H30.
@@ -1158,7 +1161,7 @@ Proof.
                      assert (forward_loop from to (Z.to_nat (depth - 1)) [] g1 g1) by
                          constructor. unfold thread_info_relation.
                      destruct H54 as [? [? [? ?]]].
-                     entailer!.
+                     entailer!. easy.
                  --- change (Tpointer tvoid {| attr_volatile := false;
                                                attr_alignas := Some 2%N |})
                        with (int_or_ptr_type). Intros.
@@ -1171,13 +1174,12 @@ Proof.
                      forward_call (rsh, sh, gv, fi, ti, g3, t_info3, f_info, roots',
                                    outlier, from, to, depth - 1,
                                    (@inr Z _ (new_copied_v g to, i))).
-                     +++ simpl. apply prop_right. do 3 split; [|reflexivity].
+                     +++ simpl. apply prop_right. rewrite sub_repr.
+                         do 3 split; [|easy].
                          f_equal. rewrite H31. rewrite sem_add_pi_ptr_special.
                          *** simpl. f_equal.
-                             rewrite <- (lgd_vertex_address_eq g' e v1).
-                             rewrite <- Heqg1.
-                             subst v1.
-                             apply (fl_vertex_address _ _ _ _ _ _ H64 H61).
+                             rewrite <- (lgd_vertex_address_eq g' e v1), <- Heqg1.
+                             subst v1. apply (fl_vertex_address _ _ _ _ _ _ H64 H61).
                              apply graph_has_v_in_closure; assumption.
                          *** rewrite <- H31. assumption.
                          *** subst n'. clear -H59 Hr. rep_omega.
