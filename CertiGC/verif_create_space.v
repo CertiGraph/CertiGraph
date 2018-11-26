@@ -9,7 +9,7 @@ Proof.
   - exfalso. rewrite MSS_eq_unsigned, Int.unsigned_repr in H0;
                [omega | apply MSS_max_unsigned_range; assumption].
   - forward. entailer!.
-  - forward_call (Tarray int_or_ptr_type n noattr).
+  - forward_call (Tarray int_or_ptr_type n noattr, gv).
     + entailer!. replace (n * 4) with (4 * n) by omega. reflexivity.
     + split; [|split].
       * simpl. replace (Z.max 0 n) with n. 1: apply MSS_max_4_unsigned_range, H.
@@ -26,7 +26,7 @@ Proof.
       * Intros. forward_if (
                     PROP ( )
                     LOCAL (temp _p p; temp _s s; temp _n (Vint (Int.repr n)))
-                    SEP (all_string_constants rsh gv;
+                    SEP (mem_mgr gv; all_string_constants rsh gv;
                          malloc_token Ews (Tarray int_or_ptr_type n noattr) p;
                          data_at_ Ews (Tarray int_or_ptr_type n noattr) p;
                          data_at_ sh space_type s)).

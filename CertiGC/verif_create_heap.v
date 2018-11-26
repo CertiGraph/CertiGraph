@@ -65,8 +65,8 @@ Qed.
 Lemma body_create_heap: semax_body Vprog Gprog f_create_heap create_heap_spec.
 Proof.
   start_function.
-  forward_call heap_type. 1:simpl; split; split; [omega|rep_omega| |cbv]; reflexivity.
-  Intros h. if_tac.
+  forward_call (heap_type, gv).
+  1: simpl; split; split; [omega|rep_omega| |cbv]; reflexivity. Intros h. if_tac.
   - subst h; forward_if False; [|inversion H].
     unfold all_string_constants; Intros;
       forward_call ((gv ___stringlit_8),
@@ -76,7 +76,7 @@ Proof.
     (* make "data_at sh space_type v h " in SEP *)
     assert_PROP (isptr h) by entailer!. remember (Vundef, (Vundef, Vundef)) as vn.
     assert_PROP (field_compatible heap_type [StructField _spaces] h) by entailer!.
-    replace_SEP 1 (data_at Ews heap_type (default_val heap_type) h) by entailer!.
+    replace_SEP 2 (data_at Ews heap_type (default_val heap_type) h) by entailer!.
     change (default_val heap_type) with
         (list_repeat (Z.to_nat 12) (Vundef, (Vundef, Vundef))).
     rewrite <- Heqvn. rewrite data_at_heaptype_eq; auto.
@@ -87,7 +87,7 @@ Proof.
     (* make succeed *)
     + split; [apply writable_Ews | split; [assumption|]].
       rewrite MAX_SPACE_SIZE_eq. compute; split; [discriminate | reflexivity].
-    + Intros p0. freeze [0;1;2;4] FR.
+    + Intros p0. freeze [0;1;2;3;5] FR.
       (* change back to "data_at sh heap_type v h" *)
       rewrite <- space_array_1_eq. rewrite sublist_list_repeat by omega.
       change (12 - 1) with 11 at 2. gather_SEP 1 2.

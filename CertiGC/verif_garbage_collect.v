@@ -57,6 +57,7 @@ Lemma body_garbage_collect:
   semax_body Vprog Gprog f_garbage_collect garbage_collect_spec.
 Proof.
   start_function.
+  sep_apply (create_mem_mgr gv).
   unfold before_gc_thread_info_rep, heap_struct_rep. Intros. forward. pose proof H.
   destruct H as [? _]. pose proof (gt_gs_compatible _ _ H _ (graph_has_gen_O _)).
   destruct H3 as [? [? ?]].
@@ -71,7 +72,7 @@ Proof.
       (spaces (ti_heap t_info)) by
       (destruct (heap_head_cons (ti_heap t_info)) as [hs [hl [? ?]]];
        unfold nth_space; rewrite H7; simpl; reflexivity).
-  gather_SEP 4 5 6. replace_SEP 0 (thread_info_rep sh t_info ti) by
+  gather_SEP 5 6 7. replace_SEP 0 (thread_info_rep sh t_info ti) by
       (unfold thread_info_rep, heap_struct_rep; entailer! ;
        do 2 (unfold_data_at 1%nat); cancel).
   forward_for_simple_bound
@@ -86,6 +87,7 @@ Proof.
      LOCAL (temp _h (ti_heap_p t_info'); temp _fi fi; temp _ti ti;
             gvars gv)
      SEP (thread_info_rep sh t_info' ti;
+          mem_mgr gv;
           all_string_constants rsh gv;
           fun_info_rep rsh f_info fi;
           outlier_rep outlier;
@@ -114,6 +116,7 @@ Proof.
               gvars gv; temp _i (Vint (Int.repr i)))
        SEP (thread_info_rep sh t_info1 ti;
             ti_token_rep t_info1;
+            mem_mgr gv;
             all_string_constants rsh gv;
             fun_info_rep rsh f_info fi;
             outlier_rep outlier;
@@ -154,7 +157,7 @@ Proof.
       rewrite spaces_size in H20. unfold thread_info_rep. Intros.
       rewrite hsr_single_explicit with (i := i + 1). 2: assumption.
       2: rewrite Zlength_map, spaces_size; reflexivity. Intros.
-      freeze [0;2;3;4;6;7;8] FR.
+      freeze [0;2;3;4;7;8;9] FR.
       sep_apply (data_at_data_at_
                    sh space_type
                    (Znth (i + 1) (map space_tri (spaces (ti_heap t_info'))))
@@ -186,7 +189,7 @@ Proof.
             (subst g1; apply firstn_gen_clear_add; assumption).
         assert (new_gen_relation (Z.to_nat (i + 1)) g' g1). {
           subst g1. red. rewrite if_false by assumption. exists gi. split; auto. }
-        gather_SEP 1 4.
+        gather_SEP 2 5.
         assert (total_space sp = nth_gen_size (Z.to_nat (i + 1))) by
             (subst sp; simpl; reflexivity). rewrite <- H29.
         assert (space_start sp = p) by (subst sp; simpl; reflexivity). rewrite <- H30.
@@ -199,23 +202,23 @@ Proof.
             (space_tri sp) by
             (unfold space_tri; do 2 f_equal; subst sp; simpl;
              rewrite Z.mul_0_r, isptr_offset_val_zero by assumption; reflexivity).
-        thaw FR. gather_SEP 11 2 3.
+        thaw FR. gather_SEP 12 2 3.
         rewrite (heap_struct_rep_add t_info' sh sp (i + 1) H20), <- Heqt_info1.
         replace (ti_heap_p t_info') with (ti_heap_p t_info1) by
             (subst t_info1; simpl; reflexivity).
         replace (ti_args t_info') with (ti_args t_info1) by
             (subst t_info1; simpl; reflexivity).
-        replace_SEP 9 (space_rest_rep sp). {
+        replace_SEP 10 (space_rest_rep sp). {
           unfold space_rest_rep. rewrite if_false by assumption.
           replace (space_sh sp) with Ews by (subst sp; simpl; reflexivity).
           replace (used_space sp) with 0 by (subst sp; simpl; reflexivity).
           rewrite Z.sub_0_r, Z.mul_0_r, isptr_offset_val_zero by
-              (subst; simpl; assumption). entailer!. } gather_SEP 3 9.
+              (subst; simpl; assumption). entailer!. } gather_SEP 3 10.
         rewrite (heap_rest_rep_add _ _ (i + 1) H20), <- Heqt_info1 by assumption.
         gather_SEP 3 1 0. rewrite <- sepcon_assoc.
         replace_SEP 0 (thread_info_rep sh t_info1 ti) by
             (unfold thread_info_rep; entailer!). rewrite (graph_rep_add g' gi); auto.
-        3: destruct H9 as [?[?[?[? ?]]]]; assumption.
+        3: destruct H9 as [? [? [? [? ?]]]]; assumption.
         2: apply graph_unmarked_copy_compatible;
           destruct H9 as [? [? [? [? ?]]]]; assumption. rewrite <- Heqg1.
         assert (graph_has_gen g1 (Z.to_nat (i + 1))). {
