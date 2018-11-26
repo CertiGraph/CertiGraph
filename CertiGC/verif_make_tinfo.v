@@ -5,7 +5,7 @@ Proof.
   start_function.
   forward_call (sh, gv).
   Intros vret. destruct vret as [h p]. simpl fst. simpl snd.
-  forward_call thread_info_type.
+  forward_call (thread_info_type, gv).
   - split; [|split]; cbv; [split; intro HS; inversion HS | reflexivity..].
   - Intros t. if_tac.
     + subst t. forward_if False; [|inversion H].
