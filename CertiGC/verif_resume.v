@@ -55,5 +55,5 @@ Proof.
         pose proof (spaces_size (ti_heap t_info)). rewrite MAX_SPACES_eq in H2.
         rewrite <- H2, H1, Zlength_cons, Zlength_map. omega. } rewrite !H2.
       rewrite !data_at_tarray_split_1 by reflexivity. cancel.
-      do 2 (unfold_data_at 1%nat). cancel.
+      do 2 (unfold_data_at (data_at _ _ _ _)). cancel.
 Qed.

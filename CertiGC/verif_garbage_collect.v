@@ -8,8 +8,8 @@ Lemma sem_sub_pp_total_space: forall s,
                   (space_start s)) = Vint (Int.repr (total_space s)).
 Proof.
   intros. destruct (space_start s); try contradiction. simpl. destruct (eq_block b b).
-  2: exfalso; apply n; reflexivity. inv_int i.
-  rewrite ptrofs_add_repr, ptrofs_sub_repr.
+  2: exfalso; apply n; reflexivity.
+  inv_int i. rewrite ptrofs_add_repr, ptrofs_sub_repr.
   replace (ofs + WORD_SIZE * total_space s - ofs) with
       (WORD_SIZE * total_space s)%Z by omega. simpl.
   pose proof (total_space_signed_range s). unfold Ptrofs.divs.
@@ -27,7 +27,8 @@ Lemma sem_sub_pp_rest_space: forall s,
     Vint (Int.repr (total_space s - used_space s)).
 Proof.
   intros. destruct (space_start s); try contradiction. simpl. destruct (eq_block b b).
-  2: exfalso; apply n; reflexivity. inv_int i.
+  2: exfalso; apply n; reflexivity.
+  inv_int i.
   rewrite !ptrofs_add_repr, ptrofs_sub_repr.
   replace (ofs + WORD_SIZE * total_space s - (ofs + WORD_SIZE * used_space s)) with
           (WORD_SIZE * (total_space s - used_space s))%Z by
@@ -73,8 +74,8 @@ Proof.
       (destruct (heap_head_cons (ti_heap t_info)) as [hs [hl [? ?]]];
        unfold nth_space; rewrite H7; simpl; reflexivity).
   gather_SEP 5 6 7. replace_SEP 0 (thread_info_rep sh t_info ti) by
-      (unfold thread_info_rep, heap_struct_rep; entailer! ;
-       do 2 (unfold_data_at 1%nat); cancel).
+    (unfold thread_info_rep, heap_struct_rep; entailer!;
+    do 2 (unfold_data_at (data_at _ _ _ _); cancel)).
   forward_for_simple_bound
     11
     (EX i: Z, EX g': LGraph, EX roots': roots_t, EX t_info': thread_info,
