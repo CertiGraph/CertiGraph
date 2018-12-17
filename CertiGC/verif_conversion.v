@@ -28,4 +28,3 @@ Proof.
   start_function.
   forward.
 Qed.
-
