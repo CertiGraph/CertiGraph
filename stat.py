@@ -15,7 +15,7 @@ thm_pattern = re.compile(r" *(Lemma|Theorem|Corollary|Remark|Fact|Proposition)"
 
 
 def_pattern = re.compile(r" *(Program Definition|Definition|Fixpoint|"
-                         r"Inductive) +([a-zA-Z][a-zA-Z0-9_']*).*")
+                         r"Inductive|Class) +([a-zA-Z][a-zA-Z0-9_']*).*")
 
 
 def get_def_or_thm(coq_file_name: str, pattern: re.Pattern):
@@ -81,8 +81,8 @@ def gen_occur_insert(file_name: str, pat: re.Pattern,
 
 
 def create_insert_sql():
-    gen_def_or_thm_insert("insert_def.sql", def_pattern, "definition")
-    gen_def_or_thm_insert("insert_thm.sql", thm_pattern, "theorem")
+    gen_def_or_thm_insert("insert_def.sql", def_pattern, "def")
+    gen_def_or_thm_insert("insert_thm.sql", thm_pattern, "thm")
     gen_occur_insert("insert_def_occur.sql", def_pattern,
                      "def_occur", all_defs)
     gen_occur_insert("insert_thm_occur.sql", thm_pattern,
