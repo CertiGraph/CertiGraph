@@ -1251,10 +1251,11 @@ Lemma heap_struct_rep_eq: forall sh l p,
     heap_struct_rep sh l p = data_at sh (tarray space_type 12) l p.
 Proof.
   intros. unfold heap_struct_rep. apply pred_ext; rewrite data_at_isptr; Intros.
-  - unfold_data_at 1%nat. entailer!. clear H0. rewrite field_at_data_at.
+  - unfold_data_at (data_at _ heap_type _ _).
+    entailer!. clear H0. rewrite field_at_data_at.
     unfold field_address. rewrite if_true by assumption. simpl.
     entailer!.
-  - unfold_data_at 2%nat. entailer!. clear H0 H1. rewrite field_at_data_at.
+  - unfold_data_at (data_at _ heap_type _ _). entailer!. clear H0 H1. rewrite field_at_data_at.
     unfold field_address. rewrite if_true.
     + simpl. rewrite isptr_offset_val_zero by assumption. entailer!.
     + unfold field_compatible in *. simpl in *. intuition.

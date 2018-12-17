@@ -4,7 +4,7 @@ Lemma data_at_heaptype_eq: forall (sh: share) v h,
     isptr h -> field_compatible heap_type [StructField _spaces] h ->
     data_at sh heap_type v h = data_at sh (tarray space_type 12) v h.
 Proof.
-  intros. unfold_data_at 1%nat. rewrite field_at_data_at. simpl nested_field_type.
+  intros. unfold_data_at (data_at _ heap_type _ _). rewrite field_at_data_at. simpl nested_field_type.
   rewrite field_address_offset; auto. simpl nested_field_offset.
   rewrite isptr_offset_val_zero; auto.
 Qed.

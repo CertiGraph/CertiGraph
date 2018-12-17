@@ -23,10 +23,7 @@ compat is
 And so I write compat (g, t_info, f_info, outlier, from, to, forward_p)
 where forward_p can be 
 "Z", ie an index of the args array or "VType * Z", ie the Zth field of the vertex V.
-We're eliding the first case, so I'm writing \exists v,n.~ forward_p = (v,n) pretty early and then using that
-
-line 13 depends on how we express _p upstairs
-it needs to have a disjunction, where va can be either a block or not. this will let us pick a case later on.
+We're eliding the first case, so I'm writing \exists v,n.~ forward_p = (v,n) in the pre
 
 (Znth n (make_fields g v)) can be either (Z, GC_Pointer, or Etype)
 - if it's Z, we fail is_block and we're done quickly. identity transformation for all seps
@@ -34,4 +31,7 @@ it needs to have a disjunction, where va can be either a block or not. this will
 	+ yes, is from -- can get exfalso, since GCPtr is by construction not in from
 	+ no, not in from -- done quickly, with indentity transformations for all seps
 - if it's EType, we need to play the whole thing through
+
+instead of va \in exptr, maybe we can just say va \in outlier?
+
 

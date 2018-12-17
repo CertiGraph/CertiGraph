@@ -72,6 +72,16 @@ Section GList_UnionFind.
       destruct (equiv_dec (x, tt) (x0, tt)); auto. compute in e. exfalso. inversion e. auto.
   Qed.
 
+  Definition ggrp_rel (g : Graph) (x root : addr) (g' : Graph) : Prop :=
+    exists H1 H2 H3, g' = Graph_gen_redirect_parent g x root H1 H2 H3.
+
+  Lemma graph_gen_redirect_parent_ramify_rel: forall (g: Graph) x r pa root g',
+      ggrp_rel g x root g' ->
+      vgamma g x = (r, pa) -> root <> null -> 
+      (vertices_at (vvalid g) g: pred) 
+        |-- vertex_at x (r, pa) * (vertex_at x (r, root) -* vertices_at (vvalid g) g').
+  Proof. intros g x r pa root g' [Ha [Hb [Hc Heq]]] ? ?. subst g'. apply graph_gen_redirect_parent_ramify; auto. Qed. 
+
   Definition Graph_vgen (G: Graph) (x: addr) (d: nat) : Graph := Graph_vgen G x d.
 
   Lemma graph_vgen_ramify: forall (g: Graph) x r1 r2 pa,
