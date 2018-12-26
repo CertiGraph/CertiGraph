@@ -34,16 +34,15 @@ Lemma reachable_by_path_subgraph_partialgraph (g: PreGraph V E) (p q: V -> Prop)
     (predicate_partialgraph g p) |= l is n1 ~o~> n2 satisfying q.
 Proof.
   intros. unfold reachable_by_path, good_path. apply and_iff_split; [|apply and_iff_split].
-  + unfold path_endpoints. apply and_iff_compat_l. destruct l as [v l]. revert v. induction l; intros.
-    - simpl. intuition.
-    - rewrite !pfoot_cons. apply IHl.
-  + destruct l as [v l]. revert v. induction l; intros.
-    - simpl. intuition.
-    - rewrite !valid_path_cons_iff. rewrite IHl. apply and_iff_compat_l, and_iff_compat_r.
+  - unfold path_endpoints. apply and_iff_compat_l. destruct l as [v l]. revert v. induction l; intros.
+    + simpl. intuition.
+    + rewrite !pfoot_cons. apply IHl.
+  - destruct l as [v l]. revert v. induction l; intros.
+    + simpl. intuition.
+    + rewrite !valid_path_cons_iff. rewrite IHl. apply and_iff_compat_l, and_iff_compat_r.
       unfold strong_evalid. simpl. apply and_iff_compat_r_weak. intros. destruct H.
       unfold predicate_evalid. unfold predicate_weak_evalid. destruct H0. intuition.
-  + destruct l as [v l]. simpl. destruct l. intuition. unfold path_prop'.
-    rewrite !Forall_forall. simpl. intuition.
+  - destruct l as [v l]. unfold path_prop. simpl. rewrite !Forall_forall. reflexivity.
 Qed.
 
 Lemma reachable_subgraph_partialgraph (g: PreGraph V E) (p: V -> Prop):
@@ -59,21 +58,24 @@ Lemma reachable_by_path_eq_subgraph_reachable (g: PreGraph V E) (p: V -> Prop):
     g |= path is n1 ~o~> n2 satisfying p <-> (predicate_subgraph g p) |= path is n1 ~o~> n2 satisfying (fun _ => True).
 Proof.
   intros; split; intros; destruct H as [[? ?] [? ?]]; split.
-  + split; auto. clear - H0. destruct path as [v l]. revert v H0. induction l; intros. 1: simpl in *; auto. rewrite pfoot_cons in H0 |-* . apply IHl; auto.
-  + split. 2: destruct path; simpl; destruct l; auto; unfold path_prop'; rewrite Forall_forall; intros; auto.
-    clear H H0. destruct path as [v l]. revert v H1 H2. induction l; intros. 1: simpl in H1; simpl in *; unfold predicate_vvalid; intuition.
+  - split; auto. clear - H0. destruct path as [v l]. revert v H0. induction l; intros. 1: simpl in *; auto. rewrite pfoot_cons in H0 |-* . apply IHl; auto.
+  - split. 2: destruct path; red; rewrite Forall_forall; split; intros; auto.
+    clear H H0. destruct path as [v l]. revert v H1 H2. induction l; intros.
+    1: simpl in H1; simpl in *; unfold path_prop in H2. unfold predicate_vvalid; intuition.
     rewrite valid_path_cons_iff in H1 |-* . destruct H1 as [? [? ?]]. split; auto. split.
-    - unfold strong_evalid in *. simpl. unfold predicate_evalid, predicate_vvalid. subst v. simpl in H2. hnf in H2. rewrite Forall_forall in H2.
-      assert (In a (a :: l)) by apply in_eq. specialize (H2 _ H). intuition.
-    - apply IHl; auto. apply path_prop_tail in H2. unfold ptail in H2. apply H2.
-  + split; auto. clear - H0. destruct path as [v l]. revert v H0. induction l; intros. 1: simpl in *; auto. rewrite pfoot_cons in H0 |-* . apply IHl; auto.
-  + clear H H0 H2. destruct path. revert v H1. induction l; intros.
-    - simpl in H1. unfold good_path. simpl. auto.
-    - rewrite valid_path_cons_iff in H1. destruct H1 as [? [? ?]]. simpl in H. subst v. unfold strong_evalid in H0. simpl in H0.
+    + unfold strong_evalid in *. simpl. unfold predicate_evalid, predicate_vvalid. subst v. simpl in H2. hnf in H2. rewrite Forall_forall in H2. destruct H2.
+      assert (In a (a :: l)) by apply in_eq. specialize (H2 _ H3). intuition.
+    + apply IHl; auto. apply path_prop_tail in H2. unfold ptail in H2. apply H2.
+  - split; auto. clear - H0. destruct path as [v l]. revert v H0. induction l; intros. 1: simpl in *; auto. rewrite pfoot_cons in H0 |-* . apply IHl; auto.
+  - clear H H0 H2. destruct path. revert v H1. induction l; intros.
+    + simpl in H1. unfold good_path. simpl. unfold path_prop.
+      unfold predicate_vvalid in H1. simpl. destruct H1. split; auto.
+    + rewrite valid_path_cons_iff in H1. destruct H1 as [? [? ?]]. simpl in H. subst v. unfold strong_evalid in H0. simpl in H0.
       unfold predicate_vvalid, predicate_evalid in H0. intuition. clear H6 H7. specialize (IHl _ H1).
       unfold predicate_subgraph in IHl; simpl in IHl. destruct IHl. split.
       * rewrite valid_path_cons_iff. do 2 (split; auto). hnf. auto.
-      * simpl. hnf. rewrite Forall_forall. intros. simpl in H7. destruct H7. 1: subst; intuition.
+      * simpl. hnf. rewrite Forall_forall. simpl. split; auto. intros.
+        simpl in H7. destruct H7. 1: subst; intuition.
         hnf in H6. destruct l. 1: inversion H7. hnf in H6. rewrite Forall_forall in H6. apply H6; auto.
 Qed.
 
@@ -234,9 +236,11 @@ Section IS_PARTIAL_GRAPH.
         assert (strong_evalid g1 a) by (destruct H2; simpl in H5; destruct p; intuition). destruct H5 as [? [? ?]]. assert (dst g1 a = dst g2 a) by (apply H4; auto).
         rewrite <- H8. apply IHp; auto. apply valid_path_cons in H2. auto.
     + apply is_partial_graph_valid_path with g1; auto.
-    + destruct p; simpl in H3 |-* ; auto. unfold path_prop' in H3 |-* . rewrite Forall_forall in H3 |-* . intros. specialize (H3 _ H4).
-      destruct H as [? [? [? ?]]]. pose proof (valid_path_strong_evalid _ _ _ _ H2 H4). destruct H8 as [? [? ?]].
-      assert (src g1 x = src g2 x) by (apply H6; auto). assert (dst g1 x = dst g2 x) by (apply H7; auto). rewrite <- H11. rewrite <- H12. auto.
+    + unfold path_prop in *. simpl fst in *. simpl snd in *. destruct H3. split; auto.
+      rewrite Forall_forall in H4 |-* . intros. specialize (H4 _ H5).
+      destruct H as [? [? [? ?]]]. pose proof (valid_path_strong_evalid _ _ _ _ H2 H5).
+      destruct H9 as [? [? ?]]. assert (src g1 x = src g2 x) by (apply H7; auto).
+      assert (dst g1 x = dst g2 x) by (apply H8; auto). rewrite <- H12, <- H13. easy.
   Qed.
 
   Lemma is_partial_graph_reachable_by: forall (g1 g2: PreGraph V E) (n: V) (P: Ensemble V) (n': V),

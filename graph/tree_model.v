@@ -327,8 +327,11 @@ Section TREE_DEF.
 
     Lemma is_tree_not_to_root: forall root v x, is_tree G root -> G |= root ~> v -> reachable G v x -> x <> root.
     Proof.
-      intros. destruct H0 as [? [? ?]]. assert (reachable G root root) by (apply reachable_refl; auto). specialize (H _ H4).
-      destruct H as [p [? ?]]. assert (G |= (root, nil) is root ~o~> root satisfying (fun _ => True)) by (split; split; simpl; hnf; auto). pose proof (H5 _ H6).
+      intros. destruct H0 as [? [? ?]]. assert (reachable G root root) by
+          (apply reachable_refl; auto). specialize (H _ H4). destruct H as [p [? ?]].
+      assert (G |= (root, nil) is root ~o~> root satisfying (fun _ => True)) by
+          (split; split; simpl; auto; red; simpl; split; intros; auto).
+      pose proof (H5 _ H6).
       intro. subst x. destruct H1 as [path' ?]. rewrite step_spec in H3. destruct H3 as [e [? [? ?]]].
       assert (G |= (root, e :: nil) is root ~o~> v satisfying (fun _ => True)) by
           (split; split; simpl; intuition; hnf; [subst root v | rewrite Forall_forall; intros]; auto).

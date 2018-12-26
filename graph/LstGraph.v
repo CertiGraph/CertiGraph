@@ -130,7 +130,7 @@ Section LstGraph.
       split; split; auto.
       - simpl. unfold strong_evalid. rewrite H0. pose proof (vvalid_src_evalid x H). destruct H3. rewrite H3.
         split; [|split; [|split]]; auto. apply reachable_head_valid in H1. auto.
-      - simpl. unfold path_prop'. rewrite Forall_forall. intros; auto.
+      - red. rewrite Forall_forall. split; intros; auto.
     } assert (reachable g pa x) by (apply reachable_trans with y; auto). destruct H4 as [ppa ?].
     pose proof (reachable_by_path_merge _ _ _ _ _ _ _ H3 H4). apply no_loop_path in H5. unfold path_glue in H5. simpl in H5. inversion H5.
   Qed.

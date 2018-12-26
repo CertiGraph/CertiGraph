@@ -984,7 +984,7 @@ Module SIMPLE_SPANNING_TREE.
               destruct H13 as [[? ?] [? ?]]. split; split; auto.
               * rewrite pfoot_cons in H0; auto.
               * apply valid_path_cons in H1; auto.
-              * hnf.  destruct path; auto. hnf; rewrite Forall_forall; intros; auto.
+              * hnf. rewrite Forall_forall. split; intros; auto.
             - apply H19. split; auto.
         }
         destruct x'; destruct p; auto.

@@ -215,7 +215,8 @@ Section LIST_MODEL.
           } subst v. simpl in H8. destruct H8.
           1: {
             subst d. destruct H0 as [pf [? ?]]. apply H8 in H5. clear H8. destruct H5 as [pr [[? ?] ?]].
-            assert (G |= (root, nil) is root ~o~> root satisfying (fun _ => True)) by (split; split; simpl; auto).
+            assert (G |= (root, nil) is root ~o~> root satisfying (fun _ => True)) by
+                (split; split; simpl; auto; red; simpl; auto).
             destruct H7 as [[vr ps] ?]. destruct H6 as [? [? ?]]. rewrite step_spec in H12. destruct H12 as [e [? [? ?]]].
             assert (G |= (s, e :: nil) is s ~o~> root satisfying (fun _ => True)). {
               split; split; simpl; auto.
