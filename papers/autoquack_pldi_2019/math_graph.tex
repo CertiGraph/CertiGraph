@@ -132,14 +132,9 @@ properties to LabeledGraphs (\ref{subsec:graphplugins}). %and will be discussed 
 \end{figure}
 
 \vspace{-0.75ex}
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%%%%% Edit 1
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%%%%% Edit 1: Qinxiang's proposal starts
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \iftrue
 \paragraph{PreGraph.} A PreGraph is a hextuple $(VT, ET, V, E, s, d)$, where $VT$ 
-and $ET$ are the underlying carrier sets of vertices and edges and $V$ and $E$, 
+and $ET$ are the underlying carrier sets of vertices and edges, and $V$ and $E$, 
 subsets $VT$ and $ET$ respectively, allow for a notion of \emph{validity} in the 
 graph. For instance, in Figure \ref{fig:pregraph}, valid vertices are in $V$ and 
 invalid vertices are in $VE \smallsetminus V$ but, importantly, 
@@ -166,9 +161,9 @@ PreGraph's ability to reason about missing vertices and edges is convenient when
 verifying real programs. For instance, in \ref{blah} we argued for a condition of 
 congruence on $\gamma \smallsetminus (v \in \gamma \mid \m{x} 
 \mathrel{{\stackrel{\gamma~}{\leadsto^{\star}}}} \m{v})$. 
-Even if $\gamma$ satisfied some stronger notion of
+Even if $\gamma$ were to satisfy some stronger notion of
 ``well-formed'', in the sense that valid vertices have only valid edges and 
-vice versa, subtracting some vertices in this way may make it ill-formed 
+vice versa, subtracting some vertices in this way may well make $\gamma$ ill-formed 
 by leaving dangling edges pointing to recently-removed vertices. 
 A PreGraph is more accommodating:
 it produces a fresh PreGraph after this selective subtraction 
