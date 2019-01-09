@@ -1,0 +1,24 @@
+GC talking points
+
+don't focus too much on the GC as a difficult example
+basically our techniques rose to the occasion and got this done
+
+overall purpose, outermost spec
+	context of CertiCoq, generational gc in the spirit of OCaml
+	state and explain the spec for g_c
+how forward works
+	its spec (half of the spec, on the heap only)
+boundary issues
+	code snippet of pointer subtraction 
+	explanation
+explain is_from and int_or_ptr. 
+	IF really necessary in any GC
+	IOP is not necessary, but alternatives aren't realy much better. 
+		it's not uncommon to use this trick. see AH's email re: this. 
+	put in the code for these. explain where they're defined and undefined. 
+	explain where we need them defined. 
+	explain the semantics we need.
+	have brought these issues to XLeroy. CC is satisfying the invariants for IsFrom, and we are hopeful that IF matches CC's external function specs. 
+	TIOP is harder: pointer injections can have odd offsets. see XL email.
+	... we don't actually have XL's issues in the GC. we are using them on malloc-ed spaces. we will have even boundaries and we'll be fine. but keeping track of this is hard and may require tweaks to compcert. in communication and working on it.
+	althougth CC happens to satisfy IF, there are old/obscure archis where IF may not be proveable (segmented memory machines etc) 

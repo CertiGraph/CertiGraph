@@ -9,32 +9,128 @@ reuse from our prior certifications, and when we stated
 new lemmas for the GC, we filed them away at the appropriate
 ``layers'' so that they may be reused in the future.}
 
+% The last line above is currently false.
+% We cannot edit the code to make it 100% true, 
+% but the plan is to incorporate GCGraph's special
+% properties into a soundness condition that will be
+% added atop a LiMaFin-type LabeledGraph.
+% Having done that, I'll weaken the last line
+% above to match the actual work.
+
 \subsection{Background}
 \label{sec:gcbackground}
-The CertiCoq Project compiles Gallina code to CompCert 
-C light, and then trusts CompCert to carry the compilation 
-through to assembly. In order to support Gallina's presumption of
+
+% My goal here is to start with a broad overview
+% and then work my way down to forward
+% at the end of this subsection I want it to be pretty
+% clear that the whole game is just a series of calls
+% to forward.
+% This will set us up nicely for the decorated proof of
+% forward in the next subsection.
+
+The CertiCoq Project compiles Gallina code into CompCert 
+C light, and then uses CompCert to compile C light
+into assembly. In order to support Gallina's presumption of
 infinite heap memory, CertiCoq provides garbage collection at
-the C light level. Accordingly, they presented us with a 
-generational copying garbage collector written in C light. 
-The GC, which is in the spirit of the OCaml Garbage Collector,
-is realistic, supporting variable-sized words, 12 generations... 
+the C light level. Their generational copying garbage 
+collector is written in C light, and is realistic, 
+supporting variable-sized words, 12 generations... 
+% Leaving this slot open for the time being, so
+% we can highlight those features that we will discuss 
+% the most in the technical part later.
+Since CertiCoq aims to be end-to-end certified, the GC 
+also needs certification.
 
 The GC's client program, also called the mutator, controls
-an array of arguments that it cares about. These arguments may
-point at memory blocks in the heap; those blocks, in turn, 
-may point at other blocks in the heap, and so on. By 
-maintaining links to certain blocks in this way, the mutator 
-indicates that it cares about those blocks. When the mutator
-runs out of heap space, it calls the garbage collector 
-to free up memory. The GC is allowed to modify the heap as
-it sees fit, provided... 
+an array of arguments that it cares about. 
+% Looking for better term than "cares about"
+These arguments may point at memory blocks 
+in the heap, and, recursively, the items in those
+memory blocks may point at other blocks in the heap. 
+By maintaining direct and indirect links to
+blocks via this internal ``web of care'', 
+% I'm a little iffy about introducing this additional
+% analogy, but then again I don't want to introduce
+% the analogy of a graph right away. That could be seen
+% as a huge conceptual leap, and a skipped step. 
+the mutator indicates that it 
+cares about those blocks, and reserves the right to 
+access them for reading or writing. 
+% Maybe add a line about how the mutator can "drop"
+% a block, thus showing that it won't need it anymore?
 
-A call to the garbage collector is actually just a series of 
-calls between generations...
+When the mutator runs out of heap space, 
+it calls the garbage collector to free up memory. 
+The GC is allowed to modify the heap as
+it sees fit, with the condition that it not damage the 
+mutator's web of care. By this we mean that the same items 
+should be accessible from the mutator's arguments
+array before and after the collection, and they 
+should be reached from the arguments array by 
+following similar links as before. 
+Other features of the original web, such as where 
+items were situated in the heap, may be changed. 
+In SECTION, we will explain how we abstracted this
+web into a mathematical graph, where preserving the 
+web of care is analogous to showing graph isomorphism.
 
-{\color{blue}Wondering about the level of detail we want to go
-into with the above to paragraphs.}
+``We thus say that the arguments array is owned by the 
+mutator, but the heap is owned by the GC.''
+
+\subsection{Structure of the Program}
+\label{sec:gcstructure}
+% maybe a diagram showing how everythign calls forward? 
+% I sketched one before, can show you sometime.
+Ours is a generational copying garbage collector, which
+means that it leans on the empirical observation that
+new blocks often need to be collected soon after their
+allocation, while blocks that survive this initial
+culling tend to live for much longer.
+% Hm, it would take about another 100 words to explain 
+% this fully. I'm wondering if we can elide it, 
+% treating the above as adequate revision, and assuming 
+% they know the rest of the story.
+
+The mutator only ever allocates new memory in the first, 
+smallest generation of heap. This generation is thus 
+called the nursery. On finding that the nursery is full, 
+the mutator calls the garbage collector to free up space.
+The main GC function triggers the collection of the nursery
+into the second generation, which is twice in size. These generations
+are called the \emph{from} and \emph{to} generations respectively.
+To trigger a collection means to examine the elements 
+in \emph{from}, see if they are accessible from the mutator's
+args array either directly or indirectly, and, if they are, 
+copy them over to \emph{to}. This copying is achieved over a few steps, 
+and we will examine these shortly, but the larger picture is that 
+everything of import in \emph{from} has been copied to \emph{to}, 
+and so \emph{from} can safely be reset. The mutator will now have 
+enough room for the allocation that it was trying to perform.
+
+One subtlety in this discussion is that we enjoyed a 
+guarantee that \emph{to} had enough room to accept 
+\emph{from}'s items. In the (unlikely) worst case, 
+\emph{all} of \emph{from}'s data was copied over to \emph{to}, 
+so in other words \emph{to} could not have been more than 
+half full. We relied on this guarantee before this collection, 
+and we must ensure we will enjoy it the next time a collection 
+is required. So, in case the collection of the nursery caused
+the second generation to become more than half full, we trigger
+a collection of the second generation to the third. This makes 
+both the first and second generations empty, thus giving us our 
+guarantee trivially. It should be 
+clear to see that this may also trigger further collections in 
+a cascade effect. 
+
+Armed with an understanding of how the overall collection 
+works, we move one level deeper and examine how we identify and 
+copy those items in a \emph{from} generation that are reachable
+from the args array tot he \emph{to} generation.
+
+% 150 or so words that explain forward_roots and do_scan.
+% End goal is to convince them that everything relies on forward, 
+% and forward is all that remains to be explained.
+% I can do this writing, just taking a break.
 
 \subsection{Forward}
 \label{sec:gcforward}

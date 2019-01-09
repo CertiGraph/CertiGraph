@@ -60,7 +60,8 @@ Proof.
       eapply Mem.valid_pointer_extends; eauto. }
     split. eapply Mem.valid_pointer_extends; eauto.
     tauto.
-  - intros. exists f, vres, m1'. destruct H0 as [? [? ?]]. split.
+  - intros. exists f, vres, m1'. destruct H0 as [? [? ?]]. (* subst m2 t. *)
+    split.
     2: {
       split.
       - do 4 (destruct vargs; try destruct v; try contradiction). inversion H2. inversion H7. inversion H9.
@@ -79,24 +80,59 @@ Proof.
         inversion H29; subst.
     clear H2 H7 H9 H17 H19 H27 H29.
     destruct H4 as [n [? [? [? [? [? [? ?]]]]]]].
-    subst. exists n. rewrite H22 in H12; inversion H12.
+    subst. exists n. rewrite H22 in H12; inversion H12. subst.
+    clear H12.
     split3; [| |split3; [| |split3]]; trivial.
-    5: { destruct H7.
-         - destruct H3 as [? [? ?]]; subst.
-           rewrite H32 in H22; inversion H22.
-           left; split3; trivial. admit.
-         - destruct H3; subst; destruct H3.
-           + right; split; trivial; left. admit.
-           + right; split; trivial. right. destruct H3; split.
-             subst. rewrite H32 in H22; now inversion H22.
-             destruct H7; [left|right].
-             * admit.
-             * admit.
-    }
-    + admit.
-    + admit.
-    + admit.
-    + admit.
+    + destruct H1 as [? ? ? ? ? ?].
+      specialize (mi_representable b0 b3 delta (* (Ptrofs.add i (Ptrofs.repr n)) *) i H22). 
+      destruct mi_representable as [Hx Hy]. 
+      1: left; apply Mem.perm_cur_max, Mem.valid_pointer_nonempty_perm;
+        destruct H5 as [_ [_ ?]]; assert (0 <= 0 < n) by omega;
+        specialize (H1 0 H3);
+        now replace (Ptrofs.unsigned i + 0) with (Ptrofs.unsigned i) in H1 by omega.
+      destruct Hy as [_ Hy].
+      unfold Ptrofs.add. repeat rewrite Ptrofs.unsigned_repr_eq.
+      replace Int.modulus with Ptrofs.modulus by now unfold Archi.ptr64; apply Ptrofs.modulus_eq32.
+      admit.
+    + unfold Ptrofs.add. rewrite <- H4.
+      rewrite <- Ptrofs.add_unsigned.
+      (* similar now? *)
+      admit.
+    + destruct H1 as [? ? ? ? ? ?].
+      unfold valid_block in *.
+      destruct H5 as [? [? ?]].
+      split3; trivial.
+      * admit.
+      * intros. admit.
+    + admit. (* very similar, grr *)
+    + destruct H7.
+      * destruct H3 as [? [? ?]].
+        subst b0. rewrite H22 in H32; inversion H32.
+        left. split3; trivial. subst delta1.
+        clear -H7.
+        unfold Ptrofs.add. repeat rewrite Ptrofs.unsigned_repr_eq. admit.
+      * destruct H3. destruct H3.
+        -- right. split; trivial.
+           pose proof block_eq_dec b3 b7. destruct H8; [|left; trivial].
+           right. split; trivial.
+           admit. (* easy, just treat as Zs *)
+        -- destruct H3. subst b0. rewrite H22 in H32; inversion H32.
+           right. split; trivial. right; split; trivial.
+           admit. (* again, just treat as Zs *)
+  
+  (* unsigned_repr_range: *)
+  (*   forall i : Z, 0 <= i -> 0 <= Ptrofs.unsigned (Ptrofs.repr i) <= i *)
+
+(* Mem.valid_pointer_nonempty_perm: *)
+(*   forall (m : mem) (b : block) (ofs : Z), *)
+(*     Mem.valid_pointer m b ofs = true <-> Mem.perm m b ofs Cur Nonempty *)
+                                                  
+(* Mem.perm_cur_max: *)
+(*   forall (m : mem) (b : block) (ofs : Z) (p : permission), *)
+(*   Mem.perm m b ofs Cur p -> Mem.perm m b ofs Max p *)
+
+      
+
 (*      destruct H7.
       * destruct H7 as [? [? ?]].
         subst. rewrite H32 in H12; inversion H12.
