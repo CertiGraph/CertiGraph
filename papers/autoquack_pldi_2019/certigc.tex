@@ -79,7 +79,7 @@ mutator, but the heap is owned by the GC.''
 
 \subsection{Structure of the Program}
 \label{sec:gcstructure}
-% maybe a diagram showing how everythign calls forward? 
+% maybe a diagram showing how everything calls forward? 
 % I sketched one before, can show you sometime.
 Ours is a generational copying garbage collector, which
 means that it leans on the empirical observation that
@@ -93,7 +93,7 @@ culling tend to live for much longer.
 
 The mutator only ever allocates new memory in the first, 
 smallest generation of heap. This generation is thus 
-called the nursery. On finding that the nursery is full, 
+called the nursery. If it finds that the nursery is full, 
 the mutator calls the garbage collector to free up space.
 The main GC function triggers the collection of the nursery
 into the second generation, which is twice in size. These generations
@@ -103,15 +103,14 @@ in \emph{from}, see if they are accessible from the mutator's
 args array either directly or indirectly, and, if they are, 
 copy them over to \emph{to}. This copying is achieved over a few steps, 
 and we will examine these shortly, but the larger picture is that 
-everything of import in \emph{from} has been copied to \emph{to}, 
-and so \emph{from} can safely be reset. The mutator will now have 
-enough room for the allocation that it was trying to perform.
+everything of import in \emph{from} gets copied to \emph{to}, 
+and so \emph{from} can safely be reset. 
 
-One subtlety in this discussion is that we enjoyed a 
+An important subtlety here is that we enjoyed a 
 guarantee that \emph{to} had enough room to accept 
-\emph{from}'s items. In the (unlikely) worst case, 
+\emph{from}'s items. In the (empirically improbable) worst case, 
 \emph{all} of \emph{from}'s data was copied over to \emph{to}, 
-so in other words \emph{to} could not have been more than 
+so \emph{to} could not have been more than 
 half full. We relied on this guarantee before this collection, 
 and we must ensure we will enjoy it the next time a collection 
 is required. So, in case the collection of the nursery caused
@@ -120,26 +119,92 @@ a collection of the second generation to the third. This makes
 both the first and second generations empty, thus giving us our 
 guarantee trivially. It should be 
 clear to see that this may also trigger further collections in 
-a cascade effect. 
+a cascade effect. Once this cascade (if any) is over, we
+return control to the mutator, which goes ahead with 
+the allocation that it was trying to perform in the nursery.
 
 Armed with an understanding of how the overall collection 
-works, we move one level deeper and examine how we identify and 
+works via two-generational collections, we move one 
+level deeper and examine how we identify and 
 copy those items in a \emph{from} generation that are reachable
-from the args array tot he \emph{to} generation.
+from the args array to the \emph{to} generation.
 
 % 150 or so words that explain forward_roots and do_scan.
 % End goal is to convince them that everything relies on forward, 
 % and forward is all that remains to be explained.
-% I can do this writing, just taking a break.
+
+We start at the mutator-owned args array, whose elements
+are either data, or pointers that point at blocks in the 
+heap. We do not touch the data or the pointers that point
+anywhere but the \emph{from} generation. 
+For each pointer that points into \emph{from}, we copy its
+target block to \emph{to}, simply adding it in its entirety 
+after \emph{to}'s last-used spot, which is called \emph{next}. 
+% need better word than "spot" above
+% should I mention the distinguished pointer that points at the copy?
+
+This operation only takes care of the blocks that 
+the args array was pointing at directly, so we still have work
+to do. The only way to get to an indirect 
+block is via one of the direct blocks, and, conveniently, we have
+just finished copying the direct blocks into a neat contiguous
+array. We start at the old \emph{next} in \emph{to}
+and work our way through the freshly copied blocks, performing
+the same actions as before: ignoring data and pointers to 
+places other than \emph{from}, and copying over any objects in
+\emph{from} that are pointed at from within \emph{to}. In
+the \emph{to} generation, these newly copied blocks 
+simply get stacked atop our first batch of copied blocks. 
+% need better phrasing above
+Of course, the second batch of copied blocks may still
+have pointers into \emph{from}: indeed, there is no limit to the 
+``depth'' of the web of care. However, thanks to our systematic
+copying strategy, it is very easy to take care of indirect
+blocks at any depth. We simply keep scanning ``upwards'' in 
+\emph{to}, copying over blocks from \emph{from} as necessary, 
+until the scan reaches the... blah. 
+% a little hard to phrase this last bit...
+This completes a collection 
+from \emph{from} to \emph{to}, copying all blocks that lived
+in \emph{from} and were of interest to the mutator. 
+\emph{from} may now be reset.
+
+A good question at this juncture is why this rather selective scan 
+of the args array and the heap is good enough to collect \emph{from}. 
+We definitely collected every direct block by scanning the args array,
+but what of the indirect blocks? Couldn't there be valid indirect links
+either from the portion of \emph{to} below \emph{next}, 
+or from other generations altogether? 
+
+Both of these turn out to be impossible because the mutator
+is a purely functional language. The heap is chronologically
+faithful, in that higher-indexed generations host
+objects that were allocated earlier. Because
+of the immutability of objects in a purely functional language, 
+it is impossible for objects to point ``backwards'' to 
+a younger generation, as the older object would not have
+had known about the younger during its allocation, and could not 
+have been modified after its allocation. The generations 
+younger than \emph{from} can point into \emph{from} during 
+normal mutator activity, but this is
+impossible at the time of collection 
+because \emph{from} is only ever collected if it is either
+the nursery or if a cascade effect has caused all generations younger
+than it to be collected and reset. 
+In fact, the only time we ever see backwards pointers
+is when we create (and quickly fix) them during garbage collection, 
+as described earlier.
 
 \subsection{Forward}
 \label{sec:gcforward}
-The Garbage Collector's main workhorse is the function \emph{forward}.
-Given a pointer to a block that is in the \emph{from} generation, 
-it makes a copy of that block in the \emph{to} generation.
-{\color{blue}Maybe at this point we could dedicate one or 
-two sentences to explaining that the whole dang opera is really just 
-calls to \emph{forward}.}
+The garbage collector's main workhorse is the function \emph{forward}.
+Whenever we have mentioned any kind of copying in the preceeding 
+discussion, we have always meant a call to \emph{forward}. 
+Given a pointer, it checks that the pointer's target is a block
+in the \emph{from} generation, and, if so, 
+makes a copy of that block in the \emph{to} generation. The function 
+is robust and versatile, and gets called in a variety of different 
+situations... 
 
 Figure (blah) shows a decorated proof of the forward function.
 The function's behavior is subtly different depending on 
