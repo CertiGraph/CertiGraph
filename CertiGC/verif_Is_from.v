@@ -90,13 +90,23 @@ Proof.
         destruct H5 as [_ [_ ?]]; assert (0 <= 0 < n) by omega;
         specialize (H1 0 H3);
         now replace (Ptrofs.unsigned i + 0) with (Ptrofs.unsigned i) in H1 by omega.
-      destruct Hy as [_ Hy].
-      unfold Ptrofs.add. repeat rewrite Ptrofs.unsigned_repr_eq.
       replace Int.modulus with Ptrofs.modulus by now unfold Archi.ptr64; apply Ptrofs.modulus_eq32.
-      admit.
-    + unfold Ptrofs.add. rewrite <- H4.
-      rewrite <- Ptrofs.add_unsigned.
-      (* similar now? *)
+      destruct Hy as [_ Hy].
+      replace Ptrofs.max_unsigned with (Z.pred Ptrofs.modulus) in Hy by rep_omega.
+      rewrite <- Z.lt_le_pred in Hy.
+      unfold Ptrofs.add.
+      repeat rewrite Ptrofs.unsigned_repr_eq.
+      admit. (* IDK if this is true. *)
+    + unfold Ptrofs.add; rewrite <- H4, Z.add_shuffle0.
+      repeat rewrite Ptrofs.unsigned_repr_eq.
+      (* hmmm. *) 
+      (* do we know that i+delta is less than modulus? *)
+      destruct H5 as [? [? ?]].
+      specialize (H8 delta).
+      (*
+      assert (n + Ptrofs.unsigned (Ptrofs.repr delta) =
+              Ptrofs.unsigned (Ptrofs.repr delta) + n) by omega.
+      *)      
       admit.
     + destruct H1 as [? ? ? ? ? ?].
       unfold valid_block in *.
