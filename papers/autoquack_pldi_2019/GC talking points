@@ -4,12 +4,13 @@ don't focus too much on the GC as a difficult example
 basically our techniques rose to the occasion and got this done
 
 overall purpose, outermost spec
-	context of CertiCoq, generational gc in the spirit of OCaml
-	state and explain the spec for g_c
+	✓ context of CertiCoq, generational gc in the spirit of OCaml
+	? state and explain the spec for garbage_collect
+		✓ and how forward is the beast of burden
 how forward works
-	its spec (half of the spec, on the heap only)
+	? its spec 
 boundary issues
-	code snippet of pointer subtraction 
+	? code snippet of pointer subtraction 
 	explanation
 explain is_from and int_or_ptr. 
 	IF really necessary in any GC
