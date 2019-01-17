@@ -2,7 +2,7 @@ In order to verify the functional correctness of graph
 algorithms, we need to first reason about mathematical graphs.
 Our graph library is powerful and expressive, allowing 
 us to verify realistic algorithms that work in an end-to-end
-system. However, its more distinctive property is its modularity, 
+system. One of its strengths is its modularity, 
 which allows us to intuitively reuse and compose our proofs when
 mechanising our verifications. In this section, we present our 
 mathematical graph framework with an emphasis on this modularity. 
@@ -78,6 +78,7 @@ than focusing on the nitty-gritty details.} % end hide
 \vspace{1ex}
 \caption{Structure of the Mathematical Graph Library}\label{fig:graphs}
 \end{figure}
+% move to its own file?
 
 Figure~\ref{fig:graphs} shows the architecture of our mathematical graph library. 
 \hide{The most basic kind of graph is PreGraph, out of which we build 
@@ -130,14 +131,15 @@ properties to LabeledGraphs (\ref{subsec:graphplugins}). %and will be discussed 
 \vspace{1ex}
 \caption{A PreGraph with valid and invalid vertices and edges.}\label{fig:pregraph}
 \end{figure}
+% move to its own file?
 
 \vspace{-0.75ex}
 \iftrue
 \paragraph{PreGraph.} A PreGraph is a hextuple $(VT, ET, V, E, s, d)$, where $VT$ 
 and $ET$ are the underlying carrier sets of vertices and edges, and $V$ and $E$, 
-subsets $VT$ and $ET$ respectively, allow for a notion of \emph{validity} in the 
-graph. For instance, in Figure \ref{fig:pregraph}, valid vertices are in $V$ and 
-invalid vertices are in $VE \smallsetminus V$ but, importantly, 
+subsets $VT$ and $ET$ respectively, introduce the notion of \emph{validity} in the 
+graph. In Figure \ref{fig:pregraph}, valid vertices are in $V$ and 
+invalid vertices are in $VE \smallsetminus V$. Importantly, 
 both kinds are legally part 
 of the PreGraph. Finally, $s$ and $d$ are functions that map 
 an edge to its source and destination respectively; {\color{magenta}this model means 
@@ -149,6 +151,8 @@ vertices and edges in an arbitrary configuration.
 
 Many graph concepts such as \emph{path}, \emph{reachability}, and \emph{subgraph} are 
 defined on PreGraphs. In \S\ref{blah} we saw \emph{reachable}, written 
+$\m{a} \mathrel{{\stackrel{\gamma~}{\leadsto^{1}}}} \m{b}$. It is 
+defined as 
 $\m{a} \mathrel{{\stackrel{\gamma~}{\leadsto^{1}}}} \m{b} \defeq a \in V(\gamma) /| 
 b \in V(\gamma) /| \exists e.~ e \in E(\gamma) /| s (e,\gamma) = a /| 
 d (e,\gamma) = b$. 
@@ -161,11 +165,13 @@ PreGraph's ability to reason about missing vertices and edges is convenient when
 verifying real programs. For instance, in \ref{blah} we argued for a condition of 
 congruence on $\gamma \smallsetminus (v \in \gamma \mid \m{x} 
 \mathrel{{\stackrel{\gamma~}{\leadsto^{\star}}}} \m{v})$. 
-Even if $\gamma$ were to satisfy some stronger notion of
+Even if $\gamma$ itself satisfied some stronger notion of
 ``well-formed'', in the sense that valid vertices have only valid edges and 
-vice versa, subtracting some vertices in this way may well make $\gamma$ ill-formed 
+vice versa, subtracting some vertices may well make 
+$\gamma \smallsetminus (v \in \gamma \mid \m{x} 
+\mathrel{{\stackrel{\gamma~}{\leadsto^{\star}}}} \m{v})$ ill-formed 
 by leaving dangling edges pointing to recently-removed vertices. 
-A PreGraph is more accommodating:
+A PreGraph is more accommodating, since
 it produces a fresh PreGraph after this selective subtraction 
 and then allows us to go ahead and reason about congruence as we need to.
 
@@ -229,12 +235,17 @@ dangling edges pointing to the now-removed vertices of $\gamma_2$.
 \iftrue
 \paragraph{LabeledGraph.}
 A LabeledGraph is a PreGraph with the addition of \emph{labels} on 
-vertices, edges, and/or the graph as a whole. As shown in Figure~\ref{graphs}, a 
-LabeledGraph inherits any lemmas proved about its associated PreGraph. In addition, we 
-can define additional lemmas that use labels, \emph{e.g.} {add an integer label to 
-vertices denoting \emph{rank} and state a lemma that \texttt{find} does not alter
-any vertex's rank, or, more interestingly, add string labels to edges and reason 
-about a trie.}
+vertices, edges, and/or the graph as a whole. The need for such labels
+is fairly clear; the bare structure of a graph can only 
+contain so much information, and many classic graph problems 
+such as graph coloring, shortest path, and network flow rely on 
+additional information in the form of labels. In our architecture, a
+LabeledGraph inherits any lemmas proved about its associated PreGraph. 
+In addition, we can define additional lemmas that use labels, 
+\emph{e.g.} add an integer label, denoting \emph{rank} to 
+vertices and prove a lemma that running \texttt{find} does not alter
+any vertex's rank. 
+\hide{add string labels to edges and reason about a trie.}
 \fi
 % Anshuman's proposal ends
 
@@ -266,19 +277,36 @@ on LabeledGraphs.
 
 \vspace{-0.75ex}
 \paragraph{GeneralGraph.}
-A GeneralGraph augments a LabeledGraph by adding a soundness condition, indicated in 
-Figure~\ref{fig:graphs} by a dashed border. This soundness ``plugin'' makes 
-GeneralGraphs truly versatile: it allows us to state algorithm-specific properties 
+PreGraphs and LabeledGraphs are quite universal, and allow us 
+to state and prove useful lemmas that are true by virtue of the 
+way the graphs were set up. However, when proving the correctness
+of graph algorithms, we often need more specificity in our mathematical graphs
+so that we may model the real program's restrictions more closely. 
+For example, the graph used in Find earlier had the restriction 
+that each vertex have exactly one out-edge. 
+We achieve this using GeneralGraphs. 
+A GeneralGraph augments a LabeledGraph by adding a 
+``soundness condition'' plugin, indicated in 
+Figure~\ref{fig:graphs} by a dashed border. 
+This soundness condition can be arbitrarily complex, 
+and can thus specify arbitrary restrictions on the graph. 
+This is what makes GeneralGraphs truly versatile: 
+it allows us to state algorithm-specific properties 
 of any complexity on the graph, and then derive lemmas based on those properties.
+Thankfully, we do not need to state these complicated soundness 
+conditions afresh for each program that we verify. In the next section, 
+we explain how we enjoyed {\color{magenta}modularity} in this regard as well.
 
 \subsection{Composing Graph plugins}
 \label{subsec:graphplugins}
 
-We use Coq's typeclass system to manage our plugins smoothly, benefiting from
-the \emph{compositionality} of the system. If we have two properties, 
-each with its associated proved lemmas, we can combine them, {\color{magenta}easily} 
-prove the {\color{magenta}emergent} lemmas that result from the combination, and then 
-treat the new combination as a new plugin. 
+We use Coq's typeclass system to manage our soundness plugins smoothly, 
+benefiting from the \emph{compositionality} of the system. 
+If we have two soundness properties, each with its associated proved lemmas, 
+we can combine them, 
+prove the {\color{magenta}emergent} lemmas that result from the combination
+{\color{magenta}with relative ease}, and then 
+treat the combination as a new plugin. 
 
 Consider the following oft-used graph properties:
 
@@ -334,19 +362,31 @@ vertex has one out edge and there are no loops.
 \end{figure}
 } % end hide
 
-Now we can, for instance, compose \p{LstGraph}, \p{MathGraph}, and \p{FiniteGraph} 
-together into a new plugin called \p{LiMaFin}, which is the 
-actual soundness condition used to verify the program in Figure~\ref{fig:findsketch}.
+As a first step, we can prove many general, reusable lemmas
+about these properties. However, this is still too general for 
+most real programs. The next step is compose these plugins to 
+arrive at a more specific set of restrictions that more closely 
+models our particular graph. 
+For instance, we can compose 
+\p{LstGraph}, \p{MathGraph}, and \p{FiniteGraph} 
+together into a new plugin called \p{LiMaFin}, which, incidentally, is the 
+soundness condition used to verify Find in Figure~\ref{fig:findsketch}.
 In our verification of Mark~\ref{blah}, we use a similar soundness condition
 \p{BiMaFin}, which uses \p{BiGraph} instead of \p{LstGraph}. 
-Composing plugins in this way is much more elegant than creating custom plugins
-for each new algorithm as it promotes a natural reuse of graph 
+The commonalities and differences between \p{LiMaFin} 
+and \p{BiMaFin} are readily apparent from their construction.
+Composing plugins in this way is much more elegant than creating a
+custom plugin for each new algorithm as it promotes the natural reuse of graph 
 properties across algorithms.
 
-{\color{blue} Maybe move this somewhere.} Coq also handles our notion of inherited 
-lemmas seamlessly: as described earlier,
-we use PreGraph properties such as reachability and selective subtraction on a 
-\p{LiMaFin} GeneralGraph and trust Coq to insert the appropriate coercions. 
+{\color{blue} Maybe move this somewhere.} 
+Coq also handles our notion of inherited 
+lemmas seamlessly: in our verfication of Find, we 
+work directly with a \p{LiMaFin} GeneralGraph, but, as 
+we saw, we still use
+PreGraph properties such as reachability and selective subtraction 
+on this GeneralGraph. Coq handles the appropriate coercions with 
+remarkable elegance.
 
 %% We can apply our framework to define related structures such as DAGs and trees.
 %% For example, a DAG has the additional property that for any $x$ and $y$,

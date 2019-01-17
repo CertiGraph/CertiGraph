@@ -101,8 +101,8 @@ Proof.
       repeat rewrite Ptrofs.unsigned_repr_eq.
       (* hmmm. *) 
       (* do we know that i+delta is less than modulus? *)
-      destruct H5 as [? [? ?]].
-      specialize (H8 delta).
+      (* destruct H5 as [? [? ?]]. *)
+      (* specialize (H8 delta). *)
       (*
       assert (n + Ptrofs.unsigned (Ptrofs.repr delta) =
               Ptrofs.unsigned (Ptrofs.repr delta) + n) by omega.
@@ -115,11 +115,34 @@ Proof.
       * admit.
       * intros. admit.
     + admit. (* very similar, grr *)
-    + destruct H7.
-      * destruct H3 as [? [? ?]].
+    +
+      destruct H7. destruct H3 as [? [? ?]].
+      destruct H1 as [? ? ? ? ? ?].
+      assert (Hz := mi_representable).
+      specialize (Hz b0 b3 delta i H22).
+      destruct Hz as [_ Hy1].
+      1: left; apply Mem.perm_cur_max, Mem.valid_pointer_nonempty_perm;
+        destruct H5 as [_ [_ ?]]; assert (0 <= 0 < n) by omega.
+          specialize (H1 0 H5).
+          now replace (Ptrofs.unsigned i + 0) with (Ptrofs.unsigned i) in H1 by omega.
+      assert (Hz := mi_representable).
+      specialize (Hz b0 b3 delta i1 H22).
+      destruct Hz as [_ Hy2].
+      1: left; apply Mem.perm_cur_max, Mem.valid_pointer_nonempty_perm;
+        destruct H5 as [_ [_ ?]]; assert (0 <= 0 < n) by omega;
+          specialize (H1 0 H5). now rewrite H3.
+      assert (Hz := mi_representable).
+      specialize (Hz b0 b3 delta i0 H22).
+      destruct Hz as [_ Hy3].
+      1: left; apply Mem.perm_cur_max, Mem.valid_pointer_nonempty_perm;
+        destruct H5 as [_ [_ ?]]; assert (0 <= 0 < n) by omega;
+          specialize (H1 0 H5). now rewrite H3.
+
+
+      * destruct H1 as [? [? ?]].
         subst b0. rewrite H22 in H32; inversion H32.
         left. split3; trivial. subst delta1.
-        clear -H7.
+        clear -H7 Hy.
         unfold Ptrofs.add. repeat rewrite Ptrofs.unsigned_repr_eq. admit.
       * destruct H3. destruct H3.
         -- right. split; trivial.

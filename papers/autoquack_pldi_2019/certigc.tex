@@ -188,12 +188,12 @@ have been modified after its allocation. The generations
 younger than \emph{from} can point into \emph{from} during 
 normal mutator activity, but this is
 impossible at the time of collection 
-because \emph{from} is only ever collected if it is either
+because \emph{from} is only ever collected either if it is
 the nursery or if a cascade effect has caused all generations younger
 than it to be collected and reset. 
-In fact, the only time we ever see backwards pointers
+``In fact, the only time we ever see backwards pointers
 is when we create (and quickly fix) them during garbage collection, 
-as described earlier.
+as described earlier.''
 
 \subsection{Forward}
 \label{sec:gcforward}
