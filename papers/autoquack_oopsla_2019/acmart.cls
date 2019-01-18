@@ -209,7 +209,7 @@ Computing Machinery]
   \fi
 \fi
 \ClassInfo{\@classname}{Using fontsize \ACM@fontsize}
-\LoadClass[\ACM@fontsize, reqno, tbtags]{amsart}
+\LoadClass[\ACM@fontsize, reqno]{amsart}
 \RequirePackage{microtype}
 \RequirePackage{etoolbox}
 \RequirePackage{refcount}
@@ -450,7 +450,7 @@ Computing Machinery]
 \def\@makefnmark{\hbox{\@textsuperscript{\normalfont\@thefnmark}}}
 \let\@footnotemark@nolink\@footnotemark
 \let\@footnotetext@nolink\@footnotetext
-\RequirePackage[bookmarksnumbered,unicode,colorlinks=true,allcolors=blue,breaklinks,draft=false]{hyperref}
+\RequirePackage[bookmarksnumbered,unicode]{hyperref}
 \pdfstringdefDisableCommands{%
   \def\unskip{}%
   \def\textbullet{- }%

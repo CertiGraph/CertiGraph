@@ -104,7 +104,13 @@ The other direction, \mbox{$\graphkt(100,\hat{\gamma}) |- 100 |-> 42,100,0$},
 
 \subsection{Defining a good \p{graph} predicate}\label{sec:goodgraph}
 
-Rather than trying to define \p{graph} as a recursive fixpoint, we will instead give it a flat structure.  Graphs in separation logic have been defined in similar ways before~\cite{ilya-graphs}; what is new here is that we prove---with the amount of precision required to convince Coq---that we can still enjoy fold/unfold with our definition.  Our path starts with the iterated separating conjunction or ``big star'', defined as:
+Rather than trying to define \p{graph} as a recursive fixpoint, 
+we will instead give it a flat structure.  Graphs in separation
+logic have been defined in similar ways before~\cite{ilya-graphs};
+our innovation that we prove---with the amount of precision 
+required to convince Coq---that we can still enjoy fold/unfold 
+with our flat definition.  Our path starts with the iterated 
+separating conjunction or ``big star'', defined as:
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%% Edit1
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -118,7 +124,7 @@ Rather than trying to define \p{graph} as a recursive fixpoint, we will instead 
 \underset{S}{\bigstar} P ~~ \defeq ~~ \exists L.~ (\p{NoDup}\ L) /| (\forall x.~ x\ \p{in}\ L <=> x \in S) /| \underset{L}{\bigstar}P
 \end{array}
 \]
-Big star $\bigstar$ is first defined over a list and then extended to sets.  We are now ready to define a good \p{graph} predicate:
+Big star $\bigstar$ is first defined over lists and then extended to sets.  We are now ready to define a good \p{graph} predicate:
 \fi
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%% Edit1: Qinxiang's proposal ends
