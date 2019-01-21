@@ -94,7 +94,7 @@ Suppose that other (elided) lines of the program make localization desirable, ev
 \]
 One problem is that $L_2 --* G_2$ does \textbf{not} ignore the modified program variable \tx{x}, preventing us from applying \infrulestyle{Ramify}.  Intuitively, the side condition on the \infrulestyle{Ramify} rule is a bit too strong since it prevents us from mentioning variables in the postconditions that have been modified by code $c$.
 
-We could try to weaken the side condition in \infrulestyle{Ramify} to $\big(\FV(G_2) \cap \MV(c)\big) \subseteq \FV(L_2)$, the idea being that information about modified program variables mentioned in the local postcondition $L_2$ can be carried to the global postcondition $G_2$.  Unfortunately, this idea is unsound because \li{x} cannot simultaneously be both~5 and~6, \emph{i.e.} the above entailment is vacuous.  A better idea is: % the following :
+We could weaken the side condition in \infrulestyle{Ramify} to $\big(\FV(G_2) \cap \MV(c)\big) \subseteq \FV(L_2)$, with the hope that information about modified program variables mentioned in the local postcondition $L_2$ can be carried to the global postcondition $G_2$.  Unfortunately, this idea is unsound because \li{x} cannot simultaneously be both~5 and~6, \emph{i.e.} the above entailment is vacuous.  A better idea is: % the following :
 \[
 \infrule{Ramify-P (Program variables)}
 {\{ L_1 \} ~ c ~ \{L_2 \} \\
@@ -150,7 +150,7 @@ With \infrulestyle{Ramify-P} and \infrulestyle{Solve Ramify-P} we can prove the 
 \]
 This justifies our point in \S\ref{sec:localizations} that our new localization notation can also be used for frames.
 
-Choosing $F$ in a concrete setting is a little delicate.  For our example, we can just replace\footnote{In a semantic setting, substitution is defined with a modal operator rather than textual replacement, but the net effect is the same.}~\li{x} with~$6$ in $L_2 --* G_2$:
+The choice of $F$ in a concrete setting is delicate. In our example, we replace\footnote{In a semantic setting, substitution is defined with a modal operator and not textual replacement, but the effect is the same.}~\li{x} with~$6$ in $L_2 --* G_2$:
 \[
 F ~~ \defeq ~~ (6 = 6 /| [\li{x} |-> 6]C) --* (6 = 6 /| [\li{x} |-> 6]D)
 \]
@@ -171,7 +171,7 @@ Meanwhile, the second premise looks like this:
 \end{array}
 \vspace*{-0.75ex}
 \end{equation}
-Although it may not be readily apparent, this is in fact a tautology using $(P * Q |- R) <=> (P |- Q --* R)$.
+Although it may not be readily apparent, this is a tautology using $(P * Q |- R) <=> (P |- Q --* R)$.
 
 %: introduce the $L_2$ premise of the right $--*$ to the left side of the entailment and, since the clause $\li{x} = 6$ is now on the left, substitute it everywhere.
 \iffalse

@@ -242,7 +242,7 @@ such as graph coloring, shortest path, and network flow rely on
 additional information in the form of labels. In our architecture, a
 LabeledGraph inherits any lemmas proved about its associated PreGraph. 
 In addition, we can define additional lemmas that use labels, 
-\emph{e.g.} add an integer label, denoting \emph{rank} to 
+\emph{e.g.} add an integer label, denoting \emph{rank}, to 
 vertices and prove a lemma that running \texttt{find} does not alter
 any vertex's rank. 
 \hide{add string labels to edges and reason about a trie.}
@@ -363,10 +363,10 @@ vertex has one out edge and there are no loops.
 } % end hide
 
 As a first step, we can prove many general, reusable lemmas
-about these properties. However, this is still too general for 
-most real programs. The next step is compose these plugins to 
-arrive at a more specific set of restrictions that more closely 
-models our particular graph. 
+about these properties. However, these properties are still 
+too general to model a real program. The next step is compose 
+these plugins to arrive at a more specific set of restrictions 
+that more closely models our particular graph. 
 For instance, we can compose 
 \p{LstGraph}, \p{MathGraph}, and \p{FiniteGraph} 
 together into a new plugin called \p{LiMaFin}, which, incidentally, is the 
