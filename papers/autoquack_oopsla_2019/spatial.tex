@@ -1,15 +1,21 @@
-{\color{blue}Needs reworking because SS1 was cut. Not doing since we may merge with previous section.}
+{\color{blue} This section overview needs reworking because SS1 was cut. Not doing since we may merge with previous section, or we may bring SS1 back given the new page limit.}
+{\color{magenta} After reading this section (and previous 
+versions of it) with some care, I want to argue that cutting
+the first subsection may have been overly hasty. I think we 
+can tighten it and perhaps merge it with the following 
+subsection, but cutting it altogether leaves us without 
+motivation for the next subsection. Un-hiding it for now, 
+and perhaps will shorten and merge it later.}
 
 To prove the functional correctness of graph-manipulating algorithms implemented in a real language, we need to connect the heap representation of graphs, the memory model of the programming language, and the mathematical properties of graphs from \S\ref{sec:mathgraph}.  The first of these turns out to be surprisingly subtle as we shall see in \S\ref{sec:fixpointfail} and \S\ref{sec:goodgraph}.  The main challenge for the others is to engineer a framework that is generic enough and modular enough to be useful in practice in a variety of settings; we cover it in~\S\ref{sec:ramifylib}.
 
-\hide{
 \subsection{Recursive definitions yield poor \p{graph} predicates}\label{sec:fixpointfail}
 
 \newcommand{\graphkt}{\p{graph}_T}
 \newcommand{\grapham}{\p{graph}_A}
 
 Recursive predicates are ubiquitous in separation logic---so
-much so that when a person writes the definition of a predicate as
+much so that when one writes the definition of a predicate as
 \mbox{$P$ ``$\defeq$'' $\ldots P \! \ldots$}, no one raises an eyebrow despite the
 dangers of circularity in mathematics. Indeed, the vast majority of the time there
 is no danger thanks to the magic of the Knaster-Tarski fixpoint
@@ -65,7 +71,7 @@ Consider the following memory $m$ for a toy machine:
 \end{minipage}
 \vspace{0.75ex}
 
-\noindent Clearly $m |= 100 |-> 42,100,0$.  But it seems also clear that this memory represents a one-cell cyclic graph as illustrated in the accompanying diagram, \emph{i.e.} we want $m |= \graphkt(100,\hat{\gamma})$, where $\hat{\gamma}(100) = (42,100,0)$.  This is equivalent to wanting to be able to prove $100 |-> 42,100,0 |- \graphkt(100,\hat{\gamma})$.  Unfortunately, as hinted in Appendix~C\hide{\ref{apx:problemrecgraph}}, this seems rather difficult to do so since applying the natural proof techniques actually strengthen the goal.  In fact we do not know if this entailment is provable or not, but the difficulties encountered in proving what ``should be'' straightforward suggest that Knaster-Tarski should be treated with caution when defining spatial predicates for graphs.
+\noindent Clearly $m |= 100 |-> 42,100,0$.  But it seems also clear that this memory represents a one-cell cyclic graph as illustrated in the accompanying diagram, \emph{i.e.} we want $m |= \graphkt(100,\hat{\gamma})$, where $\hat{\gamma}(100) = (42,100,0)$.  This is equivalent to wanting to be able to prove $100 |-> 42,100,0 |- \graphkt(100,\hat{\gamma})$.  Unfortunately, as hinted in Appendix~C\hide{\ref{apx:problemrecgraph}}, this is rather difficult to do so since applying the natural proof techniques actually strengthens the goal. In fact we do not know if this entailment is provable, but the difficulties encountered in proving what ``should be'' straightforward suggest that Knaster-Tarski should be treated with caution when defining spatial predicates for graphs.
 
 The other direction, \mbox{$\graphkt(100,\hat{\gamma}) |- 100 |-> 42,100,0$},
 \textbf{is} true but is not easy to prove, relying on the constructions in \S\ref{sec:goodgraph} and the fact that $\mu_{\mathsf{T}}$ constructs the least fixpoint.  In contrast, $\graphkt(100,\hat{\gamma}) |- 100 |-> 42,100,0 * \top$ is easy. % to prove. % via fold/unfold.
@@ -100,7 +106,7 @@ The other direction, \mbox{$\graphkt(100,\hat{\gamma}) |- 100 |-> 42,100,0$},
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%% Edit0: cut down contractive recursion
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-} % end hide
+
 
 \subsection{Defining a good \p{graph} predicate}\label{sec:goodgraph}
 
@@ -158,7 +164,7 @@ $\gamma$ is a GeneralGraph and ``$x |-> \gamma(x)$'' is a predicate that says ho
 \]
 $\gamma$ need not be a bigraph, but \emph{e.g.} can have many edges.
 
-Our definition of \p{graph} is flat in the sense that there is no obvious way to follow the link structure recursively.  Happily, we can recover a general recursive fold/unfold (if $x |-> \gamma(x)$ and the GeneralGraph have the necessary properties):
+Our definition of \p{graph} is flat in the sense that there is no obvious way to follow the link structure recursively.  Happily, we can recover a general recursive fold/unfold (if $x |-> \gamma(x)$ and the GeneralGraph has the necessary properties in its soundness condition):
 \vspace{-1ex}
 \begin{equation}
 \label{eqn:unfold_graph}
@@ -173,7 +179,7 @@ The proof of the $<=$ direction requires care. The difficulty is that if two nod
 \[
 \forall x,y.~ \Big(P(x) ** P(y) |- \big(P(x) /| x = y\big) |/ \big(P(x) * P(y)\big)\Big)
 \]
-That is, either they are completely on top of one another or they do not interfere at all.  In a Java-like memory model such as in HIP/SLEEK this property is automatic because pointers in such a model always point to the root/beginning of an object.  In contrast, in a C-like memory model such as in VST/CompCert, this property is not automatic because pointers can point anywhere.  In such a model, alignment is most easily enforced by storing graph nodes at addresses that are multiples of an appropriate size (16 in Figure~\ref{fig:markgraph}).
+That is, either they are completely on top of one another or they do not interfere at all.  In a Java-like memory model this property is automatic because pointers in such a model always point to the root/beginning of an object.  In contrast, in a C-like memory model such as in VST/CompCert, this property is not automatic because pointers can point anywhere.  In such a model, alignment is most easily enforced by storing graph nodes at addresses that are multiples of an appropriate size (16 in Figure~\ref{fig:markgraph}).
 
 {\color{magenta}Some of our VST proofs do not use fold/unfold, instead preferring to use the lemmas in~\S\ref{sec:ramifylib} directly.  On the other hand, for HIP/SLEEK fold/unfold is vital, and knowing that the recursive relationship holds produces a pleasant feeling.  We also prove fold/unfold lemma for DAGs in which we get a $*$ between the root and its $\medocon$-joined neighbors. % rather than the $**$ present in \eqref{eqn:unfold_graph}.
 }
@@ -231,9 +237,20 @@ ent/.style={shape=rectangle, rounded corners=4pt, draw, on grid}]
 \caption{Infrastructure of ramification library}\label{fig:infra}
 \end{figure}
 
-We provide the architecture of our spatial development in Figure~\ref{fig:infra}.  Starting from the bottom, notice that there are two underlying heap models: the Step-Indexed Model, which is the main heap model used in VST, and a much simpler Direct Model, which is used by HIP/SLEEK among others.  The Step-Indexed model is much fancier, but none of our development depends on its bells and whistles.
+We provide the architecture of our spatial development in Figure~\ref{fig:infra}.  Starting from the bottom, notice that there are two underlying heap models: the Step-Indexed Model, which is the main heap model used in VST, and a much simpler Direct Model, {\color{magenta} which is used by HIP/SLEEK among others}. The Step-Indexed model is much fancier, but none of our development depends on its bells and whistles.
 
-To isolate our development from these unnecessary complications, and to ensure that HIP/SLEEK can reuse our spatial reasoning, we use two interfaces: Core Logic and Supplementary Logic.  Both models can instantiate both interfaces, but generally speaking our VST proofs only need the Core properties to prove our examples, whereas HIP/SLEEK uses both Core and Supplemental.  Each interface defines some operators of separation logic and provides some axioms about how they work.  For example, $*$ and $--*$ are in Core Logic, along with the axiom $(P |- Q --* R) <=> (P * Q |- R)$.  On the other hand, the $**$ and $--o$ operators are in Supplementary Logic, along with rules like $P |- P ** P$.
+To isolate our development from these unnecessary complications, 
+{\color{magenta}and to ensure that HIP/SLEEK can reuse our spatial 
+reasoning, we use two interfaces: Core Logic and Supplementary 
+Logic.  Both models can instantiate both interfaces, but generally 
+speaking our VST proofs only need the Core properties to prove 
+our examples, whereas HIP/SLEEK uses both Core and Supplemental.} 
+Each interface defines some operators of separation logic and 
+provides some axioms about how they work.  For example, $*$ and 
+$--*$ are in Core Logic, along with the axiom 
+$(P |- Q --* R) <=> (P * Q |- R)$.  On the other hand, 
+the $**$ and $--o$ operators are in Supplementary Logic, 
+along with rules like $P |- P ** P$.
 
 Above the Logic layer we have three towers, each three levels high.  The leftmost tower contains basic lemmas about Logic, $\bigstar$, and \p{graph}.  In the $\bigstar$ Facts box we prove \emph{e.g.}:
 \[
@@ -289,7 +306,7 @@ $\begin{array}{@{}l@{}l@{}}
 }{}
 \end{equation}
 
-The Supplementary tower contains properties not used by most of the VST examples.  This includes the fold/unfold relationship from \S\ref{sec:goodgraph}, facts about precision, and so forth.  Some of these properties are needed by HIP/SLEEK, while others are mostly included for esthetic effect.
+The Supplementary tower contains properties not used by most of the VST examples.  This includes the fold/unfold relationship from \S\ref{sec:goodgraph}, facts about precision, and so forth.  Some of these properties are needed by HIP/SLEEK, {\color{magenta}while others are mostly included for esthetic effect}.
 
 % are there just because we felt they might be useful in the future.
 
