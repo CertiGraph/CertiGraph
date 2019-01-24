@@ -74,10 +74,10 @@ Fixpoint pfoot' (g: Gph) (l : list E) (v : V) : V :=
 
 Definition pfoot (g: Gph) (p: path) : V := match p with (v, l) => pfoot' g l v end.
 
-Definition path_endpoints (g: Gph) (p: path) (n1 n2 : V) : Prop := phead p = n1 /\ pfoot g p = n2.
+Definition path_ends (g: Gph) (p: path) (n1 n2 : V) : Prop := phead p = n1 /\ pfoot g p = n2.
 
 Definition reachable_by_path (g: Gph) (p: path) (n : V) (P : Ensemble V) : Ensemble V :=
-  fun n' => path_endpoints g p n n' /\ good_path g P p.
+  fun n' => path_ends g p n n' /\ good_path g P p.
 Notation " g '|=' p 'is' n1 '~o~>' n2 'satisfying' P" := (reachable_by_path g p n1 P n2) (at level 1).
 
 Definition reachable_by (g: Gph) (n : V) (P : Ensemble V) : Ensemble V := fun n' => exists p, g |= p is n ~o~> n' satisfying P.
@@ -113,12 +113,12 @@ Path Lemmas
 
 ******************************************)
 
-Lemma path_endpoints_meet: forall (g: Gph) p1 p2 n1 n2 n3,
-  path_endpoints g p1 n1 n2 ->
-  path_endpoints g p2 n2 n3 ->
+Lemma path_ends_meet: forall (g: Gph) p1 p2 n1 n2 n3,
+  path_ends g p1 n1 n2 ->
+  path_ends g p2 n2 n3 ->
   paths_meet g p1 p2.
 Proof.
-  unfold path_endpoints, paths_meet; intros.
+  unfold path_ends, paths_meet; intros.
   destruct H, H0. exists n2. split; tauto.
 Qed.
 
@@ -158,8 +158,8 @@ Proof.
   destruct p3 as [v3 p3]. simpl. rewrite <- app_assoc. auto.
 Qed.
 
-Lemma path_endpoints_glue: forall g n1 n2 n3 p1 p2,
-  path_endpoints g p1 n1 n2 -> path_endpoints g p2 n2 n3 -> path_endpoints g (p1 +++ p2) n1 n3.
+Lemma path_ends_glue: forall g n1 n2 n3 p1 p2,
+  path_ends g p1 n1 n2 -> path_ends g p2 n2 n3 -> path_ends g (p1 +++ p2) n1 n3.
 Proof.
   intros. destruct H, H0. split.
   icase p1. icase p2. icase p1. simpl in *. subst v0 v. destruct l; simpl.
@@ -321,8 +321,8 @@ Qed.
 
 Lemma path_acyclic:
   forall (g: Gph) (p: path) n1 n2,
-    path_endpoints g p n1 n2 -> valid_path g p -> Dup (epath_to_vpath g p) ->
-    exists p', length (snd p') < length (snd p) /\ Subpath g p' p /\ path_endpoints g p' n1 n2 /\ valid_path g p'.
+    path_ends g p n1 n2 -> valid_path g p -> Dup (epath_to_vpath g p) ->
+    exists p', length (snd p') < length (snd p) /\ Subpath g p' p /\ path_ends g p' n1 n2 /\ valid_path g p'.
 Proof.
   intros. apply Dup_cyclic in H1. destruct H1 as [a [L1 [L2 [L3 ?]]]]. rewrite <- app_comm_cons in H1.
   destruct (epath_to_vpath_split _ _ _ _ _ H0 H1) as [p1 [p2 [? [? [? [? ?]]]]]]. rewrite app_comm_cons in H6.
@@ -346,8 +346,8 @@ Qed.
 
 Lemma valid_path_acyclic:
   forall (g : Gph) (p : path) n1 n2,
-    path_endpoints g p n1 n2 -> valid_path g p ->
-    exists p', Subpath g p' p /\ path_endpoints g p' n1 n2 /\ NoDup (epath_to_vpath g p') /\ valid_path g p'.
+    path_ends g p n1 n2 -> valid_path g p ->
+    exists p', Subpath g p' p /\ path_ends g p' n1 n2 /\ NoDup (epath_to_vpath g p') /\ valid_path g p'.
 Proof.
   intros until p. destruct p as [v p]. revert v. remember (length p). assert (length p <= n) by omega. clear Heqn. revert p H. induction n; intros.
   + assert (p = nil) by (destruct p; auto; simpl in H; exfalso; intuition). subst. exists (v, nil). simpl. simpl in H1.
@@ -477,7 +477,7 @@ Qed.
 
 Lemma good_path_acyclic:
   forall (g: Gph) P p n1 n2,
-    path_endpoints g p n1 n2 -> good_path g P p -> exists p', path_endpoints g p' n1 n2 /\ NoDup (epath_to_vpath g p') /\ good_path g P p'.
+    path_ends g p n1 n2 -> good_path g P p -> exists p', path_ends g p' n1 n2 /\ NoDup (epath_to_vpath g p') /\ good_path g P p'.
 Proof.
   intros. destruct H0. pose proof H0. apply valid_path_acyclic with (n1 := n1) (n2 := n2) in H0; trivial.
   destruct H0 as [p' [? [? [? ?]]]]. exists p'. do 3 (split; trivial).
@@ -533,9 +533,9 @@ Lemma reachable_by_path_merge: forall (g: Gph) p1 n1 n2 p2 n3 P,
                                  g |= (p1 +++ p2) is n1 ~o~> n3 satisfying P.
 Proof.
   intros. destruct H. destruct H0.
-  split. apply path_endpoints_glue with n2; auto.
+  split. apply path_ends_glue with n2; auto.
   apply good_path_merge; auto.
-  eapply path_endpoints_meet; eauto.
+  eapply path_ends_meet; eauto.
 Qed.
 
 Lemma reachable_by_path_split_glue:
@@ -1353,9 +1353,9 @@ Proof.
 Qed.
 
 Lemma valid_path_unique_edge: forall (g : Gph) (p : path) s t e,
-    path_endpoints g p s t -> valid_path g p -> In e (snd p) ->
+    path_ends g p s t -> valid_path g p -> In e (snd p) ->
     exists p1 p2, Subpath g (s, p1 ++ e :: p2) p /\
-                  path_endpoints g (s, p1 ++ e :: p2) s t /\
+                  path_ends g (s, p1 ++ e :: p2) s t /\
                   valid_path g (s, p1 ++ e :: p2) /\ ~ In e p1 /\ ~ In e p2 /\
                   length (p1 ++ e :: p2) <= length (snd p).
 Proof.
@@ -1370,7 +1370,7 @@ Proof.
     + apply in_split in i. destruct i as [l1' [l3 ?]]. subst l1. rename l1' into l1.
       assert (length (l1 ++ e :: l2) <= n) by
           (rewrite !app_length in *; simpl length in *; omega).
-      assert (path_endpoints g (s, l1 ++ e :: l2) s t). {
+      assert (path_ends g (s, l1 ++ e :: l2) s t). {
         split; [simpl; auto|]. destruct H0. now rewrite (pfoot_app_cons _ _ s) in *. }
       assert (valid_path g (s, l1 ++ e :: l2)). {
         clear -H1. rewrite !valid_path_app, !valid_path_cons_iff in *.
@@ -1389,7 +1389,7 @@ Proof.
       assert (length (l1 ++ e :: l2) <= n). {
         rewrite app_length in *; simpl length in *. rewrite app_length in H.
         simpl length in H. omega. }
-      assert (path_endpoints g (s, l1 ++ e :: l2) s t). {
+      assert (path_ends g (s, l1 ++ e :: l2) s t). {
         split; [simpl; auto|]. destruct H0. rewrite app_comm_cons, app_assoc in H3.
         now rewrite (pfoot_app_cons _ _ s) in *. }
       assert (valid_path g (s, l1 ++ e :: l2)). {
@@ -1408,9 +1408,9 @@ Proof.
 Qed.
 
 Lemma good_path_unique_edge: forall (g: Gph) P p s t e,
-    path_endpoints g p s t -> good_path g P p -> In e (snd p) ->
+    path_ends g p s t -> good_path g P p -> In e (snd p) ->
     exists p1 p2, Subpath g (s, p1 ++ e :: p2) p /\
-                  path_endpoints g (s, p1 ++ e :: p2) s t /\
+                  path_ends g (s, p1 ++ e :: p2) s t /\
                   good_path g P (s, p1 ++ e :: p2) /\ ~ In e p1 /\ ~ In e p2 /\
                   length (p1 ++ e :: p2) <= length (snd p).
 Proof.

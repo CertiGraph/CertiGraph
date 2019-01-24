@@ -34,7 +34,7 @@ Lemma reachable_by_path_subgraph_partialgraph (g: PreGraph V E) (p q: V -> Prop)
     (predicate_partialgraph g p) |= l is n1 ~o~> n2 satisfying q.
 Proof.
   intros. unfold reachable_by_path, good_path. apply and_iff_split; [|apply and_iff_split].
-  - unfold path_endpoints. apply and_iff_compat_l. destruct l as [v l]. revert v. induction l; intros.
+  - unfold path_ends. apply and_iff_compat_l. destruct l as [v l]. revert v. induction l; intros.
     + simpl. intuition.
     + rewrite !pfoot_cons. apply IHl.
   - destruct l as [v l]. revert v. induction l; intros.
