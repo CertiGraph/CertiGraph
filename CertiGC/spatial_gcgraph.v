@@ -661,7 +661,7 @@ Proof.
   unfold gen_start. if_tac. 2: contradiction.
   rewrite H2. sep_apply (memory_block_valid_ptr
                            (nth_sh g gen) (4 * gen_size t_info gen)
-                           (space_start (nth_space t_info gen))); [| |entailer!].
+                           (space_start (nth_space t_info gen))); [|entailer!|].
   - unfold nth_sh. apply readable_nonidentity, writable_readable,
                    generation_share_writable.
   - cut (0 < gen_size t_info gen). 1: omega. eapply ti_size_gt_0; eauto.
@@ -700,7 +700,7 @@ Proof.
   intros. unfold single_outlier_rep. Intros sh. remember (GC_Pointer2val p) as pp.
   sep_apply (data_at__memory_block_cancel sh (tptr tvoid) pp). simpl sizeof.
   sep_apply (memory_block_valid_ptr sh 4 pp);
-    [apply readable_nonidentity; assumption | omega | apply derives_refl].
+    [apply readable_nonidentity; assumption | apply derives_refl].
 Qed.
 
 Lemma outlier_rep_valid_pointer: forall outlier p,
@@ -826,8 +826,8 @@ Proof.
     (sepcon_assoc TT).
     sep_apply (readable_writable_memory_block_FF sh2 sh1 m2 m1 p); auto.
     + apply writable_readable. subst. apply generation_share_writable.
-    + subst. apply generation_share_writable.
     + entailer!.
+    + subst. apply generation_share_writable.
 Qed.
 
 Lemma graph_gen_ramif_stable: forall g gen,

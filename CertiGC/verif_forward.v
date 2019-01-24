@@ -122,8 +122,10 @@ Proof.
     destruct root as [[? | ?] | ?]; simpl root2val.
     + unfold odd_Z2val. apply semax_if_seq. forward_if.
       1: exfalso; apply H20'; reflexivity.
-      forward. Exists g t_info roots. rewrite <- Heqroot. entailer!.
-      * simpl. split; [constructor | split; [hnf; intuition | apply tir_id]].
+      forward. Exists g t_info roots.
+      entailer!. 
+      * simpl; split3; try rewrite <- Heqroot; [easy..|].
+        split3; [constructor | easy | apply tir_id].
       * unfold thread_info_rep. entailer!.
     + unfold GC_Pointer2val. destruct g0. apply semax_if_seq. forward_if.
       2: exfalso; apply Int.one_not_zero in H20; assumption.
@@ -149,12 +151,10 @@ Proof.
         sep_apply (single_outlier_rep_memory_block_FF (GCPtr b i) fp gn fsh H19 v).
         assert_PROP False by entailer!. contradiction.
       * apply semax_if_seq. forward_if. 1: exfalso; apply H19'; reflexivity.
-        forward. Exists g t_info roots. rewrite <- Heqroot. entailer!.
-        -- split; [|split; [|split]].
-           ++ unfold roots_compatible. split; assumption.
-           ++ simpl; constructor.
-           ++ hnf; intuition.
-           ++ apply tir_id.
+        forward. Exists g t_info roots.
+        entailer!.
+        -- split3; [| |split3]; simpl; try rewrite <- Heqroot;
+             [easy.. | constructor | hnf; intuition | apply tir_id].
         -- unfold thread_info_rep. entailer!.
     + specialize (H14 _ H13). destruct (vertex_address g v) eqn:? ; try contradiction.
       apply semax_if_seq. forward_if.
@@ -171,9 +171,10 @@ Proof.
         sep_apply (data_at_valid_ptr shh (tarray int_or_ptr_type (Zlength l)) l
                                      (vertex_address g v)).
         - apply readable_nonidentity, writable_readable_share. assumption.
+        - rewrite Heqv0. cancel.
         - subst l. simpl. rewrite fields_eq_length.
           rewrite Z.max_r; pose proof (raw_fields_range (vlabel g v)); omega.
-        - rewrite Heqv0; cancel. }
+      }
       replace_SEP 1 (weak_derives P (valid_pointer (Vptr b i) * TT) && emp * P)
         by (entailer; assumption). clear H20. Intros. rewrite <- Heqv0 in *.
       forward_call (fsh, fp, fn, (vertex_address g v), P). Intros vv. rewrite HeqP.
@@ -208,8 +209,7 @@ Proof.
              unfold vertex_rep, vertex_at. unfold make_fields_vals at 3.
              rewrite H21. entailer!. }
            unlocalize [graph_rep g]. 1: apply (graph_vertex_ramif_stable _ _ H19).
-           thaw FR. forward. forward. rewrite <- Heqroot.
-           rewrite if_true by reflexivity. rewrite H21.
+           thaw FR. forward. forward.
            Exists g (upd_thread_info_arg
                        t_info
                        (Znth z (live_roots_indices f_info))
@@ -219,9 +219,10 @@ Proof.
            ++ apply upd_fun_thread_arg_compatible. assumption.
            ++ specialize (H9 _ H19 H21). destruct H9 as [? _].
               apply upd_roots_compatible; assumption.
-           ++ apply fr_v_in_forwarded; [reflexivity | assumption].
-           ++ hnf. intuition.
-           ++ red. simpl. intuition.
+           ++ rewrite <- Heqroot, H21.
+              now rewrite if_true by reflexivity.
+           ++ rewrite <- Heqroot. apply fr_v_in_forwarded; [reflexivity | assumption].
+           ++ easy.
         -- forward. thaw FR. freeze [0; 1; 2; 3; 4; 5] FR.
            apply not_true_is_false in H21. rewrite make_header_Wosize by assumption.
            assert (0 <= Z.of_nat to < 12). {
@@ -548,16 +549,15 @@ Proof.
                      2: { rewrite Z.le_lteq. right. subst n g' from.
                           rewrite vpp_Zlength, lcv_vlabel_new; auto. }
                      Opaque super_compatible. forward. clear H50 H51 H52 H53.
-                     rewrite <- Heqroot, H21, if_true by reflexivity.
                      remember (upd_bunch z f_info roots (inr (new_copied_v g to)))
                        as roots'. Exists g3 t_info3 roots'. simpl. entailer!.
+                     rewrite <- Heqroot, H21, if_true by reflexivity.
                      replace (Z.to_nat depth) with (S (Z.to_nat (depth - 1))) by
                          (rewrite <- Z2Nat.inj_succ; [f_equal|]; omega).
-                     constructor; [reflexivity | assumption..].
+                     constructor; [|constructor]; easy.
                      Transparent super_compatible.
               ** assert (depth = 0) by omega. subst depth. clear H42.
                  deadvars!. clear Heqnv. forward.
-                 rewrite <- Heqroot. rewrite if_true by reflexivity. rewrite H21.
                  remember (Znth z (live_roots_indices f_info)) as lz.
                  remember (vertex_address (lgraph_copy_v g v to) (new_copied_v g to))
                           as nv.
@@ -565,11 +565,13 @@ Proof.
                              t_info (Z.of_nat to) (vertex_size g v) Hi Hh).
                  Exists (lgraph_copy_v g v to) (update_thread_info_arg t lz nv H16)
                         (upd_bunch z f_info roots (inr (new_copied_v g to))).
-                 simpl root2forward. entailer!.
+                 entailer!. simpl; rewrite <- Heqroot.
+                 rewrite if_true by reflexivity; rewrite H21; easy. 
       * apply semax_if_seq. forward_if. 1: exfalso; apply H21'; reflexivity.
-        rewrite H20 in n. forward. rewrite <- Heqroot. rewrite if_false by assumption.
+        rewrite H20 in n. forward.
         Exists g t_info roots. simpl. entailer!.
-        -- split; [constructor; assumption | split; [hnf; intuition | apply tir_id]].
+        -- rewrite <- Heqroot, if_false by assumption.
+           split3; [|simpl root2forward; constructor |]; easy. 
         -- unfold thread_info_rep. entailer!.
   (* p is Vtype * Z, ie located in graph *)
   - destruct p as [v n]. destruct H0 as [? [? [? ?]]]. freeze [0; 1; 2; 4] FR.
@@ -636,9 +638,9 @@ Proof.
       unfold field2val, odd_Z2val. apply semax_if_seq. forward_if.
       1: exfalso; apply H20'; reflexivity.
       forward. Exists g t_info roots. entailer!. split.
-      * rewrite Heqf. rewrite H12. simpl. constructor.
+      * easy.
       * unfold forward_condition, thread_info_relation.
-        split; auto; split; reflexivity.
+        simpl. rewrite Heqf, H12. simpl. constructor; [constructor|easy].
     + (* GC_Pointer *)
       destruct g0. unfold field2val, GC_Pointer2val. apply semax_if_seq. forward_if.
       2: exfalso; apply Int.one_not_zero; assumption.
@@ -661,7 +663,7 @@ Proof.
       * (* yes *)
         rewrite HeqP. Intros. gather_SEP 0 1. sep_apply H18. rewrite Heqfn in v0.
         pose proof in_gcptr_outlier g (GCPtr b i) outlier n v H0 H6 H11 Heqf.
-        sep_apply (outlier_rep_single_rep outlier (GCPtr b i)). 1: assumption.
+        sep_apply (outlier_rep_single_rep outlier (GCPtr b i)).
         Intros. gather_SEP 2 0.
         change (Vptr b i) with (GC_Pointer2val (GCPtr b i)) in v0.
         pose proof (generation_share_writable (nth_gen g from)).
@@ -673,10 +675,10 @@ Proof.
         apply semax_if_seq. forward_if.
         1: exfalso; apply H19'; reflexivity.
         forward. Exists g t_info roots. entailer!.
-        -- split; [|split].
-           ++ unfold roots_compatible. split; assumption.
-           ++ simpl. rewrite Heqf. rewrite H12. simpl. constructor.
-           ++ hnf; intuition; unfold forward_condition, thread_info_relation; auto.
+        -- split3.
+           ++ unfold roots_compatible. easy. 
+           ++ simpl. rewrite Heqf, H12. simpl. constructor.
+           ++ easy. 
         -- unfold thread_info_rep. entailer!.
     + (* EType *)
       unfold field2val. remember (dst g e) as v'.
@@ -722,9 +724,10 @@ Proof.
                      shh (tarray int_or_ptr_type (Zlength (make_fields_vals g v')))
                      (make_fields_vals g v') (Vptr b i)).
         - apply readable_nonidentity, writable_readable_share; assumption.
+        - cancel.
         - simpl. rewrite fields_eq_length.
           pose proof (proj1 (raw_fields_range (vlabel g v'))). rewrite Z.max_r; omega.
-        - cancel. }
+      }
       replace_SEP 1 (weak_derives P (valid_pointer (Vptr b i) * TT) && emp * P)
         by entailer!. clear H21. Intros.
       forward_call (fsh, fp, fn, (Vptr b i), P).
@@ -807,8 +810,11 @@ Proof.
           2: unfold thread_info_rep; thaw FR; entailer!.
           pose proof (lgd_no_dangling_dst_copied_vert g e (dst g e) H9 H19 H22 H10).
           split; [|split; [|split; [|split]]]; try reflexivity.
-          ++ rewrite H12, Heqf. now constructor.
-          ++ repeat (now split).
+          ++ now constructor.
+          ++ simpl forward_p2forward_t.
+             rewrite H12, Heqf. simpl. now constructor.
+          ++ now constructor.
+          ++ easy.
         -- (* not yet forwarded *)
           forward. thaw FR.  freeze [0; 1; 2; 3; 4; 5] FR.
            apply not_true_is_false in H22. rewrite make_header_Wosize by assumption.
@@ -1229,16 +1235,16 @@ Proof.
                           rewrite vpp_Zlength,  <- lgd_raw_fld_length_eq.
                           subst g'; rewrite lcv_vlabel_new; auto. }
                      Opaque super_compatible. forward. clear H64 H65 H66 H67.
-                     rewrite H12. simpl.
+                     simpl.
                      Exists g3 t_info3 roots. simpl. entailer!.
                      replace (Z.to_nat depth) with (S (Z.to_nat (depth - 1))) by
                          (rewrite <- Z2Nat.inj_succ; [f_equal|]; omega).
-                     rewrite Heqf. simpl.
+                     rewrite Heqf, H12. simpl.
                      constructor; [reflexivity | assumption..].
                      Transparent super_compatible.
               ** assert (depth = 0) by omega. subst depth. clear H56.
                  deadvars!. clear Heqnv. forward.
-                 rewrite H12. simpl.
+                 simpl.
                  remember (cut_thread_info t_info (Z.of_nat to)
                              (vertex_size g (dst g e)) Hi Hh) as t_info'.
               remember (lgraph_copy_v g (dst g e) to) as g'.
@@ -1247,10 +1253,11 @@ Proof.
               remember (labeledgraph_gen_dst g' e v0) as g1.
               Exists g1 t_info' roots.
               rewrite Heqf.
-              simpl field2forward. entailer!.
+              simpl field2forward. rewrite H12. simpl. entailer!.
       * apply semax_if_seq. forward_if. 1: exfalso; apply H22'; reflexivity.
-        rewrite H21 in n0. forward. rewrite H12. simpl.
-        Exists g t_info roots. simpl. entailer!.
+        rewrite H21 in n0. forward.
+        simpl.
+        Exists g t_info roots. simpl. rewrite H12. entailer!.
         -- rewrite Heqf. split; [constructor; assumption |
                                  split; [hnf; intuition | apply tir_id]].
         -- unfold thread_info_rep. entailer!.

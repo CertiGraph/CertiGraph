@@ -177,5 +177,5 @@ Proof.
         - apply tir_trans with t_info1; assumption.
         - subst t_info3. apply tir_reset. }
       Exists g3 t_info3 roots1.
-      destruct H34 as [? [? [? ?]]]. entailer!.
+      destruct H34 as [? [? [? ?]]]. entailer!. easy.
 Qed.
