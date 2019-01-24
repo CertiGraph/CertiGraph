@@ -147,12 +147,15 @@ Proof.
             (offset_val offset (Vptr b i)).
         sep_apply (memory_block_weak_valid_pointer
                      (nth_sh g' to) (WORD_SIZE * gen_size t_info' to)
-                     (Vptr b i) offset); auto. 3: apply extend_weak_valid_pointer.
+                     (Vptr b i) offset); auto.
+        2: apply extend_weak_valid_pointer.
         - subst. unfold gen_size. split. 1: apply (proj1 H34).
           transitivity (WORD_SIZE * used_space (nth_space t_info' to))%Z.
           + rewrite nth_space_Znth. apply (proj2 H34).
           + apply Zmult_le_compat_l. apply (proj2 (space_order _)). rep_omega.
-        - clear -H3 H7. destruct H7 as [? [? ?]]. rewrite <- H0. rep_omega. }
+        - clear -H3 H7. destruct H7 as [? [? ?]].
+          rewrite <- H0.
+          rep_omega. }
       apply andp_right; apply H34.
       * subst. split. 1: pose proof (pvs_ge_zero g' to (to_index + n)%nat); rep_omega.
         apply Zmult_le_compat_l. 2: rep_omega. rewrite <- H20.

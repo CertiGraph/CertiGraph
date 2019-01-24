@@ -90,5 +90,5 @@ Proof.
     + exfalso. rep_omega.
   - Intros g' t_info' roots'. forward. Exists g' t_info' roots'.
     destruct H8 as [? [? [? ?]]]. entailer!. rewrite <- H5, ZtoNat_Zlength in H6.
-    apply H6.
+    easy. 
 Qed.
