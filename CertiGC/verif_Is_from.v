@@ -31,6 +31,17 @@ Definition Is_from_sem : extcall_sem :=
 Definition Is_from_sig : signature :=
   mksignature (AST.Tint :: AST.Tint :: AST.Tint :: nil) (Some AST.Tint) cc_default.
 
+Lemma intmod_eq_ptrofsmod: Int.modulus = Ptrofs.modulus.
+Proof. now unfold Archi.ptr64; apply Ptrofs.modulus_eq32. Qed.
+
+Lemma lt_ptr_mod: forall n1 n2,
+    n1 <= n2 <= Ptrofs.max_unsigned -> n1 <= n2 < Ptrofs.modulus.
+Proof.
+  intros.
+  replace Ptrofs.max_unsigned with (Z.pred Ptrofs.modulus) in * by rep_omega.
+  now rewrite <- Z.lt_le_pred in *.
+Qed.
+
 Lemma Is_from_extcall: extcall_properties Is_from_sem Is_from_sig.
 Proof.
   constructor.
@@ -60,7 +71,7 @@ Proof.
       eapply Mem.valid_pointer_extends; eauto. }
     split. eapply Mem.valid_pointer_extends; eauto.
     tauto.
-  - intros. exists f, vres, m1'. destruct H0 as [? [? ?]]. (* subst m2 t. *)
+  - intros. exists f, vres, m1'. destruct H0 as [? [? ?]]. 
     split.
     2: {
       split.
@@ -82,155 +93,176 @@ Proof.
     destruct H4 as [n [? [? [? [? [? [? ?]]]]]]].
     subst. exists n. rewrite H22 in H12; inversion H12. subst.
     clear H12.
-    split3; [| |split3; [| |split3]]; trivial.
-    + destruct H1 as [? ? ? ? ? ?].
-      generalize (mi_representable b0 b3 delta
-                                   (Ptrofs.add i (Ptrofs.repr n)) H22).
-      assert (Hf: 0 <= Ptrofs.unsigned i + n < Ptrofs.modulus) by  
-          (unfold Ptrofs.unsigned, Ptrofs.intval; destruct i;
-           split; [omega | auto]).
+    assert (Hf: 0 <= Ptrofs.unsigned i + n < Ptrofs.modulus) by  
+        (unfold Ptrofs.unsigned, Ptrofs.intval; destruct i;
+         split; [omega | auto]).
+    assert (Ha: Ptrofs.unsigned (Ptrofs.add i (Ptrofs.repr delta)) + n < Int.modulus). {
+      rewrite intmod_eq_ptrofsmod.
+      destruct H1 as [_ _ _ _ rep _].
+      generalize (rep b0 b3 delta
+                      (Ptrofs.add i (Ptrofs.repr n)) H22).
       intros [Hx Hy].
       { right. apply Mem.perm_cur_max, Mem.valid_pointer_nonempty_perm.
         destruct H5 as [_ [_ H5]].
         assert (Hm: 0 <= n - 1 < n) by omega.
-        specialize (H5 _ Hm); rewrite <- H5.
+        rewrite <- (H5 _ Hm).
         f_equal.
         unfold Ptrofs.add; repeat rewrite Ptrofs.unsigned_repr_eq.
-        replace Int.modulus with Ptrofs.modulus in H2 by
-            now unfold Archi.ptr64; apply Ptrofs.modulus_eq32.
         rewrite Z.add_mod_idemp_r, Z.mod_small by easy. omega. }
-      replace Int.modulus with Ptrofs.modulus by
-          now unfold Archi.ptr64; apply Ptrofs.modulus_eq32.
       clear -Hy Hf H0 Hx.
+      apply lt_ptr_mod in Hy.
       destruct Hy as [Hy' Hy].
-      replace Ptrofs.max_unsigned with (Z.pred Ptrofs.modulus) in Hy by rep_omega.
-      rewrite <- Z.lt_le_pred in Hy.
       unfold Ptrofs.add in *.
       repeat rewrite Ptrofs.unsigned_repr_eq in *.
       rewrite Z.add_mod_idemp_r, Z.mod_small in Hy, Hy' by easy.
       rewrite Z.add_mod_idemp_r by easy.
       rewrite Z.mod_small; [omega|].
-      destruct i. unfold Ptrofs.unsigned in *; simpl in *. omega. 
-    + unfold Ptrofs.add; rewrite <- H4, Z.add_shuffle0.
+      destruct i. unfold Ptrofs.unsigned in *; simpl in *. omega.
+    }
+    split3; [| |split3; [| |split3]]; trivial.
+    + unfold Ptrofs.add. rewrite <- H4.
+      destruct (Ptrofs.unsigned_range i) as [? _].
       repeat rewrite Ptrofs.unsigned_repr_eq.
-      (* hmmm. *) 
-      (* do we know that i+delta is less than modulus? *)
-      (* destruct H5 as [? [? ?]]. *)
-      (* specialize (H8 delta). *)
-      (*
-      assert (n + Ptrofs.unsigned (Ptrofs.repr delta) =
-              Ptrofs.unsigned (Ptrofs.repr delta) + n) by omega.
-      *)      
-      admit.
-    + destruct H1 as [? ? ? ? ? ?].
-      unfold valid_block in *.
-      destruct H5 as [? [? ?]].
-      split3; trivial.
-      * admit.
-      * intros. admit.
-    + admit. (* very similar, grr *)
-    + destruct H7. destruct H3 as [? [? ?]].
-      destruct H1 as [? ? ? ? ? ?].
-      assert (Hz := mi_representable).
-      specialize (Hz b0 b3 delta i H22).
-      destruct Hz as [_ Hy1]. {
-        left; apply Mem.perm_cur_max, Mem.valid_pointer_nonempty_perm;
-          destruct H5 as [_ [_ ?]]; assert (0 <= 0 < n) by omega.
-        specialize (H1 0 H5).
-        now replace (Ptrofs.unsigned i + 0) with (Ptrofs.unsigned i) in H1 by omega.
+      repeat rewrite Z.add_mod_idemp_r by easy.
+      rewrite intmod_eq_ptrofsmod in Ha.
+      destruct H1 as [_ _ _ _ rep _].
+      destruct (rep _ _ delta
+                   (Ptrofs.add i (Ptrofs.repr n)) H22) as [Hd' Hd]. {
+        right. apply Mem.perm_cur_max, Mem.valid_pointer_nonempty_perm.
+        destruct H5 as [_ [_ H5]].
+        assert (0 <= n - 1 < n) by omega.
+        rewrite <- (H5 _ H1). f_equal.
+        unfold Ptrofs.add. repeat rewrite Ptrofs.unsigned_repr_eq.
+        rewrite Z.add_mod_idemp_r, Z.mod_small by easy.
+        omega.
       }
-      assert (Hz := mi_representable).
-      specialize (Hz b0 b3 delta i1 H22).
-      destruct Hz as [_ Hy2]. {
-        left; apply Mem.perm_cur_max, Mem.valid_pointer_nonempty_perm;
-        destruct H5 as [_ [_ ?]]; assert (0 <= 0 < n) by omega;
-          specialize (H1 0 H5). now rewrite H3.
+      unfold Ptrofs.add in Hd.
+      repeat rewrite Ptrofs.unsigned_repr_eq in Hd.
+      rewrite Z.add_mod_idemp_r, Z.mod_small in Hd by easy.
+      apply lt_ptr_mod in Hd.
+      repeat rewrite Z.mod_small; [omega | trivial | omega].
+    + split3; [easy | omega|]. intros.
+      destruct H5 as [_ [_ H5]]. assert (Hs := H5).
+      specialize (H5 i2 H3).
+      rewrite <- (Mem.valid_pointer_inject _ _ _ _ _ _ _ H22 H1 H5).
+      f_equal. unfold Ptrofs.add.
+      repeat rewrite Ptrofs.unsigned_repr_eq.
+      destruct H1 as [_ _ _ _ rep _].
+      destruct (rep _ _ delta i H22) as [_ Hd]. {
+        left. apply Mem.perm_cur_max, Mem.valid_pointer_nonempty_perm.
+        assert (0 <= 0 < n) by omega.
+        specialize (Hs 0 H1). rewrite <- Hs. f_equal. omega.
+      } 
+      apply lt_ptr_mod in Hd.
+      rewrite Z.add_mod_idemp_r by easy.
+      rewrite Z.mod_small by easy. omega.
+    + rewrite <- (Mem.valid_pointer_inject _ _ _ _ _ _ _ H32 H1 H6).
+      f_equal. unfold Ptrofs.add.
+      repeat rewrite Ptrofs.unsigned_repr_eq.
+      destruct H1 as [_ _ _ _ rep _].
+      destruct (rep _ _ delta1 i1 H32) as [_ Hd]. {
+        left; now apply Mem.perm_cur_max,
+              Mem.valid_pointer_nonempty_perm.
       }
-      assert (Hz := mi_representable).
-      specialize (Hz b0 b3 delta i0 H22).
-      destruct Hz as [_ Hy3]. {
-        (* not true? *)
-        left; apply Mem.perm_cur_max, Mem.valid_pointer_nonempty_perm. 
-        destruct H5 as [_ [_ ?]]; assert (0 <= 0 < n) by omega.
-        specialize (H1 0 H5). (* hmm *) admit. 
-      }
-      * admit. 
-        (* destruct H1 as [? [? ?]]. *)
-        (* subst b0. rewrite H22 in H32; inversion H32. *)
-        (* left. split3; trivial. subst delta1. *)
-        (* clear -H7 Hy. *)
-        (* unfold Ptrofs.add. repeat rewrite Ptrofs.unsigned_repr_eq. admit. *)
-      * destruct H3. destruct H3.
-        -- right. split; trivial.
-           pose proof block_eq_dec b3 b7. destruct H8; [|left; trivial].
-           right. split; trivial.
-           admit. (* easy, just treat as Zs *)
-        -- destruct H3. subst b0. rewrite H22 in H32; inversion H32.
-           right. split; trivial. right; split; trivial.
-           admit. (* again, just treat as Zs *)
-  
-  (* unsigned_repr_range: *)
-  (*   forall i : Z, 0 <= i -> 0 <= Ptrofs.unsigned (Ptrofs.repr i) <= i *)
-
-(* Mem.valid_pointer_nonempty_perm: *)
-(*   forall (m : mem) (b : block) (ofs : Z), *)
-(*     Mem.valid_pointer m b ofs = true <-> Mem.perm m b ofs Cur Nonempty *)
-                                                  
-(* Mem.perm_cur_max: *)
-(*   forall (m : mem) (b : block) (ofs : Z) (p : permission), *)
-(*   Mem.perm m b ofs Cur p -> Mem.perm m b ofs Max p *)
-
-      
-
-(*      destruct H7.
-      * destruct H7 as [? [? ?]].
-        subst. rewrite H32 in H12; inversion H12.
-        rewrite H32 in H22; inversion H22. subst.
-        clear H22 H12.
-        split. destruct H1. pose proof (mi_representable _ _ _ i H32).
-        destruct H1.
-        (* apply (mi_representable H32). *)
-        admit.
-        split; trivial.
-        split. admit.
-        split. clear -H1 H5. destruct H5 as [? [? ?]].
-        split; trivial. split. 
+      apply lt_ptr_mod in Hd.
+      rewrite Z.add_mod_idemp_r, Z.mod_small by easy. omega.
+    + destruct H7.
+      * destruct H3 as [? [? ?]].
+        destruct H1 as [_ _ _ _ rep _].
+        destruct (rep b0 b3 delta i H22) as [_ Hp]. {
+          left; apply Mem.perm_cur_max, Mem.valid_pointer_nonempty_perm.
+          destruct H5 as [_ [_ H1]]; assert (H5: 0 <= 0 < n) by omega.
+          specialize (H1 0 H5).
+          now replace (Ptrofs.unsigned i + 0) with (Ptrofs.unsigned i) in H1 by omega.
+        }
+        destruct (rep b0 b3 delta i1 H22) as [_ Hq]. {
+          left; apply Mem.perm_cur_max, Mem.valid_pointer_nonempty_perm;
+            destruct H5 as [_ [_ ?]]; assert (0 <= 0 < n) by omega.
+          specialize (H1 0 H5); now rewrite H3.
+        }
+        destruct (rep b0 b3 delta i0 H22) as [_ Hr]. {
+          destruct H5 as [_ [_ H5]].
+          rewrite <- H4.
+          assert (Hm: 0 <= n - 1 < n) by omega.
+          right. apply Mem.perm_cur_max, Mem.valid_pointer_nonempty_perm.
+          rewrite <- (H5 _ Hm); f_equal; omega.
+        }
+        subst b0.
+        rewrite H22 in H32; inversion H32.
+        left. split3; trivial.
+        subst delta1. clear -H7 Hp Hq Hr.
         unfold Ptrofs.add; repeat rewrite Ptrofs.unsigned_repr_eq.
-        destruct H1.
-        repeat (split; try easy).
-      split; trivial.
-      (* Mem.address_inject. *)
-      (* Mem.valid_pointer_inject_no_overflow: *)
-      split; [admit|].
-      split; [rewrite H22 in H12; now inversion H12|].
-      split; [rewrite H22 in H12; inversion H12; subst;
-              unfold Ptrofs.add; rewrite <- H9; admit|].
-      split. 
-      intuition.
-      destruct H27.
-      * destruct H0 as [? [? ?]]. subst.
-        rewrite H12 in H22. inversion H22.
-        rewrite H12 in H32; inversion H32.
-        subst.
-        intuition; try easy.
-        5: { left. split; trivial; split; trivial.
-             unfold Ptrofs.add. split.
-             - repeat rewrite Ptrofs.unsigned_repr_eq.
-               admit.
-             - admit. }
-        admit. admit. admit. admit.
-      * destruct H0. destruct H0.
-        -- admit.
-        -- destruct H0. subst.
-           rewrite H12 in H22. inversion H22.
-           rewrite H12 in H32; inversion H32.
-           subst.
+        apply lt_ptr_mod in Hp; apply lt_ptr_mod in Hq; apply lt_ptr_mod in Hr.  
+        repeat rewrite Z.add_mod_idemp_r, Z.mod_small by easy.
+        omega.
+      * destruct H3. right. split; trivial.
+        destruct H3.
+        -- destruct (EqDec_block b3 b7); [|now left].
+           subst b3. right. split; trivial.
+           unfold Ptrofs.add; repeat rewrite Ptrofs.unsigned_repr_eq.
+           repeat rewrite Z.add_mod_idemp_r by easy.
+           assert (Hs := H5).
+           destruct H5 as [_ [_ H5]].
+           assert (bound: 0 <= 0 < n) by omega.
+           specialize (H5 _ bound).
+           clear bound.
+           apply Mem.valid_pointer_nonempty_perm, Mem.perm_cur_max in H6.
+           apply Mem.valid_pointer_nonempty_perm, Mem.perm_cur_max in H5.
+           replace (Ptrofs.unsigned i + 0) with (Ptrofs.unsigned i) in H5 by omega.
+           (* specialize (lap b0 b7 delta b1 b7 delta1 (Ptrofs.unsigned i) (Ptrofs.unsigned i1) H3 H22 H32 H5 H6). (**) *)
+           destruct H1 as [_ _ _ lap rep _].
+           specialize (lap _ _ _ _ _ _ _ _ H3 H22 H32 H5 H6). (**)
+           destruct (rep _ _ delta1 i1 H32) as [_ Hp].
+           1: left; easy.
+           destruct (rep _ _ delta i H22) as [_ Hq].
+           1: left; easy.
+           destruct (rep _ _ delta i0 H22) as [_ Hr]. {
+             destruct Hs as [_ [_ Hs]]. 
+             rewrite <- H4.
+             assert (Hm: 0 <= n - 1 < n) by omega.
+             specialize (Hs _ Hm).
+             replace (Ptrofs.unsigned i + (n - 1)) with (Ptrofs.unsigned i + n - 1) in Hs by omega.
+             apply Mem.valid_pointer_nonempty_perm, Mem.perm_cur_max in Hs. now right.
+           }
+           replace Ptrofs.max_unsigned with (Z.pred Ptrofs.modulus) in * by rep_omega.
+           rewrite <- Z.lt_le_pred in *.
+           repeat rewrite Z.mod_small by easy.
+           clear Hp Hq Hr rep H7 H3.
+           destruct lap as [? | lap]; [contradiction|].
+           (* stuck.
+            * too many seemingly unrelated variables
+            * and no disjunction above the bar.
+            *)
            admit.
-           (* intuition; try easy. *)
-           (* 10 subgoals, none easy *) *)
-      (*
+        -- destruct H3. subst b0.
+           right. rewrite H22 in H32; inversion H32.
+           split; trivial.
+           unfold Ptrofs.add; repeat rewrite Ptrofs.unsigned_repr_eq.
+           repeat rewrite Z.add_mod_idemp_r by easy.
+           destruct H1 as [_ _ _ _ rep _].
+           subst delta1.           
+           destruct (rep b1 b3 delta i H22) as [_ Hp]. {
+             left; apply Mem.perm_cur_max, Mem.valid_pointer_nonempty_perm.
+             destruct H5 as [_ [_ H1]]; assert (H5: 0 <= 0 < n) by omega.
+             specialize (H1 0 H5).
+             now replace (Ptrofs.unsigned i + 0) with (Ptrofs.unsigned i) in H1 by omega.
+           }
+           destruct (rep b1 b3 delta i1 H22) as [_ Hq]. {
+             now left; apply Mem.perm_cur_max, Mem.valid_pointer_nonempty_perm.
+           }
+           destruct (rep b1 b3 delta i0 H22) as [_ Hr]. {
+             destruct H5 as [_ [_ H5]].
+             rewrite <- H4.
+             assert (Hm: 0 <= n - 1 < n) by omega.
+             right. apply Mem.perm_cur_max, Mem.valid_pointer_nonempty_perm.
+             rewrite <- (H5 _ Hm); f_equal; omega.
+           }
+           clear - H8 Hp Hq Hr.
+           apply lt_ptr_mod in Hp; apply lt_ptr_mod in Hq; apply lt_ptr_mod in Hr. 
+           repeat rewrite Z.mod_small by easy.
+           destruct H8; [left | right]; omega.
 (** External calls must commute with memory injections,
-  in the following sense. *)
+  in the following sense.
   ec_mem_inject:
     forall ge1 ge2 vargs m1 t vres m2 f m1' vargs',
     symbols_inject f ge1 ge2 ->
