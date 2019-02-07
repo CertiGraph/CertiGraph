@@ -196,9 +196,11 @@ Proof.
         repeat rewrite Z.add_mod_idemp_r, Z.mod_small by easy.
         omega.
       * destruct H3. right. split; trivial.
+        rename m2 into m. rename m1' into m'.
+        destruct H1 as [[perm _ _] _ _ lap rep inv].
         destruct H3.
-        -- destruct (EqDec_block b3 b7); [|now left].
-           subst b3. right. split; trivial.
+        -- destruct (EqDec_block b3 b7); [subst b3 | now left].
+           right; split; trivial.
            unfold Ptrofs.add; repeat rewrite Ptrofs.unsigned_repr_eq.
            repeat rewrite Z.add_mod_idemp_r by easy.
            assert (Hs := H5).
@@ -210,8 +212,7 @@ Proof.
            apply Mem.valid_pointer_nonempty_perm, Mem.perm_cur_max in H5.
            replace (Ptrofs.unsigned i + 0) with (Ptrofs.unsigned i) in H5 by omega.
            (* specialize (lap b0 b7 delta b1 b7 delta1 (Ptrofs.unsigned i) (Ptrofs.unsigned i1) H3 H22 H32 H5 H6). (**) *)
-           destruct H1 as [_ _ _ lap rep _].
-           specialize (lap _ _ _ _ _ _ _ _ H3 H22 H32 H5 H6). (**)
+           specialize (lap _ _ _ _ _ _ _ _ H1 H22 H32 H5 H6). (**)
            destruct (rep _ _ delta1 i1 H32) as [_ Hp].
            1: left; easy.
            destruct (rep _ _ delta i H22) as [_ Hq].
@@ -227,8 +228,19 @@ Proof.
            replace Ptrofs.max_unsigned with (Z.pred Ptrofs.modulus) in * by rep_omega.
            rewrite <- Z.lt_le_pred in *.
            repeat rewrite Z.mod_small by easy.
-           clear Hp Hq Hr rep H7 H3.
            destruct lap as [? | lap]; [contradiction|].
+           clear rep Hp Hq Hr.
+           replace (Ptrofs.unsigned i) with ((Ptrofs.unsigned i - delta) + delta) in H5 by omega.
+           destruct Hs as [_ [_ Hs]].
+           specialize (perm b0 b7 delta (Ptrofs.unsigned i - delta) Max Nonempty H22).
+           specialize (inv _ (Ptrofs.unsigned i - delta) _ _ Max Nonempty H22).
+           (* Hrm... kinda worked myself into a corner.
+            * Feels circular and weird. 
+            * Consider perm --> inv.
+            * Plus, specializing Hs is hard 
+            *   cuz I would want "-delta" for i0, 
+            *   and good luck proving the bound for that.
+            *)
            (* stuck.
             * too many seemingly unrelated variables
             * and no disjunction above the bar.

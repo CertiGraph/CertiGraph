@@ -487,7 +487,7 @@ Proof.
             sep_apply (apply_derives m (valid_pointer (Vptr b (Ptrofs.add i (Ptrofs.repr z))) * TT)). entailer!.
        }
        sep_apply (apply_derives m (memory_block s n (Vptr b i) * TT)).
-       sep_apply (memory_block_valid_ptr s n (Vptr b i)); [| omega ].
+       sep_apply (memory_block_valid_ptr s n (Vptr b i)); [omega|].
        eapply derives_trans.
        2: apply valid_pointer_weak.
        entailer!.

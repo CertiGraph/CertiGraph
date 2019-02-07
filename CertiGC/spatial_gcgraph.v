@@ -661,10 +661,10 @@ Proof.
   unfold gen_start. if_tac. 2: contradiction.
   rewrite H2. sep_apply (memory_block_valid_ptr
                            (nth_sh g gen) (4 * gen_size t_info gen)
-                           (space_start (nth_space t_info gen))); [|entailer!|].
+                           (space_start (nth_space t_info gen)));
+                [|pose proof (ti_size_gt_0 g t_info gen H1 H5 H0); omega | entailer!].
   - unfold nth_sh. apply readable_nonidentity, writable_readable,
                    generation_share_writable.
-  - cut (0 < gen_size t_info gen). 1: omega. eapply ti_size_gt_0; eauto.
 Qed.
 
 Lemma generation_data_at__ptrofs: forall g t_info gen b i,
@@ -826,8 +826,8 @@ Proof.
     (sepcon_assoc TT).
     sep_apply (readable_writable_memory_block_FF sh2 sh1 m2 m1 p); auto.
     + apply writable_readable. subst. apply generation_share_writable.
-    + entailer!.
     + subst. apply generation_share_writable.
+    + entailer!.
 Qed.
 
 Lemma graph_gen_ramif_stable: forall g gen,
