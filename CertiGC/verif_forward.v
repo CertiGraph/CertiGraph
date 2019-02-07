@@ -171,9 +171,9 @@ Proof.
         sep_apply (data_at_valid_ptr shh (tarray int_or_ptr_type (Zlength l)) l
                                      (vertex_address g v)).
         - apply readable_nonidentity, writable_readable_share. assumption.
-        - rewrite Heqv0. cancel.
         - subst l. simpl. rewrite fields_eq_length.
           rewrite Z.max_r; pose proof (raw_fields_range (vlabel g v)); omega.
+        - rewrite Heqv0. cancel.                    
       }
       replace_SEP 1 (weak_derives P (valid_pointer (Vptr b i) * TT) && emp * P)
         by (entailer; assumption). clear H20. Intros. rewrite <- Heqv0 in *.
@@ -724,9 +724,9 @@ Proof.
                      shh (tarray int_or_ptr_type (Zlength (make_fields_vals g v')))
                      (make_fields_vals g v') (Vptr b i)).
         - apply readable_nonidentity, writable_readable_share; assumption.
-        - cancel.
         - simpl. rewrite fields_eq_length.
           pose proof (proj1 (raw_fields_range (vlabel g v'))). rewrite Z.max_r; omega.
+        - cancel.
       }
       replace_SEP 1 (weak_derives P (valid_pointer (Vptr b i) * TT) && emp * P)
         by entailer!. clear H21. Intros.
