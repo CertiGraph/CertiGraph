@@ -148,7 +148,7 @@ Proof.
         sep_apply (memory_block_weak_valid_pointer
                      (nth_sh g' to) (WORD_SIZE * gen_size t_info' to)
                      (Vptr b i) offset); auto.
-        2: apply extend_weak_valid_pointer.
+        3: apply extend_weak_valid_pointer.
         - subst. unfold gen_size. split. 1: apply (proj1 H34).
           transitivity (WORD_SIZE * used_space (nth_space t_info' to))%Z.
           + rewrite nth_space_Znth. apply (proj2 H34).
