@@ -91,7 +91,8 @@ Proof.
     unfold gen_start at 1. rewrite if_true by assumption. rewrite H18.
     remember (WORD_SIZE * used_space sp_to)%Z as used_offset.
     remember (WORD_SIZE * previous_vertices_size g' to index)%Z as index_offset.
-    freeze [0; 1; 2; 4; 5] FR. gather_SEP 1 2.
+    freeze [0; 1; 2; 4; 5] FR.
+    gather_SEP (graph_rep g') (heap_rest_rep (ti_heap t_info')).
     assert (
         forall b i,
           Vptr b i = space_start sp_to ->
@@ -190,7 +191,12 @@ Proof.
           with index_offset by rep_omega.
         f_equal. unfold gen_start.
         rewrite if_true by assumption; now rewrite H18. }
-      rewrite H25. forward. rewrite <- H25. gather_SEP 0 1.
+      rewrite H25. forward. rewrite <- H25.
+      gather_SEP (data_at (nth_sh g' to) tuint (Z2val (make_header g' (to, index)))
+            (offset_val (- WORD_SIZE) (vertex_address g' (to, index))))
+     (data_at (nth_sh g' to)
+       (tarray int_or_ptr_type (Zlength (make_fields_vals g' (to, index))))
+       (make_fields_vals g' (to, index)) (vertex_address g' (to, index))). 
       replace_SEP 0 (vertex_rep (nth_sh g' to) g' (to, index)) by
           (unfold vertex_rep, vertex_at; entailer!).
       unlocalize [graph_rep g']. 1: apply graph_vertex_ramif_stable; assumption.
@@ -200,8 +206,9 @@ Proof.
       specialize (H26 H14 _ H8).
       rewrite make_header_Wosize, make_header_tag by assumption. deadvars!.
       fold (next_address t_info' to). thaw FR.
-      fold (heap_struct_rep sh l (ti_heap_p t_info')).
-      gather_SEP 5 6 1. replace_SEP 0 (thread_info_rep sh t_info' ti) by
+      fold (heap_struct_rep sh l (ti_heap_p t_info')). 
+      gather_SEP 5 6 1.
+      replace_SEP 0 (thread_info_rep sh t_info' ti) by
           (unfold thread_info_rep; entailer!).
       forward_if
         (EX g'': LGraph, EX t_info'': thread_info,
