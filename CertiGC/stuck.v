@@ -1,5 +1,4 @@
 Require Import compcert.cfrontend.ClightBigstep.
-
 Require Export VST.veric.rmaps.
 Require Export RamifyCoq.lib.List_ext.
 Require Export RamifyCoq.graph.graph_model.
