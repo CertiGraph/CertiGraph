@@ -193,6 +193,7 @@ Proof.
         assert (new_gen_relation (Z.to_nat (i + 1)) g' g1). {
           subst g1. red. rewrite if_false by assumption. exists gi. split; auto. }
         gather_SEP 2 5.
+        (* gather_SEP (malloc_token Ews (tarray int_or_ptr_type (nth_gen_size (Z.to_nat (i + 1)))) p) (FRZL FR). *)
         assert (total_space sp = nth_gen_size (Z.to_nat (i + 1))) by
             (subst sp; simpl; reflexivity). rewrite <- H29.
         assert (space_start sp = p) by (subst sp; simpl; reflexivity). rewrite <- H30.
@@ -216,7 +217,9 @@ Proof.
           replace (space_sh sp) with Ews by (subst sp; simpl; reflexivity).
           replace (used_space sp) with 0 by (subst sp; simpl; reflexivity).
           rewrite Z.sub_0_r, Z.mul_0_r, isptr_offset_val_zero by
-              (subst; simpl; assumption). entailer!. } gather_SEP 3 10.
+              (subst; simpl; assumption). entailer!. }
+        gather_SEP 3 10.
+        (* gather_SEP (heap_rest_rep (ti_heap t_info')) (space_rest_rep sp). *)
         rewrite (heap_rest_rep_add _ _ (i + 1) H20), <- Heqt_info1 by assumption.
         gather_SEP 3 1 0. rewrite <- sepcon_assoc.
         replace_SEP 0 (thread_info_rep sh t_info1 ti) by

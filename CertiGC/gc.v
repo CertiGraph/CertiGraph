@@ -3,7 +3,7 @@ From compcert Require Import Coqlib Integers Floats AST Ctypes Cop Clight Clight
 Local Open Scope Z_scope.
 
 Module Info.
-  Definition version := "3.3"%string.
+  Definition version := "3.4"%string.
   Definition build_number := ""%string.
   Definition build_tag := ""%string.
   Definition arch := "x86"%string.
@@ -119,7 +119,7 @@ Definition _create_space : ident := 133%positive.
 Definition _depth : ident := 107%positive.
 Definition _do_generation : ident := 130%positive.
 Definition _do_scan : ident := 125%positive.
-Definition _exit : ident := 86%positive.
+Definition _exit : ident := 88%positive.
 Definition _fi : ident := 114%positive.
 Definition _forward : ident := 113%positive.
 Definition _forward_roots : ident := 121%positive.
@@ -143,7 +143,7 @@ Definition _limit : ident := 27%positive.
 Definition _lo : ident := 140%positive.
 Definition _main : ident := 155%positive.
 Definition _make_tinfo : ident := 139%positive.
-Definition _malloc : ident := 88%positive.
+Definition _malloc : ident := 86%positive.
 Definition _n : ident := 116%positive.
 Definition _new : ident := 112%positive.
 Definition _next : ident := 32%positive.
@@ -2202,13 +2202,13 @@ Definition global_definitions : list (ident * globdef fundef type) :=
                      {|cc_vararg:=true; cc_unproto:=false; cc_structret:=false|}))
      (Tcons tint Tnil) tvoid
      {|cc_vararg:=true; cc_unproto:=false; cc_structret:=false|})) ::
+ (_malloc,
+   Gfun(External EF_malloc (Tcons tuint Tnil) (tptr tvoid) cc_default)) ::
+ (_free, Gfun(External EF_free (Tcons (tptr tvoid) Tnil) tvoid cc_default)) ::
  (_exit,
    Gfun(External (EF_external "exit"
                    (mksignature (AST.Tint :: nil) None cc_default))
      (Tcons tint Tnil) tvoid cc_default)) ::
- (_free, Gfun(External EF_free (Tcons (tptr tvoid) Tnil) tvoid cc_default)) ::
- (_malloc,
-   Gfun(External EF_malloc (Tcons tuint Tnil) (tptr tvoid) cc_default)) ::
  (___stderrp, Gvar v___stderrp) ::
  (_fprintf,
    Gfun(External (EF_external "fprintf"
@@ -2251,7 +2251,7 @@ Definition public_idents : list ident :=
  _forward_roots :: _forward :: _Is_from :: _abort_with :: _Is_block ::
  _ptr_to_int_or_ptr :: _int_to_int_or_ptr :: _int_or_ptr_to_ptr ::
  _int_or_ptr_to_int :: _test_int_or_ptr :: _printf :: _abort :: _fprintf ::
- ___stderrp :: _malloc :: _free :: _exit :: ___builtin_debug ::
+ ___stderrp :: _exit :: _free :: _malloc :: ___builtin_debug ::
  ___builtin_nop :: ___builtin_write32_reversed ::
  ___builtin_write16_reversed :: ___builtin_read32_reversed ::
  ___builtin_read16_reversed :: ___builtin_fnmsub :: ___builtin_fnmadd ::
