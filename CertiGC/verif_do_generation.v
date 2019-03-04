@@ -24,6 +24,18 @@ Proof.
   localize [space_struct_rep sh t_info from; space_struct_rep sh t_info to].
   unfold space_struct_rep. unfold space_tri. do 5 forward.
   gather_SEP 0 1.
+  (* gather_SEP (data_at sh space_type *)
+  (*           (space_start (nth_space t_info from), *)
+  (*           (offset_val (WORD_SIZE * used_space (nth_space t_info from)) *)
+  (*              (space_start (nth_space t_info from)), *)
+  (*           offset_val (WORD_SIZE * total_space (nth_space t_info from)) *)
+  (*             (space_start (nth_space t_info from)))) (space_address t_info from)) *)
+  (*         (data_at sh space_type *)
+  (*           (space_start (nth_space t_info to), *)
+  (*           (offset_val (WORD_SIZE * used_space (nth_space t_info to)) *)
+  (*              (space_start (nth_space t_info to)), *)
+  (*           offset_val (WORD_SIZE * total_space (nth_space t_info to)) *)
+  (*             (space_start (nth_space t_info to)))) (space_address t_info to)). *)
   replace_SEP 0 (space_struct_rep sh t_info from * space_struct_rep sh t_info to) by
     (unfold space_struct_rep; entailer!).
   unlocalize [thread_info_rep sh t_info ti].
@@ -154,7 +166,8 @@ Proof.
     rewrite Znth_map by (rewrite spaces_size; rep_omega).
     rewrite <- nth_space_Znth. unfold space_tri at 2 3. thaw FR.
     assert (graph_has_gen g2 from) by (destruct H35 as [_ [? _]]; assumption).
-    rewrite (graph_rep_reset g2 from) by assumption. Intros. gather_SEP 1 4.
+    rewrite (graph_rep_reset g2 from) by assumption. Intros.
+    gather_SEP (heap_rest_rep (ti_heap t_info2)) (graph_rep (reset_graph from g2)).
     sep_apply (heap_rest_rep_reset g2 t_info2 from (proj1 H34) H40).
     rewrite <- heap_struct_rep_eq. gather_SEP 2 5 0.
     replace_SEP 0 (thread_info_rep sh (reset_nth_heap_thread_info from t_info2) ti).
