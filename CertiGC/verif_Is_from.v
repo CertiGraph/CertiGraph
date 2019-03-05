@@ -2,14 +2,23 @@
 (*                            *)
 (*          CONTENTS          *)
 (*                            *)
-(* is_from          line  14  *)
-(* int_or_ptr, v1   line 275  *)
-(* int_or_ptr, v2   line 350  *) 
+(* is_from          line  23  *)
+(* int_or_ptr, v1   line 280  *)
+(* int_or_ptr, v2   line 355  *) 
 (*                            *)
 (******************************)
 
-Require Export compcert.common.Events.
-Require Export RamifyCoq.CertiGC.gc_spec. (** sadly, we do need this import *)
+Require Import compcert.common.Events.
+Require Import compcert.common.Memory.
+Require Import compcert.common.Values.
+Require Import compcert.common.AST.
+Require Import compcert.x86_32.Archi.
+Require Import compcert.lib.Integers.
+Require Import Coq.ZArith.BinInt.
+Require Import Omega.
+Local Open Scope Z_scope.
+Local Open Scope list_scope.
+
 
 (* Verification of the function Is_from *)
 
@@ -44,23 +53,16 @@ Definition Is_from_sem : extcall_sem :=
 Definition Is_from_sig : signature :=
   mksignature (AST.Tint :: AST.Tint :: AST.Tint :: nil) (Some AST.Tint) cc_default.
 
-Lemma intmod_eq_ptrofsmod: Int.modulus = Ptrofs.modulus.
-Proof. now unfold Archi.ptr64; apply Ptrofs.modulus_eq32. Qed.
+Ltac split3 := split; [|split ].
 
-Lemma lt_ptr_mod: forall n1 n2, n1 <= n2 <= Ptrofs.max_unsigned -> n1 <= n2 < Ptrofs.modulus.
-Proof.
+Lemma lt_ptr_mod: forall n1 n2,
+    n1 <= n2 <= Ptrofs.max_unsigned ->
+    n1 <= n2 < Ptrofs.modulus.
+Proof. 
   intros.
-  replace Ptrofs.max_unsigned with (Z.pred Ptrofs.modulus) in * by rep_omega.
+  replace Ptrofs.max_unsigned with (Z.pred Ptrofs.modulus) in * by
+      (unfold Ptrofs.max_unsigned; omega).
   now rewrite <- Z.lt_le_pred in *.
-Qed.
-
-Lemma mem_ext_valid_block: forall m1 m2 b i n,
-    Mem.extends m1 m2 -> valid_block m1 b i n -> valid_block m2 b i n.
-Proof.
-  intros. destruct H0 as [? [? ?]].
-  do 2 (split; trivial).
-  intros. specialize (H2 i0 H3).
-  eapply Mem.valid_pointer_extends; eauto.
 Qed.
 
 Lemma Is_from_extcall: extcall_properties Is_from_sem Is_from_sig.
@@ -86,8 +88,11 @@ Proof.
     destruct H3 as [n [? [? [? [? ?]]]]].
     exists n. do 4 (split; trivial).
     clear -H0 H4. destruct H4 as [? [? ?]].
-    split3; [apply (mem_ext_valid_block _ _ _ _ _ H0 H) |
-             eapply Mem.valid_pointer_extends; eauto | tauto].
+    split3; [|eapply Mem.valid_pointer_extends; eauto | tauto].
+    destruct H as [? [? ?]].
+    do 2 (split; trivial).
+    intros. specialize (H4 i2 H5).
+    eapply Mem.valid_pointer_extends; eauto.
   - intros. exists f, vres, m1'. destruct H0 as [? [? ?]]. split.
     2: {
       split.
@@ -95,8 +100,7 @@ Proof.
         do 4 (destruct vargs; try destruct v; try contradiction).
         destruct H4 as [_ [_ [_ [_ [_ [_ [_ H]]]]]]].
         destruct vres; auto. now destruct H. 
-      - repeat (split; [now subst|]).
-        apply mem_lemmas.inject_separated_same_meminj.
+      - repeat (split; [now subst|]). congruence.
     }
     split3; trivial.
     do 4 (destruct vargs; try destruct v; try contradiction).
@@ -109,7 +113,8 @@ Proof.
     assert (Hf: 0 <= Ptrofs.unsigned i + n < Ptrofs.modulus) by
         (rewrite H4; apply Ptrofs.unsigned_range).
     assert (Ha: Ptrofs.unsigned (Ptrofs.add i (Ptrofs.repr delta)) + n < Int.modulus). {
-      rewrite intmod_eq_ptrofsmod.
+      replace Int.modulus with Ptrofs.modulus by
+          (unfold Int.modulus, Ptrofs.modulus; f_equal).
       destruct H1 as [_ _ _ _ rep _].
       destruct (rep b0 b3 delta
                       (Ptrofs.add i (Ptrofs.repr n)) H22) as [Hx Hy]. 
@@ -140,7 +145,8 @@ Proof.
       destruct (Ptrofs.unsigned_range i) as [? _].
       repeat rewrite Ptrofs.unsigned_repr_eq.
       repeat rewrite Z.add_mod_idemp_r by easy.
-      rewrite intmod_eq_ptrofsmod in Ha.
+      replace Int.modulus with Ptrofs.modulus in Ha by
+          (unfold Int.modulus, Ptrofs.modulus; f_equal).
       unfold Ptrofs.add in Hd.
       repeat rewrite Ptrofs.unsigned_repr_eq in Hd.
       rewrite Z.add_mod_idemp_r, Z.mod_small in Hd by easy.
@@ -197,7 +203,8 @@ Proof.
         rename m2 into m; rename m1' into m'.
         destruct H1 as [_ _ _ lap rep _].
         destruct H3.
-        -- destruct (EqDec_block b3 b7); [|now left].
+        Require Export RamifyCoq.CertiGC.gc_spec.
+        -- destruct (eq_block b3 b7); [|now left].
            subst b3. right. split; trivial.
            unfold Ptrofs.add; repeat rewrite Ptrofs.unsigned_repr_eq.
            repeat rewrite Z.add_mod_idemp_r by easy.
@@ -271,7 +278,6 @@ Proof.
 Qed.
 
 
-
 (* Verification of the function test_int_or_ptr, version 1 *)
 
 (* 
@@ -320,7 +326,7 @@ Proof.
         split; [apply Mem.unchanged_on_refl|].
         split; [apply Mem.unchanged_on_refl|].
         split; [apply inject_incr_refl|].
-        apply mem_lemmas.inject_separated_same_meminj.
+        congruence.
     }
     split3; trivial.
     do 2  (destruct vargs; try destruct v; try contradiction).
@@ -391,7 +397,11 @@ Definition test_iop_sem' : extcall_sem :=
     | _ => False
     end.
 
-Lemma test_iop__extcall': extcall_properties test_iop_sem' test_iop_sig.
+(* No change from before, just pasting again to make this section standalone *)
+Definition test_iop_sig' : signature :=
+  mksignature (AST.Tint :: nil) (Some AST.Tint) cc_default.
+
+Lemma test_iop__extcall': extcall_properties test_iop_sem' test_iop_sig'.
 Proof.
   constructor; intros.
   - destruct H as [_ [_ ?]].
@@ -475,7 +485,7 @@ Proof.
         split; [apply Mem.unchanged_on_refl|].
         split; [apply Mem.unchanged_on_refl|].
         split; [apply inject_incr_refl|].
-        apply mem_lemmas.inject_separated_same_meminj.
+        congruence.
     }
     split3; trivial.
     do 2 (destruct vargs; try destruct v; try contradiction).
