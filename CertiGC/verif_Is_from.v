@@ -1,23 +1,20 @@
+
 (******************************)
 (*                            *)
 (*          CONTENTS          *)
 (*                            *)
-(* is_from          line  23  *)
+(* is_from          line  20  *)
 (* int_or_ptr, v1   line 280  *)
 (* int_or_ptr, v2   line 355  *) 
 (*                            *)
 (******************************)
 
-Require Import compcert.common.Events.
-Require Import compcert.common.Memory.
-Require Import compcert.common.Values.
-Require Import compcert.common.AST.
-Require Import compcert.x86_32.Archi.
-Require Import compcert.lib.Integers.
-Require Import Coq.ZArith.BinInt.
-Require Import Omega.
-Local Open Scope Z_scope.
-Local Open Scope list_scope.
+Require Import compcert.common.Events compcert.common.Memory.
+Require Import compcert.common.Values compcert.common.AST.
+Require Import compcert.x86_32.Archi compcert.lib.Integers.
+Require Import Coq.ZArith.BinInt Coq.Lists.List Omega.
+Import ListNotations.
+Local Open Scope Z_scope. Local Open Scope list_scope.
 
 
 (* Verification of the function Is_from *)
@@ -203,7 +200,6 @@ Proof.
         rename m2 into m; rename m1' into m'.
         destruct H1 as [_ _ _ lap rep _].
         destruct H3.
-        Require Export RamifyCoq.CertiGC.gc_spec.
         -- destruct (eq_block b3 b7); [|now left].
            subst b3. right. split; trivial.
            unfold Ptrofs.add; repeat rewrite Ptrofs.unsigned_repr_eq.
@@ -223,7 +219,8 @@ Proof.
              replace (Ptrofs.unsigned i + (n - 1)) with (Ptrofs.unsigned i + n - 1) in H5 by omega.
              apply Mem.valid_pointer_nonempty_perm, Mem.perm_cur_max in H5. now right.
            }
-           replace Ptrofs.max_unsigned with (Z.pred Ptrofs.modulus) in * by rep_omega.
+           replace Ptrofs.max_unsigned with (Z.pred Ptrofs.modulus) in * by
+               (unfold Ptrofs.max_unsigned; omega).       
            rewrite <- Z.lt_le_pred in *.
            repeat rewrite Z.mod_small by easy.
            destruct (lap _ _ _ _ _ _ _ _ H1 H22 H32 H8 H6); [contradiction|].
@@ -233,14 +230,16 @@ Proof.
                    (Ptrofs.unsigned i1 + delta1 >= Ptrofs.unsigned i0 + delta) \/
                    ((Ptrofs.unsigned i1 + delta1 >= Ptrofs.unsigned i + delta) /\
                     Ptrofs.unsigned i1 + delta1 < Ptrofs.unsigned i0 + delta)) by omega.
-           destruct H10; [auto | destruct H10; [auto|]]. exfalso.
+           destruct H10; [auto | destruct H10; [auto|]].
+           exfalso.
            destruct H10. rewrite <- H4 in H11.
            assert (0 <= Ptrofs.unsigned i1 + delta1 - Ptrofs.unsigned i - delta < n) by omega.
            specialize (H5 (Ptrofs.unsigned i1 + delta1 - Ptrofs.unsigned i - delta) H12).
            apply Mem.valid_pointer_nonempty_perm, Mem.perm_cur_max in H5.
            destruct (lap b0 b7 delta b1 b7 delta1 _ (Ptrofs.unsigned i1) H1 H22 H32 H5 H6); [auto | apply H13; omega].
         -- destruct H1. subst b0 vres.
-           right. rewrite H22 in H32; inversion H32. clear H32.
+           right. rewrite H22 in H32; inversion H32.
+           clear H32.
            split; trivial.
            unfold Ptrofs.add; repeat rewrite Ptrofs.unsigned_repr_eq.
            repeat rewrite Z.add_mod_idemp_r by easy.
@@ -254,8 +253,7 @@ Proof.
            destruct (rep b1 b3 delta i1 H22) as [_ Hq].
            1:  now left; apply Mem.perm_cur_max, Mem.valid_pointer_nonempty_perm.
            destruct (rep b1 b3 delta i0 H22) as [_ Hr]. {
-             destruct H5 as [_ [_ H5]].
-             rewrite <- H4.
+             destruct H5 as [_ [_ H5]]. rewrite <- H4.
              assert (Hm: 0 <= n - 1 < n) by omega.
              right. apply Mem.perm_cur_max, Mem.valid_pointer_nonempty_perm.
              rewrite <- (H5 _ Hm); f_equal; omega.
@@ -265,17 +263,18 @@ Proof.
            repeat rewrite Z.mod_small by easy.
            destruct H3; [left | right]; omega.
   - intros. destruct H as [_ [? _]]. subst t. simpl. omega.
-  - intros. generalize H. destruct H as [_ [? _]]. subst t1. inversion H0. subst t2. clear H0. intro H.
+  - intros. generalize H. destruct H as [_ [? _]]. subst t1.
+    inversion H0. subst t2. clear H0. intro H.
     exists vres1, m1. apply H.
   - intros. destruct H as [? [? ?]]. destruct H0 as [? [? ?]].
-    subst m1 m2 t1 t2.
-    split; [constructor|].
+    subst m1 m2 t1 t2. split; [constructor|].
     intros _. split; trivial.
     do 4 (destruct vargs; try destruct v; try contradiction).
     destruct H2 as [_ [_ [_ [_ [_ [_ [_ ?]]]]]]].
     destruct H4 as [_ [_ [_ [_ [_ [_ [_ ?]]]]]]].
     intuition; congruence.
 Qed.
+
 
 
 (* Verification of the function test_int_or_ptr, version 1 *)
@@ -287,13 +286,13 @@ Qed.
 
 Definition test_iop_sem : extcall_sem :=
   fun _ args m1 trc ret m2 =>
-    m1 = m2 /\ trc = nil /\ 
+    m1 = m2 /\ trc = nil /\
     match args with
-    | [(Vint i)] =>
+    | [Vint i] =>
       ret = Vint (Int.modu i (Int.repr 2))
-    | [(Vptr b ofs)] =>
+    | [Vptr b ofs] =>
       ret = Vint (Ptrofs.to_int (Ptrofs.modu ofs (Ptrofs.repr 2)))
-    | _ => False
+    | _  => False
     end.
 
 Definition test_iop_sig : signature :=
@@ -346,10 +345,10 @@ Proof.
     intro H; exists vres1, m1; apply H.
   - intros. destruct H as [? [? ?]]. destruct H0 as [? [? ?]].
     subst m1 m2 t1 t2.
-    split; [constructor|]. intros _. split; trivial.
+    split; [constructor|].
+    intros _. split; trivial.
     do 2 (destruct vargs; try destruct v; try contradiction); congruence.
 Admitted.
-
 
 
 
@@ -369,10 +368,10 @@ Lemma valid_b_o_So_dec: forall m b o, {valid_b_o_So m b o} + {~ valid_b_o_So m b
 Proof.
   intros. unfold valid_b_o_So.
   destruct (Mem.perm_dec m b (Ptrofs.unsigned o) Max Nonempty), (Mem.perm_dec m b (Ptrofs.unsigned o + 1) Max Nonempty).
-  - left; split; trivial.
-  - right; intro; apply n; destruct H; trivial.
-  - right; intro; apply n; destruct H; trivial.
-  - right; intro. easy. 
+  - left; auto. 
+  - right; intros [_ ?]; contradiction.
+  - right; intros [? _]. apply n; contradiction.
+  - right; intros [? _]. contradiction. 
 Qed.
 
 (* 
@@ -384,11 +383,11 @@ Definition test_iop_sem' : extcall_sem :=
   fun _ args m1 trc ret m2 =>
     m1 = m2 /\ trc = nil /\ 
     match args with
-    | [(Vint i)] =>
+    | [Vint i] =>
       if (Int.eq Int.one (Int.modu i (Int.repr 2)))
       then ret = Vone
       else False
-    | [(Vptr b ofs)] =>
+    | [Vptr b ofs] =>
       if (Ptrofs.eq Ptrofs.one (Ptrofs.modu ofs (Ptrofs.repr 2)))
       then False
       else if valid_b_o_So_dec m1 b ofs                    
