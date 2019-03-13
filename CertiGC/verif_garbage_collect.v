@@ -206,19 +206,19 @@ Proof.
             (space_tri sp) by
             (unfold space_tri; do 2 f_equal; subst sp; simpl;
              rewrite Z.mul_0_r, isptr_offset_val_zero by assumption; reflexivity).
-        thaw FR. gather_SEP 12 2 3.
+        thaw FR. gather_SEP 11 2 3.
         rewrite (heap_struct_rep_add t_info' sh sp (i + 1) H20), <- Heqt_info1.
         replace (ti_heap_p t_info') with (ti_heap_p t_info1) by
             (subst t_info1; simpl; reflexivity).
         replace (ti_args t_info') with (ti_args t_info1) by
             (subst t_info1; simpl; reflexivity).
-        replace_SEP 10 (space_rest_rep sp). {
+        replace_SEP 9 (space_rest_rep sp). {
           unfold space_rest_rep. rewrite if_false by assumption.
           replace (space_sh sp) with Ews by (subst sp; simpl; reflexivity).
           replace (used_space sp) with 0 by (subst sp; simpl; reflexivity).
           rewrite Z.sub_0_r, Z.mul_0_r, isptr_offset_val_zero by
               (subst; simpl; assumption). entailer!. }
-        gather_SEP 3 10.
+        gather_SEP 3 9.
         (* gather_SEP (heap_rest_rep (ti_heap t_info')) (space_rest_rep sp). *)
         rewrite (heap_rest_rep_add _ _ (i + 1) H20), <- Heqt_info1 by assumption.
         gather_SEP 3 1 0. rewrite <- sepcon_assoc.
