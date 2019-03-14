@@ -91,11 +91,9 @@ Proof.
       (* change back to "data_at sh heap_type v h" *)
       rewrite <- space_array_1_eq. rewrite sublist_list_repeat by omega.
       change (12 - 1) with 11 at 2.
-      gather_SEP 1 2.
-      (* gather_SEP (data_at Ews (tarray space_type 1) *)
-      (*       [(p0, (p0, offset_val (WORD_SIZE * Z.shiftl 1 16) p0))] h) *)
-      (*     (data_at Ews (tarray space_type (12 - 1)) (list_repeat (Z.to_nat 11) vn) *)
-      (*       (field_address0 (tarray space_type 12) [ArraySubsc 1] h)). *)
+      (* gather_SEP 1 2. *)
+      gather_SEP (data_at Ews (tarray space_type 1) _ h)
+                 (data_at Ews (tarray space_type (12 - 1)) _ _).
       remember (p0, (p0, offset_val (WORD_SIZE * Z.shiftl 1 16) p0)) as vh.
       remember (vh :: list_repeat (Z.to_nat 11) vn) as vl.
       replace [vh] with (sublist 0 1 vl). 2: {

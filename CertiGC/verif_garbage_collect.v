@@ -73,7 +73,10 @@ Proof.
       (spaces (ti_heap t_info)) by
       (destruct (heap_head_cons (ti_heap t_info)) as [hs [hl [? ?]]];
        unfold nth_space; rewrite H7; simpl; reflexivity).
-  gather_SEP 5 6 7. replace_SEP 0 (thread_info_rep sh t_info ti) by
+  gather_SEP (data_at sh heap_type _ _) (heap_rest_rep _).
+  gather_SEP (data_at sh thread_info_type _ _)
+             (data_at sh heap_type _ _ * heap_rest_rep _).
+  replace_SEP 0 (thread_info_rep sh t_info ti) by
     (unfold thread_info_rep, heap_struct_rep; entailer!;
     do 2 (unfold_data_at (data_at _ _ _ _); cancel)).
   forward_for_simple_bound
@@ -153,7 +156,10 @@ Proof.
       pose proof H9. destruct H19 as [_ [_ [_ [_ ?]]]].
       pose proof (ti_size_gen _ _ _ (proj1 H8) H13 H19). unfold gen_size in H20.
       rewrite nth_space_Znth, Z2Nat.id in H20 by omega. rewrite H20. clear H19 H20.
-      assert_PROP (isptr (ti_heap_p t_info')) by entailer!. gather_SEP 0 1 2.
+      assert_PROP (isptr (ti_heap_p t_info')) by entailer!.
+      gather_SEP (data_at sh heap_type _ _) (heap_rest_rep _).
+      gather_SEP (data_at sh thread_info_type _ ti) (data_at sh heap_type _ _ * heap_rest_rep _). 
+      (* gather_SEP 0 1 2. *)
       replace_SEP 0 (thread_info_rep sh t_info' ti) by
           (unfold thread_info_rep, heap_struct_rep; entailer!). pose proof H14.
       rewrite spaces_size in H20. unfold thread_info_rep. Intros.
@@ -206,7 +212,8 @@ Proof.
             (space_tri sp) by
             (unfold space_tri; do 2 f_equal; subst sp; simpl;
              rewrite Z.mul_0_r, isptr_offset_val_zero by assumption; reflexivity).
-        thaw FR. gather_SEP 11 2 3.
+        thaw FR.
+        gather_SEP 11 2 3.
         rewrite (heap_struct_rep_add t_info' sh sp (i + 1) H20), <- Heqt_info1.
         replace (ti_heap_p t_info') with (ti_heap_p t_info1) by
             (subst t_info1; simpl; reflexivity).
@@ -221,7 +228,11 @@ Proof.
         gather_SEP 3 9.
         (* gather_SEP (heap_rest_rep (ti_heap t_info')) (space_rest_rep sp). *)
         rewrite (heap_rest_rep_add _ _ (i + 1) H20), <- Heqt_info1 by assumption.
-        gather_SEP 3 1 0. rewrite <- sepcon_assoc.
+        
+        gather_SEP 3 1 0.
+        (* gather_SEP (heap_struct_rep sh _ _) *)
+                   (* (heap_rest_rep _). *)
+        rewrite <- sepcon_assoc.
         replace_SEP 0 (thread_info_rep sh t_info1 ti) by
             (unfold thread_info_rep; entailer!). rewrite (graph_rep_add g' gi); auto.
         3: destruct H9 as [? [? [? [? ?]]]]; assumption.

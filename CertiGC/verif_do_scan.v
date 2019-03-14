@@ -207,7 +207,10 @@ Proof.
       rewrite make_header_Wosize, make_header_tag by assumption. deadvars!.
       fold (next_address t_info' to). thaw FR.
       fold (heap_struct_rep sh l (ti_heap_p t_info')). 
-      gather_SEP 5 6 1.
+      (* gather_SEP 5 6 1. *)
+      gather_SEP
+        (data_at sh thread_info_type _ _)
+        (heap_struct_rep sh l _ ) (heap_rest_rep _).
       replace_SEP 0 (thread_info_rep sh t_info' ti) by
           (unfold thread_info_rep; entailer!).
       forward_if
