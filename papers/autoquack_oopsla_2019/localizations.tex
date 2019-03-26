@@ -1,4 +1,10 @@
-Here we explain two important features of the \infrulestyle{Localize} rule that go beyond what \infrulestyle{Ramify} can do: its ability to link existentially-quantified predicates from the local postcondition $L_2$ to the global postcondition $G_2$, as well as how to handle program variables that are modified during a localization block.  Perhaps surprisingly, to provide a robust, lightweight, and fully-automatable solution to the latter, it is necessary to first understand and solve the former.
+Here we explain two important improvements the \infrulestyle{Localize} rule 
+makes on the \infrulestyle{Ramify} rule. 
+It can link existentially-quantified predicates from the local postcondition 
+$L_2$ to the global postcondition $G_2$, and also handle program variables 
+that are modified during a localization block. We need to understand 
+{\color{magenta}and solve} the former in order to provide a robust, 
+lightweight, and fully-automatable solution to the latter.
 
 \subsection{Linked existentials}
 
@@ -10,19 +16,23 @@ In Figure~\ref{fig:markgraph} we put the code and proof sketch of the classic \l
 \{\p{m\_graph}(\li{x},\gamma)\}~\li{mark(x)}~\{\exists \gamma'.~ \p{m\_graph}(\li{x},\gamma') /| \m{mark}(\gamma, \li{x}, \gamma')\}
 \vspace*{-1ex}
 \]
-The specification is again stated with mathematical $\gamma$, although in this case $\gamma(x)$ maps to triples $(m,l,r)$, where $m$ is a ``mark'' bit (0 or 1) and $\{l,r\} \subseteq V(\gamma) \uplus \{0\}$ are the neighbors of $v$.  By ``local'', we mean that the predicate $\p{m\_graph}(\li{x},\gamma)$ says that the heap represents \emph{only the nodes in $\gamma$ that are reachable from \li{x}}.  Rather than passing the entire graph around as \li{find} does, \li{mark} will use the fold/unfold relationship given in equation~\eqref{eqn:bigraphintrofoldunfold}, located just under the code in Figure~\ref{fig:markgraph}, to ``unfold'' the graph as if it were an inductive predicate.
+The specification is again stated with mathematical $\gamma$, although in this case $\gamma(x)$ maps to triples $(m,l,r)$, where $m$ is a ``mark'' bit (0 or 1) and $\{l,r\} \subseteq V(\gamma) \uplus \{0\}$ are the neighbors of $v$.  By ``local'', we mean that the predicate $\p{m\_graph}(\li{x},\gamma)$ says that the heap represents \emph{only the nodes in $\gamma$ that are reachable from \li{x}}.  Rather than passing the entire graph around as \li{find} does, \li{mark} will use the fold/unfold relationship given in equation~\eqref{eqn:bigraphintrofoldunfold}, located just under the code in Figure~\ref{fig:markgraph}, to ``unfold'' the graph as if it were an inductive predicate. {\color{blue} and then...}
 
 This fold/unfold relationship deserves attention.
-First, \eqref{eqn:bigraphintrofoldunfold} uses the ``overlapping conjunction'' $\ocon$ of separation logic; informally $P ** Q$ means that $P$ and $Q$ may overlap in the heap (\emph{e.g.}, nodes in the left subgraph can also be in the right subgraph or even be the root $x$).  The presence of the unspecified sharing indicated by the $\ocon$ connective is directly related to why graph-manipulating algorithms are so hard to verify (\emph{e.g.}, it is hard to apply the \infrulestyle{Frame} rule).  {\color{magenta}The standard semantics of the separation logic connectives used in this paper are in Figure~\ref{fig:seplogsem}.}
-Second, \eqref{eqn:bigraphintrofoldunfold} illustrates how industrial-strength settings complicate verification.  Lines~\mbox{\ref{code:nodedefstart}--\ref{code:nodedefend}} define the data type \li{Node} used by \li{mark}.  The \li{_Alignas($n$)} directives tell CompCert to align fields on $n$-byte boundaries.  As explained in~\S\ref{sec:goodgraph}, this alignment is necessary in C-like memory models to prove fold-unfold \eqref{eqn:bigraphintrofoldunfold}, which is why \eqref{eqn:bigraphintrofoldunfold} includes an alignment restriction $x~\mathsf{mod}~16 = 0$ and an existentially-quantified ``blank'' second field for the root $x \mapsto m,-,l,r$.
+First, \eqref{eqn:bigraphintrofoldunfold} uses the ``overlapping conjunction'' $\ocon$ of separation logic; informally $P ** Q$ means that $P$ and $Q$ may overlap in the heap (\emph{e.g.}, nodes in the left subgraph can also be in the right subgraph or even be the root $x$).  The presence of the unspecified sharing indicated by the $\ocon$ connective is part of why graph-manipulating algorithms are so hard to verify (\emph{e.g.}, it is hard to apply the \infrulestyle{Frame} rule).  {\color{magenta}The standard semantics of the separation logic connectives used in this paper are in Figure~\ref{fig:seplogsem}.}
+Second, \eqref{eqn:bigraphintrofoldunfold} illustrates how industrial-strength settings complicate verification.  Lines~\mbox{\ref{code:nodedefstart}--\ref{code:nodedefend}} define the data type \li{Node} used by \li{mark}.  The \li{_Alignas($n$)} directives tell {\color{magenta}CompCert} to align fields on $n$-byte boundaries. 
+{\color{blue} This problem recurs... we need to be very clear about when
+CompCert, VST, Floyd, etc get introduced. We do have neat little 30-word briefs about
+each, but they tend to appear haphazardly.} 
+As explained in~\S\ref{sec:goodgraph}, this alignment is necessary in C-like memory models to prove fold-unfold \eqref{eqn:bigraphintrofoldunfold}, which is why \eqref{eqn:bigraphintrofoldunfold} includes an alignment restriction $x~\mathsf{mod}~16 = 0$ and an existentially-quantified ``blank'' second field for the root $x \mapsto m,-,l,r$.
 {\color{magenta}(In our Floyd proofs the alignment restriction and blank second field are nicely hidden ``behind the scenes''.)}
 
-Just as with \li{find}, the postcondition of \li{mark} is specified \emph{relationally}, \emph{i.e.} $\{\exists \gamma'.~ \p{graph}(\li{x},\gamma') /| \m{mark}(\gamma, \li{x}, \gamma')\}$ instead of \emph{functionally}, \emph{i.e.} $\{\p{graph}\big(\li{x},\m{mark}(\gamma, \li{x})\big)\}$. In the first case $\m{mark}$ is a relation that specifies that~$\gamma'$ is the result of correctly marking~$\gamma$ from~\li{x}, whereas in the second $\m{mark}$ is a function that \textbf{computes} the result of marking~$\gamma$ from~\li{x}. For both theoretical and practical reasons a relational approach is better.
+Just as with \li{find}, the postcondition of \li{mark} is specified \emph{relationally}, \emph{i.e.} $\{\exists \gamma'.~ \p{graph}(\li{x},\gamma') /| \m{mark}(\gamma, \li{x}, \gamma')\}$ instead of \emph{functionally}, \emph{i.e.} $\{\p{graph}\big(\li{x},\m{mark}(\gamma, \li{x})\big)\}$. In the first case $\m{mark}$ is a relation that specifies that~$\gamma'$ is the result of correctly marking~$\gamma$ from~\li{x}, whereas in the second $\m{mark}$ is a function that \textbf{computes} a new graph, which is the result of marking~$\gamma$ from~\li{x}. A relational approach is better for both theoretical and practical reasons.
 {\color{magenta}Theoretically, relations are preferable because they are more general.  For example, relations allow ``inputs'' to have no ``outputs'' (\emph{i.e.} be partial) or alternatively have many outputs (\emph{i.e.} be nondeterministic).  Nondeterminism can be quite useful when specifying programs; for example, the CertiCoq garbage collector (\S\ref{sec:gc}) is specified nondeterministically to avoid, among other things, specifying how \li{malloc} allocates fresh blocks of memory.  Relations are also preferable to functions because they are more compositional.
-We take advantage of compositionality by using $\m{mark}(\gamma,x,\gamma') /| \ldots$ to specify both our ``spanning tree'' and {\color{blue}``graph copy''} algorithms in~\S\ref{sec:application}, which also mark nodes while carrying out their primary tasks.
+We take advantage of compositionality by using $\m{mark}(\gamma,x,\gamma') /| \ldots$ to specify both our ``spanning tree'' and {\color{blue}``graph copy''} algorithms in~\S\ref{sec:application}, which also need to mark nodes in order to carry out their primary tasks.
 
 \begin{figure}
-{\color{magena}
+{\color{magenta}
 \[
 \begin{array}{lcl}
 \sigma |= P * Q & \defeq & \exists \sigma_1, \sigma_2.~ \sigma_1 \oplus \sigma_2 = \sigma /| \null \\ && ~~ (\sigma_1 |= P) /| (\sigma_2 |= 2)\\
@@ -43,12 +53,14 @@ We take advantage of compositionality by using $\m{mark}(\gamma,x,\gamma') /| \l
 \vspace*{-1em}
 \end{figure}
 
-Practically, it is painful to define computational functions over graphs in a proof assistant like Coq, and portions of this pain are overkill.  For example, Coq requires that all functions terminate, a nontrivial proof obligation over cyclic structures like graphs, but our verification of \li{mark} is only for partial correctness.  Defining relations is much easier because \emph{e.g.} one can use quantifiers and does not have to prove termination.
+Practically, it is painful to define computational functions over graphs in a proof assistant like Coq, {\color{magenta}and portions of this pain are overkill}.  For example, Coq requires that all functions terminate, a nontrivial proof obligation over cyclic structures like graphs, but our verification of \li{mark} is only for partial correctness.  Defining relations is much easier because \emph{e.g.} one can use quantifiers and does not have to prove termination.
 The $\m{mark}$ and $\m{mark1}$ relations we use are defined straightforwardly at the bottom of Figure~\ref{fig:markgraph}.
 }
 
-Turning to the body of the verification (lines~\ref{code:inmark}--\ref{code:outmark}), readers may already have noticed our new notation: blocks of proof sketch bracketed by the symbols $\searrow$ and $\swarrow$, such as lines~\ref{code:beforerootmark}--\ref{code:afterrootmark}.  We call a bracketed set of lines like this a ``localization block''; localization blocks were inspired by our new \li{localize} $\searrow$ and \li{unlocalize} $\swarrow$ tactics in Floyd (\S\ref{sec:vst}).
-The intuitive idea is that we zoom in from a larger ``global'' context to a smaller ``local'' one.  After verifying some commands locally to arrive at a local postcondition, we zoom back out to the global context.  Although we do not do so in Figure~\ref{fig:markgraph}, localization blocks can safely nest.
+{\color{blue}\emph{Very} serious repetition below!}
+
+{\color{magenta}Turning to the body of the verification (lines~\ref{code:inmark}--\ref{code:outmark}), readers may already have noticed our new notation: blocks of proof sketch bracketed by the symbols $\searrow$ and $\swarrow$, such as lines~\ref{code:beforerootmark}--\ref{code:afterrootmark}.  We call a bracketed set of lines like this a ``localization block''; localization blocks were inspired by our new \li{localize} $\searrow$ and \li{unlocalize} $\swarrow$ tactics in Floyd (\S\ref{sec:vst}).
+The intuitive idea is that we zoom in from a larger ``global'' context to a smaller ``local'' one.  After verifying some commands locally to arrive at a local postcondition, we zoom back out to the global context.  Although we do not do so in Figure~\ref{fig:markgraph}, localization blocks can safely nest.}
 
 In lines~\ref{code:beforerootmark}--\ref{code:afterrootmark}, imagine unfolding the \p{graph} predicate in line~\ref{code:globalbeforerootmark} using equation \eqref{eqn:bigraphintrofoldunfold} and then zooming in to the root node \li{x} for lines~\ref{code:beforerootmark}--\ref{code:afterrootmark}, before zooming back out in line~\ref{code:globalafterrootmark}.
 
@@ -57,9 +69,10 @@ In lines~\ref{code:beforerootmark}--\ref{code:afterrootmark}, imagine unfolding 
 HERE
 
 
-Here we upgrade the \infrulestyle{Ramify} rule in two important respects.  The first is the treatment of modified program variables.  Although prosaic, a robust treatment of modified variables is essential to verifying programs of any length.  The second is better handling of existential variables in the postconditions of localization blocks, which occur frequently when using relations in specifications.  For example, in lines~\ref{code:beforemarkl}--\ref{code:aftermarkl} of Figure~\ref{fig:markgraph} we must ``extract'' the existentially-quantified~$\gamma''$ from inside the localization block to outside it.  Moreover, rather surprisingly, robust treatment of modified program variables requires extraction of existential quantifiers from localization blocks.  Accordingly, we develop the \infrulestyle{Ramify-PQ} rule that can robustly handle both modified \underline{p}rogram variables as well as existential \underline{q}uantifiers.
+{\color{magenta}Here we upgrade the \infrulestyle{Ramify} rule in two important respects.  The first is the treatment of modified program variables.  Although prosaic, a robust treatment of modified variables is essential to verifying programs of any length.  The second is better handling of existential variables in the postconditions of localization blocks, which occur frequently when using relations in specifications.}
+{\color{blue} repetition} For example, in lines~\ref{code:beforemarkl}--\ref{code:aftermarkl} of Figure~\ref{fig:markgraph} we must ``extract'' the existentially-quantified~$\gamma''$ from inside the localization block to outside it.  Moreover, rather surprisingly, the robust treatment of modified program variables requires the extraction of existential quantifiers from localization blocks.  Accordingly, we develop the \infrulestyle{Ramify-PQ} rule that can robustly handle both modified \underline{p}rogram variables as well as existential \underline{q}uantifiers.
 
-Hobor and Villard noted that their \infrulestyle{Ramify} rule handled modified program variables poorly~\cite{hobor:ramification} and proposed two solutions: using ``variables as resource''~\cite{bornat:var} and making local program transformations.  While these solutions are reasonable in a pen-and-paper context, both fall well short in mechanized ones.  Neither VST nor HIP/SLEEK use variables as resource, nor do they have modules to reason about program equivalence; moreover, most other mechanized verification systems do not support these solutions either~\cite{Beckert:2007,DistefanoP08,bengtson:charge}.  We want a solution that is widely applicable to tools as they actually exist today; in~\S\ref{sec:development} we will see that our modifications to VST and H/S are approximately 1.4\% of their respective (sizable) codebases.
+Hobor and Villard noted that their \infrulestyle{Ramify} rule handled modified program variables poorly~\cite{hobor:ramification} and proposed two solutions: using ``variables as resource''~\cite{bornat:var} and making local program transformations.  While these solutions are reasonable in a pen-and-paper context, both fall well short in mechanized ones.  VST does not use variables as resource, nor does it have modules to reason about program equivalence; moreover, most other mechanized verification systems do not support these solutions either~\cite{Beckert:2007,DistefanoP08,bengtson:charge}.  We want a solution that is widely applicable to tools as they actually exist today; in~\S\ref{sec:development} we will see that our modifications to VST and H/S are approximately 1.4\% of their respective (sizable) codebases. {\color{blue}Update to the latest stats, remove H/S.}
 
 \subsection{Modified program variables}
 \label{sec:freevars}
@@ -71,8 +84,7 @@ we need a fixed inductive \textbf{syntax} for formulas.  In contrast, in this pa
 \[
 \begin{array}{ll}
 \sigma \stackrel{S}{\cong} \sigma' & \stackrel{\Delta}{=} ~~ \sigma \text{ and } \sigma' \text{ coincide everywhere except } S\\
-P \text{ ignores } S & \stackrel{\Delta}{=} ~~ \forall \sigma, \sigma'.~ \sigma \stackrel{S}{\cong} \sigma' => \null \\
-& \qquad ~~ (\sigma |= P) <=> (\sigma' |= P)
+P \text{ ignores } S & \stackrel{\Delta}{=} ~~ \forall \sigma, \sigma'.~ \sigma \stackrel{S}{\cong} \sigma' => \big( (\sigma |= P) <=> (\sigma' |= P) \big)
 \end{array}
 \]
 That is, we consider two program states $\sigma$ and $\sigma'$ equivalent up to program variable set $S$ when they agree everywhere except on the values of $S$ (typically, a state $\sigma$ is a pair of a heap $h$ and program variables $\rho$).  A predicate $P$ ignores $S$ when its truth is independent of all program variables in $S$.  %{\color{magenta} Notice both the syntactic and semantic styles use the $\MV(c)$ function defined via straightforward recursive case analysis on program syntax; programming languages typically do have a fixed syntactic structure.}
@@ -107,8 +119,8 @@ The ramification entailment now incorporates a new (universal/boxy) modal operat
 Let us return to our earlier entailment:
 \[
 \begin{array}{l}
-(\li{x} = 5 /| A) \vdash (\li{x} = 5 /| B) * \null \\
-~~ \pguards{\li{...; x = x + 1; ...;}} \big((\li{x} = 6 /| C) --* (\li{x} = 6 /| D)\big)
+(\li{x} = 5 /| A) \vdash (\li{x} = 5 /| B) *
+\pguards{\li{...; x = x + 1; ...;}} \big((\li{x} = 6 /| C) --* (\li{x} = 6 /| D)\big)
 \end{array}
 \]
 Since \li{x} is modified, its value can change from the first line, in which \li{x} must be 5, to the second, in which \li{x} must be 6.
@@ -157,7 +169,7 @@ F ~~ \defeq ~~ (6 = 6 /| [\li{x} |-> 6]C) --* (6 = 6 /| [\li{x} |-> 6]D)
 The first premise of \infrulestyle{Solve Ramify-P} is
 \[
 \begin{array} {l}
-\li{x} = 5 /| A ~ |- ~ (\li{x} = 5 /| B) * \null \\ \qquad \big((6 = 6 /| [\li{x} |-> 6]C) --* (6 = 6 /| [\li{x} |-> 6]D)\big)
+\li{x} = 5 /| A ~ |- ~ (\li{x} = 5 /| B) * \big((6 = 6 /| [\li{x} |-> 6]C) --* (6 = 6 /| [\li{x} |-> 6]D)\big)
 \end{array}
 \]
 This entailment is the key proof that our localization was sound.  To solve it we first substitute away the remaining program variables (\emph{e.g.} replace \li{x} with 5) to obtain a program-variable-free and modality-free entailment and then apply our ramification library (\S\ref{sec:ramifylib}); as previously explained we sometimes use $\ramify(n)$ to explicitly reference a library lemma.
@@ -167,7 +179,7 @@ Meanwhile, the second premise looks like this:
 \begin{equation}
 \label{eqn:sndpremisetauto}
 \begin{array}{l}
-(6 = 6 /| [\li{x} |-> 6]C) --* (6 = 6 /| [\li{x} |-> 6]D) ~ |- ~ \\ \qquad (\li{x} = 6 /| C) --* (\li{x} = 6 /| D)
+(6 = 6 /| [\li{x} |-> 6]C) --* (6 = 6 /| [\li{x} |-> 6]D) ~ |- (\li{x} = 6 /| C) --* (\li{x} = 6 /| D)
 \end{array}
 \vspace*{-0.75ex}
 \end{equation}
@@ -212,7 +224,9 @@ What happens when we \textbf{cannot} calculate a substitution using globally-sco
 \vspace*{-1.5ex}
 Within a localization block we call the nondeterministically specified function \li{malloc} and use the program variable~\li{y} as a flag to keep track of whether the allocation succeeded.  Call the postconditions in lines~\ref{toycode:localpost} and~\ref{toycode:globalpost} just above $L_2$ and $G_2$. %respectively.
 
-Now the choice of $F$ is not very straightforward because we do not know the values to substitute for \li{x} or \li{y}:
+Now the choice of $F$ is not very straightforward because we do not know the values to substitute for \li{x} or \li{y}: $[\li{x} |-> ?][\li{y} |-> ?] (L_2 --* G_2)$.
+
+\hide{
 \vspace*{-1.5ex}
 \begin{equation}
 \label{eqn:unclearsubst}
@@ -223,6 +237,7 @@ Now the choice of $F$ is not very straightforward because we do not know the val
 %\end{array}
 \vspace*{-1.5ex}
 \end{equation}
+} % hiding because I just made it inline.
 
 We proceed as follows.  First, rewrite the postconditions in lines~\ref{toycode:localpost} and~\ref{toycode:globalpost} just above to introduce fresh existentially-quantified  variables $x$ and $y$ and bind them to \li{x} and \li{y}:
 \begin{lstlisting}[firstnumber=4]
@@ -231,7 +246,8 @@ We proceed as follows.  First, rewrite the postconditions in lines~\ref{toycode:
 // $\label{code:G2p}\{\exists x,y. ~ x = \tx{x} /| y = \tx{y} /| [\tx{x} |-> x][\tx{y} |-> y] G_2\}$
 // $\{ G_2 \}$
 \end{lstlisting}
-Call these equivalent postconditions $L_2'$ and $G_2'$ (lines~\ref{code:L2p}\&\ref{code:G2p}).
+Call these equivalent postconditions $L_2'$ and $G_2'$ (lines~\ref{code:L2p} and 
+\ref{code:G2p}).
 
 
 %\begin{lstlisting}[firstnumber=4]
@@ -303,6 +319,7 @@ Although our technique to handle modified program variables is rather intricate,
 In Appendix~B\hide{\ref{apx:ruleproofs}} we sketch the soundness proofs for \infrulestyle{Ramify-P} and \infrulestyle{Ramify-PQ}.  \infrulestyle{Ramify-P} requires only \infrulestyle{Frame} and \infrulestyle{Consequence} to prove, along with some basic properties of $\pguards{c}$.  \infrulestyle{Ramify-PQ} is built on top of \infrulestyle{Ramify-P} with some complicated logical maneuvers.  Systems of separation logic that do not wish to add $\pguards{c}$ to their logical formulae might consider adding a rule that packages the \infrulestyle{Ramify-PQ} and \infrulestyle{Solve Ramify-PQ} rules together.
 
 \subsection{Forward ramification}
+{\color{blue} What to do about this now that H/S has been cut?}
 
 As we saw in \S\ref{sec:hipsleek}, the forward style of reasoning employed by HIP/SLEEK uses the existential wand $--o$ to express ramifications instead of the more typical universal wand $--*$.  The standard $--*$ form of ramification is weaker, but the strongest postcondition style using $--o$ can also get the job done without too much extra work since:
 \vspace*{0.25ex}

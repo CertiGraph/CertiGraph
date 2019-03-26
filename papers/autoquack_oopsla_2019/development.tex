@@ -1,6 +1,6 @@
 \label{sec:vst}
 
-
+{\color{blue} These brief explanations of VST and Floyd need to come in much earlier...}
 The Verified Software Toolchain (VST) is a series of machine-checked modules written in Coq whose focus is reasoning about C programs~\cite{appel:programlogics}, especially those programs that can be compiled with the CompCert compiler~\cite{leroy:compcert}.  One of VST's modules, ``Floyd'', is a separation-logic based engine to help users
 verify concrete programs.  The modules interlock so there are no ``gaps'' in the end-to-end certified results; accordingly all of the rules employed by Floyd have been proved sound with respect to the underlying semantics used by CompCert.  Floyd is written in Ltac and Gallina and is designed to help users verify the full functional correctness of their programs.  Although Floyd devotes considerable effort to make this task simpler, it prefers expressibility and completeness to more automated tools like HIP/SLEEK.
 
@@ -94,7 +94,7 @@ Component & Files & Size (in lines)\\\hline
 VST Examples (\S\ref{sec:vstgraphmark},\S\ref{sec:application}) & 13 & 3,290 \\
 Integration into Floyd (\S\ref{sec:vstlocalunlocal}) & 12 & 1,917 \\
 H/S Example (\S\ref{sec:hipsleek}) & 2 & 443 \\
-Modifications to H/S (\S\ref{sec:hipsleek}) & ~~51\tablefootnote{H/S files are modified, not necessarily freshly created.} & 2,500 \\
+Modifications to H/S (\S\ref{sec:hipsleek}) & ~~51 & 2,500 \\
 Math Graph (\S\ref{sec:mathgraph}) & 19 & 12,723\\
 Spatial Graph (\$\ref{sec:spacegraph}) & 10 & 6,458 \\
 Memory Model \& Logic & 13 & 2,373 \\
