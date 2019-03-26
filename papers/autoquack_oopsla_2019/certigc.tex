@@ -1,6 +1,6 @@
-In this section, we explain how we used our graph library
+{\color{magenta}In this section, we explain how we used our graph library
 to verify a generational copying garbage collector for the 
-CertiCoq compiler. The GC is our most complicated example,
+CertiCoq compiler.} The GC is our most complicated example,
 and we will discuss some of its key proofs, but the larger
 point here is that we completed this certification using 
 exactly the framework and the principles we have discussed
@@ -95,22 +95,24 @@ The mutator only ever allocates new memory in the first,
 smallest generation of heap. This generation is thus 
 called the nursery. If it finds that the nursery is full, 
 the mutator calls the garbage collector to free up space.
-The main GC function triggers the collection of the nursery
-into the second generation, which is twice in size. These generations
-are called the \emph{from} and \emph{to} generations respectively.
+The main GC function triggers the collection of the nursery 
+(now called the \emph{from} generation)
+into the second generation (the \emph{to} generation). 
 To trigger a collection means to examine the elements 
 in \emph{from}, see if they are accessible from the mutator's
 args array either directly or indirectly, and, if they are, 
 copy them over to \emph{to}. This copying is achieved over a few steps, 
 and we will examine these shortly, but the larger picture is that 
-everything of import in \emph{from} gets copied to \emph{to}, 
+everything of importance in \emph{from} gets copied to \emph{to}, 
 and so \emph{from} can safely be reset. 
 
 An important subtlety here is that we enjoyed a 
 guarantee that \emph{to} had enough room to accept 
-\emph{from}'s items. In the (empirically improbable) worst case, 
+\emph{from}'s items. Subsequent generations double in size, so 
+\emph{to} had twice the capacity of \emph{from}.
+In the (empirically improbable) worst case, 
 \emph{all} of \emph{from}'s data was copied over to \emph{to}, 
-so \emph{to} could not have been more than 
+so, before this collection started, \emph{to} could not have been more than 
 half full. We relied on this guarantee before this collection, 
 and we must ensure we will enjoy it the next time a collection 
 is required. So, in case the collection of the nursery caused
@@ -124,7 +126,7 @@ return control to the mutator, which goes ahead with
 the allocation that it was trying to perform in the nursery.
 
 Armed with an understanding of how the overall collection 
-works via two-generational collections, we move one 
+works via (a series of) two-generational collections, we move one 
 level deeper and examine how we identify and 
 copy those items in a \emph{from} generation that are reachable
 from the args array to the \emph{to} generation.
@@ -135,8 +137,8 @@ from the args array to the \emph{to} generation.
 
 We start at the mutator-owned args array, whose elements
 are either data, or pointers that point at blocks in the 
-heap. We do not touch the data or the pointers that point
-anywhere but the \emph{from} generation. 
+heap. We ignore the data entirely, and, among the pointers, we 
+are only interested in pointers that point into the \emph{from} generation. 
 For each pointer that points into \emph{from}, we copy its
 target block to \emph{to}, simply adding it in its entirety 
 after \emph{to}'s last-used spot, which is called \emph{next}. 
@@ -144,8 +146,9 @@ after \emph{to}'s last-used spot, which is called \emph{next}.
 % should I mention the distinguished pointer that points at the copy?
 
 This operation only takes care of the blocks that 
-the args array was pointing at directly, so we still have work
-to do. The only way to get to an indirect 
+the args array was pointing at directly, so we still have to copy 
+over indirectly-accessible blocks. Of course, the only way to 
+access an indirect 
 block is via one of the direct blocks, and, conveniently, we have
 just finished copying the direct blocks into a neat contiguous
 array. We start at the old \emph{next} in \emph{to}
@@ -173,11 +176,12 @@ A good question at this juncture is why this rather selective scan
 of the args array and the heap is good enough to collect \emph{from}. 
 We definitely collected every direct block by scanning the args array,
 but what of the indirect blocks? Couldn't there be valid indirect links
-either from the portion of \emph{to} below \emph{next}, 
+that start either from the portion of \emph{to} below \emph{next}, 
 or from other generations altogether? 
 
-Both of these turn out to be impossible because the mutator
-is a purely functional language. The heap is chronologically
+Both of these turn out to be impossible because the 
+{\color{magenta}mutator is a purely functional language.}
+The heap is chronologically
 faithful, in that higher-indexed generations host
 objects that were allocated earlier. Because
 of the immutability of objects in a purely functional language, 
@@ -221,13 +225,13 @@ case. To this end, we assume in line (blah) that p is (dododo).
 
 \subsection{Issues}
 \label{sec:gccsemantics}
-
+\paragraph{Double-Bounded Pointer Comparisons}
 \paragraph{Pointer Subtraction.}
-{\color{blue}Hmm I'm wondering if we should really be mentioning this,
-strapped as we are for space.}
+{\color{blue}Hmm I'm wondering if we should really be mentioning these,
+strapped as we are for space. Just skip to those issues that cause C semantics to be 
+extended and the OCaml GC to be rethought?}
 \input{boundary.tex}
 
-\paragraph{Double-Bounded Pointer Comparisons}
 
 
 

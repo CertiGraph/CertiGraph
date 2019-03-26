@@ -140,12 +140,13 @@ and $ET$ are the underlying carrier sets of vertices and edges, and $V$ and $E$,
 subsets $VT$ and $ET$ respectively, introduce the notion of \emph{validity} in the 
 graph. In Figure \ref{fig:pregraph}, valid vertices are in $V$ and 
 invalid vertices are in $VE \smallsetminus V$. Importantly, 
-both kinds are legally part 
+both kinds of vertices are legally part 
 of the PreGraph. Finally, $s$ and $d$ are functions that map 
 an edge to its source and destination respectively; {\color{magenta}this model means 
 that PreGraphs are directed rather than undirected.} 
 With an eye to flexibility, we make no further 
-requirements of a legal PreGraph, not even a notion of how the four sets are related.
+requirements of a legal PreGraph, not even a specific notion 
+of how the four sets are related.
 Indeed, the PreGraph in Figure \ref{fig:pregraph} contains invalid 
 vertices and edges in an arbitrary configuration.
 
@@ -153,24 +154,26 @@ Many graph concepts such as \emph{path}, \emph{reachability}, and \emph{subgraph
 defined on PreGraphs. In \S\ref{blah} we saw \emph{reachable}, written 
 $\m{a} \mathrel{{\stackrel{\gamma~}{\leadsto^{1}}}} \m{b}$. It is 
 defined as 
-$\m{a} \mathrel{{\stackrel{\gamma~}{\leadsto^{1}}}} \m{b} \defeq a \in V(\gamma) /| 
+
+$$\m{a} \mathrel{{\stackrel{\gamma~}{\leadsto^{1}}}} \m{b} \defeq a \in V(\gamma) /| 
 b \in V(\gamma) /| \exists e.~ e \in E(\gamma) /| s (e,\gamma) = a /| 
-d (e,\gamma) = b$. 
+d (e,\gamma) = b.$$ 
 The reflexive, transitive closure on \emph{reachable} is written 
-$\m{a} \mathrel{{\stackrel{\gamma~}{\leadsto^{\star}}}}} \m{b}$, and 
+$\m{a} \mathrel{{\stackrel{\gamma~}{\leadsto^{\star}}}} \m{b}$, and 
 $\neg (\m{a} \mathrel{{\stackrel{\gamma~}{\leadsto^{\star}}}} \m{b})$ 
 is written $\m{a} \mathrel{{\stackrel{\gamma~}{\not\leadsto^{\star}}}} \m{b}$.
 
 PreGraph's ability to reason about missing vertices and edges is convenient when 
-verifying real programs. For instance, in \ref{blah} we argued for a condition of 
-congruence on $\gamma \smallsetminus (v \in \gamma \mid \m{x} 
-\mathrel{{\stackrel{\gamma~}{\leadsto^{\star}}}} \m{v})$. 
-Even if $\gamma$ itself satisfied some stronger notion of
+verifying real programs. Suppose some $\gamma$ satisfied some stronger notion of
 ``well-formed'', in the sense that valid vertices have only valid edges and 
-vice versa, subtracting some vertices may well make 
+vice versa. Can we now subtract some vertices and edges from it and reason about the 
+resulting structure? This is precisely what needed to do in \ref{blah}, where
+we argued for a condition of congruence on 
 $\gamma \smallsetminus (v \in \gamma \mid \m{x} 
-\mathrel{{\stackrel{\gamma~}{\leadsto^{\star}}}} \m{v})$ ill-formed 
-by leaving dangling edges pointing to recently-removed vertices. 
+\mathrel{{\stackrel{\gamma~}{\leadsto^{\star}}}} \m{v})$. 
+A conventional notion of well-formedness may have stopped us short at this point, 
+declaring the structure ill-formed because of the dangling edges 
+pointing to recently-removed vertices. 
 A PreGraph is more accommodating, since
 it produces a fresh PreGraph after this selective subtraction 
 and then allows us to go ahead and reason about congruence as we need to.
@@ -242,8 +245,8 @@ such as graph coloring, shortest path, and network flow rely on
 additional information in the form of labels. In our architecture, a
 LabeledGraph inherits any lemmas proved about its associated PreGraph. 
 In addition, we can define additional lemmas that use labels, 
-\emph{e.g.} add an integer label, denoting \emph{rank}, to 
-vertices and prove a lemma that running \texttt{find} does not alter
+\emph{e.g.} the union-find graph has an integer label denoting \emph{rank}.
+We could prove a lemma that running \texttt{find} does not alter
 any vertex's rank. 
 \hide{add string labels to edges and reason about a trie.}
 \fi
@@ -295,7 +298,7 @@ it allows us to state algorithm-specific properties
 of any complexity on the graph, and then derive lemmas based on those properties.
 Thankfully, we do not need to state these complicated soundness 
 conditions afresh for each program that we verify. In the next section, 
-we explain how we enjoyed {\color{magenta}modularity} in this regard as well.
+we explain how to compose these out of smaller, reusable pieces.
 
 \subsection{Composing Graph plugins}
 \label{subsec:graphplugins}
@@ -304,9 +307,8 @@ We use Coq's typeclass system to manage our soundness plugins smoothly,
 benefiting from the \emph{compositionality} of the system. 
 If we have two soundness properties, each with its associated proved lemmas, 
 we can combine them, 
-prove the {\color{magenta}emergent} lemmas that result from the combination
-{\color{magenta}with relative ease}, and then 
-treat the combination as a new plugin. 
+prove the {\color{magenta}emergent} lemmas that result from the combination,
+and then treat the combination as a new plugin. 
 
 Consider the following oft-used graph properties:
 
@@ -323,7 +325,7 @@ destinations for valid edges.} % end hide
 %\vspace{-1ex}
 \item \p{BiGraph}: there are two outgoing edges per node. 
 \item \p{LstGraph}: the graph behaves like a list; every
-vertex has one out edge and there are no loops.
+node has one out edge and there are no loops.
 \end{itemize}
 
 \hide{
@@ -383,9 +385,10 @@ properties across algorithms.
 Coq also handles our notion of inherited 
 lemmas seamlessly: in our verfication of Find, we 
 work directly with a \p{LiMaFin} GeneralGraph, but, as 
-we saw, we still use
-PreGraph properties such as reachability and selective subtraction 
-on this GeneralGraph. Coq handles the appropriate coercions with 
+we saw, we still use properties such as reachability 
+and operations such as selective subtraction, which are defined on the 
+embedded PreGraph, not the GeneralGraph. 
+Coq handles the appropriate coercions with 
 remarkable elegance.
 
 %% We can apply our framework to define related structures such as DAGs and trees.
@@ -421,8 +424,8 @@ Accordingly, we can reuse facts such as the following:
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \[
 \begin{array}{@{}l@{}}
-\text{if } \gamma(x)=(0, v_1, \dots,v_n), \m{mark1}(\gamma, x, \gamma_1), \\
-\text{and } \forall i, \m{mark}(\gamma_i,v_i,\gamma_{i+1}) \text{ then } \m{mark}(\gamma,x,\gamma_{n+1}).
+\text{if } \gamma(x)=(0, v_1, \dots,v_n), \m{mark1}(\gamma, x, \gamma_1),
+\text{ and } \forall i, \m{mark}(\gamma_i,v_i,\gamma_{i+1}) \text{ then } \m{mark}(\gamma,x,\gamma_{n+1}).
 \end{array}
 \]
 %We prove this theorem sound for any LabeledGraph, not just

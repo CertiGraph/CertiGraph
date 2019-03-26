@@ -14,6 +14,9 @@ To prove the functional correctness of graph-manipulating algorithms implemented
 \newcommand{\graphkt}{\p{graph}_T}
 \newcommand{\grapham}{\p{graph}_A}
 
+
+{\color{blue} I wonder if we can crunch the paragraph below... it's not our main point, 
+just a lesson for the user so we can make our point.}
 Recursive predicates are ubiquitous in separation logic---so
 much so that when one writes the definition of a predicate as
 \mbox{$P$ ``$\defeq$'' $\ldots P \! \ldots$}, no one raises an eyebrow despite the
@@ -71,7 +74,7 @@ Consider the following memory $m$ for a toy machine:
 \end{minipage}
 \vspace{0.75ex}
 
-\noindent Clearly $m |= 100 |-> 42,100,0$.  But it seems also clear that this memory represents a one-cell cyclic graph as illustrated in the accompanying diagram, \emph{i.e.} we want $m |= \graphkt(100,\hat{\gamma})$, where $\hat{\gamma}(100) = (42,100,0)$.  This is equivalent to wanting to be able to prove $100 |-> 42,100,0 |- \graphkt(100,\hat{\gamma})$.  Unfortunately, as hinted in Appendix~C\hide{\ref{apx:problemrecgraph}}, this is rather difficult to do so since applying the natural proof techniques actually strengthens the goal. In fact we do not know if this entailment is provable, but the difficulties encountered in proving what ``should be'' straightforward suggest that Knaster-Tarski should be treated with caution when defining spatial predicates for graphs.
+\noindent Clearly $m |= 100 |-> 42,100,0$.  But it seems also clear that this memory represents a one-cell cyclic graph as illustrated in the accompanying diagram, \emph{i.e.} we want $m |= \graphkt(100,\hat{\gamma})$, where $\hat{\gamma}(100) = (42,100,0)$.  This is equivalent to wanting to be able to prove $100 |-> 42,100,0 |- \graphkt(100,\hat{\gamma})$.  Unfortunately, as explained in Appendix~C\hide{\ref{apx:problemrecgraph}}, this is rather difficult to do so since applying the natural proof techniques actually strengthens the goal. In fact we do not know if this entailment is provable, but the difficulties encountered in proving what ``should be'' straightforward suggest that Knaster-Tarski should be treated with caution when defining spatial predicates for graphs.
 
 The other direction, \mbox{$\graphkt(100,\hat{\gamma}) |- 100 |-> 42,100,0$},
 \textbf{is} true but is not easy to prove, relying on the constructions in \S\ref{sec:goodgraph} and the fact that $\mu_{\mathsf{T}}$ constructs the least fixpoint.  In contrast, $\graphkt(100,\hat{\gamma}) |- 100 |-> 42,100,0 * \top$ is easy. % to prove. % via fold/unfold.
@@ -113,10 +116,12 @@ The other direction, \mbox{$\graphkt(100,\hat{\gamma}) |- 100 |-> 42,100,0$},
 Rather than trying to define \p{graph} as a recursive fixpoint, 
 we will instead give it a flat structure.  Graphs in separation
 logic have been defined in similar ways before~\cite{ilya-graphs};
-our innovation that we prove---with the amount of precision 
+our innovation is that we prove---with the amount of precision 
 required to convince Coq---that we can still enjoy fold/unfold 
 with our flat definition.  Our path starts with the iterated 
-separating conjunction or ``big star'', defined as:
+separating conjunction or ``big star'', which is first defined over 
+lists and then extended to sets as follows:
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%% Edit1
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -130,7 +135,7 @@ separating conjunction or ``big star'', defined as:
 \underset{S}{\bigstar} P ~~ \defeq ~~ \exists L.~ (\p{NoDup}\ L) /| (\forall x.~ x\ \p{in}\ L <=> x \in S) /| \underset{L}{\bigstar}P
 \end{array}
 \]
-Big star $\bigstar$ is first defined over lists and then extended to sets.  We are now ready to define a good \p{graph} predicate:
+We are now ready to define a good \p{graph} predicate:
 \fi
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%% Edit1: Qinxiang's proposal ends
@@ -179,9 +184,9 @@ The proof of the $<=$ direction requires care. The difficulty is that if two nod
 \[
 \forall x,y.~ \Big(P(x) ** P(y) |- \big(P(x) /| x = y\big) |/ \big(P(x) * P(y)\big)\Big)
 \]
-That is, either they are completely on top of one another or they do not interfere at all.  In a Java-like memory model this property is automatic because pointers in such a model always point to the root/beginning of an object.  In contrast, in a C-like memory model such as in VST/CompCert, this property is not automatic because pointers can point anywhere.  In such a model, alignment is most easily enforced by storing graph nodes at addresses that are multiples of an appropriate size (16 in Figure~\ref{fig:markgraph}).
+That is, they overlap either completely or not at all. In a Java-like memory model this property is automatic because pointers in such a model always point to the root/beginning of an object.  In contrast, in a C-like memory model such as in VST/CompCert, this property is not automatic because pointers can point anywhere.  In such a model, alignment is most easily enforced by storing graph nodes at addresses that are multiples of an appropriate size (16 in Figure~\ref{fig:markgraph}).
 
-{\color{magenta}Some of our VST proofs do not use fold/unfold, instead preferring to use the lemmas in~\S\ref{sec:ramifylib} directly.  On the other hand, for HIP/SLEEK fold/unfold is vital, and knowing that the recursive relationship holds produces a pleasant feeling.  We also prove fold/unfold lemma for DAGs in which we get a $*$ between the root and its $\medocon$-joined neighbors. % rather than the $**$ present in \eqref{eqn:unfold_graph}.
+{\color{magenta}Some of our VST proofs do not use fold/unfold, instead preferring to use the lemmas in~\S\ref{sec:ramifylib} directly.  On the other hand, for HIP/SLEEK fold/unfold is vital, and it is heartening to know that the recursive relationship holds.  We also prove fold/unfold lemma for DAGs in which we get a $*$ between the root and its $\medocon$-joined neighbors. % rather than the $**$ present in \eqref{eqn:unfold_graph}.
 }
 
 \subsection{Ramification Libraries}\label{sec:ramifylib}
@@ -306,7 +311,7 @@ $\begin{array}{@{}l@{}l@{}}
 }{}
 \end{equation}
 
-The Supplementary tower contains properties not used by most of the VST examples.  This includes the fold/unfold relationship from \S\ref{sec:goodgraph}, facts about precision, and so forth.  Some of these properties are needed by HIP/SLEEK, {\color{magenta}while others are mostly included for esthetic effect}.
+The Supplementary tower contains properties not used by most of the VST examples.  This includes the fold/unfold relationship from \S\ref{sec:goodgraph}, facts about precision, and so forth.  Some of these properties are needed by HIP/SLEEK, {\color{magenta}while others are mostly included for completeness}.
 
 % are there just because we felt they might be useful in the future.
 
