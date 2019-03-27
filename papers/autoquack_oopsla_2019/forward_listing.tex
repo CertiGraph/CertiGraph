@@ -1,7 +1,7 @@
  
-\begin{figure*}
+\begin{figure*}[h!]
 \vspace{-1ex}
-  \begin{lstlisting}[multicols=2]
+  \begin{lstlisting}%[multicols=2]
 //$\left\{\!\!\!\begin{array}{l@{}} \forall \gamma, \m{f\_inf}, \m{t\_inf}, \m{outlier}, \m{from}, \m{to}, \m{forp}, \m{v}, \m{n}.~ \null \\ \p{gc\_graph}(\gamma) * \p{fun\_inf}(\m{f\_inf}, \m{fi}) * \p{thr\_inf}(\m{t\_inf}, \m{ti}) /| \null \\ \m{compat}(\gamma, \m{f\_inf}, \m{t\_inf}, \m{outlier}, \m{from}, \m{to}, \m{forp}) /| \null \\ \tx{s} = \m{gen\_start}(\gamma, \m{from}) /| \tx{l} = \tx{s} + \m{gen\_size}(\gamma, \m{from}) /| \null \\ \tx{n} = \m{naddr}(\m{t\_inf}, \m{to}) /| \null \m{forp}=(\m{v},\m{n}) /| \tx{p} = \m{vaddr}(\gamma, \m{v}) + \m{n}\end{array}\right\}$
 void forward (value *s, *l, **n, *p, int depth) {
   value * v;
@@ -30,6 +30,16 @@ void forward (value *s, *l, **n, *p, int depth) {
 //$\swarrow$ ??
 //$\left\{\!\!\!\begin{array}{l@{}} \exists \gamma'.~ \p{uf\_graph}(\gamma') /| \gamma' = \m{lgd}(\gamma,\m{e},\m{copvert}(\gamma, \m{v'})) /| \null \\ \tx{postcondition}\end{array}\right\}$
       } else {
+\end{lstlisting}
+\vspace{-0.4em}
+\caption{Clight code and proof sketch for forward}
+\label{fig:forward}
+\vspace{-1em}
+\end{figure*}
+
+\begin{figure*}[h!]
+\vspace{-1ex}
+  \begin{lstlisting}
 //remind them of old facts...
 //$\{ \tx{hd} = \m{Z2val}(\m{hd'})\}$
         int i; int sz; value *new;
@@ -56,9 +66,9 @@ void forward (value *s, *l, **n, *p, int depth) {
 //$\{\exists \m{e}, \m{v'}, \m{b}, \m{i}.~ \tx{va} = \m{flds}[\m{e}] = \m{vaddr}(\gamma, \m{dst}(\gamma, \m{e})) = \m{vaddr}(\gamma, \m{v'}) = \m{Vptr}(\m{b},\m{i})\}$
 
 \end{lstlisting}
-
 \vspace{-0.4em}
-\caption{Clight code and proof sketch for forward}
+\caption{Clight code and proof sketch for forward, 2}
 \label{fig:forward}
 \vspace{-1em}
 \end{figure*}
+

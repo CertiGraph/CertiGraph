@@ -154,7 +154,7 @@ With \infrulestyle{Ramify-P} and \infrulestyle{Solve Ramify-P} we can prove the 
 \[
 \infrule{}{\raisebox{1.4ex}{$\infrule{}{P * F |- P * F \\ F |- Q --* (Q * F)}
 {\raisebox{-4pt}[0pt][0pt]{$P * F |- P * \pguards{c}\big(Q --* (Q * F)\big)$}}
-{\hspace{-1.1ex}\raisebox{0.9ex}{$\begin{array}{c}F \text{ ignores} \\ \MV(c)\end{array}$}}$}
+{\hspace{-1.1ex}\raisebox{0.9ex}{$\begin{array}{c}F \text{ ignores} \MV(c)\end{array}$}}$}
 \\ \{P\}~c~\{Q\}}
 {\{P * F\}~c~\{Q * F\}}
 {}
@@ -174,7 +174,7 @@ The first premise of \infrulestyle{Solve Ramify-P} is
 \]
 This entailment is the key proof that our localization was sound.  To solve it we first substitute away the remaining program variables (\emph{e.g.} replace \li{x} with 5) to obtain a program-variable-free and modality-free entailment and then apply our ramification library (\S\ref{sec:ramifylib}); as previously explained we sometimes use $\ramify(n)$ to explicitly reference a library lemma.
 
-Meanwhile, the second premise looks like this:
+The second premise, shown below, is a tautology using $(P * Q |- R) <=> (P |- Q --* R)$:
 \vspace*{-0.75ex}
 \begin{equation}
 \label{eqn:sndpremisetauto}
@@ -183,7 +183,6 @@ Meanwhile, the second premise looks like this:
 \end{array}
 \vspace*{-0.75ex}
 \end{equation}
-Although it may not be readily apparent, this is a tautology using $(P * Q |- R) <=> (P |- Q --* R)$.
 
 %: introduce the $L_2$ premise of the right $--*$ to the left side of the entailment and, since the clause $\li{x} = 6$ is now on the left, substitute it everywhere.
 \iffalse
@@ -213,7 +212,6 @@ Pen and paper Hoare proofs are often a little casual with existentials, \emph{e.
 \label{sec:existentials}
 
 What happens when we \textbf{cannot} calculate a substitution using globally-scoped metavariables?  Consider the following: %example:
-\vspace*{-3.5ex}
 \begin{lstlisting}
 // $\{ A \} \searrow \{ B \}$
       ...; x = malloc(sizeof(int));
@@ -261,12 +259,8 @@ Call these equivalent postconditions $L_2'$ and $G_2'$ (lines~\ref{code:L2p} and
 %--* \! (y \! = \! 1 \! /| \! [\li{x} |-> x][\li{y} |-> y]D_1) \! |/ \! (y \! = \! 0 \! /| \! [\li{x} \! |-> \! x][\li{y} \! |-> \! y]D_2)
 %\end{array}
 %\]
-Next apply \infrulestyle{Ramify-P} and \infrulestyle{Solve Ramify-P} with $F \defeq \null$
-\vspace*{-0.75ex}
-\[
-\forall x, y.~ [\tx{x} |-> x][\tx{y} |-> y](L_2 --* G_2)
-\vspace*{-0.75ex}
-\]
+Next apply \infrulestyle{Ramify-P} and \infrulestyle{Solve Ramify-P} with 
+$F \defeq \forall x, y.~ [\tx{x} |-> x][\tx{y} |-> y](L_2 --* G_2)$.
 In other words, replace the ``?'' from \eqref{eqn:unclearsubst} with universally-quantified metavariables $x$ and $y$ scoped over the entire $--*$.
 
 Now consider the first premise of \infrulestyle{Solve Ramify-P}:
@@ -301,17 +295,17 @@ F |- \forall x.~ (L_2 --* G_2)
 %{\color{magenta} F |- L_2 --* G_2}
 %F * L_2 |- G_2
 }
-{G_1 \vdash L_1 * \pguards{c}  \big(\forall x.~ (L_2 --* G_2)\big)}{\begin{array}{c}F \textrm{ ignores} \\ \MV(c)\end{array}} \qquad \qquad \quad
+{G_1 \vdash L_1 * \pguards{c}  \big(\forall x.~ (L_2 --* G_2)\big)}{\begin{array}{c}F \textrm{ ignores} \MV(c)\end{array}} \qquad \qquad \quad
 \]
 %Since we use a relational style to verify graph algorithms (\emph{e.g.} in Figure~\ref{fig:markgraph}), existentials appear frequently and a smooth treatment is very helpful in practice.  To make this point a little more clearly
-We were more explicit about existentials in \emph{e.g.} lines~\ref{code:beforemarkl}--\ref{code:aftermarkl} than is typical so that we could prove that we handle them correctly.  Fortified by the \infrulestyle{Ramify-PQ} rule, we could reasonably-albeit-less-formally have \emph{e.g.} written line~\ref{code:postmark1} as: \begin{lstlisting}[firstnumber=25]
+We were more explicit about existentials in \emph{e.g.} lines~\ref{code:beforemarkl}--\ref{code:aftermarkl} than is typical so that we could prove that we handle them correctly.  Fortified by the \infrulestyle{Ramify-PQ} rule, we could reasonably (albeit less formally) have \emph{e.g.} written line~\ref{code:postmark1} as below, allowing us to omit line~\ref{code:aftermarkl} entirely.
+ \begin{lstlisting}[firstnumber=25]
 // $\swarrow \{\p{graph}(\tx l, \gamma'') /| \m{mark}(\gamma', \tx{l}, \gamma'')\}$
 \end{lstlisting}
-and omitted line~\ref{code:aftermarkl} entirely.
 
 %\ref{code:postmark1}]
 
-Although our technique to handle modified program variables is rather intricate, it is done mechanically by our \li{localize} and \li{unlocalize} tactics, which use \infrulestyle{Ramify-PQ}.
+Although our technique to handle modified program variables is rather intricate, it is handled mechanically by our \li{localize} and \li{unlocalize} tactics, which use \infrulestyle{Ramify-PQ}.
 % since it is the most general rule.
 
 \subsection{Soundness of our rules}
@@ -322,11 +316,11 @@ In Appendix~B\hide{\ref{apx:ruleproofs}} we sketch the soundness proofs for \inf
 {\color{blue} What to do about this now that H/S has been cut?}
 
 As we saw in \S\ref{sec:hipsleek}, the forward style of reasoning employed by HIP/SLEEK uses the existential wand $--o$ to express ramifications instead of the more typical universal wand $--*$.  The standard $--*$ form of ramification is weaker, but the strongest postcondition style using $--o$ can also get the job done without too much extra work since:
-\vspace*{0.25ex}
-\[\infrulestyle{WandToEwand}~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\]
-\vspace*{-8ex}
+\vspace*{5.25ex}
+%\[\infrulestyle{WandToEwand}~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\]
+\vspace*{-6ex}
 \[
-~~~~~~~~\infrule{}
+\infrule{WandToEwand}
 {G_1 |- L_1 * (L_2 --* G_2)}
 {(L_1 --o G_1) * L_2 |- G_2}
 {\m{precise}(L_1)}

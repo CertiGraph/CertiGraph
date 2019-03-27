@@ -40,7 +40,7 @@ rule:
 \begin{equation}
 \label{eq:localize}
 \begin{array}{@{}l@{}}
-\infrule{}%Localize}
+\infrule{Localize}
 {G_1 |- L_1 * R \\
 \{ L_1 \} ~ c ~ \{ \exists x.~ L_2 \} \\
 R |- \forall x.~ (L_2 --* G_2) }
@@ -54,15 +54,14 @@ R |- \forall x.~ (L_2 --* G_2) }
 % new one-column version:
 \begin{equation}
 \label{eq:localize}
-\begin{array}{@{}l@{}}
-\infrule{Localize}
-{G_1 |- L_1 * R \\
-\{ L_1 \} ~ c ~ \{ \exists x.~ L_2 \} \\
+%\infrule{Localize}	
+\frac
+{G_1 |- L_1 * R \qquad
+\{ L_1 \} ~ c ~ \{ \exists x.~ L_2 \} \qquad
 R |- \forall x.~ (L_2 --* G_2) }
-{\{ G_1 \} ~ c ~ \{ \exists x.~ G_2 \}} {\mathit{freevars}(R) \cap \MV(c) = \emptyset} \\
-[3pt]
-\end{array}
-\end{equation} \marginpar{Can we typeset this a little better?}
+{\{ G_1 \} ~ c ~ \{ \exists x.~ G_2 \}} 
+\; {\mathit{freevars}(R) \cap \MV(c) = \emptyset} 
+\end{equation} 
 
 \textsc{Localize} connects the behavior of a command~$c$ in a ``local'' context~$L_1$ 
 and~$L_2$ to its effect on a ``global'' context~$G_1$ and~$G_2$ using a carefully-chosen 
