@@ -19,7 +19,14 @@ In Figure~\ref{fig:markgraph} we put the code and proof sketch of the classic \l
 The specification is again stated with mathematical $\gamma$, although in this case $\gamma(x)$ maps to triples $(m,l,r)$, where $m$ is a ``mark'' bit (0 or 1) and $\{l,r\} \subseteq V(\gamma) \uplus \{0\}$ are the neighbors of $v$.  By ``local'', we mean that the predicate $\p{m\_graph}(\li{x},\gamma)$ says that the heap represents \emph{only the nodes in $\gamma$ that are reachable from \li{x}}.  Rather than passing the entire graph around as \li{find} does, \li{mark} will use the fold/unfold relationship given in equation~\eqref{eqn:bigraphintrofoldunfold}, located just under the code in Figure~\ref{fig:markgraph}, to ``unfold'' the graph as if it were an inductive predicate. {\color{blue} and then...}
 
 This fold/unfold relationship deserves attention.
-First, \eqref{eqn:bigraphintrofoldunfold} uses the ``overlapping conjunction'' $\ocon$ of separation logic; informally $P ** Q$ means that $P$ and $Q$ may overlap in the heap (\emph{e.g.}, nodes in the left subgraph can also be in the right subgraph or even be the root $x$).  The presence of the unspecified sharing indicated by the $\ocon$ connective is part of why graph-manipulating algorithms are so hard to verify (\emph{e.g.}, it is hard to apply the \infrulestyle{Frame} rule).  {\color{magenta}The standard semantics of the separation logic connectives used in this paper are in Figure~\ref{fig:seplogsem}.}
+First, \eqref{eqn:bigraphintrofoldunfold} uses the ``overlapping conjunction'' 
+$\ocon$ of separation logic; informally $P ** Q$ means that $P$ and $Q$ may overlap 
+in the heap (\emph{e.g.}, nodes in the left subgraph can also be in the right subgraph 
+or even be the root $x$).  The presence of the unspecified sharing indicated by the 
+$\ocon$ connective is part of why graph-manipulating algorithms are so hard to verify 
+(\emph{e.g.}, it is hard to apply the \infrulestyle{Frame} rule).  {\color{magenta}The 
+standard semantics of the separation logic connectives used in this paper are in 
+Figure~\ref{fig:seplogsem}.}
 Second, \eqref{eqn:bigraphintrofoldunfold} illustrates how industrial-strength settings complicate verification.  Lines~\mbox{\ref{code:nodedefstart}--\ref{code:nodedefend}} define the data type \li{Node} used by \li{mark}.  The \li{_Alignas($n$)} directives tell {\color{magenta}CompCert} to align fields on $n$-byte boundaries. 
 {\color{blue} This problem recurs... we need to be very clear about when
 CompCert, VST, Floyd, etc get introduced. We do have neat little 30-word briefs about
@@ -136,7 +143,7 @@ Here is the definition of $\pguards{c}$, writing $\langle c \rangle$ for $\MV(c)
 \]
 In other words, $\pguards{c}$ is exactly the universal modal operator~$\Box$ over the relation that considers equivalent all states that differ only on program values modified by $c$.  Since $\stackrel{\langle c \rangle}{\cong}$ is an equivalence relation, $\pguards{c}$ forms an S5 modal logic.
 
-Note that \infrulestyle{Ramify-P} has no free variable side condition, which is unnecessary because $\forall P.~ \pguards{c}P \text{ ignores } \MV(c)$.  However, in practice this side condition reappears because to actually prove a ramification entailment containing $\pguards{c}$ one typically applies the following \infrulestyle{Solve Ramify-P} rule:
+Note that \infrulestyle{Ramify-P} has no free variable side condition, which is unnecessary because \\ $\forall P.~ \pguards{c}P \text{ ignores } \MV(c)$. However, in practice this side condition reappears because to actually prove a ramification entailment containing $\pguards{c}$ one typically applies the following \infrulestyle{Solve Ramify-P} rule:
 \[
 \infrule{Solve Ramify-P}
 {G_1 |- L_1 * F \\

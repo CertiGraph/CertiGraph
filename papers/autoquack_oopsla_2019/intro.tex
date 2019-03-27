@@ -1,14 +1,16 @@
 Over the last fifteen years, separation logic has facilitated great strides 
-in verifying programs that manipulate tree-shaped data structures. \cite{berdine:smallfoot,chin:hipsleek,jacobs:verifast,chlipala:bedrock,bengtson:charge,appel:programlogics}. 
+in verifying programs that manipulate tree-shaped data structures. 
+\citep{berdine:smallfoot,chin:hipsleek,jacobs:verifast,
+chlipala:bedrock,bengtson:charge,appel:programlogics}. 
 Unfortunately, programs that manipulate graph-shaped data structures 
 (i.e. structures with \emph{intrinsic sharing}) have proved harder to verify.  
 Indeed, such programs were formidable enough that a number of the early 
 landmark results in separation logic devoted substantial effort to verifying 
 single examples such as Schorr-Waite~\cite{hongseok:phd} or 
-union-find~\cite{NeelThesis} with pen and paper.  
+union-find~\cite{neelthesis} with pen and paper.  
 More recent landmarks have moved to a machine-checked context, but have still
 been devoted to either single examples or to classes of closely-related examples, 
-such as garbage collectors~\cite{A,CakeMLGC,C}.
+such as garbage collectors~\cite{blah,cakemlgc}.
 Due to the complexity of these examples, they tend to require a large number 
 of custom predicates and subtle reasoning, which generally does not carry across 
 to the verification of other graph-manipulating programs.
@@ -101,9 +103,11 @@ of them be shortened?}
 %\item[\S\ref{sec:hipsleek}] We explain how we modified HIP/SLEEK to introduce ramifications when programs modify data structures with intrinsic sharing and to automatically discharge the associated obligations using Coq-verified external lemmas.
 %\item[\S\ref{sec:vst}] We explain how we integrated ramification into VST by developing .
 \item[\S\ref{sec:certigc}] We discuss the certification of the CertiCoq garbage collector (GC). While certifying this GC we identify two places where the semantics of C is too weak to define an OCaml-style GC. We also found and fixed a rather subtle overflow error in the original C code for the GC, justifying the effort of developing the machine-checked proof.
-\item[\S\ref{sec:development}] We integrate our techniques into VST with two new Floyd tactics, \li{localize} and \li{unlocalize}, and document some statistics related to our overall development. {\color{blue} I think it's a bit funny to put these two in the same section.}
+\item[\S\ref{sec:development}] We integrate our techniques into VST with two new Floyd 
+tactics, \li{localize} and \li{unlocalize}, and document some statistics related to our 
+overall development. {\color{blue} I think it's a bit funny to put these two in the same 
+section.}
 \item[\S\ref{sec:related}] We discuss related work.
 \item[\S\ref{sec:conclusion}] We discuss directions for future work and conclude.
 \end{itemize}
 All of our results are machine checked in Coq.
-

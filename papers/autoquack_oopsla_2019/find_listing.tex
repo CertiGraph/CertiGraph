@@ -15,7 +15,7 @@ $\ramify(\ref{findram1})$  p = x -> parent; $\label{code:findram1}$
     p = find(p); $\label{code:ufreccall}$
 // $\label{code:ufbefram2}\left\{\!\!\!\begin{array}{l@{}}\exists \gamma',\m{rt}.~\p{uf\_graph}(\gamma') /| \tx{p} = \m{rt} /| \m{pa} \neq \tx{x} /| \m{findS}(\gamma,\m{pa},\gamma') /| \null \\ \m{uf\_root}(\gamma',\m{pa},\m{rt}) /| \tx{x}\in\m{V}(\gamma) /| \gamma(\tx{x})=(\m{r},\m{pa})\end{array}\right\}$
 // $\label{code:findbeforexparent}\searrow \left\{\!\!\!\begin{array}{l@{}}\tx{x} |-> \m{r},{pa} /| \tx{p} = \m{rt} /| \m{pa} \neq \tx{x} /| \m{findS}(\gamma, \m{pa}, \gamma') /| \null \\ \m{uf\_root}(\gamma',\m{pa},\m{rt}) /| \tx{x}\in\m{V}(\gamma) /| \gamma(\tx{x})=(\m{r}, \m{pa})\end{array}\right\}$
-$\ramify(\ref{findram2})$    x -> parent = p; $\label{code:ufpathcompress}$
+$\ramify(\ref{findram2})$   x -> parent = p; $\label{code:ufpathcompress}$
 // $\label{code:findafterxparent}\swarrow \left\{\!\!\!\begin{array}{l@{}}\tx{x} |-> \m{r},\m{rt} /| \tx{p} = \m{rt} /| \m{pa} \neq \tx{x} /| \m{findS}(\gamma, \m{pa}, \gamma') /| \null \\ \m{uf\_root}(\gamma',\m{pa},\m{rt}) /| \tx{x}\in\m{V}(\gamma) /| \gamma(\tx{x})=(\m{r}, \m{pa})\end{array}\right\}$
 // $\label{code:ufaftram2}\left\{\!\!\!\begin{array}{l@{}} \exists \gamma''.~ \p{uf\_graph}(\gamma'') /| \m{findS}(\gamma, \m{pa}, \gamma'') /| \null \\ \m{uf\_root}(\gamma'',\tx{x},\m{rt}) /| \tx{p} = \m{rt} \end{array}\right\}$
   }
