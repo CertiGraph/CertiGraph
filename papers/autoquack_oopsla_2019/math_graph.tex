@@ -155,23 +155,26 @@ defined on PreGraphs. In \S\ref{blah} we saw \emph{reachable}, written
 $\m{a} \mathrel{{\stackrel{\gamma~}{\leadsto^{1}}}} \m{b}$. It is 
 defined as 
 
-$$\m{a} \mathrel{{\stackrel{\gamma~}{\leadsto^{1}}}} \m{b} \defeq a \in V(\gamma) /| 
-b \in V(\gamma) /| \exists e.~ e \in E(\gamma) /| s (e,\gamma) = a /| 
+$$\m{a} \mathrel{{\stackrel{\gamma~}{\leadsto^{1}}}} \m{b} \defeq a, b \in V(\gamma) /| \exists e.~ e \in E(\gamma) /| s (e,\gamma) = a /| 
 d (e,\gamma) = b.$$ 
 The reflexive, transitive closure on \emph{reachable} is written 
 $\m{a} \mathrel{{\stackrel{\gamma~}{\leadsto^{\star}}}} \m{b}$, and 
 $\neg (\m{a} \mathrel{{\stackrel{\gamma~}{\leadsto^{\star}}}} \m{b})$ 
 is written $\m{a} \mathrel{{\stackrel{\gamma~}{\not\leadsto^{\star}}}} \m{b}$.
+{\color{blue} I think the definition is rather simple and doens't deserve so much space.
+How about just ``...written $\m{a} \mathrel{{\stackrel{\gamma~}{\leadsto^{1}}}} \m{b}$.
+It means that a and b are in $V(\gamma)$ and that there exists a edge (in $E(\gamma)$)
+that goes from a to b.''}
 
 PreGraph's ability to reason about missing vertices and edges is convenient when 
 verifying real programs. Suppose some $\gamma$ satisfied some stronger notion of
 ``well-formed'', in the sense that valid vertices have only valid edges and 
-vice versa. Can we now subtract some vertices and edges from it and reason about the 
-resulting structure? This is precisely what needed to do in \ref{blah}, where
+vice versa. Could we then subtract some vertices and edges from it and reason about the 
+resulting structure? This is precisely what we needed to do in \ref{blah}, where
 we argued for a condition of congruence on 
 $\gamma \smallsetminus (v \in \gamma \mid \m{x} 
 \mathrel{{\stackrel{\gamma~}{\leadsto^{\star}}}} \m{v})$. 
-A conventional notion of well-formedness may have stopped us short at this point, 
+A strong notion of well-formedness may have stopped us short at this point, 
 declaring the structure ill-formed because of the dangling edges 
 pointing to recently-removed vertices. 
 A PreGraph is more accommodating, since
@@ -307,11 +310,11 @@ We use Coq's typeclass system to manage our soundness plugins smoothly,
 benefiting from the \emph{compositionality} of the system. 
 If we have two soundness properties, each with its associated proved lemmas, 
 we can combine them, 
-prove the {\color{magenta}emergent} lemmas that result from the combination,
+prove lemmas about their combination using known facts about 
+the separate pieces,
 and then treat the combination as a new plugin. 
 
 Consider the following oft-used graph properties:
-
 \begin{itemize}
 \vspace{-1ex}
 \item \p{FiniteGraph}: The validity sets $V$ and $E$ are finite.
@@ -323,9 +326,9 @@ represent unused nodes.  The  property introduces this concept---
 \emph{i.e.} some special invalid nodes are allowed to appear as 
 destinations for valid edges.} % end hide
 %\vspace{-1ex}
-\item \p{BiGraph}: there are two outgoing edges per node. 
-\item \p{LstGraph}: the graph behaves like a list; every
-node has one out edge and there are no loops.
+\item \p{BiGraph}: there are exactly two outgoing edges per node. 
+\item \p{LstGraph}: the graph is list-like; loops are forbidden and 
+nodes have one out-edge each.
 \end{itemize}
 
 \hide{
