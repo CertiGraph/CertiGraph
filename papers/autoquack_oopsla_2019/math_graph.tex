@@ -100,7 +100,7 @@ Indeed, the PreGraph in Figure \ref{fig:pregraph} contains invalid
 vertices and edges in an arbitrary configuration.
 
 Many graph concepts such as \emph{path}, \emph{reachability}, and \emph{subgraph} are 
-defined on PreGraphs. In \S\ref{blah} we saw \emph{reachable}, written 
+defined on PreGraphs. In \S\ref{fig:find} we saw \emph{reachable}, written 
 $\m{a} \mathrel{{\stackrel{\gamma~}{\leadsto^{1}}}} \m{b}$. It is 
 defined as 
 
@@ -119,7 +119,7 @@ PreGraph's ability to reason about missing vertices and edges is convenient when
 verifying real programs. Suppose some $\gamma$ satisfied some stronger notion of
 ``well-formed'', in the sense that valid vertices have only valid edges and 
 vice versa. Could we then subtract some vertices and edges from it and reason about the 
-resulting structure? This is precisely what we needed to do in \ref{blah}, where
+resulting structure? This is precisely what we needed to do in \ref{fig:find}, where
 we argued for a condition of congruence on 
 $\gamma \smallsetminus (v \in \gamma \mid \m{x} 
 \mathrel{{\stackrel{\gamma~}{\leadsto^{\star}}}} \m{v})$. 
@@ -324,8 +324,8 @@ that more closely models our particular graph.
 For instance, we can compose 
 \p{LstGraph}, \p{MathGraph}, and \p{FiniteGraph} 
 together into a new plugin called \p{LiMaFin}, which, incidentally, is the 
-soundness condition used to verify Find in Figure~\ref{fig:findsketch}.
-In our verification of Mark~\ref{blah}, we use a similar soundness condition
+soundness condition used to verify Find in Figure~\ref{fig:find}.
+In our verification of Mark~\ref{fig:markgraph}, we use a similar soundness condition
 \p{BiMaFin}, which uses \p{BiGraph} instead of \p{LstGraph}. 
 The commonalities and differences between \p{LiMaFin} 
 and \p{BiMaFin} are readily apparent from their construction.

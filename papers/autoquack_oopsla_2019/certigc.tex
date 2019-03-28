@@ -209,16 +209,16 @@ makes a copy of that block in the \emph{to} generation. The function
 is robust and versatile, and gets called in a variety of different 
 situations... 
 
-Figure (blah) shows a decorated proof of the forward function.
+Figure \ref{fig:forward} shows a decorated proof of the forward function.
 The function's behavior is subtly different depending on 
 whether the the pointer $p$ lives in the arguments array or in the 
-heap itself. The difference lies in lines blah and blah, where 
+heap itself. The difference lies in lines \ref{dummyref} and \ref{dummyref}, where 
 we wish to update $p$ to point to the new forwarded block. 
 When $p$ lives in the arguments array, this update is easy to 
 reason about since $p$ is fundamentally $\bigstar$-separated from our heap. 
 When $p$ is itself in the heap, this update itself constitutues a
 write to the heap. In the decorated proof, we show the second 
-case. To this end, we assume in line (blah) that p is (dododo). 
+case. To this end, we assume in line \ref{dummyref} that p is (dododo). 
 
 \input{forward_listing.tex}
 
