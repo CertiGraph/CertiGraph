@@ -1,7 +1,7 @@
 \input{find_listing.tex}
 
 As an initial demonstration of our techniques, we show the decorated code of the 
-\texttt{find} function from the classic disjoint-set data structure~\cite{CLRS} in 
+\texttt{find} function from the classic disjoint-set data structure~\cite{clrs} in 
 Figure~\ref{fig:find}. \texttt{find} returns the root 
 (ultimate parent) of a \texttt{Node} \texttt{x}. A node is a root when its parent 
 pointer points to itself (line~\ref{code:ufif}); 
@@ -22,7 +22,7 @@ labeled vertices {\color{magenta}$V(\gamma)$ and edges $E(\gamma)$.}
 When $v \in V(\gamma)$, we write $\gamma(v) = (r,p)$ to state that vertex $v$ has 
 label $r$ and parent vertex $p$ ($r$ stores the ``rank'' of a node; it is ignored 
 in \texttt{find} but used in \texttt{union}).  Pure predicates are written in 
-\textit{italic}.  We explain more about mathematical graphs in~\S\ref{somewhere}. 
+\textit{italic}.  We explain more about mathematical graphs in~\S\ref{sec:mathgraph}. 
 Turning our attention to the spatial predicates, each node $v \in V(\gamma)$ will be 
 represented by $v \mapsto \gamma(v) {\color{blue} = (r,p)}$ in the heap, 
 where we use the usual pen-and-paper 
@@ -35,7 +35,7 @@ separating conjunction of} the representations
 of all the individual verticies $v \in V(\gamma)$. 
 {\color{blue}I I think bigstar is coming in unexplained here...}
 Spatial predicates are written 
-in \textsf{sans-serif}.  We explain more about spatial graphs in~\S\ref{somewhereelse}.
+in \textsf{sans-serif}.  We explain more about spatial graphs in~\S\ref{sec:spacegraph}.
 
 {\color{magenta}Standing as we do on the shoulders of giants, we can see 
 further and more clearly.} {\color{blue} A little unnecessary?} The invariants at 
@@ -91,32 +91,13 @@ symbols $\searrow \text{, } \ramify(i)$, and $\swarrow$
 
 {\color{magenta}Recall that \textsc{Localize} connects some ``global'' to a ``local'' one by using five predicates.  For the purposes of guiding intuition in \S\ref{sec:localblocks}, we will use a simpler variant of \textsc{Localize} called \textsc{Ramify} for a moment:}
 
-% Currently ugly...
 \begin{equation}
 \label{eq:ramify}
-\begin{split}
-\text{Ramify} \\	
-\frac
-{\{ L_1 \} ~ c ~ \{ L_2 \} \qquad
-G_1 |- L_1 * (L_2 --* G_2)}
-{\{ G_1 \} ~ c ~ \{ G_2 \}} 
-\;{\mathit{freevars}(L_2 --* G_2) \cap \MV(c) = \emptyset}
-\end{split}
-\end{equation}
-
-\hide{ % this is the old two-column version
-\begin{equation}
-\label{eq:ramify}
-\begin{array}{@{}l@{}}
-\infrule{}%Localize}
+\inferrule[Localize]
 {\{ L_1 \} ~ c ~ \{ L_2 \} \\
 G_1 |- L_1 * (L_2 --* G_2)}
-{\{ G_1 \} ~ c ~ \{ G_2 \}} {(\ddagger)} \\
-[3pt]
-(\ddagger)~ \mathit{freevars}(L_2 --* G_2) \cap \MV(c) = \emptyset
-\end{array}
+{\{ G_1 \} ~ c ~ \{ G_2 \}} \mathit{freevars}(L_2 --* G_2) \cap \MV(c) = \emptyset
 \end{equation}
-} % end hide
 
 {\color{magenta}The \emph{ramification entailment} $G_1 |- L_1 * (L_2 --* G_2)$ captures two key ideas: 
 first, that $L_1$ is spatially contained within $G_1$; and second, that 
@@ -145,7 +126,7 @@ associated with lines~\ref{code:ufbefram1}--\ref{code:ufaftram1}:
 %\p{graph}(\gamma) /| x \in V(\gamma) |- x |-> \gamma(x) * (\overbrace{x |-> \gamma(x)}^{L_2'} --* \overbrace{\p{graph}(\gamma)}^{G_2'})
 \end{equation}
 Here we isolate the spatial parts of the invariants on lines~\ref{code:ufbefram1}--\ref{code:ufaftram1}.  Notice that this lemma is stated for any whole-graph predicate $\p{graph}(\gamma)$, and not merely for the special class of ``union-find graphs'' $\p{uf\_graph}(\gamma)$ (that \emph{e.g.} have only one outgoing edge per node).  That is useful because we use the same lemma to prove similar goals in all of our examples.
-Indeed, this ``unchanged vertex'' ramification entailment is used whenever we need to read from a vertex in a graph.  In~\S\ref{spatialgraphs} we describe other generic and reusable lemmas that prove other ramification entailments.
+Indeed, this ``unchanged vertex'' ramification entailment is used whenever we need to read from a vertex in a graph.  In~\S\ref{sec:spacegraph} we describe other generic and reusable lemmas that prove other ramification entailments.
 
 Unfortunately, we still have a problem: the side condition above requires that 
 the free variables of $L_2 --* G_2$ be disjoint from any local variables modified 
@@ -155,11 +136,11 @@ both $L_2$ and $G_2$.  This problem is fundamental: the whole point of verifying
 a read is to know something about the value that has been read.  Accordingly, 
 although \textsc{Ramify} is sound, it is not strong enough to verify
 lines~\ref{code:ufbefram1}--\ref{code:ufaftram1}.  We will address this problem 
-head-on in~\S\ref{existentials}, but for now let us content ourselves with knowing 
-that other than the side condition ($\ddagger$), \textsc{Ramify} lets us verify 
+head-on in~\S\ref{sec:existentials}, but for now let us content ourselves with knowing 
+that other than the side condition, \textsc{Ramify} lets us verify 
 lines \ref{code:ufbefram1}--\ref{code:ufaftram1}.
 
-The second localization block (lines~\ref{code:ufbefram2}--\ref{code:ufaftram2}) is both easier and harder than the first.  It is easier because \textsc{Ramify} \textbf{is} strong enough to verify it. Line~\ref{code:ufpathcompress} does not modify any local program variables, so ($\ddagger$) is trivially satisfied.  Moreover, although line~\ref{code:ufaftram2} does contain an existential, line~\ref{code:findafterxparent} does not, and so there is no need to ``link'' the two associated witnesses.  On the other hand, the second localization block is harder than the first because there is more going on spatially. $\ramify(\ref{findram2})$ expresses an update to a single node of our graph:
+The second localization block (lines~\ref{code:ufbefram2}--\ref{code:ufaftram2}) is both easier and harder than the first.  It is easier because \textsc{Ramify} \textbf{is} strong enough to verify it. Line~\ref{code:ufpathcompress} does not modify any local program variables, so the side condition is trivially satisfied.  Moreover, although line~\ref{code:ufaftram2} does contain an existential, line~\ref{code:findafterxparent} does not, and so there is no need to ``link'' the two associated witnesses.  On the other hand, the second localization block is harder than the first because there is more going on spatially. $\ramify(\ref{findram2})$ expresses an update to a single node of our graph:
 \begin{equation}
 \label{findram2}
 \frac
@@ -167,7 +148,7 @@ The second localization block (lines~\ref{code:ufbefram2}--\ref{code:ufaftram2})
 {\p{graph}(\gamma') \; |- \; x |-> \gamma'(x) * \big(x |-> \gamma''(x) --* \p{graph}(\gamma'')\big)}
 \end{equation}
 
-Here we abuse notation a little bit.  The conclusion of the ``rule'' (actually, lemma) is exactly right and appropriately generic, so spatial ramification lemmas of the kind given in \S\ref{spatialgraphs} can handle the dirty spatial work for us.  However, the second premise uses a notation for ``mathematical graph node update'' that is customized for union-find graphs, since most graphs have more than a rank and single outgoing edge.  More seriously, as we will discuss in MATHGRAPH SECTION, updating a mathematical graph cannot be done willy-nilly; it is only defined when the properties that restrict the mathematical structure of $\gamma$ are preserved. {\color{magenta}These properties are carried around via dependent types;} in the case of union-find graphs, they force \emph{e.g.} acyclicity (other than at roots).
+Here we abuse notation a little bit.  The conclusion of the ``rule'' (actually, lemma) is exactly right and appropriately generic, so spatial ramification lemmas of the kind given in \S\ref{sec:spacegraph} can handle the dirty spatial work for us.  However, the second premise uses a notation for ``mathematical graph node update'' that is customized for union-find graphs, since most graphs have more than a rank and single outgoing edge.  More seriously, as we will discuss in \S\ref{sec:mathgraph}, updating a mathematical graph cannot be done willy-nilly; it is only defined when the properties that restrict the mathematical structure of $\gamma$ are preserved. {\color{magenta}These properties are carried around via dependent types;} in the case of union-find graphs, they force \emph{e.g.} acyclicity (other than at roots).
 
 In the actual proof of \texttt{find}, the bulk of the example-specific effort (as opposed to generic lemmas we reuse in other examples) is indeed showing that this mathematical update can be done properly, \emph{i.e.} from 
 \[

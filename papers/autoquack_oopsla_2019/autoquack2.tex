@@ -46,19 +46,19 @@
 %% 'acmart-pacmpl-template.tex'.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-
 %% Some recommended packages.
 %\usepackage{booktabs}   %% For formal tables:
                         %% http://ctan.org/pkg/booktabs
 %\usepackage{subcaption} %% For complex figures with subfigures/subcaptions
                         %% http://ctan.org/pkg/subcaption
 
-\usepackage{listings} % for code formatting
-\usepackage{stmaryrd} % for the lightning symbol
-\usepackage{mathtools} % for mathrlap
-\usepackage{semantic} % for mathlig
-\usepackage{mathpartir} % for inferrule
-\usepackage{tikz} % for drawings
+\usepackage{listings}         % for code formatting
+\usepackage{stmaryrd}         % for the lightning symbol
+\usepackage{mathtools}        % for mathrlap
+\usepackage{semantic}         % for mathlig
+\usepackage{mathpartir}       % for inferrule
+\usepackage{tikz}             % for drawings
+\usepackage{courier}          % for the courier font (optional)
 
 % inline code
 \makeatletter
@@ -67,15 +67,15 @@
   \settowidth{\@mli}{\lstinline/#1/}
   \hspace{-.5ex}\begin{minipage}[t]{\@mli}\lstinline/#1/\end{minipage}}
 \makeatother
-\newcommand{\li}[1]{\ifmmode\mbox{\mli{#1}}\else\mbox{\lstinline/#1/}\fi}
 
+\newcommand{\li}[1]{\ifmmode\mbox{\mli{#1}}\else\mbox{\lstinline/#1/}\fi}
 \newcommand\hide[1]{}
 \newcommand{\MV}{\ensuremath{\mathsf{ModVar}}}
 \newcommand{\FV}{\ensuremath{\mathsf{FreeVar}}}
 \newcommand{\pguards}[1]{\llbracket #1 \rrbracket}
 
 %\newcommand{\scon}{\mathbin{\varstar}}
-\newcommand{\scon}{\mathbin{\star}}
+\newcommand{\scon}{\mathbin{\star}} % trying to save an alphabet by using 'star'
 \newcommand{\ocon}{%
   \mathbin{\mbox{$\mathrlap{\cup}\hspace*{.15em}
       \raisebox{.01em}[0ex][0ex]{$\scon$}$\hspace*{.07em}}}}
@@ -258,6 +258,7 @@ sort used in the OCaml runtime.  Our proofs are entirely machine-checked.
 \maketitle
 
 \section{Introduction}
+\label{dummyref} % TODO: Remove this and then fix the reference errors that arise
 \label{sec:intro}
 \input{intro.tex}
 
