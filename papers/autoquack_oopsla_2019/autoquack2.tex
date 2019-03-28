@@ -58,6 +58,7 @@
 \usepackage{mathtools} % for mathrlap
 \usepackage{semantic} % for mathlig
 \usepackage{mathpartir} % for inferrule
+\usepackage{tikz} % for drawings
 
 % inline code
 \makeatletter
@@ -108,6 +109,10 @@
 \let\ramify\lightning
 \newcommand{\infrulestyle}[1]{\textsc{#1}}
 \newcommand{\infrule}[4]{\inferrule*[lab=\infrulestyle{#1},right=$\mathrlap{#4}$]{#2}{#3}}
+\long\def\beginpgfgraphicnamed#1#2\endpgfgraphicnamed{\includegraphics{#1}}
+\newcommand{\medocon}{
+  \raisebox{-0.3ex}{\resizebox{0.63em}{!}{$\scon$}} \hspace{-2.05ex} \bigcup}
+\newcommand{\triple}[3]{\{#1\}\,#2\,\{#3\}}
 
 \lstset{%
   language=C,
@@ -264,6 +269,31 @@ sort used in the OCaml runtime.  Our proofs are entirely machine-checked.
 \label{sec:localizations}
 \input{localizations.tex}
 
+\section{A framework for graph theory}
+\label{sec:mathgraph}
+\input{math_graph.tex}
+
+\section{Defining and reasoning about spatial graphs}
+\label{sec:spacegraph}
+\input{spatial.tex}
+
+\section{Certifying a Garbage Collector for CertiCoq}
+\label{sec:certigc}
+\input{certigc.tex}
+
+\section{Statistics related to our development}
+\label{sec:development}
+\input{development.tex}
+
+\section{Related work}
+\label{sec:related}
+\input{related.tex}
+
+\section{Future work and conclusion}
+\label{sec:future}
+\label{sec:conclusion}
+\input{futurecon.tex}
+
 %% Acknowledgments
 \begin{acks}                            %% acks environment is optional
                                         %% contents suppressed with 'anonymous'
@@ -289,7 +319,7 @@ sort used in the OCaml runtime.  Our proofs are entirely machine-checked.
 %% Appendix
 \appendix
 \section{Appendix}
-
-Text of appendix \ldots
+\label{sec:appendix}
+% \input{appendix.tex}  % riddled with overful boxes
 
 \end{document}

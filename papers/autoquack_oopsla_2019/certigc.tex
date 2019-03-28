@@ -125,8 +125,8 @@ a cascade effect. Once this cascade (if any) is over, we
 return control to the mutator, which goes ahead with 
 the allocation that it was trying to perform in the nursery.
 
-Armed with an understanding of how the overall collection 
-works via (a series of) two-generational collections, we move one 
+We have shown how the overall collection 
+works via (a series of) two-generational collections. We now move one 
 level deeper and examine how we identify and 
 copy those items in a \emph{from} generation that are reachable
 from the args array to the \emph{to} generation.
@@ -134,7 +134,6 @@ from the args array to the \emph{to} generation.
 % 150 or so words that explain forward_roots and do_scan.
 % End goal is to convince them that everything relies on forward, 
 % and forward is all that remains to be explained.
-
 We start at the mutator-owned args array, whose elements
 are either data, or pointers that point at blocks in the 
 heap. We ignore the data entirely, and, among the pointers, we 
