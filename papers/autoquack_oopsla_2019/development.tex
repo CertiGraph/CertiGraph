@@ -14,7 +14,7 @@ When the user is in the middle of a verification, the decorated program is parti
 We wish to preserve this ``decorated program'' view while extending Floyd to support ramification.  Our task therefore is to construct a proof in Coq's underlying logic that allows a localization block to be constructed in this manner---that is, we wish to enter a localization block without requiring the user to specify the ``exit point'' in advance.  The engineering is tricky because the proof Floyd is constructing (\emph{i.e.} applications of inference rules) has holes in places where the user's ``top to bottom'' view of things has not yet arrived.
 
 \begin{figure}[t]
-\begin{minipage}{.1\textwidth}
+\begin{minipage}{.15\textwidth}
 \begin{lstlisting}
 $\{\ \ P_1 \ \ \}$
     c1
@@ -29,7 +29,7 @@ $~~\,\{\ \ P_4 \ \ \}\label{code:localsndcmd}$
 
 \end{lstlisting}
 \end{minipage} \vline ~
-\begin{minipage}{.11\textwidth}
+\begin{minipage}{.15\textwidth}
 \begin{lstlisting}[numbers=none]
 $\{\ \ P_1 \ \ \}$
     c1
@@ -44,7 +44,7 @@ $\{\ \ ?F * P_4 \ \}$
 
 \end{lstlisting}
 \end{minipage} \vline ~
-\begin{minipage}{.11\textwidth}
+\begin{minipage}{.15\textwidth}
 \begin{lstlisting}[numbers=none]
 $\{\ \ P_1 \ \ \}$
     c1
@@ -59,7 +59,7 @@ $\{\ \ P_6 \ \ \}$
     ...
 \end{lstlisting}
 \end{minipage} \vline ~
-\begin{minipage}{.11\textwidth}
+\begin{minipage}{.15\textwidth}
 \begin{lstlisting}[numbers=none]
 $\{\ \ P_1 \ \ \}$
     c1
