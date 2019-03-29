@@ -1,12 +1,5 @@
-{\color{blue} This section overview needs reworking because SS1 was cut. Not doing since we may merge with previous section, or we may bring SS1 back given the new page limit.}
-{\color{magenta} After reading this section (and previous 
-versions of it) with some care, I want to argue that cutting
-the first subsection may have been overly hasty. I think we 
-can tighten it and perhaps merge it with the following 
-subsection, but cutting it altogether leaves us without 
-motivation for the next subsection. Un-hiding it for now, 
-and perhaps will shorten and merge it later.}
 
+\marginpar{\tiny \color{blue} We are interested in cutting \S\ref{sec:fixpointfail}. Needs massaging.}
 To prove the functional correctness of graph-manipulating algorithms implemented in a real language, we need to connect the heap representation of graphs, the memory model of the programming language, and the mathematical properties of graphs from \S\ref{sec:mathgraph}.  The first of these turns out to be surprisingly subtle as we shall see in \S\ref{sec:fixpointfail} and \S\ref{sec:goodgraph}.  The main challenge for the others is to engineer a framework that is generic enough and modular enough to be useful in practice in a variety of settings; we cover it in~\S\ref{sec:ramifylib}.
 
 \subsection{Recursive definitions yield poor \p{graph} predicates}\label{sec:fixpointfail}
@@ -15,9 +8,9 @@ To prove the functional correctness of graph-manipulating algorithms implemented
 \newcommand{\grapham}{\p{graph}_A}
 
 
-{\color{blue} I wonder if we can crunch the paragraph below... it's not our main point, 
-just a lesson for the user so we can make our point.}
-Recursive predicates are ubiquitous in separation logic---so
+\marginpar{\tiny \color{blue} Crunch. Not our main point, just a lesson for the reader 
+so we can make our point.}
+{\color{magenta}Recursive predicates are ubiquitous in separation logic---so
 much so that when one writes the definition of a predicate as
 \mbox{$P$ ``$\defeq$'' $\ldots P \! \ldots$}, no one raises an eyebrow despite the
 dangers of circularity in mathematics. Indeed, the vast majority of the time there
@@ -30,7 +23,7 @@ Assuming {\color{magenta}(as one typically does without comment)}
 that $F_P$ is \emph{covariant}, i.e. $(P \vdash Q)
 \Rightarrow (F \, P \vdash F \, Q)$, one then enjoys the fixpoint
 equation $P \Leftrightarrow \ldots P \ldots$, formally justifying
-the typically-written pseudodefinition (``$\defeq$'').
+the typically-written pseudodefinition (``$\defeq$'').}
 
 %Definition corec {B A: Type}  (F: (B -> pred A) -> (B -> pred A)) : B -> pred A :=
 %fun x w => forall P: B -> pred A, (forall x, F P x |-- P x) -> P x w.
@@ -312,7 +305,7 @@ $\begin{array}{@{}l@{}l@{}}
 }
 \end{equation}
 
-The Supplementary tower contains properties not used by most of the VST examples.  This includes the fold/unfold relationship from \S\ref{sec:goodgraph}, facts about precision, \emph{etc}. Some of these properties are needed by HIP/SLEEK, {\color{magenta}while others are mostly included for completeness}.
+The Supplementary tower contains properties not used by most of the VST examples.  This includes the fold/unfold relationship from \S\ref{sec:goodgraph}, facts about precision, \emph{etc}. Some of these properties are needed by HIP/SLEEK, while others are mostly included for completeness.
 
 % are there just because we felt they might be useful in the future.
 

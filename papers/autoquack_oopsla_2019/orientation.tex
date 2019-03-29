@@ -1,7 +1,7 @@
 \input{find_listing.tex}
 
 As an initial demonstration of our techniques, we show the decorated code of the 
-\texttt{find} function from the classic disjoint-set data structure~\cite{clrs} in 
+\texttt{find} function from the classic disjoint-set data structure~\cite{blah} in 
 Figure~\ref{fig:find}. \texttt{find} returns the root 
 (ultimate parent) of a \texttt{Node} \texttt{x}. A node is a root when its parent 
 pointer points to itself (line~\ref{code:ufif}); 
@@ -15,10 +15,10 @@ implicit sharing inherent in parent-pointers make the disjoint-set data
 structure very difficult to reason about. Indeed, the first pen-and-paper 
 verification in separation logic required 20 pages~\cite{neelthesis}.
 
+\marginpar{\tiny \color{blue} Would you consider $V_\gamma$ and $E_\gamma$?}
 We use a number of basic concepts in our invariants.  We write~$\gamma$ to 
 mean a ``mathematical'' (or ``pure'') graph: \emph{roughly}, a set of 
 labeled vertices {\color{magenta}$V(\gamma)$ and edges $E(\gamma)$.} 
-{\color{blue} Would you consider $V_\gamma$ and $E_\gamma$?}   
 When $v \in V(\gamma)$, we write $\gamma(v) = (r,p)$ to state that vertex $v$ has 
 label $r$ and parent vertex $p$ ($r$ stores the ``rank'' of a node; it is ignored 
 in \texttt{find} but used in \texttt{union}).  Pure predicates are written in 
@@ -26,28 +26,30 @@ in \texttt{find} but used in \texttt{union}).  Pure predicates are written in
 Turning our attention to the spatial predicates, each node $v \in V(\gamma)$ will be 
 represented by $v \mapsto \gamma(v) {\color{blue} = (r,p)}$ in the heap, 
 where we use the usual pen-and-paper 
+\marginpar{\tiny \color{blue}I think it would be clearer if it was ``$\m{sizeof}(r)$''.}
 trick of writing \emph{e.g.} $v \mapsto r,p$ to mean 
-\mbox{$v |-> r * (v + \m{sizeof}(\texttt{unsigned int})) |-> p$} in the C memory model.
-{\color{blue}I think it would be clearer if it was ``$\m{sizeof}(r)$''.}
+\mbox{$v |-> r * (v + \m{sizeof}(\texttt{\color{magenta}unsigned int})) |-> p$} in the C memory model.
+\marginpar{\tiny \color{blue}Bigstar coming in unexplained.}
 The whole graph (the entire disjoint-set forest) is then represented by 
 $\p{uf\_graph}(\gamma)$, {\color{magenta}essentially the 
 separating conjunction of} the representations 
 of all the individual verticies $v \in V(\gamma)$. 
-{\color{blue}I I think bigstar is coming in unexplained here...}
 Spatial predicates are written 
 in \textsf{sans-serif}.  We explain more about spatial graphs in~\S\ref{sec:spacegraph}.
 
 {\color{magenta}Standing as we do on the shoulders of giants, we can see 
-further and more clearly.} {\color{blue} A little unnecessary?} The invariants at 
+further and more clearly.} The invariants at 
 each program point are natural despite only minor tidying from our machine-checked 
 proof.  We also enjoy good separation between the spatial predicates and pure 
 predicates.  All of this is despite verifying real C code, which entails quite a number 
 of grungy details. As one example, we will examine some grunginess that occurs in the 
 verification of line~\ref{code:ufif} shortly.
 
-The precondition on line~\ref{code:findstart} says exactly that we have a disjoint-set forest representing the abstract graph $\gamma$ and that \texttt{x} is a valid vertex in $\gamma$.  The postcondition is on line~\ref{code:findend}: the heap is representing a new union-find graph $\gamma''$, and \texttt{find} \texttt{ret}urns the node \m{rt}.  We specify that $\m{rt}$
-is the root (ultimate parent) of \texttt{x} with the pure relation $\m{uf\_root}$.  
-{\color{magenta} explain reachability?} We likewise describe how $\gamma''$ 
+The precondition on line~\ref{code:findstart} says exactly that we have a disjoint-set forest representing the abstract graph $\gamma$ and that \texttt{x} is a valid vertex in $\gamma$.  The postcondition is on line~\ref{code:findend}: the heap is representing a new union-find graph $\gamma''$, and \texttt{find} \texttt{ret}urns the node \m{rt}.  
+\marginpar{\tiny \color{blue} explain reachability?} 
+{\color{magenta}We specify that $\m{rt}$
+is the root (ultimate parent) of \texttt{x} with the pure relation $\m{uf\_root}$.}  
+We likewise describe how $\gamma''$ 
 relates to the original graph $\gamma$ via the relation $\m{findS}$, which 
 {\color{magenta}conservatively approximates} the action of path compression.
 
@@ -99,6 +101,8 @@ G_1 |- L_1 * (L_2 --* G_2)}
 {\{ G_1 \} ~ c ~ \{ G_2 \}} \mathit{freevars}(L_2 --* G_2) \cap \MV(c) = \emptyset
 \end{equation}
 
+\marginpar{\tiny \color{blue} I really feel like we're backing into this point. I'd like
+to rework it a little.}
 {\color{magenta}The \emph{ramification entailment} $G_1 |- L_1 * (L_2 --* G_2)$ captures two key ideas: 
 first, that $L_1$ is spatially contained within $G_1$; and second, that 
 \emph{replacing} $L_1$ with $L_2$ inside $G_1$ yields $G_2$. \textsc{Ramify} essentially 
@@ -109,8 +113,6 @@ quantifiers (quantifiers can appear \emph{within} $L_2$ and $G_2$, but
 Although \textsc{Ramify} is sound\footnote{Use \textsc{Localize} with 
 $P -|- \exists x : \m{unit}.P$ for any $x$ not free in $P$.}, 
 we shall soon see that these drawbacks are serious.}
-{\color{blue} I really feel like we're backing into this point. I'd like
-to rework it a little.}
 
 Using either \textsc{Localize} or \textsc{Ramify}, the lines adjacent to 
 the~$\searrow$ and~$\swarrow$ symbols specify~$G_1$ (line~\ref{code:ufbefram1}), 
@@ -141,16 +143,20 @@ that other than the side condition, \textsc{Ramify} lets us verify
 lines \ref{code:ufbefram1}--\ref{code:ufaftram1}.
 
 The second localization block (lines~\ref{code:ufbefram2}--\ref{code:ufaftram2}) is both easier and harder than the first.  It is easier because \textsc{Ramify} \textbf{is} strong enough to verify it. Line~\ref{code:ufpathcompress} does not modify any local program variables, so the side condition is trivially satisfied.  Moreover, although line~\ref{code:ufaftram2} does contain an existential, line~\ref{code:findafterxparent} does not, and so there is no need to ``link'' the two associated witnesses.  On the other hand, the second localization block is harder than the first because there is more going on spatially. $\ramify(\ref{findram2})$ expresses an update to a single node of our graph:
+
 \begin{equation}
 \label{findram2}
-\frac
+\inferrule
 {x \in V(\gamma') \; \qquad \gamma'' = [x -> (r,rt)]\gamma'}
 {\p{graph}(\gamma') \; |- \; x |-> \gamma'(x) * \big(x |-> \gamma''(x) --* \p{graph}(\gamma'')\big)}
 \end{equation}
 
-Here we abuse notation a little bit.  The conclusion of the ``rule'' (actually, lemma) is exactly right and appropriately generic, so spatial ramification lemmas of the kind given in \S\ref{sec:spacegraph} can handle the dirty spatial work for us.  However, the second premise uses a notation for ``mathematical graph node update'' that is customized for union-find graphs, since most graphs have more than a rank and single outgoing edge.  More seriously, as we will discuss in \S\ref{sec:mathgraph}, updating a mathematical graph cannot be done willy-nilly; it is only defined when the properties that restrict the mathematical structure of $\gamma$ are preserved. {\color{magenta}These properties are carried around via dependent types;} in the case of union-find graphs, they force \emph{e.g.} acyclicity (other than at roots).
+Here we abuse notation a little bit.  The conclusion of the ``rule'' (actually, lemma) is exactly right and appropriately generic, so spatial ramification lemmas of the kind given in \S\ref{sec:spacegraph} can handle the dirty spatial work for us.  However, the second premise uses a notation for ``mathematical graph node update'' that is customized for union-find graphs, since most graphs have more than a rank and single outgoing edge.  More seriously, as we will discuss in \S\ref{sec:mathgraph}, updating a mathematical graph cannot be done willy-nilly; it is only defined when the properties that restrict the mathematical structure of $\gamma$ are preserved. 
+\marginpar{\tiny \color{blue}Too early}
+{\color{magenta}These properties are carried around via dependent types;} in the case of union-find graphs, they force \emph{e.g.} acyclicity (other than at roots).
 
 In the actual proof of \texttt{find}, the bulk of the example-specific effort (as opposed to generic lemmas we reuse in other examples) is indeed showing that this mathematical update can be done properly, \emph{i.e.} from 
+\marginpar{\tiny \color{blue} Need to come to some decision re: the typesetting.}
 \[
 \texttt{x} \in V(\gamma) /| \gamma(\texttt{x}) = (r,\m{pa}) \quad \text{ and } \quad
 \texttt{x} \neq \m{pa} /|
@@ -161,15 +167,14 @@ we can prove
 \exists \gamma''.~ \gamma'' = [x -> (r,rt)]\gamma' /| \m{uf\_root}(\gamma'',\texttt{x},\m{rt}) /| \m{findS}(\gamma,\texttt{x},\gamma'')
 \]
 
-{\color{blue} Need to come to some decision re: the typesetting above.}
 
 This lemma captures the essence of both finding the root and doing path compression: after compressing your parent and finding its root, you can path compress yourself by rerouting your own parent pointer to your (soon-to-be former) parent's root.  The proof of the lemma is nontrivial, but is completely isolated from the grungy details of C.
 
 With the second localization block complete, the remainder of the verification is straightforward.
 
+\marginpar{\tiny \color{blue}I think this can be cut down to a footnote.}
 \paragraph{Notes on notation.} 
-
-{\color{magenta} I think this can be cut down to a footnote.} Although we do not do so in Figure~\ref{fig:find}, localization blocks can safely nest.  When the ramification entailment is not noteworthy we can omit the $\ramify(i)$ reference in pen-and-paper proofs.  When we wish to save vertical space we can write $\{ G_1 \} \searrow \{ L_1 \}$ and $\{ G_2 \} \swarrow \{ L_2 \}$.
+{\color{magenta} Although we do not do so in Figure~\ref{fig:find}, localization blocks can safely nest.  When the ramification entailment is not noteworthy we can omit the $\ramify(i)$ reference in pen-and-paper proofs.  When we wish to save vertical space we can write $\{ G_1 \} \searrow \{ L_1 \}$ and $\{ G_2 \} \swarrow \{ L_2 \}$.
 
 As pointed out in \S\ref{sec:intro}, \infrulestyle{Localize} can derive \infrulestyle{Frame}.  Our notation for localization blocks clarifies pen-and-paper uses of \infrulestyle{Frame}, especially in multi-line contexts with nontrivial $F$, for which the current popular notation to express \infrulestyle{Frame} involves a liberal use of 
 ellipses, \emph{e.g.}:
@@ -201,13 +206,14 @@ New notation:
 \end{lstlisting}
 \end{minipage}
 \vspace{-0.75ex}
+}
 
-\subsection{Additional verified examples}
+\marginpar{\tiny \color{blue} These have been mentioned a few times, 
+and this short discussion feels unsatisfying. Expand?}
+\subsection{\color{magenta}Additional verified examples}
 \label{sec:application}
-{\color{blue} These have been mentioned a few times here and there, 
-and this short discussion here feels a bit unsatisfying. Should we expand this?}
 
-Mark for graphs (cyclic), briefly discussed in EXISTENTIALS.
+Mark for graphs (cyclic), briefly discussed in~\S\ref{sec:existentials}.
 
 In addition to \li{mark} for graphs, we have also verified the same program for DAGs.
 More interestingly, we have verified two algorithms that modify the link structure:

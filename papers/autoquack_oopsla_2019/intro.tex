@@ -15,11 +15,11 @@ Due to the complexity of these examples, they tend to require a large number
 of custom predicates and subtle reasoning, which generally does not carry across 
 to the verification of other graph-manipulating programs.
 
+\marginpar{\tiny \color{blue}This will be repeated shortly...}
 We present a general toolkit for verifying graph-manipulating programs in a 
 machine-checked context. Our techniques are \emph{general} in that they handle a diverse 
-range of graph-manipulating programs, {\color{blue}including union-find, visiting/marking 
-each node in a DAG, and pruning a cyclic graph to a spanning tree.} {\color{magenta}This 
-will be repeated shortly...}
+range of graph-manipulating programs, {\color{magenta}including union-find, visiting/marking 
+each node in a DAG, and pruning a cyclic graph to a spanning tree.} 
 Our techniques are \emph{modular}, allowing us to reuse definitions and proofs 
 (\emph{e.g.} facts about reachability) and giving us {\color{magenta} significant 
 modularity} between abstract mathematical graphs and their concrete representation 
@@ -56,33 +56,33 @@ R |- \forall x.~ (L_2 --* G_2) }
 % new one-column version:
 \begin{equation}
 \label{eq:localize}
-%\infrule{Localize}	
-\frac
-{G_1 |- L_1 * R \qquad
-\{ L_1 \} ~ c ~ \{ \exists x.~ L_2 \} \qquad
+\inferrule[Localize]	
+{G_1 |- L_1 * R \\
+\{ L_1 \} ~ c ~ \{ \exists x.~ L_2 \} \\
 R |- \forall x.~ (L_2 --* G_2) }
-{\{ G_1 \} ~ c ~ \{ \exists x.~ G_2 \}} 
-\; {\mathit{freevars}(R) \cap \MV(c) = \emptyset} 
+{\{ G_1 \} ~ c ~ \{ \exists x.~ G_2 \}} \mathit{freevars}(R) \cap \MV(c) = \emptyset 
 \end{equation} 
 
+\marginpar{\color{blue} \tiny Can be a footnote: 
+It explains how Localize is a general version of Frame.} 
 \textsc{Localize} connects the behavior of a command~$c$ in a ``local'' context~$L_1$ 
 and~$L_2$ to its effect on a ``global'' context~$G_1$ and~$G_2$ using a carefully-chosen 
 predicate~$R$. This is a more general version of the well-known \textsc{Frame} rule, 
 which does the same task in the simpler case when $G_i = L_i * F$ for some frame~$F$ that 
-is untouched by~$c$.  {\color{magenta}Indeed, \textsc{Frame} can be derived 
+is untouched by~$c$.  
+{\color{magenta}Indeed, \textsc{Frame} can be derived 
 from \textsc{Localize} by setting $R \defeq F$, which makes both entailments 
 tautologies\footnote{For readers relatively unfamiliar with the \emph{separating 
 implication}~$--*$, \emph{a.k.a.} ``magic wand'',~$*$ and~$--*$ are related in the same 
 way that~$/|$ and~$->$ are in propositional logic, \emph{i.e.} 
 adjointness:~$(P * Q |- R) \Leftrightarrow (P |- Q --* R)$.} and trivially satisfies the 
-side condition.} {\color{blue}I think the magenta section can be a footnote. It explains 
-how Localize is a general version of Frame. I don't know if it deserves prime 
-real estate.} 
+side condition.} 
 Localization blocks are an upgrade to Hobor and Villard's concept of 
 \emph{ramification}~\cite{blah} with two key improvements: support for existential 
+\marginpar{\tiny \color{blue} This repeats just below.}
 quantifiers in postconditions, and smoother treatment of modified program variables.  
-We will see how all three ingredients work together in an example 
-in~\S\ref{sec:orientation}.
+{\color{magenta}We will see how all three ingredients work together in an example 
+in~\S\ref{sec:orientation}}.
 
 %as a kind of proof pattern or framework to verify graph-manipulating programs on pen and paper~\cite{hobor:ramification}.  The major focus of this paper is to develop methods to verify realistic graph programs in a mechanized context.  We do so by upgrading the theory of ramification and by developing a general and modular library for graph-related reasoning in separation logic.  We incorporate our approach into two sizeable separation logic-based verification tools: the Floyd system of the Verified Software Toolchain (VST)~\cite{appel:programlogics} and the HIP/SLEEK program verifier~\cite{chin:hipsleek}.  VST and HIP/SLEEK inhabit quite different points in the design space for verification tools, with VST primarily focusing on heavily human-guided verifications with an emphasis on end-to-end machine-checked proofs, and HIP/SLEEK focusing on more automation.  Despite these differences, the vast majority of our Coq code base is shared between them,
 %giving us hope that our work will be applicable to other tools.
@@ -92,21 +92,23 @@ Our contributions are organized as follows:
 \begin{itemize}
 \item[\S\ref{sec:orientation}] We use the classic ``union-find'' disjoint set algorithm to show {\color{magenta}how our three key ingredients---mathematical graphs, spatial graphs, and localization blocks---come together to verify 
 graph-manipulating algorithms.} 
-{\color{blue}I worry this is repetetive. Ref: the last few words of the previous paragraph.}
-Although we use it primarily as a running example, this is the first machine-checked verification of this algorithm in C to the best of our knowledge. {\color{blue} Does anyone have any data on this?}  {\color{magenta} We introduce \emph{localization blocks} as a new notation for ramification. We briefly discuss three additional VST-certified examples to give a sense of the breadth of algorithms we can verify: marking a DAG, pruning a graph into a spanning tree, and making a structure-preserving copy of a 
+\marginpar{\color{blue} \tiny Reads like sth in prev page. Shorten one?}
+Although we use it primarily as a running example, {\color{magenta}this is the first machine-checked verification of this algorithm in C to the best of our knowledge.} 
+{\color{blue} <- TODO: check.}  
+{\color{magenta} We introduce \emph{localization blocks} as a new notation for ramification. We briefly discuss three additional VST-certified examples to give a sense of the breadth of algorithms we can verify: marking a DAG, pruning a graph into a spanning tree, and making a structure-preserving copy of a 
 graph.}
-{\color{blue}The above reads a lot like something in the previous page. Can one 
-of them be shortened?}
-\item[\S\ref{sec:localizations}] {\color{magenta} Existentials for fun and profit: we upgrade Hobor and Villard's \infrulestyle{Ramify} rule to handle both modified program variables and existential quantifiers in postconditions more gracefully.}
-\item[\S\ref{sec:mathgraph}] We develop a general mechanization of mathematical graphs powerful enough to support realistic verification. {\color{magenta}Probably we will merge this with the next section.} %{\color{magenta} What else can we say here?}
+\item[\S\ref{sec:localizations}] Existentials for fun and profit: we upgrade Hobor and Villard's \infrulestyle{Ramify} rule to handle both modified program variables and existential quantifiers in postconditions more gracefully.
+\marginpar{\tiny \color{blue}Merge this with next section?}
+\item[\S\ref{sec:mathgraph}] {\color{magenta}We develop a general mechanization of mathematical graphs powerful enough to support realistic verification.}
+ %{\color{magenta} What else can we say here?}
 \item[\S\ref{sec:spacegraph}] We suggest that the Knaster-Tarski fixpoint~\cite{tarski:fixpoint} cannot define a usable separation logic graph predicate.  We propose a better definition for general spatial graphs that still enjoys a ``recursive'' fold/unfold.  We prove general theorems about spatial graphs in a way that can be utilized in multiple flavors of separation logic. %{\color{magenta} Line about modularity?}
 %\item[\S\ref{sec:hipsleek}] We explain how we modified HIP/SLEEK to introduce ramifications when programs modify data structures with intrinsic sharing and to automatically discharge the associated obligations using Coq-verified external lemmas.
 %\item[\S\ref{sec:vst}] We explain how we integrated ramification into VST by developing .
 \item[\S\ref{sec:certigc}] We discuss the certification of the CertiCoq garbage collector (GC). While certifying this GC we identify two places where the semantics of C is too weak to define an OCaml-style GC. We also found and fixed a rather subtle overflow error in the original C code for the GC, justifying the effort of developing the machine-checked proof.
-\item[\S\ref{sec:development}] We integrate our techniques into VST with two new Floyd 
-tactics, \li{localize} and \\ \li{unlocalize}, and document some statistics related to our 
-overall development. {\color{blue} I think it's a bit funny to put these two in the same 
-section.}
+\marginpar{\tiny \color{blue} Bit funny to put these two in the same section.}
+\item[\S\ref{sec:development}] {\color{magenta}We integrate our techniques into VST with two new Floyd 
+tactics, \li{localize} and \\ \li{unlocalize}, and document some 
+statistics related to our overall development.}
 \item[\S\ref{sec:related}] We discuss related work.
 \item[\S\ref{sec:conclusion}] We discuss directions for future work and conclude.
 \end{itemize}
