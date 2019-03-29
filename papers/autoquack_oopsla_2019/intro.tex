@@ -15,21 +15,19 @@ Due to the complexity of these examples, they tend to require a large number
 of custom predicates and subtle reasoning, which generally does not carry across 
 to the verification of other graph-manipulating programs.
 
-\marginpar{\tiny \color{blue}This will be repeated shortly...}
 We present a general toolkit for verifying graph-manipulating programs in a 
 machine-checked context. Our techniques are \emph{general} in that they handle a diverse 
-range of graph-manipulating programs, {\color{magenta}including union-find, visiting/marking 
-each node in a DAG, and pruning a cyclic graph to a spanning tree.} 
-Our techniques are \emph{modular}, allowing us to reuse definitions and proofs 
-(\emph{e.g.} facts about reachability) and giving us {\color{magenta} significant 
-modularity} between abstract mathematical graphs and their concrete representation 
-in the heap.
+range of graph-manipulating programs, and \emph{modular} in that they allow code
+reuse (\emph{e.g.} facts about reachability) and encourage separation of concerns 
+(\emph{e.g.} between abstract mathematical graphs and their concrete representation 
+in the heap).
 Our techniques are \emph{powerful} enough to reason about real C code as compiled by 
-CompCert~\cite{blah}, and also \emph{lightweight} enough to integrate into the Verified 
+CompCert~\cite{leroy:compcert}, and also 
+\emph{lightweight} enough to integrate into the Verified 
 Software Toolchain (VST)~\cite{appel:programlogics} without serious reengineering.
-Finally, our techniques \emph{scale} well beyond short toy programs: we certify the 
-correctness of a generational garbage collector for the CertiCoq project~\cite{blah} 
-($\approx400$ devilish lines of C).
+{\color{magenta}Finally, our techniques \emph{scale} well beyond short toy programs: we certify the 
+correctness of a generational garbage collector for the CertiCoq 
+project~\cite{certicoqwebsite} ($\approx400$ devilish lines of C).}
 
 We proceed in three steps. First, we develop a ``mathematical graph library'' that is general enough to reason about a wide variety of algorithms.  We modularize this library carefully so that common ideas---\emph{e.g.} subgraphs, reachability, and isomorphism---can be reused in a number of algorithms.  
 Second, we connect these abstract graphs to
@@ -62,27 +60,21 @@ R |- \forall x.~ (L_2 --* G_2) }
 R |- \forall x.~ (L_2 --* G_2) }
 {\{ G_1 \} ~ c ~ \{ \exists x.~ G_2 \}} \mathit{freevars}(R) \cap \MV(c) = \emptyset 
 \end{equation} 
-
-\marginpar{\color{blue} \tiny Can be a footnote: 
-It explains how Localize is a general version of Frame.} 
-\textsc{Localize} connects the behavior of a command~$c$ in a ``local'' context~$L_1$ 
+ 
+\marginpar{\tiny \color{blue} Maybe this should be moved to \S2? Just formula for intro?}
+{\color{magenta}\textsc{Localize} connects the behavior of a command~$c$ in a ``local'' context~$L_1$ 
 and~$L_2$ to its effect on a ``global'' context~$G_1$ and~$G_2$ using a carefully-chosen 
 predicate~$R$. This is a more general version of the well-known \textsc{Frame} rule, 
-which does the same task in the simpler case when $G_i = L_i * F$ for some frame~$F$ that 
-is untouched by~$c$.  
-{\color{magenta}Indeed, \textsc{Frame} can be derived 
+which does the same task in the simpler case when $G_i = L_i * F$ 
+for some frame~$F$ that is untouched by~$c$.\footnote {\color{orange}Indeed, 
+\textsc{Frame} can be derived 
 from \textsc{Localize} by setting $R \defeq F$, which makes both entailments 
-tautologies\footnote{For readers relatively unfamiliar with the \emph{separating 
-implication}~$--*$, \emph{a.k.a.} ``magic wand'',~$*$ and~$--*$ are related in the same 
-way that~$/|$ and~$->$ are in propositional logic, \emph{i.e.} 
-adjointness:~$(P * Q |- R) \Leftrightarrow (P |- Q --* R)$.} and trivially satisfies the 
-side condition.} 
+tautologies and trivially satisfies the side condition using the property of 
+adjointness:~$(P * Q |- R) \Leftrightarrow (P |- Q --* R)$.}   
 Localization blocks are an upgrade to Hobor and Villard's concept of 
-\emph{ramification}~\cite{blah} with two key improvements: support for existential 
-\marginpar{\tiny \color{blue} This repeats just below.}
-quantifiers in postconditions, and smoother treatment of modified program variables.  
-{\color{magenta}We will see how all three ingredients work together in an example 
-in~\S\ref{sec:orientation}}.
+\emph{ramification}~\cite{hobor:ramification} with two key improvements: 
+support for existential 
+quantifiers in postconditions, and smoother treatment of modified program variables.}  
 
 %as a kind of proof pattern or framework to verify graph-manipulating programs on pen and paper~\cite{hobor:ramification}.  The major focus of this paper is to develop methods to verify realistic graph programs in a mechanized context.  We do so by upgrading the theory of ramification and by developing a general and modular library for graph-related reasoning in separation logic.  We incorporate our approach into two sizeable separation logic-based verification tools: the Floyd system of the Verified Software Toolchain (VST)~\cite{appel:programlogics} and the HIP/SLEEK program verifier~\cite{chin:hipsleek}.  VST and HIP/SLEEK inhabit quite different points in the design space for verification tools, with VST primarily focusing on heavily human-guided verifications with an emphasis on end-to-end machine-checked proofs, and HIP/SLEEK focusing on more automation.  Despite these differences, the vast majority of our Coq code base is shared between them,
 %giving us hope that our work will be applicable to other tools.
@@ -90,13 +82,11 @@ in~\S\ref{sec:orientation}}.
 %% \marginpar{\color{magenta} computable mathgraphs, null, pregraphs Problem with ``later'' not being precise.}
 Our contributions are organized as follows:
 \begin{itemize}
-\item[\S\ref{sec:orientation}] We use the classic ``union-find'' disjoint set algorithm to show {\color{magenta}how our three key ingredients---mathematical graphs, spatial graphs, and localization blocks---come together to verify 
-graph-manipulating algorithms.} 
-\marginpar{\color{blue} \tiny Reads like sth in prev page. Shorten one?}
+\item[\S\ref{sec:orientation}] We use the classic ``union-find'' disjoint set algorithm to show how our three key ingredients---mathematical graphs, spatial graphs, and localization blocks---come together to verify 
+graph-manipulating algorithms.
+\marginpar{\tiny \color{blue} TODO: check.}  
 Although we use it primarily as a running example, {\color{magenta}this is the first machine-checked verification of this algorithm in C to the best of our knowledge.} 
-{\color{blue} <- TODO: check.}  
-{\color{magenta} We introduce \emph{localization blocks} as a new notation for ramification. We briefly discuss three additional VST-certified examples to give a sense of the breadth of algorithms we can verify: marking a DAG, pruning a graph into a spanning tree, and making a structure-preserving copy of a 
-graph.}
+We introduce \emph{localization blocks} as a new notation for ramification. We briefly discuss three additional VST-certified examples to give a sense of the breadth of algorithms we can verify: marking a DAG, pruning a graph into a spanning tree, and making a structure-preserving copy of a graph.
 \item[\S\ref{sec:localizations}] Existentials for fun and profit: we upgrade Hobor and Villard's \infrulestyle{Ramify} rule to handle both modified program variables and existential quantifiers in postconditions more gracefully.
 \marginpar{\tiny \color{blue}Merge this with next section?}
 \item[\S\ref{sec:mathgraph}] {\color{magenta}We develop a general mechanization of mathematical graphs powerful enough to support realistic verification.}
@@ -112,4 +102,5 @@ statistics related to our overall development.}
 \item[\S\ref{sec:related}] We discuss related work.
 \item[\S\ref{sec:conclusion}] We discuss directions for future work and conclude.
 \end{itemize}
-All of our results are machine checked in Coq.
+\marginpar{\tiny \color{blue} repeats}
+{\color{magenta}All of our results are machine checked in Coq.}

@@ -91,19 +91,19 @@ graph. In Figure \ref{fig:pregraph}, valid vertices are in $V$ and
 invalid vertices are in $VE \smallsetminus V$. Importantly, 
 both kinds of vertices are legally part 
 of the PreGraph. Finally, $s$ and $d$ are functions that map 
-an edge to its source and destination respectively; {\color{magenta}this model means 
-that PreGraphs are directed rather than undirected.} 
+an edge to its source and destination respectively; 
+{\color{orange}this means that PreGraphs model directed graphs.}
 With an eye to flexibility, we make no further 
 requirements of a legal PreGraph, not even a specific notion 
 of how the four sets are related.
 Indeed, the PreGraph in Figure \ref{fig:pregraph} contains invalid 
 vertices and edges in an arbitrary configuration.
 
+Many graph concepts such as \emph{path}, \emph{reachability}, and \emph{subgraph} are 
+defined on PreGraphs. In \S\ref{fig:find} we saw \emph{reachable}, written
 \marginpar{\color{blue} \tiny How about inline: ``...written $\m{a} \mathrel{{\stackrel{\gamma~}{\leadsto^{1}}}} \m{b}$.
 It means that a and b are in $V(\gamma)$ and that there exists a edge (in $E(\gamma)$)
-that goes from a to b.''}
-Many graph concepts such as \emph{path}, \emph{reachability}, and \emph{subgraph} are 
-defined on PreGraphs. In \S\ref{fig:find} we saw \emph{reachable}, written 
+that goes from a to b.''} 
 {\color{magenta}
 $\m{a} \mathrel{{\stackrel{\gamma~}{\leadsto^{1}}}} \m{b}$. It is 
 defined as 
