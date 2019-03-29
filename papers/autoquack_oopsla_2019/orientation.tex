@@ -17,28 +17,26 @@ verification in separation logic required 20 pages~\cite{neelthesis}.
 
 \marginpar{\tiny \color{blue} Would you consider $V_\gamma$ and $E_\gamma$?}
 We use a number of basic concepts in our invariants.  We write~$\gamma$ to 
-mean a ``mathematical'' (or ``pure'') graph: \emph{roughly}, a set of 
+mean a ``mathematical'' (or~``pure'') graph: \emph{roughly}, a set of 
 labeled vertices {\color{magenta}$V(\gamma)$ and edges $E(\gamma)$.} 
 When $v \in V(\gamma)$, we write $\gamma(v) = (r,p)$ to state that vertex $v$ has 
 label $r$ and parent vertex $p$ ($r$ stores the ``rank'' of a node; it is ignored 
 in \texttt{find} but used in \texttt{union}).  Pure predicates are written in 
 \textit{italic}.  We explain more about mathematical graphs in~\S\ref{sec:mathgraph}. 
 Turning our attention to the spatial predicates, each node $v \in V(\gamma)$ will be 
-represented by $v \mapsto \gamma(v) {\color{blue} = (r,p)}$ in the heap, 
+represented by {\color{orange}$v \mapsto \gamma(v) = (r,p)$} in the heap, 
 where we use the usual pen-and-paper 
-\marginpar{\tiny \color{blue}I think it would be clearer if it was ``$\m{sizeof}(r)$''.}
 trick of writing \emph{e.g.} $v \mapsto r,p$ to mean 
-\mbox{$v |-> r * (v + \m{sizeof}(\texttt{\color{magenta}unsigned int})) |-> p$} in the C memory model.
+\mbox{\color{orange}$v |-> r * (v + \m{sizeof}(r)) |-> p$} in the C memory model.
 \marginpar{\tiny \color{blue}Bigstar coming in unexplained.}
 The whole graph (the entire disjoint-set forest) is then represented by 
 $\p{uf\_graph}(\gamma)$, {\color{magenta}essentially the 
 separating conjunction of} the representations 
 of all the individual verticies $v \in V(\gamma)$. 
-Spatial predicates are written 
-in \textsf{sans-serif}.  We explain more about spatial graphs in~\S\ref{sec:spacegraph}.
+{\color{magenta}Spatial predicates are written in \textsf{sans-serif}.}  
+We explain more about spatial graphs in~\S\ref{sec:spacegraph}.
 
-{\color{magenta}Standing as we do on the shoulders of giants, we can see 
-further and more clearly.} The invariants at 
+The invariants at 
 each program point are natural despite only minor tidying from our machine-checked 
 proof.  We also enjoy good separation between the spatial predicates and pure 
 predicates.  All of this is despite verifying real C code, which entails quite a number 
@@ -87,23 +85,37 @@ the pointer comparison is defined in C.
 \subsection{Localization Blocks}
 \label{sec:localblocks}
 
-It is time to explain the not-so-obvious jumps in reasoning punctuated by the 
+{\color{orange}
+It is time to explain the non-obvious jumps in reasoning bracketed by the 
 symbols $\searrow \text{, } \ramify(i)$, and $\swarrow$ 
-(lines~\ref{code:ufbefram1}--\ref{code:ufaftram1} and~\ref{code:ufbefram2}--\ref{code:ufaftram2}).  {\color{magenta}As explained above, the verification of the command itself is entirely straightforward given its immediate neighbors (lines~\ref{code:befparentfind}--\ref{code:aftparentfind} and~\ref{code:findbeforexparent}--\ref{code:findafterxparent}).  What is not so straightforward is how \emph{e.g.} line~\ref{code:ufbefram1} leads to line~\ref{code:befparentfind} or how line~\ref{code:aftparentfind} leads to line~\ref{code:ufaftram1}.} The intuitive idea is that we zoom in from a larger ``global'' context to a smaller ``local'' one.  After verifying some commands locally to arrive at a local postcondition, we zoom back out to the global context.  The $\searrow$ and $\swarrow$ symbols formally indicate an application of the \textsc{Localize} rule (\ref{eq:localize}) from page~\pageref{eq:localize}.
+(lines~\ref{code:ufbefram1}--\ref{code:ufaftram1} and~\ref{code:ufbefram2}--\ref{code:ufaftram2}). We call such bracketed sets of lines ``localization blocks''. 
+As explained above, the verification of the command itself is entirely 
+straightforward given its immediate neighbors 
+(lines~\ref{code:befparentfind}--\ref{code:aftparentfind} 
+and~\ref{code:findbeforexparent}--\ref{code:findafterxparent}).  
+What is not so straightforward is how \emph{e.g.} line~\ref{code:ufbefram1} 
+leads to line~\ref{code:befparentfind} or how line~\ref{code:aftparentfind} 
+leads to line~\ref{code:ufaftram1}.
+Intuitively, a localization block allows us to zoom in from a larger 
+``global'' context to a smaller ``local'' one, and, after verifying some commands 
+locally and arriving at a local postcondition, to zoom back out to the global 
+context. The $\searrow$ and $\swarrow$ symbols formally indicate an application 
+of the \textsc{Localize} rule (\ref{eq:localize}) from page~\pageref{eq:localize}.}
 
-{\color{magenta}Recall that \textsc{Localize} connects some ``global'' to a ``local'' one by using five predicates.  For the purposes of guiding intuition in \S\ref{sec:localblocks}, we will use a simpler variant of \textsc{Localize} called \textsc{Ramify} for a moment:}
+\marginpar{\tiny \color{blue} repetition}
+{\color{magenta}Recall that \textsc{Localize} connects some ``global'' to a ``local'' 
+one} by using five predicates.  To guide intuition in \S\ref{sec:localblocks}, we will
+provisionally use a simpler variant of \textsc{Localize} called \textsc{Ramify}:
 
 \begin{equation}
 \label{eq:ramify}
-\inferrule[Localize]
+\inferrule[Ramify]
 {\{ L_1 \} ~ c ~ \{ L_2 \} \\
 G_1 |- L_1 * (L_2 --* G_2)}
 {\{ G_1 \} ~ c ~ \{ G_2 \}} \mathit{freevars}(L_2 --* G_2) \cap \MV(c) = \emptyset
 \end{equation}
 
-\marginpar{\tiny \color{blue} I really feel like we're backing into this point. I'd like
-to rework it a little.}
-{\color{magenta}The \emph{ramification entailment} $G_1 |- L_1 * (L_2 --* G_2)$ captures two key ideas: 
+The \emph{ramification entailment} $G_1 |- L_1 * (L_2 --* G_2)$ captures two key ideas: 
 first, that $L_1$ is spatially contained within $G_1$; and second, that 
 \emph{replacing} $L_1$ with $L_2$ inside $G_1$ yields $G_2$. \textsc{Ramify} essentially 
 combines the two entailments in \textsc{Localize} into one by forcing the choice of 
@@ -112,7 +124,7 @@ quantifiers (quantifiers can appear \emph{within} $L_2$ and $G_2$, but
 \emph{the witnesses of such quantifiers cannot be related to each other}).  
 Although \textsc{Ramify} is sound\footnote{Use \textsc{Localize} with 
 $P -|- \exists x : \m{unit}.P$ for any $x$ not free in $P$.}, 
-we shall soon see that these drawbacks are serious.}
+we shall soon see that these drawbacks are serious.
 
 Using either \textsc{Localize} or \textsc{Ramify}, the lines adjacent to 
 the~$\searrow$ and~$\swarrow$ symbols specify~$G_1$ (line~\ref{code:ufbefram1}), 
@@ -134,7 +146,8 @@ Unfortunately, we still have a problem: the side condition above requires that
 the free variables of $L_2 --* G_2$ be disjoint from any local variables modified 
 by $c$.  Inspection of lines~\ref{code:findram1}--\ref{code:ufaftram1} shows that the 
 program variable \texttt{p} \textbf{is} modified by $c$, and \textbf{is} free in 
-both $L_2$ and $G_2$.  This problem is fundamental: the whole point of verifying 
+both $L_2$ and $G_2$.  
+This issue is fundamental: the whole point of verifying 
 a read is to know something about the value that has been read.  Accordingly, 
 although \textsc{Ramify} is sound, it is not strong enough to verify
 lines~\ref{code:ufbefram1}--\ref{code:ufaftram1}.  We will address this problem 
@@ -332,10 +345,4 @@ The $\m{mark}$ and $\m{mark1}$ relations we use are defined straightforwardly at
 
 Turning to the body of the verification (lines~\ref{code:inmark}--\ref{code:outmark}), readers may already have noticed our new notation: blocks of proof sketch bracketed by the symbols $\searrow$ and $\swarrow$, such as lines~\ref{code:beforerootmark}--\ref{code:afterrootmark}.  We call a bracketed set of lines like this a ``localization block''; localization blocks were inspired by our new \li{localize} $\searrow$ and \li{unlocalize} $\swarrow$ tactics in Floyd (\S\ref{sec:vst}).
 The intuitive idea is that we zoom in from a larger ``global'' context to a smaller ``local'' one.  After verifying some commands locally to arrive at a local postcondition, we zoom back out to the global context.  Although we do not do so in Figure~\ref{fig:markgraph}, localization blocks can safely nest.
-
-
-
-
-
-
-}
+} % end hide
