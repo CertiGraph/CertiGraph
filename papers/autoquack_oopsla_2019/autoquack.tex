@@ -52,13 +52,16 @@
 %\usepackage{subcaption} %% For complex figures with subfigures/subcaptions
                         %% http://ctan.org/pkg/subcaption
 
-\usepackage{listings}         % for code formatting
-\usepackage{stmaryrd}         % for the lightning symbol
-\usepackage{mathtools}        % for mathrlap
-\usepackage{semantic}         % for mathlig
-\usepackage{mathpartir}       % for inferrule
-\usepackage{tikz}             % for drawings
-\usepackage{courier}          % for the courier font (optional)
+\usepackage{listings}          % for code formatting
+\usepackage{stmaryrd}          % for the lightning symbol
+\usepackage{mathtools}         % for mathrlap
+\usepackage{semantic}          % for mathlig
+\usepackage{mathpartir}        % for inferrule
+\usepackage{tikz}              % for drawings
+\usepackage{courier}           % for the courier font (optional)
+\usepackage{multicol}          % for multi-column listings
+\usepackage{subcaption}        % for subfigures
+\usepackage[export]{adjustbox} % for subfigures
 
 % inline code
 \makeatletter
@@ -119,7 +122,8 @@
   morecomment=[n][{\color{red!80!black}}]{/*}{*/},
   morecomment=[l][{\color{red!80!black}}]{//},
   sensitive=true, mathescape=true, showlines=true, 
-  basicstyle=\normalfont\smaller\tt, keywordstyle=\color{blue}, numbers=left,
+  basicstyle=\normalfont\footnotesize\tt, 
+  keywordstyle=\color{blue}, numbers=left,
   numberstyle=\tiny, numbersep=5pt, boxpos=t,
 }
 

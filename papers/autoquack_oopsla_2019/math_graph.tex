@@ -27,9 +27,11 @@ than focusing on the nitty-gritty details.} % end hide
 
 \subsection{Structure of the mathematical graph framework}\label{sec:mathinfra}
 
-\input{mathgraph_structure.tex}
+\input{mathgraph_pregraph_combined.tex}
+%\input{mathgraph_structure.tex}
+%\input{pregraph_figure.tex}
 
-Figure~\ref{fig:graphs} shows the architecture of our mathematical graph library. 
+{\color{magenta}Figure~\ref{fig:graphs}} shows the architecture of our mathematical graph library. 
 \hide{The most basic kind of graph is PreGraph, out of which we build 
 LabeledGraph, and which in turn are used
 to build GeneralGraphs.  Each kind has some lemmas and also inherits the lemmas of the 
@@ -38,48 +40,6 @@ properties to LabeledGraphs (\ref{subsec:graphplugins}). %and will be discussed 
 %We will consider each in turn.
 } % end hide
 
-\begin{figure}[t]
-\centering
-\beginpgfgraphicnamed{pregraphexp}
-\begin{tikzpicture}
-[vad/.style={circle, fill=black, inner sep=0pt, minimum size=4pt},
- inv/.style={circle, draw=black, thick, inner sep=0pt, minimum size=4pt},
- ->/.style={thick, arrows={-Stealth}}]
-\node[vad] (n1) at (0, 0) {};
-\node[vad] (n2) at (1, 1) {};
-\node[inv] (n3) at (1, -1) {};
-\node[vad] (n4) at (-2,2) {};
-\node[vad] (n5) at (-2,-2) {};
-\node[vad] (n6) at (-3,0) {};
-\node[vad] (n7) at (3,1.5) {};
-\node[inv] (n8) at (3,-1.5) {};
-\node[vad] (n9) at (3.5, 1) {};
-\node[inv] (n10) at (3.5, 0.5) {};
-\node at (3.5, 1) [right=1.5pt] {\small Valid node};
-\node at (3.5, 0.5) [right=1.5pt] {\small Invalid node};
-\node at (3.5, 0) [right=1.5pt] {\small Valid edge};
-\node at (3.5, -0.5) [right=1.5pt] {\small Invalid edge};
-\draw[->] (n1) to (n2);
-\draw[->,dashed] (n1) to (n3);
-\draw[->,dashed] (n3) to (n5);
-\draw[->] (n2) to (n3);
-\draw[->] (n2) to (n7);
-\draw[->] (n2) to (n8);
-\draw[->,dashed] (n3) to (n8);
-\draw[->] (n4) to (n1);
-\draw[->] (n1) to (n5);
-\draw[->] (n2) to (n4);
-\draw[->] (n1) to [bend left=20] (n6);
-\draw[->] (n6) to (n5);
-\draw[->] (n8) to [bend left=20] (n7);
-\draw[->] (n4) to [bend right=35] (n1);
-\draw[->] (3.0, 0) -- (3.6, 0);
-\draw[->,dashed] (3.0, -0.5) -- (3.6, -0.5);
-\end{tikzpicture}
-\endpgfgraphicnamed
-\vspace{1ex}
-\caption{A PreGraph with valid and invalid vertices and edges.}\label{fig:pregraph}
-\end{figure}
 % move to its own file?
 
 \vspace{-0.75ex}
@@ -87,7 +47,7 @@ properties to LabeledGraphs (\ref{subsec:graphplugins}). %and will be discussed 
 \paragraph{PreGraph.} A PreGraph is a hextuple $(VT, ET, V, E, s, d)$, where $VT$ 
 and $ET$ are the underlying carrier sets of vertices and edges, and $V$ and $E$, 
 subsets $VT$ and $ET$ respectively, introduce the notion of \emph{validity} in the 
-graph. In Figure \ref{fig:pregraph}, valid vertices are in $V$ and 
+graph. In {\color{magenta}Figure \ref{fig:pregraph}}, valid vertices are in $V$ and 
 invalid vertices are in $VE \smallsetminus V$. Importantly, 
 both kinds of vertices are legally part 
 of the PreGraph. Finally, $s$ and $d$ are functions that map 
@@ -101,16 +61,9 @@ vertices and edges in an arbitrary configuration.
 
 Many graph concepts such as \emph{path}, \emph{reachability}, and \emph{subgraph} are 
 defined on PreGraphs. In \S\ref{fig:find} we saw \emph{reachable}, written
-\marginpar{\color{blue} \tiny How about inline: ``...written $\m{a} \mathrel{{\stackrel{\gamma~}{\leadsto^{1}}}} \m{b}$.
-It means that a and b are in $V(\gamma)$ and that there exists a edge (in $E(\gamma)$)
-that goes from a to b.''} 
-{\color{magenta}
-$\m{a} \mathrel{{\stackrel{\gamma~}{\leadsto^{1}}}} \m{b}$. It is 
-defined as 
-
-$$\m{a} \mathrel{{\stackrel{\gamma~}{\leadsto^{1}}}} \m{b} \defeq a, b \in V(\gamma) /| \exists e.~ e \in E(\gamma) /| s (e,\gamma) = a /| 
-d (e,\gamma) = b.$$
-} 
+{\color{orange}
+$\m{a} \mathrel{{\stackrel{\gamma~}{\leadsto^{1}}}} \m{b}$. It means that a and b are in $V(\gamma)$ and that there exists an edge (in $E(\gamma)$)
+that goes from a to b.}
 The reflexive, transitive closure on \emph{reachable} is written 
 $\m{a} \mathrel{{\stackrel{\gamma~}{\leadsto^{\star}}}} \m{b}$, and 
 $\neg (\m{a} \mathrel{{\stackrel{\gamma~}{\leadsto^{\star}}}} \m{b})$ 

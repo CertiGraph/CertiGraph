@@ -8,7 +8,7 @@ lightweight, and fully-automatable solution to the latter.
 
 \subsection{Linked existentials}
 
-\input{mark_listing.tex}
+\input{mark_listing_compact.tex}
 
 In Figure~\ref{fig:markgraph} we put the code and proof sketch of the classic \li{mark} algorithm that visits and colors every reachable node in a heap-represented graph.  The \li{mark} example contrasts from \li{find} in several illustrative respects.  First, it modifies the labels of nodes instead of the edges.  Second, each node has two outgoing edges rather than one, so the graph can have a more complex shape.  Third, the graph can be cyclic.  Lastly, the specification we certify (lines \ref{code:markstart} and \ref{code:markend}) is \emph{local} rather than \emph{global}:
 \vspace*{-1ex}
@@ -18,6 +18,8 @@ In Figure~\ref{fig:markgraph} we put the code and proof sketch of the classic \l
 \]
 The specification is again stated with mathematical $\gamma$, although in this case $\gamma(x)$ maps to triples $(m,l,r)$, where $m$ is a ``mark'' bit (0 or 1) and $\{l,r\} \subseteq V(\gamma) \uplus \{0\}$ are the neighbors of $v$.  By ``local'', we mean that the predicate $\p{m\_graph}(\li{x},\gamma)$ says that the heap represents \emph{only the nodes in $\gamma$ that are reachable from \li{x}}.  Rather than passing the entire graph around as \li{find} does, \li{mark} will use the fold/unfold relationship given in equation~\eqref{eqn:bigraphintrofoldunfold}, located just under the code in Figure~\ref{fig:markgraph}, to ``unfold'' the graph as if it were an inductive predicate.
 
+\input{seplogsem_figure.tex}
+
 This fold/unfold relationship deserves attention.
 First, \eqref{eqn:bigraphintrofoldunfold} uses the ``overlapping conjunction'' 
 $\ocon$ of separation logic; informally $P ** Q$ means that $P$ and $Q$ may overlap 
@@ -26,8 +28,7 @@ or even be the root $x$).  The presence of the unspecified sharing indicated by 
 $\ocon$ connective is part of why graph-manipulating algorithms are so hard to verify 
 (\emph{e.g.}, it is hard to apply the \infrulestyle{Frame} rule).  {\color{magenta}The 
 standard semantics of the separation logic connectives used in this paper are in 
-%Figure~\ref{fig:seplogsem}.}
-Figure~\ref{dummyref}.}
+Figure~\ref{fig:seplogsem}.}
 Second, \eqref{eqn:bigraphintrofoldunfold} illustrates how industrial-strength settings complicate verification.  Lines~\mbox{\ref{code:nodedefstart}--\ref{code:nodedefend}} define the data type \li{Node} used by \li{mark}.  The \li{_Alignas($n$)} directives tell CompCert to align fields on $n$-byte boundaries. 
 As explained in~\S\ref{sec:goodgraph}, this alignment is necessary in C-like memory models to prove fold-unfold \eqref{eqn:bigraphintrofoldunfold}, which is why \eqref{eqn:bigraphintrofoldunfold} includes an alignment restriction $x~\mathsf{mod}~16 = 0$ and an existentially-quantified ``blank'' second field for the root $x \mapsto m,-,l,r$.
 {\color{magenta}(In our Floyd proofs the alignment restriction and blank second field are nicely hidden ``behind the scenes''.)}
@@ -36,28 +37,6 @@ Just as with \li{find}, the postcondition of \li{mark} is specified \emph{relati
 \marginpar{\tiny \color{blue}Needs polishing}
 {\color{magenta}Theoretically, relations are preferable because they are more general.  For example, relations allow ``inputs'' to have no ``outputs'' (\emph{i.e.} be partial) or alternatively have many outputs (\emph{i.e.} be nondeterministic).  Nondeterminism can be quite useful when specifying programs; for example, the CertiCoq garbage collector (\S\ref{sec:certigc}) is specified nondeterministically to avoid, among other things, specifying how \li{malloc} allocates fresh blocks of memory.  Relations are also preferable to functions because they are more compositional.
 We take advantage of compositionality by using $\m{mark}(\gamma,x,\gamma') /| \ldots$ to specify both our ``spanning tree'' and {\color{blue}``graph copy''} algorithms in~\S\ref{sec:application}, which also need to mark nodes in order to carry out their primary tasks.
-
-\begin{figure}
-{\color{magenta}
-\[
-\begin{array}{lcl}
-\sigma |= P * Q & \defeq & \exists \sigma_1, \sigma_2.~ \sigma_1 \oplus \sigma_2 = \sigma /| \null \\ && ~~ (\sigma_1 |= P) /| (\sigma_2 |= 2)\\
-[-2pt]
-\sigma |= P ** Q & \defeq & \exists \sigma_1, \sigma_2, \sigma_3.~ \sigma_1 \oplus \sigma_2 \oplus \sigma_3 = \sigma /| \null \\ && ~~ (\sigma_1 \oplus \sigma_2 |= P) /| (\sigma_2 \oplus \sigma_3 |= Q) \\
-[-2pt]
-\sigma |= P --* Q & \defeq & \forall \sigma_1, \sigma_2.~ \sigma_1 \oplus \sigma = \sigma_2 /| \null \\ && ~~
-(\sigma_1 |= P) => (\sigma_2 |= Q) \\
-[-2pt]
-\sigma |= P --o Q & \defeq & \exists \sigma_1, \sigma_2.~ \sigma_1 \oplus \sigma = \sigma_2 /| \null \\ && ~~
-(\sigma_1 |= P) /| (\sigma_2 |= Q)
-\end{array}
-\]
-\vspace*{-1.5em}
-\caption{Separation logic connectives; $\oplus$ is the join operation on states, usually some kind of disjoint union on heaps}
-}
-\label{fig:seplogsem}
-\vspace*{-1em}
-\end{figure}
 
 Practically, it is painful to define computational functions over graphs in a proof assistant like Coq, {\color{magenta}and portions of this pain are overkill}.  For example, Coq requires that all functions terminate, a nontrivial proof obligation over cyclic structures like graphs, but our verification of \li{mark} is only for partial correctness.  Defining relations is much easier because \emph{e.g.} one can use quantifiers and does not have to prove termination.
 The $\m{mark}$ and $\m{mark1}$ relations we use are defined straightforwardly at the bottom of Figure~\ref{fig:markgraph}.
