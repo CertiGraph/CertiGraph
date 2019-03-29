@@ -99,21 +99,22 @@ of how the four sets are related.
 Indeed, the PreGraph in Figure \ref{fig:pregraph} contains invalid 
 vertices and edges in an arbitrary configuration.
 
+\marginpar{\color{blue} \tiny How about inline: ``...written $\m{a} \mathrel{{\stackrel{\gamma~}{\leadsto^{1}}}} \m{b}$.
+It means that a and b are in $V(\gamma)$ and that there exists a edge (in $E(\gamma)$)
+that goes from a to b.''}
 Many graph concepts such as \emph{path}, \emph{reachability}, and \emph{subgraph} are 
 defined on PreGraphs. In \S\ref{fig:find} we saw \emph{reachable}, written 
+{\color{magenta}
 $\m{a} \mathrel{{\stackrel{\gamma~}{\leadsto^{1}}}} \m{b}$. It is 
 defined as 
 
 $$\m{a} \mathrel{{\stackrel{\gamma~}{\leadsto^{1}}}} \m{b} \defeq a, b \in V(\gamma) /| \exists e.~ e \in E(\gamma) /| s (e,\gamma) = a /| 
-d (e,\gamma) = b.$$ 
+d (e,\gamma) = b.$$
+} 
 The reflexive, transitive closure on \emph{reachable} is written 
 $\m{a} \mathrel{{\stackrel{\gamma~}{\leadsto^{\star}}}} \m{b}$, and 
 $\neg (\m{a} \mathrel{{\stackrel{\gamma~}{\leadsto^{\star}}}} \m{b})$ 
 is written $\m{a} \mathrel{{\stackrel{\gamma~}{\not\leadsto^{\star}}}} \m{b}$.
-{\color{blue} I think the definition is rather simple and doens't deserve so much space.
-How about just ``...written $\m{a} \mathrel{{\stackrel{\gamma~}{\leadsto^{1}}}} \m{b}$.
-It means that a and b are in $V(\gamma)$ and that there exists a edge (in $E(\gamma)$)
-that goes from a to b.''}
 
 PreGraph's ability to reason about missing vertices and edges is convenient when 
 verifying real programs. Suppose some $\gamma$ satisfied some stronger notion of
@@ -333,15 +334,15 @@ Composing plugins in this way is much more elegant than creating a
 custom plugin for each new algorithm as it promotes the natural reuse of graph 
 properties across algorithms.
 
-{\color{blue} Maybe move this somewhere.} 
-Coq also handles our notion of inherited 
+\marginpar{\tiny \color{blue} Maybe move this somewhere.} 
+{\color{magenta}Coq also handles our notion of inherited 
 lemmas seamlessly: in our verfication of Find, we 
 work directly with a \p{LiMaFin} GeneralGraph, but, as 
 we saw, we still use properties such as reachability 
 and operations such as selective subtraction, which are defined on the 
 embedded PreGraph, not the GeneralGraph. 
 Coq handles the appropriate coercions with 
-remarkable elegance.
+remarkable elegance.}
 
 %% We can apply our framework to define related structures such as DAGs and trees.
 %% For example, a DAG has the additional property that for any $x$ and $y$,
@@ -352,9 +353,9 @@ remarkable elegance.
 
 \subsection{Reasoning about relations between graphs} %Using our framework to reasonApplication of the framework}
 
-{\color{blue}Needs revised examples based on new Orientation.}
+\marginpar{\color{blue} \tiny Needs revised examples based on new Orientation.}
 
-In Figure~\ref{fig:markgraph} we defined the relation 
+{\color{magenta} In Figure~\ref{fig:markgraph} we defined the relation 
 $\m{mark}(\gamma, \tx x, \gamma')$
 for the graph marking algorithm.  Similarly, we define $\m{span}$ for the 
 spanning tree program
@@ -380,6 +381,7 @@ Accordingly, we can reuse facts such as the following:
 \text{ and } \forall i, \m{mark}(\gamma_i,v_i,\gamma_{i+1}) \text{ then } \m{mark}(\gamma,x,\gamma_{n+1}).
 \end{array}
 \]
+}
 %We prove this theorem sound for any LabeledGraph, not just
 %\p{BiGraph}s (\emph{i.e.}, we do not assume only two neighbors).
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

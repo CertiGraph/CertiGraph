@@ -76,7 +76,7 @@
 
 %\newcommand{\scon}{\mathbin{\varstar}}
 \newcommand{\scon}{\mathbin{\star}} % trying to save an alphabet by using 'star'
-\newcommand{\ocon}{%
+\newcommand{\ocon}{ % TODO: needs polishing
   \mathbin{\mbox{$\mathrlap{\cup}\hspace*{.15em}
       \raisebox{.01em}[0ex][0ex]{$\scon$}$\hspace*{.07em}}}}
 \newcommand{\wand}{%
@@ -200,6 +200,11 @@
 %% Note: \begin{abstract}...\end{abstract} environment must come
 %% before \maketitle command
 \begin{abstract}
+\marginpar{\tiny \color{red}23p lim}
+\marginpar{\color{blue} \tiny Shorten for abstract? 
+``We make two improvements to Hobor and 
+Villard's theory of ramification 
+and use our improved version to verify real graph-manipulating C code.''}
 We develop powerful and general techniques to mechanically verify realistic programs that
 manipulate heap-represented graphs and related data structures with intrinsic sharing.
 We construct a modular and general setup for reasoning about abstract mathematical graphs
@@ -207,11 +212,7 @@ and use separation logic to define how such abstract graphs are represented conc
 the heap.  {\color{magenta}We upgrade Hobor and Villard's theory of ramification 
 to support existential
 quantifiers in postconditions and to smooth the treatment of modified program variables
-so that we can use it to verify real graph-manipulating C code.}
-{\color{blue}I wonder if this should be shortened for the abstract... 
-``We make {\color{magenta}two} improvements to Hobor and 
-Villard's theory of ramification 
-and use our improved version to verify real graph-manipulating C code.''}  
+so that we can use it to verify real graph-manipulating C code.}  
 We demonstrate the generality
 and power of our techniques by integrating them into the Verified Software Toolchain and
 certifying the correctness of seven graph-manipulating programs written in 
