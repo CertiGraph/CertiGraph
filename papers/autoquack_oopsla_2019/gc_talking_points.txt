@@ -22,4 +22,22 @@ explain is_from and int_or_ptr.
 	have brought these issues to XLeroy. CC is satisfying the invariants for IsFrom, and we are hopeful that IF matches CC's external function specs. 
 	TIOP is harder: pointer injections can have odd offsets. see XL email.
 	... we don't actually have XL's issues in the GC. we are using them on malloc-ed spaces. we will have even boundaries and we'll be fine. but keeping track of this is hard and may require tweaks to compcert. in communication and working on it.
-	althougth CC happens to satisfy IF, there are old/obscure archis where IF may not be proveable (segmented memory machines etc) 
+	althougth CC happens to satisfy IF, there are old/obscure archis where IF may not be proveable (segmented memory machines etc)
+
+
+what is hard about the GC
+
+the graph model changed not at all
+	we added label to the whole graph. we are genuinely not iso in GC
+	quite happy to add this change to our model; it doesn't change the other proofs at all
+
+what was challenging
+	- very aggressive re: complex C code. right at the edge of undefined behavior
+	- interface between C and mathgraph: top level theorems and forward are exploring the graph in a connected way, but do_scan is making a linear array survey. 
+	- proofs about these two views being okay... complex labels, edges, etc.
+	- exposing these proofs to a compiler and making sure that the compiler's own invariants can use the GC. eg: compiler will never take an item from an older gen and point it to a newer gen.
+
+
+within in generation, it's basically Cheney. 
+two functions that are the bulk of the work: forward, and do_scan.
+one other place: reset_heap, a single instruction that throws away a top of vertices
