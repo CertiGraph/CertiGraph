@@ -1,183 +1,167 @@
-{\color{magenta}In this section, we explain how we used our graph library
-to verify a generational copying garbage collector for the 
-CertiCoq compiler.} The GC is our most complicated example,
+Our certification of a realistic garbage collector for the 
+CertiCoq Project serves to show that our techniques 
+scale well beyond short toy programs. 
+
+\hide{The GC is our most complicated example,
 and we will discuss some of its key proofs, but the larger
 point here is that we completed this certification using 
-exactly the framework and the principles we have discussed
-thus far. {\color{magenta}We enjoyed significant code 
+exactly the framework and principles we have discussed
+thus far. 
+
+We enjoyed significant code 
 reuse from our prior certifications, and when we stated 
 new lemmas for the GC, we filed them away at the appropriate
-``layers'' so that they may be reused in the future.}
-
-% The last line above is currently false.
-% We cannot edit the code to make it 100% true, 
-% but the plan is to incorporate GCGraph's special
-% properties into a soundness condition that will be
-% added atop a LiMaFin-type LabeledGraph.
-% Having done that, I'll weaken the last line
-% above to match the actual work.
+``layers'' so that they may be reused in the future.
+}%end hide
 
 \subsection{Background}
 \label{sec:gcbackground}
 
+\marginpar{\tiny \color{blue} Highlight features discussed later.}
+The CertiCoq Project compiles Gallina code into 
+C-light, which it then compiles to assembly using CompCert.
+CertiCoq provides garbage collection at
+the C-light level in order to support Gallina's presumption of
+infinite heap memory. The generational copying garbage 
+collector {\color{magenta} supports variable-sized words, ... .}
+Since CertiCoq aims to be end-to-end certified, the GC 
+also needs certification.
+
+\marginpar{\tiny \color{blue}The mutator can "drop"
+a block, showing that it won't need it anymore}
+The GC's mutator controls
+an array of {\color{magenta}arguments} that it 
+{\color{magenta}cares about}. 
+These arguments may point at memory blocks 
+in the heap, and, recursively, the fields of those
+blocks may point at other blocks in the heap, to indefinite depth.
+If the mutator {\color{magenta}can reach a block}, either directly
+or indirectly, via this {\color{magenta}dependency graph}, 
+it reserves the right to access it for reading or writing. 
+
+When invoked by the mutator, the GC 
+is allowed to modify the heap as
+it sees fit, with the condition that it not damage the 
+mutator's dependency graph. The mutator is agnostic 
+to the specific layout of the heap, so long as 
+it can access the same fields by following the same 
+links.
+% Other features of the original web, such as where 
+% items were situated in the heap, may be changed. 
+In \S\ref{sec:movetomathgraph}, we will explain how we abstracted 
+this dependency graph into a mathematical graph 
+(as seen in \S\ref{sec:mathinfra}), where the problem becomes
+analogous to showing graph isomorphism.
+
+%``We thus say that the arguments array is owned by the 
+% mutator, but the heap is owned by the GC.''
+
+\subsection{Structure of the Program {\color{magenta}(move to appendix?)}}
+\label{sec:gcstructure}
+
 % My goal here is to start with a broad overview
-% and then work my way down to forward
-% at the end of this subsection I want it to be pretty
+% and then work my way down to forward.
+% At the end of this subsection I want it to be pretty
 % clear that the whole game is just a series of calls
 % to forward.
 % This will set us up nicely for the decorated proof of
 % forward in the next subsection.
 
-The CertiCoq Project compiles Gallina code into CompCert 
-C light, and then uses CompCert to compile C light
-into assembly. In order to support Gallina's presumption of
-infinite heap memory, CertiCoq provides garbage collection at
-the C light level. Their generational copying garbage 
-collector is written in C light, and is realistic, 
-supporting variable-sized words, 12 generations... 
-% Leaving this slot open for the time being, so
-% we can highlight those features that we will discuss 
-% the most in the technical part later.
-Since CertiCoq aims to be end-to-end certified, the GC 
-also needs certification.
-
-The GC's client program, also called the mutator, controls
-an array of arguments that it cares about. 
-% Looking for better term than "cares about"
-These arguments may point at memory blocks 
-in the heap, and, recursively, the items in those
-memory blocks may point at other blocks in the heap. 
-By maintaining direct and indirect links to
-blocks via this internal ``web of care'', 
-% I'm a little iffy about introducing this additional
-% analogy, but then again I don't want to introduce
-% the analogy of a graph right away. That could be seen
-% as a huge conceptual leap, and a skipped step. 
-the mutator indicates that it 
-cares about those blocks, and reserves the right to 
-access them for reading or writing. 
-% Maybe add a line about how the mutator can "drop"
-% a block, thus showing that it won't need it anymore?
-
-When the mutator runs out of heap space, 
-it calls the garbage collector to free up memory. 
-The GC is allowed to modify the heap as
-it sees fit, with the condition that it not damage the 
-mutator's web of care. By this we mean that the same items 
-should be accessible from the mutator's arguments
-array before and after the collection, and they 
-should be reached from the arguments array by 
-following similar links as before. 
-Other features of the original web, such as where 
-items were situated in the heap, may be changed. 
-In SECTION, we will explain how we abstracted this
-web into a mathematical graph, where preserving the 
-web of care is analogous to showing graph isomorphism.
-
-``We thus say that the arguments array is owned by the 
-mutator, but the heap is owned by the GC.''
-
-\subsection{Structure of the Program}
-\label{sec:gcstructure}
 % maybe a diagram showing how everything calls forward? 
-% I sketched one before, can show you sometime.
-Ours is a generational copying garbage collector, which
-means that it leans on the empirical observation that
+CertiCoq uses a generational copying garbage collector 
+that is inspired by the OCaml GC. 
+\hide{It leans on the empirical observation that
 new blocks often need to be collected soon after their
 allocation, while blocks that survive this initial
 culling tend to live for much longer.
-% Hm, it would take about another 100 words to explain 
-% this fully. I'm wondering if we can elide it, 
-% treating the above as adequate revision, and assuming 
+% I'm wondering if we can elide this. 
+% Treat the above as adequate revision and assume
 % they know the rest of the story.
-
+}%end hide
+The heap is divided into a series of disjoint
+spaces called \emph{generations}. The size of the first generation
+is carefully calculated, and then subsequent generations
+{\color{magenta}double in size}.
 The mutator only ever allocates new memory in the first, 
-smallest generation of heap. This generation is thus 
-called the nursery. If it finds that the nursery is full, 
-the mutator calls the garbage collector to free up space.
-The main GC function triggers the collection of the nursery 
+smallest generation of heap, which is called the nursery. 
+If it finds that the nursery is full, 
+the mutator calls the GC to free up space.
+The GC collects the nursery 
 (now called the \emph{from} generation)
-into the second generation (the \emph{to} generation). 
-To trigger a collection means to examine the elements 
-in \emph{from}, see if they are accessible from the mutator's
-args array either directly or indirectly, and, if they are, 
-copy them over to \emph{to}. This copying is achieved over a few steps, 
-and we will examine these shortly, but the larger picture is that 
+into the second generation (the \emph{to} generation): 
+it examines the elements 
+in \emph{from}, sees if they are accessible by
+the mutator, and, if they are, 
+copies them over to \emph{to}. This copying is achieved over a few steps, 
+and we will explain these shortly, but the larger picture is that 
 everything of importance in \emph{from} gets copied to \emph{to}, 
 and so \emph{from} can safely be reset. 
 
-An important subtlety here is that we enjoyed a 
-guarantee that \emph{to} had enough room to accept 
-\emph{from}'s items. Subsequent generations double in size, so 
-\emph{to} had twice the capacity of \emph{from}.
+An important subtlety here is that \emph{to} had enough 
+room to accept \emph{from}'s items. 
 In the (empirically improbable) worst case, 
-\emph{all} of \emph{from}'s data was copied over to \emph{to}, 
-so, before this collection started, \emph{to} could not have been more than 
-half full. We relied on this guarantee before this collection, 
-and we must ensure we will enjoy it the next time a collection 
-is required. So, in case the collection of the nursery caused
-the second generation to become more than half full, we trigger
-a collection of the second generation to the third. This makes 
-both the first and second generations empty, thus giving us our 
-guarantee trivially. It should be 
+\emph{all} of \emph{from}'s fields were copied over to \emph{to}.
+Because \emph{to} has twice the capacity of \emph{from},
+\emph{to} could not have been more than half full when 
+the collection started.
+This guarantee must be renewed before the next collection. 
+So, in case the collection of the nursery caused
+the second generation to become more than half full, 
+the second generation is collected into the third. This makes 
+both the first and second generations empty, thus ensuring 
+the guarantee trivially. It should be 
 clear to see that this may also trigger further collections in 
-a cascade effect. Once this cascade (if any) is over, we
-return control to the mutator, which goes ahead with 
+a cascade effect. The GC's task is only complete once this 
+cascade (if any) is over. It returns control to the mutator,
+which goes ahead with 
 the allocation that it was trying to perform in the nursery.
 
-We have shown how the overall collection 
-works via (a series of) two-generational collections. We now move one 
-level deeper and examine how we identify and 
-copy those items in a \emph{from} generation that are reachable
-from the args array to the \emph{to} generation.
-
-% 150 or so words that explain forward_roots and do_scan.
-% End goal is to convince them that everything relies on forward, 
-% and forward is all that remains to be explained.
-We start at the mutator-owned args array, whose elements
-are either data, or pointers that point at blocks in the 
-heap. We ignore the data entirely, and, among the pointers, we 
-are only interested in pointers that point into the \emph{from} generation. 
-For each pointer that points into \emph{from}, we copy its
+\marginpar{\tiny \color{blue}should I mention the distinguished 
+pointer that points at the copy?}
+Having shown that the overall collection 
+works via (a series of) two-generational collections, 
+we now zoom in and explain a two-generation collection.
+The GC starts at the mutator-owned arguments array, whose fields
+are either data, or pointers that point at memory blocks in the 
+heap. It ignores the data entirely, and, among the pointers, 
+cares only for the pointers that point into the \emph{from} generation. 
+For each pointer that points into \emph{from}, it copies its
 target block to \emph{to}, simply adding it in its entirety 
-after \emph{to}'s last-used spot, which is called \emph{next}. 
-% need better word than "spot" above
-% should I mention the distinguished pointer that points at the copy?
+after \emph{to}'s last-used memory field, which is called \emph{next}. 
 
-This operation only takes care of the blocks that 
-the args array was pointing at directly, so we still have to copy 
+This operation only takes care of the blocks in the heap that 
+the arguments array was pointing at directly, so the GC still has to copy 
 over indirectly-accessible blocks. Of course, the only way to 
 access an indirect 
-block is via one of the direct blocks, and, conveniently, we have
-just finished copying the direct blocks into a neat contiguous
-array. We start at the old \emph{next} in \emph{to}
-and work our way through the freshly copied blocks, performing
-the same actions as before: ignoring data and pointers to 
-places other than \emph{from}, and copying over any objects in
-\emph{from} that are pointed at from within \emph{to}. In
-the \emph{to} generation, these newly copied blocks 
+block is via one of the direct blocks that it has
+just finished copying into a contiguous array. 
+It starts at the old \emph{next} in \emph{to}
+and works its way ``upwards'' through the freshly copied blocks, 
+again looking exclusively for pointers that point into \emph{from}
+and copying over their target blocks into \emph{to}. 
+In the \emph{to} generation, these newly copied blocks 
 simply get stacked atop our first batch of copied blocks. 
-% need better phrasing above
-Of course, the second batch of copied blocks may still
-have pointers into \emph{from}: indeed, there is no limit to the 
-``depth'' of the web of care. However, thanks to our systematic
-copying strategy, it is very easy to take care of indirect
-blocks at any depth. We simply keep scanning ``upwards'' in 
+
+The mutator's dependency graph has indefinite depth, so the second 
+batch of copied blocks may still have pointers into \emph{from}. 
+However, thanks to this systematic
+copying strategy, it is very easy to take care of all indirect
+blocks. The GC simply keeps scanning upwards in 
 \emph{to}, copying over blocks from \emph{from} as necessary, 
-until the scan reaches the... blah. 
-% a little hard to phrase this last bit...
-This completes a collection 
+until the scanning pointer catches up to the last-used field in
+\emph{to}. This completes a collection 
 from \emph{from} to \emph{to}, copying all blocks that lived
 in \emph{from} and were of interest to the mutator. 
-\emph{from} may now be reset.
+\emph{from} is now reset.
 
 A good question at this juncture is why this rather selective scan 
 of the args array and the heap is good enough to collect \emph{from}. 
-We definitely collected every direct block by scanning the args array,
+The GC definitely collected every direct block by scanning the args array,
 but what of the indirect blocks? Couldn't there be valid indirect links
-that start either from the portion of \emph{to} below \emph{next}, 
+that start either below \emph{next} in the \emph{to} generation, 
 or from other generations altogether? 
 
+\marginpar{\tiny \color{blue}Gallina is purely functional, C-light is not.}
 Both of these turn out to be impossible because the 
 {\color{magenta}mutator is a purely functional language.}
 The heap is chronologically
@@ -186,28 +170,33 @@ objects that were allocated earlier. Because
 of the immutability of objects in a purely functional language, 
 it is impossible for objects to point ``backwards'' to 
 a younger generation, as the older object would not have
-had known about the younger during its allocation, and could not 
-have been modified after its allocation. The generations 
+had known about the younger at the time of its allocation, and could not 
+have been modified after its allocation. Fields living in generations 
 younger than \emph{from} can point into \emph{from} during 
 normal mutator activity, but this is
-impossible at the time of collection 
-because \emph{from} is only ever collected either if it is
+impossible at the time of collection: 
+\emph{from} is only ever collected either if it is
 the nursery or if a cascade effect has caused all generations younger
 than it to be collected and reset. 
-``In fact, the only time we ever see backwards pointers
-is when we create (and quickly fix) them during garbage collection, 
-as described earlier.''
+In fact, the only time the GC ever sees backwards pointers
+is when it creates (and quickly fixes) them during during its 
+activities.
+
+\subsection{From C to Mathematical Graphs}
+\label{sec:movetomathgraph}
+TODO
 
 \subsection{Forward}
 \label{sec:gcforward}
-The garbage collector's main workhorse is the function \emph{forward}.
+The GC's main workhorse is the function \emph{forward}.
 Whenever we have mentioned any kind of copying in the preceeding 
 discussion, we have always meant a call to \emph{forward}. 
 Given a pointer, it checks that the pointer's target is a block
 in the \emph{from} generation, and, if so, 
-makes a copy of that block in the \emph{to} generation. The function 
+makes a copy of that block in the \emph{to} generation. 
+{\color{magenta}The function 
 is robust and versatile, and gets called in a variety of different 
-situations... 
+situations.}
 
 Figure \ref{fig:forward} shows a decorated proof of the forward function.
 The function's behavior is subtly different depending on 
@@ -215,26 +204,17 @@ whether the the pointer $p$ lives in the arguments array or in the
 heap itself. The difference lies in lines \ref{dummyref} and \ref{dummyref}, where 
 we wish to update $p$ to point to the new forwarded block. 
 When $p$ lives in the arguments array, this update is easy to 
-reason about since $p$ is fundamentally $\bigstar$-separated from our heap. 
+reason about since $p$ is $\bigstar$-separated from our heap. 
 When $p$ is itself in the heap, this update itself constitutues a
 write to the heap. In the decorated proof, we show the second 
-case. To this end, we assume in line \ref{dummyref} that p is (dododo). 
+case. To this end, we assume in line \ref{dummyref} that p is (todo). 
 
 \input{forward_listing.tex}
 
 \subsection{Issues}
 \label{sec:gccsemantics}
-\paragraph{Double-Bounded Pointer Comparisons}
+\paragraph{Double-Bounded Pointer Comparisons.}
 \paragraph{Pointer Subtraction.}
-{\color{blue}Hmm I'm wondering if we should really be mentioning these,
-strapped as we are for space. Just skip to those issues that cause C semantics to be 
-extended and the OCaml GC to be rethought?}
-\input{boundary.tex}
+\paragraph{Block Alignment}
 
-
-
-
-
-
-
-
+%\input{boundary.tex}
