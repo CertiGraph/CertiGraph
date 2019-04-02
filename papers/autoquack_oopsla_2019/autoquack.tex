@@ -71,6 +71,8 @@
   \hspace{-.5ex}\begin{minipage}[t]{\@mli}\lstinline/#1/\end{minipage}}
 \makeatother
 
+\newcommand{\note}[2][polish]{{\color{magenta} #2 }{\marginpar{\tiny \color{blue} #1 }}}
+\newcommand{\noted}[2][new]{{\color{orange} #2 }{\marginpar{\tiny \color{blue} #1 }}}
 \newcommand{\li}[1]{\ifmmode\mbox{\mli{#1}}\else\mbox{\lstinline/#1/}\fi}
 \newcommand\hide[1]{}
 \newcommand{\MV}{\ensuremath{\mathsf{ModVar}}}
@@ -314,7 +316,7 @@ sort used in the OCaml runtime.  Our proofs are entirely machine-checked.
 
 
 %% Bibliography
-\bibliography{autoquack.bib}
+\bibliography{autoquack}
 
 
 %% Appendix
