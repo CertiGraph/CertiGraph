@@ -41,3 +41,12 @@ what was challenging
 within in generation, it's basically Cheney. 
 two functions that are the bulk of the work: forward, and do_scan.
 one other place: reset_heap, a single instruction that throws away a top of vertices
+
+
+multigen
+ocaml obect model
+	boxed and unboxed -- pointers may point outside the heap
+	variable obj lengths
+purely func mutator
+
+when I say undefined in C or defined in C, maybe always say "C light"
