@@ -133,6 +133,10 @@
   keywordstyle=\color{blue}, numbers=left,
   numberstyle=\tiny, numbersep=5pt, boxpos=t,
 }
+\long\def\beginpgfgraphicnamed#1#2\endpgfgraphicnamed{\includegraphics{#1}}
+%% \usetikzlibrary{arrows.meta, positioning, decorations.pathmorphing, fit}
+%% \pgfrealjobname{autoquack}
+
 
 \begin{document}
 
@@ -276,7 +280,7 @@ sort used in the OCaml runtime.  Our proofs are entirely machine-checked.
 \label{sec:localizations}
 \input{localizations.tex}
 
-\section{A framework for graph theory}
+\section{A Reusable Library of Formalized Graph Theory}
 \label{sec:mathgraph}
 \input{math_graph.tex}
 
