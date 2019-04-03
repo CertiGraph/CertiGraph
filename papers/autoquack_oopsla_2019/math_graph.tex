@@ -1,3 +1,4 @@
+\hide{
 In order to verify the functional correctness of graph
 algorithms, we need to first reason about mathematical graphs.
 Our graph library is powerful and expressive, allowing 
@@ -6,7 +7,19 @@ system. One of its strengths is its modularity,
 which allows us to intuitively reuse and compose our proofs when
 mechanising our verifications. In this section, we present our 
 mathematical graph framework with an emphasis on this modularity. 
-{\color{magenta} We continue to use Union-Find from 
+{\color{magenta} We continue to use Union-Find from }
+}
+
+In order to verify the functional correctness of graph algorithms, it
+is natural to use the terminology of graph theory to describe the
+behavior of those programs. As a result, an essential component of our
+work is a library of formalized graph theory, which is powerful and
+expressive, allowing us to verify realistic algorithms that work in an
+end-to-end system. One of its strengths is its modularity, which
+allows us to intuitively reuse and compose our proofs when mechanising
+our verifications. In this section, we present our mathematical graph
+framework with an emphasis on this modularity.  \hide{\color{magenta} We
+continue to use Union-Find from
 \S\ref{sec:orientation} as our motivating example.}
 
 % saving old version just in case...
@@ -25,25 +38,36 @@ Accordingly, in this section we will present our framework
 at a high level to communicate the overall architecture rather
 than focusing on the nitty-gritty details.} % end hide
 
-\subsection{Structure of the mathematical graph framework}\label{sec:mathinfra}
+\subsection{Definitions of graphs}\label{sec:mathinfra}
 
 \input{mathgraph_pregraph_combined.tex}
 %\input{mathgraph_structure.tex}
 %\input{pregraph_figure.tex}
 
-{\color{magenta}Figure~\ref{fig:graphs}} shows the architecture of our mathematical graph library. 
+The first challenge in formalizaing concepts from graph theory is that
+graph theory is usually based on set theory but our formalization has
+to be based on type theory. We choose to formalize graph theory
+directly in Coq instead of formalizing set theory in Coq first as the
+foundation of graph theory, so as to take advantage of Coq's built-in
+support for type-related constructions directly for graphs. Like other
+mathematical theories, out formalized graph theory is developed
+surrounding its core concept: graph. To balance the dichotomy between
+the generality and the speciality of the library, we divide the
+concept graph into three related structures: PreGraph, LabeledGraph
+and GeneralGraphs. {\color{magenta}Figure~\ref{fig:graphs}} shows the
+architecture of the library.
+
 \hide{The most basic kind of graph is PreGraph, out of which we build 
 LabeledGraph, and which in turn are used
-to build GeneralGraphs.  Each kind has some lemmas and also inherits the lemmas of the 
+to build GeneralGraphs. Each kind has some lemmas and also inherits the lemmas of the 
 previous kind.  The dashed box represents a ``plugin'' system for attaching arbitrary 
 properties to LabeledGraphs (\ref{subsec:graphplugins}). %and will be discussed later. 
 %We will consider each in turn.
 } % end hide
 
 % move to its own file?
-
-\vspace{-0.75ex}
 \iftrue
+\hide{
 \paragraph{PreGraph.} A PreGraph is a hextuple $(VT, ET, V, E, s, d)$, where $VT$ 
 and $ET$ are the underlying carrier sets of vertices and edges, and $V$ and $E$, 
 subsets $VT$ and $ET$ respectively, introduce the notion of \emph{validity} in the 
@@ -58,6 +82,68 @@ requirements of a legal PreGraph, not even a specific notion
 of how the four sets are related.
 Indeed, the PreGraph in Figure \ref{fig:pregraph} contains invalid 
 vertices and edges in an arbitrary configuration.
+}% end hide
+
+\paragraph{PreGraph.} A PreGraph is a hextuple $(\mathcal{V}, \mathcal{E}, V, 
+E, s, d)$, where $\mathcal{V}$ and $\mathcal{E}$ are the underlying
+carrier types of vertices and edges, and $V$ and $E$, predicates over
+$\mathcal{V}$ and $\mathcal{E}$ respectively, introduce the notion
+of \emph{validity} in the graph. Finally, $s$ and $d$ are functions
+that map an edge to its source and destination respectively. We make
+no further requirements of a legal PreGraph for flexibility.
+
+The purposes of introducing validity are twofold. One is bridging the
+incompatibility between type theory and set theory. In set theory, one
+element can belong to multiple sets, e.g.\ to a subset or a
+superset. Thus, in set theory, when we add or remove vertices and/or
+edges, we just need to change the set accordingly to represent the
+result of the operation. But in type theory, one term can only belong
+to one type, which makes it difficult if not impossible to change the
+type to represent the result. As a common practice, we add two
+predicates $V$ and $E$ to classify verteices and edges as \emph{valid}
+(in) or not (out) for a certain graph. The resulting superset or
+subset can be got by weakening or strenthening the two predicates.
+
+The other purpose is representing incomplete graphs, which is
+convenient in verification. In such an incomplete graph shown in
+{\color{magenta}Figure \ref{fig:pregraph}}, vertices $v_0$ and $v_1$
+are source and destination of a valid edge $e_0$ while $v_0$ is valid
+but $v_1$ is not, which means $v_1$ does not belong to the
+graph. Drawing $v_1$ in Figure \ref{fig:pregraph} only indicates the
+fact $d(e_0) = v_1$. Incomplete graphs are needed in the following
+scenario. Many programs manipulates graphs via traversing and
+processing vertices along their outer edges. As a result, the final
+processed graph $g$ can be partitioned into two parts: the subgraph
+$g_1$ composed by reachable vertices and edges from the initial set of
+vertices and a residue $g_2$ which is the difference, $g - g_1$. In
+the specification of the program, it is necessary to state that the
+unreachable residue $g_2$ is unchanged. If $g$ is an undirected graph,
+$g_2$ is just a collection of connected components. If $g$ is a
+directed graph, then $g_2$ may contain some dangling edges or
+vertices. In that case, $g_2$ is an incomplete graph. The definition
+of PreGraph is accommodating in referring $g_2$.
+
+Based on PreGraph, we defined some other related concepts. Those
+concepts include structure \emph{path}, predicates about PreGraph and
+path such as \emph{is\_cyclic} and \emph{reachable},
+operation/functions on PreGraph such as \emph{add\_vertex}
+and \emph{remove\_edge}, and relations between PreGraphs such
+as \emph{structurally\_identical} and \emph{subgraph}.  These general
+concepts together with derived lemmas (around 750 in total) provide a
+solid foundation for more specific theorem needed in concrete
+verifications.
+
+\hide{
+In {\color{magenta}Figure \ref{fig:pregraph}}, valid vertices satisfy
+$V$ and invalid vertices are just of type $VT$ but do not satisfy
+$V$. Importantly, both kinds of vertices are legally part of the
+PreGraph. Finally, $s$ and $d$ are functions that map an edge to its
+source and destination respectively; {\color{orange}this means that
+PreGraphs model directed graphs.}  With an eye to flexibility, we make
+no further requirements of a legal PreGraph, not even a specific
+notion of how the four sets are related.  Indeed, the PreGraph in
+Figure \ref{fig:pregraph} contains invalid vertices and edges in an
+arbitrary configuration.
 
 Many graph concepts such as \emph{path}, \emph{reachability}, and \emph{subgraph} are 
 defined on PreGraphs. In \S\ref{fig:find} we saw \emph{reachable}, written
@@ -83,6 +169,7 @@ pointing to recently-removed vertices.
 A PreGraph is more accommodating, since
 it produces a fresh PreGraph after this selective subtraction 
 and then allows us to go ahead and reason about congruence as we need to.
+}%end hide
 
 \hide{
 For example, consider the difference of two graphs, $\gamma_1
@@ -102,46 +189,27 @@ from $x$ even though $\gamma$ may have other valid vertices.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%% Edit 1: Qinxiang's proposal ends
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%%%%% Edit 1: Original version starts
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\iffalse
-\paragraph{Pregraphs.} A PreGraph is a hextuple $(V, E, \phi_V, \phi_E, s, d)$,
-where $V$ and $E$ are the underlying carrier set of vertices and edges.  
-Not every $v \in V$ or $e \in E$ is actually ``in'' the graph, so we provide 
-the predicates $\phi_V$ and $\phi_E$ to classify vertices and edges as 
-\emph{valid} (in) or not (out).  Finally, $s$ and $d : E -> V$ are functions that 
-map an edges to their source and destination respectively; this model means that 
-PreGraphs are directed rather than undirected.  By design, there are no requirements 
-for \emph{e.g.} how the validities of edges and vertices relate.  As shown in 
-Figure \ref{fig:pregraph}, a PreGraph can contain invalid nodes and edges in an 
-arbitrary configuration.
-
-Many graph concepts such as \emph{path}, \emph{reachability}, and \emph{subgraph} are 
-defined on PreGraphs.  Wefor write $\gamma\models n_1 \xrightarrow{P} n_2$ to mean 
-that there is a valid path from $n_1$ to $n_2$ such that each vertex in the path 
-satisfies the predicate $P$.  The set of all reachable vertices from $v$, written $\p{
-reachable}(\gamma,v)$, is then just $\{v' ~|~ \gamma\models v \xrightarrow{\top} v'\}$.
-In \S\ref{sec:spacegraph} we will tie mathematical graphs $\gamma$ to a spatial graph 
-predicate
-$\p{graph}(x, \gamma)$.   As we will see, $\p{graph}$ ``owns'' only the
-spatial portion of $\gamma$ that is reachable
-from $x$ even though $\gamma$ may have other valid vertices.
-
-The advantage of designing a graph type that can reason about missing vertices and 
-edges is because concepts necessary to verify real programs require such flexibility.  
-For example, consider the difference of two graphs, $\gamma_1 - \gamma_2$.  Even if 
-both of these graphs are ``well-formed'' to begin with, in the sense that valid nodes 
-have only valid edges and vice versa, their difference may not since there may be 
-dangling edges pointing to the now-removed vertices of $\gamma_2$.
-\fi
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%%%%% Edit 1: Original version ends
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 
 \vspace{-0.75ex}
+
+\paragraph{LabeledGraph.}
+A LabeledGraph is a PreGraph with the addition of \emph{labels} on
+vertices, edges, and/or the graph as a whole. The need for such labels
+is fairly clear: the bare structure of a graph can only contain so
+much information, and many classic graph problems such as graph
+coloring, shortest path, and network flow rely on additional
+information in the form of labels. Since the definition of
+LabeledGraph is built on PreGraph, it inherits all lemmas proved about
+PreGraph through a technique called ``type coercion'' in Coq. In
+addition, we can prove additional lemmas that use labels,
+\emph{e.g.} the union-find graph has an integer label denoting \emph{rank}.
+We could prove a lemma that running \texttt{find} does not alter
+any vertex's rank.
+
+
 %% Anshuman's proposal 
-\iftrue
+\iffalse
 \paragraph{LabeledGraph.}
 A LabeledGraph is a PreGraph with the addition of \emph{labels} on 
 vertices, edges, and/or the graph as a whole. The need for such labels
@@ -160,67 +228,51 @@ any vertex's rank.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%% Edit 2
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%%%%% Edit 2: Qinxiang's proposal starts
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\iffalse
-\paragraph{LabeledGraph.}
-A LabeledGraph is a PreGraph with labels, e.g. the ``mark bit'' used in Figure~\ref{fig:markgraph} are labels.
-\fi
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%%%%% Edit 2: Qinxiang's proposal ends
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%%%%% Edit 2: Original version starts
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\iffalse
-\paragraph{LabeledGraph.}
-Although many basic lemmas can be proved about PreGraphs, they are inadequate for real program verification.
-When reasoning about the concrete graphs manipulated by various algorithms,
-we usually need to add a notion of \emph{labels} on vertices and/or edges, such as
-the ``mark bit'' used in Figure~\ref{fig:markgraph}, letting us define notions like ``the vertices reachable via an unmarked path''
-on LabeledGraphs.
-\fi
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%%%%% Edit 2: Original version ends
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \vspace{-0.75ex}
 \paragraph{GeneralGraph.}
-PreGraphs and LabeledGraphs are quite universal, and allow us 
-to state and prove useful lemmas that are true by virtue of the 
-way the graphs were set up. However, when proving the correctness
-of graph algorithms, we often need more specificity in our mathematical graphs
-so that we may model the real program's restrictions more closely. 
-For example, the graph used in Find earlier had the restriction 
-that each vertex have exactly one out-edge. 
-We achieve this using GeneralGraphs. 
-A GeneralGraph augments a LabeledGraph by adding a 
-``soundness condition'' plugin, indicated in 
-Figure~\ref{fig:graphs} by a dashed border. 
-This soundness condition can be arbitrarily complex, 
-and can thus specify arbitrary restrictions on the graph. 
-This is what makes GeneralGraphs truly versatile: 
-it allows us to state algorithm-specific properties 
-of any complexity on the graph, and then derive lemmas based on those properties.
-Thankfully, we do not need to state these complicated soundness 
-conditions afresh for each program that we verify. In the next section, 
-we explain how to compose these out of smaller, reusable pieces.
+PreGraphs and LabeledGraphs are quite universal, and allow us to state
+and prove useful lemmas that are true by virtue of the way the graphs
+were set up. However, when proving the correctness of graph
+algorithms, we often need more specificity in our mathematical graphs
+so that we may model the real program's restrictions more closely.
+For example, the graph used in \texttt{find} earlier had the
+restriction that each vertex have exactly one out-edge.  We achieve
+this using GeneralGraphs. A GeneralGraph augments a LabeledGraph by
+adding a ``soundness condition'' plugin, indicated in
+Figure~\ref{fig:graphs} by a dashed border. So the same inheritance
+mechanism also works for GeneralGraph. A GeneralGraph can be seen as a
+LabeledGraph or a PreGraph so that lemmas about PreGraph/LabeledGraph
+are totally applicable. The soundness condition can be arbitrarily
+complex, and can thus specify arbitrary restrictions on the graph.
+This is what makes GeneralGraphs truly versatile: it allows us to
+state algorithm-specific properties of any complexity on the graph,
+and then derive lemmas based on those properties.  Thankfully, we do
+not need to state these complicated soundness conditions afresh for
+each program that we verify. In the next section, we explain how to
+compose these out of smaller, reusable pieces.
 
 \subsection{Composing Graph plugins}
 \label{subsec:graphplugins}
 
-We use Coq's typeclass system to manage our soundness plugins smoothly, 
-benefiting from the \emph{compositionality} of the system. 
-If we have two soundness properties, each with its associated proved lemmas, 
-we can combine them, 
-prove lemmas about their combination using known facts about 
-the separate pieces,
-and then treat the combination as a new plugin. 
+The whole library of formal graph theory is developed surrounding the
+three graph structures above. The theorems about PreGraph/LabeledGraph
+are universal while a certain portion of theorems about GeneralGraph
+are developed on demand because the soundness condition vary for
+different algorithm. However, the similarity among soundness
+conditions allows us to prepare some simple soundness conditions along
+with related lemmas in advance, which are called soundness plugins.
+
+We use Coq's typeclass system to manage our soundness plugins
+smoothly, benefiting from the \emph{compositionality} of the system.
+If we have two soundness plugins, we can combine them, prove lemmas
+about their combination using known facts about the separate pieces,
+and then treat the combination as a new plugin.
 
 Consider the following oft-used graph properties:
 \begin{itemize}
 \vspace{-1ex}
-\item \p{FiniteGraph}: The validity sets $V$ and $E$ are finite.
+\item \p{FiniteGraph}: the valid vertices and edges are finite.
 %\vspace{-1ex}
 \item \p{MathGraph}: invalid nodes are allowed to be destinations
 of valid edges, thus allowing null values to represent unused nodes.
@@ -234,42 +286,6 @@ destinations for valid edges.} % end hide
 nodes have one out-edge each.
 \end{itemize}
 
-\hide{
-\begin{figure}[t]
-\centering
-\beginpgfgraphicnamed{graphproperty}
-\begin{tikzpicture}
-[->/.style={thick,arrows={-Stealth}},
-   group/.style={shape=rectangle, draw, thick, dashed},
-   propG/.style={shape=rectangle, rounded corners=4pt, draw}]
-\node[propG] (PL12) at (0, 0) {\footnotesize Lemmas of Property 1 and 2};
-\coordinate [left=1 of PL12.north] (PL12n1);
-\coordinate [right=1 of PL12.north] (PL12n2);
-\node[propG] (PL1) [above=0.5 of PL12n1, align=center] {\footnotesize Property 1 \\\footnotesize Lemmas};
-\node[propG] (PL2) [above=0.5 of PL12n2, align=center] {\footnotesize Property 2 \\\footnotesize Lemmas};
-\node[propG] (P1) [above=0.5 of PL1] {\footnotesize Property 1};
-\node[propG] (P2) [above=0.5 of PL2] {\footnotesize Property 2};
-\draw [->] (P1) to (PL1);
-\draw [->] (P2) to (PL2);
-\draw [double, ->] (PL1) to (PL12n1);
-\draw [double, ->] (PL2) to (PL12n2);
-\draw [->] (P1.west) to [bend right=45] (PL12.west);
-\draw [->] (P2.east) to [bend left=45] (PL12.east);
-\node (R1) [group, fit=(P1) (PL1)] {};
-\node (R2) [group, fit=(P2) (PL2)] {};
-\node (R3) [group, fit=(current bounding box)] {};
-\node [propG] (P1P2) [above right=-1.1 and 1.2 of R3, align=left] {\footnotesize Property 1$/|$ \\\footnotesize Property 2};
-\node [propG] (PL1PL2) [below=0.5 of P1P2, align=center] {\footnotesize Prop. 1 Lemmas \\\footnotesize Prop. 2 Lemmas \\\footnotesize Prop. 1$/|$2 Lemmas};
-\draw [->] (P1P2) to (PL1PL2);
-\node (R4) [group, fit=(P1P2) (PL1PL2)] {};
-\node (EQ) [right=0 of R3] {\bf \Large $\mapsto$};
-\end{tikzpicture}
-\endpgfgraphicnamed
-\vspace{1ex}
-\caption{Combining plugins{\color{blue} [cut this?]}}\label{fig:properties}
-\end{figure}
-} % end hide
-
 As a first step, we can prove many general, reusable lemmas
 about these properties. However, these properties are still 
 too general to model a real program. The next step is compose 
@@ -277,9 +293,10 @@ these plugins to arrive at a more specific set of restrictions
 that more closely models our particular graph. 
 For instance, we can compose 
 \p{LstGraph}, \p{MathGraph}, and \p{FiniteGraph} 
-together into a new plugin called \p{LiMaFin}, which, incidentally, is the 
-soundness condition used to verify Find in Figure~\ref{fig:find}.
-In our verification of Mark~\ref{fig:markgraph}, we use a similar soundness condition
+together into a new plugin called \p{LiMaFin}, which, incidentally, is
+the soundness condition used to verify \texttt{find} in
+Figure~\ref{fig:find}.  In our verification of \texttt{mark} in
+Figure~\ref{fig:markgraph}, we use a similar soundness condition
 \p{BiMaFin}, which uses \p{BiGraph} instead of \p{LstGraph}. 
 The commonalities and differences between \p{LiMaFin} 
 and \p{BiMaFin} are readily apparent from their construction.
@@ -287,6 +304,7 @@ Composing plugins in this way is much more elegant than creating a
 custom plugin for each new algorithm as it promotes the natural reuse of graph 
 properties across algorithms.
 
+\iffalse
 \marginpar{\tiny \color{blue} Maybe move this somewhere.} 
 {\color{magenta}Coq also handles our notion of inherited 
 lemmas seamlessly: in our verfication of Find, we 
@@ -296,6 +314,7 @@ and operations such as selective subtraction, which are defined on the
 embedded PreGraph, not the GeneralGraph. 
 Coq handles the appropriate coercions with 
 remarkable elegance.}
+\fi
 
 %% We can apply our framework to define related structures such as DAGs and trees.
 %% For example, a DAG has the additional property that for any $x$ and $y$,
@@ -303,7 +322,7 @@ remarkable elegance.}
 %% from $x$.
 %  Similarly, we define tree by saying that for any reachable node $n$ there is
 %a unique path from the root to $n$.
-
+\iffalse
 \subsection{Reasoning about relations between graphs} %Using our framework to reasonApplication of the framework}
 
 \marginpar{\color{blue} \tiny Needs revised examples based on new Orientation.}
@@ -335,6 +354,7 @@ Accordingly, we can reuse facts such as the following:
 \end{array}
 \]
 }
+\fi
 %We prove this theorem sound for any LabeledGraph, not just
 %\p{BiGraph}s (\emph{i.e.}, we do not assume only two neighbors).
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
