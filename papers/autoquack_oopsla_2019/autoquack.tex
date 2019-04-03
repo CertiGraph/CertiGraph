@@ -92,6 +92,8 @@
   \mathrel{\mbox{$\hspace*{-0.03em}\mathord{-}\hspace*{-0.66em}
   \mathord{-}\hspace*{-0.155em}\mathord{\ocircle\hspace*{-.66em}\scon}$\hspace*{0.05em}}}}
   
+\colorlet{red}{red!80!black}
+
 \let\magicwand\wand
 \mathlig{--*}{\mathrel{\magicwand}}
 \mathlig{--o}{\mathrel{\septraction}}
@@ -105,6 +107,7 @@
 \mathlig{|/}{\mathbin{\vee}} % additive disjunction
 \mathlig{|-}{\mathrel{\vdash}} % entails
 \mathlig{|=}{\vDash} % models
+\mathlig{//}{\color{red}{\sslash}} % listings comments
 
 
 \newcommand{\defeq}{\mathbin{\stackrel{\Delta}{=}}}
@@ -122,8 +125,8 @@
 
 \lstset{%
   language=C,
-  morecomment=[n][{\color{red!80!black}}]{/*}{*/},
-  morecomment=[l][{\color{red!80!black}}]{//},
+  morecomment=[n][{\color{red}}]{/*}{*/},
+  morecomment=[l][{\color{red}}]{//},
   sensitive=true, mathescape=true, showlines=true, 
   basicstyle=\normalfont\footnotesize\tt, 
   keywordstyle=\color{blue}, numbers=left,
