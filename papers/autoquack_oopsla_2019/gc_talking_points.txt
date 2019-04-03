@@ -50,3 +50,45 @@ ocaml obect model
 purely func mutator
 
 when I say undefined in C or defined in C, maybe always say "C light"
+
+
+a list of changes made to the forward_listing_short code
+	sz = size(hd) instead of wosize_hd
+	removed the depth loop
+	s, n, l instead of start, next, limit
+	iop2p and p2iop instead of longer forms
+	tabbed to one space instead of two
+	finf, tinf instead of f_inf, t_inf. the underscores are too ugly in mathit
+	throwing away forp. it's no longer necessary, since we are pre-splitting.
+	gen_start --> start
+	gen_size --> size
+
+questions when making listing
+	in line 1, shouldn't it be \exists v, n? how can p = (v,n) for all v, n?
+	can finf, tinf, finf(finf,fi)*tinf(tinf,ti), etc be thrown away? just get a fake "args"?
+	can outlier be thrown away?
+
+items elided in "alpha"
+	spatial: 
+		outlier_rep outlier
+	math facts: 
+		enough_space_to_copy g t_info from to
+		graph_has_gen g from, graph_has_gen g to
+		graph_has_v g v
+		0 <= n < Zlength (raw_fields (vlabel g v))
+  		raw_mark (vlabel g v) = false
+  		vgeneration v <> from
+		from <> to
+
+items elided in "omega"
+	spatial: none
+	math facts: 
+		enough_space_to_copy g t_info from to
+		0 <= n < Zlength (raw_fields (vlabel g v))
+  		raw_mark (vlabel g v) = false
+
+code for omega:
+$//$$\braces{\forall \ga, \m{\finf}, \m{\tinf}, \m{\out}, \m{from}, \m{to}, \m{v}, \m{n}.~ \null \\ \p{gc{\_}graph}(\ga) * \p{\finf}(\m{\finf}, \m{fi}) * \p{\tinf}(\m{\tinf}, \m{ti}) * \null \\ {\color{red}\p{\out}(\m{\out})} /| \null \\ \m{compat}(\ga, \m{\finf}, \m{\tinf}, \m{\out}, \m{from}, \m{to}) /| \null \\ \tx{s} = \m{start}(\ga, \m{from}) /| \tx{l} = \tx{s} + \m{size}(\ga, \m{from}) /| \null \\ \tx{n} = \m{naddr}(\m{\tinf}, \m{to}) /| \tx{p} = \m{vaddr}(\ga, \m{v}) + \m{n} /| \null \\ {\color{red} \m{ghas}(\ga, \m{from}) /| \m{ghas}(\ga, \m{to}) /| \m{ghas}(\ga, \m{v})} /| \null \\ {\color{red}\m{from} \neq \m{to} /| \m{gen}(v) \neq \m{from}}} \omega$
+
+code for hd value meaning:
+/| ((\tx{hd==1} /| \tx{...}) \lor \null \\ (\tx{hd==0} /| \m{flds}[0] = \m{vaddr}(\m{copied\_vert}(\ga, \m{v'}))))
