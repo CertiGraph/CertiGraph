@@ -8,9 +8,9 @@ void do_scan(value *from_start,
   value *s;
   s = scan;
   while(s < *next) {
-// $\searrow $
+$//$$\searrow $
     header_t hd = *((header_t *) s);
-// $\swarrow $
+$//$$\swarrow $
     mlsize_t sz = Wosize_hd(hd);
     int tag = Tag_hd(hd);
     if (!No_scan(tag)) {
