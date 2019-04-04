@@ -89,7 +89,7 @@
 \newcommand{\septraction}{%
   \mathrel{\mbox{$\hspace*{-0.03em}\mathord{-}\hspace*{-0.66em}
   \mathord{-}\hspace*{-0.155em}\mathord{\ocircle\hspace*{-.66em}\scon}$\hspace*{0.05em}}}}
-  
+
 \let\magicwand\wand
 \mathlig{--*}{\mathrel{\magicwand}}
 \mathlig{--o}{\mathrel{\septraction}}
@@ -98,7 +98,7 @@
 \mathlig{==>}{\mathrel{\Rightarrow}} % meta implication
 \mathlig{-|-}{\mathrel{\mathrlap{\dashv} \hspace{5pt} \vdash}} % entails
 \mathlig{**}{\mathbin{\ocon}}
-\mathlig{*}{\mathbin{\scon}}  
+\mathlig{*}{\mathbin{\scon}}
 \mathlig{/|}{\mathbin{\wedge}} % additive conjunction
 \mathlig{|/}{\mathbin{\vee}} % additive disjunction
 \mathlig{|-}{\mathrel{\vdash}} % entails
@@ -122,8 +122,8 @@
   language=C,
   morecomment=[n][{\color{red!80!black}}]{/*}{*/},
   morecomment=[l][{\color{red!80!black}}]{//},
-  sensitive=true, mathescape=true, showlines=true, 
-  basicstyle=\normalfont\footnotesize\tt, 
+  sensitive=true, mathescape=true, showlines=true,
+  basicstyle=\normalfont\footnotesize\tt,
   keywordstyle=\color{blue}, numbers=left,
   numberstyle=\tiny, numbersep=5pt, boxpos=t,
 }
@@ -210,15 +210,15 @@ We develop powerful and general techniques to mechanically verify realistic prog
 manipulate heap-represented graphs and related data structures with intrinsic sharing.
 We construct a modular and general setup for reasoning about abstract mathematical graphs
 and use separation logic to define how such abstract graphs are represented concretely in
-the heap. {\color{orange}We make two improvements to Hobor and Villard's theory 
+the heap. {\color{orange}We make two improvements to Hobor and Villard's theory
 of ramification and use our improved version to verify real graph-manipulating C code.}
 We demonstrate the generality
 and power of our techniques by integrating them into the Verified Software Toolchain and
-certifying the correctness of seven graph-manipulating programs written in 
+certifying the correctness of seven graph-manipulating programs written in
 CompCert C, including
-a 400-line generational garbage collector for the CertiCoq project.  
+a 400-line generational garbage collector for the CertiCoq project.
 While doing so, we identify
-two places where the C semantics is too weak to define generational 
+two places where the C semantics is too weak to define generational
 garbage collectors of the
 sort used in the OCaml runtime.  Our proofs are entirely machine-checked.
 %We connect our development to two large verification tools, and HIP/SLEEK, and use these tools to mechanically verify several canonical graph algorithms. %
@@ -314,7 +314,7 @@ sort used in the OCaml runtime.  Our proofs are entirely machine-checked.
 
 
 %% Bibliography
-\bibliography{autoquack.bib}
+\bibliography{autoquack}
 
 
 %% Appendix
