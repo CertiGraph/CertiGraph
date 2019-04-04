@@ -71,11 +71,14 @@
   \hspace{-.5ex}\begin{minipage}[t]{\@mli}\lstinline/#1/\end{minipage}}
 \makeatother
 
+\newcommand{\note}[2][polish]{{\color{magenta} #2 }{\marginpar{\tiny \color{blue} #1 }}}
+\newcommand{\noted}[2][new]{{\color{orange} #2 }{\marginpar{\tiny \color{blue} #1 }}}
 \newcommand{\li}[1]{\ifmmode\mbox{\mli{#1}}\else\mbox{\lstinline/#1/}\fi}
 \newcommand\hide[1]{}
 \newcommand{\MV}{\ensuremath{\mathsf{ModVar}}}
 \newcommand{\FV}{\ensuremath{\mathsf{FreeVar}}}
 \newcommand{\pguards}[1]{\llbracket #1 \rrbracket}
+\newcommand{\code}[1]{\texttt{\small #1}}
 
 %\newcommand{\scon}{\mathbin{\varstar}}
 \newcommand{\scon}{\mathbin{\ast}} % trying to save an alphabet by using 'star'
@@ -90,6 +93,8 @@
   \mathrel{\mbox{$\hspace*{-0.03em}\mathord{-}\hspace*{-0.66em}
   \mathord{-}\hspace*{-0.155em}\mathord{\ocircle\hspace*{-.66em}\scon}$\hspace*{0.05em}}}}
 
+\colorlet{red}{red!80!black}
+
 \let\magicwand\wand
 \mathlig{--*}{\mathrel{\magicwand}}
 \mathlig{--o}{\mathrel{\septraction}}
@@ -103,6 +108,7 @@
 \mathlig{|/}{\mathbin{\vee}} % additive disjunction
 \mathlig{|-}{\mathrel{\vdash}} % entails
 \mathlig{|=}{\vDash} % models
+\mathlig{//}{\color{red}{\sslash}} % listings comments
 
 
 \newcommand{\defeq}{\mathbin{\stackrel{\Delta}{=}}}
@@ -120,13 +126,17 @@
 
 \lstset{%
   language=C,
-  morecomment=[n][{\color{red!80!black}}]{/*}{*/},
-  morecomment=[l][{\color{red!80!black}}]{//},
+  morecomment=[n][{\color{red}}]{/*}{*/},
+  morecomment=[l][{\color{red}}]{//},
   sensitive=true, mathescape=true, showlines=true,
   basicstyle=\normalfont\footnotesize\tt,
   keywordstyle=\color{blue}, numbers=left,
   numberstyle=\tiny, numbersep=5pt, boxpos=t,
 }
+\long\def\beginpgfgraphicnamed#1#2\endpgfgraphicnamed{\includegraphics{#1}}
+%% \usetikzlibrary{arrows.meta, positioning, decorations.pathmorphing, fit}
+%% \pgfrealjobname{autoquack}
+
 
 \begin{document}
 
@@ -270,7 +280,7 @@ sort used in the OCaml runtime.  Our proofs are entirely machine-checked.
 \label{sec:localizations}
 \input{localizations.tex}
 
-\section{A framework for graph theory}
+\section{A Reusable Library of Formalized Graph Theory}
 \label{sec:mathgraph}
 \input{math_graph.tex}
 
