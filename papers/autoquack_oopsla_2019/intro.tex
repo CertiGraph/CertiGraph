@@ -61,9 +61,14 @@ R |- \forall x.~ (L_2 --* G_2) }
 {\{ G_1 \} ~ c ~ \{ \exists x.~ G_2 \}} \quad \FV(R) \cap \MV(c) = \emptyset \qquad
 \end{equation}
 %\marginpar{\tiny \color{blue} Maybe this should be moved to \S2? Just formula for intro?}
-\textsc{Localize} connects the behavior of a command~$c$ in a ``local'' context~$L_1$
-and~$L_2$ to its effect on a ``global'' context~$G_1$ and~$G_2$ using a carefully-chosen
-\emph{ramification frame} predicate~$R$. \textsc{Localize} is a more general version of the well-known \textsc{Frame} rule,
+\textsc{Localize} connects the ``local'' effect of a command~$c$, \emph{i.e.} 
+transforming~$L_1$ to~$L_2$, with its ``global'' effect, \emph{i.e.} from~$G_1$ to~$G_2$.
+The key is carefully choosing a \emph{ramification frame}~$R$ that satisfies a pair of
+delicately-stated entailments\footnote{Readers less familiar with the separating implication $P --* Q$, also known as \emph{magic wand}, can refer to its semantics in Figure~\ref{fig:seplogsem} (page~\pageref{fig:seplogsem}), which also models the other separation logic operators 
+we use in this paper.  The key proof rule for magic wand is its adjointness
+with the separating conjunction:~$(P * Q |- R) \Leftrightarrow (P |- Q --* R)$.} and
+the side condition on modified local program variables.
+\textsc{Localize} is a more general version of the well-known \textsc{Frame} rule,
 which does the same task in the simpler case when $G_i = L_i * F$
 for some frame~$F$ that is untouched by~$c$.  Said differently, \textsc{Frame} works well
 for tree-manipulating programs, while \textsc{Localize} handles the more subtle

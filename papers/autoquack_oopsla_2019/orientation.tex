@@ -31,9 +31,9 @@ where we use the usual pen-and-paper
 trick of writing \emph{e.g.} $v \mapsto r,p$ to mean
 \mbox{$\big(v |-> r\big) * \big((v + \m{sizeof}(\li{unsigned int})) |-> p\big)$} in the character-addressed C memory model.
 %\marginpar{\tiny \color{blue}Bigstar coming in unexplained.}
-The whole graph (the entire disjoint-set forest) is represented by
+The whole graph (disjoint-set forest) is represented by
 $\p{uf\_graph}(\gamma)$, essentially the
-separating conjunction of the representations
+iterated separating conjunction of the representations
 of each vertex $v \in V(\gamma)$.
 We detail spatial graphs in~\S\ref{sec:spacegraph}.
 
@@ -107,7 +107,7 @@ of the \textsc{Localize} rule (equation \ref{eq:localize} from page~\pageref{eq:
 
 %\marginpar{\tiny \color{blue} repetition}
 Recall that \textsc{Localize} connects some ``global'' pre- and postconditions $G_1$ and $G_2$
-with some ``local'' pre- and postconditions $L_1$ and $L_2$ using an additional ramification
+with some ``local'' pre- and postconditions $L_1$ and $L_2$ using a ramification
 frame $R$.  
 The lines adjacent to
 the~$\searrow$ and~$\swarrow$ symbols specify~$G_1$ (\emph{e.g.} line~\ref{code:ufbefram1}),
@@ -117,10 +117,11 @@ Note that the \textsc{Localize} rule expects quantifiers in the postconditions $
 but lines \ref{code:aftparentfind}--\ref{code:ufaftram1} do not have any.  Since 
 $\forall P.~ (P -|- \exists x : \m{unit}.P)$ for any $x$ not free in $P$, we will elide this feature until {\color{red}\S\ref{whenever}}.
 
-What is \textbf{not} specified explicitly is the ramification frame $R$, which must satisfy 
+
+What is not specified explicitly is the ramification frame $R$, which must satisfy 
 the entailments $G_1 |- L_1 * R$ and (again eliding the quantifier) $R |- L_2 --* G_2$.
 Here things are a little delicate.  To give intuition, it is \textbf{almost} enough to choose
-$R \triangleq L_2 --* G_2$, which makes the second entailment trivial, and reduces the problem
+$R \defeq L_2 --* G_2$, which makes the second entailment trivial, and reduces the problem
 to three remaining checks.
 
 The first check is the \emph{ramification entailment}: $G_1 |- L_1 * (L_2 --* G_2)$.  Typically, this
@@ -143,12 +144,12 @@ are straightforward---indeed, the point of \textsc{Localize} is to make them
 so---verifying line~\ref{findram1} is easy.
 
 The third check is the side condition on the modified variables.  Here we have an irritating
-problem: the free variables of $R \triangleq L_2 --* G_2$ are \textbf{not} disjoint from 
+problem: the free variables of $R \defeq L_2 --* G_2$ are \textbf{not} disjoint from 
 the local variables modified by $c$.  Inspection of lines~\ref{code:findram1}--\ref{code:ufaftram1} shows that the program variable \texttt{p} \textbf{is} modified by $c$, 
 and \textbf{is} free in both $L_2$ and $G_2$.
 This issue is fundamental: the whole point of verifying
 a read is to know something about the value that has been read.  
-Accordingly, our proof fails with the choice of $R \triangleq (L_2 --* G_2)$.
+Accordingly, our proof fails with the choice of $R \defeq (L_2 --* G_2)$.
 We will address this problem
 head-on in~{\color{red}\S\ref{sec:existentials}}, but for now let us content ourselves with knowing
 that other than this problem, \textsc{Localize} lets us verify
@@ -199,7 +200,7 @@ Unfortunately, we still have a problem: the side condition above requires that
 
 The second localization block (lines~\ref{code:ufbefram2}--\ref{code:ufaftram2}) is both easier and harder than the first.  It is easier because line~\ref{code:ufpathcompress} does not modify any local program variables, so the side condition is trivially satisfied.  Moreover, although line~\ref{code:ufaftram2} does contain an existential, line~\ref{code:findafterxparent} does not, and so there is no need to ``link'' the two associated witnesses.  We will discuss this issue
 in more detail in {\color{red}\S\ref{whenever}}, but for now it is enough to 
-choose $R \triangleq L_2 --* G_2$ exactly written in lines~\ref{code:findafterxparent} 
+choose $R \defeq L_2 --* G_2$ exactly written in lines~\ref{code:findafterxparent} 
 (for $L_2$) and~\ref{code:ufaftram2} (for $G_2$).
 
 On the other hand, the second localization block is harder than the first because there is more going on spatially. $\ramify(\ref{findram2})$ expresses an update to a single node of our graph:
