@@ -1,0 +1,6 @@
+
+count how many working examples we have
+sep, kleene star, bigstar
+leadsto gamma is too high
+look through CakeML and see whom they cite
+mention pottier paper (see ackermann paper) in related work

@@ -55,8 +55,41 @@ where we must prove graph isomorphism.
 
 \subsection{From C to Mathematical Graphs}
 \label{sec:movetomathgraph}
-{\color{red}
-TODO 
+In the code, the information of 12 generations is stored as an
+12-element array \texttt{heap}. Each generation, as a memory segment,
+is represented as a \texttt{struct} \texttt{space}, which contains
+three pointers: \texttt{start} marking the start address of a
+generation, \texttt{next} representing the next available address in a
+generation, and \texttt{limit} marking the last address of a
+generation. The basic unit manipulated by the garbage collector is a
+piece of memory called block. The size of a block is stored in its
+head and the rest is an array of fields. Each field is either data or
+a pointer to another block. Blocks with variant sizes are all stored
+in generations without gaps.
+
+From the perspective of the algorithm, the 12 generations can be seen
+as a graph $\gamma$. Basically each block can be can be seen as a
+vertex and pointers to other other block compose connections among
+vertices. More foramlly, we decide to encode each vertex of this graph
+as a pair of natural numbers $(v_g, v_i)$ which means the vertex is
+the $v_i$th block in the $v_g$th generation. We also encode each edge
+as a pair of vertex and index $(v, i)$ which means this edge is from
+vectex $v$ and connects to the vertex which the pointer in the $i$th
+field of $v$ points to. The source function always satisfies
+$d(\gamma, (v, i)) = v$. The destination function $d$ actually stores
+the connection information. Each vertex is attached a label which
+contains the pure data items and indices of pointers in the
+fields. There is also a global label of $\gamma$ which has the
+start/limit addresses and number of vertices of each generation. We
+can reconstruct the 12 generations in memory from $\gamma$ under this
+setting without redundancy. For example, we can count the size of each
+vertex according to its label. The sum of the sizes in each generation
+is the occupied size of each generation. Adding up the occupied size
+to the
+\texttt{start} address retrieves the \texttt{next} pointer.
+
+\hide
+{\color{red} TODO
 
 The graph model changed not at all. We added label to the whole graph. Quite happy to add this change to our model; it doesn't change the other proofs at all. We are genuinely not isomorphic so this label helps. 
 

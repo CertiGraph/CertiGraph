@@ -9,14 +9,14 @@
 \begin{figure*}[!ht]
 \vspace{-1ex}
   \begin{lstlisting}[multicols=2]
-$//$$\braces{\forall \ga, \m{\finf}, \m{\tinf}, \m{from}, \m{to}, \m{v}, \m{n}.~\null \\ \p{gc{\_}graph}(\ga) * \p{\finf}(\m{\finf}) * \p{\tinf}(\m{\tinf}) /| \null \\ \m{compat}(\ga, \m{\finf}, \m{\tinf}, \m{from}, \m{to}) /| \null \\ \tx{s} = \m{start}(\ga, \m{from}) /| \tx{l} = \tx{s} + \m{gensize}(\ga, \m{from}) /| \null \\ \tx{n} = \m{naddr}(\m{\tinf}, \m{to}) /| \tx{p} = \m{vaddr}(\ga, \m{v}) + \m{n}} \alpha $
+$//$$\braces{\forall \ga, \m{\finf}, \m{\tinf}, \m{from}, \m{to}, \m{v}, \m{n}.~\null \\ \p{gc{\_}graph}(\ga) * \p{\finf}(\m{\finf}) * \p{\tinf}(\m{\tinf}) /| \null \\ \m{compat}(\ga, \m{\finf}, \m{\tinf}, \m{from}, \m{to}) /| \null \\ \tx{s} = \m{start}(\ga, \m{from}) /| \tx{l} = \tx{s} + \m{gensize}(\ga, \m{from}) /| \null \\ \tx{n} = \m{naddr}(\m{\tinf}, \m{to}) /| \tx{p} = \m{vaddr}(\ga, \m{v}) + \m{n}} \defeq \phi_1 $
 void forward (value *s, *l, **n, *p, 
               int depth) {
  value * v; value va = *p; 
  if(Is_block(va)) {$// \textit{is ptr}$
   v = (value*)iop2p(va); 
   if(Is_from(s, l, v)) {$ // \textit{in from}$
-$//$$\braces{\alpha /| \exists \m{e}, \m{v'}.~\m{lab}(\ga, \m{v})[\m{n}] = \m{e} /| \null \\ \m{dst}(\ga, \m{e}) = \m{v'} /| \tx{v} = \m{vaddr}(\ga, \m{v'})} \beta $
+$//$$\braces{\phi_1 /| \exists \m{e}, \m{v'}.~\m{lab}(\ga, \m{v})[\m{n}] = \m{e} /| \null \\ \m{dst}(\ga, \m{e}) = \m{v'} /| \tx{v} = \m{vaddr}(\ga, \m{v'})} \phi_8 $
 $//$$\searrow$$\braces{\exists \m{flds'}, \m{hdr'}.~\m{flds'} = \m{lab}(\ga, \m{v'}) /| \null \\ \m{v'} |-> \m{flds'} /| \m{hdr'} = \m{flds'}[-1]} \gamma $
    header_t hd = Hd_val(v);
 $//$$\swarrow$$\braces{\gamma /| \tx{hd} = \m{val}(\m{hdr'})}$
