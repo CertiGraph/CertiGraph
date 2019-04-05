@@ -1,7 +1,7 @@
 \input{find_listing_narrow.tex}
 
 As an initial demonstration of our techniques, we show the decorated code of the
-\texttt{find} function from the classic disjoint-set data structure~{\color{red}\cite{blah}} in
+\texttt{find} function from the classic disjoint-set data structure in
 Figure~\ref{fig:find}. The \texttt{find} function returns the root
 (ultimate parent) of a \texttt{Node} \texttt{x}. A node is a root when its parent
 pointer points to itself (line~\ref{code:ufif});
@@ -20,21 +20,21 @@ We use the following conventions in our invariants.  Pure predicates are written
 \textit{italic}.  We write~$\gamma$ to
 mean a ``mathematical'' (or~``pure'') graph: roughly, a set of
 labeled vertices $V(\gamma)$ and edges $E(\gamma)$.
-When $v \in V(\gamma)$, we write $\gamma(v) = (r,p)$ to state that vertex $v$ has
+When $\m{v} \in V(\gamma)$, we write $\gamma(v) = (r,p)$ to state that vertex $\m{v}$ has
 label $r$ and parent vertex $p$ ($r$ stores the ``rank'' of a node; it is ignored
 in \texttt{find}).  We detail mathematical graphs in~\S\ref{sec:mathgraph}.
 
 Spatial predicates are written in \textsf{sans-serif}.
-Each node $v \in V(\gamma)$ is 
-represented in the heap by $v \mapsto \gamma(v)$, %, \emph{i.e.}  = (r,p)$},
+Each node $\m{v} \in V(\gamma)$ is 
+represented in the heap by $\m{v} \mapsto \gamma(\m{v})$, %, \emph{i.e.}  = (r,p)$},
 where we use the usual pen-and-paper
-trick of writing \emph{e.g.} $v \mapsto r,p$ to mean
-\mbox{$\big(v |-> r\big) * \big((v + \m{sizeof}(\li{unsigned int})) |-> p\big)$} in the character-addressed C memory model.
+trick of writing \emph{e.g.} $\m{v} \mapsto r,p$ to mean
+\mbox{$\big(\m{v} |-> r\big) * \big((\m{v} + \m{sizeof}(\li{unsigned int})) |-> p\big)$} in the character-addressed C memory model.
 %\marginpar{\tiny \color{blue}Bigstar coming in unexplained.}
 The whole graph (disjoint-set forest) is represented by
 $\p{uf\_graph}(\gamma)$, essentially the
 iterated separating conjunction of the representations
-of each vertex $v \in V(\gamma)$.
+of each vertex $\m{v} \in V(\gamma)$.
 We detail spatial graphs in~\S\ref{sec:spacegraph}.
 
 The invariants at
@@ -44,7 +44,7 @@ predicates.  All of this is despite verifying real C code, which entails quite a
 of grungy details. As one example, we will examine some grunginess that occurs in the
 verification of line~\ref{code:ufif} shortly.
 
-The precondition on line~\ref{code:findstart} says that we have a disjoint-set forest representing the abstract graph~$\gamma$, and that \texttt{x} is a valid vertex in~$\gamma$.  The postcondition is on line~\ref{code:findend}: the heap is representing a new union-find graph~$\gamma''$, and \li{find} returns the node \m{rt}.
+The precondition on line~\ref{code:findstart} says that we have a disjoint-set forest representing the abstract graph~$\gamma$, and that \texttt{x} is a valid vertex in~$\gamma$.  The postcondition is on line~\ref{code:findend}: the heap contains a new union-find graph~$\gamma''$, and \li{find} returns the node \m{rt}.
 We specify that $\m{rt}$
 is the root (ultimate parent) of \texttt{x} with the pure relation $\m{uf\_root}$.
 The relation $\m{findS}$, which conservatively approximates the action of path 
@@ -114,8 +114,8 @@ the~$\searrow$ and~$\swarrow$ symbols specify~$G_1$ (\emph{e.g.} line~\ref{code:
 $L_1$~(line~\ref{code:befparentfind}),
 $L_2$~(line~\ref{code:aftparentfind}), and~$G_2$~(line~\ref{code:ufaftram1}).
 Note that the \textsc{Localize} rule expects quantifiers in the postconditions $L_2$ and $G_2$,
-but lines \ref{code:aftparentfind}--\ref{code:ufaftram1} do not have any.  Since 
-$\forall P.~ (P -|- \exists x : \m{unit}.P)$ for any $x$ not free in $P$, we will elide this feature until {\color{red}\S\ref{whenever}}.
+but lines \ref{code:aftparentfind}--\ref{code:ufaftram1} do not have any.  We can overcome
+this mismatch since $\forall P.~ (P -|- \exists x : \m{unit}.P)$ for any $x$ not free in $P$. %we will elide until {\color{red}\S\ref{whenever}}.
 
 
 What is not specified explicitly is the ramification frame $R$, which must satisfy 
@@ -125,7 +125,7 @@ $R \defeq L_2 --* G_2$, which makes the second entailment trivial, and reduces t
 to three remaining checks.
 
 The first check is the \emph{ramification entailment}: $G_1 |- L_1 * (L_2 --* G_2)$.
-Informally this asks whether replacing $L_1$ with $L_2$ inside $G_1$ yields $G_2$.
+Informally, this asks whether replacing $L_1$ with $L_2$ inside $G_1$ yields $G_2$.
 This ramification entailment is a nontrivial proof obligation both because
 we must prove $L_1$ is located inside $G_1$, and because we must prove that 
 ``replacing'' $L_1$ with $L_2$ yields $G_2$.
@@ -144,7 +144,7 @@ Indeed, this ``unchanged vertex'' ramification entailment is used whenever we ne
 The second check is the Hoare proof of the local
 change from $L_1$ to $L_2$.  Since lines~\ref{code:befparentfind} and~\ref{code:aftparentfind} 
 are straightforward---indeed, the point of \textsc{Localize} is to make them
-so---verifying line~\ref{findram1} is easy.
+so---verifying line~\ref{code:findram1} is easy.
 
 The third check is the side condition on the modified variables.  Here we have an irritating
 problem: the free variables of $R \defeq L_2 --* G_2$ are \textbf{not} disjoint from 
@@ -152,7 +152,7 @@ the local variables modified by $c$.  Inspection of lines~\ref{code:findram1}--\
 and \textbf{is} free in both $L_2$ and $G_2$.
 This issue is fundamental: the whole point of verifying
 a read is to know something about the value that has been read.  
-Accordingly, our proof fails with the choice of $R \defeq (L_2 --* G_2)$.
+Accordingly, our proof fails when we choose $R \defeq (L_2 --* G_2)$.
 We will address this problem
 head-on in~{\color{red}\S\ref{sec:existentials}}, but for now let us content ourselves with knowing
 that other than this problem, \textsc{Localize} lets us verify
