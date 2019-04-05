@@ -73,6 +73,7 @@
 
 \newcommand{\note}[2][polish]{{\color{magenta} #2 }{\marginpar{\tiny \color{blue} #1 }}}
 \newcommand{\noted}[2][new]{{\color{orange} #2 }{\marginpar{\tiny \color{blue} #1 }}}
+\newcommand{\notedd}[2][blah]{#2}
 \newcommand{\li}[1]{\ifmmode\mbox{\mli{#1}}\else\mbox{\lstinline/#1/}\fi}
 \newcommand\hide[1]{}
 \newcommand{\MV}{\ensuremath{\mathsf{ModVar}}}
@@ -108,7 +109,7 @@
 \mathlig{|/}{\mathbin{\vee}} % additive disjunction
 \mathlig{|-}{\mathrel{\vdash}} % entails
 \mathlig{|=}{\vDash} % models
-\mathlig{//}{\color{red}{\sslash}} % listings comments
+\mathlig{//}{\color{black}{\sslash}} % listings comments
 
 
 \newcommand{\defeq}{\mathbin{\stackrel{\Delta}{=}}}
@@ -119,7 +120,6 @@
 \let\ramify\lightning
 \newcommand{\infrulestyle}[1]{\textsc{#1}}
 \newcommand{\infrule}[4]{\inferrule*[lab=\infrulestyle{#1},right=$\mathrlap{#4}$]{#2}{#3}}
-\long\def\beginpgfgraphicnamed#1#2\endpgfgraphicnamed{\includegraphics{#1}}
 \newcommand{\medocon}{
   \raisebox{-0.3ex}{\resizebox{0.63em}{!}{$\scon$}} \hspace{-2.05ex} \bigcup}
 \newcommand{\triple}[3]{\{#1\}\,#2\,\{#3\}}
@@ -133,9 +133,9 @@
   keywordstyle=\color{blue}, numbers=left,
   numberstyle=\tiny, numbersep=5pt, boxpos=t,
 }
-\long\def\beginpgfgraphicnamed#1#2\endpgfgraphicnamed{\includegraphics{#1}}
-%% \usetikzlibrary{arrows.meta, positioning, decorations.pathmorphing, fit}
-%% \pgfrealjobname{autoquack}
+% \long\def\beginpgfgraphicnamed#1#2\endpgfgraphicnamed{\includegraphics{#1}}
+\usetikzlibrary{arrows.meta, positioning, decorations.pathmorphing, fit}
+\pgfrealjobname{autoquack}
 
 
 \begin{document}

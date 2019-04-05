@@ -12,11 +12,11 @@ mathematical graph framework with an emphasis on this modularity.
 
 When verifying the functional correctness of graph algorithms, 
 we intuitively wish to borrow terminology from graph theory to describe
-program behavior. Accordingly, an essential component of our
+program behavior. \noted{Accordingly, an essential component of our
 work is a library of formalized graph theory which is powerful and
-expressive enough to verify realistic algorithms that 
-\note[what do you mean?]{work in an
-end-to-end system}. One of its strengths is its modularity, which
+expressive enough to verify realistic algorithms in a machine-checked
+theorem prover.}
+One of its strengths is its modularity, which
 allows us to intuitively reuse and compose proofs when mechanising 
 verifications. In this section, we present our mathematical graph
 framework with an emphasis on this modularity.  
@@ -42,18 +42,16 @@ than focusing on the nitty-gritty details.} % end hide
 \subsection{Definitions of graphs}\label{sec:mathinfra}
 
 \input{mathgraph_pregraph_combined.tex}
-%\input{mathgraph_structure.tex}
-%\input{pregraph_figure.tex}
+\input{kindsofgraphs.tex}
+\input{somegraphdefns.tex}
 
 Our first challenge is that graph theory is usually based on 
-\emph{set theory} but our formalization in Coq has
-to be based on \emph{type theory}. We choose to formalize graph theory
+\emph{set theory} but our formalization in Coq is 
+based on \emph{type theory}. We choose to formalize graph theory
 directly in Coq instead of formalizing set theory and then building
 graph theory atop it. This allows us to take advantage of Coq's built-in
 support for type-related constructions directly for graphs. 
-\note[what do you mean?]{Like other
-mathematical theories,} our formalized graph theory is developed
-around its core concept: graph. To balance the dichotomy between
+To balance the dichotomy between
 the generality and the speciality of the library, we divide the
 concept of graph into three structures, 
 PreGraph, LabeledGraph and GeneralGraph, arranged in a hierarchy. 
@@ -85,33 +83,32 @@ Indeed, the PreGraph in Figure \ref{fig:pregraph} contains invalid
 vertices and edges in an arbitrary configuration.
 }% end hide
 
-\paragraph{PreGraph.} A PreGraph is a hextuple $(\mathcal{V}, \mathcal{E}, V, 
-E, s, d)$, where $\mathcal{V}$ and $\mathcal{E}$ are the underlying
-carrier types of vertices and edges, and $V$ and $E$, predicates over
+\paragraph{PreGraph.}             
+A PreGraph is a hextuple $(\mathcal{V}, \mathcal{E}, \mathtt{V}, \mathtt{E}, \mathtt{src}, \mathtt{dst})$, where $\mathcal{V}$ and $\mathcal{E}$ are the underlying
+carrier types of vertices and edges, and $\mathtt{V}$ and $\mathtt{E}$, predicates over
 $\mathcal{V}$ and $\mathcal{E}$ respectively, introduce the notion
-of \emph{validity} in the graph. Finally, $s$ and $d$ are functions
-that map an edge to its $s$ource and $d$estination. With an 
-eye to flexibility, we make
-no further requirements of a legal PreGraph.
+of \emph{validity} in the graph. Finally, $\mathtt{src}$ and $\mathtt{dst}$ are functions
+that map an edge to its source and destination. With an 
+eye to flexibility, we make no further requirements of a legal PreGraph.
 
 The benefits of introducing validity are twofold. The first is a 
 neat resolution of the incompatibility between type theory and set theory. 
 In set theory, one
-element can belong to multiple sets, \emph{e.g.}\ 
-\note[explain a little More?]{to a subset or a superset.} 
+element can belong to multiple sets, 
+\emph{e.g.}\note[explain a little more?]{to a subset or a superset.} 
 Adding or removing vertices or edges is therefore easy: we alter
 the set directly to represent the result of the operation. 
 In type theory, however, a term can only belong
 to one type, which makes it difficult\hide{if not impossible} 
 to analogously change the
 type to represent the result. As is common practice, we introduce the
-predicates $V$ and $E$ to classify vertices and edges as \emph{valid}
-(in) or \emph{invalid} (out) of a graph. The equivalent of a superset/subset 
-behavior can be replicated by weakening or strengthening the two predicates.
+predicates $\mathtt{V}$ and $\mathtt{E}$ to classify vertices and edges as \emph{valid}
+(in) or \emph{invalid} (out) \note{of a graph}. The equivalent of 
+\note[depends on answer to earlier doubt]{superset/subset behavior} can be replicated by weakening or strengthening the two predicates.
 
-The other benefit is the ability to represent incomplete graphs, which is
-convenient in verification.  
-\note[fix numbering]{Figure \ref{fig:pregraph}} shows an incomplete graph, 
+\note{The other benefit is the ability to represent incomplete graphs, which is
+convenient in verification.
+Figure \ref{fig:pregraph} shows an incomplete graph, 
 where vertices $v_0$ and $v_1$
 are the source and destination of a valid edge $e_0$. Both 
 vertices are in $\mathcal{V}$, but $v_0$ is valid
@@ -131,15 +128,18 @@ if $g$ is an undirected graph,
 $g_2$ is just a collection of \note[disconnected?]{connected} components, 
 and if $g$ is a directed graph, then $g_2$ may contain dangling edges or
 vertices. PreGraph is accommodating enough to permit reasoning
-about~$g_2$ in either case.
+about~$g_2$ in either case.}
 
 We define some primary graph concepts on PreGraphs, 
-including structures like \emph{path}, predicates 
-such as \emph{is\_cyclic} and \emph{reachable},
+including structures like \emph{path}$^{*}$, predicates 
+such as \emph{is\_cyclic} and \emph{reachable}$^{*}$,
 operation/functions such as \emph{add\_vertex}
 and \emph{remove\_edge}, and relations between PreGraphs such
-as \emph{structurally\_identical} and \emph{subgraph}.  These general
-concepts, together with derived lemmas (around 750 in total) provide a
+as \emph{structurally\_identical}$^{*}$ and \emph{subgraph}. 
+Coq definitions of the concepts marked with asterisks are 
+shown in Figure \ref{fig:graphdefns}.
+These general concepts, together with derived lemmas 
+(around 750 in total) provide a
 solid foundation for more specific theorems needed in concrete
 verifications.
 
@@ -217,8 +217,7 @@ In addition, we can prove additional lemmas that use labels,
 and we prove that running \texttt{find} does not alter any vertex's rank.
 
 %% Anshuman's proposal 
-\iffalse
-\paragraph{LabeledGraph.}
+\hide{\paragraph{LabeledGraph.}
 A LabeledGraph is a PreGraph with the addition of \emph{labels} on 
 vertices, edges, and/or the graph as a whole. The need for such labels
 is fairly clear; the bare structure of a graph can only 
@@ -230,8 +229,7 @@ In addition, we can define additional lemmas that use labels,
 \emph{e.g.} the union-find graph has an integer label denoting \emph{rank}.
 We could prove a lemma that running \texttt{find} does not alter
 any vertex's rank. 
-\hide{add string labels to edges and reason about a trie.}
-\fi
+\hide{add string labels to edges and reason about a trie.}}
 % Anshuman's proposal ends
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -239,6 +237,9 @@ any vertex's rank.
 
 \vspace{-0.75ex}
 \paragraph{GeneralGraph.}
+
+\note{add: updating a graph requires care with the dependent types. What is a d.t.}
+
 PreGraphs and LabeledGraphs are quite universal, and allow us to state
 and prove useful lemmas that are true by virtue of the way the graphs
 were set up. However, when proving the correctness of graph
@@ -261,7 +262,6 @@ what makes GeneralGraphs truly versatile. Thankfully, we do
 not need to state complicated soundness conditions afresh for
 each program that we verify. In the next section, we explain how to
 compose these out of smaller, reusable pieces.
-
 
 \subsection{Composing soundness plugins}
 \label{subsec:graphplugins}
