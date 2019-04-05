@@ -1,9 +1,11 @@
-\begin{figure}[t!]
-\centering
-\begin{adjustbox}{scale=0.85}
-  \begin{subfigure}[t]{0.5\textwidth}
+% https://tex.stackexchange.com/questions/55337/how-to-use-figure-inside-a-minipage
+% The solution was to not use figures at all, but just put the graphics in 
+%   and manually caption them using captionof.
+
+\begin{adjustbox}{scale=0.80}	
+  \begin{minipage}[t]{0.5\textwidth}
   \centering
-  \beginpgfgraphicnamed{variousgraph}
+  \beginpgfgraphicnamed{variousgraph} % ?
 \begin{tikzpicture}
 [->/.style={thick,arrows={-Stealth}},
 -->/.style={thick,arrows={-Stealth}, decorate, decoration={snake, amplitude=.4mm,segment length=2mm,post length=2mm}},
@@ -51,9 +53,9 @@
 \endpgfgraphicnamed
 \vspace{1ex}
 \captionof{figure}{Structure of the Mathematical Graph Library}\label{fig:graphs}
-\end{subfigure}
+\end{minipage}
   ~
-  \begin{subfigure}[t]{0.5\textwidth}
+  \begin{minipage}[t]{0.5\textwidth}
 \centering
 \beginpgfgraphicnamed{pregraphexp}
 \begin{tikzpicture}
@@ -97,7 +99,5 @@
 \endpgfgraphicnamed
 \vspace{1ex}
 \captionof{figure}{A PreGraph with valid/invalid vertices and edges.}\label{fig:pregraph}
-\end{subfigure}
-%\caption{\color{magenta}The Mathematical Graph Library, and a Pregraph}
+\end{minipage}
 \end{adjustbox}
-\end{figure}
