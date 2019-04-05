@@ -89,17 +89,18 @@ In the third column, the user has advanced past $c_3$ to reach the local postcon
 
 \begin{table}[t]
 \centering
-\begin{tabular}{c|c|c}
-Component & Files & Size (in lines)\\\hline
-VST Examples (\S\ref{dummyref},\S\ref{sec:application}) & 13 & 3,290 \\
-Integration into Floyd (\S\ref{sec:vstlocalunlocal}) & 12 & 1,917 \\
-H/S Example (\S\ref{dummyref}) & 2 & 443 \\
-Modifications to H/S (\S\ref{dummyref}) & ~~51 & 2,500 \\
-Math Graph (\S\ref{sec:mathgraph}) & 19 & 12,723\\
-Spatial Graph (\$\ref{sec:spacegraph}) & 10 & 6,458 \\
-Memory Model \& Logic & 13 & 2,373 \\
-Common Utilities & 10 & 2,842 \\\hline\hline
-Total Development & 130 & 32,546 \\
+\begin{tabular}{c|c|c|c|c}
+Component & Files & Size (in lines) & Num. of Defs & Num. of Theorems\\\hline
+Verification of Marking & 6 & 775 & 9 & 20 \\
+Spanning Tree & 5 & 2,723 & 17 & 92 \\
+Union-Find & 18 & 3,193 & 107 & 135 \\
+Garbage Collector & 16 & 13,858 & 235 & 712 \\
+Math Graph Library & 20 & 10,585 & 216 & 581 \\
+Spatial Graph Library & 3 & 2,328 & 59 & 110 \\
+Integration into VST & 11 & 2,783 & 17 & 172 \\
+Common Utilities & 10 & 3,578 & 44 & 289 \\
+\hline\hline
+Total Development & 89 & 39,823 & 704 & 2,111 \\
 \end{tabular}
 \caption{Size of our codebase}
 \label{tab:codebase}
