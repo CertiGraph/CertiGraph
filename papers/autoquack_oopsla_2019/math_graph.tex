@@ -57,7 +57,7 @@ around its core concept: graph. To balance the dichotomy between
 the generality and the speciality of the library, we divide the
 concept of graph into three structures, 
 PreGraph, LabeledGraph and GeneralGraph, arranged in a hierarchy. 
-\note[fix numbering]{Figure~\ref{fig:graphs}} shows the
+Figure~\ref{fig:graphs} shows the
 architecture of the library.
 
 \hide{The most basic kind of graph is PreGraph, out of which we build 
@@ -72,7 +72,7 @@ properties to LabeledGraphs (\ref{subsec:graphplugins}). %and will be discussed 
 \paragraph{PreGraph.} A PreGraph is a hextuple $(VT, ET, V, E, s, d)$, where $VT$ 
 and $ET$ are the underlying carrier sets of vertices and edges, and $V$ and $E$, 
 subsets $VT$ and $ET$ respectively, introduce the notion of \emph{validity} in the 
-graph. In \note[fix numbering]{Figure \ref{fig:pregraph}}, valid vertices are in $V$ and 
+graph. In Figure \ref{fig:pregraph}, valid vertices are in $V$ and 
 invalid vertices are in $VE \smallsetminus V$. Importantly, 
 both kinds of vertices are legally part 
 of the PreGraph. Finally, $s$ and $d$ are functions that map 
