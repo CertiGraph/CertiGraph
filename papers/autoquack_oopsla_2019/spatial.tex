@@ -1,3 +1,4 @@
+\input{seplogsem_figure.tex}
 
 \marginpar{\tiny \color{blue} We are interested in cutting \S\ref{sec:fixpointfail}. Needs massaging.}
 To prove the functional correctness of graph-manipulating algorithms implemented in a real language, we need to connect the heap representation of graphs, the memory model of the programming language, and the mathematical properties of graphs from \S\ref{sec:mathgraph}.  The first of these turns out to be surprisingly subtle as we shall see in \S\ref{sec:fixpointfail} and \S\ref{sec:goodgraph}.  The main challenge for the others is to engineer a framework that is generic enough and modular enough to be useful in practice in a variety of settings; we cover it in~\S\ref{sec:ramifylib}.
@@ -8,18 +9,18 @@ To prove the functional correctness of graph-manipulating algorithms implemented
 \newcommand{\grapham}{\p{graph}_A}
 
 
-\marginpar{\tiny \color{blue} Crunch. Not our main point, just a lesson for the reader 
+\marginpar{\tiny \color{blue} Crunch. Not our main point, just a lesson for the reader
 so we can make our point.}
 {\color{magenta}Recursive predicates are ubiquitous in separation logic---so
 much so that when one writes the definition of a predicate as
 \mbox{$P$ ``$\defeq$'' $\ldots P \! \ldots$}, no one raises an eyebrow despite the
 dangers of circularity in mathematics. Indeed, the vast majority of the time there
 is no danger thanks to the magic of the Knaster-Tarski fixpoint
-$\mu_{\mathsf{T}}$ \cite{tarski:fixpoint}.  Formally, one does not define $P$ directly, 
+$\mu_{\mathsf{T}}$ \cite{tarski:fixpoint}.  Formally, one does not define $P$ directly,
 but rather defines a functional
 \mbox{$F_P \defeq \lambda P.~ \ldots P \! \ldots$} and then defines $P$ itself as
-\mbox{$P \defeq \mu_{\mathsf{T}} \, F_P$}.  
-Assuming {\color{magenta}(as one typically does without comment)} 
+\mbox{$P \defeq \mu_{\mathsf{T}} \, F_P$}.
+Assuming {\color{magenta}(as one typically does without comment)}
 that $F_P$ is \emph{covariant}, i.e. $(P \vdash Q)
 \Rightarrow (F \, P \vdash F \, Q)$, one then enjoys the fixpoint
 equation $P \Leftrightarrow \ldots P \ldots$, formally justifying
@@ -39,8 +40,8 @@ Suppose we define a graph predicate $\graphkt$ this way, \emph{e.g.} along the l
 \vspace{-1ex}
 \]
 %We have removed the alignment-related portions of equation~\eqref{eqn:bigraphintrofoldunfold} to focus on a more serious issue, even though as we will explain in~\S\ref{sec:goodgraph} alignment concerns are also necessary for the fold/unfold relationship to hold in C-like memory models.
-Although we can apply Knaster-Tarski (because the functional needed to 
-define $\graphkt$ is covariant), the result is hard to use. 
+Although we can apply Knaster-Tarski (because the functional needed to
+define $\graphkt$ is covariant), the result is hard to use.
 Consider the following memory $m$ for a toy machine:
 
 \begin{minipage}{.24\textwidth}
@@ -107,13 +108,13 @@ The other direction, \mbox{$\graphkt(100,\hat{\gamma}) |- 100 |-> 42,100,0$},
 
 \subsection{Defining a good \p{graph} predicate}\label{sec:goodgraph}
 
-Rather than trying to define \p{graph} as a recursive fixpoint, 
+Rather than trying to define \p{graph} as a recursive fixpoint,
 we will instead give it a flat structure.  Graphs in separation
 logic have been defined in similar ways before~\cite{ilya-graphs};
-our innovation is that we prove---with the amount of precision 
-required to convince Coq---that we can still enjoy fold/unfold 
-with our flat definition.  Our path starts with the iterated 
-separating conjunction or ``big star'', which is first defined over 
+our innovation is that we prove---with the amount of precision
+required to convince Coq---that we can still enjoy fold/unfold
+with our flat definition.  Our path starts with the iterated
+separating conjunction or ``big star'', which is first defined over
 lists and then extended to sets as follows:
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -238,17 +239,17 @@ ent/.style={shape=rectangle, rounded corners=4pt, draw, on grid}]
 
 We provide the architecture of our spatial development in Figure~\ref{fig:infra}.  Starting from the bottom, notice that there are two underlying heap models: the Step-Indexed Model, which is the main heap model used in VST, and a much simpler Direct Model, {\color{magenta} which is used by HIP/SLEEK among others}. The Step-Indexed model is much fancier, but none of our development depends on its bells and whistles.
 
-To isolate our development from these unnecessary complications, 
-{\color{magenta}and to ensure that HIP/SLEEK can reuse our spatial 
-reasoning, we use two interfaces: Core Logic and Supplementary 
-Logic.  Both models can instantiate both interfaces, but generally 
-speaking our VST proofs only need the Core properties to prove 
-our examples, whereas HIP/SLEEK uses both Core and Supplemental.} 
-Each interface defines some operators of separation logic and 
-provides some axioms about how they work.  For example, $*$ and 
-$--*$ are in Core Logic, along with the axiom 
-$(P |- Q --* R) <=> (P * Q |- R)$.  On the other hand, 
-the $**$ and $--o$ operators are in Supplementary Logic, 
+To isolate our development from these unnecessary complications,
+{\color{magenta}and to ensure that HIP/SLEEK can reuse our spatial
+reasoning, we use two interfaces: Core Logic and Supplementary
+Logic.  Both models can instantiate both interfaces, but generally
+speaking our VST proofs only need the Core properties to prove
+our examples, whereas HIP/SLEEK uses both Core and Supplemental.}
+Each interface defines some operators of separation logic and
+provides some axioms about how they work.  For example, $*$ and
+$--*$ are in Core Logic, along with the axiom
+$(P |- Q --* R) <=> (P * Q |- R)$.  On the other hand,
+the $**$ and $--o$ operators are in Supplementary Logic,
 along with rules like $P |- P ** P$.
 
 Above the Logic layer we have three towers, each three levels high.  The leftmost tower contains basic lemmas about Logic, $\bigstar$, and \p{graph}.  In the $\bigstar$ Facts box we prove \emph{e.g.}:

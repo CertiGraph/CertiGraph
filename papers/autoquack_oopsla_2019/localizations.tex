@@ -2,7 +2,7 @@
 \textsc{Frame} can be derived
 from \textsc{Localize} by setting $R \defeq F$, which makes both entailments
 tautologies and trivially satisfies the side condition using the property of
-adjointness:~$(P * Q |- R) \Leftrightarrow (P |- Q --* R)$.}
+.}
 
 \paragraph{Notes on notation.}
 {\color{magenta} Although we do not do so in Figure~\ref{fig:find}, localization blocks can safely nest.  When the ramification entailment is not noteworthy we can omit the $\ramify(i)$ reference in pen-and-paper proofs.  When we wish to save vertical space we can write $\{ G_1 \} \searrow \{ L_1 \}$ and $\{ G_2 \} \swarrow \{ L_2 \}$.
@@ -72,8 +72,6 @@ In Figure~\ref{fig:markgraph} we put the code and proof sketch of the classic \l
 \vspace*{-1ex}
 \]
 The specification is again stated with mathematical $\gamma$, although in this case $\gamma(x)$ maps to triples $(m,l,r)$, where $m$ is a ``mark'' bit (0 or 1) and $\{l,r\} \subseteq V(\gamma) \uplus \{0\}$ are the neighbors of $v$.  By ``local'', we mean that the predicate $\p{m\_graph}(\li{x},\gamma)$ says that the heap represents \emph{only the nodes in $\gamma$ that are reachable from \li{x}}.  Rather than passing the entire graph around as \li{find} does, \li{mark} will use the fold/unfold relationship given in equation~\eqref{eqn:bigraphintrofoldunfold}, located just under the code in Figure~\ref{fig:markgraph}, to ``unfold'' the graph as if it were an inductive predicate.
-
-\input{seplogsem_figure.tex}
 
 This fold/unfold relationship deserves attention.
 First, \eqref{eqn:bigraphintrofoldunfold} uses the ``overlapping conjunction''
