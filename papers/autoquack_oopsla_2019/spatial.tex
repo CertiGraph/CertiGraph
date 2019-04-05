@@ -191,7 +191,7 @@ That is, they overlap either completely or not at all. In a Java-like memory mod
 \beginpgfgraphicnamed{infrastructure}
 \begin{tikzpicture}[
 ->/.style={thick, arrows={-Stealth}},
-ent/.style={shape=rectangle, rounded corners=4pt, draw, on grid}]
+ent/.style={shape=rectangle, rounded corners=4pt, draw, on grid},x=33pt]
 \node[ent] (SM) at (0, 0) {\small Step-Indexed Model};
 \node[ent] (DM) [right=4.4 of SM] {\small Direct Model};
 \node[ent] (CL) [above=1 of SM] {\small Core Logic};
@@ -233,7 +233,7 @@ ent/.style={shape=rectangle, rounded corners=4pt, draw, on grid}]
 \draw [double, ->] (l2) to (legend2);
 \end{tikzpicture}
 \endpgfgraphicnamed
-\vspace{1ex}
+%% \vspace{1ex}
 \caption{Infrastructure of ramification library}\label{fig:infra}
 \end{figure}
 
