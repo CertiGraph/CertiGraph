@@ -124,8 +124,11 @@ Here things are a little delicate.  To give intuition, it is \textbf{almost} eno
 $R \defeq L_2 --* G_2$, which makes the second entailment trivial, and reduces the problem
 to three remaining checks.
 
-The first check is the \emph{ramification entailment}: $G_1 |- L_1 * (L_2 --* G_2)$.  Typically, this
-entailment is a nontrivial proof obligation.
+The first check is the \emph{ramification entailment}: $G_1 |- L_1 * (L_2 --* G_2)$.
+Informally this asks whether replacing $L_1$ with $L_2$ inside $G_1$ yields $G_2$.
+This ramification entailment is a nontrivial proof obligation both because
+we must prove $L_1$ is located inside $G_1$, and because we must prove that 
+``replacing'' $L_1$ with $L_2$ yields $G_2$.
 When we want to refer to the ramification entailment of a localization block in
 subsequent text we use the symbol $\ramify(i)$ to connect it to relevant equation
 numbers.  Accordingly, $\ramify(\ref{findram1})$ refers to the ramification entailment
