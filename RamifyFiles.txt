@@ -9,8 +9,6 @@ sample_mark/env_unionfind_iter.v
 sample_mark/verif_unionfind_rank.v
 sample_mark/verif_unionfind_iter_rank.v
 sample_mark/verif_mark_bi_dag.v
-sample_mark/env_garbage_collector.v
-sample_mark/trinode.v
 sample_mark/spatial_graph_bi_mark.v
 sample_mark/verif_unionfind_iter.v
 sample_mark/verif_unionfind_arr.v
