@@ -116,6 +116,7 @@
 \newcommand{\tx}[1]{\text{#1}}
 \newcommand{\p}[1]{\ensuremath{\mathsf{#1}}} % predicate font
 \newcommand{\m}[1]{\ensuremath{\mathit{#1}}} % math font
+\newcommand{\ma}[1]{\ensuremath{\mathcal{#1}}} % mathcal font
 %\newcommand{\ramify}{\lightning}
 \let\ramify\lightning
 \newcommand{\infrulestyle}[1]{\textsc{#1}}
@@ -220,7 +221,7 @@ We develop powerful and general techniques to mechanically verify realistic prog
 manipulate heap-represented graphs and related data structures with intrinsic sharing.
 We construct a modular and general setup for reasoning about abstract mathematical graphs
 and use separation logic to define how such abstract graphs are represented concretely in
-the heap. We upgrade Hobor and Villard's theory of ramification to support existential 
+the heap. We upgrade Hobor and Villard's theory of ramification to support existential
 quantifiers in postconditions and to smoothly handle modified program variables.
 We demonstrate the generality
 and power of our techniques by integrating them into the Verified Software Toolchain and
