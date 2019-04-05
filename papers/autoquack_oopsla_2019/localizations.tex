@@ -4,6 +4,53 @@ from \textsc{Localize} by setting $R \defeq F$, which makes both entailments
 tautologies and trivially satisfies the side condition using the property of
 adjointness:~$(P * Q |- R) \Leftrightarrow (P |- Q --* R)$.}
 
+\paragraph{Notes on notation.}
+{\color{magenta} Although we do not do so in Figure~\ref{fig:find}, localization blocks can safely nest.  When the ramification entailment is not noteworthy we can omit the $\ramify(i)$ reference in pen-and-paper proofs.  When we wish to save vertical space we can write $\{ G_1 \} \searrow \{ L_1 \}$ and $\{ G_2 \} \swarrow \{ L_2 \}$.
+
+As pointed out in \S\ref{sec:intro}, \infrulestyle{Localize} can derive \infrulestyle{Frame}.  Our notation for localization blocks clarifies pen-and-paper uses of \infrulestyle{Frame}, especially in multi-line contexts with nontrivial $F$, for which the current popular notation to express \infrulestyle{Frame} involves a liberal use of
+ellipses, \emph{e.g.}:
+
+\vspace{5pt}
+
+\begin{minipage}{.25\textwidth}
+Old notation:
+\begin{lstlisting}
+// $\{ P_1 * F_1 * F_2 * F_3 \}$
+   $c_1$;
+// $\{ P_2 * \ldots \}$
+   $c_2$;
+// $\{ P_3 * \ldots \}$
+   $c_3$;
+// $\{ P_4 * F_1 * F_2 * F_3 \}$
+\end{lstlisting}
+\end{minipage} \quad \vline \; ~~~
+\begin{minipage}{.3\textwidth}
+New notation:
+\begin{lstlisting}[numbers=none]
+// $\{ P_1 * F_1 * F_2 * F_3 \} \searrow \{ P_1 \}$
+      $c_1$;
+//    $\{ P_2 \}$
+      $c_2$;
+//    $\{ P_3 \}$
+      $c_3$;
+// $\{ P_4 * F_1 * F_2 * F_3 \} \swarrow \{ P_4 \}$
+\end{lstlisting}
+\end{minipage}
+\vspace{-0.75ex}
+}
+
+\subsection{Additional verified examples}
+\label{sec:application}
+
+
+
+Mark for graphs (cyclic), briefly discussed in~\S\ref{sec:existentials}.
+
+In addition to \li{mark} for graphs, we have also verified the same program for DAGs.
+More interestingly, we have verified two algorithms that modify the link structure:
+\li{spanning} for graphs, which prunes a graph into its spanning tree, and \li{copy}
+for graphs, which makes a structure-preserving copy.  For space reasons we put
+\li{spanning} and \li{copy} in Appendix~A\hide{\ref{apx:spanning}}.
 
 
 Here we explain two important improvements the \infrulestyle{Localize} rule
@@ -77,7 +124,7 @@ we need a fixed inductive \textbf{syntax} for formulas.  In contrast, in this pa
 P \text{ ignores } S & \stackrel{\Delta}{=} ~~ \forall \sigma, \sigma'.~ \sigma \stackrel{S}{\cong} \sigma' => \big( (\sigma |= P) <=> (\sigma' |= P) \big)
 \end{array}
 \]
-That is, we consider two program states $\sigma$ and $\sigma'$ equivalent up to program variable set $S$ when they agree everywhere except on the values of $S$ (typically, a state $\sigma$ is a pair of a heap $h$ and program variables $\rho$).  A predicate $P$ ignores $S$ when its truth is independent of all program variables in $S$.  %{\color{magenta} Notice both the syntactic and semantic styles use the $\MV(c)$ function defined via straightforward recursive case analysis on program syntax; programming languages typically do have a fixed syntactic structure.}
+That is, we consider two program states $\sigma$ and $\sigma'$ equivalent up to program variable set~$S$ when they agree everywhere except on the values of $S$ (typically, a state $\sigma$ is a pair of a heap $h$ and program variables $\rho$).  A predicate $P$ ignores~$S$ when its truth is independent of all program variables in $S$.  %{\color{magenta} Notice both the syntactic and semantic styles use the $\MV(c)$ function defined via straightforward recursive case analysis on program syntax; programming languages typically do have a fixed syntactic structure.}
 
 
 Now consider using ramification to verify this program:
