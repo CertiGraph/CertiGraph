@@ -28,13 +28,11 @@ $//$$\label{code:ufaftram2}\left\{\!\!\!\begin{array}{l@{}} {\color{red}\exists 
 \begin{flushleft}
 \begin{minipage}[c]{0.4\textwidth}
 \begin{equation*}
-\label{eqn:ufgraphdefn}
-\p{graph}(x, \gamma) ~~ \defeq ~~ \underset{\m{v} \in \m{V}(\gamma)}{\bigstar} v\mapsto\gamma(\m{v})
-\end{equation*}
-\begin{equation*}
 \begin{split}
-\m{uf\_root}&(\gamma,\m{x},\m{rt}) \; \defeq \; \m{x} \mathrel{{\stackrel{\gamma~}{\leadsto^{\star}}}} \m{rt} \; /| \\ 
-& \forall \m{rt'}.~\m{rt} \mathrel{{\stackrel{\gamma~}{\leadsto^{\star}}}} \m{rt'} => \m{rt} = \m{rt'}
+\label{eqn:ufgraphdefn}
+\p{graph}(x, \gamma \; \defeq& \; \underset{\m{v} \in \m{V}(\gamma)}{\bigstar} v\mapsto\gamma(\m{v}) \\
+\m{uf\_root}(\gamma,\m{x},\m{rt}) \; \defeq& \; \m{x} \mathrel{{\stackrel{\gamma~}{\leadsto^{\star}}}} \m{rt} \; /| \null \\ 
+&\forall \m{rt'}.~\m{rt} \mathrel{{\stackrel{\gamma~}{\leadsto^{\star}}}} \m{rt'} => \m{rt} = \m{rt'}
 \end{split}
 \end{equation*}
 \end{minipage}
@@ -42,9 +40,9 @@ $//$$\label{code:ufaftram2}\left\{\!\!\!\begin{array}{l@{}} {\color{red}\exists 
 \begin{minipage}[c]{0.5\textwidth}
 \begin{equation*}
 \begin{split}
-\quad \m{findS}&(\gamma,\m{x},\gamma') \defeq \forall \m{v}.~ \m{v}\in\m{V}(\gamma) <=> \m{v}\in\m{V}(\gamma') \; /| \\ 
-& \forall \m{v}.~ \m{v}\in\m{V}(\gamma) => \gamma(\m{v}).\m{rank} = \gamma'(\m{v}).\m{rank} \; /|  \\
-& \forall \m{v}, \m{r}, \m{r'}.~ \m{uf\_root}(\gamma, \m{v}, \m{r}) => \m{uf\_root}(\gamma', \m{v}, \m{r'}) => \m{r} = \m{r'} \; /|  \\ 
+\quad \m{findS}(\gamma,\m{x},\gamma') \; \defeq& \; \forall \m{v}, \m{r}, \m{r'}.~ \m{v}\in\m{V}(\gamma) <=> \m{v}\in\m{V}(\gamma') \; /| \\ 
+&\m{v}\in\m{V}(\gamma) => \gamma(\m{v}).\m{rank} = \gamma'(\m{v}).\m{rank} \; /|  \\
+&\m{uf\_root}(\gamma, \m{v}, \m{r}) => \m{uf\_root}(\gamma', \m{v}, \m{r'}) => \m{r} = \m{r'} \; /|  \\ 
 & \gamma \smallsetminus (v \in \gamma \mid \m{x} \mathrel{{\stackrel{\gamma~}{\leadsto^{\star}}}} \m{v}) \cong \gamma' \smallsetminus (v \in \gamma \mid \m{x} \mathrel{{\stackrel{\gamma~}{\leadsto^{\star}}}} \m{v})
 \end{split}
 \end{equation*}

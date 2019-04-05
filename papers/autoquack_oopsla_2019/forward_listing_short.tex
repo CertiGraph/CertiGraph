@@ -9,37 +9,44 @@
 \begin{figure*}[!ht]
 \vspace{-1ex}
   \begin{lstlisting}[multicols=2]
-$//$$\braces{\forall \ga, \m{\finf}, \m{\tinf}, \m{\out}, \m{from}, \m{to}, \m{v}, \m{n}.~ \null \\ \p{gc{\_}graph}(\ga) * \p{\finf}(\m{\finf}, \m{fi}) * \p{\tinf}(\m{\tinf}, \m{ti}) /| \null \\ \m{compat}(\ga, \m{\finf}, \m{\tinf}, \m{\out}, \m{from}, \m{to}) /| \null \\ \tx{s} = \m{start}(\ga, \m{from}) /| \tx{l} = \tx{s} + \m{size}(\ga, \m{from}) /| \null \\ \tx{n} = \m{naddr}(\m{\tinf}, \m{to}) /| \tx{p} = \m{vaddr}(\ga, \m{v}) + \m{n}} \alpha$
+$//$$\braces{\forall \ga, \m{\finf}, \m{\tinf}, \m{from}, \m{to}, \m{v}, \m{n}.~\null \\ \p{gc{\_}graph}(\ga) * \p{\finf}(\m{\finf}) * \p{\tinf}(\m{\tinf}) /| \null \\ \m{compat}(\ga, \m{\finf}, \m{\tinf}, \m{from}, \m{to}) /| \null \\ \tx{s} = \m{start}(\ga, \m{from}) /| \tx{l} = \tx{s} + \m{gensize}(\ga, \m{from}) /| \null \\ \tx{n} = \m{naddr}(\m{\tinf}, \m{to}) /| \tx{p} = \m{vaddr}(\ga, \m{v}) + \m{n}} \alpha $
 void forward (value *s, *l, **n, *p, 
               int depth) {
  value * v; value va = *p; 
- if(Is_block(va)) $// \textit{is ptr}$
+ if(Is_block(va)) {$// \textit{is ptr}$
   v = (value*)iop2p(va); 
-  if(Is_from(s, l, v)) {$// \textit{in from}$
-$//$$\braces{\alpha /| \tx{v} = \m{v'} /| \exists \m{e}, {v'}.~ e \in \Eg /| (\ga, \m{v})[\m{n}] = \m{e} /| \null \\ \m{dst}(\gamma, \m{e}) = \m{v'} /| \m{v} |-> \m{v'}} \beta $
-$//$$\searrow$$\braces{\exists \m{flds}, \m{hdr}.~\m{flds} = (\ga, \m{v'}) /| \null \\ \m{hdr} = \m{flds}[-1] /| \m{v'} |-> \m{flds}} \gamma $
+  if(Is_from(s, l, v)) {$ // \textit{in from}$
+$//$$\braces{\alpha /| \exists \m{e}, \m{v'}.~\m{lab}(\ga, \m{v})[\m{n}] = \m{e} /| \null \\ \m{dst}(\ga, \m{e}) = \m{v'} /| \tx{v} = \m{vaddr}(\ga, \m{v'})} \beta $
+$//$$\searrow$$\braces{\exists \m{flds'}, \m{hdr'}.~\m{flds'} = \m{lab}(\ga, \m{v'}) /| \null \\ \m{v'} |-> \m{flds'} /| \m{hdr'} = \m{flds'}[-1]} \gamma $
    header_t hd = Hd_val(v);
-$//$$\braces{\beta /| \tx{hd} = \m{val}(\m{hdr})}$ $\swarrow$ $\braces{\gamma /| \tx{hd} = \m{val}(\m{hdr})}$
-   if(hd == 0) { $// \textit{already forwarded}$
-$//$$\searrow \left\{\!\!\!\begin{array}{l@{}} \exists \m{hd'},\m{flds'}.~ \m{hd'} = \m{mkhd}(\ga, \m{v'}) /| \m{flds'} = \m{mkfv}(\ga, \m{v'}) /| \null \\ \m{v'} |-> \m{hd'},\m{flds'} /| \m{flds'}[0] = \m{vaddr}(\m{copvert}(\ga, \m{v'})) \end{array}\right\}$
+$//$$\swarrow$$\braces{\gamma /| \tx{hd} = \m{val}(\m{hdr'})}$
+$//$$\braces{\beta /| \tx{hd} = \m{val}(\m{hdr'})}$ 
+   if(hd == 0) {$// \textit{already forwarded}$
+$//$$\braces{\beta /| \tx{hd} = 0} \delta $ 
+$//$$\searrow$$\braces{\exists \m{flds}, \m{flds'}.~\m{v} |-> \m{flds} /| \m{v'} |-> \m{flds'} /| \null \\ \m{flds} = \m{lab}(\ga, \m{v}) /| \m{flds'} = \m{lab}(\ga, \m{v'}) /| \null \\ \m{flds'}[0] = \m{vaddr}(\gamma, \m{copy}(\ga, \m{v'})) /| \tx{p} = \tx{\&}\m{flds}[n]} \epsilon $
     *p = Field(v,0);
-   } else {
-$//$remind them of old facts...
-$//$$\{ \tx{hd} = \m{Z2val}(\m{hd'})\}$
+$//$$\swarrow$$\braces{\epsilon /| \m{flds}[n] := \m{flds'}[0]}$
+$//$$\braces{\exists \ga'.~\p{gc{\_}graph}(\ga') /| \ga' = \m{upd\_edge}(\ga, \m{e}, \m{copy}(\ga, \m{v'})) /| \null \\ \m{postcondition}(\ga', \m{\tinf}, \m{\finf})}$
+   } else {$// \textit{not yet forwarded}$
+$//$$\braces{\beta /| \tx{hd} \neq 0} \zeta $
     int i; int sz; value *new;
     sz = size(hd); new = *n+1; *n = new+sz;
-$//$$\{\tx{sz} = \m{getvertsz}(\m{hd'}) = \m{lenflds}(\ga, \m{v'}) /| \tx{new} = \m{sp\_start}(\m{to}) + \m{used}(\m{to}) + 1 /| \tx{??}\}$        
-    Hd_val(new) = hd; $//$ ??
+$//$$\braces{\zeta /| \tx{sz} = \m{blocksize}(\tx{hd}) /| \null \\ \tx{new} = \m{start}(\gamma,\m{to}) + \m{used}(\gamma, \m{to}) + 1 /| \tx{n} = \tx{new} + \tx{sz}} \eta $      
+    Hd_val(new) = hd; 
     for(i = 0; i < sz; i++) 
      Field(new, i) = Field(v, i);
+$//$$\braces{\exists \ga', \m{v''}, \m{\tinf'}.~\p{gc\_graph}(\ga') /| \null \\ 
+\m{v''} = \m{newly\_copied\_vert(\ga, \m{to})} /| \null \\ \ga' = \m{copy\_block}(\gamma, \m{to}, \m{v'}, \m{v''}) /| \null \\ 
+\m{compat}(\ga', \m{\finf}, \m{\tinf'}, \m{from}, \m{to})} \theta $
     Hd_val(v) = 0;
     Field(v, 0) = p2iop((void *)new);
-$//$$\searrow$
+$//$$\braces{\theta /| \m{val}(\m{hdr'}) = 0 /| \m{flds'}[0] = \m{copy}(\ga, \m{v'})} \m{\color{red}check} $
+$//$$\searrow$$\braces{\exists \m{flds}.~\m{v} |-> \m{flds} /| \m{flds} = \m{lab}(\ga', \m{v})}$
     *p = p2iop((void *)new);
-$//$$\swarrow$
-} } } }
-$//$$\{\exists \m{e}, \m{v'}, \m{b}, \m{i}.~ \tx{va} = \m{flds}[\m{e}] = \m{vaddr}(\ga, \m{dst}(\ga, \m{e})) = \m{vaddr}(\ga, \m{v'}) = \m{Vptr}(\m{b},\m{i})\}$
-
+$//$$\swarrow$$\braces{\m{flds}[0] := \m{vaddr}(\ga, \m{v''})}$
+$//$$\braces{\exists \ga''.~\p{gc\_graph}(\ga'') /| \ga'' = \m{upd\_edge}(\ga', \m{e}, \m{v''})}$
+}}}}
+$//$$\braces{\m{postcondition}(\gamma'', \m{tinf'}, \m{finf})}$
 \end{lstlisting}
 \vspace{-0.4em}
 \caption{Clight code and proof sketch for forward}
