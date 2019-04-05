@@ -27,7 +27,7 @@ CompCert~\cite{leroy:compcert}, and also
 Software Toolchain (VST)~\cite{appel:programlogics} without requiring major reengineering.
 Finally, our techniques \emph{scale} well beyond short toy programs: we certify the
 correctness of a generational garbage collector for the CertiCoq
-project~{\color{red}\cite{certicoqwebsite}} ($\approx400$ rather devilish lines of C).
+project~\cite{certicoqpaper} ($\approx400$ rather devilish lines of C).
 
 We proceed in three steps. First, we develop a ``mathematical graph library'' that is general enough to reason about a wide variety of algorithms and expressive enough to describe the behavior of these algorithms in real machines.  We modularize this library carefully so that common ideas---\emph{e.g.} subgraphs, reachability, and isomorphism---can be efficiently reused 
 in different algorithms.  Second, use separation logic to express how these abstract graphs 

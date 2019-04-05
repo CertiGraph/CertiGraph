@@ -1,42 +1,39 @@
 \begin{figure}
 	\begin{gather*}
      	\begin{aligned}
-    	\mathrm{Path} \; \defeq \; &(\m{v}_0, [e_0, e_1, \dots, e_k]) \\ 
-    	\mathtt{s\_evalid}(\gamma, e) \; \defeq \; &\mathtt{evalid}(\gamma, e) \wedge \null
-    	\mathtt{vvalid}(\gamma, \mathtt{src}(\gamma,e))\wedge
-    	\mathtt{vvalid}(\gamma, \mathtt{dst}(\gamma,e)) \\
-		\mathtt{valid\_path}\big(\gamma, (\m{v},[])\big) \;\defeq \; &\mathtt{vvalid}(\gamma, \m{v}) \\
+    	\mathrm{path} \; \defeq \; &(\m{v}_0, [e_0, e_1, \dots, e_k]) \\ 
+    	\mathtt{s\_evalid}(\gamma, e) \; \defeq \; & e \in \mathtt{E}(\gamma) /| 
+    	\mathtt{src}(\gamma,e) \in \mathtt{V}(\gamma) /| 
+    	\mathtt{dst}(\gamma,e) \in \mathtt{V}(\gamma) \\
+		\mathtt{valid\_path}\big(\gamma, (\m{v},[])\big) \;\defeq \; & v \in \mathtt{V}(\gamma)\\
 		\mathtt{valid\_path}\big(\gamma, (\m{v},[e_1,e_2,\dots,e_n])\big) \; \defeq \; &\m{v}=\mathtt{src}(\gamma,e_1) \wedge \mathtt{s\_evalid}(\gamma,e_1) \wedge \null \\
     &\mathtt{dst}(\gamma,e_1)=\mathtt{src}(\gamma,e_2) \wedge \null\\
-    &\mathtt{s\_evalid}(\gamma, e_2) \wedge \dots NOTE \\ 
+    &\mathtt{s\_evalid}(\gamma, e_2) \wedge \dots /| \mathtt{dst}(\gamma,e_{n-1})=\mathtt{src}(\gamma,e_n) \\ 
         \mathtt{end}\big(\gamma, (\m{v}, [])\big)\;\defeq\;& \m{v}\\
       	\mathtt{end}\big(\gamma, (\m{v},[e_1,e_2,\dots,e_n])\big)\;\defeq\;&
       	\mathtt{dst}(\gamma, e_n)\\
       	\gamma \vDash s \overset{\m{p}}{\leadsto} t \;\defeq\; &
         \mathtt{valid\_path}(\gamma, p)\wedge
-        \mathtt{fst}(p)=s \wedge \mathtt{end}(\gamma,p)=t \quad NOTE \\
+        \mathtt{fst}(p)=s \wedge \mathtt{end}(\gamma,p)=t \\
         \gamma \vDash s \leadsto t \;\defeq\; &
         \exists \m{p}.~ \; \gamma \vDash s \overset{p}{\leadsto} t \quad CUT? \\  
-        \gamma_1 \approx \gamma_2 \; \defeq \; & 
-        	\forall e.~\mathtt{evalid}(\gamma_1, e) <=> \mathtt{evalid}(\gamma_2, e) /| \null \\ 
-        	&\forall \m{v}.~\mathtt{vvalid}(\gamma_1, \m{v}) <=> \mathtt{vvalid}(\gamma_2, \m{v}) /| \null \\
-        	&\forall e.~\mathtt{evalid}(\gamma_1, e) ==> \mathtt{evalid}(\gamma_2, e) ==> \null \quad NOTE \\ 
-        	& \quad \mathtt{src}(\gamma_1, e) = \mathtt{src}(\gamma_2, e) /| \mathtt{dst}(\gamma_1, e) = \mathtt{dst}(\gamma_2, e) \\
+        \gamma_1 \cong \gamma_2 \; \defeq \; & 
+        	\forall e.~e \in \mathtt{E}(\gamma_1) <=> e \in \mathtt{E}(\gamma_2) /| \forall \m{v}.~\m{v} \in \mathtt{V}(\gamma_1) <=> \m{v} \in \mathtt{V}(\gamma_2) /| \null \\
+        	&\forall e.~e \in \mathtt{E}(\gamma_1) ==> e \in \mathtt{E}(\gamma_2) ==> \mathtt{src}(\gamma_1, e) = \mathtt{src}(\gamma_2, e) /| \null \\ 
+        	&\forall e.~e \in \mathtt{E}(\gamma_1) ==> e \in \mathtt{E}(\gamma_2) ==> \mathtt{dst}(\gamma_1, e) = \mathtt{dst}(\gamma_2, e) \\
        	\gamma \smallsetminus S \; \defeq \; & \exists \gamma'.~\mathrm{PreGraph}(\gamma') /| \null \\
        	 	& \gamma'_{\mathcal{V}} = \gamma_{\mathcal{V}}/|
        	 	\gamma'_{\mathcal{E}} = \gamma_{\mathcal{E}}/|
        	 	\gamma'_{\mathtt{src}} = \gamma_{\mathtt{src}}/|
        	 	\gamma'_{\mathtt{dst}} = \gamma_{\mathtt{dst}}/| \null \\
-       	 	&\gamma'_{\mathtt{V}} = \{v \in \gamma | v \not\in S\} /| \null \\ 
-       	 	&\gamma'_{\mathtt{E}} = QUESTION \\
+       	 	&\gamma'_{\mathtt{V}} = \{\m{v} \in \gamma_{\mathtt{V}} | \m{v} \not\in S\} /| \null \\ 
+       	 	&\gamma'_{\mathtt{E}} = \\
 %        	\begin{minipage}[c]{.5\linewidth} \hline \end{minipage}
         \mathrm{MathGraph}(\gamma)\,\defeq\,\Big\{
-          \mathtt{null}:\; & V\\
-          \mathtt{weak\_valid}(\m{v}) \; \defeq \; & \m{v} = \mathtt{null} \vee
-          \mathtt{vvalid}(\gamma, \m{v}) \quad MERGE? \\
+          \mathtt{null}:\; & V\\ 
           \mathtt{valid\_graph}:\;& \forall e\,.\,\mathtt{evalid}(\gamma, e) \Rightarrow
-          \mathtt{vvalid}\big(\gamma, \mathtt{src}(\gamma, e)\big)\wedge
-          \mathtt{weak\_valid}\big(\mathtt{dst}(\gamma, e)\big)\\
+          \mathtt{vvalid}\big(\gamma, \mathtt{src}(\gamma, e)\big)\wedge \null \\
+          & \qquad \big(\m{e} = \mathtt{null} \vee \mathtt{vvalid}(\gamma, \m{e})\big)\\
           \mathtt{valid\_not\_null}:\;& \forall \m{v}\,.\,\mathtt{vvalid}(\gamma, \m{v})
           \Rightarrow \m{v} \neq \mathtt{null} \Big\} \\
         \mathrm{LstGraph}(\gamma)\,\defeq\, \Big\{
