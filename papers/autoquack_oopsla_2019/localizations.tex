@@ -1,9 +1,17 @@
-Here we explain two important improvements the \infrulestyle{Localize} rule 
-makes on the \infrulestyle{Ramify} rule. 
-It can link existentially-quantified predicates from the local postcondition 
-$L_2$ to the global postcondition $G_2$, and also handle program variables 
-that are modified during a localization block. We need to understand 
-{\color{magenta}and solve} the former in order to provide a robust, 
+\footnote {\color{orange}Indeed,
+\textsc{Frame} can be derived
+from \textsc{Localize} by setting $R \defeq F$, which makes both entailments
+tautologies and trivially satisfies the side condition using the property of
+adjointness:~$(P * Q |- R) \Leftrightarrow (P |- Q --* R)$.}
+
+
+
+Here we explain two important improvements the \infrulestyle{Localize} rule
+makes on the \infrulestyle{Ramify} rule.
+It can link existentially-quantified predicates from the local postcondition
+$L_2$ to the global postcondition $G_2$, and also handle program variables
+that are modified during a localization block. We need to understand
+{\color{magenta}and solve} the former in order to provide a robust,
 lightweight, and fully-automatable solution to the latter.
 
 \subsection{Linked existentials}
@@ -21,15 +29,15 @@ The specification is again stated with mathematical $\gamma$, although in this c
 \input{seplogsem_figure.tex}
 
 This fold/unfold relationship deserves attention.
-First, \eqref{eqn:bigraphintrofoldunfold} uses the ``overlapping conjunction'' 
-$\ocon$ of separation logic; informally $P ** Q$ means that $P$ and $Q$ may overlap 
-in the heap (\emph{e.g.}, nodes in the left subgraph can also be in the right subgraph 
-or even be the root $x$).  The presence of the unspecified sharing indicated by the 
-$\ocon$ connective is part of why graph-manipulating algorithms are so hard to verify 
-(\emph{e.g.}, it is hard to apply the \infrulestyle{Frame} rule).  {\color{magenta}The 
-standard semantics of the separation logic connectives used in this paper are in 
+First, \eqref{eqn:bigraphintrofoldunfold} uses the ``overlapping conjunction''
+$\ocon$ of separation logic; informally $P ** Q$ means that $P$ and $Q$ may overlap
+in the heap (\emph{e.g.}, nodes in the left subgraph can also be in the right subgraph
+or even be the root $x$).  The presence of the unspecified sharing indicated by the
+$\ocon$ connective is part of why graph-manipulating algorithms are so hard to verify
+(\emph{e.g.}, it is hard to apply the \infrulestyle{Frame} rule).  {\color{magenta}The
+standard semantics of the separation logic connectives used in this paper are in
 Figure~\ref{fig:seplogsem}.}
-Second, \eqref{eqn:bigraphintrofoldunfold} illustrates how industrial-strength settings complicate verification.  Lines~\mbox{\ref{code:nodedefstart}--\ref{code:nodedefend}} define the data type \li{Node} used by \li{mark}.  The \li{_Alignas($n$)} directives tell CompCert to align fields on $n$-byte boundaries. 
+Second, \eqref{eqn:bigraphintrofoldunfold} illustrates how industrial-strength settings complicate verification.  Lines~\mbox{\ref{code:nodedefstart}--\ref{code:nodedefend}} define the data type \li{Node} used by \li{mark}.  The \li{_Alignas($n$)} directives tell CompCert to align fields on $n$-byte boundaries.
 As explained in~\S\ref{sec:goodgraph}, this alignment is necessary in C-like memory models to prove fold-unfold \eqref{eqn:bigraphintrofoldunfold}, which is why \eqref{eqn:bigraphintrofoldunfold} includes an alignment restriction $x~\mathsf{mod}~16 = 0$ and an existentially-quantified ``blank'' second field for the root $x \mapsto m,-,l,r$.
 {\color{magenta}(In our Floyd proofs the alignment restriction and blank second field are nicely hidden ``behind the scenes''.)}
 
@@ -49,7 +57,7 @@ In lines~\ref{code:beforerootmark}--\ref{code:afterrootmark}, imagine unfolding 
 HERE
 
 
-\marginpar{\tiny \color{blue} repetition} 
+\marginpar{\tiny \color{blue} repetition}
 {\color{magenta}Here we upgrade the \infrulestyle{Ramify} rule in two important respects.  The first is the treatment of modified program variables.  Although prosaic, a robust treatment of modified variables is essential to verifying programs of any length.  The second is better handling of existential variables in the postconditions of localization blocks, which occur frequently when using relations in specifications.}
 For example, in lines~\ref{code:beforemarkl}--\ref{code:aftermarkl} of Figure~\ref{fig:markgraph} we must ``extract'' the existentially-quantified~$\gamma''$ from inside the localization block to outside it.  Moreover, rather surprisingly, the robust treatment of modified program variables requires the extraction of existential quantifiers from localization blocks.  Accordingly, we develop the \infrulestyle{Ramify-PQ} rule that can robustly handle both modified \underline{p}rogram variables as well as existential \underline{q}uantifiers.
 
@@ -223,7 +231,7 @@ We proceed as follows.  First, rewrite the postconditions in lines~\ref{toycode:
 // $\label{code:G2p}\{\exists x,y. ~ x = \tx{x} /| y = \tx{y} /| [\tx{x} |-> x][\tx{y} |-> y] G_2\}$
 // $\{ G_2 \}$
 \end{lstlisting}
-Call these equivalent postconditions $L_2'$ and $G_2'$ (lines~\ref{code:L2p} and 
+Call these equivalent postconditions $L_2'$ and $G_2'$ (lines~\ref{code:L2p} and
 \ref{code:G2p}).
 
 
@@ -238,9 +246,9 @@ Call these equivalent postconditions $L_2'$ and $G_2'$ (lines~\ref{code:L2p} and
 %--* \! (y \! = \! 1 \! /| \! [\li{x} |-> x][\li{y} |-> y]D_1) \! |/ \! (y \! = \! 0 \! /| \! [\li{x} \! |-> \! x][\li{y} \! |-> \! y]D_2)
 %\end{array}
 %\]
-Next apply \infrulestyle{Ramify-P} and \infrulestyle{Solve Ramify-P} with 
+Next apply \infrulestyle{Ramify-P} and \infrulestyle{Solve Ramify-P} with
 $F \defeq \forall x, y.~ [\tx{x} |-> x][\tx{y} |-> y](L_2 --* G_2)$.
-In other words, replace the ``?'' from the unclear substitution in 
+In other words, replace the ``?'' from the unclear substitution in
 \S\ref{eqn:unclearsubst} with universally-quantified metavariables $x$ and $y$ scoped over the entire $--*$.
 
 Now consider the first premise of \infrulestyle{Solve Ramify-P}:
@@ -274,7 +282,7 @@ Essentially \infrulestyle{Ramify-PQ} allows us to shift existential variables fr
 %{\color{magenta} F |- L_2 --* G_2}
 %F * L_2 |- G_2
 {G_1 \vdash L_1 * \pguards{c}  \big(\forall x.~ (L_2 --* G_2)\big)}
-F \textrm{ ignores} \MV(c) 
+F \textrm{ ignores} \MV(c)
 \]
 %Since we use a relational style to verify graph algorithms (\emph{e.g.} in Figure~\ref{fig:markgraph}), existentials appear frequently and a smooth treatment is very helpful in practice.  To make this point a little more clearly
 We were more explicit about existentials in \emph{e.g.} lines~\ref{code:beforemarkl}--\ref{code:aftermarkl} than is typical so that we could prove that we handle them correctly.  Fortified by the \infrulestyle{Ramify-PQ} rule, we could reasonably (albeit less formally) have \emph{e.g.} written line~\ref{code:postmark1} as below, allowing us to omit line~\ref{code:aftermarkl} entirely.
