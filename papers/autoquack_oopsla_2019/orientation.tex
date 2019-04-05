@@ -20,7 +20,7 @@ We use the following conventions in our invariants.  Pure predicates are written
 \textit{italic}.  We write~$\gamma$ to
 mean a ``mathematical'' (or~``pure'') graph: roughly, a set of
 labeled vertices $V(\gamma)$ and edges $E(\gamma)$.
-When $\m{v} \in V(\gamma)$, we write $\gamma(v) = (r,p)$ to state that vertex $\m{v}$ has
+When $\m{v} \in V(\gamma)$, we write $\gamma(\m{v}) = (r,p)$ to state that vertex $\m{v}$ has
 label $r$ and parent vertex $p$ ($r$ stores the ``rank'' of a node; it is ignored
 in \texttt{find}).  We detail mathematical graphs in~\S\ref{sec:mathgraph}.
 
@@ -50,7 +50,8 @@ is the root (ultimate parent) of \texttt{x} with the pure relation $\m{uf\_root}
 The relation $\m{findS}$, which conservatively approximates the action of path 
 compression, relates the final graph~$\gamma''$ to the original graph~$\gamma$.
 The formal definitions for the concepts used in $\m{uf\_root}$ and $\m{findS}$
-will be given in~\S\ref{sec:mathgraph}, but briefly: $\m{x} \mathrel{\stackrel{\gamma~}{\leadsto^{\star}}} \m{y}$ expresses that~$y$ is reachable
+will be given in~\S\ref{sec:mathgraph}, but briefly: 
+$\m{x} \accentset{\gamma}{\leadsto}^{\star} \m{y}$ expresses that~$y$ is reachable
 from~$x$ in~$\gamma$, $\gamma \smallsetminus S$ expresses the result of removing the
 vertices in set~$S$ from graph~$\gamma$, and~$\gamma_1 \cong \gamma_2$ expresses that the two
 graphs are structurally equivalent.

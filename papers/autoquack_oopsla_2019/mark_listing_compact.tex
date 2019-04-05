@@ -44,9 +44,9 @@ $//$$\label{code:outmark}\left\{\!\!\!\begin{array}{l@{}}\exists \gamma'''. \p{g
 \end{equation*}
 \begin{equation*}
 \begin{array}{l@{\hspace{2pt}}c@{\hspace{2pt}}l}
-\quad \m{mark1}(\gamma,x,\gamma') & \defeq & \forall v. \gamma'(v) = \! \begin{cases}
-(1,l,r) \! & \begin{array}{@{}l@{}}\text{when } x = v /| \null \\ \gamma(v) = (0,l,r) \end{array} \\
-\gamma(v) & \text{otherwise}
+\quad \m{mark1}(\gamma,x,\gamma') & \defeq & \forall \m{v}. \gamma'(v) = \! \begin{cases}
+(1,l,r) \! & \begin{array}{@{}l@{}}\text{when } x = \m{v} /| \null \\ \gamma(\m{v}) = (0,l,r) \end{array} \\
+\gamma(\m{v}) & \text{otherwise}
 \end{cases} 
 \end{array}
 \end{equation*}
@@ -55,16 +55,17 @@ $//$$\label{code:outmark}\left\{\!\!\!\begin{array}{l@{}}\exists \gamma'''. \p{g
 \begin{minipage}[c]{0.4\textwidth}
 \begin{equation*}
 \begin{split}
-v_1 \mathrel{{\stackrel{\gamma~}{\leadsto_{0}}}} v_2 \defeq \exists l,r.~ \gamma(v_1) = (0,l,r) /| v_2 \in \{ l,r\} \\
-v_1 \mathrel{{\stackrel{\gamma~}{\leadsto^{\star}_{0}}}} v_2 \defeq \text{reflexive, transitive closure of ``}\mathrel{{\stackrel{\gamma}{\leadsto}}_{0}}\text{''} 
+\m{v_1} \accentset{\gamma}{\leadsto}_0 \m{v_2} \defeq \exists l,r.~ \gamma(\m{v}_1) = (0,l,r) /| \m{v}_2 \in \{ l,r\} \\
+\m{v_1} \accentset{\gamma}{\leadsto}^{\star}_0 \m{v_2} \defeq \text{reflexive, transitive closure of ``}\mathrel{{\stackrel{\gamma}{\leadsto}}_{0}}\text{''} 
 \\
 \m{mark}(\gamma,x,\gamma') \defeq
-\forall v. \gamma'(v) = \! 
+\forall \m{v}. \gamma'(\m{v}) = \! 
 \begin{cases}
 (1,l,r) \! 
-\begin{array}{@{}l@{}}\text{when } x \mathrel{\stackrel{\gamma~}{\leadsto^{\star}_{0}}} v /| \null \\ \gamma(v) = (-,l,r) 
+\begin{array}{@{}l@{}}\text{when } 
+\m{x} \accentset{\gamma}{\leadsto}^{\star}_0 \m{v} /| \null \\ \gamma(\m{v}) = (-,l,r) 
 \end{array}\\
-\gamma(v) \text{otherwise}
+\gamma(\m{v}) \text{otherwise}
 \end{cases}
 \end{split}
 \end{equation*}

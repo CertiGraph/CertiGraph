@@ -163,9 +163,11 @@ defined on PreGraphs. In \S\ref{fig:find} we saw \emph{reachable}, written
 $\m{a} \mathrel{{\stackrel{\gamma~}{\leadsto^{1}}}} \m{b}$. It means that a and b are in $V(\gamma)$ and that there exists an edge (in $E(\gamma)$)
 that goes from a to b.}
 The reflexive, transitive closure on \emph{reachable} is written
-$\m{a} \mathrel{{\stackrel{\gamma~}{\leadsto^{\star}}}} \m{b}$, and
-$\neg (\m{a} \mathrel{{\stackrel{\gamma~}{\leadsto^{\star}}}} \m{b})$
-is written $\m{a} \mathrel{{\stackrel{\gamma~}{\not\leadsto^{\star}}}} \m{b}$.
+$\m{a} \accentset{\gamma}{\leadsto}^{\star} \m{b}$, and 
+$\neg (\m{a} \accentset{\gamma}{\leadsto}^{\star} \m{b})$
+is written 
+$\m{a} \accentset{\gamma}{\not\leadsto}^{\star} \m{b}$
+$\m{a} \mathrel{{\stackrel{\gamma~}{\not\leadsto^{\star}}}} \m{b}$.
 
 PreGraph's ability to reason about missing vertices and edges is convenient when
 verifying real programs. Suppose some $\gamma$ satisfied some stronger notion of
