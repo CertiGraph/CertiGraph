@@ -1,8 +1,6 @@
 import re
 import sys
 
-prefix = "../"
-
 
 def get_file_names(list_file_name: str):
     f = open(list_file_name, 'r')
@@ -38,7 +36,8 @@ def count_lines(coq_file_name: str) -> int:
 
 
 def main(argv):
-    coq_files = get_file_names(argv[1])
+    prefix = argv[1]
+    coq_files = get_file_names(argv[2])
     total_lines = 0
     total_theorems = 0
     total_definitions = 0
@@ -46,7 +45,7 @@ def main(argv):
         total_lines += count_lines(prefix + name)
         total_definitions += count_patterns(prefix + name, def_pattern)
         total_theorems += count_patterns(prefix + name, thm_pattern)
-    print(argv[1], len(coq_files), total_lines, total_definitions,
+    print(argv[2], len(coq_files), total_lines, total_definitions,
           total_theorems, sep=' & ', end=' \\\\\n')
 
 
