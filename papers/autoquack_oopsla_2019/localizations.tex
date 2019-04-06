@@ -29,7 +29,7 @@ Our flagship example, the garbage collector for the CertiCoq project, will be co
 \hspace{-1em}
 \infrule{}{
   G_1 |- L_1 * R \\
-  \infrule{}{\{L_1\}~c~\{L_2\}}{\{L_1 * R\}~c~\{(\exists x.~ L_2) * R\}}{\infrulestyle{Frame}} \\
+  \infrule{}{\{L_1\}~c~\{\exists x.~ L_2\}}{\{L_1 * R\}~c~\{(\exists x.~ L_2) * R\}}{\infrulestyle{Frame}} \\
   \quad \infrule{}{\infrule{}{\vdots}{(\exists x.~ L_2) * (\forall x.~ (L_2 --* G_2)) |- \exists x.~ G_2}{\infrulestyle{Tauto}}}{(\exists x.~ L_2) * R |- \exists x.~ G_2}{\infrulestyle{Cut}}
   }
   {\{G_1\}~c~\{\exists x.~ G_2\}}{\textsc{Cons}}
