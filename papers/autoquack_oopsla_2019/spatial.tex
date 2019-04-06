@@ -33,9 +33,9 @@ Suppose we define a graph predicate $\graphkt$ this way, \emph{e.g.} along the l
 \vspace{-1ex}
 \[
 \begin{array}{@{}l@{}l@{}}
-\graphkt(x, \gamma) \stackrel{\Delta}{=} \; &(x = 0 /| \p{emp}) |/ \null \\
-& \exists m,l,r.~ \gamma(x)=(m,l,r) /| \null \\
-& ~~  x |-> m,l,r ** \graphkt(l, \gamma) ** \graphkt(r, \gamma)
+\graphkt(x, \gamma) \stackrel{\Delta}{=} \; &\Big(x = 0 /| \p{emp}\Big) |/ \\ 
+&\quad \Big(\exists m,l,r.~ \gamma(x)=(m,l,r) /|
+\big(x |-> m,l,r ** \graphkt(l, \gamma) ** \graphkt(r, \gamma)\big)\Big)
 \end{array}
 \vspace{-1ex}
 \]
@@ -44,9 +44,12 @@ Although we can apply Knaster-Tarski (because the functional needed to
 define $\graphkt$ is covariant), the result is hard to use.
 Consider the following memory $m$ for a toy machine:
 
-\begin{minipage}{.24\textwidth}
+
+\begin{wrapfigure}{r}{.39\textwidth}
+\vspace{-2em} % very fiddly. need to adjust per final layout
+\begin{minipage}{.20\textwidth}
 \qquad \[
-\begin{array}{l|l}
+\begin{array}{c|c}
 \textrm{address} & \textrm{value} \\
 \hline
 102 & 0 \\
@@ -67,9 +70,10 @@ Consider the following memory $m$ for a toy machine:
 \end{tikzpicture}
 \endpgfgraphicnamed
 \end{minipage}
-\vspace{0.75ex}
+\vspace{-0.5em} % very fiddly. need to adjust per final layout
+\end{wrapfigure}
 
-\noindent Clearly $m |= 100 |-> 42,100,0$.  But it seems also clear that this memory represents a one-cell cyclic graph as illustrated in the accompanying diagram, \emph{i.e.} we want $m |= \graphkt(100,\hat{\gamma})$, where $\hat{\gamma}(100) = (42,100,0)$.  This is equivalent to wanting to be able to prove $100 |-> 42,100,0 |- \graphkt(100,\hat{\gamma})$.  Unfortunately, as explained in Appendix~C\hide{\ref{apx:problemrecgraph}}, this is rather difficult to do so since applying the natural proof techniques actually strengthens the goal. In fact we do not know if this entailment is provable, but the difficulties encountered in proving what ``should be'' straightforward suggest that Knaster-Tarski should be treated with caution when defining spatial predicates for graphs.
+\noindent Clearly $m |= 100 |-> 42,100,0$.  But it seems also clear that this memory represents a one-cell cyclic graph as illustrated in the accompanying diagram, \emph{i.e.} we want $m |= \graphkt(100,\hat{\gamma})$, where $\hat{\gamma}(100) = (42,100,0)$.  This is equivalent to wanting to be able to prove $100~|->~42,100,0~|-~\graphkt(100,\hat{\gamma})$.  Unfortunately, as explained in Appendix~C\hide{\ref{apx:problemrecgraph}}, this is rather difficult to do since applying the natural proof techniques actually strengthens the goal. In fact we do not know if this entailment is provable, but the difficulties encountered in proving what ``should be'' straightforward suggest that Knaster-Tarski should be treated with caution when defining spatial predicates for graphs.
 
 The other direction, \mbox{$\graphkt(100,\hat{\gamma}) |- 100 |-> 42,100,0$},
 \textbf{is} true but is not easy to prove, relying on the constructions in \S\ref{sec:goodgraph} and the fact that $\mu_{\mathsf{T}}$ constructs the least fixpoint.  In contrast, $\graphkt(100,\hat{\gamma}) |- 100 |-> 42,100,0 * \top$ is easy. % to prove. % via fold/unfold.
@@ -110,7 +114,7 @@ The other direction, \mbox{$\graphkt(100,\hat{\gamma}) |- 100 |-> 42,100,0$},
 
 Rather than trying to define \p{graph} as a recursive fixpoint,
 we will instead give it a flat structure.  Graphs in separation
-logic have been defined in similar ways before~\cite{ilya-graphs};
+logic have been defined in similar ways before, \emph{e.g.}~\cite{ilya-graphs};
 our innovation is that we prove---with the amount of precision
 required to convince Coq---that we can still enjoy fold/unfold
 with our flat definition.  Our path starts with the iterated
@@ -122,16 +126,17 @@ lists and then extended to sets as follows:
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%% Edit1: Qinxiang's proposal starts
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\iftrue
+\vspace{-1em}
 \[
 \begin{array}{@{}l@{}}
 \underset{\{l_1, l_2,\dots,l_n\}}{\bigstar}P ~~ \defeq ~~ P(l_1) *
-  P(l_2) * \dots * P(l_n) \\
+  P(l_2) * \dots * P(l_n) \quad \vline \quad
 \underset{S}{\bigstar} P ~~ \defeq ~~ \exists L.~ (\p{NoDup}\ L) /| (\forall x.~ x\ \p{in}\ L <=> x \in S) /| \underset{L}{\bigstar}P
 \end{array}
 \]
+
 We are now ready to define a good \p{graph} predicate:
-\fi
+  \quad $\p{graph}(x, \gamma) \; \defeq \; \underset{v \in \mathit{reach}(\gamma, x)}{\bigstar} v\mapsto\gamma(v)$
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%% Edit1: Qinxiang's proposal ends
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -153,7 +158,8 @@ We are now ready to give a good \p{graph} predicate:
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%% Edit1: Original version ends
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\vspace{-1.5ex}
+
+\hide{\vspace{-1.5ex}
 \begin{equation}\label{eqn:iter_def}
   \p{graph}(x, \gamma) ~~ \defeq ~~ \underset{v \in \mathit{reach}(\gamma, x)}{\bigstar} v\mapsto\gamma(v)
 \vspace{-1.5ex}
@@ -161,7 +167,7 @@ We are now ready to give a good \p{graph} predicate:
 $\gamma$ is a GeneralGraph and ``$x |-> \gamma(x)$'' is a predicate that says how a single node fits in memory. In Figure~\ref{fig:markgraph} it was:
 \[
 \exists m,l,r.~\gamma(x) = (m,l,r) /| x |-> m,-,l,r /| x\ \p{mod}\ 16 = 0
-\]
+\]}
 {\color{magenta}$\gamma$ need not be a bigraph, but \emph{e.g.} can have many edges.}
 
 Our definition of \p{graph} is flat in the sense that there is no obvious way to follow the link structure recursively.  Happily, we can recover a general recursive fold/unfold (if $x |-> \gamma(x)$ and the GeneralGraph has the necessary properties in its soundness condition):
@@ -169,9 +175,8 @@ Our definition of \p{graph} is flat in the sense that there is no obvious way to
 \begin{equation}
 \label{eqn:unfold_graph}
 \hspace{-1em}\begin{array}{@{}lc@{\hspace{1pt}}c@{\hspace{1pt}}l@{}}
-\p{graph}(x,\gamma)  <=>  x |-> \gamma(x) ** \big(\!\!\!\!\!\!\!\!\!\!\!\!\!\underset{\color{magenta}n \in \p{neighbors}(\gamma,x)}{\raisebox{-0.3ex}{\resizebox{0.75em}{!}{$\scon$}} \hspace{-2.18ex} \bigcup}\!\!\!\!\!\!\!\!\!\!\!\! \p{graph}(\gamma,n) \big) \\
-[2pt]
-\text{~~~ where ~~ }\underset{l_1,\dots,l_n}{\raisebox{-0.3ex}{\resizebox{0.75em}{!}{$\scon$}}\hspace{-2.18ex} \bigcup} \! \! P  \defeq  P(l_1) ** \ldots ** P(l_n) \end{array}
+\p{graph}(x,\gamma)  <=>  x |-> \gamma(x) ** \big(\!\!\!\!\!\!\!\!\!\!\!\!\!\underset{n \in \p{neighbors}(\gamma,x)}{\raisebox{-0.3ex}{\resizebox{0.75em}{!}{$\scon$}} \hspace{-2.18ex} \bigcup}\!\!\!\!\!\!\!\!\!\!\!\! \p{graph}(\gamma,n) \big)
+\quad \text{~~~ where ~~ }\underset{l_1,\dots,l_n}{\raisebox{-0.3ex}{\resizebox{0.75em}{!}{$\scon$}}\hspace{-2.18ex} \bigcup} \! \! P  \defeq  P(l_1) ** \ldots ** P(l_n) \end{array}
 \vspace{-1ex}
 \end{equation}
 
@@ -186,7 +191,7 @@ That is, they overlap either completely or not at all. In a Java-like memory mod
 
 \subsection{Ramification Libraries}\label{sec:ramifylib}
 
-\begin{figure}[t]
+\begin{wrapfigure}{r}{.5\textwidth}
 \centering
 \beginpgfgraphicnamed{infrastructure}
 \begin{tikzpicture}[
@@ -235,9 +240,31 @@ ent/.style={shape=rectangle, rounded corners=4pt, draw, on grid},x=33pt]
 \endpgfgraphicnamed
 %% \vspace{1ex}
 \caption{Infrastructure of ramification library}\label{fig:infra}
-\end{figure}
+\end{wrapfigure}
 
-We provide the architecture of our spatial development in Figure~\ref{fig:infra}.  Starting from the bottom, notice that there are two underlying heap models: the Step-Indexed Model, which is the main heap model used in VST, and a much simpler Direct Model, {\color{magenta} which is used by HIP/SLEEK among others}. The Step-Indexed model is much fancier, but none of our development depends on its bells and whistles.
+VST employs a somewhat unusual Step-Indexed heap model to represent
+spatial predicates, and uses it to support an unusually rich program 
+logic.~\cite{appel:programlogics} However, the spatial representation 
+of our graph library does not rely on any of its bells and whistles. 
+To isolate our development from these unnecessary complications,
+we use two interfaces: Core Logic and Supplementary
+Logic, where Supplementary Logic is built upon the much simpler
+and more universal Direct Model of heap representation. 
+We present the architecture of our spatial development in 
+Figure~\ref{fig:infra}, where it should be straighforward to see
+that both models can instantiate both interfaces.
+
+Generally speaking, our VST proofs only need the Core properties to prove
+our examples. Each interface defines some operators of separation logic and
+provides some axioms about how they work.  For example, $*$ and
+$--*$ are in Core Logic, along with the axiom
+$(P |- Q --* R) <=> (P * Q |- R)$.  On the other hand,
+the $**$ and $--o$ operators are in Supplementary Logic,
+along with rules like $P |- P ** P$.
+
+
+\hide{Starting from the bottom, notice that there are two underlying heap models,
+VST's Step-Indexed model and the much simpler Direct Model.
 
 To isolate our development from these unnecessary complications,
 {\color{magenta}and to ensure that HIP/SLEEK can reuse our spatial
@@ -250,16 +277,16 @@ provides some axioms about how they work.  For example, $*$ and
 $--*$ are in Core Logic, along with the axiom
 $(P |- Q --* R) <=> (P * Q |- R)$.  On the other hand,
 the $**$ and $--o$ operators are in Supplementary Logic,
-along with rules like $P |- P ** P$.
+along with rules like $P |- P ** P$.} % end hide
 
-Above the Logic layer we have three towers, each three levels high.  The leftmost tower contains basic lemmas about Logic, $\bigstar$, and \p{graph}.  In the $\bigstar$ Facts box we prove \emph{e.g.}:
+Above the Logic layer we have three towers, each three levels high.  The tower on the left contains basic lemmas about Logic, $\bigstar$, and \p{graph}.  For instance, in the $\bigstar$ Facts box we prove:
 \[
 \infrule{}
 {A \cap B = \emptyset}
 {\underset{x\in A}{\bigstar} P(x) \; * \underset{x\in B}{\bigstar} P(x) \;\, \Leftrightarrow \underset{x\in A \cup B}{\bigstar} P(x)}{}
 \]
 
-The middle tower is more interesting in that it is entirely focused on ramification entailments.  A robust library of ramification entailments is essential to make ramification work smoothly in practice.  The lowest level contains lemmas like:
+The middle tower is more interesting in that it is entirely focused on ramification entailments.  A robust library of ramification entailments is essential to make ramification work smoothly in practice.  The Basic Ramification box in the lower layer contains lemmas like:
 \[
 %\infrule{Ramify-Q-SPLIT}
 \infrule{}
@@ -268,8 +295,7 @@ The middle tower is more interesting in that it is entirely focused on ramificat
 {G_1 * G'_1 \vdash (L_1 * L'_1) * \forall x.~ \big((L_2 * L'_2)--* (G_2 * G'_2)\big)}{}
 \]
 We use this lemma to break large ramification entailments into more manageable pieces in a compositional way. % compositionally.
-
-The middle level contains $\bigstar$ ramification lemmas, \emph{e.g.}:
+The $\bigstar$ Ramification box in the middle layer contains lemmas like:
 \begin{equation*}
 \label{ramify:bigstar}
 \infrule{}
@@ -277,7 +303,7 @@ The middle level contains $\bigstar$ ramification lemmas, \emph{e.g.}:
 {\underset{x\in A\cup B}{\bigstar} P(x) \vdash \! \underset{x\in A}{\bigstar} \! P(x) * \Big( \underset{x\in A'}{\bigstar} \! P(x) \! \wand \! \! \! \! \underset{x\in A' \cup B}{\bigstar} \! \! P(x)\Big)}{}
 \end{equation*}
 
-The top level is focused on graph ramifications, such as the ``update one node'' lemma:
+The Graph Ramification box in the top layer is focused lemmas such as the following ``update one node'' lemma, which was used on line~\ref{code:markram2} in Figure~\ref{fig:markgraph}:
 \begin{equation*}
 \label{lem:updategraphnode}
 %{\gamma(x_0) = \gamma'(x_0) \text{ for any } x_0 \neq x }
@@ -285,11 +311,9 @@ The top level is focused on graph ramifications, such as the ``update one node''
 {\forall x_0 \neq x.~ \gamma(x_0) = \gamma'(x_0) \\ \p{neighbors}(\gamma,x)=\p{neighbors}(\gamma',x)}
 {\p{graph}(x, \gamma) \! \vdash \! x \! \mapsto \! \gamma(x) \! * \! \big(x \! \mapsto \! \gamma'(x) \! \wand \! \p{graph}(x, \gamma')\big)}{}
 \end{equation*}
-This lemma was used on line~\ref{code:markram2} in Figure~\ref{fig:markgraph}.
 
 This layered structure enables proof reuse. All of the theorems for $\p{graph}$ are proved from the properties of iterated separating conjunction, but having a modular library allows $\bigstar$ to be reused in other structures smoothly.
-
-Also, all of our verifications of different graph algorithms use the proof rules of $\p{graph}$ at the top level in the library. Taking the marking algorithm we introduced in \S\ref{sec:orientation} as an example, we prove the following theorem from the library:
+Further, all our verifications of different graph algorithms use the proof rules of $\p{graph}$ at the top level in the library. Taking the marking algorithm we introduced in \S\ref{sec:orientation} as an example, we prove the following theorem from the library:
 \begin{equation*}
 \label{lem:updatesubgraph}
 \frac
@@ -305,7 +329,12 @@ $\begin{array}{@{}l@{}l@{}}
 }
 \end{equation*}
 
-The Supplementary tower contains properties not used by most of the VST examples.  This includes the fold/unfold relationship from \S\ref{sec:goodgraph}, facts about precision, \emph{etc}. Some of these properties are needed by HIP/SLEEK, while others are mostly included for completeness.
+The Supplementary tower contains properties not used by most of the VST examples.  
+This includes the fold/unfold relationship from \S\ref{sec:goodgraph}, facts 
+about precision, \emph{etc}. These are currently included mostly for completeness, 
+but do make our library more general should we wish to accommodate an alternate 
+prover that uses the Direct Model.
+
 
 % are there just because we felt they might be useful in the future.
 

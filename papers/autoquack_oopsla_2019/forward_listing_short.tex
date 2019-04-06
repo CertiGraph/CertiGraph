@@ -26,7 +26,7 @@ $//$$\braces{\phi_8 /| \tx{hd} = 0} \defeq \phi_{14}$
 $//$$\searrow$$\braces{\exists \m{flds}, \m{flds'}.~\m{v} |-> \m{flds} /| \m{v'} |-> \m{flds'} /| \null \\ \m{flds} = \m{lab}(\ga, \m{v}) /| \m{flds'} = \m{lab}(\ga, \m{v'}) /| \null \\ \m{flds'}[0] = \m{vaddr}(\gamma, \m{copy}(\ga, \m{v'})) /| \null \\ \tx{p} = \tx{\&}\m{flds}[n]} \defeq \phi_{15} $
     *p = Field(v,0); $\label{code:alreadyforwarded}$
 $//$$\swarrow$$\braces{\phi_{15} /| \m{flds}[n] := \m{flds'}[0]}$
-$//$$\braces{\phi_{31} /| \exists \ga'.~\p{gc{\_}graph}(\ga') /| \null \\ \ga' = \m{upd\_edge}(\ga, \m{e}, \m{copy}(\ga, \m{v'})) /| \null \\ \m{postcondition}(\ga', \m{\tinf}, \m{\finf})}$ $\label{code:postconafterredirect}$
+$//$$\braces{\phi_{31} /| \exists \ga'.~\p{gc{\_}graph}(\ga') /| \null \\ \ga' = \m{upd\_edge}(\ga, \m{e}, \m{copy}(\ga, \m{v'})) /| \null \\ \m{postcondition}(\ga, \ga', \m{\tinf}, \m{\finf}, \m{from}, \m{to})}$ $\label{code:postconafterredirect}$
    } else {$// \textit{not yet forwarded}$
 $//$$\braces{\phi_8 /| \tx{hd} \neq 0}  \defeq \phi_{20} $
     int i; int sz; value *new;
@@ -36,18 +36,30 @@ $//$$\braces{\phi_{20} /| \tx{sz} = \m{blocksize}(\tx{hd}) /| \null \\ \tx{new} 
     for(i = 0; i < sz; i++) 
      Field(new, i) = Field(v, i); $\label{code:copyfields}$
 $//$$\braces{\phi_{23} /| \exists \ga', \m{v''}, \m{\tinf'}.~\p{gc\_graph}(\ga') /| \null \\ 
-\m{v''} = \m{newly\_copied\_vert(\ga, \m{to})} /| \null \\ \ga' = \m{copy\_block}(\gamma, \m{to}, \m{v'}, \m{v''}) /| \null \\ 
+\m{v''} = \m{newly\_copied\_vertex(\ga, \m{to})} /| \null \\ \ga' = \m{copy\_vertex}(\gamma, \m{to}, \m{v'}, \m{v''}) /| \null \\ 
 \m{compat}(\ga', \m{\finf}, \m{\tinf'}, \m{from}, \m{to})} \defeq \phi_{27} $
     Hd_val(v) = 0; $\label{code:zeroingheader}$
     Field(v, 0) = (value)((void *)new); $\label{code:copyinfirstfield}$
 $//$$\braces{\phi_{27} /| \m{val}(\m{hdr'}) = 0 /| \m{flds'}[0] = \m{copy}(\ga, \m{v'})} \defeq \phi_{30}$
 $//$$\searrow$$\braces{\exists \m{flds}.~\m{v} |-> \m{flds} /| \m{flds} = \m{lab}(\ga', \m{v})} \defeq \phi_{31}$
-    *p = (value)((void *)new);
+    *p = (value)((void *)new); $\label{code:ridirect}$
 $//$$\swarrow$$\braces{\phi_{31} /| \m{flds}[0] := \m{vaddr}(\ga, \m{v''})}$
 $//$$\braces{\phi_{30} /| \exists \ga''.~\p{gc\_graph}(\ga'') /| \ga'' = \m{upd\_edge}(\ga', \m{e}, \m{v''})}$
 }}}}
-$//$$\braces{\m{postcondition}(\gamma'', \m{tinf'}, \m{finf})}$
+$//$$\braces{\m{postcondition}(\gamma', \gamma'', \m{tinf'}, \m{finf}, \m{from}, \m{to})}$
 \end{lstlisting}
+\footnotesize{
+\vspace{-0.8em}
+\begin{equation*}
+\begin{split}
+\m{postcondition}(\gamma, \ga', \m{tinf'}, &\m{finf'}, \m{from}, \m{to}) \; \defeq \; 
+   \p{gc{\_}graph}(\ga') * \p{\finf}(\m{\finf'}) * \p{\tinf}(\m{\tinf'}) /| \null \\
+   &\m{compat}(\ga', \m{\finf'}, \m{\tinf'}, \m{from}, \m{to}) /|
+   \m{forward\_relation}(\ga, \ga', \m{from}, \m{to})
+\end{split}
+\end{equation*}
+
+}
 \vspace{-0.4em}
 \caption{Clight code and proof sketch for forward}
 \label{fig:forward}
