@@ -1,10 +1,6 @@
-make repo
-
 say "Clight" throughout
 
 citations to add in:
 certicoqwebsite and certicoqpaper when mentioning certicoq
-
-discuss with Shengyi about the red p in forward listing
 
 if you cut 5.1, there will be a ?? in related
