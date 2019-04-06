@@ -92,10 +92,16 @@ graph-manipulating algorithms.
 %Although we use it primarily as a running example, 
 To the best of our knowledge this is the first machine-checked verification of this algorithm that starts with real C code.
 We introduce \emph{localization blocks} as a notation for \textsc{Localize} in decorated programs. 
-\item[\S\ref{sec:localizations}] {\color{magenta}Existentials for fun and profit: we upgrade Hobor and Villard's \infrulestyle{Ramify} rule to handle both modified program variables and existential quantifiers in postconditions more gracefully.
-    We briefly discuss four additional VST-certified examples to give a sense of the breadth of algorithms we can verify: marking a DAG, marking a graph, an array-based version of union-find, and pruning a graph into a spanning tree.} %, and making a structure-preserving copy of a graph.
+\item[\S\ref{sec:localizations}] We show that \textsc{Localize} and \textsc{Frame} are equivalent,
+and a delicate technique to properly handle modified local variables.  We show a mark-graph
+program that explores a graph in a fold/unfold style and discuss the utility of linked 
+existentials in postconditions. We also briefly discuss some additional examples
+to give a sense of the breadth of algorithms we can verify: marking a DAG, an array-based 
+version of union-find, and pruning a graph into a spanning tree.
+%{\color{magenta}Existentials for fun and profit: we upgrade Hobor and Villard's \infrulestyle{Ramify} rule to handle both modified program variables and existential quantifiers in postconditions more gracefully.
+%    We briefly discuss four additional VST-certified examples to give a sense of the breadth of algorithms we can verify: marking a DAG, marking a graph, an array-based version of union-find, and pruning a graph into a spanning tree.} %, and making a structure-preserving copy of a graph.
 \item[\S\ref{sec:mathgraph}] We develop a general framework of mathematical graphs powerful enough to support realistic verification in a mechanized context.  We give a sampling of key definitions and show how our framework is modularized to facilitate code reuse.
-\item[\S\ref{sec:spacegraph}] {\color{magenta}We suggest that the Knaster-Tarski fixpoint~\cite{tarski:fixpoint} cannot define a usable separation logic graph predicate.  We propose a better definition for general spatial graphs that still enjoys a ``recursive'' fold/unfold.  We prove general theorems about spatial graphs in a way that can be utilized in multiple flavors of separation logic.} %{\color{magenta} Line about modularity?}
+\item[\S\ref{sec:spacegraph}] We suggest that the Knaster-Tarski fixpoint~\cite{tarski:fixpoint} cannot define a usable separation logic graph predicate.  We propose a better definition for general spatial graphs that still enjoys a ``recursive'' fold/unfold.  We prove general theorems about spatial graphs in a way that can be utilized in multiple flavors of separation logic. %{\color{magenta} Line about modularity?}
 %\item[\S\ref{sec:hipsleek}] We explain how we modified HIP/SLEEK to introduce ramifications when programs modify data structures with intrinsic sharing and to automatically discharge the associated obligations using Coq-verified external lemmas.
 %\item[\S\ref{sec:vst}] We explain how we integrated ramification into VST by developing .
 \item[\S\ref{sec:certigc}] We discuss the certification of the CertiCoq garbage collector (GC). While certifying this GC we identify two places where the semantics of C is too weak to define an OCaml-style GC. We also found and fixed a rather subtle overflow error in the original C code for the GC, justifying the effort of developing the machine-checked proof.
