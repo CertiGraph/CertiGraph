@@ -2,32 +2,29 @@
 	\begin{gather*}
      	\begin{aligned}
     	\mathrm{path} \; \defeq \; &(\m{v}_0, [e_0, e_1, \dots, e_k]) \\ 
-    	\mathtt{s\_evalid}(\gamma, e) \; \defeq \; & e \in \mathtt{E}(\gamma) /| 
-    	\mathtt{src}(\gamma,e) \in \mathtt{V}(\gamma) /| 
-    	\mathtt{dst}(\gamma,e) \in \mathtt{V}(\gamma) \\
-		\mathtt{valid\_path}\big(\gamma, (\m{v},[])\big) \;\defeq \; & v \in \mathtt{V}(\gamma)\\
-		\mathtt{valid\_path}\big(\gamma, (\m{v},[e_1,e_2,\dots,e_n])\big) \; \defeq \; &\m{v}=\mathtt{src}(\gamma,e_1) \wedge \mathtt{s\_evalid}(\gamma,e_1) \wedge \null \\
-    &\mathtt{dst}(\gamma,e_1)=\mathtt{src}(\gamma,e_2) \wedge \null\\
-    &\mathtt{s\_evalid}(\gamma, e_2) \wedge \dots /| \mathtt{dst}(\gamma,e_{n-1})=\mathtt{src}(\gamma,e_n) \\ 
+    	\mathtt{s\_evalid}(\gamma, e) \; \defeq \; & \mathtt{E}_{\gamma}(e) /| 
+    	\mathtt{V}_{\gamma}(\mathtt{src}_{\gamma}(e)) /| 
+    	\mathtt{V}_{\gamma}(\mathtt{dst}_{\gamma}(e)) \\
+		\mathtt{valid\_path}\big(\gamma, (\m{v},[])\big) \;\defeq \; & \mathtt{V}_{\gamma}(\m{v})\\
+		\mathtt{valid\_path}\big(\gamma, (\m{v},[e_1,e_2,\dots,e_n])\big) \; \defeq \; &\m{v}=\mathtt{src}_{\gamma}(e_1) \wedge \mathtt{s\_evalid}(\gamma,e_1) \wedge \null \\
+    &\mathtt{dst}_{\gamma}(e_1)=\mathtt{src}_{\gamma}(e_2) \wedge \null\\
+    &\mathtt{s\_evalid}(\gamma, e_2) \wedge \dots /| \mathtt{dst}_{\gamma}(e_{n-1})=\mathtt{src}_{\gamma}(e_n) \\ 
         \mathtt{end}\big(\gamma, (\m{v}, [])\big)\;\defeq\;& \m{v}\\
       	\mathtt{end}\big(\gamma, (\m{v},[e_1,e_2,\dots,e_n])\big)\;\defeq\;&
-      	\mathtt{dst}(\gamma, e_n)\\
+      	\mathtt{dst}_{\gamma}(e_{n})\\
       	\gamma \vDash s \overset{\m{p}}{\leadsto} t \;\defeq\; &
         \mathtt{valid\_path}(\gamma, p)\wedge
         \mathtt{fst}(p)=s \wedge \mathtt{end}(\gamma,p)=t \\
-        \gamma \vDash s \leadsto t \;\defeq\; &
-        \exists \m{p}.~ \; \gamma \vDash s \overset{p}{\leadsto} t \quad CUT? \\  
         \gamma_1 \cong \gamma_2 \; \defeq \; & 
-        	\forall e.~e \in \mathtt{E}(\gamma_1) <=> e \in \mathtt{E}(\gamma_2) /| \forall \m{v}.~\m{v} \in \mathtt{V}(\gamma_1) <=> \m{v} \in \mathtt{V}(\gamma_2) /| \null \\
-        	&\forall e.~e \in \mathtt{E}(\gamma_1) ==> e \in \mathtt{E}(\gamma_2) ==> \mathtt{src}(\gamma_1, e) = \mathtt{src}(\gamma_2, e) /| \null \\ 
-        	&\forall e.~e \in \mathtt{E}(\gamma_1) ==> e \in \mathtt{E}(\gamma_2) ==> \mathtt{dst}(\gamma_1, e) = \mathtt{dst}(\gamma_2, e) \\
-       	\gamma \smallsetminus S \; \defeq \; & \exists \gamma'.~\mathrm{PreGraph}(\gamma') /| \null \\
-       	 	& \gamma'_{\mathcal{V}} = \gamma_{\mathcal{V}}/|
-       	 	\gamma'_{\mathcal{E}} = \gamma_{\mathcal{E}}/|
-       	 	\gamma'_{\mathtt{src}} = \gamma_{\mathtt{src}}/|
-       	 	\gamma'_{\mathtt{dst}} = \gamma_{\mathtt{dst}}/| \null \\
-       	 	&\gamma'_{\mathtt{V}} = \{\m{v} \in \gamma_{\mathtt{V}} | \m{v} \not\in S\} /| \null \\ 
-       	 	&\gamma'_{\mathtt{E}} = \\
+        	\forall e.~\mathtt{E}_{\gamma_1}(e) <=> \mathtt{E}_{\gamma_2}(e) /| \forall \m{v}.~\mathtt{V}_{\gamma_1}(\m{v}) <=> \mathtt{V}_{\gamma_1}(\m{v}) /| \null \\
+        	&\forall e.~\mathtt{E}_{\gamma_1}(e) ==> \mathtt{src}_{\gamma_1}(e) = \mathtt{src}_{\gamma_2}(e) /| \mathtt{dst}_{\gamma_1}(e) = \mathtt{dst}_{\gamma_2}(e) \\
+       	\gamma \smallsetminus S \; \defeq \; & \exists \gamma'.~\mathrm{PreGraph}(\gamma') /| 
+       	 	{\mathcal{V}}_{\gamma'} = {\mathcal{V}}_{\gamma} /| 
+          {\mathcal{E}}_{\gamma'} = {\mathcal{E}}_{\gamma} /| \null \\
+          &{\mathtt{src}}_{\gamma'} = {\mathtt{src}}_{\gamma} /|
+          {\mathtt{dst}}_{\gamma'} = {\mathtt{dst}}_{\gamma} /| \null \\
+       	 	&\gamma'_{\mathtt{V}} = \Big(\lambda x.~ \gamma_{\mathtt{V}}(x) /| \lnot S_{\mathtt{V}}(x)\Big) /| \null \\ 
+       	 	&\gamma'_{\mathtt{E}} = \Big(\lambda x.~ \gamma_{\mathtt{E}}(x) /| \lnot S_{\mathtt{E}}(x)\Big)\\
 %        	\begin{minipage}[c]{.5\linewidth} \hline \end{minipage}
         \mathrm{MathGraph}(\gamma)\,\defeq\,\Big\{
           \mathtt{null}:\; & V\\ 
