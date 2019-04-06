@@ -4,9 +4,7 @@ struct Node {
     int m;
     struct Node * l;
     struct Node * r; };
-
 // We use $R$ to represent $\p{reachable}(\gamma,\tx x)$
-
 void spanning(struct Node * x) { 
 // $\{\p{graph}(\tx{x},\gamma)/|\gamma(\tx{x}).1=0\}$ 
     struct Node * l, * r; int root_mark;
@@ -15,9 +13,7 @@ void spanning(struct Node * x) {
 // $\{\p{vertices\_at}(\p{reachable}(\gamma,\tx x), \gamma) /| \gamma(\tx{x}) = (0,l,r)\}$
 // $\{\p{vertices\_at}(R, \gamma) /| \gamma(\tx{x}) = (0,l,r)\}$
 // $\searrow \{\tx x|-> 0,l,r /| \gamma(\tx{x}) = (0,l,r)\}$
-    l = x -> l;
-    r = x -> r;
-    x -> m = 1;
+    l = x -> l; r = x -> r; x -> m = 1;
 // $\swarrow \{\tx x|-> 1,\tx{l},\tx{r} /| \gamma(\tx{x}) = (0,\tx{l},\tx{r}) /| \exists \gamma_1.~ \m{mark1}(\gamma, \tx{x}, \gamma_1)\}$
 // $\{\exists \gamma_1.~\p{vertices\_at}(R, \gamma_1) /| \gamma(\tx{x}) = (0,\tx{l},\tx{r}) /| \m{mark1}(\gamma, \tx{x}, \gamma_1)\}$
 // $\{\p{vertices\_at}(R, \gamma_1) /| \gamma(\tx{x}) = (0,\tx{l},\tx{r}) /| \m{mark1}(\gamma, \tx{x}, \gamma_1)\}$

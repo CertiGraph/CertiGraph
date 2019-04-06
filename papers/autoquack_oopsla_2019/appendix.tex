@@ -19,9 +19,10 @@ other parts of the paper, both algorithms have been machine verified.
 \input{copy.tex}
 
 
-\section{Proof of \infrulestyle{Ramify-P} and \infrulestyle{Ramify-PQ}}
-\label{apx:ruleproofs}
+%\section{Proof of \infrulestyle{Ramify-P} and \infrulestyle{Ramify-PQ}}
+%\label{apx:ruleproofs}
 
+\hide{
 \begin{figure*}
 Proof of \infrulestyle{Ramify-P} from \infrulestyle{Frame} and \infrulestyle{Consequence}:
 \vspace{-3em}
@@ -80,6 +81,7 @@ Proof of \infrulestyle{Ramify-PQ} from \infrulestyle{Ramify-P}:
 \end{figure*}
 
 See Figure~\ref{fig:rampqproofs} for the proofs of \infrulestyle{Ramify-P} and \infrulestyle{Ramify-PQ}. 
+}
 
 \section{Difficulty using $\graphkt$}
 \label{apx:problemrecgraph}
@@ -102,7 +104,7 @@ See Figure~\ref{fig:rampqproofs} for the proofs of \infrulestyle{Ramify-P} and \
 \label{fig:badcycle}
 \end{figure*}
 
-See Figure \ref{fig:badcycle} for an attempt to prove the entailment $100 |-> 42,100,0 ~ |- ~ \graphkt(100,\hat{\gamma})$.  Part of the problem is that the recursive structure interacts very badly with $**$: if the recursion involved $*$ then it \textbf{would} be provable, by induction on the finite memory (each ``recursive call'' would be on a strictly smaller subheap).  This is why Knaster-Tarski works so well with list, tree, and DAG predicates in separation logic.
+See Figure \ref{fig:badcycle} for an attempt to prove the entailment $100 |-> 42,100,0 ~ |- ~ \graphkt(100,\hat{\gamma})$.  Part of the problem is that the recursive structure interacts very badly with $**$: if the recursion involved~$*$then it \textbf{would} be provable, by induction on the finite memory (each ``recursive call'' would be on a strictly smaller subheap).  This is why Knaster-Tarski works so well with list, tree, and DAG predicates in separation logic.
 
 \section{Problem with Appel and McAllester's fixpoint}
 \label{apx:appelfixpiont}
@@ -245,7 +247,7 @@ In fact, the only time the GC ever sees backwards pointers
 is when it creates (and quickly fixes) them during during its 
 activities.
 
-\section{Forward Relation}
+\section{Code for Forward Relation}
 \label{apx:forwardrelation}
 \input{forward_relation_listing.tex}
 
