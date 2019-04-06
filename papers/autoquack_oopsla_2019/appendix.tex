@@ -122,7 +122,7 @@ look like
 
 Unfortunately, $\rhd P$ is not precise for all $P$, so $\grapham$ is not precise either.  The approximation modality's universal imprecision has never been noticed before.
 
-\subsection{Structure of the Garbage Collector Program}
+\section{Structure of the Garbage Collector Program}
 \label{apx:gcstructure}
 
 % My goal here is to start with a broad overview
@@ -147,7 +147,7 @@ culling tend to live for much longer.
 The heap is divided into a series of disjoint
 spaces called \emph{generations}. The size of the first generation
 is carefully calculated, and then subsequent generations
-{\color{magenta}double in size}.
+double in size.
 The mutator only ever allocates new memory in the first, 
 smallest generation of heap, which is called the nursery. 
 If it finds that the nursery is full, 
@@ -182,8 +182,6 @@ cascade (if any) is over. It returns control to the mutator,
 which goes ahead with 
 the allocation that it was trying to perform in the nursery.
 
-\marginpar{\tiny \color{blue}should I mention the distinguished 
-pointer that points at the copy?}
 Having shown that the overall collection 
 works via (a series of) two-generational collections, 
 we now zoom in and explain a two-generation collection.
@@ -227,9 +225,8 @@ but what of the indirect blocks? Couldn't there be valid indirect links
 that start either below \emph{next} in the \emph{to} generation, 
 or from other generations altogether? 
 
-\marginpar{\tiny \color{blue}Gallina is purely functional, C-light is not.}
 Both of these turn out to be impossible because the 
-{\color{magenta}mutator is a purely functional language.}
+mutator behaves in a purely functional manner.
 The heap is chronologically
 faithful, in that higher-indexed generations host
 objects that were allocated earlier. Because
@@ -248,22 +245,10 @@ In fact, the only time the GC ever sees backwards pointers
 is when it creates (and quickly fixes) them during during its 
 activities.
 
-\note[The mutator can "drop"
-a block, showing that it won't need it anymore]{blah}
+\section{Forward Relation}
+\label{apx:forwardrelation}
+\input{forward_relation_listing.tex}
 
-
-``When invoked by the mutator, the GC 
-is allowed to modify the heap as
-it sees fit, with the condition that it not damage the 
-mutator's dependency graph. The mutator is agnostic 
-to the specific layout of the heap, so long as 
-it can access the same fields by following the same 
-links.''
-
-
-
-\section{Code of Garbage Collector}
-
-Below we present the code of the garbage collector in its entirety.
-
-\input{gc.tex}
+% \section{Code of Garbage Collector}
+% Below we present the code of the garbage collector in its entirety.
+% \input{gc.tex}

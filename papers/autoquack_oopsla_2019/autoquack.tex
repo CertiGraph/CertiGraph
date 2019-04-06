@@ -135,11 +135,11 @@
   basicstyle=\normalfont\footnotesize\tt,
   keywordstyle=\color{blue}, numbers=left,
   numberstyle=\tiny, numbersep=5pt, boxpos=t,
+  showstringspaces=false
 }
 % \long\def\beginpgfgraphicnamed#1#2\endpgfgraphicnamed{\includegraphics{#1}}
 \usetikzlibrary{arrows.meta, positioning, decorations.pathmorphing, fit}
 \pgfrealjobname{autoquack}
-
 
 \begin{document}
 
@@ -334,6 +334,6 @@ sort used in the OCaml runtime.  Our proofs are entirely machine-checked in Coq.
 %\appendix
 %\section{Appendix}
 %\label{sec:appendix}
-% \input{appendix.tex}  % riddled with overful boxes
+\input{appendix.tex}  % riddled with overful boxes
 
 \end{document}

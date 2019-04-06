@@ -118,16 +118,21 @@ and also to collect the blocks \emph{in} the heap that are reachable via
 \code{args}. Its behavior needs to be subtly different in these
 two cases.
 Figure~\ref{fig:forward} shows a decorated proof sketch of \code{forward}
-in the latter case, which is harder. For 
-concision, the facts known to us in 
+in the latter case, which is harder to verify. 
+
+The {\color{red}items} \m{finf} and \m{tinf} together allow 
+us to extract the mutator's \code{args} array, and 
+The proposition \m{super\_compatible} encapsulates various checks 
+about \emph{e.g.} legal bounds that avoid some overflow issues.
+For concision, the facts known to us in 
 \emph{e.g.} line $1$ are represented by $\phi_1$, and then $\phi_1$ 
-features as a fact \emph{e.g.} in line $8$. 
+can feature as a fact \emph{e.g.} in line $8$. 
 
 Line \ref{code:alreadyforwarded} shows
 the case when the block passed to the function was already forwarded.
 This may seem strange, but is vital because the same block may be 
 reachable from the \code{args} via different paths.
-Such a block's header is zeroed out and its $0^\textrm{th}$ field holds 
+Such a block's header is zeroed out and its $0$th field holds 
 the address of its 
 copy\footnote{These guarantees are set up by \code{forward} itself. 
 Refer to lines \ref{code:zeroingheader} and 
@@ -140,7 +145,28 @@ $\m{copy}(\gamma, \m{v'})$.
 
 Lines \ref{code:copyhead} to \ref{code:copyfields} show
 how a block is copied over to the next-available spot in the 
-\code{to} space. 
+\code{to} space. Some of the grungy details having to do with
+variable-sized memory blocks being to show up in the C code,
+but the verification looks relatively clean 
+thanks to our mathematical graph framework.
+This is just the copying of a vertex, and so our new graph after the change is
+$\gamma' = \m{copy\_vertex}(\gamma, \m{to}, \m{v'}, \m{v''})$. 
+The final step (line \ref{code:ridirect}) is to reroute to this 
+new copy, and this is done just as in line~\ref{code:alreadyforwarded}. The
+resultant graph is $\gamma'' = \m{upd\_edge}(\gamma', \m{e}, \m{v''})$.
+
+The postcondition is a little different from
+those of \code{find} and \code{mark} seen earlier, in that it does not have 
+{\color{red} an explicit check} saying that \code{forward} has been 
+``computed correctly''. 
+Rather, we use the Coq relation $\m{forward\_relation}$
+to say that the initial and final graphs $\gamma$ and $\gamma'$ are 
+related in a legal way \emph{after} abstracting the original program into
+our mathematical graph framework. {\color{red} For a taste, we put the 
+code for \m{forward\_relation} in Appendix~\ref{apx:forwardrelation}}.
+We have relations of this sort for all the key functions in our GC, 
+and we show that the composition of these correctly corresponds to the 
+C code of our garbage collector.
 
 \input{forward_listing_short.tex}
 
