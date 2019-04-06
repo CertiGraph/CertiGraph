@@ -106,21 +106,41 @@ What was challenging:
 The function \code{forward} is the GC's workhorse.
 When correctly given the spaces \code{from} and \code{to} and a pointer
 \code{p} to a memory block in \code{from},
-it carries out the atomic task of copying the memory block to the next
+it copies the memory block to the next
 available location in the \code{to} space.
 The function is robust: if passed a ``pointer'' argument
 that is actually a data value, or that points outside of
-\code{from}, \note{it behaves appropriately by taking no action.}
+\code{from}, it behaves appropriately by taking no action.
 As we will see in \S\ref{sec:gcissues}, these checks are nontrivial.
 The function is also versatile: it is used to collect the
 mutator's \code{args} (which are $*$-separated from the heap)
 and also to collect the blocks \emph{in} the heap that are reachable via
 \code{args}. Its behavior needs to be subtly different in these
 two cases.
-Figure \ref{fig:forward} shows a decorated proof of \code{forward}
-in the second case, which is more challenging.
+Figure~\ref{fig:forward} shows a decorated proof sketch of \code{forward}
+in the latter case, which is harder. For 
+concision, the facts known to us in 
+\emph{e.g.} line $1$ are represented by $\phi_1$, and then $\phi_1$ 
+features as a fact \emph{e.g.} in line $8$. 
 
-TODO: explain highlights of the code in Figure \ref{fig:forward}.
+Line \ref{code:alreadyforwarded} shows
+the case when the block passed to the function was already forwarded.
+This may seem strange, but is vital because the same block may be 
+reachable from the \code{args} via different paths.
+Such a block's header is zeroed out and its $0^\textrm{th}$ field holds 
+the address of its 
+copy\footnote{These guarantees are set up by \code{forward} itself. 
+Refer to lines \ref{code:zeroingheader} and 
+\ref{code:copyinfirstfield} of Figure~\ref{fig:forward} to see this being done.}, 
+so we simply reroute to that copy. 
+Line \ref{code:postconafterredirect} shows that this operation 
+gives us a new graph, $\gamma'=\m{upd\_edge}(\gamma, \m{e}, \m{copy}(\gamma, \m{v'}))$.
+This means to reroute the edge $e$ in $\gamma$ and make it point at
+$\m{copy}(\gamma, \m{v'})$.
+
+Lines \ref{code:copyhead} to \ref{code:copyfields} show
+how a block is copied over to the next-available spot in the 
+\code{to} space. 
 
 \input{forward_listing_short.tex}
 
