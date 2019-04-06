@@ -73,12 +73,12 @@ From the perspective of the algorithm, the 12 generations can be seen
 as a graph $\gamma$. Each block can be can be seen as a
 vertex and pointers to other blocks indicate edges between 
 vertices. More formally, we decide to encode each vertex of this graph
-as a pair of natural numbers $(v_g, v_i)$ which means the vertex is
-the $v_i$th block in the $v_g$th generation. We encode each edge
-as a pair of vertex and index $(v, i)$ which means this edge is from
+as a pair of natural numbers $(\m{v}_g, \m{v}_i)$ which means the vertex is
+the $\m{v}_i$th block in the $\m{v}_g$th generation. We encode each edge
+as a pair of vertex and index $(\m{v}, i)$ which means this edge is from
 vertex $v$ and the associated pointer is in the $i$th field of the
 corresponding block.  The source function always satisfies
-$\mathsf{src}(\gamma, (v, i)) = v$.
+$\mathsf{src}(\gamma, (\m{v}, i)) = \m{v}$.
 %The destination function $d$ 
 %actually stores
 %the connection information. 
