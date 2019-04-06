@@ -66,7 +66,7 @@ concurrent spanning algorithm using a kind of
 ``concurrent localization''~\cite{raadvg15}.  Sergey \emph{et al.} also verified a 
 concurrent spanning tree algorithm and mechanized their proofs in Coq~\cite{ilya-graphs}.
 
-Almost a decade after Yang verified Schorr-Waite on paper, Dafny automated 
+Almost a decade after Yang verified Schorr-Waite on paper, Leino automated 
 its verification~\cite{leino10}.
 
 %\paragraph{Alternative fixpoint constructions.}
@@ -100,12 +100,38 @@ the development actually uses hypermaps instead of graphs.
 Noschinski built a graph library in Isabelle/HOL whose formalization
 is the closest to ours~\cite{noschinski2015}, \emph{e.g.} supporting
 graphs with labeled and parallel arcs.
-
 Noschinski and Dubois \emph{et al.} used proof assistants to design verifiable
 checkers for solutions to graph problems~\cite{noschinski2015formalizing,dubois2015graphes}.
 Yamamoto \emph{et al.} and Bauer and Nipkow use an inductive
 encoding of graphs to formalize planar graph theory~\cite{yamamoto1995formalization,bauer20025}.
+\note[from inv-ack. massage to avoid plagiarism]{Charguéraud and Pottier,
+\cite{charpott} later joined by Guéneau \cite{gueneauetal},
+extended Separation Logic with the notion of ``time credits'',
+formalized the~$O$ notation in Coq,
+and gave a proof in Coq that simultaneously verifies the correctness
+and the time complexity of the union-find data structure. Several others
+\cite{others2, others4, others3, others1}
+have explored the idea of checking bounds on the resources
+used by programs formally in proof assistants such as Coq, Isabelle/HOL, and Why3.}
 
+Nipkow \cite{nipkow2016, nipkow2017} has verified several classic 
+tree and queue structures in Isabelle/HOL. Some of his proofs are automated, while 
+others are manual. \note{Does he have a model like ours??}
+
+\paragraph{Verification of garbage collection algorithms.}
+Schism \cite{gcexample4,gcexample4a} is a certified concurrent 
+collector built in a Java VM that services multi-core architectures with weak memory consistency. 
+McCreight \emph{et al.} \cite{gcexample5, gcexample3} introduce GCminor, which is 
+a certified translation step added to CompCert's translation from C-light to assembly. 
+GCminor makes explicit the specific invariants that the garbage collector 
+relies upon, thus minimising errors due to the violation of invariants 
+between the garbage collector and the mutator.
+
+Cake ML\cite{cakemlgc} has to be written with great care. They are very serious competition.
+
+Hawblitzel and Petrank \cite{gcexample2} annotate x86 code
+for two GCs by hand, and then use Boogie and the Z3 automated theorem prover 
+to verify their correctness automatically.
 
 %{\color{magenta}
 %5.2. An alternative way of verifying marking program is reasoning about the whole history of marking operations. The disadvantage of it is that it currently needs more work in a Hoare logic framework. The advantage of it is that its reasoning structure are more similar with the way we understand it in our first algorithm class.
