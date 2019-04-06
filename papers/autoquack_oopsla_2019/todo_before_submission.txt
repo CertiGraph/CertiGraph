@@ -8,6 +8,3 @@ certicoqwebsite and certicoqpaper when mentioning certicoq
 discuss with Shengyi about the red p in forward listing
 
 if you cut 5.1, there will be a ?? in related
-
-for the figure that has two gaps...
-you can define them via lambda expressions like "\x -> V_gamma x /\ ~ V_S x", "\" stands for lambda.

@@ -1,6 +1,5 @@
 \input{seplogsem_figure.tex}
 
-\marginpar{\tiny \color{blue} We are interested in cutting \S\ref{sec:fixpointfail}. Needs massaging.}
 To prove the functional correctness of graph-manipulating algorithms implemented in a real language, we need to connect the heap representation of graphs, the memory model of the programming language, and the mathematical properties of graphs from \S\ref{sec:mathgraph}.  The first of these turns out to be surprisingly subtle as we shall see in \S\ref{sec:fixpointfail} and \S\ref{sec:goodgraph}.  The main challenge for the others is to engineer a framework that is generic enough and modular enough to be useful in practice in a variety of settings; we cover it in~\S\ref{sec:ramifylib}.
 
 \subsection{Recursive definitions yield poor \p{graph} predicates}\label{sec:fixpointfail}
@@ -9,9 +8,7 @@ To prove the functional correctness of graph-manipulating algorithms implemented
 \newcommand{\grapham}{\p{graph}_A}
 
 
-\marginpar{\tiny \color{blue} Crunch. Not our main point, just a lesson for the reader
-so we can make our point.}
-{\color{magenta}Recursive predicates are ubiquitous in separation logic---so
+Recursive predicates are ubiquitous in separation logic---so
 much so that when one writes the definition of a predicate as
 \mbox{$P$ ``$\defeq$'' $\ldots P \! \ldots$}, no one raises an eyebrow despite the
 dangers of circularity in mathematics. Indeed, the vast majority of the time there
@@ -20,11 +17,11 @@ $\mu_{\mathsf{T}}$ \cite{tarski:fixpoint}.  Formally, one does not define $P$ di
 but rather defines a functional
 \mbox{$F_P \defeq \lambda P.~ \ldots P \! \ldots$} and then defines $P$ itself as
 \mbox{$P \defeq \mu_{\mathsf{T}} \, F_P$}.
-Assuming {\color{magenta}(as one typically does without comment)}
+Assuming, as one typically does without comment,
 that $F_P$ is \emph{covariant}, i.e. $(P \vdash Q)
 \Rightarrow (F \, P \vdash F \, Q)$, one then enjoys the fixpoint
 equation $P \Leftrightarrow \ldots P \ldots$, formally justifying
-the typically-written pseudodefinition (``$\defeq$'').}
+the typically-written pseudodefinition (``$\defeq$'').
 
 %Definition corec {B A: Type}  (F: (B -> pred A) -> (B -> pred A)) : B -> pred A :=
 %fun x w => forall P: B -> pred A, (forall x, F P x |-- P x) -> P x w.
@@ -159,7 +156,7 @@ We are now ready to give a good \p{graph} predicate:
 %%%%%% Edit1: Original version ends
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-\hide{\vspace{-1.5ex}
+\hide{ \vspace{-1.5ex}
 \begin{equation}\label{eqn:iter_def}
   \p{graph}(x, \gamma) ~~ \defeq ~~ \underset{v \in \mathit{reach}(\gamma, x)}{\bigstar} v\mapsto\gamma(v)
 \vspace{-1.5ex}
@@ -168,7 +165,7 @@ $\gamma$ is a GeneralGraph and ``$x |-> \gamma(x)$'' is a predicate that says ho
 \[
 \exists m,l,r.~\gamma(x) = (m,l,r) /| x |-> m,-,l,r /| x\ \p{mod}\ 16 = 0
 \]}
-{\color{magenta}$\gamma$ need not be a bigraph, but \emph{e.g.} can have many edges.}
+The graph $\gamma$ here need not be a bigraph, but \emph{e.g.} can have many edges.
 
 Our definition of \p{graph} is flat in the sense that there is no obvious way to follow the link structure recursively.  Happily, we can recover a general recursive fold/unfold (if $x |-> \gamma(x)$ and the GeneralGraph has the necessary properties in its soundness condition):
 \vspace{-1ex}
@@ -186,8 +183,9 @@ The proof of the $<=$ direction requires care. The difficulty is that if two nod
 \]
 That is, they overlap either completely or not at all. In a Java-like memory model this property is automatic because pointers in such a model always point to the root/beginning of an object.  In contrast, in a C-like memory model such as in VST/CompCert, this property is not automatic because pointers can point anywhere.  In such a model, alignment is most easily enforced by storing graph nodes at addresses that are multiples of an appropriate size (16 in Figure~\ref{fig:markgraph}).
 
-{\color{magenta}Some of our VST proofs do not use fold/unfold, instead preferring to use the lemmas in~\S\ref{sec:ramifylib} directly.  On the other hand, for HIP/SLEEK fold/unfold is vital, and it is heartening to know that the recursive relationship holds.  We also prove fold/unfold lemma for DAGs in which we get a $*$ between the root and its $**$-joined neighbors. % rather than the $**$ present in \eqref{eqn:unfold_graph}.
-}
+Some of our VST proofs, \emph{e.g.} for \texttt{find}, do not use fold/unfold, instead preferring to use the lemmas in~\S\ref{sec:ramifylib} directly.  Others, \emph{e.g.} \texttt{mark}, do---and it is helpful to have both options avilable. We also prove fold/unfold lemma for DAGs in which we get a $*$ between the root and its $**$-joined neighbors, rather than the $**$ present in \eqref{eqn:unfold_graph}.
+% (On the other hand, for HIP/SLEEK fold/unfold is vital, and it is heartening to know that the recursive relationship holds.  We also prove fold/unfold lemma for DAGs in which we get a $*$ between the root and its $**$-joined neighbors. % rather than the $**$ present in \eqref{eqn:unfold_graph}.
+
 
 \subsection{Ramification Libraries}\label{sec:ramifylib}
 
