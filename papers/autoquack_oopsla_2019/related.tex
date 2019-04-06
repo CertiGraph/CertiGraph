@@ -8,20 +8,20 @@ who verified graph algorithms on pen-and-paper using their \infrulestyle{Ramify}
 G_1 |- L_1 * (L_2 --* G_2)}
 {\{ G_1 \} ~ c ~ \{ G_2 \}} \qquad \mathit{freevars}(L_2 --* G_2) \cap \MV(c) = \emptyset
 \end{equation*}
-Our \textsc{Localize} rule upgrades \textsc{Ramify} to better handle modified program 
+Our \textsc{Localize} rule upgrades \textsc{Ramify} to better handle modified program
 variables (note the side condition and recall the discussion in \S\ref{sec:localizations})
-and existential quantifiers in postconditions.  Hobor and Villard avoided these challenges 
-by proposing a unwieldy variant of \infrulestyle{Ramify} called \infrulestyle{RamifyAssign}, which 
-could reason about the special case of a single assignment $\li{x=}f(\ldots)$, assuming 
-the verifier can make the local program translation to $\li{x'=}f(\ldots)\li{; x=x'}$, 
-where \li{x'} is fresh.  This is nontrivial in large existing formal 
+and existential quantifiers in postconditions.  Hobor and Villard avoided these challenges
+by proposing a unwieldy variant of \infrulestyle{Ramify} called \infrulestyle{RamifyAssign}, which
+could reason about the special case of a single assignment $\li{x=}f(\ldots)$, assuming
+the verifier can make the local program translation to $\li{x'=}f(\ldots)\li{; x=x'}$,
+where \li{x'} is fresh.  This is nontrivial in large existing formal
 developments, such as VST, that do not have any way to prove programs equivalent.
 Hobor and Villard could not verify unmodified program code, modify program variables
 inside nested localization blocks, or handle multiple assignments in a single block as
 in lines~\ref{code:markbeforetripleramify}--\ref{code:markaftertripleramify} of
 figure~\ref{fig:markgraph}.  Hobor and Villard avoided existentials in localized
 postconditions by defining all mathematical operations (\emph{e.g.} $\m{mark}$) as
-functions rather than as relations; this is fine on pen-and-paper, but painful in 
+functions rather than as relations; this is fine for pen-and-paper, but painful in
 a mechanized setting wherein functions must be proven to terminate.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -57,19 +57,19 @@ community have since followed them in, \emph{e.g.}~\cite{raadvg15}.  We exposed 
 error and provided a sound and quite general definition for
 \p{graph}~(\S\ref{sec:goodgraph}) that recovers fold/unfold reasoning.  We developed a
 much more general and more modular set of related lemmas and connect our spatial
-reasoning to the verification framework of CompCert/VST~(\S\ref{sec:vst}), and 
+reasoning to the verification framework of CompCert/VST~(\S\ref{sec:vst}), and
 our development is entirely
 machine-checked~(\S\ref{sec:development}) whereas they used only pen and paper.
 
 %two very different verification tools~(\S\ref{sec:ramifylib}),
-% and HIP/SLEEK~(\S\ref{dummyref}).  
+% and HIP/SLEEK~(\S\ref{dummyref}).
 \fi
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%% Edit 1: Original version ends
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \paragraph{Other verification of graph algorithms and/or $**$.}
-\cite{hongseok:phd}'s verification of the Schorr-Waite algorithm is a landmark in the 
+\cite{hongseok:phd}'s verification of the Schorr-Waite algorithm is a landmark in the
 early separation logic literature.  \cite{neelthesis}~provided the first separation
 logic proof of union-find.  \cite{bornat:aliasing04}~gave an early attempt to
 reason about graph algorithms in separation logic in a more general
@@ -108,6 +108,8 @@ than a library of pre-defined predicates for lists, trees etc.
 Dafny~\cite{leino10} and KeY~\cite{beckert:2007} are verifiers not based
 on separation logic; KeY uses an interactive verifier while Dafny pursues automation with Z3~\cite{moura2008}.
 
+%\cite{nipkow2017}~verified functional variants of several classic tree and queue structures in Isabelle/HOL.
+
 \vspace{-1ex}
 \paragraph{Mechanized mathematical graph theory.} There is a long history,
 going back at least 25 years, of mechanized reasoning about mathematical
@@ -117,22 +119,17 @@ the development actually uses hypermaps instead of graphs.
 Noschinski built a graph library in Isabelle/HOL whose formalization
 is the closest to ours~\cite{noschinski2015}, \emph{e.g.} supporting
 graphs with labeled and parallel arcs.
-Noschinski and Dubois \emph{et al.} used proof assistants to design verifiable
-checkers for solutions to graph problems~\cite{noschinski2015formalizing,dubois2015graphes}.
-Yamamoto \emph{et al.} and Bauer and Nipkow use an inductive
-encoding of graphs to formalize planar graph theory~\cite{yamamoto1995formalization,bauer20025}.
+\cite{noschinski2015formalizing,dubois2015graphes}~used proof assistants to design verifiable
+checkers for solutions to graph problems.
+\cite{yamamoto1995formalization,bauer20025}~use an inductive
+encoding of graphs to formalize planar graph theory.
 
-Guéneau \emph{et al.}~\cite{gueneauetal},
-formalised ``time credits'' in Separation Logic and the $O$ notation in
+\cite{gueneauetal}~formalised ``time credits'' in Separation Logic and big-$O$ notation in
 Coq and then verified both the correctness
-and the time complexity of the union-find data structure. 
-Others, \emph{e.g.}~\cite{others2, others4, others3, others1}
-have also formally proved bounds on the resources
-used by programs. %formally in proof assistants such as Coq, Isabelle/HOL, and Why3.
-
-Nipkow \cite{nipkow2017} has verified functional variants of 
-several classic
-tree and queue structures in Isabelle/HOL. 
+and the time complexity of the union-find data structure.
+%Others, \emph{e.g.}~\cite{others2, others4, others3, others1}
+%have also formally proved bounds on the resources
+%used by programs. %formally in proof assistants such as Coq, Isabelle/HOL, and Why3.
 
 \paragraph{Verification of garbage collection algorithms.}
 Schism \cite{gcexample4,gcexample4a} is a certified concurrent
@@ -146,7 +143,18 @@ Hawblitzel and Petrank \cite{gcexample2} annotate x86 code
 for two GCs by hand, and then use Boogie and the Z3 automated theorem prover
 to verify their correctness automatically.
 
-\note{Cake ML~\cite{cakemlgc} has to be written with great care. They are very serious competition.}
+The closest piece of work to our certified GC is probably the excellent certified GC
+for the Cake ML project~\cite{cakemlgc}, since both integrate a certified GC into 
+a certified compiler for a functional language.  Their GC is written closer to assembly 
+than C, which is both a positive---in that they avoid undefined behaviors---and a negative, 
+in that their GC is harder to understand and upgrade and cannot take advantage of the
+mature CompCert compiler.  Their GC lacks some of our optimisations (\emph{e.g.} they have 
+only three generations), but on the other hand handles mutation in the GC heap.  The largest 
+difference, however, is that we present an integrated graph framework suitable for reasoning 
+about many graph algorithms, of which our GC is merely the flagship.  In contrast, they focus 
+much more narrowly on the problem of certified GCs.
+
+%\note{has to be written with great care. They are very serious competition.}
 
 
 %{\color{magenta}
