@@ -31,7 +31,7 @@ We wish to preserve this ``decorated program'' view while extending Floyd to sup
 
 \begin{figure}[t]
 \begin{minipage}{.15\textwidth}
-\begin{lstlisting}
+\begin{lstlisting}[basicstyle=\linespread{0.8}\normalfont\footnotesize\tt]
 $\{\ \ P_1 \ \ \}$
     c1
 $\{\ \ P_2 \ \ \}\label{code:localglobalin}$
@@ -42,12 +42,11 @@ $\searrow \{\ \ P_3 \ \ \}\label{code:locallocalin}$
     ...
 
 
-
 \end{lstlisting}
 \centerline{(front)}
 \end{minipage} \vline ~
 \begin{minipage}{.15\textwidth}
-\begin{lstlisting}[numbers=none]
+\begin{lstlisting}[numbers=none, basicstyle=\linespread{0.8}\normalfont\footnotesize\tt]
 $\{\ \ P_1 \ \ \}$
     c1
 $\{\ \ P_2 \ \ \}$
@@ -58,12 +57,11 @@ $\{\ \ ?F * P_4 \ \}$
   ...
 
 
-
 \end{lstlisting}
 \centerline{(back)}
 \end{minipage} \vline ~
 \begin{minipage}{.15\textwidth}
-\begin{lstlisting}[numbers=none]
+\begin{lstlisting}[numbers=none, basicstyle=\linespread{0.8}\normalfont\footnotesize\tt]
 $\{\ \ P_1 \ \ \}$
     c1
 $\{\ \ P_2 \ \ \}$
@@ -73,13 +71,12 @@ $\searrow \{\ \ P_3 \ \ \}$
       c3;
 $\swarrow\{\ \ P_5 \ \ \}$
 $\{\ \ P_6 \ \ \}$
-
     ...
 \end{lstlisting}
 \centerline{(front)}
 \end{minipage} \vline ~
 \begin{minipage}{.15\textwidth}
-\begin{lstlisting}[numbers=none]
+\begin{lstlisting}[numbers=none, basicstyle=\linespread{0.8}\normalfont\footnotesize\tt]
 $\{\ \ P_1 \ \ \}$
     c1
 $\{\ \ P_2 \ \ \}$
@@ -89,7 +86,6 @@ $\{\ \ ?F * P_4 \ \}$
     c3;
 $\{\ \ ?F * P_5 \ \}$
 $\{\ \ P_6 \ \ \}$
-
   ...
 \end{lstlisting}
 \centerline{(back)}
