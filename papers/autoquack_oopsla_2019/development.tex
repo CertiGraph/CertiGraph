@@ -4,12 +4,12 @@
 CompCert is a fully machine-checked verified compiler for~C~\cite{leroy:compcert}.
 The Verified Software Toolchain consists of a series of machine-checked modules written in Coq
 to reason about (CompCert) C programs~\cite{appel:programlogics}.
-Floyd is VST's module for verifying such programs using separation logic.  
-VST's modules interlock so there are no ``gaps'' in the end-to-end certified results; 
-accordingly all of the rules employed by Floyd have been proved sound with respect to 
-the underlying semantics used by CompCert.  Floyd is written in Ltac and Gallina and is 
+Floyd is VST's module for verifying such programs using separation logic.
+VST's modules interlock so there are no ``gaps'' in the end-to-end certified results;
+accordingly all of the rules employed by Floyd have been proved sound with respect to
+the underlying semantics used by CompCert.  Floyd is written in Ltac and Gallina and is
 designed to help users verify the full functional correctness of their programs.
-We added two tactics, \li{localize} and \li{unlocalize}, to 
+We added two tactics, \li{localize} and \li{unlocalize}, to
 integrate the \textsc{Localize} rule into Floyd as described in \S\ref{sec:orientation}--\S\ref{sec:localizations}.
 
 
@@ -126,12 +126,13 @@ All our results in this paper have been machine-checked.
 %The bulk of our development was checked in Coq, although a 55-line file (shown in Figure~\ref{fig:hipmarkgraph}) was checked in HIP/SLEEK.  Our modifications to H/S itself were not machine-checked since H/S does not have a mechanized soundness proof.
 Although the size of a development does not perfectly match with that development's importance or implementation difficulty, we present the size nonetheless in Table~\ref{tab:codebase}.
 %, organized roughly by the paper section corresponding to each development.
-Our proof script is written in a very 
+Our proof script is written in a very
 dense style.
-For comparison, verifying a simple 39-line list-based merge sort in VST takes 600 lines.  
-At $\approx400$ LOC, the garbage collector is much larger, and is very complicated both 
-mathematically and spatially, in many places teetering on the edge of what can be defined 
-in~C.  For context, VST and CompCert are approximately {\color{red}?783k?} and 217k LOC, respectively.
+For comparison, verifying a simple 39-line list-based merge sort in VST takes 600 lines.
+At $\approx400$ LOC, the garbage collector is much larger, and is very complicated both
+mathematically and spatially, in many places teetering on the edge of what can be defined
+in~C.  For context, CompCert has 217k LOC, 5,687 definitions, and 6,694 theorems;
+VST has 623k LOC, 14,038 definitions, and 21,442 theorems.
 
 %It took fewer than 400 lines of Coq to verify the \li{mark} algorithm in H/S, indicating that a large portion of the codebase is shared between VST and H/S.  For context, VST and H/S have approximately 140k and 179k LOC.
 
