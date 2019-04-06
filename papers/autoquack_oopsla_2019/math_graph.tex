@@ -15,15 +15,15 @@ to want to use graph theory to describe
 program behavior. As discussed in \S\ref{sec:related},
 25 years of research into mechanized graph theory can
 be succinctly summarized as ``it is a little tricky''.
-%, since as is so often the 
+%, since as is so often the
 %case, the proofs are straightforward only once the proper definitions have
-%been found.  
+%been found.
 Accordingly, an essential component of our
 work is a library of formalized graph theory that is actually powerful enough, and
-expressive enough, to mechanically verify realistic algorithms written in C.  
+expressive enough, to mechanically verify realistic algorithms written in C.
 As will be shown in \S\ref{sec:development}, our mathematical
 graph constructions comprise a considerable fraction of our
-codebase, so it is vital that our framework be highly modular to 
+codebase, so it is vital that our framework be highly modular to
 enable reuse of definitions and proofs from one
 example to the next. We present our mathematical graph
 framework with an emphasis on this modularity.
@@ -78,7 +78,7 @@ properties to LabeledGraphs (\ref{subsec:graphplugins}). %and will be discussed 
 A PreGraph is a hextuple $(\mathcal{V}, \mathcal{E}, \mathtt{V}, \mathtt{E}, \mathtt{src}, \mathtt{dst})$.  $\mathcal{V}$ and $\mathcal{E}$ are the underlying
 carrier types of vertices and edges.  $\mathtt{V}$ and $\mathtt{E}$ are predicates over
 $\mathcal{V}$ and $\mathcal{E}$ that specify the notion
-of \emph{validity} in the graph.  Finally, $\mathtt{src}$ and $\mathtt{dst}$ map each edge to 
+of \emph{validity} in the graph.  Finally, $\mathtt{src}$ and $\mathtt{dst}$ map each edge to
 its source and destination.
 % With an
 %eye to flexibility, we make no further requirements of a legal PreGraph.
@@ -86,7 +86,7 @@ its source and destination.
 The benefits of introducing validity are twofold. The first is a
 neat resolution of the incompatibility between type theory and set theory.
 In set theory, one
-element can belong to multiple sets, and 
+element can belong to multiple sets, and
 adding or removing vertices or edges is as easy as altering
 the set directly to represent the result of the operation.
 In type theory, however, a term can only belong
@@ -105,7 +105,7 @@ where a connected graph (everything is reachable from $\m{v}_0$) has had the con
 subgraph reachable from $\m{v}_1$ removed; \emph{e.g.}, the edge $e$ is dangling.
 The last conjunct in the $\m{findS}$ relation from Figure~\ref{fig:find} is an example
 of where a real verification needs to reason about just such a doughnut, in particular
-to specify that the unreachable portion of a graph has not changed.  
+to specify that the unreachable portion of a graph has not changed.
 %PreGraph supplies the necessary flexibility to express such notions.
 
 \hide{an incomplete graph,
@@ -138,9 +138,9 @@ and \emph{remove\_edge}, and relations between PreGraphs such
 as \emph{structurally\_identical}$^{*}$ and \emph{subgraph}.
 Definitions of the concepts marked with asterisks are
 shown in Figure \ref{fig:graphdefns} to give a flavor
-of the subtleties involved in getting definitions that 
+of the subtleties involved in getting definitions that
 really work.
-These general concepts, together with around 750 derived lemmas,
+These general concepts, together with around 500 derived lemmas,
 provide a
 solid foundation for more specific theorems needed in concrete
 verifications.
@@ -163,9 +163,9 @@ defined on PreGraphs. In \S\ref{fig:find} we saw \emph{reachable}, written
 $\m{a} \mathrel{{\stackrel{\gamma~}{\leadsto^{1}}}} \m{b}$. It means that a and b are in $V(\gamma)$ and that there exists an edge (in $E(\gamma)$)
 that goes from a to b.}
 The reflexive, transitive closure on \emph{reachable} is written
-$\m{a} \accentset{\gamma}{\leadsto}^{\star} \m{b}$, and 
+$\m{a} \accentset{\gamma}{\leadsto}^{\star} \m{b}$, and
 $\neg (\m{a} \accentset{\gamma}{\leadsto}^{\star} \m{b})$
-is written 
+is written
 $\m{a} \accentset{\gamma}{\not\leadsto}^{\star} \m{b}$
 $\m{a} \mathrel{{\stackrel{\gamma~}{\not\leadsto^{\star}}}} \m{b}$.
 
@@ -212,9 +212,9 @@ A LabeledGraph is septuple $(\mathrm{PreGraph},\ma{L_{V}},\ma{L_{E}},\ma{L_{G}},
 vertices, edges, and/or the graph as a whole. $\ma{L_{V}}$, $\ma{L_{E}}$, and $\ma{L_{G}}$
 are the associated carrier types; $\mathtt{vl}$, $\mathtt{el}$, and $\mathtt{gl}$
 are the labeling functions themselves.
-The need for such labels is that many classic graph problems from union-find (node ranks) 
+The need for such labels is that many classic graph problems from union-find (node ranks)
 to Dijkstra (edge weights) require them.  The need for a label on the graph as a whole
-is a little more subtle; in \S\ref{sec:certigc} we use one in the garbage collector 
+is a little more subtle; in \S\ref{sec:certigc} we use one in the garbage collector
 to keep track of \emph{e.g.} the number of generations and their boundaries.
 Since LabeledGraph is built on PreGraph, it inherits all PreGraph lemmas via
 Coq's \emph{type coercion} mechanism, while enabling additional lemmas involving labels.
@@ -263,12 +263,12 @@ Further, the type coercion we described earlier continues to apply,
 meaning that a GeneralGraph can seamlessly behave like a
 LabeledGraph or a PreGraph, thereby inheriting their lemmas.
 This combination of specificity and generality is
-what makes GeneralGraphs versatile. Moreover, we can 
+what makes GeneralGraphs versatile. Moreover, we can
 compose complicated soundness conditions from reusable pieces,
 further enabling code sharing between algorithms.
 
 %we do
-%not need to restate 
+%not need to restate
 
 %for
 %each program that we verify since we can %. In the next section, we explain how to
@@ -291,10 +291,10 @@ We take advantage of this pattern by developing %some simple atomic
 \emph{soundness plugins}, \emph{i.e.} definitions of soundness
 conditions along with related lemmas.  By combining these plugins
 we can describe the soundness condition we need for a particular
-algorithm.  When proving lemmas about the resulting combination, 
-we can use known facts about the separate plugins, in addition to 
+algorithm.  When proving lemmas about the resulting combination,
+we can use known facts about the separate plugins, in addition to
 lemmas that emerge due to the various combinations.  This complexity
-is managed smoothly by Coq's typeclass system, increasing the 
+is managed smoothly by Coq's typeclass system, increasing the
 compositionality of the system.
 Consider the following oft-used graph properties:
 

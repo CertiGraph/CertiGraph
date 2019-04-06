@@ -1,8 +1,24 @@
 \label{sec:vst}
 
-\marginpar{\tiny \color{blue} These brief explanations of VST and Floyd need to come in much earlier...}
-{\color{magenta}The Verified Software Toolchain (VST) is a series of machine-checked modules written in Coq whose focus is reasoning about C programs~\cite{appel:programlogics}, especially those programs that can be compiled with the CompCert compiler~\cite{leroy:compcert}.  One of VST's modules, ``Floyd'', is a separation-logic based engine to help users verify concrete programs.}
-The modules interlock so there are no ``gaps'' in the end-to-end certified results; accordingly all of the rules employed by Floyd have been proved sound with respect to the underlying semantics used by CompCert.  Floyd is written in Ltac and Gallina and is designed to help users verify the full functional correctness of their programs.  Although Floyd devotes considerable effort to make this task simpler, it prefers expressibility and completeness to more automated tools like HIP/SLEEK.
+%\marginpar{\tiny \color{blue} These brief explanations of VST and Floyd need to come in much earlier...}
+Floyd is written in Ltac and Gallina and is designed to help users verify the full functional correctness of their programs.
+
+~\cite{appel:programlogics}, especially those programs that can be compiled with the compiler~\cite{leroy:compcert}.
+
+concrete programs.
+
+The Verified Software Toolchain consists of a series of machine-checked modules written in Coq
+to reason about (CompCert) C programs.  Floyd use
+
+One of VST's modules,
+
+.
+ whose focus is reasoning about
+
+The modules interlock so there are no ``gaps'' in the end-to-end certified results; accordingly all of the rules employed by Floyd have been proved sound with respect to the underlying semantics used by CompCert.
+
+
+%Although Floyd devotes considerable effort to make this task simpler, it prefers expressibility and completeness to more automated tools like HIP/SLEEK.
 
 
 \subsection{Localizations in VST with \li{localize} and \li{unlocalize}}
@@ -11,7 +27,7 @@ The modules interlock so there are no ``gaps'' in the end-to-end certified resul
 Floyd presents users with a pleasant ``decorated program'' visualization for Hoare proofs, in which users work from the top of the program to the bottom even though the formal proof is maintained as applications of inference rules.  For example, suppose the proof goal is $\triple{P_1}{c_1\li{;}c_2}{P_5}$ and VST's user tells Floyd to apply a Hoare rule for $c_1$, \emph{e.g.}~$\triple{P_1}{c_1}{P_2}$.  Floyd will then automatically apply the \infrulestyle{Sequence} rule and show the user $\triple{P_2}{c_2}{P_5}$ as the remaining goal.
 When the user is in the middle of a verification, the decorated program is partially done (\emph{i.e.} the proof is finished from the top to ``the current program point'') and the inference tree is also partially done (\emph{i.e.} with holes that are represented by the remaining proof goals in Coq).
 
-We wish to preserve this ``decorated program'' view while extending Floyd to support ramification.  Our task therefore is to construct a proof in Coq's underlying logic that allows a localization block to be constructed in this manner---that is, we wish to enter a localization block without requiring the user to specify the ``exit point'' in advance.  The engineering is tricky because the proof Floyd is constructing (\emph{i.e.} applications of inference rules) has holes in places where the user's ``top to bottom'' view of things has not yet arrived.
+We wish to preserve this ``decorated program'' view while extending Floyd to support localization.  Our task therefore is to construct a proof in Coq's underlying logic that allows a localization block to be constructed in this manner---that is, we wish to enter a localization block without requiring the user to specify the ``exit point'' in advance.  The engineering is tricky because the proof Floyd is constructing (\emph{i.e.} applications of inference rules) has holes in places where the user's ``top to bottom'' view of things has not yet arrived.
 
 \begin{figure}[t]
 \begin{minipage}{.15\textwidth}
@@ -21,13 +37,14 @@ $\{\ \ P_1 \ \ \}$
 $\{\ \ P_2 \ \ \}\label{code:localglobalin}$
 $\searrow \{\ \ P_3 \ \ \}\label{code:locallocalin}$
       c2;
-$~~\,\{\ \ P_4 \ \ \}\label{code:localsndcmd}$
+  $\,\{\ \ P_4 \ \ \}\label{code:localsndcmd}$
 
     ...
 
 
 
 \end{lstlisting}
+\centerline{(front)}
 \end{minipage} \vline ~
 \begin{minipage}{.15\textwidth}
 \begin{lstlisting}[numbers=none]
@@ -43,6 +60,7 @@ $\{\ \ ?F * P_4 \ \}$
 
 
 \end{lstlisting}
+\centerline{(back)}
 \end{minipage} \vline ~
 \begin{minipage}{.15\textwidth}
 \begin{lstlisting}[numbers=none]
@@ -58,6 +76,7 @@ $\{\ \ P_6 \ \ \}$
 
     ...
 \end{lstlisting}
+\centerline{(front)}
 \end{minipage} \vline ~
 \begin{minipage}{.15\textwidth}
 \begin{lstlisting}[numbers=none]
@@ -73,6 +92,7 @@ $\{\ \ P_6 \ \ \}$
 
   ...
 \end{lstlisting}
+\centerline{(back)}
 \end{minipage}
 %\vspace{-ex}
 \caption{Front and back ends of \li{localize} and \li{unlocalize}}
@@ -84,31 +104,45 @@ Figure~\ref{figure:backend} has four partially-decorated ``proofs in progress'',
 Accordingly, the \li{localize} tactic builds an incremental proof in the underlying program logic by applying \infrulestyle{Frame} with an uninstantiated metavariable.
 The second column of Figure~\ref{figure:backend} shows the back end with the unknown frame $?F$, which will eventually be instantiated by \li{unlocalize}.
 
-In the third column, the user has advanced past $c_3$ to reach the local postcondition $P_5$ and now wishes to \li{unlocalize} to~$P_6$.  Afterwards, the internal state looks like the fourth column, and so to a first approximation, \li{unlocalize} can instantiate $?F$ with $P_5 \wand P_6$.  In truth, $?F$ is chosen more subtly to properly handle both existential variables and modified program variables; \li{unlocalize} then automatically simplifies the goals to present a cleaner interface to the user.  These transformations require some additional theory given in \S\ref{sec:localizations}.
+In the third column, the user has advanced past $c_3$ to reach the local postcondition $P_5$ and now wishes to \li{unlocalize} to~$P_6$.  Afterwards, the internal state looks like the fourth column, and so to a first approximation, \li{unlocalize} can instantiate $?F$ with $P_5 \wand P_6$.  In truth, $?F$ is chosen more subtly to properly handle both existential variables and modified program variables; \li{unlocalize} then automatically simplifies the goals to present a cleaner interface to the user.  These transformations require the additional theory given in \S\ref{sec:localizations}.
 
+\subsection{Statistics related to our development}
 
 \begin{table}[t]
 \centering
-\begin{tabular}{c|c|c|c|c}
-Component & Files & Size (in lines) & Definitions & Theorems\\\hline
-Verification of Marking & 6 & 775 & 9 & 20 \\
-Spanning Tree & 5 & 2,723 & 17 & 92 \\
-Union-Find & 18 & 3,193 & 107 & 135 \\
-Garbage Collector & 16 & 13,858 & 235 & 712 \\
-Math Graph Library & 20 & 10,585 & 216 & 581 \\
-Spatial Graph Library & 3 & 2,328 & 59 & 110 \\
-Integration into VST & 11 & 2,783 & 17 & 172 \\
-Common Utilities & 10 & 3,578 & 44 & 289 \\
-\hline\hline
-Total Development & 89 & 39,823 & 704 & 2,111 \\
+\begin{tabular}{c|c|c|c|c|c}
+Component & Section & Files & Size (in lines) & Definitions & Theorems\\\hline
+Common Utilities & & 10 & 3,578 & 44 & 289 \\
+Math Graph Library & \S\ref{sec:mathgraph} & 20 & 10,585 & 216 & 581 \\
+Spatial Graph Library & \S\ref{sec:spacegraph} & 3 & 2,328 & 59 & 110 \\
+Integration into VST & \S\ref{sec:localizations},\S\ref{sec:development} & 11 & 2,783 & 17 & 172 \\
+\hline
+Marking (graph and DAG) & \S\ref{sec:localizations} & 6 & 775 & 9 & 20 \\
+Spanning Tree & \S\ref{sec:localizations} & 5 & 2,723 & 17 & 92 \\
+Union-Find (heap and array) & \S\ref{sec:orientation} & 18 & 3,193 & 107 & 135 \\
+Garbage Collector & \S\ref{sec:certigc} & 16 & 13,858 & 235 & 712 \\
+\hline & & & & & \\
+[-2.2em] \\
+\hline & & & & & \\
+[-1em]
+Total Development & & 89 & 39,823 & 704 & 2,111 \\
 \end{tabular}
-\caption{Size of our codebase}
+\caption{Statistics for our code base}
 \label{tab:codebase}
 \end{table}
 
-All of our results in this paper have been machine-checked.  
+All our results in this paper have been machine-checked.
 %The bulk of our development was checked in Coq, although a 55-line file (shown in Figure~\ref{fig:hipmarkgraph}) was checked in HIP/SLEEK.  Our modifications to H/S itself were not machine-checked since H/S does not have a mechanized soundness proof.
-Although the size of a development does not perfectly match with that development's importance or implementation difficulty, we present it nonetheless in Table~\ref{tab:codebase}, organized roughly by the paper section corresponding to each development.  For comparison, verifying a simple list-based merge sort in VST takes 600 lines.  It took fewer than 400 lines of Coq to verify the \li{mark} algorithm in H/S, indicating that a large portion of the codebase is shared between VST and H/S.  For context, VST and H/S have approximately 140k and 179k LOC.
+Although the size of a development does not perfectly match with that development's importance or implementation difficulty, we present the size nonetheless in Table~\ref{tab:codebase}.
+%, organized roughly by the paper section corresponding to each development.
+Our proof script is written in a very 
+dense style.
+For comparison, verifying a simple 39-line list-based merge sort in VST takes 600 lines.  
+At $\approx400$ LOC, the garbage collector is much larger, and is very complicated both 
+mathematically and spatially, in many places teetering on the edge of what can be defined 
+in~C.  For context, VST and CompCert are approximately {\color{red}?783k?} and 217k LOC, respectively.
+
+%It took fewer than 400 lines of Coq to verify the \li{mark} algorithm in H/S, indicating that a large portion of the codebase is shared between VST and H/S.  For context, VST and H/S have approximately 140k and 179k LOC.
 
 \hide{
 \paragraph{Size of Coq mathgraph \S\ref{sec:mathgraph}.}
