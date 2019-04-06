@@ -4,9 +4,7 @@ struct Node {
     int m;
     struct Node * l;
     struct Node * r; };
-
 // We use $x \xleftrightarrow{\gamma} x'$ to represent $x = x' = 0 \vee \gamma(x) = (x', \_, \_)$
-
 struct Node * copy(struct Node * x) { 
     struct Node * l, * r, * x0, * l0, * r0;
 // $\{\p{graph}(\tx{x},\gamma)\}$
@@ -25,10 +23,7 @@ struct Node * copy(struct Node * x) {
       x0 = (struct Node *) mallocN (sizeof (struct Node));
 // $\{\p{graph}(\tx x,\gamma) * \tx{x0} |-> \_, \_, \_ /| \gamma(\tx{x}) = (0,l,r) \}$
 // $\searrow \{\tx x|-> 0,l,r * \tx{x0} |-> \_, \_, \_ /| \gamma(\tx{x}) = (0,l,r)\}$
-      l = x -> l;
-      r = x -> r;
-      x -> m = x0;
-      x0 -> m = 0;
+      l = x -> l; r = x -> r; x -> m = x0; x0 -> m = 0;
 // $\swarrow \left\{\!\!\!\begin{array}{l@{}} \tx x|-> \tx{x0},\tx{l},\tx{r} * \tx{x0} |-> 0, \_, \_ /| \\ \gamma(\tx{x}) = (0,\tx{l},\tx{r}) /|  \exists \gamma_1 \gamma_1'. \m{v\_copy1}(\gamma, \tx{x}, \gamma_1, \gamma_1') \end{array}\right\}$
 // $\left\{\!\!\!\begin{array}{l@{}}\exists \gamma_1 \gamma_1'. \p{graph}(\tx x,\gamma_1) * \tx{x0} |-> 0, \_, \_ /| \\ \gamma(\tx{x}) = (0,\tx{l},\tx{r}) /| \m{v\_copy1}(\gamma, \tx{x}, \gamma_1, \gamma_1')\end{array}\right\}$
 // $\left\{\!\!\!\begin{array}{l@{}} \p{graph}(\tx x,\gamma_1) * \tx{x0} |-> 0, \_, \_ /| \\ \gamma(\tx{x}) = (0,\tx{l},\tx{r}) /| \m{v\_copy1}(\gamma, \tx{x}, \gamma_1, \gamma_1')\end{array}\right\}$

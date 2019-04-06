@@ -1,6 +1,1 @@
-say "Clight" throughout
-
-citations to add in:
-certicoqwebsite and certicoqpaper when mentioning certicoq
-
-if you cut 5.1, there will be a ?? in related
+scale infra picture
