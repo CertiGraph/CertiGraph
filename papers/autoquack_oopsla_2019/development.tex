@@ -1,21 +1,16 @@
 \label{sec:vst}
 
 %\marginpar{\tiny \color{blue} These brief explanations of VST and Floyd need to come in much earlier...}
-Floyd is written in Ltac and Gallina and is designed to help users verify the full functional correctness of their programs.
-
-~\cite{appel:programlogics}, especially those programs that can be compiled with the compiler~\cite{leroy:compcert}.
-
-concrete programs.
-
+CompCert is a fully machine-checked verified compiler for~C~\cite{leroy:compcert}.
 The Verified Software Toolchain consists of a series of machine-checked modules written in Coq
-to reason about (CompCert) C programs.  Floyd use
-
-One of VST's modules,
-
-.
- whose focus is reasoning about
-
-The modules interlock so there are no ``gaps'' in the end-to-end certified results; accordingly all of the rules employed by Floyd have been proved sound with respect to the underlying semantics used by CompCert.
+to reason about (CompCert) C programs~\cite{appel:programlogics}.
+Floyd is VST's module for verifying such programs using separation logic.  
+VST's modules interlock so there are no ``gaps'' in the end-to-end certified results; 
+accordingly all of the rules employed by Floyd have been proved sound with respect to 
+the underlying semantics used by CompCert.  Floyd is written in Ltac and Gallina and is 
+designed to help users verify the full functional correctness of their programs.
+We added two tactics, \li{localize} and \li{unlocalize}, to 
+integrate the \textsc{Localize} rule into Floyd as described in \S\ref{sec:orientation}--\S\ref{sec:localizations}.
 
 
 %Although Floyd devotes considerable effort to make this task simpler, it prefers expressibility and completeness to more automated tools like HIP/SLEEK.
