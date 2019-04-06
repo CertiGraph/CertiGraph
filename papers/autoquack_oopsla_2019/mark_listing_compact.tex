@@ -14,7 +14,7 @@ $//$$\label{code:afterrootmark}\swarrow \{\tx x|-> m,-,l,r /| {\color{red}m = \t
 $//$$\label{code:globalafterrootmark}\{{\color{red}\p{graph}(\tx x,\gamma)} /| {\color{red}\gamma(\tx{x}) = (m,l,r)} /| m = \tx{root\_mark} \}$
   if (root_mark == 1) return;
 $//$$\{\p{graph}(\tx x,\gamma) /| \gamma(\tx{x}) = ({\color{red}0},l,r) \}$
-$//$$\label{code:markbeforetripleramify}\searrow \{{\color{red}\tx x|-> 0,-,l,r} /| \gamma(\tx{x}) = (0,l,r)\}$      
+$//$$\label{code:markbeforetripleramify}\searrow \{{\color{red}\tx x|-> 0,-,l,r} /| \gamma(\tx{x}) = (0,l,r)\}$
 $\label{code:markram2}\ramify(\ref{lem:updategraphnode})$  l = x -> l; r = x -> r; x -> m = 1;
 $//$$\label{code:markaftertripleramify}\swarrow \left\{\!\!\!\begin{array}{l@{}}\tx x|-> {\color{red}1},-,\tx{l},\tx{r} /| \gamma(\tx{x}) = (0,\tx{l},\tx{r}) /| \null \\ {\color{red}\exists \gamma'. \m{mark1}(\gamma, \tx{x}, \gamma')}\end{array}\right\}$
 $//$$\{{\color{red}\exists \gamma'. \p{graph}(\tx x,\gamma')} /| \gamma(\tx{x}) = (0,\tx{l},\tx{r}) /| \m{mark1}(\gamma, \tx{x}, \gamma')\}$
@@ -34,36 +34,36 @@ $//$$\label{code:outmark}\left\{\!\!\!\begin{array}{l@{}}\exists \gamma'''. \p{g
 {\footnotesize
 \begin{flushleft}
 \begin{minipage}[c]{0.5\textwidth}
-\begin{equation*}
+\begin{equation}
 \label{eqn:bigraphintrofoldunfold}
 \begin{split}
 \quad \p{graph}&(x, \gamma) ~ <=> ~ (x = 0 /| \p{emp}) |/ \null \\
 & \exists m,l,r.~ \gamma(x)=(m,l,r) /| x~\mathsf{mod}~16 = 0 /| \null \\
 & \qquad ~~ x |-> m,-,l,r ** \p{graph}(l, \gamma) ** \p{graph}(r, \gamma)
 \end{split}
-\end{equation*}
+\end{equation}
 \begin{equation*}
 \begin{array}{l@{\hspace{2pt}}c@{\hspace{2pt}}l}
 \quad \m{mark1}(\gamma,x,\gamma') & \defeq & \forall \m{v}. \gamma'(v) = \! \begin{cases}
-(1,l,r) \! & \begin{array}{@{}l@{}}\text{when } x = \m{v} /| \null \\ \gamma(\m{v}) = (0,l,r) \end{array} \\
+(1,l,r) \! & \begin{array}{@{}l@{}}\text{when } x = \m{v} /| \null \\[-3pt] \gamma(\m{v}) = (0,l,r) \end{array} \\
 \gamma(\m{v}) & \text{otherwise}
-\end{cases} 
+\end{cases}
 \end{array}
 \end{equation*}
 \end{minipage}
-\vline
+~~ \vline
 \begin{minipage}[c]{0.4\textwidth}
 \begin{equation*}
 \begin{split}
 \m{v_1} \accentset{\gamma}{\leadsto}_0 \m{v_2} \defeq \exists l,r.~ \gamma(\m{v}_1) = (0,l,r) /| \m{v}_2 \in \{ l,r\} \\
-\m{v_1} \accentset{\gamma}{\leadsto}^{\star}_0 \m{v_2} \defeq \text{reflexive, transitive closure of ``}\mathrel{{\stackrel{\gamma}{\leadsto}}_{0}}\text{''} 
+\m{v_1} \accentset{\gamma}{\leadsto}^{\star}_0 \m{v_2} \defeq \text{reflexive, transitive closure of ``}\mathrel{{\stackrel{\gamma}{\leadsto}}_{0}}\text{''}
 \\
-\m{mark}(\gamma,x,\gamma') \defeq
-\forall \m{v}. \gamma'(\m{v}) = \! 
+\quad \m{mark}(\gamma,x,\gamma') \defeq
+\forall \m{v}. \gamma'(\m{v}) = \!
 \begin{cases}
-(1,l,r) \! 
-\begin{array}{@{}l@{}}\text{when } 
-\m{x} \accentset{\gamma}{\leadsto}^{\star}_0 \m{v} /| \null \\ \gamma(\m{v}) = (-,l,r) 
+(1,l,r) \!
+\begin{array}{@{}l@{}}\text{when }
+\m{x} \accentset{\gamma}{\leadsto}^{\star}_0 \m{v} /| \null \\[-3pt] \gamma(\m{v}) = (-,l,r)
 \end{array}\\
 \gamma(\m{v}) \text{otherwise}
 \end{cases}

@@ -166,7 +166,7 @@ $\label{code:locexamplepostsw}// \{ \exists x_f.~ (x_f = \tx{x}) /| (x_f \! = \!
 $// \{ \tx{x} \! = \! 6 /| D \}  \}$
 \end{lstlisting}
 Notice that lines~\ref{code:locexamplepresw} and~\ref{code:locexamplepostsw}
-are exactly in the form $\exists x. \hat{\hat{L_2}}$ and $\exists x. \hat{\hat{G_2}}$, \emph{i.e.} exactly in the format permitted by \textsc{Localize}, where $\hat{\hat{L_2}}(x_f) \defeq (x_f = \tx{x}) /| \hat{L_2}(x_f)$, \emph{i.e.} $(x_f = \tx{x}) /| (x_f \! = \! 6 /| C)$ and $\hat{\hat{G_2}}(x_f)$ is similar. % \defeq (x_f = \tx{x}) /| (x_f \! = \! 6 /| C)$
+are exactly in the form $\exists x_f. \hat{\hat{L_2}}(x_f)$ and $\exists x_f. \hat{\hat{G_2}}(x_f)$, \emph{i.e.} exactly in the format permitted by \textsc{Localize}, where $\hat{\hat{L_2}}(x_f) \defeq (x_f = \tx{x}) /| \hat{L_2}(x_f)$, \emph{i.e.} $(x_f = \tx{x}) /| (x_f \! = \! 6 /| C)$ and $\hat{\hat{G_2}}(x_f)$ is similar. % \defeq (x_f = \tx{x}) /| (x_f \! = \! 6 /| C)$
 
 Now apply \textsc{Localize} with $R \defeq \forall x_f.~\hat{L_2}(x_f) --* \hat{G_2}(x_f)$, \emph{i.e.} $\forall x_f.~(x_f \! = \! 6 /| C) --* (x_f \! = \! 6 /| D)$.  By construction, $R$
 is free from all program variables modified by $c$, so \textsc{Localize}'s side condition is
@@ -204,52 +204,53 @@ decisions taken by most existing tools, our solutions can be incorporated more e
 
 \input{mark_listing_compact.tex}
 
-In Figure~\ref{fig:markgraph} we put the code and proof sketch of the classic \li{mark} algorithm that visits and colors every reachable node in a heap-represented graph.  The \li{mark} example contrasts from \li{find} in several illustrative respects.  First, it modifies the labels of nodes instead of the edges.  Second, each node has two outgoing edges rather than one, so the graph can have a more complex shape.  Third, the graph can be cyclic.  Lastly, the specification we certify (lines \ref{code:markstart} and \ref{code:markend}) is \emph{local} rather than \emph{global}:
+We have already seen that allowing existentials in postconditions lets us handle modified program
+variables properly.  However, these ``linked existentials''---recall that our previous technique
+hinged on the fact that the existential witness to the variable $x_f$ in the local postcondition 
+$L_2$ was carried over to the corresponding existential witness in the global postcondition---have
+other uses as well.  To illustrate them, and to demonstrate other aspects of our system, 
+consider another example.
+
+In Figure~\ref{fig:markgraph} we put the code and proof sketch of the classic \li{mark} algorithm that visits and colors every reachable node in a heap-represented graph.  The \li{mark} example contrasts from \li{find} in several respects.  First, it modifies the labels of nodes instead of the edges.  Second, each node has two outgoing edges rather than one, so the graph can have a more complex shape.  Third, the graph can be nontrivially cyclic.  Lastly, the specification we certify (lines \ref{code:markstart} and \ref{code:markend}) is \emph{local} rather than \emph{global}:
 \vspace*{-1ex}
 \[
 \{\p{m\_graph}(\li{x},\gamma)\}~\li{mark(x)}~\{\exists \gamma'.~ \p{m\_graph}(\li{x},\gamma') /| \m{mark}(\gamma, \li{x}, \gamma')\}
 \vspace*{-1ex}
 \]
-The specification is again stated with mathematical $\gamma$, although in this case $\gamma(x)$ maps to triples $(m,l,r)$, where $m$ is a ``mark'' bit (0 or 1) and $\{l,r\} \subseteq V(\gamma) \uplus \{0\}$ are the neighbors of $v$.  By ``local'', we mean that the predicate $\p{m\_graph}(\li{x},\gamma)$ says that the heap represents \emph{only the nodes in $\gamma$ that are reachable from \li{x}}.  Rather than passing the entire graph around as \li{find} does, \li{mark} will use the fold/unfold relationship given in equation~\eqref{eqn:bigraphintrofoldunfold}, located just under the code in Figure~\ref{fig:markgraph}, to ``unfold'' the graph as if it were an inductive predicate.
+The specification is again stated with mathematical $\gamma$, although in this case $\gamma(x)$ maps to triples $(m,l,r)$, where $m$ is a ``mark'' bit (0 or 1) and $\{l,r\} \subseteq V(\gamma) \uplus \{\mathtt{null}\}$ are the neighbors of $v$.  By ``local'', we mean that the predicate $\p{m\_graph}(\li{x},\gamma)$ says that the heap represents \emph{only the nodes in $\gamma$ that are reachable from \li{x}}.  Rather than passing the entire graph around as \li{find} does, \li{mark} will use the fold/unfold relationship given in equation~\eqref{eqn:bigraphintrofoldunfold}, located just under the code in Figure~\ref{fig:markgraph}, to ``unfold'' the graph as if it were an inductive predicate.
 
 This fold/unfold relationship deserves attention.
-First, \eqref{eqn:bigraphintrofoldunfold} uses the ``overlapping conjunction''
-$\ocon$ of separation logic; informally $P ** Q$ means that $P$ and $Q$ may overlap
+First, \eqref{eqn:bigraphintrofoldunfold} uses the ``overlapping conjunction''~$\ocon$ of separation logic; informally $P ** Q$ means that $P$ and $Q$ may overlap
 in the heap (\emph{e.g.}, nodes in the left subgraph can also be in the right subgraph
 or even be the root $x$).  The presence of the unspecified sharing indicated by the
-$\ocon$ connective is part of why graph-manipulating algorithms are so hard to verify
-(\emph{e.g.}, it is hard to apply the \infrulestyle{Frame} rule).  {\color{magenta}The
+$\ocon$ connective\footnote{Recall that the
 standard semantics of the separation logic connectives used in this paper are in
-Figure~\ref{fig:seplogsem}.}
+Figure~\ref{fig:seplogsem} on page~\pageref{fig:seplogsem}.} is part of why graph-manipulating algorithms are so hard to verify
+(\emph{e.g.}, it is hard to apply the \infrulestyle{Frame} rule).
 Second, \eqref{eqn:bigraphintrofoldunfold} illustrates how industrial-strength settings complicate verification.  Lines~\mbox{\ref{code:nodedefstart}--\ref{code:nodedefend}} define the data type \li{Node} used by \li{mark}.  The \li{_Alignas($n$)} directives tell CompCert to align fields on $n$-byte boundaries.
 As explained in~\S\ref{sec:goodgraph}, this alignment is necessary in C-like memory models to prove fold-unfold \eqref{eqn:bigraphintrofoldunfold}, which is why \eqref{eqn:bigraphintrofoldunfold} includes an alignment restriction $x~\mathsf{mod}~16 = 0$ and an existentially-quantified ``blank'' second field for the root $x \mapsto m,-,l,r$.
-{\color{magenta}(In our Floyd proofs the alignment restriction and blank second field are nicely hidden ``behind the scenes''.)}
+(In our Floyd proofs the alignment restriction and blank second field are nicely hidden ``behind the scenes''.)
 
 Just as with \li{find}, the postcondition of \li{mark} is specified \emph{relationally}, \emph{i.e.} $\{\exists \gamma'.~ \p{graph}(\li{x},\gamma') /| \m{mark}(\gamma, \li{x}, \gamma')\}$ instead of \emph{functionally}, \emph{i.e.} $\{\p{graph}\big(\li{x},\m{mark}(\gamma, \li{x})\big)\}$. In the first case $\m{mark}$ is a relation that specifies that~$\gamma'$ is the result of correctly marking~$\gamma$ from~\li{x}, whereas in the second $\m{mark}$ is a function that \textbf{computes} a new graph, which is the result of marking~$\gamma$ from~\li{x}. A relational approach is better for both theoretical and practical reasons.
-\marginpar{\tiny \color{blue}Needs polishing}
-{\color{magenta}Theoretically, relations are preferable because they are more general.  For example, relations allow ``inputs'' to have no ``outputs'' (\emph{i.e.} be partial) or alternatively have many outputs (\emph{i.e.} be nondeterministic).  Nondeterminism can be quite useful when specifying programs; for example, the CertiCoq garbage collector (\S\ref{sec:certigc}) is specified nondeterministically to avoid, among other things, specifying how \li{malloc} allocates fresh blocks of memory.  Relations are also preferable to functions because they are more compositional.
-We take advantage of compositionality by using $\m{mark}(\gamma,x,\gamma') /| \ldots$ to specify both our ``spanning tree'' and {\color{blue}``graph copy''} algorithms in~\S\ref{sec:application}, which also need to mark nodes in order to carry out their primary tasks.
+%\marginpar{\tiny \color{blue}Needs polishing}
+%{\color{magenta}
+Theoretically, relations are preferable because they are more general.  For example, relations allow ``inputs'' to have no ``outputs'' (\emph{i.e.} be partial) or alternatively have many outputs (\emph{i.e.} be nondeterministic).  Nondeterminism can be quite useful when specifying programs; for example, the CertiCoq garbage collector (\S\ref{sec:certigc}) is specified nondeterministically to avoid, among other things, specifying how \li{malloc} allocates fresh blocks of memory.  Relations are also preferable to functions because they are more compositional.
+%We take advantage of compositionality by using $\m{mark}(\gamma,x,\gamma') /| \ldots$ to specify both our ``spanning tree'' and {\color{blue}``graph copy''} algorithms in~\S\ref{sec:application}, which also need to mark nodes in order to carry out their primary tasks.
 
-Practically, it is painful to define computational functions over graphs in a proof assistant like Coq, {\color{magenta}and portions of this pain are overkill}.  For example, Coq requires that all functions terminate, a nontrivial proof obligation over cyclic structures like graphs, but our verification of \li{mark} is only for partial correctness.  Defining relations is much easier because \emph{e.g.} one can use quantifiers and does not have to prove termination.
+Practically, it is painful to define computational functions over graphs in a proof assistant like Coq.  For example, Coq requires that all functions terminate, a nontrivial proof obligation over cyclic structures like graphs, but our verification of \li{mark} is only for partial correctness.  Defining relations is much easier because \emph{e.g.} one can use quantifiers and does not have to prove termination.
 The $\m{mark}$ and $\m{mark1}$ relations we use are defined straightforwardly at the bottom of Figure~\ref{fig:markgraph}.
-}
+
 
 In lines~\ref{code:beforerootmark}--\ref{code:afterrootmark}, imagine unfolding the \p{graph} predicate in line~\ref{code:globalbeforerootmark} using equation \eqref{eqn:bigraphintrofoldunfold} and then zooming in to the root node \li{x} for lines~\ref{code:beforerootmark}--\ref{code:afterrootmark}, before zooming back out in line~\ref{code:globalafterrootmark}.
 
+\hide{\color{magenta}Here we upgrade the \infrulestyle{Ramify} rule in two important respects.  The first is the treatment of modified program variables.  Although prosaic, a robust treatment of modified variables is essential to verifying programs of any length.  The second is better handling of existential variables in the postconditions of localization blocks, which occur frequently when using relations in specifications.}
+Lines~\ref{code:beforemarkl}--\ref{code:aftermarkl} of Figure~\ref{fig:markgraph} contain an example where we use the power of linked existentials in the \textsc{Localize} rule to ``extract'' the existentially-quantified~$\gamma''$ from inside the localization block to outside it.
+%Moreover, rather surprisingly, the robust treatment of modified program variables requires the extraction of existential quantifiers from localization blocks.  Accordingly, we develop the \infrulestyle{Ramify-PQ} rule that can robustly handle both modified \underline{p}rogram variables as well as existential \underline{q}uantifiers.
 
+%\marginpar{\tiny \color{blue}Update to the latest stats, remove H/S.}
+%Hobor and Villard noted that their \infrulestyle{Ramify} rule handled modified program variables poorly~\cite{hobor:ramification} and proposed two solutions: using ``variables as resource''~\cite{bornat:var} and making local program transformations.  While these solutions are reasonable in a pen-and-paper context, both fall well short in mechanized ones.
 
-HERE
-
-
-\marginpar{\tiny \color{blue} repetition}
-{\color{magenta}Here we upgrade the \infrulestyle{Ramify} rule in two important respects.  The first is the treatment of modified program variables.  Although prosaic, a robust treatment of modified variables is essential to verifying programs of any length.  The second is better handling of existential variables in the postconditions of localization blocks, which occur frequently when using relations in specifications.}
-For example, in lines~\ref{code:beforemarkl}--\ref{code:aftermarkl} of Figure~\ref{fig:markgraph} we must ``extract'' the existentially-quantified~$\gamma''$ from inside the localization block to outside it.  Moreover, rather surprisingly, the robust treatment of modified program variables requires the extraction of existential quantifiers from localization blocks.  Accordingly, we develop the \infrulestyle{Ramify-PQ} rule that can robustly handle both modified \underline{p}rogram variables as well as existential \underline{q}uantifiers.
-
-\marginpar{\tiny \color{blue}Update to the latest stats, remove H/S.}
-Hobor and Villard noted that their \infrulestyle{Ramify} rule handled modified program variables poorly~\cite{hobor:ramification} and proposed two solutions: using ``variables as resource''~\cite{bornat:var} and making local program transformations.  While these solutions are reasonable in a pen-and-paper context, both fall well short in mechanized ones.
-
-
-VST does not use variables as resource, nor does it have modules to reason about program equivalence; moreover, most other mechanized verification systems do not support these solutions either~\cite{beckert:2007,distefanop08,bengtson:charge}.  We want a solution that is widely applicable to tools as they actually exist today; in~\S\ref{sec:development} {\color{magenta}we will see that our modifications to VST and H/S are approximately 1.4\% of their respective (sizable) codebases.}
+%VST does not use variables as resource, nor does it have modules to reason about program equivalence; moreover, most other mechanized verification systems do not support these solutions either~\cite{beckert:2007,distefanop08,bengtson:charge}.  We want a solution that is widely applicable to tools as they actually exist today; in~\S\ref{sec:development} {\color{magenta}we will see that our modifications to VST and H/S are approximately 1.4\% of their respective (sizable) codebases.}
 
 \hide{
 \subsection{Modified program variables}
