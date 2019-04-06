@@ -1,8 +1,6 @@
 
 
-clean sep, kleene star, bigstar. 
-
-look through CakeML and see whom they cite
+clean sep, kleene star, bigstar, -||-, |=, etc
 
 "C-light" throughout
 
@@ -11,3 +9,6 @@ certicoqwebsite and certicoqpaper when mentioning certicoq
 many of the gcexample1, gcexample2, etc can go upstairs with CakeML
 
 related: CakeML needs to be written with care
+look through CakeML and see whom they cite
+
+add citation for IRIS call it krebbers:iris
