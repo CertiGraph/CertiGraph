@@ -25,7 +25,7 @@ label $r$ and parent vertex $p$ ($r$ stores the ``rank'' of a node; it is ignore
 in \texttt{find}).  We detail mathematical graphs in~\S\ref{sec:mathgraph}.
 
 Spatial predicates are written in \textsf{sans-serif}.
-Each node $\m{v} \in V(\gamma)$ is 
+Each node $\m{v} \in V(\gamma)$ is
 represented in the heap by $\m{v} \mapsto \gamma(\m{v})$, %, \emph{i.e.}  = (r,p)$},
 where we use the usual pen-and-paper
 trick of writing \emph{e.g.} $\m{v} \mapsto r,p$ to mean
@@ -47,10 +47,10 @@ verification of line~\ref{code:ufif} shortly.
 The precondition on line~\ref{code:findstart} says that we have a disjoint-set forest representing the abstract graph~$\gamma$, and that \texttt{x} is a valid vertex in~$\gamma$.  The postcondition is on line~\ref{code:findend}: the heap contains a new union-find graph~$\gamma''$, and \li{find} returns the node \m{rt}.
 We specify that $\m{rt}$
 is the root (ultimate parent) of \texttt{x} with the pure relation $\m{uf\_root}$.
-The relation $\m{findS}$, which conservatively approximates the action of path 
+The relation $\m{findS}$, which conservatively approximates the action of path
 compression, relates the final graph~$\gamma''$ to the original graph~$\gamma$.
 The formal definitions for the concepts used in $\m{uf\_root}$ and $\m{findS}$
-will be given in~\S\ref{sec:mathgraph}, but briefly: 
+will be given in~\S\ref{sec:mathgraph}, but briefly:
 $\m{x} \accentset{\gamma}{\leadsto}^{\star} \m{y}$ expresses that~$y$ is reachable
 from~$x$ in~$\gamma$, $\gamma \smallsetminus S$ expresses the result of removing the
 vertices in set~$S$ from graph~$\gamma$, and~$\gamma_1 \cong \gamma_2$ expresses that the two
@@ -109,7 +109,7 @@ of the \textsc{Localize} rule (equation \ref{eq:localize} from page~\pageref{eq:
 %\marginpar{\tiny \color{blue} repetition}
 Recall that \textsc{Localize} connects some ``global'' pre- and postconditions $G_1$ and $G_2$
 with some ``local'' pre- and postconditions $L_1$ and $L_2$ using a ramification
-frame $R$.  
+frame $R$.
 The lines adjacent to
 the~$\searrow$ and~$\swarrow$ symbols specify~$G_1$ (\emph{e.g.} line~\ref{code:ufbefram1}),
 $L_1$~(line~\ref{code:befparentfind}),
@@ -119,7 +119,7 @@ but lines \ref{code:aftparentfind}--\ref{code:ufaftram1} do not have any.  We ca
 this mismatch since $\forall P.~ (P -|- \exists x : \m{unit}.P)$ for any $x$ not free in $P$. %we will elide until {\color{red}\S\ref{whenever}}.
 
 
-What is not specified explicitly is the ramification frame $R$, which must satisfy 
+What is not specified explicitly is the ramification frame $R$, which must satisfy
 the entailments $G_1 |- L_1 * R$ and (again eliding the quantifier) $R |- L_2 --* G_2$.
 Here things are a little delicate.  To give intuition, it is \textbf{almost} enough to choose
 $R \defeq L_2 --* G_2$, which makes the second entailment trivial, and reduces the problem
@@ -128,7 +128,7 @@ to three remaining checks.
 The first check is the \emph{ramification entailment}: $G_1 |- L_1 * (L_2 --* G_2)$.
 Informally, this asks whether replacing $L_1$ with $L_2$ inside $G_1$ yields $G_2$.
 This ramification entailment is a nontrivial proof obligation both because
-we must prove $L_1$ is located inside $G_1$, and because we must prove that 
+we must prove $L_1$ is located inside $G_1$, and because we must prove that
 ``replacing'' $L_1$ with $L_2$ yields $G_2$.
 When we want to refer to the ramification entailment of a localization block in
 subsequent text we use the symbol $\ramify(i)$ to connect it to relevant equation
@@ -143,19 +143,19 @@ Here we have isolated the key \textbf{spatial} parts of the invariants on lines~
 Indeed, this ``unchanged vertex'' ramification entailment is used whenever we need to read from a vertex in a graph.  In~\S\ref{sec:spacegraph} we describe other generic and reusable lemmas that prove other ramification entailments.
 
 The second check is the Hoare proof of the local
-change from $L_1$ to $L_2$.  Since lines~\ref{code:befparentfind} and~\ref{code:aftparentfind} 
+change from $L_1$ to $L_2$.  Since lines~\ref{code:befparentfind} and~\ref{code:aftparentfind}
 are straightforward---indeed, the point of \textsc{Localize} is to make them
 so---verifying line~\ref{code:findram1} is easy.
 
 The third check is the side condition on the modified variables.  Here we have an irritating
-problem: the free variables of $R \defeq L_2 --* G_2$ are \textbf{not} disjoint from 
-the local variables modified by $c$.  Inspection of lines~\ref{code:findram1}--\ref{code:ufaftram1} shows that the program variable \texttt{p} \textbf{is} modified by $c$, 
+problem: the free variables of $R \defeq L_2 --* G_2$ are \textbf{not} disjoint from
+the local variables modified by $c$.  Inspection of lines~\ref{code:findram1}--\ref{code:ufaftram1} shows that the program variable \texttt{p} \textbf{is} modified by $c$,
 and \textbf{is} free in both $L_2$ and $G_2$.
 This issue is fundamental: the whole point of verifying
-a read is to know something about the value that has been read.  
+a read is to know something about the value that has been read.
 Accordingly, our proof fails when we choose $R \defeq (L_2 --* G_2)$.
 We will address this problem
-head-on in~{\color{red}\S\ref{sec:existentials}}, but for now let us content ourselves with knowing
+head-on in~\S\ref{sec:freevars}, but for now let us content ourselves with knowing
 that other than this problem, \textsc{Localize} lets us verify
 lines \ref{code:ufbefram1}--\ref{code:ufaftram1}.
 
@@ -165,10 +165,10 @@ lines \ref{code:ufbefram1}--\ref{code:ufaftram1}.
 
 %: the program variable \li{p} \textbf{is} modified on line~\ref{findram1}, and---since
 %the whole point of a read is that we know something about its contents afterwards---\li{p}
-%is mentioned in both the local~$L_2$ and global~$G_2$ postconditions.  
+%is mentioned in both the local~$L_2$ and global~$G_2$ postconditions.
 
-%As it turns out, $R$ can be selected automatically in a way that makes the second entailment 
-%a tautology.   which means that the remaining entailment can be 
+%As it turns out, $R$ can be selected automatically in a way that makes the second entailment
+%a tautology.   which means that the remaining entailment can be
 
 %As it turns out, the second of these two entailments will end up being a tautology.
 
@@ -197,14 +197,14 @@ Although \textsc{Ramify} is sound\footnote{Use \textsc{Localize} with
 $P -|- \exists x : \m{unit}.P$ for any $x$ not free in $P$.},
 we shall soon see that these drawbacks are serious.
 
-Using either \textsc{Localize} or \textsc{Ramify}, 
+Using either \textsc{Localize} or \textsc{Ramify},
 
 Unfortunately, we still have a problem: the side condition above requires that
 }
 
 The second localization block (lines~\ref{code:ufbefram2}--\ref{code:ufaftram2}) is both easier and harder than the first.  It is easier because line~\ref{code:ufpathcompress} does not modify any local program variables, so the side condition is trivially satisfied.  Moreover, although line~\ref{code:ufaftram2} does contain an existential, line~\ref{code:findafterxparent} does not, and so there is no need to ``link'' the two associated witnesses.  We will discuss this issue
-in more detail in {\color{red}\S\ref{whenever}}, but for now it is enough to 
-choose $R \defeq L_2 --* G_2$ exactly written in lines~\ref{code:findafterxparent} 
+in more detail in \S\ref{sec:linkedex}, but for now it is enough to
+choose $R \defeq L_2 --* G_2$ exactly written in lines~\ref{code:findafterxparent}
 (for $L_2$) and~\ref{code:ufaftram2} (for $G_2$).
 
 On the other hand, the second localization block is harder than the first because there is more going on spatially. $\ramify(\ref{findram2})$ expresses an update to a single node of our graph:
@@ -214,9 +214,9 @@ On the other hand, the second localization block is harder than the first becaus
 {x \in V(\gamma') \; \qquad \gamma'' = [x -> (r,rt)]\gamma'}
 {\p{graph}(\gamma') \; |- \; x |-> \gamma'(x) * \big(x |-> \gamma''(x) --* \p{graph}(\gamma'')\big)}
 \end{equation}
-Here we abuse notation a little bit.  The conclusion of the ``rule'' (actually, lemma) is exactly right and appropriately generic, so spatial ramification lemmas of the kind given in \S\ref{sec:spacegraph} can handle the dirty spatial work for us.  However, the second premise uses a notation for ``mathematical graph node update'' that is customized for union-find graphs, since most graphs have more than a rank and single outgoing edge.  More seriously, updating a mathematical graph cannot be done willy-nilly; it is only defined when the properties that restrict the mathematical structure of $\gamma$ are preserved. For example, in the case of union-find graphs, 
+Here we abuse notation a little bit.  The conclusion of the ``rule'' (actually, lemma) is exactly right and appropriately generic, so spatial ramification lemmas of the kind given in \S\ref{sec:spacegraph} can handle the dirty spatial work for us.  However, the second premise uses a notation for ``mathematical graph node update'' that is customized for union-find graphs, since most graphs have more than a rank and single outgoing edge.  More seriously, updating a mathematical graph cannot be done willy-nilly; it is only defined when the properties that restrict the mathematical structure of $\gamma$ are preserved. For example, in the case of union-find graphs,
 the graph must be acyclic (other than at roots).
-% , as we will discuss in \S\ref{sec:mathgraph}, 
+% , as we will discuss in \S\ref{sec:mathgraph},
 %\marginpar{\tiny \color{blue}Too early}
 In Coq, these properties are carried around via dependent types as will explained in \S\ref{sec:mathinfra}.
 
