@@ -44,6 +44,7 @@ context~(\S\ref{sec:mathgraph},\S\ref{sec:spacegraph}).
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%% Edit 1: Original version starts
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
 \iftrue
 Hobor and Villard treated mathematical graphs as triples $(V,E,L)$ of
 vertices, edges, and a vertex labeling function; vertices had no more than two
@@ -59,6 +60,7 @@ much more general and more modular set of related lemmas and connect our spatial
 reasoning to the verification framework of CompCert/VST~(\S\ref{sec:vst}), and 
 our development is entirely
 machine-checked~(\S\ref{sec:development}) whereas they used only pen and paper.
+
 %two very different verification tools~(\S\ref{sec:ramifylib}),
 % and HIP/SLEEK~(\S\ref{dummyref}).  
 \fi
@@ -119,19 +121,18 @@ Noschinski and Dubois \emph{et al.} used proof assistants to design verifiable
 checkers for solutions to graph problems~\cite{noschinski2015formalizing,dubois2015graphes}.
 Yamamoto \emph{et al.} and Bauer and Nipkow use an inductive
 encoding of graphs to formalize planar graph theory~\cite{yamamoto1995formalization,bauer20025}.
-\note[from inv-ack. massage to avoid plagiarism]{Charguéraud and Pottier,
-\cite{charpott} later joined by Guéneau \cite{gueneauetal},
-extended Separation Logic with the notion of ``time credits'',
-formalized the~$O$ notation in Coq,
-and gave a proof in Coq that simultaneously verifies the correctness
-and the time complexity of the union-find data structure. Several others
-\cite{others2, others4, others3, others1}
-have explored the idea of checking bounds on the resources
-used by programs formally in proof assistants such as Coq, Isabelle/HOL, and Why3.}
 
-Nipkow \cite{nipkow2016, nipkow2017} has verified several classic
-tree and queue structures in Isabelle/HOL. Some of his proofs are automated, while
-others are manual. \note{Does he have a model like ours??}
+Guéneau \emph{et al.}~\cite{gueneauetal},
+formalised ``time credits'' in Separation Logic and the $O$ notation in
+Coq and then verified both the correctness
+and the time complexity of the union-find data structure. 
+Others, \emph{e.g.}~\cite{others2, others4, others3, others1}
+have also formally proved bounds on the resources
+used by programs. %formally in proof assistants such as Coq, Isabelle/HOL, and Why3.
+
+Nipkow \cite{nipkow2017} has verified functional variants of 
+several classic
+tree and queue structures in Isabelle/HOL. 
 
 \paragraph{Verification of garbage collection algorithms.}
 Schism \cite{gcexample4,gcexample4a} is a certified concurrent
@@ -141,12 +142,12 @@ a certified translation step added to CompCert's translation from C-light to ass
 GCminor makes explicit the specific invariants that the garbage collector
 relies upon, thus minimising errors due to the violation of invariants
 between the garbage collector and the mutator.
-
-Cake ML\cite{cakemlgc} has to be written with great care. They are very serious competition.
-
 Hawblitzel and Petrank \cite{gcexample2} annotate x86 code
 for two GCs by hand, and then use Boogie and the Z3 automated theorem prover
 to verify their correctness automatically.
+
+\note{Cake ML~\cite{cakemlgc} has to be written with great care. They are very serious competition.}
+
 
 %{\color{magenta}
 %5.2. An alternative way of verifying marking program is reasoning about the whole history of marking operations. The disadvantage of it is that it currently needs more work in a Hoare logic framework. The advantage of it is that its reasoning structure are more similar with the way we understand it in our first algorithm class.
