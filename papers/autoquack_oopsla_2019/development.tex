@@ -24,7 +24,8 @@ When the user is in the middle of a verification, the decorated program is parti
 
 We wish to preserve this ``decorated program'' view while extending Floyd to support localization.  Our task therefore is to construct a proof in Coq's underlying logic that allows a localization block to be constructed in this manner---that is, we wish to enter a localization block without requiring the user to specify the ``exit point'' in advance.  The engineering is tricky because the proof Floyd is constructing (\emph{i.e.} applications of inference rules) has holes in places where the user's ``top to bottom'' view of things has not yet arrived.
 
-\begin{wrapfigure}{l}{.63\textwidth}
+%\begin{wrapfigure}{l}{.63\textwidth}
+\begin{figure}
 \begin{minipage}{.15\textwidth}
 \begin{lstlisting}[basicstyle=\linespread{0.8}\normalfont\footnotesize\tt]
 $\{\ \ P_1 \ \ \}$
@@ -88,7 +89,8 @@ $\{\ \ P_6 \ \ \}$
 %\vspace{-ex}
 \caption{Front and back ends of \li{localize} and \li{unlocalize}}
 \label{figure:backend}
-\end{wrapfigure}
+\end{figure}
+%\end{wrapfigure}
 
 Figure~\ref{figure:backend} has four partially-decorated ``proofs in progress'', from both the user's (front end) and Floyd's (back end) points of view.  In the first column, from the user's point of view, they saw the assertion $P_2$ (line~\ref{code:localglobalin}) and decided to use the \li{localize} tactic to zoom into $P_3$ (line~\ref{code:locallocalin}).  They then applied some proof rules to move past $c_2$ to reach the assertion $P_4$ (line~\ref{code:localsndcmd}).  At this point, Floyd does not know when the corresponding \li{unlocalize} tactic will execute, so it does not know which commands will be inside the block or what the final local and global postconditions will be.
 
@@ -99,7 +101,7 @@ In the third column, the user has advanced past $c_3$ to reach the local postcon
 
 \subsection{Statistics related to our development}
 
-\begin{table}[t]
+\begin{table}[b]
 \centering
 \begin{tabular}{c|c|c|c|c|c}
 Component & Section & Files & Size (in lines) & Definitions & Theorems\\\hline
