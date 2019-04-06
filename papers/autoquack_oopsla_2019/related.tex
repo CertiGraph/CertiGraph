@@ -1,16 +1,28 @@
-\paragraph{Comparison with Hobor and Villard \cite{hobor:ramification}.}
-Hobor and Villiard verified graph algorithms using the \infrulestyle{Ramify} rule.  
-We have upgraded this rule to better handle modified program variables and existential 
-quantifiers in postconditions; they avoided these challenges by proposing a variant 
-of \infrulestyle{Ramify} called \infrulestyle{RamifyAssign}, which could reason about the 
-special case of a single assignment $\li{x=}f(\ldots)$, assuming the verifier can make 
-the local program translation to $\li{x'=}f(\ldots)\li{; x=x'}$, where \li{x'} is fresh.  
-They proposed no way to verify unmodified program code, to modify program variables 
-inside nested localization blocks, or to do a ramification across multiple assignments as 
-in lines~\ref{code:markbeforetripleramify}--\ref{code:markaftertripleramify} of 
-figure~\ref{fig:markgraph}.  Hobor and Villard avoided existentials in localized 
-postconditions by defining all their mathematical operations (\emph{e.g.} $\m{mark}$) as 
-functions rather than as relations.
+\paragraph{Comparison with~\cite{hobor:ramification}.}
+Our work builds on the theory of ramification by Hobor and Villiard,
+who verified graph algorithms on pen-and-paper using their \infrulestyle{Ramify} rule:
+\begin{equation*}
+%\label{eq:ramify}
+\inferrule[Ramify]
+{\{ L_1 \} ~ c ~ \{ L_2 \} \\
+G_1 |- L_1 * (L_2 --* G_2)}
+{\{ G_1 \} ~ c ~ \{ G_2 \}} \qquad \mathit{freevars}(L_2 --* G_2) \cap \MV(c) = \emptyset
+\end{equation*}
+Our \textsc{Localize} rule upgrades \textsc{Ramify} to better handle modified program 
+variables (note the side condition and recall the discussion in \S\ref{sec:localizations})
+and existential quantifiers in postconditions.  Hobor and Villard avoided these challenges 
+by proposing a unwieldy variant of \infrulestyle{Ramify} called \infrulestyle{RamifyAssign}, which 
+could reason about the special case of a single assignment $\li{x=}f(\ldots)$, assuming 
+the verifier can make the local program translation to $\li{x'=}f(\ldots)\li{; x=x'}$, 
+where \li{x'} is fresh.  This is nontrivial in large existing formal 
+developments, such as VST, that do not have any way to prove programs equivalent.
+Hobor and Villard could not verify unmodified program code, modify program variables
+inside nested localization blocks, or handle multiple assignments in a single block as
+in lines~\ref{code:markbeforetripleramify}--\ref{code:markaftertripleramify} of
+figure~\ref{fig:markgraph}.  Hobor and Villard avoided existentials in localized
+postconditions by defining all mathematical operations (\emph{e.g.} $\m{mark}$) as
+functions rather than as relations; this is fine on pen-and-paper, but painful in 
+a mechanized setting wherein functions must be proven to terminate.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%% Edit 1
@@ -18,11 +30,11 @@ functions rather than as relations.
 %%%%%% Edit 1: Qinxiang's proposal starts
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \iffalse
-Our development is entirely machine-checked~(\S\ref{sec:development}) which revealed some 
-tricky technique details. Hobor and Villard fell into the trap of defining spatial graphs 
-recursively~(\S\ref{sec:fixpointfail}); unfortunately other members of the research 
-community have since followed them in.  We exposed this error and provided a sound, 
-general, and highly modular graph framework that works smoothly in a mechanized 
+Our development is entirely machine-checked~(\S\ref{sec:development}) which revealed some
+tricky technique details. Hobor and Villard fell into the trap of defining spatial graphs
+recursively~(\S\ref{sec:fixpointfail}); unfortunately other members of the research
+community have since followed them in.  We exposed this error and provided a sound,
+general, and highly modular graph framework that works smoothly in a mechanized
 context~(\S\ref{sec:mathgraph},\S\ref{sec:spacegraph}).
 % and quite general
 %definition for \p{graph}~(\S\ref{sec:goodgraph}) that recovers fold/unfold reasoning.
@@ -33,41 +45,44 @@ context~(\S\ref{sec:mathgraph},\S\ref{sec:spacegraph}).
 %%%%%% Edit 1: Original version starts
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \iftrue
-Hobor and Villard treated mathematical graphs very simply, as triples $(V,E,L)$ of 
-vertices, edges, and a labeling function on vertices.  Vertices had no more than two 
-neighbors.  In contrast, our mathematical graph framework~(\S\ref{sec:mathgraph}) is very 
+Hobor and Villard treated mathematical graphs as triples $(V,E,L)$ of
+vertices, edges, and a vertex labeling function; vertices had no more than two
+neighbors.  Our mathematical graph framework~(\S\ref{sec:mathgraph}) is very
 modular and general and has been tuned to work smoothly in a mechanized context.
 
-Hobor and Villard erroneously defined spatial graphs 
-recursively~(\S\ref{sec:fixpointfail}); unfortunately other members of the research 
-community have since followed them in, \emph{e.g.}~\cite{raadvg15}.  We exposed this 
-error and provided a sound and quite general definition for 
-\p{graph}~(\S\ref{sec:goodgraph}) that recovers fold/unfold reasoning.  We developed a 
-much more general and more modular set of related lemmas and connect our spatial 
-reasoning to two very different verification tools~(\S\ref{sec:ramifylib}), 
-VST~(\S\ref{sec:vst}) and HIP/SLEEK~(\S\ref{dummyref}).  Our development is entirely 
+Hobor and Villard erroneously defined spatial graphs
+recursively~(\S\ref{sec:fixpointfail}); unfortunately other members of the research
+community have since followed them in, \emph{e.g.}~\cite{raadvg15}.  We exposed this
+error and provided a sound and quite general definition for
+\p{graph}~(\S\ref{sec:goodgraph}) that recovers fold/unfold reasoning.  We developed a
+much more general and more modular set of related lemmas and connect our spatial
+reasoning to the verification framework of CompCert/VST~(\S\ref{sec:vst}), and 
+our development is entirely
 machine-checked~(\S\ref{sec:development}) whereas they used only pen and paper.
+%two very different verification tools~(\S\ref{sec:ramifylib}),
+% and HIP/SLEEK~(\S\ref{dummyref}).  
 \fi
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%% Edit 1: Original version ends
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \paragraph{Other verification of graph algorithms and/or $**$.}
-Yang's verification of the Schorr-Waite algorithm is a landmark in the early separation 
-logic literature~\cite{hongseok:phd}.  Bornat \emph{et al.} gave an early attempt to 
-reason about graph algorithms in separation logic in a more general 
-way~\cite{bornat:aliasing04}.
+\cite{hongseok:phd}'s verification of the Schorr-Waite algorithm is a landmark in the 
+early separation logic literature.  \cite{neelthesis}~provided the first separation
+logic proof of union-find.  \cite{bornat:aliasing04}~gave an early attempt to
+reason about graph algorithms in separation logic in a more general
+way.
 
-Reynolds was the first to document the overlapping conjunction~$**$, although he did not 
-present any strategy to reason about it using Hoare rules~\cite{rey-slnotes}.  
-Gardner \emph{et al.} were the first to reason about a program using $**$ in 
-Javascript~\cite{gardnerms12}.  Raad \emph{et al.} used $**$ to reason about a 
-concurrent spanning algorithm using a kind of 
-``concurrent localization''~\cite{raadvg15}.  Sergey \emph{et al.} also verified a 
-concurrent spanning tree algorithm and mechanized their proofs in Coq~\cite{ilya-graphs}.
+\cite{rey-slnotes}~was the first to document the overlapping conjunction~$**$, albeit without
+any strategy to reason about it using Hoare rules.
+\cite{gardnerms12}~were the first to reason about a program using $**$ in
+Javascript.  \cite{raadvg15}~used $**$ to reason about a
+concurrent spanning algorithm using a kind of
+``concurrent localization''.  \cite{ilya-graphs} also verified a
+concurrent spanning tree algorithm, and moreover developed mechanized Coq proofs.
 
-Almost a decade after Yang verified Schorr-Waite on paper, Leino automated 
-its verification~\cite{leino10}.
+A decade after Yang verified Schorr-Waite on paper, \cite{leino10}~automated
+its verification.
 
 %\paragraph{Alternative fixpoint constructions.}
 %Appel and McAllester defined an alternative ``contractive'' fixpoint that is sometimes used to define recursive predicates in separation
@@ -75,21 +90,21 @@ its verification~\cite{leino10}.
 
 \vspace{-1ex}
 \paragraph{Verification tools.}
-Our work interacts substantially with the Floyd~\cite{appel:programlogics} verification 
-tool.  Like Floyd, Charge! uses Coq tactics to work with a shallow embedding of higher 
-order separation logic, but focuses on OO programs written in 
-Java/C\#~\cite{bengtson:charge}.  A  more automated approach to verification of low 
-level programs using Coq is implemented in the Bedrock framework \cite{chlipala:bedrock}.
+Our work interacts with the Floyd~\cite{appel:programlogics} verification
+tool.  Charge! likewise uses Coq tactics to work with a shallow embedding of higher
+order separation logic, but focuses on OO programs written in
+Java/C\#~\cite{bengtson:charge}.  Iris Proof Mode provides a similar framework for higher-order
+concurrent reasoning~\cite{krebbers:iris}.  A  more automated approach to verification of low
+level programs using Coq is the Bedrock framework \cite{chlipala:bedrock}.
 
-Many automated verification tools also use separation logic in a forward reasoning style 
-as does HIP/SLEEK, including Smallfoot~\cite{berdine:smallfoot}, 
-jStar~\cite{distefanop08}, and Verifast~\cite{jacobs:verifast}.  One of HIP/SLEEK's 
-distinguishing features is good support for user-defined inductive predicates rather 
+Many automated verification tools also use separation logic in a forward reasoning style
+as does HIP/SLEEK, including Smallfoot~\cite{berdine:smallfoot},
+jStar~\cite{distefanop08}, and Verifast~\cite{jacobs:verifast}.  One of HIP/SLEEK's
+distinguishing features is good support for user-defined inductive predicates rather
 than a library of pre-defined predicates for lists, trees etc.
 
-Dafny~\cite{leino10} and KeY~\cite{beckert:2007} are two notable verifiers not based 
-on separation logic; KeY uses an interactive verifier while Dafny pursues more 
-automation with Z3~\cite{moura2008}.
+Dafny~\cite{leino10} and KeY~\cite{beckert:2007} are verifiers not based
+on separation logic; KeY uses an interactive verifier while Dafny pursues automation with Z3~\cite{moura2008}.
 
 \vspace{-1ex}
 \paragraph{Mechanized mathematical graph theory.} There is a long history,
@@ -114,23 +129,23 @@ and the time complexity of the union-find data structure. Several others
 have explored the idea of checking bounds on the resources
 used by programs formally in proof assistants such as Coq, Isabelle/HOL, and Why3.}
 
-Nipkow \cite{nipkow2016, nipkow2017} has verified several classic 
-tree and queue structures in Isabelle/HOL. Some of his proofs are automated, while 
+Nipkow \cite{nipkow2016, nipkow2017} has verified several classic
+tree and queue structures in Isabelle/HOL. Some of his proofs are automated, while
 others are manual. \note{Does he have a model like ours??}
 
 \paragraph{Verification of garbage collection algorithms.}
-Schism \cite{gcexample4,gcexample4a} is a certified concurrent 
-collector built in a Java VM that services multi-core architectures with weak memory consistency. 
-McCreight \emph{et al.} \cite{gcexample5, gcexample3} introduce GCminor, which is 
-a certified translation step added to CompCert's translation from C-light to assembly. 
-GCminor makes explicit the specific invariants that the garbage collector 
-relies upon, thus minimising errors due to the violation of invariants 
+Schism \cite{gcexample4,gcexample4a} is a certified concurrent
+collector built in a Java VM that services multi-core architectures with weak memory consistency.
+McCreight \emph{et al.} \cite{gcexample5, gcexample3} introduce GCminor, which is
+a certified translation step added to CompCert's translation from C-light to assembly.
+GCminor makes explicit the specific invariants that the garbage collector
+relies upon, thus minimising errors due to the violation of invariants
 between the garbage collector and the mutator.
 
 Cake ML\cite{cakemlgc} has to be written with great care. They are very serious competition.
 
 Hawblitzel and Petrank \cite{gcexample2} annotate x86 code
-for two GCs by hand, and then use Boogie and the Z3 automated theorem prover 
+for two GCs by hand, and then use Boogie and the Z3 automated theorem prover
 to verify their correctness automatically.
 
 %{\color{magenta}
