@@ -1,14 +1,13 @@
+make repo
 
-
-clean sep, kleene star, bigstar, -||-, |=, etc
-
-"C-light" throughout
+say "Clight" throughout
 
 citations to add in:
 certicoqwebsite and certicoqpaper when mentioning certicoq
-many of the gcexample1, gcexample2, etc can go upstairs with CakeML
 
-related: CakeML needs to be written with care
-look through CakeML and see whom they cite
+discuss with Shengyi about the red p in forward listing
 
-add citation for IRIS call it krebbers:iris
+if you cut 5.1, there will be a ?? in related
+
+for the figure that has two gaps...
+you can define them via lambda expressions like "\x -> V_gamma x /\ ~ V_S x", "\" stands for lambda.

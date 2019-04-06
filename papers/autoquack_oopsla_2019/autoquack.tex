@@ -63,6 +63,7 @@
 \usepackage{subcaption}        % for subfigures
 \usepackage[export]{adjustbox} % for subfigures
 \usepackage{accents}
+\usepackage{wrapfig}
 
 % inline code
 \makeatletter
@@ -70,6 +71,13 @@
 \newcommand{\mli}[1]{%
   \settowidth{\@mli}{\lstinline/#1/}
   \hspace{-.5ex}\begin{minipage}[t]{\@mli}\lstinline/#1/\end{minipage}}
+\newcommand{\ostar}{\mathbin{\mathpalette\make@circled\ast}}
+\newcommand{\make@circled}[2]{%
+  \ooalign{$\m@th#1\smallbigcirc{#1}$\cr\hidewidth$\m@th#1#2$\hidewidth\cr}%
+}
+\newcommand{\smallbigcirc}[1]{%
+  \vcenter{\hbox{\scalebox{0.66667}{$\m@th#1\bigcirc$}}}%
+}
 \makeatother
 
 \newcommand{\note}[2][polish]{{\color{magenta} #2 }{\marginpar{\tiny \color{blue} #1 }}}
@@ -83,17 +91,18 @@
 \newcommand{\code}[1]{\texttt{\small #1}}
 
 %\newcommand{\scon}{\mathbin{\varstar}}
+\newcommand{\minbar}{\scalebox{1.0}[1.0]{$-$}}
 \newcommand{\scon}{\mathbin{\ast}} % trying to save an alphabet by using 'star'
 \newcommand{\ocon}{ % TODO: needs polishing
-  \mathbin{\mbox{$\mathrlap{\cup}\hspace*{.15em}
-      \raisebox{.01em}[0ex][0ex]{$\scon$}$\hspace*{.07em}}}}
+  \mathbin{\mbox{$\mathrlap{\cup}\hspace*{.09em}
+      \raisebox{.04em}[0ex][0ex]{$\scon$}$\hspace*{.07em}}}}
 \newcommand{\wand}{%
  \mathrel{\mbox{$\hspace*{-0.03em}\mathord{-}\hspace*{-0.4em}
-     \mathord{-}\hspace*{-0.25em}
+  \mathord{-}\hspace*{-0.13em}
      \mathord{\scon}$\hspace*{-0.005em}}}}
 \newcommand{\septraction}{%
   \mathrel{\mbox{$\hspace*{-0.03em}\mathord{-}\hspace*{-0.66em}
-  \mathord{-}\hspace*{-0.155em}\mathord{\ocircle\hspace*{-.66em}\scon}$\hspace*{0.05em}}}}
+  \mathord{-}\hspace*{-0.1em}\mathord{\ostar}$\hspace*{0.05em}}}}
 
 \colorlet{red}{red!80!black}
 
@@ -103,13 +112,13 @@
 \mathlig{|->}{\mathrel{\mapsto}} % tight points-to
 \mathlig{<=>}{\mathrel{\Leftrightarrow}} % equivalence of expressions
 \mathlig{==>}{\mathrel{\Rightarrow}} % meta implication
-\mathlig{-|-}{\mathrel{\mathrlap{\dashv} \hspace{5pt} \vdash}} % entails
+\mathlig{-|-}{\mathrel{\mathrlap{\dashv} \hspace*{0.15em} \vdash}} % entails
 \mathlig{**}{\mathbin{\ocon}}
 \mathlig{*}{\mathbin{\scon}}
 \mathlig{/|}{\mathbin{\wedge}} % additive conjunction
 \mathlig{|/}{\mathbin{\vee}} % additive disjunction
 \mathlig{|-}{\mathrel{\vdash}} % entails
-\mathlig{|=}{\vDash} % models
+\mathlig{|=}{\models} % models
 \mathlig{//}{\color{black}{\sslash}} % listings comments
 
 
@@ -134,11 +143,11 @@
   basicstyle=\normalfont\footnotesize\tt,
   keywordstyle=\color{blue}, numbers=left,
   numberstyle=\tiny, numbersep=5pt, boxpos=t,
+  showstringspaces=false
 }
 % \long\def\beginpgfgraphicnamed#1#2\endpgfgraphicnamed{\includegraphics{#1}}
 \usetikzlibrary{arrows.meta, positioning, decorations.pathmorphing, fit}
 \pgfrealjobname{autoquack}
-
 
 \begin{document}
 
@@ -333,6 +342,6 @@ sort used in the OCaml runtime.  Our proofs are entirely machine-checked in Coq.
 %\appendix
 %\section{Appendix}
 %\label{sec:appendix}
-% \input{appendix.tex}  % riddled with overful boxes
+\input{appendix.tex}  % riddled with overful boxes
 
 \end{document}
