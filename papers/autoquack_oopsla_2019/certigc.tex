@@ -53,15 +53,15 @@ mathematical graphs, where we must prove graph isomorphism.
 \subsection{From C to Mathematical Graphs}
 \label{sec:movetomathgraph}
 In the code, the metainformation of the 12 generations is stored as an
-12-element array \texttt{heap}. Each generation, as a memory segment,
-is represented as a \texttt{struct} \texttt{space}, which contains
-three pointers: \texttt{start} marking the start address of a
-generation, \texttt{next} representing the next available address in a
-generation, and \texttt{limit} marking the last address of a
+12-element array \code{heap}. Each generation, as a memory segment,
+is represented as a \code{struct} \code{space}, which contains
+three pointers: \code{start} marking the start address of a
+generation, \code{next} representing the next available address in a
+generation, and \code{limit} marking the last address of a
 generation. The basic unit manipulated by the garbage collector is a
 chunk of memory called a block. Blocks can be of different sizes;
 the size of a particular block is stored in its
-header (using 22 bits of the word stored at offset $-\m{sizeof}(\texttt{void*})$), and the remainder of the block is a continuous array of fields. 
+header (using 22 bits of the word stored at offset $-\m{sizeof}(\code{void*})$), and the remainder of the block is a continuous array of fields. 
 Each field is either an unboxed integer data value, or a pointer, which may be
 either within the GC or to external structures.  To disambiguate the two,
 we follow OCaml's practice of requiring that all pointers are even-aligned and 
@@ -86,9 +86,9 @@ Each vertex is labeled with the integer data items and the indices of pointers i
 fields. There is also a global label of $\gamma$ which has the
 start/limit addresses and number of vertices of each generation. We
 can reconstruct the 12 generations in memory from $\gamma$ under this
-setting without redundancy. For example, to determine the \texttt{next} pointer of
+setting without redundancy. For example, to determine the \code{next} pointer of
 a generation, we can sum the sizes of each vertex in that generation using its label,
-and then add the \texttt{start} address.
+and then add the \code{start} address.
 
 \hide
 {\color{red} TODO
@@ -120,11 +120,12 @@ two cases.
 Figure~\ref{fig:forward} shows a decorated proof sketch of \code{forward}
 in the latter case, which is harder to verify. 
 
-The {\color{red}items} \m{finf} and \m{tinf} together allow 
-us to extract the mutator's \code{args} array, and 
-The proposition \m{super\_compatible} encapsulates various checks 
-about \emph{e.g.} legal bounds that avoid some overflow issues.
-For concision, the facts known to us in 
+Two abstractions of \code{struct} \code{thread\_inf}
+and \code{file\_info}---\m{finf} and \m{tinf}---together allow us to
+extract the mutator's \code{args} array, and The
+proposition \m{super\_compatible} encapsulates various checks
+about \emph{e.g.} legal bounds that avoid some overflow issues.  For
+concision, the facts known to us in
 \emph{e.g.} line $1$ are represented by $\phi_1$, and then $\phi_1$ 
 can feature as a fact \emph{e.g.} in line $8$. 
 
@@ -155,18 +156,17 @@ The final step (line \ref{code:ridirect}) is to reroute to this
 new copy, and this is done just as in line~\ref{code:alreadyforwarded}. The
 resultant graph is $\gamma'' = \m{upd\_edge}(\gamma', \m{e}, \m{v''})$.
 
-The postcondition is a little different from
-those of \code{find} and \code{mark} seen earlier, in that it does not have 
-{\color{red} an explicit check} saying that \code{forward} has been 
-``computed correctly''. 
-Rather, we use the Coq relation $\m{forward\_relation}$
-to say that the initial and final graphs $\gamma$ and $\gamma'$ are 
-related in a legal way \emph{after} abstracting the original program into
-our mathematical graph framework. {\color{red} For a taste, we put the 
-code for \m{forward\_relation} in Appendix~\ref{apx:forwardrelation}}.
-We have relations of this sort for all the key functions in our GC, 
-and we show that the composition of these correctly corresponds to the 
-C code of our garbage collector.
+The postcondition is a little different from those of \code{find}
+and \code{mark} seen earlier, in that it does not provide a relation
+saying that \code{forward} has been functionally correct. Rather, we
+defined the relation to reflect the result of operations
+in \code{forward}, such as a vertex is copied, an edge is redirected,
+and etc,. For a taste, we put the complete definition
+of \m{forward\_relation} in Appendix~\ref{apx:forwardrelation}. We
+have relations of this sort for all the key functions in our GC, and
+we show that the composition of these correctly corresponds to the C
+code of our garbage collector. The final functional correctness is
+derived from these relations.
 
 \input{forward_listing_short.tex}
 
