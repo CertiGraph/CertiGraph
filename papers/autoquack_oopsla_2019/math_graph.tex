@@ -50,8 +50,8 @@ than focusing on the nitty-gritty details.} % end hide
 \subsection{Definitions of graphs}\label{sec:mathinfra}
 
 \input{mathgraph_pregraph_combined.tex}
-%\input{kindsofgraphs.tex}
-\input{somegraphdefns.tex}
+\input{pregraphdefs.tex}
+\input{gengraphdefs.tex}
 
 Our first challenge is that graph theory is usually based on
 \emph{set theory} but our formalization in Coq is
@@ -137,7 +137,7 @@ operations such as \emph{add\_vertex}
 and \emph{remove\_edge}, and relations between PreGraphs such
 as \emph{structurally\_identical}$^{*}$ and \emph{subgraph}.
 Definitions of the concepts marked with asterisks are
-shown in Figure \ref{fig:graphdefns} to give a flavor
+shown in Figure \ref{fig:pregraphdefs} to give a flavor
 of the subtleties involved in getting definitions that
 really work.
 These general concepts, together with around 500 derived lemmas,
@@ -317,7 +317,7 @@ destinations for valid edges.} % end hide
 \item \p{BiGraph}: there are exactly two outgoing edges per node
 \end{itemize}
 Definitions of the concepts marked with asterisks are
-shown in Figure~\ref{fig:graphdefns} for illustration.
+shown in Figure~\ref{fig:gengraphdefs} for illustration.
 
 \hide{As a first step, we can prove many general, reusable lemmas
 about these properties. However, these properties are still
