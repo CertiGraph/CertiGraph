@@ -58,17 +58,17 @@ $//$$\label{code:outmark}\left\{\!\!\!\begin{array}{l@{}}\exists \gamma'''. \p{g
 \begin{minipage}[c]{0.4\textwidth}
 \begin{equation*}
 \begin{split}
-\m{v_1} \accentset{\gamma}{\leadsto}_0 \m{v_2} \defeq \exists l,r.~ \gamma(\m{v}_1) = (0,l,r) /| \m{v}_2 \in \{ l,r\} \\
-\m{v_1} \accentset{\gamma}{\leadsto}^{\star}_0 \m{v_2} \defeq \text{reflexive, transitive closure of ``}\mathrel{{\stackrel{\gamma}{\leadsto}}_{0}}\text{''}
+\reachable{v_1}{\gamma}{}{0}{v_2} \defeq \exists l,r.~ \gamma(\m{v}_1) = (0,l,r) /| \m{v}_2 \in \{ l,r\} \\
+\reachable{v_1}{\gamma}{\star}{0}{v_2} \defeq \text{reflexive, transitive closure of ``} \reachable{}{\gamma}{}{0}{}\text{''}
 \\
 \quad \m{mark}(\gamma,x,\gamma') \defeq
 \forall \m{v}. \gamma'(\m{v}) = \!
 \begin{cases}
 (1,l,r) \!
-\begin{array}{@{}l@{}}\text{when }
-\m{x} \accentset{\gamma}{\leadsto}^{\star}_0 \m{v} /| \null \\[-3pt] \gamma(\m{v}) = (-,l,r)
+\begin{array}{@{}l@{}}\text{ when }
+\reachable{x}{\gamma}{\star}{0}{v} /| \null \\[-2pt] \; \gamma(\m{v}) = (-,l,r)
 \end{array}\\
-\gamma(\m{v}) \text{otherwise}
+\gamma(\m{v}) \text{ otherwise}
 \end{cases}
 \end{split}
 \end{equation*}

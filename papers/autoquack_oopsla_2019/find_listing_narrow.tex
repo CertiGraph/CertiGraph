@@ -35,8 +35,8 @@ $//$$\label{code:ufaftram2}\left\{\!\!\!\begin{array}{l@{}} {\color{red}\exists 
 \begin{array}{@{}l@{}lcl@{}}
 \multicolumn{2}{r}{\p{uf\_graph}(x, \gamma)} & \defeq & \underset{\m{v} \in \m{V}(\gamma)}{\bigstar} \m{v}	\mapsto\gamma(\m{v}) \\
 [15pt]
-\m{uf\_root}&(\gamma,\m{x},\m{rt}) & \defeq & \m{x} \accentset{\gamma}{\leadsto}^{\star} \m{rt} \; /| \null \\  
-& \multicolumn{3}{@{}l}{\forall \m{rt'}.~\m{rt} \accentset{\gamma}{\leadsto}^{\star} \m{rt'} => \m{rt} = \m{rt'}}
+\m{uf\_root}&(\gamma,\m{x},\m{rt}) & \defeq & \reachable{x}{\gamma}{\star}{}{rt} \; /| \null \\  
+& \multicolumn{3}{@{}l}{\forall \m{rt'}.~\reachable{rt}{\gamma}{\star}{}{rt'} => \m{rt} = \m{rt'}}
 \end{array}
 \end{equation*}
 \end{minipage}
@@ -48,7 +48,7 @@ $//$$\label{code:ufaftram2}\left\{\!\!\!\begin{array}{l@{}} {\color{red}\exists 
 \quad \m{findS}&(\gamma,\m{x},\gamma') \; \defeq \; \big(\forall \m{v}.~ \m{v}\in\m{V}(\gamma) <=> \m{v}\in\m{V}(\gamma') \big) /| \null \\ 
 &\big(\forall \m{v}.~\m{v}\in\m{V}(\gamma) => \gamma(\m{v}).\m{rank} = \gamma'(\m{v}).\m{rank} \big) /| \null \\
 &\big(\forall \m{r},\m{r'}.~\m{uf\_root}(\gamma, \m{v}, \m{r}) => \m{uf\_root}(\gamma', \m{v}, \m{r'}) => \m{r} = \m{r'} \big) /|  \null \\ 
-&\big(\gamma \smallsetminus \{\m{v} \in \gamma \mid \m{x} \accentset{\gamma}{\leadsto}^{\star} \m{v}\} \cong \gamma' \smallsetminus \{\m{v} \in \gamma \mid \m{x} \accentset{\gamma}{\leadsto}^{\star} \m{v}\}\big)
+&\big(\gamma \smallsetminus \{\m{v} \in \gamma \mid \reachable{x}{\gamma}{\star}{}{v}\} \cong \gamma' \smallsetminus \{\m{v} \in \gamma \mid \reachable{x}{\gamma}{\star}{}{v}\}\big)
 \end{split}
 \end{equation*}
 \end{minipage}
