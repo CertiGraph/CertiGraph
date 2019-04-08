@@ -88,15 +88,15 @@
 \newcommand{\MV}{\ensuremath{\mathsf{ModVar}}}
 \newcommand{\FV}{\ensuremath{\mathsf{FreeVar}}}
 \newcommand{\pguards}[1]{\llbracket #1 \rrbracket}
-\newcommand{\code}[1]{\texttt{\small #1}}
 \newcommand{\reachable}[5]{\ensuremath{{\m{#1}\;\accentset{#2}{\leadsto}^{#3}_{#4} \m{#5}}}}
 
 %\newcommand{\scon}{\mathbin{\varstar}}
 \newcommand{\minbar}{\scalebox{1.0}[1.0]{$-$}}
-\newcommand{\scon}{\mathbin{\ast}} % trying to save an alphabet by using 'star'
-\newcommand{\ocon}{ % TODO: needs polishing
+\newcommand{\scon}{\mathbin{\ast}}
+\newcommand{\ocon}{
   \mathbin{\mbox{$\mathrlap{\cup}\hspace*{.09em}
       \raisebox{.04em}[0ex][0ex]{$\scon$}$\hspace*{.07em}}}}
+\newcommand{\bigocon}{\raisebox{-0.3ex}{\resizebox{0.75em}{!}{\hspace{0.05em}$\scon$}}\hspace{-2.18ex} \bigcup}
 \newcommand{\wand}{%
  \mathrel{\mbox{$\hspace*{-0.03em}\mathord{-}\hspace*{-0.4em}
   \mathord{-}\hspace*{-0.13em}
@@ -104,10 +104,12 @@
 \newcommand{\septraction}{%
   \mathrel{\mbox{$\hspace*{-0.03em}\mathord{-}\hspace*{-0.66em}
   \mathord{-}\hspace*{-0.1em}\mathord{\ostar}$\hspace*{0.05em}}}}
-
 \colorlet{red}{red!80!black}
+\newcommand{\vdashtwo}{\vdash\hspace*{-0.5em}\mathord{-}}
+
 
 \let\magicwand\wand
+\let\emptyset\varnothing
 \mathlig{--*}{\mathrel{\magicwand}}
 \mathlig{--o}{\mathrel{\septraction}}
 \mathlig{|->}{\mathrel{\mapsto}} % tight points-to
@@ -118,12 +120,15 @@
 \mathlig{*}{\mathbin{\scon}}
 \mathlig{/|}{\mathbin{\wedge}} % additive conjunction
 \mathlig{|/}{\mathbin{\vee}} % additive disjunction
-\mathlig{|-}{\mathrel{\vdash}} % entails
+\mathlig{|-}{\mathrel{\vdashtwo}} % entails
 \mathlig{|=}{\models} % models
 \mathlig{//}{\color{black}{\sslash}} % listings comments
 
 
-\newcommand{\defeq}{\mathbin{\stackrel{\Delta}{=}}}
+\newcommand{\defeq}{\mathbin{\stackrel{\triangle}{=}}}
+% \newcommand{\defeq}{
+%   \mathbin{\mbox{$\mathrlap{=}\hspace*{.09em}
+%       \raisebox{0.5em}[0ex][0ex]{\resizebox{0.4em}{!}{$\triangle$}}$\hspace*{.07em}}}}
 \newcommand{\tx}[1]{\text{#1}}
 \newcommand{\p}[1]{\ensuremath{\mathsf{#1}}} % predicate font
 \newcommand{\m}[1]{\ensuremath{\mathit{#1}}} % math font

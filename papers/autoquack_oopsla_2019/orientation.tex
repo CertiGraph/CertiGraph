@@ -1,15 +1,15 @@
 \input{find_listing_narrow.tex}
 
 As an initial demonstration of our techniques, we show the decorated code of the
-\texttt{find} function from the classic disjoint-set data structure in
-Figure~\ref{fig:find}. The \texttt{find} function returns the root
-(ultimate parent) of a \texttt{Node} \texttt{x}. A node is a root when its parent
+\li{find} function from the classic disjoint-set data structure in
+Figure~\ref{fig:find}. The \li{find} function returns the root
+(ultimate parent) of a \li{Node x}. A node is a root when its parent
 pointer points to itself (line~\ref{code:ufif});
 other than such self-loops at roots, the structure is acyclic.
-For good amortised performance, \texttt{find} also performs path
+For good amortised performance, \li{find} also performs path
 compression (line~\ref{code:ufpathcompress}).
-At first, \texttt{find} appears rather trivial since it only has about 5 lines
-of code and a \texttt{Node} has only a single outgoing pointer.
+At first, \li{find} appears rather trivial since it only has about 5 lines
+of code and a \li{Node} has only a single outgoing pointer.
 In actual fact, the rather subtle nature of path compression and the
 implicit sharing inherent in parent-pointers make the disjoint-set data
 structure very difficult to reason about. Indeed, the first pen-and-paper
@@ -22,7 +22,7 @@ mean a ``mathematical'' (or~``pure'') graph: roughly, a set of
 labeled vertices $V(\gamma)$ and edges $E(\gamma)$.
 When $\m{v} \in V(\gamma)$, we write $\gamma(\m{v}) = (r,p)$ to state that vertex $\m{v}$ has
 label $r$ and parent vertex $p$ ($r$ stores the ``rank'' of a node; it is ignored
-in \texttt{find}).  We detail mathematical graphs in~\S\ref{sec:mathgraph}.
+in \li{find}).  We detail mathematical graphs in~\S\ref{sec:mathgraph}.
 
 Spatial predicates are written in \textsf{sans-serif}.
 Each node $\m{v} \in V(\gamma)$ is
@@ -44,9 +44,9 @@ predicates.  All of this is despite verifying real C code, which entails quite a
 of grungy details. As one example, we will examine some grunginess that occurs in the
 verification of line~\ref{code:ufif} shortly.
 
-The precondition on line~\ref{code:findstart} says that we have a disjoint-set forest representing the abstract graph~$\gamma$, and that \texttt{x} is a valid vertex in~$\gamma$.  The postcondition is on line~\ref{code:findend}: the heap contains a new union-find graph~$\gamma''$, and \li{find} returns the node \m{rt}.
+The precondition on line~\ref{code:findstart} says that we have a disjoint-set forest representing the abstract graph~$\gamma$, and that \li{x} is a valid vertex in~$\gamma$.  The postcondition is on line~\ref{code:findend}: the heap contains a new union-find graph~$\gamma''$, and \li{find} returns the node \m{rt}.
 We specify that $\m{rt}$
-is the root (ultimate parent) of \texttt{x} with the pure relation $\m{uf\_root}$.
+is the root (ultimate parent) of \li{x} with the pure relation $\m{uf\_root}$.
 The relation $\m{findS}$, which conservatively approximates the action of path
 compression, relates the final graph~$\gamma''$ to the original graph~$\gamma$.
 The formal definitions for the concepts used in $\m{uf\_root}$ and $\m{findS}$
@@ -71,20 +71,20 @@ The pointer comparison in line~\ref{code:ufif} is an example of where
 such lemmas are necessary.
 Formally, pointer (in-)equality comparison in C is only defined under somewhat delicate
 circumstances\footnote{\label{footnote:pointereq}To summarize: it is a mess. Specifically,
-whenever (1) \texttt{x} and \texttt{p} are both null; or when (2) one of them is null and the
+whenever (1) \li{x} and \li{p} are both null; or when (2) one of them is null and the
 other has offset between~0 and the size of the memory block into which it is pointing;
-or when (3) if \texttt{x} and \texttt{p} are from the same memory block, then both of their
-offsets are between~0 and the size of that block; or when (4) \texttt{x} and \texttt{p} are
+or when (3) if \li{x} and \li{p} are from the same memory block, then both of their
+offsets are between~0 and the size of that block; or when (4) \li{x} and \li{p} are
 not in the same memory block and both have offsets between 0 and the size of their
 respective memory blocks \emph{minus one}.}.  VST could prove the definedness of the
 pointer comparison automatically if we knew
-\mbox{$(\texttt{x} |-> \_) * (\texttt{p} |-> \_) * \top$}, but
+\mbox{$(\li{x} |-> \_) * (\li{p} |-> \_) * \top$}, but
 unfortunately this does not follow from line~\ref{code:aftparentfind} since,
-when \texttt{x} is a root, self-loop gives us $\texttt{x}=\texttt{p}$ and
+when \li{x} is a root, self-loop gives us $\li{x}=\li{p}$ and
 %then, because of the way $*$ works,
-$\texttt{x} |-> \_ * \texttt{x} |-> \_ \vdash \bot$.  Accordingly, we must prove a
-simple lemma that states that when $\p{uf\_graph}(\gamma) /| \texttt{x}
-\in V(\gamma) /| \texttt{p} \in V(\gamma)$,
+$\li{x} |-> \_ * \li{x} |-> \_ \vdash \bot$.  Accordingly, we must prove a
+simple lemma that states that when $\p{uf\_graph}(\gamma) /| \li{x}
+\in V(\gamma) /| \li{p} \in V(\gamma)$,
 the pointer comparison is defined in C.
 
 \subsection{Localization Blocks}
@@ -104,7 +104,7 @@ Intuitively, a localization block allows us to zoom in from a larger
 ``global'' context to a smaller ``local'' one, and, after verifying some commands
 locally and arriving at a local postcondition, to zoom back out to the global
 context. The $\searrow$ and $\swarrow$ symbols formally indicate an application
-of the \textsc{Localize} rule (equation \ref{eq:localize} from page~\pageref{eq:localize}).
+of the \textsc{Localize} rule (Equation \ref{eq:localize} from page~\pageref{eq:localize}).
 
 %\marginpar{\tiny \color{blue} repetition}
 Recall that \textsc{Localize} connects some ``global'' pre- and postconditions $G_1$ and $G_2$
@@ -149,7 +149,7 @@ so---verifying line~\ref{code:findram1} is easy.
 
 The third check is the side condition on the modified variables.  Here we have an irritating
 problem: the free variables of $R \defeq L_2 --* G_2$ are \textbf{not} disjoint from
-the local variables modified by $c$.  Inspection of lines~\ref{code:findram1}--\ref{code:ufaftram1} shows that the program variable \texttt{p} \textbf{is} modified by $c$,
+the local variables modified by $c$.  Inspection of lines~\ref{code:findram1}--\ref{code:ufaftram1} shows that the program variable \li{p} \textbf{is} modified by $c$,
 and \textbf{is} free in both $L_2$ and $G_2$.
 This issue is fundamental: the whole point of verifying
 a read is to know something about the value that has been read.
@@ -218,18 +218,18 @@ Here we abuse notation a little bit.  The conclusion of the ``rule'' (actually, 
 the graph must be acyclic (other than at roots).
 % , as we will discuss in \S\ref{sec:mathgraph},
 %\marginpar{\tiny \color{blue}Too early}
-In Coq, these properties are carried around via dependent types as will explained in \S\ref{sec:mathinfra}.
+In Coq, these properties are carried around via dependent types, as will be explained in \S\ref{sec:mathinfra}.
 
 In our proof of \li{find}, the bulk of the example-specific effort (as opposed to generic lemmas we reuse in other examples) is showing that this mathematical update can be done properly, \emph{i.e.} from
 %\marginpar{\tiny \color{blue} Need to come to some decision re: the typesetting.}
 \[
-\texttt{x} \in V(\gamma) /| \gamma(\texttt{x}) = (r,\m{pa}) \quad \text{ and } \quad
-\texttt{x} \neq \m{pa} /|
+\li{x} \in V(\gamma) /| \gamma(\li{x}) = (r,\m{pa}) \quad \text{ and } \quad
+\li{x} \neq \m{pa} /|
 \m{findS}(\gamma,\m{pa},\gamma') /| \m{uf\_root}(\gamma',\m{pa},\m{rt})
 \]
 we can prove
 \[
-\exists \gamma''.~ \gamma'' = [x -> (r,rt)]\gamma' /| \m{uf\_root}(\gamma'',\texttt{x},\m{rt}) /| \m{findS}(\gamma,\texttt{x},\gamma'')
+\exists \gamma''.~ \gamma'' = [x -> (r,rt)]\gamma' /| \m{uf\_root}(\gamma'',\li{x},\m{rt}) /| \m{findS}(\gamma,\li{x},\gamma'')
 \]
 
 

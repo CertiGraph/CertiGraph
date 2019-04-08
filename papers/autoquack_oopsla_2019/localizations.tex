@@ -140,8 +140,8 @@ we tried to do in \S\ref{sec:localblocks}, then the program variable {\li{x}} ap
 \overbrace{(\li{x} \! = \! 5 /| A)}^{G_1} |- \overbrace{(\li{x} \! = \! 5 /| B)}^{L_1} * \big(\overbrace{(\li{x} \! = \! 6 /| C)}^{L_2} --* \overbrace{(\li{x} \! = \! 6 /| D)}^{G_2}\big)
 \vspace{-1ex}
 \]
-For the sake of simplicity, assume that in the above snippet only \texttt{x} is modified
-and that \texttt{x} does not appear free in $A$, $B$, $C$ or $D$.  Let us further assume
+For the sake of simplicity, assume that in the above snippet only \li{x} is modified
+and that \li{x} does not appear free in $A$, $B$, $C$ or $D$.  Let us further assume
 that, modulo the local variable issue we are trying to solve, the entailment holds.
 In other words, let us assume that $A |- B * (C --* D)$.
 
@@ -488,14 +488,14 @@ Although our technique to handle modified program variables is rather intricate,
 \subsection{Additional verified examples}
 \label{sec:application}
 
-In addition to the proof of \texttt{find} shown above, we do a proof of \texttt{union} 
+In addition to the proof of \li{find} shown above, we do a proof of \li{union} 
 in the same style.  We also do a \emph{second} version of union-find, this time using
-arrays rather than \texttt{malloc}-allocated nodes.  The mathematical definitions, 
+arrays rather than \li{malloc}-allocated nodes.  The mathematical definitions, 
 \emph{e.g.} for $\m{findS}$, are entirely shared, demonstrating that we have 
 separated the concerns of abstract algorithmic reasoning from the nitty-gritty details
 of heap representation. % graphs in the heap.
 
-We also have done a version of \texttt{mark} for DAGs (acyclic).  In general, using DAGS 
+We also have done a version of \li{mark} for DAGs (acyclic).  In general, using DAGS 
 are both easier and harder than cyclic graphs.  On the one hand, we get genuine separation 
 between the root and its children; on the other hand, we need to maintain acyclicity if
 we modify the link structure.

@@ -221,7 +221,7 @@ Coq's \emph{type coercion} mechanism, while enabling additional lemmas involving
 
 %In addition, we can prove additional lemmas that use labels,
 %\emph{e.g.} vertices in the union-find graph have an integer label denoting \emph{rank},
-%and we prove that running \texttt{find} does not alter any vertex's rank.
+%and we prove that running \li{find} does not alter any vertex's rank.
 
 %% Anshuman's proposal
 \hide{\paragraph{LabeledGraph.}
@@ -234,7 +234,7 @@ additional information in the form of labels. In our architecture, a
 LabeledGraph inherits any lemmas proved about its associated PreGraph.
 In addition, we can define additional lemmas that use labels,
 \emph{e.g.} the union-find graph has an integer label denoting \emph{rank}.
-We could prove a lemma that running \texttt{find} does not alter
+We could prove a lemma that running \li{find} does not alter
 any vertex's rank.
 \hide{add string labels to edges and reason about a trie.}}
 % Anshuman's proposal ends
@@ -250,7 +250,7 @@ and prove many useful lemmas that follow essentially by the nature
 of our graph constructions. However, when proving the correctness of graph
 algorithms, we often need more specificity in our mathematical graphs
 so that we may model the real program's behaviors closely.
-For example, the \p{uf\_graph} used in \texttt{find}
+For example, the \p{uf\_graph} used in \li{find}
 restricted each vertex to having exactly one out-edge.
 On the other hand, these restrictions vary greatly by algorithm, so we do not
 want to bake them into our core definitions.
@@ -328,8 +328,8 @@ We can compose
 \p{LstGraph}, \p{MathGraph}, and \p{FiniteGraph}
 together into a new plugin called \p{LiMaFin}, which, incidentally, is
 the soundness condition of mathematical \p{uf\_graph}
-we used to verify \texttt{find} in
-Figure~\ref{fig:find}.  In our verification of \texttt{mark} in
+we used to verify \li{find} in
+Figure~\ref{fig:find}.  In our verification of \li{mark} in
 Figure~\ref{fig:markgraph}, we use a similar soundness condition
 \p{BiMaFin}, which uses \p{BiGraph} instead of \p{LstGraph}.
 The commonalities and differences between \p{LiMaFin}
