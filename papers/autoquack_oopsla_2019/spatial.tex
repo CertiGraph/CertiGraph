@@ -172,8 +172,8 @@ Our definition of \p{graph} is flat in the sense that there is no obvious way to
 \begin{equation}
 \label{eqn:unfold_graph}
 \hspace{-1em}\begin{array}{@{}lc@{\hspace{1pt}}c@{\hspace{1pt}}l@{}}
-\p{graph}(x,\gamma)  <=>  x |-> \gamma(x) ** \big(\!\!\!\!\!\!\!\!\!\!\!\!\!\underset{n \in \p{neighbors}(\gamma,x)}{\raisebox{-0.3ex}{\resizebox{0.75em}{!}{$\scon$}} \hspace{-2.18ex} \bigcup}\!\!\!\!\!\!\!\!\!\!\!\! \p{graph}(\gamma,n) \big)
-\quad \text{~~~ where ~~ }\underset{l_1,\dots,l_n}{\raisebox{-0.3ex}{\resizebox{0.75em}{!}{$\scon$}}\hspace{-2.18ex} \bigcup} \! \! P  \defeq  P(l_1) ** \ldots ** P(l_n) \end{array}
+\p{graph}(x,\gamma)  <=>  x |-> \gamma(x) ** \big(\!\!\!\!\!\!\!\!\!\!\!\!\!\underset{n \in \p{neighbors}(\gamma,x)}{\bigocon}\!\!\!\!\!\!\!\!\!\!\!\! \p{graph}(\gamma,n) \big)
+\quad \text{~~~ where ~~ }\underset{l_1,\dots,l_n}{\raisebox{-0.3ex}{\resizebox{0.75em}{!}{\hspace{0.05em}$\scon$}}\hspace{-2.18ex} \bigcup} \! \! P  \defeq  P(l_1) ** \ldots ** P(l_n) \end{array}
 \vspace{-1ex}
 \end{equation}
 
@@ -183,7 +183,7 @@ The proof of the $<=$ direction requires care. The difficulty is that if two nod
 \]
 That is, they overlap either completely or not at all. In a Java-like memory model this property is automatic because pointers in such a model always point to the root/beginning of an object.  In contrast, in a C-like memory model such as in VST/CompCert, this property is not automatic because pointers can point anywhere.  In such a model, alignment is most easily enforced by storing graph nodes at addresses that are multiples of an appropriate size (16 in Figure~\ref{fig:markgraph}).
 
-Some of our VST proofs, \emph{e.g.} for \texttt{find}, do not use fold/unfold, instead preferring to use the lemmas in~\S\ref{sec:ramifylib} directly.  Others, \emph{e.g.} \texttt{mark}, do---and it is helpful to have both options avilable. We also prove fold/unfold lemma for DAGs in which we get a $*$ between the root and its $**$-joined neighbors, rather than the $**$ present in \eqref{eqn:unfold_graph}.
+Some of our VST proofs, \emph{e.g.} for \li{find}, do not use fold/unfold, instead preferring to use the lemmas in~\S\ref{sec:ramifylib} directly.  Others, \emph{e.g.} \li{mark}, do---and it is helpful to have both options avilable. We also prove fold/unfold lemma for DAGs in which we get a $*$ between the root and its $**$-joined neighbors, rather than the $**$ present in \eqref{eqn:unfold_graph}.
 % (On the other hand, for HIP/SLEEK fold/unfold is vital, and it is heartening to know that the recursive relationship holds.  We also prove fold/unfold lemma for DAGs in which we get a $*$ between the root and its $**$-joined neighbors. % rather than the $**$ present in \eqref{eqn:unfold_graph}.
 
 
@@ -358,9 +358,9 @@ prover that uses the Direct Model.
 %ramification rules for $\p{graph}$ in \cite{hobor:ramification}, which
 %uses $\bigstar$ so as to be applied in all verification examples.
 
-%% 1.2. \texttt{Iter\_sepcon} and \texttt{pred\_sepcon} are defined. And related ramification rules are proved.
-%% 1.3. The most general graph-spatial-predicate \texttt{vertices\_at} are defined (for all possible styles of graphs). Related ramification rules are proved. Graph and graphs are defined as special cases of vertices at.
+%% 1.2. \li{Iter\_sepcon} and \li{pred\_sepcon} are defined. And related ramification rules are proved.
+%% 1.3. The most general graph-spatial-predicate \li{vertices\_at} are defined (for all possible styles of graphs). Related ramification rules are proved. Graph and graphs are defined as special cases of vertices at.
 
-%% 2. A minor implementation trick. There are many tactics defined in \texttt{msl\_ext/ramify\_tactics.v}, which can manipulate low level heaps efficiently.
+%% 2. A minor implementation trick. There are many tactics defined in \li{msl\_ext/ramify\_tactics.v}, which can manipulate low level heaps efficiently.
 
 %% * Separating the material into the general vs. tool-specific part.  Measurements of etc.
