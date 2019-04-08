@@ -57,7 +57,7 @@ Consider the following memory $m$ for a toy machine:
 \end{minipage}
 \begin{minipage}{.19\textwidth}
 \centering
-\beginpgfgraphicnamed{selfref}
+%\beginpgfgraphicnamed{selfref}
 \begin{tikzpicture}
 [->/.style={thick,arrows={-Stealth}},
    propG/.style={shape=circle, draw}]
@@ -65,7 +65,7 @@ Consider the following memory $m$ for a toy machine:
    \node[propG] (P) at (0, 0) {42};
    \draw[->] (P.west) .. controls (-1.5, 0) and (0, -1.5) .. (P.south);
 \end{tikzpicture}
-\endpgfgraphicnamed
+%\endpgfgraphicnamed
 \end{minipage}
 \vspace{-0.5em} % very fiddly. need to adjust per final layout
 \end{wrapfigure}
@@ -192,7 +192,7 @@ Some of our VST proofs, \emph{e.g.} for \li{find}, do not use fold/unfold, inste
 %\begin{wrapfigure}{r}{.5\textwidth}
 \begin{figure}
 \centering
-\beginpgfgraphicnamed{infrastructure}
+%\beginpgfgraphicnamed{infrastructure}
 \begin{tikzpicture}[
 ->/.style={thick, arrows={-Stealth}},
 ent/.style={shape=rectangle, rounded corners=4pt, draw, on grid},x=33pt]
@@ -236,7 +236,7 @@ ent/.style={shape=rectangle, rounded corners=4pt, draw, on grid},x=33pt]
 \coordinate[left=0.8 of legend2]  (l2);
 \draw [double, ->] (l2) to (legend2);
 \end{tikzpicture}
-\endpgfgraphicnamed
+%\endpgfgraphicnamed
 %% \vspace{1ex}
 \caption{Infrastructure of ramification library}\label{fig:infra}
 \end{figure}
@@ -244,7 +244,7 @@ ent/.style={shape=rectangle, rounded corners=4pt, draw, on grid},x=33pt]
 
 VST employs a somewhat unusual Step-Indexed heap model to represent
 spatial predicates, and uses it to support an unusually rich program
-logic.~\cite{appel:programlogics} However, the spatial representation
+logic~\cite{appel:programlogics}. However, the spatial representation
 of our graph library does not rely on any of its bells and whistles.
 To isolate our development from these unnecessary complications,
 we use two interfaces: Core Logic and Supplementary

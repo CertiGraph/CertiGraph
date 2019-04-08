@@ -55,14 +55,14 @@ than focusing on the nitty-gritty details.} % end hide
 
 Our first challenge is that graph theory is usually based on
 \emph{set theory} but our formalization in Coq is
-based on \emph{type theory}. We choose to formalize graph theory
+based on \emph{type theory}. We formalize graph theory
 directly in Coq instead of formalizing set theory and then building
-graph theory atop it to take advantage of Coq's built-in
+graph theory atop it, because this lets us take advantage of Coq's built-in
 support for type-related constructions.
-To balance the dichotomy between
-the generality and the speciality of the library, we divide the
-concept of graph into three structures,
-PreGraph, LabeledGraph and GeneralGraph, arranged in a hierarchy.
+To resolve the dichotomy between
+the generality and the speciality of the library, we develop 
+our graphs gradually over three structures: 
+PreGraph, LabeledGraph and GeneralGraph.
 Figure~\ref{fig:graphs} shows the
 architecture of the library.
 

@@ -5,11 +5,11 @@
 \begin{adjustbox}{scale=0.80}	
   \begin{minipage}[t]{0.68\textwidth}
   \centering
-  \beginpgfgraphicnamed{variousgraph}
+%  \beginpgfgraphicnamed{variousgraph}
 \begin{tikzpicture}
 [->/.style={thick,arrows={-Stealth}},
--->/.style={thick,arrows={-Stealth}, decorate, decoration={snake, amplitude=.4mm,segment length=2mm,post length=2mm}},
-   realG/.style={shape=rectangle, rounded corners=4pt, draw, fill=gray!40},
+-->/.style=	{thick,arrows={-Stealth}, decorate, decoration={snake, amplitude=.4mm,segment length=2mm,post length=2mm}},
+   realG/.style={shape=rectangle, rounded corners=4pt, draw, fill=red!30},
    propG/.style={shape=rectangle, rounded corners=4pt, draw}]
 \node[realG] (PG) at (0, 0) {\small PreGraph};
 \node[realG] (LG) [right=0.8 of PG] {\small LabeledGraph};
@@ -50,14 +50,14 @@
 \coordinate[left=0.8 of legend3]  (l3);
 \draw [-->] (l3) to (legend3);
 \end{tikzpicture}
-\endpgfgraphicnamed
-\vspace{1ex}
+% \endpgfgraphicnamed
+\vspace{2.6ex}
 \captionof{figure}{Structure of the Mathematical Graph Library}\label{fig:graphs}
 \end{minipage}
   ~
   \begin{minipage}[t]{0.52\textwidth}
 \centering
-\beginpgfgraphicnamed{pregraphexp}
+% \beginpgfgraphicnamed{pregraphexp}
 \begin{tikzpicture}
 [vad/.style={circle, fill=black, inner sep=0pt, minimum size=4pt},
  inv/.style={circle, draw=red, thick, inner sep=0pt, minimum size=4pt},
@@ -104,8 +104,10 @@
 \node at (3.9, -0.5) [right=1.5pt] {\small Invalid edge};
 
 \end{tikzpicture}
-\endpgfgraphicnamed
-\vspace{1ex}
+% \endpgfgraphicnamed
+\vspace{0.0001ex}
 \captionof{figure}{A PreGraph with valid/invalid vertices and edges.}\label{fig:pregraph}
 \end{minipage}
 \end{adjustbox}
+\vspace{1.5ex}
+
