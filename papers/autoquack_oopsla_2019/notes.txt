@@ -3,7 +3,6 @@ I: Known issues
 ```````````````
 - In the gc code, does the nursery get collected when half-full or full? 
 - kleene star is technially meant to be an asterisk, not a five-pointed solid star
-- I think bigstar should be a big "sep", whatever sep is
 
 II: Weak sections
 `````````````````
