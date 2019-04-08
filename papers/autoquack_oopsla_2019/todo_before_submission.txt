@@ -1,4 +1,0 @@
-Some thoughts about appearance:
-
-1. kleene star is technially meant to be an asterisk, not a five-pointed solid star
-2. I think bigstar should be a big "sep", whatever sep is
