@@ -1,7 +1,7 @@
 
 \appendix
 
-\section{Spanning and Copying}
+\section{Spanning Trees}
 \label{apx:spanning}
 
 \input{spanning.tex}
@@ -11,12 +11,11 @@ the spanning tree algorithm.  Unlike graph marking, the spanning tree algorithm 
 structure of the graph, leading to a more complicated specification,
 in both the pure part and the spatial part. Observe that the $\m{span}$ relation is
 rather long; the $\m{e\_span}$ handles the case of either calling spanning tree or deleting an edge.
+Just like other parts of the paper, this algorithms has been machine-verified.
 
-We put the proof sketch of the graph copying algorithm in
-Figure~\ref{fig:copy-part1} and Figure~\ref{fig:copy-part2}. Just like
-other parts of the paper, both algorithms have been machine verified.
-
-\input{copy.tex}
+% We put the proof sketch of the graph copying algorithm in
+% Figure~\ref{fig:copy-part1} and Figure~\ref{fig:copy-part2}. 
+% \input{copy.tex}
 
 
 %\section{Proof of \infrulestyle{Ramify-P} and \infrulestyle{Ramify-PQ}}
@@ -81,7 +80,7 @@ Proof of \infrulestyle{Ramify-PQ} from \infrulestyle{Ramify-P}:
 \end{figure*}
 
 See Figure~\ref{fig:rampqproofs} for the proofs of \infrulestyle{Ramify-P} and \infrulestyle{Ramify-PQ}. 
-}
+} % end hide
 
 \section{Difficulty using $\graphkt$}
 \label{apx:problemrecgraph}
