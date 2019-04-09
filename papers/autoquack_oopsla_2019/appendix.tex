@@ -11,7 +11,7 @@ the spanning tree algorithm.  Unlike graph marking, the spanning tree algorithm 
 structure of the graph, leading to a more complicated specification,
 in both the pure part and the spatial part. Observe that the $\m{span}$ relation is
 rather long; the $\m{e\_span}$ handles the case of either calling spanning tree or deleting an edge.
-Just like other parts of the paper, this algorithms has been machine-verified.
+Just like other parts of the paper, this algorithm has been machine-verified.
 
 % We put the proof sketch of the graph copying algorithm in
 % Figure~\ref{fig:copy-part1} and Figure~\ref{fig:copy-part2}. 
@@ -103,7 +103,7 @@ See Figure~\ref{fig:rampqproofs} for the proofs of \infrulestyle{Ramify-P} and \
 \label{fig:badcycle}
 \end{figure*}
 
-See Figure \ref{fig:badcycle} for an attempt to prove the entailment $100 |-> 42,100,0 ~ |- ~ \graphkt(100,\hat{\gamma})$.  Part of the problem is that the recursive structure interacts very badly with $**$: if the recursion involved~$*$then it \textbf{would} be provable, by induction on the finite memory (each ``recursive call'' would be on a strictly smaller subheap).  This is why Knaster-Tarski works so well with list, tree, and DAG predicates in separation logic.
+See Figure \ref{fig:badcycle} for an attempt to prove the entailment $100 |-> 42,100,0 ~ |- ~ \graphkt(100,\hat{\gamma})$.  Part of the problem is that the recursive structure interacts very badly with $**$: if the recursion involved~$*$~then it \textbf{would} be provable, by induction on the finite memory (each ``recursive call'' would be on a strictly smaller subheap).  This is why Knaster-Tarski works so well with list, tree, and DAG predicates in separation logic.
 
 \section{Problem with Appel and McAllester's fixpoint}
 \label{apx:appelfixpiont}
@@ -123,7 +123,7 @@ look like
 
 Unfortunately, $\rhd P$ is not precise for all $P$, so $\grapham$ is not precise either.  The approximation modality's universal imprecision has never been noticed before.
 
-\section{Structure of the Garbage Collector Program}
+\section{Explanation of the Garbage Collector Program}
 \label{apx:gcstructure}
 
 % My goal here is to start with a broad overview
