@@ -1,4 +1,4 @@
-In this section we (\S\ref{sec:rulessound}) first ensure our feet are solidly planted by proving why \textsc{Localize} is sound, and indeed equivalent to \textsc{Frame}.  Second (\S\ref{sec:freevars}), 
+In this section we first (\S\ref{sec:rulessound}) ensure our feet are solidly planted by proving why \textsc{Localize} is sound, and indeed equivalent to \textsc{Frame}.  Second (\S\ref{sec:freevars}), 
 we address the bug from \S\ref{sec:localblocks} and show that \textsc{Localize} is indeed 
 strong enough to robustly handle modified local program variables.  Third (\S\ref{sec:linkedex}), 
 we showcase two additional features of our framework, linked existentials and a fold/unfold style
@@ -25,6 +25,7 @@ Our flagship example, the garbage collector for the CertiCoq project, will be co
 \label{sec:rulessound}
 
 \begin{figure*}
+{\footnotesize
 \[
 \hspace{-1em}
 \infrule{}{
@@ -49,6 +50,7 @@ Our flagship example, the garbage collector for the CertiCoq project, will be co
   }
   {\{P * F\}~c~\{Q * F\}}{\textsc{Cons}}  
 \]
+}
 \caption{Proving \infrulestyle{Localize} from \infrulestyle{Frame}, and conversely \infrulestyle{Frame} from \infrulestyle{Localize}}
 \label{fig:rampqproofs}
 \end{figure*}
@@ -65,7 +67,7 @@ is exactly what \textsc{Localize} needs (since $R \defeq F$).
 The equivalence between \textsc{Frame} and \textsc{Localize} means that %is important because 
 our techniques will be sound in any separation logic.
 
-\paragraph{Notes on notation.} Although we do not do so in Figure~\ref{fig:find}, localization blocks can safely nest.  When the ramification entailment is not noteworthy we can omit the $\ramify(i)$ reference in pen-and-paper proofs.  When we wish to save vertical space we can write $\{ G_1 \} \searrow \{ L_1 \}$ and $\{ G_2 \} \swarrow \{ L_2 \}$.
+\paragraph{Note on notation.} Although we do not do so in Figure~\ref{fig:find}, localization blocks can safely nest.  When the ramification entailment is not noteworthy we can omit the $\ramify(i)$ reference in pen-and-paper proofs.  When we wish to save vertical space we can write $\{ G_1 \} \searrow \{ L_1 \}$ and $\{ G_2 \} \swarrow \{ L_2 \}$.
 We also note that since \infrulestyle{Localize} can derive \infrulestyle{Frame}, our notation for localization blocks clarifies pen-and-paper uses of \infrulestyle{Frame}, especially in multi-line contexts with nontrivial $F$.
 \hide{, for which the current popular notation to express \infrulestyle{Frame} involves a liberal use of
 ellipses, \emph{e.g.}:
@@ -127,10 +129,10 @@ the preciseness of our key predicates.
 
 Consider using \textsc{Localize} to verify the program
 \vspace{-1ex}
-\begin{lstlisting}[numbers=none]
-$// \{ \tx{x} = 5 /| A \} \searrow \{\tx{x} = 5 /| B \}$
-  ...; x = x + 1; ...;
-$// \{ \tx{x} = 6 /| D \} \swarrow \{\tx{x} = 6 /| C \}$
+\begin{lstlisting}
+  $// \{ \tx{x} = 5 /| A \} \searrow \{\tx{x} = 5 /| B \}$
+    ...; x = x + 1; ...;
+  $// \{ \tx{x} = 6 /| D \} \swarrow \{\tx{x} = 6 /| C \}$
 \end{lstlisting}
 \vspace{-1ex}
 Suppose that other (elided) lines of the program make localization desirable, even though it is overkill for a single assignment.  The key issue is that if one sets $R \defeq L_2 --* G_2$, as 
@@ -153,19 +155,19 @@ the separating implication is vacuously true since \tx{x} cannot simultaneously 
 both $5$ and $6$.  But since two fatal problems are overkill, let us move on.}.  
 Intuitively, the side condition on \infrulestyle{Localize} seems to be a bit too strong 
 since it prevents us from mentioning variables in the postconditions that have been modified 
-by code $c$.  As in other cases when life gets tough, what we need is an elegant little dance, and as with most dances one should lead by example.
+by code $c$.  As in other cases when life gets tough, what we need is an elegant little dance, and as with most dances, one should lead by example.
 
 First, define $\hat{L_2}(x_f) \defeq (x_f \! = \! 6 /| C)$ and
 $\hat{G_2}(x_f) \defeq (x_f \! = \! 6 /| D)$, \emph{i.e.} replace the troublesome program variable \tx{x} in $L_2$ and $G_2$ with a harmless fresh metavariable $x_f$.  Next, notice that with a carefully chosen existential quantifier, we can express the original $L_2$ with the new $\hat{L_2}$
 while keeping the troublesome program variable \tx{x} isolated and shift the above decorated program
 into the form
 \begin{lstlisting} %[numbers=none]
-$// \{ \tx{x} \! = \! 5 /| A \} \searrow \{\tx{x} \! = \! 5 /| B \}$
-  ...; x = x + 1; ...;
-  $\, // \{\tx{x} \! = \! 6 /| C\}$
-$\label{code:locexamplepresw}\swarrow // \{\exists x_f.~ (x_f = \tx{x}) /| (x_f \! = \! 6 /| C) \} $
-$\label{code:locexamplepostsw}// \{ \exists x_f.~ (x_f = \tx{x}) /| (x_f \! = \! 6 /| D) \}  \}$
-$// \{ \tx{x} \! = \! 6 /| D \}  \}$
+  $// \{ \tx{x} \! = \! 5 /| A \} \searrow \{\tx{x} \! = \! 5 /| B \}$
+    ...; x = x + 1; ...;
+    $\, // \{\tx{x} \! = \! 6 /| C\}$
+  $\label{code:locexamplepresw}\swarrow // \{\exists x_f.~ (x_f = \tx{x}) /| (x_f \! = \! 6 /| C) \} $
+  $\label{code:locexamplepostsw}// \{ \exists x_f.~ (x_f = \tx{x}) /| (x_f \! = \! 6 /| D) \}  \}$
+  $// \{ \tx{x} \! = \! 6 /| D \}  \}$
 \end{lstlisting}
 Notice that lines~\ref{code:locexamplepresw} and~\ref{code:locexamplepostsw}
 are exactly in the form $\exists x_f. \hat{\hat{L_2}}(x_f)$ and $\exists x_f. \hat{\hat{G_2}}(x_f)$, \emph{i.e.} exactly in the format permitted by \textsc{Localize}, where $\hat{\hat{L_2}}(x_f) \defeq (x_f = \tx{x}) /| \hat{L_2}(x_f)$, \emph{i.e.} $(x_f = \tx{x}) /| (x_f \! = \! 6 /| C)$ and $\hat{\hat{G_2}}(x_f)$ is similar. % \defeq (x_f = \tx{x}) /| (x_f \! = \! 6 /| C)$
@@ -230,7 +232,7 @@ Figure~\ref{fig:seplogsem} on page~\pageref{fig:seplogsem}.} is part of why grap
 (\emph{e.g.}, it is hard to apply the \infrulestyle{Frame} rule).
 Second, \eqref{eqn:bigraphintrofoldunfold} illustrates how industrial-strength settings complicate verification.  Lines~\mbox{\ref{code:nodedefstart}--\ref{code:nodedefend}} define the data type \li{Node} used by \li{mark}.  The \li{_Alignas($n$)} directives tell CompCert to align fields on $n$-byte boundaries.
 As explained in~\S\ref{sec:goodgraph}, this alignment is necessary in C-like memory models to prove fold-unfold \eqref{eqn:bigraphintrofoldunfold}, which is why \eqref{eqn:bigraphintrofoldunfold} includes an alignment restriction $x~\mathsf{mod}~16 = 0$ and an existentially-quantified ``blank'' second field for the root $x \mapsto m,-,l,r$.
-(In our Floyd proofs the alignment restriction and blank second field are nicely hidden ``behind the scenes''.)
+In our Floyd proofs, the alignment restriction and blank second field are nicely hidden ``behind the scenes''.
 
 Just as with \li{find}, the postcondition of \li{mark} is specified \emph{relationally}, \emph{i.e.} $\{\exists \gamma'.~ \p{graph}(\li{x},\gamma') /| \m{mark}(\gamma, \li{x}, \gamma')\}$ instead of \emph{functionally}, \emph{i.e.} $\{\p{graph}\big(\li{x},\m{mark}(\gamma, \li{x})\big)\}$. In the first case $\m{mark}$ is a relation that specifies that~$\gamma'$ is the result of correctly marking~$\gamma$ from~\li{x}, whereas in the second $\m{mark}$ is a function that \textbf{computes} a new graph, which is the result of marking~$\gamma$ from~\li{x}. A relational approach is better for both theoretical and practical reasons.
 %\marginpar{\tiny \color{blue}Needs polishing}
@@ -488,8 +490,8 @@ Although our technique to handle modified program variables is rather intricate,
 \subsection{Additional verified examples}
 \label{sec:application}
 
-In addition to the proof of \li{find} shown above, we do a proof of \li{union} 
-in the same style.  We also do a \emph{second} version of union-find, this time using
+\note[randomly blue]{In addition to the proof of \li{find} shown above, we do a proof of \li{union} 
+in the same style.}  We also do a \emph{second} version of union-find, this time using
 arrays rather than \li{malloc}-allocated nodes.  The mathematical definitions, 
 \emph{e.g.} for $\m{findS}$, are entirely shared, demonstrating that we have 
 separated the concerns of abstract algorithmic reasoning from the nitty-gritty details

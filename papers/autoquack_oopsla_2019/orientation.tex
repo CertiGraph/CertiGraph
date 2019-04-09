@@ -46,7 +46,7 @@ verification of line~\ref{code:ufif} shortly.
 
 The precondition on line~\ref{code:findstart} says that we have a disjoint-set forest representing the abstract graph~$\gamma$, and that \li{x} is a valid vertex in~$\gamma$.  The postcondition is on line~\ref{code:findend}: the heap contains a new union-find graph~$\gamma''$, and \li{find} returns the node \m{rt}.
 We specify that $\m{rt}$
-is the root (ultimate parent) of \li{x} with the pure relation $\m{uf\_root}$.
+is the root (ultimate parent) of~\li{x} with the pure relation $\m{uf\_root}$.
 The relation $\m{findS}$, which conservatively approximates the action of path
 compression, relates the final graph~$\gamma''$ to the original graph~$\gamma$.
 The formal definitions for the concepts used in $\m{uf\_root}$ and $\m{findS}$
@@ -82,7 +82,7 @@ pointer comparison automatically if we knew
 unfortunately this does not follow from line~\ref{code:aftparentfind} since,
 when \li{x} is a root, self-loop gives us $\li{x}=\li{p}$ and
 %then, because of the way $*$ works,
-$\li{x} |-> \_ * \li{x} |-> \_ \vdash \bot$.  Accordingly, we must prove a
+$\li{x} |-> \_ * \li{x} |-> \_ |- \bot$.  Accordingly, we must prove a
 simple lemma that states that when $\p{uf\_graph}(\gamma) /| \li{x}
 \in V(\gamma) /| \li{p} \in V(\gamma)$,
 the pointer comparison is defined in C.
@@ -149,8 +149,8 @@ so---verifying line~\ref{code:findram1} is easy.
 
 The third check is the side condition on the modified variables.  Here we have an irritating
 problem: the free variables of $R \defeq L_2 --* G_2$ are \textbf{not} disjoint from
-the local variables modified by $c$.  Inspection of lines~\ref{code:findram1}--\ref{code:ufaftram1} shows that the program variable \li{p} \textbf{is} modified by $c$,
-and \textbf{is} free in both $L_2$ and $G_2$.
+the local variables modified by $c$.  Inspection of lines~\ref{code:findram1}--\ref{code:ufaftram1} shows that the program variable \li{p} \textbf{is} modified by~$c$,
+and \textbf{is} free in both~$L_2$ and~$G_2$.
 This issue is fundamental: the whole point of verifying
 a read is to know something about the value that has been read.
 Accordingly, our proof fails when we choose $R \defeq (L_2 --* G_2)$.
@@ -204,7 +204,7 @@ Unfortunately, we still have a problem: the side condition above requires that
 
 The second localization block (lines~\ref{code:ufbefram2}--\ref{code:ufaftram2}) is both easier and harder than the first.  It is easier because line~\ref{code:ufpathcompress} does not modify any local program variables, so the side condition is trivially satisfied.  Moreover, although line~\ref{code:ufaftram2} does contain an existential, line~\ref{code:findafterxparent} does not, and so there is no need to ``link'' the two associated witnesses.  We will discuss this issue
 in more detail in \S\ref{sec:linkedex}, but for now it is enough to
-choose $R \defeq L_2 --* G_2$ exactly written in lines~\ref{code:findafterxparent}
+choose $R \defeq L_2 --* G_2$ \note{exactly written} in lines~\ref{code:findafterxparent}
 (for $L_2$) and~\ref{code:ufaftram2} (for $G_2$).
 
 On the other hand, the second localization block is harder than the first because there is more going on spatially. $\ramify(\ref{findram2})$ expresses an update to a single node of our graph:
