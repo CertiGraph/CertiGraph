@@ -10,11 +10,12 @@ mathematical graph framework with an emphasis on this modularity.
 {\color{magenta} We continue to use Union-Find from }
 } % end hide
 
-To verify the functional correctness of graph algorithms it is natural
+When verifying the functional correctness of graph algorithms it is natural
 to want to use graph theory to describe
-program behavior. As discussed in \S\ref{sec:related},
+program behavior. 
+\note[a bit off? Consider: ...graph theory has deduced that ``it is...'']{As discussed in \S\ref{sec:related},
 25 years of research into mechanized graph theory can
-be succinctly summarized as ``it is a little tricky''.
+be succinctly summarized as ``it is a little tricky''.}
 %, since as is so often the
 %case, the proofs are straightforward only once the proper definitions have
 %been found.
@@ -47,11 +48,9 @@ Accordingly, in this section we will present our framework
 at a high level to communicate the overall architecture rather
 than focusing on the nitty-gritty details.} % end hide
 
-\subsection{Definitions of graphs}\label{sec:mathinfra}
-
 \input{mathgraph_pregraph_combined.tex}
-\input{pregraphdefs.tex}
-\input{gengraphdefs.tex}
+
+\subsection{Definitions of graphs}\label{sec:mathinfra}
 
 Our first challenge is that graph theory is usually based on
 \emph{set theory} but our formalization in Coq is
@@ -75,7 +74,7 @@ properties to LabeledGraphs (\ref{subsec:graphplugins}). %and will be discussed 
 } % end hide
 
 \paragraph{PreGraph.}
-A PreGraph is a hextuple $(\mathcal{V}, \mathcal{E}, \mathtt{V}, \mathtt{E}, \mathtt{src}, \mathtt{dst})$.  $\mathcal{V}$ and $\mathcal{E}$ are the underlying
+A PreGraph is a hextuple $(\mathcal{V}, \mathcal{E}, \mathtt{V}, \mathtt{E}, \mathtt{src}, \mathtt{dst})$.  Arguments $\mathcal{V}$ and $\mathcal{E}$ are the underlying
 carrier types of vertices and edges.  $\mathtt{V}$ and $\mathtt{E}$ are predicates over
 $\mathcal{V}$ and $\mathcal{E}$ that specify the notion
 of \emph{validity} in the graph.  Finally, $\mathtt{src}$ and $\mathtt{dst}$ map each edge to
@@ -129,6 +128,8 @@ $g_2$ is just a collection of \note[disconnected?]{connected} components,
 and if $g$ is a directed graph, then $g_2$ may contain dangling edges or
 vertices. PreGraph is accommodating enough to permit reasoning
 about~$g_2$ in either case.}
+
+\input{pregraphdefs.tex}
 
 We define many fundamental graph concepts on PreGraphs,
 including structures like \emph{path}$^{*}$, predicates
@@ -212,8 +213,9 @@ A LabeledGraph is septuple $(\mathrm{PreGraph},\ma{L_{V}},\ma{L_{E}},\ma{L_{G}},
 vertices, edges, and/or the graph as a whole. $\ma{L_{V}}$, $\ma{L_{E}}$, and $\ma{L_{G}}$
 are the associated carrier types; $\mathtt{vl}$, $\mathtt{el}$, and $\mathtt{gl}$
 are the labeling functions themselves.
-The need for such labels is that many classic graph problems from union-find (node ranks)
-to Dijkstra (edge weights) require them.  The need for a label on the graph as a whole
+Many classic graph problems, from union-find (node ranks)
+to Dijkstra (edge weights), require such labels.  
+The need for a label on the graph as a whole
 is a little more subtle; in \S\ref{sec:certigc} we use one in the garbage collector
 to keep track of \emph{e.g.} the number of generations and their boundaries.
 Since LabeledGraph is built on PreGraph, it inherits all PreGraph lemmas via
@@ -244,7 +246,6 @@ any vertex's rank.
 
 \vspace{-0.75ex}
 \paragraph{GeneralGraph.}
-%\note{add: updating a graph requires care with the dependent types. What is a d.t.}
 PreGraphs and LabeledGraphs let us state
 and prove many useful lemmas that follow essentially by the nature
 of our graph constructions. However, when proving the correctness of graph
@@ -278,6 +279,7 @@ further enabling code sharing between algorithms.
 
 \subsection{Composing soundness plugins}
 \label{subsec:graphplugins}
+\input{gengraphdefs.tex}
 
 \hide{Our entire library of formal
 graph theory is developed around the
