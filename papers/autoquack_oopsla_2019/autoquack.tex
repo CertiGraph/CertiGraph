@@ -93,8 +93,9 @@
 
 %\newcommand{\scon}{\mathbin{\varstar}}
 \newcommand{\minbar}{\scalebox{1.0}[1.0]{$-$}}
-\newcommand{\scon}{\mathbin{\ast}}
-\renewcommand{\bigstar}{\scaleobj{2.5}{\scon}} % Comment out to return to 5-pt star
+\newcommand{\scon}{\mathbin{\star}}
+\renewcommand{\scon}{\mathbin{\ast}} % Comment out this line to return to 5-pt star
+\renewcommand{\bigstar}{\scaleobj{2.5}{\scon}} 
 \newcommand{\ocon}{
   \mathbin{\mbox{$\mathrlap{\cup}\hspace*{.09em}
       \raisebox{.04em}[0ex][0ex]{$\scon$}$\hspace*{.07em}}}}
