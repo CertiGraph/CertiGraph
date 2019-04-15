@@ -101,7 +101,7 @@ Proof.
     pose proof (graph_has_gen_O g). entailer!. split; [|split; [|split]].
     + red. auto.
     + apply stc_stcte_O_iff; assumption.
-    + red. intros. simpl in H12. omega.
+    + red. intros. simpl in H31. omega.
     + unfold nat_inc_list. simpl. constructor.
   - cbv beta. Intros g' roots' t_info'. unfold thread_info_rep. Intros.
     unfold heap_struct_rep. assert (0 <= i + 1 < Zlength (spaces (ti_heap t_info'))) by
@@ -131,8 +131,8 @@ Proof.
       * simpl in H15. subst i0. simpl. entailer!.
       * simpl. entailer!. assert (isptr (Vptr b i0)) by exact I. rewrite Heqv0 in *.
         pull_left (heap_rest_rep (ti_heap t_info')). pull_left (graph_rep g').
-        destruct H8. rewrite <- (space_start_isptr_iff g') in H23 by assumption.
-        sep_apply (graph_and_heap_rest_valid_ptr g' t_info' _ H23); auto.
+        destruct H8. rewrite <- (space_start_isptr_iff g') in H40 by assumption.
+        sep_apply (graph_and_heap_rest_valid_ptr g' t_info' _ H40); auto.
         1: destruct H9 as [? [? [? [? ?]]]]; assumption.
         rewrite nth_space_Znth, Z2Nat.id by omega.
         sep_apply (valid_pointer_weak
