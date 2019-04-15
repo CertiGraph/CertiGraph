@@ -145,18 +145,17 @@ Proof.
       (unfold generation_rep in IHnum; sep_apply IHnum; entailer!). clear IHnum.
   simpl iter_sepcon. entailer. unfold vertex_rep at 2. unfold vertex_at.
   rewrite vertex_head_address_eq. unfold vertex_address, vertex_offset. simpl.
-  rewrite <- H. inv_int i. entailer. destruct H1 as [_ [_ [? _]]]. simpl in H1.
-  destruct H4 as [_ [_ [? _]]]. simpl in H4. rewrite <- H5 in H4. clear H3 H6 H5.
+  rewrite <- H. inv_int i. entailer. destruct H6 as [_ [_ [? _]]]. simpl in H6.
+  destruct H8 as [_ [_ [? _]]]. simpl in H8. rewrite <- H4 in H8.
   rewrite ptrofs_add_repr in *. apply prop_right.
-  pose proof (pvs_ge_zero g gen num). rewrite Ptrofs.unsigned_repr_eq in H1.
-  rewrite Z.mod_small in H1 by rep_omega. rewrite pvs_S.
+  pose proof (pvs_ge_zero g gen num). rewrite Ptrofs.unsigned_repr_eq in H6.
+  rewrite Z.mod_small in H6 by rep_omega. rewrite pvs_S.
   unfold vertex_size. rewrite <- fields_eq_length. rewrite WORD_SIZE_eq in *.
-  rewrite Z.mul_add_distr_l, Z.mul_1_r, Z.add_assoc in H4.
-  rewrite Ptrofs.unsigned_repr_eq in H4. rewrite Z.mod_small in H4 by rep_omega.
+  rewrite Z.mul_add_distr_l, Z.mul_1_r, Z.add_assoc in H8.
+  rewrite Ptrofs.unsigned_repr_eq in H8. rewrite Z.mod_small in H8 by rep_omega.
   assert ((@Zlength (@reptype CompSpecs int_or_ptr_type)
                     (make_fields_vals g (gen, num))) =
-          (@Zlength val (make_fields_vals g (gen, num)))) by reflexivity.
-  rewrite H5 in *. rep_omega.
+          (@Zlength val (make_fields_vals g (gen, num)))) by reflexivity. rep_omega.
 Qed.
 
 Lemma generation_rep_ptrofs: forall g gen b i,

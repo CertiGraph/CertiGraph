@@ -349,9 +349,9 @@ Proof.
                      assert (Z.of_nat (Znth (i - 1) l) = i - 1). {
                        rewrite <- nth_Znth by omega. subst l.
                        rewrite nat_inc_list_nth; [rewrite Z2Nat.id; omega|].
-                       rewrite <- ZtoNat_Zlength. rewrite Zlength_correct in H52.
-                       rewrite nat_inc_list_length in H52. rewrite Nat2Z.inj_lt.
-                       rewrite !Z2Nat.id; omega. } rewrite H53. assumption.
+                       rewrite <- ZtoNat_Zlength. rewrite Zlength_correct in H70.
+                       rewrite nat_inc_list_length in H70. rewrite Nat2Z.inj_lt.
+                       rewrite !Z2Nat.id; omega. } rewrite H71. assumption.
                  --- apply tir_trans with t_info3; assumption.
                  --- f_equal. symmetry. eapply fr_vertex_address; eauto.
                      apply graph_has_v_in_closure; assumption.
