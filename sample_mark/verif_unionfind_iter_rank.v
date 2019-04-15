@@ -61,7 +61,10 @@ Qed.
 Lemma graph_local_facts: forall sh x (g: Graph), vvalid g x -> whole_graph sh g |-- valid_pointer (pointer_val_val x).
 Proof.
   intros. eapply derives_trans; [apply (@vertices_at_ramif_1_stable _ _ _ _ SGBA_VST _ _ (SGA_VST sh) g (vvalid g) x (vgamma g x)); auto |].
-  simpl vertex_at at 1. unfold binode. entailer!.
+  simpl vertex_at at 1. unfold binode. apply sepcon_valid_pointer1.
+  sep_apply (data_at_valid_ptr sh node_type (vgamma2cdata (vgamma g x))
+                                (pointer_val_val x)). 2: entailer!.
+  apply readable_nonidentity, wshare_readable.
 Qed.
 
 Lemma body_find: semax_body Vprog Gprog f_find find_spec.
