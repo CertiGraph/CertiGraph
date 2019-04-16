@@ -64,15 +64,18 @@ Proof.
   destruct dlr as [[d l] r].
   rename H0 into H_GAMMA_g; symmetry in H_GAMMA_g.
   rename H into H_weak_valid.
-
   forward_if  (* if (x == 0) *)
     (PROP  (pointer_val_val x <> nullval)
      LOCAL (temp _x (pointer_val_val x))
      SEP   (graph sh x g)).
   - apply denote_tc_test_eq_split. 2: entailer!. apply graph_local_facts; auto.
-  - forward. (* return *)
-    Exists g. entailer!. destruct x. 1: simpl in H; inversion H. apply (mark_null_refl g).
-  - forward. (* skip *) entailer!.
+  - admit.
+    (* unfold abbreviate in POSTCONDITION. *)
+    (* forward. (* return *) *)
+    (* Exists g. entailer!. destruct x. 1: simpl in H; inversion H. apply (mark_null_refl g). *)
+  - forward. (* skip *)
+    admit.
+    (* entailer!. *)
   - Intros. assert (vvalid g x) as gx_vvalid. {
       destruct H_weak_valid; [| auto].
       unfold is_null_SGBA in H0; simpl in H0; subst x.
