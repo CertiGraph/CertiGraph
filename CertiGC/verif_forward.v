@@ -107,7 +107,7 @@ Proof.
         (apply (fi_index_range f_info), Znth_In; assumption).
     forward; rewrite H12. 1: entailer!.
     assert_PROP (valid_int_or_ptr (root2val g root)). {
-      gather_SEP 3 2. (* no matching clauses for match *)
+      gather_SEP (graph_rep _) (outlier_rep _).
       sep_apply (root_valid_int_or_ptr _ _ _ _ H13 H5). entailer!. }
     forward_call (root2val g root).
     remember (graph_rep g * heap_rest_rep (ti_heap t_info) * outlier_rep outlier)
@@ -131,9 +131,7 @@ Proof.
     + unfold GC_Pointer2val. destruct g0. apply semax_if_seq. forward_if.
       2: exfalso; apply Int.one_not_zero in H20; assumption.
       forward_call (Vptr b i).
-      gather_SEP (graph_rep g)
-                 (heap_rest_rep (ti_heap t_info)) (outlier_rep outlier).
-      (* gather_SEP 3 6 2. *)
+      gather_SEP (graph_rep g) (heap_rest_rep _) (outlier_rep _).
       rewrite <- HeqP. destruct H5.
       replace_SEP 0 ((weak_derives P (memory_block fsh fn fp * TT) && emp) * P) by
           (entailer; assumption). clear H19. Intros. simpl root2val in *.
@@ -150,8 +148,7 @@ Proof.
         gather_SEP (graph_rep g) (heap_rest_rep (ti_heap t_info)).
         sep_apply H18. rewrite Heqfn in v.
         sep_apply (roots_outlier_rep_single_rep _ _ _ H13 H5). Intros.
-        gather_SEP (single_outlier_rep (GCPtr b i))
-                   (data_at_ fsh (tarray int_or_ptr_type gn) fp).
+        gather_SEP (single_outlier_rep _) (data_at_ _ _ _).
         change (Vptr b i) with (GC_Pointer2val (GCPtr b i)) in v.
         pose proof (generation_share_writable (nth_gen g from)).
         change (generation_sh (nth_gen g from)) with (nth_sh g from) in H19.
@@ -169,9 +166,7 @@ Proof.
       2: exfalso; apply Int.one_not_zero in H20; assumption.
       clear H20 H20'. simpl in H15, H17. forward_call (Vptr b i).
       rewrite <- Heqv0 in *.
-      (* gather_SEP 3 6 2. *)
-      gather_SEP (graph_rep g)
-                 (heap_rest_rep _) (outlier_rep _).
+      gather_SEP (graph_rep _) (heap_rest_rep _) (outlier_rep _).
       rewrite <- HeqP.
       replace_SEP 0 ((weak_derives P (memory_block fsh fn fp * TT) && emp) * P) by
           (entailer; assumption). clear H19. Intros. assert (graph_has_v g v). {
@@ -201,12 +196,7 @@ Proof.
         sep_apply (data_at_minus1_address (nth_sh g from) (Z2val (make_header g v))
                                           (vertex_address g v)).
         Intros. forward. clear H21.
-        gather_SEP
-          (data_at (nth_sh g from) tuint (Z2val (make_header g v))
-                   (offset_val (- WORD_SIZE) (vertex_address g v)) )
-          (data_at (nth_sh g from)
-                   (tarray int_or_ptr_type (Zlength (make_fields_vals g v)))
-                   (make_fields_vals g v) (vertex_address g v)).
+        gather_SEP (data_at _ tuint _ _) (data_at _ _ _ _).
         replace_SEP 0 (vertex_rep (nth_sh g (vgeneration v)) g v) by
             (unfold vertex_rep, vertex_at; entailer!).
         unlocalize [graph_rep g]. 1: apply (graph_vertex_ramif_stable _ _ H19).
@@ -223,14 +213,7 @@ Proof.
              rewrite isptr_offset_val.
              apply graph_has_gen_start_isptr, H9; assumption. }
            forward. rewrite Znth_0_cons.
-           gather_SEP
-             (data_at (nth_sh g from) tuint (Z2val (make_header g v))
-                      (offset_val (- WORD_SIZE) (vertex_address g v)) )
-             (data_at (nth_sh g from)
-                      (tarray int_or_ptr_type (Zlength (make_fields_vals g v)))
-                      (vertex_address g (copied_vertex (vlabel g v))
-                                      :: tl (map (field2val g) (make_fields g v)))
-                      (vertex_address g v)).
+           gather_SEP (data_at _ tuint _ _) (data_at _ _ _ _).
            replace_SEP 0 (vertex_rep (nth_sh g (vgeneration v)) g v). {
              unfold vertex_rep, vertex_at. unfold make_fields_vals at 3.
              rewrite H21. entailer!. }
@@ -293,9 +276,8 @@ Proof.
            rewrite (heap_rest_rep_cut
                       (ti_heap t_info) (Z.of_nat to) (vertex_size g v) Hi Hh Hn).
            rewrite <- Heqsp_to. thaw FR.
-           (* gather_SEP 4 5 7. *)
-           gather_SEP (data_at sh thread_info_type _ ti) 
-                      (data_at sh heap_type _ _) 
+           gather_SEP (data_at _ thread_info_type _ _) 
+                      (data_at _ heap_type _ _) 
                       (heap_rest_rep _).
            replace_SEP 0 (thread_info_rep
                             sh (cut_thread_info t_info _ _ Hi Hh) ti). {
@@ -383,28 +365,17 @@ Proof.
                                   (offset_val (WORD_SIZE * i) nv)). {
                    unfold field_address. rewrite if_true by assumption.
                    clear. entailer!. }
-                 gather_SEP
-                 (data_at shv tuint (Z2val (make_header g v))
-                           (offset_val (- WORD_SIZE) (vertex_address g v)))
-                    (data_at shv (tarray int_or_ptr_type n) (make_fields_vals g v)
-                             (vertex_address g v)). 
-                  replace_SEP 0 (vertex_rep shv g v) by
-                      (unfold vertex_rep, vertex_at;
-                       rewrite fields_eq_length; entailer!). forward.
+                 gather_SEP (data_at _ tuint _ _) (data_at _ _ _ _).  
+                 replace_SEP 0 (vertex_rep shv g v) by
+                     (unfold vertex_rep, vertex_at;
+                      rewrite fields_eq_length; entailer!). forward.
                  rewrite offset_offset_val.
                  replace (n - i - 1) with (n - (i + 1)) by omega.
                  replace (WORD_SIZE * i + WORD_SIZE * 1) with
                      (WORD_SIZE * (i + 1))%Z by rep_omega.
-                 gather_SEP 1 2.
-                 (* gather_SEP *)
-                 (*   (data_at sht *)
-                 (*            (tarray int_or_ptr_type i) *)
-                 (*            (sublist 0 i (make_fields_vals g v)) *)
-                 (*            nv) *)
-                 (*   (field_at sht int_or_ptr_type [] *)
-                 (*             (Znth i (make_fields_vals g v)) *)
-                 (*             (offset_val (WORD_SIZE * i) nv)). *)
-                 (* no matching clauses *)
+                 gather_SEP
+                   (data_at sht (tarray int_or_ptr_type i) _ _)
+                   (field_at _ _ _ _ _). 
                  rewrite data_at_mfs_eq. 2: assumption.
                  2: subst n; assumption. entailer!.
            ++ thaw FR. rewrite v0, <- Heqshv.
@@ -421,10 +392,7 @@ Proof.
                 - unfold vertex_offset. simpl. rewrite H25. reflexivity.
                 - unfold gen_start. rewrite if_true by assumption.
                   rewrite H23. reflexivity. }
-              (* gather_SEP 1 2 3. *)
-              gather_SEP
-              (data_at sht _ _ nv)
-              (emp) (data_at sht tuint _ _).
+              gather_SEP (data_at sht _ _ _) (emp) (data_at sht tuint _ _).
               replace_SEP
                 0 (vertex_at (nth_sh g to)
                              (vertex_address g (new_copied_v g to))
@@ -476,7 +444,6 @@ Proof.
                 destruct H7. assumption. } forward. clear H38.
               sep_apply (field_at_data_at_cancel
                            sh' int_or_ptr_type nv (vertex_address g' v)).
-              (* gather_SEP 1 0 3. *)
               gather_SEP
                 (data_at sh' tuint (vint 0) _) 
                 (data_at sh' int_or_ptr_type nv _)
@@ -503,7 +470,6 @@ Proof.
               remember (cut_thread_info t_info (Z.of_nat to) (vertex_size g v) Hi Hh)
                 as t_info'. unfold thread_info_rep. Intros. forward.
               remember (Znth z (live_roots_indices f_info)) as lz.
-              (* gather_SEP 1 2 3. *)
               gather_SEP
                 (data_at sh thread_info_type _ ti)
                 (heap_struct_rep sh _ _)
@@ -722,7 +688,6 @@ Proof.
       2: exfalso; apply Int.one_not_zero; assumption.
       forward_call (Vptr b i). 1: exact I.
       unfold thread_info_rep; Intros.
-      (* gather_SEP 0 6 3. *)
       gather_SEP (graph_rep g)
                  (heap_rest_rep _) (outlier_rep _).
       rewrite <- HeqP. destruct H5.
@@ -784,9 +749,7 @@ Proof.
       2: exfalso; apply Int.one_not_zero in H21; assumption.
       clear H21 H21'. forward_call (Vptr b i).
       unfold thread_info_rep; Intros.
-      (* gather_SEP 0 6 3. *)
-      gather_SEP (graph_rep g)
-                 (heap_rest_rep _) (outlier_rep _).
+      gather_SEP (graph_rep g) (heap_rest_rep _) (outlier_rep _).
       rewrite <- HeqP.
       replace_SEP 0
                   ((weak_derives P (memory_block fsh fn fp * TT) && emp) * P) by
@@ -882,7 +845,6 @@ Proof.
                        (upd_Znth n (make_fields_vals g v)
                        (vertex_address g (copied_vertex (vlabel g v'))))
                        (vertex_address g v)).
-          (* gather_SEP 1 0. *)
           gather_SEP (data_at _ tuint _ _ ) (data_at _ _ _ _).
           remember (copied_vertex (vlabel g v')).
           remember (labeledgraph_gen_dst g e v1) as g'.
@@ -961,7 +923,6 @@ Proof.
            rewrite (heap_rest_rep_cut
                       (ti_heap t_info) (Z.of_nat to) (vertex_size g v') Hi Hh Hn).
            rewrite <- Heqsp_to. thaw FR.
-           (* gather_SEP 4 5 7. *)
            gather_SEP
              (data_at sh thread_info_type _ ti)
              (data_at sh heap_type _ _) (heap_rest_rep _).
@@ -1059,13 +1020,7 @@ Proof.
                  replace (n' - i - 1) with (n' - (i + 1)) by omega.
                  replace (WORD_SIZE * i + WORD_SIZE * 1) with
                      (WORD_SIZE * (i + 1))%Z by rep_omega.
-                 gather_SEP 1 2.
-                 (* gather_SEP *)
-                 (*   (data_at sht (tarray int_or_ptr_type i) (sublist 0 i (make_fields_vals g v')) *)
-                 (*            nv) *)
-                 (*   (field_at sht int_or_ptr_type [] (Znth i (make_fields_vals g v')) *)
-                 (*             (offset_val (WORD_SIZE * i) nv)). *)
-                 (* no matching... *)
+                 gather_SEP (data_at _ _ _ nv) (field_at _ _ _ _ _).
                  rewrite data_at_mfs_eq;
                                    [|assumption|subst n'; assumption].
                  entailer!.
@@ -1083,10 +1038,7 @@ Proof.
                 - unfold vertex_offset. simpl. rewrite H26. reflexivity.
                 - unfold gen_start. rewrite if_true by assumption.
                   rewrite H24. reflexivity. }
-              (* gather_SEP 1 2 3. *)
-              gather_SEP
-              (data_at sht _ _ nv)
-              (emp) (data_at sht tuint _ _).
+              gather_SEP (data_at sht _ _ nv) (emp) (data_at sht tuint _ _).
               replace_SEP
                 0 (vertex_at (nth_sh g to)
                              (vertex_address g (new_copied_v g to))
@@ -1140,7 +1092,6 @@ Proof.
               forward. clear H39.
               sep_apply (field_at_data_at_cancel
                            sh' int_or_ptr_type nv (vertex_address g' v')).
-              (* gather_SEP 1 0 3. *)
               gather_SEP
                 (data_at sh' tuint (vint 0) _)
                 (data_at sh' int_or_ptr_type nv _)
@@ -1212,7 +1163,6 @@ Proof.
                            (tarray int_or_ptr_type (Zlength (make_fields_vals g' v)))
                            (upd_Znth n (make_fields_vals g' v) (vertex_address g' v1))
                            (vertex_address g' v)).
-              (* gather_SEP 1 0. *)
               gather_SEP
                 (data_at shh tuint _ _) (data_at shh _ _ _).
               replace_SEP 0 (vertex_rep (nth_sh g1 (vgeneration v)) g1 v).
@@ -1237,7 +1187,6 @@ Proof.
               unfold thread_info_rep. Intros.
               assert (0 <= 0 < Zlength (ti_args t_info')) by
                   (rewrite arg_size; rep_omega).
-              (* gather_SEP 1 2 3. *)
               gather_SEP
                 (data_at sh thread_info_type _ _)
                 (heap_struct_rep sh _ _) (heap_rest_rep _).

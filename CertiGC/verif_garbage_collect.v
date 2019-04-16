@@ -158,8 +158,7 @@ Proof.
       rewrite nth_space_Znth, Z2Nat.id in H20 by omega. rewrite H20. clear H19 H20.
       assert_PROP (isptr (ti_heap_p t_info')) by entailer!.
       gather_SEP (data_at sh heap_type _ _) (heap_rest_rep _).
-      gather_SEP (data_at sh thread_info_type _ ti) (data_at sh heap_type _ _ * heap_rest_rep _). 
-      (* gather_SEP 0 1 2. *)
+      gather_SEP (data_at sh thread_info_type _ ti) (data_at sh heap_type _ _ * heap_rest_rep _).
       replace_SEP 0 (thread_info_rep sh t_info' ti) by
           (unfold thread_info_rep, heap_struct_rep; entailer!). pose proof H14.
       rewrite spaces_size in H20. unfold thread_info_rep. Intros.
@@ -198,8 +197,7 @@ Proof.
             (subst g1; apply firstn_gen_clear_add; assumption).
         assert (new_gen_relation (Z.to_nat (i + 1)) g' g1). {
           subst g1. red. rewrite if_false by assumption. exists gi. split; auto. }
-        gather_SEP 2 5.
-        (* gather_SEP (malloc_token Ews (tarray int_or_ptr_type (nth_gen_size (Z.to_nat (i + 1)))) p) (FRZL FR). *)
+        gather_SEP (malloc_token Ews (tarray int_or_ptr_type (nth_gen_size (Z.to_nat (i + 1)))) p) (FRZL FR).
         assert (total_space sp = nth_gen_size (Z.to_nat (i + 1))) by
             (subst sp; simpl; reflexivity). rewrite <- H29.
         assert (space_start sp = p) by (subst sp; simpl; reflexivity). rewrite <- H30.
@@ -213,8 +211,16 @@ Proof.
             (unfold space_tri; do 2 f_equal; subst sp; simpl;
              rewrite Z.mul_0_r, isptr_offset_val_zero by assumption; reflexivity).
         thaw FR.
-        gather_SEP 11 2 3.
-        rewrite (heap_struct_rep_add t_info' sh sp (i + 1) H20), <- Heqt_info1.
+        gather_SEP
+          (data_at sh space_type _ _)
+          (data_at sh (tarray space_type
+                              (Zlength
+                                 (sublist (i + 1 + 1) 12 (map space_tri (spaces (ti_heap t_info')))))) _
+                   (offset_val (sizeof space_type)
+                               (offset_val (SPACE_STRUCT_SIZE * (i + 1)) (ti_heap_p t_info'))))
+          (data_at sh (tarray space_type (i + 1)) _
+                   (ti_heap_p t_info')).
+        rewrite sepcon_assoc, (heap_struct_rep_add t_info' sh sp (i + 1) H20), <- Heqt_info1.
         replace (ti_heap_p t_info') with (ti_heap_p t_info1) by
             (subst t_info1; simpl; reflexivity).
         replace (ti_args t_info') with (ti_args t_info1) by
@@ -225,14 +231,12 @@ Proof.
           replace (used_space sp) with 0 by (subst sp; simpl; reflexivity).
           rewrite Z.sub_0_r, Z.mul_0_r, isptr_offset_val_zero by
               (subst; simpl; assumption). entailer!. }
-        gather_SEP 3 9.
-        (* gather_SEP (heap_rest_rep (ti_heap t_info')) (space_rest_rep sp). *)
-        rewrite (heap_rest_rep_add _ _ (i + 1) H20), <- Heqt_info1 by assumption.
-        
-        gather_SEP 3 1 0.
-        (* gather_SEP (heap_struct_rep sh _ _) *)
-                   (* (heap_rest_rep _). *)
-        rewrite <- sepcon_assoc.
+        gather_SEP (heap_rest_rep (ti_heap t_info')) (space_rest_rep sp).
+        rewrite (heap_rest_rep_add _ _ (i + 1) H20), <- Heqt_info1 by assumption.  
+        gather_SEP
+          (data_at sh thread_info_type _ _)
+          (heap_struct_rep _ _ _)
+          (heap_rest_rep _).
         replace_SEP 0 (thread_info_rep sh t_info1 ti) by
             (unfold thread_info_rep; entailer!). rewrite (graph_rep_add g' gi); auto.
         3: destruct H9 as [? [? [? [? ?]]]]; assumption.
@@ -297,7 +301,12 @@ Proof.
       assert (firstn_gen_clear g2 (Z.to_nat (i + 1))) by
           (rewrite H23; eapply do_gen_firstn_gen_clear; eauto).
       assert (safe_to_copy_to_except g2 (Z.to_nat (i + 1))) by
-          (rewrite H23; eapply do_gen_stcte; eauto). gather_SEP 4 5 6.
+          (rewrite H23; eapply do_gen_stcte; eauto).
+      gather_SEP
+        (data_at sh thread_info_type _ _)
+        (data_at sh heap_type _ (ti_heap_p t_info2))
+        (heap_rest_rep (ti_heap t_info2)).
+      rewrite sepcon_assoc.
       replace_SEP 0 (thread_info_rep sh t_info2 ti) by
           (unfold thread_info_rep, heap_struct_rep; entailer!).
       assert (garbage_collect_loop

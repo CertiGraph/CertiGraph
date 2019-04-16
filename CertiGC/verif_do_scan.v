@@ -192,11 +192,7 @@ Proof.
         f_equal. unfold gen_start.
         rewrite if_true by assumption; now rewrite H18. }
       rewrite H25. forward. rewrite <- H25.
-      gather_SEP (data_at (nth_sh g' to) tuint (Z2val (make_header g' (to, index)))
-            (offset_val (- WORD_SIZE) (vertex_address g' (to, index))))
-     (data_at (nth_sh g' to)
-       (tarray int_or_ptr_type (Zlength (make_fields_vals g' (to, index))))
-       (make_fields_vals g' (to, index)) (vertex_address g' (to, index))). 
+      gather_SEP (data_at _ tuint _ _) (data_at _ _ _ _). 
       replace_SEP 0 (vertex_rep (nth_sh g' to) g' (to, index)) by
           (unfold vertex_rep, vertex_at; entailer!).
       unlocalize [graph_rep g']. 1: apply graph_vertex_ramif_stable; assumption.
@@ -207,10 +203,9 @@ Proof.
       rewrite make_header_Wosize, make_header_tag by assumption. deadvars!.
       fold (next_address t_info' to). thaw FR.
       fold (heap_struct_rep sh l (ti_heap_p t_info')). 
-      (* gather_SEP 5 6 1. *)
       gather_SEP
-        (data_at sh thread_info_type _ _)
-        (heap_struct_rep sh l _ ) (heap_rest_rep _).
+        (data_at _ thread_info_type _ _)
+        (heap_struct_rep _ _ _ ) (heap_rest_rep _).
       replace_SEP 0 (thread_info_rep sh t_info' ti) by
           (unfold thread_info_rep; entailer!).
       forward_if
