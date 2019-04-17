@@ -11,9 +11,9 @@ Lemma typed_true_tag: forall (to : nat) (g : LGraph) (index : nat),
                                                   (Int.repr 251))))))) ->
     ~ no_scan g (to, index).
 Proof.
-  intros. remember (Int.lt (Int.repr (raw_tag (vlabel g (to, index))))
-                           (Int.repr 251)). unfold typed_true in H.
-  destruct b; simpl in H. 2: inversion H. symmetry in Heqb. apply lt_repr in Heqb.
+  intros. remember (Int.lt (Int.repr (raw_tag (vlabel g (to, index)))) (Int.repr 251)).
+  unfold typed_true in H. destruct b; simpl in H; [|inversion H].
+  symmetry in Heqb. apply lt_repr in Heqb.
   - unfold no_scan. rep_omega.
   - red. pose proof (raw_tag_range (vlabel g (to, index))). rep_omega.
   - red. rep_omega.
@@ -30,10 +30,9 @@ Lemma typed_false_tag: forall (to : nat) (g : LGraph) (index : nat),
                                                   (Int.repr 251))))))) ->
     no_scan g (to, index).
 Proof.
-  intros. remember (Int.lt (Int.repr (raw_tag (vlabel g (to, index))))
-                           (Int.repr 251)). unfold typed_false in H.
-  destruct b; simpl in H. 1: inversion H. symmetry in Heqb.
-  apply lt_repr_false in Heqb.
+  intros. remember (Int.lt (Int.repr (raw_tag (vlabel g (to, index)))) (Int.repr 251)).
+  unfold typed_false in H. destruct b; simpl in H; [inversion H|].
+  symmetry in Heqb. apply lt_repr_false in Heqb.
   - unfold no_scan. rep_omega.
   - red. pose proof (raw_tag_range (vlabel g (to, index))). rep_omega.
   - red. rep_omega.
@@ -108,7 +107,7 @@ Proof.
                    (sem_cmp_pp Clt (offset_val index_offset (space_start sp_to))
                                (offset_val used_offset (space_start sp_to))) =
                  Vint (if if zlt index_offset used_offset then true else false
-                       then Int.one else Int.zero)). { (**)
+                       then Int.one else Int.zero)). {
       remember (space_start sp_to). destruct v; try contradiction. inv_int i.
       specialize (H23 b (Ptrofs.repr ofs) eq_refl).
       rewrite Ptrofs.unsigned_repr in H23 by rep_omega. sep_apply H23. Intros.
