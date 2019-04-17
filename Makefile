@@ -82,6 +82,14 @@ all: \
   $(NORMAL_FILES:%.v=%.vo) \
   $(CLIGHT_FILES:%.v=%.vo)
 
+# A minimal list of files that need to built within VST. Please add to this as needed.
+VST_CRITICAL_FILES = \
+  progs/conclib.v floyd/reassoc_seq.v compcert/cfrontend/ClightBigstep.v
+
+.PHONY: vstandme
+vstandall:
+	cd $(VST_DIR) && make $(VST_CRITICAL_FILES:%.v=%.vo) -j7 && cd - && make -j7
+
 depend:
 	@$(COQDEP) $(NORMAL_FLAG) $(NORMAL_FILES) > .depend
 	@$(COQDEP) $(CLIGHT_FLAG) $(CLIGHT_FILES) >> .depend
