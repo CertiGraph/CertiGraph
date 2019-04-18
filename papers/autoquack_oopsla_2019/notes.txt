@@ -6,11 +6,17 @@ I: Known issues
 
 II: Weak sections
 `````````````````
-- new rule and treatment of local variables
+- new rule and treatment of local variables, we don't show it off adequately
 - explanation of UF
 - things in MarkGraph/DAG that are not in UF
 - GC proof
 - spatial defn of graph, fold/unfold
+- Things to expand in GC:
+  + resetting the whole heap
+  + calc and alloc a new generation
+  + handling roots
+  + forward_roots
+  + proving graph iso as a composition of all the relations.
 
 III: Defer till later
 `````````````````````
