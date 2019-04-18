@@ -87,7 +87,7 @@ VST_CRITICAL_FILES = \
   progs/conclib.v floyd/reassoc_seq.v compcert/cfrontend/ClightBigstep.v
 
 .PHONY: vstandme
-vstandall:
+vstandme:
 	cd $(VST_DIR) && make $(VST_CRITICAL_FILES:%.v=%.vo) -j7 && cd - && make -j7
 
 depend:
