@@ -1,0 +1,9 @@
+
+List of simplifications in do_scan listing
+
+1. st, li, sc, nx instead of from_start, from_limit, scan, next
+2. DEPTH gone
+3. ignoring shares
+4. simplification in to_index... just calling it scanned(gamma,to)
+in practice it's called to be equal to the _old_ next value, and this is something we mention as a performance "bug" in our autoquack \S6.4.
+ 

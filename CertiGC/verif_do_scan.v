@@ -177,7 +177,8 @@ Proof.
       rewrite <- Z.mul_lt_mono_pos_l in H26 by rep_omega. intro; apply H26.
       now apply pvs_mono_strict.
     + clear H8 H23 H24. Intros. thaw FR. freeze [1;2;3;4;5;6] FR.
-      assert (graph_has_v g' (to, index)) by easy. 
+      assert (graph_has_v g' (to, index)) by easy.
+      (* annotation theta 6 *)
       localize [vertex_rep (nth_sh g' to) g' (to, index)].
       assert (readable_share (nth_sh g' to)) by
           (unfold nth_sh; apply writable_readable_share, generation_share_writable).
@@ -343,9 +344,9 @@ Proof.
                      assert (Z.of_nat (Znth (i - 1) l) = i - 1). {
                        rewrite <- nth_Znth by omega. subst l.
                        rewrite nat_inc_list_nth; [rewrite Z2Nat.id; omega|].
-                       rewrite <- ZtoNat_Zlength. rewrite Zlength_correct in H70.
-                       rewrite nat_inc_list_length in H70. rewrite Nat2Z.inj_lt.
-                       rewrite !Z2Nat.id; omega. } rewrite H71. assumption.
+                       rewrite <- ZtoNat_Zlength. rewrite Zlength_correct in H52.
+                       rewrite nat_inc_list_length in H52. rewrite Nat2Z.inj_lt.
+                       rewrite !Z2Nat.id; omega. } rewrite H53. assumption.
                  --- apply tir_trans with t_info3; assumption.
                  --- f_equal. symmetry. eapply fr_vertex_address; eauto.
                      apply graph_has_v_in_closure; assumption.
