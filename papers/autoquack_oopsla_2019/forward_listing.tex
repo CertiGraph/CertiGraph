@@ -1,7 +1,9 @@
+\renewcommand{\tx}[1]{\scriptsize {\text{#1}}}
+
 \begin{figure*}[!ht]
 \vspace{-1ex}
   \begin{lstlisting}[multicols=2]
-$//$$\braces{\forall \ga, \m{\finf}, \m{\tinf}, \m{from}, \m{to}, \m{v}, \m{n}.~\null \\ \p{gc{\_}graph}(\ga) * \p{\finf}(\m{\finf}) * \p{\tinf}(\m{\tinf}) /| \null \\ \m{compat}(\ga, \m{\finf}, \m{\tinf}, \m{from}, \m{to}) /| \null \\ \tx{s} = \m{start}(\ga, \m{from}) /| \tx{l} = \tx{s} + \m{gensize}(\ga, \m{from}) \\ \null /| \tx{n} = \m{naddr}(\m{\tinf}, \m{to}) /| \tx{p} = \m{vaddr}(\ga, \m{v}) + \m{n}} \defeq \phi_1 $
+$//$$\braces{\forall \ga, \m{\finf}, \m{\tinf}, \m{from}, \m{to}, \m{v}, \m{n}.~\null \\ \p{gc{\_}graph}(\ga) * \p{\finf}(\m{\finf}) * \p{\tinf}(\m{\tinf}) /| \null \\ \m{compat}(\ga, \m{\finf}, \m{\tinf}, \m{from}, \m{to}) /| \null \\ \tx{s} = \m{start}(\ga, \m{from}) /| \tx{l} = \tx{s} + \m{gensz}(\ga, \m{from}) \\ \null /| \tx{n} = \m{naddr}(\m{\tinf}, \m{to}) /| \tx{p} = \m{vaddr}(\ga, \m{v}) + \m{n}} \defeq \phi_1 $
 void forward (value *s, *l, **n, *p, 
               int depth) {
  value * v; value va = *p; 
@@ -58,3 +60,4 @@ $//$$\braces{\m{postcondition}(\gamma', \gamma'', \m{tinf'}, \m{finf}, \m{from},
 \vspace{-1em}
 \end{figure*}
 
+\renewcommand{\tx}[1]{\text{#1}}
