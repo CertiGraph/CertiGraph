@@ -178,7 +178,7 @@ Proof.
       now apply pvs_mono_strict.
     + clear H8 H23 H24. Intros. thaw FR. freeze [1;2;3;4;5;6] FR.
       assert (graph_has_v g' (to, index)) by easy.
-      (* annotation theta 6 *)
+      (* annotation theta 7 *)
       localize [vertex_rep (nth_sh g' to) g' (to, index)].
       assert (readable_share (nth_sh g' to)) by
           (unfold nth_sh; apply writable_readable_share, generation_share_writable).
