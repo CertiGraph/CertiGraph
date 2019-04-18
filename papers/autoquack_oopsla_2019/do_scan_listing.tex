@@ -6,9 +6,11 @@ void do_scan(value *st, *li, *sc, **nx){
  value *s; s = sc;
 $//$$\braces{\theta_{1} /| \tx{s}= \m{scanned}(\ga,\m{to})} \defeq \theta_{4} $
  while(s < *nx){
-$//$$\searrow $
+$//$$\searrow$$\braces{\theta_{4} /| {\color{red}?}}$
+$//$$\braces{ }$
   header_t hd = *((header_t *) s);
 $//$$\swarrow $
+$//$
   mlsize_t sz = Wosize_hd(hd);
   int tag = Tag_hd(hd);
   if (!No_scan(tag)){
