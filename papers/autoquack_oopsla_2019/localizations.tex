@@ -69,7 +69,7 @@ The equivalence between \textsc{Frame} and \textsc{Localize} means that %is impo
 our techniques will be sound in any separation logic.
 
 \paragraph{Note on notation.} Although we do not do so in Figure~\ref{fig:find}, localization blocks can safely nest.  When the ramification entailment is not noteworthy we can omit the $\ramify(i)$ reference in pen-and-paper proofs.  When we wish to save vertical space we can write $\{ G_1 \} \searrow \{ L_1 \}$ and $\{ G_2 \} \swarrow \{ L_2 \}$.
-We also note that since \infrulestyle{Localize} can derive \infrulestyle{Frame}, our notation for localization blocks clarifies pen-and-paper uses of \infrulestyle{Frame}, especially in multi-line contexts with nontrivial $F$.
+We also note that since \infrulestyle{Localize} can derive \infrulestyle{Frame}, our notation for localization blocks clarifies pen-and-paper uses of \infrulestyle{Frame}, especially in multi-line contexts with nontrivial frame $F$.
 \hide{, for which the current popular notation to express \infrulestyle{Frame} involves a liberal use of
 ellipses, \emph{e.g.}:
 
@@ -235,7 +235,7 @@ Second, \eqref{eqn:bigraphintrofoldunfold} illustrates how industrial-strength s
 As explained in~\S\ref{sec:goodgraph}, this alignment is necessary in C-like memory models to prove fold-unfold \eqref{eqn:bigraphintrofoldunfold}, which is why \eqref{eqn:bigraphintrofoldunfold} includes an alignment restriction $x~\mathsf{mod}~16 = 0$ and an existentially-quantified ``blank'' second field for the root $x \mapsto m,-,l,r$.
 In our Floyd proofs, the alignment restriction and blank second field are nicely hidden ``behind the scenes''.
 
-Just as with \li{find}, the postcondition of \li{mark} is specified \emph{relationally}, \emph{i.e.} $\{\exists \gamma'.~ \p{graph}(\li{x},\gamma') /| \m{mark}(\gamma, \li{x}, \gamma')\}$ instead of \emph{functionally}, \emph{i.e.} $\{\p{graph}\big(\li{x},\m{mark}(\gamma, \li{x})\big)\}$. In the first case $\m{mark}$ is a relation that specifies that~$\gamma'$ is the result of correctly marking~$\gamma$ from~\li{x}, whereas in the second $\m{mark}$ is a function that \textbf{computes} a new graph, which is the result of marking~$\gamma$ from~\li{x}. A relational approach is better for both theoretical and practical reasons.
+Just as with \li{find}, the postcondition of \li{mark} is specified \emph{relationally}, \emph{i.e.} $\{\exists \gamma'.~ \p{m\_graph}(\li{x},\gamma') /| \m{mark}(\gamma, \li{x}, \gamma')\}$ instead of \emph{functionally}, \emph{i.e.} $\{\p{m\_graph}\big(\li{x},\m{mark}(\gamma, \li{x})\big)\}$. In the first case $\m{mark}$ is a relation that specifies that~$\gamma'$ is the result of correctly marking~$\gamma$ from~\li{x}, whereas in the second $\m{mark}$ is a function that \textbf{computes} a new graph, which is the result of marking~$\gamma$ from~\li{x}. A relational approach is better for both theoretical and practical reasons.
 %\marginpar{\tiny \color{blue}Needs polishing}
 %{\color{magenta}
 Theoretically, relations are preferable because they are more general.  For example, relations allow ``inputs'' to have no ``outputs'' (\emph{i.e.} be partial) or alternatively have many outputs (\emph{i.e.} be nondeterministic).  Nondeterminism can be quite useful when specifying programs; for example, the CertiCoq garbage collector (\S\ref{sec:certigc}) is specified nondeterministically to avoid, among other things, specifying how \li{malloc} allocates fresh blocks of memory.  Relations are also preferable to functions because they are more compositional.
@@ -245,7 +245,7 @@ Practically, it is painful to define computational functions over graphs in a pr
 The $\m{mark}$ and $\m{mark1}$ relations we use are defined straightforwardly at the bottom of Figure~\ref{fig:markgraph}.
 
 The highlights of the proof are as follows.
-In lines~\ref{code:beforerootmark}--\ref{code:afterrootmark}, imagine unfolding the \p{graph} predicate in line~\ref{code:globalbeforerootmark} using equation \eqref{eqn:bigraphintrofoldunfold} and then zooming in to the root node \li{x} for lines~\ref{code:beforerootmark}--\ref{code:afterrootmark}, before zooming back out in line~\ref{code:globalafterrootmark}.
+In lines~\ref{code:beforerootmark}--\ref{code:afterrootmark}, imagine unfolding the \p{m\_graph} predicate in line~\ref{code:globalbeforerootmark} using equation \ref{eqn:bigraphintrofoldunfold} and then zooming in to the root node \li{x} for lines~\ref{code:beforerootmark}--\ref{code:afterrootmark}, before zooming back out in line~\ref{code:globalafterrootmark}.
 \hide{\color{magenta}Here we upgrade the \infrulestyle{Ramify} rule in two important respects.  The first is the treatment of modified program variables.  Although prosaic, a robust treatment of modified variables is essential to verifying programs of any length.  The second is better handling of existential variables in the postconditions of localization blocks, which occur frequently when using relations in specifications.}
 Lines~\ref{code:beforemarkl}--\ref{code:aftermarkl} of Figure~\ref{fig:markgraph} contain an example where we use the power of linked existentials in the \textsc{Localize} rule to ``extract'' the existentially-quantified~$\gamma''$ from inside the localization block to outside it.
 The rest of the proof is relatively routine.
