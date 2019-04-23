@@ -100,7 +100,7 @@ The second benefit is the ability to represent incomplete graphs.
 Consider starting from a graph $\gamma$ and then removing a subgraph; the remaining
 ``doughnut'' structure is \textbf{not} necessarily a graph, since there may be dangling
 edges pointing into the ``hole''.  Figure \ref{fig:pregraph} shows just such a situation,
-where a connected graph (everything is reachable from $\m{v}_0$) has had the connected
+where a connected graph (everything that is reachable from $\m{v}_0$) has had the connected
 subgraph reachable from $\m{v}_1$ removed; \emph{e.g.}, the edge $e$ is dangling.
 The last conjunct in the $\m{findS}$ relation from Figure~\ref{fig:find} is an example
 of where a real verification needs to reason about just such a doughnut, in particular

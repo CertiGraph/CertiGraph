@@ -44,7 +44,7 @@ predicates.  All of this is despite verifying real C code, which entails quite a
 of grungy details. As one example, we will examine some grunginess that occurs in the
 verification of line~\ref{code:ufif} shortly.
 
-The precondition on line~\ref{code:findstart} says that we have a disjoint-set forest representing the abstract graph~$\gamma$, and that \li{x} is a valid vertex in~$\gamma$.  The postcondition is on line~\ref{code:findend}: the heap contains a new union-find graph~$\gamma''$, and \li{find} returns the node \m{rt}.
+The precondition, stated on line~\ref{code:findstart}, says that we have a disjoint-set forest representing the abstract graph~$\gamma$, and that \li{x} is a valid vertex in~$\gamma$.  The postcondition is on line~\ref{code:findend}: the heap contains a new union-find graph~$\gamma''$, and \li{find} returns the node \m{rt}.
 We specify that $\m{rt}$
 is the root (ultimate parent) of~\li{x} with the pure relation $\m{uf\_root}$.
 The relation $\m{findS}$, which conservatively approximates the action of path
