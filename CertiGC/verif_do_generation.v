@@ -43,10 +43,12 @@ Proof.
   assert (is_true (sameblock (offset_val to_total to_p) (offset_val to_used to_p))). {
     destruct to_p; try contradiction. simpl.
     destruct peq. 2: contradiction. exact I. }
-  forward_if True. 1: entailer!; unfold denote_tc_samebase; entailer!.
+  forward_if True.
+  - entailer!; unfold denote_tc_samebase; entailer!.
   - forward. entailer!.
   - destruct from_p; try contradiction. inv_int i. destruct to_p; try contradiction.
-    inv_int i0. simpl in H18. exfalso.
+    inv_int i0. simpl in H18; unfold sem_sub_pp in H18;
+                  destruct eq_block in H18; [|easy]. exfalso.
     rewrite !ptrofs_add_repr, !ptrofs_sub_repr, !if_true in H18 by reflexivity.
     simpl in H18. replace (ofs0 + to_total - (ofs0 + to_used)) with
                       (to_total - to_used) in H18 by omega.
@@ -65,7 +67,7 @@ Proof.
                 (Int.repr (used_space (nth_space t_info from)))) eqn: ?; simpl in H18.
     2: inversion H18. apply lt_repr in Heqb1. 2: apply rest_space_repable_signed.
     2: apply used_space_repable_signed. clear -H8 H3 Heqb1. red in H3.
-    unfold graph_gen_size, rest_gen_size in H3. rewrite H8 in H3. omega.
+    unfold graph_gen_size, rest_gen_size in H3. rewrite H8 in H3. omega. 
   - Intros. deadvars!. localize [space_struct_rep sh t_info from].
     unfold space_struct_rep, space_tri. do 2 forward.
     replace_SEP 0 (space_struct_rep sh t_info from) by
