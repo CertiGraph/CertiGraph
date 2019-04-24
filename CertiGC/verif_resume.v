@@ -24,8 +24,9 @@ Proof.
       forward_call ((gv ___stringlit_11),
                     (map init_data2byte (gvar_init v___stringlit_11)), rsh).
       exfalso; assumption.
-    + forward. entailer!. unfold sem_sub in H7. simpl in H7. rewrite if_true in H7.
-      2: reflexivity. inv_int i. clear -H7. remember (heap_head (ti_heap t_info)) as h.
+    + forward. entailer!. 
+      unfold sem_sub_pp in H7. destruct eq_block in H7; [|easy]; simpl in H7.
+      inv_int i. clear -H7. remember (heap_head (ti_heap t_info)) as h.
       rewrite ptrofs_add_repr, ptrofs_sub_repr, Z.add_comm, Z.add_simpl_r in H7.
       simpl in H7. unfold Ptrofs.divs in H7.
       rewrite (Ptrofs.signed_repr 4) in H7 by rep_omega.
