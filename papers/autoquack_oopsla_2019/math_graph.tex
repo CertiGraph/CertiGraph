@@ -12,16 +12,19 @@ mathematical graph framework with an emphasis on this modularity.
 
 When verifying the functional correctness of graph algorithms it is natural
 to want to use graph theory to describe
-program behavior. 
-\note[a bit off? Consider: ...graph theory has deduced that ``it is...'']{As discussed in \S\ref{sec:related},
-25 years of research into mechanized graph theory can
-be succinctly summarized as ``it is a little tricky''.}
+program behavior.
+%\note[a bit off? Consider: ...graph theory has deduced that ``it is...'']{As discussed in \S\ref{sec:related},
+%25 years of research into mechanized graph theory can
+%be succinctly summarized as ``it is a little tricky''.}
+Over the past 25 years, researchers in mechanized proofs have explored many choices for the 
+critical definitions of graph theory~(\S\ref{sec:related}).  Unfortunately, most such choices
+are not powerful enough, or expressive enough, to mechanically verify realistic algorithms 
+written in~C.
 %, since as is so often the
 %case, the proofs are straightforward only once the proper definitions have
 %been found.
 Accordingly, an essential component of our
-work is a library of formalized graph theory that is actually powerful enough, and
-expressive enough, to mechanically verify realistic algorithms written in C.
+work is a library of formalized graph theory that can support such verifications.
 As will be shown in \S\ref{sec:development}, our mathematical
 graph constructions comprise a considerable fraction of our
 codebase, so it is vital that our framework be highly modular to
@@ -59,8 +62,8 @@ directly in Coq instead of formalizing set theory and then building
 graph theory atop it, because this lets us take advantage of Coq's built-in
 support for type-related constructions.
 To resolve the dichotomy between
-the generality and the speciality of the library, we develop 
-our graphs gradually over three structures: 
+the generality and the speciality of the library, we develop
+our graphs gradually over three structures:
 PreGraph, LabeledGraph and GeneralGraph.
 Figure~\ref{fig:graphs} shows the
 architecture of the library.
@@ -214,7 +217,7 @@ vertices, edges, and/or the graph as a whole. $\ma{L_{V}}$, $\ma{L_{E}}$, and $\
 are the associated carrier types; $\mathtt{vl}$, $\mathtt{el}$, and $\mathtt{gl}$
 are the labeling functions themselves.
 Many classic graph problems, from union-find (node ranks)
-to Dijkstra (edge weights), require such labels.  
+to Dijkstra (edge weights), require such labels.
 The need for a label on the graph as a whole
 is a little more subtle; in \S\ref{sec:certigc} we use one in the garbage collector
 to keep track of \emph{e.g.} the number of generations and their boundaries.

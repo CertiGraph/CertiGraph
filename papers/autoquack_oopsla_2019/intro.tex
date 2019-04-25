@@ -12,8 +12,8 @@ More recent landmarks have moved to a machine-checked context, but have still
 been devoted to either single examples or to classes of closely-related examples
 such as garbage collectors~\cite{gcexample3,cakemlgc}.
 These kinds of examples tend to require a large number
-of custom predicates and subtle reasoning, which generally 
-does not \note[carry over? carry forward?]{carry}
+of custom predicates and subtle reasoning, which generally
+does not carry over
 to the verification of other graph-manipulating programs.
 
 In contrast, we present a general toolkit for verifying graph-manipulating programs in a
@@ -25,8 +25,8 @@ in the heap).
 Our techniques are \emph{powerful} enough to reason about real C code as compiled by
 CompCert~\cite{leroy:compcert}, and also
 \emph{lightweight} enough to integrate into the Verified
-Software Toolchain (VST)~\cite{appel:programlogics} without requiring major reengineering.
-Both CompCert and VST are distributed as optional packages in the CoqIDE installer and through 
+Software Toolchain (VST)~\cite{appel:programlogics} without major reengineering.
+Both CompCert and VST are distributed as optional packages in the CoqIDE installer and through
 opam, so they have a sizable userbase that can take advantage of our techniques. %``out of the box''.
 Finally, our techniques \emph{scale} well beyond short toy programs: we certify the
 correctness of a generational garbage collector for the CertiCoq
@@ -34,8 +34,8 @@ project~\cite{certicoqpaper} ($\approx400$ rather devilish lines of C).
 
 We proceed in three steps. First, we develop a ``mathematical graph library'' that is general enough to reason about a wide variety of algorithms and expressive enough to describe the behavior of these algorithms in real machines.  We modularize this library carefully so that common ideas---\emph{e.g.}~subgraphs, reachability, and isomorphism---can be efficiently reused
 in different algorithms.  Second, we use separation logic to express how these abstract graphs
-are actualized in the heap as concrete graphs in a way that facilitates the reuse of key definitions and theorems across algorithms.  Finally, we develop a notion of \emph{localization blocks} that
-allows us to carry out our Hoare proofs in a modular fashion, even in the presence of the
+are actualized in the heap as concrete graphs in a way that facilitates the reuse of key definitions and theorems across algorithms.  Third, we develop a notion of \emph{localization blocks} that
+enables modular reasoning in our Hoare proofs, even in the presence of the
 implicit sharing intrinsic to graphs, by using our \textsc{Localize} rule:
 
 % old two-column version:
@@ -68,16 +68,14 @@ R |- \forall x.~ (L_2 --* G_2) }
 %\marginpar{\tiny \color{blue} Maybe this should be moved to \S2? Just formula for intro?}
 \textsc{Localize} connects the ``local'' effect of a command~$c$, \emph{i.e.}
 transforming~$L_1$ to~$L_2$, with its ``global'' effect, \emph{i.e.} from~$G_1$ to~$G_2$.
-The key is carefully choosing a \emph{ramification frame}~$R$ that satisfies a pair of
+\textsc{Localize} is a more general version of the well-known \textsc{Frame} rule,
+which does the same task in the simpler case when $G_i = L_i * F$
+for some frame~$F$ that is untouched by~$c$.
+\textsc{Localize} can handle the more general transformation if we can find a \emph{ramification frame}~$R$ that satisfies a pair of
 delicately-stated entailments\footnote{Readers less familiar with the separating implication $P --* Q$, also known as \emph{magic wand}, can refer to its semantics in Figure~\ref{fig:seplogsem} (page~\pageref{fig:seplogsem}), which also models the other separation logic operators
 we use in this paper.  The key proof rule for magic wand is its adjointness
 with the separating conjunction:~$(P * Q |- R) \Leftrightarrow (P |- Q --* R)$.} and
 the side condition on modified local program variables.
-\textsc{Localize} is a more general version of the well-known \textsc{Frame} rule,
-which does the same task in the simpler case when $G_i = L_i * F$
-for some frame~$F$ that is untouched by~$c$.  Said differently, \textsc{Frame} works well
-for tree-manipulating programs, while \textsc{Localize} handles more subtle
-graph-manipulating programs.
 \textsc{Localize} %Localization blocks upgrade
 upgrades the \textsc{Ramify} rule~\cite{hobor:ramification} in two key ways:
 support for existential
@@ -92,14 +90,13 @@ Our contributions are organized as follows:
 \item[\S\ref{sec:orientation}] We use the classic ``union-find'' disjoint set algorithm~\cite{clrs} to show how our three key ingredients---mathematical graphs, spatial graphs, and localization blocks---come together to verify
 graph-manipulating algorithms.
 %\marginpar{\tiny \color{blue} TODO: check.}
-%Although we use it primarily as a running example, 
+%Although we use it primarily as a running example,
 To the best of our knowledge this is the first machine-checked verification of this algorithm that starts with real C code.
-We introduce \emph{localization blocks} as a notation for \textsc{Localize} in decorated programs. 
-\item[\S\ref{sec:localizations}] We show that \textsc{Localize} and \textsc{Frame} are equivalent,
-\note[unclear what you mean]{and a delicate technique to properly handle modified local variables.}  We show a mark-graph
-program that explores a graph in a fold/unfold style and discuss the utility of linked 
-existentials in postconditions. We also briefly discuss some additional examples
-to give a sense of the breadth of algorithms we can verify: marking a DAG, an array-based 
+We introduce \emph{localization blocks} as a notation for \textsc{Localize} in decorated programs.
+\item[\S\ref{sec:localizations}] We show that \textsc{Localize} and \textsc{Frame} are co-derivable.  We illustrate a delicate technique to properly handle modified local variables.  We show a mark-graph
+program that explores a graph in a fold/unfold style and discuss the utility of linked
+existentials in postconditions.  
+We give a sense of the breadth of algorithms we can verify, which include marking a DAG, an array-based
 version of union-find, and pruning a graph into a spanning tree.
 %{\color{magenta}Existentials for fun and profit: we upgrade Hobor and Villard's \infrulestyle{Ramify} rule to handle both modified program variables and existential quantifiers in postconditions more gracefully.
 %    We briefly discuss four additional VST-certified examples to give a sense of the breadth of algorithms we can verify: marking a DAG, marking a graph, an array-based version of union-find, and pruning a graph into a spanning tree.} %, and making a structure-preserving copy of a graph.

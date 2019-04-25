@@ -3,7 +3,7 @@
 \begin{figure}[t]
 \vspace{-1ex}
   \begin{lstlisting}[multicols=2]
-struct Node { unsigned int rank; 
+struct Node { unsigned int rank;
               struct Node * parent; }
 $//$$\label{code:findstart}\{\p{uf\_graph}(\gamma) /| \tx{x}\in\m{V}(\gamma)\}$
 struct Node* find(struct Node* x) {
@@ -37,7 +37,7 @@ $//$$\label{code:ufaftram2}\left\{\!\!\!\begin{array}{l@{}} {\color{red}\exists 
 \begin{array}{@{}l@{}lcl@{}}
 \multicolumn{2}{r}{\p{uf\_graph}(x, \gamma)} & \defeq & \underset{\m{v} \in \m{V}(\gamma)}{\bigstar} \m{v}	\mapsto\gamma(\m{v}) \\
 [15pt]
-\m{uf\_root}(\gamma,\m{x},\m{rt})&& \defeq & \reachable{x}{\gamma}{\star}{}{rt} \; /| \null \\ 	 
+\m{uf\_root}(\gamma,\m{x},\m{rt})&& \defeq & \reachable{x}{\gamma}{\star}{}{rt} \; /| \null \\ 	
 &\multicolumn{3}{@{}l}{\forall \m{rt'}.~\reachable{rt}{\gamma}{\star}{}{rt'} => \m{rt} = \m{rt'}}
 \end{array}
 \end{equation*}
@@ -47,9 +47,9 @@ $//$$\label{code:ufaftram2}\left\{\!\!\!\begin{array}{l@{}} {\color{red}\exists 
 \vspace*{-1ex}
 \begin{equation*}
 \begin{split}
-\quad \m{findS}&(\gamma,\m{x},\gamma') \; \defeq \; \big(\forall \m{v}.~ \m{v}\in\m{V}(\gamma) <=> \m{v}\in\m{V}(\gamma') \big) /| \null \\ 
+\quad \m{findS}&(\gamma,\m{x},\gamma') \; \defeq \; \big(\forall \m{v}.~ \m{v}\in\m{V}(\gamma) <=> \m{v}\in\m{V}(\gamma') \big) /| \null \\
 &\big(\forall \m{v}.~\m{v}\in\m{V}(\gamma) => \gamma(\m{v}).\m{rank} = \gamma'(\m{v}).\m{rank} \big) /| \null \\
-&\big(\forall \m{r},\m{r'}.~\m{uf\_root}(\gamma, \m{v}, \m{r}) => \m{uf\_root}(\gamma', \m{v}, \m{r'}) => \m{r} = \m{r'} \big) /|  \null \\ 
+&\big(\forall \m{r},\m{r'}.~\m{uf\_root}(\gamma, \m{v}, \m{r}) => \m{uf\_root}(\gamma', \m{v}, \m{r'}) => \m{r} = \m{r'} \big) /|  \null \\
 &\big(\gamma \smallsetminus \{\m{v} \in \gamma \mid \reachable{x}{\gamma}{\star}{}{v}\} \cong \gamma' \smallsetminus \{\m{v} \in \gamma \mid \reachable{x}{\gamma}{\star}{}{v}\}\big)
 \end{split}
 \end{equation*}
@@ -68,7 +68,7 @@ $//$$\label{code:ufaftram2}\left\{\!\!\!\begin{array}{l@{}} {\color{red}\exists 
 %    (predicate_partialgraph g1 (fun n => ~ reachable g1 x n)) ~=~ (predicate_partialgraph g2 (fun n => ~ reachable g1 x n)) /\ uf_equiv g1 g2 /\ rank_unchanged g1 g2. (**) why isn't uf_equiv enough?
 
 \vspace{-0.4em}
-\caption{Clight code and proof sketch for find}
+\caption{Clight code and proof sketch for \li{find}; {\color{red}red} text in formulae indicate the line-by-line changes}
 \label{fig:find}
 \vspace{-1em}
 \end{figure}

@@ -1,6 +1,6 @@
-In this section we first (\S\ref{sec:rulessound}) ensure our feet are solidly planted by proving why \textsc{Localize} is sound, and indeed equivalent to \textsc{Frame}.  Second (\S\ref{sec:freevars}), 
-we address the bug from \S\ref{sec:localblocks} and show that \textsc{Localize} is indeed 
-strong enough to robustly handle modified local program variables.  Third (\S\ref{sec:linkedex}), 
+In this section we first (\S\ref{sec:rulessound}) ensure our feet are solidly planted by proving why \textsc{Localize} is sound, and indeed equivalent to \textsc{Frame}.  Second (\S\ref{sec:freevars}),
+we address the bug from \S\ref{sec:localblocks} and show that \textsc{Localize} is indeed
+strong enough to robustly handle modified local program variables.  Third (\S\ref{sec:linkedex}),
 we showcase two additional features of our framework, linked existentials and a fold/unfold style
 for spatial graphs, by covering the verification of a program that marks a cyclic graph.
 Finally (\S\ref{sec:application}), we briefly discuss some additional examples we have handled.
@@ -28,13 +28,18 @@ Our flagship example, the garbage collector for the CertiCoq project, will be co
 {\footnotesize
 \[
 \hspace{-1em}
+\begin{array}{l}
 \infrule{}{
   G_1 |- L_1 * R \\
   \infrule{}{\{L_1\}~c~\{\exists x.~ L_2\}}{\{L_1 * R\}~c~\{(\exists x.~ L_2) * R\}}{\infrulestyle{Frame}} \\
-  \quad \infrule{}{\infrule{}{\vdots}{(\exists x.~ L_2) * (\forall x.~ (L_2 --* G_2)) |- \exists x.~ G_2}{\infrulestyle{Tauto}}}{(\exists x.~ L_2) * R |- \exists x.~ G_2}{\infrulestyle{Cut}}
+  \qquad \quad \infrule{}{\infrule{}{\vdots}{(\exists x.~ L_2) * (\forall x.~ (L_2 --* G_2)) |- \exists x.~ G_2}{\infrulestyle{Tauto}}}{(\exists x.~ L_2) * R |- \exists x.~ G_2}{\infrulestyle{Cut}~(\dagger)}
   }
-  {\{G_1\}~c~\{\exists x.~ G_2\}}{\textsc{Cons}}
+  {\{G_1\}~c~\{\exists x.~ G_2\}}{\textsc{Cons}} \\ \\
+[-5pt]
+(\dagger)~R |- \forall x.~ (L_2 --* G_2) ~\text{is a premise of \infrulestyle{Localize}}
+\end{array}
 \]
+
 
 \[
 \hspace{-1em}
@@ -42,13 +47,13 @@ Our flagship example, the garbage collector for the CertiCoq project, will be co
 \infrule{}{
 %  P * F |- P * F \\
   \infrule{}{\{P\}~c~\{Q\} \\ Q |- \exists x_f.~ Q}{\{P\}~c~\{\exists x_f.~ Q\}}{\infrulestyle{Cons}} \\
-  \quad F |- \forall x_f.~(Q --* (Q * F))
+  \qquad F |- \forall x_f.~(Q --* (Q * F))
   %\quad \infrule{}{\infrule{}{\vdots}{(\exists x.~ L_2) * (\forall x.~ (L_2 --* G_2)) |- \exists x.~ G_2}{\infrulestyle{Tauto}}}{(\exists x.~ L_2) * R |- \exists x.~ G_2}{\infrulestyle{Cut}}
   }
   {\{P * F\}~c~\{\exists x_f.~(Q * F)\}}{\textsc{Localize}} \\
-  \qquad \exists x_f.~(Q * F) |- Q * F
+  \qquad \qquad \exists x_f.~(Q * F) |- Q * F
   }
-  {\{P * F\}~c~\{Q * F\}}{\textsc{Cons}}  
+  {\{P * F\}~c~\{Q * F\}}{\textsc{Cons}}
 \]
 }
 \vspace{-1em}
@@ -56,8 +61,8 @@ Our flagship example, the garbage collector for the CertiCoq project, will be co
 \label{fig:rampqproofs}
 \end{figure*}
 
-In Figure~\ref{fig:rampqproofs} we put the proof sketches that show that 
-\infrulestyle{Localize} and \infrulestyle{Frame} are equivalent.  They require a 
+In Figure~\ref{fig:rampqproofs} we put the proof sketches that show that
+\infrulestyle{Localize} and \infrulestyle{Frame} are equivalent.  They require a
 little care with quantifiers, but are in essence straightforward.
 In the latter proof set $R \defeq F$, choose $x_f$ fresh, and range the quantifiers
 over the unit type.  Notice that in both directions the restriction on modified
@@ -65,7 +70,7 @@ program variables is satisfied: in the first proof, \textsc{Localize}'s side
 condition that $\FV(R) \cap \MV(c) = \emptyset$ is exactly what \textsc{Frame} needs;
 in the second, \textsc{Frame}'s side condition that $\FV(F) \cap \MV(c) = \emptyset$
 is exactly what \textsc{Localize} needs (since $R \defeq F$).
-The equivalence between \textsc{Frame} and \textsc{Localize} means that %is important because 
+The equivalence between \textsc{Frame} and \textsc{Localize} means that %is important because
 our techniques will be sound in any separation logic.
 
 \paragraph{Note on notation.} Although we do not do so in Figure~\ref{fig:find}, localization blocks can safely nest.  When the ramification entailment is not noteworthy we can omit the $\ramify(i)$ reference in pen-and-paper proofs.  When we wish to save vertical space we can write $\{ G_1 \} \searrow \{ L_1 \}$ and $\{ G_2 \} \swarrow \{ L_2 \}$.
@@ -136,7 +141,7 @@ Consider using \textsc{Localize} to verify the program
   $// \{ \tx{x} = 6 /| D \} \swarrow \{\tx{x} = 6 /| C \}$
 \end{lstlisting}
 \vspace{-1ex}
-Suppose that other (elided) lines of the program make localization desirable, even though it is overkill for a single assignment.  The key issue is that if one sets $R \defeq L_2 --* G_2$, as 
+Suppose that other (elided) lines of the program make localization desirable, even though it is overkill for a single assignment.  The key issue is that if one sets $R \defeq L_2 --* G_2$, as
 we tried to do in \S\ref{sec:localblocks}, then the program variable {\li{x}} appears in all four positions in the ramification entailment
 \vspace{-1ex}
 \[
@@ -148,14 +153,14 @@ and that \li{x} does not appear free in $A$, $B$, $C$ or $D$.  Let us further as
 that, modulo the local variable issue we are trying to solve, the entailment holds.
 In other words, let us assume that $A |- B * (C --* D)$.
 
-Turning to the local variable issue itself, in~\S\ref{sec:localblocks} we observed 
-that $L_2 --* G_2$ does \textbf{not} ignore the modified program variable \tx{x}, 
-preventing us from meeting \infrulestyle{Localize}'s side condition\footnote{There is 
-another problem: in the standard model for local variable treatment in separation logic, 
-the separating implication is vacuously true since \tx{x} cannot simultaneously be 
-both $5$ and $6$.  But since two fatal problems are overkill, let us move on.}.  
-Intuitively, the side condition on \infrulestyle{Localize} seems to be a bit too strong 
-since it prevents us from mentioning variables in the postconditions that have been modified 
+Turning to the local variable issue itself, in~\S\ref{sec:localblocks} we observed
+that $L_2 --* G_2$ does \textbf{not} ignore the modified program variable \tx{x},
+preventing us from meeting \infrulestyle{Localize}'s side condition\footnote{There is
+another problem: in the standard model for local variable treatment in separation logic,
+the separating implication is vacuously true since \tx{x} cannot simultaneously be
+both $5$ and $6$.  But since two fatal problems are overkill, let us move on.}.
+Intuitively, the side condition on \infrulestyle{Localize} seems to be a bit too strong
+since it prevents us from mentioning variables in the postconditions that have been modified
 by code $c$.  As in other cases when life gets tough, what we need is an elegant little dance, and as with most dances, one should lead by example.
 
 First, define $\hat{L_2}(x_f) \defeq (x_f \! = \! 6 /| C)$ and
@@ -192,14 +197,14 @@ goal is the spatial part, which captures the key action of the localization bloc
 these in practice, we end up applying generic lemmas from \S\ref{sec:spacegraph}.
 
 \paragraph{Discussion.} The delicacy and detail in the dance above may seem to be making
-mountains out of molehills, since a careful treatment of modified program variables is 
+mountains out of molehills, since a careful treatment of modified program variables is
 hardly a sexy topic.  Indeed, in pen-and-paper systems they are molehills, with any
-number of workarounds including: making local program transformations to introduce 
-fresh variables and arguing for program equivalence, using 
+number of workarounds including: making local program transformations to introduce
+fresh variables and arguing for program equivalence, using
 variables-as-resource~\cite{bornat:var}, or even just sweeping the issue under the rug.
 
 In a mechanized context, working with existing toolsets, these kinds of solutions are
-not viable.  Either we must reinvent a \textbf{very, very} large wheel---combined, 
+not viable.  Either we must reinvent a \textbf{very, very} large wheel---combined,
 VST and CompCert contain about 840k LOC---or we must dance within their constraints.
 VST does not use variables as resource, nor does it have modules to reason about program equivalence.  Moreover, it is hardly unique in these respects: most other mechanized verification systems do not support these solutions either~\cite{beckert:2007,distefanop08,bengtson:charge,chin:hipsleek}.  By respecting the design
 decisions taken by most existing tools, our solutions can be incorporated more easily; in~\S\ref{sec:development} we will see that our additions to VST are less than 1\% of its codebase.
@@ -211,7 +216,7 @@ decisions taken by most existing tools, our solutions can be incorporated more e
 
 We have already seen that allowing existentials in postconditions lets us handle modified program
 variables properly.  However, these ``linked existentials''---recall that our previous technique
-hinged on the fact that the existential witness to the variable $x_f$ in the local postcondition 
+hinged on the fact that the existential witness to the variable $x_f$ in the local postcondition
 $L_2$ was carried over to the corresponding existential witness in the global postcondition---have
 other uses as well.  To illustrate them, and to demonstrate other aspects of our system, in particular our ability to explore a graph recursively via fold/unfold, we consider another example.
 
@@ -491,18 +496,18 @@ Although our technique to handle modified program variables is rather intricate,
 \subsection{Additional verified examples}
 \label{sec:application}
 
-\note[randomly blue]{In addition to the proof of \li{find} shown above, we do a proof of \li{union} 
-in the same style.}  We also do a \emph{second} version of union-find, this time using
-arrays rather than \li{malloc}-allocated nodes.  The mathematical definitions, 
-\emph{e.g.} for $\m{findS}$, are entirely shared, demonstrating that we have 
+In addition to the proof of \li{find} shown above, we do a proof of \li{union}
+in the same style.  We also do a \emph{second} version of union-find, this time using
+arrays rather than \li{malloc}-allocated nodes.  The mathematical definitions,
+\emph{e.g.} for $\m{findS}$, are entirely shared, demonstrating that we have
 separated the concerns of abstract algorithmic reasoning from the nitty-gritty details
 of heap representation. % graphs in the heap.
 
-We also have done a version of \li{mark} for DAGs (acyclic).  In general, using DAGS 
-are both easier and harder than cyclic graphs.  On the one hand, we get genuine separation 
+We also have done a version of \li{mark} for DAGs (acyclic).  In general, using DAGS
+are both easier and harder than cyclic graphs.  On the one hand, we get genuine separation
 between the root and its children; on the other hand, we need to maintain acyclicity if
 we modify the link structure.
-As a more aggressive example of modifying the link structure of a graph, we have verified 
+As a more aggressive example of modifying the link structure of a graph, we have verified
 \li{spanning}, which prunes a graph into its spanning tree; for space reasons we put
 this example in Appendix~\ref{apx:spanning}.
 Our flagship example, the CertiCoq garbage collector, will be discussed in~\S\ref{sec:certigc}.
@@ -513,4 +518,4 @@ Our flagship example, the CertiCoq garbage collector, will be discussed in~\S\re
 %two algorithms that modify the link structure:
 %for graphs, and \li{copy}
 %for graphs, which makes a structure-preserving copy.  For space reasons we put
-%\li{spanning} and \li{copy} 
+%\li{spanning} and \li{copy}
