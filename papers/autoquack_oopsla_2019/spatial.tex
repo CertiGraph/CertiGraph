@@ -28,7 +28,7 @@ the typically-written pseudodefinition (``$\defeq$'').
 %Definition corec {B A: Type}  (F: (B -> pred A) -> (B -> pred A)) : B -> pred A :=
 %fun x w => forall P: B -> pred A, (forall x, F P x |-- P x) -> P x w.
 
-Suppose we define a graph predicate $\graphkt$ this way, \emph{e.g.} along the lines of the fold/unfold definition in Figure~\ref{fig:markgraph}: %, \emph{i.e.}
+Suppose we define a graph predicate $\graphkt$ along the lines of the fold/unfold definition in Figure~\ref{fig:markgraph}.  Such a definition would use the overlapping conjunction $P ** Q$ (\emph{c.f.} Figure~\ref{fig:seplogsem}) as follows: %, \emph{i.e.}
 \vspace{-1ex}
 \[
 \begin{array}{@{}l@{}l@{}}
@@ -76,6 +76,9 @@ Consider the memory $m$ for a toy machine:
 
 The other direction, \mbox{$\graphkt(100,\hat{\gamma}) |- 100 |-> 42,100,0$},
 \textbf{is} true but is not easy to prove, relying on the constructions in \S\ref{sec:goodgraph} and the fact that $\mu_{\mathsf{T}}$ constructs the least fixpoint.  In contrast, $\graphkt(100,\hat{\gamma}) |- 100 |-> 42,100,0 * \top$ is easy. % to prove. % via fold/unfold.
+
+\cite{appel:fixpoint} defined an alternative fixpoint using a notation of \emph{contractiveness}.  Unfortunately, this alternative fixpoint also
+fails to define a sensible graph predicate; see Appendix~\ref{apx:appelfixpiont}.
 
 %As explained in~\S\ref{sec:foldunfold}, this alignment is necessary in C-like memory models to prove fold-unfold \eqref{eqn:bigraphintrofoldunfold}, which is why \eqref{eqn:bigraphintrofoldunfold} includes an alignment restriction $x~\mathsf{mod}~16 = 0$ and an existentially-quantified ``blank'' second field for the root $x \mapsto m,-,l,r$.
 

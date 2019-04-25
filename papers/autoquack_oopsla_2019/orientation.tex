@@ -204,7 +204,7 @@ Unfortunately, we still have a problem: the side condition above requires that
 
 The second localization block (lines~\ref{code:ufbefram2}--\ref{code:ufaftram2}) is both easier and harder than the first.  It is easier because line~\ref{code:ufpathcompress} does not modify any local program variables, so the side condition is trivially satisfied.  Moreover, although line~\ref{code:ufaftram2} does contain an existential, line~\ref{code:findafterxparent} does not, and so there is no need to ``link'' the two associated witnesses.  We will discuss this issue
 in more detail in \S\ref{sec:linkedex}, but for now it is enough to
-choose $R \defeq L_2 --* G_2$ \note{exactly written} in lines~\ref{code:findafterxparent}
+choose $R \defeq L_2 --* G_2$ exactly as written in lines~\ref{code:findafterxparent}
 (for $L_2$) and~\ref{code:ufaftram2} (for $G_2$).
 
 On the other hand, the second localization block is harder than the first because there is more going on spatially. $\ramify(\ref{findram2})$ expresses an update to a single node of our graph:
