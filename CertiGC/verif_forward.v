@@ -31,10 +31,9 @@ Lemma sapi_ptr_val: forall p m n,
        (sem_add_ptr_int int_or_ptr_type Signed (offset_val (WORD_SIZE * m) p)
                         (vint n))) = offset_val (WORD_SIZE * (m + n)) p.
 Proof.
-  intros. rewrite sem_add_pi_ptr_special.
+  intros. rewrite sem_add_pi_ptr_special; [| easy | | easy].
   - simpl. rewrite offset_offset_val. f_equal. rep_omega.
   - rewrite isptr_offset_val. assumption.
-  - assumption.
 Qed.
 
 Lemma data_at_mfs_eq: forall g v i sh nv,
@@ -530,8 +529,9 @@ Proof.
                          rewrite sem_add_pi_ptr_special.
                          *** simpl. f_equal. erewrite fl_vertex_address; eauto.
                              subst g'. apply graph_has_v_in_closure. assumption.
+                         *** subst n. clear -H45 Hr. easy.
                          *** rewrite <- H30. assumption.
-                         *** subst n. clear -H45 Hr. rep_omega.
+                         *** rep_omega.
                      +++ do 3 (split; [assumption |]). split.
                          *** simpl. split; [|split; [|split]]; auto.
                              ---- destruct H39 as [_ [_ [? _]]].
@@ -1229,8 +1229,9 @@ Proof.
                              rewrite <- (lgd_vertex_address_eq g' e v1), <- Heqg1.
                              subst v1. apply (fl_vertex_address _ _ _ _ _ _ H64 H61).
                              apply graph_has_v_in_closure; assumption.
+                         *** subst n'. clear -H59 Hr. easy.
                          *** rewrite <- H31. assumption.
-                         *** subst n'. clear -H59 Hr. rep_omega.
+                         *** rep_omega.
                      +++ do 3 (split; [assumption |]). split.
                          *** simpl. split; [|split].
                              ---- destruct H53 as [_ [_ [? _]]].

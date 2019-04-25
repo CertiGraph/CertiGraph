@@ -307,9 +307,8 @@ Proof.
                             outlier, from, to, 0, (@inr Z _ ((to, index), i - 1))).
               ** simpl snd. apply prop_right.
                  split; [split; [split|]|]; [|reflexivity..].
-                 rewrite sem_add_pi_ptr_special;
-                   [| rewrite isptr_offset_val; assumption | rep_omega]. simpl.
-                 rewrite offset_offset_val. do 2 f_equal. rep_omega.
+                 rewrite sem_add_pi_ptr_special; [| easy | rewrite isptr_offset_val; assumption | rep_omega].
+                 simpl. rewrite offset_offset_val. do 2 f_equal. rep_omega.
               ** split; [|split; [|split; [|split; [|split; [|split]]]]];
                    try assumption. 2: rep_omega. red. split; [|split;[|split]].
                  --- assumption.
@@ -386,6 +385,7 @@ Proof.
                unfold vertex_address. rewrite !offset_offset_val.
                unfold vertex_offset. simpl vgeneration. simpl vindex. f_equal.
                rewrite pvs_S. unfold vertex_size. rep_omega.
+             - easy.
              - rewrite isptr_offset_val. assumption.
              - split. 1: rep_omega.
                assert (two_power_nat 22 < Int.max_unsigned) by
