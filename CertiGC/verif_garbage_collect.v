@@ -9,6 +9,7 @@ Lemma sem_sub_pp_total_space: forall s,
 Proof.
   intros. destruct (space_start s); try contradiction. simpl. destruct (eq_block b b).
   2: exfalso; apply n; reflexivity.
+  unfold sem_sub_pp; destruct eq_block; [|easy].
   inv_int i. rewrite ptrofs_add_repr, ptrofs_sub_repr.
   replace (ofs + WORD_SIZE * total_space s - ofs) with
       (WORD_SIZE * total_space s)%Z by omega. simpl.
@@ -28,7 +29,7 @@ Lemma sem_sub_pp_rest_space: forall s,
 Proof.
   intros. destruct (space_start s); try contradiction. simpl. destruct (eq_block b b).
   2: exfalso; apply n; reflexivity.
-  inv_int i.
+  inv_int i. unfold sem_sub_pp; destruct eq_block; [|easy].
   rewrite !ptrofs_add_repr, ptrofs_sub_repr.
   replace (ofs + WORD_SIZE * total_space s - (ofs + WORD_SIZE * used_space s)) with
           (WORD_SIZE * (total_space s - used_space s))%Z by
