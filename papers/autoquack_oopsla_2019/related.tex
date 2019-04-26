@@ -53,8 +53,8 @@ modular and general and has been tuned to work smoothly in a mechanized context.
 
 Hobor and Villard erroneously defined spatial graphs
 recursively~(\S\ref{sec:fixpointfail}); unfortunately other members of the research
-community have since followed them in, \emph{e.g.}~\cite{raadvg15}.  We exposed this
-error and provided a sound and quite general definition for
+community have since followed them, \emph{e.g.}~\cite{raadvg15}.  We exposed this
+error and provided a sound and rather general definition for
 \p{graph}~(\S\ref{sec:goodgraph}) that recovers fold/unfold reasoning.  We developed a
 much more general and more modular set of related lemmas and connect our spatial
 reasoning to the verification framework of CompCert/VST~(\S\ref{sec:vst}), and
@@ -134,7 +134,7 @@ and the time complexity of the union-find data structure.
 \paragraph{Verification of garbage collection algorithms.}
 Schism \cite{gcexample4,gcexample4a} is a certified concurrent
 collector built in a Java VM that services multi-core architectures with weak memory consistency.
-McCreight \emph{et al.} \cite{gcexample5, gcexample3} introduce GCminor, which is
+\cite{gcexample5, gcexample3} introduce GCminor, which is
 a certified translation step added to CompCert's translation from Clight to assembly.
 GCminor makes explicit the specific invariants that the garbage collector
 relies upon, thus minimising errors due to the violation of invariants

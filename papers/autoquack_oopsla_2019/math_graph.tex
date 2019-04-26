@@ -57,9 +57,10 @@ than focusing on the nitty-gritty details.} % end hide
 
 Our first challenge is that graph theory is usually based on
 \emph{set theory} but our formalization in Coq is
-based on \emph{type theory}. We formalize graph theory
-directly in Coq instead of formalizing set theory and then building
-graph theory atop it, because this lets us take advantage of Coq's built-in
+based on \emph{type theory}. 
+Instead of formalizing set theory in Coq and then building
+graph theory atop it, we formalize graph theory
+directly in Coq, as this lets us take advantage of Coq's built-in
 support for type-related constructions.
 To resolve the dichotomy between
 the generality and the speciality of the library, we develop
@@ -305,8 +306,13 @@ Consider the following oft-used graph properties:
 
 \begin{itemize}
 \vspace{-1ex}
-\item $\p{MathGraph}^{*}$: all valid edges must have a valid source vertex; the destination
-vertex must either be valid or be a special invalid node called \p{null}
+\item \p{BiGraph}: there are exactly two outgoing edges per vertex
+\item $\p{LstGraph}^{*}$: the graph is structured like a list, meaning that every 
+vertex has one outgoing edge, and there no loops except trivial self-loops 
+of length $0$, signifying the end of the ``list"
+\item $\p{MathGraph}^{*}$: every valid edge has a valid source vertex,
+and its destination vertex is either valid or is a 
+special invalid vertex called \p{null}
 %, which
 %is allowed to be the destination of valid edges are allowed to be destinations
 %of valid edges, thus allowing null values to represent unused nodes
@@ -317,9 +323,9 @@ represent unused nodes.  The  property introduces this concept---
 \emph{i.e.} some special invalid nodes are allowed to appear as
 destinations for valid edges.} % end hide
 %\vspace{-1ex}
-\item $\p{LstGraph}^{*}$: the graph is list-like: each vertex has only one outgoing edge; no nontrivial loops
+
 %each
-\item \p{BiGraph}: there are exactly two outgoing edges per node
+
 \end{itemize}
 Definitions of the concepts marked with asterisks are
 shown in Figure~\ref{fig:gengraphdefs} for illustration.

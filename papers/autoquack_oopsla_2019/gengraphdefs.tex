@@ -14,7 +14,7 @@
           &&&&\qquad \Big(\mathtt{src}(\gamma, e) =\m{v} \wedge
                 \mathtt{evalid}(\gamma, e)\Big) \Leftrightarrow e = \mathtt{out}(\m{v})\\
           &&&\mathtt{acyclic\_path}:&\; \forall \m{v},\,p\,.\,
-          \gamma \vDash \m{v} \overset{p}{\leadsto} \m{v} \Rightarrow p = (\m{v},[]) \qquad \Big\} \\
+          \gamma |= \m{v} \overset{p}{\leadsto} \m{v} \Rightarrow p = (\m{v},[]) \qquad \Big\} \\
        	\mathrm{FiniteGraph}(\gamma)\,&\defeq&\, \Big\{&\mathtt{finite\_v}:&\;\exists\, S_\m{v},\, M_\m{v}.~\;\lvert S_\m{v}\rvert
           \leq M_\m{v} \wedge
           \forall \m{v}\,.\, \mathtt{vvalid}(\gamma,\m{v})\Rightarrow \m{v}\,\in\,S_\m{v}\\
