@@ -26,7 +26,7 @@ explain is_from and int_or_ptr.
 
 
 what is hard about the GC
-
+`````````````````````````
 the graph model changed not at all
 	we added label to the whole graph. we are genuinely not iso in GC
 	quite happy to add this change to our model; it doesn't change the other proofs at all
@@ -40,8 +40,13 @@ what was challenging
 
 within in generation, it's basically Cheney. 
 two functions that are the bulk of the work: forward, and do_scan.
-one other place: reset_heap, a single instruction that throws away a top of vertices
+one other place: reset_heap, a single instruction that throws away a ton of vertices
 
+the composition of all these relations gives you correctness vis the C code in the end
+
+forward_roots
+do_scan
+calculating the sizes
 
 multigen
 ocaml obect model

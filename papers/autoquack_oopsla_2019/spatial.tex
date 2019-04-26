@@ -186,7 +186,7 @@ The proof of the $<=$ direction requires care. The difficulty is that if two nod
 \[
 \forall x,y.~ \Big(P(x) ** P(y) |- \big(P(x) /| x = y\big) |/ \big(P(x) * P(y)\big)\Big)
 \]
-That is, they overlap either completely or not at all. In a Java-like memory model this property is automatic because pointers in such a model always point to the root/beginning of an object.  In contrast, in a C-like memory model such as in VST/CompCert, this property is not automatic because pointers can point anywhere.  In such a model, alignment is most easily enforced by storing graph nodes at addresses that are multiples of an appropriate size (16 in Figure~\ref{fig:markgraph}).
+That is, they overlap either completely or not at all. In a Java-like memory model this property is automatic because pointers in such a model always point to the root/beginning of an object.  In contrast, in a C-like memory model such as in VST/CompCert, this property is not automatic because pointers can point anywhere.  In such a model, alignment is most easily enforced by storing graph nodes at addresses that are multiples of an appropriate size (\emph{e.g} this size is $16$ in Figure~\ref{fig:markgraph}).
 
 Some of our VST proofs, \emph{e.g.} for \li{find}, do not use fold/unfold, instead preferring to use the lemmas in~\S\ref{sec:ramifylib} directly.  Others, \emph{e.g.} \li{mark}, do---and it is helpful to have both options avilable. We also prove fold/unfold lemma for DAGs in which we get a $*$ between the root and its $**$-joined neighbors, rather than the $**$ present in \eqref{eqn:unfold_graph}.
 % (On the other hand, for HIP/SLEEK fold/unfold is vital, and it is heartening to know that the recursive relationship holds.  We also prove fold/unfold lemma for DAGs in which we get a $*$ between the root and its $**$-joined neighbors. % rather than the $**$ present in \eqref{eqn:unfold_graph}.
@@ -196,7 +196,7 @@ Some of our VST proofs, \emph{e.g.} for \li{find}, do not use fold/unfold, inste
 
 \input{libinfra_figure.tex}
 
-VST employs a somewhat unusual Step-Indexed heap model to represent
+VST employs an unusually complex Step-Indexed heap model to represent
 spatial predicates, and uses it to support an unusually rich program
 logic~\cite{appel:programlogics}. However, the spatial representation
 of our graph library does not rely on any of its bells and whistles.

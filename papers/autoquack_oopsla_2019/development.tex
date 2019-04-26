@@ -1,9 +1,9 @@
 \label{sec:vst}
 
 %\marginpar{\tiny \color{blue} These brief explanations of VST and Floyd need to come in much earlier...}
-CompCert is a fully machine-checked verified compiler for~C~\cite{leroy:compcert}.
+CompCert is a fully machine-checked verified compiler for~CompCert C~\cite{leroy:compcert}.
 The Verified Software Toolchain consists of a series of machine-checked modules written in Coq
-to reason about (CompCert) C programs~\cite{appel:programlogics}.
+to reason about CompCert C programs~\cite{appel:programlogics}.
 Floyd is VST's module for verifying such programs using separation logic.
 VST's modules interlock so there are no ``gaps'' in the end-to-end certified results;
 accordingly all of the rules employed by Floyd have been proved sound with respect to
@@ -55,7 +55,7 @@ $\{\ \ ?F * P_4 \ \}$
 
 \end{lstlisting}
 \centerline{\footnotesize(back)}
-\end{minipage} \vline ~
+\end{minipage} \vline \vline ~
 \begin{minipage}{.15\textwidth}
 \begin{lstlisting}[numbers=none, basicstyle=\linespread{0.8}\normalfont\footnotesize\tt]
 $\{\ \ P_1 \ \ \}$
@@ -92,7 +92,7 @@ $\{\ \ P_6 \ \ \}$
 \end{figure}
 %\end{wrapfigure}
 
-Figure~\ref{figure:backend} has four partially-decorated ``proofs in progress'', from both the user's (front end) and Floyd's (back end) points of view.  In the first column, from the user's point of view, they saw the assertion $P_2$ (line~\ref{code:localglobalin}) and decided to use the \li{localize} tactic to zoom into $P_3$ (line~\ref{code:locallocalin}).  They then applied some proof rules to move past $c_2$ to reach the assertion $P_4$ (line~\ref{code:localsndcmd}).  At this point, Floyd does not know when the corresponding \li{unlocalize} tactic will execute, so it does not know which commands will be inside the block or what the final local and global postconditions will be.
+Figure~\ref{figure:backend} has two partially-decorated ``proofs in progress'', from both the user's (front end) and Floyd's (back end) points of view.  In the first column, from the user's point of view, they saw the assertion $P_2$ (line~\ref{code:localglobalin}) and decided to use the \li{localize} tactic to zoom into $P_3$ (line~\ref{code:locallocalin}).  They then applied some proof rules to move past $c_2$ to reach the assertion $P_4$ (line~\ref{code:localsndcmd}).  At this point, Floyd does not know when the corresponding \li{unlocalize} tactic will execute, so it does not know which commands will be inside the block or what the final local and global postconditions will be.
 
 Accordingly, the \li{localize} tactic builds an incremental proof in the underlying program logic by applying \infrulestyle{Frame} with an uninstantiated metavariable.
 The second column of Figure~\ref{figure:backend} shows the back end with the unknown frame $?F$, which will eventually be instantiated by \li{unlocalize}.
