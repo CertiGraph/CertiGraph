@@ -319,7 +319,7 @@ Proof.
   + destruct H1 as [e [? ?]]. right. exists e. split; auto.
 Qed.
 
-Lemma path_acyclic:
+Lemma path_shorten:
   forall (g: Gph) (p: path) n1 n2,
     path_ends g p n1 n2 -> valid_path g p -> Dup (epath_to_vpath g p) ->
     exists p', length (snd p') < length (snd p) /\ Subpath g p' p /\ path_ends g p' n1 n2 /\ valid_path g p'.
@@ -354,7 +354,7 @@ Proof.
     split. 1: apply Subpath_refl. do 2 (split; auto). constructor. intro; inversion H2. apply NoDup_nil.
   + destruct (NoDup_dec EV (epath_to_vpath g (v, p))).
     - exists (v, p); split; [apply Subpath_refl | split; auto].
-    - destruct (path_acyclic _ _ _ _ H0 H1 n0) as [[v2 p2] [? [? [? ?]]]]. simpl in H2. assert (length p2 <= n) by intuition.
+    - destruct (path_shorten _ _ _ _ H0 H1 n0) as [[v2 p2] [? [? [? ?]]]]. simpl in H2. assert (length p2 <= n) by intuition.
       specialize (IHn p2 H6 _ _ _ H4 H5). simpl in IHn, H3. destruct IHn as [p' [? ?]]. exists p'. split; auto.
       apply Subpath_trans with (v2, p2); auto.
 Qed.

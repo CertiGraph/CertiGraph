@@ -21,6 +21,7 @@ Context {EE: EqDec E eq}.
 Context {EV': EqDec V' eq}.
 Context {EE': EqDec E' eq}.
 
+
 Variables (PV: V -> Prop) (PE: E -> Prop) (vmap: V -> V') (emap: E -> E') (G: PreGraph V E) (G': PreGraph V' E').
 
 Record guarded_morphism: Prop := {
@@ -961,4 +962,3 @@ Definition respectful {A B : Type}
 PRETTY SURPRISING THAT THIS SYNTAX IS LEGAL!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 *)
-

@@ -71,19 +71,6 @@ Section SepAlgPack.
 
   Instance Join_Pack: Join PackNode := join_Pack.
 
-  Instance Perm_Pack: Perm_alg PackNode.
-  Proof.
-    constructor.
-
-    (* join_eq *)
-    intros.
-    unfold join, Join_Pack in *.
-    destruct x, y, z, z'.
-    inversion H; clear H;
-    inversion H0; clear H0.
-    subst; subst u3.
-    f_equal.
-  Abort.
 End SepAlgPack.
 
 

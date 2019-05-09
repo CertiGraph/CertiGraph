@@ -5,7 +5,7 @@ Require Import RamifyCoq.lib.List_ext.
 Require Export RamifyCoq.lib.Ensembles_ext.
 Require Import Coq.Lists.List.
 
-Definition Enumerable U (A: Ensemble U) := {l: list U | NoDup l /\ forall x, In x l <-> Ensembles.In U A x}.
+Definition Enumerable U (A: Ensemble U) := {l: list U | NoDup l /\ forall x, In x l <-> A x}.
 
 Definition EnumCovered U (A: Ensemble U) := {l: list U | NoDup l /\ forall x, Ensembles.In U A x -> In x l}.
 
