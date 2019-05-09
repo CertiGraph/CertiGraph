@@ -53,21 +53,22 @@ Proof.
   apply ex_iff, reachable_by_path_subgraph_partialgraph.
 Qed.
 
-Lemma reachable_by_path_eq_subgraph_reachable (g: PreGraph V E) (p: V -> Prop):
-  forall (n1 n2: V) (path : path),
-    g |= path is n1 ~o~> n2 satisfying p <-> (predicate_subgraph g p) |= path is n1 ~o~> n2 satisfying (fun _ => True).
+Lemma reachable_by_path_eq_subgraph_reachable (g: PreGraph V E) (P: V -> Prop):
+  forall (n1 n2: V) (p : path),
+    g |= p is n1 ~o~> n2 satisfying P <->
+    (predicate_subgraph g P) |= p is n1 ~o~> n2 satisfying (fun _ => True).
 Proof.
   intros; split; intros; destruct H as [[? ?] [? ?]]; split.
-  - split; auto. clear - H0. destruct path as [v l]. revert v H0. induction l; intros. 1: simpl in *; auto. rewrite pfoot_cons in H0 |-* . apply IHl; auto.
-  - split. 2: destruct path; red; rewrite Forall_forall; split; intros; auto.
-    clear H H0. destruct path as [v l]. revert v H1 H2. induction l; intros.
+  - split; auto. clear - H0. destruct p as [v l]. revert v H0. induction l; intros. 1: simpl in *; auto. rewrite pfoot_cons in H0 |-* . apply IHl; auto.
+  - split. 2: destruct p; red; rewrite Forall_forall; split; intros; auto.
+    clear H H0. destruct p as [v l]. revert v H1 H2. induction l; intros.
     1: simpl in H1; simpl in *; unfold path_prop in H2. unfold predicate_vvalid; intuition.
     rewrite valid_path_cons_iff in H1 |-* . destruct H1 as [? [? ?]]. split; auto. split.
     + unfold strong_evalid in *. simpl. unfold predicate_evalid, predicate_vvalid. subst v. simpl in H2. hnf in H2. rewrite Forall_forall in H2. destruct H2.
       assert (In a (a :: l)) by apply in_eq. specialize (H2 _ H3). intuition.
     + apply IHl; auto. apply path_prop_tail in H2. unfold ptail in H2. apply H2.
-  - split; auto. clear - H0. destruct path as [v l]. revert v H0. induction l; intros. 1: simpl in *; auto. rewrite pfoot_cons in H0 |-* . apply IHl; auto.
-  - clear H H0 H2. destruct path. revert v H1. induction l; intros.
+  - split; auto. clear - H0. destruct p as [v l]. revert v H0. induction l; intros. 1: simpl in *; auto. rewrite pfoot_cons in H0 |-* . apply IHl; auto.
+  - clear H H0 H2. destruct p. revert v H1. induction l; intros.
     + simpl in H1. unfold good_path. simpl. unfold path_prop.
       unfold predicate_vvalid in H1. simpl. destruct H1. split; auto.
     + rewrite valid_path_cons_iff in H1. destruct H1 as [? [? ?]]. simpl in H. subst v. unfold strong_evalid in H0. simpl in H0.
