@@ -494,61 +494,6 @@ Proof.
     destruct_eq_dec x n'; [tauto | auto].
 Qed.
 
-(*
-Lemma step_list_reachable_included: forall (g1 g2 g3: Graph) x l y l',
-  vvalid g1 x ->
-  step_list g1 x (l ++ y :: l') ->
-  mark1 g1 x g2 ->
-  mark_list g2 l g3 ->
-  Included (reachable g3 y) (reachable g1 x).
-Proof.
-  intros.
-  hnf; unfold Ensembles.In; intros.
-  assert ((marked g3) x /\ step g3 x y /\ vvalid g3 x);
-    [| apply step_reachable with y; tauto].
-  assert (step g2 x y).
-  1: {
-    destruct H1 as [? _].
-    rewrite <- step_si by eassumption.
-    specialize (H0 y);
-    rewrite in_app_iff in H0; simpl in H0; tauto.
-  }
-  assert (vvalid g2 x) by (rewrite <- (proj1 (proj1 H1)); auto).
-  destruct H1 as [_ [? _]].
-  clear - H1 H2 H4 H5.
-  induction H2.
-  + split.
-    - simpl.
-      destruct H as [_ [? _]].
-      rewrite <- H; auto.
-    - destruct H as [? _].
-      erewrite <- step_si by eassumption.
-      rewrite <- (proj1 H).
-      auto.
-  + do 3 (spec IHrelation_list; [auto |]).
-    clear H2 H4 H5 H1 x0.
-    assert ((marked z) x) by (eapply mark_marked; eauto; tauto).
-    split; [| split]; auto.
-    - destruct H as [? [? ?]].
-      assert (step (dualgraph y0) y x) by admit.
-      pose proof partialgraph_step _ (unmarked z) _ _ H3.
-      
-SearchAbout edge.
-Locate partialgraph_edge.
- rewrite !step_spec in IHrelation_list |- *.
-      destruct IHrelation_list as [? [[e [? [? ?]]] ?]].
-      exists e.
-      
-    destruct H as [? _].
-    assert (marked g2 x) by destru
-    1: {
-      destruct H1.
-SearchAbout reachable Proper.
-
-Locate reachable_proper.
-rewrite <- H1.
-*)
-
 End WeakMarkGraph.
 
 End WeakMarkGraph.

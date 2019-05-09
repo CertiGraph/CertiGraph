@@ -22,7 +22,7 @@ Inductive reachable: V -> V -> Prop :=
   | reachable_nil: forall x, vvalid G x -> reachable x x
   | reachable_cons: forall x y z, edge G x y -> reachable y z -> reachable x z.
 
-Lemma reachable_trans: forall x y z,
+Lemma reachable_trans1: forall x y z,
   reachable x y -> reachable y z -> reachable x z.
 Proof.
   intros.
@@ -94,7 +94,7 @@ Proof.
       destruct H; tauto.
   + induction H.
     - apply ind.reachable_nil; auto.
-    - apply ind.reachable_trans with y; auto.
+    - apply ind.reachable_trans1 with y; auto.
       apply ind.reachable_cons with z; auto.
       apply ind.reachable_nil.
       destruct H0; tauto.
