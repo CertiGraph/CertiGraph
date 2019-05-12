@@ -60,7 +60,7 @@ Lemma MSS_eq_unsigned:
 Proof.
   rewrite Int.shl_mul_two_p.
   rewrite (Int.unsigned_repr 29) by (compute; split; discriminate).
-  rewrite mul_repr, MAX_SPACE_SIZE_eq. rewrite Int.Zshiftl_mul_two_p by omega.
+  rewrite mul_repr, MAX_SPACE_SIZE_eq. rewrite Zbits.Zshiftl_mul_two_p by omega.
   rewrite !Z.mul_1_l, Int.unsigned_repr;
     [reflexivity | compute; split; intro S; discriminate].
 Qed.
@@ -770,8 +770,8 @@ Proof.
     pose proof (raw_fields_range (vlabel g v)). remember (raw_tag (vlabel g v)) as z1.
     clear Heqz1. remember (raw_color (vlabel g v)) as z2. clear Heqz2.
     remember (Zlength (raw_fields (vlabel g v))) as z3. clear Heqz3.
-    assert (0 <= 8) by omega. apply (Int.Zshiftl_mul_two_p z2) in H2. rewrite H2.
-    clear H2. assert (0 <= 10) by omega. apply (Int.Zshiftl_mul_two_p z3) in H2.
+    assert (0 <= 8) by omega. apply (Zbits.Zshiftl_mul_two_p z2) in H2. rewrite H2.
+    clear H2. assert (0 <= 10) by omega. apply (Zbits.Zshiftl_mul_two_p z3) in H2.
     rewrite H2. clear H2. rewrite two_power_nat_two_p in *. simpl Z.of_nat in *.
     assert (two_p 10 > 0) by (apply two_p_gt_ZERO; omega).
     assert (two_p 8 > 0) by (apply two_p_gt_ZERO; omega). split.
@@ -804,7 +804,7 @@ Lemma make_header_Wosize: forall g v,
 Proof.
   intros. rewrite Int.shru_div_two_p, !Int.unsigned_repr.
   - f_equal. unfold make_header. remember (vlabel g v). clear Heqr.
-    rewrite H, !Int.Zshiftl_mul_two_p by omega. rewrite Z.div_add. 2: compute; omega.
+    rewrite H, !Zbits.Zshiftl_mul_two_p by omega. rewrite Z.div_add. 2: compute; omega.
     pose proof (raw_tag_range r). pose proof (raw_color_range r).
     cut ((raw_tag r + raw_color r * two_p 8) / two_p 10 = 0). 1: intros; omega.
     apply Z.div_small. change 256 with (two_p 8) in H0. change 4 with (two_p 2) in H1.
@@ -3692,7 +3692,7 @@ Proof.
   rewrite Int.shru_div_two_p, !Int.unsigned_repr; [| rep_omega | assumption].
   rewrite Int.shl_mul_two_p, Int.unsigned_repr by rep_omega.
   unfold make_header in *. remember (vlabel g v). clear Heqr.
-  rewrite H, !Int.Zshiftl_mul_two_p in * by omega. rewrite <- Z.add_assoc.
+  rewrite H, !Zbits.Zshiftl_mul_two_p in * by omega. rewrite <- Z.add_assoc.
   replace (raw_color r * two_p 8 + Zlength (raw_fields r) * two_p 10)
     with ((raw_color r + Zlength (raw_fields r) * two_p 2) * two_p 8) by
       (rewrite Z.mul_add_distr_r, <- Z.mul_assoc, <- two_p_is_exp by omega;
@@ -4447,7 +4447,7 @@ Lemma ngs_range: forall i,
     0 <= i < MAX_SPACES -> 0 <= nth_gen_size (Z.to_nat i) < MAX_SPACE_SIZE.
 Proof.
   intros. unfold nth_gen_size. rewrite MAX_SPACES_eq in H.
-  rewrite Z2Nat.id, NURSERY_SIZE_eq, Int.Zshiftl_mul_two_p,
+  rewrite Z2Nat.id, NURSERY_SIZE_eq, Zbits.Zshiftl_mul_two_p,
   Z.mul_1_l, <- two_p_is_exp by omega. split.
   - cut (two_p (16 + i) > 0). 1: intros; omega. apply two_p_gt_ZERO. omega.
   - transitivity (two_p 28). 1: apply two_p_monotone_strict; omega.
@@ -4496,7 +4496,7 @@ Proof.
   assert (length l <= Z.to_nat i)%nat by omega. clear H1.
   assert (0 <= i - Zlength l) by
       (rewrite <- ZtoNat_Zlength, <- Z2Nat.inj_le in H3; rep_omega).
-  rewrite <- Znth_skipn by rep_omega. unfold nat_of_Z. rewrite ZtoNat_Zlength.
+  rewrite <- Znth_skipn by rep_omega. rewrite ZtoNat_Zlength.
   apply Znth_In. split. 1: assumption. rewrite <- ZtoNat_Zlength, Zlength_skipn.
   rewrite (Z.max_r 0 (Zlength l)) by rep_omega. rewrite Z.max_r; rep_omega.
 Qed.
@@ -5465,7 +5465,8 @@ Qed.
 Lemma ngs_0_lt: forall i, 0 < nth_gen_size i.
 Proof.
   intros. unfold nth_gen_size.
-  rewrite NURSERY_SIZE_eq, Int.Zshiftl_mul_two_p, Z.mul_1_l, <- two_p_is_exp by omega.
+  rewrite NURSERY_SIZE_eq, Zbits.Zshiftl_mul_two_p, Z.mul_1_l,
+  <- two_p_is_exp by omega.
   cut (two_p (16 + Z.of_nat i) > 0); [|apply two_p_gt_ZERO]; omega.
 Qed.
 
