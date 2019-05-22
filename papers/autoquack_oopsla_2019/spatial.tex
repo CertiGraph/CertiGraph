@@ -244,9 +244,9 @@ The middle tower is more interesting in that it is entirely focused on ramificat
 \[
 %\infrule{Ramify-Q-SPLIT}
 \infrule{}
-{G_1 \vdash L_1 * \forall x.~ (L_2 --* G_2) \\
- G'_1 \vdash L'_1 * \forall x.~ (L_2' --* G'_2)}
-{G_1 * G'_1 \vdash (L_1 * L'_1) * \forall x.~ \big((L_2 * L'_2)--* (G_2 * G'_2)\big)}{}
+{G_1 |- L_1 * \forall x.~ (L_2 --* G_2) \\
+ G'_1 |- L'_1 * \forall x.~ (L_2' --* G'_2)}
+{G_1 * G'_1 |- (L_1 * L'_1) * \forall x.~ \big((L_2 * L'_2)--* (G_2 * G'_2)\big)}{}
 \]
 We use this lemma to break large ramification entailments into more manageable pieces in a compositional way. % compositionally.
 The $\bigstar$ Ramification box in the middle layer contains lemmas like:
@@ -254,7 +254,7 @@ The $\bigstar$ Ramification box in the middle layer contains lemmas like:
 \label{ramify:bigstar}
 \infrule{}
 {A \cap B = \emptyset  \qquad  A' \cap B = \emptyset}
-{\underset{x\in A\cup B}{\bigstar} P(x) \vdash \! \underset{x\in A}{\bigstar} \! P(x) * \Big( \underset{x\in A'}{\bigstar} \! P(x) \! \wand \! \! \! \! \underset{x\in A' \cup B}{\bigstar} \! \! P(x)\Big)}{}
+{\underset{x\in A\cup B}{\bigstar} P(x) |- \! \underset{x\in A}{\bigstar} \! P(x) * \Big( \underset{x\in A'}{\bigstar} \! P(x) \! \wand \! \! \! \! \underset{x\in A' \cup B}{\bigstar} \! \! P(x)\Big)}{}
 \end{equation*}
 
 The Graph Ramification box in the top layer is focused lemmas such as the following ``update one node'' lemma, which was used on line~\ref{code:markram2} in Figure~\ref{fig:markgraph}:
@@ -263,7 +263,7 @@ The Graph Ramification box in the top layer is focused lemmas such as the follow
 %{\gamma(x_0) = \gamma'(x_0) \text{ for any } x_0 \neq x }
 \infrule{}
 {\forall x_0 \neq x.~ \gamma(x_0) = \gamma'(x_0) \\ \p{neighbors}(\gamma,x)=\p{neighbors}(\gamma',x)}
-{\p{graph}(x, \gamma) \! \vdash \! x \! \mapsto \! \gamma(x) \! * \! \big(x \! \mapsto \! \gamma'(x) \! \wand \! \p{graph}(x, \gamma')\big)}{}
+{\p{graph}(x, \gamma) \! |- \! x \! \mapsto \! \gamma(x) \! * \! \big(x \! \mapsto \! \gamma'(x) \! \wand \! \p{graph}(x, \gamma')\big)}{}
 \end{equation*}
 
 This layered structure enables proof reuse. All of the theorems for $\p{graph}$ are proved from the properties of iterated separating conjunction, but having a modular library allows $\bigstar$ to be reused in other structures smoothly.
@@ -275,7 +275,7 @@ Further, all our verifications of different graph algorithms use the proof rules
 {
 \mbox{
 $\begin{array}{@{}l@{}l@{}}
-\p{graph}(x, \gamma) \vdash \p{graph}(n, \gamma) \! * \!
+\p{graph}(x, \gamma) |- \p{graph}(n, \gamma) \! * \!
 \big(\forall \gamma'. \m{mark}(\gamma, n, \gamma') \! /| \! \p{graph}(n, \gamma') \! --*
 \m{mark}(\gamma, n, \gamma') \! /| \! \p{graph}(x, \gamma')\big)
 \end{array}$
