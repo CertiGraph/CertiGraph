@@ -20,6 +20,7 @@ Require Import RamifyCoq.msl_application.GraphBi.
 Require Import RamifyCoq.msl_application.GraphBi_Mark.
 Require RamifyCoq.graph.weak_mark_lemmas.
 Import RamifyCoq.graph.weak_mark_lemmas.WeakMarkGraph.
+Require Import VST.floyd.library. Import VST.veric.mpred.
 
 (* TODO: Put some pure lemmas into some file like: graph/bi_spanning. *)
 
@@ -76,15 +77,15 @@ Section SPATIAL_GRAPH_DISPOSE_BI.
   Lemma graph_gen_left_null_ramify:
     forall (g: Graph) (x : addr) d (l r : addr),
       vvalid g x -> vgamma g x = (d, l, r) ->
-      (reachable_vertices_at x g : pred) |-- vertex_at x (d, l, r) * (vertex_at x (d, null, r) -* vertices_at (reachable g x) (Graph_gen_left_null g x)).
+      (reachable_vertices_at x g : mpred) |-- vertex_at x (d, l, r) * (vertex_at x (d, null, r) -* vertices_at (reachable g x) (Graph_gen_left_null g x)).
   Proof.
     intros.
-    replace (@vertex_at _ _ _ _ _ SGP x (d, l, r)) with (graph_vcell g x).
+    replace (@vertex_at _ _ _ _ SGP x (d, l, r)) with (graph_vcell g x).
     2: {
       unfold graph_vcell; simpl.
       simpl in H0; rewrite H0; auto.
     }
-    replace (@vertex_at _ _ _ _ _ SGP x (d, null, r)) with (graph_vcell (Graph_gen_left_null g x) x).
+    replace (@vertex_at _ _ _ _ SGP x (d, null, r)) with (graph_vcell (Graph_gen_left_null g x) x).
     2: {
       unfold graph_vcell; simpl.
       unfold updateEdgeFunc.
@@ -114,12 +115,12 @@ Section SPATIAL_GRAPH_DISPOSE_BI.
   Lemma graph_gen_left_null_ramify_weak:
     forall (g: Graph) (x : addr) d (l r : addr),
       vvalid g x -> vgamma g x = (d, l, r) ->
-      (reachable_vertices_at x g : pred) |-- vertex_at x (d, l, r) * (vertex_at x (d, null, r) -* (reachable_vertices_at x (Graph_gen_left_null g x) * TT)).
+      (reachable_vertices_at x g : mpred) |-- vertex_at x (d, l, r) * (vertex_at x (d, null, r) -* (reachable_vertices_at x (Graph_gen_left_null g x) * TT)).
   Proof.
     intros. pose proof (graph_gen_left_null_ramify g x d l r H H0).
     apply log_normalize.sepcon_weaken with (vertex_at x (d, null, r) -* vertices_at (reachable g x) (Graph_gen_left_null g x)); auto.
     apply wand_derives; auto. unfold reachable_vertices_at.
-    cut ((vertices_at (reachable g x) (Graph_gen_left_null g x) : pred)
+    cut ((vertices_at (reachable g x) (Graph_gen_left_null g x) : mpred)
                      |-- vertices_at (reachable (Graph_gen_left_null g x) x)
                      (Graph_gen_left_null g x) * TT). auto. unfold vertices_at.
     apply iter_sepcon.pred_sepcon_prop_true_weak.
@@ -132,7 +133,7 @@ Section SPATIAL_GRAPH_DISPOSE_BI.
 
   Lemma graph_ramify_aux1_left: forall (g: Graph) x d l r,
       vvalid g x -> vgamma g x = (d, l, r) ->
-      (reachable_vertices_at x g : pred) |-- reachable_vertices_at l g *
+      (reachable_vertices_at x g : mpred) |-- reachable_vertices_at l g *
       (ALL  g' : Graph , !!spanning_tree g l g' --> (vertices_at (reachable g l) g' -* vertices_at (reachable g x) g')).
   Proof.
     intros. eapply vertices_at_ramif_xQ; auto.
@@ -344,7 +345,7 @@ Section SPATIAL_GRAPH_DISPOSE_BI.
   Lemma graph_ramify_aux1_right: forall (g1 g2: Graph) x l r,
       vvalid g1 x -> vgamma g1 x = (true, l, r) ->
       edge_spanning_tree g1 (x, L) g2 ->
-      (vertices_at (reachable g1 x) g2: pred) |-- reachable_vertices_at r g2 *
+      (vertices_at (reachable g1 x) g2: mpred) |-- reachable_vertices_at r g2 *
       (ALL  g' : Graph ,
                 !!spanning_tree g2 r g' -->
                   (vertices_at (reachable g2 r) g' -*
@@ -401,16 +402,16 @@ Section SPATIAL_GRAPH_DISPOSE_BI.
 
   Lemma graph_gen_right_null_ramify: forall (g1 g2: Graph) (x : addr) d (l r : addr),
       vvalid g1 x -> vgamma g2 x = (d, l, r) ->
-      (vertices_at (reachable g1 x) g2 : pred) |--
+      (vertices_at (reachable g1 x) g2 : mpred) |--
                   vertex_at x (d, l, r) * (vertex_at x (d, l, null) -* vertices_at (reachable g1 x) (Graph_gen_right_null g2 x)).
   Proof.
     intros.
-    replace (@vertex_at _ _ _ _ _ SGP x (d, l, r)) with (graph_vcell g2 x).
+    replace (@vertex_at _ _ _ _ SGP x (d, l, r)) with (graph_vcell g2 x).
     2: {
       unfold graph_vcell; simpl.
       simpl in H0; rewrite H0; auto.
     }
-    replace (@vertex_at _ _ _ _ _ SGP x (d, l, null)) with (graph_vcell (Graph_gen_right_null g2 x) x).
+    replace (@vertex_at _ _ _ _ SGP x (d, l, null)) with (graph_vcell (Graph_gen_right_null g2 x) x).
     2: {
       unfold graph_vcell; simpl.
       unfold updateEdgeFunc.
@@ -441,12 +442,12 @@ Section SPATIAL_GRAPH_DISPOSE_BI.
 
   Lemma graph_gen_right_null_ramify_weak: forall (g2: Graph) (x : addr) d (l r : addr),
       vvalid g2 x -> vgamma g2 x = (d, l, r) ->
-      (reachable_vertices_at x g2 : pred) |-- vertex_at x (d, l, r) * (vertex_at x (d, l, null) -* (reachable_vertices_at x (Graph_gen_right_null g2 x) * TT)).
+      (reachable_vertices_at x g2 : mpred) |-- vertex_at x (d, l, r) * (vertex_at x (d, l, null) -* (reachable_vertices_at x (Graph_gen_right_null g2 x) * TT)).
   Proof.
     intros. pose proof (graph_gen_right_null_ramify g2 g2 x d l r H H0).
     apply log_normalize.sepcon_weaken with (vertex_at x (d, l, null) -* vertices_at (reachable g2 x) (Graph_gen_right_null g2 x)); auto.
     apply wand_derives; auto. unfold reachable_vertices_at.
-    cut ((vertices_at (reachable g2 x) (Graph_gen_right_null g2 x): pred)
+    cut ((vertices_at (reachable g2 x) (Graph_gen_right_null g2 x): mpred)
            |-- vertices_at (reachable (Graph_gen_right_null g2 x) x)
            (Graph_gen_right_null g2 x) * TT). auto. unfold vertices_at.
     apply iter_sepcon.pred_sepcon_prop_true_weak.

@@ -18,7 +18,7 @@ Local Identity Coercion LGraph_LabeledGraph: UnionFindGraph.LGraph >-> LabeledGr
 Local Identity Coercion SGraph_PointwiseGraph: SGraph >-> PointwiseGraph.
 Local Coercion pg_lg: LabeledGraph >-> PreGraph.
 
-Notation vertices_at sh P g:= (@vertices_at _ _ _ _ _ _ (@SGP pSGG_VST nat unit (sSGG_VST sh)) _ P g).
+Notation vertices_at sh P g:= (@vertices_at _ _ _ _ _ (@SGP pSGG_VST nat unit (sSGG_VST sh)) P g).
 Notation whole_graph sh g := (vertices_at sh (vvalid g) g).
 Notation graph sh x g := (@reachable_vertices_at _ _ _ _ _ _ _ _ _ _ (@SGP pSGG_VST nat unit (sSGG_VST sh)) _ x g).
 Notation Graph := (@Graph pSGG_VST).
@@ -83,11 +83,11 @@ Lemma body_makeSet: semax_body Vprog Gprog f_makeSet makeSet_spec.
 Proof.
   start_function.
   forward_call (sh, 8).
-  - apply syntactic_cancel_nil.
+  (* - apply syntactic_cancel_nil. *)
   - rep_omega.
   - Intros x.
     assert_PROP (x <> null) as x_not_null by (entailer !; destruct H0 as [? _]; apply H0).
-    assert_PROP (~ vvalid g x) by (entailer; apply (@vertices_at_sepcon_unique_1x _ _ _ _ SGBA_VST _ _ (SGA_VST sh) (SGAvs_VST sh) g x (vvalid g) (O, null))).
+    assert_PROP (~ vvalid g x) by (entailer; apply (@vertices_at_sepcon_unique_1x _ _ _ _ SGBA_VST (SGP_VST sh) (SGAvs_VST sh) g x (vvalid g) (O, null))).
     forward. forward. forward.
     Exists (make_set_Graph O tt tt x g x_not_null H). Exists x. entailer!.
     + split; simpl; [right | apply is_partial_make_set_pregraph]; auto.
@@ -127,7 +127,7 @@ Qed.
 
 Lemma graph_local_facts: forall sh x (g: Graph), vvalid g x -> whole_graph sh g |-- valid_pointer (pointer_val_val x).
 Proof.
-  intros. eapply derives_trans; [apply (@vertices_at_ramif_1_stable _ _ _ _ SGBA_VST _ _ (SGA_VST sh) g (vvalid g) x (vgamma g x)); auto |].
+  intros. eapply derives_trans; [apply (@vertices_at_ramif_1_stable _ _ _ _ SGBA_VST (SGP_VST sh) g (vvalid g) x (vgamma g x)); auto |].
   simpl vertex_at at 1. unfold binode. entailer!.
 Qed.
 
@@ -139,7 +139,7 @@ Proof.
   localize [data_at sh node_type (vgamma2cdata (vgamma g x)) (pointer_val_val x)]. rewrite <- H0. simpl vgamma2cdata.
   forward. 1: entailer!; destruct pa; simpl; auto.
   unlocalize [whole_graph sh g].
-  1: rewrite <- H0; simpl vgamma2cdata; apply (@vertices_at_ramif_1_stable _ _ _ _ SGBA_VST _ _ (SGA_VST sh) g (vvalid g) x (r, pa)); auto.
+  1: rewrite <- H0; simpl vgamma2cdata; apply (@vertices_at_ramif_1_stable _ _ _ _ SGBA_VST (SGP_VST sh) g (vvalid g) x (r, pa)); auto.
   assert (H_PARENT_Valid: vvalid g pa) by (eapply valid_parent; eauto).
   (* if (p != x) { *)
   forward_if
@@ -217,13 +217,13 @@ Proof.
     localize [data_at sh node_type (vgamma2cdata (vgamma g2 x_root)) (pointer_val_val x_root)].
     rewrite H7. simpl vgamma2cdata. forward.
     unlocalize [whole_graph sh g2].
-    1: rewrite H7; simpl; apply (@vertices_at_ramif_1_stable _ _ _ _ SGBA_VST _ _ (SGA_VST sh) g2 (vvalid g2) x_root (rankXRoot, paXRoot)); auto.
+    1: rewrite H7; simpl; apply (@vertices_at_ramif_1_stable _ _ _ _ SGBA_VST (SGP_VST sh) g2 (vvalid g2) x_root (rankXRoot, paXRoot)); auto.
     (* yRank = yRoot -> rank; *)
     remember (vgamma g2 y_root) as rpa eqn:?H. destruct rpa as [rankYRoot paYRoot]. symmetry in H8.
     localize [data_at sh node_type (vgamma2cdata (vgamma g2 y_root)) (pointer_val_val y_root)].
     rewrite H8. simpl vgamma2cdata. forward.
     unlocalize [whole_graph sh g2].
-    1: rewrite H8; simpl; apply (@vertices_at_ramif_1_stable _ _ _ _ SGBA_VST _ _ (SGA_VST sh) g2 (vvalid g2) y_root (rankYRoot, paYRoot)); auto.
+    1: rewrite H8; simpl; apply (@vertices_at_ramif_1_stable _ _ _ _ SGBA_VST (SGP_VST sh) g2 (vvalid g2) y_root (rankYRoot, paYRoot)); auto.
     forward_if
       (EX g': Graph,
        PROP (uf_union g x y g')

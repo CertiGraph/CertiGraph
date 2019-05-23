@@ -21,7 +21,10 @@ Require Import RamifyCoq.graph.subgraph2.
 Require Import RamifyCoq.graph.dag.
 Require Import RamifyCoq.graph.FiniteGraph.
 
+(* importing mpred *)
+Require Import VST.floyd.library. Import VST.veric.mpred.
 Local Open Scope logic.
+
 
 Class PointwiseGraph (V E: Type) {VE: EqDec V eq} {EE: EqDec E eq} (GV GE: Type): Type := {
   pg_sg: PreGraph V E;
@@ -33,9 +36,9 @@ Arguments pg_sg {V E _ _ GV GE} _.
 Arguments vgamma {V E _ _ GV GE} _ _.
 Arguments egamma {V E _ _ GV GE} _ _.
 
-Class PointwiseGraphPred (V E GV GE Pred: Type): Type := {
-  vertex_at: V -> GV -> Pred;
-  edge_at: E -> GE -> Pred
+Class PointwiseGraphPred (V E GV GE: Type): Type := {
+  vertex_at: V -> GV -> mpred;
+  edge_at: E -> GE -> mpred
 }.
 
 Class PointwiseGraphBasicAssum (V E: Type) := {
@@ -45,26 +48,19 @@ Class PointwiseGraphBasicAssum (V E: Type) := {
 
 Existing Instances SGBA_VE SGBA_EE.
 
-Class PointwiseGraphAssum {V E GV GE Pred: Type} (SGP: PointwiseGraphPred V E GV GE Pred) {SGBA: PointwiseGraphBasicAssum V E}:= {
-  SGP_ND: NatDed Pred;
-  SGP_SL : SepLog Pred;
-  SGP_ClSL: ClassicalSep Pred;
-  SGP_CoSL: CorableSepLog Pred
-}.
+(* Existing Instances SGP_ND SGP_SL SGP_ClSL SGP_CoSL. *)
 
-Existing Instances SGP_ND SGP_SL SGP_ClSL SGP_CoSL.
+Class PointwiseGraphAssum_vs {V E GV GE: Type} (SGP: PointwiseGraphPred V E GV GE) {SGBA: PointwiseGraphBasicAssum V E} :=
+  vertex_at_sep: sepcon_unique2 (@vertex_at _ _ _ _ SGP).
 
-Class PointwiseGraphAssum_vs {V E GV GE Pred: Type} (SGP: PointwiseGraphPred V E GV GE Pred) {SGBA: PointwiseGraphBasicAssum V E} {SGA: PointwiseGraphAssum SGP} :=
-  vertex_at_sep: sepcon_unique2 (@vertex_at _ _ _ _ _ SGP).
+Class PointwiseGraphAssum_es {V E GV GE: Type} (SGP: PointwiseGraphPred V E GV GE) {SGBA: PointwiseGraphBasicAssum V E} :=
+  edge_at_sep: sepcon_unique2 (@edge_at _ _ _ _ SGP).
 
-Class PointwiseGraphAssum_es {V E GV GE Pred: Type} (SGP: PointwiseGraphPred V E GV GE Pred) {SGBA: PointwiseGraphBasicAssum V E} {SGA: PointwiseGraphAssum SGP} :=
-  edge_at_sep: sepcon_unique2 (@edge_at _ _ _ _ _ SGP).
+Class PointwiseGraphAssum_vn {V E GV GE: Type} (SGP: PointwiseGraphPred V E GV GE) {SGBA: PointwiseGraphBasicAssum V E} (vnull: V) :=
+  vertex_at_not_null: forall gx, @derives mpred _ (vertex_at vnull gx) FF.
 
-Class PointwiseGraphAssum_vn {V E GV GE Pred: Type} (SGP: PointwiseGraphPred V E GV GE Pred) {SGBA: PointwiseGraphBasicAssum V E} {SGA: PointwiseGraphAssum SGP} (vnull: V) :=
-  vertex_at_not_null: forall gx, @derives Pred _ (vertex_at vnull gx) FF.
-
-Class PointwiseGraphAssum_en {V E GV GE Pred: Type} (SGP: PointwiseGraphPred V E GV GE Pred) {SGBA: PointwiseGraphBasicAssum V E} {SGA: PointwiseGraphAssum SGP} (enull: E) :=
-  edge_at_not_null: forall ge, @derives Pred _ (edge_at enull ge) FF.
+Class PointwiseGraphAssum_en {V E GV GE: Type} (SGP: PointwiseGraphPred V E GV GE) {SGBA: PointwiseGraphBasicAssum V E}  (enull: E) :=
+  edge_at_not_null: forall ge, @derives mpred _ (edge_at enull ge) FF.
 
 (*
 Instance AAV {V E GV GE Pred: Type} (SGP: PointwiseGraphPred V E GV GE Pred) {SGBA: PointwiseGraphBasicAssum V E} : AbsAddr V GV.
@@ -285,14 +281,14 @@ End PURE_FACTS.
 Section SPATIAL_FACTS.
 
 Context {Pred: Type}.
-Context {SGP: PointwiseGraphPred V E GV GE Pred}.
-Context {SGA: PointwiseGraphAssum SGP}.
+Context {SGP: PointwiseGraphPred V E GV GE}.
+(* Context {SGA: PointwiseGraphAssum SGP}. *)
 Notation Graph := (PointwiseGraph V E GV GE).
 
-Definition graph_vcell (g: Graph) (v : V) : Pred := vertex_at v (vgamma g v).
-Definition graph_ecell (g: Graph) (e : E) : Pred := edge_at e (egamma g e).
-Definition vertices_at (P: V -> Prop) (g: Graph): Pred := pred_sepcon P (graph_vcell g).
-Definition edges_at (P: E -> Prop) (g: Graph): Pred := pred_sepcon P (graph_ecell g).
+Definition graph_vcell (g: Graph) (v : V) := vertex_at v (vgamma g v).
+Definition graph_ecell (g: Graph) (e : E) := edge_at e (egamma g e).
+Definition vertices_at (P: V -> Prop) (g: Graph): mpred := pred_sepcon P (graph_vcell g).
+Definition edges_at (P: E -> Prop) (g: Graph): mpred := pred_sepcon P (graph_ecell g).
 
 Definition Gamma (g: Graph) x := (x, vgamma g x).
 
@@ -373,7 +369,7 @@ Lemma vertices_at_ramif_1Q: forall {A: Type} (Pure: A -> Prop) (g: Graph) (P: V 
 Proof.
   intros.
   unfold vertices_at.
-  change (@vertex_at _ _ _ _ _ SGP x (vgamma g x)) with (graph_vcell g x).
+  change (@vertex_at _ _ _ _ SGP x (vgamma g x)) with (graph_vcell g x).
   RAMIF_Q'.formalize.
   change ((fun a : A => vertex_at (x' a) (vgamma (g' a) (x' a)))) with
     ((fun a : A => graph_vcell (g' a) (x' a))).
@@ -420,8 +416,8 @@ Lemma vertices_at_ramif_1: forall (g g': Graph) (P P': V -> Prop) x x' d d',
 Proof.
   intros.
   subst.
-  change (@vertex_at _ _ _ _ _ SGP x (vgamma g x)) with (graph_vcell g x).
-  change (@vertex_at _ _ _ _ _ SGP x' (vgamma g' x')) with (graph_vcell g' x').
+  change (@vertex_at _ _ _ _ SGP x (vgamma g x)) with (graph_vcell g x).
+  change (@vertex_at _ _ _ _ SGP x' (vgamma g' x')) with (graph_vcell g' x').
   apply pred_sepcon_ramif_1.
   destruct H as [F [? [? ?]]].
   exists F; split; [| split]; auto.
@@ -480,7 +476,7 @@ Lemma vertices_at1: forall (g: Graph) P x0 d,
   vertices_at P g = vertex_at x0 d.
 Proof.
   intros.
-  replace (@vertex_at _ _ _ _ _ SGP x0 d) with (graph_vcell g x0).
+  replace (@vertex_at _ _ _ _ SGP x0 d) with (graph_vcell g x0).
   2: {
     simpl.
     unfold graph_vcell; simpl.
@@ -576,7 +572,7 @@ Proof.
 Qed.
 
 Lemma neg_pure_from_vertices_at: forall (g: Graph) (P Q: V -> Prop),
-  (forall (x: V) (gx: GV), Q x -> @derives _ SGP_ND (vertex_at x gx) FF) ->
+  (forall (x: V) (gx: GV), Q x -> @derives _ _ (vertex_at x gx) FF) ->
   vertices_at P g |-- !! (Disjoint _ P Q).
 Proof.
   intros.
@@ -703,21 +699,21 @@ End PURE_FACTS.
 Section SPATIAL_FACTS.
 
 Context {Pred: Type}.
-Context {SGP: PointwiseGraphPred V E GV GE Pred}.
-Context {SGA: PointwiseGraphAssum SGP}.
+Context {SGP: PointwiseGraphPred V E GV GE}.
+(* Context {SGA: PointwiseGraphAssum SGP}. *)
 Notation Graph := (LabeledGraph V E DV DE DG).
 
-Definition full_vertices_at (g: Graph): Pred := vertices_at (vvalid g) (Graph_PointwiseGraph g).
+Definition full_vertices_at (g: Graph): mpred := vertices_at (vvalid g) (Graph_PointwiseGraph g).
 
-Definition reachable_vertices_at (x : V) (g: Graph): Pred := vertices_at (reachable g x) (Graph_PointwiseGraph g).
+Definition reachable_vertices_at (x : V) (g: Graph): mpred := vertices_at (reachable g x) (Graph_PointwiseGraph g).
 
-Definition reachable_vertices_at' (x : V) (g1 g2: Graph): Pred := vertices_at (reachable g2 x) (Graph_PointwiseGraph g1).
+Definition reachable_vertices_at' (x : V) (g1 g2: Graph): mpred := vertices_at (reachable g2 x) (Graph_PointwiseGraph g1).
 
-Definition reachable_dag_vertices_at (x: V) (g: Graph): Pred := !! localDag g x && vertices_at (reachable g x) (Graph_PointwiseGraph g).
+Definition reachable_dag_vertices_at (x: V) (g: Graph): mpred := !! localDag g x && vertices_at (reachable g x) (Graph_PointwiseGraph g).
 
-Definition reachable_through_vertices_at (S : list V) (g : Graph): Pred := vertices_at (reachable_through_set g S) (Graph_PointwiseGraph g).
+Definition reachable_through_vertices_at (S : list V) (g : Graph): mpred := vertices_at (reachable_through_set g S) (Graph_PointwiseGraph g).
 
-Definition reachable_through_dag_vertices_at (S : list V) (g : Graph): Pred := !! (Forall (localDag g) S) && vertices_at (reachable_through_set g S) (Graph_PointwiseGraph g).
+Definition reachable_through_dag_vertices_at (S : list V) (g : Graph): mpred := !! (Forall (localDag g) S) && vertices_at (reachable_through_set g S) (Graph_PointwiseGraph g).
 
 Lemma va_reachable_reachable_through: forall g x, reachable_vertices_at x g = reachable_through_vertices_at (x :: nil) g.
 Proof.
@@ -858,7 +854,7 @@ Proof.
       rewrite (H0 x0) in H2; auto.
     - apply derives_refl'.
       apply localDag_vertices_unfold; auto.
-  + assert ((vertex_at x (vgamma (Graph_PointwiseGraph g) x): Pred) * vertices_at (reachable_through_set g S) (Graph_PointwiseGraph g)
+  + assert ((vertex_at x (vgamma (Graph_PointwiseGraph g) x): mpred) * vertices_at (reachable_through_set g S) (Graph_PointwiseGraph g)
    |-- !!localDag g x).
     - eapply derives_trans; [apply vertices_at_sepcon_unique_1x; auto |].
       apply prop_derives; intro.
@@ -903,7 +899,7 @@ Qed.
 Lemma va_reachable_root_stable_ramify: forall (g: Graph) (x: V) (gx: GV),
   vgamma (Graph_PointwiseGraph g) x = gx ->
   vvalid g x ->
-  @derives Pred _
+  @derives mpred _
     (reachable_vertices_at x g)
     (vertex_at x gx * (vertex_at x gx -* reachable_vertices_at x g)).
 Proof.
@@ -920,7 +916,7 @@ Lemma va_reachable_root_update_ramify: forall (g: Graph) (x: V) (lx: DV) (gx gx'
   vgamma (Graph_PointwiseGraph (labeledgraph_vgen g x lx)) x = gx' ->
   Included (Intersection V (reachable g x) (Complement V (eq x))) (vguard g) ->
   Included (Intersection V (reachable g x) (Complement V (eq x))) (vguard (labeledgraph_vgen g x lx)) ->
-  @derives Pred _
+  @derives mpred _
     (reachable_vertices_at x g)
     (vertex_at x gx *
       (vertex_at x gx' -* reachable_vertices_at x (labeledgraph_vgen g x lx))).

@@ -18,6 +18,7 @@ Require Import RamifyCoq.graph.dag.
 Require Import RamifyCoq.graph.weak_mark_lemmas.
 Require Import RamifyCoq.msl_application.Graph.
 Require Import Coq.Logic.Classical.
+Require Import VST.floyd.library. Import VST.veric.mpred.
 
 Local Open Scope logic.
 
@@ -28,8 +29,8 @@ Context {GV GE Pred: Type}.
 Context {SGBA: PointwiseGraphBasicAssum V E}.
 Context {SGC: PointwiseGraphConstructor V E bool unit unit GV GE}.
 Context {L_SGC: Local_PointwiseGraphConstructor V E bool unit unit GV GE}.
-Context {SGP: PointwiseGraphPred V E GV GE Pred}.
-Context {SGA: PointwiseGraphAssum SGP}.
+Context {SGP: PointwiseGraphPred V E GV GE}.
+(* Context {SGA: PointwiseGraphAssum SGP}. *)
 
 Instance MGS: WeakMarkGraph.MarkGraphSetting bool.
 Proof.
@@ -139,7 +140,7 @@ Qed.
 Lemma root_stable_ramify: forall (g: Graph) (x: V) (gx: GV),
   vgamma (Graph_PointwiseGraph g) x = gx ->
   vvalid g x ->
-  @derives Pred _
+  @derives mpred _
     (reachable_vertices_at x g)
     (vertex_at x gx * (vertex_at x gx -* reachable_vertices_at x g)).
 Proof. apply va_reachable_root_stable_ramify. Qed.
@@ -150,7 +151,7 @@ Lemma root_update_ramify: forall (g: Graph) (x: V) (lx: bool) (gx gx': GV),
   vgamma (Graph_PointwiseGraph (labeledgraph_vgen g x lx)) x = gx' ->
   Included (Intersection V (reachable g x) (Complement V (eq x))) (vguard g) ->
   Included (Intersection V (reachable g x) (Complement V (eq x))) (vguard (labeledgraph_vgen g x lx)) ->
-  @derives Pred _
+  @derives mpred _
     (reachable_vertices_at x g)
     (vertex_at x gx *
       (vertex_at x gx' -* reachable_vertices_at x (labeledgraph_vgen g x lx))).
@@ -159,7 +160,7 @@ Proof. apply va_reachable_root_update_ramify. Qed.
 (* TODO: remove this lemma? *)
 Lemma exp_mark1: forall (g: Graph) (x: V) (lx: bool),
   WeakMarkGraph.label_marked lx ->
-  @derives Pred _ (reachable_vertices_at x (labeledgraph_vgen g x lx)) (EX g': Graph, !! (mark1 x g g') && reachable_vertices_at x g').
+  @derives mpred _ (reachable_vertices_at x (labeledgraph_vgen g x lx)) (EX g': Graph, !! (mark1 x g g') && reachable_vertices_at x g').
 Proof.
   intros.
   apply (exp_right (labeledgraph_vgen g x lx)).
@@ -174,7 +175,7 @@ Lemma mark_neighbor_ramify: forall {A} (g1: Graph) (g2: A -> Graph) x y,
   Included (Intersection V (reachable g1 x) (Complement V (reachable g1 y)))
      (vguard g1) ->
   (forall a, mark y g1 (g2 a) -> Included (Intersection V (reachable g1 x) (Complement V (reachable g1 y))) (vguard (g2 a))) ->
-  @derives Pred _
+  @derives mpred _
     (reachable_vertices_at x g1)
     (reachable_vertices_at y g1 *
       (ALL a: A, !! mark y g1 (g2 a) -->
@@ -217,7 +218,7 @@ Lemma mark_list_mark_ramify: forall {A} (g1 g2: Graph) (g3: A -> Graph) x l y l'
   Included (Intersection V (reachable g2 x) (Complement V (reachable g2 y)))
      (vguard g2) ->
   (forall a, mark y g2 (g3 a) -> Included (Intersection V (reachable g2 x) (Complement V (reachable g2 y))) (vguard (g3 a))) ->
-  @derives Pred _
+  @derives mpred _
     (reachable_vertices_at x g2)
     (reachable_vertices_at y g2 *
       (ALL a: A, !! mark y g2 (g3 a) -->

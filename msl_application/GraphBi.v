@@ -18,6 +18,9 @@ Require Export RamifyCoq.graph.FiniteGraph.
 Require Import RamifyCoq.msl_application.Graph.
 Require Import Coq.Logic.Classical.
 
+Require Import VST.floyd.library. Import VST.veric.mpred.
+
+
 Local Open Scope logic.
 
 Inductive LR :=
@@ -35,14 +38,14 @@ Existing Instance SGBA.
 Definition is_null_SGBA {pSGGB: pPointwiseGraph_Graph_Bi} : DecidablePred addr := (existT (fun P => forall a, {P a} + {~ P a}) (fun x => x = null) (fun x => SGBA_VE x null)).
 
 Class sPointwiseGraph_Graph_Bi {pSGG_Bi: pPointwiseGraph_Graph_Bi} (DV DE: Type): Type := {
-  pred: Type;
-  SGP: PointwiseGraphPred addr (addr * LR) (DV * addr * addr) unit pred;
-  SGA: PointwiseGraphAssum SGP;
+  (* pred: Type; *)
+  SGP: PointwiseGraphPred addr (addr * LR) (DV * addr * addr) unit;
+  (* SGA: PointwiseGraphAssum SGP; *)
   SGAvs: PointwiseGraphAssum_vs SGP;
   SGAvn: PointwiseGraphAssum_vn SGP null
 }.
 
-Existing Instances SGP SGA SGAvs.
+Existing Instances SGP SGAvs.
 
 Section GRAPH_BI.
 
@@ -641,7 +644,7 @@ Qed.
 Lemma va_reachable_root_stable_ramify: forall (g: Graph) (x: addr) (gx: DV * addr * addr),
   vgamma g x = gx ->
   vvalid g x ->
-  @derives pred _
+  @derives mpred _
     (reachable_vertices_at x g)
     (vertex_at x gx * (vertex_at x gx -* reachable_vertices_at x g)).
 Proof. intros; apply va_reachable_root_stable_ramify; auto. Qed.
@@ -650,7 +653,7 @@ Lemma va_reachable_root_update_ramify: forall (g: Graph) (x: addr) (lx: DV) (gx 
   vvalid g x ->
   vgamma g x = gx ->
   vgamma (Graph_vgen g x lx) x = gx' ->
-  @derives pred _
+  @derives mpred _
     (reachable_vertices_at x g)
     (vertex_at x gx *
       (vertex_at x gx' -* reachable_vertices_at x (Graph_vgen g x lx))).
@@ -673,7 +676,7 @@ Lemma va_reachable_internal_stable_ramify: forall (g: Graph) (x y: addr) (gy: DV
   vvalid g y ->
   vgamma g y = gy ->
   reachable g x y ->
-  @derives pred _
+  @derives mpred _
     (reachable_vertices_at x g)
     (vertex_at y gy *
       (vertex_at y gy -* reachable_vertices_at x g)).
@@ -684,7 +687,7 @@ TODO: maybe as a general lemma for normal_general_graph
 Lemma is_guarded_BiMaFin_si: forall (g1 g2: LGraph),
 *)
 
-Lemma is_BiMaFin_LGraph_Graph: forall (g: LGraph) (P: LGraph -> pred),
+Lemma is_BiMaFin_LGraph_Graph: forall (g: LGraph) (P: LGraph -> mpred),
   is_BiMaFin g ->
   P g |-- EX g: Graph, P g.
 Proof.
@@ -699,9 +702,9 @@ Lemma va_labeledgraph_add_edge_eq: forall (g: LGraph) es e s d data,
   ~ evalid g e ->
   is_guarded_BiMaFin (fun x => s <> x) (fun e => ~ In e es) g ->
   let g' := labeledgraph_add_edge g e s d data in
-  @vertices_at _ _ _ _ _ _ SGP _
+  @vertices_at _ _ _ _ _ SGP
    (Intersection _ (vvalid g) (fun x => s <> x)) (Graph_PointwiseGraph g) =
-  @vertices_at _ _ _ _ _ _ SGP _
+  @vertices_at _ _ _ _ _ SGP
    (Intersection _ (vvalid g') (fun x => s <> x)) (Graph_PointwiseGraph g').
 Proof.
   intros.
@@ -731,9 +734,9 @@ Proof.
 Qed.
 
 Lemma va_labeledgraph_egen_eq: forall (g: LGraph) e data P,
-  @vertices_at _ _ _ _ _ _ SGP _
+  @vertices_at _ _ _ _ _ SGP 
    P (Graph_PointwiseGraph g) =
-  @vertices_at _ _ _ _ _ _ SGP _
+  @vertices_at _ _ _ _ _  SGP
    P (Graph_PointwiseGraph (labeledgraph_egen g e data)).
 Proof.
   intros.

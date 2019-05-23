@@ -39,8 +39,8 @@ Section sSGG_VST.
   Definition binode (sh: share) (p: addr) (rpa: nat * addr): mpred :=
     data_at sh node_type (vgamma2cdata rpa) (pointer_val_val p).
 
-  Instance SGP_VST (sh: share) : PointwiseGraphPred addr (addr * unit) (nat * addr) unit mpred.
-  refine (Build_PointwiseGraphPred _ _ _ _ _ (binode sh) (fun _ _ => emp)).
+  Instance SGP_VST (sh: share) : PointwiseGraphPred addr (addr * unit) (nat * addr) unit.
+  refine (Build_PointwiseGraphPred _ _ _ _ (binode sh) (fun _ _ => emp)).
   Defined.
 
   (*
@@ -54,7 +54,7 @@ Section sSGG_VST.
 
    *)
 
-  Lemma sepcon_unique_vertex_at sh: writable_share sh -> sepcon_unique2 (@vertex_at _ _ _ _ _ (SGP_VST sh)).
+  Lemma sepcon_unique_vertex_at sh: writable_share sh -> sepcon_unique2 (@vertex_at _ _ _ _ (SGP_VST sh)).
   Proof.
     intros. hnf; intros. simpl.
     destruct y1 as [? ?], y2 as [? ?].
@@ -66,9 +66,9 @@ Section sSGG_VST.
     + change (sizeof node_type) with 8. omega.
   Qed.
 
-Instance SGA_VST (sh: share) : PointwiseGraphAssum (SGP_VST sh).
-  refine (Build_PointwiseGraphAssum _ _ _ _ _ _ _ _ _ _ _).
-Defined.
+(* Instance SGA_VST (sh: share) : PointwiseGraphAssum (SGP_VST sh). *)
+(*   refine (Build_PointwiseGraphAssum _ _ _ _ _ _ _ _ _ _ _). *)
+(* Defined. *)
 
 Instance SGAvs_VST (sh: wshare): PointwiseGraphAssum_vs (SGP_VST sh).
   apply sepcon_unique_vertex_at; auto.
@@ -87,7 +87,7 @@ End sSGG_VST.
 Hint Extern 10 (@sepcon_unique2 _ _ _ _ _ (@vertex_at _ _ _ _ _ _)) => apply sepcon_unique_vertex_at; auto.
 
 Instance sSGG_VST (sh: wshare): @sPointwiseGraph_GList pSGG_VST nat unit.
-  refine (Build_sPointwiseGraph_GList pSGG_VST _ _ _ (SGP_VST sh) (SGA_VST sh) (SGAvs_VST sh) (SGAvn_VST sh)).
+  refine (Build_sPointwiseGraph_GList pSGG_VST _ _ (SGP_VST sh) (SGAvs_VST sh) (SGAvn_VST sh)).
 Defined.
 
-Global Opaque pSGG_VST sSGG_VST.
+Global Opaque pSGG_VST sSGG_VST. 

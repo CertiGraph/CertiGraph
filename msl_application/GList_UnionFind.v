@@ -16,6 +16,7 @@ Require Import RamifyCoq.graph.reachable_computable.
 Require Import RamifyCoq.msl_application.Graph.
 Require Import RamifyCoq.msl_application.UnionFindGraph.
 Require Import RamifyCoq.msl_application.GList.
+Require Import VST.floyd.library. Import VST.veric.mpred.
 
 Local Open Scope logic.
 
@@ -53,7 +54,7 @@ Section GList_UnionFind.
 
   Lemma graph_gen_redirect_parent_ramify: forall (g: Graph) x r pa root (H: weak_valid g root) (Hv: vvalid g x) (Hn: ~ reachable g root x),
       vgamma g x = (r, pa) -> root <> null -> 
-      (vertices_at (vvalid g) g: pred) 
+      (vertices_at (vvalid g) g: mpred) 
         |-- vertex_at x (r, pa) * (vertex_at x (r, root) -* vertices_at (vvalid g) (Graph_gen_redirect_parent g x root H Hv Hn)).
   Proof.
     intros. assert (vgamma (Graph_gen_redirect_parent g x root H Hv Hn) x = (r, root)). {
@@ -78,14 +79,14 @@ Section GList_UnionFind.
   Lemma graph_gen_redirect_parent_ramify_rel: forall (g: Graph) x r pa root g',
       ggrp_rel g x root g' ->
       vgamma g x = (r, pa) -> root <> null -> 
-      (vertices_at (vvalid g) g: pred) 
+      (vertices_at (vvalid g) g: mpred) 
         |-- vertex_at x (r, pa) * (vertex_at x (r, root) -* vertices_at (vvalid g) g').
   Proof. intros g x r pa root g' [Ha [Hb [Hc Heq]]] ? ?. subst g'. apply graph_gen_redirect_parent_ramify; auto. Qed. 
 
   Definition Graph_vgen (G: Graph) (x: addr) (d: nat) : Graph := Graph_vgen G x d.
 
   Lemma graph_vgen_ramify: forall (g: Graph) x r1 r2 pa,
-      vvalid g x -> vgamma g x = (r1, pa) -> (vertices_at (vvalid g) g: pred) |-- vertex_at x (r1, pa) * (vertex_at x (r2, pa) -* vertices_at (vvalid g) (Graph_vgen g x r2)).
+      vvalid g x -> vgamma g x = (r1, pa) -> (vertices_at (vvalid g) g: mpred) |-- vertex_at x (r1, pa) * (vertex_at x (r2, pa) -* vertices_at (vvalid g) (Graph_vgen g x r2)).
   Proof.
     intros. assert (vgamma (Graph_vgen g x r2) x = (r2, pa)). {
       simpl in *. inversion H0. unfold vgamma, UnionFindGraph.vgamma. simpl. f_equal. unfold update_vlabel. destruct (equiv_dec x x); auto. compute in c. exfalso; auto.

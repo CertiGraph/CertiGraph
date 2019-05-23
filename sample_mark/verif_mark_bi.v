@@ -22,7 +22,7 @@ Local Identity Coercion LGraph_LabeledGraph: LGraph >-> LabeledGraph.
 Local Identity Coercion SGraph_PointwiseGraph: SGraph >-> PointwiseGraph.
 Local Coercion pg_lg: LabeledGraph >-> PreGraph.
 
-Notation graph sh x g := (@reachable_vertices_at _ _ _ _ _ _ _ _ _ _ (@SGP pSGG_VST bool unit (sSGG_VST sh)) _ x g).
+Notation graph sh x g := (@reachable_vertices_at _ _ _ _ _ _ _ _ _ (@SGP pSGG_VST bool unit (sSGG_VST sh)) x g).
 Notation Graph := (@Graph pSGG_VST bool unit unit).
 Existing Instances MGS biGraph maGraph finGraph RGF.
 
@@ -69,13 +69,10 @@ Proof.
      LOCAL (temp _x (pointer_val_val x))
      SEP   (graph sh x g)).
   - apply denote_tc_test_eq_split. 2: entailer!. apply graph_local_facts; auto.
-  - admit.
-    (* unfold abbreviate in POSTCONDITION. *)
-    (* forward. (* return *) *)
-    (* Exists g. entailer!. destruct x. 1: simpl in H; inversion H. apply (mark_null_refl g). *)
-  - forward. (* skip *)
-    admit.
-    (* entailer!. *)
+  - unfold abbreviate in POSTCONDITION.
+    forward. (* return *)
+    Exists g. entailer!. destruct x. 1: simpl in H; inversion H. apply (mark_null_refl g).
+  - forward. (* skip *) entailer!.
   - Intros. assert (vvalid g x) as gx_vvalid. {
       destruct H_weak_valid; [| auto].
       unfold is_null_SGBA in H0; simpl in H0; subst x.

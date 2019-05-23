@@ -25,6 +25,7 @@ Require Import RamifyCoq.msl_application.Graph.
 Require Import RamifyCoq.msl_application.GraphBi.
 Require Import RamifyCoq.msl_application.Graph_Copy.
 Require Import Coq.Logic.Classical.
+Require Import VST.floyd.library. Import VST.veric.mpred.
 
 Open Scope logic.
 
@@ -88,7 +89,7 @@ Qed.
 Lemma root_stable_ramify: forall (g: Graph) (x: addr) (gx: addr * addr * addr),
   vgamma g x = gx ->
   vvalid g x ->
-  @derives pred _
+  @derives mpred _
     (reachable_vertices_at x g)
     (vertex_at x gx *
       (vertex_at x gx -* reachable_vertices_at x g)).
@@ -98,7 +99,7 @@ Lemma root_update_ramify: forall (g: Graph) (x x0: addr) (lx: addr) (gx gx': add
   vgamma g x = gx ->
   vgamma (Graph_vgen g x lx) x = gx' ->
   vvalid g x ->
-  @derives pred _
+  @derives mpred _
     (F * reachable_vertices_at x g)
     (vertex_at x gx *
       (vertex_at x gx' -*
@@ -191,7 +192,7 @@ Proof.
   eapply gamma_right_weak_valid; eauto.
 Qed.
 
-Lemma graph_ramify_left: forall {RamUnit: Type} (g g1: Graph) (g1': LGraph) (x l r: addr) (F1 F2: pred),
+Lemma graph_ramify_left: forall {RamUnit: Type} (g g1: Graph) (g1': LGraph) (x l r: addr) (F1 F2: mpred),
   vvalid g x ->
   vgamma g x = (null, l, r) ->
   vcopy1 x g g1 g1' ->
@@ -255,7 +256,7 @@ Proof.
       apply reachable_foot_valid in H5; auto.
 Qed.
 
-Lemma graph_ramify_right: forall {RamUnit: Type} (g g1 g2 g3: Graph) (g1' g2' g3': LGraph) (x l r: addr) (F1 F2: pred),
+Lemma graph_ramify_right: forall {RamUnit: Type} (g g1 g2 g3: Graph) (g1' g2' g3': LGraph) (x l r: addr) (F1 F2: mpred),
   vvalid g x ->
   vgamma g x = (null, l, r) ->
   vcopy1 x g g1 g1' ->
@@ -386,7 +387,7 @@ Lemma extend_copy_left: forall (g g1 g2: Graph) (g1': LGraph) (g2'': Graph) (x l
   x0 = LocalGraphCopy.vmap g1 x ->
   l = null /\ l0 = null \/ l0 = LocalGraphCopy.vmap g2 l ->
   is_guarded_BiMaFin (fun v => x0 <> v) (fun e => ~ In e nil) g1' ->
-  @derives pred _
+  @derives mpred _
   (vertex_at x0 d0 * vertices_at (Intersection _ (vvalid g1') (fun x => x0 <> x)) g1' * reachable_vertices_at l0 g2'') 
   (EX g2': LGraph,
     !! (extended_copy l (g1: LGraph, g1') (g2: LGraph, g2') /\ is_guarded_BiMaFin (fun v => x0 <> v) (fun e => ~ In e nil) g2') && 
@@ -436,7 +437,7 @@ Proof.
   1: {
     clear - H14.
     subst x0.
-    pose proof @vertex_at_not_null _ _ _ _ _ _ _ _ null SGAvn d0.
+    pose proof @vertex_at_not_null _ _ _ _ _ _ null SGAvn d0.
     rewrite (add_andp _ _ H).
     normalize.
   }
@@ -613,7 +614,7 @@ Lemma extend_copy_right: forall (g g1 g2 g3 g4: Graph) (g1' g2' g3': LGraph) (g4
   (x0, L) = LocalGraphCopy.emap g3 (x, L) ->
   r = null /\ r0 = null \/ r0 = LocalGraphCopy.vmap g4 r ->
   is_guarded_BiMaFin (fun v => x0 <> v) (fun e => ~ In e ((x0, L) :: nil)) g3' ->
-  @derives pred _
+  @derives mpred _
   (vertex_at x0 d0 * vertices_at (Intersection _ (vvalid g3') (fun x => x0 <> x)) g3' * reachable_vertices_at r0 g4'') 
   (EX g4': LGraph,
     !! (extended_copy r (g3: LGraph, g3') (g4: LGraph, g4') /\ is_guarded_BiMaFin (fun v => x0 <> v) (fun e => ~ In e ((x0, L) :: nil)) g4') && 
@@ -672,7 +673,7 @@ Proof.
   1: {
     clear - H17.
     subst x0.
-    pose proof @vertex_at_not_null _ _ _ _ _ _ _ _ null SGAvn d0.
+    pose proof @vertex_at_not_null _ _ _ _ _ _ null SGAvn d0.
     rewrite (add_andp _ _ H).
     normalize.
   }
@@ -896,7 +897,7 @@ Lemma copy_final: forall (g g1 g2 g3 g4 g5: Graph) (g1' g2' g3' g4' g5': LGraph)
   ecopy1 (x, L) (g2: LGraph, g2') (g3: LGraph, g3') ->
   extended_copy r (g3: LGraph, g3') (g4: LGraph, g4') ->
   ecopy1 (x, R) (g4: LGraph, g4') (g5: LGraph, g5') ->
-  @derives pred _
+  @derives mpred _
   (vertex_at x0 (null, l0, r0) * vertices_at (Intersection _ (vvalid g5') (fun v => x0 <> v)) g5')
   (EX gg5': Graph,
   !! (copy x g g5 gg5' /\ LocalGraphCopy.vmap g1 x = LocalGraphCopy.vmap g5 x) && reachable_vertices_at x0 gg5').

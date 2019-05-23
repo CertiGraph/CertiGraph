@@ -37,8 +37,8 @@ Context {V E M: Type}.
 Context {SGBA: PointwiseGraphBasicAssum V E}.
 Context {CCS: CompactCopySetting V E M}.
 Context {GV GE Pred: Type}.
-Context {SGP: PointwiseGraphPred V E GV GE Pred}.
-Context {SGA: PointwiseGraphAssum SGP}.
+Context {SGP: PointwiseGraphPred V E GV GE}.
+(* Context {SGA: PointwiseGraphAssum SGP}. *)
 Context {SGC: PointwiseGraphConstructor V E V E M GV GE}.
 Context {L_SGC: Local_PointwiseGraphConstructor V E V E M GV GE}.
 Context {SGA_vn: PointwiseGraphAssum_vn SGP default_v}.

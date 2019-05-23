@@ -35,14 +35,14 @@ Definition is_null_SGBA {pSGG: pPointwiseGraph_GList} : DecidablePred addr := (e
 
 Class sPointwiseGraph_GList {pSGG_Bi: pPointwiseGraph_GList} (DV DE: Type): Type :=
   {
-    pred: Type;
-    SGP: PointwiseGraphPred addr (addr * unit) (DV * addr) unit pred;
-    SGA: PointwiseGraphAssum SGP;
+    (* pred: Type; *)
+    SGP: PointwiseGraphPred addr (addr * unit) (DV * addr) unit;
+    (* SGA: PointwiseGraphAssum SGP; *)
     SGAvs: PointwiseGraphAssum_vs SGP;
     SGAvn: PointwiseGraphAssum_vn SGP null
   }.
 
-Existing Instances SGP SGA SGAvs.
+Existing Instances SGP SGAvs.
 
 Section GRAPH_GList.
 

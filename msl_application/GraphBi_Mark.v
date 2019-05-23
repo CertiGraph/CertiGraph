@@ -20,6 +20,7 @@ Require Import RamifyCoq.msl_application.Graph.
 Require Import RamifyCoq.msl_application.Graph_Mark.
 Require Import RamifyCoq.msl_application.GraphBi.
 Require Import Coq.Logic.Classical.
+Require Import VST.floyd.library. Import VST.veric.mpred.
 
 Open Scope logic.
 
@@ -98,7 +99,7 @@ Qed.
 Lemma root_stable_ramify: forall (g: Graph) (x: addr) (gx: bool * addr * addr),
   vgamma g x = gx ->
   vvalid g x ->
-  @derives pred _
+  @derives mpred _
     (reachable_vertices_at x g)
     (vertex_at x gx *
       (vertex_at x gx -* reachable_vertices_at x g)).
@@ -108,7 +109,7 @@ Lemma root_update_ramify: forall (g: Graph) (x: addr) (lx: bool) (gx gx': bool *
   vgamma g x = gx ->
   vgamma (Graph_vgen g x lx) x = gx' ->
   vvalid g x ->
-  @derives pred _
+  @derives mpred _
     (reachable_vertices_at x g)
     (vertex_at x gx *
       (vertex_at x gx' -* reachable_vertices_at x (Graph_vgen g x lx))).
@@ -118,7 +119,7 @@ Lemma graph_ramify_left: forall (g g1: Graph) x l r,
   vvalid g x ->
   vgamma g x = (false, l, r) ->
   mark1 x g g1 ->
-  @derives pred _
+  @derives mpred _
     (reachable_vertices_at x g1)
     (reachable_vertices_at l g1 *
       (ALL g': Graph,
@@ -149,7 +150,7 @@ Lemma graph_ramify_right: forall (g g1 g2: Graph) x l r,
   vgamma g x = (false, l, r) ->
   mark1 x g g1 ->
   mark l g1 g2 ->
-  (reachable_vertices_at x g2: pred) |-- reachable_vertices_at r g2 *
+  (reachable_vertices_at x g2: mpred) |-- reachable_vertices_at r g2 *
    (ALL g': Graph,
      !! (mark r g2 g') -->
      (reachable_vertices_at r g' -* reachable_vertices_at x g')).

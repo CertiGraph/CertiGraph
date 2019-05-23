@@ -24,8 +24,8 @@ Local Identity Coercion LGraph_LabeledGraph: LGraph >-> LabeledGraph.
 Local Identity Coercion SGraph_PointwiseGraph: SGraph >-> PointwiseGraph.
 Local Coercion pg_lg: LabeledGraph >-> PreGraph.
 
-Notation vertices_at sh g P := (@vertices_at _ _ _ _ _ _ (@SGP pSGG_VST bool unit (sSGG_VST sh)) _ g P).
-Notation graph sh x g := (@reachable_vertices_at _ _ _ _ _ _ _ _ _ _ (@SGP pSGG_VST bool unit (sSGG_VST sh)) _ x g).
+Notation vertices_at sh g P := (@vertices_at _ _ _ _ _ (@SGP pSGG_VST bool unit (sSGG_VST sh)) g P).
+Notation graph sh x g := (@reachable_vertices_at _ _ _ _ _ _ _ _ _ (@SGP pSGG_VST bool unit (sSGG_VST sh)) x g).
 Notation Graph := (@Graph pSGG_VST bool unit unit).
 Existing Instances MGS biGraph maGraph finGraph RGF.
 
@@ -238,7 +238,7 @@ Proof.
         assert (vvalid g1 r). {
           assert (weak_valid g1 r) by (eapply gamma_right_weak_valid; eauto).
           destruct H7; auto. hnf in H7; subst. exfalso; intuition.
-        } unfold vgamma2cdata; apply (@vertices_at_ramif_1_stable _ _ _ _ _ _ _ (SGA_VST sh) _ _ r (dd, ll, rr)); auto.
+        } unfold vgamma2cdata; apply (@vertices_at_ramif_1_stable _ _ _ _ _ (SGP_VST sh) _ _ r (dd, ll, rr)); auto.
         apply (gamma_right_reachable_included g1 _ _ _ _ H3 H_GAMMA_g1 r).
         apply reachable_by_refl; auto.
       * (* if (root_mark == 0) { *)
