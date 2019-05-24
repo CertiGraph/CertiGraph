@@ -18,7 +18,7 @@ Local Identity Coercion LGraph_LabeledGraph: UnionFindGraph.LGraph >-> LabeledGr
 Local Identity Coercion SGraph_PointwiseGraph: SGraph >-> PointwiseGraph.
 Local Coercion pg_lg: LabeledGraph >-> PreGraph.
 
-Notation vertices_at sh P g:= (@vertices_at _ _ _ _ _ _ (@SGP pSGG_VST nat unit (sSGG_VST sh)) _ P g).
+Definition vertices_at sh P g:= (@vertices_at _ _ _ _ _ mpred (@SGP pSGG_VST nat unit (sSGG_VST sh)) (SGA_VST sh) P g).
 Notation whole_graph sh g := (vertices_at sh (vvalid g) g).
 Notation graph sh x g := (@reachable_vertices_at _ _ _ _ _ _ _ _ _ _ (@SGP pSGG_VST nat unit (sSGG_VST sh)) _ x g).
 Notation Graph := (@Graph pSGG_VST).
@@ -85,7 +85,6 @@ Lemma body_makeSet: semax_body Vprog Gprog f_makeSet makeSet_spec.
 Proof.
   start_function.
   forward_call (sh, 8).
-  - apply syntactic_cancel_nil.
   - rep_omega.
   - Intros x.
     assert_PROP (x <> null) as x_not_null by (entailer !; destruct H0 as [? _]; apply H0).
@@ -100,13 +99,15 @@ Proof.
         - destruct (SGBA_VE x x); [| hnf in c; unfold Equivalence.equiv in c; exfalso]; auto.
         - unfold graph_gen.updateEdgeFunc. destruct (EquivDec.equiv_dec (x, tt) (x, tt)). 2: compute in c; exfalso; auto. destruct (SGBA_VE null null); auto.
           hnf in c. unfold Equivalence.equiv in c. exfalso; auto.
-      } rewrite <- (vertices_at_sepcon_1x (make_set_Graph 0%nat tt tt x g x_not_null H) x (vvalid g) _ (O, x)); auto. apply sepcon_derives. 1: apply derives_refl.
+      }
+      unfold vertices_at.
+      rewrite <- (vertices_at_sepcon_1x (make_set_Graph 0%nat tt tt x g x_not_null H) x (vvalid g) _ (O, x)); auto. apply sepcon_derives. 1: apply derives_refl.
       assert (vertices_at sh (vvalid g) g = vertices_at sh (vvalid g) (make_set_Graph O tt tt x g x_not_null H)). {
         apply vertices_at_vertices_identical. simpl. hnf. intros. destruct a as [y ?]. unfold Morphisms_ext.app_sig. simpl.
         unfold UnionFindGraph.vgamma. simpl. unfold graph_gen.updateEdgeFunc. f_equal.
         - destruct (SGBA_VE y x); [hnf in e; subst y; exfalso |]; auto.
         - destruct (EquivDec.equiv_dec (x, tt) (y, tt)); auto. hnf in e. inversion e. subst y. exfalso; auto.
-      } rewrite <- H5. apply derives_refl.
+      } unfold vertices_at in H5; rewrite <- H5. apply derives_refl.
 Qed.
 
 Lemma false_Cne_eq: forall x y, typed_false tint (force_val (sem_cmp_pp Cne (pointer_val_val x) (pointer_val_val y))) -> x = y.
@@ -213,16 +214,17 @@ Proof.
         destruct H3. apply reachable_foot_valid in H3. intro. subst root. apply (valid_not_null g' null H3). simpl. auto. }
       eapply derives_trans.
       apply (@graph_gen_redirect_parent_ramify _ (sSGG_VST sh)); eauto.
-      apply sepcon_derives. apply derives_refl.
-      apply wand_derives. apply derives_refl.
+      apply sepcon_derives; [apply derives_refl|].
+      apply wand_derives; [apply derives_refl|].
       Exists (Graph_gen_redirect_parent g' x root H6 H7 H8).
-      apply andp_right. 2: apply derives_refl. apply prop_right. split.
+      apply andp_right; [|apply derives_refl]. apply prop_right. split.
       * apply (graph_gen_redirect_parent_findS g g' x r r pa root _ _ _); auto.
       * simpl. apply (uf_root_gen_dst_same g' (liGraph g') x x root); auto.
         -- apply (uf_root_edge _ (liGraph g') _ pa); auto. apply (vgamma_not_dst g' x r pa); auto.
         -- apply reachable_refl; auto.
     (* End ramification entailment. *)
     + clear. entailer!. Exists g'' root. entailer!.
+      Unshelve. easy. easy. easy.
   - forward. Exists g x. entailer!. apply false_Cne_eq in H1. subst pa. split; split; [|split| |]; auto.
     + reflexivity.
     + apply (uf_equiv_refl _  (liGraph g)).
