@@ -18,7 +18,7 @@ Local Identity Coercion LGraph_LabeledGraph: UnionFindGraph.LGraph >-> LabeledGr
 Local Identity Coercion SGraph_PointwiseGraph: SGraph >-> PointwiseGraph.
 Local Coercion pg_lg: LabeledGraph >-> PreGraph.
 
-Notation vertices_at sh P g:= (@vertices_at _ _ _ _ _ _ (@SGP pSGG_VST nat unit (sSGG_VST sh)) _ P g).
+Notation vertices_at sh P g:= (@vertices_at _ _ _ _ _ mpred (@SGP pSGG_VST nat unit (sSGG_VST sh)) (SGA_VST sh) P g).
 Notation whole_graph sh g := (vertices_at sh (vvalid g) g).
 Notation graph sh x g := (@reachable_vertices_at _ _ _ _ _ _ _ _ _ _ (@SGP pSGG_VST nat unit (sSGG_VST sh)) _ x g).
 Notation Graph := (@Graph pSGG_VST).
