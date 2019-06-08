@@ -24,8 +24,8 @@ Local Identity Coercion LGraph_LabeledGraph: LGraph >-> LabeledGraph.
 Local Identity Coercion SGraph_PointwiseGraph: SGraph >-> PointwiseGraph.
 Local Coercion pg_lg: LabeledGraph >-> PreGraph.
 
-Notation vertices_at sh g P := (@vertices_at _ _ _ _ _ _ (@SGP pSGG_VST bool unit (sSGG_VST sh)) _ g P).
-Notation graph sh x g := (@reachable_vertices_at _ _ _ _ _ _ _ _ _ _ (@SGP pSGG_VST bool unit (sSGG_VST sh)) _ x g).
+Definition vertices_at sh g P := (@vertices_at _ _ _ _ _ _ (@SGP pSGG_VST bool unit (sSGG_VST sh)) _ g P).
+Definition graph sh x g := (@reachable_vertices_at _ _ _ _ _ _ unit unit _ mpred (@SGP pSGG_VST bool unit (sSGG_VST sh)) _ x g).
 Notation Graph := (@Graph pSGG_VST bool unit unit).
 Existing Instances MGS biGraph maGraph finGraph RGF.
 
@@ -79,7 +79,7 @@ Lemma graph_local_facts: forall sh x (g: Graph), vvalid g x -> @derives mpred Nv
 Proof.
   intros.
   eapply derives_trans; [apply (@va_reachable_root_stable_ramify pSGG_VST _ _ _ (sSGG_VST sh) g x (vgamma g x)); auto |].
-  simpl vertex_at. unfold trinode. entailer!.
+  simpl vertex_at. unfold trinode. simpl. entailer!.
 Qed.
 
 Lemma graph_left_local_facts: forall sh x (g: Graph) d l r, vvalid g x -> vgamma g x = (d, l, r) -> graph sh x g |-- valid_pointer (pointer_val_val l).
@@ -87,7 +87,9 @@ Proof.
   intros.
   eapply derives_trans; [apply (@graph_ramify_aux1_left pSGG_VST (sSGG_VST sh) g x d l r); auto | ].
   assert (weak_valid g l) by (apply (gamma_left_weak_valid g x d l r); auto). destruct H1.
-  - simpl in H1. subst l. simpl pointer_val_val. apply sepcon_valid_pointer1. entailer!.
+  - simpl in H1. subst l. simpl pointer_val_val.
+    apply sepcon_valid_pointer1.
+    unfold pred. simpl reachable_vertices_at. entailer!. 
   - apply sepcon_valid_pointer1. apply graph_local_facts; auto.
 Qed.
 
@@ -98,7 +100,8 @@ Proof.
   intros.
   eapply derives_trans; [apply (@graph_ramify_aux1_right pSGG_VST (sSGG_VST sh) g1 g2 x l r); auto | ].
   assert (weak_valid g2 r) by (apply (gamma_right_weak_valid g2 x true l' r); auto). destruct H4.
-  - simpl in H4. subst r. simpl pointer_val_val. apply sepcon_valid_pointer1. entailer!.
+  - simpl in H4. subst r. simpl pointer_val_val. apply sepcon_valid_pointer1.
+    unfold pred. simpl reachable_vertices_at. entailer!.
   - apply sepcon_valid_pointer1. apply graph_local_facts; auto.
 Qed.
   
@@ -193,9 +196,11 @@ Proof.
         Intros g'.
         unlocalize [vertices_at sh (reachable g1 x) g'] using g' assuming H8.
         1: apply (@graph_ramify_aux1_left _ (sSGG_VST sh) g1 x true l r); auto.
-        Exists g'. entailer!.
+        Exists g'.
+        unfold vertices_at; simpl Graph.vertices_at.
+        entailer!.
         assert (l = dst g1 (x, L)) by (simpl in H_GAMMA_g1; inversion H_GAMMA_g1; auto).
-        unfold edge_spanning_tree. if_tac; subst l; [exfalso |]; auto.
+        unfold edge_spanning_tree. if_tac; subst l; [exfalso|]; auto.
       * (* x -> l = 0; *)
         destruct (node_pred_dec (marked g1) l). 2: exfalso; auto.
         localize [data_at sh node_type (Vint (Int.repr 1), (pointer_val_val l, pointer_val_val r)) (pointer_val_val x)].
@@ -203,7 +208,8 @@ Proof.
         unlocalize [vertices_at sh (reachable g1 x) (Graph_gen_left_null g1 x)].
         1: apply (@graph_gen_left_null_ramify _ (sSGG_VST sh) g1 x true l r); auto.
         Exists (Graph_gen_left_null g1 x).
-        entailer!.
+        unfold vertices_at; simpl Graph.vertices_at.
+        entailer!. 
         apply (edge_spanning_tree_left_null g1 x true l r); auto.
   - forward. Exists g1. entailer!. 2: apply derives_refl. apply edge_spanning_tree_invalid.
     + apply (@left_valid _ _ _ _ _ _ g1 _ _) in H3; auto.
@@ -214,6 +220,7 @@ Proof.
     Intros g2.
     assert (vvalid g2 x) by (rewrite <- (edge_spanning_tree_left_vvalid g1 g2 x); auto).
     destruct (edge_spanning_tree_left_vgamma g1 g2 x l r H3 H_GAMMA_g1 H4) as [l' H_GAMMA_g2].
+    unfold vertices_at. simpl.
     forward_if
       (EX g3: Graph,
        PROP  (edge_spanning_tree g2 (x, R) g3)
@@ -244,6 +251,7 @@ Proof.
       * (* if (root_mark == 0) { *)
         Opaque node_pred_dec.
         Opaque pSGG_VST.
+        unfold vertices_at; simpl.
         forward_if
           (EX g3: Graph,
            PROP  (edge_spanning_tree g2 (x, R) g3)
@@ -269,9 +277,11 @@ Proof.
           Intros g3.
           unlocalize [vertices_at sh (reachable g1 x) g3] using g3 assuming H11.
           1: apply (@graph_ramify_aux1_right _ (sSGG_VST sh) g1 g2 x l r); auto.
-          Exists g3. entailer!.
+          Exists g3.
+          unfold vertices_at; simpl Graph.vertices_at.
+          entailer!.
           assert (r = dst g2 (x, R)) by (simpl in H_GAMMA_g2; inversion H_GAMMA_g2; auto).
-          unfold edge_spanning_tree. if_tac; subst r; [exfalso |]; auto.
+          unfold edge_spanning_tree. if_tac; subst r; [exfalso |]; auto. (* killed again by simpl. *)
         -- (* x -> r = 0; *)
           destruct (node_pred_dec (marked g2) r). 2: exfalso; auto.
           localize [data_at sh node_type (Vint (Int.repr 1), (pointer_val_val l', pointer_val_val r)) (pointer_val_val x)].
@@ -279,6 +289,7 @@ Proof.
           unlocalize [vertices_at sh (reachable g1 x) (Graph_gen_right_null g2 x)].
           1: apply (@graph_gen_right_null_ramify _ (sSGG_VST sh) g1 g2 x true l' r); auto.
           Exists (Graph_gen_right_null g2 x).
+          unfold vertices_at. simpl Graph.vertices_at.
           entailer!. apply (edge_spanning_tree_right_null g2 x true l' r); auto.
     + forward. Exists g2. entailer!. apply edge_spanning_tree_invalid.
       * apply (@right_valid _ _ _ _ _ _ g2 _ _) in H5; auto.
@@ -286,7 +297,9 @@ Proof.
         -- assert (r = dst g2 (x, R)) by (simpl in H_GAMMA_g2; inversion H_GAMMA_g2; auto). rewrite H11. apply H10.
         -- hnf. destruct r. 1: inversion H6. auto.
     + (* return *)
-      Intros g3. forward. Exists g3. entailer!.
+      Intros g3.
+      unfold vertices_at; simpl Graph.vertices_at.
+      forward. Exists g3. entailer!.
       * apply (edge_spanning_tree_spanning_tree g g1 g2 g3 x l r); auto.
       * destruct H2. apply derives_refl'. apply vertices_at_Same_set. rewrite H2; reflexivity.
 Qed. (* original: 5500 sec, VST 2.*: 8.91 secs *)

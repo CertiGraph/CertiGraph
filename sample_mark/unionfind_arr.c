@@ -21,7 +21,7 @@ int find(struct subset subsets[], int i)
     }
  
     return p;
-}
+} 
 
 void Union(struct subset subsets[], int x, int y)
 {

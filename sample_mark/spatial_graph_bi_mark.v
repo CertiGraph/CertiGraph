@@ -41,6 +41,8 @@ Definition trinode (sh: share) (p: addr) (dlr: bool * addr * addr): mpred :=
                     (pointer_val_val p)
   end.
 
+(* WHY IS THIS MPRED? *)
+(* mpred is pretty solidly stitched through the development *)
 Instance SGP_VST (sh: share) : PointwiseGraphPred addr (addr * LR) (bool * addr * addr) unit mpred.
   refine (Build_PointwiseGraphPred _ _ _ _ _ (trinode sh) (fun _ _ => emp)).
 Defined.
