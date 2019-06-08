@@ -22,7 +22,7 @@ Local Identity Coercion LGraph_LabeledGraph: LGraph >-> LabeledGraph.
 Local Identity Coercion SGraph_PointwiseGraph: SGraph >-> PointwiseGraph.
 Local Coercion pg_lg: LabeledGraph >-> PreGraph.
 
-Notation graph sh x g := (@reachable_vertices_at _ _ _ _ _ _ _ _ _ _ (@SGP pSGG_VST bool unit (sSGG_VST sh)) _ x g).
+Notation graph sh x g := (@reachable_vertices_at _ _ _ _ _ _ unit unit _ mpred (@SGP pSGG_VST bool unit (sSGG_VST sh)) (SGA_VST sh) x g).
 Notation Graph := (@Graph pSGG_VST bool unit unit).
 Existing Instances MGS biGraph maGraph finGraph RGF.
 
@@ -39,6 +39,26 @@ Definition mark_spec :=
         LOCAL ()
         SEP   (graph sh x g').
 
+(*
+Context {DE DG: Type}.
+
+Definition graph sh x g := (@reachable_vertices_at _ _ _ _ _ _ DE DG _ mpred (@SGP pSGG_VST bool unit (sSGG_VST sh)) (SGA_VST sh) x g).
+Definition Graph := (@Graph pSGG_VST bool DE DG).
+Existing Instances MGS biGraph maGraph finGraph RGF.
+
+Definition mark_spec :=
+ DECLARE _mark
+  WITH sh: wshare, g: Graph, x: pointer_val
+  PRE [ _x OF (tptr (Tstruct _Node noattr))]
+          PROP  (weak_valid (pg_lg (lg_gg g)) x)
+          LOCAL (temp _x (pointer_val_val x))
+          SEP   (graph sh x (lg_gg g))
+  POST [ Tvoid ]
+        EX g': Graph,
+        PROP (mark x (lg_gg g) (lg_gg g'))
+        LOCAL ()
+        SEP   (graph sh x g'). *)
+
 Definition main_spec :=
  DECLARE _main
   WITH gv : globals 
@@ -51,8 +71,10 @@ Lemma graph_local_facts: forall sh x (g: Graph), weak_valid g x -> @derives mpre
 Proof.
   intros. destruct H.
   - simpl in H. subst x. entailer!.
-  - eapply derives_trans; [apply (@va_reachable_root_stable_ramify pSGG_VST _ _ _ (sSGG_VST sh) g x (vgamma g x)); auto |].
-    simpl vertex_at. entailer!.
+  - eapply derives_trans.
+    + apply (@va_reachable_root_stable_ramify pSGG_VST _ _ _ (sSGG_VST sh) g x (vgamma g x)); auto.
+    + simpl.
+      entailer!.
 Qed.
 
 Opaque pSGG_VST sSGG_VST.
@@ -69,13 +91,12 @@ Proof.
      LOCAL (temp _x (pointer_val_val x))
      SEP   (graph sh x g)).
   - apply denote_tc_test_eq_split. 2: entailer!. apply graph_local_facts; auto.
-  - admit.
-    (* unfold abbreviate in POSTCONDITION. *)
-    (* forward. (* return *) *)
-    (* Exists g. entailer!. destruct x. 1: simpl in H; inversion H. apply (mark_null_refl g). *)
+  - unfold abbreviate in POSTCONDITION.
+    forward.
+    (* return. *)
+    Exists g. entailer!. destruct x. 1: simpl in H; inversion H. apply (mark_null_refl g).
   - forward. (* skip *)
-    admit.
-    (* entailer!. *)
+    entailer!.
   - Intros. assert (vvalid g x) as gx_vvalid. {
       destruct H_weak_valid; [| auto].
       unfold is_null_SGBA in H0; simpl in H0; subst x.

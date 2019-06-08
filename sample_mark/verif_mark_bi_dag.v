@@ -23,7 +23,8 @@ Local Identity Coercion LGraph_LabeledGraph: LGraph >-> LabeledGraph.
 Local Identity Coercion SGraph_PointwiseGraph: SGraph >-> PointwiseGraph.
 Local Coercion pg_lg: LabeledGraph >-> PreGraph.
 
-Notation dag sh x g := (@reachable_dag_vertices_at _ _ _ _ _ _ _ _ _ _ (@SGP pSGG_VST bool unit (sSGG_VST sh)) _ x g).
+(* Using unit for DE and DG, inspired by Graph *)
+Notation dag sh x g := (@reachable_dag_vertices_at _ _ _ _ _ _ unit unit _ mpred (@SGP pSGG_VST bool unit (sSGG_VST sh)) (SGA_VST sh) x g).
 Notation Graph := (@Graph pSGG_VST bool unit unit).
 Existing Instances MGS biGraph maGraph finGraph RGF.
 
@@ -52,7 +53,9 @@ Lemma dag_local_facts: forall sh x (g: Graph), weak_valid g x -> dag sh x g |-- 
 Proof.
   intros. destruct H.
   - simpl in H. subst x. entailer!.
-  - destruct (vgamma g x) as [[d l] r] eqn:? . erewrite root_unfold; eauto. simpl vertex_at. entailer!.
+  - destruct (vgamma g x) as [[d l] r] eqn:?. 
+    pose proof (@root_unfold _ (sSGG_VST sh) g x d l r H Heqp); clear -H0.
+    simpl in *. rewrite H0. entailer!.
 Qed.
 
 Lemma body_mark: semax_body Vprog Gprog f_mark mark_spec.
@@ -78,7 +81,9 @@ Proof.
       destruct x. 2: exfalso; apply H; reflexivity. split; simpl; auto.
       exists b, i. reflexivity.
     } destruct H0 as [? [b [i ?]]]. clear H0 H_weak_valid.
-    erewrite root_unfold by eauto. Intros.
+    pose proof (@root_unfold _ (sSGG_VST sh) g x d l r gx_vvalid).
+    simpl in H0. simpl reachable_dag_vertices_at.
+    erewrite H0 by eauto. Intros.
     change (vertex_at x (d, l, r)) with
         (@data_at CompSpecs sh node_type
                   (Vint (Int.repr (if d then 1 else 0)), (pointer_val_val l, pointer_val_val r)) (pointer_val_val x)).
@@ -89,16 +94,24 @@ Proof.
                (temp _root_mark (Vint (Int.repr (if d then 1 else 0)));
                 temp _x (pointer_val_val x))
                SEP  (dag sh x g)).
-    1: erewrite root_unfold by eauto; simpl vertex_at; entailer!.
+    1: { pose proof (@root_unfold _ (sSGG_VST sh) g x d l r gx_vvalid).
+         simpl in H2. simpl reachable_dag_vertices_at.
+         erewrite H2 by eauto; simpl vertex_at; entailer!.
+         }
     forward_if  (* if (root_mark == 1) *)
       (PROP (d = false)
             LOCAL (temp _x (pointer_val_val x))
             SEP (dag sh x g)).
     + forward. (* return *) Exists g. entailer!.
       eapply (mark_vgamma_true_refl g); eauto.
-      clear - H0; destruct d; [auto | inversion H0].
-    + forward. (* skip; *) entailer!. clear - H0; destruct d; congruence.
-    + erewrite root_unfold by eauto. Intros. subst d.
+      now destruct d.
+    + forward. (* skip; *) entailer!.
+      now destruct d.
+    +
+      pose proof (@root_unfold _ (sSGG_VST sh) g x d l r gx_vvalid).
+      simpl in H2. simpl reachable_dag_vertices_at.
+      erewrite H2 by eauto.
+      Intros. subst d.
       change (vertex_at x (false, l, r)) with
           (@data_at CompSpecs sh node_type
                     (Vint (Int.repr 0), (pointer_val_val l, pointer_val_val r)) (pointer_val_val x)).
@@ -112,23 +125,45 @@ Proof.
                         temp _l (pointer_val_val l);
                         temp _x (pointer_val_val x))
                  SEP (dag sh x (Graph_vgen g x true))).
-      1: erewrite root_update_unfold by eauto; simpl vertex_at; entailer!.
-      forget (Graph_vgen g x true) as g1.
+      1: { pose proof (@root_update_unfold _ (sSGG_VST sh) g).
+           simpl in H4. simpl reachable_dag_vertices_at.
+           erewrite H4 by eauto; simpl vertex_at; entailer!. }
+           forget (Graph_vgen g x true) as g1.
       assert (weak_valid g1 l) by (eapply left_weak_valid; eauto).
       (* mark(l); *)
       localize [dag sh l g1].
       forward_call (sh, g1, l).
       Intros g2.
       unlocalize [dag sh x g2] using g2 assuming H3.
-      1: subst; eapply (@dag_ramify_left _ (sSGG_VST sh) g); eauto.
+      (* Original, which no longer does the job: *)
+      (* 1: subst; eapply (@dag_ramify_left _ (sSGG_VST sh) g); eauto. *)
+      
+      (* Below I show you my attempt. 
+         The issue is that mark and mark1 are totally different. So I'm a little unsure why we unlocalised "using H3" in line 137 above. *)
+      1: { subst.
+           pose proof (@dag_ramify_left _ (sSGG_VST sh) g g1 (ValidPointer b i) l r gx_vvalid H_GAMMA_g H3).
+           simpl reachable_dag_vertices_at in *.
+           admit.
+      }
       assert (weak_valid g2 r) by (eapply right_weak_valid; eauto).
       (* mark(r); *)
       localize [dag sh r g2].
       forward_call (sh, g2, r).
       Intros g3.
       unlocalize [dag sh x g3] using g3 assuming H5.
-      1: subst; eapply (@dag_ramify_right _ (sSGG_VST sh) g); eauto.
+      (* Original one-liner :*)
+      (* 1: subst; eapply (@dag_ramify_right _ (sSGG_VST sh) g); eauto. *)
+
+      (* New attempt: *)
+      1: { subst.
+           pose proof (@dag_ramify_right
+                         _ (sSGG_VST sh) g
+                         _ _ _ _ _ gx_vvalid H_GAMMA_g H3 H5).
+           simpl in H1. simpl reachable_dag_vertices_at.
+           (* stuck, the mark is wrong altogether? *)
+           admit. }
       forward. (* ( return; ) *)
       Exists g3. entailer!.
       apply (mark1_mark_left_mark_right g g1 g2 g3 (ValidPointer b i) l r); auto.
-Qed. (* Original: 114 seconds; VST 2.*: 2.739 secs *)
+Admitted.
+(* Qed. (* Original: 114 seconds; VST 2.*: 2.739 secs *) *)
