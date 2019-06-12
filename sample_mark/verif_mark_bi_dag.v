@@ -134,36 +134,24 @@ Proof.
       localize [dag sh l g1].
       forward_call (sh, g1, l).
       Intros g2.
-      unlocalize [dag sh x g2] using g2 assuming H3.
-      (* Original, which no longer does the job: *)
-      (* 1: subst; eapply (@dag_ramify_left _ (sSGG_VST sh) g); eauto. *)
-      
-      (* Below I show you my attempt. 
-         The issue is that mark and mark1 are totally different. So I'm a little unsure why we unlocalised "using H3" in line 137 above. *)
+      unlocalize [dag sh x g2] using g2 assuming H5.
       1: { subst.
            pose proof (@dag_ramify_left _ (sSGG_VST sh) g g1 (ValidPointer b i) l r gx_vvalid H_GAMMA_g H3).
            simpl reachable_dag_vertices_at in *.
-           admit.
+           eapply H1.
       }
-      assert (weak_valid g2 r) by (eapply right_weak_valid; eauto).
+       assert (weak_valid g2 r) by (eapply right_weak_valid; eauto).
       (* mark(r); *)
       localize [dag sh r g2].
       forward_call (sh, g2, r).
       Intros g3.
-      unlocalize [dag sh x g3] using g3 assuming H5.
-      (* Original one-liner :*)
-      (* 1: subst; eapply (@dag_ramify_right _ (sSGG_VST sh) g); eauto. *)
-
-      (* New attempt: *)
+      unlocalize [dag sh x g3] using g3 assuming H7.
       1: { subst.
-           pose proof (@dag_ramify_right
-                         _ (sSGG_VST sh) g
+           pose proof (@dag_ramify_right _ (sSGG_VST sh) g
                          _ _ _ _ _ gx_vvalid H_GAMMA_g H3 H5).
-           simpl in H1. simpl reachable_dag_vertices_at.
-           (* stuck, the mark is wrong altogether? *)
-           admit. }
+           simpl reachable_dag_vertices_at in *; eapply H1.
+           }
       forward. (* ( return; ) *)
       Exists g3. entailer!.
       apply (mark1_mark_left_mark_right g g1 g2 g3 (ValidPointer b i) l r); auto.
-Admitted.
-(* Qed. (* Original: 114 seconds; VST 2.*: 2.739 secs *) *)
+Qed. (* Original: 114 seconds; VST 2.*: 2.739 secs *)
