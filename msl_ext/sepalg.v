@@ -40,5 +40,5 @@ Qed.
 Lemma exact_mem_alignable: forall (AV: AbsAddr) {Al: Alignable AV} (A: Type) {J: Join A} {SA: Sep_alg A} {MA: Mem_alg AV A} a a1 a2 p v1 v2, exact_mem a1 p v1 -> exact_mem a2 p v2 -> join_sub a a1 -> join_sub a a2 -> unit_for a a1 /\ unit_for a a2.
 Proof.
   intros.
-  
+Qed.  
 *)

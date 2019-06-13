@@ -431,7 +431,7 @@ Proof.
   reflexivity.
 Qed.
 
-Lemma reachable_by_reachable_by_equiv (g: PreGraph V E) (P: V -> Prop) (n: V):
+Lemma reachable_by_idempotent (g: PreGraph V E) (P: V -> Prop) (n: V):
   Same_set (reachable_by g n P) (reachable_by g n (reachable_by g n P)).
 Proof.
   intros.

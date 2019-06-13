@@ -1790,7 +1790,7 @@ Proof.
   destruct H as [v [? ?]]; subst v'.
   apply (guarded_morphism_reachable COPY_bij); [rewrite (weak_edge_prop_si _ _ _ COPY_si); apply Included_refl |].
   rewrite <- COPY_si.
-  rewrite <- (reachable_by_reachable_by_equiv _ _ _ _); auto.
+  rewrite <- (reachable_by_idempotent _ _ _ _); auto.
 Qed.
 
 Lemma copy_evalid_eq: forall (g1 g2: Graph) (g2'': Graph') (M: V -> Prop) x,
@@ -1812,7 +1812,7 @@ Proof.
   rewrite <- (src_preserved COPY_bij) by auto.
   apply (guarded_morphism_reachable COPY_bij); [rewrite (weak_edge_prop_si _ _ _ COPY_si); apply Included_refl |].
   rewrite <- COPY_si at 1.
-  rewrite <- (reachable_by_reachable_by_equiv _ _ _ _); auto.
+  rewrite <- (reachable_by_idempotent _ _ _ _); auto.
 Qed.
 
 Lemma copy_vvalid_weak_eq: forall (g1 g2: Graph) (g2'': Graph') (M: V -> Prop) x x0,

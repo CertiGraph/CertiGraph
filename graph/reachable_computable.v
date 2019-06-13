@@ -595,7 +595,7 @@ Section REACHABLE_COMPUTABLE.
   End UniquePreGraph.
 
   Lemma reachable_by_decidable (G: PreGraph V E) {is_null: DecidablePred V} {MA: MathGraph G is_null} {LF: LocalFiniteGraph G}:
-    forall (p : NodePred V) x ,
+    forall (p : DecidablePred V) x ,
       {vvalid G x} + {~ vvalid G x} ->
       EnumCovered V (reachable G x) ->
       ReachDecidable G x p.
