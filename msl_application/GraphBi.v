@@ -6,6 +6,7 @@ Require Import RamifyCoq.lib.Coqlib.
 Require Import RamifyCoq.lib.EquivDec_ext.
 Require Import RamifyCoq.msl_ext.log_normalize.
 Require Import RamifyCoq.msl_ext.iter_sepcon.
+Require Import RamifyCoq.msl_ext.seplog.
 Require Import RamifyCoq.graph.graph_model.
 Require Import RamifyCoq.graph.path_lemmas.
 Require Import RamifyCoq.graph.reachable_computable.
@@ -17,6 +18,7 @@ Require Export RamifyCoq.graph.MathGraph.
 Require Export RamifyCoq.graph.FiniteGraph.
 Require Import RamifyCoq.msl_application.Graph.
 Require Import Coq.Logic.Classical.
+Import OconNotation.
 
 Local Open Scope logic.
 
@@ -748,7 +750,6 @@ Spatial Facts (with Strong Assumption) Part
 
 *********************************************************)
 
-(*
   Context {SGSA: PointwiseGraphStrongAssum SGP}.
 
   Notation graph x g := (@reachable_vertices_at _ _ _ _ _ _ _ _ (_) _ (@SGP pSGG_Bi DV DE sSGG_Bi) _ x g).
@@ -876,7 +877,5 @@ Spatial Facts (with Strong Assumption) Part
         destruct H0; auto.
       - intro v; apply vvalid_vguard.
   Qed.
-
-*)
 
 End GRAPH_BI.

@@ -1,4 +1,3 @@
-Require Import RamifyCoq.msl_ext.log_normalize.
 Require Import RamifyCoq.lib.Coqlib.
 Require Import RamifyCoq.lib.Ensembles_ext.
 Require Import RamifyCoq.lib.List_ext.
@@ -9,6 +8,10 @@ Require Import VST.msl.log_normalize.
 Require Import Coq.Lists.List.
 Require Import Coq.Sorting.Permutation.
 Require Export Coq.Classes.Morphisms.
+Require Import RamifyCoq.msl_ext.seplog.
+Require Import RamifyCoq.msl_ext.log_normalize.
+
+Import OconNotation.
 
 Local Open Scope logic.
 
@@ -27,10 +30,10 @@ Section IterSepCon.
   Context {ND : NatDed A}.
   Context {SL : SepLog A}.
   Context {ClS: ClassicalSep A}.
-  (* Context {PSL : PreciseSepLog A}. *)
+  Context {PSL : PreciseSepLog A}.
   Context {CoSL: CorableSepLog A}.
-  (* Context {OSL: OverlapSepLog A}. *)
-  (* Context {DSL : DisjointedSepLog A}. *)
+  Context {OSL: OverlapSepLog A}.
+  Context {DSL : DisjointedSepLog A}.
 
 Fixpoint iter_sepcon (l : list B) (p : B -> A) : A :=
   match l with
@@ -55,10 +58,8 @@ Proof.
   + rewrite IHPermutation1. auto.
 Qed.
 
-(*
 Lemma precise_iter_sepcon: forall (p : B -> A), (forall z, precise (p z)) -> forall (l : list B), precise (iter_sepcon l p).
 Proof. intros; induction l; simpl. apply precise_emp. apply precise_sepcon; auto. Qed.
- *)
 
 Lemma iter_sepcon_in_true: forall (p : B -> A) (l : list B) x, In x l -> iter_sepcon l p |-- p x * TT.
 Proof.
@@ -93,8 +94,6 @@ Proof.
   - normalize. constructor; auto.
 Qed.
 
-(*
-
 Definition joinable (p : B -> A): Prop := forall x y, x <> y -> disjointed (p x) (p y).
 
 Lemma iter_sepcon_joinable:
@@ -118,9 +117,6 @@ Proof.
     - apply disj_comm, IHl1. intros; apply H0, in_cons; auto.
 Qed.
 
-*)
-
-(*
 Fixpoint iter_ocon (l : list B) (p : B -> A) : A :=
   match l with
     | nil => emp
@@ -140,7 +136,6 @@ Lemma iter_ocon_app_ocon:
 Proof.
   induction l1; intros; simpl. rewrite emp_ocon; auto. rewrite (IHl1 l2). rewrite ocon_assoc. auto.
 Qed.
-
 
 Lemma iter_sepcon_ocon' (eq_dec: forall x y : B, {x = y} + {x <> y}):
   forall l l1 l2 p,
@@ -228,7 +223,6 @@ Proof.
   tauto.
 Qed.
 
-*)
 Lemma iter_sepcon_func: forall l P Q, (forall x, P x = Q x) -> iter_sepcon l P = iter_sepcon l Q.
 Proof. intros. induction l; simpl; [|f_equal]; auto. Qed.
 
@@ -591,8 +585,6 @@ Qed.
 
 End IterPredSepCon.
 
-(*
-
 Section OconIterSepCon.
 
   Context {A : Type}.
@@ -647,4 +639,3 @@ Section OconIterSepCon.
   Qed.
 
 End OconIterSepCon.
- *)

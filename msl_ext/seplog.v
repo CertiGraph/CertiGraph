@@ -15,8 +15,8 @@ Class PreciseSepLog (A: Type) {ND: NatDed A} {SL: SepLog A} := mkPreciseSepLog {
   precise_wand_ewand: forall R P Q R', precise P -> R |-- P * (Q -* R') -> Q * (ewand P R) |-- R'
 }.
 
-Implicit Arguments PreciseSepLog [[ND] [SL]].
-Implicit Arguments mkPreciseSepLog [[A] [ND] [SL]].
+Arguments PreciseSepLog _ {_ _}.
+Arguments mkPreciseSepLog {_ _ _}.
 
 Instance LiftPreciseSepLog (A B: Type) {ND: NatDed B} {SL: SepLog B} {PSL: PreciseSepLog B} : PreciseSepLog (A -> B).
   apply (mkPreciseSepLog (fun P => forall a, precise (P a))); simpl; intros.
@@ -32,8 +32,8 @@ Class MapstoSepLog {Addr Val: Type} (AV: AbsAddr Addr Val) {A: Type} (mapsto: Ad
   mapsto__precise: forall p, precise (mapsto_ p)
 }.
 
-Implicit Arguments MapstoSepLog [[Addr] [Val] [A] [ND] [SL] [PSL]].
-Implicit Arguments mkMapstoSepLog [[Addr] [Val] [A] [mapsto] [ND] [SL] [PSL]].
+Arguments MapstoSepLog {_ _} _ {_} _ {_ _ _}.
+Arguments mkMapstoSepLog {_ _} _ {_ _ _ _ _}.
 
 Class OverlapSepLog (A: Type) {ND: NatDed A} {SL: SepLog A} {PSL: PreciseSepLog A}:= mkOverlapSepLog {
   ocon: A -> A -> A;
@@ -54,8 +54,8 @@ Class OverlapSepLog (A: Type) {ND: NatDed A} {SL: SepLog A} {PSL: PreciseSepLog 
   precise_ocon: forall P Q, precise P -> precise Q -> precise (ocon P Q)
 }.
 
-Implicit Arguments OverlapSepLog [[ND] [SL] [PSL]].
-Implicit Arguments mkOverlapSepLog [[A] [ND] [SL] [PSL]].
+Arguments OverlapSepLog _ {_ _ _}.
+Arguments mkOverlapSepLog {_ _ _ _}.
 
 Instance LiftOverlapSepLog (A B: Type) {ND: NatDed B} {SL: SepLog B} {PSL: PreciseSepLog B} {OSL: OverlapSepLog B}: OverlapSepLog (A -> B).
   apply (mkOverlapSepLog (fun P Q x => ocon (P x) (Q x)) (fun P Q x => owand (P x) (Q x))); simpl; intros.
@@ -83,8 +83,8 @@ Class DisjointedSepLog (A: Type) {ND: NatDed A} {SL: SepLog A} {PSL: PreciseSepL
   disj_ocon_right: forall P Q R, disjointed P Q -> disjointed P R -> disjointed P (ocon Q R)
 }.
 
-Implicit Arguments DisjointedSepLog [[ND] [SL] [PSL] [OSL]].
-Implicit Arguments mkDisjointedSepLog [[A] [ND] [SL] [PSL] [OSL]].
+Arguments DisjointedSepLog _ {_ _ _ _}.
+Arguments mkDisjointedSepLog {_ _ _ _ _}.
 
 Instance LiftDisjointedSepLog (A B: Type) {ND: NatDed B} {SL: SepLog B} {PSL: PreciseSepLog B} {OSL: OverlapSepLog B} {DSL: DisjointedSepLog B}: DisjointedSepLog (A -> B).
   apply (mkDisjointedSepLog (fun P Q => forall x, disjointed (P x) (Q x))); simpl; intros.
@@ -101,23 +101,23 @@ Class StaticMapstoSepLog {Addr Val: Type} (AV: AbsAddr Addr Val) {A: Type} (maps
   disj_mapsto_: forall p1 p2, addr_conflict p1 p2 = false -> disjointed (mapsto_ p1) (mapsto_ p2)
 }.
 
-Implicit Arguments StaticMapstoSepLog [[Addr] [Val] [A] [ND] [SL] [PSL] [MSL] [OSL] [DSL]].
-Implicit Arguments mkStaticMapstoSepLog [[Addr] [Val] [A] [mapsto] [ND] [SL] [PSL] [MSL] [OSL] [DSL]].
+Arguments StaticMapstoSepLog {_ _} _ {_} _ {_ _ _ _ _ _}.
+Arguments mkStaticMapstoSepLog {_ _} _ {_ _ _ _ _ _ _ _}.
 
 Class NormalMapstoSepLog {Addr Val: Type} (AV: AbsAddr Addr Val) {A: Type} (mapsto: Addr -> Val -> A) {ND: NatDed A} {SL: SepLog A} {PSL: PreciseSepLog A} {MSL: MapstoSepLog AV mapsto} {OSL: OverlapSepLog A} {DSL: DisjointedSepLog A} := mkNormalMapstoSepLog {
   mapsto_inj: forall p v1 v2, mapsto p v1 && mapsto p v2 |-- !! (v1 = v2)
 }.
 
-Implicit Arguments NormalMapstoSepLog [[Addr] [Val] [A] [ND] [SL] [PSL] [MSL] [OSL] [DSL]].
-Implicit Arguments mkNormalMapstoSepLog [[Addr] [Val] [A] [mapsto] [ND] [SL] [PSL] [MSL] [OSL] [DSL]].
+Arguments NormalMapstoSepLog {_ _} _ {_} _ {_ _ _ _ _ _}.
+Arguments mkNormalMapstoSepLog {_ _} _ {_ _ _ _ _ _ _ _}.
 
 Class CorableOverlapSepLog (A: Type) {ND: NatDed A}{SL: SepLog A}{PSL: PreciseSepLog A}{OSL: OverlapSepLog A}{CoSL: CorableSepLog A} := mkCorableOverlapSepLog {
   corable_ocon: forall P Q, corable P -> corable Q -> corable (ocon P Q);
   corable_andp_ocon1: forall P Q R, corable P -> ocon (P && Q) R = P && (ocon Q R)
 }.
 
-Implicit Arguments CorableOverlapSepLog [[ND] [SL] [PSL] [OSL] [CoSL]].
-Implicit Arguments mkCorableOverlapSepLog [[A] [ND] [SL] [PSL] [OSL] [CoSL]].
+Arguments CorableOverlapSepLog _ {_ _ _ _ _}.
+Arguments mkCorableOverlapSepLog {_ _ _ _ _ _}.
 
 Instance LiftCorableOverlapSepLog (A: Type) (B: Type) {NB: NatDed B} {SB: SepLog B} {PSL: PreciseSepLog B} {OSL: OverlapSepLog B} {CoSL: CorableSepLog B} {COSL: CorableOverlapSepLog B}: CorableOverlapSepLog (A -> B).
   apply mkCorableOverlapSepLog; simpl; intros.
