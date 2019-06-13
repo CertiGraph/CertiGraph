@@ -17,11 +17,9 @@ LIB_FILES = \
   Coqlib.v Equivalence_ext.v List_Func_ext.v Ensembles_ext.v List_ext.v EnumEnsembles.v Relation_ext.v relation_list.v EquivDec_ext.v Morphisms_ext.v
 
 MSL_EXT_FILES = \
-  log_normalize.v iter_sepcon.v ramification_lemmas.v
-  # abs_addr.v seplog.v log_normalize.v ramify_tactics.v msl_ext.v iter_sepcon.v \
-  # sepalg.v ramification_lemmas.v \
-  # overlapping.v precise.v alg_seplog.v \
-  # overlapping_direct.v precise_direct.v alg_seplog_direct.v
+  log_normalize.v iter_sepcon.v ramification_lemmas.v abs_addr.v seplog.v \
+  ramify_tactics.v msl_ext.v sepalg.v overlapping.v precise.v alg_seplog.v \
+  overlapping_direct.v precise_direct.v alg_seplog_direct.v
 
 MSL_APPLICATION_FILES = \
   Graph.v Graph_Mark.v GraphBi.v GraphBi_Mark.v DagBi_Mark.v Graph_Copy.v GraphBi_Copy.v GList.v GList_UnionFind.v ArrayGraph.v UnionFindGraph.v
@@ -68,7 +66,9 @@ NORMAL_FILES = \
   $(CERTIGC_FILES:%.v=CertiGC/%.v) \
   $(SAMPLE_MARK_FILES:%.v=sample_mark/%.v) \
   $(GRAPH_FILES:%.v=graph/%.v) \
-  $(LIB_FILES:%.v=lib/%.v)
+  $(LIB_FILES:%.v=lib/%.v) \
+  $(HEAP_MODEL_DIRECT_FILES:%.v=heap_model_direct/%.v)
+
 
 $(NORMAL_FILES:%.v=%.vo): %.vo: %.v
 	@echo COQC $*.v
