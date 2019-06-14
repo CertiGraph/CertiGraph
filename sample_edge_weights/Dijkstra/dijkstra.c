@@ -14,8 +14,8 @@
 #include <time.h>
 
 #define IFTY INT_MAX
-#define SIZE 8  // number of vertices
-#define CONN 4  // the connectedness. 1 is 100%, higher numbers mean less connected
+#define SIZE 32  // number of vertices
+#define CONN 10  // the connectedness. 1 is 100%, higher numbers mean less connected
 #define INFL 50 // increase this to inflate the highest possible cost, thus creating greater ranges
 
 /* ************************************************** */
@@ -79,7 +79,8 @@ void dijkstra () {
                     dist[i] = dist[u] + graph[u][i];   // improve it
                     prev[i] = u;                       // note that we got there via 'u'
                     adjustWeight(i, dist[i], &pq);     // and then stash the improvement in the PQ
-                    //printf("Improved the dist to get to vertex %d to %d\n", i, dist[i]); // for testing only
+                    // printf("Improved the dist to get to vertex %d to %d\n", i, dist[i]);
+                    // uncomment the above line to see how the "best answer" improves slowly!
                 }
             }
         }
