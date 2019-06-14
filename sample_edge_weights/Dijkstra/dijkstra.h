@@ -13,3 +13,5 @@
 void setup (void);
 void print_graph (void);
 void dijkstra (void);
+void getPaths (void);
+
