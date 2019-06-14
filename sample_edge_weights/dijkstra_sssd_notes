@@ -1,12 +1,12 @@
 
-Shortest path from a single source to a all other vertices
+Shortest path from a single source to a single destination
 
 Thoughts:
 
 PreGraph: generic
 
 LabeledGraph:
-	LV: nat
+	LV: nat, or even unit?
 	LE: nat
 	LG: unit
 	need a way to follow a path while adding up the edge labels
