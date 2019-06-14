@@ -10,7 +10,7 @@
 #include <stdlib.h>
 #include <limits.h>
 #include <stdio.h>
-#define INF INT_MAX
+#define IFTY INT_MAX
 
 /* ****************************** */
 /* Linked List Masquerading as PQ */
@@ -39,7 +39,7 @@ void deleteNode (struct Node *del, struct Node **head) {
 }
 
 int popMin (struct Node **head) {
-    int minWeight = INF;
+    int minWeight = IFTY;
     int minVertex = -1;
     struct Node *minNode = NULL;
     struct Node *current = *head;

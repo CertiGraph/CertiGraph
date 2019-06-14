@@ -13,5 +13,6 @@ int main(int argc, const char * argv[])
     setup();
     print_graph();
     dijkstra();
+    getPaths();
     return 0;
 }
