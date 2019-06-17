@@ -13,7 +13,7 @@ Notation "P ⊗ Q" := (ocon P Q) (at level 40, left associativity) : pred.
 Program Definition owand {A: Type}{JA: Join A} (p q:pred A) : pred A :=
   fun h23:A => forall h1 h2 h3 h12 h123, join h1 h2 h12 -> join h2 h3 h23 -> join h12 h3 h123 -> p h12 -> q h123.
 
-Lemma ocon_emp {A}{JA: Join A}{PA: Perm_alg A}{SA: Sep_alg A}{CA: Canc_alg A}: forall P: pred A, P ⊗ emp = P.
+Lemma ocon_emp_d {A}{JA: Join A}{PA: Perm_alg A}{SA: Sep_alg A}{CA: Canc_alg A}: forall P: pred A, P ⊗ emp = P.
 Proof.
   intros; apply pred_ext; hnf; intros; simpl in *; intros.
   destruct_ocon H h; try_join h2 h3 h23'; equate_join h23 h23'.
@@ -27,7 +27,7 @@ Proof.
   apply core_identity.
 Qed.
 
-Lemma ocon_TT {A}{JA: Join A}{PA: Perm_alg A}{SA: Sep_alg A}{CA: Canc_alg A}: forall P: pred A, P ⊗ TT = P * TT.
+Lemma ocon_TT_d {A}{JA: Join A}{PA: Perm_alg A}{SA: Sep_alg A}{CA: Canc_alg A}: forall P: pred A, P ⊗ TT = P * TT.
 Proof.
   intros; apply pred_ext; hnf; intros; simpl in *; intros.
   + destruct_ocon H h.
@@ -41,7 +41,7 @@ Proof.
       apply core_unit.
 Qed.
 
-Lemma andp_ocon {A}{JA: Join A}{PA: Perm_alg A}{SA: Sep_alg A}: forall P Q, P && Q |-- P ⊗ Q.
+Lemma andp_ocon_d {A}{JA: Join A}{PA: Perm_alg A}{SA: Sep_alg A}: forall P Q, P && Q |-- P ⊗ Q.
 Proof.
   intros.
   hnf; intros; simpl in *; intros.
@@ -53,7 +53,7 @@ Proof.
   apply join_comm; apply core_unit.
 Qed.
 
-Lemma ocon_andp_prop {A}{JA: Join A}{PA: Perm_alg A}{SA: Sep_alg A}: forall P Q R, P ⊗ (!!Q && R) = !!Q && (P ⊗ R).
+Lemma ocon_andp_prop_d {A}{JA: Join A}{PA: Perm_alg A}{SA: Sep_alg A}: forall P Q R, P ⊗ (!!Q && R) = !!Q && (P ⊗ R).
 Proof.
   intros; apply pred_ext; hnf; intros; simpl in *.
   + destruct H as [h1 [h2 [h3 [h12 [h23 [? [? [? [? [? ?]]]]]]]]]].
@@ -62,7 +62,7 @@ Proof.
     exists h1, h2, h3, h12, h23. unfold andp. intuition.
 Qed.
 
-Lemma sepcon_ocon {A}{JA: Join A}{PA: Perm_alg A}{SA: Sep_alg A}: forall P Q, P * Q |-- P ⊗ Q.
+Lemma sepcon_ocon_d {A}{JA: Join A}{PA: Perm_alg A}{SA: Sep_alg A}: forall P Q, P * Q |-- P ⊗ Q.
 Proof.
   intros; hnf; intros; simpl in *; intros.
   destruct H as [y [z [? [? ?]]]].
@@ -78,7 +78,7 @@ Proof.
   rewrite Hequ. apply core_unit.
 Qed.
 
-Lemma ocon_sep_true {A}{JA: Join A}{PA: Perm_alg A}: forall P Q, P ⊗ Q |-- P * TT.
+Lemma ocon_sep_true_d {A}{JA: Join A}{PA: Perm_alg A}: forall P Q, P ⊗ Q |-- P * TT.
 Proof.
   intros; hnf; intros; simpl in *; intros.
   destruct_ocon H h.
@@ -86,7 +86,7 @@ Proof.
   repeat split; auto.
 Qed.
 
-Lemma ocon_wand {A}{JA: Join A}{PA: Perm_alg A}: forall P Q, P ⊗ Q = EX R : pred A, (R -* P) * (R -* Q) * R.
+Lemma ocon_wand_d {A}{JA: Join A}{PA: Perm_alg A}: forall P Q, P ⊗ Q = EX R : pred A, (R -* P) * (R -* Q) * R.
 Proof.
   intros; apply pred_ext; hnf; intros; simpl in *.
   destruct_ocon H h; try_join h2 h3 h23'; equate_join h23 h23'; try_join h1 h3 h13.
@@ -100,14 +100,14 @@ Proof.
   apply (HP w2 w12). auto. trivial. apply (HQ w2 w23); auto.
 Qed.
 
-Lemma ocon_comm {A}{JA: Join A}{PA: Perm_alg A}: forall P Q, P ⊗ Q = Q ⊗ P.
+Lemma ocon_comm_d {A}{JA: Join A}{PA: Perm_alg A}: forall P Q, P ⊗ Q = Q ⊗ P.
 Proof.
   intros; apply pred_ext; hnf; intros; simpl in *; intros;
   destruct_ocon H h; exists h3, h2, h1, h23, h12;
   repeat split; auto; try_join h2 h3 h23'; equate_join h23 h23'; auto.
 Qed.
 
-Lemma cross_rev {A}{JA: Join A}{PA: Perm_alg A}: forall h1 h2 h3 h4
+Lemma cross_rev_d {A}{JA: Join A}{PA: Perm_alg A}: forall h1 h2 h3 h4
   h12 h34 h13 h24 h1234, join h1 h2 h12 -> join h1 h3 h13 -> join h3 h4
   h34 -> join h2 h4 h24 -> join h12 h34 h1234 -> join h13 h24 h1234.
 Proof.
@@ -116,7 +116,7 @@ Proof.
   try_join h1 h3 h13'; equate_join h13 h13'; auto.
 Qed.
 
-Lemma ocon_assoc {A}{JA: Join A}{PA: Perm_alg A}{CA: Cross_alg A}:
+Lemma ocon_assoc_d {A}{JA: Join A}{PA: Perm_alg A}{CA: Cross_alg A}:
   forall P Q R: pred A, P ⊗ Q ⊗ R = P ⊗ (Q ⊗ R).
 Proof.
   intros; apply pred_ext; hnf; intros; simpl in *; intros.
@@ -127,7 +127,8 @@ Proof.
   exists w1, w457, w236, w1457, w234567; repeat split; auto.
   try_join w2 w4 w24; try_join w6 w7 w67; try_join w3 w5 w35.
   exists w24, w67, w35, w2467, w3567; repeat split; auto.
-  apply (cross_rev w2 w6 w4 w7 w26 w47); auto. apply (cross_rev w47 w5 w26 w3 w457 w236); auto.
+  apply (cross_rev_d w2 w6 w4 w7 w26 w47); auto.
+  apply (cross_rev_d w47 w5 w26 w3 w457 w236); auto.
   (* another direction *)
   destruct H as [w1 [w457 [w236 [w1457 [w234567 [? [? [? [? [w24 [w67 [w35 [w2467 [w3567 [? [? [? [? ?]]]]]]]]]]]]]]]]]].
   destruct (cross_split _ _ _ _ _ H0 H5) as [[[[w47 w5] w26] w3] [? [? [? ?]]]].
@@ -135,13 +136,13 @@ Proof.
   try_join w26 w1457 w124567; try_join w5 w67 w567; try_join w5 w7 w57; try_join w1 w4 w14;
   try_join w14 w26 w1246; try_join w2 w14 w124.
   exists w124, w567, w3, w124567, w3567; repeat split; auto.
-  apply join_comm; apply (cross_rev w6 w2 w57 w14 w26 w1457); auto.
+  apply join_comm; apply (cross_rev_d w6 w2 w57 w14 w26 w1457); auto.
   try_join_through w67 w5 w7 w57'; equate_join w57 w57'; auto.
   try_join w1 w5 w15; exists w15, w47, w26, w1457, w2467;
   repeat split; auto.
 Qed.
 
-Lemma ocon_derives {A} {JA: Join A}{PA: Perm_alg A}: forall p q p' q', (p |-- p') -> (q |-- q') -> (p ⊗ q |-- p' ⊗ q').
+Lemma ocon_derives_d {A} {JA: Join A}{PA: Perm_alg A}: forall p q p' q', (p |-- p') -> (q |-- q') -> (p ⊗ q |-- p' ⊗ q').
 Proof.
   repeat (intros; hnf).
   simpl in H1.
@@ -150,10 +151,10 @@ Proof.
   repeat split; auto.
 Qed.
 
-Lemma owand_ocon_adjoint {A} {JA: Join A}{PA: Perm_alg A}: forall P Q R, ocon P Q |-- R <-> P |-- owand Q R.
+Lemma owand_ocon_adjoint_d {A} {JA: Join A}{PA: Perm_alg A}: forall P Q R, ocon P Q |-- R <-> P |-- owand Q R.
 Proof.
   intros.
-  rewrite ocon_comm.
+  rewrite ocon_comm_d.
   unfold ocon, owand, derives.
   simpl.
   split; intros.
@@ -166,7 +167,7 @@ Proof.
     apply H; auto.
 Qed.
 
-Lemma ocon_contain {A} {JA: Join A} {PA: Perm_alg A} {SA: Sep_alg A}: forall P Q, Q |-- P * TT -> Q |-- ocon P Q.
+Lemma ocon_contain_d {A} {JA: Join A} {PA: Perm_alg A} {SA: Sep_alg A}: forall P Q, Q |-- P * TT -> Q |-- ocon P Q.
 Proof.
   unfold ocon, owand, derives; simpl; intros.
   destruct (H a H0) as [y [z [? [? ?]]]].
@@ -175,9 +176,9 @@ Proof.
   apply core_unit.
 Qed.
 
-Lemma precise_ocon_contain {A} {JA: Join A} {PA: Perm_alg A} {SA: Sep_alg A} {CA: Canc_alg A} {DA: Disj_alg A} : forall P Q, precise P -> Q |-- P * TT -> Q = ocon P Q.
+Lemma precise_ocon_contain_d {A} {JA: Join A} {PA: Perm_alg A} {SA: Sep_alg A} {CA: Canc_alg A} {DA: Disj_alg A} : forall P Q, precise P -> Q |-- P * TT -> Q = ocon P Q.
 Proof.
-  intros; apply pred_ext; [apply ocon_contain; auto |].
+  intros; apply pred_ext; [apply ocon_contain_d; auto |].
   unfold ocon, owand, derives in *; simpl in *.
   intros.
   destruct H1 as [h1 [h2 [h3 [h12 [h23 [? [? [? [? ?]]]]]]]]].
@@ -201,7 +202,7 @@ Definition disjointed {A: Type} {JA: Join A} (P Q: pred A):=
   forall h1 h2 h3 h12 h23,
   join h1 h2 h12 -> join h2 h3 h23 -> P h12 -> Q h23 -> identity h2 /\ joins h1 h3.
 
-Lemma ocon_sepcon {A: Type} {JA: Join A} {SA: Sep_alg A} {PA : Perm_alg A}:
+Lemma ocon_sepcon_d {A: Type} {JA: Join A} {SA: Sep_alg A} {PA : Perm_alg A}:
   forall P Q, disjointed P Q -> ocon P Q |-- P * Q.
 Proof.
   unfold ocon, sepcon, disjointed, derives; simpl.
@@ -216,7 +217,7 @@ Proof.
   auto.
 Qed.
 
-Lemma disj_emp {A: Type} {JA: Join A} {SA: Sep_alg A} {PA : Perm_alg A} {CA: Canc_alg A}: forall P, disjointed P emp.
+Lemma disj_emp_d {A: Type} {JA: Join A} {SA: Sep_alg A} {PA : Perm_alg A} {CA: Canc_alg A}: forall P, disjointed P emp.
 Proof.
   intros.
   unfold disjointed. simpl; intros.
@@ -227,7 +228,7 @@ Proof.
   split; eauto.
 Qed.
 
-Lemma disj_comm {A: Type} {JA: Join A} {PA: Perm_alg A}: forall P Q, disjointed P Q -> disjointed Q P.
+Lemma disj_comm_d {A: Type} {JA: Join A} {PA: Perm_alg A}: forall P Q, disjointed P Q -> disjointed Q P.
 Proof.
   unfold disjointed; intros.
   specialize (H h3 h2 h1 h23 h12).
@@ -237,7 +238,7 @@ Proof.
   apply joins_comm; auto.
 Qed.
 
-Lemma disj_derives {A: Type} {JA: Join A} {PA: Perm_alg A}:
+Lemma disj_derives_d {A: Type} {JA: Join A} {PA: Perm_alg A}:
   forall P P' Q Q', P |-- P' -> Q |-- Q' -> disjointed P' Q' -> disjointed P Q.
 Proof.
   unfold derives, disjointed.
@@ -274,7 +275,7 @@ Qed.
 
 **************************************************************************)
 
-Lemma disj_ocon_right {A: Type} {JA: Join A} {SA: Sep_alg A} {PA : Perm_alg A} {CA: Canc_alg A} {CrA: Cross_alg A} {TA: Trip_alg A}:
+Lemma disj_ocon_right_d {A: Type} {JA: Join A} {SA: Sep_alg A} {PA : Perm_alg A} {CA: Canc_alg A} {CrA: Cross_alg A} {TA: Trip_alg A}:
   forall P Q R, disjointed P Q -> disjointed P R -> disjointed P (ocon Q R).
 Proof.
   unfold ocon, disjointed, precise; simpl.
@@ -315,34 +316,34 @@ Proof.
     apply joins_comm; eauto.
 Qed.
 
-Lemma covariant_ocon {B}{A} {JA: Join A}{PA: Perm_alg A}:
+Lemma covariant_ocon_d {B}{A} {JA: Join A}{PA: Perm_alg A}:
    forall F1 F2 : (B -> pred A) -> (B -> pred A),
     covariant F1 -> covariant F2 ->
     covariant (fun (x : B -> pred A) b => F1 x b ⊗ F2 x b).
 Proof.
   intros; hnf.
   intros P Q ? ?.
-  eapply ocon_derives.
+  eapply ocon_derives_d.
   apply H, H1.
   apply H0, H1.
 Qed.
 
-Definition contravariant {B A : Type} (F: (B -> pred A) -> (B -> pred A)) : Prop :=
+Definition contravariant_d {B A : Type} (F: (B -> pred A) -> (B -> pred A)) : Prop :=
 forall (P Q: B -> pred A), (forall x, P x |-- Q x) -> (forall x, F Q x |-- F P x).
 
-Lemma contravariant_ocon {B}{A} {JA: Join A}{PA: Perm_alg A}:
+Lemma contravariant_ocon_d {B}{A} {JA: Join A}{PA: Perm_alg A}:
    forall F1 F2 : (B -> pred A) -> (B -> pred A),
-    contravariant F1 -> contravariant F2 ->
-    contravariant (fun (x : B -> pred A) b => F1 x b ⊗ F2 x b).
+    contravariant_d F1 -> contravariant_d F2 ->
+    contravariant_d (fun (x : B -> pred A) b => F1 x b ⊗ F2 x b).
 Proof.
   intros; hnf.
   intros P Q ? ?.
-  eapply ocon_derives.
+  eapply ocon_derives_d.
   apply H, H1.
   apply H0, H1.
 Qed.
 
-Lemma precise_ocon {A} {JA : Join A} {PA : Perm_alg A} {SA: Sep_alg A}{CaA : Canc_alg A}{CrA : Cross_alg A}{DA : Disj_alg A} :
+Lemma precise_ocon_d {A} {JA : Join A} {PA : Perm_alg A} {SA: Sep_alg A}{CaA : Canc_alg A}{CrA : Cross_alg A}{DA : Disj_alg A} :
   forall P Q, precise P -> precise Q -> precise (P ⊗ Q).
 Proof.
   intros; intro; intros.
@@ -358,7 +359,7 @@ Proof.
   apply (overlapping_eq h1 h2 h3 i1 i2 i3 i12 i23); trivial.
 Qed.
 
-Lemma precise_tri_exp_ocon {A} {JA : Join A} {PA : Perm_alg A} {SA: Sep_alg A} {CaA : Canc_alg A}
+Lemma precise_tri_exp_ocon_d {A} {JA : Join A} {PA : Perm_alg A} {SA: Sep_alg A} {CaA : Canc_alg A}
       {CrA : Cross_alg A} {DA : Disj_alg A} B:
   forall (P : B -> B -> B -> pred A) (Q R: B -> pred A),
     precise (EX x : B, EX y : B, EX z : B, P x y z) -> precise (exp Q) -> precise (exp R) ->
@@ -379,11 +380,11 @@ Proof.
   rewrite H24 in *; rewrite H25 in *; apply (overlapping_eq h1 h2 h3 i1 i2 i3 i12 i23); trivial.
 Qed.
 
-Lemma extract_andp_ocon_ocon_left {A} {JA : Join A} {PA : Perm_alg A} {SA: Sep_alg A}:
+Lemma extract_andp_ocon_ocon_left_d {A} {JA : Join A} {PA : Perm_alg A} {SA: Sep_alg A}:
   forall (w : A) P Q R S, (P && Q ⊗ R ⊗ S) w -> exists w', P w'.
 Proof. repeat intro; destruct_ocon H h; destruct_ocon H2 i; destruct H6; exists i12; trivial. Qed.
 
-Lemma ocon_precise_elim  {A}{JA: Join A}{PA: Perm_alg A}{SA: Sep_alg A}{CA: Canc_alg A}{DA : Disj_alg A}:
+Lemma ocon_precise_elim_d  {A}{JA: Join A}{PA: Perm_alg A}{SA: Sep_alg A}{CA: Canc_alg A}{DA : Disj_alg A}:
   forall P : pred A, precise P -> P ⊗ P = P.
 Proof.
   intros; apply pred_ext; intro w; intro. destruct_ocon H0 h. try_join h2 h3 h23'; equate_join h23 h23'.
@@ -393,7 +394,7 @@ Proof.
   apply join_comm, core_unit. split; auto.
 Qed.
 
-Lemma corable_ocon: forall {A}{JA: Join A}{PA: Perm_alg A}{SA: Sep_alg A} P Q, corable P -> corable Q -> corable (ocon P Q).
+Lemma corable_ocon_d: forall {A}{JA: Join A}{PA: Perm_alg A}{SA: Sep_alg A} P Q, corable P -> corable Q -> corable (ocon P Q).
 Proof.
   intros.
   rewrite corable_spec in H, H0 |- *.
@@ -420,7 +421,7 @@ Proof.
     congruence.
 Qed.
 
-Lemma corable_andp_ocon1{A} {JA: Join A}{PA: Perm_alg A}{SA: Sep_alg A}:
+Lemma corable_andp_ocon1_d {A} {JA: Join A}{PA: Perm_alg A}{SA: Sep_alg A}:
    forall P Q R, corable P ->  ocon (P && Q) R = P && (ocon Q R).
 Proof.
   intros.
@@ -439,4 +440,3 @@ Proof.
     apply join_core in H3.
     apply H with h; [congruence | auto].
 Qed.
-
