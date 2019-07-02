@@ -37,3 +37,5 @@ Section DijkstraGraph.
     | (v, nil) => 0
     | (v, edges) => fold_left Nat.add (map (elabel g) edges) 0
     end.
+
+End DijkstraGraph.

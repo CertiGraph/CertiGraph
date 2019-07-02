@@ -22,7 +22,7 @@ MSL_EXT_FILES = \
   overlapping_direct.v precise_direct.v alg_seplog_direct.v
 
 MSL_APPLICATION_FILES = \
-  Graph.v Graph_Mark.v GraphBi.v GraphBi_Mark.v DagBi_Mark.v Graph_Copy.v GraphBi_Copy.v GList.v GList_UnionFind.v ArrayGraph.v UnionFindGraph.v
+  Graph.v Graph_Mark.v GraphBi.v GraphBi_Mark.v DagBi_Mark.v Graph_Copy.v GraphBi_Copy.v GList.v GList_UnionFind.v ArrayGraph.v UnionFindGraph.v DijkstraGraph.v
 
 VERIC_EXT_FILES = \
   res_predicates.v seplog.v SeparationLogic.v
@@ -83,9 +83,10 @@ all: \
   $(NORMAL_FILES:%.v=%.vo) \
   $(CLIGHT_FILES:%.v=%.vo)
 
-# A minimal list of files that need to built within VST. Please add to this as needed.
+# A minimal list of files that need to built within VST for our build to work.
+# Please add to this as needed.
 VST_CRITICAL_FILES = \
-  progs/conclib.v floyd/reassoc_seq.v compcert/cfrontend/ClightBigstep.v
+  progs/conclib.v floyd/reassoc_seq.v compcert/cfrontend/ClightBigstep.v msl/msl_direct.v msl/alg_seplog_direct.v
 
 .PHONY: vstandme
 vstandme:

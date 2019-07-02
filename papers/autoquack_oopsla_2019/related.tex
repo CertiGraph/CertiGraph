@@ -24,28 +24,6 @@ postconditions by defining all mathematical operations (\emph{e.g.} $\m{mark}$) 
 functions rather than as relations; this is fine for pen-and-paper, but painful in
 a mechanized setting wherein functions must be proven to terminate.
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%%%%% Edit 1
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%%%%% Edit 1: Qinxiang's proposal starts
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\iffalse
-Our development is entirely machine-checked~(\S\ref{sec:development}) which revealed some
-tricky technique details. Hobor and Villard fell into the trap of defining spatial graphs
-recursively~(\S\ref{sec:fixpointfail}); unfortunately other members of the research
-community have since followed them in.  We exposed this error and provided a sound,
-general, and highly modular graph framework that works smoothly in a mechanized
-context~(\S\ref{sec:mathgraph},\S\ref{sec:spacegraph}).
-% and quite general
-%definition for \p{graph}~(\S\ref{sec:goodgraph}) that recovers fold/unfold reasoning.
-\fi
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%%%%% Edit 1: Qinxiang's proposal ends
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%%%%% Edit 1: Original version starts
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-\iftrue
 Hobor and Villard treated mathematical graphs as triples $(V,E,L)$ of
 vertices, edges, and a vertex labeling function; vertices had no more than two
 neighbors.  Our mathematical graph framework~(\S\ref{sec:mathgraph}) is very
@@ -61,75 +39,136 @@ reasoning to the verification framework of CompCert/VST~(\S\ref{sec:vst}), and
 our development is entirely
 machine-checked~(\S\ref{sec:development}) whereas they used only pen and paper.
 
-%two very different verification tools~(\S\ref{sec:ramifylib}),
-% and HIP/SLEEK~(\S\ref{dummyref}).
-\fi
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%%%%% Edit 1: Original version ends
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\paragraph{Other pen-and-paper verification of graph algorithms and/or $**$.}
 
-\paragraph{Other verification of graph algorithms and/or $**$.}
-\cite{hongseok:phd}'s verification of the Schorr-Waite algorithm is a landmark in the
-early separation logic literature.  \cite{neelthesis}~provided the first separation
-logic proof of union-find.  \cite{bornat:aliasing04}~gave an early attempt to
-reason about graph algorithms in separation logic in a more general
-way.
+\cite{hongseok:phd}’s verification of the Schorr-Waite algorithm is 
+a landmark in the early separation logic literature. 
+\cite{bornat:aliasing04}~gave an early attempt to reason about graph algorithms 
+in separation logic in a more general way. 
+\cite{neelthesis}~provided the first separation logic proof of union-find.
 
-\cite{rey-slnotes}~was the first to document the overlapping conjunction~$**$, albeit without
-any strategy to reason about it using Hoare rules.
-\cite{gardnerms12}~were the first to reason about a program using $**$ in
-Javascript.  \cite{raadvg15}~used $**$ to reason about a
-concurrent spanning algorithm using a kind of
-``concurrent localization''.  \cite{ilya-graphs} also verified a
-concurrent spanning tree algorithm, and moreover developed mechanized Coq proofs.
-
-A decade after Yang verified Schorr-Waite on paper, \cite{leino10}~automated
-its verification.
+\cite{rey-slnotes}~was the first to document the overlapping 
+conjunction $**$, albeit without any strategy to reason about it using Hoare rules. 
+\cite{gardnerms12}~were the first to reason about a program using $**$ in 
+Javascript. 
+\cite{raadvg15}~used $**$ within their CoLoSL program logic to reason about 
+a concurrent spanning algorithm using a kind of ``concurrent localization''.
 
 %\paragraph{Alternative fixpoint constructions.}
 %Appel and McAllester defined an alternative ``contractive'' fixpoint that is sometimes used to define recursive predicates in separation
 %logic~\cite{appel:fixpoint}.  In Appendix~\ref{apx:appelfixpiont} we explain why Appel and McAllester's  is also unsuitable to define graphs.
 
-\vspace{-1ex}
-\paragraph{Verification tools.}
-Our work interacts with the Floyd~\cite{appel:programlogics} verification
-tool.  Charge! likewise uses Coq tactics to work with a shallow embedding of higher
-order separation logic, but focuses on OO programs written in
-Java/C\#~\cite{bengtson:charge}.  Iris Proof Mode provides a similar framework for higher-order
-concurrent reasoning~\cite{krebbers:iris}.  A  more automated approach to verification of low
-level programs using Coq is the Bedrock framework \cite{chlipala:bedrock}.
+\paragraph{Machine-checked verification of graph algorithms.}
+A decade after Yang verified Schorr-Waite on paper, \cite{leino10} automated 
+its verification in Dafny. 
+\cite{ilya-graphs}~verified a concurrent spanning tree algorithm, and 
+moreover developed mechanized Coq proofs. Their algorithm was written in FCSL, 
+a monadic DSL that combines effectful operations with pure Coq expressions; 
+FSCL cannot be executed. 
+\cite{chen18}~compared how three provers (Coq, Isabelle, and Why3) can 
+verify Tarjan’s strongly-connected component algorithm written in the native 
+language of each of the tools. Because these are written in the native languages 
+of a proof assistant, they avoid “real-world” language concerns such as 
+memory models and overflow.
 
-Many automated verification tools also use separation logic in a forward reasoning style
-as does HIP/SLEEK, including Smallfoot~\cite{berdine:smallfoot},
-jStar~\cite{distefanop08}, and Verifast~\cite{jacobs:verifast}.  One of HIP/SLEEK's
-distinguishing features is good support for user-defined inductive predicates rather
-than a library of pre-defined predicates for lists, trees etc.
+\cite{lamneu15}~extended the Isabelle Refinement Framework to verify a range of 
+DFS algorithms via stepwise refinement. 
+\cite{lamsef19}~extended this further and presented verifications of 
+the correctness and time complexity of the Edmonds-Karp and push-relabel
+algorithms. Lammich \emph{et al.}’s work yields very readable proofs of classic 
+textbook algorithms by using the Isar language.
 
-Dafny~\cite{leino10} and KeY~\cite{beckert:2007} are verifiers not based
-on separation logic; KeY uses an interactive verifier while Dafny pursues automation with Z3~\cite{moura2008}.
+\cite{char11}~used his CFML tool to Coq-verify an OCaml implementation of 
+Dijkstra. 
+\cite{gueneauetal19}~extended CFML and verified the correctness 
+and time complexity of a modified version of the BFGT cycle-detection algorithm.
+The graph algorithms verified in CFML tend to be “graph theory” in flavour, 
+whereas the algorithms we have verified in this paper tend to have more of a
+“systems” flavor; this difference is partially explained by the fact that 
+code written in ML can take advantage of its high-level design, whereas 
+the “interesting” use for C code is to handle grungy systems tasks. For 
+example, references in ML cannot be null and do not support pointer arithmetic; 
+of course both are possible – and lead to nontrivial complications – in 
+C. Accordingly, the CFML proofs benefit from ML’s cleaner computational model; 
+our verifications are in C so we must contend with C’s memory model, pointer 
+arithmetic, significant scope for undefined behavior, and so forth.
 
-%\cite{nipkow2017}~verified functional variants of several classic tree and queue structures in Isabelle/HOL.
+\cite{charpott15, charpott19}~used CFML to verify the correctness and 
+time complexity of union-find. Their work is an interesting counterpoint to 
+ours because, while it maintains an abstraction between the client and the 
+internal mathematical/spatial facts that the client need not know, it does 
+not appear to maintain a separation between the mathematical and spatial 
+facts themselves, as we do in~\S\ref{sec:mathgraph} and ~\S\ref{sec:spacegraph}.
+Our modular method let us verify an alternate version of union-find that uses an array of vertices rather than individually heap-allocated nodes. This 
+secondary verification then used exactly the same mathematical proof of 
+functional correctness despite the radically different layout of spatial 
+memory. Our work does not verify the time complexity of union-find; when 
+we attempted to prove the necessary amortisation bounds we ran into an 
+overflow issue: it was impossible to prove that the rank would not exceed 
+\li{max_int} because the CompCert memory model does not place a bound on the 
+total number of allocations. Informally, this overflow is impossible in 
+practice because no computer has $2^{2^{\tiny 64}}$ bytes of memory, which would 
+be required for this overflow to occur, but Coq remains unconvinced. 
+Chargu{\'{e}}raud and Pottier acknowledged and sidestepped this issue by 
+representing rank using the Coq type \li{Z}, which is not an option we could 
+use given the end-to-end nature of the VST + CompCert toolchain.
 
-\vspace{-1ex}
-\paragraph{Mechanized mathematical graph theory.} There is a long history,
-going back at least 25 years, of mechanized reasoning about mathematical
-graphs~\cite{wong1991}.  The most famous mechanically verified ``graph theorem''
-is the Four Color Theorem~\cite{gonthier2005computer}; however
-the development actually uses hypermaps instead of graphs.
-Noschinski built a graph library in Isabelle/HOL whose formalization
-is the closest to ours~\cite{noschinski2015}, \emph{e.g.} supporting
-graphs with labeled and parallel arcs.
-\cite{noschinski2015formalizing,dubois2015graphes}~used proof assistants to design verifiable
-checkers for solutions to graph problems.
-\cite{yamamoto1995formalization,bauer20025}~use an inductive
-encoding of graphs to formalize planar graph theory.
+\paragraph{Verification tools in Coq.}
+Our work interacts with the Floyd verification module within the Verified 
+Software Toolchain (VST)~\cite{appel:programlogics}. The Floyd module uses 
+tactics to enable the separation-logic verification of CompCert C programs. 
+VST connects to the CompCert certified C compiler~\cite{leroy:compcert}, and 
+thus has no gaps or admits between the verified source code and the eventual
+assembly code~\cite{appelvst}.
 
-\cite{gueneauetal}~formalised ``time credits'' in Separation Logic and big-$O$ notation in
-Coq and then verified both the correctness
-and the time complexity of the union-find data structure.
-%Others, \emph{e.g.}~\cite{others2, others4, others3, others1}
-%have also formally proved bounds on the resources
-%used by programs. %formally in proof assistants such as Coq, Isabelle/HOL, and Why3.
+Charge! likewise uses Coq tactics to work with a shallow embedding of higher 
+order separation logic, but focuses on OO programs written in 
+Java/C\#~~\cite{bengtson:charge}. Iris Proof Mode provides a similar framework 
+for higher-order concurrent reasoning in Coq~\cite{krebbers:iris}.
+
+CFML enables the verification of OCaml programs by reasoning about their
+ “characteristic formulae” in separation logic using Coq~\cite{char10, char11}. 
+CFML has been used to verify a range of functional and imperative programs,
+including some graph-related algorithms as discussed 
+above. \cite{charpott15, charpott19}~extended CFML to reason about time 
+credits. \cite{gueneau17}~indicates that CFML is exploring a connection 
+with the certified CakeML compiler~\cite{cakeml}.
+
+The tools above require substantial human guidance. A more automated approach to verification of low level programs using Coq is the Bedrock framework~\cite{chlipala:bedrock}.
+
+
+\paragraph{Other verification tools.} 
+
+Many more-automated verification tools also use separation logic in a forward
+reasoning style. Smallfoot~\cite{berdine:smallfoot}, jStar~~\cite{distefanop08}, 
+HIP/SLEEK~\cite{chin:hipsleek}, and Verifast~\cite{jacobs:verifast} are landmarks
+at various points on the expressibility-automatability spectrum. 
+KeY~\cite{beckert:2007} and Dafny~\cite{leino10} are verifiers that are not 
+based on separation logic. KeY uses an interactive verifier while Dafny pursues
+ automation with Z3~\cite{moura2008}.
+
+\paragraph{Mechanized mathematical graph theory.}
+There is a long history, going back at least 28 years, of mechanized 
+reasoning about mathematical graphs~\cite{wong1991}. 
+The most famous mechanically verified “graph theorem” is the Four Color 
+Theorem~\cite{gonthier2005computer}; however the development actually uses
+hypermaps instead of graphs. In general most “mathematical graph” frameworks in 
+the literature were not used to verify real 
+code~\cite{wong1991, chou1994, yamamoto1995formalization, rwpgt1998, yamamoto1998formalization, tamai2000formal, duprat2001coq, ridge2005graphs, nipkow2016, dijkstra_shortest_path-afp}, for which they seem unsuitable. Verifying real code requires delicate concepts such as “removing a subgraph”, “null nodes”, and “parallel edges”, and one of our contributions is that our framework is general enough to support such verification. 
+\cite{noschinski2015}~built a graph library in Isabelle/HOL whose formalization 
+is the closest to ours, 
+\emph{e.g.} supporting graphs with labeled and parallel arcs. 
+Beyond being in Coq, our setup supports at least three features beyond 
+Noschinski’s: reasoning about incomplete graphs (as discussed 
+in~\S\ref{sec:mathinfra} using figure~\ref{fig:pregraph}), labeling the graph 
+as a whole (used, for example, in the garbage collector to store 
+metainformation about the number and location of the generations), and our 
+modular typeclass-supported “graphs with properties” setup in General Graph 
+(as described in~\S\ref{subsec:graphplugins}). 
+\cite{noschinski2015formalizing,dubois2015graphes}~used proof assistants to 
+design verifiable checkers for solutions to graph problems. 
+\cite{yamamoto1995formalization,bauer20025}~used an inductive encoding of graphs to formalize planar graph theory.
+
 
 \paragraph{Verification of garbage collection algorithms.}
 Schism \cite{gcexample4,gcexample4a} is a certified concurrent
@@ -153,12 +192,3 @@ only three generations), but on the other hand handles mutation in the GC heap. 
 difference, however, is that we present an integrated graph framework suitable for reasoning 
 about many graph algorithms, of which our GC is merely the flagship.  In contrast, they focus 
 much more narrowly on the problem of certified GCs.
-
-%\note{has to be written with great care. They are very serious competition.}
-
-
-%{\color{magenta}
-%5.2. An alternative way of verifying marking program is reasoning about the whole history of marking operations. The disadvantage of it is that it currently needs more work in a Hoare logic framework. The advantage of it is that its reasoning structure are more similar with the way we understand it in our first algorithm class.
-%5.3. I take some effort on garbage collector like graph structural. Though it is only connecting this special structural with 5.1.1 and 1.3, it takes much time and it is not finished yet.}
-
-

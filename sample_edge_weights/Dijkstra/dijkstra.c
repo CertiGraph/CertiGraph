@@ -79,7 +79,7 @@ void dijkstra () {
                     dist[i] = dist[u] + graph[u][i];   // improve it
                     prev[i] = u;                       // note that we got there via 'u'
                     adjustWeight(i, dist[i], &pq);     // and then stash the improvement in the PQ
-                    // printf("Improved the dist to get to vertex %d to %d\n", i, dist[i]);
+                    printf("Improved the dist to get to vertex %d to %d\n", i, dist[i]);
                     // uncomment the above line to see how the "best answer" improves slowly!
                 }
             }
