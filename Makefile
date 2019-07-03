@@ -88,16 +88,21 @@ all: \
 VST_CRITICAL_FILES = \
   progs/conclib.v floyd/reassoc_seq.v compcert/cfrontend/ClightBigstep.v msl/msl_direct.v msl/alg_seplog_direct.v
 
-.PHONY: vstandme
-vstandme:
+.PHONY: vstandme7
+vstandme7:
 	cd $(VST_DIR) && make $(VST_CRITICAL_FILES:%.v=%.vo) -j7 && cd - && make -j7
 
-depend:
+.PHONY: vstandme3
+vstandme3:
+	cd $(VST_DIR) && make $(VST_CRITICAL_FILES:%.v=%.vo) -j3 && cd - && make -j3
+
+.depend depend:
+	@echo 'coqdep ... >.depend'
 	@$(COQDEP) $(NORMAL_FLAG) $(NORMAL_FILES) > .depend
 	@$(COQDEP) $(CLIGHT_FLAG) $(CLIGHT_FILES) >> .depend
 
 clean:
-	@rm */*.vo */*.glob */.*.aux
+	@rm */*.vo */*.glob */.*.aux .depend
 
 .DEFAULT_GOAL := all
 
