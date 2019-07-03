@@ -1,6 +1,6 @@
 
 Require Import RamifyCoq.CertiGC.gc_spec.
-Require Import RamifyCoq.msl_ext.ramification_lemmas.
+Require Import RamifyCoq.msl_ext.ramification_lemmas. 
 
 Lemma root_valid_int_or_ptr: forall g (roots: roots_t) root outlier,
     In root roots ->
