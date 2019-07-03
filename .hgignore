@@ -15,3 +15,6 @@ _CoqProject
 CONFIGURE
 autoquack.pdf
 .DS_Store
+sample_mark/Dijkstra.xcodeproj/project.xcworkspace
+project.pbxproj
+xcschememanagement.plist
