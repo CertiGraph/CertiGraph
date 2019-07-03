@@ -1,2 +1,0 @@
-coqide -async-proofs off `cat .loadpath` $* &
-
