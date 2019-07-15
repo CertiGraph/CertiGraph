@@ -256,9 +256,10 @@ Functions like \li{forward} ignore the Clight memory representation
 of the heap and go about their business in the abstract domain
 of mathematical graphs, but \li{do\_scan} cannot do this because grungy 
 details such as the index order of blocks are key to its strategy of a
-linear search from \li{sc} to \li{nx}. 
+linear search from \li{sc} to \li{nx}.
 
-do do do
+% Forward operates on the graph in a graph-theory sense, verices are neighbors and so on.
+% Scan navigates it in a more systems-ey sense, ie the graph is basiclaly in malloc order, and neighbors and not necessarily beside each other, etc. Do-scan is navigatingh that boundary
 
 \subsection{Performance and Overflows and Undefined Behaviours, Oh My!} \label{sec:gcissues}
 

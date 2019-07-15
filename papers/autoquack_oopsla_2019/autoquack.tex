@@ -210,7 +210,7 @@
 %\email{txyyss@gmail.com}          %% \email is recommended
 
 \author{Qinxiang Cao}
-\affiliation{\institution{John Hopcroft Center for Computer Science}}
+\affiliation{\institution{Shanghai Jiao Tong University}}
 % \email{caoqinxiang@gmail.com}
 
 \author{Anshuman Mohan}
@@ -283,20 +283,33 @@ sort used in the OCaml runtime.  Our proofs are entirely machine-checked in Coq.
 \begin{CCSXML}
 <ccs2012>
 <concept>
-<concept_id>10011007.10011006.10011008</concept_id>
-<concept_desc>Software and its engineering~General programming languages</concept_desc>
+<concept_id>10003752.10003790.10011742</concept_id>
+<concept_desc>Theory of computation~Separation logic</concept_desc>
 <concept_significance>500</concept_significance>
 </concept>
 <concept>
-<concept_id>10003456.10003457.10003521.10003525</concept_id>
-<concept_desc>Social and professional topics~History of programming languages</concept_desc>
+<concept_id>10003752.10010124.10010138.10010142</concept_id>
+<concept_desc>Theory of computation~Program verification</concept_desc>
+<concept_significance>500</concept_significance>
+</concept>
+<concept>
+<concept_id>10003752.10003790.10002990</concept_id>
+<concept_desc>Theory of computation~Logic and verification</concept_desc>
 <concept_significance>300</concept_significance>
+</concept>
+<concept>
+<concept_id>10003752.10010124.10010138.10010140</concept_id>
+<concept_desc>Theory of computation~Program specifications</concept_desc>
+<concept_significance>100</concept_significance>
 </concept>
 </ccs2012>
 \end{CCSXML}
 
-\ccsdesc[500]{Software and its engineering~General programming languages}
-\ccsdesc[300]{Social and professional topics~History of programming languages}
+\ccsdesc[500]{Theory of computation~Separation logic}
+\ccsdesc[500]{Theory of computation~Program verification}
+\ccsdesc[300]{Theory of computation~Logic and verification}
+\ccsdesc[100]{Theory of computation~Program specifications}
+
 %% End of generated code
 
 
@@ -350,7 +363,19 @@ sort used in the OCaml runtime.  Our proofs are entirely machine-checked in Coq.
 \input{futurecon.tex}
 
 %% Acknowledgments
-\begin{acks}                            %% acks environment is optional
+\begin{acks}
+We thank Asankhaya Sharma for his help with a previous version of this paper,
+Neel Krishnaswami for his helpful suggestions and encouragments, and the 
+CertiCoq team (esp. Andrew~W.~Appel, Olivier~Savary~Belanger, and 
+Zoe~Paraskevopoulou) for their overall support and for hosting 
+Shengyi Wang for a summer. This work was funded in part by the
+\grantsponsor{}{Yale-NUS College}{} grant~\mbox{\grantnum{}{R-607-265-322-121}} and the \grantsponsor{}{National Science Foundation}{} grant~\grantnum{}{CCF-1521602}.
+Any opinions, findings, and conclusions or recommendations expressed in 
+this material are those of the authors and do not necessarily reflect the 
+views of Yale-NUS College or the National Science Foundation.
+\hide{
+
+                            %% acks environment is optional
                                         %% contents suppressed with 'anonymous'
   %% Commands \grantsponsor{<sponsorID>}{<name>}{<url>} and
   %% \grantnum[<url>]{<sponsorID>}{<number>} should be used to
@@ -363,7 +388,7 @@ sort used in the OCaml runtime.  Our proofs are entirely machine-checked in Coq.
   No.~\grantnum{GS100000001}{mmmmmmm}.  Any opinions, findings, and
   conclusions or recommendations expressed in this material are those
   of the author and do not necessarily reflect the views of the
-  National Science Foundation.
+  National Science Foundation.}
 \end{acks}
 
 

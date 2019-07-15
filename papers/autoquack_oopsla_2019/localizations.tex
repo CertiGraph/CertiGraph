@@ -512,6 +512,36 @@ As a more aggressive example of modifying the link structure of a graph, we have
 this example in Appendix~\ref{apx:spanning}.
 Our flagship example, the CertiCoq garbage collector, will be discussed in~\S\ref{sec:certigc}.
 
+\hide{
+\subsection{Forward ramification}
+
+\note[Check refs]
+{Sometimes it is convenient to reason in a ``forward'' (strongest postcondition)
+style rather than in a ``backward'' (weakest precondition) style---many 
+automated tools use a forward style~\cite{chin:hipsleek,X,XX,XXX}.}  
+
+As we saw in \S\ref{sec:hipsleek}, the forward style of reasoning employed by HIP/SLEEK uses the existential wand $--o$ to express ramifications instead of the more typical universal wand $--*$.  The standard $--*$ form of ramification is weaker, but the strongest postcondition style using $--o$ can also get the job done without too much extra work since:
+\vspace*{0.25ex}
+\[\infrulestyle{WandToEwand}~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\]
+\vspace*{-8ex}
+\[
+~~~~~~~~\infrule{}
+{G_1 |- L_1 * (L_2 --* G_2)}
+{(L_1 --o G_1) * L_2 |- G_2}
+{\m{precise}(L_1)}
+\vspace*{-1.5ex}
+\]
+\[
+\begin{array}{@{}l@{}l@{}}
+\m{precise}(P) ~ \defeq ~ & (\sigma_1 |= P) => (\sigma_2 |= P) => \\
+& ~~ (\sigma_1 \oplus \sigma_1' \! = \! \sigma) => (\sigma_2 \oplus \sigma_2' \! = \! \sigma) => \sigma_1 \! = \! \sigma_2
+\end{array}
+\]
+In \S\ref{sec:ramifylib} we will discuss the ``supplemental'' spatial libraries, which ensures
+the preciseness of our key predicates.
+
+}
+
 %In addition to \li{mark} for graphs, we have also verified the same program for DAGs.
 %More interestingly
 

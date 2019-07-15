@@ -82,47 +82,6 @@ Proof of \infrulestyle{Ramify-PQ} from \infrulestyle{Ramify-P}:
 See Figure~\ref{fig:rampqproofs} for the proofs of \infrulestyle{Ramify-P} and \infrulestyle{Ramify-PQ}. 
 } % end hide
 
-\section{Difficulty using $\graphkt$}
-\label{apx:problemrecgraph}
-
-\begin{figure*}
-\[
-\infrule{}
-{\infrule{}
-  {100 |-> 42,100,0 ~ |- ~ 100 |-> 42,100,0 ** \graphkt(100,\hat{\gamma})}
-  {100 |-> 42,100,0 ~ |- ~ \hat{\gamma}(100) = (42,100,0) ~ /| ~ 100 |-> 42,100,0 ** \graphkt(100,\hat{\gamma}) ** \graphkt(0,\hat{\gamma})}
-  {(2)}
-}
-{100 |-> 42,100,0 ~ |- ~ \graphkt(100,\hat{\gamma})}
-{(1)}
-\]
-(1) Unfold $\graphkt$, dismiss first disjunct (contradiction), introduce existentials (which must be 42,100,0) \\
-(2) simplify using $P * \p{emp} -|- P$ and remove pure conjunct
-
-\caption{An attempt to prove a ``simple'' entailment}
-\label{fig:badcycle}
-\end{figure*}
-
-See Figure \ref{fig:badcycle} for an attempt to prove the entailment $100 |-> 42,100,0 ~ |- ~ \graphkt(100,\hat{\gamma})$.  Part of the problem is that the recursive structure interacts very badly with $**$: if the recursion involved~$*$~then it \textbf{would} be provable, by induction on the finite memory (each ``recursive call'' would be on a strictly smaller subheap).  This is why Knaster-Tarski works so well with list, tree, and DAG predicates in separation logic.
-
-\section{Problem with Appel and McAllester's fixpoint}
-\label{apx:appelfixpiont}
-
-Appel and McAllester proposed another fixpoint $\mu_{\mathsf{A}}$
-that is sometimes used to define recursive predicates in separation
-logic \cite{appel:fixpoint}.  This time the functional $F_P$ needs to be
-\emph{contractive}, which to a first order of approximation means that
-all recursion needs to be guarded by the ``approximation
-modality''~$\rhd$~\cite{appel:vmm}, \emph{i.e.} our graph predicate would
-look like
-\begin{align*}
-\grapham(x, \gamma) ~ &\stackrel{\Delta}{=}\\
- (x = 0 /| \p{emp}) & |/ \exists m,l,r.~ \gamma(x)=(m,l,r) /| \null \\
- x |-> m,l,r & ** \rhd \grapham(l, \gamma) ** \rhd \grapham(r, \gamma)
-\end{align*}
-
-Unfortunately, $\rhd P$ is not precise for all $P$, so $\grapham$ is not precise either.  The approximation modality's universal imprecision has never been noticed before.
-
 \section{Explanation of the Garbage Collector Program}
 \label{apx:gcstructure}
 

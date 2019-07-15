@@ -16,7 +16,8 @@ P \text{ ignores } S & \stackrel{\Delta}{=} ~~ \forall \sigma, \sigma'.~ \sigma 
 & \qquad ~~ (\sigma |= P) <=> (\sigma' |= P)
 \end{array}
 \]
-That is, we consider two program states $\sigma$ and $\sigma'$ equivalent up to program variable set $S$ when they agree everywhere except on the values of $S$ (typically, a state $\sigma$ is a pair of a heap $h$ and program variables $\rho$).  A predicate $P$ ignores $S$ when its truth is independent of all program variables in $S$.  %{\color{magenta} Notice both the syntactic and semantic styles use the $\MV(c)$ function defined via straightforward recursive case analysis on program syntax; programming languages typically do have a fixed syntactic structure.}
+That is, we consider two program states $\sigma$ and $\sigma'$ equivalent up to program variable set $S$ when they agree everywhere except on the values of $S$ (typically, a state $\sigma$ is a pair of a heap $h$ and program variables $\rho$).  A predicate $P$ ignores $S$ when its truth is independent of all program variables in $S$.  %{\color{magenta} Notice both the syntactic and semantic styles use the $\MV(c)$ function defined via straight
+ recursive case analysis on program syntax; programming languages typically do have a fixed syntactic structure.}
 
 
 Now consider using ramification to verify this program:
