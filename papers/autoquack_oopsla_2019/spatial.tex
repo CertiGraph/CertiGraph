@@ -4,6 +4,8 @@ To prove the functional correctness of graph-manipulating algorithms implemented
 
 \input{seplogsem_figure.tex}
 
+For reference, Figure~\ref{fig:seplogsem} shows the standard semantic models for the separation logic connectives using a join relation $\oplus$ on an underlying separation algebra~\cite{dockins09}.
+
 \subsection{Recursive definitions yield poor \p{graph} predicates}\label{sec:fixpointfail}
 
 \newcommand{\graphkt}{\p{graph}_T}
@@ -72,13 +74,86 @@ Consider the memory $m$ for a toy machine:
 \vspace{-0.5em} % very fiddly. need to adjust per final layout
 \end{wrapfigure}
 
-\noindent Clearly $m |= 100 |-> 42,100,0$.  But it seems also clear that this memory represents a one-cell cyclic graph as illustrated in the accompanying diagram, \emph{i.e.} we want $m |= \graphkt(100,\hat{\gamma})$, where $\hat{\gamma}(100) = (42,100,0)$.  This is equivalent to wanting to be able to prove $100~|->~42,100,0~|-~\graphkt(100,\hat{\gamma})$.  Unfortunately, as explained in Appendix~\ref{apx:problemrecgraph}, this is rather difficult to do since applying the natural proof techniques actually strengthens the goal. In fact we do not know if this entailment is provable, but the difficulties encountered in proving what ``should be'' straightforward suggest that Knaster-Tarski should be treated with caution when defining spatial predicates for graphs.
+\noindent Clearly $m |= 100 |-> 42,100,0$.  But it seems also clear that this
+memory represents a one-cell cyclic graph as illustrated in the accompanying
+diagram, \emph{i.e.} we want $m |= \graphkt(100,\hat{\gamma})$, where 
+$\hat{\gamma}(100) = (42,100,0)$.  This is equivalent to wanting to be able to 
+prove $100~|->~42,100,0~|-~\graphkt(100,\hat{\gamma})$.  Unfortunately, as 
+illustrated in Figure~\ref{fig:badcycle}, this is rather difficult to do since 
+applying the natural proof techniques actually strengthens the goal.
+Part of the 
+problem is that the recursive structure interacts very badly with $**$: if the 
+recursion involved~$*$~then it \textbf{would} be provable, by induction on the 
+finite memory (each ``recursive call'' would be on a strictly smaller subheap).  
+This is why Knaster-Tarski works so well with list, tree, and DAG predicates in 
+separation logic.  We do not know if this entailment is provable, but the 
+difficulties encountered in proving what ``should be'' straightforward suggest 
+that Knaster-Tarski should be treated with caution when defining spatial 
+predicates for graphs.
+
+\begin{figure*}
+\[
+\infrule{}
+{\infrule{}
+  {100 |-> 42,100,0 ~ |- ~ 100 |-> 42,100,0 ** \graphkt(100,\hat{\gamma})}
+  {100 |-> 42,100,0 ~ |- ~ \hat{\gamma}(100) = (42,100,0) ~ /| ~ 100 |-> 42,100,0 ** \graphkt(100,\hat{\gamma}) ** \graphkt(0,\hat{\gamma})}
+  {(2)}
+}
+{100 |-> 42,100,0 ~ |- ~ \graphkt(100,\hat{\gamma})}
+{(1)}
+\]
+\begin{tabular}{@{}l@{$~~$}l|l@{$~~$}l}
+(1) & Unfold $\graphkt$, dismiss first disjunct (contradiction), $~~$ & $~~$ (2) &simplify using $P * \p{emp} -|- P$ \\
+& introduce existentials (which must be 42,100,0) & & and remove pure conjunct
+\end{tabular}
+\caption{An attempt to prove a ``simple'' entailment}
+\label{fig:badcycle}
+\end{figure*}
+
 
 The other direction, \mbox{$\graphkt(100,\hat{\gamma}) |- 100 |-> 42,100,0$},
 \textbf{is} true but is not easy to prove, relying on the constructions in \S\ref{sec:goodgraph} and the fact that $\mu_{\mathsf{T}}$ constructs the least fixpoint.  In contrast, $\graphkt(100,\hat{\gamma}) |- 100 |-> 42,100,0 * \top$ is easy. % to prove. % via fold/unfold.
 
+\hide{
 \cite{appel:fixpoint} defined an alternative fixpoint using a notation of \emph{contractiveness}.  Unfortunately, this alternative fixpoint also
 fails to define a sensible graph predicate; see Appendix~\ref{apx:appelfixpiont}.
+
+\subsection{Problem with Appel and McAllester's fixpoint}
+\label{apx:appelfixpiont} }
+
+Appel and McAllester proposed another fixpoint $\mu_{\mathsf{A}}$
+that is sometimes used to define recursive predicates in separation
+logic \cite{appel:fixpoint}.  This time the functional $F_P$ needs to be
+\emph{contractive}, which to a first order of approximation means that
+all recursion needs to be guarded by~$\rhd$~, the ``approximation
+modality'' \cite{appel:vmm}, \emph{i.e.} our graph predicate would
+look like
+\begin{align*}
+\grapham(x, \gamma) ~ \stackrel{\Delta}{=} ~~ &(x = 0 /| \p{emp}) |/ \exists m,l,r.~ \gamma(x)=(m,l,r) /| \null \\
+ & x |-> m,l,r ** \rhd \grapham(l, \gamma) ** \rhd \grapham(r, \gamma)
+\end{align*}
+This functional is contractive, and so the fixpoint is well-defined.  
+Nevertheless, this definition has a subtle flaw: the resulting graph
+predicate is \textbf{not} ``precise'' in the separation logic sense:
+\[
+%\begin{array}{@{}l@{}l@{}}
+\m{precise}(P) ~~ \defeq ~~ (\sigma_1 |= P) ~ => ~ (\sigma_2 |= P) ~ => ~ (\sigma_1 \oplus \sigma_1' \! = \! \sigma) ~ => ~ (\sigma_2 \oplus \sigma_2' \! = \! \sigma) ~ => ~ \sigma_1 \! = \! \sigma_2
+%\end{array}
+\]
+The flaw stems from the fact that $\rhd P$ is not precise for any $P$ 
+(at time zero, $\rhd P$ is just $\top$), 
+so $\grapham$ is not precise either.  The approximation modality's 
+universal imprecision has never been noticed before in the literature.
+Accordingly, $\grapham$ is also rather difficult to use.
+%Some proof strategies require 
+
+\hide{
+\section{Difficulty using $\graphkt$}
+\label{apx:problemrecgraph}
+
+
+See Figure \ref{fig:badcycle} for an attempt to prove the entailment $100 |-> 42,100,0 ~ |- ~ \graphkt(100,\hat{\gamma})$.  Part of the problem is that the recursive structure interacts very badly with $**$: if the recursion involved~$*$~then it \textbf{would} be provable, by induction on the finite memory (each ``recursive call'' would be on a strictly smaller subheap).  This is why Knaster-Tarski works so well with list, tree, and DAG predicates in separation logic.
+}
 
 %As explained in~\S\ref{sec:foldunfold}, this alignment is necessary in C-like memory models to prove fold-unfold \eqref{eqn:bigraphintrofoldunfold}, which is why \eqref{eqn:bigraphintrofoldunfold} includes an alignment restriction $x~\mathsf{mod}~16 = 0$ and an existentially-quantified ``blank'' second field for the root $x \mapsto m,-,l,r$.
 
@@ -234,38 +309,47 @@ the $**$ and $--o$ operators are in Supplementary Logic,
 along with rules like $P |- P ** P$.} % end hide
 
 Above the Logic layer we have three towers, each three levels high.  The tower on the left contains basic lemmas about Logic, $\bigstar$, and \p{graph}.  For instance, in the $\bigstar$ Facts box we prove:
-\[
+\begin{equation*}
 \infrule{}
 {A \cap B = \emptyset}
 {\underset{x\in A}{\bigstar} P(x) \; * \underset{x\in B}{\bigstar} P(x) \;\, \Leftrightarrow \underset{x\in A \cup B}{\bigstar} P(x)}{}
-\]
-
-The middle tower is more interesting in that it is entirely focused on ramification entailments.  A robust library of ramification entailments is essential to make ramification work smoothly in practice.  The Basic Ramification box in the lower layer contains lemmas like:
-\[
+\end{equation*}
+The middle tower is more interesting in that it is entirely focused on ramification entailments.  A robust library of ramification entailments is essential to make ramification work smoothly in practice.  The Basic Ramification box in the lower layer contains lemmas like the one below, which we use to break large ramification entailments into compositionally manageable pieces. % in a compositional way. 
+\begin{equation*}
 %\infrule{Ramify-Q-SPLIT}
 \infrule{}
 {G_1 |- L_1 * \forall x.~ (L_2 --* G_2) \\
  G'_1 |- L'_1 * \forall x.~ (L_2' --* G'_2)}
 {G_1 * G'_1 |- (L_1 * L'_1) * \forall x.~ \big((L_2 * L'_2)--* (G_2 * G'_2)\big)}{}
-\]
-We use this lemma to break large ramification entailments into more manageable pieces in a compositional way. % compositionally.
-The $\bigstar$ Ramification box in the middle layer contains lemmas like:
+\end{equation*}
+The $\bigstar$ Ramification box in the middle layer contains lemmas like the one below:
 \begin{equation*}
-\label{ramify:bigstar}
 \infrule{}
 {A \cap B = \emptyset  \qquad  A' \cap B = \emptyset}
 {\underset{x\in A\cup B}{\bigstar} P(x) |- \! \underset{x\in A}{\bigstar} \! P(x) * \Big( \underset{x\in A'}{\bigstar} \! P(x) \! \wand \! \! \! \! \underset{x\in A' \cup B}{\bigstar} \! \! P(x)\Big)}{}
 \end{equation*}
-
-The Graph Ramification box in the top layer is focused lemmas such as the following ``update one node'' lemma, which was used on line~\ref{code:markram2} in Figure~\ref{fig:markgraph}:
-\begin{equation*}
+The above lemma expresses large-scale replacement, clearing the way to 
+cleanly establish a key graph-specific lemma.
+Lemma~\ref{ramify:bigstar}, which is 
+placed in the Graph Ramification box (top layer), was used on 
+lines~\ref{code:markram3} and~\ref{code:markram4} of 
+Figure~\ref{fig:markgraph} to reason about smoothly replacing subgraphs. 
+{\color{red}
+\begin{equation}
+\label{ramify:bigstar}
+%{\gamma(x_0) = \gamma'(x_0) \text{ for any } x_0 \neq x }
+\infrule{}
+{\forall x_0 \neq x.~ \gamma(x_0) = \gamma'(x_0) \\ \p{neighbors}(\gamma,x)=\p{neighbors}(\gamma',x)}
+{\p{graph}(x, \gamma) \! |- \! x \! \mapsto \! \gamma(x) \! * \! \big(x \! \mapsto \! \gamma'(x) \! \wand \! \p{graph}(x, \gamma')\big)}{}
+\end{equation}}
+Similarily, the same box contains the key lemma used on line~\ref{code:markram2} in Figure~\ref{fig:markgraph} to update one node:
+\begin{equation}
 \label{lem:updategraphnode}
 %{\gamma(x_0) = \gamma'(x_0) \text{ for any } x_0 \neq x }
 \infrule{}
 {\forall x_0 \neq x.~ \gamma(x_0) = \gamma'(x_0) \\ \p{neighbors}(\gamma,x)=\p{neighbors}(\gamma',x)}
 {\p{graph}(x, \gamma) \! |- \! x \! \mapsto \! \gamma(x) \! * \! \big(x \! \mapsto \! \gamma'(x) \! \wand \! \p{graph}(x, \gamma')\big)}{}
-\end{equation*}
-
+\end{equation}
 This layered structure enables proof reuse. All of the theorems for $\p{graph}$ are proved from the properties of iterated separating conjunction, but having a modular library allows $\bigstar$ to be reused in other structures smoothly.
 Further, all our verifications of different graph algorithms use the proof rules of $\p{graph}$ at the top level in the library. Taking the marking algorithm we introduced in \S\ref{sec:orientation} as an example, we prove the following theorem from the library:
 \begin{equation*}

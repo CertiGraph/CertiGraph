@@ -25,12 +25,12 @@ $//$$\label{code:markaftertripleramify}\swarrow \left\{\!\!\!\begin{array}{l@{}}
 $//$$\{{\color{red}\exists \gamma'. \p{m\_graph}(\tx x,\gamma')} /| \gamma(\tx{x}) = (0,\tx{l},\tx{r}) /| \m{mark1}(\gamma, \tx{x}, \gamma')\}$
 $//$$\label{code:beforemarkl}\{\p{m\_graph}(\tx x,\gamma') /| \gamma(\tx{x}) = (0,\tx{l},\tx{r}) /| \m{mark1}(\gamma, \tx{x}, \gamma')\}$
 $//$$\searrow \{{\color{red}\p{m\_graph}(\tx l, \gamma')}\}$
-$\label{code:markram3}\ramify(\ref{lem:updatesubgraph})$      mark(l);
+$\label{code:markram3}\ramify(\ref{ramify:bigstar})$      mark(l);
 $//$$\label{code:postmark1}\swarrow \{{\color{red}\exists \gamma''. \p{m\_graph}(\tx l, \gamma'')} /| {\color{red}\m{mark}(\gamma', \tx{l}, \gamma'')}\}$
 $//$$\label{code:aftermarkl}\left\{\!\!\!\begin{array}{l@{}}\exists \gamma''. \p{m\_graph}(\tx x,\gamma'') /| \gamma(\tx{x}) = (0,\tx{l},\tx{r}) /| \null \\ \m{mark1}(\gamma, \tx{x}, \gamma') /| \m{mark}(\gamma', \tx{l}, \gamma'')\end{array}\right\}$
 $//$$\left\{\!\!\!\begin{array}{l@{}}\p{m\_graph}(\tx x,\gamma'') /| \gamma(\tx{x}) = (0,\tx{l},\tx{r}) /| \null \\ \m{mark1}(\gamma, \tx{x}, \gamma') /| \m{mark}(\gamma', \tx{l}, \gamma'')\end{array}\right\}$
 $//$$\searrow \{\p{m\_graph}(\tx r, \gamma'')\}$
-$\label{code:markram4}\ramify(\ref{lem:updatesubgraph})$      mark(r);
+$\label{code:markram4}\ramify(\ref{ramify:bigstar})$      mark(r);
 $//$$\swarrow \{\exists \gamma'''. \p{m\_graph}(\tx r, \gamma''') /| \m{mark}(\gamma'', \tx{r}, \gamma''')\}$
 $//$$\label{code:outmark}\left\{\!\!\!\begin{array}{l@{}}\exists \gamma'''. \p{m\_graph}(\tx x,\gamma''') /| \gamma(\tx{x}) = (0,\tx{l},\tx{r}) /| \null \\ \m{mark1}(\gamma, \tx{x}, \gamma') /| \m{mark}(\gamma', \tx{l}, \gamma'') /| \m{mark}(\gamma'', \tx{r}, \gamma''')\end{array}\right\}$
 }$//$$\label{code:markend}\{\exists \gamma'''. \p{m\_graph}(\tx x,\gamma''') /| \m{mark}(\gamma, \tx{x}, \gamma''')\}$
