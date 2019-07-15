@@ -1,22 +1,85 @@
-//
-//  dijkstra.c
-//  Dijkstra
-//
-//  Created by Anshuman Mohan on 14/6/19.
-//  Copyright © 2019 Anshuman Mohan. All rights reserved.
-//
-
-#include "dijkstra.h"
-#include "linked_list.h"
+#include <stdlib.h>
 #include <limits.h>
 #include <stdio.h>
-#include <stdlib.h>
 #include <time.h>
 
 #define IFTY INT_MAX
 #define SIZE 8  // number of vertices
 #define CONN 5  // the connectedness. 1 is 100%, higher numbers mean less connected
 #define INFL 50 // increase this to inflate the highest possible cost, thus creating greater ranges
+
+
+/* ****************************** */
+/* Linked List Masquerading as PQ */
+/* ****************************** */
+
+struct Node { int vertex; int weight; struct Node *next; struct Node *prev;};
+
+void push (int vertex, int weight, struct Node **list) {
+    struct Node* newHead = (struct Node *) malloc (sizeof (struct Node));
+    newHead->vertex = vertex;
+    newHead->weight = weight;
+    newHead->prev=NULL;
+    newHead->next = *list;
+    if (*list != NULL)
+        (*list)->prev = newHead;
+    *list = newHead;
+}
+
+void deleteNode (struct Node *del, struct Node **head) {
+    if (*head == NULL || del == NULL) return;
+    if (*head == del) *head = del->next;
+    if (del->next != NULL) del->next->prev = del->prev;
+    if (del->prev != NULL) del->prev->next = del->next;
+    free(del);
+    return;
+}
+
+int popMin (struct Node **head) {
+    int minWeight = IFTY;
+    int minVertex = -1;
+    struct Node *minNode = NULL;
+    struct Node *current = *head;
+    while (current != NULL) {
+        if (current->weight < minWeight) {
+            minWeight = current->weight;
+            minVertex = current->vertex;
+            minNode = current;
+        } current = current->next;
+    }
+    deleteNode(minNode, head);
+    return minVertex;
+}
+
+void adjustWeight (int vertex, int newWeight, struct Node **head) {
+    struct Node *current = *head;
+    while (current != NULL) {
+        if (current->vertex == vertex) {
+            current->weight = newWeight;
+            return;
+        } current = current->next;
+    }
+}
+
+void print_verts (struct Node *list) {
+    if (list == NULL) printf("A blank list was provided.\n");
+    struct Node *current = list;
+    while (current != NULL) {
+        printf ("%d\t", current->vertex);
+        current = current->next;
+    } printf ("\n");
+}
+
+// Used only for testing, will be removed eventually.
+void print_list (struct Node *list) {
+    if (list == NULL) printf("A blank list was provided.\n");
+    struct Node *current = list;
+    while (current != NULL) {
+        printf ("(%d, %d)\t", current->vertex, current->weight);
+        current = current->next;
+    } printf ("\n");
+}
+
 
 /* ************************************************** */
 /*   Dijkstra's Algorithm to find the shortest path   */
@@ -108,3 +171,13 @@ void getPaths () {
             printf ("Vertex %d was unreachable altogether\n", i);
     }
 }
+
+int main(int argc, const char * argv[])
+{
+    setup();
+    print_graph();
+    dijkstra();
+    getPaths();
+    return 0;
+}
+
