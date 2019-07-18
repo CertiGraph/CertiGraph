@@ -155,11 +155,7 @@ Proof.
   assert_PROP (x0 <> null) as x0_not_null. { entailer!. }
 
   localize
-  [data_at sh node_type (pointer_val_val null, (pointer_val_val l, pointer_val_val r)) (pointer_val_val x);
-   data_at sh node_type
-            (pointer_val_val null,
-            (pointer_val_val null, pointer_val_val null))
-            (pointer_val_val x0)].
+  [data_at sh node_type (pointer_val_val null, (pointer_val_val l, pointer_val_val r)) (pointer_val_val x)].
   (* localize *)
 
   forward.
@@ -189,38 +185,34 @@ Proof.
   forward.
   (* x -> m = x0; *)
 
-  forward.
-  (* x0 -> m = 0; *)
-  
   unlocalize
   [data_at sh node_type
            (pointer_val_val null, (pointer_val_val null, pointer_val_val null))
            (pointer_val_val x0);
    holegraph sh x0 (initial_copied_Graph x x0 g);
    graph sh x (Graph_vgen g x x0)].
-  Grab Existential Variables.
-  2: {
-    simplify_ramif.
-    apply (@root_update_ramify _ (sSGG_VST sh) g x x0 _ (null, l, r) (x0, l, r)); auto.
+  {
+    rewrite sepcon_assoc.
+    apply (@root_update_ramify _ (sSGG_VST sh) g x x0 x0 (null, l, r) (x0, l, r)); auto.
     eapply Graph_vgen_vgamma; eauto.
   }
   (* unlocalize *)
-
-  unfold semax_ram. (* should not need this *)
 
   destruct (not_null_copy1 g x x0 _ _ H_GAMMA_g gx_vvalid x0_not_null) as [H_vopy1 [H_x0 BiMaFin_g1']].
   forget (Graph_vgen g x x0) as g1.
   forget (initial_copied_Graph x x0 g) as g1'.
 
-  forward. (* x0 -> m = 0; *)
+  forward.
+  (* x0 -> m = 0; *)
 
-  localize
-   (PROP  (weak_valid g1 l)
-    LOCAL (temp _l (pointer_val_val l))
-    SEP   (graph sh l g1)).
-  1: eapply left_weak_valid; eauto.  
+  assert_PROP (weak_valid g1 l).
+  1: apply prop_right; eapply left_weak_valid; eauto.  
+
+  localize [graph sh l g1].
   (* localize *)
 
+  forward_call (sh, g1, l).
+  Intros ret; destruct ret as [[l0 g2] g2''].
   eapply semax_ram_seq;
   [ subst RamFrame RamFrame0; unfold abbreviate;
     repeat apply eexists_add_stats_cons; constructor
