@@ -902,6 +902,9 @@ Lemma copy_final: forall (g g1 g2 g3 g4 g5: Graph) (g1' g2' g3' g4' g5': LGraph)
   !! (copy x g g5 gg5' /\ LocalGraphCopy.vmap g1 x = LocalGraphCopy.vmap g5 x) && reachable_vertices_at x0 gg5').
 Proof.
   intros.
+  assert (BiMaFin g5'). admit.
+  Check vcopy1_edge_copy_list_copy.
+  SearchAbout copy.
 Admitted.
 
 End PointwiseGraph_Copy_Bi.

@@ -36,13 +36,6 @@ Section PointwiseGraph_Copy.
 Context {V E M: Type}.
 Context {SGBA: PointwiseGraphBasicAssum V E}.
 Context {CCS: CompactCopySetting V E M}.
-Context {GV GE Pred: Type}.
-Context {SGP: PointwiseGraphPred V E GV GE Pred}.
-Context {SGA: PointwiseGraphAssum SGP}.
-Context {SGC: PointwiseGraphConstructor V E V E M GV GE}.
-Context {L_SGC: Local_PointwiseGraphConstructor V E V E M GV GE}.
-Context {SGA_vn: PointwiseGraphAssum_vn SGP default_v}.
-Context {SGA_vs: PointwiseGraphAssum_vs SGP}.
 
 Instance MGS: WeakMarkGraph.MarkGraphSetting V.
 Proof.
@@ -649,6 +642,10 @@ Proof.
       1: intros; destruct (node_pred_dec (WeakMarkGraph.marked g1) v); auto.
       1: destruct H4 as [? [? ?]]; auto.
 Qed.
+
+Context {GV GE: Type}.
+Context {SGC: PointwiseGraphConstructor V E V E M GV GE}.
+Context {L_SGC: Local_PointwiseGraphConstructor V E V E M GV GE}.
 
 Lemma vcopy1_edge_copy_list_weak_copy_extended_copy': forall {P: Graph -> Type} {NP: NormalGeneralGraph P},
   forall root es es_done e0 es_later (g1 g2 g3 g2' g3' g4 g4'': Graph) (root0: V),
