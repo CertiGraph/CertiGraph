@@ -249,31 +249,28 @@ Proof.
 
   forward. (* x0 -> l = l0; *)
 
-  rewrite (va_labeledgraph_add_edge_left g g1 g2 g1' g2' x l r x0 l0) by auto.
-  rewrite (va_labeledgraph_egen_left g2 x x0).
+  pose proof (@va_labeledgraph_add_edge_left _ (sSGG_VST sh) g g1 g2 g1' g2' x l r x0 l0) as HH.
+  simpl vertices_at in HH |- *. rewrite HH by auto; clear HH.
+
+  pose proof (@va_labeledgraph_egen_left _ (sSGG_VST sh) g2 x x0) as HH.
+  simpl reachable_vertices_at in HH |- *. rewrite HH; clear HH.
+
   destruct (labeledgraph_add_edge_ecopy1_left g g1 g2 g1' g2' x l r x0 l0 gx_vvalid H_GAMMA_g H_vopy1 H_copy_left H_x0 H_l0 BiMaFin_g2' x0_not_null) as [H_ecopy1_left [BiMaFin_g3' H_x0L]].
   clear BiMaFin_g2'.
   forget (Graph_egen g2 (x: addr, L) (x0: addr, L)) as g3.
   forget (graph_gen.labeledgraph_add_edge g2' (x0, L) x0 l0 (null, L)) as g3'.
 
-  normalize.
-  localize
-   (PROP  (weak_valid g3 r)
-    LOCAL (temp _r (pointer_val_val r))
-    SEP   (graph sh r g3)).
-  1: eapply right_weak_valid; eauto.  
+  assert_PROP (weak_valid g3 r).
+  { apply prop_right. eapply right_weak_valid; eauto. }
+  localize [graph sh r g3].
   (* localize *)
 
-  eapply semax_ram_seq;
-  [ subst RamFrame RamFrame0; unfold abbreviate;
-    repeat apply eexists_add_stats_cons; constructor
-  | semax_ram_call_body (sh, g3, r)
-  | semax_ram_after_call; intros [[r0 g4] g4''];
-    repeat (apply ram_extract_PROP; intro) ].
-  (* r0 = copy(r); *)
-
+  forward_call (sh, g3, r).
+  Intros ret; destruct ret as [[r0 g4] g4''].
   rename H3 into H_copy, H4 into H_r0.
   cbv [fst snd] in H_copy, H_r0 |- *.
+  (* r0 = copy(r); *)
+
   unlocalize
    (PROP  ()
     LOCAL (temp _r (pointer_val_val r);
