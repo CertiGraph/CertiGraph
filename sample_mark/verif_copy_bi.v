@@ -26,8 +26,8 @@ Local Identity Coercion LGraph_LabeledGraph: LGraph >-> LabeledGraph.
 Local Identity Coercion SGraph_PointwiseGraph: SGraph >-> PointwiseGraph.
 Local Coercion pg_lg: LabeledGraph >-> PreGraph.
 
-Notation graph sh x g := (@reachable_vertices_at _ _ _ _ _ _ _ _ _ _ (@SGP pSGG_VST addr (addr * LR) (sSGG_VST sh)) _ x g).
-Notation holegraph sh x g := (@vertices_at _ _ _ _ _ _ (@SGP pSGG_VST addr (addr * LR) (sSGG_VST sh)) _ (Ensembles.Intersection _ (@vvalid addr (addr * LR) _ _ g) (fun u => x <> u)) (LGraph_SGraph g)).
+Notation graph sh x g := (@reachable_vertices_at _ _ _ _ _ _ (addr * LR) unit _ mpred (@SGP pSGG_VST addr (addr * LR) (sSGG_VST sh)) (SGA_VST sh) x g).
+Notation holegraph sh x g := (@vertices_at _ _ _ _ _ mpred (@SGP pSGG_VST addr (addr * LR) (sSGG_VST sh)) (SGA_VST sh) (Ensembles.Intersection _ (@vvalid addr (addr * LR) _ _ g) (fun u => x <> u)) (LGraph_SGraph g)).
 Notation Graph := (@Graph pSGG_VST (@addr pSGG_VST) (addr * LR) unit).
 Notation vmap := (@LocalGraphCopy.vmap addr (addr * LR) addr (addr * LR) _ _ _ _ _ _ _ _ (@GMS _ _ _ CCS)).
 Existing Instances MGS biGraph maGraph finGraph RGF.
@@ -70,14 +70,19 @@ Definition main_spec :=
 
 Definition Gprog : funspecs := ltac:(with_library prog [copy_spec; mallocN_spec; main_spec]).
 
+Transparent pSGG_VST sSGG_VST.
+
 Lemma graph_local_facts: forall sh x (g: Graph), weak_valid g x -> graph sh x g |-- valid_pointer (pointer_val_val x).
 Proof.
   intros. destruct H.
   - simpl in H. subst x. entailer!.
-  - destruct (vgamma g x) as [[d l] r] eqn:?.
-    eapply derives_trans; [apply (@root_stable_ramify _ (sSGG_VST sh) g x _ Heqp); auto |].
-    Transparent sSGG_VST. simpl vertex_at at 1. entailer!. Opaque sSGG_VST.
+  - eapply derives_trans.
+    + apply (@va_reachable_root_stable_ramify pSGG_VST _ _ _ (sSGG_VST sh) g x (vgamma g x)); auto.
+    + simpl.
+      entailer!.
 Qed.
+
+Opaque pSGG_VST sSGG_VST.
 
 Lemma body_copy: semax_body Vprog Gprog f_copy copy_spec.
 Proof.
@@ -113,25 +118,28 @@ Proof.
       (PROP (d = null)
        LOCAL (temp _x (pointer_val_val x))
        SEP (graph sh x g)).
-    + apply denote_tc_test_eq_split. 2: entailer!.
+    { apply denote_tc_test_eq_split. 2: entailer!.
       eapply derives_trans; [apply (@root_stable_ramify _ (sSGG_VST sh) g (ValidPointer b i) _ H_GAMMA_g); auto |].
       apply sepcon_valid_pointer1. Transparent sSGG_VST. simpl vertex_at. unfold_data_at 1%nat.
       do 2 apply sepcon_valid_pointer1. pose proof (field_at_valid_ptr sh node_type [StructField _m] (pointer_val_val d) (Vptr b i)).
       rewrite field_at_data_at. unfold node_type. simpl field_address.
       simpl field_address in H1.
-  apply ADMIT. (* type checking for pointer comparable. VST will fix it. *)
+      entailer!.
+      admit. (* type checking for pointer comparable. VST will fix it. *)
+    }
   1: { (* if-then branch *)
     forward. (* return x0; *)
     apply (exp_right (d, g, empty_Graph)).
     simpl.
     entailer!; auto.
-    split.
+    1: split.
     + eapply (copy_vgamma_not_null_refl g); eauto.
       clear - H0.
       destruct d; [change null with (NullPointer) | simpl in H0; change nullval with (Vint Int.zero) in H0]; try congruence.
     + right.
       inversion H_GAMMA_g; auto.
-    + rewrite va_reachable_invalid; auto.
+    + rewrite (va_reachable_invalid _ d); auto.
+      cancel.
   }
   1: { (* if-else branch *)
     forward. (* skip; *)
@@ -144,43 +152,46 @@ Proof.
   forward_call sh. (* x0 = (struct Node * ) mallocN (sizeof (struct Node)); *)
 
   Intros x0.
-  assert_PROP (x0 <> null) as x0_not_null. entailer!. destruct H3 as [? _]. apply H1.
+  assert_PROP (x0 <> null) as x0_not_null. { entailer!. }
 
   localize
-   (PROP  ()
-    LOCAL (temp _x (pointer_val_val x); temp _x0 (pointer_val_val x0))
-    SEP   (data_at sh node_type (pointer_val_val null, (pointer_val_val l, pointer_val_val r))
-              (pointer_val_val x))).
+  [data_at sh node_type (pointer_val_val null, (pointer_val_val l, pointer_val_val r)) (pointer_val_val x);
+   data_at sh node_type
+            (pointer_val_val null,
+            (pointer_val_val null, pointer_val_val null))
+            (pointer_val_val x0)].
   (* localize *)
 
-  eapply semax_ram_seq;
-    [ subst RamFrame RamFrame0; unfold abbreviate;
-      repeat apply eexists_add_stats_cons; constructor
-    | load_tac
-    | abbreviate_semax_ram].
+  forward.
   (* l = x -> l; *)
+  {
+    entailer!.
+    rewrite value_fits_eq in H4; simpl in H4.
+    destruct H4 as [_ [? _]].
+    rewrite value_fits_eq in H1; simpl in H1.
+    unfold tc_val' in H1.
+    simpl in H1.
+    destruct l; simpl; auto.
+  }
 
-  eapply semax_ram_seq;
-    [ subst RamFrame RamFrame0; unfold abbreviate;
-      repeat apply eexists_add_stats_cons; constructor
-    | load_tac
-    | abbreviate_semax_ram].
+  forward.
   (* r = x -> r; *)
+  {
+    entailer!.
+    rewrite value_fits_eq in H5; simpl in H5.
+    destruct H5 as [_ [? _]].
+    rewrite value_fits_eq in H1; simpl in H1.
+    unfold tc_val' in H1.
+    simpl in H1.
+    destruct r; simpl; auto.
+  }
 
-  eapply semax_ram_seq;
-    [ subst RamFrame RamFrame0; unfold abbreviate;
-      repeat apply eexists_add_stats_cons; constructor
-    | store_tac
-    | abbreviate_semax_ram].
-
-  autorewrite with norm. (* TODO: should not need this *)
-  change (@field_at CompSpecs sh node_type []
-           (pointer_val_val x0, (pointer_val_val l, pointer_val_val r))) with
-         (@data_at CompSpecs sh node_type
-           (pointer_val_val x0, (pointer_val_val l, pointer_val_val r))).
-
+  forward.
   (* x -> m = x0; *)
 
+  forward.
+  (* x0 -> m = 0; *)
+  
   unlocalize
    (PROP  ()
     LOCAL (temp _r (pointer_val_val r);
