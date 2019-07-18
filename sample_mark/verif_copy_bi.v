@@ -213,38 +213,25 @@ Proof.
 
   forward_call (sh, g1, l).
   Intros ret; destruct ret as [[l0 g2] g2''].
-  eapply semax_ram_seq;
-  [ subst RamFrame RamFrame0; unfold abbreviate;
-    repeat apply eexists_add_stats_cons; constructor
-  | semax_ram_call_body (sh, g1, l)
-  | semax_ram_after_call; intros [[l0 g2] g2''];
-    repeat (apply ram_extract_PROP; intro) ].
-
-  (* l0 = copy(l); *)
-
   rename H2 into H_copy, H3 into H_l0.
   cbv [fst snd] in H_copy, H_l0 |- *.
+  (* l0 = copy(l); *)
+
   unlocalize
-   (PROP  ()
-    LOCAL (temp _r (pointer_val_val r);
-           temp _l (pointer_val_val l);
-           temp _l0 (pointer_val_val l0);
-           temp _x (pointer_val_val x);
-           temp _x0 (pointer_val_val x0))
-    SEP (data_at sh node_type (Vint (Int.repr 0), (pointer_val_val null, pointer_val_val null)) (pointer_val_val x0);
+    [data_at sh node_type (Vint (Int.repr 0), (pointer_val_val null, pointer_val_val null)) (pointer_val_val x0);
          holegraph sh x0 g1';
          graph sh x g2;
-         graph sh l0 g2''))
-  using [H_copy; H_l0]%RamAssu
-  binding [l0; g2; g2'']%RamBind.
-  Grab Existential Variables.
-  2: {
-    simplify_ramif.
-    eapply (@graph_ramify_left _ (sSGG_VST sh) RamUnit g); eauto.
+         graph sh l0 g2'']
+  using (g2'', g2, l0)
+  assuming (H_copy, H_l0).
+
+  {
+    rewrite allp_uncurry'.
+    rewrite allp_uncurry'.
+    eapply (@graph_ramify_left _ (sSGG_VST sh) g g1); eauto.
   }
   (* unlocalize *)
 
-  unfold semax_ram. (* should not need this *)
   gather_SEP 0 1 3.
   replace_SEP 0
       (EX g2': LGraph,
@@ -253,18 +240,14 @@ Proof.
           (data_at sh node_type
             (pointer_val_val null, (pointer_val_val null, pointer_val_val null)) (pointer_val_val x0) *
            holegraph sh x0 g2')).
-  1: {
+  {
     entailer.
     apply (@extend_copy_left _ (sSGG_VST sh) g g1 g2 g1' g2'' (ValidPointer b i) l r (vmap g1 (ValidPointer b i)) l0 (null, null, null)); auto.
   }
-  Opaque extended_copy.
-  rewrite extract_exists_in_SEP. (* should be able to use tactic directly *)
-  Transparent extended_copy.
   clear g2'' H_copy BiMaFin_g1'.
   Intros g2'. rename H2 into H_copy_left, H3 into BiMaFin_g2'.
 
   forward. (* x0 -> l = l0; *)
-  autorewrite with norm. (* TODO: should not need this *)
 
   rewrite (va_labeledgraph_add_edge_left g g1 g2 g1' g2' x l r x0 l0) by auto.
   rewrite (va_labeledgraph_egen_left g2 x x0).
