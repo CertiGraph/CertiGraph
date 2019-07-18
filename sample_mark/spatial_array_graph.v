@@ -10,4 +10,8 @@ Definition vgamma2cdata (rpa : nat * Z) : reptype vertex_type :=
   | (r, pa) => (Vint (Int.repr pa), Vint (Int.repr (Z.of_nat r)))
   end.
 
-Instance SAG_VST (sh: share): SpatialArrayGraph pointer_val mpred := fun pt lst => data_at sh (tarray vertex_type (Z.of_nat (length lst))) (map vgamma2cdata lst) (pointer_val_val pt).
+Instance SAG_VST (sh: share): SpatialArrayGraph pointer_val mpred.
+Proof.
+  exact (fun pt lst => data_at sh (tarray vertex_type (Z.of_nat (length lst)))
+                               (map vgamma2cdata lst) (pointer_val_val pt)).
+Defined.
