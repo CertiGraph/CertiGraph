@@ -193,16 +193,11 @@ Proof.
   (* x0 -> m = 0; *)
   
   unlocalize
-   (PROP  ()
-    LOCAL (temp _r (pointer_val_val r);
-           temp _l (pointer_val_val l);
-           temp _x (pointer_val_val x);
-           temp _x0 (pointer_val_val x0))
-    SEP (data_at sh node_type
+  [data_at sh node_type
            (pointer_val_val null, (pointer_val_val null, pointer_val_val null))
            (pointer_val_val x0);
-         holegraph sh x0 (initial_copied_Graph x x0 g);
-         graph sh x (Graph_vgen g x x0))).
+   holegraph sh x0 (initial_copied_Graph x x0 g);
+   graph sh x (Graph_vgen g x x0)].
   Grab Existential Variables.
   2: {
     simplify_ramif.
