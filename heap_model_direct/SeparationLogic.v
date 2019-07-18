@@ -12,13 +12,13 @@ Require Import RamifyCoq.heap_model_direct.mapsto.
 Require Import VST.msl.msl_direct.
 Require Import VST.msl.predicates_sa.
 
-Instance Ndirect : NatDed (pred world) := algNatDed world.
-Instance Sdirect : SepLog (pred world) := algSepLog world.
-Instance Cldirect : ClassicalSep (pred world) := algClassicalSep world.
-Instance CSLdirect : CorableSepLog (pred world) := algCorableSepLog world.
-Instance PSLdirect : PreciseSepLog (pred world) := algPreciseSepLog world.
-Instance OSLdirect : OverlapSepLog (pred world) := algOverlapSepLog world.
-Instance DSLdirect : DisjointedSepLog (pred world) := algDisjointedSepLog world.
+Instance Ndirect : NatDed (pred world). exact (algNatDed world). Defined.
+Instance Sdirect : SepLog (pred world). exact (algSepLog world). Defined.
+Instance Cldirect : ClassicalSep (pred world). exact (algClassicalSep world). Defined.
+Instance CSLdirect : CorableSepLog (pred world). exact (algCorableSepLog world). Defined.
+Instance PSLdirect : PreciseSepLog (pred world). exact (algPreciseSepLog world). Defined.
+Instance OSLdirect : OverlapSepLog (pred world). exact (algOverlapSepLog world). Defined.
+Instance DSLdirect : DisjointedSepLog (pred world). exact (algDisjointedSepLog world). Defined.
 
 Instance MSLdirect : MapstoSepLog AbsAddr_world mapsto.
 Proof.
