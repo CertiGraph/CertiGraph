@@ -255,7 +255,7 @@ Proof.
       apply reachable_foot_valid in H5; auto.
 Qed.
 
-Lemma graph_ramify_right: forall {RamUnit: Type} (g g1 g2 g3: Graph) (g1' g2' g3': LGraph) (x l r: addr) (F1 F2: pred),
+Lemma graph_ramify_right: forall (g g1 g2 g3: Graph) (g1' g2' g3': LGraph) (x l r: addr) (F1 F2: pred),
   vvalid g x ->
   vgamma g x = (null, l, r) ->
   vcopy1 x g g1 g1' ->
@@ -263,10 +263,10 @@ Lemma graph_ramify_right: forall {RamUnit: Type} (g g1 g2 g3: Graph) (g1' g2' g3
   ecopy1 (x, L) (g2: LGraph, g2') (g3: LGraph, g3') ->
   F1 * (F2 * reachable_vertices_at x g3) |--
   reachable_vertices_at r g3 *
-   (ALL a: RamUnit * Graph * Graph * addr,
-     !! (copy r g3 (snd (fst a)) (snd (fst (fst a))) /\ (r = null /\ snd a = null \/ snd a = LocalGraphCopy.vmap (snd (fst a)) r)) -->
-     (reachable_vertices_at r (snd (fst a)) * reachable_vertices_at (snd a) (snd (fst (fst a))) -*
-      F1 * (F2 * (reachable_vertices_at x (snd (fst a)) * reachable_vertices_at (snd a) (snd (fst (fst a))))))).
+   (ALL a: Graph * Graph * addr,
+     !! (copy r g3 (snd (fst a)) (fst (fst a)) /\ (r = null /\ snd a = null \/ snd a = LocalGraphCopy.vmap (snd (fst a)) r)) -->
+     (reachable_vertices_at r (snd (fst a)) * reachable_vertices_at (snd a) (fst (fst a)) -*
+      F1 * (F2 * (reachable_vertices_at x (snd (fst a)) * reachable_vertices_at (snd a) (fst (fst a)))))).
 Proof.
   intros.
   destruct H1 as [? [? ?]].
@@ -275,9 +275,9 @@ Proof.
   match goal with
   | |- _ |-- _ * allp (_ --> (_ -* ?A)) =>
     replace A with
-    (fun p : RamUnit * Graph * Graph * addr =>
+    (fun p : Graph * Graph * addr =>
             reachable_vertices_at x (snd (fst p)) *
-            reachable_vertices_at (snd p) (snd (fst (fst p))) * (F1 * F2)) by
+            reachable_vertices_at (snd p) (fst (fst p)) * (F1 * F2)) by
     (extensionality p; rewrite <- (sepcon_assoc F1 F2), (sepcon_comm _ (F1 * F2)); auto)
   end.
   apply RAMIF_Q'.frame; [auto |].
@@ -295,7 +295,7 @@ Proof.
     eapply Prop_join_reachable_right; eauto.
   + intros [[[? ?] ?] ?] [? _].
     destruct H2 as [? _], H3 as [? _]; rewrite H2, H3 in H1.
-    simpl in H6 |- *; clear r0.
+    simpl in H6 |- *.
     rewrite vertices_identical_spec.
     intros.
     simpl.
