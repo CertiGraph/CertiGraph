@@ -15,6 +15,9 @@ Require Import VST.msl.wand_frame.
 Require Import VST.floyd.reassoc_seq.
 Require Import VST.floyd.field_at_wand.
 
+Axiom ADMIT: forall sh d b i, data_at sh (nested_field_type (Tstruct _Node noattr) [StructField _m]) (pointer_val_val d)
+   (field_address (Tstruct _Node noattr) [StructField _m] (Vptr b i))
+ |-- valid_pointer (pointer_val_val d).
 (* Local Open Scope logic. *)
 
 (* Hint Rewrite eval_cast_neutral_is_pointer_or_null using auto : norm. (* TODO: should not need this *) *)
@@ -125,7 +128,7 @@ Proof.
       rewrite field_at_data_at. unfold node_type. simpl field_address.
       simpl field_address in H1.
       entailer!.
-      admit. (* type checking for pointer comparable. VST will fix it. *)
+      apply ADMIT. (* type checking for pointer comparable. VST will fix it. *)
     }
   1: { (* if-then branch *)
     forward. (* return x0; *)
@@ -307,8 +310,14 @@ Proof.
 
   forward. (* x0 -> r = r0; *)
 
-  rewrite (va_labeledgraph_add_edge_right g g1 g2 g3 g4 g1' g2' g3' g4' x l r x0 r0) by auto.
-  rewrite (va_labeledgraph_egen_right g4 x x0).
+  pose proof @va_labeledgraph_add_edge_right _ (sSGG_VST sh) g g1 g2 g3 g4 g1' g2' g3' g4' x l r x0 r0 as HH.
+  Opaque vvalid graph_gen.labeledgraph_add_edge. simpl vertices_at in HH |- *. Transparent vvalid graph_gen.labeledgraph_add_edge. rewrite HH by auto; clear HH.
+
+  pose proof @va_labeledgraph_egen_right _ (sSGG_VST sh) g4 x x0 as HH.
+  Opaque Graph_LGraph.
+  simpl reachable_vertices_at in HH |- *. rewrite HH; clear HH.
+  Transparent Graph_LGraph.
+
   destruct (labeledgraph_add_edge_ecopy1_right g g1 g2 g3 g4 g1' g2' g3' g4' x l r x0 r0 gx_vvalid H_GAMMA_g H_vopy1 H_copy_left H_ecopy1_left H_copy_right H_x0 H_x0L H_r0 BiMaFin_g4' x0_not_null) as [H_ecopy1_right [BiMaFin_g5' H_x0R]].
   clear BiMaFin_g4'.
   forget (Graph_egen g4 (x: addr, R) (x0: addr, R)) as g5.
@@ -322,7 +331,7 @@ Proof.
   }
 
   forward. (* return x0; *)
-  rewrite H7.
+  rewrite H9.
   apply (exp_right (vlabel g5 (ValidPointer b i), g5, gg5')); entailer!; auto. cancel.
   apply derives_refl.
-Time Qed. (* Takes 885 seconds. *)
+Time Qed. (* Takes 15 seconds. *)
