@@ -1248,29 +1248,43 @@ We have verified half a dozen graph algorithms, including:
 \end{frame}
 
 \section{Garbage Collector}
-\begin{frame}[fragile]{A Generational Garbage Collector}
+
+\begin{frame}{A Generational Garbage Collector}
+  \begin{itemize}
+  \item 12 generations.
+  \item Cheney's mark-and-copy to collect a generation to next.
+  \item Receiving generation may exceed bound,\\ triggering further
+    collections.
+  \item Iterate pair-wise to reach stable state.
+  \item Functional mutator, no backward pointers.
+  \item Most tasks are handled by a versatile function, \texttt{forward}.
+  \end{itemize}
+\end{frame}
+
+
+\begin{frame}[fragile]{Overview of \texttt{forward}}
   \begin{center}
   \begin{tikzpicture}[heap/.style={rectangle split, rectangle split parts=#1, draw,
         minimum width=35pt}, node distance=2cm, ->/.style={-Stealth, thick}]
     \node<1> [heap=12, rectangle split part fill={darkg, lightg, lightg,
         darkg, lightg, lightg, lightg, lightg, white}]
-    (gen 0) {};
+    (gen 0) {\color{white}{\scriptsize 1}\nodepart{four}\color{white}{\scriptsize 2}};
     \node<2> [heap=12, rectangle split part fill={red, lightg, lightg,
         darkg, lightg, lightg, lightg, lightg, white}]
-    (gen 0) {};
+    (gen 0) {\color{white}{\scriptsize 1}\nodepart{four}\color{white}{\scriptsize 2}};
     \node<3> [heap=12, rectangle split part fill={red, lightg, lightg,
         red, lightg, lightg, lightg, lightg, white}]
-    (gen 0) {};
+    (gen 0) {\color{white}{\scriptsize 1}\nodepart{four}\color{white}{\scriptsize 2}};
     \node<1>[heap=15, right = of gen 0.north east, anchor=north west,
       rectangle split part fill={darkg, lightg, darkg,
         lightg, lightg, lightg, white}] (gen 1) {};
     \node<2>[heap=15, right = of gen 0.north east, anchor=north west,
       rectangle split part fill={darkg, lightg, darkg,
-        lightg, lightg, lightg, darkg, lightg, lightg, white}] (gen 1) {};
+        lightg, lightg, lightg, darkg, lightg, lightg, white}] (gen 1) {\nodepart{seven}\color{white}{\scriptsize 1}};
     \node<3>[heap=15, right = of gen 0.north east, anchor=north west,
       rectangle split part fill={darkg, lightg, darkg,
         lightg, lightg, lightg, darkg, lightg, lightg, darkg, lightg, lightg,
-        lightg, lightg, white}] (gen 1) {};
+        lightg, lightg, white}] (gen 1) {\nodepart{seven}\color{white}{\scriptsize 1}\nodepart{ten}\color{white}{\scriptsize 2}};
     \node [heap=16, right = of gen 1.north east, anchor=north west,
       rectangle split part fill={darkg, lightg, lightg, lightg, darkg,
         lightg, lightg, lightg, darkg, lightg, lightg, lightg, lightg, white}]
@@ -1293,6 +1307,44 @@ We have verified half a dozen graph algorithms, including:
     (gen 1.ten split east);
   \end{tikzpicture}
   \end{center}
+\end{frame}
+
+\begin{frame}
+  \centering
+  \includegraphics[height=\textheight]{certigc_theorems.pdf}
+\end{frame}
+
+\begin{frame}[fragile]{Bugs in the source C code}
+  \begin{itemize}
+  \item Cheney was executed too conservatively,\\ only part of
+    \textsf{to} needs to be scaned.
+  \pause
+\item Overflow in the following calculation:\\
+\begin{verbatim}
+int space_size = 
+        h->spaces[i].limit - h->spaces[i].start;  
+\end{verbatim}
+  \end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]{Undefined behavior in C}
+  
+  \begin{itemize}
+  \item Double-bounded pointer comparisons:
+    \begin{Verbatim}
+int Is_from(value * from_start,
+            value * from_limit, value * v) {
+    return (from_start <= v && v < from_limit); }
+    \end{Verbatim}
+    Resolved using CompCert's ``extcall\_properties''.
+    \pause
+  \item A classic OCaml trick:
+    \begin{Verbatim}
+int test_int_or_ptr (value x) {
+    return (int)(((intnat)x)&1); }
+    \end{Verbatim}
+    Discussing \texttt{char} alignment issues with CompCert.
+  \end{itemize}
 \end{frame}
 
 %\begin{frame}{A few things to note}
