@@ -224,7 +224,6 @@ Proof.
          graph sh l0 g2'']
   using (g2'', g2, l0)
   assuming (H_copy, H_l0).
-
   {
     rewrite allp_uncurry'.
     rewrite allp_uncurry'.
@@ -250,10 +249,12 @@ Proof.
   forward. (* x0 -> l = l0; *)
 
   pose proof (@va_labeledgraph_add_edge_left _ (sSGG_VST sh) g g1 g2 g1' g2' x l r x0 l0) as HH.
-  simpl vertices_at in HH |- *. rewrite HH by auto; clear HH.
+  Opaque vvalid graph_gen.labeledgraph_add_edge. simpl vertices_at in HH |- *. Transparent vvalid graph_gen.labeledgraph_add_edge. rewrite HH by auto; clear HH.
 
   pose proof (@va_labeledgraph_egen_left _ (sSGG_VST sh) g2 x x0) as HH.
+  Opaque Graph_LGraph.
   simpl reachable_vertices_at in HH |- *. rewrite HH; clear HH.
+  Transparent Graph_LGraph.
 
   destruct (labeledgraph_add_edge_ecopy1_left g g1 g2 g1' g2' x l r x0 l0 gx_vvalid H_GAMMA_g H_vopy1 H_copy_left H_x0 H_l0 BiMaFin_g2' x0_not_null) as [H_ecopy1_left [BiMaFin_g3' H_x0L]].
   clear BiMaFin_g2'.
@@ -272,26 +273,20 @@ Proof.
   (* r0 = copy(r); *)
 
   unlocalize
-   (PROP  ()
-    LOCAL (temp _r (pointer_val_val r);
-           temp _r0 (pointer_val_val r0);
-           temp _x (pointer_val_val x);
-           temp _x0 (pointer_val_val x0))
-    SEP (data_at sh node_type
+    [data_at sh node_type
           (Vint (Int.repr 0), (pointer_val_val l0, pointer_val_val null))
           (pointer_val_val x0);
          holegraph sh x0 g3';
-         graph sh x g4; graph sh r0 g4''))
-  using [H_copy; H_r0]%RamAssu
-  binding [r0; g4; g4'']%RamBind.
-  Grab Existential Variables.
-  2: {
-    simplify_ramif.
-    eapply (@graph_ramify_right _ (sSGG_VST sh) RamUnit g); eauto.
+         graph sh x g4; graph sh r0 g4'']
+  using (g4'', g4, r0)
+  assuming (H_copy, H_r0).
+  {
+    rewrite allp_uncurry'.
+    rewrite allp_uncurry'.
+    eapply (@graph_ramify_right _ (sSGG_VST sh) g g1); eauto.
   }
   (* Unlocalize *)
 
-  unfold semax_ram. (* should not need this *)
   gather_SEP 0 1 3.
   replace_SEP 0
       (EX g4': LGraph,
@@ -311,7 +306,6 @@ Proof.
   Intros g4'. rename H3 into H_copy_right, H4 into BiMaFin_g4'.
 
   forward. (* x0 -> r = r0; *)
-  autorewrite with norm. (* TODO: should not need this *)
 
   rewrite (va_labeledgraph_add_edge_right g g1 g2 g3 g4 g1' g2' g3' g4' x l r x0 r0) by auto.
   rewrite (va_labeledgraph_egen_right g4 x x0).
