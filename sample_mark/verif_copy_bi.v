@@ -57,7 +57,7 @@ Definition copy_spec :=
           LOCAL (temp _x (pointer_val_val x))
           SEP   (graph sh x g)
   POST [ (tptr (Tstruct _Node noattr)) ]
-        EX xgg: pointer_val * Graph * Graph,
+        EX xgg: pointer_val * Graph * LGraph,
         let x' := fst (fst xgg) in
         let g1 := snd (fst xgg) in
         let g1' := snd xgg in
