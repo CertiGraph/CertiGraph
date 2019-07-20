@@ -1262,7 +1262,57 @@ We have verified half a dozen graph algorithms, including:
 \end{frame}
 
 
-\begin{frame}[fragile]{Overview of \texttt{forward}}
+\begin{frame}[fragile]{Overview of \texttt{forward (proposal)}}
+  \begin{center}
+  \begin{tikzpicture}[heap/.style={rectangle split, rectangle split parts=#1, draw,
+        minimum width=35pt}, node distance=2cm, ->/.style={-Stealth, thick}]
+    \node<1> [heap=10, rectangle split part fill={darkg, lightg,
+        darkg, lightg, lightg, white}]
+    (gen 0) {\color{white}{\scriptsize 1}\nodepart{three}\color{white}{\scriptsize 2}};
+    \node<2> [heap=10, rectangle split part fill={red, lightg,
+        darkg, lightg, lightg, white}]
+    (gen 0) {\color{white}{\scriptsize 1}\nodepart{three}\color{white}{\scriptsize 2}};
+    \node<3> [heap=10, rectangle split part fill={red, lightg,
+        red, lightg, lightg, white}]
+    (gen 0) {\color{white}{\scriptsize 1}\nodepart{three}\color{white}{\scriptsize 2}};
+
+    \node<1>[heap=13, right = of gen 0.north east, anchor=north west,
+      rectangle split part fill={darkg, lightg, darkg,
+        lightg, lightg, lightg, white}] (gen 1) {};
+    \node<2>[heap=13, right = of gen 0.north east, anchor=north west,
+      rectangle split part fill={darkg, lightg, darkg,
+        lightg, lightg, lightg, darkg, lightg, white}] (gen 1) {\nodepart{seven}\color{white}{\scriptsize 1}};
+    \node<3>[heap=13, right = of gen 0.north east, anchor=north west,
+      rectangle split part fill={darkg, lightg, darkg,
+        lightg, lightg, lightg, darkg, lightg, darkg, lightg, lightg,
+        white}] (gen 1) {\nodepart{seven}\color{white}{\scriptsize 1}\nodepart{nine}\color{white}{\scriptsize 2}};
+
+    \node [heap=16, right = of gen 1.north east, anchor=north west,
+      rectangle split part fill={darkg, lightg, lightg, darkg,
+        lightg, darkg, lightg, lightg, white}]
+    (gen 2) {};
+    
+    \draw[->] (gen 2.five east)..controls +(1.3, 0.3) and +(1.3, -0.3)..
+    (gen 2.six split east);
+    % \draw[->] (gen 2.two east)..controls +(1, 0.3) and +(1, -0.3)..
+    % (gen 2.four split east);
+    \draw[->] (gen 1.four east)..controls +(1, 0) and +(-1, 0)..
+    (gen 2.six split west);
+    \draw[->] (gen 0.two west)..controls +(-1.2, 0.3) and +(-1.2, -0.3)..
+    (gen 0.three split west);
+    \draw<2->[->,dashed] (gen 0.one east)..controls +(1.5, 0) and +(-1.5, 0)..
+    (gen 1.seven split west);
+    \draw<2>[->,red] (gen 1.eight west)..controls +(-2, -0.25) and +(1, -0.25)..
+    (gen 0.three split east);
+    \draw<3->[->,dashed] (gen 0.three east)..controls +(1.5, 0) and +(-1.5, 0)..
+    (gen 1.nine split west);
+    \draw<3->[->] (gen 1.eight east)..controls +(1.2, 0.3) and +(1.2, -0.3)..
+    (gen 1.nine split east);
+  \end{tikzpicture}
+  \end{center}
+\end{frame}
+
+\begin{frame}[fragile]{Overview of \texttt{forward (original)}}
   \begin{center}
   \begin{tikzpicture}[heap/.style={rectangle split, rectangle split parts=#1, draw,
         minimum width=35pt}, node distance=2cm, ->/.style={-Stealth, thick}]
