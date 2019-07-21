@@ -197,7 +197,7 @@ Lemma graph_ramify_left: forall (g g1: Graph) (g1': LGraph) (x l r: addr) (F1 F2
   vcopy1 x g g1 g1' ->
   F1 * (F2 * reachable_vertices_at x g1) |--
   reachable_vertices_at l g1 *
-   (ALL a: Graph * Graph * addr,
+   (ALL a: LGraph * Graph * addr,
      !! (copy l g1 (snd (fst a)) (fst (fst a)) /\ (l = null /\ snd a = null \/ snd a = LocalGraphCopy.vmap (snd (fst a)) l)) -->
      (reachable_vertices_at l (snd (fst a)) * reachable_vertices_at (snd a) (fst (fst a)) -*
       F1 * (F2 * (reachable_vertices_at x (snd (fst a)) * reachable_vertices_at (snd a) (fst (fst a)))))).
@@ -209,9 +209,15 @@ Proof.
   match goal with
   | |- _ |-- _ * allp (_ --> (_ -* ?A)) =>
     replace A with
-    (fun p : Graph * Graph * addr =>
+    (fun p : LGraph * Graph * addr =>
             reachable_vertices_at x (snd (fst p)) *
-            reachable_vertices_at (snd p) (fst (fst p)) * (F1 * F2)) by
+            @reachable_vertices_at (@addr pSGG_Bi) (prod (@addr pSGG_Bi) LR)
+                            (prod (prod (@addr pSGG_Bi) (@addr pSGG_Bi)) (@addr pSGG_Bi)) unit
+                            (@SGBA pSGG_Bi) (@addr pSGG_Bi) (prod (@addr pSGG_Bi) LR) unit
+                            (@SGC_Bi pSGG_Bi (@addr pSGG_Bi) (prod (@addr pSGG_Bi) LR) unit)
+                            (@pred pSGG_Bi (@addr pSGG_Bi) (prod (@addr pSGG_Bi) LR) sSGG_Bi)
+                            (@SGP pSGG_Bi (@addr pSGG_Bi) (prod (@addr pSGG_Bi) LR) sSGG_Bi)
+                            (@SGA pSGG_Bi (@addr pSGG_Bi) (prod (@addr pSGG_Bi) LR) sSGG_Bi) (snd p) (fst (fst p)) * (F1 * F2)) by
     (extensionality p; rewrite <- (sepcon_assoc F1 F2), (sepcon_comm _ (F1 * F2)); auto)
   end.
   apply RAMIF_Q'.frame; [auto |].
@@ -263,7 +269,7 @@ Lemma graph_ramify_right: forall (g g1 g2 g3: Graph) (g1' g2' g3': LGraph) (x l 
   ecopy1 (x, L) (g2: LGraph, g2') (g3: LGraph, g3') ->
   F1 * (F2 * reachable_vertices_at x g3) |--
   reachable_vertices_at r g3 *
-   (ALL a: Graph * Graph * addr,
+   (ALL a: LGraph * Graph * addr,
      !! (copy r g3 (snd (fst a)) (fst (fst a)) /\ (r = null /\ snd a = null \/ snd a = LocalGraphCopy.vmap (snd (fst a)) r)) -->
      (reachable_vertices_at r (snd (fst a)) * reachable_vertices_at (snd a) (fst (fst a)) -*
       F1 * (F2 * (reachable_vertices_at x (snd (fst a)) * reachable_vertices_at (snd a) (fst (fst a)))))).
@@ -275,9 +281,15 @@ Proof.
   match goal with
   | |- _ |-- _ * allp (_ --> (_ -* ?A)) =>
     replace A with
-    (fun p : Graph * Graph * addr =>
+    (fun p : LGraph * Graph * addr =>
             reachable_vertices_at x (snd (fst p)) *
-            reachable_vertices_at (snd p) (fst (fst p)) * (F1 * F2)) by
+                        @reachable_vertices_at (@addr pSGG_Bi) (prod (@addr pSGG_Bi) LR)
+                            (prod (prod (@addr pSGG_Bi) (@addr pSGG_Bi)) (@addr pSGG_Bi)) unit
+                            (@SGBA pSGG_Bi) (@addr pSGG_Bi) (prod (@addr pSGG_Bi) LR) unit
+                            (@SGC_Bi pSGG_Bi (@addr pSGG_Bi) (prod (@addr pSGG_Bi) LR) unit)
+                            (@pred pSGG_Bi (@addr pSGG_Bi) (prod (@addr pSGG_Bi) LR) sSGG_Bi)
+                            (@SGP pSGG_Bi (@addr pSGG_Bi) (prod (@addr pSGG_Bi) LR) sSGG_Bi)
+                            (@SGA pSGG_Bi (@addr pSGG_Bi) (prod (@addr pSGG_Bi) LR) sSGG_Bi) (snd p) (fst (fst p)) * (F1 * F2)) by
     (extensionality p; rewrite <- (sepcon_assoc F1 F2), (sepcon_comm _ (F1 * F2)); auto)
   end.
   apply RAMIF_Q'.frame; [auto |].
@@ -378,7 +390,7 @@ Proof.
   auto.
 Qed.
 
-Lemma extend_copy_left: forall (g g1 g2: Graph) (g1': LGraph) (g2'': Graph) (x l r x0 l0: addr) d0,
+Lemma extend_copy_left: forall (g g1 g2: Graph) (g1': LGraph) (g2'': LGraph) (x l r x0 l0: addr) d0,
   vvalid g x ->
   vgamma g x = (null, l, r) ->
   vcopy1 x g g1 g1' ->
@@ -898,13 +910,11 @@ Lemma copy_final: forall (g g1 g2 g3 g4 g5: Graph) (g1' g2' g3' g4' g5': LGraph)
   ecopy1 (x, R) (g4: LGraph, g4') (g5: LGraph, g5') ->
   @derives pred _
   (vertex_at x0 (null, l0, r0) * vertices_at (Intersection _ (vvalid g5') (fun v => x0 <> v)) g5')
-  (EX gg5': Graph,
+  (EX gg5': LGraph,
   !! (copy x g g5 gg5' /\ LocalGraphCopy.vmap g1 x = LocalGraphCopy.vmap g5 x) && reachable_vertices_at x0 gg5').
 Proof.
   intros.
-  assert (BiMaFin g5'). admit.
-  Check vcopy1_edge_copy_list_copy.
-  SearchAbout copy.
+  apply (exp_right g5').
 Admitted.
 
 End PointwiseGraph_Copy_Bi.

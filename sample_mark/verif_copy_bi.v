@@ -101,7 +101,7 @@ Proof.
   - apply denote_tc_test_eq_split. 2: entailer!. apply graph_local_facts; auto.
   - assert (x = NullPointer) by (destruct x; simpl in H; inversion H; auto). subst x.
     forward.
-    Exists ((NullPointer, g), empty_Graph).
+    Exists ((NullPointer, g), Graph_LGraph empty_Graph).
     simpl. entailer!.
     + apply (copy_null_refl g).
     + rewrite va_reachable_invalid; auto. apply derives_refl. (* TODO why?*)
@@ -132,7 +132,7 @@ Proof.
     }
   1: { (* if-then branch *)
     forward. (* return x0; *)
-    apply (exp_right (d, g, empty_Graph)).
+    apply (exp_right (d, g, Graph_LGraph empty_Graph)).
     simpl.
     entailer!; auto.
     1: split.
@@ -324,7 +324,7 @@ Proof.
   forget (graph_gen.labeledgraph_add_edge g4' (x0, R) x0 r0 (null, L)) as g5'.
 
   gather_SEP 0 1.
-  replace_SEP 0 (EX gg5': Graph, !! (@copy _ _ _ _ CCS x g g5 gg5' /\ x0 = vmap g5 x) && graph sh x0 gg5').
+  replace_SEP 0 (EX gg5': LGraph, !! (@copy _ _ _ _ CCS x g g5 gg5' /\ x0 = vmap g5 x) && graph sh x0 gg5').
   1: {
     entailer!.
     eapply (@copy_final pSGG_VST (sSGG_VST sh) g g1 g2 g3 g4 g5 g1' g2' g3' g4' g5'); [| | | | | | | | eassumption ..]; eauto.
