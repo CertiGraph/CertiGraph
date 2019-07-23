@@ -425,7 +425,7 @@ Proof.
   rewrite (sepcon_comm (vertices_at _ _)), <- sepcon_assoc, (add_andp _ _ H9); normalize.
   clear H9 H10.
   spec H5.
-  1: {
+  {
     apply is_BiMaFin_disjoint_guard with (x0 := x0) (es0 := nil); auto.
     + eapply vcopy1_copied_root_valid in H1; auto.
       subst x0; auto.
