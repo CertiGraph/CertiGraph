@@ -4,40 +4,40 @@
 \vspace{-1ex}
   \begin{lstlisting}[multicols=2]
 $//$$\braces{\forall \ga, \m{\finf}, \m{\tinf}, \m{from}, \m{to}, \m{v}, \m{n}.~\null \\ \p{gc{\_}graph}(\ga) * \p{\finf}(\m{\finf}) * \p{\tinf}(\m{\tinf}) /| \null \\ \m{compat}(\ga, \m{\finf}, \m{\tinf}, \m{from}, \m{to}) /| \null \\ \tx{s} = \m{start}(\ga, \m{from}) /| \tx{l} = \tx{s} + \m{gensz}(\ga, \m{from}) \\ \null /| \tx{n} = \m{naddr}(\m{\tinf}, \m{to}) /| \tx{p} = \m{vaddr}(\ga, \m{v}) + \m{n}} \defeq \phi_1 $
-void forward (value *s, *l, **n, *p) {
- value *v; value va = *p; 
- if(Is_block(va)) {$// \textit{is ptr}$
-  v = (value *)((void *)va); 
-  if(Is_from(s, l, v)) {$ // \textit{in from}$
+`\hl{void forward (value *s, *l, **n, *p) \{}`
+ `\hl{value *v; value va = *p;}` 
+ `\hl{if(Is\_block(va)) \{}` $// \textit{is ptr}$
+ `\hl{v = (value *)((void *)va);}` 
+ `\hl{if(Is\_from(s, l, v)) \{}` $// \textit{in from}$
 $//$$\braces{\phi_1 /| \exists \m{e}, \m{v'}.~\m{lab}(\ga, \m{v})[\m{n}] = \m{e} /| \null \\ \m{dst}(\ga, \m{e}) = \m{v'} /| \tx{v} = \m{vaddr}(\ga, \m{v'})} \defeq \phi_7 $
 $//$$\searrow$$\braces{\exists \m{flds'}, \m{hdr'}.~\m{flds'} = \m{lab}(\ga, \m{v'}) /| \null \\ \m{v'} |-> \m{flds'} /| \m{hdr'} = \m{flds'}[-1]} \defeq \phi_8 $
-   header_t hd = Hd_val(v);
+   `\hl{header\_t hd = Hd\_val(v);}`
 $//$$\swarrow$$\braces{\phi_8 /| \tx{hd} = \m{val}(\m{hdr'})}$
 $//$$\braces{\phi_7 /| \tx{hd} = \m{val}(\m{hdr'})}$ 
-   if(hd == 0) {$// \textit{already forwarded}$
-$//$$\braces{\phi_7 /| \tx{hd} = 0} \defeq \phi_{14}$ 
+   `\hl{if(hd == 0) \{}`$// \textit{already forwarded}$
+$//$$\braces{\phi_7 /| \tx{hd} = 0} \defeq \phi_{13}$ 
 $//$$\searrow$$\braces{\exists \m{flds}, \m{flds'}.~\m{v} |-> \m{flds} /| \m{v'} |-> \m{flds'} /| \null \\ \m{flds} = \m{lab}(\ga, \m{v}) /| \m{flds'} = \m{lab}(\ga, \m{v'}) /| \null \\ \m{flds'}[0] = \m{vaddr}(\gamma, \m{copy}(\ga, \m{v'})) /| \null \\ \tx{p} = \tx{\&}\m{flds}[n]} \defeq \phi_{14} $
-    *p = Field(v,0); $\label{code:alreadyforwarded}$
+    `\hl{*p = Field(v,0);}` $\label{code:alreadyforwarded}$
 $//$$\swarrow$$\braces{\phi_{14} /| \m{flds}[n] := \m{flds'}[0]}$
-$//$$\braces{\phi_{30} /| \exists \ga'.~\p{gc{\_}graph}(\ga') /| \null \\ \ga' = \m{upd\_edge}(\ga, \m{e}, \m{copy}(\ga, \m{v'})) /| \null \\ \m{fwd\_postcondition}(\ga, \ga', \m{\tinf}, \m{\finf}, \m{from}, \m{to}, \m{v}, \m{n})}$ $\label{code:postconafterredirect}$
-   } else {$// \textit{not yet forwarded}$
+$//$$\braces{\phi_{14} /| \exists \ga'.~\p{gc{\_}graph}(\ga') /| \null \\ \ga' = \m{upd\_edge}(\ga, \m{e}, \m{copy}(\ga, \m{v'})) /| \null \\ \m{fwd\_postcondition}(\ga, \ga', \m{\tinf}, \m{\finf}, \m{from}, \m{to}, \m{v}, \m{n})}$ $\label{code:postconafterredirect}$
+   `\hl{\} else \{}` $// \textit{not yet forwarded}$
 $//$$\braces{\phi_7 /| \tx{hd} \neq 0}  \defeq \phi_{20} $
-    int i; int sz; value *new;
-    sz = size(hd); new = *n+1; *n = new+sz;
+    `\hl{int i; int sz; value *new;}`
+    `\hl{sz = size(hd); new = *n+1; *n = new+sz;}`
 $//$$\braces{\phi_{20} /| \tx{sz} = \m{blocksize}(\tx{hd}) /| \null \\ \tx{new} = \m{start}(\gamma,\m{to}) + \m{used}(\gamma, \m{to}) + 1 /| \tx{n} = \tx{new} + \tx{sz}}  \defeq \phi_{22} $      
-    Hd_val(new) = hd; $\label{code:copyhead}$
-    for(i = 0; i < sz; i++) 
-     Field(new, i) = Field(v, i); $\label{code:copyfields}$
+    `\hl{Hd\_val(new) = hd;}`$\label{code:copyhead}$
+    `\hl{for(i = 0; i < sz; i++)}` 
+    `\hl{Field(new, i) = Field(v, i);}` $\label{code:copyfields}$
 $//$$\braces{\phi_{22} /| \exists \ga', \m{v''}, \m{tinf'}.~\p{gc\_graph}(\ga') * \p{tinf}(\m{tinf'}) /| \null \\ 
 \m{v''} = \m{newly\_copied\_vertex(\ga, \m{to})} /| \null \\ \ga' = \m{copy\_vertex}(\gamma, \m{to}, \m{v'}, \m{v''}) /| \null \\ \m{compat}(\ga', \m{\finf}, \m{\tinf'}, \m{from}, \m{to})} \defeq \phi_{26} $
-    Hd_val(v) = 0; $\label{code:zeroingheader}$
-    Field(v, 0) = (value)((void *)new); $\label{code:copyinfirstfield}$
+    `\hl{Hd\_val(v) = 0;}` $\label{code:zeroingheader}$
+    `\hl{Field(v, 0) = (value)((void *)new);}` $\label{code:copyinfirstfield}$
 $//$$\braces{\phi_{26} /| \m{val}(\m{hdr'}) = 0 /| \m{flds'}[0] = \m{copy}(\ga, \m{v'})} \defeq \phi_{29}$
 $//$$\searrow$$\braces{\exists \m{flds}.~\m{v} |-> \m{flds} /| \m{flds} = \m{lab}(\ga', \m{v})} \defeq \phi_{30}$
-    *p = (value)((void *)new); $\label{code:ridirect}$
+    `\hl{*p = (value)((void *)new);}` $\label{code:ridirect}$
 $//$$\swarrow$$\braces{\phi_{30} /| \m{flds}[0] := \m{vaddr}(\ga, \m{v''})}$
 $//$$\braces{\phi_{29} /| \exists \ga''.~\p{gc\_graph}(\ga'') /| \ga'' = \m{upd\_edge}(\ga', \m{e}, \m{v''}) /| \null \\ \m{compat}(\ga'', \m{\finf}, \m{\tinf'}, \m{from}, \m{to})}$
-}}}}
+`\hl{\}\}\}\}\}}`
 $//$$\braces{\m{fwd\_postcondition}(\gamma', \gamma'', \m{tinf'}, \m{finf}, \m{from}, \m{to},\m{v}, \m{n})}$
 \end{lstlisting}
 \footnotesize{
