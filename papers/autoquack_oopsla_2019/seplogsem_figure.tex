@@ -2,7 +2,7 @@
 {\footnotesize
 \[
 \begin{array}{lcl}
-\sigma |= P * Q & \defeq & \exists \sigma_1, \sigma_2.~ (\sigma_1 \oplus \sigma_2 = \sigma) /| (\sigma_1 |= P) /| (\sigma_2 |= 2)\\
+\sigma |= P * Q & \defeq & \exists \sigma_1, \sigma_2.~ (\sigma_1 \oplus \sigma_2 = \sigma) /| (\sigma_1 |= P) /| (\sigma_2 |= Q)\\
 \sigma |= P --* Q & \defeq & \forall \sigma_1, \sigma_2.~ (\sigma_1 \oplus \sigma = \sigma_2) /| (\sigma_1 |= P) => (\sigma_2 |= Q) \\
 %\sigma |= P --o Q & \defeq & \exists \sigma_1, \sigma_2.~ (\sigma_1 \oplus \sigma = \sigma_2) /| (\sigma_1 |= P) /| (\sigma_2 |= Q) \\
 \sigma |= P ** Q & \defeq & \exists \sigma_1, \sigma_2, \sigma_3.~ (\sigma_1 \oplus \sigma_2 \oplus \sigma_3 = \sigma) /| (\sigma_1 \oplus \sigma_2 |= P) /| (\sigma_2 \oplus \sigma_3 |= Q)

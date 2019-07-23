@@ -66,6 +66,8 @@
 \usepackage{wrapfig}
 \usepackage{scalerel}
 \usepackage{graphicx}
+\usepackage{fvextra}
+
 
 % inline code
 \makeatletter
@@ -150,12 +152,13 @@
 \newcommand{\medocon}{
   \raisebox{-0.3ex}{\resizebox{0.63em}{!}{$\scon$}} \hspace{-2.05ex} \bigcup}
 \newcommand{\triple}[3]{\{#1\}\,#2\,\{#3\}}
+\newcommand{\hl}[1]{\colorbox{lightgray}{#1}}
 
 \lstset{%
   language=C,
   %morecomment=[n][{\color{red}}]{/*}{*/},
   morecomment=[l][{\color{red}}]{//},
-  sensitive=true, mathescape=true, showlines=true,
+  sensitive=true, mathescape=true, showlines=true,escapechar=`,
   basicstyle=\normalfont\footnotesize\tt,
   keywordstyle=\color{blue}, numbers=left,
   numberstyle=\tiny, numbersep=5pt, boxpos=t,
