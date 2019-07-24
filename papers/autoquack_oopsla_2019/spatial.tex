@@ -43,7 +43,7 @@ Suppose we define a graph predicate $\graphkt$ along the lines of the fold/unfol
 %We have removed the alignment-related portions of equation~\eqref{eqn:bigraphintrofoldunfold} to focus on a more serious issue, even though as we will explain in~\S\ref{sec:goodgraph} alignment concerns are also necessary for the fold/unfold relationship to hold in C-like memory models.
 Although we can apply Knaster-Tarski (because the functional needed to
 define $\graphkt$ is covariant), the result is hard to use.
-Consider the memory $m$ for a toy machine:
+Consider the memory $m$ for a toy machine, where $m |= 100 |-> 42,100,0$.
 
 
 \begin{wrapfigure}{r}{.39\textwidth}
@@ -74,8 +74,8 @@ Consider the memory $m$ for a toy machine:
 \vspace{-0.5em} % very fiddly. need to adjust per final layout
 \end{wrapfigure}
 
-\noindent Clearly $m |= 100 |-> 42,100,0$.  But it seems also clear that this
-memory represents a one-cell cyclic graph as illustrated in the accompanying
+\noindent It seems clear, however, that this
+memory also represents a one-cell cyclic graph as illustrated in the accompanying
 diagram, \emph{i.e.} we want $m |= \graphkt(100,\hat{\gamma})$, where 
 $\hat{\gamma}(100) = (42,100,0)$.  This is equivalent to wanting to be able to 
 prove $100~|->~42,100,0~|-~\graphkt(100,\hat{\gamma})$.  Unfortunately, as 
