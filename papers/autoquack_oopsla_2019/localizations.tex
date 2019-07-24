@@ -137,7 +137,7 @@ Consider using \textsc{Localize} to verify the program
 \vspace{-1ex}
 \begin{lstlisting}
   $// \{ \tx{x} = 5 /| A \} \searrow \{\tx{x} = 5 /| B \}$
-    ...; x = x + 1; ...;
+    `\hl{...; x = x + 1; ...;}`
   $// \{ \tx{x} = 6 /| D \} \swarrow \{\tx{x} = 6 /| C \}$
 \end{lstlisting}
 \vspace{-1ex}
@@ -168,10 +168,11 @@ $\hat{G_2}(x_f) \defeq (x_f \! = \! 6 /| D)$, \emph{i.e.} replace the troublesom
 while keeping the troublesome program variable \tx{x} isolated and shift the above decorated program
 into the form
 \begin{lstlisting} %[numbers=none]
+
   $// \{ \tx{x} \! = \! 5 /| A \} \searrow \{\tx{x} \! = \! 5 /| B \}$
-    ...; x = x + 1; ...;
+    `\hl{...; x = x + 1; ...;}`
     $\, // \{\tx{x} \! = \! 6 /| C\}$
-  $\label{code:locexamplepresw}\swarrow // \{\exists x_f.~ (x_f = \tx{x}) /| (x_f \! = \! 6 /| C) \} $
+  $\label{code:locexamplepresw}// \swarrow \{\exists x_f.~ (x_f = \tx{x}) /| (x_f \! = \! 6 /| C) \} $
   $\label{code:locexamplepostsw}// \{ \exists x_f.~ (x_f = \tx{x}) /| (x_f \! = \! 6 /| D) \}  \}$
   $// \{ \tx{x} \! = \! 6 /| D \}  \}$
 \end{lstlisting}
