@@ -192,7 +192,7 @@ The first of \textsc{Localize}'s entailments is $G_1 |- L_1 --* R$, \emph{i.e.}
 \]
 This can be broken into the ``variable-related'' part $\li{x} \! = \! 5 |- (\li{x} \! = \! 5) * \big(\forall x_f.~ (x_f \! = \! 6 --* x_f \! = \! 6)\big)$, which is also a tautology, and the ``spatial'' part $A |- B * (C --* D)$, which was true by assumption above.
 
-With carefully engineering, all of the modified-variable dance above can be done fully automatically, and in a way that is completely hidden to end-users.  The only remaining proof
+With careful engineering, all of the modified-variable dance above can be done fully automatically, and in a way that is completely hidden to end-users.  The only remaining proof
 goal is the spatial part, which captures the key action of the localization block.  To solve
 these in practice, we end up applying generic lemmas from \S\ref{sec:spacegraph}.
 
