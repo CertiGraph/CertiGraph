@@ -902,11 +902,117 @@ Lemma copy_final: forall (g g1 g2 g3 g4 g5: Graph) (g1' g2' g3' g4' g5': LGraph)
   !! (copy x g g5 gg5' /\ LocalGraphCopy.vmap g1 x = LocalGraphCopy.vmap g5 x) && reachable_vertices_at x0 gg5').
 Proof.
   intros.
-  assert (BiMaFin g5'). admit.
-  Check vcopy1_edge_copy_list_copy.
-  SearchAbout copy.
+  assert (copy x g g5 g5').
+  {
+    eapply vcopy1_edge_copy_list_copy.
+    + assumption.
+    + simpl in H0 |- *; unfold Complement, Ensembles.In. congruence.
+    + intros; apply (biGraph_out_edges g (biGraph _)); auto.
+    + repeat constructor; intro HH; inversion HH; inversion H12.
+    + exact H7.
+    + hnf.
+      exists (g3: LGraph, g3').
+      - exists (g1: LGraph, g1'); auto.
+        exists (g2: LGraph, g2').
+        * exists (g1: LGraph, g1'); auto.
+          simpl in H0.
+          inversion H0.
+          rewrite H14.
+          exact H8.
+        * exact H9.
+      - hnf.
+        exists (g4: LGraph, g4').
+        * exists (g3: LGraph, g3'); auto.
+          simpl in H0.
+          inversion H0.
+          rewrite H15.
+          exact H10.
+        * exact H11.
+  }
+  pose proof H6.
+  destruct H13 as [? _].
+  assert (BiMaFin
+           (gpredicate_sub_labeledgraph (fun v : addr => x0 = v)
+              (fun e : addr * LR => In e ((x0, L) :: (x0, R) :: nil)) g5')).
+  {
+    constructor.
+    + constructor.
+      - intros; simpl.
+        congruence.
+      - simpl; intros.
+        rewrite Intersection_spec in H13 |- *.
+        destruct H13; subst x2.
+        assert (x0 = LocalGraphCopy.vmap g5 (src g5 (x, R))) as HH1.
+        {
+          rewrite left_right_sound by (rewrite <- (proj1 (proj1 H12)); auto).
+          subst x0.
+          assert (WeakMarkGraph.marked g1 x).
+          {
+            destruct H7 as [_ [? _]].
+            destruct H1 as [_ [? _]]; auto.
+          }
+          assert (WeakMarkGraph.marked g3 x).
+          {
+            destruct H9 as [_ [? _]].
+            rewrite <- (proj2 H9).
+            eapply WeakMarkGraph.mark_marked; [destruct H8 as [_ [H8 _]]; exact H8 | auto].
+          }
+          rewrite (extended_copy_vmap_root g1 g2 g1' g2' l x) by auto.
+          rewrite (ecopy1_vmap_root g2 g3 g2' g3' (x, L) x H9).
+          rewrite (extended_copy_vmap_root g3 g4 g3' g4' r x) by auto.
+          rewrite (ecopy1_vmap_root g4 g5 g4' g5' (x, R) x H11).
+          reflexivity.
+        }
+        assert (e = (x0, L) -> src g5' e = x0).
+        {
+          admit.
+        }
+      admit.
+    + constructor; simpl.
+      - intros.
+        rewrite Intersection_spec in H13 |- *.
+        admit.
+      - intros.
+        rewrite Intersection_spec in H13.
+        admit.
+    + constructor; simpl.
+      - exists (x0 :: nil).
+        split; [repeat constructor; intros [] |].
+        intros.
+        admit.
+      - exists ((x0, L) :: (x0, R) :: nil).
+        split; [repeat constructor; [intros [| []]; congruence | intros []] |].
+        intros.
+        admit.
+  }
+  assert (BiMaFin g5').
+  {
+    Print NormalGeneralGraph.
+    Print join_preserved.
+    pose proof fun H H0 => @join_preserved _ _ _ _ _ _ _ BiMaFin BiMaFin_Normal g5' _ _ (fun _ => True) _ _ (fun _ => True) H H0 x1 X.
+    spec X0.
+    {
+      split.
+      + intros; tauto.
+      + intros; tauto.
+    }
+    spec X0.
+    {
+      split.
+      + intros; tauto.
+      + intros; tauto.
+    }
+    pose proof @gpredicate_sub_labeledgraph_equiv.
+    pose proof @gpredicate_sub_labeledgraph_self.
+    admit.
+  }
+  apply (exp_right (Build_GeneralGraph _ _ _ _ g5' X0)); clear x1 X.
+  apply andp_right.
+  + apply prop_right.
+    split; auto.
+    admit.
+  + admit.
 Admitted.
 
 End PointwiseGraph_Copy_Bi.
-
 

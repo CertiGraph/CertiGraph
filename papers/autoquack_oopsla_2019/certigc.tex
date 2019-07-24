@@ -278,7 +278,7 @@ heap \li{h}.
 %raw byte-difference and dividing it by \li{\scriptsize wordsize} to get the word-difference.}
 %\vspace{-1em}
 \begin{lstlisting}[numbers=none]
-  int w = h->spaces[i].limit - h->spaces[i].start;
+  `\hl{int w = h->spaces[i].limit - h->spaces[i].start;}`
 \end{lstlisting}
 %\vspace{-1em}
 %The pointers are known to be in
@@ -288,21 +288,21 @@ will overflow if the difference equals
 or exceeds~$2^{31}$. We adjusted the size of the largest generation to avoid this overflow.
 
 \subsubsection*{Undefined behavior in C} %Double-Bounded Pointer Comparisons.}
-We found two places where the semantics of Clight was unable to specify an OCaml-style GC.
+We found two places where the semantics of Clight was unable to specify an OCaml-style GC such as ours.
 The first involved double-bounded pointer comparisons.
-As mentioned in \S\ref{sec:gcforward}, \li{forward} needs to
-check whether the object it is considering, which it already knows to be a pointer,
-is in fact pointing into the \li{from} space. It uses this function:
+On line~\ref{code:isfrom} of Figure~\ref{fig:forward}, \li{forward} checks 
+whether the object it is considering, which it already knows to be a pointer,
+is in fact pointing into the \li{from} space. It uses the following function:
 %\vspace{-1em}
 \begin{lstlisting}[numbers=none]
-  int Is_from(value * from_start, value * from_limit, value * v) {
-    return (from_start <= v && v < from_limit); }
+  `\hl{int Is\_from(value * from\_start, value * from\_limit, value * v) \{}`
+    `\hl{return (from\_start <= v \&\& v < from\_limit); \}}`
 \end{lstlisting}
 %\vspace{-1em}
 Here, the \li{start} and \li{limit} pointers are in the same
 memory block. If \li{v} is also in the same block, \li{Is{\_}from}
 correctly computes whether it is in bounds.
-However, if \li{v} is in a different block, the comparison gets stuck rather than
+However, if \li{v} is in a different block, the comparison gets stuck instead of
 returning \li{false}.
 Although the Clight code is undefined, we used CompCert's ``extcall{\_}properties''
 to prove that CompCert's compiler transformations will preserve the necessary invariants
@@ -312,13 +312,13 @@ comparisons need not be semantically preserved in CompCert.
 The second area of undefined behavior results from our GC's use of the well-established
 31-bit integer trick to allow both boxed and unboxed data in block fields~\cite{realworldocaml}.
 To distinguish them, \li{forward} calls \li{Is\_block} ({\color{black} line~5}), which
-in turn calls
+in turn calls the following helper:
 \begin{lstlisting}[numbers=none]
-  int test_int_or_ptr (value x) { /* returns 1 if int, 0 if aligned ptr */
-    return (int)(((intnat)x)&1); }
+  `\hl{int test\_int\_or\_ptr (value x) \{ return (int)(((intnat)x)\&1); \}}`
 \end{lstlisting}
+It aims to return $1$ if \li{x} is an int, and $0$ if it is an aligned pointer.
 When \li{x} is an integer, this is indeed well-defined. 
-When \li{x} is a pointer, the code gets stuck because
+But when \li{x} is a pointer, the code gets stuck because
 it is undefined to take the logical \li{and} of a pointer in Clight.
 Here the situation is messier,
 since CompCert does \textbf{not} guarantee that the alignment of a pointer is stable during
