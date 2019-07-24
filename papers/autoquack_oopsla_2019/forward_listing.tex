@@ -14,7 +14,7 @@ $//$$\searrow$$\braces{\exists \m{flds'}, \m{hdr'}.~\m{flds'} = \m{lab}(\ga, \m{
    `\hl{header\_t hd = Hd\_val(v);}`
 $//$$\swarrow$$\braces{\phi_8 /| \tx{hd} = \m{val}(\m{hdr'})}$
 $//$$\braces{\phi_7 /| \tx{hd} = \m{val}(\m{hdr'})}$ 
-   `\hl{if(hd == 0) \{}`$// \textit{already forwarded}$
+   `\hl{if(hd == 0) \{}` $// \textit{already forwarded}$
 $//$$\braces{\phi_7 /| \tx{hd} = 0} \defeq \phi_{13}$ 
 $//$$\searrow$$\braces{\exists \m{flds}, \m{flds'}.~\m{v} |-> \m{flds} /| \m{v'} |-> \m{flds'} /| \null \\ \m{flds} = \m{lab}(\ga, \m{v}) /| \m{flds'} = \m{lab}(\ga, \m{v'}) /| \null \\ \m{flds'}[0] = \m{vaddr}(\gamma, \m{copy}(\ga, \m{v'})) /| \null \\ \tx{p} = \tx{\&}\m{flds}[n]} \defeq \phi_{14} $
     `\hl{*p = Field(v,0);}` $\label{code:alreadyforwarded}$
