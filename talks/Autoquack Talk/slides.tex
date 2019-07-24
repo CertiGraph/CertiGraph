@@ -58,9 +58,10 @@
 
 \title[Mechanized Verification]{Mechanized Verification of \\
   Graph-manipulating Programs}
-\author[Wang, Cao, Mohan, Hobor]{Shengyi Wang, Qingxiang Cao, Anshuman Mohan, \underline{Aquinas Hobor}}
-\institute[NUS]{National University of Singapore}
-\date{\today}
+\author[Wang, Cao, Mohan, Hobor]{\hspace{-0.5em}Shengyi Wang$^{\dagger}$, Qingxiang Cao$^{\ddagger}$, Anshuman Mohan$^{\dagger}$, \underline{Aquinas Hobor}$^{\dagger}$\hspace*{-0.5em}}
+\institute[NUS]{$\includegraphics[scale=0.33]{NUS_logo_full-horizontal.jpg}~\raisebox{2em}{$(\dagger)$}$
+$\qquad \qquad \qquad$ $\includegraphics[scale=2.4]{SJTlogo.jpg}~~\raisebox{2em}{$(\ddagger)$}$ \hspace*{-1.25em}}
+\date[\hspace{1ex}SCW/S-REPLS, \number\day/\number\month/\number\year\hspace*{-2ex}]{Surrey Concurrency Workshop and S-REPLS 12 \\ \today}
 %% \setbeamercovered{transparent}
 \begin{document}
 \begin{frame}
@@ -912,7 +913,7 @@ We have verified half a dozen graph algorithms, including:
   \begin{equation*}
     \frac{\{ L_1 \}\,C\,\{\uncover<2->{{\color{red}{\exists x \,.\,}}} L_2\} \qquad
       G_1 \vdash L_1 \scon R \qquad
-      R \vdash 
+      R \vdash
       \uncover<2->{{\color{red}{\forall x \,.\,(}}}
       L_2 \wand G_2\uncover<2->{{\color{red}{)}}}}
          {\{ G_1 \} \,C\, \{\uncover<2->{{\color{red}{\exists x \,.\,}}} G_2 \}} \uncover<3->{~~(\dagger)}
@@ -1258,14 +1259,15 @@ We have verified half a dozen graph algorithms, including:
   \item Receiving generation may exceed fullness bound, \\
   triggering cascade of further pairwise collections
   \pause
-  \item Most tasks are handled by a versatile \texttt{forward} function
+  \item Most tasks are handled by two key functions: \texttt{forward} (to copy
+  individual objects) and \texttt{do\_scan} (to repair the copied objects)
   \end{itemize}
 \end{frame}
 
 \usetikzlibrary{positioning}
 
 
-\begin{frame}[fragile]{Overview of \texttt{forward} (proposal)}
+\begin{frame}[fragile]{Overview of \texttt{forward} and \texttt{do\_scan}}
   \begin{center}
   \begin{tikzpicture}[heap/.style={rectangle split, rectangle split parts=#1, draw,
         minimum width=32pt}, node distance=1.7cm, ->/.style={-Stealth, thick}]
@@ -1285,26 +1287,26 @@ We have verified half a dozen graph algorithms, including:
 
     \node<1>[heap=13, right = of gen 0.north east, anchor=north west,
       rectangle split part fill={darkg, lightg, darkg,
-        lightg, lightg, lightg, white}] 
+        lightg, lightg, lightg, white}]
         (gen 1) {\color{white}{\scriptsize c}\nodepart{three}\color{white}{\scriptsize d}};
     \node<2>[heap=13, right = of gen 0.north east, anchor=north west,
       rectangle split part fill={darkg, lightg, darkg,
-        lightg, lightg, lightg, darkg, lightg, white}] 
+        lightg, lightg, lightg, darkg, lightg, white}]
         (gen 1) {\color{white}{\scriptsize c}\nodepart{three}\color{white}{\scriptsize d}\nodepart{seven}\color{white}{\scriptsize a}};
     \node<3>[heap=13, right = of gen 0.north east, anchor=north west,
       rectangle split part fill={darkg, lightg, darkg,
         lightg, lightg, lightg, darkg, lightg, darkg, lightg, lightg,
-        white}] (gen 1) 
+        white}] (gen 1)
         {\color{white}{\scriptsize c}\nodepart{three}\color{white}{\scriptsize d}\nodepart{seven}\color{white}{\scriptsize a}\nodepart{nine}\color{white}{\scriptsize b}};
     \node<4>[heap=13, right = of gen 0.north east, anchor=north west,
       rectangle split part fill={darkg, lightg, darkg,
         lightg, lightg, lightg, darkg, lightg, darkg, lightg, lightg,
-        white}] 
+        white}]
         (gen 1) {\color{white}{\scriptsize c}\nodepart{three}\color{white}{\scriptsize d}\nodepart{seven}\color{white}{\scriptsize a}\nodepart{nine}\color{white}{\scriptsize b}};
     \node<5>[heap=13, right = of gen 0.north east, anchor=north west,
       rectangle split part fill={darkg, lightg, darkg,
         lightg, lightg, lightg, darkg, lightg, darkg, lightg, lightg,
-        white}] 
+        white}]
         (gen 1) {\color{white}{\scriptsize c}\nodepart{three}\color{white}{\scriptsize d}\nodepart{seven}\color{white}{\scriptsize a}\nodepart{nine}\color{white}{\scriptsize b}};
 
     \node [heap=16, right = of gen 1.north east, anchor=north west,
@@ -1341,7 +1343,7 @@ We have verified half a dozen graph algorithms, including:
   \end{center}
 \end{frame}
 
-
+\hide{
 \begin{frame}[fragile]{Overview of \texttt{forward} (original)}
   \begin{center}
   \begin{tikzpicture}[heap/.style={rectangle split, rectangle split parts=#1, draw,
@@ -1388,11 +1390,7 @@ We have verified half a dozen graph algorithms, including:
   \end{tikzpicture}
   \end{center}
 \end{frame}
-
-\begin{frame}
-  \centering
-  \includegraphics[height=\textheight]{certigc_theorems.pdf}
-\end{frame}
+}
 
 \begin{frame}[fragile]{Bugs in the source C code}
   \begin{itemize}
@@ -1401,14 +1399,14 @@ We have verified half a dozen graph algorithms, including:
   \pause
 \item Overflow in the following calculation:\\
 \begin{verbatim}
-int space_size = 
-        h->spaces[i].limit - h->spaces[i].start;  
+int space_size =
+        h->spaces[i].limit - h->spaces[i].start;
 \end{verbatim}
   \end{itemize}
 \end{frame}
 
 \begin{frame}[fragile]{Undefined behavior in C}
-  
+
   \begin{itemize}
   \item Double-bounded pointer comparisons:
     \begin{Verbatim}
@@ -1455,6 +1453,12 @@ int test_int_or_ptr (value x) {
     \bf{Total Development} & 95 & 43,773 \\\hline
   \end{tabular}}
 \end{frame}
+
+\begin{frame}{Separation between pure and spatial reasoning}
+  \centering
+  \includegraphics[height=0.9\textheight]{certigc_theorems.pdf}
+\end{frame}
+
 
 \hide{
 
