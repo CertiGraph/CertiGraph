@@ -167,8 +167,7 @@ First, define $\hat{L_2}(x_f) \defeq (x_f \! = \! 6 /| C)$ and
 $\hat{G_2}(x_f) \defeq (x_f \! = \! 6 /| D)$, \emph{i.e.} replace the troublesome program variable \tx{x} in $L_2$ and $G_2$ with a harmless fresh metavariable $x_f$.  Next, notice that with a carefully chosen existential quantifier, we can express the original $L_2$ with the new $\hat{L_2}$
 while keeping the troublesome program variable \tx{x} isolated and shift the above decorated program
 into the form
-\begin{lstlisting} %[numbers=none]
-
+\begin{lstlisting}
   $// \{ \tx{x} \! = \! 5 /| A \} \searrow \{\tx{x} \! = \! 5 /| B \}$
     `\hl{...; x = x + 1; ...;}`
     $\, // \{\tx{x} \! = \! 6 /| C\}$
