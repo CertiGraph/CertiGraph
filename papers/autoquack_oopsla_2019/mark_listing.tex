@@ -6,34 +6,37 @@
 \begin{figure}[t]
 %\vspace{-1ex}
   \begin{lstlisting}[multicols=2]
-struct Node {int  _Alignas(16) m; $\label{code:nodedefstart}$
-  struct Node * _Alignas(8) l, * r };$\label{code:nodedefend}$
-void mark(struct Node * x){$//$$\label{code:markstart}\{\p{m\_graph}(\tx{x},\gamma)\}$
-  struct Node * l, * r; int root_mark; $\label{code:inmark}$
-  if (x == 0) return;
+`\hl{struct Node \{int \_Alignas(16) m;}` $\label{code:nodedefstart}$
+ `\hl{struct Node * \_Alignas(8) l, * r \};}`$\label{code:nodedefend}$
+`\hl{void mark(struct Node * x)\{}`$\label{code:markstart}$
+$//\{\p{m\_graph}(\tx{x},\gamma)\}$
+ `\hl{struct Node * l, * r; int root\_mark;}` $\label{code:inmark}$
+ `\hl{if (x == 0) return;}`
 $//$$\label{code:globalbeforerootmarkwithex}\{\p{m\_graph}(\tx x,\gamma) /| {\color{red}\exists m,l,r. \gamma(\tx{x}) = (m,l,r)}\}$
 $//$$\label{code:globalbeforerootmark}\{\p{m\_graph}(\tx x,\gamma) /| \gamma(\tx{x}) = (m,l,r)\}$
 $//$$\label{code:beforerootmark}\searrow \{{\color{red}\tx x|-> m,-,l,r}\}$
-$\label{code:markram1}$      root_mark = x -> m;
+$\label{code:markram1}$ `\hl{root\_mark = x -> m;}`
 $//$$\label{code:afterrootmark}\swarrow \{\tx x|-> m,-,l,r /| {\color{red}m = \tx{root\_mark}}\}$
 $//$$\label{code:globalafterrootmark}\{{\color{red}\p{m\_graph}(\tx x,\gamma)} /| {\color{red}\gamma(\tx{x}) = (m,l,r)} /| m = \tx{root\_mark} \}$
-  if (root_mark == 1) return;
+ `\hl{if (root\_mark == 1) return;}`
 $//$$\{\p{m\_graph}(\tx x,\gamma) /| \gamma(\tx{x}) = ({\color{red}0},l,r) \}$
 $//$$\label{code:markbeforetripleramify}\searrow \{{\color{red}\tx x|-> 0,-,l,r} /| \gamma(\tx{x}) = (0,l,r)\}$
-$\label{code:markram2}\ramify(\ref{lem:updategraphnode})$  l = x -> l; r = x -> r; x -> m = 1;
+$\label{code:markram2}\ramify(\ref{lem:updategraphnode})$ `\hl{l = x -> l;}`
+$\ramify(\ref{lem:updategraphnode})$ `\hl{r = x -> r;}` 
+`\hl{x -> m = 1;}`
 $//$$\label{code:markaftertripleramify}\swarrow \left\{\!\!\!\begin{array}{l@{}}\tx x|-> {\color{red}1},-,\tx{l},\tx{r} /| \gamma(\tx{x}) = (0,\tx{l},\tx{r}) /| \null \\ {\color{red}\exists \gamma'. \m{mark1}(\gamma, \tx{x}, \gamma')}\end{array}\right\}$
 $//$$\{{\color{red}\exists \gamma'. \p{m\_graph}(\tx x,\gamma')} /| \gamma(\tx{x}) = (0,\tx{l},\tx{r}) /| \m{mark1}(\gamma, \tx{x}, \gamma')\}$
 $//$$\label{code:beforemarkl}\{\p{m\_graph}(\tx x,\gamma') /| \gamma(\tx{x}) = (0,\tx{l},\tx{r}) /| \m{mark1}(\gamma, \tx{x}, \gamma')\}$
 $//$$\searrow \{{\color{red}\p{m\_graph}(\tx l, \gamma')}\}$
-$\label{code:markram3}\ramify(\ref{ramify:bigstar})$      mark(l);
+$\label{code:markram3}\ramify(\ref{ramify:bigstar})$ `\hl{mark(l);}`
 $//$$\label{code:postmark1}\swarrow \{{\color{red}\exists \gamma''. \p{m\_graph}(\tx l, \gamma'')} /| {\color{red}\m{mark}(\gamma', \tx{l}, \gamma'')}\}$
 $//$$\label{code:aftermarkl}\left\{\!\!\!\begin{array}{l@{}}\exists \gamma''. \p{m\_graph}(\tx x,\gamma'') /| \gamma(\tx{x}) = (0,\tx{l},\tx{r}) /| \null \\ \m{mark1}(\gamma, \tx{x}, \gamma') /| \m{mark}(\gamma', \tx{l}, \gamma'')\end{array}\right\}$
 $//$$\left\{\!\!\!\begin{array}{l@{}}\p{m\_graph}(\tx x,\gamma'') /| \gamma(\tx{x}) = (0,\tx{l},\tx{r}) /| \null \\ \m{mark1}(\gamma, \tx{x}, \gamma') /| \m{mark}(\gamma', \tx{l}, \gamma'')\end{array}\right\}$
 $//$$\searrow \{\p{m\_graph}(\tx r, \gamma'')\}$
-$\label{code:markram4}\ramify(\ref{ramify:bigstar})$      mark(r);
+$\label{code:markram4}\ramify(\ref{ramify:bigstar})$` \hl{mark(r);}`
 $//$$\swarrow \{\exists \gamma'''. \p{m\_graph}(\tx r, \gamma''') /| \m{mark}(\gamma'', \tx{r}, \gamma''')\}$
 $//$$\label{code:outmark}\left\{\!\!\!\begin{array}{l@{}}\exists \gamma'''. \p{m\_graph}(\tx x,\gamma''') /| \gamma(\tx{x}) = (0,\tx{l},\tx{r}) /| \null \\ \m{mark1}(\gamma, \tx{x}, \gamma') /| \m{mark}(\gamma', \tx{l}, \gamma'') /| \m{mark}(\gamma'', \tx{r}, \gamma''')\end{array}\right\}$
-}$//$$\label{code:markend}\{\exists \gamma'''. \p{m\_graph}(\tx x,\gamma''') /| \m{mark}(\gamma, \tx{x}, \gamma''')\}$
+`\hl{\}}`$//$$\label{code:markend}\{\exists \gamma'''. \p{m\_graph}(\tx x,\gamma''') /| \m{mark}(\gamma, \tx{x}, \gamma''')\}$
 \end{lstlisting}
 
 {\footnotesize
@@ -79,7 +82,7 @@ $//$$\label{code:outmark}\left\{\!\!\!\begin{array}{l@{}}\exists \gamma'''. \p{m
 }
 
 \vspace{-0.4em}
-\caption{Clight code and proof sketch for bigraph mark.}
+\caption{Clight code and proof sketch for bigraph mark}
 \label{fig:markgraph}
 \vspace{-1em}
 \end{figure}
