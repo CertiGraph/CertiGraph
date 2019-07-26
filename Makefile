@@ -22,7 +22,7 @@ MSL_EXT_FILES = \
   overlapping_direct.v precise_direct.v alg_seplog_direct.v
 
 MSL_APPLICATION_FILES = \
-  Graph.v Graph_Mark.v GraphBi.v GraphBi_Mark.v DagBi_Mark.v Graph_Copy.v GraphBi_Copy.v GList.v GList_UnionFind.v ArrayGraph.v UnionFindGraph.v DijkstraGraph.v
+  Graph.v Graph_Mark.v GraphBi.v GraphBi_Mark.v DagBi_Mark.v Graph_Copy.v GraphBi_Copy.v GList.v GList_UnionFind.v ArrayGraph.v UnionFindGraph.v DijkstraGraph.v DijkstraArrayGraph.v
 
 VERIC_EXT_FILES = \
   res_predicates.v seplog.v SeparationLogic.v
@@ -42,7 +42,7 @@ DATA_STRUCTURE_FILES = \
   spatial_graph_unaligned_bi_VST.v spatial_graph_dispose_bi.v
 
 SAMPLE_MARK_FILES = \
-  env_mark_bi.v verif_mark_bi.v env_garbage_collector.v env_dispose_bi.v verif_dispose_bi.v verif_mark_bi_dag.v env_copy_bi.v spatial_graph_bi_mark.v spatial_graph_bi_copy.v unionfind.v env_unionfind.v spatial_graph_glist.v verif_unionfind.v verif_unionfind_slim.v verif_unionfind_rank.v unionfind_iter.v env_unionfind_iter.v spatial_graph_uf_iter.v verif_unionfind_iter.v verif_unionfind_iter_rank.v unionfind_arr.v env_unionfind_arr.v spatial_array_graph.v verif_unionfind_arr.v dijkstra.v
+  env_mark_bi.v verif_mark_bi.v env_garbage_collector.v env_dispose_bi.v verif_dispose_bi.v verif_mark_bi_dag.v env_copy_bi.v spatial_graph_bi_mark.v spatial_graph_bi_copy.v unionfind.v env_unionfind.v spatial_graph_glist.v verif_unionfind.v verif_unionfind_slim.v verif_unionfind_rank.v unionfind_iter.v env_unionfind_iter.v spatial_graph_uf_iter.v verif_unionfind_iter.v verif_unionfind_iter_rank.v unionfind_arr.v env_unionfind_arr.v spatial_array_graph.v verif_unionfind_arr.v dijkstra.v env_dijkstra_arr.v spatial_dijkstra_array_graph.v verif_dijkstra.v
 
 HIP_FILES = \
   hip_graphmark.v hip_graphmark_proofs.v spanningtree.v
@@ -52,7 +52,7 @@ HIP_FILES = \
 CERTIGC_FILES = \
   gc.v data_at_test.v spatial_gcgraph.v verif_conversion.v\
   gc_spec.v verif_create_space.v verif_create_heap.v verif_make_tinfo.v env_graph_gc.v verif_Is_block.v verif_garbage_collect.v verif_resume.v \
-  GCGraph.v verif_forward.v verif_do_scan.v verif_forward_roots.v verif_do_generation.v gc_correct.v stuck.v
+  GCGraph.v verif_forward.v verif_do_scan.v verif_forward_roots.v verif_do_generation.v gc_correct.v
 
 CLIGHT_FILES = sample_mark/mark_bi.v sample_mark/garbage_collector.v sample_mark/dispose_bi.v sample_mark/copy_bi.v
 
