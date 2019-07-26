@@ -21,3 +21,9 @@ xcschememanagement.plist
 sample_mark/Dijkstra/Dijkstra.xcodeproj/project.xcworkspace
 *.o
 final
+*.nav
+*.snm
+*.vrb
+*.toc
+slides.pdf
+#spatial_array_graph.v#
