@@ -929,6 +929,13 @@ Proof.
           exact H10.
         * exact H11.
   }
+  assert (LocalGraphCopy.vmap g5 x = x0 /\
+          vgamma g5' x0 = (null, l0, r0) /\
+          src g5' (x0, L) = x0 /\
+          src g5' (x0, R) = x0 /\
+          evalid g5' (x0, L) /\
+          evalid g5' (x0, R) /\
+          vvalid g5' x0) as LOCAL. admit.
   pose proof H6.
   destruct H13 as [? _].
   assert (BiMaFin
@@ -963,14 +970,23 @@ Proof.
           rewrite (ecopy1_vmap_root g4 g5 g4' g5' (x, R) x H11).
           reflexivity.
         }
-        assert (e = (x0, L) -> src g5' e = x0).
+        assert (e = (x0, L) -> src g5' e = x0 /\ evalid g5' e).
         {
-          admit.
+          intros; subst e; tauto.
         }
-      admit.
+        assert (e = (x0, R) -> src g5' e = x0 /\ evalid g5' e).
+        {
+          intros; subst e; tauto.
+        }
+        pose proof @eq_sym _ e (x0,L).
+        pose proof @eq_sym _ e (x0,R).
+        pose proof @eq_sym _ (x0,L) e.
+        pose proof @eq_sym _ (x0,R) e.
+        tauto.
     + constructor; simpl.
       - intros.
         rewrite Intersection_spec in H13 |- *.
+        rewrite Intersection_spec.
         admit.
       - intros.
         rewrite Intersection_spec in H13.
@@ -979,16 +995,24 @@ Proof.
       - exists (x0 :: nil).
         split; [repeat constructor; intros [] |].
         intros.
-        admit.
+        rewrite Intersection_spec.
+        split; intros.
+        * destruct H13 as [|[]].
+          subst x2.
+          tauto.
+        * left.
+          tauto.
       - exists ((x0, L) :: (x0, R) :: nil).
         split; [repeat constructor; [intros [| []]; congruence | intros []] |].
         intros.
-        admit.
+        rewrite Intersection_spec.
+        split; intros.
+        * destruct H13 as [| [| []]];
+          subst x2; tauto.
+        * simpl. tauto.
   }
   assert (BiMaFin g5').
   {
-    Print NormalGeneralGraph.
-    Print join_preserved.
     pose proof fun H H0 => @join_preserved _ _ _ _ _ _ _ BiMaFin BiMaFin_Normal g5' _ _ (fun _ => True) _ _ (fun _ => True) H H0 x1 X.
     spec X0.
     {
@@ -1002,16 +1026,29 @@ Proof.
       + intros; tauto.
       + intros; tauto.
     }
-    pose proof @gpredicate_sub_labeledgraph_equiv.
-    pose proof @gpredicate_sub_labeledgraph_self.
-    admit.
+    pose proof @gpredicate_sub_labeledgraph_equiv _ _ _ _ _ _ _ g5' (fun _ => True) (vvalid g5') (fun _ => True) (evalid g5').
+    spec H13.
+      { rewrite Same_set_spec; intro; rewrite !Intersection_spec; tauto. }
+    spec H13.
+      { rewrite Same_set_spec; intro; rewrite !Intersection_spec; tauto. }
+    pose proof @lge_preserved _ _ _ _ _ _ _ BiMaFin BiMaFin_Normal _ _ H13; clear H13.
+    pose proof @gpredicate_sub_labeledgraph_self _ _ _ _ _ _ _ g5'.
+    pose proof @lge_preserved _ _ _ _ _ _ _ BiMaFin BiMaFin_Normal _ _ H13; clear H13.
+    apply X2, X1, X0.
   }
   apply (exp_right (Build_GeneralGraph _ _ _ _ g5' X0)); clear x1 X.
   apply andp_right.
   + apply prop_right.
     split; auto.
-    admit.
-  + admit.
+    rewrite <- H1; symmetry; tauto.
+  + match goal with
+    | |- _ |-- _ ?A => change A with (g5')
+    end.
+    apply derives_refl', vertices_at_sepcon_1x.
+    - admit.
+    - change (vgamma (Graph_PointwiseGraph g5') x0) with (vgamma g5' x0).
+      simpl.
+      admit.
 Admitted.
 
 End PointwiseGraph_Copy_Bi.
