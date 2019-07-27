@@ -938,6 +938,42 @@ Proof.
           vvalid g5' x0) as LOCAL. admit.
   pose proof H6.
   destruct H13 as [? _].
+  assert (BiMaFin g5').
+  {
+    constructor.
+    + constructor.
+      - intros.
+        congruence.
+      - intros.
+        destruct (classic (x0 = x2)).
+        * subst x2.
+          destruct (classic (e = (x0, L))); [| destruct (classic (e = (x0, R)))].
+         ++ subst e; tauto.
+         ++ subst e; tauto.
+         ++ split; [intros [? ?]; exfalso | tauto].
+            pose proof @ma _ _ x1.
+            pose proof @valid_graph _ _ _ _ _ _ H18 e.
+            simpl in H19.
+            rewrite !Intersection_spec in H19.
+            specialize (H19 ltac:(pose proof @eq_sym _ (x0, L) e; pose proof @eq_sym _ (x0, R) e; tauto)).
+            destruct H19 as [? _].
+            rewrite H16 in H19; tauto.
+        * pose proof @bi _ _ x1.
+          pose proof @only_two_edges _ _ _ _ _ _ _ H15 x2 e.
+          simpl in H16.
+          rewrite !Intersection_spec in H16.
+          specialize (H16 ltac:(tauto)).
+          rewrite <- H16; split; [| tauto].
+          intros [? ?]; repeat split; auto.
+          intros [| [| []]]; subst e; rewrite <- H17 in H14; apply H14; symmetry; tauto.
+    + constructor.
+      intros.
+      admit.
+      admit.
+    + (* finite_graph_join finite_graph_si *)
+      admit.
+  }
+  (*
   assert (BiMaFin
            (gpredicate_sub_labeledgraph (fun v : addr => x0 = v)
               (fun e : addr * LR => In e ((x0, L) :: (x0, R) :: nil)) g5')).
@@ -1036,7 +1072,8 @@ Proof.
     pose proof @lge_preserved _ _ _ _ _ _ _ BiMaFin BiMaFin_Normal _ _ H13; clear H13.
     apply X2, X1, X0.
   }
-  apply (exp_right (Build_GeneralGraph _ _ _ _ g5' X0)); clear x1 X.
+*)
+  apply (exp_right (Build_GeneralGraph _ _ _ _ g5' X)); clear x1.
   apply andp_right.
   + apply prop_right.
     split; auto.
