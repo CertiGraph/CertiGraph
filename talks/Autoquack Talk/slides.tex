@@ -61,7 +61,7 @@
 \author[Wang, Cao, Mohan, Hobor]{\hspace{-0.5em}Shengyi Wang$^{\dagger}$, Qingxiang Cao$^{\ddagger}$, Anshuman Mohan$^{\dagger}$, \underline{Aquinas Hobor}$^{\dagger}$\hspace*{-0.5em}}
 \institute[NUS]{$\includegraphics[scale=0.33]{NUS_logo_full-horizontal.jpg}~\raisebox{2em}{$(\dagger)$}$
 $\qquad \qquad \qquad$ $\includegraphics[scale=2.4]{SJTlogo.jpg}~~\raisebox{2em}{$(\ddagger)$}$ \hspace*{-1.25em}}
-\date[\hspace{1ex}SCW/S-REPLS, \number\day/\number\month/\number\year\hspace*{-2ex}]{Surrey Concurrency Workshop and S-REPLS 12 \\ \today}
+\date[\hspace{1ex}INRIA, \number\day/\number\month/\number\year\hspace*{-2ex}]{INRIA \\ \today}
 %% \setbeamercovered{transparent}
 \begin{document}
 \begin{frame}
@@ -357,6 +357,31 @@ We have verified half a dozen graph algorithms, including:
     \end{itemize}
   \item A Generational Garbage Collector
   \end{itemize}
+\end{frame}
+
+\section{Statistics}
+\begin{frame}{Statistics}
+\small
+  \centering
+  \rowcolors{1}{lightg}{white}
+  \scalebox{1.2}{
+  \begin{tabular}{|l|c|r|}\hline
+    \bf{Component} & \bf{Files} & \bf{LOC} \\\hline
+    Common Utilities & 10 & 2,842 \\
+    Math Graph Library & 19 & 12,723\\
+    Memory Model \& Logic & 13 & 2,373 \\
+    Spatial Graph Library  & 10 & 6,458 \\
+    Integration into VST  & 12 & 1,917 \\\hline
+    Examples (excluding GC) & 13 & 3,290 \\\hline
+    GC, subdivided into & 18 & 14,170 \\
+%    $\bullet$ GC graphs (Math \& Spatial) & 2 & 7,382 \\
+    $\bullet$ mathematical graph & 1 & 5,764 \\
+    $\bullet$ spatial graph & 1 & 1,618 \\
+    $\bullet$ function specifications & 1 & 461 \\
+    $\bullet$ function Hoare proofs & 14 & 3,062 \\
+    $\bullet$ isomorphism proof & 1 & 3,265 \\ \hline
+    \bf{Total Development} & 95 & 43,773 \\\hline
+  \end{tabular}}
 \end{frame}
 
 \section{The Mathematical Graph Library}
@@ -1428,31 +1453,6 @@ int test_int_or_ptr (value x) {
 %\begin{frame}{A few things to note}
 
 %\end{frame}
-
-\section{Statistics}
-\begin{frame}{Statistics}
-\small
-  \centering
-  \rowcolors{1}{lightg}{white}
-  \scalebox{1.2}{
-  \begin{tabular}{|l|c|r|}\hline
-    \bf{Component} & \bf{Files} & \bf{LOC} \\\hline
-    Common Utilities & 10 & 2,842 \\
-    Math Graph Library & 19 & 12,723\\
-    Memory Model \& Logic & 13 & 2,373 \\
-    Spatial Graph Library  & 10 & 6,458 \\
-    Integration into VST  & 12 & 1,917 \\\hline
-    Examples (excluding GC) & 13 & 3,290 \\\hline
-    GC, subdivided into & 18 & 14,170 \\
-%    $\bullet$ GC graphs (Math \& Spatial) & 2 & 7,382 \\
-    $\bullet$ mathematical graph & 1 & 5,764 \\
-    $\bullet$ spatial graph & 1 & 1,618 \\
-    $\bullet$ function specifications & 1 & 461 \\
-    $\bullet$ function Hoare proofs & 14 & 3,062 \\
-    $\bullet$ isomorphism proof & 1 & 3,265 \\ \hline
-    \bf{Total Development} & 95 & 43,773 \\\hline
-  \end{tabular}}
-\end{frame}
 
 \begin{frame}{Separation between pure and spatial reasoning}
   \centering
