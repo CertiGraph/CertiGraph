@@ -27,3 +27,4 @@ final
 *.toc
 slides.pdf
 #spatial_array_graph.v#
+#verif_Is_from.v#
