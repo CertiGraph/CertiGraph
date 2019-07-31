@@ -50,7 +50,7 @@ HIP_FILES = \
 # Using "clightgen -DCOMPCERT -normalize -isystem . gc.c" to generate gc.v
 
 CERTIGC_FILES = \
-  gc.v data_at_test.v spatial_gcgraph.v verif_conversion.v\
+  gc.v data_at_test.v spatial_gcgraph.v verif_conversion.v verif_Is_from.v \
   gc_spec.v verif_create_space.v verif_create_heap.v verif_make_tinfo.v env_graph_gc.v verif_Is_block.v verif_garbage_collect.v verif_resume.v \
   GCGraph.v verif_forward.v verif_do_scan.v verif_forward_roots.v verif_do_generation.v gc_correct.v
 
