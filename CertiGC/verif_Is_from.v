@@ -53,8 +53,7 @@ Definition Is_from_sig : signature :=
 Ltac split3 := split; [|split ].
 
 Lemma lt_ptr_mod: forall n1 n2,
-    n1 <= n2 <= Ptrofs.max_unsigned ->
-    n1 <= n2 < Ptrofs.modulus.
+    n1 <= n2 <= Ptrofs.max_unsigned -> n1 <= n2 < Ptrofs.modulus.
 Proof. 
   intros.
   replace Ptrofs.max_unsigned with (Z.pred Ptrofs.modulus) in * by
@@ -92,12 +91,11 @@ Proof.
     eapply Mem.valid_pointer_extends; eauto.
   - intros. exists f, vres, m1'. destruct H0 as [? [? ?]]. split.
     2: {
-      split.
-      - clear -H4.
-        do 4 (destruct vargs; try destruct v; try contradiction).
-        destruct H4 as [_ [_ [_ [_ [_ [_ [_ H]]]]]]].
-        destruct vres; auto. now destruct H. 
-      - repeat (split; [now subst|]). congruence.
+      split. 2: repeat (split; [now subst|]); congruence.
+      clear -H4.
+      do 4 (destruct vargs; try destruct v; try contradiction).
+      destruct H4 as [_ [_ [_ [_ [_ [_ [_ H]]]]]]].
+      destruct vres; auto. now destruct H. 
     }
     split3; trivial.
     do 4 (destruct vargs; try destruct v; try contradiction).
@@ -283,9 +281,7 @@ Definition valid_b_o_So (m : mem) (b : block) (o : ptrofs) : Prop :=
   Mem.range_perm m b (Ptrofs.unsigned o) (Ptrofs.unsigned o + 2) Cur Nonempty.
 
 Lemma valid_b_o_So_dec: forall m b o, {valid_b_o_So m b o} + {~ valid_b_o_So m b o}.
-Proof.
-  intros. unfold valid_b_o_So. apply Mem.range_perm_dec.
-Qed.
+Proof. intros. unfold valid_b_o_So. apply Mem.range_perm_dec. Qed.
 
 Definition test_iop_sem : extcall_sem :=
   fun _ args m1 trc ret m2 =>
@@ -346,35 +342,7 @@ Proof.
     specialize (mi_perm _ _ _ ofs Cur Nonempty H).
     replace (ofs + 0) with ofs in mi_perm by omega.
     apply (mi_perm v). 
-  -
-    (** External calls must commute with memory injections,
-  in the following sense. *)
-(*  ec_mem_inject:
-    forall ge1 ge2 vargs m1 t vres m2 f m1' vargs',
-    symbols_inject f ge1 ge2 ->
-    sem ge1 vargs m1 t vres m2 ->
-    Mem.inject f m1 m1' ->
-    Val.inject_list f vargs vargs' ->
-    exists f', exists vres', exists m2',
-       sem ge2 vargs' m1' t vres' m2'
-    /\ Val.inject f' vres vres'
-    /\ Mem.inject f' m2 m2'
-    /\ Mem.unchanged_on (loc_unmapped f) m1 m2
-    /\ Mem.unchanged_on (loc_out_of_reach f m1) m1' m2'
-    /\ inject_incr f f'
-    /\ inject_separated f f' m1 m1'; 
-*)
-    intros. exists f, vres, m1'.
-    (* 
-     * A possible misstep is my choice of "f" as the meminj.
-     * I've searched the CompCert codebase for instances of "extcall properties" 
-     * being used (all of these instances are in CompCert/common/Events.v).
-     * The original f is often piped back in as the meminj in many cases.
-     * A new meminj is cooked up sometimes, 
-     * but I don't believe those cases are similar to ours.
-     * A SearchAbout on meminj shows that there aren't all that many ways to 
-     * create a new meminj... let's go on ahead for now.
-     *)
+  - intros. exists f, vres, m1'.
     destruct H0 as [? [? ?]]. subst.
     split.
     2: {
@@ -393,30 +361,27 @@ Proof.
     do 2 (destruct vargs; try destruct v; try contradiction).
     + inversion H2. inversion H5. inversion H7. auto.
     + inversion H2. inversion H5. inversion H7.
-      (* 
-       * This is where we died in version 1. 
-       * Let's keep going, we can strip away a few more layers... 
-       *)
-      
-      rewrite H12. (* clear H7 H2. *)
+      subst. clear H7 H2.
       destruct (Ptrofs.eq Ptrofs.one (Ptrofs.modu i (Ptrofs.repr 2))) eqn:parity1; [contradiction|].
       destruct (valid_b_o_So_dec m2 b i); [|contradiction].
       assert (OF: Ptrofs.unsigned (Ptrofs.add i (Ptrofs.repr delta)) = Ptrofs.unsigned i + delta).
-        { eapply Mem.address_inject; eauto. apply v0. omega. }
+        { eapply Mem.address_inject; eauto. apply v. omega. }
         assert (AL: (2 | delta)).
         { change 2 with (align_chunk Mint16unsigned).
-          (* change 1 with (align_chunk Mint8unsigned). *)
-          clear - H10 v0 H1.
+          clear - H10 v H1.
           eauto using Mem.mi_align, Mem.mi_inj, Mem.range_perm_max. }
         destruct (Ptrofs.eq Ptrofs.one
                           (Ptrofs.modu (Ptrofs.add i (Ptrofs.repr delta)) (Ptrofs.repr 2))) eqn:parity2.
-
-      *(*
-         * From parity1 we know that i was even. 
-         * We need a contradiction from parity2.
-         * This now comes easily, since delta is known to be even. *)
-
-        (* rewrite <- Bool.not_true_iff_false in parity1. *)
+      * assert (0 <= Ptrofs.unsigned i + delta < Ptrofs.modulus). {
+          destruct H1 as [_ _ _ _ rep _].
+          specialize (rep _ _ _ i H10) as [_ rep].
+          left. unfold valid_b_o_So in v.
+          unfold Mem.range_perm in v.
+          specialize (v (Ptrofs.unsigned i)).
+          apply Mem.perm_cur_max in v. auto.
+          omega. apply lt_ptr_mod in rep. assumption.
+        }
+        clear - parity1 parity2 AL H0.
         rewrite <- Bool.not_false_iff_true in parity2.
         unfold not in *.
         destruct parity2.
@@ -424,29 +389,14 @@ Proof.
         rewrite Ptrofs.unsigned_repr_eq in *.
         rewrite (Z.mod_small 2 _) in * by easy.        
         unfold Ptrofs.add; repeat rewrite Ptrofs.unsigned_repr_eq.
-        rewrite Z.add_mod_idemp_r by easy.
-        rewrite (Z.mod_small (Ptrofs.unsigned i + delta) _).
-        2: { destruct H1 as [_ _ _ _ rep _].
-             specialize (rep _ _ _ i H10) as [_ rep].
-             { left. 
-               unfold valid_b_o_So in v0.
-               unfold Mem.range_perm in v0.
-               specialize (v0 (Ptrofs.unsigned i)).
-               apply Mem.perm_cur_max in v0.
-               auto. omega. }
-             apply lt_ptr_mod in rep.
-             assumption.
-        }
-        rewrite <- parity1.
-        f_equal. f_equal.
-        rewrite <- Z.add_mod_idemp_r by easy.
-        rewrite (Znumtheory.Zdivide_mod delta 2) by easy.
+        rewrite Z.add_mod_idemp_r, (Z.mod_small (Ptrofs.unsigned i + delta) _) by easy.
+        rewrite <- parity1. do 2 f_equal. 
+        rewrite <- Z.add_mod_idemp_r, (Znumtheory.Zdivide_mod delta 2) by easy.
         now replace (Ptrofs.unsigned i + 0) with (Ptrofs.unsigned i) by omega. 
       * destruct (valid_b_o_So_dec m1' b2 (Ptrofs.add i (Ptrofs.repr delta))); auto.
         destruct n.
         assert (inj := H1).
         destruct H1 as [[? _ _] _ _ _ rep _].
-        (* clear - mi_perm v H10 rep OF AL. *)
         unfold valid_b_o_So in *.
         rewrite OF. replace (Ptrofs.unsigned i + delta + 2) with ((Ptrofs.unsigned i + 2) + delta) by omega.
   eapply Mem.range_perm_inject; eauto.
