@@ -933,9 +933,13 @@ Proof.
           vgamma g5' x0 = (null, l0, r0) /\
           src g5' (x0, L) = x0 /\
           src g5' (x0, R) = x0 /\
+          dst g5' (x0, L) = l0 /\
+          dst g5' (x0, R) = r0 /\
           evalid g5' (x0, L) /\
           evalid g5' (x0, R) /\
-          vvalid g5' x0) as LOCAL. admit.
+          vvalid g5' x0 /\
+          (l0 = null \/ vvalid g5' l0) /\
+          (r0 = null \/ vvalid g5' r0)) as LOCAL. admit.
   pose proof H6.
   destruct H13 as [? _].
   assert (BiMaFin g5').
@@ -967,8 +971,27 @@ Proof.
           intros [? ?]; repeat split; auto.
           intros [| [| []]]; subst e; rewrite <- H17 in H14; apply H14; symmetry; tauto.
     + constructor.
-      intros.
-      admit.
+      - intros.
+        destruct (classic ((x0, L) = e)); [| destruct (classic ((x0, R) = e))].
+        * unfold is_null_SGBA; simpl.
+          subst e.
+          replace (src g5' (x0, L)) with x0 by (symmetry; tauto).
+          replace (dst g5' (x0, L)) with l0 by (symmetry; tauto).
+          tauto.
+        * unfold is_null_SGBA; simpl.
+          subst e.
+          replace (src g5' (x0, R)) with x0 by (symmetry; tauto).
+          replace (dst g5' (x0, R)) with r0 by (symmetry; tauto).
+          tauto.
+        * pose proof @ma _ _ x1.
+          pose proof @valid_graph _ _ _ _ _ _ H16.
+          unfold weak_valid in H17.
+          simpl in H17.
+          specialize (H17 e).
+          rewrite !Intersection_spec in H17.
+          specialize (H17 ltac:(tauto)).
+          tauto.
+      - intros.
       admit.
     + (* finite_graph_join finite_graph_si *)
       admit.
