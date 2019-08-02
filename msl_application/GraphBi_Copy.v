@@ -938,6 +938,7 @@ Proof.
           evalid g5' (x0, L) /\
           evalid g5' (x0, R) /\
           vvalid g5' x0 /\
+          x0 <> null /\
           (l0 = null \/ vvalid g5' l0) /\
           (r0 = null \/ vvalid g5' r0)) as LOCAL. admit.
   pose proof H6.
@@ -992,8 +993,15 @@ Proof.
           specialize (H17 ltac:(tauto)).
           tauto.
       - intros.
+        pose proof @ma _ _ x1.
+        pose proof @valid_not_null _ _ _ _ _ _ H15.
+        specialize (H16 x2).
+        simpl in H16.
+        rewrite Intersection_spec in H16.
+        destruct (classic (x0 = x2)); [subst x2 |]; tauto.
+    + constructor.
+          (* finite_graph_join finite_graph_si *)
       admit.
-    + (* finite_graph_join finite_graph_si *)
       admit.
   }
   (*
