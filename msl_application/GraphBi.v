@@ -63,6 +63,12 @@ Class BiMaFin (g: PreGraph addr (addr * LR)) := {
   fin: FiniteGraph g
 }.
 
+Class BiMaFin' (g: PreGraph addr (addr * LR)) := {
+  bi': BiGraph g (fun x => (x, L)) (fun x => (x, R));
+  ma': MathGraph' g is_null_SGBA;
+  fin': FiniteGraph g
+}.
+
 Definition Graph := (GeneralGraph addr (addr * LR) DV DE DG (fun g => BiMaFin (pg_lg g))).
 Definition LGraph := (LabeledGraph addr (addr * LR) DV DE DG).
 Definition SGraph := (PointwiseGraph addr (addr * LR) (DV * addr * addr) unit).
