@@ -17,6 +17,12 @@ Class MathGraph (pg: PreGraph V E) (is_null: DecidablePred V): Prop := {
   valid_not_null: forall x, vvalid pg x -> is_null x -> False
 }.
 
+Class MathGraph' (pg: PreGraph V E) (is_null: DecidablePred V): Prop := {
+  weak_valid': V -> Prop := fun p => is_null p \/ vvalid pg p;
+  valid_graph': forall e, evalid pg e -> vvalid pg (src pg e);
+  valid_not_null': forall x, vvalid pg x -> is_null x -> False
+}.
+
 Context {is_null: DecidablePred V}.
 
 Lemma is_null_dec: forall x, {is_null x} + {~ is_null x}.
