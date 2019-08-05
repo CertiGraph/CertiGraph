@@ -23,8 +23,10 @@ Axiom ADMIT: forall sh d b i, data_at sh (nested_field_type (Tstruct _Node noatt
 (* Hint Rewrite eval_cast_neutral_is_pointer_or_null using auto : norm. (* TODO: should not need this *) *)
 
 Local Coercion Graph_LGraph: Graph >-> LGraph.
+Local Coercion Graph'_LGraph: Graph' >-> LGraph.
 Local Coercion LGraph_SGraph: LGraph >-> SGraph.
 Local Identity Coercion Graph_GeneralGraph: Graph >-> GeneralGraph.
+Local Identity Coercion Graph'_GeneralGraph: Graph' >-> GeneralGraph.
 Local Identity Coercion LGraph_LabeledGraph: LGraph >-> LabeledGraph.
 Local Identity Coercion SGraph_PointwiseGraph: SGraph >-> PointwiseGraph.
 Local Coercion pg_lg: LabeledGraph >-> PreGraph.
@@ -57,7 +59,7 @@ Definition copy_spec :=
           LOCAL (temp _x (pointer_val_val x))
           SEP   (graph sh x g)
   POST [ (tptr (Tstruct _Node noattr)) ]
-        EX xgg: pointer_val * Graph * Graph,
+        EX xgg: pointer_val * Graph * Graph',
         let x' := fst (fst xgg) in
         let g1 := snd (fst xgg) in
         let g1' := snd xgg in
@@ -101,7 +103,7 @@ Proof.
   - apply denote_tc_test_eq_split. 2: entailer!. apply graph_local_facts; auto.
   - assert (x = NullPointer) by (destruct x; simpl in H; inversion H; auto). subst x.
     forward.
-    Exists ((NullPointer, g), empty_Graph).
+    Exists ((NullPointer, g), empty_Graph').
     simpl. entailer!.
     + apply (copy_null_refl g).
     + rewrite va_reachable_invalid; auto. apply derives_refl. (* TODO why?*)
@@ -132,7 +134,7 @@ Proof.
     }
   1: { (* if-then branch *)
     forward. (* return x0; *)
-    apply (exp_right (d, g, empty_Graph)).
+    apply (exp_right (d, g, empty_Graph')).
     simpl.
     entailer!; auto.
     1: split.

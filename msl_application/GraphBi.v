@@ -70,6 +70,7 @@ Class BiMaFin' (g: PreGraph addr (addr * LR)) := {
 }.
 
 Definition Graph := (GeneralGraph addr (addr * LR) DV DE DG (fun g => BiMaFin (pg_lg g))).
+Definition Graph' := (GeneralGraph addr (addr * LR) DV DE DG (fun g => BiMaFin' (pg_lg g))).
 Definition LGraph := (LabeledGraph addr (addr * LR) DV DE DG).
 Definition SGraph := (PointwiseGraph addr (addr * LR) (DV * addr * addr) unit).
 
@@ -97,11 +98,14 @@ Defined.
 Global Existing Instances SGC_Bi L_SGC_Bi.
 
 Definition Graph_LGraph (G: Graph): LGraph := lg_gg G.
+Definition Graph'_LGraph (G: Graph'): LGraph := lg_gg G.
 Definition LGraph_SGraph (G: LGraph): SGraph := Graph_PointwiseGraph G.
 
 Local Coercion Graph_LGraph: Graph >-> LGraph.
+Local Coercion Graph'_LGraph: Graph' >-> LGraph.
 Local Coercion LGraph_SGraph: LGraph >-> SGraph.
 Local Identity Coercion Graph_GeneralGraph: Graph >-> GeneralGraph.
+Local Identity Coercion Graph'_GeneralGraph: Graph' >-> GeneralGraph.
 Local Identity Coercion LGraph_LabeledGraph: LGraph >-> LabeledGraph.
 Local Identity Coercion SGraph_PointwiseGraph: SGraph >-> PointwiseGraph.
 Local Coercion pg_lg: LabeledGraph >-> PreGraph.
@@ -109,11 +113,20 @@ Local Coercion pg_lg: LabeledGraph >-> PreGraph.
 Instance biGraph (G: Graph): BiGraph G (fun x => (x, L)) (fun x => (x, R)) :=
   @bi G (@sound_gg _ _ _ _ _ _ _ _ G).
 
+Instance biGraph' (G: Graph'): BiGraph G (fun x => (x, L)) (fun x => (x, R)) :=
+  @bi' G (@sound_gg _ _ _ _ _ _ _ _ G).
+
 Instance maGraph(G: Graph): MathGraph G is_null_SGBA :=
   @ma G (@sound_gg _ _ _ _ _ _ _ _ G).
 
+Instance maGraph'(G: Graph'): MathGraph' G is_null_SGBA :=
+  @ma' G (@sound_gg _ _ _ _ _ _ _ _ G).
+
 Instance finGraph (G: Graph): FiniteGraph G :=
   @fin G (@sound_gg _ _ _ _ _ _ _ _ G).
+
+Instance finGraph' (G: Graph'): FiniteGraph G :=
+  @fin' G (@sound_gg _ _ _ _ _ _ _ _ G).
 
 Instance RGF (G: Graph): ReachableFiniteGraph G.
   apply Build_ReachableFiniteGraph.
@@ -144,6 +157,12 @@ Definition empty_MathGraph: MathGraph (empty_pregraph (fun e => fst e) (fun e =>
   + intros ? [].
 Defined.
 
+Definition empty_MathGraph': MathGraph' (empty_pregraph (fun e => fst e) (fun e => null)) is_null_SGBA.
+  apply (Build_MathGraph' _ is_null_SGBA).
+  + intros ? [].
+  + intros ? [].
+Defined.
+
 Definition empty_FiniteGraph: FiniteGraph (empty_pregraph (fun e => fst e) (fun e => null)).
   constructor.
   + exists nil.
@@ -159,12 +178,22 @@ Defined.
 Definition empty_sound: BiMaFin (empty_pregraph (fun e => fst e) (fun e => null)) :=
   Build_BiMaFin _ empty_BiGraph empty_MathGraph empty_FiniteGraph.
 
+Definition empty_sound': BiMaFin' (empty_pregraph (fun e => fst e) (fun e => null)) :=
+  Build_BiMaFin' _ empty_BiGraph empty_MathGraph' empty_FiniteGraph.
+
 Definition empty_Graph (default_v: DV) (default_e: DE) (default_g : DG) : Graph :=
   Build_GeneralGraph _ _ _ _ (empty_labeledgraph (fun e => fst e) (fun e => null) default_v default_e default_g) empty_sound.
 
+Definition empty_Graph' (default_v: DV) (default_e: DE) (default_g : DG) : Graph' :=
+  Build_GeneralGraph _ _ _ _ (empty_labeledgraph (fun e => fst e) (fun e => null) default_v default_e default_g) empty_sound'.
+
 Definition is_BiMaFin (g: LGraph): Prop := exists X: BiMaFin (pg_lg g), True.
 
+Definition is_BiMaFin' (g: LGraph): Prop := exists X: BiMaFin' (pg_lg g), True.
+
 Definition is_guarded_BiMaFin (PV: addr -> Prop) (PE: addr * LR -> Prop) (g: LGraph): Prop := is_BiMaFin (gpredicate_sub_labeledgraph PV PE g).
+
+Definition is_guarded_BiMaFin' (PV: addr -> Prop) (PE: addr * LR -> Prop) (g: LGraph): Prop := is_BiMaFin' (gpredicate_sub_labeledgraph PV PE g).
 
 Definition left_right_sound: forall (g: Graph) (x: addr) lr,
   vvalid g x ->
@@ -191,6 +220,38 @@ Proof.
     rewrite <- ! H3; auto.
   + destruct (@valid_graph _ _ _ _ g _ (maGraph _) (x, R) H) as [? _].
     pose proof (@only_two_edges _ _ _ _ g _ _ (biGraph _) _ (x, R) H0).
+    simpl in H1.
+    destruct H1 as [? _].
+    specialize (H1 (conj eq_refl H)).
+    destruct H1; inversion H1.
+    rewrite <- ! H3; auto.
+Qed.
+
+Definition left_right_sound': forall (g: Graph') (x: addr) lr,
+  vvalid g x ->
+  src g (x, lr) = x.
+Proof.
+  intros.
+  destruct lr.
+  + apply (@left_sound _ _ _ _ _ _ g (biGraph' _) x); auto.
+  + apply (@right_sound _ _ _ _ _ _ g (biGraph' _) x); auto.
+Qed.
+
+Definition left_right_sound0': forall (g: Graph') (x: addr) lr,
+  evalid g (x, lr) ->
+  src g (x, lr) = x.
+Proof.
+  intros.
+  destruct lr.
+  + pose proof @valid_graph' _ _ _ _ g _ (maGraph' _) (x, L) H.
+    pose proof (@only_two_edges _ _ _ _ g _ _ (biGraph' _) _ (x, L) H0).
+    simpl in H1.
+    destruct H1 as [? _].
+    specialize (H1 (conj eq_refl H)).
+    destruct H1; inversion H1.
+    rewrite <- ! H3; auto.
+  + pose proof @valid_graph' _ _ _ _ g _ (maGraph' _) (x, R) H.
+    pose proof (@only_two_edges _ _ _ _ g _ _ (biGraph' _) _ (x, R) H0).
     simpl in H1.
     destruct H1 as [? _].
     specialize (H1 (conj eq_refl H)).
@@ -531,7 +592,32 @@ Proof.
     - eapply finite_graph_join; eauto.
 Qed.
 
+Instance BiMaFin'_Normal: NormalGeneralGraph (fun g: LGraph => BiMaFin' g).
+Proof.
+  constructor.
+  + intros.
+    destruct X as [?H ?H ?H].
+    apply (bi_graph_si _ _ (proj1 H)) in H0.
+    apply (math_graph_si' _ _ (proj1 H)) in H1.
+    apply (finite_graph_si _ _ (proj1 H)) in H2.
+    constructor; auto.
+  + intros.
+    destruct X as [?H ?H ?H].
+    destruct X0 as [?H ?H ?H].
+    constructor.
+    - eapply bi_graph_join'; eauto.
+    - eapply math_graph_join'; eauto.
+    - eapply finite_graph_join; eauto.
+Qed.
+
 Lemma Graph_is_BiMaFin: forall (g: Graph), is_BiMaFin g.
+Proof.
+  intros.
+  destruct g.
+  exists sound_gg; auto.
+Qed.
+
+Lemma Graph'_is_BiMaFin': forall (g: Graph'), is_BiMaFin' g.
 Proof.
   intros.
   destruct g.

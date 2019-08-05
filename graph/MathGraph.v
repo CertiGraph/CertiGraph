@@ -36,6 +36,9 @@ Qed.
 Arguments weak_valid _ {_} {_}  _.
 Arguments valid_graph _ {_} {_} _ _.
 Arguments valid_not_null _ {_} {_} _ _ _. 
+Arguments weak_valid' _ {_} {_}  _.
+Arguments valid_graph' _ {_} {_} _ _.
+Arguments valid_not_null' _ {_} {_} _ _ _. 
 
 Definition well_defined_list (pg: PreGraph V E) {ma: MathGraph pg is_null} (l : list V) := forall x, In x l -> weak_valid pg x.
 
@@ -75,6 +78,25 @@ Proof.
   + intros.
     rewrite <- (proj1 H) in H1.
     apply (valid_not_null g1 x); auto.
+Qed.
+
+Lemma math_graph_si': forall (g1 g2: PreGraph V E),
+  g1 ~=~ g2 ->
+  MathGraph' g1 is_null ->
+  MathGraph' g2 is_null.
+Proof.
+  intros.
+  constructor.
+  + intros.
+    pose proof (proj2 (proj1 (proj2 H) _) H1).
+    pose proof valid_graph' g1 e H2.
+    unfold weak_valid in H3.
+    rewrite (si_src1 _ _ _ H) in H3 by auto.
+    rewrite !(proj1 H) in H3.
+    auto.
+  + intros.
+    rewrite <- (proj1 H) in H1.
+    apply (valid_not_null' g1 x); auto.
 Qed.
 
 Lemma gen_dst_preserve_math: forall (g: PreGraph V E) e t (M: MathGraph g is_null),
@@ -133,8 +155,43 @@ Proof.
       simpl; rewrite Intersection_spec; auto.
 Qed.
 
+Lemma math_graph_join': forall (g: PreGraph V E) (PV1 PV2 PV: V -> Prop) (PE1 PE2 PE: E -> Prop),
+  Prop_join PV1 PV2 PV ->
+  Prop_join PE1 PE2 PE ->
+  MathGraph' (gpredicate_subgraph PV1 PE1 g) is_null ->
+  MathGraph' (gpredicate_subgraph PV2 PE2 g) is_null ->
+  MathGraph' (gpredicate_subgraph PV PE g) is_null.
+Proof.
+  intros.
+  constructor.
+  + simpl; intro; rewrite !Intersection_spec; intros.
+    destruct H, H0.
+    rewrite H0 in H3; destruct H3 as [? [? | ?]].
+    - pose proof valid_graph' (gpredicate_subgraph PV1 PE1 g) e.
+      simpl in H7; unfold weak_valid in H7; simpl in H7; rewrite !Intersection_spec in H7.
+      specialize (H7 (conj H3 H6)).
+      rewrite !H.
+      tauto.
+    - pose proof valid_graph' (gpredicate_subgraph PV2 PE2 g) e.
+      simpl in H7; unfold weak_valid in H7; simpl in H7; rewrite !Intersection_spec in H7.
+      specialize (H7 (conj H3 H6)).
+      rewrite !H.
+      tauto.
+  + simpl; intros.
+    destruct H, H0.
+    rewrite Intersection_spec, H in H3.
+    destruct H3 as [? [? | ?]].
+    - apply (valid_not_null' (gpredicate_subgraph PV1 PE1 g) x); auto.
+      simpl; rewrite Intersection_spec; auto.
+    - apply (valid_not_null' (gpredicate_subgraph PV2 PE2 g) x); auto.
+      simpl; rewrite Intersection_spec; auto.
+Qed.
+
 End MathGraph.
 
 Arguments weak_valid {_} {_} {_} {_} _ {_} {_} _.
 Arguments valid_graph {_} {_} {_} {_} _ {_} {_} _ _.
 Arguments valid_not_null {_} {_} {_} {_} _ {_} {_} _ _ _. 
+Arguments weak_valid' {_} {_} {_} {_} _ {_} {_} _.
+Arguments valid_graph' {_} {_} {_} {_} _ {_} {_} _ _.
+Arguments valid_not_null' {_} {_} {_} {_} _ {_} {_} _ _ _. 
