@@ -6,6 +6,57 @@ To prove the functional correctness of graph-manipulating algorithms implemented
 
 For reference, Figure~\ref{fig:seplogsem} shows the standard semantic models for the separation logic connectives using a join relation $\oplus$ on an underlying separation algebra~\cite{dockins09}.
 
+\subsection{\color{red} Review: separation logic in tree-manipulating programs}
+
+In two papers about separation
+logic \citep{o2001local, o2012primer}, that both aim to give a more
+precise specification of a tree copy program, the spatial
+representation of a binary tree is defined recursively as a predicate
+with an additional parameter, the mathematical tree $\tau$:
+\begin{equation}\label{def:tree}
+\begin{split}
+    \mathsf{tree}(x, \tau)\;\defeq\;
+    &(x=0 \wedge \mathsf{isatom}(\tau) \wedge \mathsf{emp})
+    \vee \null \\ &\Big(\exists\,l,r,\tau_1,\tau_2.\; \tau=\langle \tau_1,
+    \tau_2 \rangle \wedge (x \mapsto l,r) \scon
+    \mathsf{tree}(l, \tau_1) \scon \mathsf{tree}(r, \tau_2)\Big)
+    \end{split}
+\end{equation}
+
+The mathematical tree $\tau$ is defined as an expression to encode the
+shape of a binary tree. It is either an $\mathsf{atom}$ or a pair of
+tree encodings. For example,
+$\langle \mathsf{atom}, \langle \langle \mathsf{atom}, \mathsf{atom} \rangle, \mathsf{atom} \rangle \rangle$
+is a valid encoding. A $\mathsf{tree}(x, \tau)$ is either an
+$\mathsf{emp}$ or $(x \mapsto
+l,r) \scon \mathsf{tree}(l, \tau_1) \scon \mathsf{tree}(r, \tau_2)$
+where $\tau_1$ and $\tau_2$ are the left and right subtrees of $\tau$.
+If $\tau_1$ is $\mathsf{atom}$ then $a$ must be null pointer and
+$\mathsf{tree}(l, \tau_1)$ must be $\mathsf{emp}$.
+\begin{wrapfigure}{r}{.4\textwidth}
+  \centering
+  \input{bitree_bigraph.tex}
+  \caption{A Binary Tree and a Binary Graph}\label{fig:bin_tree_graph}
+\end{wrapfigure}
+Otherwise $\mathsf{tree}(l, \tau_1)$ can be further expanded like
+$\mathsf{tree}(x, \tau)$, and so on. Thus the data layout matches
+$\tau$ (the shape of a tree) exactly. In the verification of a tree
+copy program, the precondition is $\mathsf{tree}(x, \tau)$ and the
+postcondition is
+$\mathsf{tree}(x, \tau) \scon \mathsf{tree}(y, \tau)$. The same $\tau$
+in the specification indicates that the program creates a exact clone
+of the original tree, not an arbitrary shaped tree. As shown in the
+left part of Figure~\ref{fig:bin_tree_graph}, the separation
+conjunction $\scon$ fits perfectly because the root, the left, and the
+right branch of a tree are totally disjoint. By applying
+the \textsc{Frame} rule, one can safely reason about one brach of the
+tree and compose the conclusion back, without considering the effect
+to the other branch. When it turns to graph, such as the right part of
+Figure~\ref{fig:bin_tree_graph}, things become more complicated. The
+separating conjunction is not applicable here if we want to define a
+similar recursive predicate, because a single node can be shared
+arbitrarily.
+
 \subsection{Recursive definitions yield poor \p{graph} predicates}\label{sec:fixpointfail}
 
 \newcommand{\graphkt}{\p{graph}_T}
@@ -34,7 +85,7 @@ Suppose we define a graph predicate $\graphkt$ along the lines of the fold/unfol
 \vspace{-1ex}
 \[
 \begin{array}{@{}l@{}l@{}}
-\graphkt(x, \gamma) \stackrel{\Delta}{=} \; &\Big(x = 0 /| \p{emp}\Big) |/ \\
+\graphkt(x, \gamma) \; \defeq \; &\Big(x = 0 /| \p{emp}\Big) |/ \\
 &\quad \Big(\exists m,l,r.~ \gamma(x)=(m,l,r) /|
 \big(x |-> m,l,r ** \graphkt(l, \gamma) ** \graphkt(r, \gamma)\big)\Big)
 \end{array}
@@ -129,7 +180,7 @@ all recursion needs to be guarded by~$\rhd$~, the ``approximation
 modality'' \cite{appel:vmm}, \emph{i.e.} our graph predicate would
 look like
 \begin{align*}
-\grapham(x, \gamma) ~ \stackrel{\Delta}{=} ~~ &(x = 0 /| \p{emp}) |/ \exists m,l,r.~ \gamma(x)=(m,l,r) /| \null \\
+\grapham(x, \gamma) ~ \defeq ~~ &(x = 0 /| \p{emp}) |/ \exists m,l,r.~ \gamma(x)=(m,l,r) /| \null \\
  & x |-> m,l,r ** \rhd \grapham(l, \gamma) ** \rhd \grapham(r, \gamma)
 \end{align*}
 This functional is contractive, and so the fixpoint is well-defined.  
