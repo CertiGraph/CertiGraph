@@ -273,8 +273,8 @@ By ``syntactic style'' we mean that the side condition is written using a functi
 we need a fixed inductive \textbf{syntax} for formulas.  In contrast, in this paper we follow a ``semantic style'' in which formulas are not given a fixed syntax in advance but can be defined \textbf{semantically} on the fly using an appropriate model~\cite{appel:programlogics}.  In a semantic style, the side condition on the frame rule is defined as:
 \[
 \begin{array}{ll}
-\sigma \stackrel{S}{\cong} \sigma' & \stackrel{\Delta}{=} ~~ \sigma \text{ and } \sigma' \text{ coincide everywhere except } S\\
-P \text{ ignores } S & \stackrel{\Delta}{=} ~~ \forall \sigma, \sigma'.~ \sigma \stackrel{S}{\cong} \sigma' => \big( (\sigma |= P) <=> (\sigma' |= P) \big)
+\sigma \stackrel{S}{\cong} \sigma' & \defeq ~~ \sigma \text{ and } \sigma' \text{ coincide everywhere except } S\\
+P \text{ ignores } S & \defeq ~~ \forall \sigma, \sigma'.~ \sigma \stackrel{S}{\cong} \sigma' => \big( (\sigma |= P) <=> (\sigma' |= P) \big)
 \end{array}
 \]
 That is, we consider two program states $\sigma$ and $\sigma'$ equivalent up to program variable set~$S$ when they agree everywhere except on the values of $S$ (typically, a state $\sigma$ is a pair of a heap $h$ and program variables $\rho$).  A predicate $P$ ignores~$S$ when its truth is independent of all program variables in $S$.  %{\color{magenta} Notice both the syntactic and semantic styles use the $\MV(c)$ function defined via straightforward recursive case analysis on program syntax; programming languages typically do have a fixed syntactic structure.}
@@ -319,7 +319,7 @@ Here is the definition of $\pguards{c}$, writing $\langle c \rangle$ for $\MV(c)
 \[
 %\begin{array}{lcl}
 %\langle c \rangle & \stackrel{\Delta}{=} & \MV(c) \\
-\sigma |= \pguards{c} P ~~ \stackrel{\Delta}{=} ~~ \forall \sigma'.~ (\sigma \stackrel{\langle c \rangle}{\cong} \sigma') => (\sigma' |= P)% ~~~~ \text{where $\mathsf{MV}(c)$ is $\MV(c)$}\\
+\sigma |= \pguards{c} P ~~ \defeq ~~ \forall \sigma'.~ (\sigma \stackrel{\langle c \rangle}{\cong} \sigma') => (\sigma' |= P)% ~~~~ \text{where $\mathsf{MV}(c)$ is $\MV(c)$}\\
 %\end{array}
 \vspace{-1ex}
 \]
