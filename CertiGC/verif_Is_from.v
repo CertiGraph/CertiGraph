@@ -307,39 +307,32 @@ Lemma test_iop__extcall: extcall_properties test_iop_sem test_iop_sig.
 Proof.
   constructor; intros.
   - destruct H as [_ [_ ?]].
-    destruct vargs; try destruct v; try contradiction.
-    + destruct vargs; [|contradiction].
-      destruct (Int.eq Int.one (Int.modu i (Int.repr 2))); subst; easy.
-    + destruct vargs; [|contradiction].
-      destruct (Ptrofs.eq Ptrofs.one (Ptrofs.modu i (Ptrofs.repr 2))); [contradiction|].
-      destruct (valid_b_o_So_dec m1 b i); subst; easy.
-  - apply H0.
+    destruct vargs; try destruct v; try contradiction; destruct vargs; try contradiction.
+    1: destruct (Int.eq Int.one (Int.modu i (Int.repr 2))); subst; easy.
+    destruct (Ptrofs.eq Ptrofs.one (Ptrofs.modu i (Ptrofs.repr 2))).
+    1: contradiction.
+    destruct (valid_b_o_So_dec m1 b i); subst; easy.
+  - trivial.
   - destruct H as [? _]. subst m1. trivial. 
   - destruct H as [? _]. subst m1. trivial.
   - destruct H as [? _]. subst m1. apply Mem.unchanged_on_refl.
-  - destruct H as [? [? ?]]. subst m2 t.
+  - destruct H as [? [? ?]]; subst m2 t.
     exists vres, m1'. split.
     2: split3; [apply Val.lessdef_refl | trivial | apply Mem.unchanged_on_refl].
     split3; trivial.
     do 2 (try destruct vargs; try destruct v); try contradiction;
       inversion H1; inversion H4; inversion H6; auto.
     clear -H0 H3.
-    (* 
-     * Basically we need to show that the valid_b_o_So in the hypothesis
-     * implies the valid_b_o_So in the goal. Luckily, it does. 
-     * When refactoring, I may extract this to a separate lemma, but
-     * for now I'll just strip away the details until the core goal is exposed. 
-     *)
     destruct (Ptrofs.eq Ptrofs.one (Ptrofs.modu i (Ptrofs.repr 2))); auto.
     destruct (valid_b_o_So_dec m1 b i); 
       destruct (valid_b_o_So_dec m1' b i); [trivial| | contradiction..].
-    clear H3; destruct n. (* There we go, the core goal. *)
-    destruct H0 as [_ [? _ _] _]. (* And this is going to save us. *)
-    assert (inject_id b = Some (b, 0)) by now unfold inject_id.    
+    clear H3; destruct n. 
+    destruct H0 as [_ [? _ _] _].
     unfold valid_b_o_So in *.
     unfold Mem.range_perm in *. intros.
-    specialize (v ofs H0).
-    specialize (mi_perm _ _ _ ofs Cur Nonempty H).
+    specialize (v ofs H).
+    assert (inject_id b = Some (b, 0)) by now unfold inject_id.
+    specialize (mi_perm _ _ _ ofs Cur Nonempty H0).
     replace (ofs + 0) with ofs in mi_perm by omega.
     apply (mi_perm v). 
   - intros. exists f, vres, m1'.

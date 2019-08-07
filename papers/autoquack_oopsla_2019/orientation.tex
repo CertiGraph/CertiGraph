@@ -3,13 +3,13 @@
 As an initial demonstration of our techniques, we show the decorated code of the
 \li{find} function from the classic disjoint-set data structure in
 Figure~\ref{fig:find}. The \li{find} function returns the root
-(ultimate parent) of a \li{Node x}. A node is a root when its parent
-pointer points to itself (line~\ref{code:ufif});
-other than such self-loops at roots, the structure is acyclic.
+(ultimate parent) of a \li{Node x}.\hspace{0.5em}A node is a root when its parent
+pointer points to itself (line~\ref{code:ufif}).
+Other than such self-loops at roots, the structure is acyclic.
 For good amortised performance, \li{find} also performs path
 compression (line~\ref{code:ufpathcompress}).
-At first, \li{find} appears rather trivial since it only has about 5 lines
-of code and a \li{Node} has only a single outgoing pointer.
+At first glance, \li{find} appears rather trivial since it only has about 5 lines
+of code and a \li{Node} only has a single outgoing pointer.
 In actual fact, the rather subtle nature of path compression and the
 implicit sharing inherent in parent-pointers make the disjoint-set data
 structure very difficult to reason about. Indeed, the first pen-and-paper

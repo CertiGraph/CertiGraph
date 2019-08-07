@@ -40,6 +40,8 @@ Definition is_null_Z: DecidablePred Z := existT (fun P : Z -> Prop => forall a :
  |  Z  |  Z  | list DE | option nat | unit |  Finite   |  
  *)
 
+Definition VType : Type := Z.
+Definition EType : Type := Z.
 Definition LE : Type := option nat.
 Definition LV: Type := list LE.
 Definition LG: Type := unit.
@@ -50,8 +52,8 @@ Definition LG: Type := unit.
   vertices_range: length vertices = size
   }. *)
 
-Definition Graph := (@Graph Z Z _ _ LV LE LG).
-Definition LGraph := (@LGraph Z Z _ _ LV LE LG).
+Definition Graph := (@Graph VType EType _ _ LV LE LG).
+Definition LGraph := (@LGraph VType EType _ _ LV LE LG).
 
 
 (* Moving on to Spatial Rep *)
@@ -78,7 +80,7 @@ Definition allTrue {A : Type} (l : list (option A)) : bool :=
   fold_right (fun x acc => match x with Some _ => acc | _ => false end) true l.
 
 (* assuming that allTrue will be in the vvalid of path *)
-Definition path_cost (g: Graph) (p : @path Z Z) : nat :=
+Definition path_cost (g: Graph) (p : @path VType EType) : nat :=
   match p with
   | (v, nil) => 0
   | (v, edges) => fold_left Nat.add (choose (map (elabel g) edges)) 0%nat

@@ -155,11 +155,11 @@ As discussed in~\S\ref{sec:mathgraph} and~\S\ref{sec:spacegraph},
 we made a significant effort to increase the modularity of our library and to 
 encourage proof reuse.
 Figure~\ref{fig:connectedness} gives a sense of this engineering effort. 
-Each line in the perimeter represents a theorem used to verify the GC, 
+Each normal line in the perimeter represents a theorem used to verify the GC, 
 with the length of a line corresponding to the length of the theorem on a 
 logarithmic scale. The fourteen color-coded sectors represent the files in which 
-these theorems are housed, and arcs connecting theorems represent dependencies. 
-An arc is colored the same as the \emph{caller}.
+these theorems are housed. Arcs connecting theorems represent dependencies, 
+where an arc is colored the same as the \emph{caller}.
 
 Sector $1$ contains $432$ generic helper theorems used to check that functions
 satisfy the inductive spatial relations that we need. These theorems do not depend
