@@ -144,8 +144,16 @@ above. \citet{charpott15, charpott19}~extended CFML to reason about time
 credits. The work of \citet{gueneau17}~indicates that CFML is exploring a connection 
 with the certified CakeML compiler~\cite{cakeml}.
 
-The tools above require substantial human guidance. A more automated approach to verification of low level programs using Coq is the Bedrock framework~\cite{chlipala:bedrock}.
-
+While the tools above require substantial human guidance, 
+Bedrock is a more automated approach to the verification of 
+low level programs using separation logic in Coq~\cite{chlipala:bedrock}. 
+Bedrock leverages the fact that phrasing function 
+specifications in a \emph{computational} style 
+(in this case, inspired by functional programming) 
+leads to separation logic proof obligations that are quite automatable.
+It simplifies these obligations into pure mathematics using a 
+versatile custom tactic called \li{sep}, and then discharges those 
+obligations using standard Coq automation.
 
 \paragraph{Other verification tools.} 
 
