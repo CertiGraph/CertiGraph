@@ -1,8 +1,8 @@
 % https://tex.stackexchange.com/questions/55337/how-to-use-figure-inside-a-minipage
 % The solution was to not use figures at all, but just put the graphics in 
 %   and manually caption them using captionof.
-
-  \begin{minipage}[t]{0.48\textwidth}
+\hspace{-1.2em}
+  \begin{minipage}[t]{0.5\textwidth}
   \begin{adjustbox}{scale=0.80}
   \centering
 %  \beginpgfgraphicnamed{variousgraph}
@@ -56,6 +56,7 @@
 \captionof{figure}{Structure of the Mathematical Graph Library}\label{fig:graphs}
 \end{minipage}
   ~
+  \hspace{0em}
   \begin{minipage}[t]{0.5\textwidth}
   \begin{adjustbox}{scale=0.80}
 \centering

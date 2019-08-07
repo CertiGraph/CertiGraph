@@ -277,7 +277,7 @@ logic~\cite{appel:programlogics}. However, the spatial representation
 of our graph library does not rely on any of its bells and whistles.
 To isolate our development from these unnecessary complications,
 we use two interfaces: Core Logic and Supplementary
-Logic, where Supplementary Logic is built upon the much simpler
+Logic, where Core Logic is built upon the much simpler
 and more universal Direct Model of heap representation.
 We present the architecture of our spatial development in
 Figure~\ref{fig:infra}, where it should be straighforward to see
@@ -285,11 +285,11 @@ that both models can instantiate both interfaces.
 
 Generally speaking, our VST proofs only need the Core properties to prove
 our examples. Each interface defines some operators of separation logic and
-provides some axioms about how they work.  For example, $*$ and
-$--*$ are in Core Logic, along with the axiom
+provides some axioms about how they work.  For example, the definitions of $*$ and
+$--*$ are in Core Logic, along with key axiom and rules such as
 $(P |- Q --* R) <=> (P * Q |- R)$.  On the other hand,
 the $**$ and $--o$ operators are in Supplementary Logic,
-along with rules like $P |- P ** P$.
+along with rules such as $P |- P ** P$.
 
 
 \hide{Starting from the bottom, notice that there are two underlying heap models,

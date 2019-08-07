@@ -72,8 +72,8 @@ a 12-element array called \li{heap}.
 The basic unit manipulated by the GC is a
 contiguous piece of memory called a block. Blocks can be of different sizes;
 the size of a particular block is stored in its
-header (using 22 bits of the word 
-\note[is this very interesting?]{stored at offset~$-\m{sizeof}(\li{void*})$}), and the remainder of the block is a contiguous array of fields.
+header \note[is this very interesting?]{(using 22 bits of the word 
+stored at offset~$-\m{sizeof}(\li{void*})$)}, and the remainder of the block is a contiguous array of fields.
 Each field is either an unboxed integer data value or a pointer. 
 To disambiguate the two,
 we follow OCaml's practice of requiring that all integers are odd 
@@ -85,7 +85,7 @@ Moving towards a mathematical abstraction, the 12 generations can be seen
 as a graph $\gamma$. Blocks are
 vertices, and pointers to other blocks are edges to other
 vertices. Vertices are labeled with
-a pair $(\m{v}_g, \m{v}_i)$ meaning the vertex represents the 
+\note[careful!]{a pair $(\m{v}_g, \m{v}_i)$} meaning the vertex represents the 
 the $\m{v}_i$th block in the $\m{v}_g$th generation. 
 \note[careful!]{An edge is a pair $(\m{v}, i)$,} meaning that 
 the associated pointer is the $i$th field of the block

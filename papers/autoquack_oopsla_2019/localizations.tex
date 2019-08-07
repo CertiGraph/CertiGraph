@@ -138,7 +138,8 @@ Consider using \textsc{Localize} to verify the program
 \begin{lstlisting}
   $// \{ \tx{x} = 5 /| A \} \searrow \{\tx{x} = 5 /| B \}$
     `\hl{...; x = x + 1; ...;}`
-  $// \{ \tx{x} = 6 /| D \} \swarrow \{\tx{x} = 6 /| C \}$
+  $// \{\tx{x} = 6 /| C \}$
+  $// \swarrow \{ \tx{x} = 6 /| D \}$ 
 \end{lstlisting}
 \vspace{-1ex}
 Suppose that other (elided) lines of the program make localization desirable, even though it is overkill for a single assignment.  The key issue is that if one sets $R \defeq L_2 --* G_2$, as
@@ -159,7 +160,7 @@ preventing us from meeting \infrulestyle{Localize}'s side condition\footnote{The
 another problem: in the standard model for local variable treatment in separation logic,
 the separating implication is vacuously true since \tx{x} cannot simultaneously be
 both $5$ and $6$.  But since two fatal problems are overkill, let us move on.}.
-Intuitively, the side condition on \infrulestyle{Localize} seems to be a bit too strong
+Intuitively, the side condition on \infrulestyle{Localize} is a bit too strong
 since it prevents us from mentioning variables in the postconditions that have been modified
 by code $c$.  As in other cases when life gets tough, what we need is an elegant little dance, and as with most dances, one should lead by example.
 
@@ -170,7 +171,7 @@ into the form
 \begin{lstlisting}
   $// \{ \tx{x} \! = \! 5 /| A \} \searrow \{\tx{x} \! = \! 5 /| B \}$
     `\hl{...; x = x + 1; ...;}`
-    $\, // \{\tx{x} \! = \! 6 /| C\}$
+  $// \{\tx{x} \! = \! 6 /| C\}$
   $\label{code:locexamplepresw}// \swarrow \{\exists x_f.~ (x_f = \tx{x}) /| (x_f \! = \! 6 /| C) \} $
   $\label{code:locexamplepostsw}// \{ \exists x_f.~ (x_f = \tx{x}) /| (x_f \! = \! 6 /| D) \}  \}$
   $// \{ \tx{x} \! = \! 6 /| D \}  \}$
@@ -184,15 +185,17 @@ them in reverse order.  The second one is $R |- \forall x_f.~ \big(\hat{\hat{L_2
 \[
 \forall x_f.~\big(\hat{L_2}(x_f) --* \hat{G_2}(x_f)\big) |- \forall x_f.~\Big(\big((\tx{x} = x_f) /| \hat{L_2}(x_f)\big) --* \big((\tx{x} = x_f) /| \hat{G_2}(x_f)\big)\Big)
 \]
-This turns out to be just a long-winded tautology, and can be done automatically in a tool.
+This turns out to be just a long-winded tautology, and can be handled automatically by a tool.
 
 The first of \textsc{Localize}'s entailments is $G_1 |- L_1 --* R$, \emph{i.e.}
 \[
 (\li{x} \! = \! 5 /| A) |- (\li{x} \! = \! 5 /| B) * \big(\forall x_f.~ (x_f \! = \! 6 /| C) --* (x_f \! = \! 6 /| D) \big)
 \]
-This can be broken into the ``variable-related'' part $\li{x} \! = \! 5 |- (\li{x} \! = \! 5) * \big(\forall x_f.~ (x_f \! = \! 6 --* x_f \! = \! 6)\big)$, which is also a tautology, and the ``spatial'' part $A |- B * (C --* D)$, which was true by assumption above.
+This can be broken into the ``variable-related'' part $\li{x} \! = \! 5 |- (\li{x} \! = \! 5) * \big(\forall x_f.~ (x_f \! = \! 6 --* x_f \! = \! 6)\big)$, which is also a tautology, and the ``spatial'' part $A |- B * (C --* D)$, which is true by assumption above.
 
-With careful engineering, all of the modified-variable dance above can be done fully automatically, and in a way that is completely hidden to end-users.  The only remaining proof
+With careful engineering, the entire modified-variable dance detailed above 
+can be done fully automatically, in a way that is completely hidden to end-users.  
+The only remaining proof
 goal is the spatial part, which captures the key action of the localization block.  To solve
 these in practice, we end up applying generic lemmas from \S\ref{sec:spacegraph}.
 

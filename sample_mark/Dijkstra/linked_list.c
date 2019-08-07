@@ -1,11 +1,3 @@
-//
-//  linked_list.c
-//  Dijkstra
-//
-//  Created by Anshuman Mohan on 14/6/19.
-//  Copyright © 2019 Anshuman Mohan. All rights reserved.
-//
-
 #include "linked_list.h"
 #include <stdlib.h>
 #include <limits.h>
