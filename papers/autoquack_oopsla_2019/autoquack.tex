@@ -68,6 +68,7 @@
 \usepackage{graphicx}
 \usepackage{fvextra}
 
+\renewcommand*{\ttdefault}{zi4}
 
 % inline code
 \makeatletter
@@ -87,8 +88,8 @@
 \newcommand{\note}[2][polish]{{\color{magenta} #2 }{\marginpar{\tiny \color{blue} #1 }}}
 \newcommand{\noted}[2][new]{{\color{orange} #2 }{\marginpar{\tiny \color{blue} #1 }}}
 \newcommand{\notedd}[2][blah]{#2}
-\newcommand{\li}[1]{\ifmmode\mbox{\mli{#1}}\else\mbox{\lstinline/#1/}\fi}
-%\renewcommand{\li}[1]{\ensuremath{\texttt{#1}}}
+%% \newcommand{\li}[1]{\ifmmode\mbox{\mli{#1}}\else\mbox{\lstinline/#1/}\fi}
+\newcommand{\li}[1]{{\texttt{\small #1}}}
 \newcommand\hide[1]{}
 \newcommand{\MV}{\ensuremath{\mathsf{ModVar}}}
 \newcommand{\FV}{\ensuremath{\mathsf{FreeVar}}}
@@ -160,7 +161,7 @@
   %morecomment=[n][{\color{red}}]{/*}{*/},
   morecomment=[l][{\color{red}}]{//},
   sensitive=true, mathescape=true, showlines=true, escapechar=`,
-  basicstyle=\normalfont\footnotesize\tt,
+  basicstyle=\footnotesize\ttfamily,
   keywordstyle=\color{blue}, numbers=left,
   numberstyle=\tiny, numbersep=5pt, boxpos=t,
   showstringspaces=false
