@@ -239,7 +239,7 @@ $\ocon$ connective\footnote{Recall that the
 standard semantics of the separation logic connectives used in this paper are in
 Figure~\ref{fig:seplogsem} on page~\pageref{fig:seplogsem}.} is part of why graph-manipulating algorithms are so hard to verify
 (\emph{e.g.}, it is hard to apply the \infrulestyle{Frame} rule).
-Second, \eqref{eqn:bigraphintrofoldunfold} illustrates how industrial-strength settings complicate verification.  Lines~\mbox{\ref{code:nodedefstart}--\ref{code:nodedefend}} define the data type \li{Node} used by \li{mark}.  The \li{_Alignas($n$)} directives tell CompCert to align fields on $n$-byte boundaries.
+Second, \eqref{eqn:bigraphintrofoldunfold} illustrates how industrial-strength settings complicate verification.  Lines~\mbox{\ref{code:nodedefstart}--\ref{code:nodedefend}} define the data type \li{Node} used by \li{mark}.  The \li{\_Alignas(}$n${)} directives tell CompCert to align fields on $n$-byte boundaries.
 As explained in~\S\ref{sec:goodgraph}, this alignment is necessary in C-like memory models to prove fold-unfold \eqref{eqn:bigraphintrofoldunfold}, which is why \eqref{eqn:bigraphintrofoldunfold} includes an alignment restriction $x~\mathsf{mod}~16 = 0$ and an existentially-quantified ``blank'' second field for the root $x \mapsto m,-,l,r$.
 In our Floyd proofs, the alignment restriction and blank second field are nicely hidden ``behind the scenes''.
 

@@ -115,7 +115,7 @@ memory!
 Our work does not verify the time complexity of union-find. When 
 we attempted to prove the necessary amortisation bounds we ran into an 
 overflow issue: it was impossible to prove that the rank would not exceed 
-\li{max_int} because the CompCert memory model does not place a bound on the 
+\li{max\_int} because the CompCert memory model does not place a bound on the 
 total number of allocations. Informally, this overflow is impossible in 
 practice because no computer has $2^{2^{\tiny 64}}$ bytes of memory, which would 
 be required for this overflow to occur, but Coq remains unconvinced. 
