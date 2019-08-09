@@ -176,4 +176,64 @@ Proof.
       tauto.
 Qed.
 
+Lemma bi_graph_join': forall (g: PreGraph V E) (PV1 PV2 PV: V -> Prop) (PE1 PE2 PE: E -> Prop),
+  Prop_join PV1 PV2 PV ->
+  Prop_join PE1 PE2 PE ->
+  MathGraph' (gpredicate_subgraph PV1 PE1 g) is_null ->
+  MathGraph' (gpredicate_subgraph PV2 PE2 g) is_null ->
+  BiGraph (gpredicate_subgraph PV1 PE1 g) left_out_edge right_out_edge ->
+  BiGraph (gpredicate_subgraph PV2 PE2 g) left_out_edge right_out_edge ->
+  BiGraph (gpredicate_subgraph PV PE g) left_out_edge right_out_edge.
+Proof.
+  intros.
+  constructor.
+  + intros.
+    simpl in H5.
+    rewrite Intersection_spec in H5.
+    destruct H5.
+    destruct H as [? _].
+    rewrite H in H6; destruct H6.
+    - apply (@bi_consist _ _ _ H3).
+      split; auto.
+    - apply (@bi_consist _ _ _ H4).
+      split; auto.
+  + intros.
+    simpl in H5.
+    rewrite Intersection_spec in H5.
+    destruct H5.
+    destruct H as [HH HH0].
+    rewrite HH in H6.
+    destruct H6 as [H6 | H6]; [pose proof HH0 _ H6 | pose proof (fun H => HH0 _ H H6)].
+    - pose proof @only_two_edges _ _ _ H3 x e.
+      simpl in H7; rewrite !Intersection_spec in H7; specialize (H7 (conj H5 H6)).
+      rewrite <- H7; simpl.
+      rewrite Intersection_spec.
+      apply and_iff_compat_l_weak; intros.
+      apply and_iff_compat_l_weak; intros.
+      destruct H0 as [HH1 HH2].
+      rewrite HH1.
+      assert (~ PE2 e); [intro | tauto].
+      pose proof valid_graph' (gpredicate_subgraph PV2 PE2 g) e.
+      simpl in H10; rewrite !Intersection_spec in H10.
+      specialize (H10 (conj H9 H0)).
+      subst x.
+      pose proof (fun H => HH2 _ H H0).
+      tauto.
+    - pose proof @only_two_edges _ _ _ H4 x e.
+      simpl in H7; rewrite !Intersection_spec in H7; specialize (H7 (conj H5 H6)).
+      rewrite <- H7; simpl.
+      rewrite Intersection_spec.
+      apply and_iff_compat_l_weak; intros.
+      apply and_iff_compat_l_weak; intros.
+      destruct H0 as [HH1 HH2].
+      rewrite HH1.
+      assert (~ PE1 e); [intro | tauto].
+      pose proof valid_graph' (gpredicate_subgraph PV1 PE1 g) e.
+      simpl in H10; rewrite !Intersection_spec in H10.
+      specialize (H10 (conj H9 H0)).
+      subst x.
+      pose proof (HH2 _ H0).
+      tauto.
+Qed.
+
 End BiGraph.
