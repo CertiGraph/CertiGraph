@@ -43,11 +43,6 @@ l,r) \scon \mathsf{tree}(l, \tau_1) \scon \mathsf{tree}(r, \tau_2)$
 where $\tau_1$ and $\tau_2$ are the left and right subtrees of $\tau$.
 If $\tau_1$ is $\mathsf{atom}$ then $l$ must be null pointer and
 $\mathsf{tree}(l, \tau_1)$ must be $\mathsf{emp}$.
-\begin{wrapfigure}{r}{.4\textwidth}
-  \centering
-  \input{bitree_bigraph.tex}
-  \caption{A Binary Tree and a Binary Graph}\label{fig:bin_tree_graph}
-\end{wrapfigure}
 Otherwise $\mathsf{tree}(l, \tau_1)$ can be expanded recursively as above.
 The left part of Figure~\ref{fig:bin_tree_graph} shows a binary tree, 
 and it should be straightforward to see that the data layout matches~$\tau$ 
@@ -57,7 +52,7 @@ postcondition is
 $\mathsf{tree}(x, \tau) \scon \mathsf{tree}(y, \tau)$. 
 Having the same $\tau$ in the pre- and postconditions
 of the specification indicates that the program creates an exact clone
-of the original tree, not an arbitrarily-shaped tree. 
+of the original tree, not an arbitrarily-shaped tree.
 
 This is an ideal use-case for the separation logic
 because the root, the left subtree, 
@@ -77,6 +72,24 @@ a single node can be shared arbitrarily, and so finding a suitable
 \infrulestyle{frame} is impossible. 
 Attempting to manipulate the subgraph reachable from $\m{w}$ causes 
 an unexpected node to be affected.
+
+\begin{figure}[htbp]
+\centering
+\begin{minipage}{.5\textwidth}
+  \centering
+  \input{bitree_bigraph.tex}
+  \captionof{figure}{A Binary Tree and a Binary Graph}
+  \label{fig:bin_tree_graph}
+\end{minipage}%
+\begin{minipage}{.5\textwidth}
+  \centering
+  \vspace*{0.5em}
+  \input{single_cell.tex}
+  \vspace*{1em}
+  \captionof{figure}{A One-Cell Graph and its Heap Layout}
+  \label{fig:single:cell}
+\end{minipage}
+\end{figure}
 
 \subsection{Recursive definitions yield poor \p{graph} predicates}\label{sec:fixpointfail}
 
@@ -116,18 +129,10 @@ Suppose we define a graph predicate $\graphkt$ along the lines of the fold/unfol
 Although we can apply Knaster-Tarski (because the functional needed to
 define $\graphkt$ is covariant), the result is hard to use.
 Consider the memory $m$ for a toy machine, where $m |= 100 |-> 42,100,0$.
-
-
-\begin{wrapfigure}{r}{.39\textwidth}
-\vspace{-1em} % very fiddly. need to adjust per final layout
-\centering
-\input{single_cell.tex}
-\vspace{-0.5em} % very fiddly. need to adjust per final layout
-\end{wrapfigure}
-
-\noindent It seems clear, however, that this
-memory also represents a one-cell cyclic graph as illustrated in the accompanying
-diagram, \emph{i.e.} we want $m |= \graphkt(100,\hat{\gamma})$, where 
+It seems clear, however, that this
+memory also represents a one-cell cyclic graph as illustrated in
+Figure~\ref{fig:single:cell}, \emph{i.e.} we want
+$m |= \graphkt(100,\hat{\gamma})$, where 
 $\hat{\gamma}(100) = (42,100,0)$.  This is equivalent to wanting to be able to 
 prove $100~|->~42,100,0~|-~\graphkt(100,\hat{\gamma})$.  Unfortunately, as 
 illustrated in Figure~\ref{fig:badcycle}, this is rather difficult to do since 
@@ -142,7 +147,7 @@ difficulties encountered in proving what ``should be'' straightforward suggest
 that Knaster-Tarski should be treated with caution when defining spatial 
 predicates for graphs.
 
-\begin{figure*}
+\begin{figure}[htbp]
 \[
 \infrule{}
 {\infrule{}
@@ -159,7 +164,7 @@ predicates for graphs.
 \end{tabular}
 \caption{An attempt to prove a ``simple'' entailment}
 \label{fig:badcycle}
-\end{figure*}
+\end{figure}
 
 
 The other direction, \mbox{$\graphkt(100,\hat{\gamma}) |- 100 |-> 42,100,0$},
