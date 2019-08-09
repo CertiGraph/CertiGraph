@@ -5,23 +5,24 @@
 \begin{adjustbox}{scale=0.80}
 \begin{tikzpicture}[
 ->/.style={thick, arrows={-Stealth}},
-ent/.style={shape=rectangle, rounded corners=4pt, draw, on grid},x=33pt]
+ent/.style={shape=rectangle, rounded corners=4pt, draw, on grid},
+entcol/.style={shape=rectangle, rounded corners=4pt, draw, on grid, fill=red!30},x=33pt]
 \node[ent] (SM) at (0, 0) {\small Step-Indexed Model};
-\node[ent] (DM) [right=4.4 of SM] {\small Direct Model};
-\node[ent] (CL) [above=1 of SM] {\small Core Logic};
-\node[ent] (SL) [above=1 of DM] {\small Supplementary Logic};
-\node[ent] (LF) [above left=1 and 1.2 of CL] {\small Logic Facts};
-\node[ent] (RF) [above right=1 and 1.2 of CL] {\small Basic Ramification};
-\node[ent] (BF) [above=1 of LF] {\small $\bigstar$ Facts};
-\node[ent] (BR) [above=1 of RF] {\small $\bigstar$ Ramification};
-\node[ent] (GF) [above=1 of BF] {\small Graph Facts};
-\node[ent] (GR) [above=1 of BR] {\small Graph Ramification};
+\node[ent] (DM) [right=4.9 of SM] {\small Direct Model};
+\node[entcol] (CL) [above=1.5 of SM] {\small Core Logic Interface};
+\node[ent] (SL) [above=1.5 of DM] {\small Supplementary Logic Interface};
+\node[entcol] (LF) [above left=1 and 1.2 of CL] {\small Logic Facts};
+\node[entcol] (RF) [above right=1 and 1.2 of CL] {\small Basic Ramification};
+\node[entcol] (BF) [above=1 of LF] {{\scriptsize $\bigstar$} {\small Facts}};
+\node[entcol] (BR) [above=1 of RF] {{\scriptsize $\bigstar$} {\small Ramification}};
+\node[entcol] (GF) [above=1 of BF] {\small Graph Facts};
+\node[entcol] (GR) [above=1 of BR] {\small Graph Ramification};
 \node[ent] (SLF) [above=1 of SL] {\small Supplementary Logic Facts};
-\node[ent] (SBF) [above=1 of SLF] {\small Supplementary $\bigstar$ Facts};
+\node[ent] (SBF) [above=1 of SLF] {\small Supplementary {\scriptsize $\bigstar$} Facts};
 \node[ent] (SGF) [above=1 of SBF] {\small Supplementary Graph Facts};
 \draw [double, ->] (SM) to (CL);
-\draw [double, ->] (SM) to (SL);
-\draw [double, ->] (DM) to (CL);
+\draw [double, ->] (SM) to [bend right=12] (SL);
+\draw [double, ->] (DM) to [bend left=12] (CL);
 \draw [double, ->] (DM) to (SL);
 \draw [->] (CL) to (LF);
 \draw [->] (CL) to (RF);
@@ -42,7 +43,7 @@ ent/.style={shape=rectangle, rounded corners=4pt, draw, on grid},x=33pt]
 \node (legend1) [below right=0.2 and -1.2 of SM] {\small Dependence};
 \coordinate[left=0.8 of legend1]  (l1);
 \draw [->] (l1) to (legend1);
-\node (legend2) [right=1 of legend1] {\small Instantialization Choices};
+\node (legend2) [right=1 of legend1] {\small Instantialization Options};
 \coordinate[left=0.8 of legend2]  (l2);
 \draw [double, ->] (l2) to (legend2);
 \end{tikzpicture}
