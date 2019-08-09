@@ -41,7 +41,7 @@ is a valid encoding. A $\mathsf{tree}(x, \tau)$ is either an
 $\mathsf{emp}$ or $(x \mapsto
 l,r) \scon \mathsf{tree}(l, \tau_1) \scon \mathsf{tree}(r, \tau_2)$
 where $\tau_1$ and $\tau_2$ are the left and right subtrees of $\tau$.
-If $\tau_1$ is $\mathsf{atom}$ \note[typo?]{then $a$ must be null pointer} and
+If $\tau_1$ is $\mathsf{atom}$ then $l$ must be null pointer and
 $\mathsf{tree}(l, \tau_1)$ must be $\mathsf{emp}$.
 \begin{wrapfigure}{r}{.4\textwidth}
   \centering
