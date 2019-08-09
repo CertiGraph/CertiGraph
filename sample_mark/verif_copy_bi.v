@@ -240,7 +240,7 @@ Proof.
   replace_SEP 0
       (EX g2': LGraph,
        !! (extended_copy l (g1: LGraph, g1') (g2: LGraph, g2') /\
-           is_guarded_BiMaFin (fun v => x0 <> v) (fun e => ~ In e nil) g2') &&
+           is_guarded_BiMaFin' (fun v => x0 <> v) (fun e => ~ In e nil) g2') &&
           (data_at sh node_type
             (pointer_val_val null, (pointer_val_val null, pointer_val_val null)) (pointer_val_val x0) *
            holegraph sh x0 g2')).
@@ -296,7 +296,7 @@ Proof.
   replace_SEP 0
       (EX g4': LGraph,
        !! (extended_copy r (g3: LGraph, g3') (g4: LGraph, g4') /\
-           is_guarded_BiMaFin (fun v => x0 <> v) (fun e => ~ In e ((x0, L) :: nil)) g4') &&
+           is_guarded_BiMaFin' (fun v => x0 <> v) (fun e => ~ In e ((x0, L) :: nil)) g4') &&
           (data_at sh node_type
             (pointer_val_val null, (pointer_val_val l0, pointer_val_val null)) (pointer_val_val x0) *
            holegraph sh x0 g4')).
