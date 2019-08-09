@@ -120,29 +120,8 @@ Consider the memory $m$ for a toy machine, where $m |= 100 |-> 42,100,0$.
 
 \begin{wrapfigure}{r}{.39\textwidth}
 \vspace{-1em} % very fiddly. need to adjust per final layout
-\begin{minipage}{.20\textwidth}
-\qquad \[
-\begin{array}{c|c}
-\textrm{address} & \textrm{value} \\
-\hline
-102 & 0 \\
-101 & 100 \\
-100 & 42 \\
-\end{array}
-\]
-\end{minipage}%
-\begin{minipage}{.19\textwidth}
 \centering
-%\beginpgfgraphicnamed{selfref}
-\begin{tikzpicture}
-[->/.style={thick,arrows={-Stealth}},
-   propG/.style={shape=circle, draw}]
-   \path[use as bounding box] (-1, -1) rectangle (0.5, 0.5);
-   \node[propG] (P) at (0, 0) {42};
-   \draw[->] (P.west) .. controls (-1.5, 0) and (0, -1.5) .. (P.south);
-\end{tikzpicture}
-%\endpgfgraphicnamed
-\end{minipage}
+\input{single_cell.tex}
 \vspace{-0.5em} % very fiddly. need to adjust per final layout
 \end{wrapfigure}
 
