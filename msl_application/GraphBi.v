@@ -295,6 +295,24 @@ Proof.
     tauto.
 Qed.
 
+Lemma vvalid_vguard': forall (g: Graph') x,
+  vvalid g x ->
+  vguard g x.
+Proof.
+  intros.
+  pose proof biGraph' g.
+  simpl.
+  split; [| split; [| split]].
+  + apply left_valid with (x0 := x) in H0; auto.
+  + apply right_valid with (x0 := x) in H0; auto.
+  + pose proof (proj2 (only_two_edges x (x, L) H)).
+    specialize (H1 (or_introl eq_refl)).
+    tauto.
+  + pose proof (proj2 (only_two_edges x (x, R) H)).
+    specialize (H1 (or_intror eq_refl)).
+    tauto.
+Qed.
+
 Definition Graph_gen_left_null (G : Graph) (x : addr) : Graph.
 Proof.
   refine (generalgraph_gen_dst G (x, L) null _).
@@ -649,6 +667,31 @@ Proof.
       unfold Ensembles.In in H; rewrite Intersection_spec in H; destruct H; congruence.
 Qed.
   
+Lemma single_vertex_guarded_BiMaFin': forall (x0: addr) dv de dg,
+  is_guarded_BiMaFin' (fun v : addr => x0 <> v) (fun _ : addr * LR => ~ False)
+    (single_vertex_labeledgraph x0 dv de dg).
+Proof.
+  intros.
+  constructor; auto.
+  simpl.
+  constructor.
+  + constructor; simpl; intros.
+    - congruence.
+    - rewrite Intersection_spec in H; destruct H; congruence.
+  + constructor; simpl; intros.
+    - rewrite Intersection_spec in H; destruct H; tauto.
+    - rewrite Intersection_spec in H; destruct H; congruence.
+  + constructor; exists nil; repeat constructor.
+    - inversion H.
+    - inversion H.
+    - simpl; intros.
+      unfold Ensembles.In in H; rewrite Intersection_spec in H; destruct H; congruence.
+    - inversion H.
+    - inversion H.
+    - simpl; intros.
+      unfold Ensembles.In in H; rewrite Intersection_spec in H; destruct H; congruence.
+Qed.
+  
 Lemma is_BiMaFin_si: forall (g1 g2: LGraph),
   g1 ~=~ g2 ->
   is_BiMaFin g1 ->
@@ -662,6 +705,19 @@ Proof.
   constructor; constructor; auto.
 Qed.
 
+Lemma is_BiMaFin_si': forall (g1 g2: LGraph),
+  g1 ~=~ g2 ->
+  is_BiMaFin' g1 ->
+  is_BiMaFin' g2.
+Proof.
+  intros.
+  destruct H0 as [[?H ?H ?H] _].
+  apply (bi_graph_si _ _ H) in H0.
+  apply (math_graph_si' _ _ H) in H1.
+  apply (finite_graph_si _ _ H) in H2.
+  constructor; constructor; auto.
+Qed.
+
 Lemma is_guarded_BiMaFin_labeledgraph_add_edge: forall (g: LGraph) PV PE PE' e s d data_e,
   ~ evalid g e ->
   Same_set PE' (Intersection _ PE (fun e0 => e0 <> e)) ->
@@ -671,6 +727,41 @@ Proof.
   unfold is_guarded_BiMaFin.
   intros.
   eapply is_BiMaFin_si; [| eassumption].
+  simpl.
+  rewrite Same_set_spec in H0.
+  split; [| split; [| split]].
+  + intros; simpl; reflexivity.
+  + intros; simpl.
+    specialize (H0 e0).
+    rewrite !Intersection_spec in *.
+    unfold addValidFunc.
+    rewrite H0.
+    destruct_eq_dec e0 e; [subst |]; try tauto.
+  + simpl; intros.
+    unfold updateEdgeFunc.
+    destruct_eq_dec e e0; auto; subst.
+    specialize (H0 e0).
+    rewrite Intersection_spec in *.
+    destruct H3.
+    tauto.
+  + simpl; intros.
+    unfold updateEdgeFunc.
+    destruct_eq_dec e e0; auto; subst.
+    specialize (H0 e0).
+    rewrite Intersection_spec in *.
+    destruct H3.
+    tauto.
+Qed.
+
+Lemma is_guarded_BiMaFin'_labeledgraph_add_edge: forall (g: LGraph) PV PE PE' e s d data_e,
+  ~ evalid g e ->
+  Same_set PE' (Intersection _ PE (fun e0 => e0 <> e)) ->
+  is_guarded_BiMaFin' PV PE g ->
+  is_guarded_BiMaFin' PV PE' (labeledgraph_add_edge g e s d data_e).
+Proof.
+  unfold is_guarded_BiMaFin'.
+  intros.
+  eapply is_BiMaFin_si'; [| eassumption].
   simpl.
   rewrite Same_set_spec in H0.
   split; [| split; [| split]].
@@ -815,6 +906,41 @@ Proof.
     pose (g0 := Build_GeneralGraph _ _ _ (fun g => BiMaFin (pg_lg g)) _ X: Graph).
     assert (vvalid g0 x0) by auto.
     apply vvalid_vguard in H0.
+    simpl in H0 |- *.
+    rewrite !Intersection_spec in H0.
+    unfold addValidFunc, updateEdgeFunc.
+    split; [| split]; [tauto | tauto |].
+    destruct_eq_dec e (x0, L); subst; [tauto |].
+    destruct_eq_dec e (x0, R); subst; [tauto |].
+    tauto.
+Qed.
+
+Lemma va_labeledgraph_add_edge_eq': forall (g: LGraph) es e s d data,
+  ~ evalid g e ->
+  is_guarded_BiMaFin' (fun x => s <> x) (fun e => ~ In e es) g ->
+  let g' := labeledgraph_add_edge g e s d data in
+  @vertices_at _ _ _ _ _ _ SGP _
+   (Intersection _ (vvalid g) (fun x => s <> x)) (Graph_PointwiseGraph g) =
+  @vertices_at _ _ _ _ _ _ SGP _
+   (Intersection _ (vvalid g') (fun x => s <> x)) (Graph_PointwiseGraph g').
+Proof.
+  intros.
+  apply Graph.va_labeledgraph_add_edge_eq; auto.
+  + unfold Included, Ensembles.In.
+    intros x0 ?.
+    destruct H0 as [X _].
+    pose (g0 := Build_GeneralGraph _ _ _ (fun g => BiMaFin' (pg_lg g)) _ X: Graph').
+    assert (vvalid g0 x0) by auto.
+    apply vvalid_vguard' in H0.
+    simpl in H0 |- *.
+    rewrite !Intersection_spec in H0.
+    tauto.
+  + unfold Included, Ensembles.In.
+    intros x0 ?.
+    destruct H0 as [X _].
+    pose (g0 := Build_GeneralGraph _ _ _ (fun g => BiMaFin' (pg_lg g)) _ X: Graph').
+    assert (vvalid g0 x0) by auto.
+    apply vvalid_vguard' in H0.
     simpl in H0 |- *.
     rewrite !Intersection_spec in H0.
     unfold addValidFunc, updateEdgeFunc.
