@@ -997,89 +997,33 @@ Proof.
         simpl in H16.
         rewrite Intersection_spec in H16.
         destruct (classic (x0 = x2)); [subst x2 |]; tauto.
-    + constructor.
-          (* finite_graph_join finite_graph_si *)
-      admit.
-      admit.
-  }
-  (*
-  assert (BiMaFin
+    + assert (FiniteGraph
            (gpredicate_sub_labeledgraph (fun v : addr => x0 = v)
               (fun e : addr * LR => In e ((x0, L) :: (x0, R) :: nil)) g5')).
-  {
-    constructor.
-    + constructor.
-      - intros; simpl.
-        congruence.
-      - simpl; intros.
-        rewrite Intersection_spec in H13 |- *.
-        destruct H13; subst x2.
-        assert (x0 = LocalGraphCopy.vmap g5 (src g5 (x, R))) as HH1.
-        {
-          rewrite left_right_sound by (rewrite <- (proj1 (proj1 H12)); auto).
-          subst x0.
-          assert (WeakMarkGraph.marked g1 x).
-          {
-            destruct H7 as [_ [? _]].
-            destruct H1 as [_ [? _]]; auto.
-          }
-          assert (WeakMarkGraph.marked g3 x).
-          {
-            destruct H9 as [_ [? _]].
-            rewrite <- (proj2 H9).
-            eapply WeakMarkGraph.mark_marked; [destruct H8 as [_ [H8 _]]; exact H8 | auto].
-          }
-          rewrite (extended_copy_vmap_root g1 g2 g1' g2' l x) by auto.
-          rewrite (ecopy1_vmap_root g2 g3 g2' g3' (x, L) x H9).
-          rewrite (extended_copy_vmap_root g3 g4 g3' g4' r x) by auto.
-          rewrite (ecopy1_vmap_root g4 g5 g4' g5' (x, R) x H11).
-          reflexivity.
-        }
-        assert (e = (x0, L) -> src g5' e = x0 /\ evalid g5' e).
-        {
-          intros; subst e; tauto.
-        }
-        assert (e = (x0, R) -> src g5' e = x0 /\ evalid g5' e).
-        {
-          intros; subst e; tauto.
-        }
-        pose proof @eq_sym _ e (x0,L).
-        pose proof @eq_sym _ e (x0,R).
-        pose proof @eq_sym _ (x0,L) e.
-        pose proof @eq_sym _ (x0,R) e.
-        tauto.
-    + constructor; simpl.
-      - intros.
-        rewrite Intersection_spec in H13 |- *.
-        rewrite Intersection_spec.
-        admit.
-      - intros.
-        rewrite Intersection_spec in H13.
-        admit.
-    + constructor; simpl.
-      - exists (x0 :: nil).
-        split; [repeat constructor; intros [] |].
-        intros.
-        rewrite Intersection_spec.
-        split; intros.
-        * destruct H13 as [|[]].
-          subst x2.
-          tauto.
-        * left.
-          tauto.
-      - exists ((x0, L) :: (x0, R) :: nil).
-        split; [repeat constructor; [intros [| []]; congruence | intros []] |].
-        intros.
-        rewrite Intersection_spec.
-        split; intros.
-        * destruct H13 as [| [| []]];
-          subst x2; tauto.
-        * simpl. tauto.
-  }
-  assert (BiMaFin g5').
-  {
-    pose proof fun H H0 => @join_preserved _ _ _ _ _ _ _ BiMaFin BiMaFin_Normal g5' _ _ (fun _ => True) _ _ (fun _ => True) H H0 x1 X.
-    spec X0.
+      {
+        constructor; simpl.
+        - exists (x0 :: nil).
+          split; [repeat constructor; intros [] |].
+          intros.
+          rewrite Intersection_spec.
+          split; intros.
+          * destruct H13 as [|[]].
+            subst x2.
+            tauto.
+          * left.
+            tauto.
+        - exists ((x0, L) :: (x0, R) :: nil).
+          split; [repeat constructor; [intros [| []]; congruence | intros []] |].
+          intros.
+          rewrite Intersection_spec.
+          split; intros.
+          * destruct H13 as [| [| []]];
+            subst x2; tauto.
+          * simpl. tauto.
+      }
+      apply (@fin' _ _) in x1.
+      pose proof fun H H0 => finite_graph_join g5' _ _ (fun _ => True) _ _ (fun _ => True) H H0 x1 X.
+      spec X0.
     {
       split.
       + intros; tauto.
@@ -1096,12 +1040,11 @@ Proof.
       { rewrite Same_set_spec; intro; rewrite !Intersection_spec; tauto. }
     spec H13.
       { rewrite Same_set_spec; intro; rewrite !Intersection_spec; tauto. }
-    pose proof @lge_preserved _ _ _ _ _ _ _ BiMaFin BiMaFin_Normal _ _ H13; clear H13.
+    pose proof finite_graph_si _ _ (proj1 H13); clear H13.
     pose proof @gpredicate_sub_labeledgraph_self _ _ _ _ _ _ _ g5'.
-    pose proof @lge_preserved _ _ _ _ _ _ _ BiMaFin BiMaFin_Normal _ _ H13; clear H13.
+    pose proof finite_graph_si _ _ (proj1 H13); clear H13.
     apply X2, X1, X0.
   }
-*)
   apply (exp_right (Build_GeneralGraph _ _ _ _ g5' X)); clear x1.
   apply andp_right.
   + apply prop_right.
