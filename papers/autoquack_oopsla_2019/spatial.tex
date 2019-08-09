@@ -1,22 +1,32 @@
 
 
-To prove the functional correctness of graph-manipulating algorithms implemented in a real language, we need to connect the heap representation of graphs, the memory model of the programming language, and the mathematical properties of graphs from \S\ref{sec:mathgraph}.  The first of these turns out to be surprisingly subtle as we shall see in \S\ref{sec:fixpointfail} and \S\ref{sec:goodgraph}.  The main challenge for the others is to engineer a framework that is generic enough and modular enough to be useful in practice in a variety of settings; we cover it in~\S\ref{sec:ramifylib}.
+To prove the functional correctness of graph-manipulating algorithms implemented in a real language, we need to \note[can be clearer. maybe an inline numbered list of the challenges?]{connect the heap representation of graphs, the memory model of the programming language, and the mathematical properties of abstract graphs from \S\ref{sec:mathgraph}.}  
+The first of these challenges turns out to be surprisingly subtle: 
+the standard tactic of leveraging the \infrulestyle{Frame} rule 
+works well for tree-manipulating programs, but fails for graph-manipulating programs.
+We review the standard treatment for trees in~\S\ref{sec:seplogtrees}, 
+point out the issue with graphs in~\S\ref{sec:fixpointfail},
+and propose a fix in~\S\ref{sec:goodgraph}.  
+The main challenge for the others is to engineer a framework that is generic 
+enough and modular enough to be useful in practice in a variety of settings; 
+we cover this in~\S\ref{sec:ramifylib}.
 
 \input{seplogsem_figure.tex}
 
-For reference, Figure~\ref{fig:seplogsem} shows the standard semantic models for the separation logic connectives using a join relation $\oplus$ on an underlying separation algebra~\cite{dockins09}.
+Figure~\ref{fig:seplogsem} shows the standard semantic models for the separation logic connectives using a join relation $\oplus$ on an underlying separation algebra~\cite{dockins09}.
 
 \subsection{\color{red} Review: separation logic in tree-manipulating programs}
+\label{sec:seplogtrees}
 
-In two papers about separation
-logic \citep{o2001local, o2012primer}, that both aim to give a more
-precise specification of a tree copy program, the spatial
-representation of a binary tree is defined recursively as a predicate
-with an additional parameter, the mathematical tree $\tau$:
+In recent works \citep{o2001local, o2012primer}
+that employ separation logic to give
+precise specifications of tree copy programs, the spatial
+representation of a binary tree is defined as a recursive predicate
+with an additional parameter: the mathematical tree $\tau$.
 \begin{equation}\label{def:tree}
 \begin{split}
     \mathsf{tree}(x, \tau)\;\defeq\;
-    &(x=0 \wedge \mathsf{isatom}(\tau) \wedge \mathsf{emp})
+    &\Big(x=0 \wedge \mathsf{isatom}(\tau) \wedge \mathsf{emp}\Big)
     \vee \null \\ &\Big(\exists\,l,r,\tau_1,\tau_2.\; \tau=\langle \tau_1,
     \tau_2 \rangle \wedge (x \mapsto l,r) \scon
     \mathsf{tree}(l, \tau_1) \scon \mathsf{tree}(r, \tau_2)\Big)
@@ -31,31 +41,40 @@ is a valid encoding. A $\mathsf{tree}(x, \tau)$ is either an
 $\mathsf{emp}$ or $(x \mapsto
 l,r) \scon \mathsf{tree}(l, \tau_1) \scon \mathsf{tree}(r, \tau_2)$
 where $\tau_1$ and $\tau_2$ are the left and right subtrees of $\tau$.
-If $\tau_1$ is $\mathsf{atom}$ then $a$ must be null pointer and
+If $\tau_1$ is $\mathsf{atom}$ \note[typo?]{then $a$ must be null pointer} and
 $\mathsf{tree}(l, \tau_1)$ must be $\mathsf{emp}$.
 \begin{wrapfigure}{r}{.4\textwidth}
   \centering
   \input{bitree_bigraph.tex}
   \caption{A Binary Tree and a Binary Graph}\label{fig:bin_tree_graph}
 \end{wrapfigure}
-Otherwise $\mathsf{tree}(l, \tau_1)$ can be further expanded like
-$\mathsf{tree}(x, \tau)$, and so on. Thus the data layout matches
-$\tau$ (the shape of a tree) exactly. In the verification of a tree
+Otherwise $\mathsf{tree}(l, \tau_1)$ can be expanded recursively as above.
+The left part of Figure~\ref{fig:bin_tree_graph} shows a binary tree, 
+and it should be straightforward to see that the data layout matches~$\tau$ 
+(the shape of the tree) exactly. In the verification of a tree
 copy program, the precondition is $\mathsf{tree}(x, \tau)$ and the
 postcondition is
-$\mathsf{tree}(x, \tau) \scon \mathsf{tree}(y, \tau)$. The same $\tau$
-in the specification indicates that the program creates a exact clone
-of the original tree, not an arbitrary shaped tree. As shown in the
-left part of Figure~\ref{fig:bin_tree_graph}, the separation
-conjunction $\scon$ fits perfectly because the root, the left, and the
-right branch of a tree are totally disjoint. By applying
-the \textsc{Frame} rule, one can safely reason about one brach of the
-tree and compose the conclusion back, without considering the effect
-to the other branch. When it turns to graph, such as the right part of
-Figure~\ref{fig:bin_tree_graph}, things become more complicated. The
-separating conjunction is not applicable here if we want to define a
-similar recursive predicate, because a single node can be shared
-arbitrarily.
+$\mathsf{tree}(x, \tau) \scon \mathsf{tree}(y, \tau)$. 
+Having the same $\tau$ in the pre- and postconditions
+of the specification indicates that the program creates an exact clone
+of the original tree, not an arbitrarily-shaped tree. 
+
+This is an ideal use-case for the separation logic
+because the root, the left subtree, 
+and the right subtree are disjoint by contstruction. By applying
+the \textsc{Frame} rule, one can safely reason about a particular 
+$\scon$-separated branch of the tree and later compose the 
+conclusion back into the rest of the tree
+without considering the effect on the rest of the tree.
+
+Things become more complicated when it comes to graphs.
+Consider the right part of Figure~\ref{fig:bin_tree_graph},
+which shows a bigraph. 
+Defining a recursive predicate in the style of \eqref{def:tree},
+\emph{i.e.} using the separating conjunction~$\scon$, is a bad idea: 
+a single node can be shared arbitrarily, and so finding a suitable 
+\infrulestyle{frame} is impossible. In the next section, we 
+explain
 
 \subsection{Recursive definitions yield poor \p{graph} predicates}\label{sec:fixpointfail}
 
@@ -409,7 +428,10 @@ Similarily, the same box contains the key lemma used on line~\ref{code:markram2}
 {\p{graph}(x, \gamma) \! |- \! x \! \mapsto \! \gamma(x) \! * \! \big(x \! \mapsto \! \gamma'(x) \! \wand \! \p{graph}(x, \gamma')\big)}{}
 \end{equation}
 This layered structure enables proof reuse. All of the theorems for $\p{graph}$ are proved from the properties of iterated separating conjunction, but having a modular library allows $\bigstar$ to be reused in other structures smoothly.
-Further, all our verifications of different graph algorithms use the proof rules of $\p{graph}$ at the top level in the library. Taking the marking algorithm we introduced in \S\ref{sec:orientation} as an example, we prove the following theorem from the library:
+Further, all our verifications of different graph algorithms use the proof rules of $\p{graph}$ at the top level in the library. 
+
+% Hiding because this very equation is the subgraph-replacing equation up above.
+\hide{Taking the marking algorithm we introduced in \S\ref{sec:orientation} as an example, we prove the following theorem from the library:
 {\color{red}
 \begin{equation*}
 \label{lem:updatesubgraph}
@@ -421,6 +443,7 @@ Further, all our verifications of different graph algorithms use the proof rules
 }
 \end{equation*}
 }
+}% end hide
 
 The Supplementary tower contains properties not used by most of the VST examples.
 This includes the fold/unfold relationship from \S\ref{sec:goodgraph}, facts
