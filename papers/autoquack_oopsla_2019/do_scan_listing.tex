@@ -19,11 +19,11 @@ $//$$\braces{\theta_{10} /| \tx{sz} = \m{blocksize}(\tx{hd})} \defeq \theta_{12}
   `\hl{if (!No\_scan(tag))\{}`
    `\hl{intnat j;}`
    `\hl{for(j = 1; j <= sz; j++) \{}`
-$//$$\braces{\m{explain\ that\ this\ entails\ }\phi_{1}\m{\ for\ some\ }\tx{p}}$ $\label{code:dshasfwdprecon}$
+$//$$\braces{\m{entails\ }\phi_{1}\m{\ where\ }\m{v=\tx{s}, n=\tx{j}}}$ $\label{code:dshasfwdprecon}$
     `\hl{forward (st, li, nx, \&Field(s, j));}` 
-$//$$\braces{\exists \ga', \m{\tinf'}.~\p{gc\_graph}(\ga') /| \null \\ \m{compat}(\ga', \m{\finf}, \m{\tinf'}, \m{from}, \m{to}) /| \null \\ \m{forward\_relation}(\ga, \ga', \m{from}, \m{to}, \m{s}, \m{j})} \defeq \theta_{19}$ $\label{code:dshasfwdpostcon}$
-   `\hl{\}}`$//$$\braces{\m{forwarded}}$ $\label{code:dswholeblockfwded}$
-  `\hl{\}}`$//$$\braces{\m{or\ ignored}}$ $\label{code:dswholeblockignored}$
+$//$$\braces{\m{entails\ }\phi_{36}\m{\ where\ }\m{v=\tx{s}, n=\tx{j}} \\ \m{i.e.,\ }\exists \ga', \m{\tinf'}.~\p{gc\_graph}(\ga') /| \null \\ \m{compat}(\ga', \m{\finf}, \m{\tinf'}, \m{from}, \m{to}) /| \null \\ \m{forward\_relation}(\ga, \ga', \m{from}, \m{to}, \m{s}, \m{j})} \defeq \theta_{19}$ $\label{code:dshasfwdpostcon}$
+   `\hl{\}}` $\label{code:dswholeblockfwded}$
+  `\hl{\}}`$\label{code:dswholeblockignored}$
   `\hl{s += 1+sz;}`
 `\hl{\}\}}`
 $//$$\braces{\m{ds\_postcondition}(\gamma', \gamma', \m{tinf'}, \m{finf}, \m{from}, \m{to})}$
