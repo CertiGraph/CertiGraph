@@ -204,30 +204,31 @@ Clight code of our garbage collector.
 
 \subsection{Do Scan}
 
-Thanks to \li{forward}, collecting a generation is a straightforward 
-two-step process.
-First, call \li{forward} on each item in the \li{args} array. 
-%\emph{i.e.,} if a pointer from \li{args} points into \li{from},
-%copy the target to \li{to} and redirect the pointer appropriately.
-The result is that no field of \li{args} points directly at \li{from}. 
-However, \li{args} may still point into \li{from} \emph{indirectly} 
-via the direct links that we just forwarded.
-This is why we perform the second step, which is to scan \li{to} and call 
-\li{forward} on all items copied over as part of this collection. This
-fixes any backwards pointers from \li{to} into \li{from}.
+To collect \li{from} into \li{to}, 
+we start by calling the function \li{forward\_roots}, which calls \li{forward} 
+on each item in the \li{args} array. 
+Thus, no field of \li{args} points directly into \li{from}. 
+However, the fields of \li{args} may still point into \li{from} \emph{indirectly}, 
+via the direct links that we just forwarded to~\li{to}.
+To fix this, we call the function 
+\li{do\_scan}, which scans~\li{to} and calls 
+\li{forward} on all items that were copied over as part of this collection.
+This fixes any backwards pointers from \li{to} into \li{from} by moving
+their targets to \li{to} as well.
 Together, these steps fully disentangle \li{args} from the 
 \li{from} space, so \li{from} can be reset to free up memory. 
-Here we present a decorated proof sketch of the function
-\li{do\_scan}, which tackles the (trickier) second step.
 
 \input{do_scan_listing.tex}
+
+Figure~\ref{fig:doscan} contains a decorated proof sketch of \li{do\_scan}.
 The precondition, given on line $1$, is very similar to that of 
 \li{forward}. We have \li{st} and \li{li} denoting the boundaries
 of the \li{from} space, and \li{nx} denoting the last-used address
 in the \li{to} space. The key difference is that instead of a specific
 target like~\li{p}, we take the argument \li{sc}, 
 which is the place in the \li{to} space from where we must start scanning.
-In the heap, the items recently copied over in the first step 
+Because of the way \li{forward} works, we know that the 
+the items recently copied over by \li{forward\_roots} 
 have been placed placed contiguously between \li{sc} and \li{nx}. 
 Working from \li{sc} upwards, we ignore blocks that are tagged as 
 ``do not scan'', but otherwise simply call \li{forward} on every field
@@ -243,7 +244,7 @@ The only use of \infrulestyle{localize} is when
 reading the block header on line \ref{code:dsreadheader}, 
 and this is not very different from the read seen in \li{forward}. 
 Lines \ref{code:dshasfwdprecon} and \ref{code:dshasfwdpostcon} 
-represent the pre- and postconditions of \li{forward}
+represent exactly the pre- and postconditions of \li{forward}
 for some vertex \m{(s, j)}. 
 After the for-loop, the entire block represented by~\m{s} has either been
 forwarded (line \ref{code:dswholeblockfwded}) or 

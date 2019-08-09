@@ -314,7 +314,7 @@ The proof of the $<=$ direction requires care. The difficulty is that if two nod
 \]
 That is, they overlap either completely or not at all. In a Java-like memory model this property is automatic because pointers in such a model always point to the root/beginning of an object.  In contrast, in a C-like memory model such as in VST/CompCert, this property is not automatic because pointers can point anywhere.  In such a model, alignment is most easily enforced by storing graph nodes at addresses that are multiples of an appropriate size (\emph{e.g} this size is $16$ in Figure~\ref{fig:markgraph}).
 
-Some of our VST proofs, \emph{e.g.} for \li{find}, do not use fold/unfold, instead preferring to use the lemmas in~\S\ref{sec:ramifylib} directly.  Others, \emph{e.g.} \li{mark}, do---and it is helpful to have both options avilable. We also prove fold/unfold lemma for DAGs in which we get a $*$ between the root and its $**$-joined neighbors, rather than the $**$ present in \eqref{eqn:unfold_graph}.
+\note[this is false]{Some of our VST proofs, \emph{e.g.} for \li{find}, do not use fold/unfold, instead preferring to use the lemmas in~\S\ref{sec:ramifylib} directly.  Others, \emph{e.g.} \li{mark}, do---and it is helpful to have both options avilable.} We also prove fold/unfold lemma for DAGs in which we get a $*$ between the root and its $**$-joined neighbors, rather than the $**$ present in \eqref{eqn:unfold_graph}.
 % (On the other hand, for HIP/SLEEK fold/unfold is vital, and it is heartening to know that the recursive relationship holds.  We also prove fold/unfold lemma for DAGs in which we get a $*$ between the root and its $**$-joined neighbors. % rather than the $**$ present in \eqref{eqn:unfold_graph}.
 
 
@@ -322,26 +322,31 @@ Some of our VST proofs, \emph{e.g.} for \li{find}, do not use fold/unfold, inste
 
 \input{libinfra_figure.tex}
 
-VST employs an unusually complex Step-Indexed heap model to represent
-spatial predicates, and uses it to support an unusually rich program
-logic~\cite{appel:programlogics}. However, the spatial representation
+
+Most tools {\color{red}[cite cite cite]} use the Direct Model to 
+represent spatial predicates
+on the heap, but VST employs an unusually complex Step-Indexed heap model 
+in order to support an unusually rich program
+logic~\cite{appel:programlogics}.
+Figure~\ref{fig:infra} shows the architecture of our spatial development.
+We will explain our two interfaces momentarily, but for now observe that 
+both heap models can instantiate both our interfaces, showing
+that we steer clear of specialized properties that are only 
+available in the Step-Indexed Model. That is to say, the spatial representation
 of our graph library does not rely on any of its bells and whistles.
-To isolate our development from these unnecessary complications,
-we use two interfaces: Core Logic and Supplementary
-Logic, where Core Logic is built upon the much simpler
-and more universal Direct Model of heap representation.
-We present the architecture of our spatial development in
-Figure~\ref{fig:infra}, where it should be straighforward to see
-that both models can instantiate both interfaces.
 
-Generally speaking, our VST proofs only need the Core properties to prove
-our examples. Each interface defines some operators of separation logic and
-provides some axioms about how they work.  For example, the definitions of $*$ and
-$--*$ are in Core Logic, along with key axiom and rules such as
-$(P |- Q --* R) <=> (P * Q |- R)$.  On the other hand,
-the $**$ and $--o$ operators are in Supplementary Logic,
-along with rules such as $P |- P ** P$.
-
+To further isolate our development from unnecessary complications,
+we implement two interfaces: Core Logic and Supplementary Logic.
+Each interface defines some operators of separation logic 
+along with relevant axioms to show how they work.  
+For example, the definitions of $*$ and
+$--*$ are in Core Logic, along with key axioms and rules such as
+$(P |- Q --* R) <=> (P * Q |- R)$.  
+On the other hand, lesser-used operators such as 
+$**$ and $--o$ are in Supplementary Logic,
+along with rules such as $P |- P ** P$. 
+Generally speaking, our VST proofs only need Core properties 
+(shaded in the figure) to prove our examples.
 
 \hide{Starting from the bottom, notice that there are two underlying heap models,
 VST's Step-Indexed model and the much simpler Direct Model.
@@ -421,7 +426,7 @@ The Supplementary tower contains properties not used by most of the VST examples
 This includes the fold/unfold relationship from \S\ref{sec:goodgraph}, facts
 about precision, \emph{etc}. These are currently included mostly for completeness,
 but do make our library more general should we wish to accommodate an alternate
-prover that uses the Direct Model.
+prover that needs separation logic facts about $**$,  $--o$, \emph{etc.}
 
 
 % are there just because we felt they might be useful in the future.
