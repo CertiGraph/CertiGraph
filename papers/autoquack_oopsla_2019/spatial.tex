@@ -65,7 +65,8 @@ the \textsc{Frame} rule, one can safely reason about a particular
 $\scon$-separated branch of the tree and later compose the 
 conclusion back into the rest of the tree
 without worrying about the effect on the rest of the tree. 
-Consider manipulating the subtree with root $\m{v}$.
+In the figure we show that manipulating the subtree under 
+root~$\m{v}$ does not affect the rest of the tree.
 
 Things become more complicated when it comes to graphs.
 Consider the right part of Figure~\ref{fig:bin_tree_graph},
@@ -74,8 +75,8 @@ Defining a recursive predicate in the style of \eqref{def:tree},
 \emph{i.e.} using the separating conjunction~$\scon$, is a bad idea: 
 a single node can be shared arbitrarily, and so finding a suitable 
 \infrulestyle{frame} is impossible. 
-Attempting to manipulate the subgraph reachable from $\m{w}$ causes 
-an unexpected node to be affected.
+In the figure we show that manipulating the subgraph reachable 
+from~$\m{w}$ causes an unexpected node to be affected.
 
 \begin{figure}[htbp]
 \centering
