@@ -74,7 +74,7 @@ which shows a bigraph.
 Defining a recursive predicate in the style of \eqref{def:tree},
 \emph{i.e.} using the separating conjunction~$\scon$, is a bad idea: 
 a single node can be shared arbitrarily, and so finding a suitable 
-\infrulestyle{frame} is impossible. 
+\infrulestyle{frame} is difficult. 
 In the figure we show that manipulating the subgraph reachable 
 from~$\m{w}$ causes an unexpected node to be affected.
 
@@ -342,11 +342,11 @@ Figure~\ref{fig:infra} shows the architecture of our spatial development.
 We will explain our two interfaces momentarily, but for now observe that 
 both heap models can instantiate both our interfaces, showing
 that we steer clear of specialized properties that are only 
-available in the Step-Indexed Model. That is to say, the spatial representation
-of our graph library does not rely on any of its bells and whistles.
+available in the Step-Indexed Model. That is to say, we do 
+not rely on any of its bells and whistles.
 
-To further isolate our development from unnecessary complications,
-we implement two interfaces: Core Logic and Supplementary Logic.
+We modularize our spatial library over 
+two interfaces: Core Logic and Supplementary Logic.
 Each interface defines some operators of separation logic 
 along with relevant axioms to show how they work.  
 For example, the definitions of $*$ and

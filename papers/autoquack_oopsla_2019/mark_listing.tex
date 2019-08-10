@@ -21,9 +21,7 @@ $//$$\label{code:globalafterrootmark}\{{\color{red}\p{m\_graph}(\tx x,\gamma)} /
  `\hl{if (root\_mark == 1) return;}`
 $//$$\{\p{m\_graph}(\tx x,\gamma) /| \gamma(\tx{x}) = ({\color{red}0},l,r) \}$
 $//$$\label{code:markbeforetripleramify}\searrow \{{\color{red}\tx x|-> 0,-,l,r} /| \gamma(\tx{x}) = (0,l,r)\}$
-$\label{code:markram2}\ramify(\ref{lem:updategraphnode})$ `\hl{l = x -> l;}`
-$\ramify(\ref{lem:updategraphnode})$ `\hl{r = x -> r;}` 
-`\hl{x -> m = 1;}`
+$\label{code:markram2}\ramify(\ref{lem:updategraphnode})$ `\hl{l = x -> l; r = x -> r; x -> m = 1;}`
 $//$$\label{code:markaftertripleramify}\swarrow \left\{\!\!\!\begin{array}{l@{}}\tx x|-> {\color{red}1},-,\tx{l},\tx{r} /| \gamma(\tx{x}) = (0,\tx{l},\tx{r}) /| \null \\ {\color{red}\exists \gamma'. \m{mark1}(\gamma, \tx{x}, \gamma')}\end{array}\right\}$
 $//$$\{{\color{red}\exists \gamma'. \p{m\_graph}(\tx x,\gamma')} /| \gamma(\tx{x}) = (0,\tx{l},\tx{r}) /| \m{mark1}(\gamma, \tx{x}, \gamma')\}$
 $//$$\label{code:beforemarkl}\{\p{m\_graph}(\tx x,\gamma') /| \gamma(\tx{x}) = (0,\tx{l},\tx{r}) /| \m{mark1}(\gamma, \tx{x}, \gamma')\}$
@@ -39,8 +37,10 @@ $//$$\label{code:outmark}\left\{\!\!\!\begin{array}{l@{}}\exists \gamma'''. \p{m
 `\hl{\}}`$//$$\label{code:markend}\{\exists \gamma'''. \p{m\_graph}(\tx x,\gamma''') /| \m{mark}(\gamma, \tx{x}, \gamma''')\}$
 \end{lstlisting}
 
+
 {\footnotesize
 \begin{flushleft}
+\hspace{-3em}
 \begin{minipage}[c]{0.55\textwidth}
 \begin{equation}
 \label{eqn:bigraphintrofoldunfold}
@@ -52,7 +52,7 @@ $//$$\label{code:outmark}\left\{\!\!\!\begin{array}{l@{}}\exists \gamma'''. \p{m
 \end{equation}
 \begin{equation*}
 \begin{array}{l@{\hspace{2pt}}c@{\hspace{2pt}}l}
-\quad \m{mark1}(\gamma,x,\gamma') & \defeq & \forall \m{v}. \gamma'(v) = \! \begin{cases}
+\quad \m{mark1}(\gamma,x,\gamma') & \defeq & \forall \m{v}. \gamma'(\m{v}) = \! \begin{cases}
 (1,l,r) \! & \begin{array}{@{}l@{}}\text{when } x = \m{v} /| \null \\[-3pt] \gamma(\m{v}) = (0,l,r) \end{array} \\
 \gamma(\m{v}) & \text{otherwise}
 \end{cases}
