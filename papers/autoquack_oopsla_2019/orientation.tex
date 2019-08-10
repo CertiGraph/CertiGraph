@@ -2,15 +2,15 @@
 
 As an initial demonstration of our techniques, we show the decorated code of the
 \li{find} function from the classic disjoint-set data structure in
-Figure~\ref{fig:find}. The \li{find} function returns the root
-(ultimate parent) of a \li{Node x}.\hspace{0.5em}A node is a root when its parent
+Figure~\ref{fig:find}. The function returns the root
+(ultimate parent) of a \li{Node x}.\hspace{0.5em}A node is a root whose parent
 pointer points to itself (line~\ref{code:ufif}).
 Other than such self-loops at roots, the structure is acyclic.
 For good amortised performance, \li{find} also performs path
 compression (line~\ref{code:ufpathcompress}).
-At first glance, \li{find} appears rather trivial since it only has about 5 lines
-of code and a \li{Node} only has a single outgoing pointer.
-In actual fact, the rather subtle nature of path compression and the
+While \li{find} may appear straightforward --- it is about 5 lines
+long, and a \li{Node} only has one outgoing pointer ---
+the rather subtle nature of path compression and the
 implicit sharing inherent in parent-pointers make the disjoint-set data
 structure very difficult to reason about. Indeed, the first pen-and-paper
 verification in separation logic required 20 pages~\cite{neelthesis}.
@@ -56,21 +56,22 @@ from~$x$ in~$\gamma$, $\gamma \smallsetminus S$ expresses the result of removing
 vertices in set~$S$ from graph~$\gamma$, and~$\gamma_1 \cong \gamma_2$ expresses that the two
 graphs are structurally equivalent.
 
-Most of the verification is straightforward.  To aid human readability, we use the color {\color{red}red} to indicate the changes in the invariants line-by-line.
-Each individual line of code
+Most of the verification is straightforward. For readability, we mark 
+line-by-line changes in the invariants in {\color{red}red}.
+Each line of code
 (\ref{code:findram1}, \ref{code:ufif}, \ref{code:ufreccall}, \ref{code:ufpathcompress},
 and \ref{code:ufreturn}) is bracketed with invariants leading to relatively easy proofs
 of the command (ignoring the symbols~$\searrow \text{, } \ramify(i) \text{, and }
 \swarrow$ until~\S\ref{sec:localblocks}).
 In addition to improving human comprehensibility, this
-also aids mechanical comprehensibility---that is, straightforward
+also aids mechanical comprehensibility: straightforward
 invariants help the underlying verification engine (VST, in our case) handle many grungy
 details for us either automatically or with a little human guidance via suitable lemmas.
 
 The pointer comparison in line~\ref{code:ufif} is an example of where
 such lemmas are necessary.
 Formally, pointer (in-)equality comparison in C is only defined under somewhat delicate
-circumstances\footnote{\label{footnote:pointereq}To summarize: it is a mess. Specifically,
+circumstances\footnote{\label{footnote:pointereq}Executive summary: it is a mess. Full story:
 whenever (1) \li{x} and \li{p} are both null; or when (2) one of them is null and the
 other has offset between~0 and the size of the memory block into which it is pointing;
 or when (3) if \li{x} and \li{p} are from the same memory block, then both of their
@@ -100,7 +101,7 @@ and~\ref{code:findbeforexparent}--\ref{code:findafterxparent}).
 What is not so straightforward is how \emph{e.g.} line~\ref{code:ufbefram1}
 leads to line~\ref{code:befparentfind} or how line~\ref{code:aftparentfind}
 leads to line~\ref{code:ufaftram1}.
-Intuitively, a localization block allows us to zoom in from a larger
+To give intuition, a localization block allows us to zoom in from a larger
 ``global'' context to a smaller ``local'' one, and, after verifying some commands
 locally and arriving at a local postcondition, to zoom back out to the global
 context. The $\searrow$ and $\swarrow$ symbols formally indicate an application
@@ -119,20 +120,19 @@ but lines \ref{code:aftparentfind}--\ref{code:ufaftram1} do not have any.  We ca
 this mismatch since $\forall P.~ (P -|- \exists x : \m{unit}.P)$ for any $x$ not free in $P$. %we will elide until {\color{red}\S\ref{whenever}}.
 
 
-What is not specified explicitly is the ramification frame $R$, which must satisfy
+We must now pick a ramification frame $R$ that satisfies
 the entailments $G_1 |- L_1 * R$ and (again eliding the quantifier) $R |- L_2 --* G_2$.
-Here things are a little delicate.  To give intuition, it is \textbf{almost} enough to choose
-$R \defeq L_2 --* G_2$, which makes the second entailment trivial, and reduces the problem
-to three remaining checks.
+This is delicate.  To give intuition, it is \textbf{almost} enough to 
+choose
+$R \defeq L_2 --* G_2$, which makes the second entailment trivial, and leaves us with three checks.
 
-The first check is the \emph{ramification entailment}: $G_1 |- L_1 * (L_2 --* G_2)$.
-Informally, this asks whether replacing $L_1$ with $L_2$ inside $G_1$ yields $G_2$.
-This ramification entailment is a nontrivial proof obligation both because
-we must prove $L_1$ is located inside $G_1$, and because we must prove that
+The first check is the \emph{ramification entailment}, $G_1 |- L_1 * (L_2 --* G_2)$,
+which asks whether replacing $L_1$ with $L_2$ inside $G_1$ yields $G_2$.
+This is a nontrivial proof obligation both because
+we must prove that $L_1$ is located inside $G_1$, and and that
 ``replacing'' $L_1$ with $L_2$ yields $G_2$.
-When we want to refer to the ramification entailment of a localization block in
-subsequent text we use the symbol $\ramify(i)$ to connect it to relevant equation
-numbers.  Accordingly, $\ramify(\ref{findram1})$ refers to the ramification entailment
+Henceforth, we refer to the ramification entailment of a localization block by
+using the symbol $\ramify(i)$ to connect it to a relevant equation.  Accordingly, $\ramify(\ref{findram1})$ refers to the ramification entailment
 associated with lines~\ref{code:ufbefram1}--\ref{code:ufaftram1}:
 \begin{equation}
 \label{findram1}
@@ -220,14 +220,18 @@ the graph must be acyclic (other than at roots).
 %\marginpar{\tiny \color{blue}Too early}
 In Coq, these properties are carried around via dependent types, as will be explained in \S\ref{sec:mathinfra}.
 
-In our proof of \li{find}, the bulk of the example-specific effort (as opposed to generic lemmas we reuse in other examples) is showing that this mathematical update can be done properly, \emph{i.e.} from
+The example-specific challenge in proving \li{find} 
+(\emph{i.e.} not generic enough to be reused elsewhere)
+is to show that this mathematical update can be done properly, \emph{i.e.} from
 %\marginpar{\tiny \color{blue} Need to come to some decision re: the typesetting.}
-\[
+$\li{x} \in V(\gamma) /| \gamma(\li{x}) = (r,\m{pa})$ and 
+$\li{x} \neq \m{pa} /| \m{findS}(\gamma,\m{pa},\gamma') /| \m{uf\_root}(\gamma',\m{pa},\m{rt})$
+we can prove
+\hide{\[
 \li{x} \in V(\gamma) /| \gamma(\li{x}) = (r,\m{pa}) \quad \text{ and } \quad
 \li{x} \neq \m{pa} /|
 \m{findS}(\gamma,\m{pa},\gamma') /| \m{uf\_root}(\gamma',\m{pa},\m{rt})
-\]
-we can prove
+\]} % end hide
 \[
 \exists \gamma''.~ \gamma'' = [x -> (r,rt)]\gamma' /| \m{uf\_root}(\gamma'',\li{x},\m{rt}) /| \m{findS}(\gamma,\li{x},\gamma'')
 \]
