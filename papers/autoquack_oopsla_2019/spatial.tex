@@ -1,13 +1,17 @@
 
 
-To prove the functional correctness of graph-manipulating algorithms implemented in a real language, we need to \note[can be clearer. maybe an inline numbered list of the challenges?]{connect the heap representation of graphs, the memory model of the programming language, and the mathematical properties of abstract graphs from \S\ref{sec:mathgraph}.}  
+To prove the functional correctness of graph-manipulating algorithms implemented in a real language, we need to 
+% connect the heap representation of graphs, the memory model of the programming language, and the mathematical properties of abstract graphs from \S\ref{sec:mathgraph}. 
+(1) connect the heap representation of graphs to the memory model of the 
+programming language, and (2) connect the memory model to the mathematical 
+properties of abstract graphs from \S\ref{sec:mathgraph}.
 The first of these challenges turns out to be surprisingly subtle: 
 the standard tactic of leveraging the \infrulestyle{Frame} rule 
 works well for tree-manipulating programs, but fails for graph-manipulating programs.
 We review the standard treatment for trees in~\S\ref{sec:seplogtrees}, 
 point out the issue with graphs in~\S\ref{sec:fixpointfail},
 and propose a fix in~\S\ref{sec:goodgraph}.  
-The main challenge for the others is to engineer a framework that is generic 
+The main challenge thereafter is to engineer a framework that is generic 
 enough and modular enough to be useful in practice in a variety of settings; 
 we cover this in~\S\ref{sec:ramifylib}.
 
@@ -15,7 +19,7 @@ we cover this in~\S\ref{sec:ramifylib}.
 
 Figure~\ref{fig:seplogsem} shows the standard semantic models for the separation logic connectives using a join relation $\oplus$ on an underlying separation algebra~\cite{dockins09}.
 
-\subsection{\color{red} Review: separation logic in tree-manipulating programs}
+\subsection{Separation logic in tree-manipulating programs}
 \label{sec:seplogtrees}
 
 In recent works \citep{o2001local, o2012primer}
@@ -328,7 +332,7 @@ That is, they overlap either completely or not at all. In a Java-like memory mod
 \input{libinfra_figure.tex}
 
 
-Most tools {\color{red}[cite cite cite]} use the Direct Model to 
+Many tools {\color{red}[cite cite cite]} use the Direct Model to 
 represent spatial predicates
 on the heap, but VST employs an unusually complex Step-Indexed heap model 
 in order to support an unusually rich program
