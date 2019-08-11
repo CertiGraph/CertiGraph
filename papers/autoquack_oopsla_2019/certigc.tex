@@ -85,17 +85,16 @@ we follow OCaml's practice of requiring that all integers are odd
 Moving towards a mathematical abstraction, the 12 generations can be seen
 as a graph $\gamma$. Blocks are
 vertices, and pointers to other blocks are edges to other
-vertices. Vertices are labeled with
-a pair~$(\m{g}, \m{i})$, meaning the vertex represents the 
+vertices. 
+Vertices are tuples of the form~$(\m{g}, \m{i})$, meaning the vertex represents the 
 the $\m{i}^{\textit{th}}$ block in the $\m{g}^{\textit{th}}$ generation. 
-An edge is a pair~$(\m{v}, i)$, meaning that 
+An edge is a tuple~$(\m{v}, i)$, meaning that 
 the associated pointer is the $\m{i}^{\textit{th}}$ field of the block
 corresponding to vertex $\m{v}$. 
-% \note[a bit random]{The source function always satisfies
-% $\mathsf{src}(\gamma, (\m{v}, i)) = \m{v}$.}
-Each vertex is \note{labeled with the integer data 
-items and the indices of pointers in the
-fields.} There is also a global label on the entire graph $\gamma$ which has the
+Each vertex is labeled with its integer data, along with 
+metainformation such as whether it has already been forwarded, 
+and if so, where its forwarded copy is.
+There is also a global label on the entire graph $\gamma$ which has the
 start/limit addresses and number of vertices of each generation. 
 % \note[is this actually that clever?]{We
 % can reconstruct the 12 generations in memory from $\gamma$ under this
