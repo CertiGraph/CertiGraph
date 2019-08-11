@@ -229,7 +229,7 @@ In Figure~\ref{fig:markgraph} we put the code and proof sketch of the classic \l
 \{\p{m\_graph}(\li{x},\gamma)\}~\li{mark(x)}~\{\exists \gamma'.~ \p{m\_graph}(\li{x},\gamma') /| \m{mark}(\gamma, \li{x}, \gamma')\}
 \vspace*{-1ex}
 \]
-The specification is again stated with mathematical $\gamma$, although $\gamma(x)$ now maps to triples $(m,l,r)$ where $m$ is a ``mark'' bit (0 or 1) and $\{l,r\} \subseteq V(\gamma) \uplus \{\mathtt{null}\}$ are the neighbors of \note[where did v come from]{$\m{v}$}.  By ``local'', we mean that the predicate $\p{m\_graph}(\li{x},\gamma)$ says that the heap represents \emph{only the nodes in $\gamma$ that are reachable from \li{x}}.  Rather than passing the entire graph around as \li{find} does, \li{mark} uses the fold/unfold relationship given in~\eqref{eqn:bigraphintrofoldunfold} to ``unfold'' the graph as if it were an inductive predicate.
+The specification is again stated with mathematical $\gamma$, although $\gamma(\li{x})$ now maps to triples $(m,l,r)$ where $m$ is a ``mark'' bit (0 or 1) and $\{l,r\} \subseteq V(\gamma) \uplus \{\mathtt{null}\}$ are the neighbors of $\li{x}$.  By ``local'', we mean that the predicate $\p{m\_graph}(\li{x},\gamma)$ says that the heap represents \emph{only the nodes in $\gamma$ that are reachable from \li{x}}.  Rather than passing the entire graph around as \li{find} does, \li{mark} uses the fold/unfold relationship given in~\eqref{eqn:bigraphintrofoldunfold} to ``unfold'' the graph as if it were an inductive predicate.
 
 This fold/unfold relationship deserves attention.
 Note the use of the ``overlapping conjunction''~$\ocon$ of separation logic; informally $P ** Q$ means that $P$ and $Q$ may overlap
