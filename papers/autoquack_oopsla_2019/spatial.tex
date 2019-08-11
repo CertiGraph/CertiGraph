@@ -333,17 +333,18 @@ That is, they overlap either completely or not at all. In a Java-like memory mod
 \input{libinfra_figure.tex}
 
 
-Many tools {\color{red}[cite cite cite]} use the Direct Model to 
-represent spatial predicates
-on the heap, but VST employs an unusually complex Step-Indexed heap model 
-in order to support an unusually rich program
-logic~\cite{appel:programlogics}.
-Figure~\ref{fig:infra} shows the architecture of our spatial development.
-We will explain our two interfaces momentarily, but for now observe that 
-both heap models can instantiate both our interfaces, showing
-that we steer clear of specialized properties that are only 
-available in the Step-Indexed Model. That is to say, we do 
-not rely on any of its bells and whistles.
+Many tools (e.g.\ Charge! \citep{bengtson:charge},
+Smallfoot \citep{berdine:smallfoot}, jStar \citep{distefanop08},
+HIP/SLEEK \citep{chin:hipsleek}) use the Direct Model to represent
+spatial predicates on the heap, but VST employs an unusually complex
+Step-Indexed heap model in order to support an unusually rich program
+logic~\cite{appel:programlogics}.  Figure~\ref{fig:infra} shows the
+architecture of our spatial development.  We will explain our two
+interfaces momentarily, but for now observe that both heap models can
+instantiate both our interfaces, showing that we steer clear of
+specialized properties that are only available in the Step-Indexed
+Model. That is to say, we do not rely on any of its bells and
+whistles.
 
 We modularize our spatial library over 
 two interfaces: Core Logic and Supplementary Logic.
