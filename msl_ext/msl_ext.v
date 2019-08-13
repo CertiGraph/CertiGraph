@@ -3,7 +3,7 @@ Require Import RamifyCoq.msl_ext.ramify_tactics.
 Require Import Coq.Sorting.Permutation.
 
 Lemma overlapping_eq {A} {JA : Join A} {PA : Perm_alg A} {SA: Sep_alg A}
-      {CaA : Canc_alg A} {CrA : Cross_alg A} {DA : Disj_alg A}:
+       {CrA : Cross_alg A} {DA : Disj_alg A}:
   forall h1 h2 h3 i1 i2 i3 i12 i23 w1 w2,
     join h1 h2 i12 -> join h2 h3 i23 -> join i12 h3 w1 -> join i1 i2 i12 -> join i2 i3 i23 -> join i12 i3 w2 -> w1 = w2.
 Proof.
@@ -23,14 +23,14 @@ Proof.
   equate_join w1 w2; apply eq_refl.
 Qed.
 
-Lemma overlapping_join_eq {A} {JA : Join A} {PA : Perm_alg A} {SA: Sep_alg A} {CaA : Canc_alg A} {DA : Disj_alg A}:
+Lemma overlapping_join_eq {A} {JA : Join A} {PA : Perm_alg A} {SA: Sep_alg A} {DA : Disj_alg A}:
   forall h1 h2 h3 h4 h12 h23 w, join h1 h2 h12 -> join h2 h3 h23 -> join h12 h3 w -> join h12 h4 h23 -> h23 = w.
 Proof.
   intros. try_join h2 h3 h23'; equate_join h23 h23'. assertSub h1 h23 HS. assert (identity h1).
   apply join_sub_joins_identity with h23; auto. exists w; auto. apply join_unit1_e with h1; auto.
 Qed.
 
-Arguments overlapping_join_eq [A] [JA] [PA] [SA] [CaA] [DA] [h1] [h2] [h3] [h4] [h12] [h23] [w] _ _ _ _.
+Arguments overlapping_join_eq [A] [JA] [PA] [SA] [DA] [h1] [h2] [h3] [h4] [h12] [h23] [w] _ _ _ _.
 
 Lemma join_together {A} {JA : Join A} {PA : Perm_alg A} {SA: Sep_alg A}
       {CaA : Canc_alg A} {CrA : Cross_alg A} {DA : Disj_alg A}:

@@ -126,6 +126,6 @@ Lemma disj_address_mapsto_: forall sh l1 ch1 l2 ch2,
   disjointed (EX v1: val, address_mapsto ch1 v1 sh l1) (EX v2: val, address_mapsto ch2 v2 sh l2).
 Proof.
   intros.
-  eapply disj_derives; [| | apply disj_VALspec_range; eauto];
+  eapply disj_derives_i; [| | apply disj_VALspec_range; eauto];
   apply exp_left; intro; apply address_mapsto_VALspec_range.
 Qed.
