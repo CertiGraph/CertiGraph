@@ -944,7 +944,6 @@ Proof.
   assert (x0 <> null) as LOCAL' by congruence; clear H13.
 
   assert (LocalGraphCopy.vmap g5 x = x0 /\
-          vgamma g5' x0 = (null, l0, r0) /\
           src g5' (x0, L) = x0 /\
           src g5' (x0, R) = x0 /\
           dst g5' (x0, L) = l0 /\
@@ -960,6 +959,14 @@ Proof.
     specialize (H15 ltac:(simpl in H1, H13, H14 |- *; subst x0; congruence)).
     pose proof ecopy1_vmap_root _ _ _ _ _ x H11.
     split; [congruence |].
+    assert (vlabel g1' x0 = null).
+    {
+      destruct H7 as [_ [_ ?]].
+      destruct H7 as [_ [_ [_ ?]]].
+      rewrite <- H1 in H7.
+      subst g1'.
+      reflexivity.
+    }
     admit.
   }
   pose proof H6.
@@ -1067,25 +1074,38 @@ Proof.
     pose proof finite_graph_si _ _ (proj1 H13); clear H13.
     apply X2, X1, X0.
   }
-  apply (exp_right (Build_GeneralGraph _ _ _ _ g5' X)); clear x1.
+  apply (exp_right (Build_GeneralGraph _ _ _ _ (labeledgraph_vgen g5' x0 null) X)); clear x1.
   apply andp_right.
   + apply prop_right.
     split; auto.
     rewrite <- H1; symmetry; tauto.
   + match goal with
-    | |- _ |-- _ ?A => change A with (g5')
+    | |- _ |-- _ ?A => change A with (labeledgraph_vgen g5' x0 null)
     end.
+    replace (vertices_at (Intersection addr (vvalid g5') (fun v : addr => x0 <> v)) g5')
+      with (vertices_at (Intersection addr (vvalid g5') (fun v : addr => x0 <> v)) (LGraph_SGraph (labeledgraph_vgen g5' x0 null))).
+    2: {
+       apply vertices_at_vertices_identical.
+       rewrite (update_irr _ g5' x0) by (rewrite Intersection_spec; tauto).
+       apply (GSG_VGenPreserve (Intersection addr (vvalid g5') (fun v : addr => x0 <> v)) g5').
+       + reflexivity.
+       + unfold Included, Ensembles.In; intro; rewrite Intersection_spec.
+         intros [? _]. apply (vvalid_vguard' (Build_GeneralGraph _ _ _ _ g5' X)), H13.
+       + unfold Included, Ensembles.In; intro; rewrite Intersection_spec.
+         intros [? _]. apply (vvalid_vguard' (Build_GeneralGraph _ _ _ _ g5' X)), H13.
+    }
+    change (vvalid g5') with (vvalid (labeledgraph_vgen g5' x0 null)).
     apply derives_refl', vertices_at_sepcon_1x.
     - apply Prop_join_comm.
       rewrite <- copy_vvalid_weak_eq; [apply Ensemble_join_Intersection_Complement | .. | exact H12].
       * unfold Included, Ensembles.In; intros; subst; tauto.
       * intros; tauto. 
       * right; symmetry; tauto.
-    - change (vgamma (Graph_PointwiseGraph g5') x0) with (vgamma g5' x0).
+    - change (vgamma (Graph_PointwiseGraph (labeledgraph_vgen g5' x0 null)) x0)
+        with (vgamma (LGraph_SGraph (labeledgraph_vgen g5' x0 null)) x0).
       simpl.
-      destruct LOCAL as [_ [? _]].
-      simpl in H13.
-      auto.
+      unfold update_vlabel. rewrite if_true by reflexivity.
+      repeat f_equal; tauto.
 Admitted.
 
 End PointwiseGraph_Copy_Bi.
