@@ -33,7 +33,7 @@ Section PointwiseGraph_Copy_Bi.
 Context {pSGG_Bi: pPointwiseGraph_Graph_Bi}.
 Context {sSGG_Bi: sPointwiseGraph_Graph_Bi addr (addr * LR)}.
 
-Existing Instances pSGG_Bi sSGG_Bi.
+Existing Instances pSGG_Bi sSGG_Bi SGAvn.
 
 Local Coercion Graph'_LGraph: Graph' >-> LGraph.
 Local Coercion Graph_LGraph: Graph >-> LGraph.
@@ -59,6 +59,19 @@ Definition initial_copied_Graph (x x0: addr) (g: Graph): LGraph
   := single_vertex_labeledgraph (LocalGraphCopy.vmap (Graph_vgen g x x0) x) null (null, L) tt.
 
 Opaque empty_Graph initial_copied_Graph.
+
+Lemma vertex_at_not_null: forall (x: addr) (gx: addr * addr * addr),
+  @derives pred _
+    (vertex_at x gx) (!! (null <> x)).
+Proof.
+  intros.
+  destruct (classic (null = x)).
+  + subst x.
+    apply derives_trans with FF.
+    apply vertex_at_not_null.
+    apply FF_left.
+  + apply prop_right; auto.
+Qed.
 
 Lemma copy_null_refl: forall (g: Graph),
   copy null g g empty_Graph'.
@@ -433,14 +446,12 @@ Proof.
   destruct H5 as [g2' [? [? [? ?]]]].
   apply (exp_right g2').
 
-  destruct_eq_dec x0 null.
-  1: {
-    clear - H14.
-    subst x0.
-    pose proof @vertex_at_not_null _ _ _ _ _ _ _ _ null SGAvn d0.
-    rewrite (add_andp _ _ H).
-    normalize.
-  }
+  pose proof vertex_at_not_null x0 d0.
+  rewrite (add_andp _ _ H14) at 1.
+  rewrite andp_comm, !sepcon_andp_prop'.
+  apply derives_extract_prop.
+  intro.
+  clear H14. assert (x0 <> null) by congruence; clear H15.
   
   apply andp_right; [apply prop_right; split; auto | rewrite sepcon_assoc; apply sepcon_derives; auto].
   assert (Prop_join (vvalid g1') (vvalid g2'') (vvalid g2')) as HPJ.
@@ -669,14 +680,12 @@ Proof.
   destruct H8 as [g4' [? [? [? ?]]]].
   apply (exp_right g4').
 
-  destruct_eq_dec x0 null.
-  1: {
-    clear - H17.
-    subst x0.
-    pose proof @vertex_at_not_null _ _ _ _ _ _ _ _ null SGAvn d0.
-    rewrite (add_andp _ _ H).
-    normalize.
-  }
+  pose proof vertex_at_not_null x0 d0.
+  rewrite (add_andp _ _ H17) at 1.
+  rewrite andp_comm, !sepcon_andp_prop'.
+  apply derives_extract_prop.
+  intro.
+  clear H17. assert (x0 <> null) by congruence; clear H18.
 
   pose proof (extend_copy_emap_root g g1 g3 g4 g1' g3' g4' x ((x, L) :: (x, R) :: nil) ((x, L) :: nil) (x, R) nil H).
   spec H18; [simpl; unfold Complement, Ensembles.In; congruence |].
@@ -930,6 +939,10 @@ Proof.
           exact H10.
         * exact H11.
   }
+  rewrite (add_andp _ _ (vertex_at_not_null x0 (null, l0, r0))).
+  normalize.
+  assert (x0 <> null) as LOCAL' by congruence; clear H13.
+
   assert (LocalGraphCopy.vmap g5 x = x0 /\
           vgamma g5' x0 = (null, l0, r0) /\
           src g5' (x0, L) = x0 /\
@@ -938,8 +951,17 @@ Proof.
           dst g5' (x0, R) = r0 /\
           evalid g5' (x0, L) /\
           evalid g5' (x0, R) /\
-          vvalid g5' x0 /\
-          x0 <> null) as LOCAL. admit.
+          vvalid g5' x0) as LOCAL.
+  {
+    pose proof fun H => extended_copy_vmap_root _ _ _ _ _ x H H8.
+    specialize (H13 ltac:(simpl in H1 |- *; subst x0; congruence)).
+    pose proof ecopy1_vmap_root _ _ _ _ _ x H9.
+    pose proof fun H => extended_copy_vmap_root _ _ _ _ _ x H H10.
+    specialize (H15 ltac:(simpl in H1, H13, H14 |- *; subst x0; congruence)).
+    pose proof ecopy1_vmap_root _ _ _ _ _ x H11.
+    split; [congruence |].
+    admit.
+  }
   pose proof H6.
   destruct H13 as [? _].
   assert (BiMaFin' g5').
@@ -1061,7 +1083,9 @@ Proof.
       * right; symmetry; tauto.
     - change (vgamma (Graph_PointwiseGraph g5') x0) with (vgamma g5' x0).
       simpl.
-      admit.
+      destruct LOCAL as [_ [? _]].
+      simpl in H13.
+      auto.
 Admitted.
 
 End PointwiseGraph_Copy_Bi.
