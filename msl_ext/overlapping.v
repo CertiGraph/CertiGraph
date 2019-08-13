@@ -42,7 +42,7 @@ Next Obligation.
   exists h23'; auto.
 Qed.
 
-Lemma ocon_emp_i {A}{JA: Join A}{PA: Perm_alg A}{SA: Sep_alg A}{CA: Canc_alg A}{AG : ageable A} {AA : Age_alg A}: forall P: pred A, P ⊗ emp = P.
+Lemma ocon_emp_i {A}{JA: Join A}{PA: Perm_alg A}{SA: Sep_alg A}{AG : ageable A} {AA : Age_alg A}: forall P: pred A, P ⊗ emp = P.
 Proof.
   intros; apply pred_ext; hnf; intros; simpl in *; intros.
   destruct_ocon H h; try_join h2 h3 h23'; equate_join h23 h23'.
@@ -56,7 +56,7 @@ Proof.
   apply core_identity.
 Qed.
 
-Lemma ocon_TT_i {A}{JA: Join A}{PA: Perm_alg A}{SA: Sep_alg A}{CA: Canc_alg A}{AG : ageable A} {AA : Age_alg A}: forall P: pred A, P ⊗ TT = P * TT.
+Lemma ocon_TT_i {A}{JA: Join A}{PA: Perm_alg A}{SA: Sep_alg A}{AG : ageable A} {AA : Age_alg A}: forall P: pred A, P ⊗ TT = P * TT.
 Proof.
   intros; apply pred_ext; hnf; intros; simpl in *; intros.
   + destruct_ocon H h.
@@ -250,7 +250,7 @@ Proof.
   auto.
 Qed.
 
-Lemma disj_emp_i {A: Type} {JA: Join A} {SA: Sep_alg A} {PA : Perm_alg A} {CA: Canc_alg A} {AG : ageable A} {AA : Age_alg A}: forall P, disjointed P emp.
+Lemma disj_emp_i {A: Type} {JA: Join A} {SA: Sep_alg A} {PA : Perm_alg A} {AG : ageable A} {AA : Age_alg A}: forall P, disjointed P emp.
 Proof.
   intros.
   unfold disjointed, emp; simpl; intros.
@@ -402,7 +402,7 @@ Proof.
   apply H3; apply (join_age x2 x3 _ h2 h3 _); auto.
 Qed.
 
-Lemma precise_ocon_i {A} {JA : Join A} {PA : Perm_alg A} {SA: Sep_alg A}{CaA : Canc_alg A}{CrA : Cross_alg A}{DA : Disj_alg A}{AG : ageable A} {AA : Age_alg A} :
+Lemma precise_ocon_i {A} {JA : Join A} {PA : Perm_alg A} {SA: Sep_alg A}{CrA : Cross_alg A}{DA : Disj_alg A}{AG : ageable A} {AA : Age_alg A} :
   forall P Q, precise P -> precise Q -> precise (P ⊗ Q).
 Proof.
   intros; intro; intros.
@@ -418,7 +418,7 @@ Proof.
   apply (overlapping_eq h1 h2 h3 i1 i2 i3 i12 i23); trivial.
 Qed.
 
-Lemma precise_tri_exp_ocon {A} {JA : Join A} {PA : Perm_alg A} {SA: Sep_alg A} {CaA : Canc_alg A}
+Lemma precise_tri_exp_ocon {A} {JA : Join A} {PA : Perm_alg A} {SA: Sep_alg A}
       {CrA : Cross_alg A} {DA : Disj_alg A}{AG : ageable A} {AA : Age_alg A} B:
   forall (P : B -> B -> B -> pred A) (Q R: B -> pred A),
     precise (EX x : B, EX y : B, EX z : B, P x y z) -> precise (exp Q) -> precise (exp R) ->
