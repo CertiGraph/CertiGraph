@@ -1054,7 +1054,11 @@ Proof.
     | |- _ |-- _ ?A => change A with (g5')
     end.
     apply derives_refl', vertices_at_sepcon_1x.
-    - admit.
+    - apply Prop_join_comm.
+      rewrite <- copy_vvalid_weak_eq; [apply Ensemble_join_Intersection_Complement | .. | exact H12].
+      * unfold Included, Ensembles.In; intros; subst; tauto.
+      * intros; tauto. 
+      * right; symmetry; tauto.
     - change (vgamma (Graph_PointwiseGraph g5') x0) with (vgamma g5' x0).
       simpl.
       admit.
