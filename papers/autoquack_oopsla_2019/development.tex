@@ -1,6 +1,16 @@
 \label{sec:vst}
 
-%\marginpar{\tiny \color{blue} These brief explanations of VST and Floyd need to come in much earlier...}
+An important feature of our work is that it integrates into 
+substantial existing projects, making our techniques 
+open to a large userbase. Another feature is that we 
+carefully organized our library to separate the concerns of 
+abstract mathematical reasoning and code-specific spatial reasoning.
+\S\ref{sec:vstlocalunlocal} explains the former effort, and~\S\ref{sec:modularlibrary}
+the latter. \S\ref{sec:stats} gives statistics about our development.
+
+\subsection{Localizations in VST with \li{localize} and \li{unlocalize}}
+\label{sec:vstlocalunlocal}
+\vspace{-0.75ex}
 CompCert is a fully machine-checked verified compiler for~CompCert C~\cite{leroy:compcert}.
 The Verified Software Toolchain consists of a series of machine-checked modules written in Coq
 to reason about CompCert C programs~\cite{appel:programlogics}.
@@ -12,13 +22,6 @@ designed to help users verify the full functional correctness of their programs.
 We added two tactics, \li{localize} and \li{unlocalize}, to
 integrate the \textsc{Localize} rule into Floyd as described in \S\ref{sec:orientation}--\S\ref{sec:localizations}.
 
-
-%Although Floyd devotes considerable effort to make this task simpler, it prefers expressibility and completeness to more automated tools like HIP/SLEEK.
-
-
-\subsection{Localizations in VST with \li{localize} and \li{unlocalize}}
-\label{sec:vstlocalunlocal}
-\vspace{-0.75ex}
 Floyd presents users with a pleasant ``decorated program'' visualization for Hoare proofs, in which users work from the top of the program to the bottom even though the formal proof is maintained as applications of inference rules.  For example, suppose the proof goal is $\triple{P_1}{c_1\li{;}c_2}{P_5}$ and VST's user tells Floyd to apply a Hoare rule for $c_1$, \emph{e.g.}~$\triple{P_1}{c_1}{P_2}$.  Floyd will then automatically apply the \infrulestyle{Sequence} rule and show the user $\triple{P_2}{c_2}{P_5}$ as the remaining goal.
 When the user is in the middle of a verification, the decorated program is partially done (\emph{i.e.} the proof is finished from the top to ``the current program point'') and the inference tree is also partially done (\emph{i.e.} with holes that are represented by the remaining proof goals in Coq).
 
@@ -99,8 +102,40 @@ The second column of Figure~\ref{figure:backend} shows the back end with the unk
 
 In the third column, the user has advanced past $c_3$ to reach the local postcondition $P_5$ and now wishes to \li{unlocalize} to~$P_6$.  Afterwards, the internal state looks like the fourth column, and so to a first approximation, \li{unlocalize} can instantiate $?F$ with $P_5 \wand P_6$.  In truth, $?F$ is chosen more subtly to properly handle both existential variables and modified program variables; \li{unlocalize} then automatically simplifies the goals to present a cleaner interface to the user.  These transformations require the additional theory given in \S\ref{sec:localizations}.
 
+\subsection{Modularity of our Library}
+\label{sec:modularlibrary}
+
+\begin{figure}
+\includegraphics[width=0.95\textwidth]{certigc_theorems}
+\caption{Theorems in the verification of the GC}
+\label{fig:connectedness}
+\end{figure}
+
+%As discussed in~\S\ref{sec:mathgraph} and~\S\ref{sec:spacegraph}, 
+We worked to make our library modular, thus encouraging 
+proof reuse. Figure~\ref{fig:connectedness} gives a sense of this 
+engineering effort.
+$14$ files were used to verify the garbage collector, and
+the bar at the bottom shows their relative lengths.
+Each straight line in the perimeter represents a theorem used to verify the GC, 
+with the length of a line corresponding to the length of the theorem on a 
+logarithmic scale. The fourteen color-coded sectors represent the files in which 
+these theorems are housed. Arcs connecting theorems represent dependencies, 
+where an arc is colored the same as the \emph{caller}.
+
+Sector $1$ contains $432$ generic helper theorems used to check that functions
+satisfy the inductive spatial relations that we need. These theorems do not depend
+on any other part of the development. Sector $3$ contains $91$ theorems that establish  
+spatial correctness (see~\S\ref{sec:spacegraph}). Sectors $4$-$14$ are the actual
+proof scripts for individual functions of the C code. Unsurprisingly, they depend
+chiefly on Sectors $1$ and $3$. Sector $2$ contains $155$ theorems that 
+prove the final mathematical graph isomorphism (see~\S\ref{sec:mathgraph}).
+These theorems depend only on Sector $1$, 
+and no other sectors depend on them. This is to be expected, seeing as graph
+isomorphism is our final goal.
 
 \subsection{Statistics related to our development}
+\label{sec:stats}
 
 \begin{table}[b]
 \centering
@@ -143,35 +178,7 @@ took us eight months.
 
 %It took fewer than 400 lines of Coq to verify the \li{mark} algorithm in H/S, indicating that a large portion of the codebase is shared between VST and H/S.  For context, VST and H/S have approximately 140k and 179k LOC.
 
-\subsection{Modularity of our Library}
-\label{sec:modularlibrary}
 
-\begin{figure}
-\includegraphics[width=0.95\textwidth]{certigc_theorems}
-\caption{Theorems in the verification of the GC}
-\label{fig:connectedness}
-\end{figure}
-
-As discussed in~\S\ref{sec:mathgraph} and~\S\ref{sec:spacegraph}, 
-we made a significant effort to increase the modularity of our library and to 
-encourage proof reuse.
-Figure~\ref{fig:connectedness} gives a sense of this engineering effort. 
-Each normal line in the perimeter represents a theorem used to verify the GC, 
-with the length of a line corresponding to the length of the theorem on a 
-logarithmic scale. The fourteen color-coded sectors represent the files in which 
-these theorems are housed. Arcs connecting theorems represent dependencies, 
-where an arc is colored the same as the \emph{caller}.
-
-Sector $1$ contains $432$ generic helper theorems used to check that functions
-satisfy the inductive spatial relations that we need. These theorems do not depend
-on any other part of the development. Sector $2$ contains $155$ theorems that 
-prove the final mathematical graph isomorphism (see~\S\ref{sec:mathgraph}).
-These theorems depend only on Sector $1$, 
-and no other sectors depend on them. This is to be expected, seeing as graph
-isomorphism is our final goal. Sector $3$ contains $91$ theorems that establish  
-spatial correctness (see~\S\ref{sec:spacegraph}). Sectors $4$-$14$ are the actual
-proof scripts for individual functions of the C code. Unsurprisingly, they depend
-chiefly on Sectors $1$ and $3$. 
 
 
 
