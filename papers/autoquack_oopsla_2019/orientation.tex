@@ -1,18 +1,31 @@
+Before jumping into an involved discussion of our three-part recipe, 
+we first~(\S\ref{sec:unionfind}) build intuition by showing how 
+they are applied to verify a well-known algorithm. 
+We then~(\S\ref{sec:localblocks}) explain our new \emph{localization blocks}. 
+Finally~(\S\ref{sec:application}), we briefly discuss some additional 
+examples we have handled. 
+%Our flagship example, the garbage collector for the 
+%CertiCoq project, will be covered in~\S\ref{sec:certigc}.
+
+
+\subsection{Localizations Yield a Tidy Union-Find}
+\label{sec:unionfind}
+
 \input{find_listing.tex}
 
 As an initial demonstration of our techniques, we show the decorated code of the
-\li{find} function from the classic disjoint-set data structure in
+\li{find} function from the classic disjoint-set data structure~\cite{clrs} in
 Figure~\ref{fig:find}. The function returns the root
 (ultimate parent) of a \li{Node x}.\hspace{0.5em}A node is a root whose parent
 pointer points to itself (line~\ref{code:ufif}).
 Other than such self-loops at roots, the structure is acyclic.
-For good amortised performance, \li{find} also performs path
+For good amortised performance, \li{find} performs path
 compression (line~\ref{code:ufpathcompress}).
-While \li{find} may appear straightforward --- it is about 5 lines
-long, and a \li{Node} only has one outgoing pointer ---
-the rather subtle nature of path compression and the
-implicit sharing inherent in parent-pointers make the disjoint-set data
-structure very difficult to reason about. Indeed, the first pen-and-paper
+While \li{find} may appear straightforward---the code is short, 
+and a \li{Node} only has one outgoing pointer---the
+disjoint-set data structure is tricky to reason about 
+because of the subtle nature of path compression and the
+implicit sharing inherent in parent-pointers. Indeed, the first pen-and-paper
 verification in separation logic required 20 pages~\cite{neelthesis}.
 
 %\marginpar{\tiny \color{blue} Would you consider $V_\gamma$ and $E_\gamma$?}
@@ -243,6 +256,36 @@ This lemma requires some effort to prove, but is completely isolated from the gr
 
 With the second localization block complete, the remainder of the verification is straightforward.
 
+
+\subsection{Our six verified examples}
+\label{sec:application}
+
+In addition to \li{find} shown above, we prove \li{union}
+in the same style, thus completing the verification of 
+union-find for \li{malloc}-allocated nodes.
+We also verify a \emph{second} version of union-find that uses
+arrays rather than nodes. The two programs look different spatially, but 
+use exactly the same abstract mathematical definitions,
+\emph{e.g.} for $\m{findS}$. 
+This suggests that we have separated the abstract algorithmic 
+reasoning from the specific details of heap representation, as will be explained
+in~\S\ref{sec:modularlibrary}.
+
+We discuss our verification of a graph \li{mark}ing algorithm 
+in~\S\ref{sec:linkedex}. We also verify a version of \li{mark} 
+for directed acyclic graphs (DAGs), which is both easier and harder than 
+marking cyclic graphs. To briefly give intuition about the example-specific 
+challenge: on the one hand, we get genuine separation
+between the root and its children; on the other hand, we need to maintain acyclicity if
+we modify the link structure.
+Further, as an example of more aggressive modifications to the link structure 
+of a graph, we verify \li{spanning}, which prunes a graph into its 
+spanning tree. 
+
+We elide discussion about \li{spanning} and DAG \li{mark} 
+in the interest of space, but the verification code and annotated proof sketches 
+are available as online resources.
+Our flagship example, the CertiCoq garbage collector, will be discussed in~\S\ref{sec:certigc}.
 
 
 \hide{

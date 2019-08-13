@@ -289,11 +289,22 @@ will overflow if the difference equals
 or exceeds~$2^{31}$. We adjusted the size of the largest generation to avoid this overflow.
 
 \subsubsection*{Undefined behavior in C} %Double-Bounded Pointer Comparisons.}
-We found two places where the semantics of Clight was unable to specify an OCaml-style GC such as ours.
-The first involved double-bounded pointer comparisons.
+We found two places where the semantics of Clight is unable to specify an OCaml-style GC such as ours.
+The first area of undefined behavior results from our GC's use of the well-established
+31-bit integer trick to allow both boxed and unboxed data in block fields~\cite{realworldocaml}.
+To distinguish them, \li{forward} calls \li{Is\_block} ({\color{black} line~5}), which
+in turn calls the following:
+\begin{lstlisting}[numbers=none]
+  `\hl{int test\_int\_or\_ptr (value x) \{ return (int)(((intnat)x)\&1); \}}`
+\end{lstlisting}
+This function aims to return $1$ if \li{x} is an int, and $0$ if it is an aligned pointer.
+When \li{x} is an integer, this is indeed well-defined. 
+But when \li{x} is a pointer, the code gets stuck because
+it is undefined to take the logical \li{and} of a pointer in Clight.
+The second involves double-bounded pointer comparisons.
 On line~\ref{code:isfrom} of Figure~\ref{fig:forward}, \li{forward} checks 
 whether the object it is considering, which it already knows to be a pointer,
-is in fact pointing into the \li{from} space. It uses the following function:
+is in fact pointing into the \li{from} space.  The \li{forward} function uses the following:
 %\vspace{-1em}
 \begin{lstlisting}[numbers=none]
   `\hl{int Is\_from(value * from\_start, value * from\_limit, value * v) \{}`
@@ -303,35 +314,22 @@ is in fact pointing into the \li{from} space. It uses the following function:
 Here, the \li{start} and \li{limit} pointers are in the same
 memory block. If \li{v} is also in the same block, \li{Is{\_}from}
 correctly computes whether it is in bounds.
-However, if \li{v} is in a different block, the comparison gets stuck instead of
+However, if \li{v} is in a different block, the comparison gets stuck---both halves 
+of the conjunction are undefined---instead of
 returning \li{false}.
+
 Although the Clight code is undefined, we used CompCert's ``extcall{\_}properties''
 to prove that CompCert's compiler transformations will preserve the necessary invariants
-because the comparison is bounded both above and below. In contrast, single-bounded
-comparisons need not be semantically preserved in CompCert.
-
-The second area of undefined behavior results from our GC's use of the well-established
-31-bit integer trick to allow both boxed and unboxed data in block fields~\cite{realworldocaml}.
-To distinguish them, \li{forward} calls \li{Is\_block} ({\color{black} line~5}), which
-in turn calls the following helper:
-\begin{lstlisting}[numbers=none]
-  `\hl{int test\_int\_or\_ptr (value x) \{ return (int)(((intnat)x)\&1); \}}`
-\end{lstlisting}
-It aims to return $1$ if \li{x} is an int, and $0$ if it is an aligned pointer.
-When \li{x} is an integer, this is indeed well-defined. 
-But when \li{x} is a pointer, the code gets stuck because
-it is undefined to take the logical \li{and} of a pointer in Clight.
-Here the situation is messier,
-since CompCert does \textbf{not} guarantee that the alignment of a pointer is stable during
-compilation: in particular, stack-allocated local variables of type \li{char} may be packed
-tightly while assembling the stack frame, thus shifting their alignment.  Informally, of course,
-this cannot occur in the GC since we do not store stack-allocated local variables in the GC-managed
-heap.  We have discussed this issue with the CompCert team \cite{leroy_email}, and believe that
-a stronger specification of the extcall{\_}properties (essentially, guaranteeing that non-\li{char} pointers do not change alignment) should allow us to prove that CompCert
-will respect \li{test\_int\_or\_ptr}'s behavior.  The CompCert team understands the
-issue and wants OCaml-style GCs to have defined behavior in Clight.
+for both operations. Both operations require careful treatment.  The first operation 
+requires that the \li{x} pointer is defined and has even offset within its memory block, 
+\emph{and} that \li{x+1} is also defined.  This length-two requirement ensures that
+\li{x} is not pointing to a stack-allocated local variable of type \li{char},
+which CompCert can realign as it assembles the stack frame.  The second operation
+is respected by CompCert because the pointer comparison is double-bounded (below by 
+\li{from\_start} and above by \li{from\_limit}); in contrast, a single-bounded 
+comparison need not be semantically preserved by CompCert.
 
 Other than these two items, the GC is fully defined in Clight---we were even able to
 prove that all casts (\emph{e.g.} {\color{black} line~6}) are well-defined.
-As a concluding thought, Coq itself is written in OCaml with a similar-style garbage collector.
-Thus, our GC is at least as well-defined as Coq itself.
+As a concluding thought, Coq itself is written in OCaml with a similar-style garbage 
+collector. Thus, our GC is at least as well-defined as Coq itself.

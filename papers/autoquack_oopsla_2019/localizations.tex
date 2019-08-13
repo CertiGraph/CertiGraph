@@ -1,11 +1,11 @@
-In this section we first (\S\ref{sec:rulessound}) ensure our feet are solidly planted by proving why \textsc{Localize} is sound, and indeed equivalent to \textsc{Frame}.  Second (\S\ref{sec:freevars}),
-we address the bug from \S\ref{sec:localblocks} and show that \textsc{Localize} is indeed
-strong enough to robustly handle modified local program variables.  Third (\S\ref{sec:linkedex}),
-we showcase two additional features of our framework, linked existentials and a fold/unfold style
-for spatial graphs, by covering the verification of a program that marks a cyclic graph.
-Finally (\S\ref{sec:application}), we briefly discuss some additional examples we have handled.
-Our flagship example, the garbage collector for the CertiCoq project, will be covered in~\S\ref{sec:certigc}.
-
+In this section we first (\S\ref{sec:rulessound}) ensure our feet are solidly planted 
+by proving why \textsc{Localize} is sound, and indeed equivalent to \textsc{Frame}.  
+Second (\S\ref{sec:freevars}), we address the bug from \S\ref{sec:localblocks} 
+and show that \textsc{Localize} is indeed strong enough to robustly handle 
+modified local program variables.  Third (\S\ref{sec:linkedex}),
+we showcase two additional features of our framework, linked existentials 
+and a fold/unfold style for spatial graphs, by covering the verification of 
+a program that marks a cyclic graph.
 
 %aim to detail additional aspects of our framework, particularly
 %how the \textsc{Localize} rule can handle modified program variables and existentials
@@ -59,7 +59,7 @@ Our flagship example, the garbage collector for the CertiCoq project, will be co
 \label{fig:rampqproofs}
 \end{figure*}
 
-In Figure~\ref{fig:rampqproofs} we put the proof sketches that show that
+In Figure~\ref{fig:rampqproofs} we put proof sketches that show that
 \infrulestyle{Localize} and \infrulestyle{Frame} are equivalent.  They require a
 little care with quantifiers, but are in essence straightforward.
 In the latter proof set $R \defeq F$, choose $x_f$ fresh, and range the quantifiers
@@ -71,8 +71,8 @@ is exactly what \textsc{Localize} needs (since $R \defeq F$).
 The equivalence between \textsc{Frame} and \textsc{Localize} means that %is important because
 our techniques will be sound in any separation logic.
 
-\paragraph{Note on notation.} Although we do not do so in Figure~\ref{fig:find}, localization blocks can safely nest.  When the ramification entailment is not noteworthy we can omit the $\ramify(i)$ reference in pen-and-paper proofs.  When we wish to save vertical space we can write $\{ G_1 \} \searrow \{ L_1 \}$ and $\{ G_2 \} \swarrow \{ L_2 \}$.
-We also note that since \infrulestyle{Localize} can derive \infrulestyle{Frame}, our notation for localization blocks clarifies pen-and-paper uses of \infrulestyle{Frame}, especially in multi-line contexts with nontrivial frame $F$.
+\paragraph{Note on notation.} Localization blocks can safely nest. When the ramification entailment is not noteworthy we can omit the $\ramify(i)$ reference in pen-and-paper proofs.  When we wish to save vertical space we write $\{ G_1 \} \searrow \{ L_1 \}$ and $\{ G_2 \} \swarrow \{ L_2 \}$.
+Since \infrulestyle{Localize} can derive \infrulestyle{Frame}, our notation also clarifies pen-and-paper uses of \infrulestyle{Frame}, especially in multi-line contexts with nontrivial frame~$F$.
 \hide{, for which the current popular notation to express \infrulestyle{Frame} involves a liberal use of
 ellipses, \emph{e.g.}:
 
@@ -496,34 +496,6 @@ We were more explicit about existentials in \emph{e.g.} lines~\ref{code:beforema
 Although our technique to handle modified program variables is rather intricate, it is handled mechanically by our \li{localize} and \li{unlocalize} tactics, which use \infrulestyle{Ramify-PQ}.
 % since it is the most general rule.
 }
-
-\subsection{Our six verified examples}
-\label{sec:application}
-
-In addition to \li{find} shown above, we do a proof of \li{union}
-in the same style, thus completing the verification of 
-union-find for \li{malloc}-allocated nodes.
-We also verify a \emph{second} version of union-find that uses
-arrays rather than nodes. The two programs look different spatially, but 
-we employ exactly the same abstract mathematical definitions,
-\emph{e.g.} for $\m{findS}$. 
-This shows that we have
-separated the concerns of abstract algorithmic reasoning from the specific details
-of heap representation.
-
-In addition to the graph \li{mark}ing algorithm discussed above, 
-we verify a version of \li{mark} for directed acyclic graphs (DAGs).  
-In general, using DAGs is both easier and harder than cyclic graphs.  
-On the one hand, we get genuine separation
-between the root and its children; on the other hand, we need to maintain acyclicity if
-we modify the link structure.
-
-As an example of more aggressive modifications to the link structure 
-of a graph, we verify
-\li{spanning}, which prunes a graph into its spanning tree. We elide a discussion 
-about it in the interest of space, but the verification code and an annotated
-proof sketch \note[todo]{are available as online resources}.
-Our flagship example, the CertiCoq garbage collector, will be discussed in~\S\ref{sec:certigc}.
 
 \hide{
 \subsection{Forward ramification}
