@@ -253,6 +253,7 @@ Proof.
   apply modus_ponens_wand.
 Qed.
 
+(*
 Lemma precise_left_sepcon_andp_sepcon: forall {A} `{PreciseSepLog A} P Q R, precise P -> (P * Q) && (P * R) |-- P * (Q && R).
 Proof.
   intros.
@@ -261,6 +262,7 @@ Proof.
   + apply sepcon_derives; auto.
     apply andp_left1; auto.
 Qed.
+*)
 
 Lemma precise_exp_sepcon: forall {A} `{PreciseSepLog A} {B} (P Q: B -> A), precise (exp P) -> precise (exp Q) -> precise (exp (P * Q)).
 Proof.
@@ -290,11 +292,13 @@ Proof.
   apply sepcon_TT.
 Qed.
 
+(*
 Lemma precise_ocon_self: forall {A} {ND: NatDed A} {SL: SepLog A} {CLS: ClassicalSep A} {PSL: PreciseSepLog A} {OSL: OverlapSepLog A} {DSL: DisjointedSepLog A} P, precise P -> P = ocon P P.
 Proof.
   intros.
   apply precise_ocon_contain; auto.
 Qed.
+*)
 
 Lemma ocon_sepcon_cancel: forall {A} {ND: NatDed A} {SL: SepLog A} {PSL: PreciseSepLog A} {OSL: OverlapSepLog A} {DSL: DisjointedSepLog A} P Q, P * Q |-- ocon P (P * Q).
 Proof.
@@ -304,6 +308,7 @@ Proof.
   apply TT_right.
 Qed.
 
+(*
 Lemma precise_ocon_sepcon_cancel: forall {A} {ND: NatDed A} {SL: SepLog A} {PSL: PreciseSepLog A} {OSL: OverlapSepLog A} {DSL: DisjointedSepLog A} P Q, precise P -> P * Q = ocon P (P * Q).
 Proof.
   intros.
@@ -311,6 +316,7 @@ Proof.
   apply sepcon_derives; auto.
   apply TT_right.
 Qed.
+*)
 
 Lemma emp_disj: forall {A} {ND: NatDed A} {SL: SepLog A} {PSL: PreciseSepLog A} {OSL: OverlapSepLog A} {DSL: DisjointedSepLog A} P, disjointed emp P.
 Proof.

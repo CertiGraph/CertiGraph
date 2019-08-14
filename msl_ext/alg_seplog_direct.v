@@ -10,11 +10,11 @@ Local Open Scope logic.
 
 Instance algPreciseSepLog (A : Type) {JA : Join A} {PA : Perm_alg A} {SA: Sep_alg A} {CA: Canc_alg A}: PreciseSepLog (pred A).
   apply (mkPreciseSepLog precise); simpl; intros.
-  + eapply precise_left_sepcon_andp_distr_d; eauto.
+  (* + eapply precise_left_sepcon_andp_distr_d; eauto. *)
   + eapply derives_precise; eauto.
   + apply precise_emp.
   + apply precise_sepcon_d; auto.
-  + apply precise_wand_ewand_d; auto.
+  (* + apply precise_wand_ewand_d; auto. *)
 Defined.
 
 Instance algOverlapSepLog (A: Type) {JA: Join A} {SA: Sep_alg A} {PA : Perm_alg A} {CA: Canc_alg A} {DA: Disj_alg A} {CrA: Cross_alg A} : OverlapSepLog (pred A).
@@ -32,7 +32,8 @@ Instance algOverlapSepLog (A: Type) {JA: Join A} {SA: Sep_alg A} {PA : Perm_alg 
   + apply ocon_derives_d.
   + apply owand_ocon_adjoint_d.
   + apply ocon_contain_d.
-  + apply precise_ocon_contain_d.
+  (* + apply precise_ocon_contain_d. *)
+  + apply precise_ocon_self_d.
   + apply precise_ocon_d.
 Defined.
 
