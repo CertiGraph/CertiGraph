@@ -959,6 +959,35 @@ Proof.
     specialize (H15 ltac:(simpl in H1, H13, H14 |- *; subst x0; congruence)).
     pose proof ecopy1_vmap_root _ _ _ _ _ x H11.
     split; [congruence |].
+    pose proof vcopy1_copied_root_valid _ _ _ _ _ H7 H1.
+    apply (extended_copy_vvalid_mono _ _ _ _ _ _ H8) in H17.
+    apply (ecopy1_vvalid_mono _ _ _ _ _ _ H9) in H17.
+    apply (extended_copy_vvalid_mono _ _ _ _ _ _ H10) in H17.
+    apply (ecopy1_vvalid_mono _ _ _ _ _ _ H11) in H17.
+    assert (vvalid g2 x).
+    {
+      rewrite <- (proj1 (proj1 H8)), <- (proj1 (proj1 H7)).
+      auto.
+    }
+    assert (vvalid g3 x).
+    {
+      rewrite <- (proj1 (proj1 H9)).
+      auto.
+    }
+    assert (src g3' (x0, L) = x0 /\ dst g3' (x0, L) = l0 /\ evalid g3' (x0, L)) as [? [? ?]].
+    {
+      destruct H9 as [_ [_ ?]].
+      destruct H9 as [? [? [? [? [? ?]]]]].
+      destruct H22 as [_ [? _]].
+      destruct H22 as [? _].
+      rewrite (H22 (x0, L)).
+      rewrite left_right_sound in H23 by auto.
+      rewrite <- H3 in *.
+      rewrite <- H23 by auto.
+      simpl in H0; inversion H0.
+      split; [congruence | split; [| tauto]].
+      admit.
+    }
     assert (vlabel g1' x0 = null).
     {
       destruct H7 as [_ [_ ?]].
@@ -967,6 +996,7 @@ Proof.
       subst g1'.
       reflexivity.
     }
+    SearchAbout vcopy1.
     admit.
   }
   pose proof H6.
@@ -1004,12 +1034,10 @@ Proof.
         * unfold is_null_SGBA; simpl.
           subst e.
           replace (src g5' (x0, L)) with x0 by (symmetry; tauto).
-          replace (dst g5' (x0, L)) with l0 by (symmetry; tauto).
           tauto.
         * unfold is_null_SGBA; simpl.
           subst e.
           replace (src g5' (x0, R)) with x0 by (symmetry; tauto).
-          replace (dst g5' (x0, R)) with r0 by (symmetry; tauto).
           tauto.
         * pose proof @ma' _ _ x1.
           pose proof @valid_graph' _ _ _ _ _ _ H16.
