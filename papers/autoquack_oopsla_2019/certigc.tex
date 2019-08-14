@@ -49,8 +49,7 @@ calculate the root set. The GC collects the first generation
 into the second using Cheney's algorithm \cite{cheney:gc}.
 This may recursively trigger the collection of the second generation
 into the third, \emph{etc.}, following which the GC returns control to the mutator. 
-\note[todo]{We provide
-a more detailed explanation of the GC's operation as an online resource.}
+We provide a more detailed explanation of the GC's operation as an online resource.
 % We put a 
 % more detailed explanation of the GC's operation in Appendix~\ref{apx:gcstructure}.
 
@@ -200,7 +199,7 @@ $\gamma'$ falls within one of them.
 For a taste, we put the complete definition
 of \m{forward\_relation}, with its twelve constructors, 
 % in Appendix~\ref{apx:forwardrelation}. 
-in our \note[todo]{online resources}.
+in the online version of our paper.
 We actually have such relations for all the key functions in our GC, 
 and our final correctness proof shows that a 
 systematic \emph{composition} of these relations corresponds to the 

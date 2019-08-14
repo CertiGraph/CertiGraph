@@ -33,16 +33,16 @@ We use the following conventions in our invariants.  Pure predicates are written
 \textit{italic}.  We write~$\gamma$ to
 mean a ``mathematical'' (or~``pure'') graph: roughly, a set of
 labeled vertices $V(\gamma)$ and edges $E(\gamma)$.
-When $\m{v} \in V(\gamma)$, we write $\gamma(\m{v}) = (r,p)$ to state that vertex $\m{v}$ has
-label $r$ and parent vertex $p$ ($r$ stores the ``rank'' of a node; it is ignored
+When $\m{v} \in V(\gamma)$, we write $\gamma(\m{v}) = (r,pa)$ to state that vertex $\m{v}$ has
+label $r$ and parent vertex $pa$ ($r$ stores the ``rank'' of a node; it is ignored
 in \li{find}).  We detail mathematical graphs in~\S\ref{sec:mathgraph}.
 
 Spatial predicates are written in \textsf{sans-serif}.
 Each node $\m{v} \in V(\gamma)$ is
 represented in the heap by $\m{v} \mapsto \gamma(\m{v})$, %, \emph{i.e.}  = (r,p)$},
 where we use the usual pen-and-paper
-trick of writing \emph{e.g.} $\m{v} \mapsto r,p$ to mean
-\mbox{$\big(\m{v} |-> r\big) * \big((\m{v} + \m{sizeof}(\li{unsigned int})) |-> p\big)$} in the character-addressed C memory model.
+trick of writing \emph{e.g.} $\m{v} \mapsto r,pa$ to mean
+\mbox{$\big(\m{v} |-> r\big) * \big((\m{v} + \m{sizeof}(\li{unsigned int})) |-> pa\big)$} in the character-addressed C memory model.
 %\marginpar{\tiny \color{blue}Bigstar coming in unexplained.}
 The whole graph (disjoint-set forest) is represented by
 $\p{uf\_graph}(\gamma)$, essentially the
@@ -269,7 +269,7 @@ use exactly the same abstract mathematical definitions,
 \emph{e.g.} for $\m{findS}$. 
 This suggests that we have separated the abstract algorithmic 
 reasoning from the specific details of heap representation, as will be explained
-in~\S\ref{sec:modularlibrary}.
+in~\S\ref{sec:vst}.
 
 We discuss our verification of a graph \li{mark}ing algorithm 
 in~\S\ref{sec:linkedex}. We also verify a version of \li{mark} 
