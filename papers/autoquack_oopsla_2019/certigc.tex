@@ -35,7 +35,7 @@ and review interesting issues we found and resolved~(\S\ref{sec:gcissues}).
 The $12$-generation GC, written in the spirit of the OCaml GC,
 is realistic and sophisticated, though by no means
 industrial-strength.
-Because CertiCoq borrows OCaml's representation of blocks and
+Because CertiCoq uses OCaml's representation of blocks and
 values \cite{realworldocaml}, the GC must support features such as
 variable-length memory objects, object fields that may be boxed
 or unboxed and must be disambiguated at runtime, and pointers to places
@@ -49,7 +49,8 @@ calculate the root set. The GC collects the first generation
 into the second using Cheney's algorithm \cite{cheney:gc}.
 This may recursively trigger the collection of the second generation
 into the third, \emph{etc.}, following which the GC returns control to the mutator. 
-We provide a more detailed explanation of the GC's operation as an online resource.
+We provide a further details about the GC's operation in 
+our extended online paper.
 % We put a 
 % more detailed explanation of the GC's operation in Appendix~\ref{apx:gcstructure}.
 
@@ -67,11 +68,11 @@ Three pointers capture key metainformation about a generation:
 \li{start} marks the first address, \li{limit},
 the last address, and \li{next}, the next address available for 
 allocation.  
-Initially, \li{next = start}. 
+Initially, \li{next~=~start}. 
 New memory is added in a contiguous chunk starting 
 at \li{next}, and \li{next} is
 incremented appropriately. 
-The generation is full when \li{next = limit}.
+The generation is full when \li{next~=~limit}.
 Metainformation about all $12$ generations is stored in 
 a 12-element array called \li{heap}.
 	
@@ -94,7 +95,7 @@ Vertices are tuples of the form~$(\m{g}, \m{i})$, meaning the vertex represents 
 the $\m{i}^{\textit{th}}$ block in the $\m{g}^{\textit{th}}$ generation. 
 An edge is a tuple~$(\m{v}, i)$, meaning that 
 the associated pointer is the $\m{i}^{\textit{th}}$ field of the block
-corresponding to vertex $\m{v}$. 
+corresponding to vertex~$\m{v}$. 
 Each vertex is labeled with its integer data, along with 
 metainformation such as whether it has already been forwarded, 
 and if so, where its forwarded copy is.
@@ -144,16 +145,16 @@ extract the \li{args} array. The
 proposition \m{compat} encapsulates a series of checks, 
 \emph{e.g.} to avoid out-of-bounds issues.
 The arguments \li{s}, \li{l}, and \li{n} are straightforwardly
-explained in $\phi_1$. 
-We are forwarding
-is~\li{p}, which denotes the \m{n}th edge of vertex~\m{v}. 
+explained on line $1$. 
+We are forwarding~\li{p}, 
+which denotes the \m{n}th edge of vertex~\m{v}. 
 For readability,
 we denote the facts known to us in
 \emph{e.g.} line~$1$ by $\phi_1$, and then use $\phi_1$
 as a fact in later annotations.
 
 Line \ref{code:alreadyforwarded} shows
-the case when the block \m{v'} passed to the function was already forwarded.
+the case when the block passed to the function was already forwarded.
 The block's header is zeroed out and its $0^\textit{th}$ field holds
 the address of its
 copy\footnote{These guarantees are set up by \li{forward} itself.
@@ -166,27 +167,27 @@ $\gamma'~=~\m{upd\_edge}(\gamma, \m{e}, \m{copy}(\gamma, \m{v'}))$.
 That is, in $\gamma$, update the edge $e$ to point at
 $\m{copy}(\gamma, \m{v'})$. 
 This delicate treatment avoids erroneous double-copying
-in case a block is reachable from the \li{args} via different paths.
+in case a block is reachable from the \li{args} array via different paths.
 
 Moving to the meatier case where we must actually make a copy,
 lines \ref{code:copyhead} to \ref{code:copyfields} show
 how a block is copied over to the next-available spot in the
 \li{to} space. Some of the grungy details having to do with
 variable-sized memory blocks begin to show up in the C code,
-but the annotation on line $26$ is relatively clean
+but the annotation on line~$27$ is relatively clean
 thanks to our mathematical graph framework:
 this is just the copying of a vertex, and so our new graph after the change is
 $\gamma' = \m{copy\_vertex}(\gamma, \m{to}, \m{v'}, \m{v''})$.
 Unlike the edit in line~\ref{code:alreadyforwarded}, which was
 local to the graph proper, this
-change spills over to the graph's metainformation: 
-\m{tinf'}, an alteration to \m{tinf}, explains that additional 
-space is now used up in the \li{to} generation of $\gamma'$. 
+change spills over to the graph's metainformation:~\m{tinf'}, 
+an alteration to \m{tinf}, explains that additional 
+space is now used up in the \li{to} generation of~$\gamma'$. 
 The final step (line \ref{code:ridirect}) is to reroute to this
 new copy, and this is handled exactly as in line~\ref{code:alreadyforwarded}. 
 The resultant graph is $\gamma'' = \m{upd\_edge}(\gamma', \m{e}, \m{v''})$. 
-This edit is local to the graph, and so the old metainformation in 
-\m{tinf'} remains compatible with $\gamma''$.
+This edit is local to the graph, and so the old metainformation in~\m{tinf'} 
+remains compatible with $\gamma''$.
 
 The postcondition is a little different from those of \li{find}
 and \li{mark} seen earlier: it does not provide a relation
@@ -196,13 +197,13 @@ end results of calling
 \li{forward} on \m{(v,n)} --- a vertex may be copied, an edge may be redirected, 
 no action may be taken, \emph{etc.} --- and check if the graph
 $\gamma'$ falls within one of them.
-For a taste, we put the complete definition
+We put the complete definition
 of \m{forward\_relation}, with its twelve constructors, 
 % in Appendix~\ref{apx:forwardrelation}. 
 in the online version of our paper.
 We actually have such relations for all the key functions in our GC, 
 and our final correctness proof shows that a 
-systematic \emph{composition} of these relations corresponds to the 
+systematic composition of these relations corresponds to the 
 Clight code of our garbage collector. 
 
 
@@ -219,7 +220,7 @@ We fix this via the function
 \li{do\_scan}, which scans~\li{to} and calls 
 \li{forward} on all items that were copied over as part of this collection.
 This fixes any backwards pointers from \li{to} into \li{from} by moving
-their targets to \li{to} as well.
+their targets into \li{to} as well.
 These steps fully disentangle \li{args} from the 
 \li{from} space, which can be reset to free up memory. 
 
@@ -231,7 +232,7 @@ The precondition, given on line $1$, is very similar to that of
 of the \li{from} space, and \li{nx} denoting the last-used address
 in the \li{to} space. The key difference is that instead of a specific
 target like~\li{p}, we take the argument \li{sc}, 
-which is the place in the \li{to} space from where we must start scanning.
+which is the place in the \li{to} space from where we must start \li{sc}anning.
 Because of the way \li{forward} works, we know that the 
 the items recently copied over by \li{forward\_roots} 
 have been placed placed contiguously between \li{sc} and \li{nx}. 
@@ -261,7 +262,7 @@ and the mathematical graph model introduced in ~\S\ref{sec:movetomathgraph}.
 Functions like \li{forward} ignore the Clight memory representation 
 of the heap and go about their business in the abstract domain
 of mathematical graphs, but \li{do\_scan} cannot do this because grungy 
-details such as the index order of blocks are key to its strategy of a
+details such as the index order of runtime-allocated blocks are key to its strategy of a
 linear search from \li{sc} to \li{nx}.
 
 % Forward operates on the graph in a graph-theory sense, verices are neighbors and so on.
@@ -276,9 +277,8 @@ The first was a performance bug we discovered when developing the key invariants
 The original GC code executed Cheney's algorithm too conservatively,
 scanning the entire~\li{to} space for backward pointers into \li{from}. We
 showed that scanning a subset of \li{to} suffices.  Performance doubled.
-
 The second bug was an overflow when subtracting two pointers
-to calculate the size of a space, as below. Pointers \li{start} and \li{limit}
+to calculate the size of a space, as below. Here the pointers \li{start} and \li{limit}
 point to the beginning and end of the \li{i}$^{\text{th}}$ space of the
 heap \li{h}.
 %the difference of pointers\footnote{This is commonly calculated by finding the
@@ -307,7 +307,7 @@ This function aims to return $1$ if \li{x} is an int, and $0$ if it is an aligne
 When \li{x} is an integer, this is indeed well-defined. 
 But when \li{x} is a pointer, the code gets stuck because
 it is undefined to take the logical \li{and} of a pointer in Clight.
-The second involves double-bounded pointer comparisons.
+The second issue involves double-bounded pointer comparisons.
 On line~\ref{code:isfrom} of Figure~\ref{fig:forward}, \li{forward} checks 
 whether the object it is considering, which it already knows to be a pointer,
 is in fact pointing into the \li{from} space.  The \li{forward} function uses the following:
@@ -336,6 +336,6 @@ is respected by CompCert because the pointer comparison is double-bounded (below
 comparison need not be semantically preserved by CompCert.
 
 Other than these two items, the GC is fully defined in Clight---we were even able to
-prove that all casts (\emph{e.g.} {\color{black} line~6}) are well-defined.
+prove that all casts (\emph{e.g.} line~\ref{code:dsreadheader}) are well-defined.
 As a concluding thought, Coq itself is written in OCaml with a similar-style garbage 
 collector. Thus, our GC is at least as well-defined as Coq itself.

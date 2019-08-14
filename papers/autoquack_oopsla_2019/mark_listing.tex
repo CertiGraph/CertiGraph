@@ -6,9 +6,9 @@
 \begin{figure}[t]
 %\vspace{-1ex}
   \begin{lstlisting}[multicols=2]
-`\hl{struct Node \{int \_Alignas(16) m;}` $\label{code:nodedefstart}$
- `\hl{struct Node * \_Alignas(8) l, * r \};}`$\label{code:nodedefend}$
-`\hl{void mark(struct Node * x)\{}`$\label{code:markstart}$
+`\hl{struct Node \{ int \_Alignas(16) m;}` $\label{code:nodedefstart}$
+       `\hl{struct Node * \_Alignas(8) l, * r \};}`$\label{code:nodedefend}$
+`\hl{void mark(struct Node * x) \{}`$\label{code:markstart}$
 $//\{\p{m\_graph}(\tx{x},\gamma)\}$
  `\hl{struct Node * l, * r; int root\_mark;}` $\label{code:inmark}$
  `\hl{if (x == 0) return;}`
