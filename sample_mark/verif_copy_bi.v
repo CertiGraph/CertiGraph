@@ -261,7 +261,7 @@ Proof.
   simpl reachable_vertices_at in HH |- *. rewrite HH; clear HH.
   Transparent Graph_LGraph.
 
-  destruct (labeledgraph_add_edge_ecopy1_left g g1 g2 g1' g2' x l r x0 l0 gx_vvalid H_GAMMA_g H_vopy1 H_copy_left H_x0 H_l0 BiMaFin_g2' x0_not_null) as [H_ecopy1_left [BiMaFin_g3' H_x0L]].
+  destruct (labeledgraph_add_edge_ecopy1_left g g1 g2 g1' g2' x l r x0 l0 gx_vvalid H_GAMMA_g H_vopy1 H_copy_left H_x0 H_l0 BiMaFin_g2' x0_not_null) as [H_ecopy1_left [BiMaFin_g3' [H_x0L Hl0_dst]]].
   clear BiMaFin_g2'.
   forget (Graph_egen g2 (x: addr, L) (x0: addr, L)) as g3.
   forget (graph_gen.labeledgraph_add_edge g2' (x0, L) x0 l0 (null, L)) as g3'.
@@ -300,7 +300,8 @@ Proof.
           (data_at sh node_type
             (pointer_val_val null, (pointer_val_val l0, pointer_val_val null)) (pointer_val_val x0) *
            holegraph sh x0 g4')).
-  1: {
+  {
+    clear Hl0_dst.
     entailer.
     apply (@extend_copy_right _ (sSGG_VST sh) g g1 g2 g3 g4 g1' g2' g3' g4''(ValidPointer b i) l r (vmap g1 (ValidPointer b i)) r0 (null, l0, null)); auto.
   }
@@ -320,7 +321,7 @@ Proof.
   simpl reachable_vertices_at in HH |- *. rewrite HH; clear HH.
   Transparent Graph_LGraph.
 
-  destruct (labeledgraph_add_edge_ecopy1_right g g1 g2 g3 g4 g1' g2' g3' g4' x l r x0 r0 gx_vvalid H_GAMMA_g H_vopy1 H_copy_left H_ecopy1_left H_copy_right H_x0 H_x0L H_r0 BiMaFin_g4' x0_not_null) as [H_ecopy1_right [BiMaFin_g5' H_x0R]].
+  destruct (labeledgraph_add_edge_ecopy1_right g g1 g2 g3 g4 g1' g2' g3' g4' x l r x0 r0 gx_vvalid H_GAMMA_g H_vopy1 H_copy_left H_ecopy1_left H_copy_right H_x0 H_x0L H_r0 BiMaFin_g4' x0_not_null) as [H_ecopy1_right [BiMaFin_g5' [H_x0R Hr0_dst]]].
   clear BiMaFin_g4'.
   forget (Graph_egen g4 (x: addr, R) (x0: addr, R)) as g5.
   forget (graph_gen.labeledgraph_add_edge g4' (x0, R) x0 r0 (null, L)) as g5'.
@@ -328,7 +329,7 @@ Proof.
   gather_SEP 0 1.
   replace_SEP 0 (EX gg5': Graph', !! (@copy _ _ _ _ CCS x g g5 gg5' /\ x0 = vmap g5 x) && graph sh x0 gg5').
   {
-    entailer!.
+    entailer.
     eapply (@copy_final pSGG_VST (sSGG_VST sh) g g1 g2 g3 g4 g5 g1' g2' g3' g4' g5'); [| | | | | | | | eassumption ..]; eauto.
   }
 
