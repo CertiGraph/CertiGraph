@@ -520,7 +520,8 @@ Lemma labeledgraph_add_edge_ecopy1_left: forall (g g1 g2: Graph) (g1' g2': LGrap
   let g3' := labeledgraph_add_edge g2' (x0, L) x0 l0 (null, L): LGraph in
   ecopy1 (x, L) (g2: LGraph, g2') (g3: LGraph, g3') /\
   is_guarded_BiMaFin' (fun v => x0 <> v) (fun e => ~ In e ((x0, L) :: nil)) g3' /\
-  (x0, L) = LocalGraphCopy.emap g3 (x, L).
+  (x0, L) = LocalGraphCopy.emap g3 (x, L) /\
+  dst g3' (x0, L) = l0.
 Proof.
   intros.
   unfold ecopy1.
@@ -531,7 +532,7 @@ Proof.
     eapply vcopy1_copied_root_valid in H1; auto.
     subst x0; auto.
   }
-  split; [split; [| split] | split].
+  split; [split; [| split] | split; [| split]].
   + reflexivity.
   + apply WeakMarkGraph.labeledgraph_egen_do_nothing.
   + assert (g ~=~ g2) as HH0.
@@ -587,6 +588,10 @@ Proof.
   + simpl.
     unfold update_elabel; simpl.
     destruct_eq_dec (x, L) (x, L); auto; congruence.
+  + subst g3'.
+    simpl.
+    unfold updateEdgeFunc.
+    rewrite if_true; reflexivity.
 Qed.
 
 Lemma va_labeledgraph_add_edge_left: forall (g g1 g2: Graph) (g1' g2': LGraph) (x l r x0 l0: addr),
@@ -778,7 +783,8 @@ Lemma labeledgraph_add_edge_ecopy1_right: forall (g g1 g2 g3 g4: Graph) (g1' g2'
   let g5' := labeledgraph_add_edge g4' (x0, R) x0 r0 (null, L): LGraph in
   ecopy1 (x, R) (g4: LGraph, g4') (g5: LGraph, g5') /\
   is_guarded_BiMaFin' (fun v => x0 <> v) (fun e => ~ In e ((x0, L) :: (x0, R) :: nil)) g5' /\
-  (x0, R) = LocalGraphCopy.emap g5 (x, R).
+  (x0, R) = LocalGraphCopy.emap g5 (x, R) /\
+  dst g5' (x0, R) = r0.
 Proof.
   intros.
   unfold ecopy1.
@@ -795,7 +801,7 @@ Proof.
     + intros [? | []].
       inversion H10.
   }
-  split; [split; [| split] | split].
+  split; [split; [| split] | split; [| split]].
   + reflexivity.
   + apply WeakMarkGraph.labeledgraph_egen_do_nothing.
   + assert (g ~=~ g4) as HH0.
@@ -856,6 +862,10 @@ Proof.
   + simpl.
     unfold update_elabel; simpl.
     destruct_eq_dec (x, R) (x, R); auto; congruence.
+  + subst g5'.
+    simpl.
+    unfold updateEdgeFunc.
+    rewrite if_true; reflexivity.
 Qed.
 
 Lemma va_labeledgraph_add_edge_right: forall (g g1 g2 g3 g4: Graph) (g1' g2' g3' g4': LGraph) (x l r x0 r0: addr),
@@ -895,8 +905,10 @@ Lemma copy_final: forall (g g1 g2 g3 g4 g5: Graph) (g1' g2' g3' g4' g5': LGraph)
   vgamma g x = (null, l, r) ->
   x0 = LocalGraphCopy.vmap g1 x ->
   l = null /\ l0 = null \/ l0 = LocalGraphCopy.vmap g2 l ->
+  forall (H999: dst g3' (x0, L) = l0), 
   (x0, L) = LocalGraphCopy.emap g3 (x, L) ->
   r = null /\ r0 = null \/ r0 = LocalGraphCopy.vmap g4 r ->
+  forall (H998: dst g5' (x0, R) = r0), 
   (x0, R) = LocalGraphCopy.emap g5 (x, R) ->
   is_guarded_BiMaFin'
     (fun v => x0 <> v)
@@ -985,8 +997,7 @@ Proof.
       rewrite <- H3 in *.
       rewrite <- H23 by auto.
       simpl in H0; inversion H0.
-      split; [congruence | split; [| tauto]].
-      admit.
+      split; [congruence | split; tauto].
     }
     assert (vlabel g1' x0 = null).
     {
@@ -996,7 +1007,6 @@ Proof.
       subst g1'.
       reflexivity.
     }
-    SearchAbout vcopy1.
     admit.
   }
   pose proof H6.
