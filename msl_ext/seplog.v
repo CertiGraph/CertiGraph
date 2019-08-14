@@ -8,11 +8,11 @@ Set Implicit Arguments.
 
 Class PreciseSepLog (A: Type) {ND: NatDed A} {SL: SepLog A} := mkPreciseSepLog {
   precise: A -> Prop;
-  precise_left_sepcon_andp_distr: forall P P1 P2 Q R, precise P -> P1 |-- P -> P2 |-- P -> (P1 * Q) && (P2 * R) |-- (P1 && P2) * (Q && R);
+  (* precise_left_sepcon_andp_distr: forall P P1 P2 Q R, precise P -> P1 |-- P -> P2 |-- P -> (P1 * Q) && (P2 * R) |-- (P1 && P2) * (Q && R); *)
   derives_precise: forall P Q, (P |-- Q) -> precise Q -> precise P;
   precise_emp: precise emp;
   precise_sepcon: forall P Q, precise Q -> precise P -> precise (P * Q);
-  precise_wand_ewand: forall R P Q R', precise P -> R |-- P * (Q -* R') -> Q * (ewand P R) |-- R'
+  (* precise_wand_ewand: forall R P Q R', precise P -> R |-- P * (Q -* R') -> Q * (ewand P R) |-- R' *)
 }.
 
 Arguments PreciseSepLog _ {_ _}.
@@ -20,11 +20,11 @@ Arguments mkPreciseSepLog {_ _ _}.
 
 Instance LiftPreciseSepLog (A B: Type) {ND: NatDed B} {SL: SepLog B} {PSL: PreciseSepLog B} : PreciseSepLog (A -> B).
   apply (mkPreciseSepLog (fun P => forall a, precise (P a))); simpl; intros.
-  + eapply precise_left_sepcon_andp_distr; eauto.
+  (* + eapply precise_left_sepcon_andp_distr; eauto. *)
   + eapply derives_precise; eauto.
   + apply precise_emp.
   + apply precise_sepcon; auto.
-  + apply precise_wand_ewand; auto.
+  (* + apply precise_wand_ewand; auto. *)
 Defined.
 
 Class MapstoSepLog {Addr Val: Type} (AV: AbsAddr Addr Val) {A: Type} (mapsto: Addr -> Val -> A) {ND: NatDed A} {SL: SepLog A} {PSL: PreciseSepLog A} := mkMapstoSepLog {
@@ -50,7 +50,8 @@ Class OverlapSepLog (A: Type) {ND: NatDed A} {SL: SepLog A} {PSL: PreciseSepLog 
   ocon_derives: forall P Q P' Q', (P |-- P') -> (Q |-- Q') -> ocon P Q |-- ocon P' Q';
   owand_ocon_adjoint: forall P Q R, (ocon P Q |-- R) <-> (P |-- owand Q R);
   ocon_contain: forall P Q, Q |-- P * TT -> Q |-- ocon P Q;
-  precise_ocon_contain: forall P Q, precise P -> Q |-- P * TT -> Q = ocon P Q;
+  (* precise_ocon_contain: forall P Q, precise P -> Q |-- P * TT -> Q = ocon P Q; *)
+  precise_ocon_self: forall P, precise P -> P = ocon P P;
   precise_ocon: forall P Q, precise P -> precise Q -> precise (ocon P Q)
 }.
 
@@ -70,7 +71,8 @@ Instance LiftOverlapSepLog (A B: Type) {ND: NatDed B} {SL: SepLog B} {PSL: Preci
   + apply ocon_derives; auto.
   + split; intros; apply owand_ocon_adjoint; auto.
   + apply ocon_contain; auto.
-  + extensionality x. apply precise_ocon_contain; auto.
+  (* + extensionality x. apply precise_ocon_contain; auto. *)
+  + extensionality x. apply precise_ocon_self; auto.
   + apply precise_ocon; auto.
 Defined.
 
@@ -132,4 +134,3 @@ Class ImpredicativeOSL (A: Type) {ND: NatDed A} {SL: SepLog A} {PSL: PreciseSepL
 Module OconNotation.
 Notation "P ⊗ Q" := (ocon P Q) (at level 40, left associativity) : logic.
 End OconNotation.
-
