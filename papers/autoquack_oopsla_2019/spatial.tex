@@ -8,21 +8,19 @@ properties of abstract graphs from \S\ref{sec:mathgraph}.
 The first of these challenges turns out to be surprisingly subtle: 
 the standard tactic of leveraging the \infrulestyle{Frame} rule 
 works well for tree-manipulating programs, but fails for graph-manipulating programs.
-We review the standard treatment for trees in~\S\ref{sec:seplogtrees}, 
-point out the issue with graphs in~\S\ref{sec:fixpointfail},
-and propose a fix in~\S\ref{sec:goodgraph}.  
+We review the standard treatment for trees~(\S\ref{sec:seplogtrees}), 
+point out the issue with graphs~(\S\ref{sec:fixpointfail}),
+and propose a fix for this~(\S\ref{sec:goodgraph}).  
 The main challenge thereafter is to engineer a framework that is generic 
-enough and modular enough to be useful in practice in a variety of settings; 
-we cover this in~\S\ref{sec:ramifylib}.
+and modular enough to be useful in a variety of 
+settings~(\S\ref{sec:ramifylib}).
 
 \input{seplogsem_figure.tex}
-
-Figure~\ref{fig:seplogsem} shows the standard semantic models for the separation logic connectives using a join relation $\oplus$ on an underlying separation algebra~\cite{dockins09}.
 
 \subsection{Separation logic in tree-manipulating programs}
 \label{sec:seplogtrees}
 
-In recent works \citep{o2001local, o2012primer}
+Figure~\ref{fig:seplogsem} shows the standard semantic models for the separation logic connectives using a join relation $\oplus$ on an underlying separation algebra~\cite{dockins09}. In recent works \citep{o2001local, o2012primer}
 that employ separation logic to give
 precise specifications of tree copy programs, the spatial
 representation of a binary tree is defined as a recursive predicate
@@ -46,7 +44,7 @@ $\mathsf{emp}$ or $(x \mapsto
 l,r) \scon \mathsf{tree}(l, \tau_1) \scon \mathsf{tree}(r, \tau_2)$
 where $\tau_1$ and $\tau_2$ are the left and right subtrees of $\tau$.
 If $\tau_1$ is $\mathsf{atom}$ then $l$ must be null pointer and
-$\mathsf{tree}(l, \tau_1)$ must be $\mathsf{emp}$.
+$\mathsf{tree}(l, \tau_1)$ must be~$\mathsf{emp}$.
 Otherwise $\mathsf{tree}(l, \tau_1)$ can be expanded recursively as above.
 The left part of Figure~\ref{fig:bin_tree_graph} shows a binary tree, 
 and it should be straightforward to see that the data layout matches~$\tau$ 
@@ -60,7 +58,7 @@ of the original tree, not an arbitrarily-shaped tree.
 
 This is an ideal use-case for the separation logic
 because the root, the left subtree, 
-and the right subtree are disjoint by contstruction. By applying
+and the right subtree are disjoint by construction. By applying
 the \textsc{Frame} rule, one can safely reason about a particular 
 $\scon$-separated branch of the tree and later compose the 
 conclusion back into the rest of the tree
@@ -252,7 +250,7 @@ See Figure \ref{fig:badcycle} for an attempt to prove the entailment $100 |-> 42
 
 Rather than trying to define \p{graph} as a recursive fixpoint,
 we will instead give it a flat structure.  Graphs in separation
-logic have been defined in similar ways before, \emph{e.g.}~\cite{ilya-graphs};
+logic have been defined in similar ways before, \emph{e.g.}~\citet{ilya-graphs};
 our innovation is that we prove---with the amount of precision
 required to convince Coq---that we can still enjoy fold/unfold
 with our flat definition.  Our path starts with the iterated
@@ -274,7 +272,7 @@ lists and then extended to sets as follows:
 \]
 
 We are now ready to define a good \p{graph} predicate:
-  \quad $\p{graph}(x, \gamma) \; \defeq \; \!\!\!\!\!\!\!\!\!\!\underset{v \in \mathit{reach}(\gamma, x)}{\bigstar}\!\!\!\!\!\!v\mapsto\gamma(v)$
+  \quad $\p{graph}(x, \gamma) \; \defeq \; \!\!\!\!\!\!\!\!\!\!\underset{\m{v} \in \mathit{reach}(\gamma, x)}{\bigstar}\!\!\!\!\!\!\m{v}\mapsto\gamma(\m{v})$.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%% Edit1: Qinxiang's proposal ends
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -324,7 +322,7 @@ The proof of the $<=$ direction requires care. The difficulty is that if two nod
 \]
 That is, they overlap either completely or not at all. In a Java-like memory model this property is automatic because pointers in such a model always point to the root/beginning of an object.  In contrast, in a C-like memory model such as in VST/CompCert, this property is not automatic because pointers can point anywhere.  In such a model, alignment is most easily enforced by storing graph nodes at addresses that are multiples of an appropriate size (\emph{e.g} this size is $16$ in Figure~\ref{fig:markgraph}).
 
-Some of our VST proofs, \emph{e.g.} for \li{find}, do not use fold/unfold, instead preferring to use the lemmas in~\S\ref{sec:ramifylib} directly.  Others, \emph{e.g.} \li{mark}, do---and it is helpful to have both options avilable. We also prove fold/unfold lemma for DAGs in which we get a $*$ between the root and its $**$-joined neighbors, rather than the $**$ present in \eqref{eqn:unfold_graph}.
+Some of our VST proofs, \emph{e.g.} for \li{find}, do not use fold/unfold, instead preferring to use the lemmas in~\S\ref{sec:ramifylib} directly.  Others, \emph{e.g.} \li{mark}, do, and it is helpful to have both options avilable. We also prove fold/unfold lemma for DAGs in which we get a clean $*$ between the root and its $**$-joined neighbors, rather than the $**$ present in \eqref{eqn:unfold_graph}.
 % (On the other hand, for HIP/SLEEK fold/unfold is vital, and it is heartening to know that the recursive relationship holds.  We also prove fold/unfold lemma for DAGs in which we get a $*$ between the root and its $**$-joined neighbors. % rather than the $**$ present in \eqref{eqn:unfold_graph}.
 
 
@@ -333,7 +331,7 @@ Some of our VST proofs, \emph{e.g.} for \li{find}, do not use fold/unfold, inste
 \input{libinfra_figure.tex}
 
 
-Many tools (e.g.\ Charge! \citep{bengtson:charge},
+Many tools (\emph{e.g.}\ Charge! \citep{bengtson:charge},
 Smallfoot \citep{berdine:smallfoot}, jStar \citep{distefanop08},
 HIP/SLEEK \citep{chin:hipsleek}) use the Direct Model to represent
 spatial predicates on the heap, but VST employs an unusually complex
@@ -341,10 +339,9 @@ Step-Indexed heap model in order to support an unusually rich program
 logic~\cite{appel:programlogics}.  Figure~\ref{fig:infra} shows the
 architecture of our spatial development.  We will explain our two
 interfaces momentarily, but for now observe that both heap models can
-instantiate both our interfaces, showing that we steer clear of
-specialized properties that are only available in the Step-Indexed
-Model. That is to say, we do not rely on any of its bells and
-whistles.
+instantiate both interfaces. That is to say, we do not rely on any of the
+bells, whistles, or specialized properties that are only available 
+in the Step-Indexed Model.
 
 We modularize our spatial library over 
 two interfaces: Core Logic and Supplementary Logic.
@@ -396,7 +393,7 @@ The $\bigstar$ Ramification box in the middle layer contains lemmas like the one
 {\underset{x\in A\cup B}{\bigstar} P(x) |- \! \underset{x\in A}{\bigstar} \! P(x) * \Big( \underset{x\in A'}{\bigstar} \! P(x) \! \wand \! \! \! \! \underset{x\in A' \cup B}{\bigstar} \! \! P(x)\Big)}{}
 \end{equation*}
 The above lemma expresses large-scale replacement, clearing the way to 
-cleanly establish a key graph-specific lemma.
+cleanly establish a key graph-specific fact:
 Lemma~\ref{ramify:bigstar}, which is 
 placed in the Graph Ramification box (top layer), was used on 
 lines~\ref{code:markram3} and~\ref{code:markram4} of 
@@ -438,7 +435,8 @@ Further, all our verifications of different graph algorithms use the proof rules
 }% end hide
 
 The Supplementary tower contains properties not used by most of the VST examples.
-This includes the fold/unfold relationship from \S\ref{sec:goodgraph}, facts
+This includes the fold/unfold relationship that we moved away from 
+in~\S\ref{sec:goodgraph}, facts
 about precision, \emph{etc}. These are currently included mostly for completeness,
 but do make our library more general should we wish to accommodate an alternate
 prover that needs separation logic facts about $**$,  $--o$, \emph{etc.}

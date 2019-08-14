@@ -19,7 +19,7 @@ developments, such as VST, that do not have any way to prove programs equivalent
 Hobor and Villard could not verify unmodified program code, modify program variables
 inside nested localization blocks, or handle multiple assignments in a single block as
 in lines~\ref{code:markbeforetripleramify}--\ref{code:markaftertripleramify} of
-figure~\ref{fig:markgraph}.  They avoided existentials in localized
+Figure~\ref{fig:markgraph}.  They avoided existentials in localized
 postconditions by defining all mathematical operations (\emph{e.g.} $\m{mark}$) as
 functions rather than as relations; this is fine for pen-and-paper, but painful in
 a mechanized setting wherein functions must be proven to terminate.
@@ -32,9 +32,9 @@ modular and versatile, and ships with hundreds of reusable definitions and theor
 
 Hobor and Villard erroneously defined spatial graphs
 recursively. Unfortunately, other members of the research
-community (\emph{e.g.}~\citet{raadvg15}) followed their lead.  We exposed this
-error~(\S\ref{sec:fixpointfail}) and provided a sound and rather general definition for
-\p{graph} that recovers fold/unfold reasoning~(\S\ref{sec:goodgraph}).  We developed a
+community (\emph{e.g.}~\citet{raadvg15}) followed their lead.  We expose this
+error~(\S\ref{sec:fixpointfail}) and provide a sound and rather general definition for
+\p{graph} that recovers fold/unfold reasoning~(\S\ref{sec:goodgraph}).  We develop a
 much more general and more modular set of related lemmas and connected our spatial
 reasoning to the verification framework of CompCert/VST~(\S\ref{sec:vst}).
 Our development is entirely
@@ -95,7 +95,7 @@ whereas the algorithms we have verified tend to have more of a
 code written in ML can take advantage of its high-level design, whereas
 code written in C is often interested in handling grungy systems tasks. For 
 example, references in ML cannot be null and do not support pointer arithmetic; 
-of course both are possible – and lead to nontrivial complications – in 
+of course both are possible---and lead to nontrivial complications---in 
 C. Accordingly, the CFML proofs benefit from ML’s cleaner computational model. 
 Our verifications are in C so we must contend with C’s memory model, pointer 
 arithmetic, significant scope for undefined behavior, and so forth.
@@ -111,7 +111,7 @@ version of union-find that uses an array of vertices rather than individually
 heap-allocated nodes. This 
 secondary verification then used \emph{exactly the same} mathematical proof of 
 functional correctness despite the radically different layout of spatial 
-memory! 
+memory.
 Our work does not verify the time complexity of union-find. When 
 we attempted to prove the necessary amortisation bounds we ran into an 
 overflow issue: it was impossible to prove that the rank would not exceed 
@@ -145,14 +145,14 @@ credits. The work of \citet{gueneau17}~indicates that CFML is exploring a connec
 with the certified CakeML compiler~\cite{cakeml}.
 
 While the tools above require substantial human guidance, 
-Bedrock is a more automated approach to the verification of 
-low level programs using separation logic in Coq~\cite{chlipala:bedrock}. 
+Bedrock~\cite{chlipala:bedrock} is a more automated approach to the verification of 
+low level programs using separation logic in Coq. 
 Bedrock leverages the fact that phrasing function 
 specifications in a \emph{computational} style 
 (in this case, inspired by functional programming) 
 leads to separation logic proof obligations that are quite automatable.
 It simplifies these obligations into pure mathematics using a 
-versatile custom tactic called \li{sep}, and then discharges those 
+custom workhorse tactic, and then discharges those 
 obligations using standard Coq automation.
 
 \paragraph{Other verification tools.} 
@@ -172,7 +172,7 @@ The most famous mechanically verified “graph theorem” is the Four Color
 Theorem~\cite{gonthier2005computer}; however the development actually uses
 hypermaps instead of graphs. In general most “mathematical graph” frameworks in 
 the literature~\cite{wong1991, chou1994, yamamoto1995formalization, rwpgt1998, yamamoto1998formalization, tamai2000formal, duprat2001coq, ridge2005graphs, nipkow2016, dijkstra_shortest_path-afp} were not used to verify real 
-code, for which they seem unsuitable. Verifying real code requires delicate concepts such as ``removing a subgraph'', ``null nodes'', and ``parallel edges'', and one of our contributions is that our framework is general enough to support such verification. 
+code, for which they seem unsuitable. Verifying real code requires delicate concepts such as removing a subgraph, null nodes, and parallel edges, and one of our contributions is that our framework is general enough to support such verification. 
 \citet{noschinski2015}~built a graph library in Isabelle/HOL whose formalization 
 is the closest to ours, 
 \emph{e.g.} supporting graphs with labeled and parallel arcs. 
@@ -196,8 +196,8 @@ a certified translation step added to CompCert's translation from Clight to asse
 GCminor makes explicit the specific invariants that the garbage collector
 relies upon, thus minimising errors due to the violation of invariants
 between the garbage collector and the mutator.
-\citet{gcexample2} annotate x86 code
-for two GCs by hand, and then use Boogie and the Z3 automated theorem prover
+\citet{gcexample2} annotated x86 code
+for two GCs by hand, and then used Boogie and the Z3 automated theorem prover
 to verify their correctness automatically.
 
 The closest piece of work to our certified GC is probably the excellent certified GC

@@ -3,7 +3,7 @@ in verifying programs that manipulate tree-shaped data structures.
 \citep{berdine:smallfoot,chin:hipsleek,jacobs:verifast,
 chlipala:bedrock,bengtson:charge,appel:programlogics}.
 Unfortunately, programs that manipulate graph-shaped data structures
-(i.e. structures with \emph{intrinsic sharing}) have proved harder to verify.
+(\emph{i.e.} structures with \emph{intrinsic sharing}) have proved harder to verify.
 Indeed, such programs were formidable enough that a number of the early
 landmark results in separation logic devoted substantial effort to verifying
 single examples such as Schorr-Waite~\cite{hongseok:phd} or
@@ -31,7 +31,7 @@ Finally, our techniques \emph{scale} well beyond short toy programs: we certify 
 correctness of a generational garbage collector for the CertiCoq
 project~\cite{certicoqpaper} ($\approx400$ rather devilish lines of C).
 
-We proceed in three steps. First, we develop a ``mathematical graph library'' that is general enough to reason about a wide variety of algorithms and expressive enough to describe the behavior of these algorithms in real machines.  We modularize this library carefully so that common ideas---\emph{e.g.}~subgraphs, reachability, and isomorphism---can be efficiently reused
+We proceed in three steps. First, we develop a mathematical graph library that is general enough to reason about a wide variety of algorithms and expressive enough to describe the behavior of these algorithms in real machines.  We modularize this library carefully so that common ideas---\emph{e.g.}~subgraphs, reachability, and isomorphism---can be efficiently reused
 in different algorithms.  Second, we use separation logic to express how these abstract graphs
 are actualized in the heap as concrete graphs in a way that facilitates the reuse of key definitions and theorems across algorithms.  Third, we develop a notion of \emph{localization blocks} that
 enables modular reasoning in our Hoare proofs, even in the presence of the
@@ -117,5 +117,5 @@ We also document statistics related to our overall development.
 \item[\S\ref{sec:conclusion}] We discuss directions for future work and conclude.
 \end{itemize}
 All of our results are machine checked in Coq and are available as an artifact online.
-A version of the paper that features three additional appendices is available 
+A version of this paper featuring three additional appendices is available 
 at \href{www.example.com}{www.example.com}.

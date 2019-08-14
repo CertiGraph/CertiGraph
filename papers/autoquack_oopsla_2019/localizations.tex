@@ -24,6 +24,21 @@ a program that marks a cyclic graph.
 \subsection{Soundness of $\infrulestyle{Localize}$}
 \label{sec:rulessound}
 
+In Figure~\ref{fig:rampqproofs} we put proof sketches that show that
+\infrulestyle{Localize} and \infrulestyle{Frame} are equivalent.  They require a
+little care with quantifiers, but are in essence straightforward.
+In the latter proof set $R \defeq F$, choose $x_f$ fresh, and range the quantifiers
+over the unit type.  Notice that in both directions the restriction on modified
+program variables is satisfied: in the first proof, \textsc{Localize}'s side
+condition that $\FV(R) \cap \MV(c) = \emptyset$ is exactly what \textsc{Frame} needs;
+in the second, \textsc{Frame}'s side condition that $\FV(F) \cap \MV(c) = \emptyset$
+is exactly what \textsc{Localize} needs (since $R \defeq F$).
+The equivalence between \textsc{Frame} and \textsc{Localize} means that %is important because
+our techniques will be sound in any separation logic.
+
+\paragraph{Note on notation.} Localization blocks can safely nest. When the ramification entailment is not noteworthy we can omit the $\ramify(i)$ reference in pen-and-paper proofs.  When we wish to save vertical space we write $\{ G_1 \} \searrow \{ L_1 \}$ and $\{ G_2 \} \swarrow \{ L_2 \}$.
+Since \infrulestyle{Localize} can derive \infrulestyle{Frame}, our notation also clarifies pen-and-paper uses of \infrulestyle{Frame}, especially in multi-line contexts with nontrivial frame~$F$.
+
 \begin{figure*}
 {\footnotesize
 \[
@@ -59,20 +74,6 @@ a program that marks a cyclic graph.
 \label{fig:rampqproofs}
 \end{figure*}
 
-In Figure~\ref{fig:rampqproofs} we put proof sketches that show that
-\infrulestyle{Localize} and \infrulestyle{Frame} are equivalent.  They require a
-little care with quantifiers, but are in essence straightforward.
-In the latter proof set $R \defeq F$, choose $x_f$ fresh, and range the quantifiers
-over the unit type.  Notice that in both directions the restriction on modified
-program variables is satisfied: in the first proof, \textsc{Localize}'s side
-condition that $\FV(R) \cap \MV(c) = \emptyset$ is exactly what \textsc{Frame} needs;
-in the second, \textsc{Frame}'s side condition that $\FV(F) \cap \MV(c) = \emptyset$
-is exactly what \textsc{Localize} needs (since $R \defeq F$).
-The equivalence between \textsc{Frame} and \textsc{Localize} means that %is important because
-our techniques will be sound in any separation logic.
-
-\paragraph{Note on notation.} Localization blocks can safely nest. When the ramification entailment is not noteworthy we can omit the $\ramify(i)$ reference in pen-and-paper proofs.  When we wish to save vertical space we write $\{ G_1 \} \searrow \{ L_1 \}$ and $\{ G_2 \} \swarrow \{ L_2 \}$.
-Since \infrulestyle{Localize} can derive \infrulestyle{Frame}, our notation also clarifies pen-and-paper uses of \infrulestyle{Frame}, especially in multi-line contexts with nontrivial frame~$F$.
 \hide{, for which the current popular notation to express \infrulestyle{Frame} involves a liberal use of
 ellipses, \emph{e.g.}:
 
@@ -176,7 +177,7 @@ The new decorated program is below.
 \end{lstlisting}
 
 Notice that lines~\ref{code:locexamplepresw} and~\ref{code:locexamplepostsw}
-are exactly in the form $\exists x_f. \hat{\hat{L_2}}(x_f)$ and $\exists x_f. \hat{\hat{G_2}}(x_f)$, \emph{i.e.} exactly in the format permitted by \textsc{Localize}, where $\hat{\hat{L_2}}(x_f) \defeq (x_f = \tx{x}) /| \hat{L_2}(x_f)$, \emph{i.e.} $(x_f = \tx{x}) /| (x_f \! = \! 6 /| C)$. $\hat{\hat{G_2}}(x_f)$ is similar. % \defeq (x_f = \tx{x}) /| (x_f \! = \! 6 /| C)$
+are exactly in the form $\exists x_f. \hat{\hat{L_2}}(x_f)$ and $\exists x_f. \hat{\hat{G_2}}(x_f)$, \emph{i.e.} exactly in the format permitted by \textsc{Localize}, where $\hat{\hat{L_2}}(x_f) \defeq (x_f = \tx{x}) /| \hat{L_2}(x_f)$, \emph{i.e.} $(x_f = \tx{x}) /| (x_f \! = \! 6 /| C)$. $\hat{\hat{G_2}}(x_f)$~is similar. % \defeq (x_f = \tx{x}) /| (x_f \! = \! 6 /| C)$
 Now apply \textsc{Localize} with $R \defeq \forall x_f.~\hat{L_2}(x_f) --* \hat{G_2}(x_f)$, \emph{i.e.} $\forall x_f.~(x_f \! = \! 6 /| C) --* (x_f \! = \! 6 /| D)$.  By construction, $R$
 is free from all program variables modified by $c$, so \textsc{Localize}'s side condition is
 satisfied.  All that remains is to prove \textsc{Localize}'s two entailments.  Let us consider
@@ -223,7 +224,7 @@ hinged on the fact that the existential witness to the variable $x_f$ in the loc
 $L_2$ was carried over to the corresponding existential witness in the global postcondition---have
 other uses as well.  To illustrate them, and to demonstrate other aspects of our system, in particular our ability to explore a graph recursively via fold/unfold, we consider another example.
 
-In Figure~\ref{fig:markgraph} we put the code and proof sketch of the classic \li{mark} algorithm that visits and colors every reachable node in a heap-represented graph.  The \li{mark} example contrasts from \li{find} in several respects.  First, it modifies the labels of nodes instead of the edges.  Second, each node has two outgoing edges rather than one, so the graph can have a more complex shape.  Third, the graph can be nontrivially cyclic.  Lastly, the specification we certify (lines \ref{code:markstart} and \ref{code:markend}) is \emph{local} rather than \emph{global}:
+In Figure~\ref{fig:markgraph} we put the code and proof sketch of the classic \li{mark} algorithm that visits and colors every reachable node in a heap-represented graph.  The \li{mark} example contrasts from \li{find} in several respects.  First, it modifies the labels of nodes instead of the edges.  Second, each node has two outgoing edges rather than one, so the graph can have a more complex shape.  Third, the graph can be nontrivially cyclic.  Fourth, the specification we certify (lines \ref{code:markstart} and \ref{code:markend}) is \emph{local} rather than \emph{global}:
 \vspace*{-1ex}
 \[
 \{\p{m\_graph}(\li{x},\gamma)\}~\li{mark(x)}~\{\exists \gamma'.~ \p{m\_graph}(\li{x},\gamma') /| \m{mark}(\gamma, \li{x}, \gamma')\}
@@ -235,7 +236,7 @@ This fold/unfold relationship deserves attention.
 Note the use of the ``overlapping conjunction''~$\ocon$ of separation logic; informally $P ** Q$ means that $P$ and $Q$ may overlap
 in the heap (\emph{e.g.}, nodes in the left subgraph can also be in the right subgraph
 or even be the root $x$).  The unspecified sharing indicated by the
-$\ocon$ connective\footnote{Recall that the
+$\ocon$ connective\footnote{The
 standard semantics of the separation logic connectives used in this paper are in
 Figure~\ref{fig:seplogsem} on page~\pageref{fig:seplogsem}.} is part of why graph-manipulating algorithms are so hard to verify
 (\emph{e.g.}, it is hard to apply the \infrulestyle{Frame} rule).
@@ -250,7 +251,7 @@ Just as with \li{find}, the postcondition of \li{mark} is specified \emph{relati
 Theoretically, relations are preferable because they are more general.  For example, relations allow ``inputs'' to have no ``outputs'' (\emph{i.e.} be partial) or alternatively have many outputs (\emph{i.e.} be nondeterministic).  Nondeterminism can be quite useful when specifying programs; for example, the CertiCoq garbage collector (\S\ref{sec:certigc}) is specified nondeterministically to avoid, among other things, specifying how \li{malloc} allocates fresh blocks of memory.  Relations are also preferable to functions because they are more compositional.
 %We take advantage of compositionality by using $\m{mark}(\gamma,x,\gamma') /| \ldots$ to specify both our ``spanning tree'' and {\color{blue}``graph copy''} algorithms in~\S\ref{sec:application}, which also need to mark nodes in order to carry out their primary tasks.
 
-Practically, it is painful to define computational functions over graphs in a proof assistant like Coq.  For example, Coq requires that all functions terminate, a nontrivial proof obligation over cyclic structures like graphs, but our verification of \li{mark} is only for partial correctness.  Defining relations is much easier because \emph{e.g.} one can use quantifiers and does not have to prove termination.
+Practically, it is painful to define computational functions over graphs in a proof assistant like Coq.  For example, Coq requires that all functions terminate---a nontrivial proof obligation over cyclic structures like graphs---but our verification of \li{mark} is only for partial correctness.  Defining relations is much easier because \emph{e.g.} one can use quantifiers and does not have to prove termination.
 The $\m{mark}$ and $\m{mark1}$ relations we use are defined straightforwardly at the bottom of Figure~\ref{fig:markgraph}.
 
 The highlights of the proof are as follows.

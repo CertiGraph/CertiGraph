@@ -2,7 +2,7 @@ Before jumping into an involved discussion of our three-part recipe,
 we first~(\S\ref{sec:unionfind}) build intuition by showing how 
 they are applied to verify a well-known algorithm. 
 We then~(\S\ref{sec:localblocks}) explain our new \emph{localization blocks}. 
-Finally~(\S\ref{sec:application}), we briefly discuss some additional 
+Finally~(\S\ref{sec:application}), we briefly discuss the other 
 examples we have handled. 
 %Our flagship example, the garbage collector for the 
 %CertiCoq project, will be covered in~\S\ref{sec:certigc}.
@@ -40,8 +40,8 @@ in \li{find}).  We detail mathematical graphs in~\S\ref{sec:mathgraph}.
 Spatial predicates are written in \textsf{sans-serif}.
 Each node $\m{v} \in V(\gamma)$ is
 represented in the heap by $\m{v} \mapsto \gamma(\m{v})$, %, \emph{i.e.}  = (r,p)$},
-where we use the usual pen-and-paper
-trick of writing \emph{e.g.} $\m{v} \mapsto r,pa$ to mean
+where we employ the usual pen-and-paper
+shorthand of writing \emph{e.g.} $\m{v} \mapsto r,pa$ to mean
 \mbox{$\big(\m{v} |-> r\big) * \big((\m{v} + \m{sizeof}(\li{unsigned int})) |-> pa\big)$} in the character-addressed C memory model.
 %\marginpar{\tiny \color{blue}Bigstar coming in unexplained.}
 The whole graph (disjoint-set forest) is represented by
@@ -54,13 +54,14 @@ The invariants at
 each program point are natural despite only minor tidying from our machine-checked
 proof.  We also enjoy good separation between the spatial predicates and pure
 predicates.  All of this is despite verifying real C code, which entails quite a number
-of grungy details. As one example, we will examine some grunginess that occurs in the
-verification of line~\ref{code:ufif} shortly.
+of grungy details. As one example, we will shortly 
+examine some grunginess that occurs in the
+verification of line~\ref{code:ufif}.
 
 The precondition, stated on line~\ref{code:findstart}, says that we have a disjoint-set forest representing the abstract graph~$\gamma$, and that \li{x} is a valid vertex in~$\gamma$.  The postcondition is on line~\ref{code:findend}: the heap contains a new union-find graph~$\gamma''$, and \li{find} returns the node \m{rt}.
 We specify that $\m{rt}$
-is the root (ultimate parent) of~\li{x} with the pure relation $\m{uf\_root}$.
-The relation $\m{findS}$, which conservatively approximates the action of path
+is the root (ultimate parent) of~\li{x} with the mathematical relation $\m{uf\_root}$.
+The mathematical relation $\m{findS}$, which conservatively approximates the action of path
 compression, relates the final graph~$\gamma''$ to the original graph~$\gamma$.
 The formal definitions for the concepts used in $\m{uf\_root}$ and $\m{findS}$
 will be given in~\S\ref{sec:mathgraph}, but briefly:
@@ -105,8 +106,10 @@ the pointer comparison is defined in C.
 \label{sec:localblocks}
 
 It is time to explain the non-obvious jumps in reasoning bracketed by the
-symbols $\searrow \text{, } \ramify(i)$, and $\swarrow$
-(lines~\ref{code:ufbefram1}--\ref{code:ufaftram1} and~\ref{code:ufbefram2}--\ref{code:ufaftram2}). We call such bracketed sets of lines ``localization blocks''.
+symbols $\searrow~\text{, }~\ramify(i)$,~and~$\swarrow$
+(lines~\ref{code:ufbefram1}--\ref{code:ufaftram1} and~\ref{code:ufbefram2}--\ref{code:ufaftram2}). We call such bracketed sets of lines ``localization blocks'',
+and the $\searrow$~and~$\swarrow$ symbols formally indicate an application
+of the \textsc{Localize} rule (Equation \ref{eq:localize} from page~\pageref{eq:localize}).
 As explained above, the verification of the command itself is entirely
 straightforward given its immediate neighbors
 (lines~\ref{code:befparentfind}--\ref{code:aftparentfind}
@@ -117,8 +120,7 @@ leads to line~\ref{code:ufaftram1}.
 To give intuition, a localization block allows us to zoom in from a larger
 ``global'' context to a smaller ``local'' one, and, after verifying some commands
 locally and arriving at a local postcondition, to zoom back out to the global
-context. The $\searrow$ and $\swarrow$ symbols formally indicate an application
-of the \textsc{Localize} rule (Equation \ref{eq:localize} from page~\pageref{eq:localize}).
+context. 
 
 %\marginpar{\tiny \color{blue} repetition}
 Recall that \textsc{Localize} connects some ``global'' pre- and postconditions $G_1$ and $G_2$
@@ -142,7 +144,7 @@ $R \defeq L_2 --* G_2$, which makes the second entailment trivial, and leaves us
 The first check is the \emph{ramification entailment}, $G_1 |- L_1 * (L_2 --* G_2)$,
 which asks whether replacing $L_1$ with $L_2$ inside $G_1$ yields $G_2$.
 This is a nontrivial proof obligation both because
-we must prove that $L_1$ is located inside $G_1$, and and that
+we must prove that $L_1$ is located inside $G_1$, and that
 ``replacing'' $L_1$ with $L_2$ yields $G_2$.
 Henceforth, we refer to the ramification entailment of a localization block by
 using the symbol $\ramify(i)$ to connect it to a relevant equation.  Accordingly, $\ramify(\ref{findram1})$ refers to the ramification entailment
@@ -239,7 +241,7 @@ is to show that this mathematical update can be done properly, \emph{i.e.} from
 %\marginpar{\tiny \color{blue} Need to come to some decision re: the typesetting.}
 $\li{x} \in V(\gamma) /| \gamma(\li{x}) = (r,\m{pa})$ and 
 $\li{x} \neq \m{pa} /| \m{findS}(\gamma,\m{pa},\gamma') /| \m{uf\_root}(\gamma',\m{pa},\m{rt})$
-we can prove
+we must prove
 \hide{\[
 \li{x} \in V(\gamma) /| \gamma(\li{x}) = (r,\m{pa}) \quad \text{ and } \quad
 \li{x} \neq \m{pa} /|
@@ -253,7 +255,6 @@ we can prove
 This lemma captures the essence of both finding the root and doing path compression: after compressing your parent and finding its root, you can path compress yourself by rerouting your own parent pointer to your (soon-to-be former) parent's root.  The existential in the goal is nontrivial
 exactly because the update $[x -> (r,rt)]\gamma'$ is not always kosher.
 This lemma requires some effort to prove, but is completely isolated from the grungy details of C.
-
 With the second localization block complete, the remainder of the verification is straightforward.
 
 
@@ -268,13 +269,13 @@ arrays rather than nodes. The two programs look different spatially, but
 use exactly the same abstract mathematical definitions,
 \emph{e.g.} for $\m{findS}$. 
 This suggests that we have separated the abstract algorithmic 
-reasoning from the specific details of heap representation, as will be explained
+reasoning from the specific details of heap representation, as we will explain
 in~\S\ref{sec:vst}.
 
 We discuss our verification of a graph \li{mark}ing algorithm 
-in~\S\ref{sec:linkedex}. We also verify a version of \li{mark} 
+in~\S\ref{sec:localizations}. We also verify a version of \li{mark} 
 for directed acyclic graphs (DAGs), which is both easier and harder than 
-marking cyclic graphs. To briefly give intuition about the example-specific 
+marking cyclic graphs. To briefly give intuition about the DAG-specific 
 challenge: on the one hand, we get genuine separation
 between the root and its children; on the other hand, we need to maintain acyclicity if
 we modify the link structure.
@@ -282,11 +283,9 @@ Further, as an example of more aggressive modifications to the link structure
 of a graph, we verify \li{spanning}, which prunes a graph into its 
 spanning tree. 
 
-We elide discussion about \li{spanning} and DAG \li{mark} 
-in the interest of space, but the verification code and annotated proof sketches 
-are available as online resources.
-Our flagship example, the CertiCoq garbage collector, will be discussed in~\S\ref{sec:certigc}.
-
+We elide discussions about \li{spanning} and DAG \li{mark} 
+in the interest of space, but the verification code is available in our artifact.
+Our flagship example, the CertiCoq garbage collector, is in~\S\ref{sec:certigc}.
 
 \hide{
 (Assume until~\S\ref{sec:existentials} that $L_2$ and $G_2$ do not contain ``fancy'' existentials; in this case the explicit existentials in \textsc{Localize} can be ,
