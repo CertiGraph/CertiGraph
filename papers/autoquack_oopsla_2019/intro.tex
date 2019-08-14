@@ -18,7 +18,7 @@ to the verification of other graph-manipulating programs.
 
 In contrast, we present a toolkit for verifying graph-manipulating programs in a
 machine-checked context. Our techniques are \emph{general} in that they handle a diverse
-range of graph-manipulating programs, and \emph{modular} in that they allow code
+range of programs, and \emph{modular} in that they allow code
 reuse (\emph{e.g.} facts about reachability) and encourage separation of concerns
 (\emph{e.g.} between abstract mathematical graphs and their concrete representation
 in the heap).
@@ -26,8 +26,7 @@ Our techniques are \emph{powerful} enough to reason about real C code as compile
 CompCert~\cite{leroy:compcert}, and also
 \emph{lightweight} enough to integrate into the Verified
 Software Toolchain (VST)~\cite{appel:programlogics} without major reengineering.
-Both CompCert and VST are distributed as optional packages in the CoqIDE installer and through
-opam, so they have a sizable userbase that can take advantage of our techniques. %``out of the box''.
+CompCert and VST are distributed via opam and the CoqIDE installer, so they have a sizable userbase that can take advantage of our techniques. %``out of the box''.
 Finally, our techniques \emph{scale} well beyond short toy programs: we certify the
 correctness of a generational garbage collector for the CertiCoq
 project~\cite{certicoqpaper} ($\approx400$ rather devilish lines of C).
@@ -103,12 +102,12 @@ existentials in postconditions.
 
 %{\color{magenta}Existentials for fun and profit: we upgrade Hobor and Villard's \infrulestyle{Ramify} rule to handle both modified program variables and existential quantifiers in postconditions more gracefully.
 %    We briefly discuss four additional VST-certified examples to give a sense of the breadth of algorithms we can verify: marking a DAG, marking a graph, an array-based version of union-find, and pruning a graph into a spanning tree.} %, and making a structure-preserving copy of a graph.
-\item[\S\ref{sec:mathgraph}] We develop a general framework of mathematical graphs powerful enough to support realistic verification in a mechanized context.  We give a sampling of key definitions and show how our framework is modularized to facilitate code reuse.
+\item[\S\ref{sec:mathgraph}] We develop a general and modular framework of mathematical graphs powerful enough to support realistic verification in a mechanized context.  We give a sampling of key definitions.
 \item[\S\ref{sec:spacegraph}] We suggest that the Knaster-Tarski fixpoint~\cite{tarski:fixpoint} cannot define a usable separation logic graph predicate.  We propose a better definition for general spatial graphs that still enjoys a ``recursive'' fold/unfold.  We prove general theorems about spatial graphs that are 
 organized in a modular way that can be utilized in multiple flavors of separation logic. %{\color{magenta} Line about modularity?}
 %\item[\S\ref{sec:hipsleek}] We explain how we modified HIP/SLEEK to introduce ramifications when programs modify data structures with intrinsic sharing and to automatically discharge the associated obligations using Coq-verified external lemmas.
 %\item[\S\ref{sec:vst}] We explain how we integrated ramification into VST by developing .
-\item[\S\ref{sec:certigc}] We discuss the certification of the CertiCoq garbage collector (GC). While certifying this GC we identify two places where the semantics of C is too weak to define an OCaml-style GC. We also find and fix a rather subtle overflow error in the original C code for the GC, justifying the effort of developing the machine-checked proof.
+\item[\S\ref{sec:certigc}] We discuss our flagship example, the certification of the CertiCoq garbage collector (GC). We identify two places where the semantics of C is too weak to define an OCaml-style GC. We also find and fix a rather subtle overflow error in the original C code for the GC, thereby justifying the effort of developing machine-checked proofs of correctness.
 %\marginpar{\tiny \color{blue} Bit funny to put these two in the same section.}
 \item[\S\ref{sec:development}] We discuss how our techniques are integrated into the
 ``Floyd'' module of VST, a separation-logic based engine to help users verify
@@ -117,4 +116,6 @@ We also document statistics related to our overall development.
 \item[\S\ref{sec:related}] We discuss related work.
 \item[\S\ref{sec:conclusion}] We discuss directions for future work and conclude.
 \end{itemize}
-All of our results are machine checked in Coq and available at~\cite{github}.
+All of our results are machine checked in Coq and are available as an artifact online.
+A version of the paper that features three additional appendices is available 
+at \href{www.example.com}{www.example.com}.
