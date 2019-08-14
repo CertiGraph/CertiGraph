@@ -176,6 +176,23 @@ Proof.
   apply core_unit.
 Qed.
 
+Lemma precise_ocon_self_d {A} {JA: Join A} {PA: Perm_alg A} {SA: Sep_alg A}
+      {DA: Disj_alg A}: forall P, precise P -> P = ocon P P.
+Proof.
+  intros. apply pred_ext.
+  - apply ocon_contain_d. repeat intro.
+    destruct (join_ex_identity a) as [e [? ?]]. red in u. apply join_comm in u.
+    exists a, e. split; auto.
+  - repeat intro. destruct_ocon H0 a. try_join a2 a3 a23'. equate_join a23 a23'.
+    equate_precise_direct a12 a23.
+    assert (identity a1). {
+      assertSub a1 a12 H5. eapply join_sub_joins_identity; eauto. }
+    apply H4 in H0. subst.
+    assert (identity a3). {
+      assertSub a3 a12 H0. eapply join_sub_joins_identity; eauto. }
+    apply join_comm in H2. apply H0 in H2. now subst.
+Qed.
+
 Lemma precise_ocon_contain_d {A} {JA: Join A} {PA: Perm_alg A} {SA: Sep_alg A} {CA: Canc_alg A} {DA: Disj_alg A} : forall P Q, precise P -> Q |-- P * TT -> Q = ocon P Q.
 Proof.
   intros; apply pred_ext; [apply ocon_contain_d; auto |].
@@ -275,7 +292,7 @@ Qed.
 
 **************************************************************************)
 
-Lemma disj_ocon_right_d {A: Type} {JA: Join A} {SA: Sep_alg A} {PA : Perm_alg A} {CA: Canc_alg A} {CrA: Cross_alg A} {TA: Trip_alg A}:
+Lemma disj_ocon_right_d {A: Type} {JA: Join A} {SA: Sep_alg A} {PA : Perm_alg A} {CrA: Cross_alg A} {TA: Trip_alg A}:
   forall P Q R, disjointed P Q -> disjointed P R -> disjointed P (ocon Q R).
 Proof.
   unfold ocon, disjointed, precise; simpl.

@@ -5,7 +5,7 @@ Require Import RamifyCoq.msl_ext.ramify_tactics.
 
 Set Implicit Arguments.
 
-Lemma join_identity {A} {JA: Join A}{PA: Perm_alg A}{SA: Sep_alg A}{CA: Canc_alg A}:
+Lemma join_identity {A} {JA: Join A}{PA: Perm_alg A}{SA: Sep_alg A}:
   forall a b c, join a b c -> identity a -> identity b -> identity c.
 Proof.
   intros.

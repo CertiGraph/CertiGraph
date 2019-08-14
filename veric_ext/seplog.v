@@ -13,6 +13,7 @@ Require Import VST.veric.tycontext.
 Require Import VST.veric.expr.
 Require Import VST.veric.address_conflict.
 Require Import VST.veric.seplog.
+Require Import VST.veric.mapsto_memory_block.
 
 Require Import VST.msl.msl_standard.
 Require Import VST.msl.alg_seplog.
@@ -20,8 +21,6 @@ Require Import RamifyCoq.msl_ext.alg_seplog.
 Require Import RamifyCoq.veric_ext.res_predicates.
 
 Local Open Scope pred.
-
-(*
 
 Lemma exp_mapsto_precise: forall sh t p, precise (EX v: val, mapsto sh t p v).
 Proof.
@@ -41,8 +40,6 @@ Proof.
     - apply exp_left; intro. apply andp_left2. auto.
     - apply nonlock_permission_bytes_precise.
 Qed.
-
- *)
 
 Definition BV_sizeof t :=
   match access_mode t with
