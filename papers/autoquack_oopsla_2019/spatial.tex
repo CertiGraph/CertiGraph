@@ -17,7 +17,7 @@ settings~(\S\ref{sec:ramifylib}).
 
 \input{seplogsem_figure.tex}
 
-\subsection{Separation logic in tree-manipulating programs}
+\subsection{Separation Logic in Tree-Manipulating Programs}
 \label{sec:seplogtrees}
 
 Figure~\ref{fig:seplogsem} shows the standard semantic models for the separation logic connectives using a join relation $\oplus$ on an underlying separation algebra~\cite{dockins09}. In recent works \citep{o2001local, o2012primer}
@@ -35,7 +35,7 @@ with an additional parameter: the mathematical tree $\tau$.
     \end{split}
 \end{equation}
 
-The mathematical tree $\tau$ is defined as an expression to encode the
+The mathematical tree $\tau$ encodes the
 shape of a binary tree. It is either an $\mathsf{atom}$ or a pair of
 tree encodings. For example,
 $\langle \mathsf{atom}, \langle \langle \mathsf{atom}, \mathsf{atom} \rangle, \mathsf{atom} \rangle \rangle$
@@ -66,12 +66,12 @@ without worrying about the effect on the rest of the tree.
 In the figure we show that manipulating the subtree under 
 root~$\m{v}$ does not affect the rest of the tree.
 
-Things become more complicated when it comes to graphs.
+Graphs are more complicated.
 Consider the right part of Figure~\ref{fig:bin_tree_graph},
 which shows a bigraph. 
 Defining a recursive predicate in the style of \eqref{def:tree},
 \emph{i.e.} using the separating conjunction~$\scon$, is a bad idea: 
-a single node can be shared arbitrarily, and so finding a suitable 
+a node can be shared arbitrarily, and so finding a suitable 
 \infrulestyle{frame} is difficult. 
 In the figure we show that manipulating the subgraph reachable 
 from~$\m{w}$ causes an unexpected node to be affected.
@@ -94,7 +94,7 @@ from~$\m{w}$ causes an unexpected node to be affected.
 \end{minipage}
 \end{figure}
 
-\subsection{Recursive definitions yield poor \p{graph} predicates}\label{sec:fixpointfail}
+\subsection{Recursive Definitions Yield Poor \p{graph} Predicates}\label{sec:fixpointfail}
 
 \newcommand{\graphkt}{\p{graph}_T}
 \newcommand{\grapham}{\p{graph}_A}
@@ -246,7 +246,7 @@ See Figure \ref{fig:badcycle} for an attempt to prove the entailment $100 |-> 42
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 
-\subsection{Defining a good \p{graph} predicate}\label{sec:goodgraph}
+\subsection{Defining a Good \p{graph} Predicate}\label{sec:goodgraph}
 
 Rather than trying to define \p{graph} as a recursive fixpoint,
 we will instead give it a flat structure.  Graphs in separation
