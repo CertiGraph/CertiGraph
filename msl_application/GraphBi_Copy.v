@@ -110,7 +110,21 @@ Lemma root_stable_ramify: forall (g: Graph) (x: addr) (gx: addr * addr * addr),
       (vertex_at x gx -* reachable_vertices_at x g)).
 Proof. intros; apply va_reachable_root_stable_ramify; auto. Qed.
 
-Lemma root_update_ramify: forall (g: Graph) (x x0: addr) (lx: addr) (gx gx': addr * addr * addr) F,
+Lemma root_update_ramify1: forall (g: Graph) (x x0: addr) (lx: addr) (gx gx': addr * addr * addr),
+  vvalid g x ->
+  vertices_at (Intersection _ (vvalid (initial_copied_Graph x x0 g)) (fun u : addr => x0 <> u)) (initial_copied_Graph x x0 g) = emp.
+Proof.
+  intros.
+    erewrite <- vertices_at_False.
+    apply vertices_at_Same_set.
+    rewrite Same_set_spec; intros ?.
+Transparent initial_copied_Graph. simpl. Opaque initial_copied_Graph.
+    unfold update_vlabel.
+    if_tac; [| congruence].
+    split; [intros [? ?]; congruence | tauto].
+Qed.
+
+Lemma root_update_ramify2: forall (g: Graph) (x x0: addr) (lx: addr) (gx gx': addr * addr * addr) F,
   vgamma g x = gx ->
   vgamma (Graph_vgen g x lx) x = gx' ->
   vvalid g x ->
@@ -118,13 +132,30 @@ Lemma root_update_ramify: forall (g: Graph) (x x0: addr) (lx: addr) (gx gx': add
     (F * reachable_vertices_at x g)
     (vertex_at x gx *
       (vertex_at x gx' -*
-       F * (vertices_at (Intersection _ (vvalid (initial_copied_Graph x x0 g)) (fun u => x0 <> u)) (initial_copied_Graph x x0 g) * reachable_vertices_at x (Graph_vgen g x lx)))).
+       F * (emp * reachable_vertices_at x (Graph_vgen g x lx)))).
 Proof.
   intros.
   rewrite !(sepcon_comm F).
   apply RAMIF_PLAIN.frame.
-  assert (vertices_at (Intersection _ (vvalid (initial_copied_Graph x x0 g)) (fun u : addr => x0 <> u)) (initial_copied_Graph x x0 g) = emp).
-  1: {
+  rewrite emp_sepcon.
+  apply va_reachable_root_update_ramify; auto.
+Qed.
+
+Lemma root_update_ramify (* {sSGG_Bi': sPointwiseGraph_Graph_Bi addr (addr * LR)} *): forall (g: Graph) (x x0: addr) (lx: addr) (gx gx': addr * addr * addr) F,
+  vgamma g x = gx ->
+  vgamma (Graph_vgen g x lx) x = gx' ->
+  vvalid g x ->
+  @derives pred _
+    (F * @reachable_vertices_at _ _ _ _ (@SGBA pSGG_Bi) _ _ _ (@SGC_Bi pSGG_Bi _ _ _) _ (@SGP pSGG_Bi _ _ sSGG_Bi) (@SGA pSGG_Bi _ _ sSGG_Bi) x g)
+    (vertex_at x gx *
+      (vertex_at x gx' -*
+       F * (@vertices_at _ _ _ _ (@SGBA pSGG_Bi) _ (@SGP pSGG_Bi _ _ sSGG_Bi) _ (Intersection _ (vvalid (initial_copied_Graph x x0 g)) (fun u : addr => x0 <> u)) (initial_copied_Graph x x0 g) * reachable_vertices_at x (Graph_vgen g x lx)))).
+Proof.
+  intros.
+  rewrite !(sepcon_comm F).
+  apply RAMIF_PLAIN.frame.
+  assert (@vertices_at _ _ _ _ (@SGBA pSGG_Bi) _ (@SGP pSGG_Bi _ _ sSGG_Bi) _ (Intersection _ (vvalid (initial_copied_Graph x x0 g)) (fun u : addr => x0 <> u)) (initial_copied_Graph x x0 g) = emp).
+  {
     erewrite <- vertices_at_False.
     apply vertices_at_Same_set.
     rewrite Same_set_spec; intros ?.
@@ -136,7 +167,7 @@ Transparent initial_copied_Graph. simpl. Opaque initial_copied_Graph.
   rewrite H2, emp_sepcon.
   apply va_reachable_root_update_ramify; auto.
 Qed.
-
+        
 Lemma not_null_copy1: forall (G: Graph) (x x0: addr) l r,
   vgamma G x = (null, l, r) ->
   vvalid G x ->
@@ -207,7 +238,7 @@ Proof.
   eapply gamma_right_weak_valid; eauto.
 Qed.
 
-Lemma graph_ramify_left: forall (g g1: Graph) (g1': LGraph) (x l r: addr) (F1 F2: pred),
+Lemma graph_ramify_left: forall (g g1: Graph) (g1': LGraph) (x l r: addr) (F1 F2: pred) F3,
   vvalid g x ->
   vgamma g x = (null, l, r) ->
   vcopy1 x g g1 g1' ->
@@ -215,8 +246,8 @@ Lemma graph_ramify_left: forall (g g1: Graph) (g1': LGraph) (x l r: addr) (F1 F2
   reachable_vertices_at l g1 *
    (ALL a: Graph' * Graph * addr,
      !! (copy l g1 (snd (fst a)) (fst (fst a)) /\ (l = null /\ snd a = null \/ snd a = LocalGraphCopy.vmap (snd (fst a)) l)) -->
-     (reachable_vertices_at l (snd (fst a)) * reachable_vertices_at (snd a) (fst (fst a)) -*
-      F1 * (F2 * (reachable_vertices_at x (snd (fst a)) * reachable_vertices_at (snd a) (fst (fst a)))))).
+     (reachable_vertices_at l (snd (fst a)) * F3 (snd a) (fst (fst a)) -*
+      F1 * (F2 * (reachable_vertices_at x (snd (fst a)) * F3 (snd a) (fst (fst a)))))).
 Proof.
   intros.
   destruct H1 as [? [? ?]].
@@ -227,7 +258,7 @@ Proof.
     replace A with
     (fun p : Graph' * Graph * addr =>
             reachable_vertices_at x (snd (fst p)) *
-            reachable_vertices_at (snd p) (fst (fst p)) * (F1 * F2)) by
+            F3 (snd p) (fst (fst p)) * (F1 * F2)) by
     (extensionality p; rewrite <- (sepcon_assoc F1 F2), (sepcon_comm _ (F1 * F2)); auto)
   end.
   apply RAMIF_Q'.frame; [auto |].
@@ -271,7 +302,7 @@ Proof.
       apply reachable_foot_valid in H5; auto.
 Qed.
 
-Lemma graph_ramify_right: forall (g g1 g2 g3: Graph) (g1' g2' g3': LGraph) (x l r: addr) (F1 F2: pred),
+Lemma graph_ramify_right: forall (g g1 g2 g3: Graph) (g1' g2' g3': LGraph) (x l r: addr) (F1 F2: pred) F3,
   vvalid g x ->
   vgamma g x = (null, l, r) ->
   vcopy1 x g g1 g1' ->
@@ -281,8 +312,8 @@ Lemma graph_ramify_right: forall (g g1 g2 g3: Graph) (g1' g2' g3': LGraph) (x l 
   reachable_vertices_at r g3 *
    (ALL a: Graph' * Graph * addr,
      !! (copy r g3 (snd (fst a)) (fst (fst a)) /\ (r = null /\ snd a = null \/ snd a = LocalGraphCopy.vmap (snd (fst a)) r)) -->
-     (reachable_vertices_at r (snd (fst a)) * reachable_vertices_at (snd a) (fst (fst a)) -*
-      F1 * (F2 * (reachable_vertices_at x (snd (fst a)) * reachable_vertices_at (snd a) (fst (fst a)))))).
+     (reachable_vertices_at r (snd (fst a)) * F3 (snd a) (fst (fst a)) -*
+      F1 * (F2 * (reachable_vertices_at x (snd (fst a)) * F3 (snd a) (fst (fst a)))))).
 Proof.
   intros.
   destruct H1 as [? [? ?]].
@@ -293,7 +324,7 @@ Proof.
     replace A with
     (fun p : Graph' * Graph * addr =>
             reachable_vertices_at x (snd (fst p)) *
-            reachable_vertices_at (snd p) (fst (fst p)) * (F1 * F2)) by
+            F3 (snd p) (fst (fst p)) * (F1 * F2)) by
     (extensionality p; rewrite <- (sepcon_assoc F1 F2), (sepcon_comm _ (F1 * F2)); auto)
   end.
   apply RAMIF_Q'.frame; [auto |].
