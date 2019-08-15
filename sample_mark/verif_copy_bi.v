@@ -15,43 +15,7 @@ Require Import VST.msl.wand_frame.
 Require Import VST.floyd.reassoc_seq.
 Require Import VST.floyd.field_at_wand.
 
-Goal Share.comp Ews <> Share.bot.
-  intro.
-  apply (f_equal Share.comp) in H.
-  rewrite comp_bot in H.
-  rewrite Share.comp_inv in H.
-  unfold Ews in H.
-  unfold extern_retainer in H.
-  pose proof fun x1 x2 => split_nontrivial' x1 x2 Share.Lsh.
-  pose proof fun x1 x2 => split_join x1 x2 Share.Lsh.
-  destruct (Share.split Share.Lsh) as [sh1 sh2]; simpl in H.
-  specialize (H0 _ _ eq_refl).
-  specialize (H1 _ _ eq_refl).
-  pose proof fun HH => Lsh_nonidentity (H0 HH); clear H0.
-  assert (sh1 = Share.Lsh).
-  {
-    pose proof glb_Rsh_Lsh.
-    pose proof @sub_glb_bot Share.Rsh sh1 Share.Lsh ltac:(eapply sepalg.join_join_sub; eauto) H0.
-    pose proof lub_Lsh_Rsh.
-    rewrite Share.lub_commute in H.
-    rewrite Share.lub_commute in H4.
-    apply (Share.distrib_spec Share.Rsh sh1 Share.Lsh); congruence.
-  }
-  apply H2; right; clear H2.
-  subst sh1.
-  pose proof sepalg.join_assoc H1 H1 as [sh22 [? ?]].
-  apply sepalg.join_self in H0.
-  auto.
-Qed.
-
-Definition Ews: wshare := ltac: (exists Ews; apply writable_Ews).
-
-Axiom ADMIT: forall sh d b i, data_at sh (nested_field_type (Tstruct _Node noattr) [StructField _m]) (pointer_val_val d)
-   (field_address (Tstruct _Node noattr) [StructField _m] (Vptr b i))
- |-- valid_pointer (pointer_val_val d).
-(* Local Open Scope logic. *)
-
-(* Hint Rewrite eval_cast_neutral_is_pointer_or_null using auto : norm. (* TODO: should not need this *) *)
+Hint Resolve concrete_valid_pointer_valid_pointer: valid_pointer.
 
 Local Coercion Graph_LGraph: Graph >-> LGraph.
 Local Coercion Graph'_LGraph: Graph' >-> LGraph.
@@ -80,7 +44,8 @@ Definition mallocN_spec :=
      PROP ()
      LOCAL (temp ret_temp (pointer_val_val v)) 
      SEP (data_at Ews node_type (pointer_val_val null, (pointer_val_val null, pointer_val_val null))
-              (pointer_val_val v)).
+                  (pointer_val_val v);
+          concrete_valid_pointer v).
 
 Definition copy_spec :=
  DECLARE _copy
@@ -147,7 +112,7 @@ Proof.
       destruct x. 2: exfalso; apply H; reflexivity. split; simpl; auto.
       exists b, i. reflexivity.
     } destruct H0 as [? [b [i ?]]]. clear H0 H_weak_valid.
-    localize [data_at sh node_type (pointer_val_val d, (pointer_val_val l, pointer_val_val r)) (pointer_val_val x)].
+    localize [data_at sh node_type (pointer_val_val d, (pointer_val_val l, pointer_val_val r)) (pointer_val_val x); concrete_valid_pointer d].
     forward. (* x0 = x -> m; *) 1: entailer!; destruct d; simpl; auto.
     unlocalize [graph sh x g]. 1: apply (@root_stable_ramify _ (sSGG_VST sh) g x _ H_GAMMA_g); auto.
     forward_if  (* if (x0 != 0) *)
@@ -157,11 +122,7 @@ Proof.
     { apply denote_tc_test_eq_split. 2: entailer!.
       eapply derives_trans; [apply (@root_stable_ramify _ (sSGG_VST sh) g (ValidPointer b i) _ H_GAMMA_g); auto |].
       apply sepcon_valid_pointer1. Transparent sSGG_VST. simpl vertex_at. unfold_data_at 1%nat.
-      do 2 apply sepcon_valid_pointer1. pose proof (field_at_valid_ptr sh node_type [StructField _m] (pointer_val_val d) (Vptr b i)).
-      rewrite field_at_data_at. unfold node_type. simpl field_address.
-      simpl field_address in H1.
       entailer!.
-      apply ADMIT. (* type checking for pointer comparable. VST will fix it. *)
     }
   1: { (* if-then branch *)
     forward. (* return x0; *)
@@ -191,7 +152,8 @@ Proof.
   assert_PROP (x0 <> null) as x0_not_null. { entailer!. }
 
   localize
-  [data_at sh node_type (pointer_val_val null, (pointer_val_val l, pointer_val_val r)) (pointer_val_val x)].
+  [data_at sh node_type (pointer_val_val null, (pointer_val_val l, pointer_val_val r)) (pointer_val_val x);
+   concrete_valid_pointer x0].
   (* localize *)
 
   forward.
@@ -228,10 +190,19 @@ Proof.
    holegraph Ews x0 (initial_copied_Graph x x0 g);
    graph sh x (Graph_vgen g x x0)].
   {
+    cancel.
     rewrite sepcon_assoc.
     match goal with
     | |- _ |-- _ * (_ -* (_ * (?P * _))) =>
       replace P with emp; [| symmetry; apply (@root_update_ramify1 _ (sSGG_VST Ews) g x x0 x0 (null, l, r) (x0, l, r)); auto]
+    end.
+    match goal with
+    | |- ?A * _ |-- _ =>
+      replace A with (A * concrete_valid_pointer null) by (rewrite concrete_valid_pointer_null, sepcon_emp; auto)
+    end.
+    match goal with
+    | |- _ |-- ?A * _ =>
+      replace A with (A * concrete_valid_pointer null) by (rewrite concrete_valid_pointer_null, sepcon_emp; auto)
     end.
     apply (@root_update_ramify2 _ (sSGG_VST sh)  g x x0 x0 (null, l, r) (x0, l, r)); auto.
     eapply Graph_vgen_vgamma; eauto.
@@ -247,6 +218,11 @@ Proof.
   assert_PROP (weak_valid g1 l).
   1: apply prop_right; eapply left_weak_valid; eauto.  
 
+  match goal with
+  | |- context [SEPx (?A :: _)] =>
+      replace A with (A * concrete_valid_pointer null) by (rewrite concrete_valid_pointer_null, sepcon_emp; auto)
+  end; Intros.
+
   localize [graph sh l g1].
   (* localize *)
 
@@ -257,7 +233,7 @@ Proof.
   (* l0 = copy(l); *)
 
   unlocalize
-    [data_at Ews node_type (Vint (Int.repr 0), (pointer_val_val null, pointer_val_val null)) (pointer_val_val x0);
+    [data_at Ews node_type (Vint (Int.repr 0), (pointer_val_val null, pointer_val_val null)) (pointer_val_val x0) * concrete_valid_pointer null;
          holegraph Ews x0 g1';
          graph sh x g2;
          graph Ews l0 g2'']
@@ -266,6 +242,7 @@ Proof.
   {
     rewrite allp_uncurry'.
     rewrite allp_uncurry'.
+    rewrite <- sepcon_assoc.
     match goal with
     | |- ?F1 * (?F2 * _) |-- _ * allp (fun _ => _ --> (_ * ?F3 _ _ -* _)) =>
            apply (@graph_ramify_left _ (sSGG_VST sh) g g1 g1' x l r F1 F2 F3)
@@ -279,7 +256,7 @@ Proof.
        !! (extended_copy l (g1: LGraph, g1') (g2: LGraph, g2') /\
            is_guarded_BiMaFin' (fun v => x0 <> v) (fun e => ~ In e nil) g2') &&
           (data_at Ews node_type
-            (pointer_val_val null, (pointer_val_val null, pointer_val_val null)) (pointer_val_val x0) *
+            (pointer_val_val null, (pointer_val_val null, pointer_val_val null)) (pointer_val_val x0) * concrete_valid_pointer null *
            holegraph Ews x0 g2')).
   {
     entailer.
@@ -317,7 +294,7 @@ Proof.
   unlocalize
     [data_at Ews node_type
           (Vint (Int.repr 0), (pointer_val_val l0, pointer_val_val null))
-          (pointer_val_val x0);
+          (pointer_val_val x0) * concrete_valid_pointer null;
          holegraph Ews x0 g3';
          graph sh x g4; graph Ews r0 g4'']
   using (g4'', g4, r0)
@@ -325,6 +302,7 @@ Proof.
   {
     rewrite allp_uncurry'.
     rewrite allp_uncurry'.
+    rewrite <- sepcon_assoc.
     match goal with
     | |- ?F1 * (?F2 * _) |-- _ * allp (fun _ => _ --> (_ * ?F3 _ _ -* _)) =>
            apply (@graph_ramify_right _ (sSGG_VST sh) g g1 g2 g3 g1' g2' g3' x l r F1 F2 F3)
@@ -338,7 +316,7 @@ Proof.
        !! (extended_copy r (g3: LGraph, g3') (g4: LGraph, g4') /\
            is_guarded_BiMaFin' (fun v => x0 <> v) (fun e => ~ In e ((x0, L) :: nil)) g4') &&
           (data_at Ews node_type
-            (pointer_val_val null, (pointer_val_val l0, pointer_val_val null)) (pointer_val_val x0) *
+            (pointer_val_val null, (pointer_val_val l0, pointer_val_val null)) (pointer_val_val x0) * concrete_valid_pointer null * 
            holegraph Ews x0 g4')).
   {
     clear Hl0_dst.
@@ -367,6 +345,7 @@ Proof.
   forget (graph_gen.labeledgraph_add_edge g4' (x0, R) x0 r0 (null, L)) as g5'.
 
   gather_SEP 0 1.
+  gather_SEP 0 1.
   replace_SEP 0 (EX gg5': Graph', !! (@copy _ _ _ _ CCS x g g5 gg5' /\ x0 = vmap g5 x) && graph Ews x0 gg5').
   {
     entailer.
@@ -377,4 +356,4 @@ Proof.
   rewrite H9.
   apply (exp_right (vlabel g5 (ValidPointer b i), g5, gg5')); entailer!; auto. cancel.
   apply derives_refl.
-Time Qed. (* Takes 15 seconds. *)
+Time Qed. (* Takes 40 seconds. *)

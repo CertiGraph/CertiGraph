@@ -4,6 +4,37 @@ Require Import RamifyCoq.msl_application.GraphBi.
 Require Import VST.veric.SeparationLogic.
 Require Import RamifyCoq.sample_mark.env_copy_bi.
 
+Lemma comp_Ews_not_bot: Share.comp Ews <> Share.bot.
+  intro.
+  apply (f_equal Share.comp) in H.
+  rewrite comp_bot in H.
+  rewrite Share.comp_inv in H.
+  unfold Ews in H.
+  unfold extern_retainer in H.
+  pose proof fun x1 x2 => split_nontrivial' x1 x2 Share.Lsh.
+  pose proof fun x1 x2 => split_join x1 x2 Share.Lsh.
+  destruct (Share.split Share.Lsh) as [sh1 sh2]; simpl in H.
+  specialize (H0 _ _ eq_refl).
+  specialize (H1 _ _ eq_refl).
+  pose proof fun HH => Lsh_nonidentity (H0 HH); clear H0.
+  assert (sh1 = Share.Lsh).
+  {
+    pose proof glb_Rsh_Lsh.
+    pose proof @sub_glb_bot Share.Rsh sh1 Share.Lsh ltac:(eapply sepalg.join_join_sub; eauto) H0.
+    pose proof lub_Lsh_Rsh.
+    rewrite Share.lub_commute in H.
+    rewrite Share.lub_commute in H4.
+    apply (Share.distrib_spec Share.Rsh sh1 Share.Lsh); congruence.
+  }
+  apply H2; right; clear H2.
+  subst sh1.
+  pose proof sepalg.join_assoc H1 H1 as [sh22 [? ?]].
+  apply sepalg.join_self in H0.
+  auto.
+Qed.
+
+Definition Ews: wshare := ltac: (exists Ews; apply writable_Ews).
+
 Section pSGG_VST.
 
 Instance PointerVal_EqDec: EquivDec.EqDec pointer_val eq.
@@ -31,11 +62,46 @@ Defined.
 
 Section sSGG_VST.
 
+Definition concrete_valid_pointer (p: addr) :=
+  (!! (p = NullPointer) && emp) || data_at_ (Share.comp Ews) node_type (pointer_val_val p).
+
+Lemma concrete_valid_pointer_null:
+  concrete_valid_pointer null = emp.
+Proof.
+  intros.
+  unfold concrete_valid_pointer.
+  apply pred_ext.
+  + apply orp_left; [normalize |].
+    simpl pointer_val_val.
+    saturate_local.
+    destruct H; tauto.
+  + apply orp_right1.
+    normalize.
+Qed.
+    
+Lemma concrete_valid_pointer_valid_pointer: forall p,
+  concrete_valid_pointer p |-- valid_pointer (pointer_val_val p).
+Proof.
+  intros.
+  unfold concrete_valid_pointer.
+  apply orp_left.
+  + normalize.
+    auto with valid_pointer.
+  + apply data_at_valid_ptr.
+    - intro.
+      apply identity_share_bot in H.
+      apply comp_Ews_not_bot.
+      auto.
+    - change (sizeof node_type) with 16.
+      omega.
+Qed.
+
 Definition trinode (sh: share) (p: addr) (dlr: addr * addr * addr): mpred :=
   match dlr with
   | (d, l, r) => data_at sh node_type
                   (pointer_val_val d, (pointer_val_val l, pointer_val_val r))
-                    (pointer_val_val p)
+                  (pointer_val_val p) *
+                 concrete_valid_pointer d
   end.
 
 Instance SGP_VST (sh: share) : PointwiseGraphPred addr (addr * LR) (addr * addr * addr) unit mpred.
@@ -65,9 +131,14 @@ Proof.
   unfold trinode.
   rewrite data_at_isptr.
   normalize.
+  match goal with
+  | |- ?A * _ * (?B * _) |-- _ => assert (A * B |-- FF)
+  end.
   apply data_at_conflict.
   + apply readable_nonidentity, writable_readable. auto.
   + change (sizeof node_type) with 16. omega.
+  + sep_apply H1.
+    normalize.
 Qed.
 
 (*
