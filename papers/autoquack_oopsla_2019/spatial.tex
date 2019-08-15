@@ -412,9 +412,9 @@ Similarily, the same box contains the key lemma used on line~\ref{code:markram2}
 \begin{equation}
 \label{lem:updategraphnode}
 %{\gamma(x_0) = \gamma'(x_0) \text{ for any } x_0 \neq x }
-\infrule{}
+\frac
 {\forall x_0 \neq x.~ \gamma(x_0) = \gamma'(x_0) \\ \p{neighbors}(\gamma,x)=\p{neighbors}(\gamma',x)}
-{\p{graph}(x, \gamma) \! |- \! x \! \mapsto \! \gamma(x) \! * \! \big(x \! \mapsto \! \gamma'(x) \! \wand \! \p{graph}(x, \gamma')\big)}{}
+{\p{graph}(x, \gamma) \! |- \! x \! \mapsto \! \gamma(x) \! * \! \big(x \! \mapsto \! \gamma'(x) \! \wand \! \p{graph}(x, \gamma')\big)}
 \end{equation}
 This layered structure enables proof reuse. All of the theorems for $\p{graph}$ are proved from the properties of iterated separating conjunction, but having a modular library allows $\bigstar$ to be reused in other structures smoothly.
 Further, all our verifications of different graph algorithms use the proof rules of $\p{graph}$ at the top level in the library. 
