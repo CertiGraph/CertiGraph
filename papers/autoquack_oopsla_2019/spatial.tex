@@ -156,13 +156,13 @@ predicates for graphs.
 {\infrule{}
   {100 |-> 42,100,0 ~ |- ~ 100 |-> 42,100,0 ** \graphkt(100,\hat{\gamma})}
   {100 |-> 42,100,0 ~ |- ~ \hat{\gamma}(100) = (42,100,0) ~ /| ~ 100 |-> 42,100,0 ** \graphkt(100,\hat{\gamma}) ** \graphkt(0,\hat{\gamma})}
-  {(2)}
+  {\ddagger}
 }
 {100 |-> 42,100,0 ~ |- ~ \graphkt(100,\hat{\gamma})}
-{(1)}
+{\dagger}
 \]
 \begin{tabular}{@{}l@{$~~$}l|l@{$~~$}l}
-(1) & Unfold $\graphkt$, dismiss first disjunct (contradiction), $~~$ & $~~$ (2) &simplify using $P * \p{emp} -|- P$ \\
+$\dagger$ & Unfold $\graphkt$, dismiss first disjunct (contradiction), $~~$ & $~~$ $\ddagger$ &simplify using $P * \p{emp} -|- P$ \\
 & introduce existentials (which must be 42,100,0) & & and remove pure conjunct
 \end{tabular}
 \caption{An attempt to prove a ``simple'' entailment}
