@@ -15,6 +15,37 @@ Require Import VST.msl.wand_frame.
 Require Import VST.floyd.reassoc_seq.
 Require Import VST.floyd.field_at_wand.
 
+Goal Share.comp Ews <> Share.bot.
+  intro.
+  apply (f_equal Share.comp) in H.
+  rewrite comp_bot in H.
+  rewrite Share.comp_inv in H.
+  unfold Ews in H.
+  unfold extern_retainer in H.
+  pose proof fun x1 x2 => split_nontrivial' x1 x2 Share.Lsh.
+  pose proof fun x1 x2 => split_join x1 x2 Share.Lsh.
+  destruct (Share.split Share.Lsh) as [sh1 sh2]; simpl in H.
+  specialize (H0 _ _ eq_refl).
+  specialize (H1 _ _ eq_refl).
+  pose proof fun HH => Lsh_nonidentity (H0 HH); clear H0.
+  assert (sh1 = Share.Lsh).
+  {
+    pose proof glb_Rsh_Lsh.
+    pose proof @sub_glb_bot Share.Rsh sh1 Share.Lsh ltac:(eapply sepalg.join_join_sub; eauto) H0.
+    pose proof lub_Lsh_Rsh.
+    rewrite Share.lub_commute in H.
+    rewrite Share.lub_commute in H4.
+    apply (Share.distrib_spec Share.Rsh sh1 Share.Lsh); congruence.
+  }
+  apply H2; right; clear H2.
+  subst sh1.
+  pose proof sepalg.join_assoc H1 H1 as [sh22 [? ?]].
+  apply sepalg.join_self in H0.
+  auto.
+Qed.
+
+Definition Ews: wshare := ltac: (exists Ews; apply writable_Ews).
+
 Axiom ADMIT: forall sh d b i, data_at sh (nested_field_type (Tstruct _Node noattr) [StructField _m]) (pointer_val_val d)
    (field_address (Tstruct _Node noattr) [StructField _m] (Vptr b i))
  |-- valid_pointer (pointer_val_val d).
@@ -48,7 +79,7 @@ Definition mallocN_spec :=
      EX v: addr,
      PROP ()
      LOCAL (temp ret_temp (pointer_val_val v)) 
-     SEP (data_at sh node_type (pointer_val_val null, (pointer_val_val null, pointer_val_val null))
+     SEP (data_at Ews node_type (pointer_val_val null, (pointer_val_val null, pointer_val_val null))
               (pointer_val_val v)).
 
 Definition copy_spec :=
@@ -65,7 +96,7 @@ Definition copy_spec :=
         let g1' := snd xgg in
         PROP (copy (x: @addr pSGG_VST) g g1 g1'; x = null /\ x' = null \/ x' = vmap g1 x)
         LOCAL (temp ret_temp (pointer_val_val x'))
-        SEP   (graph sh x g1; graph sh x' g1').
+        SEP   (graph sh x g1; graph Ews x' g1').
 
 Definition main_spec :=
  DECLARE _main
@@ -191,18 +222,21 @@ Proof.
   (* x -> m = x0; *)
 
   unlocalize
-  [data_at sh node_type
+  [data_at Ews node_type
            (pointer_val_val null, (pointer_val_val null, pointer_val_val null))
            (pointer_val_val x0);
-   holegraph sh x0 (initial_copied_Graph x x0 g);
+   holegraph Ews x0 (initial_copied_Graph x x0 g);
    graph sh x (Graph_vgen g x x0)].
   {
     rewrite sepcon_assoc.
-    apply (@root_update_ramify _ (sSGG_VST sh) g x x0 x0 (null, l, r) (x0, l, r)); auto.
+    match goal with
+    | |- _ |-- _ * (_ -* (_ * (?P * _))) =>
+      replace P with emp; [| symmetry; apply (@root_update_ramify1 _ (sSGG_VST Ews) g x x0 x0 (null, l, r) (x0, l, r)); auto]
+    end.
+    apply (@root_update_ramify2 _ (sSGG_VST sh)  g x x0 x0 (null, l, r) (x0, l, r)); auto.
     eapply Graph_vgen_vgamma; eauto.
   }
   (* unlocalize *)
-
   destruct (not_null_copy1 g x x0 _ _ H_GAMMA_g gx_vvalid x0_not_null) as [H_vopy1 [H_x0 BiMaFin_g1']].
   forget (Graph_vgen g x x0) as g1.
   forget (initial_copied_Graph x x0 g) as g1'.
@@ -223,16 +257,19 @@ Proof.
   (* l0 = copy(l); *)
 
   unlocalize
-    [data_at sh node_type (Vint (Int.repr 0), (pointer_val_val null, pointer_val_val null)) (pointer_val_val x0);
-         holegraph sh x0 g1';
+    [data_at Ews node_type (Vint (Int.repr 0), (pointer_val_val null, pointer_val_val null)) (pointer_val_val x0);
+         holegraph Ews x0 g1';
          graph sh x g2;
-         graph sh l0 g2'']
+         graph Ews l0 g2'']
   using (g2'', g2, l0)
   assuming (H_copy, H_l0).
   {
     rewrite allp_uncurry'.
     rewrite allp_uncurry'.
-    eapply (@graph_ramify_left _ (sSGG_VST sh) g g1); eauto.
+    match goal with
+    | |- ?F1 * (?F2 * _) |-- _ * allp (fun _ => _ --> (_ * ?F3 _ _ -* _)) =>
+           apply (@graph_ramify_left _ (sSGG_VST sh) g g1 g1' x l r F1 F2 F3)
+    end; eauto.
   }
   (* unlocalize *)
 
@@ -241,19 +278,19 @@ Proof.
       (EX g2': LGraph,
        !! (extended_copy l (g1: LGraph, g1') (g2: LGraph, g2') /\
            is_guarded_BiMaFin' (fun v => x0 <> v) (fun e => ~ In e nil) g2') &&
-          (data_at sh node_type
+          (data_at Ews node_type
             (pointer_val_val null, (pointer_val_val null, pointer_val_val null)) (pointer_val_val x0) *
-           holegraph sh x0 g2')).
+           holegraph Ews x0 g2')).
   {
     entailer.
-    apply (@extend_copy_left _ (sSGG_VST sh) g g1 g2 g1' g2'' (ValidPointer b i) l r (vmap g1 (ValidPointer b i)) l0 (null, null, null)); auto.
+    apply (@extend_copy_left _ (sSGG_VST Ews) g g1 g2 g1' g2'' (ValidPointer b i) l r (vmap g1 (ValidPointer b i)) l0 (null, null, null)); auto.
   }
   clear g2'' H_copy BiMaFin_g1'.
   Intros g2'. rename H2 into H_copy_left, H3 into BiMaFin_g2'.
 
   forward. (* x0 -> l = l0; *)
 
-  pose proof (@va_labeledgraph_add_edge_left _ (sSGG_VST sh) g g1 g2 g1' g2' x l r x0 l0) as HH.
+  pose proof (@va_labeledgraph_add_edge_left _ (sSGG_VST Ews) g g1 g2 g1' g2' x l r x0 l0) as HH.
   Opaque vvalid graph_gen.labeledgraph_add_edge. simpl vertices_at in HH |- *. Transparent vvalid graph_gen.labeledgraph_add_edge. rewrite HH by auto; clear HH.
 
   pose proof (@va_labeledgraph_egen_left _ (sSGG_VST sh) g2 x x0) as HH.
@@ -278,17 +315,20 @@ Proof.
   (* r0 = copy(r); *)
 
   unlocalize
-    [data_at sh node_type
+    [data_at Ews node_type
           (Vint (Int.repr 0), (pointer_val_val l0, pointer_val_val null))
           (pointer_val_val x0);
-         holegraph sh x0 g3';
-         graph sh x g4; graph sh r0 g4'']
+         holegraph Ews x0 g3';
+         graph sh x g4; graph Ews r0 g4'']
   using (g4'', g4, r0)
   assuming (H_copy, H_r0).
   {
     rewrite allp_uncurry'.
     rewrite allp_uncurry'.
-    eapply (@graph_ramify_right _ (sSGG_VST sh) g g1); eauto.
+    match goal with
+    | |- ?F1 * (?F2 * _) |-- _ * allp (fun _ => _ --> (_ * ?F3 _ _ -* _)) =>
+           apply (@graph_ramify_right _ (sSGG_VST sh) g g1 g2 g3 g1' g2' g3' x l r F1 F2 F3)
+    end; eauto.
   }
   (* Unlocalize *)
 
@@ -297,13 +337,13 @@ Proof.
       (EX g4': LGraph,
        !! (extended_copy r (g3: LGraph, g3') (g4: LGraph, g4') /\
            is_guarded_BiMaFin' (fun v => x0 <> v) (fun e => ~ In e ((x0, L) :: nil)) g4') &&
-          (data_at sh node_type
+          (data_at Ews node_type
             (pointer_val_val null, (pointer_val_val l0, pointer_val_val null)) (pointer_val_val x0) *
-           holegraph sh x0 g4')).
+           holegraph Ews x0 g4')).
   {
     clear Hl0_dst.
     entailer.
-    apply (@extend_copy_right _ (sSGG_VST sh) g g1 g2 g3 g4 g1' g2' g3' g4''(ValidPointer b i) l r (vmap g1 (ValidPointer b i)) r0 (null, l0, null)); auto.
+    apply (@extend_copy_right _ (sSGG_VST Ews) g g1 g2 g3 g4 g1' g2' g3' g4''(ValidPointer b i) l r (vmap g1 (ValidPointer b i)) r0 (null, l0, null)); auto.
   }
   Opaque extended_copy.
   rewrite extract_exists_in_SEP. (* should be able to use tactic directly *)
@@ -313,7 +353,7 @@ Proof.
 
   forward. (* x0 -> r = r0; *)
 
-  pose proof @va_labeledgraph_add_edge_right _ (sSGG_VST sh) g g1 g2 g3 g4 g1' g2' g3' g4' x l r x0 r0 as HH.
+  pose proof @va_labeledgraph_add_edge_right _ (sSGG_VST Ews) g g1 g2 g3 g4 g1' g2' g3' g4' x l r x0 r0 as HH.
   Opaque vvalid graph_gen.labeledgraph_add_edge. simpl vertices_at in HH |- *. Transparent vvalid graph_gen.labeledgraph_add_edge. rewrite HH by auto; clear HH.
 
   pose proof @va_labeledgraph_egen_right _ (sSGG_VST sh) g4 x x0 as HH.
@@ -327,10 +367,10 @@ Proof.
   forget (graph_gen.labeledgraph_add_edge g4' (x0, R) x0 r0 (null, L)) as g5'.
 
   gather_SEP 0 1.
-  replace_SEP 0 (EX gg5': Graph', !! (@copy _ _ _ _ CCS x g g5 gg5' /\ x0 = vmap g5 x) && graph sh x0 gg5').
+  replace_SEP 0 (EX gg5': Graph', !! (@copy _ _ _ _ CCS x g g5 gg5' /\ x0 = vmap g5 x) && graph Ews x0 gg5').
   {
     entailer.
-    eapply (@copy_final pSGG_VST (sSGG_VST sh) g g1 g2 g3 g4 g5 g1' g2' g3' g4' g5'); [| | | | | | | | eassumption ..]; eauto.
+    eapply (@copy_final pSGG_VST (sSGG_VST Ews) g g1 g2 g3 g4 g5 g1' g2' g3' g4' g5'); [| | | | | | | | eassumption ..]; eauto.
   }
 
   forward. (* return x0; *)
