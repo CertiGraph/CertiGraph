@@ -243,7 +243,7 @@ $\li{x} \neq \m{pa} /| \m{findS}(\gamma,\m{pa},\gamma') /| \m{uf\_root}(\gamma',
 we must prove
 \vspace{-0.4em}
 $$\exists \gamma''.~ \gamma'' = [x -> (r,rt)]\gamma' /| \m{uf\_root}(\gamma'',\li{x},\m{rt}) /| \m{findS}(\gamma,\li{x},\gamma'')$$
-This captures the essence of finding the root and doing path compression: after compressing your parent and finding its root, path-compress yourself by rerouting your own parent pointer to your (soon-to-be former) parent's root.  The existential in the goal is nontrivial
+This says: after compressing your parent and finding its root, compress yourself by rerouting your own parent pointer to your (soon-to-be former) parent's root.  The existential in the goal is nontrivial
 exactly because the update $[x -> (r,rt)]\gamma'$ is not always kosher.
 This lemma requires some effort to prove, but is completely isolated from the grungy details of C.
 With the second localization block complete, the remainder of the verification is straightforward.
@@ -266,14 +266,17 @@ in~\S\ref{sec:vst}.
 We discuss our verification of a graph \li{mark}ing algorithm 
 in~\S\ref{sec:localizations}. We also verify a version of \li{mark} 
 for directed acyclic graphs (DAGs), which is both easier and harder than 
-marking cyclic graphs: on the one hand, we get genuine separation
-between the root and its children; on the other hand, we need to maintain acyclicity if
+marking cyclic graphs: we get genuine separation
+between the root and its children, but we also need to maintain acyclicity if
 we modify the link structure.
-We verify \li{copy}, a graph copying algorithm. Here the challenge is 
-that the copied graph does not satisfy the original graph's soundness 
-condition (see~\S\ref{subsec:graphplugins}) while it is being constructed, 
-and yet we must establish this soundness condition on the copy at the 
-end of the program.
+We verify \li{copy}, a graph copying algorithm, which is tricky because
+we must initially reason about a ``copy'' that is under construction, 
+but eventually show isomorphism with the well-formed original.
+% is tricky because
+% although the copied graph does not satisfy the original graph's soundness 
+% condition (see~\S\ref{{sec:mathgraph}}) while it is being constructed, 
+% and yet we must establish this soundness condition on the copy at the 
+% end of the program.
 Further, as an example of more aggressive modifications to the link structure 
 of a graph, we verify \li{spanning}, which prunes a graph into its 
 spanning tree. 
