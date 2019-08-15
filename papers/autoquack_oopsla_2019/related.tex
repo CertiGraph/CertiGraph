@@ -40,7 +40,7 @@ reasoning to the verification framework of CompCert/VST~(\S\ref{sec:vst}).
 Our development is entirely
 machine-checked~(\S\ref{sec:development}) whereas they used only pen and paper.
 
-\paragraph{Other pen-and-paper verification of graph algorithms and/or $**$.}
+\paragraph{Other Pen-and-Paper Verification of Graph Algorithms and/or $**$.}
 
 \citet{hongseok:phd} verified the Schorr-Waite algorithm, and this 
 is widely considered a landmark in the early separation logic literature. 
@@ -59,7 +59,7 @@ a concurrent spanning algorithm using a kind of ``concurrent localization''.
 %Appel and McAllester defined an alternative ``contractive'' fixpoint that is sometimes used to define recursive predicates in separation
 %logic~\cite{appel:fixpoint}.  In Appendix~\ref{apx:appelfixpiont} we explain why Appel and McAllester's  is also unsuitable to define graphs.
 
-\paragraph{Machine-checked verification of graph algorithms.}
+\paragraph{Machine-Checked Verification of Graph Algorithms.}
 A decade after Yang verified Schorr-Waite on paper, \citet{leino10} automated 
 its verification in Dafny. 
 \citet{ilya-graphs}~verified a concurrent spanning tree algorithm, and 
@@ -123,7 +123,7 @@ Chargu{\'{e}}raud and Pottier acknowledged and sidestepped this issue by
 representing rank using the Coq type \li{Z}, which was not an option for us 
 given the end-to-end nature of the VST+CompCert toolchain.
 
-\paragraph{Verification tools in Coq.}
+\paragraph{Verification Tools in Coq.}
 Our work interacts with the Floyd verification module within the Verified 
 Software Toolchain (VST)~\cite{appel:programlogics}. The Floyd module uses 
 tactics to enable the separation-logic verification of CompCert C programs. 
@@ -155,7 +155,7 @@ It simplifies these obligations into pure mathematics using a
 custom workhorse tactic, and then discharges those 
 obligations using standard Coq automation.
 
-\paragraph{Other verification tools.} 
+\paragraph{Other Verification Tools.} 
 
 Many more-automated verification tools also use separation logic in a forward
 reasoning style. Smallfoot~\cite{berdine:smallfoot}, jStar~~\cite{distefanop08}, 
@@ -165,7 +165,7 @@ KeY~\cite{beckert:2007} and Dafny~\cite{leino10} are verifiers that are not
 based on separation logic. KeY uses an interactive verifier while Dafny pursues
  automation with Z3~\cite{moura2008}.
 
-\paragraph{Mechanized mathematical graph theory.}
+\paragraph{Mechanized Mathematical Graph Theory.}
 There is a long history, going back at least 28 years, of mechanized 
 reasoning about mathematical graphs~\cite{wong1991}. 
 The most famous mechanically verified “graph theorem” is the Four Color 
@@ -188,7 +188,7 @@ design verifiable checkers for solutions to graph problems.
 \citet{bauer20025} and \citet{yamamoto1995formalization}~used an inductive encoding of graphs to formalize planar graph theory.
 
 
-\paragraph{Verification of garbage collection algorithms.}
+\paragraph{Verification of Garbage Collection Algorithms.}
 Schism \cite{gcexample4,gcexample4a} is a certified concurrent
 collector built in a Java VM that services multi-core architectures with weak memory consistency.
 \citet{gcexample5, gcexample3} introduced GCminor, which is
