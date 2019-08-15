@@ -17,7 +17,7 @@ settings~(\S\ref{sec:ramifylib}).
 
 \input{seplogsem_figure.tex}
 
-\subsection{Separation logic in tree-manipulating programs}
+\subsection{Separation Logic in Tree-Manipulating Programs}
 \label{sec:seplogtrees}
 
 Figure~\ref{fig:seplogsem} shows the standard semantic models for the separation logic connectives using a join relation $\oplus$ on an underlying separation algebra~\cite{dockins09}. In recent works \citep{o2001local, o2012primer}
@@ -35,7 +35,7 @@ with an additional parameter: the mathematical tree $\tau$.
     \end{split}
 \end{equation}
 
-The mathematical tree $\tau$ is defined as an expression to encode the
+The mathematical tree $\tau$ encodes the
 shape of a binary tree. It is either an $\mathsf{atom}$ or a pair of
 tree encodings. For example,
 $\langle \mathsf{atom}, \langle \langle \mathsf{atom}, \mathsf{atom} \rangle, \mathsf{atom} \rangle \rangle$
@@ -66,12 +66,12 @@ without worrying about the effect on the rest of the tree.
 In the figure we show that manipulating the subtree under 
 root~$\m{v}$ does not affect the rest of the tree.
 
-Things become more complicated when it comes to graphs.
+Graphs are more complicated.
 Consider the right part of Figure~\ref{fig:bin_tree_graph},
 which shows a bigraph. 
 Defining a recursive predicate in the style of \eqref{def:tree},
 \emph{i.e.} using the separating conjunction~$\scon$, is a bad idea: 
-a single node can be shared arbitrarily, and so finding a suitable 
+a node can be shared arbitrarily, and so finding a suitable 
 \infrulestyle{frame} is difficult. 
 In the figure we show that manipulating the subgraph reachable 
 from~$\m{w}$ causes an unexpected node to be affected.
@@ -94,7 +94,7 @@ from~$\m{w}$ causes an unexpected node to be affected.
 \end{minipage}
 \end{figure}
 
-\subsection{Recursive definitions yield poor \p{graph} predicates}\label{sec:fixpointfail}
+\subsection{Recursive Definitions Yield Poor \p{graph} Predicates}\label{sec:fixpointfail}
 
 \newcommand{\graphkt}{\p{graph}_T}
 \newcommand{\grapham}{\p{graph}_A}
@@ -156,13 +156,13 @@ predicates for graphs.
 {\infrule{}
   {100 |-> 42,100,0 ~ |- ~ 100 |-> 42,100,0 ** \graphkt(100,\hat{\gamma})}
   {100 |-> 42,100,0 ~ |- ~ \hat{\gamma}(100) = (42,100,0) ~ /| ~ 100 |-> 42,100,0 ** \graphkt(100,\hat{\gamma}) ** \graphkt(0,\hat{\gamma})}
-  {(2)}
+  {\ddagger}
 }
 {100 |-> 42,100,0 ~ |- ~ \graphkt(100,\hat{\gamma})}
-{(1)}
+{\dagger}
 \]
 \begin{tabular}{@{}l@{$~~$}l|l@{$~~$}l}
-(1) & Unfold $\graphkt$, dismiss first disjunct (contradiction), $~~$ & $~~$ (2) &simplify using $P * \p{emp} -|- P$ \\
+$\dagger$ & Unfold $\graphkt$, dismiss first disjunct (contradiction), $~~$ & $~~$ $\ddagger$ &simplify using $P * \p{emp} -|- P$ \\
 & introduce existentials (which must be 42,100,0) & & and remove pure conjunct
 \end{tabular}
 \caption{An attempt to prove a ``simple'' entailment}
@@ -246,7 +246,7 @@ See Figure \ref{fig:badcycle} for an attempt to prove the entailment $100 |-> 42
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 
-\subsection{Defining a good \p{graph} predicate}\label{sec:goodgraph}
+\subsection{Defining a Good \p{graph} Predicate}\label{sec:goodgraph}
 
 Rather than trying to define \p{graph} as a recursive fixpoint,
 we will instead give it a flat structure.  Graphs in separation
@@ -395,7 +395,7 @@ The $\bigstar$ Ramification box in the middle layer contains lemmas like the one
 The above lemma expresses large-scale replacement, clearing the way to 
 cleanly establish a key graph-specific fact:
 Lemma~\ref{ramify:bigstar}, which is 
-placed in the Graph Ramification box (top layer), was used on 
+placed in the Graph Ramification box (top layer), is used on 
 lines~\ref{code:markram3} and~\ref{code:markram4} of 
 Figure~\ref{fig:markgraph} to reason about smoothly replacing subgraphs. 
 \begin{equation}
@@ -412,9 +412,9 @@ Similarily, the same box contains the key lemma used on line~\ref{code:markram2}
 \begin{equation}
 \label{lem:updategraphnode}
 %{\gamma(x_0) = \gamma'(x_0) \text{ for any } x_0 \neq x }
-\infrule{}
+\frac
 {\forall x_0 \neq x.~ \gamma(x_0) = \gamma'(x_0) \\ \p{neighbors}(\gamma,x)=\p{neighbors}(\gamma',x)}
-{\p{graph}(x, \gamma) \! |- \! x \! \mapsto \! \gamma(x) \! * \! \big(x \! \mapsto \! \gamma'(x) \! \wand \! \p{graph}(x, \gamma')\big)}{}
+{\p{graph}(x, \gamma) \! |- \! x \! \mapsto \! \gamma(x) \! * \! \big(x \! \mapsto \! \gamma'(x) \! \wand \! \p{graph}(x, \gamma')\big)}
 \end{equation}
 This layered structure enables proof reuse. All of the theorems for $\p{graph}$ are proved from the properties of iterated separating conjunction, but having a modular library allows $\bigstar$ to be reused in other structures smoothly.
 Further, all our verifications of different graph algorithms use the proof rules of $\p{graph}$ at the top level in the library. 

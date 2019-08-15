@@ -42,7 +42,7 @@ DATA_STRUCTURE_FILES = \
   spatial_graph_unaligned_bi_VST.v spatial_graph_dispose_bi.v
 
 SAMPLE_MARK_FILES = \
-  env_mark_bi.v verif_mark_bi.v env_garbage_collector.v env_dispose_bi.v verif_dispose_bi.v verif_mark_bi_dag.v env_copy_bi.v spatial_graph_bi_mark.v spatial_graph_bi_copy.v unionfind.v env_unionfind.v spatial_graph_glist.v verif_unionfind.v verif_unionfind_slim.v verif_unionfind_rank.v unionfind_iter.v env_unionfind_iter.v spatial_graph_uf_iter.v verif_unionfind_iter.v verif_unionfind_iter_rank.v unionfind_arr.v env_unionfind_arr.v spatial_array_graph.v verif_unionfind_arr.v dijkstra.v env_dijkstra_arr.v spatial_dijkstra_array_graph.v verif_dijkstra.v
+  env_mark_bi.v verif_mark_bi.v env_garbage_collector.v env_dispose_bi.v verif_dispose_bi.v verif_mark_bi_dag.v env_copy_bi.v spatial_graph_bi_mark.v spatial_graph_bi_copy.v unionfind.v env_unionfind.v spatial_graph_glist.v verif_unionfind.v verif_unionfind_slim.v verif_unionfind_rank.v unionfind_iter.v env_unionfind_iter.v spatial_graph_uf_iter.v verif_unionfind_iter.v verif_unionfind_iter_rank.v unionfind_arr.v env_unionfind_arr.v spatial_array_graph.v verif_unionfind_arr.v dijkstra.v env_dijkstra_arr.v spatial_dijkstra_array_graph.v verif_dijkstra.v verif_copy_bi.v
 
 HIP_FILES = \
   hip_graphmark.v hip_graphmark_proofs.v spanningtree.v

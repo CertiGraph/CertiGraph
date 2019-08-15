@@ -3,7 +3,7 @@ we first~(\S\ref{sec:unionfind}) build intuition by showing how
 they are applied to verify a well-known algorithm. 
 We then~(\S\ref{sec:localblocks}) explain our new \emph{localization blocks}. 
 Finally~(\S\ref{sec:application}), we briefly discuss the other 
-examples we have handled. 
+examples we have verified. 
 %Our flagship example, the garbage collector for the 
 %CertiCoq project, will be covered in~\S\ref{sec:certigc}.
 
@@ -217,7 +217,7 @@ Using either \textsc{Localize} or \textsc{Ramify},
 Unfortunately, we still have a problem: the side condition above requires that
 }
 
-The second localization block (lines~\ref{code:ufbefram2}--\ref{code:ufaftram2}) is both easier and harder than the first.  It is easier because line~\ref{code:ufpathcompress} does not modify any local program variables, so the side condition is trivially satisfied.  Moreover, although line~\ref{code:ufaftram2} does contain an existential, line~\ref{code:findafterxparent} does not, and so there is no need to ``link'' the two associated witnesses.  We will discuss this issue
+The second localization block (lines~\ref{code:ufbefram2}--\ref{code:ufaftram2}) is both easier and harder than the first.  It is easier because line~\ref{code:ufpathcompress} does not modify any local program variables, so the side condition is trivially satisfied.  Moreover, although line~\ref{code:ufaftram2} contains an existential, line~\ref{code:findafterxparent} does not, and so there is no need to ``link'' the two associated witnesses.  We will discuss this issue
 in more detail in \S\ref{sec:linkedex}, but for now it is enough to
 choose $R \defeq L_2 --* G_2$ exactly as written in lines~\ref{code:findafterxparent}
 (for $L_2$) and~\ref{code:ufaftram2} (for $G_2$).
@@ -236,29 +236,20 @@ the graph must be acyclic (other than at roots).
 In Coq, these properties are carried around via dependent types, as will be explained in \S\ref{sec:mathinfra}.
 
 The example-specific challenge in proving \li{find} 
-(\emph{i.e.} not generic enough to be reused elsewhere)
-is to show that this mathematical update can be done properly, \emph{i.e.} from
+is showing that this update can be done properly, \emph{i.e.} from
 %\marginpar{\tiny \color{blue} Need to come to some decision re: the typesetting.}
 $\li{x} \in V(\gamma) /| \gamma(\li{x}) = (r,\m{pa})$ and 
 $\li{x} \neq \m{pa} /| \m{findS}(\gamma,\m{pa},\gamma') /| \m{uf\_root}(\gamma',\m{pa},\m{rt})$
 we must prove
-\hide{\[
-\li{x} \in V(\gamma) /| \gamma(\li{x}) = (r,\m{pa}) \quad \text{ and } \quad
-\li{x} \neq \m{pa} /|
-\m{findS}(\gamma,\m{pa},\gamma') /| \m{uf\_root}(\gamma',\m{pa},\m{rt})
-\]} % end hide
-\[
-\exists \gamma''.~ \gamma'' = [x -> (r,rt)]\gamma' /| \m{uf\_root}(\gamma'',\li{x},\m{rt}) /| \m{findS}(\gamma,\li{x},\gamma'')
-\]
-
-
-This lemma captures the essence of both finding the root and doing path compression: after compressing your parent and finding its root, you can path compress yourself by rerouting your own parent pointer to your (soon-to-be former) parent's root.  The existential in the goal is nontrivial
+\vspace{-0.4em}
+$$\exists \gamma''.~ \gamma'' = [x -> (r,rt)]\gamma' /| \m{uf\_root}(\gamma'',\li{x},\m{rt}) /| \m{findS}(\gamma,\li{x},\gamma'')$$
+This says: after compressing your parent and finding its root, compress yourself by rerouting your own parent pointer to your (soon-to-be former) parent's root.  The existential in the goal is nontrivial
 exactly because the update $[x -> (r,rt)]\gamma'$ is not always kosher.
 This lemma requires some effort to prove, but is completely isolated from the grungy details of C.
 With the second localization block complete, the remainder of the verification is straightforward.
 
 
-\subsection{Our six verified examples}
+\subsection{Our Seven Verified Examples}
 \label{sec:application}
 
 In addition to \li{find} shown above, we prove \li{union}
@@ -275,16 +266,24 @@ in~\S\ref{sec:vst}.
 We discuss our verification of a graph \li{mark}ing algorithm 
 in~\S\ref{sec:localizations}. We also verify a version of \li{mark} 
 for directed acyclic graphs (DAGs), which is both easier and harder than 
-marking cyclic graphs. To briefly give intuition about the DAG-specific 
-challenge: on the one hand, we get genuine separation
-between the root and its children; on the other hand, we need to maintain acyclicity if
+marking cyclic graphs: we get genuine separation
+between the root and its children, but we also need to maintain acyclicity if
 we modify the link structure.
+We verify \li{copy}, a graph copying algorithm, which is tricky because
+we must initially reason about a ``copy'' that is under construction, 
+but eventually show isomorphism with the well-formed original.
+% is tricky because
+% although the copied graph does not satisfy the original graph's soundness 
+% condition (see~\S\ref{{sec:mathgraph}}) while it is being constructed, 
+% and yet we must establish this soundness condition on the copy at the 
+% end of the program.
 Further, as an example of more aggressive modifications to the link structure 
 of a graph, we verify \li{spanning}, which prunes a graph into its 
 spanning tree. 
 
-We elide discussions about \li{spanning} and DAG \li{mark} 
-in the interest of space, but the verification code is available in our artifact.
+We elide discussions about \li{spanning}, DAG \li{mark}, and \li{copy} 
+in the interest of space, but the verification code is in our artifact.
+%% In Appendix~\ref{apx:spanning} we give a decorated proof of \li{spanning}.%
 Our flagship example, the CertiCoq garbage collector, is in~\S\ref{sec:certigc}.
 
 \hide{
