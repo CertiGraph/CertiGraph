@@ -49,7 +49,7 @@ calculate the root set. The GC collects the first generation
 into the second using Cheney's algorithm \cite{cheney:gc}.
 This may recursively trigger the collection of the second generation
 into the third, \emph{etc.}, following which the GC returns control to the mutator. 
-We provide a further details about the GC's operation in 
+We provide further details about the GC's operation in 
 our extended online paper.
 % We put a 
 % more detailed explanation of the GC's operation in Appendix~\ref{apx:gcstructure}.
@@ -157,7 +157,7 @@ Line \ref{code:alreadyforwarded} shows
 the case when the block passed to the function was already forwarded.
 The block's header is zeroed out and its $0^\textit{th}$ field holds
 the address of its
-copy\footnote{These guarantees are set up by \li{forward} itself.
+copy\footnote{These guarantees are set up by \texttt{\scriptsize forward} itself.
 Refer to lines \ref{code:zeroingheader} and
 \ref{code:copyinfirstfield} of Figure~\ref{fig:forward} to see this being done straightforwardly.},
 so we simply reroute to the copy. 
@@ -187,7 +187,7 @@ The final step (line \ref{code:ridirect}) is to reroute to this
 new copy, and this is handled exactly as in line~\ref{code:alreadyforwarded}. 
 The resultant graph is $\gamma'' = \m{upd\_edge}(\gamma', \m{e}, \m{v''})$. 
 This edit is local to the graph, and so the old metainformation in~\m{tinf'} 
-remains compatible with $\gamma''$.
+remains compatible with the new graph $\gamma''$.
 
 The postcondition is a little different from those of \li{find}
 and \li{mark} seen earlier: it does not provide a relation
@@ -255,6 +255,8 @@ for some vertex \m{(s, j)}.
 After the for-loop, the entire block represented by~\m{s} has either been
 forwarded (line \ref{code:dswholeblockfwded}) or 
 ignored (line \ref{code:dswholeblockignored}). 
+This may increment \li{nx}, so we continue until \li{sc~=~nx}.
+
 At first glance, this verification may seem quite elementary. 
 Its trickiness comes from the fact
 that \li{do\_scan} operates exactly on the interface between the Clight code 
@@ -291,7 +293,7 @@ heap \li{h}.
 %The pointers are known to be in
 %the same memory block, so
 This subtraction is defined in C and Clight, but
-will overflow if the difference equals
+overflows if the difference equals
 or exceeds~$2^{31}$. We adjusted the size of the largest generation to avoid this overflow.
 
 \subsubsection*{Undefined behavior in C} %Double-Bounded Pointer Comparisons.}
@@ -306,7 +308,7 @@ in turn calls the following:
 This function aims to return $1$ if \li{x} is an int, and $0$ if it is an aligned pointer.
 When \li{x} is an integer, this is indeed well-defined. 
 But when \li{x} is a pointer, the code gets stuck because
-it is undefined to take the logical \li{and} of a pointer in Clight.
+taking the logical \li{and} of a pointer is undefined in Clight.
 The second issue involves double-bounded pointer comparisons.
 On line~\ref{code:isfrom} of Figure~\ref{fig:forward}, \li{forward} checks 
 whether the object it is considering, which it already knows to be a pointer,

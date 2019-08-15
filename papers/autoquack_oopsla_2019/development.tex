@@ -128,14 +128,15 @@ satisfy the inductive spatial relations that we need. These theorems do not depe
 on any other GC theorems. Sector $3$ contains $91$ theorems that establish  
 spatial correctness (see~\S\ref{sec:spacegraph}). Sectors $4$-$14$ are the actual
 proof scripts for individual functions of the C code. Unsurprisingly, they depend
-chiefly on Sectors $1$ and $3$. Sector $2$ contains $155$ theorems that 
+chiefly on Sectors $1$ and~$3$. 
+Among these, sector $10$ is notably large, and this makes sense given that it houses 
+our workhorse \li{forward} function. The C code of \li{forward} is~$35$ lines, 
+and its verification is~$1309$ lines long: a~$37$-fold blowup.
+Sector $2$ contains $155$ theorems that 
 prove the final mathematical graph isomorphism (see~\S\ref{sec:mathgraph}).
 These theorems depend only on Sector $1$, 
 and no other sectors depend on them. This is to be expected, seeing as graph
-isomorphism is our final goal. It should be noted that sector $10$ occupies a
-disproportionate amount of space in the bar chart, compared to the circular
-diagram. This is because the width of the sectors is proportional to the number of
-theorems, not the total length.
+isomorphism is our final goal. 
 
 \subsection{Statistics Related to our Development}
 \label{sec:stats}

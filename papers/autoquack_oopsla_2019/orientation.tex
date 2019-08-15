@@ -3,7 +3,7 @@ we first~(\S\ref{sec:unionfind}) build intuition by showing how
 they are applied to verify a well-known algorithm. 
 We then~(\S\ref{sec:localblocks}) explain our new \emph{localization blocks}. 
 Finally~(\S\ref{sec:application}), we briefly discuss the other 
-examples we have handled. 
+examples we have verified. 
 %Our flagship example, the garbage collector for the 
 %CertiCoq project, will be covered in~\S\ref{sec:certigc}.
 
@@ -217,7 +217,7 @@ Using either \textsc{Localize} or \textsc{Ramify},
 Unfortunately, we still have a problem: the side condition above requires that
 }
 
-The second localization block (lines~\ref{code:ufbefram2}--\ref{code:ufaftram2}) is both easier and harder than the first.  It is easier because line~\ref{code:ufpathcompress} does not modify any local program variables, so the side condition is trivially satisfied.  Moreover, although line~\ref{code:ufaftram2} does contain an existential, line~\ref{code:findafterxparent} does not, and so there is no need to ``link'' the two associated witnesses.  We will discuss this issue
+The second localization block (lines~\ref{code:ufbefram2}--\ref{code:ufaftram2}) is both easier and harder than the first.  It is easier because line~\ref{code:ufpathcompress} does not modify any local program variables, so the side condition is trivially satisfied.  Moreover, although line~\ref{code:ufaftram2} contains an existential, line~\ref{code:findafterxparent} does not, and so there is no need to ``link'' the two associated witnesses.  We will discuss this issue
 in more detail in \S\ref{sec:linkedex}, but for now it is enough to
 choose $R \defeq L_2 --* G_2$ exactly as written in lines~\ref{code:findafterxparent}
 (for $L_2$) and~\ref{code:ufaftram2} (for $G_2$).
