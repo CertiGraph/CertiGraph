@@ -135,6 +135,16 @@ Proof.
   destruct H as [_ [_ ?]]; eauto.
 Qed.
 
+Lemma extended_copy_evalid_mono: forall (G1 G2 G1' G2': Graph) x e,
+  extended_copy x (G1, G1') (G2, G2') ->
+  evalid G1' e ->
+  evalid G2' e.
+Proof.
+  intros.
+  eapply (LocalGraphCopy.extended_copy_evalid_mono G1 G2 G1' G2' _ x e); auto.
+  destruct H as [_ [_ ?]]; eauto.
+Qed.
+
 Lemma ecopy1_vvalid_mono: forall (G1 G2 G1' G2': Graph) e x0,
   ecopy1 e (G1, G1') (G2, G2') ->
   vvalid G1' x0 ->
@@ -142,6 +152,16 @@ Lemma ecopy1_vvalid_mono: forall (G1 G2 G1' G2': Graph) e x0,
 Proof.
   intros.
   eapply (LocalGraphCopy.ecopy1_vvalid_mono G1 G2 G1' G2' e x0); auto.
+  destruct H as [_ [_ ?]]; eauto.
+Qed.
+
+Lemma ecopy1_evalid_mono: forall (G1 G2 G1' G2': Graph) e e0,
+  ecopy1 e (G1, G1') (G2, G2') ->
+  evalid G1' e0 ->
+  evalid G2' e0.
+Proof.
+  intros.
+  eapply (LocalGraphCopy.ecopy1_evalid_mono G1 G2 G1' G2' e e0); auto.
   destruct H as [_ [_ ?]]; eauto.
 Qed.
 
