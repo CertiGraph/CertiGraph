@@ -964,50 +964,79 @@ Proof.
           evalid g5' (x0, R) /\
           vvalid g5' x0) as LOCAL.
   {
-    pose proof fun H => extended_copy_vmap_root _ _ _ _ _ x H H8.
-    specialize (H13 ltac:(simpl in H1 |- *; subst x0; congruence)).
-    pose proof ecopy1_vmap_root _ _ _ _ _ x H9.
-    pose proof fun H => extended_copy_vmap_root _ _ _ _ _ x H H10.
-    specialize (H15 ltac:(simpl in H1, H13, H14 |- *; subst x0; congruence)).
-    pose proof ecopy1_vmap_root _ _ _ _ _ x H11.
+    pose proof fun H => extended_copy_vmap_root _ _ _ _ _ x H H8 as Hvmap12.
+    specialize (Hvmap12 ltac:(simpl in H1 |- *; subst x0; congruence)).
+    pose proof ecopy1_vmap_root _ _ _ _ _ x H9 as Hvmap23.
+    pose proof fun H => extended_copy_vmap_root _ _ _ _ _ x H H10 as Hvmap34.
+    specialize (Hvmap34 ltac:(simpl in H1, Hvmap12, Hvmap23 |- *; subst x0; congruence)).
+    pose proof ecopy1_vmap_root _ _ _ _ _ x H11 as Hvmap45.
     split; [congruence |].
-    pose proof vcopy1_copied_root_valid _ _ _ _ _ H7 H1.
-    apply (extended_copy_vvalid_mono _ _ _ _ _ _ H8) in H17.
-    apply (ecopy1_vvalid_mono _ _ _ _ _ _ H9) in H17.
-    apply (extended_copy_vvalid_mono _ _ _ _ _ _ H10) in H17.
-    apply (ecopy1_vvalid_mono _ _ _ _ _ _ H11) in H17.
-    assert (vvalid g2 x).
+    pose proof vcopy1_copied_root_valid _ _ _ _ _ H7 H1 as Hx0_g5'.
+    apply (extended_copy_vvalid_mono _ _ _ _ _ _ H8) in Hx0_g5'.
+    apply (ecopy1_vvalid_mono _ _ _ _ _ _ H9) in Hx0_g5'.
+    apply (extended_copy_vvalid_mono _ _ _ _ _ _ H10) in Hx0_g5'.
+    apply (ecopy1_vvalid_mono _ _ _ _ _ _ H11) in Hx0_g5'.
+    assert (vvalid g2 x) as Hx_g2.
     {
       rewrite <- (proj1 (proj1 H8)), <- (proj1 (proj1 H7)).
       auto.
     }
-    assert (vvalid g3 x).
+    assert (vvalid g3 x) as Hx_g3.
     {
       rewrite <- (proj1 (proj1 H9)).
       auto.
     }
-    assert (src g3' (x0, L) = x0 /\ dst g3' (x0, L) = l0 /\ evalid g3' (x0, L)) as [? [? ?]].
+    assert (vvalid g4 x) as Hx_g4.
+    {
+      rewrite <- (proj1 (proj1 H10)).
+      auto.
+    }
+    assert (vvalid g5 x) as Hx_g5.
+    {
+      rewrite <- (proj1 (proj1 H11)).
+      auto.
+    }
+    assert (src g3' (x0, L) = x0 /\ dst g3' (x0, L) = l0 /\ evalid g3' (x0, L)) as [Hx0L_src [Hx0L_dst Hx0L_v]].
     {
       destruct H9 as [_ [_ ?]].
       destruct H9 as [? [? [? [? [? ?]]]]].
-      destruct H22 as [_ [? _]].
-      destruct H22 as [? _].
-      rewrite (H22 (x0, L)).
-      rewrite left_right_sound in H23 by auto.
+      destruct H15 as [_ [? _]].
+      destruct H15 as [? _].
+      rewrite (H15 (x0, L)).
+      rewrite left_right_sound in H16 by auto.
       rewrite <- H3 in *.
-      rewrite <- H23 by auto.
+      rewrite <- H16 by auto.
       simpl in H0; inversion H0.
       split; [congruence | split; tauto].
     }
-    assert (vlabel g1' x0 = null).
+    pose proof (extended_copy_evalid_mono _ _ _ _ _ _ H10 Hx0L_v) as Hx0L_v'.
+    pose proof proj2 (proj2 H10).
+    destruct H13 as [_ [_ [_ [? [_ _]]]]].
+    destruct H13 as [_ [_ [? ?]]].
+    rewrite H13 in Hx0L_src by auto.
+    rewrite H14 in Hx0L_dst by auto.
+    clear H13 H14 Hx0L_v; rename Hx0L_v' into Hx0L_v.
+    pose proof (ecopy1_evalid_mono _ _ _ _ _ _ H11 Hx0L_v) as Hx0L_v'.
+    pose proof proj2 (proj2 H11).
+    destruct H13 as [_ [_ [_ [? [_ _]]]]].
+    destruct H13 as [_ [_ [? ?]]].
+    rewrite H13 in Hx0L_src by auto.
+    rewrite H14 in Hx0L_dst by auto.
+    clear H13 H14 Hx0L_v; rename Hx0L_v' into Hx0L_v.
+    assert (src g5' (x0, R) = x0 /\ dst g5' (x0, R) = r0 /\ evalid g5' (x0, R)) as [Hx0R_src [Hx0R_dst Hx0R_v]].
     {
-      destruct H7 as [_ [_ ?]].
-      destruct H7 as [_ [_ [_ ?]]].
-      rewrite <- H1 in H7.
-      subst g1'.
-      reflexivity.
+      destruct H11 as [_ [_ ?]].
+      destruct H11 as [? [? [? [? [? ?]]]]].
+      destruct H15 as [_ [? _]].
+      destruct H15 as [? _].
+      rewrite (H15 (x0, R)).
+      rewrite left_right_sound in H16 by auto.
+      rewrite <- H5 in *.
+      rewrite <- H16 by auto.
+      simpl in H0; inversion H0.
+      split; [congruence | split; tauto].
     }
-    admit.
+    tauto.
   }
   pose proof H6.
   destruct H13 as [? _].
@@ -1144,7 +1173,7 @@ Proof.
       simpl.
       unfold update_vlabel. rewrite if_true by reflexivity.
       repeat f_equal; tauto.
-Admitted.
+Qed.
 
 End PointwiseGraph_Copy_Bi.
 
