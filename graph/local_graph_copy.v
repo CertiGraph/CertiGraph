@@ -174,6 +174,26 @@ Proof.
   eapply pregraph_join_vvalid_mono; eauto.
 Qed.
 
+Lemma extended_copy_evalid_mono: forall (G1 G2: Graph) (G1' G2': Graph') M x e,
+  extended_copy M x (G1, G1') (G2, G2') ->
+  evalid G1' e ->
+  evalid G2' e.
+Proof.
+  intros.
+  destruct H as [_ [_ [_ [? _]]]].
+  eapply pregraph_join_vealid_mono; eauto.
+Qed.
+
+Lemma ecopy1_evalid_mono: forall (G1 G2: Graph) (G1' G2': Graph') e e0,
+  ecopy1 e (G1, G1') (G2, G2') ->
+  evalid G1' e0 ->
+  evalid G2' e0.
+Proof.
+  intros.
+  destruct H as [_ [_ [_ [? _]]]].
+  eapply pregraph_join_vealid_mono; eauto.
+Qed.
+
 Lemma edge_copy_vvalid_mono: forall (G1 G2: Graph) (G1' G2': Graph') g root M es_done e0 x0,
   edge_copy g root M (es_done, e0) (G1, G1') (G2, G2') ->
   vvalid G1' x0 ->
