@@ -221,7 +221,7 @@ Many classic graph problems, from union-find (node ranks)
 to Dijkstra (edge weights), require such labels.
 The need for a label on the graph as a whole
 is not as obvious; in \S\ref{sec:certigc} we use one in the garbage collector
-to keep track of \emph{e.g.} the number of generations and their boundaries.
+to keep track of the number of generations and their boundaries.
 Since every LabeledGraph is built on a PreGraph, it inherits all of the 
 PreGraph's lemmas via
 Coq's \emph{type coercion} mechanism while also opening the doors to 
@@ -258,7 +258,7 @@ of our graph constructions. However, when proving the correctness of graph
 algorithms, we often need more specificity in our mathematical graphs
 so that we may model the real program's behaviors closely.
 For example, the \p{uf\_graph} used in \li{find}
-restricted each vertex to having exactly one out-edge.
+restricts each vertex to having exactly one out-edge.
 On the other hand, these restrictions vary greatly by algorithm, so we do not
 want to bake them into our core definitions.
 We achieve this flexibility using GeneralGraphs, which augment
