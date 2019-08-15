@@ -36,7 +36,7 @@ is exactly what \textsc{Localize} needs (since $R \defeq F$).
 The equivalence between \textsc{Frame} and \textsc{Localize} means that %is important because
 our techniques will be sound in any separation logic.
 
-\paragraph{Note on notation.} Localization blocks can safely nest. When the ramification entailment is not noteworthy we can omit the $\ramify(i)$ reference in pen-and-paper proofs.  When we wish to save vertical space we write $\{ G_1 \} \searrow \{ L_1 \}$ and $\{ G_2 \} \swarrow \{ L_2 \}$.
+\emph{Note on Notation.} Localization blocks can safely nest. When the ramification entailment is not noteworthy we can omit the $\ramify(i)$ reference in pen-and-paper proofs.  When we wish to save vertical space we write $\{ G_1 \} \searrow \{ L_1 \}$ and $\{ G_2 \} \swarrow \{ L_2 \}$.
 Since \infrulestyle{Localize} can derive \infrulestyle{Frame}, our notation also clarifies pen-and-paper uses of \infrulestyle{Frame}, especially in multi-line contexts with nontrivial frame~$F$.
 
 \begin{figure*}
@@ -129,8 +129,7 @@ In \S\ref{sec:ramifylib} we will discuss the ``supplemental'' spatial libraries,
 the preciseness of our key predicates.
 }
 
-\pagebreak
-\subsection{Smoothly handling modified program variables}
+\subsection{Smoothly Handling Modified Program Variables}
 \label{sec:freevars}
 Consider using \textsc{Localize} to verify the program below.
 \vspace{-1ex}
@@ -140,8 +139,8 @@ Consider using \textsc{Localize} to verify the program below.
   $// \{ \tx{x} = 6 /| D \} \swarrow \{\tx{x} = 6 /| C \}$
 \end{lstlisting}
 \vspace{-1ex}
-Suppose that other (elided) lines of the program make localization desirable, even though it is overkill for a single assignment.  The key issue is that if one sets $R \defeq L_2 --* G_2$, as
-we tried to do in \S\ref{sec:localblocks}, then the program variable {\li{x}} appears 
+Suppose that other (elided) lines of the program make localization desirable, even though it is overkill for a single assignment.  The key issue is that if one sets $R \defeq L_2 --* G_2$ as
+we tried to do in \S\ref{sec:localblocks}, the program variable {\li{x}} appears 
 in all four positions in the ramification entailment
 \vspace{-1ex}
 \[
@@ -164,8 +163,8 @@ since it prevents us from mentioning variables in the postconditions that have b
 by code $c$.  As in other cases when life gets tough, what we need is an elegant little dance, and as with most dances, one should lead by example.
 
 First, define $\hat{L_2}(x_f) \defeq (x_f \! = \! 6 /| C)$ and
-$\hat{G_2}(x_f) \defeq (x_f \! = \! 6 /| D)$, \emph{i.e.} replace the troublesome program variable \tx{x} in $L_2$ and $G_2$ with a harmless fresh metavariable $x_f$.  Next, notice that with a carefully chosen existential quantifier, we can express the original $L_2$ with the new $\hat{L_2}$
-while keeping the troublesome program variable \tx{x} isolated. 
+$\hat{G_2}(x_f) \defeq (x_f \! = \! 6 /| D)$, \emph{i.e.} replace the troublesome program variable \li{x} in $L_2$ and $G_2$ with a harmless fresh metavariable $x_f$.  Next, notice that with a carefully chosen existential quantifier, we can express the original $L_2$ with the new $\hat{L_2}$
+while keeping the troublesome program variable \li{x} isolated. 
 The new decorated program is below.
 \begin{lstlisting}
   $// \{ \tx{x} \! = \! 5 /| A \} \searrow \{\tx{x} \! = \! 5 /| B \}$
@@ -177,13 +176,13 @@ The new decorated program is below.
 \end{lstlisting}
 
 Notice that lines~\ref{code:locexamplepresw} and~\ref{code:locexamplepostsw}
-are exactly in the form $\exists x_f. \hat{\hat{L_2}}(x_f)$ and $\exists x_f. \hat{\hat{G_2}}(x_f)$, \emph{i.e.} exactly in the format permitted by \textsc{Localize}, where $\hat{\hat{L_2}}(x_f) \defeq (x_f = \tx{x}) /| \hat{L_2}(x_f)$, \emph{i.e.} $(x_f = \tx{x}) /| (x_f \! = \! 6 /| C)$. $\hat{\hat{G_2}}(x_f)$~is similar. % \defeq (x_f = \tx{x}) /| (x_f \! = \! 6 /| C)$
+are exactly in the form $\exists x_f. \hat{\hat{L_2}}(x_f)$ and $\exists x_f. \hat{\hat{G_2}}(x_f)$, \emph{i.e.} exactly in the format permitted by \textsc{Localize}, where $\hat{\hat{L_2}}(x_f) \defeq (x_f = \li{x}) /| \hat{L_2}(x_f)$, \emph{i.e.} $(x_f = \li{x}) /| (x_f \! = \! 6 /| C)$. $\hat{\hat{G_2}}(x_f)$~is similar. % \defeq (x_f = \tx{x}) /| (x_f \! = \! 6 /| C)$
 Now apply \textsc{Localize} with $R \defeq \forall x_f.~\hat{L_2}(x_f) --* \hat{G_2}(x_f)$, \emph{i.e.} $\forall x_f.~(x_f \! = \! 6 /| C) --* (x_f \! = \! 6 /| D)$.  By construction, $R$
 is free from all program variables modified by $c$, so \textsc{Localize}'s side condition is
 satisfied.  All that remains is to prove \textsc{Localize}'s two entailments.  Let us consider
 them in reverse order.  The second one is $R |- \forall x_f.~ \big(\hat{\hat{L_2}}(x_f) --* \hat{\hat{G_2}}(x_f)\big)$, \emph{i.e.}
 \[
-\forall x_f.~\big(\hat{L_2}(x_f) --* \hat{G_2}(x_f)\big) |- \forall x_f.~\Big(\big((\tx{x} = x_f) /| \hat{L_2}(x_f)\big) --* \big((\tx{x} = x_f) /| \hat{G_2}(x_f)\big)\Big)
+\forall x_f.~\big(\hat{L_2}(x_f) --* \hat{G_2}(x_f)\big) |- \forall x_f.~\Big(\big((\li{x} = x_f) /| \hat{L_2}(x_f)\big) --* \big((\li{x} = x_f) /| \hat{G_2}(x_f)\big)\Big)
 \]
 This is a long-winded tautology, and is automatic in a tool.
 The first entailment is $G_1 |- L_1 --* R$,~\emph{i.e.}
@@ -213,7 +212,7 @@ VST does not use variables as resource, nor does it have modules to reason about
 Because we respect these design decisions, our solutions can be incorporated 
 more easily: in~\S\ref{sec:development} we will see that our additions to VST are less than 1\% of its codebase.
 
-\subsection{Linked existentials}
+\subsection{Linked Existentials}
 \label{sec:linkedex}
 
 \input{mark_listing.tex}
@@ -225,7 +224,7 @@ $L_2$ was carried over to the corresponding existential witness in the global po
 other uses as well.  To illustrate them, and to demonstrate other aspects of our system, in particular our ability to explore a graph recursively via fold/unfold, we consider another example.
 
 In Figure~\ref{fig:markgraph} we put the code and proof sketch of the classic \li{mark} algorithm that visits and colors every reachable node in a heap-represented graph.  The \li{mark} example contrasts from \li{find} in several respects.  First, it modifies the labels of nodes instead of the edges.  Second, each node has two outgoing edges rather than one, so the graph can have a more complex shape.  Third, the graph can be nontrivially cyclic.  Fourth, the specification we certify (lines \ref{code:markstart} and \ref{code:markend}) is \emph{local} rather than \emph{global}:
-\vspace*{-1ex}
+\vspace*{-2.2ex}
 \[
 \{\p{m\_graph}(\li{x},\gamma)\}~\li{mark(x)}~\{\exists \gamma'.~ \p{m\_graph}(\li{x},\gamma') /| \m{mark}(\gamma, \li{x}, \gamma')\}
 \vspace*{-1ex}

@@ -4,7 +4,7 @@ in verifying programs that manipulate tree-shaped data structures.
 chlipala:bedrock,bengtson:charge,appel:programlogics}.
 Unfortunately, programs that manipulate graph-shaped data structures
 (\emph{i.e.} structures with \emph{intrinsic sharing}) have proved harder to verify.
-Indeed, such programs were formidable enough that a number of the early
+Indeed, such programs were formidable enough that many of the early
 landmark results in separation logic devoted substantial effort to verifying
 single examples such as Schorr-Waite~\cite{hongseok:phd} or
 union-find~\cite{neelthesis} with pen and paper.
@@ -18,9 +18,9 @@ to the verification of other graph-manipulating programs.
 
 In contrast, we present a toolkit for verifying graph-manipulating programs in a
 machine-checked context. Our techniques are \emph{general} in that they handle a diverse
-range of programs, and \emph{modular} in that they allow code
-reuse (\emph{e.g.} facts about reachability) and encourage separation of concerns
-(\emph{e.g.} between abstract mathematical graphs and their concrete representation
+range of programs, and \emph{modular} in that they encourage code
+reuse (\emph{e.g.} facts about reachability) and separation of concerns
+(\emph{e.g.} between abstract mathematical graphs and concrete representations
 in the heap).
 Our techniques are \emph{powerful} enough to reason about real C code as compiled by
 CompCert~\cite{leroy:compcert}, and also
@@ -93,7 +93,7 @@ graph-manipulating algorithms.
 To the best of our knowledge this is the first machine-checked verification of this algorithm that starts with real C code.
 %We introduce \emph{localization blocks} as a notation for \textsc{Localize} in 
 %decorated programs. 
-We briefly review the six programs we have already verified to give a sense 
+We briefly review the seven programs we have already verified to give a sense 
 of the breadth of algorithms our system can tackle.
 \item[\S\ref{sec:localizations}] We show that \textsc{Localize} and \textsc{Frame} are co-derivable.  We illustrate a delicate technique to properly handle modified 
 local variables. We show a mark-graph
