@@ -337,4 +337,4 @@ Proof.
   rewrite H9.
   apply (exp_right (vlabel g5 (ValidPointer b i), g5, gg5')); entailer!; auto. cancel.
   apply derives_refl.
-Time Qed. (* Takes 15 seconds. *)
+Qed. (* Takes 15 seconds. *)
