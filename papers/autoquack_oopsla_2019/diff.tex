@@ -471,7 +471,7 @@ graph-manipulating algorithms.
 To the best of our knowledge this is the first machine-checked verification of this algorithm that starts with real C code.
 We \DIFdelbegin \DIFdel{introduce }\emph{\DIFdel{localization blocks}} %DIFAUXCMD
 \DIFdel{as a notation for }\textsc{\DIFdel{Localize}} %DIFAUXCMD
-\DIFdel{in decorated programs }\DIFdelend \DIFaddbegin \DIFadd{briefly review the seven programs we have already verified to give a sense 
+\DIFdel{in decorated programs }\DIFdelend \DIFaddbegin \DIFadd{briefly review the seven programs we have verified to give a sense 
 of the breadth of algorithms our system can tackle}\DIFaddend .
 \item[\S\ref{sec:localizations}] We show that \textsc{Localize} and \textsc{Frame} are \DIFdelbegin \DIFdel{equivalent,
 and }\DIFdelend \DIFaddbegin \DIFadd{co-derivable.  We illustrate }\DIFaddend a delicate technique to properly handle modified 
@@ -497,14 +497,14 @@ We also document statistics related to our overall development.
 All of our results are machine checked in Coq and \DIFdelbegin \DIFdel{available at~\mbox{%DIFAUXCMD
 \cite{github}}\hspace{0pt}%DIFAUXCMD
 }\DIFdelend \DIFaddbegin \DIFadd{are available as an artifact online.
-A version of this paper featuring three additional appendices is available 
-at }\cite{onlinepaper}\DIFaddend .
+A version of this paper featuring three additional appendices is also available 
+online }\cite{onlinepaper}\DIFaddend .
 
 \section{\texorpdfstring{\DIFdelbegin \DIFdel{Localizations yield a tidy union-find}\DIFdelend \DIFaddbegin \DIFadd{Tour of a verified example}\DIFaddend \DIFdelbegin \DIFdel{}\DIFdelend \DIFaddbegin \DIFadd{}\DIFaddend}{verified examples} }
 \label{sec:orientation}
 \DIFaddbegin \DIFadd{Before jumping into an involved discussion of our three-part recipe, 
 we first~(\S\ref{sec:unionfind}) build intuition by showing how 
-they are applied to verify a well-known algorithm. 
+they are applied to verify the union-find algorithm. 
 We then~(\S\ref{sec:localblocks}) explain our new }\emph{\DIFadd{localization blocks}}\DIFadd{. 
 Finally~(\S\ref{sec:application}), we briefly discuss the other 
 examples we have verified. 
