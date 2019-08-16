@@ -1,4 +1,3 @@
-\DIFaddbegin \DIFadd{
 We thank Asankhaya Sharma for his help with a previous version of this paper,
 Neel Krishnaswami for his helpful suggestions and encouragements, and
 Xavier Leroy and Robbert Krebbers for fruitful discussions.
@@ -8,4 +7,20 @@ Shengyi Wang for a summer. This work was funded in part by the
 \grantsponsor{}{Yale-NUS College}{} grant~\mbox{\grantnum{}{R-607-265-322-121}} and the \grantsponsor{}{National Science Foundation}{} grant~\grantnum{}{CCF-1521602}.
 Any opinions, findings, and conclusions or recommendations expressed in
 this material are those of the authors and do not necessarily reflect the
-views of Yale-NUS College or the National Science Foundation.}\DIFaddend
+views of Yale-NUS College or the National Science Foundation.
+\hide{
+
+                            %% acks environment is optional
+                                        %% contents suppressed with 'anonymous'
+  %% Commands \grantsponsor{<sponsorID>}{<name>}{<url>} and
+  %% \grantnum[<url>]{<sponsorID>}{<number>} should be used to
+  %% acknowledge financial support and will be used by metadata
+  %% extraction tools.
+  This material is based upon work supported by the
+  \grantsponsor{GS100000001}{National Science
+    Foundation}{http://dx.doi.org/10.13039/100000001} under Grant
+  No.~\grantnum{GS100000001}{nnnnnnn} and Grant
+  No.~\grantnum{GS100000001}{mmmmmmm}.  Any opinions, findings, and
+  conclusions or recommendations expressed in this material are those
+  of the author and do not necessarily reflect the views of the
+  National Science Foundation.}
