@@ -34,7 +34,8 @@
       \gamma \smallsetminus S \; &\defeq \;&
           \Big(\mathcal{V}_{\gamma},\mathcal{E}_{\gamma}, \mathtt{src}_{\gamma}, \mathtt{dst}_{\gamma}, \\
           &&\qquad \lambda x.~ \gamma_{\mathtt{V}}(x) /| \lnot S_{\mathtt{V}}(x), \\
-          &&\qquad \lambda x.~ \gamma_{\mathtt{E}}(x) /| \lnot S_{\mathtt{E}}(x)\;\Big)
+          &&\qquad \lambda x.~ \gamma_{\mathtt{E}}(x) /| \lnot S_{\mathtt{E}}(x)\;\Big)\\
+          && \hspace{-1cm}\mathit{reachable}(\gamma, x)\;\defeq\;\big\{t \mid \exists\,p\,.\, \gamma |= x \overset{\m{p}}{\leadsto} t\big\}
   \end{array}}
   \end{equation*}
   \end{minipage}
