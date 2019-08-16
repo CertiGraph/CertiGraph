@@ -927,9 +927,10 @@ in~\S\ref{sec:localizations}. We also verify a version of }\li{mark}
 marking cyclic graphs: we get genuine separation
 between the root and its children, but we also need to maintain acyclicity if
 we modify the link structure.
-We verify }\li{copy}\DIFadd{, a graph copying algorithm, which is tricky because
+We verify} \li{copy}\DIFadd{, a deep structure-preserving graph copying algorithm, 
+which is tricky because
 we must initially reason about a ``copy'' that is under construction, 
-but eventually show isomorphism with the well-formed original.
+but eventually show isomorphism with the original.
 Further, as an example of more aggressive modifications to the link structure 
 of a graph, we verify }\li{spanning}\DIFadd{, which prunes a graph into its 
 spanning tree. 
@@ -2438,7 +2439,7 @@ properties to LabeledGraphs (\ref{subsec:graphplugins}). }
 A PreGraph is a hextuple $(\mathcal{V}, \mathcal{E}, \mathtt{V}, \mathtt{E}, \mathtt{src}, \mathtt{dst})$.  \DIFaddbegin \DIFadd{Arguments }\DIFaddend $\mathcal{V}$ and $\mathcal{E}$ are the underlying
 carrier types of vertices and edges.  $\mathtt{V}$ and $\mathtt{E}$ are predicates over
 $\mathcal{V}$ and $\mathcal{E}$ that specify the notion
-of \emph{validity} in the graph.  Finally, $\mathtt{src}$ and $\mathtt{dst}$ map each edge to
+of \emph{validity} in the graph.  Finally, $\mathtt{src}$ and $\mathtt{dst}: \DIFaddbegin \DIFadd{\mathcal{E} -> \mathcal{V}}\DIFaddend$ map each edge to
 its source and destination.
 
 
@@ -2721,11 +2722,11 @@ further enabling code sharing between algorithms.
   \end{aligned} \right\}}\\
   \DIFaddFL{\mathrm{FiniteGraph}(\gamma)\,}&\DIFaddFL{\defeq\, \left\{
   \begin{aligned}
-      \mathtt{finite\_v}:&\;\exists\, S_\m{v},\, M_\m{v}.~\;\lvert S_\m{v}\rvert
-      \leq M_\m{v} \wedge
+      \mathtt{finite\_v}:&\;\exists\, S_\m{v},\, n.~\;\lvert S_\m{v}\rvert
+      \leq n \wedge
       \forall \m{v}\,.\, \mathtt{vvalid}(\gamma,\m{v})\Rightarrow \m{v}\,\in\,S_\m{v}\\
-      \mathtt{finite\_e}:&\;\exists\, S_e,\, M_e.~\;\lvert S_e\rvert
-      \leq M_e \wedge
+      \mathtt{finite\_e}:&\;\exists\, S_e,\, n.~\;\lvert S_e\rvert
+      \leq n \wedge
       \forall e\,.\, \mathtt{evalid}(\gamma,e)\Rightarrow e\,\in\,S_e\\
   \end{aligned}  \right\}}\\
 \end{align*}}
