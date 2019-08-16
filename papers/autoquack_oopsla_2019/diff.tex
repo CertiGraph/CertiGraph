@@ -3244,7 +3244,9 @@ lists and then extended to sets as follows:
 
 We are now ready to define a good \p{graph} predicate:
   \quad \DIFdelbegin \DIFdel{$\p{graph}(x, \gamma) \; \defeq \; \underset{v \in \mathit{reach}(\gamma, x)}{\bigstar} v\mapsto\gamma(v)$
-}\DIFdelend \DIFaddbegin \DIFadd{$\p{graph}(x, \gamma) \; \defeq \; \!\!\!\!\!\!\!\!\!\!\underset{\m{v} \in \mathit{reachable}(\gamma, x)}{\bigstar}\!\!\!\!\!\!\m{v}\mapsto\gamma(\m{v})$.
+}\DIFdelend 
+
+\DIFaddbegin \DIFadd{$\p{graph}(x, \gamma) \; \defeq \; \!\!\!\!\!\!\!\!\!\!\underset{\m{v} \in \mathit{reachable}(\gamma, x)}{\bigstar}\!\!\!\!\!\!\m{v}\mapsto\gamma(\m{v})$.
 }\DIFaddend \iffalse
 \begin{equation*}
   \underset{\{l_1, l_2,\dots,l_n\}}{\bigstar}P ~~ \defeq ~~ P(l_1) *
@@ -5010,7 +5012,7 @@ Xavier Leroy and Robbert Krebbers for fruitful discussions.
 We also thank the CertiCoq team (esp. Andrew~W.~Appel, Olivier~Savary~Belanger, and 
 Zoe~Paraskevopoulou) for their overall support and for hosting 
 Shengyi Wang for a summer. This work was funded in part by the
-\grantsponsor{}{Yale-NUS College}{} grant~\mbox{\grantnum{}{R-607-265-322-121}} and the \grantsponsor{}{National Science Foundation}{} grant~\grantnum{}{CCF-1521602}.
+\grantsponsor{}{Yale-NUS College}{} grant~\mbox{\grantnum{}{R-607-265-322-121}} and the \grantsponsor{}{National Science \linebreak Foundation}{} grant~\grantnum{}{CCF-1521602}.
 Any opinions, findings, and conclusions or recommendations expressed in 
 this material are those of the authors and do not necessarily reflect the 
 views of Yale-NUS College or the National Science Foundation.}\DIFaddend
