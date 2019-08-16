@@ -16,13 +16,14 @@ The Verified Software Toolchain consists of a series of machine-checked modules 
 to reason about CompCert C programs~\cite{appel:programlogics}.
 Floyd is VST's module for verifying such programs using separation logic.
 VST's modules interlock so there are no ``gaps'' in the end-to-end certified results;
-accordingly all of the rules employed by Floyd have been proved sound with respect to
+accordingly all of the rules employed by the Floyd module 
+have been proved sound with respect to
 the underlying semantics used by CompCert.  Floyd is written in Ltac and Gallina and is
 designed to help users verify the full functional correctness of their programs.
 We added two tactics, \li{localize} and \li{unlocalize}, to
 integrate the \textsc{Localize} rule (as described in \S\ref{sec:orientation}--\S\ref{sec:localizations}) into Floyd.
 
-Floyd presents users with a pleasant ``decorated program'' visualization for Hoare proofs, in which users work from the top of the program to the bottom even though the formal proof is maintained as applications of inference rules.  For example, suppose the proof goal is $\triple{P_1}{c_1\li{;}c_2}{P_5}$ and VST's user tells Floyd to apply a Hoare rule for $c_1$, \emph{e.g.}~$\triple{P_1}{c_1}{P_2}$.  Floyd then automatically applies the \infrulestyle{Sequence} rule and show the user $\triple{P_2}{c_2}{P_5}$ as the remaining goal.
+The Floyd module presents users with a pleasant ``decorated program'' visualization for Hoare proofs, in which users work from the top of the program to the bottom even though the formal proof is maintained as applications of inference rules.  For example, suppose the proof goal is $\triple{P_1}{c_1\li{;}c_2}{P_5}$ and VST's user tells Floyd to apply a Hoare rule for $c_1$, \emph{e.g.}~$\triple{P_1}{c_1}{P_2}$.  Floyd then automatically applies the \infrulestyle{Sequence} rule and show the user $\triple{P_2}{c_2}{P_5}$ as the remaining goal.
 When the user is in the middle of a verification, the decorated program is partially done (\emph{i.e.} the proof is finished from the top to ``the current program point'') and the inference tree is also partially done (\emph{i.e.} with holes that are represented by the remaining proof goals in Coq).
 
 We wish to preserve this ``decorated program'' view while extending Floyd to support localization.  Our task therefore is to construct a proof in Coq's underlying logic that allows a localization block to be constructed in this manner---that is, we wish to enter a localization block without requiring the user to specify the ``exit point'' in advance.  The engineering is tricky because the proof Floyd is constructing (\emph{i.e.} applications of inference rules) has holes in places where the user's ``top to bottom'' view of things has not yet arrived.
