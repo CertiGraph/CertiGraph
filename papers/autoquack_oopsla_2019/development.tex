@@ -114,13 +114,20 @@ In the third column, the user has advanced past $c_3$ to reach the local postcon
 %As discussed in~\S\ref{sec:mathgraph} and~\S\ref{sec:spacegraph}, 
 We worked to make our library modular, thus encouraging 
 proof reuse. Figure~\ref{fig:connectedness} gives a sense of this 
-engineering effort.
-$14$ files were used to verify the garbage collector, and
-the bar at the bottom shows their relative lengths.
-Each straight line in the perimeter represents a theorem used to verify the GC, 
-and the length of a line corresponds to the length of the theorem on a 
+engineering effort with the garbage collector as a case study.
+$14$ files were used to verify the GC, and
+the bar at the bottom the relative lengths of those files on a linear scale.
+Files $1$ and $3$ are about half the development, 
+and they contain generic definitions and theorems. They can be reused for
+the verification of programs that have mathematical or spatial structures
+similar to our GC.
+
+Moving to the circular graph, 
+each straight line perpendicular to the perimeter 
+represents a theorem used to verify the GC. 
+The lengths of those lines corresponds to the lengths of the relevant theorems on a 
 logarithmic scale. The $14$ color-coded sectors represent the files in which 
-these theorems are housed. Arcs connecting theorems represent dependencies, 
+these theorems are housed. Inside the circle, arcs connecting theorems represent dependencies, 
 where an arc is colored the same as the theorem's \emph{caller}.
 
 Sector $1$ contains $432$ generic helper theorems used to check that functions
@@ -138,10 +145,11 @@ These theorems depend only on Sector $1$,
 and no other sectors depend on them. This is to be expected, seeing as graph
 isomorphism is our final goal. 
 
+\pagebreak
 \subsection{Statistics Related to our Development}
 \label{sec:stats}
 
-\begin{table}[b]
+\begin{table}[t]
 \centering
 \caption{Statistics for our code base}
 \begin{tabular}{c|c|c|c|c|c}
@@ -166,19 +174,19 @@ Total Development & & 89 & 39,823 & 704 & 2,111 \\
 
 All our results in this paper have been machine-checked.
 %The bulk of our development was checked in Coq, although a 55-line file (shown in Figure~\ref{fig:hipmarkgraph}) was checked in HIP/SLEEK.  Our modifications to H/S itself were not machine-checked since H/S does not have a mechanized soundness proof.
-Although the size of a development does not perfectly match that development's 
+Although the size of a development does not perfectly match its 
 importance or the difficulty of its implementation, 
 we present the size nonetheless in Table~\ref{tab:codebase}.
 %, organized roughly by the paper section corresponding to each development.
-Our proof script is written in a very
+Our proofs are written in a very
 dense style.
 For comparison, verifying a simple 39-line list-based merge sort in VST takes 600 lines.
 At $\approx400$ LOC, the garbage collector is much larger, and is very complicated both
 mathematically and spatially, in many places teetering on the edge of what can be defined
-in~C. For context, CompCert has 217k LOC, 5,687 definitions, and 6,694 theorems;
+in~C. CompCert has 217k LOC, 5,687 definitions, and 6,694 theorems;
 VST has 623k LOC, 14,038 definitions, and 21,442 theorems. It is hard to determine
 the time taken for this project on the whole, but the verification of the garbage collector
-took us eight months.
+took $8$ months.
 
 %It took fewer than 400 lines of Coq to verify the \li{mark} algorithm in H/S, indicating that a large portion of the codebase is shared between VST and H/S.  For context, VST and H/S have approximately 140k and 179k LOC.
 
