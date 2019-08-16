@@ -269,15 +269,16 @@ for directed acyclic graphs (DAGs), which is both easier and harder than
 marking cyclic graphs: we get genuine separation
 between the root and its children, but we also need to maintain acyclicity if
 we modify the link structure.
-We verify \li{copy}, a graph copying algorithm, which is tricky because
+We verify \li{copy}, a deep structure-preserving graph copying algorithm, 
+which is tricky because
 we must initially reason about a ``copy'' that is under construction, 
-but eventually show isomorphism with the well-formed original.
+but eventually show isomorphism with the original.
 % is tricky because
 % although the copied graph does not satisfy the original graph's soundness 
 % condition (see~\S\ref{{sec:mathgraph}}) while it is being constructed, 
 % and yet we must establish this soundness condition on the copy at the 
 % end of the program.
-Further, as an example of more aggressive modifications to the link structure 
+As an example of more aggressive modifications to the link structure 
 of a graph, we verify \li{spanning}, which prunes a graph into its 
 spanning tree. 
 

@@ -81,7 +81,7 @@ properties to LabeledGraphs (\ref{subsec:graphplugins}). %and will be discussed 
 A PreGraph is a hextuple $(\mathcal{V}, \mathcal{E}, \mathtt{V}, \mathtt{E}, \mathtt{src}, \mathtt{dst})$.  Arguments $\mathcal{V}$ and $\mathcal{E}$ are the underlying
 carrier types of vertices and edges.  $\mathtt{V}$ and $\mathtt{E}$ are predicates over
 $\mathcal{V}$ and $\mathcal{E}$ that specify the notion
-of \emph{validity} in the graph.  Finally, $\mathtt{src}$ and $\mathtt{dst}$ map each edge to
+of \emph{validity} in the graph.  Finally, $\mathtt{src}$ and $\mathtt{dst}: \mathcal{E} -> \mathcal{V}$ map each edge to
 its source and destination.
 % With an
 %eye to flexibility, we make no further requirements of a legal PreGraph.
