@@ -201,11 +201,10 @@ We put the complete definition
 of \m{forward\_relation}, with its twelve constructors, 
 % in Appendix~\ref{apx:forwardrelation}. 
 in the extended online version of our paper.
-We actually have such relations for all the key functions in our GC, 
-and our final correctness proof shows that a 
-systematic composition of these relations corresponds to the 
-Clight code of our garbage collector. 
-
+We have such relations for all the key functions in our GC, 
+and our final correctness proof shows that 
+composing these relations together yields the high-level 
+correctness property---a kind of graph isomorphism---that is required by CertiCoq.
 
 \subsection{Do Scan}
 \label{sec:gcdoscan}
