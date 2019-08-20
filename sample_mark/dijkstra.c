@@ -130,7 +130,7 @@ void dijkstra () {
     for (i = 0; i < SIZE; i++) {
         dist[i] = (i == src) ? 0 : IFTY;  // Best-known distance from src to i
         prev[i] = IFTY;                   // Last vertex visited before i
-        push(i, dist[i], &pq);           // Everybody goes in the queue
+        push(i, dist[i], &pq);            // Everybody goes in the queue
     }
     while (pq != NULL) {
         u = popMin(&pq); // this is the next candidate we will deal with (once and for all)
