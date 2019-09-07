@@ -100,7 +100,7 @@ C. Accordingly, the CFML proofs benefit from ML’s cleaner computational model.
 Our verifications are in C so we must contend with C’s memory model, pointer 
 arithmetic, significant scope for undefined behavior, and so forth.
 
-\citet{charpott15, charpott19}~used CFML to verify the correctness and 
+\citet{charpott19}~used CFML to verify the correctness and 
 time complexity of union-find. Their work is an interesting counterpoint to 
 ours because, while it maintains an abstraction between the client and the 
 internal mathematical/spatial facts that the client need not know, it does 
@@ -140,7 +140,7 @@ CFML enables the verification of OCaml programs by reasoning about their
 ``characteristic formulae'' in separation logic using Coq~\cite{char10, char11}. 
 CFML has been used to verify a range of functional and imperative programs,
 including some graph-related algorithms as discussed 
-above. \citet{charpott15, charpott19}~extended CFML to reason about time 
+above. \citet{charpott19}~extended CFML to reason about time 
 credits. The work of \citet{gueneau17}~indicates that CFML is exploring a connection 
 with the certified CakeML compiler~\cite{cakeml}.
 
