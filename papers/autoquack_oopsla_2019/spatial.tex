@@ -248,12 +248,13 @@ See Figure \ref{fig:badcycle} for an attempt to prove the entailment $100 |-> 42
 
 \subsection{Defining a Good \p{graph} Predicate}\label{sec:goodgraph}
 
-Rather than trying to define \p{graph} as a recursive fixpoint,
-we will instead give it a flat structure.  Graphs in separation
-logic have been defined in similar ways before, \emph{e.g.}~\citet{ilya-graphs};
+Rather than defining \p{graph} as a recursive fixpoint,
+we give it a flat structure.  Graphs in separation
+logic have been defined in similar ways before, \emph{e.g.}~\citet{ilya-graphs}
+and \citet{charpott19};
 our innovation is that we prove---with the amount of precision
-required to convince Coq---that we can still enjoy fold/unfold
-with our flat definition.  Our path starts with the iterated
+required to convince Coq---that we still enjoy fold/unfold
+with our flat definition.  We start with the iterated
 separating conjunction or ``big star'', which is first defined over
 lists and then extended to sets as follows:
 
