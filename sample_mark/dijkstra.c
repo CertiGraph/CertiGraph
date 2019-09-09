@@ -5,82 +5,50 @@
 
 #define IFTY INT_MAX
 #define SIZE 8  // number of vertices
-#define CONN 5  // the connectedness. 1 is 100%, higher numbers mean less connected
+#define CONN 3  // the connectedness. 1 is 100%, higher numbers mean less connected
 #define INFL 50 // increase this to inflate the highest possible cost, thus creating greater ranges
 
 
 /* ****************************** */
-/* Linked List Masquerading as PQ */
+/*    Array Masquerading as PQ    */
 /* ****************************** */
 
-struct Node { int vertex; int weight; struct Node *next; struct Node *prev;};
+// Here for completeness. Actually just inlined in the code.
+// void push (int vertex, int weight, int** pq) {
+//     *pq[vertex] = weight;   
+// }
 
-void push (int vertex, int weight, struct Node **list) {
-    struct Node* newHead = (struct Node *) malloc (sizeof (struct Node));
-    newHead->vertex = vertex;
-    newHead->weight = weight;
-    newHead->prev=NULL;
-    newHead->next = *list;
-    if (*list != NULL)
-        (*list)->prev = newHead;
-    *list = newHead;
-}
-
-void deleteNode (struct Node *del, struct Node **head) {
-    if (*head == NULL || del == NULL) return;
-    if (*head == del) *head = del->next;
-    if (del->next != NULL) del->next->prev = del->prev;
-    if (del->prev != NULL) del->prev->next = del->next;
-    free(del);
-    return;
-}
-
-int popMin (struct Node **head) {
+int popMin (int pq[SIZE]) {
     int minWeight = IFTY;
     int minVertex = -1;
-    struct Node *minNode = NULL;
-    struct Node *current = *head;
-    while (current != NULL) {
-        if (current->weight < minWeight) {
-            minWeight = current->weight;
-            minVertex = current->vertex;
-            minNode = current;
-        } current = current->next;
+    int i;
+    for (i = 0; i < SIZE; i++) {
+        if (pq[i] < minWeight) {
+            minVertex = i;
+            minWeight = pq[i];
+        }   
     }
-    deleteNode(minNode, head);
+    if (minVertex != -1) {
+        pq[minVertex] = IFTY; /* basically, deletes the node */
+    }
     return minVertex;
 }
 
-void adjustWeight (int vertex, int newWeight, struct Node **head) {
-    struct Node *current = *head;
-    while (current != NULL) {
-        if (current->vertex == vertex) {
-            current->weight = newWeight;
-            return;
-        } current = current->next;
-    }
+// // Here for completeness. Actually just inlined in the code.
+// void adjustWeight (int vertex, int newWeight, int **pq) {
+//     *pq[vertex] = newWeight;
+// }
+
+// Quick utility function to check that the PQ is not empty
+int pq_not_emp (int pq[SIZE]) {
+    int i;
+    for (i = 0; i < SIZE; i++) {
+        if (pq[i] < IFTY)
+            return 1;
+    }   
+    return 0;
 }
-
-void print_verts (struct Node *list) {
-    if (list == NULL) printf("A blank list was provided.\n");
-    struct Node *current = list;
-    while (current != NULL) {
-        printf ("%d\t", current->vertex);
-        current = current->next;
-    } printf ("\n");
-}
-
-// Used only for testing, will be removed eventually.
-void print_list (struct Node *list) {
-    if (list == NULL) printf("A blank list was provided.\n");
-    struct Node *current = list;
-    while (current != NULL) {
-        printf ("(%d, %d)\t", current->vertex, current->weight);
-        current = current->next;
-    } printf ("\n");
-}
-
-
+ 
 /* ************************************************** */
 /*   Dijkstra's Algorithm to find the shortest path   */
 /*  from a single source to all possible destinations */
@@ -90,12 +58,11 @@ void print_list (struct Node *list) {
 /* Setting up a random problem */
 /* *************************** */
 
-int graph[SIZE][SIZE]; /* We represent the graph using an adjacency matrix */
-int src, dst;
-
-void setup () {
+// not currently used.
+// will figure out how to reason about random later.
+void setup (int graph[SIZE][SIZE]) {
     srand((unsigned int) time(NULL));
-    src = rand() % SIZE;
+    // src = rand() % SIZE;
     int i, j;
     for (i = 0; i < SIZE; i++) {
         for (j = 0; j <= SIZE; j++) {
@@ -106,7 +73,7 @@ void setup () {
 }
 
 // Used only for testing, will be removed eventually.
-void print_graph () {
+void print_graph (int graph[SIZE][SIZE], int src) {
     int i, j;
     for (i = 0; i < SIZE; i++) {
         for (j = 0; j < SIZE; j++)
@@ -121,63 +88,78 @@ void print_graph () {
 /* Solution */
 /* ******** */
 
-int dist[SIZE];
-int prev[SIZE];
-
-void dijkstra () {
-    int i, u;
-    struct Node *pq = NULL;
-    for (i = 0; i < SIZE; i++) {
-        dist[i] = (i == src) ? 0 : IFTY;  // Best-known distance from src to i
-        prev[i] = IFTY;                   // Last vertex visited before i
-        push(i, dist[i], &pq);            // Everybody goes in the queue
+void printPath (int curr, int src, int prev[SIZE]) {
+    if (curr == src) {
+        printf("%d\t", curr);
+    } else {
+        printPath (prev[curr], src, prev); printf("%d\t", curr);
     }
-    while (pq != NULL) {
-        u = popMin(&pq); // this is the next candidate we will deal with (once and for all)
-        if (u < 0) // The "min" actually had distance infinity. All the rest in the PQ are unreachable.
+} 
+
+void getPaths (int src, int dist[SIZE], int prev[SIZE]) {
+    int i;
+    for (i = 0; i < SIZE; i++) {
+        if (i != src && dist[i] < IFTY) {
+            printf("\nTravel from %d to %d at cost %d via: ", src, i, dist[i]);
+            printPath(i, src, prev);
+        }
+    }
+}
+
+void dijkstra (int graph[SIZE][SIZE], int src, int *dist, int *prev) {
+    // int dist[SIZE];
+    // int prev[SIZE];
+    int pq[SIZE];
+    int i, j, u;
+    for (i = 0; i < SIZE; i++) {
+        dist[i] = IFTY;                   // Best-known distance from src to i
+        prev[i] = IFTY;                   // Last vertex visited before i
+        pq[i] = dist[i];                  // Everybody goes in the queue
+    }
+    dist[src] = 0;
+    pq[src] = 0;
+    prev[src] = src;
+    for (j = 0; j < SIZE; j++) {
+    // while (pq_not_emp(pq)) {
+        u = popMin(pq);  // this is the next candidate we will deal with (once and for all)
+        if (u == -1)    // The "min" actually had distance infinity. All the rest in the PQ are unreachable.
             break;
         for (i = 0; i < SIZE; i++) {
             if ((graph[u][i]) < IFTY) { // i.e. node i is a neighbor of mine
                 if (dist[i] > dist[u] + graph[u][i]) { // if we can improve the best-known dist from src to i
                     dist[i] = dist[u] + graph[u][i];   // improve it
                     prev[i] = u;                       // note that we got there via 'u'
-                    adjustWeight(i, dist[i], &pq);     // and then stash the improvement in the PQ
-                    printf("Improved the dist to get to vertex %d to %d\n", i, dist[i]);
+                    pq[i] = dist[i];                   // and then stash the improvement in the PQ
+                    // printf("Improved %d --> %d to %d\n", src, i, dist[i]);
                     // uncomment the above line to see how the "best answer" improves slowly!
                 }
             }
         }
     }
+//    return prev;
+    // for(i = 0; i < SIZE; i++)
+    //     printf("%d\t", prev[i]);
+    // printf("\n");
+    // getPaths(src, dist, prev);
 }
 
-void getPath (int dst) {
-    if (dst != src && dist[dst] < IFTY) {
-        printf("Travel from %d to %d at cost %d via: ", src, dst, dist[dst]);
-        struct Node *pq = NULL;
-        int before; before = dst;
-        while (before < IFTY) {
-            push(before, 0, &pq);
-            before = prev[before];
-        } print_verts(pq);
-    }
-}
 
-void getPaths () {
-    int i;
-    for (i = 0; i < SIZE; i++) {
-        if (dist[i] < IFTY)
-            getPath(i);
-        else
-            printf ("Vertex %d was unreachable altogether\n", i);
-    }
-}
 
 int main(int argc, const char * argv[])
 {
-    setup();
-    print_graph();
-    dijkstra();
-    getPaths();
+    int i, j;
+    int src = 0;
+    int graph[SIZE][SIZE];
+    // for (i = 0; i < SIZE; i++) {
+    //     for (j = 0; j < SIZE; j++) {
+    //         graph[i][j] = 5;
+    //     }
+    // }
+    setup(graph);
+    print_graph(graph, src);
+    int prev[SIZE];
+    int dist[SIZE];
+    dijkstra(graph, src, dist, prev);
+    getPaths(src, dist, prev);
     return 0;
 }
-
