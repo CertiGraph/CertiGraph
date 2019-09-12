@@ -18,9 +18,11 @@
 //     *pq[vertex] = weight;   
 // }
 
+
+// precondition: won't be called on an empty PQ
 int popMin (int pq[SIZE]) {
-    int minWeight = IFTY;
-    int minVertex = -1;
+    int minVertex = 0;
+    int minWeight = pq[minVertex];
     int i;
     for (i = 0; i < SIZE; i++) {
         if (pq[i] < minWeight) {
@@ -28,9 +30,7 @@ int popMin (int pq[SIZE]) {
             minWeight = pq[i];
         }   
     }
-    if (minVertex != -1) {
-        pq[minVertex] = IFTY; /* basically, deletes the node */
-    }
+    pq[minVertex] = IFTY; /* basically, delete the node */
     return minVertex;
 }
 
@@ -39,14 +39,15 @@ int popMin (int pq[SIZE]) {
 //     *pq[vertex] = newWeight;
 // }
 
-// Quick utility function to check that the PQ is not empty
-int pq_not_emp (int pq[SIZE]) {
+// Quick utility function to check if the PQ empty
+// If all cells are IFTY, the pq is considered empty
+int pq_emp (int pq[SIZE]) {
     int i;
     for (i = 0; i < SIZE; i++) {
-        if (pq[i] < IFTY)
-            return 1;
+        if (pq[i] < IFTY) // this cell is populated. pq is not empty.
+            return 0;
     }   
-    return 0;
+    return 1;
 }
  
 /* ************************************************** */
@@ -119,24 +120,22 @@ void dijkstra (int graph[SIZE][SIZE], int src, int *dist, int *prev) {
     dist[src] = 0;
     pq[src] = 0;
     prev[src] = src;
-    for (j = 0; j < SIZE; j++) {
-    // while (pq_not_emp(pq)) {
+    while (!pq_emp(pq)) {
         u = popMin(pq);  // this is the next candidate we will deal with (once and for all)
-        if (u == -1)    // The "min" actually had distance infinity. All the rest in the PQ are unreachable.
-            break;
+        // printf("Popped vertex %d\n", u);
         for (i = 0; i < SIZE; i++) {
             if ((graph[u][i]) < IFTY) { // i.e. node i is a neighbor of mine
                 if (dist[i] > dist[u] + graph[u][i]) { // if we can improve the best-known dist from src to i
                     dist[i] = dist[u] + graph[u][i];   // improve it
                     prev[i] = u;                       // note that we got there via 'u'
-                    pq[i] = dist[i];                   // and then stash the improvement in the PQ
+                    pq[i] = dist[i];                   // and stash the improvement in the PQ
                     // printf("Improved %d --> %d to %d\n", src, i, dist[i]);
                     // uncomment the above line to see how the "best answer" improves slowly!
                 }
             }
         }
     }
-//    return prev;
+    // return prev;
     // for(i = 0; i < SIZE; i++)
     //     printf("%d\t", prev[i]);
     // printf("\n");
@@ -148,7 +147,8 @@ void dijkstra (int graph[SIZE][SIZE], int src, int *dist, int *prev) {
 int main(int argc, const char * argv[])
 {
     int i, j;
-    int src = 0;
+    srand((unsigned int) time(NULL));
+    int src = rand() % SIZE;
     int graph[SIZE][SIZE];
     // for (i = 0; i < SIZE; i++) {
     //     for (j = 0; j < SIZE; j++) {
