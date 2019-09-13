@@ -39,37 +39,6 @@ Definition pq_emp_spec :=
     LOCAL (temp ret_temp (empty contents))
     SEP (data_at Ews (tarray tint 8) (map Vint (map Int.repr contents)) pq).
 
-Definition mylist := [1;2;4;6;3;2].
-
-
-(*
-Lemma find_index l i : 0 <= i < Zlength l ->
-                       NoDup (sublist 0 i l) ->
-                       find l (Znth i l) 0 = i.
-Proof.
-  intros. induction l.
-  1: rewrite Zlength_nil in H; exfalso; omega.
-  - unfold find. destruct (eq_dec a (Znth i (a :: l))).
-    
-
-    
-    1: omega.
-    rewrite e in n. rewrite Znth_0_cons in n.
-    exfalso; omega.
-  - unfold find. destruct (eq_dec a (Znth i (a :: l))).
-    + admit.
-    + 
-    
-
-    
-
-    
-    + rewrite Znth_0_cons. unfold find.
-      destruct eq_dec. trivial.
-      exfalso. apply n. trivial.
-    + 
-Qed. *)
-
 Theorem fold_min_general:
   forall (al: list Z)(i: Z),
   In i (al) ->
@@ -193,23 +162,18 @@ Proof.
     rewrite Zlength_cons. rep_omega.
 Qed.
 
-Lemma min_in_list : forall l starter,
-    In starter l -> In (fold_right Z.min starter l) l.
+Lemma min_in_list : forall l1 l2 starter,
+    incl l1 l2 ->
+    In starter l2 ->
+    In (fold_right Z.min starter l1) l2.
 Proof.
-  intros. generalize dependent starter. induction l.
-  - intros.
-    pose proof (in_nil). specialize (H0 Z starter). 
-    exfalso. apply H0. trivial.
-  - intros. pose proof (fold_min (a :: l) starter H).
-    simpl in H0. rewrite fold_right_cons. destruct H.
-    + destruct (Z.min_dec a (fold_right Z.min starter l)); rewrite e; clear e.
-      * apply in_eq.
-      * admit.
-    + specialize (IHl starter H).
-      destruct (Z.min_dec a (fold_right Z.min starter l)); rewrite e; clear e.
-      * apply in_eq.
-      * pose proof (in_cons a (fold_right Z.min starter l) l IHl). assumption.
-Admitted.
+  intros. induction l1.
+  - assumption.
+  - simpl.
+    destruct (Z.min_dec a (fold_right Z.min starter l1)); rewrite e; clear e.
+    + apply H. apply in_eq.
+    + apply IHl1. apply (incl_cons_inv H).
+Qed.
 
 Definition popMin_spec :=
  DECLARE _popMin
@@ -315,7 +279,7 @@ Proof.
     + rewrite <- H1. replace (Zlength contents) with (Zlength contents + 0) by omega.
       apply find_range. 2: reflexivity.
       rewrite sublist_same; [|omega..].
-      apply min_in_list. apply Znth_In; omega. 
+      apply min_in_list; [apply incl_refl | apply Znth_In; omega]. 
     + forward. 
       Exists (find contents (fold_right Z.min (hd 0 contents) (sublist 0 8 contents)) 0).
       entailer!.
