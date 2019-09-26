@@ -115,7 +115,7 @@ void dijkstra (int graph[SIZE][SIZE], int src, int *dist, int *prev) {
     for (i = 0; i < SIZE; i++) {
         dist[i] = IFTY;                   // Best-known distance from src to i
         prev[i] = IFTY;                   // Last vertex visited before i
-        pq[i] = dist[i];                  // Everybody goes in the queue
+        pq[i] = IFTY;                     // Everybody goes in the queue
     }
     dist[src] = 0;
     pq[src] = 0;
