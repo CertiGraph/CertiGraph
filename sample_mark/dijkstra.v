@@ -98,7 +98,6 @@ Definition _src : ident := 66%positive.
 Definition _time : ident := 55%positive.
 Definition _u : ident := 78%positive.
 Definition _t'1 : ident := 83%positive.
-Definition _t'10 : ident := 92%positive.
 Definition _t'2 : ident := 84%positive.
 Definition _t'3 : ident := 85%positive.
 Definition _t'4 : ident := 86%positive.
@@ -490,9 +489,9 @@ Definition f_dijkstra := {|
                 (_dist, (tptr tint)) :: (_prev, (tptr tint)) :: nil);
   fn_vars := ((_pq, (tarray tint 8)) :: nil);
   fn_temps := ((_i, tint) :: (_j, tint) :: (_u, tint) :: (_t'2, tint) ::
-               (_t'1, tint) :: (_t'10, tint) :: (_t'9, tint) ::
-               (_t'8, tint) :: (_t'7, tint) :: (_t'6, tint) ::
-               (_t'5, tint) :: (_t'4, tint) :: (_t'3, tint) :: nil);
+               (_t'1, tint) :: (_t'9, tint) :: (_t'8, tint) ::
+               (_t'7, tint) :: (_t'6, tint) :: (_t'5, tint) ::
+               (_t'4, tint) :: (_t'3, tint) :: nil);
   fn_body :=
 (Ssequence
   (Ssequence
@@ -513,15 +512,10 @@ Definition f_dijkstra := {|
               (Ederef
                 (Ebinop Oadd (Etempvar _prev (tptr tint)) (Etempvar _i tint)
                   (tptr tint)) tint) (Econst_int (Int.repr 2147483647) tint))
-            (Ssequence
-              (Sset _t'10
-                (Ederef
-                  (Ebinop Oadd (Etempvar _dist (tptr tint))
-                    (Etempvar _i tint) (tptr tint)) tint))
-              (Sassign
-                (Ederef
-                  (Ebinop Oadd (Evar _pq (tarray tint 8)) (Etempvar _i tint)
-                    (tptr tint)) tint) (Etempvar _t'10 tint))))))
+            (Sassign
+              (Ederef
+                (Ebinop Oadd (Evar _pq (tarray tint 8)) (Etempvar _i tint)
+                  (tptr tint)) tint) (Econst_int (Int.repr 2147483647) tint)))))
       (Sset _i
         (Ebinop Oadd (Etempvar _i tint) (Econst_int (Int.repr 1) tint) tint))))
   (Ssequence
