@@ -124,6 +124,7 @@ void dijkstra (int graph[SIZE][SIZE], int src, int *dist, int *prev) {
         u = popMin(pq);  // this is the next candidate we will deal with (once and for all)
         // printf("Popped vertex %d\n", u);
         for (i = 0; i < SIZE; i++) {
+            // current = graph[u][i]; 
             if ((graph[u][i]) < IFTY) { // i.e. node i is a neighbor of mine
                 if (dist[i] > dist[u] + graph[u][i]) { // if we can improve the best-known dist from src to i
                     dist[i] = dist[u] + graph[u][i];   // improve it

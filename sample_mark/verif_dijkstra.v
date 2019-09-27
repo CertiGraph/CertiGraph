@@ -177,11 +177,13 @@ Proof.
 Qed.
 
 Lemma whole_graph_unfold: forall sh g p,
+    0 <= Zlength (graph_rep_contiguous g) ->
     whole_graph sh g p =
-    data_at sh (tarray vertex_type (Z.of_nat (Datatypes.length (graph_rep_contiguous g))))
+    data_at sh (tarray vertex_type (Zlength (graph_rep_contiguous g)))
             (map abstract_data_at2cdata (graph_rep_contiguous g)) (pointer_val_val p).
 Proof.
-  intros. unfold whole_graph, graph_rep_spatial, abstract_data_at, SDAG_VST. trivial.
+  intros. unfold whole_graph, graph_rep_spatial, abstract_data_at, SDAG_VST.
+  rewrite <- ZtoNat_Zlength, Z2Nat.id; trivial.
 Qed.
 
 Definition popMin_spec :=
@@ -345,6 +347,9 @@ Proof.
       destruct contents; simpl; auto.
 Qed.
 
+Definition compatible (prev pq dist : list Z) : Prop :=
+  True.
+
 Lemma body_dijkstra: semax_body Vprog Gprog f_dijkstra dijkstra_spec.
 Proof.
   start_function.
@@ -430,30 +435,55 @@ Proof.
         rewrite upd_Znth_Zlength, Zlength_list_repeat;
           [| omega | rewrite Zlength_list_repeat; omega].
         destruct list_eq_dec; trivial.
-        exfalso; clear -e.
+        exfalso.
         admit. (* easy *)
       * repeat rewrite <- upd_Znth_map. entailer!. 
     + Intros prev_contents pq_contents dist_contents.
       forward_call (v_pq, pq_contents).
       forward_if.
-      * forward_call.
+      * forward_call (v_pq, pq_contents).
         Intros min_ind.
         forward_for_simple_bound
           8
           (EX i : Z,
-           PROP ()
+           EX prev_contents' : list Z,
+           EX pq_contents' : list Z,
+           EX dist_contents' : list Z,
+           PROP (compatible prev_contents' pq_contents' dist_contents')
            LOCAL (temp _u (Vint (Int.repr min_ind));
                   temp _dist (pointer_val_val dist);
                   temp _prev (pointer_val_val prev);
                   temp _src (Vint (Int.repr src));
                   lvar _pq (tarray tint 8) v_pq;
                   temp _graph (pointer_val_val arr))
-           SEP (whole_graph sh g arr)).
-        -- admit. (* SEP needs fleshing out later *)
-        -- rewrite whole_graph_unfold.
-           (* Hmm not sure how to get this from the sep *)
-           assert ((Z.of_nat (Datatypes.length (graph_rep_contiguous g))) = 64) by admit. rewrite H5.
+           SEP (data_at Tsh (tarray tint 8) (map Vint (map Int.repr prev_contents')) (pointer_val_val prev);
+            data_at Tsh (tarray tint 8) (map Vint (map Int.repr pq_contents')) v_pq;
+            data_at Tsh (tarray tint 8) (map Vint (map Int.repr dist_contents')) (pointer_val_val dist); whole_graph sh g arr)).
+        -- Exists prev_contents.
+           Exists (upd_Znth
+            (find pq_contents (fold_right Z.min (Znth 0 pq_contents) pq_contents) 0)
+            pq_contents 2147483647).
+           Exists dist_contents. repeat rewrite <- upd_Znth_map.
+           entailer!.
+        -- freeze F := (data_at _ _ _ _) (data_at _ _ _ _) (data_at _ _ _ _).
+           assert_PROP (0 <= Zlength (graph_rep_contiguous g)) by entailer!.
+           rewrite whole_graph_unfold by trivial.
            unfold tarray.
+           
+           rewrite (@split3_data_at_Tarray _ sh tuint size j (j+1)
+    l l (sublist 0 j l) [Znth j l] (sublist (j+1) size l)
+    (list_address a i size)).
+    2: unfold naturally_aligned; simpl; auto. 
+    2: omega.
+    2: split; [omega | rewrite H6; apply Z.le_refl].
+    2: symmetry; apply sublist_same; trivial.
+    2: trivial.
+    2: { symmetry. apply sublist_one. omega.
+         rewrite H6 in HRE0. apply Zlt_le_succ.
+         trivial. omega. }
+    2: trivial.
+
+           
            remember (map abstract_data_at2cdata (graph_rep_contiguous g)) as gdata.
            remember ((8 * min_ind) + i) as n1.
            rewrite (split3_data_at_Tarray _ _ _ n1 (n1+1) _ gdata (sublist 0 n1 gdata) (sublist n1 (n1+1) gdata) (sublist (n1+1) 64 gdata)); simpl; auto.
