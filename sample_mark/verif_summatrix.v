@@ -136,16 +136,13 @@ Proof.
   + entailer!.
   + assert_PROP (length contents_mat = Z.to_nat 2) by
         (entailer!; rewrite <- H; rewrite ZtoNat_Zlength; trivial).
-    (*
     unfold matrix_rep.
     replace (Z_inc_list (Datatypes.length contents_mat)) with
         (sublist 0 (Zlength contents_mat) (Z_inc_list (Datatypes.length contents_mat))).
     2: { rewrite sublist_same; auto.
          repeat rewrite Zlength_correct; f_equal. 
-         rewrite Z_inc_list_length. trivial.
-    }
-    rewrite H.
-    rewrite (sublist_split 0 i 2).
+         rewrite Z_inc_list_length. trivial. }
+    rewrite H. rewrite (sublist_split 0 i 2).
     2: omega.
     2: { rewrite Zlength_correct. rewrite Z_inc_list_length.
          rewrite H4. rewrite Z2Nat.id; omega. }
@@ -158,9 +155,13 @@ Proof.
     freeze F := (iter_sepcon (list_rep sh 2 a contents_mat)
             (sublist 0 i (Z_inc_list (Datatypes.length contents_mat)))) (iter_sepcon (list_rep sh 2 a contents_mat)
                                                                                      (sublist (i + 1) 2 (Z_inc_list (Datatypes.length contents_mat)))).
-    rewrite (sublist_one i). simpl.
-    Intros. *)
-    sep_apply (matrix_rep_list_rep sh i 2 a contents_mat). 1: omega.
+    rewrite (sublist_one i). simpl. Intros.
+    replace (Znth i (Z_inc_list (Datatypes.length contents_mat))) with i.
+    2: { admit. }
+
+
+    (* *)
+    (* sep_apply (matrix_rep_list_rep sh i 2 a contents_mat). 1: omega. *)
     unfold list_rep.
     (* Okay now I have a simple list-access problem.
      * I have the exact address (list_address) and I want the j'th item. 
@@ -190,8 +191,6 @@ Proof.
       rewrite field_address_offset.
       1: rewrite offset_offset_val; simpl; f_equal; rep_omega.
       unfold field_compatible in H5. destruct H5 as [? [? [? [? ?]]]].
-      (* assert (Znth i (Z_inc_list (Datatypes.length contents_mat)) = i) by admit. *)
-      (* rewrite H12 in *. *)
       unfold field_compatible. split3; [| | split3]; auto.
       unfold legal_nested_field. split; [auto | simpl; omega].
     }
@@ -204,7 +203,32 @@ Proof.
     rewrite sublist_last_1; [|omega..].
     rewrite sum_list_app; simpl; omega.
   - unfold matrix_rep. (* Okay, need to go back and use a matrix unfold. *)
-    admit.
+    thaw F.
+    replace (Z_inc_list (Datatypes.length contents_mat)) with
+        (sublist 0 (Zlength contents_mat) (Z_inc_list (Datatypes.length contents_mat))) at 3.
+    2: { rewrite sublist_same; auto.
+         repeat rewrite Zlength_correct; f_equal. 
+         rewrite Z_inc_list_length. trivial. }
+    rewrite H. rewrite (sublist_split 0 i 2).
+    2: omega.
+    2: { rewrite Zlength_correct. rewrite Z_inc_list_length.
+         rewrite H4. rewrite Z2Nat.id; omega. }
+    rewrite (sublist_split i (i+1) 2).
+    2: omega.
+    2: { rewrite Zlength_correct. rewrite Z_inc_list_length.
+         rewrite H4. rewrite Z2Nat.id; omega. }
+    repeat rewrite iter_sepcon_app.
+    entailer!.
+    rewrite (sublist_one i). simpl. Intros.
+    replace (Znth i (Z_inc_list (Datatypes.length contents_mat))) with i.
+    2: { admit. }
+    entailer!.
+    omega. admit. omega.
+
+  - 
+    omega.
+  - admit.
+  - omega.
     + forward. Exists (i+1).
       entailer!. assert (j = Zlength contents_mat) by omega.
       assert (j = 2) by omega.
@@ -218,4 +242,4 @@ Proof.
     * forward. entailer!.
       assert (i = Zlength contents_mat) by omega.
       rewrite sublist_same; trivial.
-Admitted.
+Admitted
