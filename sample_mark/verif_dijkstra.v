@@ -522,6 +522,3 @@ Proof.
              admit.
              split.
              unfold align_compatible. destruct arr; simpl; trivial. *)
-
-  
-          
