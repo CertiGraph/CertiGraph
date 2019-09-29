@@ -242,4 +242,4 @@ Proof.
     * forward. entailer!.
       assert (i = Zlength contents_mat) by omega.
       rewrite sublist_same; trivial.
-Admitted
+Admitted.
