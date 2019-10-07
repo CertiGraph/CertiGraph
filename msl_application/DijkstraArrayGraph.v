@@ -4,6 +4,7 @@ Require Import Coq.Sets.Ensembles.
 Require Import Coq.ZArith.ZArith.
 Require Import VST.msl.seplog.
 Require Import VST.msl.log_normalize.
+Require Import VST.floyd.sublist.
 Require Import compcert.lib.Integers.
 Require Import RamifyCoq.lib.Coqlib.
 Require Import RamifyCoq.lib.Ensembles_ext.
@@ -26,7 +27,7 @@ Require Import RamifyCoq.msl_application.DijkstraGraph.
 Local Open Scope logic.
 Local Open Scope Z_scope.
 Definition inf := Integers.Int.max_signed.
-Definition size := 8%nat.
+Definition SIZE := 8.
 
 Instance Z_EqDec : EqDec Z eq. Proof. hnf. intros. apply Z.eq_dec. Defined.
 
@@ -68,7 +69,8 @@ Section SpaceDijkstraArrayGraph.
     SGP_CoSL: CorableSepLog Pred
   }.
   
-  Class SpatialDijkstraArrayGraph (Addr: Type) (Pred: Type) := abstract_data_at: Addr -> list Z -> Pred.
+  Class SpatialDijkstraArrayGraph (Addr: Type) (Pred: Type) :=
+    abstract_data_at: Addr -> list Z -> Pred.
 
   Context {Pred: Type}.
   Context {Addr: Type}.
@@ -96,15 +98,20 @@ Definition vert_rep (g : Graph) (v : LV) : list Z :=
   map (fun x => match x with Some x => (Z.of_nat x) | None => inf end) v.
 
 (* from Graph to list (list Z) *)
-Definition graph_rep (g : Graph) : list (list Z) :=
-  map (vert_rep g) (map (vlabel g) (Z_inc_list size)).
+Definition graph_to_mat (g : Graph) : list (list Z) :=
+  map (vert_rep g) (map (vlabel g) (Z_inc_list (Z.to_nat SIZE))).
 
-(* from list (list Z) to list Z of n^2 size *)
-Definition graph_rep_contiguous (g : Graph) : list Z :=
-  List.concat (graph_rep g).
+Definition list_rep listaddr contents_mat index :=
+  abstract_data_at listaddr (Znth index contents_mat).
 
 (* spatial representation of the DijkstraGraph *)
-Definition graph_rep_spatial (g : Graph) (a : Addr)  :=
-  abstract_data_at a (graph_rep_contiguous g).
+Definition graph_rep (g : Graph) (a : Addr)  :=
+  abstract_data_at a (concat (graph_to_mat g)).
+
+(* But the above is a little annoying.
+   I would prefer to make an iter_sepcon of the various list_reps.
+   The issue right now is that I can't get the lists to calculate
+   their own addresses. 
+*)
 
 End SpaceDijkstraArrayGraph.
