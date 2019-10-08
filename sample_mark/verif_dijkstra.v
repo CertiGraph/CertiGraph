@@ -180,6 +180,14 @@ Proof.
     right; trivial.
 Qed.
 
+Lemma isEmptyMeansInf: forall l,
+    isEmpty l = Vone -> Forall (fun x => x >= inf) l.
+Proof.
+  intros. induction l; trivial. simpl in H.
+  destruct (Z_lt_dec a inf); [inversion H|].
+  specialize (IHl H). apply Forall_cons; trivial.
+Qed.
+
 Definition pq_emp_spec :=
   DECLARE _pq_emp
   WITH pq: val, contents: list Z
@@ -380,7 +388,7 @@ Definition dijkstra_spec :=
        dist : pointer_val, prev : pointer_val, src : Z
   PRE [_graph OF (tptr (tarray tint 8)), _src OF tint,
        _dist OF (tptr tint), _prev OF (tptr tint)]
-  PROP (0 <= src < 8;
+    PROP (0 <= src < 8;
           Forall (fun list => Zlength list = 8) (graph_to_mat g);
        Forall (fun list => inrange list) (graph_to_mat g))
     LOCAL (temp _graph (pointer_val_val arr);
@@ -391,11 +399,13 @@ Definition dijkstra_spec :=
        data_at_ Tsh (tarray tint 8) (pointer_val_val dist);
        data_at_ Tsh (tarray tint 8) (pointer_val_val prev))
   POST [tvoid]
-    EX prev_contents : list Z, 
-    PROP () (* dijkstra_correct g src prev_contents) *)
+    EX prev_contents : list Z,
+    EX dist_contents : list Z,
+    PROP (dijkstra_correct g src prev_contents)
     LOCAL ()
     SEP (graph_rep sh (graph_to_mat g) (pointer_val_val arr); 
-         data_at Tsh (tarray tint 8) (map Vint (map Int.repr prev_contents)) (pointer_val_val prev)).
+         data_at Tsh (tarray tint 8) (map Vint (map Int.repr prev_contents)) (pointer_val_val prev);
+         data_at Tsh (tarray tint 8) (map Vint (map Int.repr dist_contents)) (pointer_val_val dist)).
     
 Definition Gprog : funspecs := ltac:(with_library prog [pq_emp_spec; popMin_spec; dijkstra_spec]).
 
@@ -555,14 +565,15 @@ Proof.
             data_at Tsh (tarray tint 8) (map Vint (map Int.repr pq_contents)) v_pq;
             data_at Tsh (tarray tint 8) (map Vint (map Int.repr dist_contents)) (pointer_val_val dist); graph_rep sh (graph_to_mat g) (pointer_val_val arr))) 
       break:
-      (EX prev_contents : list Z,
-       EX pq_contents : list Z,
-       EX dist_contents : list Z,
-       PROP ()
-       LOCAL ()
+      (EX prev_contents: list Z,
+       EX pq_contents: list Z,
+       EX dist_contents: list Z,                                    
+       PROP (Forall (fun x => x >= inf) pq_contents)
+       LOCAL (lvar _pq (tarray tint 8) v_pq)
        SEP (data_at Tsh (tarray tint 8) (map Vint (map Int.repr prev_contents)) (pointer_val_val prev);
-            data_at Tsh (tarray tint 8) (map Vint (map Int.repr pq_contents)) v_pq;
+            (data_at Tsh (tarray tint 8) (map Vint (map Int.repr pq_contents)) v_pq);
             data_at Tsh (tarray tint 8) (map Vint (map Int.repr dist_contents)) (pointer_val_val dist); graph_rep sh (graph_to_mat g) (pointer_val_val arr))).
+ (* ie, the PQ is all inf --> is empty *)
     + Exists (upd_Znth src (list_repeat (Z.to_nat 8) inf) src).
       Exists (upd_Znth src (list_repeat (Z.to_nat 8) inf) 0).
       Exists (upd_Znth src (list_repeat (Z.to_nat 8) inf) 0).
@@ -666,15 +677,6 @@ Proof.
       unfold legal_nested_field; split; [auto | simpl; omega].
            }
            forward. thaw FR2. 
-           (* gather_SEP *)
-           (*   (iter_sepcon (list_rep sh SIZE (pointer_val_val arr) (graph_to_mat g)) *)
-           (*                (sublist 0 u (Z_inc_list (Z.to_nat (Zlength (graph_to_mat g)))))) *)
-           (*   (data_at sh (tarray tint SIZE) *)
-           (*            (map Vint (map Int.repr (Znth u (graph_to_mat g)))) *)
-           (*            (list_address (pointer_val_val arr) u SIZE)) *)
-           (*   (iter_sepcon (list_rep sh SIZE (pointer_val_val arr) (graph_to_mat g)) *)
-           (*                (sublist (u + 1) (Zlength (graph_to_mat g)) *)
-           (*                         (Z_inc_list (Z.to_nat (Zlength (graph_to_mat g)))))). *)
            gather_SEP 0 3 1.
            rewrite <- graph_unfold; trivial. thaw FR.
            remember (Znth i (Znth u (graph_to_mat g))) as cost.
@@ -765,10 +767,9 @@ Proof.
           destruct (isEmptyTwoCases pq_contents);
             rewrite H9 in H8; simpl in H8; now inversion H8.
         }
-        forward.
-        Exists prev_contents pq_contents dist_contents.
-        entailer!.        
-    + Fail forward.
-      unfold POSTCONDITION, abbreviate.
-      Fail forward. admit.
+        forward. Exists prev_contents pq_contents dist_contents.
+        entailer!. apply (isEmptyMeansInf _ H9).
+    + Intros prev_contents pq_contents dist_contents.
+      forward. Exists prev_contents dist_contents.
+      entailer!. admit.
 Abort.
