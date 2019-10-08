@@ -3,7 +3,7 @@
 #include <stdio.h>
 #include <time.h>
 
-#define IFTY INT_MAX
+#define IFTY INT_MAX/2
 #define SIZE 8  // number of vertices
 #define CONN 3  // the connectedness. 1 is 100%, higher numbers mean less connected
 #define INFL 50 // increase this to inflate the highest possible cost, thus creating greater ranges
@@ -124,7 +124,7 @@ void dijkstra (int graph[SIZE][SIZE], int src, int *dist, int *prev) {
         u = popMin(pq);  // this is the next candidate we will deal with (once and for all)
         // printf("Popped vertex %d\n", u);
         for (i = 0; i < SIZE; i++) {
-            cost = graph[u][i];
+            cost = graph[u][i]; 
             if (cost < IFTY) { // i.e. node i is a neighbor of mine
                 if (dist[i] > dist[u] + cost) { // if we can improve the best-known dist from src to i
                     dist[i] = dist[u] + cost;   // improve it
@@ -136,6 +136,7 @@ void dijkstra (int graph[SIZE][SIZE], int src, int *dist, int *prev) {
             }
         }
     }
+    return;
     // return prev;
     // for(i = 0; i < SIZE; i++)
     //     printf("%d\t", prev[i]);

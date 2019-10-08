@@ -13,10 +13,24 @@ Require Import RamifyCoq.msl_application.DijkstraArrayGraph.
 Require Import RamifyCoq.sample_mark.spatial_dijkstra_array_graph.
 Require Import Coq.omega.Omega.
 Require Import Coq.Lists.List.
-Definition inf := Int.max_signed.
+Definition inf := Int.max_signed/2.
 
-Lemma inf_eq : 2147483647 = inf.
-Proof. unfold inf. rep_omega. Qed.
+Lemma inf_eq : 1073741823 = inf.
+Proof. unfold inf, Int.max_signed; auto. Qed.
+
+Lemma inf_gt_0: 0 <= inf.
+Proof. unfold inf, Int.max_signed; simpl. apply Z.div_pos; omega. Qed.
+
+Lemma inf_div_2: inf < Int.max_signed.
+Proof. apply (Z_div_lt Int.max_signed 2); rep_omega. Qed.
+
+Lemma inf_div_eq:
+  (Int.divs (Int.repr 2147483647) (Int.repr 2)) = Int.repr inf.
+Proof.
+  unfold Int.divs. repeat rewrite Int.signed_repr by rep_omega.
+  rewrite Zquot.Zquot_Zdiv_pos by rep_omega.
+  unfold inf, Int.max_signed; simpl. trivial.
+Qed.
 
 Definition list_address a index size : val :=
   offset_val (index * sizeof (tarray tint size)) a.
@@ -52,12 +66,12 @@ Proof.
 Qed.
 
 Definition inrange l :=
-  Forall (fun x => 0 <= x <= Int.max_signed) l.
+  Forall (fun x => 0 <= x <= inf) l.
 
 Lemma inrange_upd_Znth: forall l i new,
     0 <= i < Zlength l ->
     inrange l ->
-    0 <= new <= Int.max_signed ->
+    0 <= new <= inf ->
     inrange (upd_Znth i l new).
 Proof.
   intros. unfold inrange in *.
@@ -75,11 +89,10 @@ Lemma inrange_Znth: forall l i,
     inrange l ->
     Int.min_signed <= Znth i l <= Int.max_signed.
 Proof.
-  intros.
-  unfold inrange in H0.
-  rewrite Forall_forall in H0.
+  intros. unfold inrange in H0. rewrite Forall_forall in H0.
   assert (In (Znth i l) l) by (apply Znth_In; omega).
-  specialize (H0 (Znth i l) H1). rep_omega.
+  specialize (H0 (Znth i l) H1). split; destruct H0; try rep_omega.
+  pose proof inf_div_2. omega.
 Qed.
 
 Lemma graph_unfold: forall sh contents ptr i,
@@ -414,10 +427,10 @@ Proof.
       rewrite sublist_one; try omega. simpl.
       destruct (Z_lt_dec (Znth i contents) inf).
       2: unfold isEmpty_Prop in H2; trivial.
-      rewrite Int.signed_repr in H3.
-      rewrite inf_eq in H3.
-      exfalso; omega.
-      apply inrange_Znth; trivial; omega.
+      exfalso. rewrite inf_div_eq in H3.
+      rewrite Int.signed_repr in H3. auto.
+      apply inrange_Znth; trivial.
+      repeat rewrite Zlength_map in H5; rep_omega. 
   - forward. entailer!.
     rewrite sublist_same in H0.
     2: omega.
@@ -447,19 +460,12 @@ Proof.
         (apply inrange_Znth; trivial; omega).
     assert (Int.min_signed <=
             fold_right Z.min (Znth 0 contents) (sublist 0 i contents) <= Int.max_signed).
-    { apply Forall_fold_min.
-      apply Forall_Znth. omega.
-      rewrite Forall_forall. intros.
-      rewrite In_Znth_iff in H4.
-      destruct H4 as [? [? ?]].
-      rewrite <- H5.
-      apply inrange_Znth; trivial.
-      apply Forall_sublist; auto.
-      rewrite Forall_forall. intros.
-      rewrite In_Znth_iff in H4.
-      destruct H4 as [? [? ?]].
-      rewrite <- H5.
-      apply inrange_Znth; trivial.
+    { apply Forall_fold_min. apply Forall_Znth. omega.
+      rewrite Forall_forall. intros. rewrite In_Znth_iff in H4.
+      destruct H4 as [? [? ?]]. rewrite <- H5.
+      apply inrange_Znth; trivial. apply Forall_sublist; auto.
+      rewrite Forall_forall. intros. rewrite In_Znth_iff in H4.
+      destruct H4 as [? [? ?]]. rewrite <- H5. apply inrange_Znth; trivial.
     }
     forward_if.
     + forward. forward.
@@ -490,7 +496,8 @@ Qed.
 
 Definition compatible (prev pq dist : list Z) : Prop :=
   True.
-(* huge todo *)
+(* This is where I will make a claim about how the three lists
+interact with each other during the working of the inner loop *)
 
 Lemma body_dijkstra: semax_body Vprog Gprog f_dijkstra dijkstra_spec.
 Proof.
@@ -510,7 +517,8 @@ Proof.
           graph_rep sh (graph_to_mat g) (pointer_val_val arr))).
   - unfold data_at, data_at_, field_at_; entailer!.
   - forward. forward. forward.
-    rewrite inf_eq in *.
+    rewrite inf_div_eq in *.
+    (* rewrite inf_eq in *. *)
     entailer!. 
     replace (upd_Znth i
        (list_repeat (Z.to_nat i) (Vint (Int.repr inf)) ++
@@ -550,7 +558,7 @@ Proof.
       (EX prev_contents : list Z,
        EX pq_contents : list Z,
        EX dist_contents : list Z,
-       PROP () (* dijkstra_correct g src prev_contents) *)
+       PROP ()
        LOCAL ()
        SEP (data_at Tsh (tarray tint 8) (map Vint (map Int.repr prev_contents)) (pointer_val_val prev);
             data_at Tsh (tarray tint 8) (map Vint (map Int.repr pq_contents)) v_pq;
@@ -559,11 +567,15 @@ Proof.
       Exists (upd_Znth src (list_repeat (Z.to_nat 8) inf) 0).
       Exists (upd_Znth src (list_repeat (Z.to_nat 8) inf) 0).
       repeat rewrite <- upd_Znth_map; entailer!.
+      assert (0 <= inf <= inf).
+      { pose proof inf_gt_0. omega. }
       assert (inrange (list_repeat (Z.to_nat 8) inf)).
       { unfold inrange. rewrite Forall_forall; intros.
-        apply in_list_repeat in H12. rewrite H12.
-        unfold inf. rep_omega. }
-      split3; apply inrange_upd_Znth; trivial; rep_omega.
+        apply in_list_repeat in H13. rewrite H13. assumption. }
+      split3; apply inrange_upd_Znth; trivial; try rep_omega.
+      clear -H; unfold inf. unfold Int.max_signed; simpl.
+      assert (8 < 2147483647) by omega. destruct H.
+      pose proof (Z.lt_trans src 8 (2147483647 / 2) H1 H0). omega.
     + Intros prev_contents pq_contents dist_contents.
       assert_PROP (Zlength pq_contents = 8).
       { entailer!. now repeat rewrite Zlength_map in H12. }
@@ -614,8 +626,9 @@ Proof.
             pq_contents inf).
            Exists dist_contents.
            repeat rewrite <- upd_Znth_map.
-           entailer!.
-           apply inrange_upd_Znth; [| trivial | unfold inf; rep_omega].
+           entailer!. pose proof inf_div_2.
+           apply inrange_upd_Znth; trivial.
+           2: { pose proof inf_gt_0. omega. }
            replace (Zlength pq_contents) with (Zlength pq_contents + 0) by omega.
            apply find_range; [|reflexivity].
            apply min_in_list; [apply incl_refl | apply Znth_In; omega].
@@ -652,7 +665,17 @@ Proof.
       unfold field_compatible; split3; [| | split3]; auto.
       unfold legal_nested_field; split; [auto | simpl; omega].
            }
-           forward. thaw FR2. gather_SEP 0 3 1.
+           forward. thaw FR2. 
+           (* gather_SEP *)
+           (*   (iter_sepcon (list_rep sh SIZE (pointer_val_val arr) (graph_to_mat g)) *)
+           (*                (sublist 0 u (Z_inc_list (Z.to_nat (Zlength (graph_to_mat g)))))) *)
+           (*   (data_at sh (tarray tint SIZE) *)
+           (*            (map Vint (map Int.repr (Znth u (graph_to_mat g)))) *)
+           (*            (list_address (pointer_val_val arr) u SIZE)) *)
+           (*   (iter_sepcon (list_rep sh SIZE (pointer_val_val arr) (graph_to_mat g)) *)
+           (*                (sublist (u + 1) (Zlength (graph_to_mat g)) *)
+           (*                         (Z_inc_list (Z.to_nat (Zlength (graph_to_mat g)))))). *)
+           gather_SEP 0 3 1.
            rewrite <- graph_unfold; trivial. thaw FR.
            remember (Znth i (Znth u (graph_to_mat g))) as cost.
            remember (find pq_contents (fold_right Z.min (hd 0 pq_contents) pq_contents) 0) as min_ind.
@@ -664,7 +687,7 @@ Proof.
              entailer!. repeat rewrite Zlength_map in *. trivial. }    
            assert_PROP (Zlength (graph_to_mat g) = 8) by 
                entailer!.
-           assert (0 <= cost <= Int.max_signed). {
+           assert (0 <= cost <= inf). {
              rewrite Forall_forall in H1.
              specialize (H1 (Znth u (graph_to_mat g))).
              pose proof (Znth_In u (graph_to_mat g) H10).
@@ -674,47 +697,56 @@ Proof.
              rewrite Heqcost.
              apply Znth_In. omega.
            } 
-           forward_if; rewrite inf_eq in H23.
+           forward_if; rewrite inf_div_eq in H23.
            2: {
              forward. 
              Exists prev_contents' pq_contents' dist_contents'. 
 
              entailer!. } 
            forward. forward.
-           assert (0 <= Znth u dist_contents' <= Int.max_signed). {
+           assert (0 <= Znth u dist_contents' <= inf). {
              unfold inrange in H16.
-             rewrite Forall_forall in H16. apply H16.
-             apply Znth_In. omega. }
-           assert (0 <= Znth i dist_contents' <= Int.max_signed). {
+             rewrite Forall_forall in H16. unfold inf.
+             apply H16; apply Znth_In; omega. }
+           assert (0 <= Znth i dist_contents' <= inf). {
              unfold inrange in H16.
-             rewrite Forall_forall in H16. apply H16.
-             apply Znth_In. omega. }
-           assert (0 <=
+             rewrite Forall_forall in H16. unfold inf.
+             apply H16; apply Znth_In; omega. }
+           assert (0 <= Znth i (Znth u (graph_to_mat g)) <= inf). {
+             rewrite Forall_forall in H1.
+             pose proof (Znth_In u (graph_to_mat g) H12).
+             specialize (H1 (Znth u (graph_to_mat g)) H26).
+             unfold inrange in H1. rewrite Forall_forall in H1.
+             apply H1. apply Znth_In. rep_omega. }
+             assert (0 <=
                    Znth (find pq_contents (fold_right Z.min (hd 0 pq_contents) pq_contents) 0)
                         dist_contents' +
                    Znth i
                         (Znth (find pq_contents (fold_right Z.min (hd 0 pq_contents) pq_contents) 0)
                               (graph_to_mat g)) <= Int.max_signed). {
-             admit.
-             (* needs to be in the settings. *)
-           (* maybe by halving the range *) }
+             rewrite <- Heqmin_ind. rewrite <- H9.
+             clear -H24 H26. split; [omega|].
+             assert (Z.mul 2 inf < Int.max_signed) by
+                 (unfold inf, Int.max_signed; simpl; reflexivity). 
+             destruct H24 as [_ ?]; destruct H26 as [_ ?]. omega.
+           }
            forward_if.
            2: forward;
              Exists prev_contents' pq_contents' dist_contents';
              entailer!.
+           rewrite Int.signed_repr in H28.
+           2: { subst u cost min_ind. rep_omega. }
+           rewrite Int.signed_repr in H28.
+           2: { clear -H25. pose proof inf_div_2. rep_omega. }
            forward. forward.
            forward. forward.
            entailer!.
-           1: { rewrite upd_Znth_same by
-                 (repeat rewrite Zlength_map; omega). 
+           1: { rewrite upd_Znth_same by (repeat rewrite Zlength_map; omega). 
                 trivial. }
-           forward.
-           entailer!.
-           rewrite upd_Znth_same.
+           forward. entailer!. rewrite upd_Znth_same.
            2: repeat rewrite Zlength_map; omega. 
            remember (find pq_contents (fold_right Z.min (hd 0 pq_contents) pq_contents) 0) as min_ind.
-           Exists
-             (upd_Znth i prev_contents' min_ind).
+           Exists (upd_Znth i prev_contents' min_ind).
            Exists
              (upd_Znth i pq_contents'
                        (Znth min_ind dist_contents' + Znth i (Znth min_ind (graph_to_mat g)))).
@@ -722,7 +754,12 @@ Proof.
              (upd_Znth i dist_contents'
                        (Znth min_ind dist_contents' + Znth i (Znth min_ind (graph_to_mat g)))).
            repeat rewrite <- upd_Znth_map; entailer!.
-           split3; apply inrange_upd_Znth; try rep_omega; assumption.
+           split3; apply inrange_upd_Znth; try rep_omega; try assumption.
+           clear -H10. assert (8 <= inf). {
+             unfold inf, Int.max_signed in *; simpl in *.
+             replace 8 with (8 * 2 / 2). apply Z_div_le; omega.
+             apply Z_div_mult; omega. }
+           rep_omega.
         -- Intros a b c. Exists a b c. entailer!.
       * assert (isEmpty pq_contents = Vone). {
           destruct (isEmptyTwoCases pq_contents);
@@ -731,7 +768,7 @@ Proof.
         forward.
         Exists prev_contents pq_contents dist_contents.
         entailer!.        
-    + unfold POSTCONDITION, abbreviate.
-      Fail forward.
-      admit.
-Admitted.
+    + Fail forward.
+      unfold POSTCONDITION, abbreviate.
+      Fail forward. admit.
+Abort.
