@@ -134,7 +134,7 @@ void dijkstra (int graph[SIZE][SIZE], int src, int *dist, int *prev) {
                     // uncomment the above line to see how the "best answer" improves slowly!
                 }
             }
-        }
+        } // want to show "dijk_pair_correct (src, u)", but cannot. maybe move it up instead?
     }
     return;
     // return prev;
