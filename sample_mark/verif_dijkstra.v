@@ -127,14 +127,9 @@ Fixpoint create_path (src dst : VType) (prev : list VType) (ans : list VType) (n
             then src :: ans
             else create_path src (Znth dst prev) prev (dst :: ans) n'
   end.
+ (* add case for inf *)
 
-(*
-Fixpoint isEmpty' (l : list Z) : val :=
-  match l with
-  | [] => Vone
-  | h :: t => if (Z_lt_dec h inf) then Vzero else isEmpty' t
-  end.
-*)
+Compute (create_path 2 2 [0; 3; inf; 0] [] 4).
 
 Definition isEmpty_Prop (l : list Z) :=
   fold_right (fun h acc => if (Z_lt_dec h inf) then False else acc) True l.
@@ -371,16 +366,32 @@ a(3) If I query any cell, its value needs to be either
 orIf all these guarantees are set up, then I can find you the 
 source.  *)
 
+Definition optimal_path (g: Graph) src dst p : Prop  :=
+  forall p', valid_path g p' ->
+             path_ends g p' src dst ->
+             Nat.lt (path_cost g p') (path_cost g p) ->
+             p = p'.
+
+(* will add more facts to this *)
+Definition valid_prev prev src : Prop :=
+  Forall (fun x => x = inf \/ 0 <= x < 8 ) prev /\
+  Znth src prev = src.
+
+(* reachable and optimal *)
+Definition dijkstra_pair_correct (g: Graph) src dst prev : Prop :=
+  dst = src \/ 
+  (let p := (src, create_path src dst prev [] 8) in
+   valid_path g p ->  (* should come for free from create_path *)
+   path_ends g p src dst -> (* ditto *)
+   optimal_path g src dst p).
+
 Definition dijkstra_correct (g: Graph) (src : VType) (prev: list VType) : Prop :=
   forall dst,
-    (Znth dst prev) = inf \/ (* unreachable *)
-    let p := (src, create_path src dst prev [] 8) in
-    valid_path g p ->
-    path_ends g p src dst ->
-    forall p', valid_path g p' ->
-               path_ends g p' src dst ->
-               Nat.lt (path_cost g p') (path_cost g p) ->
-               p = p'.
+    valid_prev prev src ->
+    0 <= dst < Zlength prev ->
+    (* if prev[dst] = inf, we can't reach that dst *)
+    0 <= Znth dst prev < 8 -> (* but if we could reach it, *)
+    dijkstra_pair_correct g src dst prev. (* we get the optimal path *)
 
 Definition dijkstra_spec :=
   DECLARE _dijkstra
@@ -548,12 +559,16 @@ Proof.
   - (* done with the first forloop *)
     replace (8-8) with 0 by omega; rewrite list_repeat_0.
     rewrite <- (app_nil_end).
-    forward. forward. forward.  
+    forward. forward. forward.   
     forward_loop
       (EX prev_contents : list Z,
        EX pq_contents : list Z,
        EX dist_contents : list Z,
-       PROP (inrange pq_contents;
+       PROP (forall dst,
+             0 <= dst < Zlength prev_contents ->
+             0 <= Znth dst prev_contents < 8 -> (* if reachable  *)
+             dijkstra_pair_correct g src dst prev_contents; (* optimal *)
+             inrange pq_contents;
              inrange prev_contents;
              inrange dist_contents)
        LOCAL (temp _dist (pointer_val_val dist);
@@ -568,50 +583,56 @@ Proof.
       (EX prev_contents: list Z,
        EX pq_contents: list Z,
        EX dist_contents: list Z,                                    
-       PROP (Forall (fun x => x >= inf) pq_contents)
+       PROP (Forall (fun x => x >= inf) pq_contents;
+             dijkstra_correct g src prev_contents)
        LOCAL (lvar _pq (tarray tint 8) v_pq)
        SEP (data_at Tsh (tarray tint 8) (map Vint (map Int.repr prev_contents)) (pointer_val_val prev);
             (data_at Tsh (tarray tint 8) (map Vint (map Int.repr pq_contents)) v_pq);
             data_at Tsh (tarray tint 8) (map Vint (map Int.repr dist_contents)) (pointer_val_val dist); graph_rep sh (graph_to_mat g) (pointer_val_val arr))).
- (* ie, the PQ is all inf --> is empty *)
     + Exists (upd_Znth src (list_repeat (Z.to_nat 8) inf) src).
       Exists (upd_Znth src (list_repeat (Z.to_nat 8) inf) 0).
       Exists (upd_Znth src (list_repeat (Z.to_nat 8) inf) 0).
       repeat rewrite <- upd_Znth_map; entailer!.
-      assert (0 <= inf <= inf).
-      { pose proof inf_gt_0. omega. }
+      assert (0 <= inf <= inf) by (pose proof inf_gt_0; omega).
       assert (inrange (list_repeat (Z.to_nat 8) inf)).
       { unfold inrange. rewrite Forall_forall; intros.
         apply in_list_repeat in H13. rewrite H13. assumption. }
-      split3; apply inrange_upd_Znth; trivial; try rep_omega.
-      clear -H; unfold inf. unfold Int.max_signed; simpl.
-      assert (8 < 2147483647) by omega. destruct H.
-      pose proof (Z.lt_trans src 8 (2147483647 / 2) H1 H0). omega.
+      split.
+      2: {
+        split3; apply inrange_upd_Znth; trivial; try rep_omega.
+        clear -H; unfold inf, Int.max_signed; simpl.
+        assert (8 < 2147483647) by omega. destruct H.
+        pose proof (Z.lt_trans src 8 (2147483647 / 2) H1 H0). omega. }
+      intros.
+      rewrite upd_Znth_Zlength, Zlength_list_repeat in H14.
+      assert (dst = src).
+      2: rewrite H16; unfold dijkstra_pair_correct; left; trivial.
+      destruct (Z.eq_dec dst src); [trivial | exfalso].
+      rewrite upd_Znth_diff, Znth_list_repeat_inrange, <- inf_eq in H15; trivial.
+      3: rewrite Zlength_list_repeat. all: omega.
     + Intros prev_contents pq_contents dist_contents.
       assert_PROP (Zlength pq_contents = 8).
-      { entailer!. now repeat rewrite Zlength_map in H12. }
+      { entailer!. now repeat rewrite Zlength_map in *. }
       assert_PROP (Zlength prev_contents = 8).
-      { entailer!. now repeat rewrite Zlength_map in H10. }
+      { entailer!. now repeat rewrite Zlength_map in *. }
       assert_PROP (Zlength dist_contents = 8).
-      { entailer!. now repeat rewrite Zlength_map in H17. }
+      { entailer!. now repeat rewrite Zlength_map in *. }
       forward_call (v_pq, pq_contents).
       forward_if.
       * forward_call (v_pq, pq_contents).
         assert (isEmpty pq_contents = Vzero). {
           destruct (isEmptyTwoCases pq_contents);
-            rewrite H9 in H8; simpl in H8; now inversion H8.
+            rewrite H10 in H9; simpl in H9; now inversion H9.
         }
-        clear H8. split; trivial.
-        Intros u.
+        clear H9. split; trivial. Intros u.
         assert (0 <= u < 8).
-        { rewrite <- H5, H9.
+        { rewrite <- H6, H10.
           replace (Zlength pq_contents)
             with (Zlength pq_contents + 0) by omega.
           apply find_range; [|reflexivity]. 
           apply min_in_list. apply incl_refl.
-          destruct pq_contents. rewrite Zlength_nil in H5.
-          inversion H5. simpl. left; trivial.
-        }
+          destruct pq_contents. rewrite Zlength_nil in H6.
+          inversion H6. simpl. left; trivial. }
         forward_for_simple_bound
           8
           (EX i : Z,
@@ -672,7 +693,7 @@ Proof.
              unfold list_address. simpl.
              rewrite field_address_offset.
              1: rewrite offset_offset_val; simpl; f_equal; rep_omega.
-             unfold field_compatible in H20. destruct H20 as [? [? [? [? ?]]]].
+             unfold field_compatible in H21. destruct H21 as [? [? [? [? ?]]]].
       unfold field_compatible; split3; [| | split3]; auto.
       unfold legal_nested_field; split; [auto | simpl; omega].
            }
@@ -687,37 +708,33 @@ Proof.
              entailer!. repeat rewrite Zlength_map in *. trivial. }
             assert_PROP (Zlength dist_contents' = 8). {
              entailer!. repeat rewrite Zlength_map in *. trivial. }    
-           assert_PROP (Zlength (graph_to_mat g) = 8) by 
-               entailer!.
+           assert_PROP (Zlength (graph_to_mat g) = 8) by entailer!.
            assert (0 <= cost <= inf). {
              rewrite Forall_forall in H1.
              specialize (H1 (Znth u (graph_to_mat g))).
-             pose proof (Znth_In u (graph_to_mat g) H10).
-             specialize (H1 H22).
+             pose proof (Znth_In u (graph_to_mat g) H11).
+             specialize (H1 H23).
              unfold inrange in H1. rewrite Forall_forall in H1.
              apply (H1 cost).
              rewrite Heqcost.
              apply Znth_In. omega.
            } 
-           forward_if; rewrite inf_div_eq in H23.
-           2: {
-             forward. 
-             Exists prev_contents' pq_contents' dist_contents'. 
-
-             entailer!. } 
+           forward_if; rewrite inf_div_eq in H24.
+           2: { forward. 
+                Exists prev_contents' pq_contents' dist_contents'. entailer!. } 
            forward. forward.
            assert (0 <= Znth u dist_contents' <= inf). {
-             unfold inrange in H16.
-             rewrite Forall_forall in H16. unfold inf.
-             apply H16; apply Znth_In; omega. }
+             unfold inrange in H17.
+             rewrite Forall_forall in H17. unfold inf.
+             apply H17; apply Znth_In; omega. }
            assert (0 <= Znth i dist_contents' <= inf). {
-             unfold inrange in H16.
-             rewrite Forall_forall in H16. unfold inf.
-             apply H16; apply Znth_In; omega. }
+             unfold inrange in H17.
+             rewrite Forall_forall in H17. unfold inf.
+             apply H17; apply Znth_In; omega. }
            assert (0 <= Znth i (Znth u (graph_to_mat g)) <= inf). {
              rewrite Forall_forall in H1.
-             pose proof (Znth_In u (graph_to_mat g) H12).
-             specialize (H1 (Znth u (graph_to_mat g)) H26).
+             pose proof (Znth_In u (graph_to_mat g) H13).
+             specialize (H1 (Znth u (graph_to_mat g)) H27).
              unfold inrange in H1. rewrite Forall_forall in H1.
              apply H1. apply Znth_In. rep_omega. }
              assert (0 <=
@@ -726,25 +743,21 @@ Proof.
                    Znth i
                         (Znth (find pq_contents (fold_right Z.min (hd 0 pq_contents) pq_contents) 0)
                               (graph_to_mat g)) <= Int.max_signed). {
-             rewrite <- Heqmin_ind. rewrite <- H9.
-             clear -H24 H26. split; [omega|].
+             rewrite <- Heqmin_ind. rewrite <- H10.
+             clear -H25 H27. split; [omega|].
              assert (Z.mul 2 inf < Int.max_signed) by
                  (unfold inf, Int.max_signed; simpl; reflexivity). 
-             destruct H24 as [_ ?]; destruct H26 as [_ ?]. omega.
+             destruct H25 as [_ ?]; destruct H27 as [_ ?]. omega.
            }
            forward_if.
-           2: forward;
-             Exists prev_contents' pq_contents' dist_contents';
-             entailer!.
-           rewrite Int.signed_repr in H28.
+           2: { forward; Exists prev_contents' pq_contents' dist_contents'.
+                entailer!. }
+           rewrite Int.signed_repr in H29.
            2: { subst u cost min_ind. rep_omega. }
-           rewrite Int.signed_repr in H28.
-           2: { clear -H25. pose proof inf_div_2. rep_omega. }
-           forward. forward.
-           forward. forward.
-           entailer!.
-           1: { rewrite upd_Znth_same by (repeat rewrite Zlength_map; omega). 
-                trivial. }
+           rewrite Int.signed_repr in H29.
+           2: { pose proof inf_div_2. rep_omega. }
+           forward. forward. forward. forward. entailer!.
+           1: now rewrite upd_Znth_same by (repeat rewrite Zlength_map; omega). 
            forward. entailer!. rewrite upd_Znth_same.
            2: repeat rewrite Zlength_map; omega. 
            remember (find pq_contents (fold_right Z.min (hd 0 pq_contents) pq_contents) 0) as min_ind.
@@ -757,19 +770,30 @@ Proof.
                        (Znth min_ind dist_contents' + Znth i (Znth min_ind (graph_to_mat g)))).
            repeat rewrite <- upd_Znth_map; entailer!.
            split3; apply inrange_upd_Znth; try rep_omega; try assumption.
-           clear -H10. assert (8 <= inf). {
+           clear -H11. assert (8 <= inf). {
              unfold inf, Int.max_signed in *; simpl in *.
              replace 8 with (8 * 2 / 2). apply Z_div_le; omega.
              apply Z_div_mult; omega. }
            rep_omega.
-        -- Intros a b c. Exists a b c. entailer!.
-      * assert (isEmpty pq_contents = Vone). {
+        -- (* from the for loop's inv, prove the while loop's inv *)
+          assert (isEmpty pq_contents = Vzero). {
           destruct (isEmptyTwoCases pq_contents);
-            rewrite H9 in H8; simpl in H8; now inversion H8.
+            rewrite H12 in H9; simpl in H9; now inversion H9.
+          }
+          clear H9.
+          Intros prev_contents' pq_contents' dist_contents'.
+          Exists prev_contents' pq_contents' dist_contents'.
+          (* I need to strengthen the for loop inv *)
+          admit.
+      * (* after breaking, prove break's postcondition *)
+        assert (isEmpty pq_contents = Vone). {
+          destruct (isEmptyTwoCases pq_contents);
+            rewrite H10 in H9; simpl in H9; now inversion H9.
         }
         forward. Exists prev_contents pq_contents dist_contents.
-        entailer!. apply (isEmptyMeansInf _ H9).
-    + Intros prev_contents pq_contents dist_contents.
-      forward. Exists prev_contents dist_contents.
-      entailer!. admit.
+        entailer!. split; [apply (isEmptyMeansInf _ H10)|].
+        unfold dijkstra_correct; intros; now apply H2.
+    + (* from the break's postcon, prove the overall postcon *)
+      Intros prev_contents pq_contents dist_contents.
+      forward. Exists prev_contents dist_contents. entailer!. 
 Abort.
