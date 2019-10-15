@@ -43,7 +43,7 @@ Definition is_null_Z: DecidablePred Z := existT (fun P : Z -> Prop => forall a :
 
 Definition VType : Type := Z.
 Definition EType : Type := Z.
-Definition LE : Type := option nat.
+Definition LE : Type := option Z. (* not negative Zs. add to soundness?*)
 Definition LV: Type := list LE.
 Definition LG: Type := unit.
 (*Record LG: Type := (* may be unnecessary? *)
@@ -82,10 +82,10 @@ Definition allTrue {A : Type} (l : list (option A)) : bool :=
   fold_right (fun x acc => match x with Some _ => acc | _ => false end) true l.
 
 (* assuming that allTrue will be in the vvalid of path *)
-Definition path_cost (g: Graph) (p : @path VType EType) : nat :=
+Definition path_cost (g: Graph) (p : @path VType EType) : Z :=
   match p with
   | (v, nil) => 0
-  | (v, edges) => fold_left Nat.add (choose (map (elabel g) edges)) 0%nat
+  | (v, edges) => fold_left Z.add (choose (map (elabel g) edges)) 0
   end.
 
 Fixpoint Z_inc_list (n: nat) : list Z :=
@@ -95,7 +95,7 @@ Fixpoint Z_inc_list (n: nat) : list Z :=
   end.
 
 Definition vert_rep (g : Graph) (v : LV) : list Z :=
-  map (fun x => match x with Some x => (Z.of_nat x) | None => inf end) v.
+  map (fun x => match x with Some x => x | None => inf end) v.
 
 (* from Graph to list (list Z) *)
 Definition graph_to_mat (g : Graph) : list (list Z) :=
