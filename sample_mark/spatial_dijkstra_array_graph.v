@@ -19,3 +19,38 @@ Lemma graph_to_mat_diagonal: forall g i,
     Znth i (Znth i (graph_to_mat g)) = 0.
 Proof. Admitted.
 
+Definition list_address a index size : val :=
+  offset_val (index * sizeof (tarray tint size)) a.
+
+Definition list_rep sh size l contents_mat index :=
+  let mylist := (Znth index contents_mat) in
+  data_at sh (tarray tint size) (map Vint (map Int.repr mylist)) (list_address l index size).
+
+Definition graph_rep sh contents_graph gaddr : mpred :=
+  iter_sepcon.iter_sepcon (list_rep sh SIZE gaddr contents_graph)
+                          (Z_inc_list (Z.to_nat (Zlength contents_graph))).
+
+Lemma graph_unfold: forall sh contents ptr i,
+    0 <= i < (Zlength contents) ->
+    graph_rep sh contents ptr =
+    iter_sepcon.iter_sepcon (list_rep sh SIZE ptr contents)
+            (sublist 0 i (Z_inc_list (Z.to_nat (Zlength contents)))) *
+    (list_rep sh SIZE ptr contents i *
+           iter_sepcon.iter_sepcon (list_rep sh SIZE ptr contents)
+             (sublist (i + 1) (Zlength contents) (Z_inc_list (Z.to_nat (Zlength contents))))).
+Proof.
+  intros. unfold graph_rep.
+  replace (Z_inc_list (Z.to_nat (Zlength contents))) with
+      (sublist 0 (Zlength contents) (Z_inc_list (Z.to_nat (Zlength contents)))) at 1.
+  2: { rewrite sublist_same; trivial.
+       rewrite Z_inc_list_length, Z2Nat_id', Z.max_r; trivial.
+       apply Zlength_nonneg.
+  }
+  rewrite (sublist_split 0 i (Zlength contents)),
+  (sublist_split i (i+1) (Zlength contents)), (sublist_one i); try omega.
+  2, 3, 4: rewrite Z_inc_list_length; rewrite Z2Nat.id; omega.
+  rewrite <- (Z_inc_list_eq i (Z.to_nat (Zlength contents))).
+  2: rewrite Z2Nat_id', Z.max_r; trivial; apply Zlength_nonneg. 
+  repeat rewrite iter_sepcon.iter_sepcon_app.
+  simpl. rewrite sepcon_emp. reflexivity.
+Qed.
