@@ -3,7 +3,7 @@
 #include <stdio.h>
 #include <time.h>
 
-#define IFTY INT_MAX/2
+#define IFTY INT_MAX - 1
 #define SIZE 8  // number of vertices
 #define CONN 3  // the connectedness. 1 is 100%, higher numbers mean less connected
 #define INFL 50 // increase this to inflate the highest possible cost, thus creating greater ranges
@@ -30,7 +30,7 @@ int popMin (int pq[SIZE]) {
             minWeight = pq[i];
         }   
     }
-    pq[minVertex] = IFTY; /* basically, delete the node */
+    pq[minVertex] = IFTY+1; /* basically, delete the node */
     return minVertex;
 }
 
@@ -121,7 +121,7 @@ void dijkstra (int graph[SIZE][SIZE], int src, int *dist, int *prev) {
     pq[src] = 0;
     prev[src] = src;
     while (!pq_emp(pq)) {
-        u = popMin(pq);  // this is the next candidate we will deal with (once and for all)
+        u = popMin(pq);  // src -> u is optimal. relax u's neighbors if we can, and then forget about u.
         // printf("Popped vertex %d\n", u);
         for (i = 0; i < SIZE; i++) {
             cost = graph[u][i]; 
@@ -133,7 +133,7 @@ void dijkstra (int graph[SIZE][SIZE], int src, int *dist, int *prev) {
                     // printf("Improved %d --> %d to %d\n", src, i, dist[i]);
                     // uncomment the above line to see how the "best answer" improves slowly!
                 }
-            }
+            } // src --> i may NOT be perfect. 
         }
     }
     return;
