@@ -29,7 +29,7 @@ Section UnionFindGraph.
       ma: MathGraph g isNullDec;
       fin: FiniteGraph g
     }.
-
+  
   Context {DV DE DG: Type}.
 
   Definition LGraph := LabeledGraph V E DV DE DG.

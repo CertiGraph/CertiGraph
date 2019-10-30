@@ -8,10 +8,9 @@ Require Import RamifyCoq.graph.path_lemmas.
 Require Import RamifyCoq.graph.reachable_computable.
 Require Import RamifyCoq.graph.graph_gen.
 Require Import RamifyCoq.graph.FiniteGraph.
-
+Require Import Coq.ZArith.ZArith.
 Section DijkstraGraph.
 
-  Definition SIZE := 8.
 
   Context {V E: Type}.
   Context {VE: EqDec V eq}.
@@ -20,17 +19,16 @@ Section DijkstraGraph.
 
   Coercion pg_lg: LabeledGraph >-> PreGraph.
   Coercion lg_gg: GeneralGraph >-> LabeledGraph. 
-  Class Fin (g: PreGraph V E) :=
-    { fin: FiniteGraph g; }.
 
-  Definition LGraph := LabeledGraph V E DV DE DG.
-  Definition Graph := (GeneralGraph V E DV DE DG (fun g => Fin g)).
+  (* Local Open Scope Z_scope. *)
+  
+  (* Class PosEdgeGraph (pg: LabeledGraph V E DV DE DG) := *)
+    (* { *)
+      (* posEdge: (fun x  => x > 0) (evalid pg) *)
+    (* }. *)
 
-  Fixpoint choose {A : Type} (l : list (option A)) : list A :=
-    match l with
-    | nil => nil
-    | Some x :: tl => x :: choose tl
-    | None :: tl => choose tl
-    end.
+
+  (* Definition LGraph := LabeledGraph V E DV DE DG. *)
+  (* Definition Graph := (GeneralGraph V E DV DE DG (fun g => Fin g)). *)
 
 End DijkstraGraph.

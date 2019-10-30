@@ -213,8 +213,10 @@ Definition f_popMin := {|
           (Ederef
             (Ebinop Oadd (Etempvar _pq (tptr tint))
               (Etempvar _minVertex tint) (tptr tint)) tint)
-          (Ebinop Odiv (Econst_int (Int.repr 2147483647) tint)
-            (Econst_int (Int.repr 2) tint) tint))
+          (Ebinop Oadd
+            (Ebinop Osub (Econst_int (Int.repr 2147483647) tint)
+              (Econst_int (Int.repr 1) tint) tint)
+            (Econst_int (Int.repr 1) tint) tint))
         (Sreturn (Some (Etempvar _minVertex tint)))))))
 |}.
 
@@ -240,8 +242,8 @@ Definition f_pq_emp := {|
               (Ebinop Oadd (Etempvar _pq (tptr tint)) (Etempvar _i tint)
                 (tptr tint)) tint))
           (Sifthenelse (Ebinop Olt (Etempvar _t'1 tint)
-                         (Ebinop Odiv (Econst_int (Int.repr 2147483647) tint)
-                           (Econst_int (Int.repr 2) tint) tint) tint)
+                         (Ebinop Osub (Econst_int (Int.repr 2147483647) tint)
+                           (Econst_int (Int.repr 1) tint) tint) tint)
             (Sreturn (Some (Econst_int (Int.repr 0) tint)))
             Sskip)))
       (Sset _i
@@ -297,9 +299,9 @@ Definition f_setup := {|
                       (Ssequence
                         (Sset _t'4
                           (Ecast
-                            (Ebinop Odiv
+                            (Ebinop Osub
                               (Econst_int (Int.repr 2147483647) tint)
-                              (Econst_int (Int.repr 2) tint) tint) tint))
+                              (Econst_int (Int.repr 1) tint) tint) tint))
                         (Sset _t'3 (Ecast (Etempvar _t'4 tint) tint)))
                       (Ssequence
                         (Sset _t'4
@@ -360,9 +362,9 @@ Definition f_print_graph := {|
                           (tarray tint 8)) (Etempvar _j tint) (tptr tint))
                       tint))
                   (Sifthenelse (Ebinop Oeq (Etempvar _t'1 tint)
-                                 (Ebinop Odiv
+                                 (Ebinop Osub
                                    (Econst_int (Int.repr 2147483647) tint)
-                                   (Econst_int (Int.repr 2) tint) tint) tint)
+                                   (Econst_int (Int.repr 1) tint) tint) tint)
                     (Scall None
                       (Evar _printf (Tfunction (Tcons (tptr tschar) Tnil)
                                       tint
@@ -458,8 +460,8 @@ Definition f_getPaths := {|
             (Sset _t'1
               (Ecast
                 (Ebinop Olt (Etempvar _t'3 tint)
-                  (Ebinop Odiv (Econst_int (Int.repr 2147483647) tint)
-                    (Econst_int (Int.repr 2) tint) tint) tint) tbool)))
+                  (Ebinop Osub (Econst_int (Int.repr 2147483647) tint)
+                    (Econst_int (Int.repr 1) tint) tint) tint) tbool)))
           (Sset _t'1 (Econst_int (Int.repr 0) tint)))
         (Sifthenelse (Etempvar _t'1 tint)
           (Ssequence
@@ -510,21 +512,21 @@ Definition f_dijkstra := {|
             (Ederef
               (Ebinop Oadd (Etempvar _dist (tptr tint)) (Etempvar _i tint)
                 (tptr tint)) tint)
-            (Ebinop Odiv (Econst_int (Int.repr 2147483647) tint)
-              (Econst_int (Int.repr 2) tint) tint))
+            (Ebinop Osub (Econst_int (Int.repr 2147483647) tint)
+              (Econst_int (Int.repr 1) tint) tint))
           (Ssequence
             (Sassign
               (Ederef
                 (Ebinop Oadd (Etempvar _prev (tptr tint)) (Etempvar _i tint)
                   (tptr tint)) tint)
-              (Ebinop Odiv (Econst_int (Int.repr 2147483647) tint)
-                (Econst_int (Int.repr 2) tint) tint))
+              (Ebinop Osub (Econst_int (Int.repr 2147483647) tint)
+                (Econst_int (Int.repr 1) tint) tint))
             (Sassign
               (Ederef
                 (Ebinop Oadd (Evar _pq (tarray tint 8)) (Etempvar _i tint)
                   (tptr tint)) tint)
-              (Ebinop Odiv (Econst_int (Int.repr 2147483647) tint)
-                (Econst_int (Int.repr 2) tint) tint)))))
+              (Ebinop Osub (Econst_int (Int.repr 2147483647) tint)
+                (Econst_int (Int.repr 1) tint) tint)))))
       (Sset _i
         (Ebinop Oadd (Etempvar _i tint) (Econst_int (Int.repr 1) tint) tint))))
   (Ssequence
@@ -579,9 +581,9 @@ Definition f_dijkstra := {|
                                 (tarray tint 8)) (Etempvar _i tint)
                               (tptr tint)) tint))
                         (Sifthenelse (Ebinop Olt (Etempvar _cost tint)
-                                       (Ebinop Odiv
+                                       (Ebinop Osub
                                          (Econst_int (Int.repr 2147483647) tint)
-                                         (Econst_int (Int.repr 2) tint) tint)
+                                         (Econst_int (Int.repr 1) tint) tint)
                                        tint)
                           (Ssequence
                             (Sset _t'3
