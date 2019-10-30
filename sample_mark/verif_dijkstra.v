@@ -15,16 +15,6 @@ Require Import Coq.omega.Omega.
 Require Import Coq.Lists.List.
 Definition inf := Int.max_signed - 1.
 
-Lemma inf_eq : inf = 2147483646.
-Proof. now unfold Int.max_signed. Qed.
-Hint Rewrite inf_eq.
-
-Lemma inf_gt_0: 0 <= inf.
-Proof. now autorewrite with core. Qed.
-
-Lemma inf_div_2: inf < Int.max_signed.
-Proof. now autorewrite with core. Qed.
-
 Definition list_address a index size : val :=
   offset_val (index * sizeof (tarray tint size)) a.
 
@@ -64,9 +54,12 @@ Definition inrange_prev prev_contents :=
 Definition inrange_priq priq_contents :=
   Forall (fun x => 0 <= x <= inf+1) priq_contents.
 
-Definition inrange_graph graph_contents :=
-  Forall (fun list => Forall (fun cost => 0 <= cost <= inf / SIZE) list) graph_contents. 
+Definition inrange_graph grph_contents :=
+  Forall (fun list => Forall (fun cost => 0 <= cost <= inf / SIZE) list) grph_contents.
 
+Definition inrange_dist dist_contents :=
+  Forall (fun x => 0 <= x <= inf - (inf / SIZE)) dist_contents. 
+  
 Lemma inrange_priq_zoom_in:
   forall priq_contents i,
     0 <= i < Zlength priq_contents ->
@@ -99,8 +92,6 @@ Proof.
   apply (inrange_priq_zoom_in _ i) in H0; trivial.
   rep_omega.
 Qed.
-
-  
 
 (* recycle later *)
 (*
@@ -482,7 +473,7 @@ Proof.
       2: unfold isEmpty_Prop in H2; trivial.
       exfalso.
       rewrite signed_repr_same_priq in H3 by (trivial; omega).
-      simpl in H3. rewrite <- inf_eq in H3. omega.
+      unfold inf in l. rep_omega.
   - forward. entailer!.
     rewrite sublist_same in H0; trivial.
     2: repeat rewrite Zlength_map in H2; omega.
