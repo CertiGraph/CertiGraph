@@ -36,9 +36,9 @@ Definition is_null_Z: DecidablePred Z := existT (fun P : Z -> Prop => forall a :
 
 (* 
  Concretizing the DijkstraGraph with array-specific types.
- |  V  |  E  |    DV   |     DE     |  DG  | soundness |
- |-----|-----|---------|------------|------|-----------| 
- |  Z  |  Z  | list DE | option nat | unit |  Finite   |  
+ |  V  |  E  |    DV   |    DE    |  DG  | soundness |
+ |-----|-----|---------|----------|------|-----------| 
+ |  Z  |  Z  | list DE | option Z | unit |  Finite   |  
  *)
 
 Definition VType : Type := Z.
@@ -53,8 +53,25 @@ Definition LG: Type := unit.
   vertices_range: length vertices = size
   }. *)
 
-Definition Graph := (@Graph VType EType _ _ LV LE LG).
-Definition LGraph := (@LGraph VType EType _ _ LV LE LG).
+Fixpoint Z_inc_list (n: nat) : list Z :=
+  match n with
+  | O => nil
+  | S n' => Z_inc_list n' ++ (Z.of_nat n' :: nil)
+  end.
+
+
+  Class Fin (g: LabeledGraph VType EType LV LE LG) :=
+    { fin: FiniteGraph g;
+      (* pos: Z_inc_list (Z.to_nat SIZE) *)
+    }.
+
+
+  Definition LGraph := LabeledGraph VType EType LV LE LG.
+  Definition Graph := (GeneralGraph VType EType LV LE LG (fun g => Fin g)).
+
+
+(* Definition Graph := (@Graph VType EType _ _ LV LE LG). *)
+(* Definition LGraph := (@LGraph VType EType _ _ LV LE LG). *)
 
 
 (* Moving on to Spatial Rep *)
@@ -77,6 +94,13 @@ Section SpaceDijkstraArrayGraph.
   Context {SAGP: SpatialDijkstraArrayGraphAssum Pred}.
   Context {SAG: SpatialDijkstraArrayGraph Addr Pred}.
 
+  Fixpoint choose {A : Type} (l : list (option A)) : list A :=
+    match l with
+    | nil => nil
+    | Some x :: tl => x :: choose tl
+    | None :: tl => choose tl
+    end.
+  
 (* TODO: move this to vvalid of a Dijk path *)
 Definition allTrue {A : Type} (l : list (option A)) : bool :=
   fold_right (fun x acc => match x with Some _ => acc | _ => false end) true l.
@@ -88,11 +112,6 @@ Definition path_cost (g: Graph) (p : @path VType EType) : Z :=
   | (v, edges) => fold_left Z.add (choose (map (elabel g) edges)) 0
   end.
 
-Fixpoint Z_inc_list (n: nat) : list Z :=
-  match n with
-  | O => nil
-  | S n' => Z_inc_list n' ++ (Z.of_nat n' :: nil)
-  end.
 
 Definition vert_rep (g : Graph) (v : LV) : list Z :=
   map (fun x => match x with Some x => x | None => inf end) v.
