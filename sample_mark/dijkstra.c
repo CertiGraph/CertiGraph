@@ -3,11 +3,10 @@
 #include <stdio.h>
 #include <time.h>
 
-#define IFTY INT_MAX - 1
 #define SIZE 8  // number of vertices
 #define CONN 3  // the connectedness. 1 is 100%, higher numbers mean less connected
 #define INFL 50 // increase this to inflate the highest possible cost, thus creating greater ranges
-
+#define IFTY INT_MAX - INT_MAX/SIZE
 
 /* ****************************** */
 /*    Array Masquerading as PQ    */

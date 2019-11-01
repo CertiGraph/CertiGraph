@@ -13,130 +13,43 @@ Require Import RamifyCoq.msl_application.DijkstraArrayGraph.
 Require Import RamifyCoq.sample_mark.spatial_dijkstra_array_graph.
 Require Import Coq.omega.Omega.
 Require Import Coq.Lists.List.
-Definition inf := Int.max_signed - 1.
+Definition inf := Int.max_signed - Int.max_signed/SIZE.
 
-Lemma inf_eq: 2147483647 - 1 = inf.
-Proof. unfold inf. rep_omega. Qed.
+Lemma inf_eq: 1879048192 = inf.   
+Proof. compute; trivial. Qed.
+
+Lemma inf_eq2: Int.sub (Int.repr 2147483647)
+                          (Int.divs (Int.repr 2147483647) (Int.repr 8)) = Int.repr inf.
+Proof. compute. trivial. Qed.
 
 (* Ranges for different arrays *)
 Definition inrange_prev prev_contents :=
-  Forall (fun x => 0 <= x <= SIZE-1 \/ x = inf) prev_contents.
+  Forall (fun x => 0 <= x < SIZE \/ x = inf) prev_contents.
 
 Definition inrange_priq priq_contents :=
   Forall (fun x => 0 <= x <= inf+1) priq_contents.
 
 Definition inrange_dist dist_contents :=
-  Forall (fun x => 0 <= x <= inf - (inf / SIZE)
-                                     \/ x = inf) dist_contents. 
+  Forall (fun x => 0 <= x <= inf) dist_contents. 
 
 Definition inrange_graph grph_contents :=
-  Forall (fun list => Forall (fun cost => 0 <= cost <= inf / SIZE) list) grph_contents.
-  
-Lemma inrange_priq_zoom_in:
-  forall priq_contents i,
-    0 <= i < Zlength priq_contents ->
-    inrange_priq priq_contents ->
-    0 <= Znth i priq_contents <= Int.max_signed.
-Proof.
-  intros. unfold inrange_priq in H0. rewrite Forall_forall in H0.
-  pose proof (Znth_In i priq_contents H).
-  specialize (H0 (Znth i priq_contents) H1).
-  unfold inf in H0. omega.
-Qed.
+  Forall (fun list => Forall (fun cost => 0 <= cost <= Int.max_signed / SIZE) list) grph_contents.
 
-Lemma inrange_dist_zoom_in:
-  forall dist_contents i,
-    0 <= i < Zlength dist_contents ->
-    inrange_dist dist_contents ->
-    (0 <= Znth i dist_contents <= inf - inf/SIZE
-     \/ Znth i dist_contents = inf).
-Proof.
-  intros. unfold inrange_dist in H0. rewrite Forall_forall in H0.
-  pose proof (Znth_In i dist_contents H).
-  specialize (H0 (Znth i dist_contents) H1).
-  destruct H0; omega.
-Qed.
-
-Lemma inrange_priq_sublist:
-  forall priq_contents i,
-    0 <= i < Zlength priq_contents ->
-    inrange_priq priq_contents ->
-    inrange_priq (sublist 0 i priq_contents).
-Proof.
-  intros. unfold inrange_priq in *.
-  apply Forall_sublist; trivial.
-Qed.
-  
-Lemma signed_repr_same_priq: forall priq_contents i,
-    0 <= i < Zlength priq_contents ->
-    inrange_priq priq_contents ->
-    Int.signed (Int.repr (Znth i priq_contents)) =
-    Znth i priq_contents.
-Proof.
-  intros. rewrite Int.signed_repr; trivial.
-  apply (inrange_priq_zoom_in _ i) in H0; trivial.
-  rep_omega.
-Qed.
-
-Lemma signed_repr_same_dist: forall dist_contents i,
-    0 <= i < Zlength dist_contents ->
-    inrange_dist dist_contents ->
-    Int.signed (Int.repr (Znth i dist_contents)) =
-    Znth i dist_contents.
-Proof.
-  intros. rewrite Int.signed_repr; trivial.
-  apply (inrange_dist_zoom_in _ i) in H0; trivial.
-  simpl in *. destruct H0; [|unfold inf in *]; rep_omega. 
-Qed.
-
-Lemma inrange_upd_Znth_dist: forall l i new,
+Lemma inrange_upd_Znth: forall (l: list Z) i new F,
     0 <= i < Zlength l ->
-    inrange_dist l ->
-    (0 <= new <= inf - inf/SIZE \/ new = inf) ->
-    inrange_dist (upd_Znth i l new).
+    Forall F l ->
+    F new ->
+    Forall F (upd_Znth i l new).
 Proof.
-  intros. unfold inrange_dist in *.
-  rewrite Forall_forall in *. intros.
-  destruct (eq_dec x new). 1: omega.
+  intros. rewrite Forall_forall in *. intros.
+  destruct (eq_dec x new).
+  1: rewrite e; assumption.
   unfold upd_Znth in H2; apply in_app_or in H2; destruct H2.
   - apply sublist_In in H2. apply (H0 x H2).
   - simpl in H2. destruct H2.
     1: exfalso; omega.
     apply sublist_In in H2. apply (H0 x H2).
 Qed.
-
-Lemma inrange_upd_Znth_prev: forall l i new,
-    0 <= i < Zlength l ->
-    inrange_prev l ->
-    (0 <= new <= SIZE - 1 \/ new = inf) ->
-    inrange_prev (upd_Znth i l new).
-Proof.
-  intros. unfold inrange_prev in *.
-  rewrite Forall_forall in *. intros.
-  destruct (eq_dec x new). 1: omega.
-  unfold upd_Znth in H2; apply in_app_or in H2; destruct H2.
-  - apply sublist_In in H2. apply (H0 x H2).
-  - simpl in H2. destruct H2.
-    1: exfalso; omega.
-    apply sublist_In in H2. apply (H0 x H2).
-Qed.
-
-Lemma inrange_upd_Znth_priq: forall l i new,
-    0 <= i < Zlength l ->
-    inrange_priq l ->
-    (0 <= new <= inf+1) ->
-    inrange_priq (upd_Znth i l new).
-Proof.
-  intros. unfold inrange_priq in *.
-  rewrite Forall_forall in *. intros.
-  destruct (eq_dec x new). 1: omega.
-  unfold upd_Znth in H2; apply in_app_or in H2; destruct H2.
-  - apply sublist_In in H2. apply (H0 x H2).
-  - simpl in H2. destruct H2.
-    1: exfalso; omega.
-    apply sublist_In in H2. apply (H0 x H2).
-Qed.
-
 
 (* 
  * If it's a valid situation, it will return the 
@@ -510,7 +423,11 @@ Proof.
     + rewrite (isEmpty_in priq_contents (Znth i priq_contents)).
       trivial. 
       apply Znth_In; omega.
-      rewrite signed_repr_same_priq in H3; trivial; omega.
+      rewrite <- H1 in H0.
+      pose proof (Forall_Znth _ _ i H0 H).
+      rewrite Int.signed_repr in H3.
+      rewrite inf_eq2 in H3; trivial.
+      simpl in H7. rep_omega.
     + rewrite (sublist_split 0 i (i+1)); try omega.
       unfold isEmpty_Prop.
       rewrite fold_right_app.
@@ -518,8 +435,11 @@ Proof.
       destruct (Z_lt_dec (Znth i priq_contents) inf).
       2: unfold isEmpty_Prop in H2; trivial.
       exfalso.
-      rewrite signed_repr_same_priq in H3 by (trivial; omega).
-      unfold inf in l. rep_omega.
+      rewrite inf_eq2 in H3.
+      do 2 rewrite Int.signed_repr in H3. 
+      rep_omega.
+      1: compute; split; inversion 1. 
+      1,2: rewrite <- H1 in H0; apply (Forall_Znth _ _ i H0) in H; simpl in H; rep_omega.  
   - forward. entailer!.
     rewrite sublist_same in H0; trivial.
     2: repeat rewrite Zlength_map in H2; omega.
@@ -551,15 +471,17 @@ Proof.
     { apply Forall_fold_min. apply Forall_Znth. omega.
       rewrite Forall_forall. intros. rewrite In_Znth_iff in H4.
       destruct H4 as [? [? ?]]. rewrite <- H5.
-      apply (inrange_priq_zoom_in _ x0) in H; trivial.
-      rep_omega.
+      pose proof (Forall_Znth _ _ x0 H4 H).
+      simpl in H6. rep_omega.
       rewrite Forall_forall. intros. rewrite In_Znth_iff in H4.
       destruct H4 as [? [? ?]]. rewrite <- H5.
-      apply (inrange_priq_sublist _ _ H3) in H.
-      pose proof (inrange_priq_zoom_in (sublist 0 i priq_contents) x0 H4 H).
-      rep_omega.
+      apply (Forall_sublist _ 0 i _) in H.
+      apply (Forall_Znth _ _ _ H4) in H.
+      simpl in H. rep_omega.
     }
-    forward_if; rewrite signed_repr_same_priq in H5; trivial.
+    assert (Int.min_signed <= Znth i priq_contents <= Int.max_signed). {
+      apply (Forall_Znth _ _ _ H3) in H; simpl in H; rep_omega. }
+    forward_if.
     + forward. forward. entailer!.
       rewrite (sublist_split 0 i (i+1)) by omega.
       rewrite (sublist_one i (i+1) priq_contents) by omega.
@@ -610,7 +532,7 @@ Proof.
           graph_rep sh (graph_to_mat g) (pointer_val_val arr))).
   - unfold data_at, data_at_, field_at_; entailer!.
   - forward. forward. forward.
-    entailer!. rewrite inf_eq. 
+    entailer!. rewrite inf_eq2.
     replace (upd_Znth i
        (list_repeat (Z.to_nat i) (Vint (Int.repr inf)) ++
                     list_repeat (Z.to_nat (8 - i)) Vundef) (Vint (Int.repr inf))) with
@@ -680,17 +602,17 @@ Proof.
         }
         assert (inrange_dist (list_repeat (Z.to_nat 8) inf)). {
           unfold inrange_dist. rewrite Forall_forall.
-          intros. apply in_list_repeat in H14. right; trivial.
+          intros. apply in_list_repeat in H14.
+          rewrite H14. compute. split; inversion 1.
         }
         assert (inrange_priq (list_repeat (Z.to_nat 8) inf)). {
           unfold inrange_priq. rewrite Forall_forall.
           intros. apply in_list_repeat in H15.
           rewrite H15. rewrite <- inf_eq. omega.
         }          
-        split3; [apply inrange_upd_Znth_prev | apply inrange_upd_Znth_dist | apply inrange_upd_Znth_priq].        
-        3,6: left.
-        3,4: unfold SIZE; simpl.
-        9: rewrite <- inf_eq.
+        split3; apply inrange_upd_Znth.     
+        3: left; unfold SIZE; simpl.
+        6, 9: rewrite <- inf_eq.
         all: try rep_omega; trivial.
       }
       intros.
@@ -751,8 +673,8 @@ Proof.
            repeat rewrite <- upd_Znth_map.
            entailer!.
            split; [intros; exfalso; omega|].
-           apply inrange_upd_Znth_priq; trivial.
-           unfold inf. rep_omega.
+           apply inrange_upd_Znth; trivial.
+           rewrite <- inf_eq. rep_omega.
         -- Fail forward.
            assert (0 <= u < Zlength (graph_to_mat g)). {
              unfold graph_to_mat.
@@ -797,35 +719,24 @@ Proof.
             assert_PROP (Zlength dist_contents' = 8). {
              entailer!. repeat rewrite Zlength_map in *. trivial. }    
            assert_PROP (Zlength (graph_to_mat g) = 8) by entailer!.
-           assert (0 <= cost <= inf / SIZE). {
-             unfold inrange_graph in H1.
-             rewrite Forall_forall in H1.
-             specialize (H1 (Znth u (graph_to_mat g))).
-             pose proof (Znth_In u (graph_to_mat g) H13).
-             specialize (H1 H24).
-             unfold inrange_graph in H1. rewrite Forall_forall in H1.
-             apply (H1 cost). rewrite Heqcost.
-             apply Znth_In. omega.
-           } 
+           assert (0 <= cost <= Int.max_signed / SIZE). {
+             apply (Forall_Znth _ _ _ H13) in H1.
+             simpl in H1.
+             assert (0 <= i < Zlength (Znth u (graph_to_mat g))) by omega.
+             apply (Forall_Znth _ _ _ H24) in H1.
+             simpl in H1. now rewrite <- Heqcost in H1.
+           }
            forward_if.
-           ++ assert (0 <= Znth u dist_contents' <= inf - inf / SIZE). {
+           ++ assert (0 <= Znth u dist_contents' <= inf). {
                 assert (0 <= u < Zlength dist_contents') by omega.
-                pose proof (inrange_dist_zoom_in _ _ H26 H18).
-                destruct H27; [omega | exfalso].
-                unfold cost_was_improved_if_possible in H15.
-                admit.
-                (* need to show that it's not inf
-                   because it came via popping *)
+                apply (Forall_Znth _ _ _ H26) in H18.
+                simpl in H18. assumption. 
               } 
-              assert (cost < inf). {
-                rewrite inf_eq in H25.
-                unfold inf,SIZE in H24.
-                rewrite Int.signed_repr in H25. rep_omega.
-                clear -H24.
-                destruct H24; split; try rep_omega.
-                apply (Z.le_trans cost ((Int.max_signed - 1)/ 8) Int.max_signed); trivial.
-                compute. inversion 1.
-              }
+              assert (0 <= Znth i dist_contents' <= inf). {
+                assert (0 <= i < Zlength dist_contents') by omega.
+                apply (Forall_Znth _ _ _ H27) in H18.
+                simpl in H18. assumption. 
+              }               
               assert (0 <= Znth u dist_contents' + cost <= Int.max_signed). {
                 split; [omega|].
                 destruct H26. destruct H24.
@@ -834,7 +745,8 @@ Proof.
                 rep_omega.
                 }
               forward. forward. forward_if.
-              ** rewrite signed_repr_same_dist in H29; trivial; try rep_omega.
+              ** rewrite Int.signed_repr in H29
+                  by (unfold inf in H27; rep_omega).
                  assert (0 <= i < Zlength (map Vint (map Int.repr dist_contents'))).
                  { repeat rewrite Zlength_map. omega. }
                  forward. forward. forward.
@@ -847,25 +759,15 @@ Proof.
                  repeat rewrite <- upd_Znth_map; entailer!.
                  split.
                  2: { repeat rewrite Zlength_map in H30.
-                      split3; [apply inrange_upd_Znth_prev |
-                               apply inrange_upd_Znth_priq |
-                               apply inrange_upd_Znth_dist];
-                      trivial; try omega.
-                      - left.
-                        replace SIZE with (Zlength priq_contents).
-                        rewrite Z.sub_1_r.
-                        rewrite <- (Z.lt_succ_r _ (Z.pred (Zlength priq_contents))).
-                        rewrite Z.succ_pred.
-                        apply find_range.
-                        apply min_in_list.
-                        apply incl_refl.
-                        rewrite <- Znth_0_hd by omega.
-                        apply Znth_In; omega.
-                      - pose proof (inrange_dist_zoom_in dist_contents' i H30 H18). 
-                        clear -H29 H9.
-                        destruct H9.
-                        + admit. (* easy *)
-                        + (* hmm, time to rethink the dist_range? *) admit.
+                      split3; apply inrange_upd_Znth;
+                        trivial; try omega.
+                      left.
+                      replace SIZE with (Zlength priq_contents).
+                      apply find_range.
+                      apply min_in_list.
+                      apply incl_refl.
+                      rewrite <- Znth_0_hd by omega.
+                      apply Znth_In; omega.
                  }
                  intros.
                  unfold cost_was_improved_if_possible. intros.
@@ -883,7 +785,12 @@ Proof.
                      rewrite graph_to_mat_diagonal by omega.
                      omega. rep_omega.
                  --- rewrite H44, upd_Znth_same, upd_Znth_diff; try rep_omega.
-              ** rewrite signed_repr_same_dist in H29 by (trivial; omega).
+              ** rewrite Int.signed_repr in H29.
+                 2: { assert (0 <= i < Zlength dist_contents') by omega.
+                      apply (Forall_Znth _ _ _ H30) in H18.
+                      simpl in H18.
+                      unfold inf in H18.
+                      rep_omega. }
                  forward.
                  Exists prev_contents' priq_contents' dist_contents'.
                  entailer!.
@@ -896,9 +803,12 @@ Proof.
               entailer!. unfold cost_was_improved_if_possible in *. intros.
               assert (0 <= dst < i \/ dst = i) by omega.
               destruct H39; [apply H15; trivial|].
-              (* clear -H25 H38 H39.  *)
               subst dst. exfalso. unfold inf in H38.
-              rewrite Int.signed_repr in H25; rep_omega.
+              rewrite inf_eq2 in H25.
+              do 2 rewrite Int.signed_repr in H25. 
+              unfold inf in H25. rep_omega.
+              compute; split; inversion 1.
+              1,2: rep_omega.
         -- (* from the for loop's inv, prove the while loop's inv *)
           Intros prev_contents' priq_contents' dist_contents'.
           Exists prev_contents' priq_contents' dist_contents'.
