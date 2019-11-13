@@ -126,13 +126,12 @@ Section SpaceDijkstraArrayGraph.
     fold_right (fun x acc => match x with Some _ => acc | _ => false end) true l.
   
   (* assuming that allTrue will be in the vvalid of path *)
-  Definition path_cost (g: Graph) (p : @path VType EType) : Z :=
+  Definition path_cost (g: LGraph) (p : @path VType EType) : Z :=
     match p with
     | (v, nil) => 0
     | (v, edges) => fold_left Z.add (choose (map (elabel g) edges)) 0
     end.
   
-
   Definition vert_rep (g : Graph) (v : LV) : list Z :=
     map (fun x => match x with Some x => x | None => inf end) v.
   
