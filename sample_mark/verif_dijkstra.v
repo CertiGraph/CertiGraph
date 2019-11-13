@@ -19,10 +19,10 @@ Lemma inf_eq: 1879048192 = inf.
 Proof. compute; trivial. Qed.
 
 Lemma inf_eq2: Int.sub (Int.repr 2147483647)
-                          (Int.divs (Int.repr 2147483647) (Int.repr 8)) = Int.repr inf.
+                       (Int.divs (Int.repr 2147483647)
+                                 (Int.repr 8)) = Int.repr inf.
 Proof. compute. trivial. Qed.
 
-(* Ranges for different arrays *)
 Definition inrange_prev prev_contents :=
   Forall (fun x => 0 <= x < SIZE \/ x = inf) prev_contents.
 
@@ -37,39 +37,16 @@ Definition inrange_graph grph_contents :=
 
 Lemma inrange_upd_Znth: forall (l: list Z) i new F,
     0 <= i < Zlength l ->
-    Forall F l ->
-    F new ->
+    Forall F l -> F new ->
     Forall F (upd_Znth i l new).
 Proof.
   intros. rewrite Forall_forall in *. intros.
-  destruct (eq_dec x new).
-  1: rewrite e; assumption.
+  destruct (eq_dec x new); [rewrite e; trivial|].
   unfold upd_Znth in H2; apply in_app_or in H2; destruct H2.
   - apply sublist_In in H2. apply (H0 x H2).
-  - simpl in H2. destruct H2.
-    1: exfalso; omega.
+  - simpl in H2. destruct H2; [omega|].
     apply sublist_In in H2. apply (H0 x H2).
 Qed.
-
-(* 
- * If it's a valid situation, it will return the 
- * path.
- * If not, it will return an empty list.
- *)
-Fixpoint create_path_inner (src dst : VType) (prev : list VType) (ans : list VType) (n : nat) : list VType :=
-  match n with
-  | O => []
-  | S n' => if Z_le_gt_dec dst SIZE
-            then if Z.eq_dec src dst
-                 then src :: ans
-                 else create_path_inner src (Znth dst prev) prev (dst :: ans) n'
-            else []
-  end.
-
-Definition create_path src dst prev :=
-  create_path_inner src dst prev [] (Z.to_nat (Zlength prev)).
-
-Compute (create_path 0 3 [0; 0; 1; inf]).
 
 (* can probably collapse these two together *)
 Definition isEmpty_Prop (pq_contents : list Z) :=
@@ -255,9 +232,7 @@ Proof.
 Qed.  
 
 Lemma Znth_0_hd:
-  forall list,
-    Zlength list > 0 ->
-    Znth 0 list = hd 0 list.
+  forall list, Zlength list > 0 -> Znth 0 list = hd 0 list.
 Proof.
   intros. induction list; inversion H.
   rewrite Znth_0_cons. trivial.
@@ -268,8 +243,7 @@ Lemma min_picks_first:
     start <= mono ->
     fold_right Z.min start (list_repeat num mono) = start.
 Proof.
-  intros.
-  induction num; trivial.
+  intros. induction num; trivial.
   simpl. rewrite IHnum. rewrite Z.min_r; omega.
 Qed.
   
@@ -318,37 +292,66 @@ Proof.
       symmetry. apply min_picks_first. reflexivity.
 Qed.
 
-Definition optimal_path (g: Graph) src dst p : Prop  :=
+(* Getting Graphy... *)
+
+Definition get_popped pq : list VType :=
+  map snd (filter (fun x => Z.eq_dec (fst x) (inf+1))
+                  (combine pq (nat_inc_list 8))).
+(* use with reachable_sub_labeledgraph *)
+
+Definition path_is_optimal (g: LGraph) src dst p : Prop  :=
+  valid_path g p ->
+  path_ends g p src dst ->
   forall p', valid_path g p' ->
              path_ends g p' src dst ->
-             path_cost g p' <= path_cost g p ->
-             p = p'.
+             path_cost g p' >= path_cost g p.
+(* may I can replace [path_cost g p] with just dist[dst] *)
 
 (* will add more facts to this *)
 Definition valid_prev prev src : Prop :=
   inrange_prev prev /\
   Znth src prev = src.
 
+(* don't need this? *)
+(*
 (* reachable and optimal *)
-Definition dijkstra_pair_correct (g: Graph) src dst prev : Prop :=
+Definition dijkstra_pair_correct g src dst prev : Prop :=
   dst = src \/  (* Maybe I can massage away this conjunct *)
   (let p := (src, create_path src dst prev) in (* This is in VST *)
    optimal_path g src dst p).
 (* this has to be in Graph land *)
+ *)
 
-Definition dijkstra_correct (g: Graph) (src : VType) (prev: list VType) (priq: list VType) : Prop :=
+(* 
+ * If it's a valid situation, it will return the 
+ * path.
+ * If not, it will return an empty list.
+ *)
+(* May need fine-tuning *)
+Fixpoint create_path_inner (src dst : VType) (prev : list VType) (ans : list VType) (n : nat) : list VType :=
+  match n with
+  | O => []
+  | S n' => if Z_le_gt_dec dst SIZE
+            then if Z.eq_dec src dst
+                 then src :: ans
+                 else create_path_inner src (Znth dst prev) prev (dst :: ans) n'
+            else []
+  end.
+
+Definition create_path src dst prev : path :=
+  (src, (create_path_inner src dst prev [] (Z.to_nat (Zlength prev)))).
+
+(* Compute (create_path 0 3 [0; 0; 1; inf]). *)
+
+(* This will now take a subgraph *)
+Definition dijkstra_correct g (src : VType) (prev: list VType) (priq: list VType) : Prop :=
+  valid_prev prev src ->
   forall dst,
-    valid_prev prev src ->
-    0 <= dst < SIZE ->
-    isEmpty_Prop priq ->
-    (Znth dst priq = inf + 1 -> (* if popped *)
-     dijkstra_pair_correct g src dst prev).
-    (* /\ *) (* can add this on later... *)
-    (* (Znth dst priq = inf -> *)
-     (* Znth dst prev = inf). *)
+    In dst (get_popped priq) -> (* dst has been optimized *)
+    path_is_optimal g src dst (create_path src dst prev).
+(* make a path using prev *)
 
 (* SPECS *)
-
 Definition pq_emp_spec :=
   DECLARE _pq_emp
   WITH pq: val, priq_contents: list Z
@@ -397,7 +400,9 @@ Definition dijkstra_spec :=
     EX prev_contents : list Z,
     EX dist_contents : list Z,
     EX priq_contents : list Z,
-    PROP (dijkstra_correct g src prev_contents priq_contents)
+    PROP (dijkstra_correct (reachable_sub_labeledgraph g (get_popped priq_contents))
+                           src prev_contents priq_contents)
+        (* and add a statement that the items that are in PQ but are not inf+1 are known to be unreachable *) 
     LOCAL ()
     SEP (graph_rep sh (graph_to_mat g) (pointer_val_val arr); 
          data_at Tsh (tarray tint 8) (map Vint (map Int.repr prev_contents)) (pointer_val_val prev);
@@ -514,6 +519,28 @@ Definition cost_was_improved_if_possible g me dst dist : Prop :=
 (* by the time we're done, the cost to the dst is either better 
 or the same as the cost via me *)
 
+Lemma get_popped_empty:
+  forall l,
+    Forall (fun x => x <> inf + 1) l ->
+    get_popped l = [].
+Proof.
+  intros.
+  unfold get_popped.
+  replace (filter (fun x : Z * Z => Z.eq_dec (fst x) (inf + 1))
+       (combine l (nat_inc_list 8))) with (@nil (Z*Z)).
+  trivial. symmetry. 
+  remember (nat_inc_list 8) as l2.
+  clear Heql2.
+  generalize dependent l2.
+  induction l; trivial.
+  intros. simpl.
+  destruct l2; [reflexivity|].
+  simpl. pose proof (Forall_inv H). pose proof (Forall_tl _ _ _ H).
+  destruct (proj_sumbool (Z.eq_dec a 1879048193)) eqn:?.
+  1: exfalso. simpl in H0. apply H0. admit.
+  apply IHl. assumption.
+Admitted.
+
 Lemma body_dijkstra: semax_body Vprog Gprog f_dijkstra dijkstra_spec.
 Proof.
   start_function. 
@@ -556,15 +583,7 @@ Proof.
        EX priq_contents : list Z,
        EX dist_contents : list Z,
        PROP (
-           forall dst,
-             isEmpty priq_contents = Vzero ->
-             0 <= dst < Zlength priq_contents ->
-             dst = find priq_contents (fold_right Z.min (hd 0 priq_contents) priq_contents) 0 ->
-             dijkstra_pair_correct g src dst prev_contents;
-             (* forall dst, *)
-             (* 0 <= dst < Zlength priq_contents -> *)
-             (* Znth dst priq_contents > inf -> (* if popped *) *)
-             (* dijkstra_pair_correct g src dst prev_contents; (* optimal *) *)
+           dijkstra_correct (reachable_sub_labeledgraph g (get_popped priq_contents)) src prev_contents priq_contents;
              inrange_prev prev_contents;
              inrange_dist dist_contents;
              inrange_priq priq_contents)
@@ -582,7 +601,7 @@ Proof.
        EX priq_contents: list Z,
        EX dist_contents: list Z,                                    
        PROP (Forall (fun x => x >= inf) priq_contents;
-             dijkstra_correct g src prev_contents priq_contents)
+             dijkstra_correct (reachable_sub_labeledgraph g (get_popped priq_contents)) src prev_contents priq_contents)
        LOCAL (lvar _pq (tarray tint 8) v_pq)
        SEP (data_at Tsh (tarray tint 8) (map Vint (map Int.repr prev_contents)) (pointer_val_val prev);
             (data_at Tsh (tarray tint 8) (map Vint (map Int.repr priq_contents)) v_pq);
@@ -615,12 +634,17 @@ Proof.
         6, 9: rewrite <- inf_eq.
         all: try rep_omega; trivial.
       }
-      intros.
-      replace (find (upd_Znth src (list_repeat (Z.to_nat 8) inf) 0)
-          (fold_right Z.min (hd 0 (upd_Znth src (list_repeat (Z.to_nat 8) inf) 0))
-                      (upd_Znth src (list_repeat (Z.to_nat 8) inf) 0)) 0) with src in H15.
-      unfold dijkstra_pair_correct. left; trivial.
-      rewrite find_src; trivial.
+      assert (get_popped (upd_Znth src (list_repeat (Z.to_nat 8) inf) 0) = []).
+      {
+        apply get_popped_empty. rewrite Forall_forall; intros.
+        unfold upd_Znth in H13.
+        apply in_app_or in H13.
+        destruct H13; [| apply in_inv in H13; destruct H13].
+        1,3: rewrite sublist_list_repeat in H13 by omega;
+          apply in_list_repeat in H13; omega.
+        rewrite <- H13; compute; omega.
+      } 
+      unfold dijkstra_correct; rewrite H13. inversion 2.
     + Intros prev_contents priq_contents dist_contents.
       assert_PROP (Zlength priq_contents = 8).
       { entailer!. now repeat rewrite Zlength_map in *. }
@@ -628,7 +652,7 @@ Proof.
       { entailer!. now repeat rewrite Zlength_map in *. }
       assert_PROP (Zlength dist_contents = 8).
       { entailer!. now repeat rewrite Zlength_map in *. }
-      forward_call (v_pq, priq_contents).
+      forward_call (v_pq, priq_contents). 
       forward_if.
       * assert (isEmpty priq_contents = Vzero). {
           destruct (isEmptyTwoCases priq_contents);
@@ -642,7 +666,7 @@ Proof.
           apply min_in_list. apply incl_refl.
           destruct priq_contents. rewrite Zlength_nil in H6.
           inversion H6. simpl. left; trivial. }
-        specialize (H2 u H10 H11 H9).
+        (* specialize (H2 u H10 H11 H9). *)
         (* good! The u we popped was minimal *)
         forward_for_simple_bound
           8
@@ -650,7 +674,7 @@ Proof.
            EX prev_contents' : list Z,
            EX priq_contents' : list Z,
            EX dist_contents' : list Z,
-           PROP (forall dst,
+           PROP (forall dst, (* time to rethink *)
                  0 <= dst < i ->
                  cost_was_improved_if_possible g u dst dist_contents';  
                  inrange_prev prev_contents';
@@ -673,10 +697,9 @@ Proof.
            repeat rewrite <- upd_Znth_map.
            entailer!.
            split; [intros; exfalso; omega|].
-           apply inrange_upd_Znth; trivial.
+           apply inrange_upd_Znth; trivial. 
            rewrite <- inf_eq. rep_omega.
-        -- Fail forward.
-           assert (0 <= u < Zlength (graph_to_mat g)). {
+        -- assert (0 <= u < Zlength (graph_to_mat g)). {
              unfold graph_to_mat.
              repeat rewrite Zlength_map.
              rewrite Z_inc_list_length.
@@ -695,7 +718,6 @@ Proof.
                                                                                                          (sublist (u + 1) (Zlength (graph_to_mat g))
                                                                                                                   (Z_inc_list (Z.to_nat (Zlength (graph_to_mat g)))))). 
            unfold list_rep.
-           Fail forward.
            assert_PROP (force_val
                           (sem_add_ptr_int tint Signed
                                            (force_val (sem_add_ptr_int (tarray tint 8) Signed (pointer_val_val arr) (Vint (Int.repr u))))
@@ -747,8 +769,8 @@ Proof.
               forward. forward. forward_if.
               ** rewrite Int.signed_repr in H29
                   by (unfold inf in H27; rep_omega).
-                 assert (0 <= i < Zlength (map Vint (map Int.repr dist_contents'))).
-                 { repeat rewrite Zlength_map. omega. }
+                 assert (0 <= i < Zlength (map Vint (map Int.repr dist_contents'))) by
+                 (repeat rewrite Zlength_map; omega). 
                  forward. forward. forward.
                  forward; rewrite upd_Znth_same; trivial.
                  1: entailer!.
@@ -799,8 +821,10 @@ Proof.
                  remember (find priq_contents (fold_right Z.min (hd 0 priq_contents) priq_contents) 0) as u.
                  destruct H43; [apply H15; trivial|].
                  subst dst. omega.
-           ++ forward. Exists prev_contents' priq_contents' dist_contents'.
-              entailer!. unfold cost_was_improved_if_possible in *. intros.
+           ++ (* ...prove the for loop's invariant holds *)
+             forward.
+             Exists prev_contents' priq_contents' dist_contents'.
+             entailer!. unfold cost_was_improved_if_possible in *. intros.
               assert (0 <= dst < i \/ dst = i) by omega.
               destruct H39; [apply H15; trivial|].
               subst dst. exfalso. unfold inf in H38.
@@ -808,12 +832,12 @@ Proof.
               do 2 rewrite Int.signed_repr in H25. 
               unfold inf in H25. rep_omega.
               compute; split; inversion 1.
-              1,2: rep_omega.
+              all: rep_omega.
         -- (* from the for loop's inv, prove the while loop's inv *)
           Intros prev_contents' priq_contents' dist_contents'.
           Exists prev_contents' priq_contents' dist_contents'.
-          entailer!. 
-          unfold dijkstra_pair_correct.
+          entailer!.
+          (* unfold dijkstra_pair_correct. *)
           admit. (* Hmm I need some way to link up the 
                     prev and prev' arrays *)
       * (* after breaking, prove break's postcondition *)
@@ -822,18 +846,8 @@ Proof.
             rewrite H10 in H9; simpl in H9; now inversion H9.
         }
         clear H9.
-        (* I may need some way to separate things that are inf in the PQ from things that have been popped from the PQ *)
-        (* Then I will know for sure which items have been optimized. *)
         forward. Exists prev_contents priq_contents dist_contents.
-        entailer!. split; [apply (isEmptyMeansInf _ H10)|].
-        unfold dijkstra_correct. intros.
-        (* need some sort of compatibility condition 
-           on the three different arrays *)
-        (* being inf+1 in the PQ should _mean_ 
-           something in the other arrays, etc etc *)
-        unfold dijkstra_pair_correct.
-        
-        admit. (* hmmmm *)
+        entailer!. apply (isEmptyMeansInf _ H10).
     + (* from the break's postcon, prove the overall postcon *)
       Intros prev_contents priq_contents dist_contents.
       forward. Exists prev_contents dist_contents priq_contents. entailer!. 
