@@ -124,7 +124,7 @@ void dijkstra (int graph[SIZE][SIZE], int src, int *dist, int *prev) {
         // printf("Popped vertex %d\n", u);
         for (i = 0; i < SIZE; i++) {
             cost = graph[u][i]; 
-            if (cost < IFTY) { // i.e. node i is a neighbor of mine
+            if (cost < IFTY) { // i.e. node i is a neighbor of mine. do I need to add that cost > 0?
                 if (dist[i] > dist[u] + cost) { // if we can improve the best-known dist from src to i
                     dist[i] = dist[u] + cost;   // improve it
                     prev[i] = u;                       // note that we got there via 'u'
@@ -132,7 +132,7 @@ void dijkstra (int graph[SIZE][SIZE], int src, int *dist, int *prev) {
                     // printf("Improved %d --> %d to %d\n", src, i, dist[i]);
                     // uncomment the above line to see how the "best answer" improves slowly!
                 }
-            } // src --> i may NOT be perfect. 
+            } // [src --> i] may NOT be perfect. 
         }
     }
     return;
