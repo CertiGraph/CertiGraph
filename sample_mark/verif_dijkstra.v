@@ -316,17 +316,250 @@ Proof.
   apply IHl; assumption.
 Qed.
 
+Lemma filter_app:
+  forall l1 l2 (F: Z*Z -> bool),
+    filter F (l1 ++ l2) = (filter F l1) ++ (filter F l2).
+Proof.
+  intros. induction l1.
+  1: simpl; repeat rewrite app_nil_l; reflexivity.
+  simpl. destruct (F a); [rewrite IHl1|]; easy.
+Qed.
+
+Lemma sublist_nil: forall lo hi A,
+    sublist lo hi (@nil A) = (@nil A).
+Proof.
+  intros. unfold sublist, skipn.
+  destruct (Z.to_nat lo); destruct (Z.to_nat (hi - lo)); reflexivity.
+Qed.
+
+(* Find a way to hint that the inhabitant of 
+   Z*Z is (0,0). 
+   Then merge the two below 
+*)
+Lemma sublist_cons:
+  forall a (l: list Z) i,
+    0 < i < Zlength (a :: l) ->
+    sublist 0 i (a :: l) = a :: sublist 0 (i-1) l.
+Proof.
+  intros.
+  rewrite (sublist_split 0 1 i) by omega.
+  rewrite sublist_one by omega. simpl.
+  rewrite Znth_0_cons.
+  rewrite sublist_1_cons. reflexivity.
+Qed.
+
+Lemma sublist_cons':
+  forall a (l: list (Z*Z)) i,
+    0 < i < Zlength (a :: l) ->
+    sublist 0 i (a :: l) = a :: sublist 0 (i-1) l.
+Proof.
+  intros.
+  rewrite (sublist_split 0 1 i) by omega.
+  rewrite sublist_one by omega. simpl.
+  rewrite Znth_0_cons.
+  rewrite sublist_1_cons. reflexivity.
+Qed.
+
+Lemma combine_same_length:
+  forall (l1 l2 : list Z),
+    Zlength l1 = Zlength l2 ->
+    Zlength (combine l1 l2) = Zlength l1.
+Proof.
+  intros.
+  repeat rewrite Zlength_correct in *.
+  rewrite combine_length.
+  rewrite min_l. reflexivity. rep_omega.
+Qed.
+
+Lemma sublist_skip: forall A lo (l: list A) a,
+    0 < lo ->
+    sublist lo (Zlength (a :: l)) (a::l) =
+    sublist (lo - 1) (Zlength (a :: l) - 1) l.
+Proof.
+  intros.
+  unfold sublist.
+  destruct (Z.to_nat lo) eqn:?.
+  - exfalso.
+    unfold Z.to_nat in Heqn.
+    destruct lo; try inversion H.
+    pose proof (Pos2Nat.is_pos p); omega.
+  - simpl. replace (Zlength (a :: l) - 1 - (lo - 1)) with 
+               (Zlength (a :: l) - lo) by omega.
+    f_equal. replace (Z.to_nat (lo - 1)) with n.
+    reflexivity. apply juicy_mem_lemmas.nat_of_Z_lem1. omega.
+Qed.
+
+Lemma combine_sublist_0:
+  forall (l1 l2 : list Z),
+    Zlength l1 = Zlength l2 ->
+    combine (sublist 0 (Zlength l1) l1) (sublist 0 (Zlength l2) l2) =
+    sublist 0 (Zlength (combine l1 l2)) (combine l1 l2).
+Proof. 
+  intros. generalize dependent l2. induction l1. 
+  - intros. simpl. rewrite sublist_nil. reflexivity.
+  - intros.
+    assert (1 <= Zlength l2). {
+      rewrite Zlength_cons in H. rep_omega. }
+    rewrite <- (sublist_same 0 (Zlength l2) l2) by omega.
+    rewrite (sublist_split 0 1 (Zlength l2) l2) by omega.
+    rewrite (sublist_one 0 1) by omega.
+    rewrite <- semax_lemmas.cons_app.
+    rewrite sublist_same by omega.
+    rewrite sublist_same by omega.
+    rewrite (sublist_same 0 (Zlength (combine (a :: l1) (Znth 0 l2 :: sublist 1 (Zlength l2) l2))))  by omega.
+    simpl. f_equal. 
+Qed.
+
+Lemma combine_sublist_gen:
+  forall (l1 l2 : list Z) lo,
+    0 <= lo < Zlength l1 + 1 ->
+    Zlength l1 = Zlength l2 ->
+    combine (sublist lo (Zlength l1) l1) (sublist lo (Zlength l2) l2) =
+    sublist lo (Zlength (combine l1 l2)) (combine l1 l2).
+Proof. 
+  intros.
+  generalize dependent l2.
+  generalize dependent lo.
+  induction l1. 
+  1: intros; rewrite sublist_nil; simpl;
+    rewrite sublist_nil; reflexivity.
+  intros. destruct (Z.eq_dec 0 lo).
+  1: subst lo; apply combine_sublist_0; omega.
+  rewrite <- (sublist_same 0 (Zlength l2) l2) by omega.
+  assert (1 <= Zlength l2). {
+    rewrite Zlength_cons in H0.
+    rewrite <- Z.add_1_l in H0. rewrite <- H0.
+    pose proof (Zlength_nonneg l1). omega. }
+  rewrite (sublist_split 0 1 (Zlength l2) l2) by omega.
+  rewrite (sublist_one 0 1); try omega.
+  rewrite <- semax_lemmas.cons_app.
+  simpl.
+  repeat rewrite sublist_skip by omega.
+  replace (Zlength (a :: l1) - 1) with (Zlength l1)
+    by (rewrite Zlength_cons; omega).
+  replace (Zlength (Znth 0 l2 :: sublist 1 (Zlength l2) l2) - 1) with (Zlength (sublist 1 (Zlength l2) l2)) by
+      (rewrite Zlength_cons, Zlength_sublist; rep_omega).
+    replace (Zlength ((a, Znth 0 l2) :: combine l1 (sublist 1 (Zlength l2) l2)) - 1)
+      with (Zlength (combine l1 (sublist 1 (Zlength l2) l2))) by
+      (rewrite Zlength_cons; rep_omega).
+    apply IHl1.
+    rewrite Zlength_cons in H; omega.
+    rewrite Zlength_cons in H0.
+    rewrite Zlength_sublist; omega.
+Qed.
+
+Lemma combine_sublist_specific:
+  forall (l1 l2: list Z) i,
+    Zlength l1 = Zlength l2 ->
+    0 <= i < Zlength l1 ->
+    combine (sublist 0 i l1) (sublist 0 i l2) = sublist 0 i (combine l1 l2).
+Proof.
+  intros.
+  generalize dependent i.
+  generalize dependent l2. induction l1. 
+  - intros. simpl. repeat rewrite sublist_nil. reflexivity.
+  - intros.
+    assert (1 <= Zlength l2). {
+      rewrite Zlength_cons in H. rep_omega. }
+    rewrite <- (sublist_same 0 (Zlength l2) l2) by omega.
+    rewrite (sublist_split 0 1 (Zlength l2) l2) by omega.
+    rewrite (sublist_one 0 1) by omega.
+    rewrite <- semax_lemmas.cons_app.
+    destruct (Z.eq_dec i 0).
+    + subst i; repeat rewrite sublist.sublist_nil; reflexivity.
+    + repeat rewrite sublist_cons.
+      simpl. rewrite sublist_cons'.
+      f_equal. apply IHl1.
+      all: try rewrite Zlength_cons in *.
+      3: rewrite combine_same_length.
+      1,4,5: rewrite Zlength_sublist.
+      all: omega.
+Qed.
+
+
+Lemma combine_upd_Znth:
+  forall (l1 l2: list Z) i new,
+    Zlength l1 = Zlength l2 ->
+    0 <= i < Zlength l1 ->
+    combine (upd_Znth i l1 new) l2 =
+    upd_Znth i (combine l1 l2) (new , Znth i l2).
+Proof.
+  intros.
+  rewrite <- (sublist_same 0 (Zlength l2) l2) at 1 by reflexivity.
+  repeat rewrite (sublist_split 0 i (Zlength l2) l2) by omega.
+  unfold upd_Znth.
+  rewrite combine_app.
+  2: { repeat rewrite <- ZtoNat_Zlength.
+       f_equal. repeat rewrite Zlength_sublist; omega. }
+  f_equal. 
+  1: apply combine_sublist_specific; assumption.
+  rewrite (sublist_split i (i+1) (Zlength l2) l2) by omega.
+  rewrite sublist_len_1 by omega.
+  rewrite <- semax_lemmas.cons_app.
+  simpl combine. f_equal.
+  apply combine_sublist_gen.  omega. omega.
+Qed.
+
+Lemma Znth_combine:
+  forall (l1 l2 : list Z) i,
+    Zlength l1 = Zlength l2 ->
+    0 <= i < Zlength l1 ->
+    Znth i (combine l1 l2) = (Znth i l1, Znth i l2).
+Proof.
+  intros. generalize dependent i.
+  generalize dependent l2.
+  induction l1.
+  - intros. rewrite Zlength_nil in H0; exfalso; omega.
+  - intros.
+    rewrite <- (sublist_same 0 (Zlength l2) l2) by omega.
+    rewrite (sublist_split 0 1 (Zlength l2) l2) by omega.
+    rewrite sublist_len_1 by omega.
+    rewrite <- semax_lemmas.cons_app.
+    simpl. destruct (Z.eq_dec i 0).
+    1: subst i; repeat rewrite Znth_0_cons; reflexivity.
+    repeat rewrite Znth_pos_cons by omega.
+    apply IHl1.
+    rewrite Zlength_sublist by omega.
+    rewrite Zlength_cons in H; rep_omega.
+    rewrite Zlength_cons in H0; rep_omega.
+Qed.
+
 Lemma get_popped_unchanged:
   forall l new i,
+    Zlength l = 8 ->
     0 <= i < Zlength l ->
     new <> inf + 1 ->
+    Znth i l <> inf + 1 ->
     get_popped (upd_Znth i l new) = get_popped l.
 Proof.
-  intros. unfold get_popped. f_equal.
+  intros. unfold get_popped. 
   remember (fun x : Z * Z => fst x =? inf + 1) as F.
-  remember (nat_inc_list 8) as l2. clear Heql2.
-  admit.
-Admitted.
+  remember (nat_inc_list 8) as l2.
+  assert (Zlength l = Zlength l2). {
+    pose proof (nat_inc_list_length 8).
+    rewrite <- Heql2 in H3.
+    rewrite H. rewrite Zlength_correct. omega. }
+  clear Heql2 H. f_equal.
+  pose proof (combine_same_length l l2 H3).
+  rewrite combine_upd_Znth by assumption.  
+  unfold upd_Znth.
+  rewrite <- (sublist_same 0 (Zlength (combine l l2)) (combine l l2)) at 4 by reflexivity.
+  rewrite (sublist_split 0 i (Zlength (combine l l2))
+                         (combine l l2)) by omega.
+  do 2 rewrite filter_app.
+  f_equal. rewrite H.
+  rewrite (sublist_split i (i+1) (Zlength l)) by omega.
+  rewrite (sublist_one i (i+1) (combine l l2)) by omega.
+  rewrite semax_lemmas.cons_app.
+  do 2 rewrite filter_app.
+  f_equal. simpl.
+  destruct (F (new, Znth i l2)) eqn:?; rewrite HeqF in Heqb; simpl in Heqb.
+  - exfalso. apply H1. rewrite <- inf_eq.
+    simpl. rewrite Z.eqb_eq in Heqb. omega.
+  - destruct (F (Znth i (combine l l2))) eqn:?; trivial.
+    rewrite HeqF, Znth_combine, Z.eqb_eq in Heqb0 by omega.
+    simpl in Heqb0. exfalso. apply H2. rewrite <- inf_eq. omega.
+Qed.       
 
 Definition path_is_optimal (g: LGraph) src dst p : Prop  :=
   valid_path g p ->
@@ -357,6 +590,8 @@ Definition dijkstra_pair_correct g src dst prev : Prop :=
  * If not, it will return an empty list.
  *)
 (* May need fine-tuning *)
+(* update: dropping this in favor of a relational approach *)
+(*
 Fixpoint create_path_inner (src dst : VType) (prev : list VType) (ans : list VType) (n : nat) : list VType :=
   match n with
   | O => []
@@ -369,27 +604,61 @@ Fixpoint create_path_inner (src dst : VType) (prev : list VType) (ans : list VTy
 
 Definition create_path src dst prev : path :=
   (src, (create_path_inner src dst prev [] (Z.to_nat (Zlength prev)))).
+ *)
 
 (* Compute (create_path 0 3 [0; 0; 1; inf]). *)
 
+(* pass this the snd of the path, reversed *)
+Fixpoint path_sits_in_prev' (src:Z) ptail prev : Prop :=
+  match ptail with
+  | [] => True
+  | h :: [] => Znth h prev = src
+  | h1 :: t => Znth h1 prev = (@hd Z 0 t) /\
+                     path_sits_in_prev' src t prev
+  end.
+(* Have I slipped too far back into funcitonal land? *)
+
+Definition path_sits_in_prev (src:Z) (ptail:list Z) (prev:list Z) := True.
+
 (* This will now take a subgraph *)
 Definition dijkstra_correct g (src : VType) (prev: list VType) (priq: list VType) : Prop :=
-  valid_prev prev src ->
   forall dst,
     In dst (get_popped priq) -> (* dst has been optimized *)
-    path_is_optimal g src dst (create_path src dst prev).
-(* make a path using prev *)
+    exists path,
+      incl (snd path) (get_popped priq) /\
+      path_is_optimal g src dst path /\
+      path_sits_in_prev src (rev (snd path)) prev.
 
 Lemma dijkstra_correct_priq_irrel:
   forall g src prev priq i new,
     0 <= i < Zlength priq ->
+    Znth i priq <> inf + 1 ->
     new <> inf + 1 ->
     dijkstra_correct g src prev priq ->
     dijkstra_correct g src prev (upd_Znth i priq new).
 Proof.
   unfold dijkstra_correct. intros.
-  rewrite get_popped_unchanged in H3 by assumption.
-  apply H1; assumption.
+  rewrite get_popped_unchanged in * by assumption.
+  apply H2; assumption.
+Qed.
+(* Even if I state this functionally, 
+   it doesn't matter if prev[i] has been changed.
+   This is because we only look at _those_
+   cells of prev for which the vertices 
+   have been popped. 
+   We have a proof that i has not been popped
+ *)
+
+Lemma dijkstra_correct_prev_irrel:
+  forall g src prev priq i new,
+    0 <= i < Zlength priq ->
+    new <> inf + 1 ->
+    dijkstra_correct g src prev priq ->
+    dijkstra_correct g src (upd_Znth i prev new) priq.
+Proof.
+  intros. unfold dijkstra_correct in *. intros.
+  unfold path_sits_in_prev in *.
+  apply H1. assumption.
 Qed.
 
 (* SPECS *)
@@ -664,7 +933,8 @@ Proof.
           apply in_list_repeat in H13; omega.
         rewrite <- H13; compute; omega.
       } 
-      unfold dijkstra_correct; rewrite H13. inversion 2.
+      unfold dijkstra_correct; rewrite H13.
+      intros. inversion H14.
     + Intros prev_contents priq_contents dist_contents.
       assert_PROP (Zlength priq_contents = 8).
       { entailer!. now repeat rewrite Zlength_map in *. }
@@ -824,53 +1094,30 @@ Proof.
           rewrite graph_to_mat_diagonal by omega.
           omega. rep_omega.
       +++ rewrite H45, upd_Znth_same, upd_Znth_diff; [reflexivity | rep_omega..].
-  --- rewrite get_popped_unchanged by omega.
-      apply dijkstra_correct_priq_irrel.
-      1: rewrite <- H21 in H12; assumption.
-      1: omega.
-      clear -H16.
-
-      1: omega.
-
-
-      
-        omega.
-        
-      unfold dijkstra_correct.
+  --- assert (Znth i priq_contents' <> inf + 1). {
+        (* comes from the fact that we just improved
+           the dist to i. This is impossible
+           for popped items. In fact we can show this
+           right at the moment we forward_if **.
+         *)
+        admit.
+      }
       rewrite get_popped_unchanged by omega.
-
-      
-
-      (* i was NOT just popped *)
-      intros.
-      unfold dijkstra_correct in H16.
-      assert (valid_prev prev_contents' src) by admit.
-                     specialize (H16 H1 dst H0).
-                     
-                     
-
-
-                     omega.
-
-                     intros.
-                     
-                   
-                 (*
-1. prove that the new get_popped = old get_popped
-2. show that the improvement in prev_contents' doesn't affect the subgraph
-3. ditto for priq_contents'          
-                  *)
-                       admit.
-                     --- repeat rewrite Zlength_map in H31.
-                         split3; apply inrange_upd_Znth;
-                           trivial; try omega.
-                         left.
-                         replace SIZE with (Zlength priq_contents).
-                         apply find_range.
-                         apply min_in_list.
-                         apply incl_refl.
-                         rewrite <- Znth_0_hd by omega.
-                         apply Znth_In; omega.
+      apply dijkstra_correct_priq_irrel.
+      4: apply dijkstra_correct_prev_irrel.
+      1, 4: rewrite <- H21 in H12; assumption.
+      3: rewrite <- inf_eq.
+      all: try omega. assumption. 
+  --- repeat rewrite Zlength_map in H31.
+      split3; apply inrange_upd_Znth;
+        trivial; try omega.
+      left.
+      replace SIZE with (Zlength priq_contents).
+      apply find_range.
+      apply min_in_list.
+      apply incl_refl.
+      rewrite <- Znth_0_hd by omega.
+      apply Znth_In; omega.
               ** rewrite Int.signed_repr in H30.
                  2: { assert (0 <= i < Zlength dist_contents') by omega.
                       apply (Forall_Znth _ _ _ H31) in H19.
@@ -886,9 +1133,9 @@ Proof.
                  destruct H44; [apply H15; trivial|].
                  subst dst. omega.
            ++ (* ...prove the for loop's invariant holds *)
-             forward.
-             Exists prev_contents' priq_contents' dist_contents'.
-             entailer!. unfold cost_was_improved_if_possible in *. intros.
+              forward.
+              Exists prev_contents' priq_contents' dist_contents'.
+              entailer!. unfold cost_was_improved_if_possible in *. intros.
               assert (0 <= dst < i \/ dst = i) by omega.
               destruct H40; [apply H15; trivial|].
               subst dst. exfalso. unfold inf in H39.
