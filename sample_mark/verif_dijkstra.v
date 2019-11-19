@@ -631,6 +631,7 @@ Definition dijkstra_correct g (src : VType) (prev: list VType) (priq: list VType
 
 Lemma dijkstra_correct_priq_irrel:
   forall g src prev priq i new,
+    Zlength priq = 8 ->
     0 <= i < Zlength priq ->
     Znth i priq <> inf + 1 ->
     new <> inf + 1 ->
@@ -639,7 +640,7 @@ Lemma dijkstra_correct_priq_irrel:
 Proof.
   unfold dijkstra_correct. intros.
   rewrite get_popped_unchanged in * by assumption.
-  apply H2; assumption.
+  apply H3; assumption.
 Qed.
 (* Even if I state this functionally, 
    it doesn't matter if prev[i] has been changed.
@@ -1065,85 +1066,79 @@ Proof.
                 unfold inf in *. rep_omega.
                 }
               forward. forward. forward_if.
-              ** rewrite Int.signed_repr in H30
-                  by (unfold inf in H28; rep_omega).
-                 assert (0 <= i < Zlength (map Vint (map Int.repr dist_contents'))) by
-                 (repeat rewrite Zlength_map; omega). 
-                 forward. forward. forward.
-                 forward; rewrite upd_Znth_same; trivial.
-                 1: entailer!.
-                 forward.
-                 Exists (upd_Znth i prev_contents' u).
-                 Exists (upd_Znth i priq_contents' (Znth u dist_contents' + cost)).
-                 Exists (upd_Znth i dist_contents' (Znth u dist_contents' + cost)).
-                 repeat rewrite <- upd_Znth_map; entailer!.
-                 split3.
-  --- intros.
-      unfold cost_was_improved_if_possible. intros.
-      remember (find priq_contents (fold_right Z.min (hd 0 priq_contents) priq_contents) 0) as u.
-      assert (0 <= dst < i \/ dst = i) by omega.
-      unfold cost_was_improved_if_possible in H15.
-      destruct H45; [assert (dst <> i) by omega|]; destruct (Z.eq_dec u i).
-      +++ rewrite <- e, upd_Znth_same, upd_Znth_diff; try rep_omega.
-          rewrite graph_to_mat_diagonal by omega.
-          rewrite Z.add_0_r. apply H15; trivial.           
-      +++ repeat rewrite upd_Znth_diff; try rep_omega.
-          apply H15; trivial.
-      +++ rewrite H45, <- e.
-          repeat rewrite upd_Znth_same.
-          rewrite graph_to_mat_diagonal by omega.
-          omega. rep_omega.
-      +++ rewrite H45, upd_Znth_same, upd_Znth_diff; [reflexivity | rep_omega..].
-  --- assert (Znth i priq_contents' <> inf + 1). {
-        (* comes from the fact that we just improved
-           the dist to i. This is impossible
-           for popped items. In fact we can show this
-           right at the moment we forward_if **.
-         *)
+  ** rewrite Int.signed_repr in H30
+      by (unfold inf in H28; rep_omega).
+     assert (0 <= i < Zlength (map Vint (map Int.repr dist_contents'))) by
+         (repeat rewrite Zlength_map; omega).
+     assert (Znth i priq_contents' <> inf + 1). {
+       (* comes from the fact that we just improved
+          the dist to i. This is impossible
+          for popped items. *)
         admit.
-      }
-      rewrite get_popped_unchanged by omega.
-      apply dijkstra_correct_priq_irrel.
-      4: apply dijkstra_correct_prev_irrel.
-      1, 4: rewrite <- H21 in H12; assumption.
-      3: rewrite <- inf_eq.
-      all: try omega. assumption. 
-  --- repeat rewrite Zlength_map in H31.
-      split3; apply inrange_upd_Znth;
-        trivial; try omega.
-      left.
-      replace SIZE with (Zlength priq_contents).
-      apply find_range.
-      apply min_in_list.
-      apply incl_refl.
-      rewrite <- Znth_0_hd by omega.
-      apply Znth_In; omega.
-              ** rewrite Int.signed_repr in H30.
-                 2: { assert (0 <= i < Zlength dist_contents') by omega.
-                      apply (Forall_Znth _ _ _ H31) in H19.
-                      simpl in H19.
-                      unfold inf in H19.
-                      rep_omega. }
-                 forward.
-                 Exists prev_contents' priq_contents' dist_contents'.
-                 entailer!.
-                 unfold cost_was_improved_if_possible in *. intros.
-                 assert (0 <= dst < i \/ dst = i) by omega.
-                 remember (find priq_contents (fold_right Z.min (hd 0 priq_contents) priq_contents) 0) as u.
-                 destruct H44; [apply H15; trivial|].
-                 subst dst. omega.
+     }
+     forward. forward. forward.
+     forward; rewrite upd_Znth_same; trivial.
+     1: entailer!.
+     forward.
+     Exists (upd_Znth i prev_contents' u).
+     Exists (upd_Znth i priq_contents' (Znth u dist_contents' + cost)).
+     Exists (upd_Znth i dist_contents' (Znth u dist_contents' + cost)).
+     repeat rewrite <- upd_Znth_map; entailer!.
+     split3.
+     --- intros.
+         unfold cost_was_improved_if_possible. intros.
+         remember (find priq_contents (fold_right Z.min (hd 0 priq_contents) priq_contents) 0) as u.
+         assert (0 <= dst < i \/ dst = i) by omega.
+         unfold cost_was_improved_if_possible in H15.
+         destruct H46; [assert (dst <> i) by omega|]; destruct (Z.eq_dec u i).
+         +++ rewrite <- e, upd_Znth_same, upd_Znth_diff; try rep_omega.
+             rewrite graph_to_mat_diagonal by omega.
+             rewrite Z.add_0_r. apply H15; trivial.           
+         +++ repeat rewrite upd_Znth_diff; try rep_omega.
+             apply H15; trivial.
+         +++ rewrite H46, <- e.
+             repeat rewrite upd_Znth_same.
+             rewrite graph_to_mat_diagonal by omega.
+             omega. rep_omega.
+         +++ rewrite H46, upd_Znth_same, upd_Znth_diff; [reflexivity | rep_omega..].
+     --- rewrite get_popped_unchanged by omega.
+         apply dijkstra_correct_priq_irrel; trivial; omega.
+     --- repeat rewrite Zlength_map in H31.
+         split3; apply inrange_upd_Znth;
+           trivial; try omega.
+         left.
+         replace SIZE with (Zlength priq_contents).
+         apply find_range.
+         apply min_in_list.
+         apply incl_refl.
+         rewrite <- Znth_0_hd by omega.
+         apply Znth_In; omega.
+  ** rewrite Int.signed_repr in H30.
+     2: { assert (0 <= i < Zlength dist_contents') by omega.
+          apply (Forall_Znth _ _ _ H31) in H19.
+          simpl in H19.
+          unfold inf in H19.
+          rep_omega. }
+     forward.
+     Exists prev_contents' priq_contents' dist_contents'.
+     entailer!.
+     unfold cost_was_improved_if_possible in *. intros.
+     assert (0 <= dst < i \/ dst = i) by omega.
+     remember (find priq_contents (fold_right Z.min (hd 0 priq_contents) priq_contents) 0) as u.
+     destruct H44; [apply H15; trivial|].
+     subst dst. omega.
            ++ (* ...prove the for loop's invariant holds *)
-              forward.
-              Exists prev_contents' priq_contents' dist_contents'.
-              entailer!. unfold cost_was_improved_if_possible in *. intros.
-              assert (0 <= dst < i \/ dst = i) by omega.
-              destruct H40; [apply H15; trivial|].
-              subst dst. exfalso. unfold inf in H39.
-              rewrite inf_eq2 in H26.
-              do 2 rewrite Int.signed_repr in H26. 
-              unfold inf in H26. rep_omega.
-              compute; split; inversion 1.
-              all: rep_omega.
+             forward.
+             Exists prev_contents' priq_contents' dist_contents'.
+             entailer!. unfold cost_was_improved_if_possible in *. intros.
+             assert (0 <= dst < i \/ dst = i) by omega.
+             destruct H40; [apply H15; trivial|].
+             subst dst. exfalso. unfold inf in H39.
+             rewrite inf_eq2 in H26.
+             do 2 rewrite Int.signed_repr in H26. 
+             unfold inf in H26. rep_omega.
+             compute; split; inversion 1.
+             all: rep_omega.
         -- (* from the for loop's inv, prove the while loop's inv *)
           Intros prev_contents' priq_contents' dist_contents'.
           Exists prev_contents' priq_contents' dist_contents'.
