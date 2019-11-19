@@ -356,10 +356,9 @@ Qed.
 
 (* Getting Graphy... *)
 
-(* lol, this is hardcoded... *)
 Definition get_popped pq : list VType :=
   map snd (filter (fun x => (fst x) =? (inf+1))
-                  (combine pq (nat_inc_list 8))).
+                  (combine pq (nat_inc_list (Z.to_nat (Zlength pq))))).
 
 Lemma get_popped_empty:
   forall l,
@@ -368,9 +367,9 @@ Proof.
   intros. 
   unfold get_popped.
   replace (filter (fun x : Z * Z => (fst x) =? (inf + 1))
-                  (combine l (nat_inc_list 8))) with (@nil (Z*Z)).
+                  (combine l (nat_inc_list (Z.to_nat (Zlength l))))) with (@nil (Z*Z)).
   trivial. symmetry. 
-  remember (nat_inc_list 8) as l2. clear Heql2.
+  remember (nat_inc_list (Z.to_nat (Zlength l))) as l2. clear Heql2.
   generalize dependent l2. induction l; trivial.
   intros. simpl. destruct l2; [reflexivity|].
   simpl. pose proof (Forall_inv H). pose proof (Forall_tl _ _ _ H).
@@ -589,7 +588,7 @@ Qed.
 
 Lemma get_popped_unchanged:
   forall l new i,
-    Zlength l = 8 ->
+    (* Zlength l = 8 -> *)
     0 <= i < Zlength l ->
     new <> inf + 1 ->
     Znth i l <> inf + 1 ->
@@ -597,20 +596,24 @@ Lemma get_popped_unchanged:
 Proof.
   intros. unfold get_popped. 
   remember (fun x : Z * Z => fst x =? inf + 1) as F.
-  remember (nat_inc_list 8) as l2.
+  rewrite upd_Znth_Zlength by omega.
+  remember (nat_inc_list (Z.to_nat (Zlength l))) as l2.
   assert (Zlength l = Zlength l2). {
-    pose proof (nat_inc_list_length 8).
-    rewrite <- Heql2 in H3.
-    rewrite H. rewrite Zlength_correct. omega. }
-  clear Heql2 H. f_equal.
-  pose proof (combine_same_length l l2 H3).
+    pose proof (nat_inc_list_length (Z.to_nat (Zlength l))).
+    rewrite <- Heql2 in H2.
+    repeat rewrite Zlength_correct.
+    rewrite H2. f_equal.
+    rewrite ZtoNat_Zlength. reflexivity.
+  } 
+  f_equal.
+  pose proof (combine_same_length l l2 H2).
   rewrite combine_upd_Znth by assumption.  
   unfold upd_Znth.
   rewrite <- (sublist_same 0 (Zlength (combine l l2)) (combine l l2)) at 4 by reflexivity.
   rewrite (sublist_split 0 i (Zlength (combine l l2))
                          (combine l l2)) by omega.
   do 2 rewrite filter_app.
-  f_equal. rewrite H.
+  f_equal. rewrite H3.
   rewrite (sublist_split i (i+1) (Zlength l)) by omega.
   rewrite (sublist_one i (i+1) (combine l l2)) by omega.
   rewrite semax_lemmas.cons_app.
@@ -618,10 +621,11 @@ Proof.
   f_equal. simpl.
   destruct (F (new, Znth i l2)) eqn:?; rewrite HeqF in Heqb; simpl in Heqb.
   - exfalso. apply H1. rewrite <- inf_eq.
-    simpl. rewrite Z.eqb_eq in Heqb. omega.
+    simpl. rewrite Z.eqb_eq in Heqb. rewrite <- inf_eq in *.
+    omega.
   - destruct (F (Znth i (combine l l2))) eqn:?; trivial.
     rewrite HeqF, Znth_combine, Z.eqb_eq in Heqb0 by omega.
-    simpl in Heqb0. exfalso. apply H2. rewrite <- inf_eq. omega.
+    simpl in Heqb0. exfalso. apply H1. rewrite <- inf_eq. omega.
 Qed.
 
 Lemma in_get_popped:
@@ -636,7 +640,62 @@ Proof.
     rewrite filter_In in H1; destruct H1; simpl in H2.
     rewrite In_map_snd_iff.
     exists x. (* maybe wrong *)
-    rewrite filter_In; split; trivial. clear H2.    
+    rewrite filter_In; split; trivial. clear H2.
+    rewrite <- (sublist_same 0 (Zlength (l1 ++ l2)) (nat_inc_list (Z.to_nat (Zlength (l1 ++ l2))))) in H1.
+    rewrite (sublist_split 0 (Zlength l1) (Zlength (l1 ++ l2))) in H1.
+    5,3: rewrite (Zlength_correct (nat_inc_list (Z.to_nat (Zlength (l1 ++ l2)))));
+         rewrite nat_inc_list_length;
+         rewrite Z2Nat.id; trivial.
+    3: rewrite Zlength_app.    
+    all: try rep_omega.
+    rewrite combine_app in H1.
+    2: { admit. }
+    apply in_app_or in H1.
+    destruct H1.
+    + (* cannot be here *) admit.
+    + admit. (* gonna be okay.. *)
+  - rewrite In_map_snd_iff in H1; destruct H1.
+    rewrite filter_In in H1; destruct H1; simpl in H2.
+    rewrite In_map_snd_iff.
+    exists x. (* maybe wrong *)
+    rewrite filter_In; split; trivial. clear H2.
+    rewrite <- (sublist_same 0 (Zlength (l1 ++ l2)) (nat_inc_list (Z.to_nat (Zlength (l1 ++ l2))))).
+    rewrite (sublist_split 0 (Zlength l1) (Zlength (l1 ++ l2))).
+    5,3: rewrite (Zlength_correct (nat_inc_list (Z.to_nat (Zlength (l1 ++ l2)))));
+         rewrite nat_inc_list_length;
+         rewrite Z2Nat.id; trivial.
+    3: rewrite Zlength_app.    
+    all: try rep_omega.
+    rewrite combine_app. 
+    2: { admit. }
+    rewrite in_app_iff. right.
+    rewrite In_Znth_iff in H1; destruct H1 as [? [? ?]].
+    rewrite In_Znth_iff.
+    exists x0. split.
+    1: admit.
+    admit.      
+Admitted.
+
+Lemma behead_list:
+  forall (l: list Z),
+    0 < Zlength l -> 
+    l = Znth 0 l :: tl l.
+Proof.
+  intros.
+  destruct l.
+  - rewrite Zlength_nil in H. inversion H.
+  - simpl. rewrite Znth_0_cons. reflexivity.
+Qed.
+
+Lemma nat_inc_list_hd:
+  forall n,
+    0 < n ->
+    Znth 0 (nat_inc_list (Z.to_nat n)) = 0.
+Proof.
+  intros.
+  induction (Z.to_nat n) eqn:?.
+  - admit. (* easy *)
+  - admit.
 Admitted.
 
 Lemma get_popped_meaning:
@@ -650,20 +709,29 @@ Proof.
   destruct (Z.eq_dec i 0).
   - subst i.
     split; intros.
-    + unfold get_popped in H0.
-      simpl in H0.
-      destruct (a =? 1879048193) eqn:?.
-      * rewrite Z.eqb_eq in Heqb.
-      rewrite Heqb. compute. trivial.
-      * exfalso.
-        apply In_map_snd_iff in H0.
-        destruct H0.
-        rewrite filter_In in H0.
-        destruct H0.
-        apply in_combine_r in H0.
-        simpl in H0.
-        omega.
+    + rewrite Znth_0_cons.
+      unfold get_popped in H0.
+      rewrite In_map_snd_iff in H0; destruct H0.
+      rewrite filter_In in H0; destruct H0.
+      simpl in H1.
+      rewrite (behead_list (nat_inc_list (Z.to_nat (Zlength (a :: l))))) in H0.
+      2: { rewrite Zlength_correct.
+           rewrite nat_inc_list_length.
+           rewrite Z2Nat.id; omega.
+      }
+      rewrite nat_inc_list_hd in H0 by omega.
+      simpl in H0. destruct H0.
+      * inversion H0. rewrite Z.eqb_eq in H1.
+        rewrite <- inf_eq. rep_omega.
+      * pose proof (in_combine_r _ _ _ _ H0).
+        admit. (* this is clearly exfalso *)
     + unfold get_popped.
+      rewrite (behead_list (nat_inc_list (Z.to_nat (Zlength (a :: l))))).
+      2: { rewrite Zlength_correct.
+           rewrite nat_inc_list_length.
+           rewrite Z2Nat.id; omega.
+      }
+      rewrite nat_inc_list_hd by omega.
       simpl.
       destruct (a =? 1879048193) eqn:?.
       simpl; left; trivial.
@@ -678,7 +746,7 @@ Proof.
     assert (Zlength [a] = 1) by reflexivity.
     rewrite in_get_popped by omega.
     apply IHl; omega.
-Qed.
+Admitted.
 
 (* remnants 
     rewrite <- (IHl _ H0).
