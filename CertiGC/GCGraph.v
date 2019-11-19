@@ -141,6 +141,7 @@ Record raw_vertex_block : Type :=
     raw_color_range: 0 <= raw_color < 4;
     raw_fields_range: 0 < Zlength raw_fields < two_power_nat 22;
     tag_no_scan: NO_SCAN_TAG <= raw_tag -> ~ In None raw_fields;
+    (* what's up with this? why can raw_f be None at all? *)
   }.
 
 Local Close Scope Z_scope.
