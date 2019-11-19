@@ -356,6 +356,7 @@ Qed.
 
 (* Getting Graphy... *)
 
+(* lol, this is hardcoded... *)
 Definition get_popped pq : list VType :=
   map snd (filter (fun x => (fst x) =? (inf+1))
                   (combine pq (nat_inc_list 8))).
@@ -623,7 +624,21 @@ Proof.
     simpl in Heqb0. exfalso. apply H2. rewrite <- inf_eq. omega.
 Qed.
 
-(* Let's try this again...*)
+Lemma in_get_popped:
+  forall i l1 l2,
+    0 <= i < Zlength l1 + Zlength l2 ->
+    Zlength l1 <= i  ->
+    In i (get_popped (l1 ++ l2)) <-> In (i - Zlength l1) (get_popped l2).
+Proof.
+  intros.
+  split; unfold get_popped; intros.
+  - rewrite In_map_snd_iff in H1; destruct H1.
+    rewrite filter_In in H1; destruct H1; simpl in H2.
+    rewrite In_map_snd_iff.
+    exists x. (* maybe wrong *)
+    rewrite filter_In; split; trivial. clear H2.    
+Admitted.
+
 Lemma get_popped_meaning:
   forall l i,
     0 <= i < Zlength l ->
@@ -659,39 +674,47 @@ Proof.
   - rewrite Znth_pos_cons by omega.
     rewrite Zlength_cons in H.
     assert (0 <= (i-1) < Zlength l) by omega.
+    rewrite semax_lemmas.cons_app.
+    assert (Zlength [a] = 1) by reflexivity.
+    rewrite in_get_popped by omega.
+    apply IHl; omega.
+Qed.
+
+(* remnants 
     rewrite <- (IHl _ H0).
     split; unfold get_popped; intro.
-    + rewrite In_map_snd_iff in *.
-      destruct H1.
-      exists x.
-      rewrite filter_In in *. destruct H1.
-      assert (H3:= H1).
-      apply in_combine_r in H1.
-      apply in_combine_l in H3.
-      simpl in H2. simpl.
-      split; trivial. 
-      assert (In (i-1) [0;1;2;3;4;5;6;7]).
-      { simpl. simpl in H1.
-        repeat (destruct H1; [omega|]).
-        omega.
-      }
-      admit. (* silly lemma *)
+    + simpl in H1.
+      destruct (a =? 1879048193).
+      * simpl in *. destruct H1; [omega|].
+        rewrite In_map_snd_iff in *.
+        destruct H1.
+        exists x.
+        rewrite filter_In in *.
+        destruct H1; simpl in H2; split; trivial.
+        pose proof (in_combine_r _ _ _ _ H1).
+        pose proof (in_combine_l _ _ _ _ H1).
+        rewrite In_Znth_iff in H1.
+        rewrite In_Znth_iff.
+        destruct H1 as [? [? ?]].
+        exists x0. split.
+        admit. (* easy *)        
+        rewrite Znth_combine in H5 by admit. (* Zlength l = 7 *)
+        inversion H5.
+        rewrite Znth_combine by admit.
+        f_equal.
+        rewrite H8. admit.
+      * admit.
     + simpl in *.
       destruct (a =? 1879048193).
       * simpl. right. rewrite In_map_snd_iff in *.
         destruct H1.
         exists x.
         rewrite filter_In in *. destruct H1.
-        assert (H3:= H1).
-        apply in_combine_r in H1.
-        apply in_combine_l in H3.
+        pose proof (in_combine_r _ _ _ _ H1).
+        pose proof (in_combine_l _ _ _ _ H1).
         simpl in H2. simpl.
         split; trivial. 
-        assert (In i [1;2;3;4;5;6;7;8]).
-        { simpl. simpl in H1.
-          repeat (destruct H1; [omega|]).
-          omega.
-        }
+        
         admit. (* silly lemma about In combine *)
       * rewrite In_map_snd_iff in *.
         destruct H1.
@@ -709,6 +732,7 @@ Proof.
         }
         admit. (* same silly lemma *)
 Admitted.
+*)
 
 Lemma get_popped_irrel_upd:
   forall l i j new,
