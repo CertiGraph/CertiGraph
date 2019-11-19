@@ -62,6 +62,28 @@ Proof.
   destruct (Z_lt_dec a inf); trivial. split; inversion 1.
 Qed.
 
+(* During refactoring, merge the two that follow *)
+Lemma isEmpty_in': forall l,
+    (exists i, In i l /\ i < inf) <-> isEmpty l = Vzero.
+Proof.
+  split; intros.
+  - destruct H as [? [? ?]]. induction l. 
+    1: exfalso; apply (in_nil H).
+    unfold isEmpty. rewrite fold_right_cons.
+    destruct (Z_lt_dec a inf); trivial.
+    simpl in H; simpl; destruct H.
+    1: rewrite H in n; exfalso. omega.
+    clear n a. specialize (IHl H).
+    unfold isEmpty in IHl. trivial.
+  - induction l.
+    1: inversion H.
+    simpl in H.
+    destruct (Z_lt_dec a inf).
+    + exists a. split; simpl; [left|]; trivial.
+    + destruct (IHl H) as [? [? ?]].
+      exists x. split; [apply in_cons|]; assumption.
+Qed.
+
 Lemma isEmpty_in: forall l target,
     In target l -> target < inf -> isEmpty l = Vzero.
 Proof.
@@ -192,7 +214,7 @@ Qed.
 Lemma find_range_gen: forall l target ans,
     In target l ->
     0 <= ans ->
-    0 <= find l target ans < Zlength l + ans.
+    ans <= find l target ans < Zlength l + ans.
 Proof.
   intros. generalize dependent target.
   generalize dependent ans.
@@ -218,6 +240,46 @@ Proof.
   intros. replace (Zlength l) with (Zlength l + 0) by omega.
   apply find_range_gen; trivial; omega.
 Qed.
+
+Lemma Znth_find_gen:
+  forall l target ans,
+    0 <= ans ->
+    In target l ->
+    Znth ((find l target ans)-ans) l = target.
+Proof.
+  intros. generalize dependent ans.
+  induction l. 1: inversion H0.
+  intros.
+  destruct H0.
+  - subst target. simpl.
+    destruct (initial_world.EqDec_Z a a).
+    + replace (ans-ans) with 0 by omega.
+      rewrite Znth_0_cons; auto.
+    + exfalso; omega.
+  - specialize (IHl H0).
+    simpl.
+    destruct (initial_world.EqDec_Z a target).
+    + replace (ans-ans) with 0 by omega.
+      rewrite Znth_0_cons; auto.
+    + assert (0 <= 1 + ans) by omega.
+      specialize (IHl (1+ans) H1).
+      rewrite Znth_pos_cons.
+      replace (1+ans) with (ans+1) in IHl at 2 by omega.
+      rewrite Z.sub_add_distr in IHl.
+      assumption.
+      destruct (find_range_gen l target (1+ans) H0 H1) as [? _].
+      omega.
+Qed.
+
+Lemma Znth_find:
+  forall l target,
+    In target l ->
+    Znth (find l target 0) l = target.
+Proof.
+  intros.
+  replace (find l target 0) with (find l target 0 - 0) by omega.
+  apply Znth_find_gen; [omega | assumption].
+Qed.  
 
 Lemma min_in_list : forall l1 l2 starter,
     incl l1 l2 ->
@@ -830,6 +892,9 @@ Definition cost_was_improved_if_possible g me dst dist : Prop :=
 (* by the time we're done, the cost to the dst is either better 
 or the same as the cost via me *)
 
+
+Set Nested Proofs Allowed.
+
 Lemma body_dijkstra: semax_body Vprog Gprog f_dijkstra dijkstra_spec.
 Proof.
   start_function. 
@@ -960,11 +1025,6 @@ Proof.
         rewrite Znth_0_hd, <- H9 by omega.
         do 2 rewrite upd_Znth_map.
         remember (upd_Znth u priq_contents (inf+1)) as priq_contents_popped.
-        
-        (* Show that the u that I popped is minimal. *)
-        
-        (* earlier I used to have an easy way: *)
-        (* specialize (H2 u H10 H11 H9). *)
         forward_for_simple_bound
           8
           (EX i : Z,
@@ -996,6 +1056,21 @@ Proof.
            split3; [intros; omega | |
                     apply inrange_upd_Znth; trivial;
                     rewrite <- inf_eq; rep_omega].
+           remember ((find priq_contents
+                           (fold_right Z.min (hd 0 priq_contents) priq_contents) 0)) as u.
+           assert (Znth u priq_contents <> inf + 1). {
+             (* comes from the fact that priq_contents in not empty, and that u was found to be the min *) 
+             clear -H10 Hequ H6.
+             rewrite <- isEmpty_in' in H10.
+             destruct H10 as [? [? ?]].
+             apply fold_min in H.
+             remember (fold_right Z.min (hd 0 priq_contents) priq_contents).
+             subst u. intro.
+             rewrite Znth_find in H1. omega.
+             subst z.
+             rewrite <- Znth_0_hd by omega.
+             apply min_in_list; [ apply incl_refl | apply Znth_In; omega].
+           }
            (* 
 1. show that get_popped is old get_popped + u 
 2. show that u is minimal 
@@ -1071,6 +1146,10 @@ Proof.
      assert (0 <= i < Zlength (map Vint (map Int.repr dist_contents'))) by
          (repeat rewrite Zlength_map; omega).
      assert (Znth i priq_contents' <> inf + 1). {
+       intro.
+       
+
+       
        (* comes from the fact that we just improved
           the dist to i. This is impossible
           for popped items. *)
