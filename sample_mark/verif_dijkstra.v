@@ -628,6 +628,15 @@ Proof.
     simpl in Heqb0. exfalso. apply H1. rewrite <- inf_eq. omega.
 Qed.
 
+Lemma nat_inc_list_sublist:
+  forall n m,
+    0 <= n ->
+    n <= m ->
+    sublist 0 n (nat_inc_list (Z.to_nat m)) =
+    nat_inc_list (Z.to_nat n).
+Proof.
+Admitted.
+
 Lemma in_get_popped:
   forall i l1 l2,
     0 <= i < Zlength l1 + Zlength l2 ->
@@ -649,15 +658,54 @@ Proof.
     3: rewrite Zlength_app.    
     all: try rep_omega.
     rewrite combine_app in H1.
-    2: { admit. }
+    2: { rewrite Zlength_correct.
+         repeat rewrite <- ZtoNat_Zlength.
+         f_equal.
+         pose proof (Zlength_nonneg l1). 
+         rewrite Zlength_sublist.
+         all: rewrite Z2Nat.id.
+         all: try omega.
+         rewrite Zlength_app.
+         rewrite Zlength_correct at 1.
+         rewrite Zlength_correct at 1.
+         rewrite nat_inc_list_length.
+         rewrite Z2Nat.id by omega.
+         rewrite <- Zlength_correct. omega.
+    }
     apply in_app_or in H1.
     destruct H1.
-    + (* cannot be here *) admit.
-    + admit. (* gonna be okay.. *)
+    + exfalso.
+      pose proof (in_combine_r _ _ _ _ H1).
+      clear H1.
+      rewrite nat_inc_list_sublist in H2.
+      2: apply Zlength_nonneg.
+      2: rewrite Zlength_app; omega.
+      apply nat_inc_list_in_iff in H2.
+      rewrite Z2Nat.id in H2 by (apply Zlength_nonneg).
+      omega.
+    + apply In_Znth_iff in H1. destruct H1 as [? [? ?]].
+      rewrite In_Znth_iff. exists x0.
+      split.
+      * rewrite combine_same_length in *.
+        assumption.
+        rewrite Zlength_sublist.
+        rewrite Zlength_app. omega.
+        rewrite Zlength_app.
+        rep_omega.
+        rewrite (Zlength_correct (nat_inc_list (Z.to_nat (Zlength (l1 ++ l2))))).
+        rewrite nat_inc_list_length.
+        rewrite Z2Nat.id. reflexivity.
+        apply Zlength_nonneg.
+        rewrite (Zlength_correct (nat_inc_list (Z.to_nat (Zlength l2)))).
+        rewrite nat_inc_list_length.
+        rewrite Z2Nat.id. reflexivity.
+        apply Zlength_nonneg.
+      * rewrite Znth_combine in * by admit. (* all easy *)
+        admit. (* grr *)
   - rewrite In_map_snd_iff in H1; destruct H1.
     rewrite filter_In in H1; destruct H1; simpl in H2.
     rewrite In_map_snd_iff.
-    exists x. (* maybe wrong *)
+    exists x. (* may be wrong choice... *)
     rewrite filter_In; split; trivial. clear H2.
     rewrite <- (sublist_same 0 (Zlength (l1 ++ l2)) (nat_inc_list (Z.to_nat (Zlength (l1 ++ l2))))).
     rewrite (sublist_split 0 (Zlength l1) (Zlength (l1 ++ l2))).
@@ -667,12 +715,35 @@ Proof.
     3: rewrite Zlength_app.    
     all: try rep_omega.
     rewrite combine_app. 
-    2: { admit. }
+    2: { repeat rewrite <- ZtoNat_Zlength. f_equal.
+         rewrite Zlength_sublist. omega.
+         pose proof (Zlength_nonneg l1); omega.
+         rewrite Zlength_app.
+         repeat rewrite Zlength_correct.
+         rewrite nat_inc_list_length.
+         rewrite Z2Nat.id; omega.
+    }
     rewrite in_app_iff. right.
     rewrite In_Znth_iff in H1; destruct H1 as [? [? ?]].
     rewrite In_Znth_iff.
     exists x0. split.
-    1: admit.
+    1: { rewrite combine_same_length in *.
+         assumption.
+         repeat rewrite Zlength_correct.
+         rewrite nat_inc_list_length.
+         rewrite Z2Nat.id. reflexivity.
+         omega.
+         rewrite Zlength_sublist.
+         rewrite Zlength_app. omega.
+         rewrite Zlength_app.
+         pose proof (Zlength_nonneg l2).
+         rep_omega.
+         repeat rewrite Zlength_correct.
+         rewrite nat_inc_list_length.
+         rewrite Z2Nat.id. reflexivity.
+         omega.
+    }
+    (* similar to above admit *)
     admit.      
 Admitted.
 
@@ -692,10 +763,44 @@ Lemma nat_inc_list_hd:
     0 < n ->
     Znth 0 (nat_inc_list (Z.to_nat n)) = 0.
 Proof.
+  intros. induction (Z.to_nat n).
+  - reflexivity.
+  - simpl.
+    destruct n0.
+    + reflexivity.
+    + rewrite app_Znth1. omega.
+      rewrite Zlength_correct.
+      rewrite nat_inc_list_length.
+      rewrite <- Nat2Z.inj_0.
+      apply inj_lt. omega.
+Qed.
+
+Lemma tl_app:
+  forall (l1 l2: list Z),
+    0 < Zlength l1 ->
+    tl (l1 ++ l2) = tl l1 ++ l2.
+Proof.
+  intros. destruct l1.
+  - inversion H.
+  - intros. simpl. reflexivity.
+Qed.
+
+(* admit. retry with fresh mind. *)
+Lemma in_tl_nat_inc_list:
+  forall i n,
+    In i (tl (nat_inc_list n)) ->
+    1 <= i.
+Proof.
   intros.
-  induction (Z.to_nat n) eqn:?.
-  - admit. (* easy *)
-  - admit.
+  induction n.
+  - simpl in H. inversion H.
+  - apply IHn. clear IHn.
+    simpl in H. destruct n.
+    1: inversion H.
+    rewrite tl_app in H.
+    2: admit. (* easy *)
+    apply in_app_or in H. destruct H.
+    1: assumption. (* dead *)
 Admitted.
 
 Lemma get_popped_meaning:
@@ -724,7 +829,10 @@ Proof.
       * inversion H0. rewrite Z.eqb_eq in H1.
         rewrite <- inf_eq. rep_omega.
       * pose proof (in_combine_r _ _ _ _ H0).
-        admit. (* this is clearly exfalso *)
+        exfalso.
+        clear -H2.
+        apply in_tl_nat_inc_list in H2.
+        omega.
     + unfold get_popped.
       rewrite (behead_list (nat_inc_list (Z.to_nat (Zlength (a :: l))))).
       2: { rewrite Zlength_correct.
@@ -746,61 +854,7 @@ Proof.
     assert (Zlength [a] = 1) by reflexivity.
     rewrite in_get_popped by omega.
     apply IHl; omega.
-Admitted.
-
-(* remnants 
-    rewrite <- (IHl _ H0).
-    split; unfold get_popped; intro.
-    + simpl in H1.
-      destruct (a =? 1879048193).
-      * simpl in *. destruct H1; [omega|].
-        rewrite In_map_snd_iff in *.
-        destruct H1.
-        exists x.
-        rewrite filter_In in *.
-        destruct H1; simpl in H2; split; trivial.
-        pose proof (in_combine_r _ _ _ _ H1).
-        pose proof (in_combine_l _ _ _ _ H1).
-        rewrite In_Znth_iff in H1.
-        rewrite In_Znth_iff.
-        destruct H1 as [? [? ?]].
-        exists x0. split.
-        admit. (* easy *)        
-        rewrite Znth_combine in H5 by admit. (* Zlength l = 7 *)
-        inversion H5.
-        rewrite Znth_combine by admit.
-        f_equal.
-        rewrite H8. admit.
-      * admit.
-    + simpl in *.
-      destruct (a =? 1879048193).
-      * simpl. right. rewrite In_map_snd_iff in *.
-        destruct H1.
-        exists x.
-        rewrite filter_In in *. destruct H1.
-        pose proof (in_combine_r _ _ _ _ H1).
-        pose proof (in_combine_l _ _ _ _ H1).
-        simpl in H2. simpl.
-        split; trivial. 
-        
-        admit. (* silly lemma about In combine *)
-      * rewrite In_map_snd_iff in *.
-        destruct H1.
-        exists x.
-        rewrite filter_In in *. destruct H1.
-        assert (H3:= H1).
-        apply in_combine_r in H1.
-        apply in_combine_l in H3.
-        simpl in H2. simpl.
-        split; trivial. 
-        assert (In i [1;2;3;4;5;6;7;8]).
-        { simpl. simpl in H1.
-          repeat (destruct H1; [omega|]).
-          omega.
-        }
-        admit. (* same silly lemma *)
-Admitted.
-*)
+Qed.
 
 Lemma get_popped_irrel_upd:
   forall l i j new,
@@ -1251,9 +1305,9 @@ Proof.
            entailer!.
            remember (find priq_contents (fold_right Z.min (hd 0 priq_contents) priq_contents) 0) as u. 
            split.
-           1: {
-             admit. (* straightforward *)
-             } 
+           1: { apply get_popped_meaning.
+                rewrite upd_Znth_Zlength; omega.
+                rewrite upd_Znth_same; omega. } 
            split3; [intros; omega | |
                     apply inrange_upd_Znth; trivial;
                     rewrite <- inf_eq; rep_omega]. 
