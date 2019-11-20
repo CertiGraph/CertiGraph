@@ -132,11 +132,11 @@ Section SpaceDijkstraArrayGraph.
     | (v, edges) => fold_left Z.add (choose (map (elabel g) edges)) 0
     end.
   
-  Definition vert_rep (g : Graph) (v : LV) : list Z :=
+  Definition vert_rep (g: LGraph) (v : LV) : list Z :=
     map (fun x => match x with Some x => x | None => inf end) v.
   
   (* from Graph to list (list Z) *)
-  Definition graph_to_mat (g : Graph) : list (list Z) :=
+  Definition graph_to_mat (g : LGraph) : list (list Z) :=
     map (vert_rep g) (map (vlabel g) (Z_inc_list (Z.to_nat SIZE))).
   
   Definition list_rep listaddr contents_mat index :=
