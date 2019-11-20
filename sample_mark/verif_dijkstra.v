@@ -659,39 +659,119 @@ Proof.
       rewrite H0; omega.
 Qed.
 
-(* not proving until I'm sure I need it *)
+Lemma behead_list:
+  forall (l: list Z),
+    0 < Zlength l -> 
+    l = Znth 0 l :: tl l.
+Proof.
+  intros.
+  destruct l.
+  - rewrite Zlength_nil in H. inversion H.
+  - simpl. rewrite Znth_0_cons. reflexivity.
+Qed.
+
+Lemma nat_inc_list_hd:
+  forall n,
+    0 < n ->
+    Znth 0 (nat_inc_list (Z.to_nat n)) = 0.
+Proof.
+  intros. induction (Z.to_nat n).
+  - reflexivity.
+  - simpl.
+    destruct n0.
+    + reflexivity.
+    + rewrite app_Znth1. omega.
+      rewrite Zlength_correct.
+      rewrite nat_inc_list_length.
+      rewrite <- Nat2Z.inj_0.
+      apply inj_lt. omega.
+Qed.
+
+Lemma tl_app:
+  forall (l1 l2: list Z),
+    0 < Zlength l1 ->
+    tl (l1 ++ l2) = tl l1 ++ l2.
+Proof.
+  intros. destruct l1.
+  - inversion H.
+  - intros. simpl. reflexivity.
+Qed.
+
+Lemma in_tl_nat_inc_list:
+  forall i n,
+    In i (tl (nat_inc_list n)) ->
+    1 <= i.
+Proof.
+  destruct n. inversion 1.
+  induction n. inversion 1. 
+  intros.
+  simpl in H.
+  rewrite Zpos_P_of_succ_nat in H.
+  rewrite tl_app in H.
+  2: { rewrite Zlength_app.
+       replace (Zlength [Z.of_nat n]) with 1 by reflexivity.
+       rep_omega.
+  } 
+  apply in_app_or in H; destruct H.
+  - apply IHn. simpl. assumption.
+  - simpl in H. destruct H; omega.
+Qed.
+
+Lemma nat_inc_list_app:
+  forall n m p i,
+    0 <= i < m ->
+    0 <= n ->
+    n + m <= p ->
+    Znth i (nat_inc_list (Z.to_nat m)) =
+    Znth i
+         (sublist n (n + m)
+                  (nat_inc_list (Z.to_nat p))) - n.
+Proof.
+  symmetry.
+  rewrite Znth_sublist by rep_omega.
+  repeat rewrite nat_inc_list_i by rep_omega.
+  omega.
+Qed.
+
 Lemma nat_inc_list_sublist:
   forall n m,
     0 <= n ->
     n <= m ->
     sublist 0 n (nat_inc_list (Z.to_nat m)) =
     nat_inc_list (Z.to_nat n).
-Proof.  
-Admitted.
-
-Lemma nat_inc_list_app:
-  forall (l1 l2: list Z) i,
-    0 <= i < Zlength l2 ->
-    0 < Zlength l2 ->
-    Znth i (nat_inc_list (Z.to_nat (Zlength l2))) =
-    Znth i
-         (sublist (Zlength l1) (Zlength (l1 ++ l2))
-                  (nat_inc_list (Z.to_nat (Zlength (l1 ++ l2))))) - 
-    Zlength l1.
 Proof.
-  symmetry.
-  rewrite Znth_sublist.
-  repeat rewrite nat_inc_list_i.
-  omega.
-  rewrite Z2Nat.id. omega.
-  omega.
-  rewrite Z2Nat.id. rewrite Zlength_app.
-  rep_omega.
-  rep_omega. rep_omega.
-  rewrite Zlength_app.
-  rep_omega.
+  intros.
+  apply Zle_lt_or_eq in H0. destruct H0.
+  2: { subst. rewrite sublist_same.
+       reflexivity. reflexivity.
+       rewrite Zlength_correct.
+       rewrite nat_inc_list_length. rep_omega. }
+  apply Znth_eq_ext.
+  1: { rewrite Zlength_sublist.
+       rewrite Zlength_correct.
+       rewrite nat_inc_list_length. rep_omega.
+       rep_omega.
+       rewrite Zlength_correct.
+       rewrite nat_inc_list_length. rep_omega.
+  }
+  intros.
+  rewrite nat_inc_list_i.
+  2: { rewrite Zlength_sublist in H1.
+       rep_omega.
+       rep_omega.
+       rewrite Zlength_correct.
+       rewrite nat_inc_list_length. rep_omega.
+  }
+  rewrite <- Z.sub_0_r at 1.
+  replace n with (0 + n) by omega.
+  rewrite Zlength_sublist in H1. 
+  rewrite <- nat_inc_list_app. 
+  rewrite nat_inc_list_i.
+  all: try rep_omega.
+  rewrite Zlength_correct.
+  rewrite nat_inc_list_length. rep_omega.
 Qed.
-  
+
 Lemma in_get_popped:
   forall i l1 l2,
     0 <= i < Zlength l1 + Zlength l2 ->
@@ -773,6 +853,7 @@ Proof.
              rewrite nat_inc_list_length;
              rewrite Nat2Z.id; omega.
         inversion H2.
+        rewrite Zlength_app.
         rewrite <- nat_inc_list_app. 
         reflexivity.
         rewrite combine_same_length in H1. omega.
@@ -782,7 +863,7 @@ Proof.
         repeat rewrite Zlength_correct.
         rewrite nat_inc_list_length.
         rewrite Z2Nat.id. reflexivity.
-        omega. rep_omega.
+        omega. rep_omega. reflexivity.
   - rewrite In_map_snd_iff in H1; destruct H1.
     rewrite filter_In in H1; destruct H1; simpl in H2.
     rewrite In_map_snd_iff.
@@ -837,71 +918,17 @@ Proof.
       rewrite nat_inc_list_length;
       rewrite Nat2Z.id; omega.    
     inversion H2.
-    rewrite (nat_inc_list_app l1 l2 _) in H5.
+    rewrite (nat_inc_list_app (Zlength l1) _ (Zlength (l1 ++ l2))) in H5.
     rewrite Z.sub_cancel_r in H5.
+    rewrite Zlength_app at 1.
     rewrite H5. reflexivity.
     rewrite combine_same_length in H1. omega.
     repeat rewrite Zlength_correct.
     rewrite nat_inc_list_length.
     rewrite Z2Nat.id. reflexivity.
     omega. rep_omega.
+    rewrite Zlength_app. rep_omega.
 Qed.
-
-Lemma behead_list:
-  forall (l: list Z),
-    0 < Zlength l -> 
-    l = Znth 0 l :: tl l.
-Proof.
-  intros.
-  destruct l.
-  - rewrite Zlength_nil in H. inversion H.
-  - simpl. rewrite Znth_0_cons. reflexivity.
-Qed.
-
-Lemma nat_inc_list_hd:
-  forall n,
-    0 < n ->
-    Znth 0 (nat_inc_list (Z.to_nat n)) = 0.
-Proof.
-  intros. induction (Z.to_nat n).
-  - reflexivity.
-  - simpl.
-    destruct n0.
-    + reflexivity.
-    + rewrite app_Znth1. omega.
-      rewrite Zlength_correct.
-      rewrite nat_inc_list_length.
-      rewrite <- Nat2Z.inj_0.
-      apply inj_lt. omega.
-Qed.
-
-Lemma tl_app:
-  forall (l1 l2: list Z),
-    0 < Zlength l1 ->
-    tl (l1 ++ l2) = tl l1 ++ l2.
-Proof.
-  intros. destruct l1.
-  - inversion H.
-  - intros. simpl. reflexivity.
-Qed.
-
-(* admit. retry with fresh mind. *)
-Lemma in_tl_nat_inc_list:
-  forall i n,
-    In i (tl (nat_inc_list n)) ->
-    1 <= i.
-Proof.
-  intros.
-  induction n.
-  - simpl in H. inversion H.
-  - apply IHn. clear IHn.
-    simpl in H. destruct n.
-    1: inversion H.
-    rewrite tl_app in H.
-    2: admit. (* easy *)
-    apply in_app_or in H. destruct H.
-    1: assumption. (* dead *)
-Admitted.
 
 Lemma get_popped_meaning:
   forall l i,
@@ -929,8 +956,7 @@ Proof.
       * inversion H0. rewrite Z.eqb_eq in H1.
         rewrite <- inf_eq. rep_omega.
       * pose proof (in_combine_r _ _ _ _ H0).
-        exfalso.
-        clear -H2.
+        exfalso. 
         apply in_tl_nat_inc_list in H2.
         omega.
     + unfold get_popped.
@@ -1427,10 +1453,10 @@ Proof.
              subst z.
              rewrite <- Znth_0_hd by omega.
              apply min_in_list; [ apply incl_refl | apply Znth_In; omega].
-           } 
+           }           
            (* 
-1. show that get_popped is old get_popped + u 
-2. show that u is minimal 
+              1. show that get_popped is old get_popped + u 
+              2. show that u is minimal 
             *)
            admit.
         -- assert (0 <= u < Zlength (graph_to_mat g)). {
