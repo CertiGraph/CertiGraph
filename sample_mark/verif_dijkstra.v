@@ -15,6 +15,8 @@ Require Import Coq.omega.Omega.
 Require Import Coq.Lists.List.
 Definition inf := Int.max_signed - Int.max_signed/SIZE.
 
+Set Nested Proofs Allowed.
+
 Lemma inf_eq: 1879048192 = inf.   
 Proof. compute; trivial. Qed.
 
@@ -997,6 +999,21 @@ Proof.
   rewrite upd_Znth_diff; omega.
 Qed.
 
+Lemma get_popped_range:
+  forall n l,
+    In n (get_popped l) ->
+    0 <= n < Zlength l.
+Proof.
+  intros.
+  unfold get_popped in H.
+  rewrite In_map_snd_iff in H. destruct H.
+  rewrite filter_In in H. destruct H as [? _].
+  apply in_combine_r in H.
+  apply nat_inc_list_in_iff in H.
+  rewrite Z2Nat.id in H by (apply Zlength_nonneg).
+  assumption.
+Qed.
+
 Definition path_is_optimal (g: LGraph) src dst p : Prop  :=
   valid_path g p /\
   path_ends g p src dst /\
@@ -1573,9 +1590,32 @@ Proof.
          +++ rewrite H47, upd_Znth_same, upd_Znth_diff; [reflexivity | rep_omega..].
      --- apply dijkstra_correct_priq_irrel; try omega.
          apply dijkstra_correct_prev_irrel.
-         +++ rewrite <- H22 in H12. assumption.
-         +++ rewrite <- inf_eq; omega.
-         +++ admit. (* new issue... *)
+         1: rewrite <- H22 in H12; assumption.
+         1: rewrite <- inf_eq; omega.
+
+Lemma dijkstra_correct_dist_irrel:
+  forall g src prev priq dist i new,
+    Zlength dist = Zlength priq ->
+    0 <= i < Zlength priq ->
+    Znth i priq <> inf + 1 ->
+    dijkstra_correct g src prev priq dist ->
+    dijkstra_correct g src prev priq (upd_Znth i dist new).
+Proof. 
+  intros. unfold dijkstra_correct in *. intros.
+  split.
+  1,2: specialize (H2 dst H3); destruct H2.
+  2: assumption.
+  intros.
+  specialize (H2 dst').
+  rewrite upd_Znth_diff.
+  2: rewrite H; apply get_popped_range; assumption.
+  2: rep_omega.
+  2: intro; rewrite H5 in H3; apply get_popped_meaning in H3; omega.
+Admitted.
+
+apply dijkstra_correct_dist_irrel.
+4: assumption.
+rewrite H22; trivial. all: rep_omega.
      --- repeat rewrite Zlength_map in H32.
          split3; apply inrange_upd_Znth;
            trivial; try omega.
