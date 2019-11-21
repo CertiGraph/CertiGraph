@@ -1081,11 +1081,17 @@ Definition dijkstra_correct g (src : VType) (prev priq dist: list VType) : Prop 
     In dst (get_popped priq) ->
     (* dst has been globally optimized *)
     (forall dst',
+        0 <= dst' < Zlength priq ->
         Znth dst dist <= Znth dst' dist + Znth dst (Znth dst' (graph_to_mat g))) /\
-    exists path,
+    (forall dst',
+        0 <= dst' < Zlength priq ->
+        ~ In dst' (get_popped priq) ->
+    Znth (find priq (fold_right Z.min (hd 0 priq) priq) 0) (Znth dst (graph_to_mat g)) <=
+    Znth dst' (Znth dst (graph_to_mat g))) /\
+    (exists path,
       incl (snd path) (get_popped priq) /\
       path_is_optimal (reachable_sub_labeledgraph g (get_popped priq)) src dst path /\
-      path_sits_in_prev src (rev (snd path)) prev.
+      path_sits_in_prev src (rev (snd path)) prev).
 
 Lemma dijkstra_correct_priq_irrel:
   forall g src prev priq dist i new,
@@ -1098,16 +1104,22 @@ Lemma dijkstra_correct_priq_irrel:
 Proof.
   unfold dijkstra_correct. intros.
   rewrite get_popped_unchanged in * by assumption.
-  apply H3; assumption.
-Qed.
+  specialize (H3 dst H4).
+  destruct H3 as [? [? ?]].
+  rewrite upd_Znth_Zlength. 2: assumption. 
+  split3; trivial. intros.
+  specialize (H3 dst').
+  admit.
+Admitted.
+
+
 (* Even if I state this functionally, 
    it doesn't matter if prev[i] has been changed.
    This is because we only look at _those_
    cells of prev for which the vertices 
    have been popped. 
-   We have a proof that i has not been popped
+   We have a proof that i has not been popped.
  *)
-
 Lemma dijkstra_correct_prev_irrel:
   forall g src prev priq dist i new,
     0 <= i < Zlength priq ->
@@ -1546,16 +1558,16 @@ Proof.
      assert (0 <= i < Zlength (map Vint (map Int.repr dist_contents'))) by
          (repeat rewrite Zlength_map; omega).
      assert (Znth i priq_contents' <> inf + 1). {
-       intro.
-       rewrite <- get_popped_meaning in H33 by omega.
-       clear -H17 H31 H33 Heqcost.
+       intro. 
+       rewrite <- get_popped_meaning in H33 by omega. 
+       (* clear -H12 H13 H14 H17 H31 H33 Heqcost. *)
        unfold dijkstra_correct in H17.
        specialize (H17 _ H33). destruct H17.
-       specialize (H u).
-       rewrite <- Heqcost in H.
-       clear -H H31.
-       apply Zle_not_lt in H.
-       apply H. assumption.
+       specialize (H17 u).
+       rewrite <- Heqcost in H17.
+       apply Zle_not_lt in H17. 
+       apply H17. assumption.
+       apply get_popped_range in H15. assumption.
      }
        (* comes from the fact that we just improved
           the dist to i. This is impossible
@@ -1591,7 +1603,75 @@ Proof.
      --- apply dijkstra_correct_priq_irrel; try omega.
          apply dijkstra_correct_prev_irrel.
          1: rewrite <- H22 in H12; assumption.
-         1: rewrite <- inf_eq; omega.
+         1: rewrite <- inf_eq; omega.  
+            
+Lemma dijkstra_correct_dist_irrel:
+  forall g src prev priq dist i u,
+    Zlength dist = Zlength priq ->
+    0 <= i < Zlength priq ->
+    Znth i priq <> inf + 1 ->
+    In u (get_popped priq) ->
+    dijkstra_correct g src prev priq dist ->
+    dijkstra_correct g src prev priq
+      (upd_Znth i dist (Znth u dist + Znth i (Znth u (graph_to_mat g)))).
+Proof.
+  intros.
+  remember (Znth u dist + Znth i (Znth u (graph_to_mat g))) as new.
+  unfold dijkstra_correct in *. intros. 
+  specialize (H3 _ H4); destruct H3 as [? [? ?]].
+  split3; try assumption. clear H6.
+  intros.
+  assert (0 <= dst < Zlength priq) by
+      (apply get_popped_range in H4; omega).
+  destruct (Z.eq_dec dst' i).
+  2: { pose proof (get_popped_range _ _ H4).
+       specialize (H3 dst' H6).  
+       repeat rewrite upd_Znth_diff.
+       all: try rewrite H; try assumption.
+       intro. rewrite H9 in H4.
+       rewrite get_popped_meaning in H4; omega. }
+  subst dst'.
+  rewrite upd_Znth_same by omega. 
+  assert (~ In i (get_popped priq)). {
+    intro. rewrite get_popped_meaning in H8; omega.
+  }
+  rewrite upd_Znth_diff.
+  2: rewrite H; omega.
+  2: omega.
+  2: intro; rewrite H9 in H4; apply H8; assumption.
+  rewrite Heqnew. clear Heqnew.
+  
+  
+  
+  specialize (H2 dst' H5).
+
+  specialize (H4 dst' H5).  
+  specialize (H4 H7).
+*)
+         specialize (H16 dst'). 
+         destruct (Z.eq_dec dst' i).
+         +++ rewrite e.
+             rewrite upd_Znth_same by admit.
+             clear -H17.
+             specialize (H17 u).
+             assert (Znth dst (Znth u (graph_to_mat g)) <=
+                     Znth i (Znth u (graph_to_mat g)) +
+                     Znth dst (Znth i (graph_to_mat g))). {
+                 (* i --> dst is non negative *)
+                 (* cost from popped to u is 
+                    less is leq cost to anyone else *)
+               admit.
+               }
+             rewrite <- Z.add_assoc.
+             remember (Znth i (Znth u (graph_to_mat g)) + Znth dst (Znth i (graph_to_mat g))) as diversion.
+             (* it's true, probably just needs
+                lower bounds of 0 *)
+             admit.
+         +++ rewrite upd_Znth_diff. apply H17.
+             apply get_popped_range in H9.
+             admit.
+             admit.
+             assumption.
 
 Lemma dijkstra_correct_dist_irrel:
   forall g src prev priq dist i new,
@@ -1613,9 +1693,9 @@ Proof.
   2: intro; rewrite H5 in H3; apply get_popped_meaning in H3; omega.
 Admitted.
 
-apply dijkstra_correct_dist_irrel.
-4: assumption.
-rewrite H22; trivial. all: rep_omega.
+(* apply dijkstra_correct_dist_irrel. *)
+(* 4: assumption. *)
+(* rewrite H22; trivial. all: rep_omega. *)
      --- repeat rewrite Zlength_map in H32.
          split3; apply inrange_upd_Znth;
            trivial; try omega.
