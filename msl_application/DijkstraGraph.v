@@ -1,17 +1,17 @@
-Require Import Coq.Sets.Ensembles.
-Require Import Coq.Lists.List.
-Require Import RamifyCoq.lib.EquivDec_ext.
+Require Import Coq.Sets.Ensembles. 
+Require Import Coq.Lists.List. 
+Require Import RamifyCoq.lib.EquivDec_ext. 
 Require Import RamifyCoq.lib.Coqlib.
 Require Import RamifyCoq.lib.Ensembles_ext.
 Require Import RamifyCoq.graph.graph_model.
 Require Import RamifyCoq.graph.path_lemmas.
 Require Import RamifyCoq.graph.reachable_computable.
-Require Import RamifyCoq.graph.graph_gen.
+Require Import RamifyCoq.graph.graph_gen. 
 Require Import RamifyCoq.graph.FiniteGraph.
 Require Import Coq.ZArith.ZArith.
 Section DijkstraGraph.
 
-
+ 
   Context {V E: Type}.
   Context {VE: EqDec V eq}.
   Context {EE: EqDec E eq}.
