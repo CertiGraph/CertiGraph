@@ -1346,7 +1346,9 @@ Proof.
   - unfold SIZE. rep_omega.
   - unfold data_at, data_at_, field_at_; entailer!.
   - forward. forward. forward.
-    entailer!. rewrite inf_eq2.
+    entailer!.
+    replace 8 with SIZE by (unfold SIZE; rep_omega).
+    rewrite inf_eq2.
     replace (upd_Znth i
        (list_repeat (Z.to_nat i) (Vint (Int.repr inf)) ++
                     list_repeat (Z.to_nat (SIZE - i)) Vundef) (Vint (Int.repr inf))) with
@@ -1700,13 +1702,13 @@ Proof.
          unfold cost_was_improved_if_possible in H19.
          destruct H49; [assert (dst <> i) by omega|]; destruct (Z.eq_dec u i).
          +++ rewrite <- e, upd_Znth_same, upd_Znth_diff; try rep_omega.
-             rewrite (H3 u) by (unfold SIZE; omega).
+             rewrite (H3 u) by trivial.
              rewrite Z.add_0_r. apply H18; trivial.
          +++ repeat rewrite upd_Znth_diff; try rep_omega.
              apply H18; trivial.
          +++ rewrite H49, <- e.
              repeat rewrite upd_Znth_same.
-             rewrite (H3 u) by (unfold SIZE; omega).
+             rewrite (H3 u) by trivial.
              omega. rep_omega.
          +++ rewrite H49, upd_Znth_same, upd_Znth_diff; [reflexivity | rep_omega..].
      ---  (* Important Spot #2: 
@@ -1779,7 +1781,6 @@ Proof.
                 unfold edge_valid in H62.
                 rewrite H62 in H61.
                 destruct H61.
-                unfold SIZE in H65.
                 rewrite <- H25 in H65; trivial.
       ---- assumption.
       ---- rewrite upd_Znth_diff; try omega.
@@ -1810,7 +1811,6 @@ Proof.
                 unfold edge_valid in H63.
                 rewrite H63 in H62.
                 destruct H62.
-                unfold SIZE in H66.
                 rewrite <- H24 in H66; trivial.
   *** (*assert (In mom
                  (get_popped
@@ -1855,16 +1855,16 @@ Proof.
               rewrite upd_Znth_diff by admit.
               pose proof (Forall_Znth _ _ dst H53 H20).
               simpl in H54. destruct H54. 
-              1: unfold SIZE in H54; rewrite <- H24 in H54; assumption.
+              1: rewrite <- H24 in H54; assumption.
               exfalso.
               rewrite upd_Znth_diff in H52 by admit.
               apply get_popped_range in H52.
               admit. (* easy enough *)
-         ++++ admit. (* bullshit *)
+         ++++ omega.
          ++++ intro. rewrite H53 in H52.
               apply get_popped_meaning in H52.
               apply H35. assumption.
-              admit. (* bullshit *)
+              omega.
          ++++ assumption.
     ---- pose proof (H19 mom). destruct H53 as [? _].
          specialize (H53 H52).
@@ -1884,7 +1884,6 @@ Proof.
                    destruct H2 as [? [? [? ?]]].
                    unfold edge_valid in H62.
                    rewrite H62 in H61. destruct H61.
-                   unfold SIZE in H65.
                    rewrite <- H25 in H65.
                    assumption.
               **** intro.
@@ -1899,7 +1898,6 @@ Proof.
                    destruct H2 as [? [? [? ?]]].
                    unfold edge_valid in H64.
                    rewrite H64 in H63. destruct H63.
-                   unfold SIZE in H67.
                    rewrite <- H24 in H67.
                    assumption.
          ++++ unfold path_correct in *.
@@ -1928,7 +1926,11 @@ Proof.
       simpl. destruct (l +:: (mom, dst)) eqn:?.
       1: exfalso; now apply (app_not_nil l (mom,dst)).
       apply IHl.
- **** rewrite path_cost_app_cons.
+ **** rewrite <- path_cost_app_cons.
+      (* show that they're a pair. *)
+      all: admit.
+      (* then see how much of the below can be used *)
+      (*
       rewrite elabel_Znth_graph_to_mat; simpl.
       rewrite <- H55. admit. (* unclear *)
       assumption.
@@ -1943,7 +1945,7 @@ Proof.
       unfold edge_valid in H60;
         unfold vertex_valid in H2;
         rewrite H60, H2; simpl; split; admit. (* easy ranges *)
-      assumption.
+      assumption. *)
  **** rewrite Forall_forall; intros. 
       destruct (Z.eq_dec (snd x) i).
       ----- rewrite e. rewrite upd_Znth_same.
@@ -1995,13 +1997,6 @@ Proof.
      --- repeat rewrite Zlength_map in H34.
          split3; apply inrange_upd_Znth;
            trivial; try omega.
-         left.
-         replace SIZE with (Zlength priq_contents).
-         apply find_range.
-         apply min_in_list.
-         apply incl_refl.
-         rewrite <- Znth_0_hd by omega.
-         apply Znth_In; omega.
   ** rewrite Int.signed_repr in H33.
      2: { assert (0 <= i < Zlength dist_contents') by omega.
           apply (Forall_Znth _ _ _ H34) in H22.
@@ -2023,6 +2018,7 @@ Proof.
              assert (0 <= dst < i \/ dst = i) by omega.
              destruct H43; [apply H18; trivial|].
              subst dst. exfalso. unfold inf in H42.
+             replace 8 with SIZE in H29 by (unfold SIZE; rep_omega).
              rewrite inf_eq2 in H29.
              do 2 rewrite Int.signed_repr in H29. 
              unfold inf in H29. rep_omega.
