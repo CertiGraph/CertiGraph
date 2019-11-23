@@ -974,28 +974,29 @@ Definition path_globally_optimal (g: LGraph) src dst p : Prop :=
              path_cost g p <= path_cost g p'.
 
 Definition dijkstra_correct g (src : VType) (prev priq dist: list VType) : Prop :=
-  (forall dst,  (* globally optimized *)
-      In dst (get_popped priq) ->
-      exists path, 
-        (* add that the path lies completely in subgraph *)
-        path_correct g prev src dst path /\
-        path_globally_optimal g src dst path /\
-        Znth dst dist = path_cost g path) /\
-  (forall dst, (* fringe *)
-      dst <> src -> (* kinda a quick hack. merge later? *)
-      0 <= dst < Zlength priq ->
-      Znth dst priq < inf  -> (* have been seen *)
-      let mom := (Znth dst prev) in 
-      In mom (get_popped priq) /\
-      exists p2mom,
-        path_correct g prev src mom p2mom /\
-        let p2dst := (fst p2mom, snd p2mom +:: (mom, dst)) in 
-        path_correct g prev src dst p2dst /\
-        forall mom' p2mom',
-          In mom' (get_popped priq) ->
-          path_correct g prev src mom' p2mom' ->
-          path_cost g p2dst <=
-          path_cost g (fst p2mom', snd p2mom' +:: (mom',dst))).
+  forall dst,  
+    (In dst (get_popped priq) -> (* globally optimized *)
+     exists path, 
+       path_correct g prev src dst path /\
+       path_globally_optimal g src dst path /\
+       Znth dst dist = path_cost g path /\
+       Forall (fun x => In (fst x) (get_popped priq) /\
+                        In (snd x) (get_popped priq))
+              (snd path)) /\
+    (dst <> src -> (* kinda a quick hack. merge later? *)
+     0 <= dst < Zlength priq ->
+     Znth dst priq < inf  -> (* have been seen *)
+     let mom := (Znth dst prev) in 
+     In mom (get_popped priq) /\
+     exists p2mom,
+       path_correct g prev src mom p2mom /\
+       let p2dst := (fst p2mom, snd p2mom +:: (mom, dst)) in 
+       path_correct g prev src dst p2dst /\
+       forall mom' p2mom',
+         In mom' (get_popped priq) ->
+         path_correct g prev src mom' p2mom' ->
+         path_cost g p2dst <=
+         path_cost g (fst p2mom', snd p2mom' +:: (mom',dst))).
 
 Lemma dijkstra_correct_priq_irrel:
   forall g src prev priq dist i new,
@@ -1405,11 +1406,13 @@ Proof.
        (* just cleaning up a little to show
           Aquinas a clear screen *)
        admit.
-     ** apply H4.
+     ** destruct (H4 dst).
+        admit. (*
+        apply H28.
         apply (get_popped_irrel_upd _ _ u (inf + 1)).
         1: apply get_popped_range in H27;
           rewrite upd_Znth_Zlength in H27.
-        all: try omega; assumption.
+        all: try omega; assumption.*)
 
   ++ (* there is one new guy in get_popped: u *)
     admit.
@@ -1545,65 +1548,69 @@ Proof.
        rewrite <- get_popped_meaning in H35 by omega.
        rewrite H8 in H13.  
        clear -H2 H13 H14 H19 H28 H35 H17 Heqcost. 
-       unfold dijkstra_correct in H19. 
-       destruct H19 as [H20 _].
-       pose proof (H20 _ H35).
-       pose proof (H20 _ H17).
-       clear H20. 
-       destruct H as [p2i [? [? ?]]].
-       destruct H0 as [p2u [? [? ?]]].
-       unfold path_globally_optimal in H1.
+       unfold dijkstra_correct in H19.
+       pose proof (H19 i). 
+       destruct H as [H _].
+       specialize (H H35).
+       pose proof (H19 u).
+       destruct H0 as [H0 _]. 
+       specialize (H0 H17).
+       clear H19. 
+       destruct H as [p2i [? [? [? ?]]]].
+       destruct H0 as [p2u [? [? [? ?]]]].
+       unfold path_globally_optimal in H1. 
        destruct H as [? [? [? ?]]].
        destruct H0 as [? [? [? _]]].  
        specialize (H1 (fst p2u, snd p2u ++ [(u,i)])).
        assert (Hrem := H2).
-       destruct H2 as [? [? [? ?]]].
+       destruct H2 as [? [? [? ?]]]. 
        replace (path_cost g (fst p2u, snd p2u +:: (u,i)))
-         with (path_cost g p2u + cost) in H1.  
+         with (path_cost g p2u + cost) in H1.
+       2: { rewrite path_cost_app_cons.
+            rewrite elabel_Znth_graph_to_mat; simpl.
+            omega. assumption.
+            unfold edge_valid in H15;
+              unfold vertex_valid in H2;
+              rewrite H15, H2; simpl; split; assumption.
+            rewrite elabel_Znth_graph_to_mat; simpl.
+            rewrite <- Heqcost.
+            unfold DijkstraArrayGraph.inf.
+            intro.
+            rewrite H19 in H28. destruct H28.
+            apply Zle_not_gt in H21.
+            apply H21.
+            compute; trivial.
+            assumption. 
+            unfold edge_valid in H15;
+              unfold vertex_valid in H2;
+              rewrite H15, H2; simpl; split; assumption.
+            assumption.
+       } 
        replace (Znth u dist_contents') with (path_cost g p2u).
        replace (Znth i dist_contents') with (path_cost g p2i).       
-       apply H1.  
+       apply H1.       (* can make lemma *)
        - apply valid_path_app. 
          rewrite <- surjective_pairing.
          split; [assumption|].
          simpl; split.
-         + rewrite H12; simpl.
-           destruct H9; assumption.
+         + rewrite H16; simpl.
+           destruct H11; assumption.
          + unfold strong_evalid.
-           unfold edge_valid in H11.
+           unfold edge_valid in H15.
            unfold vertex_valid in H2.
-           rewrite H11, H12, H15, H2, H2. simpl.
+           rewrite H15, H16, H18, H2, H2. simpl.
            split; split; assumption.
        - split; simpl.
-         + destruct H9.
+         + destruct H11.
            destruct p2u; simpl.
            unfold valid_path in H0.
            simpl in *; omega.
-         + clear H1. induction (snd p2u).
-           * simpl; rewrite H15; trivial.
+         + clear H1 H7.  induction (snd p2u).
+           * simpl. rewrite H18; trivial.
            * simpl. destruct (l +:: (u, i)) eqn:?.
              1: exfalso; now apply (app_not_nil l (u,i)).
              apply IHl.
-       - rewrite path_cost_app_cons.
-         rewrite elabel_Znth_graph_to_mat; simpl.
-         omega. assumption.
-         unfold edge_valid in H11;
-           unfold vertex_valid in H2;
-           rewrite H11, H2; simpl; split; assumption.
-         rewrite elabel_Znth_graph_to_mat; simpl.
-         rewrite <- Heqcost.
-         unfold DijkstraArrayGraph.inf.
-         intro.
-         rewrite H16 in H28. destruct H28.
-         apply Zle_not_gt in H19.
-         apply H19.
-         compute; trivial.
-         assumption. 
-         unfold edge_valid in H11;
-           unfold vertex_valid in H2;
-           rewrite H11, H2; simpl; split; assumption.
-         assumption.
-     } 
+     }
        (* comes from the fact that we just improved
           the dist to i. This is impossible
           for popped items. 
@@ -1636,21 +1643,258 @@ Proof.
              rewrite (H3 u) by (unfold SIZE; omega).
              omega. rep_omega.
          +++ rewrite H49, upd_Znth_same, upd_Znth_diff; [reflexivity | rep_omega..].
-     --- (* Important Spot #2: 
+     ---  (* Important Spot #2: 
             We just "saw" a better way to get to i: via u.
             The three arrays have all changed in response.
           *)
        remember (find priq_contents (fold_right Z.min (hd 0 priq_contents) priq_contents) 0) as u.
-       split; intros.
- +++ (* the interesting case is when dst = i *)
-   destruct (Z.eq_dec dst i).
-   2: {
-       
-
-       
-       admit.
-       
-
+       intro.
+       assert (0 <= i < Zlength prev_contents'). {
+         rewrite H25. assumption. }
+       assert (Zlength priq_contents' = Zlength prev_contents') by omega.
+       destruct (Z.eq_dec dst i).
+       (* the interesting case is when dst = i *)
+       +++ subst dst. rewrite get_popped_unchanged.
+           destruct (H19 i). split; intros.
+           *** destruct (H49 H51) as [p2i [? [? [? ?]]]].
+               exists p2i; split3; [| | split].
+               ---- admit.
+               ---- assumption.
+               ---- rewrite upd_Znth_same by admit. admit. 
+               ---- assumption.
+           *** assert (0 <= i < Zlength priq_contents')
+               by admit.
+               assert (Znth i priq_contents' < inf) by admit.
+               destruct (H50 H51 H54 H55) as [? [p2mom [? [? ?]]]].
+               subst mom. rewrite upd_Znth_same by admit.
+               split; trivial.
+               exists p2mom. admit.
+           *** admit.
+           *** admit.
+           *** admit.
+       +++ (* the "easier" case: dst <> i *) 
+         split; intros.    
+  *** assert (0 <= dst < Zlength priq_contents). {
+        apply get_popped_range in H49.
+        rewrite upd_Znth_Zlength in H49; omega. }
+      rewrite <- get_popped_irrel_upd in H49 by rep_omega.        
+      pose proof (H19 dst). 
+      destruct H51 as [? ?]. 
+      destruct (H51 H49) as [p2dst [? [? [? ?]]]].
+      exists p2dst. 
+      split3; [| | split].  
+      ---- destruct H53 as [? [? [? ?]]].
+           split3; [| | split]; try assumption. 
+           rewrite Forall_forall; intros.
+           rewrite Forall_forall in H59. 
+           rewrite Forall_forall in H56. 
+           specialize (H59 _ H60).
+           (* the interesting case is when x hops to i *)
+           destruct (Z.eq_dec (snd x) i).
+           ++++ rewrite e.
+                rewrite upd_Znth_same by assumption.     (* so... there is some step from ? to i
+       inside the legal path from src to dst.
+       This is impossible -- i isn't in the subgraph!
+       violates legality of the path
+                                                            *) 
+                exfalso.
+                specialize (H56 _ H60).
+                destruct H56 as [_ H56].
+                rewrite get_popped_meaning in H56.
+                apply H35.
+                rewrite <- e. assumption.
+                apply get_popped_range in H56.
+                omega.
+           ++++ rewrite upd_Znth_diff; try omega; trivial.
+                destruct p2dst. simpl in H60.
+                
+                pose proof (valid_path_evalid g v l x H53 H60).
+                destruct H2 as [? [? [? ?]]].
+                unfold edge_valid in H62.
+                rewrite H62 in H61.
+                destruct H61.
+                unfold SIZE in H65.
+                rewrite <- H25 in H65; trivial.
+      ---- assumption.
+      ---- rewrite upd_Znth_diff; try omega.
+           rewrite H8 in H50.
+           rewrite <- H26 in H50. assumption.
+           repeat rewrite Zlength_map in H34.
+           assumption.
+      ---- rewrite Forall_forall.
+           rewrite Forall_forall in H56.
+           intros. specialize (H56 _ H57).
+           destruct H56.
+           split.
+           admit. (* if I don't need it, may kill *)
+           destruct (Z.eq_dec (snd x) i).
+           ++++ exfalso.
+                rewrite get_popped_meaning in H58.
+                apply H35.
+                rewrite <- e. assumption.
+                apply get_popped_range in H56.
+                omega.
+           ++++ apply get_popped_irrel_upd;
+                  try omega; trivial.
+                destruct p2dst. simpl in H57.
+                destruct H53 as [? [? [? ?]]].
+                pose proof (valid_path_evalid _ _ _ _
+                                              H53 H57).
+                destruct H2 as [? [? [? ?]]].
+                unfold edge_valid in H63.
+                rewrite H63 in H62.
+                destruct H62.
+                unfold SIZE in H66.
+                rewrite <- H24 in H66; trivial.
+  *** (*assert (In mom
+                 (get_popped
+                    (upd_Znth i priq_contents'
+                              (Znth u dist_contents' + Znth i (Znth u (graph_to_mat g)))))).
+      { subst mom.
+        assert (0 <= dst < Zlength priq_contents') by admit.
+        rewrite upd_Znth_diff by admit.
+        rewrite upd_Znth_diff in H51 by admit.
+        pose proof (H19 dst).   
+        destruct H53 as [_ ?].
+        destruct (H53 H49 H52 H51) as [? _].
+        apply get_popped_irrel_upd.
+        - assert (0 <= dst < Zlength prev_contents') by admit.
+          pose proof (Forall_Znth _ _ dst H55 H20).
+          simpl in H56. destruct H56.
+          1: unfold SIZE in H56; rewrite <- H24 in H56; assumption.
+          exfalso.
+          apply get_popped_range in H54.
+          admit. (* bullshit *)
+        - admit. (* bullshit *)
+        - intro. rewrite H55 in H54.
+          apply get_popped_meaning in H54.
+          apply H35. assumption.
+          admit. (* bullshit *)
+        - assumption.
+      }*) 
+    assert (In mom (get_popped priq_contents')).
+      { subst mom.
+        assert (0 <= dst < Zlength priq_contents') by admit.
+        rewrite upd_Znth_diff by admit.
+        rewrite upd_Znth_diff in H51 by admit.
+        pose proof (H19 dst).   
+        destruct H53 as [_ ?].
+        destruct (H53 H49 H52 H51) as [? _].
+        assumption.
+      }
+      split.
+    ---- apply get_popped_irrel_upd.
+         ++++ assert (0 <= dst < Zlength prev_contents') by admit.
+              subst mom.
+              rewrite upd_Znth_diff by admit.
+              pose proof (Forall_Znth _ _ dst H53 H20).
+              simpl in H54. destruct H54. 
+              1: unfold SIZE in H54; rewrite <- H24 in H54; assumption.
+              exfalso.
+              rewrite upd_Znth_diff in H52 by admit.
+              apply get_popped_range in H52.
+              admit. (* easy enough *)
+         ++++ admit. (* bullshit *)
+         ++++ intro. rewrite H53 in H52.
+              apply get_popped_meaning in H52.
+              apply H35. assumption.
+              admit. (* bullshit *)
+         ++++ assumption.
+    ---- pose proof (H19 mom). destruct H53 as [? _].
+         specialize (H53 H52).
+         destruct H53 as [p2mom [? [? [? ?]]]].
+         exists p2mom. split3.
+         ++++ unfold path_correct in *.
+              destruct H53 as [? [? [? ?]]].
+              split; [assumption|].
+              split; [assumption|].
+              split; [assumption|].
+              rewrite Forall_forall; intros.
+              rewrite Forall_forall in H59.
+              specialize (H59 _ H60).
+              rewrite upd_Znth_diff; try assumption.
+              **** destruct p2mom. simpl in H60.
+                   pose proof (valid_path_evalid _ _ _ _ H53 H60).
+                   destruct H2 as [? [? [? ?]]].
+                   unfold edge_valid in H62.
+                   rewrite H62 in H61. destruct H61.
+                   unfold SIZE in H65.
+                   rewrite <- H25 in H65.
+                   assumption.
+              **** intro.
+                   rewrite Forall_forall in H56.
+                   specialize (H56 _ H60).
+                   destruct H56.
+                   apply H35.
+                   rewrite get_popped_meaning in H62.
+                   rewrite <- H61. assumption.
+                   destruct p2mom.
+                   pose proof (valid_path_evalid _ _ _ _ H53 H60).
+                   destruct H2 as [? [? [? ?]]].
+                   unfold edge_valid in H64.
+                   rewrite H64 in H63. destruct H63.
+                   unfold SIZE in H67.
+                   rewrite <- H24 in H67.
+                   assumption.
+         ++++ unfold path_correct in *.
+              destruct H53 as [? [? [? ?]]].
+              assert (Hrem := H2).
+              destruct H2 as [? [? [? ?]]]. 
+              split3; [| | split].
+ **** apply valid_path_app;
+        rewrite <- surjective_pairing; 
+        split; [assumption|].
+      simpl; split.
+      1: rewrite H61; simpl; destruct H57; assumption.
+      unfold strong_evalid.
+      unfold edge_valid in H60.
+      unfold vertex_valid in H2.
+      rewrite H60, H61, H62, H2, H2; simpl.
+      split; split; admit. (* easy ranges *)
+ **** split; simpl.
+      1: { destruct H57.
+           destruct p2mom; simpl.
+           unfold valid_path in H53.
+           simpl in *; omega. }
+      clear H56 H59.
+      induction (snd p2mom).
+      1: simpl; rewrite H62; trivial.
+      simpl. destruct (l +:: (mom, dst)) eqn:?.
+      1: exfalso; now apply (app_not_nil l (mom,dst)).
+      apply IHl.
+ **** rewrite path_cost_app_cons.
+      rewrite elabel_Znth_graph_to_mat; simpl.
+      rewrite <- H55. admit. (* unclear *)
+      assumption.
+      unfold edge_valid in H60;
+        unfold vertex_valid in H2;
+        rewrite H60, H2; simpl; split; admit. (* easy ranges *)
+      rewrite elabel_Znth_graph_to_mat; simpl.
+      unfold DijkstraArrayGraph.inf.
+      intro.
+      clear -H1 H63. admit. (* gonna be okay *)
+      assumption.
+      unfold edge_valid in H60;
+        unfold vertex_valid in H2;
+        rewrite H60, H2; simpl; split; admit. (* easy ranges *)
+      assumption.
+ **** rewrite Forall_forall; intros. 
+      destruct (Z.eq_dec (snd x) i).
+      ----- rewrite e. rewrite upd_Znth_same.
+      simpl in H63.
+      apply in_app_or in H63. destruct H63.
+      1: admit. (* this is impossible, see above for eg *)
+      simpl in H63. destruct H63; [|omega].
+      destruct x; inversion H63; simpl.
+      simpl in e. subst. admit. (* idk... *)
+      assumption.
+      ----- rewrite upd_Znth_diff by admit.
+      rewrite Forall_forall in H59.
+      (* similar to just above.
+         what's the deal when x = mom dst? *)
+      admit.
+         ++++ intros.
+              admit.
 (* old:
   intros.
   remember (Znth u dist + Znth i (Znth u (graph_to_mat g))) as new.
