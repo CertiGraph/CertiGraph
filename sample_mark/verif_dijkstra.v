@@ -993,7 +993,7 @@ Definition dijkstra_correct g (src : VType) (prev priq dist: list VType) : Prop 
      (* In mom (get_popped priq) /\ *) (* redundant *)
      exists p2mom,
        path_correct g prev dist src mom p2mom /\
-       path_globally_optimal g src dst p2mom /\
+       path_globally_optimal g src mom p2mom /\
        Forall (fun x => In (fst x) (get_popped priq) /\
                         In (snd x) (get_popped priq))
               (snd p2mom) /\
@@ -1338,6 +1338,41 @@ Proof.
     destruct H15; simpl in H15; omega.
 Qed.
 
+Lemma path_end_in_popped:
+  forall g src mom priq prev dist p2mom,
+    sound_dijk_graph g ->
+    path_correct g prev dist src mom p2mom ->
+    Forall
+      (fun x : Z * Z =>
+         In (fst x) (get_popped priq) /\
+         In (snd x) (get_popped priq)) (snd p2mom) ->
+    In mom (get_popped priq).
+Proof.
+  intros.
+  rewrite Forall_forall in H1.
+  destruct H0 as [_ [? _]].  
+  destruct H0.
+  pose proof (pfoot_in _ _ _ H2).
+  unfold In_path in H3.
+  destruct H3.
+  - destruct p2mom. simpl in H3.
+    unfold phead in H0; simpl in H0.
+    rewrite H0 in H3.
+    admit. (* maybe add to settings that 
+                         src is always in popped *)
+  - destruct H3 as [? [? ?]].
+    specialize (H1 _ H3).
+    destruct H1.
+    destruct H as [? [? [? ?]]].
+    destruct H4.
+    + rewrite H7 in H4. 
+      unfold VType in *.
+      rewrite <- H4 in H1; trivial.
+    + rewrite H8 in H4.
+      unfold VType in *.
+      rewrite <- H4 in H5; trivial.
+Admitted.
+
 Lemma body_dijkstra: semax_body Vprog Gprog f_dijkstra dijkstra_spec.
 Proof.
   start_function. 
@@ -1484,7 +1519,7 @@ Proof.
            EX dist_contents' : list Z,
            PROP (
                In u (get_popped priq_contents');
-                                   forall dst, (* time to rethink this...*)
+               forall dst, (* time to rethink this...*)
                  0 <= dst < i ->
                  cost_was_improved_if_possible g u dst dist_contents';
                  dijkstra_correct g src prev_contents' priq_contents' dist_contents';
@@ -1543,14 +1578,35 @@ Proof.
           we must show that it is worthy. *)
        (* Solution: find the path to mom, u's prev.
           the path we need is p2mom +:: mom2u *)
-       assert (Znth u priq_contents < inf) by admit.
+       assert (Znth u priq_contents < inf). {
+         assert (Znth u priq_contents <> inf). {
+           intro.
+           rewrite <- isEmpty_in' in H12.
+           destruct H12 as [? [? ?]].
+           pose proof (fold_min _ _ H12).
+           
+
+             }
+         pose proof (Forall_Znth _ _ _ H13 H7).
+         Opaque inf.
+         simpl in H29.
+         Transparent inf.
+         rep_omega.
+       }
+                                                   
+
+
+         by admit.
        (* I think I can prove this.
           Znth u priq <> inf, since
           - u is minimally chosen
           - priq is not empty
           So then it's <> inf and <> inf + 1 and we're done.
-        *)
-       assert (u <> src) by admit.
+        *) 
+       assert (u <> src).
+       
+
+         by admit.
        (* may need to add something to settings *)
        unfold dijkstra_correct in H4.
        destruct (H4 u) as [_ ?].  
@@ -1559,9 +1615,7 @@ Proof.
        unfold VType in *.
        remember (Znth u prev_contents) as mom.
        assert (In mom (get_popped priq_contents)).
-       (* comes from H32 -- mom is in the path. 
-          make it a lemma. *)
-       admit.
+       apply (path_end_in_popped _ _ _ _ _ _ _ H2 H30 H32).
        exists (fst p2mom, snd p2mom +:: (mom, u)).
        split3; trivial.
        --- unfold path_globally_optimal; intros. 
@@ -1645,13 +1699,13 @@ Proof.
      unfold dijkstra_correct in H4.
      destruct (H4 dst) as [_ ?].
      specialize (H30 H27 H28 H29).
-     destruct H30 as [p2mom [? [? [? [? ?]]]]].
+     destruct H30 as [p2mom [? [? [? [? ?]]]]]. 
      exists p2mom. 
      remember (Znth dst prev_contents) as mom.
      unfold VType in *. rewrite <- Heqmom in *.
      split3; [| | split3]; trivial. 
-     --- assert (In mom (get_popped priq_contents))
-                by admit. (* lemma *)
+     --- assert (In mom (get_popped priq_contents)) by
+         apply (path_end_in_popped _ _ _ _ _ _ _ H2 H30 H32).
          assert (mom <> u). { 
            intro. apply H11. rewrite <- H36.
            apply get_popped_meaning;
@@ -1667,7 +1721,7 @@ Proof.
              apply get_popped_meaning; trivial.
          +++ rewrite H42 in H39, H41.
              apply get_popped_meaning; trivial.
-     --- intros.      
+     --- intros.        
          apply H34; trivial.
          rewrite Forall_forall; intros.
          rewrite Forall_forall in H37. 
@@ -1681,13 +1735,14 @@ Proof.
          (* well this makes sense --
             u is now gone from the fringe, 
             so if there was a path link on the way to 
-            dst that passed through u, then how?
+            dst that passed through u, then...?
 
             good news: the path could not have
             passed through u, since u was not in 
             the subgraph! gonna be fine...
 
-*)
+          *)
+         intro. 
          admit. admit. (* not sure... *)
 (*
 
@@ -1957,11 +2012,11 @@ Proof.
                 *)
                unfold VType in *.
                subst mom. rewrite upd_Znth_same by omega.
-               destruct (H19 u) as [? _].
+               destruct (H19 u) as [? _]. 
                specialize (H50 H17).               
                destruct H50 as [p2u [? [? ?]]].
                exists p2u. 
-               split3; [| | split3]; trivial.  
+               split3; [| | split3]; trivial.    
  ---- unfold path_correct in *.
       destruct H50 as [? [? [? [? ?]]]].
       split3; [| | split3]; trivial.
@@ -1978,8 +2033,6 @@ Proof.
            intro. apply H35.
            rewrite H60 in H58, H59.
            apply get_popped_meaning; trivial.
- ---- unfold path_globally_optimal. intros.
-      admit. (* very strange... *)
  ---- unfold VType in *.
       rewrite Forall_forall; intros.
       rewrite Forall_forall in H52. specialize (H52 _ H53).
@@ -2072,9 +2125,9 @@ Proof.
            destruct (H19 dst) as [_ ?].
            specialize (H50 H11 H48 H49). unfold VType in *.
            destruct H50 as [p2mom [? [? [? [? ?]]]]].
-           rewrite <- Heqmom in *.
-           assert (In mom (get_popped priq_contents')).
-           { admit. (* lemma *) }
+           rewrite <- Heqmom in *. (*here*)
+           assert (In mom (get_popped priq_contents')) by
+             apply (path_end_in_popped _ _ _ _ _ _ _ H2 H50 H52). 
            exists p2mom; split3; [| | split3]; trivial.   
  ---- unfold path_correct in *.
       destruct H50 as [? [? [? [? ?]]]].
@@ -2134,7 +2187,12 @@ Proof.
                 ----- simpl in H60. destruct H60; [|omega].
                 rewrite (surjective_pairing x) in *.
                 inversion H60. simpl in H61. omega.
- ---- intros. admit.
+ ---- intros.
+      (* path cost of (p2mom + mom2me) <=
+              cost of (p2mom' + mom'2me)
+       *)
+      admit.
+      
       (* show that they're a pair. *)
       (* then see how much of the below can be used *)
       (*
