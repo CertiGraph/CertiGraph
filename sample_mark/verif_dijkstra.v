@@ -1744,7 +1744,7 @@ Proof.
           destruct priq_contents. rewrite Zlength_nil in H8.
           inversion H8. simpl. left; trivial. }
         rewrite Znth_0_hd, <- H11 by omega.
-        do 2 rewrite upd_Znth_map.
+        do 2 rewrite upd_Znth_map. 
         remember (upd_Znth u priq_contents (inf+1)) as priq_contents_popped.
         forward_for_simple_bound
           SIZE
@@ -1776,7 +1776,7 @@ Proof.
            Exists priq_contents_popped.
            Exists dist_contents.
            repeat rewrite <- upd_Znth_map.
-           entailer!. (* here *)
+           entailer!. 
            remember (find priq_contents (fold_right Z.min (hd 0 priq_contents) priq_contents) 0) as u. 
            split. 
            1: { apply get_popped_meaning.
@@ -1930,7 +1930,16 @@ Proof.
              apply get_popped_irrel_upd in H36; trivial.
              clear H41. 
              destruct H37 as [? [? [? [? ?]]]].
+             intro. 
+             
+
+             
              admit. (* not sure... *)
+             (* the point is that no-one logs u 
+                as their prev yet! *)
+             
+
+             
          +++  rewrite Forall_forall; intros.
               rewrite Forall_forall in H39. 
               destruct (H39 _ H40).
@@ -2102,6 +2111,8 @@ Proof.
       split; trivial.
       apply get_popped_range in H35. rewrite upd_Znth_Zlength in H35; trivial.
       2: apply get_popped_range in H34; rewrite upd_Znth_Zlength in H34; trivial.
+
+      
       intro. 
       admit. admit. (* not sure. similar to earlier.
                        how to show that it could not 
@@ -2208,7 +2219,7 @@ Proof.
      ---  (* Important Spot #2: 
             We just "saw" a better way to get to i: via u.
             The three arrays have all changed in response.
-          *)
+          *) 
        remember (find priq_contents (fold_right Z.min (hd 0 priq_contents) priq_contents) 0) as u.
        intro.
        (* plan: 
@@ -2550,28 +2561,54 @@ Proof.
                 rewrite (surjective_pairing x) in *.
                 inversion H60. simpl in H61. omega.
  ---- intros.
-      (* path cost of (p2mom + mom2me) <=
-              cost of (p2mom' + mom'2me)
-       *)
-      admit.      
-      (* show that they're a pair. *)
-      (* then see how much of the below can be used *)
-      (*
-      rewrite elabel_Znth_graph_to_mat; simpl.
-      rewrite <- H55. mit. (* unclear *)
-      assumption.
-      unfold edge_valid in H60;
-        unfold vertex_valid in H2;
-        rewrite H60, H2; simpl; split; mit. (* easy ranges *)
-      rewrite elabel_Znth_graph_to_mat; simpl.
-      unfold DijkstraArrayGraph.inf.
-      intro.
-      clear -H1 H63. mit. (* gonna be okay *)
-      assumption.
-      unfold edge_valid in H60;
-        unfold vertex_valid in H2;
-        rewrite H60, H2; simpl; split; mit. (* easy ranges *)
-      assumption. *)
+      apply H55; trivial.
+      ++++ apply get_popped_irrel_upd in H56; trivial; try omega.
+           apply get_popped_range in H56; rewrite upd_Znth_Zlength in H56; trivial; try omega.
+           intro. apply H35.
+           rewrite H61 in H56.
+           rewrite get_popped_meaning in H56.
+           rewrite upd_Znth_same in H56; omega.
+           repeat rewrite Zlength_map in H34.
+           rewrite upd_Znth_Zlength; omega.
+      ++++ destruct H57 as [? [? [? [? ?]]]].
+           split3; [| | split3]; trivial.
+           **** rewrite <- H62. rewrite upd_Znth_diff; trivial; try omega.
+                apply get_popped_range in H56; rewrite upd_Znth_Zlength in H56; omega.
+                intro. rewrite H64 in *.
+                rewrite get_popped_meaning, upd_Znth_same in H56; trivial; try omega.
+                rewrite upd_Znth_Zlength; omega.
+           **** rewrite Forall_forall; intros.
+                rewrite Forall_forall in H63, H59;
+                  specialize (H63 _ H64);
+                  specialize (H59 _ H64); destruct H59;
+                    rewrite <- H63.
+                unfold VType in *.
+                rewrite upd_Znth_diff; trivial; try omega.
+                replace (Zlength prev_contents') with (Zlength priq_contents') by omega.
+                apply get_popped_range in H65; rewrite upd_Znth_Zlength in H65; trivial; try omega.
+                intro.
+                rewrite H66 in H65.
+                apply get_popped_meaning in H65.
+                rewrite upd_Znth_same in H65. omega.
+                omega.
+                rewrite upd_Znth_Zlength; omega.
+      ++++ rewrite Forall_forall; intros.
+           rewrite Forall_forall in H59;
+             specialize (H59 _ H60); destruct H59.
+           pose proof (get_popped_range _ _ H59).
+           pose proof (get_popped_range _ _ H61).
+           rewrite upd_Znth_Zlength in H62, H63 by omega.
+           apply get_popped_irrel_upd in H59; trivial; try omega.
+           apply get_popped_irrel_upd in H61; trivial; try omega.
+           split; trivial.
+           intro. rewrite H65 in H61.
+           apply get_popped_meaning in H61.
+           rewrite upd_Znth_same in H61. omega.
+           omega. rewrite upd_Znth_Zlength; omega.
+           intro. rewrite H65 in H59.
+           apply get_popped_meaning in H59.
+           rewrite upd_Znth_same in H59. omega.
+           omega. rewrite upd_Znth_Zlength; omega.
          *** rewrite upd_Znth_Zlength in H11. 
            destruct (H19 dst) as [_ [_ ?]]. 
              apply H52; trivial; try omega.
