@@ -1347,9 +1347,6 @@ Proof.
     destruct H15; simpl in H15; omega.
 Qed.
 
-(* Pretty sure I can prove this without using 
-   In src (get_popped priq)
- *)
 Lemma path_end_in_popped:
   forall g src mom priq prev dist p2mom,
     sound_dijk_graph g ->
@@ -1405,8 +1402,6 @@ Proof. Abort.
   destruct H7.
   - destruct p2mom. simpl in H7. subst v.
     
-
-    
     unfold phead in H1; simpl in H1.
     rewrite H1 in H4. rewrite H4.
     trivial. (* here *)
@@ -1423,34 +1418,59 @@ Proof. Abort.
       rewrite <- H5 in H6; trivial.
 Qed. *)
 
-Lemma path_cost_pos_gen:
+Lemma path_cost_pos_gen: 
   forall g links starter,
+    sound_dijk_graph g ->
+    valid_path' g links ->
     inrange_graph (graph_to_mat g) ->
     0 <= starter ->
+    starter <> inf ->
     0 <= fold_left careful_add (map (elabel g) links) starter.
 Proof.
   intros. generalize dependent starter.
   induction links.
   - intros. simpl; trivial.
-  - intros. simpl. apply IHlinks.
-    rewrite elabel_Znth_graph_to_mat.
-    rewrite careful_add_clean.
-    unfold inrange_graph in H.
-    specialize (H (fst a) (snd a)).
-    (* okie, we're gonna be fine after adding those on *)  
+  - intros.
+    assert (evalid g a). {
+      destruct H as [? [? [? ?]]].
+      simpl in H0. destruct links.
+      - unfold strong_evalid in H0; destruct H0; trivial.
+      - destruct H0; unfold strong_evalid in H0; destruct H0; trivial.
+    }
+    assert (H5 := H4).
+    assert (H6 := H).
+    destruct H as [? [? _]].
+    unfold vertex_valid in H; unfold edge_valid in H7;
+      rewrite H7, H in H4; destruct H4.
+    simpl. specialize (H1 _ _ H8 H4).
+    rewrite elabel_Znth_graph_to_mat; trivial.
+    rewrite careful_add_clean; trivial.
+    apply IHlinks.
+    + simpl in H0.
+      destruct links. simpl. trivial.
+      destruct H0 as [_ [_ ?]]. trivial.
+    + omega.
+    + admit.
+    + intro. rewrite H9 in H1. compute in H1.
+      destruct H1. apply H10. reflexivity. 
 Admitted.
-
 
 Lemma path_cost_pos:
   forall g p,
+    sound_dijk_graph g ->
+    valid_path g p ->
     inrange_graph (graph_to_mat g) ->
-    (* valid_path g p -> *)
+    inrange_graph (graph_to_mat g) ->
     0 <= path_cost g p.
 Proof.
   intros.
   destruct p as [src links].
-  unfold path_cost. simpl.
-  apply path_cost_pos_gen. trivial. reflexivity.
+  destruct links.
+  - unfold path_cost; reflexivity.
+  - unfold valid_path in H0. destruct H0.
+    unfold path_cost. 
+    apply path_cost_pos_gen; trivial. reflexivity.
+    compute. omega.
 Qed.
 
 Lemma body_dijkstra: semax_body Vprog Gprog f_dijkstra dijkstra_spec.
@@ -1575,8 +1595,10 @@ Proof.
               ** rewrite Forall_forall; intros.
                  simpl in H18. inversion H18.
            ++ unfold path_globally_optimal; intros.
-              unfold path_cost at 1; simpl.
+              unfold path_cost at 1; simpl. 
+              rewrite upd_Znth_same in H19.
               apply path_cost_pos; trivial.
+              rewrite upd_Znth_Zlength in H16; trivial.
            ++ rewrite Forall_forall; intros. inversion H18.
            ++ split3; [| | split3]; try repeat rewrite upd_Znth_same; try rewrite Zlength_list_repeat; try omega.
               ** simpl. destruct H2 as [? [? [? ?]]].
@@ -1622,10 +1644,20 @@ Proof.
               2: { destruct H2 as [? [? [? ?]]].
                    unfold edge_valid in H21.
                    unfold vertex_valid in H2.
-                   rewrite H21, H2; simpl; omega. }
-              simpl. rewrite H3 by omega.
-              unfold careful_add; simpl.
+                   rewrite H21, H2; simpl; omega. } 
+              simpl. rewrite H3 by omega. 
+              unfold careful_add; simpl.  
               apply path_cost_pos; trivial.
+              destruct H18 as [? [? [? [? ?]]]].
+              apply valid_path_app_cons; trivial;
+                try rewrite <- surjective_pairing; trivial.
+              destruct H21; trivial.
+              destruct H2 as [? [? [? ?]]].
+              unfold vertex_valid in H2.
+              rewrite <- H2.
+              destruct H21.
+              pose proof (pfoot_in _ _ _ H28).
+              apply (valid_path_valid _ _ _ H18 H29).
         -- exfalso.
            rewrite upd_Znth_Zlength, Zlength_list_repeat in H16; try omega.
            rewrite upd_Znth_diff, Znth_list_repeat_inrange in H17; try omega.
