@@ -1002,6 +1002,8 @@ Definition dijkstra_correct g (src : VType) (prev priq dist: list VType) : Prop 
               (snd p2mom) /\
        let p2dst := (fst p2mom, snd p2mom +:: (mom, dst)) in 
        path_correct g prev dist src dst p2dst /\
+       (* wait a second -- shouldn't these
+          be /\s?? *)
        forall mom' p2mom',
          In mom' (get_popped priq) -> (* red, that's fine *)
          path_correct g prev dist src mom' p2mom' ->
