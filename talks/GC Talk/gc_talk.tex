@@ -75,7 +75,7 @@
 \title[Verified GC for Gallina]{A Verified Garbage Collector for Gallina}
 \author[Wang, Mohan, Cao, Hobor]{\hspace{-0.5em}Shengyi Wang$^\dagger$, 
 \underline{Anshuman Mohan}$^\dagger$, Qinxiang Cao$^\ddagger$, Aquinas Hobor$^\dagger$}
-\institute[NUS]{$\includegraphics[height=0.12\textwidth]{NUS_logo_full-horizontal.jpg}
+\institute[]{$\includegraphics[height=0.12\textwidth]{NUS_logo_full-horizontal.jpg}
   ~\raisebox{2em}{$(\dagger)$}$
   $\qquad \qquad \qquad$ $\includegraphics[height=0.12\textwidth]{sjtubannerblue.png}~
   ~\raisebox{2em}{$(\ddagger)$}$ \hspace*{-1.25em}}
@@ -93,7 +93,7 @@ Verify \alert{graph-manipulating} programs
 \\ \hspace{1em}written in \alert{executable C}
 \\ \hspace{2em}with \alert{machine-checked} correctness proofs
 \bigskip
-\uncover<2->{\flushright{Ubiquitous in critical areas}}
+\uncover<2->{\flushright{Hard, but ubiquitous in critical areas}}
 \end{frame}
 
 \begin{frame}{Broad Solution}
@@ -273,7 +273,6 @@ Gallina assumes \alert{infinite} memory
 \\\hspace{1em}\uncover<15->{determine \texttt{v}'s gen}
 \\\hspace{1em}\uncover<16->{determine gen size}
 \\\hspace{1em}\uncover<17->{\color{OliveGreen}what if \texttt{malloc} fails?}
-\\\hspace{1em}\uncover<18->{\color{OliveGreen}mutator's max \texttt{alloc}?}
 
 
 \end{column}%
@@ -393,7 +392,7 @@ Gallina assumes \alert{infinite} memory
    (gen 1.six split west);
 
 \draw[->] (roots.three north)..controls +(0.5, 0.5)..
-    (gen 1.eleven split east);
+    (gen 1.ten split east);
 \draw[->] (roots.four north)..controls ++(-0.25, 0.5)..
     (gen 2.thirteen split west);
 
@@ -700,15 +699,16 @@ A LabeledGraph is a quadruple (PreGraph, \texttt{VL}, \texttt{EL}, \texttt{GL})
 \end{Verbatim}
 \end{frame}
 
-\begin{frame}[fragile]{\texttt{Forward}: a Deep Dive}
+\begin{frame}[fragile]{\texttt{forward}: a Deep Dive}
 
-\texttt{forward} is \alert{robust} 
-\\\uncover<2->{\hspace{7em} pointer?} 
-\uncover<3->{\hspace{1em} in \texttt{from} space?}
-\uncover<4->{\hspace{1em} already forwarded?}
-\\\uncover<5->{\hspace{3em}and \alert{versatile}}
-\\\uncover<6->{\hspace{7em}called on root set}
-\uncover<7->{\hspace{1em}called on heap}
+\texttt{forward} is everywhere! 
+\\\uncover<2->{\texttt{forward} is \alert{robust}}
+\\\uncover<3->{\hspace{7em} pointer?} 
+\uncover<4->{\hspace{1em} in \texttt{from} space?}
+\uncover<5->{\hspace{1em} already forwarded?}
+\\\uncover<6->{\hspace{3em}and \alert{versatile}}
+\\\uncover<7->{\hspace{7em}called on root set}
+\uncover<8->{\hspace{1em}called on heap}
 
 \bigskip
 
@@ -729,10 +729,9 @@ void forward (value *s, *l, **n, *p) {
 \newcommand{\tx}[1]{\text{#1}}
 
 
-\begin{frame}[fragile]{\texttt{Forward}: a Deep Dive}
+\begin{frame}[fragile]{\texttt{forward}: a Deep Dive}
 $\braces{\forall \ga, \m{from}, \m{to}, \m{v}, \m{n}.~\p{gc{\_}graph}(\ga) \wedge \m{compat}(\ga, \m{from}, \m{to}) \wedge \null \\ \tx{s} = \m{start}(\ga, \m{from}) \wedge \tx{l} = \tx{s} + \m{gensz}(\ga, \m{from}) \wedge \null \\  \tx{n} = \m{nxtaddr}(\m{to}) \wedge \tx{p} = \m{vaddr}(\ga, \m{v}) + \m{n}} \defeq \phi_1$
 
-\pause
 \begin{Verbatim}
 void forward (value *s, *l, **n, *p) { 
  /* elided */
@@ -746,7 +745,7 @@ $\braces{\phi_{1} \wedge \exists \ga'.~\p{gc{\_}graph}(\ga') \wedge \ga' = \m{up
 \end{Verbatim}
 \end{frame}
 
-\begin{frame}[fragile]{\texttt{Forward}: a Deep Dive}
+\begin{frame}[fragile]{\texttt{forward}: a Deep Dive}
 \begin{Verbatim}
  else {
   int i; int sz; value *new; sz = size(hd); 
@@ -786,19 +785,19 @@ Inductive fwd_relation from to :
 | fr_e_to_fwded : forall e g,
   vgen (dst g e) = from ->
   raw_mark (vlabel g (dst g e)) = true ->
-  let new_g := labeledgraph_gen_dst g e
+  let new_g := lgraph_gen_dst g e
     (copied_vertex (vlabel g (dst g e))) in
   fwd_relation from to (inr e) g new_g
 \end{Verbatim}
 \end{frame}
 
-\begin{frame}[fragile]{\texttt{forward\_relation}}
+\begin{frame}[fragile]{\texttt{fwd\_relation}}
 \begin{Verbatim}
 | fr_e_to_not_fwded_Sn : forall e g g', 
   vgen (dst g e) = from ->
   raw_mark (vlabel g (dst g e)) = false -> 
   let new_g :=
-    labeledgraph_gen_dst (lgraph_copy1v g (dst g e) to)
+    lgraph_gen_dst (lgraph_copy1v g (dst g e) to)
       e (copy1v_new_v g to) in 
   fwd_loop from to
     (make_fields new_g (copy1v_new_v g to)) new_g g' ->
@@ -819,7 +818,7 @@ Similar to \texttt{forward\_relation}, we have
 \flushright \pause A composition of these gives us our \alert{isomorphism}
 \end{frame}
 
-\begin{frame}[fragile]{Isomorphism}
+\begin{frame}[fragile]{Moving Towards Isomorphism}
 But the journey is far from easy! 
 
 \smallskip
@@ -831,37 +830,44 @@ A brief look at \texttt{semi\_iso}:
 \begin{center}
 \begin{tikzpicture}[heap/.style={rectangle split, rectangle split parts=#1, draw,
         minimum width=20pt}, node distance=1cm, ->/.style={-Stealth, thick}]
-\node [heap=5, rectangle split part fill={white, mypink, myred, mypink, myred}]
+\node<1-> [heap=5, rectangle split part fill={white, mypink, myred, mypink, myred}]
     (gen 0) {\nodepart{three}\ws{b}
             \nodepart{five}\ws{a}};
-\node [heap=10, right = of gen 0.south east, anchor=south west,
+\node<1-> [heap=10, right = of gen 0.south east, anchor=south west,
       rectangle split part fill={white}]
         (gen 1) {};
-\draw [->] (gen 0.two west)..controls ++(-0.5, -0.5).. (gen 0.four split west);
+\draw<1-> [->] (gen 0.two west)..controls ++(-0.5, -0.5).. (gen 0.four split west);
 
 \tikzset{shift={(4,0)}}
 
-\node {\Huge $\triangleright$};
+\node<3-> {\Huge $\triangleright$};
+\node<3-> at (0, 0.5) {\Large \textbf{?}};
 
 \tikzset{shift={(2,0)}}
 
-\node [heap=5, rectangle split part fill={white, mypink, myred, mypink, OliveGreen}]
+\node<1> [heap=5, white, rectangle split part fill={white}]
+    (gen 0) {};
+\node<1> [heap=10, white, right = of gen 0.south east, anchor=south west,
+      rectangle split part fill={white}]
+        (gen 1) {};
+
+\node<2-> [heap=5, rectangle split part fill={white, mypink, myred, mypink, OliveGreen}]
     (gen 0) {\nodepart{three}\ws{b}
             \nodepart{five}\ws{a}};
-\node [heap=10, right = of gen 0.south east, anchor=south west,
+\node<2-> [heap=10, right = of gen 0.south east, anchor=south west,
       rectangle split part fill={white, white, white, white, white, white, white, white, mypink, myred}]
         (gen 1) {\nodepart{ten}\ws{a'}};
-\draw [->] (gen 0.two west)..controls ++(-0.5, -0.5).. (gen 0.four split west);
-\draw [->] (gen 0.four east) -- (gen 1.nine split west);
+\draw<2-> [->] (gen 0.two west)..controls ++(-0.5, -0.5).. (gen 0.four split west);
+\draw<2-> [->] (gen 0.four east) -- (gen 1.nine split west);
 
 
 \end{tikzpicture}
 \end{center}
 \end{frame}
 
-\begin{frame}[fragile]{Isomorphism}
+\begin{frame}[fragile]{Moving Towards Isomorphism}
 
-The general iterative pattern:
+The general iterative strategy:
 
 \bigskip
 
@@ -873,13 +879,15 @@ The general iterative pattern:
 \node at (6.75, 0.25) {$\gamma \triangleright \gamma_i \hspace{2.5em} \gamma_i \leadsto \gamma_{i+1}$};
 \node at (6.75, -0.25) {$\gamma \triangleright \gamma_{i+1}$};
 \draw [thick, myred] (5,0) -- (8.5,0);}
-\uncover<3>{\node at (3.25,-2) {$\gamma_{\alpha} \triangleright \gamma_{\omega}$};}
+\uncover<3>{
+\draw [thick, myred] (0,-1) -- (8.6,-1);
+\node at (4.3,-1.25) {$\gamma_{\alpha} \triangleright \gamma_{\omega}$};}
 
 \end{tikzpicture}
 \end{center}
 \end{frame}
 
-\begin{frame}[fragile]{Isomorphism}
+\begin{frame}[fragile]{Moving Towards Isomorphism}
 
 A specific example:
 \begin{Verbatim}
@@ -896,7 +904,7 @@ Lemma fwd_rel_semi_iso:
 \end{Verbatim}
 \end{frame}
 
-\begin{frame}[fragile]{Isomorphism}
+\begin{frame}[fragile]{Moving Towards Isomorphism}
 And eventually, 
 \begin{Verbatim}
 Theorem garbage_collect_iso: forall roots1 roots2 g1 g2,
@@ -907,17 +915,59 @@ Theorem garbage_collect_iso: forall roots1 roots2 g1 g2,
 
 \bigskip \pause
 
-The graphs are \alert{isomorphic} 
+The graphs are isomorphic
 \\\hspace{1em}\alert{up to the vertices reachable from roots}\\
-The space between \texttt{n} and \texttt{l} is \alert{available for \texttt{alloc}}
+\pause The space between \texttt{n} and \texttt{l} is \alert{available for \texttt{alloc}}
 
 \bigskip \pause
 
 Note that we may still not achieve full isomorphism:
-\\\hspace{1em}the \alert{graph label} changes to accommodate new vertices
-\\\hspace{2em}and may even grow to accommodate new generations
+\\\pause \hspace{1em}the \alert{graph label} may change to register new vertices
+\\\pause \hspace{2em}and may even grow to accommodate new generations
+\end{frame}
 
+\begin{frame}{Recap: Intuitive Specification}
+\emph{Primum non nocere}: first, do no harm
 
+\bigskip
+
+\begin{center}
+\begin{tikzpicture}
+\uncover<1>{
+            \draw [fill=NavyBlue, thick]
+  (0,0) -- (1,0) -- (1,1) -- (0,1) -- cycle;
+            \draw [fill=myred, thick]
+  (0.1,0.1) -- (0.4,0.1) -- (0.4,0.4) -- (0.1,0.4) -- cycle;
+            \draw [fill=myred, thick]
+  (0.6,0.4) -- (0.9,0.4) -- (0.9,0.7) -- (0.6,0.7) -- cycle;
+            \draw [fill=myred, thick]
+  (0.2,0.6) -- (0.5,0.6) -- (0.5,0.9) -- (0.2,0.9) -- cycle;
+            \draw [fill=mypink, thick ] 
+  (1.2,0) -- (2.2,0) -- (2.2,2) -- (1.2,2) -- cycle;
+            \draw [fill=mypink, thick ] 
+  (2.4,0) -- (3.4,0) -- (3.4,4) -- (2.4,4) -- cycle;}
+
+\node at (0.25,0.25){\tiny a};
+\node at (0.75,0.56){\tiny b};
+\node at (0.34,0.73){\tiny c};
+
+\tikzset{shift={(7,0)}}
+  \uncover<1>{
+            \draw [fill=mypink, thick ]
+  (0,0) -- (1,0) -- (1,1) -- (0,1) -- cycle;
+            \draw [fill=mypink, thick ] 
+  (1.2,0) -- (2.2,0) -- (2.2,2) -- (1.2,2) -- cycle;
+            \draw [fill=mypink, thick ] 
+  (2.4,0) -- (3.4,0) -- (3.4,4) -- (2.4,4) -- cycle;
+  \draw [fill=myred, thick]
+  (1.2,0) -- (2.2,0) -- (2.2,0.3) -- (1.2,0.3) -- cycle;
+  \draw[thick] (1.533,0) -- (1.533,0.3);
+  \draw[thick] (1.866,0) -- (1.866,0.3);
+  \node at (1.7,0.15){{\tiny a} \hspace{0.01em} {\tiny b} \hspace{0.01em} {\tiny c}};}
+  \end{tikzpicture}
+\end{center}
+
+\uncover<1>{\vspace{-6em}\hspace{5.8cm}\Huge $\cong$}
 \end{frame}
 
 \section{Findings}
@@ -925,7 +975,8 @@ Note that we may still not achieve full isomorphism:
 \begin{frame}[fragile]{Bugs in the source C code}
   \begin{itemize}
   \item Cheney implemented too conservatively:\\ 
-  \hspace{1em}only part of \texttt{to} space needs to be scanned
+  \hspace{1em}only part of \texttt{to} space needs to be 
+  \\\hspace{2em}scanned during \texttt{do\_scan}
   \pause 
   \\ Performance doubled
 \pause  \bigskip
@@ -935,6 +986,8 @@ int space_size =
      h->spaces[i].limit - h->spaces[i].start;
 \end{verbatim}
 \pause
+\hspace{1em} if difference > $2^{31}$
+\pause \smallskip \\
 Fixed by adjusting nursery size
   \end{itemize}
 \end{frame}
