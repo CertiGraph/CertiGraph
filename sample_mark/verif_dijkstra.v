@@ -1564,7 +1564,7 @@ Proof.
        EX dist_contents : list Z,
        PROP (
            dijkstra_correct g src prev_contents priq_contents dist_contents;
-           Znth src dist_contents = 0;
+           (* Znth src dist_contents = 0; *)
            inrange_prev prev_contents;
            inrange_dist dist_contents;
            inrange_priq priq_contents)
@@ -1594,8 +1594,7 @@ Proof.
       repeat rewrite <- upd_Znth_map; entailer!.
       assert (Zlength (list_repeat (Z.to_nat SIZE) inf) = SIZE). {
         rewrite Zlength_list_repeat; omega. }
-      split3.
-      2: rewrite upd_Znth_same; omega. 
+      split.
       2: {
         assert (inrange_prev (list_repeat (Z.to_nat SIZE) inf)). {
           unfold inrange_prev. rewrite Forall_forall.
@@ -1646,18 +1645,18 @@ Proof.
       forward_if.
       * assert (isEmpty priq_contents = Vzero). {
           destruct (isEmptyTwoCases priq_contents);
-            rewrite H13 in H12; simpl in H12;
-              now inversion H12.
+            rewrite H12 in H11; simpl in H11;
+              now inversion H11.
         }
-        clear H12. 
+        clear H11. 
         forward_call (v_pq, priq_contents). Intros u.
         assert (0 <= u < Zlength priq_contents).
-        { rewrite H12. 
+        { rewrite H11. 
           apply find_range.  
           apply min_in_list. apply incl_refl.
-          destruct priq_contents. rewrite Zlength_nil in H9.
-          inversion H9. simpl. left; trivial. }
-        rewrite Znth_0_hd, <- H12 by omega.
+          destruct priq_contents. rewrite Zlength_nil in H8.
+          inversion H8. simpl. left; trivial. }
+        rewrite Znth_0_hd, <- H11 by omega.
         do 2 rewrite upd_Znth_map. 
         remember (upd_Znth u priq_contents (inf+1)) as priq_contents_popped.
         forward_for_simple_bound
@@ -1671,7 +1670,7 @@ Proof.
                forall dst, (* time to rethink this...*)
                  0 <= dst < i ->
                  cost_was_improved_if_possible g u dst dist_contents';
-                 Znth src dist_contents' = 0;
+                 (* Znth src dist_contents' = 0; *)
                  inrange_prev prev_contents';
                  inrange_priq priq_contents';
                  inrange_dist dist_contents')
@@ -1908,9 +1907,7 @@ admit.
       admit. admit. (* not sure. similar to earlier.
                        how to show that it could not 
                        have gone through u? *)  *)
-
-(* here *)
-               
+    
         -- assert (0 <= u < Zlength (graph_to_mat g)). {
              unfold graph_to_mat.
              repeat rewrite Zlength_map.
@@ -1938,7 +1935,7 @@ admit.
              unfold list_address. simpl.
              rewrite field_address_offset.
              1: rewrite offset_offset_val; simpl; f_equal; rep_omega.
-             destruct H27 as [? [? [? [? ?]]]].
+             destruct H25 as [? [? [? [? ?]]]].
       unfold field_compatible; split3; [| | split3]; auto.
       unfold legal_nested_field; split; [auto | simpl; omega].
            }
@@ -1958,12 +1955,12 @@ admit.
            forward_if.
            ++ assert (0 <= Znth u dist_contents' <= inf). {
                 assert (0 <= u < Zlength dist_contents') by omega.
-                apply (Forall_Znth _ _ _ H31) in H23.
+                apply (Forall_Znth _ _ _ H29) in H21.
                 assumption. 
               } 
               assert (0 <= Znth i dist_contents' <= inf). {
                 assert (0 <= i < Zlength dist_contents') by omega.
-                apply (Forall_Znth _ _ _ H32) in H23.
+                apply (Forall_Znth _ _ _ H30) in H21.
                 assumption. 
               }               
               assert (0 <= Znth u dist_contents' + cost <= Int.max_signed). {
@@ -1971,7 +1968,7 @@ admit.
                 unfold inf in *. rep_omega.
                 }
               forward. forward. forward_if.
-  ** rewrite Int.signed_repr in H34
+  ** rewrite Int.signed_repr in H32
       by (unfold inf in *; rep_omega).
      assert (0 <= i < Zlength (map Vint (map Int.repr dist_contents'))) by
          (repeat rewrite Zlength_map; omega).
@@ -1982,8 +1979,8 @@ admit.
      Exists (upd_Znth i prev_contents' u).
      Exists (upd_Znth i priq_contents' (Znth u dist_contents' + cost)).
      Exists (upd_Znth i dist_contents' (Znth u dist_contents' + cost)).
-     repeat rewrite <- upd_Znth_map; entailer!.  
-     split3; [| |split].
+     repeat rewrite <- upd_Znth_map; entailer!.   
+     split3.
      --- remember (find priq_contents (fold_right Z.min (hd 0 priq_contents) priq_contents) 0) as u.
          assert (u <> i) by (intro; subst; omega).
          apply get_popped_irrel_upd; try omega; assumption.
@@ -1992,33 +1989,28 @@ admit.
          remember (find priq_contents (fold_right Z.min (hd 0 priq_contents) priq_contents) 0) as u.
          assert (0 <= dst < i \/ dst = i) by omega.
          unfold cost_was_improved_if_possible in H20.
-         destruct H49; [assert (dst <> i) by omega|]; destruct (Z.eq_dec u i).
+         destruct H47; [assert (dst <> i) by omega|]; destruct (Z.eq_dec u i). 
          +++ rewrite <- e, upd_Znth_same, upd_Znth_diff; try rep_omega.
              rewrite (H3 u) by trivial.
-             rewrite Z.add_0_r. apply H19; trivial.
+             rewrite Z.add_0_r. apply H18; trivial.
          +++ repeat rewrite upd_Znth_diff; try rep_omega.
-             apply H19; trivial.
-         +++ rewrite H49, <- e.
+             apply H18; trivial.
+         +++ rewrite H47, <- e.
              repeat rewrite upd_Znth_same.
              rewrite (H3 u) by trivial.
              omega. rep_omega.
-         +++ rewrite H49, upd_Znth_same, upd_Znth_diff; [reflexivity | rep_omega..].
-     --- rewrite upd_Znth_diff; trivial; try omega.
-         
-
-
-         admit.
-         (*
-         
-         split3; apply inrange_upd_Znth;
+         +++ rewrite H47, upd_Znth_same, upd_Znth_diff; [reflexivity | rep_omega..].
+     --- split3; apply inrange_upd_Znth;
            trivial; try omega.
 
+         (*
        (* Important Spot #2: 
             We just "saw" a better way to get to i: via u.
             The three arrays have all changed in response.
-          *) 
+        *)
+         (*
        remember (find priq_contents (fold_right Z.min (hd 0 priq_contents) priq_contents) 0) as u.
-       intro.
+       intro. *)
        (* plan: 
            if dst is i
             if dst is in subgraph -- impossible!
@@ -2468,16 +2460,17 @@ admit.
                   intro. rewrite H58 in H56.
                   rewrite get_popped_meaning in H56.
                   rewrite upd_Znth_same in H56; omega.
-                  apply get_popped_range; trivial. *)
+                  apply get_popped_range; trivial. 
      --- repeat rewrite Zlength_map in H35.
          split3; apply inrange_upd_Znth;
            trivial; try omega.
-  ** rewrite Int.signed_repr in H34.
+         *)
+  ** rewrite Int.signed_repr in H32. 
      2: { assert (0 <= i < Zlength dist_contents') by omega.
-          apply (Forall_Znth _ _ _ H35) in H23.
-          simpl in H23.
+          apply (Forall_Znth _ _ _ H33) in H21.
+          simpl in H21.
           Transparent inf.
-          unfold inf in H23.
+          unfold inf in H21.
           rep_omega. }
      forward.
      Exists prev_contents' priq_contents' dist_contents'.
@@ -2485,20 +2478,20 @@ admit.
      unfold cost_was_improved_if_possible in *. intros.
      assert (0 <= dst < i \/ dst = i) by omega.
      remember (find priq_contents (fold_right Z.min (hd 0 priq_contents) priq_contents) 0) as u.
-     destruct H48; [apply H19; trivial|].
+     destruct H46; [apply H18; trivial|].
      subst dst. omega.
            ++ (* ...prove the for loop's invariant holds *)
              forward.
              Exists prev_contents' priq_contents' dist_contents'.
              entailer!. unfold cost_was_improved_if_possible in *. intros.
              assert (0 <= dst < i \/ dst = i) by omega.
-             destruct H44; [apply H19; trivial|].
-             subst dst. exfalso. unfold inf in H43.
-             replace 8 with SIZE in H31 by (unfold SIZE; rep_omega).
-             replace 8 with SIZE in H30.
-             rewrite inf_eq2 in H30.
-             do 2 rewrite Int.signed_repr in H30. 
-             unfold inf in H30. rep_omega.
+             destruct H42; [apply H18; trivial|].
+             subst dst. exfalso. unfold inf in H41.
+             replace 8 with SIZE in H28 by (unfold SIZE; rep_omega).
+             replace 8 with SIZE in H28.
+             rewrite inf_eq2 in H28.
+             do 2 rewrite Int.signed_repr in H28. 
+             unfold inf in H28. rep_omega.
              compute; split; inversion 1.
              all: rep_omega.
         -- (* from the for loop's inv, prove the while loop's inv *)
@@ -2510,11 +2503,11 @@ admit.
       * (* after breaking, prove break's postcondition *)
         assert (isEmpty priq_contents = Vone). {
           destruct (isEmptyTwoCases priq_contents);
-            rewrite H13 in H12; simpl in H12; now inversion H12.
+            rewrite H12 in H11; simpl in H11; now inversion H11.
         }
-        clear H12.
+        clear H11.
         forward. Exists prev_contents priq_contents dist_contents.
-        entailer!. apply (isEmptyMeansInf _ H13).
+        entailer!. apply (isEmptyMeansInf _ H12).
     + (* from the break's postcon, prove the overall postcon *)
       Intros prev_contents priq_contents dist_contents.
       forward. Exists prev_contents dist_contents priq_contents. entailer!. 
