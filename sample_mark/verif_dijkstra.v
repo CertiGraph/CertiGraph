@@ -8,12 +8,10 @@ Require Import RamifyCoq.graph.graph_relation.
 Require Import RamifyCoq.graph.reachable_computable.
 Require Import RamifyCoq.floyd_ext.share.
 Require Import RamifyCoq.msl_application.ArrayGraph.
-(* Require Import RamifyCoq.msl_application.DijkstraGraph. *)
 Require Import RamifyCoq.msl_application.DijkstraArrayGraph.
 Require Import RamifyCoq.sample_mark.spatial_dijkstra_array_graph.
 Require Import Coq.omega.Omega.
 Require Import Coq.Lists.List.
-(* Definition inf := Int.max_signed - Int.max_signed/SIZE. *)
 
 Lemma inf_eq: 1879048192 = inf.   
 Proof. compute; trivial. Qed.
@@ -32,6 +30,7 @@ Definition inrange_priq priq_contents :=
 Definition inrange_dist dist_contents :=
   Forall (fun x => 0 <= x <= inf) dist_contents. 
 
+(* hmm, this can move to the soundness condition *)
 Definition inrange_graph grph_contents :=
   forall i j,
     0 <= i < Zlength grph_contents ->
@@ -1002,17 +1001,15 @@ Definition dijkstra_correct g (src : VType) (prev priq dist: list VType) : Prop 
               (snd p2mom) /\
        let p2dst := (fst p2mom, snd p2mom +:: (mom, dst)) in 
        path_correct g prev dist src dst p2dst /\
-       (* wait a second -- shouldn't these
-          be /\s?? *)
-       forall mom' p2mom',
-         In mom' (get_popped priq) -> (* red, that's fine *)
-         path_correct g prev dist src mom' p2mom' ->
-         path_globally_optimal g src mom' p2mom' ->
+       (forall mom' p2mom',
+         In mom' (get_popped priq) /\ (* red, that's fine *)
+         path_correct g prev dist src mom' p2mom' /\
+         path_globally_optimal g src mom' p2mom' /\
          Forall (fun x => In (fst x) (get_popped priq) /\
                           In (snd x) (get_popped priq))
                 (snd p2mom') ->
          path_cost g p2dst <=
-         path_cost g (fst p2mom', snd p2mom' +:: (mom', dst))) /\
+         path_cost g (fst p2mom', snd p2mom' +:: (mom', dst)))) /\
     (0 <= dst < Zlength priq ->
      Znth dst priq = inf -> (* have not been seen *)
      forall u p2u,
@@ -1652,7 +1649,7 @@ Proof.
             rewrite H13 in H12; simpl in H12;
               now inversion H12.
         }
-        clear H12.
+        clear H12. 
         forward_call (v_pq, priq_contents). Intros u.
         assert (0 <= u < Zlength priq_contents).
         { rewrite H12. 
@@ -1689,7 +1686,7 @@ Proof.
                 data_at Tsh (tarray tint SIZE) (map Vint (map Int.repr priq_contents')) v_pq;
                 data_at Tsh (tarray tint SIZE) (map Vint (map Int.repr dist_contents')) (pointer_val_val dist);
                 graph_rep sh (graph_to_mat g) (pointer_val_val arr))).
-        -- unfold SIZE; rep_omega.
+        -- unfold SIZE; rep_omega. 
         -- Exists prev_contents. 
            Exists priq_contents_popped.
            Exists dist_contents.
@@ -1718,7 +1715,7 @@ Proof.
              rewrite <- Znth_0_hd by (unfold SIZE in *; omega).
              apply min_in_list; [ apply incl_refl | apply Znth_In; unfold SIZE in *; omega].
            }
-           (* math stuff *) 
+           (* math stuff *)  
            unfold dijkstra_correct. intros. 
            destruct (Z.eq_dec dst u).
            (* ie, are you the new entrant or an old-timer? *) 
@@ -1772,26 +1769,21 @@ Proof.
        unfold VType in *.
        remember (Znth u prev_contents) as mom. 
        exists (fst p2mom, snd p2mom +:: (mom, u)). 
-       split3; trivial. 
+       split3; trivial.  
        --- unfold path_globally_optimal in *; intros.
     (* this alternate path either went through
        the subgraph to some mom' + one step, or not. *)
     (* if yes, then we can use H37 *)
     (* if no, then it loses by default because
        the cost to go to mom' > cost to u anyway! *)
-           destruct p' as [src' links2u].
-           destruct H39. simpl in H39. subst src'. 
-           
-           
 
-           
-           rewrite <- path_cost_app_cons.
-           
-           
+admit.
 
-
-
-           admit.
+(*destruct p' as [src' links2u].
+           destruct H39. simpl in H39. subst src'.
+           
+           rewrite <- path_cost_app_cons; trivial; try omega.
+ *)          
        --- simpl. apply entirely_in_subgraph_upd; trivial.
     ** exfalso. 
        rewrite upd_Znth_same in H29. omega.
@@ -1802,7 +1794,7 @@ Proof.
        ie, we're talking about an old-timer.
        This old-timer could have been in subgraph or
        in fringe, so we'll have to deal with both cases *)
-   split3; intros.  
+   split3; intros.   
    ** (* dst is in subgraph. 
          show that adding u didn't mess anything up *)
      assert (0 <= dst < Zlength priq_contents).
@@ -1829,9 +1821,10 @@ Proof.
           - but u is not in get_popped. *)
            rewrite H38 in *; 
            apply get_popped_meaning; trivial.
-   ** (* dst is in fringe. show that moving 
-         u from the fringe to the subgraph won't
-         screw anything up *)
+   **   (* dst is an old-timer from the fringe. 
+           show that moving 
+           u from the fringe to the subgraph won't
+           screw anything up *)
      (* the main point is that it's possible to reach
         dst via some subgraph-internal path + one hop.
         plan: use the same path as before this tweak. *)
@@ -1848,7 +1841,7 @@ Proof.
           apply H12. apply get_popped_meaning; trivial. }
      exists p2mom.  
      remember (Znth dst prev_contents) as mom.
-     unfold VType in *. rewrite <- Heqmom in *. 
+     unfold VType in *. rewrite <- Heqmom in *.  
      split3; [| | split3]; trivial.   
      --- assert (mom <> u). { 
            intro. apply H12. rewrite <- H37.
@@ -1863,24 +1856,24 @@ Proof.
            trivial; intro; apply H12;
              rewrite H43 in *;
              apply get_popped_meaning; trivial.
-     --- intros. apply H36; trivial.   
-         +++ pose proof (get_popped_range _ _ H37).
-             rewrite upd_Znth_Zlength in H41 by trivial.
-             apply get_popped_irrel_upd in H37; trivial.
-             clear H42. 
-             destruct H38 as [? [? [? [? ?]]]].
-             admit. (* not sure... *)
-             (* the point is that no-one logs u 
-                as their prev yet! *)
-         +++  rewrite Forall_forall; intros.
-              rewrite Forall_forall in H40. 
-              destruct (H40 _ H41).
-              pose proof (get_popped_range _ _ H42).
-              pose proof (get_popped_range _ _ H43).
-              rewrite upd_Znth_Zlength in H44, H45; trivial.
-              apply get_popped_irrel_upd in H42; trivial.
-              apply get_popped_irrel_upd in H43; trivial.
-              split; trivial.
+     --- intros.
+         destruct (Z.eq_dec mom' u).
+         +++ admit.
+         +++ apply H36.
+             destruct H37 as [? [? [? ?]]].
+             split3; [| |split]; trivial.   
+             *** pose proof (get_popped_range _ _ H37).
+                 rewrite upd_Znth_Zlength in H41 by trivial.
+                 apply get_popped_irrel_upd in H37; trivial.
+             *** rewrite Forall_forall; intros.
+                 rewrite Forall_forall in H40. 
+                 destruct (H40 _ H41).
+                 pose proof (get_popped_range _ _ H42).
+                 pose proof (get_popped_range _ _ H43).
+                 rewrite upd_Znth_Zlength in H44, H45; trivial.
+                 apply get_popped_irrel_upd in H42; trivial.
+                 apply get_popped_irrel_upd in H43; trivial.
+                 split; trivial.
          (* this makes sense --
             u is now gone from the fringe, 
             so if there was a path link on the way to 
@@ -2125,6 +2118,7 @@ Proof.
                 rewrite upd_Znth_same; trivial.
                 omega.
  ---- intros.
+      destruct H55 as [? [? [? ?]]].
       rewrite <- get_popped_irrel_upd in H55; trivial; try omega.
       2: apply get_popped_range in H55;
         rewrite upd_Znth_Zlength in H55; trivial. 
@@ -2136,9 +2130,9 @@ Proof.
       destruct H52 as [? [? [? [? ?]]]].
       destruct H56 as [? [? [? [? ?]]]]. 
       rewrite <- path_cost_app_cons; trivial; try omega.
-      rewrite <- H61.
+      rewrite <- H61. 
       apply (Z.le_trans _ (Znth i dist_contents') _).
-      1: omega.
+      1: omega. 
       destruct (Z.eq_dec (Znth i priq_contents') inf).
       ++++ destruct (H20 i) as [_ [_ ?]].  
            assert (0 <= i < Zlength priq_contents') by 
@@ -2194,18 +2188,21 @@ Proof.
            specialize (H67 H68 H69 H51). 
            destruct H67 as [? [? [? [? [? [? ?]]]]]].
            destruct H73 as [? [? [? [? ?]]]].
-           rewrite H77.
+           rewrite H77. 
            apply H74; trivial.
-           split3; [| | split3]; trivial.
-           **** rewrite <- H65. rewrite upd_Znth_diff; try omega.
-                replace (Zlength dist_contents') with (Zlength priq_contents') by omega.  
-                apply get_popped_range; trivial.
+           split3; [| | split]; trivial.
+           **** split3; [| | split3]; trivial.
+                ----- rewrite <- H65.
+                rewrite upd_Znth_diff; try omega.
+                1: replace (Zlength dist_contents') with (Zlength priq_contents') by omega;  
+                  apply get_popped_range; trivial.
                 intro.
                 apply H37. rewrite <- H79.
                 apply get_popped_meaning; trivial.
-                apply get_popped_range; trivial. 
-           **** rewrite Forall_forall; intros.
-                rewrite Forall_forall in H66. 
+                apply get_popped_range; trivial.
+                ----- rewrite Forall_forall; intros.
+                rewrite Forall_forall in H66.
+                unfold VType in *. 
                 pose proof (H66 _ H79). rewrite <- H80.
                 rewrite Forall_forall in H58.
                 destruct (H58 _ H79). 
@@ -2213,9 +2210,12 @@ Proof.
                 rewrite upd_Znth_Zlength in H83; trivial.
                 unfold VType in *.
                 rewrite upd_Znth_diff; trivial; try omega.
-                intro. rewrite H84 in *. rewrite get_popped_meaning in H82.
+                intro.
+                rewrite H84 in *.
+                rewrite get_popped_meaning in H82.
                 rewrite upd_Znth_same in H82.
-                omega. trivial. rewrite upd_Znth_Zlength.
+                omega. omega.
+                rewrite upd_Znth_Zlength.
                 assumption.
                 assumption.
            **** rewrite Forall_forall; intros.
@@ -2356,8 +2356,10 @@ Proof.
                 ----- simpl in H62. destruct H62; [|omega].
                 rewrite (surjective_pairing x) in *.
                 inversion H62. simpl in H63. omega.
- ---- intros.
-      apply H57; trivial.
+ ---- intros. 
+      apply H57.
+      destruct H58 as [? [? [? ?]]].
+      split3; [| |split]; trivial.
       ++++ apply get_popped_irrel_upd in H58; trivial; try omega.
            apply get_popped_range in H58; rewrite upd_Znth_Zlength in H58; trivial; try omega.
            intro. apply H37.
