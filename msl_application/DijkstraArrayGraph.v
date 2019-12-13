@@ -25,11 +25,6 @@ Require Import RamifyCoq.msl_application.ArrayGraph.
 (* Require Import RamifyCoq.msl_application.DijkstraGraph. *)
 (* TODO: Narrow the above to be minimal *)
  
-  (* Context {V E: Type}. *)
-  (* Context {VE: EqDec V eq}. *)
-  (* Context {EE: EqDec E eq}. *)
-  (* Context {DV DE DG: Type}. *)
-
 Coercion pg_lg: LabeledGraph >-> PreGraph.
 Coercion lg_gg: GeneralGraph >-> LabeledGraph. 
 
@@ -43,14 +38,7 @@ Instance Z_EqDec : EqDec Z eq. Proof. hnf. intros. apply Z.eq_dec. Defined.
 Definition is_null_Z: DecidablePred Z := existT (fun P : Z -> Prop => forall a : Z, {P a} + {~ P a}) (fun x : Z => x < 0) (fun a : Z => Z_lt_dec a 0).
 
 
-(* old
- Concretizing the DijkstraGraph with array-specific types.
- |  V  |  E  |    DV   |    DE    |  DG  | soundness |
- |-----|-----|---------|----------|------|-----------| 
- |  Z  |  Z  | list DE | option Z | unit |  Finite   |  
- *)
-
-(* new
+(*
  Concretizing the DijkstraGraph with array-specific types.
  |  V  |    E    |    DV   |  DE |  DG  | soundness |
  |-----|---------|---------|-----|------|-----------| 
@@ -59,7 +47,7 @@ Definition is_null_Z: DecidablePred Z := existT (fun P : Z -> Prop => forall a :
 
 Definition VType : Type := Z.
 Definition EType : Type := VType * Z.
-Definition LE : Type := Z. (*positive Z. add to soundness*)
+Definition LE : Type := Z. (*positive Z. add this to soundness*)
 Definition LV: Type := list LE.
 Definition LG: Type := unit.
 (*Record LG: Type := (* may be unnecessary? *)
@@ -110,6 +98,7 @@ Class Fin (g: LabeledGraph VType EType LV LE LG) :=
 
 Definition LGraph := LabeledGraph VType EType LV LE LG.
 Definition Graph := (GeneralGraph VType EType LV LE LG (fun g => Fin g)).
+(* TODO: put bound on i, j in here *)
 
 Definition vertex_valid (g: LGraph): Prop :=
   forall v, vvalid g v <-> 0 <= v < SIZE.
