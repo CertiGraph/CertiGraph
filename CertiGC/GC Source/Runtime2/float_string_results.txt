@@ -1,0 +1,69 @@
+coqresearch@coqresearch-VirtualBox:~/Desktop/Runtime2$ make all
+gcc -g -O3   -c -o gc.o gc.c
+gc.c: In function ‘abort_with’:
+gc.c:105:3: warning: format not a string literal and no format arguments [-Wformat-security]
+   fprintf(stderr, s);
+   ^
+gcc -g -O3   -c -o nogc.o nogc.c
+gcc -g -O3   -c -o testmain.o testmain.c
+testmain.c: In function ‘done’:
+testmain.c:27:11: warning: format ‘%d’ expects argument of type ‘int’, but argument 2 has type ‘long int’ [-Wformat=]
+   printf ("Stack growth: %d words\n", stack - &x);
+           ^
+testmain.c: In function ‘main’:
+testmain.c:43:10: warning: format ‘%d’ expects argument of type ‘int’, but argument 2 has type ‘value {aka long int}’ [-Wformat=]
+   printf("Tree has %d nodes\n", n);
+          ^
+gcc -g -O3   -c -o gctest.o gctest.c
+gcc -g -O3 testmain.o gctest.o gc.o -o gctest
+gcc -g -O3   -c -o gctest2.o gctest2.c
+gcc -g -O3 testmain.o gctest2.o gc.o -o gctest2
+gcc -g -O3   -c -o gctest2_float.o gctest2_float.c
+gcc -g -O3 testmain.o gctest2_float.o gc.o -o gctest2_float
+gcc -g -O3   -c -o gctest2_string.o gctest2_string.c
+gcc -g -O3 testmain.o gctest2_string.o gc.o -o gctest2_string
+ocamlopt ocamltest.ml -o ocamltest
+ocamlc ocamltest.ml -o ocamltest-nonopt
+ocamlopt ocamltest_float.ml -o ocamltest_float
+ocamlc ocamltest_float.ml -o ocamltest_float-nonopt
+ocamlopt ocamltest_string.ml -o ocamltest_string
+ocamlc ocamltest_string.ml -o ocamltest_string-nonopt
+coqresearch@coqresearch-VirtualBox:~/Desktop/Runtime2$ time ./gctest2_float 1000000
+Stack growth: 8 words
+Tree has 999752 nodes		<-- some repeats
+
+real	0m2.362s
+user	0m2.325s
+sys	0m0.032s
+coqresearch@coqresearch-VirtualBox:~/Desktop/Runtime2$ time ./ocamltest_float 1000000
+Tree has 1000000 nodes
+
+real	0m2.585s
+user	0m2.559s
+sys	0m0.020s
+coqresearch@coqresearch-VirtualBox:~/Desktop/Runtime2$ time ./ocamltest_float-nonopt 1000000
+Tree has 1000000 nodes
+
+real	0m8.108s
+user	0m8.053s
+sys	0m0.040s
+coqresearch@coqresearch-VirtualBox:~/Desktop/Runtime2$ time ./gctest2_string 10000
+Stack growth: 8 words
+Tree has 10000 nodes
+
+real	0m1.362s
+user	0m1.350s
+sys	0m0.008s
+coqresearch@coqresearch-VirtualBox:~/Desktop/Runtime2$ time ./ocamltest_string 10000
+Tree has 10000 nodes
+
+real	0m2.174s
+user	0m2.154s
+sys	0m0.004s
+coqresearch@coqresearch-VirtualBox:~/Desktop/Runtime2$ time ./ocamltest_string-nonopt 10000
+Tree has 10000 nodes
+
+real	0m9.823s
+user	0m9.646s
+sys	0m0.012s
+coqresearch@coqresearch-VirtualBox:~/Desktop/Runtime2$ 
