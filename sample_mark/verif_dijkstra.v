@@ -1678,9 +1678,10 @@ Proof.
                    cost < inf ->
                    (* which is reachable from u *)
                    (Znth dst dist_contents' > Znth u dist_contents' + cost -> 
-                    Znth dst prev_contents' = u) /\
-                   (Znth dst dist_contents' <= Znth u dist_contents' + cost -> 
-                    Znth dst prev_contents' = Znth dst prev_contents);
+                    Znth dst prev_contents' = u);
+                   (* /\ *)
+                   (* (Znth dst dist_contents' <= Znth u dist_contents' + cost ->  *)
+                    (* Znth dst prev_contents' = Znth dst prev_contents); *)
                    
                    (* and we can go via u to make it cheaper *)
                    (* check.... tricky! *)
@@ -2013,29 +2014,20 @@ admit.
          remember (Znth dst (Znth u (graph_to_mat g))) as cost2dst.
          intros.  
          assert (0 <= dst < i \/ dst = i) by omega.
-           destruct H48. 
+           destruct H49. 
            +++ rewrite Heqcost2dst in H47.  
-               destruct (H18 dst H48 H47).
-               split; intro; rewrite upd_Znth_diff by omega.
-               *** apply H49.
-                   repeat rewrite upd_Znth_diff in H51 by omega. omega.
-               *** apply H50.
-                   repeat rewrite upd_Znth_diff in H51 by omega. omega.
+               pose proof (H18 dst H49 H47).
+               rewrite upd_Znth_diff by omega.
+               *** repeat rewrite upd_Znth_diff in H48 by omega. omega.
+               (* *** apply H50. *)
+                   (* repeat rewrite upd_Znth_diff in H51 by omega. omega. *)
            +++ subst dst.
                repeat rewrite upd_Znth_same by omega. 
-               rewrite upd_Znth_diff by omega.
-               split; intros; trivial.
+               trivial.
+               (* rewrite upd_Znth_diff by omega. *)
+               (* split; intros; trivial. *)
                
 
-               
-               
-
-               
-               admit.
-               omega.
-               omega.
-               admit.
-               
                
 (*             destruct (H18 dst H48 H46 H47) as [? [? ?]].
 
@@ -2546,7 +2538,8 @@ admit.
          split3; apply inrange_upd_Znth;
            trivial; try omega.
          *)
-  ** rewrite Int.signed_repr in H32. 
+  ** rewrite Int.signed_repr in H32.
+     (* this is the branch where nothing happened *)
      2: { assert (0 <= i < Zlength dist_contents') by omega.
           apply (Forall_Znth _ _ _ H33) in H21.
           simpl in H21.
@@ -2556,19 +2549,20 @@ admit.
      forward.
      Exists prev_contents' priq_contents' dist_contents'.
      entailer!.
-     unfold cost_was_improved_if_possible in *. intros.
+     intros.
      assert (0 <= dst < i \/ dst = i) by omega.
      remember (find priq_contents (fold_right Z.min (hd 0 priq_contents) priq_contents) 0) as u.
-     destruct H46; [apply H18; trivial|].
+     destruct H47; [apply H18; trivial|].
      subst dst.
-     admit.
-
+     (* would be super useful to explain, here,
+        that prev'[i] = prev[i]. *)
+     exfalso. omega.
            ++ (* ...prove the for loop's invariant holds *)
              forward.
              Exists prev_contents' priq_contents' dist_contents'.
              entailer!. unfold cost_was_improved_if_possible in *. intros.
              assert (0 <= dst < i \/ dst = i) by omega.
-             destruct H42; [apply H18; trivial|].
+             destruct H43; [apply H18; trivial|].
              subst dst. exfalso. unfold inf in H41.
              replace 8 with SIZE in H28 by (unfold SIZE; rep_omega).
              replace 8 with SIZE in H28.
