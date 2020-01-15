@@ -1677,8 +1677,13 @@ Proof.
                    let cost := Znth dst (Znth u (graph_to_mat g)) in
                    cost < inf ->
                    (* which is reachable from u *)
-                   (Znth dst dist_contents' > Znth u dist_contents' + cost -> 
-                    Znth dst prev_contents' = u);
+                   Znth dst dist_contents' > Znth u dist_contents' + cost -> 
+                   (Znth dst prev_contents' = u
+                   /\
+                   Znth dst dist_contents' = (Z.add (Znth u dist_contents') cost)
+                   /\
+                   Znth dst priq_contents' = (Z.add (Znth u dist_contents') cost))
+                   ;
                    (* /\ *)
                    (* (Znth dst dist_contents' <= Znth u dist_contents' + cost ->  *)
                     (* Znth dst prev_contents' = Znth dst prev_contents); *)
@@ -2012,27 +2017,22 @@ admit.
      --- apply get_popped_irrel_upd; try omega; assumption.
      --- intro.
          remember (Znth dst (Znth u (graph_to_mat g))) as cost2dst.
-         intros.  
+         intros.         
          assert (0 <= dst < i \/ dst = i) by omega.
-           destruct H49. 
-           +++ rewrite Heqcost2dst in H47.  
-               pose proof (H18 dst H49 H47).
-               rewrite upd_Znth_diff by omega.
-               *** repeat rewrite upd_Znth_diff in H48 by omega. omega.
-               (* *** apply H50. *)
-                   (* repeat rewrite upd_Znth_diff in H51 by omega. omega. *)
-           +++ subst dst.
-               repeat rewrite upd_Znth_same by omega. 
-               trivial.
-               (* rewrite upd_Znth_diff by omega. *)
-               (* split; intros; trivial. *)
-               
-
-               
-(*             destruct (H18 dst H48 H46 H47) as [? [? ?]].
-
+         destruct H49. 
+         +++
+           repeat rewrite upd_Znth_diff in H48 by omega.
+           rewrite Heqcost2dst in *.  
+           destruct (H18 dst H49 H47 H48) as [? [? ?]].
+           repeat rewrite upd_Znth_diff by omega.
+           split3; trivial.
+         +++ subst dst.
+             repeat rewrite upd_Znth_same by omega.
+             rewrite upd_Znth_diff by omega.
+             rewrite Heqcost2dst. omega.
              
-             split3.
+     (*   destruct (H18 dst H48 H46 H47) as [? [? ?]].
+          split3.
              *** rewrite H49.
                  rewrite <- Heqcost.
                  remember (upd_Znth dst dist_contents (Znth u dist_contents + cost)).
