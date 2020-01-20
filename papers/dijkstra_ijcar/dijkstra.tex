@@ -153,11 +153,12 @@
 We report on a machine-checked proof of correctness for 
 Dijkstra’s one-to-all shortest path algorithm. 
 Unlike previous work, we use classic textbook code written in C.
-Our C code is executable and realistic but also has 
-real-world complications. 
-We prove full functional correctness, and not just program safety.
-We show that Dijkstra’s algorithm suffers from potential overflow issues. 
-The precise bound is nontrivial: we show that the intuitive guess 
+Our C code is executable and realistic but also has real-world complications. 
+% We prove full functional correctness, and not just program safety.
+Case in point, we show that Dijkstra’s algorithm suffers from 
+overflow issues for some inputs.
+The precise bound in the relevant precondition is 
+nontrivial: we show that the intuitive guess 
 fails, and provide a workable refinement.
 
 \keywords{Dijkstra \and verification \and Coq}
@@ -169,9 +170,9 @@ fails, and provide a workable refinement.
 
 %% main text
 
-% \section{Overview}
-% \label{sec: overview}
-% \input{overview.tex}
+\section{Overview}
+\label{sec: overview}
+\input{overview.tex}
 
 
 %% If you have bibdatabase file and want bibtex to generate the
