@@ -1,3 +1,40 @@
+Lemma path_cost_pos_gen: 
+  forall g links starter,
+    sound_dijk_graph g ->
+    valid_path' g links ->
+    inrange_graph (graph_to_mat g) ->
+    0 <= starter ->
+    starter <> inf ->
+    0 <= fold_left careful_add (map (elabel g) links) starter.
+Proof.
+  intros. generalize dependent starter.
+  induction links.
+  - intros. simpl; trivial.
+  - intros.
+    assert (evalid g a). {
+      destruct H as [? [? [? ?]]].
+      simpl in H0. destruct links.
+      - unfold strong_evalid in H0; destruct H0; trivial.
+      - destruct H0; unfold strong_evalid in H0; destruct H0; trivial.
+    }
+    assert (H5 := H4).
+    assert (H6 := H).
+    destruct H as [? [? _]].
+    unfold vertex_valid in H; unfold edge_valid in H7;
+      rewrite H7, H in H4; destruct H4.
+    simpl. specialize (H1 _ _ H8 H4).
+    rewrite elabel_Znth_graph_to_mat; trivial.
+    rewrite careful_add_clean; trivial.
+    apply IHlinks.
+    + simpl in H0.
+      destruct links. simpl. trivial.
+      destruct H0 as [_ [_ ?]]. trivial.
+    + omega.
+    + admit.
+    + intro. rewrite H9 in H1. compute in H1.
+      destruct H1. apply H10. reflexivity. 
+Abort. (* this lemma is not actually used *)
+
 (*
 Lemma dijkstra_correct_priq_irrel:
   forall g src prev priq dist i new,

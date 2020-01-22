@@ -978,26 +978,21 @@ Definition inv_popped g src prev priq dist dst :=
     In dst (get_popped priq) ->
     exists path,
       path_correct g prev dist src dst path /\
+      Forall (fun x => (fst x) = src \/ In (fst x) (get_popped priq))
+             (snd path) /\
       path_globally_optimal g src dst path.
-(* and...
-   Forall (fun x => In (fst x) (get_popped priq) /\
-   In (snd x) (get_popped priq))
-   (snd path))
- *)
-(* temporarily dropping the fact that 
-   the path was entirely within popped-land *)
 
 Definition inv_unpopped g src prev priq dist dst :=
   0 <= dst < Zlength priq ->
   Znth dst priq < inf  ->
   exists path,
     path_correct g prev dist src dst path /\
-    Forall (fun x => In (fst x) (get_popped priq))
+    Forall (fun x => (fst x) = src \/ In (fst x) (get_popped priq))
            (snd path) /\
     forall p',
       valid_path g p' ->
       path_ends g p' src dst ->
-      Forall (fun x => In (fst x) (get_popped priq))
+      Forall (fun x => (fst x) = src \/ In (fst x) (get_popped priq))
              (snd p') ->
       path_cost g path <= path_cost g p'.  
 
@@ -1005,6 +1000,7 @@ Definition dijkstra_correct g (src : VType) (prev priq dist: list VType) : Prop 
   forall dst,
     inv_popped g src prev priq dist dst /\
     inv_unpopped g src prev priq dist dst.
+(* gotta add a case for unseen *)
 
 (*
     /\
@@ -1236,7 +1232,7 @@ Proof.
     rewrite H; reflexivity.
 Qed.
 
-                         Lemma path_cost_app_cons:
+Lemma path_cost_app_cons:
   forall g p2u u i,
     inrange_graph (graph_to_mat g) ->
     sound_dijk_graph g ->
@@ -1270,6 +1266,7 @@ Proof.
   - assumption.
 Qed.
 
+(*
 Lemma cant_improve_further:
   forall i u src g priq prev dist,
     sound_dijk_graph g ->
@@ -1292,7 +1289,7 @@ Proof.
   unfold path_globally_optimal in H9. 
   destruct H8 as [? [? [? [? ?]]]].
   destruct H10 as [? [? [? [? ?]]]].  
-  specialize (H9 (fst p2u, snd p2u ++ [(u,i)])).
+  specialize (H10 (fst p2u, snd p2u ++ [(u,i)])).
   apply get_popped_range in H3.
   apply get_popped_range in H4.
   unfold VType in *. rewrite H2 in H3, H4.
@@ -1306,6 +1303,7 @@ Proof.
     apply path_ends_app_cons; assumption.
     destruct H13; simpl in H13; omega.
 Qed.
+*)
 
 Lemma path_end_in_popped:
   forall g src mom priq prev dist p2mom,
@@ -1377,43 +1375,6 @@ Proof. Abort.
       unfold VType in *.
       rewrite <- H5 in H6; trivial.
 Qed. *)
-
-Lemma path_cost_pos_gen: 
-  forall g links starter,
-    sound_dijk_graph g ->
-    valid_path' g links ->
-    inrange_graph (graph_to_mat g) ->
-    0 <= starter ->
-    starter <> inf ->
-    0 <= fold_left careful_add (map (elabel g) links) starter.
-Proof.
-  intros. generalize dependent starter.
-  induction links.
-  - intros. simpl; trivial.
-  - intros.
-    assert (evalid g a). {
-      destruct H as [? [? [? ?]]].
-      simpl in H0. destruct links.
-      - unfold strong_evalid in H0; destruct H0; trivial.
-      - destruct H0; unfold strong_evalid in H0; destruct H0; trivial.
-    }
-    assert (H5 := H4).
-    assert (H6 := H).
-    destruct H as [? [? _]].
-    unfold vertex_valid in H; unfold edge_valid in H7;
-      rewrite H7, H in H4; destruct H4.
-    simpl. specialize (H1 _ _ H8 H4).
-    rewrite elabel_Znth_graph_to_mat; trivial.
-    rewrite careful_add_clean; trivial.
-    apply IHlinks.
-    + simpl in H0.
-      destruct links. simpl. trivial.
-      destruct H0 as [_ [_ ?]]. trivial.
-    + omega.
-    + admit.
-    + intro. rewrite H9 in H1. compute in H1.
-      destruct H1. apply H10. reflexivity. 
-Abort. (* this lemma is not actually used *)
 
 Lemma graph_to_mat_Zlength: forall g, Zlength (graph_to_mat g) = SIZE.
 Proof.
@@ -1629,9 +1590,7 @@ Proof.
         -- simpl snd; apply Forall_nil.
         -- intros.
            unfold path_cost at 1; simpl.
-           admit.
-           (* prove a lemma about how path cost is
-              always positive *)
+           apply path_cost_pos; trivial.
     + Intros prev_contents priq_contents dist_contents.
       assert_PROP (Zlength priq_contents = SIZE).
       { entailer!. now repeat rewrite Zlength_map in *. }
@@ -1670,28 +1629,22 @@ Proof.
               (* Shengyi's suggestion:
                   prove inv2 until i, and something 
                   weaker from i to SIZE *)
+              forall dst, inv_popped g src prev_contents' priq_contents' dist_contents' dst;
+              (* popped items are not affected by the for loop *)
               forall dst,
                 0 <= dst < i ->
-                exists path,
-                  path_correct g prev_contents' dist_contents' src dst path /\
-                  Forall (fun x => In (fst x) (get_popped priq_contents'))
-                         (snd path) /\
-                  forall p',
-                    valid_path g p' ->
-                    path_ends g p' src dst ->
-                    Forall (fun x => In (fst x) (get_popped priq_contents'))
-                           (snd p') ->
-                    path_cost g path <= path_cost g p';
+                inv_unpopped g src prev_contents' priq_contents' dist_contents' dst;
               forall dst,
                 i <= dst < SIZE ->
+                Znth dst priq_contents' < inf -> (* seen *)
                 exists path,
                   path_correct g prev_contents' dist_contents' src dst path /\
-                  Forall (fun x => (fst x) <> u /\ In (fst x) (get_popped priq_contents'))
+                  Forall (fun x => (fst x = src \/ In (fst x) (get_popped priq_contents')) /\ fst x <> u)
                          (snd path) /\
                   forall p',
                     valid_path g p' ->
                     path_ends g p' src dst ->
-                    Forall (fun x => (fst x <> u) /\ In (fst x) (get_popped priq_contents'))
+                    Forall (fun x => (fst x = src \/ In (fst x) (get_popped priq_contents')) /\ fst x <> u)
                            (snd p') ->
                     path_cost g path <= path_cost g p'; 
                In u (get_popped priq_contents'); (* kill? *)
@@ -1714,14 +1667,52 @@ Proof.
            Exists dist_contents.
            repeat rewrite <- upd_Znth_map.
            entailer!. 
-           remember (find priq_contents (fold_right Z.min (hd 0 priq_contents) priq_contents) 0) as u.   
-           split3; [| | split].
+           remember (find priq_contents (fold_right Z.min (hd 0 priq_contents) priq_contents) 0) as u.
+           split3; [| | split3].
            (* proving the for loop's invariants for
               i = 0
             *)
+           ++ (* show that u is a legitimate entrant into the 
+                 popped club *)
+             admit.
            ++ intros; omega.
-           ++ admit.
-           (* should be okay without any change. *)
+           ++ intros.
+              destruct (Z.eq_dec dst u).
+              1: subst dst; rewrite upd_Znth_same in H27; omega.
+              rewrite upd_Znth_diff in H27 by omega.
+              destruct (H4 dst) as [_ ?].
+              unfold inv_unpopped in H28.
+              rewrite H8 in H28.
+              specialize (H28 H11 H27).
+              destruct H28 as [? [? [? ?]]].
+              exists x. split3; trivial.
+              ** rewrite Forall_forall; intros.
+                 rewrite Forall_forall in H29.
+                 specialize (H29 _ H31).
+                 (* somehow gotta explain that u was 
+                    not in the picture earlier *)
+                 admit.
+              ** intros. apply H30; trivial.
+                 rewrite Forall_forall.
+                 rewrite Forall_forall in H33.
+                 intros.
+                 specialize (H33 _ H34). destruct H33.
+                 destruct H33; [left | right]; trivial.
+                 assert (0 <= fst x0 < SIZE). {
+                   destruct H2 as [? [? [? ?]]].
+                   unfold vertex_valid in H2.
+                   unfold src_edge in H37.
+                   assert (In_path g (fst x0) p'). {
+                     unfold In_path. right.
+                     exists x0. rewrite H37.
+                     split; [| left]; trivial. }
+                   pose proof (valid_path_valid _ _ _ H31 H39).
+                   rewrite H2 in H40. omega. }
+                 rewrite <- H8 in H36.
+                 rewrite get_popped_meaning in H33.
+                 rewrite get_popped_meaning by omega.
+                 rewrite upd_Znth_diff in H33; try omega; trivial.
+                 rewrite upd_Znth_Zlength by omega; trivial.
            ++ apply get_popped_meaning.
               rewrite upd_Znth_Zlength; omega.
               rewrite upd_Znth_same; omega.
@@ -1754,7 +1745,7 @@ Proof.
              unfold list_address. simpl.
              rewrite field_address_offset.
              1: rewrite offset_offset_val; simpl; f_equal; rep_omega.
-             destruct H26 as [? [? [? [? ?]]]].
+             destruct H27 as [? [? [? [? ?]]]].
       unfold field_compatible; split3; [| | split3]; auto.
       unfold legal_nested_field; split; [auto | simpl; omega].
            }
@@ -1774,12 +1765,12 @@ Proof.
            forward_if. 
            ++ assert (0 <= Znth u dist_contents' <= inf). {
                 assert (0 <= u < Zlength dist_contents') by omega.
-                apply (Forall_Znth _ _ _ H30) in H22.
+                apply (Forall_Znth _ _ _ H31) in H23.
                 assumption. 
               } 
               assert (0 <= Znth i dist_contents' <= inf). {
                 assert (0 <= i < Zlength dist_contents') by omega.
-                apply (Forall_Znth _ _ _ H31) in H22.
+                apply (Forall_Znth _ _ _ H32) in H23.
                 assumption. 
               }               
               assert (0 <= Znth u dist_contents' + cost <= Int.max_signed). {
@@ -1787,7 +1778,7 @@ Proof.
                 unfold inf in *. rep_omega.
                 }
               forward. forward. forward_if.
-  ** rewrite Int.signed_repr in H33
+  ** rewrite Int.signed_repr in H34
       by (unfold inf in *; rep_omega).
      assert (0 <= i < Zlength (map Vint (map Int.repr dist_contents'))) by
          (repeat rewrite Zlength_map; omega).
@@ -1801,31 +1792,52 @@ Proof.
      repeat rewrite <- upd_Znth_map; entailer!.
      remember (find priq_contents (fold_right Z.min (hd 0 priq_contents) priq_contents) 0) as u.
      assert (u <> i) by (intro; subst; omega).
-     split3; [| | split].
-     --- (* prove that the for loop's invariant 
-            holds if I take another step *)
-       intros.
-       destruct (Z.eq_dec dst i).
-       +++ subst dst; clear H46.
-           (* this is the key change --
-              i will now be locally optimal,
-              thanks to the new path via u. *)
-           admit.
-       +++ assert (0 <= dst < i) by omega.
-           (* we'll proceed by using the 
-              old best-known path for dst *)
-           destruct (H17 _ H48) as [? [? [? ?]]].
-           exists x.
-           (* show that the old path is still okay
-              given the new arrays *)
-           admit.
+     split3; [| | split3].
+     (* prove that the for loop's invariant 
+        holds if I take another step *)
+     --- admit.
+     --- intros.
+         destruct (Z.eq_dec dst i).
+         +++ subst dst.
+             (* this is the key change --
+                i will now be locally optimal,
+                thanks to the new path via u. *)
+             admit.
+         +++ assert (0 <= dst < i) by omega.
+             (* we'll proceed by using the 
+                old best-known path for dst *)
+             specialize (H18 _ H49).
+             unfold inv_unpopped in *.
+             intros.
+             rewrite upd_Znth_Zlength in H50.
+             rewrite upd_Znth_diff in H51 by omega.
+             destruct (H18 H50 H51) as [? [? [? ?]]].
+             exists x. split3.
+             *** destruct H52 as [? [? [? [? ?]]]].
+                 split3; [| | split3]; trivial.
+                 1: rewrite upd_Znth_diff by omega; assumption.
+                 rewrite Forall_forall; intros.
+                 rewrite Forall_forall in H58.
+                 specialize (H58 _ H59).
+                 admit.
+             *** admit.
+             *** intros. apply H54; trivial.
+                 rewrite Forall_forall; intros.
+                 rewrite Forall_forall in H57.
+                 specialize (H57 _ H58).
+                 destruct H57; [left | right]; trivial.
+                 admit.
+             *** omega.
      --- intros.
          assert (i <= dst < SIZE) by omega.
-         destruct (H18 _ H48) as [? [? [? ?]]].
-         exists x.
-           (* show that the old path is still okay
-              given the new arrays *)
-         admit.
+         destruct (Z.eq_dec dst i).
+         1: subst dst; omega.
+         rewrite upd_Znth_diff in H49 by omega.
+         destruct (H19 _ H50 H49) as [? [? [? ?]]].
+         exists x. 
+         (* show that the old path is still okay
+            given the new arrays *)
+             admit.
      --- apply get_popped_irrel_upd; try omega; assumption.
      (* ---
        intro.
@@ -1858,7 +1870,7 @@ Proof.
              rewrite upd_Znth_Zlength; omega. *)
      ---  split3; apply inrange_upd_Znth;
            trivial; try omega.
-  ** rewrite Int.signed_repr in H33
+  ** rewrite Int.signed_repr in H34
       by (unfold inf in *; rep_omega).
      (* This is the branch where I didn't
         make a change to the i'th vertex *)
@@ -1870,18 +1882,7 @@ Proof.
                 still preserves the for loop
                 invariant *)
          destruct (Z.eq_dec dst i).
-         +++ subst dst; clear H11.
-             admit.
-            (* Will need to use the second half of the 
-               for loop's invariant.       
-               Whatever path worked for i then will 
-               continue to work for i now:
-               i cannot be improved
-               by going via u *)
-         +++ apply H17; omega.
-     --- intros.
-         destruct (Z.eq_dec dst i).
-         +++ subst dst; clear H11.
+         +++ subst dst.
              admit.
             (* Will need to use the second half of the 
                for loop's invariant.       
@@ -1890,26 +1891,19 @@ Proof.
                i cannot be improved
                by going via u *)
          +++ apply H18; omega.
+     --- intros. destruct (Z.eq_dec dst i).
+         +++ subst dst. omega.
+         +++ apply H19; omega.
            ++ (* [i] was not a neighbor of [u]. 
                  prove the for loop's invariant holds *)
-             replace 8 with SIZE in H29 by omega.
-             rewrite inf_eq2 in H29.
+             replace 8 with SIZE in H30 by omega.
+             rewrite inf_eq2 in H30.
              forward.
              Exists prev_contents' priq_contents' dist_contents'.
              entailer!.
              split; intros.
              ** destruct (Z.eq_dec dst i).
-                --- subst dst. clear H11. 
-             (* Will need to use the second half of the 
-                for loop's invariant.          
-                Whatever path worked for i then will 
-                continue to work for i now:
-                i cannot be improved
-                by going via u *)
-                    admit.
-                --- apply H17; omega.
-             ** destruct (Z.eq_dec dst i).
-                --- subst dst. clear H11. 
+                --- subst dst. 
              (* Will need to use the second half of the 
                 for loop's invariant.          
                 Whatever path worked for i then will 
@@ -1918,6 +1912,15 @@ Proof.
                 by going via u *)
                     admit.
                 --- apply H18; omega.
+             ** destruct (Z.eq_dec dst i).
+                --- subst dst. omega. 
+             (* Will need to use the second half of the 
+                for loop's invariant.          
+                Whatever path worked for i then will 
+                continue to work for i now:
+                i cannot be improved
+                by going via u *)
+                --- apply H19; omega.
                 
 
              (* unfold cost_was_improved_if_possible in *.
@@ -1939,7 +1942,7 @@ Proof.
           Exists prev_contents' priq_contents' dist_contents'.
           entailer!.
           remember (find priq_contents (fold_right Z.min (hd 0 priq_contents) priq_contents) 0) as u.
-          unfold dijkstra_correct, inv_popped, inv_unpopped.
+          unfold dijkstra_correct. 
           (* and now H14 is exactly the 
              second clause? *)
           (* plan:
@@ -1947,7 +1950,8 @@ Proof.
              2. establish "inv1" for u itself  
              3. establish "inv1" for all the other previously-popped vertices
            *)
-          admit.  
+          split; trivial.
+          apply H15. admit.
       * (* after breaking, prove break's postcondition *)
         assert (isEmpty priq_contents = Vone). {
           destruct (isEmptyTwoCases priq_contents);
