@@ -1626,7 +1626,7 @@ Proof.
         forward_call (v_pq, priq_contents). Intros u.
         (* Shengyi's suggestion:
            At this point it's possible to prove
-           that dist[u] is minimal *)
+           that dist[u] is globally minimal *)
         assert (0 <= u < Zlength priq_contents).
         { rewrite H11. 
           apply find_range.  
@@ -1636,20 +1636,41 @@ Proof.
         rewrite Znth_0_hd, <- H11 by omega.
         do 2 rewrite upd_Znth_map. 
         remember (upd_Znth u priq_contents (inf+1)) as priq_contents_popped.
-        (* Shengyi's suggestion:
-           Prove some kind of dijkstra_correct
-           with the new priq array? *)
         forward_for_simple_bound
           SIZE
           (EX i : Z,
            EX prev_contents' : list Z,
            EX priq_contents' : list Z,
            EX dist_contents' : list Z,
-           PROP (
-               (* Shengyi's suggestion:
+          PROP (
+              (* Shengyi's suggestion:
                   prove inv2 until i, and something 
                   weaker from i to SIZE *)
-               In u (get_popped priq_contents');
+              forall dst,
+                0 <= dst < i ->
+                exists path,
+                  path_correct g prev_contents' dist_contents' src dst path /\
+                  Forall (fun x => In (fst x) (get_popped priq_contents'))
+                         (snd path) /\
+                  forall p',
+                    valid_path g p' ->
+                    path_ends g p' src dst ->
+                    Forall (fun x => In (fst x) (get_popped priq_contents'))
+                           (snd p') ->
+                    path_cost g path <= path_cost g p';
+              forall dst,
+                i <= dst < SIZE ->
+                exists path,
+                  path_correct g prev_contents' dist_contents' src dst path /\
+                  Forall (fun x => (fst x) <> u /\ In (fst x) (get_popped priq_contents'))
+                         (snd path) /\
+                  forall p',
+                    valid_path g p' ->
+                    path_ends g p' src dst ->
+                    Forall (fun x => (fst x <> u) /\ In (fst x) (get_popped priq_contents'))
+                           (snd p') ->
+                    path_cost g path <= path_cost g p'; 
+               In u (get_popped priq_contents'); (* kill? *)
                inrange_prev prev_contents';
                inrange_priq priq_contents';
                inrange_dist dist_contents')
@@ -1670,12 +1691,18 @@ Proof.
            repeat rewrite <- upd_Znth_map.
            entailer!. 
            remember (find priq_contents (fold_right Z.min (hd 0 priq_contents) priq_contents) 0) as u.   
-           split.  
-           1: { apply get_popped_meaning.
-                rewrite upd_Znth_Zlength; omega.
-                rewrite upd_Znth_same; omega. } 
-           apply inrange_upd_Znth; trivial;
-                   rewrite <- inf_eq; rep_omega.
+           split3; [| | split].
+           (* proving the for loop's invariants for
+              i = 0
+            *)
+           ++ intros; omega.
+           ++ admit.
+           (* should be okay without any change. *)
+           ++ apply get_popped_meaning.
+              rewrite upd_Znth_Zlength; omega.
+              rewrite upd_Znth_same; omega.
+           ++ apply inrange_upd_Znth; trivial;
+                rewrite <- inf_eq; rep_omega.
         -- assert (0 <= u < Zlength (graph_to_mat g)). {
              unfold graph_to_mat.
              repeat rewrite Zlength_map.
@@ -1703,7 +1730,7 @@ Proof.
              unfold list_address. simpl.
              rewrite field_address_offset.
              1: rewrite offset_offset_val; simpl; f_equal; rep_omega.
-             destruct H24 as [? [? [? [? ?]]]].
+             destruct H26 as [? [? [? [? ?]]]].
       unfold field_compatible; split3; [| | split3]; auto.
       unfold legal_nested_field; split; [auto | simpl; omega].
            }
@@ -1723,12 +1750,12 @@ Proof.
            forward_if. 
            ++ assert (0 <= Znth u dist_contents' <= inf). {
                 assert (0 <= u < Zlength dist_contents') by omega.
-                apply (Forall_Znth _ _ _ H28) in H20.
+                apply (Forall_Znth _ _ _ H30) in H22.
                 assumption. 
               } 
               assert (0 <= Znth i dist_contents' <= inf). {
                 assert (0 <= i < Zlength dist_contents') by omega.
-                apply (Forall_Znth _ _ _ H29) in H20.
+                apply (Forall_Znth _ _ _ H31) in H22.
                 assumption. 
               }               
               assert (0 <= Znth u dist_contents' + cost <= Int.max_signed). {
@@ -1736,7 +1763,7 @@ Proof.
                 unfold inf in *. rep_omega.
                 }
               forward. forward. forward_if.
-  ** rewrite Int.signed_repr in H31
+  ** rewrite Int.signed_repr in H33
       by (unfold inf in *; rep_omega).
      assert (0 <= i < Zlength (map Vint (map Int.repr dist_contents'))) by
          (repeat rewrite Zlength_map; omega).
@@ -1750,8 +1777,31 @@ Proof.
      repeat rewrite <- upd_Znth_map; entailer!.
      remember (find priq_contents (fold_right Z.min (hd 0 priq_contents) priq_contents) 0) as u.
      assert (u <> i) by (intro; subst; omega).
-     (* split3; [| | split].  *)
-     split.
+     split3; [| | split].
+     --- (* prove that the for loop's invariant 
+            holds if I take another step *)
+       intros.
+       destruct (Z.eq_dec dst i).
+       +++ subst dst; clear H46.
+           (* this is the key change --
+              i will now be locally optimal,
+              thanks to the new path via u. *)
+           admit.
+       +++ assert (0 <= dst < i) by omega.
+           (* we'll proceed by using the 
+              old best-known path for dst *)
+           destruct (H17 _ H48) as [? [? [? ?]]].
+           exists x.
+           (* show that the old path is still okay
+              given the new arrays *)
+           admit.
+     --- intros.
+         assert (i <= dst < SIZE) by omega.
+         destruct (H18 _ H48) as [? [? [? ?]]].
+         exists x.
+           (* show that the old path is still okay
+              given the new arrays *)
+         admit.
      --- apply get_popped_irrel_upd; try omega; assumption.
      (* ---
        intro.
@@ -1784,25 +1834,67 @@ Proof.
              rewrite upd_Znth_Zlength; omega. *)
      ---  split3; apply inrange_upd_Znth;
            trivial; try omega.
-  ** rewrite Int.signed_repr in H31
+  ** rewrite Int.signed_repr in H33
       by (unfold inf in *; rep_omega).
+     (* This is the branch where I didn't
+        make a change to the i'th vertex *)
      forward.
      Exists prev_contents' priq_contents' dist_contents'.
      entailer!.
-
-     (*
-     intros.
-     remember (find priq_contents (fold_right Z.min (hd 0 priq_contents) priq_contents) 0) as u.
-     assert (0 <= dst < i \/ dst = i) by omega.
-     destruct H48; [apply H18; trivial|].
-     subst dst. exfalso. omega.
-     (* may be super useful to explain, here,
-        that prev'[i] = prev[i]. *) *)
-     
-           ++ (* ...prove the for loop's invariant holds *)
+     split.
+     --- intros. (* show that moving one more step 
+                still preserves the for loop
+                invariant *)
+         destruct (Z.eq_dec dst i).
+         +++ subst dst; clear H11.
+             admit.
+            (* Will need to use the second half of the 
+               for loop's invariant.       
+               Whatever path worked for i then will 
+               continue to work for i now:
+               i cannot be improved
+               by going via u *)
+         +++ apply H17; omega.
+     --- intros.
+         destruct (Z.eq_dec dst i).
+         +++ subst dst; clear H11.
+             admit.
+            (* Will need to use the second half of the 
+               for loop's invariant.       
+               Whatever path worked for i then will 
+               continue to work for i now:
+               i cannot be improved
+               by going via u *)
+         +++ apply H18; omega.
+           ++ (* [i] was not a neighbor of [u]. 
+                 prove the for loop's invariant holds *)
+             replace 8 with SIZE in H29 by omega.
+             rewrite inf_eq2 in H29.
              forward.
              Exists prev_contents' priq_contents' dist_contents'.
              entailer!.
+             split; intros.
+             ** destruct (Z.eq_dec dst i).
+                --- subst dst. clear H11. 
+             (* Will need to use the second half of the 
+                for loop's invariant.          
+                Whatever path worked for i then will 
+                continue to work for i now:
+                i cannot be improved
+                by going via u *)
+                    admit.
+                --- apply H17; omega.
+             ** destruct (Z.eq_dec dst i).
+                --- subst dst. clear H11. 
+             (* Will need to use the second half of the 
+                for loop's invariant.          
+                Whatever path worked for i then will 
+                continue to work for i now:
+                i cannot be improved
+                by going via u *)
+                    admit.
+                --- apply H18; omega.
+                
 
              (* unfold cost_was_improved_if_possible in *.
              intros.
@@ -1823,21 +1915,15 @@ Proof.
           Exists prev_contents' priq_contents' dist_contents'.
           entailer!.
           remember (find priq_contents (fold_right Z.min (hd 0 priq_contents) priq_contents) 0) as u.
-          (* now... what do I know about 
-             priq vs priq',
-             dist vs dist', 
-             prev vs prev'???
+          unfold dijkstra_correct, inv_popped, inv_unpopped.
+          (* and now H14 is exactly the 
+             second clause? *)
+          (* plan:
+             1. eestablish "inv2" for u's unpopped neighbors
+             2. establish "inv1" for u itself  
+             3. establish "inv1" for all the other previously-popped vertices
            *)
-
-          (* I need to add more and more true facts about
-             the link into the for loop's invariant.
-             That way, when I come here, I will have those
-             important facts at hand. *)
-
-           
-          admit.
-  
-     
+          admit.  
       * (* after breaking, prove break's postcondition *)
         assert (isEmpty priq_contents = Vone). {
           destruct (isEmptyTwoCases priq_contents);
