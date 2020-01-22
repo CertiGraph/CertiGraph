@@ -983,7 +983,6 @@ Definition inv_popped g src prev priq dist dst :=
       path_globally_optimal g src dst path.
 
 Definition inv_unpopped g src prev priq dist dst :=
-  0 <= dst < Zlength priq ->
   Znth dst priq < inf  ->
   exists path,
     path_correct g prev dist src dst path /\
@@ -998,6 +997,7 @@ Definition inv_unpopped g src prev priq dist dst :=
 
 Definition dijkstra_correct g (src : VType) (prev priq dist: list VType) : Prop :=
   forall dst,
+    0 <= dst < SIZE ->  
     inv_popped g src prev priq dist dst /\
     inv_unpopped g src prev priq dist dst.
 (* gotta add a case for unseen *)
@@ -1568,11 +1568,10 @@ Proof.
       (* math stuff *)  
       unfold dijkstra_correct, inv_popped, inv_unpopped.
       rewrite H15. split; intros.
-      * inversion H16. 
+      * inversion H17. 
       * unfold VType in *.
         destruct (Z.eq_dec src dst).
-        2: rewrite upd_Znth_Zlength in H16 by omega;
-          rewrite upd_Znth_diff in H17; try omega;
+        2: rewrite upd_Znth_diff in H17; try omega;
             rewrite Znth_list_repeat_inrange in H17; omega.
         subst dst.
         exists (src, []).
@@ -1680,10 +1679,9 @@ Proof.
               destruct (Z.eq_dec dst u).
               1: subst dst; rewrite upd_Znth_same in H27; omega.
               rewrite upd_Znth_diff in H27 by omega.
-              destruct (H4 dst) as [_ ?].
+              destruct (H4 dst H11) as [_ ?].
               unfold inv_unpopped in H28.
-              rewrite H8 in H28.
-              specialize (H28 H11 H27).
+              specialize (H28 H27).
               destruct H28 as [? [? [? ?]]].
               exists x. split3; trivial.
               ** rewrite Forall_forall; intros.
@@ -1809,25 +1807,23 @@ Proof.
              specialize (H18 _ H49).
              unfold inv_unpopped in *.
              intros.
-             rewrite upd_Znth_Zlength in H50.
-             rewrite upd_Znth_diff in H51 by omega.
-             destruct (H18 H50 H51) as [? [? [? ?]]].
+             rewrite upd_Znth_diff in H50 by omega.
+             destruct (H18 H50) as [? [? [? ?]]].
              exists x. split3.
-             *** destruct H52 as [? [? [? [? ?]]]].
+             *** destruct H51 as [? [? [? [? ?]]]].
                  split3; [| | split3]; trivial.
                  1: rewrite upd_Znth_diff by omega; assumption.
                  rewrite Forall_forall; intros.
-                 rewrite Forall_forall in H58.
-                 specialize (H58 _ H59).
-                 admit.
-             *** admit.
-             *** intros. apply H54; trivial.
-                 rewrite Forall_forall; intros.
                  rewrite Forall_forall in H57.
                  specialize (H57 _ H58).
-                 destruct H57; [left | right]; trivial.
                  admit.
-             *** omega.
+             *** admit.
+             *** intros. apply H53; trivial.
+                 rewrite Forall_forall; intros.
+                 rewrite Forall_forall in H56.
+                 specialize (H56 _ H57).
+                 destruct H56; [left | right]; trivial.
+                 admit.
      --- intros.
          assert (i <= dst < SIZE) by omega.
          destruct (Z.eq_dec dst i).
@@ -1951,7 +1947,7 @@ Proof.
              3. establish "inv1" for all the other previously-popped vertices
            *)
           split; trivial.
-          apply H15. admit.
+          apply H15; trivial.
       * (* after breaking, prove break's postcondition *)
         assert (isEmpty priq_contents = Vone). {
           destruct (isEmptyTwoCases priq_contents);
