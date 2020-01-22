@@ -1,0 +1,34 @@
+
+The best-known variant of Dijkstra's algorithm [cite Dijk] 
+takes a finite directed graph with nonnegative costs 
+on the edges, and, for a distinguished \emph{source} vertex, 
+finds cost-minimal paths from the source to all the other vertices.
+
+The algorithm is classic and ubiquitous, appearing widely in textbooks
+and in real routing protocols. Further, the algorithm has been in 
+use for over $60$ years, suggesting, for all practical purposes, 
+that its safety and correctness have been verified by decades of application. 
+
+Recent efforts [cite Mizar, cite ACL2, cite Coq] have implemented the algorithm 
+in proof assistants and formally proved claims about its behavior.
+However, because they operate entirely within idealized formal checkers, 
+these works inadvertently gloss over certain classes of issues 
+that routinely crop up in real-world settings.
+
+In this paper we verify a~C~implementation of Dijkstra's 
+one-to-all shortest path algorithm. We implement 
+textbook~C~code [cite CLRS], import it into Coq [cite VST],
+and state and prove a correctness claim in Coq [cite VST, cite RamifyCoq].
+We expose a subtle overflow issue in the code, and address the issue
+via a nontrivial refinement in the precondition of the algorithm.
+
+The paper is organized as follows:
+\vspace{-1em}
+\begin{itemize}
+    \item[\S\ref{sec:overview}] We briefly present and explain 
+    our~C~implementation of Dijkstra's algorithm.
+    \item[\S\ref{sec:verification}] We present our specification 
+    and our most important loop invariant.
+    \item[\S\ref{sec:overflow}] We explain the critical overflow issue
+    in the code, and propose a fix by refinining the specification.
+\end{itemize}

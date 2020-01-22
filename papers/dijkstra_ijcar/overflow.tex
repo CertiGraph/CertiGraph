@@ -1,0 +1,27 @@
+
+Point out the key line in the code where overflow could occur
+
+Use this diagram:
+
+\begin{adjustbox}{scale=0.30}
+{\centering
+\begin{tikzpicture}[
+  vert/.style={circle, line width=1pt, draw, fill=red}]
+  \node[vert] (A) at (0,0) {\color{white}A};
+  \node[vert] (B) [right = 8 of A] {\color{white}B};
+  \node[vert] (C) [right = 8 of B] {\color{white}C};
+  \draw [->,line width=3pt,arrows={-Stealth}] (A) -- (B);
+  \draw [->,line width=3pt,arrows={-Stealth}] (B) -- (C);
+  \draw [->,line width=3pt,arrows={-Stealth}] (C.south) .. controls ++(0, -2) .. (B);
+  \node at (4,0.6) {3};
+  \node at (12,0.6) {3};
+  \node at (15,-1.9) {3};
+\end{tikzpicture}
+
+}
+\end{adjustbox}
+
+Briefly explain that intuition supports the straight approach
+
+Show the nontrivial refinement in the precondition
+
