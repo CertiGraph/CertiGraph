@@ -26,6 +26,7 @@
 \usepackage{scalerel}
 \usepackage{tikz}
 \usepackage{pgfplots}
+\usepackage[export]{adjustbox} % for subfigures
 
 
 \hypersetup{ % play with these to change the look of hyperlinks
@@ -37,6 +38,16 @@
 }
 
 \newcommand{\coq}{\scalebox{.6}{\textpmhg{\Ha}}}
+\newcommand{\p}[1]{\ensuremath{\mathsf{#1}}} % predicate font
+\newcommand{\m}[1]{\ensuremath{\mathit{#1}}} % math font
+\newcommand{\braces}[1]{\left\{\begin{array}{l@{}} #1 \end{array}\right\}}
+\let\ramify\lightning
+\newcommand{\sz}{\texttt{SIZE}}
+\newcommand{\ifty}{\texttt{INF}}
+\newcommand{\defeq}{\mathbin{\stackrel{\Delta}{=}}}
+\usetikzlibrary{shadows}
+\usetikzlibrary{arrows.meta, positioning, decorations.pathmorphing, fit, matrix}
+
 
 % required by LNCS
 \renewcommand\UrlFont{\color{blue}\rmfamily}
@@ -111,8 +122,9 @@
 % First names are abbreviated in the running head.
 % If there are more than two authors, 'et al.' is used.
 %
-\institute{National University of Singapore \\
-\email{\{mohan,hobor\}@comp.nus.edu.sg}}
+\institute{National University of Singapore} 
+% \\
+% \email{\{hobor\}@comp.nus.edu.sg}}
 
 
 \maketitle
@@ -161,7 +173,7 @@ The precise bound in the relevant precondition is
 nontrivial: we show that the intuitive guess 
 fails, and provide a workable refinement.
 
-\keywords{Dijkstra \and verification \and Coq}
+\keywords{Dijkstra \and verification \and coq}
 \end{abstract}
 
 %\end{frontmatter}
@@ -170,10 +182,21 @@ fails, and provide a workable refinement.
 
 %% main text
 
-\section{Overview}
-\label{sec: overview}
+\section{Introduction}
+\label{sec:intro}
+\input{intro.tex}
+
+\section{Overview of Algorithm}
+\label{sec:overview}
 \input{overview.tex}
 
+\section{Verified Dijkstra}
+\label{sec:verification}
+\input{verification.tex}
+
+\section{Overflow Strikes Again}
+\label{sec:overflow}
+\input{overflow.tex}
 
 %% If you have bibdatabase file and want bibtex to generate the
 %% bibitems, please use
