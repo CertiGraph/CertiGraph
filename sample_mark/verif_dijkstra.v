@@ -1415,24 +1415,48 @@ Proof.
       destruct H1. apply H10. reflexivity. 
 Abort. (* this lemma is not actually used *)
 
+Lemma graph_to_mat_Zlength: forall g, Zlength (graph_to_mat g) = SIZE.
+Proof.
+  intros. unfold graph_to_mat.
+  rewrite Zlength_map, nat_inc_list_Zlength, Z2Nat.id; auto. now vm_compute.
+Qed.
+
+Lemma inrange_graph_cost_pos: forall g e,
+    sound_dijk_graph g -> inrange_graph (graph_to_mat g) ->
+    evalid g e -> 0 <= elabel g e.
+Proof.
+  intros. rewrite elabel_Znth_graph_to_mat; auto. destruct H as [? [? _]].
+  red in H, H2. rewrite H2, H in H1. destruct H1. red in H0.
+  rewrite <- (graph_to_mat_Zlength g) in H1, H3. specialize (H0 _ _ H3 H1).
+  now destruct H0.
+Qed.
+
+Lemma acc_pos: forall (g: LGraph) l z,
+    (forall e : EType, In e l -> 0 <= elabel g e) -> 0 <= z ->
+    0 <= fold_left careful_add (map (elabel g) l) z.
+Proof.
+  intro. induction l; intros; simpl; auto. apply IHl.
+  - intros. apply H. now apply in_cons.
+  - unfold careful_add. destruct ((z =? inf) || (elabel g a =? inf))%bool.
+    + now vm_compute.
+    + apply Z.add_nonneg_nonneg; auto. apply H, in_eq.
+Qed.
+
 Lemma path_cost_pos:
   forall g p,
     sound_dijk_graph g ->
     valid_path g p ->
     inrange_graph (graph_to_mat g) ->
-    inrange_graph (graph_to_mat g) ->
     0 <= path_cost g p.
 Proof.
   intros.
-  destruct p as [src links].
-  destruct links.
-  - unfold path_cost; reflexivity.
-  - unfold valid_path in H0. destruct H0.
-    unfold path_cost. 
-    (* apply path_cost_pos_gen; trivial. reflexivity. *)
-    (* compute. omega.  *)
-    (* Qed. *)
-Abort.
+  destruct p as [src links]. unfold path_cost. simpl.
+  assert (forall e, In e links -> evalid g e). {
+    intros. eapply valid_path_evalid; eauto. }
+  assert (forall e, In e links -> 0 <= elabel g e). {
+    intros. apply inrange_graph_cost_pos; auto. }
+  apply acc_pos; auto. easy.
+Qed.
 
 Lemma entirely_in_subgraph_upd:
   forall u priq_contents links2mom mom,
