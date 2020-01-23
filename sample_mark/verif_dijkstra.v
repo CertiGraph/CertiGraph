@@ -1716,8 +1716,25 @@ Proof.
               destruct (Z.eq_dec dst u).
               ** subst dst.
                  (* show that u is a legit entrant into the 
-                    popped club *) 
-                 admit.
+                    popped club *)
+                 clear H28.
+                 unfold inv_unpopped in H29.
+                 assert (Znth u priq_contents < inf)
+                   by admit.
+                 specialize (H29 H28).
+                 destruct H29 as [? [? [? ?]]].
+                 exists x. unfold path_globally_optimal.
+                 split3; trivial.
+                 --- rewrite Forall_forall; intros.
+                     rewrite Forall_forall in H30.
+                     specialize (H30 _ H32).
+                     destruct H30; [left | right]; trivial.
+                     rewrite <- get_popped_irrel_upd; try omega; trivial.
+                     1: rewrite H8; destruct H29;
+                       apply (step_in_range g x); trivial.
+                     admit.
+                 --- intros. admit.
+                     (* tricky admit #1 *)
               ** rewrite <- get_popped_irrel_upd in H11 by omega.
                  (* show that all is well for the old
                     popped vertices *)
@@ -1921,7 +1938,44 @@ Proof.
              (* this is the key change --
                 i will now be locally optimal,
                 thanks to the new path via u. *)
-             admit.
+             assert (i <= i < SIZE) by omega.
+             assert (Znth i priq_contents' < inf) by admit.
+             destruct (H19 i H49 H50) as [? [? [? ?]]].
+             unfold inv_unpopped; intros.
+             exists x; split3.
+             *** destruct H51 as [? [? [? [? ?]]]].
+                 split3; [| | split3]; trivial.
+                 ---- rewrite upd_Znth_same by omega.
+                      admit.
+                      (* tricky admit #2 *)
+                 ---- rewrite Forall_forall; intros.
+                      rewrite Forall_forall in H58.
+                      specialize (H58 _ H59).
+                      unfold VType in *.
+                      rewrite upd_Znth_diff; try omega; trivial.
+                      1: rewrite H26;
+                        apply (step_in_range2 g x); trivial.
+                      admit.
+             *** rewrite Forall_forall; intros.
+                 rewrite Forall_forall in H52.
+                 specialize (H52 _ H55).
+                 destruct H52.
+                 destruct H52; [left | right]; trivial.
+                 rewrite <- get_popped_irrel_upd; try omega; trivial.
+                 1: rewrite H25; destruct H51;
+                   apply (step_in_range g x); trivial.
+                 admit.
+             *** intros.
+                 apply H53; trivial.
+                 rewrite Forall_forall; intros.
+                 rewrite Forall_forall in H57.
+                 specialize (H57 _ H58).
+                 assert (fst x0 <> u) by admit.
+                 assert (fst x0 <> i) by admit.
+                 split; trivial.
+                 destruct H57; [left | right]; trivial.
+                 rewrite <- get_popped_irrel_upd in H57; try omega; trivial.
+                 1: destruct H51; rewrite H25; apply (step_in_range g p'); trivial.
          +++ assert (0 <= dst < i) by omega.
              (* we'll proceed by using the 
                 old best-known path for dst *)
@@ -2041,6 +2095,7 @@ Proof.
              forward.
              Exists prev_contents' priq_contents' dist_contents'.
              entailer!.
+             remember (find priq_contents (fold_right Z.min (hd 0 priq_contents) priq_contents) 0) as u.
              split; intros.
              ** destruct (Z.eq_dec dst i).
                 --- subst dst. 
@@ -2050,8 +2105,21 @@ Proof.
                 continue to work for i now:
                 i cannot be improved
                 by going via u *)
-                    intros.
-                    admit.
+                    unfold inv_unpopped; intros.
+                    assert (i <= i < SIZE) by omega.
+                    destruct (H19 i H44 H43) as [? [? [? ?]]].
+                    exists x; split3; trivial.
+                    +++ rewrite Forall_forall; intros.
+                        rewrite Forall_forall in H46.
+                        specialize (H46 _ H48).
+                        destruct H46; trivial.
+                    +++ intros. apply H47; trivial.
+                        unfold VType in *.
+                        rewrite Forall_forall; intros.
+                        rewrite Forall_forall in H50.
+                        specialize (H50 _ H51).
+                        assert (fst x0 <> u) by admit.
+                        split; trivial.
                 --- apply H18; omega.
              ** destruct (Z.eq_dec dst i).
                 --- omega. 
