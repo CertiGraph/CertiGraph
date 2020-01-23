@@ -1946,6 +1946,10 @@ Proof.
              *** destruct H51 as [? [? [? [? ?]]]].
                  split3; [| | split3]; trivial.
                  ---- rewrite upd_Znth_same by omega.
+                      rewrite <- H57.
+                      (* hmm this is actually false. 
+                         see H34. it says <, not = *)
+                      (* need to make changes elsewhere... *)
                       admit.
                       (* tricky admit #2 *)
                  ---- rewrite Forall_forall; intros.
@@ -2124,9 +2128,8 @@ Proof.
              ** destruct (Z.eq_dec dst i).
                 --- omega. 
                 --- apply H19; omega.
-        -- (* from the for loop's inv, prove the while loop's inv.
-              This is the last tricky part
-            *)
+        -- (* from the for loop's inv, prove the while loop's inv. *)
+              
           Intros prev_contents' priq_contents' dist_contents'.
           Exists prev_contents' priq_contents' dist_contents'.
           entailer!.
