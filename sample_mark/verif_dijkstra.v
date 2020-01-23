@@ -1719,8 +1719,18 @@ Proof.
                     popped club *)
                  clear H28.
                  unfold inv_unpopped in H29.
-                 assert (Znth u priq_contents < inf)
-                   by admit.
+                 assert (Znth u priq_contents < inf).
+                 {
+                   rewrite <- isEmpty_in' in H12.
+                   destruct H12 as [? [? ?]].
+                   rewrite Hequ.
+                   rewrite Znth_find.
+                   2: { apply min_in_list.
+                        apply incl_refl.
+                        rewrite <- Znth_0_hd by (unfold SIZE in *; omega).
+                        apply Znth_In; omega.
+                   }
+                   pose proof (fold_min _ _ H12). omega. }
                  specialize (H29 H28).
                  destruct H29 as [? [? [? ?]]].
                  exists x. unfold path_globally_optimal.
@@ -1938,48 +1948,64 @@ Proof.
              (* this is the key change --
                 i will now be locally optimal,
                 thanks to the new path via u. *)
-             assert (i <= i < SIZE) by omega.
-             assert (Znth i priq_contents' < inf) by admit.
-             destruct (H19 i H49 H50) as [? [? [? ?]]].
              unfold inv_unpopped; intros.
-             exists x; split3.
-             *** destruct H51 as [? [? [? [? ?]]]].
-                 split3; [| | split3]; trivial.
-                 ---- rewrite upd_Znth_same by omega.
-                      rewrite <- H57.
-                      (* hmm this is actually false. 
-                         see H34. it says <, not = *)
-                      (* need to make changes elsewhere... *)
-                      admit.
-                      (* tricky admit #2 *)
-                 ---- rewrite Forall_forall; intros.
-                      rewrite Forall_forall in H58.
-                      specialize (H58 _ H59).
-                      unfold VType in *.
-                      rewrite upd_Znth_diff; try omega; trivial.
-                      1: rewrite H26;
-                        apply (step_in_range2 g x); trivial.
-                      admit.
+             unfold inv_popped in H17.
+             destruct (H17 _ H20) as [p2u [? [? ?]]].
+             exists (fst p2u, snd p2u +:: (u, i)).
+             (* we provide the path to u, plus one hop *)
+             split3.
+             *** destruct H50 as [? [? [? [? ?]]]].
+                 split3; [ | | split3].
+                 ---- destruct H53.
+                      apply valid_path_app_cons; trivial;
+                        rewrite <- surjective_pairing; trivial.
+                 ---- rewrite (surjective_pairing p2u) in *.
+                      simpl.
+                      replace (fst p2u) with src in *.
+                      apply path_ends_app_cons; trivial.
+                      destruct H53. simpl in H53; omega.
+                 ---- rewrite <- path_cost_app_cons; trivial.
+                      rewrite <- H55. omega.
+                 ---- rewrite <- path_cost_app_cons; trivial.
+                      rewrite upd_Znth_same by omega.
+                      rewrite <- H55. omega.
+                 ---- unfold VType in *.
+                      rewrite Forall_forall. intros.
+                      rewrite Forall_forall in H56, H51.
+                      apply in_app_or in H57. destruct H57.
+                      ++++ specialize (H56 _ H57).
+                           specialize (H51 _ H57).
+                           destruct H51;
+                             rewrite upd_Znth_diff; try omega; try (rewrite H26; apply (step_in_range2 g p2u)); trivial.
+                           admit. admit.
+                      ++++ simpl in H57. destruct H57; [| omega].
+                           rewrite (surjective_pairing x) in *.
+                           simpl. inversion H57.
+                           rewrite upd_Znth_same; trivial.
+                           omega.
              *** rewrite Forall_forall; intros.
-                 rewrite Forall_forall in H52.
-                 specialize (H52 _ H55).
-                 destruct H52.
-                 destruct H52; [left | right]; trivial.
-                 rewrite <- get_popped_irrel_upd; try omega; trivial.
-                 1: rewrite H25; destruct H51;
-                   apply (step_in_range g x); trivial.
-                 admit.
-             *** intros.
-                 apply H53; trivial.
-                 rewrite Forall_forall; intros.
-                 rewrite Forall_forall in H57.
-                 specialize (H57 _ H58).
-                 assert (fst x0 <> u) by admit.
-                 assert (fst x0 <> i) by admit.
-                 split; trivial.
-                 destruct H57; [left | right]; trivial.
-                 rewrite <- get_popped_irrel_upd in H57; try omega; trivial.
-                 1: destruct H51; rewrite H25; apply (step_in_range g p'); trivial.
+                 rewrite Forall_forall in H51.
+                 simpl in H53.
+                 apply in_app_or in H53. destruct H53.
+                 ---- specialize (H51 _ H53).
+                      destruct H51; [left | right]; trivial.
+                      rewrite <- get_popped_irrel_upd; try omega; trivial.
+                      rewrite H25.
+                      destruct H50.
+                      apply (step_in_range g p2u); trivial.
+                      admit.
+                 ---- simpl in H53. destruct H53; [|omega].
+                      rewrite (surjective_pairing x) in *.
+                      simpl. inversion H53.
+                      rewrite get_popped_meaning.
+                      rewrite upd_Znth_diff; try omega.
+                      2: rewrite upd_Znth_Zlength; omega.
+                      right.
+                      rewrite <- H55.
+                      rewrite get_popped_meaning in H20;
+                        omega.
+             *** intros. admit. 
+                 (* tricky admit #2 *)
          +++ assert (0 <= dst < i) by omega.
              (* we'll proceed by using the 
                 old best-known path for dst *)
