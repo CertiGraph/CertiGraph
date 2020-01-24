@@ -1661,7 +1661,18 @@ Proof.
         rewrite Znth_0_hd, <- H11 by omega.
         do 2 rewrite upd_Znth_map.
         assert (~ (In u (get_popped priq_contents))). {
-          admit.
+          intro.
+          rewrite get_popped_meaning in H14 by omega.
+          rewrite <- isEmpty_in' in H12.
+          destruct H12 as [? [? ?]].
+          rewrite H11 in H14.
+          rewrite Znth_find in H14.
+          2: {
+            rewrite <- Znth_0_hd by (unfold SIZE in *; omega).
+            apply min_in_list; [ apply incl_refl | apply Znth_In; unfold SIZE in *; omega].
+          }
+          pose proof (fold_min _ _ H12).
+          omega.
         }
         remember (upd_Znth u priq_contents (inf+1)) as priq_contents_popped.
         forward_for_simple_bound
@@ -1948,7 +1959,34 @@ Proof.
           just improved. This is impossible for 
           popped items. 
         *)
-       admit.
+       intro.
+       unfold inv_popped in H18.
+       destruct (H18 _ H36) as [p2i [? [? ?]]].
+       destruct (H18 _ H21) as [p2u [? [? ?]]].
+       unfold path_globally_optimal in H39.
+       specialize (H39 (fst p2u, snd p2u +:: (u,i))).
+       rewrite Heqcost in H35.
+       rewrite <- path_cost_app_cons in H39.
+       destruct H40 as [? [? [? [? ?]]]].
+       destruct H37 as [? [? [? [? ?]]]].
+       rewrite H49, H45 in H35.
+       apply Zlt_not_le in H35.
+       unfold VType in *.
+       apply H35. apply H39.
+       - apply valid_path_app_cons; trivial;
+         rewrite <- surjective_pairing; 
+         destruct H43; trivial.
+       - rewrite (surjective_pairing p2u) in *.
+           simpl.
+           replace (fst p2u) with src in *.
+           apply path_ends_app_cons; trivial.
+           destruct H43. simpl in H43; omega.
+       - apply H1.
+       - apply H2.
+       - apply graph_to_mat_Zlength.
+       - omega.
+       - omega.
+       - destruct H40 as [_ [_ [? _]]]. omega.
      }
      assert (0 <= i < Zlength (map Vint (map Int.repr dist_contents'))) by
          (repeat rewrite Zlength_map; omega).
