@@ -1755,10 +1755,11 @@ Proof.
                         rewrite <- Znth_0_hd by (unfold SIZE in *; omega).
                         apply Znth_In; omega.
                    }
-                   pose proof (fold_min _ _ H12). omega. }
+                   pose proof (fold_min _ _ H12). omega.
+                 }
                  specialize (H30 H31).
-                 destruct H30 as [? [? [? ?]]].
-                 exists x. unfold path_globally_optimal.
+                 destruct H30 as [p2u [? [? ?]]].
+                 exists p2u. unfold path_globally_optimal.
                  split3; trivial.
                  --- rewrite Forall_forall; intros.
                      rewrite Forall_forall in H32.
@@ -1766,22 +1767,23 @@ Proof.
                      destruct H32; split.
                      +++ rewrite <- get_popped_irrel_upd; try omega; trivial.
                          *** rewrite H8; destruct H30;
-                               apply (step_in_range g x); trivial.
+                               apply (step_in_range g p2u); trivial.
                          *** intro.
                              unfold VType in *.
                              rewrite H36 in H32.
                              apply H14. trivial.
                      +++ destruct H35.
                          *** destruct H35.
-                             assert (0 <= snd x0 < Zlength priq_contents). {
+                             assert (0 <= snd x < Zlength priq_contents). {
                                rewrite H8; destruct H30;
-                                 apply (step_in_range2 g x); trivial. }
+                                 apply (step_in_range2 g p2u); trivial. }
                              rewrite <- get_popped_irrel_upd; try omega; trivial.
                          *** unfold VType in *; rewrite H35.
                              rewrite get_popped_meaning.
                              2: rewrite upd_Znth_Zlength; trivial.
                              rewrite upd_Znth_same; omega.
-                 --- intros. admit.
+                 --- intros.
+                     admit.
                      (* tricky admit #1 *)
               ** rewrite <- get_popped_irrel_upd in H11 by omega.
                  (* show that all is well for the old
@@ -1840,39 +1842,13 @@ Proof.
                          rewrite H8; destruct H29;
                            apply (step_in_range2 g x);
                            trivial.
-                     +++ (* something is amiss... *)
+                     +++ 
+           (* something is wrong...
+              the invariant is not strong enough? 
+              
+              Invariant admit #1
+            *)
                        admit.
-                       (*
-
-                       rewrite <- get_popped_irrel_upd.
-
-                       
-
-                         omega.
-                     
-                 
-
-                 
-  - unfold VType in *. rewrite H32 in H29.
-                     rewrite get_popped_meaning in H29 by omega.
-                 (* rewrite H32 in H30. *)
-                 rewrite <- isEmpty_in' in H12.
-                 destruct H12 as [? [? ?]].
-                 rewrite Hequ in H29.
-                 rewrite Znth_find in H29.
-                 2: { apply min_in_list.
-                      apply incl_refl.
-                      rewrite <- Znth_0_hd by (unfold SIZE in *; omega).
-                      apply Znth_In; omega.
-                 }
-                 pose proof (fold_min _ _ H12). omega.
-                 }
-                 split; trivial.
-                 destruct H29; [left | right]; trivial.
-                 rewrite <- get_popped_irrel_upd; trivial.
-                 rewrite H8.
-                 destruct H28 as [? _].
-                 apply (step_in_range g x x0); trivial. *)
               ** intros. apply H31; trivial.
                  rewrite Forall_forall.
                  rewrite Forall_forall in H34.
@@ -2286,28 +2262,33 @@ Proof.
                 still preserves the for loop
                 invariant *)
          destruct (Z.eq_dec dst i).
-         +++ subst dst.
-             unfold inv_unpopped; intros.
-             assert (i <= i < SIZE) by omega.
-             destruct (H20 i H49 H48) as [? [? [? ?]]].
-             exists x; split3; trivial.
-             *** rewrite Forall_forall; intros.
-                 rewrite Forall_forall in H51.
-                 specialize (H51 _ H53).
-                 destruct H51 as [? [? [? ?]]].
-                 split; trivial.
-                 destruct (Z.eq_dec (snd x0) i).
-                 1: right; trivial.
-                 left; split; trivial.
-             *** intros. apply H52; trivial.
-                 rewrite Forall_forall; intros.
-                 rewrite Forall_forall in H55.
-                 specialize (H55 _ H56).
-                 destruct H55.
-                 split; trivial.
-                 admit.
-                 (* something is amiss... *)
-         +++ apply H19; omega.
+         2: apply H19; omega.
+         subst dst.
+         unfold inv_unpopped; intros.
+         assert (i <= i < SIZE) by omega.
+         destruct (H20 i H49 H48) as [? [? [? ?]]].
+         exists x; split3; trivial.
+         +++ rewrite Forall_forall; intros.
+             rewrite Forall_forall in H51.
+             specialize (H51 _ H53).
+             destruct H51 as [? [? [? ?]]].
+             split; trivial.
+             destruct (Z.eq_dec (snd x0) i).
+             1: right; trivial.
+             left; split; trivial.
+         +++ intros.
+             (* something is wrong with the invariant? *)
+             (* let's try anyway... *)
+             apply H52; trivial.
+             rewrite Forall_forall; intros.
+             rewrite Forall_forall in H55.
+             specialize (H55 _ H56).
+             destruct H55; split; trivial.
+             (* ya, something is wrong. 
+
+              Invariant admit #2
+              *)
+             admit.
      --- intros. destruct (Z.eq_dec dst i).
          +++ subst dst. omega.
          +++ apply H20; omega.
@@ -2342,11 +2323,16 @@ Proof.
                         *** left; split; trivial.
                     +++ intros. apply H48; trivial.
                         unfold VType in *.
-                        rewrite Forall_forall; intros.
+                        rewrite Forall_forall; intros.     
                         rewrite Forall_forall in H51.
                         specialize (H51 _ H52).
+                        destruct H51; split; trivial.
                         admit.
-                        (* something may be amiss. *)
+                        (* same thing. 
+                           the invariant is too weak.
+                           
+                           Invariant admit #3
+                         *)
                 --- apply H19; omega.
              ** destruct (Z.eq_dec dst i).
                 --- omega. 
