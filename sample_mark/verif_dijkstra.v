@@ -1695,7 +1695,7 @@ Proof.
                 exists path,
                   path_correct g prev_contents' dist_contents' src dst path /\
                   Forall (fun x => In (fst x) (get_popped priq_contents') /\
-                                   In (snd x) (get_popped priq_contents') /\
+                                   (snd x <> dst -> In (snd x) (get_popped priq_contents')) /\
                                    fst x <> u /\
                                    snd x <> u)
                          (snd path) /\
@@ -1703,7 +1703,7 @@ Proof.
                     valid_path g p' ->
                     path_ends g p' src dst ->
                     Forall (fun x => In (fst x) (get_popped priq_contents') /\
-                                     In (snd x) (get_popped priq_contents') /\
+                                     (snd x <> dst -> In (snd x) (get_popped priq_contents')) /\
                                      fst x <> u /\
                                      snd x <> u)
                            (snd p') ->
@@ -1844,13 +1844,11 @@ Proof.
                  --- rewrite <- get_popped_irrel_upd; try omega; trivial.
                      rewrite H8. destruct H29.
                      apply (step_in_range g x); trivial.
-                 ---
-           (* something is wrong...
-              the invariant is not strong enough? 
-              
-              Invariant admit #1
-            *)
-                       admit.
+                 --- intro. specialize (H33 H36).
+                     rewrite <- get_popped_irrel_upd; try omega; trivial.
+                     destruct H29.
+                     rewrite H8.
+                     apply (step_in_range2 g x); trivial.
               ** intros. apply H31; trivial.
                  rewrite Forall_forall.
                  rewrite Forall_forall in H34.
@@ -2187,19 +2185,21 @@ Proof.
          +++ destruct H53 as [? [? [? [? ?]]]].
              split3; [| | split3]; trivial.
              1: rewrite upd_Znth_diff; omega.
-             1: { rewrite Forall_forall; intros.
-                  rewrite Forall_forall in H59.
-                  specialize (H59 _ H60).
-                  unfold VType in *.
-                  rewrite upd_Znth_diff; try omega; trivial.
-                  1: unfold VType in *; rewrite H27;
-                    apply (step_in_range2 g x); trivial.
-                  intro.
-                  rewrite Forall_forall in H54.
-                  destruct (H54 _ H60) as [_ [? _]].
-                  rewrite H61 in H62.
-                  apply H36. trivial. 
-             }
+             rewrite Forall_forall; intros.
+             rewrite Forall_forall in H59.
+             specialize (H59 _ H60).
+             unfold VType in *.
+             rewrite upd_Znth_diff; try omega; trivial.
+             1: unfold VType in *; rewrite H27;
+               apply (step_in_range2 g x); trivial.
+             intro.
+             rewrite Forall_forall in H54.
+             destruct (H54 _ H60) as [? [? [? ?]]].
+             destruct (Z.eq_dec (snd x0) dst).
+             1: omega.
+             specialize (H63 n0).
+             rewrite H61 in H63.
+             apply H36. trivial.
          +++ rewrite Forall_forall; intros.
              rewrite Forall_forall in H54.
              specialize (H54 _ H56).
@@ -2211,7 +2211,8 @@ Proof.
              *** rewrite H26. apply (step_in_range g x); trivial.
              *** intro. rewrite H61 in H54. apply H36; trivial.
              *** rewrite H26. apply (step_in_range2 g x); trivial.
-             *** intro. rewrite H61 in H57. apply H36; trivial.
+             *** intro. rewrite H61 in H57.
+                 apply H36. apply H57. omega.
          +++ intros. apply H55; trivial.
              rewrite Forall_forall; intros.
              rewrite Forall_forall in H58.
@@ -2247,15 +2248,26 @@ Proof.
      entailer!.
      remember (find priq_contents (fold_right Z.min (hd 0 priq_contents) priq_contents) 0) as u.
      split.
-     --- intros. (* show that moving one more step 
-                still preserves the for loop
-                invariant *)
+     --- intros.
+         (* show that moving one more step 
+            still preserves the for loop
+            invariant *)
          destruct (Z.eq_dec dst i).
          2: apply H19; omega.
          subst dst.
+         (* i already obeys the weaker inv_unpopped,
+            ie inv_unpopped without going via u.
+
+            Now I must show that it actually satisfies 
+            inv_unpopped as it stands.
+            
+            ie, it is better off going without u
+          *)
          unfold inv_unpopped; intros.
          assert (i <= i < SIZE) by omega.
          destruct (H20 i H49 H48) as [? [? [? ?]]].
+         (* now I must show that the same path
+            is actually still okay *)
          exists x; split3; trivial.
          +++ rewrite Forall_forall; intros.
              rewrite Forall_forall in H51.
@@ -2263,17 +2275,15 @@ Proof.
              destruct H51 as [? [? [? ?]]].
              split; trivial.
          +++ intros.
-             (* something is wrong with the invariant? *)
-             (* let's try anyway... *)
              apply H52; trivial.
              rewrite Forall_forall; intros.
              rewrite Forall_forall in H55.
              specialize (H55 _ H56).
-             destruct H55; split; trivial.
-             (* ya, something is wrong. 
-              Invariant admit #2
-              *)
+             destruct H55.
+             split3; [| | split]; trivial.
              admit.
+             admit.
+             (* come back to this in a sec *)
      --- intros. destruct (Z.eq_dec dst i).
          +++ subst dst. omega.
          +++ apply H20; omega.
@@ -2308,8 +2318,9 @@ Proof.
                         rewrite Forall_forall; intros.     
                         rewrite Forall_forall in H51.
                         specialize (H51 _ H52).
-                        destruct H51; split; trivial.
-                        admit.
+                        destruct H51.
+                        split3; [| |split]; trivial.
+                        admit. admit.
                         (* same thing. 
                            the invariant is too weak.
                            
