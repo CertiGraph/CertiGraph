@@ -1,22 +1,23 @@
 
-\begin{lstlisting}
+\begin{figure}
+\begin{lstlisting}[mathescape=true]
   void dijkstra (int graph[SIZE][SIZE], int src, 
                            int *dist, int *prev) {
 $//$ $\braces{\p{DijkGraph}(\gamma)}$
     int pq[SIZE];
     int i, j, u, cost;
     for (i = 0; i < SIZE; i++) {
-      dist[i] = INF; 
-      prev[i] = INF; 
-      pq[i] = INF;
+      dist[i] = INF; prev[i] = INF; pq[i] = INF;
     }
-    dist[src] = 0; 
-    pq[src] = 0; 
-    prev[src] = src;
+    dist[src] = 0; pq[src] = 0; prev[src] = src;
 $//$ $\braces{\p{DijkGraph}(\gamma) /| \null \\
 \m{dijk\_correct}(\gamma,\m{src},\m{prev},\m{dist},\m{priq})}$
     while (!pq_emp(pq)) {
       u = popMin(pq);
+$//$ $\braces{\texttt{u} \in \m{popped}(\m{priq}) /| \null \\
+\forall \m{dst}.~\texttt{0} \le \m{dst} < \texttt{SIZE} -> \m{inv\_popped}(\gamma, \m{src}, \m{prev}, \m{dist}, \m{priq}, \m{dst}) /| \null \\
+\forall \m{dst}.~\texttt{0} \le \m{dst} < \texttt{i} -> \m{inv\_unpopped}(\gamma, \m{src}, \m{prev}, \m{dist}, \m{priq}, \m{dst}) /| \null \\
+\forall \m{dst}.~\texttt{i} \le \m{dst} < \texttt{SIZE} -> \m{inv\_unpopped}(\gamma, \m{src}, \m{prev}, \m{dist}, \m{priq}, \m{dst}) /| \texttt{u} \not \in \m{path2dst}}$
       for (i = 0; i < SIZE; i++) {
         cost = graph[u][i]; 
         if (cost < INF) {
@@ -29,7 +30,7 @@ $//$ $\braces{\p{DijkGraph}(\gamma) /| \null \\
       }
     }
 $//$ $\braces{\p{DijkGraph}(\gamma) /| \null \\ 
-\forall \m{dst} \in \m{priq}.~\m{priq}[\m{dst}] = \texttt{INF} /| \null \\ 
+\forall \m{dst} \in \m{priq}.~\m{priq}[\m{dst}] \ge \texttt{INF} /| \null \\ 
 \m{dijk\_correct}(\gamma,\m{src},\m{prev},\m{dist},\m{priq})}$
     return;
   }
@@ -45,6 +46,35 @@ $//$ $\braces{\p{DijkGraph}(\gamma) /| \null \\
 
 \begin{equation*}
 \begin{split}
+\m{dijk\_correct}(\gamma, \m{src}, \m{prev}, \m{dist}, \m{priq}) \; \defeq \; &\forall \m{dst}.~\texttt{0} \le \m{dst} < \texttt{SIZE}. \\
+&\m{inv\_popped}(\gamma, \m{src}, \m{prev}, \m{dist}, \m{priq}, \m{dst}) /| \null \\
+&\m{inv\_unpopped}(\gamma, \m{src}, \m{prev}, \m{dist}, \m{priq}, \m{dst})
+\end{split}
+\end{equation*}
+
+\begin{equation*}
+\begin{split}
+\m{inv\_popped}(\gamma, \m{src}, \m{prev}, \m{dist}, \m{priq}, \m{dst}) \; \defeq \; &\m{dst} \in \m{popped}(\m{priq}) -> \\
+&\exists \m{path2dst}.~\m{path\_correct}(\gamma, \m{src}, \m{prev}, \m{dist}, \m{priq}, \m{dst}) /| \null \\
+&\forall \m{(a, b)}.~\m{(a, b)} \in \m{path2dst} -> \m{a} \in \m{popped}(\m{priq}) /| \m{b} \in \m{popped}(\m{priq}) /| \null \\
+&\m{path\_globally\_optimal}(\gamma, \m{src}, \m{dst}, \m{path2dst})
+\end{split}
+\end{equation*}
+
+\begin{equation*}
+\begin{split}
+\m{inv\_unpopped}(\gamma, \m{src}, \m{prev}, \m{dist}, \m{priq}, \m{dst}) \; \defeq \; &\m{priq}[\m{dst}] < \texttt{INF} -> \\
+&\texttt{let } \m{mom} \texttt{ := } \m{prev}[m{dst}] \texttt{ in } \\
+&\exists \m{path2mom}.~\m{path\_correct}(\gamma, \m{src}, \m{prev}, \m{dist}, \m{priq}, \m{mom}) /| \null \\
+&\forall \m{(a, b)}.~\m{(a, b)} \in \m{path2mom} -> \m{a} \in \m{popped}(\m{priq}) /| \m{b} \in \m{popped}(\m{priq}) /| \null \\
+&\m{path\_globally\_optimal}(\gamma, \m{src}, \m{dst}, \m{path2mom}) /|
+...
+\end{split}
+\end{equation*}
+
+\hide{
+\begin{equation*}
+\begin{split}
 \m{dijk\_correct}(\gamma, \m{src}, \m{prev}, \m{dist},& \m{priq}) \; \defeq \; \\
 \forall \m{dst}.~\m{dst} \in \m{popped}(\m{priq}) \; => \; & \exists \m{path}.~\m{path\_correct}(\gamma, \m{prev}, \m{dist}, \m{path}) /| \null \\
 & \m{path\_glob\_optimal}(\gamma, \m{dist}, \m{path}) /| \null \\
@@ -55,4 +85,6 @@ $//$ $\braces{\p{DijkGraph}(\gamma) /| \null \\
 \m{priq}[\m{dst}] = \ifty \; => \; & \forall \m{m} \in \m{popped}(\m{priq}).~\m{cost}(\m{path2m} +:: (m, dst)) = \ifty
 \end{split}
 \end{equation*}
+}
+\end{figure}
 
