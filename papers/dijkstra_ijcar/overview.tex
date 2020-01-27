@@ -1,17 +1,20 @@
+\input{poster_code_dijk.tex}
+
+\vspace{-0.75em}
 
 Figure~\ref{fig:decorated} shows the code and proof
 sketch of Dijkstra's algorithm.  Our code is implemented exactly
 as suggested by CLRS~\cite{clrs} so we refer readers there for a
 general discussion of the algorithm.
-The adjacency-matrix-represented graph $\gamma$ of \texttt{SIZE} vertices
+The adjacency-matrix-represented graph~$\gamma$ of \texttt{SIZE} vertices
 is passed as the parameter \texttt{graph} along with the source vertex \texttt{src}
 and two allocated arrays \texttt{dist} and \texttt{prev}.
 The details of the spatial predicates $\mathsf{array}(x,\vec{v})$, connecting an array pointer $x$ with its contents $\vec{v}$, and the internals of the priority
 queue $\mathsf{PQ}$ are unexciting.  Our spatial graph predicate is more interesting in
 that it nests arrays and connects the concrete memory values to an abstract mathematical
-graph $\gamma$, which in turn exposes an interface in the language of graph theory
+graph~$\gamma$, which in turn exposes an interface in the language of graph theory
 (vertices, edges, labels, etc.).
-
+\vspace{-0.5em}
 \begin{equation*}
 \begin{split}
 \m{list\_addr} ((\m{block}, \m{offset}), \m{index}) &\defeq
@@ -21,7 +24,6 @@ graph $\gamma$, which in turn exposes an interface in the language of graph theo
 \p{graph\_rep}(\gamma, \m{g\_addr}) &\defeq \underset{\m{v} \in \gamma}{\bigstar} \m{v}  \mapsto\p{list\_rep}(\gamma, \m{v}, \m{g\_addr})
 \end{split}
 \end{equation*}
-
 In general these spatial representations are simple enough that they pose no special
 challenge in the proof and so we will not focus on issues such as \emph{e.g.}~making
 sure an array dereference is in bounds in our discussion below.
@@ -145,5 +147,4 @@ $\m{u}$ as discussed above. The key edit is in $\m{inv\_unpopped}$. blah blah bl
 }
 
 
-\input{poster_code_dijk.tex}
 
