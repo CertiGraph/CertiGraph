@@ -12,23 +12,26 @@ its safety and correctness have been verified by decades of application.
 %these works inadvertently gloss over certain classes of issues
 %that routinely crop up in real-world settings.
 
-Here we verify a~C~implementation of Dijkstra's one-to-all shortest path algorithm. 
+Here we verify a~C~implementation of Dijkstra's one-to-all shortest path algorithm.
 We implement textbook~C~code~\cite{clrs} in CompCert~C~\cite{leroy:compcert} so that
-we can use the Verified Software Toolchain~\cite{appel:programlogics} and 
-Wang~\emph{et al.}'s recent framework for verifying graph algorithms~\cite{DBLP:journals/pacmpl/WangCMH19} to state and prove the full functional 
-correctness of the code using the Coq proof assistant~\cite{coq}.  
+we can use the Verified Software Toolchain~\cite{appel:programlogics} and
+Wang~\emph{et al.}'s recent framework for verifying graph algorithms~\cite{DBLP:journals/pacmpl/WangCMH19} to state and prove the full functional
+correctness of the code using the Coq proof assistant~\cite{coq}.
 We expose a subtle overflow issue in the~C~code and make a nontrivial refinement to the precondition of the algorithm so that users know when the code will calculate the correct paths.
 
 The remainder of this paper is organized as follows:
 \begin{itemize}
     \item[\S\ref{sec:overview}] We briefly present and explain
-    our~C~implementation of Dijkstra's algorithm.
-    \item[\S\ref{sec:verification}] We present our specification
-    and our key loop invariants.
-    \item[\S\ref{sec:overflow}] We explain how overflow can occur and give a 
+    our~C~implementation of Dijkstra's algorithm and the key loop invariants
+    we use to certify its specification.
+%    \item[\S\ref{sec:verification}] We present our 
+%    and our key loop invariants.
+    \item[\S\ref{sec:overflow}] We explain how overflow can occur and give a
     refinement to the precondition of the function that restricts edge weights
     appropriately in a way that prevents said overflow.
     \item[\S\ref{sec:conclusion}] We put this result in the context of our
     previous and ongoing work, discuss related work in certifying Dijkstra's algorithm
     as well as standard algorithms textbook presentations, and conclude.
 \end{itemize} 
+
+Our code is available at \url{https://github.com/anshumanmohan/VerifDijkstra}.
