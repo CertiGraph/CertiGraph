@@ -9,11 +9,11 @@ We are investigating techniques to increase the automation of such verifications
 we benefit from some automation at the Hoare-logic level provided by the Verified Software
 Toolchain~\cite{appel:programlogics}, building these proofs is still highly labor intensive.  We see potential
 for automation in four areas: (A) the Hoare level; (B) the spatial level; (C) the mathematical level; and (D) the interface between the spatial and the mathematical levels.  Our ongoing work
-on these challenges include improved tactics for VST for common cases we encounter in graph
-algorithms (A); an expanded library of existing graph constructions and associated lemmas (B);
-better lemmas about common mathematical graph patterns, investigations into reachability techniques
-based on regular expressions over matrices and related semirings~\cite{backhouse,DBLP:journals/jacm/Tarjan81a,dolan2013fun,krishna2017go} (C); improved modularity in our constructions and
-automation of common cases, \emph{e.g.} we often compare C pointers to heap-represented graph
+on these challenges include (A) improved tactics for VST for common cases we encounter in graph
+algorithms; (B) an expanded library of existing graph constructions such as the adjacency-matrix representation used in this result, as well as associated lemmas;
+(C) better lemmas about common mathematical graph patterns, investigations into reachability techniques
+based on regular expressions over matrices and related semirings~\cite{backhouse,DBLP:journals/jacm/Tarjan81a,dolan2013fun,krishna2017go}; and (D) improved modularity in our constructions and
+automation of common cases, \emph{e.g.} we often compare~C pointers to heap-represented graph
 nodes for equality, and due to the nature of our representations this equality check will be
 well-defined in~C when the associated nodes are present in the mathematical graph.  The key
 advantage of having end-to-end machine-checked examples such as the one we presented above is 
