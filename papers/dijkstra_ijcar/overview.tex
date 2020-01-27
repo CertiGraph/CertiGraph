@@ -11,11 +11,19 @@ queue $\mathsf{PQ}$ are unexciting.  Our spatial graph predicate is more interes
 that it nests arrays and connects the concrete memory values to an abstract mathematical
 graph $\gamma$, which in turn exposes an interface in the language of graph theory
 (vertices, edges, labels, etc.).
-\[
-stuff
-\]
+
+\begin{equation*}
+\begin{split}
+\m{list\_addr} ((\m{block}, \m{offset}), \m{index}) &\defeq
+  (\m{block}, \m{offset} + (\m{index} \times \texttt{sizeof}(\texttt{int}) \times \texttt{SIZE})) \\
+\p{list\_rep}(\gamma, \m{i}, \m{base\_ptr}) &\defeq \mathsf{array}(\mathsf{graph2matrix}(\gamma)[\m{i}], \m{list\_addr}(\m{base\_ptr}, \m{i})) \\
+\vspace{1em}
+\p{graph\_rep}(\gamma, \m{g\_addr}) &\defeq \underset{\m{v} \in \gamma}{\bigstar} \m{v}  \mapsto\p{list\_rep}(\gamma, \m{v}, \m{g\_addr})
+\end{split}
+\end{equation*}
+
 In general these spatial representations are simple enough that they pose no special
-challenge in the proof and so we will not focus on issues such as \emph{e.g.} making
+challenge in the proof and so we will not focus on issues such as \emph{e.g.}~making
 sure an array dereference is in bounds in our discussion below.
 
 The key to the verification is the pure part of the loop
@@ -35,7 +43,7 @@ popped from the priority queue.
 A globally optimal path from $\texttt{src}$
 to $\m{dst}$ exists, the cost of this path is logged in
 the \texttt{dist} array, and all the vertices visited by the path are also popped.
-Further, the links of this path are correctly logged in the \texttt{prev} array.
+Further, the links of this path are logged in the \texttt{prev} array.
 \item $\m{inv\_unpopped}$: $\m{dst}$ is reachable in
 one hop from a ``\emph{mom}'' vertex, which is itself popped.
 This route is locally optimal: we cannot
