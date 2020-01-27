@@ -6,9 +6,9 @@ of the definitions discussed inline in the paper proper.
 \begin{figure}
 \begin{equation*}
 \begin{split}
-\m{list\_addr} ((\m{block}, \m{offset}), \m{index}, \m{size}) &\defeq
-  (\m{block}, \m{offset} + (\m{index} \times \texttt{sizeof}(\texttt{int}) \times \m{size})) \\
-\p{list\_rep}(\gamma, \m{i}, \m{base\_ptr}) &\defeq \mathsf{array}(\texttt{graph2mat}(\gamma)[\m{i}], \m{list\_addr}(\m{base\_ptr}, \m{i}, \m{size})) \\
+\m{list\_addr} ((\m{block}, \m{offset}), \m{index}) &\defeq
+  (\m{block}, \m{offset} + (\m{index} \times \texttt{sizeof}(\texttt{int}) \times \texttt{SIZE})) \\
+\p{list\_rep}(\gamma, \m{i}, \m{base\_ptr}) &\defeq \mathsf{array}(\mathsf{graph2matrix}(\gamma)[\m{i}], \m{list\_addr}(\m{base\_ptr}, \m{i})) \\
 \vspace{1em}
 \p{graph\_rep}(\gamma, \m{g\_addr}) &\defeq \underset{\m{v} \in \gamma}{\bigstar} \m{v}  \mapsto\p{list\_rep}(\gamma, \m{v}, \m{g\_addr})
 \end{split}
