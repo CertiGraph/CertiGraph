@@ -1,24 +1,24 @@
 
 Figure~\ref{fig:decorated} shows the code and proof
-sketch of Dijkstra's algorithm.  Our code is implemented exactly 
+sketch of Dijkstra's algorithm.  Our code is implemented exactly
 as suggested by CLRS~\cite{clrs} so we refer readers there for a
 general discussion of the algorithm.
-The adjacency-matrix-represented graph $\gamma$ of \texttt{SIZE} vertices 
+The adjacency-matrix-represented graph $\gamma$ of \texttt{SIZE} vertices
 is passed as the parameter \texttt{graph} along with the source vertex \texttt{src}
 and two allocated arrays \texttt{dist} and \texttt{prev}.
 The details of the spatial predicates $\mathsf{array}(x,\vec{v})$, connecting an array pointer $x$ with its contents $\vec{v}$, and the internals of the priority
 queue $\mathsf{PQ}$ are unexciting.  Our spatial graph predicate is more interesting in
 that it nests arrays and connects the concrete memory values to an abstract mathematical
-graph $\gamma$, which in turn exposes an interface in the language of graph theory 
+graph $\gamma$, which in turn exposes an interface in the language of graph theory
 (vertices, edges, labels, etc.).
 \[
 stuff
 \]
 In general these spatial representations are simple enough that they pose no special
-challenge in the proof and so we will not focus on issues such as \emph{e.g.} making 
+challenge in the proof and so we will not focus on issues such as \emph{e.g.} making
 sure an array dereference is in bounds in our discussion below.
 
-The key to the verification is the pure part of the loop 
+The key to the verification is the pure part of the loop
 invariants on lines~\ref{code:whileinv} and~\ref{code:forinv}.  The \texttt{while} invariant $\m{dijk\_correct}(\gamma, \texttt{src}, \m{prev}, \m{dist}, \m{priq})$ has three parts:
 \[
 \begin{array}{l}
@@ -67,7 +67,7 @@ one hop from a ``\emph{mom}'' vertex, which is itself popped.  Initially this is
 \end{enumerate}
 The formal definitions for the above predicates, and the key subdefinitions upon which they rely, can be found in appendix~\ref{sec:apx}.
 
-
+\hide{
 
 While loop's invariant, which is stated on line
 and explained further in Figure~\ref{fig:defns}.
@@ -124,15 +124,18 @@ This comes from blah blah blah
 Next, we must account for the ripple effect that popping
 $\m{u}$ could have had on the other vertices.
 In particular, it is possible that a vertex obeying $\m{inv\_unpopped}$ can
-improve its cost via $\m{u}$, and that an unreachable vertex 
-obeying $\m{inv\_unseen}$ can now be reached via $\m{u}$. 
-The for loop repairs these breakages by 
+improve its cost via $\m{u}$, and that an unreachable vertex
+obeying $\m{inv\_unseen}$ can now be reached via $\m{u}$.
+The for loop repairs these breakages by
 checking if a path via $\m{u}$ is an improvement for such vertices, and, if so,
 edits both arrays and the priority queue as seen on line~\ref{code:update}.
 
 The for loop's invariant is similar to that of the while loop---$\m{inv\_unseen}$
-and $\m{inv\_popped}$ are preserved as-is, modulo the popping of 
+and $\m{inv\_popped}$ are preserved as-is, modulo the popping of
 $\m{u}$ as discussed above. The key edit is in $\m{inv\_unpopped}$. blah blah blah
+
+}
+
 
 \input{poster_code_dijk.tex}
 
