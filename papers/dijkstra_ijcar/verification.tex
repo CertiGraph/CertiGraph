@@ -8,3 +8,11 @@ Explain that by the time the loop ends, we'll be done
 Use annotated proof:
 
 \input{poster_code_dijk.tex}
+
+\begin{equation*}
+\begin{split}
+\p{list\_rep}(\gamma, \m{i}) &\defeq \texttt{data\_at  array  graph2mat}(\gamma)[\m{i}] \texttt{  list\_addr}(\gamma, \m{i}) \\
+\vspace{1em}
+\p{graph\_rep}(\gamma) &\defeq \underset{\texttt{vvalid}(\gamma,\m{v})}{\bigstar} \m{v}  \mapsto\p{list\_rep}(\gamma, \m{v})
+\end{split}
+\end{equation*}
