@@ -2,12 +2,11 @@
 \begin{figure}[htbp]
 
 \begin{lstlisting}[mathescape=true,showlines=true]
-#define SIZE 8
 #define INF INT_MAX - INT_MAX/SIZE $\label{code:inf}$
-
 void dijkstra (int graph[SIZE][SIZE], int src, 
                            int *dist, int *prev) {
-$//$ $\braces{\p{DijkGraph}(\gamma)}$
+$//$ $\braces{\p{DijkGraph}(\gamma) * 
+\mathsf{array}(\texttt{dist}, \_) * \mathsf{array}(\texttt{prev}, \_)}$
  int pq[SIZE]; int i, j, u, cost;
  for (i = 0; i < SIZE; i++) 
  {  dist[i] = INF; prev[i] = INF; pq[i] = INF; }
@@ -18,13 +17,13 @@ $//$ $\braces{\exists \m{priq}, \m{dist}, \m{prev}.~\p{DijkGraph}(\gamma) * \mat
   u = popMin(pq); $\label{code:pop}$
 $//$ $\braces{\exists \m{prev'}, \m{dist'}, \m{priq'}.~\p{DijkGraph}(\gamma) *
 \mathsf{PQ}(\texttt{pq},\m{priq'}) * \mathsf{array}(\texttt{dist},\m{dist'}) * \null \\ \mathsf{array}(\texttt{prev}, \m{prev'}) /| \texttt{u} \in \m{popped}(\m{priq'}) /| \null \\
-\m{dijk\_correct\_weak}(\gamma, \texttt{src}, \m{prev'}, \m{dist'}, \m{priq'}, \texttt{i}, \texttt{u}, \texttt{SIZE})}$
+\m{dijk\_correct\_weak}(\gamma, \texttt{src}, \m{prev'}, \m{dist'}, \m{priq'}, \texttt{i}, \texttt{u})}$ $\label{code:forinv}$
   for (i = 0; i < SIZE; i++) {
    cost = graph[u][i]; $\label{code:cost}$
    if (cost < INF) {
     if (dist[i] > dist[u] + cost) $\label{code:overflow}$
     { dist[i] = dist[u] + cost; prev[i] = u; pq[i] = dist[i]; } $\label{code:update}$
-   } $//$ $\braces{\exists \m{prev'}, \m{dist'}, \m{priq'}.~\p{DijkGraph}(\gamma) * \mathsf{PQ}(\texttt{pq},\m{priq'}) * \mathsf{array}(\texttt{dist},\m{dist'}) * \null \\ \mathsf{array}(\texttt{prev}, \m{prev'}) /| \m{dijk\_correct\_weak}(\gamma, \texttt{src}, \m{prev'}, \m{dist'}, \m{priq'}, \texttt{i}, \texttt{u}, \texttt{SIZE})}$  
+   } $//$ $\braces{\exists \m{prev'}, \m{dist'}, \m{priq'}.~\p{DijkGraph}(\gamma) * \mathsf{PQ}(\texttt{pq},\m{priq'}) * \mathsf{array}(\texttt{dist},\m{dist'}) * \null \\ \mathsf{array}(\texttt{prev}, \m{prev'}) /| \m{dijk\_correct\_weak}(\gamma, \texttt{src}, \m{prev'}, \m{dist'}, \m{priq'}, \texttt{i}, \texttt{u})}$  
   } $//$ $\braces{\exists \m{prev'}, \m{dist'}, \m{priq'}.~\p{DijkGraph}(\gamma) * \mathsf{PQ}(\texttt{pq},\m{priq'}) * \mathsf{array}(\texttt{dist},\m{dist'}) * \null \\ \mathsf{array}(\texttt{prev}, \m{prev'}) /| \m{dijk\_correct}(\gamma, \texttt{src}, \m{prev'}, \m{dist'}, \m{priq'})}$
  } $//$ $\braces{\exists \m{priq}, \m{dist}, \m{prev}.~\p{DijkGraph}(\gamma) * \mathsf{PQ}(\texttt{pq},\m{priq}) * \mathsf{array}(\texttt{dist},\m{dist}) * \null \\ \mathsf{array}(\texttt{prev}, \m{prev}) /| 
 \forall \m{dst} \in \m{priq}.~\m{priq}[\m{dst}] \not< \texttt{INF} /| \null \\
