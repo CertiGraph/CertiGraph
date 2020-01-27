@@ -47,12 +47,12 @@ to $\m{dst}$ exists, the cost of this path is logged in
 the \texttt{dist} array, and all the vertices visited by the path are also popped.
 Further, the links of this path are logged in the \texttt{prev} array.
 \item $\m{inv\_unpopped}$: $\m{dst}$ is reachable in
-one hop from a ``\emph{mom}'' vertex, which is itself popped.
+one hop from a popped ``\emph{mom}'' vertex.
 This route is locally optimal: we cannot
-improve the cost by going via a \emph{different} popped vertex.
+improve the cost with a \emph{different} popped vertex.
 The \texttt{prev} array logs
 \emph{mom} as the best-known way to reach $\m{dst}$, and the \texttt{dist}
-array logs the cost of the path via \emph{mom} as the best-known cost.
+array logs the path cost via \emph{mom} as the best-known cost.
 \item $\m{inv\_unseen}$: no path is currently known from $\texttt{src}$ to $\m{dst}$.
 \end{enumerate}
 After popping the lowest-cost vertex in line~\ref{code:pop}, we reach the invariant of
@@ -65,29 +65,29 @@ the \texttt{for} loop $\m{dijk\_correct\_weak}(\gamma, \texttt{src}, \m{prev}, \
 \forall \m{dst}.~\texttt{i} \le \m{dst} < \texttt{SIZE} -> \m{inv\_unpopped\_weak}(\gamma, \m{src}, \m{prev}, \m{dist}, \m{priq}, \m{dst}, \texttt{u})
 \end{array}
 \]
-We now have four cases:
+We now have four cases, many of which are familiar from $\m{dijk\_correct}$:
 \begin{enumerate}
 \item $\m{inv\_popped}$: $\m{dst}$ has been fully processed, and has been
 popped from the priority queue.  For all popped vertices \emph{except for} \texttt{u}
-this is trivial from $\m{dijk\_correct}$; for \texttt{u} itself we reach the heart of Dijkstra's correctness: the cost to the fringe vertex with minimum cost cannot be further improved.  The associated entailment is not trivial.
+this is trivial from $\m{dijk\_correct}$; for \texttt{u} itself we reach the heart of Dijkstra's correctness: the cost to the fringe vertex with minimum cost cannot be further improved.  %The associated entailment is not trivial.
 \item $\m{inv\_unseen}$: no path is known from $\texttt{src}$ to $\m{dst}$.  Trivial from $\m{dijk\_correct}$.
 \item $\m{inv\_unpopped}$ (less than \texttt{i}): $\m{dst}$ is reachable in
 one hop from a ``\emph{mom}'' vertex, which is itself popped.  Initially this is trivial since $\texttt{i}=0$ and we restore it as \texttt{i} climbs by updating costs when they can be improved in line~\ref{code:update}.
 \item $\m{inv\_unpopped\_weak}$ (between than \texttt{i} and \texttt{SIZE}):
 $\m{dst}$ is reachable in one hop from a popped ``\emph{mom}'' vertex.
 However, the path to $\m{dst}$ specifically \emph{does not go via} \texttt{u}.
-This is fairly intuitive, since the for loop has not yet repaired $\m{dst}$.
-However, this fact is key to restoring $\m{inv\_unpopped}$ as $\texttt{i}$
+%This is fairly intuitive, since the for loop has not yet repaired $\m{dst}$.
+This fact is key to restoring $\m{inv\_unpopped}$ as $\texttt{i}$
 increments.
 \end{enumerate}
-The formal definitions for the above predicates, and the key subdefinitions upon which they rely, can be found in appendix~\ref{sec:apx}.
+The formal definitions for the above predicates can be found in appendix~\ref{sec:apx}.
+%, and the key subdefinitions upon which they rely, 
 
 At the end of the \texttt{for} loop, the fourth case will fall away (\texttt{i = SIZE}),
-allowing us to infer the \texttt{while} invariant from the \texttt{for} invariant and
-thus continue the \texttt{while} loop.
-The while loop will break precisely when no item in the priority queue has weight
-less than \texttt{INF}. This, in turn, causes the second \texttt{while} clause to
-fall away: the vertices that could be reached have all been optimized,
+allowing us to infer the \texttt{while} invariant $\m{dijk\_correct}$ from $\m{dijk\_correct\_weak}$ and thus continue the \texttt{while} loop.
+The while loop will break precisely when no item in the priority queue has cost
+less than \texttt{INF}. The second clause of the \texttt{while} loop invariant
+$\m{dijk\_correct}$ then falls away: all reachable vertices have been optimized,
 and the rest are unreachable altogether. We are done.
 
 \hide{
