@@ -121,7 +121,7 @@ void dijkstra (int graph[SIZE][SIZE], int src, int *dist, int *prev) {
     prev[src] = src;
     while (!pq_emp(pq)) {
         u = popMin(pq);  // src -> u is optimal. relax u's neighbors if we can, and then forget about u.
-        // printf("Popped vertex %d\n", u);
+        // printf("Popped vertex %d\n", u); 
         for (i = 0; i < SIZE; i++) {
             cost = graph[u][i]; 
             if (cost < IFTY) { // i.e. node i is a neighbor of mine. do I need to add that cost > 0?
