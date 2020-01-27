@@ -1,13 +1,22 @@
+\section{Formal definitions used in decorated proof}
 
+In this appendix we put more formal and complete versions 
+of the definitions discussed inline in the paper proper.
 
+\begin{figure}
 \begin{equation*}
 \begin{split}
-\p{list\_rep}(\gamma, \m{i}) &\defeq \texttt{data\_at  array  graph2mat}(\gamma)[\m{i}] \texttt{  list\_addr}(\gamma, \m{i}) \\
+\m{list\_addr} ((\m{block}, \m{offset}), \m{index}, \m{size}) &\defeq
+  (\m{block}, \m{offset} + (\m{index} \times \texttt{sizeof}(\texttt{int}) \times \m{size})) \\
+\p{list\_rep}(\gamma, \m{i}, \m{base\_ptr}) &\defeq \mathsf{array}(\texttt{graph2mat}(\gamma)[\m{i}], \m{list\_addr}(\m{base\_ptr}, \m{i}, \m{size})) \\
 \vspace{1em}
-\p{graph\_rep}(\gamma) &\defeq \underset{\texttt{vvalid}(\gamma,\m{v})}{\bigstar} \m{v}  \mapsto\p{list\_rep}(\gamma, \m{v})
+\p{graph\_rep}(\gamma, \m{g\_addr}) &\defeq \underset{\m{v} \in \gamma}{\bigstar} \m{v}  \mapsto\p{list\_rep}(\gamma, \m{v}, \m{g\_addr})
 \end{split}
 \end{equation*}
+\caption{Spatial representation of the graph}
+\end{figure}
 
+\begin{figure}
 \begin{equation*}
 \begin{split}
 &\!\!\!\!\!\!\m{path\_correct}(\gamma, \m{src}, \m{prev}, \m{dist}, \m{mom}, \m{p}) \; \defeq \; 
@@ -28,7 +37,7 @@
 &\hspace{11em}\m{inv\_unpopped}(\gamma, \m{src}, \m{prev}, \m{dist}, \m{priq}, \m{dst}) /| \null \\
 &\hspace{11em}\m{inv\_unseen}(\gamma, \m{prev}, \m{dist}, \m{priq}, \m{dst}) \\
 \vspace{1em}
-&\!\!\!\!\!\!\m{dijk\_correct\_weak}(\gamma, \m{src}, \m{prev}, \m{dist}, \m{priq}, \texttt{i}, \texttt{u}, \texttt{SIZE}) \; \defeq \; \\
+&\!\!\!\!\!\!\m{dijk\_correct\_weak}(\gamma, \m{src}, \m{prev}, \m{dist}, \m{priq}, \texttt{i}, \texttt{u}) \; \defeq \; \\
 &\forall \m{dst}.~\texttt{0} \le \m{dst} < \texttt{SIZE} -> \m{inv\_popped}(\gamma, \m{src}, \m{prev}, \m{dist}, \m{priq}, \m{dst}) /| \null \\
 &\hspace{11em}\m{inv\_unseen}(\gamma, \m{prev}, \m{dist}, \m{priq}, \m{dst}) /| \null \\
 &\forall \m{dst}.~\texttt{0} \le \m{dst} < \texttt{i} -> \m{inv\_unpopped}(\gamma, \m{src}, \m{prev}, \m{dist}, \m{priq}, \m{dst}) /| \null \\
@@ -59,3 +68,6 @@
 (\m{dist}[\m{dst}] = \texttt{INF} /| \m{prev}[\m{dst}] = \texttt{INF})
 \end{split}  
 \end{equation*}
+\caption{Key mathematical used in the decorated proof}
+\label{fig:defns}
+\end{figure}

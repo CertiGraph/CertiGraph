@@ -77,13 +77,14 @@ This comes from blah blah blah
 Next, we must account for the ripple effect that popping 
 $\m{u}$ could have had on the other vertices. 
 In particular, it is possible that a vertex obeying $\m{inv\_unpopped}$ can
-improve its cost via $\m{u}$, and that a vertex obeying $\m{inv\_unseen}$ can
-be reached via $\m{u}$. The for loop repairs these breakages by 
+improve its cost via $\m{u}$, and that an unreachable vertex 
+obeying $\m{inv\_unseen}$ can now be reached via $\m{u}$. 
+The for loop repairs these breakages by 
 checking if a path via $\m{u}$ is an improvement for such vertices, and, if so, 
 edits both arrays and the priority queue as seen on line~\ref{code:update}.
 
 The for loop's invariant is similar to that of the while loop---$\m{inv\_unseen}$ 
-is preserved as-is, and $\m{inv\_popped}$ is preserved modulo the addition of 
+and $\m{inv\_popped}$ are preserved as-is, modulo the popping of 
 $\m{u}$ as discussed above. The key edit is in $\m{inv\_unpopped}$. blah blah blah
 
 \input{poster_code_dijk.tex}
