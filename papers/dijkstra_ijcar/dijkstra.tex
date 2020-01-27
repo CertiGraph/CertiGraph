@@ -171,12 +171,12 @@
 
 \begin{abstract}
 \vspace{-1.2em}
-We report on a machine-checked proof of correctness for
+We report on a machine-checked Coq proof of correctness for
 Dijkstra’s one-to-all shortest path algorithm.
-We use classic textbook code written in CompCert C.
-Our code is executable and realistic, meaning that our verification
-needs to deal with real-world complications.
-% We prove full functional correctness, and not just program safety.
+We prove full functional correctness.
+We use classic textbook code written in CompCert C, and since our
+code is executable and realistic our verification
+must deal with real-world complications.
 In particular, we encounter and explain an overflow issue in
 Dijkstra’s algorithm. The precise bound in the relevant precondition is
 nontrivial: we show that the intuitive guess
@@ -184,8 +184,8 @@ fails and provide a workable refinement.
 This work fits into an ongoing exploration of verified graph-manipulating
 algorithms in a realistic setting.
 
-\keywords{Dijkstra \and verification \and CompCert \and Coq}
-\end{abstract}
+\keywords{Dijkstra's shortest-path \and verification \and CompCert \and VST}
+\end{abstract} %\and Coq 
 
 %\end{frontmatter}
 
