@@ -77,7 +77,6 @@
 
 \lstdefinestyle{myTinyStyle}{
 %   language=Coq,
-    keywords={Inductive,Require,Import,Definition,Fixpoint,match,with,end,let,in,fix},
     basicstyle=\normalfont\fontsize{8.2}{8.5}\tt,
     keywordstyle=\color{green}, % Blue clashes with the cyan links. Change if you want.
     stepnumber=1,
@@ -86,11 +85,19 @@
     numberstyle=\tiny,
     numbersep=5pt,
     showspaces=false,
-    escapechar=`,
-    showstringspaces=false
-}
+    showstringspaces=false,
+      language=C,
+  morecomment=[l][{\color{red}}]{//},
+  sensitive=true, 
+  mathescape=true, 
+  showlines=true, 
+  escapechar=`,
+  basicstyle=\footnotesize\ttfamily,
+  keywordstyle=\color{blue}, numbers=left,
+  numberstyle=\tiny, numbersep=5pt, boxpos=t
+  }
 
-\lstset{style=myStyle}
+\lstset{style=myTinyStyle}
 \makeatletter
 \newlength{\@mli}
 \newcommand{\mli}[1]{%
