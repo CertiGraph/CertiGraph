@@ -70,12 +70,25 @@ We now have four cases:
 \item $\m{inv\_popped}$: $\m{dst}$ has been fully processed, and has been
 popped from the priority queue.  For all popped vertices \emph{except for} \texttt{u}
 this is trivial from $\m{dijk\_correct}$; for \texttt{u} itself we reach the heart of Dijkstra's correctness: the cost to the fringe vertex with minimum cost cannot be further improved.  The associated entailment is not trivial.
-\item $\m{inv\_unseen}$: no path is currently known from $\texttt{src}$ to $\m{dst}$.  Trivially holds from $\m{dijk\_correct}$.
+\item $\m{inv\_unseen}$: no path is known from $\texttt{src}$ to $\m{dst}$.  Trivial from $\m{dijk\_correct}$.
 \item $\m{inv\_unpopped}$ (less than \texttt{i}): $\m{dst}$ is reachable in
 one hop from a ``\emph{mom}'' vertex, which is itself popped.  Initially this is trivial since $\texttt{i}=0$ and we restore it as \texttt{i} climbs by updating costs when they can be improved in line~\ref{code:update}.
-\item $\m{inv\_unpopped\_weak}$ (between than \texttt{i} and \texttt{SIZE}): ANSHUMAN
+\item $\m{inv\_unpopped\_weak}$ (between than \texttt{i} and \texttt{SIZE}):
+$\m{dst}$ is reachable in one hop from a popped ``\emph{mom}'' vertex.
+However, the path to $\m{dst}$ specifically \emph{does not go via} \texttt{u}.
+This is fairly intuitive, since the for loop has not yet repaired $\m{dst}$.
+However, this fact is key to restoring $\m{inv\_unpopped}$ as $\texttt{i}$
+increments.
 \end{enumerate}
 The formal definitions for the above predicates, and the key subdefinitions upon which they rely, can be found in appendix~\ref{sec:apx}.
+
+At the end of the \texttt{for} loop, the fourth case will fall away (\texttt{i = SIZE}),
+allowing us to infer the \texttt{while} invariant from the \texttt{for} invariant and
+thus continue the \texttt{while} loop.
+The while loop will break precisely when no item in the priority queue has weight
+less than \texttt{INF}. This, in turn, causes the second \texttt{while} clause to
+fall away: the vertices that could be reached have all been optimized,
+and the rest are unreachable altogether. We are done.
 
 \hide{
 
