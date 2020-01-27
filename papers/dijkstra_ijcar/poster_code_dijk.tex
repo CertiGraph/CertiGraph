@@ -1,8 +1,9 @@
 
-\begin{figure}
+\begin{figure}[htbp]
+
 \begin{lstlisting}[mathescape=true,showlines=true]
 #define SIZE 8
-#define IFTY INT_MAX - INT_MAX/SIZE
+#define INF INT_MAX - INT_MAX/SIZE $\label{code:inf}$
 
 void dijkstra (int graph[SIZE][SIZE], int src, 
                            int *dist, int *prev) {
@@ -12,17 +13,17 @@ $//$ $\braces{\p{DijkGraph}(\gamma)}$
  {  dist[i] = INF; prev[i] = INF; pq[i] = INF; }
  dist[src] = 0; pq[src] = 0; prev[src] = src;
 $//$ $\braces{\exists \m{priq}, \m{dist}, \m{prev}.~\p{DijkGraph}(\gamma) * \mathsf{PQ}(\texttt{pq},\m{priq}) * \mathsf{array}(\texttt{dist},\m{dist}) * \null \\ \mathsf{array}(\texttt{prev}, \m{prev}) /|
-\m{dijk\_correct}(\gamma,\texttt{src},\m{prev},\m{dist},\m{priq})}$
+\m{dijk\_correct}(\gamma,\texttt{src},\m{prev},\m{dist},\m{priq})}$ $\label{code:whileinv}$
  while (!pq_emp(pq)) {
-  u = popMin(pq);
+  u = popMin(pq); $\label{code:pop}$
 $//$ $\braces{\exists \m{prev'}, \m{dist'}, \m{priq'}.~\p{DijkGraph}(\gamma) *
 \mathsf{PQ}(\texttt{pq},\m{priq'}) * \mathsf{array}(\texttt{dist},\m{dist'}) * \null \\ \mathsf{array}(\texttt{prev}, \m{prev'}) /| \texttt{u} \in \m{popped}(\m{priq'}) /| \null \\
 \m{dijk\_correct\_weak}(\gamma, \texttt{src}, \m{prev'}, \m{dist'}, \m{priq'}, \texttt{i}, \texttt{u}, \texttt{SIZE})}$
   for (i = 0; i < SIZE; i++) {
-   cost = graph[u][i]; 
+   cost = graph[u][i]; $\label{code:cost}$
    if (cost < INF) {
-    if (dist[i] > dist[u] + cost)
-    { dist[i] = dist[u] + cost; prev[i] = u; pq[i] = dist[i]; }
+    if (dist[i] > dist[u] + cost) $\label{code:overflow}$
+    { dist[i] = dist[u] + cost; prev[i] = u; pq[i] = dist[i]; } $\label{code:update}$
    } $//$ $\braces{\exists \m{prev'}, \m{dist'}, \m{priq'}.~\p{DijkGraph}(\gamma) * \mathsf{PQ}(\texttt{pq},\m{priq'}) * \mathsf{array}(\texttt{dist},\m{dist'}) * \null \\ \mathsf{array}(\texttt{prev}, \m{prev'}) /| \m{dijk\_correct\_weak}(\gamma, \texttt{src}, \m{prev'}, \m{dist'}, \m{priq'}, \texttt{i}, \texttt{u}, \texttt{SIZE})}$  
   } $//$ $\braces{\exists \m{prev'}, \m{dist'}, \m{priq'}.~\p{DijkGraph}(\gamma) * \mathsf{PQ}(\texttt{pq},\m{priq'}) * \mathsf{array}(\texttt{dist},\m{dist'}) * \null \\ \mathsf{array}(\texttt{prev}, \m{prev'}) /| \m{dijk\_correct}(\gamma, \texttt{src}, \m{prev'}, \m{dist'}, \m{priq'})}$
  } $//$ $\braces{\exists \m{priq}, \m{dist}, \m{prev}.~\p{DijkGraph}(\gamma) * \mathsf{PQ}(\texttt{pq},\m{priq}) * \mathsf{array}(\texttt{dist},\m{dist}) * \null \\ \mathsf{array}(\texttt{prev}, \m{prev}) /| 
@@ -30,4 +31,6 @@ $//$ $\braces{\exists \m{prev'}, \m{dist'}, \m{priq'}.~\p{DijkGraph}(\gamma) *
 \m{dijk\_correct}(\gamma,\texttt{src},\m{prev},\m{dist},\m{priq})}$
  return; }
 \end{lstlisting}
+\caption{Clight code and proof sketch for Dijkstra's Algorithm}
+\label{fig:decorated}
 \end{figure}
