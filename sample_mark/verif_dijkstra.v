@@ -34,8 +34,8 @@ Definition inrange_graph grph_contents :=
   forall i j,
     0 <= i < Zlength grph_contents ->
     0 <= j < Zlength grph_contents ->
-    0 <= Znth i (Znth j grph_contents) <= Int.max_signed / SIZE.
-(* TODO: add here that graph_cell can be inf also *)
+    0 <= Znth i (Znth j grph_contents) <= Int.max_signed / SIZE \/
+    Znth i (Znth j grph_contents) = inf.
 
 Lemma inrange_upd_Znth: forall (l: list Z) i new F,
     0 <= i < Zlength l ->
@@ -1223,38 +1223,35 @@ Proof.
     rewrite H; reflexivity.
 Qed.
 
-Lemma path_cost_app_cons:
-  forall g p2u u i,
-    inrange_graph (graph_to_mat g) ->
+Lemma link_evalid:
+  forall g a b,
     sound_dijk_graph g ->
-    Zlength (graph_to_mat g) = SIZE ->
-    0 <= u < SIZE ->
-    0 <= i < SIZE ->
-    path_cost g p2u <> inf ->
-    path_cost g p2u + Znth i (Znth u (graph_to_mat g)) =
-    path_cost g (fst p2u, snd p2u +:: (u, i)).
+    0 <= a < SIZE ->
+    0 <= b < SIZE ->
+    evalid g (a,b).
 Proof.
   intros.
-  rewrite path_cost_app_cons.
-  - rewrite elabel_Znth_graph_to_mat; simpl.
-    omega. assumption.
-    destruct H0 as [? [? [_ _]]].
-    unfold edge_valid in H5.
-    unfold vertex_valid in H0.
-    rewrite H5; split; simpl; [rewrite H0|]; assumption.
-  - rewrite elabel_Znth_graph_to_mat; simpl.
-    + intro. unfold inrange_graph in H.
-      rewrite <- H1 in H2, H3.
-      specialize (H _ _ H3 H2).
-      rewrite H5 in H.
-      compute in H; destruct H.
-      apply H6; reflexivity.
-    + assumption.
-    + destruct H0 as [? [? [_ _]]].
-      unfold edge_valid in H5.
-      unfold vertex_valid in H0.
-      rewrite H5; split; simpl; [rewrite H0|]; assumption.
-  - assumption.
+  destruct H as [? [? _]].
+  unfold edge_valid in H2.
+  unfold vertex_valid in H.
+  rewrite H2; split; simpl; [rewrite H|]; assumption.
+Qed.
+  
+Lemma path_cost_app_not_inf:
+  forall g p mom u,
+    sound_dijk_graph g ->
+    0 <= mom < SIZE ->
+    0 <= u < SIZE -> 
+    path_cost g p <> inf ->  
+    elabel g (mom, u) <> inf ->
+    path_cost g p + Znth u (Znth mom (graph_to_mat g)) <> inf ->
+    path_cost g (fst p, snd p +:: (mom, u)) <> inf.    
+Proof.
+  intros.
+  rewrite path_cost_app_cons; trivial.
+  rewrite elabel_Znth_graph_to_mat; simpl;
+    try omega; trivial.
+  apply link_evalid; trivial.
 Qed.
 
 (*
@@ -1344,7 +1341,9 @@ Proof.
   intros. rewrite elabel_Znth_graph_to_mat; auto. destruct H as [? [? _]].
   red in H, H2. rewrite H2, H in H1. destruct H1. red in H0.
   rewrite <- (graph_to_mat_Zlength g) in H1, H3. specialize (H0 _ _ H3 H1).
-  now destruct H0.
+  destruct H0.
+  - destruct H0; omega.
+  - rewrite H0. rewrite <- inf_eq. omega.
 Qed.
 
 Lemma acc_pos: forall (g: LGraph) l z,
@@ -1860,9 +1859,13 @@ Proof.
                          replace (fst p2mom) with src in *.
                          apply path_ends_app_cons; trivial.
                          destruct H42. simpl in H42; omega.
-                     +++ rewrite <- path_cost_app_cons; trivial.
-
-                     +++ rewrite <- path_cost_app_cons; trivial.
+                     +++ apply path_cost_app_not_inf; trivial.
+                         admit.
+  
+                     +++ rewrite path_cost_app_cons; trivial.
+                         rewrite elabel_Znth_graph_to_mat; simpl; try omega; trivial.
+                         apply link_evalid; trivial. 
+                         admit.
                      +++ unfold VType in *.
                          rewrite Forall_forall. intros.
                          rewrite Forall_forall in H45, H36.
@@ -2010,7 +2013,8 @@ Proof.
                    (* need to add that mom' was in popped *)
                  }
                  specialize (H37 H38 H39).
-                 omega.
+                 destruct H37. rep_omega.
+                 rewrite H37. rewrite <- inf_eq. omega.
              }
              destruct (H4 dst H14 n0) as [_ [? _]].
              unfold inv_unpopped in H32.
@@ -2128,14 +2132,14 @@ Proof.
             assert_PROP (Zlength dist_contents' = SIZE). {
              entailer!. repeat rewrite Zlength_map in *. trivial. }    
            assert_PROP (Zlength (graph_to_mat g) = SIZE) by entailer!.
-           assert (0 <= cost <= Int.max_signed / SIZE) by
-               (rewrite Heqcost; apply H1; omega). 
-           forward_if. 
-           ++ assert (0 <= Znth u dist_contents' <= inf). {
-                assert (0 <= u < Zlength dist_contents') by omega.
-                apply (Forall_Znth _ _ _ H39) in H31.
-                assumption. 
-              } 
+           forward_if.
+          ++ assert (0 <= cost <= Int.max_signed / SIZE) by
+                admit.
+             assert (0 <= Znth u dist_contents' <= inf). {
+               assert (0 <= u < Zlength dist_contents') by omega.
+               apply (Forall_Znth _ _ _ H39) in H31.
+               assumption. 
+             } 
               assert (0 <= Znth i dist_contents' <= inf). {
                 assert (0 <= i < Zlength dist_contents') by omega.
                 apply (Forall_Znth _ _ _ H40) in H31.
@@ -2163,13 +2167,22 @@ Proof.
        unfold path_globally_optimal in H46.
        specialize (H46 (fst p2u, snd p2u +:: (u,i))).
        rewrite Heqcost in H42.
-       rewrite <- path_cost_app_cons in H46.
        destruct H47 as [? [? [? [? ?]]]].
        destruct H44 as [? [? [? [? ?]]]].
        rewrite H56, H52 in H42.
        apply Zlt_not_le in H42.
        unfold VType in *.
-       apply H42. apply H46.
+       apply H42.
+       rewrite path_cost_app_cons in H46; trivial. 
+       2: { rewrite elabel_Znth_graph_to_mat; trivial.
+            2: apply link_evalid; trivial.
+            simpl. omega.
+       }
+       rewrite elabel_Znth_graph_to_mat in H46; trivial.
+       2: apply link_evalid; trivial.
+       simpl fst in H46.
+       simpl snd in H46.
+       apply H46.
        - apply valid_path_app_cons; trivial;
          rewrite <- surjective_pairing; 
          destruct H50; trivial.
@@ -2178,12 +2191,6 @@ Proof.
            replace (fst p2u) with src in *.
            apply path_ends_app_cons; trivial.
            destruct H50. simpl in H50; omega.
-       - apply H1.
-       - apply H2.
-       - apply graph_to_mat_Zlength.
-       - omega.
-       - omega.
-       - destruct H47 as [_ [_ [? _]]]. omega.
      }
      assert (0 <= i < Zlength (map Vint (map Int.repr dist_contents'))) by
          (repeat rewrite Zlength_map; omega).
@@ -2615,8 +2622,8 @@ Proof.
          +++ apply H23; omega.
            ++ (* i was not a neighbor of u. 
                  prove the for loop's invariant holds *)
-             replace 8 with SIZE in H38 by omega.
-             rewrite inf_eq2 in H38.
+             replace 8 with SIZE in H37 by omega.
+             rewrite inf_eq2 in H37.
              forward.
              Exists prev_contents' priq_contents' dist_contents'.
              entailer!.
@@ -2632,21 +2639,21 @@ Proof.
                 by going via u *)
                     unfold inv_unpopped; intros.
                     assert (i <= i < SIZE) by omega.
-                    destruct (H23 i H52 H51) as [p2mom [? [? [? [? [? ?]]]]]].
+                    destruct (H23 i H51 H50) as [p2mom [? [? [? [? [? ?]]]]]].
                     unfold VType in *.
                     remember (Znth i prev_contents') as mom.
                     exists p2mom; split3; [| |split3; [| |split]]; trivial.
                     +++ rewrite Forall_forall; intros.
-                        rewrite Forall_forall in H54.
-                        specialize (H54 _ H59).
-                        destruct H54 as [? [? [? ?]]].
+                        rewrite Forall_forall in H53.
+                        specialize (H53 _ H58).
+                        destruct H53 as [? [? [? ?]]].
                         split; trivial.
-                    +++ intros. apply H58; trivial.
+                    +++ intros. apply H57; trivial.
                         unfold VType in *.
                         rewrite Forall_forall; intros.     
-                        rewrite Forall_forall in H60.
-                        specialize (H60 _ H62).
-                        destruct H60.
+                        rewrite Forall_forall in H59.
+                        specialize (H59 _ H61).
+                        destruct H59.
                         split3; [| |split]; trivial.
                         admit. admit.
                         (* interesting case -- 
