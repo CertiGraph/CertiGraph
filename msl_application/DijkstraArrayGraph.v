@@ -22,8 +22,6 @@ Require Export RamifyCoq.graph.FiniteGraph.
 Require Export RamifyCoq.graph.MathGraph.
 Require Export RamifyCoq.graph.LstGraph.
 Require Import RamifyCoq.msl_application.ArrayGraph.
-(* Require Import RamifyCoq.msl_application.DijkstraGraph. *)
-(* TODO: Narrow the above to be minimal *)
  
 Coercion pg_lg: LabeledGraph >-> PreGraph.
 Coercion lg_gg: GeneralGraph >-> LabeledGraph. 
@@ -47,15 +45,9 @@ Definition is_null_Z: DecidablePred Z := existT (fun P : Z -> Prop => forall a :
 
 Definition VType : Type := Z.
 Definition EType : Type := VType * Z.
-Definition LE : Type := Z. (*positive Z. add this to soundness*)
+Definition LE : Type := Z.
 Definition LV: Type := list LE.
 Definition LG: Type := unit.
-(*Record LG: Type := (* may be unnecessary? *)
-  {
-  vertices : list LV;
-  size: nat;
-  vertices_range: length vertices = size
-  }. *)
 
 Instance V_EqDec: EqDec VType eq.
 Proof. hnf. apply Z.eq_dec. Qed.
@@ -92,13 +84,10 @@ Proof.
 Qed.
 
 Class Fin (g: LabeledGraph VType EType LV LE LG) :=
-  { fin: FiniteGraph g;
-    (* pos: Z_inc_list (Z.to_nat SIZE) *)
-  }.
+  { fin: FiniteGraph g; }.
 
 Definition LGraph := LabeledGraph VType EType LV LE LG.
 Definition Graph := (GeneralGraph VType EType LV LE LG (fun g => Fin g)).
-(* TODO: put bound on i, j in here *)
 
 Definition vertex_valid (g: LGraph): Prop :=
   forall v, vvalid g v <-> 0 <= v < SIZE.
@@ -136,26 +125,12 @@ Section SpaceDijkstraArrayGraph.
   Context {SAGP: SpatialDijkstraArrayGraphAssum Pred}.
   Context {SAG: SpatialDijkstraArrayGraph Addr Pred}.
 
-  (* Fixpoint choose {A : Type} (l : list (option A)) : list A := *)
-  (*   match l with *)
-  (*   | nil => nil *)
-  (*   | Some x :: tl => x :: choose tl *)
-  (*   | None :: tl => choose tl *)
-  (*   end. *)
-  
-  (* (* TODO: move this to vvalid of a Dijk path *) *)
-  (* Definition allTrue {A : Type} (l : list (option A)) : bool := *)
-  (*   fold_right (fun x acc => match x with Some _ => acc | _ => false end) true l. *)
-
   Definition vert_rep (g: LGraph) (v : VType) : list Z :=
     map (elabel g) (map (fun x => (v,x)) (nat_inc_list (Z.to_nat SIZE))).
   
   (* from Graph to list (list Z) *)
   Definition graph_to_mat (g : LGraph) : list (list Z) :=
     map (vert_rep g) (nat_inc_list (Z.to_nat SIZE)).
-  
-  (* Definition list_rep listaddr contents_mat index := *)
-    (* abstract_data_at listaddr (Znth index contents_mat). *)
   
   (* spatial representation of the DijkstraGraph *)
   Definition graph_rep (g : Graph) (a : Addr)  :=
