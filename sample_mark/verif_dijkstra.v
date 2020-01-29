@@ -1452,6 +1452,35 @@ Proof.
   rewrite H in H4. omega.
 Qed.
 
+Set Nested Proofs Allowed.
+
+Lemma in_path_app_cons:
+  forall g step p2a src a b,
+     sound_dijk_graph g ->
+    path_ends g p2a src a ->
+    In_path g step (fst p2a, snd p2a +:: (a, b)) ->
+    In_path g step p2a \/ step = b.
+Proof.
+  intros. destruct H1; simpl in H1.
+  - left. unfold In_path. left; trivial.
+  - destruct H1 as [? [? ?]].
+    apply in_app_or in H1.
+    destruct H as [? [? [? ?]]].
+    unfold src_edge in H4. unfold dst_edge in H5.
+    rewrite H4, H5 in H2.
+    destruct H1.
+    + left. unfold In_path. right.
+      exists x. rewrite H4, H5. split; trivial.
+    + simpl in H1. destruct H1; [|omega].
+      rewrite (surjective_pairing x) in *.
+      inversion H1. simpl in H2.
+      destruct H2.
+      * left. destruct H0.
+        apply pfoot_in in H6. rewrite H7, <- H2 in H6.
+        trivial.
+      * right; trivial.
+Qed.
+
 Lemma body_dijkstra: semax_body Vprog Gprog f_dijkstra dijkstra_spec.
 Proof.
   start_function. 
@@ -1892,89 +1921,22 @@ Proof.
                              rewrite <- H49, <- H50.
                              omega.
                  --- intros.
-                     (* I need something like
-                        "In_path_app_cons"
-                        that will break the case of 
-                        H44 (ie, last hypethesis) 
-                        into two cases. Then one 
-                        of those will plug into 
-                        H36 immediately. *)
-                     
-                   
-                     (* rewrite in_path_or_cons in H44. *)
-                     (* destruct H44. *)
-
-                     admit.
-
-                     (*
-                     1: { simpl in H44.
-                          destruct H33 as [? [? _]].
-                          destruct H45. 
-                          replace (fst p2mom) with src in H44 by omega.
-                          omega.
-                     }
-                     destruct H44 as [? [? ?]].
-                     simpl in H44. 
-                     apply in_app_or in H44. simpl in H44.
-                     destruct H2 as [? [? [? ?]]].
-                     unfold src_edge in H47.
-                     unfold dst_edge in H48.
-                     rewrite H47, H48 in H45.
-                     destruct H44;
-                       [|destruct H44; [|omega]]; destruct H45.
-                     +++ 
-                     +++ specialize (H36 _ H43).
-                         destruct H36.
+                     destruct H33 as [_ [? _]].
+                     apply (in_path_app_cons _ _ _ src) in H44; trivial.
+                     destruct H44.
+                     +++ specialize (H36 _ H43 H44).
                          rewrite <- get_popped_irrel_upd; try omega; trivial.
-                         *** apply get_popped_range in H36; omega.
-                         *** intro.
-                             unfold VType in *.
-                             rewrite H45 in H36.
-                             apply H17. trivial.
-                     +++ destruct (Z.eq_dec (snd x) u).
-                         *** rewrite get_popped_meaning.
-                             rewrite e.
-                             rewrite upd_Znth_same; trivial.
-                             rewrite upd_Znth_Zlength by omega.
-                             rewrite H11.
-                             destruct H33.
-                             apply (step_in_range2 g p2mom);
-                               trivial.
-                         *** specialize (H36 _ H43).
-                             destruct H36.
-                             rewrite <- get_popped_irrel_upd; try omega; trivial.
-                             rewrite H11.
-                             destruct H33.
-                             apply (step_in_range2 g p2mom);
-                               trivial.
-                     +++ simpl in H43.
-                         destruct H43; [|omega].
-                         rewrite (surjective_pairing x) in *.
-                         inversion H43.
-                         simpl fst.
-                         rewrite <- H46, <- H45.
-                         rewrite <- get_popped_irrel_upd; try omega; trivial.
-                         assert (In mom (get_popped priq_contents)). {
-                           destruct H33 as [? [? [? [? ?]]]].
-                           destruct H44.
-                           apply pfoot_in in H50.
-                           destruct H50.
-                           *** unfold VType in *.
-                               replace (fst p2mom) with src in * by omega.
-                         intro. apply H17.
-                         rewrite <- H45. trivial.
-                     +++ simpl in H44.
-                         destruct H44; [|omega].
-                         rewrite (surjective_pairing x) in *.
-                         inversion H44.
-                         simpl snd.
+                         apply get_popped_range in H36; omega.
+                         intro. rewrite H45 in H36.
+                         apply H17; trivial.
+                     +++ rewrite H44.
                          rewrite get_popped_meaning.
                          rewrite upd_Znth_same; omega.
                          rewrite upd_Znth_Zlength; omega.
-*)
                  --- (* This is a key juncture --
                         we must show that the locally optimal path via mom
                         is actually the globally optimal path to u *)
+(* tricky admit #1 *)
                    admit.
                    (*
                    unfold path_globally_optimal; intros.
@@ -2007,7 +1969,7 @@ Proof.
                    destruct (Forall_dec (fun x : Z * Z =>
                                            In (fst x) (get_popped priq_contents) /\
                                            In (snd x) (get_popped priq_contents)) H50 (snd p')).
-                   +++ admit. (* impossible *)
+                   +++  (* impossible *)
                    +++ apply neg_Forall_Exists_neg in n0.
                        rewrite Exists_exists in n0.
                        destruct n0 as [? [? ?]].
@@ -2038,10 +2000,8 @@ Proof.
                    unfold inv_unpopped in H50.
                    specialize (H50 H35).
                    
-                   
-                   
-                   admit. *)
-              (* tricky admit #1 *)
+                 *)
+
               ** (* Here we must show that the 
                     vertices that were popped earlier
                     are not affected by the addition of
@@ -2154,51 +2114,9 @@ Proof.
                 rewrite <- get_popped_irrel_upd; try omega; trivial.
                 apply get_popped_range in H33; omega.
              ** intros.
-                admit.
+                apply H38; trivial.
+                intros. admit.
                 (* tricky *)
-                (* 
-                apply H39; trivial.
-                1: { destruct (Z.eq_dec mom' u).
-                     - subst mom'.
-                       rewrite Forall_forall in H42.
-                       destruct H41 as [? [? _]].
-                       destruct H44 as [? ?].
-                       apply pfoot_in in H45.
-                       destruct H45.
-                       + unfold valid_path in H41.
-                         rewrite (surjective_pairing p2mom') in *.
-                         destruct (snd p2mom').
-                         * 
-                        + destruct H44 as 
-
-                         
-                     - unfold VType in *.
-                       replace (fst p2mom') with src in * by omega.                       
-                       adm
-                     (* gotta think about this... *)
-                     - destruct H45 as [? [? ?]].
-                       specialize (H42 _ H45).
-                       destruct H42 as [? [? [? ?]]].
-                       destruct H2 as [? [? [? ?]]].
-                       unfold src_edge in H51.
-                       unfold dst_edge in H52.
-                       rewrite H51, H52 in H46.
-                       rewrite H44 in H46.
-                       destruct H46; symmetry in H46.
-                       apply H48; trivial.
-                       apply H49; trivial.
-                }
-                rewrite Forall_forall; intros.
-                rewrite Forall_forall in H42.
-                specialize (H42 _ H44).
-                destruct H42 as [? [? [? ?]]].
-                destruct H41.
-                rewrite <- get_popped_irrel_upd in H42, H45; try omega.
-                split; trivial.
-                all: rewrite H11.
-                apply (step_in_range2 g p2mom'); trivial.
-                apply (step_in_range g p2mom'); trivial.
-                 *)
            ++ (* now we show that all is well for the 
                  vertices that have not yet been seen *)
              unfold inv_unseen; intros.
@@ -2493,7 +2411,7 @@ Proof.
                     we must show that the path via u is 
                     better than all other paths via
                     other popped verices *)
-                 destruct H62 as [? [? [? [? ?]]]].
+                 destruct H62 as [? [? [? [? ?]]]]s.
                  admit.
                  (*       This is tricky admit #2 *) 
                  (*
@@ -2625,7 +2543,10 @@ Proof.
                         apply (step_in_range2 g p2mom); trivial.
                       1: unfold VType in *; omega.
                       intro contra.
-                      (* can specialise 
+                      (* 
+                         Shengyi? 
+
+                         can specialise 
                           H61 : forall step : Z,
         step <> src -> In_path g step p2mom -> In step (get_popped priq_contents')
                           using step = (snd x)
@@ -2717,6 +2638,8 @@ Proof.
                     and for the contra can intro, 
                     rewrite in H61, and then get a contra
                     from H43 
+
+                    Shengyi?
                   *)
                  admit.
                  admit.
@@ -2728,7 +2651,10 @@ Proof.
                  ---- rewrite H34.
                       apply (step_in_range2 g p2mom); trivial.
                  ---- (* can specialize H61 and then
-                         use contra *)
+                         use contra 
+
+                         Shengyi?
+*)
                    admit.
          +++ intros.
              specialize (H61 _ H67 H68).
@@ -2749,7 +2675,7 @@ Proof.
                  split3; [| |split3]; trivial.
                  ---- rewrite upd_Znth_diff in H72;
                         try omega; trivial.
-                      (* Shengyi *)
+                      (* Shengyi? *)
                       (* first please help me 
                          specialize H68.
                          
@@ -2770,7 +2696,7 @@ Proof.
                       specialize (H73 _ H74).
                       unfold VType in *.
                       rewrite upd_Znth_diff in H73; try omega; trivial.
-                      (* Shengyi *)
+                      (* Shengyi? *)
                       (* same story. need to specialize
                        H68 and then proceed *)
 
