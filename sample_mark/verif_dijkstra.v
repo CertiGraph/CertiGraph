@@ -1936,72 +1936,33 @@ Proof.
                  --- (* This is a key juncture --
                         we must show that the locally optimal path via mom
                         is actually the globally optimal path to u *)
-(* tricky admit #1 *)
-                   admit.
-                   (*
+                   (* tricky admit #1 *)
+
+(* 
+When we get in the while loop, u is popped. 
+We must prove that dist[u] is the global shortest. 
+Since u is in pq before, u satisfy Inv2. 
+
+We can prove that dist[u] is either global shortest or not. If so, done. 
+
+If not, the global shortest path to u 
+must contain an unpopped vertex w because of Inv2. 
+Thus we have dist[u] > dist[w] + length(w to u). 
+But wait, u is popped from pq because dist[u] is minimum. 
+It is impossible to have another unpopped w satisfying 
+dist[w] < dist[u]. 
+So the "not" case is False. 
+So this pop operation maintains Inv1.
+*)
                    unfold path_globally_optimal; intros.
-                   unfold path_globally_optimal in H38.
-                   destruct H36 as [? [? [? [? ?]]]].
+                   unfold path_globally_optimal in H37.
+                   destruct H33 as [? [? [? [? ?]]]].
                    rewrite path_cost_app_cons; trivial.
                    rewrite elabel_Znth_graph_to_mat;
                      trivial.
                    2: apply link_evalid; trivial.
                    simpl.
-                   assert (forall x : Z * Z,
-  {In (fst x) (get_popped priq_contents) /\ In (snd x) (get_popped priq_contents)} +
-  {~
-     (In (fst x) (get_popped priq_contents) /\ In (snd x) (get_popped priq_contents))}).
-                   {
-                     intros.
-                     destruct (in_dec (ZIndexed.eq) (fst x)
-                                      (get_popped priq_contents));
-                     destruct (in_dec (ZIndexed.eq) (snd x)
-                                      (get_popped priq_contents)).
-                     - left; split; trivial.
-                     - right. intro. destruct H50.
-                       apply n0; trivial.
-                     - right. intro. destruct H50.
-                       apply n0; trivial.
-                     - right. intro. destruct H50.
-                       apply n0; trivial.
-                   }
-                   
-                   destruct (Forall_dec (fun x : Z * Z =>
-                                           In (fst x) (get_popped priq_contents) /\
-                                           In (snd x) (get_popped priq_contents)) H50 (snd p')).
-                   +++  (* impossible *)
-                   +++ apply neg_Forall_Exists_neg in n0.
-                       rewrite Exists_exists in n0.
-                       destruct n0 as [? [? ?]].
-                       apply Classical_Prop.not_and_or in H52.
-                       assert (In_path g x p').
-                       epath_to_vpath
-
-                       
-                       in_path_split:
-                       
-                       
-                       
-                       
-                       n
-
-
-
-                   (fun x : Z * Z =>
-                      In (fst x) (get_popped priq_contents) /\
-                      In (snd x) (get_popped priq_contents))
-  ).
-                                        
-                   
-
-                   
-                   (* apply Znot_gt_le. intro. *)
-                   destruct (H4 u) as [_ [? _]]; trivial.
-                   unfold inv_unpopped in H50.
-                   specialize (H50 H35).
-                   
-                 *)
-
+                   admit.
               ** (* Here we must show that the 
                     vertices that were popped earlier
                     are not affected by the addition of
@@ -2115,8 +2076,11 @@ Proof.
                 apply get_popped_range in H33; omega.
              ** intros.
                 apply H38; trivial.
-                intros. admit.
-                (* tricky *)
+                intros.
+                specialize (H40 _ H42 H43). destruct H40.
+                rewrite <- get_popped_irrel_upd in H40; try omega; trivial.
+                apply get_popped_range in H40.
+                rewrite upd_Znth_Zlength in H40; omega.
            ++ (* now we show that all is well for the 
                  vertices that have not yet been seen *)
              unfold inv_unseen; intros.
@@ -2411,7 +2375,7 @@ Proof.
                     we must show that the path via u is 
                     better than all other paths via
                     other popped verices *)
-                 destruct H62 as [? [? [? [? ?]]]]s.
+                 destruct H62 as [? [? [? [? ?]]]].
                  admit.
                  (*       This is tricky admit #2 *) 
                  (*
