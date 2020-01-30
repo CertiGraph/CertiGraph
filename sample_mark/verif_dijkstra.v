@@ -2422,7 +2422,9 @@ So this pop operation maintains Inv1.
                         of u to prove that first
                         is le first. then done. 
                       *)
-                     admit.
+                     unfold path_globally_optimal in H62.
+                     specialize (H62 _ H63 H66).
+                     omega.
                    }
                    assert (In_path g mom' p2mom') by admit.
                    (* Shengyi is removing this anyway *)
