@@ -996,18 +996,19 @@ Definition inv_unpopped g src prev priq dist dst :=
       path_globally_optimal g src mom' p2mom' ->
       path_cost g p2mom + Znth dst (Znth mom (graph_to_mat g)) <= path_cost g p2mom' + Znth dst (Znth mom' (graph_to_mat g)).
 
-Definition inv_unseen prev priq dist dst :=
+Definition inv_unseen g prev priq dist dst :=
   Znth dst priq = inf ->
   Znth dst dist = inf /\
-  Znth dst prev = inf.
+  Znth dst prev = inf /\
+  forall mom, In mom (get_popped priq) ->
+              Znth dst (Znth mom (graph_to_mat g)) = inf.
 
 Definition dijkstra_correct g (src : VType) (prev priq dist: list VType) : Prop :=
   forall dst,
     0 <= dst < SIZE ->
-    (* src <> dst -> *)
     inv_popped g src prev priq dist dst /\
     inv_unpopped g src prev priq dist dst /\
-    inv_unseen prev priq dist dst.
+    inv_unseen g prev priq dist dst.
 
 (* SPECS *)
 Definition pq_emp_spec :=
@@ -1678,10 +1679,14 @@ Proof.
            rewrite <- inf_eq. omega.
       * split; trivial.
         rewrite upd_Znth_diff; try omega.
-        rewrite Znth_list_repeat_inrange; omega.
+        rewrite Znth_list_repeat_inrange.
+        split; trivial.
+        inversion 1.
+        omega.
         intro. rewrite H18 in H17.
         rewrite upd_Znth_same in H17.
         inversion H17. omega.
+        (* intros. inversion H18. *)
     + (* Now the body of the while loop begins. *)
       Intros prev_contents priq_contents dist_contents.
       assert_PROP (Zlength priq_contents = SIZE).
@@ -1780,10 +1785,26 @@ Proof.
                     path_globally_optimal g src mom' p2mom' ->
                     path_cost g p2mom + Znth dst (Znth mom (graph_to_mat g)) <= path_cost g p2mom' + Znth dst (Znth mom' (graph_to_mat g));
 
-                    (* and inv_unseen remains true *)
+                    (* similarly for inv_unseen,
+                       the invariant has been 
+                       restored until i:
+                       u has been taken into account *)
                     forall dst,
-                      0 <= dst < SIZE ->
-                      inv_unseen prev_contents' priq_contents' dist_contents' dst;
+                       0 <= dst < i ->
+                       inv_unseen g prev_contents' priq_contents' dist_contents' dst;
+
+                (* and a weaker version of inv_unseen is
+                   true for those vertices that the 
+                   for loop has not yet scanned *)
+                forall dst,
+                i <= dst < SIZE ->
+                Znth dst priq_contents' = inf ->
+                Znth dst dist_contents' = inf /\
+                Znth dst prev_contents' = inf /\
+                forall mom : VType,
+                  In mom (get_popped priq_contents') ->
+                  mom <> u ->
+                  Znth dst (Znth mom (graph_to_mat g)) = inf;
 
                       (* further, some useful facts
                          about src... *)
@@ -2081,25 +2102,34 @@ So this pop operation maintains Inv1.
                 rewrite <- get_popped_irrel_upd in H40; try omega; trivial.
                 apply get_popped_range in H40.
                 rewrite upd_Znth_Zlength in H40; omega.
-           ++ (* now we show that all is well for the 
-                 vertices that have not yet been seen *)
-             unfold inv_unseen; intros.
-             destruct (Z.eq_dec dst u).
-             1: { rewrite e in H31.
-                  rewrite upd_Znth_same in H31; omega. }
-             rewrite upd_Znth_diff in H31 by omega.
-             destruct (H4 dst H14) as [_ [_ ?]].
-             unfold inv_unseen in H32.
-             specialize (H32 H31); trivial.
+           ++ (* no unseen vertices have been repaired yet *)
+             intros. omega.
+           ++ unfold inv_unseen; intros.
+              destruct (Z.eq_dec dst u).
+              1: { rewrite e in H31.
+                  rewrite upd_Znth_same in H31 by omega.
+                  inversion H31.
+              }
+              rewrite upd_Znth_diff in H31 by omega.
+              destruct (H4 dst H14) as [_ [_ ?]].
+              unfold inv_unseen in H32.
+              specialize (H32 H31).
+              destruct H32 as [? [? ?]].
+              split3; trivial.
+              intros.
+              rewrite <- get_popped_irrel_upd in H35; try omega.
+              2: apply get_popped_range in H35;
+                rewrite upd_Znth_Zlength in H35; omega.
+              apply H34; trivial.
            ++ destruct (Z.eq_dec src u).
               1: subst src; rewrite upd_Znth_same; omega.
               rewrite upd_Znth_diff; omega.             
-           ++ apply get_popped_meaning.
-              rewrite upd_Znth_Zlength; omega.
-              rewrite upd_Znth_same; omega.
-           ++ apply inrange_upd_Znth; trivial;
-                rewrite <- inf_eq; rep_omega.
-              
+           ++ split.
+              ** apply get_popped_meaning.
+                 rewrite upd_Znth_Zlength; omega.
+                 rewrite upd_Znth_same; omega.
+              ** apply inrange_upd_Znth; trivial;
+                rewrite <- inf_eq; rep_omega.              
         -- (* We now begin with the for loop's body *)
           assert (0 <= u < Zlength (graph_to_mat g)). {
             unfold graph_to_mat.
@@ -2128,7 +2158,7 @@ So this pop operation maintains Inv1.
              unfold list_address. simpl.
              rewrite field_address_offset.
              1: rewrite offset_offset_val; simpl; f_equal; rep_omega.
-             destruct H35 as [? [? [? [? ?]]]].
+             destruct H36 as [? [? [? [? ?]]]].
       unfold field_compatible; split3; [| | split3]; auto.
       unfold legal_nested_field; split; [auto | simpl; omega].
            }
@@ -2145,15 +2175,15 @@ So this pop operation maintains Inv1.
            assert_PROP (Zlength (graph_to_mat g) = SIZE) by entailer!.
            forward_if.
           ++ assert (0 <= cost <= Int.max_signed / SIZE). {
-               replace 8 with SIZE in H37.
+               replace 8 with SIZE in H38.
                assert (0 <= i < Zlength (graph_to_mat g)) by
                    (rewrite graph_to_mat_Zlength; omega).
                assert (0 <= u < Zlength (graph_to_mat g)) by
                    (rewrite graph_to_mat_Zlength; omega).
-               specialize (H1 i u H38 H39).
-               rewrite inf_eq2 in H37.
+               specialize (H1 i u H39 H40).
+               rewrite inf_eq2 in H38.
                rewrite Heqcost in *.
-               rewrite Int.signed_repr in H37.
+               rewrite Int.signed_repr in H38.
                2: { destruct H1.
                     - unfold VType in *.
                       replace SIZE with 8 in H1.
@@ -2161,25 +2191,25 @@ So this pop operation maintains Inv1.
                       pose proof (Int.min_signed_neg).
                       assert (Int.max_signed / 8 <= Int.max_signed). {
                         compute.
-                        intro. inversion H42.
+                        intro. inversion H43.
                       }
                       split; try omega.
                     - rewrite H1.
                       rewrite <- inf_eq. 
                       compute; split; inversion 1.
                }
-               rewrite Int.signed_repr in H37.
+               rewrite Int.signed_repr in H38.
                2: rewrite <- inf_eq; compute; split; inversion 1.
                destruct H1; omega.
              }
              assert (0 <= Znth u dist_contents' <= inf). {
                assert (0 <= u < Zlength dist_contents') by omega.
-               apply (Forall_Znth _ _ _ H39) in H31.
+               apply (Forall_Znth _ _ _ H40) in H32.
                assumption. 
              } 
               assert (0 <= Znth i dist_contents' <= inf). {
                 assert (0 <= i < Zlength dist_contents') by omega.
-                apply (Forall_Znth _ _ _ H40) in H31.
+                apply (Forall_Znth _ _ _ H41) in H32.
                 assumption. 
               }
               assert (0 <= Znth u dist_contents' + cost <= Int.max_signed). {
@@ -2187,7 +2217,7 @@ So this pop operation maintains Inv1.
                 unfold inf in *. rep_omega.
                 }
               forward. forward. forward_if.
-  ** rewrite Int.signed_repr in H42
+  ** rewrite Int.signed_repr in H43
       by (unfold inf in *; rep_omega).
      (* At this point we know that we are definitely
         going to make edits in the arrays:
@@ -2199,35 +2229,35 @@ So this pop operation maintains Inv1.
         *)
        intro.
        unfold inv_popped in H21.
-       destruct (H21 _ H43) as [p2i [? [? ?]]].
-       destruct (H21 _ H28) as [p2u [? [? ?]]].
-       unfold path_globally_optimal in H46.
-       specialize (H46 (fst p2u, snd p2u +:: (u,i))).
-       rewrite Heqcost in H42.
-       destruct H47 as [? [? [? [? ?]]]].
-       destruct H44 as [? [? [? [? ?]]]].
-       rewrite H56, H52 in H42.
-       apply Zlt_not_le in H42.
+       destruct (H21 _ H44) as [p2i [? [? ?]]].
+       destruct (H21 _ H29) as [p2u [? [? ?]]].
+       unfold path_globally_optimal in H47.
+       specialize (H47 (fst p2u, snd p2u +:: (u,i))).
+       rewrite Heqcost in H43.
+       destruct H48 as [? [? [? [? ?]]]].
+       destruct H45 as [? [? [? [? ?]]]].
+       rewrite H57, H53 in H43.
+       apply Zlt_not_le in H43.
        unfold VType in *.
-       apply H42.
-       rewrite path_cost_app_cons in H46; trivial. 
+       apply H43.
+       rewrite path_cost_app_cons in H47; trivial. 
        2: { rewrite elabel_Znth_graph_to_mat; trivial.
             2: apply link_evalid; trivial.
             simpl. omega.
        }
-       rewrite elabel_Znth_graph_to_mat in H46; trivial.
+       rewrite elabel_Znth_graph_to_mat in H47; trivial.
        2: apply link_evalid; trivial.
-       simpl fst in H46.
-       simpl snd in H46.
-       apply H46.
+       simpl fst in H47.
+       simpl snd in H47.
+       apply H47.
        - apply valid_path_app_cons; trivial;
          rewrite <- surjective_pairing; 
-         destruct H50; trivial.
+         destruct H51; trivial.
        - rewrite (surjective_pairing p2u) in *.
            simpl.
            replace (fst p2u) with src in *.
            apply path_ends_app_cons; trivial.
-           destruct H50. simpl in H50; omega.
+           destruct H51. simpl in H51; omega.
      }
      assert (0 <= i < Zlength (map Vint (map Int.repr dist_contents'))) by
          (repeat rewrite Zlength_map; omega).
@@ -2254,21 +2284,21 @@ So this pop operation maintains Inv1.
      split3; [| | split3; [| | split3; [| | split3]]].
      ---
        intros. pose proof (H21 dst).
-       unfold inv_popped in H57.
+       unfold inv_popped in H58.
        unfold inv_popped.
        intros.
        destruct (Z.eq_dec dst i).
        +++ subst dst.
-           rewrite get_popped_meaning, upd_Znth_same in H58.
+           rewrite get_popped_meaning, upd_Znth_same in H59.
            3: rewrite upd_Znth_Zlength.
            all: omega.
-       +++ pose proof (get_popped_range _ _ H58).
-           rewrite upd_Znth_Zlength in H59 by omega.
-           rewrite <- get_popped_irrel_upd in H58; try omega.
-           specialize (H57 H58).
-           destruct H57 as [p2dst [? [? ?]]].
+       +++ pose proof (get_popped_range _ _ H59).
+           rewrite upd_Znth_Zlength in H60 by omega.
+           rewrite <- get_popped_irrel_upd in H59; try omega.
+           specialize (H58 H59).
+           destruct H58 as [p2dst [? [? ?]]].
            exists p2dst; split3; trivial.
-           *** destruct H57 as [? [? [? [? ?]]]].
+           *** destruct H58 as [? [? [? [? ?]]]].
                split3; [| | split3]; trivial.
                1: rewrite upd_Znth_diff; omega.
                rewrite Forall_forall; intros.
@@ -2291,27 +2321,27 @@ So this pop operation maintains Inv1.
                  unfold In_path. right.
                  exists x. split; trivial.
                  destruct H2 as [? [? [? ?]]].
-                 unfold dst_edge in H70.
-                 rewrite H70. right; trivial.
+                 unfold dst_edge in H71.
+                 rewrite H71. right; trivial.
                }
-               specialize (H60 _ H67 H68).
-               rewrite Forall_forall in H65.
-               specialize (H65 _ H66).
+               specialize (H61 _ H68 H69).
+               rewrite Forall_forall in H66.
+               specialize (H66 _ H67).
                assert (snd x <> i). {
                  intro contra.
                  unfold VType in *.
-                 rewrite contra in H60.
-                 apply H43. trivial.
+                 rewrite contra in H61.
+                 apply H44. trivial.
                }
                unfold VType in *.
                rewrite upd_Znth_diff; try omega.
-               apply get_popped_range in H60; omega.
+               apply get_popped_range in H61; omega.
            *** intros.
-               specialize (H60 _ H62 H63).
+               specialize (H61 _ H63 H64).
                rewrite <- get_popped_irrel_upd; try omega; trivial.
-               apply get_popped_range in H60; omega.
-               intro contra. rewrite contra in H60.
-               apply H43. trivial.
+               apply get_popped_range in H61; omega.
+               intro contra. rewrite contra in H61.
+               apply H44. trivial.
      --- intros.
          destruct (Z.eq_dec dst i).
          +++ subst dst.
@@ -2325,12 +2355,12 @@ So this pop operation maintains Inv1.
               *)
              unfold inv_unpopped; intros.
              unfold inv_popped in H21.
-             destruct (H21 _ H28) as [p2u [? [? ?]]].
+             destruct (H21 _ H29) as [p2u [? [? ?]]].
              unfold VType in *.
              rewrite upd_Znth_same by omega.
              exists p2u.
              split3; [| |split3; [| |split3]]; trivial.
-             *** destruct H59 as [? [? [? [? ?]]]].
+             *** destruct H60 as [? [? [? [? ?]]]].
                  split3; [ | | split3]; trivial.
                  ---- rewrite upd_Znth_diff by omega.
                       trivial.
@@ -2345,38 +2375,72 @@ So this pop operation maintains Inv1.
                         unfold In_path. right.
                         exists x. split; trivial.
                         destruct H2 as [? [? [? ?]]].
-                        unfold dst_edge in H70.
-                        rewrite H70. right; trivial.
+                        unfold dst_edge in H71.
+                        rewrite H71. right; trivial.
                       }
-                      specialize (H60 _ H67 H68).
-                      rewrite Forall_forall in H65.
-                      specialize (H65 _ H66).
+                      specialize (H61 _ H68 H69).
+                      rewrite Forall_forall in H66.
+                      specialize (H66 _ H67).
                       unfold VType in *.
                       rewrite upd_Znth_diff; try omega; trivial.
-                      apply get_popped_range in H60; omega.
-                      intro. rewrite H69 in H60.
-                      apply H43. trivial.
+                      apply get_popped_range in H61; omega.
+                      intro. rewrite H70 in H61.
+                      apply H44. trivial.
              *** intros.
-                 specialize (H60 _ H62 H63).
+                 specialize (H61 _ H63 H64).
                  rewrite <- get_popped_irrel_upd; try omega; trivial.
-                 apply get_popped_range in H60; omega.
-                 intro; rewrite H64 in H60. apply H43; trivial.
+                 apply get_popped_range in H61; omega.
+                 intro; rewrite H65 in H61. apply H44; trivial.
              *** rewrite elabel_Znth_graph_to_mat;
                    simpl; trivial; try omega.
                  apply link_evalid; trivial.
-             *** rewrite upd_Znth_same in H58 by omega.
-                 destruct H59 as [_ [_ [_ [? _]]]].
-                 rewrite <- H59. omega.
+             *** rewrite upd_Znth_same in H59 by omega.
+                 destruct H60 as [_ [_ [_ [? _]]]].
+                 rewrite <- H60. omega.
              *** rewrite upd_Znth_same by omega.
-                 destruct H59 as [_ [_ [_ [? _]]]].
+                 destruct H60 as [_ [_ [_ [? _]]]].
                  omega.
              *** intros.
                  (* This is another key point in the proof:
                     we must show that the path via u is 
                     better than all other paths via
                     other popped verices *)
-                 destruct H62 as [? [? [? [? ?]]]].
-                 admit.
+                 destruct H63 as [? [? [? [? ?]]]].
+
+                 destruct (Z.eq_dec (Znth i priq_contents') inf).
+                 ---- (* i was unseen *)
+                   assert (i <= i < SIZE) by omega.
+                   destruct (H25 _ H70 e) as [? [? ?]].
+                   destruct (Z.eq_dec mom' u).
+                   1: {
+                     subst mom'.
+                     (* use path_globally_optimal
+                        of u to prove that first
+                        is le first. then done. 
+                      *)
+                     admit.
+                   }
+                   assert (In_path g mom' p2mom') by admit.
+                   (* Shengyi is removing this anyway *)
+                   assert (mom' <> src) by admit.
+                   (* can use H66 to get contra *)
+                   specialize (H64 _ H75 H74).
+                   rewrite <- get_popped_irrel_upd in H64; try omega; trivial.
+                   2: { apply get_popped_range in H64.
+                        rewrite upd_Znth_Zlength in H64;
+                          omega.
+                   }
+                   2: { intro. rewrite H76 in H64.
+                        rewrite get_popped_meaning in H64.
+                        rewrite upd_Znth_same in H64; omega.
+                        rewrite upd_Znth_Zlength; omega.
+                   }
+                   specialize (H73 _ H64 n).
+                   rewrite H73.
+                   admit. (* should be okay *)
+                 ----  (* now we know that i was 
+                          seen, but unpopped *)
+                   admit.
                  (*       This is tricky admit #2 *) 
                  (*
                  destruct (in_dec (ZIndexed.eq) u (epath_to_vpath g p2mom')).
@@ -2457,15 +2521,15 @@ So this pop operation maintains Inv1.
          +++ assert (0 <= dst < i) by omega.
              (* We will proceed using the 
                 old best-known path for dst *)
-             specialize (H22 _ H58).
+             specialize (H22 _ H59).
              unfold inv_unpopped in *.
              intros.
-             rewrite upd_Znth_diff in H59 by omega.
-             destruct (H22 H59) as [p2mom [? [? [? [? [? [? ]]]]]]].
+             rewrite upd_Znth_diff in H60 by omega.
+             destruct (H22 H60) as [p2mom [? [? [? [? [? [? ]]]]]]].
              unfold VType in *.
              remember (Znth dst prev_contents') as mom.
              exists p2mom. split3; [| |split3; [| |split3]]; trivial. 
-             *** destruct H60 as [? [? [? [? ?]]]].
+             *** destruct H61 as [? [? [? [? ?]]]].
                  split3; [| | split3]; trivial.
                  ---- rewrite upd_Znth_diff by omega;
                         rewrite <- Heqmom; trivial.
@@ -2474,9 +2538,9 @@ So this pop operation maintains Inv1.
                         (* the path could not have gone 
                            through i, since i is unpopped *)
                         intro.
-                        apply H43.
+                        apply H44.
                         rewrite <- Heqmom in *.
-                        rewrite <- H71. trivial.
+                        rewrite <- H72. trivial.
                         (* can get from 
                            H71 : mom = i
                            H67 : path_ends g p2mom src mom
@@ -2489,21 +2553,21 @@ So this pop operation maintains Inv1.
                       rewrite upd_Znth_diff; try omega.
                       2: {
                         rewrite <- Heqmom.
-                        rewrite H35.
+                        rewrite H36.
                         destruct H2.
                         unfold vertex_valid in H2.
                         rewrite <- H2.
                         apply (valid_path_valid g p2mom); trivial.
-                        destruct H67.
+                        destruct H68.
                         apply pfoot_in; trivial.
                       }
                       rewrite <- Heqmom.
                       trivial.
                  ---- rewrite Forall_forall; intros.
-                      rewrite Forall_forall in H70.
-                      specialize (H70 _ H71).
+                      rewrite Forall_forall in H71.
+                      specialize (H71 _ H72).
                       rewrite upd_Znth_diff; try omega.
-                      1: unfold VType in *; rewrite H34;
+                      1: unfold VType in *; rewrite H35;
                         apply (step_in_range2 g p2mom); trivial.
                       1: unfold VType in *; omega.
                       intro contra.
@@ -2526,10 +2590,10 @@ So this pop operation maintains Inv1.
                       admit.
 
              *** intros.
-                 specialize (H61 _ H67 H68).
+                 specialize (H62 _ H68 H69).
                  repeat rewrite <- get_popped_irrel_upd; try omega; trivial.
-                 apply get_popped_range in H61; omega.
-                 intro; rewrite H69 in H61; apply H43; trivial.
+                 apply get_popped_range in H62; omega.
+                 intro; rewrite H70 in H62; apply H44; trivial.
              *** rewrite upd_Znth_diff by omega.
                  rewrite <- Heqmom; trivial.
              *** rewrite upd_Znth_diff by omega.
@@ -2542,10 +2606,10 @@ So this pop operation maintains Inv1.
              *** intros.
                  rewrite upd_Znth_diff by omega.
                  rewrite <- Heqmom.
-                 apply H66; trivial.
-                 ---- destruct H67 as [? [? [? [? ?]]]].
+                 apply H67; trivial.
+                 ---- destruct H68 as [? [? [? [? ?]]]].
                       split3; [| |split3]; trivial.
-                      ++++ rewrite upd_Znth_diff in H72; try omega.
+                      ++++ rewrite upd_Znth_diff in H73; try omega.
                            (* specialise H68. 
                               1. use get_popped_range. done.
                               2. intro contra. 
@@ -2558,12 +2622,12 @@ So this pop operation maintains Inv1.
                            admit.
                            admit.
                       ++++ rewrite Forall_forall; intros.
-                           rewrite Forall_forall in H73.
-                           specialize (H73 _ H74).
+                           rewrite Forall_forall in H74.
+                           specialize (H74 _ H75).
                            unfold VType in *.
-                           rewrite upd_Znth_diff in H73;
+                           rewrite upd_Znth_diff in H74;
                              try omega.
-                           rewrite H34.
+                           rewrite H35.
                            apply (step_in_range2 g p2mom');
                              trivial.
                            intro.
@@ -2571,28 +2635,28 @@ So this pop operation maintains Inv1.
                            (* Shengyi? *)
                            admit.
                  ---- intros.
-                      specialize (H68 _ H70 H71).
-                      rewrite <- get_popped_irrel_upd in H68; try omega; trivial.
-                      apply get_popped_range in H68;
-                        rewrite upd_Znth_Zlength in H68; omega.
+                      specialize (H69 _ H71 H72).
+                      rewrite <- get_popped_irrel_upd in H69; try omega; trivial.
+                      apply get_popped_range in H69;
+                        rewrite upd_Znth_Zlength in H69; omega.
                       (* Example for Shengyi *)
-                      intro. rewrite H72 in H68.
-                      rewrite get_popped_meaning in H68.
-                      rewrite upd_Znth_same in H68; omega.
+                      intro. rewrite H73 in H69.
+                      rewrite get_popped_meaning in H69.
+                      rewrite upd_Znth_same in H69; omega.
                       rewrite upd_Znth_Zlength; omega.
      --- intros.
          assert (i <= dst < SIZE) by omega.
          destruct (Z.eq_dec dst i).
          1: subst dst; omega.
-         rewrite upd_Znth_diff in H58 by omega.
-         destruct (H23 _ H59 H58) as [p2mom [? [? ?]]].
+         rewrite upd_Znth_diff in H59 by omega.
+         destruct (H23 _ H60 H59) as [p2mom [? [? ?]]].
          unfold VType in *.
          remember (Znth dst prev_contents') as mom.
          rewrite upd_Znth_diff by omega.
          exists p2mom.
-         destruct H62 as [? [? [? [? ?]]]].
+         destruct H63 as [? [? [? [? ?]]]].
          split3; [| | split3; [| | split3]]; trivial.
-         +++ destruct H60 as [? [? [? [? ?]]]].
+         +++ destruct H61 as [? [? [? [? ?]]]].
              split3; [| | split3]; trivial.
              *** rewrite <- Heqmom. trivial.
              *** rewrite <- Heqmom.
@@ -2608,11 +2672,11 @@ So this pop operation maintains Inv1.
                  admit.
                  admit.
              *** rewrite Forall_forall; intros.
-                 rewrite Forall_forall in H70.
-                 specialize (H70 _ H71).
+                 rewrite Forall_forall in H71.
+                 specialize (H71 _ H72).
                  unfold VType in *.
                  rewrite upd_Znth_diff; try omega; trivial.
-                 ---- rewrite H34.
+                 ---- rewrite H35.
                       apply (step_in_range2 g p2mom); trivial.
                  ---- (* can specialize H61 and then
                          use contra 
@@ -2621,23 +2685,23 @@ So this pop operation maintains Inv1.
 *)
                    admit.
          +++ intros.
-             specialize (H61 _ H67 H68).
-             destruct H61.
+             specialize (H62 _ H68 H69).
+             destruct H62.
              split; trivial.
              rewrite <- get_popped_irrel_upd;
              try omega; trivial.
-             *** apply get_popped_range in H61; omega.
-             *** intro contra. rewrite contra in H61.
-                 apply H43; trivial.
+             *** apply get_popped_range in H62; omega.
+             *** intro contra. rewrite contra in H62.
+                 apply H44; trivial.
          +++ intros. rewrite <- Heqmom; trivial.
          +++ rewrite <- Heqmom; trivial.
          +++ rewrite <- Heqmom. trivial.
          +++ rewrite <- Heqmom. rewrite upd_Znth_diff; omega.
          +++ intros. rewrite <- Heqmom.
-             apply H66. 
-             *** destruct H67 as [? [? [? [? ?]]]].
+             apply H67. 
+             *** destruct H68 as [? [? [? [? ?]]]].
                  split3; [| |split3]; trivial.
-                 ---- rewrite upd_Znth_diff in H72;
+                 ---- rewrite upd_Znth_diff in H73;
                         try omega; trivial.
                       (* Shengyi? *)
                       (* first please help me 
@@ -2656,10 +2720,10 @@ So this pop operation maintains Inv1.
                       admit.
                       admit.
                  ---- rewrite Forall_forall; intros.
-                      rewrite Forall_forall in H73.
-                      specialize (H73 _ H74).
+                      rewrite Forall_forall in H74.
+                      specialize (H74 _ H75).
                       unfold VType in *.
-                      rewrite upd_Znth_diff in H73; try omega; trivial.
+                      rewrite upd_Znth_diff in H74; try omega; trivial.
                       (* Shengyi? *)
                       (* same story. need to specialize
                        H68 and then proceed *)
@@ -2672,36 +2736,65 @@ So this pop operation maintains Inv1.
                       admit.
 
              *** intros.
-                 specialize (H68 _ H70 H71).
-                 destruct H68.
-                 rewrite <- get_popped_irrel_upd in H68; try omega; trivial.
+                 specialize (H69 _ H71 H72).
+                 destruct H69.
+                 rewrite <- get_popped_irrel_upd in H69; try omega; trivial.
                  split; trivial.
-                 ---- apply get_popped_range in H68.
-                      rewrite upd_Znth_Zlength in H68; omega.
-                 ---- intro contra. rewrite contra in H68.
-                      rewrite get_popped_meaning in H68.
-                      rewrite upd_Znth_same in H68; omega.
+                 ---- apply get_popped_range in H69.
+                      rewrite upd_Znth_Zlength in H69; omega.
+                 ---- intro contra. rewrite contra in H69.
+                      rewrite get_popped_meaning in H69.
+                      rewrite upd_Znth_same in H69; omega.
                       rewrite upd_Znth_Zlength; omega.
              *** trivial.
-     --- intros.
-         pose proof (H24 dst H57).
-         unfold inv_unseen in H58.
-         unfold inv_unseen; intros.
+     --- unfold inv_unseen; intros.
          assert (dst <> i). {
            intro. subst dst. rewrite upd_Znth_same in H59; omega.
-           }
+         }
+         assert (0 <= dst < i) by omega.
+         pose proof (H24 dst H61).
          rewrite upd_Znth_diff in H59; try omega.
-         specialize (H58 H59).
-         repeat rewrite upd_Znth_diff; try omega.
+         rewrite upd_Znth_diff; try omega.
+         rewrite upd_Znth_diff; try omega.
+         unfold inv_unseen in H62.
+         specialize (H62 H59).
+         destruct H62 as [? [? ?]].
+         split3; trivial.
+         intros.
+         apply H64.
+         rewrite <- get_popped_irrel_upd in H65; try omega; trivial.
+         apply get_popped_range in H65;
+           rewrite upd_Znth_Zlength in H65; omega.
+         intro contra. rewrite contra in H65.
+         rewrite get_popped_meaning in H65.
+         rewrite upd_Znth_same in H65; omega.
+         rewrite upd_Znth_Zlength; omega.
+     --- intros.
+         assert (dst <> i) by omega.
+         rewrite upd_Znth_diff in H59 by omega.
+         repeat rewrite upd_Znth_diff by omega.
+         assert (i <= dst < SIZE) by omega.
+         destruct (H25 _ H61 H59) as [? [? ?]].
+         split3; trivial.
+         intros.
+         apply H64; trivial.
+         rewrite <- get_popped_irrel_upd in H65; try omega; trivial.
+         apply get_popped_range in H65;
+           rewrite upd_Znth_Zlength in H65; omega.
+         intro contra. rewrite contra in H65.
+         rewrite get_popped_meaning in H65.
+         rewrite upd_Znth_same in H65; omega.
+         rewrite upd_Znth_Zlength; omega.
      --- rewrite upd_Znth_diff; try omega.
          intro. subst src; omega.
      --- rewrite upd_Znth_diff; try omega.
          intro. subst src; omega.
      --- rewrite upd_Znth_diff; try omega.
          intro. subst src; omega.
-     --- apply get_popped_irrel_upd; try omega; trivial.
-     --- split3; apply inrange_upd_Znth; trivial; try omega.
-  ** rewrite Int.signed_repr in H42
+     --- split.
+         +++ apply get_popped_irrel_upd; try omega; trivial.
+         +++ split3; apply inrange_upd_Znth; trivial; try omega.
+  ** rewrite Int.signed_repr in H43
       by (unfold inf in *; rep_omega).
      (* This is the branch where I didn't
         make a change to the i'th vertex. *)
@@ -2710,7 +2803,7 @@ So this pop operation maintains Inv1.
      Exists prev_contents' priq_contents' dist_contents'.
      entailer!.
      remember (find priq_contents (fold_right Z.min (hd 0 priq_contents) priq_contents) 0) as u.
-     split.
+     split3; [| |split].
      --- intros.
          (* Show that moving one more step 
             still preserves the for loop invariant *)
@@ -2728,33 +2821,46 @@ So this pop operation maintains Inv1.
           *)
          unfold inv_unpopped; intros.
          assert (i <= i < SIZE) by omega.
-         destruct (H23 i H56 H55) as [p2mom [? [? [? [? [? [? ?]]]]]]].
+         destruct (H23 i H57 H56) as [p2mom [? [? [? [? [? [? ?]]]]]]].
          unfold VType in *.
          remember (Znth i prev_contents') as mom.
          (* now I must show that the same path
             is actually still okay *)
          exists p2mom; split3; [| |split3; [| |split3]]; trivial.
          +++ intros.
-             specialize (H58 _ H64 H65).
-             destruct H58. trivial.
+             specialize (H59 _ H65 H66).
+             destruct H59. trivial.
          +++ intros.
-             apply H63; trivial. intros.
-             specialize (H65 _ H67 H68).
+             apply H64; trivial. intros.
+             specialize (H66 _ H68 H69).
              split; trivial.
              admit.
              (* Another interesting case *)
      --- intros. destruct (Z.eq_dec dst i).
          +++ subst dst. omega.
          +++ apply H23; omega.
-          ++ (* i was not a neighbor of u. 
+     --- unfold inv_unseen; intros.
+         destruct (Z.eq_dec dst i).
+         +++ subst dst.
+             assert (i <= i < SIZE) by omega.
+             destruct (H25 _ H57 H56) as [? [? ?]].
+             split3; trivial.
+             intros.
+             apply H60; trivial.
+             admit. (* interesting case *)
+         +++ apply H24; omega.
+     --- intros.
+         assert (i <= dst < SIZE) by omega.
+         apply H25; trivial.
+          ++  (* i was not a neighbor of u. 
                  prove the for loop's invariant holds *)
-             replace 8 with SIZE in H37 by omega.
-             rewrite inf_eq2 in H37.
-             forward.
+       replace 8 with SIZE in H38 by omega.
+       rewrite inf_eq2 in H38.
+       forward.
              Exists prev_contents' priq_contents' dist_contents'.
              entailer!.
              remember (find priq_contents (fold_right Z.min (hd 0 priq_contents) priq_contents) 0) as u.
-             split; intros.
+             split3; [| |split]; intros.
              ** destruct (Z.eq_dec dst i).
                 --- subst dst. 
              (* Will need to use the second half of the 
@@ -2765,17 +2871,17 @@ So this pop operation maintains Inv1.
                 by going via u *)
                     unfold inv_unpopped; intros.
                     assert (i <= i < SIZE) by omega.
-                    destruct (H23 i H51 H50) as [p2mom [? [? [? [? [? ?]]]]]].
+                    destruct (H23 i H52 H51) as [p2mom [? [? [? [? [? ?]]]]]].
                     unfold VType in *.
                     remember (Znth i prev_contents') as mom.
                     exists p2mom; split3; [| |split3; [| |split3]]; trivial.
                     +++ intros.
-                        specialize (H53 _ H58 H59).
-                        destruct H53. trivial.
-                    +++ intros. apply H57; trivial.
-                    +++ intros. apply H57; trivial.
+                        specialize (H54 _ H59 H60).
+                        destruct H54. trivial.
+                    +++ intros. apply H58; trivial.
+                    +++ intros. apply H58; trivial.
                         unfold VType in *. intros.    
-                        specialize (H59 _ H61 H62).
+                        specialize (H60 _ H62 H63).
                         split; trivial.
                         admit.
                         (* interesting case -- 
@@ -2785,6 +2891,17 @@ So this pop operation maintains Inv1.
              ** destruct (Z.eq_dec dst i).
                 --- omega. 
                 --- apply H23; omega.
+             ** destruct (Z.eq_dec dst i).
+                2: apply H24; omega.
+                subst dst.
+                assert (i <= i < SIZE) by omega.
+                unfold inv_unseen; intros.
+                destruct (H25 _ H51 H52) as [? [? ?]].
+                split3; trivial.
+                intros.
+                apply H55; trivial.
+                admit. (* interesting case *)
+             ** apply H25; omega.
         -- (* From the for loop's invariant, 
               prove the while loop's invariant. *)
               
