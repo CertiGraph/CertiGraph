@@ -1,5 +1,0 @@
-sample_mark/verif_dispose_bi.v
-sample_mark/env_dispose_bi.v
-data_structure/spatial_graph_dispose_bi.v
-data_structure/spatial_graph_unaligned_bi_VST.v
-graph/spanning_tree.v
