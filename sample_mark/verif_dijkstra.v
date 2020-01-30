@@ -994,7 +994,7 @@ Definition inv_unpopped g src prev priq dist dst :=
                      In_path g step' p2mom' ->
                      In step' (get_popped priq)) ->
       path_globally_optimal g src mom' p2mom' ->
-      path_cost g p2mom + Znth dst (Znth mom (graph_to_mat g)) <= path_cost g p2mom' + Znth dst (Znth mom' (graph_to_mat g)).
+      path_cost g p2mom + Znth dst (Znth mom (graph_to_mat g)) <= careful_add (path_cost g p2mom') (Znth dst (Znth mom' (graph_to_mat g))).
 
 Definition inv_unseen g prev priq dist dst :=
   Znth dst priq = inf ->
@@ -1679,7 +1679,14 @@ Proof.
            destruct H18.
            pose proof (path_cost_pos g p2mom' H2 H18 H1).
            unfold VType in *.
-           destruct H23. rep_omega. rewrite H23.
+           destruct H23.
+           ++ rewrite careful_add_clean; try omega.
+              destruct H23 as [_ ?].
+              intro.
+              rewrite H26 in H23. compute in H23.
+              apply H23. trivial.
+           ++ rewrite H23. unfold careful_add.
+              simpl. rewrite orb_true_r. 
            rewrite <- inf_eq. omega.
       * split; trivial.
         rewrite upd_Znth_diff; try omega.
@@ -1787,7 +1794,7 @@ Proof.
                                    In step' (get_popped priq_contents') /\
                                    step' <> u) ->
                     path_globally_optimal g src mom' p2mom' ->
-                    path_cost g p2mom + Znth dst (Znth mom (graph_to_mat g)) <= path_cost g p2mom' + Znth dst (Znth mom' (graph_to_mat g));
+                    path_cost g p2mom + Znth dst (Znth mom (graph_to_mat g)) <= careful_add (path_cost g p2mom') (Znth dst (Znth mom' (graph_to_mat g)));
 
                     (* similarly for inv_unseen,
                        the invariant has been 
@@ -2069,8 +2076,14 @@ So this pop operation maintains Inv1.
                    apply pfoot_in; trivial.
                  }
                    specialize (H37 H38 H39).
-                   destruct H37. omega.
-                   rewrite H37. rewrite <- inf_eq. omega.
+                   destruct H37.
+                 + rewrite careful_add_clean; try omega; trivial.
+                   intro contra. rewrite contra in H37.
+                   compute in H37. destruct H37 as [_ ?].
+                   apply H37; trivial.
+                 + rewrite H37. unfold careful_add; simpl.
+                   rewrite orb_true_r.
+                   rewrite <- inf_eq. omega.
              }
              destruct (H4 dst H14) as [_ [? _]].
              unfold inv_unpopped in H32.
@@ -2100,6 +2113,9 @@ So this pop operation maintains Inv1.
                 rewrite <- get_popped_irrel_upd; try omega; trivial.
                 apply get_popped_range in H33; omega.
              ** intros.
+                
+
+                
                 apply H38; trivial.
                 intros.
                 specialize (H40 _ H42 H43). destruct H40.
@@ -2424,7 +2440,7 @@ So this pop operation maintains Inv1.
                       *)
                      unfold path_globally_optimal in H62.
                      specialize (H62 _ H63 H66).
-                     omega.
+                     rewrite careful_add_clean; omega.
                    }
                    assert (In_path g mom' p2mom') by admit.
                    (* Shengyi is removing this anyway *)
@@ -2443,7 +2459,12 @@ So this pop operation maintains Inv1.
                    }
                    specialize (H73 _ H64 n).
                    rewrite H73.
-                   admit. (* should be okay *)
+                   unfold careful_add.
+                   rewrite orb_true_r.
+                   rewrite H71 in H43.
+                   destruct H60 as [? [? [? [? _]]]].
+                   rewrite <- H78.
+                   omega.
                  ----  (* now we know that i was 
                           seen, but unpopped *)
                    admit.
