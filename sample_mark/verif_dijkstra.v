@@ -34,9 +34,11 @@ Definition inrange_graph grph_contents :=
   forall i j,
     0 <= i < Zlength grph_contents ->
     0 <= j < Zlength grph_contents ->
-    i <> j ->
-    (0 < Znth i (Znth j grph_contents) <= Int.max_signed / SIZE \/
-    Znth i (Znth j grph_contents) = inf).
+    (i <> j ->
+     0 < Znth i (Znth j grph_contents) <= Int.max_signed / SIZE \/
+     Znth i (Znth j grph_contents) = inf) /\
+    (i = j ->
+     Znth i (Znth j grph_contents) = 0).
 
 Lemma inrange_upd_Znth: forall (l: list Z) i new F,
     0 <= i < Zlength l ->
@@ -1344,8 +1346,11 @@ Proof.
   red in H, H2. rewrite H2, H in H1. destruct H1. red in H0.
   rewrite <- (graph_to_mat_Zlength g) in H1, H3. specialize (H0 _ _ H3 H1).
   destruct H0.
-  - destruct H0; omega.
-  - rewrite H0. rewrite <- inf_eq. omega.
+  destruct (Z.eq_dec (snd e) (fst e)).
+  - rewrite (H4 e0). omega.
+  - destruct (H0 n).
+    + destruct H5; omega.
+    + rewrite H5. rewrite <- inf_eq. omega.
 Qed.
 
 Lemma acc_pos: forall (g: LGraph) l z,
@@ -1675,8 +1680,13 @@ Proof.
            destruct H18.
            pose proof (path_cost_pos g p2mom' H2 H18 H1).
            unfold VType in *.
-           destruct H23. rep_omega. rewrite H23.
-           rewrite <- inf_eq. omega.
+           destruct H23.
+           destruct (Z.eq_dec src mom').
+           ++ rewrite (H26 e). omega.
+           ++ destruct (H23 n).
+              ** omega.
+              ** rewrite H27.
+                 rewrite <- inf_eq. omega.
       * split; trivial.
         rewrite upd_Znth_diff; try omega.
         rewrite Znth_list_repeat_inrange; omega.
@@ -2084,7 +2094,10 @@ Proof.
                    apply pfoot_in; trivial.
                  }
                  specialize (H37 H38 H39).
-                 destruct H37. rep_omega.
+                   destruct H37.
+
+
+                   rep_omega.
                  rewrite H37. rewrite <- inf_eq. omega.
              }
              destruct (H4 dst H14) as [_ [? _]].
