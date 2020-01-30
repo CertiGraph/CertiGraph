@@ -38,7 +38,7 @@ Definition inrange_graph grph_contents :=
      0 < Znth i (Znth j grph_contents) <= Int.max_signed / SIZE \/
      Znth i (Znth j grph_contents) = inf) /\
     (i = j ->
-     Znth i (Znth j grph_contents) = 0).
+     Znth i (Znth j grph_contents) = inf).
 
 Lemma inrange_upd_Znth: forall (l: list Z) i new F,
     0 <= i < Zlength l ->
@@ -1052,7 +1052,7 @@ Definition dijkstra_spec :=
           inrange_graph (graph_to_mat g);
           sound_dijk_graph g;
           forall i, 0 <= i < SIZE ->
-                    Znth i (Znth i (graph_to_mat g)) = 0)
+                    Znth i (Znth i (graph_to_mat g)) = inf)
     LOCAL (temp _graph (pointer_val_val arr);
          temp _src (Vint (Int.repr src));
          temp _dist (pointer_val_val dist);
@@ -2093,12 +2093,13 @@ Proof.
                    apply (valid_path_valid _ p2mom'); trivial.
                    apply pfoot_in; trivial.
                  }
-                 specialize (H37 H38 H39).
+                   specialize (H37 H38 H39).
                    destruct H37.
-
-
-                   rep_omega.
-                 rewrite H37. rewrite <- inf_eq. omega.
+                   destruct (Z.eq_dec src mom').
+                 + rewrite (H40 e). omega.
+                 + destruct (H37 n0).
+                   * omega.
+                   * rewrite H41. rewrite <- inf_eq. omega.
              }
              destruct (H4 dst H14) as [_ [? _]].
              unfold inv_unpopped in H32.
@@ -2204,23 +2205,31 @@ Proof.
                rewrite inf_eq2 in H37.
                rewrite Heqcost in *.
                rewrite Int.signed_repr in H37.
-               2: { destruct H1.
-                    - unfold VType in *.
-                      replace SIZE with 8 in H1.
-                      destruct H1. 
-                      pose proof (Int.min_signed_neg).
-                      assert (Int.max_signed / 8 <= Int.max_signed). {
-                        compute.
-                        intro. inversion H42.
-                      }
-                      split; try omega.
-                    - rewrite H1.
-                      rewrite <- inf_eq. 
-                      compute; split; inversion 1.
+               2: {
+                 destruct H1.
+                 destruct (Z.eq_dec i u).
+                 - rewrite (H40 e). rep_omega.
+                 - destruct (H1 n).
+                   unfold VType in *.
+                   replace SIZE with 8 in H41.
+                   destruct H41. 
+                   pose proof (Int.min_signed_neg).
+                   assert (Int.max_signed / 8 <= Int.max_signed). {
+                        compute. inversion 1.
+                   }
+                   split; try omega.
+                   rewrite H41.
+                   rewrite <- inf_eq. 
+                   compute; split; inversion 1.
                }
                rewrite Int.signed_repr in H37.
                2: rewrite <- inf_eq; compute; split; inversion 1.
-               destruct H1; omega.
+               destruct H1.
+               destruct (Z.eq_dec i u).
+               - rewrite (H40 e). compute; split; inversion 1.
+               - destruct (H1 n).
+                 + omega.
+                 + rewrite H41. omega.
              }
              assert (0 <= Znth u dist_contents' <= inf). {
                assert (0 <= u < Zlength dist_contents') by omega.
@@ -2425,7 +2434,7 @@ Proof.
                     we must show that the path via u is 
                     better than all other paths via
                     other popped verices *)
-                 destruct H62 as [? [? [? [? ?]]]]s.
+                 destruct H62 as [? [? [? [? ?]]]].
                  admit.
                  (*       This is tricky admit #2 *) 
                  (*
