@@ -2467,38 +2467,76 @@ So this pop operation maintains Inv1.
                    omega.
                  ----  (* now we know that i was 
                           seen, but unpopped *)
-                   admit.
-                 (*       This is tricky admit #2 *) 
-                 (*
-                 destruct (in_dec (ZIndexed.eq) u (epath_to_vpath g p2mom')).
-                 ---- (* Yes, the path p2mom' goes via u *)
-                   apply in_path_eq_epath_to_vpath in i0; trivial.
-                   destruct i0.
-                   ++++ (* u is the source itself, 
-                           meaning that this dst is 
-                           just one hop from src *)
-                 (* This also means that mom' has to be
-                    src -- if the minimally-chosen vertex
-                    is the source itself, that means
-                    that means that the while loop
-                    is on its first run.
-                  *)
-                     destruct H66.
-                     replace (fst p2mom') with src in * by omega.
-                     replace mom' with src in * by admit.
-                     rewrite H70 in *.
-                     destruct H59 as [? [? [? [? ?]]]].
-                     rewrite <- H74.
-                     destruct (Z.eq_dec src i).
-                     **** rewrite e in H68.
-                          rewrite upd_Znth_same in H68.
-                          rewrite <- H68. rewrite e.
-                          rewrite <- e.
-                          rewrite H25, H3; omega.
-                          omega.
-                     **** rewrite upd_Znth_diff in H68 by omega.
-                          rewrite <- H68. omega.
-                   ++++ (* u is in the links of the path *)
+                   assert (Znth i priq_contents' < inf). {
+                     admit. (* easy *)
+                   }
+
+(* 
+
+Denote the old dist[i] as old-shortest-to-i. 
+So the known condition is
+
+Cond: dist[u] + graph[u][i] < old-shortest-to-i
+H43
+
+The first statement is that i is an unpopped vertex. 
+H70
+
+Now we prove for any other path p' which is from s to i 
+and composed by popped vertices (including u), 
+dist[u] + graph[u][i] <= path_cost p'.
+
+There are two cases about p': ~ In u p' \/ In u p'
+ *)
+                   destruct (in_dec (ZIndexed.eq) u (epath_to_vpath g p2mom')).
+                   ++++ (* Yes, the path p2mom' goes via u *)
+(*
+  2. In u p': p' is the path from s to i. 
+  Consider the vertex k which is
+  just before i. Again, there are two cases: 
+  k = u \/ ~ k = u.
+ *)
+                     destruct (Z.eq_dec mom' u).
+                     ****
+(*
+        2.1 k = u: path_cost p' = path_cost [s to u] + graph[u][i]. 
+        As we know, u is just popped, dist[u] is the 
+        global optimal, so dist[u] <= path_cost [s to u], 
+        so dist[u] + graph[u][i] <= path_cost p'.
+ *)
+                       subst mom'.
+                       unfold path_globally_optimal in H62.
+                       specialize (H62 _ H63 H66).
+                       rewrite careful_add_clean; try omega; trivial.
+                     ****
+
+(*                       
+        2.2 ~ k = u: p' = path s to u ++ path u to k + edge k i. 
+        Since p' is composed by popped vertex 
+        (including u) only, k must be a popped
+        vertex. Then it satisfies NewInv1, which means 
+        dist[k] <= path_cost [s to u] + path_cost [u to k] 
+        and the global optimal path from s to k is
+        composed by popped vertices only. 
+        Thus dist[k] + len(edge k i) <= path_cost p'. 
+        Since dist[k] only contains popped vertices, this path
+        having dist[k] + edge k i also only contains 
+        popped vertices. Thus we have old-shortest-to-i <= 
+        dist[k] + len(edge k i) because of Inv2. 
+        So we still have 
+        dist[u] + graph[u][i] <= 
+        old-shortest-to-i <= 
+        dist[k] + len(edge k i) <= 
+        path_cost p'.
+ *)
+                       apply in_path_eq_epath_to_vpath in i0; trivial.
+                       assert (In mom' (get_popped priq_contents')) by admit.
+                       (* can unfold careful_add
+                          easily enough... *)
+                       admit.
+
+                       (*
+
                      destruct H70 as [? [? ?]].
                      destruct H2 as [? [? [? ?]]].
                      unfold src_edge in H73.
@@ -2525,26 +2563,18 @@ So this pop operation maintains Inv1.
                      }
                      destruct (H21 _ H62) as [? [? [? ?]]].
 
+                     admit.*)
+                   ++++
+
+(*
+  1. ~ In u p': This means p' is totally composed by   
+  old popped vertices. According to Inv2, 
+  old-shortest-to-i <= path_cost p'.
+  According to Cond: 
+  dist[u] + graph[u][i] < old-shortest-to-i, we have
+  dist[u] + graph[u][i] <= path_cost p'.
+ *)
                      admit.
-                 ---- (* p2mom' was composed entirely of
-                         old popped vertices --
-                         we can apply inv_unpopped for i
-                       *)
-                   assert (i <= i < SIZE) by omega.
-                   destruct (Z.eq_dec (Znth i priq_contents') inf).
-                   ++++ admit.
-                   ++++ assert (Znth i priq_contents' < inf). {
-                          rewrite get_popped_meaning in H43.
-                          admit.
-                          (* easy *)
-                          omega.
-                        }
-                        assert (0 <= i < SIZE) by omega.
-                        unfold inv_unpopped in H23.
-                        specialize (H23 i H70 H71).
-                        destruct H23 as [? [? [? [? [? [? [? [? ?]]]]]]]].
-                        admit.
-*)
          +++ assert (0 <= dst < i) by omega.
              (* We will proceed using the 
                 old best-known path for dst *)
