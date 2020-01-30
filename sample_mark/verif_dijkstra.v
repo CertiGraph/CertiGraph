@@ -982,18 +982,20 @@ Definition inv_popped g src prev priq dist dst :=
 Definition inv_unpopped g src prev priq dist dst :=
   Znth dst priq < inf ->
   let mom := Znth dst prev in
-  exists p2mom,
-    path_correct g prev dist src mom p2mom /\
-    (forall step, step <> src ->
-                  In_path g step p2mom ->
-                  In step (get_popped priq)) /\
-    path_globally_optimal g src mom p2mom /\
-    elabel g (mom, dst) <> inf /\
-    Z.add (path_cost g p2mom) (Znth dst (Znth mom (graph_to_mat g))) <> inf /\ 
-    Znth dst dist = path_cost g p2mom + Znth dst (Znth mom (graph_to_mat g)) /\
-    forall mom' p2mom',
-      path_correct g prev dist src mom' p2mom' ->
-      (forall step', step' <> src ->
+  (mom = src -> inv_src src prev priq dist) /\
+  (mom <> src ->
+   exists p2mom,
+     path_correct g prev dist src mom p2mom /\
+     (forall step, step <> src ->
+                   In_path g step p2mom ->
+                   In step (get_popped priq)) /\
+     path_globally_optimal g src mom p2mom) /\
+     elabel g (mom, dst) <> inf /\
+     Z.add (Znth mom dist_contents) (Znth dst (Znth mom (graph_to_mat g))) <> inf /\
+     Znth dst dist = (Znth mom dist_contents) + Znth dst (Znth mom (graph_to_mat g)) /\ 
+     forall mom' p2mom',
+       path_correct g prev dist src mom' p2mom' ->
+       (forall step', step' <> src ->
                      In_path g step' p2mom' ->
                      In step' (get_popped priq)) ->
       path_globally_optimal g src mom' p2mom' ->
@@ -1004,13 +1006,19 @@ Definition inv_unseen prev priq dist dst :=
   Znth dst dist = inf /\
   Znth dst prev = inf.
 
+Definition inv_src src prev priq dist :=
+  Znth src dist = 0 /\
+  Znth src prev = src /\
+  Znth src priq <> inf.
+
 Definition dijkstra_correct g (src : VType) (prev priq dist: list VType) : Prop :=
   forall dst,
-    0 <= dst < SIZE ->
-    (* src <> dst -> *)
-    inv_popped g src prev priq dist dst /\
-    inv_unpopped g src prev priq dist dst /\
-    inv_unseen prev priq dist dst.
+    (dst = src -> inv_src dst prev priq dist) /\
+    (0 <= dst < SIZE ->
+     src <> dst ->
+     inv_popped g src prev priq dist dst /\
+     inv_unpopped g src prev priq dist dst /\
+     inv_unseen prev priq dist dst).
 
 (* SPECS *)
 Definition pq_emp_spec :=
@@ -1297,6 +1305,7 @@ Proof.
 Qed.
 *)
 
+(*
 Lemma path_end_in_popped:
   forall g src mom priq prev dist p2mom,
     sound_dijk_graph g ->
@@ -1310,6 +1319,7 @@ Lemma path_end_in_popped:
 Proof.
   intros.
   rewrite Forall_forall in H2. assert (Hrem := H1).
+  destruct H1.
   destruct H1 as [_ [? _]].  
   destruct H1.
   pose proof (pfoot_in _ _ _ H3).
@@ -1331,6 +1341,7 @@ Proof.
       unfold VType in *.
       rewrite <- H5 in H6; trivial.
 Qed.
+*)
 
 Lemma graph_to_mat_Zlength: forall g, Zlength (graph_to_mat g) = SIZE.
 Proof.
@@ -1347,7 +1358,7 @@ Proof.
   rewrite <- (graph_to_mat_Zlength g) in H1, H3. specialize (H0 _ _ H3 H1).
   destruct H0.
   destruct (Z.eq_dec (snd e) (fst e)).
-  - rewrite (H4 e0). omega.
+  - rewrite (H4 e0). rewrite <- inf_eq. omega.
   - destruct (H0 n).
     + destruct H5; omega.
     + rewrite H5. rewrite <- inf_eq. omega.
@@ -1628,8 +1639,17 @@ Proof.
         }
         subst dst.
         exists (src, []).
+        unfold path_correct. left. rewrite upd_Znth_same; omega.
+        
+        
+
+        
         split3; [| |split3; [| |split3]].
-        -- split3; [| | split3].
+        -- 
+(* Keeping in case src = dst \/ ... is removed from 
+   path_correct *)
+           (*
+          split3; [| | split3].
            ++ simpl. destruct H2 as [? [? [? ?]]].
               unfold vertex_valid in H2.
               rewrite H2. omega.
@@ -1639,7 +1659,7 @@ Proof.
               rewrite <- inf_eq. omega.
            ++ repeat rewrite upd_Znth_same by omega.
               unfold path_cost; simpl; omega.
-           ++ simpl snd. apply Forall_nil.
+           ++ simpl snd. apply Forall_nil. *)
         -- intros. destruct H19.
            ++ simpl in H19. omega.
            ++ destruct H19 as [? [? ?]]. simpl in H19. omega.
