@@ -34,8 +34,9 @@ Definition inrange_graph grph_contents :=
   forall i j,
     0 <= i < Zlength grph_contents ->
     0 <= j < Zlength grph_contents ->
-    0 <= Znth i (Znth j grph_contents) <= Int.max_signed / SIZE \/
-    Znth i (Znth j grph_contents) = inf.
+    i <> j ->
+    (0 < Znth i (Znth j grph_contents) <= Int.max_signed / SIZE \/
+    Znth i (Znth j grph_contents) = inf).
 
 Lemma inrange_upd_Znth: forall (l: list Z) i new F,
     0 <= i < Zlength l ->
