@@ -3098,7 +3098,14 @@ There are two cases about p': ~ In u p' \/ In u p'
                     unfold VType in *.
                     remember (Znth i prev_contents') as mom.
                     right. split.
-                    1: admit. (* show that src is in popped, then use contra *)
+                    1: {
+                      assert (In src (get_popped priq_contents')). {
+                        admit. (* can make this a lemma *)
+                      }
+                      intro contra. rewrite <- contra in H59.
+                      rewrite get_popped_meaning in H59.
+                      omega. omega.
+                    }
                     exists p2mom; split3; [| |split3; [| |split3]]; trivial.
                     +++ intros.
                         specialize (H54 _ H59).
