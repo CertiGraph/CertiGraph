@@ -2040,6 +2040,12 @@ So this pop operation maintains Inv1.
                      trivial.
                    2: apply link_evalid; trivial.
                    simpl.
+
+                   (* is there a way to split the path 
+                      to get all but its 2nd-last link, 
+                      plus 2nd-last to last? 
+                    *)
+                   
                    admit.
               ** (* Here we must show that the 
                     vertices that were popped earlier
@@ -2073,67 +2079,6 @@ So this pop operation maintains Inv1.
              destruct (Z.eq_dec dst u).
              1: subst dst; rewrite upd_Znth_same in H31; omega.
              rewrite upd_Znth_diff in H31 by omega.
-             (*
-             destruct (Z.eq_dec src dst).
-             1: { (* This trivial case can be handled separately 
-                     Maybe I can now remove this? *)
-               subst dst.
-               replace (Znth src prev_contents) with src. 
-               exists (src, []).
-               split3; [| |split3; [| |split3]]; trivial.
-               - split3; [| | split3].
-                 + simpl. destruct H2. unfold vertex_valid in H2. rewrite H2. omega.
-                 + split; trivial.
-                 + unfold path_cost. simpl.
-                   rewrite <- inf_eq. omega.
-                 + unfold path_cost. simpl.
-                   trivial.
-                 + rewrite Forall_forall; intros.
-                   simpl in H32; omega.
-               - admit.
-                 (* intros. destruct admit. H33; simpl in H33. *)
-                 (* omega. destruct H33 as [? [? ?]]. omega. *)
-               - unfold path_globally_optimal; intros.
-                 unfold path_cost at 1; simpl.
-                 apply path_cost_pos; trivial.
-               - rewrite elabel_Znth_graph_to_mat; simpl.
-                 rewrite H3. rewrite <- inf_eq. omega.
-                 omega. trivial. apply link_evalid; trivial.
-               - unfold path_cost; simpl.
-                 rewrite H3 by omega.
-                 rewrite <- inf_eq; omega.
-               - unfold path_cost; simpl.
-                 rewrite H3 by omega.
-                 omega.
-               - intros.
-                 unfold path_cost at 1; simpl.
-                 rewrite H3 by omega.
-                 destruct H32.
-                 pose proof (path_cost_pos g p2mom' H2 H32 H1).
-                   unfold inrange_graph in H1.
-                   pose proof (H1 src mom').
-                   assert (0 <= src < Zlength (graph_to_mat g)). {
-                     rewrite graph_to_mat_Zlength. omega. }
-                   assert ( 0 <= mom' < Zlength (graph_to_mat g)). {
-                     rewrite graph_to_mat_Zlength.
-                   destruct H35. destruct H35.
-                   destruct H2.
-                   unfold vertex_valid in H2.
-                   rewrite <- H2.
-                   apply (valid_path_valid _ p2mom'); trivial.
-                   apply pfoot_in; trivial.
-                 }
-                   specialize (H37 H38 H39).
-                   destruct H37.
-                 + rewrite careful_add_clean; try omega; trivial.
-                   intro contra. rewrite contra in H37.
-                   compute in H37. destruct H37 as [_ ?].
-                   apply H37; trivial.
-                 + rewrite H37. unfold careful_add; simpl.
-                   rewrite orb_true_r.
-                   rewrite <- inf_eq. omega.
-             }
-             *)
              destruct (H4 dst H14) as [_ [? _]].
              unfold inv_unpopped in H32.
              specialize (H32 H31).
@@ -2423,10 +2368,14 @@ So this pop operation maintains Inv1.
                rewrite Forall_forall; intros.
                assert ((snd x) <> src). {
                  admit.
-               (* The "to" vertex of the link
-                  would never be src. *)
-                 (* Shengyi, could you prove this for me?
 
+                 (* update: can just kill this off.
+
+                 same for many others like this. 
+                  *)
+
+                 (*
+                 
                   Also, please note how I use this 
                   technique to specialise H60
                   and get that (snd x) is in popped.
@@ -2434,7 +2383,7 @@ So this pop operation maintains Inv1.
                   Later there are some places where
                   I have left easy admits for you to 
                   do the same for me. 
-*)
+                  *)
                }
                assert (In_path g (snd x) p2dst). {
                  unfold In_path. right.
@@ -2494,7 +2443,7 @@ So this pop operation maintains Inv1.
                         admit.
                       (* The "to" vertex of the link
                          would never be src. *)
-                        (* Shengyi? *)
+                        (* can delete. not used. *)
                       }
                       assert (In_path g (snd x) p2u). {
                         unfold In_path. right.
@@ -2548,9 +2497,11 @@ So this pop operation maintains Inv1.
                      rewrite careful_add_clean; omega.
                    }
                    assert (In_path g mom' p2mom') by admit.
-                   (* Shengyi is removing this anyway *)
+                   (* should be easy *)
+
+                   (* can remove, then change H numbers *)
                    assert (mom' <> src) by admit.
-                   (* can use H66 to get contra *)
+
                    specialize (H64 _ H74).
                    rewrite <- get_popped_irrel_upd in H64; try omega; trivial.
                    2: { apply get_popped_range in H64.
@@ -2686,10 +2637,25 @@ There are two cases about p': ~ In u p' \/ In u p'
                          - rewrite Forall_forall; intros.
                            rewrite Forall_forall in H69.
                            specialize (H69 _ H84).
+                           assert (In_path g (snd x) p2mom'). {
+                             unfold In_path. right.
+                             exists x. 
+                             split; trivial.
+                             destruct H2 as [? [? [? ?]]].
+                             red in H87; rewrite H87.
+                             right; trivial.
+                           }
+                           specialize (H64 _ H85).
+                           assert (snd x <> i). {
+                             intro. rewrite H86 in H64.
+                             rewrite get_popped_meaning in H64.
+                             rewrite upd_Znth_same in H64; omega.
+                             rewrite upd_Znth_Zlength; omega.
+                           }
                            rewrite upd_Znth_diff in H69; try omega; trivial.
-                           admit. (* should be okay *)
-                           intro.
-                           admit. (* ?? *)
+                           apply get_popped_range in H64.
+                           unfold VType in *.
+                           rewrite upd_Znth_Zlength in H64; try omega.
                        }
                        specialize (H83 mom' p2mom' H84).
                        admit.
