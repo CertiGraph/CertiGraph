@@ -24,13 +24,12 @@ The remainder of this paper is organized as follows:
     \item[\S\ref{sec:overview}] We briefly present and explain
     our~C~implementation of Dijkstra's algorithm and the key loop invariants
     we use to certify its specification.
-%    \item[\S\ref{sec:verification}] We present our
-%    and our key loop invariants.
     \item[\S\ref{sec:overflow}] We explain how overflow can occur and give a
     refinement to the precondition of the function that restricts edge weights
-    appropriately in the context of a concrete definition for infinity to prevent said overflow.
-    \item[\S\ref{sec:conclusion}] We conclude this short paper by putting this result in the context of our
-    previous and ongoing work, discussing related work in certifying Dijkstra's algorithm, and summarizing some presentations from algorithms textbooks.
-\end{itemize}
+    and the standard \texttt{INF} definition
+    appropriately in a way that prevents said overflow.
+    \item[\S\ref{sec:conclusion}] We conclude by putting this result in the context of our
+    previous and ongoing work. We discuss related work in certifying Dijkstra's algorithm, and revisit standard algorithms textbook presentations.
+\end{itemize} 
 
-\noindent Our code is available at \url{https://github.com/anshumanmohan/VerifDijkstra}.
+% Our code is available at \url{https://github.com/anshumanmohan/VerifDijkstra}.
