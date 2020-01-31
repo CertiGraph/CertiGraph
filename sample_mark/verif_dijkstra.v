@@ -2366,33 +2366,23 @@ So this pop operation maintains Inv1.
                split3; [| | split3]; trivial.
                1: rewrite upd_Znth_diff; omega.
                rewrite Forall_forall; intros.
-               assert ((snd x) <> src). {
-                 admit.
-
-                 (* update: can just kill this off.
-
-                 same for many others like this. 
-                  *)
-
                  (*
-                 
-                  Also, please note how I use this 
-                  technique to specialise H60
-                  and get that (snd x) is in popped.
-
-                  Later there are some places where
-                  I have left easy admits for you to 
-                  do the same for me. 
+                   Please note how I use this 
+                   technique to specialise H60
+                   and get that (snd x) is in popped.   
+                   
+                   Later there are some places where
+                   I have left easy admits for you to 
+                   do the same for me. 
                   *)
-               }
                assert (In_path g (snd x) p2dst). {
                  unfold In_path. right.
                  exists x. split; trivial.
                  destruct H2 as [? [? [? ?]]].
-                 unfold dst_edge in H71.
-                 rewrite H71. right; trivial.
+                 red in H70; rewrite H70.
+                 right; trivial.
                }
-               specialize (H61 _ H69).
+               specialize (H61 _ H68).
                rewrite Forall_forall in H66.
                specialize (H66 _ H67).
                assert (snd x <> i). {
@@ -2439,26 +2429,20 @@ So this pop operation maintains Inv1.
                  ---- rewrite upd_Znth_diff by omega.
                       trivial.
                  ---- rewrite Forall_forall; intros.
-                      assert ((snd x) <> src). {
-                        admit.
-                      (* The "to" vertex of the link
-                         would never be src. *)
-                        (* can delete. not used. *)
-                      }
                       assert (In_path g (snd x) p2u). {
                         unfold In_path. right.
                         exists x. split; trivial.
                         destruct H2 as [? [? [? ?]]].
-                        unfold dst_edge in H71.
-                        rewrite H71. right; trivial.
+                        unfold dst_edge in H70.
+                        rewrite H70. right; trivial.
                       }
-                      specialize (H61 _ H69).
+                      specialize (H61 _ H68).
                       rewrite Forall_forall in H66.
                       specialize (H66 _ H67).
                       unfold VType in *.
                       rewrite upd_Znth_diff; try omega; trivial.
                       apply get_popped_range in H61; omega.
-                      intro. rewrite H70 in H61.
+                      intro. rewrite H69 in H61.
                       apply H44. trivial.
              *** intros.
                  specialize (H61 _ H63).
@@ -2498,17 +2482,13 @@ So this pop operation maintains Inv1.
                    }
                    assert (In_path g mom' p2mom') by admit.
                    (* should be easy *)
-
-                   (* can remove, then change H numbers *)
-                   assert (mom' <> src) by admit.
-
                    specialize (H64 _ H74).
                    rewrite <- get_popped_irrel_upd in H64; try omega; trivial.
                    2: { apply get_popped_range in H64.
                         rewrite upd_Znth_Zlength in H64;
                           omega.
                    }
-                   2: { intro. rewrite H76 in H64.
+                   2: { intro. rewrite H75 in H64.
                         rewrite get_popped_meaning in H64.
                         rewrite upd_Znth_same in H64; omega.
                         rewrite upd_Znth_Zlength; omega.
@@ -2519,7 +2499,7 @@ So this pop operation maintains Inv1.
                    rewrite orb_true_r.
                    rewrite H71 in H43.
                    destruct H60 as [? [? [? [? _]]]].
-                   rewrite <- H78.
+                   rewrite <- H77.
                    omega.
                  ----  (* now we know that i was 
                           seen, but unpopped *)
