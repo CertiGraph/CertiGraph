@@ -2106,6 +2106,8 @@ So this pop operation maintains Inv1.
                       2. use inv_unpopped of u
                       3. src is In_path to u's mom
                       4. done
+
+                      Shengyi?
                     *)
                    admit.
                  + destruct H32 as [? [? ?]].
@@ -2133,7 +2135,23 @@ So this pop operation maintains Inv1.
                     + rewrite e. unfold careful_add. rewrite orb_true_l.
                       rewrite <- inf_eq; omega.
                     + rewrite careful_add_clean; try omega; trivial.
-                      admit. (* easy *)
+                      destruct H32 as [? [? [? [? ?]]]].
+                      pose proof (path_cost_pos g p2mom' H2 H32 H1).
+                      assert (0 <= mom' < SIZE). {
+                        destruct H35.
+                        apply pfoot_in in H40.
+                        specialize (H33 _ H40).
+                        destruct H33.
+                        apply get_popped_range in H33.
+                        rewrite upd_Znth_Zlength in H33; omega.
+                      }
+
+                      assert (0 <= src < SIZE). {
+                        (* easy. Shengyi? *)
+                        admit.
+                      }
+                      unfold inrange_graph in H1.
+                      destruct (H1 _ _ H41 H40); omega.
              }
              destruct H32 as [? [p2mom [? [? ?]]]].
              unfold VType in *.
@@ -2420,6 +2438,7 @@ So this pop operation maintains Inv1.
              split.
              1: { intro.
                   (* show that src is in popped. then get contra. *)
+                  (* Shengyi? *)
                   admit.
              }             
              exists p2u.
@@ -2480,8 +2499,10 @@ So this pop operation maintains Inv1.
                      specialize (H62 _ H63 H66).
                      rewrite careful_add_clean; omega.
                    }
-                   assert (In_path g mom' p2mom') by admit.
-                   (* should be easy *)
+                   assert (In_path g mom' p2mom'). {
+                     destruct H66.
+                     apply pfoot_in in H74. trivial.
+                   }
                    specialize (H64 _ H74).
                    rewrite <- get_popped_irrel_upd in H64; try omega; trivial.
                    2: { apply get_popped_range in H64.
@@ -2504,6 +2525,8 @@ So this pop operation maintains Inv1.
                  ----  (* now we know that i was 
                           seen, but unpopped *)
                    assert (Znth i priq_contents' < inf). {
+                     assert (0 <= i < Zlength priq_contents') by omega.
+                     pose proof (Forall_Znth _ priq_contents' i H70 H31).
                      admit. (* easy *)
                    }
 
@@ -2575,7 +2598,7 @@ There are two cases about p': ~ In u p' \/ In u p'
                          trivial.
                        }
                        assert (In mom' (get_popped priq_contents')) by admit.
-                       (* This will come thanks to Shengyi *)
+                       (* Shengyi? *)
                        (* And I already have the same
                           for u, as H29
                         *)
