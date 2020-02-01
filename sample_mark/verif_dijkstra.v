@@ -13,6 +13,8 @@ Require Import RamifyCoq.sample_mark.spatial_dijkstra_array_graph.
 Require Import Coq.omega.Omega.
 Require Import Coq.Lists.List.
 
+Local Open Scope Z_scope.
+
 Lemma inf_eq: 1879048192 = inf.   
 Proof. compute; trivial. Qed.
 
@@ -291,13 +293,20 @@ Proof.
     rewrite e; clear e.
   - apply H, in_eq.
   - apply IHl1, (incl_cons_inv H).
-Qed.  
+Qed.
 
 Lemma Znth_0_hd:
   forall list, Zlength list > 0 -> Znth 0 list = hd 0 list.
 Proof.
   intros. induction list; inversion H.
   rewrite Znth_0_cons. trivial.
+Qed.
+
+Lemma fold_min_in_list: forall l, Zlength l > 0 -> In (fold_right Z.min (hd 0 l) l) l.
+Proof.
+  intros. apply min_in_list.
+  - apply incl_refl.
+  - rewrite <- Znth_0_hd by (unfold SIZE in *; omega). apply Znth_In; omega.
 Qed.
 
 Lemma min_picks_first:
@@ -1507,6 +1516,16 @@ Proof.
       * right; trivial.
 Qed.
 
+Lemma find_min_lt_inf: forall u l,
+    u = find l (fold_right Z.min (hd 0 l) l) 0 -> isEmpty l = Vzero ->
+    Zlength l > 0 -> Znth u l < inf.
+Proof.
+  intros. rewrite <- isEmpty_in' in H0. destruct H0 as [? [? ?]].
+  rewrite H. rewrite Znth_find.
+  - pose proof (fold_min _ _ H0). omega.
+  - now apply fold_min_in_list.
+Qed.
+
 Lemma body_dijkstra: semax_body Vprog Gprog f_dijkstra dijkstra_spec.
 Proof.
   start_function. 
@@ -1920,18 +1939,7 @@ Proof.
                 subst dst.
                 unfold inv_unpopped in H33.
                 assert (Znth u priq_contents < inf).
-                {
-                  rewrite <- isEmpty_in' in H15.
-                   destruct H15 as [? [? ?]].
-                   rewrite Hequ.
-                   rewrite Znth_find.
-                   2: { apply min_in_list.
-                        apply incl_refl.
-                        rewrite <- Znth_0_hd by (unfold SIZE in *; omega).
-                        apply Znth_In; omega.
-                   }
-                   pose proof (fold_min _ _ H15). omega.
-                 }
+                { apply find_min_lt_inf; auto. unfold SIZE in H11. omega. }
                 specialize (H33 H35).
                 destruct H33.
                 1: { (* src is being popped *)
@@ -2040,7 +2048,10 @@ So this pop operation maintains Inv1.
                      trivial.
                    2: apply link_evalid; trivial.
                    simpl.
-
+                   destruct (Z_le_gt_dec
+                               (path_cost g p2mom + Znth u (Znth mom (graph_to_mat g)))
+                               (path_cost g p')); auto.
+                   apply Z.gt_lt in g0.
                    (* is there a way to split the path 
                       to get all but its 2nd-last link, 
                       plus 2nd-last to last? 
@@ -2098,18 +2109,13 @@ So this pop operation maintains Inv1.
                  + simpl in H32.
                    rewrite H32; split; trivial.
                    rewrite <- get_popped_irrel_upd; try omega; trivial.
-                   (* I need to show that src is in popped. 
-                      This is true because some u, u <> src,
-                      is the fringe min. So src is known to be popped.
-                      
-                      1. show that dist[u] < inf
-                      2. use inv_unpopped of u
-                      3. src is In_path to u's mom
-                      4. done
-
-                      Shengyi?
-                    *)
-                   admit.
+                   assert (Znth u priq_contents < inf). {
+                     apply find_min_lt_inf; auto. unfold SIZE in H11. omega. }
+                   rewrite H11 in H16. destruct (H4 _ H16) as [_ [? _]].
+                   destruct (H34 H33). 1: exfalso; now apply n.
+                   destruct H35 as [? [p2mom [? [? _]]]]. apply H37.
+                   left. destruct H36 as [_ [[? _] _]]. destruct p2mom.
+                   now simpl in H36 |- *.
                  + destruct H32 as [? [? ?]].
                    simpl in H32; omega.
                   - unfold path_globally_optimal; intros.
