@@ -2990,34 +2990,117 @@ There are two cases about p': ~ In u p' \/ In u p'
          destruct (H23 i H57 H56) as [p2mom [? [? [? [? [? [? ?]]]]]]].
          unfold VType in *.
          remember (Znth i prev_contents') as mom.
-         (* now I must show that the same path
-            is actually still okay *)
-         right.
-         split.
-         1: admit. (* prove src is popped, then use contra. *)
+         destruct (Z.eq_dec i src); [left | right]; trivial.
+         split; trivial.
          exists p2mom; split3; [| |split3; [| |split3]]; trivial.
          +++ intros.
              specialize (H59 _ H65).
              destruct H59. trivial.
          +++ intros.
-             apply H64; trivial. intros.
-             specialize (H66 _ H68).
-             split; trivial.
-             admit.
-             (* Another interesting case *)
+
+(*
+This time, we need to prove that since dist[u] + 
+graph[u][i] > dist[i], the original path from s to i 
+composed by popped vertices (excluding u) is still 
+shortest in all paths from s to i composed by popped 
+vertices (including u).
+
+In other words, it is to prove that for any path p' from 
+s to i and composed by popped vertices (including u), 
+dist[i] < path_cost p'.
+ *)
+             destruct (in_dec (ZIndexed.eq) u (epath_to_vpath g p2mom')).
+
+             *** destruct H65 as [? [? [? [? ?]]]].
+                 apply in_path_eq_epath_to_vpath in i0; trivial.
+(*
+2. In u p': p' is from s to i, consider the 
+vertex k which is just before i.
+ *)
+                 destruct (Z.eq_dec mom' u).
+                 ----
+(*               
+2.1 k = u: dist[u] is global optimal. We have
+dist [i] < dist[u] + graph[u][i] ......(H43)
+         <= path_cost [s to u of p'] + graph[u][i]
+         = path_cost p'
+ *)
+                   subst mom'.
+                   specialize (H66 _ i0).
+                   rename p2mom' into p2u.
+                   unfold path_globally_optimal in H67.
+                   apply Z.ge_le in H43.
+                   rewrite careful_add_clean; try omega; trivial.
+                   replace 8 with SIZE in H38 by omega.
+                   rewrite inf_eq2 in H38.
+                   rewrite Int.signed_repr in H38.
+                   2: rep_omega.
+                   rewrite Int.signed_repr in H38.
+                   2: { rewrite <- inf_eq.
+                        unfold VType in *. 
+                        unfold Int.min_signed, Int.max_signed.
+                        unfold Int.half_modulus.
+                        simpl. omega.
+                   }
+                   omega.
+                 ----
+(*
+2.2 ~ k = u: p' = s to u + u to k + edge k i. 
+The reasoning here is the same as tricky admit #2: 
+Since p' is composed by popped vertex (including u) only, 
+k must be a popped vertex. 
+Then it satisfies NewInv1, which means 
+dist[k] <= path_cost [s to u] + path_cost [u to k] 
+and the global optimal path from s to k is composed by 
+popped vertices only. 
+Thus dist[k] + len(edge k i) <= path_cost p'. 
+Since dist[k] only contains popped vertices, this path 
+having dist[k] + edge k i also only contains popped 
+vertices. Thus we have dist[i] <= dist[k] + len(edge k i) 
+because of Inv2. So we have: 
+dist[i] <= dist[k] + len(edge k i) <= path_cost p'.
+
+ *)
+                   admit.
+             ***
+
+(* 1. ~ In u p': This is an easy case. 
+   dist[i] < path_cost p' because of Inv2.
+ *)
+               apply H64; trivial.
+               intros.
+               specialize (H66 _ H68).
+               split; trivial.
+               destruct H65.
+               rewrite in_path_eq_epath_to_vpath in n0; trivial.
+               intro. rewrite H70 in H68.
+               apply n0; trivial.
      --- intros. destruct (Z.eq_dec dst i).
          +++ subst dst. omega.
          +++ apply H23; omega.
      --- unfold inv_unseen; intros.
          destruct (Z.eq_dec dst i).
-         +++ subst dst.
-             assert (i <= i < SIZE) by omega.
-             destruct (H25 _ H57 H56) as [? [? ?]].
-             split3; trivial.
-             intros.
-             apply H60; trivial.
-             admit. (* interesting case *)
-         +++ apply H24; omega.
+         2: apply H24; omega.
+         subst dst.
+         assert (i <= i < SIZE) by omega.
+         destruct (H25 _ H57 H56) as [? [? ?]].
+         split3; trivial.
+         intros.
+
+         destruct (Z.eq_dec mom u).
+         2: apply H60; trivial.
+
+         subst mom.
+         (* hm, logically this seems easy.
+            dist[i] = inf (H58),
+            dist[u] <> inf (can infer from H61), and
+            dist[u] + u2i >= dist[i] (H43)
+          *)
+
+         (* but do I have the facts in hand? 
+            need to tweak invariants? 
+          *)
+         admit.
      --- intros.
          assert (i <= dst < SIZE) by omega.
          apply H25; trivial.
@@ -3029,6 +3112,12 @@ There are two cases about p': ~ In u p' \/ In u p'
              Exists prev_contents' priq_contents' dist_contents'.
              entailer!.
              remember (find priq_contents (fold_right Z.min (hd 0 priq_contents) priq_contents) 0) as u.
+             assert (Znth i (Znth u (graph_to_mat g)) = inf). {
+               assert (0 <= i < SIZE) by omega.
+               assert (0 <= u < SIZE) by omega.
+               unfold inrange_graph in H1.                 
+               admit. (* fine.. *)
+             }
              split3; [| |split]; intros.
              ** destruct (Z.eq_dec dst i).
                 --- subst dst. 
@@ -3040,7 +3129,7 @@ There are two cases about p': ~ In u p' \/ In u p'
                 by going via u *)
                     unfold inv_unpopped; intros.
                     assert (i <= i < SIZE) by omega.
-                    destruct (H23 i H52 H51) as [p2mom [? [? [? [? [? ?]]]]]].
+                    destruct (H23 i H53 H52) as [p2mom [? [? [? [? [? ?]]]]]].
                     unfold VType in *.
                     remember (Znth i prev_contents') as mom.
                     right. split.
@@ -3048,23 +3137,36 @@ There are two cases about p': ~ In u p' \/ In u p'
                       assert (In src (get_popped priq_contents')). {
                         admit. (* can make this a lemma *)
                       }
-                      intro contra. rewrite <- contra in H59.
-                      rewrite get_popped_meaning in H59.
+                      intro contra. rewrite <- contra in H60.
+                      rewrite get_popped_meaning in H60.
                       omega. omega.
                     }
                     exists p2mom; split3; [| |split3; [| |split3]]; trivial.
                     +++ intros.
-                        specialize (H54 _ H59).
-                        destruct H54. trivial.
-                    +++ intros. apply H58; trivial.
-                    +++ intros. apply H58; trivial.
-                        unfold VType in *. intros.    
-                        specialize (H60 _ H62).
-                        split; trivial.
+                        specialize (H55 _ H60).
+                        destruct H55. trivial.
+                    +++ intros. apply H59; trivial.
+                    +++ intros.
+                        admit.
+
+                        
+(*                        destruct (Z.eq_dec mom' u).
+                        *** subst mom'.
+                            rewrite H14.
+                            unfold careful_add.
+                            rewrite orb_true_r.
+                            admit. (* fine... *)
+                        *** apply H59; trivial.
+                            unfold VType in *. intros.    
+                            specialize (H61 _ H63).
+                            split; trivial.
+                            intro. subst step'.
+                        
                         admit.
                         (* interesting case -- 
                            show that the path neednt'
                            go through u *)
+ *)
                 --- apply H22; omega.
              ** destruct (Z.eq_dec dst i).
                 --- omega. 
@@ -3074,11 +3176,12 @@ There are two cases about p': ~ In u p' \/ In u p'
                 subst dst.
                 assert (i <= i < SIZE) by omega.
                 unfold inv_unseen; intros.
-                destruct (H25 _ H51 H52) as [? [? ?]].
+                destruct (H25 _ H52 H53) as [? [? ?]].
                 split3; trivial.
                 intros.
-                apply H55; trivial.
-                admit. (* interesting case *)
+                destruct (Z.eq_dec mom u).
+                1: subst mom; trivial.
+                apply H56; trivial.
              ** apply H25; omega.
         -- (* From the for loop's invariant, 
               prove the while loop's invariant. *)
