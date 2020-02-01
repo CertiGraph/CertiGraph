@@ -2151,13 +2151,8 @@ So this pop operation maintains Inv1.
                         apply get_popped_range in H33.
                         rewrite upd_Znth_Zlength in H33; omega.
                       }
-
-                      assert (0 <= src < SIZE). {
-                        (* easy. Shengyi? *)
-                        admit.
-                      }
                       unfold inrange_graph in H1.
-                      destruct (H1 _ _ H41 H40); omega.
+                      destruct (H1 _ _ H14 H40); omega.
              }
              destruct H32 as [? [p2mom [? [? ?]]]].
              unfold VType in *.
@@ -2442,11 +2437,10 @@ So this pop operation maintains Inv1.
              rewrite upd_Znth_same by omega.
              right.
              split.
-             1: { intro.
-                  (* show that src is in popped. then get contra. *)
-                  (* Shengyi? *)
-                  admit.
-             }             
+             1: { intro. assert (In_path g src p2u). {
+                    left. destruct H60 as [_ [[? _] _]].
+                    destruct p2u. now simpl in H60 |- *. } specialize (H61 _ H64).
+                  now subst. }
              exists p2u.
              split3; [| |split3; [| |split3]]; trivial.
              *** destruct H60 as [? [? [? [? ?]]]].
@@ -2603,11 +2597,14 @@ There are two cases about p': ~ In u p' \/ In u p'
                          apply pfoot_in in H71.
                          trivial.
                        }
-                       assert (In mom' (get_popped priq_contents')) by admit.
-                       (* Shengyi? *)
-                       (* And I already have the same
-                          for u, as H29
-                        *)
+                       assert (In mom' (get_popped priq_contents')). {
+                         specialize (H64 _ H71).
+                         rewrite get_popped_unchanged in H64; auto.
+                         - now rewrite H34.
+                         - rewrite upd_Znth_same in H59. 2: now rewrite H34.
+                           omega.
+                         - omega.
+                       }
                        unfold VType in *.
                        (*
                        destruct (Z.eq_dec (Znth i (Znth mom' (graph_to_mat g))) inf).
@@ -2735,15 +2732,8 @@ There are two cases about p': ~ In u p' \/ In u p'
                         intro.
                         apply H44.
                         rewrite <- Heqmom in *.
-                        rewrite <- H72. trivial.
-                        (* can get from 
-                           H71 : mom = i
-                           H67 : path_ends g p2mom src mom
-                           H61 : forall step : Z,
-                           step <> src -> In_path g step p2mom -> In step (get_popped priq_contents')
-                         *)
-                        (* Shengyi? *)
-                        admit.
+                        rewrite <- H72. apply H62.
+                        apply pfoot_in. now destruct H68.
                       }
                       rewrite upd_Znth_diff; try omega.
                       2: {
@@ -2765,25 +2755,9 @@ There are two cases about p': ~ In u p' \/ In u p'
                       1: unfold VType in *; rewrite H35;
                         apply (step_in_range2 g p2mom); trivial.
                       1: unfold VType in *; omega.
-                      intro contra.
-                      (* 
-                         Shengyi? 
-
-                         can specialise 
-                          H61 : forall step : Z,
-        step <> src -> In_path g step p2mom -> In step (get_popped priq_contents')
-                          using step = (snd x)
-
-                          Will need
-                          H67 : path_ends g p2mom src mom
-
-                          Then rewrite snd x = i.
-
-                          there is a contradiction thanks to 
-                          H43 : ~ In i (get_popped priq_contents')
-                       *)
-                      admit.
-
+                      intro contra. apply H44. apply H62. right. exists x.
+                      split; auto. right. destruct H2 as [_ [_ [_ ?]]]. red in H2.
+                      now rewrite H2.
              *** intros.
                  specialize (H62 _ H68).
                  repeat rewrite <- get_popped_irrel_upd; try omega; trivial.
