@@ -2778,18 +2778,20 @@ There are two cases about p': ~ In u p' \/ In u p'
                  apply H67; trivial.
                  ---- destruct H68 as [? [? [? [? ?]]]].
                       split3; [| |split3]; trivial.
-                      ++++ rewrite upd_Znth_diff in H73; try omega.
-                           (* specialise H68. 
-                              1. use get_popped_range. done.
-                              2. intro contra. 
-                              rewrite contra in H68.
-                           rewrite get_popped_meaning in H68.
-                           rewrite upd_Znth_same in H68; omega.
-                            *)
-                           (* Shengyi? *)
-                           (* Below I give you an example *)
-                           admit.
-                           admit.
+                      ++++ assert (In mom' (get_popped priq_contents')). {
+                                assert (In_path g mom' p2mom'). {
+                                  apply pfoot_in. now destruct H71. }
+                                specialize (H69 _ H75).
+                                rewrite get_popped_unchanged in H69; auto.
+                                - now rewrite H34.
+                                - omega.
+                                - intro. apply H44.
+                                  rewrite get_popped_meaning; auto.
+                                  now rewrite H34. }
+                        rewrite upd_Znth_diff in H73; try omega.
+                           **** rewrite H36. rewrite <- H34.
+                                now apply get_popped_range.
+                           **** intro. apply H44. now rewrite <- H76.
                       ++++ rewrite Forall_forall; intros.
                            rewrite Forall_forall in H74.
                            specialize (H74 _ H75).
@@ -2799,10 +2801,14 @@ There are two cases about p': ~ In u p' \/ In u p'
                            rewrite H35.
                            apply (step_in_range2 g p2mom');
                              trivial.
-                           intro.
-                           (* similar to above *)
-                           (* Shengyi? *)
-                           admit.
+                           intro. assert (In_path g i p2mom'). {
+                             right. exists x. split; auto.
+                             right. destruct H2 as [_ [_ [_ ?]]]. red in H2.
+                             now rewrite H2. } specialize (H69 _ H77).
+                           rewrite get_popped_meaning in H69.
+                           **** rewrite upd_Znth_same in H69. omega.
+                                now rewrite H34.
+                           **** rewrite upd_Znth_Zlength; now rewrite H34.
                  ---- intros.
                       specialize (H69 _ H71).
                       rewrite <- get_popped_irrel_upd in H69; try omega; trivial.
