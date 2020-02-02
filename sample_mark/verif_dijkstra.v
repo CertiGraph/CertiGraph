@@ -2835,17 +2835,13 @@ There are two cases about p': ~ In u p' \/ In u p'
              split3; [| | split3]; trivial.
              *** rewrite <- Heqmom. trivial.
              *** rewrite <- Heqmom.
-                 rewrite upd_Znth_diff; try omega; trivial.
-                 (* can show that mom is in popped.
-                    then can use get_popped_range, 
-                    and for the contra can intro, 
-                    rewrite in H61, and then get a contra
-                    from H43 
-
-                    Shengyi?
-                  *)
-                 admit.
-                 admit.
+                 ---- assert (In mom (get_popped priq_contents')). {
+                        assert (In_path g mom p2mom). {
+                          apply pfoot_in. now destruct H68. }
+                        specialize (H62 _ H72). now destruct H62. }
+                      rewrite upd_Znth_diff; try omega; trivial.
+                      ++++ rewrite H36, <- H34. now apply get_popped_range.
+                      ++++ intro. apply H44. now rewrite <- H73.
              *** rewrite Forall_forall; intros.
                  rewrite Forall_forall in H71.
                  specialize (H71 _ H72).
@@ -2853,12 +2849,10 @@ There are two cases about p': ~ In u p' \/ In u p'
                  rewrite upd_Znth_diff; try omega; trivial.
                  ---- rewrite H35.
                       apply (step_in_range2 g p2mom); trivial.
-                 ---- (* can specialize H61 and then
-                         use contra 
-
-                         Shengyi?
-*)
-                   admit.
+                 ---- intro. assert (In_path g i p2mom). {
+                        right. exists x. split; auto. right.
+                        destruct H2 as [_ [_ [_ ?]]]. now rewrite H2. }
+                      specialize (H62 _ H74). now destruct H62.
          +++ intros.
              specialize (H62 _ H68).
              destruct H62.
@@ -2876,40 +2870,43 @@ There are two cases about p': ~ In u p' \/ In u p'
              apply H67. 
              *** destruct H68 as [? [? [? [? ?]]]].
                  split3; [| |split3]; trivial.
-                 ---- rewrite upd_Znth_diff in H73;
-                        try omega; trivial.
-                      (* Shengyi? *)
-                      (* first please help me 
-                         specialize H68.
-                         
-                         then...
-                      apply get_popped_range in H68.
-                      rewrite upd_Znth_Zlength in H68;
-                        omega.
-                      intro. rewrite H70 in H68.
-                      rewrite get_popped_meaning in H68.
-                      rewrite upd_Znth_same in H68; omega.
-                      
-                      rewrite upd_Znth_Zlength; omega.
-                       *)
-                      admit.
-                      admit.
+                 ---- assert (In mom' (get_popped priq_contents')). {
+                        assert (In_path g mom' p2mom'). {
+                          apply pfoot_in. now destruct H71. }
+                        specialize (H69 _ H75). destruct H69.
+                        rewrite get_popped_unchanged in H69; auto.
+                        - now rewrite H34.
+                        - omega.
+                        - intro. apply H44.
+                          rewrite get_popped_meaning; auto.
+                          now rewrite H34. }
+                      rewrite upd_Znth_diff in H73; try omega.
+                      ++++ rewrite H36. rewrite <- H34.
+                           now apply get_popped_range.
+                      ++++ intro. apply H44. now rewrite <- H76.
                  ---- rewrite Forall_forall; intros.
                       rewrite Forall_forall in H74.
                       specialize (H74 _ H75).
                       unfold VType in *.
-                      rewrite upd_Znth_diff in H74; try omega; trivial.
-                      (* Shengyi? *)
-                      (* same story. need to specialize
-                       H68 and then proceed *)
-
-                      (*rewrite get_popped_meaning in H68.
-                      rewrite upd_Znth_same in H68; omega.
-                      rewrite upd_Znth_Zlength; omega.
-                       *)
-                      admit.
-                      admit.
-
+                      ++++ assert (In_path g (snd x) p2mom'). {
+                             right. exists x. split; auto. right.
+                             destruct H2 as [_ [_ [_ ?]]]. now rewrite H2. }
+                           specialize (H69 _ H76). destruct H69.
+                           assert (In (snd x) (get_popped priq_contents')). {
+                             rewrite get_popped_unchanged in H69; auto.
+                             - now rewrite H34.
+                             - omega.
+                             - intro. apply H44.
+                               rewrite get_popped_meaning; auto.
+                               now rewrite H34. }
+                           rewrite upd_Znth_diff in H74; try omega.
+                           **** rewrite H35. rewrite <- H34.
+                                now apply get_popped_range.
+                           **** intro. rewrite H79 in *.
+                                rewrite get_popped_meaning in H69.
+                                ----- rewrite upd_Znth_same in H69. 1: omega.
+                                rewrite H34; auto.
+                                ----- rewrite upd_Znth_Zlength; now rewrite H34.
              *** intros.
                  specialize (H69 _ H71).
                  destruct H69.
