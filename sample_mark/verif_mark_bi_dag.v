@@ -31,9 +31,10 @@ Existing Instances MGS biGraph maGraph finGraph RGF.
 Definition mark_spec :=
  DECLARE _mark
   WITH sh: wshare, g: Graph, x: pointer_val
-  PRE [ _x OF (tptr (Tstruct _Node noattr))]
+  PRE [tptr (Tstruct _Node noattr)]
           PROP  (weak_valid g x)
-          LOCAL (temp _x (pointer_val_val x))
+          PARAMS (pointer_val_val x)
+          GLOBALS ()
           SEP   (dag sh x g)
   POST [ Tvoid ]
       EX g': Graph,
@@ -44,8 +45,8 @@ Definition mark_spec :=
 Definition main_spec :=
  DECLARE _main
   WITH u : globals
-  PRE  [] main_pre prog nil u
-  POST [ tint ] main_post prog nil u.
+  PRE  [] main_pre prog tt u
+  POST [ tint ] main_post prog u.
 
 Definition Gprog : funspecs := ltac:(with_library prog [mark_spec ; main_spec]).
 
@@ -53,7 +54,7 @@ Lemma dag_local_facts: forall sh x (g: Graph), weak_valid g x -> dag sh x g |-- 
 Proof.
   intros. destruct H.
   - simpl in H. subst x. entailer!.
-  - destruct (vgamma g x) as [[d l] r] eqn:?. 
+  - destruct (vgamma g x) as [[d l] r] eqn:?.
     pose proof (@root_unfold _ (sSGG_VST sh) g x d l r H Heqp); clear -H0.
     simpl in *. rewrite H0. entailer!.
 Qed.
@@ -151,7 +152,7 @@ Proof.
                          _ _ _ _ _ gx_vvalid H_GAMMA_g H3 H5).
            simpl reachable_dag_vertices_at in *; eapply H1.
            }
-      forward. (* ( return; ) *)
+      (* ( return; ) *)
       Exists g3. entailer!.
       apply (mark1_mark_left_mark_right g g1 g2 g3 (ValidPointer b i) l r); auto.
 Qed. (* Original: 114 seconds; VST 2.*: 2.739 secs *)

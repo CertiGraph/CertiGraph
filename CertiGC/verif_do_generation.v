@@ -1,5 +1,7 @@
 Require Import RamifyCoq.CertiGC.gc_spec.
 
+Local Open Scope logic.
+
 Lemma body_do_generation: semax_body Vprog Gprog f_do_generation do_generation_spec.
 Proof.
   start_function.
@@ -25,7 +27,7 @@ Proof.
   unfold space_struct_rep. unfold space_tri. do 5 forward.
   gather_SEP
     (data_at sh space_type
-             _ (space_address t_info from)) 
+             _ (space_address t_info from))
     (data_at sh space_type
              _ (space_address t_info to)).
   replace_SEP 0 (space_struct_rep sh t_info from * space_struct_rep sh t_info to) by
@@ -67,7 +69,7 @@ Proof.
                 (Int.repr (used_space (nth_space t_info from)))) eqn: ?; simpl in H18.
     2: inversion H18. apply lt_repr in Heqb1. 2: apply rest_space_repable_signed.
     2: apply used_space_repable_signed. clear -H8 H3 Heqb1. red in H3.
-    unfold graph_gen_size, rest_gen_size in H3. rewrite H8 in H3. omega. 
+    unfold graph_gen_size, rest_gen_size in H3. rewrite H8 in H3. omega.
   - Intros. deadvars!. localize [space_struct_rep sh t_info from].
     unfold space_struct_rep, space_tri. do 2 forward.
     replace_SEP 0 (space_struct_rep sh t_info from) by
@@ -175,7 +177,7 @@ Proof.
     + apply super_compatible_reset with (gen := from) in H34.
       2: { apply (frr_not_pointing from to f_info roots g roots1 g1); auto.
            - clear -H0. destruct H0 as [_ [_ [_ [? _]]]]. assumption.
-           - clear -H. destruct H as [_ [_ [[_ ?] _]]]. assumption. } forward.
+           - clear -H. destruct H as [_ [_ [[_ ?] _]]]. assumption. }
       remember (reset_nth_heap_thread_info from t_info2) as t_info3.
       remember (reset_graph from g2) as g3.
       assert (do_generation_relation from to f_info roots roots1 g g3) by

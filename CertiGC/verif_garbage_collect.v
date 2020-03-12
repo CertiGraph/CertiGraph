@@ -1,5 +1,7 @@
 Require Import RamifyCoq.CertiGC.gc_spec.
 
+Local Open Scope logic.
+
 Lemma sem_sub_pp_total_space: forall s,
     isptr (space_start s) ->
     force_val
@@ -59,6 +61,10 @@ Lemma body_garbage_collect:
   semax_body Vprog Gprog f_garbage_collect garbage_collect_spec.
 Proof.
   start_function.
+  assert (Tf: forall (tif: thread_info) (j: Z),
+             0 <= j -> offset_val (sizeof (Tstruct _space noattr) * j) (ti_heap_p tif)=
+                       space_address tif (Z.to_nat j)). {
+          intros. unfold space_address. now rewrite Z2Nat.id. }
   sep_apply (create_mem_mgr gv).
   unfold before_gc_thread_info_rep, heap_struct_rep. Intros. forward. pose proof H.
   destruct H as [? _]. pose proof (gt_gs_compatible _ _ H _ (graph_has_gen_O _)).
@@ -177,7 +183,7 @@ Proof.
                     (2 * nth_gen_size (Z.to_nat i))%Z, gv, rsh).
       * rewrite Int.signed_repr by (apply ngs_int_singed_range; rep_omega).
         rewrite ngs_S by omega. apply ngs_int_singed_range. rep_omega.
-      * simpl. entailer!.
+      * simpl. entailer!. f_equal. now rewrite Tf.
       * rewrite ngs_S by omega. Intros p. rewrite ngs_S in H22 by omega.
         assert (Hso: 0 <= 0 <= (nth_gen_size (Z.to_nat (i + 1)))) by omega.
         rewrite data_at__isptr. Intros.
@@ -233,7 +239,7 @@ Proof.
           rewrite Z.sub_0_r, Z.mul_0_r, isptr_offset_val_zero by
               (subst; simpl; assumption). entailer!. }
         gather_SEP (heap_rest_rep (ti_heap t_info')) (space_rest_rep sp).
-        rewrite (heap_rest_rep_add _ _ (i + 1) H20), <- Heqt_info1 by assumption.  
+        rewrite (heap_rest_rep_add _ _ (i + 1) H20), <- Heqt_info1 by assumption.
         gather_SEP
           (data_at sh thread_info_type _ _)
           (heap_struct_rep _ _ _)
@@ -272,7 +278,8 @@ Proof.
            apply (proj1 H16)). pose proof (t_info_space_address _ _ (proj1 H7) H22).
       pose proof (t_info_space_address _ _ (proj1 H14) H22).
       forward_call (rsh, sh, gv, fi, ti, g1, t_info1, f_info, roots', outlier,
-                    (Z.to_nat i), (Z.to_nat (i + 1))). 1: simpl; entailer!.
+                    (Z.to_nat i), (Z.to_nat (i + 1))).
+      1: simpl; entailer!; now rewrite !Tf.
       1: do 4 (split; auto); rewrite H23; apply n_Sn.
       Intros vret. destruct vret as [[g2 t_info2] roots2]. simpl fst in *.
       simpl snd in *. replace (ti_heap_p t_info1) with (ti_heap_p t_info2) by

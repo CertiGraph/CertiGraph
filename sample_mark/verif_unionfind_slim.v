@@ -27,9 +27,10 @@ Existing Instances maGraph finGraph liGraph RGF.
 Definition mallocN_spec :=
  DECLARE _mallocN
   WITH sh: wshare, n:Z
-  PRE [ 67%positive OF tint]
+  PRE [tint]
      PROP (0 <= n <= Int.max_signed)
-     LOCAL (temp 67%positive (Vint (Int.repr n)))
+     PARAMS (Vint (Int.repr n))
+     GLOBALS ()
      SEP ()
   POST [ tptr tvoid ]
      EX v: addr,
@@ -41,9 +42,10 @@ Definition mallocN_spec :=
 Definition find_spec :=
  DECLARE _find
   WITH sh: wshare, g: Graph, x: pointer_val
-  PRE [ _x OF (tptr (Tstruct _Node noattr))]
+  PRE [tptr (Tstruct _Node noattr)]
           PROP  (vvalid g x)
-          LOCAL (temp _x (pointer_val_val x))
+          PARAMS (pointer_val_val x)
+          GLOBALS ()
           SEP   (whole_graph sh g)
   POST [ tptr (Tstruct _Node noattr) ]
         EX g': Graph, EX rt : pointer_val,
@@ -54,9 +56,10 @@ Definition find_spec :=
 Definition unionS_spec :=
  DECLARE _unionS
   WITH sh: wshare, g: Graph, x: pointer_val, y: pointer_val
-  PRE [ _x OF (tptr (Tstruct _Node noattr)), _y OF (tptr (Tstruct _Node noattr))]
-          PROP  (vvalid g x /\ vvalid g y)
-          LOCAL (temp _x (pointer_val_val x); temp _y (pointer_val_val y))
+  PRE [tptr (Tstruct _Node noattr), tptr (Tstruct _Node noattr)]
+          PROP  (vvalid g x; vvalid g y)
+          PARAMS (pointer_val_val x; pointer_val_val y)
+          GLOBALS ()
           SEP   (whole_graph sh g)
   POST [ Tvoid ]
         EX g': Graph,
@@ -69,11 +72,12 @@ Definition makeSet_spec :=
   WITH sh: wshare, g: Graph
     PRE []
       PROP ()
-      LOCAL ()
+      PARAMS ()
+      GLOBALS ()
       SEP (whole_graph sh g)
     POST [tptr (Tstruct _Node noattr)]
       EX g': Graph, EX rt: pointer_val,
-      PROP (~ vvalid g rt /\ vvalid g' rt /\ is_partial_graph g g')
+      PROP (~ vvalid g rt ; vvalid g' rt ; is_partial_graph g g')
       LOCAL (temp ret_temp (pointer_val_val rt))
       SEP (whole_graph sh g').
 
@@ -195,7 +199,6 @@ Qed.
 Lemma body_unionS: semax_body Vprog Gprog f_unionS unionS_spec.
 Proof.
   start_function.
-  destruct H.
   forward_call (sh, g, x). Intros vret. destruct vret as [g1 x_root]. simpl fst in *. simpl snd in *.
   assert (vvalid g1 y) by (destruct H1 as [? _]; rewrite <- H1; apply H0).
   forward_call (sh, g1, y). Intros vret. destruct vret as [g2 y_root]. simpl fst in *. simpl snd in *.
@@ -276,5 +279,5 @@ Proof.
            ++ subst g3. remember (Graph_gen_redirect_parent g2 y_root x_root H10 H11 H12) as g3.
               apply (graph_gen_redirect_parent_vgamma _ _ _ rankXRoot paXRoot) in Heqg3; auto. intros. inversion H16; auto.
         -- Exists (Graph_vgen g3 x_root (rankXRoot + 1)%nat). entailer!.
-    + Intros g3. forward. Exists g3. entailer!.
+    + Intros g3. Exists g3. entailer!.
 Qed. (* 4.207 secs *)

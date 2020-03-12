@@ -1,5 +1,7 @@
 Require Import RamifyCoq.CertiGC.gc_spec.
 
+Local Open Scope logic.
+
 Lemma data_at_heaptype_eq: forall (sh: share) v h,
     isptr h -> field_compatible heap_type [StructField _spaces] h ->
     data_at sh heap_type v h = data_at sh (tarray space_type 12) v h.
@@ -124,7 +126,9 @@ Proof.
         rewrite upd_Znth_list_repeat_app by apply (proj1 H2).
         replace (i + 1 - 1) with i by omega. rewrite <- Heqv0.
         replace (12 - i - 1) with (12 - (i + 1)) by omega.
-        rewrite (semax_lemmas.cons_app _ v0), app_assoc.
+        change (v0 :: list_repeat (Z.to_nat (12 - (i + 1))) vn)
+               with ([v0] ++ list_repeat (Z.to_nat (12 - (i + 1))) vn).
+        rewrite app_assoc.
         replace (list_repeat (Z.to_nat (i - 1)) v0 ++ [v0]) with
             (list_repeat (Z.to_nat i) v0). 1: entailer!.
         replace [v0] with (list_repeat (Z.to_nat 1) v0) by (simpl; auto).

@@ -1,6 +1,7 @@
-
 Require Import RamifyCoq.CertiGC.gc_spec.
-Require Import RamifyCoq.msl_ext.ramification_lemmas. 
+Require Import RamifyCoq.msl_ext.ramification_lemmas.
+
+Local Open Scope logic.
 
 Lemma root_valid_int_or_ptr: forall g (roots: roots_t) root outlier,
     In root roots ->
@@ -120,14 +121,14 @@ Proof.
       rewrite sizeof_tarray_int_or_ptr; [Intros; cancel | unfold gen_size].
       destruct (total_space_tight_range (nth_space t_info from)). assumption. }
     destruct root as [[? | ?] | ?]; simpl root2val.
-    + unfold odd_Z2val. apply semax_if_seq. forward_if.
+    + unfold odd_Z2val. forward_if.
       1: exfalso; apply H20'; reflexivity.
       forward. Exists g t_info roots.
-      entailer!. 
+      entailer!.
       * simpl; split3; try rewrite <- Heqroot; [easy..|].
         split3; [constructor | easy | apply tir_id].
       * unfold thread_info_rep. entailer!.
-    + unfold GC_Pointer2val. destruct g0. apply semax_if_seq. forward_if.
+    + unfold GC_Pointer2val. destruct g0. forward_if.
       2: exfalso; apply Int.one_not_zero in H20; assumption.
       forward_call (Vptr b i).
       gather_SEP (graph_rep _) (heap_rest_rep _) (outlier_rep _).
@@ -154,15 +155,14 @@ Proof.
         rewrite <- Heqfsh in H19. unfold generation_data_at_.
         sep_apply (single_outlier_rep_memory_block_FF (GCPtr b i) fp gn fsh H19 v).
         assert_PROP False by entailer!. contradiction.
-      * apply semax_if_seq. forward_if. 1: exfalso; apply H19'; reflexivity.
+      * forward_if. 1: exfalso; apply H19'; reflexivity.
         forward. Exists g t_info roots.
         entailer!.
         -- split3; [| |split3]; simpl; try rewrite <- Heqroot;
              [easy.. | constructor | hnf; intuition | apply tir_id].
         -- unfold thread_info_rep. entailer!.
     + specialize (H14 _ H13). destruct (vertex_address g v) eqn:? ; try contradiction.
-      apply semax_if_seq. forward_if.
-      2: exfalso; apply Int.one_not_zero in H20; assumption.
+      forward_if. 2: exfalso; apply Int.one_not_zero in H20; assumption.
       clear H20 H20'. simpl in H15, H17. forward_call (Vptr b i).
       rewrite <- Heqv0 in *.
       gather_SEP (graph_rep _) (heap_rest_rep _) (outlier_rep _).
@@ -179,14 +179,14 @@ Proof.
         - apply readable_nonidentity, writable_readable_share. assumption.
         - subst l. simpl. rewrite fields_eq_length.
           rewrite Z.max_r; pose proof (raw_fields_range (vlabel g v)); omega.
-        - rewrite Heqv0. cancel.                    
+        - rewrite Heqv0. cancel.
       }
       replace_SEP 1 (weak_derives P (valid_pointer (Vptr b i) * TT) && emp * P)
         by (entailer; assumption). clear H20. Intros. rewrite <- Heqv0 in *.
       forward_call (fsh, fp, fn, (vertex_address g v), P). Intros vv. rewrite HeqP.
       sep_apply (graph_and_heap_rest_v_in_range_iff _ _ _ _ H H7 H19). Intros.
       rewrite <- Heqfp, <- Heqgn, <- Heqfn in H20. destruct vv.
-      * Intros. rewrite H20 in v0. clear H20. apply semax_if_seq. forward_if.
+      * Intros. rewrite H20 in v0. clear H20. forward_if.
         2: exfalso; inversion H20. deadvars!. freeze [1; 2; 3; 4; 5; 6] FR.
         clear H20 H20'. localize [vertex_rep (nth_sh g (vgeneration v)) g v].
         unfold vertex_rep, vertex_at. Intros. rewrite v0.
@@ -199,7 +199,7 @@ Proof.
         replace_SEP 0 (vertex_rep (nth_sh g (vgeneration v)) g v) by
             (unfold vertex_rep, vertex_at; entailer!).
         unlocalize [graph_rep g]. 1: apply (graph_vertex_ramif_stable _ _ H19).
-        apply semax_if_seq. forward_if; rewrite make_header_int_rep_mark_iff in H21.
+        forward_if; rewrite make_header_int_rep_mark_iff in H21.
         -- deadvars!. localize [vertex_rep (nth_sh g (vgeneration v)) g v].
            rewrite v0. unfold vertex_rep, vertex_at. Intros.
            unfold make_fields_vals at 2. rewrite H21.
@@ -217,16 +217,17 @@ Proof.
              unfold vertex_rep, vertex_at. unfold make_fields_vals at 3.
              rewrite H21. entailer!. }
            unlocalize [graph_rep g]. 1: apply (graph_vertex_ramif_stable _ _ H19).
-           thaw FR. forward. forward.
+           thaw FR. forward.
            Exists g (upd_thread_info_arg
                        t_info
                        (Znth z (live_roots_indices f_info))
                        (vertex_address g (copied_vertex (vlabel g v))) H16)
                   (upd_bunch z f_info roots (inr (copied_vertex (vlabel g v)))).
-           unfold thread_info_rep. simpl. entailer!. split; split; [| | |split].
-           ++ apply upd_fun_thread_arg_compatible. assumption.
+           unfold thread_info_rep. entailer!. 2: simpl; entailer!. simpl.
+           split; split; [|split; [|split] | |split]; auto.
+           ++ now apply upd_fun_thread_arg_compatible.
            ++ specialize (H9 _ H19 H21). destruct H9 as [? _].
-              apply upd_roots_compatible; assumption.
+              now apply upd_roots_compatible.
            ++ rewrite <- Heqroot, H21.
               now rewrite if_true by reflexivity.
            ++ rewrite <- Heqroot. apply fr_v_in_forwarded; [reflexivity | assumption].
@@ -275,8 +276,8 @@ Proof.
            rewrite (heap_rest_rep_cut
                       (ti_heap t_info) (Z.of_nat to) (vertex_size g v) Hi Hh Hn).
            rewrite <- Heqsp_to. thaw FR.
-           gather_SEP (data_at _ thread_info_type _ _) 
-                      (data_at _ heap_type _ _) 
+           gather_SEP (data_at _ thread_info_type _ _)
+                      (data_at _ heap_type _ _)
                       (heap_rest_rep _).
            replace_SEP 0 (thread_info_rep
                             sh (cut_thread_info t_info _ _ Hi Hh) ti). {
@@ -364,7 +365,7 @@ Proof.
                                   (offset_val (WORD_SIZE * i) nv)). {
                    unfold field_address. rewrite if_true by assumption.
                    clear. entailer!. }
-                 gather_SEP (data_at _ tuint _ _) (data_at _ _ _ _).  
+                 gather_SEP (data_at _ tuint _ _) (data_at _ _ _ _).
                  replace_SEP 0 (vertex_rep shv g v) by
                      (unfold vertex_rep, vertex_at;
                       rewrite fields_eq_length; entailer!). forward.
@@ -372,7 +373,7 @@ Proof.
                  replace (n - i - 1) with (n - (i + 1)) by omega.
                  replace (WORD_SIZE * i + WORD_SIZE * 1) with
                      (WORD_SIZE * (i + 1))%Z by rep_omega.
-                 gather_SEP (data_at sht _ _ nv) (field_at _ _ _ _ _). 
+                 gather_SEP (data_at sht _ _ nv) (field_at _ _ _ _ _).
                  rewrite data_at_mfs_eq. 2: assumption.
                  2: subst n; assumption. entailer!.
            ++ thaw FR. rewrite v0, <- Heqshv.
@@ -439,13 +440,13 @@ Proof.
               sep_apply (field_at_data_at_cancel
                            sh' int_or_ptr_type nv (vertex_address g' v)).
               gather_SEP
-                (data_at _ tuint (vint 0) _) 
+                (data_at _ tuint (vint 0) _)
                 (data_at _ int_or_ptr_type nv _)
                 (data_at _ _ _ _).
               rewrite H30. subst l'.
               rewrite <- lmc_vertex_rep_eq.
               thaw FR1.
-              gather_SEP (vertex_rep _ _ _) (_ -* _). 
+              gather_SEP (vertex_rep _ _ _) (_ -* _).
               sep_apply
                 (wand_frame_elim
                    (vertex_rep sh' (lgraph_mark_copied g' v (new_copied_v g to)) v)
@@ -482,7 +483,7 @@ Proof.
                 subst t_info'. split; [|split]; [reflexivity| |]; intros m.
                 - rewrite utiacti_gen_size. reflexivity.
                 - rewrite utiacti_space_start. reflexivity. }
-              apply semax_if_seq. forward_if.
+              forward_if.
               ** destruct H41 as [? [? ?]]. replace fp with (gen_start g' from) by
                      (subst fp g'; apply lcv_gen_start; assumption).
                  replace (offset_val fn (gen_start g' from)) with
@@ -524,9 +525,8 @@ Proof.
                      forward_call (rsh, sh, gv, fi, ti, g3, t_info3, f_info, roots',
                                    outlier, from, to, depth - 1,
                                    (@inr Z _ (new_copied_v g to, i))).
-                     +++ simpl. apply prop_right. rewrite sub_repr.
-                         do 3 split; [|easy]. f_equal. rewrite H30.
-                         rewrite sem_add_pi_ptr_special.
+                     +++ apply prop_right. simpl. rewrite sub_repr, H30.
+                         do 4 f_equal. rewrite sem_add_pi_ptr_special.
                          *** simpl. f_equal. erewrite fl_vertex_address; eauto.
                              subst g'. apply graph_has_v_in_closure. assumption.
                          *** subst n. clear -H45 Hr. easy.
@@ -574,30 +574,27 @@ Proof.
                      rewrite sublist_all in H46. clear Heqt.
                      2: { rewrite Z.le_lteq. right. subst n g' from.
                           rewrite vpp_Zlength, lcv_vlabel_new; auto. }
-                     Opaque super_compatible. forward. clear H50 H51 H52 H53.
-                     remember (upd_bunch z f_info roots (inr (new_copied_v g to)))
-                       as roots'. Exists g3 t_info3 roots'. simpl. entailer!.
-                     rewrite <- Heqroot, H21, if_true by reflexivity.
+                     Opaque super_compatible.
+                     Exists g3 t_info3 roots'. entailer!. simpl.
+                     rewrite <- Heqroot, H21, if_true by reflexivity. split; auto.
                      replace (Z.to_nat depth) with (S (Z.to_nat (depth - 1))) by
                          (rewrite <- Z2Nat.inj_succ; [f_equal|]; omega).
-                     constructor; [|constructor]; easy.
+                     constructor; easy.
                      Transparent super_compatible.
               ** assert (depth = 0) by omega. subst depth. clear H42.
                  deadvars!. clear Heqnv. forward.
-                 remember (Znth z (live_roots_indices f_info)) as lz.
-                 remember (vertex_address (lgraph_copy_v g v to) (new_copied_v g to))
-                          as nv.
                  remember (cut_thread_info
                              t_info (Z.of_nat to) (vertex_size g v) Hi Hh).
                  Exists (lgraph_copy_v g v to) (update_thread_info_arg t lz nv H16)
                         (upd_bunch z f_info roots (inr (new_copied_v g to))).
                  entailer!. simpl; rewrite <- Heqroot.
-                 rewrite if_true by reflexivity; rewrite H21; easy. 
-      * apply semax_if_seq. forward_if. 1: exfalso; apply H21'; reflexivity.
+                 rewrite if_true by reflexivity; rewrite H21; easy.
+      * forward_if. 1: exfalso; apply H21'; reflexivity.
         rewrite H20 in n. forward.
-        Exists g t_info roots. simpl. entailer!.
+        Exists g t_info roots. entailer!; simpl.
         -- rewrite <- Heqroot, if_false by assumption.
-           split3; [|simpl root2forward; constructor |]; easy. 
+           split3; [| |simpl root2forward; constructor]; try easy.
+           now constructor.
         -- unfold thread_info_rep. entailer!.
   (* p is Vtype * Z, ie located in graph *)
   - destruct p as [v n]. destruct H0 as [? [? [? ?]]]. freeze [0; 1; 2; 4] FR.
@@ -615,7 +612,7 @@ Proof.
       apply writable_readable, generation_share_writable.
     assert (is_pointer_or_integer (Znth n (make_fields_vals g v))). {
       pose proof (mfv_all_is_ptr_or_int g v H9 H10 H0). rewrite Forall_forall in H16.
-      apply H16, Znth_In. rewrite fields_eq_length. assumption. } forward. 
+      apply H16, Znth_In. rewrite fields_eq_length. assumption. } forward.
     gather_SEP (data_at _ tuint _ _) (data_at _ _ _ _).
     replace_SEP 0 (vertex_rep (nth_sh g (vgeneration v)) g v).
     1: unfold vertex_rep, vertex_at; entailer!.
@@ -646,7 +643,7 @@ Proof.
         unfold no_dangling_dst in H10.
         apply H10 with (e:=e) in H0.
         1: sep_apply (graph_rep_valid_int_or_ptr g (dst g e) H0); entailer!.
-        unfold get_edges; rewrite <- filter_sum_right_In_iff, <- Heqf. 
+        unfold get_edges; rewrite <- filter_sum_right_In_iff, <- Heqf.
         now apply Znth_In; rewrite make_fields_eq_length. }
     forward_call (field2val g (Znth n (make_fields g v))).
     remember (graph_rep g * heap_rest_rep (ti_heap t_info) * outlier_rep outlier) as P.
@@ -662,14 +659,14 @@ Proof.
     destruct (Znth n (make_fields g v)) eqn:? ; [destruct s|].
     (* Z + GC_Pointer + EType *)
     + (* Z *)
-      unfold field2val, odd_Z2val. apply semax_if_seq. forward_if.
+      unfold field2val, odd_Z2val. forward_if.
       1: exfalso; apply H20'; reflexivity.
       forward. Exists g t_info roots. entailer!. split.
       * easy.
       * unfold forward_condition, thread_info_relation.
         simpl. rewrite Heqf, H12. simpl. constructor; [constructor|easy].
     + (* GC_Pointer *)
-      destruct g0. unfold field2val, GC_Pointer2val. apply semax_if_seq. forward_if.
+      destruct g0. unfold field2val, GC_Pointer2val. forward_if.
       2: exfalso; apply Int.one_not_zero; assumption.
       forward_call (Vptr b i). 1: exact I.
       unfold thread_info_rep; Intros.
@@ -703,13 +700,12 @@ Proof.
         sep_apply (single_outlier_rep_memory_block_FF (GCPtr b i) fp gn fsh H22 v0).
         assert_PROP False by entailer!. contradiction.
       * (* no *)
-        apply semax_if_seq. forward_if.
-        1: exfalso; apply H19'; reflexivity.
+        forward_if. 1: exfalso; apply H19'; reflexivity.
         forward. Exists g t_info roots. entailer!.
         -- split3.
-           ++ unfold roots_compatible. easy. 
+           ++ unfold roots_compatible. easy.
            ++ simpl. rewrite Heqf, H12. simpl. constructor.
-           ++ easy. 
+           ++ easy.
         -- unfold thread_info_rep. entailer!.
     + (* EType *)
       unfold field2val. remember (dst g e) as v'.
@@ -719,7 +715,7 @@ Proof.
         assert (graph_has_v g v'). {
           unfold no_dangling_dst in H10.
           subst. clear -H0 H10 H11 e Heqf.
-          apply (H10 v H0). 
+          apply (H10 v H0).
           unfold get_edges;
           rewrite <- filter_sum_right_In_iff, <- Heqf; apply Znth_In.
           now rewrite make_fields_eq_length.
@@ -728,8 +724,7 @@ Proof.
         pose proof (graph_has_gen_start_isptr g n' H20).
         destruct (gen_start g n'); try contradiction; auto.       }
       destruct (vertex_address g v') eqn:?; try contradiction.
-      apply semax_if_seq. forward_if.
-      2: exfalso; apply Int.one_not_zero in H21; assumption.
+      forward_if. 2: exfalso; apply Int.one_not_zero in H21; assumption.
       clear H21 H21'. forward_call (Vptr b i).
       unfold thread_info_rep; Intros.
       gather_SEP (graph_rep _) (heap_rest_rep _) (outlier_rep _).
@@ -740,7 +735,7 @@ Proof.
       clear H19. Intros. assert (graph_has_v g v'). { (**)
         rewrite Heqv'.
         unfold no_dangling_dst in H10.
-        clear -H10 H0 e Heqf H11. apply (H10 v H0). 
+        clear -H10 H0 e Heqf H11. apply (H10 v H0).
         unfold get_edges.
         rewrite <- filter_sum_right_In_iff.
         rewrite <- Heqf.
@@ -768,7 +763,7 @@ Proof.
       sep_apply (graph_and_heap_rest_v_in_range_iff _ _ _ _ H H7 H19).
       Intros. rewrite <- Heqfp, <- Heqgn, <- Heqfn, Heqv0 in H21. destruct vv.
       * (* yes, is_from *)
-        rewrite H21 in v0. clear H21. apply semax_if_seq. forward_if.
+        rewrite H21 in v0. clear H21. forward_if.
         2: exfalso; inversion H21.
         deadvars!. freeze [1; 2; 3; 4; 5; 6] FR.
         clear H21 H21'. localize [vertex_rep (nth_sh g (vgeneration v')) g v'].
@@ -779,11 +774,11 @@ Proof.
         sep_apply (data_at_minus1_address
                      (nth_sh g from) (Z2val (make_header g v')) (vertex_address g v')).
         Intros. forward. clear H22.
-        gather_SEP (data_at _ tuint _ _) (data_at _ _ _ _). 
+        gather_SEP (data_at _ tuint _ _) (data_at _ _ _ _).
         replace_SEP 0 (vertex_rep (nth_sh g (vgeneration v')) g v') by
             (unfold vertex_rep, vertex_at; entailer!).
         unlocalize [graph_rep g]. 1: apply (graph_vertex_ramif_stable _ _ H19).
-        apply semax_if_seq. forward_if; rewrite make_header_int_rep_mark_iff in H22.
+        forward_if; rewrite make_header_int_rep_mark_iff in H22.
         -- (* yes, already forwarded *)
           deadvars!.
           localize [vertex_rep (nth_sh g (vgeneration v')) g v'].
@@ -836,7 +831,6 @@ Proof.
                                                       (copied_vertex (vlabel g v')))].
           1: apply (graph_vertex_lgd_ramif g v e (copied_vertex (vlabel g v')) n);
             try (rewrite make_fields_eq_length); assumption.
-          forward.
           Exists (labeledgraph_gen_dst g e (copied_vertex (vlabel g (dst g e))))
                  t_info roots.
           entailer!.
@@ -957,7 +951,7 @@ Proof.
            ++ rewrite sublist_nil. replace (n' - 0) with n' by omega.
               replace (WORD_SIZE * 0)%Z with 0 by omega.
               rewrite isptr_offset_val_zero by assumption.
-              rewrite data_at_zero_array_eq; [entailer! | easy..]. 
+              rewrite data_at_zero_array_eq; [entailer! | easy..].
            ++ unfold vertex_rep, vertex_at. Intros.
               rewrite fields_eq_length, <- Heqn'. forward.
               ** entailer!. pose proof (mfv_all_is_ptr_or_int _ _ H9 H10 H19).
@@ -1176,7 +1170,7 @@ Proof.
                 subst t_info'. split; [|split]; [reflexivity| |]; intros m.
                 - rewrite cti_gen_size. reflexivity.
                 - rewrite cti_space_start. reflexivity. }
-                apply semax_if_seq. forward_if.
+                forward_if.
               ** destruct H55 as [? [? ?]]. replace fp with (gen_start g1 from) by
                      (subst fp g1 g'; apply lcv_gen_start; assumption).
                  replace (offset_val fn (gen_start g1 from)) with
@@ -1222,9 +1216,8 @@ Proof.
                      forward_call (rsh, sh, gv, fi, ti, g3, t_info3, f_info, roots',
                                    outlier, from, to, depth - 1,
                                    (@inr Z _ (new_copied_v g to, i))).
-                     +++ simpl. apply prop_right. rewrite sub_repr.
-                         do 3 split; [|easy].
-                         f_equal. rewrite H31. rewrite sem_add_pi_ptr_special.
+                     +++ apply prop_right. simpl. rewrite sub_repr.
+                         do 4 f_equal. rewrite H31, sem_add_pi_ptr_special.
                          *** simpl. f_equal.
                              rewrite <- (lgd_vertex_address_eq g' e v1), <- Heqg1.
                              subst v1. apply (fl_vertex_address _ _ _ _ _ _ H64 H61).
@@ -1279,9 +1272,8 @@ Proof.
                      2: { rewrite Z.le_lteq. right. subst n' g1 from.
                           rewrite vpp_Zlength,  <- lgd_raw_fld_length_eq.
                           subst g'; rewrite lcv_vlabel_new; auto. }
-                     Opaque super_compatible. forward. clear H64 H65 H66 H67.
-                     simpl.
-                     Exists g3 t_info3 roots. simpl. entailer!.
+                     Opaque super_compatible. Exists g3 t_info3 roots.
+                     entailer!. simpl.
                      replace (Z.to_nat depth) with (S (Z.to_nat (depth - 1))) by
                          (rewrite <- Z2Nat.inj_succ; [f_equal|]; omega).
                      rewrite Heqf, H12. simpl.
@@ -1289,21 +1281,14 @@ Proof.
                      Transparent super_compatible.
               ** assert (depth = 0) by omega. subst depth. clear H56.
                  deadvars!. clear Heqnv. forward.
-                 simpl.
-                 remember (cut_thread_info t_info (Z.of_nat to)
-                             (vertex_size g (dst g e)) Hi Hh) as t_info'.
-              remember (lgraph_copy_v g (dst g e) to) as g'.
-
-              remember (new_copied_v g to).
-              remember (labeledgraph_gen_dst g' e v0) as g1.
-              Exists g1 t_info' roots.
-              rewrite Heqf.
-              simpl field2forward. rewrite H12. simpl. entailer!.
-      * apply semax_if_seq. forward_if. 1: exfalso; apply H22'; reflexivity.
+                 Exists g1 t_info' roots. entailer!. simpl. rewrite Heqf.
+                 simpl field2forward. rewrite H12. simpl. now constructor.
+      * forward_if. 1: exfalso; apply H22'; reflexivity.
         rewrite H21 in n0. forward.
-        simpl.
-        Exists g t_info roots. simpl. rewrite H12. entailer!.
-        -- rewrite Heqf. split; [constructor; assumption |
-                                 split; [hnf; intuition | apply tir_id]].
+        Exists g t_info roots. entailer!; simpl.
+        -- rewrite H12, Heqf. simpl. split; auto. split; [|split].
+           ++ constructor. auto.
+           ++ split; auto.
+           ++ apply tir_id.
         -- unfold thread_info_rep. entailer!.
 Qed.
