@@ -67,7 +67,8 @@ NORMAL_FILES = \
   $(SAMPLE_EDGE_WEIGHT_FILES:%.v=sample_edge_weight/%.v) \
   $(GRAPH_FILES:%.v=graph/%.v) \
   $(LIB_FILES:%.v=lib/%.v) \
-  $(HEAP_MODEL_DIRECT_FILES:%.v=heap_model_direct/%.v)
+  $(HEAP_MODEL_DIRECT_FILES:%.v=heap_model_direct/%.v) \
+  $(CERTIGC_FILES:%.v=CertiGC/%.v)
 
 
 $(NORMAL_FILES:%.v=%.vo): %.vo: %.v

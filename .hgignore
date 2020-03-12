@@ -34,3 +34,6 @@ poster.run.xml
 poster.bcf
 dijkstra.pdf
 #verif_dijkstra.v#
+*.vok
+*.vos
+.lia.cache
