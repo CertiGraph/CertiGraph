@@ -32,9 +32,10 @@ Existing Instances MGS biGraph maGraph finGraph RGF.
 Definition mark_spec :=
  DECLARE _mark
   WITH sh: wshare, g: Graph, x: pointer_val
-  PRE [ _x OF (tptr (Tstruct _Node noattr))]
+  PRE [tptr (Tstruct _Node noattr)]
           PROP  (weak_valid g x)
-          LOCAL (temp _x (pointer_val_val x))
+          PARAMS (pointer_val_val x)
+          GLOBALS ()
           SEP   (graph sh x g)
   POST [ Tvoid ]
         EX g': Graph,
@@ -45,9 +46,10 @@ Definition mark_spec :=
 Definition spanning_spec :=
   DECLARE _spanning
   WITH sh: wshare, g: Graph, x: pointer_val
-  PRE [ _x OF (tptr (Tstruct _Node noattr))]
+  PRE [tptr (Tstruct _Node noattr)]
           PROP  (vvalid g x; fst (fst (vgamma g x)) = false)
-          LOCAL (temp _x (pointer_val_val x))
+          PARAMS (pointer_val_val x)
+          GLOBALS ()
           SEP   (graph sh x g)
   POST [ Tvoid ]
         EX g': Graph,
@@ -58,10 +60,11 @@ Definition spanning_spec :=
 Definition dispose_spec :=
   DECLARE _dispose
   WITH sh: wshare, g: Graph, x: pointer_val
-  PRE [ _x OF (tptr (Tstruct _Node noattr))]
-          PROP  (weak_valid g x)
-          LOCAL (temp _x (pointer_val_val x))
-          SEP   (!!is_tree g x && graph sh x g)
+  PRE [tptr (Tstruct _Node noattr)]
+          PROP  (weak_valid g x; is_tree g x)
+          PARAMS (pointer_val_val x)
+          GLOBALS ()
+          SEP   (graph sh x g)
   POST [ Tvoid ]
         PROP ()
         LOCAL()
@@ -70,8 +73,8 @@ Definition dispose_spec :=
 Definition main_spec :=
  DECLARE _main
   WITH gv : globals
-  PRE  [] main_pre prog nil gv
-  POST [ tint ] main_post prog nil gv.
+  PRE  [] main_pre prog tt gv
+  POST [ tint ] main_post prog gv.
 
 Definition Gprog : funspecs := ltac:(with_library prog [mark_spec ; spanning_spec ; dispose_spec ; main_spec]).
 
@@ -89,7 +92,7 @@ Proof.
   assert (weak_valid g l) by (apply (gamma_left_weak_valid g x d l r); auto). destruct H1.
   - simpl in H1. subst l. simpl pointer_val_val.
     apply sepcon_valid_pointer1.
-    unfold pred. simpl reachable_vertices_at. entailer!. 
+    unfold pred. simpl reachable_vertices_at. entailer!.
   - apply sepcon_valid_pointer1. apply graph_local_facts; auto.
 Qed.
 
@@ -104,7 +107,7 @@ Proof.
     unfold pred. simpl reachable_vertices_at. entailer!.
   - apply sepcon_valid_pointer1. apply graph_local_facts; auto.
 Qed.
-  
+
 Lemma body_spanning: semax_body Vprog Gprog f_spanning spanning_spec.
 Proof.
   start_function.
@@ -146,7 +149,7 @@ Proof.
   - (* root_mark = l -> m; *)
     localize [data_at sh node_type (vgamma2cdata (vgamma g1 l)) (pointer_val_val l)].
     remember (vgamma g1 l) as dlr in |-*.
-    destruct dlr as [[dd ll] rr]. 
+    destruct dlr as [[dd ll] rr].
     forward. simpl vgamma2cdata at 1.
     replace (if dd then 1 else 0) with (if node_pred_dec (marked g1) l then 1 else 0).
     2: {
@@ -209,7 +212,7 @@ Proof.
         1: apply (@graph_gen_left_null_ramify _ (sSGG_VST sh) g1 x true l r); auto.
         Exists (Graph_gen_left_null g1 x).
         unfold vertices_at; simpl Graph.vertices_at.
-        entailer!. 
+        entailer!.
         apply (edge_spanning_tree_left_null g1 x true l r); auto.
   - forward. Exists g1. entailer!. 2: apply derives_refl. apply edge_spanning_tree_invalid.
     + apply (@left_valid _ _ _ _ _ _ g1 _ _) in H3; auto.
@@ -299,7 +302,7 @@ Proof.
     + (* return *)
       Intros g3.
       unfold vertices_at; simpl Graph.vertices_at.
-      forward. Exists g3. entailer!.
+      Exists g3. entailer!.
       * apply (edge_spanning_tree_spanning_tree g g1 g2 g3 x l r); auto.
       * destruct H2. apply derives_refl'. apply vertices_at_Same_set. rewrite H2; reflexivity.
 Qed. (* original: 5500 sec, VST 2.*: 8.91 secs *)

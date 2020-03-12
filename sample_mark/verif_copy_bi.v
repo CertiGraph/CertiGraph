@@ -35,39 +35,43 @@ Existing Instances MGS biGraph maGraph finGraph RGF.
 Definition mallocN_spec :=
  DECLARE _mallocN
   WITH sh: wshare
-  PRE [ 1%positive OF tint]
-     PROP () 
-     LOCAL (temp 1%positive (Vint (Int.repr 16)))
+  PRE [tint]
+     PROP ()
+     PARAMS (Vint (Int.repr 16))
+     GLOBALS ()
      SEP ()
-  POST [ tptr tvoid ] 
+  POST [ tptr tvoid ]
      EX v: addr,
      PROP ()
-     LOCAL (temp ret_temp (pointer_val_val v)) 
-     SEP (data_at Ews node_type (pointer_val_val null, (pointer_val_val null, pointer_val_val null))
+     LOCAL (temp ret_temp (pointer_val_val v))
+     SEP (data_at Ews node_type (pointer_val_val null,
+                                 (pointer_val_val null, pointer_val_val null))
                   (pointer_val_val v);
           concrete_valid_pointer v).
 
 Definition copy_spec :=
  DECLARE _copy
   WITH sh: wshare, g: Graph, x: pointer_val
-  PRE [ _x OF (tptr (Tstruct _Node noattr))]
+  PRE [tptr (Tstruct _Node noattr)]
           PROP  (weak_valid g x)
-          LOCAL (temp _x (pointer_val_val x))
+          PARAMS (pointer_val_val x)
+          GLOBALS ()
           SEP   (graph sh x g)
   POST [ (tptr (Tstruct _Node noattr)) ]
         EX xgg: pointer_val * Graph * Graph',
         let x' := fst (fst xgg) in
         let g1 := snd (fst xgg) in
         let g1' := snd xgg in
-        PROP (copy (x: @addr pSGG_VST) g g1 g1'; x = null /\ x' = null \/ x' = vmap g1 x)
+        PROP (copy (x: @addr pSGG_VST) g g1 g1';
+             x = null /\ x' = null \/ x' = vmap g1 x)
         LOCAL (temp ret_temp (pointer_val_val x'))
         SEP   (graph sh x g1; graph Ews x' g1').
 
 Definition main_spec :=
  DECLARE _main
   WITH u : globals
-  PRE  [] main_pre prog nil u
-  POST [ tint ] main_post prog nil u.
+  PRE  [] main_pre prog tt u
+  POST [ tint ] main_post prog u.
 
 Definition Gprog : funspecs := ltac:(with_library prog [copy_spec; mallocN_spec; main_spec]).
 
@@ -216,7 +220,7 @@ Proof.
   (* x0 -> m = 0; *)
 
   assert_PROP (weak_valid g1 l).
-  1: apply prop_right; eapply left_weak_valid; eauto.  
+  1: apply prop_right; eapply left_weak_valid; eauto.
 
   match goal with
   | |- context [SEPx (?A :: _)] =>
@@ -316,7 +320,7 @@ Proof.
        !! (extended_copy r (g3: LGraph, g3') (g4: LGraph, g4') /\
            is_guarded_BiMaFin' (fun v => x0 <> v) (fun e => ~ In e ((x0, L) :: nil)) g4') &&
           (data_at Ews node_type
-            (pointer_val_val null, (pointer_val_val l0, pointer_val_val null)) (pointer_val_val x0) * concrete_valid_pointer null * 
+            (pointer_val_val null, (pointer_val_val l0, pointer_val_val null)) (pointer_val_val x0) * concrete_valid_pointer null *
            holegraph Ews x0 g4')).
   {
     clear Hl0_dst.
