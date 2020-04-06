@@ -1,5 +1,7 @@
 Require Import RamifyCoq.CertiGC.gc_spec.
 
+Local Open Scope logic.
+
 Lemma typed_true_tag: forall (to : nat) (g : LGraph) (index : nat),
     typed_true tint
                (force_val
@@ -168,7 +170,7 @@ Proof.
       rewrite <- Z.mul_lt_mono_pos_l in H26 by rep_omega.
       apply pvs_lt_rev in H26. assumption.
     + assert (~ index_offset < used_offset). {
-        destruct (zlt index_offset used_offset); trivial. 
+        destruct (zlt index_offset used_offset); trivial.
         now rewrite H24 in H25; unfold typed_false in H25. }
       forward. thaw FR. unfold thread_info_rep, heap_struct_rep.
       Exists g' t_info'. unfold forward_condition. entailer!.
@@ -192,7 +194,7 @@ Proof.
         f_equal. unfold gen_start.
         rewrite if_true by assumption; now rewrite H18. }
       rewrite H25. forward. rewrite <- H25.
-      gather_SEP (data_at _ tuint _ _) (data_at _ _ _ _). 
+      gather_SEP (data_at _ tuint _ _) (data_at _ _ _ _).
       replace_SEP 0 (vertex_rep (nth_sh g' to) g' (to, index)) by
           (unfold vertex_rep, vertex_at; entailer!).
       unlocalize [graph_rep g']. 1: apply graph_vertex_ramif_stable; assumption.
@@ -202,7 +204,7 @@ Proof.
       specialize (H26 H14 _ H8).
       rewrite make_header_Wosize, make_header_tag by assumption. deadvars!.
       fold (next_address t_info' to). thaw FR.
-      fold (heap_struct_rep sh l (ti_heap_p t_info')). 
+      fold (heap_struct_rep sh l (ti_heap_p t_info')).
       gather_SEP
         (data_at _ thread_info_type _ _)
         (heap_struct_rep _ _ _ ) (heap_rest_rep _).
@@ -305,10 +307,10 @@ Proof.
                   (eapply svfl_graph_has_v in H29; [apply H29| assumption..]).
               forward_call (rsh, sh, gv, fi, ti, g3, t_info3, f_info, roots,
                             outlier, from, to, 0, (@inr Z _ ((to, index), i - 1))).
-              ** simpl snd. apply prop_right.
-                 split; [split; [split|]|]; [|reflexivity..].
+              ** simpl snd. apply prop_right. simpl.
+                 do 4 f_equal.
                  rewrite sem_add_pi_ptr_special; [| easy | rewrite isptr_offset_val; assumption | rep_omega].
-                 simpl. rewrite offset_offset_val. do 2 f_equal. rep_omega.
+                 simpl. rewrite offset_offset_val. f_equal. rep_omega.
               ** split; [|split; [|split; [|split; [|split; [|split]]]]];
                    try assumption. 2: rep_omega. red. split; [|split;[|split]].
                  --- assumption.
@@ -339,7 +341,7 @@ Proof.
                        rewrite Zlength_correct in H34. omega. }
                      rewrite (sublist_split 0 (i - 1) i) by omega.
                      rewrite (sublist_one (i - 1) i) by omega.
-                     apply svfl_add_tail with roots g3; trivial. 
+                     apply svfl_add_tail with roots g3; trivial.
                      assert (Z.of_nat (Znth (i - 1) l) = i - 1). {
                        rewrite <- nth_Znth by omega. subst l.
                        rewrite nat_inc_list_nth; [rewrite Z2Nat.id; omega|].
@@ -401,5 +403,5 @@ Proof.
            rewrite nat_seq_S, Nat.add_comm. destruct H30 as [[? ?] | [? ?]].
            ++ subst g''. split; [| apply svwl_add_tail_no_scan]; easy.
            ++ split; [|apply svwl_add_tail_scan with g']; easy.
-  - Intros g' t_info'. forward. Exists g' t_info'. entailer!.
+  - Intros g' t_info'. unfold POSTCONDITION, abbreviate. Exists g' t_info'. entailer!.
 Qed.
