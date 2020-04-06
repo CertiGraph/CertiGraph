@@ -6,6 +6,8 @@ Require Export RamifyCoq.CertiGC.spatial_gcgraph.
 Require Export RamifyCoq.CertiGC.env_graph_gc.
 Require Export RamifyCoq.msl_ext.iter_sepcon.
 
+Local Open Scope logic.
+
 Identity Coercion LGraph_LabeledGraph: LGraph >-> LabeledGraph.
 Coercion pg_lg: LabeledGraph >-> PreGraph.
 
@@ -36,8 +38,11 @@ Definition all_string_constants (sh: share) (gv: globals) : mpred :=
 Definition test_int_or_ptr_spec :=
  DECLARE _test_int_or_ptr
  WITH x : val
- PRE [ _x OF int_or_ptr_type ]
-   PROP(valid_int_or_ptr x) LOCAL(temp _x x) SEP()
+ PRE [int_or_ptr_type]
+   PROP (valid_int_or_ptr x)
+   PARAMS (x)
+   GLOBALS ()
+   SEP ()
  POST [ tint ]
    PROP()
    LOCAL(temp ret_temp
@@ -50,41 +55,55 @@ Definition test_int_or_ptr_spec :=
 Definition int_or_ptr_to_int_spec :=
   DECLARE _int_or_ptr_to_int
   WITH x : val
-  PRE [ _x OF int_or_ptr_type ]
-    PROP(is_int I32 Signed x) LOCAL(temp _x x) SEP()
+  PRE [int_or_ptr_type ]
+    PROP (is_int I32 Signed x)
+    PARAMS (x)
+    GLOBALS ()
+    SEP ()
   POST [ tint ]
     PROP() LOCAL (temp ret_temp x) SEP().
 
 Definition int_or_ptr_to_ptr_spec :=
   DECLARE _int_or_ptr_to_ptr
   WITH x : val
-  PRE [ _x OF int_or_ptr_type ]
-    PROP(isptr x) LOCAL(temp _x x) SEP()
+  PRE [int_or_ptr_type ]
+    PROP (isptr x)
+    PARAMS (x)
+    GLOBALS ()
+    SEP ()
   POST [ tptr tvoid ]
     PROP() LOCAL (temp ret_temp x) SEP().
 
 Definition int_to_int_or_ptr_spec :=
   DECLARE _int_to_int_or_ptr
   WITH x : val
-  PRE [ _x OF tint ]
-    PROP(valid_int_or_ptr x)
-    LOCAL(temp _x x) SEP()
+  PRE [tint]
+    PROP (valid_int_or_ptr x)
+    PARAMS (x)
+    GLOBALS ()
+    SEP ()
   POST [ int_or_ptr_type ]
     PROP() LOCAL (temp ret_temp x) SEP().
 
 Definition ptr_to_int_or_ptr_spec :=
   DECLARE _ptr_to_int_or_ptr
   WITH x : val
-  PRE [ _x OF tptr tvoid ]
-    PROP(valid_int_or_ptr x) LOCAL(temp _x x) SEP()
+  PRE [tptr tvoid ]
+    PROP (valid_int_or_ptr x)
+    PARAMS (x)
+    GLOBALS ()
+    SEP()
   POST [ int_or_ptr_type ]
     PROP() LOCAL (temp ret_temp x) SEP().
 
 Definition Is_block_spec :=
   DECLARE _Is_block
   WITH x : val
-  PRE [ _x OF int_or_ptr_type ]
-    PROP(valid_int_or_ptr x) LOCAL(temp _x x) SEP()
+  PRE [int_or_ptr_type ]
+    PROP (valid_int_or_ptr x)
+    PARAMS (x)
+    GLOBALS ()
+    SEP()
   POST [ tint ]
     PROP()
     LOCAL(temp ret_temp
@@ -97,8 +116,11 @@ Definition Is_block_spec :=
 Definition abort_with_spec :=
   DECLARE _abort_with
   WITH s: val, str: list byte, sh: share
-  PRE [ _s OF tptr tschar]
-    PROP (readable_share sh) LOCAL (temp _s s) SEP (cstring sh str s)
+  PRE [tptr tschar]
+    PROP (readable_share sh)
+    PARAMS (s)
+    GLOBALS ()
+    SEP (cstring sh str s)
   POST [ tvoid ]
     PROP (False) LOCAL() SEP().
 
@@ -111,11 +133,12 @@ Program Definition Is_from_spec :=
   DECLARE _Is_from
   TYPE IS_FROM_TYPE
   WITH sh: share, start : val, n: Z, v: val, P: mpred
-  PRE [ _from_start OF (tptr int_or_ptr_type),
-        _from_limit OF (tptr int_or_ptr_type),
-        _v OF (tptr int_or_ptr_type)]
+  PRE [tptr int_or_ptr_type,
+       tptr int_or_ptr_type,
+       tptr int_or_ptr_type]
     PROP ()
-    LOCAL (temp _from_start start; temp _from_limit (offset_val n start); temp _v v)
+    PARAMS (start; offset_val n start; v)
+    GLOBALS ()
     SEP (weak_derives P (memory_block sh n start * TT) && emp;
          weak_derives P (valid_pointer v * TT) && emp; P)
   POST [tint]
@@ -127,9 +150,10 @@ Next Obligation.
 Proof.
   repeat intro.
   destruct x as ((((?, ?), ?), ?), ?); simpl.
-  unfold PROPx, LOCALx, SEPx; simpl; rewrite !approx_andp; f_equal; f_equal.
+  unfold PROPx, LAMBDAx, GLOBALSx, LOCALx, SEPx, argsassert2assert; simpl;
+    rewrite !approx_andp; f_equal; f_equal.
   rewrite !sepcon_emp, ?approx_sepcon, ?approx_idem, ?approx_andp.
-  f_equal; f_equal; [|f_equal]; rewrite derives_nonexpansive_l; reflexivity.
+  f_equal; f_equal; [|f_equal]; now rewrite derives_nonexpansive_l.
 Qed.
 Next Obligation.
 Proof.
@@ -164,22 +188,23 @@ Definition forward_spec :=
        g: LGraph, t_info: thread_info, f_info: fun_info,
        roots : roots_t, outlier: outlier_t,
        from: nat, to: nat, depth: Z, forward_p: forward_p_type
-  PRE [ _from_start OF (tptr int_or_ptr_type),
-        _from_limit OF (tptr int_or_ptr_type),
-        _next OF (tptr (tptr int_or_ptr_type)),
-        _p OF (tptr int_or_ptr_type),
-        _depth OF tint]
+  PRE [tptr int_or_ptr_type,
+       tptr int_or_ptr_type,
+       tptr (tptr int_or_ptr_type),
+       tptr int_or_ptr_type,
+       tint]
     PROP (readable_share rsh; writable_share sh;
           super_compatible (g, t_info, roots) f_info outlier;
           forward_p_compatible forward_p roots g from;
           forward_condition g t_info from to;
           0 <= depth <= Int.max_signed;
           from <> to)
-    LOCAL (temp _from_start (gen_start g from);
-           temp _from_limit (limit_address g t_info from);
-           temp _next (next_address t_info to);
-           temp _p (forward_p_address forward_p ti f_info g);
-           temp _depth (Vint (Int.repr depth)))
+    PARAMS (gen_start g from;
+           limit_address g t_info from;
+           next_address t_info to;
+           forward_p_address forward_p ti f_info g;
+           Vint (Int.repr depth))
+    GLOBALS ()
     SEP (all_string_constants rsh gv;
          fun_info_rep rsh f_info fi;
          outlier_rep outlier;
@@ -205,19 +230,20 @@ Definition forward_roots_spec :=
   WITH rsh: share, sh: share, gv: globals, fi: val, ti: val,
        g: LGraph, t_info: thread_info, f_info: fun_info,
        roots: roots_t, outlier: outlier_t, from: nat, to: nat
-  PRE [ _from_start OF (tptr int_or_ptr_type),
-        _from_limit OF (tptr int_or_ptr_type),
-        _next OF (tptr (tptr int_or_ptr_type)),
-        _fi OF (tptr tuint),
-        _ti OF (tptr thread_info_type)]
+  PRE [tptr int_or_ptr_type,
+       tptr int_or_ptr_type,
+       tptr (tptr int_or_ptr_type),
+       tptr tuint,
+       tptr thread_info_type]
     PROP (readable_share rsh; writable_share sh;
           super_compatible (g, t_info, roots) f_info outlier;
           forward_condition g t_info from to;
           from <> to)
-    LOCAL (temp _from_start (gen_start g from);
-           temp _from_limit (limit_address g t_info from);
-           temp _next (next_address t_info to);
-           temp _fi fi; temp _ti ti)
+    PARAMS (gen_start g from;
+           limit_address g t_info from;
+           next_address t_info to;
+           fi; ti)
+    GLOBALS (gv)
     SEP (all_string_constants rsh gv;
          fun_info_rep rsh f_info fi;
          outlier_rep outlier;
@@ -242,19 +268,20 @@ Definition do_scan_spec :=
        g: LGraph, t_info: thread_info, f_info: fun_info,
        roots : roots_t, outlier: outlier_t,
        from: nat, to: nat, to_index: nat
-  PRE [ _from_start OF (tptr int_or_ptr_type),
-        _from_limit OF (tptr int_or_ptr_type),
-        _scan OF (tptr int_or_ptr_type),
-        _next OF (tptr (tptr int_or_ptr_type))]
+  PRE [tptr int_or_ptr_type,
+       tptr int_or_ptr_type,
+       tptr int_or_ptr_type,
+       tptr (tptr int_or_ptr_type)]
     PROP (readable_share rsh; writable_share sh;
           super_compatible (g, t_info, roots) f_info outlier;
           forward_condition g t_info from to;
           from <> to; closure_has_index g to to_index;
           0 < gen_size t_info to; gen_unmarked g to)
-    LOCAL (temp _from_start (gen_start g from);
-           temp _from_limit (limit_address g t_info from);
-           temp _scan (offset_val (- WORD_SIZE) (vertex_address g (to, to_index)));
-           temp _next (next_address t_info to))
+    PARAMS (gen_start g from;
+           limit_address g t_info from;
+           offset_val (- WORD_SIZE) (vertex_address g (to, to_index));
+           next_address t_info to)
+    GLOBALS ()
     SEP (all_string_constants rsh gv;
          fun_info_rep rsh f_info fi;
          outlier_rep outlier;
@@ -278,17 +305,18 @@ Definition do_generation_spec :=
   WITH rsh: share, sh: share, gv: globals, fi: val, ti: val,
        g: LGraph, t_info: thread_info, f_info: fun_info,
        roots: roots_t, outlier: outlier_t, from: nat, to: nat
-  PRE [ _from OF (tptr space_type),
-        _to OF (tptr space_type),
-        _fi OF (tptr tuint),
-        _ti OF (tptr thread_info_type)]
+  PRE [tptr space_type,
+       tptr space_type,
+       tptr tuint,
+       tptr thread_info_type]
     PROP (readable_share rsh; writable_share sh;
           super_compatible (g, t_info, roots) f_info outlier;
           do_generation_condition g t_info roots f_info from to;
           from <> to)
-    LOCAL (temp _from (space_address t_info from);
-           temp _to (space_address t_info to);
-           temp _fi fi; temp _ti ti)
+    PARAMS (space_address t_info from;
+           space_address t_info to;
+           fi; ti)
+    GLOBALS (gv)
     SEP (all_string_constants rsh gv;
          fun_info_rep rsh f_info fi;
          outlier_rep outlier;
@@ -309,12 +337,12 @@ Definition do_generation_spec :=
 Definition create_space_spec :=
   DECLARE _create_space
   WITH sh: share, s: val, n: Z, gv: globals, rsh: share
-  PRE [ _s OF (tptr space_type),
-        _n OF tuint]
+  PRE [tptr space_type, tuint]
     PROP (writable_share sh;
           readable_share rsh;
           0 <= n < MAX_SPACE_SIZE)
-    LOCAL (temp _s s; temp _n (Vint (Int.repr n)); gvars gv)
+    PARAMS (s; Vint (Int.repr n))
+    GLOBALS (gv)
     SEP (mem_mgr gv; all_string_constants rsh gv; data_at_ sh space_type s)
   POST [tvoid]
     EX p: val,
@@ -331,7 +359,8 @@ Definition create_heap_spec :=
   WITH sh: share, gv: globals
   PRE []
     PROP (readable_share sh)
-    LOCAL (gvars gv)
+    PARAMS ()
+    GLOBALS (gv)
     SEP (mem_mgr gv; all_string_constants sh gv)
   POST [tptr heap_type]
     EX h: val, EX p: val,
@@ -348,7 +377,8 @@ Definition make_tinfo_spec :=
   WITH sh: share, gv: globals
   PRE []
     PROP (readable_share sh)
-    LOCAL (gvars gv)
+    PARAMS ()
+    GLOBALS (gv)
     SEP (mem_mgr gv; all_string_constants sh gv)
   POST [tptr thread_info_type]
     EX t: val, EX h: val, EX p: val,
@@ -370,12 +400,13 @@ Definition resume_spec :=
   WITH rsh: share, sh: share, gv: globals, fi: val, ti: val,
        g: LGraph, t_info: thread_info, f_info: fun_info,
        roots : roots_t
-  PRE [ _fi OF (tptr tuint),
-        _ti OF (tptr thread_info_type)]
+  PRE [tptr tuint,
+       tptr thread_info_type]
     PROP (readable_share rsh; writable_share sh;
           graph_thread_info_compatible g t_info;
           graph_gen_clear g O)
-    LOCAL (temp _fi fi; temp _ti ti; gvars gv)
+    PARAMS (fi; ti)
+    GLOBALS (gv)
     SEP (all_string_constants rsh gv;
          fun_info_rep rsh f_info fi;
          graph_rep g;
@@ -393,13 +424,14 @@ Definition garbage_collect_spec :=
   WITH rsh: share, sh: share, gv: globals, fi: val, ti: val,
        g: LGraph, t_info: thread_info, f_info: fun_info,
        roots : roots_t, outlier: outlier_t
-  PRE [ _fi OF (tptr tuint),
-        _ti OF (tptr thread_info_type)]
+  PRE [tptr tuint,
+       tptr thread_info_type]
     PROP (readable_share rsh; writable_share sh;
           super_compatible (g, t_info, roots) f_info outlier;
           garbage_collect_condition g t_info roots f_info;
           safe_to_copy g)
-    LOCAL (temp _fi fi; temp _ti ti; gvars gv)
+    PARAMS (fi; ti)
+    GLOBALS (gv)
     SEP (all_string_constants rsh gv;
          fun_info_rep rsh f_info fi;
          outlier_rep outlier;
@@ -424,16 +456,19 @@ Definition garbage_collect_spec :=
 Definition reset_heap_spec :=
   DECLARE _reset_heap
   WITH h: val
-  PRE [ _h OF (tptr heap_type)]
-    PROP () LOCAL (temp _h h) SEP ()
+  PRE [tptr heap_type]
+    PROP ()
+    PARAMS (h)
+    GLOBALS ()
+    SEP ()
   POST [tvoid]
   PROP () LOCAL () SEP ().
 
 Definition free_heap_spec :=
   DECLARE _free_heap
   WITH h: val
-  PRE [ _h OF (tptr heap_type)]
-    PROP () LOCAL (temp _h h) SEP ()
+  PRE [tptr heap_type]
+    PROP () PARAMS (h) GLOBALS () SEP ()
   POST [tvoid]
   PROP () LOCAL () SEP ().
 

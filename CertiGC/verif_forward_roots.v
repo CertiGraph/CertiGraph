@@ -68,7 +68,7 @@ Proof.
                     to, 0, (@inl _ (VType*Z) i)).
       * simpl snd. apply prop_right.
         change (Tpointer tvoid {| attr_volatile := false; attr_alignas := Some 2%N |})
-          with int_or_ptr_type. rewrite H14. rewrite <- Heqz. clear. intuition.
+          with int_or_ptr_type. simpl. rewrite H14. rewrite <- Heqz. clear. intuition.
       * intuition. red. rewrite H15, H5. split; assumption.
       * Intros vret. destruct vret as [[g2 t_info2] roots2]. simpl fst in *.
         simpl snd in *. simpl forward_p2forward_t in H16. Exists g2 t_info2 roots2.
@@ -88,7 +88,7 @@ Proof.
         replace i with (Z.of_nat n) in * by (subst n;rewrite Z2Nat.id; omega).
         simpl in H18. split; [apply frl_add_tail|]; easy.
     + exfalso. rep_omega.
-  - Intros g' t_info' roots'. forward. Exists g' t_info' roots'.
+  - Intros g' t_info' roots'. Exists g' t_info' roots'.
     destruct H8 as [? [? [? ?]]]. entailer!. rewrite <- H5, ZtoNat_Zlength in H6.
-    easy. 
+    easy.
 Qed.
