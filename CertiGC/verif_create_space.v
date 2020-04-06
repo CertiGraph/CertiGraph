@@ -10,7 +10,7 @@ Proof.
                [omega | apply MSS_max_unsigned_range; assumption].
   - forward. entailer!.
   - forward_call (Tarray int_or_ptr_type n noattr, gv).
-    + entailer!. replace (n * 4) with (4 * n) by omega. reflexivity.
+    + entailer!. simpl. rewrite Z.max_r by omega. now rewrite Z.mul_comm.
     + split; [|split].
       * simpl. replace (Z.max 0 n) with n. 1: apply MSS_max_4_unsigned_range, H.
         rewrite Z.max_r; [reflexivity | destruct H; assumption].
@@ -32,5 +32,5 @@ Proof.
                          data_at_ sh space_type s)).
         -- contradiction.
         -- forward. entailer!.
-        -- do 4 forward. Exists p. unfold tarray. entailer!.
+        -- do 3 forward. Exists p. unfold tarray. entailer!.
 Qed.

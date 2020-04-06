@@ -12,7 +12,7 @@ Require Import Coq.Lists.List.
 
 Local Open Scope Z_scope.
 
-Lemma inf_eq: 1879048192 = inf.   
+Lemma inf_eq: 1879048192 = inf.
 Proof. compute; trivial. Qed.
 
 Lemma inf_eq2: Int.sub (Int.repr 2147483647)
@@ -27,7 +27,7 @@ Definition inrange_priq priq_contents :=
   Forall (fun x => 0 <= x <= inf+1) priq_contents.
 
 Definition inrange_dist dist_contents :=
-  Forall (fun x => 0 <= x <= inf) dist_contents. 
+  Forall (fun x => 0 <= x <= inf) dist_contents.
 
 Definition inrange_graph grph_contents :=
   forall i j,
@@ -58,7 +58,7 @@ Definition isEmpty (pq_contents : list Z) : val :=
 Lemma isEmpty_prop_val: forall l,
     isEmpty_Prop l <-> isEmpty l = Vone.
 Proof.
-  intros. induction l; simpl in *. split; intro; trivial. 
+  intros. induction l; simpl in *. split; intro; trivial.
   destruct (Z_lt_dec a inf); trivial. split; inversion 1.
 Qed.
 
@@ -66,7 +66,7 @@ Lemma isEmpty_in': forall l,
     (exists i, In i l /\ i < inf) <-> isEmpty l = Vzero.
 Proof.
   split; intros.
-  - destruct H as [? [? ?]]. induction l. 
+  - destruct H as [? [? ?]]. induction l.
     1: exfalso; apply (in_nil H).
     unfold isEmpty. rewrite fold_right_cons.
     destruct (Z_lt_dec a inf); trivial.
@@ -174,7 +174,7 @@ Proof.
   intros.
   destruct (eq_dec a (Znth i (a :: l))).
   - rewrite <- e in H0. clear - H H0.
-    destruct (Z.eq_dec 0 i). 1: omega. 
+    destruct (Z.eq_dec 0 i). 1: omega.
     destruct H. assert (0 < i) by omega.
     exfalso. apply H0.
     unfold sublist. replace (i-0) with i by omega.
@@ -184,9 +184,9 @@ Proof.
   - destruct (Z.eq_dec 0 i).
     1: rewrite <- e in n; rewrite Znth_0_cons in n;
       exfalso; omega.
-    assert (0 <= i - 1 < Zlength l) by 
+    assert (0 <= i - 1 < Zlength l) by
         (rewrite Zlength_cons in H; rep_omega).
-    assert (~ In (Znth (i - 1) l) (sublist 0 (i - 1) l)). { 
+    assert (~ In (Znth (i - 1) l) (sublist 0 (i - 1) l)). {
         rewrite <- (Znth_pos_cons i l a) by omega.
         rewrite <- (sublist_1_cons l a i).
         intro. apply H0.
@@ -218,7 +218,7 @@ Proof.
   intros. generalize dependent target.
   generalize dependent ans.
   induction l.
-  1: intros; simpl; now rewrite Zlength_nil. 
+  1: intros; simpl; now rewrite Zlength_nil.
   intros. apply in_inv in H. destruct H.
   - subst a. unfold find.
     destruct (eq_dec target target).
@@ -278,7 +278,7 @@ Proof.
   intros.
   replace (find l target 0) with (find l target 0 - 0) by omega.
   apply Znth_find_gen; [omega | assumption].
-Qed.  
+Qed.
 
 Lemma min_in_list : forall l1 l2 starter,
     incl l1 l2 ->
@@ -314,7 +314,7 @@ Proof.
   intros. induction num; trivial.
   simpl. rewrite IHnum. rewrite Z.min_r; omega.
 Qed.
-  
+
 Lemma find_src: forall src,
     0 <= src < Zlength (list_repeat (Z.to_nat SIZE) inf) ->
     find (upd_Znth src (list_repeat (Z.to_nat SIZE) inf) 0)
@@ -367,11 +367,11 @@ Lemma get_popped_empty:
   forall l,
     Forall (fun x => x <> inf + 1) l -> get_popped l = [].
 Proof.
-  intros. 
+  intros.
   unfold get_popped.
   replace (filter (fun x : Z * Z => (fst x) =? (inf + 1))
                   (combine l (nat_inc_list (Z.to_nat (Zlength l))))) with (@nil (Z*Z)).
-  trivial. symmetry. 
+  trivial. symmetry.
   remember (nat_inc_list (Z.to_nat (Zlength l))) as l2. clear Heql2.
   generalize dependent l2. induction l; trivial.
   intros. simpl. destruct l2; [reflexivity|].
@@ -392,10 +392,7 @@ Qed.
 
 Lemma sublist_nil: forall lo hi A,
     sublist lo hi (@nil A) = (@nil A).
-Proof.
-  intros. unfold sublist, skipn.
-  destruct (Z.to_nat lo); destruct (Z.to_nat (hi - lo)); reflexivity.
-Qed.
+Proof. intros. unfold sublist. rewrite firstn_nil. apply sublist.skipn_nil. Qed.
 
 Lemma sublist_cons:
   forall a (l: list Z) i,
@@ -434,41 +431,20 @@ Qed.
 
 Lemma sublist_skip: forall A lo (l: list A) a,
     0 < lo ->
-    sublist lo (Zlength (a :: l)) (a::l) =
-    sublist (lo - 1) (Zlength (a :: l) - 1) l.
+    sublist lo (Z.succ (Zlength l)) (a::l) =
+    sublist (lo - 1) (Zlength l) l.
 Proof.
-  intros.
-  unfold sublist.
+  intros. unfold sublist.
   destruct (Z.to_nat lo) eqn:?.
   - exfalso.
     unfold Z.to_nat in Heqn.
     destruct lo; try inversion H.
     pose proof (Pos2Nat.is_pos p); omega.
-  - simpl. replace (Zlength (a :: l) - 1 - (lo - 1)) with 
-               (Zlength (a :: l) - lo) by omega.
-    f_equal. replace (Z.to_nat (lo - 1)) with n.
-    reflexivity. apply juicy_mem_lemmas.nat_of_Z_lem1. omega.
-Qed.
-
-Lemma combine_sublist_0:
-  forall (l1 l2 : list Z),
-    Zlength l1 = Zlength l2 ->
-    combine (sublist 0 (Zlength l1) l1) (sublist 0 (Zlength l2) l2) =
-    sublist 0 (Zlength (combine l1 l2)) (combine l1 l2).
-Proof. 
-  intros. generalize dependent l2. induction l1. 
-  - intros. simpl. rewrite sublist_nil. reflexivity.
-  - intros.
-    assert (1 <= Zlength l2). {
-      rewrite Zlength_cons in H. rep_omega. }
-    rewrite <- (sublist_same 0 (Zlength l2) l2) by omega.
-    rewrite (sublist_split 0 1 (Zlength l2) l2) by omega.
-    rewrite (sublist_one 0 1) by omega.
-    rewrite <- semax_lemmas.cons_app.
-    rewrite sublist_same by omega.
-    rewrite sublist_same by omega.
-    rewrite (sublist_same 0 (Zlength (combine (a :: l1) (Znth 0 l2 :: sublist 1 (Zlength l2) l2))))  by omega.
-    simpl. f_equal. 
+  - assert (Z.to_nat (lo - 1) = n) by
+        now rewrite <- (juicy_mem_lemmas.nat_of_Z_lem1 n lo). rewrite H0.
+    assert (Z.to_nat (Z.succ(Zlength l)) = S (Z.to_nat (Zlength l))). {
+      rewrite Z2Nat.inj_succ; auto. apply Zlength_nonneg. }
+    rewrite H1. now simpl.
 Qed.
 
 Lemma combine_sublist_gen:
@@ -477,36 +453,17 @@ Lemma combine_sublist_gen:
     Zlength l1 = Zlength l2 ->
     combine (sublist lo (Zlength l1) l1) (sublist lo (Zlength l2) l2) =
     sublist lo (Zlength (combine l1 l2)) (combine l1 l2).
-Proof. 
-  intros.
-  generalize dependent l2.
-  generalize dependent lo.
-  induction l1. 
-  1: intros; rewrite sublist_nil; simpl;
-    rewrite sublist_nil; reflexivity.
-  intros. destruct (Z.eq_dec 0 lo).
-  1: subst lo; apply combine_sublist_0; omega.
-  rewrite <- (sublist_same 0 (Zlength l2) l2) by omega.
-  assert (1 <= Zlength l2). {
-    rewrite Zlength_cons in H0.
-    rewrite <- Z.add_1_l in H0. rewrite <- H0.
-    pose proof (Zlength_nonneg l1). omega. }
-  rewrite (sublist_split 0 1 (Zlength l2) l2) by omega.
-  rewrite (sublist_one 0 1); try omega.
-  rewrite <- semax_lemmas.cons_app.
-  simpl.
-  repeat rewrite sublist_skip by omega.
-  replace (Zlength (a :: l1) - 1) with (Zlength l1)
-    by (rewrite Zlength_cons; omega).
-  replace (Zlength (Znth 0 l2 :: sublist 1 (Zlength l2) l2) - 1) with (Zlength (sublist 1 (Zlength l2) l2)) by
-      (rewrite Zlength_cons, Zlength_sublist; rep_omega).
-    replace (Zlength ((a, Znth 0 l2) :: combine l1 (sublist 1 (Zlength l2) l2)) - 1)
-      with (Zlength (combine l1 (sublist 1 (Zlength l2) l2))) by
-      (rewrite Zlength_cons; rep_omega).
-    apply IHl1.
-    rewrite Zlength_cons in H; omega.
-    rewrite Zlength_cons in H0.
-    rewrite Zlength_sublist; omega.
+Proof.
+  induction l1, l2; intros; simpl; autorewrite with sublist.
+  - rewrite !sublist_nil. easy.
+  - rewrite Zlength_nil in H0. rewrite Zlength_cons in H0.
+    pose proof (Zlength_nonneg l2). exfalso. omega.
+  - rewrite Zlength_nil in H0. rewrite Zlength_cons in H0.
+    pose proof (Zlength_nonneg l1). exfalso. omega.
+  - destruct (Z.eq_dec 0 lo).
+    + subst lo. autorewrite with sublist. now simpl.
+    + assert (0 < lo) by omega. rewrite !sublist_skip; auto.
+      rewrite !Zlength_cons in *. apply IHl1; omega.
 Qed.
 
 Lemma combine_sublist_specific:
@@ -515,28 +472,20 @@ Lemma combine_sublist_specific:
     0 <= i < Zlength l1 ->
     combine (sublist 0 i l1) (sublist 0 i l2) = sublist 0 i (combine l1 l2).
 Proof.
-  intros.
-  generalize dependent i.
-  generalize dependent l2. induction l1. 
-  - intros. simpl. repeat rewrite sublist_nil. reflexivity.
-  - intros.
-    assert (1 <= Zlength l2). {
-      rewrite Zlength_cons in H. rep_omega. }
-    rewrite <- (sublist_same 0 (Zlength l2) l2) by omega.
-    rewrite (sublist_split 0 1 (Zlength l2) l2) by omega.
-    rewrite (sublist_one 0 1) by omega.
-    rewrite <- semax_lemmas.cons_app.
-    destruct (Z.eq_dec i 0).
-    + subst i; repeat rewrite sublist.sublist_nil; reflexivity.
-    + repeat rewrite sublist_cons.
-      simpl. rewrite sublist_cons'.
-      f_equal. apply IHl1.
-      all: try rewrite Zlength_cons in *.
-      3: rewrite combine_same_length.
-      1,4,5: rewrite Zlength_sublist.
-      all: omega.
+  induction l1, l2; intros; simpl; autorewrite with sublist.
+  - rewrite !sublist_nil. easy.
+  - rewrite Zlength_nil in H0. omega.
+  - rewrite Zlength_nil in H. rewrite Zlength_cons in H.
+    pose proof (Zlength_nonneg l1). omega.
+  - destruct (Z.eq_dec i 0).
+    + subst i. autorewrite with sublist. now simpl.
+    + rewrite !Zlength_cons in *. repeat rewrite sublist_cons.
+      * simpl. rewrite sublist_cons'.
+        -- f_equal. apply IHl1; omega.
+        -- rewrite Zlength_cons. rewrite combine_same_length; omega.
+      * rewrite Zlength_cons. omega.
+      * rewrite Zlength_cons. omega.
 Qed.
-
 
 Lemma combine_upd_Znth:
   forall (l1 l2: list Z) i new,
@@ -552,13 +501,12 @@ Proof.
   rewrite combine_app.
   2: { repeat rewrite <- ZtoNat_Zlength.
        f_equal. repeat rewrite Zlength_sublist; omega. }
-  f_equal. 
+  f_equal.
   1: apply combine_sublist_specific; assumption.
   rewrite (sublist_split i (i+1) (Zlength l2) l2) by omega.
   rewrite sublist_len_1 by omega.
-  rewrite <- semax_lemmas.cons_app.
   simpl combine. f_equal.
-  apply combine_sublist_gen.  omega. omega.
+  apply combine_sublist_gen. omega. omega.
 Qed.
 
 Lemma Znth_combine:
@@ -575,7 +523,6 @@ Proof.
     rewrite <- (sublist_same 0 (Zlength l2) l2) by omega.
     rewrite (sublist_split 0 1 (Zlength l2) l2) by omega.
     rewrite sublist_len_1 by omega.
-    rewrite <- semax_lemmas.cons_app.
     simpl. destruct (Z.eq_dec i 0).
     1: subst i; repeat rewrite Znth_0_cons; reflexivity.
     repeat rewrite Znth_pos_cons by omega.
@@ -592,17 +539,17 @@ Lemma get_popped_unchanged:
     Znth i l <> inf + 1 ->
     get_popped (upd_Znth i l new) = get_popped l.
 Proof.
-  intros. unfold get_popped. 
+  intros. unfold get_popped.
   remember (fun x : Z * Z => fst x =? inf + 1) as F.
   rewrite upd_Znth_Zlength by omega.
   remember (nat_inc_list (Z.to_nat (Zlength l))) as l2.
   assert (Zlength l = Zlength l2). {
     rewrite Heql2.
     rewrite nat_inc_list_Zlength. rep_omega.
-  } 
+  }
   f_equal.
   pose proof (combine_same_length l l2 H2).
-  rewrite combine_upd_Znth by assumption.  
+  rewrite combine_upd_Znth by assumption.
   unfold upd_Znth.
   rewrite <- (sublist_same 0 (Zlength (combine l l2)) (combine l l2)) at 4 by reflexivity.
   rewrite (sublist_split 0 i (Zlength (combine l l2))
@@ -611,8 +558,7 @@ Proof.
   f_equal. rewrite H3.
   rewrite (sublist_split i (i+1) (Zlength l)) by omega.
   rewrite (sublist_one i (i+1) (combine l l2)) by omega.
-  rewrite semax_lemmas.cons_app.
-  do 2 rewrite filter_app.
+  rewrite filter_app.
   f_equal. simpl.
   destruct (F (new, Znth i l2)) eqn:?; rewrite HeqF in Heqb; simpl in Heqb.
   - exfalso. apply H1. rewrite <- inf_eq.
@@ -623,11 +569,9 @@ Proof.
     simpl in Heqb0. exfalso. apply H1. rewrite <- inf_eq. omega.
 Qed.
 
-
-
 Lemma behead_list:
   forall (l: list Z),
-    0 < Zlength l -> 
+    0 < Zlength l ->
     l = Znth 0 l :: tl l.
 Proof.
   intros.
@@ -668,7 +612,7 @@ Lemma in_tl_nat_inc_list:
     1 <= i.
 Proof.
   destruct n. inversion 1.
-  induction n. inversion 1. 
+  induction n. inversion 1.
   intros.
   simpl in H.
   rewrite Zpos_P_of_succ_nat in H.
@@ -676,7 +620,7 @@ Proof.
   2: { rewrite Zlength_app.
        replace (Zlength [Z.of_nat n]) with 1 by reflexivity.
        rep_omega.
-  } 
+  }
   apply in_app_or in H; destruct H.
   - apply IHn. simpl. assumption.
   - simpl in H. destruct H; omega.
@@ -725,8 +669,8 @@ Proof.
   }
   rewrite <- Z.sub_0_r at 1.
   replace n with (0 + n) by omega.
-  rewrite Zlength_sublist in H1. 
-  rewrite <- nat_inc_list_app. 
+  rewrite Zlength_sublist in H1.
+  rewrite <- nat_inc_list_app.
   rewrite nat_inc_list_i.
   all: try rep_omega.
   rewrite nat_inc_list_Zlength. rep_omega.
@@ -750,13 +694,13 @@ Proof.
     5,3: rewrite (Zlength_correct (nat_inc_list (Z.to_nat (Zlength (l1 ++ l2)))));
          rewrite nat_inc_list_length;
          rewrite Z2Nat.id; trivial.
-    3: rewrite Zlength_app.    
+    3: rewrite Zlength_app.
     all: try rep_omega.
     rewrite combine_app in H1.
     2: { rewrite Zlength_correct.
          repeat rewrite <- ZtoNat_Zlength.
          f_equal.
-         pose proof (Zlength_nonneg l1). 
+         pose proof (Zlength_nonneg l1).
          rewrite Zlength_sublist.
          all: rewrite Z2Nat.id.
          all: try omega.
@@ -806,7 +750,7 @@ Proof.
         2: repeat rewrite nat_inc_list_Zlength; rep_omega.
         inversion H2.
         rewrite Zlength_app.
-        rewrite <- nat_inc_list_app. 
+        rewrite <- nat_inc_list_app.
         reflexivity.
         rewrite combine_same_length in H1. omega.
         rewrite Zlength_sublist. rewrite Zlength_app.
@@ -818,16 +762,16 @@ Proof.
   - rewrite In_map_snd_iff in H1; destruct H1.
     rewrite filter_In in H1; destruct H1; simpl in H2.
     rewrite In_map_snd_iff.
-    exists x. 
+    exists x.
     rewrite filter_In; split; trivial. clear H2.
     rewrite <- (sublist_same 0 (Zlength (l1 ++ l2)) (nat_inc_list (Z.to_nat (Zlength (l1 ++ l2))))).
     rewrite (sublist_split 0 (Zlength l1) (Zlength (l1 ++ l2))).
     5,3: rewrite (Zlength_correct (nat_inc_list (Z.to_nat (Zlength (l1 ++ l2)))));
          rewrite nat_inc_list_length;
          rewrite Z2Nat.id; trivial.
-    3: rewrite Zlength_app.    
+    3: rewrite Zlength_app.
     all: try rep_omega.
-    rewrite combine_app. 
+    rewrite combine_app.
     2: { repeat rewrite <- ZtoNat_Zlength. f_equal.
          rewrite Zlength_sublist. omega.
          pose proof (Zlength_nonneg l1); omega.
@@ -859,7 +803,7 @@ Proof.
     rewrite Znth_combine in *.
     2: repeat rewrite Zlength_correct;
       rewrite nat_inc_list_length;
-      rewrite Nat2Z.id; omega.    
+      rewrite Nat2Z.id; omega.
     3: rewrite Zlength_sublist, Zlength_app; [|rewrite Zlength_app|]; try rep_omega;
              repeat rewrite Zlength_correct;
              rewrite nat_inc_list_length;
@@ -867,7 +811,7 @@ Proof.
     2, 3: rewrite combine_same_length in H1; [rep_omega|].
     2, 3: repeat rewrite Zlength_correct;
       rewrite nat_inc_list_length;
-      rewrite Nat2Z.id; omega.    
+      rewrite Nat2Z.id; omega.
     inversion H2.
     rewrite (nat_inc_list_app (Zlength l1) _ (Zlength (l1 ++ l2))) in H5.
     rewrite Z.sub_cancel_r in H5.
@@ -884,7 +828,7 @@ Qed.
 Lemma get_popped_meaning:
   forall l i,
     0 <= i < Zlength l ->
-    In i (get_popped l) <-> Znth i l = inf + 1. 
+    In i (get_popped l) <-> Znth i l = inf + 1.
 Proof.
   intros. generalize dependent i.
   induction l; intros.
@@ -907,7 +851,7 @@ Proof.
       * inversion H0. rewrite Z.eqb_eq in H1.
         rewrite <- inf_eq. rep_omega.
       * pose proof (in_combine_r _ _ _ _ H0).
-        exfalso. 
+        exfalso.
         apply in_tl_nat_inc_list in H2.
         omega.
     + unfold get_popped.
@@ -927,10 +871,9 @@ Proof.
   - rewrite Znth_pos_cons by omega.
     rewrite Zlength_cons in H.
     assert (0 <= (i-1) < Zlength l) by omega.
-    rewrite semax_lemmas.cons_app.
     assert (Zlength [a] = 1) by reflexivity.
-    rewrite in_get_popped by omega.
-    apply IHl; omega.
+    change (a :: l) with ([a] ++ l).
+    rewrite in_get_popped by omega. apply IHl; omega.
 Qed.
 
 Lemma get_popped_irrel_upd:
@@ -944,7 +887,7 @@ Proof.
   intros.
   repeat rewrite get_popped_meaning; [| rewrite upd_Znth_Zlength; omega | omega].
   rewrite upd_Znth_diff; trivial; reflexivity.
-Qed. 
+Qed.
 
 Lemma get_popped_range:
   forall n l,
@@ -992,7 +935,7 @@ Definition inv_unpopped g src prev priq dist dst :=
                    In step (get_popped priq)) /\
      path_globally_optimal g src mom p2mom /\
      elabel g (mom, dst) <> inf /\
-     Z.add (path_cost g p2mom) (Znth dst (Znth mom (graph_to_mat g))) <> inf /\ 
+     Z.add (path_cost g p2mom) (Znth dst (Znth mom (graph_to_mat g))) <> inf /\
      Znth dst dist = path_cost g p2mom + Znth dst (Znth mom (graph_to_mat g)) /\
      forall mom' p2mom',
        path_correct g prev dist src mom' p2mom' ->
@@ -1019,11 +962,12 @@ Definition dijkstra_correct g (src : VType) (prev priq dist: list VType) : Prop 
 Definition pq_emp_spec :=
   DECLARE _pq_emp
   WITH pq: val, priq_contents: list Z
-  PRE [_pq OF tptr tint]
+  PRE [tptr tint]
     PROP (inrange_priq priq_contents)
-    LOCAL (temp _pq pq)
+    PARAMS (pq)
+    GLOBALS ()
     SEP (data_at Tsh (tarray tint SIZE) (map Vint (map Int.repr priq_contents)) pq)
-    POST [ tint ]
+  POST [ tint ]
     PROP ()
     LOCAL (temp ret_temp (isEmpty priq_contents))
     SEP (data_at Tsh (tarray tint SIZE) (map Vint (map Int.repr priq_contents)) pq).
@@ -1031,10 +975,11 @@ Definition pq_emp_spec :=
 Definition popMin_spec :=
  DECLARE _popMin
   WITH pq: val, priq_contents: list Z
-  PRE [_pq OF tptr tint]
-    PROP  (inrange_priq priq_contents;
+  PRE [tptr tint]
+    PROP (inrange_priq priq_contents;
          isEmpty priq_contents = Vzero)
-    LOCAL (temp _pq pq)
+    PARAMS (pq)
+    GLOBALS ()
     SEP   (data_at Tsh (tarray tint SIZE) (map Vint (map Int.repr priq_contents)) pq)
   POST [ tint ]
     EX rt : Z,
@@ -1048,19 +993,19 @@ Definition dijkstra_spec :=
   DECLARE _dijkstra
   WITH sh: wshare, g: Graph, arr : pointer_val,
        dist : pointer_val, prev : pointer_val, src : Z
-  PRE [_graph OF (tptr (tarray tint SIZE)), _src OF tint,
-       _dist OF (tptr tint), _prev OF (tptr tint)]
+  PRE [tptr (tarray tint SIZE), tint, tptr tint, tptr tint]
     PROP (0 <= src < SIZE;
           Forall (fun list => Zlength list = SIZE) (graph_to_mat g);
           inrange_graph (graph_to_mat g);
           sound_dijk_graph g;
           forall i, 0 <= i < SIZE ->
                     Znth i (Znth i (graph_to_mat g)) = 0)
-    LOCAL (temp _graph (pointer_val_val arr);
-         temp _src (Vint (Int.repr src));
-         temp _dist (pointer_val_val dist);
-         temp _prev (pointer_val_val prev))
-    SEP (graph_rep sh (graph_to_mat g) (pointer_val_val arr); 
+    PARAMS (pointer_val_val arr;
+            Vint (Int.repr src);
+            pointer_val_val dist;
+           pointer_val_val prev)
+    GLOBALS ()
+    SEP (graph_rep sh (graph_to_mat g) (pointer_val_val arr);
        data_at_ Tsh (tarray tint SIZE) (pointer_val_val dist);
        data_at_ Tsh (tarray tint SIZE) (pointer_val_val prev))
   POST [tvoid]
@@ -1069,15 +1014,15 @@ Definition dijkstra_spec :=
     EX priq_contents : list Z,
     PROP (dijkstra_correct g src prev_contents priq_contents dist_contents)
     LOCAL ()
-    SEP (graph_rep sh (graph_to_mat g) (pointer_val_val arr); 
+    SEP (graph_rep sh (graph_to_mat g) (pointer_val_val arr);
          data_at Tsh (tarray tint SIZE) (map Vint (map Int.repr prev_contents)) (pointer_val_val prev);
          data_at Tsh (tarray tint SIZE) (map Vint (map Int.repr dist_contents)) (pointer_val_val dist)).
-    
+
 Definition Gprog : funspecs := ltac:(with_library prog [pq_emp_spec; popMin_spec; dijkstra_spec]).
 
 Lemma body_pq_emp: semax_body Vprog Gprog f_pq_emp pq_emp_spec.
 Proof.
-  start_function. 
+  start_function.
   forward_for_simple_bound
     SIZE
     (EX i : Z,
@@ -1093,7 +1038,7 @@ Proof.
     }
     forward; forward_if; forward; entailer!.
     + rewrite (isEmpty_in priq_contents (Znth i priq_contents)).
-      trivial. 
+      trivial.
       apply Znth_In; omega.
       rewrite <- H1 in H0.
       pose proof (Forall_Znth _ _ i H0 H).
@@ -1110,16 +1055,16 @@ Proof.
       exfalso.
       replace 8 with SIZE in H3 by (unfold SIZE; trivial).
       rewrite inf_eq2 in H3.
-      do 2 rewrite Int.signed_repr in H3. 
+      do 2 rewrite Int.signed_repr in H3.
       rep_omega.
-      1: compute; split; inversion 1. 
-      1,2: rewrite <- H1 in H0; apply (Forall_Znth _ _ i H0) in H; simpl in H; rep_omega.  
+      1: compute; split; inversion 1.
+      1,2: rewrite <- H1 in H0; apply (Forall_Znth _ _ i H0) in H; simpl in H; rep_omega.
   - forward. entailer!.
     rewrite sublist_same in H0; trivial.
     2: { symmetry; repeat rewrite Zlength_map in H2.
          unfold SIZE. simpl in H2. omega. }
     replace (Vint (Int.repr 1)) with Vone by now unfold Vone, Int.one.
-    symmetry. apply isEmpty_prop_val; trivial. 
+    symmetry. apply isEmpty_prop_val; trivial.
 Qed.
 
 Lemma body_popMin: semax_body Vprog Gprog f_popMin popMin_spec.
@@ -1130,7 +1075,7 @@ Proof.
   }
   assert (0 <= 0 < Zlength (map Int.repr priq_contents)) by
       (rewrite Zlength_map; rewrite H1; unfold SIZE; omega).
-  assert (0 <= 0 < Zlength priq_contents) by 
+  assert (0 <= 0 < Zlength priq_contents) by
       (rewrite H1; unfold SIZE; omega).
   forward. forward.
   forward_for_simple_bound
@@ -1138,7 +1083,7 @@ Proof.
     (EX i : Z,
      PROP ()
      LOCAL (temp _minWeight (Vint (Int.repr (fold_right Z.min (Znth 0 priq_contents) (sublist 0 i priq_contents))));
-            temp _minVertex (Vint (Int.repr (find priq_contents (fold_right Z.min (Znth 0 priq_contents) (sublist 0 i priq_contents)) 0))); 
+            temp _minVertex (Vint (Int.repr (find priq_contents (fold_right Z.min (Znth 0 priq_contents) (sublist 0 i priq_contents)) 0)));
             temp _pq pq)
      SEP (data_at Tsh (tarray tint SIZE) (map Vint (map Int.repr priq_contents)) pq)).
   - unfold SIZE; rep_omega.
@@ -1166,8 +1111,8 @@ Proof.
       rewrite (sublist_split 0 i (i+1)) by omega.
       rewrite (sublist_one i (i+1) priq_contents) by omega.
       rewrite fold_min_another.
-      rewrite Z.min_r; [|omega]. 
-      split; trivial. f_equal. 
+      rewrite Z.min_r; [|omega].
+      split; trivial. f_equal.
       rewrite find_index; trivial.
       apply min_not_in_prev; trivial.
     + forward. entailer!.
@@ -1175,12 +1120,12 @@ Proof.
       rewrite (sublist_one i (i+1) priq_contents) by omega.
       rewrite fold_min_another.
       rewrite Z.min_l; [|omega]. split; trivial.
-  - forward. 
+  - forward.
     + entailer!. rewrite <- H1.
-      apply find_range. 
+      apply find_range.
       rewrite sublist_same; [|omega..].
-      apply min_in_list; [apply incl_refl | apply Znth_In; omega]. 
-    + forward. 
+      apply min_in_list; [apply incl_refl | apply Znth_In; omega].
+    + forward.
       Exists (find priq_contents (fold_right Z.min (hd 0 priq_contents) (sublist 0 SIZE priq_contents)) 0).
       rewrite sublist_same by omega. entailer!.
       destruct priq_contents; simpl; auto.
@@ -1201,7 +1146,7 @@ Proof.
   destruct H as [? [? [? ?]]].
   simpl; split.
   + rewrite H5; simpl.
-    assumption.  
+    assumption.
   + unfold strong_evalid.
     unfold edge_valid in H4.
     unfold vertex_valid in H.
@@ -1214,7 +1159,7 @@ Lemma path_ends_app_cons:
     sound_dijk_graph g ->
     path_ends g (src, links2u) src u ->
     path_ends g (src, links2u +:: (u, i)) src i.
-Proof.                    
+Proof.
   split.
   + destruct H0; apply H0.
   + rewrite pfoot_last.
@@ -1235,16 +1180,16 @@ Proof.
   unfold vertex_valid in H.
   rewrite H2; split; simpl; [rewrite H|]; assumption.
 Qed.
-  
+
 Lemma path_cost_app_not_inf:
   forall g p mom u,
     sound_dijk_graph g ->
     0 <= mom < SIZE ->
-    0 <= u < SIZE -> 
-    path_cost g p <> inf ->  
+    0 <= u < SIZE ->
+    path_cost g p <> inf ->
     elabel g (mom, u) <> inf ->
     path_cost g p + Znth u (Znth mom (graph_to_mat g)) <> inf ->
-    path_cost g (fst p, snd p +:: (mom, u)) <> inf.    
+    path_cost g (fst p, snd p +:: (mom, u)) <> inf.
 Proof.
   intros.
   rewrite path_cost_app_cons; trivial.
@@ -1316,10 +1261,10 @@ Proof.
   rewrite Forall_forall; intros.
   rewrite Forall_forall in H.
   simpl in H3. apply in_app_or in H3.
-  destruct H3. 
+  destruct H3.
   - specialize (H _ H3).
-    destruct H. 
-    pose proof (get_popped_range _ _ H). 
+    destruct H.
+    pose proof (get_popped_range _ _ H).
     pose proof (get_popped_range _ _ H4).
     split; rewrite <- get_popped_irrel_upd;
       trivial; intro; apply H1;
@@ -1415,10 +1360,10 @@ Qed.
 
 Lemma body_dijkstra: semax_body Vprog Gprog f_dijkstra dijkstra_spec.
 Proof.
-  start_function. 
+  start_function.
   forward_for_simple_bound
     SIZE
-    (EX i : Z, 
+    (EX i : Z,
      PROP (inrange_graph (graph_to_mat g))
      LOCAL (temp _dist (pointer_val_val dist);
             temp _prev (pointer_val_val prev);
@@ -1449,18 +1394,17 @@ Proof.
     rewrite Zlength_list_repeat by omega.
     rewrite sublist_list_repeat by omega.
     replace (SIZE - (i + 1)) with (SIZE - i - 1) by omega.
-    replace (list_repeat (Z.to_nat 1) (Vint (Int.repr inf))) with ([Vint (Int.repr inf)]) by reflexivity.
-    rewrite <- semax_lemmas.cons_app. reflexivity.
-  - (* At this point we are done with the 
+    replace (list_repeat (Z.to_nat 1) (Vint (Int.repr inf))) with ([Vint (Int.repr inf)]) by reflexivity. easy.
+  - (* At this point we are done with the
        first for loop. The arrays are all set to INF. *)
     replace (SIZE - SIZE) with 0 by omega; rewrite list_repeat_0, <- (app_nil_end).
     forward. forward. forward.
     (* Special values for src have been inserted *)
-    
-    (* We will now enter the main while loop. 
+
+    (* We will now enter the main while loop.
        We state the invariant just below, in PROP.
 
-       VST will first ask us to first show the 
+       VST will first ask us to first show the
        invariant at the start of the loop
      *)
     forward_loop
@@ -1487,7 +1431,7 @@ Proof.
        SEP (data_at Tsh (tarray tint SIZE) (map Vint (map Int.repr prev_contents)) (pointer_val_val prev);
             data_at Tsh (tarray tint SIZE) (map Vint (map Int.repr priq_contents)) v_pq;
             data_at Tsh (tarray tint SIZE) (map Vint (map Int.repr dist_contents)) (pointer_val_val dist);
-            graph_rep sh (graph_to_mat g) (pointer_val_val arr))) 
+            graph_rep sh (graph_to_mat g) (pointer_val_val arr)))
       break:
       (EX prev_contents: list Z,
        EX priq_contents: list Z,
@@ -1540,7 +1484,7 @@ Proof.
         1,3: rewrite sublist_list_repeat in H15 by omega;
           apply in_list_repeat in H15; omega.
         rewrite <- H15. compute; omega.
-      } 
+      }
       (* Now we get into the proof of dijkstra_correct proper.
          This is not very challenging... *)
       unfold dijkstra_correct, inv_popped, inv_unpopped, inv_unseen.
@@ -1571,7 +1515,7 @@ Proof.
       { entailer!. now repeat rewrite Zlength_map in *. }
       assert_PROP (Zlength dist_contents = SIZE).
       { entailer!. now repeat rewrite Zlength_map in *. }
-      forward_call (v_pq, priq_contents). 
+      forward_call (v_pq, priq_contents).
       forward_if. (* checking if it's time to break *)
       * (* No, don't break. *)
         assert (isEmpty priq_contents = Vzero). {
@@ -1579,15 +1523,15 @@ Proof.
             rewrite H15 in H14; simpl in H14;
               now inversion H14.
         }
-        clear H14. 
+        clear H14.
         forward_call (v_pq, priq_contents). Intros u.
-        (* u is the minimally chosen item from the 
+        (* u is the minimally chosen item from the
            "seen but not popped" category of vertices *)
 
         (* We prove a few useful facts about u: *)
         assert (0 <= u < Zlength priq_contents). {
-          rewrite H14. 
-          apply find_range.  
+          rewrite H14.
+          apply find_range.
           apply min_in_list. apply incl_refl.
           destruct priq_contents. rewrite Zlength_nil in H11.
           inversion H11. simpl. left; trivial.
@@ -1608,13 +1552,13 @@ Proof.
           pose proof (fold_min _ _ H15).
           omega.
         }
-        
+
         remember (upd_Znth u priq_contents (inf+1)) as priq_contents_popped.
-        (* This is the priq array with which 
-           we will enter the for loop. 
+        (* This is the priq array with which
+           we will enter the for loop.
            The dist and prev arrays are the same.
            Naturally, going in with this new priq
-           and the old dist and prev means that 
+           and the old dist and prev means that
            dijkstra_correct is currently broken.
            The for loop will repair this and restore
            dijkstra_correct.
@@ -1627,7 +1571,7 @@ Proof.
            EX dist_contents' : list Z,
            PROP (
               (* popped items are not affected by the for loop *)
-              forall dst, inv_popped g src prev_contents' priq_contents' dist_contents' dst;          
+              forall dst, inv_popped g src prev_contents' priq_contents' dist_contents' dst;
 
               (* inv_unpopped is restored for those vertices
                  that the for loop has scanned and repaired *)
@@ -1636,7 +1580,7 @@ Proof.
                 inv_unpopped g src prev_contents' priq_contents' dist_contents' dst;
 
                 (* a weaker version of inv_popped is
-                   true for those vertices that the 
+                   true for those vertices that the
                    for loop has not yet scanned *)
                 forall dst,
                 i <= dst < SIZE ->
@@ -1652,7 +1596,7 @@ Proof.
                   path_globally_optimal g src mom p2mom /\
                   elabel g (mom, dst) <> inf /\
                   Z.add (path_cost g p2mom) (Znth dst (Znth mom (graph_to_mat g))) <> inf /\
-                  Znth dst dist_contents' = Z.add (path_cost g p2mom) (Znth dst (Znth mom (graph_to_mat g))) /\ 
+                  Znth dst dist_contents' = Z.add (path_cost g p2mom) (Znth dst (Znth mom (graph_to_mat g))) /\
                   forall mom' p2mom',
                     path_correct g prev_contents' dist_contents' src mom' p2mom' ->
                     (forall step',
@@ -1664,7 +1608,7 @@ Proof.
                     path_cost g p2mom + Znth dst (Znth mom (graph_to_mat g)) <= careful_add (path_cost g p2mom') (Znth dst (Znth mom' (graph_to_mat g)));
 
                     (* similarly for inv_unseen,
-                       the invariant has been 
+                       the invariant has been
                        restored until i:
                        u has been taken into account *)
                     forall dst,
@@ -1672,7 +1616,7 @@ Proof.
                        inv_unseen g prev_contents' priq_contents' dist_contents' dst;
 
                 (* and a weaker version of inv_unseen is
-                   true for those vertices that the 
+                   true for those vertices that the
                    for loop has not yet scanned *)
                 forall dst,
                 i <= dst < SIZE ->
@@ -1707,19 +1651,19 @@ Proof.
                 data_at Tsh (tarray tint SIZE) (map Vint (map Int.repr priq_contents')) v_pq;
                 data_at Tsh (tarray tint SIZE) (map Vint (map Int.repr dist_contents')) (pointer_val_val dist);
                 graph_rep sh (graph_to_mat g) (pointer_val_val arr))).
-        -- unfold SIZE; rep_omega. 
-        -- (* We start the for loop as planned -- 
-              with the old dist and prev arrays,  
+        -- unfold SIZE; rep_omega.
+        -- (* We start the for loop as planned --
+              with the old dist and prev arrays,
               and with a priq array where u has been popped *)
-           (* We must prove the for loop's invariants for i = 0 *)     
-           Exists prev_contents. 
+           (* We must prove the for loop's invariants for i = 0 *)
+           Exists prev_contents.
            Exists priq_contents_popped.
            Exists dist_contents.
            repeat rewrite <- upd_Znth_map.
-           entailer!.  
+           entailer!.
            remember (find priq_contents (fold_right Z.min (hd 0 priq_contents) priq_contents) 0) as u.
            split3; [| | split3; [| |split3]].
-           ++ (* We must show inv_popped for all 
+           ++ (* We must show inv_popped for all
                  dst that are in range. *)
              unfold inv_popped. intros.
               pose proof (get_popped_range _ _ H14).
@@ -1756,12 +1700,12 @@ Proof.
                   - unfold path_globally_optimal; intros.
                     unfold path_cost at 1; simpl.
                     apply path_cost_pos; trivial.
-                }                
+                }
                 destruct H33 as [? [p2mom [? [? [? [? [? [? ?]]]]]]]].
                 unfold VType in *.
                 remember (Znth u prev_contents) as mom.
                 assert (0 <= mom < SIZE). {
-                   destruct H36 as [? [? _]].              
+                   destruct H36 as [? [? _]].
                    assert (In_path g mom p2mom). {
                      destruct H43.
                      apply pfoot_in; trivial.
@@ -1771,70 +1715,68 @@ Proof.
                    apply (valid_path_valid g p2mom); trivial.
                  }
                  (* this the best path to u:
-                    go, optimally, to mom, and then take one step 
+                    go, optimally, to mom, and then take one step
                   *)
                  exists (fst p2mom, snd p2mom +:: (mom, u)).
-                split3; trivial.
- --- destruct H36 as [? [? [? [? ?]]]].
-     split3; [| | split3].
-     +++
-       destruct H44.
-       apply valid_path_app_cons; trivial;
-         try rewrite <- surjective_pairing; trivial.
-     +++ rewrite (surjective_pairing p2mom) in *.
-         simpl.
-         replace (fst p2mom) with src in *.
-         apply path_ends_app_cons; trivial.
-         destruct H44. simpl in H44; omega.
-     +++ apply path_cost_app_not_inf; trivial.
-     +++ rewrite path_cost_app_cons; trivial.
-         rewrite elabel_Znth_graph_to_mat; simpl; try omega; trivial.
-         apply link_evalid; trivial. 
-     +++ unfold VType in *.
-         rewrite Forall_forall. intros.
-         rewrite Forall_forall in H47.
-         apply in_app_or in H48.
-         destruct H48.
-         *** specialize (H47 _ H48). trivial.
-         *** simpl in H48.
-             destruct H48; [| omega].
-             rewrite (surjective_pairing x) in *.
-             inversion H48.
-             simpl.
-             rewrite <- H50, <- H51.
-             omega.
- --- intros.
-     destruct H36 as [_ [? _]].
-     apply (in_path_app_cons _ _ _ src) in H44; trivial.
+                 split3; trivial.
+                 --- destruct H36 as [? [? [? [? ?]]]].
+                     split3; [| | split3].
+                     +++
+                       destruct H44.
+                       apply valid_path_app_cons; trivial;
+                         try rewrite <- surjective_pairing; trivial.
+                     +++ rewrite (surjective_pairing p2mom) in *.
+                         simpl.
+                         replace (fst p2mom) with src in *.
+                         apply path_ends_app_cons; trivial.
+                         destruct H44. simpl in H44; omega.
+                     +++ apply path_cost_app_not_inf; trivial.
+                     +++ rewrite path_cost_app_cons; trivial.
+                         rewrite elabel_Znth_graph_to_mat; simpl; try omega; trivial.
+                         apply link_evalid; trivial.
+                     +++ unfold VType in *.
+                         rewrite Forall_forall. intros.
+                         rewrite Forall_forall in H47.
+                         apply in_app_or in H48.
+                         destruct H48.
+                         *** specialize (H47 _ H48). trivial.
+                         *** simpl in H48.
+                             destruct H48; [| omega].
+                             rewrite (surjective_pairing x) in *.
+                             inversion H48.
+                             simpl.
+                             rewrite <- H50, <- H51.
+                             omega.
+                 --- intros.
+                     destruct H36 as [_ [? _]].
+                     apply (in_path_app_cons _ _ _ src) in H44; trivial.
                      destruct H44.
-     +++ specialize (H37 _ H44).
-         rewrite <- get_popped_irrel_upd; try omega; trivial.
-         apply get_popped_range in H37; omega.
-         intro. rewrite H45 in H37.
-         apply H17; trivial.
-     +++ rewrite H44.
-         rewrite get_popped_meaning.
-         rewrite upd_Znth_same; omega.
-         rewrite upd_Znth_Zlength; omega.
- ---
-   
-   (* We must show that the locally optimal path via mom
-      is actually the globally optimal path to u *)
-   (* 
-      When we get in the while loop, u is popped. 
-We must prove that dist[u] is the global shortest. 
-Since u is in pq before, u satisfies inv_unpopped. 
+                     +++ specialize (H37 _ H44).
+                         rewrite <- get_popped_irrel_upd; try omega; trivial.
+                         apply get_popped_range in H37; omega.
+                         intro. rewrite H45 in H37.
+                         apply H17; trivial.
+                     +++ rewrite H44.
+                         rewrite get_popped_meaning.
+                         rewrite upd_Znth_same; omega.
+                         rewrite upd_Znth_Zlength; omega.
+                 --- (* We must show that the locally optimal path via mom
+                        is actually the globally optimal path to u *)
+(*
+When we get in the while loop, u is popped.
+We must prove that dist[u] is the global shortest.
+Since u is in pq before, u satisfies inv_unpopped.
 
-We can prove that dist[u] is either global shortest or not. If so, done. 
+We can prove that dist[u] is either global shortest or not. If so, done.
 
-If not, the global shortest path to u 
+If not, the global shortest path to u
 must contain an unpopped vertex w because of inv_unpopped.
 
-Thus we have dist[u] > dist[w] + length(w to u). 
-But wait, u is popped from pq because dist[u] is minimum. 
-It is impossible to have another unpopped w satisfying 
-dist[w] < dist[u]. 
-So the "not" case is False. 
+Thus we have dist[u] > dist[w] + length(w to u).
+But wait, u is popped from pq because dist[u] is minimum.
+It is impossible to have another unpopped w satisfying
+dist[w] < dist[u].
+So the "not" case is False.
 So this pop operation maintains inv_popped for u.
 *)
    unfold path_globally_optimal; intros.
@@ -1946,13 +1888,8 @@ So this pop operation maintains inv_popped for u.
    assert (child' <> u). {
      intro; subst child'.
      pose proof (path_cost_pos g p2 H2 H52 H1).
-     
-
-     
-     rep_omega.
-     
-
-     
+     admit.
+   }
    
 
   (* now we know that child' is not minimal, and thus x + c >= p2mom +++ u *)
@@ -1964,16 +1901,14 @@ Lemma foo: forall (a b c d e : nat), (a + b >= d + e)%nat -> (a + b + c < d + e)
 intros. omega.
 Qed.
 
-   (* path_cost p'1 >= minimal path_cost from src to mom'. *)
-                   
-                   (* I need moahhhh grr *)
-                   admit.
-              ** (* Here we must show that the 
+   admit.
+
+              ** (* Here we must show that the
                     vertices that were popped earlier
                     are not affected by the addition of
                     u to the popped set.
 
-                    As expected, this is significantly easier.      
+                    As expected, this is significantly easier.
                   *)
                 rewrite <- get_popped_irrel_upd in H14 by omega.
                  specialize (H32 H14).
@@ -1987,13 +1922,13 @@ Qed.
                  intro contra. rewrite contra in H35.
                      apply H17. trivial.
            ++ (* No vertex has been repaired yet... *)
-             intros; omega. 
-           ++ (* ... in fact, any vertex that is 
-                 "seen but not popped" 
+             intros; omega.
+           ++ (* ... in fact, any vertex that is
+                 "seen but not popped"
                  is that way without the benefit of u.
 
-                 We will be asked to provide a locally optimal 
-                 path to such a dst, and we will simply provide the 
+                 We will be asked to provide a locally optimal
+                 path to such a dst, and we will simply provide the
                  old one best-known path
                *)
              intros.
@@ -2068,20 +2003,20 @@ Qed.
              unfold VType in *.
              remember (Znth dst prev_contents) as mom.
              destruct H35 as [? [? [? [? ?]]]].
-             (* We have retrieved the old path to mom, 
-                and we will now provide it. 
+             (* We have retrieved the old path to mom,
+                and we will now provide it.
 
                 Several of the proof obligations
                 fall away easily, and those that remain
-                boil down to showing that 
-                u was not involved in this 
+                boil down to showing that
+                u was not involved in this
                 locally optimal path.
               *)
-             exists p2mom. split3; [| |split3; [| |split3]]; trivial. 
+             exists p2mom. split3; [| |split3; [| |split3]]; trivial.
              ** intros.
                 specialize (H34 _ H40).
                 assert (step <> u). {
-                  intro. 
+                  intro.
                   unfold VType in *. rewrite H41 in H34.
                   apply H17; trivial.
                 }
@@ -2116,13 +2051,13 @@ Qed.
               apply H34; trivial.
            ++ destruct (Z.eq_dec src u).
               1: subst src; rewrite upd_Znth_same; omega.
-              rewrite upd_Znth_diff; omega.             
+              rewrite upd_Znth_diff; omega.
            ++ split.
               ** apply get_popped_meaning.
                  rewrite upd_Znth_Zlength; omega.
                  rewrite upd_Znth_same; omega.
               ** apply inrange_upd_Znth; trivial;
-                rewrite <- inf_eq; rep_omega.              
+                rewrite <- inf_eq; rep_omega.
         -- (* We now begin with the for loop's body *)
           assert (0 <= u < Zlength (graph_to_mat g)). {
             unfold graph_to_mat.
@@ -2141,7 +2076,7 @@ Qed.
                           (sublist 0 u (nat_inc_list (Z.to_nat (Zlength (graph_to_mat g))))))
                                                                                             (iter_sepcon (list_rep sh SIZE (pointer_val_val arr) (graph_to_mat g))
                                                                                                          (sublist (u + 1) (Zlength (graph_to_mat g))
-                                                                                                                  (nat_inc_list (Z.to_nat (Zlength (graph_to_mat g)))))). 
+                                                                                                                  (nat_inc_list (Z.to_nat (Zlength (graph_to_mat g)))))).
            unfold list_rep.
            assert_PROP (force_val
                           (sem_add_ptr_int tint Signed
@@ -2173,7 +2108,7 @@ Qed.
             assert_PROP (Zlength prev_contents' = SIZE). {
              entailer!. repeat rewrite Zlength_map in *. trivial. }
             assert_PROP (Zlength dist_contents' = SIZE). {
-             entailer!. repeat rewrite Zlength_map in *. trivial. }    
+             entailer!. repeat rewrite Zlength_map in *. trivial. }
            assert_PROP (Zlength (graph_to_mat g) = SIZE) by entailer!.
            forward_if.
           ++ assert (0 <= cost <= Int.max_signed / SIZE). {
@@ -2189,7 +2124,7 @@ Qed.
                2: { destruct H1.
                     - unfold VType in *.
                       replace SIZE with 8 in H1.
-                      destruct H1. 
+                      destruct H1.
                       pose proof (Int.min_signed_neg).
                       assert (Int.max_signed / 8 <= Int.max_signed). {
                         compute.
@@ -2197,7 +2132,7 @@ Qed.
                       }
                       split; try omega.
                     - rewrite H1.
-                      rewrite <- inf_eq. 
+                      rewrite <- inf_eq.
                       compute; split; inversion 1.
                }
                rewrite Int.signed_repr in H38.
@@ -2207,12 +2142,12 @@ Qed.
              assert (0 <= Znth u dist_contents' <= inf). {
                assert (0 <= u < Zlength dist_contents') by omega.
                apply (Forall_Znth _ _ _ H40) in H32.
-               assumption. 
-             } 
+               assumption.
+             }
               assert (0 <= Znth i dist_contents' <= inf). {
                 assert (0 <= i < Zlength dist_contents') by omega.
                 apply (Forall_Znth _ _ _ H41) in H32.
-                assumption. 
+                assumption.
               }
               assert (0 <= Znth u dist_contents' + cost <= Int.max_signed). {
                 split; [omega|].
@@ -2225,9 +2160,9 @@ Qed.
         going to make edits in the arrays:
         we have found a better path to i, via u *)
      assert (~ In i (get_popped priq_contents')). {
-       (* This useful fact is true because 
-          the cost to i was just improved. 
-          This is impossible for popped items. 
+       (* This useful fact is true because
+          the cost to i was just improved.
+          This is impossible for popped items.
         *)
        intro.
        unfold inv_popped in H21.
@@ -2242,7 +2177,7 @@ Qed.
        apply Zlt_not_le in H43.
        unfold VType in *.
        apply H43.
-       rewrite path_cost_app_cons in H47; trivial. 
+       rewrite path_cost_app_cons in H47; trivial.
        2: { rewrite elabel_Znth_graph_to_mat; trivial.
             2: apply link_evalid; trivial.
             simpl. omega.
@@ -2253,7 +2188,7 @@ Qed.
        simpl snd in H47.
        apply H47.
        - apply valid_path_app_cons; trivial;
-         rewrite <- surjective_pairing; 
+         rewrite <- surjective_pairing;
          destruct H51; trivial.
        - rewrite (surjective_pairing p2u) in *.
            simpl.
@@ -2265,21 +2200,21 @@ Qed.
          (repeat rewrite Zlength_map; omega).
      forward. forward. forward.
      forward; rewrite upd_Znth_same; trivial.
-     (* The above "forward" commands are tweaking the 
+     (* The above "forward" commands are tweaking the
         three arrays! *)
-     1: entailer!. 
+     1: entailer!.
      forward.
 
      (* Now we must show that the for loop's invariant
-        holds if we take another step, 
+        holds if we take another step,
         ie when i increments *)
 
      (* We will provide the arrays as they stand now:
-        with the i'th cell updated in all three arrays, 
+        with the i'th cell updated in all three arrays,
         to log a new improved path via u *)
      Exists (upd_Znth i prev_contents' u).
      Exists (upd_Znth i priq_contents' (Znth u dist_contents' + cost)).
-     Exists (upd_Znth i dist_contents' (Znth u dist_contents' + cost)). 
+     Exists (upd_Znth i dist_contents' (Znth u dist_contents' + cost)).
      repeat rewrite <- upd_Znth_map. entailer!.
      remember (find priq_contents (fold_right Z.min (hd 0 priq_contents) priq_contents) 0) as u.
      assert (u <> i) by (intro; subst; omega).
@@ -2334,9 +2269,9 @@ Qed.
          +++ subst dst.
              (* This is a key change --
                 i will now be locally optimal,
-                _thanks to the new path via u_. 
-                
-                In other words, it is moving from 
+                _thanks to the new path via u_.
+
+                In other words, it is moving from
                 the weaker inv_popped clause
                 to the stronger
               *)
@@ -2389,7 +2324,7 @@ Qed.
                  omega.
              *** intros.
                  (* This is another key point in the proof:
-                    we must show that the path via u is 
+                    we must show that the path via u is
                     better than all other paths via
                     other popped verices *)
                  destruct H63 as [? [? [? [? ?]]]]. 
@@ -2402,7 +2337,7 @@ Qed.
                      subst mom'.
                      (* use path_globally_optimal
                         of u to prove that first
-                        is le first. then done. 
+                        is le first. then done.
                       *)
                      unfold path_globally_optimal in H62.
                      specialize (H62 _ H63 H66).
@@ -2431,7 +2366,7 @@ Qed.
                    destruct H60 as [? [? [? [? _]]]].
                    rewrite <- H77.
                    omega.
-                 ----  (* now we know that i was 
+                 ----  (* now we know that i was
                           seen, but unpopped *)
                    assert (Znth i priq_contents' < inf). {
                      assert (0 <= i < Zlength priq_contents') by omega.
@@ -2439,19 +2374,18 @@ Qed.
                      Opaque inf. simpl in H71. Transparent inf.
                      rewrite get_popped_meaning in H44.
                      omega. omega.
-                   } 
- 
-(* 
+                   }
 
-Denote the old dist[i] as old-shortest-to-i. 
+(*
+Denote the old dist[i] as old-shortest-to-i.
 So the known conditions are:
 
 H43: dist[u] + graph[u][i] < old-shortest-to-i
 
-H70: The first statement is that i is an unpopped vertex. 
+H70: The first statement is that i is an unpopped vertex.
 
-Now we prove for any other path p' which is from s to i 
-and composed by popped vertices (including u), 
+Now we prove for any other path p' which is from s to i
+and composed by popped vertices (including u),
 dist[u] + graph[u][i] <= path_cost p'.
 
 There are two cases about p': In u p' \/ ~ In u p'
@@ -2459,17 +2393,17 @@ There are two cases about p': In u p' \/ ~ In u p'
                    destruct (in_dec (ZIndexed.eq) u (epath_to_vpath g p2mom')).
                    ++++ (* Yes, the path p2mom' goes via u *) 
 (*
-  1. In u p': p' is the path from s to i. 
+  1. In u p': p' is the path from s to i.
   Consider the vertex k which is
-  just before i. Again, there are two cases: 
+  just before i. Again, there are two cases:
   k = u \/ ~ k = u.
  *)
                      destruct (Z.eq_dec mom' u).
                      ****
 (*
-        1.1 k = u: path_cost p' = path_cost [s to u] + graph[u][i]. 
-        As we know, u is just popped, dist[u] is the 
-        global optimal, so dist[u] <= path_cost [s to u], 
+        1.1 k = u: path_cost p' = path_cost [s to u] + graph[u][i].
+        As we know, u is just popped, dist[u] is the
+        global optimal, so dist[u] <= path_cost [s to u],
         so dist[u] + graph[u][i] <= path_cost p'.
  *)
                        subst mom'.
@@ -2478,26 +2412,26 @@ There are two cases about p': In u p' \/ ~ In u p'
                        rewrite careful_add_clean; try omega; trivial.
                      ****
 
-(*                       
-        1.2 ~ k = u: p' = path s to u ++ path u to k + edge k i. 
-        Since p' is composed by popped vertex 
+(*
+        1.2 ~ k = u: p' = path s to u ++ path u to k + edge k i.
+        Since p' is composed by popped vertex
         (including u) only, k must be a popped
-        vertex. Then it satisfies NewInv1, which means 
-        dist[k] <= path_cost [s to u] + path_cost [u to k] 
+        vertex. Then it satisfies NewInv1, which means
+        dist[k] <= path_cost [s to u] + path_cost [u to k]
         and the global optimal path from s to k is
         composed by popped vertices only. [ok]
 
         Thus dist[k] + len(edge k i) <= path_cost p'. ??
 
         Since dist[k] only contains popped vertices, this path
-        having dist[k] + edge k i also only contains 
-        popped vertices. Thus we have old-shortest-to-i <= 
-        dist[k] + len(edge k i) because of Inv2. 
+        having dist[k] + edge k i also only contains
+        popped vertices. Thus we have old-shortest-to-i <=
+        dist[k] + len(edge k i) because of Inv2.
 
-        So we still have 
-        dist[u] + graph[u][i] <= 
-        old-shortest-to-i <= 
-        dist[k] + len(edge k i) <= 
+        So we still have
+        dist[u] + graph[u][i] <=
+        old-shortest-to-i <=
+        dist[k] + len(edge k i) <=
         path_cost p'.
  *)
                        apply in_path_eq_epath_to_vpath in i0; trivial.
@@ -2525,7 +2459,7 @@ There are two cases about p': In u p' \/ ~ In u p'
                        destruct (H23 _ H76 H70) as [p2ioldmom [? [? [? [? [? [? ?]]]]]]].
                        unfold VType in *.
                        remember (Znth i prev_contents')
-                                as ioldmom.          
+                                as ioldmom.
                        assert (path_correct g prev_contents' dist_contents' src mom' p2mom'). {
                          split3; [| |split3]; trivial.
                          - rewrite upd_Znth_diff in H68; try omega; trivial.
@@ -2538,7 +2472,7 @@ There are two cases about p': In u p' \/ ~ In u p'
                            specialize (H69 _ H84).
                            assert (In_path g (snd x) p2mom'). {
                              unfold In_path. right.
-                             exists x. 
+                             exists x.
                              split; trivial.
                              destruct H2 as [? [? [? ?]]].
                              red in H87; rewrite H87.
@@ -2566,16 +2500,16 @@ There are two cases about p': In u p' \/ ~ In u p'
                    ++++
 
 (*
-  2. ~ In u p': This means p' is totally composed by   
-  old popped vertices. According to Inv2, 
+  2. ~ In u p': This means p' is totally composed by
+  old popped vertices. According to Inv2,
   old-shortest-to-i <= path_cost p'.
-  According to Cond: 
+  According to Cond:
   dist[u] + graph[u][i] < old-shortest-to-i, we have
   dist[u] + graph[u][i] <= path_cost p'.
  *)
                      admit.
          +++ assert (0 <= dst < i) by omega.
-             (* We will proceed using the 
+             (* We will proceed using the
                 old best-known path for dst *)
              specialize (H22 _ H59).
              unfold inv_unpopped in *.
@@ -2588,15 +2522,15 @@ There are two cases about p': In u p' \/ ~ In u p'
              remember (Znth dst prev_contents') as mom. right.
              split; trivial.
 
-             
-             exists p2mom. split3; [| |split3; [| |split3]]; trivial. 
+
+             exists p2mom. split3; [| |split3; [| |split3]]; trivial.
              *** destruct H61 as [? [? [? [? ?]]]].
                  split3; [| | split3]; trivial.
                  ---- rewrite upd_Znth_diff by omega;
                         rewrite <- Heqmom; trivial.
                  ---- rewrite (upd_Znth_diff dst i) by omega.
                       assert ((Znth dst prev_contents') <> i). {
-                        (* the path could not have gone 
+                        (* the path could not have gone
                            through i, since i is unpopped *)
                         intro.
                         apply H44.
@@ -2735,7 +2669,7 @@ There are two cases about p': In u p' \/ ~ In u p'
          +++ rewrite <- Heqmom. trivial.
          +++ rewrite <- Heqmom. rewrite upd_Znth_diff; omega.
          +++ intros. rewrite <- Heqmom.
-             apply H67. 
+             apply H67.
              *** destruct H68 as [? [? [? [? ?]]]].
                  split3; [| |split3]; trivial.
                  ---- assert (In mom' (get_popped priq_contents')). {
@@ -2845,18 +2779,18 @@ There are two cases about p': In u p' \/ ~ In u p'
      remember (find priq_contents (fold_right Z.min (hd 0 priq_contents) priq_contents) 0) as u.
      split3; [| |split].
      --- intros.
-         (* Show that moving one more step 
+         (* Show that moving one more step
             still preserves the for loop invariant *)
          destruct (Z.eq_dec dst i).
          (* when dst <> i, all is well *)
-         2: apply H22; omega. 
+         2: apply H22; omega.
          (* things get interesting when dst = i
-            We must show that i is better off 
+            We must show that i is better off
             not going via u *)
          subst dst.
          (* i already obeys the weaker inv_unpopped,
             ie inv_unpopped without going via u.
-            Now I must show that it actually satisfies 
+            Now I must show that it actually satisfies
             inv_unpopped proper
           *)
          unfold inv_unpopped; intros.
@@ -2873,14 +2807,14 @@ There are two cases about p': In u p' \/ ~ In u p'
          +++ intros.
 
 (*
-This time, we need to prove that since dist[u] + 
-graph[u][i] > dist[i], the original path from s to i 
-composed by popped vertices (excluding u) is still 
-shortest in all paths from s to i composed by popped 
+This time, we need to prove that since dist[u] +
+graph[u][i] > dist[i], the original path from s to i
+composed by popped vertices (excluding u) is still
+shortest in all paths from s to i composed by popped
 vertices (including u).
 
-In other words, it is to prove that for any path p' from 
-s to i and composed by popped vertices (including u), 
+In other words, it is to prove that for any path p' from
+s to i and composed by popped vertices (including u),
 dist[i] < path_cost p'.
  *)
              destruct (in_dec (ZIndexed.eq) u (epath_to_vpath g p2mom')).
@@ -2888,12 +2822,12 @@ dist[i] < path_cost p'.
              *** destruct H65 as [? [? [? [? ?]]]].
                  apply in_path_eq_epath_to_vpath in i0; trivial.
 (*
-1. In u p': p' is from s to i, consider the 
+1. In u p': p' is from s to i, consider the
 vertex k which is just before i.
  *)
                  destruct (Z.eq_dec mom' u).
                  ----
-(*               
+(*
 1.1 k = u: dist[u] is global optimal. We have
 dist [i] < dist[u] + graph[u][i] ......(H43)
          <= path_cost [s to u of p'] + graph[u][i]
@@ -2911,7 +2845,7 @@ dist [i] < dist[u] + graph[u][i] ......(H43)
                    2: rep_omega.
                    rewrite Int.signed_repr in H38.
                    2: { rewrite <- inf_eq.
-                        unfold VType in *. 
+                        unfold VType in *.
                         unfold Int.min_signed, Int.max_signed.
                         unfold Int.half_modulus.
                         simpl. omega.
@@ -2919,25 +2853,25 @@ dist [i] < dist[u] + graph[u][i] ......(H43)
                    omega.
                  ----
 (*
-1.2 ~ k = u: p' = s to u + u to k + edge k i. 
-Since p' is composed by popped vertex (including u) only, 
-k must be a popped vertex. 
-Then it satisfies NewInv1, which means 
-dist[k] <= path_cost [s to u] + path_cost [u to k] 
-and the global optimal path from s to k is composed by 
-popped vertices only. 
-Thus dist[k] + len(edge k i) <= path_cost p'. 
-Since dist[k] only contains popped vertices, this path 
-having dist[k] + edge k i also only contains popped 
-vertices. Thus we have dist[i] <= dist[k] + len(edge k i) 
-because of Inv2. So we have: 
+1.2 ~ k = u: p' = s to u + u to k + edge k i.
+Since p' is composed by popped vertex (including u) only,
+k must be a popped vertex.
+Then it satisfies NewInv1, which means
+dist[k] <= path_cost [s to u] + path_cost [u to k]
+and the global optimal path from s to k is composed by
+popped vertices only.
+Thus dist[k] + len(edge k i) <= path_cost p'.
+Since dist[k] only contains popped vertices, this path
+having dist[k] + edge k i also only contains popped
+vertices. Thus we have dist[i] <= dist[k] + len(edge k i)
+because of Inv2. So we have:
 dist[i] <= dist[k] + len(edge k i) <= path_cost p'.
 
  *) 
                    admit.
              ***
 
-(* 2. ~ In u p': This is an easy case. 
+(* 2. ~ In u p': This is an easy case.
    dist[i] < path_cost p' because of Inv2.
  *)
                apply H64; trivial.
@@ -2977,7 +2911,7 @@ dist[i] <= dist[k] + len(edge k i) <= path_cost p'.
      --- intros.
          assert (i <= dst < SIZE) by omega.
          apply H25; trivial.
-          ++  (* i was not a neighbor of u. 
+          ++  (* i was not a neighbor of u.
                  prove the for loop's invariant holds *)
        replace 8 with SIZE in H38 by omega.
        rewrite inf_eq2 in H38.
@@ -3054,12 +2988,11 @@ dist[i] <= dist[k] + len(edge k i) <= path_cost p'.
        ** apply H25; omega.
         -- (* From the for loop's invariant, 
               prove the while loop's invariant. *)
-          
           Intros prev_contents' priq_contents' dist_contents'.
           Exists prev_contents' priq_contents' dist_contents'.
           entailer!.
           remember (find priq_contents (fold_right Z.min (hd 0 priq_contents) priq_contents) 0) as u.
-          unfold dijkstra_correct. 
+          unfold dijkstra_correct.
           split3; trivial.
           apply H19; trivial.
           apply H21; trivial.
@@ -3074,5 +3007,5 @@ dist[i] <= dist[k] + len(edge k i) <= path_cost p'.
         entailer!. apply (isEmptyMeansInf _ H15).
     + (* from the break's postcon, prove the overall postcon *)
       Intros prev_contents priq_contents dist_contents.
-      forward. Exists prev_contents dist_contents priq_contents. entailer!. 
+      forward. Exists prev_contents dist_contents priq_contents. entailer!.
 Abort.

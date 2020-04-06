@@ -29,10 +29,11 @@ Existing Instances MGS biGraph maGraph finGraph RGF.
 Definition mark_spec :=
  DECLARE _mark
   WITH sh: wshare, g: Graph, x: pointer_val
-  PRE [ _x OF (tptr (Tstruct _Node noattr))]
+  PRE [tptr (Tstruct _Node noattr)]
           PROP  (weak_valid g x)
-          LOCAL (temp _x (pointer_val_val x))
-          SEP   (graph sh x g)
+          PARAMS (pointer_val_val x)
+          GLOBALS ()
+          SEP (graph sh x g)
   POST [ Tvoid ]
         EX g': Graph,
         PROP (mark x g g')
@@ -61,9 +62,9 @@ Definition mark_spec :=
 
 Definition main_spec :=
  DECLARE _main
-  WITH gv : globals 
-  PRE  [] main_pre prog nil gv
-  POST [ tint ] main_post prog nil gv.
+  WITH gv : globals
+  PRE  [] main_pre prog tt gv
+  POST [ tint ] main_post prog gv.
 
 Definition Gprog : funspecs := ltac:(with_library prog [mark_spec ; main_spec]).
 
@@ -146,7 +147,6 @@ Proof.
       unlocalize [graph sh x g3] using g3 assuming H5.
       1: subst; eapply (@graph_ramify_right _ (sSGG_VST sh) g); eauto.
       (* return; *)
-      forward.
       Exists g3. entailer!.
       apply (mark1_mark_left_mark_right g g1 g2 g3 (ValidPointer b i) l r); auto.
 Qed. (* original: 358 secs; VST 2.*: 4.772 secs *)
