@@ -4,6 +4,8 @@ Require Import VST.veric.SeparationLogic.
 Require Import RamifyCoq.sample_mark.env_dijkstra_arr.
 Require Import RamifyCoq.floyd_ext.share.
 
+Local Open Scope logic.
+
 Instance SDAGA_VST: SpatialDijkstraArrayGraphAssum mpred. Proof. refine (Build_SpatialDijkstraArrayGraphAssum _ _ _ _ _). Defined.
 
 Definition abstract_data_at2cdata (value : Z) : reptype vertex_type :=

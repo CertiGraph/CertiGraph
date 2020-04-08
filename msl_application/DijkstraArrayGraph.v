@@ -1,26 +1,12 @@
-Require Import Coq.Logic.Classical.
-Require Import Coq.Lists.List.
-Require Import Coq.Sets.Ensembles.
 Require Import Coq.ZArith.ZArith.
 Require Import VST.msl.seplog.
-Require Import VST.msl.log_normalize.
 Require Import VST.floyd.sublist.
 Require Import compcert.lib.Integers.
 Require Import RamifyCoq.lib.Coqlib.
-Require Import RamifyCoq.lib.Ensembles_ext.
 Require Import RamifyCoq.lib.EquivDec_ext.
-Require Import RamifyCoq.lib.Relation_ext.
-Require Import RamifyCoq.lib.List_ext. 
+Require Import RamifyCoq.lib.List_ext.
 Require Import RamifyCoq.graph.graph_model.
-Require Import RamifyCoq.graph.weak_mark_lemmas.
 Require Import RamifyCoq.graph.path_lemmas.
-Require Import RamifyCoq.graph.graph_gen.
-Require Import RamifyCoq.graph.graph_relation.
-Require Import RamifyCoq.graph.subgraph2.
-Require Import RamifyCoq.graph.reachable_computable.
-Require Export RamifyCoq.graph.FiniteGraph.
-Require Export RamifyCoq.graph.MathGraph.
-Require Export RamifyCoq.graph.LstGraph.
 Require Import RamifyCoq.msl_application.ArrayGraph.
  
 Coercion pg_lg: LabeledGraph >-> PreGraph.

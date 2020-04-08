@@ -27,13 +27,14 @@ Existing Instances maGraph finGraph liGraph RGF.
 Definition find_spec :=
  DECLARE _find
   WITH sh: wshare, g: Graph, x: pointer_val
-  PRE [ _x OF (tptr (Tstruct _Node noattr))]
+  PRE [tptr (Tstruct _Node noattr)]
           PROP  (vvalid g x)
-          LOCAL (temp _x (pointer_val_val x))
+          PARAMS (pointer_val_val x)
+          GLOBALS ()
           SEP   (whole_graph sh g)
   POST [ tptr (Tstruct _Node noattr) ]
         EX g': Graph, EX rt : pointer_val,
-        PROP (uf_equiv g g' /\ uf_root g' x rt)
+        PROP (uf_equiv g g'; uf_root g' x rt)
         LOCAL (temp ret_temp (pointer_val_val rt))
         SEP (whole_graph sh g').
 
@@ -42,7 +43,7 @@ Definition Gprog : funspecs := ltac:(with_library prog [find_spec]).
 Lemma false_Cne_eq: forall x y, typed_false tint (force_val (sem_cmp_pp Cne (pointer_val_val x) (pointer_val_val y))) -> x = y.
 Proof.
   intros. hnf in H. destruct x, y; inversion H; auto. simpl in H. clear H1. unfold sem_cmp_pp in H. simpl in H. destruct (eq_block b b0).
-  - destruct (Ptrofs.eq i i0) eqn:? .    
+  - destruct (Ptrofs.eq i i0) eqn:? .
     + pose proof (Ptrofs.eq_spec i i0). rewrite Heqb1 in H0. subst; auto.
     + simpl in H. inversion H.
   - simpl in H. inversion H.
@@ -51,7 +52,7 @@ Qed.
 Lemma true_Cne_neq: forall x y, typed_true tint (force_val (sem_cmp_pp Cne (pointer_val_val x) (pointer_val_val y))) -> x <> y.
 Proof.
   intros. hnf in H. destruct x, y; inversion H; [|intro; inversion H0..]. simpl in H. clear H1. unfold sem_cmp_pp in H. simpl in H. destruct (eq_block b b0).
-  - destruct (Ptrofs.eq i i0) eqn:? .    
+  - destruct (Ptrofs.eq i i0) eqn:? .
     + simpl in H. inversion H.
     + subst b0. pose proof (Ptrofs.eq_spec i i0). rewrite Heqb1 in H0. intro; apply H0. inversion H1. reflexivity.
   - intro. inversion H0. auto.
@@ -60,7 +61,7 @@ Qed.
 Lemma graph_local_facts: forall sh x (g: Graph), vvalid g x -> whole_graph sh g |-- valid_pointer (pointer_val_val x).
 Proof.
   intros. eapply derives_trans; [apply (@vertices_at_ramif_1_stable _ _ _ _ SGBA_VST _ _ (SGA_VST sh) g (vvalid g) x (vgamma g x)); auto |].
-  simpl vertex_at at 1. unfold binode. entailer!. 
+  simpl vertex_at at 1. unfold binode. entailer!.
 Qed.
 
 Lemma body_find: semax_body Vprog Gprog f_find find_spec.
@@ -106,7 +107,7 @@ Proof.
       1: rewrite H6; apply (@vertices_at_ramif_1_stable _ _ _ _ SGBA_VST _ _ (SGA_VST sh) g' (vvalid g') xv (xr, xpa)); auto.
       assert (weak_valid g' p) by (right; destruct H4; rewrite <- H4; apply reachable_foot_valid in H1; auto).
       assert (vvalid g' xv) by (destruct H5; apply reachable_head_valid in H5; auto).
-      assert (~ reachable g' p xv) by (intro; destruct H5 as [_ ?]; specialize (H5 _ H9); auto). 
+      assert (~ reachable g' p xv) by (intro; destruct H5 as [_ ?]; specialize (H5 _ H9); auto).
       assert (vertices_at sh (vvalid (Graph_gen_redirect_parent g' xv p H7 H8 H9)) (Graph_gen_redirect_parent g' xv p H7 H8 H9) =
               vertices_at sh (vvalid g') (Graph_gen_redirect_parent g' xv p H7 H8 H9)). {
         apply vertices_at_Same_set. unfold Ensembles.Same_set, Ensembles.Included, Ensembles.In. simpl. intuition. }
