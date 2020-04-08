@@ -33,9 +33,10 @@ Proof. unfold uf_equiv, rank_unchanged, vlabel_in_bound. intros. destruct H as [
 Definition mallocN_spec :=
  DECLARE _mallocN
   WITH sh: wshare, n:Z
-  PRE [ 67%positive OF tint]
+  PRE [tint]
      PROP (0 <= n <= Int.max_signed)
-     LOCAL (temp 67%positive (Vint (Int.repr n)))
+     PARAMS (Vint (Int.repr n))
+     GLOBALS ()
      SEP ()
   POST [ tptr tvoid ]
      EX v: addr,
@@ -47,26 +48,28 @@ Definition mallocN_spec :=
 Definition find_spec :=
  DECLARE _find
   WITH sh: wshare, g: Graph, x: pointer_val
-  PRE [ _x OF (tptr (Tstruct _Node noattr))]
-          PROP  (vvalid g x /\ uf_under_bound g)
-          LOCAL (temp _x (pointer_val_val x))
+  PRE [tptr (Tstruct _Node noattr)]
+          PROP  (vvalid g x ; uf_under_bound g)
+          PARAMS (pointer_val_val x)
+          GLOBALS ()
           SEP   (whole_graph sh g)
   POST [ tptr (Tstruct _Node noattr) ]
         EX g': Graph, EX rt : pointer_val,
-        PROP (uf_equiv g g' /\ uf_root g' x rt /\ uf_under_bound g' /\ rank_unchanged g g')
+        PROP (uf_equiv g g'; uf_root g' x rt ; uf_under_bound g' ; rank_unchanged g g')
         LOCAL (temp ret_temp (pointer_val_val rt))
         SEP (whole_graph sh g').
 
 Definition unionS_spec :=
  DECLARE _unionS
   WITH sh: wshare, g: Graph, x: pointer_val, y: pointer_val
-  PRE [ _x OF (tptr (Tstruct _Node noattr)), _y OF (tptr (Tstruct _Node noattr))]
-          PROP  (vvalid g x /\ vvalid g y /\ uf_under_bound g /\ vlabel_in_bound g)
-          LOCAL (temp _x (pointer_val_val x); temp _y (pointer_val_val y))
+  PRE [tptr (Tstruct _Node noattr), tptr (Tstruct _Node noattr)]
+          PROP  (vvalid g x; vvalid g y ; uf_under_bound g ; vlabel_in_bound g)
+          PARAMS (pointer_val_val x; pointer_val_val y)
+          GLOBALS ()
           SEP   (whole_graph sh g)
   POST [ Tvoid ]
         EX g': Graph,
-        PROP (uf_union g x y g' /\ uf_under_bound g')
+        PROP (uf_union g x y g' ; uf_under_bound g')
         LOCAL()
         SEP (whole_graph sh g').
 
@@ -75,11 +78,12 @@ Definition makeSet_spec :=
   WITH sh: wshare, g: Graph
     PRE []
       PROP (uf_under_bound g)
-      LOCAL ()
+      PARAMS ()
+      GLOBALS ()
       SEP (whole_graph sh g)
     POST [tptr (Tstruct _Node noattr)]
       EX g': Graph, EX rt: pointer_val,
-      PROP (~ vvalid g rt /\ vvalid g' rt /\ is_partial_graph g g' /\ uf_under_bound g')
+      PROP (~ vvalid g rt ; vvalid g' rt ; is_partial_graph g g' ; uf_under_bound g')
       LOCAL (temp ret_temp (pointer_val_val rt))
       SEP (whole_graph sh g').
 
@@ -115,7 +119,7 @@ Qed.
 Lemma false_Cne_eq: forall x y, typed_false tint (force_val (sem_cmp_pp Cne (pointer_val_val x) (pointer_val_val y))) -> x = y.
 Proof.
   intros. hnf in H. destruct x, y; inversion H; auto. simpl in H. clear H1. unfold sem_cmp_pp in H. simpl in H. destruct (eq_block b b0).
-  - destruct (Ptrofs.eq i i0) eqn:? .    
+  - destruct (Ptrofs.eq i i0) eqn:? .
     + pose proof (Ptrofs.eq_spec i i0). rewrite Heqb1 in H0. subst; auto.
     + simpl in H. inversion H.
   - simpl in H. inversion H.
@@ -124,7 +128,7 @@ Qed.
 Lemma true_Cne_neq: forall x y, typed_true tint (force_val (sem_cmp_pp Cne (pointer_val_val x) (pointer_val_val y))) -> x <> y.
 Proof.
   intros. hnf in H. destruct x, y; inversion H; [|intro; inversion H0..]. simpl in H. clear H1. unfold sem_cmp_pp in H. simpl in H. destruct (eq_block b b0).
-  - destruct (Ptrofs.eq i i0) eqn:? .    
+  - destruct (Ptrofs.eq i i0) eqn:? .
     + simpl in H. inversion H.
     + subst b0. pose proof (Ptrofs.eq_spec i i0). rewrite Heqb1 in H0. intro; apply H0. inversion H1. reflexivity.
   - intro. inversion H0. auto.
@@ -139,7 +143,7 @@ Qed.
 Lemma body_find: semax_body Vprog Gprog f_find find_spec.
 Proof.
   start_function.
-  destruct H. remember (vgamma g x) as rpa eqn:?H. destruct rpa as [r pa].
+  remember (vgamma g x) as rpa eqn:?H. destruct rpa as [r pa].
   (* p = x -> parent; *)
   localize [data_at sh node_type (vgamma2cdata (vgamma g x)) (pointer_val_val x)]. rewrite <- H1. simpl vgamma2cdata.
   forward. 1: entailer!; destruct pa; simpl; auto.
@@ -206,7 +210,7 @@ Qed.
 Lemma body_unionS: semax_body Vprog Gprog f_unionS unionS_spec.
 Proof.
   start_function.
-  destruct H as [? [? [? ?]]]. forward_call (sh, g, x). Intros vret. destruct vret as [g1 x_root]. simpl fst in *. simpl snd in *. apply rank_unchanged_in_bound in H6; auto.
+  forward_call (sh, g, x). Intros vret. destruct vret as [g1 x_root]. simpl fst in *. simpl snd in *. apply rank_unchanged_in_bound in H6; auto.
   assert (vvalid g1 y) by (destruct H3 as [? _]; rewrite <- H3; apply H0).
   forward_call (sh, g1, y). Intros vret. destruct vret as [g2 y_root]. simpl fst in *. simpl snd in *. apply rank_unchanged_in_bound in H11; auto.
   assert (H_VALID_XROOT: vvalid g2 x_root) by (destruct H8 as [? _]; rewrite <- H8; destruct H4; apply reachable_foot_valid in H4; apply H4).
@@ -299,5 +303,5 @@ Proof.
         -- Exists (Graph_vgen g3 x_root (rankXRoot + 1)%nat). entailer!. rewrite H1 in *; rewrite H2 in *.
            assert (Z.of_nat (vlabel g2 x_root) = Z.of_nat (vlabel g2 y_root)) by (clear -H5 H18; intuition). apply Nat2Z.inj in H24.
            simpl in H13. inversion H13. apply uf_under_bound_redirect_parent_eq; auto. rewrite (uf_equiv_root_the_same g1 g2) in H4; auto. destruct H4. auto.
-    + Intros g'. forward. Exists g'. entailer!.
+    + Intros g'. Exists g'. entailer!.
 Qed. (* Original: 192.772 secs; VST 2.*: 4.786 secs *)

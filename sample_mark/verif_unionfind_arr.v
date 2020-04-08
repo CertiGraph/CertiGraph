@@ -19,17 +19,20 @@ Local Identity Coercion LGraph_LabeledGraph: UnionFindGraph.LGraph >-> LabeledGr
 Local Coercion pg_lg: LabeledGraph >-> PreGraph.
 Existing Instances maGraph finGraph liGraph.
 
+Local Open Scope Z_scope.
+
 Definition mallocN_spec :=
  DECLARE _mallocN
   WITH sh:wshare, n: Z
-  PRE [ 67%positive OF tint]
-     PROP (4 <= n <= Int.max_unsigned) 
-     LOCAL (temp 67%positive (Vint (Int.repr n)))
+  PRE [tint]
+     PROP (4 <= n <= Int.max_unsigned)
+     PARAMS (Vint (Int.repr n))
+     GLOBALS ()
      SEP ()
-  POST [ tptr tvoid ] 
+  POST [ tptr tvoid ]
      EX v: pointer_val,
-     PROP (malloc_compatible n (pointer_val_val v)) 
-     LOCAL (temp ret_temp (pointer_val_val v)) 
+     PROP (malloc_compatible n (pointer_val_val v))
+     LOCAL (temp ret_temp (pointer_val_val v))
      SEP (memory_block sh n (pointer_val_val v)).
 
 Definition whole_graph sh g x := (@full_graph_at mpred SAGA_VST pointer_val (SAG_VST sh) g x).
@@ -37,9 +40,10 @@ Definition whole_graph sh g x := (@full_graph_at mpred SAGA_VST pointer_val (SAG
 Definition makeSet_spec :=
   DECLARE _makeSet
   WITH sh: wshare, V: Z
-    PRE [_V OF tint]
+    PRE [tint]
       PROP (0 < V <= Int.max_signed / 8)
-      LOCAL (temp _V (Vint (Int.repr V)))
+      PARAMS (Vint (Int.repr V))
+      GLOBALS ()
       SEP ()
     POST [tptr vertex_type]
       EX g: Graph, EX rt: pointer_val,
@@ -50,22 +54,24 @@ Definition makeSet_spec :=
 Definition find_spec :=
   DECLARE _find
   WITH sh: wshare, g: Graph, subsets: pointer_val, i: Z
-    PRE [_subsets OF (tptr vertex_type), _i OF tint]
+    PRE [tptr vertex_type, tint]
       PROP (vvalid g i)
-      LOCAL (temp _subsets (pointer_val_val subsets); temp _i (Vint (Int.repr i)))
+      PARAMS (pointer_val_val subsets; Vint (Int.repr i))
+      GLOBALS ()
       SEP (whole_graph sh g subsets)
     POST [tint]
       EX g': Graph, EX rt: Z,
-      PROP (uf_equiv g g' /\ uf_root g' i rt)
+      PROP (uf_equiv g g' ; uf_root g' i rt)
       LOCAL (temp ret_temp (Vint (Int.repr rt)))
       SEP (whole_graph sh g' subsets).
 
 Definition union_spec :=
  DECLARE _Union
   WITH sh: wshare, g: Graph, subsets: pointer_val, x: Z, y: Z
-  PRE [ _subsets OF (tptr vertex_type), _x OF tint, _y OF tint]
-          PROP  (vvalid g x /\ vvalid g y)
-          LOCAL (temp _subsets (pointer_val_val subsets); temp _x (Vint (Int.repr x)); temp _y (Vint (Int.repr y)))
+  PRE [tptr vertex_type, tint, tint]
+          PROP  (vvalid g x; vvalid g y)
+          PARAMS (pointer_val_val subsets; Vint (Int.repr x); Vint (Int.repr y))
+          GLOBALS ()
           SEP   (whole_graph sh g subsets)
   POST [ Tvoid ]
         EX g': Graph,
@@ -137,7 +143,7 @@ Proof.
   - assert (Int.min_signed <= 8 <= Int.max_signed) by rep_omega.
     assert (Int.min_signed <= V <= Int.max_signed). {
       split; rewrite Z.le_lteq; left.
-      - rep_omega. 
+      - rep_omega.
       - apply Z.le_lt_trans with (Int.max_signed / 8); [intuition | apply Z.div_lt; omega].
     } rewrite !Int.signed_repr; auto. split. 1: omega.
     assert (Z.mul 8 (Int.max_signed /8) <= Int.max_signed) by (apply Z_mult_div_ge; intuition). rep_omega.
@@ -153,7 +159,7 @@ Proof.
       unfold data_at_, field_at_, data_at. assert (default_val (nested_field_type (tarray vertex_type V) []) = list_repeat (Z.to_nat V) (Vundef, Vundef)) by reflexivity.
       rewrite H1. rewrite progressive_list_repeat. auto.
     } rewrite H1. clear H1.
-    forward_for_simple_bound V 
+    forward_for_simple_bound V
       (EX i: Z,
        PROP ()
        LOCAL (temp _subsets (pointer_val_val rt); temp _V (Vint (Int.repr V)))
@@ -173,7 +179,7 @@ Proof.
            assert (map (fun x : Z => vgamma (makeSet_discrete_LabeledGraph (Z.to_nat V)) x) (nat_inc_list (Z.to_nat V)) =
                    map (fun x => (0%nat, x)) (nat_inc_list (Z.to_nat V))). {
              apply list_map_exten. intros. unfold vgamma, UnionFindGraph.vgamma. simpl. rewrite makeSet_dst. simpl. auto.
-           } rewrite H6. clear H6. rewrite list_map_compose. unfold vgamma2cdata. simpl. rewrite <- progressive_nat_inc_list; intuition. 
+           } rewrite H6. clear H6. rewrite list_map_compose. unfold vgamma2cdata. simpl. rewrite <- progressive_nat_inc_list; intuition.
 Qed.
 
 Lemma whole_graph_fold: forall n sh g p,
@@ -231,7 +237,7 @@ Lemma upd_Znth_Graph_redirect_parent: forall (i root : Z) (g: Graph) n (Hw: weak
                                                               (Vint (Int.repr root), Vint (Int.repr (Z.of_nat (vlabel (lg_gg g) i)))) =
                                                      map (fun m : Z => vgamma2cdata (vgamma (lg_gg (Graph_gen_redirect_parent g i root Hw Hv Hi)) m))(nat_inc_list n).
 Proof.
-  intros. 
+  intros.
   assert (Zlength (map (fun m : Z => vgamma2cdata (vgamma (lg_gg g) m)) (nat_inc_list n)) = Z.of_nat n) by (rewrite Zlength_map, Zlength_correct, nat_inc_list_length; auto).
   apply (list_eq_Znth _ _ n).
   - rewrite <- (Nat2Z.id n) at 2. rewrite <- Zlength_length. 2: omega. rewrite upd_Znth_Zlength; auto. rewrite <- H1 in H. auto.
@@ -254,7 +260,7 @@ Proof.
        LOCAL (temp _p (Vint (Int.repr rt)); temp _subsets (pointer_val_val subsets); temp _i (Vint (Int.repr i)))
        SEP (whole_graph sh g' subsets)).
     + rewrite whole_graph_fold; [|intuition..]. destruct (vgamma (lg_gg g) i) eqn: ?. forward_call (sh, g, subsets, z).
-      * unfold vgamma, UnionFindGraph.vgamma in Heqp. inversion Heqp. clear Heqp. destruct (Z_lt_dec (dst (lg_gg g) i) 0). 1: exfalso; apply H2; auto. 
+      * unfold vgamma, UnionFindGraph.vgamma in Heqp. inversion Heqp. clear Heqp. destruct (Z_lt_dec (dst (lg_gg g) i) 0). 1: exfalso; apply H2; auto.
         destruct ((proj2 (@only_one_edge _ _ _ _ _ _ (liGraph g) _ i H)) (eq_refl i)) as [_ ?]. destruct (valid_graph g _ H3) as [_ [? | ?]]; auto.
         hnf in H6. exfalso. apply n1. auto.
       * Intros vret. destruct vret as [g' root]. simpl fst in *. simpl snd in *. rewrite whole_graph_unfold. Intros n'. forward. Opaque Znth. forward. Transparent Znth.
@@ -291,7 +297,7 @@ Proof.
       * destruct (vvalid_src_evalid _ (liGraph g) i H) as [_ ?]. destruct (valid_graph g _ H4) as [_ [? | ?]]. 1: simpl in H5; exfalso; auto. simpl id in *.
         rewrite <- H0 in H5. rewrite <- H0 in H. apply repr_inj_unsigned in H2.
         -- exfalso. rewrite H0 in H. assert (reachable g i i) by (apply reachable_refl; auto). pose proof (dst_not_reachable _ (liGraph g) _ _ _ H H2 H6). auto.
-        -- split. 1: omega. rewrite Z.lt_eq_cases. left. apply Z.lt_trans with (Int.max_signed / 8). 2: reflexivity. destruct H5. apply Z.lt_le_trans with (Z.of_nat n); auto. 
+        -- split. 1: omega. rewrite Z.lt_eq_cases. left. apply Z.lt_trans with (Int.max_signed / 8). 2: reflexivity. destruct H5. apply Z.lt_le_trans with (Z.of_nat n); auto.
         -- split. 1: omega. rewrite Z.lt_eq_cases. left. apply Z.lt_trans with (Int.max_signed / 8). 2: compute; auto. destruct H. apply Z.lt_le_trans with (Z.of_nat n); auto.
     + Intros g' rt. forward. apply (exp_right g'). apply (exp_right rt). entailer !.
 Qed.
@@ -305,10 +311,12 @@ Qed.
 
 Lemma body_union: semax_body Vprog Gprog f_Union union_spec.
 Proof.
-  start_function. destruct H.
-  forward_call (sh, g, subsets, x). Intros vret. destruct vret as [g1 x_root]. simpl fst in *. simpl snd in *.
+  start_function.
+  forward_call (sh, g, subsets, x). Intros vret. destruct vret as [g1 x_root].
+  simpl fst in *. simpl snd in *.
   assert (vvalid g1 y) by (destruct H1 as [? _]; rewrite <- H1; apply H0).
-  forward_call (sh, g1, subsets, y). Intros vret. destruct vret as [g2 y_root]. simpl fst in *. simpl snd in *.
+  forward_call (sh, g1, subsets, y). Intros vret. destruct vret as [g2 y_root].
+  simpl fst in *. simpl snd in *.
   forward_if
     (PROP (x_root <> y_root)
      LOCAL (temp _yroot (Vint (Int.repr y_root)); temp _xroot (Vint (Int.repr x_root));
@@ -347,7 +355,7 @@ Proof.
       forward_if
         (EX g': Graph,
          PROP (uf_union g x y g')
-         LOCAL (temp _yRank (Vint (Int.repr (Z.of_nat (vlabel (lg_gg g2) y_root)))); temp _xRank (Vint (Int.repr (Z.of_nat (vlabel (lg_gg g2) x_root)))); 
+         LOCAL (temp _yRank (Vint (Int.repr (Z.of_nat (vlabel (lg_gg g2) y_root)))); temp _xRank (Vint (Int.repr (Z.of_nat (vlabel (lg_gg g2) x_root))));
                 temp _yroot (Vint (Int.repr y_root)); temp _xroot (Vint (Int.repr x_root)); temp _subsets (pointer_val_val subsets); temp _x (Vint (Int.repr x));
                 temp _y (Vint (Int.repr y)))
          SEP (whole_graph sh g' subsets)).
@@ -383,5 +391,5 @@ Proof.
                  --- subst j. destruct (Z.eq_dec y_root y_root). 2: exfalso; apply n1; auto. destruct (Z.eq_dec x_root y_root). 1: exfalso; auto. destruct (Z_lt_dec x_root 0).
                      1: destruct H9; exfalso; omega. auto.
                  --- destruct (Z.eq_dec y_root j). 1: exfalso; apply n1; auto. destruct (Z.eq_dec x_root j). 1: exfalso; auto. auto.
-    + Intros g'. forward. apply (exp_right g'). entailer!.
+    + Intros g'. apply (exp_right g'). entailer!.
 Qed.

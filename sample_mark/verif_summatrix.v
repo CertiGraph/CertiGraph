@@ -2,6 +2,8 @@ Require Import VST.floyd.proofauto.
 Require Import RamifyCoq.sample_mark.summatrix.
 Require Import VST.msl.iter_sepcon.
 
+Local Open Scope logic.
+
 Instance CompSpecs : compspecs. make_compspecs prog. Defined.
 Definition Vprog : varspecs.  mk_varspecs prog. Defined.
 
@@ -97,12 +99,13 @@ Qed.
 Definition summatrix_spec : ident * funspec :=
  DECLARE _summatrix
          WITH a: val, sh : share, contents_mat : list (list Z)
-  PRE [ _a OF (tptr (tarray tuint 2)), _n OF tint ]
-  PROP  (readable_share sh; 
-           Zlength contents_mat = 2;
-           Forall (fun list => Zlength list = 2) contents_mat;
-           Forall (fun list => Forall (fun x => 0 <= x <= Int.max_unsigned) list) contents_mat)
-   LOCAL (temp _a a; temp _n (Vint (Int.repr 2)))
+  PRE [tptr (tarray tuint 2), tint ]
+   PROP  (readable_share sh; 
+          Zlength contents_mat = 2;
+          Forall (fun list => Zlength list = 2) contents_mat;
+          Forall (fun list => Forall (fun x => 0 <= x <= Int.max_unsigned) list) contents_mat)
+   PARAMS (a; Vint (Int.repr 2))
+   GLOBALS ()
    SEP (matrix_rep sh 2 contents_mat a)
   POST [ tuint ]
    PROP ()
@@ -112,7 +115,7 @@ Definition summatrix_spec : ident * funspec :=
 Definition main_spec :=
  DECLARE _main
   WITH gv : globals
-  PRE  [] main_pre prog nil gv
+  PRE  [] main_pre prog tt gv
   POST [ tint ]  
      PROP() 
      LOCAL (temp ret_temp (Vint (Int.repr (1+2+3+4)))) 

@@ -63,12 +63,12 @@ NORMAL_FILES = \
   $(MSL_APPLICATION_FILES:%.v=msl_application/%.v) \
   $(FLOYD_EXT_FILES:%.v=floyd_ext/%.v) \
   $(DATA_STRUCTURE_FILES:%.v=data_structure/%.v) \
-  $(CERTIGC_FILES:%.v=CertiGC/%.v) \
   $(SAMPLE_MARK_FILES:%.v=sample_mark/%.v) \
   $(SAMPLE_EDGE_WEIGHT_FILES:%.v=sample_edge_weight/%.v) \
   $(GRAPH_FILES:%.v=graph/%.v) \
   $(LIB_FILES:%.v=lib/%.v) \
-  $(HEAP_MODEL_DIRECT_FILES:%.v=heap_model_direct/%.v)
+  $(HEAP_MODEL_DIRECT_FILES:%.v=heap_model_direct/%.v) \
+  $(CERTIGC_FILES:%.v=CertiGC/%.v)
 
 
 $(NORMAL_FILES:%.v=%.vo): %.vo: %.v

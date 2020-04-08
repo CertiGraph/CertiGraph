@@ -4,6 +4,8 @@ Require Import RamifyCoq.msl_application.GraphBi.
 Require Import VST.veric.SeparationLogic.
 Require Import RamifyCoq.sample_mark.env_copy_bi.
 
+Local Open Scope logic.
+
 Lemma comp_Ews_not_bot: Share.comp Ews <> Share.bot.
   intro.
   apply (f_equal Share.comp) in H.
