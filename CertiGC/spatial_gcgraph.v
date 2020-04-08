@@ -11,6 +11,8 @@ Require Export RamifyCoq.CertiGC.env_graph_gc.
 Require Import RamifyCoq.msl_ext.iter_sepcon.
 Require Import Coq.Lists.List.
 
+Local Open Scope logic.
+
 Definition vertex_at (sh: share) (p: val) (header: Z) (lst_fields: list val) :=
   data_at sh tuint (Z2val header) (offset_val (- WORD_SIZE) p) *
   data_at sh (tarray int_or_ptr_type (Zlength lst_fields)) lst_fields p.
@@ -684,7 +686,7 @@ Lemma outlier_rep_single_rep: forall outlier p,
     outlier_rep outlier |-- single_outlier_rep p * TT.
 Proof.
   intros. unfold outlier_rep. apply (in_map single_outlier_rep) in H.
-  apply fold_right_andp in H. destruct H as [Q ?]. rewrite H.
+  apply log_normalize.fold_right_andp in H. destruct H as [Q ?]. rewrite H.
   apply andp_left1. cancel.
 Qed.
 

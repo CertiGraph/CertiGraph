@@ -10,7 +10,7 @@ Proof.
   - forward; entailer!.
   - remember (ti_heap_p t_info). rewrite (data_at_isptr sh heap_type).
     Intros. exfalso. destruct t_info. simpl in *. subst. contradiction.
-  - Intros. destruct (heap_head_cons (ti_heap t_info)) as [hs [hl [? ?]]]. 
+  - Intros. destruct (heap_head_cons (ti_heap t_info)) as [hs [hl [? ?]]].
     rewrite H1, <- H2, map_cons.
     destruct (gt_gs_compatible _ _ H _ (graph_has_gen_O _)) as [? [? ?]].
     assert (isptr (space_start (heap_head (ti_heap t_info)))). {
@@ -24,7 +24,7 @@ Proof.
       forward_call ((gv ___stringlit_11),
                     (map init_data2byte (gvar_init v___stringlit_11)), rsh).
       exfalso; assumption.
-    + forward. entailer!. 
+    + forward. entailer!.
       unfold sem_sub_pp in H7. destruct eq_block in H7; [|easy]; simpl in H7.
       inv_int i. clear -H7. remember (heap_head (ti_heap t_info)) as h.
       rewrite ptrofs_add_repr, ptrofs_sub_repr, Z.add_comm, Z.add_simpl_r in H7.
@@ -48,10 +48,10 @@ Proof.
                    offset_val (WORD_SIZE * total_space (heap_head (ti_heap t_info)))
                               (space_start (heap_head (ti_heap t_info)))))
                    :: map space_tri hl) (ti_heap_p t_info)) by
-          (unfold heap_struct_rep; entailer!). do 3 forward.
+          (unfold heap_struct_rep; entailer!). do 2 forward.
       unfold before_gc_thread_info_rep. rewrite !heap_struct_rep_eq. rewrite <- H5.
       replace (WORD_SIZE * 0)%Z with 0 by omega.
-      rewrite !isptr_offset_val_zero by assumption. cancel. rewrite H1. simpl tl.
+      rewrite !isptr_offset_val_zero by assumption. entailer!. rewrite H1. simpl tl.
       assert (12 = Zlength (map space_tri hl) + 1). {
         pose proof (spaces_size (ti_heap t_info)). rewrite MAX_SPACES_eq in H2.
         rewrite <- H2, H1, Zlength_cons, Zlength_map. omega. } rewrite !H2.
