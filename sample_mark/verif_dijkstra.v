@@ -2143,7 +2143,7 @@ Qed.
              entailer!. repeat rewrite Zlength_map in *. trivial. }
             assert_PROP (Zlength dist_contents' = SIZE). {
              entailer!. repeat rewrite Zlength_map in *. trivial. }
-           assert_PROP (Zlength (graph_to_mat g) = SIZE) by entailer!.
+            assert_PROP (Zlength (graph_to_mat g) = SIZE) by entailer!.
            forward_if.
           ++ assert (0 <= cost <= Int.max_signed / SIZE). {
                replace 8 with SIZE in H38.
