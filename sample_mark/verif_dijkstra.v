@@ -1812,17 +1812,46 @@ So this pop operation maintains inv_popped for u.
    
    Set Nested Proofs Allowed.
 
+   Lemma careful_add_l_0: forall a, careful_add 0 a = a.
+   Proof.
+     intros.
+     unfold careful_add.
+     simpl. destruct (a =? inf) eqn:?.
+     - rewrite Z.eqb_eq in Heqb. omega.
+     - omega.
+   Qed.
+
+   Lemma careful_add_r_0: forall a, careful_add a 0 = a.
+   Proof.
+     intros.
+     unfold careful_add.
+     simpl. destruct (a =? inf) eqn:?.
+     - simpl. rewrite Z.eqb_eq in Heqb. omega.
+     - simpl. omega.
+   Qed.
+   
    Lemma path_cost_path_glue:
      forall g p1 p2,
        path_cost g (path_glue p1 p2) = careful_add (path_cost g p1) (path_cost g p2).
    Proof.
      intros.
      unfold path_glue, path_cost. simpl.
-     rewrite map_app, fold_left_app.
-     (* it's somewhat more complicated, with some more case-splitting
-        needed, but the basic point comes through *)
-     admit.
+     rewrite map_app.
+     remember (map (elabel g) (snd p1)) as m1.
+     remember (map (elabel g) (snd p2)) as m2.
+     rewrite List_Func_ext.monoid_fold_left_app; intros; trivial.
+     - rewrite careful_add_l_0. apply Equivalence.equiv_reflexive_obligation_1.
+     - rewrite careful_add_r_0. apply Equivalence.equiv_reflexive_obligation_1.
+     - unfold careful_add.
+       destruct (x =? inf) eqn:?;
+                destruct (y =? inf) eqn:?;
+                destruct (z =? inf) eqn:?; simpl;
+         try apply Equivalence.equiv_reflexive_obligation_1.
+       + destruct (x + y =? inf); simpl; apply Equivalence.equiv_reflexive_obligation_1.
+       + admit.
    Admitted.
+
+
 
    (* new g0: path_cost p'1 + (label mom' child') + path_cost p'2 < path_cost g p2mom + ... *)
    (* need a lemma about path_cost and path_glue *)
@@ -1840,6 +1869,11 @@ So this pop operation maintains inv_popped for u.
      repeat rewrite careful_add_clean; trivial; [omega| |];
        compute; intro; omega.
    }
+
+   
+
+   
+
 
    repeat rewrite path_cost_path_glue in g0.
    do 2 rewrite careful_add_clean in g0; trivial.
