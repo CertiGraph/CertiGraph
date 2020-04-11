@@ -10,7 +10,7 @@ Require Import RamifyCoq.msl_application.UnionFindGraph.
 Require Import RamifyCoq.msl_application.ArrayGraph.
 Require Import RamifyCoq.floyd_ext.share.
 Require Import RamifyCoq.sample_mark.spatial_array_graph.
-Require Import Coq.omega.Omega.
+Require Import Coq.micromega.Lia.
 Require Import Coq.Lists.List.
 
 Local Coercion UGraph_LGraph: Graph >-> LGraph.
@@ -35,7 +35,8 @@ Definition mallocN_spec :=
      LOCAL (temp ret_temp (pointer_val_val v))
      SEP (memory_block sh n (pointer_val_val v)).
 
-Definition whole_graph sh g x := (@full_graph_at mpred SAGA_VST pointer_val (SAG_VST sh) g x).
+Definition whole_graph sh g x :=
+  (@full_graph_at mpred SAGA_VST pointer_val (SAG_VST sh) g x).
 
 Definition makeSet_spec :=
   DECLARE _makeSet
@@ -79,62 +80,82 @@ Definition union_spec :=
         LOCAL ()
         SEP (whole_graph sh g' subsets).
 
-Definition Gprog : funspecs := ltac:(with_library prog [mallocN_spec; makeSet_spec; find_spec; union_spec]).
+Definition Gprog : funspecs :=
+  ltac:(with_library prog [mallocN_spec; makeSet_spec; find_spec; union_spec]).
 
 Fixpoint prog_list_helper (i: nat) (n: nat) : list (val * val) :=
   match n with
   | O => nil
   | S n' => if (le_dec i n') then (Vundef, Vundef) :: prog_list_helper i n'
-            else (Vint (Int.repr (Z.of_nat (n'))), Vint (Int.repr 0)) :: prog_list_helper i n'
+            else (Vint (Int.repr (Z.of_nat (n'))),
+                  Vint (Int.repr 0)) :: prog_list_helper i n'
   end.
 
 Definition progressive_list (i: nat) (n: nat) := rev (prog_list_helper i n).
 
-Lemma progressive_list_repeat: forall n, list_repeat n (Vundef, Vundef) = progressive_list O n.
+Lemma progressive_list_repeat:
+  forall n, list_repeat n (Vundef, Vundef) = progressive_list O n.
 Proof.
-  induction n; unfold progressive_list; simpl; auto. unfold progressive_list in IHn. rewrite <- IHn.
-  change ((Vundef, Vundef) :: list_repeat n (Vundef, Vundef)) with (((Vundef, Vundef) :: nil) ++ list_repeat n (Vundef, Vundef)).
-  change ((Vundef, Vundef) :: nil) with (list_repeat 1 (Vundef, Vundef)). rewrite !list_repeat_app. rewrite Nat.add_comm. auto.
+  induction n; unfold progressive_list; simpl; auto. unfold progressive_list in IHn.
+  rewrite <- IHn. change ((Vundef, Vundef) :: list_repeat n (Vundef, Vundef)) with
+                      (((Vundef, Vundef) :: nil) ++ list_repeat n (Vundef, Vundef)).
+  change ((Vundef, Vundef) :: nil) with (list_repeat 1 (Vundef, Vundef)).
+  rewrite !list_repeat_app. rewrite Nat.add_comm. auto.
 Qed.
 
 Lemma progressive_list_length: forall i n, length (progressive_list i n) = n.
-Proof. intros. unfold progressive_list. rewrite rev_length. induction n; simpl; auto. destruct (le_dec i n); simpl; rewrite IHn; auto. Qed.
-
-Definition progressive_array sh i V rt := data_at sh (tarray vertex_type V) (progressive_list (Z.to_nat i) (Z.to_nat V)) (pointer_val_val rt).
-
-Lemma upd_Znth_twice: forall {A: Type} i (l: list A) v1 v2, 0 <= i < Zlength l -> upd_Znth i (upd_Znth i l v1) v2 = upd_Znth i l v2.
 Proof.
-  intros. unfold upd_Znth. f_equal; [|f_equal].
-  - rewrite sublist0_app1.
-    + rewrite sublist_same; auto. rewrite Zlength_sublist; omega.
-    + rewrite Zlength_sublist; omega.
-  - assert (Zlength (sublist 0 i l) = i) by (rewrite Zlength_sublist; omega). rewrite sublist_app2; rewrite H0. 2: omega.
-    assert (i + 1 - i = 1) by omega. rewrite H1. clear H1. rewrite Zlength_app. rewrite H0. rewrite Zlength_cons. unfold Z.succ.
-    rewrite Zlength_sublist; [|omega..]. assert (i + (Zlength l - (i + 1) + 1) - i = Zlength l - i) by omega. rewrite H1; clear H1.
-    rewrite sublist_1_cons. rewrite sublist_same; [auto | omega |]. rewrite Zlength_sublist; omega.
+  intros. unfold progressive_list. rewrite rev_length. induction n; simpl; auto.
+  destruct (le_dec i n); simpl; rewrite IHn; auto.
 Qed.
 
-Lemma prog_list_helper_gt: forall i j n, (i >= n)%nat -> (j >= n)%nat -> prog_list_helper i n = prog_list_helper j n.
-Proof. intros. revert i j H H0. induction n; intros; simpl; auto. destruct (le_dec i n), (le_dec j n); [exfalso; omega ..|]. f_equal. apply IHn; omega. Qed.
+Definition progressive_array sh i V rt :=
+  data_at sh (tarray vertex_type V) (progressive_list (Z.to_nat i) (Z.to_nat V))
+          (pointer_val_val rt).
+
+Lemma upd_Znth_twice: forall {A: Type} i (l: list A) v1 v2,
+    0 <= i < Zlength l -> upd_Znth i (upd_Znth i l v1) v2 = upd_Znth i l v2.
+Proof.
+  intros. rewrite !upd_Znth_unfold; auto. 2: now rewrite upd_Znth_Zlength.
+  f_equal; [|f_equal].
+  - rewrite sublist0_app1.
+    + rewrite sublist_same; auto. rewrite Zlength_sublist; lia.
+    + rewrite Zlength_sublist; lia.
+  - assert (Zlength (sublist 0 i l) = i) by (rewrite Zlength_sublist; lia).
+    rewrite sublist_app2; rewrite H0. 2: lia.
+    assert (i + 1 - i = 1) by lia. rewrite H1. clear H1. rewrite Zlength_app.
+    rewrite H0. simpl. rewrite Zlength_cons. unfold Z.succ.
+    rewrite Zlength_sublist; [|lia..].
+    assert (i + (Zlength l - (i + 1) + 1) - i = Zlength l - i) by lia.
+    rewrite H1; clear H1. rewrite sublist_1_cons.
+    rewrite sublist_same; [auto | lia |]. rewrite Zlength_sublist; lia.
+Qed.
+
+Lemma prog_list_helper_gt: forall i j n,
+    (i >= n)%nat -> (j >= n)%nat -> prog_list_helper i n = prog_list_helper j n.
+Proof.
+  intros. revert i j H H0. induction n; intros; simpl; auto.
+  destruct (le_dec i n), (le_dec j n); [exfalso; lia ..|]. f_equal. apply IHn; lia.
+Qed.
 
 Lemma upd_Znth_progressive_list: forall i V,
     0 <= i < Z.of_nat V -> upd_Znth i (progressive_list (Z.to_nat i) V) (Vint (Int.repr i), Vint (Int.repr 0)) = progressive_list (Z.to_nat (i + 1)) V.
 Proof.
   intros. induction V. 1: exfalso; simpl in H; intuition. rewrite Nat2Z.inj_succ in H. unfold Z.succ in H. unfold progressive_list. simpl. destruct (le_dec (Z.to_nat i) V).
   - destruct (le_dec (Z.to_nat (i + 1)) V).
-    + simpl. assert (0 <= i < Z.of_nat V) by (apply inj_le in l0; rewrite Z2Nat.id in l0; omega). unfold progressive_list in IHV. rewrite <- IHV; auto.
+    + simpl. assert (0 <= i < Z.of_nat V) by (apply inj_le in l0; rewrite Z2Nat.id in l0; lia). unfold progressive_list in IHV. rewrite <- IHV; auto.
       rewrite upd_Znth_app1; auto. change (rev (prog_list_helper (Z.to_nat i) V)) with (progressive_list (Z.to_nat i) V).
       rewrite Zlength_correct, progressive_list_length. auto.
-    + assert (Z.to_nat (i + 1) > V)%nat by omega. apply inj_gt in H0. rewrite Z2Nat.id in H0. 2: omega. assert (i = Z.of_nat V) by omega. subst i.
+    + assert (Z.to_nat (i + 1) > V)%nat by lia. apply inj_gt in H0. rewrite Z2Nat.id in H0. 2: lia. assert (i = Z.of_nat V) by lia. subst i.
       clear IHV l n H0 H. rewrite Nat2Z.id. simpl. rewrite upd_Znth_char.
-      * f_equal. change 1 with (Z.of_nat 1). rewrite <- Nat2Z.inj_add, Nat2Z.id. f_equal. apply prog_list_helper_gt; omega.
+      * f_equal. change 1 with (Z.of_nat 1). rewrite <- Nat2Z.inj_add, Nat2Z.id. f_equal. apply prog_list_helper_gt; lia.
       * change (rev (prog_list_helper V V)) with (progressive_list V V). rewrite Zlength_correct, progressive_list_length. auto.
-  - exfalso. assert (Z.to_nat i > V)%nat by omega. apply inj_gt in H0. rewrite Z2Nat.id in H0; omega.
+  - exfalso. assert (Z.to_nat i > V)%nat by lia. apply inj_gt in H0. rewrite Z2Nat.id in H0; lia.
 Qed.
 
 Lemma progressive_nat_inc_list: forall n i, (i >= n)%nat -> map (fun x : Z => (Vint (Int.repr x), Vint (Int.repr 0))) (nat_inc_list n) = progressive_list i n.
 Proof.
-  induction n; intros; unfold progressive_list in *; simpl; auto. destruct (le_dec i n). 1: exfalso; omega. rewrite map_app. simpl. rewrite <- IHn; intuition.
+  induction n; intros; unfold progressive_list in *; simpl; auto. destruct (le_dec i n). 1: exfalso; lia. rewrite map_app. simpl. rewrite <- IHn; intuition.
 Qed.
 
 Lemma body_makeSet: semax_body Vprog Gprog f_makeSet makeSet_spec.
@@ -144,14 +165,14 @@ Proof.
     assert (Int.min_signed <= V <= Int.max_signed). {
       split; rewrite Z.le_lteq; left.
       - rep_omega.
-      - apply Z.le_lt_trans with (Int.max_signed / 8); [intuition | apply Z.div_lt; omega].
-    } rewrite !Int.signed_repr; auto. split. 1: omega.
+      - apply Z.le_lt_trans with (Int.max_signed / 8); [intuition | apply Z.div_lt; lia].
+    } rewrite !Int.signed_repr; auto. split. 1: lia.
     assert (Z.mul 8 (Int.max_signed /8) <= Int.max_signed) by (apply Z_mult_div_ge; intuition). rep_omega.
-  - split. 1: omega. assert (Z.mul 8 (Int.max_signed /8) <= Int.max_signed) by (apply Z_mult_div_ge; intuition). rep_omega.
+  - split. 1: lia. assert (Z.mul 8 (Int.max_signed /8) <= Int.max_signed) by (apply Z_mult_div_ge; intuition). rep_omega.
   - Intros rt.
     assert (memory_block sh (V * 8) (pointer_val_val rt) = data_at_ sh (tarray vertex_type V) (pointer_val_val rt)). {
       assert (memory_block sh (V * 8) (pointer_val_val rt) = memory_block sh (sizeof (tarray vertex_type V)) (pointer_val_val rt)). {
-        simpl sizeof. rewrite Zmax0r. 2: intuition. assert (V * 8 = 8 * V)%Z by omega. rewrite H1. auto.
+        simpl sizeof. rewrite Zmax0r. 2: intuition. assert (V * 8 = 8 * V)%Z by lia. rewrite H1. auto.
       } rewrite <- memory_block_data_at_; auto. apply malloc_compatible_field_compatible; auto.
       unfold malloc_compatible in *. destruct (pointer_val_val rt); auto. destruct H0. split; auto. simpl sizeof. rewrite Zmax0r; intuition.
     } rewrite H1. clear H1.
@@ -167,14 +188,14 @@ Proof.
     + destruct H. apply Z.le_trans with (Int.max_signed / 8); auto. rewrite Z.lt_eq_cases. left. apply Z_div_lt; intuition.
     + entailer.
     + Opaque Znth. forward. remember (Znth i (progressive_list (Z.to_nat i) (Z.to_nat V))) as lll. destruct lll. forward.
-      assert (0 <= i < Zlength (progressive_list (Z.to_nat i) (Z.to_nat V))) by (split; [|rewrite Zlength_correct, progressive_list_length, Z2Nat.id]; omega).
+      assert (0 <= i < Zlength (progressive_list (Z.to_nat i) (Z.to_nat V))) by (split; [|rewrite Zlength_correct, progressive_list_length, Z2Nat.id]; lia).
       rewrite upd_Znth_same, upd_Znth_twice; [|auto ..]. unfold progressive_array, data_at.
-      rewrite upd_Znth_progressive_list. 2: rewrite Z2Nat.id; omega. entailer. Transparent Znth.
+      rewrite upd_Znth_progressive_list. 2: rewrite Z2Nat.id; lia. entailer. Transparent Znth.
     + forward. Exists (makeSet_discrete_Graph (Z.to_nat V)) rt. entailer!.
-      * intros. simpl. rewrite makeSet_vvalid. rewrite Z2Nat.id; omega.
+      * intros. simpl. rewrite makeSet_vvalid. rewrite Z2Nat.id; lia.
       * unfold whole_graph, full_graph_at. simpl. Exists (Z.to_nat V). apply andp_right; intros; [apply andp_right; apply prop_right|].
         -- intros. rewrite makeSet_vvalid. intuition.
-        -- rewrite Z2Nat.id; omega.
+        -- rewrite Z2Nat.id; lia.
         -- simpl. unfold vcell_array_at, SAG_VST. rewrite map_length, nat_inc_list_length. rewrite Z2Nat.id. 2: intuition.
            assert (map (fun x : Z => vgamma (makeSet_discrete_LabeledGraph (Z.to_nat V)) x) (nat_inc_list (Z.to_nat V)) =
                    map (fun x => (0%nat, x)) (nat_inc_list (Z.to_nat V))). {
@@ -211,7 +232,7 @@ Proof.
       rewrite Nat2Z.inj_succ in H. destruct H. rewrite Z.lt_succ_r, Z.lt_eq_cases in H0. destruct H0; [left | right]; auto.
     } assert (Zlength (nat_inc_list n) = Z.of_nat n) by (rewrite Zlength_correct, nat_inc_list_length; auto). destruct H0.
     + rewrite app_Znth1. 2: rewrite H1; destruct H0; auto. apply IHn; auto.
-    + rewrite app_Znth2. 2: rewrite H1; intuition. rewrite H0, H1. replace (Z.of_nat n - Z.of_nat n) with 0 by omega. rewrite Znth_0_cons. auto.
+    + rewrite app_Znth2. 2: rewrite H1; intuition. rewrite H0, H1. replace (Z.of_nat n - Z.of_nat n) with 0 by lia. rewrite Znth_0_cons. auto.
 Qed.
 
 Lemma graph_same_size: forall (g g': Graph) n n', (forall x : Z, vvalid g x <-> vvalid g' x) -> (forall v : Z, 0 <= v < Z.of_nat n' <-> vvalid (lg_gg g') v) ->
@@ -219,17 +240,17 @@ Lemma graph_same_size: forall (g g': Graph) n n', (forall x : Z, vvalid g x <-> 
 Proof.
   intros. assert (forall v, 0 <= v < Z.of_nat n' <-> 0 <= v < Z.of_nat n). intros. rewrite H0. rewrite H1. symmetry. apply H. clear -H2.
   destruct (lt_eq_lt_dec n n'); [destruct s|]; auto; exfalso.
-  - specialize (H2 (Z.of_nat n)). omega.
-  - specialize (H2 (Z.of_nat n')). omega.
+  - specialize (H2 (Z.of_nat n)). lia.
+  - specialize (H2 (Z.of_nat n')). lia.
 Qed.
 
 Lemma list_eq_Znth {A} {d: Inhabitant A}: forall (l1 l2: list A) n, length l1 = n -> length l2 = n -> (forall j, 0 <= j < Z.of_nat n -> Znth j l1 = Znth j l2) -> l1 = l2.
 Proof.
   intros l1 l2 n. revert l1 l2. induction n; intros.
   - simpl in *. destruct l1, l2; simpl in *; [auto | exfalso; intuition..].
-  - destruct l1, l2; simpl in H, H0; [exfalso; intuition..| ]. assert (a = a0) by (specialize (H1 0); rewrite !Znth_0_cons in H1; apply H1; rewrite Nat2Z.inj_succ; omega).
+  - destruct l1, l2; simpl in H, H0; [exfalso; intuition..| ]. assert (a = a0) by (specialize (H1 0); rewrite !Znth_0_cons in H1; apply H1; rewrite Nat2Z.inj_succ; lia).
     subst a0. cut (l1 = l2); intros. 1: subst l2; auto. inversion H. inversion H0. apply (IHn _ _); auto. intros. specialize (H1 (j + 1)).
-    assert (0 < j + 1) by omega. assert (j + 1 - 1 = j) by omega. rewrite !Znth_pos_cons in H1; auto. rewrite !H6 in H1. apply H1. rewrite Nat2Z.inj_succ. omega.
+    assert (0 < j + 1) by lia. assert (j + 1 - 1 = j) by lia. rewrite !Znth_pos_cons in H1; auto. rewrite !H6 in H1. apply H1. rewrite Nat2Z.inj_succ. lia.
 Qed.
 
 Lemma upd_Znth_Graph_redirect_parent: forall (i root : Z) (g: Graph) n (Hw: weak_valid g root) (Hv: vvalid g i) (Hi: ~ reachable g root i),
@@ -240,11 +261,11 @@ Proof.
   intros.
   assert (Zlength (map (fun m : Z => vgamma2cdata (vgamma (lg_gg g) m)) (nat_inc_list n)) = Z.of_nat n) by (rewrite Zlength_map, Zlength_correct, nat_inc_list_length; auto).
   apply (list_eq_Znth _ _ n).
-  - rewrite <- (Nat2Z.id n) at 2. rewrite <- Zlength_length. 2: omega. rewrite upd_Znth_Zlength; auto. rewrite <- H1 in H. auto.
+  - rewrite <- (Nat2Z.id n) at 2. rewrite <- Zlength_length. 2: lia. rewrite upd_Znth_Zlength; auto. rewrite <- H1 in H. auto.
   - rewrite list_length_map, nat_inc_list_length; auto.
   - intros. rewrite Znth_nat_inc_list; auto. rewrite (upd_Znth_lookup' (Z.of_nat n)); auto. rewrite Znth_nat_inc_list; auto.
     unfold vgamma2cdata, vgamma, UnionFindGraph.vgamma. simpl. unfold graph_gen.updateEdgeFunc. unfold EquivDec.equiv_dec, Z_EqDec, zeq. destruct (Z.eq_dec j i).
-    + subst j. destruct (Z.eq_dec i i). 2: exfalso; apply n0; auto. f_equal. destruct (Z_lt_dec root 0); [exfalso; omega | auto].
+    + subst j. destruct (Z.eq_dec i i). 2: exfalso; apply n0; auto. f_equal. destruct (Z_lt_dec root 0); [exfalso; lia | auto].
     + f_equal. destruct (Z.eq_dec i j). 1: exfalso; intuition. auto.
 Qed.
 
@@ -267,8 +288,8 @@ Proof.
         -- apply prop_right. rewrite H5. destruct H3. rewrite <- H3. auto.
         -- assert (n' = n). {
              destruct H3, (lt_eq_lt_dec n n'); [destruct s|]; auto; exfalso.
-             - specialize (H3 (Z.of_nat n)). specialize (H0 (Z.of_nat n)). specialize (H5 (Z.of_nat n)). rewrite <- H0 in H3. rewrite <- H3 in H5. omega.
-             - specialize (H3 (Z.of_nat n')). specialize (H0 (Z.of_nat n')). specialize (H5 (Z.of_nat n')). rewrite <- H0 in H3. rewrite <- H3 in H5. omega.
+             - specialize (H3 (Z.of_nat n)). specialize (H0 (Z.of_nat n)). specialize (H5 (Z.of_nat n)). rewrite <- H0 in H3. rewrite <- H3 in H5. lia.
+             - specialize (H3 (Z.of_nat n')). specialize (H0 (Z.of_nat n')). specialize (H5 (Z.of_nat n')). rewrite <- H0 in H3. rewrite <- H3 in H5. lia.
            } subst n'. assert (z <> i) by (unfold vgamma, UnionFindGraph.vgamma in Heqp; inversion Heqp; intro; apply H2; rewrite H9 in H7; rewrite H9; subst i; auto).
            assert (weak_valid g' root) by (right; destruct H4; apply reachable_foot_valid in H4; auto).
            assert (vvalid g' i) by (destruct H3 as [? _]; rewrite <- H3; apply H).
@@ -293,12 +314,12 @@ Proof.
         -- simpl in H5. auto.
         -- simpl in H6. destruct H6. assert (strong_evalid g z) by (destruct l0; [|destruct H6]; auto). destruct H8 as [? [? ?]]. symmetry in H4.
            destruct (@only_one_edge _ _ _ _ _ _ (liGraph g) _ z H) as [? _]. specialize (H11 (conj H4 H8)). simpl in H11. subst z. rewrite <- H0 in H10.
-           destruct H10. assert (dst g i < 0) by apply l. exfalso; omega.
+           destruct H10. assert (dst g i < 0) by apply l. exfalso; lia.
       * destruct (vvalid_src_evalid _ (liGraph g) i H) as [_ ?]. destruct (valid_graph g _ H4) as [_ [? | ?]]. 1: simpl in H5; exfalso; auto. simpl id in *.
         rewrite <- H0 in H5. rewrite <- H0 in H. apply repr_inj_unsigned in H2.
         -- exfalso. rewrite H0 in H. assert (reachable g i i) by (apply reachable_refl; auto). pose proof (dst_not_reachable _ (liGraph g) _ _ _ H H2 H6). auto.
-        -- split. 1: omega. rewrite Z.lt_eq_cases. left. apply Z.lt_trans with (Int.max_signed / 8). 2: reflexivity. destruct H5. apply Z.lt_le_trans with (Z.of_nat n); auto.
-        -- split. 1: omega. rewrite Z.lt_eq_cases. left. apply Z.lt_trans with (Int.max_signed / 8). 2: compute; auto. destruct H. apply Z.lt_le_trans with (Z.of_nat n); auto.
+        -- split. 1: lia. rewrite Z.lt_eq_cases. left. apply Z.lt_trans with (Int.max_signed / 8). 2: reflexivity. destruct H5. apply Z.lt_le_trans with (Z.of_nat n); auto.
+        -- split. 1: lia. rewrite Z.lt_eq_cases. left. apply Z.lt_trans with (Int.max_signed / 8). 2: compute; auto. destruct H. apply Z.lt_le_trans with (Z.of_nat n); auto.
     + Intros g' rt. forward. apply (exp_right g'). apply (exp_right rt). entailer !.
 Qed.
 
@@ -380,16 +401,16 @@ Proof.
            assert (Zlength (upd_Znth y_root (map (fun x0 : Z => vgamma2cdata (vgamma (lg_gg g2) x0)) (nat_inc_list n))
                                      (Vint (Int.repr x_root), Vint (Int.repr (Z.of_nat (vlabel (lg_gg g2) y_root))))) = Z.of_nat n) by
                (rewrite upd_Znth_Zlength; auto; rewrite <- H in H10; auto). apply (list_eq_Znth _ _ n).
-           ++ rewrite <- (Nat2Z.id n) at 2. rewrite <- Zlength_length. 2: omega. rewrite <- H in H10, H9. rewrite upd_Znth_Zlength; auto; rewrite upd_Znth_Zlength; auto.
+           ++ rewrite <- (Nat2Z.id n) at 2. rewrite <- Zlength_length. 2: lia. rewrite <- H in H10, H9. rewrite upd_Znth_Zlength; auto; rewrite upd_Znth_Zlength; auto.
            ++ rewrite list_length_map, nat_inc_list_length; auto.
            ++ intros. rewrite Znth_nat_inc_list; auto. rewrite (upd_Znth_lookup' (Z.of_nat n)); auto. rewrite (upd_Znth_lookup' (Z.of_nat n)); auto.
               rewrite Znth_nat_inc_list; auto. unfold vgamma2cdata, vgamma, UnionFindGraph.vgamma. simpl.
               unfold graph_gen.updateEdgeFunc, graph_gen.update_vlabel, EquivDec.equiv_dec, Z_EqDec, zeq. destruct (Z.eq_dec j x_root).
               ** subst j. destruct (Z.eq_dec y_root x_root). 1: exfalso; auto. destruct (Z.eq_dec x_root x_root). 2: exfalso; apply n1; auto. do 3 f_equal.
-                 transitivity (Z.succ (Z.of_nat (vlabel (lg_gg g2) x_root))). 2: rewrite <- Nat2Z.inj_succ; f_equal; unfold Z_EqDec; omega. rewrite Z.add_1_r. auto.
+                 transitivity (Z.succ (Z.of_nat (vlabel (lg_gg g2) x_root))). 2: rewrite <- Nat2Z.inj_succ; f_equal; unfold Z_EqDec; lia. rewrite Z.add_1_r. auto.
               ** destruct (Z.eq_dec j y_root).
                  --- subst j. destruct (Z.eq_dec y_root y_root). 2: exfalso; apply n1; auto. destruct (Z.eq_dec x_root y_root). 1: exfalso; auto. destruct (Z_lt_dec x_root 0).
-                     1: destruct H9; exfalso; omega. auto.
+                     1: destruct H9; exfalso; lia. auto.
                  --- destruct (Z.eq_dec y_root j). 1: exfalso; apply n1; auto. destruct (Z.eq_dec x_root j). 1: exfalso; auto. auto.
     + Intros g'. apply (exp_right g'). entailer!.
 Qed.

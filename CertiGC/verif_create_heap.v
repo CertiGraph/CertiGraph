@@ -36,16 +36,16 @@ Lemma list_repeat_cons {t: Type}: forall i (v: t),
 Proof.
   intros. replace (Z.to_nat i) with (S (Z.to_nat (i - 1))).
   - simpl. auto.
-  - rewrite <- Z2Nat.inj_succ by omega. f_equal. omega.
+  - rewrite <- Z2Nat.inj_succ by lia. f_equal. lia.
 Qed.
 
 Lemma Znth_list_repeat_app {X: Type} {IX: Inhabitant X}: forall i (vh v0 vn: X) l,
     1 <= i -> Znth i (vh :: list_repeat (Z.to_nat (i - 1)) v0 ++ vn :: l) = vn.
 Proof.
-  intros. rewrite Znth_pos_cons by omega.
-  rewrite app_Znth2 by (rewrite Zlength_list_repeat; omega).
-  rewrite Zlength_list_repeat by omega.
-  replace (i - 1 - (i - 1)) with 0 by omega. rewrite Znth_0_cons. reflexivity.
+  intros. rewrite Znth_pos_cons by lia.
+  rewrite app_Znth2 by (rewrite Zlength_list_repeat; lia).
+  rewrite Zlength_list_repeat by lia.
+  replace (i - 1 - (i - 1)) with 0 by lia. rewrite Znth_0_cons. reflexivity.
 Qed.
 
 Lemma upd_Znth_list_repeat_app {X: Type} {IX: Inhabitant X}:
@@ -55,13 +55,12 @@ Lemma upd_Znth_list_repeat_app {X: Type} {IX: Inhabitant X}:
 Proof.
   intros. rewrite app_comm_cons, upd_Znth_app2.
   - rewrite app_comm_cons. f_equal.
-    rewrite Zlength_cons, Zlength_list_repeat by omega.
-    replace (i - Z.succ (i - 1)) with 0 by omega.
-    rewrite upd_Znth0. f_equal. autorewrite with sublist.
-    rewrite sublist_1_cons. autorewrite with sublist. reflexivity.
-  - rewrite Zlength_cons, !Zlength_list_repeat by omega.
-    replace (Z.succ (i - 1)) with i by omega.
-    pose proof (Zlength_nonneg (v1 :: l)). omega.
+    rewrite Zlength_cons, Zlength_list_repeat by lia.
+    replace (i - Z.succ (i - 1)) with 0 by lia.
+    rewrite upd_Znth0. f_equal.
+  - rewrite Zlength_cons, !Zlength_list_repeat by lia.
+    replace (Z.succ (i - 1)) with i by lia.
+    pose proof (Zlength_nonneg (v1 :: l)). lia.
 Qed.
 
 Lemma body_create_heap: semax_body Vprog Gprog f_create_heap create_heap_spec.
@@ -83,28 +82,28 @@ Proof.
         (list_repeat (Z.to_nat 12) (Vundef, (Vundef, Vundef))).
     rewrite <- Heqvn. rewrite data_at_heaptype_eq; auto.
     rewrite (split2_data_at_Tarray_space_type Ews 12 1);
-      [| omega | rewrite Zlength_list_repeat; omega].
-    rewrite sublist_list_repeat by omega. simpl list_repeat at 1.
+      [| lia | rewrite Zlength_list_repeat; lia].
+    rewrite sublist_list_repeat by lia. simpl list_repeat at 1.
     rewrite space_array_1_eq. Intros. forward_call (Ews, h, Z.shiftl 1 16, gv, sh).
     (* make succeed *)
     + split; [apply writable_Ews | split; [assumption|]].
       rewrite MAX_SPACE_SIZE_eq. compute; split; [discriminate | reflexivity].
     + Intros p0. freeze [0;1;2;3;5] FR.
       (* change back to "data_at sh heap_type v h" *)
-      rewrite <- space_array_1_eq. rewrite sublist_list_repeat by omega.
+      rewrite <- space_array_1_eq. rewrite sublist_list_repeat by lia.
       change (12 - 1) with 11 at 2.
       gather_SEP (data_at Ews (tarray space_type 1) _ h)
                  (data_at Ews (tarray space_type (12 - 1)) _ _).
       remember (p0, (p0, offset_val (WORD_SIZE * Z.shiftl 1 16) p0)) as vh.
       remember (vh :: list_repeat (Z.to_nat 11) vn) as vl.
       replace [vh] with (sublist 0 1 vl). 2: {
-        subst vl; rewrite sublist_one; try omega.
+        subst vl; rewrite sublist_one; try lia.
         - rewrite Znth_0_cons; auto.
-        - rewrite Zlength_cons, Zlength_list_repeat; omega.
+        - rewrite Zlength_cons, Zlength_list_repeat; lia.
       } replace (list_repeat (Z.to_nat 11) vn) with (sublist 1 12 vl) by
           (rewrite Heqvl, sublist_1_cons, sublist_list_repeat; [reflexivity|omega..]).
       rewrite <- split2_data_at_Tarray_space_type;
-        [| omega | rewrite Heqvl, Zlength_cons, Zlength_list_repeat; omega].
+        [| lia | rewrite Heqvl, Zlength_cons, Zlength_list_repeat; lia].
       remember (Vint (Int.repr 0), (Vint (Int.repr 0), Vint (Int.repr 0))) as v0.
       (* change succeed *) subst vl. rewrite <- data_at_heaptype_eq; auto.
       forward_for_simple_bound
@@ -116,25 +115,25 @@ Proof.
                       (vh :: list_repeat (Z.to_nat (i - 1)) v0 ++
                           list_repeat (Z.to_nat (12 - i)) vn) h; FRZL FR))%assert.
       * entailer!.
-      * Opaque Znth. forward. rewrite (list_repeat_cons (12 - i)) at 2 by omega.
+      * Opaque Znth. forward. rewrite (list_repeat_cons (12 - i)) at 2 by lia.
         rewrite Znth_list_repeat_app by apply (proj1 H2). rewrite Heqvn at 2.
-        rewrite (list_repeat_cons (12 - i)) by omega.
+        rewrite (list_repeat_cons (12 - i)) by lia.
         rewrite upd_Znth_list_repeat_app by apply (proj1 H2). forward.
         rewrite Znth_list_repeat_app by apply (proj1 H2).
         rewrite upd_Znth_list_repeat_app by apply (proj1 H2). forward.
         rewrite Znth_list_repeat_app by apply (proj1 H2).
         rewrite upd_Znth_list_repeat_app by apply (proj1 H2).
-        replace (i + 1 - 1) with i by omega. rewrite <- Heqv0.
-        replace (12 - i - 1) with (12 - (i + 1)) by omega.
+        replace (i + 1 - 1) with i by lia. rewrite <- Heqv0.
+        replace (12 - i - 1) with (12 - (i + 1)) by lia.
         change (v0 :: list_repeat (Z.to_nat (12 - (i + 1))) vn)
                with ([v0] ++ list_repeat (Z.to_nat (12 - (i + 1))) vn).
         rewrite app_assoc.
         replace (list_repeat (Z.to_nat (i - 1)) v0 ++ [v0]) with
             (list_repeat (Z.to_nat i) v0). 1: entailer!.
         replace [v0] with (list_repeat (Z.to_nat 1) v0) by (simpl; auto).
-        rewrite list_repeat_app. f_equal. rewrite <- Z2Nat.inj_add by omega.
-        f_equal. omega.
-      * replace (12 - 12) with 0 by omega. simpl list_repeat at 2.
+        rewrite list_repeat_app. f_equal. rewrite <- Z2Nat.inj_add by lia.
+        f_equal. lia.
+      * replace (12 - 12) with 0 by lia. simpl list_repeat at 2.
         rewrite app_nil_r. change 12 with MAX_SPACES at 2. thaw FR.
         change (Z.shiftl 1 16) with NURSERY_SIZE in *.
         assert (v0 = zero_triple) by (subst v0; unfold zero_triple; reflexivity).

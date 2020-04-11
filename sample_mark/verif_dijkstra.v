@@ -43,7 +43,7 @@ Lemma inrange_upd_Znth: forall (l: list Z) i new F,
 Proof.
   intros. rewrite Forall_forall in *. intros.
   destruct (eq_dec x new); [rewrite e; trivial|].
-  unfold upd_Znth in H2; apply in_app_or in H2; destruct H2.
+  rewrite upd_Znth_unfold in H2; auto. apply in_app_or in H2; destruct H2.
   - apply sublist_In in H2. apply (H0 x H2).
   - simpl in H2. destruct H2; [omega|].
     apply sublist_In in H2. apply (H0 x H2).
@@ -338,7 +338,7 @@ Proof.
     inversion H0.
   - subst l.
     rewrite upd_Znth_same; trivial.
-    rewrite upd_Znth_unfold at 2.
+    rewrite upd_Znth_unfold at 2; auto.
     repeat rewrite fold_right_app.
     repeat rewrite sublist_list_repeat; try omega.
     2: rewrite Zlength_list_repeat in H; [|unfold SIZE]; omega.
@@ -497,14 +497,14 @@ Proof.
   intros.
   rewrite <- (sublist_same 0 (Zlength l2) l2) at 1 by reflexivity.
   repeat rewrite (sublist_split 0 i (Zlength l2) l2) by omega.
-  unfold upd_Znth.
+  rewrite !upd_Znth_unfold; auto. 2: now rewrite combine_same_length.
   rewrite combine_app.
   2: { repeat rewrite <- ZtoNat_Zlength.
        f_equal. repeat rewrite Zlength_sublist; omega. }
   f_equal.
   1: apply combine_sublist_specific; assumption.
   rewrite (sublist_split i (i+1) (Zlength l2) l2) by omega.
-  rewrite sublist_len_1 by omega.
+  rewrite sublist_len_1 by omega. simpl.
   simpl combine. f_equal.
   apply combine_sublist_gen. omega. omega.
 Qed.
@@ -550,7 +550,7 @@ Proof.
   f_equal.
   pose proof (combine_same_length l l2 H2).
   rewrite combine_upd_Znth by assumption.
-  unfold upd_Znth.
+  unfold_upd_Znth_old.
   rewrite <- (sublist_same 0 (Zlength (combine l l2)) (combine l l2)) at 4 by reflexivity.
   rewrite (sublist_split 0 i (Zlength (combine l l2))
                          (combine l l2)) by omega.
@@ -1390,7 +1390,7 @@ Proof.
     replace (i-i) with 0 by omega.
     rewrite <- list_repeat_app' by omega.
     rewrite app_assoc_reverse; f_equal.
-    rewrite upd_Znth0.
+    rewrite upd_Znth0_old. 2: rewrite Zlength_list_repeat; omega.
     rewrite Zlength_list_repeat by omega.
     rewrite sublist_list_repeat by omega.
     replace (SIZE - (i + 1)) with (SIZE - i - 1) by omega.
@@ -1478,7 +1478,7 @@ Proof.
       (* First, worth noting that _nothing_ has been popped so far *)
       assert (get_popped (upd_Znth src (list_repeat (Z.to_nat SIZE) inf) 0) = []).
       { apply get_popped_empty. rewrite Forall_forall; intros.
-        unfold upd_Znth in H15.
+        rewrite upd_Znth_unfold in H15. 2: omega.
         apply in_app_or in H15.
         destruct H15; [| apply in_inv in H15; destruct H15].
         1,3: rewrite sublist_list_repeat in H15 by omega;

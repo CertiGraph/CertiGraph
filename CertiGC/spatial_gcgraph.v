@@ -1543,8 +1543,9 @@ Lemma ti_token_rep_add: forall ti sp i (Hs: 0 <= i < MAX_SPACES),
     ti_token_rep ti |-- ti_token_rep (ti_add_new_space ti sp i Hs).
 Proof.
   intros. unfold ti_token_rep. simpl. cancel. remember (spaces (ti_heap ti)).
-  rewrite <- (sublist_all (Zlength l) l) at 1 by omega. unfold upd_Znth.
+  rewrite <- (sublist_all (Zlength l) l) at 1 by omega.
   assert (Zlength l = MAX_SPACES) by (subst; rewrite spaces_size; reflexivity).
+  rewrite upd_Znth_unfold. 2: now rewrite H1.
   rewrite <- (sublist_rejoin 0 i) by omega. rewrite !iter_sepcon_app_sepcon. cancel.
   rewrite (sublist_next i) by omega. simpl. cancel. subst l.
   unfold space_token_rep at 1. rewrite H. rewrite if_true by reflexivity.
@@ -1586,11 +1587,12 @@ Lemma heap_rest_rep_add: forall tinfo sp i (Hs: 0 <= i < MAX_SPACES),
     heap_rest_rep (ti_heap (ti_add_new_space tinfo sp i Hs)).
 Proof.
   intros. unfold heap_rest_rep. simpl. remember (spaces (ti_heap tinfo)).
-  rewrite <- (sublist_all (Zlength l) l) at 1 by omega. unfold upd_Znth.
+  rewrite <- (sublist_all (Zlength l) l) at 1 by omega.
   assert (Zlength l = MAX_SPACES) by (subst; rewrite spaces_size; reflexivity).
+  rewrite upd_Znth_unfold. 2: now rewrite H0.
   rewrite <- (sublist_rejoin 0 i) by omega. rewrite !iter_sepcon_app_sepcon.
   rewrite sepcon_assoc. f_equal. rewrite (sublist_next i) by omega. simpl.
-  rewrite sepcon_comm. f_equal. subst l. unfold space_rest_rep at 1.
+  rewrite sepcon_emp, sepcon_comm. f_equal. subst l. unfold space_rest_rep at 1.
   rewrite if_true by assumption. rewrite emp_sepcon. reflexivity.
 Qed.
 
