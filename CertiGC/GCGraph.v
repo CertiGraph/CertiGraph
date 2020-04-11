@@ -13,6 +13,7 @@ Require Import VST.floyd.sublist.
 Require Import VST.floyd.coqlib3.
 Require Import VST.floyd.functional_base.
 Require Import VST.floyd.data_at_rec_lemmas.
+Require Import VST.floyd.list_solver.
 Require Import RamifyCoq.lib.EquivDec_ext.
 Require Import RamifyCoq.lib.List_ext.
 Require Import RamifyCoq.graph.graph_model.
@@ -625,7 +626,7 @@ Qed.
 Lemma upd_Znth_pos_cons: forall {A: Type} (i: Z) (l: list A) v x,
     (0 < i <= Zlength l)%Z -> upd_Znth i (v :: l) x = v :: upd_Znth (i - 1) l x.
 Proof.
-  intros. unfold upd_Znth.
+  intros. unfold_upd_Znth_old.
   rewrite (sublist_split 0 1 i); [| |rewrite Zlength_cons]; [| lia..].
   unfold sublist at 1. simpl. rewrite !sublist_pos_cons by lia. do 4 f_equal.
   1: lia. rewrite Zlength_cons; lia.
@@ -688,8 +689,9 @@ Lemma reset_nth_space_Znth: forall s i,
 Proof.
   intros ? ?. revert s. induction i; intros; destruct s; simpl in H; try lia.
   - simpl.
-    rewrite upd_Znth0, Znth_0_cons, sublist_1_cons, sublist_same; try reflexivity.
-    rewrite Zlength_cons. lia.
+    rewrite upd_Znth0_old, Znth_0_cons, sublist_1_cons, sublist_same;
+      try reflexivity; rewrite Zlength_cons. lia.
+    pose proof (Zlength_nonneg s0). lia.
   - replace (Z.of_nat (S i)) with (Z.of_nat i + 1)%Z by (zify; lia).
     rewrite Znth_pos_cons by lia.
     replace (Z.of_nat i + 1 - 1)%Z with (Z.of_nat i) by lia. simpl.
@@ -1491,7 +1493,10 @@ Qed.
 
 Lemma upd_Znth_In {A}: forall (e: A) l i v, In v (upd_Znth i l e) -> In v l \/ v = e.
 Proof.
-  intros. unfold upd_Znth in H. rewrite in_app_iff in H. simpl in H.
+  intros. destruct (Z_lt_le_dec i 0). 1: rewrite upd_Znth_out_of_range in H; auto.
+  destruct (Z_lt_le_dec i (Zlength l)).
+  2: { rewrite upd_Znth_out_of_range in H; auto. right. lia. }
+  rewrite upd_Znth_unfold in H; auto. rewrite in_app_iff in H. simpl in H.
   destruct H as [? | [? | ?]]; [|right; rewrite H; reflexivity|];
     apply sublist_In in H; left; assumption.
 Qed.
@@ -1828,7 +1833,10 @@ Lemma upd_Znth_tl {A}: forall (i: Z) (l: list A) (x: A),
     0 <= i -> l <> nil -> tl (upd_Znth (i + 1) l x) = upd_Znth i (tl l) x.
 Proof.
   intros. destruct l; simpl. 1: contradiction.
-  unfold upd_Znth. unfold_sublist_old. replace (i - 0) with i by lia.
+  destruct (Z_lt_le_dec i (Zlength l)).
+  2: rewrite !upd_Znth_out_of_range; auto; [|rewrite Zlength_cons]; lia.
+  rewrite !upd_Znth_unfold; auto. 2: rewrite Zlength_cons; lia.
+  unfold_sublist_old. replace (i - 0) with i by lia.
   replace (i + 1 - 0) with (i + 1) by lia. simpl.
   assert (forall j, 0 <= j -> Z.to_nat (j + 1) = S (Z.to_nat j)) by
       (intros; rewrite <- Z2Nat.inj_succ; rep_omega).

@@ -74,7 +74,11 @@ Proof.
        unfold nth_space; rewrite H6, H7; simpl; reflexivity).
   assert (isptr (space_start (nth_space t_info 0))) by
       (rewrite <- H3; apply start_isptr). do 2 forward. deadvars!.
-  rewrite upd_Znth0, sublist_1_cons, Zlength_cons, sublist_same by omega.
+  rewrite upd_Znth0_old.
+  2: { pose proof (@Zlength_nonneg (val * (val * val))
+                                   (map space_tri (tl (spaces (ti_heap t_info))))).
+       rewrite Zlength_cons. lia. }
+  rewrite sublist_1_cons, Zlength_cons, sublist_same by omega.
   fold (space_tri (nth_space t_info 0)). rewrite <- map_cons.
   replace (nth_space t_info 0 :: tl (spaces (ti_heap t_info))) with
       (spaces (ti_heap t_info)) by
