@@ -1181,6 +1181,7 @@ Proof.
   rewrite H2; split; simpl; [rewrite H|]; assumption.
 Qed.
 
+(*
 Lemma path_cost_app_not_inf:
   forall g p mom u,
     sound_dijk_graph g ->
@@ -1197,6 +1198,7 @@ Proof.
     try omega; trivial.
   apply link_evalid; trivial.
 Qed.
+*)
 
 Lemma graph_to_mat_Zlength: forall g, Zlength (graph_to_mat g) = SIZE.
 Proof.
@@ -1222,9 +1224,15 @@ Lemma acc_pos: forall (g: LGraph) l z,
 Proof.
   intro. induction l; intros; simpl; auto. apply IHl.
   - intros. apply H. now apply in_cons.
-  - unfold careful_add. destruct ((z =? inf) || (elabel g a =? inf))%bool.
-    + now vm_compute.
-    + apply Z.add_nonneg_nonneg; auto. apply H, in_eq.
+  - unfold careful_add.
+    destruct (z =? 0).
+    1: apply H, in_eq.
+    destruct (elabel g a =? 0).
+    1: apply H0.
+    destruct ((z =? inf) || (elabel g a =? inf))%bool;
+      destruct (inf <=? z + elabel g a).
+      1,3: compute; inversion 1.
+      1,2: apply Z.add_nonneg_nonneg; auto; apply H, in_eq.
 Qed.
 
 Lemma path_cost_pos:
@@ -1730,10 +1738,18 @@ Proof.
                          replace (fst p2mom) with src in *.
                          apply path_ends_app_cons; trivial.
                          destruct H44. simpl in H44; omega.
-                     +++ apply path_cost_app_not_inf; trivial.
+                     +++ admit.
+                         (* will be okay, will
+                            just use new lemma
+                            about path_cost and
+                            path_glue
+                            *)
+                       (* apply path_cost_app_not_inf; trivial. *)
                      +++ rewrite path_cost_app_cons; trivial.
                          rewrite elabel_Znth_graph_to_mat; simpl; try omega; trivial.
                          apply link_evalid; trivial.
+                         admit.
+                         (* easy, see H40 *)
                      +++ unfold VType in *.
                          rewrite Forall_forall. intros.
                          rewrite Forall_forall in H47.
@@ -1783,6 +1799,7 @@ So this pop operation maintains inv_popped for u.
    unfold path_globally_optimal in H38.
    destruct H36 as [? [? [? [? ?]]]].
    rewrite path_cost_app_cons; trivial.
+   2: admit. (* about to change anyway... *)
    rewrite elabel_Znth_graph_to_mat; trivial.
    2: apply link_evalid; trivial.
    simpl.
@@ -1811,74 +1828,32 @@ So this pop operation maintains inv_popped for u.
    rewrite <- H50 in g0.
    
    Set Nested Proofs Allowed.
-
-   Lemma careful_add_l_0: forall a, careful_add 0 a = a.
-   Proof.
-     intros.
-     unfold careful_add.
-     simpl. destruct (a =? inf) eqn:?.
-     - rewrite Z.eqb_eq in Heqb. omega.
-     - omega.
-   Qed.
-
-   Lemma careful_add_r_0: forall a, careful_add a 0 = a.
-   Proof.
-     intros.
-     unfold careful_add.
-     simpl. destruct (a =? inf) eqn:?.
-     - simpl. rewrite Z.eqb_eq in Heqb. omega.
-     - simpl. omega.
-   Qed.
    
-   Lemma path_cost_path_glue:
-     forall g p1 p2,
-       path_cost g (path_glue p1 p2) = careful_add (path_cost g p1) (path_cost g p2).
-   Proof.
-     intros.
-     unfold path_glue, path_cost. simpl.
-     rewrite map_app.
-     remember (map (elabel g) (snd p1)) as m1.
-     remember (map (elabel g) (snd p2)) as m2.
-     rewrite List_Func_ext.monoid_fold_left_app; intros; trivial.
-     - rewrite careful_add_l_0. apply Equivalence.equiv_reflexive_obligation_1.
-     - rewrite careful_add_r_0. apply Equivalence.equiv_reflexive_obligation_1.
-     - unfold careful_add.
-       destruct (x =? inf) eqn:?;
-                destruct (y =? inf) eqn:?;
-                destruct (z =? inf) eqn:?; simpl;
-         try apply Equivalence.equiv_reflexive_obligation_1.
-       + destruct (x + y =? inf); simpl; apply Equivalence.equiv_reflexive_obligation_1.
-       + admit.
-   Admitted.
-
-
-
    (* new g0: path_cost p'1 + (label mom' child') + path_cost p'2 < path_cost g p2mom + ... *)
    (* need a lemma about path_cost and path_glue *)
 
    assert (path_cost g (mom', [(mom', child')]) <> inf). {
      unfold path_cost. simpl.
-     rewrite elabel_Znth_graph_to_mat; trivial. simpl.
-     rewrite careful_add_clean; trivial.
-     compute; intro; omega.
+     rewrite careful_add_comm, careful_add_0.
+     rewrite elabel_Znth_graph_to_mat; trivial.
    }
           
    assert (careful_add (path_cost g (mom', [(mom', child')])) (path_cost g p2) <> inf). {
      unfold path_cost at 1. simpl.
      rewrite elabel_Znth_graph_to_mat by assumption; simpl.
-     repeat rewrite careful_add_clean; trivial; [omega| |];
-       compute; intro; omega.
+     repeat rewrite careful_add_clean; rewrite Z.add_0_l.
+     - omega.
+     - admit. (* easy from inrange_graph and H58 *)
+     - admit. (* from H59?? *)
+     - admit. (* same as above. *)
    }
 
-   
-
-   
-
-
-   repeat rewrite path_cost_path_glue in g0.
+   do 2 rewrite path_cost_path_glue in g0.
    do 2 rewrite careful_add_clean in g0; trivial.
 
-   (* and now just a little cleanup... *)
+   2,3,4: admit.
+
+   (* and now just a little cleanup... 
    unfold path_cost at 2 in g0. simpl in g0.
    rewrite careful_add_clean in g0.
    2: compute; intro; omega.
@@ -1886,7 +1861,7 @@ So this pop operation maintains inv_popped for u.
    rewrite Z.add_0_l in g0.
    rewrite elabel_Znth_graph_to_mat in g0 by assumption.
    simpl in g0.
-   rewrite Z.add_assoc in g0.
+   rewrite Z.add_assoc in g0. *)
 
 
    (* from global optimal within dark green, you know that there exists a 
@@ -1915,6 +1890,7 @@ So this pop operation maintains inv_popped for u.
       apply (Z.le_lt_trans _ (path_cost g p1 + Znth child' (Znth mom' (graph_to_mat g)) + path_cost g p2) _); trivial.
      do 2 rewrite <- Z.add_assoc.
      apply Zplus_le_compat_r; trivial.
+     admit.
    }
  
 (* assert that child' <> u 
@@ -2011,28 +1987,32 @@ Qed.
                     omega.
                   - intros.
                     rewrite H3 by omega. unfold path_cost at 1; simpl.
-                    destruct (Z.eq_dec (Znth src (Znth mom' (graph_to_mat g))) inf);
-                      destruct (Z.eq_dec (path_cost g p2mom') inf).
-                    + rewrite e. unfold careful_add. rewrite orb_true_r.
-                      rewrite <- inf_eq; omega.
-                    + rewrite e. unfold careful_add. rewrite orb_true_r.
-                      rewrite <- inf_eq; omega.
-                    + rewrite e. unfold careful_add. rewrite orb_true_l.
-                      rewrite <- inf_eq; omega.
-                    + rewrite careful_add_clean; try omega; trivial.
-                      destruct H32 as [? [? [? [? ?]]]].
-                      pose proof (path_cost_pos g p2mom' H2 H32 H1).
-                      assert (0 <= mom' < SIZE). {
-                        destruct H35.
-                        apply pfoot_in in H40.
-                        specialize (H33 _ H40).
+                    (* admitting for now, 
+                       will be easier soon *)
+                    admit.
+             }
+                    
+(*
+                    destruct (path_cost g p2mom' + Znth src (Znth mom' (graph_to_mat g)) >=? inf).
+                    1: compute; inversion 1.
+                    apply Z.add_nonneg_nonneg.
+                    apply path_cost_pos; trivial.
+                    1: destruct H32 as [? _]; trivial.
+
+                    assert (0 <= mom' < SIZE). {
+                        destruct H32 as [? [[? ?] ?]].
+                        apply pfoot_in in H36.
+                        specialize (H33 _ H36).
                         destruct H33.
                         apply get_popped_range in H33.
                         rewrite upd_Znth_Zlength in H33; omega.
-                      }
-                      unfold inrange_graph in H1.
-                      destruct (H1 _ _ H14 H40); omega.
-             }
+                    }
+
+                    unfold inrange_graph in H1.
+                    destruct (H1 _ _ H14 H35).
+                    omega.
+                    rewrite H36. compute; inversion 1. 
+             }                     *)
              destruct H32 as [? [p2mom [? [? ?]]]].
              unfold VType in *.
              remember (Znth dst prev_contents) as mom.
@@ -2375,7 +2355,9 @@ Qed.
                       *)
                      unfold path_globally_optimal in H62.
                      specialize (H62 _ H63 H66).
-                     rewrite careful_add_clean; omega.
+                     rewrite careful_add_clean.
+                     omega.
+                     admit.
                    }
                    assert (In_path g mom' p2mom'). {
                      destruct H66.
@@ -2395,11 +2377,13 @@ Qed.
                    specialize (H73 _ H64 n).
                    rewrite H73.
                    unfold careful_add.
+                   admit.
+                   (*
                    rewrite orb_true_r.
                    rewrite H71 in H43.
                    destruct H60 as [? [? [? [? _]]]].
                    rewrite <- H77.
-                   omega.
+                   omega. *)
                  ----  (* now we know that i was
                           seen, but unpopped *)
                    assert (Znth i priq_contents' < inf). {
@@ -2444,6 +2428,7 @@ There are two cases about p': In u p' \/ ~ In u p'
                        unfold path_globally_optimal in H62.
                        specialize (H62 _ H63 H66).
                        rewrite careful_add_clean; try omega; trivial.
+                       admit.
                      ****
 
 (*
@@ -2884,8 +2869,8 @@ dist [i] < dist[u] + graph[u][i] ......(H43)
                         unfold Int.half_modulus.
                         simpl. omega.
                    }
-                   omega.
-                 ----
+                   admit.
+                   ----
 (*
 1.2 ~ k = u: p' = s to u + u to k + edge k i.
 Since p' is composed by popped vertex (including u) only,
