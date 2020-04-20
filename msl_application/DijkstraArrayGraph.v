@@ -122,36 +122,217 @@ Section SpaceDijkstraArrayGraph.
   Definition graph_rep (g : Graph) (a : Addr)  :=
     abstract_data_at a (concat (graph_to_mat g)).
 
+End SpaceDijkstraArrayGraph.
+  
   Definition careful_add (a b : Z) :=
-    if (orb (Z.eqb a inf) (Z.eqb b inf)) then inf else a + b.
+    if Z.eqb a 0 then b else
+      if Z.eqb b 0 then a else
+        if Z.leb inf (a + b) then inf else a + b.
+
+  Lemma if_true_bool:
+    forall (T : Type) (a : T) (b : bool) (c : T),
+      b = true -> (if b then a else c) = a.
+  Proof. intros. rewrite H. trivial. Qed.
+
+    Lemma if_false_bool:
+    forall (T : Type) (a : T) (b : bool) (c : T),
+      b = false -> (if b then a else c) = c.
+  Proof. intros. rewrite H. trivial. Qed.
+  
+  Lemma careful_add_comm:
+    forall a b, careful_add a b = careful_add b a.
+  Proof.
+    intros. unfold careful_add.
+    destruct (a =? 0) eqn:?; destruct (b =? 0) eqn:?; trivial.
+    - try rewrite Z.eqb_eq in *. omega.
+    - destruct (inf <=? a + b) eqn:?;
+               rewrite Z.add_comm in Heqb2; rewrite Heqb2; omega.
+  Qed.
+
+  (* maybe I can lose the Hypos? *)  
+  Lemma careful_add_assoc:
+    forall a b c,
+      0 <= a -> 0 <= b -> 0 <= c ->
+      careful_add a (careful_add b c) =
+      careful_add (careful_add a b) c.
+  Proof.
+    intros.
+    unfold careful_add.
+    destruct (a =? 0) eqn:?;
+     destruct (b =? 0) eqn:?;
+      destruct (c =? 0) eqn:?; trivial.
+    - rewrite if_false_bool; trivial.
+    - rewrite (if_false_bool _ _ (a =? 0)); trivial.
+    - rewrite if_false_bool; trivial.
+      rewrite (if_false_bool _ _ ((if inf <=? a + b then inf else a + b) =? 0)); trivial.
+      destruct (inf <=? a + b) eqn:?.
+      + trivial.
+      + rewrite Z.eqb_neq in *. omega.
+    - {
+      rewrite Z.eqb_neq in *.
+      assert ((inf =? 0) = false) by
+          (rewrite Z.eqb_neq; compute; omega).
+      destruct (inf <=? a) eqn:?.
+    - rewrite Z.leb_le in Heqb3.
+      destruct (inf <=? b + c) eqn:?.
+      + rewrite H2.
+        rewrite Z.leb_le in Heqb4.
+        rewrite if_true_bool by (apply Zle_imp_le_bool; omega).
+        rewrite (if_true_bool _ _ (inf <=? a + b)) by (apply Zle_imp_le_bool; omega).
+        rewrite H2.
+        rewrite if_true_bool by (apply Zle_imp_le_bool; omega).
+        trivial.
+      + rewrite if_false_bool by (rewrite Z.eqb_neq; omega).
+        rewrite if_true_bool by (apply Zle_imp_le_bool; omega).
+        rewrite (if_true_bool _ _ (inf <=? a + b)) by (apply Zle_imp_le_bool; omega).
+        rewrite H2.
+        rewrite if_true_bool by (apply Zle_imp_le_bool; omega).
+        trivial.
+    - destruct (inf <=? b + c) eqn:?.
+      + rewrite Z.leb_le in Heqb4.
+        rewrite H2.
+        rewrite if_true_bool by (apply Zle_imp_le_bool; omega).
+        destruct (inf <=? a + b) eqn:?.
+        * rewrite Z.leb_le in Heqb5.
+          rewrite H2.
+          rewrite if_true_bool by (apply Zle_imp_le_bool; omega).
+          trivial.
+        * rewrite if_false_bool by
+              (rewrite Z.eqb_neq; omega).
+          rewrite if_true_bool by (apply Zle_imp_le_bool; omega).
+          trivial.
+      + repeat rewrite Z.add_assoc.
+        destruct (inf <=? a + b + c) eqn:?.
+        * rewrite if_false_bool by
+              (rewrite Z.eqb_neq; omega).
+          rewrite Z.leb_le in Heqb5.
+          rewrite (if_false_bool _ _ ((if inf <=? a + b then inf else a + b) =? 0)).
+          2: { destruct (inf <=? a + b).
+               - compute. trivial.
+               - rewrite Z.eqb_neq. omega.
+          }
+          destruct (inf <=? a + b) eqn:?;
+                   rewrite if_true_bool by (apply Zle_imp_le_bool; omega);
+            trivial.
+        * rewrite if_false_bool by (rewrite Z.eqb_neq; omega).
+          rewrite Z.leb_gt in Heqb5. 
+          rewrite if_false_bool.
+          2: { destruct (inf <=? a + b).
+               - compute. trivial.
+               - rewrite Z.eqb_neq. omega.
+          }
+          rewrite if_false_bool; rewrite if_false_bool;
+            trivial; rewrite Z.leb_gt; omega.
+      }
+  Qed.
+    
+  Lemma careful_add_0:
+    forall a, careful_add a 0 = a.
+  Proof.
+    intros. unfold careful_add.
+    destruct (a =? 0) eqn:?; trivial.
+    rewrite Z.eqb_eq in Heqb. omega.
+  Qed.
 
   Lemma careful_add_clean:
     forall a b,
-      a <> inf ->
-      b <> inf ->
+      a + b < inf ->
       careful_add a b = a + b.
   Proof.
     intros. unfold careful_add.
-    rewrite <- Z.eqb_neq in *.
-    destruct (a =? inf); destruct (b =? inf);
-      try discriminate; simpl; trivial.
-  Qed.    
-   
+    destruct (a =? 0) eqn:?;
+     destruct (b =? 0) eqn:?;
+    try rewrite Z.eqb_eq in *;
+      try rewrite Z.eqb_neq in *; subst; try omega.
+    rewrite if_false_bool; trivial.
+    rewrite Z.leb_gt; omega.
+  Qed.
+       
   Definition path_cost (g: LGraph) (path : @path VType EType) :=
     fold_left careful_add (map (elabel g) (snd path)) 0.
   
   Lemma path_cost_app_cons:
     forall g path i,
-      elabel g i <> inf ->
-      path_cost g path <> inf ->
+      elabel g i + path_cost g path < inf ->
       path_cost g (fst path, snd path +:: i) =
       path_cost g path + elabel g i.
   Proof.
     intros. unfold path_cost in *. simpl.
-    rewrite map_app, fold_left_app. simpl.
-    apply careful_add_clean; assumption.
-  Qed. 
+    rewrite map_app, fold_left_app. simpl. 
+    apply careful_add_clean. omega. 
+ Qed.
+    
+  Lemma path_cost_general:
+    forall g p init,
+      init < inf ->
+      fold_left careful_add (map (elabel g) (snd p)) init = careful_add init (path_cost g p).
+  Proof.
+    intros. unfold path_cost.
+    unfold LE in *.
+    remember (map (elabel g) (snd p)) as l.
+    remember careful_add as f.
+    clear -H Heqf.
+    induction l.
+    - simpl. subst f. unfold careful_add.
+      rewrite Z.add_0_r.
+      destruct (init =? 0) eqn:?.
+      1: rewrite Z.eqb_eq in Heqb; omega.
+      trivial.
+    - Abort.
 
+  Lemma path_cost_with_init:
+    forall l init,
+      init < inf ->
+      (* fold_left careful_add l 0 < inf -> *)
+      fold_left careful_add l init =
+      careful_add init (fold_left careful_add l 0).
+  Proof.
+    intros. induction l.
+    - intros; simpl. unfold careful_add.
+      destruct (init =? 0) eqn:?; trivial.
+      rewrite Z.eqb_eq in Heqb; omega.
+    - rewrite (List_Func_ext.monoid_fold_left_head 0).
+      2: intro; rewrite careful_add_comm, careful_add_0.
+      3: intro; rewrite careful_add_0.
+      4: admit. (* will weaken assoc *)
+      all: try apply Equivalence.equiv_reflexive_obligation_1.
+      admit.
+
+(*
+      rewrite careful_add_assoc.
+      rewrite (careful_add_comm init a).
+      rewrite <- careful_add_assoc.
+      rewrite <- (List_Func_ext.monoid_fold_left_head 0).
+      simpl.
+      replace (careful_add 0 init) with init.
+      fold_left careful_add l (careful_add init a) =
+  careful_add a (fold_left careful_add l init)
+ *)
+  Admitted.
+
+      Lemma path_cost_path_glue:
+    forall g p1 p2,
+      path_cost g (path_glue p1 p2) = careful_add (path_cost g p1) (path_cost g p2).
+  Proof.
+    intros.
+    unfold path_cost at 1, path_glue at 1.
+    simpl. rewrite map_app.
+    rewrite fold_left_app.
+    unfold LE in *.
+    unfold LE in *.
+    assert ((fold_left careful_add (map (elabel g) (snd p1)) 0) = (path_cost g p1))
+      by now unfold path_cost.
+    Set Printing All. unfold LE in *. rewrite H. 
+    unfold path_cost at 3.
+    remember (map (elabel g) (snd p2)) as l2.
+    unfold LE in *.
+    rewrite <- Heql2.
+    Unset Printing All.
+    remember (path_cost g p1) as c1.
+    rewrite path_cost_with_init; trivial.
+    Admitted. (* the premises of path_cost_general
+                 are a-changing *)      
+ 
   Lemma elabel_Znth_graph_to_mat:
     forall g i,
       sound_dijk_graph g ->
@@ -174,5 +355,27 @@ Section SpaceDijkstraArrayGraph.
     all: rewrite Z2Nat.id; omega.
 Qed.
   
-End SpaceDijkstraArrayGraph.
 
+
+(*
+   Lemma path_cost_path_glue:
+     forall g p1 p2,
+       path_cost g (path_glue p1 p2) = careful_add (path_cost g p1) (path_cost g p2).
+   Proof.
+     intros.
+     unfold path_glue, path_cost. simpl.
+     rewrite map_app.
+     remember (map (elabel g) (snd p1)) as m1.
+     remember (map (elabel g) (snd p2)) as m2.
+     rewrite List_Func_ext.monoid_fold_left_app; intros; trivial.
+(*     - rewrite careful_add_l_0. apply Equivalence.equiv_reflexive_obligation_1.
+     - rewrite careful_add_r_0. apply Equivalence.equiv_reflexive_obligation_1.
+     - unfold careful_add.
+       destruct (x =? inf) eqn:?;
+                destruct (y =? inf) eqn:?;
+                destruct (z =? inf) eqn:?; simpl;
+         try apply Equivalence.equiv_reflexive_obligation_1.
+       + destruct (x + y =? inf); simpl; apply Equivalence.equiv_reflexive_obligation_1.
+ *)
+   Admitted.
+*)
