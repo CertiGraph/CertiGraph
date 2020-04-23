@@ -241,7 +241,9 @@ Proof.
         set (j := Int64.max_unsigned) in *; compute in j; subst j; omega.
         apply H5.
         
-    + (*asdf Use allp_jam_split2?*)
+    + (* Use allp_jam_split2? *)
+      (* I've no confidence the premises can be solved...*) 
+
       rewrite <- (allp_jam_split2 (adr_range (b, Ptrofs.unsigned i) 8) (adr_range (b, Ptrofs.unsigned i) 4) (adr_range (b, Ptrofs.unsigned i + 4) 4)
                                   (fun loc : address =>
                                      yesat compcert_rmaps.RML.R.NoneP
@@ -255,11 +257,21 @@ Proof.
                                            (compcert_rmaps.VAL
                                               (nth (Z.to_nat (snd loc - (Ptrofs.unsigned i + 4))) [Byte x4; Byte x5; Byte x6; Byte x7] Undef)) sh loc)
                                   (adr_range_dec (b, Ptrofs.unsigned i) 8)
-                 ). split. apply H1. apply H0.
-      (*welp so I did this, but I've no confidence what's below can be solved...*)
-      simpl in H1. unfold is_resource_pred. simpl.
-
-
-      Search "exists" compcert_rmaps.RML.R.resource.
-
+                 ).
+      * split; trivial.
+      * eexists. unfold is_resource_pred; intros.
+        admit.
+      * admit.
+      * admit.
+      * unfold Ensemble_join. split; intros.
+        -- replace 8 with (4+4) by omega.
+           apply initial_world.adr_range_divide; omega.
+        -- admit.
+      * intros. admit.
+      * intros. admit.
+      * intros. red in k. destruct k.
+        -- left; trivial.
+        -- exfalso. admit.
+        -- right; unfold compcert_rmaps.isFUN; trivial.
+           
 Abort.
