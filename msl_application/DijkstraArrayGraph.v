@@ -8,6 +8,8 @@ Require Import RamifyCoq.lib.List_ext.
 Require Import RamifyCoq.graph.graph_model.
 Require Import RamifyCoq.graph.path_lemmas.
 Require Import RamifyCoq.msl_application.ArrayGraph.
+Require Import Coq.Lists.List.
+
 
 Coercion pg_lg: LabeledGraph >-> PreGraph.
 Coercion lg_gg: GeneralGraph >-> LabeledGraph. 
@@ -292,6 +294,25 @@ Proof.
   rewrite if_true_bool; trivial. rewrite Z.leb_le. omega.
 Qed.
 
+Lemma careful_add_inf_clean:
+  forall a b,
+    0 <= a -> 0 <= b ->
+    careful_add a b < inf ->
+    a + b < inf.
+Proof.
+  intros.
+  unfold careful_add in H1.
+  destruct (a =? 0) eqn:?.
+  - rewrite Z.eqb_eq in *. omega.
+  - destruct (b =? 0) eqn:?.
+    + rewrite Z.eqb_eq in *. omega.
+    + rewrite Z.eqb_neq in *.
+      destruct (a <? 0) eqn:?; destruct (b <? 0) eqn:?;
+               try rewrite Z.ltb_lt in *; try omega.
+      simpl in H1.
+      destruct (inf <=? a + b); [inversion H1 | trivial].
+Qed.
+
 Definition path_cost (g: LGraph) (path : @path VType EType) :=
   fold_left careful_add (map (elabel g) (snd path)) 0.
 
@@ -323,3 +344,4 @@ Proof.
   2, 3, 5: rewrite nat_inc_list_Zlength.
   all: rewrite Z2Nat.id; omega.
 Qed.
+
