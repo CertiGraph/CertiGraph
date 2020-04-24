@@ -308,6 +308,25 @@ Proof.
   simpl. rewrite IHnum. rewrite Z.min_r; omega.
 Qed.
 
+Lemma vvalid2_evalid:
+  forall g a b,
+    sound_dijk_graph g ->
+    vvalid g a ->
+    vvalid g b ->
+    evalid g (a,b).
+Proof.
+  intros. destruct H as [_ [? _]].
+  red in H; rewrite H; split; trivial.
+Qed.
+
+Lemma vvalid_range:
+  forall g a,
+    sound_dijk_graph g ->
+    vvalid g a <-> 0 <= a < SIZE.
+Proof.
+  intros. destruct H as [? _]. red in H. trivial.
+Qed.
+
 Lemma find_src: forall src,
     0 <= src < Zlength (list_repeat (Z.to_nat SIZE) inf) ->
     find (upd_Znth src (list_repeat (Z.to_nat SIZE) inf) 0)
@@ -1136,15 +1155,15 @@ Proof.
   intros.
   apply valid_path_app.
   split; [assumption|].
+  assert (Hrem := H).
   destruct H as [? [? [? ?]]].
   simpl; split.
-  + rewrite H5; simpl.
-    assumption.
-  + unfold strong_evalid.
-    unfold edge_valid in H4.
-    unfold vertex_valid in H.
-    rewrite H4, H5, H6, H, H; simpl.
-    split; split; assumption.
+  1: rewrite H5; simpl; assumption.
+  unfold strong_evalid.
+  red in H, H4.
+  repeat rewrite H4, H5, H6, H; simpl.
+  repeat rewrite vvalid_range by assumption.
+  split; split; assumption.
 Qed.
 
 Lemma path_ends_app_cons:
@@ -1160,6 +1179,7 @@ Proof.
     rewrite H; reflexivity.
 Qed.
 
+(* can refactor away *)
 Lemma link_evalid:
   forall g a b,
     sound_dijk_graph g ->
@@ -1167,11 +1187,8 @@ Lemma link_evalid:
     0 <= b < SIZE ->
     evalid g (a,b).
 Proof.
-  intros.
-  destruct H as [? [? _]].
-  unfold edge_valid in H2.
-  unfold vertex_valid in H.
-  rewrite H2; split; simpl; [rewrite H|]; assumption.
+  intros. destruct H as [? [? _]].
+  red in H, H2. rewrite H2; split; rewrite H; assumption.
 Qed.
 
 Lemma graph_to_mat_Zlength: forall g, Zlength (graph_to_mat g) = SIZE.
@@ -1185,11 +1202,14 @@ Lemma inrange_graph_cost_pos: forall g e,
     evalid g e -> 0 <= elabel g e.
 Proof.
   intros. rewrite elabel_Znth_graph_to_mat; auto. destruct H as [? [? _]].
-  red in H, H2. rewrite H2, H in H1. destruct H1. red in H0.
-  rewrite <- (graph_to_mat_Zlength g) in H1, H3. specialize (H0 _ _ H3 H1).
-  destruct H0.
-  - destruct H0; omega.
-  - rewrite H0. rewrite <- inf_eq. omega.
+  red in H, H2.
+  rewrite (surjective_pairing e) in H1.
+  rewrite H2 in H1. red in H0.
+  rewrite (graph_to_mat_Zlength g) in H0.
+  destruct H1. rewrite H in H1, H3.
+  specialize (H0 _ _ H3 H1). destruct H0.
+  1: destruct H0; omega.
+  rewrite H0. rewrite <- inf_eq. omega.
 Qed.
 
 Lemma acc_pos: forall (g: LGraph) l z,
@@ -1768,24 +1788,31 @@ Proof.
                     destruct H44.
                     apply valid_path_app_cons; trivial;
                       try rewrite <- surjective_pairing; trivial.
-                  +++ rewrite (surjective_pairing p2mom) in *.
-                      simpl.
-                      replace (fst p2mom) with src in *.
-                      apply path_ends_app_cons; trivial.
-                      destruct H44. simpl in H44; omega.
-                  +++ admit.
-                  (* will be okay, will
-                            just use new lemma
-                            about path_cost and
-                            path_glue
-                   *)
-                  (* apply path_cost_app_not_inf; trivial. *)
-                  +++ rewrite path_cost_app_cons; trivial.
-                      rewrite elabel_Znth_graph_to_mat; simpl; try omega; trivial.
-                      apply link_evalid; trivial.
-                      admit.
-                      admit.
-                  (* easy, see H40 *)
+                  +++
+                    rewrite (surjective_pairing p2mom) in *.
+                    simpl.
+                    replace (fst p2mom) with src in *.
+                    apply path_ends_app_cons; trivial.
+                    destruct H44. simpl in H44; omega.
+                  +++ 
+                    assert (path_cost g p2mom + elabel g (mom, u) < inf) by admit.
+                    (* I need to get this from 
+                       an invariant *)
+                    rewrite path_cost_app_cons; trivial.
+                    *** unfold VType in *. omega.
+                    *** rewrite Z.add_comm. trivial.
+                    *** apply vvalid2_evalid;
+                          try apply vvalid_range; trivial.
+                  +++
+                    assert (path_cost g p2mom + elabel g (mom, u) < inf) by admit.
+                    rewrite path_cost_app_cons; trivial.
+                    rewrite elabel_Znth_graph_to_mat; simpl; try omega; trivial.
+                    apply vvalid2_evalid;
+                      try apply vvalid_range; trivial.
+                    unfold VType in *.
+                    omega.
+                    apply vvalid2_evalid;
+                      try apply vvalid_range; trivial.
                   +++ unfold VType in *.
                       rewrite Forall_forall. intros.
                       rewrite Forall_forall in H47.
@@ -1835,11 +1862,13 @@ So this pop operation maintains inv_popped for u.
                 unfold path_globally_optimal in H38.
                 destruct H36 as [? [? [? [? ?]]]].
                 rewrite path_cost_app_cons; trivial.
-                2: admit. (* about to change anyway... *)
-                2: apply link_evalid; trivial.
-
+                2: admit. (* get from inv *)
+                2: apply vvalid2_evalid;
+                  try apply vvalid_range; trivial.
+               
                 rewrite elabel_Znth_graph_to_mat; trivial.
-                2: apply link_evalid; trivial.
+                2: apply vvalid2_evalid;
+                  try apply vvalid_range; trivial.
                 simpl.
                 destruct (Z_le_gt_dec
                             (path_cost g p2mom + Znth u (Znth mom (graph_to_mat g)))
@@ -1868,16 +1897,35 @@ So this pop operation maintains inv_popped for u.
                 Set Nested Proofs Allowed.
                 
                 (* new g0: path_cost p'1 + (label mom' child') + path_cost p'2 < path_cost g p2mom + ... *)
-                (* need a lemma about path_cost and path_glue *)
 
-                assert (path_cost g (mom', [(mom', child')]) <> inf). {
+                assert (0 <= path_cost g (mom', [(mom', child')]) < inf). {
                   unfold path_cost. simpl.
                   rewrite careful_add_comm, careful_add_id.
-                  rewrite elabel_Znth_graph_to_mat; trivial.
+                  rewrite elabel_Znth_graph_to_mat; simpl; trivial.
+                  red in H1.
+                  destruct H2 as [? [? _]].
+                  red in H2, H61.
+                  rewrite H61 in H60.
+                  destruct H60.
+                  rewrite H2 in H60, H62.
+                  rewrite graph_to_mat_Zlength in H1.
+                  specialize (H1 _ _ H62 H60).
+                  destruct H1.
+                  2: unfold VType in *; omega.
+                  unfold VType in *.
+                  split; [destruct H1; omega|].
+                  apply Z.le_lt_trans with (m := Int.max_signed / SIZE).
+                  apply H1.
+                  compute; trivial.
                 }
-                
-                do 2 rewrite path_cost_path_glue in g0 by admit.
-                do 2 rewrite careful_add_clean in g0 by admit.
+                assert (path_cost g p1 < inf) by admit.
+                (* better inv *)
+                unfold VType in *.
+                do 2 rewrite path_cost_path_glue in g0; trivial.
+                2: omega.
+                rewrite careful_add_clean in g0; trivial; try omega; try apply path_cost_pos; trivial.
+                rewrite careful_add_clean in g0; trivial; try omega; try apply path_cost_pos; trivial.
+                2,3,4: admit.
 
                 (* and now just a little cleanup...  *)
    unfold path_cost at 2 in g0. simpl in g0.
@@ -1893,18 +1941,18 @@ So this pop operation maintains inv_popped for u.
                 assert (0 <= mom' < SIZE). {
                   red in H2.
                   destruct H2 as [? [? _]].
-                  apply H62 in H60.
+                  apply H63 in H60.
                   destruct H60 as [? _].
                   apply H2 in H60; simpl in H60.
                   trivial.
                 }
 
-                destruct (H4 mom' H62) as [? _].
-                unfold inv_popped in H63.
-                destruct (H63 H55) as [p2mom' [? [? ?]]].
+                destruct (H4 mom' H63) as [? _].
+                unfold inv_popped in H64.
+                destruct (H64 H55) as [p2mom' [? [? ?]]].
 
                 (* and path_cost of p2mom' will be <= that of p1 *)
-                specialize (H66 p1 H51 H53). 
+                specialize (H67 p1 H51 H53). 
                 
                 (* assert by transitivity that
      path_cost (p2mom' +++ (mom', child') +++ p2) < path_cost p2mom +++ ...   *) 
@@ -2012,7 +2060,11 @@ So this pop operation maintains inv_popped for u.
                 rewrite H3 by omega. unfold path_cost at 1; simpl.
                 (* admitting for now, 
                        will be easier soon *)
+                
+
+                
                 admit.
+                (* careful_add_pos *)
             }
             
             (*
@@ -2232,10 +2284,8 @@ So this pop operation maintains inv_popped for u.
                     replace (fst p2u) with src in *.
                     apply path_ends_app_cons; trivial.
                     destruct H51. simpl in H51; omega.
-                  - destruct H2 as [? [? _]].
-                    red in H2, H59.
-                    rewrite H59, H2.
-                    simpl. omega.
+                  - apply vvalid2_evalid;
+                      try apply vvalid_range; trivial.
                 }
                 assert (0 <= i < Zlength (map Vint (map Int.repr dist_contents'))) by
                     (repeat rewrite Zlength_map; omega).
@@ -2383,10 +2433,14 @@ So this pop operation maintains inv_popped for u.
                                 unfold path_globally_optimal in H62.
                                 specialize (H62 _ H63 H66).
                                 rewrite careful_add_clean.
-                                omega.
-                                apply path_cost_pos; trivial.
-                                admit.
-                                admit.
+                                1: omega.
+                                1: apply path_cost_pos; trivial.
+                                2: admit. (* invariant *)
+                                red in H1.
+                                rewrite graph_to_mat_Zlength in H1.
+                                replace (Zlength priq_contents) with SIZE in H16.
+                                specialize (H1 _ _ H18 H16).
+                                destruct H1; omega.
                               }
                               assert (In_path g mom' p2mom'). {
                                 destruct H66.
@@ -2405,8 +2459,11 @@ So this pop operation maintains inv_popped for u.
                               }
                               specialize (H73 _ H64 n).
                               rewrite H73.
-                              unfold careful_add.
-                              admit.
+                              assert (careful_add (path_cost g p2mom') inf = inf) by admit.
+                              unfold VType in *.
+                              rewrite H75.
+                              admit. (* invariant *)
+                              
                             (*
                    rewrite orb_true_r.
                    rewrite H71 in H43.
@@ -2457,8 +2514,9 @@ There are two cases about p': In u p' \/ ~ In u p'
                                   unfold path_globally_optimal in H62.
                                   specialize (H62 _ H63 H66).
                                   rewrite careful_add_clean; try omega; trivial.
-                                  admit.
-                                  admit.
+                                  apply path_cost_pos; trivial.
+                                  admit. (* invariant *)
+
                                 ****
 
                                   (*
@@ -2540,9 +2598,6 @@ There are two cases about p': In u p' \/ ~ In u p'
                                       rewrite upd_Znth_Zlength in H64; try omega.
                                   }
                                   specialize (H83 mom' p2mom' H84).
-                                  
-                                  
-                                  
                                   
                                   
                                   admit.
@@ -2947,15 +3002,12 @@ dist[i] <= dist[k] + len(edge k i) <= path_cost p'.
                     2: apply H60; trivial.
                     subst mom.
 
-                    (* dist[i] = inf (H58),
-   dist[u] <> inf (can infer from H61), and
-   dist[u] + u2i >= dist[i] (H43)
-                     *)
+ (* dist[u] <> inf (can infer from H63), and     
+    dist[u] + u2i >= dist[i] (H43)
+  *)
                     assert (0 <= i < SIZE) by omega.
                     assert (0 <= u < SIZE) by omega.
                     assert (Int.max_signed / SIZE < inf) by now compute. 
-                    unfold inrange_graph in H1;
-                      destruct (H1 _ _ H62 H63); trivial.
                     admit.
                 --- intros.
                     assert (i <= dst < SIZE) by omega.
@@ -3018,7 +3070,7 @@ dist[i] <= dist[k] + len(edge k i) <= path_cost p'.
                        destruct H55. trivial.
                    +++ intros. apply H59; trivial.
                    +++ intros. 
-                       admit.
+                       admit. 
                --- apply H22; omega.
             ** destruct (Z.eq_dec dst i).
                --- omega. 
