@@ -916,10 +916,12 @@ Proof.
   assumption.
 Qed.
 
+(* SETTING UP THE INVARIANTS *)
+
 Definition path_correct (g: LGraph) prev dist src dst p : Prop  :=
   valid_path g p /\
   path_ends g p src dst /\
-  path_cost g p <> inf /\
+  path_cost g p < inf /\
   Znth dst dist = path_cost g p /\
   Forall (fun x => Znth (snd x) prev = fst x) (snd p).
 
@@ -946,8 +948,8 @@ Definition inv_unpopped g src prev priq dist dst :=
      (forall step, In_path g step p2mom ->
                    In step (get_popped priq)) /\
      path_globally_optimal g src mom p2mom /\
-     elabel g (mom, dst) <> inf /\
-     Z.add (path_cost g p2mom) (Znth dst (Znth mom (graph_to_mat g))) <> inf /\
+     elabel g (mom, dst) < inf /\
+     (path_cost g p2mom) + (Znth dst (Znth mom (graph_to_mat g))) < inf /\
      Znth dst dist = path_cost g p2mom + Znth dst (Znth mom (graph_to_mat g)) /\
      forall mom' p2mom',
        path_correct g prev dist src mom' p2mom' ->
@@ -1635,43 +1637,42 @@ Proof.
            PROP (
                (* popped items are not affected by the for loop *)
                forall dst, inv_popped g src prev_contents' priq_contents' dist_contents' dst;
-                           
-                           (* inv_unpopped is restored for those vertices
-                              that the for loop has scanned and repaired *)
-                           forall dst,
-                             0 <= dst < i ->
-                             inv_unpopped g src prev_contents' priq_contents' dist_contents' dst;
-                             
-                             (* a weaker version of inv_popped is
-                                true for those vertices that the
-                                for loop has not yet scanned *)
-                             forall dst,
-                               i <= dst < SIZE ->
-                               Znth dst priq_contents' < inf ->
-                               let mom := Znth dst prev_contents' in
-                               exists p2mom,
-                                 path_correct g prev_contents' dist_contents' src mom p2mom /\
-                                 (forall step,
-                                     (* step <> src -> *)
-                                     In_path g step p2mom ->
-                                     In step (get_popped priq_contents') /\
-                                     step <> u) /\
-                                 path_globally_optimal g src mom p2mom /\
-                                 elabel g (mom, dst) <> inf /\
-                                 Z.add (path_cost g p2mom) (Znth dst (Znth mom (graph_to_mat g))) <> inf /\
-                                 Znth dst dist_contents' = Z.add (path_cost g p2mom) (Znth dst (Znth mom (graph_to_mat g))) /\
-                                 forall mom' p2mom',
-                                   path_correct g prev_contents' dist_contents' src mom' p2mom' ->
-                                   (forall step',
-                                       (* step' <> src -> *)
-                                       In_path g step' p2mom' ->
-                                       In step' (get_popped priq_contents') /\
-                                       step' <> u) ->
-                                   path_globally_optimal g src mom' p2mom' ->
-                                   path_cost g p2mom + Znth dst (Znth mom (graph_to_mat g)) <= careful_add (path_cost g p2mom') (Znth dst (Znth mom' (graph_to_mat g)));
-                                   
-                                   (* similarly for inv_unseen,
-                       the invariant has been
+              (* inv_unpopped is restored for those vertices
+                 that the for loop has scanned and repaired *)
+               forall dst,
+                 0 <= dst < i ->
+                 inv_unpopped g src prev_contents' priq_contents' dist_contents' dst;
+                 
+                 (* a weaker version of inv_popped is
+                    true for those vertices that the
+                    for loop has not yet scanned *)
+                 forall dst,
+                   i <= dst < SIZE ->
+                   Znth dst priq_contents' < inf ->
+                   let mom := Znth dst prev_contents' in
+                   exists p2mom,
+                     path_correct g prev_contents' dist_contents' src mom p2mom /\
+                     (forall step,
+                         (* step <> src -> *)
+                         In_path g step p2mom ->
+                         In step (get_popped priq_contents') /\
+                         step <> u) /\
+                     path_globally_optimal g src mom p2mom /\
+                     elabel g (mom, dst) < inf /\
+                     (path_cost g p2mom) + (Znth dst (Znth mom (graph_to_mat g))) < inf /\
+                     Znth dst dist_contents' = Z.add (path_cost g p2mom) (Znth dst (Znth mom (graph_to_mat g))) /\
+                     forall mom' p2mom',
+                       path_correct g prev_contents' dist_contents' src mom' p2mom' ->
+                       (forall step',
+                           (* step' <> src -> *)
+                           In_path g step' p2mom' ->
+                           In step' (get_popped priq_contents') /\
+                           step' <> u) ->
+                       path_globally_optimal g src mom' p2mom' ->
+                       path_cost g p2mom + Znth dst (Znth mom (graph_to_mat g)) <= careful_add (path_cost g p2mom') (Znth dst (Znth mom' (graph_to_mat g)));
+                       
+                       (* similarly for inv_unseen,
+                          the invariant has been
                        restored until i:
                        u has been taken into account *)
                                    forall dst,
@@ -1800,7 +1801,6 @@ Proof.
                        an invariant *)
                     rewrite path_cost_app_cons; trivial.
                     *** unfold VType in *. omega.
-                    *** rewrite Z.add_comm. trivial.
                     *** apply vvalid2_evalid;
                           try apply vvalid_range; trivial.
                   +++
@@ -1884,10 +1884,10 @@ So this pop operation maintains inv_popped for u.
                            path_ends g p1 src mom' /\
                            path_ends g p2 child' u /\
                            In mom' (get_popped priq_contents) /\
-                           path_cost g p1 <> inf /\
-                           path_cost g p2 <> inf /\
-                           Znth child' (Znth mom' (graph_to_mat g)) <> inf /\
-                           path_cost g p2 + Znth child' (Znth mom' (graph_to_mat g)) <> inf /\
+                           path_cost g p1 < inf /\
+                           path_cost g p2 < inf /\
+                           Znth child' (Znth mom' (graph_to_mat g)) < inf /\
+                           path_cost g p2 + Znth child' (Znth mom' (graph_to_mat g)) < inf /\
                            evalid g (mom', child')                          
                        (* etc *)) by admit.
                 
