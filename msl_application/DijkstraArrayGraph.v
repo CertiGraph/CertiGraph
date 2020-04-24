@@ -79,8 +79,8 @@ Definition vertex_valid (g: LGraph): Prop :=
   forall v, vvalid g v <-> 0 <= v < SIZE.
 
 Definition edge_valid (g: LGraph): Prop :=
-  forall e, evalid g e <->
-            (vvalid g (fst e) /\ 0 <= snd e < SIZE).
+  forall a b, evalid g (a,b) <->
+            (vvalid g a /\ vvalid g b).
 
 Definition src_edge (g: LGraph): Prop :=
   forall e, src g e = fst e.
@@ -267,6 +267,31 @@ Proof.
   split; rewrite Z.ltb_nlt; omega.
 Qed.
 
+Lemma careful_add_pos:
+  forall a b,
+    0 <= a -> 0 <= b -> 0 <= careful_add a b.
+Proof.
+  intros. unfold careful_add.
+  destruct (a =? 0); destruct (b =? 0); trivial.
+  rewrite if_false_bool.
+  2: { rewrite Bool.orb_false_iff; split;
+       rewrite Z.ltb_nlt; omega. }
+  destruct (inf <=? a + b); [now compute| omega].
+Qed.
+
+Lemma careful_add_inf:
+  forall a,
+    0 <= a -> careful_add a inf = inf.
+Proof.
+  intros. unfold careful_add.
+  destruct (a =? 0); trivial.
+  rewrite if_false_bool by (now compute).
+  rewrite if_false_bool.
+  2: { rewrite Bool.orb_false_iff; split;
+       rewrite Z.ltb_nlt; [omega | compute; inversion 1]. }
+  rewrite if_true_bool; trivial. rewrite Z.leb_le. omega.
+Qed.
+
 Definition path_cost (g: LGraph) (path : @path VType EType) :=
   fold_left careful_add (map (elabel g) (snd path)) 0.
 
@@ -287,9 +312,9 @@ Proof.
   intros. destruct i as (src, dst); simpl.
   unfold graph_to_mat.
   destruct H as [? [? _]].
-  unfold vertex_valid in H; unfold edge_valid in H1.
-  rewrite H1 in H0; destruct H0. simpl in H0, H2.
-  rewrite H in H0.
+  red in H, H1.
+  rewrite H1 in H0; destruct H0. 
+  rewrite H in H0, H2.
   rewrite Znth_map, nat_inc_list_i.
   unfold vert_rep. rewrite Znth_map.
   rewrite Znth_map. rewrite nat_inc_list_i.
