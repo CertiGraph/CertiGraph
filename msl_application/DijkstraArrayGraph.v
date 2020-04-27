@@ -269,6 +269,29 @@ Proof.
   split; rewrite Z.ltb_nlt; omega.
 Qed.
 
+Lemma careful_add_dirty:
+  forall a b,
+    a < inf -> b < inf ->
+    a + b >= inf ->
+    careful_add a b = inf.
+Proof.
+  intros.
+  unfold careful_add.
+  destruct (a =? 0) eqn:?;
+           destruct (b =? 0) eqn:?;
+  try rewrite Z.eqb_eq in *;
+    try rewrite Z.eqb_neq in *.
+  - subst. exfalso. compute in H1. apply H1; trivial.
+  - exfalso. omega.
+  - exfalso. omega.
+  - destruct (a <? 0) eqn:?; simpl.
+    + rewrite Z.ltb_lt in Heqb2. omega.
+    + destruct (b <? 0) eqn:?; simpl.
+      * rewrite Z.ltb_lt in Heqb3. omega.
+      * rewrite if_true_bool; trivial.
+        rewrite Z.leb_le. omega.
+Qed.
+
 Lemma careful_add_pos:
   forall a b,
     0 <= a -> 0 <= b -> 0 <= careful_add a b.
@@ -324,13 +347,13 @@ Definition inrange_graph grph_contents :=
     Znth i (Znth j grph_contents) = inf.
 
 Lemma elabel_Znth_graph_to_mat:
-  forall g i,
+  forall g src dst,
     sound_dijk_graph g ->
-    evalid (pg_lg g) i ->
-    elabel g i =
-    Znth (snd i) (Znth (fst i) (graph_to_mat g)).
+    evalid (pg_lg g) (src, dst) ->
+    elabel g (src, dst) =
+    Znth dst (Znth src (graph_to_mat g)).
 Proof.
-  intros. destruct i as (src, dst); simpl.
+  intros. 
   unfold graph_to_mat.
   destruct H as [? [? _]].
   red in H, H1.
@@ -344,4 +367,3 @@ Proof.
   2, 3, 5: rewrite nat_inc_list_Zlength.
   all: rewrite Z2Nat.id; omega.
 Qed.
-
