@@ -124,6 +124,12 @@ Section SpaceDijkstraArrayGraph.
 
 End SpaceDijkstraArrayGraph.
 
+Lemma graph_to_mat_Zlength: forall g, Zlength (graph_to_mat g) = SIZE.
+Proof.
+  intros. unfold graph_to_mat.
+  rewrite Zlength_map, nat_inc_list_Zlength, Z2Nat.id; auto. now vm_compute.
+Qed.
+
 Lemma if_true_bool:
   forall (T : Type) (a : T) (b : bool) (c : T),
     b = true -> (if b then a else c) = a.
@@ -364,4 +370,245 @@ Proof.
   3: rewrite Zlength_map.
   2, 3, 5: rewrite nat_inc_list_Zlength.
   all: rewrite Z2Nat.id; omega.
+Qed.
+
+Lemma one_step_path_Znth:
+  forall g a b,
+    sound_dijk_graph g ->
+    evalid g (a, b) ->
+    path_cost g (a, (a,b)::nil) =
+    Znth b (Znth a (graph_to_mat g)).
+Proof.
+  intros.
+  unfold path_cost; simpl.
+  rewrite careful_add_comm, careful_add_id.
+  rewrite elabel_Znth_graph_to_mat; trivial.
+Qed.
+
+Lemma vvalid2_evalid:
+  forall g a b,
+    sound_dijk_graph g ->
+    vvalid g a ->
+    vvalid g b ->
+    evalid g (a,b).
+Proof.
+  intros. destruct H as [_ [? _]].
+  red in H; rewrite H; split; trivial.
+Qed.
+
+Lemma vvalid_range:
+  forall g a,
+    sound_dijk_graph g ->
+    vvalid g a <-> 0 <= a < SIZE.
+Proof.
+  intros. destruct H as [? _]. red in H. trivial.
+Qed.
+
+Lemma valid_path_app_cons:
+  forall g src links2u u i,
+    sound_dijk_graph g ->
+    valid_path g (src, links2u) ->
+    pfoot g (src, links2u) = u ->
+    evalid g (u,i) ->
+    valid_path g (src, links2u +:: (u,i)).
+Proof.
+  intros.
+  apply valid_path_app.
+  split; [assumption|].
+  assert (Hrem := H).
+  destruct H as [? [? [? ?]]].
+  simpl; split.
+  1: rewrite H4; simpl; assumption.
+  unfold strong_evalid.
+  rewrite H4, H5; simpl.
+  split; trivial.
+  red in H3; rewrite H3 in H2; trivial.
+Qed.
+
+Lemma path_ends_app_cons:
+  forall g src links2u u i,
+    sound_dijk_graph g ->
+    path_ends g (src, links2u) src u ->
+    path_ends g (src, links2u +:: (u, i)) src i.
+Proof.
+  split.
+  + destruct H0; apply H0.
+  + rewrite pfoot_last.
+    destruct H as [_ [_ [_ ?]]].
+    rewrite H; reflexivity.
+Qed.
+
+Lemma inrange_graph_cost_pos: forall g e,
+    sound_dijk_graph g -> inrange_graph (graph_to_mat g) ->
+    evalid g e -> 0 <= elabel g e.
+Proof.
+  intros. rewrite (surjective_pairing e) in *.
+  rewrite elabel_Znth_graph_to_mat; auto. destruct H as [? [? _]].
+  red in H, H2.
+  rewrite (surjective_pairing e) in H1.
+  rewrite H2 in H1. red in H0.
+  rewrite (graph_to_mat_Zlength g) in H0.
+  simpl in H1. destruct H1. rewrite H in H1, H3.
+  specialize (H0 _ _ H3 H1). destruct H0.
+  1: destruct H0; omega.
+  rewrite H0. compute; inversion 1.
+Qed.
+
+Lemma acc_pos: forall (g: LGraph) l z,
+    (forall e : EType, In e l -> 0 <= elabel g e) -> 0 <= z ->
+    0 <= fold_left careful_add (map (elabel g) l) z.
+Proof.
+  intro. induction l; intros; simpl; auto. apply IHl.
+  - intros. apply H. now apply in_cons.
+  - unfold careful_add.
+    destruct (z =? 0).
+    1: apply H, in_eq.
+    destruct (elabel g a =? 0).
+    1: apply H0.
+    rewrite if_false_bool.
+    2: rewrite Bool.orb_false_iff; split; rewrite Z.ltb_nlt;
+      [omega | apply Zle_not_lt, H, in_eq].
+    destruct (inf <=? z + elabel g a).
+    compute; inversion 1.
+    apply Z.add_nonneg_nonneg; auto; apply H, in_eq.
+Qed.
+
+Lemma path_cost_pos:
+  forall g p,
+    sound_dijk_graph g ->
+    valid_path g p ->
+    inrange_graph (graph_to_mat g) ->
+    0 <= path_cost g p.
+Proof.
+  intros.
+  destruct p as [src links]. unfold path_cost. simpl.
+  assert (forall e, In e links -> evalid g e). {
+    intros. eapply valid_path_evalid; eauto. }
+  assert (forall e, In e links -> 0 <= elabel g e). {
+    intros. apply inrange_graph_cost_pos; auto. }
+  apply acc_pos; auto. easy.
+Qed.
+
+Lemma path_cost_app_cons:
+  forall g path i,
+    sound_dijk_graph g ->
+    valid_path g path ->
+    inrange_graph (graph_to_mat g) ->
+    elabel g i + path_cost g path < inf ->
+    evalid g i ->
+    path_cost g (fst path, snd path +:: i) =
+    path_cost g path + elabel g i.
+Proof.
+  intros.
+  unfold path_cost in *. simpl.
+  rewrite map_app, fold_left_app. simpl.
+  pose proof (path_cost_pos g path) H H0 H1.
+  assert (0 <= elabel g i) by
+      (apply inrange_graph_cost_pos; trivial).
+  apply careful_add_clean; trivial; omega.
+Qed.
+
+Lemma path_cost_init:
+  forall l init s,
+    init < inf ->
+    fold_left careful_add l (careful_add init s) =
+    careful_add init (fold_left careful_add l s).
+Proof.
+  intros.
+  generalize dependent s.
+  induction l.
+  - intros; simpl. unfold careful_add.
+    destruct (init =? 0) eqn:?; trivial.
+  - intros; simpl.
+    rewrite <- careful_add_assoc.
+    rewrite IHl. omega.
+Qed.
+     
+Lemma path_cost_path_glue:
+  forall g p1 p2,
+    path_cost g p1 < inf ->
+    path_cost g (path_glue p1 p2) = careful_add (path_cost g p1) (path_cost g p2).
+Proof.
+  intros.
+  unfold path_cost at 1, path_glue at 1.
+  simpl. rewrite map_app.
+  rewrite fold_left_app.
+  assert ((fold_left careful_add (map (elabel g) (snd p1)) 0) = (path_cost g p1))
+    by now unfold path_cost.
+  Set Printing All.
+  unfold LE in *. rewrite H0. 
+  unfold path_cost at 3.
+  remember (map (elabel g) (snd p2)) as l2.
+  unfold LE in *.
+  rewrite <- Heql2.
+  Unset Printing All.
+  remember (path_cost g p1) as c1.
+  replace c1 with (careful_add c1 0) at 1 by
+      apply careful_add_id. 
+  rewrite path_cost_init; trivial.
+Qed.
+
+Lemma step_in_range: forall g x x0,
+    sound_dijk_graph g ->
+    valid_path g x ->
+    In x0 (snd x) ->
+    0 <= fst x0 < SIZE.
+Proof.
+  intros.
+  destruct H as [? [_ [? _]]].
+  unfold vertex_valid in H.
+  unfold src_edge in H2.
+  assert (In_path g (fst x0) x). {
+    unfold In_path. right.
+    exists x0. rewrite H2.
+    split; [| left]; trivial.
+  }
+  pose proof (valid_path_valid _ _ _ H0 H3).
+  rewrite H in H4. omega.
+Qed.
+
+Lemma step_in_range2: forall g x x0,
+    sound_dijk_graph g ->
+    valid_path g x ->
+    In x0 (snd x) ->
+    0 <= snd x0 < SIZE.
+Proof.
+  intros.
+  destruct H as [? [_ [_ ?]]].
+  unfold vertex_valid in H.
+  unfold dst_edge in H2.
+  assert (In_path g (snd x0) x). {
+    unfold In_path. right.
+    exists x0. rewrite H2.
+    split; [| right]; trivial.
+  }
+  pose proof (valid_path_valid _ _ _ H0 H3).
+  rewrite H in H4. omega.
+Qed.
+
+Lemma in_path_app_cons:
+  forall g step p2a src a b,
+    sound_dijk_graph g ->
+    path_ends g p2a src a ->
+    In_path g step (fst p2a, snd p2a +:: (a, b)) ->
+    In_path g step p2a \/ step = b.
+Proof.
+  intros. destruct H1; simpl in H1.
+  - left. unfold In_path. left; trivial.
+  - destruct H1 as [? [? ?]].
+    apply in_app_or in H1.
+    destruct H as [? [? [? ?]]].
+    unfold src_edge in H4. unfold dst_edge in H5.
+    rewrite H4, H5 in H2.
+    destruct H1.
+    + left. unfold In_path. right.
+      exists x. rewrite H4, H5. split; trivial.
+    + simpl in H1. destruct H1; [|omega].
+      rewrite (surjective_pairing x) in *.
+      inversion H1. simpl in H2.
+      destruct H2.
+      * left. destruct H0.
+        apply pfoot_in in H6. rewrite H7, <- H2 in H6.
+        trivial.
+      * right; trivial.
 Qed.

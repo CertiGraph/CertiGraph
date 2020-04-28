@@ -26,7 +26,6 @@ Proof. compute. trivial. Qed.
 Definition inrange_prev prev_contents :=
   Forall (fun x => 0 <= x < SIZE \/ x = inf) prev_contents.
 
-(* already defined in verif_priorityqueue *)
 Definition inrange_priq priq_contents :=
   Forall (fun x => 0 <= x <= inf+1) priq_contents.
 
@@ -44,76 +43,6 @@ Proof.
   - apply sublist_In in H2. apply (H0 x H2).
   - simpl in H2. destruct H2; [omega|].
     apply sublist_In in H2. apply (H0 x H2).
-Qed.
-
-Lemma one_step_path_Znth:
-  forall g a b,
-    sound_dijk_graph g ->
-    evalid g (a, b) ->
-    path_cost g (a, [(a,b)]) =
-    Znth b (Znth a (graph_to_mat g)).
-Proof.
-  intros.
-  unfold path_cost; simpl.
-  rewrite careful_add_comm, careful_add_id.
-  rewrite elabel_Znth_graph_to_mat; trivial.
-Qed.
-
-Lemma isEmptyTwoCases: forall l,
-    isEmpty l = Vone \/ isEmpty l = Vzero.
-Proof.
-  intros. induction l. 1: simpl; left; trivial.
-  destruct IHl; simpl; destruct (Z_lt_dec a inf);
-    (try now left); now right.
-Qed.
-
-Lemma isEmptyMeansInf: forall l,
-    isEmpty l = Vone -> Forall (fun x => x >= inf) l.
-Proof.
-  intros. induction l; trivial. simpl in H.
-  destruct (Z_lt_dec a inf); [inversion H|].
-  specialize (IHl H). apply Forall_cons; trivial.
-Qed.
-
-Lemma vvalid2_evalid:
-  forall g a b,
-    sound_dijk_graph g ->
-    vvalid g a ->
-    vvalid g b ->
-    evalid g (a,b).
-Proof.
-  intros. destruct H as [_ [? _]].
-  red in H; rewrite H; split; trivial.
-Qed.
-
-Lemma vvalid_range:
-  forall g a,
-    sound_dijk_graph g ->
-    vvalid g a <-> 0 <= a < SIZE.
-Proof.
-  intros. destruct H as [? _]. red in H. trivial.
-Qed.
-
-Definition get_popped pq : list VType :=
-  map snd (filter (fun x => (fst x) =? (inf+1))
-                  (combine pq (nat_inc_list (Z.to_nat (Zlength pq))))).
-
-Lemma get_popped_empty:
-  forall l,
-    Forall (fun x => x <> inf + 1) l -> get_popped l = [].
-Proof.
-  intros.
-  unfold get_popped.
-  replace (filter (fun x : Z * Z => (fst x) =? (inf + 1))
-                  (combine l (nat_inc_list (Z.to_nat (Zlength l))))) with (@nil (Z*Z)).
-  trivial. symmetry.
-  remember (nat_inc_list (Z.to_nat (Zlength l))) as l2. clear Heql2.
-  generalize dependent l2. induction l; trivial.
-  intros. simpl. destruct l2; [reflexivity|].
-  simpl. pose proof (Forall_inv H). pose proof (Forall_tl _ _ _ H).
-  simpl in H0. destruct (a =? 1879048193) eqn:?.
-  1: rewrite Z.eqb_eq in Heqb; omega.
-  apply IHl; assumption.
 Qed.
 
 Lemma filter_app:
@@ -267,43 +196,6 @@ Proof.
     rewrite Zlength_cons in H0; rep_omega.
 Qed.
 
-Lemma get_popped_unchanged:
-  forall l new i,
-    0 <= i < Zlength l ->
-    new <> inf + 1 ->
-    Znth i l <> inf + 1 ->
-    get_popped (upd_Znth i l new) = get_popped l.
-Proof.
-  intros. unfold get_popped.
-  remember (fun x : Z * Z => fst x =? inf + 1) as F.
-  rewrite upd_Znth_Zlength by omega.
-  remember (nat_inc_list (Z.to_nat (Zlength l))) as l2.
-  assert (Zlength l = Zlength l2). {
-    rewrite Heql2.
-    rewrite nat_inc_list_Zlength. rep_omega.
-  }
-  f_equal.
-  pose proof (combine_same_length l l2 H2).
-  rewrite combine_upd_Znth by assumption.
-  unfold_upd_Znth_old.
-  rewrite <- (sublist_same 0 (Zlength (combine l l2)) (combine l l2)) at 4 by reflexivity.
-  rewrite (sublist_split 0 i (Zlength (combine l l2))
-                         (combine l l2)) by omega.
-  do 2 rewrite filter_app.
-  f_equal. rewrite H3.
-  rewrite (sublist_split i (i+1) (Zlength l)) by omega.
-  rewrite (sublist_one i (i+1) (combine l l2)) by omega.
-  rewrite filter_app.
-  f_equal. simpl.
-  destruct (F (new, Znth i l2)) eqn:?; rewrite HeqF in Heqb; simpl in Heqb.
-  - exfalso. apply H1. rewrite <- inf_eq.
-    simpl. rewrite Z.eqb_eq in Heqb. rewrite <- inf_eq in *.
-    omega.
-  - destruct (F (Znth i (combine l l2))) eqn:?; trivial.
-    rewrite HeqF, Znth_combine, Z.eqb_eq in Heqb0 by omega.
-    simpl in Heqb0. exfalso. apply H1. rewrite <- inf_eq. omega.
-Qed.
-
 Lemma behead_list:
   forall (l: list Z),
     0 < Zlength l ->
@@ -409,6 +301,65 @@ Proof.
   rewrite nat_inc_list_i.
   all: try rep_omega.
   rewrite nat_inc_list_Zlength. rep_omega.
+Qed.
+
+Definition get_popped pq : list VType :=
+  map snd (filter (fun x => (fst x) =? (inf+1))
+                  (combine pq (nat_inc_list (Z.to_nat (Zlength pq))))).
+
+Lemma get_popped_empty:
+  forall l,
+    Forall (fun x => x <> inf + 1) l -> get_popped l = [].
+Proof.
+  intros.
+  unfold get_popped.
+  replace (filter (fun x : Z * Z => (fst x) =? (inf + 1))
+                  (combine l (nat_inc_list (Z.to_nat (Zlength l))))) with (@nil (Z*Z)).
+  trivial. symmetry.
+  remember (nat_inc_list (Z.to_nat (Zlength l))) as l2. clear Heql2.
+  generalize dependent l2. induction l; trivial.
+  intros. simpl. destruct l2; [reflexivity|].
+  simpl. pose proof (Forall_inv H). pose proof (Forall_tl _ _ _ H).
+  simpl in H0. destruct (a =? 1879048193) eqn:?.
+  1: rewrite Z.eqb_eq in Heqb; omega.
+  apply IHl; assumption.
+Qed.
+
+Lemma get_popped_unchanged:
+  forall l new i,
+    0 <= i < Zlength l ->
+    new <> inf + 1 ->
+    Znth i l <> inf + 1 ->
+    get_popped (upd_Znth i l new) = get_popped l.
+Proof.
+  intros. unfold get_popped.
+  remember (fun x : Z * Z => fst x =? inf + 1) as F.
+  rewrite upd_Znth_Zlength by omega.
+  remember (nat_inc_list (Z.to_nat (Zlength l))) as l2.
+  assert (Zlength l = Zlength l2). {
+    rewrite Heql2.
+    rewrite nat_inc_list_Zlength. rep_omega.
+  }
+  f_equal.
+  pose proof (combine_same_length l l2 H2).
+  rewrite combine_upd_Znth by assumption.
+  unfold_upd_Znth_old.
+  rewrite <- (sublist_same 0 (Zlength (combine l l2)) (combine l l2)) at 4 by reflexivity.
+  rewrite (sublist_split 0 i (Zlength (combine l l2))
+                         (combine l l2)) by omega.
+  do 2 rewrite filter_app.
+  f_equal. rewrite H3.
+  rewrite (sublist_split i (i+1) (Zlength l)) by omega.
+  rewrite (sublist_one i (i+1) (combine l l2)) by omega.
+  rewrite filter_app.
+  f_equal. simpl.
+  destruct (F (new, Znth i l2)) eqn:?; rewrite HeqF in Heqb; simpl in Heqb.
+  - exfalso. apply H1. rewrite <- inf_eq.
+    simpl. rewrite Z.eqb_eq in Heqb. rewrite <- inf_eq in *.
+    omega.
+  - destruct (F (Znth i (combine l l2))) eqn:?; trivial.
+    rewrite HeqF, Znth_combine, Z.eqb_eq in Heqb0 by omega.
+    simpl in Heqb0. exfalso. apply H1. rewrite <- inf_eq. omega.
 Qed.
 
 Lemma in_get_popped:
@@ -639,6 +590,9 @@ Proof.
   assumption.
 Qed.
 
+
+
+
 (* SETTING UP THE INVARIANTS *)
 
 Definition path_correct (g: LGraph) prev dist src dst p : Prop  :=
@@ -686,9 +640,9 @@ Definition inv_unseen prev priq dist dst :=
   Znth dst dist = inf /\
   Znth dst prev = inf.
 
-Definition dijkstra_correct g (src : VType) (prev priq dist: list VType) : Prop :=
+Definition dijkstra_correct (g: LGraph) (src : VType) (prev priq dist: list VType) : Prop :=
   forall dst,
-    0 <= dst < SIZE ->
+    vvalid g dst ->
     inv_popped g src prev priq dist dst /\
     inv_unpopped g src prev priq dist dst /\
     inv_unseen prev priq dist dst.
@@ -702,7 +656,7 @@ Definition dijkstra_spec :=
         Forall (fun list => Zlength list = SIZE) (graph_to_mat g);
         inrange_graph (graph_to_mat g);
         sound_dijk_graph g;
-        forall i, 0 <= i < SIZE ->
+        forall i, vvalid g i ->
                   Znth i (Znth i (graph_to_mat g)) = 0)
    PARAMS (pointer_val_val arr;
           Vint (Int.repr src);
@@ -722,170 +676,7 @@ Definition dijkstra_spec :=
        data_at Tsh (tarray tint SIZE) (map Vint (map Int.repr prev_contents)) (pointer_val_val prev);
        data_at Tsh (tarray tint SIZE) (map Vint (map Int.repr dist_contents)) (pointer_val_val dist)).
 
-Lemma valid_path_app_cons:
-  forall g src links2u u i,
-    sound_dijk_graph g ->
-    valid_path g (src, links2u) ->
-    pfoot g (src, links2u) = u ->
-    0 <= u < SIZE ->
-    0 <= i < SIZE ->
-    valid_path g (src, links2u +:: (u,i)).
-Proof.
-  intros.
-  apply valid_path_app.
-  split; [assumption|].
-  assert (Hrem := H).
-  destruct H as [? [? [? ?]]].
-  simpl; split.
-  1: rewrite H5; simpl; assumption.
-  unfold strong_evalid.
-  red in H, H4.
-  repeat rewrite H4, H5, H6, H; simpl.
-  repeat rewrite vvalid_range by assumption.
-  split; split; assumption.
-Qed.
-
-Lemma path_ends_app_cons:
-  forall g src links2u u i,
-    sound_dijk_graph g ->
-    path_ends g (src, links2u) src u ->
-    path_ends g (src, links2u +:: (u, i)) src i.
-Proof.
-  split.
-  + destruct H0; apply H0.
-  + rewrite pfoot_last.
-    destruct H as [_ [_ [_ ?]]].
-    rewrite H; reflexivity.
-Qed.
-
-(* can refactor away *)
-Lemma link_evalid:
-  forall g a b,
-    sound_dijk_graph g ->
-    0 <= a < SIZE ->
-    0 <= b < SIZE ->
-    evalid g (a,b).
-Proof.
-  intros. destruct H as [? [? _]].
-  red in H, H2. rewrite H2; split; rewrite H; assumption.
-Qed.
-
-Lemma graph_to_mat_Zlength: forall g, Zlength (graph_to_mat g) = SIZE.
-Proof.
-  intros. unfold graph_to_mat.
-  rewrite Zlength_map, nat_inc_list_Zlength, Z2Nat.id; auto. now vm_compute.
-Qed.
-
-Lemma inrange_graph_cost_pos: forall g e,
-    sound_dijk_graph g -> inrange_graph (graph_to_mat g) ->
-    evalid g e -> 0 <= elabel g e.
-Proof.
-  intros. rewrite (surjective_pairing e) in *.
-  rewrite elabel_Znth_graph_to_mat; auto. destruct H as [? [? _]].
-  red in H, H2.
-  rewrite (surjective_pairing e) in H1.
-  rewrite H2 in H1. red in H0.
-  rewrite (graph_to_mat_Zlength g) in H0.
-  simpl in H1. destruct H1. rewrite H in H1, H3.
-  specialize (H0 _ _ H3 H1). destruct H0.
-  1: destruct H0; omega.
-  rewrite H0. compute; inversion 1.
-Qed.
-
-Lemma acc_pos: forall (g: LGraph) l z,
-    (forall e : EType, In e l -> 0 <= elabel g e) -> 0 <= z ->
-    0 <= fold_left careful_add (map (elabel g) l) z.
-Proof.
-  intro. induction l; intros; simpl; auto. apply IHl.
-  - intros. apply H. now apply in_cons.
-  - unfold careful_add.
-    destruct (z =? 0).
-    1: apply H, in_eq.
-    destruct (elabel g a =? 0).
-    1: apply H0.
-    rewrite if_false_bool.
-    2: rewrite orb_false_iff; split; rewrite Z.ltb_nlt;
-      [omega | apply Zle_not_lt, H, in_eq].
-    destruct (inf <=? z + elabel g a).
-    compute; inversion 1.
-    apply Z.add_nonneg_nonneg; auto; apply H, in_eq.
-Qed.
-
-Lemma path_cost_pos:
-  forall g p,
-    sound_dijk_graph g ->
-    valid_path g p ->
-    inrange_graph (graph_to_mat g) ->
-    0 <= path_cost g p.
-Proof.
-  intros.
-  destruct p as [src links]. unfold path_cost. simpl.
-  assert (forall e, In e links -> evalid g e). {
-    intros. eapply valid_path_evalid; eauto. }
-  assert (forall e, In e links -> 0 <= elabel g e). {
-    intros. apply inrange_graph_cost_pos; auto. }
-  apply acc_pos; auto. easy.
-Qed.
-
-Lemma path_cost_app_cons:
-  forall g path i,
-    sound_dijk_graph g ->
-    valid_path g path ->
-    inrange_graph (graph_to_mat g) ->
-    elabel g i + path_cost g path < inf ->
-    evalid g i ->
-    path_cost g (fst path, snd path +:: i) =
-    path_cost g path + elabel g i.
-Proof.
-  intros.
-  unfold path_cost in *. simpl.
-  rewrite map_app, fold_left_app. simpl.
-  pose proof (path_cost_pos g path) H H0 H1.
-  assert (0 <= elabel g i) by
-      (apply inrange_graph_cost_pos; trivial).
-  apply careful_add_clean; trivial; omega.
-Qed.
-
-Lemma path_cost_init:
-  forall l init s,
-    init < inf ->
-    fold_left careful_add l (careful_add init s) =
-    careful_add init (fold_left careful_add l s).
-Proof.
-  intros.
-  generalize dependent s.
-  induction l.
-  - intros; simpl. unfold careful_add.
-    destruct (init =? 0) eqn:?; trivial.
-  - intros; simpl.
-    rewrite <- careful_add_assoc.
-    rewrite IHl. omega.
-Qed.
-     
-Lemma path_cost_path_glue:
-  forall g p1 p2,
-    path_cost g p1 < inf ->
-    path_cost g (path_glue p1 p2) = careful_add (path_cost g p1) (path_cost g p2).
-Proof.
-  intros.
-  unfold path_cost at 1, path_glue at 1.
-  simpl. rewrite map_app.
-  rewrite fold_left_app.
-  assert ((fold_left careful_add (map (elabel g) (snd p1)) 0) = (path_cost g p1))
-    by now unfold path_cost.
-  Set Printing All.
-  unfold LE in *. rewrite H0. 
-  unfold path_cost at 3.
-  remember (map (elabel g) (snd p2)) as l2.
-  unfold LE in *.
-  rewrite <- Heql2.
-  Unset Printing All.
-  remember (path_cost g p1) as c1.
-  replace c1 with (careful_add c1 0) at 1 by
-      apply careful_add_id. 
-  rewrite path_cost_init; trivial.
-Qed.  
-
+(*
 Lemma entirely_in_subgraph_upd:
   forall u priq_contents links2mom mom,
     Forall
@@ -925,71 +716,7 @@ Proof.
       rewrite upd_Znth_same; trivial.
       rewrite upd_Znth_Zlength; trivial.
 Qed.
-
-Lemma step_in_range: forall g x x0,
-    sound_dijk_graph g ->
-    valid_path g x ->
-    In x0 (snd x) ->
-    0 <= fst x0 < SIZE.
-Proof.
-  intros.
-  destruct H as [? [_ [? _]]].
-  unfold vertex_valid in H.
-  unfold src_edge in H2.
-  assert (In_path g (fst x0) x). {
-    unfold In_path. right.
-    exists x0. rewrite H2.
-    split; [| left]; trivial.
-  }
-  pose proof (valid_path_valid _ _ _ H0 H3).
-  rewrite H in H4. omega.
-Qed.
-
-Lemma step_in_range2: forall g x x0,
-    sound_dijk_graph g ->
-    valid_path g x ->
-    In x0 (snd x) ->
-    0 <= snd x0 < SIZE.
-Proof.
-  intros.
-  destruct H as [? [_ [_ ?]]].
-  unfold vertex_valid in H.
-  unfold dst_edge in H2.
-  assert (In_path g (snd x0) x). {
-    unfold In_path. right.
-    exists x0. rewrite H2.
-    split; [| right]; trivial.
-  }
-  pose proof (valid_path_valid _ _ _ H0 H3).
-  rewrite H in H4. omega.
-Qed.
-
-Lemma in_path_app_cons:
-  forall g step p2a src a b,
-    sound_dijk_graph g ->
-    path_ends g p2a src a ->
-    In_path g step (fst p2a, snd p2a +:: (a, b)) ->
-    In_path g step p2a \/ step = b.
-Proof.
-  intros. destruct H1; simpl in H1.
-  - left. unfold In_path. left; trivial.
-  - destruct H1 as [? [? ?]].
-    apply in_app_or in H1.
-    destruct H as [? [? [? ?]]].
-    unfold src_edge in H4. unfold dst_edge in H5.
-    rewrite H4, H5 in H2.
-    destruct H1.
-    + left. unfold In_path. right.
-      exists x. rewrite H4, H5. split; trivial.
-    + simpl in H1. destruct H1; [|omega].
-      rewrite (surjective_pairing x) in *.
-      inversion H1. simpl in H2.
-      destruct H2.
-      * left. destruct H0.
-        apply pfoot_in in H6. rewrite H7, <- H2 in H6.
-        trivial.
-      * right; trivial.
-Qed.
+*)
  
 Definition Gprog : funspecs := ltac:(with_library prog [pq_emp_spec; popMin_spec; dijkstra_spec]).
 
@@ -1128,18 +855,20 @@ Proof.
       * inversion H17.
       * unfold VType in *.
         assert (src = dst). {
-          destruct (Z.eq_dec src dst); trivial.
-          rewrite upd_Znth_diff in H17 by omega.
+          destruct (Z.eq_dec src dst); trivial. exfalso.
+          assert (0 <= dst < SIZE) by
+              (rewrite <- (vvalid_range g); trivial).
+          rewrite upd_Znth_diff in H17; try omega.
           rewrite Znth_list_repeat_inrange in H17; omega.
         }
         subst dst. left; trivial.
       * split; trivial.
+        assert (0 <= dst < SIZE) by
+            (rewrite <- (vvalid_range g dst); trivial).
         rewrite upd_Znth_diff; try omega.
-        rewrite Znth_list_repeat_inrange. trivial.  omega.
-        intro. rewrite H18 in H17.
-        rewrite upd_Znth_same in H17.
+        rewrite Znth_list_repeat_inrange. trivial. omega.
+        intro. subst dst. rewrite upd_Znth_same in H17.
         inversion H17. omega.
-    (* intros. inversion H18. *)
     + (* Now the body of the while loop begins. *)
       Intros prev_contents priq_contents dist_contents.
       assert_PROP (Zlength priq_contents = SIZE).
@@ -1288,7 +1017,7 @@ Proof.
           Exists dist_contents.
           repeat rewrite <- upd_Znth_map.
           entailer!.
-          remember (find priq_contents (fold_right Z.min (hd 0 priq_contents) priq_contents) 0) as u.
+          remember (find priq_contents (fold_right Z.min (hd 0 priq_contents) priq_contents) 0) as u. 
           split3; [| | split3; [| |split3]].
           ++ (* We must show inv_popped for all
                  dst that are in range. *)
@@ -1296,6 +1025,7 @@ Proof.
             pose proof (get_popped_range _ _ H14).
             rewrite upd_Znth_Zlength in H31 by omega.
             rewrite H11 in H31.
+            rewrite <- (vvalid_range g) in H31.
             destruct (H4 dst H31) as [? [? ?]].
             unfold inv_popped in H32.
             (* now we must distinguish between those
@@ -1331,15 +1061,11 @@ Proof.
               destruct H33 as [? [p2mom [? [? [? [? [? [? ?]]]]]]]].
               unfold VType in *.
               remember (Znth u prev_contents) as mom.
-              assert (0 <= mom < SIZE). {
+              assert (vvalid g mom). {
                 destruct H36 as [? [? _]].
-                assert (In_path g mom p2mom). {
-                  destruct H43.
-                  apply pfoot_in; trivial.
-                }
-                destruct H2. unfold vertex_valid in H2.
-                rewrite <- H2.
                 apply (valid_path_valid g p2mom); trivial.
+                destruct H43.
+                apply pfoot_in; trivial.
               }
               (* this the best path to u:
                     go, optimally, to mom, and then take one step
@@ -1349,13 +1075,15 @@ Proof.
               --- destruct H36 as [? [? [? [? ?]]]].
                   assert (path_cost g p2mom + elabel g (mom, u) < inf).
                   { rewrite elabel_Znth_graph_to_mat; trivial; simpl. 
-                    apply vvalid2_evalid; try apply vvalid_range; trivial.
+                    apply vvalid2_evalid; trivial.
                   }
                   split3; [| | split3].
                   +++
                     destruct H44.
                     apply valid_path_app_cons; trivial;
                       try rewrite <- surjective_pairing; trivial.
+                    apply vvalid2_evalid; trivial.
+                    
                   +++
                     rewrite (surjective_pairing p2mom) in *.
                     simpl.
@@ -1365,17 +1093,13 @@ Proof.
                   +++ 
                     rewrite path_cost_app_cons; trivial.
                     *** unfold VType in *. omega.
-                    *** apply vvalid2_evalid;
-                          try apply vvalid_range; trivial.
+                    *** apply vvalid2_evalid; trivial.
                   +++
                     rewrite path_cost_app_cons; trivial.
                     rewrite elabel_Znth_graph_to_mat; simpl; try omega; trivial.
-                    apply vvalid2_evalid;
-                      try apply vvalid_range; trivial.
-                    unfold VType in *.
-                    omega.
-                    apply vvalid2_evalid;
-                      try apply vvalid_range; trivial.
+                    apply vvalid2_evalid; trivial.
+                    unfold VType in *. omega.
+                    apply vvalid2_evalid; trivial.
                   +++ unfold VType in *.
                       rewrite Forall_forall. intros.
                       rewrite Forall_forall in H47.
@@ -1425,8 +1149,7 @@ So this pop operation maintains inv_popped for u.
                 unfold path_globally_optimal in H38.
                 destruct H36 as [? [? [? [? ?]]]].
                 assert (evalid g (mom, u)) by
-                    (apply vvalid2_evalid;
-                     try apply vvalid_range; trivial).
+                    (apply vvalid2_evalid; trivial).
                 rewrite path_cost_app_cons; trivial.
                 2: rewrite elabel_Znth_graph_to_mat; simpl; trivial; omega.
                 rewrite elabel_Znth_graph_to_mat; trivial.
@@ -1557,15 +1280,11 @@ So this pop operation maintains inv_popped for u.
 
                 (* from global optimal within dark green, you know that there exists a 
    path p2mom', the global minimum from src to mom' *)
-                assert (0 <= mom' < SIZE). {
-                  red in H2.
-                  destruct H2 as [? [? _]].
-                  apply H63 in H61.
-                  destruct H61 as [? _].
-                  apply H2 in H61; simpl in H61.
-                  trivial.
+                assert (vvalid g mom'). {
+                  destruct H2 as [_ [? _]].
+                  red in H2. rewrite H2 in H61.
+                  destruct H61; trivial.
                 }
-
                 destruct (H4 mom' H63) as [? _].
                 unfold inv_popped in H64.
                 destruct (H64 H56) as [p2mom' [? [? ?]]].
@@ -1598,7 +1317,7 @@ So this pop operation maintains inv_popped for u.
 
 
                 admit.
-
+                
             ** (* Here we must show that the
                     vertices that were popped earlier
                     are not affected by the addition of
@@ -1606,7 +1325,10 @@ So this pop operation maintains inv_popped for u.
 
                     As expected, this is significantly easier.
                 *)
-              rewrite <- get_popped_irrel_upd in H14 by omega.
+              rewrite <- get_popped_irrel_upd in H14; try omega.
+              2: { replace (Zlength priq_contents) with SIZE by omega.
+                   apply (vvalid_range g dst); trivial.
+              }
               specialize (H32 H14).
               destruct H32 as [? [? [? ?]]].
               exists x. split3; trivial.
@@ -1616,7 +1338,8 @@ So this pop operation maintains inv_popped for u.
               rewrite <- get_popped_irrel_upd; try omega; trivial.
               apply get_popped_range in H35; omega.
               intro contra. rewrite contra in H35.
-              apply H17. trivial.
+              apply H17; trivial.
+            ** trivial.
           ++ (* No vertex has been repaired yet... *)
             intros; omega.
           ++ (* ... in fact, any vertex that is
@@ -1631,6 +1354,7 @@ So this pop operation maintains inv_popped for u.
             destruct (Z.eq_dec dst u).
             1: subst dst; rewrite upd_Znth_same in H31; omega.
             rewrite upd_Znth_diff in H31 by omega.
+            rewrite <- (vvalid_range g) in H14.
             destruct (H4 dst H14) as [_ [? _]].
             unfold inv_unpopped in H32.
             specialize (H32 H31).
@@ -1640,12 +1364,6 @@ So this pop operation maintains inv_popped for u.
               rewrite H6.
               exists (src, []); split3; [| | split3; [| | split3]].
               - split3; [| | split3]; trivial.
-                + 
-
-                  unfold valid_path.
-
-                  simpl. destruct H2 as [? [? [? ?]]].
-                  red in H2. rewrite H2. omega.
                 + split; trivial.
                 + unfold path_cost. simpl. rewrite <- inf_eq. omega.
                 + rewrite Forall_forall; intros.
@@ -1656,7 +1374,9 @@ So this pop operation maintains inv_popped for u.
                   rewrite <- get_popped_irrel_upd; try omega; trivial.
                   assert (Znth u priq_contents < inf). {
                     apply find_min_lt_inf; auto. unfold SIZE in H11. omega. }
-                  rewrite H11 in H16. destruct (H4 _ H16) as [_ [? _]].
+                  rewrite H11 in H16.
+                  rewrite <- (vvalid_range g) in H16; trivial.
+                  destruct (H4 _ H16) as [_ [? _]].
                   destruct (H34 H33). 1: exfalso; now apply n.
                   destruct H35 as [? [p2mom [? [? _]]]]. apply H37.
                   left. destruct H36 as [_ [[? _] _]]. destruct p2mom.
@@ -1667,52 +1387,28 @@ So this pop operation maintains inv_popped for u.
                 unfold path_cost at 1; simpl.
                 apply path_cost_pos; trivial.
               - rewrite elabel_Znth_graph_to_mat; try omega; trivial.
-                simpl; rewrite H3. rewrite <- inf_eq. omega.
-                omega.
-                apply link_evalid; trivial.
-              - rewrite H3. unfold path_cost; simpl.
-                rewrite <- inf_eq; omega.
-                omega.
-              - rewrite H3. unfold path_cost; simpl. trivial.
-                omega.
+                simpl; rewrite H3. compute; trivial.
+                trivial.
+                apply vvalid2_evalid; trivial.
+              - rewrite H3; trivial; unfold path_cost; simpl.
+                compute; trivial.
+              - rewrite H3; simpl; trivial.
               - intros.
-                rewrite H3 by omega. unfold path_cost at 1; simpl.
+                rewrite H3; trivial. unfold path_cost at 1; simpl.
                 apply careful_add_pos.
                 apply path_cost_pos; trivial.
                 destruct H32; trivial.
-                red in H1.
+                red in H1. 
                 rewrite graph_to_mat_Zlength in H1.
                 destruct H32 as [? [? _]].
                 destruct H35.
                 apply pfoot_in in H36.
                 pose proof (valid_path_valid _ _ _ H32 H36).
-                red in H2. destruct H2 as [? _]. apply H2 in H37.
+                rewrite vvalid_range in H14, H37; trivial.
                 specialize (H1 _ _ H14 H37). destruct H1.
                 + omega.
                 + rewrite H1. compute; inversion 1.
-            }
-            
-            (*
-                    destruct (path_cost g p2mom' + Znth src (Znth mom' (graph_to_mat g)) >=? inf).
-                    1: compute; inversion 1.
-                    apply Z.add_nonneg_nonneg.
-                    apply path_cost_pos; trivial.
-                    1: destruct H32 as [? _]; trivial.
-
-                    assert (0 <= mom' < SIZE). {
-                        destruct H32 as [? [[? ?] ?]].
-                        apply pfoot_in in H36.
-                        specialize (H33 _ H36).
-                        destruct H33.
-                        apply get_popped_range in H33.
-                        rewrite upd_Znth_Zlength in H33; omega.
-                    }
-
-                    unfold inrange_graph in H1.
-                    destruct (H1 _ _ H14 H35).
-                    omega.
-                    rewrite H36. compute; inversion 1. 
-             }                     *)
+            }                    
             destruct H32 as [? [p2mom [? [? ?]]]].
             unfold VType in *.
             remember (Znth dst prev_contents) as mom.
@@ -1743,7 +1439,8 @@ So this pop operation maintains inv_popped for u.
                specialize (H41 _ H43). destruct H41.
                rewrite <- get_popped_irrel_upd in H41; try omega; trivial.
                apply get_popped_range in H41.
-               rewrite upd_Znth_Zlength in H41; omega.
+               rewrite upd_Znth_Zlength in H41; try omega; trivial.
+            ** trivial.
           ++ (* no unseen vertices have been repaired yet *)
             intros. omega.
           ++ intros.
@@ -1753,6 +1450,7 @@ So this pop operation maintains inv_popped for u.
                   inversion H31.
              }
              rewrite upd_Znth_diff in H31 by omega.
+             rewrite <- (vvalid_range g) in H14; trivial.
              destruct (H4 dst H14) as [_ [_ ?]].
              unfold inv_unseen in H32.
              specialize (H32 H31).
@@ -1888,17 +1586,27 @@ So this pop operation maintains inv_popped for u.
                   apply H43.
                   rewrite path_cost_app_cons in H47; trivial.
                   2: { rewrite elabel_Znth_graph_to_mat; trivial.
-                       2: apply link_evalid; trivial.
+                       2: { apply vvalid2_evalid; 
+                            try apply vvalid_range;
+                            trivial.
+                       }
                        simpl. omega.
                   }
                   rewrite elabel_Znth_graph_to_mat in H47; trivial.
-                  2: apply link_evalid; trivial.
+                  2: { apply vvalid2_evalid; 
+                            try apply vvalid_range;
+                            trivial.
+                       }
                   simpl fst in H47.
                   simpl snd in H47.
                   apply H47. 
-                  - apply valid_path_app_cons; trivial;
-                      rewrite <- surjective_pairing;
-                      destruct H51; trivial.
+                  - destruct H51.
+                    apply valid_path_app_cons;
+                      try rewrite <- surjective_pairing;
+                      trivial.
+                    apply vvalid2_evalid;
+                      try apply vvalid_range;
+                      trivial.
                   - rewrite (surjective_pairing p2u) in *.
                     simpl.
                     replace (fst p2u) with src in *.
@@ -2026,7 +1734,8 @@ So this pop operation maintains inv_popped for u.
                             intro; rewrite H64 in H61. apply H44; trivial.
                         *** rewrite elabel_Znth_graph_to_mat;
                               simpl; trivial; try omega.
-                            apply link_evalid; trivial.
+                            apply vvalid2_evalid;
+                              try apply vvalid_range; trivial.
                         *** rewrite upd_Znth_same in H59 by omega.
                             destruct H60 as [_ [_ [_ [? _]]]].
                             rewrite <- H60. omega.
@@ -2837,9 +2546,9 @@ dist[i] <= dist[k] + len(edge k i) <= path_cost p'.
           entailer!.
           remember (find priq_contents (fold_right Z.min (hd 0 priq_contents) priq_contents) 0) as u.
           unfold dijkstra_correct.
-          split3; trivial.
-          apply H19; trivial.
-          apply H21; trivial.
+          split3; trivial;
+            [apply H19 | apply H21];
+            rewrite <- (vvalid_range g); trivial.
       * (* After breaking, the while loop,
            prove break's postcondition *)
         assert (isEmpty priq_contents = Vone). {
