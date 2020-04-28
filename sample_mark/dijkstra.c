@@ -2,52 +2,14 @@
 #include <limits.h>
 #include <stdio.h>
 #include <time.h>
+#include "priorityqueue.h"
 
 #define SIZE 8  // number of vertices
 #define CONN 3  // the connectedness. 1 is 100%, higher numbers mean less connected
 #define INFL 50 // increase this to inflate the highest possible cost, thus creating greater ranges
 #define IFTY INT_MAX - INT_MAX/SIZE
 
-/* ****************************** */
-/*    Array Masquerading as PQ    */
-/* ****************************** */
 
-// Here for completeness. Actually just inlined in the code.
-// void push (int vertex, int weight, int** pq) {
-//     *pq[vertex] = weight;   
-// }
-
-
-// precondition: won't be called on an empty PQ
-int popMin (int pq[SIZE]) {
-    int minVertex = 0;
-    int minWeight = pq[minVertex];
-    int i;
-    for (i = 0; i < SIZE; i++) {
-        if (pq[i] < minWeight) {
-            minVertex = i;
-            minWeight = pq[i];
-        }   
-    }
-    pq[minVertex] = IFTY+1; /* basically, delete the node */
-    return minVertex;
-}
-
-// // Here for completeness. Actually just inlined in the code.
-// void adjustWeight (int vertex, int newWeight, int **pq) {
-//     *pq[vertex] = newWeight;
-// }
-
-// Quick utility function to check if the PQ empty
-// If all cells are IFTY, the pq is considered empty
-int pq_emp (int pq[SIZE]) {
-    int i;
-    for (i = 0; i < SIZE; i++) {
-        if (pq[i] < IFTY) // this cell is populated. pq is not empty.
-            return 0;
-    }   
-    return 1;
-}
  
 /* ************************************************** */
 /*   Dijkstra's Algorithm to find the shortest path   */
