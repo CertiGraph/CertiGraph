@@ -9,15 +9,13 @@ Require Import RamifyCoq.graph.graph_model.
 Require Import RamifyCoq.graph.path_lemmas.
 Require Import RamifyCoq.msl_application.ArrayGraph.
 Require Import Coq.Lists.List.
-
+Require Export RamifyCoq.sample_mark.dijk_pq_arr_macros.
 
 Coercion pg_lg: LabeledGraph >-> PreGraph.
 Coercion lg_gg: GeneralGraph >-> LabeledGraph. 
 
 Local Open Scope logic.
 Local Open Scope Z_scope.
-Definition SIZE := 8.
-Definition inf := Int.max_signed - Int.max_signed/SIZE.
 
 Instance Z_EqDec : EqDec Z eq. Proof. hnf. intros. apply Z.eq_dec. Defined.
 

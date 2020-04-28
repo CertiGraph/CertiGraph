@@ -1,5 +1,5 @@
 Require Import VST.msl.iter_sepcon.
-Require Import RamifyCoq.lib.List_ext. 
+Require Import RamifyCoq.lib.List_ext.
 Require Import RamifyCoq.sample_mark.env_dijkstra_arr.
 Require Import RamifyCoq.graph.graph_model.
 Require Import RamifyCoq.graph.path_lemmas.
@@ -7,8 +7,11 @@ Require Import RamifyCoq.floyd_ext.share.
 Require Import RamifyCoq.msl_application.ArrayGraph.
 Require Import RamifyCoq.msl_application.DijkstraArrayGraph.
 Require Import RamifyCoq.sample_mark.spatial_dijkstra_array_graph.
+Require Import RamifyCoq.sample_mark.verif_priorityqueue.
 Require Import Coq.omega.Omega.
 Require Import Coq.Lists.List.
+Require Import RamifyCoq.sample_mark.priq_utils.
+Require Import RamifyCoq.sample_mark.dijk_pq_arr_macros.
 
 Local Open Scope Z_scope.
 
@@ -23,6 +26,7 @@ Proof. compute. trivial. Qed.
 Definition inrange_prev prev_contents :=
   Forall (fun x => 0 <= x < SIZE \/ x = inf) prev_contents.
 
+(* already defined in verif_priorityqueue *)
 Definition inrange_priq priq_contents :=
   Forall (fun x => 0 <= x <= inf+1) priq_contents.
 
@@ -55,53 +59,6 @@ Proof.
   rewrite elabel_Znth_graph_to_mat; trivial.
 Qed.
 
-Definition isEmpty_Prop (pq_contents : list Z) :=
-  fold_right (fun h acc => if (Z_lt_dec h inf) then False else acc) True pq_contents.
-
-Definition isEmpty (pq_contents : list Z) : val :=
-  fold_right (fun h acc => if (Z_lt_dec h inf) then Vzero else acc) Vone pq_contents.
-
-Lemma isEmpty_prop_val: forall l,
-    isEmpty_Prop l <-> isEmpty l = Vone.
-Proof.
-  intros. induction l; simpl in *. split; intro; trivial.
-  destruct (Z_lt_dec a inf); trivial. split; inversion 1.
-Qed.
-
-Lemma isEmpty_in': forall l,
-    (exists i, In i l /\ i < inf) <-> isEmpty l = Vzero.
-Proof.
-  split; intros.
-  - destruct H as [? [? ?]]. induction l.
-    1: exfalso; apply (in_nil H).
-    unfold isEmpty. rewrite fold_right_cons.
-    destruct (Z_lt_dec a inf); trivial.
-    simpl in H; simpl; destruct H.
-    1: rewrite H in n; exfalso. omega.
-    clear n a. specialize (IHl H).
-    unfold isEmpty in IHl. trivial.
-  - induction l.
-    1: inversion H.
-    simpl in H.
-    destruct (Z_lt_dec a inf).
-    + exists a. split; simpl; [left|]; trivial.
-    + destruct (IHl H) as [? [? ?]].
-      exists x. split; [apply in_cons|]; assumption.
-Qed.
-
-Lemma isEmpty_in: forall l target,
-    In target l -> target < inf -> isEmpty l = Vzero.
-Proof.
-  intros. induction l.
-  1: exfalso; apply (in_nil H).
-  unfold isEmpty. rewrite fold_right_cons.
-  destruct (Z_lt_dec a inf); trivial.
-  simpl in H; simpl; destruct H.
-  1: rewrite H in n; exfalso; omega.
-  clear n a. specialize (IHl H).
-  unfold isEmpty in IHl. trivial.
-Qed.
-
 Lemma isEmptyTwoCases: forall l,
     isEmpty l = Vone \/ isEmpty l = Vzero.
 Proof.
@@ -116,209 +73,6 @@ Proof.
   intros. induction l; trivial. simpl in H.
   destruct (Z_lt_dec a inf); [inversion H|].
   specialize (IHl H). apply Forall_cons; trivial.
-Qed.
-
-Theorem fold_min_general:
-  forall (al: list Z)(i: Z),
-    In i (al) ->
-    forall x, List.fold_right Z.min x al <= i.
-Proof.
-  induction al; intros. 1: inversion H.
-  destruct H.
-  1: subst a; simpl; apply Z.le_min_l.
-  simpl. rewrite Z.le_min_r. apply IHal, H.
-Qed.
-
-Theorem fold_min:
-  forall (al: list Z)(i: Z),
-    In i (al) ->
-    List.fold_right Z.min (hd 0 al) al <= i.
-Proof. intros. apply fold_min_general, H. Qed.
-
-Lemma Forall_fold_min:
-  forall (f: Z -> Prop) (x: Z) (al: list Z),
-    f x -> Forall f al -> f (fold_right Z.min x al).
-Proof.
-  intros. induction H0.
-  simpl. auto. simpl. unfold Z.min at 1.
-  destruct (Z.compare x0 (fold_right Z.min x l)) eqn:?; auto.
-Qed.
-
-Lemma fold_min_another:
-  forall x al y,
-    fold_right Z.min x (al ++ [y]) = Z.min (fold_right Z.min x al) y.
-Proof.
-  intros. revert x; induction al; simpl; intros.
-  apply Z.min_comm. rewrite <- Z.min_assoc. f_equal. apply IHal.
-Qed.
-
-Lemma min_not_in_prev i l :
-  Znth i l < fold_right Z.min (Znth 0 l) (sublist 0 i l) ->
-  ~ In (Znth i l) (sublist 0 i l).
-Proof.
-  intros. intro.
-  pose proof (fold_min_general (sublist 0 i l) (Znth i l) H0(Znth 0 l)). omega.
-Qed.
-
-Fixpoint find (l : list Z) (n : Z) (ans : Z) :=
-  match l with
-  | [] => ans
-  | h :: t => if eq_dec h n
-              then ans
-              else (find t n (1 + ans))
-  end.
-
-Lemma find_index_gen: forall l i ans,
-    0 <= i < Zlength l ->
-    ~ In (Znth i l) (sublist 0 i l) ->
-    find l (Znth i l) ans = i + ans.
-Proof.
-  intros. generalize dependent i.
-  generalize dependent ans. induction l.
-  1: intros; rewrite Zlength_nil in H; exfalso; omega.
-  unfold find.
-  intros.
-  destruct (eq_dec a (Znth i (a :: l))).
-  - rewrite <- e in H0. clear - H H0.
-    destruct (Z.eq_dec 0 i). 1: omega.
-    destruct H. assert (0 < i) by omega.
-    exfalso. apply H0.
-    unfold sublist. replace (i-0) with i by omega.
-    simpl. replace (Z.to_nat i) with (Z.to_nat (Z.succ (i-1))) by rep_omega.
-    rewrite Z2Nat.inj_succ by omega.
-    rewrite firstn_cons. apply in_eq.
-  - destruct (Z.eq_dec 0 i).
-    1: rewrite <- e in n; rewrite Znth_0_cons in n;
-      exfalso; omega.
-    assert (0 <= i - 1 < Zlength l) by
-        (rewrite Zlength_cons in H; rep_omega).
-    assert (~ In (Znth (i - 1) l) (sublist 0 (i - 1) l)). {
-      rewrite <- (Znth_pos_cons i l a) by omega.
-      rewrite <- (sublist_1_cons l a i).
-      intro. apply H0.
-      apply (sublist_In 1 i).
-      rewrite sublist_sublist0 by omega. assumption.
-    }
-    pose proof (IHl (1 + ans) (i - 1) H1 H2).
-    replace (i - 1 + (1 + ans)) with (i + ans) in H3 by omega.
-    replace (Znth i (a :: l)) with (Znth (i - 1) l).
-    2: { symmetry. apply Znth_pos_cons; omega. }
-    rewrite <- H3.
-    unfold find. trivial.
-Qed.
-
-Lemma find_index: forall l i,
-    0 <= i < Zlength l ->
-    ~ In (Znth i l) (sublist 0 i l) ->
-    find l (Znth i l) 0 = i.
-Proof.
-  intros. replace i with (i + 0) at 2 by omega.
-  apply find_index_gen; trivial.
-Qed.
-
-Lemma find_range_gen: forall l target ans,
-    In target l ->
-    0 <= ans ->
-    ans <= find l target ans < Zlength l + ans.
-Proof.
-  intros. generalize dependent target.
-  generalize dependent ans.
-  induction l.
-  1: intros; simpl; now rewrite Zlength_nil.
-  intros. apply in_inv in H. destruct H.
-  - subst a. unfold find.
-    destruct (eq_dec target target).
-    rewrite Zlength_cons. split; rep_omega.
-    exfalso; omega.
-  - unfold find. destruct (eq_dec a target).
-    1: rewrite Zlength_cons; split; rep_omega.
-    assert (0 <= 1 + ans) by omega.
-    pose proof (IHl (1+ans) H1 target H).
-    clear -H2. unfold find in H2.
-    rewrite Zlength_cons. rep_omega.
-Qed.
-
-Lemma find_range: forall l target,
-    In target l ->
-    0 <= find l target 0 < Zlength l.
-Proof.
-  intros. replace (Zlength l) with (Zlength l + 0) by omega.
-  apply find_range_gen; trivial; omega.
-Qed.
-
-Lemma Znth_find_gen:
-  forall l target ans,
-    0 <= ans ->
-    In target l ->
-    Znth ((find l target ans)-ans) l = target.
-Proof.
-  intros. generalize dependent ans.
-  induction l. 1: inversion H0.
-  intros.
-  destruct H0.
-  - subst target. simpl.
-    destruct (initial_world.EqDec_Z a a).
-    + replace (ans-ans) with 0 by omega.
-      rewrite Znth_0_cons; auto.
-    + exfalso; omega.
-  - specialize (IHl H0).
-    simpl.
-    destruct (initial_world.EqDec_Z a target).
-    + replace (ans-ans) with 0 by omega.
-      rewrite Znth_0_cons; auto.
-    + assert (0 <= 1 + ans) by omega.
-      specialize (IHl (1+ans) H1).
-      rewrite Znth_pos_cons.
-      replace (1+ans) with (ans+1) in IHl at 2 by omega.
-      rewrite Z.sub_add_distr in IHl.
-      assumption.
-      destruct (find_range_gen l target (1+ans) H0 H1) as [? _].
-      omega.
-Qed.
-
-Lemma Znth_find:
-  forall l target,
-    In target l ->
-    Znth (find l target 0) l = target.
-Proof.
-  intros.
-  replace (find l target 0) with (find l target 0 - 0) by omega.
-  apply Znth_find_gen; [omega | assumption].
-Qed.
-
-Lemma min_in_list : forall l1 l2 starter,
-    incl l1 l2 ->
-    In starter l2 ->
-    In (fold_right Z.min starter l1) l2.
-Proof.
-  intros. induction l1; trivial. simpl.
-  destruct (Z.min_dec a (fold_right Z.min starter l1));
-    rewrite e; clear e.
-  - apply H, in_eq.
-  - apply IHl1, (incl_cons_inv H).
-Qed.
-
-Lemma Znth_0_hd:
-  forall list, Zlength list > 0 -> Znth 0 list = hd 0 list.
-Proof.
-  intros. induction list; inversion H.
-  rewrite Znth_0_cons. trivial.
-Qed.
-
-Lemma fold_min_in_list: forall l, Zlength l > 0 -> In (fold_right Z.min (hd 0 l) l) l.
-Proof.
-  intros. apply min_in_list.
-  - apply incl_refl.
-  - rewrite <- Znth_0_hd by (unfold SIZE in *; omega). apply Znth_In; omega.
-Qed.
-
-Lemma min_picks_first:
-  forall num mono start,
-    start <= mono ->
-    fold_right Z.min start (list_repeat num mono) = start.
-Proof.
-  intros. induction num; trivial.
-  simpl. rewrite IHnum. rewrite Z.min_r; omega.
 Qed.
 
 Lemma vvalid2_evalid:
@@ -338,50 +92,6 @@ Lemma vvalid_range:
     vvalid g a <-> 0 <= a < SIZE.
 Proof.
   intros. destruct H as [? _]. red in H. trivial.
-Qed.
-
-Lemma find_src: forall src,
-    0 <= src < Zlength (list_repeat (Z.to_nat SIZE) inf) ->
-    find (upd_Znth src (list_repeat (Z.to_nat SIZE) inf) 0)
-         (fold_right Z.min (hd 0 (upd_Znth src (list_repeat (Z.to_nat SIZE) inf) 0))
-                     (upd_Znth src (list_repeat (Z.to_nat SIZE) inf) 0)) 0 = src.
-Proof.
-  intros.
-  remember (upd_Znth src (list_repeat (Z.to_nat SIZE) inf) 0) as l.
-  replace (fold_right Z.min (hd 0 l) l) with (Znth src l).
-  - apply find_index.
-    1: rewrite Heql, upd_Znth_Zlength; trivial.
-    rewrite Heql.
-    rewrite upd_Znth_same; trivial.
-    rewrite sublist_upd_Znth_l by omega.
-    rewrite sublist_list_repeat.
-    2: omega.
-    2: rewrite Zlength_list_repeat in H; [|unfold SIZE]; rep_omega.
-    replace (src - 0) with (src) by omega.
-    intro.
-    apply in_list_repeat in H0.
-    inversion H0.
-  - subst l.
-    rewrite upd_Znth_same; trivial.
-    rewrite upd_Znth_unfold at 2; auto.
-    repeat rewrite fold_right_app.
-    repeat rewrite sublist_list_repeat; try omega.
-    2: rewrite Zlength_list_repeat in H; [|unfold SIZE]; omega.
-    2: { split. omega. unfold SIZE in *; rewrite Zlength_list_repeat; omega. }
-    repeat rewrite Zlength_list_repeat by omega.
-    replace (src - 0) with (src) by omega.
-    rewrite <- Znth_0_hd.
-    2: { unfold SIZE in *; rewrite upd_Znth_Zlength by assumption.
-         rewrite Zlength_list_repeat; omega. }
-    destruct (Z.eq_dec src 0).
-    + rewrite e. rewrite upd_Znth_same. simpl.
-      compute; trivial. omega.
-    + rewrite upd_Znth_diff by omega.
-      rewrite Znth_list_repeat_inrange by (unfold SIZE in *; omega).
-      rewrite Zlength_list_repeat.
-      simpl. rewrite Z.min_l.
-      1,2: rewrite min_picks_first.
-      all: try rewrite <- inf_eq; try unfold SIZE; omega.
 Qed.
 
 Definition get_popped pq : list VType :=
@@ -983,37 +693,6 @@ Definition dijkstra_correct g (src : VType) (prev priq dist: list VType) : Prop 
     inv_unpopped g src prev priq dist dst /\
     inv_unseen prev priq dist dst.
 
-(* SPECS *)
-Definition pq_emp_spec :=
-  DECLARE _pq_emp
-  WITH pq: val, priq_contents: list Z
-  PRE [tptr tint]
-   PROP (inrange_priq priq_contents)
-   PARAMS (pq)
-   GLOBALS ()
-   SEP (data_at Tsh (tarray tint SIZE) (map Vint (map Int.repr priq_contents)) pq)
-  POST [ tint ]
-   PROP ()
-   LOCAL (temp ret_temp (isEmpty priq_contents))
-   SEP (data_at Tsh (tarray tint SIZE) (map Vint (map Int.repr priq_contents)) pq).
-
-Definition popMin_spec :=
-  DECLARE _popMin
-  WITH pq: val, priq_contents: list Z
-  PRE [tptr tint]
-   PROP (inrange_priq priq_contents;
-        isEmpty priq_contents = Vzero)
-   PARAMS (pq)
-   GLOBALS ()
-   SEP   (data_at Tsh (tarray tint SIZE) (map Vint (map Int.repr priq_contents)) pq)
-  POST [ tint ]
-   EX rt : Z,
-   PROP (rt = find priq_contents (fold_right Z.min (hd 0 priq_contents) priq_contents) 0)
-   LOCAL (temp ret_temp  (Vint (Int.repr rt)))
-   SEP   (data_at Tsh (tarray tint SIZE) (upd_Znth
-                                            (find priq_contents (fold_right Z.min (Znth 0 priq_contents) priq_contents) 0)
-                                            (map Vint (map Int.repr priq_contents)) (Vint (Int.repr (inf+1)))) pq).
-
 Definition dijkstra_spec :=
   DECLARE _dijkstra
   WITH sh: wshare, g: Graph, arr : pointer_val,
@@ -1042,119 +721,6 @@ Definition dijkstra_spec :=
    SEP (graph_rep sh (graph_to_mat g) (pointer_val_val arr);
        data_at Tsh (tarray tint SIZE) (map Vint (map Int.repr prev_contents)) (pointer_val_val prev);
        data_at Tsh (tarray tint SIZE) (map Vint (map Int.repr dist_contents)) (pointer_val_val dist)).
-
-Definition Gprog : funspecs := ltac:(with_library prog [pq_emp_spec; popMin_spec; dijkstra_spec]).
-
-Lemma body_pq_emp: semax_body Vprog Gprog f_pq_emp pq_emp_spec.
-Proof.
-  start_function.
-  forward_for_simple_bound
-    SIZE
-    (EX i : Z,
-     PROP (isEmpty_Prop (sublist 0 i priq_contents))
-     LOCAL (temp _pq pq)
-     SEP (data_at Tsh (tarray tint SIZE) (map Vint (map Int.repr priq_contents)) pq)).
-  - unfold SIZE; rep_omega.
-  - unfold SIZE; rep_omega.
-  - entailer!.
-  - simpl.
-    assert_PROP (Zlength priq_contents = SIZE). {
-      entailer!. repeat rewrite Zlength_map in H3; auto.
-    }
-    forward; forward_if; forward; entailer!.
-    + rewrite (isEmpty_in priq_contents (Znth i priq_contents)).
-      trivial.
-      apply Znth_In; omega.
-      rewrite <- H1 in H0.
-      pose proof (Forall_Znth _ _ i H0 H).
-      rewrite Int.signed_repr in H3.
-      replace 8 with SIZE in H3 by (unfold SIZE; trivial).
-      rewrite inf_eq2 in H3; trivial.
-      simpl in H7. rep_omega.
-    + rewrite (sublist_split 0 i (i+1)); try omega.
-      unfold isEmpty_Prop.
-      rewrite fold_right_app.
-      rewrite sublist_one; try omega. simpl.
-      destruct (Z_lt_dec (Znth i priq_contents) inf).
-      2: unfold isEmpty_Prop in H2; trivial.
-      exfalso.
-      replace 8 with SIZE in H3 by (unfold SIZE; trivial).
-      rewrite inf_eq2 in H3.
-      do 2 rewrite Int.signed_repr in H3.
-      rep_omega.
-      1: compute; split; inversion 1.
-      1,2: rewrite <- H1 in H0; apply (Forall_Znth _ _ i H0) in H; simpl in H; rep_omega.
-  - forward. entailer!.
-    rewrite sublist_same in H0; trivial.
-    2: { symmetry; repeat rewrite Zlength_map in H2.
-         unfold SIZE. simpl in H2. omega. }
-    replace (Vint (Int.repr 1)) with Vone by now unfold Vone, Int.one.
-    symmetry. apply isEmpty_prop_val; trivial.
-Qed.
-
-Lemma body_popMin: semax_body Vprog Gprog f_popMin popMin_spec.
-Proof.
-  start_function.
-  assert_PROP (Zlength priq_contents = SIZE). {
-    entailer!. repeat rewrite Zlength_map in H2; auto.
-  }
-  assert (0 <= 0 < Zlength (map Int.repr priq_contents)) by
-      (rewrite Zlength_map; rewrite H1; unfold SIZE; omega).
-  assert (0 <= 0 < Zlength priq_contents) by
-      (rewrite H1; unfold SIZE; omega).
-  forward. forward.
-  forward_for_simple_bound
-    SIZE
-    (EX i : Z,
-     PROP ()
-     LOCAL (temp _minWeight (Vint (Int.repr (fold_right Z.min (Znth 0 priq_contents) (sublist 0 i priq_contents))));
-                        temp _minVertex (Vint (Int.repr (find priq_contents (fold_right Z.min (Znth 0 priq_contents) (sublist 0 i priq_contents)) 0)));
-                        temp _pq pq)
-                 SEP (data_at Tsh (tarray tint SIZE) (map Vint (map Int.repr priq_contents)) pq)).
-  - unfold SIZE; rep_omega.
-  - entailer!. simpl. rewrite find_index.
-    trivial. omega. simpl. unfold not. omega.
-  - forward.
-    assert (0 <= i < Zlength priq_contents) by omega.
-    assert (Int.min_signed <=
-            fold_right Z.min (Znth 0 priq_contents) (sublist 0 i priq_contents) <= Int.max_signed).
-    { apply Forall_fold_min. apply Forall_Znth. omega.
-      rewrite Forall_forall. intros. rewrite In_Znth_iff in H6.
-      destruct H6 as [? [? ?]]. rewrite <- H7.
-      pose proof (Forall_Znth _ _ x0 H6 H).
-      simpl in H8. rep_omega.
-      rewrite Forall_forall. intros. rewrite In_Znth_iff in H6.
-      destruct H6 as [? [? ?]]. rewrite <- H7.
-      apply (Forall_sublist _ 0 i _) in H.
-      apply (Forall_Znth _ _ _ H6) in H.
-      simpl in H. rep_omega.
-    }
-    assert (Int.min_signed <= Znth i priq_contents <= Int.max_signed). {
-      apply (Forall_Znth _ _ _ H5) in H; simpl in H; rep_omega. }
-    forward_if.
-    + forward. forward. entailer!.
-      rewrite (sublist_split 0 i (i+1)) by omega.
-      rewrite (sublist_one i (i+1) priq_contents) by omega.
-      rewrite fold_min_another.
-      rewrite Z.min_r; [|omega].
-      split; trivial. f_equal.
-      rewrite find_index; trivial.
-      apply min_not_in_prev; trivial.
-    + forward. entailer!.
-      rewrite (sublist_split 0 i (i+1)) by omega.
-      rewrite (sublist_one i (i+1) priq_contents) by omega.
-      rewrite fold_min_another.
-      rewrite Z.min_l; [|omega]. split; trivial.
-  - forward.
-    + entailer!. rewrite <- H1.
-      apply find_range.
-      rewrite sublist_same; [|omega..].
-      apply min_in_list; [apply incl_refl | apply Znth_In; omega].
-    + forward.
-      Exists (find priq_contents (fold_right Z.min (hd 0 priq_contents) (sublist 0 SIZE priq_contents)) 0).
-      rewrite sublist_same by omega. entailer!.
-      destruct priq_contents; simpl; auto.
-Qed.
 
 Lemma valid_path_app_cons:
   forall g src links2u u i,
@@ -1223,7 +789,7 @@ Proof.
   simpl in H1. destruct H1. rewrite H in H1, H3.
   specialize (H0 _ _ H3 H1). destruct H0.
   1: destruct H0; omega.
-  rewrite H0. rewrite <- inf_eq. omega.
+  rewrite H0. compute; inversion 1.
 Qed.
 
 Lemma acc_pos: forall (g: LGraph) l z,
@@ -1424,16 +990,9 @@ Proof.
         trivial.
       * right; trivial.
 Qed.
+ 
+Definition Gprog : funspecs := ltac:(with_library prog [pq_emp_spec; popMin_spec; dijkstra_spec]).
 
-Lemma find_min_lt_inf: forall u l,
-    u = find l (fold_right Z.min (hd 0 l) l) 0 -> isEmpty l = Vzero ->
-    Zlength l > 0 -> Znth u l < inf.
-Proof.
-  intros. rewrite <- isEmpty_in' in H0. destruct H0 as [? [? ?]].
-  rewrite H. rewrite Znth_find.
-  - pose proof (fold_min _ _ H0). omega.
-  - now apply fold_min_in_list.
-Qed.
 
 Lemma body_dijkstra: semax_body Vprog Gprog f_dijkstra dijkstra_spec.
 Proof.
@@ -1452,7 +1011,7 @@ Proof.
           data_at Tsh (tarray tint SIZE) ((list_repeat (Z.to_nat i) (Vint (Int.repr inf))) ++ (list_repeat (Z.to_nat (SIZE-i)) Vundef)) (pointer_val_val dist);
           graph_rep sh (graph_to_mat g) (pointer_val_val arr))).
   - unfold SIZE. rep_omega.
-  - unfold data_at, data_at_, field_at_; entailer!.
+  - unfold data_at, data_at_, field_at_. entailer!.
   - forward. forward. forward.
     entailer!.
     replace 8 with SIZE by (unfold SIZE; rep_omega).
@@ -1588,7 +1147,7 @@ Proof.
       assert_PROP (Zlength prev_contents = SIZE).
       { entailer!. now repeat rewrite Zlength_map in *. }
       assert_PROP (Zlength dist_contents = SIZE).
-      { entailer!. now repeat rewrite Zlength_map in *. }
+      { entailer!. now repeat rewrite Zlength_map in *. }      
       forward_call (v_pq, priq_contents).
       forward_if. (* checking if it's time to break *)
       * (* No, don't break. *)
