@@ -66,42 +66,44 @@ Definition ___compcert_va_composite : ident := 19%positive.
 Definition ___compcert_va_float64 : ident := 18%positive.
 Definition ___compcert_va_int32 : ident := 16%positive.
 Definition ___compcert_va_int64 : ident := 17%positive.
-Definition ___stringlit_1 : ident := 64%positive.
-Definition ___stringlit_2 : ident := 65%positive.
-Definition ___stringlit_3 : ident := 66%positive.
-Definition ___stringlit_4 : ident := 67%positive.
-Definition ___stringlit_5 : ident := 73%positive.
-Definition _argc : ident := 79%positive.
-Definition _argv : ident := 80%positive.
-Definition _cost : ident := 77%positive.
-Definition _curr : ident := 69%positive.
-Definition _dijkstra : ident := 78%positive.
-Definition _dist : ident := 72%positive.
-Definition _getPaths : ident := 74%positive.
-Definition _graph : ident := 58%positive.
-Definition _i : ident := 59%positive.
-Definition _j : ident := 60%positive.
-Definition _main : ident := 81%positive.
-Definition _popMin : ident := 56%positive.
-Definition _pq : ident := 75%positive.
-Definition _pq_emp : ident := 57%positive.
-Definition _prev : ident := 70%positive.
-Definition _printPath : ident := 71%positive.
-Definition _print_graph : ident := 68%positive.
+Definition ___stringlit_1 : ident := 66%positive.
+Definition ___stringlit_2 : ident := 67%positive.
+Definition ___stringlit_3 : ident := 68%positive.
+Definition ___stringlit_4 : ident := 69%positive.
+Definition ___stringlit_5 : ident := 75%positive.
+Definition _adjustWeight : ident := 58%positive.
+Definition _argc : ident := 81%positive.
+Definition _argv : ident := 82%positive.
+Definition _cost : ident := 79%positive.
+Definition _curr : ident := 71%positive.
+Definition _dijkstra : ident := 80%positive.
+Definition _dist : ident := 74%positive.
+Definition _getPaths : ident := 76%positive.
+Definition _graph : ident := 60%positive.
+Definition _i : ident := 61%positive.
+Definition _j : ident := 62%positive.
+Definition _main : ident := 83%positive.
+Definition _popMin : ident := 57%positive.
+Definition _pq : ident := 77%positive.
+Definition _pq_emp : ident := 59%positive.
+Definition _prev : ident := 72%positive.
+Definition _printPath : ident := 73%positive.
+Definition _print_graph : ident := 70%positive.
 Definition _printf : ident := 54%positive.
+Definition _push : ident := 56%positive.
 Definition _rand : ident := 52%positive.
-Definition _random : ident := 61%positive.
-Definition _setup : ident := 62%positive.
+Definition _random : ident := 63%positive.
+Definition _setup : ident := 64%positive.
 Definition _srand : ident := 53%positive.
-Definition _src : ident := 63%positive.
+Definition _src : ident := 65%positive.
 Definition _time : ident := 55%positive.
-Definition _u : ident := 76%positive.
-Definition _t'1 : ident := 82%positive.
-Definition _t'2 : ident := 83%positive.
-Definition _t'3 : ident := 84%positive.
-Definition _t'4 : ident := 85%positive.
-Definition _t'5 : ident := 86%positive.
-Definition _t'6 : ident := 87%positive.
+Definition _u : ident := 78%positive.
+Definition _t'1 : ident := 84%positive.
+Definition _t'2 : ident := 85%positive.
+Definition _t'3 : ident := 86%positive.
+Definition _t'4 : ident := 87%positive.
+Definition _t'5 : ident := 88%positive.
+Definition _t'6 : ident := 89%positive.
 
 Definition v___stringlit_4 := {|
   gvar_info := (tarray tschar 13);
@@ -444,13 +446,16 @@ Definition f_dijkstra := {|
               (Ebinop Osub (Econst_int (Int.repr 2147483647) tint)
                 (Ebinop Odiv (Econst_int (Int.repr 2147483647) tint)
                   (Econst_int (Int.repr 8) tint) tint) tint))
-            (Sassign
-              (Ederef
-                (Ebinop Oadd (Evar _pq (tarray tint 8)) (Etempvar _i tint)
-                  (tptr tint)) tint)
-              (Ebinop Osub (Econst_int (Int.repr 2147483647) tint)
-                (Ebinop Odiv (Econst_int (Int.repr 2147483647) tint)
-                  (Econst_int (Int.repr 8) tint) tint) tint)))))
+            (Scall None
+              (Evar _push (Tfunction
+                            (Tcons tint
+                              (Tcons tint (Tcons (tptr tint) Tnil))) tvoid
+                            cc_default))
+              ((Etempvar _i tint) ::
+               (Ebinop Osub (Econst_int (Int.repr 2147483647) tint)
+                 (Ebinop Odiv (Econst_int (Int.repr 2147483647) tint)
+                   (Econst_int (Int.repr 8) tint) tint) tint) ::
+               (Evar _pq (tarray tint 8)) :: nil)))))
       (Sset _i
         (Ebinop Oadd (Etempvar _i tint) (Econst_int (Int.repr 1) tint) tint))))
   (Ssequence
@@ -556,12 +561,18 @@ Definition f_dijkstra := {|
                                             (Etempvar _dist (tptr tint))
                                             (Etempvar _i tint) (tptr tint))
                                           tint))
-                                      (Sassign
-                                        (Ederef
-                                          (Ebinop Oadd
-                                            (Evar _pq (tarray tint 8))
-                                            (Etempvar _i tint) (tptr tint))
-                                          tint) (Etempvar _t'5 tint)))))
+                                      (Scall None
+                                        (Evar _adjustWeight (Tfunction
+                                                              (Tcons tint
+                                                                (Tcons tint
+                                                                  (Tcons
+                                                                    (tptr tint)
+                                                                    Tnil)))
+                                                              tvoid
+                                                              cc_default))
+                                        ((Etempvar _i tint) ::
+                                         (Etempvar _t'5 tint) ::
+                                         (Evar _pq (tarray tint 8)) :: nil)))))
                                 Sskip)))
                           Sskip)))
                     (Sset _i
@@ -901,10 +912,20 @@ Definition global_definitions : list (ident * globdef fundef type) :=
    Gfun(External (EF_external "time"
                    (mksignature (AST.Tint :: nil) AST.Tint cc_default))
      (Tcons (tptr tint) Tnil) tint cc_default)) ::
+ (_push,
+   Gfun(External (EF_external "push"
+                   (mksignature (AST.Tint :: AST.Tint :: AST.Tint :: nil)
+                     AST.Tvoid cc_default))
+     (Tcons tint (Tcons tint (Tcons (tptr tint) Tnil))) tvoid cc_default)) ::
  (_popMin,
    Gfun(External (EF_external "popMin"
                    (mksignature (AST.Tint :: nil) AST.Tint cc_default))
      (Tcons (tptr tint) Tnil) tint cc_default)) ::
+ (_adjustWeight,
+   Gfun(External (EF_external "adjustWeight"
+                   (mksignature (AST.Tint :: AST.Tint :: AST.Tint :: nil)
+                     AST.Tvoid cc_default))
+     (Tcons tint (Tcons tint (Tcons (tptr tint) Tnil))) tvoid cc_default)) ::
  (_pq_emp,
    Gfun(External (EF_external "pq_emp"
                    (mksignature (AST.Tint :: nil) AST.Tint cc_default))
@@ -918,8 +939,8 @@ Definition global_definitions : list (ident * globdef fundef type) :=
 
 Definition public_idents : list ident :=
 (_main :: _dijkstra :: _getPaths :: _printPath :: _print_graph :: _setup ::
- _pq_emp :: _popMin :: _time :: _printf :: _srand :: _rand ::
- ___builtin_debug :: ___builtin_write32_reversed ::
+ _pq_emp :: _adjustWeight :: _popMin :: _push :: _time :: _printf ::
+ _srand :: _rand :: ___builtin_debug :: ___builtin_write32_reversed ::
  ___builtin_write16_reversed :: ___builtin_read32_reversed ::
  ___builtin_read16_reversed :: ___builtin_fnmsub :: ___builtin_fnmadd ::
  ___builtin_fmsub :: ___builtin_fmadd :: ___builtin_fmin ::

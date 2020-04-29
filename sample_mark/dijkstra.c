@@ -20,8 +20,6 @@
 /* Setting up a random problem */
 /* *************************** */
 
-// not currently used.
-// will figure out how to reason about random later.
 void setup (int graph[SIZE][SIZE]) {
     srand((unsigned int) time(NULL));
     // src = rand() % SIZE;
@@ -69,32 +67,32 @@ void getPaths (int src, int dist[SIZE], int prev[SIZE]) {
 }
 
 void dijkstra (int graph[SIZE][SIZE], int src, int *dist, int *prev) {
-    // int dist[SIZE];
-    // int prev[SIZE];
     int pq[SIZE];
     int i, j, u, cost;
     for (i = 0; i < SIZE; i++) {
-        dist[i] = IFTY;                   // Best-known distance from src to i
-        prev[i] = IFTY;                   // Last vertex visited before i
-        pq[i] = IFTY;                     // Everybody goes in the queue
+        dist[i] = IFTY;  // Best-known distance from src to i
+        prev[i] = IFTY;  // Last vertex visited before i
+        push(i, IFTY, pq);  // Everybody goes in the queue  
+        //pq[i] = IFTY;
     }
     dist[src] = 0;
     pq[src] = 0;
     prev[src] = src;
     while (!pq_emp(pq)) {
-        u = popMin(pq);  // src -> u is optimal. relax u's neighbors if we can, and then forget about u.
+        u = popMin(pq);  // src -> u is optimal. relax u's neighbors, then done with u.
         // printf("Popped vertex %d\n", u); 
         for (i = 0; i < SIZE; i++) {
             cost = graph[u][i]; 
-            if (cost < IFTY) { // i.e. node i is a neighbor of mine. do I need to add that cost > 0?
-                if (dist[i] > dist[u] + cost) { // if we can improve the best-known dist from src to i
-                    dist[i] = dist[u] + cost;   // improve it
-                    prev[i] = u;                       // note that we got there via 'u'
-                    pq[i] = dist[i];                   // and stash the improvement in the PQ
+            if (cost < IFTY) { // i.e. node i is a neighbor of mine
+                if (dist[i] > dist[u] + cost) {  // if we can improve the best-known dist from src to i
+                    dist[i] = dist[u] + cost;  // improve it
+                    prev[i] = u;  // note that we got there via 'u'
+                    adjustWeight(i, dist[i], pq);
+                    // pq[i] = dist[i];  // and stash the improvement in the PQ
                     // printf("Improved %d --> %d to %d\n", src, i, dist[i]);
                     // uncomment the above line to see how the "best answer" improves slowly!
                 }
-            } // [src --> i] may NOT be perfect. 
+            } // [src --> i] may not be perfect 
         }
     }
     return;
