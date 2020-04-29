@@ -13,6 +13,17 @@ Require Import Coq.Lists.List.
 Require Import RamifyCoq.sample_mark.priq_utils.
 Require Import RamifyCoq.sample_mark.dijk_pq_arr_macros.
 
+(* Require Import RamifyCoq.sample_mark.dijk_pq_arr_spec. *)
+Locate _pq.
+
+(* We must use the CompSpecs and Vprog that were
+   centrally defined in dijksta's environment. 
+   This lets us be consistent and call PQ functions in Dijkstra. 
+ *)
+Local Definition CompSpecs := env_dijkstra_arr.CompSpecs.
+Local Definition Vprog := env_dijkstra_arr.Vprog.
+Local Definition Gprog := dijk_pq_arr_spec.Gprog.
+
 Local Open Scope Z_scope.
 
 Lemma inf_eq: 1879048192 = inf.
@@ -717,8 +728,12 @@ Proof.
       rewrite upd_Znth_Zlength; trivial.
 Qed.
 *)
- 
-Definition Gprog : funspecs := ltac:(with_library prog [pq_emp_spec; popMin_spec; dijkstra_spec]).
+
+
+
+(* Definition Gprog : funspecs := ltac:(with_library prog [push_spec; pq_emp_spec; adjustWeight_spec; popMin_spec; dijkstra_spec]). *)
+
+(* Definition Gprog : funspecs := ltac:(with_library prog [push_spec; pq_emp_spec; adjustWeight_spec; popMin_spec; dijkstra_spec]). *)
 
 
 Lemma body_dijkstra: semax_body Vprog Gprog f_dijkstra dijkstra_spec.
@@ -739,8 +754,18 @@ Proof.
           graph_rep sh (graph_to_mat g) (pointer_val_val arr))).
   - unfold SIZE. rep_omega.
   - unfold data_at, data_at_, field_at_. entailer!.
-  - forward. forward. forward.
-    entailer!.
+  - admit.
+(*
+    forward. forward.
+    forward_call (v_pq, i, inf, ((list_repeat (Z.to_nat i) (inf) ++ (list_repeat (Z.to_nat (SIZE-i)) 0)))).
+
+    admit.
+    admit.
+
+    
+
+    
+    (* entailer!. *)
     replace 8 with SIZE by (unfold SIZE; rep_omega).
     rewrite inf_eq2.
     replace (upd_Znth i
@@ -748,6 +773,7 @@ Proof.
                                    list_repeat (Z.to_nat (SIZE - i)) Vundef) (Vint (Int.repr inf))) with
         (list_repeat (Z.to_nat (i + 1)) (Vint (Int.repr inf)) ++ list_repeat (Z.to_nat (SIZE - (i + 1))) Vundef).
     1: entailer!.
+    2: {
     rewrite upd_Znth_app2 by (repeat rewrite Zlength_list_repeat by omega; omega).
     rewrite Zlength_list_repeat by omega.
     replace (i-i) with 0 by omega.
@@ -758,6 +784,10 @@ Proof.
     rewrite sublist_list_repeat by omega.
     replace (SIZE - (i + 1)) with (SIZE - i - 1) by omega.
     replace (list_repeat (Z.to_nat 1) (Vint (Int.repr inf))) with ([Vint (Int.repr inf)]) by reflexivity. easy.
+    }
+
+*)
+    
   - (* At this point we are done with the
        first for loop. The arrays are all set to INF. *)
     replace (SIZE - SIZE) with 0 by omega; rewrite list_repeat_0, <- (app_nil_end).

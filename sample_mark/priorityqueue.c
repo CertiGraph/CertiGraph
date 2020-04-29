@@ -10,11 +10,10 @@
 /*    Array Masquerading as PQ    */
 /* ****************************** */
 
-//Actually just inlined in the code, but here is push:
-// void push (int vertex, int weight, int** pq) {
-//     *pq[vertex] = weight;   
-// }
 
+void push (int vertex, int weight, int pq[SIZE]) {
+    pq[vertex] = weight;   
+}
 
 // precondition: won't be called on an empty PQ
 int popMin (int pq[SIZE]) {
@@ -31,11 +30,9 @@ int popMin (int pq[SIZE]) {
     return minVertex;
 }
 
-// Actually just inlined in the code, but here is adjustWeight:
-// void adjustWeight (int vertex, int newWeight, int **pq) {
-//     *pq[vertex] = newWeight;
-// }
-
+void adjustWeight (int vertex, int newWeight, int pq[SIZE]) {
+    pq[vertex] = newWeight;
+}
 
 // Quick utility function to check if the PQ empty
 // If all cells are >= IFTY, the pq is considered empty
