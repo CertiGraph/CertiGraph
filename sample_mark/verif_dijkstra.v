@@ -603,50 +603,28 @@ Proof.
           data_at Tsh (tarray tint SIZE) ((list_repeat (Z.to_nat i) (Vint (Int.repr inf))) ++ (list_repeat (Z.to_nat (SIZE-i)) Vundef)) (pointer_val_val dist);
           graph_rep sh (graph_to_mat g) (pointer_val_val arr))).
   - unfold SIZE. rep_omega.
-  - unfold data_at, data_at_, field_at_. entailer!.
-  - 
-    forward. forward.
-
-    assert ((map Vint
-                   (map Int.repr
-                        (list_repeat (Z.to_nat i) inf ++ list_repeat (Z.to_nat (SIZE - i)) 0))) =
-          (list_repeat (Z.to_nat i) (Vint (Int.repr inf)) ++
-                       list_repeat (Z.to_nat (SIZE - i)) Vundef)) by admit.
-    (* 
-       it's not true...
-       I need to figure out the correct
-       way to reason about such Vundefs.
-
-       Basically I need some (x : Z), such that
-       Vint (Int.repr x) = Vundef
-       And of course this is impossible; 
-       they are entirely different constructors of val.
-
-       I have temporarily just put 0 and faked the equality.
-       This lets me go all the way through.
-     *)
-
-    forward_call (v_pq, i, inf, ((list_repeat (Z.to_nat i) (inf) ++ (list_repeat (Z.to_nat (SIZE-i)) 0)))).
-    
-    + rewrite H5. entailer!.
-    + replace 8 with SIZE by (unfold SIZE; rep_omega).
-      rewrite inf_eq2.
-      assert ((upd_Znth i
-                        (list_repeat (Z.to_nat i) (Vint (Int.repr inf)) ++
-                                     list_repeat (Z.to_nat (SIZE - i)) Vundef) (Vint (Int.repr inf))) =
-          (list_repeat (Z.to_nat (i + 1)) (Vint (Int.repr inf)) ++ list_repeat (Z.to_nat (SIZE - (i + 1))) Vundef)). {
-        rewrite upd_Znth_app2 by (repeat rewrite Zlength_list_repeat by omega; omega).
-        rewrite Zlength_list_repeat by omega.
-        replace (i-i) with 0 by omega.
-        rewrite <- list_repeat_app' by omega.
-        rewrite app_assoc_reverse; f_equal.
-        rewrite upd_Znth0_old. 2: rewrite Zlength_list_repeat; omega.
-        rewrite Zlength_list_repeat by omega.
-        rewrite sublist_list_repeat by omega.
-        replace (SIZE - (i + 1)) with (SIZE - i - 1) by omega.
-        replace (list_repeat (Z.to_nat 1) (Vint (Int.repr inf))) with ([Vint (Int.repr inf)]) by reflexivity. easy.
-      }
-      rewrite H5. entailer!.
+  - unfold data_at, data_at_, field_at_, SIZE; entailer!.
+  - forward. forward.
+    forward_call (v_pq, i, inf, (list_repeat (Z.to_nat i) (Vint (Int.repr inf)) ++
+             list_repeat (Z.to_nat (SIZE - i)) Vundef)).
+    replace 8 with SIZE by (unfold SIZE; rep_omega).
+    rewrite inf_eq2.
+    assert ((upd_Znth i
+                      (list_repeat (Z.to_nat i) (Vint (Int.repr inf)) ++
+                                   list_repeat (Z.to_nat (SIZE - i)) Vundef) (Vint (Int.repr inf))) =
+            (list_repeat (Z.to_nat (i + 1)) (Vint (Int.repr inf)) ++ list_repeat (Z.to_nat (SIZE - (i + 1))) Vundef)). {
+      rewrite upd_Znth_app2 by (repeat rewrite Zlength_list_repeat by omega; omega).
+      rewrite Zlength_list_repeat by omega.
+      replace (i-i) with 0 by omega.
+      rewrite <- list_repeat_app' by omega.
+      rewrite app_assoc_reverse; f_equal.
+      rewrite upd_Znth0_old. 2: rewrite Zlength_list_repeat; omega.
+      rewrite Zlength_list_repeat by omega.
+      rewrite sublist_list_repeat by omega.
+      replace (SIZE - (i + 1)) with (SIZE - i - 1) by omega.
+      replace (list_repeat (Z.to_nat 1) (Vint (Int.repr inf))) with ([Vint (Int.repr inf)]) by reflexivity. easy.
+    }
+    rewrite H5. entailer!.
   - (* At this point we are done with the
        first for loop. The arrays are all set to INF. *)
     replace (SIZE - SIZE) with 0 by omega; rewrite list_repeat_0, <- (app_nil_end).
