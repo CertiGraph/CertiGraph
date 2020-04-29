@@ -486,9 +486,9 @@ Ltac solve_ramify_Q_with Fr :=
         end;
         match goal with
         | |- ?P _ --> (?L' _ -* ?G' _) = _ =>
-             instantiate (1 := P) in (Value of p);
-             instantiate (1 := L') in (Value of l');
-             instantiate (1 := G') in (Value of g')
+             instantiate (1 := P) in (value of p);
+             instantiate (1 := L') in (value of l');
+             instantiate (1 := G') in (value of g')
         end;
         subst p g' l';
         reflexivity
@@ -750,9 +750,9 @@ Proof.
     extensionality x0.
     super_pattern (!! Pure x0) x0. super_pattern (p' x0 (x' x0)) x0.
     super_pattern (fun l => !! (forall x1 : B, In x1 l <-> P' x0 x1) && !! NoDup l && iter_sepcon l (p' x0)) x0.
-    instantiate (1 := (fun t : T => !! Pure t)) in (Value of pp).
-    instantiate (1 := (fun t : T => p' t (x' t))) in (Value of ll).
-    instantiate (1 := (fun (l : list B) (t : T) => !! (forall x1 : B, In x1 l <-> P' t x1) && !! NoDup l && iter_sepcon l (p' t))) in (Value of gg).
+    instantiate (1 := (fun t : T => !! Pure t)) in (value of pp).
+    instantiate (1 := (fun t : T => p' t (x' t))) in (value of ll).
+    instantiate (1 := (fun (l : list B) (t : T) => !! (forall x1 : B, In x1 l <-> P' t x1) && !! NoDup l && iter_sepcon l (p' t))) in (value of gg).
     subst pp gg ll. reflexivity.
   }
   subst pp gg ll. rewrite H7. clear H7.

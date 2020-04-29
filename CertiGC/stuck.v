@@ -486,7 +486,7 @@ Proof.
             sep_apply (apply_derives m (valid_pointer (Vptr b (Ptrofs.add i (Ptrofs.repr z))) * TT)). entailer!.
        }
        sep_apply (apply_derives m (memory_block s n (Vptr b i) * TT)).
-       sep_apply (memory_block_valid_ptr s n (Vptr b i)); [omega|].
+       sep_apply (memory_block_valid_ptr s n (Vptr b i)); [lia|].
        eapply derives_trans.
        2: apply valid_pointer_weak.
        entailer!.
@@ -505,7 +505,7 @@ Proof.
       2: { simpl offset_val.
            sep_apply (apply_derives m (memory_block s n (Vptr b i) * TT)).
            sep_apply (memory_block_weak_valid_pointer s n (Vptr b i) n).
-           omega. auto. auto. simpl offset_val.
+           lia. auto. auto. simpl offset_val.
            apply extend_weak_valid_pointer.
       }
       simpl offset_val.
@@ -525,8 +525,8 @@ Proof.
       assert_PROP (0 <= ofs + n <= Ptrofs.max_unsigned). {
         sep_apply (apply_derives m (memory_block s n (Vptr b (Ptrofs.repr ofs)) * TT)).
         sep_apply (memory_block_local_facts s n (Vptr b (Ptrofs.repr ofs))). Intros. red in H0.
-        rewrite Ptrofs.unsigned_repr in H0. 2: rep_omega.
-        apply prop_right. rep_omega. }
+        rewrite Ptrofs.unsigned_repr in H0. 2: rep_lia.
+        apply prop_right. rep_lia. }
       assert_PROP (0 <= ofs + z <= Ptrofs.max_unsigned). {
         sep_apply (apply_derives m (valid_pointer (Vptr b (Ptrofs.repr (ofs + z))) * TT)).
         sep_apply (valid_pointer_bounds (Vptr b (Ptrofs.repr (ofs + z)))). Intros. apply prop_right.
@@ -549,15 +549,15 @@ Proof.
              split; auto. }
            Exists (@left _ (~ v_in_range (Vptr b (Ptrofs.repr (ofs + z))) (Vptr b (Ptrofs.repr ofs)) n) H6).
            entailer!.
-        -- assert (n <= z) by omega. clear g.
+        -- assert (n <= z) by lia. clear g.
            simpl force_val.
            assert (~ v_in_range
                      (Vptr b (Ptrofs.repr (ofs + z))) (Vptr b (Ptrofs.repr ofs)) n). {
              intro. destruct H7 as [i [? ?]]. simpl offset_val in H8. rewrite ptrofs_add_repr in H8.
              inversion H8.
              rewrite !Ptrofs.Z_mod_modulus_eq in H10.
-             rewrite !Z.mod_small in H10; [|rep_omega..].
-             apply Z.add_reg_l in H10. omega. }
+             rewrite !Z.mod_small in H10; [|rep_lia..].
+             apply Z.add_reg_l in H10. lia. }
            Exists (@right (v_in_range (Vptr b (Ptrofs.repr (ofs + z))) (Vptr b (Ptrofs.repr ofs)) n) _ H7).
            entailer!.
   - forward. subst v. unfold sem_cmp_pp in H.
@@ -569,8 +569,8 @@ Proof.
     assert_PROP (0 <= ofs + z <= Ptrofs.max_unsigned). {
       admit.
     } rewrite !Ptrofs.unsigned_repr in H; auto.
-    2: rep_omega. destruct (zlt (ofs + z) ofs).
-    1: exfalso; omega. simpl in H. unfold typed_false in H.
+    2: rep_lia. destruct (zlt (ofs + z) ofs).
+    1: exfalso; lia. simpl in H. unfold typed_false in H.
     simpl in H. inversion H.
   - Intros b. forward. Exists b. entailer.
     rewrite <- (sepcon_emp m) at 4.

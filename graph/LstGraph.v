@@ -1,5 +1,5 @@
 Require Import Coq.Classes.Morphisms.
-Require Import Coq.omega.Omega.
+Require Import Coq.micromega.Lia.
 Require Import Coq.Logic.FunctionalExtensionality.
 Require Import RamifyCoq.lib.Coqlib.
 Require Import RamifyCoq.lib.EquivDec_ext.
@@ -68,7 +68,7 @@ Section LstGraph.
   Proof.
     intros. hnf. split; auto. intros p2 ?. destruct p as [v1 p1]. destruct p2 as [v2 p2]. f_equal.
     - destruct H as [[? _] _]. destruct H0 as [[? _] _]. simpl in H, H0. subst v1 v2; auto.
-    - destruct (le_dec (length p1) (length p2)).
+    - destruct (Compare_dec.le_dec (length p1) (length p2)).
       + destruct (lst_reachable_unique v1 p1 v2 p2 x y y P H H0 l) as [p3 [? ?]].
         assert (g |= (y, p3) is y ~o~> y satisfying (fun _ => True)) by (apply reachable_by_path_weaken with P; auto; unfold Included, Ensembles.In; intros; auto).
         apply no_loop_path in H3. inversion H3. subst p3 p2. rewrite app_nil_r; auto.
@@ -88,7 +88,7 @@ Section LstGraph.
 
   Lemma lst_reachable_or: forall x r1 r2, reachable g x r1 -> reachable g x r2 -> reachable g r1 r2 \/ reachable g r2 r1.
   Proof.
-    intros. destruct H as [p1 ?]. destruct H0 as [p2 ?]. destruct (le_dec (length (snd p1)) (length (snd p2))); [left | right].
+    intros. destruct H as [p1 ?]. destruct H0 as [p2 ?]. destruct (Compare_dec.le_dec (length (snd p1)) (length (snd p2))); [left | right].
     - apply (lst_reachable_unique' p1 p2 x); auto.
     - apply (lst_reachable_unique' p2 p1 x); intuition.
   Qed.

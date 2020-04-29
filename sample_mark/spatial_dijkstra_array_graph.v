@@ -45,8 +45,8 @@ Proof.
        apply Zlength_nonneg.
   }
   rewrite (sublist_split 0 i (Zlength contents)),
-  (sublist_split i (i+1) (Zlength contents)), (sublist_one i); try omega.
-  2, 3, 4: rewrite nat_inc_list_Zlength; rewrite Z2Nat.id; omega.
+  (sublist_split i (i+1) (Zlength contents)), (sublist_one i); try lia.
+  2, 3, 4: rewrite nat_inc_list_Zlength; rewrite Z2Nat.id; lia.
   rewrite nat_inc_list_i.
   2: rewrite Z2Nat_id', Z.max_r; trivial; apply Zlength_nonneg. 
   repeat rewrite iter_sepcon.iter_sepcon_app.

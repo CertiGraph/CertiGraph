@@ -70,7 +70,7 @@ Proof.
   normalize.
   apply data_at_conflict.
   + apply readable_nonidentity, writable_readable. auto.
-  + change (sizeof node_type) with 16. omega.
+  + change (sizeof node_type) with 16. lia.
 Qed.
 
 (*
@@ -89,7 +89,7 @@ Proof.
     change (sizeof cenv_cs node_type) with 16.
     destruct_eq_dec p1 p2; [| congruence].
     subst.
-    apply pointer_range_overlap_refl; try omega.
+    apply pointer_range_overlap_refl; try lia.
     destruct H0; auto.
   + unfold msl_ext.seplog.mapsto_, trinode.
     eapply disj_derives with
@@ -121,8 +121,8 @@ Proof.
       cbv beta iota zeta delta [pointer_val_val] in *; clear H0 H1.
       intros [[? ?] [[? ?] [? [? ?]]]].
       inv H0; inv H1.
-      apply res_predicates.range_overlap_spec in H5; [| omega | omega].
-      assert (Int.unsigned i = Int.unsigned i0) by (destruct H5 as [[? ?] | [? ?]], H4, H3; omega).
+      apply res_predicates.range_overlap_spec in H5; [| lia | lia].
+      assert (Int.unsigned i = Int.unsigned i0) by (destruct H5 as [[? ?] | [? ?]], H4, H3; lia).
       assert (b = b0) by (destruct H5 as [[? ?] | [? ?]]; subst; auto).
       apply H2.
       rewrite H1, <- (Int.repr_unsigned i), H0, Int.repr_unsigned; auto.

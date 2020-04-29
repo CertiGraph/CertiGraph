@@ -1,5 +1,5 @@
 Require Import Coq.Logic.ProofIrrelevance.
-Require Import Coq.omega.Omega.
+Require Import Coq.micromega.Lia.
 Require Import RamifyCoq.lib.Coqlib.
 Require Import RamifyCoq.lib.EnumEnsembles.
 Require Import RamifyCoq.lib.List_ext.
@@ -349,12 +349,12 @@ Lemma valid_path_acyclic:
     path_ends g p n1 n2 -> valid_path g p ->
     exists p', Subpath g p' p /\ path_ends g p' n1 n2 /\ NoDup (epath_to_vpath g p') /\ valid_path g p'.
 Proof.
-  intros until p. destruct p as [v p]. revert v. remember (length p). assert (length p <= n) by omega. clear Heqn. revert p H. induction n; intros.
-  + assert (p = nil) by (destruct p; auto; simpl in H; exfalso; intuition). subst. exists (v, nil). simpl. simpl in H1.
+  intros until p. destruct p as [v p]. revert v. remember (length p). assert (length p <= n) by lia. clear Heqn. revert p H. induction n; intros.
+  + assert (p = nil) by (destruct p; auto; simpl in H; exfalso; lia). subst. exists (v, nil). simpl. simpl in H1.
     split. 1: apply Subpath_refl. do 2 (split; auto). constructor. intro; inversion H2. apply NoDup_nil.
   + destruct (NoDup_dec EV (epath_to_vpath g (v, p))).
     - exists (v, p); split; [apply Subpath_refl | split; auto].
-    - destruct (path_shorten _ _ _ _ H0 H1 n0) as [[v2 p2] [? [? [? ?]]]]. simpl in H2. assert (length p2 <= n) by intuition.
+    - destruct (path_shorten _ _ _ _ H0 H1 n0) as [[v2 p2] [? [? [? ?]]]]. simpl in H2. assert (length p2 <= n) by lia.
       specialize (IHn p2 H6 _ _ _ H4 H5). simpl in IHn, H3. destruct IHn as [p' [? ?]]. exists p'. split; auto.
       apply Subpath_trans with (v2, p2); auto.
 Qed.
@@ -1360,16 +1360,16 @@ Lemma valid_path_unique_edge: forall (g : Gph) (p : path) s t e,
                   length (p1 ++ e :: p2) <= length (snd p).
 Proof.
   intros g p. destruct p as [v p]. simpl snd. revert v. remember (length p).
-  assert (length p <= n) by omega. rewrite Heqn. clear Heqn.
+  assert (length p <= n) by lia. rewrite Heqn. clear Heqn.
   revert p H. induction n; intros.
-  - assert (p = nil) by (destruct p; auto; simpl in H; omega). simpl in *.
+  - assert (p = nil) by (destruct p; auto; simpl in H; lia). simpl in *.
     subst p. inversion H2.
   - simpl in H2. assert (v = s) by (destruct H0; now simpl in H0). subst v.
     apply in_split in H2. destruct H2 as [l1 [l2 ?]]. subst p.
     destruct (in_dec equiv_dec e l1).
     + apply in_split in i. destruct i as [l1' [l3 ?]]. subst l1. rename l1' into l1.
       assert (length (l1 ++ e :: l2) <= n) by
-          (rewrite !app_length in *; simpl length in *; omega).
+          (rewrite !app_length in *; simpl length in *; lia).
       assert (path_ends g (s, l1 ++ e :: l2) s t). {
         split; [simpl; auto|]. destruct H0. now rewrite (pfoot_app_cons _ _ s) in *. }
       assert (valid_path g (s, l1 ++ e :: l2)). {
@@ -1382,13 +1382,13 @@ Proof.
       * apply Subpath_trans with (s, l1 ++ e :: l2); auto.
         red. unfold In_path. simpl. split; [|now left]. apply incl_app.
         2: now apply incl_appr. now do 2 apply incl_appl.
-      * transitivity (length (l1 ++ e :: l2)); auto. rewrite !app_length. simpl. omega.
+      * transitivity (length (l1 ++ e :: l2)); auto. rewrite !app_length. simpl. lia.
     + destruct (in_dec equiv_dec e l2); [clear n0|].
       2: exists l1, l2; split; [apply Subpath_refl | auto]. apply in_split in i.
       destruct i as [l3 [l2' ?]]. subst l2. rename l2' into l2.
       assert (length (l1 ++ e :: l2) <= n). {
         rewrite app_length in *; simpl length in *. rewrite app_length in H.
-        simpl length in H. omega. }
+        simpl length in H. lia. }
       assert (path_ends g (s, l1 ++ e :: l2) s t). {
         split; [simpl; auto|]. destruct H0. rewrite app_comm_cons, app_assoc in H3.
         now rewrite (pfoot_app_cons _ _ s) in *. }
@@ -1404,7 +1404,7 @@ Proof.
         red. unfold In_path. simpl. split; [|now left]. apply incl_app.
         1: now apply incl_appl. rewrite app_comm_cons, app_assoc. now apply incl_appr.
       * transitivity (length (l1 ++ e :: l2)); auto.
-        do 2 (rewrite !app_length; simpl). omega.
+        do 2 (rewrite !app_length; simpl). lia.
 Qed.
 
 Lemma good_path_unique_edge: forall (g: Gph) P p s t e,
@@ -1436,7 +1436,7 @@ Proof.
   intros. destruct (in_dec equiv_dec e (snd p)). 2: (exists p; now split).
   eapply reachable_path_unique_edge in i; eauto. destruct i as [p1 [p2 [? [? [? ?]]]]].
   apply reachable_by_path_app_cons in H0. destruct H0. exists (s, p1).
-  split; [|split]; auto. simpl. rewrite app_length in H3. omega.
+  split; [|split]; auto. simpl. rewrite app_length in H3. lia.
 Qed.
 
 End PATH_LEM.

@@ -20,7 +20,7 @@ Qed.
 Corollary Byte_unsigned_range2:
   forall b: byte, 0 <= Byte.unsigned b <= 255.
 Proof.
-  intros. pose proof (Byte_unsigned_range b). omega.
+  intros. pose proof (Byte_unsigned_range b). lia.
 Qed.
 
 Lemma Int_modulus_value:
@@ -50,11 +50,11 @@ Proof.
   - inversion H.
     repeat rewrite Int.Z_mod_modulus_eq in H1.
     rewrite Zmod_small in H1.
-    + rewrite Zmod_small in H1; [omega|].
+    + rewrite Zmod_small in H1; [lia|].
       pose proof (Byte_unsigned_range b);
-        rewrite Int_modulus_value; omega.
+        rewrite Int_modulus_value; lia.
     + pose proof (Byte_unsigned_range a).
-      rewrite Int_modulus_value; omega.
+      rewrite Int_modulus_value; lia.
   - rewrite H. reflexivity.
 Qed.
 
@@ -137,11 +137,11 @@ Proof.
                (Byte.unsigned x0 + (Byte.unsigned x1 + (Byte.unsigned x2 + (Byte.unsigned x3 + 0 * 256) * 256) * 256) * 256)
             ). reflexivity.
     rewrite !Int64.unsigned_repr. unfold Int.eqm. unfold Zbits.eqmod. rewrite Int_modulus_value.
-    exists (Byte.unsigned x4 + (Byte.unsigned x5 + (Byte.unsigned x6 + (Byte.unsigned x7 + 0) * 256) * 256) * 256). omega.
+    exists (Byte.unsigned x4 + (Byte.unsigned x5 + (Byte.unsigned x6 + (Byte.unsigned x7 + 0) * 256) * 256) * 256). lia.
     split.
     + repeat (apply Z.add_nonneg_nonneg; [apply Byte_unsigned_range|];
-              apply Z.mul_nonneg_nonneg; [|omega]).
-      apply Z.add_nonneg_nonneg; [apply Byte_unsigned_range | omega].
+              apply Z.mul_nonneg_nonneg; [|lia]).
+      apply Z.add_nonneg_nonneg; [apply Byte_unsigned_range | lia].
 
     + repeat rewrite Z.mul_add_distr_r.
       assert (255 +
@@ -155,9 +155,9 @@ Proof.
               Int64.max_unsigned) by (compute; trivial).
       rewrite <- H5. clear H5.
       apply Z.add_le_mono; [apply Byte_unsigned_range2|].
-      apply Z.add_le_mono. apply Zmult_lt_0_le_compat_r. omega. apply Byte_unsigned_range2.
-      repeat (apply Z.add_le_mono; [repeat apply Zmult_lt_0_le_compat_r; try omega; apply Byte_unsigned_range2|]).
-      omega.
+      apply Z.add_le_mono. apply Zmult_lt_0_le_compat_r. lia. apply Byte_unsigned_range2.
+      repeat (apply Z.add_le_mono; [repeat apply Zmult_lt_0_le_compat_r; try lia; apply Byte_unsigned_range2|]).
+      lia.
   - split.
     + split3; trivial.
       2: apply Z.divide_add_r; trivial; apply Z.divide_refl. 
@@ -178,8 +178,8 @@ Proof.
         split.
         * apply Z.add_nonneg_nonneg; [apply Byte_unsigned_range|].
           repeat (apply Z.mul_nonneg_nonneg; [apply Z.add_nonneg_nonneg;
-                                              [apply Byte_unsigned_range|]|omega]).
-          omega.
+                                              [apply Byte_unsigned_range|]|lia]).
+          lia.
         * repeat rewrite Z.mul_add_distr_r.
           assert (255 +
                   (255 * 256 +
@@ -189,16 +189,16 @@ Proof.
                       (255 * 256 * 256 * 256 * 256 * 256 +
                        (255 * 256 * 256 * 256 * 256 * 256 * 256 +
                         (255 * 256 * 256 * 256 * 256 * 256 * 256 * 256 + 0 * 256 * 256 * 256 * 256 * 256 * 256 * 256))))))) = Int64.max_unsigned).
-          set (j := Int64.max_unsigned) in *; compute in j; subst j. omega. rewrite <- H5. clear H5.
+          set (j := Int64.max_unsigned) in *; compute in j; subst j. lia. rewrite <- H5. clear H5.
           apply Z.add_le_mono. apply Byte_unsigned_range2.
-          apply Z.add_le_mono. apply Zmult_lt_0_le_compat_r. omega. apply Byte_unsigned_range2.
-          apply Z.add_le_mono. repeat apply Zmult_lt_0_le_compat_r; try omega. apply Byte_unsigned_range2.
-          apply Z.add_le_mono. repeat apply Zmult_lt_0_le_compat_r; try omega. apply Byte_unsigned_range2.
-          apply Z.add_le_mono. repeat apply Zmult_lt_0_le_compat_r; try omega. apply Byte_unsigned_range2.
-          apply Z.add_le_mono. repeat apply Zmult_lt_0_le_compat_r; try omega. apply Byte_unsigned_range2.
-          apply Z.add_le_mono. repeat apply Zmult_lt_0_le_compat_r; try omega. apply Byte_unsigned_range2.
-          apply Z.add_le_mono. repeat apply Zmult_lt_0_le_compat_r; try omega. apply Byte_unsigned_range2.
-          omega.
+          apply Z.add_le_mono. apply Zmult_lt_0_le_compat_r. lia. apply Byte_unsigned_range2.
+          apply Z.add_le_mono. repeat apply Zmult_lt_0_le_compat_r; try lia. apply Byte_unsigned_range2.
+          apply Z.add_le_mono. repeat apply Zmult_lt_0_le_compat_r; try lia. apply Byte_unsigned_range2.
+          apply Z.add_le_mono. repeat apply Zmult_lt_0_le_compat_r; try lia. apply Byte_unsigned_range2.
+          apply Z.add_le_mono. repeat apply Zmult_lt_0_le_compat_r; try lia. apply Byte_unsigned_range2.
+          apply Z.add_le_mono. repeat apply Zmult_lt_0_le_compat_r; try lia. apply Byte_unsigned_range2.
+          apply Z.add_le_mono. repeat apply Zmult_lt_0_le_compat_r; try lia. apply Byte_unsigned_range2.
+          lia.
       }
       rewrite !Int64.unsigned_repr.
       * set (j := two_p 32) in *; compute in j; subst j.
@@ -218,27 +218,27 @@ Proof.
            ++ apply Z.add_nonneg_nonneg. apply Byte_unsigned_range.
               apply Z.mul_nonneg_nonneg. apply Z.add_nonneg_nonneg. apply Byte_unsigned_range.
               apply Z.mul_nonneg_nonneg. apply Z.add_nonneg_nonneg. apply Byte_unsigned_range.
-              apply Z.mul_nonneg_nonneg. apply Byte_unsigned_range. omega. omega. omega.
+              apply Z.mul_nonneg_nonneg. apply Byte_unsigned_range. lia. lia. lia.
            ++ apply (Z.le_lt_trans (Byte.unsigned x0 + (Byte.unsigned x1 + (Byte.unsigned x2 + Byte.unsigned x3 * 256) * 256) * 256)
                                    (255 + (255 + (255 + 255 * 256) * 256) * 256)).
               apply Z.add_le_mono. apply Byte_unsigned_range2.
-              apply Zmult_lt_0_le_compat_r. omega. apply Z.add_le_mono. apply Byte_unsigned_range2.
-              apply Zmult_lt_0_le_compat_r. omega. apply Z.add_le_mono. apply Byte_unsigned_range2.
-              apply Zmult_lt_0_le_compat_r. omega. apply Byte_unsigned_range2. omega.
-        -- omega.
+              apply Zmult_lt_0_le_compat_r. lia. apply Z.add_le_mono. apply Byte_unsigned_range2.
+              apply Zmult_lt_0_le_compat_r. lia. apply Z.add_le_mono. apply Byte_unsigned_range2.
+              apply Zmult_lt_0_le_compat_r. lia. apply Byte_unsigned_range2. lia.
+        -- lia.
       * split; compute; inversion 1.
       * trivial.
       * rewrite !Int64.unsigned_repr.
         set (j := two_p) in *; compute in j; subst j.
-        split. apply Z.div_pos. apply H5. omega.
-        apply Zdiv_le_upper_bound. omega.
+        split. apply Z.div_pos. apply H5. lia.
+        apply Zdiv_le_upper_bound. lia.
         apply (Z.le_trans (Byte.unsigned x0 +
                            (Byte.unsigned x1 +
                             (Byte.unsigned x2 +
                              (Byte.unsigned x3 +
                               (Byte.unsigned x4 + (Byte.unsigned x5 + (Byte.unsigned x6 + (Byte.unsigned x7 + 0) * 256) * 256) * 256) * 256) *
-                             256) * 256) * 256) Int64.max_unsigned). apply H5. omega.
-        set (j := Int64.max_unsigned) in *; compute in j; subst j; omega.
+                             256) * 256) * 256) Int64.max_unsigned). apply H5. lia.
+        set (j := Int64.max_unsigned) in *; compute in j; subst j; lia.
         apply H5.
         
     + (* Use allp_jam_split2? *)
@@ -264,8 +264,8 @@ Proof.
       * admit.
       * admit.
       * unfold Ensemble_join. split; intros.
-        -- replace 8 with (4+4) by omega.
-           apply initial_world.adr_range_divide; omega.
+        -- replace 8 with (4+4) by lia.
+           apply initial_world.adr_range_divide; lia.
         -- admit.
       * intros. admit.
       * intros. admit.
