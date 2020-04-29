@@ -592,7 +592,6 @@ Proof.
   forward_for_simple_bound
     SIZE
     (EX i : Z,
-     (* EX priq_contents : list Z,  *)
      PROP (inrange_graph (graph_to_mat g))
      LOCAL (temp _dist (pointer_val_val dist);
             temp _prev (pointer_val_val prev);
@@ -840,7 +839,6 @@ Proof.
                    exists p2mom,
                      path_correct g prev_contents' dist_contents' src mom p2mom /\
                      (forall step,
-                         (* step <> src -> *)
                          In_path g step p2mom ->
                          In step (get_popped priq_contents') /\
                          step <> u) /\
@@ -851,7 +849,6 @@ Proof.
                      forall mom' p2mom',
                        path_correct g prev_contents' dist_contents' src mom' p2mom' ->
                        (forall step',
-                           (* step' <> src -> *)
                            In_path g step' p2mom' ->
                            In step' (get_popped priq_contents') /\
                            step' <> u) ->
