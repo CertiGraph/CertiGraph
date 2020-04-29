@@ -124,7 +124,7 @@ Proof.
   intros.
   pose proof pointer_range_overlap_non_zero _ _ _ _ H.
   unfold BV_sizeof in H0.
-  destruct (access_mode t1) eqn:?H, (access_mode t2) eqn:?H; try omega.
+  destruct (access_mode t1) eqn:?H, (access_mode t2) eqn:?H; try lia.
   erewrite !BV_sizeof_sizeof in H by eauto.
   eauto.
 Qed.
@@ -160,7 +160,7 @@ Opaque Z.le.
 Transparent Z.le. (* A bug of Coq here ? *)
   1: destruct (zle (Int.unsigned i + n) (Int.modulus)); [left | right]; auto.
   intros.
-  rewrite memory_block'_eq; [| pose proof Int.unsigned_range i; omega | apply Clight_lemmas.Nat2Z_add_le; auto].
+  rewrite memory_block'_eq; [| pose proof Int.unsigned_range i; lia | apply Clight_lemmas.Nat2Z_add_le; auto].
   simpl.
   unfold memory_block'_alt.
   if_tac.
@@ -186,8 +186,8 @@ Opaque Z.le.
   apply (@disj_prop_andp_right _ _ _ _ _ (algDisjointedSepLog _)); [| intros].
 Transparent Z.le. (* A bug of Coq here ? *)
   1: destruct (zle (Int.unsigned i0 + n2) (Int.modulus)); [left | right]; auto.
-  rewrite memory_block'_eq; [| pose proof Int.unsigned_range i; omega | apply Clight_lemmas.Nat2Z_add_le; auto].
-  rewrite memory_block'_eq; [| pose proof Int.unsigned_range i0; omega | apply Clight_lemmas.Nat2Z_add_le; auto].
+  rewrite memory_block'_eq; [| pose proof Int.unsigned_range i; lia | apply Clight_lemmas.Nat2Z_add_le; auto].
+  rewrite memory_block'_eq; [| pose proof Int.unsigned_range i0; lia | apply Clight_lemmas.Nat2Z_add_le; auto].
   unfold memory_block'_alt.
   if_tac.
   + clear H2.
@@ -196,9 +196,9 @@ Transparent Z.le. (* A bug of Coq here ? *)
     exists (b, Int.unsigned i), (b0, Int.unsigned i0); auto.
     repeat split; auto.
     pose proof range_overlap_non_zero _ _ _ _ H2.
-    destruct (zlt 0 n1); [| rewrite (nat_of_Z_neg n1) in H3 by omega; simpl in H3; omega].
-    destruct (zlt 0 n2); [| rewrite (nat_of_Z_neg n2) in H3 by omega; simpl in H3; omega].
-    rewrite !Coqlib.nat_of_Z_eq in H2 by omega.
+    destruct (zlt 0 n1); [| rewrite (nat_of_Z_neg n1) in H3 by lia; simpl in H3; lia].
+    destruct (zlt 0 n2); [| rewrite (nat_of_Z_neg n2) in H3 by lia; simpl in H3; lia].
+    rewrite !Coqlib.nat_of_Z_eq in H2 by lia.
     auto.
   + clear H2.
     apply disj_nonlock_permission_bytes.
@@ -206,9 +206,9 @@ Transparent Z.le. (* A bug of Coq here ? *)
     exists (b, Int.unsigned i), (b0, Int.unsigned i0); auto.
     repeat split; auto.
     pose proof range_overlap_non_zero _ _ _ _ H2.
-    destruct (zlt 0 n1); [| rewrite (nat_of_Z_neg n1) in H3 by omega; simpl in H3; omega].
-    destruct (zlt 0 n2); [| rewrite (nat_of_Z_neg n2) in H3 by omega; simpl in H3; omega].
-    rewrite !Coqlib.nat_of_Z_eq in H2 by omega.
+    destruct (zlt 0 n1); [| rewrite (nat_of_Z_neg n1) in H3 by lia; simpl in H3; lia].
+    destruct (zlt 0 n2); [| rewrite (nat_of_Z_neg n2) in H3 by lia; simpl in H3; lia].
+    rewrite !Coqlib.nat_of_Z_eq in H2 by lia.
     auto.
 Qed.
 

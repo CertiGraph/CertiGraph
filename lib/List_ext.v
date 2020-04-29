@@ -1,6 +1,7 @@
 Require Export Coq.Lists.List.
-Require Import Coq.omega.Omega.
+Require Import Coq.micromega.Lia.
 Require Export Coq.Sorting.Permutation.
+Require Import Coq.ZArith.ZArith_base.
 Require Import Coq.Logic.FunctionalExtensionality.
 Require Import RamifyCoq.lib.Coqlib.
 Require Import RamifyCoq.lib.EquivDec_ext.
@@ -113,13 +114,13 @@ Proof.
   + split; [intro H; inversion H | reflexivity].
   + simpl.
     destruct (eq_dec x a).
-    - split; [intros; omega | omega].
+    - split; [intros; lia | lia].
     - split.
       * intros. simpl.
         destruct IHl.
         destruct H; [congruence | apply H0 in H].
-        omega.
-      * simpl; omega.
+        lia.
+      * simpl; lia.
 Qed.
 
 Lemma not_in_app: forall {A} (eq_dec : forall x y : A, {x = y} + {x <> y}) x a (l : list A), (~ In x (a :: l)) -> x <> a /\ ~ In x l.
@@ -809,11 +810,11 @@ Lemma nth_error_None_iff: forall {A} (l: list A) n, nth_error l n = None <-> n >
 Proof.
   intros.
   revert n; induction l; intros; destruct n; simpl.
-  + split; [intros _; omega | auto].
-  + split; [intros _; omega | auto].
-  + split; [intros; inversion H | omega].
+  + split; [intros _; lia | auto].
+  + split; [intros _; lia | auto].
+  + split; [intros; inversion H | lia].
   + rewrite IHl.
-    omega.
+    lia.
 Qed.
 
 (* TODO: These three lemmas are copied from VST.veric.assert_lemmas and VST.veric.initial_world *)
@@ -823,8 +824,8 @@ Proof.
 intros until i; intros H.
 revert i l H.
 induction i; destruct l; intros; simpl in *;
-  try solve [eauto | omega].
-apply IHi; omega.
+  try solve [eauto | lia].
+apply IHi; lia.
 Qed.
 
 Lemma nth_error_app: forall {T} (al bl : list T) (j: nat),
@@ -837,8 +838,8 @@ Lemma nth_error_app1: forall {T} (al bl : list T) (j: nat),
      (j < length al)%nat ->
      nth_error (al++bl) j = nth_error al j.
 Proof.
-  intros. revert al H; induction j; destruct al; simpl; intros; auto; try omega.
-   apply IHj. omega.
+  intros. revert al H; induction j; destruct al; simpl; intros; auto; try lia.
+   apply IHj. lia.
 Qed.
 
 Lemma in_split_not_in_first: forall {A} (eq_dec: forall x y : A, {x = y} + {x <> y}) (x: A) (l: list A), In x l -> exists l1 l2, l = l1 ++ x :: l2 /\ ~ In x l1.
@@ -920,10 +921,10 @@ Lemma combine_nth_lt {A B}: forall (l1: list A) (l2: list B) n x y,
     nth n (combine l1 l2) (x, y) = (nth n l1 x, nth n l2 y).
 Proof.
   induction l1; intros.
-  - simpl in *. exfalso. omega.
+  - simpl in *. exfalso. lia.
   - destruct l2.
-    + simpl in H0. exfalso. omega.
-    + simpl. destruct n; [|simpl in *; rewrite IHl1 by omega]; reflexivity.
+    + simpl in H0. exfalso. lia.
+    + simpl. destruct n; [|simpl in *; rewrite IHl1 by lia]; reflexivity.
 Qed.
 
 Lemma map_tl {A B: Type}: forall (f: A -> B) (l: list A), map f (tl l) = tl (map f l).
@@ -933,12 +934,12 @@ Lemma fold_left_comm: forall {A B} (f: A -> B -> A) l1 l2 init,
     (forall a b1 b2, f (f a b1) b2  = f (f a b2) b1) ->
     Permutation l1 l2 -> fold_left f l1 init = fold_left f l2 init.
 Proof.
-  intros. remember (length l1). assert (length l1 <= n) by omega. clear Heqn.
+  intros. remember (length l1). assert (length l1 <= n) by lia. clear Heqn.
   revert init l1 l2 H1 H0. induction n; intros; destruct l1.
   - apply Permutation_nil in H0. subst l2. simpl. reflexivity.
-  - simpl in H1; exfalso; omega.
+  - simpl in H1; exfalso; lia.
   - apply Permutation_nil in H0. subst l2. simpl. reflexivity.
-  - simpl in H1. assert (length l1 <= n) by omega. clear H1.
+  - simpl in H1. assert (length l1 <= n) by lia. clear H1.
     assert (In b l2) by
         (apply Permutation_in with (x := b) in H0; [assumption | left; reflexivity]).
     apply in_split in H1. destruct H1 as [l3 [l4 ?]]. subst l2.

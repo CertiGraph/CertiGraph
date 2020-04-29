@@ -29,14 +29,14 @@ Proof.
       inv_int i. clear -H7. remember (heap_head (ti_heap t_info)) as h.
       rewrite ptrofs_add_repr, ptrofs_sub_repr, Z.add_comm, Z.add_simpl_r in H7.
       simpl in H7. unfold Ptrofs.divs in H7.
-      rewrite (Ptrofs.signed_repr 4) in H7 by rep_omega.
+      rewrite (Ptrofs.signed_repr 4) in H7 by rep_lia.
       rewrite Ptrofs.signed_repr in H7 by (apply total_space_signed_range).
-      rewrite WORD_SIZE_eq in H7. rewrite Z.mul_comm, Z.quot_mul in H7 by omega.
+      rewrite WORD_SIZE_eq in H7. rewrite Z.mul_comm, Z.quot_mul in H7 by lia.
       rewrite ptrofs_to_int_repr in H7. hnf in H7.
       destruct (Int.ltu (Int.repr (total_space h))
                         (Int.repr (fun_word_size f_info))) eqn:? ; simpl in H7.
       1: inversion H7. apply ltu_repr_false in Heqb;
-                         [omega | apply total_space_range | apply word_size_range].
+                         [lia | apply total_space_range | apply word_size_range].
     + rewrite <- Heqv in *. red in H0. rewrite H0 in H5.
       unfold previous_vertices_size in H5. simpl in H5. unfold nth_space in H5.
       rewrite H1 in H5. simpl in H5. rewrite <- H2 in H5.
@@ -50,11 +50,11 @@ Proof.
                    :: map space_tri hl) (ti_heap_p t_info)) by
           (unfold heap_struct_rep; entailer!). do 2 forward.
       unfold before_gc_thread_info_rep. rewrite !heap_struct_rep_eq. rewrite <- H5.
-      replace (WORD_SIZE * 0)%Z with 0 by omega.
+      replace (WORD_SIZE * 0)%Z with 0 by lia.
       rewrite !isptr_offset_val_zero by assumption. entailer!. rewrite H1. simpl tl.
       assert (12 = Zlength (map space_tri hl) + 1). {
         pose proof (spaces_size (ti_heap t_info)). rewrite MAX_SPACES_eq in H2.
-        rewrite <- H2, H1, Zlength_cons, Zlength_map. omega. } rewrite !H2.
+        rewrite <- H2, H1, Zlength_cons, Zlength_map. lia. } rewrite !H2.
       rewrite !data_at_tarray_split_1 by reflexivity. cancel.
       do 2 (unfold_data_at (data_at _ _ _ _)). cancel.
 Qed.

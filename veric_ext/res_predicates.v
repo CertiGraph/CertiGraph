@@ -44,7 +44,7 @@ Proof.
   apply resource_at_joins2.
   + apply join_level in H0.
     apply join_level in H1.
-    omega.
+    lia.
   + intros l; specialize (H2 l); specialize (H3 l).
     pose proof resource_at_join _ _ _ l H0.
     pose proof resource_at_join _ _ _ l H1.
@@ -94,7 +94,7 @@ Proof.
   apply resource_at_joins2.
   + apply join_level in H0.
     apply join_level in H1.
-    omega.
+    lia.
   + intros l; specialize (H2 l); specialize (H3 l).
     pose proof resource_at_join _ _ _ l H0.
     pose proof resource_at_join _ _ _ l H1.

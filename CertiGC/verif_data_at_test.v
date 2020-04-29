@@ -32,13 +32,13 @@ assert_PROP (Zlength contents = n) as LEN. {
   rewrite Zlength_cons in H0.
   rewrite !Zlength_map in H0.
   destruct (zlt n 0); [elimtype False | ].
-  rewrite Z.max_l in H0 by omega.
+  rewrite Z.max_l in H0 by lia.
   pose proof (Zlength_nonneg contents).
-  omega.
-  rewrite Z.max_r in H0 by omega. omega.  
+  lia.
+  rewrite Z.max_r in H0 by lia. lia.  
 }
 assert (N0: 0 <= n)
-  by (pose proof (Zlength_nonneg contents); omega).
+  by (pose proof (Zlength_nonneg contents); lia).
 (* STOP HERE. *)
 assert_PROP (p = field_address0 (tarray value (1+n)) [ArraySubsc 1] (offset_val (-sizeof value) p)). {
   entailer!.
@@ -49,7 +49,7 @@ assert_PROP (p = field_address0 (tarray value (1+n)) [ArraySubsc 1] (offset_val 
   destruct H as [? [? [? [? [? [? [? ?]]]]]]].
   hnf. repeat simple apply conj; auto.
   split; hnf.
-  auto. omega.
+  auto. lia.
 }
 replace field_address0 with field_address in H by admit.
 forward.
@@ -65,7 +65,7 @@ erewrite (split2_data_at_Tarray Ews value (1+n) 1 _
       (map Vint (map Int.repr (tag :: contents)))
       (map Vint (map Int.repr (tag :: nil)))
       (map Vint (map Int.repr (contents))));
-  try omega; 
+  try lia; 
   try (autorewrite with sublist; apply JMeq_refl).
 2: rewrite !sublist_map, sublist_1_cons;
    autorewrite with sublist; apply JMeq_refl.
@@ -79,12 +79,12 @@ assert_PROP (p = field_address (tarray value 1) [ArraySubsc 1] (offset_val (-siz
   destruct H as [? [? [? [? [? [? [? ?]]]]]]].
   hnf. repeat simple apply conj; auto.
   split; hnf.
-  auto. omega.
+  auto. lia.
 }
 
 forward.
  
- 2: omega.
+ 2: lia.
 
   try reflexivity.
 
