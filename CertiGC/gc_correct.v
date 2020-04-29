@@ -212,8 +212,8 @@ Proof.
   apply list_in_map_inv in H. destruct H as [x [? ?]].
   rewrite <- filter_sum_right_In_iff in H0.
   apply In_nth with (d := field_t_inhabitant) in H0. destruct H0 as [p [? ?]].
-  apply make_fields'_edge_depends_on_index in H1; [subst x; simpl in H; omega|].
-  rewrite make_fields'_eq_length in H0. rewrite Zlength_correct. split; [omega|].
+  apply make_fields'_edge_depends_on_index in H1; [subst x; simpl in H; lia|].
+  rewrite make_fields'_eq_length in H0. rewrite Zlength_correct. split; [lia|].
   apply Nat2Z.inj_lt; assumption.
 Qed.
 
@@ -428,7 +428,7 @@ Proof.
   red in H. red. destruct H as [? [vpl [? [? ?]]]]. unfold roots_map in H5.
   destruct (split vpl) as [from_l to_l] eqn:? . destruct H7 as [[? ?] [[? [? ?N]] ?N]].
   assert (DoubleNoDup vpl). {
-    apply (PairGenNoDup_DoubleNoDup _ from to); [omega|]. red. rewrite Heqp. 
+    apply (PairGenNoDup_DoubleNoDup _ from to); [lia|]. red. rewrite Heqp. 
     now split; split; [| intros; rewrite <- H8 in H11; destruct H11 | |].
   }
   assert (Hn: DoubleNoDup (gen_edge_pair_list g1 vpl)) by
@@ -484,7 +484,7 @@ Proof.
       assert (vgen = to). {
         rewrite <- H12 in H13. apply in_combine_r in H13. apply N in H13.
         simpl in H13. assumption. }
-      subst vgen. assert (to <> from) by omega.
+      subst vgen. assert (to <> from) by lia.
       specialize (H3 _ H35 vidx (snd e)).
       simpl in H3. rewrite H25 in *. simpl in *. apply H3; auto.
       change (prod nat nat) with VType. rewrite H31; auto.
@@ -514,7 +514,7 @@ Proof.
       unfold graph_has_e, egeneration. simpl. rewrite <- H0. pose proof H13.
       rewrite <- H12 in H13. apply in_combine_r in H13. pose proof H13.
       rewrite H10 in H13. destruct H13 as [? _]. apply N in H30. rewrite H30.
-      split; [split|]; [auto | | omega]. rewrite get_edges_inv in H25.
+      split; [split|]; [auto | | lia]. rewrite get_edges_inv in H25.
       destruct H25 as [idx [? ?]]. rewrite H25. simpl. apply H6 in H29.
       destruct H29 as [? _]. apply vlabel_get_edges_snd in H29.
       rewrite get_edges_In, <- H29. assumption.
@@ -531,7 +531,7 @@ Proof.
     - specialize (H13 _ H21 i). destruct H13 as [v1 [v2 [? [? ?]]]].
       subst x; rewrite H24. rewrite <- H12 in H13. apply in_combine_r in H13.
       pose proof H13. apply N in H13. rewrite H10 in H23. destruct H23 as [? _].
-      rewrite <- H0. split; auto. omega.
+      rewrite <- H0. split; auto. lia.
     - rewrite list_bi_map_not_In; auto. destruct H as [? _]. rewrite <- H0.
       split. 1: apply H; auto. intro. apply n. clear n. red.
       rewrite Heqp, in_app_iff. left. rewrite <- H8. split; auto. }
@@ -768,7 +768,7 @@ Lemma ngr_graph_has_gen: forall g1 g2 gen,
 Proof.
   intros. red in H0. destruct (graph_has_gen_dec g1 (S gen)). 1: subst; auto.
   destruct H0 as [gen_i [? ?]]. subst. rewrite ang_graph_has_gen. right. 
-  unfold graph_has_gen in H, n. omega.
+  unfold graph_has_gen in H, n. lia.
 Qed.
 
 Lemma gcl_graph_has_gen: forall fi s n g1 g2 r1 r2,
@@ -1248,8 +1248,8 @@ Lemma collect_Z_indices_In_le:
     In i (collect_Z_indices eqdec target l ind) -> ind <= i.
 Proof.
   do 4 intro. induction l; intros; simpl in H. 1: easy. if_tac in H.
-  - simpl in H. destruct H; [|apply IHl in H]; omega.
-  - apply IHl in H. omega.
+  - simpl in H. destruct H; [|apply IHl in H]; lia.
+  - apply IHl in H. lia.
 Qed.
 
 Lemma collect_Z_indices_NoDup:
@@ -1257,7 +1257,7 @@ Lemma collect_Z_indices_NoDup:
     NoDup (collect_Z_indices eqdec target l ind).
 Proof.
   do 4 intro. induction l; intros; simpl. 1: constructor. if_tac. 2: apply IHl.
-  constructor. 2: apply IHl. intro; apply collect_Z_indices_In_le in H0; omega.
+  constructor. 2: apply IHl. intro; apply collect_Z_indices_In_le in H0; lia.
 Qed.
 
 Lemma restricted_roots_map_Znth_diff: forall z f_info roots l j,
@@ -1694,7 +1694,7 @@ Proof.
           apply make_fields_Znth_edge in Heqf; auto. subst e. simpl.
           destruct v as [gen idx]. red in H4. simpl in H4. destruct H4. red in H13.
           intro. unfold new_copied_v in H15. inversion H15. subst gen idx.
-          omega. } eapply (lgd_semi_iso _ _ _ _ _ v n e) in H12; eauto.
+          lia. } eapply (lgd_semi_iso _ _ _ _ _ v n e) in H12; eauto.
         -- subst new_g. simpl dst in H12. rewrite pcv_dst_old in H12; auto.
            simpl in H12.  rewrite ucov_copied_vertex in H12. easy.
         -- now apply lcv_sound.
@@ -1716,7 +1716,7 @@ Proof.
         -- red in Hg. rewrite Forall_forall in Hg.
            rewrite filter_sum_right_In_iff in H12. apply Hg in H12.
            rewrite <- H13 in H12. unfold new_copied_v in H12. destruct H12.
-           simpl in H15. red in H15. omega.
+           simpl in H15. red in H15. lia.
 Qed.
 
 Definition gather_indices (il: list Z) (live_indices: list Z) :=
@@ -1789,7 +1789,7 @@ Proof.
   change (root2forward (Znth (Z.of_nat a) roots1)) with
       (forward_p2forward_t (inl (Z.of_nat a)) roots1 g1) in H13. pose proof H13.
   assert (0 <= Z.of_nat a < Zlength roots1) by
-      (rewrite Zlength_correct; split; [omega | apply inj_lt, H5; now left]).
+      (rewrite Zlength_correct; split; [lia | apply inj_lt, H5; now left]).
   eapply (fr_O_semi_iso from to _ g g1) in H13; simpl; eauto.
   destruct H13 as [l3 [? [? ?N]]]. rewrite <- Heqroots3 in H13. simpl in H13.
   eapply IHl in H18; eauto. clear IHl.
@@ -1868,8 +1868,8 @@ Proof.
     + apply root_map_idempotent, list_map_idempotent.
       eapply semi_iso_DoubleNoDup; eauto.
     + rewrite In_gather_indices_spec. exists j. rewrite <- H3. split3; auto.
-      rewrite <- (Z2Nat.id j) by omega. apply in_map. rewrite nat_inc_list_In_iff.
-      rewrite <- ZtoNat_Zlength. apply Z2Nat.inj_lt; omega.
+      rewrite <- (Z2Nat.id j) by lia. apply in_map. rewrite nat_inc_list_In_iff.
+      rewrite <- ZtoNat_Zlength. apply Z2Nat.inj_lt; lia.
   - intros. now rewrite nat_inc_list_In_iff in H9.
 Qed.
 
@@ -1959,7 +1959,7 @@ Proof.
   revert g1 roots1 g2 roots2 H0 H1 Hc H2 H3 H4.
   induction l; intros; inversion H3; subst; auto; clear H3.
   assert (forward_p_compatible (inl (Z.of_nat a)) roots1 g1 from). {
-    simpl. rewrite Zlength_correct. split; [omega | apply inj_lt].
+    simpl. rewrite Zlength_correct. split; [lia | apply inj_lt].
     apply H4. now left. }
   eapply (fr_roots_graph_compatible O from to (inl (Z.of_nat a)))
     with (f_info := f_info) in H2; eauto.
@@ -2234,9 +2234,9 @@ Lemma copied_vertex_reachable_by_path: forall (g : LGraph) r v (from to : nat) p
                  (copied_vertex (vlabel g r)) ~o~> v satisfying (fun _ => True) /\
                length p = length p'.
 Proof.
-  intros. remember (length p) as n. assert (length p <= n)%nat by omega. rewrite Heqn.
+  intros. remember (length p) as n. assert (length p <= n)%nat by lia. rewrite Heqn.
   clear Heqn. revert r p H1 H2 H3. induction n; intros.
-  - destruct p. 2: simpl in H3; exfalso; omega. destruct H2 as [[_ ?] _]. simpl in H2.
+  - destruct p. 2: simpl in H3; exfalso; lia. destruct H2 as [[_ ?] _]. simpl in H2.
     subst v. left; auto.
   - destruct p. 1: destruct H2 as [[_ ?] _]; simpl in H2; subst v; left; auto.
     assert (g |= (dst g e, p) is dst g e ~o~> v satisfying (fun _ => True)). {
@@ -2262,7 +2262,7 @@ Proof.
         by (now unfold path_glue). unfold EType. rewrite H16.
       apply reachable_by_path_merge with (dst g (cr, idx)). 2: rewrite H14; auto.
       apply H15. now rewrite H14.
-    + destruct H14. assert (length p <= n)%nat by (simpl in H3; omega).
+    + destruct H14. assert (length p <= n)%nat by (simpl in H3; lia).
       specialize (IHn _ _ H14 H4 H17). destruct IHn. 1: now left. right.
       destruct H18 as [p' [? ?]]. rewrite <- H16 in H18. exists ((cr, idx) :: p').
       split. 2: simpl; auto. assert ((cr, (cr, idx) :: p') =
@@ -2295,9 +2295,9 @@ Lemma copied_vertex_reachable_by_path_inv: forall (g: LGraph) (r v: VType) from 
                length p = length p'.
 Proof.
   intros g r v from to p H H0 H1 H2 H3 Hd H4 H5.
-  remember (length p) as n. assert (length p <= n)%nat by omega. rewrite Heqn.
+  remember (length p) as n. assert (length p <= n)%nat by lia. rewrite Heqn.
   clear Heqn. revert r p H6 H1 H4 H5. induction n; intros.
-  - destruct p. 2: simpl in H6; omega. destruct H5 as [[_ ?] _]. simpl in H5.
+  - destruct p. 2: simpl in H6; lia. destruct H5 as [[_ ?] _]. simpl in H5.
     red in H0. specialize (H0 _ H4 H1). destruct H0 as [_ [? _]]. rewrite H5, H2 in H0.
     now rewrite H0 in H3.
   - red in H0. specialize (H0 _ H4 H1). destruct H0 as [? [? [? [? ?]]]].
@@ -2324,7 +2324,7 @@ Proof.
           by (now unfold path_glue). unfold EType. rewrite H19.
         apply reachable_by_path_merge with (dst g (r, idx)); auto. apply H18.
         now rewrite <- H10.
-      * destruct H10. assert (length p <= n)%nat by (simpl in H6; omega).
+      * destruct H10. assert (length p <= n)%nat by (simpl in H6; lia).
         assert (graph_has_v g (dst g (r, idx))). {
           red in Hd. apply Hd with r; auto. now rewrite get_edges_In. }
         rewrite H19 in H11. specialize (IHn _ _ H20 H10 H21 H11).
@@ -2357,9 +2357,9 @@ Lemma copied_vertex_pgd_reachable: forall g e to r v,
 Proof.
   intros. unfold reachable, reachable_by in H3. destruct H3 as [[s p] ?].
   assert (phead (s, p) = r) by (eapply reachable_by_path_head; eauto). simpl in H4.
-  subst s. remember (length p) as n. assert (length p <= n)%nat by omega. clear Heqn.
+  subst s. remember (length p) as n. assert (length p <= n)%nat by lia. clear Heqn.
   revert r p H4 H3. induction n; intros.
-  - destruct p. 2: simpl in H4; omega. destruct H3 as [[_ ?] [? _]]. simpl in *.
+  - destruct p. 2: simpl in H4; lia. destruct H3 as [[_ ?] [? _]]. simpl in *.
     subst v. left. apply reachable_refl. now simpl.
   - destruct (in_dec equiv_dec e p).
     2: left; exists (r, p); rewrite no_edge_gen_dst_equiv; auto.
@@ -2367,7 +2367,7 @@ Proof.
     destruct i as [p1 [p2 [? [? [? ?]]]]]. apply reachable_by_path_app_cons in H5.
     destruct H5. rewrite app_length in H8. simpl in H8.
     eapply copied_vertex_reachable_by_path in H9; eauto. destruct H9.
-    1: right; auto. destruct H9 as [p' [? ?]]. assert (length p' <= n)%nat by omega.
+    1: right; auto. destruct H9 as [p' [? ?]]. assert (length p' <= n)%nat by lia.
     specialize (IHn _ _ H11 H9). destruct IHn. 2: now right. left.
     remember (copied_vertex (vlabel g (dst g e))) as cde.
     apply reachable_trans with cde; auto.
@@ -2767,7 +2767,7 @@ Proof.
   change (root2forward (Znth (Z.of_nat a) roots1)) with
       (forward_p2forward_t (inl (Z.of_nat a)) roots1 g1) in H11. pose proof H11.
   assert (0 <= Z.of_nat a < Zlength roots1) by
-      (rewrite Zlength_correct; split; [omega | apply inj_lt, H8; now left]).
+      (rewrite Zlength_correct; split; [lia | apply inj_lt, H8; now left]).
   eapply fr_O_reachable_or_marked with (v := v) in H11; eauto. 2: easy. rewrite H11.
   rewrite <- Heqroots3 in *. apply IHl; auto.
   - eapply fr_O_sound; eauto.
@@ -2795,7 +2795,7 @@ Proof.
   change (forward_p2forward_t (inr (r, Z.of_nat a)) [] g1)
     with (forward_p2forward_t (inr (r, Z.of_nat a)) roots g1) in H16. pose proof H16.
   assert (forward_p_compatible (inr (r, Z.of_nat a)) roots g1 from). {
-    simpl. do 3 (split; auto). 1: omega. rewrite Zlength_correct. apply inj_lt, H11.
+    simpl. do 3 (split; auto). 1: lia. rewrite Zlength_correct. apply inj_lt, H11.
     now left. } eapply fr_O_reachable_or_marked with (v := v) in H4; eauto.
   2: simpl; split; auto. remember (vgeneration r) as to. simpl in H4. rewrite H4.
   apply IHl; auto.
@@ -2816,8 +2816,8 @@ Definition null_fun_info: fun_info.
 Proof.
   apply (Build_fun_info 0 nil).
   - intros. inversion H.
-  - rewrite Zlength_nil. rep_omega.
-  - rep_omega.
+  - rewrite Zlength_nil. rep_lia.
+  - rep_lia.
 Qed.
 
 Lemma svfl_roots_graph_compatible: forall from to roots v l g1 g2,
@@ -2831,7 +2831,7 @@ Proof.
   change (forward_p2forward_t (inr (v, Z.of_nat a)) [] g1)
     with (forward_p2forward_t (inr (v, Z.of_nat a)) roots g1) in H10. pose proof H10.
   assert (forward_p_compatible (inr (v, Z.of_nat a)) roots g1 from). {
-    simpl. do 3 (split; auto). 1: omega. rewrite Zlength_correct. apply inj_lt, H5.
+    simpl. do 3 (split; auto). 1: lia. rewrite Zlength_correct. apply inj_lt, H5.
     now left. }
   eapply fr_roots_graph_compatible with (f_info := null_fun_info) in H6; eauto.
   simpl in H6. apply (IHl g3); auto.
@@ -2851,7 +2851,7 @@ Lemma svfl_copied_vertex_prop: forall from to v l g1 g2,
 Proof.
   intros until l. induction l; intros; inversion H8; subst; clear H8; try easy.
   pose proof H12. assert (forward_p_compatible (inr (v, Z.of_nat a)) [] g1 from). {
-    simpl. do 3 (split; auto). 1: omega. rewrite Zlength_correct. apply inj_lt, H6.
+    simpl. do 3 (split; auto). 1: lia. rewrite Zlength_correct. apply inj_lt, H6.
     now left. } eapply (fr_O_copied_vertex_prop _ _ _ g1 g3) in H9; eauto.
   apply (IHl g3); auto.
   - rewrite <- fr_graph_has_gen; eauto.
@@ -2876,7 +2876,7 @@ Proof.
   change (forward_p2forward_t (inr (v, Z.of_nat a)) [] g1)
     with (forward_p2forward_t (inr (v, Z.of_nat a)) roots g1) in H16. pose proof H16.
   assert (forward_p_compatible (inr (v, Z.of_nat a)) roots g1 from). {
-    simpl. do 3 (split; auto). 1: omega. rewrite Zlength_correct. apply inj_lt, H11.
+    simpl. do 3 (split; auto). 1: lia. rewrite Zlength_correct. apply inj_lt, H11.
     now left. }
   eapply fr_O_backward_edge_prop with (f_info := f_info) in H10; eauto. 2: now simpl.
   simpl in H10. remember (vgeneration v) as to. apply (IHl g3); auto.
@@ -2935,7 +2935,7 @@ Proof.
   change (root2forward (Znth (Z.of_nat a) roots1)) with
       (forward_p2forward_t (inl (Z.of_nat a)) roots1 g1) in H11. pose proof H11.
   assert (0 <= Z.of_nat a < Zlength roots1) by
-      (rewrite Zlength_correct; split; [omega | apply inj_lt, H8; now left]).
+      (rewrite Zlength_correct; split; [lia | apply inj_lt, H8; now left]).
   apply fr_O_copied_vertex_prop in H11; auto. eapply (IHl g3 _ roots3); eauto.
   - eapply fr_O_sound; eauto.
   - rewrite <- fr_graph_has_gen; eauto.
@@ -2964,7 +2964,7 @@ Proof.
   change (root2forward (Znth (Z.of_nat a) roots1)) with
       (forward_p2forward_t (inl (Z.of_nat a)) roots1 g1) in H13. pose proof H13.
   assert (0 <= Z.of_nat a < Zlength roots1) by
-      (rewrite Zlength_correct; split; [omega | apply inj_lt, H10; now left]).
+      (rewrite Zlength_correct; split; [lia | apply inj_lt, H10; now left]).
   eapply fr_O_backward_edge_prop in H13; eauto. rewrite <- Heqroots3 in *.
   2: simpl; auto. apply (IHl g3 _ roots3); auto.
   - eapply fr_O_sound; eauto.
@@ -3001,15 +3001,15 @@ Proof.
   assert (vgeneration r <> from) by (apply H1; rewrite <- H4; now apply Znth_In).
   clear i H1 H3 H4. unfold reachable, reachable_by in H5. destruct H5 as [[? p] ?].
   pose proof H1. apply reachable_by_path_head in H3. simpl in H3. subst v0.
-  remember (length p) as n. assert (length p <= n)%nat by omega. clear Heqn.
+  remember (length p) as n. assert (length p <= n)%nat by lia. clear Heqn.
   revert r p H3 H1 H6. induction n; intros.
-  - destruct p. 2: simpl in H3; omega. destruct H1 as [[_ ?] _]. simpl in H1.
+  - destruct p. 2: simpl in H3; lia. destruct H1 as [[_ ?] _]. simpl in H1.
     subst v. now rewrite H2 in H6.
   - destruct p.
     + destruct H1 as [[_ ?] _]. simpl in H1. subst v. now rewrite H2 in H6.
     + pose proof H1. change (e :: p) with (nil ++ e :: p) in H1.
       apply reachable_by_path_app_cons in H1. destruct H1 as [_ ?].
-      assert (length p <= n)%nat by (simpl in H3; omega). specialize (IHn _ _ H5 H1).
+      assert (length p <= n)%nat by (simpl in H3; lia). specialize (IHn _ _ H5 H1).
       apply IHn. red in H0. unfold gen2gen_no_edge in H0.
       destruct H4 as [_ [? _]]. rewrite valid_path_cons_iff in H4.
       destruct H4 as [? [[? _] _]]. destruct H as [? [? ?]]. red in H, H8, H9.
@@ -3100,7 +3100,7 @@ Proof.
   - eapply frr_roots_graph_compatible; eauto.
   - destruct H3. eapply frr_no_dangling_dst; eauto.
   - eapply frr_not_pointing; eauto.
-  - intros. rewrite nat_seq_In_iff in H13. unfold gen_has_index. omega.
+  - intros. rewrite nat_seq_In_iff in H13. unfold gen_has_index. lia.
   - eapply frr_copy_compatible; eauto.
   - eapply frr_gen_unmarked; eauto. rewrite graph_gen_unmarked_iff in H2; apply H2.
 Qed.
@@ -3234,7 +3234,7 @@ Theorem garbage_collect_isomorphism: forall f_info roots1 roots2 g1 g2,
 Proof.
   intros. destruct H5 as [n [? ?]]. clear H6. unfold nat_inc_list in H5.
   pose proof (graph_has_gen_O g1).
-  assert (firstn_gen_clear g1 O) by (red; intros; omega). remember O as s. clear Heqs.
+  assert (firstn_gen_clear g1 O) by (red; intros; lia). remember O as s. clear Heqs.
   remember (S n) as m. clear n Heqm. rename m into n.
   revert s g1 roots1 g2 roots2 H H0 H1 H2 H3 H4 H5 H6 H7.
   induction n; intros; simpl in *; inversion H5; subst; clear H5.

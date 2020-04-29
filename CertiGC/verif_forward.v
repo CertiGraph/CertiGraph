@@ -9,7 +9,7 @@ Lemma root_valid_int_or_ptr: forall g (roots: roots_t) root outlier,
     graph_rep g * outlier_rep outlier |-- !! (valid_int_or_ptr (root2val g root)).
 Proof.
   intros. destruct H0. destruct root as [[? | ?] | ?].
-  - simpl root2val. unfold odd_Z2val. replace (2 * z + 1) with (z + z + 1) by omega.
+  - simpl root2val. unfold odd_Z2val. replace (2 * z + 1) with (z + z + 1) by lia.
     apply prop_right, valid_int_or_ptr_ii1.
   - sep_apply (roots_outlier_rep_single_rep _ _ _ H H0).
     sep_apply (single_outlier_rep_valid_int_or_ptr g0). entailer!.
@@ -33,7 +33,7 @@ Lemma sapi_ptr_val: forall p m n,
                         (vint n))) = offset_val (WORD_SIZE * (m + n)) p.
 Proof.
   intros. rewrite sem_add_pi_ptr_special; [| easy | | easy].
-  - simpl. rewrite offset_offset_val. f_equal. rep_omega.
+  - simpl. rewrite offset_offset_val. f_equal. rep_lia.
   - rewrite isptr_offset_val. assumption.
 Qed.
 
@@ -49,7 +49,7 @@ Proof.
   intros. rewrite field_at_data_at. unfold field_address.
   rewrite if_true by assumption. simpl nested_field_type.
   simpl nested_field_offset. rewrite offset_offset_val.
-  replace (WORD_SIZE * i + 0) with (WORD_SIZE * i)%Z by omega.
+  replace (WORD_SIZE * i + 0) with (WORD_SIZE * i)%Z by lia.
   rewrite <- (data_at_singleton_array_eq
                 sh int_or_ptr_type _ [Znth i (make_fields_vals g v)]) by reflexivity.
   rewrite <- fields_eq_length in H0.
@@ -57,12 +57,12 @@ Proof.
              sh (i + 1) i nv (sublist 0 (i + 1) (make_fields_vals g v))
              (make_fields_vals g v) (sublist 0 i (make_fields_vals g v))
              [Znth i (make_fields_vals g v)]).
-  - replace (i + 1 - i) with 1 by omega. reflexivity.
-  - omega.
-  - omega.
+  - replace (i + 1 - i) with 1 by lia. reflexivity.
+  - lia.
+  - lia.
   - autorewrite with sublist. reflexivity.
   - reflexivity.
-  - rewrite sublist_one; [reflexivity | omega..].
+  - rewrite sublist_one; [reflexivity | lia..].
 Qed.
 
 Lemma data_at__value_0_size: forall sh p,
@@ -178,7 +178,7 @@ Proof.
                                      (vertex_address g v)).
         - apply readable_nonidentity, writable_readable_share. assumption.
         - subst l. simpl. rewrite fields_eq_length.
-          rewrite Z.max_r; pose proof (raw_fields_range (vlabel g v)); omega.
+          rewrite Z.max_r; pose proof (raw_fields_range (vlabel g v)); lia.
         - rewrite Heqv0. cancel.
       }
       replace_SEP 1 (weak_derives P (valid_pointer (Vptr b i) * TT) && emp * P)
@@ -204,7 +204,7 @@ Proof.
            rewrite v0. unfold vertex_rep, vertex_at. Intros.
            unfold make_fields_vals at 2. rewrite H21.
            assert (0 <= 0 < Zlength (make_fields_vals g v)). {
-             split. 1: omega. rewrite fields_eq_length.
+             split. 1: lia. rewrite fields_eq_length.
              apply (proj1 (raw_fields_range (vlabel g v))). }
            assert (is_pointer_or_integer
                      (vertex_address g (copied_vertex (vlabel g v)))). {
@@ -237,7 +237,7 @@ Proof.
            assert (0 <= Z.of_nat to < 12). {
              clear -H H8. destruct H as [_ [_ ?]]. red in H8.
              pose proof (spaces_size (ti_heap t_info)).
-             rewrite Zlength_correct in H0. rep_omega. } unfold heap_struct_rep.
+             rewrite Zlength_correct in H0. rep_lia. } unfold heap_struct_rep.
            destruct (gt_gs_compatible _ _ H _ H8) as [? [? ?]].
            rewrite nth_space_Znth in *.
            remember (Znth (Z.of_nat to) (spaces (ti_heap t_info))) as sp_to.
@@ -245,26 +245,26 @@ Proof.
            remember (map space_tri (spaces (ti_heap t_info))) as l.
            assert (@Znth (val * (val * val)) (Vundef, (Vundef, Vundef))
                          (Z.of_nat to) l = space_tri sp_to). {
-             subst l sp_to. rewrite Znth_map by (rewrite spaces_size; rep_omega).
+             subst l sp_to. rewrite Znth_map by (rewrite spaces_size; rep_lia).
              reflexivity. }
            forward; rewrite H27; unfold space_tri. 1: entailer!.
            forward. simpl sem_binary_operation'.
-           rewrite sapi_ptr_val; [|assumption | rep_omega].
+           rewrite sapi_ptr_val; [|assumption | rep_lia].
            Opaque Znth. forward. Transparent Znth.
            assert (Hr: Int.min_signed <= Zlength (raw_fields (vlabel g v)) <=
                        Int.max_signed). {
              pose proof (raw_fields_range (vlabel g v)). destruct H28. split.
-             1: rep_omega. transitivity (two_power_nat 22). 1: omega.
+             1: rep_lia. transitivity (two_power_nat 22). 1: lia.
              compute; intro s; inversion s. }
            rewrite sapi_ptr_val by assumption. rewrite H27. unfold space_tri.
            rewrite <- Z.add_assoc.
            replace (1 + Zlength (raw_fields (vlabel g v))) with (vertex_size g v) by
-               (unfold vertex_size; omega). thaw FR. freeze [0; 2; 3; 4; 5; 6] FR.
+               (unfold vertex_size; lia). thaw FR. freeze [0; 2; 3; 4; 5; 6] FR.
            assert (Hi : 0 <= Z.of_nat to < Zlength (spaces (ti_heap t_info))) by
-               (rewrite spaces_size; rep_omega).
+               (rewrite spaces_size; rep_lia).
            assert (Hh: has_space (Znth (Z.of_nat to) (spaces (ti_heap t_info)))
                                  (vertex_size g v)). {
-             red. split. 1: pose proof (svs_gt_one g v); omega.
+             red. split. 1: pose proof (svs_gt_one g v); lia.
              transitivity (unmarked_gen_size g (vgeneration v)).
              - apply single_unmarked_le; assumption.
              - red in H1. unfold rest_gen_size in H1. subst from.
@@ -290,7 +290,7 @@ Proof.
            assert (writable_share (space_sh sp_to)) by
                (rewrite <- H24; apply generation_share_writable).
            remember (space_sh sp_to) as sht.
-           rewrite (data_at__tarray_value _ _ 1). 2: unfold vertex_size; rep_omega.
+           rewrite (data_at__tarray_value _ _ 1). 2: unfold vertex_size; rep_lia.
            Intros.
            remember (offset_val (WORD_SIZE * used_space sp_to) (space_start sp_to)).
            rewrite (data_at__int_or_ptr_tuint sht v1).
@@ -304,14 +304,14 @@ Proof.
              subst v1. rewrite WORD_SIZE_eq. entailer!. simpl. rewrite neg_repr.
              rewrite sem_add_pi_ptr_special'; auto. simpl. unfold field_address.
              rewrite if_true by assumption. simpl. rewrite !offset_offset_val.
-             f_equal. omega. }
+             f_equal. lia. }
            forward. sep_apply (field_at_data_at_cancel
                                  sht tuint (Z2val (make_header g v)) v1). clear H29.
            subst v1. rewrite offset_offset_val.
            replace (vertex_size g v - 1) with (Zlength (raw_fields (vlabel g v)))
-             by (unfold vertex_size; omega).
+             by (unfold vertex_size; lia).
            replace (WORD_SIZE * used_space sp_to + WORD_SIZE * 1) with
-               (WORD_SIZE * (used_space sp_to + 1))%Z by rep_omega.
+               (WORD_SIZE * (used_space sp_to + 1))%Z by rep_lia.
            remember (offset_val (WORD_SIZE * (used_space sp_to + 1))
                                 (space_start sp_to)) as nv.
            thaw FR. freeze [0; 1; 2; 3; 4; 5] FR. rename i into j. deadvars!.
@@ -340,8 +340,8 @@ Proof.
                            (sublist 0 i (make_fields_vals g v)) nv;
                    data_at_ sht (tarray int_or_ptr_type (n - i))
                             (offset_val (WORD_SIZE * i) nv); FRZL FR))%assert.
-           ++ rewrite sublist_nil. replace (n - 0) with n by omega.
-              replace (WORD_SIZE * 0)%Z with 0 by omega.
+           ++ rewrite sublist_nil. replace (n - 0) with n by lia.
+              replace (WORD_SIZE * 0)%Z with 0 by lia.
               rewrite isptr_offset_val_zero by assumption.
               rewrite data_at_zero_array_eq;
                 [|reflexivity | assumption | reflexivity]. entailer!.
@@ -350,7 +350,7 @@ Proof.
               ** entailer!. pose proof (mfv_all_is_ptr_or_int _ _ H9 H10 H19).
                  rewrite Forall_forall in H45. apply H45, Znth_In.
                  rewrite fields_eq_length. assumption.
-              ** rewrite (data_at__tarray_value _ _ 1) by omega. Intros.
+              ** rewrite (data_at__tarray_value _ _ 1) by lia. Intros.
                  rewrite data_at__singleton_array_eq.
                  assert_PROP
                    (field_compatible int_or_ptr_type []
@@ -370,18 +370,18 @@ Proof.
                      (unfold vertex_rep, vertex_at;
                       rewrite fields_eq_length; entailer!). forward.
                  rewrite offset_offset_val.
-                 replace (n - i - 1) with (n - (i + 1)) by omega.
+                 replace (n - i - 1) with (n - (i + 1)) by lia.
                  replace (WORD_SIZE * i + WORD_SIZE * 1) with
-                     (WORD_SIZE * (i + 1))%Z by rep_omega.
+                     (WORD_SIZE * (i + 1))%Z by rep_lia.
                  gather_SEP (data_at sht _ _ nv) (field_at _ _ _ _ _).
                  rewrite data_at_mfs_eq. 2: assumption.
                  2: subst n; assumption. entailer!.
            ++ thaw FR. rewrite v0, <- Heqshv.
               gather_SEP (vertex_rep _ _ _) (_ -* _).
               replace_SEP 0 (graph_rep g) by (entailer!; apply wand_frame_elim).
-              rewrite sublist_all by (rewrite fields_eq_length; omega).
+              rewrite sublist_all by (rewrite fields_eq_length; lia).
               replace_SEP 2 emp. {
-                replace (n - n) with 0 by omega. clear. entailer.
+                replace (n - n) with 0 by lia. clear. entailer.
                 apply data_at__value_0_size. }
               assert (nv = vertex_address g (new_copied_v g to)). {
                 subst nv. unfold vertex_address. unfold new_copied_v. simpl. f_equal.
@@ -398,7 +398,7 @@ Proof.
                 rewrite <- fields_eq_length in Heqn.
                 replace (offset_val (WORD_SIZE * used_space sp_to) (space_start sp_to))
                   with (offset_val (- WORD_SIZE) nv) by
-                    (rewrite Heqnv; rewrite offset_offset_val; f_equal; rep_omega).
+                    (rewrite Heqnv; rewrite offset_offset_val; f_equal; rep_lia).
                 rewrite <- H30. unfold vertex_at; entailer!. }
               gather_SEP (vertex_at _ _ _ _) (graph_rep _).
               rewrite (copied_v_derives_new_g g v to) by assumption.
@@ -531,7 +531,7 @@ Proof.
                              subst g'. apply graph_has_v_in_closure. assumption.
                          *** subst n. clear -H45 Hr. easy.
                          *** rewrite <- H30. assumption.
-                         *** rep_omega.
+                         *** rep_lia.
                      +++ do 3 (split; [assumption |]). split.
                          *** simpl. split; [|split; [|split]]; auto.
                              ---- destruct H39 as [_ [_ [? _]]].
@@ -542,7 +542,7 @@ Proof.
                                   assumption.
                              ---- erewrite <- fl_raw_mark; eauto. subst g' from.
                                   rewrite lcv_vlabel_new; assumption.
-                         *** split; [assumption|]. split; [omega | assumption].
+                         *** split; [assumption|]. split; [lia | assumption].
                      +++ Intros vret. destruct vret as [[g4 t_info4] roots4].
                          simpl fst in *. simpl snd in *. Exists g4 t_info4.
                          simpl in H53. subst roots4.
@@ -578,10 +578,10 @@ Proof.
                      Exists g3 t_info3 roots'. entailer!. simpl.
                      rewrite <- Heqroot, H21, if_true by reflexivity. split; auto.
                      replace (Z.to_nat depth) with (S (Z.to_nat (depth - 1))) by
-                         (rewrite <- Z2Nat.inj_succ; [f_equal|]; omega).
+                         (rewrite <- Z2Nat.inj_succ; [f_equal|]; lia).
                      constructor; easy.
                      Transparent super_compatible.
-              ** assert (depth = 0) by omega. subst depth. clear H42.
+              ** assert (depth = 0) by lia. subst depth. clear H42.
                  deadvars!. clear Heqnv. forward.
                  remember (cut_thread_info
                              t_info (Z.of_nat to) (vertex_size g v) Hi Hh).
@@ -622,7 +622,7 @@ Proof.
     assert_PROP (valid_int_or_ptr (field2val g (Znth n (make_fields g v)))). {
       destruct (Znth n (make_fields g v)) eqn:?; [destruct s|].
       - unfold field2val; unfold odd_Z2val.
-        replace (2 * z + 1) with (z + z + 1) by omega.
+        replace (2 * z + 1) with (z + z + 1) by lia.
         entailer!. apply valid_int_or_ptr_ii1.
       - unfold field2val, outlier_rep.
         apply in_gcptr_outlier with (gcptr:= g0) (outlier:=outlier) (n:=n) in H0;
@@ -752,7 +752,7 @@ Proof.
                      (make_fields_vals g v') (Vptr b i)).
         - apply readable_nonidentity, writable_readable_share; assumption.
         - simpl. rewrite fields_eq_length.
-          pose proof (proj1 (raw_fields_range (vlabel g v'))). rewrite Z.max_r; omega.
+          pose proof (proj1 (raw_fields_range (vlabel g v'))). rewrite Z.max_r; lia.
         - cancel.
       }
       replace_SEP 1 (weak_derives P (valid_pointer (Vptr b i) * TT) && emp * P)
@@ -787,7 +787,7 @@ Proof.
           rewrite v0. unfold vertex_rep, vertex_at. Intros.
           unfold make_fields_vals at 2. rewrite H22.
           assert (0 <= 0 < Zlength (make_fields_vals g v')). {
-             split. 1: omega. rewrite fields_eq_length.
+             split. 1: lia. rewrite fields_eq_length.
              apply (proj1 (raw_fields_range (vlabel g v'))).
           }
           assert (is_pointer_or_integer
@@ -848,7 +848,7 @@ Proof.
            assert (0 <= Z.of_nat to < 12). {
              clear -H H8. destruct H as [_ [_ ?]]. red in H8.
              pose proof (spaces_size (ti_heap t_info)).
-             rewrite Zlength_correct in H0. rep_omega. } unfold heap_struct_rep.
+             rewrite Zlength_correct in H0. rep_lia. } unfold heap_struct_rep.
            destruct (gt_gs_compatible _ _ H _ H8) as [? [? ?]].
            rewrite nth_space_Znth in *.
            remember (Znth (Z.of_nat to) (spaces (ti_heap t_info))) as sp_to.
@@ -856,28 +856,28 @@ Proof.
            remember (map space_tri (spaces (ti_heap t_info))).
            assert (@Znth (val * (val * val)) (Vundef, (Vundef, Vundef))
                          (Z.of_nat to) l = space_tri sp_to). {
-             subst l sp_to. rewrite Znth_map by (rewrite spaces_size; rep_omega).
+             subst l sp_to. rewrite Znth_map by (rewrite spaces_size; rep_lia).
              reflexivity. }
            forward; rewrite H28; unfold space_tri. 1: entailer!.
            forward. simpl sem_binary_operation'.
-           rewrite sapi_ptr_val; [| assumption | rep_omega].
+           rewrite sapi_ptr_val; [| assumption | rep_lia].
            Opaque Znth.  forward. Transparent Znth.
            assert (Hr: Int.min_signed <= Zlength (raw_fields (vlabel g v')) <=
                        Int.max_signed). {
              pose proof (raw_fields_range (vlabel g v')). destruct H29. split.
-             - rep_omega.
-             - transitivity (two_power_nat 22). 1: omega.
+             - rep_lia.
+             - transitivity (two_power_nat 22). 1: lia.
                compute; intro s; inversion s. }
            rewrite sapi_ptr_val; [|easy|easy].
            rewrite H28. unfold space_tri.
            rewrite <- Z.add_assoc.
            replace (1 + Zlength (raw_fields (vlabel g v'))) with (vertex_size g v') by
-               (unfold vertex_size; omega). thaw FR. freeze [0; 2; 3; 4; 5; 6] FR.
+               (unfold vertex_size; lia). thaw FR. freeze [0; 2; 3; 4; 5; 6] FR.
            assert (Hi : 0 <= Z.of_nat to < Zlength (spaces (ti_heap t_info))) by
-               (rewrite spaces_size; rep_omega).
+               (rewrite spaces_size; rep_lia).
            assert (Hh: has_space (Znth (Z.of_nat to) (spaces (ti_heap t_info)))
                                  (vertex_size g v')). {
-             red. split. 1: pose proof (svs_gt_one g v'); omega.
+             red. split. 1: pose proof (svs_gt_one g v'); lia.
              transitivity (unmarked_gen_size g (vgeneration v')).
              - apply single_unmarked_le; assumption.
              - red in H1. unfold rest_gen_size in H1. subst from.
@@ -901,7 +901,7 @@ Proof.
            assert (writable_share (space_sh sp_to)) by
                (rewrite <- H25; apply generation_share_writable).
            remember (space_sh sp_to) as sht.
-           rewrite (data_at__tarray_value _ _ 1). 2: unfold vertex_size; rep_omega.
+           rewrite (data_at__tarray_value _ _ 1). 2: unfold vertex_size; rep_lia.
            Intros.
            remember (offset_val (WORD_SIZE * used_space sp_to) (space_start sp_to)).
            rewrite (data_at__int_or_ptr_tuint sht v1).
@@ -915,14 +915,14 @@ Proof.
              subst v1. rewrite WORD_SIZE_eq. entailer!. unfold field_address.
              simpl. rewrite neg_repr. rewrite sem_add_pi_ptr_special'; auto.
              rewrite if_true by assumption. simpl. rewrite !offset_offset_val.
-             f_equal. omega. }
+             f_equal. lia. }
            forward. sep_apply (field_at_data_at_cancel
                                  sht tuint (Z2val (make_header g v')) v1). clear H30.
            subst v1. rewrite offset_offset_val.
            replace (vertex_size g v' - 1) with (Zlength (raw_fields (vlabel g v')))
-             by (unfold vertex_size; omega).
+             by (unfold vertex_size; lia).
            replace (WORD_SIZE * used_space sp_to + WORD_SIZE * 1) with
-               (WORD_SIZE * (used_space sp_to + 1))%Z by rep_omega.
+               (WORD_SIZE * (used_space sp_to + 1))%Z by rep_lia.
            remember (offset_val (WORD_SIZE * (used_space sp_to + 1))
                                 (space_start sp_to)) as nv.
            thaw FR. freeze [0; 1; 2; 3; 4; 5] FR. rename i into j. deadvars!.
@@ -948,8 +948,8 @@ Proof.
                            (sublist 0 i (make_fields_vals g v')) nv;
                    data_at_ sht (tarray int_or_ptr_type (n' - i))
                             (offset_val (WORD_SIZE * i) nv); FRZL FR))%assert.
-           ++ rewrite sublist_nil. replace (n' - 0) with n' by omega.
-              replace (WORD_SIZE * 0)%Z with 0 by omega.
+           ++ rewrite sublist_nil. replace (n' - 0) with n' by lia.
+              replace (WORD_SIZE * 0)%Z with 0 by lia.
               rewrite isptr_offset_val_zero by assumption.
               rewrite data_at_zero_array_eq; [entailer! | easy..].
            ++ unfold vertex_rep, vertex_at. Intros.
@@ -957,7 +957,7 @@ Proof.
               ** entailer!. pose proof (mfv_all_is_ptr_or_int _ _ H9 H10 H19).
                  rewrite Forall_forall in H46. apply H46, Znth_In.
                  rewrite fields_eq_length. assumption.
-              ** rewrite (data_at__tarray_value _ _ 1) by omega. Intros.
+              ** rewrite (data_at__tarray_value _ _ 1) by lia. Intros.
                  rewrite data_at__singleton_array_eq.
                  assert_PROP
                    (field_compatible int_or_ptr_type []
@@ -977,18 +977,18 @@ Proof.
                      (unfold vertex_rep, vertex_at;
                       rewrite fields_eq_length; entailer!). forward.
                  rewrite offset_offset_val.
-                 replace (n' - i - 1) with (n' - (i + 1)) by omega.
+                 replace (n' - i - 1) with (n' - (i + 1)) by lia.
                  replace (WORD_SIZE * i + WORD_SIZE * 1) with
-                     (WORD_SIZE * (i + 1))%Z by rep_omega.
+                     (WORD_SIZE * (i + 1))%Z by rep_lia.
                  gather_SEP (data_at _ _ _ nv) (field_at _ _ _ _ _).
                  rewrite data_at_mfs_eq;
                                    [entailer! | assumption | subst n'; assumption].
            ++ thaw FR. rewrite v0, <- Heqshv.
               gather_SEP (vertex_rep _ _ _) (_ -* _).
               replace_SEP 0 (graph_rep g) by (entailer!; apply wand_frame_elim).
-              rewrite sublist_all by (rewrite fields_eq_length; omega).
+              rewrite sublist_all by (rewrite fields_eq_length; lia).
               replace_SEP 2 emp. {
-                replace (n' - n') with 0 by omega. clear. entailer.
+                replace (n' - n') with 0 by lia. clear. entailer.
                 apply data_at__value_0_size. }
               assert (nv = vertex_address g (new_copied_v g to)). {
                 subst nv. unfold vertex_address. unfold new_copied_v. simpl. f_equal.
@@ -1005,7 +1005,7 @@ Proof.
                 rewrite <- fields_eq_length in Heqn'.
                 replace (offset_val (WORD_SIZE * used_space sp_to) (space_start sp_to))
                   with (offset_val (- WORD_SIZE) nv) by
-                    (rewrite Heqnv; rewrite offset_offset_val; f_equal; rep_omega).
+                    (rewrite Heqnv; rewrite offset_offset_val; f_equal; rep_lia).
                 rewrite <- H31. unfold vertex_at; entailer!. }
               gather_SEP (vertex_at _ _ _ _) (graph_rep _).
               rewrite (copied_v_derives_new_g g v' to) by assumption.
@@ -1099,7 +1099,7 @@ Proof.
               assert (graph_has_v g' v) by
                   (subst g'; apply lcv_graph_has_v_old; assumption).
               assert (v <> v') by
-                  (intro; subst v; clear -v0 H13; omega).
+                  (intro; subst v; clear -v0 H13; lia).
               assert (raw_mark (vlabel g' v) = false) by
                 (subst g'; rewrite <- lcv_raw_mark; assumption).
               assert (writable_share shh) by
@@ -1136,7 +1136,7 @@ Proof.
                 as t_info'.
               unfold thread_info_rep. Intros.
               assert (0 <= 0 < Zlength (ti_args t_info')) by
-                  (rewrite arg_size; rep_omega).
+                  (rewrite arg_size; rep_lia).
               gather_SEP
                 (data_at _ _ _ _)
                 (heap_struct_rep _ _ _)
@@ -1224,7 +1224,7 @@ Proof.
                              apply graph_has_v_in_closure; assumption.
                          *** subst n'. clear -H59 Hr. easy.
                          *** rewrite <- H31. assumption.
-                         *** rep_omega.
+                         *** rep_lia.
                      +++ do 3 (split; [assumption |]). split.
                          *** simpl. split; [|split].
                              ---- destruct H53 as [_ [_ [? _]]].
@@ -1233,12 +1233,12 @@ Proof.
                                   unfold lgraph_copy_v. subst n'.
                                   rewrite <- lgd_raw_fld_length_eq.
                                   subst g'. rewrite lcv_vlabel_new.
-                                  assumption. rewrite v0. omega.
+                                  assumption. rewrite v0. lia.
                              ---- erewrite <- fl_raw_mark; eauto. subst g1 from.
                                   rewrite <- lgd_raw_mark_eq. subst g'.
                                   rewrite lcv_vlabel_new; try assumption.
-                                  split; try assumption. omega.
-                         *** split; [assumption|]. split; [omega | assumption].
+                                  split; try assumption. lia.
+                         *** split; [assumption|]. split; [lia | assumption].
                      +++ Intros vret. destruct vret as [[g4 t_info4] roots4].
                          simpl fst in *. simpl snd in *. Exists g4 t_info4.
                          simpl in H67. subst roots4.
@@ -1275,11 +1275,11 @@ Proof.
                      Opaque super_compatible. Exists g3 t_info3 roots.
                      entailer!. simpl.
                      replace (Z.to_nat depth) with (S (Z.to_nat (depth - 1))) by
-                         (rewrite <- Z2Nat.inj_succ; [f_equal|]; omega).
+                         (rewrite <- Z2Nat.inj_succ; [f_equal|]; lia).
                      rewrite Heqf, H12. simpl.
                      constructor; [reflexivity | assumption..].
                      Transparent super_compatible.
-              ** assert (depth = 0) by omega. subst depth. clear H56.
+              ** assert (depth = 0) by lia. subst depth. clear H56.
                  deadvars!. clear Heqnv. forward.
                  Exists g1 t_info' roots. entailer!. simpl. rewrite Heqf.
                  simpl field2forward. rewrite H12. simpl. now constructor.

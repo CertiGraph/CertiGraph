@@ -24,37 +24,37 @@ Local Open Scope Z_scope.
 
 Definition MAX_SPACES: Z := 12.
 Lemma MAX_SPACES_eq: MAX_SPACES = 12. Proof. reflexivity. Qed.
-Hint Rewrite MAX_SPACES_eq: rep_omega.
+Hint Rewrite MAX_SPACES_eq: rep_lia.
 Global Opaque MAX_SPACES.
 
 Definition NURSERY_SIZE: Z := Z.shiftl 1 16.
 Lemma NURSERY_SIZE_eq: NURSERY_SIZE = Z.shiftl 1 16. Proof. reflexivity. Qed.
-Hint Rewrite NURSERY_SIZE_eq: rep_omega.
+Hint Rewrite NURSERY_SIZE_eq: rep_lia.
 Global Opaque NURSERY_SIZE.
 
 Definition MAX_ARGS: Z := 1024.
 Lemma MAX_ARGS_eq: MAX_ARGS = 1024. Proof. reflexivity. Qed.
-Hint Rewrite MAX_ARGS_eq: rep_omega.
+Hint Rewrite MAX_ARGS_eq: rep_lia.
 Global Opaque MAX_ARGS.
 
 Definition WORD_SIZE: Z := 4.
 Lemma WORD_SIZE_eq: WORD_SIZE = 4. Proof. reflexivity. Qed.
-Hint Rewrite WORD_SIZE_eq: rep_omega.
+Hint Rewrite WORD_SIZE_eq: rep_lia.
 Global Opaque WORD_SIZE.
 
 Definition MAX_SPACE_SIZE: Z := Z.shiftl 1 29.
 Lemma MAX_SPACE_SIZE_eq: MAX_SPACE_SIZE = Z.shiftl 1 29. Proof. reflexivity. Qed.
-Hint Rewrite MAX_SPACE_SIZE_eq: rep_omega.
+Hint Rewrite MAX_SPACE_SIZE_eq: rep_lia.
 Global Opaque MAX_SPACE_SIZE.
 
 Definition NO_SCAN_TAG: Z := 251.
 Lemma NO_SCAN_TAG_eq: NO_SCAN_TAG = 251. Proof. reflexivity. Qed.
-Hint Rewrite NO_SCAN_TAG_eq: rep_omega.
+Hint Rewrite NO_SCAN_TAG_eq: rep_lia.
 Global Opaque NO_SCAN_TAG.
 
 Definition SPACE_STRUCT_SIZE: Z := 12.
 Lemma SPACE_STRUCT_SIZE_eq: SPACE_STRUCT_SIZE = 12. Proof. reflexivity. Qed.
-Hint Rewrite SPACE_STRUCT_SIZE_eq: rep_omega.
+Hint Rewrite SPACE_STRUCT_SIZE_eq: rep_lia.
 Global Opaque SPACE_STRUCT_SIZE.
 
 Lemma MSS_eq_unsigned:
@@ -275,20 +275,20 @@ Qed.
 Lemma used_space_repable_signed: forall sp, repable_signed (used_space sp).
 Proof.
   intros. rewrite <- signed_range_repable_signed.
-  pose proof (used_space_signed_range sp). rep_omega.
+  pose proof (used_space_signed_range sp). rep_lia.
 Qed.
 
 Lemma total_space_repable_signed: forall sp, repable_signed (total_space sp).
 Proof.
   intros. rewrite <- signed_range_repable_signed.
-  pose proof (total_space_signed_range sp). rep_omega.
+  pose proof (total_space_signed_range sp). rep_lia.
 Qed.
 
 Lemma rest_space_repable_signed: forall sp,
     repable_signed (total_space sp - used_space sp).
 Proof.
   intros. rewrite <- signed_range_repable_signed.
-  pose proof (rest_space_signed_range sp). rep_omega.
+  pose proof (rest_space_signed_range sp). rep_lia.
 Qed.
 
 Record heap: Type :=
@@ -393,7 +393,7 @@ Lemma nat_inc_list_In_iff: forall i n, In i (nat_inc_list n) <-> i < n.
 Proof. intros. unfold nat_inc_list. rewrite nat_seq_In_iff. intuition. Qed.
 
 Lemma nat_inc_list_nth: forall i n a, i < n -> nth i (nat_inc_list n) a = i.
-Proof. intros. unfold nat_inc_list. rewrite nat_seq_nth; [omega | assumption]. Qed.
+Proof. intros. unfold nat_inc_list. rewrite nat_seq_nth; [lia | assumption]. Qed.
 
 Lemma nat_inc_list_app: forall n m,
     nat_inc_list (n + m) = nat_inc_list n ++ nat_seq n m.
@@ -819,9 +819,9 @@ Proof.
     + apply Z.mul_le_mono_nonneg_r with (p := two_p 8) in H3. 2: lia.
       rewrite Z.mul_sub_distr_r, <- two_p_is_exp in H3 by lia. simpl Z.add in H3.
       lia.
-  - rep_omega.
+  - rep_lia.
   - pose proof (make_header_range g v). unfold Int.max_unsigned, Int.modulus.
-    rep_omega.
+    rep_lia.
 Qed.
 
 Definition field_t: Type := Z + GC_Pointer + EType.
@@ -1315,7 +1315,7 @@ Proof.
         assumption. }
     destruct (eqdec target a).
     + simpl. rewrite IHl. clear IHl. split; intros; destruct H4; [|intuition|].
-      * subst j. split; [split|]; [omega | | rewrite <- e in H3; assumption].
+      * subst j. split; [split|]; [lia | | rewrite <- e in H3; assumption].
         pose proof (Zlength_skipn ind c). rewrite <- H in H4.
         rewrite Zlength_cons in H4. pose proof (Zlength_nonneg l).
         destruct (Z.max_spec 0 (Zlength c - Z.max 0 ind)). 2: exfalso; lia.
@@ -1323,7 +1323,7 @@ Proof.
       * assert (ind = j \/ ind + 1 <= j < Zlength c) by lia.
         destruct H6; [left | right; split]; assumption.
     + rewrite IHl; split; intros; destruct H4; split;
-        [omega | assumption | | assumption].
+        [lia | assumption | | assumption].
       assert (ind = j \/ ind + 1 <= j < Zlength c) by lia. clear H4. destruct H6.
       2: assumption. exfalso; subst j. rewrite H5 in H3. rewrite H3 in n.
       apply n; reflexivity.
@@ -1431,15 +1431,15 @@ Proof.
   - split; intros; reflexivity.
   - reflexivity.
   - inversion H.
-  - destruct H. rewrite Zlength_nil, Zlength_cons in H. exfalso; rep_omega.
+  - destruct H. rewrite Zlength_nil, Zlength_cons in H. exfalso; rep_lia.
   - inversion H.
-  - destruct H. rewrite Zlength_nil, Zlength_cons in H. exfalso; rep_omega.
+  - destruct H. rewrite Zlength_nil, Zlength_cons in H. exfalso; rep_lia.
   - inversion H. subst a. subst l1. split; intros; reflexivity.
   - destruct H. assert (0 <= 0 < Zlength (a :: l1)) by
-        (rewrite Zlength_cons; rep_omega). apply H0 in H1. rewrite !Znth_0_cons in H1.
-    subst a. rewrite !Zlength_cons in H. f_equal. rewrite IHl1. split. 1: rep_omega.
+        (rewrite Zlength_cons; rep_lia). apply H0 in H1. rewrite !Znth_0_cons in H1.
+    subst a. rewrite !Zlength_cons in H. f_equal. rewrite IHl1. split. 1: rep_lia.
     intros. assert (0 < j + 1) by lia.
-    assert (0 <= j + 1 < Zlength (x :: l1)) by (rewrite Zlength_cons; rep_omega).
+    assert (0 <= j + 1 < Zlength (x :: l1)) by (rewrite Zlength_cons; rep_lia).
     specialize (H0 _ H3). rewrite !Znth_pos_cons in H0 by assumption.
     replace (j + 1 - 1) with j in H0 by lia. assumption.
 Qed.
@@ -1474,9 +1474,9 @@ Proof.
   unfold flip in *.
   destruct (Z.eq_dec (Znth j (live_roots_indices f_info))
                      (Znth z (live_roots_indices f_info))).
-  - rewrite e, upd_Znth_same. 2: rewrite arg_size; rep_omega.
+  - rewrite e, upd_Znth_same. 2: rewrite arg_size; rep_lia.
     rewrite upd_bunch_same; [|assumption..]. reflexivity.
-  - rewrite upd_Znth_diff. 4: assumption. 3: rewrite arg_size; rep_omega.
+  - rewrite upd_Znth_diff. 4: assumption. 3: rewrite arg_size; rep_lia.
     + rewrite <- H0. rewrite upd_bunch_diff; [|assumption..]. reflexivity.
     + rewrite arg_size. apply (fi_index_range f_info), Znth_In.
       rewrite <- H. assumption.
@@ -1694,8 +1694,8 @@ Proof.
   intros. red. unfold vertex_address. exists (WORD_SIZE * vertex_offset g v).
   split. 2: reflexivity. unfold gen_size. destruct H0. remember (vgeneration v). split.
   - unfold vertex_offset.
-    pose proof (pvs_ge_zero g (vgeneration v) (vindex v)). rep_omega.
-  - apply Zmult_lt_compat_l. 1: rep_omega.
+    pose proof (pvs_ge_zero g (vgeneration v) (vindex v)). rep_lia.
+  - apply Zmult_lt_compat_l. 1: rep_lia.
     apply Z.lt_le_trans with (used_space (nth_space t_info n)).
     2: apply (proj2 (space_order (nth_space t_info n))).
     destruct (gt_gs_compatible _ _ H _ H0) as [? [? ?]].
@@ -1808,7 +1808,7 @@ Proof.
   remember (skipn (Z.to_nat (i + 1)) (spaces h)) as ls2.
   assert (Zlength ls1 = i). {
     rewrite Zlength_length by lia. subst ls1. apply firstn_length_le.
-    clear H5. rewrite Zlength_correct in H1. rep_omega. }
+    clear H5. rewrite Zlength_correct in H1. rep_lia. }
   rewrite H6 in H4 at 1. rewrite (upd_Znth_char _ _ _ _ _ H7) in H4.
   rewrite H6 in H0. clear -H0 H4 H H7. destruct ls1.
   - rewrite Zlength_nil in H7. exfalso. apply H. subst i. reflexivity.
@@ -1839,7 +1839,7 @@ Proof.
   unfold_sublist_old. replace (i - 0) with i by lia.
   replace (i + 1 - 0) with (i + 1) by lia. simpl.
   assert (forall j, 0 <= j -> Z.to_nat (j + 1) = S (Z.to_nat j)) by
-      (intros; rewrite <- Z2Nat.inj_succ; rep_omega).
+      (intros; rewrite <- Z2Nat.inj_succ; rep_lia).
   rewrite (H1 _ H). simpl tl. do 3 f_equal.
   - f_equal. rewrite Zlength_cons. lia.
   - remember (S (Z.to_nat i)). replace (Z.to_nat (i + 1 + 1)) with (S n).
@@ -3566,7 +3566,7 @@ Lemma forward_loop_add_tail_vpp: forall from to depth x g g1 g2 g3 roots i,
     forward_relation from to depth (forward_p2forward_t (inr (x, i)) roots g2) g2 g3 ->
     forward_loop from to depth (sublist 0 (i + 1) (vertex_pos_pairs g x)) g1 g3.
 Proof.
-  intros. rewrite <- vpp_Zlength in H. rewrite sublist_last_1; [|omega..].
+  intros. rewrite <- vpp_Zlength in H. rewrite sublist_last_1; [|lia..].
   rewrite vpp_Zlength in H. rewrite vpp_Znth by assumption.
   apply forward_loop_add_tail with (g2 := g2) (roots := roots); assumption.
 Qed.
@@ -3698,9 +3698,9 @@ Proof.
   rewrite (Int.mul_pow2 _ _ (Int.repr 8)) by assumption.
   assert (0 <= make_header g v <= Int.max_unsigned). {
     pose proof (make_header_range g v). unfold Int.max_unsigned, Int.modulus.
-    rep_omega. }
-  rewrite Int.shru_div_two_p, !Int.unsigned_repr; [| rep_omega | assumption].
-  rewrite Int.shl_mul_two_p, Int.unsigned_repr by rep_omega.
+    rep_lia. }
+  rewrite Int.shru_div_two_p, !Int.unsigned_repr; [| rep_lia | assumption].
+  rewrite Int.shl_mul_two_p, Int.unsigned_repr by rep_lia.
   unfold make_header in *. remember (vlabel g v). clear Heqr.
   rewrite H, !Zbits.Zshiftl_mul_two_p in * by lia. rewrite <- Z.add_assoc.
   replace (raw_color r * two_p 8 + Zlength (raw_fields r) * two_p 10)
@@ -4193,7 +4193,7 @@ Proof.
     - intros. rewrite Zlength_map in H. rewrite Znth_map by assumption. f_equal.
       rewrite <- nth_Znth by assumption. rewrite nat_inc_list_nth.
       1: apply Z2Nat.id; lia. rewrite Zlength_correct, nat_inc_list_length in H.
-      rep_omega. } rewrite H8. clear H8. apply Znth_In. apply frl_roots_Zlength in H4.
+      rep_lia. } rewrite H8. clear H8. apply Znth_In. apply frl_roots_Zlength in H4.
   2: subst; assumption. rewrite <- H3, <- H4. assumption.
 Qed.
 
@@ -4505,10 +4505,10 @@ Proof.
   replace i with (i - Zlength l + Zlength l) by lia.
   assert (length l <= Z.to_nat i)%nat by lia. clear H1.
   assert (0 <= i - Zlength l) by
-      (rewrite <- ZtoNat_Zlength, <- Z2Nat.inj_le in H3; rep_omega).
-  rewrite <- Znth_skipn by rep_omega. rewrite ZtoNat_Zlength.
+      (rewrite <- ZtoNat_Zlength, <- Z2Nat.inj_le in H3; rep_lia).
+  rewrite <- Znth_skipn by rep_lia. rewrite ZtoNat_Zlength.
   apply Znth_In. split. 1: assumption. rewrite <- ZtoNat_Zlength, Zlength_skipn.
-  rewrite (Z.max_r 0 (Zlength l)) by rep_omega. rewrite Z.max_r; rep_omega.
+  rewrite (Z.max_r 0 (Zlength l)) by rep_lia. rewrite Z.max_r; rep_lia.
 Qed.
 
 Lemma space_start_is_pointer_or_null: forall (g: LGraph) (t_info: thread_info) i,
@@ -4553,7 +4553,7 @@ Lemma ti_size_gen: forall (g : LGraph) (t_info : thread_info) (gen : nat),
 Proof.
   intros. red in H1. rewrite Forall_forall in H1.
   assert (0 <= (Z.of_nat gen) < Zlength (spaces (ti_heap t_info))). {
-    split. 1: rep_omega. rewrite Zlength_correct. apply inj_lt.
+    split. 1: rep_lia. rewrite Zlength_correct. apply inj_lt.
     destruct H as [_ [_ ?]]. red in H0. lia. }
   assert (nth_gen_size_spec t_info gen). {
     apply H1. rewrite nat_inc_list_In_iff. destruct H as [_ [_ ?]]. red in H0.
@@ -4617,7 +4617,7 @@ Proof.
     1: left; assumption. right. unfold new_copied_v in H0. subst v.
     clear H2. destruct H1. red in H1. simpl in *. unfold gen_v_num. lia.
   - right. destruct H4. split. 1: assumption. destruct H5. split. 2: assumption.
-    apply fr_O_gen_v_num_to in H0; [omega | assumption].
+    apply fr_O_gen_v_num_to in H0; [lia | assumption].
 Qed.
 
 Lemma frr_raw_fields: forall from to f_info roots1 g1 roots2 g2,
@@ -4732,7 +4732,7 @@ Proof.
     1: left; assumption. right. clear -H1 H4. unfold new_copied_v in H4. subst.
     destruct H1. unfold gen_v_num. simpl in *. red in H0. lia.
   - right. destruct H3. split. 1: assumption. destruct H5. split; auto.
-    eapply fr_O_gen_v_num_to in H4; [omega | assumption].
+    eapply fr_O_gen_v_num_to in H4; [lia | assumption].
 Qed.
 
 Lemma svwl_graph_has_v: forall from to l g1 g2,
@@ -4768,9 +4768,9 @@ Proof.
   specialize (IHl _ _ H2 H9 _ H1). destruct IHl.
   - eapply svfl_graph_has_v_inv in H6; eauto. destruct H6; [left|right]. 1: assumption.
     destruct H6 as [? [? ?]]. split; [|split]; [assumption..|].
-    apply svwl_gen_v_num_to in H9; [omega | assumption].
+    apply svwl_gen_v_num_to in H9; [lia | assumption].
   - right. destruct H3 as [? [? ?]]. split; [|split]; try assumption.
-    apply svfl_gen_v_num_to in H6; [omega | assumption].
+    apply svfl_gen_v_num_to in H6; [lia | assumption].
 Qed.
 
 Lemma svwl_raw_fields: forall from to l g g',
@@ -5076,9 +5076,9 @@ Proof.
       - eapply (frr_graph_has_v_inv from _ _ _ g) in H10; eauto.
         simpl in H10. destruct H10. 1: left; assumption.
         right. destruct H10 as [_ [? ?]]. split; auto.
-        apply svwl_gen_v_num_to in H7; [omega | assumption].
+        apply svwl_gen_v_num_to in H7; [lia | assumption].
       - right. destruct H10 as [_ [? ?]]. split; auto.
-        apply frr_gen_v_num_to in H6; [omega | assumption]. } destruct H14.
+        apply frr_gen_v_num_to in H6; [lia | assumption]. } destruct H14.
     + assert (graph_has_v g1 (to, vidx)) by
           (eapply (frr_graph_has_v from to _ _ g); eauto).
       assert (get_edges g (to, vidx) = get_edges g2 (to, vidx)). {
@@ -5500,7 +5500,7 @@ Proof.
     fold (gen_size t_info i) in H10. rewrite <- H9 in H10.
     transitivity (gen_size t_info i). 1: assumption.
     rewrite (ti_size_gen _ _ _ H1 H7 H6), (ti_size_gen _ _ _ H1 H0 H6).
-    apply H; [omega.. | assumption].
+    apply H; [lia.. | assumption].
   - apply graph_unmarked_copy_compatible; assumption.
   - rewrite (ti_size_gen _ _ _ H1 H0 H6). apply ngs_0_lt.
   - rewrite graph_gen_unmarked_iff in H2. apply H2.

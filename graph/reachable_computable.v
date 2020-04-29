@@ -3,7 +3,7 @@ Require Import Coq.Arith.Arith.
 Require Import Coq.Logic.ProofIrrelevance.
 Require Import Coq.Logic.FunctionalExtensionality.
 Require Import Coq.Sorting.Permutation.
-Require Import Coq.omega.Omega.
+Require Import Coq.micromega.Lia.
 Require Import RamifyCoq.lib.Coqlib.
 Require Import RamifyCoq.lib.List_ext.
 Require Import RamifyCoq.lib.EquivDec_ext.
@@ -80,8 +80,8 @@ Section REACHABLE_COMPUTABLE.
     destruct (weak_In_dec l3 x); tauto.
   Qed.
 
-  Lemma construct_omega: forall len (r : list V),  (~ len <= length r) -> len - S (length r) < len - length r.
-  Proof. intros; omega. Qed.
+  Lemma construct_lia: forall len (r : list V),  (~ len <= length r) -> len - S (length r) < len - length r.
+  Proof. intros; lia. Qed.
 
   Definition construct_reachable : reach_input -> list V.
     refine (
@@ -94,7 +94,7 @@ Section REACHABLE_COMPUTABLE.
                                          then r
                                          else let newL := new_working_list l (map (dst G) (edge_func G g)) (g :: r) in f (len, newL, g :: r) _
                end)).
-    unfold inputOrder, lengthInput. simpl. apply construct_omega; auto.
+    unfold inputOrder, lengthInput. simpl. apply construct_lia; auto.
   Defined.
 
   Lemma construct_reachable_unfold:
@@ -135,20 +135,20 @@ Section REACHABLE_COMPUTABLE.
   Proof.
     intros.
     remember (lengthInput i).
-    assert (lengthInput i <= n) by omega; clear Heqn.
+    assert (lengthInput i <= n) by lia; clear Heqn.
     revert i H H3; induction n; intros; remember (construct_reachable i) as r; destruct i as [[len pr] rslt]; simpl in *;
     rewrite construct_reachable_unfold in Heqr; destruct pr; simpl in Heqr.
     + subst. apply H1 in H; auto.
     + destruct (le_dec len (length rslt)).
       - subst; apply H2 in H; auto.
-      - exfalso; omega.
+      - exfalso; lia.
     + subst. apply H1 in H; auto.
     + destruct (le_dec len (length rslt)).
       - subst; apply H2 in H; auto.
       - subst.
         apply IHn; [apply H0; auto |].
         simpl.
-        omega.
+        lia.
   Qed.
 
   Definition rch1_is_bound i: Prop := rch1 i <= length (rch3 i) -> rch2 i = nil.
@@ -407,7 +407,7 @@ Section REACHABLE_COMPUTABLE.
         apply H2; auto.
       }
       rewrite app_length in H1.
-      assert (length (nodup equiv_dec (rch2 i0)) = 0) by omega.
+      assert (length (nodup equiv_dec (rch2 i0)) = 0) by lia.
       clear - H7. remember (rch2 i0). clear Heql. induction l; auto.
       simpl in H7. destruct (in_dec equiv_dec a l).
       * specialize (IHl H7). subst. inversion i.

@@ -2,6 +2,7 @@ Require Import Coq.Logic.Classical.
 Require Import Coq.Lists.List.
 Require Import Coq.Sets.Ensembles.
 Require Import Coq.ZArith.ZArith.
+Require Import Coq.micromega.Lia.
 Require Import VST.msl.seplog.
 Require Import VST.msl.log_normalize.
 Require Import compcert.lib.Integers.
@@ -66,7 +67,7 @@ Proof.
   - exfalso; auto.
   - destruct H. intuition.
   - unfold addValidFunc in H. rewrite Zpos_P_of_succ_nat, <- Z.add_1_r. destruct H; [rewrite IHsize in H|]; intuition.
-  - unfold addValidFunc. rewrite Zpos_P_of_succ_nat, <- Z.add_1_r in H. rewrite IHsize. omega.
+  - unfold addValidFunc. rewrite Zpos_P_of_succ_nat, <- Z.add_1_r in H. rewrite IHsize. lia.
 Qed.
 
 Lemma makeSet_evalid: forall size e, evalid (makeSet_discrete_PreGraph size) e <-> 0 <= e < Z.of_nat size.
@@ -75,7 +76,7 @@ Proof.
   - exfalso. auto.
   - destruct H; intuition.
   - unfold addValidFunc in H. rewrite Zpos_P_of_succ_nat, <- Z.add_1_r. destruct H; [apply IHsize in H | subst e]; intuition.
-  - unfold addValidFunc. rewrite Zpos_P_of_succ_nat, <- Z.add_1_r in H. rewrite IHsize. omega.
+  - unfold addValidFunc. rewrite Zpos_P_of_succ_nat, <- Z.add_1_r in H. rewrite IHsize. lia.
 Qed.
 
 Lemma makeSet_evalid_src: forall size e, evalid (makeSet_discrete_PreGraph size) e -> src (makeSet_discrete_PreGraph size) e = e.
@@ -123,7 +124,7 @@ Proof.
   - exfalso; auto.
   - destruct H; intuition.
   - rewrite Zpos_P_of_succ_nat, <- Z.add_1_r. rewrite IHsize in H. intuition.
-  - rewrite Zpos_P_of_succ_nat, <- Z.add_1_r in H. rewrite IHsize. omega.
+  - rewrite Zpos_P_of_succ_nat, <- Z.add_1_r in H. rewrite IHsize. lia.
 Qed.
 
 Lemma makeSet_discrete_list_NoDup: forall size, NoDup (makeSet_discrete_list size).
@@ -158,14 +159,14 @@ Fixpoint nat_inc_list (n: nat) : list Z :=
 Lemma nat_inc_list_in_iff: forall n v, List.In v (nat_inc_list n) <-> 0 <= v < Z.of_nat n.
 Proof.
   induction n; intros; [simpl; intuition|]. rewrite Nat2Z.inj_succ. unfold Z.succ. simpl. rewrite in_app_iff.
-  assert (0 <= v < Z.of_nat n + 1 <-> 0 <= v < Z.of_nat n \/ v = Z.of_nat n) by omega. rewrite H. clear H. rewrite IHn. simpl. intuition.
+  assert (0 <= v < Z.of_nat n + 1 <-> 0 <= v < Z.of_nat n \/ v = Z.of_nat n) by lia. rewrite H. clear H. rewrite IHn. simpl. intuition.
 Qed.
 
 Lemma nat_inc_list_NoDup: forall n, NoDup (nat_inc_list n).
 Proof.
   induction n; simpl; [constructor|]. apply NoDup_app_inv; auto.
   - constructor; auto. constructor.
-  - intros. rewrite nat_inc_list_in_iff in H. simpl. omega.
+  - intros. rewrite nat_inc_list_in_iff in H. simpl. lia.
 Qed.
 
 Lemma nat_inc_list_length: forall n, length (nat_inc_list n) = n. Proof. induction n; simpl; auto. rewrite app_length. simpl. rewrite IHn. intuition. Qed.

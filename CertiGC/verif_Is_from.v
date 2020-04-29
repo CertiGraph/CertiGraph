@@ -11,7 +11,7 @@
 Require Import compcert.common.Events compcert.common.Memory.
 Require Import compcert.common.Values compcert.common.AST.
 Require Import compcert.x86_32.Archi compcert.lib.Integers.
-Require Import Coq.ZArith.BinInt Coq.Lists.List Omega.
+Require Import Coq.ZArith.BinInt Coq.Lists.List Coq.micromega.Lia.
 Import ListNotations.
 Local Open Scope Z_scope. Local Open Scope list_scope.
 
@@ -57,7 +57,7 @@ Lemma lt_ptr_mod: forall n1 n2,
 Proof.
   intros.
   replace Ptrofs.max_unsigned with (Z.pred Ptrofs.modulus) in * by
-      (unfold Ptrofs.max_unsigned; omega).
+      (unfold Ptrofs.max_unsigned; lia).
   now rewrite <- Z.lt_le_pred in *.
 Qed.
 
@@ -115,26 +115,26 @@ Proof.
                       (Ptrofs.add i (Ptrofs.repr n)) H22) as [Hx Hy].
       { right. apply Mem.perm_cur_max, Mem.valid_pointer_nonempty_perm.
         destruct H5 as [_ [_ H5]].
-        assert (Hm: 0 <= n - 1 < n) by omega; rewrite <- (H5 _ Hm).
+        assert (Hm: 0 <= n - 1 < n) by lia; rewrite <- (H5 _ Hm).
         f_equal; unfold Ptrofs.add; repeat rewrite Ptrofs.unsigned_repr_eq.
-        rewrite Z.add_mod_idemp_r, Z.mod_small by easy. omega.
+        rewrite Z.add_mod_idemp_r, Z.mod_small by easy. lia.
       }
       clear -Hx Hy Hf H0.
       apply lt_ptr_mod in Hy. unfold Ptrofs.add in *.
       repeat rewrite Ptrofs.unsigned_repr_eq in *.
       rewrite Z.add_mod_idemp_r, Z.mod_small in * by easy.
-      rewrite Z.mod_small; [omega|].
-      destruct i. unfold Ptrofs.unsigned in *; simpl in *. omega.
+      rewrite Z.mod_small; [lia|].
+      destruct i. unfold Ptrofs.unsigned in *; simpl in *. lia.
     }
     split3; [| |split3; [| |split3]]; trivial.
     + destruct H1 as [_ _ _ _ rep _].
       destruct (rep _ _ delta
                    (Ptrofs.add i (Ptrofs.repr n)) H22) as [Hd' Hd]. {
         right. apply Mem.perm_cur_max, Mem.valid_pointer_nonempty_perm.
-        destruct H5 as [_ [_ H5]]. assert (0 <= n - 1 < n) by omega.
+        destruct H5 as [_ [_ H5]]. assert (0 <= n - 1 < n) by lia.
         rewrite <- (H5 _ H1). f_equal.
         unfold Ptrofs.add; repeat rewrite Ptrofs.unsigned_repr_eq.
-        rewrite Z.add_mod_idemp_r, Z.mod_small by easy. omega.
+        rewrite Z.add_mod_idemp_r, Z.mod_small by easy. lia.
       }
       unfold Ptrofs.add. rewrite <- H4.
       destruct (Ptrofs.unsigned_range i) as [? _].
@@ -146,18 +146,18 @@ Proof.
       repeat rewrite Ptrofs.unsigned_repr_eq in Hd.
       rewrite Z.add_mod_idemp_r, Z.mod_small in Hd by easy.
       apply lt_ptr_mod in Hd.
-      repeat rewrite Z.mod_small; [omega | trivial | omega].
-    + split3; [easy | omega|]. intros.
+      repeat rewrite Z.mod_small; [lia | trivial | lia].
+    + split3; [easy | lia|]. intros.
       destruct H5 as [_ [_ H5]].
       rewrite <- (Mem.valid_pointer_inject _ _ _ _ _ _ _ H22 H1 (H5 i2 H3)).
       f_equal. unfold Ptrofs.add; repeat rewrite Ptrofs.unsigned_repr_eq.
       destruct H1 as [_ _ _ _ rep _].
       destruct (rep _ _ delta i H22) as [_ Hd]. {
         left. apply Mem.perm_cur_max, Mem.valid_pointer_nonempty_perm.
-        assert (0 <= 0 < n) by omega; rewrite <- (H5 0 H1); f_equal; omega.
+        assert (0 <= 0 < n) by lia; rewrite <- (H5 0 H1); f_equal; lia.
       }
       apply lt_ptr_mod in Hd.
-      rewrite Z.add_mod_idemp_r, Z.mod_small by easy. omega.
+      rewrite Z.add_mod_idemp_r, Z.mod_small by easy. lia.
     + rewrite <- (Mem.valid_pointer_inject _ _ _ _ _ _ _ H32 H1 H6).
       f_equal. unfold Ptrofs.add. repeat rewrite Ptrofs.unsigned_repr_eq.
       destruct H1 as [_ _ _ _ rep _].
@@ -166,26 +166,26 @@ Proof.
               Mem.valid_pointer_nonempty_perm.
       }
       apply lt_ptr_mod in Hd.
-      rewrite Z.add_mod_idemp_r, Z.mod_small by easy. omega.
+      rewrite Z.add_mod_idemp_r, Z.mod_small by easy. lia.
     + destruct H7.
       * destruct H3 as [? [? ?]]; subst b1 vres.
         destruct H1 as [_ _ _ _ rep _].
         destruct (rep b0 b3 delta i H22) as [_ Hp]. {
           left; apply Mem.perm_cur_max, Mem.valid_pointer_nonempty_perm.
-          destruct H5 as [_ [_ H5]]; assert (0 <= 0 < n) by omega.
+          destruct H5 as [_ [_ H5]]; assert (0 <= 0 < n) by lia.
           specialize (H5 0 H1).
-          now replace (Ptrofs.unsigned i + 0) with (Ptrofs.unsigned i) in H5 by omega.
+          now replace (Ptrofs.unsigned i + 0) with (Ptrofs.unsigned i) in H5 by lia.
         }
         destruct (rep b0 b3 delta i1 H22) as [_ Hq]. {
           left; apply Mem.perm_cur_max, Mem.valid_pointer_nonempty_perm;
-            destruct H5 as [_ [_ ?]]; assert (0 <= 0 < n) by omega.
+            destruct H5 as [_ [_ ?]]; assert (0 <= 0 < n) by lia.
           specialize (H1 0 H3); now rewrite H6.
         }
         destruct (rep b0 b3 delta i0 H22) as [_ Hr]. {
           destruct H5 as [_ [_ H5]]. rewrite <- H4.
-          assert (Hm: 0 <= n - 1 < n) by omega.
+          assert (Hm: 0 <= n - 1 < n) by lia.
           right. apply Mem.perm_cur_max, Mem.valid_pointer_nonempty_perm.
-          rewrite <- (H5 _ Hm); f_equal; omega.
+          rewrite <- (H5 _ Hm); f_equal; lia.
         }
         rewrite H22 in H32; inversion H32.
         left. split3; trivial.
@@ -193,7 +193,7 @@ Proof.
         unfold Ptrofs.add; repeat rewrite Ptrofs.unsigned_repr_eq.
         apply lt_ptr_mod in Hp; apply lt_ptr_mod in Hq; apply lt_ptr_mod in Hr.
         repeat rewrite Z.add_mod_idemp_r, Z.mod_small by easy.
-        omega.
+        lia.
       * destruct H3. right. split; trivial.
         rename m2 into m; rename m1' into m'.
         destruct H1 as [_ _ _ lap rep _].
@@ -203,38 +203,38 @@ Proof.
            unfold Ptrofs.add; repeat rewrite Ptrofs.unsigned_repr_eq.
            repeat rewrite Z.add_mod_idemp_r by easy.
            destruct H5 as [_ [_ H5]].
-           assert (0 <= 0 < n) by omega.
+           assert (0 <= 0 < n) by lia.
            pose proof (H5 _ H3).
            apply Mem.valid_pointer_nonempty_perm, Mem.perm_cur_max in H6.
            apply Mem.valid_pointer_nonempty_perm, Mem.perm_cur_max in H8.
-           replace (Ptrofs.unsigned i + 0) with (Ptrofs.unsigned i) in H8 by omega.
+           replace (Ptrofs.unsigned i + 0) with (Ptrofs.unsigned i) in H8 by lia.
            destruct (rep _ _ delta1 i1 H32) as [_ Hp]; [left; easy|].
            destruct (rep _ _ delta i H22) as [_ Hq]; [left; easy|].
            destruct (rep _ _ delta i0 H22) as [_ Hr]. {
              rewrite <- H4.
-             assert (Hm: 0 <= n - 1 < n) by omega.
+             assert (Hm: 0 <= n - 1 < n) by lia.
              specialize (H5 _ Hm).
-             replace (Ptrofs.unsigned i + (n - 1)) with (Ptrofs.unsigned i + n - 1) in H5 by omega.
+             replace (Ptrofs.unsigned i + (n - 1)) with (Ptrofs.unsigned i + n - 1) in H5 by lia.
              apply Mem.valid_pointer_nonempty_perm, Mem.perm_cur_max in H5. now right.
            }
            replace Ptrofs.max_unsigned with (Z.pred Ptrofs.modulus) in * by
-               (unfold Ptrofs.max_unsigned; omega).
+               (unfold Ptrofs.max_unsigned; lia).
            rewrite <- Z.lt_le_pred in *.
            repeat rewrite Z.mod_small by easy.
            destruct (lap _ _ _ _ _ _ _ _ H1 H22 H32 H8 H6); [contradiction|].
            clear rep Hp Hq Hr.
-           replace (Ptrofs.unsigned i) with ((Ptrofs.unsigned i - delta) + delta) in H5 by omega.
+           replace (Ptrofs.unsigned i) with ((Ptrofs.unsigned i - delta) + delta) in H5 by lia.
            assert ((Ptrofs.unsigned i1 + delta1 < Ptrofs.unsigned i + delta) \/
                    (Ptrofs.unsigned i1 + delta1 >= Ptrofs.unsigned i0 + delta) \/
                    ((Ptrofs.unsigned i1 + delta1 >= Ptrofs.unsigned i + delta) /\
-                    Ptrofs.unsigned i1 + delta1 < Ptrofs.unsigned i0 + delta)) by omega.
+                    Ptrofs.unsigned i1 + delta1 < Ptrofs.unsigned i0 + delta)) by lia.
            destruct H10; [auto | destruct H10; [auto|]].
            exfalso.
            destruct H10. rewrite <- H4 in H11.
-           assert (0 <= Ptrofs.unsigned i1 + delta1 - Ptrofs.unsigned i - delta < n) by omega.
+           assert (0 <= Ptrofs.unsigned i1 + delta1 - Ptrofs.unsigned i - delta < n) by lia.
            specialize (H5 (Ptrofs.unsigned i1 + delta1 - Ptrofs.unsigned i - delta) H12).
            apply Mem.valid_pointer_nonempty_perm, Mem.perm_cur_max in H5.
-           destruct (lap b0 b7 delta b1 b7 delta1 _ (Ptrofs.unsigned i1) H1 H22 H32 H5 H6); [auto | apply H13; omega].
+           destruct (lap b0 b7 delta b1 b7 delta1 _ (Ptrofs.unsigned i1) H1 H22 H32 H5 H6); [auto | apply H13; lia].
         -- destruct H1. subst b0 vres.
            right. rewrite H22 in H32; inversion H32.
            clear H32.
@@ -244,23 +244,23 @@ Proof.
            subst delta1.
            destruct (rep b1 b3 delta i H22) as [_ Hp]. {
              left; apply Mem.perm_cur_max, Mem.valid_pointer_nonempty_perm.
-             destruct H5 as [_ [_ H5]]; assert (H1: 0 <= 0 < n) by omega.
+             destruct H5 as [_ [_ H5]]; assert (H1: 0 <= 0 < n) by lia.
              specialize (H5 0 H1).
-             now replace (Ptrofs.unsigned i + 0) with (Ptrofs.unsigned i) in H5 by omega.
+             now replace (Ptrofs.unsigned i + 0) with (Ptrofs.unsigned i) in H5 by lia.
            }
            destruct (rep b1 b3 delta i1 H22) as [_ Hq].
            1:  now left; apply Mem.perm_cur_max, Mem.valid_pointer_nonempty_perm.
            destruct (rep b1 b3 delta i0 H22) as [_ Hr]. {
              destruct H5 as [_ [_ H5]]. rewrite <- H4.
-             assert (Hm: 0 <= n - 1 < n) by omega.
+             assert (Hm: 0 <= n - 1 < n) by lia.
              right. apply Mem.perm_cur_max, Mem.valid_pointer_nonempty_perm.
-             rewrite <- (H5 _ Hm); f_equal; omega.
+             rewrite <- (H5 _ Hm); f_equal; lia.
            }
            clear - H3 Hp Hq Hr.
            apply lt_ptr_mod in Hp; apply lt_ptr_mod in Hq; apply lt_ptr_mod in Hr.
            repeat rewrite Z.mod_small by easy.
-           destruct H3; [left | right]; omega.
-  - intros. destruct H as [_ [? _]]. subst t. simpl. omega.
+           destruct H3; [left | right]; lia.
+  - intros. destruct H as [_ [? _]]. subst t. simpl. lia.
   - intros. generalize H. destruct H as [_ [? _]]. subst t1.
     inversion H0. subst t2. clear H0. intro H.
     exists vres1, m1. apply H.
@@ -333,7 +333,7 @@ Proof.
     specialize (v ofs H).
     assert (inject_id b = Some (b, 0)) by now unfold inject_id.
     specialize (mi_perm _ _ _ ofs Cur Nonempty H0).
-    replace (ofs + 0) with ofs in mi_perm by omega.
+    replace (ofs + 0) with ofs in mi_perm by lia.
     apply (mi_perm v).
   - intros. exists f, vres, m1'.
     destruct H0 as [? [? ?]]. subst.
@@ -358,7 +358,7 @@ Proof.
       destruct (Ptrofs.eq Ptrofs.one (Ptrofs.modu i (Ptrofs.repr 2))) eqn:parity1; [contradiction|].
       destruct (valid_b_o_So_dec m2 b i); [|contradiction].
       assert (OF: Ptrofs.unsigned (Ptrofs.add i (Ptrofs.repr delta)) = Ptrofs.unsigned i + delta).
-        { eapply Mem.address_inject; eauto. apply v. omega. }
+        { eapply Mem.address_inject; eauto. apply v. lia. }
         assert (AL: (2 | delta)).
         { change 2 with (align_chunk Mint16unsigned).
           clear - H10 v H1.
@@ -372,7 +372,7 @@ Proof.
           unfold Mem.range_perm in v.
           specialize (v (Ptrofs.unsigned i)).
           apply Mem.perm_cur_max in v. auto.
-          omega. apply lt_ptr_mod in rep. assumption.
+          lia. apply lt_ptr_mod in rep. assumption.
         }
         clear - parity1 parity2 AL H0.
         rewrite <- Bool.not_false_iff_true in parity2.
@@ -385,15 +385,15 @@ Proof.
         rewrite Z.add_mod_idemp_r, (Z.mod_small (Ptrofs.unsigned i + delta) _) by easy.
         rewrite <- parity1. do 2 f_equal.
         rewrite <- Z.add_mod_idemp_r, (Znumtheory.Zdivide_mod delta 2) by easy.
-        now replace (Ptrofs.unsigned i + 0) with (Ptrofs.unsigned i) by omega.
+        now replace (Ptrofs.unsigned i + 0) with (Ptrofs.unsigned i) by lia.
       * destruct (valid_b_o_So_dec m1' b2 (Ptrofs.add i (Ptrofs.repr delta))); auto.
         destruct n.
         assert (inj := H1).
         destruct H1 as [[? _ _] _ _ _ rep _].
         unfold valid_b_o_So in *.
-        rewrite OF. replace (Ptrofs.unsigned i + delta + 2) with ((Ptrofs.unsigned i + 2) + delta) by omega.
+        rewrite OF. replace (Ptrofs.unsigned i + delta + 2) with ((Ptrofs.unsigned i + 2) + delta) by lia.
   eapply Mem.range_perm_inject; eauto.
-  - destruct H as [_ [? _]]. subst t. simpl; omega.
+  - destruct H as [_ [? _]]. subst t. simpl; lia.
   - generalize H. destruct H as [_ [? _]].
     subst t1; inversion H0; subst t2.
     intro H; exists vres1, m1; apply H.

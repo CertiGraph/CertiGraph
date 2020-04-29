@@ -29,15 +29,15 @@ Defined.
 Instance sMSLdirect : StaticMapstoSepLog AbsAddr_world mapsto.
 Proof.
   apply mkStaticMapstoSepLog; simpl; intros.
-  + hnf in H. simpl in H. unfold adr_conflict in H. destruct (eq_nat_dec p p).
+  + hnf in H. simpl in H. unfold adr_conflict in H. destruct (NPeano.Nat.eq_dec p p).
     - inversion H.
     - exfalso; tauto.
   + apply mapsto_conflict.
     unfold adr_conflict in H.
-    destruct (eq_nat_dec p1 p2); congruence.
+    destruct (NPeano.Nat.eq_dec p1 p2); congruence.
   + apply disj_mapsto_.
     unfold adr_conflict in H.
-    destruct (eq_nat_dec p1 p2); congruence.
+    destruct (NPeano.Nat.eq_dec p1 p2); congruence.
 Defined.
 
 Instance nMSLdirect : NormalMapstoSepLog AbsAddr_world mapsto.
