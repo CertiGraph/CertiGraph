@@ -1568,7 +1568,8 @@ So this pop operation maintains inv_popped for u.
                         split.
                         1: { intro. assert (In_path g src p2u). {
                                left. destruct H60 as [_ [[? _] _]].
-                               destruct p2u. now simpl in H60 |- *. } specialize (H61 _ H64).
+                               destruct p2u. now simpl in H60 |- *. }
+                             specialize (H61 _ H64).
                              now subst. }
                         exists p2u.
                         split3; [| |split3; [| |split3]]; trivial.
@@ -1608,16 +1609,30 @@ So this pop operation maintains inv_popped for u.
                             destruct H60 as [_ [_ [_ [? _]]]].
                             omega.
                         *** intros.
+                            rewrite upd_Znth_same in H59 by omega.
+                            
+                            
+
+                            
+
+                            
+
+                            
                             (* This is another key point in the proof:
                     we must show that the path via u is
                     better than all other paths via
                     other popped verices *)
                             assert (path_corr := H63).
-                            destruct H63 as [? [? [? [? ?]]]]. 
+                            destruct H63 as [? [? [? [? ?]]]].
                             destruct (Z.eq_dec (Znth i priq_contents') inf).
-                            ---- (* i was unseen *)
+
+                            
+                            ----  (* i was unseen *)
                               assert (i <= i < SIZE) by omega.
                               destruct (H25 _ H70 e).
+                              clear H71 H72.
+                              assert (H71 : True) by admit.
+                              assert (H72: True) by admit.
                               destruct (Z.eq_dec mom' u).
                               1: {
                                 subst mom'.
@@ -1680,7 +1695,7 @@ So this pop operation maintains inv_popped for u.
                               }
                              rewrite <- H74.
 
-                              assert (Znth i dist_contents' < careful_add (Znth mom' dist_contents') (Znth i (Znth mom' (graph_to_mat g)))) by admit. (* invariant *)
+                              assert (Znth i dist_contents' <= careful_add (Znth mom' dist_contents') (Znth i (Znth mom' (graph_to_mat g)))) by admit. (* invariant *)
                               unfold VType in *. 
                               omega.
                               
@@ -1844,7 +1859,50 @@ specialize (H85 mom' optimalp2mom' H74 H86 H76rem).
 Add to invariants? This is actually true of all vertices, 
 no matter what class of poppedness they're in!
  *)
-                                  assert (Znth i dist_contents' <=   path_cost g optimalp2mom' + Znth i (Znth mom' (graph_to_mat g))) by admit.
+                                  assert (Znth i dist_contents' <= careful_add (path_cost g p2mom') (Znth i (Znth mom' (graph_to_mat g)))). {
+                                    assert (i <= i < SIZE) by omega.
+                                    destruct (H23 _ H77 H70)
+                                    as [x [? [? [? [? [? [? ?]]]]]]].
+                                    rewrite <- H83 in H84.
+                                    apply H84; trivial.
+                                    - split3; [| |split3]; trivial.
+                                      destruct path_corr as [_ [_ [_ [? _]]]].
+                                      rewrite upd_Znth_diff in H85; trivial.
+                                      admit. omega.
+                                      intro.
+                                      rewrite H86 in H72.
+                                      rewrite get_popped_meaning in H72.
+                                      omega.
+                                      omega.
+                                      rewrite Forall_forall.
+                                      intros.
+                                      rewrite Forall_forall in H69.
+                                      specialize (H69 _ H85).
+                                      rewrite upd_Znth_diff in H69; trivial.
+                                      replace (Zlength prev_contents') with SIZE by omega.
+                                      apply (step_in_range2 g p2mom' x0); trivial.
+                                      omega.
+                                      intro.
+                                      admit. (* easy *)
+                                    - 
+}
+
+
+
+                                      
+                                      
+                                      omega.
+
+                                      
+                                      omega.
+                                      
+                                      
+                                    
+                                    
+                                    
+
+
+                                    by admit.
                                   
 
  
