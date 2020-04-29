@@ -2,96 +2,23 @@ Require Import VST.floyd.proofauto.
 Require Import RamifyCoq.sample_mark.dijk_pq_arr_macros.
 Require Import RamifyCoq.sample_mark.priorityqueue.
 Require Import RamifyCoq.sample_mark.priq_utils.
+Require Import RamifyCoq.sample_mark.dijk_pq_arr_spec.
 
-Instance CompSpecs : compspecs. Proof. make_compspecs prog. Defined.
-Definition Vprog : varspecs. mk_varspecs prog. Defined.
-Global Existing Instance CompSpecs.
+(* We must use the CompSpecs and Vprog that were
+   centrally defined in dijksta's environment. 
+   This lets us be consistent and call PQ functions in Dijkstra. 
+ *)
 
-(** MACROS **)
+Local Definition CompSpecs := env_dijkstra_arr.CompSpecs.
+Local Definition Vprog := env_dijkstra_arr.Vprog.
 
 Lemma inf_eq2: Int.sub (Int.repr 2147483647)
                        (Int.divs (Int.repr 2147483647)
                                  (Int.repr SIZE)) = Int.repr inf.
 Proof. compute. trivial. Qed.
 
-(** SPECS **)
-
-(*
-Definition push_spec :=
-  DECLARE _push
-  WITH pq: val, vertex : Z, weight : Z, priq_contents: list Z
-  PRE [tint, tint, tptr tint]
-  PROP (0 <= vertex < SIZE)
-  PARAMS (Vint (Int.repr vertex);
-          Vint (Int.repr weight);
-          pq)
-  GLOBALS ()
-  SEP (data_at Tsh (tarray tint SIZE) (map Vint (map Int.repr priq_contents)) pq)
-  POST [tvoid]
-  PROP ()
-  LOCAL ()
-  SEP (data_at Tsh (tarray tint SIZE)
-               (upd_Znth vertex
-                  (map Vint (map Int.repr priq_contents)) (Vint (Int.repr weight))) pq).
- *)
-
-Definition pq_emp_spec :=
-  DECLARE _pq_emp
-  WITH pq: val, priq_contents: list Z
-  PRE [tptr tint]
-   PROP (inrange_priq priq_contents)
-   PARAMS (pq)
-   GLOBALS ()
-   SEP (data_at Tsh (tarray tint SIZE) (map Vint (map Int.repr priq_contents)) pq)
-  POST [ tint ]
-   PROP ()
-   LOCAL (temp ret_temp (isEmpty priq_contents))
-   SEP (data_at Tsh (tarray tint SIZE) (map Vint (map Int.repr priq_contents)) pq).
-
-(*
-Definition adjustWeight_spec :=
-  DECLARE _adjustWeight
-  WITH pq: val, vertex : Z, newWeight : Z, priq_contents: list Z
-  PRE [tint, tint, tptr tint]
-  PROP (0 <= vertex < SIZE)
-  PARAMS (Vint (Int.repr vertex);
-          Vint (Int.repr newWeight);
-          pq)
-  GLOBALS ()
-  SEP (data_at Tsh (tarray tint SIZE) (map Vint (map Int.repr priq_contents)) pq)
-  POST [tvoid]
-  PROP ()
-  LOCAL ()
-  SEP (data_at Tsh (tarray tint SIZE)
-               (upd_Znth vertex
-                  (map Vint (map Int.repr priq_contents)) (Vint (Int.repr newWeight))) pq).
- *)
-
-Definition popMin_spec :=
-  DECLARE _popMin
-  WITH pq: val, priq_contents: list Z
-  PRE [tptr tint]
-   PROP (inrange_priq priq_contents;
-        isEmpty priq_contents = Vzero)
-   PARAMS (pq)
-   GLOBALS ()
-   SEP   (data_at Tsh (tarray tint SIZE) (map Vint (map Int.repr priq_contents)) pq)
-  POST [ tint ]
-   EX rt : Z,
-   PROP (rt = find priq_contents (fold_right Z.min (hd 0 priq_contents) priq_contents) 0)
-   LOCAL (temp ret_temp  (Vint (Int.repr rt)))
-   SEP   (data_at Tsh (tarray tint SIZE) (upd_Znth
-                                            (find priq_contents (fold_right Z.min (Znth 0 priq_contents) priq_contents) 0)
-                                            (map Vint (map Int.repr priq_contents)) (Vint (Int.repr (inf+1)))) pq).
-
-(* Definition Gprog : funspecs := ltac:(with_library prog [push_spec; pq_emp_spec; adjustWeight_spec; popMin_spec]). *)
-
-Definition Gprog : funspecs := ltac:(with_library prog [pq_emp_spec; popMin_spec]).
-
-(** PROOFS **)
-
-(* Lemma body_push: semax_body Vprog Gprog f_push push_spec. *)
-(* Proof. start_function. forward. entailer!. Qed. *)
+Lemma body_push: semax_body Vprog Gprog f_push push_spec.
+Proof. start_function. forward. entailer!. Qed.
 
 Lemma body_pq_emp: semax_body Vprog Gprog f_pq_emp pq_emp_spec.
 Proof.
@@ -104,7 +31,7 @@ Proof.
      SEP (data_at Tsh (tarray tint SIZE) (map Vint (map Int.repr priq_contents)) pq)).
   - unfold SIZE; rep_omega.
   - unfold SIZE; rep_omega.
-  - entailer!.
+  - entailer!. 
   - simpl.
     assert_PROP (Zlength priq_contents = SIZE). {
       entailer!. repeat rewrite Zlength_map in H3; auto.
@@ -139,8 +66,8 @@ Proof.
     symmetry. apply isEmpty_prop_val; trivial.
 Qed.
 
-(* Lemma body_adjustWeight: semax_body Vprog Gprog f_adjustWeight adjustWeight_spec. *)
-(* Proof. start_function. forward. entailer!. Qed. *)
+Lemma body_adjustWeight: semax_body Vprog Gprog f_adjustWeight adjustWeight_spec.
+Proof. start_function. forward. entailer!. Qed.
 
 Lemma body_popMin: semax_body Vprog Gprog f_popMin popMin_spec.
 Proof.
