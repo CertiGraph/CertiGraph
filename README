@@ -1,31 +1,36 @@
-HOW TO SET UP YOUR ENVIRMENT
+HOW TO SET UP YOUR ENVIRONMENT
 
 1. Download and Unpack
-1.1. Download CompCert 3.5 or clone it from the repository and unpack it into your CompCert folder.
-1.2. Download VST of master branch and unpack it into your VST folder.
-1.3. Download RamifyCoq and unpack it into your Ramify folder.
-1.4. It is not necessary for your folder names to be CompCert, VST and/or Ramify, you can feel free to name them in your own way.
+1.1. Clone CompCert [optional, if you plan to use clightgen]
+1.2. Clone VST
+1.3. Clone RamifyCoq
+1.4. Your life will be a bit easier if these three are in sibling directories
+     named CompCert, VST, and RamifyCoq. 
 
-2. Build CompCert
-2.1. Run "./configure" in your CompCert folder.
-2.2. Run "make all" and "make clightgen" in your CompCert folder.
+2. Build CompCert [optional, if you plan to use clightgen]
+In CompCert/
+2.1. make clean
+2.2 ./configure -clightgen {your_operating_system}  
+    see CompCert/configure for the OS options you have
+2.2. make -j7
 
 2. Build VST
-2.1. Create a file CONFIGURE in your VST folder with two lines of text in it: "COMPCERT=[Your CompCert Folder]" and "LIBPREFIX=VST"
-2.2. If this is the first time you use VST, you can ignore this line. Do "make clean" in your VST folder.
-2.3. Run "make -j3" or "make -j7" to build VST.
+In VST/
+2.1. make clean
+2.2. make -j7
 
 3. Build RamifyCoq
-3.1. Create a file CONFIGURE in your RamifyCoq folder with these two lines in it:
-       COMPCERT_DIR=[Your CompCert Folder]
-       VST_DIR=[Your VST Folder]
-3.2. Run "make all" in your RamifyCoq folder.
+In RamifyCoq/
+3.1. Create a file CONFIGURE in your RamifyCoq folder with (only) these two lines in it:
+COMPCERT_DIR=../VST/compcert
+VST_DIR=../VST 
+3.2. make clean
+3.3. make -j7 
 
-4. Set up your ProofGeneral Environment.
+4. Set up your ProofGeneral Environment [optional]
 4.1. Install ProofGeneral in your computer.
 4.2. Add ProofGeneral into your emacs setting files.
-4.3. Add these two paragragh into your emacs setting files.
-
+4.3. Add these two paragraghs into your emacs setting files.
 (custom-set-variables '(coq-prog-args '(
 "-R" "[Your CompCert Folder]" "-as" "compcert" 
 "-R" "[Your VST Folder]" "-as" "VST" 
@@ -35,4 +40,13 @@ HOW TO SET UP YOUR ENVIRMENT
                       ("[Your VST Folder]" "VST")
                       ("[Your RamifyCoq Folder]" "RamifyCoq")))
 
-5. Done. You can play with RamifyCoq now.
+5. You can play with RamifyCoq as it stands.
+
+6. Developing Inside RamifyCoq
+6.1. Write your newfile.c inside RamifyCoq.
+6.2. {path_to_compcert}/CompCert/clightgen -DCOMPCERT -normalize -isystem . newfile.c
+6.3. Open RamifyCoq/Makefile and add newfile.v to the list of sources
+6.4. In RamifyCoq/, make depend (this is for every time you edit the makefile)
+6.5. In RamifyCoq/, {path_to_newfile.c}/newfile.vo (note the .vo)
+6.6. Create verif_newfile.v. Something like "Require Import RamifyCoq.path.path.newfile." will now work.
+6.7. Don't forget to check that your VCS is tracking these files you just created.
