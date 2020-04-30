@@ -1608,97 +1608,87 @@ So this pop operation maintains inv_popped for u.
                         *** rewrite upd_Znth_same by omega.
                             destruct H60 as [_ [_ [_ [? _]]]].
                             omega.
-                        *** intros.
+                        *** intros. 
                             rewrite upd_Znth_same in H59 by omega.
-                            
-                            
-
-                            
-
-                            
-
-                            
-                            (* This is another key point in the proof:
-                    we must show that the path via u is
-                    better than all other paths via
-                    other popped verices *)
-                            assert (path_corr := H63).
-                            destruct H63 as [? [? [? [? ?]]]].
-                            destruct (Z.eq_dec (Znth i priq_contents') inf).
-
-                            
-                            ----  (* i was unseen *)
-                              assert (i <= i < SIZE) by omega.
-                              destruct (H25 _ H70 e).
-                              clear H71 H72.
-                              assert (H71 : True) by admit.
-                              assert (H72: True) by admit.
-                              destruct (Z.eq_dec mom' u).
-                              1: {
-                                subst mom'.
-                                (* use path_globally_optimal
-                        of u to prove that first
-                        is le first. then done.
-                                 *)
-                                unfold path_globally_optimal in H62.
-                                specialize (H62 _ H63 H66).
-                                rewrite careful_add_clean.
-                                1: omega.
-                                1: apply path_cost_pos; trivial.
-                                2: {
-                                  rewrite upd_Znth_same in H59 by omega.
-                                  remember (path_cost g p2mom') as pc.
-                                  rewrite upd_Znth_diff in H68 by omega.
-                                    unfold VType in *.
-                                    omega.
-                                } 
-                                red in H1.
-                                rewrite graph_to_mat_Zlength in H1.
-                                replace (Zlength priq_contents) with SIZE in H16.
-                                specialize (H1 _ _ H18 H16).
-                                destruct H1; omega.
-                              }
-                              assert (In_path g mom' p2mom'). {
-                                destruct H66.
-                                apply pfoot_in in H73. trivial.
-                              }
-                              specialize (H64 _ H73).
-                              rewrite <- get_popped_irrel_upd in H64; try omega; trivial.
-                              2: { apply get_popped_range in H64.
-                                   rewrite upd_Znth_Zlength in H64;
-                                     omega.
-                              }
-                              2: { intro. rewrite H74 in H64.
-                                   rewrite get_popped_meaning in H64.
-                                   rewrite upd_Znth_same in H64; omega.
-                                   rewrite upd_Znth_Zlength; omega.
-                              }
-                              rewrite upd_Znth_same in H59 by omega.
-                              destruct H60 as [_ [_ [_ [? _]]]].
-                              rewrite <- H60.
+ (* This is another key point in the proof:
+    we must show that the path via u is
+    better than all other paths via
+    other popped verices *)
+                            (*
+                            destruct (Z.eq_dec mom' u).
+                            1: {
+                              subst mom'.
+                              (* use path_globally_optimal
+                                 of u to prove that first
+                                 is le first. then done.
+                               *)
+                              unfold path_globally_optimal in H62.
+                              specialize (H62 _ H63 H66).
+                              rewrite careful_add_clean.
+                              1: omega.
+                              1: apply path_cost_pos; trivial.
+                              2: {
+                                rewrite upd_Znth_same in H59 by omega.
+                                remember (path_cost g p2mom') as pc.
+                                rewrite upd_Znth_diff in H68 by omega.
+                                unfold VType in *.
+                                omega.
+                              } 
+                              red in H1.
+                              rewrite graph_to_mat_Zlength in H1.
+                              replace (Zlength priq_contents) with SIZE in H16.
+                              specialize (H1 _ _ H18 H16).
+                              destruct H1; omega.
+                            }
+                             *)
+                            (*
+                            assert (In_path g mom' p2mom'). {
+                              destruct H63 as [_ [? _]].
+                              destruct H63.
+                              apply pfoot_in in H66. trivial.
+                            }
+                             *)
+                            (*
+                            specialize (H64 _ H66).
+                            rewrite <- get_popped_irrel_upd in H64;
+                              try omega; trivial.
+                            2: { replace (Zlength priq_contents') with SIZE by omega.
+                                 destruct H63.
+                                 apply (vvalid_range g); trivial.
+                                 apply (valid_path_valid g p2mom'); trivial.
+                            }
+                            2: { intro. subst mom'.
+                                 rewrite get_popped_meaning in H64.
+                                 rewrite upd_Znth_same in H64; omega.
+                                 rewrite upd_Znth_Zlength; omega.
+                            }
+                             *)
+                              
   (* see H43: Znth u dist_contents' + Znth i (Znth u (graph_to_mat g)) < Znth i dist_contents'
      further, we know that for all popped items like mom', 
      Znth i dist_contents' < Znth mom' dist_contents' + (mom', i).
    *)
-                              destruct path_corr as [_ [_ [_ [? _]]]].
-                              rewrite upd_Znth_diff in H74.
-                              2: { replace (Zlength dist_contents') with SIZE by omega.
-                                   destruct H2 as [? _].
-                                   red in H2.
-                                   rewrite <- H2.
-                                   apply (valid_path_valid g p2mom'); trivial.
-                              }
-                              2: omega.
-                              2: { intro.
-                                   rewrite H75 in H64.
-                                   rewrite get_popped_meaning in H64. omega. omega.
-                              }
-                             rewrite <- H74.
-
-                              assert (Znth i dist_contents' <= careful_add (Znth mom' dist_contents') (Znth i (Znth mom' (graph_to_mat g)))) by admit. (* invariant *)
-                              unfold VType in *. 
-                              omega.
-                              
+                            (*
+                            destruct path_corr as [_ [_ [_ [? _]]]].
+                            rewrite upd_Znth_diff in H74.
+                            2: { replace (Zlength dist_contents') with SIZE by omega.
+                                 destruct H2 as [? _].
+                                 red in H2.
+                                 rewrite <- H2.
+                                 apply (valid_path_valid g p2mom'); trivial.
+                            }
+                            2: omega.
+                            2: { intro.
+                                 rewrite H75 in H64.
+                                 rewrite get_popped_meaning in H64. omega. omega.
+                            }
+                            rewrite <- H74.
+                            
+                            assert (Znth i dist_contents' <= careful_add (Znth mom' dist_contents') (Znth i (Znth mom' (graph_to_mat g)))) by admit. (* invariant *)
+                            unfold VType in *. 
+                            omega.
+                             *)
+                            (*
                             ----  (* now we know that i was
                           seen, but unpopped *)
                               assert (Znth i priq_contents' < inf). {
@@ -1708,6 +1698,7 @@ So this pop operation maintains inv_popped for u.
                                 rewrite get_popped_meaning in H44.
                                 omega. omega.
                               }
+                              *)
 
 (*
 Denote the old dist[i] as old-shortest-to-i.
@@ -1715,7 +1706,7 @@ So the known conditions are:
 
 H43: dist[u] + graph[u][i] < old-shortest-to-i
 
-H70: i is an unpopped vertex.
+H44: i is an unpopped vertex.
 
 Now we prove for any other path p' which is from s to i
 and composed by popped vertices (including u),
@@ -1723,40 +1714,43 @@ dist[u] + graph[u][i] <= path_cost p'.
 
 There are two cases about p': In u p' \/ ~ In u p'
  *)
-                              destruct (in_dec (ZIndexed.eq) u (epath_to_vpath g p2mom')).
-                              ++++ (* Yes, the path p2mom' goes via u *) 
-                                (*
+                            destruct (in_dec (ZIndexed.eq) u (epath_to_vpath g p2mom')).
+                            ++++ (* Yes, the path p2mom' goes via u *) 
+                              (*
   1. In u p': p' is the path from s to i.
   Consider the vertex k which is
   just before i. Again, there are two cases:
   k = u \/ ~ k = u.
                                  *)
-                                destruct (Z.eq_dec mom' u).
-                                ****
-                                  (*
+                              destruct (Z.eq_dec mom' u).
+                              1: {
+                                (*
         1.1 k = u: path_cost p' = path_cost [s to u] + graph[u][i].
         As we know, u is just popped, dist[u] is the
         global optimal, so dist[u] <= path_cost [s to u],
         so dist[u] + graph[u][i] <= path_cost p'.
-                                   *)
-                                  subst mom'.
-                                  unfold path_globally_optimal in H62.
-                                  specialize (H62 _ H63 H66).
-                                  rewrite careful_add_clean; try omega; trivial.
-                                  apply path_cost_pos; trivial.
-                                  rewrite upd_Znth_same in H59 by omega.
-                                  rewrite upd_Znth_diff in H68 by omega.
-                                  rewrite <- H68; omega.
-
-                                ****
-                                  apply in_path_eq_epath_to_vpath in i0; trivial.
+        DONE
+                                 *)
+                                subst mom'.
+                                unfold path_globally_optimal in H62.
+                                destruct H63 as [? [? [? [? ?]]]].
+                                specialize (H62 _ H63 H66).
+                                rewrite careful_add_clean; try omega; trivial.
+                                1: apply path_cost_pos; trivial.
+                                rewrite upd_Znth_diff in H68 by omega.
+                                rewrite <- H68; omega.
+                              }
+                              
+                              
+                              apply in_path_eq_epath_to_vpath in i0.
+                              2: destruct H63; trivial.
 
 (*
   1.2 ~ k = u: 
   
   p' can conceptually be split up as:
   path s to u ++ path u to k + edge k i.
- *)
+ *) 
                                                                     
 (*
   Since p' is composed by popped vertex
@@ -1766,71 +1760,51 @@ There are two cases about p': In u p' \/ ~ In u p'
   and the global optimal path from s to k is
   composed by popped vertices only. 
  *)
-                                  
-                                  assert (In_path g mom' p2mom'). {
-                                    destruct H66.
-                                    apply pfoot_in in H71.
-                                    trivial.
-                                  }
-                                  assert (In mom' (get_popped priq_contents')). {
-                                    specialize (H64 _ H71).
-                                    rewrite get_popped_unchanged in H64; auto; omega.
-                                  }
-                                  unfold VType in *.
-                                  unfold path_globally_optimal in H62.
-                                  destruct (H21 mom' H72) as [optimalp2mom' [? [? ?]]].
-                                  assert (H75rem := H75).
-                                  unfold path_globally_optimal in H75.
+                              
+                              assert (In_path g mom' p2mom'). {
+                                destruct H63 as [_ [[_ ?] _]].
+                                apply pfoot_in in H63.
+                                trivial.
+                              }
+                              assert (mom' <> i). {
+                                intro.
+                                specialize (H64 _ H66).
+                                rewrite H67 in H64.
+                                rewrite get_popped_meaning, upd_Znth_same in H64; [| | rewrite upd_Znth_Zlength]; omega.
+                              }
+                              assert (vvalid g mom'). {
+                                destruct H63.
+                                apply (valid_path_valid g p2mom'); trivial.
+                              }
+                              assert (In mom' (get_popped priq_contents')). {
+                                specialize (H64 _ H66).
+                                rewrite <- get_popped_irrel_upd in H64; auto; try omega.
+                                replace (Zlength priq_contents') with SIZE by omega.
+                                apply (vvalid_range g); trivial.
+                              }
+                              assert (vvalid g i). {
+                                destruct H2 as [? _].
+                                red in H2; rewrite H2; trivial.
+                              }
+                              destruct H63 as [? [? [? [? ?]]]].
+                              rewrite upd_Znth_diff in H73; trivial.
+                              2,3: replace (Zlength dist_contents') with SIZE by omega; apply (vvalid_range g); trivial.
 
-                                  pose proof (H75 _ H63 H66).
-  (* done, see H77 *)
+ (*   dist[k] <= path_cost [s to u] + path_cost [u to k]
+  and the global optimal path from s to k is
+  composed by popped vertices only. 
+  DONE
+  *)
+
                                   
-                                  destruct (zlt (path_cost g p2mom' + Znth i (Znth mom' (graph_to_mat g))) inf).
-                                  2: {
-                                    unfold VType in *.
-                                    destruct H60 as [_ [_ [_ [? _]]]].
-                                    rewrite <- H60.
-                                    destruct (zlt (Znth i (Znth mom' (graph_to_mat g))) inf).
-                                    - rewrite careful_add_dirty; trivial.
-                                      rewrite upd_Znth_same in H59 by omega.                                      omega.
-                                    - unfold careful_add.
-                                      destruct (path_cost g p2mom' =? 0) eqn:?.
-                                      + rewrite Z.eqb_eq in Heqb.
-                                        unfold VType in *.
-                                        rewrite Heqb. simpl.
-                                        omega.
-                                      + unfold VType in *.
-                                        rewrite Heqb.
-                                        rewrite if_false_bool.
-                                        rewrite if_false_bool.
-                                        rewrite if_true_bool. omega.
-                                        rewrite Z.leb_le. omega.
-                                        rewrite orb_false_iff; split; rewrite Z.ltb_nlt.
-                                        pose proof (path_cost_pos g p2mom' H2 H63 H1).
-                                        unfold VType in *.
-                                        omega.
-                                        omega.
-                                        rewrite Z.eqb_neq. omega.
-                                  }
-                                  rewrite careful_add_clean; trivial.
-                                  2: apply path_cost_pos; trivial.
-                                  2: { assert (evalid g (mom', i)). {
-                                         apply vvalid2_evalid; trivial.
-                                         - apply (valid_path_valid g p2mom'); trivial.
-                                         - destruct H2 as [? _]. red in H2.
-                                           rewrite H2; trivial.
-                                       }
-                                    rewrite <- elabel_Znth_graph_to_mat; trivial.
-                                    apply inrange_graph_cost_pos; trivial.
-                                  }
-                                  clear l.
   (*
     Thus dist[k] + len(edge k i) <= path_cost (path s to u ++ path u to k) + len (edge k i)
-                                 <= path_cost p'.
+                                  = path_cost p'.
    *)
-                                   
-                                  apply (Zplus_le_compat_r _ _ (Znth i (Znth mom' (graph_to_mat g)))) in H76.
-                                  (* done, see H76 *)
+                              (* done, just proved equal in
+                                 goal. can throw away the 
+                                 careful_add easily.
+                               *)
                                   
  
 (*
@@ -1859,7 +1833,16 @@ specialize (H85 mom' optimalp2mom' H74 H86 H76rem).
 Add to invariants? This is actually true of all vertices, 
 no matter what class of poppedness they're in!
  *)
-                                  assert (Znth i dist_contents' <= careful_add (path_cost g p2mom') (Znth i (Znth mom' (graph_to_mat g)))). {
+                              assert (Znth i dist_contents' <= careful_add (path_cost g p2mom') (Znth i (Znth mom' (graph_to_mat g)))) by admit.
+                              (* this should come from an inv
+                                 but is not possible rn *)
+                              (* need to try and remove step <> u
+                                 from inv_unpopped_weak
+                               *)
+
+                              (*
+                              
+                              {
                                     assert (i <= i < SIZE) by omega.
                                     destruct (H23 _ H77 H70)
                                     as [x [? [? [? [? [? [? ?]]]]]]].
@@ -1884,27 +1867,9 @@ no matter what class of poppedness they're in!
                                       omega.
                                       intro.
                                       admit. (* easy *)
-                                    - 
+                                    - admi
 }
-
-
-
-                                      
-                                      
-                                      omega.
-
-                                      
-                                      omega.
-                                      
-                                      
-                                    
-                                    
-                                    
-
-
-                                    by admit.
-                                  
-
+*)
  
 (*
   So we still have 
@@ -1913,11 +1878,9 @@ no matter what class of poppedness they're in!
   dist[k] + len(edge k i) <=
   path_cost p'.
  *)
-
-                                  apply Z.le_trans with (m:= path_cost g optimalp2mom' + Znth i (Znth mom' (graph_to_mat g))); trivial.
-                                  apply Z.le_trans with (m:= Znth i dist_contents'); trivial.
-                                  destruct H60 as [_ [_ [_ [? _]]]].
-                                  omega.
+                              unfold VType in *.
+                              destruct H60 as [_ [_ [_ [? _]]]].
+                              omega.
                               ++++
 
                                 (*
@@ -1929,9 +1892,22 @@ no matter what class of poppedness they're in!
   dist[u] + graph[u][i] <= path_cost p'.
                                  *)
 
+                                admit.
+
+                                (*
+                                
+
+                                
+
+                                
+
+                                  
+
+                                
+
                                 assert (Znth i dist_contents' <= careful_add (path_cost g p2mom') (Znth i (Znth mom' (graph_to_mat g)))). {
                                   assert (i <= i < SIZE) by omega.
-                                  destruct (H23 i H71 H70) as [x [? [? [? [? [? [? ?]]]]]]].
+                                  destruct (H23 i H66 H70) as [x [? [? [? [? [? [? ?]]]]]]].
                                   rewrite <- H77 in H78.
                                   apply H78; trivial.
                                   - unfold path_correct.
@@ -2013,7 +1989,7 @@ no matter what class of poppedness they're in!
                                 }
                                 apply Z.le_trans with (m := Znth i dist_contents'); trivial.
                                 destruct H60 as [_ [_ [_ [? _]]]].
-                                rewrite <- H60; omega.
+                                rewrite <- H60; omega. *)
                     +++ assert (0 <= dst < i) by omega.
                         (* We will proceed using the
                 old best-known path for dst *)
