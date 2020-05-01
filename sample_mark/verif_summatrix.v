@@ -14,7 +14,7 @@ Definition sum_list (l : list Z) : Z :=
 
 Lemma sum_list_app:
   forall a b, sum_list (a++b) = sum_list a + sum_list b.
-Proof. intros. induction a; simpl; omega. Qed.
+Proof. intros. induction a; simpl; lia. Qed.
 
 (* Functional spec of this program *)
 Definition sum_mat (m : list (list Z)) : Z := 
@@ -23,7 +23,7 @@ Definition sum_mat (m : list (list Z)) : Z :=
 Lemma sum_mat_app:
   forall a b, sum_mat (a++b) =  sum_mat a + sum_mat b.
 Proof.
-  intros. induction a; unfold sum_mat in *; simpl; [|rewrite IHa]; omega.
+  intros. induction a; unfold sum_mat in *; simpl; [|rewrite IHa]; lia.
 Qed.
 
 Fixpoint Z_inc_list (n: nat) : list Z :=
@@ -36,13 +36,13 @@ Lemma Z_inc_list_length: forall n, Zlength (Z_inc_list n) = Z.of_nat n.
 Proof.
   intros. induction n. trivial.
   simpl Z_inc_list. rewrite Zlength_app. rewrite IHn.
-  rewrite Nat2Z.inj_succ. unfold Zlength. simpl. omega.
+  rewrite Nat2Z.inj_succ. unfold Zlength. simpl. lia.
 Qed.
 
 Lemma Z_inc_list_in_iff: forall n v, List.In v (Z_inc_list n) <-> 0 <= v < Z.of_nat n.
 Proof.
   induction n; intros; [simpl; intuition|]. rewrite Nat2Z.inj_succ. unfold Z.succ. simpl. rewrite in_app_iff.
-  assert (0 <= v < Z.of_nat n + 1 <-> 0 <= v < Z.of_nat n \/ v = Z.of_nat n) by omega. rewrite H. clear H. rewrite IHn. simpl. intuition.
+  assert (0 <= v < Z.of_nat n + 1 <-> 0 <= v < Z.of_nat n \/ v = Z.of_nat n) by lia. rewrite H. clear H. rewrite IHn. simpl. intuition.
 Qed.
 
 Lemma Z_inc_list_eq: forall i len,
@@ -50,13 +50,13 @@ Lemma Z_inc_list_eq: forall i len,
     i = Znth i (Z_inc_list len).
 Proof.
   intros. generalize dependent i. induction len.
-  1: intros; exfalso; destruct H; rewrite Nat2Z.inj_0 in H0; omega.
+  1: intros; exfalso; destruct H; rewrite Nat2Z.inj_0 in H0; lia.
   intros. simpl. rewrite Nat2Z.inj_succ in H. destruct H.
   apply Zlt_succ_le in H0. apply Zle_lt_or_eq in H0. destruct H0.
-  - rewrite app_Znth1. apply IHlen. omega. now rewrite Z_inc_list_length.
-  - rewrite app_Znth2 by (rewrite Z_inc_list_length; omega).
+  - rewrite app_Znth1. apply IHlen. lia. now rewrite Z_inc_list_length.
+  - rewrite app_Znth2 by (rewrite Z_inc_list_length; lia).
     rewrite H0 at 2. rewrite Z_inc_list_length. simpl.
-    replace (Z.of_nat len - Z.of_nat len) with 0 by omega.
+    replace (Z.of_nat len - Z.of_nat len) with 0 by lia.
     rewrite Znth_0_cons; trivial.
 Qed.
 
@@ -88,8 +88,8 @@ Proof.
        apply Zlength_nonneg.
   }
   rewrite (sublist_split 0 i (Zlength contents)),
-  (sublist_split i (i+1) (Zlength contents)), (sublist_one i); try omega.
-  2, 3, 4: rewrite Z_inc_list_length; rewrite Z2Nat.id; omega.
+  (sublist_split i (i+1) (Zlength contents)), (sublist_one i); try lia.
+  2, 3, 4: rewrite Z_inc_list_length; rewrite Z2Nat.id; lia.
   rewrite <- (Z_inc_list_eq i (Z.to_nat (Zlength contents))).
   2: rewrite Z2Nat_id', Z.max_r; trivial; apply Zlength_nonneg. 
   repeat rewrite iter_sepcon_app. reflexivity.
@@ -158,7 +158,7 @@ Proof.
        SEP (matrix_rep sh 2 contents_mat a)).
     + Exists 0; entailer!.
     + entailer!.
-    + rewrite (matrix_unfold _ _ _ _ i) by omega. Intros.
+    + rewrite (matrix_unfold _ _ _ _ i) by lia. Intros.
       freeze F := (iter_sepcon (list_rep sh 2 a contents_mat)
                                (sublist 0 i (Z_inc_list (Z.to_nat (Zlength contents_mat))))) (iter_sepcon (list_rep sh 2 a contents_mat)
                                                                                                           (sublist (i + 1) (Zlength contents_mat)
@@ -190,32 +190,32 @@ Proof.
        *)
       { entailer!. unfold list_address. simpl.
         rewrite field_address_offset.
-        1: rewrite offset_offset_val; simpl; f_equal; rep_omega.
+        1: rewrite offset_offset_val; simpl; f_equal; rep_lia.
         unfold field_compatible in H5. destruct H4 as [? [? [? [? ?]]]].
         unfold field_compatible. split3; [| | split3]; auto.
-        unfold legal_nested_field. split; [auto | simpl; omega].
+        unfold legal_nested_field. split; [auto | simpl; lia].
       }
       (* I gave forward what it wanted. Let's go. *)
       assert (Zlength (Znth i contents_mat) = 2).
-      { rewrite Forall_forall in H0. apply H0. apply Znth_In. omega. }
+      { rewrite Forall_forall in H0. apply H0. apply Znth_In. lia. }
       forward. forward. forward.
       Exists (j+1). entailer!.
       * f_equal. f_equal.
-        rewrite sublist_last_1; [|omega..].
-        rewrite sum_list_app; simpl; omega.
-      * thaw F. rewrite (matrix_unfold _ _ _ _ i). entailer!. omega.
+        rewrite sublist_last_1; [|lia..].
+        rewrite sum_list_app; simpl; lia.
+      * thaw F. rewrite (matrix_unfold _ _ _ _ i). entailer!. lia.
     + forward. Exists (i+1).
-      entailer!. assert (j = Zlength contents_mat) by omega.
-      assert (j = 2) by omega.
+      entailer!. assert (j = Zlength contents_mat) by lia.
+      assert (j = 2) by lia.
       assert (Zlength (Znth i contents_mat) = 2).
-      { rewrite Forall_forall in H0. apply H0. apply Znth_In. omega. }
+      { rewrite Forall_forall in H0. apply H0. apply Znth_In. lia. }
       rewrite (sublist_same 0 j); trivial. 2: now rewrite H6.
-      rewrite sublist_last_1; try rep_omega.
+      rewrite sublist_last_1; try rep_lia.
       rewrite sum_mat_app. do 2 f_equal.
       unfold sum_mat at 2.
-      simpl. omega.
+      simpl. lia.
   - unfold POSTCONDITION, abbreviate.
     forward. entailer!.
-    assert (i = Zlength contents_mat) by omega.
+    assert (i = Zlength contents_mat) by lia.
     rewrite sublist_same; trivial.
 Qed.

@@ -115,11 +115,11 @@ Proof.
     assert (0 <= k)%Z.
     1: {
       destruct (Z_lt_le_dec k 0%Z); auto.
-      assert (k * 3 < 0 * 3)%Z by (apply Z.mul_lt_mono_pos_r; omega).
+      assert (k * 3 < 0 * 3)%Z by (apply Z.mul_lt_mono_pos_r; lia).
       simpl in H0.
-      omega.
+      lia.
     }
-    apply Z2Nat.inj_mul; omega.
+    apply Z2Nat.inj_mul; lia.
   + exists (Z.of_nat k).
     rewrite H.
     apply Nat2Z.inj_mul.
@@ -131,9 +131,9 @@ Proof.
   subst.
   destruct (le_dec k1 k2).
   + pose proof mult_le_compat_r _ _ 3 l.
-    omega.
-  + assert (k2 * 3 < k1 * 3) by (apply Nat.mul_lt_mono_pos_r; omega).
-    omega.
+    lia.
+  + assert (k2 * 3 < k1 * 3) by (apply Nat.mul_lt_mono_pos_r; lia).
+    lia.
 Qed.
 
 Lemma align_3_aux2: forall p1 p2 k1 k2, (p1 = k1 * 3 -> p2 = k2 * 3 -> p1 = p2 + 2 -> False)%nat.
@@ -142,9 +142,9 @@ Proof.
   subst.
   destruct (le_dec k1 k2).
   + pose proof mult_le_compat_r _ _ 3 l.
-    omega.
-  + assert (k2 * 3 < k1 * 3) by (apply Nat.mul_lt_mono_pos_r; omega).
-    omega.
+    lia.
+  + assert (k2 * 3 < k1 * 3) by (apply Nat.mul_lt_mono_pos_r; lia).
+    lia.
 Qed.
 
 Lemma disj_trinode_: forall p1 p2, p1 <> p2 -> disjointed (EX  v : bool * adr * adr, trinode p1 v)
@@ -165,7 +165,7 @@ Proof.
   try (eapply disj_derives;
          [ first [apply mapsto_derives_aux | apply derives_refl]
          | first [apply mapsto_derives_aux | apply derives_refl]
-         | apply disj_mapsto_]; omega).
+         | apply disj_mapsto_]; lia).
 Qed.
 
 Lemma trinode_inj: forall p v1 v2, trinode p v1 && trinode p v2 |-- !! (v1 = v2).

@@ -3,6 +3,8 @@ Require Import FunctionalExtensionality.
 Require Import RamifyCoq.msl_ext.ramify_tactics.
 Require Import RamifyCoq.msl_ext.overlapping_direct.
 Require Import RamifyCoq.heap_model_direct.SeparationAlgebra.
+Require Import Peano_dec.
+
 
 Definition mapsto (x y: adr) : pred world :=
   fun w => x <> 0 /\
@@ -50,18 +52,18 @@ Proof.
   generalize H2; intro Hx. generalize H3; intro Hy.
   destruct h12 as [f12 x12] eqn:? . hnf in H2. simpl in H2. destruct H2 as [? [? ?]].
   destruct h23 as [f23 x23] eqn:? . hnf in H3. simpl in H3. destruct H3 as [? [? ?]].
-  remember (fun xx : adr => if eq_nat_dec xx p1 then Some v1 else (if eq_nat_dec xx p2 then Some v2 else None)) as f.
+  remember (fun xx : adr => if NPeano.Nat.eq_dec xx p1 then Some v1 else (if NPeano.Nat.eq_dec xx p2 then Some v2 else None)) as f.
   assert (finMap f). {
-    exists (p1 :: p2 :: nil). intro z. intros. rewrite Heqf. destruct (eq_nat_dec z p1).
+    exists (p1 :: p2 :: nil). intro z. intros. rewrite Heqf. destruct (NPeano.Nat.eq_dec z p1).
     + subst. exfalso. apply H8. apply in_eq.
-    + destruct (eq_nat_dec z p2).
+    + destruct (NPeano.Nat.eq_dec z p2).
       - subst. exfalso. apply H8. apply in_cons, in_eq.
       - trivial.
   } remember (exist (finMap (B:=adr)) f H8) as ff.
   assert (join h12 h23 ff). {
-    rewrite Heqw, Heqw0, Heqff. hnf; simpl. rewrite Heqf. intro z. destruct (eq_nat_dec z p1).
+    rewrite Heqw, Heqw0, Heqff. hnf; simpl. rewrite Heqf. intro z. destruct (NPeano.Nat.eq_dec z p1).
     + rewrite e in *. rewrite H5. generalize (H6 p1 H); intro HS. rewrite HS. constructor.
-    + destruct (eq_nat_dec z p2).
+    + destruct (NPeano.Nat.eq_dec z p2).
       - rewrite e in *. rewrite H7. generalize (H4 p2 n); intro HS. rewrite HS. constructor.
       - specialize (H4 z n). specialize (H6 z n0). rewrite H4, H6. constructor.
   } rewrite <- Heqw0 in *. rewrite <- Heqw in *.

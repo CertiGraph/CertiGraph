@@ -7,10 +7,10 @@ Proof.
   start_function.
   forward_if True.
   - exfalso. rewrite MSS_eq_unsigned, Int.unsigned_repr in H0;
-               [omega | apply MSS_max_unsigned_range; assumption].
+               [lia | apply MSS_max_unsigned_range; assumption].
   - forward. entailer!.
   - forward_call (Tarray int_or_ptr_type n noattr, gv).
-    + entailer!. simpl. rewrite Z.max_r by omega. now rewrite Z.mul_comm.
+    + entailer!. simpl. rewrite Z.max_r by lia. now rewrite Z.mul_comm.
     + split; [|split].
       * simpl. replace (Z.max 0 n) with n. 1: apply MSS_max_4_unsigned_range, H.
         rewrite Z.max_r; [reflexivity | destruct H; assumption].
