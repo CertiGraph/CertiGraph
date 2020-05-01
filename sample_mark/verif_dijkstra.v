@@ -1,5 +1,4 @@
 Require Import VST.msl.iter_sepcon.
-Require Import VST.floyd.sublist.
 Require Import RamifyCoq.lib.List_ext.
 Require Import RamifyCoq.sample_mark.env_dijkstra_arr.
 Require Import RamifyCoq.graph.graph_model.
@@ -13,6 +12,7 @@ Require Import Coq.Lists.List.
 Require Import RamifyCoq.sample_mark.priq_utils.
 Require Import RamifyCoq.sample_mark.dijk_pq_arr_macros.
 Require Import RamifyCoq.sample_mark.dijk_pq_arr_spec.
+Require Import VST.floyd.sublist.
 
 
 (* We must use the CompSpecs and Vprog that were
