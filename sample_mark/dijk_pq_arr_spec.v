@@ -55,17 +55,21 @@ Definition inv_unpopped g src prev priq dist dst :=
        path_globally_optimal g src mom' p2mom' ->
        path_cost g p2mom + Znth dst (Znth mom (graph_to_mat g)) <= careful_add (path_cost g p2mom') (Znth dst (Znth mom' (graph_to_mat g)))).
 
-Definition inv_unseen prev priq dist dst :=
+Definition inv_unseen g prev priq dist dst :=
   Znth dst priq = inf ->
   Znth dst dist = inf /\
-  Znth dst prev = inf.
+  Znth dst prev = inf /\
+  forall m, In m (get_popped priq) ->
+            careful_add 
+              (Znth m dist)
+              (Znth dst (Znth m (graph_to_mat g))) = inf.
 
 Definition dijkstra_correct (g: LGraph) (src : VType) (prev priq dist: list VType) : Prop :=
   forall dst,
     vvalid g dst ->
     inv_popped g src prev priq dist dst /\
     inv_unpopped g src prev priq dist dst /\
-    inv_unseen prev priq dist dst.
+    inv_unseen g prev priq dist dst.
 
 Definition push_spec :=
   DECLARE _push
