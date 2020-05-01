@@ -5,8 +5,8 @@ Proof.
   start_function. unfold fun_info_rep.
   assert_PROP (isptr fi) by entailer.
   assert_PROP (isptr ti) by (unfold thread_info_rep; entailer).
-  assert (0 <= 1 < Zlength (live_roots_indices f_info) + 2) by (split; rep_omega).
-  do 3 forward. simpl align. rewrite Znth_pos_cons, Znth_0_cons by omega.
+  assert (0 <= 1 < Zlength (live_roots_indices f_info) + 2) by (split; rep_lia).
+  do 3 forward. simpl align. rewrite Znth_pos_cons, Znth_0_cons by lia.
   simpl sem_binary_operation'.
   replace (force_val (sem_add_ptr_int tuint Signed fi (vint 2))) with
       (offset_val 8 fi) by (rewrite sem_add_pi_ptr_special' by auto; reflexivity).
@@ -35,7 +35,7 @@ Proof.
           outlier_rep outlier;
           graph_rep g';
           thread_info_rep sh t_info' ti)).
-  - pose proof lri_range f_info; subst n; omega.
+  - pose proof lri_range f_info; subst n; lia.
   - Exists g t_info roots. destruct H as [? [? [? ?]]]. entailer!.
     split; [|split]; try easy. unfold nat_inc_list. simpl. constructor.
   - unfold fun_info_rep.
@@ -45,12 +45,12 @@ Proof.
                                                 (live_roots_indices f_info) + 2))
                                [ArraySubsc (i+2)] fi). {
       entailer!. simpl. unfold field_address. rewrite if_true; simpl.
-      1: f_equal; omega. unfold field_compatible in *. intuition. red. split; auto.
-      simpl. omega. } forward. do 2 rewrite Znth_pos_cons by omega.
-    replace (i + 2 - 1 - 1) with i by omega. apply semax_if_seq. rewrite Heqn in H6.
+      1: f_equal; lia. unfold field_compatible in *. intuition. red. split; auto.
+      simpl. lia. } forward. do 2 rewrite Znth_pos_cons by lia.
+    replace (i + 2 - 1 - 1) with i by lia. apply semax_if_seq. rewrite Heqn in H6.
     pose proof (fi_index_range _ _ (Znth_In _ _ H6)). forward_if.
-    + deadvars!. forward. do 2 rewrite Znth_pos_cons by omega.
-      replace (i + 2 - 1 - 1) with i by omega.
+    + deadvars!. forward. do 2 rewrite Znth_pos_cons by lia.
+      replace (i + 2 - 1 - 1) with i by lia.
       remember (Znth i (live_roots_indices f_info)).
       replace_SEP 1 (fun_info_rep rsh f_info fi) by entailer.
       assert_PROP (force_val
@@ -83,11 +83,11 @@ Proof.
             (unfold next_address; rewrite (proj1 H20); reflexivity).
         destruct H16 as [? [? [? ?]]]. entailer!.
         replace (Z.to_nat (i + 1)) with (S (Z.to_nat i)) by
-            (rewrite Z2Nat.inj_add by omega; simpl; omega).
+            (rewrite Z2Nat.inj_add by lia; simpl; lia).
         rewrite nat_inc_list_S. remember (Z.to_nat i) as n.
-        replace i with (Z.of_nat n) in * by (subst n;rewrite Z2Nat.id; omega).
+        replace i with (Z.of_nat n) in * by (subst n;rewrite Z2Nat.id; lia).
         simpl in H18. split; [apply frl_add_tail|]; easy.
-    + exfalso. rep_omega.
+    + exfalso. rep_lia.
   - Intros g' t_info' roots'. Exists g' t_info' roots'.
     destruct H8 as [? [? [? ?]]]. entailer!. rewrite <- H5, ZtoNat_Zlength in H6.
     easy.

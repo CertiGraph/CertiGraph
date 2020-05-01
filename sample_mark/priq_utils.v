@@ -40,7 +40,7 @@ Proof.
   unfold isEmpty. rewrite fold_right_cons.
   destruct (Z_lt_dec a inf); trivial.
   simpl in H; simpl; destruct H.
-  1: rewrite H in n; exfalso; omega.
+  1: rewrite H in n; exfalso; lia.
   clear n a. specialize (IHl H).
   unfold isEmpty in IHl. trivial.
 Qed.
@@ -68,34 +68,34 @@ Lemma find_index_gen: forall l i ans,
 Proof.
   intros. generalize dependent i.
   generalize dependent ans. induction l.
-  1: intros; rewrite Zlength_nil in H; exfalso; omega.
+  1: intros; rewrite Zlength_nil in H; exfalso; lia.
   unfold find.
   intros.
   destruct (eq_dec a (Znth i (a :: l))).
   - rewrite <- e in H0. clear - H H0.
-    destruct (Z.eq_dec 0 i). 1: omega.
-    destruct H. assert (0 < i) by omega.
+    destruct (Z.eq_dec 0 i). 1: lia.
+    destruct H. assert (0 < i) by lia.
     exfalso. apply H0.
-    unfold sublist. replace (i-0) with i by omega. simpl.
-    replace (Z.to_nat i) with (Z.to_nat (Z.succ (i-1))) by rep_omega.
-    rewrite Z2Nat.inj_succ by omega.
+    unfold sublist. replace (i-0) with i by lia. simpl.
+    replace (Z.to_nat i) with (Z.to_nat (Z.succ (i-1))) by rep_lia.
+    rewrite Z2Nat.inj_succ by lia.
     rewrite firstn_cons. apply in_eq.
   - destruct (Z.eq_dec 0 i).
     1: rewrite <- e in n; rewrite Znth_0_cons in n;
-      exfalso; omega.
+      exfalso; lia.
     assert (0 <= i - 1 < Zlength l) by
-        (rewrite Zlength_cons in H; rep_omega).
+        (rewrite Zlength_cons in H; rep_lia).
     assert (~ In (Znth (i - 1) l) (sublist 0 (i - 1) l)). {
-      rewrite <- (Znth_pos_cons i l a) by omega.
+      rewrite <- (Znth_pos_cons i l a) by lia.
       rewrite <- (sublist_1_cons l a i).
       intro. apply H0.
       apply (sublist_In 1 i).
-      rewrite sublist_sublist0 by omega. assumption.
+      rewrite sublist_sublist0 by lia. assumption.
     }
     pose proof (IHl (1 + ans) (i - 1) H1 H2).
-    replace (i - 1 + (1 + ans)) with (i + ans) in H3 by omega.
+    replace (i - 1 + (1 + ans)) with (i + ans) in H3 by lia.
     replace (Znth i (a :: l)) with (Znth (i - 1) l).
-    2: { symmetry. apply Znth_pos_cons; omega. }
+    2: { symmetry. apply Znth_pos_cons; lia. }
     rewrite <- H3.
     unfold find. trivial.
 Qed.
@@ -105,7 +105,7 @@ Lemma find_index: forall l i,
     ~ In (Znth i l) (sublist 0 i l) ->
     find l (Znth i l) 0 = i.
 Proof.
-  intros. replace i with (i + 0) at 2 by omega.
+  intros. replace i with (i + 0) at 2 by lia.
   apply find_index_gen; trivial.
 Qed.
 
@@ -121,22 +121,22 @@ Proof.
   intros. apply in_inv in H. destruct H.
   - subst a. unfold find.
     destruct (eq_dec target target).
-    rewrite Zlength_cons. split; rep_omega.
-    exfalso; omega.
+    rewrite Zlength_cons. split; rep_lia.
+    exfalso; lia.
   - unfold find. destruct (eq_dec a target).
-    1: rewrite Zlength_cons; split; rep_omega.
-    assert (0 <= 1 + ans) by omega.
+    1: rewrite Zlength_cons; split; rep_lia.
+    assert (0 <= 1 + ans) by lia.
     pose proof (IHl (1+ans) H1 target H).
     clear -H2. unfold find in H2.
-    rewrite Zlength_cons. rep_omega.
+    rewrite Zlength_cons. rep_lia.
 Qed.
 
 Lemma find_range: forall l target,
     In target l ->
     0 <= find l target 0 < Zlength l.
 Proof.
-  intros. replace (Zlength l) with (Zlength l + 0) by omega.
-  apply find_range_gen; trivial; omega.
+  intros. replace (Zlength l) with (Zlength l + 0) by lia.
+  apply find_range_gen; trivial; lia.
 Qed.
 
 Lemma Znth_find_gen:
@@ -151,22 +151,22 @@ Proof.
   destruct H0.
   - subst target. simpl.
     destruct (initial_world.EqDec_Z a a).
-    + replace (ans-ans) with 0 by omega.
+    + replace (ans-ans) with 0 by lia.
       rewrite Znth_0_cons; auto.
-    + exfalso; omega.
+    + exfalso; lia.
   - specialize (IHl H0).
     simpl.
     destruct (initial_world.EqDec_Z a target).
-    + replace (ans-ans) with 0 by omega.
+    + replace (ans-ans) with 0 by lia.
       rewrite Znth_0_cons; auto.
-    + assert (0 <= 1 + ans) by omega.
+    + assert (0 <= 1 + ans) by lia.
       specialize (IHl (1+ans) H1).
       rewrite Znth_pos_cons.
-      replace (1+ans) with (ans+1) in IHl at 2 by omega.
+      replace (1+ans) with (ans+1) in IHl at 2 by lia.
       rewrite Z.sub_add_distr in IHl.
       assumption.
       destruct (find_range_gen l target (1+ans) H0 H1) as [? _].
-      omega.
+      lia.
 Qed.
 
 Lemma Znth_find:
@@ -175,8 +175,8 @@ Lemma Znth_find:
     Znth (find l target 0) l = target.
 Proof.
   intros.
-  replace (find l target 0) with (find l target 0 - 0) by omega.
-  apply Znth_find_gen; [omega | assumption].
+  replace (find l target 0) with (find l target 0 - 0) by lia.
+  apply Znth_find_gen; [lia | assumption].
 Qed.
 
 Lemma Forall_fold_min:
@@ -218,7 +218,7 @@ Lemma min_not_in_prev i l :
   ~ In (Znth i l) (sublist 0 i l).
 Proof.
   intros. intro.
-  pose proof (fold_min_general (sublist 0 i l) (Znth i l) H0(Znth 0 l)). omega.
+  pose proof (fold_min_general (sublist 0 i l) (Znth i l) H0(Znth 0 l)). lia.
 Qed.
 
 Lemma min_in_list : forall l1 l2 starter,
@@ -246,7 +246,7 @@ Lemma min_picks_first:
     fold_right Z.min start (list_repeat num mono) = start.
 Proof.
   intros. induction num; trivial.
-  simpl. rewrite IHnum. rewrite Z.min_r; omega.
+  simpl. rewrite IHnum. rewrite Z.min_r; lia.
 Qed.
 
 Lemma find_src: forall src,
@@ -263,32 +263,32 @@ Proof.
     rewrite Heql.
     rewrite upd_Znth_same; trivial.
     rewrite sublist_upd_Znth_l.
-    2: omega.
-    2: rewrite Zlength_list_repeat; omega.
-    rewrite sublist_list_repeat by omega.
-    replace (src - 0) with (src) by omega.
+    2: lia.
+    2: rewrite Zlength_list_repeat; lia.
+    rewrite sublist_list_repeat by lia.
+    replace (src - 0) with (src) by lia.
     intro. apply in_list_repeat in H0.
     inversion H0.
   - subst l.
     rewrite upd_Znth_same; trivial.
     rewrite upd_Znth_unfold at 2; auto.
     repeat rewrite fold_right_app.
-    repeat rewrite sublist_list_repeat; try omega.
-    2: rewrite Zlength_list_repeat; [|unfold SIZE]; omega.
-    repeat rewrite Zlength_list_repeat by omega.
-    replace (src - 0) with (src) by omega.
+    repeat rewrite sublist_list_repeat; try lia.
+    2: rewrite Zlength_list_repeat; [|unfold SIZE]; lia.
+    repeat rewrite Zlength_list_repeat by lia.
+    replace (src - 0) with (src) by lia.
     rewrite <- Znth_0_hd.
     2: { unfold SIZE in *; rewrite upd_Znth_Zlength by assumption.
-         rewrite Zlength_list_repeat; omega. }
+         rewrite Zlength_list_repeat; lia. }
     destruct (Z.eq_dec src 0).
     + rewrite e. rewrite upd_Znth_same. simpl.
-      compute; trivial. rewrite Zlength_list_repeat; omega.
+      compute; trivial. rewrite Zlength_list_repeat; lia.
     + rewrite upd_Znth_diff;
-        try rewrite Zlength_list_repeat; try omega.
-      rewrite Znth_list_repeat_inrange by (unfold SIZE in *; omega).
+        try rewrite Zlength_list_repeat; try lia.
+      rewrite Znth_list_repeat_inrange by (unfold SIZE in *; lia).
       simpl. rewrite Z.min_l.
       1,2: rewrite min_picks_first.
-      all: try omega; compute; inversion 1.
+      all: try lia; compute; inversion 1.
 Qed.
 
 Lemma isEmpty_in': forall l,
@@ -303,7 +303,7 @@ Proof.
     
 
     
-    1: rewrite H in n; exfalso. omega.
+    1: rewrite H in n; exfalso. lia.
     clear n a. specialize (IHl H).
     unfold isEmpty in IHl. trivial.
   - induction l.
@@ -319,7 +319,7 @@ Lemma fold_min_in_list: forall l, Zlength l > 0 -> In (fold_right Z.min (hd 0 l)
 Proof.
   intros. apply min_in_list.
   - apply incl_refl.
-  - rewrite <- Znth_0_hd by (unfold SIZE in *; omega). apply Znth_In; omega.
+  - rewrite <- Znth_0_hd by (unfold SIZE in *; lia). apply Znth_In; lia.
 Qed.
 
 Lemma find_min_lt_inf: forall u l,
@@ -328,6 +328,6 @@ Lemma find_min_lt_inf: forall u l,
 Proof.
   intros. rewrite <- isEmpty_in' in H0. destruct H0 as [? [? ?]].
   rewrite H. rewrite Znth_find.
-  - pose proof (fold_min _ _ H0). omega.
+  - pose proof (fold_min _ _ H0). lia.
   - now apply fold_min_in_list.
 Qed.

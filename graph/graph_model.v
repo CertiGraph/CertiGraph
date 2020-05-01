@@ -347,6 +347,10 @@ End LABELED_GRAPH_EQUIV.
 
 End GRAPH_BASIC_LEM.
 
+Declare Scope PreGraph.
+Declare Scope NodePred.
+Declare Scope LabeledGraph.
+
 Notation "g1 '~=~' g2" := (structurally_identical g1 g2) (at level 1): PreGraph.
 Notation "m1 '~=~' m2" := (node_pred_equiv m1 m2) (at level 1) : NodePred.
 Notation "g1 '~=~' g2" := (labeled_graph_equiv g1 g2) (at level 1) : LabeledGraph.
@@ -358,4 +362,3 @@ Open Scope PreGraph.
 Global Existing Instance npe_Equiv.
 Global Existing Instance si_Equiv.
 Global Existing Instance lge_Equiv.
-

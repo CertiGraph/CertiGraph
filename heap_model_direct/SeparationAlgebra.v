@@ -1,5 +1,6 @@
 Require Import VST.msl.msl_direct.
 Require Import RamifyCoq.msl_ext.abs_addr.
+Require Import Peano_dec.
 
 Instance Join_discrete (A : Type): Join A := fun a1 a2 a3 : A => False.
 
@@ -58,13 +59,13 @@ Proof.
     - constructor.
 Defined.
 
-Definition adr_conflict (a1 a2 : adr) : bool := if (eq_nat_dec a1 a2) then true else false.
+Definition adr_conflict (a1 a2 : adr) : bool := if (NPeano.Nat.eq_dec a1 a2) then true else false.
 
 Instance AbsAddr_world : AbsAddr adr adr.
   apply (mkAbsAddr adr adr adr_conflict); intros; unfold adr_conflict in *.
-  + destruct (eq_nat_dec p1 p2). subst. destruct (eq_nat_dec p2 p2); auto. exfalso; tauto.
-    destruct (eq_nat_dec p2 p1). subst. exfalso; tauto. trivial.
-  + destruct (eq_nat_dec p1 p1). inversion H. exfalso; tauto.
+  + destruct (NPeano.Nat.eq_dec p1 p2). subst. destruct (NPeano.Nat.eq_dec p2 p2); auto. exfalso; tauto.
+    destruct (NPeano.Nat.eq_dec p2 p1). subst. exfalso; tauto. trivial.
+  + destruct (NPeano.Nat.eq_dec p1 p1). inversion H. exfalso; tauto.
 Defined.
 
 Fixpoint extractSome (f : adr -> option adr) (li : list adr) : list adr :=
