@@ -125,7 +125,7 @@ Proof.
        SEP (graph sh x g)).
     { apply denote_tc_test_eq_split. 2: entailer!.
       eapply derives_trans; [apply (@root_stable_ramify _ (sSGG_VST sh) g (ValidPointer b i) _ H_GAMMA_g); auto |].
-      apply sepcon_valid_pointer1. Transparent sSGG_VST. simpl vertex_at. unfold_data_at 1%nat.
+      apply sepcon_valid_pointer1. Transparent sSGG_VST. simpl vertex_at. unfold_data_at (data_at _ _ _ _).
       entailer!.
     }
   1: { (* if-then branch *)
@@ -254,7 +254,8 @@ Proof.
   }
   (* unlocalize *)
 
-  gather_SEP 0 1 3.
+  Intros. gather_SEP (data_at _ _ _ _) (concrete_valid_pointer _) (vertices_at _ _)
+                     (reachable_vertices_at _ g2'').
   replace_SEP 0
       (EX g2': LGraph,
        !! (extended_copy l (g1: LGraph, g1') (g2: LGraph, g2') /\
@@ -313,8 +314,8 @@ Proof.
     end; eauto.
   }
   (* Unlocalize *)
-
-  gather_SEP 0 1 3.
+  Intros. gather_SEP (data_at _ _ _ _) (concrete_valid_pointer _) (vertices_at _ _)
+                     (reachable_vertices_at _ g4'').
   replace_SEP 0
       (EX g4': LGraph,
        !! (extended_copy r (g3: LGraph, g3') (g4: LGraph, g4') /\
@@ -348,8 +349,7 @@ Proof.
   forget (Graph_egen g4 (x: addr, R) (x0: addr, R)) as g5.
   forget (graph_gen.labeledgraph_add_edge g4' (x0, R) x0 r0 (null, L)) as g5'.
 
-  gather_SEP 0 1.
-  gather_SEP 0 1.
+  gather_SEP (data_at _ _ _ _) (concrete_valid_pointer _) (vertices_at _ _).
   replace_SEP 0 (EX gg5': Graph', !! (@copy _ _ _ _ CCS x g g5 gg5' /\ x0 = vmap g5 x) && graph Ews x0 gg5').
   {
     entailer.
