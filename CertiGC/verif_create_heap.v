@@ -67,7 +67,7 @@ Lemma body_create_heap: semax_body Vprog Gprog f_create_heap create_heap_spec.
 Proof.
   start_function.
   forward_call (heap_type, gv).
-  1: simpl; split; split; [omega|rep_omega| |cbv]; reflexivity. Intros h. if_tac.
+  1: simpl; split; split; [lia|rep_lia| |cbv]; reflexivity. Intros h. if_tac.
   - subst h; forward_if False; [|inversion H].
     unfold all_string_constants; Intros;
       forward_call ((gv ___stringlit_8),
@@ -101,7 +101,7 @@ Proof.
         - rewrite Znth_0_cons; auto.
         - rewrite Zlength_cons, Zlength_list_repeat; lia.
       } replace (list_repeat (Z.to_nat 11) vn) with (sublist 1 12 vl) by
-          (rewrite Heqvl, sublist_1_cons, sublist_list_repeat; [reflexivity|omega..]).
+          (rewrite Heqvl, sublist_1_cons, sublist_list_repeat; [reflexivity|lia..]).
       rewrite <- split2_data_at_Tarray_space_type;
         [| lia | rewrite Heqvl, Zlength_cons, Zlength_list_repeat; lia].
       remember (Vint (Int.repr 0), (Vint (Int.repr 0), Vint (Int.repr 0))) as v0.

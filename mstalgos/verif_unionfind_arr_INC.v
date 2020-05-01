@@ -10,7 +10,7 @@ Require Import RamifyCoq.msl_application.UnionFindGraph.
 Require Import RamifyCoq.msl_application.ArrayGraph.
 Require Import RamifyCoq.floyd_ext.share.
 Require Import RamifyCoq.sample_mark.spatial_array_graph.
-Require Import Coq.micromega.Lia.
+Require Import Coq.micrlia.Lia.
 Require Import Coq.Lists.List.
 
 Local Coercion UGraph_LGraph: Graph >-> LGraph.
@@ -162,14 +162,14 @@ Qed.
 Lemma body_makeSet: semax_body Vprog Gprog f_makeSet makeSet_spec.
 Proof.
   start_function. forward_call (sh, Z.mul V 8).
-  - assert (Int.min_signed <= 8 <= Int.max_signed) by rep_omega.
+  - assert (Int.min_signed <= 8 <= Int.max_signed) by rep_lia.
     assert (Int.min_signed <= V <= Int.max_signed). {
       split; rewrite Z.le_lteq; left.
-      - rep_omega.
+      - rep_lia.
       - apply Z.le_lt_trans with (Int.max_signed / 8); [intuition | apply Z.div_lt; lia].
     } rewrite !Int.signed_repr; auto. split. 1: lia.
-    assert (Z.mul 8 (Int.max_signed /8) <= Int.max_signed) by (apply Z_mult_div_ge; intuition). rep_omega.
-  - split. 1: lia. assert (Z.mul 8 (Int.max_signed /8) <= Int.max_signed) by (apply Z_mult_div_ge; intuition). rep_omega.
+    assert (Z.mul 8 (Int.max_signed /8) <= Int.max_signed) by (apply Z_mult_div_ge; intuition). rep_lia.
+  - split. 1: lia. assert (Z.mul 8 (Int.max_signed /8) <= Int.max_signed) by (apply Z_mult_div_ge; intuition). rep_lia.
   - Intros rt.
     assert (memory_block sh (V * 8) (pointer_val_val rt) = data_at_ sh (tarray vertex_type V) (pointer_val_val rt)). {
       assert (memory_block sh (V * 8) (pointer_val_val rt) = memory_block sh (sizeof (tarray vertex_type V)) (pointer_val_val rt)). {

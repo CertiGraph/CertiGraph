@@ -47,10 +47,10 @@ Instance AA (sh: share) : AbsAddr (val * type) val.
     destruct (pointer_range_overlap_isptr _ _ _ _ p).
     destruct (zlt 0 (BV_sizeof t)).
     - assert (pointer_range_overlap v (BV_sizeof t) v (BV_sizeof t))
-        by (apply pointer_range_overlap_refl; auto; omega).
+        by (apply pointer_range_overlap_refl; auto; lia).
       destruct (pointer_range_overlap_dec v (BV_sizeof t) v (BV_sizeof t)); [congruence | tauto].
     - apply pointer_range_overlap_non_zero in p.
-      omega.
+      lia.
 Defined.
 
 Instance MSL sh: MapstoSepLog (AA sh) (fun pt v => let (p, t) := pt in mapsto sh t p v).
@@ -131,10 +131,10 @@ Instance AA : AbsAddr (val * Z) unit.
     destruct (pointer_range_overlap_isptr _ _ _ _ p).
     destruct (zlt 0 z).
     - assert (pointer_range_overlap v z v z)
-        by (apply pointer_range_overlap_refl; auto; omega).
+        by (apply pointer_range_overlap_refl; auto; lia).
       destruct (pointer_range_overlap_dec v z v z); [congruence | tauto].
     - apply pointer_range_overlap_non_zero in p.
-      omega.
+      lia.
 Defined.
 
 Instance MSL sh: MapstoSepLog AA (fun pn v => let (p, n) := pn in memory_block sh n p).
@@ -156,10 +156,10 @@ Proof.
     destruct p; try inversion Pp.
     destruct (zlt 0 n).
     - assert (pointer_range_overlap (Vptr b i) n (Vptr b i) n); [| tauto].
-      apply pointer_range_overlap_refl; simpl; try tauto; omega.
+      apply pointer_range_overlap_refl; simpl; try tauto; lia.
     - change memory_block with mapsto_memory_block.memory_block.
       unfold mapsto_memory_block.memory_block.
-      rewrite nat_of_Z_neg by omega.
+      rewrite nat_of_Z_neg by lia.
       simpl.
       change (predicates_hered.andp
         (predicates_hered.prop (Int.unsigned i + n <= Int.modulus))

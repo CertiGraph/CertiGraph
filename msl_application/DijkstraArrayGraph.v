@@ -1,4 +1,5 @@
 Require Import Coq.ZArith.ZArith.
+Require Import Coq.micromega.Lia.
 Require Import VST.msl.seplog.
 Require Import VST.floyd.sublist.
 Require Import compcert.lib.Integers.
@@ -58,14 +59,14 @@ Lemma nat_inc_list_i: forall i n,
     Znth i (nat_inc_list n) = i.
 Proof.
   intros. generalize dependent i. induction n.
-  1: intros; exfalso; destruct H; rewrite Nat2Z.inj_0 in H0; omega.
+  1: intros; exfalso; destruct H; rewrite Nat2Z.inj_0 in H0; lia.
   intros. simpl. rewrite Nat2Z.inj_succ in H. destruct H.
   apply Zlt_succ_le in H0. apply Zle_lt_or_eq in H0. destruct H0.
-  - rewrite app_Znth1. apply IHn. omega.
+  - rewrite app_Znth1. apply IHn. lia.
     now rewrite nat_inc_list_Zlength.
-  - rewrite app_Znth2 by (rewrite nat_inc_list_Zlength; omega). 
+  - rewrite app_Znth2 by (rewrite nat_inc_list_Zlength; lia). 
     rewrite H0. rewrite nat_inc_list_Zlength. simpl. 
-    replace (Z.of_nat n - Z.of_nat n) with 0 by omega.
+    replace (Z.of_nat n - Z.of_nat n) with 0 by lia.
     rewrite Znth_0_cons; trivial.
 Qed.
 
@@ -151,7 +152,7 @@ Lemma careful_add_id:
 Proof.
   intros. unfold careful_add. simpl.
   destruct (a =? 0) eqn:?; trivial.
-  rewrite Z.eqb_eq in Heqb. omega.
+  rewrite Z.eqb_eq in Heqb. lia.
 Qed.
 
 Lemma careful_add_comm:
@@ -159,11 +160,11 @@ Lemma careful_add_comm:
 Proof.
   intros. unfold careful_add.
   destruct (a =? 0) eqn:?; destruct (b =? 0) eqn:?; trivial.
-  1: try rewrite Z.eqb_eq in *; omega.
+  1: try rewrite Z.eqb_eq in *; lia.
   destruct (a <? 0) eqn:?; destruct (b <? 0) eqn:?;
            simpl; trivial.
   destruct (inf <=? a + b) eqn:?;
-           rewrite Z.add_comm in Heqb4; rewrite Heqb4; omega.
+           rewrite Z.add_comm in Heqb4; rewrite Heqb4; lia.
 Qed.
 
 Lemma careful_add_assoc:
@@ -184,76 +185,76 @@ Proof.
     + destruct (inf <=? a + b) eqn:?.
       1: rewrite if_false_bool; trivial.
       rewrite if_false_bool; trivial.
-      rewrite Z.eqb_neq, Z.ltb_nlt in *; omega.
+      rewrite Z.eqb_neq, Z.ltb_nlt in *; lia.
     + destruct (inf <=? a + b) eqn:?.
       1: rewrite if_false_bool; trivial.
       destruct (a + b =? 0) eqn:?; trivial.
-      rewrite Z.eqb_eq in *; omega.
+      rewrite Z.eqb_eq in *; lia.
   - destruct (a <? 0) eqn:?;
              destruct (b <? 0) eqn:?;
              destruct (c <? 0) eqn:?; simpl; trivial.
     + rewrite if_false_bool; trivial.
       destruct (inf <=? b + c) eqn:?.
       * compute; trivial.
-      * rewrite Z.eqb_neq, Z.ltb_nlt in *; omega.
+      * rewrite Z.eqb_neq, Z.ltb_nlt in *; lia.
     + destruct (inf <=? a + b) eqn:?.
       * compute; trivial.
       * rewrite if_false_bool.
-        2: rewrite Z.eqb_neq, Z.ltb_nlt in *; omega.
+        2: rewrite Z.eqb_neq, Z.ltb_nlt in *; lia.
         rewrite Bool.orb_true_r; trivial.
     + rewrite Z.eqb_neq, Z.ltb_ge in *.
       rewrite if_false_bool.
       2: { destruct (inf <=? b + c).
            - compute; trivial.
-           - rewrite Z.eqb_neq; omega. }
+           - rewrite Z.eqb_neq; lia. }
       destruct (inf <=? b + c) eqn:?.
       * rewrite if_false_bool by (compute; trivial).
         rewrite if_true_bool.
-        2: rewrite Z.leb_le; omega.
+        2: rewrite Z.leb_le; lia.
         rewrite if_false_bool.
         2: { destruct (inf <=? a + b) eqn:?.
              - compute; trivial.
-             - rewrite Z.eqb_neq; omega. }
+             - rewrite Z.eqb_neq; lia. }
         rewrite Bool.orb_false_r.
         rewrite if_false_bool.
         2: { destruct (inf <=? a + b) eqn:?.
              - compute; trivial.
-             - rewrite Z.ltb_nlt; omega. }
+             - rewrite Z.ltb_nlt; lia. }
         destruct (inf <=? a + b) eqn:?.
         -- rewrite if_true_bool; trivial.
-           rewrite Z.leb_le; omega. 
+           rewrite Z.leb_le; lia. 
         -- rewrite if_true_bool; trivial.
-           rewrite Z.leb_le in *; omega. 
-      * rewrite if_false_bool by (rewrite Z.ltb_nlt; omega).
+           rewrite Z.leb_le in *; lia. 
+      * rewrite if_false_bool by (rewrite Z.ltb_nlt; lia).
         rewrite Z.add_assoc.
         destruct (inf <=? a + b + c) eqn:?.
         -- rewrite if_false_bool.
            2:  { destruct (inf <=? a + b) eqn:?.
                  - compute; trivial.
-                 - rewrite Z.eqb_neq; omega. }
+                 - rewrite Z.eqb_neq; lia. }
            rewrite Bool.orb_false_r.
            rewrite if_false_bool.
            2:  { destruct (inf <=? a + b) eqn:?.
                  - compute; trivial.
-                 - rewrite Z.ltb_nlt; omega. }
+                 - rewrite Z.ltb_nlt; lia. }
            rewrite if_true_bool; trivial.
            destruct (inf <=? a + b) eqn:?; trivial.
-           rewrite Z.leb_le. omega.
+           rewrite Z.leb_le. lia.
         -- rewrite if_false_bool.
            rewrite if_false_bool.
            rewrite if_false_bool.
            rewrite if_false_bool; trivial.
            all: rewrite Z.leb_gt in *.
-           1: omega.
+           1: lia.
            1: { rewrite if_false_bool; trivial.
-                rewrite Z.leb_gt in *; omega. }
+                rewrite Z.leb_gt in *; lia. }
            1: { rewrite Bool.orb_false_r.
                 rewrite if_false_bool.
-                rewrite Z.ltb_nlt; omega.
-                rewrite Z.leb_gt; omega. }
+                rewrite Z.ltb_nlt; lia.
+                rewrite Z.leb_gt; lia. }
            destruct (inf <=? a + b) eqn:?.
            ++ compute; trivial.
-           ++ rewrite Z.eqb_neq; omega.
+           ++ rewrite Z.eqb_neq; lia.
 Qed.
 
 Lemma careful_add_clean:
@@ -265,12 +266,12 @@ Proof.
   destruct (a =? 0) eqn:?;
            destruct (b =? 0) eqn:?;
            try rewrite Z.eqb_eq in *;
-    try rewrite Z.eqb_neq in *; subst; try omega.
+    try rewrite Z.eqb_neq in *; subst; try lia.
   rewrite if_false_bool.
   rewrite if_false_bool; trivial.
   rewrite Z.leb_gt; trivial.
   rewrite Bool.orb_false_iff.
-  split; rewrite Z.ltb_nlt; omega.
+  split; rewrite Z.ltb_nlt; lia.
 Qed.
 
 Lemma careful_add_dirty:
@@ -286,14 +287,14 @@ Proof.
   try rewrite Z.eqb_eq in *;
     try rewrite Z.eqb_neq in *.
   - subst. exfalso. compute in H1. apply H1; trivial.
-  - exfalso. omega.
-  - exfalso. omega.
+  - exfalso. lia.
+  - exfalso. lia.
   - destruct (a <? 0) eqn:?; simpl.
-    + rewrite Z.ltb_lt in Heqb2. omega.
+    + rewrite Z.ltb_lt in Heqb2. lia.
     + destruct (b <? 0) eqn:?; simpl.
-      * rewrite Z.ltb_lt in Heqb3. omega.
+      * rewrite Z.ltb_lt in Heqb3. lia.
       * rewrite if_true_bool; trivial.
-        rewrite Z.leb_le. omega.
+        rewrite Z.leb_le. lia.
 Qed.
 
 Lemma careful_add_pos:
@@ -304,8 +305,8 @@ Proof.
   destruct (a =? 0); destruct (b =? 0); trivial.
   rewrite if_false_bool.
   2: { rewrite Bool.orb_false_iff; split;
-       rewrite Z.ltb_nlt; omega. }
-  destruct (inf <=? a + b); [now compute| omega].
+       rewrite Z.ltb_nlt; lia. }
+  destruct (inf <=? a + b); [now compute| lia].
 Qed.
 
 Lemma careful_add_inf:
@@ -317,8 +318,8 @@ Proof.
   rewrite if_false_bool by (now compute).
   rewrite if_false_bool.
   2: { rewrite Bool.orb_false_iff; split;
-       rewrite Z.ltb_nlt; [omega | compute; inversion 1]. }
-  rewrite if_true_bool; trivial. rewrite Z.leb_le. omega.
+       rewrite Z.ltb_nlt; [lia | compute; inversion 1]. }
+  rewrite if_true_bool; trivial. rewrite Z.leb_le. lia.
 Qed.
 
 Lemma careful_add_inf_clean:
@@ -330,12 +331,12 @@ Proof.
   intros.
   unfold careful_add in H1.
   destruct (a =? 0) eqn:?.
-  - rewrite Z.eqb_eq in *. omega.
+  - rewrite Z.eqb_eq in *. lia.
   - destruct (b =? 0) eqn:?.
-    + rewrite Z.eqb_eq in *. omega.
+    + rewrite Z.eqb_eq in *. lia.
     + rewrite Z.eqb_neq in *.
       destruct (a <? 0) eqn:?; destruct (b <? 0) eqn:?;
-               try rewrite Z.ltb_lt in *; try omega.
+               try rewrite Z.ltb_lt in *; try lia.
       simpl in H1.
       destruct (inf <=? a + b); [inversion H1 | trivial].
 Qed.
@@ -369,7 +370,7 @@ Proof.
   reflexivity.
   3: rewrite Zlength_map.
   2, 3, 5: rewrite nat_inc_list_Zlength.
-  all: rewrite Z2Nat.id; omega.
+  all: rewrite Z2Nat.id; lia.
 Qed.
 
 Lemma one_step_path_Znth:
@@ -450,7 +451,7 @@ Proof.
   rewrite (graph_to_mat_Zlength g) in H0.
   simpl in H1. destruct H1. rewrite H in H1, H3.
   specialize (H0 _ _ H3 H1). destruct H0.
-  1: destruct H0; omega.
+  1: destruct H0; lia.
   rewrite H0. compute; inversion 1.
 Qed.
 
@@ -467,7 +468,7 @@ Proof.
     1: apply H0.
     rewrite if_false_bool.
     2: rewrite Bool.orb_false_iff; split; rewrite Z.ltb_nlt;
-      [omega | apply Zle_not_lt, H, in_eq].
+      [lia | apply Zle_not_lt, H, in_eq].
     destruct (inf <=? z + elabel g a).
     compute; inversion 1.
     apply Z.add_nonneg_nonneg; auto; apply H, in_eq.
@@ -505,7 +506,7 @@ Proof.
   pose proof (path_cost_pos g path) H H0 H1.
   assert (0 <= elabel g i) by
       (apply inrange_graph_cost_pos; trivial).
-  apply careful_add_clean; trivial; omega.
+  apply careful_add_clean; trivial; lia.
 Qed.
 
 Lemma path_cost_init:
@@ -521,7 +522,7 @@ Proof.
     destruct (init =? 0) eqn:?; trivial.
   - intros; simpl.
     rewrite <- careful_add_assoc.
-    rewrite IHl. omega.
+    rewrite IHl. lia.
 Qed.
      
 Lemma path_cost_path_glue:
@@ -564,7 +565,7 @@ Proof.
     split; [| left]; trivial.
   }
   pose proof (valid_path_valid _ _ _ H0 H3).
-  rewrite H in H4. omega.
+  rewrite H in H4. lia.
 Qed.
 
 Lemma step_in_range2: forall g x x0,
@@ -583,7 +584,7 @@ Proof.
     split; [| right]; trivial.
   }
   pose proof (valid_path_valid _ _ _ H0 H3).
-  rewrite H in H4. omega.
+  rewrite H in H4. lia.
 Qed.
 
 Lemma in_path_app_cons:
@@ -603,7 +604,7 @@ Proof.
     destruct H1.
     + left. unfold In_path. right.
       exists x. rewrite H4, H5. split; trivial.
-    + simpl in H1. destruct H1; [|omega].
+    + simpl in H1. destruct H1; [|lia].
       rewrite (surjective_pairing x) in *.
       inversion H1. simpl in H2.
       destruct H2.

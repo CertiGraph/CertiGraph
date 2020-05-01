@@ -118,13 +118,13 @@ Proof.
   } assert (Ptrofs.unsigned (Ptrofs.add i (Ptrofs.repr (WORD_SIZE * (z + 1)))) =
             ofs + 4). {
     rewrite H6, Ptrofs.unsigned_repr_eq. apply Z.mod_small.
-    destruct (Ptrofs.unsigned_range i0). rewrite <- Heqofs in *. omega.
+    destruct (Ptrofs.unsigned_range i0). rewrite <- Heqofs in *. lia.
   } rewrite H6. assert (0 <= z0) by (subst z0; apply Zlength_nonneg).
   assert ((@Zlength (@reptype CompSpecs int_or_ptr_type)
                     (make_fields_vals g (gen, num))) =
           (@Zlength val (make_fields_vals g (gen, num)))) by reflexivity.
   rewrite H9 in H3. clear H9. rewrite <- Heqz0 in *.
-  rewrite memory_block_split; [| rep_omega..].
+  rewrite memory_block_split; [| rep_lia..].
   sep_apply (data_at_memory_block
                sh tuint (Vint (Int.repr (make_header g (gen, num))))
                (Vptr b (Ptrofs.repr ofs))).
@@ -151,14 +151,14 @@ Proof.
   destruct H4 as [_ [_ [? _]]]. simpl in H4. rewrite <- H5 in H4. clear H3 H6 H5.
    rewrite ptrofs_add_repr in *. apply prop_right.
   pose proof (pvs_ge_zero g gen num). rewrite Ptrofs.unsigned_repr_eq in H1.
-  rewrite Z.mod_small in H1 by rep_omega. rewrite pvs_S.
+  rewrite Z.mod_small in H1 by rep_lia. rewrite pvs_S.
    unfold vertex_size. rewrite <- fields_eq_length. rewrite WORD_SIZE_eq in *.
   rewrite Z.mul_add_distr_l, Z.mul_1_r, Z.add_assoc in H4.
-  rewrite Ptrofs.unsigned_repr_eq in H4. rewrite Z.mod_small in H4 by rep_omega.
+  rewrite Ptrofs.unsigned_repr_eq in H4. rewrite Z.mod_small in H4 by rep_lia.
    assert ((@Zlength (@reptype CompSpecs int_or_ptr_type)
                      (make_fields_vals g (gen, num))) =
           (@Zlength val (make_fields_vals g (gen, num)))) by reflexivity.
-  rewrite H5 in *. rep_omega.
+  rewrite H5 in *. rep_lia.
  Qed.
 
 Lemma generation_rep_ptrofs: forall g gen b i,
@@ -189,7 +189,7 @@ Proof.
     assert (0 <= zp) by (rewrite Heqzp; apply pvs_ge_zero).
     pose proof (svs_gt_one g (gen, num)) as HS1.
     pose proof (Ptrofs.unsigned_range i) as HS2. rewrite pvs_S in HS.
-    rewrite Z.add_comm, Z.mul_add_distr_l, memory_block_split; [|rep_omega..].
+    rewrite Z.add_comm, Z.mul_add_distr_l, memory_block_split; [|rep_lia..].
     rewrite (Ptrofs.repr_unsigned i). apply cancel_left.
     sep_apply (vertex_rep_memory_block sh g (gen, num)).
     rewrite vertex_head_address_eq, <- Heqzp, <- Heqv. simpl offset_val.
@@ -209,7 +209,7 @@ Proof.
   remember (number_of_vertices (nth_gen g gen)) as num. clear Heqnum.
   remember (nth_sh g gen) as sh. clear Heqsh. induction num.
   - unfold previous_vertices_size. simpl fold_left. apply prop_right.
-    constructor. intros. omega.
+    constructor. intros. lia.
   - unfold generation_rep. rewrite nat_inc_list_S, map_app, iter_sepcon_app_sepcon.
     simpl iter_sepcon. entailer. unfold vertex_rep at 2. unfold vertex_at.
     rename H0 into HS. rewrite vertex_head_address_eq. entailer!. clear H1 H2 H3 H4.
@@ -217,17 +217,17 @@ Proof.
     hnf in H0. rewrite ptrofs_add_repr in H0. inv H0. simpl in H1. inv H1.
     simpl in H3. simpl in HS. pose proof (svs_gt_one g (gen, num)).
     pose proof (pvs_ge_zero g gen num). rewrite pvs_S in HS.
-    rewrite Ptrofs.unsigned_repr_eq in H3. rewrite Z.mod_small in H3 by rep_omega.
+    rewrite Ptrofs.unsigned_repr_eq in H3. rewrite Z.mod_small in H3 by rep_lia.
     rewrite Z.add_comm in H3. apply Z.divide_add_cancel_r in H3.
     2: rewrite WORD_SIZE_eq; apply Z.divide_factor_l. constructor. intros.
-    rewrite Ptrofs.unsigned_repr_eq. rewrite Z.mod_small by omega. simpl sizeof.
+    rewrite Ptrofs.unsigned_repr_eq. rewrite Z.mod_small by lia. simpl sizeof.
     apply align_compatible_rec_by_value with Mptr. 1: reflexivity. simpl.
     apply Z.divide_add_r; [assumption | apply Z.divide_factor_l].
 Qed.
 
 Lemma sizeof_tarray_int_or_ptr: forall n,
     0 <= n -> sizeof (tarray int_or_ptr_type n) = (WORD_SIZE * n)%Z.
-Proof. intros. simpl. rewrite Z.max_r by assumption. rep_omega. Qed.
+Proof. intros. simpl. rewrite Z.max_r by assumption. rep_lia. Qed.
 
 Lemma generation_rep_field_compatible: forall g gen,
     graph_has_gen g gen ->
@@ -267,21 +267,21 @@ Proof.
   intros. unfold field_compatible. simpl. destruct H1 as [? [_ [? [? _]]]].
   destruct H2 as [_ [_ [? [? _]]]]. destruct p; try contradiction. clear H1.
   simpl isptr. inv_int i. unfold size_compatible in *. simpl in H2.
-  simpl sizeof in *. rewrite Z.max_r in * by omega. pose proof (sizeof_pos t).
+  simpl sizeof in *. rewrite Z.max_r in * by lia. pose proof (sizeof_pos t).
   remember (sizeof t) as S. rewrite ptrofs_add_repr in H2.
-  rewrite Ptrofs.unsigned_repr in * by rep_omega.
+  rewrite Ptrofs.unsigned_repr in * by rep_lia.
   assert (0 <= ofs + S * n1 <= Ptrofs.max_unsigned). {
-    destruct H, H6. split. 2: rep_omega. apply Z.add_nonneg_nonneg. 1: omega.
-    apply Z.mul_nonneg_nonneg; omega. }
+    destruct H, H6. split. 2: rep_lia. apply Z.add_nonneg_nonneg. 1: lia.
+    apply Z.mul_nonneg_nonneg; lia. }
   rewrite Ptrofs.unsigned_repr in * by assumption.
   assert (forall i, ofs + S * n1 + S * (i - n1) = ofs + S * i). {
     intros. rewrite <- Z.add_assoc. rewrite <- Z.mul_add_distr_l.
-    do 2 f_equal. omega. } rewrite H8 in H2. do 4 (split; auto). constructor. intros.
+    do 2 f_equal. lia. } rewrite H8 in H2. do 4 (split; auto). constructor. intros.
   unfold tarray in *. inversion H4; subst. 1: simpl in H10; inversion H10.
   inversion H5; subst. 1: simpl in H10; inversion H10. remember (sizeof t) as S.
-  rewrite ptrofs_add_repr in H15. rewrite Ptrofs.unsigned_repr in * by rep_omega.
-  assert (0 <= i < n1 \/ n1 <= i < n) by omega. destruct H10.
-  1: apply H14; assumption. assert (0 <= i - n1 < n - n1) by omega.
+  rewrite ptrofs_add_repr in H15. rewrite Ptrofs.unsigned_repr in * by rep_lia.
+  assert (0 <= i < n1 \/ n1 <= i < n) by lia. destruct H10.
+  1: apply H14; assumption. assert (0 <= i - n1 < n - n1) by lia.
   specialize (H15 _ H11). rewrite H8 in H15. assumption.
 Qed.
 
@@ -366,7 +366,7 @@ Lemma data_at_tarray_space: forall sh n n1 p (v: list (reptype space_type)),
     data_at sh (tarray space_type (n - n1)) (sublist n1 n v)
             (offset_val (SPACE_STRUCT_SIZE * n1) p).
 Proof.
-  intros. eapply data_at_tarray_split; eauto. 1: omega.
+  intros. eapply data_at_tarray_split; eauto. 1: lia.
   autorewrite with sublist. reflexivity.
 Qed.
 
@@ -379,7 +379,7 @@ Proof.
   intros. rewrite !data_at__eq.
   apply data_at_tarray_value with (default_val (tarray int_or_ptr_type n));
     [assumption | unfold default_val; simpl; autorewrite with sublist..];
-    [omega | reflexivity..].
+    [lia | reflexivity..].
 Qed.
 
 Definition valid_int_or_ptr (x: val) :=
@@ -397,8 +397,8 @@ Proof.
   rewrite Int.unsigned_repr_eq.
   rewrite Zodd_mod.
   apply Zeq_is_eq_bool.
-  replace (i+i) with (2*i)%Z by omega.
-  rewrite <- Zmod_div_mod; try omega.
+  replace (i+i) with (2*i)%Z by lia.
+  rewrite <- Zmod_div_mod; try lia.
   - rewrite Z.mul_comm, Z.add_comm, Z_mod_plus_full. reflexivity.
   - compute; reflexivity.
   - exists (Z.div Int.modulus 2). reflexivity.
@@ -407,7 +407,7 @@ Qed.
 Lemma four_divided_odd_false: forall z, (4 | z) -> Z.odd z = false.
 Proof.
   intros. rewrite Zodd_mod. inversion H.
-  replace (x * 4)%Z with (2 * x * 2)%Z in H0 by omega. subst.
+  replace (x * 4)%Z with (2 * x * 2)%Z in H0 by lia. subst.
   rewrite Z_mod_mult; unfold Zeq_bool; reflexivity.
 Qed.
 
@@ -415,7 +415,7 @@ Lemma four_divided_tenth_pl_false: forall i,
     (4 | Ptrofs.unsigned i) -> Ptrofs.testbit i 1 = false.
 Proof.
   intros. unfold Ptrofs.testbit. inversion H.
-  replace (x * 4)%Z with (2 * (x * 2))%Z in H0 by omega.
+  replace (x * 4)%Z with (2 * (x * 2))%Z in H0 by lia.
   rewrite H0. rewrite Z.double_bits. simpl.
   rewrite Zodd_mod; rewrite Z_mod_mult;
   unfold Zeq_bool; reflexivity.
@@ -430,9 +430,9 @@ Proof.
   inv_int i. entailer!.
   destruct H3 as [_ [_ [_ [? _]]]]. clear -H3. hnf in H3. inv H3.
   1: simpl in H; inversion H. assert (0 <= 0 < Zlength (make_fields_vals g v)). {
-    split; [omega|]. rewrite fields_eq_length.
+    split; [lia|]. rewrite fields_eq_length.
     destruct (raw_fields_head_cons (vlabel g v)) as [r [l [? _]]]. rewrite H.
-    rewrite Zlength_cons. pose proof (Zlength_nonneg l). omega.
+    rewrite Zlength_cons. pose proof (Zlength_nonneg l). lia.
   } apply H4 in H. rewrite Z.mul_0_r, Z.add_0_r in H. clear H4. inv H. inv H0.
   simpl in H1. split.
   - simpl; rewrite !ptrofs_add_repr in *; apply four_divided_odd_false; assumption.
@@ -455,7 +455,7 @@ Proof.
   assert (nth index (map (fun x : nat => (gen, x)) (nat_inc_list num))
               (gen, O) = (gen, index)). {
     change (gen, O) with ((fun x: nat => (gen, x)) O). rewrite map_nth. red in H.
-    rewrite nat_inc_list_nth by omega. reflexivity.
+    rewrite nat_inc_list_nth by lia. reflexivity.
   } assert (In (gen, index) (map (fun x : nat => (gen, x)) (nat_inc_list num))). {
     rewrite <- H0. apply nth_In. rewrite map_length, nat_inc_list_length.
     red in H. subst num. assumption.
@@ -486,7 +486,7 @@ Next Obligation.
   repeat intro.
   destruct H1.
   apply age_level in H.
-  lapply (H0 a0); [|split; auto; omega].
+  lapply (H0 a0); [|split; auto; lia].
   intro HQ; destruct HQ.
   eexists; eauto.
 Defined.
@@ -496,9 +496,9 @@ Lemma derives_nonexpansive: forall P Q n,
 Proof.
   apply nonexpansive2_super_non_expansive; repeat intro.
   - split; intros ??%necR_level Hshift ? HP;
-      destruct (Hshift _ HP); destruct HP; eexists;  eauto; eapply H; auto; omega.
+      destruct (Hshift _ HP); destruct HP; eexists;  eauto; eapply H; auto; lia.
   - split; intros ??%necR_level Hshift ? []; apply Hshift;
-      split; auto; apply (H a0); auto; omega.
+      split; auto; apply (H a0); auto; lia.
 Qed.
 
 Lemma derives_nonexpansive_l: forall P Q n,
@@ -507,7 +507,7 @@ Proof.
   repeat intro.
   apply (nonexpansive_super_non_expansive (fun P => weak_derives P Q)); repeat intro.
   split; intros ??%necR_level Hshift ? [];
-    apply Hshift; split; auto; apply (H a0); auto; omega.
+    apply Hshift; split; auto; apply (H a0); auto; lia.
 Qed.
 
 Lemma derives_nonexpansive_r: forall P Q n,
@@ -518,7 +518,7 @@ Proof.
   split; intros ??%necR_level Hshift ? HP;
     destruct (Hshift _ HP); destruct HP;
       eexists;  eauto;
-        eapply H; auto; omega.
+        eapply H; auto; lia.
 Qed.
 
 Lemma derives_weak: forall P Q, P |-- Q -> TT |-- weak_derives P Q.
@@ -537,7 +537,7 @@ Proof.
   intros ? (? & ? & ? & [Hderives Hemp] & HP).
   destruct (join_level _ _ _ H).
   apply Hemp in H; subst.
-  lapply (Hderives a); [|split; auto; omega].
+  lapply (Hderives a); [|split; auto; lia].
   intro X; destruct X; eauto 7.
 Qed.
 
@@ -577,11 +577,11 @@ Proof.
   - unfold nth_space. remember (spaces (ti_heap t_info)) as ls.
     remember (length (g_gen (glabel g))) as m. clear -H2. revert ls H2.
     induction m; intros. 1: simpl; reflexivity. rewrite nat_inc_list_S, map_app.
-    rewrite IHm by omega. simpl map. clear IHm. revert ls H2. induction m; intros.
-    + destruct ls. 1: simpl in H2; exfalso; omega. simpl. reflexivity.
-    + destruct ls. 1: simpl in H2; exfalso; omega.
+    rewrite IHm by lia. simpl map. clear IHm. revert ls H2. induction m; intros.
+    + destruct ls. 1: simpl in H2; exfalso; lia. simpl. reflexivity.
+    + destruct ls. 1: simpl in H2; exfalso; lia.
       simpl firstn at 1. simpl nth. Opaque firstn. simpl. Transparent firstn.
-      rewrite IHm by (simpl in H2; omega). simpl. destruct ls; reflexivity.
+      rewrite IHm by (simpl in H2; lia). simpl. destruct ls; reflexivity.
 Qed.
 
 Lemma heap_rest_rep_data_at_: forall (g: LGraph) (t_info: thread_info) gen,
@@ -664,7 +664,7 @@ Proof.
   rewrite H2. sep_apply (memory_block_valid_ptr
                            (nth_sh g gen) (4 * gen_size t_info gen)
                            (space_start (nth_space t_info gen)));
-                [|pose proof (ti_size_gt_0 g t_info gen H1 H5 H0); omega | entailer!].
+                [|pose proof (ti_size_gt_0 g t_info gen H1 H5 H0); lia | entailer!].
   - unfold nth_sh. apply readable_nonidentity, writable_readable,
                    generation_share_writable.
 Qed.
@@ -677,7 +677,7 @@ Lemma generation_data_at__ptrofs: forall g t_info gen b i,
 Proof.
   intros. unfold generation_data_at_. rewrite <- H. entailer!.
   destruct H0 as [_ [_ [? _]]]. red in H0. simpl sizeof in H0.
-  rewrite Z.max_r in H0; [rep_omega |
+  rewrite Z.max_r in H0; [rep_lia |
                           unfold gen_size; apply (proj1 (total_space_range _))].
 Qed.
 
@@ -777,12 +777,12 @@ Proof.
   intros. destruct H as [o [? ?]]. rewrite data_at__memory_block. Intros.
   destruct H1 as [? [_ [? _]]]. destruct p; try contradiction. inv_int i.
   simpl offset_val in H0. rewrite ptrofs_add_repr in H0.
-  assert (0 <= n)%Z by rep_omega. rewrite sizeof_tarray_int_or_ptr by assumption.
-  simpl in H2. rewrite Ptrofs.unsigned_repr in H2 by rep_omega.
+  assert (0 <= n)%Z by rep_lia. rewrite sizeof_tarray_int_or_ptr by assumption.
+  simpl in H2. rewrite Ptrofs.unsigned_repr in H2 by rep_lia.
   rewrite Z.max_r in H2 by assumption. rewrite WORD_SIZE_eq in *.
-  assert (4 * n = o + (4 * n - o))%Z by omega. remember (4 * n - o) as m.
-  rewrite H5 in *. rewrite (memory_block_split sh b ofs o m) by omega.
-  clear Heqm n H5 H3. assert (0 < m <= Ptrofs.max_unsigned) by rep_omega.
+  assert (4 * n = o + (4 * n - o))%Z by lia. remember (4 * n - o) as m.
+  rewrite H5 in *. rewrite (memory_block_split sh b ofs o m) by lia.
+  clear Heqm n H5 H3. assert (0 < m <= Ptrofs.max_unsigned) by rep_lia.
   rewrite <- H0. Exists m. entailer!.
 Qed.
 
@@ -796,7 +796,7 @@ Proof.
   sep_apply (data_at__memory_block_cancel rsh (tptr tvoid) gp). simpl sizeof.
   rewrite <- sepcon_assoc.
   sep_apply (readable_writable_memory_block_FF _ _ 4 m gp H1 H); auto;
-    [rep_omega | entailer].
+    [rep_lia | entailer].
 Qed.
 
 Lemma graph_and_heap_rest_v_in_range_iff: forall g t_info gen v,
@@ -874,12 +874,12 @@ Proof.
   intros. unfold heap_rest_rep.
   pose proof (split3_full_length_list
                 0 i _ _ H1 (Zminus_0_l_reverse (Zlength (spaces h)))).
-  replace (i - 0) with i in H0 by omega. simpl in *.
+  replace (i - 0) with i in H0 by lia. simpl in *.
   remember (firstn (Z.to_nat i) (spaces h)) as l1.
   remember (skipn (Z.to_nat (i + 1)) (spaces h)) as l2.
   assert (Zlength l1 = i). {
-    rewrite Zlength_length by omega. subst l1. apply firstn_length_le.
-    rewrite Zlength_correct in H1. rep_omega. }
+    rewrite Zlength_length by lia. subst l1. apply firstn_length_le.
+    rewrite Zlength_correct in H1. rep_lia. }
   rewrite H0 at 5. rewrite (upd_Znth_char _ _ _ _ _ H3).
   rewrite H0 at 1. rewrite !iter_sepcon_app_sepcon. simpl.
   remember (data_at_ (space_sh (Znth i (spaces h))) (tarray int_or_ptr_type s)
@@ -891,9 +891,9 @@ Proof.
   red in H2. subst P. remember (Znth i (spaces h)) as sp.
   rewrite (data_at__tarray_value _ _ _ _ H2). rewrite offset_offset_val.
   replace (total_space sp - used_space sp - s) with
-      (total_space sp - (used_space sp + s)) by omega.
+      (total_space sp - (used_space sp + s)) by lia.
   replace (WORD_SIZE * used_space sp + WORD_SIZE * s) with
-      (WORD_SIZE * (used_space sp + s))%Z by rep_omega. reflexivity.
+      (WORD_SIZE * (used_space sp + s))%Z by rep_lia. reflexivity.
 Qed.
 
 Lemma data_at__singleton_array_eq:
@@ -932,7 +932,7 @@ Proof.
     destruct (Nat.lt_ge_cases n (length (g_gen (glabel g)))).
     - split; simpl; assumption.
     - exfalso. unfold nth_gen in H4. rewrite nth_overflow in H4 by assumption.
-      simpl in H4. omega. } f_equal.
+      simpl in H4. lia. } f_equal.
   - apply lacv_vertex_address_old; assumption.
   - apply lacv_make_header_old. intro S; inversion S. contradiction.
   - apply lacv_make_fields_vals_old; assumption.
@@ -974,7 +974,7 @@ Proof.
     assert (graph_has_v g (to, x)) by (split; simpl; assumption).
     rewrite lacv_vertex_address_old, lacv_make_header_old, lacv_make_fields_vals_old;
       [reflexivity | try assumption..].
-    unfold new_copied_v. intro. inversion H5. omega.
+    unfold new_copied_v. intro. inversion H5. lia.
 Qed.
 
 Lemma copied_v_derives_new_g: forall g v to,
@@ -985,15 +985,15 @@ Lemma copied_v_derives_new_g: forall g v to,
 Proof.
   intros. unfold graph_rep. unfold lgraph_add_copied_v at 1. simpl. red in H.
   rewrite cvmgil_length by assumption. remember (length (g_gen (glabel g))).
-  assert (n = to + (n - to))%nat by omega. assert (0 < n - to)%nat by omega.
+  assert (n = to + (n - to))%nat by lia. assert (0 < n - to)%nat by lia.
   remember (n - to)%nat as m. rewrite H3, nat_inc_list_app, !iter_sepcon_app_sepcon.
   rewrite (lacv_icgr_not_eq (nat_inc_list to) g v to); try assumption.
-  3: subst n; apply H. 2: intro; rewrite nat_inc_list_In_iff in H5; omega.
-  rewrite sepcon_comm, sepcon_assoc. f_equal. assert (m = 1 + (m - 1))%nat by omega.
+  3: subst n; apply H. 2: intro; rewrite nat_inc_list_In_iff in H5; lia.
+  rewrite sepcon_comm, sepcon_assoc. f_equal. assert (m = 1 + (m - 1))%nat by lia.
   rewrite H5, nat_seq_app, !iter_sepcon_app_sepcon.
   assert (nat_seq to 1 = [to]) by reflexivity. rewrite H6. clear H6.
   rewrite (lacv_icgr_not_eq (nat_seq (to + 1) (m - 1)) g v to); try assumption.
-  3: subst n; apply H. 2: intro; rewrite nat_seq_In_iff in H6; omega.
+  3: subst n; apply H. 2: intro; rewrite nat_seq_In_iff in H6; lia.
   rewrite sepcon_assoc, sepcon_comm, sepcon_assoc, sepcon_comm. f_equal.
   simpl iter_sepcon. normalize. clear m Heqm H3 H4 H5. subst n.
   rewrite <- lacv_generation_rep_eq; [reflexivity | assumption..].
@@ -1008,15 +1008,15 @@ Lemma data_at_tarray_split_1:
 Proof.
   intros.
   rewrite (data_at_tarray_split sh (Zlength l + 1) 1 p tt (v :: l) (v :: l) [v] l).
-  - replace (sizeof tt * 1)%Z with (sizeof tt) by omega.
-    replace (Zlength l + 1 - 1) with (Zlength l) by omega. f_equal.
+  - replace (sizeof tt * 1)%Z with (sizeof tt) by lia.
+    replace (Zlength l + 1 - 1) with (Zlength l) by lia. f_equal.
     rewrite (data_at_singleton_array_eq _ tt v); reflexivity.
-  - rep_omega.
-  - rewrite Zlength_cons. omega.
+  - rep_lia.
+  - rewrite Zlength_cons. lia.
   - autorewrite with sublist; reflexivity.
   - simpl. vm_compute. reflexivity.
   - simpl. rewrite sublist_1_cons.
-    replace (Zlength l + 1 - 1) with (Zlength l) by omega.
+    replace (Zlength l + 1 - 1) with (Zlength l) by lia.
     autorewrite with sublist. reflexivity.
   - assumption.
 Qed.
@@ -1027,10 +1027,10 @@ Lemma data_at_tarray_value_split_1: forall sh p (l: list val),
     data_at sh int_or_ptr_type (hd nullval l) p *
     data_at sh (tarray int_or_ptr_type (Zlength l-1)) (tl l) (offset_val WORD_SIZE p).
 Proof.
-  intros. destruct l. 1: rewrite Zlength_nil in H; omega. clear H. simpl hd.
+  intros. destruct l. 1: rewrite Zlength_nil in H; lia. clear H. simpl hd.
   simpl tl. rewrite Zlength_cons.
-  replace (Z.succ (Zlength l)) with (Zlength l + 1) by omega.
-  replace (Zlength l + 1 - 1) with (Zlength l) by omega.
+  replace (Z.succ (Zlength l)) with (Zlength l + 1) by lia.
+  replace (Zlength l + 1 - 1) with (Zlength l) by lia.
   eapply data_at_tarray_split_1; eauto.
 Qed.
 
@@ -1040,10 +1040,10 @@ Lemma data_at_tarray_tuint_split_1: forall sh p (l: list val),
     data_at sh tuint (hd nullval l) p *
     data_at sh (tarray tuint (Zlength l-1)) (tl l) (offset_val WORD_SIZE p).
 Proof.
-  intros. destruct l. 1: rewrite Zlength_nil in H; omega. clear H. simpl hd.
+  intros. destruct l. 1: rewrite Zlength_nil in H; lia. clear H. simpl hd.
   simpl tl. rewrite Zlength_cons.
-  replace (Z.succ (Zlength l)) with (Zlength l + 1) by omega.
-  replace (Zlength l + 1 - 1) with (Zlength l) by omega.
+  replace (Z.succ (Zlength l)) with (Zlength l + 1) by lia.
+  replace (Zlength l + 1 - 1) with (Zlength l) by lia.
   eapply data_at_tarray_split_1; eauto.
 Qed.
 
@@ -1066,12 +1066,12 @@ Proof.
       replace (Zlength (vertex_address g new_v :: tl (make_fields_vals g v)) - 1)
         with (Zlength (make_fields_vals g v) - 1). 1: reflexivity.
       transitivity (Zlength (tl (make_fields_vals g v))).
-      2: rewrite Zlength_cons; rep_omega.
+      2: rewrite Zlength_cons; rep_lia.
       assert (0 < Zlength (make_fields_vals g v)) by
           (rewrite fields_eq_length; apply (proj1 (raw_fields_range (vlabel g v)))).
       remember (make_fields_vals g v). destruct l.
-      1: rewrite Zlength_nil in H; omega. rewrite Zlength_cons. simpl. omega.
-    + rewrite Zlength_cons. rep_omega.
+      1: rewrite Zlength_nil in H; lia. rewrite Zlength_cons. simpl. lia.
+    + rewrite Zlength_cons. rep_lia.
 Qed.
 
 Lemma lmc_vertex_rep_not_eq: forall sh g v new_v x,
@@ -1174,7 +1174,7 @@ Proof.
   assert (v1 <> v). {
     intro. unfold vgeneration in H1.
     rewrite H4 in H2. rewrite H2 in H1. unfold not in H1.
-    simpl in H1. omega. }
+    simpl in H1. lia. }
   apply (lgd_vertex_rep_eq_in_diff_vert sh g v' v v1 e n); assumption.
 Qed.
 
@@ -1301,33 +1301,33 @@ Proof.
           @data_at CompSpecs sh (tarray space_type (i2 - i1 - 1))
                    (@sublist (@reptype CompSpecs space_type) (i1 + 1) i2 l)
                    (offset_val (SPACE_STRUCT_SIZE * (i1 + 1)) (ti_heap_p tinfo))).
-  rewrite heap_struct_rep_eq. rewrite (data_at_tarray_space sh 12 i1) by rep_omega.
-  rewrite (sublist_next i1 12 l) by rep_omega.
+  rewrite heap_struct_rep_eq. rewrite (data_at_tarray_space sh 12 i1) by rep_lia.
+  rewrite (sublist_next i1 12 l) by rep_lia.
   replace (12 - i1) with (Zlength (sublist (i1 + 1) 12 l) + 1) by
-      (rewrite Zlength_sublist; rep_omega).
+      (rewrite Zlength_sublist; rep_lia).
   rewrite data_at_tarray_split_1 by reflexivity. unfold space_address.
-  rewrite Z2Nat.id by omega. rewrite sepcon_comm, !sepcon_assoc. f_equal.
-  rewrite offset_offset_val. rewrite Z2Nat.id by omega.
+  rewrite Z2Nat.id by lia. rewrite sepcon_comm, !sepcon_assoc. f_equal.
+  rewrite offset_offset_val. rewrite Z2Nat.id by lia.
   replace (SPACE_STRUCT_SIZE * i1 + sizeof space_type) with
-      (SPACE_STRUCT_SIZE * (i1 + 1))%Z by (simpl sizeof; rep_omega).
+      (SPACE_STRUCT_SIZE * (i1 + 1))%Z by (simpl sizeof; rep_lia).
   assert (Zlength (sublist (i1 + 1) 12 l) = 11 - i1) by
-      (rewrite Zlength_sublist; rep_omega). rewrite H3.
+      (rewrite Zlength_sublist; rep_lia). rewrite H3.
   rewrite (data_at_tarray_space sh (11 - i1) (i2 - i1 - 1)).
-  3: rewrite H3; reflexivity. 2: rep_omega. rewrite !sublist_sublist by rep_omega.
-  replace (0 + (i1 + 1)) with (i1 + 1) by omega.
-  replace (i2 - i1 - 1 + (i1 + 1)) with i2 by omega.
-  replace (11 - i1 - (i2 - i1 - 1)) with (12 - i2) by omega.
-  replace (11 - i1 + (i1 + 1)) with 12 by omega.
+  3: rewrite H3; reflexivity. 2: rep_lia. rewrite !sublist_sublist by rep_lia.
+  replace (0 + (i1 + 1)) with (i1 + 1) by lia.
+  replace (i2 - i1 - 1 + (i1 + 1)) with i2 by lia.
+  replace (11 - i1 - (i2 - i1 - 1)) with (12 - i2) by lia.
+  replace (11 - i1 + (i1 + 1)) with 12 by lia.
   rewrite offset_offset_val, <- Z.mul_add_distr_l.
-  replace (i1 + 1 + (i2 - i1 - 1)) with i2 by omega.
-  rewrite (sublist_next i2 12 l) by rep_omega.
+  replace (i1 + 1 + (i2 - i1 - 1)) with i2 by lia.
+  rewrite (sublist_next i2 12 l) by rep_lia.
   replace (12 - i2) with (Zlength (sublist (i2 + 1) 12 l) + 1) by
-      (rewrite Zlength_sublist; rep_omega).
+      (rewrite Zlength_sublist; rep_lia).
   rewrite data_at_tarray_split_1 by reflexivity.
   rewrite sepcon_assoc, sepcon_comm, !sepcon_assoc. f_equal.
   rewrite <- !sepcon_assoc. rewrite offset_offset_val. simpl sizeof.
   replace (SPACE_STRUCT_SIZE * i2 + 12) with (SPACE_STRUCT_SIZE * (i2 + 1))%Z by
-      rep_omega. reflexivity.
+      rep_lia. reflexivity.
 Qed.
 
 Lemma heap_struct_rep_split: forall sh l tinfo i1 i2,
@@ -1338,9 +1338,9 @@ Lemma heap_struct_rep_split: forall sh l tinfo i1 i2,
         data_at sh space_type (Znth i2 l) (space_address tinfo (Z.to_nat i2)) * B.
 Proof.
   intros. destruct H, H0. destruct (Z_dec i1 i2) as [[? | ?] | ?]. 3: contradiction.
-  - destruct (heap_struct_rep_split_lt sh l tinfo i1 i2) as [B ?]; try rep_omega.
+  - destruct (heap_struct_rep_split_lt sh l tinfo i1 i2) as [B ?]; try rep_lia.
     exists B. assumption.
-  - destruct (heap_struct_rep_split_lt sh l tinfo i2 i1) as [B ?]; try rep_omega.
+  - destruct (heap_struct_rep_split_lt sh l tinfo i2 i1) as [B ?]; try rep_lia.
     exists B. rewrite H5. f_equal. rewrite sepcon_comm. reflexivity.
 Qed.
 
@@ -1362,9 +1362,9 @@ Proof.
   remember (heap_rest_rep (ti_heap tinfo)) as Q.
   rewrite (sepcon_comm P), sepcon_assoc. remember (P * Q) as R.
   clear P HeqP Q HeqQ HeqR. remember (map space_tri (spaces (ti_heap tinfo))).
-  assert (0 <= Z.of_nat gen1 < MAX_SPACES) by rep_omega.
-  assert (0 <= Z.of_nat gen2 < MAX_SPACES) by rep_omega.
-  assert (Z.of_nat gen1 <> Z.of_nat gen2) by omega.
+  assert (0 <= Z.of_nat gen1 < MAX_SPACES) by rep_lia.
+  assert (0 <= Z.of_nat gen2 < MAX_SPACES) by rep_lia.
+  assert (Z.of_nat gen1 <> Z.of_nat gen2) by lia.
   assert (Zlength l = MAX_SPACES) by (subst; rewrite Zlength_map; apply spaces_size).
   destruct (heap_struct_rep_split sh l tinfo _ _ H2 H3 H4 H5) as [B ?].
   rewrite H6, !Nat2Z.id.
@@ -1372,8 +1372,8 @@ Proof.
                     data_at sh space_type (Znth (Z.of_nat i) l)
                             (space_address tinfo i) = space_struct_rep sh tinfo i). {
     intros. unfold space_struct_rep. subst l. rewrite Zlength_map in H5.
-    rewrite nth_space_Znth, Znth_map by rep_omega. reflexivity. }
-  rewrite !H7 by rep_omega. rewrite (sepcon_assoc _ B R).
+    rewrite nth_space_Znth, Znth_map by rep_lia. reflexivity. }
+  rewrite !H7 by rep_lia. rewrite (sepcon_assoc _ B R).
   cancel. apply wand_frame_intro.
 Qed.
 
@@ -1393,12 +1393,12 @@ Lemma hsr_single_explicit: forall sh l tinfo i,
                 (@sublist (@reptype CompSpecs space_type) 0 i l) (ti_heap_p tinfo)).
 Proof.
   intros. rewrite heap_struct_rep_eq.
-  rewrite (data_at_tarray_space sh 12 i) by rep_omega.
-  rewrite (sublist_next i 12 l) by rep_omega.
+  rewrite (data_at_tarray_space sh 12 i) by rep_lia.
+  rewrite (sublist_next i 12 l) by rep_lia.
   replace (12 - i) with (Zlength (sublist (i + 1) 12 l) + 1) by
-      (rewrite Zlength_sublist; rep_omega).
+      (rewrite Zlength_sublist; rep_lia).
   rewrite data_at_tarray_split_1 by reflexivity. unfold space_address.
-  rewrite Z2Nat.id by omega. rewrite sepcon_comm, !sepcon_assoc. reflexivity.
+  rewrite Z2Nat.id by lia. rewrite sepcon_comm, !sepcon_assoc. reflexivity.
 Qed.
 
 Lemma heap_struct_rep_split_single: forall sh l tinfo i,
@@ -1439,13 +1439,13 @@ Proof.
   clear P HeqP Q HeqQ HeqR. remember (map space_tri (spaces (ti_heap tinfo))).
   assert (Zlength l = MAX_SPACES) by (subst; rewrite Zlength_map; apply spaces_size).
   destruct (heap_struct_rep_split_single sh l tinfo (Z.of_nat gen))
-    as [B ?]; try rep_omega; try assumption. rewrite H1, !Nat2Z.id. clear H1.
+    as [B ?]; try rep_lia; try assumption. rewrite H1, !Nat2Z.id. clear H1.
   assert (data_at sh space_type
                   (@Znth _ (@Inhabitant_reptype CompSpecs space_type)
                          (Z.of_nat gen) l) (space_address tinfo gen) =
           space_struct_rep sh tinfo gen). {
     intros. unfold space_struct_rep. subst l. rewrite Zlength_map in H0.
-    rewrite Znth_map by rep_omega. rewrite nth_space_Znth. reflexivity. } rewrite !H1.
+    rewrite Znth_map by rep_lia. rewrite nth_space_Znth. reflexivity. } rewrite !H1.
   rewrite (sepcon_assoc _ B R). cancel. apply wand_frame_intro.
 Qed.
 
@@ -1499,7 +1499,7 @@ Lemma heap_rest_rep_reset: forall (g: LGraph) t_info gen,
 Proof.
   intros. unfold heap_rest_rep. simpl.
   assert (gen < length (spaces (ti_heap t_info)))%nat by
-      (red in H0; destruct H as [_ [_ ?]]; omega).
+      (red in H0; destruct H as [_ [_ ?]]; lia).
   destruct (reset_nth_space_Permutation _ _ H1) as [l [? ?]].
   rewrite (iter_sepcon_permutation _ H3). rewrite (iter_sepcon_permutation _ H2).
   simpl. cancel. destruct (gt_gs_compatible _ _ H _ H0) as [? [? ?]].
@@ -1512,9 +1512,9 @@ Proof.
   sep_apply (generation_rep_data_at_ g gen H0). unfold graph_gen_size. rewrite H6.
   unfold gen_start. rewrite if_true by assumption. rewrite H4. unfold nth_sh.
   rewrite H5. simpl. remember (nth_space t_info gen).
-  replace (WORD_SIZE * 0)%Z with 0 by omega.
+  replace (WORD_SIZE * 0)%Z with 0 by lia.
   rewrite isptr_offset_val_zero by assumption.
-  replace (total_space s - 0) with (total_space s) by omega.
+  replace (total_space s - 0) with (total_space s) by lia.
   rewrite <- data_at__tarray_value by apply space_order. cancel.
 Qed.
 
@@ -1543,11 +1543,11 @@ Lemma ti_token_rep_add: forall ti sp i (Hs: 0 <= i < MAX_SPACES),
     ti_token_rep ti |-- ti_token_rep (ti_add_new_space ti sp i Hs).
 Proof.
   intros. unfold ti_token_rep. simpl. cancel. remember (spaces (ti_heap ti)).
-  rewrite <- (sublist_all (Zlength l) l) at 1 by omega.
+  rewrite <- (sublist_all (Zlength l) l) at 1 by lia.
   assert (Zlength l = MAX_SPACES) by (subst; rewrite spaces_size; reflexivity).
   rewrite upd_Znth_unfold. 2: now rewrite H1.
-  rewrite <- (sublist_rejoin 0 i) by omega. rewrite !iter_sepcon_app_sepcon. cancel.
-  rewrite (sublist_next i) by omega. simpl. cancel. subst l.
+  rewrite <- (sublist_rejoin 0 i) by lia. rewrite !iter_sepcon_app_sepcon. cancel.
+  rewrite (sublist_next i) by lia. simpl. cancel. subst l.
   unfold space_token_rep at 1. rewrite H. rewrite if_true by reflexivity.
   unfold space_token_rep. rewrite if_false by assumption. cancel.
 Qed.
@@ -1576,9 +1576,9 @@ Proof.
   assert (Zlength (map space_tri (spaces (ti_heap (ti_add_new_space tinfo sp i Hs)))) =
           MAX_SPACES) by (rewrite Zlength_map, spaces_size; reflexivity).
   rewrite hsr_single_explicit with (i := i) by assumption. simpl.
-  rewrite <- !upd_Znth_map, upd_Znth_same, ans_space_address by omega.
-  rewrite sublist_upd_Znth_r; [| omega | pose proof Hs; rep_omega].
-  rewrite sublist_upd_Znth_l by omega. reflexivity.
+  rewrite <- !upd_Znth_map, upd_Znth_same, ans_space_address by lia.
+  rewrite sublist_upd_Znth_r; [| lia | pose proof Hs; rep_lia].
+  rewrite sublist_upd_Znth_l by lia. reflexivity.
 Qed.
 
 Lemma heap_rest_rep_add: forall tinfo sp i (Hs: 0 <= i < MAX_SPACES),
@@ -1587,11 +1587,11 @@ Lemma heap_rest_rep_add: forall tinfo sp i (Hs: 0 <= i < MAX_SPACES),
     heap_rest_rep (ti_heap (ti_add_new_space tinfo sp i Hs)).
 Proof.
   intros. unfold heap_rest_rep. simpl. remember (spaces (ti_heap tinfo)).
-  rewrite <- (sublist_all (Zlength l) l) at 1 by omega.
+  rewrite <- (sublist_all (Zlength l) l) at 1 by lia.
   assert (Zlength l = MAX_SPACES) by (subst; rewrite spaces_size; reflexivity).
   rewrite upd_Znth_unfold. 2: now rewrite H0.
-  rewrite <- (sublist_rejoin 0 i) by omega. rewrite !iter_sepcon_app_sepcon.
-  rewrite sepcon_assoc. f_equal. rewrite (sublist_next i) by omega. simpl.
+  rewrite <- (sublist_rejoin 0 i) by lia. rewrite !iter_sepcon_app_sepcon.
+  rewrite sepcon_assoc. f_equal. rewrite (sublist_next i) by lia. simpl.
   rewrite sepcon_emp, sepcon_comm. f_equal. subst l. unfold space_rest_rep at 1.
   rewrite if_true by assumption. rewrite emp_sepcon. reflexivity.
 Qed.
@@ -1610,8 +1610,8 @@ Lemma graph_rep_add: forall (g : LGraph) (gi : generation_info),
 Proof.
   intros. unfold graph_rep. simpl. rewrite app_length. simpl.
   rewrite Nat.add_1_r, nat_inc_list_S, iter_sepcon_app_sepcon. simpl.
-  unfold generation_rep at 3. unfold nth_gen. simpl. rewrite app_nth2 by omega.
-  replace (length (g_gen (glabel g)) - length (g_gen (glabel g)))%nat with O by omega.
+  unfold generation_rep at 3. unfold nth_gen. simpl. rewrite app_nth2 by lia.
+  replace (length (g_gen (glabel g)) - length (g_gen (glabel g)))%nat with O by lia.
   simpl. rewrite H. simpl. rewrite !sepcon_emp. apply iter_sepcon_func_strong. intros.
   rewrite nat_inc_list_In_iff in H2. unfold generation_rep. unfold nth_sh.
   rewrite !ang_nth_old by assumption. apply iter_sepcon_func_strong. intros v ?.
