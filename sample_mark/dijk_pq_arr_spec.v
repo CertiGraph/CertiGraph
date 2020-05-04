@@ -40,20 +40,13 @@ Definition inv_unpopped g src prev priq dist dst :=
   dst = src \/
   (dst <> src /\
    let mom := Znth dst prev in
-   exists p2mom,
-     path_correct g prev dist src mom p2mom /\
-     (forall step, In_path g step p2mom ->
-                   In step (get_popped priq)) /\
-     path_globally_optimal g src mom p2mom /\
-     elabel g (mom, dst) < inf /\
-     (path_cost g p2mom) + (Znth dst (Znth mom (graph_to_mat g))) < inf /\
-     Znth dst dist = path_cost g p2mom + Znth dst (Znth mom (graph_to_mat g)) /\
-     forall mom' p2mom',
-       path_correct g prev dist src mom' p2mom' ->
-       (forall step', In_path g step' p2mom' ->
-                      In step' (get_popped priq)) ->
-       path_globally_optimal g src mom' p2mom' ->
-       path_cost g p2mom + Znth dst (Znth mom (graph_to_mat g)) <= careful_add (path_cost g p2mom') (Znth dst (Znth mom' (graph_to_mat g)))).
+   In mom (get_popped priq) /\
+   elabel g (mom, dst) < inf /\
+   (Znth mom dist) + (Znth dst (Znth mom (graph_to_mat g))) < inf /\
+   Znth dst dist = Znth mom dist + Znth dst (Znth mom (graph_to_mat g)) /\
+   forall mom',
+     In mom' (get_popped priq) ->
+     Znth dst dist <= careful_add (Znth mom' dist) (Znth dst (Znth mom' (graph_to_mat g)))).
 
 Definition inv_unseen g prev priq dist dst :=
   Znth dst priq = inf ->
