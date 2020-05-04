@@ -1197,7 +1197,7 @@ So this pop operation maintains inv_popped for u.
                 
 
                 (* now we know that child' is not minimal, and thus... *)
-                assert (path_cost g p2mom' + Znth child' (Znth mom' (graph_to_mat g)) >= path_cost g p2mom + Znth u (Znth mom (graph_to_mat g))) by admit.
+                assert (path_cost g p2mom' + Znth child' (Znth mom' (graph_to_mat g)) >= path_cost g p2mom + Znth u (Znth mom (graph_to_mat g))) by admit. 
                 (* add this to invariants? *)
                 lia. 
             ** (* Here we must show that the
@@ -1827,12 +1827,12 @@ CAREFUL with the inner for loop...
  *)
                               unfold VType in *.
                               rewrite H69.
+                              
+
+                              
                               assert (Znth i dist_contents' <= path_cost g p2mom' + Znth i (Znth mom' (graph_to_mat g))) by admit.
-                              (* this should come from an inv
-                                 but is not possible rn *)
-                              (* need to try and remove step <> u
-                                 from inv_unpopped_weak
-                               *)
+    (* this should come from an inv?? *)
+ 
 
 (*
   So we still have 
@@ -2299,8 +2299,60 @@ dist [i] < dist[u] + graph[u][i] ......(H43)
                                    }
                                    lia.
                             ----
-                              (*
-1.2 ~ k = u: p' = s to u + u to k + edge k i.
+                              destruct Hrem as [? [? [? [? ?]]]].
+
+                              assert (In_path g mom' p2mom'). {
+                                destruct H73.
+                                apply pfoot_in in H77. 
+                                trivial.
+                              }
+
+                              destruct (zlt (path_cost g p2mom' + Znth i (Znth mom' (graph_to_mat g))) inf).
+                              2: {
+                                unfold VType in *.
+                                destruct H58 as [_ [_ [_ [? _]]]].
+                                rewrite <- H58.
+                                destruct (zlt (Znth i (Znth mom' (graph_to_mat g))) inf).
+                                - rewrite careful_add_dirty; trivial;
+                                    lia.
+                                - unfold careful_add.
+                                  destruct (path_cost g p2mom' =? 0) eqn:?.
+                                  + rewrite Z.eqb_eq in Heqb.
+                                    unfold VType in *.
+                                    rewrite Heqb. simpl.
+                                    lia.
+                                  + unfold VType in *.
+                                    rewrite Heqb.
+                                    rewrite if_false_bool.
+                                    rewrite if_false_bool.
+                                    rewrite if_true_bool. lia.
+                                    rewrite Z.leb_le. lia.
+                                    rewrite orb_false_iff; split; rewrite Z.ltb_nlt.
+                                    pose proof (path_cost_pos g p2mom' H2 H65 H1).
+                                    unfold VType in *.
+                                    lia. lia. 
+                                    rewrite Z.eqb_neq. lia.
+                              }                              
+                              assert (vvalid g i). {
+                                destruct H2 as [? _].
+                                     red in H2; rewrite H2; trivial.
+                              }
+                              assert (vvalid g mom'). {
+                                apply (valid_path_valid g p2mom'); trivial.
+                            }
+                              assert (careful_add (path_cost g p2mom') (Znth i (Znth mom' (graph_to_mat g))) = path_cost g p2mom' + Znth i (Znth mom' (graph_to_mat g))). {
+                                rewrite careful_add_clean; trivial.
+                                - apply path_cost_pos; trivial.
+                                - rewrite <- elabel_Znth_graph_to_mat; trivial.
+                                  apply inrange_graph_cost_pos; trivial.
+                                  all: apply vvalid2_evalid; trivial.
+                              }
+                           
+(*
+1.2 ~ k = u: 
+Split p2mom' into 
+s to u + u to k + edge k i.
+
 Since p' is composed by popped vertex (including u) only,
 k must be a popped vertex.
 Then it satisfies NewInv1, which means
@@ -2308,14 +2360,23 @@ dist[k] <= path_cost [s to u] + path_cost [u to k]
 and the global optimal path from s to k is composed by
 popped vertices only.
 Thus dist[k] + len(edge k i) <= path_cost p'.
-Since dist[k] only contains popped vertices, this path
-having dist[k] + edge k i also only contains popped
-vertices. Thus we have dist[i] <= dist[k] + len(edge k i)
-because of Inv2. So we have:
-dist[i] <= dist[k] + len(edge k i) <= path_cost p'.
+ *)
+                              unfold VType in *.
+                              rewrite H80.
+                              
+(* Since dist[k] only contains popped vertices, this path
+   having dist[k] + edge k i also only contains popped
+   vertices. Thus we have dist[i] <= dist[k] + len(edge k i)
+   because of Inv2. 
+ *)
 
-                               *) 
-                              admit.
+                              assert (Znth i dist_contents' <= path_cost g p2mom' + Znth i (Znth mom' (graph_to_mat g))) by admit.
+                              (* this should come from an inv?? *)
+                           
+(* So we have:
+   dist[i] <= dist[k] + len(edge k i) <= path_cost p'.
+ *)
+                              unfold VType in *. lia.
                         ***
 
                           (* 2. ~ In u p': This is an easy case.
@@ -2341,12 +2402,39 @@ dist[i] <= dist[k] + len(edge k i) <= path_cost p'.
                     split3; trivial.
                     intros.
                     destruct (Z.eq_dec m u).
-                    +++ subst m. rewrite <- H58.
-                        admit. (* need better explanation of 
-                                  what happens with that check 
-                                  fails anyway. 
-                                  see H43. *)
-                    +++ apply H60; trivial.
+                    2: apply H60; trivial.
+                    subst m.
+                    rewrite H58 in H43.
+                    assert (0 <= u < SIZE) by lia.
+                    assert (vvalid g u). {
+                      destruct H2 as [? _]. red in H2. rewrite H2. lia.
+                    }
+                    assert (Znth u dist_contents' < inf). {
+                      destruct (H21 _ H61) as [? [? [? ?]]].
+                      destruct H64 as [? [? [? [? ?]]]].
+                      lia.
+                    }
+                    destruct (zlt (Znth i (Znth u (graph_to_mat g))) inf).
+                    1: apply careful_add_dirty; trivial; lia.
+                    assert (Znth i (Znth u (graph_to_mat g)) = inf). {
+                      assert (Int.max_signed / SIZE < inf) by now compute. 
+                      unfold inrange_graph in H1;
+                        destruct (H1 _ _ H18 H62); trivial.
+                      replace 8 with SIZE in H38 by lia.
+                      rewrite inf_eq2 in H38.
+                      rewrite Int.signed_repr in H38.
+                      2: { unfold VType in *. replace SIZE with 8 in H53, H52.
+                           unfold Int.min_signed, Int.max_signed, Int.half_modulus in *.
+                           simpl. simpl in H53, H52.
+                           assert (2147483647 / 8 < 2147483647) by now compute.
+                           lia.
+                      }
+                      rewrite Int.signed_repr in H38.
+                      2: rewrite <- inf_eq; rep_lia.
+                      lia.
+                    }
+                    rewrite H65.
+                    rewrite careful_add_inf; trivial; lia.
                 --- intros.
                     assert (i <= dst < SIZE) by lia.
                     apply H25; trivial.
@@ -2379,11 +2467,11 @@ dist[i] <= dist[k] + len(edge k i) <= path_cost p'.
             ** destruct (Z.eq_dec dst i).
                --- subst dst. 
                    (* Will need to use the second half of the 
-                for loop's invariant.          
-                Whatever path worked for i then will 
-                continue to work for i now:
-                i cannot be improved
-                by going via u *)
+                      for loop's invariant.          
+                      Whatever path worked for i then will 
+                      continue to work for i now:
+                      i cannot be improved
+                      by going via u *)
                    unfold inv_unpopped; intros.
                    assert (i <= i < SIZE) by lia.
                    destruct (H23 i H53 H52) as [p2mom [? [? [? [? [? ?]]]]]].
@@ -2407,11 +2495,99 @@ dist[i] <= dist[k] + len(edge k i) <= path_cost p'.
                        specialize (H55 _ H60).
                        destruct H55. trivial.
                    +++ intros. apply H59; trivial.
-                   +++ intros. apply H59; trivial.
-                       intros. specialize (H61 _ H63).
-                       split; trivial. 
-                       admit.
-                       (* check invariants re: step <> u *)
+                   +++ intros.
+
+                       assert (In_path g mom' p2mom'). {
+                         destruct H60 as [_ [[_ ?] _]].
+                         apply pfoot_in in H60.
+                         trivial.
+                       }
+
+                       assert (vvalid g mom'). {
+                         destruct H60.
+                         apply (valid_path_valid g p2mom'); trivial.
+                       }
+
+                       destruct (zlt (path_cost g p2mom' + Znth i (Znth mom' (graph_to_mat g))) inf).
+                       2: {
+                         unfold VType in *.
+                         destruct H54 as [_ [_ [_ [? _]]]].
+                         destruct H60 as [? [? [? [? ?]]]].
+                         rewrite <- H54.
+                         destruct (zlt (Znth i (Znth mom' (graph_to_mat g))) inf).
+                         - rewrite careful_add_dirty; trivial;
+                             lia.
+                         - unfold careful_add.
+                           destruct (path_cost g p2mom' =? 0) eqn:?.
+                           + rewrite Z.eqb_eq in Heqb.
+                             unfold VType in *.
+                             rewrite Heqb. simpl.
+                             lia.
+                           + unfold VType in *.
+                             rewrite Heqb.
+                             rewrite if_false_bool.
+                             rewrite if_false_bool.
+                             rewrite if_true_bool. lia.
+                             rewrite Z.leb_le. lia.
+                             rewrite orb_false_iff; split; rewrite Z.ltb_nlt.
+                             pose proof (path_cost_pos g p2mom' H2 H60 H1).
+                             unfold VType in *.
+                             lia. lia. 
+                             rewrite Z.eqb_neq. lia.
+                       }
+                       assert (vvalid g i). {
+                         destruct H2 as [? _].
+                         red in H2; rewrite H2; trivial.
+                       }
+                       
+                       assert (careful_add (path_cost g p2mom') (Znth i (Znth mom' (graph_to_mat g))) = path_cost g p2mom' + Znth i (Znth mom' (graph_to_mat g))). {
+                         rewrite careful_add_clean; trivial.
+                         - apply path_cost_pos; trivial.
+                           destruct H60; trivial. 
+                         - rewrite <- elabel_Znth_graph_to_mat; trivial.
+                           apply inrange_graph_cost_pos; trivial.
+                           all: apply vvalid2_evalid; trivial.
+                       }
+                       assert (mom' <> i). {
+                         intro.
+                         specialize (H61 _ H63).
+                         subst mom'. 
+                         rewrite get_popped_meaning in H61; lia. 
+                       }
+                              
+                       assert (In mom' (get_popped priq_contents')). {
+                         specialize (H61 _ H63). trivial.
+                       }
+                       assert (vvalid g i). {
+                         destruct H2 as [? _].
+                         red in H2; rewrite H2; trivial.
+                       }
+
+
+                       
+                       destruct (in_dec (ZIndexed.eq) u (epath_to_vpath g p2mom')).
+                       ***
+                         apply in_path_eq_epath_to_vpath in i0.
+                         2: destruct H60; trivial.
+
+                         destruct (Z.eq_dec mom' u).
+                         1: { subst mom'. rewrite H14.
+                              rewrite careful_add_inf; trivial.
+                              2: apply path_cost_pos; destruct H60; trivial.
+                              lia.
+                         }
+
+                         destruct H60 as [? [? [? [? ?]]]].
+                         assert (Znth i dist_contents' <= path_cost g p2mom' + Znth i (Znth mom' (graph_to_mat g))) by admit.
+                         unfold VType in *.
+                         (* destruct H60 as [_ [_ [_ [? _]]]]. *)
+                         lia.
+
+                       *** apply H59; trivial.
+                           intros. specialize (H61 _ H70).
+                           split; trivial. intro. subst step'.
+                           apply n.
+                           apply in_path_eq_epath_to_vpath; destruct H60; trivial.
                --- apply H22; lia.
             ** destruct (Z.eq_dec dst i).
                --- lia. 
