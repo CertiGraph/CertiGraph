@@ -1146,7 +1146,6 @@ So this pop operation maintains inv_popped for u.
 
                 rewrite Z.add_0_l in g0.
                 rewrite elabel_Znth_graph_to_mat in g0 by assumption.
-                simpl in g0.
                 rewrite Z.add_assoc in g0. 
 
 
@@ -1162,7 +1161,7 @@ So this pop operation maintains inv_popped for u.
                 destruct (H64 H56) as [p2mom' [? [? ?]]].
 
                 (* and path_cost of p2mom' will be <= that of p1 *)
-                specialize (H67 p1 H52 H54). 
+                pose proof (H67 p1 H52 H54).  
                 
                 (* assert by transitivity that
      path_cost (p2mom' +++ (mom', child') +++ p2) < path_cost p2mom +++ ...   *) 
@@ -1174,22 +1173,33 @@ So this pop operation maintains inv_popped for u.
                   apply Zplus_le_compat_r; trivial.
                 }
                 
-                (* assert that child' <> u 
-   because then LHS is x + c + ? and RHS is x + c *)
-                assert (child' <> u). {
-                  intro; subst child'.
-                  pose proof (path_cost_pos g p2 H2 H53 H1).
-                  admit.
+                (* assert that child' <> u *)
+                assert (0 <= path_cost g p2) by
+                    (apply (path_cost_pos g); trivial).
+                assert (child' <> u). { 
+                  intro. subst child'.
+                  
+                  specialize (H42 mom' p2mom' H65 H66 H67).
+                  destruct H65 as [? [? [? [? ?]]]].
+                  unfold VType in *.
+                  destruct (zlt (path_cost g p2mom' + Znth u (Znth mom' (graph_to_mat g))) inf).                  
+                  2: {
+                    apply Z.lt_asymm in H69. apply H69.
+                    rewrite careful_add_dirty in H42; trivial.
+                    unfold VType in *. lia.
+                  }
+                  rewrite careful_add_clean in H42; trivial.
+                  - unfold VType in *; lia.
+                  - apply path_cost_pos; trivial.
+                  - rewrite <- elabel_Znth_graph_to_mat; trivial.
+                    apply inrange_graph_cost_pos; trivial.
                 }
                 
 
-                (* now we know that child' is not minimal, and thus x + c >= p2mom +++ u *)
-                (* thus we have both x + c >= p2mom +++ u     and
-                       x + c + ? < p2mom +++ u *)
-
-
-                admit.
-                
+                (* now we know that child' is not minimal, and thus... *)
+                assert (path_cost g p2mom' + Znth child' (Znth mom' (graph_to_mat g)) >= path_cost g p2mom + Znth u (Znth mom (graph_to_mat g))) by admit.
+                (* add this to invariants? *)
+                lia. 
             ** (* Here we must show that the
                     vertices that were popped earlier
                     are not affected by the addition of
