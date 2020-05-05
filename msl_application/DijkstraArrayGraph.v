@@ -524,7 +524,7 @@ Proof.
     rewrite <- careful_add_assoc.
     rewrite IHl. lia.
 Qed.
-     
+
 Lemma path_cost_path_glue:
   forall g p1 p2,
     path_cost g p1 < inf ->
@@ -547,6 +547,105 @@ Proof.
   replace c1 with (careful_add c1 0) at 1 by
       apply careful_add_id. 
   rewrite path_cost_init; trivial.
+Qed.
+
+Lemma path_cost_init_inf:
+  forall l init s,
+    0 <= s ->
+    inf <= init ->
+    Forall (fun a => 0 <= a) l ->
+    fold_left careful_add l (careful_add init s) >=
+    inf.
+Proof.
+  intros.
+  generalize dependent s.
+  induction l.
+  - intros; simpl. unfold careful_add.
+    destruct (init =? 0) eqn:?; trivial.
+    + rewrite Z.eqb_eq in Heqb. rewrite Heqb in H0.
+      compute in H0. exfalso; apply H0; trivial.
+    + destruct (s =? 0); [lia|].
+      rewrite if_false_bool.
+      rewrite if_true_bool. lia.
+      rewrite Z.leb_le. lia.
+      rewrite Bool.orb_false_iff; split;
+        rewrite Z.ltb_ge; try lia.
+      assert (0 < inf) by now compute.
+      lia.
+  - intros. simpl.
+    rewrite <- careful_add_assoc.
+    apply IHl.
+    + apply Forall_tl with (x := a); trivial.
+    + rewrite Forall_forall in H1.
+      apply careful_add_pos; trivial.
+      apply H1. apply in_eq.
+Qed.
+
+Lemma path_cost_path_glue_ge_inf:
+  forall g p1 p2,
+    sound_dijk_graph g ->
+    valid_path g p1 ->
+    valid_path g p2 ->
+    inrange_graph (graph_to_mat g) ->
+    inf <= path_cost g p1 ->
+    path_cost g (path_glue p1 p2) >= inf.
+Proof.
+  intros.
+  unfold path_cost, path_glue. simpl.
+  rewrite map_app.
+  rewrite fold_left_app.
+  assert ((fold_left careful_add (map (elabel g) (snd p1)) 0) = (path_cost g p1))
+    by now unfold path_cost.
+  Set Printing All.
+  unfold LE in *. rewrite H4. 
+  Unset Printing All.
+  rewrite <- (careful_add_id (path_cost g p1)).
+  apply path_cost_init_inf; trivial.
+  lia.
+  rewrite Forall_forall. intros.
+  rewrite in_map_iff in H5. destruct H5 as [? [? ?]].
+  rewrite <- H5.
+  apply inrange_graph_cost_pos; trivial.
+  rewrite (surjective_pairing p2) in *. simpl in H6.
+  apply (valid_path_evalid g _ _ _ H1 H6).
+Qed.
+
+Lemma path_cost_path_glue_lt:
+  forall g p1 p2,
+    sound_dijk_graph g ->
+    valid_path g p1 ->
+    valid_path g p2 ->
+    inrange_graph (graph_to_mat g) ->
+    path_cost g (path_glue p1 p2) < inf ->
+    path_cost g p1 < inf /\ path_cost g p2 < inf.
+Proof.
+  intros.
+  destruct (path_cost g p1 <? inf) eqn:?.
+  - rewrite Z.ltb_lt in Heqb.
+    split; trivial.
+    rewrite path_cost_path_glue in H3; trivial.
+    destruct (path_cost g p2 <? inf) eqn:?.
+    1: rewrite Z.ltb_lt in Heqb0; trivial.
+    exfalso. unfold careful_add in H3.
+    destruct (path_cost g p1 =? 0).
+    1: rewrite Z.ltb_nlt in Heqb0; lia.
+    destruct (path_cost g p2 =? 0) eqn:?.
+    + rewrite Z.ltb_nlt in Heqb0.
+      rewrite Z.eqb_eq in Heqb1.
+      apply Heqb0. rewrite Heqb1. compute. trivial.
+    + rewrite if_false_bool in H3.
+      rewrite if_true_bool in H3.
+      * lia.
+      * rewrite Z.leb_le.
+        rewrite Z.ltb_ge in Heqb0.
+        assert (0 <= path_cost g p1) by (apply path_cost_pos; trivial). 
+        lia.
+      * rewrite Bool.orb_false_iff; split; rewrite Z.ltb_ge;
+          apply path_cost_pos; trivial.
+  - rewrite Z.ltb_ge in Heqb.
+    exfalso.
+    pose proof (path_cost_path_glue_ge_inf _ _ _ H H0 H1 H2 Heqb).
+    lia.
 Qed.
 
 Lemma step_in_range: forall g x x0,
