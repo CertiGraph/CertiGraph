@@ -48,6 +48,22 @@ Definition inv_unpopped g src prev priq dist dst :=
      In mom' (get_popped priq) ->
      Znth dst dist <= careful_add (Znth mom' dist) (Znth dst (Znth mom' (graph_to_mat g)))).
 
+Definition inv_unpopped_weak g src prev priq dist dst u :=
+  Znth dst priq < inf ->
+  dst = src \/
+  dst <> src /\
+  (let mom := Znth dst prev in
+   mom <> u /\
+   In mom (get_popped priq) /\
+   elabel g (mom, dst) < inf /\
+   Znth mom dist + (Znth dst (Znth mom (graph_to_mat g))) < inf /\
+   Znth dst dist = Z.add (Znth mom dist) (Znth dst (Znth mom (graph_to_mat g))) /\
+   forall mom',
+     mom' <> u ->
+     In mom' (get_popped priq) ->
+     Znth dst dist <=
+     careful_add (Znth mom' dist) (Znth dst (Znth mom' (graph_to_mat g)))).
+  
 Definition inv_unseen g prev priq dist dst :=
   Znth dst priq = inf ->
   Znth dst dist = inf /\
@@ -57,6 +73,16 @@ Definition inv_unseen g prev priq dist dst :=
               (Znth m dist)
               (Znth dst (Znth m (graph_to_mat g))) = inf.
 
+Definition inv_unseen_weak g prev priq dist dst u :=
+  Znth dst priq = inf ->
+  Znth dst dist = inf /\
+  Znth dst prev = inf /\
+  forall mom, In mom (get_popped priq) ->
+              mom <> u ->
+              careful_add
+                (Znth mom dist)
+                (Znth dst (Znth mom (graph_to_mat g))) = inf.
+                                                           
 Definition dijkstra_correct (g: LGraph) (src : VType) (prev priq dist: list VType) : Prop :=
   forall dst,
     vvalid g dst ->

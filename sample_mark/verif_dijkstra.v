@@ -845,55 +845,34 @@ Proof.
                     for loop has not yet scanned *)
                  forall dst,
                    i <= dst < SIZE ->
-                   Znth dst priq_contents' < inf ->
-                   dst = src \/
-                   dst <> src /\
-                   (let mom := Znth dst prev_contents' in
-                   mom <> u /\
-                   In mom (get_popped priq_contents') /\
-                   elabel g (mom, dst) < inf /\
-                   Znth mom dist_contents' + (Znth dst (Znth mom (graph_to_mat g))) < inf /\
-           Znth dst dist_contents' = Z.add (Znth mom dist_contents') (Znth dst (Znth mom (graph_to_mat g))) /\
-           forall mom',
-             mom' <> u ->
-             In mom' (get_popped priq_contents') ->
-             Znth dst dist_contents' <=
-             careful_add (Znth mom' dist_contents') (Znth dst (Znth mom' (graph_to_mat g))));
+                   inv_unpopped_weak g src prev_contents' priq_contents' dist_contents' dst u;
                        
-                       (* similarly for inv_unseen,
-                          the invariant has been
-                          restored until i:
-                          u has been taken into account *)
-                                   forall dst,
-                                     0 <= dst < i ->
-                                     inv_unseen g prev_contents' priq_contents' dist_contents' dst;
-
-                       (* and a weaker version of inv_unseen is
-                          true for those vertices that the
-                          for loop has not yet scanned *)
-                                     forall dst,
-                                       i <= dst < SIZE ->
-                                       Znth dst priq_contents' = inf ->
-                                       Znth dst dist_contents' = inf /\
-                                       Znth dst prev_contents' = inf /\
-                                       forall mom, In mom (get_popped priq_contents') ->
-                                                 mom <> u ->
-                                                 careful_add
-                                                   (Znth mom dist_contents')
-                                                   (Znth dst (Znth mom (graph_to_mat g))) = inf;
-                                       (* further, some useful facts
-                                          about src... *)
-                                         Znth src dist_contents' = 0;
-                                         Znth src prev_contents' = src;
-                                         Znth src priq_contents' <> inf;
-
-                                         (* a useful fact about u *)
-                                         In u (get_popped priq_contents');
-
-                                         (* and ranges of the three arrays *)
-                                         inrange_prev prev_contents';
-                                         inrange_priq priq_contents';
-                                         inrange_dist dist_contents')
+                   (* similarly for inv_unseen,
+                      the invariant has been
+                      restored until i:
+                      u has been taken into account *)
+                   forall dst,
+                     0 <= dst < i ->
+                     inv_unseen g prev_contents' priq_contents' dist_contents' dst;
+                     (* and a weaker version of inv_unseen is
+                        true for those vertices that the
+                        for loop has not yet scanned *)
+                     forall dst,
+                       i <= dst < SIZE ->
+                       inv_unseen_weak g prev_contents' priq_contents' dist_contents' dst u;
+                     (* further, some useful facts about src... *)
+                       Znth src dist_contents' = 0;
+                       Znth src prev_contents' = src;
+                       Znth src priq_contents' <> inf;
+                       
+                     (* a useful fact about u *)
+                       In u (get_popped priq_contents');
+                       
+                     (* and ranges of the three arrays *)
+                       inrange_prev prev_contents';
+                       inrange_priq priq_contents';
+                       inrange_dist dist_contents')
+                
                 LOCAL (temp _u (Vint (Int.repr u));
                        temp _dist (pointer_val_val dist);
                        temp _prev (pointer_val_val prev);
@@ -1251,7 +1230,7 @@ So this pop operation maintains inv_popped for u.
                  path to such a dst, and we will simply provide the
                  old one best-known path
               *)
-            intros.
+            unfold inv_unpopped_weak. intros.
             destruct (Z.eq_dec dst u).
             1: subst dst; rewrite upd_Znth_same in H31; lia.
             rewrite upd_Znth_diff in H31 by lia.
@@ -1282,7 +1261,7 @@ So this pop operation maintains inv_popped for u.
                apply H37; trivial.
                rewrite <- get_popped_irrel_upd in H43; trivial.
                apply get_popped_range in H43. rewrite upd_Znth_Zlength in H43; lia.
-          ++ intros.
+          ++ unfold inv_unseen_weak. intros.
              destruct (Z.eq_dec dst u).
              1: { rewrite e in H31.
                   rewrite upd_Znth_same in H31 by lia.
@@ -1841,17 +1820,15 @@ So this pop operation maintains inv_popped for u.
                             1,5: apply get_popped_range in H71.
                             2: rewrite upd_Znth_Zlength in H71.
                             all: lia.
-                --- intros.
+                --- unfold inv_unpopped_weak. intros.
                     assert (i <= dst < SIZE) by lia.
                     destruct (Z.eq_dec dst i).
                     1: subst dst; lia.
                     rewrite upd_Znth_diff in H59 by lia.
-                    destruct (H23 _ H60 H59).
-                    1: left; trivial.
-                    right.
+                    destruct (H23 _ H60 H59); [left | right]; trivial.
                     destruct H61 as [? [? [? [? [? [? ?]]]]]].
-                    rewrite upd_Znth_diff by lia.
                     unfold VType in *.
+                    rewrite upd_Znth_diff by lia.
                     remember (Znth dst prev_contents') as mom.
                     destruct H64 as [? [? ?]].
 
@@ -1912,7 +1889,7 @@ So this pop operation maintains inv_popped for u.
                     apply H64; trivial.
                     1,4: apply get_popped_range in H65; rewrite upd_Znth_Zlength in H65.
                     all: lia. 
-                --- intros.
+                --- unfold inv_unseen_weak; intros.
                     assert (dst <> i) by lia.
                     rewrite upd_Znth_diff in H59 by lia.
                     repeat rewrite upd_Znth_diff by lia.
@@ -2095,7 +2072,7 @@ Thus dist[mom'] + (mom',i) <= path_cost p'.
                           
 (* Since i has been "seen", 
    we have dist[i] <= dist[mom'] + (mom', i)
-   because of inv_unpopped_weakn 
+   because of inv_unpopped_weak 
  *)
                           assert (0 <= mom' < SIZE) by
                               (apply get_popped_range in H65; lia).
