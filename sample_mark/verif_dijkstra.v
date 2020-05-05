@@ -24,7 +24,9 @@ Local Definition Vprog := env_dijkstra_arr.Vprog.
 Local Definition Gprog := dijk_pq_arr_spec.Gprog.
 
 Local Open Scope Z_scope.
- 
+
+(** CONSTANTS AND RANGES **)
+
 Lemma inf_eq: 1879048192 = inf.
 Proof. compute; trivial. Qed.
 
@@ -54,6 +56,9 @@ Proof.
   - simpl in H2. destruct H2; [lia|].
     apply sublist_In in H2. apply (H0 x H2).
 Qed.
+
+
+(** MISC HELPER LEMMAS **)
 
 Lemma sublist_nil: forall lo hi A,
     sublist lo hi (@nil A) = (@nil A).
@@ -303,6 +308,9 @@ Proof.
   all: try rep_lia.
   rewrite nat_inc_list_Zlength. rep_lia.
 Qed.
+
+
+(** LEMMAS ABOUT GET_POPPED **)
 
 Lemma get_popped_empty:
   forall l,
@@ -586,6 +594,30 @@ Proof.
   rewrite Z2Nat.id in H by (apply Zlength_nonneg).
   assumption.
 Qed.
+
+Lemma get_popped_path:
+  forall {g mom src prev priq dist},
+    sound_dijk_graph g ->
+    dijkstra_correct g src prev priq dist ->
+    Zlength priq = SIZE ->
+    In mom (get_popped priq) ->
+    exists p2mom : path,
+      path_correct g prev dist src mom p2mom /\
+      (forall step : VType, In_path g step p2mom -> In step (get_popped priq)) /\
+      path_globally_optimal g src mom p2mom.
+Proof.
+  intros.
+  assert (vvalid g mom). {
+    pose proof (get_popped_range _ _  H2).
+    destruct H as [? _]. red in H. rewrite H.
+    unfold VType in *. lia.
+  }
+  destruct (H0 _ H3) as [? _].
+  specialize (H4 H2). trivial.
+Qed.
+
+
+(** PROOF BEGINS **)
 
 Lemma body_dijkstra: semax_body Vprog Gprog f_dijkstra dijkstra_spec.
 Proof.
@@ -927,31 +959,6 @@ Proof.
               destruct H33 as [? [? [? [? [? ?]]]]].
               unfold VType in *.
               remember (Znth u prev_contents) as mom.
- 
-              Set Nested Proofs Allowed.
-
-              Lemma get_popped_path:
-                forall {g mom src prev priq dist},
-                  sound_dijk_graph g ->
-                  dijkstra_correct g src prev priq dist ->
-                  Zlength priq = SIZE ->
-                  (* vvalid g mom -> *)
-                  In mom (get_popped priq) ->
-                  exists p2mom : path,
-                    path_correct g prev dist src mom p2mom /\
-                    (forall step : VType, In_path g step p2mom -> In step (get_popped priq)) /\
-                    path_globally_optimal g src mom p2mom.
-              Proof.
-                intros.
-                assert (vvalid g mom). {
-                  pose proof (get_popped_range _ _  H2).
-                  destruct H as [? _]. red in H. rewrite H.
-                  unfold VType in *. lia.
-                }
-                destruct (H0 _ H3) as [? _].
-                specialize (H4 H2). trivial.
-              Qed.
-
               destruct (get_popped_path H2 H4 H11 H36) as [p2mom [? [? ?]]].              
               (* this the best path to u:
                     go, optimally, to mom, and then take one step
@@ -1864,37 +1871,41 @@ CAREFUL with the inner for loop...
                     destruct (H23 _ H60 H59).
                     1: left; trivial.
                     right.
-                    destruct H61 as [? [p2mom [? [? [? [? ?]]]]]].
+                    destruct H61 as [? [? [? [? [? [? ?]]]]]].
                     rewrite upd_Znth_diff by lia.
                     unfold VType in *.
                     remember (Znth dst prev_contents') as mom.
-                    destruct H63 as [? [? ?]].
+                    destruct H64 as [? [? ?]].
 
                     assert (mom <> i). {
-                      intro. rewrite H63 in H62.
+                      intro. rewrite H64 in H63.
                       apply H44; trivial.
                     }
 
                     assert (0 <= mom < Zlength priq_contents'). {
-                      apply get_popped_range in H62; lia.
-                    } 
+                      apply get_popped_range in H63; lia.
+                    }
+                    
 
                     split3; [| | split3; [| | split3]]; trivial.
                     +++ rewrite <- get_popped_irrel_upd; trivial; lia.
                     +++ rewrite elabel_Znth_graph_to_mat; trivial.
-                        assert (0 <= Znth mom dist_contents') by admit.
+                        assert (0 <= Znth mom dist_contents'). {
+                          apply (Forall_Znth _ _ mom) in H32;
+                            [simpl in H32|]; lia.
+                        }
                         unfold VType in *. lia.
-                        admit.
+                        apply vvalid2_evalid; try apply vvalid_range; trivial; lia.
                     +++ repeat rewrite upd_Znth_diff; trivial; lia.
                     +++ repeat rewrite upd_Znth_diff; trivial; try lia.
                     +++ intros.
-                        assert (mom' <> i). intro. rewrite H70 in H69.
-                        rewrite get_popped_meaning, upd_Znth_same in H69; trivial.
+                        assert (mom' <> i). intro. rewrite H71 in H70.
+                        rewrite get_popped_meaning, upd_Znth_same in H70; trivial.
                         lia. lia. rewrite upd_Znth_Zlength; lia.
                         repeat rewrite upd_Znth_diff; trivial.
-                        apply H66; trivial; try lia.
-                        rewrite <- get_popped_irrel_upd in H69; trivial.
-                        1,3: apply get_popped_range in H69; rewrite upd_Znth_Zlength in H69.
+                        apply H67; trivial; try lia.
+                        rewrite <- get_popped_irrel_upd in H70; trivial.
+                        1,3: apply get_popped_range in H70; rewrite upd_Znth_Zlength in H70.
                         all: lia.
 
                 --- unfold inv_unseen; intros.
