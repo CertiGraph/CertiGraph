@@ -867,6 +867,7 @@ Proof.
                        
                      (* a useful fact about u *)
                        In u (get_popped priq_contents');
+
                        
                      (* and ranges of the three arrays *)
                        inrange_prev prev_contents';
@@ -1005,23 +1006,23 @@ Proof.
                       rewrite upd_Znth_Zlength; lia.
               --- (* We must show that the locally optimal path via mom
                         is actually the globally optimal path to u *)
-                (*
-When we get in the while loop, u is popped.
-We must prove that dist[u] is the global shortest.
-Since u is in pq before, u satisfies inv_unpopped.
+(*
+  When we get in the while loop, u is popped.
+  We must prove that dist[u] is the global shortest.
+  Since u is in pq before, u satisfies inv_unpopped.
 
-We can prove that dist[u] is either global shortest or not. If so, done.
+  We can prove that dist[u] is either global shortest or not. If so, done.
 
-If not, the global shortest path to u
-must contain an unpopped vertex w because of inv_unpopped.
+  If not, the global shortest path to u
+  must contain an unpopped vertex w because of inv_unpopped.
 
-Thus we have dist[u] > dist[w] + length(w to u).
-But wait, u is popped from pq because dist[u] is minimum.
-It is impossible to have another unpopped w satisfying
-dist[w] < dist[u].
-So the "not" case is False.
-So this pop operation maintains inv_popped for u.
-                 *)
+  Thus we have dist[u] > dist[w] + length(w to u).
+  But wait, u is popped from pq because dist[u] is minimum.
+  It is impossible to have another unpopped w satisfying
+  dist[w] < dist[u].
+  So the "not" case is False.
+  So this pop operation maintains inv_popped for u.
+ *)
                 unfold path_globally_optimal; intros.
                 unfold path_globally_optimal in H43.
                 destruct H41 as [? [? [? [? ?]]]].
@@ -1047,6 +1048,7 @@ So this pop operation maintains inv_popped for u.
                            path_ends g p1 src mom' /\
                            path_ends g p2 child' u /\
                            In mom' (get_popped priq_contents) /\
+                           Znth child' priq_contents < inf /\
                            path_cost g p1 < inf /\
                            path_cost g p2 < inf /\
                            Znth child' (Znth mom' (graph_to_mat g)) < inf /\
@@ -1054,24 +1056,22 @@ So this pop operation maintains inv_popped for u.
                            evalid g (mom', child')                          
                        (* etc *)) by admit.
                 
-                destruct H52 as [p1 [mom' [child' [p2 [? [? [? [? [? [? [? [? [? [? ?]]]]]]]]]]]]]].
+                destruct H52 as [p1 [mom' [child' [p2 [? [? [? [? [? [? [? [? [? [? [? ?]]]]]]]]]]]]]]].
 
                 rewrite <- H52 in g0.
                 
                 (* new g0: path_cost p'1 + (label mom' child') + path_cost p'2 < path_cost g p2mom + ... *)
 
-                
- 
                 assert (0 <= path_cost g (mom', [(mom', child')]) < inf). {
                   rewrite one_step_path_Znth; trivial.
                   red in H1.
                   destruct H2 as [? [? _]].
-                  red in H2, H63.
-                  rewrite H63 in H62.
-                  destruct H62.
-                  rewrite H2 in H62, H64.
+                  red in H2, H64.
+                  rewrite H64 in H63.
+                  destruct H63.
+                  rewrite H2 in H63, H65.
                   rewrite graph_to_mat_Zlength in H1.
-                  specialize (H1 _ _ H64 H62).
+                  specialize (H1 _ _ H65 H63).
                   destruct H1.
                   2: unfold VType in *; lia.
                   unfold VType in *.
@@ -1097,9 +1097,9 @@ So this pop operation maintains inv_popped for u.
                   simpl.
                   red in H2. destruct H2 as [? [? [? ?]]].
                   unfold strong_evalid.
-                  rewrite H65, H66; simpl.
+                  rewrite H66, H67; simpl.
                   split3; [| | split]; trivial;
-                    apply H64 in H62; destruct H62; trivial.
+                    apply H65 in H63; destruct H63; trivial.
                 }
                 2: {
                   rewrite <- H52 in l.
@@ -1110,7 +1110,7 @@ So this pop operation maintains inv_popped for u.
                     rewrite valid_path_cons_iff.
                     red in H2. destruct H2 as [? [? [? ?]]].
                     unfold strong_evalid.
-                    rewrite H65, H66. simpl.
+                    rewrite H66, H67. simpl.
                     split3; trivial.
                     - split3; trivial.
                       + apply (valid_path_valid _ p1); trivial.
@@ -1138,7 +1138,7 @@ So this pop operation maintains inv_popped for u.
                 rewrite careful_add_clean in g0.
                 2: lia.
                 2: { rewrite elabel_Znth_graph_to_mat; simpl; trivial.
-                     rewrite one_step_path_Znth in H63; trivial.
+                     rewrite one_step_path_Znth in H64; trivial.
                      lia.
                 }
                 2: { rewrite elabel_Znth_graph_to_mat; simpl; trivial. }
@@ -1152,15 +1152,15 @@ So this pop operation maintains inv_popped for u.
                    path p2mom', the global minimum from src to mom' *)
                 assert (vvalid g mom'). {
                   destruct H2 as [_ [? _]].
-                  red in H2. rewrite H2 in H62.
-                  destruct H62; trivial.
+                  red in H2. rewrite H2 in H63.
+                  destruct H63; trivial.
                 }
-                destruct (H4 mom' H64) as [? _].
-                unfold inv_popped in H65.
-                destruct (H65 H57) as [p2mom' [? [? ?]]].
+                destruct (H4 mom' H65) as [? _].
+                unfold inv_popped in H66.
+                destruct (H66 H57) as [p2mom' [? [? ?]]].
 
                 (* and path_cost of p2mom' will be <= that of p1 *)
-                pose proof (H68 p1 H53 H55).  
+                pose proof (H69 p1 H53 H55).  
                 
                 (* assert by transitivity that
                    path_cost (p2mom' +++ (mom', child') +++ p2) < path_cost p2mom +++ ...   *)   
@@ -1178,29 +1178,46 @@ So this pop operation maintains inv_popped for u.
                 assert (child' <> u). { 
                   intro. subst child'.
                   specialize (H40 _ H57).
-                  destruct H66 as [? [? [? [? ?]]]].
+                  destruct H67 as [? [? [? [? ?]]]].
                   unfold VType in *.
                   destruct (zlt ((Znth mom' dist_contents) + (Znth u (Znth mom' (graph_to_mat g)))) inf).                  
                   2: {
-                    apply Z.lt_asymm in H70. apply H70.
+                    apply Z.lt_asymm in H71. apply H71.
                     unfold VType in *.
                     rewrite careful_add_dirty in H40; trivial; lia.
                   }
                   rewrite careful_add_clean in H40; trivial.
                   - unfold VType in *; lia.
-                  - rewrite H74; apply path_cost_pos; trivial.
+                  - rewrite H75; apply path_cost_pos; trivial.
                   - rewrite <- elabel_Znth_graph_to_mat; trivial.
                     apply inrange_graph_cost_pos; trivial.
                 }
                 
-
-                (* now we know that child' is not minimal, and thus... *)
-                assert (path_cost g p2mom' + Znth child' (Znth mom' (graph_to_mat g)) >= path_cost g p2mom + Znth u (Znth mom (graph_to_mat g))). {
-                  admit.
-                  (* must add to invariant? *)
+                assert (vvalid g child'). {
+                  destruct H2 as [_ [? _]]. red in H2.
+                  rewrite H2 in H63. destruct H63; trivial.
                 }
-              
-                lia. 
+                  
+                destruct H67 as [_ [_ [_ [? _]]]].
+                (* now we know that child' is not minimal, and thus... *)
+                assert (Znth u dist_contents <= Znth mom' dist_contents + Znth child' (Znth mom' (graph_to_mat g))). {
+                  destruct (H4 _ H74) as [_ [? _]].
+                  destruct (H75 H58).
+                  1: { admit.
+                       (* just assert that src is in a path, 
+                          and therefore priq[src] = inf + 1
+                        *)
+                  }
+                  destruct H76 as [? [? [? [? [? ?]]]]].
+                  assert (Znth mom' dist_contents +
+                          (Znth child' (Znth mom' (graph_to_mat g))) < inf) by admit.
+                  specialize (H81 mom' H57).
+                  rewrite careful_add_clean in H81; trivial.
+                  2,3: admit. (* easy *)
+                  apply Z.le_trans with (m:=Znth child' dist_contents); trivial. 
+                  admit.
+                }
+                unfold VType in *. lia. 
             ** (* Here we must show that the
                     vertices that were popped earlier
                     are not affected by the addition of
