@@ -1062,12 +1062,88 @@ Proof.
                            path_ends g p2 child' u /\
                            In mom' (get_popped priq_contents) /\
                            Znth child' priq_contents < inf /\
+                           evalid g (mom', child') /\
                            path_cost g p1 < inf /\
                            0 <= Znth child' (Znth mom' (graph_to_mat g)) < inf /\
-                           path_cost g p2 + Znth child' (Znth mom' (graph_to_mat g)) < inf /\
-                           evalid g (mom', child')) by admit.
+                           path_cost g p2 + Znth child' (Znth mom' (graph_to_mat g)) < inf).
+                       {
 
-                
+                         assert (In src (get_popped priq_contents)). {
+                           destruct H48.
+                           apply H43; trivial.
+                           left.
+                           rewrite (surjective_pairing p2mom) in *.
+                           simpl. simpl in H48. lia.
+                         }
+                         
+Set Nested Proofs Allowed.                  
+                  
+Lemma path_leaving_popped:
+  forall g p src u priq,
+    valid_path g p ->
+    path_ends g p src u ->
+    In src (get_popped priq) ->
+    ~ In u (get_popped priq) ->
+    exists (p1 : path) (mom' child' : Z) (p2 : path),
+    path_glue p1 (path_glue (mom', [(mom', child')]) p2) = p /\
+    valid_path g p1 /\
+    valid_path g p2 /\
+    path_ends g p1 src mom' /\
+    path_ends g p2 child' u /\
+    In mom' (get_popped priq) /\
+    Znth child' priq < inf /\
+    evalid g (mom', child').
+Admitted.
+
+Unset Nested Proofs Allowed.
+
+destruct (path_leaving_popped g p' src u priq_contents
+                              H46 H47 H53 H18) as
+    [p1 [mom' [child' [p2 [? [? [? [? [? [? [? ?]]]]]]]]]]].
+
+exists p1, mom', child', p2.
+split3; [| |split3; [| |split3; [| |split3]]]; trivial.
+
+
+rewrite <- H54 in l.
+
+assert ( valid_path g (mom', [(mom', child')])). {
+  simpl. unfold strong_evalid.
+  red in H2. destruct H2 as [a [b [c d]]].
+  rewrite c, d. simpl. split3; trivial.
+  apply b in H61. trivial.
+}
+
+assert (valid_path g (path_glue (mom', [(mom', child')]) p2)). {
+  apply valid_path_merge; trivial.
+  apply (path_ends_meet _ _ _ mom' child' u); trivial.
+  unfold path_ends. simpl. red in H2. destruct H2 as [_ [_ [_ ?]]].
+  rewrite H2. simpl. lia.
+}
+
+assert (path_cost g (mom', [(mom', child')]) < inf). {
+  apply path_cost_path_glue_lt in l; destruct l; trivial.
+  apply path_cost_path_glue_lt in H65; destruct H65; trivial.
+}
+ 
+pose proof (one_step_path_Znth _ _ _ H2 H61).
+
+split3; trivial.
+                         - apply path_cost_path_glue_lt in l; destruct l; trivial.
+                         - unfold VType in *.
+                           rewrite <- H65.
+                           split; try lia.
+                           apply path_cost_pos; trivial.
+                         - apply path_cost_path_glue_lt in l; destruct l; trivial.
+                           rewrite path_cost_path_glue in H67; trivial.
+                           unfold VType in *.
+                           rewrite <- H65.
+                           apply careful_add_inf_clean; trivial.
+                           1,2: apply path_cost_pos; trivial.
+                           rewrite careful_add_comm; trivial.
+                       }
+
+
                 destruct H53 as [p1 [mom' [child' [p2 [? [? [? [? [? [? [? [? [? [? ?]]]]]]]]]]]]]].
                 rewrite <- H53 in g0.
                 
@@ -1094,7 +1170,7 @@ Proof.
                   unfold strong_evalid.
                   rewrite H66, H67; simpl.
                   split3; [| | split]; trivial;
-                    apply H65 in H63; destruct H63; trivial.
+                    apply H65 in H60; destruct H60; trivial.
                 }
                 2: {
                   rewrite <- H53 in l.
@@ -1145,8 +1221,8 @@ Proof.
                    path p2mom', the global minimum from src to mom' *)
                 assert (vvalid g mom'). {
                   destruct H2 as [_ [? _]].
-                  red in H2. rewrite H2 in H63.
-                  destruct H63; trivial.
+                  red in H2. rewrite H2 in H60.
+                  destruct H60; trivial.
                 }
                 destruct (H4 mom' H65) as [? _].
                 unfold inv_popped in H66.
@@ -1188,7 +1264,7 @@ Proof.
                 
                 assert (vvalid g child'). {
                   destruct H2 as [_ [? _]]. red in H2.
-                  rewrite H2 in H63. destruct H63; trivial.
+                  rewrite H2 in H60. destruct H60; trivial.
                 }
                   
                 destruct H67 as [? [? [? [? ?]]]].
