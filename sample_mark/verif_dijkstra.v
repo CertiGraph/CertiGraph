@@ -33,7 +33,7 @@ Proof. compute; trivial. Qed.
 Lemma inf_eq2: Int.sub (Int.repr 2147483647)
                        (Int.divs (Int.repr 2147483647)
                                  (Int.repr SIZE)) = Int.repr inf.
-Proof. compute. trivial. Qed.
+Proof. compute; trivial. Qed.
 
 Definition inrange_prev prev_contents :=
   Forall (fun x => 0 <= x < SIZE \/ x = inf) prev_contents.
@@ -51,7 +51,8 @@ Lemma inrange_upd_Znth: forall (l: list Z) i new F,
 Proof.
   intros. rewrite Forall_forall in *. intros.
   destruct (eq_dec x new); [rewrite e; trivial|].
-  rewrite upd_Znth_unfold in H2; auto. apply in_app_or in H2; destruct H2.
+  rewrite upd_Znth_unfold in H2; auto.
+  apply in_app_or in H2; destruct H2.
   - apply sublist_In in H2. apply (H0 x H2).
   - simpl in H2. destruct H2; [lia|].
     apply sublist_In in H2. apply (H0 x H2).
@@ -62,7 +63,11 @@ Qed.
 
 Lemma sublist_nil: forall lo hi A,
     sublist lo hi (@nil A) = (@nil A).
-Proof. intros. unfold sublist. rewrite firstn_nil. apply sublist.skipn_nil. Qed.
+Proof.
+  intros. unfold sublist.
+  rewrite firstn_nil.
+  apply sublist.skipn_nil.
+Qed.
 
 Lemma sublist_cons:
   forall a (l: list Z) i,
@@ -71,9 +76,9 @@ Lemma sublist_cons:
 Proof.
   intros.
   rewrite (sublist_split 0 1 i) by lia.
-  rewrite sublist_one by lia. simpl.
-  rewrite Znth_0_cons.
-  rewrite sublist_1_cons. reflexivity.
+  rewrite sublist_one by lia.
+  simpl. rewrite Znth_0_cons.
+  rewrite sublist_1_cons; trivial.
 Qed.
 
 Lemma sublist_cons':
@@ -111,7 +116,8 @@ Proof.
     destruct lo; try inversion H.
     pose proof (Pos2Nat.is_pos p); lia.
   - assert (Z.to_nat (lo - 1) = n) by
-        now rewrite <- (juicy_mem_lemmas.nat_of_Z_lem1 n lo). rewrite H0.
+        now rewrite <- (juicy_mem_lemmas.nat_of_Z_lem1 n lo).
+    rewrite H0.
     assert (Z.to_nat (Z.succ(Zlength l)) = S (Z.to_nat (Zlength l))). {
       rewrite Z2Nat.inj_succ; auto. apply Zlength_nonneg. }
     rewrite H1. now simpl.
@@ -140,7 +146,8 @@ Lemma combine_sublist_specific:
   forall (l1 l2: list Z) i,
     Zlength l1 = Zlength l2 ->
     0 <= i < Zlength l1 ->
-    combine (sublist 0 i l1) (sublist 0 i l2) = sublist 0 i (combine l1 l2).
+    combine (sublist 0 i l1) (sublist 0 i l2) =
+    sublist 0 i (combine l1 l2).
 Proof.
   induction l1, l2; intros; simpl; autorewrite with sublist.
   - rewrite !sublist_nil. easy.
@@ -204,11 +211,9 @@ Qed.
 
 Lemma behead_list:
   forall (l: list Z),
-    0 < Zlength l ->
-    l = Znth 0 l :: tl l.
+    0 < Zlength l -> l = Znth 0 l :: tl l.
 Proof.
-  intros.
-  destruct l.
+  intros. destruct l.
   - rewrite Zlength_nil in H. inversion H.
   - simpl. rewrite Znth_0_cons. reflexivity.
 Qed.
@@ -218,15 +223,12 @@ Lemma nat_inc_list_hd:
     0 < n ->
     Znth 0 (nat_inc_list (Z.to_nat n)) = 0.
 Proof.
-  intros. induction (Z.to_nat n).
-  - reflexivity.
-  - simpl.
-    destruct n0.
-    + reflexivity.
-    + rewrite app_Znth1. lia.
-      rewrite nat_inc_list_Zlength.
-      rewrite <- Nat2Z.inj_0.
-      apply inj_lt. lia.
+  intros. induction (Z.to_nat n); trivial.
+  simpl. destruct n0; trivial.
+  rewrite app_Znth1; [lia|].
+  rewrite nat_inc_list_Zlength.
+  rewrite <- Nat2Z.inj_0.
+  apply inj_lt; lia.
 Qed.
 
 Lemma tl_app:
@@ -234,20 +236,16 @@ Lemma tl_app:
     0 < Zlength l1 ->
     tl (l1 ++ l2) = tl l1 ++ l2.
 Proof.
-  intros. destruct l1.
-  - inversion H.
-  - intros. simpl. reflexivity.
+  intros. destruct l1; trivial. inversion H.
 Qed.
 
 Lemma in_tl_nat_inc_list:
   forall i n,
-    In i (tl (nat_inc_list n)) ->
-    1 <= i.
+    In i (tl (nat_inc_list n)) -> 1 <= i.
 Proof.
   destruct n. inversion 1.
   induction n. inversion 1.
-  intros.
-  simpl in H.
+  intros. simpl in H.
   rewrite Zpos_P_of_succ_nat in H.
   rewrite tl_app in H.
   2: { rewrite Zlength_app.
@@ -265,14 +263,11 @@ Lemma nat_inc_list_app:
     0 <= n ->
     n + m <= p ->
     Znth i (nat_inc_list (Z.to_nat m)) =
-    Znth i
-         (sublist n (n + m)
-                  (nat_inc_list (Z.to_nat p))) - n.
+    Znth i (sublist n (n + m)
+                    (nat_inc_list (Z.to_nat p))) - n.
 Proof.
-  symmetry.
-  rewrite Znth_sublist by rep_lia.
-  repeat rewrite nat_inc_list_i by rep_lia.
-  lia.
+  symmetry. rewrite Znth_sublist by rep_lia.
+  repeat rewrite nat_inc_list_i by rep_lia. lia.
 Qed.
 
 Lemma nat_inc_list_sublist:
@@ -284,29 +279,23 @@ Lemma nat_inc_list_sublist:
 Proof.
   intros.
   apply Zle_lt_or_eq in H0. destruct H0.
-  2: { subst. rewrite sublist_same.
-       reflexivity. reflexivity.
-       rewrite nat_inc_list_Zlength. rep_lia. }
-  apply Znth_eq_ext.
-  1: { rewrite Zlength_sublist.
-       rewrite nat_inc_list_Zlength. rep_lia.
-       rep_lia.
-       rewrite nat_inc_list_Zlength. rep_lia.
+  2: { subst. rewrite sublist_same; trivial.
+       rewrite nat_inc_list_Zlength; lia.
   }
-  intros.
-  rewrite nat_inc_list_i.
-  2: { rewrite Zlength_sublist in H1.
-       rep_lia.
-       rep_lia.
-       rewrite nat_inc_list_Zlength. rep_lia.
+  apply Znth_eq_ext.
+  1: { rewrite Zlength_sublist;
+       try rewrite nat_inc_list_Zlength; lia.
+  }
+  intros. rewrite nat_inc_list_i.
+  2: { rewrite Zlength_sublist in H1; 
+       try rewrite nat_inc_list_Zlength; lia.
   }
   rewrite <- Z.sub_0_r at 1.
   replace n with (0 + n) by lia.
   rewrite Zlength_sublist in H1.
   rewrite <- nat_inc_list_app.
   rewrite nat_inc_list_i.
-  all: try rep_lia.
-  rewrite nat_inc_list_Zlength. rep_lia.
+  all: try rewrite nat_inc_list_Zlength; lia.
 Qed.
 
 
@@ -314,17 +303,19 @@ Qed.
 
 Lemma get_popped_empty:
   forall l,
-    Forall (fun x => x <> inf + 1) l -> get_popped l = [].
+    Forall (fun x => x <> inf + 1) l ->
+    get_popped l = [].
 Proof.
-  intros.
-  unfold get_popped.
+  intros. unfold get_popped.
   replace (filter (fun x : Z * Z => (fst x) =? (inf + 1))
-                  (combine l (nat_inc_list (Z.to_nat (Zlength l))))) with (@nil (Z*Z)).
+                  (combine l (nat_inc_list (Z.to_nat (Zlength l)))))
+    with (@nil (Z*Z)).
   trivial. symmetry.
-  remember (nat_inc_list (Z.to_nat (Zlength l))) as l2. clear Heql2.
+  remember (nat_inc_list (Z.to_nat (Zlength l))) as l2.
+  clear Heql2.
   generalize dependent l2. induction l; trivial.
-  intros. simpl. destruct l2; [reflexivity|].
-  simpl. pose proof (Forall_inv H). pose proof (Forall_tl _ _ _ H).
+  intros. simpl. destruct l2; trivial. simpl.
+  pose proof (Forall_inv H). pose proof (Forall_tl _ _ _ H).
   simpl in H0. destruct (a =? 1879048193) eqn:?.
   1: rewrite Z.eqb_eq in Heqb; lia.
   apply IHl; assumption.
@@ -342,26 +333,23 @@ Proof.
   rewrite upd_Znth_Zlength by lia.
   remember (nat_inc_list (Z.to_nat (Zlength l))) as l2.
   assert (Zlength l = Zlength l2). {
-    rewrite Heql2.
-    rewrite nat_inc_list_Zlength. rep_lia.
+    rewrite Heql2. rewrite nat_inc_list_Zlength; lia.
   }
-  f_equal.
-  pose proof (combine_same_length l l2 H2).
+  f_equal. pose proof (combine_same_length l l2 H2).
   rewrite combine_upd_Znth by assumption.
   unfold_upd_Znth_old.
-  rewrite <- (sublist_same 0 (Zlength (combine l l2)) (combine l l2)) at 4 by reflexivity.
+  rewrite <- (sublist_same 0 (Zlength (combine l l2)) (combine l l2))
+          at 4 by reflexivity.
   rewrite (sublist_split 0 i (Zlength (combine l l2))
                          (combine l l2)) by lia.
   do 2 rewrite filter_app.
   f_equal. rewrite H3.
   rewrite (sublist_split i (i+1) (Zlength l)) by lia.
   rewrite (sublist_one i (i+1) (combine l l2)) by lia.
-  rewrite filter_app.
-  f_equal. simpl.
+  rewrite filter_app. f_equal. simpl.
   destruct (F (new, Znth i l2)) eqn:?; rewrite HeqF in Heqb; simpl in Heqb.
   - exfalso. apply H1. rewrite <- inf_eq.
-    simpl. rewrite Z.eqb_eq in Heqb. rewrite <- inf_eq in *.
-    lia.
+    simpl. rewrite Z.eqb_eq in Heqb. rewrite <- inf_eq in *. lia.
   - destruct (F (Znth i (combine l l2))) eqn:?; trivial.
     rewrite HeqF, Znth_combine, Z.eqb_eq in Heqb0 by lia.
     simpl in Heqb0. exfalso. apply H1. rewrite <- inf_eq. lia.
@@ -380,9 +368,12 @@ Proof.
     rewrite In_map_snd_iff.
     exists x.
     rewrite filter_In; split; trivial. clear H2.
-    rewrite <- (sublist_same 0 (Zlength (l1 ++ l2)) (nat_inc_list (Z.to_nat (Zlength (l1 ++ l2))))) in H1.
+    rewrite <-
+            (sublist_same 0 (Zlength (l1 ++ l2))
+                          (nat_inc_list (Z.to_nat (Zlength (l1 ++ l2))))) in H1.
     rewrite (sublist_split 0 (Zlength l1) (Zlength (l1 ++ l2))) in H1.
-    5,3: rewrite (Zlength_correct (nat_inc_list (Z.to_nat (Zlength (l1 ++ l2)))));
+    5,3: rewrite (Zlength_correct (nat_inc_list (Z.to_nat
+                                                   (Zlength (l1 ++ l2)))));
       rewrite nat_inc_list_length;
       rewrite Z2Nat.id; trivial.
     3: rewrite Zlength_app.
@@ -399,8 +390,7 @@ Proof.
          rewrite nat_inc_list_Zlength.
          rewrite Z2Nat.id by lia. lia.
     }
-    apply in_app_or in H1.
-    destruct H1.
+    apply in_app_or in H1. destruct H1.
     + exfalso.
       pose proof (in_combine_r _ _ _ _ H1).
       clear H1.
@@ -408,17 +398,14 @@ Proof.
       2: apply Zlength_nonneg.
       2: rewrite Zlength_app; lia.
       apply nat_inc_list_in_iff in H2.
-      rewrite Z2Nat.id in H2 by (apply Zlength_nonneg).
-      lia.
+      rewrite Z2Nat.id in H2 by (apply Zlength_nonneg). lia.
     + apply In_Znth_iff in H1. destruct H1 as [? [? ?]].
       rewrite In_Znth_iff. exists x0.
       split.
-      * rewrite combine_same_length in *.
-        assumption.
+      * rewrite combine_same_length in *; trivial.
         rewrite Zlength_sublist.
         rewrite Zlength_app. lia.
-        rewrite Zlength_app.
-        rep_lia.
+        rewrite Zlength_app. rep_lia.
         rewrite nat_inc_list_Zlength.
         rewrite Z2Nat.id. reflexivity.
         apply Zlength_nonneg.
@@ -431,8 +418,8 @@ Proof.
           rewrite Zlength_app. lia.
           rewrite Zlength_app. rep_lia.
           rewrite nat_inc_list_Zlength.
-          rewrite Z2Nat.id. reflexivity.
-          rep_lia. }
+          rewrite Z2Nat.id. reflexivity. rep_lia.
+        }
         2, 4: rewrite combine_same_length in H1; trivial.
         2, 3: rewrite Zlength_sublist, Zlength_app; [|rewrite Zlength_app|]; try rep_lia;
           repeat rewrite Zlength_correct;
@@ -441,23 +428,23 @@ Proof.
         2: repeat rewrite nat_inc_list_Zlength; rep_lia.
         inversion H2.
         rewrite Zlength_app.
-        rewrite <- nat_inc_list_app.
-        reflexivity.
+        rewrite <- nat_inc_list_app; trivial.
         rewrite combine_same_length in H1. lia.
-        rewrite Zlength_sublist. rewrite Zlength_app.
-        lia.
+        rewrite Zlength_sublist. rewrite Zlength_app. lia.
         rewrite Zlength_app. rep_lia.
         rewrite nat_inc_list_Zlength.
-        rewrite Z2Nat.id. reflexivity.
+        rewrite Z2Nat.id; trivial. reflexivity.
         rep_lia. rep_lia. reflexivity.
   - rewrite In_map_snd_iff in H1; destruct H1.
     rewrite filter_In in H1; destruct H1; simpl in H2.
-    rewrite In_map_snd_iff.
-    exists x.
+    rewrite In_map_snd_iff. exists x.
     rewrite filter_In; split; trivial. clear H2.
-    rewrite <- (sublist_same 0 (Zlength (l1 ++ l2)) (nat_inc_list (Z.to_nat (Zlength (l1 ++ l2))))).
+    rewrite <-
+            (sublist_same 0 (Zlength (l1 ++ l2))
+                          (nat_inc_list (Z.to_nat (Zlength (l1 ++ l2))))).
     rewrite (sublist_split 0 (Zlength l1) (Zlength (l1 ++ l2))).
-    5,3: rewrite (Zlength_correct (nat_inc_list (Z.to_nat (Zlength (l1 ++ l2)))));
+    5,3: rewrite (Zlength_correct
+                    (nat_inc_list (Z.to_nat (Zlength (l1 ++ l2)))));
       rewrite nat_inc_list_length;
       rewrite Z2Nat.id; trivial.
     3: rewrite Zlength_app.
@@ -495,7 +482,8 @@ Proof.
     2: repeat rewrite Zlength_correct;
       rewrite nat_inc_list_length;
       rewrite Nat2Z.id; lia.
-    3: rewrite Zlength_sublist, Zlength_app; [|rewrite Zlength_app|]; try rep_lia;
+    3: rewrite Zlength_sublist, Zlength_app;
+      [|rewrite Zlength_app|]; try rep_lia;
       repeat rewrite Zlength_correct;
       rewrite nat_inc_list_length;
       rewrite Nat2Z.id; lia.
@@ -582,8 +570,7 @@ Qed.
 
 Lemma get_popped_range:
   forall n l,
-    In n (get_popped l) ->
-    0 <= n < Zlength l.
+    In n (get_popped l) -> 0 <= n < Zlength l.
 Proof.
   intros.
   unfold get_popped in H.
@@ -608,9 +595,8 @@ Lemma get_popped_path:
 Proof.
   intros.
   assert (vvalid g mom). {
-    pose proof (get_popped_range _ _  H2).
-    destruct H as [? _]. red in H. rewrite H.
-    unfold VType in *. lia.
+    apply get_popped_range in H2.
+    apply vvalid_range; trivial. unfold VType in *. lia.
   }
   destruct (H0 _ H3) as [? _].
   specialize (H4 H2). trivial.
@@ -752,22 +738,40 @@ Proof.
             temp _src (Vint (Int.repr src));
             lvar _pq (tarray tint SIZE) v_pq;
             temp _graph (pointer_val_val arr))
-     SEP (data_at Tsh (tarray tint SIZE) ((list_repeat (Z.to_nat i) (Vint (Int.repr inf))) ++ (list_repeat (Z.to_nat (SIZE-i)) Vundef)) v_pq;
-          data_at Tsh (tarray tint SIZE) ((list_repeat (Z.to_nat i) (Vint (Int.repr inf))) ++ (list_repeat (Z.to_nat (SIZE-i)) Vundef)) (pointer_val_val prev);
-          data_at Tsh (tarray tint SIZE) ((list_repeat (Z.to_nat i) (Vint (Int.repr inf))) ++ (list_repeat (Z.to_nat (SIZE-i)) Vundef)) (pointer_val_val dist);
+     SEP (data_at Tsh
+                  (tarray tint SIZE)
+                  ((list_repeat (Z.to_nat i)
+                                (Vint (Int.repr inf)))
+                     ++ (list_repeat (Z.to_nat (SIZE-i))
+                                     Vundef)) v_pq;
+          data_at Tsh
+                  (tarray tint SIZE)
+                  ((list_repeat (Z.to_nat i)
+                                (Vint (Int.repr inf)))
+                     ++ (list_repeat (Z.to_nat (SIZE-i))
+                                     Vundef)) (pointer_val_val prev);
+          data_at Tsh
+                  (tarray tint SIZE)
+                  ((list_repeat (Z.to_nat i) (Vint (Int.repr inf)))
+                     ++ (list_repeat (Z.to_nat (SIZE-i))
+                                     Vundef)) (pointer_val_val dist);
           graph_rep sh (graph_to_mat g) (pointer_val_val arr))).
   - unfold SIZE. rep_lia.
   - unfold data_at, data_at_, field_at_, SIZE; entailer!.
   - forward. forward.
-    forward_call (v_pq, i, inf, (list_repeat (Z.to_nat i) (Vint (Int.repr inf)) ++
-             list_repeat (Z.to_nat (SIZE - i)) Vundef)).
+    forward_call (v_pq, i, inf,
+                  (list_repeat (Z.to_nat i)
+                               (Vint (Int.repr inf)) ++
+                               list_repeat (Z.to_nat (SIZE - i)) Vundef)).
     replace 8 with SIZE by (unfold SIZE; rep_lia).
     rewrite inf_eq2.
-    assert ((upd_Znth i
-                      (list_repeat (Z.to_nat i) (Vint (Int.repr inf)) ++
-                                   list_repeat (Z.to_nat (SIZE - i)) Vundef) (Vint (Int.repr inf))) =
-            (list_repeat (Z.to_nat (i + 1)) (Vint (Int.repr inf)) ++ list_repeat (Z.to_nat (SIZE - (i + 1))) Vundef)). {
-      rewrite upd_Znth_app2 by (repeat rewrite Zlength_list_repeat by lia; lia).
+    assert ((upd_Znth i (list_repeat (Z.to_nat i) (Vint (Int.repr inf))
+                                     ++ list_repeat (Z.to_nat (SIZE - i))
+                                     Vundef) (Vint (Int.repr inf))) =
+            (list_repeat (Z.to_nat (i + 1)) (Vint (Int.repr inf))
+                         ++ list_repeat (Z.to_nat (SIZE - (i + 1))) Vundef)). {
+      rewrite upd_Znth_app2 by
+          (repeat rewrite Zlength_list_repeat by lia; lia).
       rewrite Zlength_list_repeat by lia.
       replace (i-i) with 0 by lia.
       rewrite <- list_repeat_app' by lia.
@@ -776,12 +780,14 @@ Proof.
       rewrite Zlength_list_repeat by lia.
       rewrite sublist_list_repeat by lia.
       replace (SIZE - (i + 1)) with (SIZE - i - 1) by lia.
-      replace (list_repeat (Z.to_nat 1) (Vint (Int.repr inf))) with ([Vint (Int.repr inf)]) by reflexivity. easy.
+      replace (list_repeat (Z.to_nat 1) (Vint (Int.repr inf))) with
+          ([Vint (Int.repr inf)]) by reflexivity. easy.
     }
     rewrite H5. entailer!.
   - (* At this point we are done with the
        first for loop. The arrays are all set to INF. *)
-    replace (SIZE - SIZE) with 0 by lia; rewrite list_repeat_0, <- (app_nil_end).
+    replace (SIZE - SIZE) with 0 by lia; rewrite list_repeat_0,
+                                         <- (app_nil_end).
     forward. forward. forward.
     (* Special values for src have been inserted *)
 
@@ -819,9 +825,17 @@ Proof.
               temp _src (Vint (Int.repr src));
               lvar _pq (tarray tint SIZE) v_pq;
               temp _graph (pointer_val_val arr))
-       SEP (data_at Tsh (tarray tint SIZE) (map Vint (map Int.repr prev_contents)) (pointer_val_val prev);
-            data_at Tsh (tarray tint SIZE) (map Vint (map Int.repr priq_contents)) v_pq;
-            data_at Tsh (tarray tint SIZE) (map Vint (map Int.repr dist_contents)) (pointer_val_val dist);
+       SEP (data_at Tsh
+                    (tarray tint SIZE)
+                    (map Vint (map Int.repr prev_contents))
+                    (pointer_val_val prev);
+            data_at Tsh
+                    (tarray tint SIZE)
+                    (map Vint (map Int.repr priq_contents)) v_pq;
+            data_at Tsh
+                    (tarray tint SIZE)
+                    (map Vint (map Int.repr dist_contents))
+                    (pointer_val_val dist);
             graph_rep sh (graph_to_mat g) (pointer_val_val arr)))
       break:
       (EX prev_contents: list Z,
@@ -833,9 +847,17 @@ Proof.
            (* And the correctness condition is established *)
            dijkstra_correct g src prev_contents priq_contents dist_contents)
        LOCAL (lvar _pq (tarray tint SIZE) v_pq)
-       SEP (data_at Tsh (tarray tint SIZE) (map Vint (map Int.repr prev_contents)) (pointer_val_val prev);
-            (data_at Tsh (tarray tint SIZE) (map Vint (map Int.repr priq_contents)) v_pq);
-            data_at Tsh (tarray tint SIZE) (map Vint (map Int.repr dist_contents)) (pointer_val_val dist);
+       SEP (data_at Tsh
+                    (tarray tint SIZE)
+                    (map Vint (map Int.repr prev_contents))
+                    (pointer_val_val prev);
+            (data_at Tsh
+                     (tarray tint SIZE)
+                     (map Vint (map Int.repr priq_contents)) v_pq);
+            data_at Tsh
+                    (tarray tint SIZE)
+                    (map Vint (map Int.repr dist_contents))
+                    (pointer_val_val dist);
             graph_rep sh (graph_to_mat g) (pointer_val_val arr))).
     + Exists (upd_Znth src (list_repeat (Z.to_nat SIZE) inf) src).
       Exists (upd_Znth src (list_repeat (Z.to_nat SIZE) inf) 0).
@@ -938,7 +960,8 @@ Proof.
           rewrite Znth_find in H18.
           2: {
             rewrite <- Znth_0_hd by (unfold SIZE in *; lia).
-            apply min_in_list; [ apply incl_refl | apply Znth_In; unfold SIZE in *; lia].
+            apply min_in_list;
+              [ apply incl_refl | apply Znth_In; unfold SIZE in *; lia].
           }
           pose proof (fold_min _ _ H16).
           lia.
@@ -962,19 +985,22 @@ Proof.
            EX dist_contents' : list Z,
            PROP (
                (* popped items are not affected by the for loop *)
-               forall dst, inv_popped g src prev_contents' priq_contents' dist_contents' dst;
+               forall dst, inv_popped g src prev_contents'
+                                      priq_contents' dist_contents' dst;
               (* inv_unpopped is restored for those vertices
                  that the for loop has scanned and repaired *)
                forall dst,
                  0 <= dst < i ->
-                 inv_unpopped g src prev_contents' priq_contents' dist_contents' dst;
+                 inv_unpopped g src prev_contents'
+                              priq_contents' dist_contents' dst;
                  
                  (* a weaker version of inv_popped is
                     true for those vertices that the
                     for loop has not yet scanned *)
                  forall dst,
                    i <= dst < SIZE ->
-                   inv_unpopped_weak g src prev_contents' priq_contents' dist_contents' dst u;
+                   inv_unpopped_weak g src prev_contents'
+                                     priq_contents' dist_contents' dst u;
                        
                    (* similarly for inv_unseen,
                       the invariant has been
@@ -982,13 +1008,15 @@ Proof.
                       u has been taken into account *)
                    forall dst,
                      0 <= dst < i ->
-                     inv_unseen g prev_contents' priq_contents' dist_contents' dst;
+                     inv_unseen g prev_contents'
+                                priq_contents' dist_contents' dst;
                      (* and a weaker version of inv_unseen is
                         true for those vertices that the
                         for loop has not yet scanned *)
                      forall dst,
                        i <= dst < SIZE ->
-                       inv_unseen_weak g prev_contents' priq_contents' dist_contents' dst u;
+                       inv_unseen_weak g prev_contents'
+                                       priq_contents' dist_contents' dst u;
                      (* further, some useful facts about src... *)
                        Znth src dist_contents' = 0;
                        Znth src prev_contents' = src;
@@ -1014,9 +1042,17 @@ Proof.
                        temp _src (Vint (Int.repr src));
                        lvar _pq (tarray tint SIZE) v_pq;
                        temp _graph (pointer_val_val arr))
-                SEP (data_at Tsh (tarray tint SIZE) (map Vint (map Int.repr prev_contents')) (pointer_val_val prev);
-                     data_at Tsh (tarray tint SIZE) (map Vint (map Int.repr priq_contents')) v_pq;
-                     data_at Tsh (tarray tint SIZE) (map Vint (map Int.repr dist_contents')) (pointer_val_val dist);
+                SEP (data_at Tsh
+                             (tarray tint SIZE)
+                             (map Vint (map Int.repr prev_contents'))
+                             (pointer_val_val prev);
+                     data_at Tsh
+                             (tarray tint SIZE)
+                             (map Vint (map Int.repr priq_contents')) v_pq;
+                     data_at Tsh
+                             (tarray tint SIZE)
+                             (map Vint (map Int.repr dist_contents'))
+                             (pointer_val_val dist);
                      graph_rep sh (graph_to_mat g) (pointer_val_val arr))).
         -- unfold SIZE; rep_lia.
         -- (* We start the for loop as planned --
@@ -1028,7 +1064,9 @@ Proof.
           Exists dist_contents.
           repeat rewrite <- upd_Znth_map.
           entailer!.
-          remember (find priq_contents (fold_right Z.min (hd 0 priq_contents) priq_contents) 0) as u. 
+          remember (find priq_contents
+                         (fold_right Z.min (hd 0 priq_contents)
+                                     priq_contents) 0) as u. 
           split3; [| | split3; [| |split3]]; trivial. 
           ++ (* We must show inv_popped for all
                  dst that are in range. *)
@@ -1109,7 +1147,8 @@ Proof.
                     *** apply vvalid2_evalid; trivial.
                   +++
                     rewrite path_cost_app_cons; trivial.
-                    rewrite elabel_Znth_graph_to_mat; simpl; try lia; trivial.
+                    rewrite elabel_Znth_graph_to_mat; simpl;
+                      try lia; trivial.
                     apply vvalid2_evalid; trivial.
                     unfold VType in *. lia.
                     apply vvalid2_evalid; trivial.
@@ -1167,7 +1206,8 @@ Proof.
                 rewrite elabel_Znth_graph_to_mat; trivial.
                 simpl.
                 destruct (Z_le_gt_dec
-                            (path_cost g p2mom + Znth u (Znth mom (graph_to_mat g)))
+                            (path_cost g p2mom
+                             + Znth u (Znth mom (graph_to_mat g)))
                             (path_cost g p')); auto.
                 apply Z.gt_lt in g0.
                 destruct (zlt (path_cost g p') inf).
@@ -1187,81 +1227,74 @@ Proof.
                            path_cost g p1 < inf /\
                            0 <= Znth child' (Znth mom' (graph_to_mat g)) < inf /\
                            path_cost g p2 + Znth child' (Znth mom' (graph_to_mat g)) < inf).
-                       {
-
-                         assert (In src (get_popped priq_contents)). {
-                           destruct H48.
-                           apply H43; trivial.
-                           left.
-                           rewrite (surjective_pairing p2mom) in *.
-                           simpl. simpl in H48. lia.
-                         } 
-                         rewrite (surjective_pairing p') in *.
-                         remember (snd p') as links.
-                         replace (fst p') with src in *.
-                         2: destruct H47; simpl in H47; lia.
+                {
+                  
+                  assert (In src (get_popped priq_contents)). {
+                    destruct H48.
+                    apply H43; trivial.
+                    left.
+                    rewrite (surjective_pairing p2mom) in *.
+                    simpl. simpl in H48. lia.
+                  } 
+                  rewrite (surjective_pairing p') in *.
+                  remember (snd p') as links.
+                  replace (fst p') with src in *.
+                  2: destruct H47; simpl in H47; lia.
+                  
+                  destruct (path_leaving_popped
+                              g links src u priq_contents
+                              H12 H11 H2 H46 H47 H53 H18)
+                    as [p1 [mom' [child' [p2 [? [? [? [? [? [? [? ?]]]]]]]]]]].
                          
-                         destruct (path_leaving_popped g links src u priq_contents
-                                                       H12 H11 H2 H46 H47 H53 H18)
-                           as [p1 [mom' [child' [p2 [? [? [? [? [? [? [? ?]]]]]]]]]]].
-                         
-                         exists p1, mom', child', p2.
-                         
-                         split3; [| |split3; [| |split3; [| |split3]]]; trivial.
-                         unfold EType, VType in *.
-                         rewrite <- H54 in l.
-                         
-                         assert ( valid_path g (mom', [(mom', child')])). {
-                           simpl. unfold strong_evalid.
-                           red in H2. destruct H2 as [a [b [c d]]].
-                           rewrite c, d. simpl. split3; trivial.
-                           apply b in H61. trivial.
-                         }
-                         
-                         assert (valid_path g (path_glue (mom', [(mom', child')]) p2)). {
-                           apply valid_path_merge; trivial.
-                           apply (path_ends_meet _ _ _ mom' child' u); trivial.
-                           unfold path_ends. simpl. red in H2. destruct H2 as [_ [_ [_ ?]]].
-                           rewrite H2. simpl. lia.
-                         }
-                         
-                         assert (path_cost g (mom', [(mom', child')]) < inf). {
-                           apply path_cost_path_glue_lt in l; destruct l; trivial.
-                           apply path_cost_path_glue_lt in H65; destruct H65; trivial.
-                         }
-                         
-                         pose proof (one_step_path_Znth _ _ _ H2 H61).
-                         
-                         split3; trivial.
-                         - apply path_cost_path_glue_lt in l; destruct l; trivial.
-                         - unfold EType, VType in *.
-                           rewrite <- H65.
-                           split; try lia.                           
-                           apply path_cost_pos; trivial.
-                         - apply path_cost_path_glue_lt in l; destruct l; trivial.
-                           rewrite path_cost_path_glue in H67; trivial.
-                           unfold VType in *.
-                           rewrite <- H65.
-                           apply careful_add_inf_clean; trivial.
-                           1,2: apply path_cost_pos; trivial.
-                           rewrite careful_add_comm; trivial.
-                       }
-
-
+                  exists p1, mom', child', p2.
+                  split3; [| |split3; [| |split3; [| |split3]]]; trivial.
+                  unfold EType, VType in *.
+                  rewrite <- H54 in l.
+                  assert ( valid_path g (mom', [(mom', child')])). {
+                    simpl. unfold strong_evalid.
+                    red in H2. destruct H2 as [a [b [c d]]].
+                    rewrite c, d. simpl. split3; trivial.
+                    apply b in H61. trivial.
+                  }
+                  assert (valid_path g (path_glue
+                                          (mom', [(mom', child')]) p2)). {
+                    apply valid_path_merge; trivial.
+                    apply (path_ends_meet _ _ _ mom' child' u); trivial.
+                    unfold path_ends. simpl. red in H2. destruct H2 as [_ [_ [_ ?]]].
+                    rewrite H2. simpl. lia.
+                  }
+                  assert (path_cost g (mom', [(mom', child')]) < inf). {
+                    apply path_cost_path_glue_lt in l; destruct l; trivial.
+                    apply path_cost_path_glue_lt in H65; destruct H65; trivial.
+                  }
+                  pose proof (one_step_path_Znth _ _ _ H2 H61).
+                  split3; trivial.
+                  - apply path_cost_path_glue_lt in l; destruct l; trivial.
+                  - unfold EType, VType in *.
+                    rewrite <- H65.
+                    split; try lia.                           
+                    apply path_cost_pos; trivial.
+                  - apply path_cost_path_glue_lt in l; destruct l; trivial.
+                    rewrite path_cost_path_glue in H67; trivial.
+                    unfold VType in *.
+                    rewrite <- H65.
+                    apply careful_add_inf_clean; trivial.
+                    1,2: apply path_cost_pos; trivial.
+                    rewrite careful_add_comm; trivial.
+                }
+                
                 destruct H53 as [p1 [mom' [child' [p2 [? [? [? [? [? [? [? [? [? [? ?]]]]]]]]]]]]]].
                 rewrite <- H53 in g0.
                 
-                (* new g0: path_cost p'1 + (label mom' child') + path_cost p'2 < path_cost g p2mom + ... *)
-
                 assert (0 <= path_cost g (mom', [(mom', child')]) < inf). {
                   rewrite one_step_path_Znth; trivial.
                 }
                 unfold VType in *.
-                do 2 rewrite path_cost_path_glue in g0; trivial.
-                2: lia.
-
-                rewrite careful_add_clean in g0; trivial; try lia; try apply path_cost_pos; trivial.
-                rewrite careful_add_clean in g0; trivial; try lia; try apply path_cost_pos; trivial.
+                do 2 rewrite path_cost_path_glue in g0; trivial; [|lia].
+                rewrite careful_add_clean in g0; trivial; try lia;
+                  try apply path_cost_pos; trivial.
+                rewrite careful_add_clean in g0; trivial; try lia;
+                  try apply path_cost_pos; trivial.
                 2: {
                   unfold path_cost at 1. simpl.
                   rewrite careful_add_comm, careful_add_id.
@@ -1309,11 +1342,9 @@ Proof.
 
                 (* and now just a little cleanup...  *)
                 unfold path_cost at 2 in g0. simpl in g0.
-                rewrite careful_add_clean in g0.
-                2: lia.
+                rewrite careful_add_clean in g0; [|lia| |].
                 2: { rewrite elabel_Znth_graph_to_mat; simpl; trivial.
-                     rewrite one_step_path_Znth in H64; trivial.
-                     lia.
+                     rewrite one_step_path_Znth in H64; trivial. lia.
                 }
                 2: rewrite elabel_Znth_graph_to_mat; simpl; trivial; lia.
 
@@ -1336,11 +1367,18 @@ Proof.
                 pose proof (H69 p1 H54 H56).  
                 
                 (* assert by transitivity that
-                   path_cost (p2mom' +++ (mom', child') +++ p2) < path_cost p2mom +++ ...   *)   
+                   path_cost (p2mom' +++ (mom', child') +++ p2) 
+                   < path_cost p2mom +++ ...   *)   
                 
-                assert (path_cost g p2mom' + Znth child' (Znth mom' (graph_to_mat g)) + path_cost g p2 <
-                        path_cost g p2mom + Znth u (Znth mom (graph_to_mat g))). {     
-                  apply (Z.le_lt_trans _ (path_cost g p1 + Znth child' (Znth mom' (graph_to_mat g)) + path_cost g p2) _); trivial.
+                assert (path_cost g p2mom'
+                        + Znth child' (Znth mom' (graph_to_mat g))
+                        + path_cost g p2 <
+                        path_cost g p2mom
+                        + Znth u (Znth mom (graph_to_mat g))). {     
+                  apply (Z.le_lt_trans _
+                                       (path_cost g p1
+                                        + Znth child' (Znth mom' (graph_to_mat g))
+                                        + path_cost g p2) _); trivial.
                   do 2 rewrite <- Z.add_assoc.
                   apply Zplus_le_compat_r; trivial.
                 }
@@ -1353,7 +1391,8 @@ Proof.
                   specialize (H41 _ H58).
                   destruct H67 as [? [? [? [? ?]]]].
                   unfold VType in *.
-                  destruct (zlt ((Znth mom' dist_contents) + (Znth u (Znth mom' (graph_to_mat g)))) inf).                  
+                  destruct (zlt ((Znth mom' dist_contents)
+                                 + (Znth u (Znth mom' (graph_to_mat g)))) inf).                  
                   2: {
                     apply Z.lt_asymm in H71. apply H71.
                     unfold VType in *.
@@ -1374,7 +1413,8 @@ Proof.
                 destruct H67 as [? [? [? [? ?]]]].
                 (* now we know that child' is not minimal, and thus... *)
                 assert (Znth u dist_contents <=
-                        Znth mom' dist_contents + Znth child' (Znth mom' (graph_to_mat g))).
+                        Znth mom' dist_contents
+                        + Znth child' (Znth mom' (graph_to_mat g))).
                 {
                   assert (0 <= child' < Zlength priq_contents). {
                     apply vvalid_range in H74; trivial; lia.
@@ -2080,8 +2120,7 @@ Proof.
                     unfold VType in *.
                     rewrite upd_Znth_diff by lia.
                     remember (Znth dst prev_contents') as mom.
-                    destruct H66 as [? [? ?]].
-
+                    clear H66.
                     assert (mom <> i). {
                       intro. rewrite H66 in H65.
                       apply H46; trivial.
