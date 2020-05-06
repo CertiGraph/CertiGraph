@@ -1376,50 +1376,69 @@ Proof.
                 assert (Znth u dist_contents <=
                         Znth mom' dist_contents + Znth child' (Znth mom' (graph_to_mat g))).
                 {
-                  admit. }
-                (*
-                  destruct (H4 _ H74) as [_ [? _]].
-                  rewrite get_popped_meaning in H59.
-                  
-
-                  specialize (H79 H59). destruct H79.
-                  1: {
-                    assert (In_path g src p2mom'). {
-                      destruct H75. left.
-                      rewrite (surjective_pairing p2mom') in *; simpl.
-                      simpl in H75; lia.
-                    }
-                    specialize (H68 _ H80).
-                    rewrite <- H79 in H68.
-                    rewrite get_popped_meaning in H68. lia. lia.
+                  assert (0 <= child' < Zlength priq_contents). {
+                    apply vvalid_range in H74; trivial; lia.
                   }
-                  destruct H79 as [? [? [? [? [? ?]]]]].
+                  rewrite get_popped_meaning in H59; trivial.
+
+                  apply (Forall_Znth _ _ _ H79) in H11.
+                  Opaque inf. simpl in H11. Transparent inf.
+                  destruct H11 as [_ ?].
+                  apply Z.lt_eq_cases in H11.
+                  destruct H11; [|exfalso; lia].
+                  apply Z.lt_succ_r in H11.
+                  apply Z.lt_eq_cases in H11.
+                  assert (In_path g src p2mom'). {
+                    destruct H75. left.
+                    rewrite (surjective_pairing p2mom') in *; simpl.
+                    simpl in H75; lia.
+                  }
+
                   assert (Znth mom' dist_contents +
                           (Znth child' (Znth mom' (graph_to_mat g))) < inf). {
                     unfold VType in *. lia.
                   }
-                  specialize (H84 mom' H58).
-                  rewrite careful_add_clean in H84; trivial.
-                  2: {
-                    apply (Forall_Znth _ _ mom') in H10.
-                    simpl in H10. lia. apply vvalid_range in H65; trivial; lia.
-                  }
-                  2: { rewrite <- elabel_Znth_graph_to_mat; trivial.
-                       apply inrange_graph_cost_pos; trivial.
-                  }
-                  apply Z.le_trans with (m:=Znth child' dist_contents); trivial.
-                  repeat rewrite <- H8; trivial.
-                  2,3: intro; subst; lia.
-                  rewrite Hequ.
-                  rewrite Znth_find.
-                  1: { apply fold_min_general.
-                       apply Znth_In.
-                       apply vvalid_range in H74; trivial; lia.
-                  }
-                  apply min_in_list.
-                  1: apply incl_refl.
-                  rewrite <- Znth_0_hd; [apply Znth_In|]; lia.
-                } *)
+                  
+                  destruct H11.
+                  - destruct (H4 _ H74) as [_ [? _]].
+                    specialize (H82 H11). destruct H82.
+                    1: {
+                      specialize (H68 _ H80).
+                      rewrite <- H82 in H68.
+                      rewrite get_popped_meaning in H68; lia.
+                    }
+                    destruct H82 as [? [? [? [? [? ?]]]]].
+                    
+                    specialize (H87 mom' H58).
+                    rewrite careful_add_clean in H87; trivial; try lia.
+                    2: {
+                      apply (Forall_Znth _ _ mom') in H10.
+                      simpl in H10. lia. apply vvalid_range in H65; trivial; lia.
+                    } 
+                    apply Z.le_trans with (m:=Znth child' dist_contents); trivial.
+                    repeat rewrite <- H8; trivial.
+                    2: intro; subst; lia.
+                    rewrite Hequ.
+                    rewrite Znth_find.
+                    1: { apply fold_min_general.
+                         apply Znth_In.
+                         apply vvalid_range in H74; trivial; lia.
+                    }
+                    apply min_in_list.
+                    1: apply incl_refl.
+                    rewrite <- Znth_0_hd; [apply Znth_In|]; lia.
+                  - destruct (H4 _ H74) as [_ [_ ?]].
+                    specialize (H82 H11).
+                    destruct H82 as [? [? ?]].
+                    specialize (H84 _ H58).
+                    rewrite careful_add_clean in H84; trivial; try lia.
+                    2: {
+                      apply (Forall_Znth _ _ mom') in H10.
+                      simpl in H10. lia. apply vvalid_range in H65; trivial; lia.
+                    }
+                    unfold VType in *.
+                    rewrite H84. lia.
+                }
                 unfold VType in *. lia.
             ** (* Here we must show that the
                     vertices that were popped earlier
@@ -2595,4 +2614,4 @@ Thus dist[mom'] + (mom',i) <= path_cost p'.
     + (* from the break's postcon, prove the overall postcon *)
       Intros prev_contents priq_contents dist_contents.
       forward. Exists prev_contents dist_contents priq_contents. entailer!.
-Abort.
+Qed.
