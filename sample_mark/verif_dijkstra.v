@@ -1082,7 +1082,8 @@ Lemma path_leaving_popped:
   forall g links s u priq,
     Zlength priq = SIZE ->
     inrange_priq priq ->
-    Forall (fun x => Znth (snd x) priq <> inf) links ->
+    Forall (fun x => Znth (snd x) priq < inf \/
+           Znth (snd x) priq = inf + 1) links ->
     sound_dijk_graph g ->
     valid_path g (s, links) ->
     path_ends g (s, links) s u ->
@@ -1133,11 +1134,7 @@ Proof.
       destruct IHlinks as [p2m [m [c [p2u [? [? [? [? [? [? [? ?]]]]]]]]]]].
       unfold VType in *.
 
-
-
-
       exists (path_glue (s, [(s,t)]) p2m), m, c, p2u.
-
       assert (paths_meet g (s, [(s, t)]) p2m). {
         apply (path_ends_meet _ _ _ s t m); trivial.
         split; simpl; trivial. rewrite Hd; trivial.
@@ -1203,30 +1200,72 @@ Proof.
         rewrite <- H9. symmetry.
         rewrite Heqt, <- H2, Hd, <- surjective_pairing.
         rewrite <- Hd. apply pfoot_cons.
-      * assert (Znth t priq <> inf). {
-          rewrite Heqt, Hd.
-          rewrite Forall_forall in H1.
-          apply H1. rewrite Heqt, <- H2, Hd, <- surjective_pairing.
-          apply in_eq.
-        }
-        apply vvalid_range in H8; trivial.
-        rewrite <- H in H8.
-        apply (Forall_Znth _ _ _ H8) in H0.
-        Opaque inf. simpl in H0. 
-        rewrite get_popped_meaning in n; lia.
+      *  rewrite Heqt, Hd.
+         assert (In a ((s, t) :: links)). {
+           rewrite Heqt, <- H2, Hd, <- surjective_pairing.
+           apply in_eq.
+         }
+         rewrite Forall_forall in H1.
+         specialize (H1 _ H9). destruct H1; trivial.
+         exfalso. apply n.
+         rewrite Hd in Heqt. rewrite <- Heqt in H1.
+         apply Ha in H8.
+         rewrite get_popped_meaning; lia.
       * apply vvalid2_evalid; trivial.
 Qed.
 
 Unset Nested Proofs Allowed.
 
-destruct (path_leaving_popped g p' src u priq_contents
-                              H46 H47 H53 H18) as
+rewrite (surjective_pairing p') in *.
+remember (snd p') as links.
+assert (fst p' = src). {
+  destruct H47. simpl in H47; trivial.
+}
+rewrite H54 in *.
+
+assert (Forall
+   (fun x : VType * Z =>
+      Znth (snd x) priq_contents < inf \/ Znth (snd x) priq_contents = inf + 1) links). {
+  rewrite Forall_forall; intros.
+  assert (0 <= (snd x) < Zlength priq_contents) by admit.
+  apply (Forall_Znth _ _ _ H56) in H11.
+  Opaque inf. simpl in H11. Transparent inf.
+  destruct H11.
+  apply (Z.lt_eq_cases) in H57.
+  destruct H57; [left | right]; trivial.
+  apply Z.lt_succ_r in H57.
+  apply (Z.lt_eq_cases) in H57.
+  destruct H57; trivial.
+  exfalso.
+  rewrite H8 in H57; try lia.
+  2: { apply vvalid_range; trivial; lia. }
+
+  path_cost.
+  
+  
+
+  admit.
+}
+  
+  
+  
+  
+ 
+  
+pose proof (path_leaving_popped g links src u priq_contents
+                                H12 H11 H55 H2 H46 H47 H53 H18).
+
+clear H54 H55.
+assert (H54 := H56).
+clear H56.
+destruct H54
+  as
     [p1 [mom' [child' [p2 [? [? [? [? [? [? [? ?]]]]]]]]]]].
 
 exists p1, mom', child', p2.
+               
 split3; [| |split3; [| |split3; [| |split3]]]; trivial.
-
-
+unfold EType, VType in *.
 rewrite <- H54 in l.
 
 assert ( valid_path g (mom', [(mom', child')])). {
@@ -1252,9 +1291,9 @@ pose proof (one_step_path_Znth _ _ _ H2 H61).
 
 split3; trivial.
                          - apply path_cost_path_glue_lt in l; destruct l; trivial.
-                         - unfold VType in *.
+                         - unfold EType, VType in *.
                            rewrite <- H65.
-                           split; try lia.
+                           split; try lia.                           
                            apply path_cost_pos; trivial.
                          - apply path_cost_path_glue_lt in l; destruct l; trivial.
                            rewrite path_cost_path_glue in H67; trivial.
