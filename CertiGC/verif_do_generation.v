@@ -71,7 +71,7 @@ Proof.
     2: apply used_space_repable_signed. clear -H8 H3 Heqb1. red in H3.
     unfold graph_gen_size, rest_gen_size in H3. rewrite H8 in H3. lia.
   - Intros. deadvars!. localize [space_struct_rep sh t_info from].
-    unfold space_struct_rep, space_tri. do 2 forward.
+    unfold space_struct_rep, space_tri. do 2 (forward; [subst from_p; entailer!|]).
     replace_SEP 0 (space_struct_rep sh t_info from) by
         (unfold space_struct_rep, space_tri; entailer!).
     unlocalize [thread_info_rep sh t_info ti].

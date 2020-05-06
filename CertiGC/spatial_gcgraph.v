@@ -267,8 +267,8 @@ Proof.
   intros. unfold field_compatible. simpl. destruct H1 as [? [_ [? [? _]]]].
   destruct H2 as [_ [_ [? [? _]]]]. destruct p; try contradiction. clear H1.
   simpl isptr. inv_int i. unfold size_compatible in *. simpl in H2.
-  simpl sizeof in *. rewrite Z.max_r in * by lia. pose proof (sizeof_pos t).
-  remember (sizeof t) as S. rewrite ptrofs_add_repr in H2.
+  simpl sizeof in *. rewrite Z.max_r in * by lia. pose proof (Ctypes.sizeof_pos t).
+  unfold sizeof in H2. remember (Ctypes.sizeof t) as S. rewrite ptrofs_add_repr in H2.
   rewrite Ptrofs.unsigned_repr in * by rep_lia.
   assert (0 <= ofs + S * n1 <= Ptrofs.max_unsigned). {
     destruct H, H6. split. 2: rep_lia. apply Z.add_nonneg_nonneg. 1: lia.
@@ -278,8 +278,9 @@ Proof.
     intros. rewrite <- Z.add_assoc. rewrite <- Z.mul_add_distr_l.
     do 2 f_equal. lia. } rewrite H8 in H2. do 4 (split; auto). constructor. intros.
   unfold tarray in *. inversion H4; subst. 1: simpl in H10; inversion H10.
-  inversion H5; subst. 1: simpl in H10; inversion H10. remember (sizeof t) as S.
-  rewrite ptrofs_add_repr in H15. rewrite Ptrofs.unsigned_repr in * by rep_lia.
+  inversion H5; subst. 1: simpl in H10; inversion H10. unfold sizeof in *.
+  remember (Ctypes.sizeof t) as S. rewrite ptrofs_add_repr in H15.
+  rewrite Ptrofs.unsigned_repr in * by rep_lia.
   assert (0 <= i < n1 \/ n1 <= i < n) by lia. destruct H10.
   1: apply H14; assumption. assert (0 <= i - n1 < n - n1) by lia.
   specialize (H15 _ H11). rewrite H8 in H15. assumption.
@@ -1387,7 +1388,7 @@ Lemma hsr_single_explicit: forall sh l tinfo i,
                  (@Zlength (@reptype CompSpecs space_type)
                            (@sublist (@reptype CompSpecs space_type) (i + 1) 12 l)))
          (@sublist (@reptype CompSpecs space_type) (i + 1) 12 l)
-         (offset_val (@sizeof (@cenv_cs CompSpecs) space_type)
+         (offset_val (@sizeof CompSpecs space_type)
                      (offset_val (SPACE_STRUCT_SIZE * i) (ti_heap_p tinfo))) *
        @data_at CompSpecs sh (tarray space_type i)
                 (@sublist (@reptype CompSpecs space_type) 0 i l) (ti_heap_p tinfo)).
@@ -1414,7 +1415,7 @@ Proof.
                     (@Zlength (@reptype CompSpecs space_type)
                               (@sublist (@reptype CompSpecs space_type) (i + 1) 12 l)))
             (@sublist (@reptype CompSpecs space_type) (i + 1) 12 l)
-            (offset_val (@sizeof (@cenv_cs CompSpecs) space_type)
+            (offset_val (@sizeof CompSpecs space_type)
                         (offset_val (SPACE_STRUCT_SIZE * i) (ti_heap_p tinfo))) *
           @data_at CompSpecs sh (tarray space_type i)
                    (@sublist (@reptype CompSpecs space_type) 0 i l) (ti_heap_p tinfo)).
@@ -1562,7 +1563,7 @@ Lemma heap_struct_rep_add: forall tinfo sh sp i (Hs: 0 <= i < MAX_SPACES),
                                    (map space_tri (spaces (ti_heap tinfo))))))
        (@sublist (@reptype CompSpecs space_type) (i + 1) 12
                  (map space_tri (spaces (ti_heap tinfo))))
-       (offset_val (@sizeof (@cenv_cs CompSpecs) space_type)
+       (offset_val (@sizeof CompSpecs space_type)
                    (offset_val (SPACE_STRUCT_SIZE * i) (ti_heap_p tinfo))) *
      @data_at CompSpecs sh (tarray space_type i)
               (@sublist (@reptype CompSpecs space_type) 0 i
