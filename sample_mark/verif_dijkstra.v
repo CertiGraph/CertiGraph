@@ -1074,25 +1074,78 @@ Proof.
                            left.
                            rewrite (surjective_pairing p2mom) in *.
                            simpl. simpl in H48. lia.
-                         }
+                         } 
                          
 Set Nested Proofs Allowed.                  
                   
 Lemma path_leaving_popped:
-  forall g p src u priq,
-    valid_path g p ->
-    path_ends g p src u ->
-    In src (get_popped priq) ->
+  forall g links s u priq,
+    Zlength priq = SIZE ->
+    inrange_priq priq ->
+    Forall (fun x => Znth (snd x) priq <> inf) links ->
+    sound_dijk_graph g ->
+    valid_path g (s, links) ->
+    path_ends g (s, links) s u ->
+    In s (get_popped priq) ->
     ~ In u (get_popped priq) ->
     exists (p1 : path) (mom' child' : Z) (p2 : path),
-    path_glue p1 (path_glue (mom', [(mom', child')]) p2) = p /\
+    path_glue p1 (path_glue (mom', [(mom', child')]) p2) = (s, links) /\
     valid_path g p1 /\
     valid_path g p2 /\
-    path_ends g p1 src mom' /\
+    path_ends g p1 s mom' /\
     path_ends g p2 child' u /\
     In mom' (get_popped priq) /\
     Znth child' priq < inf /\
     evalid g (mom', child').
+Proof.
+  intros.
+  generalize dependent s.
+  induction links.
+  - intros. destruct H4. simpl in H4, H7.
+    exfalso. apply H6.
+    rewrite <- H7; trivial.
+  - intros.
+    assert (Hrem := H2).
+    red in H2. destruct H2 as [Ha [Hb [Hc Hd]]].
+    rewrite (surjective_pairing a) in *.
+    assert (fst a = s). {
+      simpl in H3. destruct H3 as [? _].
+      rewrite Hc in H2. simpl in H2. lia. 
+    }
+    rewrite H2 in *.
+    remember (snd a) as t.
+    rewrite <- Hd in Heqt.
+    destruct (in_dec (ZIndexed.eq) t (get_popped priq)).
+    + admit.
+    + clear IHlinks. 
+      exists (s, []), s, t, (t, links).
+      assert (evalid g (s,t)). {
+        apply (valid_path_evalid _ s ((s,t)::links)); trivial.
+        apply in_eq.
+      }
+      apply Hb in H7. destruct H7.
+      split3; [| |split3; [| | split3; [| |split]]]; trivial.
+      * rewrite Heqt.
+        apply valid_path_cons with (v := s).
+        rewrite (surjective_pairing a).
+        rewrite H2, <- Hd, <- Heqt; trivial.
+      * split; trivial.
+      * destruct H4. split; trivial.
+        rewrite <- H9. symmetry.
+        rewrite Heqt, <- H2, Hd, <- surjective_pairing.
+        rewrite <- Hd. apply pfoot_cons.
+      * assert (Znth t priq <> inf). {
+          rewrite Heqt, Hd.
+          rewrite Forall_forall in H1.
+          apply H1. rewrite Heqt, <- H2, Hd, <- surjective_pairing.
+          apply in_eq.
+        }
+        apply vvalid_range in H8; trivial.
+        rewrite <- H in H8.
+        apply (Forall_Znth _ _ _ H8) in H0.
+        Opaque inf. simpl in H0. 
+        rewrite get_popped_meaning in n; lia.
+      * apply vvalid2_evalid; trivial.
 Admitted.
 
 Unset Nested Proofs Allowed.
