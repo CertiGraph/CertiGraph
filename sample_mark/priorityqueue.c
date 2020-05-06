@@ -26,7 +26,7 @@ int popMin (int pq[SIZE]) {
             minWeight = pq[i];
         }   
     }
-    pq[minVertex] = IFTY+1; /* basically, delete the node */
+    pq[minVertex] = IFTY+1;
     return minVertex;
 }
 
@@ -34,8 +34,8 @@ void adjustWeight (int vertex, int newWeight, int pq[SIZE]) {
     pq[vertex] = newWeight;
 }
 
-// Quick utility function to check if the PQ empty
-// If all cells are >= IFTY, the pq is considered empty
+// Quick utility function to check if the PQ is empty, 
+// where (for this function alone) values of ITFY and above are considered empty.
 int pq_emp (int pq[SIZE]) {
     int i;
     for (i = 0; i < SIZE; i++) {
