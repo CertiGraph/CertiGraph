@@ -22,11 +22,10 @@
 
 void setup (int graph[SIZE][SIZE]) {
     srand((unsigned int) time(NULL));
-    // src = rand() % SIZE;
     int i, j;
     for (i = 0; i < SIZE; i++) {
         for (j = 0; j <= SIZE; j++) {
-            int random = rand() % (CONN * INFL); // 1/CONN of these will be greater than INFL
+            int random = rand() % (CONN * INFL); // 1 / CONN of these will be greater than INFL
             graph[i][j] = (i==j) ? 0 : (random > INFL) ? IFTY : 1 + random; // so the rest will be INF
         }
     }
@@ -73,7 +72,6 @@ void dijkstra (int graph[SIZE][SIZE], int src, int *dist, int *prev) {
         dist[i] = IFTY;  // Best-known distance from src to i
         prev[i] = IFTY;  // Last vertex visited before i
         push(i, IFTY, pq);  // Everybody goes in the queue  
-        //pq[i] = IFTY;
     }
     dist[src] = 0;
     pq[src] = 0;
@@ -87,12 +85,11 @@ void dijkstra (int graph[SIZE][SIZE], int src, int *dist, int *prev) {
                 if (dist[i] > dist[u] + cost) {  // if we can improve the best-known dist from src to i
                     dist[i] = dist[u] + cost;  // improve it
                     prev[i] = u;  // note that we got there via 'u'
-                    adjustWeight(i, dist[i], pq);
-                    // pq[i] = dist[i];  // and stash the improvement in the PQ
+                    adjustWeight(i, dist[i], pq); // and stash the improvement in the PQ
                     // printf("Improved %d --> %d to %d\n", src, i, dist[i]);
-                    // uncomment the above line to see how the "best answer" improves slowly!
+                    // uncomment the above line to see how the "best answer" improves slowly
                 }
-            } // [src --> i] may not be perfect 
+            }
         }
     }
     return;
@@ -103,19 +100,12 @@ void dijkstra (int graph[SIZE][SIZE], int src, int *dist, int *prev) {
     // getPaths(src, dist, prev);
 }
 
-
-
 int main(int argc, const char * argv[])
 {
     int i, j;
     srand((unsigned int) time(NULL));
     int src = rand() % SIZE;
     int graph[SIZE][SIZE];
-    // for (i = 0; i < SIZE; i++) {
-    //     for (j = 0; j < SIZE; j++) {
-    //         graph[i][j] = 5;
-    //     }
-    // }
     setup(graph);
     print_graph(graph, src);
     int prev[SIZE];
