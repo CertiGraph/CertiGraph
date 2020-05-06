@@ -1116,7 +1116,76 @@ Proof.
     remember (snd a) as t.
     rewrite <- Hd in Heqt.
     destruct (in_dec (ZIndexed.eq) t (get_popped priq)).
-    + admit.
+    + pose proof (Forall_tl _ _ _ H1).
+      assert (valid_path g (t, links)). {
+        rewrite Heqt.
+        rewrite Heqt, <- H2, Hd, <- surjective_pairing, H2 in H3.
+        apply valid_path_cons with (v := s); trivial.
+      }
+      assert (path_ends g (t, links) t u). {
+        split; trivial.
+        destruct H4.
+        rewrite <- H9. symmetry.
+        rewrite Heqt, <- H2, Hd, <- surjective_pairing, H2, <- Hd.
+        apply pfoot_cons.
+      }
+      specialize (IHlinks H7 _ H8 H9 i).
+      destruct IHlinks as [p2m [m [c [p2u [? [? [? [? [? [? [? ?]]]]]]]]]]].
+      unfold VType in *.
+
+
+
+
+      exists (path_glue (s, [(s,t)]) p2m), m, c, p2u.
+
+      assert (paths_meet g (s, [(s, t)]) p2m). {
+        apply (path_ends_meet _ _ _ s t m); trivial.
+        split; simpl; trivial. rewrite Hd; trivial.
+      }
+      assert (fst p2u = c). {
+        destruct H14.
+        rewrite (surjective_pairing p2u) in H14.
+        simpl in H14. lia.
+      }
+      assert (fst p2m = t). {
+       destruct H13.
+        rewrite (surjective_pairing p2m) in H13.
+        simpl in H13. lia.
+      } 
+      assert (evalid g (s,t)). {
+        apply (valid_path_evalid _ s ((s,t)::links)); trivial.
+        apply in_eq.
+      }
+      apply Hb in H21. destruct H21.
+
+      split3; [| |split3; [| | split3; [| |split]]]; trivial.
+      * rewrite (path_glue_assoc g); trivial.
+        -- unfold EType, VType in *. rewrite H10.
+           unfold path_glue; trivial.
+        -- apply (path_ends_meet _ _ _ t m u); trivial.
+           split; trivial.
+           unfold path_glue.
+           simpl fst; simpl snd; simpl app.
+           destruct H14. rewrite <- H23.
+           rewrite (surjective_pairing p2u) at 2.
+           rewrite H19.
+           assert (c = dst g (m, c)) by now rewrite Hd.
+           rewrite H24 at 2.
+           apply pfoot_cons.
+      * apply valid_path_merge; trivial.
+        simpl; unfold strong_evalid.
+        rewrite Hc, Hd; simpl; split3; trivial.
+        apply vvalid2_evalid; trivial; split; trivial.
+        split; trivial.
+      * split; trivial.
+        unfold path_glue.
+        simpl fst; simpl snd; simpl app.
+        destruct H13. rewrite <- H23.
+        rewrite (surjective_pairing p2m) at 2.
+        rewrite H20.
+        assert (t = dst g (s, t)) by now rewrite Hd.
+        rewrite H24 at 2.
+        apply pfoot_cons.
     + clear IHlinks. 
       exists (s, []), s, t, (t, links).
       assert (evalid g (s,t)). {
@@ -1146,7 +1215,7 @@ Proof.
         Opaque inf. simpl in H0. 
         rewrite get_popped_meaning in n; lia.
       * apply vvalid2_evalid; trivial.
-Admitted.
+Qed.
 
 Unset Nested Proofs Allowed.
 
