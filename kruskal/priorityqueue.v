@@ -11,7 +11,7 @@ Module Info.
   Definition abi := "standard"%string.
   Definition bitsize := 32.
   Definition big_endian := false.
-  Definition source_file := "verif/surely_malloc.c"%string.
+  Definition source_file := "priorityqueue.c"%string.
   Definition normalized := true.
 End Info.
 
@@ -67,47 +67,133 @@ Definition ___compcert_va_composite : ident := 20%positive.
 Definition ___compcert_va_float64 : ident := 19%positive.
 Definition ___compcert_va_int32 : ident := 17%positive.
 Definition ___compcert_va_int64 : ident := 18%positive.
-Definition _exit : ident := 55%positive.
-Definition _free : ident := 54%positive.
-Definition _main : ident := 60%positive.
-Definition _malloc : ident := 53%positive.
-Definition _maybe_free : ident := 59%positive.
-Definition _n : ident := 56%positive.
-Definition _p : ident := 57%positive.
-Definition _surely_malloc : ident := 58%positive.
-Definition _t'1 : ident := 61%positive.
+Definition _adjustWeight : ident := 62%positive.
+Definition _i : ident := 59%positive.
+Definition _main : ident := 64%positive.
+Definition _minVertex : ident := 57%positive.
+Definition _minWeight : ident := 58%positive.
+Definition _newWeight : ident := 61%positive.
+Definition _popMin : ident := 60%positive.
+Definition _pq : ident := 55%positive.
+Definition _pq_emp : ident := 63%positive.
+Definition _push : ident := 56%positive.
+Definition _vertex : ident := 53%positive.
+Definition _weight : ident := 54%positive.
+Definition _t'1 : ident := 65%positive.
 
-Definition f_surely_malloc := {|
-  fn_return := (tptr tvoid);
-  fn_callconv := cc_default;
-  fn_params := ((_n, tuint) :: nil);
-  fn_vars := nil;
-  fn_temps := ((_p, (tptr tvoid)) :: (_t'1, (tptr tvoid)) :: nil);
-  fn_body :=
-(Ssequence
-  (Ssequence
-    (Scall (Some _t'1)
-      (Evar _malloc (Tfunction (Tcons tuint Tnil) (tptr tvoid) cc_default))
-      ((Etempvar _n tuint) :: nil))
-    (Sset _p (Etempvar _t'1 (tptr tvoid))))
-  (Ssequence
-    (Sifthenelse (Eunop Onotbool (Etempvar _p (tptr tvoid)) tint)
-      (Scall None (Evar _exit (Tfunction (Tcons tint Tnil) tvoid cc_default))
-        ((Econst_int (Int.repr 1) tint) :: nil))
-      Sskip)
-    (Sreturn (Some (Etempvar _p (tptr tvoid))))))
-|}.
-
-Definition f_maybe_free := {|
+Definition f_push := {|
   fn_return := tvoid;
   fn_callconv := cc_default;
-  fn_params := ((_p, (tptr tvoid)) :: nil);
+  fn_params := ((_vertex, tint) :: (_weight, tint) :: (_pq, (tptr tint)) ::
+                nil);
   fn_vars := nil;
   fn_temps := nil;
   fn_body :=
-(Scall None
-  (Evar _free (Tfunction (Tcons (tptr tvoid) Tnil) tvoid cc_default))
-  ((Etempvar _p (tptr tvoid)) :: nil))
+(Sassign
+  (Ederef
+    (Ebinop Oadd (Etempvar _pq (tptr tint)) (Etempvar _vertex tint)
+      (tptr tint)) tint) (Etempvar _weight tint))
+|}.
+
+Definition f_popMin := {|
+  fn_return := tint;
+  fn_callconv := cc_default;
+  fn_params := ((_pq, (tptr tint)) :: nil);
+  fn_vars := nil;
+  fn_temps := ((_minVertex, tint) :: (_minWeight, tint) :: (_i, tint) ::
+               (_t'1, tint) :: nil);
+  fn_body :=
+(Ssequence
+  (Sset _minVertex (Econst_int (Int.repr 0) tint))
+  (Ssequence
+    (Sset _minWeight
+      (Ederef
+        (Ebinop Oadd (Etempvar _pq (tptr tint)) (Etempvar _minVertex tint)
+          (tptr tint)) tint))
+    (Ssequence
+      (Ssequence
+        (Sset _i (Econst_int (Int.repr 0) tint))
+        (Sloop
+          (Ssequence
+            (Sifthenelse (Ebinop Olt (Etempvar _i tint)
+                           (Econst_int (Int.repr 8) tint) tint)
+              Sskip
+              Sbreak)
+            (Ssequence
+              (Sset _t'1
+                (Ederef
+                  (Ebinop Oadd (Etempvar _pq (tptr tint)) (Etempvar _i tint)
+                    (tptr tint)) tint))
+              (Sifthenelse (Ebinop Olt (Etempvar _t'1 tint)
+                             (Etempvar _minWeight tint) tint)
+                (Ssequence
+                  (Sset _minVertex (Etempvar _i tint))
+                  (Sset _minWeight
+                    (Ederef
+                      (Ebinop Oadd (Etempvar _pq (tptr tint))
+                        (Etempvar _i tint) (tptr tint)) tint)))
+                Sskip)))
+          (Sset _i
+            (Ebinop Oadd (Etempvar _i tint) (Econst_int (Int.repr 1) tint)
+              tint))))
+      (Ssequence
+        (Sassign
+          (Ederef
+            (Ebinop Oadd (Etempvar _pq (tptr tint))
+              (Etempvar _minVertex tint) (tptr tint)) tint)
+          (Ebinop Oadd
+            (Ebinop Osub (Econst_int (Int.repr 2147483647) tint)
+              (Ebinop Odiv (Econst_int (Int.repr 2147483647) tint)
+                (Econst_int (Int.repr 8) tint) tint) tint)
+            (Econst_int (Int.repr 1) tint) tint))
+        (Sreturn (Some (Etempvar _minVertex tint)))))))
+|}.
+
+Definition f_adjustWeight := {|
+  fn_return := tvoid;
+  fn_callconv := cc_default;
+  fn_params := ((_vertex, tint) :: (_newWeight, tint) ::
+                (_pq, (tptr tint)) :: nil);
+  fn_vars := nil;
+  fn_temps := nil;
+  fn_body :=
+(Sassign
+  (Ederef
+    (Ebinop Oadd (Etempvar _pq (tptr tint)) (Etempvar _vertex tint)
+      (tptr tint)) tint) (Etempvar _newWeight tint))
+|}.
+
+Definition f_pq_emp := {|
+  fn_return := tint;
+  fn_callconv := cc_default;
+  fn_params := ((_pq, (tptr tint)) :: nil);
+  fn_vars := nil;
+  fn_temps := ((_i, tint) :: (_t'1, tint) :: nil);
+  fn_body :=
+(Ssequence
+  (Ssequence
+    (Sset _i (Econst_int (Int.repr 0) tint))
+    (Sloop
+      (Ssequence
+        (Sifthenelse (Ebinop Olt (Etempvar _i tint)
+                       (Econst_int (Int.repr 8) tint) tint)
+          Sskip
+          Sbreak)
+        (Ssequence
+          (Sset _t'1
+            (Ederef
+              (Ebinop Oadd (Etempvar _pq (tptr tint)) (Etempvar _i tint)
+                (tptr tint)) tint))
+          (Sifthenelse (Ebinop Olt (Etempvar _t'1 tint)
+                         (Ebinop Osub (Econst_int (Int.repr 2147483647) tint)
+                           (Ebinop Odiv
+                             (Econst_int (Int.repr 2147483647) tint)
+                             (Econst_int (Int.repr 8) tint) tint) tint) tint)
+            (Sreturn (Some (Econst_int (Int.repr 0) tint)))
+            Sskip)))
+      (Sset _i
+        (Ebinop Oadd (Etempvar _i tint) (Econst_int (Int.repr 1) tint) tint))))
+  (Sreturn (Some (Econst_int (Int.repr 1) tint))))
 |}.
 
 Definition composites : list composite_definition :=
@@ -364,36 +450,30 @@ Definition global_definitions : list (ident * globdef fundef type) :=
                      {|cc_vararg:=true; cc_unproto:=false; cc_structret:=false|}))
      (Tcons tint Tnil) tvoid
      {|cc_vararg:=true; cc_unproto:=false; cc_structret:=false|})) ::
- (_malloc,
-   Gfun(External EF_malloc (Tcons tuint Tnil) (tptr tvoid) cc_default)) ::
- (_free, Gfun(External EF_free (Tcons (tptr tvoid) Tnil) tvoid cc_default)) ::
- (_exit,
-   Gfun(External (EF_external "exit"
-                   (mksignature (AST.Tint :: nil) AST.Tvoid cc_default))
-     (Tcons tint Tnil) tvoid cc_default)) ::
- (_surely_malloc, Gfun(Internal f_surely_malloc)) ::
- (_maybe_free, Gfun(Internal f_maybe_free)) :: nil).
+ (_push, Gfun(Internal f_push)) :: (_popMin, Gfun(Internal f_popMin)) ::
+ (_adjustWeight, Gfun(Internal f_adjustWeight)) ::
+ (_pq_emp, Gfun(Internal f_pq_emp)) :: nil).
 
 Definition public_idents : list ident :=
-(_maybe_free :: _surely_malloc :: _exit :: _free :: _malloc ::
- ___builtin_debug :: ___builtin_write32_reversed ::
- ___builtin_write16_reversed :: ___builtin_read32_reversed ::
- ___builtin_read16_reversed :: ___builtin_fnmsub :: ___builtin_fnmadd ::
- ___builtin_fmsub :: ___builtin_fmadd :: ___builtin_fmin ::
- ___builtin_fmax :: ___builtin_ctzll :: ___builtin_ctzl :: ___builtin_ctz ::
- ___builtin_clzll :: ___builtin_clzl :: ___builtin_clz ::
- ___compcert_i64_umulh :: ___compcert_i64_smulh :: ___compcert_i64_sar ::
- ___compcert_i64_shr :: ___compcert_i64_shl :: ___compcert_i64_umod ::
- ___compcert_i64_smod :: ___compcert_i64_udiv :: ___compcert_i64_sdiv ::
- ___compcert_i64_utof :: ___compcert_i64_stof :: ___compcert_i64_utod ::
- ___compcert_i64_stod :: ___compcert_i64_dtou :: ___compcert_i64_dtos ::
- ___compcert_va_composite :: ___compcert_va_float64 ::
- ___compcert_va_int64 :: ___compcert_va_int32 :: ___builtin_va_end ::
- ___builtin_va_copy :: ___builtin_va_arg :: ___builtin_va_start ::
- ___builtin_membar :: ___builtin_annot_intval :: ___builtin_annot ::
- ___builtin_sel :: ___builtin_memcpy_aligned :: ___builtin_fsqrt ::
- ___builtin_fabs :: ___builtin_bswap16 :: ___builtin_bswap32 ::
- ___builtin_bswap :: ___builtin_bswap64 :: ___builtin_ais_annot :: nil).
+(_pq_emp :: _adjustWeight :: _popMin :: _push :: ___builtin_debug ::
+ ___builtin_write32_reversed :: ___builtin_write16_reversed ::
+ ___builtin_read32_reversed :: ___builtin_read16_reversed ::
+ ___builtin_fnmsub :: ___builtin_fnmadd :: ___builtin_fmsub ::
+ ___builtin_fmadd :: ___builtin_fmin :: ___builtin_fmax ::
+ ___builtin_ctzll :: ___builtin_ctzl :: ___builtin_ctz :: ___builtin_clzll ::
+ ___builtin_clzl :: ___builtin_clz :: ___compcert_i64_umulh ::
+ ___compcert_i64_smulh :: ___compcert_i64_sar :: ___compcert_i64_shr ::
+ ___compcert_i64_shl :: ___compcert_i64_umod :: ___compcert_i64_smod ::
+ ___compcert_i64_udiv :: ___compcert_i64_sdiv :: ___compcert_i64_utof ::
+ ___compcert_i64_stof :: ___compcert_i64_utod :: ___compcert_i64_stod ::
+ ___compcert_i64_dtou :: ___compcert_i64_dtos :: ___compcert_va_composite ::
+ ___compcert_va_float64 :: ___compcert_va_int64 :: ___compcert_va_int32 ::
+ ___builtin_va_end :: ___builtin_va_copy :: ___builtin_va_arg ::
+ ___builtin_va_start :: ___builtin_membar :: ___builtin_annot_intval ::
+ ___builtin_annot :: ___builtin_sel :: ___builtin_memcpy_aligned ::
+ ___builtin_fsqrt :: ___builtin_fabs :: ___builtin_bswap16 ::
+ ___builtin_bswap32 :: ___builtin_bswap :: ___builtin_bswap64 ::
+ ___builtin_ais_annot :: nil).
 
 Definition prog : Clight.program := 
   mkprogram composites global_definitions public_idents _main Logic.I.
