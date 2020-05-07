@@ -7,5 +7,3 @@ Definition Vprog : varspecs. mk_varspecs prog. Defined.
 Global Existing Instance CompSpecs.
 
 Definition vertex_type := tint.
-
-Locate _pq.
