@@ -788,7 +788,9 @@ Proof.
        first for loop. The arrays are all set to INF. *)
     replace (SIZE - SIZE) with 0 by lia; rewrite list_repeat_0,
                                          <- (app_nil_end).
-    forward. forward. forward.
+    forward. forward. 
+    forward_call (v_pq, src, 0, (list_repeat (Z.to_nat SIZE) inf)).
+    do 2 rewrite map_list_repeat.
     (* Special values for src have been inserted *)
 
     (* We will now enter the main while loop.
