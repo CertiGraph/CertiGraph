@@ -34,12 +34,11 @@ void adjustWeight (int vertex, int newWeight, int pq[SIZE]) {
     pq[vertex] = newWeight;
 }
 
-// Quick utility function to check if the PQ is empty, 
-// where (for this function alone) values of ITFY and above are considered empty.
+// Quick utility function to check if the PQ is empty
 int pq_emp (int pq[SIZE]) {
     int i;
     for (i = 0; i < SIZE; i++) {
-        if (pq[i] < IFTY) // this cell is populated. pq is not empty.
+        if (pq[i] < IFTY+1) // this cell is populated. pq is not empty.
             return 0;
     }   
     return 1;
