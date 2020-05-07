@@ -8,7 +8,7 @@ Definition inrange_priq priq_contents :=
   Forall (fun x => 0 <= x <= inf + 1) priq_contents.
 
 Definition isEmpty (pq_contents : list Z) : val :=
-  fold_right (fun h acc => if (Z_lt_dec h inf) then Vzero else acc) Vone pq_contents.
+  fold_right (fun h acc => if (Z_lt_dec h (inf+1)) then Vzero else acc) Vone pq_contents.
 
 Fixpoint find (l : list Z) (n : Z) (ans : Z) :=
   match l with
@@ -23,33 +23,58 @@ Fixpoint find (l : list Z) (n : Z) (ans : Z) :=
 
 (* Would like to massage this away... *)
 Definition isEmpty_Prop (pq_contents : list Z) :=
-  fold_right (fun h acc => if (Z_lt_dec h inf) then False else acc) True pq_contents.
+  fold_right (fun h acc => if (Z_lt_dec h (inf+1)) then False else acc) True pq_contents.
 
 Lemma isEmpty_prop_val: forall l,
     isEmpty_Prop l <-> isEmpty l = Vone.
 Proof.
-  intros. induction l; simpl in *. split; intro; trivial.
-  destruct (Z_lt_dec a inf); trivial. split; inversion 1.
+  intros.
+  Opaque inf.
+  induction l.
+  - simpl. split; intro; trivial.
+  - split; simpl in *; destruct (Z_lt_dec a (inf+1));
+      try inversion 1; apply IHl; trivial.
 Qed.
 
 Lemma isEmpty_in: forall l target,
-    In target l -> target < inf -> isEmpty l = Vzero.
+    In target l -> target < inf + 1 -> isEmpty l = Vzero.
 Proof.
   intros. induction l.
   1: exfalso; apply (in_nil H).
   unfold isEmpty. rewrite fold_right_cons.
-  destruct (Z_lt_dec a inf); trivial.
+  destruct (Z_lt_dec a (inf+1)); trivial.
   simpl in H; simpl; destruct H.
   1: rewrite H in n; exfalso; lia.
   clear n a. specialize (IHl H).
   unfold isEmpty in IHl. trivial.
 Qed.
 
+Lemma isEmpty_in': forall l,
+    (exists i, In i l /\ i < (inf+1)) <-> isEmpty l = Vzero.
+Proof.
+  split; intros.
+  - destruct H as [? [? ?]]. induction l.
+    1: exfalso; apply (in_nil H).
+    unfold isEmpty. rewrite fold_right_cons.
+    destruct (Z_lt_dec a (inf+1)); trivial.
+    simpl in H; simpl; destruct H.
+    1: rewrite H in n; exfalso. lia.
+    clear n a. specialize (IHl H).
+    unfold isEmpty in IHl. trivial.
+  - induction l.
+    1: inversion H.
+    simpl in H.
+    destruct (Z_lt_dec a (inf+1)).
+    + exists a. split; simpl; [left|]; trivial.
+    + destruct (IHl H) as [? [? ?]].
+      exists x. split; [apply in_cons|]; assumption.
+Qed.
+
 Lemma isEmptyTwoCases: forall l,
     isEmpty l = Vone \/ isEmpty l = Vzero.
 Proof.
   intros. induction l. 1: simpl; left; trivial.
-  destruct IHl; simpl; destruct (Z_lt_dec a inf);
+  destruct IHl; simpl; destruct (Z_lt_dec a (inf+1));
     (try now left); now right.
 Qed.
 
@@ -57,8 +82,8 @@ Lemma isEmptyMeansInf: forall l,
     isEmpty l = Vone -> Forall (fun x => x >= inf) l.
 Proof.
   intros. induction l; trivial. simpl in H.
-  destruct (Z_lt_dec a inf); [inversion H|].
-  specialize (IHl H). apply Forall_cons; trivial.
+  destruct (Z_lt_dec a (inf+1)); [inversion H|].
+  specialize (IHl H). apply Forall_cons; trivial. lia.
 Qed.
 
 Lemma find_index_gen: forall l i ans,
@@ -291,30 +316,6 @@ Proof.
       all: try lia; compute; inversion 1.
 Qed.
 
-Lemma isEmpty_in': forall l,
-    (exists i, In i l /\ i < inf) <-> isEmpty l = Vzero.
-Proof.
-  split; intros.
-  - destruct H as [? [? ?]]. induction l.
-    1: exfalso; apply (in_nil H).
-    unfold isEmpty. rewrite fold_right_cons.
-    destruct (Z_lt_dec a inf); trivial.
-    simpl in H; simpl; destruct H.
-    
-
-    
-    1: rewrite H in n; exfalso. lia.
-    clear n a. specialize (IHl H).
-    unfold isEmpty in IHl. trivial.
-  - induction l.
-    1: inversion H.
-    simpl in H.
-    destruct (Z_lt_dec a inf).
-    + exists a. split; simpl; [left|]; trivial.
-    + destruct (IHl H) as [? [? ?]].
-      exists x. split; [apply in_cons|]; assumption.
-Qed.
-
 Lemma fold_min_in_list: forall l, Zlength l > 0 -> In (fold_right Z.min (hd 0 l) l) l.
 Proof.
   intros. apply min_in_list.
@@ -324,7 +325,7 @@ Qed.
 
 Lemma find_min_lt_inf: forall u l,
     u = find l (fold_right Z.min (hd 0 l) l) 0 -> isEmpty l = Vzero ->
-    Zlength l > 0 -> Znth u l < inf.
+    Zlength l > 0 -> Znth u l < inf + 1.
 Proof.
   intros. rewrite <- isEmpty_in' in H0. destruct H0 as [? [? ?]].
   rewrite H. rewrite Znth_find.
