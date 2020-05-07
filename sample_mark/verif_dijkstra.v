@@ -1084,11 +1084,35 @@ Proof.
                  and u, which was just popped
              *)
             destruct (Z.eq_dec dst u).
-            **  (* show that u is a valid entrant *)
+            ** (* show that u is a valid entrant *)
               subst dst.
               unfold inv_unpopped in H34.
-              assert (Znth u priq_contents < inf).
-              { apply find_min_lt_inf; auto. unfold SIZE in H11. lia. }
+
+              (* we get this because u popped from a 
+                 non-empty PQ 
+               *)
+              assert (Znth u priq_contents < inf + 1). {
+                apply find_min_lt_inf; auto. unfold SIZE in H11. lia.
+              }
+              (* but u could be either 
+                 - unseen, in which case the min-popped
+                   was unseen, which means we're basically
+                   done. We're just running through the 
+                   last of the items. Logically speaking, 
+                   we won't be relaxing any neighbors. 
+                 - seen, in which case there is a 
+                   whole lot of ground to cover
+               *)
+              apply Zlt_succ_le in H36.
+              apply Z.lt_eq_cases in H36.
+              destruct H36.
+              2: {
+                (* u was unseen
+                   uh-oh. I need to rejig many things. 
+                 *)
+                admit.
+              }
+                
               specialize (H34 H36).
               destruct H34.
               1: { (* src is being popped *)
