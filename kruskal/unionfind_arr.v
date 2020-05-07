@@ -11,12 +11,12 @@ Module Info.
   Definition abi := "standard"%string.
   Definition bitsize := 32.
   Definition big_endian := false.
-  Definition source_file := "verif/unionfind_arr.c"%string.
+  Definition source_file := "unionfind_arr.c"%string.
   Definition normalized := true.
 End Info.
 
-Definition _Union : ident := 69%positive.
-Definition _V : ident := 70%positive.
+Definition _Union : ident := 68%positive.
+Definition _V : ident := 69%positive.
 Definition ___builtin_ais_annot : ident := 4%positive.
 Definition ___builtin_annot : ident := 13%positive.
 Definition ___builtin_annot_intval : ident := 14%positive.
@@ -69,28 +69,26 @@ Definition ___compcert_va_composite : ident := 23%positive.
 Definition ___compcert_va_float64 : ident := 22%positive.
 Definition ___compcert_va_int32 : ident := 20%positive.
 Definition ___compcert_va_int64 : ident := 21%positive.
-Definition _find : ident := 62%positive.
-Definition _freeSet : ident := 73%positive.
-Definition _i : ident := 59%positive.
-Definition _main : ident := 74%positive.
-Definition _makeSet : ident := 72%positive.
-Definition _maybe_free : ident := 57%positive.
-Definition _p : ident := 61%positive.
-Definition _p0 : ident := 60%positive.
+Definition _find : ident := 61%positive.
+Definition _i : ident := 58%positive.
+Definition _main : ident := 72%positive.
+Definition _makeSet : ident := 71%positive.
+Definition _mallocN : ident := 56%positive.
+Definition _p : ident := 60%positive.
+Definition _p0 : ident := 59%positive.
 Definition _parent : ident := 1%positive.
 Definition _rank : ident := 2%positive.
 Definition _subset : ident := 3%positive.
-Definition _subsets : ident := 58%positive.
-Definition _surely_malloc : ident := 56%positive.
-Definition _v : ident := 71%positive.
-Definition _x : ident := 63%positive.
-Definition _xRank : ident := 67%positive.
-Definition _xroot : ident := 65%positive.
-Definition _y : ident := 64%positive.
-Definition _yRank : ident := 68%positive.
-Definition _yroot : ident := 66%positive.
-Definition _t'1 : ident := 75%positive.
-Definition _t'2 : ident := 76%positive.
+Definition _subsets : ident := 57%positive.
+Definition _v : ident := 70%positive.
+Definition _x : ident := 62%positive.
+Definition _xRank : ident := 66%positive.
+Definition _xroot : ident := 64%positive.
+Definition _y : ident := 63%positive.
+Definition _yRank : ident := 67%positive.
+Definition _yroot : ident := 65%positive.
+Definition _t'1 : ident := 73%positive.
+Definition _t'2 : ident := 74%positive.
 
 Definition f_find := {|
   fn_return := tint;
@@ -234,8 +232,7 @@ Definition f_makeSet := {|
 (Ssequence
   (Ssequence
     (Scall (Some _t'1)
-      (Evar _surely_malloc (Tfunction (Tcons tuint Tnil) (tptr tvoid)
-                             cc_default))
+      (Evar _mallocN (Tfunction (Tcons tint Tnil) (tptr tvoid) cc_default))
       ((Ebinop Omul (Etempvar _V tint)
          (Esizeof (Tstruct _subset noattr) tuint) tuint) :: nil))
     (Sset _subsets
@@ -269,18 +266,6 @@ Definition f_makeSet := {|
           (Ebinop Oadd (Etempvar _v tint) (Econst_int (Int.repr 1) tint)
             tint))))
     (Sreturn (Some (Etempvar _subsets (tptr (Tstruct _subset noattr)))))))
-|}.
-
-Definition f_freeSet := {|
-  fn_return := tvoid;
-  fn_callconv := cc_default;
-  fn_params := ((_subsets, (tptr (Tstruct _subset noattr))) :: nil);
-  fn_vars := nil;
-  fn_temps := nil;
-  fn_body :=
-(Scall None
-  (Evar _maybe_free (Tfunction (Tcons (tptr tvoid) Tnil) tvoid cc_default))
-  ((Etempvar _subsets (tptr (Tstruct _subset noattr))) :: nil))
 |}.
 
 Definition composites : list composite_definition :=
@@ -538,38 +523,33 @@ Definition global_definitions : list (ident * globdef fundef type) :=
                      {|cc_vararg:=true; cc_unproto:=false; cc_structret:=false|}))
      (Tcons tint Tnil) tvoid
      {|cc_vararg:=true; cc_unproto:=false; cc_structret:=false|})) ::
- (_surely_malloc,
-   Gfun(External (EF_external "surely_malloc"
+ (_mallocN,
+   Gfun(External (EF_external "mallocN"
                    (mksignature (AST.Tint :: nil) AST.Tint cc_default))
-     (Tcons tuint Tnil) (tptr tvoid) cc_default)) ::
- (_maybe_free,
-   Gfun(External (EF_external "maybe_free"
-                   (mksignature (AST.Tint :: nil) AST.Tvoid cc_default))
-     (Tcons (tptr tvoid) Tnil) tvoid cc_default)) ::
+     (Tcons tint Tnil) (tptr tvoid) cc_default)) ::
  (_find, Gfun(Internal f_find)) :: (_Union, Gfun(Internal f_Union)) ::
- (_makeSet, Gfun(Internal f_makeSet)) ::
- (_freeSet, Gfun(Internal f_freeSet)) :: nil).
+ (_makeSet, Gfun(Internal f_makeSet)) :: nil).
 
 Definition public_idents : list ident :=
-(_freeSet :: _makeSet :: _Union :: _find :: _maybe_free :: _surely_malloc ::
- ___builtin_debug :: ___builtin_write32_reversed ::
- ___builtin_write16_reversed :: ___builtin_read32_reversed ::
- ___builtin_read16_reversed :: ___builtin_fnmsub :: ___builtin_fnmadd ::
- ___builtin_fmsub :: ___builtin_fmadd :: ___builtin_fmin ::
- ___builtin_fmax :: ___builtin_ctzll :: ___builtin_ctzl :: ___builtin_ctz ::
- ___builtin_clzll :: ___builtin_clzl :: ___builtin_clz ::
- ___compcert_i64_umulh :: ___compcert_i64_smulh :: ___compcert_i64_sar ::
- ___compcert_i64_shr :: ___compcert_i64_shl :: ___compcert_i64_umod ::
- ___compcert_i64_smod :: ___compcert_i64_udiv :: ___compcert_i64_sdiv ::
- ___compcert_i64_utof :: ___compcert_i64_stof :: ___compcert_i64_utod ::
- ___compcert_i64_stod :: ___compcert_i64_dtou :: ___compcert_i64_dtos ::
- ___compcert_va_composite :: ___compcert_va_float64 ::
- ___compcert_va_int64 :: ___compcert_va_int32 :: ___builtin_va_end ::
- ___builtin_va_copy :: ___builtin_va_arg :: ___builtin_va_start ::
- ___builtin_membar :: ___builtin_annot_intval :: ___builtin_annot ::
- ___builtin_sel :: ___builtin_memcpy_aligned :: ___builtin_fsqrt ::
- ___builtin_fabs :: ___builtin_bswap16 :: ___builtin_bswap32 ::
- ___builtin_bswap :: ___builtin_bswap64 :: ___builtin_ais_annot :: nil).
+(_makeSet :: _Union :: _find :: _mallocN :: ___builtin_debug ::
+ ___builtin_write32_reversed :: ___builtin_write16_reversed ::
+ ___builtin_read32_reversed :: ___builtin_read16_reversed ::
+ ___builtin_fnmsub :: ___builtin_fnmadd :: ___builtin_fmsub ::
+ ___builtin_fmadd :: ___builtin_fmin :: ___builtin_fmax ::
+ ___builtin_ctzll :: ___builtin_ctzl :: ___builtin_ctz :: ___builtin_clzll ::
+ ___builtin_clzl :: ___builtin_clz :: ___compcert_i64_umulh ::
+ ___compcert_i64_smulh :: ___compcert_i64_sar :: ___compcert_i64_shr ::
+ ___compcert_i64_shl :: ___compcert_i64_umod :: ___compcert_i64_smod ::
+ ___compcert_i64_udiv :: ___compcert_i64_sdiv :: ___compcert_i64_utof ::
+ ___compcert_i64_stof :: ___compcert_i64_utod :: ___compcert_i64_stod ::
+ ___compcert_i64_dtou :: ___compcert_i64_dtos :: ___compcert_va_composite ::
+ ___compcert_va_float64 :: ___compcert_va_int64 :: ___compcert_va_int32 ::
+ ___builtin_va_end :: ___builtin_va_copy :: ___builtin_va_arg ::
+ ___builtin_va_start :: ___builtin_membar :: ___builtin_annot_intval ::
+ ___builtin_annot :: ___builtin_sel :: ___builtin_memcpy_aligned ::
+ ___builtin_fsqrt :: ___builtin_fabs :: ___builtin_bswap16 ::
+ ___builtin_bswap32 :: ___builtin_bswap :: ___builtin_bswap64 ::
+ ___builtin_ais_annot :: nil).
 
 Definition prog : Clight.program := 
   mkprogram composites global_definitions public_idents _main Logic.I.
