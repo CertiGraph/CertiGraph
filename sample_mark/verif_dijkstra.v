@@ -981,8 +981,32 @@ Proof.
           (* dist[u] = inf. We will break. *)
           replace 8 with SIZE in H19 by (now compute).
           rewrite inf_eq2 in H19.
-          assert (Znth u dist_contents = inf) by admit.
-          (* easy, just need to learn how to clean up *)
+
+Set Nested Proofs Allowed.
+Lemma Int_repr_eq_small:
+  forall a b,
+    0 <= a < Int.modulus ->
+    0 <= b < Int.modulus ->
+    Int.repr a = Int.repr b ->
+    a = b.
+Proof.
+  intros.
+  apply Int_eqm_unsigned_repr',
+  Int_eqm_unsigned_spec in H1.
+  rewrite Int.unsigned_repr_eq in H1.
+  rewrite Z.mod_small in H1; trivial.
+  pose proof (Int.eqm_small_eq _ _ H1 H H0); trivial.
+Qed.
+
+assert (Htemp : inf < Int.modulus) by (compute; trivial).
+apply Int_repr_eq_small in H19.
+2: { assert (0 <= u < Zlength dist_contents) by lia.
+     apply (Forall_Znth _ _ _ H20) in H10.
+     simpl in H10. lia.
+}
+2: compute; split; [inversion 1 | trivial]. 
+clear Htemp.
+
           forward. 
           Exists prev_contents (upd_Znth u priq_contents (inf + 1)) dist_contents.
           entailer!.
@@ -993,24 +1017,24 @@ Proof.
             apply In_Znth_iff in H15.
             destruct H15 as [index [? ?]].
             destruct (Z.eq_dec index u).
-            + subst index. rewrite upd_Znth_same in H34; lia.
+            + subst index. rewrite upd_Znth_same in H33; lia.
             + rewrite upd_Znth_Zlength in H15; trivial.
-              rewrite upd_Znth_diff in H34; trivial.
+              rewrite upd_Znth_diff in H33; trivial.
               destruct (Z.eq_dec (Znth index priq_contents) (inf + 1)).
               1: lia.
-              rewrite Hequ in H20.
-              rewrite <- H8 in H20; trivial.
+              rewrite Hequ in H19.
+              rewrite <- H8 in H19; trivial.
               2: apply vvalid_range; trivial; lia.
               2: apply Z.lt_neq, find_min_lt_inf; trivial; lia.
-              assert (Hrem := H34).
-              rewrite H8 in H34; trivial.
+              assert (Hrem := H33).
+              rewrite H8 in H33; trivial.
               2: apply vvalid_range; trivial; lia.
-              rewrite Znth_find in H20.
+              rewrite Znth_find in H19.
               2: { apply min_in_list. apply incl_refl.
                    rewrite <- Znth_0_hd; [apply Znth_In|]; lia.
               }
               apply Z.le_ge.
-              rewrite <- H20.
+              rewrite <- H19.
               apply fold_min_general.
               rewrite <- Hrem.
               apply Znth_In; lia.
@@ -1024,8 +1048,7 @@ Proof.
         assert (Znth u dist_contents < inf). {
           replace 8 with SIZE in H19. 2: compute; trivial.
           rewrite inf_eq2 in H19.
-          assert (Znth u dist_contents <> inf) by admit.
-          (* easy, just need to learn how to clean up *)
+          apply repr_neq_e in H19.
           replace (Zlength priq_contents) with (Zlength dist_contents) in H17 by lia.
           apply (Forall_Znth _ _ _ H17) in H10.
           Opaque inf. simpl in H10. Transparent inf.
