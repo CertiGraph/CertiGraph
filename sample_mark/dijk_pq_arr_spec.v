@@ -29,6 +29,7 @@ Definition path_globally_optimal (g: LGraph) src dst p : Prop :=
 
 Definition inv_popped g src prev priq dist dst :=
   In dst (get_popped priq) ->
+  Znth dst dist < inf ->
   exists path,
     path_correct g prev dist src dst path /\
     (forall step, In_path g step path ->
