@@ -466,13 +466,16 @@ Definition f_dijkstra := {|
     (Ssequence
       (Sassign
         (Ederef
-          (Ebinop Oadd (Evar _pq (tarray tint 8)) (Etempvar _src tint)
-            (tptr tint)) tint) (Econst_int (Int.repr 0) tint))
+          (Ebinop Oadd (Etempvar _prev (tptr tint)) (Etempvar _src tint)
+            (tptr tint)) tint) (Etempvar _src tint))
       (Ssequence
-        (Sassign
-          (Ederef
-            (Ebinop Oadd (Etempvar _prev (tptr tint)) (Etempvar _src tint)
-              (tptr tint)) tint) (Etempvar _src tint))
+        (Scall None
+          (Evar _adjustWeight (Tfunction
+                                (Tcons tint
+                                  (Tcons tint (Tcons (tptr tint) Tnil)))
+                                tvoid cc_default))
+          ((Etempvar _src tint) :: (Econst_int (Int.repr 0) tint) ::
+           (Evar _pq (tarray tint 8)) :: nil))
         (Ssequence
           (Sloop
             (Ssequence

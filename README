@@ -47,6 +47,6 @@ VST_DIR=../VST
 6.2. {path_to_compcert}/CompCert/clightgen -DCOMPCERT -normalize -isystem . newfile.c
 6.3. Open RamifyCoq/Makefile and add newfile.v to the list of sources
 6.4. In RamifyCoq/, make depend (this is for every time you edit the makefile)
-6.5. In RamifyCoq/, {path_to_newfile.c}/newfile.vo (note the .vo)
+6.5. In RamifyCoq/, make {path_to_newfile.c}/newfile.vo (note the .vo)
 6.6. Create verif_newfile.v. Something like "Require Import RamifyCoq.path.path.newfile." will now work.
 6.7. Don't forget to check that your VCS is tracking these files you just created.
