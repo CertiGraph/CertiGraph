@@ -33,7 +33,8 @@ Definition inv_popped g src prev priq dist dst :=
   exists path,
     path_correct g prev dist src dst path /\
     (forall step, In_path g step path ->
-                  In step (get_popped priq)) /\
+                  In step (get_popped priq) /\
+                  Znth step dist < inf) /\
     path_globally_optimal g src dst path.
 
 Definition inv_unpopped g src prev priq dist dst :=
