@@ -1335,6 +1335,7 @@ clear Htemp.
                            path_ends g p1 src mom' /\
                            path_ends g p2 child' u /\
                            In mom' (get_popped priq_contents) /\
+                           Znth mom' dist_contents < inf /\
                            ~ In child' (get_popped priq_contents) /\
                            evalid g (mom', child') /\
                            path_cost g p1 < inf /\
@@ -1360,7 +1361,8 @@ clear Htemp.
                     as [p1 [mom' [child' [p2 [? [? [? [? [? [? [? ?]]]]]]]]]]].
                          
                   exists p1, mom', child', p2.
-                  split3; [| |split3; [| |split3; [| |split3]]]; trivial.
+                  split3; [| |split3; [| |split3; [| |split3; [| |split]]]]; trivial.
+                  1: admit. (* get it from the lemma *)
                   unfold EType, VType in *.
                   rewrite <- H54 in l.
                   assert ( valid_path g (mom', [(mom', child')])). {
@@ -1396,11 +1398,12 @@ clear Htemp.
                     rewrite careful_add_comm; trivial.
                 }
                 
-                destruct H53 as [p1 [mom' [child' [p2 [? [? [? [? [? [? [? [? [? [? ?]]]]]]]]]]]]]].
+                destruct H53 as [p1 [mom' [child' [p2 [? [? [? [? [? [? [Ha [? [? [? [? ?]]]]]]]]]]]]]]].
                 rewrite <- H53 in g0.
                 
                 assert (0 <= path_cost g (mom', [(mom', child')]) < inf). {
                   rewrite one_step_path_Znth; trivial.
+                  
                 }
                 unfold VType in *.
                 do 2 rewrite path_cost_path_glue in g0; trivial; [|lia].
@@ -1474,8 +1477,7 @@ clear Htemp.
                 }
                 destruct (H4 mom' H65) as [? _].
                 unfold inv_popped in H66.
-                destruct (H66 H58) as [p2mom' [? [? ?]]].
-                1: { admit. } (* add to invariant *)
+                destruct (H66 H58 Ha) as [p2mom' [? [? ?]]].
                 (*
                 and path_cost of p2mom' will be <= that of p1 *)
                 pose proof (H69 p1 H54 H56).  
@@ -1808,19 +1810,22 @@ clear Htemp.
                 (* At this point we know that we are definitely
         going to make edits in the arrays:
         we have found a better path to i, via u *)
-                assert (~ In i (get_popped priq_contents')). {
+
+                
+
+                
+                assert (~ (In i (get_popped priq_contents') /\
+                           Znth i dist_contents' < inf)). {
                   (* This useful fact is true because
-          the cost to i was just improved.
-          This is impossible for popped items.
+                     the cost to i was just improved.
+                     This is impossible for popped items.
                    *)
-                  intro.
+                  intro. destruct H46 as [? Ha].
                   unfold inv_popped in H22.
                   destruct (H22 _ H46) as [p2i [? [? ?]]].
-                  1: { admit. }
+                  1: trivial.
                   destruct (H22 _ H30) as [p2u [? [? ?]]].
-                  1: { admit. }
-
-                    
+                  1: lia.                    
                   unfold path_globally_optimal in H49.
                   specialize (H49 (fst p2u, snd p2u +:: (u,i))).
                   rewrite Heqcost in H45.
@@ -1898,9 +1903,9 @@ clear Htemp.
                   +++ pose proof (get_popped_range _ _ H61).
                       rewrite upd_Znth_Zlength in H62 by lia.
                       rewrite <- get_popped_irrel_upd in H61; try lia.
-                      specialize (H60 H61).
+                      rewrite upd_Znth_diff in Hz; try lia.
+                      specialize (H60 H61 Hz).
                       destruct H60 as [p2dst [? [? ?]]].
-                      1: rewrite upd_Znth_diff in Hz; lia.
                       exists p2dst; split3; trivial.
                       *** destruct H60 as [? [? [? [? ?]]]].
                           split3; [| | split3]; trivial.
@@ -1919,8 +1924,11 @@ clear Htemp.
                           assert (snd x <> i). {
                             intro contra.
                             unfold VType in *.
-                            rewrite contra in H63.
-                            apply H46. trivial.
+                            rewrite contra in *.
+                            apply H46.
+                            split; trivial.
+                            admit.
+                            (* add to invariant *)
                           }
                           unfold VType in *.
                           rewrite upd_Znth_diff; try lia.
@@ -1929,8 +1937,11 @@ clear Htemp.
                           specialize (H63 _ H65).
                           rewrite <- get_popped_irrel_upd; try lia; trivial.
                           apply get_popped_range in H63; lia.
-                          intro contra. rewrite contra in H63.
-                          apply H46. trivial.
+                          intro contra. rewrite contra in *.
+                          apply H46.
+                          split; trivial.
+                          admit. (* add to invariant *)
+                          
                 --- intros.
                     destruct (Z.eq_dec dst i).
                     +++ subst dst.
@@ -1954,7 +1965,9 @@ clear Htemp.
                                left. destruct H62 as [_ [[? _] _]].
                                destruct p2u. now simpl in H62 |- *. }
                              specialize (H63 _ H66).
-                             now subst. }
+                             admit. 
+                        }      
+                             (* now subst. } *)
                         rewrite upd_Znth_same in H61; trivial; [|lia].
                         split3; [| |split3].
                         *** rewrite <- get_popped_irrel_upd; trivial; lia.
@@ -2126,8 +2139,12 @@ clear Htemp.
                                 assert (0 <= i < Zlength priq_contents') by lia.
                                 pose proof (Forall_Znth _ priq_contents' i H79 H33).
                                 Opaque inf. simpl in H80. Transparent inf.
-                                rewrite get_popped_meaning in H46.
-                                lia. lia.
+                                apply Classical_Prop.not_and_or in H46.
+                                
+                                rewrite get_popped_meaning in H46 by lia.
+                                destruct H46.
+                                - lia.
+                                - admit.
                               }
  (* Great, so now I can employ inv_unpopped_weak. *)
  
@@ -2192,8 +2209,11 @@ clear Htemp.
                                 assert (0 <= i < Zlength priq_contents') by lia.
                                 pose proof (Forall_Znth _ priq_contents' i H80 H33).
                                 Opaque inf. simpl in H81. Transparent inf.
-                                rewrite get_popped_meaning in H46.
-                                lia. lia.
+                                rewrite get_popped_meaning in H46 by lia.
+                                apply Classical_Prop.not_and_or in H46.
+                                destruct H46.
+                                - lia.
+                                - admit.
                               }
 
                               assert (i <= i < SIZE) by lia.
@@ -2237,7 +2257,8 @@ clear Htemp.
                         
                         assert (mom <> i). {
                           intro. rewrite H71 in *.
-                          apply H46; trivial.
+                          apply H46; split; trivial.
+                          admit. 
                         }
                         assert (0 <= mom < Zlength priq_contents'). {
                           apply get_popped_range in H63; lia.
@@ -2272,7 +2293,8 @@ clear Htemp.
                     clear H66.
                     assert (mom <> i). {
                       intro. rewrite H66 in H65.
-                      apply H46; trivial.
+                      apply H46; split; trivial.
+                      admit.
                     }
 
                     assert (0 <= mom < Zlength priq_contents'). {
