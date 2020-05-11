@@ -29,7 +29,7 @@ void swim(unsigned int k, Item* arr[]) {
 
 void sink (unsigned int k, Item* arr[]) {
   int size = (unsigned int) arr[SIZE_IDX]; /* Hrm... */
-  while (2 * k <= size) { /* Requirement that size <= MAX_SIZE be of reasonable size */
+  while (2 * k <= size) { /* Requirement that size <= MAX_SIZE be of reasonable size */ /* < size or <= size? */
     unsigned j = 2 * k;
     if (j < size && less(j, j+1, arr)) j++; /* careful with j+1 overflow? */
     if (less(j, k, arr)) break;
@@ -38,19 +38,19 @@ void sink (unsigned int k, Item* arr[]) {
   }
 }
 
-void insert(Item arr[], Item* x) {
+void insert(Item* arr[], Item* x) {
   int size = (unsigned int) arr[SIZE_IDX]; /* Hrm... */
   if (size >= MAX_SIZE) return; /* Hrm */
   arr[size] = x;
   arr[SIZE_IDX] = arr[SIZE_IDX] + 1;
-  swim(i, arr);
+  swim(size, arr);
 }
 
 Item* remove_min(Item* arr[]) {
   int size = (unsigned int) arr[SIZE_IDX]; /* Hrm... */
   if (size == ROOT_IDX) return 0;
   Item* item = arr[size - 1];
-  exch(ROOT,size - 1,arr);
+  exch(ROOT_IDX,size - 1,arr);
   arr[SIZE_IDX] = arr[SIZE_IDX] - 1;
   sink(ROOT_IDX, arr);
   return item;
