@@ -58,6 +58,18 @@ Proof.
     apply sublist_In in H2. apply (H0 x H2).
 Qed.
 
+Lemma Znth_dist_lt_inf:
+  forall i dist,
+    0 <= i < Zlength dist ->
+    inrange_dist dist ->
+    Znth i dist <> inf ->
+    Znth i dist < inf.
+Proof.
+  intros.
+  apply (Forall_Znth _ _ _ H) in H0.
+  simpl in H0. lia.
+Qed.
+
 
 (** MISC HELPER LEMMAS **)
 
@@ -296,6 +308,21 @@ Proof.
   rewrite <- nat_inc_list_app.
   rewrite nat_inc_list_i.
   all: try rewrite nat_inc_list_Zlength; lia.
+Qed.
+
+Lemma Int_repr_eq_small:
+  forall a b,
+    0 <= a < Int.modulus ->
+    0 <= b < Int.modulus ->
+    Int.repr a = Int.repr b ->
+    a = b.
+Proof.
+  intros.
+  apply Int_eqm_unsigned_repr',
+  Int_eqm_unsigned_spec in H1.
+  rewrite Int.unsigned_repr_eq in H1.
+  rewrite Z.mod_small in H1; trivial.
+  pose proof (Int.eqm_small_eq _ _ H1 H H0); trivial.
 Qed.
 
 
@@ -984,32 +1011,16 @@ Proof.
           (* dist[u] = inf. We will break. *)
           replace 8 with SIZE in H19 by (now compute).
           rewrite inf_eq2 in H19.
-
-Set Nested Proofs Allowed.
-Lemma Int_repr_eq_small:
-  forall a b,
-    0 <= a < Int.modulus ->
-    0 <= b < Int.modulus ->
-    Int.repr a = Int.repr b ->
-    a = b.
-Proof.
-  intros.
-  apply Int_eqm_unsigned_repr',
-  Int_eqm_unsigned_spec in H1.
-  rewrite Int.unsigned_repr_eq in H1.
-  rewrite Z.mod_small in H1; trivial.
-  pose proof (Int.eqm_small_eq _ _ H1 H H0); trivial.
-Qed.
-
-assert (Htemp : inf < Int.modulus) by (compute; trivial).
-apply Int_repr_eq_small in H19.
-2: { assert (0 <= u < Zlength dist_contents) by lia.
-     apply (Forall_Znth _ _ _ H20) in H10.
-     simpl in H10. lia.
-}
-2: compute; split; [inversion 1 | trivial]. 
-clear Htemp.
-
+          
+          assert (Htemp : inf < Int.modulus) by (compute; trivial).
+          apply Int_repr_eq_small in H19.
+          2: { assert (0 <= u < Zlength dist_contents) by lia.
+               apply (Forall_Znth _ _ _ H20) in H10.
+               simpl in H10. lia.
+          }
+          2: compute; split; [inversion 1 | trivial]. 
+          clear Htemp.
+          
           forward. 
           Exists prev_contents (upd_Znth u priq_contents (inf + 1)) dist_contents.
           entailer!.
@@ -2039,10 +2050,10 @@ clear Htemp.
                                  rewrite <- elabel_Znth_graph_to_mat; trivial.
                                  apply inrange_graph_cost_pos; trivial.
                             }
-                            assert (Hc: Znth mom' dist_contents' < inf). {
-                              admit. (* easy *)
-                            }
-                            destruct (H22 _ H65 Hc) as [p2mom' [? [? ?]]].
+
+                            apply Znth_dist_lt_inf in n; trivial.
+                            2: apply get_popped_range in H65; lia.
+                            destruct (H22 _ H65 n) as [p2mom' [? [? ?]]].
                             destruct H68 as [? [? [? [? ?]]]].
 
                             assert (In_path g mom' p2mom'). {
@@ -2493,9 +2504,10 @@ clear Htemp.
                       apply inrange_graph_cost_pos; trivial.
                     }
 
-                    assert (Hd: Znth mom' dist_contents' < inf) by admit. (* just a slog *)
-                    
-                    destruct (H22 _ H67 Hd) as [p2mom' [? [? ?]]].
+                    apply Znth_dist_lt_inf in n0; trivial.
+                    2: apply get_popped_range in H67; lia.
+
+                    destruct (H22 _ H67 n0) as [p2mom' [? [? ?]]].
                     assert (Hrem := H68).
 
 (*
@@ -2671,9 +2683,9 @@ Thus dist[mom'] + (mom',i) <= path_cost p'.
                          rewrite <- elabel_Znth_graph_to_mat; trivial.
                          apply inrange_graph_cost_pos; trivial.
                     }
-                    assert (Znth u dist_contents' < inf). {
-                      admit. (* slog *)
-                      }
+
+                    apply Znth_dist_lt_inf in n; trivial.
+                    2: apply get_popped_range in H63; lia.
 
                     destruct (zlt (Znth i (Znth u (graph_to_mat g))) inf).
                     1: apply careful_add_dirty; trivial; lia.
@@ -2694,7 +2706,7 @@ Thus dist[mom'] + (mom',i) <= path_cost p'.
                       2: rewrite <- inf_eq; rep_lia.
                       lia.
                     }
-                    rewrite H67.
+                    rewrite H66.
                     rewrite careful_add_inf; trivial; lia.
                 --- intros.
                     assert (i <= dst < SIZE) by lia.
@@ -2786,9 +2798,9 @@ Thus dist[mom'] + (mom',i) <= path_cost p'.
                             apply inrange_graph_cost_pos; trivial.
                        }
 
-                       assert (He: Znth mom' dist_contents' < inf) by admit. (* slog *)
-                       
-                       destruct (H22 _ H66 He) as [p2mom' [? [? ?]]].
+                       apply Znth_dist_lt_inf in n; trivial.
+                       2: apply get_popped_range in H66; lia. 
+                       destruct (H22 _ H66 n) as [p2mom' [? [? ?]]].
                        assert (In_path g mom' p2mom'). {
                          destruct H67 as [_ [[_ ?] _]].
                          apply pfoot_in in H67.
