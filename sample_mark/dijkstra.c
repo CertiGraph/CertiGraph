@@ -74,11 +74,12 @@ void dijkstra (int graph[SIZE][SIZE], int src, int *dist, int *prev) {
         push(i, IFTY, pq);  // Everybody goes in the queue  
     }
     dist[src] = 0;
-    pq[src] = 0;
     prev[src] = src;
+    adjustWeight(src, 0, pq); // special values for src
     while (!pq_emp(pq)) {
         u = popMin(pq);  // src -> u is optimal. relax u's neighbors, then done with u.
         // printf("Popped vertex %d\n", u); 
+        // if (dist[u] == IFTY) break; // we're running on gas; there are no more reachable vertices 
         for (i = 0; i < SIZE; i++) {
             cost = graph[u][i]; 
             if (cost < IFTY) { // i.e. node i is a neighbor of mine

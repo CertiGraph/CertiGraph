@@ -184,10 +184,13 @@ Definition f_pq_emp := {|
               (Ebinop Oadd (Etempvar _pq (tptr tint)) (Etempvar _i tint)
                 (tptr tint)) tint))
           (Sifthenelse (Ebinop Olt (Etempvar _t'1 tint)
-                         (Ebinop Osub (Econst_int (Int.repr 2147483647) tint)
-                           (Ebinop Odiv
+                         (Ebinop Oadd
+                           (Ebinop Osub
                              (Econst_int (Int.repr 2147483647) tint)
-                             (Econst_int (Int.repr 8) tint) tint) tint) tint)
+                             (Ebinop Odiv
+                               (Econst_int (Int.repr 2147483647) tint)
+                               (Econst_int (Int.repr 8) tint) tint) tint)
+                           (Econst_int (Int.repr 1) tint) tint) tint)
             (Sreturn (Some (Econst_int (Int.repr 0) tint)))
             Sskip)))
       (Sset _i

@@ -1,5 +1,6 @@
 #include "unionfind_arr.h"
-#include "surely_malloc.h"
+//#include <malloc.h>
+extern void * mallocN (int n);
 
 // A utility function to find set of an element i
 // (uses path compression technique)
@@ -51,8 +52,8 @@ void Union(struct subset subsets[], int x, int y)
 struct subset* makeSet(int V)
 {
     // Allocate memory for creating V ssubsets
-    struct subset *subsets =
-    (struct subset*) surely_malloc( V * sizeof(struct subset) );
+    //struct subset *subsets = (struct subset*) malloc( V * sizeof(struct subset) );
+    struct subset *subsets = (struct subset*) mallocN( V * sizeof(struct subset) );
  
     // Create V subsets with single elements
     for (int v = 0; v < V; v++)
@@ -62,8 +63,4 @@ struct subset* makeSet(int V)
     }
 
     return subsets;
-}
-
-void freeSet(struct subset* subsets) {
-    maybe_free(subsets);
 }

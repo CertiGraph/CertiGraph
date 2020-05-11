@@ -1,5 +1,5 @@
-#ifndef __UNIONFIND_ARR__
-#define __UNIONFIND_ARR__
+#ifndef __UNIONFIND_ARR_H__
+#define __UNIONFIND_ARR_H__
 
 // A structure to represent a subset for union-find
 struct subset
@@ -15,6 +15,5 @@ int find(struct subset subsets[], int i);
 void Union(struct subset subsets[], int x, int y);
 
 struct subset* makeSet(int V);
-void freeSet(struct subset* subsets);
 
 #endif
