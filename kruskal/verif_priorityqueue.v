@@ -30,7 +30,7 @@ Proof.
      PROP (isEmpty_Prop (sublist 0 i priq_contents))
      LOCAL (temp _pq pq)
      SEP (data_at Tsh (tarray tint SIZE) (map Vint (map Int.repr priq_contents)) pq)).
-  - unfold SIZE; lia.
+  - unfold SIZE; rep_lia.
   - unfold SIZE; rep_lia.
   - entailer!. 
   - simpl.
@@ -39,36 +39,26 @@ Proof.
     }
     forward; forward_if; forward; entailer!.
     + rewrite (isEmpty_in priq_contents (Znth i priq_contents)).
-      * trivial.
-      * apply Znth_In; lia.
-      * rewrite <- H1 in H0.
-        pose proof (Forall_Znth _ _ i H0 H).
-        rewrite Int.signed_repr in H3.
-        apply (Z.lt_stepr _ _ _ H3). compute; trivial.
-        simpl in H7. rep_lia.
+      trivial.
+      apply Znth_In; lia.
+      rewrite <- H1 in H0.
+      pose proof (Forall_Znth _ _ i H0 H).
+      rewrite Int.signed_repr in H3.
+      apply (Z.lt_stepr _ _ _ H3). compute; trivial.
+      simpl in H7. rep_lia.
     + rewrite (sublist_split 0 i (i+1)); try lia.
       unfold isEmpty_Prop.
       rewrite fold_right_app.
-      Opaque inf.
       rewrite sublist_one; try lia. simpl.
-      destruct (Z_lt_dec (Znth i priq_contents) (inf + 1)).
+      destruct (Z_lt_dec (Znth i priq_contents) inf).
       2: unfold isEmpty_Prop in H2; trivial.
       exfalso.
       replace 8 with SIZE in H3 by (unfold SIZE; trivial).
       rewrite inf_eq2 in H3.
-      rewrite Int.add_signed in H3.
-      Transparent inf.
-      assert (Hx: inf + 1 < Int.max_signed) by 
-          (compute; trivial). 
-      rewrite Int.signed_repr in H3.
-      2: rewrite <- H1 in H0; apply (Forall_Znth _ _ i H0) in H; simpl in H; rep_lia.
-      rewrite Int.signed_repr in H3.
-      2: { rewrite Int.signed_repr; [| rep_lia].
-           rewrite Int.signed_repr; [| rep_lia].
-           rep_lia.
-      }
-      do 2 rewrite Int.signed_repr in H3. lia.
-      all: compute; split; inversion 1.
+      do 2 rewrite Int.signed_repr in H3.
+      rep_lia.
+      1: compute; split; inversion 1.
+      1,2: rewrite <- H1 in H0; apply (Forall_Znth _ _ i H0) in H; simpl in H; rep_lia.
   - forward. entailer!.
     rewrite sublist_same in H0; trivial.
     2: { symmetry; repeat rewrite Zlength_map in H2.
