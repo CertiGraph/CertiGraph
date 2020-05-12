@@ -15,156 +15,163 @@ Module Info.
   Definition normalized := true.
 End Info.
 
-Definition ___builtin_annot : ident := 12%positive.
-Definition ___builtin_annot_intval : ident := 13%positive.
-Definition ___builtin_bswap : ident := 5%positive.
-Definition ___builtin_bswap16 : ident := 7%positive.
-Definition ___builtin_bswap32 : ident := 6%positive.
-Definition ___builtin_bswap64 : ident := 4%positive.
-Definition ___builtin_clz : ident := 38%positive.
-Definition ___builtin_clzl : ident := 39%positive.
-Definition ___builtin_clzll : ident := 40%positive.
-Definition ___builtin_ctz : ident := 41%positive.
-Definition ___builtin_ctzl : ident := 42%positive.
-Definition ___builtin_ctzll : ident := 43%positive.
-Definition ___builtin_debug : ident := 54%positive.
-Definition ___builtin_fabs : ident := 8%positive.
-Definition ___builtin_fmadd : ident := 46%positive.
-Definition ___builtin_fmax : ident := 44%positive.
-Definition ___builtin_fmin : ident := 45%positive.
-Definition ___builtin_fmsub : ident := 47%positive.
-Definition ___builtin_fnmadd : ident := 48%positive.
-Definition ___builtin_fnmsub : ident := 49%positive.
-Definition ___builtin_fsqrt : ident := 9%positive.
-Definition ___builtin_membar : ident := 14%positive.
-Definition ___builtin_memcpy_aligned : ident := 10%positive.
-Definition ___builtin_read16_reversed : ident := 50%positive.
-Definition ___builtin_read32_reversed : ident := 51%positive.
-Definition ___builtin_sel : ident := 11%positive.
-Definition ___builtin_va_arg : ident := 16%positive.
-Definition ___builtin_va_copy : ident := 17%positive.
-Definition ___builtin_va_end : ident := 18%positive.
-Definition ___builtin_va_start : ident := 15%positive.
-Definition ___builtin_write16_reversed : ident := 52%positive.
-Definition ___builtin_write32_reversed : ident := 53%positive.
-Definition ___compcert_i64_dtos : ident := 23%positive.
-Definition ___compcert_i64_dtou : ident := 24%positive.
-Definition ___compcert_i64_sar : ident := 35%positive.
-Definition ___compcert_i64_sdiv : ident := 29%positive.
-Definition ___compcert_i64_shl : ident := 33%positive.
-Definition ___compcert_i64_shr : ident := 34%positive.
-Definition ___compcert_i64_smod : ident := 31%positive.
-Definition ___compcert_i64_smulh : ident := 36%positive.
-Definition ___compcert_i64_stod : ident := 25%positive.
-Definition ___compcert_i64_stof : ident := 27%positive.
-Definition ___compcert_i64_udiv : ident := 30%positive.
-Definition ___compcert_i64_umod : ident := 32%positive.
-Definition ___compcert_i64_umulh : ident := 37%positive.
-Definition ___compcert_i64_utod : ident := 26%positive.
-Definition ___compcert_i64_utof : ident := 28%positive.
-Definition ___compcert_va_composite : ident := 22%positive.
-Definition ___compcert_va_float64 : ident := 21%positive.
-Definition ___compcert_va_int32 : ident := 19%positive.
-Definition ___compcert_va_int64 : ident := 20%positive.
-Definition _arr : ident := 57%positive.
+Definition ___builtin_annot : ident := 16%positive.
+Definition ___builtin_annot_intval : ident := 17%positive.
+Definition ___builtin_bswap : ident := 9%positive.
+Definition ___builtin_bswap16 : ident := 11%positive.
+Definition ___builtin_bswap32 : ident := 10%positive.
+Definition ___builtin_bswap64 : ident := 8%positive.
+Definition ___builtin_clz : ident := 42%positive.
+Definition ___builtin_clzl : ident := 43%positive.
+Definition ___builtin_clzll : ident := 44%positive.
+Definition ___builtin_ctz : ident := 45%positive.
+Definition ___builtin_ctzl : ident := 46%positive.
+Definition ___builtin_ctzll : ident := 47%positive.
+Definition ___builtin_debug : ident := 58%positive.
+Definition ___builtin_fabs : ident := 12%positive.
+Definition ___builtin_fmadd : ident := 50%positive.
+Definition ___builtin_fmax : ident := 48%positive.
+Definition ___builtin_fmin : ident := 49%positive.
+Definition ___builtin_fmsub : ident := 51%positive.
+Definition ___builtin_fnmadd : ident := 52%positive.
+Definition ___builtin_fnmsub : ident := 53%positive.
+Definition ___builtin_fsqrt : ident := 13%positive.
+Definition ___builtin_membar : ident := 18%positive.
+Definition ___builtin_memcpy_aligned : ident := 14%positive.
+Definition ___builtin_read16_reversed : ident := 54%positive.
+Definition ___builtin_read32_reversed : ident := 55%positive.
+Definition ___builtin_sel : ident := 15%positive.
+Definition ___builtin_va_arg : ident := 20%positive.
+Definition ___builtin_va_copy : ident := 21%positive.
+Definition ___builtin_va_end : ident := 22%positive.
+Definition ___builtin_va_start : ident := 19%positive.
+Definition ___builtin_write16_reversed : ident := 56%positive.
+Definition ___builtin_write32_reversed : ident := 57%positive.
+Definition ___compcert_i64_dtos : ident := 27%positive.
+Definition ___compcert_i64_dtou : ident := 28%positive.
+Definition ___compcert_i64_sar : ident := 39%positive.
+Definition ___compcert_i64_sdiv : ident := 33%positive.
+Definition ___compcert_i64_shl : ident := 37%positive.
+Definition ___compcert_i64_shr : ident := 38%positive.
+Definition ___compcert_i64_smod : ident := 35%positive.
+Definition ___compcert_i64_smulh : ident := 40%positive.
+Definition ___compcert_i64_stod : ident := 29%positive.
+Definition ___compcert_i64_stof : ident := 31%positive.
+Definition ___compcert_i64_udiv : ident := 34%positive.
+Definition ___compcert_i64_umod : ident := 36%positive.
+Definition ___compcert_i64_umulh : ident := 41%positive.
+Definition ___compcert_i64_utod : ident := 30%positive.
+Definition ___compcert_i64_utof : ident := 32%positive.
+Definition ___compcert_va_composite : ident := 26%positive.
+Definition ___compcert_va_float64 : ident := 25%positive.
+Definition ___compcert_va_int32 : ident := 23%positive.
+Definition ___compcert_va_int64 : ident := 24%positive.
+Definition ___compound : ident := 81%positive.
+Definition __res : ident := 78%positive.
+Definition __res__1 : ident := 79%positive.
+Definition _arr : ident := 62%positive.
 Definition _data : ident := 2%positive.
-Definition _exch : ident := 59%positive.
-Definition _insert : ident := 65%positive.
-Definition _item : ident := 66%positive.
-Definition _j : ident := 55%positive.
-Definition _k : ident := 56%positive.
-Definition _less : ident := 60%positive.
-Definition _main : ident := 68%positive.
-Definition _pqItem : ident := 3%positive.
+Definition _exch : ident := 64%positive.
+Definition _first_available : ident := 5%positive.
+Definition _heap_cells : ident := 6%positive.
+Definition _insert : ident := 76%positive.
+Definition _item : ident := 77%positive.
+Definition _j : ident := 60%positive.
+Definition _k : ident := 61%positive.
+Definition _last_used : ident := 67%positive.
+Definition _less : ident := 65%positive.
+Definition _main : ident := 83%positive.
+Definition _make : ident := 82%positive.
+Definition _mallocN : ident := 59%positive.
+Definition _pq : ident := 69%positive.
+Definition _pq__1 : ident := 70%positive.
+Definition _pq__2 : ident := 71%positive.
+Definition _pq__3 : ident := 75%positive.
 Definition _priority : ident := 1%positive.
-Definition _remove_min : ident := 67%positive.
-Definition _sink : ident := 63%positive.
-Definition _size : ident := 62%positive.
-Definition _swim : ident := 61%positive.
-Definition _t : ident := 58%positive.
-Definition _x : ident := 64%positive.
-Definition _t'1 : ident := 69%positive.
-Definition _t'2 : ident := 70%positive.
-Definition _t'3 : ident := 71%positive.
-Definition _t'4 : ident := 72%positive.
+Definition _remove_min : ident := 80%positive.
+Definition _sink : ident := 68%positive.
+Definition _size : ident := 4%positive.
+Definition _structItem : ident := 3%positive.
+Definition _structPQ : ident := 7%positive.
+Definition _swim : ident := 66%positive.
+Definition _t : ident := 63%positive.
+Definition _x : ident := 72%positive.
+Definition _x__1 : ident := 73%positive.
+Definition _x__2 : ident := 74%positive.
+Definition _t'1 : ident := 84%positive.
+Definition _t'10 : ident := 93%positive.
+Definition _t'11 : ident := 94%positive.
+Definition _t'2 : ident := 85%positive.
+Definition _t'3 : ident := 86%positive.
+Definition _t'4 : ident := 87%positive.
+Definition _t'5 : ident := 88%positive.
+Definition _t'6 : ident := 89%positive.
+Definition _t'7 : ident := 90%positive.
+Definition _t'8 : ident := 91%positive.
+Definition _t'9 : ident := 92%positive.
 
 Definition f_exch := {|
   fn_return := tvoid;
   fn_callconv := cc_default;
   fn_params := ((_j, tuint) :: (_k, tuint) ::
-                (_arr, (tptr (tptr (Tstruct _pqItem noattr)))) :: nil);
-  fn_vars := nil;
-  fn_temps := ((_t, (tptr (Tstruct _pqItem noattr))) ::
-               (_t'1, (tptr (Tstruct _pqItem noattr))) :: nil);
+                (_arr, (tptr (Tstruct _structItem noattr))) :: nil);
+  fn_vars := ((_t, (Tstruct _structItem noattr)) :: nil);
+  fn_temps := nil;
   fn_body :=
 (Ssequence
-  (Sset _t
+  (Sassign (Evar _t (Tstruct _structItem noattr))
     (Ederef
-      (Ebinop Oadd (Etempvar _arr (tptr (tptr (Tstruct _pqItem noattr))))
-        (Etempvar _j tuint) (tptr (tptr (Tstruct _pqItem noattr))))
-      (tptr (Tstruct _pqItem noattr))))
+      (Ebinop Oadd (Etempvar _arr (tptr (Tstruct _structItem noattr)))
+        (Etempvar _j tuint) (tptr (Tstruct _structItem noattr)))
+      (Tstruct _structItem noattr)))
   (Ssequence
-    (Ssequence
-      (Sset _t'1
-        (Ederef
-          (Ebinop Oadd (Etempvar _arr (tptr (tptr (Tstruct _pqItem noattr))))
-            (Etempvar _k tuint) (tptr (tptr (Tstruct _pqItem noattr))))
-          (tptr (Tstruct _pqItem noattr))))
-      (Sassign
-        (Ederef
-          (Ebinop Oadd (Etempvar _arr (tptr (tptr (Tstruct _pqItem noattr))))
-            (Etempvar _j tuint) (tptr (tptr (Tstruct _pqItem noattr))))
-          (tptr (Tstruct _pqItem noattr)))
-        (Etempvar _t'1 (tptr (Tstruct _pqItem noattr)))))
     (Sassign
       (Ederef
-        (Ebinop Oadd (Etempvar _arr (tptr (tptr (Tstruct _pqItem noattr))))
-          (Etempvar _k tuint) (tptr (tptr (Tstruct _pqItem noattr))))
-        (tptr (Tstruct _pqItem noattr)))
-      (Etempvar _t (tptr (Tstruct _pqItem noattr))))))
+        (Ebinop Oadd (Etempvar _arr (tptr (Tstruct _structItem noattr)))
+          (Etempvar _j tuint) (tptr (Tstruct _structItem noattr)))
+        (Tstruct _structItem noattr))
+      (Ederef
+        (Ebinop Oadd (Etempvar _arr (tptr (Tstruct _structItem noattr)))
+          (Etempvar _k tuint) (tptr (Tstruct _structItem noattr)))
+        (Tstruct _structItem noattr)))
+    (Sassign
+      (Ederef
+        (Ebinop Oadd (Etempvar _arr (tptr (Tstruct _structItem noattr)))
+          (Etempvar _k tuint) (tptr (Tstruct _structItem noattr)))
+        (Tstruct _structItem noattr)) (Evar _t (Tstruct _structItem noattr)))))
 |}.
 
 Definition f_less := {|
   fn_return := tint;
   fn_callconv := cc_default;
   fn_params := ((_j, tuint) :: (_k, tuint) ::
-                (_arr, (tptr (tptr (Tstruct _pqItem noattr)))) :: nil);
+                (_arr, (tptr (Tstruct _structItem noattr))) :: nil);
   fn_vars := nil;
-  fn_temps := ((_t'4, tint) :: (_t'3, (tptr (Tstruct _pqItem noattr))) ::
-               (_t'2, tint) :: (_t'1, (tptr (Tstruct _pqItem noattr))) ::
-               nil);
+  fn_temps := ((_t'2, tint) :: (_t'1, tint) :: nil);
   fn_body :=
 (Ssequence
   (Sset _t'1
-    (Ederef
-      (Ebinop Oadd (Etempvar _arr (tptr (tptr (Tstruct _pqItem noattr))))
-        (Etempvar _j tuint) (tptr (tptr (Tstruct _pqItem noattr))))
-      (tptr (Tstruct _pqItem noattr))))
+    (Efield
+      (Ederef
+        (Ebinop Oadd (Etempvar _arr (tptr (Tstruct _structItem noattr)))
+          (Etempvar _j tuint) (tptr (Tstruct _structItem noattr)))
+        (Tstruct _structItem noattr)) _priority tint))
   (Ssequence
     (Sset _t'2
       (Efield
-        (Ederef (Etempvar _t'1 (tptr (Tstruct _pqItem noattr)))
-          (Tstruct _pqItem noattr)) _priority tint))
-    (Ssequence
-      (Sset _t'3
         (Ederef
-          (Ebinop Oadd (Etempvar _arr (tptr (tptr (Tstruct _pqItem noattr))))
-            (Etempvar _k tuint) (tptr (tptr (Tstruct _pqItem noattr))))
-          (tptr (Tstruct _pqItem noattr))))
-      (Ssequence
-        (Sset _t'4
-          (Efield
-            (Ederef (Etempvar _t'3 (tptr (Tstruct _pqItem noattr)))
-              (Tstruct _pqItem noattr)) _priority tint))
-        (Sreturn (Some (Ebinop Ole (Etempvar _t'2 tint) (Etempvar _t'4 tint)
-                         tint)))))))
+          (Ebinop Oadd (Etempvar _arr (tptr (Tstruct _structItem noattr)))
+            (Etempvar _k tuint) (tptr (Tstruct _structItem noattr)))
+          (Tstruct _structItem noattr)) _priority tint))
+    (Sreturn (Some (Ebinop Ole (Etempvar _t'1 tint) (Etempvar _t'2 tint)
+                     tint)))))
 |}.
 
 Definition f_swim := {|
   fn_return := tvoid;
   fn_callconv := cc_default;
-  fn_params := ((_k, tuint) ::
-                (_arr, (tptr (tptr (Tstruct _pqItem noattr)))) :: nil);
+  fn_params := ((_k, tuint) :: (_arr, (tptr (Tstruct _structItem noattr))) ::
+                nil);
   fn_vars := nil;
   fn_temps := ((_t'2, tint) :: (_t'1, tint) :: nil);
   fn_body :=
@@ -172,17 +179,20 @@ Definition f_swim := {|
   (Ssequence
     (Ssequence
       (Sifthenelse (Ebinop Ogt (Etempvar _k tuint)
-                     (Econst_int (Int.repr 1) tint) tint)
+                     (Econst_int (Int.repr 0) tint) tint)
         (Ssequence
           (Scall (Some _t'2)
             (Evar _less (Tfunction
                           (Tcons tuint
                             (Tcons tuint
-                              (Tcons (tptr (tptr (Tstruct _pqItem noattr)))
+                              (Tcons (tptr (Tstruct _structItem noattr))
                                 Tnil))) tint cc_default))
-            ((Ebinop Odiv (Etempvar _k tuint) (Econst_int (Int.repr 2) tint)
-               tuint) :: (Etempvar _k tuint) ::
-             (Etempvar _arr (tptr (tptr (Tstruct _pqItem noattr)))) :: nil))
+            ((Ebinop Odiv
+               (Ebinop Osub (Etempvar _k tuint)
+                 (Econst_int (Int.repr 1) tint) tuint)
+               (Econst_int (Int.repr 2) tint) tuint) ::
+             (Etempvar _k tuint) ::
+             (Etempvar _arr (tptr (Tstruct _structItem noattr))) :: nil))
           (Sset _t'1 (Ecast (Etempvar _t'2 tint) tbool)))
         (Sset _t'1 (Econst_int (Int.repr 0) tint)))
       (Sifthenelse (Etempvar _t'1 tint) Sskip Sbreak))
@@ -191,226 +201,491 @@ Definition f_swim := {|
         (Evar _exch (Tfunction
                       (Tcons tuint
                         (Tcons tuint
-                          (Tcons (tptr (tptr (Tstruct _pqItem noattr))) Tnil)))
+                          (Tcons (tptr (Tstruct _structItem noattr)) Tnil)))
                       tvoid cc_default))
         ((Etempvar _k tuint) ::
-         (Ebinop Odiv (Etempvar _k tuint) (Econst_int (Int.repr 2) tint)
-           tuint) ::
-         (Etempvar _arr (tptr (tptr (Tstruct _pqItem noattr)))) :: nil))
+         (Ebinop Odiv
+           (Ebinop Osub (Etempvar _k tuint) (Econst_int (Int.repr 1) tint)
+             tuint) (Econst_int (Int.repr 2) tint) tuint) ::
+         (Etempvar _arr (tptr (Tstruct _structItem noattr))) :: nil))
       (Sset _k
-        (Ebinop Odiv (Etempvar _k tuint) (Econst_int (Int.repr 2) tint)
-          tuint))))
+        (Ebinop Odiv
+          (Ebinop Osub (Etempvar _k tuint) (Econst_int (Int.repr 1) tint)
+            tuint) (Econst_int (Int.repr 2) tint) tuint))))
   Sskip)
 |}.
 
 Definition f_sink := {|
   fn_return := tvoid;
   fn_callconv := cc_default;
-  fn_params := ((_k, tuint) ::
-                (_arr, (tptr (tptr (Tstruct _pqItem noattr)))) :: nil);
+  fn_params := ((_k, tuint) :: (_arr, (tptr (Tstruct _structItem noattr))) ::
+                (_last_used, tuint) :: nil);
   fn_vars := nil;
-  fn_temps := ((_size, tint) :: (_j, tuint) :: (_t'3, tint) ::
-               (_t'2, tint) :: (_t'1, tint) ::
-               (_t'4, (tptr (Tstruct _pqItem noattr))) :: nil);
+  fn_temps := ((_j, tuint) :: (_t'3, tint) :: (_t'2, tint) :: (_t'1, tint) ::
+               nil);
   fn_body :=
-(Ssequence
-  (Ssequence
-    (Sset _t'4
-      (Ederef
-        (Ebinop Oadd (Etempvar _arr (tptr (tptr (Tstruct _pqItem noattr))))
-          (Econst_int (Int.repr 0) tint)
-          (tptr (tptr (Tstruct _pqItem noattr))))
-        (tptr (Tstruct _pqItem noattr))))
-    (Sset _size
-      (Ecast (Etempvar _t'4 (tptr (Tstruct _pqItem noattr))) tuint)))
-  (Swhile
-    (Ebinop Ole
+(Swhile
+  (Ebinop Ole
+    (Ebinop Oadd
       (Ebinop Omul (Econst_int (Int.repr 2) tint) (Etempvar _k tuint) tuint)
-      (Etempvar _size tint) tint)
-    (Ssequence
-      (Sset _j
+      (Econst_int (Int.repr 1) tint) tuint) (Etempvar _last_used tuint) tint)
+  (Ssequence
+    (Sset _j
+      (Ebinop Oadd
         (Ebinop Omul (Econst_int (Int.repr 2) tint) (Etempvar _k tuint)
-          tuint))
+          tuint) (Econst_int (Int.repr 1) tint) tuint))
+    (Ssequence
       (Ssequence
-        (Ssequence
-          (Sifthenelse (Ebinop Olt (Etempvar _j tuint) (Etempvar _size tint)
-                         tint)
-            (Ssequence
-              (Scall (Some _t'2)
-                (Evar _less (Tfunction
-                              (Tcons tuint
-                                (Tcons tuint
-                                  (Tcons
-                                    (tptr (tptr (Tstruct _pqItem noattr)))
-                                    Tnil))) tint cc_default))
-                ((Etempvar _j tuint) ::
-                 (Ebinop Oadd (Etempvar _j tuint)
-                   (Econst_int (Int.repr 1) tint) tuint) ::
-                 (Etempvar _arr (tptr (tptr (Tstruct _pqItem noattr)))) ::
-                 nil))
-              (Sset _t'1 (Ecast (Etempvar _t'2 tint) tbool)))
-            (Sset _t'1 (Econst_int (Int.repr 0) tint)))
-          (Sifthenelse (Etempvar _t'1 tint)
-            (Sset _j
-              (Ebinop Oadd (Etempvar _j tuint) (Econst_int (Int.repr 1) tint)
-                tuint))
-            Sskip))
-        (Ssequence
+        (Sifthenelse (Ebinop Olt (Etempvar _j tuint)
+                       (Etempvar _last_used tuint) tint)
           (Ssequence
-            (Scall (Some _t'3)
+            (Scall (Some _t'2)
               (Evar _less (Tfunction
                             (Tcons tuint
                               (Tcons tuint
-                                (Tcons (tptr (tptr (Tstruct _pqItem noattr)))
+                                (Tcons (tptr (Tstruct _structItem noattr))
                                   Tnil))) tint cc_default))
-              ((Etempvar _j tuint) :: (Etempvar _k tuint) ::
-               (Etempvar _arr (tptr (tptr (Tstruct _pqItem noattr)))) :: nil))
-            (Sifthenelse (Etempvar _t'3 tint) Sbreak Sskip))
-          (Ssequence
-            (Scall None
-              (Evar _exch (Tfunction
+              ((Ebinop Oadd (Etempvar _j tuint)
+                 (Econst_int (Int.repr 1) tint) tuint) ::
+               (Etempvar _j tuint) ::
+               (Etempvar _arr (tptr (Tstruct _structItem noattr))) :: nil))
+            (Sset _t'1 (Ecast (Etempvar _t'2 tint) tbool)))
+          (Sset _t'1 (Econst_int (Int.repr 0) tint)))
+        (Sifthenelse (Etempvar _t'1 tint)
+          (Sset _j
+            (Ebinop Oadd (Etempvar _j tuint) (Econst_int (Int.repr 1) tint)
+              tuint))
+          Sskip))
+      (Ssequence
+        (Ssequence
+          (Scall (Some _t'3)
+            (Evar _less (Tfunction
+                          (Tcons tuint
                             (Tcons tuint
-                              (Tcons tuint
-                                (Tcons (tptr (tptr (Tstruct _pqItem noattr)))
-                                  Tnil))) tvoid cc_default))
-              ((Etempvar _k tuint) :: (Etempvar _j tuint) ::
-               (Etempvar _arr (tptr (tptr (Tstruct _pqItem noattr)))) :: nil))
-            (Sset _k (Etempvar _j tuint))))))))
+                              (Tcons (tptr (Tstruct _structItem noattr))
+                                Tnil))) tint cc_default))
+            ((Etempvar _j tuint) :: (Etempvar _k tuint) ::
+             (Etempvar _arr (tptr (Tstruct _structItem noattr))) :: nil))
+          (Sifthenelse (Etempvar _t'3 tint) Sbreak Sskip))
+        (Ssequence
+          (Scall None
+            (Evar _exch (Tfunction
+                          (Tcons tuint
+                            (Tcons tuint
+                              (Tcons (tptr (Tstruct _structItem noattr))
+                                Tnil))) tvoid cc_default))
+            ((Etempvar _k tuint) :: (Etempvar _j tuint) ::
+             (Etempvar _arr (tptr (Tstruct _structItem noattr))) :: nil))
+          (Sset _k (Etempvar _j tuint)))))))
 |}.
 
 Definition f_insert := {|
   fn_return := tvoid;
   fn_callconv := cc_default;
-  fn_params := ((_arr, (tptr (tptr (Tstruct _pqItem noattr)))) ::
-                (_x, (tptr (Tstruct _pqItem noattr))) :: nil);
-  fn_vars := nil;
-  fn_temps := ((_size, tint) :: (_t'2, (tptr (Tstruct _pqItem noattr))) ::
-               (_t'1, (tptr (Tstruct _pqItem noattr))) :: nil);
+  fn_params := ((_pq, tuint) :: (_pq__1, tuint) :: (_pq__2, tuint) ::
+                (_x, tuint) :: (_x__1, tuint) :: nil);
+  fn_vars := ((_x__2, (tarray tuint 2)) :: (_pq__3, (tarray tuint 3)) :: nil);
+  fn_temps := ((_t'7, tuint) :: (_t'6, tuint) :: (_t'5, tuint) ::
+               (_t'4, (tptr (Tstruct _structItem noattr))) ::
+               (_t'3, (tptr (Tstruct _structItem noattr))) ::
+               (_t'2, tuint) :: (_t'1, tuint) :: nil);
   fn_body :=
 (Ssequence
   (Ssequence
-    (Sset _t'2
+    (Sassign
       (Ederef
-        (Ebinop Oadd (Etempvar _arr (tptr (tptr (Tstruct _pqItem noattr))))
-          (Econst_int (Int.repr 0) tint)
-          (tptr (tptr (Tstruct _pqItem noattr))))
-        (tptr (Tstruct _pqItem noattr))))
-    (Sset _size
-      (Ecast (Etempvar _t'2 (tptr (Tstruct _pqItem noattr))) tuint)))
-  (Ssequence
-    (Sifthenelse (Ebinop Oge (Etempvar _size tint)
-                   (Econst_int (Int.repr 8) tint) tint)
-      (Sreturn None)
-      Sskip)
+        (Ebinop Oadd (Evar _pq__3 (tarray tuint 3))
+          (Econst_int (Int.repr 0) tint) (tptr tuint)) tuint)
+      (Etempvar _pq tuint))
     (Ssequence
       (Sassign
         (Ederef
-          (Ebinop Oadd (Etempvar _arr (tptr (tptr (Tstruct _pqItem noattr))))
-            (Etempvar _size tint) (tptr (tptr (Tstruct _pqItem noattr))))
-          (tptr (Tstruct _pqItem noattr)))
-        (Etempvar _x (tptr (Tstruct _pqItem noattr))))
+          (Ebinop Oadd (Evar _pq__3 (tarray tuint 3))
+            (Econst_int (Int.repr 1) tint) (tptr tuint)) tuint)
+        (Etempvar _pq__1 tuint))
       (Ssequence
+        (Sassign
+          (Ederef
+            (Ebinop Oadd (Evar _pq__3 (tarray tuint 3))
+              (Econst_int (Int.repr 2) tint) (tptr tuint)) tuint)
+          (Etempvar _pq__2 tuint))
         (Ssequence
-          (Sset _t'1
+          (Sassign
             (Ederef
-              (Ebinop Oadd
-                (Etempvar _arr (tptr (tptr (Tstruct _pqItem noattr))))
-                (Econst_int (Int.repr 0) tint)
-                (tptr (tptr (Tstruct _pqItem noattr))))
-              (tptr (Tstruct _pqItem noattr))))
+              (Ebinop Oadd (Evar _x__2 (tarray tuint 2))
+                (Econst_int (Int.repr 0) tint) (tptr tuint)) tuint)
+            (Etempvar _x tuint))
+          (Sassign
+            (Ederef
+              (Ebinop Oadd (Evar _x__2 (tarray tuint 2))
+                (Econst_int (Int.repr 1) tint) (tptr tuint)) tuint)
+            (Etempvar _x__1 tuint))))))
+  (Ssequence
+    (Ssequence
+      (Sset _t'6
+        (Efield
+          (Ederef
+            (Ecast
+              (Eaddrof (Evar _pq__3 (tarray tuint 3))
+                (tptr (tarray tuint 3))) (tptr (Tstruct _structPQ noattr)))
+            (Tstruct _structPQ noattr)) _first_available tuint))
+      (Ssequence
+        (Sset _t'7
+          (Efield
+            (Ederef
+              (Ecast
+                (Eaddrof (Evar _pq__3 (tarray tuint 3))
+                  (tptr (tarray tuint 3))) (tptr (Tstruct _structPQ noattr)))
+              (Tstruct _structPQ noattr)) _size tuint))
+        (Sifthenelse (Ebinop Oeq (Etempvar _t'6 tuint) (Etempvar _t'7 tuint)
+                       tint)
+          (Sreturn None)
+          Sskip)))
+    (Ssequence
+      (Ssequence
+        (Sset _t'4
+          (Efield
+            (Ederef
+              (Ecast
+                (Eaddrof (Evar _pq__3 (tarray tuint 3))
+                  (tptr (tarray tuint 3))) (tptr (Tstruct _structPQ noattr)))
+              (Tstruct _structPQ noattr)) _heap_cells
+            (tptr (Tstruct _structItem noattr))))
+        (Ssequence
+          (Sset _t'5
+            (Efield
+              (Ederef
+                (Ecast
+                  (Eaddrof (Evar _pq__3 (tarray tuint 3))
+                    (tptr (tarray tuint 3)))
+                  (tptr (Tstruct _structPQ noattr)))
+                (Tstruct _structPQ noattr)) _first_available tuint))
           (Sassign
             (Ederef
               (Ebinop Oadd
-                (Etempvar _arr (tptr (tptr (Tstruct _pqItem noattr))))
-                (Econst_int (Int.repr 0) tint)
-                (tptr (tptr (Tstruct _pqItem noattr))))
-              (tptr (Tstruct _pqItem noattr)))
-            (Ebinop Oadd (Etempvar _t'1 (tptr (Tstruct _pqItem noattr)))
-              (Econst_int (Int.repr 1) tint) (tptr (Tstruct _pqItem noattr)))))
-        (Scall None
-          (Evar _swim (Tfunction
-                        (Tcons tuint
-                          (Tcons (tptr (tptr (Tstruct _pqItem noattr))) Tnil))
-                        tvoid cc_default))
-          ((Etempvar _size tint) ::
-           (Etempvar _arr (tptr (tptr (Tstruct _pqItem noattr)))) :: nil))))))
+                (Etempvar _t'4 (tptr (Tstruct _structItem noattr)))
+                (Etempvar _t'5 tuint) (tptr (Tstruct _structItem noattr)))
+              (Tstruct _structItem noattr))
+            (Ederef
+              (Ecast
+                (Eaddrof (Evar _x__2 (tarray tuint 2))
+                  (tptr (tarray tuint 2)))
+                (tptr (Tstruct _structItem noattr)))
+              (Tstruct _structItem noattr)))))
+      (Ssequence
+        (Ssequence
+          (Sset _t'2
+            (Efield
+              (Ederef
+                (Ecast
+                  (Eaddrof (Evar _pq__3 (tarray tuint 3))
+                    (tptr (tarray tuint 3)))
+                  (tptr (Tstruct _structPQ noattr)))
+                (Tstruct _structPQ noattr)) _first_available tuint))
+          (Ssequence
+            (Sset _t'3
+              (Efield
+                (Ederef
+                  (Ecast
+                    (Eaddrof (Evar _pq__3 (tarray tuint 3))
+                      (tptr (tarray tuint 3)))
+                    (tptr (Tstruct _structPQ noattr)))
+                  (Tstruct _structPQ noattr)) _heap_cells
+                (tptr (Tstruct _structItem noattr))))
+            (Scall None
+              (Evar _swim (Tfunction
+                            (Tcons tuint
+                              (Tcons (tptr (Tstruct _structItem noattr))
+                                Tnil)) tvoid cc_default))
+              ((Etempvar _t'2 tuint) ::
+               (Etempvar _t'3 (tptr (Tstruct _structItem noattr))) :: nil))))
+        (Ssequence
+          (Sset _t'1
+            (Efield
+              (Ederef
+                (Ecast
+                  (Eaddrof (Evar _pq__3 (tarray tuint 3))
+                    (tptr (tarray tuint 3)))
+                  (tptr (Tstruct _structPQ noattr)))
+                (Tstruct _structPQ noattr)) _first_available tuint))
+          (Sassign
+            (Efield
+              (Ederef
+                (Ecast
+                  (Eaddrof (Evar _pq__3 (tarray tuint 3))
+                    (tptr (tarray tuint 3)))
+                  (tptr (Tstruct _structPQ noattr)))
+                (Tstruct _structPQ noattr)) _first_available tuint)
+            (Ebinop Oadd (Etempvar _t'1 tuint) (Econst_int (Int.repr 1) tint)
+              tuint)))))))
 |}.
 
 Definition f_remove_min := {|
-  fn_return := (tptr (Tstruct _pqItem noattr));
+  fn_return := tulong;
   fn_callconv := cc_default;
-  fn_params := ((_arr, (tptr (tptr (Tstruct _pqItem noattr)))) :: nil);
-  fn_vars := nil;
-  fn_temps := ((_size, tint) :: (_item, (tptr (Tstruct _pqItem noattr))) ::
-               (_t'2, (tptr (Tstruct _pqItem noattr))) ::
-               (_t'1, (tptr (Tstruct _pqItem noattr))) :: nil);
+  fn_params := ((_pq, tuint) :: (_pq__1, tuint) :: (_pq__2, tuint) :: nil);
+  fn_vars := ((_item, (Tstruct _structItem noattr)) ::
+              (_pq__3, (tarray tuint 3)) :: nil);
+  fn_temps := ((__res, (tptr tuchar)) :: (__res__1, (tptr tuchar)) ::
+               (_t'11, tuint) ::
+               (_t'10, (tptr (Tstruct _structItem noattr))) ::
+               (_t'9, tulong) :: (_t'8, tuint) ::
+               (_t'7, (tptr (Tstruct _structItem noattr))) ::
+               (_t'6, tuint) :: (_t'5, tuint) ::
+               (_t'4, (tptr (Tstruct _structItem noattr))) ::
+               (_t'3, tuint) ::
+               (_t'2, (tptr (Tstruct _structItem noattr))) ::
+               (_t'1, tulong) :: nil);
   fn_body :=
 (Ssequence
   (Ssequence
-    (Sset _t'2
+    (Sassign
       (Ederef
-        (Ebinop Oadd (Etempvar _arr (tptr (tptr (Tstruct _pqItem noattr))))
-          (Econst_int (Int.repr 0) tint)
-          (tptr (tptr (Tstruct _pqItem noattr))))
-        (tptr (Tstruct _pqItem noattr))))
-    (Sset _size
-      (Ecast (Etempvar _t'2 (tptr (Tstruct _pqItem noattr))) tuint)))
-  (Ssequence
-    (Sifthenelse (Ebinop Oeq (Etempvar _size tint)
-                   (Econst_int (Int.repr 1) tint) tint)
-      (Sreturn (Some (Econst_int (Int.repr 0) tint)))
-      Sskip)
+        (Ebinop Oadd (Evar _pq__3 (tarray tuint 3))
+          (Econst_int (Int.repr 0) tint) (tptr tuint)) tuint)
+      (Etempvar _pq tuint))
     (Ssequence
-      (Sset _item
+      (Sassign
         (Ederef
-          (Ebinop Oadd (Etempvar _arr (tptr (tptr (Tstruct _pqItem noattr))))
-            (Ebinop Osub (Etempvar _size tint) (Econst_int (Int.repr 1) tint)
-              tint) (tptr (tptr (Tstruct _pqItem noattr))))
-          (tptr (Tstruct _pqItem noattr))))
+          (Ebinop Oadd (Evar _pq__3 (tarray tuint 3))
+            (Econst_int (Int.repr 1) tint) (tptr tuint)) tuint)
+        (Etempvar _pq__1 tuint))
+      (Sassign
+        (Ederef
+          (Ebinop Oadd (Evar _pq__3 (tarray tuint 3))
+            (Econst_int (Int.repr 2) tint) (tptr tuint)) tuint)
+        (Etempvar _pq__2 tuint))))
+  (Ssequence
+    (Ssequence
+      (Sset _t'11
+        (Efield
+          (Ederef
+            (Ecast
+              (Eaddrof (Evar _pq__3 (tarray tuint 3))
+                (tptr (tarray tuint 3))) (tptr (Tstruct _structPQ noattr)))
+            (Tstruct _structPQ noattr)) _first_available tuint))
+      (Sassign
+        (Efield
+          (Ederef
+            (Ecast
+              (Eaddrof (Evar _pq__3 (tarray tuint 3))
+                (tptr (tarray tuint 3))) (tptr (Tstruct _structPQ noattr)))
+            (Tstruct _structPQ noattr)) _first_available tuint)
+        (Ebinop Osub (Etempvar _t'11 tuint) (Econst_int (Int.repr 1) tint)
+          tuint)))
+    (Ssequence
       (Ssequence
-        (Scall None
-          (Evar _exch (Tfunction
-                        (Tcons tuint
-                          (Tcons tuint
-                            (Tcons (tptr (tptr (Tstruct _pqItem noattr)))
-                              Tnil))) tvoid cc_default))
-          ((Econst_int (Int.repr 1) tint) ::
-           (Ebinop Osub (Etempvar _size tint) (Econst_int (Int.repr 1) tint)
-             tint) ::
-           (Etempvar _arr (tptr (tptr (Tstruct _pqItem noattr)))) :: nil))
+        (Sset _t'8
+          (Efield
+            (Ederef
+              (Ecast
+                (Eaddrof (Evar _pq__3 (tarray tuint 3))
+                  (tptr (tarray tuint 3))) (tptr (Tstruct _structPQ noattr)))
+              (Tstruct _structPQ noattr)) _first_available tuint))
+        (Sifthenelse (Ebinop Oeq (Etempvar _t'8 tuint)
+                       (Econst_int (Int.repr 0) tint) tint)
+          (Ssequence
+            (Ssequence
+              (Sset _t'10
+                (Efield
+                  (Ederef
+                    (Ecast
+                      (Eaddrof (Evar _pq__3 (tarray tuint 3))
+                        (tptr (tarray tuint 3)))
+                      (tptr (Tstruct _structPQ noattr)))
+                    (Tstruct _structPQ noattr)) _heap_cells
+                  (tptr (Tstruct _structItem noattr))))
+              (Sset __res__1
+                (Ecast
+                  (Ebinop Oadd
+                    (Etempvar _t'10 (tptr (Tstruct _structItem noattr)))
+                    (Econst_int (Int.repr 0) tint)
+                    (tptr (Tstruct _structItem noattr))) (tptr tuchar))))
+            (Ssequence
+              (Sset _t'9
+                (Ederef
+                  (Ecast (Etempvar __res__1 (tptr tuchar)) (tptr tulong))
+                  tulong))
+              (Sreturn (Some (Etempvar _t'9 tulong)))))
+          Sskip))
+      (Ssequence
+        (Ssequence
+          (Sset _t'6
+            (Efield
+              (Ederef
+                (Ecast
+                  (Eaddrof (Evar _pq__3 (tarray tuint 3))
+                    (tptr (tarray tuint 3)))
+                  (tptr (Tstruct _structPQ noattr)))
+                (Tstruct _structPQ noattr)) _first_available tuint))
+          (Ssequence
+            (Sset _t'7
+              (Efield
+                (Ederef
+                  (Ecast
+                    (Eaddrof (Evar _pq__3 (tarray tuint 3))
+                      (tptr (tarray tuint 3)))
+                    (tptr (Tstruct _structPQ noattr)))
+                  (Tstruct _structPQ noattr)) _heap_cells
+                (tptr (Tstruct _structItem noattr))))
+            (Scall None
+              (Evar _exch (Tfunction
+                            (Tcons tuint
+                              (Tcons tuint
+                                (Tcons (tptr (Tstruct _structItem noattr))
+                                  Tnil))) tvoid cc_default))
+              ((Econst_int (Int.repr 0) tint) :: (Etempvar _t'6 tuint) ::
+               (Etempvar _t'7 (tptr (Tstruct _structItem noattr))) :: nil))))
         (Ssequence
           (Ssequence
-            (Sset _t'1
-              (Ederef
-                (Ebinop Oadd
-                  (Etempvar _arr (tptr (tptr (Tstruct _pqItem noattr))))
-                  (Econst_int (Int.repr 0) tint)
-                  (tptr (tptr (Tstruct _pqItem noattr))))
-                (tptr (Tstruct _pqItem noattr))))
-            (Sassign
-              (Ederef
-                (Ebinop Oadd
-                  (Etempvar _arr (tptr (tptr (Tstruct _pqItem noattr))))
-                  (Econst_int (Int.repr 0) tint)
-                  (tptr (tptr (Tstruct _pqItem noattr))))
-                (tptr (Tstruct _pqItem noattr)))
-              (Ebinop Osub (Etempvar _t'1 (tptr (Tstruct _pqItem noattr)))
-                (Econst_int (Int.repr 1) tint)
-                (tptr (Tstruct _pqItem noattr)))))
+            (Sset _t'4
+              (Efield
+                (Ederef
+                  (Ecast
+                    (Eaddrof (Evar _pq__3 (tarray tuint 3))
+                      (tptr (tarray tuint 3)))
+                    (tptr (Tstruct _structPQ noattr)))
+                  (Tstruct _structPQ noattr)) _heap_cells
+                (tptr (Tstruct _structItem noattr))))
+            (Ssequence
+              (Sset _t'5
+                (Efield
+                  (Ederef
+                    (Ecast
+                      (Eaddrof (Evar _pq__3 (tarray tuint 3))
+                        (tptr (tarray tuint 3)))
+                      (tptr (Tstruct _structPQ noattr)))
+                    (Tstruct _structPQ noattr)) _first_available tuint))
+              (Sassign (Evar _item (Tstruct _structItem noattr))
+                (Ederef
+                  (Ebinop Oadd
+                    (Etempvar _t'4 (tptr (Tstruct _structItem noattr)))
+                    (Etempvar _t'5 tuint)
+                    (tptr (Tstruct _structItem noattr)))
+                  (Tstruct _structItem noattr)))))
           (Ssequence
-            (Scall None
-              (Evar _sink (Tfunction
-                            (Tcons tuint
-                              (Tcons (tptr (tptr (Tstruct _pqItem noattr)))
-                                Tnil)) tvoid cc_default))
-              ((Econst_int (Int.repr 1) tint) ::
-               (Etempvar _arr (tptr (tptr (Tstruct _pqItem noattr)))) :: nil))
-            (Sreturn (Some (Etempvar _item (tptr (Tstruct _pqItem noattr)))))))))))
+            (Ssequence
+              (Sset _t'2
+                (Efield
+                  (Ederef
+                    (Ecast
+                      (Eaddrof (Evar _pq__3 (tarray tuint 3))
+                        (tptr (tarray tuint 3)))
+                      (tptr (Tstruct _structPQ noattr)))
+                    (Tstruct _structPQ noattr)) _heap_cells
+                  (tptr (Tstruct _structItem noattr))))
+              (Ssequence
+                (Sset _t'3
+                  (Efield
+                    (Ederef
+                      (Ecast
+                        (Eaddrof (Evar _pq__3 (tarray tuint 3))
+                          (tptr (tarray tuint 3)))
+                        (tptr (Tstruct _structPQ noattr)))
+                      (Tstruct _structPQ noattr)) _first_available tuint))
+                (Scall None
+                  (Evar _sink (Tfunction
+                                (Tcons tuint
+                                  (Tcons (tptr (Tstruct _structItem noattr))
+                                    (Tcons tuint Tnil))) tvoid cc_default))
+                  ((Econst_int (Int.repr 0) tint) ::
+                   (Etempvar _t'2 (tptr (Tstruct _structItem noattr))) ::
+                   (Ebinop Osub (Etempvar _t'3 tuint)
+                     (Econst_int (Int.repr 1) tint) tuint) :: nil))))
+            (Ssequence
+              (Sset __res
+                (Ecast
+                  (Eaddrof (Evar _item (Tstruct _structItem noattr))
+                    (tptr (Tstruct _structItem noattr))) (tptr tuchar)))
+              (Ssequence
+                (Sset _t'1
+                  (Ederef
+                    (Ecast (Etempvar __res (tptr tuchar)) (tptr tulong))
+                    tulong))
+                (Sreturn (Some (Etempvar _t'1 tulong)))))))))))
+|}.
+
+Definition f_size := {|
+  fn_return := tuint;
+  fn_callconv := cc_default;
+  fn_params := ((_pq, tuint) :: (_pq__1, tuint) :: (_pq__2, tuint) :: nil);
+  fn_vars := ((_pq__3, (tarray tuint 3)) :: nil);
+  fn_temps := ((_t'1, tuint) :: nil);
+  fn_body :=
+(Ssequence
+  (Ssequence
+    (Sassign
+      (Ederef
+        (Ebinop Oadd (Evar _pq__3 (tarray tuint 3))
+          (Econst_int (Int.repr 0) tint) (tptr tuint)) tuint)
+      (Etempvar _pq tuint))
+    (Ssequence
+      (Sassign
+        (Ederef
+          (Ebinop Oadd (Evar _pq__3 (tarray tuint 3))
+            (Econst_int (Int.repr 1) tint) (tptr tuint)) tuint)
+        (Etempvar _pq__1 tuint))
+      (Sassign
+        (Ederef
+          (Ebinop Oadd (Evar _pq__3 (tarray tuint 3))
+            (Econst_int (Int.repr 2) tint) (tptr tuint)) tuint)
+        (Etempvar _pq__2 tuint))))
+  (Ssequence
+    (Sset _t'1
+      (Efield
+        (Ederef
+          (Ecast
+            (Eaddrof (Evar _pq__3 (tarray tuint 3)) (tptr (tarray tuint 3)))
+            (tptr (Tstruct _structPQ noattr))) (Tstruct _structPQ noattr))
+        _first_available tuint))
+    (Sreturn (Some (Etempvar _t'1 tuint)))))
+|}.
+
+Definition f_make := {|
+  fn_return := tvoid;
+  fn_callconv := {|cc_vararg:=false; cc_unproto:=false; cc_structret:=true|};
+  fn_params := ((__res, (tptr (Tstruct _structPQ noattr))) :: nil);
+  fn_vars := ((___compound, (Tstruct _structPQ noattr)) :: nil);
+  fn_temps := ((_arr, (tptr (Tstruct _structItem noattr))) ::
+               (_t'1, (tptr tvoid)) :: nil);
+  fn_body :=
+(Ssequence
+  (Ssequence
+    (Scall (Some _t'1)
+      (Evar _mallocN (Tfunction (Tcons tint Tnil) (tptr tvoid) cc_default))
+      ((Ebinop Omul (Esizeof (Tstruct _structItem noattr) tuint)
+         (Econst_int (Int.repr 8) tint) tuint) :: nil))
+    (Sset _arr
+      (Ecast (Etempvar _t'1 (tptr tvoid))
+        (tptr (Tstruct _structItem noattr)))))
+  (Ssequence
+    (Ssequence
+      (Ssequence
+        (Ssequence
+          (Sassign
+            (Efield (Evar ___compound (Tstruct _structPQ noattr)) _size
+              tuint) (Econst_int (Int.repr 8) tint))
+          (Sassign
+            (Efield (Evar ___compound (Tstruct _structPQ noattr))
+              _first_available tuint) (Econst_int (Int.repr 0) tint)))
+        (Sassign
+          (Efield (Evar ___compound (Tstruct _structPQ noattr)) _heap_cells
+            (tptr (Tstruct _structItem noattr)))
+          (Etempvar _arr (tptr (Tstruct _structItem noattr)))))
+      (Sassign
+        (Ederef (Etempvar __res (tptr (Tstruct _structPQ noattr)))
+          (Tstruct _structPQ noattr))
+        (Evar ___compound (Tstruct _structPQ noattr))))
+    (Sreturn None)))
 |}.
 
 Definition composites : list composite_definition :=
-(Composite _pqItem Struct
+(Composite _structItem Struct
    ((_priority, tint) :: (_data, (tptr tvoid)) :: nil)
+   noattr ::
+ Composite _structPQ Struct
+   ((_size, tuint) :: (_first_available, tuint) ::
+    (_heap_cells, (tptr (Tstruct _structItem noattr))) :: nil)
    noattr :: nil).
 
 Definition global_definitions : list (ident * globdef fundef type) :=
@@ -658,14 +933,19 @@ Definition global_definitions : list (ident * globdef fundef type) :=
                      {|cc_vararg:=true; cc_unproto:=false; cc_structret:=false|}))
      (Tcons tint Tnil) tvoid
      {|cc_vararg:=true; cc_unproto:=false; cc_structret:=false|})) ::
+ (_mallocN,
+   Gfun(External (EF_external "mallocN"
+                   (mksignature (AST.Tint :: nil) AST.Tint cc_default))
+     (Tcons tint Tnil) (tptr tvoid) cc_default)) ::
  (_exch, Gfun(Internal f_exch)) :: (_less, Gfun(Internal f_less)) ::
  (_swim, Gfun(Internal f_swim)) :: (_sink, Gfun(Internal f_sink)) ::
  (_insert, Gfun(Internal f_insert)) ::
- (_remove_min, Gfun(Internal f_remove_min)) :: nil).
+ (_remove_min, Gfun(Internal f_remove_min)) ::
+ (_size, Gfun(Internal f_size)) :: (_make, Gfun(Internal f_make)) :: nil).
 
 Definition public_idents : list ident :=
-(_remove_min :: _insert :: _sink :: _swim :: _less :: _exch ::
- ___builtin_debug :: ___builtin_write32_reversed ::
+(_make :: _size :: _remove_min :: _insert :: _sink :: _swim :: _less ::
+ _exch :: _mallocN :: ___builtin_debug :: ___builtin_write32_reversed ::
  ___builtin_write16_reversed :: ___builtin_read32_reversed ::
  ___builtin_read16_reversed :: ___builtin_fnmsub :: ___builtin_fnmadd ::
  ___builtin_fmsub :: ___builtin_fmadd :: ___builtin_fmin ::
