@@ -327,16 +327,17 @@ Lemma left_child_root: forall i,
   left_child i > root_idx.
 Proof. unfold left_child, root_idx. lia. Qed.
 
-Lemma left_nephew: forall i,
-  left_child (left_child i) > right_child i.
-Proof. unfold right_child, left_child. lia. Qed.
-
 Lemma right_child_root: forall i,
   right_child i > root_idx.
 Proof. unfold right_child, root_idx. lia. Qed.
 
 Lemma left_child_neq_right_child: forall i j,
   left_child i <> right_child j.
+Proof. unfold right_child, left_child. lia. Qed.
+
+(* I should check if we really need this strong ordering information or if left_child_neq_right_child is enough. *)
+Lemma left_nephew: forall i,
+  left_child (left_child i) > right_child i.
 Proof. unfold right_child, left_child. lia. Qed.
 
 Lemma right_nephew: forall i,
