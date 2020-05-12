@@ -16,7 +16,7 @@ typedef struct structItem {
 } Item;
 
 typedef struct structPQ {
-  unsigned int size;
+  unsigned int capacity;
   unsigned int first_available;
   Item* heap_cells;
 } PQ;
@@ -41,7 +41,7 @@ void swim(unsigned int k, Item arr[]) {
 }
 
 void sink (unsigned int k, Item arr[], unsigned int last_used) {
-  while (LEFT_CHILD(k) <= last_used) { /* Requirement that size <= MAX_SIZE be of reasonable size */
+  while (LEFT_CHILD(k) <= last_used) { /* Requirement that capacity <= MAX_SIZE be of reasonable size */
     unsigned j = LEFT_CHILD(k);
     if (j < last_used && less(j + 1, j, arr)) j++; /* careful with j+1 overflow? */
     if (less(j, k, arr)) break;
@@ -51,7 +51,7 @@ void sink (unsigned int k, Item arr[], unsigned int last_used) {
 }
 
 void insert(PQ pq, Item x) {
-  if (pq.first_available == pq.size) return; /* Hrm, maybe should signal error or grow heap or whatever... */
+  if (pq.first_available == pq.capacity) return; /* Hrm, maybe should signal error or grow heap or whatever... */
   pq.heap_cells[pq.first_available] = x;
   swim(pq.first_available, pq.heap_cells);
   pq.first_available++;
@@ -71,9 +71,13 @@ unsigned int size(PQ pq) {
   return pq.first_available;
 }
 
+unsigned int capacity(PQ pq) {
+  return pq.capacity;
+}
+
 PQ make() { /* could take a size parameter I suppose... */
   Item* arr = (Item*) mallocN(sizeof(Item) * INITIAL_SIZE);
-  return (PQ) {.size = INITIAL_SIZE, .first_available = 0, .heap_cells = arr};
+  return (PQ) {.capacity = INITIAL_SIZE, .first_available = 0, .heap_cells = arr};
 }
 
 /* could imagine adding some additonal functions:
