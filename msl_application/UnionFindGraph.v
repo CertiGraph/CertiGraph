@@ -45,8 +45,14 @@ Section UnionFindGraph.
   Instance finGraph (G: Graph): FiniteGraph G := @fin G (@sound_gg _ _ _ _ _ _ _ _ G).
   Instance liGraph (G: Graph):  LstGraph G out_edge := @li G (@sound_gg _ _ _ _ _ _ _ _ G).
 
+  (*Returns the rank (vlabel) and parent of a vertex
+    Parent is: take (any?) dst x has an edge to.
+                What is projT2 isNullDec?
+                I suppose it means if the expr of target is valid
+  *)
   Definition vgamma (g: LGraph) (x: V) : DV * V := (vlabel g x, let target := dst (pg_lg g) (out_edge x) in if (projT2 isNullDec target) then x else target).
 
+  (*If v is in graph, and vgamma g v = some rank and parent, then the parent is also valid. *)
   Lemma valid_parent: forall (g: Graph) v n p, vvalid g v -> vgamma g v = (n, p) -> vvalid g p.
   Proof.
     intros. unfold vgamma in H0. simpl in H0. inversion H0. clear H0 H2. destruct (projT2 isNullDec (dst g (out_edge v))); auto.

@@ -18,6 +18,9 @@ Class FiniteGraph (pg: PreGraph V E) :=
   finiteE: Enumerable E (evalid pg)
 }.
 
+Definition VList (pg: PreGraph V E) {fg: FiniteGraph pg} := proj1_sig (finiteV).
+Definition EList (pg: PreGraph V E) {fg: FiniteGraph pg} := proj1_sig (finiteE).
+
 Class LocalFiniteGraph (pg: PreGraph V E) :=
 {
   local_enumerable: forall x, Enumerable E (out_edges pg x)
