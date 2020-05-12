@@ -1,11 +1,15 @@
+#include "unionfind_arr.h"
+
 extern void * mallocN (int n);
 
 // A structure to represent a subset for union-find
+/*
 struct subset
 {
     int parent;
     unsigned int rank;
 };
+*/
  
 // A utility function to find set of an element i
 // (uses path compression technique)
