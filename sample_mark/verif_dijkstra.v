@@ -654,11 +654,11 @@ Proof.
   apply H5; trivial.
 Qed.
 
+(*
 Lemma path_cost_dist_cost_lt_gen:
   forall {g src} links {dst prev priq dist limit},
     inv_popped g src prev priq dist dst ->
     In dst (get_popped priq) ->
-    Znth dst dist < inf ->
     valid_path g (src, links) ->
     path_cost g (src, links) < limit ->
     path_ends g (src, links) src dst ->
@@ -670,9 +670,10 @@ Proof.
   destruct H as [_ [_ [_ [? _]]]].
   specialize (H5 _ H2 H4). lia.
 Qed.
+*)
   
 Lemma path_leaving_popped:
-  forall g links s u priq dist,
+  forall g links s u priq,
     Zlength priq = SIZE ->
     inrange_priq priq ->
     sound_dijk_graph g ->
@@ -680,7 +681,7 @@ Lemma path_leaving_popped:
     path_ends g (s, links) s u ->
     In s (get_popped priq) ->
     ~ In u (get_popped priq) ->
-    Znth s dist < inf ->
+    (* Znth s dist < inf -> *)
     (* (forall dst, inv_popped g s prev priq dist dst) -> *)
     exists (p1 : path) (mom' child' : Z) (p2 : path),
       path_glue p1 (path_glue (mom', [(mom', child')]) p2) = (s, links) /\
@@ -689,13 +690,11 @@ Lemma path_leaving_popped:
       path_ends g p1 s mom' /\
       path_ends g p2 child' u /\
       In mom' (get_popped priq) /\
-      Znth mom' dist < inf /\ 
+      (* Znth mom' dist < inf /\  (* key change *) *)
       ~ In child' (get_popped priq) /\
       evalid g (mom', child').
 Proof.
   intros.
-  rename H6 into Hx.
-  (* rename H7 into Hy. *)
   generalize dependent s.
   induction links.
   - intros. destruct H3. simpl in H3, H6.
@@ -725,11 +724,7 @@ Proof.
         rewrite Heqt, <- H1, Hd, <- surjective_pairing, H1, <- Hd.
         apply pfoot_cons.
       }
-      assert (Hz: Znth t dist < inf). {
-        rewrite Heqt.
-        admit.
-      }
-      specialize (IHlinks _ H6 H7 i Hz).
+      specialize (IHlinks _ H6 H7 i).
       destruct IHlinks as [p2m [m [c [p2u [? [? [? [? [? [? [? ?]]]]]]]]]]].
       unfold VType in *.
       exists (path_glue (s, [(s,t)]) p2m), m, c, p2u.
@@ -788,7 +783,7 @@ Proof.
         apply in_eq.
       }
       apply Hb in H6. destruct H6.
-      split3; [| |split3; [| | split3; [| |split3]]]; trivial.
+      split3; [| |split3; [| | split3; [| |split]]]; trivial.
       * rewrite Heqt.
         apply valid_path_cons with (v := s).
         rewrite (surjective_pairing a).
@@ -799,8 +794,7 @@ Proof.
         rewrite Heqt, <- H1, Hd, <- surjective_pairing.
         rewrite <- Hd. apply pfoot_cons.
       * apply vvalid2_evalid; trivial.
-Admitted.
-
+Qed.
 
 (** PROOF BEGINS **)
 
@@ -1419,12 +1413,12 @@ Proof.
                   
                   destruct (path_leaving_popped
                               g links src u priq_contents
-                              dist_contents
                               H12 H11 H2 H46 H47 H53 H18)
-                    as [p1 [mom' [child' [p2 [? [? [? [? [? [? [Hd [? ?]]]]]]]]]]]].
-                  1: { rewrite <- inf_eq. lia. }
+                    as [p1 [mom' [child' [p2 [? [? [? [? [? [? [? ? ]]]]]]]]]]].
                   exists p1, mom', child', p2.
                   split3; [| |split3; [| |split3; [| |split3; [| |split]]]]; trivial.
+                  1: admit. (* will just prove it here *)
+                  
                   unfold EType, VType in *.
                   rewrite <- H54 in l.
                   assert ( valid_path g (mom', [(mom', child')])). {
