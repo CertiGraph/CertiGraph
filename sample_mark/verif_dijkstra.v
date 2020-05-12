@@ -1833,28 +1833,29 @@ Proof.
                 
 
                 
-                assert (~ (In i (get_popped priq_contents') /\
-                           Znth i dist_contents' < inf)). {
+                assert (Znth i dist_contents' < inf ->
+                        ~ In i (get_popped priq_contents')).
+                {
                   (* This useful fact is true because
                      the cost to i was just improved.
                      This is impossible for popped items.
                    *)
-                  intro. destruct H46 as [? Ha].
+                  intros. intro. 
                   unfold inv_popped in H22.
-                  destruct (H22 _ H46) as [p2i [? [? ?]]].
+                  destruct (H22 _ H47) as [p2i [? [? ?]]].
                   1: trivial.
                   destruct (H22 _ H30) as [p2u [? [? ?]]].
                   1: lia.                    
-                  unfold path_globally_optimal in H49.
-                  specialize (H49 (fst p2u, snd p2u +:: (u,i))).
+                  unfold path_globally_optimal in H50.
+                  specialize (H50 (fst p2u, snd p2u +:: (u,i))).
                   rewrite Heqcost in H45.
-                  destruct H50 as [? [? [? [? ?]]]].
-                  destruct H47 as [? [? [? [? ?]]]].
-                  rewrite H59, H55 in H45.
+                  destruct H51 as [? [? [? [? ?]]]].
+                  destruct H48 as [? [? [? [? ?]]]].
+                  rewrite H60, H56 in H45.
                   apply Zlt_not_le in H45.
                   unfold VType in *.
                   apply H45.
-                  rewrite path_cost_app_cons in H49; trivial.
+                  rewrite path_cost_app_cons in H50; trivial.
                   2: { rewrite elabel_Znth_graph_to_mat; trivial.
                        2: { apply vvalid2_evalid; 
                             try apply vvalid_range;
@@ -1862,15 +1863,15 @@ Proof.
                        }
                        simpl. lia.
                   }
-                  rewrite elabel_Znth_graph_to_mat in H49; trivial.
+                  rewrite elabel_Znth_graph_to_mat in H50; trivial.
                   2: { apply vvalid2_evalid; 
                             try apply vvalid_range;
                             trivial.
                        }
-                  simpl fst in H49.
-                  simpl snd in H49.
-                  apply H49. 
-                  - destruct H53.
+                  simpl fst in H50.
+                  simpl snd in H50.
+                  apply H50. 
+                  - destruct H54.
                     apply valid_path_app_cons;
                       try rewrite <- surjective_pairing;
                       trivial.
@@ -1881,7 +1882,7 @@ Proof.
                     simpl.
                     replace (fst p2u) with src in *.
                     apply path_ends_app_cons; trivial.
-                    destruct H53. simpl in H53; lia.
+                    destruct H54. simpl in H54; lia.
                   - apply vvalid2_evalid;
                       try apply vvalid_range; trivial.
                 }
@@ -1945,8 +1946,7 @@ Proof.
                             intro contra.
                             unfold VType in *.
                             rewrite contra in *.
-                            apply H46.
-                            split; trivial.
+                            apply H46; trivial.
                           }
                           unfold VType in *.
                           rewrite upd_Znth_diff; try lia.
@@ -1957,10 +1957,7 @@ Proof.
                           assert (step <> i). {
                             intro contra.
                             subst step.
-                            apply Classical_Prop.not_and_or in H46.
-                            destruct H46.
-                            1: apply H46; trivial.
-                            lia.
+                            apply H46; trivial.
                           }
                           rewrite <- get_popped_irrel_upd; try lia; trivial.
                           ---- split; trivial.
@@ -1987,17 +1984,13 @@ Proof.
                         rewrite upd_Znth_same by lia.
                         right.
                         split.
-                        1: { intro. assert (In_path g src p2u). {
+                        1: { intro. subst i.
+                             assert (In_path g src p2u). {
                                left. destruct H62 as [_ [[? _] _]].
                                destruct p2u. now simpl in H62 |- *. }
-                             specialize (H63 _ H66).
+                             specialize (H63 _ H65).
                              destruct H63.
-                             rewrite <- H65 in H63.
-                             apply Classical_Prop.not_and_or in H46.
-                             destruct H46.
-                             1: apply H46; trivial.
-                             apply H46.
-                             rewrite H65; trivial.
+                             apply H46; trivial.
                         }
                         rewrite upd_Znth_same in H61; trivial; [|lia].
                         split3; [| |split3].
@@ -2179,15 +2172,16 @@ Proof.
                                    lia.
                               }
                               (* if not, we have some info: *)
+
+                              (* nah, I think just destruct 
+                                 with  = inf + 1 and < inf
+                               *)
+                              
                               assert (Znth i priq_contents' < inf). {
                                 assert (0 <= i < Zlength priq_contents') by lia.
                                 pose proof (Forall_Znth _ priq_contents' i H79 H33).
                                 Opaque inf. simpl in H80. Transparent inf.
-                                apply Classical_Prop.not_and_or in H46.
-                                rewrite get_popped_meaning in H46 by lia.
-                                destruct H46.
-                                - lia.
-                                - admit.
+                                admit.
                                   (* not sure *)
                               }
 
@@ -2251,17 +2245,15 @@ Proof.
                                    specialize (H83 _ H65 H79).
                                    rewrite H83. lia.
                               }
-                              
+
+(* just take the cases for priq[i] = inf + 1, = inf, < inf *)
                               assert (Znth i priq_contents' < inf). {
                                
                                 assert (0 <= i < Zlength priq_contents') by lia.
                                 pose proof (Forall_Znth _ priq_contents' i H80 H33).
                                 Opaque inf. simpl in H81. Transparent inf.
                                 rewrite get_popped_meaning in H46 by lia.
-                                apply Classical_Prop.not_and_or in H46.
-                                destruct H46.
-                                - lia.
-                                - admit.
+                                admit.
                                   (* not sure *)
                               }
 
@@ -2305,10 +2297,9 @@ Proof.
                         rewrite <- Heqmom.
                         
                         assert (mom <> i). {
-                          intro. rewrite H71 in *.
-                          apply H46.
+                          intro. subst i. 
+                          apply H46; trivial.
                           apply H69.
-                          rewrite <- H71.
                           destruct H68 as [_ [[_ ?] _]].
                           apply pfoot_in. lia.
                         }
@@ -2344,11 +2335,10 @@ Proof.
                     remember (Znth dst prev_contents') as mom. 
                     clear H66.
                     assert (mom <> i). {
-                      intro. rewrite H66 in H65.
-                      apply H46; split; trivial.
-                      rewrite H66 in H67.
-                      assert (0 <= Znth dst (Znth i (graph_to_mat g))). {
-                        assert (evalid g (i, dst)). {
+                      intro. subst i.
+                      apply H46; trivial.
+                      assert (0 <= Znth dst (Znth mom (graph_to_mat g))). {
+                        assert (evalid g (mom, dst)). {
                           apply vvalid2_evalid; trivial;
                             apply vvalid_range; trivial.
                           lia.
