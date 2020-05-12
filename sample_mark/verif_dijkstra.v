@@ -1384,7 +1384,6 @@ Proof.
                            path_ends g p1 src mom' /\
                            path_ends g p2 child' u /\
                            In mom' (get_popped priq_contents) /\
-                           Znth mom' dist_contents < inf /\
                            ~ In child' (get_popped priq_contents) /\
                            evalid g (mom', child') /\
                            path_cost g p1 < inf /\
@@ -1409,8 +1408,7 @@ Proof.
                               H12 H11 H2 H46 H47 H53 H18)
                     as [p1 [mom' [child' [p2 [? [? [? [? [? [? [? ? ]]]]]]]]]]].
                   exists p1, mom', child', p2.
-                  split3; [| |split3; [| |split3; [| |split3; [| |split]]]]; trivial.
-                  1: admit. (* will just prove it here *)
+                  split3; [| |split3; [| |split3; [| |split3]]]; trivial.
                   
                   unfold EType, VType in *.
                   rewrite <- H54 in l.
@@ -1447,7 +1445,7 @@ Proof.
                     rewrite careful_add_comm; trivial.
                 }
                 
-                destruct H53 as [p1 [mom' [child' [p2 [? [? [? [? [? [? [Ha [? [? [? [? ?]]]]]]]]]]]]]]].
+                destruct H53 as [p1 [mom' [child' [p2 [? [? [? [? [? [? [? [? [? [? ?]]]]]]]]]]]]]].
                 rewrite <- H53 in g0.
                 
                 assert (0 <= path_cost g (mom', [(mom', child')]) < inf). {
@@ -2195,8 +2193,10 @@ Proof.
                               destruct H79 as [? | [? | ?]].
                               1: {
                                 (* i was popped *)
-                                admit.
+                                rewrite get_popped_meaning in H46;
+                                lia.
                               }
+                              
                               1: {
                                 (* i was unseen *)
                                 assert (i <= i < SIZE) by lia.
@@ -2261,10 +2261,10 @@ Proof.
                               destruct H80 as [? | [? | ?]].
                               1: {
                                 (* i was popped *)
-                                admit.
+                                rewrite get_popped_meaning in H46; lia.
                               }
                               1: {
-                                (* I was unseen *)
+                                (* i was unseen *)
                                 assert (i <= i < SIZE) by lia.
                                    destruct (H26 _ H81 H80) as [? [? ?]].
                                    specialize (H84 _ H65 H79).
@@ -2291,7 +2291,7 @@ Proof.
                         unfold VType in *.
                         remember (Znth dst prev_contents') as mom. right.
                         split; trivial.
-
+                        
                         destruct (H22 _ H63) as [p2mom [? [? ?]]].
                         rewrite upd_Znth_diff; trivial; [|lia..].
                         rewrite <- Heqmom.

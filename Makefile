@@ -71,7 +71,9 @@ NORMAL_FILES = \
   $(GRAPH_FILES:%.v=graph/%.v) \
   $(LIB_FILES:%.v=lib/%.v) \
   $(HEAP_MODEL_DIRECT_FILES:%.v=heap_model_direct/%.v) \
-  $(CERTIGC_FILES:%.v=CertiGC/%.v) 
+  $(CERTIGC_FILES:%.v=CertiGC/%.v) \
+  $(KRUSKAL_FILES:%.v=kruskal/%.v)
+
 
 $(NORMAL_FILES:%.v=%.vo): %.vo: %.v
 	@echo COQC $*.v
