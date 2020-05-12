@@ -335,15 +335,6 @@ Lemma left_child_neq_right_child: forall i j,
   left_child i <> right_child j.
 Proof. unfold right_child, left_child. lia. Qed.
 
-(* I should check if we really need this strong ordering information or if left_child_neq_right_child is enough. *)
-Lemma left_nephew: forall i,
-  left_child (left_child i) > right_child i.
-Proof. unfold right_child, left_child. lia. Qed.
-
-Lemma right_nephew: forall i,
-  right_child (right_child i) > left_child i.
-Proof. unfold right_child, left_child. lia. Qed.
-
 Opaque left_child. Opaque right_child. Opaque parent.
 
 Definition heapOrdered (L : list A) : Prop :=
@@ -740,7 +731,7 @@ Proof.
                          --- intro. rewrite nth_error_exchange''.
                              intro. eapply H; eauto.
                              generalize (left_child_lt_right_child i). lia.
-                             generalize (left_nephew i). lia.
+                             apply left_child_neq_right_child.
                      +++ rewrite nth_error_exchange''; auto. split.
                          apply H; auto.
                          case (eq_nat_dec j (right_child i)); intro.
@@ -790,7 +781,7 @@ Proof.
                          --- intro. rewrite nth_error_exchange''.
                              intro. specialize (H i a3 n H5). apply H in H8. trivial.
                              generalize (left_child_lt_right_child i). lia.
-                             generalize (right_nephew i). lia.
+                             intro. eapply left_child_neq_right_child; eauto.
                          --- inversion 1. subst c. clear H8.
                              apply H7 with (right_child (right_child i)); auto.
                              apply right_child_root.
