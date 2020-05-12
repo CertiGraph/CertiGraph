@@ -16,7 +16,7 @@ Require Import VST.floyd.sublist.
 
 
 (* We must use the CompSpecs and Vprog that were
-   centrally defined in dijksta's environment. 
+   centrally defined in dfijksta's environment. 
    This lets us be consistent and call PQ functions in Dijkstra. 
  *)
 Local Definition CompSpecs := env_dijkstra_arr.CompSpecs.
@@ -654,8 +654,25 @@ Proof.
   apply H5; trivial.
 Qed.
 
+Lemma path_cost_dist_cost_lt_gen:
+  forall {g src} links {dst prev priq dist limit},
+    inv_popped g src prev priq dist dst ->
+    In dst (get_popped priq) ->
+    Znth dst dist < inf ->
+    valid_path g (src, links) ->
+    path_cost g (src, links) < limit ->
+    path_ends g (src, links) src dst ->
+    Znth dst dist < limit.
+Proof.
+  intros.
+  specialize (H H0 H1).
+  destruct H as [p2dst [? [_ ?]]].
+  destruct H as [_ [_ [_ [? _]]]].
+  specialize (H5 _ H2 H4). lia.
+Qed.
+  
 Lemma path_leaving_popped:
-  forall g links s u priq,
+  forall g links s u priq dist,
     Zlength priq = SIZE ->
     inrange_priq priq ->
     sound_dijk_graph g ->
@@ -663,6 +680,8 @@ Lemma path_leaving_popped:
     path_ends g (s, links) s u ->
     In s (get_popped priq) ->
     ~ In u (get_popped priq) ->
+    Znth s dist < inf ->
+    (* (forall dst, inv_popped g s prev priq dist dst) -> *)
     exists (p1 : path) (mom' child' : Z) (p2 : path),
       path_glue p1 (path_glue (mom', [(mom', child')]) p2) = (s, links) /\
       valid_path g p1 /\
@@ -670,10 +689,13 @@ Lemma path_leaving_popped:
       path_ends g p1 s mom' /\
       path_ends g p2 child' u /\
       In mom' (get_popped priq) /\
+      Znth mom' dist < inf /\ 
       ~ In child' (get_popped priq) /\
       evalid g (mom', child').
 Proof.
   intros.
+  rename H6 into Hx.
+  (* rename H7 into Hy. *)
   generalize dependent s.
   induction links.
   - intros. destruct H3. simpl in H3, H6.
@@ -703,7 +725,11 @@ Proof.
         rewrite Heqt, <- H1, Hd, <- surjective_pairing, H1, <- Hd.
         apply pfoot_cons.
       }
-      specialize (IHlinks _ H6 H7 i).
+      assert (Hz: Znth t dist < inf). {
+        rewrite Heqt.
+        admit.
+      }
+      specialize (IHlinks _ H6 H7 i Hz).
       destruct IHlinks as [p2m [m [c [p2u [? [? [? [? [? [? [? ?]]]]]]]]]]].
       unfold VType in *.
       exists (path_glue (s, [(s,t)]) p2m), m, c, p2u.
@@ -762,7 +788,7 @@ Proof.
         apply in_eq.
       }
       apply Hb in H6. destruct H6.
-      split3; [| |split3; [| | split3; [| |split]]]; trivial.
+      split3; [| |split3; [| | split3; [| |split3]]]; trivial.
       * rewrite Heqt.
         apply valid_path_cons with (v := s).
         rewrite (surjective_pairing a).
@@ -773,7 +799,7 @@ Proof.
         rewrite Heqt, <- H1, Hd, <- surjective_pairing.
         rewrite <- Hd. apply pfoot_cons.
       * apply vvalid2_evalid; trivial.
-Qed.
+Admitted.
 
 
 (** PROOF BEGINS **)
@@ -1393,12 +1419,12 @@ Proof.
                   
                   destruct (path_leaving_popped
                               g links src u priq_contents
+                              dist_contents
                               H12 H11 H2 H46 H47 H53 H18)
-                    as [p1 [mom' [child' [p2 [? [? [? [? [? [? [? ?]]]]]]]]]]].
-                         
+                    as [p1 [mom' [child' [p2 [? [? [? [? [? [? [Hd [? ?]]]]]]]]]]]].
+                  1: { rewrite <- inf_eq. lia. }
                   exists p1, mom', child', p2.
                   split3; [| |split3; [| |split3; [| |split3; [| |split]]]]; trivial.
-                  1: admit. (* strengthen the lemma *)
                   unfold EType, VType in *.
                   rewrite <- H54 in l.
                   assert ( valid_path g (mom', [(mom', child')])). {
@@ -2181,38 +2207,29 @@ Proof.
   composed by popped vertices only. 
  *)
 
-(* Digression: a brief check to see if i was unseen, or just unpopped. *)              
-                              destruct (Z.eq_dec (Znth i priq_contents') inf).
+                              (* Digression: a brief check to see if i was popped, unseen, or just unpopped. *)
+
+                              assert (He: 0 <= i < Zlength priq_contents') by lia.
+                              (pose proof (Znth_priq_cases i priq_contents' He H33)).
+                              destruct H79 as [? | [? | ?]].
                               1: {
-                                (* if it was unseen, our job is easy *)
+                                (* i was popped *)
+                                admit.
+                              }
+                              1: {
+                                (* i was unseen *)
                                 assert (i <= i < SIZE) by lia.
-                                   destruct (H26 _ H79 e) as [? [? ?]].
-                                   specialize (H82 _ H65 n0).
+                                   destruct (H26 _ H80 H79) as [? [? ?]].
+                                   specialize (H83 _ H65 n0).
                                    lia.
                               }
-                              (* if not, we have some info: *)
 
-                              (* nah, I think just destruct 
-                                 with  = inf + 1 and < inf
-                               *)
+(* now we know that i was seen but unpopped. 
+   great, now we can employ inv_unpopped_weak. *)
                               
-                              assert (Znth i priq_contents' < inf). {
-                                assert (0 <= i < Zlength priq_contents') by lia.
-                                pose proof (Forall_Znth _ priq_contents' i H79 H33).
-                                simpl in H80.
-                                admit.
-                                  (* not sure *)
-                              }
-
-                                  
- (* Great, so now I can employ inv_unpopped_weak. *)
- 
-                              clear n1.
                               unfold VType in *.
                               rewrite H77.
                               
-                              
-
 
 (* Because i is "seen", we know that 
    The best-known path to i via popped vertices is 
@@ -2257,25 +2274,21 @@ Proof.
                                 apply n0.
                                 apply in_path_eq_epath_to_vpath; trivial.
                               }
-                             
-                              destruct (Z.eq_dec (Znth i priq_contents') inf).
-                              1: { assert (i <= i < SIZE) by lia.
-                                   destruct (H26 _ H80 e) as [? [? ?]].
-                                   specialize (H83 _ H65 H79).
-                                   rewrite H83. lia.
-                              }
 
-(* just take the cases for priq[i] = inf + 1, = inf, < inf *)
-                              assert (Znth i priq_contents' < inf). {
-                               
-                                assert (0 <= i < Zlength priq_contents') by lia.
-                                pose proof (Forall_Znth _ priq_contents' i H80 H33).
-                                simpl in H81.
-                                rewrite get_popped_meaning in H46 by lia.
+                              assert (He: 0 <= i < Zlength priq_contents') by lia.
+                              pose proof (Znth_priq_cases i priq_contents' He H33).
+                              destruct H80 as [? | [? | ?]].
+                              1: {
+                                (* i was popped *)
                                 admit.
-                                  (* not sure *)
                               }
-
+                              1: {
+                                (* I was unseen *)
+                                assert (i <= i < SIZE) by lia.
+                                   destruct (H26 _ H81 H80) as [? [? ?]].
+                                   specialize (H84 _ H65 H79).
+                                   rewrite H84. lia.
+                              }
                               assert (i <= i < SIZE) by lia.
                               destruct (H24 i H81 H80).
                               1: subst i; exfalso; lia.
