@@ -33,7 +33,13 @@ Definition mallocN_spec :=
      PROP (malloc_compatible n (pointer_val_val v))
      LOCAL (temp ret_temp (pointer_val_val v))
      SEP (memory_block sh n (pointer_val_val v)).
-
+(*Basically collapses everything into the mpred defined by SAG_VST
+takes in a lst of rank-parent pairs(from where? g?)
+  which is converted into the Cdata structures
+sh is the only parameter needed
+data_at sh (tarray vertex_type (Z.of_nat (length lst)))
+                               (map vgamma2cdata lst) (pointer_val_val x)
+*)
 Definition whole_graph sh g x :=
   (@full_graph_at mpred SAGA_VST pointer_val (SAG_VST sh) g x).
 
@@ -46,10 +52,10 @@ Definition makeSet_spec :=
       GLOBALS ()
       SEP ()
     POST [tptr vertex_type]
-      EX g: Graph, EX rt: pointer_val,
-      PROP (forall i: Z, 0 <= i < V -> vvalid g i)
+      EX g: Graph, EX rt: pointer_val, (*creates a graph where*)
+      PROP (forall i: Z, 0 <= i < V -> vvalid g i) (*anything between 0 and V is a vertex*)
       LOCAL (temp ret_temp (pointer_val_val rt))
-      SEP (whole_graph sh g rt).
+      SEP (whole_graph sh g rt). (*representation in heap...*)
 
 Definition find_spec :=
   DECLARE _find
