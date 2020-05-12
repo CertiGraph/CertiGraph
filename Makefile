@@ -54,6 +54,9 @@ CERTIGC_FILES = \
   gc_spec.v verif_create_space.v verif_create_heap.v verif_make_tinfo.v env_graph_gc.v verif_Is_block.v verif_garbage_collect.v verif_resume.v \
   GCGraph.v verif_forward.v verif_do_scan.v verif_forward_roots.v verif_do_generation.v gc_correct.v
 
+KRUSKAL_FILES = \
+  kruskal_edgelist.v env_kruskal_edgelist.v WeightedEdgeListGraph.v
+
 CLIGHT_FILES = sample_mark/mark_bi.v sample_mark/garbage_collector.v sample_mark/dispose_bi.v sample_mark/copy_bi.v sample_mark/summatrix.v
 
 C_FILES = $(CLIGHT_FILES:%.v=%.c)
@@ -68,8 +71,8 @@ NORMAL_FILES = \
   $(GRAPH_FILES:%.v=graph/%.v) \
   $(LIB_FILES:%.v=lib/%.v) \
   $(HEAP_MODEL_DIRECT_FILES:%.v=heap_model_direct/%.v) \
-  $(CERTIGC_FILES:%.v=CertiGC/%.v)
-
+  $(CERTIGC_FILES:%.v=CertiGC/%.v) \
+  $(KRUSKAL_FILES:%.v=kruskal/%.v)
 
 $(NORMAL_FILES:%.v=%.vo): %.vo: %.v
 	@echo COQC $*.v
