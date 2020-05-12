@@ -1,3 +1,4 @@
+Require Export VST.floyd.proofauto.
 Require Import Coq.ZArith.ZArith.
 Require Import Coq.micromega.Lia.
 Require Import VST.msl.seplog.
@@ -17,6 +18,7 @@ Coercion lg_gg: GeneralGraph >-> LabeledGraph.
 
 Local Open Scope logic.
 Local Open Scope Z_scope.
+Print EqDec.
 
 Instance Z_EqDec : EqDec Z eq. Proof. hnf. intros. apply Z.eq_dec. Defined.
 

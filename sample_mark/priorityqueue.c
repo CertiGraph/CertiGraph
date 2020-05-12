@@ -1,9 +1,4 @@
-
-#include <stdlib.h>
-#include <limits.h>
-
-#define SIZE 8
-#define IFTY INT_MAX - INT_MAX/SIZE
+#include "priorityqueue.h"
 
 
 /* ****************************** */
