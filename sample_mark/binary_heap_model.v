@@ -246,7 +246,7 @@ Local Open Scope heap_scope.
    but other than that, no divergence. *)
 Definition root_idx : nat := 0.
 Definition left_child (idx : nat) : nat := 1 + idx + idx. (* 2 * (idx + 1) - 1 *) 
-Definition right_child (idx : nat) : nat := 2 + idx + idx. (* 2 * (idx + 1) + 1 - 1 *)
+Definition right_child (idx : nat) : nat := (left_child idx) + 1. (* 2 + idx + idx. *) (* 2 * (idx + 1) + 1 - 1 *)
 Definition parent (idx : nat) : nat := div2 (idx - 1). (* ((idx + 1) / 2) - 1 *)
 
 Lemma parent_le: forall i,
@@ -273,11 +273,11 @@ Proof. unfold left_child. lia. Qed.
 
 Lemma right_child_inc: forall i,
   i < right_child i.
-Proof. unfold right_child. lia. Qed.
+Proof. unfold right_child, left_child. lia. Qed.
 
 Lemma left_child_lt_right_child: forall j,
   left_child j < right_child j.
-Proof. unfold left_child, right_child. lia. Qed.
+Proof. unfold right_child, left_child. lia. Qed.
 
 Lemma parent_left_child: forall i,
   parent (left_child i) = i.
@@ -285,7 +285,7 @@ Proof. unfold parent, left_child. intro. replace (1 + i + i - 1) with (2 * i) by
 
 Lemma parent_right_child: forall i,
   parent (right_child i) = i.
-Proof. unfold parent, right_child. intro. replace (2 + i + i - 1) with (S (2 * i)) by lia. apply div2_double_plus_one. Qed.
+Proof. unfold parent, right_child, left_child. intro. replace (1 + i + i + 1 - 1) with (S (2 * i)) by lia. apply div2_double_plus_one. Qed.
 
 Lemma left_child_parent_odd: forall i,
   odd i ->
@@ -301,10 +301,10 @@ Lemma right_child_parent_even: forall i,
   i > root_idx -> even i ->
   right_child (parent i) = i.
 Proof. 
-  unfold right_child, parent, root_idx. intros.
+  unfold right_child, left_child, parent, root_idx. intros.
   inversion H0. lia.
   replace (S n - 1) with n by lia. simpl. f_equal.
-  rewrite (odd_double n) at 3; auto.
+  rewrite (odd_double n) at 3; auto. unfold double. lia.
 Qed.
 
 Lemma left_child_nonroot: forall i,
@@ -313,7 +313,7 @@ Proof. unfold root_idx, left_child. intro i; lia. Qed.
 
 Lemma right_child_nonroot: forall i,
   right_child i > root_idx.
-Proof. unfold root_idx, right_child. intro i; lia. Qed.
+Proof. unfold root_idx, right_child, left_child. intro i; lia. Qed.
 
 Lemma left_child_inj: forall i j,
   left_child i = left_child j -> i = j.
@@ -321,7 +321,7 @@ Proof. unfold left_child; intros; lia. Qed.
 
 Lemma right_child_inj: forall i j,
   right_child i = right_child j -> i = j.
-Proof. unfold right_child; intros; lia. Qed.
+Proof. unfold right_child, left_child; intros; lia. Qed.
 
 Lemma left_child_root: forall i,
   left_child i > root_idx.
@@ -329,7 +329,7 @@ Proof. unfold left_child, root_idx. lia. Qed.
 
 Lemma left_nephew: forall i,
   left_child (left_child i) > right_child i.
-Proof. unfold left_child, right_child. lia. Qed.
+Proof. unfold right_child, left_child. lia. Qed.
 
 Lemma right_child_root: forall i,
   right_child i > root_idx.
@@ -337,11 +337,11 @@ Proof. unfold right_child, root_idx. lia. Qed.
 
 Lemma left_child_neq_right_child: forall i j,
   left_child i <> right_child j.
-Proof. unfold left_child, right_child. lia. Qed.
+Proof. unfold right_child, left_child. lia. Qed.
 
 Lemma right_nephew: forall i,
   right_child (right_child i) > left_child i.
-Proof. unfold left_child, right_child. lia. Qed.
+Proof. unfold right_child, left_child. lia. Qed.
 
 Opaque left_child. Opaque right_child. Opaque parent.
 
