@@ -69,70 +69,114 @@ Definition ___compcert_va_int64 : ident := 24%positive.
 Definition _arr : ident := 62%positive.
 Definition _capacity : ident := 4%positive.
 Definition _data : ident := 2%positive.
-Definition _exch : ident := 64%positive.
+Definition _exch : ident := 63%positive.
 Definition _first_available : ident := 5%positive.
 Definition _heap_cells : ident := 6%positive.
-Definition _insert : ident := 71%positive.
-Definition _insert_nc : ident := 70%positive.
-Definition _item : ident := 72%positive.
+Definition _insert : ident := 70%positive.
+Definition _insert_nc : ident := 69%positive.
+Definition _item : ident := 71%positive.
 Definition _j : ident := 60%positive.
 Definition _k : ident := 61%positive.
-Definition _less : ident := 65%positive.
-Definition _main : ident := 77%positive.
-Definition _make : ident := 76%positive.
+Definition _less : ident := 64%positive.
+Definition _main : ident := 76%positive.
+Definition _make : ident := 75%positive.
 Definition _mallocN : ident := 59%positive.
-Definition _pq : ident := 68%positive.
+Definition _pq : ident := 67%positive.
 Definition _priority : ident := 1%positive.
-Definition _remove_min : ident := 74%positive.
-Definition _remove_min_nc : ident := 73%positive.
-Definition _sink : ident := 67%positive.
-Definition _size : ident := 75%positive.
+Definition _remove_min : ident := 73%positive.
+Definition _remove_min_nc : ident := 72%positive.
+Definition _sink : ident := 66%positive.
+Definition _size : ident := 74%positive.
 Definition _structItem : ident := 3%positive.
 Definition _structPQ : ident := 7%positive.
-Definition _swim : ident := 66%positive.
-Definition _t : ident := 63%positive.
-Definition _x : ident := 69%positive.
-Definition _t'1 : ident := 78%positive.
-Definition _t'10 : ident := 87%positive.
-Definition _t'11 : ident := 88%positive.
-Definition _t'2 : ident := 79%positive.
-Definition _t'3 : ident := 80%positive.
-Definition _t'4 : ident := 81%positive.
-Definition _t'5 : ident := 82%positive.
-Definition _t'6 : ident := 83%positive.
-Definition _t'7 : ident := 84%positive.
-Definition _t'8 : ident := 85%positive.
-Definition _t'9 : ident := 86%positive.
+Definition _swim : ident := 65%positive.
+Definition _x : ident := 68%positive.
+Definition _t'1 : ident := 77%positive.
+Definition _t'10 : ident := 86%positive.
+Definition _t'11 : ident := 87%positive.
+Definition _t'2 : ident := 78%positive.
+Definition _t'3 : ident := 79%positive.
+Definition _t'4 : ident := 80%positive.
+Definition _t'5 : ident := 81%positive.
+Definition _t'6 : ident := 82%positive.
+Definition _t'7 : ident := 83%positive.
+Definition _t'8 : ident := 84%positive.
+Definition _t'9 : ident := 85%positive.
 
 Definition f_exch := {|
   fn_return := tvoid;
   fn_callconv := cc_default;
   fn_params := ((_j, tuint) :: (_k, tuint) ::
                 (_arr, (tptr (Tstruct _structItem noattr))) :: nil);
-  fn_vars := ((_t, (Tstruct _structItem noattr)) :: nil);
-  fn_temps := nil;
+  fn_vars := nil;
+  fn_temps := ((_priority, tint) :: (_data, (tptr tvoid)) :: (_t'2, tint) ::
+               (_t'1, (tptr tvoid)) :: nil);
   fn_body :=
 (Ssequence
-  (Sassign (Evar _t (Tstruct _structItem noattr))
-    (Ederef
-      (Ebinop Oadd (Etempvar _arr (tptr (Tstruct _structItem noattr)))
-        (Etempvar _j tuint) (tptr (Tstruct _structItem noattr)))
-      (Tstruct _structItem noattr)))
-  (Ssequence
-    (Sassign
+  (Sset _priority
+    (Efield
       (Ederef
         (Ebinop Oadd (Etempvar _arr (tptr (Tstruct _structItem noattr)))
           (Etempvar _j tuint) (tptr (Tstruct _structItem noattr)))
-        (Tstruct _structItem noattr))
-      (Ederef
-        (Ebinop Oadd (Etempvar _arr (tptr (Tstruct _structItem noattr)))
-          (Etempvar _k tuint) (tptr (Tstruct _structItem noattr)))
-        (Tstruct _structItem noattr)))
-    (Sassign
-      (Ederef
-        (Ebinop Oadd (Etempvar _arr (tptr (Tstruct _structItem noattr)))
-          (Etempvar _k tuint) (tptr (Tstruct _structItem noattr)))
-        (Tstruct _structItem noattr)) (Evar _t (Tstruct _structItem noattr)))))
+        (Tstruct _structItem noattr)) _priority tint))
+  (Ssequence
+    (Sset _data
+      (Efield
+        (Ederef
+          (Ebinop Oadd (Etempvar _arr (tptr (Tstruct _structItem noattr)))
+            (Etempvar _j tuint) (tptr (Tstruct _structItem noattr)))
+          (Tstruct _structItem noattr)) _data (tptr tvoid)))
+    (Ssequence
+      (Ssequence
+        (Sset _t'2
+          (Efield
+            (Ederef
+              (Ebinop Oadd
+                (Etempvar _arr (tptr (Tstruct _structItem noattr)))
+                (Etempvar _k tuint) (tptr (Tstruct _structItem noattr)))
+              (Tstruct _structItem noattr)) _priority tint))
+        (Sassign
+          (Efield
+            (Ederef
+              (Ebinop Oadd
+                (Etempvar _arr (tptr (Tstruct _structItem noattr)))
+                (Etempvar _j tuint) (tptr (Tstruct _structItem noattr)))
+              (Tstruct _structItem noattr)) _priority tint)
+          (Etempvar _t'2 tint)))
+      (Ssequence
+        (Ssequence
+          (Sset _t'1
+            (Efield
+              (Ederef
+                (Ebinop Oadd
+                  (Etempvar _arr (tptr (Tstruct _structItem noattr)))
+                  (Etempvar _k tuint) (tptr (Tstruct _structItem noattr)))
+                (Tstruct _structItem noattr)) _data (tptr tvoid)))
+          (Sassign
+            (Efield
+              (Ederef
+                (Ebinop Oadd
+                  (Etempvar _arr (tptr (Tstruct _structItem noattr)))
+                  (Etempvar _j tuint) (tptr (Tstruct _structItem noattr)))
+                (Tstruct _structItem noattr)) _data (tptr tvoid))
+            (Etempvar _t'1 (tptr tvoid))))
+        (Ssequence
+          (Sassign
+            (Efield
+              (Ederef
+                (Ebinop Oadd
+                  (Etempvar _arr (tptr (Tstruct _structItem noattr)))
+                  (Etempvar _k tuint) (tptr (Tstruct _structItem noattr)))
+                (Tstruct _structItem noattr)) _priority tint)
+            (Etempvar _priority tint))
+          (Sassign
+            (Efield
+              (Ederef
+                (Ebinop Oadd
+                  (Etempvar _arr (tptr (Tstruct _structItem noattr)))
+                  (Etempvar _k tuint) (tptr (Tstruct _structItem noattr)))
+                (Tstruct _structItem noattr)) _data (tptr tvoid))
+            (Etempvar _data (tptr tvoid))))))))
 |}.
 
 Definition f_less := {|
