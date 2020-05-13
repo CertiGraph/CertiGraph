@@ -1046,6 +1046,7 @@ Proof.
              - seen, in which case there is a 
              whole lot of ground to cover   
          *)
+
         forward.
         forward_if. 
         1: { 
@@ -1098,17 +1099,16 @@ Proof.
           - admit. (* work *)
               
         }
-          (* need to add a precondition to inv_popped *)
         
          (* dist[u] <> inf, from which we can 
-            infer that dist[u] < inf. *)
+            infer that dist[u] < inf.  
+          *)
+        
         assert (Znth u dist_contents < inf). {
           replace 8 with SIZE in H19. 2: compute; trivial.
           rewrite inf_eq2 in H19.
           apply repr_neq_e in H19.
-          replace (Zlength priq_contents) with (Zlength dist_contents) in H17 by lia.
-          apply (Forall_Znth _ _ _ H17) in H10.
-          simpl in H10. lia.
+          apply Znth_dist_lt_inf; trivial; lia.
         }
         clear H19.
         rename H20 into Hx.
@@ -1242,8 +1242,11 @@ Proof.
               apply Zlt_succ_le in H36.
               apply Z.lt_eq_cases in H36.
               destruct H36.
-              2: rewrite H8 in H36; trivial; lia.
-                
+              2: {
+                  rewrite H8 in H36; trivial; lia.
+              }
+
+
               specialize (H34 H36).
               destruct H34.
               1: { (* src is being popped *)
