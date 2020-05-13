@@ -1391,7 +1391,6 @@ Proof.
                 destruct (zlt (path_cost g p') inf).
                 2: unfold VType in *; lia.
                 
-                (* exfalso. *)
                 unfold VType in *.   
                 assert (exists p1 mom' child' p2,
                            path_glue p1 (path_glue (mom', [(mom',child')]) p2) = p' /\
@@ -2540,13 +2539,13 @@ Proof.
                       apply inrange_graph_cost_pos; trivial.
                     }
                     destruct (H22 _ H67).
-                    1: { rewrite H68.
+                    1: { destruct H68. rewrite H68.
                          rewrite careful_add_comm.
                          rewrite careful_add_inf. lia.
                          apply g2m_Znth2_range; trivial.
                          lia.
                     }
-                      destruct H68 as [p2mom' [? [? ?]]].
+                    destruct H68 as [p2mom' [? [? ?]]].
                     assert (Hrem := H68).
 
 (*
@@ -2836,7 +2835,8 @@ Thus dist[mom'] + (mom',i) <= path_cost p'.
                             apply inrange_graph_cost_pos; trivial.
                        }
                        destruct (H22 _ H66).
-                       1: { rewrite H67.
+                       1: { destruct H67.
+                            rewrite H67.
                             rewrite careful_add_comm,
                             careful_add_inf; lia.
                        }
