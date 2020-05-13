@@ -18,7 +18,8 @@ Definition get_popped pq : list VType :=
 Definition path_correct (g: LGraph) prev dist src dst p : Prop  :=
   valid_path g p /\
   path_ends g p src dst /\
-  path_cost g p < inf /\
+  (* path_cost g p < inf /\ (* hmm *) *)
+  True /\
   Znth dst dist = path_cost g p /\
   Forall (fun x => Znth (snd x) prev = fst x) (snd p).
 
@@ -29,12 +30,12 @@ Definition path_globally_optimal (g: LGraph) src dst p : Prop :=
 
 Definition inv_popped g src prev priq dist dst :=
   In dst (get_popped priq) ->
-  Znth dst dist < inf ->
+  (* Znth dst dist < inf -> (* hmm *) *)
   exists path,
     path_correct g prev dist src dst path /\
     (forall step, In_path g step path ->
-                  In step (get_popped priq) /\
-                  Znth step dist < inf) /\
+                  In step (get_popped priq)) /\
+                  (* /\ Znth step dist < inf) /\ (* hmm *) *)
     path_globally_optimal g src dst path.
 
 Definition inv_unpopped g src prev priq dist dst :=
