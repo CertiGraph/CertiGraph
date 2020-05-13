@@ -45,14 +45,13 @@ Proof.
   rewrite app_assoc.
   rewrite sublist_app2.
   2: { rewrite Zlength_app, Zlength_sublist by lia.
-       unfold Zlength. simpl. lia.
-  }
+       unfold Zlength; simpl; lia. }
   rewrite Zlength_app, Zlength_sublist by lia.
   unfold Zlength at 1; simpl.
-  rewrite sublist_same; trivial.
-  - lia.
-  - unfold Zlength at 2; simpl.
-    rewrite Zlength_sublist by lia. lia.
+  rewrite sublist_same; trivial; [lia|].
+  unfold Zlength at 2; simpl.
+  rewrite Zlength_sublist by lia.
+  lia.
 Qed.
 
 Lemma body_exch: semax_body Vprog Gprog f_exch exch_spec.
