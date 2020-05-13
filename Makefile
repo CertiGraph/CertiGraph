@@ -74,6 +74,7 @@ NORMAL_FILES = \
   $(CERTIGC_FILES:%.v=CertiGC/%.v) \
   $(KRUSKAL_FILES:%.v=kruskal/%.v)
 
+
 $(NORMAL_FILES:%.v=%.vo): %.vo: %.v
 	@echo COQC $*.v
 	@$(COQC) $(NORMAL_FLAG) $(CURRENT_DIR)/$*.v
