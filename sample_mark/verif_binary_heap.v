@@ -34,42 +34,40 @@ Proof.
   start_function.
   unfold harray.
   forward.
-  rewrite Znth_map.
-  entailer!. trivial.
-  forward.
-  rewrite Znth_map.
-  entailer!. trivial.
-  (* Why is this goal here? *)
-  admit.
-  trivial.
-  forward.
-  rewrite Znth_map.
-  rewrite Znth_map.
-  entailer!. trivial. trivial.
-  forward; trivial.
-  forward; trivial.
-  rewrite Znth_map; auto.
-  rewrite Znth_map; auto.
-  entailer!.
-(*
-rewrite Zlength_upd_Znth in H3.
-rewrite Zlength_map in H3.
-*)
-rewrite Forall_Znth in H4.
-apply H4; clear H3 H4; auto.
-rewrite Zlength_upd_Znth.
-rewrite Zlength_map. trivial.
-assert (Heq: i = j \/ i <> j) by lia. destruct Heq.
-subst j. rewrite upd_Znth_same. 2: rewrite Zlength_map; auto.
-fold Znth.
-(* argh! *)
-admit.
-admit.
-(* back *)
-forward.
-forward.
-forward.
-unfold harray.
+  - rewrite Znth_map; trivial.
+    entailer!.
+  - forward.
+    + rewrite Znth_map; trivial.
+      entailer!. 
+      (* Why is this goal here?
+         Absolutely no idea *)
+      admit.
+    + Opaque Znth.
+      forward.
+      1: repeat rewrite Znth_map; trivial; entailer!.
+      repeat rewrite Znth_map; trivial.
+      forward. forward.
+      * entailer!.
+        clear H3. (* it's useless info *)
+        (* rewrite Forall_Znth in H4. *)
+        (* apply H4; clear H4. *)
+        (* 1: rewrite Zlength_upd_Znth, Zlength_map; trivial. *)
+        destruct (Z.eq_dec i j).
+        -- subst j. rewrite upd_Znth_same.
+           2: rewrite Zlength_map; auto.
+           rewrite Znth_map; trivial.
+        -- rewrite upd_Znth_diff.  
+           2,3: rewrite Zlength_map; auto.
+           2: lia.
+           rewrite Znth_map; trivial.
+           simpl. (* and we're back at the old goal *)
+           admit.
+      * forward. forward. forward.
+Admitted.
+        
+(*        
+        simpl.
+        unfold harray.
 entailer!.
 rewrite Znth_map; auto.
 replace (Zlength (exchange arr_contents (Z.to_nat i) (Z.to_nat j))) with (Zlength arr_contents).
@@ -77,3 +75,5 @@ replace (Zlength (exchange arr_contents (Z.to_nat i) (Z.to_nat j))) with (Zlengt
 repeat rewrite upd_Znth_map in *.
 admit.
 Admitted.
+
+*)
