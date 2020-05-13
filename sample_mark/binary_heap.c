@@ -23,9 +23,12 @@ typedef struct structPQ {
 
 /* I'm assuming a decent compiler will inline the next two functions; if not they can be made #define macros. */
 void exch(unsigned int j, unsigned int k, Item arr[]) {
-  Item t = arr[j];
-  arr[j] = arr[k];
-  arr[k] = t;
+  int priority = arr[j].priority;
+  void* data = arr[j].data;
+  arr[j].priority = arr[k].priority;
+  arr[j].data = arr[k].data;
+  arr[k].priority = priority;
+  arr[k].data = data;
 }
 
 int less(unsigned int j, unsigned int k, Item arr[]) {
