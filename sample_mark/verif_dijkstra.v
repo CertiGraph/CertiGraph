@@ -1391,7 +1391,7 @@ Proof.
                 destruct (zlt (path_cost g p') inf).
                 2: unfold VType in *; lia.
                 
-                exfalso.
+                (* exfalso. *)
                 unfold VType in *.   
                 assert (exists p1 mom' child' p2,
                            path_glue p1 (path_glue (mom', [(mom',child')]) p2) = p' /\
@@ -1541,9 +1541,13 @@ Proof.
                 destruct (H4 mom' H65) as [? _].
                 unfold inv_popped in H66.
                 destruct (H66 H58).
-                1: {  admit.
-                      (* maybe this can be swum up? *)
+                1: {
+                  destruct H67.
+                  specialize (H68 p1 H54 H56). lia.
                 }
+
+                exfalso.
+                
                 destruct H67 as [p2mom' [? [? ?]]].
                 (*
                 and path_cost of p2mom' will be <= that of p1 *)
@@ -1877,13 +1881,17 @@ Proof.
              forward. forward. forward_if.
              ** rewrite Int.signed_repr in H45
                  by (rewrite <- inf_eq in *; rep_lia).
-                (* At this point we know that we are definitely
-        going to make edits in the arrays:
-        we have found a better path to i, via u *)
-
-                 
-
-                assert (Znth i dist_contents' < inf ->
+                (* We know that we are definitely
+                   going to make edits in the arrays:
+                   we have found a better path to i, via u *)
+                
+                assert (Htemp : 0 <= i < Zlength priq_contents') by lia.
+                pose proof (Znth_priq_cases i priq_contents' Htemp H33).
+                clear Htemp.
+                rename H46 into icases.
+                
+                (* this is the sticking point *)
+                assert (Znth i dist_contents' <> inf ->
                         ~ In i (get_popped priq_contents')).
                 {
                   (* This useful fact is true because
@@ -1892,12 +1900,10 @@ Proof.
                    *)
                   intro Hc. intro. 
                   unfold inv_popped in H22.
-                  destruct (H22 _ H46).
-                  1: lia. 
+                  destruct (H22 _ H46); [lia|].
                   destruct H47 as [p2i [? [? ?]]].
                   1: trivial.
-                  destruct (H22 _ H30).
-                  1: lia.
+                  destruct (H22 _ H30); [lia|].
                   destruct H50 as [p2u [? [? ?]]].
                   unfold path_globally_optimal in H49.
                   specialize (H49 (fst p2u, snd p2u +:: (u,i))).
@@ -2002,7 +2008,7 @@ Proof.
                             intro contra.
                             unfold VType in *.
                             rewrite contra in *.
-                            apply H46; trivial.
+                            apply H46; trivial; lia.
                           }
                           unfold VType in *.
                           rewrite upd_Znth_diff; try lia.
@@ -2013,7 +2019,7 @@ Proof.
                           assert (step <> i). {
                             intro contra.
                             subst step.
-                            apply H46; trivial.
+                            apply H46; trivial; lia.
                           }
                           rewrite <- get_popped_irrel_upd; try lia; trivial.
                           split; trivial.
@@ -2167,8 +2173,8 @@ Proof.
  
    There are two cases about p': In u p' \/ ~ In u p'
  *)
-                              
-                            
+
+
                             destruct (in_dec (ZIndexed.eq) u (epath_to_vpath g p2mom')).
                             ++++ (* Yes, the path p2mom' goes via u *) 
                               (*
@@ -2216,9 +2222,7 @@ Proof.
 
                               (* Digression: a brief check to see if i was popped, unseen, or just unpopped. *)
 
-                              assert (He: 0 <= i < Zlength priq_contents') by lia.
-                              (pose proof (Znth_priq_cases i priq_contents' He H33)).
-                              destruct H79 as [? | [? | ?]].
+                              destruct icases as [? | [? | ?]].
                               1: {
                                 (* i was popped *)
                                 admit.
@@ -2286,14 +2290,16 @@ Proof.
                                 apply in_path_eq_epath_to_vpath; trivial.
                               }
 
-                              assert (He: 0 <= i < Zlength priq_contents') by lia.
-                              pose proof (Znth_priq_cases i priq_contents' He H33).
-                              destruct H80 as [? | [? | ?]].
+                              destruct icases as [? | [? | ?]].
                               1: {
                                 (* i was popped *)
+                                exfalso.
+                                rewrite <- get_popped_meaning in H80.
+                                apply H46; trivial. 2: lia.
+                                intro.
+                                (* i was popped with infinite distance *)
+                                (* there's a contra in l *)
                                 admit.
-                                (*
-                                rewrite get_popped_meaning in H46; lia. *)      
                               }
                               1: {
                                 (* i was unseen *)
