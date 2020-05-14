@@ -1101,7 +1101,82 @@ Proof.
               apply fold_min_general.
               rewrite <- Hrem.
               apply Znth_In; lia.
-          - admit. (* work *)
+          - unfold VType in *.
+            unfold dijkstra_correct in H4 |- *.
+            intros. specialize (H4 _ H15).
+            destruct H4 as [? [? ?]].
+            split3.
+            + unfold inv_popped in *.
+              intros.
+              destruct (Z.eq_dec dst u).
+              * subst dst. left.
+                split; trivial.
+                intros. admit. (* come back *)
+              * apply get_popped_irrel_upd in H35; trivial.
+                2: { apply get_popped_range in H35. 
+                     rewrite upd_Znth_Zlength in H35; lia. }
+                destruct (H4 H35); [left | right]; trivial.
+                destruct H36 as [p2dst [? [? ?]]].
+                exists p2dst. split3; trivial.
+                intros.
+                specialize (H37 _ H39).
+                destruct H37; split; trivial.
+                destruct (Z.eq_dec step u).
+                -- rewrite e.
+                   rewrite get_popped_meaning; trivial.
+                   rewrite upd_Znth_same; trivial.
+                   rewrite upd_Znth_Zlength; lia.
+                -- rewrite <- get_popped_irrel_upd; trivial.
+                   apply get_popped_range in H37; trivial.
+            + unfold inv_unpopped in *.
+              intros.
+              destruct (Z.eq_dec dst u).
+              1: rewrite e, upd_Znth_same in H35; lia.
+              rewrite upd_Znth_diff in H35; trivial.
+              2: apply vvalid_range in H15; trivial; lia.
+              specialize (H33 H35).
+              destruct H33; [left | right]; trivial.
+              unfold VType in *.
+              remember (Znth dst prev_contents) as mom.
+              destruct H33 as [? [? [? [? [? ?]]]]].
+              split3; [| |split3; [| |split]]; trivial.
+              * destruct (Z.eq_dec mom u).
+                1: {rewrite e, get_popped_meaning, upd_Znth_same; trivial.
+                    rewrite upd_Znth_Zlength; lia. }
+                rewrite <- get_popped_irrel_upd; trivial.
+                apply get_popped_range in H36; lia.
+              * intros. destruct (Z.eq_dec mom' u).
+                -- rewrite e in *.
+                   rewrite H19.
+                   unfold VType in *.
+                   rewrite careful_add_comm, careful_add_inf; trivial.
+                   lia.
+                   apply g2m_Znth2_range; trivial.
+                   apply vvalid_range in H15; trivial.
+                   lia.
+                -- apply H40.
+                   rewrite <- get_popped_irrel_upd in H41; trivial.
+                   apply get_popped_range in H41.
+                   rewrite upd_Znth_Zlength in H41; trivial.
+            + unfold inv_unseen in *. intros.
+              destruct (Z.eq_dec dst u).
+              1: rewrite e, upd_Znth_same in H35; trivial; lia.
+              rewrite upd_Znth_diff in H35; trivial.
+              2: apply vvalid_range in H15; trivial; lia.
+              specialize (H34 H35).
+              destruct H34 as [? [? ?]].
+              split3; trivial.
+              intros.
+              destruct (Z.eq_dec m u).
+              1: { rewrite e, H19, careful_add_comm, careful_add_inf; trivial.
+                   apply g2m_Znth2_range; trivial.
+                   apply vvalid_range in H15; trivial; lia.
+                   lia.
+              }
+              rewrite <- get_popped_irrel_upd in H38; trivial.
+              apply H37; trivial.
+              apply get_popped_range in H38.
+              rewrite upd_Znth_Zlength in H38; trivial.
         }
         
          (* 
@@ -1391,7 +1466,6 @@ Proof.
                 destruct (zlt (path_cost g p') inf).
                 2: unfold VType in *; lia.
                 
-                exfalso.
                 unfold VType in *.   
                 assert (exists p1 mom' child' p2,
                            path_glue p1 (path_glue (mom', [(mom',child')]) p2) = p' /\
@@ -1541,9 +1615,13 @@ Proof.
                 destruct (H4 mom' H65) as [? _].
                 unfold inv_popped in H66.
                 destruct (H66 H58).
-                1: {  admit.
-                      (* maybe this can be swum up? *)
+                1: {
+                  destruct H67.
+                  specialize (H68 p1 H54 H56). lia.
                 }
+
+                exfalso.
+                
                 destruct H67 as [p2mom' [? [? ?]]].
                 (*
                 and path_cost of p2mom' will be <= that of p1 *)
@@ -1877,13 +1955,17 @@ Proof.
              forward. forward. forward_if.
              ** rewrite Int.signed_repr in H45
                  by (rewrite <- inf_eq in *; rep_lia).
-                (* At this point we know that we are definitely
-        going to make edits in the arrays:
-        we have found a better path to i, via u *)
-
-                 
-
-                assert (Znth i dist_contents' < inf ->
+                (* We know that we are definitely
+                   going to make edits in the arrays:
+                   we have found a better path to i, via u *)
+                
+                assert (Htemp : 0 <= i < Zlength priq_contents') by lia.
+                pose proof (Znth_priq_cases i priq_contents' Htemp H33).
+                clear Htemp.
+                rename H46 into icases.
+                
+                (* this is the sticking point *)
+                assert (Znth i dist_contents' <> inf ->
                         ~ In i (get_popped priq_contents')).
                 {
                   (* This useful fact is true because
@@ -1892,12 +1974,10 @@ Proof.
                    *)
                   intro Hc. intro. 
                   unfold inv_popped in H22.
-                  destruct (H22 _ H46).
-                  1: lia. 
+                  destruct (H22 _ H46); [lia|].
                   destruct H47 as [p2i [? [? ?]]].
                   1: trivial.
-                  destruct (H22 _ H30).
-                  1: lia.
+                  destruct (H22 _ H30); [lia|].
                   destruct H50 as [p2u [? [? ?]]].
                   unfold path_globally_optimal in H49.
                   specialize (H49 (fst p2u, snd p2u +:: (u,i))).
@@ -2002,7 +2082,7 @@ Proof.
                             intro contra.
                             unfold VType in *.
                             rewrite contra in *.
-                            apply H46; trivial.
+                            apply H46; trivial; lia.
                           }
                           unfold VType in *.
                           rewrite upd_Znth_diff; try lia.
@@ -2013,7 +2093,7 @@ Proof.
                           assert (step <> i). {
                             intro contra.
                             subst step.
-                            apply H46; trivial.
+                            apply H46; trivial; lia.
                           }
                           rewrite <- get_popped_irrel_upd; try lia; trivial.
                           split; trivial.
@@ -2167,8 +2247,8 @@ Proof.
  
    There are two cases about p': In u p' \/ ~ In u p'
  *)
-                              
-                            
+
+
                             destruct (in_dec (ZIndexed.eq) u (epath_to_vpath g p2mom')).
                             ++++ (* Yes, the path p2mom' goes via u *) 
                               (*
@@ -2216,15 +2296,46 @@ Proof.
 
                               (* Digression: a brief check to see if i was popped, unseen, or just unpopped. *)
 
-                              assert (He: 0 <= i < Zlength priq_contents') by lia.
-                              (pose proof (Znth_priq_cases i priq_contents' He H33)).
-                              destruct H79 as [? | [? | ?]].
+                              destruct icases as [? | [? | ?]].
                               1: {
                                 (* i was popped *)
-                                admit.
-                                (*
-                                rewrite get_popped_meaning in H46;
-                                lia. *)
+                                exfalso.
+                                rewrite <- get_popped_meaning in H79.
+                                apply H46; trivial. 2: lia.
+                                intro.
+                                (* i was popped with infinite distance *)
+                                (* there's a contra in l *)
+                                assert (evalid g (mom', i)). {
+                                  apply vvalid2_evalid; trivial.
+                                }
+                                destruct (H22 _ H79).
+                                - destruct H82.
+                                  specialize (H83 (fst p2mom', snd p2mom' +:: (mom', i))).
+                                  assert (forall a, a < a -> False). {
+                                    intros. lia.
+                                  }
+                                  apply (H84 inf).
+                                  rewrite <- H83 at 1.
+                                  + rewrite path_cost_app_cons; trivial;
+                                      rewrite elabel_Znth_graph_to_mat, <- H73; trivial.
+                                    unfold VType in *. lia.
+                                  + apply valid_path_app_cons; trivial.
+                                    all: rewrite <- surjective_pairing;
+                                      trivial.
+                                    destruct H71; trivial.
+                                  + assert (fst p2mom' = src). {
+                                      destruct H71.
+                                      rewrite (surjective_pairing p2mom') in H71.
+                                      simpl in H71; trivial.
+                                    }
+                                    rewrite H85;
+                                    apply path_ends_app_cons; trivial.
+                                    rewrite <- H85 at 1.
+                                    rewrite <- surjective_pairing;
+                                      trivial.
+                                - destruct H82 as [p2i [? _]].
+                                  destruct H82 as [? [? [? [? ?]]]].
+                                  lia.
                               }
                               
                               1: {
@@ -2286,14 +2397,46 @@ Proof.
                                 apply in_path_eq_epath_to_vpath; trivial.
                               }
 
-                              assert (He: 0 <= i < Zlength priq_contents') by lia.
-                              pose proof (Znth_priq_cases i priq_contents' He H33).
-                              destruct H80 as [? | [? | ?]].
+                              destruct icases as [? | [? | ?]].
                               1: {
                                 (* i was popped *)
-                                admit.
-                                (*
-                                rewrite get_popped_meaning in H46; lia. *)      
+                                exfalso.
+                                rewrite <- get_popped_meaning in H80.
+                                apply H46; trivial. 2: lia.
+                                intro.
+                                (* i was popped with infinite distance *)
+                                (* there's a contra in l *)
+                                assert (evalid g (mom', i)). {
+                                  apply vvalid2_evalid; trivial.
+                                }
+                                destruct (H22 _ H80).
+                                - destruct H83.
+                                  specialize (H84 (fst p2mom', snd p2mom' +:: (mom', i))).
+                                  assert (forall a, a < a -> False). {
+                                    intros. lia.
+                                  }
+                                  apply (H85 inf).
+                                  rewrite <- H84 at 1.
+                                  + rewrite path_cost_app_cons; trivial;
+                                      rewrite elabel_Znth_graph_to_mat, <- H73; trivial.
+                                    unfold VType in *. lia.
+                                  + apply valid_path_app_cons; trivial.
+                                    all: rewrite <- surjective_pairing;
+                                      trivial.
+                                    destruct H71; trivial.
+                                  + assert (fst p2mom' = src). {
+                                      destruct H71.
+                                      rewrite (surjective_pairing p2mom') in H71.
+                                      simpl in H71; trivial.
+                                    }
+                                    rewrite H86;
+                                    apply path_ends_app_cons; trivial.
+                                    rewrite <- H86 at 1.
+                                    rewrite <- surjective_pairing;
+                                      trivial.
+                                - destruct H83 as [p2i [? _]].
+                                  destruct H83 as [? [? [? [? ?]]]].
+                                  lia.
                               }
                               1: {
                                 (* i was unseen *)
@@ -2534,13 +2677,13 @@ Proof.
                       apply inrange_graph_cost_pos; trivial.
                     }
                     destruct (H22 _ H67).
-                    1: { rewrite H68.
+                    1: { destruct H68. rewrite H68.
                          rewrite careful_add_comm.
                          rewrite careful_add_inf. lia.
                          apply g2m_Znth2_range; trivial.
                          lia.
                     }
-                      destruct H68 as [p2mom' [? [? ?]]].
+                    destruct H68 as [p2mom' [? [? ?]]].
                     assert (Hrem := H68).
 
 (*
@@ -2830,7 +2973,8 @@ Thus dist[mom'] + (mom',i) <= path_cost p'.
                             apply inrange_graph_cost_pos; trivial.
                        }
                        destruct (H22 _ H66).
-                       1: { rewrite H67.
+                       1: { destruct H67.
+                            rewrite H67.
                             rewrite careful_add_comm,
                             careful_add_inf; lia.
                        }
