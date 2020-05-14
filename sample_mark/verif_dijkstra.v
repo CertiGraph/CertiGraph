@@ -1101,7 +1101,82 @@ Proof.
               apply fold_min_general.
               rewrite <- Hrem.
               apply Znth_In; lia.
-          - admit. (* work *)
+          - unfold VType in *.
+            unfold dijkstra_correct in H4 |- *.
+            intros. specialize (H4 _ H15).
+            destruct H4 as [? [? ?]].
+            split3.
+            + unfold inv_popped in *.
+              intros.
+              destruct (Z.eq_dec dst u).
+              * subst dst. left.
+                split; trivial.
+                intros. admit. (* come back *)
+              * apply get_popped_irrel_upd in H35; trivial.
+                2: { apply get_popped_range in H35. 
+                     rewrite upd_Znth_Zlength in H35; lia. }
+                destruct (H4 H35); [left | right]; trivial.
+                destruct H36 as [p2dst [? [? ?]]].
+                exists p2dst. split3; trivial.
+                intros.
+                specialize (H37 _ H39).
+                destruct H37; split; trivial.
+                destruct (Z.eq_dec step u).
+                -- rewrite e.
+                   rewrite get_popped_meaning; trivial.
+                   rewrite upd_Znth_same; trivial.
+                   rewrite upd_Znth_Zlength; lia.
+                -- rewrite <- get_popped_irrel_upd; trivial.
+                   apply get_popped_range in H37; trivial.
+            + unfold inv_unpopped in *.
+              intros.
+              destruct (Z.eq_dec dst u).
+              1: rewrite e, upd_Znth_same in H35; lia.
+              rewrite upd_Znth_diff in H35; trivial.
+              2: apply vvalid_range in H15; trivial; lia.
+              specialize (H33 H35).
+              destruct H33; [left | right]; trivial.
+              unfold VType in *.
+              remember (Znth dst prev_contents) as mom.
+              destruct H33 as [? [? [? [? [? ?]]]]].
+              split3; [| |split3; [| |split]]; trivial.
+              * destruct (Z.eq_dec mom u).
+                1: {rewrite e, get_popped_meaning, upd_Znth_same; trivial.
+                    rewrite upd_Znth_Zlength; lia. }
+                rewrite <- get_popped_irrel_upd; trivial.
+                apply get_popped_range in H36; lia.
+              * intros. destruct (Z.eq_dec mom' u).
+                -- rewrite e in *.
+                   rewrite H19.
+                   unfold VType in *.
+                   rewrite careful_add_comm, careful_add_inf; trivial.
+                   lia.
+                   apply g2m_Znth2_range; trivial.
+                   apply vvalid_range in H15; trivial.
+                   lia.
+                -- apply H40.
+                   rewrite <- get_popped_irrel_upd in H41; trivial.
+                   apply get_popped_range in H41.
+                   rewrite upd_Znth_Zlength in H41; trivial.
+            + unfold inv_unseen in *. intros.
+              destruct (Z.eq_dec dst u).
+              1: rewrite e, upd_Znth_same in H35; trivial; lia.
+              rewrite upd_Znth_diff in H35; trivial.
+              2: apply vvalid_range in H15; trivial; lia.
+              specialize (H34 H35).
+              destruct H34 as [? [? ?]].
+              split3; trivial.
+              intros.
+              destruct (Z.eq_dec m u).
+              1: { rewrite e, H19, careful_add_comm, careful_add_inf; trivial.
+                   apply g2m_Znth2_range; trivial.
+                   apply vvalid_range in H15; trivial; lia.
+                   lia.
+              }
+              rewrite <- get_popped_irrel_upd in H38; trivial.
+              apply H37; trivial.
+              apply get_popped_range in H38.
+              rewrite upd_Znth_Zlength in H38; trivial.
         }
         
          (* 
