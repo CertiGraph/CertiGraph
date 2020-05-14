@@ -34,11 +34,18 @@ Definition path_in_popped (g: LGraph) priq dist path :=
 Definition inv_popped (g: LGraph) src prev priq dist dst :=
   In dst (get_popped priq) ->
   (Znth dst dist = inf /\
-   forall p,
-     valid_path g p ->
-     path_ends g p src dst ->
-     path_cost g p = inf)
-    (* forall m, In m (get_popped priq) -> *)
+   forall m,
+     vvalid g m -> 
+     careful_add
+       (Znth m dist)
+       (Znth dst (Znth m (graph_to_mat g))) = inf)
+
+    (* forall p, *)
+     (* valid_path g p -> *)
+     (* path_ends g p src dst -> *)
+     (* path_cost g p = inf) *)
+
+  (* forall m, In m (get_popped priq) -> *)
              (* careful_add  *)
                (* (Znth m dist) *)
                (* (Znth dst (Znth m (graph_to_mat g))) = inf) *)
@@ -51,12 +58,19 @@ Definition inv_popped (g: LGraph) src prev priq dist dst :=
 Definition inv_popped_weak (g: LGraph) src prev priq dist dst u :=
   In dst (get_popped priq) ->
   (Znth dst dist = inf /\
-   forall p,
-     valid_path g p ->
-     path_ends g p src dst ->
-     ~ In u (epath_to_vpath g p) ->
-     path_cost g p = inf)
-    (* forall m, In m (get_popped priq) -> *)
+   forall m,
+     vvalid g m ->
+     m <> u ->
+     careful_add
+       (Znth m dist)
+       (Znth dst (Znth m (graph_to_mat g))) = inf)
+   (* forall p, *)
+     (* valid_path g p -> *)
+     (* path_ends g p src dst -> *)
+     (* ~ In u (epath_to_vpath g p) -> *)
+     (* path_cost g p = inf) *)
+
+  (* forall m, In m (get_popped priq) -> *)
              (* m <> u -> *)
              (* careful_add  *)
                (* (Znth m dist) *)
