@@ -12,7 +12,7 @@ Require Import RamifyCoq.sample_mark.dijkstra.
 Local Open Scope Z_scope.
 
 Definition get_popped pq : list VType :=
-  map snd (filter (fun x => (fst x) =? (inf+1))
+  map snd (filter (fun x => (fst x) =? (inf + 1))
                   (combine pq (nat_inc_list (Z.to_nat (Zlength pq))))).
 
 Definition path_correct (g: LGraph) prev dist src dst p : Prop  :=
@@ -27,36 +27,45 @@ Definition path_globally_optimal (g: LGraph) src dst p : Prop :=
              path_ends g p' src dst ->
              path_cost g p <= path_cost g p'.
 
+Definition path_in_popped (g: LGraph) priq dist path :=
+  forall step, In_path g step path ->
+               In step (get_popped priq) /\ Znth step dist < inf.
+
 Definition inv_popped (g: LGraph) src prev priq dist dst :=
   In dst (get_popped priq) ->
   (Znth dst dist = inf /\
-   forall m, In m (get_popped priq) ->
-             careful_add 
-               (Znth m dist)
-               (Znth dst (Znth m (graph_to_mat g))) = inf)
+   forall p,
+     valid_path g p ->
+     path_ends g p src dst ->
+     path_cost g p = inf)
+    (* forall m, In m (get_popped priq) -> *)
+             (* careful_add  *)
+               (* (Znth m dist) *)
+               (* (Znth dst (Znth m (graph_to_mat g))) = inf) *)
   \/
   (exists path,
-     path_correct g prev dist src dst path /\
-     (forall step, In_path g step path ->
-                   In step (get_popped priq) /\
-                   Znth step dist < inf) /\
-     path_globally_optimal g src dst path).
+      path_correct g prev dist src dst path /\
+      path_in_popped g priq dist path /\
+      path_globally_optimal g src dst path).
 
 Definition inv_popped_weak (g: LGraph) src prev priq dist dst u :=
   In dst (get_popped priq) ->
   (Znth dst dist = inf /\
-   forall m, In m (get_popped priq) ->
-             m <> u ->
-             careful_add 
-               (Znth m dist)
-               (Znth dst (Znth m (graph_to_mat g))) = inf)
+   forall p,
+     valid_path g p ->
+     path_ends g p src dst ->
+     ~ In u (epath_to_vpath g p) ->
+     path_cost g p = inf)
+    (* forall m, In m (get_popped priq) -> *)
+             (* m <> u -> *)
+             (* careful_add  *)
+               (* (Znth m dist) *)
+               (* (Znth dst (Znth m (graph_to_mat g))) = inf) *)
   \/
   (exists path,
-     path_correct g prev dist src dst path /\
-     (forall step, In_path g step path ->
-                   In step (get_popped priq) /\
-                   Znth step dist < inf) /\
-     path_globally_optimal g src dst path).
+      path_correct g prev dist src dst path /\
+      path_in_popped g priq dist path /\ (* why don't I need weak? *)
+      path_globally_optimal g src dst path).
 
 Definition inv_unpopped g src prev priq dist dst :=
   Znth dst priq < inf ->
