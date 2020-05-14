@@ -1111,7 +1111,14 @@ Proof.
               destruct (Z.eq_dec dst u).
               * subst dst. left.
                 split; trivial.
-                intros. admit. (* come back *)
+                intros.
+                assert (Znth u priq_contents = inf). {
+                  rewrite H8; trivial.
+                  rewrite get_popped_meaning in H18; trivial.
+                }
+                unfold inv_unseen in H34.
+                specialize (H34 H38).
+                admit. (* come back *)
               * apply get_popped_irrel_upd in H35; trivial.
                 2: { apply get_popped_range in H35. 
                      rewrite upd_Znth_Zlength in H35; lia. }
@@ -1502,7 +1509,7 @@ Proof.
                   
                   unfold EType, VType in *.
                   rewrite <- H54 in l.
-                  assert ( valid_path g (mom', [(mom', child')])). {
+                  assert (valid_path g (mom', [(mom', child')])). {
                     simpl. unfold strong_evalid.
                     red in H2. destruct H2 as [a [b [c d]]].
                     rewrite c, d. simpl. split3; trivial.
@@ -2299,43 +2306,16 @@ Proof.
                               destruct icases as [? | [? | ?]].
                               1: {
                                 (* i was popped *)
-                                exfalso.
-                                rewrite <- get_popped_meaning in H79.
-                                apply H46; trivial. 2: lia.
-                                intro.
-                                (* i was popped with infinite distance *)
-                                (* there's a contra in l *)
-                                assert (evalid g (mom', i)). {
-                                  apply vvalid2_evalid; trivial.
-                                }
-                                destruct (H22 _ H79).
-                                - destruct H82.
-                                  specialize (H83 (fst p2mom', snd p2mom' +:: (mom', i))).
-                                  assert (forall a, a < a -> False). {
-                                    intros. lia.
-                                  }
-                                  apply (H84 inf).
-                                  rewrite <- H83 at 1.
-                                  + rewrite path_cost_app_cons; trivial;
-                                      rewrite elabel_Znth_graph_to_mat, <- H73; trivial.
-                                    unfold VType in *. lia.
-                                  + apply valid_path_app_cons; trivial.
-                                    all: rewrite <- surjective_pairing;
-                                      trivial.
-                                    destruct H71; trivial.
-                                  + assert (fst p2mom' = src). {
-                                      destruct H71.
-                                      rewrite (surjective_pairing p2mom') in H71.
-                                      simpl in H71; trivial.
-                                    }
-                                    rewrite H85;
-                                    apply path_ends_app_cons; trivial.
-                                    rewrite <- H85 at 1.
-                                    rewrite <- surjective_pairing;
-                                      trivial.
-                                - destruct H82 as [p2i [? _]].
-                                  destruct H82 as [? [? [? [? ?]]]].
-                                  lia.
+                                rewrite <- get_popped_meaning in H79 by lia.
+                                destruct (Z.eq_dec (Znth i dist_contents') inf).
+                                - (* I was popped with non-infinite distance *)
+                                  exfalso.
+                                  (* new plan will get me outta here. *)
+                                  
+                                  admit.
+                                - (* I was popped with infinite distance *)
+                                  exfalso. 
+                                  apply H46; trivial.
                               }
                               
                               1: {
@@ -2400,43 +2380,16 @@ Proof.
                               destruct icases as [? | [? | ?]].
                               1: {
                                 (* i was popped *)
-                                exfalso.
-                                rewrite <- get_popped_meaning in H80.
-                                apply H46; trivial. 2: lia.
-                                intro.
-                                (* i was popped with infinite distance *)
-                                (* there's a contra in l *)
-                                assert (evalid g (mom', i)). {
-                                  apply vvalid2_evalid; trivial.
-                                }
-                                destruct (H22 _ H80).
-                                - destruct H83.
-                                  specialize (H84 (fst p2mom', snd p2mom' +:: (mom', i))).
-                                  assert (forall a, a < a -> False). {
-                                    intros. lia.
-                                  }
-                                  apply (H85 inf).
-                                  rewrite <- H84 at 1.
-                                  + rewrite path_cost_app_cons; trivial;
-                                      rewrite elabel_Znth_graph_to_mat, <- H73; trivial.
-                                    unfold VType in *. lia.
-                                  + apply valid_path_app_cons; trivial.
-                                    all: rewrite <- surjective_pairing;
-                                      trivial.
-                                    destruct H71; trivial.
-                                  + assert (fst p2mom' = src). {
-                                      destruct H71.
-                                      rewrite (surjective_pairing p2mom') in H71.
-                                      simpl in H71; trivial.
-                                    }
-                                    rewrite H86;
-                                    apply path_ends_app_cons; trivial.
-                                    rewrite <- H86 at 1.
-                                    rewrite <- surjective_pairing;
-                                      trivial.
-                                - destruct H83 as [p2i [? _]].
-                                  destruct H83 as [? [? [? [? ?]]]].
-                                  lia.
+                                rewrite <- get_popped_meaning in H80 by lia.
+                                destruct (Z.eq_dec (Znth i dist_contents') inf).
+                                - (* I was popped with non-infinite distance *)
+                                  exfalso.
+                                  (* new plan will get me outta here. *)
+                                  
+                                  admit.
+                                - (* I was popped with infinite distance *)
+                                  exfalso. 
+                                  apply H46; trivial.
                               }
                               1: {
                                 (* i was unseen *)
