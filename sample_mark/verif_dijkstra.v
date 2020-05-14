@@ -1155,9 +1155,16 @@ Proof.
                   rewrite get_popped_meaning in H18; trivial.
                 }
                 unfold inv_unseen in H34.
-                specialize (H34 H37).
+                specialize (H34 H38).
                 destruct H34 as [? [? ?]].
-                destruct (Z.eq_dec m u).
+                admit.
+                (* how to go from inv_unseen to
+                   popped-but-infinite?
+                 *)
+                (* H40 is promising, but we're not equipped
+                   to use it.
+                 *)
+                (* destruct (Z.eq_dec m u).
                 -- rewrite <- H8; trivial.
                    2: {
                      rewrite vvalid_range; trivial.
@@ -1170,12 +1177,16 @@ Proof.
                 -- apply H39.
                    rewrite <- get_popped_irrel_upd in H36; trivial.
                    apply get_popped_range in H36; rewrite upd_Znth_Zlength in H36; lia.
+                 *)
+
+                
               * apply get_popped_irrel_upd in H35; trivial.
                 2: { apply get_popped_range in H35. 
                      rewrite upd_Znth_Zlength in H35; lia. }
                 destruct (H4 H35); [left | right].
-                -- destruct H36; split; trivial.
-                   intros. destruct (Z.eq_dec m u).
+                -- trivial.
+                   (* destruct H36; split; trivial. *)
+(*                -- intros. destruct (Z.eq_dec m u).
                    ++ rewrite e, H19, careful_add_comm, careful_add_inf; trivial.
                       apply g2m_Znth2_range; trivial.
                       apply get_popped_range in H35; lia.
@@ -1183,9 +1194,10 @@ Proof.
                    ++ apply H37; trivial.
                       rewrite <- get_popped_irrel_upd in H38; trivial.
                       apply get_popped_range in H38;
-                        rewrite upd_Znth_Zlength in H38; lia.
+                        rewrite upd_Znth_Zlength in H38; lia.*)
                 -- destruct H36 as [p2dst [? [? ?]]].
                    exists p2dst. split3; trivial.
+                   unfold path_in_popped in *.
                    intros.
                    specialize (H37 _ H39).
                    destruct H37; split; trivial.
@@ -1416,7 +1428,7 @@ Proof.
                   + split; trivial.
                   + rewrite Forall_forall; intros.
                     simpl in H37. lia.
-                - intros. destruct H37.
+                - unfold path_in_popped. intros. destruct H37.
                   + simpl in H37.
                     rewrite H37, H34; split; trivial.
                   + destruct H37 as [? [? ?]].
@@ -1493,7 +1505,7 @@ Proof.
                           simpl.
                           rewrite <- H54, <- H55.
                           lia.
-              --- intros.
+              --- unfold path_in_popped. intros.
                   destruct H42 as [_ [? _]].
                   apply (in_path_app_cons _ _ _ src) in H46; trivial.
                   destruct H46.
@@ -1694,9 +1706,7 @@ Proof.
                 destruct (H66 H58).
                 1: {
                   destruct H67.
-                  assert ((path_cost g p1) = inf) by admit.
-                  (* how to get this... *)
-                  (* specialize (H68 p1 H54 H56). *)
+                  specialize (H68 p1 H54 H56).
                   unfold VType in *. lia.
                 }
 
@@ -1832,12 +1842,13 @@ Proof.
               destruct H33; [left | right].
               --- destruct H33; split; trivial.
                   intros.
-                  apply H36.
-                  rewrite <- get_popped_irrel_upd in H37; trivial.
+                  apply H36; trivial.
+(*                  rewrite <- get_popped_irrel_upd in H37; trivial.
                   apply get_popped_range in H37;
-                    rewrite upd_Znth_Zlength in H37; lia.
+                    rewrite upd_Znth_Zlength in H37; lia. *)
               --- destruct H33 as [? [? [? ?]]].
-              exists x. split3; trivial.
+                  exists x. split3; trivial.
+                  unfold path_in_popped.
               intros.
               specialize (H36 _ H38).
               destruct H33.
@@ -2154,8 +2165,9 @@ Proof.
                   assert (0 <= dst < i) by lia.
                   specialize (H61 H64 H62).
                   repeat rewrite upd_Znth_diff; try lia.
-                  destruct H61; [left | right]; trivial.
-                  +++ destruct H61; split; trivial.
+                  destruct H61; [left | right].
+                  +++ trivial.
+(*                  +++ destruct H61; split; trivial.
                       intros. destruct (Z.eq_dec m i).
                       ***
                         rewrite e, get_popped_meaning, upd_Znth_same in H66. lia. lia.
@@ -2167,6 +2179,7 @@ Proof.
                         1,4: apply get_popped_range in H66; trivial;
                           rewrite upd_Znth_Zlength in H66; lia.
                         1,3: lia. lia.
+ *)
                   +++ destruct H61 as [p2dst [? [? ?]]].
                       exists p2dst; split3; trivial.
                       *** destruct H61 as [? [? [? [? ?]]]].
@@ -2193,7 +2206,7 @@ Proof.
                           unfold VType in *.
                           rewrite upd_Znth_diff; try lia.
                           apply get_popped_range in H65; lia.
-                      *** intros.
+                      *** unfold path_in_popped. intros.
                           specialize (H65 _ H67).
                           destruct H65.
                           assert (step <> i). {
@@ -2422,7 +2435,9 @@ Proof.
                                   specialize (H23 _ H80 H79).
                                   destruct H23.
                                   + destruct H23.
-                                    rewrite H81; trivial. lia.
+                                    admit.
+                                    (* refinement coming *)
+                                    (* rewrite H23; trivial. lia. *)
                                   + destruct H23 as [p2i [? [? ?]]].
                                     destruct H23 as [? [? [? [? ?]]]].
                                     lia.
@@ -2500,7 +2515,9 @@ Proof.
                                   specialize (H23 _ H81 H80).
                                   destruct H23.
                                   + destruct H23.
-                                    rewrite H82; trivial. lia.
+                                    (* rewrite H82; trivial. lia. *)
+                                    admit.
+                                    (* refinement coming *)
                                   + destruct H23 as [p2i [? [? ?]]].
                                     destruct H23 as [? [? [? [? ?]]]].
                                     lia.
