@@ -328,51 +328,84 @@ Proof.
 Qed.
 
 
+Lemma upd_Znth_overwrite:
+  forall {A} (l : list A) i a b,
+    0 <= i < Zlength l ->
+    upd_Znth i (upd_Znth i l a) b = upd_Znth i l b.
+Proof.
+  intros.
+  rewrite upd_Znth_unfold by now rewrite upd_Znth_Zlength.
+  rewrite upd_Znth_Zlength; trivial.
+  repeat rewrite upd_Znth_unfold by trivial.
+  rewrite sublist0_app1.
+  2: rewrite Zlength_sublist; lia.
+  rewrite sublist_sublist00 by lia.
+  f_equal. f_equal.
+  rewrite app_assoc.
+  rewrite sublist_app2.
+  2: { rewrite Zlength_app, Zlength_sublist by lia.
+       unfold Zlength; simpl; lia. }
+  rewrite Zlength_app, Zlength_sublist by lia.
+  unfold Zlength at 1; simpl.
+  rewrite sublist_same; trivial; [lia|].
+  unfold Zlength at 2; simpl.
+  rewrite Zlength_sublist by lia.
+  lia.
+Qed.
+
 Lemma body_exch: semax_body Vprog Gprog f_exch exch_spec.
 Proof.
   start_function.
   unfold harray.
   forward.
-  rewrite Znth_map.
-  entailer!. trivial.
-  forward.
-  rewrite Znth_map.
-  entailer!. trivial.
-  (* Why is this goal here? *)
-  admit.
-  trivial.
-  forward.
-  rewrite Znth_map.
-  rewrite Znth_map.
-  entailer!. trivial. trivial.
-  forward; trivial.
-  forward; trivial.
-  rewrite Znth_map; auto.
-  rewrite Znth_map; auto.
-  entailer!.
-(*
-rewrite Zlength_upd_Znth in H3.
-rewrite Zlength_map in H3.
-*)
-rewrite Forall_Znth in H4.
-apply H4; clear H3 H4; auto.
-rewrite Zlength_upd_Znth.
-rewrite Zlength_map. trivial.
-assert (Heq: i = j \/ i <> j) by lia. destruct Heq.
-subst j. rewrite upd_Znth_same. 2: rewrite Zlength_map; auto.
-fold Znth.
-(* argh! *)
-admit.
-admit.
-(* back *)
-forward.
-forward.
-forward.
-unfold harray.
-entailer!.
-rewrite Znth_map; auto.
-replace (Zlength (exchange arr_contents (Z.to_nat i) (Z.to_nat j))) with (Zlength arr_contents).
-2: admit.
-repeat rewrite upd_Znth_map in *.
-admit.
+  - rewrite Znth_map; trivial.
+    entailer!.
+  - forward.
+    + rewrite Znth_map; trivial.
+      entailer!. 
+      (* Why is this goal here?
+         Absolutely no idea *)
+      admit.
+    + Opaque Znth.
+      forward.
+      1: repeat rewrite Znth_map; trivial; entailer!.
+      repeat rewrite Znth_map; trivial.
+      forward. forward.
+      * entailer!.
+        clear H3. (* it's useless info *)
+        destruct (Z.eq_dec i j).
+        -- subst j. rewrite upd_Znth_same.
+           2: rewrite Zlength_map; auto.
+           rewrite Znth_map; trivial.
+        -- rewrite upd_Znth_diff.  
+           2,3: rewrite Zlength_map; auto.
+           2: lia.
+           rewrite Znth_map; trivial.
+           simpl. (* and we're back at the old goal *)
+           admit.
+      * forward. forward. forward.
+        repeat rewrite upd_Znth_overwrite by
+            (repeat rewrite upd_Znth_Zlength; rewrite Zlength_map; trivial).
+        repeat rewrite upd_Znth_same by
+            (try rewrite upd_Znth_Zlength; rewrite Zlength_map; easy).
+        entailer!.
+        destruct (Z.eq_dec i j).
+        -- subst i.
+           repeat rewrite upd_Znth_same by
+               (try rewrite upd_Znth_Zlength; rewrite Zlength_map; easy).
+           rewrite upd_Znth_overwrite by
+               (repeat rewrite upd_Znth_Zlength; rewrite Zlength_map; trivial).
+           unfold harray.
+           entailer!.
+           (* does nothing: it can't 
+              read into exchange *)
+           unfold exchange.
+           (* oh wow, perhaps it would be good to
+              modify exchange to take Zs? *)
+           admit.
+        -- rewrite upd_Znth_diff; trivial.
+           2,3: rewrite Zlength_map; trivial.
+           2: lia.
+           rewrite Znth_map; trivial.
+           admit.
 Admitted.
