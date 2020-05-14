@@ -800,6 +800,44 @@ Proof.
       * apply vvalid2_evalid; trivial.
 Qed.
 
+Lemma range_split:
+  forall {low high a b},
+    low <= a < high ->
+    low <= b < high ->
+    low <= a < b \/ b <= a < high.
+Proof. lia. Qed.
+
+Lemma inv_popped_weak_strong_can_get_path:
+  forall (g: LGraph) src prev priq dist dst i u,
+    sound_dijk_graph g ->
+    vvalid g dst ->
+    0 <= i < SIZE ->
+    In dst (get_popped priq) ->
+    Znth dst dist < inf ->
+    (forall dst,
+      0 <= dst < i ->
+      inv_popped g src prev
+                 priq dist dst) ->
+    (forall dst,
+        i <= dst < SIZE ->
+        inv_popped_weak g src prev
+                        priq dist dst u) ->
+        (exists path : path,
+            path_correct g prev dist src dst path /\
+   (forall step : VType,
+    In_path g step path -> In step (get_popped priq) /\ Znth step dist < inf) /\
+   path_globally_optimal g src dst path).
+Proof.
+  intros.
+  apply vvalid_range in H0; trivial.
+  pose proof (range_split H0 H1).
+  destruct H6.
+  - specialize (H4 _ H6 H2).
+    destruct H4; [destruct H4; lia | trivial].
+  - specialize (H5 _ H6 H2).
+    destruct H5; [destruct H5; lia | trivial].
+Qed.
+
 (** PROOF BEGINS **)
 
 Lemma body_dijkstra: semax_body Vprog Gprog f_dijkstra dijkstra_spec.
@@ -2019,16 +2057,20 @@ Proof.
                    *)
                   intro Hc. intro.
 
-                  unfold inv_popped_weak in H23.
+                  (* unfold inv_popped_weak in H23. *)
                   assert (Htemp : i <= i < SIZE) by lia.
                   destruct (H23 _ Htemp H46); [lia|].
                   destruct H47 as [p2i [? [? ?]]].
 
                   unfold path_globally_optimal in H49.
                   (* dig out the cost to p2u *)
-                  admit.
-(*
-                  destruct (H22 _ H30); [lia|].
+
+                  assert (Ha: Znth u dist_contents' < inf) by lia.
+                  assert (Hb: vvalid g u). {
+                    apply vvalid_range; trivial; lia. }
+ 
+                  pose proof (inv_popped_weak_strong_can_get_path _ _ _ _ _ _ _ _ H2 Hb H19 H31 Ha H22 H23).
+                  
                   destruct H50 as [p2u [? [? ?]]].
 
                   specialize (H49 (fst p2u, snd p2u +:: (u,i))).
@@ -2069,7 +2111,6 @@ Proof.
                     destruct H53. simpl in H53; lia.
                   - apply vvalid2_evalid;
                       try apply vvalid_range; trivial.
- *)
                 }
                 
                 assert (0 <= i < Zlength (map Vint (map Int.repr dist_contents'))) by
@@ -2184,11 +2225,14 @@ Proof.
                         1: left; trivial.
                         right; split; trivial.
                         (* groan... hard to get u's path again... *)
-                        admit.
-                        (*
-                        destruct (H22 _ H30).
-                        1: lia.
+                        assert (Ha: Znth u dist_contents' < inf) by lia.
+                        assert (Hb: vvalid g u). {
+                          apply vvalid_range; trivial; lia. }
+                        
+                        pose proof (inv_popped_weak_strong_can_get_path _ _ _ _ _ _ _ _ H2 Hb H19 H31 Ha H22 H23).
+                  
                         destruct H62 as [p2u [? [? ?]]].
+                        
                         unfold VType in *.
                         rewrite upd_Znth_same by lia.
                         rewrite upd_Znth_same in H61; trivial; [|lia].
@@ -2245,8 +2289,11 @@ Proof.
                                  apply inrange_graph_cost_pos; trivial.
                             }
                             rename H68 into Hk.
-                            destruct (H22 _ H65).
-                            1: lia.
+
+                            assert (Hc: Znth mom' dist_contents' < inf) by lia.
+                            
+                            pose proof (inv_popped_weak_strong_can_get_path _ _ _ _ _ _ _ _ H2 H66 H19 H65 Hc H22 H23).
+                            
                             destruct H68 as [p2mom' [? [? ?]]].
                             destruct H68 as [? [? [? [? ?]]]].
 
@@ -2370,12 +2417,16 @@ Proof.
                                 (* i was popped *)
                                 rewrite <- get_popped_meaning in H79 by lia.
                                 destruct (Z.eq_dec (Znth i dist_contents') inf).
-                                - (* I was popped with non-infinite distance *)
-                                  exfalso.
-                                  (* new plan will get me outta here. *)
-                                  
-                                  admit.
-                                - (* i was popped with infinite distance *)
+                                - (* I was popped with infinite distance *)
+                                  assert (i <= i < SIZE) by lia.
+                                  specialize (H23 _ H80 H79).
+                                  destruct H23.
+                                  + destruct H23.
+                                    rewrite H81; trivial. lia.
+                                  + destruct H23 as [p2i [? [? ?]]].
+                                    destruct H23 as [? [? [? [? ?]]]].
+                                    lia.
+                                - (* i was popped with noninfinite distance *)
                                   exfalso. 
                                   apply H46; trivial.
                               }
@@ -2383,9 +2434,9 @@ Proof.
                               1: {
                                 (* i was unseen *)
                                 assert (i <= i < SIZE) by lia.
-                                   destruct (H26 _ H80 H79) as [? [? ?]].
-                                   specialize (H83 _ H65 n0).
-                                   lia.
+                                destruct (H27 _ H80 H79) as [? [? ?]].
+                                specialize (H83 _ H65 n0).
+                                lia.
                               }
 
 (* now we know that i was seen but unpopped. 
@@ -2405,8 +2456,8 @@ Proof.
                                 assert (i <= i < SIZE) by lia.
                                 assert (0 <= mom' < SIZE) by
                                     (apply get_popped_range in H65; lia).
-                                destruct (H24 _ H80 H79).
-                                - rewrite H82 at 1. rewrite H27.
+                                destruct (H25 _ H80 H79).
+                                - rewrite H82 at 1. rewrite H28.
                                   apply (Forall_Znth _ _ mom') in H34.
                                   2: lia.  
                                   simpl in H34.
@@ -2444,30 +2495,35 @@ Proof.
                                 (* i was popped *)
                                 rewrite <- get_popped_meaning in H80 by lia.
                                 destruct (Z.eq_dec (Znth i dist_contents') inf).
-                                - (* I was popped with non-infinite distance *)
-                                  exfalso.
-                                  (* new plan will get me outta here. *)
-                                  
-                                  admit.
                                 - (* I was popped with infinite distance *)
+                                  assert (i <= i < SIZE) by lia.
+                                  specialize (H23 _ H81 H80).
+                                  destruct H23.
+                                  + destruct H23.
+                                    rewrite H82; trivial. lia.
+                                  + destruct H23 as [p2i [? [? ?]]].
+                                    destruct H23 as [? [? [? [? ?]]]].
+                                    lia.
+                                - (* i was popped with noninfinite distance *)
                                   exfalso. 
                                   apply H46; trivial.
                               }
+
                               1: {
                                 (* i was unseen *)
                                 assert (i <= i < SIZE) by lia.
-                                   destruct (H26 _ H81 H80) as [? [? ?]].
+                                   destruct (H27 _ H81 H80) as [? [? ?]].
                                    specialize (H84 _ H65 H79).
                                    rewrite H84. lia.
                               }
                               assert (i <= i < SIZE) by lia.
-                              destruct (H24 i H81 H80).
+                              destruct (H25 i H81 H80).
                               1: subst i; exfalso; lia.
                                 destruct H82 as [_ [? [? [? [? [? ?]]]]]].
                               apply Z.lt_le_incl.
                               apply Z.lt_le_trans with (m:=Znth i dist_contents').
                               1: lia.
-                              apply H87; trivial. *)
+                              apply H87; trivial. 
                     +++ assert (0 <= dst < i) by lia.
                         (* We will proceed using the
                            old best-known path for dst *)
@@ -2481,18 +2537,23 @@ Proof.
                         unfold VType in *.
                         remember (Znth dst prev_contents') as mom. right.
                         split; trivial.
-                        admit.
-                        (*
-                        destruct (H22 _ H63).
-                        1: { exfalso.
-                             assert (0 <= Znth dst (Znth mom (graph_to_mat g))). {
-                               apply g2m_Znth2_range; trivial.
-                               lia.
-                               apply get_popped_range in H63; lia.
-                             }
-                             unfold VType in *.
-                             lia.
+
+                        assert (Ha: Znth mom dist_contents' < inf). {
+                          assert (0 <= Znth dst (Znth mom (graph_to_mat g))). {
+                            apply g2m_Znth2_range; trivial.
+                            lia.
+                            apply get_popped_range in H63; lia.
+                          }
+                          unfold VType in *.
+                          lia.
                         }
+                        assert (Hb: vvalid g mom). {
+                          apply vvalid_range; trivial.
+                          apply get_popped_range in H63; lia.
+                        }
+ 
+                        pose proof (inv_popped_weak_strong_can_get_path _ _ _ _ _ _ _ _ H2 Hb H19 H63 Ha H22 H23).
+
                         destruct H68 as [p2mom [? [? ?]]].
                         rewrite upd_Znth_diff; trivial; [|lia..].
                         rewrite <- Heqmom.
@@ -2526,7 +2587,7 @@ Proof.
                             apply H67; trivial.
                             1,5: apply get_popped_range in H73.
                             2: rewrite upd_Znth_Zlength in H73.
-                            all: lia. *)
+                            all: lia. 
                 --- unfold inv_unpopped_weak. intros.
                     assert (i <= dst < SIZE) by lia.
                     destruct (Z.eq_dec dst i).
@@ -2694,15 +2755,16 @@ Proof.
                       apply inrange_graph_cost_pos; trivial.
                     }
                     (* need to blast for mom *)
-                    admit.
-                    (*
-                    destruct (H22 _ H67).
-                    1: { destruct H68. rewrite H68.
-                         rewrite careful_add_comm.
-                         rewrite careful_add_inf. lia.
-                         apply g2m_Znth2_range; trivial.
-                         lia.
+                    
+                    assert (Hb: vvalid g mom'). {
+                      apply vvalid_range; trivial.
+                      apply get_popped_range in H67; trivial; lia.
                     }
+                    
+                    pose proof (inv_popped_weak_strong_can_get_path _ _ _ _ _ _ _ _ H2 Hb H19 H67 e H22 H23).
+
+
+                    
                     destruct H68 as [p2mom' [? [? ?]]].
                     assert (Hrem := H68).
 
@@ -2825,8 +2887,8 @@ Thus dist[mom'] + (mom',i) <= path_cost p'.
  *)
                           assert (0 <= mom' < SIZE) by
                               (apply get_popped_range in H67; lia).
-                          destruct (H24 _ H59 H58).
-                          ++++ rewrite H85 at 1. rewrite H27.
+                          destruct (H25 _ H59 H58).
+                          ++++ rewrite H85 at 1. rewrite H28.
                                apply (Forall_Znth _ _ mom') in H34.
                                2: lia.  
                                simpl in H34.
@@ -2847,8 +2909,7 @@ Thus dist[mom'] + (mom',i) <= path_cost p'.
                       destruct H68 as [? [? [? [? ?]]]].
                       rewrite in_path_eq_epath_to_vpath; trivial.
                       destruct H72.
-                      apply pfoot_in in H76. rewrite H71 in *. trivial.
-                   *)   
+                      apply pfoot_in in H76. rewrite H71 in *. trivial.           
                 --- intros. destruct (Z.eq_dec dst i).
                     +++ subst dst. lia.
                     +++ apply H25; lia.
@@ -2949,22 +3010,23 @@ Thus dist[mom'] + (mom',i) <= path_cost p'.
                    destruct H56 as [? [? [? [? [? [? ?]]]]]].
                    unfold VType in *.
                    remember (Znth i prev_contents') as mom.
-                   
-                   admit.
 
-                   (* destruct (H23 _ H55).
-                   1: { exfalso.
-                        assert (0 <= Znth i (Znth mom (graph_to_mat g))). {
-                          apply g2m_Znth2_range; trivial.
-                          apply get_popped_range in H58; lia.
+                   assert (Ha: Znth mom dist_contents' < inf). {
+                     assert (0 <= Znth i (Znth mom (graph_to_mat g))). {
+                            apply g2m_Znth2_range; trivial.
+                            apply get_popped_range in H58; lia.
+                          }
+                          unfold VType in *.
+                          lia.
                         }
-                        unfold VType in *.
-                        
-                        
-                        lia.
+                   assert (Hb: vvalid g mom). {
+                     apply vvalid_range; trivial.
+                     apply get_popped_range in H58; lia.
                    }
-                   destruct H63 as [p2mom [? [? ?]]].
+ 
+                   pose proof (inv_popped_weak_strong_can_get_path _ _ _ _ _ _ _ _ H2 Hb H19 H58 Ha H22 H23).
                    
+                   destruct H63 as [p2mom [? [? ?]]].
                    
                    right. split.
                    1: { assert (In src (get_popped priq_contents')). {
@@ -2998,28 +3060,35 @@ Thus dist[mom'] + (mom',i) <= path_cost p'.
                             rewrite <- elabel_Znth_graph_to_mat; trivial.
                             apply inrange_graph_cost_pos; trivial.
                        }
-                       destruct (H22 _ H66).
-                       1: { destruct H67.
-                            rewrite H67.
-                            rewrite careful_add_comm,
-                            careful_add_inf; lia.
+
+                       unfold VType in *.
+                       assert (Hc: Znth mom' dist_contents' < inf). {
+                         assert (0 <= mom' < Zlength dist_contents'). {
+                           apply get_popped_range in H66; lia. }
+
+                         apply (Forall_Znth _ _ _ H67) in Hinrangedist.
+                         simpl in Hinrangedist.
+                         lia.
                        }
-                       destruct H67 as [p2mom' [? [? ?]]].
+                       assert (vvalid g mom'). {
+                         apply vvalid_range; trivial.
+                         apply get_popped_range in H66; trivial. lia.
+                       }
+
+                       pose proof (inv_popped_weak_strong_can_get_path _ _ _ _ _ _ _ _ H2 H67 H19 H66 Hc H22 H23).
+                            
+                       destruct H68 as [p2mom' [? [? ?]]].
                        assert (In_path g mom' p2mom'). {
-                         destruct H67 as [_ [[_ ?] _]].
-                         apply pfoot_in in H67.
+                         destruct H68 as [_ [[_ ?] _]].
+                         apply pfoot_in in H68.
                          trivial.
                        }
 
-                       assert (vvalid g mom'). {
-                         destruct H67.
-                         apply (valid_path_valid g p2mom'); trivial.
-                       }
 
                        destruct (zlt (Znth mom' dist_contents' + Znth i (Znth mom' (graph_to_mat g))) inf).
                        2: {
                          unfold VType in *.
-                         destruct H67 as [? [? [? [? ?]]]].
+                         destruct H68 as [? [? [? [? ?]]]].
                          destruct (zlt (Znth i (Znth mom' (graph_to_mat g))) inf).
                          - rewrite careful_add_dirty; trivial;
                              lia.
@@ -3032,7 +3101,7 @@ Thus dist[mom'] + (mom',i) <= path_cost p'.
                              rewrite if_true_bool. lia.
                              rewrite Z.leb_le. lia.
                              rewrite orb_false_iff; split; rewrite Z.ltb_nlt.
-                             pose proof (path_cost_pos g p2mom' H2 H67 H1).
+                             pose proof (path_cost_pos g p2mom' H2 H68 H1).
                              unfold VType in *.
                              lia. lia. 
                              rewrite Z.eqb_neq. lia.
@@ -3044,7 +3113,7 @@ Thus dist[mom'] + (mom',i) <= path_cost p'.
                        
                        assert (careful_add (Znth mom' dist_contents') (Znth i (Znth mom' (graph_to_mat g))) = Znth mom' dist_contents' + Znth i (Znth mom' (graph_to_mat g))). {
                          rewrite careful_add_clean; trivial.
-                         - destruct H67 as [? [? [? [? ?]]]].
+                         - destruct H68 as [? [? [? [? ?]]]].
                            rewrite H75;
                            apply path_cost_pos; trivial.
                          - rewrite <- elabel_Znth_graph_to_mat; trivial.
@@ -3053,13 +3122,13 @@ Thus dist[mom'] + (mom',i) <= path_cost p'.
                        }
                        assert (mom' <> i). {
                          intro.
-                         specialize (H68 _ H70).
+                         specialize (H69 _ H71).
                          subst mom'. 
-                         rewrite get_popped_meaning in H68; lia. 
+                         rewrite get_popped_meaning in H69; lia. 
                        }
                               
                        assert (In mom' (get_popped priq_contents')). {
-                         specialize (H68 _ H70). trivial.
+                         specialize (H69 _ H71). trivial.
                        }
                        assert (vvalid g i). {
                          destruct H2 as [? _].
@@ -3072,17 +3141,16 @@ Thus dist[mom'] + (mom',i) <= path_cost p'.
                        ***
 
                          apply in_path_eq_epath_to_vpath in i0.
-                         2: destruct H67; trivial.
+                         2: destruct H68; trivial.
 
                          destruct (Z.eq_dec mom' u).
                          1: { subst mom'. rewrite H15.
                               rewrite careful_add_inf; trivial.
                               - lia.
-                              - destruct (H22 _ H75).
-                                1: lia.
-                                destruct H77 as [p2u [[? [? [? [? ?]]]] _]].
-                                rewrite H80. 
-                                apply path_cost_pos; destruct H63; trivial.
+                              - assert (0 <= u < Zlength dist_contents') by lia.
+                                apply (Forall_Znth _ _ _ H77) in Hinrangedist.
+                                simpl in Hinrangedist.
+                                lia.
                          }
 
                          destruct H63 as [? [? [? [? ?]]]].
@@ -3090,8 +3158,8 @@ Thus dist[mom'] + (mom',i) <= path_cost p'.
                          rewrite H73.
                          assert (0 <= mom' < SIZE) by
                              (apply get_popped_range in H75; lia).
-                         destruct (H24 _ H55 H54).
-                         ---- rewrite H82 at 1. rewrite H27.
+                         destruct (H25 _ H55 H54).
+                         ---- rewrite H82 at 1. rewrite H28.
                               apply (Forall_Znth _ _ mom') in H34.
                               2: lia.  
                               simpl in H34.
@@ -3105,10 +3173,10 @@ Thus dist[mom'] + (mom',i) <= path_cost p'.
                        *** apply H62; trivial.
                            intro. apply n0.
                            rewrite in_path_eq_epath_to_vpath.
-                           destruct H67 as [_ [[? ?] _]]. 
+                           destruct H68 as [_ [[? ?] _]]. 
                            apply pfoot_in in H78. rewrite H77 in *; trivial.
-                           destruct H67; trivial.
-                      *)     
+                           destruct H68; trivial.
+                           
                --- apply H24; lia.
             ** destruct (Z.eq_dec dst i).
                --- lia. 
