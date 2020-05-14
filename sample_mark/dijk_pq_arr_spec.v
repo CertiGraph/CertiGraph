@@ -30,15 +30,32 @@ Definition path_globally_optimal (g: LGraph) src dst p : Prop :=
 Definition inv_popped (g: LGraph) src prev priq dist dst :=
   In dst (get_popped priq) ->
   (Znth dst dist = inf /\
-   forall p, valid_path g p ->
-             path_ends g p src dst ->
-             path_cost g p = inf)
-   \/
+   forall m, In m (get_popped priq) ->
+             careful_add 
+               (Znth m dist)
+               (Znth dst (Znth m (graph_to_mat g))) = inf)
+  \/
   (exists path,
      path_correct g prev dist src dst path /\
      (forall step, In_path g step path ->
                    In step (get_popped priq) /\
-                   Znth step dist < inf) /\ (* added *)
+                   Znth step dist < inf) /\
+     path_globally_optimal g src dst path).
+
+Definition inv_popped_weak (g: LGraph) src prev priq dist dst u :=
+  In dst (get_popped priq) ->
+  (Znth dst dist = inf /\
+   forall m, In m (get_popped priq) ->
+             m <> u ->
+             careful_add 
+               (Znth m dist)
+               (Znth dst (Znth m (graph_to_mat g))) = inf)
+  \/
+  (exists path,
+     path_correct g prev dist src dst path /\
+     (forall step, In_path g step path ->
+                   In step (get_popped priq) /\
+                   Znth step dist < inf) /\
      path_globally_optimal g src dst path).
 
 Definition inv_unpopped g src prev priq dist dst :=
@@ -83,11 +100,11 @@ Definition inv_unseen_weak g prev priq dist dst u :=
   Znth dst priq = inf ->
   Znth dst dist = inf /\
   Znth dst prev = inf /\
-  forall mom, In mom (get_popped priq) ->
-              mom <> u ->
-              careful_add
-                (Znth mom dist)
-                (Znth dst (Znth mom (graph_to_mat g))) = inf.
+  forall m, In m (get_popped priq) ->
+            m <> u ->
+            careful_add
+              (Znth m dist)
+              (Znth dst (Znth m (graph_to_mat g))) = inf.
                                                            
 Definition dijkstra_correct (g: LGraph) (src : VType) (prev priq dist: list VType) : Prop :=
   forall dst,
