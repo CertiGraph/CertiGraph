@@ -2191,51 +2191,35 @@ Proof.
                           }
                           subst m.
                           rewrite upd_Znth_same; trivial.
+                          2: lia.
           (* dist[i] + (i,dst) = inf.
              now show that the improvment
-             (dist[u] + (u,i) < dist[i]
+             (dist[u] + (u,i) < dist[i])
              does not make it better than inf. 
            *)
-                          admit.
-                          lia.
-                      
-
-(*
-specialize (H63 _ H64).
-destruct icases as [icase | [icase | icase]].
- ++++ (* i was popped *)
-   rewrite <- get_popped_meaning in icase by lia.
-   destruct (H22 _ icase).
-   **** (* i was popped at infinite cost *)
-     destruct H65.
-     assert (vvalid g u). {
-       apply vvalid_range; trivial; lia.
-     }
-     specialize (H66 _ H67).
-     rewrite H65 in H45.
-     rewrite careful_add_clean in H66; trivial.
-     2,3: lia. lia.
-   **** (* i was popped at non-inf cost *)
-     exfalso. apply H46; trivial.
-     destruct H65 as [p2i [? _]]. 
-     destruct H65 as [? [? [? [? ?]]]]. lia.
- ++++ (* i was unseen *)
-   assert (i <= i < SIZE) by lia.
-   destruct (H26 _ H65 icase).
-   admit.
- (* let's go see what I do downstairs.
-             I must be reestablishing 
-             i unseen_strong 
-             for i down there 
-           *)
- ++++ (* i was unpopped *)
-   assert (i <= i < SIZE) by lia.
-   destruct (H24 _ H65 icase).
-   (* again, let's see what I was doing downstairs *)
-   admit.
-   admit.
- ++++ lia. *)
-      
+                          destruct (in_dec
+                            (ZIndexed.eq) i
+                            (get_popped priq_contents')).
+                          ---- (* i was popped *)
+                            destruct (H22 _ i0).
+                            ++++ (* i was popped at infinite cost *)
+                              destruct H65.
+                              assert (vvalid g u). {
+                                apply vvalid_range; trivial; lia.
+                              }
+                              specialize (H66 _ H67).
+                              rewrite H65 in H45.
+                              rewrite careful_add_clean in H66; trivial; lia.
+                            ++++ (* i was popped at non-inf cost *)
+                              exfalso. apply H46; trivial.
+                              destruct H65 as [p2i [? _]]. 
+                              destruct H65 as [? [? [? [? ?]]]]. lia.
+                          ---- (* i was unpopped *)
+                            admit.
+                            (* highly customized
+                               fact coming up...
+                             *)
+                          
                       *** destruct H60 as [p2dst [? [? ?]]].
                           exists p2dst. split3; trivial.
                           ---- 
