@@ -800,6 +800,7 @@ Proof.
       * apply vvalid2_evalid; trivial.
 Qed.
 
+(*
 Lemma range_split:
   forall {low high a b},
     low <= a < high ->
@@ -837,6 +838,7 @@ Proof.
   - specialize (H5 _ H6 H2).
     destruct H5; [destruct H5; lia | trivial].
 Qed.
+*)
 
 (** PROOF BEGINS **)
 
@@ -1029,13 +1031,7 @@ Proof.
           rewrite Znth_list_repeat_inrange in H17; lia.
         }
         subst dst. left; trivial.
-      * split3; trivial.
-        assert (0 <= dst < SIZE) by
-            (rewrite <- (vvalid_range g dst); trivial).
-        rewrite upd_Znth_diff; try lia.
-        rewrite Znth_list_repeat_inrange. trivial. lia.
-        intro. subst dst. rewrite upd_Znth_same in H17.
-        inversion H17. lia.
+      * split; trivial.
         inversion 1.
     + (* Now the body of the while loop begins. *)
       Intros prev_contents priq_contents dist_contents.
@@ -1156,12 +1152,13 @@ Proof.
                 }
                 unfold inv_unseen in H34.
                 specialize (H34 H37).
-                destruct H34 as [? [? ?]].
+                destruct H34.
+                assert (H39: True) by trivial.
                 destruct (in_dec
                             (ZIndexed.eq)
                             m
                             (get_popped priq_contents)).
-                -- apply H39; trivial.
+                -- apply H38; trivial.
                 -- (* maybe I need a new invariant? 
                       basically we know that
                       once an infinite value has been 
@@ -1255,8 +1252,8 @@ Proof.
               rewrite upd_Znth_diff in H35; trivial.
               2: apply vvalid_range in H15; trivial; lia.
               specialize (H34 H35).
-              destruct H34 as [? [? ?]].
-              split3; trivial.
+              destruct H34.
+              split; trivial.
               intros.
               destruct (Z.eq_dec m u).
               1: { rewrite e, H19, careful_add_comm, careful_add_inf; trivial.
@@ -1264,10 +1261,10 @@ Proof.
                    apply vvalid_range in H15; trivial; lia.
                    lia.
               }
-              rewrite <- get_popped_irrel_upd in H38; trivial.
-              apply H37; trivial.
-              apply get_popped_range in H38.
-              rewrite upd_Znth_Zlength in H38; trivial.
+              rewrite <- get_popped_irrel_upd in H37; trivial.
+              apply H36; trivial.
+              apply get_popped_range in H37.
+              rewrite upd_Znth_Zlength in H37; trivial.
         }
         
          (* 
@@ -1334,14 +1331,14 @@ Proof.
                       u has been taken into account *)
                    forall dst,
                      0 <= dst < i ->
-                     inv_unseen g prev_contents'
+                     inv_unseen g
                                 priq_contents' dist_contents' dst;
                      (* and a weaker version of inv_unseen is
                         true for those vertices that the
                         for loop has not yet scanned *)
                      forall dst,
                        i <= dst < SIZE ->
-                       inv_unseen_weak g prev_contents'
+                       inv_unseen_weak g 
                                        priq_contents' dist_contents' dst u;
                      (* further, some useful facts about src... *)
                        Znth src dist_contents' = 0;
@@ -1833,15 +1830,15 @@ Proof.
                     rewrite <- Znth_0_hd; [apply Znth_In|]; lia.
                   - destruct (H4 _ H74) as [_ [_ ?]].
                     specialize (H82 H11).
-                    destruct H82 as [? [? ?]].
-                    specialize (H84 _ H58).
-                    rewrite careful_add_clean in H84; trivial; try lia.
+                    destruct H82.
+                    specialize (H83 _ H58).
+                    rewrite careful_add_clean in H83; trivial; try lia.
                     2: {
                       apply (Forall_Znth _ _ mom') in H10.
                       simpl in H10. lia. apply vvalid_range in H65; trivial; lia.
                     }
                     unfold VType in *.
-                    rewrite H84. lia.
+                    rewrite H83. lia.
                 }
                 unfold VType in *. lia.
             ** (* Here we must show that the
@@ -1932,14 +1929,14 @@ Proof.
              destruct (H4 dst H15) as [_ [_ ?]].
              unfold inv_unseen in H33.
              specialize (H33 H32).
-             destruct H33 as [? [? ?]].
-             split3; trivial.
+             destruct H33.
+             split; trivial.
              intros.
-             rewrite <- get_popped_irrel_upd in H36; trivial.
-             2: { apply get_popped_range in H36.
-                  rewrite upd_Znth_Zlength in H36; trivial.
+             rewrite <- get_popped_irrel_upd in H35; trivial.
+             2: { apply get_popped_range in H35.
+                  rewrite upd_Znth_Zlength in H35; trivial.
              }
-             apply H35; trivial.
+             apply H34; trivial.
           ++ destruct (Z.eq_dec src u).
              1: subst src; rewrite upd_Znth_same; lia.
              rewrite upd_Znth_diff; lia.
@@ -2242,11 +2239,9 @@ Proof.
                 to the stronger
                 *)
                         unfold inv_unpopped; intros.
-                        unfold inv_popped_weak in H23.
                         destruct (Z.eq_dec i src).
                         1: left; trivial.
                         right; split; trivial.
-                        (* groan... hard to get u's path again... *)
                         
                         destruct (H22 _ H30).
                         1: lia.
@@ -2440,7 +2435,8 @@ Proof.
                                   assert (i <= i < SIZE) by lia.
                                   destruct (H22 _ H79).
                                   + destruct H81.
-                                    admit.
+                                    rewrite H82; trivial;
+                                      lia.
                                   + destruct H81 as [p2i [? [? ?]]].
                                     destruct H81 as [? [? [? [? ?]]]].
                                     lia.
@@ -2452,8 +2448,8 @@ Proof.
                               1: {
                                 (* i was unseen *)
                                 assert (i <= i < SIZE) by lia.
-                                destruct (H26 _ H80 H79) as [? [? ?]].
-                                specialize (H83 _ H65 n0).
+                                destruct (H26 _ H80 H79).
+                                specialize (H82 _ H65 n0).
                                 lia.
                               }
 
@@ -2529,9 +2525,9 @@ Proof.
                               1: {
                                 (* i was unseen *)
                                 assert (i <= i < SIZE) by lia.
-                                   destruct (H26 _ H81 H80) as [? [? ?]].
-                                   specialize (H84 _ H65 H79).
-                                   rewrite H84. lia.
+                                destruct (H26 _ H81 H80).
+                                specialize (H83 _ H65 H79).
+                                rewrite H83. lia.
                               }
                               assert (i <= i < SIZE) by lia.
                               destruct (H24 i H81 H80).
@@ -2656,43 +2652,42 @@ Proof.
                     pose proof (H25 dst H63).
                     rewrite upd_Znth_diff in H61; try lia.
                     rewrite upd_Znth_diff; try lia.
-                    rewrite upd_Znth_diff; try lia.
                     unfold inv_unseen in H64.
                     specialize (H64 H61).
-                    destruct H64 as [? [? ?]].
-                    split3; trivial.
+                    destruct H64.
+                    split; trivial.
                     intros.
                     destruct (Z.eq_dec m i).
                     1: { exfalso. subst m.
-                         rewrite get_popped_meaning in H67.
-                         rewrite upd_Znth_same in H67.
+                         rewrite get_popped_meaning in H66.
+                         rewrite upd_Znth_same in H66.
                          lia. lia.
                          rewrite upd_Znth_Zlength; lia.
                     }
                     rewrite upd_Znth_diff; trivial.
-                    rewrite <- get_popped_irrel_upd in H67.
-                    apply H66; trivial.
-                    1,4: apply get_popped_range in H67; rewrite upd_Znth_Zlength in H67.
+                    rewrite <- get_popped_irrel_upd in H66.
+                    apply H65; trivial.
+                    1,4: apply get_popped_range in H66; rewrite upd_Znth_Zlength in H66.
                     all: lia. 
                 --- unfold inv_unseen_weak; intros.
                     assert (dst <> i) by lia.
                     rewrite upd_Znth_diff in H61 by lia.
                     repeat rewrite upd_Znth_diff by lia.
                     assert (i <= dst < SIZE) by lia.
-                    destruct (H26 _ H63 H61) as [? [? ?]].
-                    split3; trivial.
+                    destruct (H26 _ H63 H61). 
+                    split; trivial.
                     intros.
                     destruct (Z.eq_dec m i).
                     1: { exfalso. subst m.
-                         rewrite get_popped_meaning in H67.
-                         rewrite upd_Znth_same in H67.
+                         rewrite get_popped_meaning in H66.
+                         rewrite upd_Znth_same in H66.
                          lia. lia.
                          rewrite upd_Znth_Zlength; lia.
                     }
                     rewrite upd_Znth_diff; trivial.
-                    rewrite <- get_popped_irrel_upd in H67.
-                    apply H66; trivial.
-                    1,4: apply get_popped_range in H67; rewrite upd_Znth_Zlength in H67.
+                    rewrite <- get_popped_irrel_upd in H66.
+                    apply H65; trivial.
+                    1,4: apply get_popped_range in H66; rewrite upd_Znth_Zlength in H66.
                     all: lia. 
                 --- rewrite upd_Znth_diff; try lia.
                     intro. subst src; lia.
@@ -2720,7 +2715,7 @@ Proof.
                 Exists prev_contents' priq_contents' dist_contents'.
                 entailer!.
                 remember (find priq_contents (fold_right Z.min (hd 0 priq_contents) priq_contents) 0) as u.
-                split3; [| |split3; [| | split]]; trivial.
+                split3; [| |split].
                 --- intros.
                     (* Show that moving one more step
                        still preserves the for loop invariant *)
@@ -2929,11 +2924,11 @@ Thus dist[mom'] + (mom',i) <= path_cost p'.
                     2: apply H25; lia.
                     subst dst.
                     assert (i <= i < SIZE) by lia.
-                    destruct (H26 _ H59 H58) as [? [? ?]].
-                    split3; trivial.
+                    destruct (H26 _ H59 H58).
+                    split; trivial.
                     intros.
                     destruct (Z.eq_dec m u).
-                    2: apply H62; trivial.
+                    2: apply H61; trivial.
                     subst m.
                     rewrite H60 in H45.
                     assert (0 <= u < SIZE) by lia.
@@ -2942,7 +2937,7 @@ Thus dist[mom'] + (mom',i) <= path_cost p'.
                     }
                     destruct (Znth_dist_cases u dist_contents'); trivial.
                     1: lia.
-                    all: rename H66 into e.
+                    all: rename H65 into e.
                     1: { rewrite e.
                          rewrite careful_add_comm,
                          careful_add_inf; trivial.
@@ -2959,7 +2954,7 @@ Thus dist[mom'] + (mom',i) <= path_cost p'.
                     assert (Znth i (Znth u (graph_to_mat g)) = inf). {
                       assert (Int.max_signed / SIZE < inf) by (rewrite <- inf_eq; now compute). 
                       unfold inrange_graph in H1;
-                        destruct (H1 _ _ H19 H64); trivial.
+                        destruct (H1 _ _ H19 H63); trivial.
                       replace 8 with SIZE in H40 by lia.
                       rewrite inf_eq2 in H40.
                       rewrite Int.signed_repr in H40.
@@ -2973,14 +2968,11 @@ Thus dist[mom'] + (mom',i) <= path_cost p'.
                       2: rewrite <- inf_eq; rep_lia.
                       lia.
                     }
-                    rewrite H66.
+                    rewrite H65.
                     rewrite careful_add_inf; trivial; lia.
                 --- intros.
                     assert (i <= dst < SIZE) by lia.
                     apply H26; trivial.
-                --- admit.
-                --- admit.
-                  
           ++  (* i was not a neighbor of u.
                  prove the for loop's invariant holds *)
             replace 8 with SIZE in H40 by lia.
@@ -3006,7 +2998,7 @@ Thus dist[mom'] + (mom',i) <= path_cost p'.
               2: rewrite <- inf_eq; rep_lia.
               lia.
             }
-            split3; [| |split3; [| |split]]; intros.
+            split3; [| |split]; intros.
             ** destruct (Z.eq_dec dst i).
                --- subst dst. 
                    (* Will need to use the second half of the 
@@ -3198,11 +3190,11 @@ Thus dist[mom'] + (mom',i) <= path_cost p'.
                subst dst.
                assert (i <= i < SIZE) by lia.
                unfold inv_unseen; intros.
-               destruct (H26 _ H54 H55) as [? [? ?]].
-               split3; trivial.
+               destruct (H26 _ H54 H55).
+               split; trivial.
                intros.
                destruct (Z.eq_dec m u).
-               2: apply H58; trivial.
+               2: apply H57; trivial.
                subst m. rewrite H15.
                rewrite careful_add_inf; trivial.
                unfold inrange_dist in Hinrangedist.
@@ -3210,8 +3202,6 @@ Thus dist[mom'] + (mom',i) <= path_cost p'.
                apply Hinrangedist.
                apply Znth_In. lia.
             ** apply H26; lia.
-            ** admit.
-            ** admit. 
         -- (* From the for loop's invariant, 
               prove the while loop's invariant. *)
           Intros prev_contents' priq_contents' dist_contents'.
