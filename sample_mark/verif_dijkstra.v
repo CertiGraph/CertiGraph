@@ -1302,17 +1302,16 @@ Proof.
            EX priq_contents' : list Z,
            EX dist_contents' : list Z,
            PROP (
-               (* inv_popped is restored for those vertices
-                 that the for loop has scanned and repaired *)
+               (* inv_popped is not affected *)
                forall dst,
-                 0 <= dst < i ->
                  inv_popped g src prev_contents'
-                                      priq_contents' dist_contents' dst;
+                            priq_contents' dist_contents' dst;
+                 True;
                  (* a weaker version is true for the unscanned vertices *)
-               forall dst,
-                 i <= dst < SIZE ->
-                 inv_popped_weak g src prev_contents'
-                            priq_contents' dist_contents' dst u;
+               (* forall dst, *)
+                 (* i <= dst < SIZE -> *)
+                 (* inv_popped_weak g src prev_contents' *)
+                            (* priq_contents' dist_contents' dst u; *)
                  
                  (* inv_unpopped is restored for those vertices
                  that the for loop has scanned and repaired *)
@@ -1397,14 +1396,14 @@ Proof.
           split3; [| | split3; [| |split3]]; trivial. 
           ++ (* We must show inv_popped for all
                 dst that are in range. *)
-            unfold inv_popped_weak. intros.
-            rename H15 into Hl. rename H32 into H15.
+            unfold inv_popped. intros.
+            (* rename H15 into Hl. rename H32 into H15. *)
             pose proof (get_popped_range _ _ H15).
             rewrite upd_Znth_Zlength in H32 by lia.
             rewrite H12 in H32.
             rewrite <- (vvalid_range g) in H32.
             destruct (H4 dst H32) as [? [? ?]].
-            (* unfold inv_popped in H33. *)
+            unfold inv_popped in H33.
             (* now we must distinguish between those
                  vertices that were already popped
                  and u, which was just popped
@@ -1454,7 +1453,7 @@ Proof.
 
               destruct (get_popped_path H2 H4 H12 H37) as [p2mom [? [? ?]]].
               1: { assert (0 <= Znth u (Znth mom (graph_to_mat g))). {
-                     apply g2m_Znth2_range; trivial.
+                     apply g2m_Znth2_range; trivial. lia.
                      apply get_popped_range in H37; lia.
                    }
                    unfold VType in *. 
@@ -1717,7 +1716,8 @@ Proof.
                 destruct (H66 H58).
                 1: {
                   destruct H67.
-                  admit.
+                  assert ((path_cost g p1) = inf) by admit.
+                  unfold VType in *. lia.
                   (* specialize (H68 p1 H54 H56). *)
                   (* unfold VType in *. lia. *)
                 }
@@ -1851,10 +1851,11 @@ Proof.
                 *)
               rewrite <- get_popped_irrel_upd in H15; try lia.
               specialize (H33 H15).
-              destruct H33; [left | right].
-              --- destruct H33; split; trivial.
-                  intros.
-                  apply H36; trivial.
+              destruct H33; [left | right]; trivial.
+              
+              (* --- destruct H33; split; trivial. *)
+                  (* intros. *)
+                  (* apply H36; trivial. *)
 (*                  rewrite <- get_popped_irrel_upd in H37; trivial.
                   apply get_popped_range in H37;
                     rewrite upd_Znth_Zlength in H37; lia. *)
@@ -1870,6 +1871,8 @@ Proof.
               apply get_popped_range in H36; lia.
               intro contra. rewrite contra in H36.
               apply H18; trivial.
+              --- apply get_popped_range in H15.
+                  rewrite upd_Znth_Zlength in H15; lia.
             ** trivial.
           ++ (* ... in fact, any vertex that is
                  "seen but not popped"
@@ -1968,7 +1971,9 @@ Proof.
           }
           freeze FR := (data_at _ _ _ _) (data_at _ _ _ _) (data_at _ _ _ _).
           rewrite (graph_unfold _ _ _ u) by lia.
-          Intros. rename H35 into Hinrangedist.
+          Intros.
+          rename H34 into Hinrangedist.
+          assert (H34: True) by lia.
           freeze FR2 :=
             (iter_sepcon (list_rep sh SIZE (pointer_val_val arr) (graph_to_mat g))
                          (sublist 0 u (nat_inc_list (Z.to_nat (Zlength (graph_to_mat g))))))
@@ -2065,7 +2070,7 @@ Proof.
                    we have found a better path to i, via u *)
                 
                 assert (Htemp : 0 <= i < Zlength priq_contents') by lia.
-                pose proof (Znth_priq_cases i priq_contents' Htemp H34).
+                pose proof (Znth_priq_cases i priq_contents' Htemp H33).
                 clear Htemp.
                 rename H46 into icases.
 
@@ -2079,22 +2084,19 @@ Proof.
                      This is impossible for popped items.
                    *)
                   intro Hc. intro.
+                  unfold inv_popped in H22.
+                  destruct (H22 _ H46); [lia|].
+
 
                   (* unfold inv_popped_weak in H23. *)
-                  assert (Htemp : i <= i < SIZE) by lia.
-                  destruct (H23 _ Htemp H46); [lia|].
+                  (* assert (Htemp : i <= i < SIZE) by lia. *)
+                  (* destruct (H23 _ Htemp H46); [lia|]. *)
                   destruct H47 as [p2i [? [? ?]]].
 
                   unfold path_globally_optimal in H49.
-                  (* dig out the cost to p2u *)
-
-                  assert (Ha: Znth u dist_contents' < inf) by lia.
-                  assert (Hb: vvalid g u). {
-                    apply vvalid_range; trivial; lia. }
- 
-                  pose proof (inv_popped_weak_strong_can_get_path _ _ _ _ _ _ _ _ H2 Hb H19 H31 Ha H22 H23).
-                  
+                  destruct (H22 _ H30); [lia|].
                   destruct H50 as [p2u [? [? ?]]].
+                  
 
                   specialize (H49 (fst p2u, snd p2u +:: (u,i))).
                   rewrite Heqcost in H45.
@@ -2158,82 +2160,76 @@ Proof.
                 repeat rewrite <- upd_Znth_map. entailer!.
                 remember (find priq_contents (fold_right Z.min (hd 0 priq_contents) priq_contents) 0) as u.
                 assert (u <> i) by (intro; subst; lia).
-                split3; [| | split3; [| | split3; [| | split3; [| | split3; [| |split]]]]].
-                
+                split3; [| | split3; [| | split3; [| | split3; [| | split3]]]]. 
                 --- 
                   intros. pose proof (H22 dst).
-                  unfold inv_popped in H61.
+                  unfold inv_popped in H60.
                   unfold inv_popped.
                   intros.
                   destruct (Z.eq_dec dst i).
-                  1: { subst dst.
-                       rewrite get_popped_meaning, upd_Znth_same in H62.
-                       3: rewrite upd_Znth_Zlength.
-                       all: lia. }  
-                  pose proof (get_popped_range _ _ H62).
-                  rewrite upd_Znth_Zlength in H63 by lia.
-                  rewrite <- get_popped_irrel_upd in H62; try lia.
-                  (* rewrite upd_Znth_diff in Hz; try lia. *)
-                  assert (0 <= dst < i) by lia.
-                  specialize (H61 H64 H62).
-                  repeat rewrite upd_Znth_diff; try lia.
-                  destruct H61; [left | right].
-                  +++ destruct H61; split; trivial.
-                      intros. destruct (Z.eq_dec m i).
-                      *** subst m.
-                          rewrite upd_Znth_same; trivial.
-                          admit.
-                          lia.
-
-                          (*rewrite e, get_popped_meaning, upd_Znth_same in H66. lia. lia.
-                        apply get_popped_range in H66; trivial.*)
-                      ***
-                        rewrite upd_Znth_diff; trivial.
-                        apply H65; trivial.
-                        apply vvalid_range in H66; trivial.
-                        lia.
-                        lia.
-                  +++ destruct H61 as [p2dst [? [? ?]]].
-                      exists p2dst; split3; trivial.
-                      *** destruct H61 as [? [? [? [? ?]]]].
-                          split3; [| | split3]; trivial.
-                          1: rewrite upd_Znth_diff; lia.
-                          rewrite Forall_forall; intros.
-                          assert (In_path g (snd x) p2dst). {
-                            unfold In_path. right.
-                            exists x. split; trivial.
-                            destruct H2 as [? [? [? ?]]].
-                            red in H74; rewrite H74.
-                            right; trivial.
-                          }
-                          specialize (H65 _ H72).
-                          rewrite Forall_forall in H70.
-                          specialize (H70 _ H71).
-                          destruct H65.
-                          assert (snd x <> i). {
-                            intro contra.
-                            unfold VType in *.
-                            rewrite contra in *.
-                            apply H46; trivial; lia.
-                          }
+                  +++ subst dst.
+                      rewrite get_popped_meaning, upd_Znth_same in H61.
+                      lia. lia.
+                      rewrite upd_Znth_Zlength; lia.
+                  +++ pose proof (get_popped_range _ _ H61).
+                      rewrite upd_Znth_Zlength in H62 by lia.
+                      rewrite <- get_popped_irrel_upd in H61; try lia.
+                      specialize (H60 H61).
+                      repeat rewrite upd_Znth_diff; try lia.
+                      destruct H60; [left | right].
+                      *** destruct H60; split; trivial.
+                          intros.
+                          destruct (Z.eq_dec m i).
+                          ----
+                            subst m. rewrite upd_Znth_same; trivial.
+                            admit.
+                            lia.
+                          ---- rewrite upd_Znth_diff; trivial.
+                               apply H63; trivial.
+                               apply vvalid_range in H64; trivial; lia.
+                               lia.
+                      *** destruct H60 as [p2dst [? [? ?]]].
+                          exists p2dst. split3; trivial.
+                          ---- 
+                            destruct H60 as [? [? [? [? ?]]]].
+                            split3; [| | split3]; trivial.
+                            1: rewrite upd_Znth_diff; lia.
+                            rewrite Forall_forall; intros.
+                            assert (In_path g (snd x) p2dst). {
+                              unfold In_path. right.
+                              exists x. split; trivial.
+                              destruct H2 as [? [? [? ?]]].
+                              red in H72; rewrite H72.
+                              right; trivial.
+                            }
+                            specialize (H63 _ H70).
+                            rewrite Forall_forall in H68.
+                            specialize (H68 _ H69).
+                            destruct H63.
+                            assert (snd x <> i). {
+                              intro contra.
+                              unfold VType in *.
+                              rewrite contra in *.
+                              apply H46; trivial; lia.
+                            }
                           unfold VType in *.
                           rewrite upd_Znth_diff; try lia.
-                          apply get_popped_range in H65; lia.
-                      *** unfold path_in_popped. intros.
-                          specialize (H65 _ H67).
-                          destruct H65.
-                          assert (step <> i). {
-                            intro contra.
-                            subst step.
-                            apply H46; trivial; lia.
+                          apply get_popped_range in H63; lia.
+                          ----
+                            unfold path_in_popped. intros.
+                            specialize (H63 _ H65).
+                            destruct H63.
+                            assert (step <> i). {
+                              intro contra.
+                              subst step.
+                              apply H46; trivial; lia.
                           }
                           rewrite <- get_popped_irrel_upd; try lia; trivial.
                           split; trivial.
-                          ---- rewrite upd_Znth_diff; trivial.
-                               apply get_popped_range in H65; lia.
+                            ++++ rewrite upd_Znth_diff; trivial.
+                               apply get_popped_range in H63; lia.
                                lia.
-                          ---- apply get_popped_range in H65; lia.
-                --- admit. (* new case *)
+                            ++++ apply get_popped_range in H63; lia.
                 --- intros.
                     destruct (Z.eq_dec dst i).
                     +++ subst dst.
@@ -2251,12 +2247,9 @@ Proof.
                         1: left; trivial.
                         right; split; trivial.
                         (* groan... hard to get u's path again... *)
-                        assert (Ha: Znth u dist_contents' < inf) by lia.
-                        assert (Hb: vvalid g u). {
-                          apply vvalid_range; trivial; lia. }
                         
-                        pose proof (inv_popped_weak_strong_can_get_path _ _ _ _ _ _ _ _ H2 Hb H19 H31 Ha H22 H23).
-                  
+                        destruct (H22 _ H30).
+                        1: lia.
                         destruct H62 as [p2u [? [? ?]]].
                         
                         unfold VType in *.
@@ -2316,9 +2309,9 @@ Proof.
                             }
                             rename H68 into Hk.
 
-                            assert (Hc: Znth mom' dist_contents' < inf) by lia.
-                            
-                            pose proof (inv_popped_weak_strong_can_get_path _ _ _ _ _ _ _ _ H2 H66 H19 H65 Hc H22 H23).
+                            destruct (H22 _ H65).
+                            1: lia.
+
                             
                             destruct H68 as [p2mom' [? [? ?]]].
                             destruct H68 as [? [? [? [? ?]]]].
@@ -2445,14 +2438,11 @@ Proof.
                                 destruct (Z.eq_dec (Znth i dist_contents') inf).
                                 - (* I was popped with infinite distance *)
                                   assert (i <= i < SIZE) by lia.
-                                  specialize (H23 _ H80 H79).
-                                  destruct H23.
-                                  + destruct H23.
-                                    rewrite H81; trivial.
-                                    lia.
-                                    
-                                  + destruct H23 as [p2i [? [? ?]]].
-                                    destruct H23 as [? [? [? [? ?]]]].
+                                  destruct (H22 _ H79).
+                                  + destruct H81.
+                                    admit.
+                                  + destruct H81 as [p2i [? [? ?]]].
+                                    destruct H81 as [? [? [? [? ?]]]].
                                     lia.
                                 - (* i was popped with noninfinite distance *)
                                   exfalso. 
@@ -2462,7 +2452,7 @@ Proof.
                               1: {
                                 (* i was unseen *)
                                 assert (i <= i < SIZE) by lia.
-                                destruct (H27 _ H80 H79) as [? [? ?]].
+                                destruct (H26 _ H80 H79) as [? [? ?]].
                                 specialize (H83 _ H65 n0).
                                 lia.
                               }
@@ -2484,9 +2474,9 @@ Proof.
                                 assert (i <= i < SIZE) by lia.
                                 assert (0 <= mom' < SIZE) by
                                     (apply get_popped_range in H65; lia).
-                                destruct (H25 _ H80 H79).
-                                - rewrite H82 at 1. rewrite H28.
-                                  apply (Forall_Znth _ _ mom') in H34.
+                                destruct (H24 _ H80 H79).
+                                - rewrite H82 at 1. rewrite H27.
+                                  apply (Forall_Znth _ _ mom') in H33.
                                   2: lia.  
                                   simpl in H34.
                                   unfold VType in *.
@@ -2523,14 +2513,13 @@ Proof.
                                 (* i was popped *)
                                 rewrite <- get_popped_meaning in H80 by lia.
                                 destruct (Z.eq_dec (Znth i dist_contents') inf).
-                                - (* I was popped with infinite distance *)
+                                - (* i was popped with infinite distance *)
                                   assert (i <= i < SIZE) by lia.
-                                  specialize (H23 _ H81 H80).
-                                  destruct H23.
-                                  + destruct H23.
-                                    rewrite H82; trivial. lia.
-                                  + destruct H23 as [p2i [? [? ?]]].
-                                    destruct H23 as [? [? [? [? ?]]]].
+                                  destruct (H22 _ H80).
+                                  + destruct H82.
+                                    rewrite H83; trivial. lia.
+                                  + destruct H82 as [p2i [? [? ?]]].
+                                    destruct H82 as [? [? [? [? ?]]]].
                                     lia.
                                 - (* i was popped with noninfinite distance *)
                                   exfalso. 
@@ -2540,12 +2529,12 @@ Proof.
                               1: {
                                 (* i was unseen *)
                                 assert (i <= i < SIZE) by lia.
-                                   destruct (H27 _ H81 H80) as [? [? ?]].
+                                   destruct (H26 _ H81 H80) as [? [? ?]].
                                    specialize (H84 _ H65 H79).
                                    rewrite H84. lia.
                               }
                               assert (i <= i < SIZE) by lia.
-                              destruct (H25 i H81 H80).
+                              destruct (H24 i H81 H80).
                               1: subst i; exfalso; lia.
                                 destruct H82 as [_ [? [? [? [? [? ?]]]]]].
                               apply Z.lt_le_incl.
@@ -2555,13 +2544,13 @@ Proof.
                     +++ assert (0 <= dst < i) by lia.
                         (* We will proceed using the
                            old best-known path for dst *)
-                        specialize (H24 _ H61).
+                        specialize (H23 _ H61).
                         unfold inv_unpopped in *.
                         intros.
                         rewrite upd_Znth_diff in H62 by lia.
-                        specialize (H24 H62). destruct H24.
+                        specialize (H23 H62). destruct H23.
                         1: left; trivial.
-                        destruct H24 as [? [? [? [? [? ?]]]]].
+                        destruct H23 as [? [? [? [? [? ?]]]]].
                         unfold VType in *.
                         remember (Znth dst prev_contents') as mom. right.
                         split; trivial.
@@ -2575,12 +2564,9 @@ Proof.
                           unfold VType in *.
                           lia.
                         }
-                        assert (Hb: vvalid g mom). {
-                          apply vvalid_range; trivial.
-                          apply get_popped_range in H63; lia.
-                        }
- 
-                        pose proof (inv_popped_weak_strong_can_get_path _ _ _ _ _ _ _ _ H2 Hb H19 H63 Ha H22 H23).
+
+                        destruct (H22 _ H63).
+                        1: lia.
 
                         destruct H68 as [p2mom [? [? ?]]].
                         rewrite upd_Znth_diff; trivial; [|lia..].
@@ -2621,7 +2607,7 @@ Proof.
                     destruct (Z.eq_dec dst i).
                     1: subst dst; lia.
                     rewrite upd_Znth_diff in H61 by lia.
-                    destruct (H25 _ H62 H61); [left | right]; trivial.
+                    destruct (H24 _ H62 H61); [left | right]; trivial.
                     destruct H63 as [? [? [? [? [? [? ?]]]]]].
                     unfold VType in *.
                     rewrite upd_Znth_diff by lia.
@@ -2667,7 +2653,7 @@ Proof.
                       intro. subst dst. rewrite upd_Znth_same in H61; lia.
                     }
                     assert (0 <= dst < i) by lia.
-                    pose proof (H26 dst H63).
+                    pose proof (H25 dst H63).
                     rewrite upd_Znth_diff in H61; try lia.
                     rewrite upd_Znth_diff; try lia.
                     rewrite upd_Znth_diff; try lia.
@@ -2693,7 +2679,7 @@ Proof.
                     rewrite upd_Znth_diff in H61 by lia.
                     repeat rewrite upd_Znth_diff by lia.
                     assert (i <= dst < SIZE) by lia.
-                    destruct (H27 _ H63 H61) as [? [? ?]].
+                    destruct (H26 _ H63 H61) as [? [? ?]].
                     split3; trivial.
                     intros.
                     destruct (Z.eq_dec m i).
@@ -2722,7 +2708,7 @@ Proof.
                     +++ rewrite vvalid_range in H60; trivial.
                         rewrite upd_Znth_diff in H61; trivial; try lia.
                         repeat rewrite upd_Znth_diff; trivial; try lia.
-                        apply H32; trivial.
+                        apply H31; trivial.
                         rewrite vvalid_range; trivial.
                 --- split3; apply inrange_upd_Znth; trivial; try lia. 
              ** rewrite Int.signed_repr in H45
@@ -2734,15 +2720,13 @@ Proof.
                 Exists prev_contents' priq_contents' dist_contents'.
                 entailer!.
                 remember (find priq_contents (fold_right Z.min (hd 0 priq_contents) priq_contents) 0) as u.
-                split3; [| |split3; [| | split]].
-                --- admit. (* new obligation *)
-                --- admit. (* new obligation *)
+                split3; [| |split3; [| | split]]; trivial.
                 --- intros.
                     (* Show that moving one more step
                        still preserves the for loop invariant *)
                     destruct (Z.eq_dec dst i).
                     (* when dst <> i, all is well *)
-                    2: apply H24; lia.
+                    2: apply H23; lia.
                     (* things get interesting when dst = i
                        We must show that i is better off
                        NOT going via u *)
@@ -2754,7 +2738,7 @@ Proof.
                      *)
                     unfold inv_unpopped; intros.
                     assert (i <= i < SIZE) by lia.
-                    destruct (H25 i H59 H58).
+                    destruct (H24 i H59 H58).
                     1: left; trivial.
                     destruct H60 as [? [? [? [? [? [? ?]]]]]].
                     unfold VType in *.
@@ -2789,9 +2773,7 @@ Proof.
                       apply get_popped_range in H67; trivial; lia.
                     }
                     
-                    pose proof (inv_popped_weak_strong_can_get_path _ _ _ _ _ _ _ _ H2 Hb H19 H67 e H22 H23).
-
-
+                    destruct (H22 _ H67); [lia|].
                     
                     destruct H68 as [p2mom' [? [? ?]]].
                     assert (Hrem := H68).
@@ -2915,9 +2897,10 @@ Thus dist[mom'] + (mom',i) <= path_cost p'.
  *)
                           assert (0 <= mom' < SIZE) by
                               (apply get_popped_range in H67; lia).
-                          destruct (H25 _ H59 H58).
-                          ++++ rewrite H85 at 1. rewrite H28.
-                               apply (Forall_Znth _ _ mom') in H34.
+                          destruct (H24 _ H59 H58).
+                          ++++ rewrite H85 at 1.
+                               rewrite H27.
+                               apply (Forall_Znth _ _ mom') in H33.
                                2: lia.  
                                simpl in H34.
                                unfold VType in *.
@@ -2940,13 +2923,13 @@ Thus dist[mom'] + (mom',i) <= path_cost p'.
                       apply pfoot_in in H76. rewrite H71 in *. trivial.           
                 --- intros. destruct (Z.eq_dec dst i).
                     +++ subst dst. lia.
-                    +++ apply H25; lia.
+                    +++ apply H24; lia.
                 --- unfold inv_unseen; intros.
                     destruct (Z.eq_dec dst i).
-                    2: apply H26; lia.
+                    2: apply H25; lia.
                     subst dst.
                     assert (i <= i < SIZE) by lia.
-                    destruct (H27 _ H59 H58) as [? [? ?]].
+                    destruct (H26 _ H59 H58) as [? [? ?]].
                     split3; trivial.
                     intros.
                     destruct (Z.eq_dec m u).
@@ -2994,7 +2977,10 @@ Thus dist[mom'] + (mom',i) <= path_cost p'.
                     rewrite careful_add_inf; trivial; lia.
                 --- intros.
                     assert (i <= dst < SIZE) by lia.
-                    apply H27; trivial.
+                    apply H26; trivial.
+                --- admit.
+                --- admit.
+                  
           ++  (* i was not a neighbor of u.
                  prove the for loop's invariant holds *)
             replace 8 with SIZE in H40 by lia.
@@ -3021,8 +3007,6 @@ Thus dist[mom'] + (mom',i) <= path_cost p'.
               lia.
             }
             split3; [| |split3; [| |split]]; intros.
-            ** admit.
-            ** admit.
             ** destruct (Z.eq_dec dst i).
                --- subst dst. 
                    (* Will need to use the second half of the 
@@ -3033,7 +3017,7 @@ Thus dist[mom'] + (mom',i) <= path_cost p'.
                       by going via u *)
                    unfold inv_unpopped; intros.
                    assert (i <= i < SIZE) by lia.
-                   destruct (H25 i H55 H54).
+                   destruct (H24 i H55 H54).
                    1: left; trivial.
                    destruct H56 as [? [? [? [? [? [? ?]]]]]].
                    unfold VType in *.
@@ -3052,8 +3036,7 @@ Thus dist[mom'] + (mom',i) <= path_cost p'.
                      apply get_popped_range in H58; lia.
                    }
  
-                   pose proof (inv_popped_weak_strong_can_get_path _ _ _ _ _ _ _ _ H2 Hb H19 H58 Ha H22 H23).
-                   
+                   destruct (H22 _ H58); [lia|].
                    destruct H63 as [p2mom [? [? ?]]].
                    
                    right. split.
@@ -3103,7 +3086,8 @@ Thus dist[mom'] + (mom',i) <= path_cost p'.
                          apply get_popped_range in H66; trivial. lia.
                        }
 
-                       pose proof (inv_popped_weak_strong_can_get_path _ _ _ _ _ _ _ _ H2 H67 H19 H66 Hc H22 H23).
+
+                       destruct (H22 _ H66); [lia|].
                             
                        destruct H68 as [p2mom' [? [? ?]]].
                        assert (In_path g mom' p2mom'). {
@@ -3186,9 +3170,9 @@ Thus dist[mom'] + (mom',i) <= path_cost p'.
                          rewrite H73.
                          assert (0 <= mom' < SIZE) by
                              (apply get_popped_range in H75; lia).
-                         destruct (H25 _ H55 H54).
-                         ---- rewrite H82 at 1. rewrite H28.
-                              apply (Forall_Znth _ _ mom') in H34.
+                         destruct (H24 _ H55 H54).
+                         ---- rewrite H82 at 1. rewrite H27.
+                              apply (Forall_Znth _ _ mom') in H33.
                               2: lia.  
                               simpl in H34.
                               unfold VType in *.
@@ -3205,16 +3189,16 @@ Thus dist[mom'] + (mom',i) <= path_cost p'.
                            apply pfoot_in in H78. rewrite H77 in *; trivial.
                            destruct H68; trivial.
                            
-               --- apply H24; lia.
+               --- apply H23; lia.
             ** destruct (Z.eq_dec dst i).
                --- lia. 
-               --- apply H25; lia.
+               --- apply H24; lia.
             ** destruct (Z.eq_dec dst i).
-               2: apply H26; lia.
+               2: apply H25; lia.
                subst dst.
                assert (i <= i < SIZE) by lia.
                unfold inv_unseen; intros.
-               destruct (H27 _ H54 H55) as [? [? ?]].
+               destruct (H26 _ H54 H55) as [? [? ?]].
                split3; trivial.
                intros.
                destruct (Z.eq_dec m u).
@@ -3225,7 +3209,9 @@ Thus dist[mom'] + (mom',i) <= path_cost p'.
                rewrite Forall_forall in Hinrangedist.
                apply Hinrangedist.
                apply Znth_In. lia.
-            ** apply H27; lia.
+            ** apply H26; lia.
+            ** admit.
+            ** admit. 
         -- (* From the for loop's invariant, 
               prove the while loop's invariant. *)
           Intros prev_contents' priq_contents' dist_contents'.
@@ -3233,7 +3219,7 @@ Thus dist[mom'] + (mom',i) <= path_cost p'.
           entailer!.
           remember (find priq_contents (fold_right Z.min (hd 0 priq_contents) priq_contents) 0) as u.
           unfold dijkstra_correct.
-          split3; [apply H19 | apply H21 | apply H23];
+          split3; [apply H19 | apply H20 | apply H22];
             rewrite <- (vvalid_range g); trivial.
       * (* After breaking, the while loop,
            prove break's postcondition *)
