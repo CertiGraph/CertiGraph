@@ -86,6 +86,46 @@ Proof.
   intro. apply H2. apply Z2Nat.inj; lia.
 Qed.
 
+Lemma upd_Znth_overwrite:
+  forall {A} (l : list A) i a b,
+    0 <= i < Zlength l ->
+    upd_Znth i (upd_Znth i l a) b = upd_Znth i l b.
+Proof.
+  intros.
+  rewrite upd_Znth_unfold by now rewrite upd_Znth_Zlength.
+  rewrite upd_Znth_Zlength; trivial.
+  repeat rewrite upd_Znth_unfold by trivial.
+  rewrite sublist0_app1.
+  2: rewrite Zlength_sublist; lia.
+  rewrite sublist_sublist00 by lia.
+  f_equal. f_equal.
+  rewrite app_assoc.
+  rewrite sublist_app2.
+  2: { rewrite Zlength_app, Zlength_sublist by lia.
+       unfold Zlength. simpl. lia.
+  }
+  rewrite Zlength_app, Zlength_sublist by lia.
+  unfold Zlength at 1; simpl.
+  rewrite sublist_same; trivial.
+  - lia.
+  - unfold Zlength at 2; simpl.
+    rewrite Zlength_sublist by lia. lia.
+Qed.
+
+Set Nested Proofs Allowed.
+
+Lemma upd_Znth_same_Znth:
+  forall {A} `{Ia : Inhabitant A} (l: list A) i,
+    0 <= i < Zlength l ->
+    upd_Znth i l (Znth i l) = l.
+Proof.
+  intros. rewrite upd_Znth_unfold by trivial.
+  rewrite <- sublist_len_1 by trivial.
+  repeat rewrite <- sublist_split.
+  apply sublist_same; trivial.
+  all: lia.
+Qed.
+
 Lemma exchange_eq_nil: forall A (L : list A) i j,
   exchange L i j = [] ->
   L = [].
@@ -235,6 +275,22 @@ Definition exch_spec :=
     LOCAL ()
     SEP (harray (Zexchange arr_contents i j) arr).
 
+Definition sink_spec :=
+  DECLARE _sink WITH i : Z, arr: val, arr_contents: list heap_item, first_available : Z
+  PRE [tuint, tptr t_item, tuint]
+    PROP (0 <= i <= Zlength arr_contents; 
+          first_available = Zlength arr_contents; 
+          weak_heap_ordered_top_down arr_contents i)
+    PARAMS (Vint (Int.repr i); arr; Vint (Int.repr first_available))
+    GLOBALS ()
+    SEP (harray arr_contents arr)
+  POST [tvoid]
+    EX arr_contents' : list heap_item,
+      PROP (heap_ordered arr_contents' /\ Permutation arr_contents arr_contents')
+      LOCAL ()
+      SEP (harray arr_contents' arr).
+
+
 Definition less_spec :=
   DECLARE _less WITH i : Z, j : Z, arr: val, arr_contents: list heap_item
   PRE [tuint, tuint, tptr t_item]
@@ -260,20 +316,6 @@ Definition swim_spec :=
       LOCAL ()
       SEP (harray arr_contents' arr).
 
-Definition sink_spec :=
-  DECLARE _sink WITH i : Z, arr: val, arr_contents: list heap_item, first_available : Z
-  PRE [tuint, tptr t_item, tuint]
-    PROP (0 <= i <= Zlength arr_contents; 
-          first_available = Zlength arr_contents; 
-          weak_heap_ordered_top_down arr_contents i)
-    PARAMS (Vint (Int.repr i); arr; Vint (Int.repr first_available))
-    GLOBALS ()
-    SEP (harray arr_contents arr)
-  POST [tvoid]
-    EX arr_contents' : list heap_item,
-      PROP (heap_ordered arr_contents' /\ Permutation arr_contents arr_contents')
-      LOCAL ()
-      SEP (harray arr_contents' arr).
 
 Definition size_spec := 
   DECLARE _size WITH pq : val, h : heap
@@ -392,7 +434,8 @@ Proof.
     destruct l0. 2: destruct l0; discriminate.
     inversion H. subst foot. clear H Hx. simpl in *. change (Zlength []) with 0.
     unfold Zexchange. rewrite exchange_eq.
-    admit. (* forward_call (0, arr, [root], 0). *)
+    admit.
+    (* forward_call (0, arr, [root], 0). *)
   * destruct l0; inversion H. subst h0.
     replace (Zlength (h :: l)) with (Zlength (root :: l0)). 2: { rewrite H4. rewrite Zlength_app. repeat rewrite Zlength_cons. simpl. lia. }
     rewrite Zexchange_head_foot.
@@ -445,46 +488,54 @@ Proof.
   start_function.
   unfold harray.
   forward.
-  rewrite Znth_map.
-  entailer!. trivial.
-  forward.
-  rewrite Znth_map.
-  entailer!. trivial.
-  (* Why is this goal here? *)
-  admit.
-  trivial.
-  forward.
-  rewrite Znth_map.
-  rewrite Znth_map.
-  entailer!. trivial. trivial.
-  forward; trivial.
-  forward; trivial.
-  rewrite Znth_map; auto.
-  rewrite Znth_map; auto.
-  entailer!.
-(*
-rewrite Zlength_upd_Znth in H3.
-rewrite Zlength_map in H3.
-*)
-rewrite Forall_Znth in H4.
-apply H4; clear H3 H4; auto.
-rewrite Zlength_upd_Znth.
-rewrite Zlength_map. trivial.
-assert (Heq: i = j \/ i <> j) by lia. destruct Heq.
-subst j. rewrite upd_Znth_same. 2: rewrite Zlength_map; auto.
-fold Znth.
-(* argh! *)
-admit.
-admit.
-(* back *)
-forward.
-forward.
-forward.
-unfold harray.
-entailer!.
-rewrite Znth_map; auto.
-replace (Zlength (exchange arr_contents (Z.to_nat i) (Z.to_nat j))) with (Zlength arr_contents).
-2: admit.
-repeat rewrite upd_Znth_map in *.
-admit.
+  - rewrite Znth_map; trivial.
+    entailer!.
+  - forward.
+    + rewrite Znth_map; trivial.
+      entailer!. 
+      (* Why is this goal here?
+         Absolutely no idea *)
+      admit.
+    + Opaque Znth.
+      forward.
+      1: repeat rewrite Znth_map; trivial; entailer!.
+      repeat rewrite Znth_map; trivial.
+      forward. forward.
+      * entailer!.
+        clear H3. (* it's useless info *)
+        destruct (Z.eq_dec i j).
+        -- subst j. rewrite upd_Znth_same.
+           2: rewrite Zlength_map; auto.
+           rewrite Znth_map; trivial.
+        -- rewrite upd_Znth_diff.  
+           2,3: rewrite Zlength_map; auto.
+           2: lia.
+           rewrite Znth_map; trivial.
+           simpl. (* and we're back at the old goal *)
+           admit.
+      * forward. forward. forward.
+        repeat rewrite upd_Znth_overwrite by
+            (repeat rewrite upd_Znth_Zlength; rewrite Zlength_map; trivial).
+        repeat rewrite upd_Znth_same by
+            (try rewrite upd_Znth_Zlength; rewrite Zlength_map; easy).
+        entailer!.
+        destruct (Z.eq_dec i j).
+        -- subst i.
+           repeat rewrite upd_Znth_same by
+               (try rewrite upd_Znth_Zlength; rewrite Zlength_map; easy).
+           rewrite upd_Znth_overwrite by
+               (repeat rewrite upd_Znth_Zlength; rewrite Zlength_map; trivial).
+           unfold harray.
+           rewrite Zlength_Zexchange.
+           replace (Vint (fst (Znth j arr_contents)), Vint (snd (Znth j arr_contents))) with (heap_item_rep (Znth j arr_contents)).
+           2: { unfold heap_item_rep; trivial. }
+           rewrite upd_Znth_map.
+           unfold Zexchange; rewrite exchange_eq.
+           rewrite upd_Znth_same_Znth by trivial.
+           entailer!.
+        -- rewrite upd_Znth_diff; trivial.
+           2,3: rewrite Zlength_map; trivial.
+           2: lia.
+           rewrite Znth_map; trivial.
+           admit.
 Admitted.
