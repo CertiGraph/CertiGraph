@@ -1165,29 +1165,35 @@ Proof.
                       popped, the other values in 
                       the array are all infinite too.
                     *)
-                  replace (Znth m dist_contents) with inf by admit.
+                  assert ((Znth m dist_contents) = inf). {
+                    rewrite Hequ in H37.
+                    rewrite Znth_find in H37.
+                    2: { apply min_in_list.
+                         apply incl_refl.
+                         rewrite <- Znth_0_hd; [apply Znth_In|]; lia.
+                    }
+                    pose proof (fold_min priq_contents (Znth m dist_contents)).
+                    rewrite H37 in H40.
+                    assert (0 <= m < Zlength dist_contents).
+                    { apply vvalid_range in H36; trivial.
+                      unfold VType in *. lia.
+                    }
+                    destruct (Znth_dist_cases m dist_contents H41); trivial.
+                    exfalso.
+                    - apply Zlt_not_le in H42.
+                      apply H42. apply H40.
+                      rewrite <- H8; trivial.
+                      apply Znth_In. lia.
+                      rewrite <- get_popped_meaning.
+                      trivial.
+                      lia.
+                  }
+                  rewrite H40.
                   rewrite careful_add_comm, careful_add_inf; trivial.
                   apply g2m_Znth2_range; trivial.
                   apply get_popped_range in H35;
                     rewrite upd_Znth_Zlength in H35; lia.
                   apply vvalid_range in H36; trivial; lia.
-                  
-                (* destruct (Z.eq_dec m u).
-                -- rewrite <- H8; trivial.
-                   2: {
-                     rewrite vvalid_range; trivial.
-                     apply get_popped_range in H36;
-                       rewrite upd_Znth_Zlength in H36; trivial; lia.
-                   }
-                   2: rewrite e, H37; lia.
-                   rewrite e, H37, careful_add_comm, careful_add_inf; trivial.
-                   apply g2m_Znth2_range; trivial; lia.
-                -- apply H39.
-                   rewrite <- get_popped_irrel_upd in H36; trivial.
-                   apply get_popped_range in H36; rewrite upd_Znth_Zlength in H36; lia.
-                 *)
-
-                
               * apply get_popped_irrel_upd in H35; trivial.
                 2: { apply get_popped_range in H35. 
                      rewrite upd_Znth_Zlength in H35; lia. }
@@ -2183,11 +2189,19 @@ Proof.
                                apply vvalid_range in H64; trivial; lia.
                                lia.
                           }
-
                           subst m.
                           rewrite upd_Znth_same; trivial.
-                          specialize (H63 _ H64).
-                          
+          (* dist[i] + (i,dst) = inf.
+             now show that the improvment
+             (dist[u] + (u,i) < dist[i]
+             does not make it better than inf. 
+           *)
+                          admit.
+                          lia.
+                      
+
+(*
+specialize (H63 _ H64).
 destruct icases as [icase | [icase | icase]].
  ++++ (* i was popped *)
    rewrite <- get_popped_meaning in icase by lia.
@@ -2208,14 +2222,7 @@ destruct icases as [icase | [icase | icase]].
  ++++ (* i was unseen *)
    assert (i <= i < SIZE) by lia.
    destruct (H26 _ H65 icase).
-   
-   
-
    admit.
-   
-   
-
-
  (* let's go see what I do downstairs.
              I must be reestablishing 
              i unseen_strong 
@@ -2227,7 +2234,7 @@ destruct icases as [icase | [icase | icase]].
    (* again, let's see what I was doing downstairs *)
    admit.
    admit.
- ++++ lia.
+ ++++ lia. *)
       
                       *** destruct H60 as [p2dst [? [? ?]]].
                           exists p2dst. split3; trivial.
