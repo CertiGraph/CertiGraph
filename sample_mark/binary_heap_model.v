@@ -227,11 +227,11 @@ Qed.
 
 Section Heap.
 
-Parameter A : Type.
-Parameter Aleq : relation A.
-Parameter Aleq_dec : forall a a', {Aleq a a'} + {~Aleq a a'}.
-Parameter Apo : PreOrder Aleq. (* Reflexive, transitive *)
-Parameter Aleq_linear : forall a b, Aleq a b \/ Aleq b a.
+Variable A : Type.
+Variable Aleq : relation A.
+Variable Aleq_dec : forall a a', {Aleq a a'} + {~Aleq a a'}.
+Variable Apo : PreOrder Aleq. (* Reflexive, transitive *)
+Variable Aleq_linear : forall a b, Aleq a b \/ Aleq b a.
 
 Instance A_Apo : PreOrder Aleq := Apo.
 
@@ -876,7 +876,7 @@ Lemma sink_hO: forall L j,
   weak_heapOrdered L j ->
   heapOrdered (sink (L, j)).
 Proof.
-  intros L j whO. remember (L, j) as Lj. assert (match Lj with (L, j) => weak_heapOrdered L j end). rewrite HeqLj. trivial. revert H. clear.
+  intros L j whO. remember (L, j) as Lj. assert (match Lj with (L, j) => weak_heapOrdered L j end). rewrite HeqLj. trivial. revert H. clear -Apo Aleq_linear.
   apply sink_ind; intros.
   generalize (sink1_hO L j H).
   rewrite e0. trivial.
@@ -994,7 +994,7 @@ Qed.
 
 (* Need a few more things... *)
 Require Coq.Logic.FunctionalExtensionality.
-Parameter As : Antisymmetric A eq Aleq. (* a <<= b -> b <<= a -> a = b *)
+Variable As : Antisymmetric A eq Aleq. (* a <<= b -> b <<= a -> a = b *)
 Instance A_As : Antisymmetric A eq Aleq := As.
 
 Definition Aeq_dec : forall x y : A, {x = y} + {~ x = y}.
