@@ -2157,9 +2157,9 @@ Proof.
                 repeat rewrite <- upd_Znth_map. entailer!.
                 remember (find priq_contents (fold_right Z.min (hd 0 priq_contents) priq_contents) 0) as u.
                 assert (u <> i) by (intro; subst; lia).
-                split3; [| | split3; [| | split3; [| | split3; [| | split3]]]]. 
-                --- 
-                  intros. pose proof (H22 dst).
+                split3; [| | split3; [| | split3; [| | split3; [| | split3]]]]; intros.
+                ---
+                  pose proof (H22 dst).
                   unfold inv_popped in H60.
                   unfold inv_popped.
                   intros.
@@ -2177,14 +2177,58 @@ Proof.
                       *** destruct H60; split; trivial.
                           intros.
                           destruct (Z.eq_dec m i).
-                          ----
-                            subst m. rewrite upd_Znth_same; trivial.
-                            admit.
-                            lia.
-                          ---- rewrite upd_Znth_diff; trivial.
+                          2: {
+                            rewrite upd_Znth_diff; trivial.
                                apply H63; trivial.
                                apply vvalid_range in H64; trivial; lia.
                                lia.
+                          }
+
+                          subst m.
+                          rewrite upd_Znth_same; trivial.
+                          specialize (H63 _ H64).
+                          
+destruct icases as [icase | [icase | icase]].
+ ++++ (* i was popped *)
+   rewrite <- get_popped_meaning in icase by lia.
+   destruct (H22 _ icase).
+   **** (* i was popped at infinite cost *)
+     destruct H65.
+     assert (vvalid g u). {
+       apply vvalid_range; trivial; lia.
+     }
+     specialize (H66 _ H67).
+     rewrite H65 in H45.
+     rewrite careful_add_clean in H66; trivial.
+     2,3: lia. lia.
+   **** (* i was popped at non-inf cost *)
+     exfalso. apply H46; trivial.
+     destruct H65 as [p2i [? _]]. 
+     destruct H65 as [? [? [? [? ?]]]]. lia.
+ ++++ (* i was unseen *)
+   assert (i <= i < SIZE) by lia.
+   destruct (H26 _ H65 icase).
+   
+   
+
+   admit.
+   
+   
+
+
+ (* let's go see what I do downstairs.
+             I must be reestablishing 
+             i unseen_strong 
+             for i down there 
+           *)
+ ++++ (* i was unpopped *)
+   assert (i <= i < SIZE) by lia.
+   destruct (H24 _ H65 icase).
+   (* again, let's see what I was doing downstairs *)
+   admit.
+   admit.
+ ++++ lia.
+      
                       *** destruct H60 as [p2dst [? [? ?]]].
                           exists p2dst. split3; trivial.
                           ---- 
