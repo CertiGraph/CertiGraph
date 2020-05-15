@@ -6,11 +6,127 @@ Require Import RelationClasses.
 
 Set Nested Proofs Allowed.
 
-Lemma Zlength_exchange : forall A (L : list A) i j,
-  Zlength (exchange L i j) = Zlength L.
+Definition Zexchange {A : Type} (L : list A) (i j : Z) : list A :=
+  exchange L (Z.to_nat i) (Z.to_nat j).
+
+Lemma Zlength_Zexchange {A : Type} : forall (L : list A) i j,
+  Zlength (Zexchange L i j) = Zlength L.
 Proof.
-  intros. do 2 rewrite Zlength_correct. rewrite exchange_length. trivial.
+  intros. unfold Zexchange. do 2 rewrite Zlength_correct. rewrite exchange_length. trivial.
 Qed.
+
+Lemma Znth_nth_error {A} `{Ia : Inhabitant A} : forall (L : list A) (i : Z),
+  0 <= i < Zlength L ->
+  nth_error L (Z.to_nat i) = Some (Znth i L).
+Proof.
+  intros. rewrite <- nth_Znth; trivial.
+  apply nth_error_nth.
+  rewrite <- ZtoNat_Zlength. lia.
+Qed.
+
+(*Lemma Zbound_nat: forall i j,
+  (0 <= i < j) <-> (Z.to_nat i < Z.to_nat
+*)
+
+Lemma nth_error_Znth {A} `{Ia : Inhabitant A}: forall (L1 L2 : list A) i j,
+  0 <= i < Zlength L1 ->
+  0 <= j < Zlength L2 ->
+  nth_error L1 (Z.to_nat i) = nth_error L2 (Z.to_nat j) <->
+  Znth i L1 = Znth j L2.
+Proof.
+  intros.
+  assert (Z.to_nat i < length L1 /\ Z.to_nat j < length L2)%nat. {
+    generalize (Zlength_length _ L1 (Zlength L1)); intro.
+    generalize (Zlength_length _ L2 (Zlength L2)); intro.
+    destruct H1. apply Zlength_nonneg.
+    destruct H2. apply Zlength_nonneg.
+    rewrite (H1 eq_refl). rewrite (H2 eq_refl). lia. }
+  repeat rewrite <- nth_Znth; trivial.
+  generalize (nth_error_nth A Ia); intros.
+  split; intros. do 2 (rewrite H2 in H3; try lia). inversion H3. congruence.
+  rewrite H2. rewrite H2. congruence. lia. lia.
+Qed.
+
+Lemma Znth_Zexchange : forall {A} `{Ia : Inhabitant A} (L : list A) i j,
+  0 <= i < Zlength L ->
+  0 <= j < Zlength L ->
+  Znth i (Zexchange L i j) = Znth j L.
+Proof.
+  intros.
+  apply nth_error_Znth; auto. rewrite Zlength_Zexchange. trivial.
+  generalize (Zlength_length _ L (Zlength L)). intro.
+  apply nth_error_exchange; lia.
+Qed.
+
+Lemma Znth_Zexchange' : forall {A} `{Ia : Inhabitant A} (L : list A) i j,
+  0 <= i < Zlength L ->
+  0 <= j < Zlength L ->
+  Znth j (Zexchange L i j) = Znth i L.
+Proof.
+  intros.
+  apply nth_error_Znth; auto. rewrite Zlength_Zexchange. trivial.
+  generalize (Zlength_length _ L (Zlength L)). intro.
+  apply nth_error_exchange'; lia.
+Qed.
+
+Lemma Znth_Zexchange'' : forall {A} `{Ia : Inhabitant A} (L : list A) k i j,
+  0 <= i < Zlength L ->
+  0 <= j < Zlength L ->
+  k <> i -> k <> j ->
+  Znth k (Zexchange L i j) = Znth k L.
+Proof.
+  intros.
+  assert (k < 0 \/ 0 <= k < Zlength L \/ Zlength L <= k) by lia.
+  destruct H3 as [? | [? | ?]].
+  repeat rewrite Znth_underflow; trivial.
+  2: repeat rewrite Znth_overflow; try rewrite Zlength_Zexchange; trivial; lia.
+  apply nth_error_Znth; auto. rewrite Zlength_Zexchange. trivial.
+  apply nth_error_exchange''.
+  intro. apply H1. apply Z2Nat.inj; lia.
+  intro. apply H2. apply Z2Nat.inj; lia.
+Qed.
+
+Lemma exchange_eq_nil: forall A (L : list A) i j,
+  exchange L i j = [] ->
+  L = [].
+Proof. unfold exchange. intros A L i j. case nth_error; auto. case nth_error; auto.
+  destruct L. trivial. destruct j, i; simpl; discriminate.
+Qed.
+
+Lemma nth_error_eq: forall A (L1 L2 : list A),
+  (forall i, nth_error L1 i = nth_error L2 i) ->
+  L1 = L2.
+Proof.
+  induction L1. destruct L2; auto; intros. specialize (H 0%nat); discriminate.
+  destruct L2. intro. specialize (H 0%nat); discriminate. intros.
+  f_equal. specialize (H 0%nat). inversion H. trivial.
+  apply IHL1. intro. specialize (H (S i)). apply H.
+Qed.
+
+Lemma Zexchange_head_foot: forall A (head : A) body foot,
+  Zexchange ((head :: body) ++ [foot]) 0 (Zlength (head :: body)) = ((foot :: body) ++ [head]).
+Proof.
+  intros.
+  apply nth_error_eq. intro i'. unfold Zexchange. simpl Z.to_nat. case (eq_nat_dec i' 0); intro.
+  + subst i'. 
+    rewrite nth_error_exchange; simpl. 2: lia.
+    rewrite app_comm_cons. rewrite ZtoNat_Zlength.
+    rewrite nth_error_app2. simpl. rewrite Nat.sub_diag. trivial. lia.
+    rewrite ZtoNat_Zlength. rewrite app_length. simpl. lia.
+  + case (eq_nat_dec i' (Z.to_nat (Zlength (head :: body)))); intro.
+    - subst i'.
+      rewrite nth_error_exchange'; simpl. 2: lia.
+      rewrite app_comm_cons. rewrite ZtoNat_Zlength.
+      rewrite nth_error_app2. simpl. rewrite Nat.sub_diag. trivial. simpl. lia.
+      rewrite ZtoNat_Zlength. rewrite app_length. simpl. lia.
+    - rewrite nth_error_exchange''; auto.
+      destruct i'. contradiction. simpl. rewrite ZtoNat_Zlength in n0. simpl in n0.
+      assert (i' < (length body) \/ i' >= length (body ++ [foot]))%nat. { rewrite app_length. simpl. lia. }
+      destruct H. repeat rewrite nth_error_app1; auto.
+      assert (i' >= length (body ++ [head]))%nat. { rewrite app_length in *. simpl in *. lia. }
+      apply nth_error_None in H. apply nth_error_None in H0. congruence.
+Qed.
+
 
 (* Relation on heap items. *)
 Definition heap_item : Type := (int * int)%type.
@@ -117,7 +233,7 @@ Definition exch_spec :=
   POST [tvoid]
     PROP ()
     LOCAL ()
-    SEP (harray (exchange arr_contents (Z.to_nat i) (Z.to_nat j)) arr).
+    SEP (harray (Zexchange arr_contents i j) arr).
 
 Definition less_spec :=
   DECLARE _less WITH i : Z, j : Z, arr: val, arr_contents: list heap_item
@@ -145,10 +261,12 @@ Definition swim_spec :=
       SEP (harray arr_contents' arr).
 
 Definition sink_spec :=
-  DECLARE _sink WITH i : Z, arr: val, arr_contents: list heap_item
-  PRE [tuint, tptr t_item]
-    PROP (0 <= i < Zlength arr_contents; weak_heap_ordered_top_down arr_contents i)
-    PARAMS (Vint (Int.repr i); arr)
+  DECLARE _sink WITH i : Z, arr: val, arr_contents: list heap_item, first_available : Z
+  PRE [tuint, tptr t_item, tuint]
+    PROP (0 <= i <= Zlength arr_contents; 
+          first_available = Zlength arr_contents; 
+          weak_heap_ordered_top_down arr_contents i)
+    PARAMS (Vint (Int.repr i); arr; Vint (Int.repr first_available))
     GLOBALS ()
     SEP (harray arr_contents arr)
   POST [tvoid]
@@ -215,6 +333,10 @@ Definition Gprog : funspecs :=
                                    remove_min_nc_spec ; insert_nc_spec ; 
                                    size_spec ; capacity_spec ]).
 
+Lemma body_sink: semax_body Vprog Gprog f_sink sink_spec.
+Proof.
+  start_function.
+Admitted.
 
 Lemma body_remove_min_nc: semax_body Vprog Gprog f_remove_min_nc remove_min_nc_spec.
 Proof.
@@ -223,72 +345,60 @@ Proof.
   Intros arr junk.
   rewrite harray_split.
   Intros.
-(* Why doesn't "frame_SEP 0 1 3" work here? *)
-Admitted.
-
-(*
-Search 
-Check semax_seq'.
-eapply semax_seq'.
-eapply semax_seq.
-  Intros arr junk.
-  assert (Hj: 0 <= Zlength junk) by apply Zlength_nonneg. unfold heap_size in *. rewrite Zlength_app in *.
+  destruct h. destruct l. inversion H.
+  unfold heap_items, heap_capacity, heap_size in *. simpl in *. clear H.
+  generalize (foot_split_spec _ (h :: l)).
+  case foot_split. destruct o; intro. 2: destruct H; subst l0; discriminate.
+  rename h into root. rename h0 into foot.
+  assert (Hx: Zlength l = Zlength (root :: l) - 1) by (rewrite Zlength_cons; lia).
+  assert (Hy : 0 <= Zlength l) by apply Zlength_nonneg.
   forward.
   forward.
   forward.
   forward.
   unfold harray. entailer!.
-  forward_call (0, heap_size h - 1, arr, (heap_items h) ++ junk). {
-    autorewrite with sublist in *.
-    unfold heap_size in *.
-    lia. }
+  forward_call (0, Zlength l, arr, root :: l).
+  entailer!. simpl. congruence. lia.
   forward.
   forward.
-  unfold harray.
+  unfold harray at 1. (* Not delighted with this unfold... *)
   forward.
-  entailer!. rewrite Zlength_exchange. rewrite Zlength_app. unfold heap_size in *. lia.
-  entailer!. admit.
+    { entailer!. rewrite Zlength_Zexchange. lia. }
+    { entailer!. rewrite Znth_map. rewrite <- Hx. rewrite Znth_Zexchange'; try lia. rewrite Znth_0_cons.
+      unfold heap_item_rep. trivial. rewrite Zlength_Zexchange. lia. }
   unfold hitem.
   forward.
   forward.
   forward.
   forward.
-  entailer!. rewrite Zlength_exchange. rewrite Zlength_app. unfold heap_size in *. lia.
-  entailer!. admit.
+    { entailer!. rewrite Zlength_Zexchange. lia. }
+    { entailer!. rewrite Znth_map. rewrite <- Hx. rewrite Znth_Zexchange'; try lia. rewrite Znth_0_cons.
+      unfold heap_item_rep. admit. (* C-typing issue *) rewrite Zlength_Zexchange. lia. }
+  (* this change is awful, to refold the harray back up *)
+  change (@data_at CompSpecs Tsh (tarray t_item (@Zlength heap_item (@Zexchange heap_item (@cons heap_item root l) Z0 (@Zlength heap_item l))))
+                 (@map heap_item (@reptype CompSpecs t_item) heap_item_rep (@Zexchange heap_item (@cons heap_item root l) Z0 (@Zlength heap_item l))) arr)
+         with (harray (Zexchange (root :: l) 0 (Zlength l)) arr).
   forward.
   forward.
   forward.
-hint.
-deadvars!.
-
-fold harray.
-  forward.
-  Search Zlength length.
-  apply 
- rewrite 
-
-
-split.
-lia.
-
- unfold heap_size in *; lia.
-hint.
-
-
-  rewrite harray_split.
-hint.
-Intros.
-
-frame_SEP 1.
-forward.
-  
-  admit.
-  unfold heap_size in *. lia.
-
-  u
-
+  (* Just before the final call, let's do some cleanup *)
+  rewrite <- Hx.
+  rewrite Znth_map. 2: rewrite Zlength_Zexchange; lia.
+  rewrite Znth_Zexchange'; try lia. rewrite Znth_0_cons.
+  autorewrite with norm. rewrite <- Hx.
+  unfold heap_item_rep. rewrite H.
+  destruct l.
+  * (* corner case: heap is now empty. *)
+    destruct l0. 2: destruct l0; discriminate.
+    inversion H. subst foot. clear H Hx. simpl in *. change (Zlength []) with 0.
+    unfold Zexchange. rewrite exchange_eq.
+    admit. (* forward_call (0, arr, [root], 0). *)
+  * destruct l0; inversion H. subst h0.
+    replace (Zlength (h :: l)) with (Zlength (root :: l0)). 2: { rewrite H4. rewrite Zlength_app. repeat rewrite Zlength_cons. simpl. lia. }
+    rewrite Zexchange_head_foot.
+    rewrite harray_split.
+    admit. (* forward_call (0, arr, (foot :: l0), Zlength (foot :: l0)). *)
 Admitted.
-*)
 
 Lemma body_less: semax_body Vprog Gprog f_less less_spec.
 Proof.
