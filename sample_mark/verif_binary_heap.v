@@ -298,15 +298,6 @@ Definition exch_spec :=
     PROP ()
     LOCAL ()
     SEP (harray (Zexchange arr_contents i j) arr).
-(* used to be:
- (* no EX *)
-    PROP () 
-    LOCAL ()
-    SEP (harray (Zexchange arr_contents i j) arr).
- *)
-(* In my understanding, this tweak 
-   should be processed as meaningless 
-*)
 
 Definition sink_spec :=
   DECLARE _sink WITH i : Z, arr: val, arr_contents: list heap_item, first_available : Z
@@ -411,6 +402,65 @@ Lemma body_sink: semax_body Vprog Gprog f_sink sink_spec.
 Proof.
   start_function.
 Admitted.
+
+Lemma body_swim: semax_body Vprog Gprog f_swim swim_spec.
+Proof.
+  start_function.
+Admitted.
+
+Lemma body_insert_nc: semax_body Vprog Gprog f_insert_nc insert_nc_spec.
+Proof.
+  start_function.
+  unfold valid_pq.
+  Intros arr junk.
+  destruct junk. { exfalso. unfold heap_size, heap_capacity in *. rewrite Zlength_app, Zlength_nil in H1. lia. }
+  change (h0 :: junk) with ([h0] ++ junk) in *. rewrite app_assoc in *.
+  rewrite harray_split. Intros.
+  assert (0 <= heap_size h) by apply Zlength_nonneg.
+  forward. unfold harray. entailer.
+  forward. unfold hitem.
+  forward.
+  unfold harray at 1.
+  forward. entailer!. rewrite Zlength_app, Zlength_one. unfold heap_size in *. lia.
+  forward.
+  forward.
+  forward. { (* C typing issue? *) entailer!. apply H9. discriminate. }
+  forward. entailer!. rewrite Zlength_app, Zlength_one. unfold heap_size in *. lia.
+  forward.
+  forward.
+  (* Just before the call, let's do some cleanup *)
+  deadvars!.
+  rewrite upd_Znth_overwrite, upd_Znth_same, map_app, upd_Znth_app2, Zlength_map.
+  unfold heap_size at 3. replace (Zlength (heap_items h) - Zlength (heap_items h)) with 0 by lia.
+  change (Vint (fst iv), Vint (snd iv)) with (heap_item_rep iv). rewrite upd_Znth_map.
+  rewrite <- map_app. change (upd_Znth 0 [h0] iv) with [iv].
+  2,3,4: autorewrite with sublist; unfold heap_size in *; lia.
+  replace (Zlength (heap_items h ++ [h0])) with (Zlength (heap_items h ++ [iv])). 
+  2: do 2 rewrite Zlength_app, Zlength_one; lia.
+  forward_call (heap_size h, arr, heap_items h ++ [iv]).
+    { rewrite Zlength_app, Zlength_one. unfold heap_size in *. split. lia.
+      red. rewrite Zlength_correct, Nat2Z.id.
+      apply weak_heapOrdered2_postpend. apply cmp_po. trivial. }
+  Intro vret.
+  forward.
+  forward.
+  (* Prove postcondition *)
+  Exists ((Z.to_nat (heap_capacity h))%nat, vret).
+  unfold heap_capacity. rewrite Nat2Z.id. simpl fst.
+  unfold valid_pq. entailer. Exists arr.
+  apply andp_right. { apply prop_right. split; trivial. unfold heap_items in *. simpl.
+    transitivity (snd h ++ [iv]); trivial. change (iv :: snd h) with ([iv] ++ snd h).
+    apply Permutation_app_comm. }
+  Exists junk. entailer!. { rewrite Zlength_app. apply Permutation_Zlength in H4.
+    unfold heap_items. simpl. rewrite <- H4. unfold heap_capacity in *. simpl. rewrite <- H1.
+    autorewrite with sublist. lia. }
+  unfold heap_size, heap_capacity, heap_items. simpl fst. simpl snd.
+  generalize (Permutation_Zlength _ _ _ H4); intro. rewrite <- H9.
+  replace (Zlength (heap_items h ++ [iv])) with (Zlength (snd h) + 1). 2: rewrite Zlength_app; trivial.
+  cancel.
+  rewrite harray_split. cancel.
+  repeat rewrite Zlength_app. rewrite <- H9. rewrite Zlength_app. apply derives_refl.
+Qed.
 
 Lemma body_remove_min_nc: semax_body Vprog Gprog f_remove_min_nc remove_min_nc_spec.
 Proof.
