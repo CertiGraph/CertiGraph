@@ -13,12 +13,12 @@ Require Import Multiset.
 
 (* List-related items... *)
 
-Lemma nth_error_lt {A}: forall L x (a : A),
+Lemma nth_error_le {A}: forall L x (a : A),
   nth_error L x = Some a ->
-  forall y, y < x -> exists b, nth_error L y = Some b.
+  forall y, y <= x -> exists b, nth_error L y = Some b.
 Proof.
   induction L; intros. destruct x; inversion H.
-  destruct x. inversion H0.
+  destruct x. assert (y = 0) by lia. subst y. inversion H. subst a0. exists a. apply H.
   simpl in H. specialize (IHL _ _ H).
   destruct y. exists a. trivial.
   simpl. apply IHL. lia.
@@ -401,8 +401,8 @@ Proof.
   intros. assert (j <= i \/ j = S i) by lia. destruct H3.
   eapply IHi; eauto.
   subst j.
-  destruct (nth_error_lt _ _ _ H1 (parent (S i))).
-  apply parent_dec. unfold root_idx; lia.
+  destruct (nth_error_le _ _ _ H1 (parent (S i))).
+  generalize (parent_dec (S i)). unfold root_idx. lia.
   transitivity x0. eapply IHi. 2: apply H3. generalize (parent_dec (S i)). unfold root_idx. lia.
   rewrite hOhO2 in H.
   eapply H; eauto.
@@ -415,6 +415,16 @@ Definition grandsOk (L : list A) (j : nat) : Prop :=
   j > root_idx -> 
     forall jj bb, parent jj = j -> nth_error L jj = Some bb ->
       forall a, nth_error L (parent j) = Some a -> a <<= bb.
+
+Lemma hO_grandsOk: forall L j,
+  heapOrdered L ->
+  grandsOk L j.
+Proof.
+  repeat intro.
+  generalize (nth_error_le _ _ _ H2 j); intro. rewrite <- H1 in H4.
+  destruct (H4 (parent_le jj)). apply hOhO2 in H.
+  transitivity x; eapply H; eauto. congruence.
+Qed.
 
 (* insertion, via swimming upwards *)
 
@@ -454,6 +464,13 @@ Definition weak_heapOrdered2 (L : list A) (j : nat) : Prop :=
   (forall i b, i <> j -> nth_error L i = Some b ->
      forall a, nth_error L (parent i) = Some a -> a <<= b) /\
   grandsOk L j.
+
+Lemma hOwhO2: forall L j,
+  heapOrdered L ->
+  weak_heapOrdered2 L j.
+Proof.
+  split. 2: apply hO_grandsOk; auto. rewrite hOhO2 in H. intros ? ? ?. apply H.
+Qed.
 
 Lemma weak_heapOrdered2_root: forall (L : list A),
   weak_heapOrdered2 L root_idx -> heapOrdered L.
@@ -548,8 +565,8 @@ Proof.
       destruct (Aleq_linear a b); auto. contradiction.
       destruct H.
       apply H with i; auto.
-  + assert (parent j < j). { apply Nat.leb_nle in Hx. apply parent_dec. lia. }
-    destruct (nth_error_lt _ _ _ H1 _ H2). congruence.
+  + assert (parent j <= j) by apply parent_le.
+    destruct (nth_error_le _ _ _ H1 _ H2). congruence.
   + rewrite hOhO2. repeat intro. destruct H. apply H with i; auto.
     congruence.
   + rewrite hOhO2. repeat intro. destruct H. apply H with i; auto.
@@ -681,6 +698,13 @@ Definition weak_heapOrdered (L : list A) (j : nat) : Prop :=
     (forall b, nth_error L (left_child i) = Some b -> a <<= b) /\
     (forall c, nth_error L (right_child i) = Some c -> a <<= c)) /\
   grandsOk L j.
+
+Lemma hOwhO: forall L j,
+  heapOrdered L ->
+  weak_heapOrdered L j.
+Proof.
+  split. 2: apply hO_grandsOk; auto. intros ? ? ?. apply H.
+Qed.
 
 Lemma weak_heapOrdered_root: forall r1 L,
   heapOrdered (r1 :: L) ->
