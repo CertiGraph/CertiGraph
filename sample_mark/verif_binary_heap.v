@@ -446,8 +446,16 @@ Proof.
   forward.
   forward.
     { entailer!. rewrite Zlength_Zexchange. lia. }
-    { entailer!. rewrite Znth_map. rewrite <- Hx. rewrite Znth_Zexchange'; try lia. rewrite Znth_0_cons.
-      unfold heap_item_rep. admit. (* C-typing issue *) rewrite Zlength_Zexchange. lia. }
+    { entailer!. rewrite Znth_map. 2: rewrite Zlength_Zexchange; lia.
+      rewrite <- Hx. rewrite Znth_Zexchange'; try lia. rewrite Znth_0_cons.
+      apply Forall_map in H5.
+      rewrite Forall_Znth in H5. specialize (H5 (Zlength l)). do 2 rewrite Zlength_map in H5. rewrite Zlength_Zexchange in H5.
+      assert (Hq: 0 <= (Zlength l) < Zlength (root :: l)) by lia.
+      specialize (H5 Hq). rewrite Znth_map in H5. 2: rewrite Zlength_map, Zlength_Zexchange; lia.
+      rewrite Znth_map in H5. 2: rewrite Zlength_Zexchange; lia.
+      rewrite Znth_Zexchange' in H5; try lia.
+      (* Flailing around solves the goal... *)
+      apply H5. discriminate. }
   (* this change refolds the harray back up *)
   change (data_at _ _ _ arr) with (harray (Zexchange (root :: l) 0 (Zlength l)) arr).
   forward.
@@ -512,8 +520,7 @@ Proof.
     do 2 rewrite Zlength_one.
     rewrite Zlength_cons.
     rewrite H2, H10. cancel.
-(* Done except for C-typing issue *)
-Admitted.
+Qed.
 
 Lemma body_less: semax_body Vprog Gprog f_less less_spec.
 Proof.
@@ -554,87 +561,78 @@ Proof.
   entailer!.
 Qed.
 
-(*
-typedef struct structItem {
-  int priority;
-  void* data; /* Should this be a union of void* and int? */
-} Item;
-
-void exch(unsigned int j, unsigned int k, Item arr[]) {
-  int priority = arr[j].priority;
-  void* data = arr[j].data;
-  arr[j].priority = arr[k].priority;
-  arr[j].data = arr[k].data;
-  arr[k].priority = priority;
-  arr[k].data = data;
-}
-*)
+(* I need this to make a replace work... ugly... *)
+Lemma heap_item_rep_morph: forall x y,
+  (fst (heap_item_rep x), snd (heap_item_rep y)) = heap_item_rep (fst x, snd y).
+Proof. unfold heap_item_rep. destruct x,y; reflexivity. Qed.
 
 Lemma body_exch: semax_body Vprog Gprog f_exch exch_spec.
 Proof.
   start_function.
-Admitted. 
-(*
   unfold harray.
+  forward. { rewrite Znth_map; trivial. entailer!. }
+  forward. { rewrite Znth_map; trivial. entailer!.
+    (* C-typing issue? *)
+    apply Forall_map in H3.
+    rewrite Forall_Znth in H3. specialize (H3 i). do 2 rewrite Zlength_map in H3.
+    specialize (H3 H). rewrite Znth_map in H3. 2: rewrite Zlength_map; trivial.
+    (* Flailing around solves the goal... *)
+    simplify_value_fits in H3. destruct H3.
+    rewrite Znth_map in H4; trivial.
+    apply H4. discriminate. }
+  forward. { repeat rewrite Znth_map; trivial. entailer!. }
   forward.
-  - rewrite Znth_map; trivial.
-    entailer!.
-  -
-match goal with |- context [temp _priority ?a] => set (foo := a) end.
- forward.
-    + rewrite Znth_map; trivial.
-      entailer!. 
-      (* Why is this goal here?
-         Absolutely no idea *)
-      admit.
-    + (* Opaque Znth. *)
-(* match goal with |- context [temp _data ?a] => set (food := a) end. *)
-      forward.
-      1: repeat rewrite Znth_map; trivial; entailer!.
-      repeat rewrite Znth_map; trivial.
-(* match goal with |- context [temp _t'2 ?a] => set (foo2 := a) end.
-set (n := Zlength arr_contents). *)
-      forward. forward.
-      * entailer!.
-        clear H3. (* it's useless info *)
-        destruct (Z.eq_dec i j).
-        -- subst j. rewrite upd_Znth_same.
-           2: rewrite Zlength_map; auto.
-           rewrite Znth_map; trivial.
-        -- rewrite upd_Znth_diff.  
-           2,3: rewrite Zlength_map; auto.
-           2: lia.
-           rewrite Znth_map; trivial.
-           simpl. (* and we're back at the old goal *)
-           admit.
-      * forward. forward. forward.
-        repeat rewrite upd_Znth_overwrite by
-            (repeat rewrite upd_Znth_Zlength; rewrite Zlength_map; trivial).
-        repeat rewrite upd_Znth_same by
-            (try rewrite upd_Znth_Zlength; rewrite Zlength_map; easy).
+  forward. { repeat rewrite Znth_map; trivial. entailer!.
+    clear H3.
+    (* We may be in another C-typing issue... *)
+    case (eq_dec i j); intro.
+    + subst j. rewrite upd_Znth_same. trivial. rewrite Zlength_map; auto.
+    + rewrite upd_Znth_diff; auto. 2,3: rewrite Zlength_map; auto.
+      (* So ugly... is there no easier way? *)
+      replace (let (x, _) := heap_item_rep _ in x) with (fst (heap_item_rep (Znth j arr_contents))) in H4 by trivial.
+      replace (let (_, y) := heap_item_rep _ in y) with (snd (heap_item_rep (Znth i arr_contents))) in H4 by trivial.
+      rewrite heap_item_rep_morph, upd_Znth_map in H4.
+      apply Forall_map in H4.
+      rewrite Forall_Znth in H4. specialize (H4 j).
+      do 2 rewrite Zlength_map in H4. rewrite Zlength_upd_Znth in H4. specialize (H4 H0).
+      do 2 rewrite Znth_map in H4. 2,3,4: autorewrite with sublist; trivial.
+      rewrite upd_Znth_diff in H4; auto. rewrite Znth_map; trivial.
+      (* Flailing around solves the goal... *)
+      simplify_value_fits in H4. destruct H4.
+      apply H4. discriminate. }
+  forward.
+  forward.
+  forward.
+  (* Prove postcondition *)
+  repeat rewrite upd_Znth_overwrite.
+  2,3,4: autorewrite with sublist; auto.
+  repeat rewrite upd_Znth_same.
+  2,3: autorewrite with sublist; auto.
+  case (eq_dec i j); intro.
+  + subst j. rewrite upd_Znth_overwrite, upd_Znth_same. 2,3: autorewrite with sublist; auto.
+    replace (let (x, _) := Znth i (map heap_item_rep arr_contents) in x,
+             let (_, y) := Znth i (map heap_item_rep arr_contents) in y) 
+            with (heap_item_rep (Znth i arr_contents)) by (rewrite Znth_map; auto).
+    rewrite upd_Znth_map. rewrite upd_Znth_same_Znth; trivial.
+    rewrite Zexchange_eq. unfold harray. go_lower. cancel.
+  + rewrite upd_Znth_diff; auto. 2,3: rewrite Zlength_map; auto.
+    replace (let (x, _) := Znth j (map heap_item_rep arr_contents) in x,
+             let (_, y) := Znth j (map heap_item_rep arr_contents) in y) 
+            with (heap_item_rep (Znth j arr_contents)) by (rewrite Znth_map; auto).
+    replace (let (x, _) := Znth i (map heap_item_rep arr_contents) in x,
+             let (_, y) := Znth i (map heap_item_rep arr_contents) in y) 
+            with (heap_item_rep (Znth i arr_contents)) by (rewrite Znth_map; auto).
+    do 2 rewrite upd_Znth_map.
+    rewrite fold_harray'. 2: autorewrite with sublist; trivial.
+    replace (upd_Znth j (upd_Znth i arr_contents (Znth j arr_contents)) (Znth i arr_contents)) with (Zexchange arr_contents i j).
+    go_lower. cancel.
+    apply Znth_eq_ext. { rewrite Zlength_Zexchange. autorewrite with sublist. trivial. }
+    intros. rewrite Zlength_Zexchange in H1. case (eq_dec i0 j); intro.
+    * subst i0. rewrite upd_Znth_same. 2: autorewrite with sublist; trivial.
+      rewrite Znth_Zexchange'; trivial.
+    * case (eq_dec i0 i); intro. subst i0.
+      rewrite upd_Znth_diff. rewrite upd_Znth_same. rewrite Znth_Zexchange; trivial. 1,2,3,4: autorewrite with sublist; trivial.
+      rewrite Znth_Zexchange''; auto.
+      repeat rewrite upd_Znth_diff; autorewrite with sublist; trivial.
+Qed.
 
-        Exists (Zexchange arr_contents i j).
-        (* had to be added to accommodate the tweak *)
-
-        entailer!.
-        destruct (Z.eq_dec i j).
-        -- subst i.
-           repeat rewrite upd_Znth_same by
-               (try rewrite upd_Znth_Zlength; rewrite Zlength_map; easy).
-           rewrite upd_Znth_overwrite by
-               (repeat rewrite upd_Znth_Zlength; rewrite Zlength_map; trivial).
-           unfold harray.
-           rewrite Zlength_Zexchange.
-           replace (Vint (fst (Znth j arr_contents)), Vint (snd (Znth j arr_contents))) with (heap_item_rep (Znth j arr_contents)).
-           2: { unfold heap_item_rep; trivial. }
-           rewrite upd_Znth_map.
-           unfold Zexchange; rewrite exchange_eq.
-           rewrite upd_Znth_same_Znth by trivial.
-           entailer!.
-        -- rewrite upd_Znth_diff; trivial.
-           2,3: rewrite Zlength_map; trivial.
-           2: lia.
-           rewrite Znth_map; trivial.
-           admit.
-Admitted.
-*)
