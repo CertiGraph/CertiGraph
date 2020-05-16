@@ -36,7 +36,7 @@ int less(unsigned int j, unsigned int k, Item arr[]) {
 }
 
 void swim(unsigned int k, Item arr[]) {
-  while (k > ROOT_IDX && less (PARENT(k), k, arr)) {
+  while (k > ROOT_IDX && less (k, PARENT(k), arr)) {
     exch(k, PARENT(k), arr);
     k = PARENT(k);
   }
