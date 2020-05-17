@@ -8,8 +8,6 @@ extern void * mallocN (int n); /* Maybe there are better choices for allocators?
 #define RIGHT_CHILD(x) LEFT_CHILD(x) + 1
 #define PARENT(x)      (x - 1) / 2
 
-/* #define less */
-
 typedef struct structItem {
   int priority;
   void* data; /* Should this be a union of void* and int? */
