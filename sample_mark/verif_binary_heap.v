@@ -403,9 +403,49 @@ Proof.
   start_function.
 Admitted.
 
+Definition Zparent (i : Z) : Z := Z.of_nat (parent (Z.to_nat i)).
+
 Lemma body_swim: semax_body Vprog Gprog f_swim swim_spec.
 Proof.
   start_function.
+  forward_loop (EX i' : Z, EX arr_contents' : list heap_item, 
+                PROP (0 <= i' < Zlength arr_contents; 
+                      swim arr_contents (Z.to_nat i) = swim arr_contents' (Z.to_nat i'))
+                LOCAL (temp _k (Vint (Int.repr i')); temp _arr arr)
+                SEP (harray arr_contents' arr)).
+  Exists i arr_contents. entailer.
+  Intros i' arr_contents'.
+  forward_if (EX b : bool, PROP (if b then i' > 0 /\ ~cmp_rel(Znth (Zparent i') arr_contents') (Znth i' arr_contents')
+                                      else i' = 0 \/  cmp_rel(Znth (Zparent i') arr_contents') (Znth i' arr_contents') ) 
+              LOCAL (temp _t'1 (Val.of_bool b); temp _k (Vint (Int.repr i')); temp _arr arr) 
+              SEP (harray arr_contents' arr)).
+    { forward_call (Zparent i', i', arr, arr_contents').
+      { entailer!. simpl. f_equal. unfold Zparent. f_equal.
+        Search Int.divu Int.repr. admit. }
+      { unfold swim in H2. 
+        generalize (swim_permutation _ cmp_rel cmp_dec arr_contents (Z.to_nat i)); intro.
+        generalize (swim_permutation _ cmp_rel cmp_dec arr_contents' (Z.to_nat i')); intro.
+        rewrite H2 in H4.
+        apply Permutation_Zlength in H4. apply Permutation_Zlength in H5. rewrite <- H4 in H5.
+        assert (parent (Z.to_nat i') <= (Z.to_nat i'))%nat by apply parent_le. unfold Zparent. lia. }
+      forward. unfold cmp_rel. case (cmp (Znth (Zparent i') arr_contents') (Znth i' arr_contents')).
+      Exists false. entailer!. admit. (* bug in C code *)
+      Exists true. entailer!. admit.  (* bug in C code *) }
+    { forward. Exists false. entailer!. left. admit. }
+  Intro b.
+  forward_if (PROP (i' > 0 /\ ~cmp_rel (Znth (Zparent i') arr_contents') (Znth i' arr_contents'))
+              LOCAL (temp _k (Vint (Int.repr i')); temp _arr arr)
+              SEP (harray arr_contents' arr)).
+    { subst b. forward. entailer. apply prop_right. tauto. }
+    { subst b. forward. (* Prove postcondition *)
+      Exists arr_contents'. entailer!.
+      admit. }
+  forward_call (i', Zparent i', arr, arr_contents').
+    { entailer!. simpl. do 3 f_equal. admit. }
+    { admit. (* 0 <= i' < Zlength arr_contents' /\ 0 <= Zparent i' < Zlength arr_contents' *) }
+  forward.
+  Exists (Zparent i') (Zexchange arr_contents' i' (Zparent i')).
+  entailer!. admit.
 Admitted.
 
 Lemma body_insert_nc: semax_body Vprog Gprog f_insert_nc insert_nc_spec.
