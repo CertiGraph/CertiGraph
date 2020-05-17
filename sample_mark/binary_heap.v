@@ -225,11 +225,11 @@ Definition f_swim := {|
                             (Tcons tuint
                               (Tcons (tptr (Tstruct _structItem noattr))
                                 Tnil))) tint cc_default))
-            ((Ebinop Odiv
+            ((Etempvar _k tuint) ::
+             (Ebinop Odiv
                (Ebinop Osub (Etempvar _k tuint)
                  (Econst_int (Int.repr 1) tint) tuint)
                (Econst_int (Int.repr 2) tint) tuint) ::
-             (Etempvar _k tuint) ::
              (Etempvar _arr (tptr (Tstruct _structItem noattr))) :: nil))
           (Sset _t'1 (Ecast (Etempvar _t'2 tint) tbool)))
         (Sset _t'1 (Econst_int (Int.repr 0) tint)))
