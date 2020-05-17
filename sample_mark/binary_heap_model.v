@@ -541,6 +541,16 @@ Proof.
   apply nth_error_Some; congruence.
 Qed.
 
+Lemma weak_heapOrdered2_oob: forall i L,
+  i >= length L ->
+  weak_heapOrdered2 L i ->
+  heapOrdered L.
+Proof.
+  intros. apply hOhO2.
+  repeat intro. destruct H0. eapply H0. 2: apply H1. 2: apply H2.
+  intro. subst i0. assert (i < length L) by (apply nth_error_Some; congruence). lia.
+Qed.
+
 Lemma swim1_hO: forall L j,
   weak_heapOrdered2 L j ->
   match swim1 L j with
@@ -798,7 +808,8 @@ Lemma weak_heapOrdered_oob: forall i L,
   weak_heapOrdered L i ->
   heapOrdered L.
 Proof.
-  repeat intro. destruct H0. apply H0; auto. intro. subst i0. assert (i < length L) by (apply nth_error_Some; congruence). lia.
+  repeat intro. destruct H0. apply H0; auto. 
+  intro. subst i0. assert (i < length L) by (apply nth_error_Some; congruence). lia.
 Qed.
 
 Lemma sink1_hO: forall L j,
