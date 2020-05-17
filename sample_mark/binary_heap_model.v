@@ -747,21 +747,25 @@ Proof.
   case (a <<=? a0); auto. contradiction.
 Qed.
 
-(*
-Lemma swim_step: forall L i a b,
-  0 < i < length L ->
-  nth_error L i = Some b ->
-  nth_error L (parent i) = Some a ->
-  b <<= a ->
-  swim (exchange L i (parent i)) (parent i) = swim L i.
+Lemma sink_step: forall L i p lc,
+  nth_error L i = Some p ->
+  nth_error L (left_child i) = Some lc ->
+  forall j, (match nth_error L (right_child i) with 
+              | None => j = left_child i /\ ~(p <<= lc) 
+              | Some rc => (j = left_child i /\ lc <<= rc /\ ~(p <<= lc)) \/ 
+                           (j = right_child i /\ ~(lc <<= rc) /\ (~p <<= rc)) 
+             end) ->
+  sink (exchange L i j, j) = sink (L, i).
 Proof.
-  intros. assert (parent i < i) by (apply parent_dec; unfold root_idx; lia).
-  rewrite (swim_equation L i). unfold swim1.
-  rewrite H0, H1.
-  case_eq (i <=? root_idx); intro. { apply Nat.leb_le in H4. unfold root_idx in H4. lia. }
-  case (b <<=? a); intro. 2: contradiction. trivial.
+  intros. rewrite (sink_equation (L, i)). unfold sink1.
+  rewrite H, H0. revert H1. case nth_error; intros. case (lc <<=? a); intros.
+  destruct H1 as [[? [? ?]] | [? [? ?]]]; subst j.
+  case (p <<=? lc); auto. contradiction. contradiction.
+  destruct H1 as [[? [? ?]] | [? [? ?]]]; subst j.
+  contradiction. case (p <<=? a); auto. contradiction.
+  destruct H1. subst.
+  case (p <<=? lc). contradiction. auto.
 Qed.
-*)
 
 (* removal preserves heap order *)
 
@@ -787,6 +791,14 @@ Proof.
   specialize (H i a).
   destruct i. contradiction.
   specialize (H H1). apply H. intro. lia.
+Qed.
+
+Lemma weak_heapOrdered_oob: forall i L,
+  i >= length L ->
+  weak_heapOrdered L i ->
+  heapOrdered L.
+Proof.
+  repeat intro. destruct H0. apply H0; auto. intro. subst i0. assert (i < length L) by (apply nth_error_Some; congruence). lia.
 Qed.
 
 Lemma sink1_hO: forall L j,
