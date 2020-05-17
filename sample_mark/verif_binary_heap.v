@@ -330,7 +330,7 @@ Definition exch_spec :=
 Definition sink_spec :=
   DECLARE _sink WITH i : Z, arr: val, arr_contents: list heap_item, first_available : Z
   PRE [tuint, tptr t_item, tuint]
-    PROP (0 <= i < Zlength arr_contents; 
+    PROP (0 <= i <= Zlength arr_contents; 
           first_available = Zlength arr_contents;
           (2 * first_available) + 1 < Int.modulus;
           weak_heap_ordered_top_down arr_contents i)
@@ -430,6 +430,13 @@ Definition Gprog : funspecs :=
 Lemma body_sink: semax_body Vprog Gprog f_sink sink_spec.
 Proof.
   start_function.
+  assert (Hc : i = Zlength arr_contents \/ 0 <= i < Zlength arr_contents) by lia. destruct Hc as [Hc | Hc].
+* (* Special case: oob sink, used when removing the last element of the heap. *)
+  forward_while ( PROP () LOCAL (temp _k (Vint (Int.repr i)); temp _first_available (Vint (Int.repr first_available))) SEP (harray arr_contents arr) ).
+  entailer. entailer. admit. lia. forward.
+  Exists arr_contents. entailer!.
+  eapply weak_heapOrdered_oob. 2: apply H2. rewrite Zlength_correct. lia.
+* (* Main line *)
   forward_while (EX i' : Z, EX arr_contents' : list heap_item, 
                  PROP (0 <= i' < Zlength arr_contents; 
                        sink arr_contents (Z.to_nat i) = sink arr_contents' (Z.to_nat i'))
@@ -482,7 +489,22 @@ Proof.
       { subst j'. rewrite Zright_child_unfold, Zleft_child_unfold in *; try lia. destruct b; lia. }
     forward.
     (* Prove loop invariant at loop bottom *)
-    admit. }
+    Exists (j',Zexchange arr_contents' i' j').
+    entailer!. split. subst j'. rewrite Zright_child_unfold, Zleft_child_unfold in *; try lia. destruct b; lia.
+    unfold sink at 2. unfold Zexchange. erewrite sink_step. apply H4.
+    apply Znth_nth_error; lia.
+    unfold left_child. replace (1 + Z.to_nat i' + Z.to_nat i')%nat with (Z.to_nat (2 * i' + 1)) by lia.
+    apply Znth_nth_error; lia.
+    rewrite <- Zleft_child_unfold; try lia.
+    case_eq (nth_error arr_contents' (right_child (Z.to_nat i'))); intros.
+    * (* From H0... feels like it should be a lemma. *)
+      assert (h = Znth (Zright_child i') arr_contents'). {
+        rewrite <- (nat_of_Z_eq (right_child _)) in H0.
+        rewrite Znth_nth_error in H0. inversion H0. trivial.
+        assert ((Z.to_nat (Z.of_nat (right_child (Z.to_nat i')))) < length arr_contents')%nat by (apply nth_error_Some; congruence).
+        rewrite Zlength_correct. lia. }
+      subst h. clear H0. subst j'. admit. (* destruct b. *) 
+    * admit. }
   { (* A bit annoying I have to do this twice... *)
     assert (Zlength arr_contents = Zlength arr_contents'). {
       unfold sink in H4. 
@@ -691,7 +713,8 @@ Proof.
     forward_call (0, arr, @nil heap_item, 0); rewrite Zlength_nil. 
       { unfold harray. rewrite data_at_isptr. entailer. (* Surely there's a less heavy hammer way to do this? *)
         rewrite data_at_zero_array_eq; auto. entailer!. }
-      { split; auto. split; auto. apply hOwhO. apply cmp_po. apply heapOrdered_empty. }
+      { split; auto. split; auto. split. simpl. generalize Int.modulus_gt_one. lia.
+        apply hOwhO. apply cmp_po. apply heapOrdered_empty. }
     (* Prove postcondition *)
     Intro vret. Exists (n, vret) root. entailer. (* Surely there's a less heavy hammer way to do this? *)
     destruct H. apply Permutation_nil in H12. subst vret. clear H Hy.
@@ -709,7 +732,7 @@ Proof.
     rewrite H2, Zexchange_head_foot. rewrite harray_split.
     forward_call (0, arr, (foot :: l0), Zlength (foot :: l0)). entailer!.
       { split. rewrite Zlength_cons. generalize (Zlength_nonneg l0). lia.
-        split; trivial.
+        split; trivial. split. admit. (* Need some bound... *)
         apply weak_heapOrdered_root with root.
         rewrite H4, app_comm_cons in H0.
         apply heapOrdered_cutfoot in H0. trivial. }
@@ -736,7 +759,7 @@ Proof.
     do 2 rewrite Zlength_one.
     rewrite Zlength_cons.
     rewrite H2, H10. cancel.
-Qed.
+Admitted.
 
 Lemma body_less: semax_body Vprog Gprog f_less less_spec.
 Proof.
