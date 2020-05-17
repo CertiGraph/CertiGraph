@@ -46,7 +46,7 @@ void sink (unsigned int k, Item arr[], unsigned int first_available) {
   while (LEFT_CHILD(k) < first_available) { /* Requirement that capacity <= MAX_SIZE be of reasonable size */
     unsigned j = LEFT_CHILD(k);
     if (j+1 < first_available && less(j+1, j, arr)) j++; /* careful with j+1 overflow? */
-    if (less(j, k, arr)) break;
+    if (less(k, j, arr)) break;
     exch(k, j, arr);
     k = j;
   }
