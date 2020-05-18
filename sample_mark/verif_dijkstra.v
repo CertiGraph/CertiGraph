@@ -1740,12 +1740,9 @@ Proof.
                 destruct (H66 H58).
                 1: {
                   destruct H67.
-                  assert ((path_cost g p1) = inf) by admit.
-                  unfold VType in *. lia.
-                  (* specialize (H68 p1 H54 H56). *)
-                  (* unfold VType in *. lia. *)
+                  destruct (H68 u); trivial.
+                  specialize (H70 H18). lia.
                 }
-
                 exfalso.
                 
                 destruct H67 as [p2mom' [? [? ?]]].
