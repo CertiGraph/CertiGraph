@@ -40,50 +40,11 @@ Definition inv_popped (g: LGraph) src prev priq dist dst :=
        (Znth m dist)
        (Znth dst (Znth m (graph_to_mat g))) = inf) /\
      (~ In m (get_popped priq) -> Znth m dist = inf)))
-
-    (* forall p, *)
-     (* valid_path g p -> *)
-     (* path_ends g p src dst -> *)
-     (* path_cost g p = inf) *)
-
-  (* forall m, In m (get_popped priq) -> *)
-             (* careful_add  *)
-               (* (Znth m dist) *)
-               (* (Znth dst (Znth m (graph_to_mat g))) = inf) *)
   \/
   (exists path,
       path_correct g prev dist src dst path /\
       path_in_popped g priq dist path /\
       path_globally_optimal g src dst path).
-
-
-(*
-Definition inv_popped_weak (g: LGraph) src prev priq dist dst u :=
-  In dst (get_popped priq) ->
-  (Znth dst dist = inf /\
-   forall m,
-     vvalid g m ->
-     m <> u ->
-     careful_add
-       (Znth m dist)
-       (Znth dst (Znth m (graph_to_mat g))) = inf)
-   (* forall p, *)
-     (* valid_path g p -> *)
-     (* path_ends g p src dst -> *)
-     (* ~ In u (epath_to_vpath g p) -> *)
-     (* path_cost g p = inf) *)
-
-  (* forall m, In m (get_popped priq) -> *)
-             (* m <> u -> *)
-             (* careful_add  *)
-               (* (Znth m dist) *)
-               (* (Znth dst (Znth m (graph_to_mat g))) = inf) *)
-  \/
-  (exists path,
-      path_correct g prev dist src dst path /\
-      path_in_popped g priq dist path /\ (* why don't I need weak? *)
-      path_globally_optimal g src dst path).
-*)
 
 Definition inv_unpopped g src prev priq dist dst :=
   Znth dst priq < inf ->
@@ -117,7 +78,6 @@ Definition inv_unpopped_weak g src prev priq dist dst u :=
 Definition inv_unseen g priq dist dst :=
   Znth dst priq = inf ->
   Znth dst dist = inf /\
-  (* Znth dst prev = inf /\ *)
   forall m, In m (get_popped priq) ->
             careful_add 
               (Znth m dist)
@@ -126,7 +86,6 @@ Definition inv_unseen g priq dist dst :=
 Definition inv_unseen_weak g priq dist dst u :=
   Znth dst priq = inf ->
   Znth dst dist = inf /\
-  (* Znth dst prev = inf /\ *)
   forall m, In m (get_popped priq) ->
             m <> u ->
             careful_add
