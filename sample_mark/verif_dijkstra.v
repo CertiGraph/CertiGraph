@@ -1286,7 +1286,7 @@ Proof.
           destruct H20; trivial. 1: lia. lia.
         }
         clear H19.
-        rename H20 into Hx.
+        rename H20 into Hx. 
         
         remember (upd_Znth u priq_contents (inf+1)) as priq_contents_popped.
         (* This is the priq array with which
@@ -2200,22 +2200,28 @@ Proof.
                           destruct (in_dec
                             (ZIndexed.eq) i
                             (get_popped priq_contents')).
-                          ---- (* i was popped *)
-                            destruct (H22 _ i0).
-                            ++++ (* i was popped at infinite cost *)
-                              destruct H65.
-                              assert (vvalid g u). {
-                                apply vvalid_range; trivial; lia.
-                              }
-                              specialize (H66 _ H67).
-                              rewrite H65 in H45.
-                              rewrite careful_add_clean in H66; trivial; lia.
-                            ++++ (* i was popped at non-inf cost *)
-                              exfalso. apply H46; trivial.
-                              destruct H65 as [p2i [? _]]. 
-                              destruct H65 as [? [? [? [? ?]]]]. lia.
-                          ---- (* i was unpopped *)
-                            admit.
+ ---- (* i was popped *)
+   destruct (H22 _ i0).
+   ++++ (* i was popped at infinite cost *)
+     destruct H65.
+     assert (vvalid g u). {
+       apply vvalid_range; trivial; lia.
+     }
+     specialize (H66 _ H67).
+     rewrite H65 in H45.
+     rewrite careful_add_clean in H66; trivial; lia.
+   ++++ (* i was popped at non-inf cost *)
+     exfalso. apply H46; trivial.
+     destruct H65 as [p2i [? _]]. 
+     destruct H65 as [? [? [? [? ?]]]]. lia.
+ ---- (* i was unpopped *)
+   assert (Znth i dist_contents' = inf) by admit.
+   (* coming up from tweak *)
+   rewrite <- H31 in H65.
+   assert (i <= i < SIZE) by lia.
+   destruct (H26 _ H66 H65).
+   admit.
+   
                             (* highly customized
                                fact coming up...
                              *)
