@@ -1,11 +1,11 @@
-#include "priorityqueue.h"
+#include "binary_heap.h"
 #include "unionfind_arr.h"
 #include <malloc.h>
 //extern void * mallocN(int n);
 //extern void free(void *p);
 #include <stdio.h>
 
-//adjacency matrices aren't good for Kruskal's, because the edge_list has to be constructed and sorted
+static const int SIZE = 8;  //don't want to use MAX_SIZE because mallocing that much is crazy
 
 struct edge {
     int weight; //weight at top for minor convenience
@@ -18,8 +18,18 @@ struct edge {
 struct graph {
     int V;   //represents number of vertices, assumes every 0<=n<=V is a vertex
     int E;
-    struct edge edge_list[SIZE];    //I'll change this once more when the pq is finalized
+    struct edge *edge_list;    //I'll change this once more when the pq is finalized
 };
+
+//creates a graph with zero vertices and edges
+struct graph * init_empty_graph() {
+    struct graph * empty_graph = (struct graph *) malloc(sizeof(struct graph));
+    struct edge *edge_list = (struct edge *) malloc(sizeof(struct edge) * SIZE);
+    empty_graph->V = 0;
+    empty_graph->E = 0;
+    empty_graph->edge_list = edge_list;
+    return empty_graph;
+}
 
 /*
 Modified version of qsort1 from Cbench. Wanted to import a generic verified quicksort, but
@@ -29,7 +39,7 @@ Modified version of qsort1 from Cbench. Wanted to import a generic verified quic
 a is flat edge array
 m is first index
 n is last index
-*/
+
 void sort_edges(struct edge* a, int m, int n) {
   int i, j, pivot;
   struct edge tmp;
@@ -51,65 +61,62 @@ void sort_edges(struct edge* a, int m, int n) {
     sort_edges(a, i, n);
   }
 }
+*/
 
 void free_graph(struct graph * graph) {
+    free(graph->edge_list);
     free(graph);
 }
 
-void kruskal(struct graph *graph, struct graph *mst) {
-    int V = graph->V;
-    struct subset* subsets = makeSet(V);
+struct graph *kruskal(struct graph *graph) {
+    int graph_V = graph->V;
+    int graph_E = graph->E;
+    struct subset *subsets = makeSet(graph_V);
+    struct graph *mst = init_empty_graph();
     
-    //"sort"
-    int pq[SIZE];   //better make a statement that all weights < IFTY
-    for (int i = 0; i < SIZE; ++i) {
-        pq[i] = IFTY;
-    }
-    for (int i = 0; i < graph->E; ++i) {
-        int weight = graph->edge_list[i].weight;      //I believe this is invalid in verifiable C, but normalization should handle it?
-        push(i, weight, pq);
-    }
+    //"add" all vertices
+    mst->V = graph_V;
 
-    while (!pq_emp(pq)) {
-        int next_edge = popMin(pq);
-        int u = graph->edge_list[next_edge].u;
-        int v = graph->edge_list[next_edge].v;
+    //"sort" edges
+    PQ* pq = make();
+    for (int i = 0; i < graph_E; ++i) {
+        Item item;
+        item.priority = graph->edge_list[i].weight;
+        item.data = (void*) (graph->edge_list + i);
+        insert(pq, &item);
+    }
+    
+    Item* next_item = remove_min(pq);
+    while (next_item != 0) {
+        //extract the data
+        struct edge* next_edge = (struct edge *) next_item->data;
+
+        int u = next_edge->u;
+        int v = next_edge->v;
+
+        //decide whether edge should be added using unionfind
         int ufind = find(subsets, u);
         int vfind = find(subsets, v);
         if (ufind != vfind) {
             //add edge to MST
-            mst->edge_list[mst->E].u = graph->edge_list[next_edge].u;
-            mst->edge_list[mst->E].v = graph->edge_list[next_edge].v;
-            mst->edge_list[mst->E].weight = graph->edge_list[next_edge].weight;
+            mst->edge_list[mst->E].u = u;
+            mst->edge_list[mst->E].v = v;
+            mst->edge_list[mst->E].weight = next_edge->weight;
+            //printf("Added\n");
             mst->E += 1;
             Union(subsets, u, v);
         }
+
+        //retrieve next edge
+        next_item = remove_min(pq);
     }
+
+    free(pq);
     free(subsets);
+    return mst;
 }
 
-void kruskal_sort(struct graph * graph, struct graph * mst) {
-    int V = graph->V;
-    struct subset* subsets = makeSet(V);
-    sort_edges(graph->edge_list, 0, graph->E);
-    for (int i = 0; i < graph->E; ++i) {
-        int u = graph->edge_list[i].u;      //I believe this is invalid in verifiable C, but normalization should handle it?
-        int v = graph->edge_list[i].v;
-        int ufind = find(subsets, u);
-        int vfind = find(subsets, v);
-        if (ufind != vfind) {
-            //add edge to MST
-            mst->edge_list[mst->E].u = graph->edge_list[i].u;
-            mst->edge_list[mst->E].v = graph->edge_list[i].v;
-            mst->edge_list[mst->E].weight = graph->edge_list[i].weight;
-            mst->E += 1;
-            Union(subsets, u, v);
-        }
-    }
-    free(subsets);
-}
-
-/*************************RUNTIME*************************/
+/*************************TESTING*************************/
 
 //create a sample graph
 struct graph * init_graph_sample() {
@@ -122,9 +129,11 @@ struct graph * init_graph_sample() {
        V2--------V3     V4-----V5
             W4
     */
-    struct graph * graph = malloc(sizeof(struct graph ));
+    struct graph * graph = (struct graph *) malloc(sizeof(struct graph));
     graph->V =6;
     graph->E = 6;
+    struct edge *edge_list = (struct edge *) malloc(sizeof(struct edge) * MAX_SIZE);
+    graph->edge_list = edge_list;
 
     // add edge 4-5
     graph->edge_list[0].u = 4;
@@ -171,27 +180,20 @@ struct graph * init_graph_sample() {
     return graph;
 }
 
-//creates a graph with zero edges
-struct graph * init_mst(int V) {
-    struct graph * mst = malloc(sizeof(struct graph ));
-    mst->V = V;
-    mst->E = 0;
-    return mst;
-}
-
 void print_graph(struct graph * graph) {
     printf("V: %d E: %d\n", graph->V, graph->E);
     for (int i = 0; i < graph->E; ++i) {
         printf("%d-%d %d\n", graph->edge_list[i].u, graph->edge_list[i].v, graph->edge_list[i].weight);
     }
+    printf("\n");
 }
 
 int main() {
     struct graph * graph = init_graph_sample();
+    printf("\nInitial graph\n");
     print_graph(graph);
-    printf("\n");
-    struct graph * mst = init_mst(graph->V);
-    kruskal(graph, mst);
+    struct graph * mst = kruskal(graph);
+    printf("\nResult graph\n");
     print_graph(mst);
     free_graph(mst);
     free_graph(graph);
