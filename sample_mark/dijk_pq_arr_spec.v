@@ -34,11 +34,12 @@ Definition path_in_popped (g: LGraph) priq dist path :=
 Definition inv_popped (g: LGraph) src prev priq dist dst :=
   In dst (get_popped priq) ->
   (Znth dst dist = inf /\
-   forall m,
+   (forall m,
      vvalid g m -> 
-     careful_add
+     (careful_add
        (Znth m dist)
-       (Znth dst (Znth m (graph_to_mat g))) = inf)
+       (Znth dst (Znth m (graph_to_mat g))) = inf) /\
+     (~ In m (get_popped priq) -> Znth m dist = inf)))
 
     (* forall p, *)
      (* valid_path g p -> *)
