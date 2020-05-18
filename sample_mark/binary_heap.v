@@ -305,7 +305,7 @@ Definition f_sink := {|
                             (Tcons tuint
                               (Tcons (tptr (Tstruct _structItem noattr))
                                 Tnil))) tint cc_default))
-            ((Etempvar _j tuint) :: (Etempvar _k tuint) ::
+            ((Etempvar _k tuint) :: (Etempvar _j tuint) ::
              (Etempvar _arr (tptr (Tstruct _structItem noattr))) :: nil))
           (Sifthenelse (Etempvar _t'3 tint) Sbreak Sskip))
         (Ssequence
