@@ -1317,7 +1317,7 @@ Proof.
                   *)
                forall dst,
                  In dst (get_popped priq_contents') ->
-                 Znth dst dist_contents' < inf;
+                 Znth dst dist_contents' <> inf;
                  
                  (* inv_unpopped is restored for those vertices
                  that the for loop has scanned and repaired *)
@@ -2234,7 +2234,13 @@ Proof.
                                apply get_popped_range in H63; lia.
                                lia.
                             ++++ apply get_popped_range in H63; lia.
-                --- admit. (* the new obligation *)
+                --- destruct (Z.eq_dec dst i).
+                    1: subst dst; rewrite upd_Znth_same; trivial; lia.
+                    rewrite upd_Znth_diff.
+                    rewrite <- get_popped_irrel_upd in H60.
+                    apply H23; trivial.
+                    all: trivial; try lia.
+                    all: apply get_popped_range in H60; rewrite upd_Znth_Zlength in H60; lia.
                 --- intros.
                     destruct (Z.eq_dec dst i).
                     +++ subst dst.
