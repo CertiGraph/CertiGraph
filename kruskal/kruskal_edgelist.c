@@ -24,6 +24,7 @@ struct graph {
 //creates a graph with zero vertices and edges
 struct graph * init_empty_graph() {
     struct graph * empty_graph = (struct graph *) mallocN(sizeof(struct graph));
+    //struct graph * empty_graph = (struct graph *) mallocN(12);
     struct edge *edge_list = (struct edge *) mallocN(sizeof(struct edge) * SIZE);
     empty_graph->V = 0;
     empty_graph->E = 0;
