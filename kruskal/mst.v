@@ -7,7 +7,7 @@ Require Import RamifyCoq.lib.relation_list.
 Require Import RamifyCoq.lib.Equivalence_ext.
 Require Import RamifyCoq.graph.graph_model.
 Require Import RamifyCoq.graph.FiniteGraph.
-Load "./kruskal/undirected_graph.v".
+Require Import RamifyCoq.kruskal.undirected_graph.
 
 Context {V E: Type} {EV: EqDec V eq} {EE: EqDec E eq}.
 Context {DV DG: Type}.
@@ -28,5 +28,5 @@ Definition DEList (g: LabeledGraph V E DV Z DG) {fg: FiniteGraph g} : list Z :=
 Definition sum_DE (g: LabeledGraph V E DV Z DG) {fg: FiniteGraph g} : Z :=
   fold_left Z.add (DEList g) 0.
 
-Definition MSF (g t: LabeledGraph V E DV Z DG) {fg: FiniteGraph g} {ft: FiniteGraph t}:=
+Definition minimum_spanning_forest (g t: LabeledGraph V E DV Z DG) {fg: FiniteGraph g} {ft: FiniteGraph t}:=
   spanning_uforest g t /\ forall (t': LabeledGraph V E DV Z DG) {ft': FiniteGraph t'}, spanning_uforest g t' -> sum_DE t <= sum_DE t'.

@@ -55,7 +55,7 @@ CERTIGC_FILES = \
   GCGraph.v verif_forward.v verif_do_scan.v verif_forward_roots.v verif_do_generation.v gc_correct.v
 
 KRUSKAL_FILES = \
-  kruskal_edgelist.v env_kruskal_edgelist.v WeightedEdgeListGraph.v
+  kruskal_edgelist.v env_kruskal_edgelist.v WeightedEdgeListGraph.v undirected_graph.v mst.v spatial_wedgearray_graph.v
 
 CLIGHT_FILES = sample_mark/mark_bi.v sample_mark/garbage_collector.v sample_mark/dispose_bi.v sample_mark/copy_bi.v sample_mark/summatrix.v
 

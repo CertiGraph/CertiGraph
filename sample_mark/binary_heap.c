@@ -1,7 +1,8 @@
+#include "binary_heap.h"
 extern void * mallocN (int n); /* Maybe there are better choices for allocators? */
-
-#define INITIAL_SIZE 8 /* Probably should be a power of 2, no more than max_int / 2 - 1? */
-#define MAX_SIZE (1 << 29) /* for 32-bit machine, is this the best we can do? */
+/*
+#define INITIAL_SIZE 8
+#define MAX_SIZE (1 << 29)
 
 #define ROOT_IDX       0
 #define LEFT_CHILD(x)  (2 * x) + 1
@@ -10,7 +11,7 @@ extern void * mallocN (int n); /* Maybe there are better choices for allocators?
 
 typedef struct structItem {
   int priority;
-  void* data; /* Should this be a union of void* and int? */
+  void* data;
 } Item;
 
 typedef struct structPQ {
@@ -18,7 +19,7 @@ typedef struct structPQ {
   unsigned int first_available;
   Item* heap_cells;
 } PQ;
-
+*/
 /* I'm assuming a decent compiler will inline the next two functions; if not they can be made #define macros. */
 void exch(unsigned int j, unsigned int k, Item arr[]) {
   int priority = arr[j].priority;
