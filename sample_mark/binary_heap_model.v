@@ -673,8 +673,8 @@ Definition sink1 (L : list A) (j : nat) : (list A) * (option nat) :=
    | None, _, _ | Some _, None, _ => (L, None)
    | Some root, Some Left, None => if root <<=? Left then (L, None) else (exchange L j (left_child j), Some (left_child j)) (* corner case *)
    | Some root, Some Left, Some Right => 
-     if Left <<=? Right then if root <<=? Left then (L, None) else (exchange L j (left_child j), Some (left_child j)) 
-     else if root <<=? Right then (L, None) else (exchange L j (right_child j), Some (right_child j))
+     if Right <<=? Left then if root <<=? Right then (L, None) else (exchange L j (right_child j), Some (right_child j)) 
+     else if root <<=? Left then (L, None) else (exchange L j (left_child j), Some (left_child j))
   end.
 
 Lemma sink1_length: forall L j,
@@ -683,9 +683,9 @@ Lemma sink1_length: forall L j,
   end.
 Proof.
   unfold sink1. intros. case (nth_error L j); trivial. case (nth_error L (left_child j)); trivial.
-  case (nth_error L (right_child j)); intros. case (a0 <<=? a). case (a1 <<=? a0); trivial.
+  case (nth_error L (right_child j)); intros. case (a <<=? a0). case (a1 <<=? a); trivial.
   rewrite exchange_length. trivial.
-  case (a1 <<=? a); trivial. rewrite exchange_length; trivial.
+  case (a1 <<=? a0); trivial. rewrite exchange_length; trivial.
   case (a0 <<=? a); trivial. rewrite exchange_length; trivial.
 Qed.
 
@@ -697,13 +697,13 @@ Proof.
   case_eq (nth_error L j). 2: discriminate.
   case_eq (nth_error L (left_child j)). 2: discriminate.
   case_eq (nth_error L (right_child j)).
-  do 6 intro. case (a0 <<=? a). case (a1 <<=? a0).
+  do 6 intro. case (a <<=? a0). case (a1 <<=? a).
   discriminate.
   intros. inversion H2. rewrite exchange_length.
-  split. apply left_child_inc. apply nth_error_Some; congruence.
-  case (a1 <<=? a). discriminate.
-  inversion 3. rewrite exchange_length.
   split. apply right_child_inc. apply nth_error_Some; congruence.
+  case (a1 <<=? a0). discriminate.
+  inversion 3. rewrite exchange_length.
+  split. apply left_child_inc. apply nth_error_Some; congruence.
   do 5 intro. case (a0 <<=? a). discriminate. 
   inversion 2.
   rewrite exchange_length.
@@ -751,9 +751,9 @@ Proof.
   case_eq (nth_error L (left_child i)); auto.
   intros. specialize (H0 _ H2).
   case_eq (nth_error L (right_child i)); intros.
-  specialize (H1 _ H3). case (a0 <<=? a1); intro.
-  case (a <<=? a0); auto. contradiction.
+  specialize (H1 _ H3). case (a1 <<=? a0); intro.
   case (a <<=? a1); auto. contradiction.
+  case (a <<=? a0); auto. contradiction.
   case (a <<=? a0); auto. contradiction.
 Qed.
 
@@ -762,17 +762,19 @@ Lemma sink_step: forall L i p lc,
   nth_error L (left_child i) = Some lc ->
   forall j, (match nth_error L (right_child i) with 
               | None => j = left_child i /\ ~(p <<= lc) 
-              | Some rc => (j = left_child i /\ lc <<= rc /\ ~(p <<= lc)) \/ 
-                           (j = right_child i /\ ~(lc <<= rc) /\ (~p <<= rc)) 
+              | Some rc => (j = left_child i /\ ~(rc <<= lc) /\ ~(p <<= lc)) \/ 
+                           (j = right_child i /\ rc <<= lc /\ (~p <<= rc)) 
              end) ->
   sink (exchange L i j, j) = sink (L, i).
 Proof.
   intros. rewrite (sink_equation (L, i)). unfold sink1.
-  rewrite H, H0. revert H1. case nth_error; intros. case (lc <<=? a); intros.
+  rewrite H, H0. revert H1. case nth_error; intros. case (a <<=? lc); intros.
   destruct H1 as [[? [? ?]] | [? [? ?]]]; subst j.
-  case (p <<=? lc); auto. contradiction. contradiction.
+  case (p <<=? a); auto. contradiction. contradiction.
+  case (p <<=? a); auto. contradiction.
   destruct H1 as [[? [? ?]] | [? [? ?]]]; subst j.
-  contradiction. case (p <<=? a); auto. contradiction.
+  case (p <<=? lc). contradiction. auto.
+  contradiction.
   destruct H1. subst.
   case (p <<=? lc). contradiction. auto.
 Qed.
@@ -827,29 +829,83 @@ Proof.
     + intros. assert (Hl : left_child j < length L) by (apply nth_error_Some; congruence).
       case_eq (nth_error L (right_child j)); intros.
       - assert (Hr: right_child j < length L) by (apply nth_error_Some; congruence).
-        case (a <<=? a1). 2: (destruct (Aleq_linear a a1); try contradiction; intros _).
-        ** case (a0 <<=? a). 2: (destruct (Aleq_linear a0 a); try contradiction; intros _).
+        case (a1 <<=? a). 2: (destruct (Aleq_linear a1 a); try contradiction; intros _).
+        ** case (a0 <<=? a1). 2: (destruct (Aleq_linear a0 a1); try contradiction; intros _).
            ++ repeat intro. case (eq_nat_dec i j).
               -- intro. subst j. rewrite H0, H2. rewrite H1 in H3. inversion H3. subst a4. clear H3.
+                 split; inversion 1; subst; auto.
+                 transitivity a1; auto.
+              -- intro. destruct H. apply H; auto.
+           ++ split; intros.
+              -- case (eq_nat_dec i j); intro.
+                 *** subst j.
+                     rewrite nth_error_exchange in H5; try lia.
+                     rewrite nth_error_exchange'; try lia.
+                     rewrite nth_error_exchange''; try lia.
+                     rewrite H1, H0.
+                     rewrite H2 in H5. inversion H5. subst a3. clear H5.
+                     split; inversion 1; subst; auto.
+                 *** rewrite nth_error_exchange'' in H5; auto.
+                     assert (right_child i <> right_child j) by (intro Hq; apply right_child_inj in Hq; auto).
+                     destruct H. case (eq_nat_dec j (right_child i)); intro.
+                     +++ subst j. rewrite nth_error_exchange; try lia.
+                         rewrite H2. split.
+                         --- intro. rewrite nth_error_exchange''.
+                             intro. specialize (H i a3 n H5). apply H in H8. trivial.
+                             generalize (left_child_lt_right_child i). lia.
+                             intro. eapply left_child_neq_right_child; eauto.
+                         --- inversion 1. subst c. clear H8.
+                             apply H7 with (right_child (right_child i)); auto.
+                             apply right_child_root.
+                             apply parent_right_child.
+                             rewrite parent_right_child; auto.
+                     +++ split. 2: rewrite nth_error_exchange''; auto; apply H; auto.
+                         case (eq_nat_dec j (left_child i)); intro.
+                         --- subst j. rewrite nth_error_exchange; try lia.
+                             rewrite H2. inversion 1. subst b. clear H8.
+                             eapply H7. 3: apply H2.
+                             apply left_child_root.
+                             rewrite parent_right_child. trivial.
+                             rewrite parent_left_child. trivial.
+                         --- rewrite nth_error_exchange''; auto.
+                             apply H; auto.
+                             generalize (left_child_neq_right_child i j). lia.
+              -- repeat intro.
+                 rewrite parent_right_child in H7. rewrite nth_error_exchange in H7; try lia.
+                 rewrite H2 in H7. inversion H7. subst a3. clear H7.
+                 assert (parent jj < jj). { apply parent_dec. unfold root_idx. assert (jj = 0 \/ jj > 0) by lia. 
+                   destruct H7; trivial. subst jj. change 0 with root_idx in H5. rewrite parent_root in H5.
+                   generalize (left_child_root j). lia. }
+                 rewrite nth_error_exchange'' in H6; try lia.
+                 destruct H.
+                 assert (right_child j <> j) by lia.
+                 specialize (H _ _ H9 H2). destruct H.
+                 rewrite <- H5 in *.
+                 destruct (even_or_odd jj).
+                 apply H10. rewrite right_child_parent_even; auto. generalize (left_child_root j); intro. lia.
+                 apply H. rewrite left_child_parent_odd; auto.
+        ** case (a0 <<=? a). 2: (destruct (Aleq_linear a0 a); try contradiction; intros _).
+           ++ repeat intro. case (eq_nat_dec i j).
+              -- intro. subst j. rewrite H0, H2. rewrite H1 in H4. inversion H4. subst a3. clear H4.
                  split; inversion 1; subst; auto.
                  transitivity a; auto.
               -- intro. destruct H. apply H; auto.
            ++ intros. split; intros.
               -- case (eq_nat_dec i j); intro.
                  *** subst j.
-                     rewrite nth_error_exchange in H5; try lia.
+                     rewrite nth_error_exchange in H6; try lia.
                      rewrite nth_error_exchange'; try lia.
                      rewrite nth_error_exchange''; try lia.
                      rewrite H1, H2.
-                     rewrite H0 in H5. inversion H5. subst a3. clear H5.
+                     rewrite H0 in H6. inversion H6. subst a2. clear H6.
                      split; inversion 1; subst; auto.
-                 *** rewrite nth_error_exchange'' in H5; auto.
+                 *** rewrite nth_error_exchange'' in H6; auto.
                      assert (left_child i <> left_child j) by (intro Hq; apply left_child_inj in Hq; auto).
                      destruct H. case (eq_nat_dec j (left_child i)); intro.
                      +++ subst j. rewrite nth_error_exchange; try lia.
                          rewrite H0. split.
-                         --- inversion 1. subst b. clear H8.
-                             apply H7 with (left_child (left_child i)); auto.
+                         --- inversion 1. subst b. clear H9.
+                             apply H8 with (left_child (left_child i)); auto.
                              apply left_child_root.
                              apply parent_left_child.
                              rewrite parent_left_child; auto.
@@ -861,8 +917,8 @@ Proof.
                          apply H; auto.
                          case (eq_nat_dec j (right_child i)); intro.
                          --- subst j. rewrite nth_error_exchange; try lia.
-                             rewrite H0. inversion 1. subst c. clear H8.
-                             eapply H7. 3: apply H0.
+                             rewrite H0. inversion 1. subst c. clear H9.
+                             eapply H8. 3: apply H0.
                              apply right_child_root.
                              rewrite parent_left_child. trivial.
                              rewrite parent_right_child. trivial.
@@ -870,69 +926,15 @@ Proof.
                              apply H; auto.
                              apply left_child_neq_right_child.
               -- repeat intro.
-                 rewrite parent_left_child in H7. rewrite nth_error_exchange in H7; try lia.
-                 rewrite H0 in H7. inversion H7. subst a3. clear H7.
-                 assert (parent jj < jj). { apply parent_dec. unfold root_idx. assert (jj = 0 \/ jj > 0) by lia. 
-                   destruct H7; trivial. subst jj. change 0 with root_idx in H5. rewrite parent_root in H5.
-                   generalize (left_child_root j). lia. }
-                 rewrite nth_error_exchange'' in H6; try lia.
-                 destruct H.
-                 assert (left_child j <> j) by lia.
-                 specialize (H _ _ H9 H0). destruct H.
-                 rewrite <- H5 in *.
-                 destruct (even_or_odd jj).
-                 apply H10. rewrite right_child_parent_even; auto. generalize (left_child_root j); intro. lia.
-                 apply H. rewrite left_child_parent_odd; auto.
-        ** case (a0 <<=? a1). 2: (destruct (Aleq_linear a0 a1); try contradiction; intros _).
-           ++ repeat intro. case (eq_nat_dec i j).
-              -- intro. subst j. rewrite H0, H2. rewrite H1 in H4. inversion H4. subst a3. clear H4.
-                 split; inversion 1; subst; auto.
-                 transitivity a1; auto.
-              -- intro. destruct H. apply H; auto.
-           ++ split; intros.
-              -- case (eq_nat_dec i j); intro.
-                 *** subst j.
-                     rewrite nth_error_exchange in H6; try lia.
-                     rewrite nth_error_exchange'; try lia.
-                     rewrite nth_error_exchange''; try lia.
-                     rewrite H1, H0.
-                     rewrite H2 in H6. inversion H6. subst a2. clear H6.
-                     split; inversion 1; subst; auto.
-                 *** rewrite nth_error_exchange'' in H6; auto.
-                     assert (right_child i <> right_child j) by (intro Hq; apply right_child_inj in Hq; auto).
-                     destruct H. case (eq_nat_dec j (right_child i)); intro.
-                     +++ subst j. rewrite nth_error_exchange; try lia.
-                         rewrite H2. split.
-                         --- intro. rewrite nth_error_exchange''.
-                             intro. specialize (H i a2 n H6). apply H in H9. trivial.
-                             generalize (left_child_lt_right_child i). lia.
-                             intro. eapply left_child_neq_right_child; eauto.
-                         --- inversion 1. subst c. clear H9.
-                             apply H8 with (right_child (right_child i)); auto.
-                             apply right_child_root.
-                             apply parent_right_child.
-                             rewrite parent_right_child; auto.
-                     +++ split. 2: rewrite nth_error_exchange''; auto; apply H; auto.
-                         case (eq_nat_dec j (left_child i)); intro.
-                         --- subst j. rewrite nth_error_exchange; try lia.
-                             rewrite H2. inversion 1. subst b. clear H9.
-                             eapply H8. 3: apply H2.
-                             apply left_child_root.
-                             rewrite parent_right_child. trivial.
-                             rewrite parent_left_child. trivial.
-                         --- rewrite nth_error_exchange''; auto.
-                             apply H; auto.
-                             generalize (left_child_neq_right_child i j). lia.
-              -- repeat intro.
-                 rewrite parent_right_child in H8. rewrite nth_error_exchange in H8; try lia.
-                 rewrite H2 in H8. inversion H8. subst a2. clear H8.
+                 rewrite parent_left_child in H8. rewrite nth_error_exchange in H8; try lia.
+                 rewrite H0 in H8. inversion H8. subst a2. clear H8.
                  assert (parent jj < jj). { apply parent_dec. unfold root_idx. assert (jj = 0 \/ jj > 0) by lia. 
                    destruct H8; trivial. subst jj. change 0 with root_idx in H6. rewrite parent_root in H6.
                    generalize (left_child_root j). lia. }
                  rewrite nth_error_exchange'' in H7; try lia.
                  destruct H.
-                 assert (right_child j <> j) by lia.
-                 specialize (H _ _ H10 H2). destruct H.
+                 assert (left_child j <> j) by lia.
+                 specialize (H _ _ H10 H0). destruct H.
                  rewrite <- H6 in *.
                  destruct (even_or_odd jj).
                  apply H11. rewrite right_child_parent_even; auto. generalize (left_child_root j); intro. lia.
@@ -1031,9 +1033,9 @@ Proof.
   case (nth_error L j); auto.
   case (nth_error L (left_child j)); auto.
   case (nth_error L (right_child j)); intros.
-  case (a0 <<=? a). case (a1 <<=? a0); auto.
+  case (a <<=? a0). case (a1 <<=? a); auto.
   intros. symmetry. apply exchange_permutation.
-  case (a1 <<=? a); auto.
+  case (a1 <<=? a0); auto.
   intros. symmetry. apply exchange_permutation.
   case (a0 <<=? a); auto.
   intros. symmetry. apply exchange_permutation.
