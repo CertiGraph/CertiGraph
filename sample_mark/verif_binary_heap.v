@@ -433,7 +433,7 @@ Proof.
   assert (Hc : i = Zlength arr_contents \/ 0 <= i < Zlength arr_contents) by lia. destruct Hc as [Hc | Hc].
 * (* Special case: oob sink, used when removing the last element of the heap. *)
   forward_while ( PROP () LOCAL (temp _k (Vint (Int.repr i)); temp _first_available (Vint (Int.repr first_available))) SEP (harray arr_contents arr) ).
-  entailer. entailer. admit. lia. forward.
+  entailer. entailer. admit. (* minor bug in C code, should be unsigned? *) lia. forward.
   Exists arr_contents. entailer!.
   eapply weak_heapOrdered_oob. 2: apply H2. rewrite Zlength_correct. lia.
 * (* Main line *)
@@ -475,9 +475,8 @@ Proof.
       { forward. subst j'. rewrite Zright_child_unfold, Zleft_child_unfold in *; try lia. entailer. apply prop_right. tauto. }
       { forward. entailer. }
     Intros. (* Need to get the PROP above the bar... why doesn't forward_call do this for me? *)
-    forward_call (j', i', arr, arr_contents'). { subst j'.
-      rewrite Zright_child_unfold, Zleft_child_unfold in *; try lia. destruct b; lia. }
-    forward_if (PROP (~cmp_rel (Znth j' arr_contents') (Znth i' arr_contents');
+    forward_call (i', j', arr, arr_contents'). { subst j'. rewrite Zright_child_unfold, Zleft_child_unfold in *; try lia. destruct b; lia. }
+    forward_if (PROP (~cmp_rel (Znth i' arr_contents') (Znth j' arr_contents');
                       if b then Zright_child i' <  first_available /\  cmp_rel (Znth (Zright_child i') arr_contents') (Znth (Zleft_child i') arr_contents')
                            else Zright_child i' >= first_available \/ ~cmp_rel (Znth (Zright_child i') arr_contents') (Znth (Zleft_child i') arr_contents') )
                 LOCAL (temp _t'1 (Val.of_bool b); temp _k (Vint (Int.repr i')); temp _j (Vint (Int.repr j')); temp _arr arr; temp _first_available (Vint (Int.repr first_available))) 
@@ -502,9 +501,17 @@ Proof.
         rewrite <- (nat_of_Z_eq (right_child _)) in H0.
         rewrite Znth_nth_error in H0. inversion H0. trivial.
         assert ((Z.to_nat (Z.of_nat (right_child (Z.to_nat i')))) < length arr_contents')%nat by (apply nth_error_Some; congruence).
-        rewrite Zlength_correct. lia. }
-      subst h. clear H0. subst j'. admit. (* destruct b. *) 
-    * admit. }
+        rewrite Zlength_correct. lia. } subst h.
+      (* Probably another lemma... *)
+      assert (Zright_child i' < Zlength arr_contents'). {
+        assert (right_child (Z.to_nat i') < length arr_contents')%nat by (apply nth_error_Some; congruence).
+        unfold Zright_child. rewrite Zlength_correct. lia. }
+      clear H0. subst j'. destruct b.
+      + right. split. unfold Zright_child. lia. tauto.
+      + left. split. unfold Zleft_child. lia. destruct H6. lia. tauto.
+    * subst j'. destruct b. 
+      + rewrite H5 in H6. apply nth_error_None in H0. destruct H6. unfold Zright_child in H6. rewrite Zlength_correct in H6. lia.
+      + split. unfold Zleft_child. lia. tauto. }
   { (* A bit annoying I have to do this twice... *)
     assert (Zlength arr_contents = Zlength arr_contents'). {
       unfold sink in H4. 
@@ -874,4 +881,3 @@ Proof.
       rewrite Znth_Zexchange''; auto.
       repeat rewrite upd_Znth_diff; autorewrite with sublist; trivial.
 Qed.
-
