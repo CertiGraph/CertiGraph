@@ -11,11 +11,13 @@ Require Import RamifyCoq.sample_mark.dijkstra.
 
 Local Open Scope Z_scope.
 
+(*
 Definition get_popped pq : list VType :=
   map snd (filter (fun x => (fst x) =? (inf + 1))
                   (combine pq (nat_inc_list (Z.to_nat (Zlength pq))))).
+ *)
 
-Definition path_correct (g: LGraph) prev dist src dst p : Prop  :=
+Definition path_correct (g: LGraph) (prev dist: list VType) src dst p : Prop  :=
   valid_path g p /\
   path_ends g p src dst /\
   path_cost g p < inf /\ 
@@ -27,77 +29,77 @@ Definition path_globally_optimal (g: LGraph) src dst p : Prop :=
              path_ends g p' src dst ->
              path_cost g p <= path_cost g p'.
 
-Definition path_in_popped (g: LGraph) priq dist path :=
+Definition path_in_popped (g: LGraph) popped dist path :=
   forall step, In_path g step path ->
-               In step (get_popped priq) /\ Znth step dist < inf.
+               In step popped /\ Znth step dist < inf.
 
-Definition inv_popped (g: LGraph) src prev priq dist dst :=
-  In dst (get_popped priq) ->
+Definition inv_popped (g: LGraph) src (popped prev dist : list VType) dst :=
+  In dst popped ->
   (Znth dst dist = inf /\
    (forall m,
      vvalid g m -> 
      (careful_add
        (Znth m dist)
        (Znth dst (Znth m (graph_to_mat g))) = inf) /\
-     (~ In m (get_popped priq) -> Znth m dist = inf)))
+     (~ In m popped -> Znth m dist = inf)))
   \/
   (exists path,
       path_correct g prev dist src dst path /\
-      path_in_popped g priq dist path /\
+      path_in_popped g popped dist path /\
       path_globally_optimal g src dst path).
 
-Definition inv_unpopped g src prev priq dist dst :=
+Definition inv_unpopped (g: LGraph) src (popped prev priq dist: list VType) (dst: VType) :=
   Znth dst priq < inf ->
   dst = src \/
   (dst <> src /\
    let mom := Znth dst prev in
-   In mom (get_popped priq) /\
+   In mom popped /\
    elabel g (mom, dst) < inf /\
    (Znth mom dist) + (Znth dst (Znth mom (graph_to_mat g))) < inf /\
    Znth dst dist = Znth mom dist + Znth dst (Znth mom (graph_to_mat g)) /\
    forall mom',
-     In mom' (get_popped priq) ->
+     In mom' popped ->
      Znth dst dist <= careful_add (Znth mom' dist) (Znth dst (Znth mom' (graph_to_mat g)))).
 
-Definition inv_unpopped_weak g src prev priq dist dst u :=
+Definition inv_unpopped_weak (g: LGraph) (src: VType) (popped prev priq dist : list VType) (dst u : VType) :=
   Znth dst priq < inf ->
   dst = src \/
   dst <> src /\
   (let mom := Znth dst prev in
    mom <> u /\
-   In mom (get_popped priq) /\
+   In mom popped /\
    elabel g (mom, dst) < inf /\
    Znth mom dist + (Znth dst (Znth mom (graph_to_mat g))) < inf /\
    Znth dst dist = Z.add (Znth mom dist) (Znth dst (Znth mom (graph_to_mat g))) /\
    forall mom',
      mom' <> u ->
-     In mom' (get_popped priq) ->
+     In mom' popped ->
      Znth dst dist <=
      careful_add (Znth mom' dist) (Znth dst (Znth mom' (graph_to_mat g)))).
   
-Definition inv_unseen g priq dist dst :=
+Definition inv_unseen g (popped priq dist: list VType) (dst : VType) :=
   Znth dst priq = inf ->
   Znth dst dist = inf /\
-  forall m, In m (get_popped priq) ->
+  forall m, In m popped ->
             careful_add 
               (Znth m dist)
               (Znth dst (Znth m (graph_to_mat g))) = inf.
 
-Definition inv_unseen_weak g priq dist dst u :=
+Definition inv_unseen_weak g (popped priq dist: list VType) (dst u : VType) :=
   Znth dst priq = inf ->
   Znth dst dist = inf /\
-  forall m, In m (get_popped priq) ->
+  forall m, In m popped ->
             m <> u ->
             careful_add
               (Znth m dist)
               (Znth dst (Znth m (graph_to_mat g))) = inf.
                                                            
-Definition dijkstra_correct (g: LGraph) (src : VType) (prev priq dist: list VType) : Prop :=
+Definition dijkstra_correct (g: LGraph) src popped prev priq dist : Prop :=
   forall dst,
     vvalid g dst ->
-    inv_popped g src prev priq dist dst /\
-    inv_unpopped g src prev priq dist dst /\
-    inv_unseen g priq dist dst.
+    inv_popped g src popped prev dist dst /\
+    inv_unpopped g src popped prev priq dist dst /\
+    inv_unseen g popped priq dist dst.
 
 Definition push_spec :=
   DECLARE _push
@@ -167,7 +169,7 @@ Definition popMin_spec :=
 Definition dijkstra_spec :=
   DECLARE _dijkstra
   WITH sh: wshare, g: Graph, arr : pointer_val,
-                                   dist : pointer_val, prev : pointer_val, src : Z
+                                   dist : pointer_val, prev : pointer_val, src : VType
   PRE [tptr (tarray tint SIZE), tint, tptr tint, tptr tint]
    PROP (0 <= src < SIZE;
         Forall (fun list => Zlength list = SIZE) (graph_to_mat g);
@@ -184,19 +186,21 @@ Definition dijkstra_spec :=
        data_at_ Tsh (tarray tint SIZE) (pointer_val_val dist);
        data_at_ Tsh (tarray tint SIZE) (pointer_val_val prev))
   POST [tvoid]
-   EX prev_contents : list Z,
-   EX dist_contents : list Z,
-   EX priq_contents : list Z,
-   PROP (dijkstra_correct g src prev_contents priq_contents dist_contents)
+   EX prev_contents : list VType,
+   EX dist_contents : list VType,
+   EX priq_contents : list VType,
+   EX popped_verts: list VType,                             
+   PROP (dijkstra_correct g src popped_verts prev_contents priq_contents dist_contents)
    LOCAL ()
    SEP (graph_rep sh (graph_to_mat g) (pointer_val_val arr);
        data_at Tsh (tarray tint SIZE) (map Vint (map Int.repr prev_contents)) (pointer_val_val prev);
        data_at Tsh (tarray tint SIZE) (map Vint (map Int.repr dist_contents)) (pointer_val_val dist)).
 
 
-Definition Gprog : funspecs := ltac:(with_library prog
-                                                  [push_spec;
-                                                  pq_emp_spec;
-                                                  adjustWeight_spec;
-                                                  popMin_spec;
-                                                  dijkstra_spec]).
+Definition Gprog : funspecs :=
+  ltac:(with_library prog
+                     [push_spec;
+                     pq_emp_spec;
+                     adjustWeight_spec;
+                     popMin_spec;
+                     dijkstra_spec]).
