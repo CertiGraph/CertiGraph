@@ -441,7 +441,7 @@ Proof.
   assert (Hc : i = Zlength arr_contents \/ 0 <= i < Zlength arr_contents) by lia. destruct Hc as [Hc | Hc].
 * (* Special case: oob sink, used when removing the last element of the heap. *)
   forward_while ( PROP () LOCAL (temp _k (Vint (Int.repr i)); temp _first_available (Vint (Int.repr first_available))) SEP (harray arr_contents arr) ).
-  entailer!. entailer. (* ?? *) admit. (* minor bug in C code, should be unsigned? *) exfalso. lia.
+  entailer!. entailer. exfalso. lia.
   forward.
   Exists arr_contents. entailer!.
   eapply weak_heapOrdered_oob. 2: apply H2. rewrite Zlength_correct. lia.
@@ -459,7 +459,6 @@ Proof.
     generalize (sink_permutation _ cmp_rel cmp_dec arr_contents' (Z.to_nat i')); intro.
     apply Permutation_Zlength in H5. apply Permutation_Zlength in H6. congruence. }
   forward_if (Zleft_child i' < first_available).
-    { entailer!. (* minor bug in C code, should be unsigned? *) admit. }
     { forward. entailer!. rewrite Zleft_child_unfold; lia. }
     { forward. (* Prove postcondition *)
       Exists arr_contents'. entailer!. unfold sink at 2 in H4.
@@ -473,7 +472,7 @@ Proof.
       lia.
       intros. assert (right_child (Z.to_nat i') < length arr_contents')%nat by (apply nth_error_Some; congruence).
       unfold right_child in H7. lia. }
-  forward. entailer!. admit.
+  forward.
   rewrite mul_repr, add_repr. rewrite <- Zleft_child_unfold. 2: lia.
   forward_if (EX b : bool, PROP (if b then Zright_child i' <  first_available /\  cmp_rel (Znth (Zright_child i') arr_contents') (Znth (Zleft_child i') arr_contents')
                                       else Zright_child i' >= first_available \/ ~cmp_rel (Znth (Zright_child i') arr_contents') (Znth (Zleft_child i') arr_contents') )
@@ -557,6 +556,7 @@ Proof.
     + subst j'. destruct b.
       - rewrite H5 in H7. apply nth_error_None in H0. destruct H7. unfold Zright_child in H7. rewrite Zlength_correct in H7. lia.
       - split. unfold Zleft_child. lia. tauto.
+(* Time Qed. *)
 Admitted.
 
 Lemma body_swim: semax_body Vprog Gprog f_swim swim_spec.
