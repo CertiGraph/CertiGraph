@@ -70,7 +70,7 @@ Proof.
     2: inversion H18. apply lt_repr in Heqb1. 2: apply rest_space_repable_signed.
     2: apply used_space_repable_signed. clear -H8 H3 Heqb1. red in H3.
     unfold graph_gen_size, rest_gen_size in H3. rewrite H8 in H3. lia.
-  - Intros. deadvars!. localize [space_struct_rep sh t_info from].
+  - Intros. localize [space_struct_rep sh t_info from].
     unfold space_struct_rep, space_tri. do 2 (forward; [subst from_p; entailer!|]).
     replace_SEP 0 (space_struct_rep sh t_info from) by
         (unfold space_struct_rep, space_tri; entailer!).
@@ -89,13 +89,11 @@ Proof.
       unfold thread_info_rep. unfold heap_struct_rep. Intros. entailer!.
       unfold space_address, next_address, field_address. rewrite if_true.
       - simpl. rewrite offset_offset_val. f_equal.
-      - destruct H as [[_ [_ ?]] _]. clear -H H5 H29. unfold field_compatible in *.
-        simpl in *. unfold in_members. simpl. intuition. red in H5.
-        pose proof (spaces_size (ti_heap t_info)). rewrite Zlength_correct in H4.
-        rep_lia. } thaw FR.
+      - destruct H as [[_ [_ ?]] _]. unfold field_compatible in *.
+        simpl in *. unfold in_members. simpl. intuition. } thaw FR.
     forward_call (rsh, sh, gv, fi, ti, g, t_info, f_info, roots, outlier, from, to).
     1: intuition. Intros vret. destruct vret as [[g1 t_info1] roots1]. simpl fst in *.
-    simpl snd in *. freeze [0;1;2;3] FR. deadvars!.
+    simpl snd in *. freeze [0;1;2;3] FR. 
     replace (space_address t_info from) with (space_address t_info1 from) by
         (unfold space_address; rewrite (proj1 H26); reflexivity).
     assert (space_start (nth_space t_info1 from) = gen_start g1 from). {
@@ -118,7 +116,7 @@ Proof.
       unfold thread_info_rep. unfold heap_struct_rep. entailer!.
       unfold space_address, next_address, field_address. rewrite (proj1 H26), if_true.
       - simpl. rewrite offset_offset_val. f_equal.
-      - clear -H36 H15. unfold field_compatible in *. simpl.
+      - unfold field_compatible in *. simpl.
         unfold in_members. simpl. intuition. }
     assert (closure_has_v g (to, number_of_vertices (nth_gen g to))) by
         (red; simpl; unfold closure_has_index; split; [assumption | lia]).
@@ -135,7 +133,7 @@ Proof.
     forward_call (rsh, sh, gv, fi, ti, g1, t_info1, f_info, roots1, outlier,
                   from, to, number_of_vertices (nth_gen g to)). 1: intuition.
     Intros vret. destruct vret as [g2 t_info2]. simpl fst in *. simpl snd in *.
-    deadvars!. forward_if True; Intros; [contradiction | forward; entailer! |].
+    forward_if True; Intros; [contradiction | forward; entailer! |].
     replace (space_address t_info1 from) with (space_address t_info2 from) in * by
         (unfold space_address; rewrite (proj1 H37); reflexivity).
     assert (space_start (nth_space t_info2 from) = gen_start g2 from). {
@@ -144,7 +142,7 @@ Proof.
       unfold gen_start. rewrite if_true by assumption. reflexivity. }
     assert (isptr (space_start (nth_space t_info2 from))). {
       rewrite H38. unfold gen_start. destruct H35 as [_ [? _]].
-      rewrite if_true by assumption. apply start_isptr. } deadvars!.
+      rewrite if_true by assumption. apply start_isptr. } 
     freeze [0;1;2;3] FR. localize [space_struct_rep sh t_info2 from].
     unfold space_struct_rep, space_tri. forward.
     replace_SEP 0 (space_struct_rep sh t_info2 from) by
@@ -157,7 +155,7 @@ Proof.
                                (ti_heap_p t_info2)). {
       entailer!. unfold space_address. unfold field_address. rewrite if_true.
       - simpl. f_equal.
-      - clear -H14 H42. unfold field_compatible in *. simpl in *. intuition. }
+      - unfold field_compatible in *. simpl in *. intuition. }
     rewrite H40. clear H40. Opaque Znth. forward. Transparent Znth. 1: entailer!.
     rewrite Znth_map by (rewrite spaces_size; rep_lia).
     rewrite <- nth_space_Znth. unfold space_tri at 2 3. thaw FR.
@@ -171,7 +169,7 @@ Proof.
     + unfold thread_info_rep. simpl ti_heap_p. simpl ti_args. entailer!.
       assert (from < length (spaces (ti_heap t_info2)))%nat by
           (destruct H34 as [[_ [_ ?]] _]; red in H40; lia). simpl.
-      rewrite (reset_nth_space_Znth _ _ H45), <- nth_space_Znth, <- upd_Znth_map.
+      rewrite (reset_nth_space_Znth _ _ H53), <- nth_space_Znth, <- upd_Znth_map.
       unfold space_tri at 3. simpl. replace (WORD_SIZE * 0)%Z with 0 by lia.
       rewrite isptr_offset_val_zero by assumption. cancel.
     + apply super_compatible_reset with (gen := from) in H34.
