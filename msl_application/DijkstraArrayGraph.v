@@ -18,7 +18,6 @@ Coercion lg_gg: GeneralGraph >-> LabeledGraph.
 
 Local Open Scope logic.
 Local Open Scope Z_scope.
-Print EqDec.
 
 Instance Z_EqDec : EqDec Z eq. Proof. hnf. intros. apply Z.eq_dec. Defined.
 
@@ -33,8 +32,9 @@ Definition is_null_Z: DecidablePred Z := existT (fun P : Z -> Prop => forall a :
  *)
 
 Definition VType : Type := Z.
-Definition EType : Type := VType * Z.
-Definition LE : Type := Z.
+Definition EType : Type := VType * VType.
+Definition ElabelType : Type := Z. (* labels are in Z *)
+Definition LE : Type := ElabelType.
 Definition LV: Type := list LE.
 Definition LG: Type := unit.
 
@@ -45,7 +45,7 @@ Instance E_EqDec: EqDec EType eq.
 Proof.
   hnf. intros [x] [y].
   destruct (equiv_dec x y).
-  - hnf in e. destruct (Z.eq_dec z z0); subst.
+  - hnf in e. destruct (Z.eq_dec v v0); subst.
     + left; reflexivity.
     + right. intro. apply n. inversion H. reflexivity.
   - right; intro; apply c; inversion H; reflexivity.
@@ -143,7 +143,7 @@ Lemma if_false_bool:
     b = false -> (if b then a else c) = c.
 Proof. intros. rewrite H. trivial. Qed.
 
-Definition careful_add (a b : Z) :=
+Definition careful_add a b :=
   if a =? 0 then b else
     if b =? 0 then a else
       if orb (a <? 0) (b <? 0) then -1 else
@@ -343,7 +343,7 @@ Proof.
       destruct (inf <=? a + b); [inversion H1 | trivial].
 Qed.
 
-Definition path_cost (g: LGraph) (path : @path VType EType) :=
+Definition path_cost (g: LGraph) (path : @path VType EType) : ElabelType :=
   fold_left careful_add (map (elabel g) (snd path)) 0.
 
 Definition inrange_graph grph_contents :=
@@ -539,10 +539,11 @@ Proof.
   assert ((fold_left careful_add (map (elabel g) (snd p1)) 0) = (path_cost g p1))
     by now unfold path_cost.
   Set Printing All.
-  unfold LE in *. rewrite H0. 
+  unfold LE, ElabelType in *.
+  rewrite H0. 
   unfold path_cost at 3.
   remember (map (elabel g) (snd p2)) as l2.
-  unfold LE in *.
+  unfold LE, ElabelType in *.
   rewrite <- Heql2.
   Unset Printing All.
   remember (path_cost g p1) as c1.
@@ -599,7 +600,7 @@ Proof.
   assert ((fold_left careful_add (map (elabel g) (snd p1)) 0) = (path_cost g p1))
     by now unfold path_cost.
   Set Printing All.
-  unfold LE in *. rewrite H4. 
+  unfold LE, ElabelType in *. rewrite H4. 
   Unset Printing All.
   rewrite <- (careful_add_id (path_cost g p1)).
   apply path_cost_init_inf; trivial.
