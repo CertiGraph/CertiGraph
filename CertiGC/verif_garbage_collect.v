@@ -79,7 +79,9 @@ Proof.
                                    (map space_tri (tl (spaces (ti_heap t_info))))).
        rewrite Zlength_cons. lia. }
   rewrite sublist_1_cons, Zlength_cons, sublist_same by lia.
-  fold (space_tri (nth_space t_info 0)). rewrite <- map_cons.
+  rewrite Znth_0_cons.
+  fold (space_tri (nth_space t_info 0)).
+  rewrite <- map_cons.
   replace (nth_space t_info 0 :: tl (spaces (ti_heap t_info))) with
       (spaces (ti_heap t_info)) by
       (destruct (heap_head_cons (ti_heap t_info)) as [hs [hl [? ?]]];
