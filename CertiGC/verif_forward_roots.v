@@ -10,7 +10,7 @@ Proof.
   simpl sem_binary_operation'.
   replace (force_val (sem_add_ptr_int tuint Signed fi (vint 2))) with
       (offset_val 8 fi) by (rewrite sem_add_pi_ptr_special' by auto; reflexivity).
-  remember (Zlength (live_roots_indices f_info)) as n. deadvars!.
+  remember (Zlength (live_roots_indices f_info)) as n.
   replace_SEP 1 (fun_info_rep rsh f_info fi) by entailer.
   assert (Zlength roots = Zlength (live_roots_indices f_info)). {
     destruct H as [_ [? _]]. red in H.
@@ -49,7 +49,7 @@ Proof.
       simpl. lia. } forward. do 2 rewrite Znth_pos_cons by lia.
     replace (i + 2 - 1 - 1) with i by lia. apply semax_if_seq. rewrite Heqn in H6.
     pose proof (fi_index_range _ _ (Znth_In _ _ H6)). forward_if.
-    + deadvars!. forward. do 2 rewrite Znth_pos_cons by lia.
+    + forward. do 2 rewrite Znth_pos_cons by lia.
       replace (i + 2 - 1 - 1) with i by lia.
       remember (Znth i (live_roots_indices f_info)).
       replace_SEP 1 (fun_info_rep rsh f_info fi) by entailer.

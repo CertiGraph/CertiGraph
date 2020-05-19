@@ -187,7 +187,7 @@ Proof.
       sep_apply (graph_and_heap_rest_v_in_range_iff _ _ _ _ H H7 H19). Intros.
       rewrite <- Heqfp, <- Heqgn, <- Heqfn in H20. destruct vv.
       * Intros. rewrite H20 in v0. clear H20. forward_if.
-        2: exfalso; inversion H20. deadvars!. freeze [1; 2; 3; 4; 5; 6] FR.
+        2: exfalso; inversion H20. freeze [1; 2; 3; 4; 5; 6] FR.
         clear H20 H20'. localize [vertex_rep (nth_sh g (vgeneration v)) g v].
         unfold vertex_rep, vertex_at. Intros. rewrite v0.
         assert (readable_share (nth_sh g from)) by
@@ -200,7 +200,7 @@ Proof.
             (unfold vertex_rep, vertex_at; entailer!).
         unlocalize [graph_rep g]. 1: apply (graph_vertex_ramif_stable _ _ H19).
         forward_if; rewrite make_header_int_rep_mark_iff in H21.
-        -- deadvars!. localize [vertex_rep (nth_sh g (vgeneration v)) g v].
+        -- localize [vertex_rep (nth_sh g (vgeneration v)) g v].
            rewrite v0. unfold vertex_rep, vertex_at. Intros.
            unfold make_fields_vals at 2. rewrite H21.
            assert (0 <= 0 < Zlength (make_fields_vals g v)). {
@@ -285,7 +285,7 @@ Proof.
              simpl spaces. rewrite <- upd_Znth_map. unfold cut_space.
              unfold space_tri at 3. simpl. unfold heap_struct_rep. cancel. }
            sep_apply (graph_vertex_ramif_stable _ _ H19). Intros.
-           freeze [1; 2; 3; 4; 5] FR. deadvars!. rewrite v0.
+           freeze [1; 2; 3; 4; 5] FR. rewrite v0.
            remember (nth_sh g from) as shv.
            assert (writable_share (space_sh sp_to)) by
                (rewrite <- H24; apply generation_share_writable).
@@ -314,7 +314,7 @@ Proof.
                (WORD_SIZE * (used_space sp_to + 1))%Z by rep_lia.
            remember (offset_val (WORD_SIZE * (used_space sp_to + 1))
                                 (space_start sp_to)) as nv.
-           thaw FR. freeze [0; 1; 2; 3; 4; 5] FR. rename i into j. deadvars!.
+           thaw FR. freeze [0; 1; 2; 3; 4; 5] FR. rename i into j.
            remember (Zlength (raw_fields (vlabel g v))) as n.
            assert (isptr nv) by (subst nv; rewrite isptr_offset_val; assumption).
            remember (field_address thread_info_type
@@ -582,7 +582,7 @@ Proof.
                      constructor; easy.
                      Transparent super_compatible.
               ** assert (depth = 0) by lia. subst depth. clear H42.
-                 deadvars!. clear Heqnv. forward.
+                 clear Heqnv. forward.
                  remember (cut_thread_info
                              t_info (Z.of_nat to) (vertex_size g v) Hi Hh).
                  Exists (lgraph_copy_v g v to) (update_thread_info_arg t lz nv H16)
@@ -765,7 +765,7 @@ Proof.
       * (* yes, is_from *)
         rewrite H21 in v0. clear H21. forward_if.
         2: exfalso; inversion H21.
-        deadvars!. freeze [1; 2; 3; 4; 5; 6] FR.
+        freeze [1; 2; 3; 4; 5; 6] FR.
         clear H21 H21'. localize [vertex_rep (nth_sh g (vgeneration v')) g v'].
         unfold vertex_rep, vertex_at. Intros. rewrite v0.
         assert (readable_share (nth_sh g from)) by
@@ -780,7 +780,6 @@ Proof.
         unlocalize [graph_rep g]. 1: apply (graph_vertex_ramif_stable _ _ H19).
         forward_if; rewrite make_header_int_rep_mark_iff in H22.
         -- (* yes, already forwarded *)
-          deadvars!.
           localize [vertex_rep (nth_sh g (vgeneration v')) g v'].
           change (Tpointer tvoid {| attr_volatile := false;
                                     attr_alignas := Some 2%N |}) with int_or_ptr_type.
@@ -896,7 +895,7 @@ Proof.
              simpl spaces. rewrite <- upd_Znth_map. unfold cut_space.
              unfold space_tri at 3. simpl. unfold heap_struct_rep. cancel. }
            sep_apply (graph_vertex_ramif_stable _ _ H19). Intros.
-           freeze [1; 2; 3; 4; 5] FR. deadvars!. rewrite v0.
+           freeze [1; 2; 3; 4; 5] FR. rewrite v0.
            remember (nth_sh g from) as shv.
            assert (writable_share (space_sh sp_to)) by
                (rewrite <- H25; apply generation_share_writable).
@@ -925,7 +924,7 @@ Proof.
                (WORD_SIZE * (used_space sp_to + 1))%Z by rep_lia.
            remember (offset_val (WORD_SIZE * (used_space sp_to + 1))
                                 (space_start sp_to)) as nv.
-           thaw FR. freeze [0; 1; 2; 3; 4; 5] FR. rename i into j. deadvars!.
+           thaw FR. freeze [0; 1; 2; 3; 4; 5] FR. rename i into j. 
            remember (Zlength (raw_fields (vlabel g v'))) as n'.
            assert (isptr nv) by (subst nv; rewrite isptr_offset_val; assumption).
            remember (field_address heap_type
@@ -1260,7 +1259,7 @@ Proof.
                                    (sublist 0 (i + 1)
                                             (vertex_pos_pairs g1 (new_copied_v g to)))
                                    g1 g4). {
-                           eapply forward_loop_add_tail_vpp; eauto. subst n' g1 from.
+                            eapply forward_loop_add_tail_vpp; eauto. subst n' g1 from.
                            rewrite <- lgd_raw_fld_length_eq. subst g'.
                            rewrite lcv_vlabel_new; assumption. }
                          entailer!.

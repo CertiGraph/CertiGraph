@@ -202,7 +202,7 @@ Proof.
         eapply (svwl_gen_unmarked from to _ g); eauto.
         destruct H0 as [_ [_ [? _]]]. assumption. }
       specialize (H26 H14 _ H8).
-      rewrite make_header_Wosize, make_header_tag by assumption. deadvars!.
+      rewrite make_header_Wosize, make_header_tag by assumption.
       fold (next_address t_info' to). thaw FR.
       fold (heap_struct_rep sh l (ti_heap_p t_info')).
       gather_SEP
