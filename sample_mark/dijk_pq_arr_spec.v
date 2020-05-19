@@ -53,11 +53,13 @@ Definition inv_unpopped (g: LGraph) src (popped prev priq dist: list VType) (dst
   dst = src \/
   (dst <> src /\
    let mom := Znth dst prev in
+   vvalid g mom /\
    In mom popped /\
    elabel g (mom, dst) < inf /\
    (Znth mom dist) + (Znth dst (Znth mom (graph_to_mat g))) < inf /\
    Znth dst dist = Znth mom dist + Znth dst (Znth mom (graph_to_mat g)) /\
    forall mom',
+     vvalid g mom' ->
      In mom' popped ->
      Znth dst dist <= careful_add (Znth mom' dist) (Znth dst (Znth mom' (graph_to_mat g)))).
 
@@ -67,28 +69,32 @@ Definition inv_unpopped_weak (g: LGraph) (src: VType) (popped prev priq dist : l
   dst <> src /\
   (let mom := Znth dst prev in
    mom <> u /\
+   vvalid g mom /\
    In mom popped /\
    elabel g (mom, dst) < inf /\
    Znth mom dist + (Znth dst (Znth mom (graph_to_mat g))) < inf /\
    Znth dst dist = Z.add (Znth mom dist) (Znth dst (Znth mom (graph_to_mat g))) /\
    forall mom',
      mom' <> u ->
+     vvalid g mom' ->
      In mom' popped ->
      Znth dst dist <=
      careful_add (Znth mom' dist) (Znth dst (Znth mom' (graph_to_mat g)))).
   
-Definition inv_unseen g (popped priq dist: list VType) (dst : VType) :=
+Definition inv_unseen (g: LGraph) (popped priq dist: list VType) (dst : VType) :=
   Znth dst priq = inf ->
   Znth dst dist = inf /\
-  forall m, In m popped ->
+  forall m, vvalid g m ->
+            In m popped ->
             careful_add 
               (Znth m dist)
               (Znth dst (Znth m (graph_to_mat g))) = inf.
 
-Definition inv_unseen_weak g (popped priq dist: list VType) (dst u : VType) :=
+Definition inv_unseen_weak (g: LGraph) (popped priq dist: list VType) (dst u : VType) :=
   Znth dst priq = inf ->
   Znth dst dist = inf /\
-  forall m, In m popped ->
+  forall m, vvalid g m ->
+            In m popped ->
             m <> u ->
             careful_add
               (Znth m dist)
