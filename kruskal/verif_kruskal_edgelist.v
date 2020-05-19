@@ -41,6 +41,9 @@ Definition kruskal_mallocN_spec :=
 
 (*It'll be useful if we can come up with some freeN spec, then centralize these in some header*)
 
+(* AM: You have a bug in the calls to graph_rep. *)
+
+(*
 Definition init_empty_graph_spec :=
   DECLARE _kruskal
   WITH sh: wshare
@@ -90,3 +93,5 @@ Definition kruskal_spec :=
    LOCAL (temp ret_temp pointer_msf)
    SEP (graph_rep sh g (pointer_val_val pointer_g);
         graph_rep sh msf pointer_msf).
+
+*)
