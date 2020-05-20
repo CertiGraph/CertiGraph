@@ -48,8 +48,9 @@ Definition inv_popped (g: LGraph) src (popped prev dist : list VType) dst :=
       path_in_popped g popped dist path /\
       path_globally_optimal g src dst path).
 
-Definition inv_unpopped (g: LGraph) src (popped prev priq dist: list VType) (dst: VType) :=
-  Znth dst priq < inf ->
+Definition inv_unpopped (g: LGraph) src (popped prev dist: list VType) (dst: VType) :=
+  ~ In dst popped ->
+  Znth dst dist < inf ->
   dst = src \/
   (dst <> src /\
    let mom := Znth dst prev in
@@ -63,8 +64,9 @@ Definition inv_unpopped (g: LGraph) src (popped prev priq dist: list VType) (dst
      In mom' popped ->
      Znth dst dist <= careful_add (Znth mom' dist) (Znth dst (Znth mom' (graph_to_mat g)))).
 
-Definition inv_unpopped_weak (g: LGraph) (src: VType) (popped prev priq dist : list VType) (dst u : VType) :=
-  Znth dst priq < inf ->
+Definition inv_unpopped_weak (g: LGraph) (src: VType) (popped prev dist : list VType) (dst u : VType) :=
+  ~ In dst popped ->
+  Znth dst dist < inf ->
   dst = src \/
   dst <> src /\
   (let mom := Znth dst prev in
@@ -81,18 +83,18 @@ Definition inv_unpopped_weak (g: LGraph) (src: VType) (popped prev priq dist : l
      Znth dst dist <=
      careful_add (Znth mom' dist) (Znth dst (Znth mom' (graph_to_mat g)))).
   
-Definition inv_unseen (g: LGraph) (popped priq dist: list VType) (dst : VType) :=
-  Znth dst priq = inf ->
-  Znth dst dist = inf /\
+Definition inv_unseen (g: LGraph) (popped dist: list VType) (dst : VType) :=
+  ~ In dst popped ->
+  Znth dst dist = inf ->
   forall m, vvalid g m ->
             In m popped ->
             careful_add 
               (Znth m dist)
               (Znth dst (Znth m (graph_to_mat g))) = inf.
 
-Definition inv_unseen_weak (g: LGraph) (popped priq dist: list VType) (dst u : VType) :=
-  Znth dst priq = inf ->
-  Znth dst dist = inf /\
+Definition inv_unseen_weak (g: LGraph) (popped dist: list VType) (dst u : VType) :=
+  ~ In dst popped ->
+  Znth dst dist = inf ->
   forall m, vvalid g m ->
             In m popped ->
             m <> u ->
@@ -100,12 +102,12 @@ Definition inv_unseen_weak (g: LGraph) (popped priq dist: list VType) (dst u : V
               (Znth m dist)
               (Znth dst (Znth m (graph_to_mat g))) = inf.
                                                            
-Definition dijkstra_correct (g: LGraph) src popped prev priq dist : Prop :=
+Definition dijkstra_correct (g: LGraph) src popped prev dist : Prop :=
   forall dst,
     vvalid g dst ->
     inv_popped g src popped prev dist dst /\
-    inv_unpopped g src popped prev priq dist dst /\
-    inv_unseen g popped priq dist dst.
+    inv_unpopped g src popped prev dist dst /\
+    inv_unseen g popped dist dst.
 
 Definition push_spec :=
   DECLARE _push
@@ -194,9 +196,8 @@ Definition dijkstra_spec :=
   POST [tvoid]
    EX prev_contents : list VType,
    EX dist_contents : list VType,
-   EX priq_contents : list VType,
    EX popped_verts: list VType,                             
-   PROP (dijkstra_correct g src popped_verts prev_contents priq_contents dist_contents)
+   PROP (dijkstra_correct g src popped_verts prev_contents dist_contents)
    LOCAL ()
    SEP (graph_rep sh (graph_to_mat g) (pointer_val_val arr);
        data_at Tsh (tarray tint SIZE) (map Vint (map Int.repr prev_contents)) (pointer_val_val prev);
