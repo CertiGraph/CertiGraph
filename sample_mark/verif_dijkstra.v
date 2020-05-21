@@ -49,7 +49,7 @@ Definition inrange_priq priq_contents :=
 Definition inrange_dist dist_contents :=
   Forall (fun x => 0 <= x <= inf) dist_contents.
 
-Lemma inrange_upd_Znth: forall (l: list Z) i new F,
+Lemma Forall_upd_Znth: forall (l: list Z) i new F,
     0 <= i < Zlength l ->
     Forall F l -> F new ->
     Forall F (upd_Znth i l new).
@@ -72,16 +72,6 @@ Lemma Znth_dist_cases:
 Proof.
   intros.
   apply (Forall_Znth _ _ _ H) in H0.
-  simpl in H0. lia.
-Qed.
-
-Lemma Znth_priq_cases:
-  forall i priq,
-    0 <= i < Zlength priq ->
-    inrange_priq priq ->
-    Znth i priq = inf + 1 \/ Znth i priq = inf \/ Znth i priq < inf.
-Proof.
-  intros. apply (Forall_Znth _ _ _ H) in H0.
   simpl in H0. lia.
 Qed.
 
@@ -931,9 +921,9 @@ Qed.
 (* All lemmas about get_popped will probably need rethinking. *)
 
 (* HIGHLY TEMPORARY *)
-Definition get_unpopped pq : list VType :=
-  map snd (filter (fun x => (fst x) <? (inf + 1))
-                  (combine pq (nat_inc_list (Z.to_nat (Zlength pq))))).
+(* Definition get_unpopped pq : list VType := *)
+  (* map snd (filter (fun x => (fst x) <? (inf + 1)) *)
+                  (* (combine pq (nat_inc_list (Z.to_nat (Zlength pq))))). *)
 
 Lemma get_popped_meaning:
   forall popped priq i,
@@ -1105,7 +1095,7 @@ Proof.
           rewrite new. compute. split; inversion 1.
         }
         split3; [| |split3; [| |split]];
-        try apply inrange_upd_Znth;
+        try apply Forall_upd_Znth;
         try rewrite upd_Znth_same; try lia; trivial.
         all: rewrite <- inf_eq; unfold SIZE in *; lia.
       }
@@ -1216,7 +1206,7 @@ Proof.
           2: rewrite <- inf_eq; compute; split; [inversion 1 | trivial]. 
           clear Htemp.
           
-          forward. 
+          forward.  
           Exists prev_contents (upd_Znth u priq_contents (inf + 1)) dist_contents (u :: popped_verts).
           entailer!.
           remember (find priq_contents (fold_right Z.min (hd 0 priq_contents) priq_contents)
@@ -1229,29 +1219,21 @@ Proof.
             + subst index. rewrite upd_Znth_same in H33; lia.
             + rewrite upd_Znth_Zlength in H15; trivial; [|lia].
               rewrite upd_Znth_diff in H33; trivial; [|lia].
-              destruct (Z.eq_dec (Znth index priq_contents) (inf + 1)).
-              1: lia.
-              rewrite Hequ in H19.              
-              rewrite <- H8 in H19; trivial.
-              2: apply vvalid_range; trivial; lia.
-              2: rewrite <- Hequ; trivial.
-
-              assert (Hrem := H33).
-              rewrite H8 in H33; trivial.
-              2: apply vvalid_range; trivial; lia.
-              2: rewrite (get_popped_meaning _ priq_contents); trivial.
-              rewrite Znth_find in H19.
-              2: { apply min_in_list. apply incl_refl.
+              rewrite <- H33.
+              rewrite Hequ, <- H8, Znth_find in H19.
+              * rewrite <- H19.
+                apply Z.le_ge.
+                apply fold_min.
+                apply Znth_In; trivial.
+              * apply min_in_list. apply incl_refl.
                    rewrite <- Znth_0_hd; [apply Znth_In|]; lia.
-              }
-              apply Z.le_ge.
-              rewrite <- H19.
-              apply fold_min_general.
-              rewrite <- Hrem.
-              apply Znth_In; lia.
-          -
-            (* unfold VType in *. *)
-            unfold dijkstra_correct in H4 |- *.
+              * apply vvalid_range; trivial.
+                replace SIZE with (Zlength priq_contents).
+                apply find_range.
+                apply min_in_list. apply incl_refl.
+                rewrite <- Znth_0_hd; [apply Znth_In|]; lia.
+              * rewrite <- Hequ; trivial.
+          - unfold dijkstra_correct in H4 |- *.
             intros. specialize (H4 _ H15).
             destruct H4 as [? [? ?]].
             split3.
@@ -1319,8 +1301,10 @@ Proof.
                      apply Znth_In. lia.
                    }
                    specialize (H42 H43).
-                   destruct (Znth_priq_cases m priq_contents) as [? |[ ? | ?]]; try ulia.
-                   
+                   apply Z.le_antisymm; trivial.
+                   apply (Forall_Znth _ _ m) in H11.
+                   simpl in H11.
+                   all: ulia.
               * apply in_inv in H35; destruct H35; [lia|].
                 destruct (H4 H35); [left | right].
                 -- destruct H36; split; trivial. 
@@ -1533,17 +1517,9 @@ Proof.
             ** (* show that u is a valid entrant *)
               subst dst.
               unfold inv_unpopped in H34.
-
-              (* we get this because u popped from a non-empty PQ *)
-              assert (Znth u priq_contents < inf + 1). {
-                apply find_min_lt_inf; auto. unfold SIZE in H11. lia.
+              assert (Znth u dist_contents < inf). {
+                trivial.
               }
-              
-              apply Zlt_succ_le in H36.
-              apply Z.lt_eq_cases in H36.
-              destruct H36.
-              2: rewrite H8 in H36; trivial; lia.
-              rewrite H8 in H36; trivial.
               specialize (H34 H18 H36).
               destruct H34.
               1: { (* src is being popped *)
@@ -2059,7 +2035,7 @@ Proof.
              rewrite upd_Znth_diff; trivial.
              apply H8; trivial.
              apply not_in_cons in H32; destruct H32 as [_ ?]. trivial. ulia.
-          ++ apply inrange_upd_Znth; trivial.
+          ++ apply Forall_upd_Znth; trivial.
              ulia.
              rewrite <- inf_eq; rep_lia.
         -- (* We now begin with the for loop's body *)
@@ -2170,13 +2146,8 @@ Proof.
                 (* We know that we are definitely
                    going to make edits in the arrays:
                    we have found a better path to i, via u *)
-
                 rename H46 into improvement.
                 
-                assert (Htemp : 0 <= i < Zlength priq_contents') by lia.
-                pose proof (Znth_priq_cases i priq_contents' Htemp H34).
-                clear Htemp.
-                rename H46 into icases.
                 assert (Hivalid: vvalid g i). {
                   apply vvalid_range; ulia.
                 }
@@ -2242,6 +2213,12 @@ Proof.
                            try apply vvalid_range; trivial.
                 }
                 
+                assert (Htemp : 0 <= i < Zlength dist_contents') by lia.
+                pose proof (Znth_dist_cases i dist_contents' Htemp H35).
+                clear Htemp.
+                rename H47 into icases.
+                rewrite <- H32 in icases; trivial.
+
                 assert (0 <= i < Zlength (map Vint (map Int.repr dist_contents'))) by
                     (repeat rewrite Zlength_map; lia).
                 forward. forward. forward.
@@ -2521,28 +2498,7 @@ Proof.
  (* Digression: a brief check to see if i was popped, 
     unseen, or just unpopped. 
   *)
-                              destruct icases as [? | [? | ?]].
-                              1: {
-                                (* i was popped *)
-                                rewrite <- (get_popped_meaning popped_verts') in H79 by lia.
-                                destruct (Z.eq_dec (Znth i dist_contents') inf).
-                                - (* I was popped with infinite distance *)
-                                  assert (i <= i < SIZE) by lia.
-                                  destruct (H22 _ Hivalid H79).
-                                  + destruct H81.
-                                    destruct (H82 mom').
-                                    trivial.
-                                    unfold VType in *;
-                                      rewrite H83.
-                                    lia.
-                                  + destruct H81 as [p2i [? [? ?]]].
-                                    destruct H81 as [? [? [? [? ?]]]].
-                                    unfold VType in *; lia.
-                                - (* i was popped with noninfinite distance *)
-                                  exfalso. 
-                                  apply H46; trivial.
-                              }
-                              
+                              destruct icases.
                               1: {
                                 (* i was unseen *)
                                 assert (i <= i < SIZE) by lia.
@@ -2607,27 +2563,7 @@ Proof.
                                 apply in_path_eq_epath_to_vpath; trivial.
                               }
 
-                              destruct icases as [? | [? | ?]].
-                              1: {
-                                (* i was popped *)
-                                rewrite <- (get_popped_meaning popped_verts') in H80 by lia.
-                                destruct (Z.eq_dec (Znth i dist_contents') inf).
-                                - (* i was popped with infinite distance *)
-                                  assert (i <= i < SIZE) by lia.
-                                  destruct (H22 _ Hivalid H80).
-                                  + destruct H82.
-                                    destruct (H83 mom').
-                                    trivial.
-                                    unfold VType in *;
-                                      rewrite H84; trivial. lia.
-                                  + destruct H82 as [p2i [? [? ?]]].
-                                    destruct H82 as [? [? [? [? ?]]]].
-                                    unfold VType in *; lia.
-                                - (* i was popped with noninfinite distance *)
-                                  exfalso. 
-                                  apply H46; trivial.
-                              }
-
+                              destruct icases.
                               1: {
                                 (* i was unseen *)
                                 assert (i <= i < SIZE) by lia.
@@ -2772,8 +2708,8 @@ Proof.
                         repeat rewrite upd_Znth_diff; trivial; try lia.
                         apply H32; trivial.
                         rewrite vvalid_range; trivial.
-                --- apply inrange_upd_Znth; trivial; try lia.
-                --- split; apply inrange_upd_Znth; trivial; try lia.
+                --- apply Forall_upd_Znth; trivial; try lia.
+                --- split; apply Forall_upd_Znth; trivial; try lia.
              ** rewrite Int.signed_repr in H46
                  by (rewrite <- inf_eq in *; rep_lia).
                 (* This is the branch where we didn't
