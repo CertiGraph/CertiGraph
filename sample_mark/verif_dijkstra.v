@@ -930,7 +930,7 @@ Lemma get_popped_meaning:
     0 <= i < Zlength priq ->
     In i popped <-> Znth i priq = inf + 1.
 Admitted.
-  
+
 (** PROOF BEGINS **)
 
 Lemma body_dijkstra: semax_body Vprog Gprog f_dijkstra dijkstra_spec.
@@ -2345,8 +2345,7 @@ Proof.
                         
                         destruct (H22 _ Hu H31).
                         1: unfold VType in *; lia.
-                        destruct H62 as [p2u [? [? ?]]].
-                        
+                        clear H62.
                         unfold VType in *.
                         rewrite upd_Znth_same by lia.
                         split3; [| |split3; [| |split]]; trivial.
@@ -3075,7 +3074,7 @@ Proof.
                      destruct (zlt (Znth mom' dist_contents' + Znth i (Znth mom' (graph_to_mat g))) inf).
                      2: {
                        unfold VType in *.
-                       destruct H64 as [? [? [? [? ?]]]].
+                       clear H64.
                        destruct (zlt (Znth i (Znth mom' (graph_to_mat g))) inf).
                        - rewrite careful_add_dirty; trivial;
                            lia.
