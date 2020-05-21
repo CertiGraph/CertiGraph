@@ -104,6 +104,7 @@ simpl. rewrite data_at_zero_array_eq. entailer!.
 reflexivity. apply H4. rewrite empty_WEdgeListGraph_graph_to_wedgelist. simpl. reflexivity.
 Qed.
 
+(*
 Definition kruskal_spec :=
   DECLARE _kruskal
   WITH gv: globals, sh: wshare, g: WEdgeListGraph, gptr : pointer_val, eptr : pointer_val
@@ -123,6 +124,7 @@ Definition kruskal_spec :=
    SEP (data_at sh tint (Vint (Int.repr MAX_EDGES)) (gv _MAX_EDGES);
         wedgearray_graph_rep sh g (pointer_val_val gptr);
         wedgearray_graph_rep sh msf pointer_msf).
+ *)
 
 (*
 Idea of proof:
