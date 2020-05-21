@@ -1018,7 +1018,8 @@ Proof.
            (* Some special facts about src *)
            Znth src dist_contents = 0;
            Znth src prev_contents = src;
-           Znth src priq_contents <> inf;
+           (* Znth src priq_contents <> inf; *)
+           True;
       
            (* A fact about the relationship b/w 
               dist and priq arrays *)
@@ -1094,7 +1095,7 @@ Proof.
           intros ? new. apply in_list_repeat in new.
           rewrite new. compute. split; inversion 1.
         }
-        split3; [| |split3; [| |split]];
+        split3; [| |split3];
         try apply Forall_upd_Znth;
         try rewrite upd_Znth_same; try lia; trivial.
         all: rewrite <- inf_eq; unfold SIZE in *; lia.
@@ -1131,6 +1132,11 @@ Proof.
       * inversion H20. 
     + (* Now the body of the while loop begins. *)
       Intros prev_contents priq_contents dist_contents popped_verts.
+      rename H10 into H11.
+      rename H9 into H10.
+      rename H8 into H9.
+      rename H7 into H8.
+      assert (H7: 1 = 1) by trivial.
       assert_PROP (Zlength priq_contents = SIZE).
       { entailer!. now repeat rewrite Zlength_map in *. }
       assert_PROP (Zlength prev_contents = SIZE).
@@ -1451,7 +1457,8 @@ Proof.
                  (* further, some useful facts about src... *)
                  Znth src dist_contents' = 0;
                  Znth src prev_contents' = src;
-                 Znth src priq_contents' <> inf;
+                 (* Znth src priq_contents' <> inf; *)
+                 1 = 1;
                  
                  (* a useful fact about u *)
                  In u popped_verts';
@@ -1500,7 +1507,7 @@ Proof.
           remember (find priq_contents
                          (fold_right Z.min (hd 0 priq_contents)
                                      priq_contents) 0) as u. 
-          split3; [| | split3; [| |split3; [| |split]]]; trivial.
+          split3; [| | split3; [| |split3]]; trivial.
           ++ (* We must show inv_popped for all
                 dst that are in range. *)
             unfold inv_popped. intros.
@@ -2019,9 +2026,6 @@ Proof.
              destruct (H4 dst H15) as [_ [_ ?]].
              apply H37; trivial.
              simpl in H35; destruct H35; [lia | trivial].
-          ++ destruct (Z.eq_dec src u).
-             1: subst src; rewrite upd_Znth_same; ulia.
-             rewrite upd_Znth_diff; try ulia.
           ++ apply in_eq.
           ++ intros.
              assert (dst <> u). {
@@ -2052,6 +2056,13 @@ Proof.
           freeze FR := (data_at _ _ _ _) (data_at _ _ _ _) (data_at _ _ _ _).
           rewrite (graph_unfold _ _ _ u) by lia.
           Intros.
+          rename H34 into H35.
+          rename H33 into H34.
+          rename H32 into H33.
+          rename H31 into H32.
+          rename H30 into H31.
+          assert (H30: 1 = 1) by trivial.
+          
           freeze FR2 :=
             (iter_sepcon (list_rep sh SIZE (pointer_val_val arr) (graph_to_mat g))
                          (sublist 0 u (nat_inc_list (Z.to_nat (Zlength (graph_to_mat g))))))
@@ -2241,7 +2252,7 @@ Proof.
                 repeat rewrite <- upd_Znth_map. entailer!.
                 remember (find priq_contents (fold_right Z.min (hd 0 priq_contents) priq_contents) 0) as u.
                 assert (u <> i) by (intro; subst; lia).
-                split3; [| | split3; [| | split3; [| | split3; [| | split3; [| |split]]]]]; intros.
+                split3; [| | split3; [| | split3; [| | split3; [| | split]]]]; intros.
                 --- unfold inv_popped; intros.
                     pose proof (H22 dst H60 H61).
                     assert (n: dst <> i). {
@@ -2699,8 +2710,6 @@ Proof.
                     intro. subst src; lia.
                 --- rewrite upd_Znth_diff; try lia.
                     intro. subst src; lia.
-                --- rewrite upd_Znth_diff; try lia.
-                    intro. subst src; lia.
                 --- destruct (Z.eq_dec dst i).
                     +++ rewrite e.
                         repeat rewrite upd_Znth_same; trivial; lia.
@@ -2708,8 +2717,7 @@ Proof.
                         repeat rewrite upd_Znth_diff; trivial; try lia.
                         apply H32; trivial.
                         rewrite vvalid_range; trivial.
-                --- apply Forall_upd_Znth; trivial; try lia.
-                --- split; apply Forall_upd_Znth; trivial; try lia.
+                --- split3; apply Forall_upd_Znth; trivial; try lia.
              ** rewrite Int.signed_repr in H46
                  by (rewrite <- inf_eq in *; rep_lia).
                 (* This is the branch where we didn't
