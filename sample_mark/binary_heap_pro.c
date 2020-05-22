@@ -18,7 +18,7 @@ void exch(unsigned int j, unsigned int k, Item arr[], unsigned int lookup[]) {
   lookup[key2] = j;
   arr[k].priority = priority;
   arr[k].data = data;
-  arr[k].key = key;
+  arr[k].key = key1;
   lookup[key1] = k;
 }
 
@@ -34,19 +34,19 @@ int less(unsigned int j, unsigned int k, Item arr[]) {
   return (arr[j].priority <= arr[k].priority);
 }
 
-void swim(unsigned int k, Item arr[]) {
+void swim(unsigned int k, Item arr[], unsigned int lookup[]) {
   while (k > ROOT_IDX && less (k, PARENT(k), arr)) {
-    exch(k, PARENT(k), arr);
+    exch(k, PARENT(k), arr, lookup);
     k = PARENT(k);
   }
 }
 
-void sink (unsigned int k, Item arr[], unsigned int first_available) {
+void sink (unsigned int k, Item arr[], unsigned int first_available, unsigned int lookup[]) {
   while (LEFT_CHILD(k) < first_available) { /* Requirement that capacity <= MAX_SIZE be of reasonable size */
     unsigned j = LEFT_CHILD(k);
     if (j+1 < first_available && less(j+1, j, arr)) j++; /* careful with j+1 overflow? */
     if (less(k, j, arr)) break;
-    exch(k, j, arr);
+    exch(k, j, arr, lookup);
     k = j;
   }
 }
@@ -54,16 +54,16 @@ void sink (unsigned int k, Item arr[], unsigned int first_available) {
 void insert_nc(PQ *pq, Item *x) {
   pq->heap_cells[pq->first_available].priority = x->priority;
   pq->heap_cells[pq->first_available].data = x->data;
-  swim(pq->first_available, pq->heap_cells);
+  swim(pq->first_available, pq->heap_cells, pq->key_table);
   pq->first_available++;
 }
 
 void remove_min_nc(PQ *pq, Item* item) {
   pq->first_available--;
-  exch(ROOT_IDX, pq->first_available, pq->heap_cells);
+  exch(ROOT_IDX, pq->first_available, pq->heap_cells, pq->key_table);
   item->priority = pq->heap_cells[pq->first_available].priority;
   item->data = pq->heap_cells[pq->first_available].data;
-  sink(ROOT_IDX, pq->heap_cells, pq->first_available);
+  sink(ROOT_IDX, pq->heap_cells, pq->first_available, pq->key_table);
 }  
 
 void insert(PQ *pq, Item *x) {
