@@ -24,6 +24,27 @@ Proof.
   simpl. apply IHL. lia.
 Qed.
 
+Lemma nth_error_eq: forall A (L1 L2 : list A),
+  (forall i, nth_error L1 i = nth_error L2 i) ->
+  L1 = L2.
+Proof.
+  induction L1. destruct L2; auto; intros. specialize (H 0%nat); discriminate.
+  destruct L2. intro. specialize (H 0%nat); discriminate. intros.
+  f_equal. specialize (H 0%nat). inversion H. trivial.
+  apply IHL1. intro. specialize (H (S i)). apply H.
+Qed.
+
+Lemma forall_permutation: forall A P (L : list A),
+  Forall P L ->
+    forall L', Permutation L L' ->
+      Forall P L'.
+Proof.
+  intros. revert H. induction H0; intros; auto.
+  inversion H; subst. constructor; auto.
+  inversion H. inversion H3. subst.
+  repeat (constructor; auto).
+Qed.
+
 Fixpoint update {A} (L : list A) (i : nat) (x : A) : list A :=
   match L, i with
    | _ :: L', 0 => x :: L'
@@ -100,11 +121,28 @@ Proof.
   intros. do 2 rewrite update_length. trivial.
 Qed.
 
+Lemma exchange_eq_nil: forall A (L : list A) i j,
+  exchange L i j = nil ->
+  L = nil.
+Proof. unfold exchange. intros A L i j. case nth_error; auto. case nth_error; auto.
+  destruct L. trivial. destruct j, i; simpl; discriminate.
+Qed.
+
 Lemma exchange_eq: forall A (L : list A) i,
   exchange L i i = L.
 Proof.
   unfold exchange. intros. case_eq (nth_error L i); auto.
   intros. rewrite update_update. rewrite update_idem; auto.
+Qed.
+
+Lemma exchange_eq': forall A (L : list A) i j a,
+  nth_error L i = a ->
+  nth_error L j = a ->
+  exchange L i j = L.
+Proof.
+  unfold exchange. intros. rewrite H, H0. destruct a; trivial.
+  replace (update L j a) with L. apply update_idem; trivial.
+  symmetry. apply update_idem; trivial.
 Qed.
 
 Lemma nth_error_exchange: forall A (L : list A) i j,
@@ -184,6 +222,29 @@ Proof.
   do 2 (rewrite nth_error_update'; auto).
 Qed.
 
+Lemma exchange_head_foot: forall A (head : A) body foot,
+  exchange ((head :: body) ++ (foot :: nil)) 0 (length (head :: body)) = ((foot :: body) ++ (head :: nil)).
+Proof.
+  intros.
+  apply nth_error_eq. intro i. case (eq_nat_dec i 0); intro.
+  + subst i. 
+    rewrite nth_error_exchange; simpl. 2: lia.
+    rewrite nth_error_app2. simpl. rewrite Nat.sub_diag. trivial. trivial.
+    rewrite app_length. simpl. lia.
+  + case (eq_nat_dec i (length (head :: body))); intro.
+    - subst i.
+      rewrite nth_error_exchange'; simpl. 2: lia.
+      rewrite nth_error_app2. rewrite Nat.sub_diag. trivial. trivial.
+      rewrite app_length. simpl. lia.
+    - rewrite nth_error_exchange''; auto.
+      destruct i. contradiction. simpl. simpl in n0.
+      assert (i < (length body) \/ i >= length (body ++ (foot :: nil))). { rewrite app_length. simpl. lia. }
+      destruct H. repeat rewrite nth_error_app1; auto.
+      assert (i >= length (body ++ (head :: nil))). { rewrite app_length in *. simpl in *. trivial. }
+      apply nth_error_None in H. apply nth_error_None in H0. congruence.
+Qed.
+
+
 Fixpoint foot_split {A} (L : list A) : (list A) * (option A) :=
   match L with 
    | nil => (nil, None)
@@ -212,17 +273,6 @@ Lemma foot_split_length: forall A (L : list A),
 Proof. 
   intros. generalize (foot_split_spec _ L). destruct (foot_split L).
   destruct o; intros; subst; auto. rewrite app_length. simpl. lia. destruct H. congruence. 
-Qed.
-
-Lemma forall_permutation: forall A P (L : list A),
-  Forall P L ->
-    forall L', Permutation L L' ->
-      Forall P L'.
-Proof.
-  intros. revert H. induction H0; intros; auto.
-  inversion H; subst. constructor; auto.
-  inversion H. inversion H3. subst.
-  repeat (constructor; auto).
 Qed.
 
 Section Heap.
