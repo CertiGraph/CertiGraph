@@ -126,23 +126,7 @@ Proof.
   assert (Hc : i = Zlength arr_contents \/ 0 <= i < Zlength arr_contents) by lia. destruct Hc as [Hc | Hc].
 * (* Special case: oob sink, used when removing the last element of the heap. *)
   forward_while ( PROP () LOCAL (temp _k (Vint (Int.repr i)); temp _first_available (Vint (Int.repr first_available))) SEP (harray arr_contents arr) ).
-  entailer!. entailer!. exfalso. lia.
-(* This is where the bound is needed.  For some reason I need a slightly different bound than I expect. *)
-(*
-rewrite H0 in *. subst i. remember (Zlength arr_contents). destruct H. clear H3 H0 first_available H2 POSTCONDITION MORE_COMMANDS Delta Delta_specs arr Heqz arr_contents.
-lia.
-*)
-(*
-(* 2 * fa - 1 *)
-H : 0 <= z
-H1 : 2 * z - 1 <= Int.max_unsigned
-HRE : Int.unsigned (Int.repr (2 * z + 1)) < z
-
-(* 2 * fa *)
-H : 0 <= z
-H1 : 2 * z <= Int.max_unsigned
-HRE : 2 * z + 1 < z
-*)
+  entailer!. entailer!. exfalso. lia. (* This is where the bound is needed.  For some reason I need a slightly different bound than I expect. *)
   forward.
   Exists arr_contents. entailer!.
   eapply weak_heapOrdered_oob. 2: apply H3.
