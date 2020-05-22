@@ -73,7 +73,7 @@ Local Coercion FiniteWEdgeListGraph_WEdgeListGraph: FiniteWEdgeListGraph >-> WEd
 Local Identity Coercion WEdgeListGraph_LabeledGraph: WEdgeListGraph >-> LabeledGraph.
 
 (* This is the main thing you needed: an existing instance of 
-   how to grad out FiniteGraph properties from your 
+   how to drag out FiniteGraph properties from your 
    existing GeneralGraph
  *)
 Instance finGraph (g: FiniteWEdgeListGraph): FiniteGraph g := @fin g (@sound_gg _ _ _ _ _ _ _ _ g).
