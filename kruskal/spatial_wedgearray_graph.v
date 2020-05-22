@@ -1,3 +1,4 @@
+Require Import VST.floyd.proofauto.
 Require Import RamifyCoq.kruskal.WeightedEdgeListGraph.
 Require Import RamifyCoq.graph.FiniteGraph.
 Require Import VST.veric.SeparationLogic.
@@ -5,8 +6,6 @@ Require Import RamifyCoq.kruskal.env_kruskal_edgelist.
 Require Import RamifyCoq.floyd_ext.share.
 
 Local Open Scope logic.
-(*I'm not sure what this is for*)
-Instance SWEGA_VST: SpatialWEdgeListGraphAssum mpred. Proof. refine (Build_SpatialWEdgeListGraphAssum _ _ _ _ _). Defined.
 
 Definition wedge_to_cdata (wedge : LE*EType) : reptype t_struct_edge :=
   (Vint (Int.repr (fst wedge)),
@@ -15,49 +14,38 @@ Definition wedge_to_cdata (wedge : LE*EType) : reptype t_struct_edge :=
     )
   ).
 
+(*I'm not sure what this is for
+Instance SWEGA_VST: SpatialWEdgeListGraphAssum mpred. Proof. refine (Build_SpatialWEdgeListGraphAssum _ _ _ _ _). Defined.
+
 Instance SWEG_VST (sh: share): SpatialWEdgeListGraph pointer_val mpred.
 Proof.
   (*should I include graph->V and graph->E too? i.e. the full graph struct*)
   (*I have no idea what the ordering of the lst is. Maybe I need Permutation or something*)
   exact (fun pt lst => data_at sh (tarray t_struct_edge (Z.of_nat (length lst)))
                               (map wedge_to_cdata lst) (pointer_val_val pt) (*I think this is wrong, should be just pt*)
-  (*
-                       *
-                       data_at sh  (tarray t_struct_edge (Z.of_nat (length lst)))
-                              (?) (pointer_val_val (pt+(Z.of_nat (length lst)))).
-    Perhaps should be memory_block? but I do reference it like an array when adding edges
-    Maybe I should zero the array beforehand?
-    I don't remove edges, so ok for kruskal's, but for general purposes this may not be good
-    Pretty sure splitting a tarray into smaller tarrays and vice versa is fine, maybe a lemma can be written
-    Actually, do I even need this? This is just a wrapper right? Whatever is held in the other parts of the array can be explicitly stated outside
-  *)
         ).
 Defined.
-
-Eval compute in reptype t_wedgearray_graph.
-
-Definition graph_rep sh (g: LGraph) {fg: FiniteGraph g} gaddr b i : mpred :=
+*)
+Definition wedgearray_graph_rep sh (g: FiniteWEdgeListGraph) gptr eptr : mpred :=
   data_at sh (t_wedgearray_graph) (
-    Vint (Int.repr (numV g)), (
-      Vint (Int.repr (numE g)),
-        Vptr b i
-    )
-  )
-  gaddr
+    Vint (Int.repr (numV g)), (Vint (Int.repr (numE g)), pointer_val_val eptr)
+  ) (pointer_val_val gptr)
   *
-  data_at sh (tarray t_struct_edge (numE g)) (map wedge_to_cdata (graph_to_wedgelist g)) (Vptr b i)
+  data_at sh (tarray t_struct_edge (numE g)) (map wedge_to_cdata (graph_to_wedgelist g)) (pointer_val_val eptr)
   *
-  memory_block sh (SIZE - (numE g)) (Vptr b (Ptrofs.add i (Ptrofs.mul (Ptrofs.repr (numE g)) (Ptrofs.repr 12)))) (*<--assuming int32!!*)
+  data_at sh (tarray t_struct_edge (MAX_EDGES - (numE g)))
+    (list_repeat (Z.to_nat MAX_EDGES - Z.to_nat (numE g)) (Vundef, (Vundef, Vundef)))
+    (offset_val ((numE g) * sizeof t_struct_edge) (pointer_val_val eptr))
   .
 
 (* See if I need something like this next time
 Lemma graph_unfold: forall sh contents ptr i,
     0 <= i < (Zlength contents) ->
     graph_rep sh contents ptr =
-    iter_sepcon.iter_sepcon (list_rep sh SIZE ptr contents)
+    iter_sepcon.iter_sepcon (list_rep sh MAX_EDGES ptr contents)
             (sublist 0 i (nat_inc_list (Z.to_nat (Zlength contents)))) *
-    (list_rep sh SIZE ptr contents i *
-           iter_sepcon.iter_sepcon (list_rep sh SIZE ptr contents)
+    (list_rep sh MAX_EDGES ptr contents i *
+           iter_sepcon.iter_sepcon (list_rep sh MAX_EDGES ptr contents)
              (sublist (i + 1) (Zlength contents) (nat_inc_list (Z.to_nat (Zlength contents))))).
 Proof.
   intros. unfold graph_rep.

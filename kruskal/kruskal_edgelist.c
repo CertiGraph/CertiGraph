@@ -1,10 +1,8 @@
-#include "../sample_mark/binary_heap.h"
 #include "../sample_mark/unionfind_arr.h"
 
-static const int SIZE = 8;  //don't want to use MAX_SIZE because mallocing that much is crazy
+static const int MAX_EDGES = 8;
 
-//#include <malloc.h>
-extern void * mallocN (int n); /* Maybe there are better choices for allocators? */
+extern void * mallocK (int n);
 extern void free(void *p);
 
 struct edge {
@@ -23,9 +21,8 @@ struct graph {
 
 //creates a graph with zero vertices and edges
 struct graph * init_empty_graph() {
-    struct graph * empty_graph = (struct graph *) mallocN(sizeof(struct graph));
-    //struct graph * empty_graph = (struct graph *) mallocN(12);
-    struct edge *edge_list = (struct edge *) mallocN(sizeof(struct edge) * SIZE);
+    struct graph * empty_graph = (struct graph *) mallocK(sizeof(struct graph));
+    struct edge *edge_list = (struct edge *) mallocK(sizeof(struct edge) * MAX_EDGES);
     empty_graph->V = 0;
     empty_graph->E = 0;
     empty_graph->edge_list = edge_list;
@@ -40,7 +37,7 @@ Modified version of qsort1 from Cbench. Wanted to import a generic verified quic
 a is flat edge array
 m is first index
 n is last index
-
+*/
 void sort_edges(struct edge *a, int m, int n) {
   int i, j, pivot;
   struct edge tmp;
@@ -62,7 +59,6 @@ void sort_edges(struct edge *a, int m, int n) {
     sort_edges(a, i, n);
   }
 }
-*/
 
 void free_graph(struct graph * graph) {
     free(graph->edge_list);
@@ -78,22 +74,12 @@ struct graph *kruskal(struct graph *graph) {
     //"add" all vertices
     mst->V = graph_V;
 
-    //"sort" edges
-    PQ* pq = make();
+    sort_edges(graph->edge_list,0,graph_E-1);
     for (int i = 0; i < graph_E; ++i) {
-        Item item;
-        item.priority = graph->edge_list[i].weight;
-        item.data = (void*) (graph->edge_list + i);
-        insert(pq, &item);
-    }
-    
-    Item* next_item = remove_min(pq);
-    while (next_item != 0) {
         //extract the data
-        struct edge* next_edge = (struct edge *) next_item->data;
 
-        int u = next_edge->u;
-        int v = next_edge->v;
+        int u = graph->edge_list[i].u;
+        int v = graph->edge_list[i].v;
 
         //decide whether edge should be added using unionfind
         int ufind = find(subsets, u);
@@ -102,17 +88,12 @@ struct graph *kruskal(struct graph *graph) {
             //add edge to MST
             mst->edge_list[mst->E].u = u;
             mst->edge_list[mst->E].v = v;
-            mst->edge_list[mst->E].weight = next_edge->weight;
-            //printf("Added\n");
+            mst->edge_list[mst->E].weight = graph->edge_list[i].weight;
             mst->E += 1;
             Union(subsets, u, v);
         }
-
-        //retrieve next edge
-        next_item = remove_min(pq);
     }
 
-    free(pq);
     free(subsets);
     return mst;
 }
