@@ -26,7 +26,7 @@ Proof.
         ).
 Defined.
 *)
-Definition wedgearray_graph_rep sh (g: WEdgeListGraph) {fg:FiniteGraph g} gptr eptr : mpred :=
+Definition wedgearray_graph_rep sh (g: FiniteWEdgeListGraph) gptr eptr : mpred :=
   data_at sh (t_wedgearray_graph) (
     Vint (Int.repr (numV g)), (Vint (Int.repr (numE g)), pointer_val_val eptr)
   ) (pointer_val_val gptr)

@@ -57,13 +57,30 @@ Print Build_LabeledGraph.
 
 Definition Build_WEdgeListGraph := Build_LabeledGraph LV LE LG.
 *)
-
+ 
 Class Fin (g: WEdgeListGraph) :=
   { fin: FiniteGraph g; }.
 
 Definition FiniteWEdgeListGraph := (GeneralGraph VType EType LV LE LG (fun g => Fin g)).
 
-Definition src_edge (g: WEdgeListGraph): Prop :=
+(* Later, we'll need ways to fish out the LG from the GG, 
+   and we'll need to show that the specialized 
+   LG you have is, at heart, an LG 
+ *)
+Definition FiniteWEdgeListGraph_WEdgeListGraph
+           (g: FiniteWEdgeListGraph) : WEdgeListGraph := lg_gg g.
+Local Coercion FiniteWEdgeListGraph_WEdgeListGraph: FiniteWEdgeListGraph >-> WEdgeListGraph.
+Local Identity Coercion WEdgeListGraph_LabeledGraph: WEdgeListGraph >-> LabeledGraph.
+
+(* This is the main thing you needed: an existing instance of 
+   how to grad out FiniteGraph properties from your 
+   existing GeneralGraph
+ *)
+Instance finGraph (g: FiniteWEdgeListGraph): FiniteGraph g := @fin g (@sound_gg _ _ _ _ _ _ _ _ g).
+(* Nice. Now your definitions will be cleaner. *)
+
+
+Definition src_edge (g : WEdgeListGraph): Prop :=
   forall e, src g e = fst e.
 
 Definition dst_edge (g: WEdgeListGraph): Prop :=
@@ -81,11 +98,11 @@ Definition weight_valid (g: WEdgeListGraph): Prop :=
 Definition sound_weighted_edge_graph (g: WEdgeListGraph): Prop :=
   vertex_valid g /\ edge_valid g /\ src_edge g /\ dst_edge g /\ weight_valid g.
 
-Definition numV (g: WEdgeListGraph) {fg : FiniteGraph g} : Z := Zlength (VList g).
-Definition numE (g: WEdgeListGraph) {fg : FiniteGraph g} : Z := Zlength (EList g).
+Definition numV (g: FiniteWEdgeListGraph) : Z := Zlength (VList g).
+Definition numE (g: FiniteWEdgeListGraph) : Z := Zlength (EList g).
 
 (* from Graph to list of edges *)
-Definition graph_to_wedgelist (g: WEdgeListGraph) {fg: FiniteGraph g} : list (LE*EType) :=
+Definition graph_to_wedgelist (g: FiniteWEdgeListGraph) : list (LE * EType) :=
   map (fun e => (elabel g e, e)) (EList g). (*ordering?*)
 
 
@@ -93,10 +110,41 @@ Definition graph_to_wedgelist (g: WEdgeListGraph) {fg: FiniteGraph g} : list (LE
 (*ASDF: Change this into a FiniteWEdgeListGraph (the generalgraph as defined above)
 so we don't have to lug {FiniteGraph g} around *)
 Definition empty_WEdgeListGraph : WEdgeListGraph :=
-(empty_labeledgraph (fun e => fst e) (fun e => snd e) tt 0 tt).
+  (empty_labeledgraph (fun e => fst e) (fun e => snd e) (tt: LV) (0: LE) (tt: LG)).
 
+(* Okay, so you have an empty LabeledGraph above. 
+   Now we'll use that to construct a relevant 
+   empty GeneralGraph.
+ *)
+
+(* First we need an instance to show that such an 
+   empty LabeledGraph would satisfy the soundness condition
+   of the GeneralGraph. 
+ *)
 Definition empty_WEdgeListGraph_finite:
   FiniteGraph empty_WEdgeListGraph.
+Proof.
+constructor; unfold EnumEnsembles.Enumerable, In; exists nil; split; intros; simpl.
+apply NoDup_nil. reflexivity. apply NoDup_nil. reflexivity.
+Qed.
+
+Instance Sound_empty_WEdgeListGraph:
+  Fin empty_WEdgeListGraph.
+Proof.
+  constructor.
+  apply empty_WEdgeListGraph_finite.
+Qed.
+
+(* Next we can build an empty GeneralGraph 
+   using the two pieces above
+ *)
+Definition empty_FiniteWEdgeListGraph : FiniteWEdgeListGraph :=
+  @Build_GeneralGraph VType EType V_EqDec E_EqDec LV LE LG Fin
+                      (WEdgeListGraph_LabeledGraph empty_WEdgeListGraph) Sound_empty_WEdgeListGraph.
+
+(* and now a quick fact about the new GeneralGraph *)
+Definition empty_FiniteWEdgeListGraph_finite:
+  FiniteGraph empty_FiniteWEdgeListGraph.
 Proof.
 constructor; unfold EnumEnsembles.Enumerable, In; exists nil; split; intros; simpl.
 apply NoDup_nil. reflexivity. apply NoDup_nil. reflexivity.
@@ -105,43 +153,46 @@ Qed.
 Lemma empty_WEdgeListGraph_sound:
   sound_weighted_edge_graph empty_WEdgeListGraph.
 Proof.
-repeat split; try contradiction.
+  repeat split; contradiction.
 Qed.
 
-Lemma empty_WEdgeListGraph_VList {fg: FiniteGraph empty_WEdgeListGraph}:
-  VList empty_WEdgeListGraph = nil.
+(* Tada, these are all cleaner! *)
+Lemma empty_WEdgeListGraph_VList: VList empty_FiniteWEdgeListGraph = nil.
 Proof.
-unfold VList. destruct fg. simpl in finiteV. unfold EnumEnsembles.Enumerable in finiteV.
-destruct finiteV. destruct a.
-unfold proj1_sig. unfold finiteV.
-destruct x. reflexivity.
-assert (In v (v::x)) by (apply in_eq). specialize i with v. destruct i. contradiction.
+  unfold VList.
+  destruct finiteV.
+  destruct a.
+  unfold proj1_sig.
+  destruct x; [trivial | exfalso].
+  assert (In v (v::x)) by (apply in_eq).
+  apply i in H.
+  contradiction.
 Qed.
 
-Lemma empty_WEdgeListGraph_EList {fg: FiniteGraph empty_WEdgeListGraph}:
-  EList empty_WEdgeListGraph = nil.
+Lemma empty_WEdgeListGraph_EList: EList empty_FiniteWEdgeListGraph = nil.
 Proof.
-unfold EList. destruct fg. simpl in finiteE; unfold EnumEnsembles.Enumerable in finiteE.
-destruct finiteE. destruct a.
-unfold proj1_sig; unfold finiteE.
-destruct x. reflexivity.
-assert (In e (e::x)) by (apply in_eq). specialize i with e. destruct i. contradiction.
+  unfold EList.
+  destruct finiteE.
+  destruct a.
+  unfold proj1_sig. 
+  destruct x; [trivial | exfalso].
+  assert (In e (e::x)) by (apply in_eq).
+  apply i in H.
+  contradiction.
 Qed.
 
-Corollary empty_WEdgeListGraph_numV {fg: FiniteGraph empty_WEdgeListGraph}:
-  numV empty_WEdgeListGraph = 0.
+Corollary empty_WEdgeListGraph_numV: numV empty_FiniteWEdgeListGraph = 0.
 Proof.
 unfold numV. rewrite empty_WEdgeListGraph_VList. apply Zlength_nil.
 Qed.
 
-Corollary empty_WEdgeListGraph_numE {fg: FiniteGraph empty_WEdgeListGraph}:
-  numE empty_WEdgeListGraph = 0.
+Corollary empty_WEdgeListGraph_numE: numE empty_FiniteWEdgeListGraph = 0.
 Proof.
 unfold numE. rewrite empty_WEdgeListGraph_EList. apply Zlength_nil.
 Qed.
 
-Corollary empty_WEdgeListGraph_graph_to_wedgelist {fg: FiniteGraph empty_WEdgeListGraph}:
-  graph_to_wedgelist empty_WEdgeListGraph = nil.
+Corollary empty_WEdgeListGraph_graph_to_wedgelist:
+  graph_to_wedgelist empty_FiniteWEdgeListGraph = nil.
 Proof.
 unfold graph_to_wedgelist. rewrite empty_WEdgeListGraph_EList. reflexivity.
 Qed.
