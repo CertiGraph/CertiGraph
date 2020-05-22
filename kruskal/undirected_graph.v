@@ -12,6 +12,7 @@ Require Import RamifyCoq.lib.List_ext.
 Require Import RamifyCoq.lib.EquivDec_ext.
 Require Import RamifyCoq.graph.graph_model.
 Require Import RamifyCoq.graph.graph_relation.
+Require Import RamifyCoq.graph.path_lemmas.
 (*
 Require Import Coq.Lists.List.
 Require Import Coq.Lists.ListDec.
@@ -66,7 +67,13 @@ match l with
 | _::l' => last_error l'
 end.
 
-Lemma last_err_app:
+Lemma last_error_cons: (*for convenience*)
+  forall {A:Type} (l: list A) (a: A), l <> nil -> last_error (a::l) = last_error l.
+Proof.
+intros. destruct l. contradiction. simpl. reflexivity.
+Qed.
+
+Lemma last_err_appcons:
   forall {A:Type} (l: list A) (a: A), last_error (l+::a) = Some a.
 Proof.
 induction l. auto. intros. rewrite <- app_comm_cons. rewrite <- (IHl a0). simpl.
@@ -74,11 +81,29 @@ destruct (l+::a0) eqn:H. assert (l+::a0 <> nil) by (apply app_not_nil). contradi
 reflexivity.
 Qed.
 
+Lemma last_err_app':
+  forall {A:Type} (l2 l1: list A) (a: A), last_error l2 = Some a -> last_error (l1++l2) = Some a.
+Proof.
+induction l2; intros. inversion H.
+destruct l2. simpl in H. inversion H. apply last_err_appcons.
+assert (last_error (a::a1::l2) = last_error (a1::l2)). simpl. reflexivity. rewrite H0 in H.
+assert (l1++a::a1::l2 = (l1+::a) ++ (a1::l2)).
+assert (a:: a1 :: l2 = (a::nil)++a1::l2) by reflexivity. rewrite H1.
+rewrite app_assoc. reflexivity. rewrite H1.
+apply (IHl2 (l1+::a)). apply H.
+Qed.
+
+Lemma last_err_app:
+  forall {A:Type} (l1 l2: list A) (a: A), last_error l2 = Some a -> last_error (l1++l2) = Some a.
+Proof.
+intros. apply (last_err_app' l2 l1 a H).
+Qed.
+
 Lemma rev_hd_last:
   forall {A:Type} (l: list A), hd_error l = last_error (rev l).
 Proof.
 induction l. auto.
-simpl. rewrite (last_err_app (rev l) a). reflexivity.
+simpl. rewrite (last_err_appcons (rev l) a). reflexivity.
 Qed.
 
 (*A bunch of helpers for convenience in handling options*)
@@ -183,6 +208,30 @@ induction p1; intros.
   +rewrite <- app_comm_cons. split. apply H. apply IHp1. apply H. apply H0. apply H1.
 Qed.
 
+Lemma hd_error_none_nil:
+  forall {A:Type} (l: list A), hd_error l = None <-> l = nil.
+Proof.
+  intros; split; intros. destruct l. reflexivity. simpl in H. inversion H.
+  rewrite H. reflexivity.
+Qed.
+
+Lemma valid_upath_app_2: (*find a better name*)
+  forall g p1 p2, valid_upath g p1 -> valid_upath g p2 -> (last_error p1) = (hd_error p2) -> valid_upath g (p1++(tail p2)).
+Proof.
+intros. apply valid_upath_app. apply H. apply (valid_upath_tail g p2 H0).
+unfold adjacent_err.
+destruct (last_error p1) eqn:H2. destruct (hd_error p2) eqn:H3.
+assert (v = v0) by (inversion H1; reflexivity).
+destruct (hd_error (tl p2)) eqn: H5. assert (p2 = v0::v1::(tl (tl p2))).
+apply hd_error_tl_repr. split. apply H3. apply hd_error_tl_repr. split. apply H5. reflexivity.
+rewrite H6 in H0. destruct H0. rewrite H4. apply H0.
+assert (p2 = v0::(tl p2)). apply hd_error_tl_repr. split. apply H3. reflexivity.
+rewrite hd_error_none_nil in H5. unfold valid_upath in H0. rewrite H6 in H0; rewrite H5 in H0.
+rewrite H4; apply H0.
+inversion H1.
+assert (tl p2 = nil). destruct p2. reflexivity. inversion H1. rewrite H3. simpl. trivial.
+Qed.
+
 Corollary valid_upath_concat:
   forall g p v, valid_upath g p -> adjacent_last g (last_error p) v -> valid_upath g (p+::v).
 Proof.
@@ -235,6 +284,29 @@ Proof.
   intro; apply connected_by_symm.
 Qed.
 
+Lemma connected_by_trans:
+  forall g P u v w, connected_by g P u v -> connected_by g P v w -> connected_by g P u w.
+Proof.
+unfold connected_by; unfold connected_by_path; intros.
+destruct H; rename x into p0. destruct H0; rename x into p1.
+destruct H. destruct H1. destruct H0. destruct H3.
+exists (p0++(tail p1)). split. split. apply valid_upath_app_2. apply H. apply H0.
+rewrite H3. rewrite H2. reflexivity.
+destruct H.  destruct H0. unfold upath_prop in *. rewrite Forall_forall in *; intros. apply in_app_or in H7.
+destruct H7. apply H5. apply H7. apply In_tail in H7. apply H6. apply H7.
+split. assert (p0 = u::(tl p0)). apply hd_error_tl_repr. split. apply H1. reflexivity.
+rewrite H5. rewrite <- app_comm_cons. simpl. reflexivity.
+destruct p1 eqn:H5. inversion H4.
+destruct u0. simpl in *. rewrite <- app_nil_end. rewrite <- H4. rewrite H3. apply H2.
+simpl. apply last_err_app. simpl in H4. simpl. apply H4.
+Qed.
+
+Corollary connected_trans:
+  forall g u v w, connected g u v -> connected g v w -> connected g u w.
+Proof.
+intros. apply (connected_by_trans g (fun _ => True) u v w H H0).
+Qed.
+
 Definition connected_graph (g: Gph) := forall u v, vvalid g u -> vvalid g v -> connected g u v.
 
 Definition simple_upath g p := valid_upath g p /\ NoDup p.
@@ -242,6 +314,107 @@ Definition simple_upath g p := valid_upath g p /\ NoDup p.
 Lemma paths_can_be_simplified:
   forall g p, valid_upath g p -> exists p', simple_upath g p' /\ simplified p p'
 *)
+
+(************REACHABLE -> CONNECTED************)
+
+Lemma valid_path'_cons:
+  forall (g: PreGraph V E) p a, valid_path' g (a::p) -> valid_path' g p.
+Proof.
+intros; destruct p. reflexivity.
+simpl. simpl in H. destruct H. destruct H0. apply H1.
+Qed.
+
+Corollary valid_path_cons:
+  forall (g: PreGraph V E) v a l, valid_path g (v,a::l) -> valid_path g (dst g a, l).
+Proof.
+unfold valid_path; intros. destruct H. destruct l. apply H0.
+split. apply H0. apply (valid_path'_cons g (e::l) a H0).
+Qed.
+
+Lemma valid_dpath_implies_valid_upath':
+  forall g p, valid_path' g p -> valid_upath g (epath_to_vpath' g p).
+Proof.
+intros. induction p.
+simpl. trivial.
+assert (valid_path' g p). apply (valid_path'_cons g p a H).
+destruct p eqn:H_p. simpl. split.
+exists a. split. apply H. left. split; reflexivity.
+apply H.
+assert (epath_to_vpath' g (a :: e :: l) = (src g a) :: epath_to_vpath' g (e::l)).
+simpl. reflexivity.
+rewrite H1; clear H1.
+apply valid_upath_cons. apply IHp. apply H0.
+assert (hd_error (epath_to_vpath' g (e :: l)) = Some (src g e)).
+destruct l; reflexivity. rewrite H1.
+unfold adjacent_hd. unfold adjacent. exists a.
+split. apply H. left. split. reflexivity. apply H.
+Qed.
+
+Lemma valid_dpath_implies_valid_upath:
+  forall g p, valid_path g p -> valid_upath g (epath_to_vpath g p).
+Proof.
+intros. unfold epath_to_vpath. destruct p. destruct l.
+simpl. apply H. apply valid_dpath_implies_valid_upath'. apply H.
+Qed.
+
+Lemma epath_to_vpath_head:
+  forall (g: PreGraph V E) p, valid_path g p -> hd_error (epath_to_vpath g p) = Some (phead p).
+Proof.
+intros. destruct p. destruct l.
+-simpl. reflexivity.
+-simpl. unfold valid_path in H. destruct H. destruct l; rewrite H; simpl; reflexivity.
+Qed.
+
+Lemma pfoot_cons:
+  forall (g: PreGraph V E) l e v, valid_path g (v, e::l) -> pfoot g (v,(e::l)) = pfoot g (dst g e, l).
+Proof.
+intros. destruct l; simpl. reflexivity.
+apply (pfoot_head_irrel l g v (dst g e) e0).
+Qed.
+
+Lemma epath_to_vpath_foot':
+  forall (g: PreGraph V E) l v, valid_path g (v, l) -> last_error (epath_to_vpath g (v,l)) = Some (pfoot g (v,l)).
+Proof.
+unfold epath_to_vpath; induction l; intros. reflexivity.
+destruct l. reflexivity. rewrite pfoot_cons. 2: auto.
+assert (valid_path g (dst g a, e::l)). apply H.
+rewrite <- IHl. 2: auto.
+apply last_error_cons. simpl. unfold not; intros. destruct l; inversion H1.
+Qed.
+
+Corollary epath_to_vpath_foot:
+  forall (g: PreGraph V E) p, valid_path g p -> last_error (epath_to_vpath g p) = Some (pfoot g p).
+Proof.
+destruct p. apply epath_to_vpath_foot'.
+Qed.
+
+Lemma reachable_implies_connected_by:
+  forall g P u v, reachable_by g u P v -> connected_by g P u v.
+Proof.
+intros. unfold reachable_by in H. destruct H. destruct H. rename x into dp.
+exists (epath_to_vpath g dp). split.
+split. apply valid_dpath_implies_valid_upath. apply H0.
+destruct H0. unfold path_prop in H1. destruct H1.
+rewrite Forall_forall in H2.
+unfold upath_prop. rewrite Forall_forall. intros.
+rewrite (in_path_eq_epath_to_vpath) in H3. unfold In_path in H3.
+destruct H3. rewrite H3. apply H1.
+destruct H3. destruct H3. specialize (H2 x0 H3). destruct H4; rewrite H4; apply H2.
+apply H0.
+destruct dp; destruct l. unfold path_ends in H; unfold phead in H; destruct H.
+split; simpl. rewrite H; reflexivity.
+unfold pfoot in H1. unfold pfoot' in H1. rewrite H1; reflexivity.
+unfold path_ends in H. destruct H. unfold phead in H.
+split. rewrite H. apply epath_to_vpath_head. rewrite <- H. apply H0.
+rewrite epath_to_vpath_foot. rewrite H1. reflexivity. apply H0.
+Qed.
+
+Corollary reachable_implies_connected:
+  forall g u v, reachable g u v -> connected g u v.
+Proof.
+intro. apply reachable_implies_connected_by.
+Qed.
+
 (************(CONNECTED) COMPONENTS************)
 
 Definition component (g: Gph) (P: Ensemble V):=
