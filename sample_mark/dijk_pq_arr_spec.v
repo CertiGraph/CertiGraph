@@ -17,23 +17,23 @@ Definition get_popped pq : list VType :=
                   (combine pq (nat_inc_list (Z.to_nat (Zlength pq))))).
  *)
 
-Definition path_correct (g: LGraph) (prev dist: list VType) src dst p : Prop  :=
+Definition path_correct (g : DijkstraGeneralGraph) (prev dist: list VType) src dst p : Prop  :=
   valid_path g p /\
   path_ends g p src dst /\
   path_cost g p < inf /\ 
   Znth dst dist = path_cost g p /\
   Forall (fun x => Znth (snd x) prev = fst x) (snd p).
 
-Definition path_globally_optimal (g: LGraph) src dst p : Prop :=
+Definition path_globally_optimal (g : DijkstraGeneralGraph) src dst p : Prop :=
   forall p', valid_path g p' ->
              path_ends g p' src dst ->
              path_cost g p <= path_cost g p'.
 
-Definition path_in_popped (g: LGraph) popped dist path :=
+Definition path_in_popped (g : DijkstraGeneralGraph) popped dist path :=
   forall step, In_path g step path ->
                In step popped /\ Znth step dist < inf.
 
-Definition inv_popped (g: LGraph) src (popped prev dist : list VType) dst :=
+Definition inv_popped (g : DijkstraGeneralGraph) src (popped prev dist : list VType) dst :=
   In dst popped ->
   (Znth dst dist = inf /\
    (forall m,
@@ -48,7 +48,7 @@ Definition inv_popped (g: LGraph) src (popped prev dist : list VType) dst :=
       path_in_popped g popped dist path /\
       path_globally_optimal g src dst path).
 
-Definition inv_unpopped (g: LGraph) src (popped prev dist: list VType) (dst: VType) :=
+Definition inv_unpopped (g : DijkstraGeneralGraph) src (popped prev dist: list VType) (dst: VType) :=
   ~ In dst popped ->
   Znth dst dist < inf ->
   dst = src \/
@@ -64,7 +64,7 @@ Definition inv_unpopped (g: LGraph) src (popped prev dist: list VType) (dst: VTy
      In mom' popped ->
      Znth dst dist <= careful_add (Znth mom' dist) (Znth dst (Znth mom' (graph_to_mat g)))).
 
-Definition inv_unpopped_weak (g: LGraph) (src: VType) (popped prev dist : list VType) (dst u : VType) :=
+Definition inv_unpopped_weak (g : DijkstraGeneralGraph) (src: VType) (popped prev dist : list VType) (dst u : VType) :=
   ~ In dst popped ->
   Znth dst dist < inf ->
   dst = src \/
@@ -83,7 +83,7 @@ Definition inv_unpopped_weak (g: LGraph) (src: VType) (popped prev dist : list V
      Znth dst dist <=
      careful_add (Znth mom' dist) (Znth dst (Znth mom' (graph_to_mat g)))).
   
-Definition inv_unseen (g: LGraph) (popped dist: list VType) (dst : VType) :=
+Definition inv_unseen (g : DijkstraGeneralGraph) (popped dist: list VType) (dst : VType) :=
   ~ In dst popped ->
   Znth dst dist = inf ->
   forall m, vvalid g m ->
@@ -92,7 +92,7 @@ Definition inv_unseen (g: LGraph) (popped dist: list VType) (dst : VType) :=
               (Znth m dist)
               (Znth dst (Znth m (graph_to_mat g))) = inf.
 
-Definition inv_unseen_weak (g: LGraph) (popped dist: list VType) (dst u : VType) :=
+Definition inv_unseen_weak (g : DijkstraGeneralGraph) (popped dist: list VType) (dst u : VType) :=
   ~ In dst popped ->
   Znth dst dist = inf ->
   forall m, vvalid g m ->
@@ -102,7 +102,7 @@ Definition inv_unseen_weak (g: LGraph) (popped dist: list VType) (dst u : VType)
               (Znth m dist)
               (Znth dst (Znth m (graph_to_mat g))) = inf.
                                                            
-Definition dijkstra_correct (g: LGraph) src popped prev dist : Prop :=
+Definition dijkstra_correct (g : DijkstraGeneralGraph) src popped prev dist : Prop :=
   forall dst,
     vvalid g dst ->
     inv_popped g src popped prev dist dst /\
@@ -176,7 +176,7 @@ Definition popMin_spec :=
 
 Definition dijkstra_spec :=
   DECLARE _dijkstra
-  WITH sh: wshare, g: Graph, arr : pointer_val,
+  WITH sh: wshare, g: DijkstraGeneralGraph, arr : pointer_val,
                                    dist : pointer_val, prev : pointer_val, src : VType
   PRE [tptr (tarray tint SIZE), tint, tptr tint, tptr tint]
    PROP (0 <= src < SIZE;

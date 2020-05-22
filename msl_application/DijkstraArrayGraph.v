@@ -72,26 +72,27 @@ Proof.
     rewrite Znth_0_cons; trivial.
 Qed.
 
-Class Fin (g: LabeledGraph VType EType LV LE LG) :=
+Definition DijkstraLabeledGraph := LabeledGraph VType EType LV LE LG.
+
+Class Fin (g: DijkstraLabeledGraph) :=
   { fin: FiniteGraph g; }.
 
-Definition LGraph := LabeledGraph VType EType LV LE LG.
-Definition Graph := (GeneralGraph VType EType LV LE LG (fun g => Fin g)).
+Definition DijkstraGeneralGraph := (GeneralGraph VType EType LV LE LG (fun g => Fin g)).
 
-Definition vertex_valid (g: LGraph): Prop :=
+Definition vertex_valid (g : DijkstraGeneralGraph): Prop :=
   forall v, vvalid g v <-> 0 <= v < SIZE.
 
-Definition edge_valid (g: LGraph): Prop :=
+Definition edge_valid (g : DijkstraGeneralGraph): Prop :=
   forall a b, evalid g (a,b) <->
             (vvalid g a /\ vvalid g b).
 
-Definition src_edge (g: LGraph): Prop :=
+Definition src_edge (g : DijkstraGeneralGraph): Prop :=
   forall e, src g e = fst e.
 
-Definition dst_edge (g: LGraph): Prop :=
+Definition dst_edge (g : DijkstraGeneralGraph): Prop :=
   forall e, dst g e = snd e.
 
-Definition sound_dijk_graph (g: LGraph): Prop :=
+Definition sound_dijk_graph (g : DijkstraGeneralGraph): Prop :=
   vertex_valid g /\ edge_valid g /\ src_edge g /\ dst_edge g.
 
 (* Moving on to Spatial Rep *)
@@ -114,15 +115,15 @@ Section SpaceDijkstraArrayGraph.
   Context {SAGP: SpatialDijkstraArrayGraphAssum Pred}.
   Context {SAG: SpatialDijkstraArrayGraph Addr Pred}.
 
-  Definition vert_rep (g: LGraph) (v : VType) : list Z :=
+  Definition vert_rep (g : DijkstraGeneralGraph) (v : VType) : list Z :=
     map (elabel g) (map (fun x => (v,x)) (nat_inc_list (Z.to_nat SIZE))).
   
   (* from Graph to list (list Z) *)
-  Definition graph_to_mat (g : LGraph) : list (list Z) :=
+  Definition graph_to_mat (g : DijkstraGeneralGraph) : list (list Z) :=
     map (vert_rep g) (nat_inc_list (Z.to_nat SIZE)).
   
   (* spatial representation of the DijkstraGraph *)
-  Definition graph_rep (g : Graph) (a : Addr)  :=
+  Definition graph_rep (g : DijkstraGeneralGraph) (a : Addr)  :=
     abstract_data_at a (concat (graph_to_mat g)).
 
 End SpaceDijkstraArrayGraph.
@@ -343,7 +344,7 @@ Proof.
       destruct (inf <=? a + b); [inversion H1 | trivial].
 Qed.
 
-Definition path_cost (g: LGraph) (path : @path VType EType) : ElabelType :=
+Definition path_cost (g : DijkstraGeneralGraph) (path : @path VType EType) : ElabelType :=
   fold_left careful_add (map (elabel g) (snd path)) 0.
 
 Definition inrange_graph grph_contents :=
@@ -457,7 +458,7 @@ Proof.
   rewrite H0. compute; inversion 1.
 Qed.
 
-Lemma acc_pos: forall (g: LGraph) l z,
+Lemma acc_pos: forall (g : DijkstraGeneralGraph) l z,
     (forall e : EType, In e l -> 0 <= elabel g e) -> 0 <= z ->
     0 <= fold_left careful_add (map (elabel g) l) z.
 Proof.
