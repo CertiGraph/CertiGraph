@@ -52,13 +52,12 @@ Definition init_empty_graph_spec :=
      GLOBALS (gv)
      SEP (data_at sh tint (Vint (Int.repr MAX_EDGES)) (gv _MAX_EDGES))
   POST [ tptr t_wedgearray_graph ]
-     EX {fg: FiniteGraph empty_WEdgeListGraph},
      EX gptr eptr: pointer_val,
      PROP ()
      LOCAL (temp ret_temp (pointer_val_val gptr))
      SEP (data_at sh tint (Vint (Int.repr MAX_EDGES)) (gv _MAX_EDGES) *
-          wedgearray_graph_rep sh empty_WEdgeListGraph gptr eptr).
-
+          wedgearray_graph_rep sh empty_FiniteWEdgeListGraph gptr eptr).
+ 
 Definition Vprog : varspecs. mk_varspecs prog. Defined.
 Definition Gprog : funspecs := ltac:(with_library prog
   [mallocK_spec; init_empty_graph_spec]).
@@ -97,7 +96,7 @@ forward.
 forward.
 forward.
 forward.
-Exists empty_WEdgeListGraph_finite gptr eptr.
+Exists gptr eptr.
 unfold wedgearray_graph_rep.
 rewrite empty_WEdgeListGraph_numV. rewrite empty_WEdgeListGraph_numE.
 simpl. rewrite data_at_zero_array_eq. entailer!.
