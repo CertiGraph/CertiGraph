@@ -72,25 +72,25 @@ Definition _data : ident := 2%positive.
 Definition _exch : ident := 63%positive.
 Definition _first_available : ident := 5%positive.
 Definition _heap_cells : ident := 6%positive.
-Definition _insert : ident := 70%positive.
-Definition _insert_nc : ident := 69%positive.
+Definition _insert : ident := 73%positive.
+Definition _insert_nc : ident := 70%positive.
 Definition _item : ident := 71%positive.
 Definition _j : ident := 60%positive.
 Definition _k : ident := 61%positive.
-Definition _less : ident := 64%positive.
+Definition _less : ident := 66%positive.
 Definition _main : ident := 76%positive.
 Definition _make : ident := 75%positive.
 Definition _mallocN : ident := 59%positive.
-Definition _pq : ident := 67%positive.
+Definition _pq : ident := 64%positive.
 Definition _priority : ident := 1%positive.
-Definition _remove_min : ident := 73%positive.
+Definition _remove_min : ident := 74%positive.
 Definition _remove_min_nc : ident := 72%positive.
-Definition _sink : ident := 66%positive.
-Definition _size : ident := 74%positive.
+Definition _sink : ident := 68%positive.
+Definition _size : ident := 65%positive.
 Definition _structItem : ident := 3%positive.
 Definition _structPQ : ident := 7%positive.
-Definition _swim : ident := 65%positive.
-Definition _x : ident := 68%positive.
+Definition _swim : ident := 67%positive.
+Definition _x : ident := 69%positive.
 Definition _t'1 : ident := 77%positive.
 Definition _t'10 : ident := 86%positive.
 Definition _t'11 : ident := 87%positive.
@@ -177,6 +177,36 @@ Definition f_exch := {|
                   (Etempvar _k tuint) (tptr (Tstruct _structItem noattr)))
                 (Tstruct _structItem noattr)) _data (tptr tvoid))
             (Etempvar _data (tptr tvoid))))))))
+|}.
+
+Definition f_size := {|
+  fn_return := tuint;
+  fn_callconv := cc_default;
+  fn_params := ((_pq, (tptr (Tstruct _structPQ noattr))) :: nil);
+  fn_vars := nil;
+  fn_temps := ((_t'1, tuint) :: nil);
+  fn_body :=
+(Ssequence
+  (Sset _t'1
+    (Efield
+      (Ederef (Etempvar _pq (tptr (Tstruct _structPQ noattr)))
+        (Tstruct _structPQ noattr)) _first_available tuint))
+  (Sreturn (Some (Etempvar _t'1 tuint))))
+|}.
+
+Definition f_capacity := {|
+  fn_return := tuint;
+  fn_callconv := cc_default;
+  fn_params := ((_pq, (tptr (Tstruct _structPQ noattr))) :: nil);
+  fn_vars := nil;
+  fn_temps := ((_t'1, tuint) :: nil);
+  fn_body :=
+(Ssequence
+  (Sset _t'1
+    (Efield
+      (Ederef (Etempvar _pq (tptr (Tstruct _structPQ noattr)))
+        (Tstruct _structPQ noattr)) _capacity tuint))
+  (Sreturn (Some (Etempvar _t'1 tuint))))
 |}.
 
 Definition f_less := {|
@@ -415,38 +445,6 @@ Definition f_insert_nc := {|
             tuint))))))
 |}.
 
-Definition f_insert := {|
-  fn_return := tvoid;
-  fn_callconv := cc_default;
-  fn_params := ((_pq, (tptr (Tstruct _structPQ noattr))) ::
-                (_x, (tptr (Tstruct _structItem noattr))) :: nil);
-  fn_vars := nil;
-  fn_temps := ((_t'2, tuint) :: (_t'1, tuint) :: nil);
-  fn_body :=
-(Ssequence
-  (Ssequence
-    (Sset _t'1
-      (Efield
-        (Ederef (Etempvar _pq (tptr (Tstruct _structPQ noattr)))
-          (Tstruct _structPQ noattr)) _first_available tuint))
-    (Ssequence
-      (Sset _t'2
-        (Efield
-          (Ederef (Etempvar _pq (tptr (Tstruct _structPQ noattr)))
-            (Tstruct _structPQ noattr)) _capacity tuint))
-      (Sifthenelse (Ebinop Oeq (Etempvar _t'1 tuint) (Etempvar _t'2 tuint)
-                     tint)
-        (Sreturn None)
-        Sskip)))
-  (Scall None
-    (Evar _insert_nc (Tfunction
-                       (Tcons (tptr (Tstruct _structPQ noattr))
-                         (Tcons (tptr (Tstruct _structItem noattr)) Tnil))
-                       tvoid cc_default))
-    ((Etempvar _pq (tptr (Tstruct _structPQ noattr))) ::
-     (Etempvar _x (tptr (Tstruct _structItem noattr))) :: nil)))
-|}.
-
 Definition f_remove_min_nc := {|
   fn_return := tvoid;
   fn_callconv := cc_default;
@@ -568,6 +566,38 @@ Definition f_remove_min_nc := {|
                (Etempvar _t'2 tuint) :: nil))))))))
 |}.
 
+Definition f_insert := {|
+  fn_return := tvoid;
+  fn_callconv := cc_default;
+  fn_params := ((_pq, (tptr (Tstruct _structPQ noattr))) ::
+                (_x, (tptr (Tstruct _structItem noattr))) :: nil);
+  fn_vars := nil;
+  fn_temps := ((_t'2, tuint) :: (_t'1, tuint) :: nil);
+  fn_body :=
+(Ssequence
+  (Ssequence
+    (Sset _t'1
+      (Efield
+        (Ederef (Etempvar _pq (tptr (Tstruct _structPQ noattr)))
+          (Tstruct _structPQ noattr)) _first_available tuint))
+    (Ssequence
+      (Sset _t'2
+        (Efield
+          (Ederef (Etempvar _pq (tptr (Tstruct _structPQ noattr)))
+            (Tstruct _structPQ noattr)) _capacity tuint))
+      (Sifthenelse (Ebinop Oeq (Etempvar _t'1 tuint) (Etempvar _t'2 tuint)
+                     tint)
+        (Sreturn None)
+        Sskip)))
+  (Scall None
+    (Evar _insert_nc (Tfunction
+                       (Tcons (tptr (Tstruct _structPQ noattr))
+                         (Tcons (tptr (Tstruct _structItem noattr)) Tnil))
+                       tvoid cc_default))
+    ((Etempvar _pq (tptr (Tstruct _structPQ noattr))) ::
+     (Etempvar _x (tptr (Tstruct _structItem noattr))) :: nil)))
+|}.
+
 Definition f_remove_min := {|
   fn_return := (tptr (Tstruct _structItem noattr));
   fn_callconv := cc_default;
@@ -603,36 +633,6 @@ Definition f_remove_min := {|
         ((Etempvar _pq (tptr (Tstruct _structPQ noattr))) ::
          (Etempvar _item (tptr (Tstruct _structItem noattr))) :: nil))
       (Sreturn (Some (Etempvar _item (tptr (Tstruct _structItem noattr))))))))
-|}.
-
-Definition f_size := {|
-  fn_return := tuint;
-  fn_callconv := cc_default;
-  fn_params := ((_pq, (tptr (Tstruct _structPQ noattr))) :: nil);
-  fn_vars := nil;
-  fn_temps := ((_t'1, tuint) :: nil);
-  fn_body :=
-(Ssequence
-  (Sset _t'1
-    (Efield
-      (Ederef (Etempvar _pq (tptr (Tstruct _structPQ noattr)))
-        (Tstruct _structPQ noattr)) _first_available tuint))
-  (Sreturn (Some (Etempvar _t'1 tuint))))
-|}.
-
-Definition f_capacity := {|
-  fn_return := tuint;
-  fn_callconv := cc_default;
-  fn_params := ((_pq, (tptr (Tstruct _structPQ noattr))) :: nil);
-  fn_vars := nil;
-  fn_temps := ((_t'1, tuint) :: nil);
-  fn_body :=
-(Ssequence
-  (Sset _t'1
-    (Efield
-      (Ederef (Etempvar _pq (tptr (Tstruct _structPQ noattr)))
-        (Tstruct _structPQ noattr)) _capacity tuint))
-  (Sreturn (Some (Etempvar _t'1 tuint))))
 |}.
 
 Definition f_make := {|
@@ -941,18 +941,18 @@ Definition global_definitions : list (ident * globdef fundef type) :=
    Gfun(External (EF_external "mallocN"
                    (mksignature (AST.Tint :: nil) AST.Tint cc_default))
      (Tcons tint Tnil) (tptr tvoid) cc_default)) ::
- (_exch, Gfun(Internal f_exch)) :: (_less, Gfun(Internal f_less)) ::
+ (_exch, Gfun(Internal f_exch)) :: (_size, Gfun(Internal f_size)) ::
+ (_capacity, Gfun(Internal f_capacity)) :: (_less, Gfun(Internal f_less)) ::
  (_swim, Gfun(Internal f_swim)) :: (_sink, Gfun(Internal f_sink)) ::
  (_insert_nc, Gfun(Internal f_insert_nc)) ::
- (_insert, Gfun(Internal f_insert)) ::
  (_remove_min_nc, Gfun(Internal f_remove_min_nc)) ::
+ (_insert, Gfun(Internal f_insert)) ::
  (_remove_min, Gfun(Internal f_remove_min)) ::
- (_size, Gfun(Internal f_size)) :: (_capacity, Gfun(Internal f_capacity)) ::
  (_make, Gfun(Internal f_make)) :: nil).
 
 Definition public_idents : list ident :=
-(_make :: _capacity :: _size :: _remove_min :: _remove_min_nc :: _insert ::
- _insert_nc :: _sink :: _swim :: _less :: _exch :: _mallocN ::
+(_make :: _remove_min :: _insert :: _remove_min_nc :: _insert_nc :: _sink ::
+ _swim :: _less :: _capacity :: _size :: _exch :: _mallocN ::
  ___builtin_debug :: ___builtin_write32_reversed ::
  ___builtin_write16_reversed :: ___builtin_read32_reversed ::
  ___builtin_read16_reversed :: ___builtin_fnmsub :: ___builtin_fnmadd ::
