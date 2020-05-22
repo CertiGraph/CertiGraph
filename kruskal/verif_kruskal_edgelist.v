@@ -103,10 +103,9 @@ simpl. rewrite data_at_zero_array_eq. entailer!.
 reflexivity. apply H4. rewrite empty_WEdgeListGraph_graph_to_wedgelist. simpl. reflexivity.
 Qed.
 
-(*
 Definition kruskal_spec :=
   DECLARE _kruskal
-  WITH gv: globals, sh: wshare, g: WEdgeListGraph, gptr : pointer_val, eptr : pointer_val
+  WITH gv: globals, sh: wshare, g: FiniteWEdgeListGraph, gptr : pointer_val, eptr : pointer_val
   PRE [tptr t_wedgearray_graph]
    PROP (sound_weighted_edge_graph g; numE g <= MAX_EDGES
         )
@@ -116,13 +115,19 @@ Definition kruskal_spec :=
         wedgearray_graph_rep sh g gptr eptr)
   POST [tptr t_wedgearray_graph]
    EX pointer_msf: pointer_val,
-   EX (msf: WEdgeListGraph) {f_msf: FiniteGraph msf},
-   PROP (sound_weighted_edge_graph msf; (numE msf) <= MAX_EDGES;
-         minimum_spanning_forest g msf)
-   LOCAL (temp ret_temp pointer_msf)
+   EX (msf: FiniteWEdgeListGraph),
+   PROP (sound_weighted_edge_graph msf;
+        (numE msf) <= MAX_EDGES;
+        minimum_spanning_forest (lg_gg g) (lg_gg msf)
+                                 Z.add
+                                 0
+                                 Z.le)
+   LOCAL (temp ret_temp (pointer_val_val pointer_msf))
    SEP (data_at sh tint (Vint (Int.repr MAX_EDGES)) (gv _MAX_EDGES);
-        wedgearray_graph_rep sh g (pointer_val_val gptr);
-        wedgearray_graph_rep sh msf pointer_msf).
+        wedgearray_graph_rep sh g gptr eptr;
+       wedgearray_graph_rep sh msf pointer_msf pointer_msf).
+(* the last "pointer_msf" is clearly wrong, I'm just 
+   adding it to make the spec typecheck
  *)
 
 (*
