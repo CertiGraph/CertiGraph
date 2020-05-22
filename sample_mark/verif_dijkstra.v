@@ -1884,10 +1884,6 @@ Proof.
                       simpl in H10.
                       ulia. apply vvalid_range in H65; trivial; lia.
                     }
-                    2: {
-                      rewrite <- elabel_Znth_graph_to_mat; trivial.
-                      apply inrange_graph_cost_pos; trivial.
-                    }
                     
                     apply Z.le_trans with (m := Znth child' dist_contents); trivial.
                     repeat rewrite <- H8; trivial.
