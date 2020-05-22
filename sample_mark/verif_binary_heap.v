@@ -125,8 +125,9 @@ Proof.
   start_function.
   assert (Hc : i = Zlength arr_contents \/ 0 <= i < Zlength arr_contents) by lia. destruct Hc as [Hc | Hc].
 * (* Special case: oob sink, used when removing the last element of the heap. *)
-  forward_while ( PROP () LOCAL (temp _k (Vint (Int.repr i)); temp _first_available (Vint (Int.repr first_available))) SEP (harray arr_contents arr) ).
-  entailer!. entailer!. exfalso. lia. (* This is where the bound is needed.  For some reason I need a slightly different bound than I expect. *)
+  forward_loop ( PROP () LOCAL (temp _k (Vint (Int.repr i)); temp _first_available (Vint (Int.repr first_available))) SEP (harray arr_contents arr) ).
+  entailer!.
+  forward_if False. exfalso. lia. (* This is where the bound is needed.  For some reason I need a slightly different bound than I expect. *)
   forward.
   Exists arr_contents. entailer!.
   eapply weak_heapOrdered_oob. 2: apply H3.
