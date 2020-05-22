@@ -21,6 +21,34 @@ Definition is_null_Z: DecidablePred Z := existT (fun P : Z -> Prop => forall a :
 Coercion pg_lg: LabeledGraph >-> PreGraph.
 Coercion lg_gg: GeneralGraph >-> LabeledGraph. 
 
+(*
+  TBH I'm not 100% sure I fixed this in the 
+  best possible way. Here's how I proceeded:
+
+  1. You were using a context for many fields but then
+     implicitly asserting that LE = Z when it was 
+     convenient. I understand that impulse, but I 
+     think a better approach is to leave it unspecified
+     and create holes for the use to fill. See 
+     DEint, DEadd, DEcomp below, and see how I used them
+     on the client side.
+     At first, those three lines were all that I added.
+
+  2. I thought that making this edit would be enough, 
+     but the client was still getting confused between
+     its own VType, EType, etc. and the MST context's 
+     V, E, etc. So then came back and explicitly 
+     edited ```Definition minimum_spanning_forest```
+     to look like you see it now. 
+     i.e., I got it personally work for all V, E, etc. 
+
+  3. Then there was the exact some confusion between 
+     ```Definition minimum_spanning_forest```'s parameter
+     values and ```sum_DE```'s context values, and so on. 
+     That's why I ended up making all three
+     Definitions take paramters, as you see them now.
+ *)
+
 Definition DEList
            {V E}
            {EV: EqDec V eq} {EE: EqDec E eq}
