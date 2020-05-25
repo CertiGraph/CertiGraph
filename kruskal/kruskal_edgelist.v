@@ -72,54 +72,56 @@ Definition ___compcert_va_float64 : ident := 30%positive.
 Definition ___compcert_va_int32 : ident := 28%positive.
 Definition ___compcert_va_int64 : ident := 29%positive.
 Definition _a : ident := 72%positive.
+Definition _b : ident := 73%positive.
 Definition _edge : ident := 7%positive.
 Definition _edge_list : ident := 10%positive.
 Definition _empty_graph : ident := 70%positive.
 Definition _find : ident := 64%positive.
 Definition _free : ident := 69%positive.
-Definition _free_graph : ident := 81%positive.
+Definition _free_graph : ident := 83%positive.
 Definition _graph : ident := 11%positive.
-Definition _graph_E : ident := 83%positive.
-Definition _graph_V : ident := 82%positive.
-Definition _graph__1 : ident := 80%positive.
-Definition _i : ident := 75%positive.
+Definition _graph_E : ident := 85%positive.
+Definition _graph_V : ident := 84%positive.
+Definition _graph__1 : ident := 82%positive.
+Definition _i : ident := 78%positive.
 Definition _init_empty_graph : ident := 71%positive.
-Definition _j : ident := 76%positive.
-Definition _kruskal : ident := 88%positive.
-Definition _m : ident := 73%positive.
-Definition _main : ident := 89%positive.
+Definition _j : ident := 79%positive.
+Definition _kruskal : ident := 90%positive.
+Definition _m : ident := 76%positive.
+Definition _main : ident := 91%positive.
 Definition _makeSet : ident := 66%positive.
 Definition _mallocK : ident := 68%positive.
-Definition _mst : ident := 85%positive.
-Definition _n : ident := 74%positive.
+Definition _mst : ident := 87%positive.
+Definition _n : ident := 77%positive.
 Definition _parent : ident := 1%positive.
-Definition _pivot : ident := 77%positive.
+Definition _pivot : ident := 80%positive.
 Definition _rank : ident := 2%positive.
-Definition _sort_edges : ident := 79%positive.
+Definition _sort_edges : ident := 81%positive.
 Definition _subset : ident := 3%positive.
-Definition _subsets : ident := 84%positive.
-Definition _tmp : ident := 78%positive.
+Definition _subsets : ident := 86%positive.
+Definition _swap_edges : ident := 75%positive.
+Definition _tmp : ident := 74%positive.
 Definition _u : ident := 5%positive.
-Definition _ufind : ident := 86%positive.
+Definition _ufind : ident := 88%positive.
 Definition _v : ident := 6%positive.
-Definition _vfind : ident := 87%positive.
+Definition _vfind : ident := 89%positive.
 Definition _weight : ident := 4%positive.
-Definition _t'1 : ident := 90%positive.
-Definition _t'10 : ident := 99%positive.
-Definition _t'11 : ident := 100%positive.
-Definition _t'12 : ident := 101%positive.
-Definition _t'13 : ident := 102%positive.
-Definition _t'14 : ident := 103%positive.
-Definition _t'15 : ident := 104%positive.
-Definition _t'16 : ident := 105%positive.
-Definition _t'2 : ident := 91%positive.
-Definition _t'3 : ident := 92%positive.
-Definition _t'4 : ident := 93%positive.
-Definition _t'5 : ident := 94%positive.
-Definition _t'6 : ident := 95%positive.
-Definition _t'7 : ident := 96%positive.
-Definition _t'8 : ident := 97%positive.
-Definition _t'9 : ident := 98%positive.
+Definition _t'1 : ident := 92%positive.
+Definition _t'10 : ident := 101%positive.
+Definition _t'11 : ident := 102%positive.
+Definition _t'12 : ident := 103%positive.
+Definition _t'13 : ident := 104%positive.
+Definition _t'14 : ident := 105%positive.
+Definition _t'15 : ident := 106%positive.
+Definition _t'16 : ident := 107%positive.
+Definition _t'2 : ident := 93%positive.
+Definition _t'3 : ident := 94%positive.
+Definition _t'4 : ident := 95%positive.
+Definition _t'5 : ident := 96%positive.
+Definition _t'6 : ident := 97%positive.
+Definition _t'7 : ident := 98%positive.
+Definition _t'8 : ident := 99%positive.
+Definition _t'9 : ident := 100%positive.
 
 Definition v_MAX_EDGES := {|
   gvar_info := tint;
@@ -177,240 +179,235 @@ Definition f_init_empty_graph := {|
           (Sreturn (Some (Etempvar _empty_graph (tptr (Tstruct _graph noattr))))))))))
 |}.
 
+Definition f_swap_edges := {|
+  fn_return := tvoid;
+  fn_callconv := cc_default;
+  fn_params := ((_a, (tptr (Tstruct _edge noattr))) ::
+                (_b, (tptr (Tstruct _edge noattr))) :: nil);
+  fn_vars := ((_tmp, (Tstruct _edge noattr)) :: nil);
+  fn_temps := ((_t'9, tint) :: (_t'8, tint) :: (_t'7, tint) ::
+               (_t'6, tint) :: (_t'5, tint) :: (_t'4, tint) ::
+               (_t'3, tint) :: (_t'2, tint) :: (_t'1, tint) :: nil);
+  fn_body :=
+(Ssequence
+  (Ssequence
+    (Sset _t'9
+      (Efield
+        (Ederef (Etempvar _a (tptr (Tstruct _edge noattr)))
+          (Tstruct _edge noattr)) _weight tint))
+    (Sassign (Efield (Evar _tmp (Tstruct _edge noattr)) _weight tint)
+      (Etempvar _t'9 tint)))
+  (Ssequence
+    (Ssequence
+      (Sset _t'8
+        (Efield
+          (Ederef (Etempvar _a (tptr (Tstruct _edge noattr)))
+            (Tstruct _edge noattr)) _u tint))
+      (Sassign (Efield (Evar _tmp (Tstruct _edge noattr)) _u tint)
+        (Etempvar _t'8 tint)))
+    (Ssequence
+      (Ssequence
+        (Sset _t'7
+          (Efield
+            (Ederef (Etempvar _a (tptr (Tstruct _edge noattr)))
+              (Tstruct _edge noattr)) _v tint))
+        (Sassign (Efield (Evar _tmp (Tstruct _edge noattr)) _v tint)
+          (Etempvar _t'7 tint)))
+      (Ssequence
+        (Ssequence
+          (Sset _t'6
+            (Efield
+              (Ederef (Etempvar _b (tptr (Tstruct _edge noattr)))
+                (Tstruct _edge noattr)) _weight tint))
+          (Sassign
+            (Efield
+              (Ederef (Etempvar _a (tptr (Tstruct _edge noattr)))
+                (Tstruct _edge noattr)) _weight tint) (Etempvar _t'6 tint)))
+        (Ssequence
+          (Ssequence
+            (Sset _t'5
+              (Efield
+                (Ederef (Etempvar _b (tptr (Tstruct _edge noattr)))
+                  (Tstruct _edge noattr)) _u tint))
+            (Sassign
+              (Efield
+                (Ederef (Etempvar _a (tptr (Tstruct _edge noattr)))
+                  (Tstruct _edge noattr)) _u tint) (Etempvar _t'5 tint)))
+          (Ssequence
+            (Ssequence
+              (Sset _t'4
+                (Efield
+                  (Ederef (Etempvar _b (tptr (Tstruct _edge noattr)))
+                    (Tstruct _edge noattr)) _v tint))
+              (Sassign
+                (Efield
+                  (Ederef (Etempvar _a (tptr (Tstruct _edge noattr)))
+                    (Tstruct _edge noattr)) _v tint) (Etempvar _t'4 tint)))
+            (Ssequence
+              (Ssequence
+                (Sset _t'3
+                  (Efield (Evar _tmp (Tstruct _edge noattr)) _weight tint))
+                (Sassign
+                  (Efield
+                    (Ederef (Etempvar _b (tptr (Tstruct _edge noattr)))
+                      (Tstruct _edge noattr)) _weight tint)
+                  (Etempvar _t'3 tint)))
+              (Ssequence
+                (Ssequence
+                  (Sset _t'2
+                    (Efield (Evar _tmp (Tstruct _edge noattr)) _u tint))
+                  (Sassign
+                    (Efield
+                      (Ederef (Etempvar _b (tptr (Tstruct _edge noattr)))
+                        (Tstruct _edge noattr)) _u tint)
+                    (Etempvar _t'2 tint)))
+                (Ssequence
+                  (Sset _t'1
+                    (Efield (Evar _tmp (Tstruct _edge noattr)) _v tint))
+                  (Sassign
+                    (Efield
+                      (Ederef (Etempvar _b (tptr (Tstruct _edge noattr)))
+                        (Tstruct _edge noattr)) _v tint)
+                    (Etempvar _t'1 tint)))))))))))
+|}.
+
 Definition f_sort_edges := {|
   fn_return := tvoid;
   fn_callconv := cc_default;
   fn_params := ((_a, (tptr (Tstruct _edge noattr))) :: (_m, tint) ::
                 (_n, tint) :: nil);
-  fn_vars := ((_tmp, (Tstruct _edge noattr)) :: nil);
-  fn_temps := ((_i, tint) :: (_j, tint) :: (_pivot, tint) :: (_t'11, tint) ::
-               (_t'10, tint) :: (_t'9, tint) :: (_t'8, tint) ::
-               (_t'7, tint) :: (_t'6, tint) :: (_t'5, tint) ::
-               (_t'4, tint) :: (_t'3, tint) :: (_t'2, tint) ::
-               (_t'1, tint) :: nil);
+  fn_vars := ((_pivot, (Tstruct _edge noattr)) :: nil);
+  fn_temps := ((_i, tint) :: (_j, tint) :: (_t'7, tint) :: (_t'6, tint) ::
+               (_t'5, tint) :: (_t'4, tint) :: (_t'3, tint) ::
+               (_t'2, tint) :: (_t'1, tint) :: nil);
   fn_body :=
 (Sifthenelse (Ebinop Olt (Etempvar _m tint) (Etempvar _n tint) tint)
   (Ssequence
-    (Sset _pivot
-      (Efield
-        (Ederef
-          (Ebinop Oadd (Etempvar _a (tptr (Tstruct _edge noattr)))
-            (Etempvar _n tint) (tptr (Tstruct _edge noattr)))
-          (Tstruct _edge noattr)) _weight tint))
     (Ssequence
-      (Sset _i (Etempvar _m tint))
+      (Sset _t'7
+        (Efield
+          (Ederef
+            (Ebinop Oadd (Etempvar _a (tptr (Tstruct _edge noattr)))
+              (Etempvar _n tint) (tptr (Tstruct _edge noattr)))
+            (Tstruct _edge noattr)) _weight tint))
+      (Sassign (Efield (Evar _pivot (Tstruct _edge noattr)) _weight tint)
+        (Etempvar _t'7 tint)))
+    (Ssequence
       (Ssequence
-        (Sset _j (Etempvar _n tint))
+        (Sset _t'6
+          (Efield
+            (Ederef
+              (Ebinop Oadd (Etempvar _a (tptr (Tstruct _edge noattr)))
+                (Etempvar _n tint) (tptr (Tstruct _edge noattr)))
+              (Tstruct _edge noattr)) _u tint))
+        (Sassign (Efield (Evar _pivot (Tstruct _edge noattr)) _u tint)
+          (Etempvar _t'6 tint)))
+      (Ssequence
         (Ssequence
-          (Swhile
-            (Ebinop Ole (Etempvar _i tint) (Etempvar _j tint) tint)
+          (Sset _t'5
+            (Efield
+              (Ederef
+                (Ebinop Oadd (Etempvar _a (tptr (Tstruct _edge noattr)))
+                  (Etempvar _n tint) (tptr (Tstruct _edge noattr)))
+                (Tstruct _edge noattr)) _v tint))
+          (Sassign (Efield (Evar _pivot (Tstruct _edge noattr)) _v tint)
+            (Etempvar _t'5 tint)))
+        (Ssequence
+          (Sset _i (Etempvar _m tint))
+          (Ssequence
+            (Sset _j (Etempvar _n tint))
             (Ssequence
-              (Sloop
+              (Swhile
+                (Ebinop Ole (Etempvar _i tint) (Etempvar _j tint) tint)
                 (Ssequence
-                  (Ssequence
-                    (Sset _t'11
-                      (Efield
-                        (Ederef
-                          (Ebinop Oadd
-                            (Etempvar _a (tptr (Tstruct _edge noattr)))
-                            (Etempvar _i tint) (tptr (Tstruct _edge noattr)))
-                          (Tstruct _edge noattr)) _weight tint))
-                    (Sifthenelse (Ebinop Olt (Etempvar _t'11 tint)
-                                   (Etempvar _pivot tint) tint)
-                      Sskip
-                      Sbreak))
-                  (Sset _i
-                    (Ebinop Oadd (Etempvar _i tint)
-                      (Econst_int (Int.repr 1) tint) tint)))
-                Sskip)
-              (Ssequence
-                (Sloop
-                  (Ssequence
-                    (Ssequence
-                      (Sset _t'10
-                        (Efield
-                          (Ederef
-                            (Ebinop Oadd
-                              (Etempvar _a (tptr (Tstruct _edge noattr)))
-                              (Etempvar _j tint)
-                              (tptr (Tstruct _edge noattr)))
-                            (Tstruct _edge noattr)) _weight tint))
-                      (Sifthenelse (Ebinop Ogt (Etempvar _t'10 tint)
-                                     (Etempvar _pivot tint) tint)
-                        Sskip
-                        Sbreak))
-                    (Sset _j
-                      (Ebinop Osub (Etempvar _j tint)
-                        (Econst_int (Int.repr 1) tint) tint)))
-                  Sskip)
-                (Sifthenelse (Ebinop Ole (Etempvar _i tint)
-                               (Etempvar _j tint) tint)
-                  (Ssequence
-                    (Ssequence
-                      (Sset _t'9
-                        (Efield
-                          (Ederef
-                            (Ebinop Oadd
-                              (Etempvar _a (tptr (Tstruct _edge noattr)))
-                              (Etempvar _i tint)
-                              (tptr (Tstruct _edge noattr)))
-                            (Tstruct _edge noattr)) _u tint))
-                      (Sassign
-                        (Efield (Evar _tmp (Tstruct _edge noattr)) _u tint)
-                        (Etempvar _t'9 tint)))
+                  (Sloop
                     (Ssequence
                       (Ssequence
-                        (Sset _t'8
+                        (Sset _t'3
                           (Efield
                             (Ederef
                               (Ebinop Oadd
                                 (Etempvar _a (tptr (Tstruct _edge noattr)))
                                 (Etempvar _i tint)
                                 (tptr (Tstruct _edge noattr)))
-                              (Tstruct _edge noattr)) _v tint))
-                        (Sassign
-                          (Efield (Evar _tmp (Tstruct _edge noattr)) _v tint)
-                          (Etempvar _t'8 tint)))
+                              (Tstruct _edge noattr)) _weight tint))
+                        (Ssequence
+                          (Sset _t'4
+                            (Efield (Evar _pivot (Tstruct _edge noattr))
+                              _weight tint))
+                          (Sifthenelse (Ebinop Olt (Etempvar _t'3 tint)
+                                         (Etempvar _t'4 tint) tint)
+                            Sskip
+                            Sbreak)))
+                      (Sset _i
+                        (Ebinop Oadd (Etempvar _i tint)
+                          (Econst_int (Int.repr 1) tint) tint)))
+                    Sskip)
+                  (Ssequence
+                    (Sloop
                       (Ssequence
                         (Ssequence
-                          (Sset _t'7
+                          (Sset _t'1
                             (Efield
                               (Ederef
                                 (Ebinop Oadd
                                   (Etempvar _a (tptr (Tstruct _edge noattr)))
-                                  (Etempvar _i tint)
+                                  (Etempvar _j tint)
                                   (tptr (Tstruct _edge noattr)))
                                 (Tstruct _edge noattr)) _weight tint))
-                          (Sassign
-                            (Efield (Evar _tmp (Tstruct _edge noattr))
-                              _weight tint) (Etempvar _t'7 tint)))
+                          (Ssequence
+                            (Sset _t'2
+                              (Efield (Evar _pivot (Tstruct _edge noattr))
+                                _weight tint))
+                            (Sifthenelse (Ebinop Ogt (Etempvar _t'1 tint)
+                                           (Etempvar _t'2 tint) tint)
+                              Sskip
+                              Sbreak)))
+                        (Sset _j
+                          (Ebinop Osub (Etempvar _j tint)
+                            (Econst_int (Int.repr 1) tint) tint)))
+                      Sskip)
+                    (Sifthenelse (Ebinop Ole (Etempvar _i tint)
+                                   (Etempvar _j tint) tint)
+                      (Ssequence
+                        (Scall None
+                          (Evar _swap_edges (Tfunction
+                                              (Tcons
+                                                (tptr (Tstruct _edge noattr))
+                                                (Tcons
+                                                  (tptr (Tstruct _edge noattr))
+                                                  Tnil)) tvoid cc_default))
+                          ((Ebinop Oadd
+                             (Etempvar _a (tptr (Tstruct _edge noattr)))
+                             (Etempvar _i tint)
+                             (tptr (Tstruct _edge noattr))) ::
+                           (Ebinop Oadd
+                             (Etempvar _a (tptr (Tstruct _edge noattr)))
+                             (Etempvar _j tint)
+                             (tptr (Tstruct _edge noattr))) :: nil))
                         (Ssequence
-                          (Ssequence
-                            (Sset _t'6
-                              (Efield
-                                (Ederef
-                                  (Ebinop Oadd
-                                    (Etempvar _a (tptr (Tstruct _edge noattr)))
-                                    (Etempvar _j tint)
-                                    (tptr (Tstruct _edge noattr)))
-                                  (Tstruct _edge noattr)) _u tint))
-                            (Sassign
-                              (Efield
-                                (Ederef
-                                  (Ebinop Oadd
-                                    (Etempvar _a (tptr (Tstruct _edge noattr)))
-                                    (Etempvar _i tint)
-                                    (tptr (Tstruct _edge noattr)))
-                                  (Tstruct _edge noattr)) _u tint)
-                              (Etempvar _t'6 tint)))
-                          (Ssequence
-                            (Ssequence
-                              (Sset _t'5
-                                (Efield
-                                  (Ederef
-                                    (Ebinop Oadd
-                                      (Etempvar _a (tptr (Tstruct _edge noattr)))
-                                      (Etempvar _j tint)
-                                      (tptr (Tstruct _edge noattr)))
-                                    (Tstruct _edge noattr)) _v tint))
-                              (Sassign
-                                (Efield
-                                  (Ederef
-                                    (Ebinop Oadd
-                                      (Etempvar _a (tptr (Tstruct _edge noattr)))
-                                      (Etempvar _i tint)
-                                      (tptr (Tstruct _edge noattr)))
-                                    (Tstruct _edge noattr)) _v tint)
-                                (Etempvar _t'5 tint)))
-                            (Ssequence
-                              (Ssequence
-                                (Sset _t'4
-                                  (Efield
-                                    (Ederef
-                                      (Ebinop Oadd
-                                        (Etempvar _a (tptr (Tstruct _edge noattr)))
-                                        (Etempvar _j tint)
-                                        (tptr (Tstruct _edge noattr)))
-                                      (Tstruct _edge noattr)) _weight tint))
-                                (Sassign
-                                  (Efield
-                                    (Ederef
-                                      (Ebinop Oadd
-                                        (Etempvar _a (tptr (Tstruct _edge noattr)))
-                                        (Etempvar _i tint)
-                                        (tptr (Tstruct _edge noattr)))
-                                      (Tstruct _edge noattr)) _weight tint)
-                                  (Etempvar _t'4 tint)))
-                              (Ssequence
-                                (Ssequence
-                                  (Sset _t'3
-                                    (Efield
-                                      (Evar _tmp (Tstruct _edge noattr)) _u
-                                      tint))
-                                  (Sassign
-                                    (Efield
-                                      (Ederef
-                                        (Ebinop Oadd
-                                          (Etempvar _a (tptr (Tstruct _edge noattr)))
-                                          (Etempvar _j tint)
-                                          (tptr (Tstruct _edge noattr)))
-                                        (Tstruct _edge noattr)) _u tint)
-                                    (Etempvar _t'3 tint)))
-                                (Ssequence
-                                  (Ssequence
-                                    (Sset _t'2
-                                      (Efield
-                                        (Evar _tmp (Tstruct _edge noattr)) _v
-                                        tint))
-                                    (Sassign
-                                      (Efield
-                                        (Ederef
-                                          (Ebinop Oadd
-                                            (Etempvar _a (tptr (Tstruct _edge noattr)))
-                                            (Etempvar _j tint)
-                                            (tptr (Tstruct _edge noattr)))
-                                          (Tstruct _edge noattr)) _v tint)
-                                      (Etempvar _t'2 tint)))
-                                  (Ssequence
-                                    (Ssequence
-                                      (Sset _t'1
-                                        (Efield
-                                          (Evar _tmp (Tstruct _edge noattr))
-                                          _weight tint))
-                                      (Sassign
-                                        (Efield
-                                          (Ederef
-                                            (Ebinop Oadd
-                                              (Etempvar _a (tptr (Tstruct _edge noattr)))
-                                              (Etempvar _j tint)
-                                              (tptr (Tstruct _edge noattr)))
-                                            (Tstruct _edge noattr)) _weight
-                                          tint) (Etempvar _t'1 tint)))
-                                    (Ssequence
-                                      (Sset _i
-                                        (Ebinop Oadd (Etempvar _i tint)
-                                          (Econst_int (Int.repr 1) tint)
-                                          tint))
-                                      (Sset _j
-                                        (Ebinop Osub (Etempvar _j tint)
-                                          (Econst_int (Int.repr 1) tint)
-                                          tint))))))))))))
-                  Sskip))))
-          (Ssequence
-            (Scall None
-              (Evar _sort_edges (Tfunction
-                                  (Tcons (tptr (Tstruct _edge noattr))
-                                    (Tcons tint (Tcons tint Tnil))) tvoid
-                                  cc_default))
-              ((Etempvar _a (tptr (Tstruct _edge noattr))) ::
-               (Etempvar _m tint) :: (Etempvar _j tint) :: nil))
-            (Scall None
-              (Evar _sort_edges (Tfunction
-                                  (Tcons (tptr (Tstruct _edge noattr))
-                                    (Tcons tint (Tcons tint Tnil))) tvoid
-                                  cc_default))
-              ((Etempvar _a (tptr (Tstruct _edge noattr))) ::
-               (Etempvar _i tint) :: (Etempvar _n tint) :: nil)))))))
+                          (Sset _i
+                            (Ebinop Oadd (Etempvar _i tint)
+                              (Econst_int (Int.repr 1) tint) tint))
+                          (Sset _j
+                            (Ebinop Osub (Etempvar _j tint)
+                              (Econst_int (Int.repr 1) tint) tint))))
+                      Sskip))))
+              (Ssequence
+                (Scall None
+                  (Evar _sort_edges (Tfunction
+                                      (Tcons (tptr (Tstruct _edge noattr))
+                                        (Tcons tint (Tcons tint Tnil))) tvoid
+                                      cc_default))
+                  ((Etempvar _a (tptr (Tstruct _edge noattr))) ::
+                   (Etempvar _m tint) :: (Etempvar _j tint) :: nil))
+                (Scall None
+                  (Evar _sort_edges (Tfunction
+                                      (Tcons (tptr (Tstruct _edge noattr))
+                                        (Tcons tint (Tcons tint Tnil))) tvoid
+                                      cc_default))
+                  ((Etempvar _a (tptr (Tstruct _edge noattr))) ::
+                   (Etempvar _i tint) :: (Etempvar _n tint) :: nil)))))))))
   Sskip)
 |}.
 
@@ -979,31 +976,32 @@ Definition global_definitions : list (ident * globdef fundef type) :=
      (Tcons tint Tnil) (tptr tvoid) cc_default)) ::
  (_free, Gfun(External EF_free (Tcons (tptr tvoid) Tnil) tvoid cc_default)) ::
  (_init_empty_graph, Gfun(Internal f_init_empty_graph)) ::
+ (_swap_edges, Gfun(Internal f_swap_edges)) ::
  (_sort_edges, Gfun(Internal f_sort_edges)) ::
  (_free_graph, Gfun(Internal f_free_graph)) ::
  (_kruskal, Gfun(Internal f_kruskal)) :: nil).
 
 Definition public_idents : list ident :=
-(_kruskal :: _free_graph :: _sort_edges :: _init_empty_graph :: _free ::
- _mallocK :: _makeSet :: _Union :: _find :: ___builtin_debug ::
- ___builtin_write32_reversed :: ___builtin_write16_reversed ::
- ___builtin_read32_reversed :: ___builtin_read16_reversed ::
- ___builtin_fnmsub :: ___builtin_fnmadd :: ___builtin_fmsub ::
- ___builtin_fmadd :: ___builtin_fmin :: ___builtin_fmax ::
- ___builtin_ctzll :: ___builtin_ctzl :: ___builtin_ctz :: ___builtin_clzll ::
- ___builtin_clzl :: ___builtin_clz :: ___compcert_i64_umulh ::
- ___compcert_i64_smulh :: ___compcert_i64_sar :: ___compcert_i64_shr ::
- ___compcert_i64_shl :: ___compcert_i64_umod :: ___compcert_i64_smod ::
- ___compcert_i64_udiv :: ___compcert_i64_sdiv :: ___compcert_i64_utof ::
- ___compcert_i64_stof :: ___compcert_i64_utod :: ___compcert_i64_stod ::
- ___compcert_i64_dtou :: ___compcert_i64_dtos :: ___compcert_va_composite ::
- ___compcert_va_float64 :: ___compcert_va_int64 :: ___compcert_va_int32 ::
- ___builtin_va_end :: ___builtin_va_copy :: ___builtin_va_arg ::
- ___builtin_va_start :: ___builtin_membar :: ___builtin_annot_intval ::
- ___builtin_annot :: ___builtin_sel :: ___builtin_memcpy_aligned ::
- ___builtin_fsqrt :: ___builtin_fabs :: ___builtin_bswap16 ::
- ___builtin_bswap32 :: ___builtin_bswap :: ___builtin_bswap64 ::
- ___builtin_ais_annot :: nil).
+(_kruskal :: _free_graph :: _sort_edges :: _swap_edges ::
+ _init_empty_graph :: _free :: _mallocK :: _makeSet :: _Union :: _find ::
+ ___builtin_debug :: ___builtin_write32_reversed ::
+ ___builtin_write16_reversed :: ___builtin_read32_reversed ::
+ ___builtin_read16_reversed :: ___builtin_fnmsub :: ___builtin_fnmadd ::
+ ___builtin_fmsub :: ___builtin_fmadd :: ___builtin_fmin ::
+ ___builtin_fmax :: ___builtin_ctzll :: ___builtin_ctzl :: ___builtin_ctz ::
+ ___builtin_clzll :: ___builtin_clzl :: ___builtin_clz ::
+ ___compcert_i64_umulh :: ___compcert_i64_smulh :: ___compcert_i64_sar ::
+ ___compcert_i64_shr :: ___compcert_i64_shl :: ___compcert_i64_umod ::
+ ___compcert_i64_smod :: ___compcert_i64_udiv :: ___compcert_i64_sdiv ::
+ ___compcert_i64_utof :: ___compcert_i64_stof :: ___compcert_i64_utod ::
+ ___compcert_i64_stod :: ___compcert_i64_dtou :: ___compcert_i64_dtos ::
+ ___compcert_va_composite :: ___compcert_va_float64 ::
+ ___compcert_va_int64 :: ___compcert_va_int32 :: ___builtin_va_end ::
+ ___builtin_va_copy :: ___builtin_va_arg :: ___builtin_va_start ::
+ ___builtin_membar :: ___builtin_annot_intval :: ___builtin_annot ::
+ ___builtin_sel :: ___builtin_memcpy_aligned :: ___builtin_fsqrt ::
+ ___builtin_fabs :: ___builtin_bswap16 :: ___builtin_bswap32 ::
+ ___builtin_bswap :: ___builtin_bswap64 :: ___builtin_ais_annot :: nil).
 
 Definition prog : Clight.program := 
   mkprogram composites global_definitions public_idents _main Logic.I.
