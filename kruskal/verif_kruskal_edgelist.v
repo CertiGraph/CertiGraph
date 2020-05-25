@@ -42,7 +42,6 @@ Definition mallocK_spec :=
 
 (*It'll be useful if we can come up with some freeN spec, then centralize these in some header*)
 
-(*overhaul this to explicitly return empty_WEdgeListGraph instead*)
 Definition init_empty_graph_spec :=
   DECLARE _kruskal
   WITH gv: globals, sh: wshare
@@ -57,7 +56,7 @@ Definition init_empty_graph_spec :=
      LOCAL (temp ret_temp (pointer_val_val gptr))
      SEP (data_at sh tint (Vint (Int.repr MAX_EDGES)) (gv _MAX_EDGES) *
           wedgearray_graph_rep sh empty_FiniteWEdgeListGraph gptr eptr).
- 
+
 Definition Vprog : varspecs. mk_varspecs prog. Defined.
 Definition Gprog : funspecs := ltac:(with_library prog
   [mallocK_spec; init_empty_graph_spec]).
@@ -105,16 +104,16 @@ Qed.
 
 Definition kruskal_spec :=
   DECLARE _kruskal
-  WITH gv: globals, sh: wshare, g: FiniteWEdgeListGraph, gptr : pointer_val, eptr : pointer_val
+  WITH gv: globals, sh: wshare, g: FiniteWEdgeListGraph, orig_gptr : pointer_val, orig_eptr : pointer_val
   PRE [tptr t_wedgearray_graph]
    PROP (sound_weighted_edge_graph g; numE g <= MAX_EDGES
         )
-   PARAMS ((pointer_val_val gptr))
+   PARAMS ((pointer_val_val orig_gptr))
    GLOBALS (gv)
    SEP (data_at sh tint (Vint (Int.repr MAX_EDGES)) (gv _MAX_EDGES);
-        wedgearray_graph_rep sh g gptr eptr)
+        wedgearray_graph_rep sh g orig_gptr orig_eptr)
   POST [tptr t_wedgearray_graph]
-   EX pointer_msf: pointer_val,
+   EX msf_gptr msf_eptr: pointer_val,
    EX (msf: FiniteWEdgeListGraph),
    PROP (sound_weighted_edge_graph msf;
         (numE msf) <= MAX_EDGES;
@@ -122,13 +121,10 @@ Definition kruskal_spec :=
                                  Z.add
                                  0
                                  Z.le)
-   LOCAL (temp ret_temp (pointer_val_val pointer_msf))
+   LOCAL (temp ret_temp (pointer_val_val msf_gptr))
    SEP (data_at sh tint (Vint (Int.repr MAX_EDGES)) (gv _MAX_EDGES);
-        wedgearray_graph_rep sh g gptr eptr;
-       wedgearray_graph_rep sh msf pointer_msf pointer_msf).
-(* the last "pointer_msf" is clearly wrong, I'm just 
-   adding it to make the spec typecheck
- *)
+        wedgearray_graph_rep sh g orig_gptr orig_eptr;
+       wedgearray_graph_rep sh msf msf_gptr msf_eptr).
 
 (*
 Idea of proof:
