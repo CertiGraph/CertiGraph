@@ -29,29 +29,27 @@ struct graph * init_empty_graph() {
     return empty_graph;
 }
 
-/*
-Modified version of qsort1 from Cbench. Wanted to import a generic verified quicksort, but
--Using an array of void* pointers will lead to the casting issue. They did it from void*-to-double* in qsort4, but I'm not sure about arbitrary structures
--The CBench versions are based on doubles, and I'm worried about lifting
+void swap_edges(struct edge *a, struct edge *b) {
+	struct edge tmp;
+        tmp.weight = a->weight; tmp.u = a->u; tmp.v = a->v;
+	a->weight = b->weight; a->u = b->u; a->v = b->v;
+	b->weight = tmp.weight; b->u = tmp.u; b->v = tmp.v;
+}
 
-a is flat edge array
-m is first index
-n is last index
-*/
-void sort_edges(struct edge *a, int m, int n) {
-  int i, j, pivot;
-  struct edge tmp;
+void
+sort_edges(struct edge* a, int m, int n)
+{
+  int i, j;
+  struct edge pivot;
 
   if (m < n) {
-    pivot = a[n].weight;
+    pivot.weight = a[n].weight; pivot.u = a[n].u; pivot.v = a[n].v;	//copy everything to avoid headaches in proof
     i = m; j = n;
     while (i <= j) {
-      while (a[i].weight < pivot) i++;
-      while (a[j].weight > pivot) j--;
+      while (a[i].weight < pivot.weight) i++;
+      while (a[j].weight > pivot.weight) j--;
       if (i <= j) {
-        tmp.u = a[i].u; tmp.v = a[i].v; tmp.weight = a[i].weight;
-        a[i].u = a[j].u; a[i].v = a[j].v; a[i].weight = a[j].weight;
-        a[j].u = tmp.u; a[j].v = tmp.v; a[j].weight = tmp.weight;
+	swap_edges(a+i,a+j);
         i++; j--;
       }
     }
