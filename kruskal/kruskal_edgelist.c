@@ -29,24 +29,35 @@ struct graph * init_empty_graph() {
     return empty_graph;
 }
 
-void swap_edges(struct edge *a, struct edge *b) {
-	struct edge tmp;
-    tmp.weight = a->weight; tmp.u = a->u; tmp.v = a->v;
-	a->weight = b->weight; a->u = b->u; a->v = b->v;
-	b->weight = tmp.weight; b->u = tmp.u; b->v = tmp.v;
+/*********************SORTING***********************/
+void copy_edge(struct edge *src, struct edge *dst) {
+  dst->weight = src->weight;
+  dst->u = src->u;
+  dst->v = src->v;
 }
 
-void sort_edges(struct edge* a, int m, int n) {
+void swap_edges(struct edge *a, struct edge *b) {
+  struct edge tmp;
+  tmp.weight = a->weight; tmp.u = a->u; tmp.v = a->v;
+  a->weight = b->weight; a->u = b->u; a->v = b->v;
+  b->weight = tmp.weight; b->u = tmp.u; b->v = tmp.v;
+}
+
+void
+sort_edges(struct edge* a, int m, int n)
+{
   int i, j;
   struct edge pivot;
+
   if (m < n) {
-    pivot.weight = a[n].weight; pivot.u = a[n].u; pivot.v = a[n].v;	//copy everything to avoid headaches in proof
+    copy_edge(a+n, &pivot);
+    //pivot.weight = a[n].weight; pivot.u = a[n].u; pivot.v = a[n].v;	//copy everything to avoid headaches in proof
     i = m; j = n;
     while (i <= j) {
       while (a[i].weight < pivot.weight) i++;
       while (a[j].weight > pivot.weight) j--;
       if (i <= j) {
-        swap_edges(a+i,a+j);
+        if (i<j) swap_edges(a+i,a+j);
         i++; j--;
       }
     }
@@ -81,6 +92,7 @@ struct graph *kruskal(struct graph *graph) {
         int vfind = find(subsets, v);
         if (ufind != vfind) {
             //add edge to MST
+            //copy_edge(graph->edge_list + i, mst->edge_list + mst->E);
             mst->edge_list[mst->E].u = u;
             mst->edge_list[mst->E].v = v;
             mst->edge_list[mst->E].weight = graph->edge_list[i].weight;
