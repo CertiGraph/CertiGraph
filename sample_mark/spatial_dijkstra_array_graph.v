@@ -24,20 +24,20 @@ Definition list_rep sh size l contents_mat index :=
   let mylist := (Znth index contents_mat) in
   data_at sh (tarray tint size) (map Vint (map Int.repr mylist)) (list_address l index size).
 
-Definition graph_rep sh contents_graph gaddr : mpred :=
+Definition DijkGraph sh contents_graph gaddr : mpred :=
   iter_sepcon.iter_sepcon (list_rep sh SIZE gaddr contents_graph)
                           (nat_inc_list (Z.to_nat (Zlength contents_graph))).
 
 Lemma graph_unfold: forall sh contents ptr i,
     0 <= i < (Zlength contents) ->
-    graph_rep sh contents ptr =
+    DijkGraph sh contents ptr =
     iter_sepcon.iter_sepcon (list_rep sh SIZE ptr contents)
             (sublist 0 i (nat_inc_list (Z.to_nat (Zlength contents)))) *
     (list_rep sh SIZE ptr contents i *
            iter_sepcon.iter_sepcon (list_rep sh SIZE ptr contents)
              (sublist (i + 1) (Zlength contents) (nat_inc_list (Z.to_nat (Zlength contents))))).
 Proof.
-  intros. unfold graph_rep.
+  intros. unfold DijkGraph.
   replace (nat_inc_list (Z.to_nat (Zlength contents))) with
       (sublist 0 (Zlength contents) (nat_inc_list (Z.to_nat (Zlength contents)))) at 1.
   2: { rewrite sublist_same; trivial.
