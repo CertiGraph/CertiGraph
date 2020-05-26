@@ -31,17 +31,14 @@ struct graph * init_empty_graph() {
 
 void swap_edges(struct edge *a, struct edge *b) {
 	struct edge tmp;
-        tmp.weight = a->weight; tmp.u = a->u; tmp.v = a->v;
+    tmp.weight = a->weight; tmp.u = a->u; tmp.v = a->v;
 	a->weight = b->weight; a->u = b->u; a->v = b->v;
 	b->weight = tmp.weight; b->u = tmp.u; b->v = tmp.v;
 }
 
-void
-sort_edges(struct edge* a, int m, int n)
-{
+void sort_edges(struct edge* a, int m, int n) {
   int i, j;
   struct edge pivot;
-
   if (m < n) {
     pivot.weight = a[n].weight; pivot.u = a[n].u; pivot.v = a[n].v;	//copy everything to avoid headaches in proof
     i = m; j = n;
@@ -49,7 +46,7 @@ sort_edges(struct edge* a, int m, int n)
       while (a[i].weight < pivot.weight) i++;
       while (a[j].weight > pivot.weight) j--;
       if (i <= j) {
-	swap_edges(a+i,a+j);
+        swap_edges(a+i,a+j);
         i++; j--;
       }
     }
