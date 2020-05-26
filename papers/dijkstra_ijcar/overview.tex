@@ -72,7 +72,7 @@ popped from the priority queue.  For all popped vertices \emph{except for} \text
 this is trivial from $\m{dijk\_correct}$. For \texttt{u} itself, we reach the heart of Dijkstra's correctness: the cost to the fringe vertex with minimum cost cannot be further improved.  %The associated entailment is not trivial.
 \item $\m{inv\_unseen}$: no path is known from $\texttt{src}$ to $\m{dst}$.  This is straightforward.
 \item $\m{inv\_unpopped}$ (less than \texttt{i}): $\m{dst}$ is reachable in
-one hop from a ``\emph{mom}'' vertex, which is itself popped.  Initially this is trivial since $\texttt{i}=0$, and we restore it as \texttt{i} climbs by updating costs when they can be improved, as in line~\ref{code:update}.
+one hop from a ``\emph{mom}'' vertex, which is itself popped.  Initially this is trivial since $\texttt{i}=0$, and we restore it as \texttt{i} climbs by updating costs when they can be improved, as in lines~\ref{code:update1}~and~\ref{code:update2}.
 \item $\m{inv\_unpopped\_weak}$ (between than \texttt{i} and \texttt{SIZE}):
 $\m{dst}$ is reachable in one hop from a popped ``\emph{mom}'' vertex.
 However, the path to $\m{dst}$ specifically \emph{does not go via} \texttt{u}.
