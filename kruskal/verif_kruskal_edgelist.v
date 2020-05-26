@@ -29,6 +29,45 @@ Local Open Scope Z_scope.
 (*I guess we ought to throw these in a specs_kruskal.v
 Also, thinking of we can combine env and spatial*)
 
+Lemma numE_pos: forall g, 0 <= numE g.
+Proof.
+  intros. unfold numE. apply Zlength_nonneg.
+Qed.
+
+Lemma g2wedgelist_numE:
+  forall g,
+    Zlength (graph_to_wedgelist g) = numE g.
+Proof.
+  intros. unfold numE, graph_to_wedgelist.
+  rewrite Zlength_map. trivial.
+Qed.
+
+Lemma numE_range:
+  forall g,
+    numE g <= MAX_EDGES ->
+    Int.min_signed <= numE g <= Int.max_signed.
+Proof.
+  intros.
+  pose proof (numE_pos g).
+  unfold MAX_EDGES in H.
+  assert (Int.min_signed <= 0) by now compute.
+  assert (8 <= Int.max_signed) by now compute.
+  lia.
+Qed.
+
+Lemma numE_pred_range:
+  forall g,
+    numE g <= MAX_EDGES ->
+    Int.min_signed <= numE g - 1 <= Int.max_signed.
+Proof.
+  intros.
+  pose proof (numE_pos g).
+  unfold MAX_EDGES in H.
+  assert (Int.min_signed <= -1) by now compute.
+  assert (7 <= Int.max_signed) by now compute.
+  lia.
+Qed.
+
 Lemma body_init_empty_graph: semax_body Vprog Gprog f_init_empty_graph init_empty_graph_spec.
 Proof.
 start_function.
@@ -75,8 +114,70 @@ Proof.
   start_function.
   unfold wedgearray_graph_rep. Intros.
   forward. forward.
-  Fail forward_call.
+  forward_call (sh, (numV g)).
+  1: { (* probably something to add to PROP? *) admit. }
+  Intros subsets.
+  forward_call (gv, sh).
+  Intros mst.
+  destruct subsets as [subsetsGraph subsetsPtr].
+  destruct mst as [gptr eptr].
+  simpl fst in *. simpl snd in *.
+  unfold wedgearray_graph_rep. Intros.
+  forward.
+  forward.
+  
+  (* caution *)
+  forward_call ((wshare_share sh), 
+                pointer_val_val orig_eptr,
+                (Int.repr 0),
+                (Int.repr ((numE g) - 1)),
+                (@nil wedgerep),
+                (map wedge_to_cdata (graph_to_wedgelist g)),
+                (@nil wedgerep)).
+  (* have I done this call correctly? *)
 
+  - rewrite Int.signed_repr.
+    2: apply numE_range; trivial.
+    rewrite Int.signed_repr.
+    2: compute; split; inversion 1.
+    apply numE_pred_range; trivial.
+  - rewrite app_nil_r, app_nil_l, Zlength_map, g2wedgelist_numE.
+    entailer!.
+  - split3; [| |split3]; trivial.
+    + rewrite app_nil_r, app_nil_l, Zlength_map.
+      rewrite g2wedgelist_numE.
+      apply numE_range; trivial.
+    + destruct (zlt (Int.signed (Int.repr 0)) (Int.signed (Int.repr (numE g - 1)))) eqn:?.
+      * split3; trivial.
+        -- rewrite app_nil_r, app_nil_l, Zlength_map, g2wedgelist_numE.
+           rewrite Int.signed_repr.
+           2: apply numE_pred_range; trivial.
+           rewrite Zlength_nil. lia.
+        -- rewrite Zlength_map.
+           rewrite g2wedgelist_numE.
+           rewrite Int.signed_repr.
+           2: apply numE_pred_range; trivial.
+           rewrite Int.signed_repr.
+           2: compute; split; inversion 1.
+           lia.
+      * admit.
+        (* something is wrong... from g0 I can show that 
+           numE is 0 or 1. But that's not enough to 
+           prove the goal. 
+           I forward_called with the -1 because I was 
+           looking at the proof "sketch" under the bar
+         *)
+    + rewrite Forall_forall. intros.
+      apply list_in_map_inv in H2.
+      destruct H2 as [? [? ?]].
+      unfold wedge_to_cdata in H2.
+      unfold def_wedgerep.
+      exists (Int.repr (fst x0)),
+      (Int.repr (fst (snd x0))),
+      (Int.repr (snd (snd x0))).
+      split; trivial.
+      split3; apply Int.signed_range.
+  - Intros sorted.
 Abort.
 
 
