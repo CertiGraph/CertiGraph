@@ -162,8 +162,9 @@ Definition kruskal_spec :=
   DECLARE _kruskal
   WITH gv: globals, sh: wshare, g: FiniteWEdgeListGraph, orig_gptr : pointer_val, orig_eptr : pointer_val
   PRE [tptr t_wedgearray_graph]
-   PROP (sound_weighted_edge_graph g; numE g <= MAX_EDGES
-        )
+  PROP (sound_weighted_edge_graph g;
+        numE g <= MAX_EDGES;
+        0 < numV g <= Int.max_signed / 8)
    PARAMS ((pointer_val_val orig_gptr))
    GLOBALS (gv)
    SEP (data_at sh tint (Vint (Int.repr MAX_EDGES)) (gv _MAX_EDGES);
