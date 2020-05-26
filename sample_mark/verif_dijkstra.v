@@ -962,7 +962,7 @@ Proof.
                   ((list_repeat (Z.to_nat i) (Vint (Int.repr inf)))
                      ++ (list_repeat (Z.to_nat (SIZE-i))
                                      Vundef)) (pointer_val_val dist);
-          graph_rep sh (graph_to_mat g) (pointer_val_val arr))).
+          DijkGraph sh (graph_to_mat g) (pointer_val_val arr))).
   - unfold SIZE. rep_lia.
   - unfold data_at, data_at_, field_at_, SIZE; entailer!.
   - forward. forward.
@@ -1047,7 +1047,7 @@ Proof.
                     (tarray tint SIZE)
                     (map Vint (map Int.repr dist_contents))
                     (pointer_val_val dist);
-            graph_rep sh (graph_to_mat g) (pointer_val_val arr)))
+            DijkGraph sh (graph_to_mat g) (pointer_val_val arr)))
       break:
       (EX prev_contents: list VType,
        EX priq_contents: list VType,
@@ -1070,7 +1070,7 @@ Proof.
                     (tarray tint SIZE)
                     (map Vint (map Int.repr dist_contents))
                     (pointer_val_val dist);
-            graph_rep sh (graph_to_mat g) (pointer_val_val arr))).
+            DijkGraph sh (graph_to_mat g) (pointer_val_val arr))).
     + Exists (upd_Znth src (@list_repeat VType (Z.to_nat SIZE) inf) src).
       Exists (upd_Znth src (@list_repeat VType (Z.to_nat SIZE) inf) 0).
       Exists (upd_Znth src (@list_repeat VType (Z.to_nat SIZE) inf) 0).
@@ -1492,7 +1492,7 @@ Proof.
                              (tarray tint SIZE)
                              (map Vint (map Int.repr dist_contents'))
                              (pointer_val_val dist);
-                     graph_rep sh (graph_to_mat g) (pointer_val_val arr))).
+                     DijkGraph sh (graph_to_mat g) (pointer_val_val arr))).
         -- unfold SIZE; rep_lia.
         -- (* We start the for loop as planned --
               with the old dist and prev arrays,
