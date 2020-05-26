@@ -43,9 +43,7 @@ void swap_edges(struct edge *a, struct edge *b) {
   b->weight = tmp.weight; b->u = tmp.u; b->v = tmp.v;
 }
 
-void
-sort_edges(struct edge* a, int m, int n)
-{
+void sort_edges(struct edge* a, int m, int n) {
   int i, j;
   struct edge pivot;
 
