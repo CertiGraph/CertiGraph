@@ -9,8 +9,8 @@ general discussion of the algorithm.
 The adjacency-matrix-represented graph~$\gamma$ of \texttt{SIZE} vertices
 is passed as the parameter \texttt{graph} along with the source vertex \texttt{src}
 and two allocated arrays \texttt{dist} and \texttt{prev}.
-The details of the spatial predicates $\mathsf{array}(x,\vec{v})$, connecting an array pointer $x$ with its contents $\vec{v}$, and the internals of the priority
-queue $\mathsf{PQ}$ are unexciting.  Our spatial graph predicate is more interesting, in
+The spatial predicate $\mathsf{array}(x,\vec{v})$ connecting an array pointer $x$ with its contents $\vec{v}$ is standard and unexciting.
+Our spatial graph predicate is more interesting, in
 that it nests arrays and connects the concrete memory values to an abstract mathematical
 graph~$\gamma$, which in turn exposes an interface in the language of graph theory
 (vertices, edges, labels, etc.).
@@ -28,7 +28,27 @@ In general, these spatial representations are simple enough that they pose no sp
 challenge in the proof. Therefore, in our discussion below, we will not focus on 
 issues such as making sure an array dereference is in bounds.
 
-The key to the verification is the pure part of the loop
+\note[new text]{
+Dijkstra's algorithm uses a priority queue to greedily choose the 
+next-cheapest unexamined vertex, as in line~\ref{code:pop}. Of course, the 
+best-known distances to vertices are expected to improve as the algorithm
+proceeds, and such improvements need to be logged in the PQ. 
+In other words, Dijkstra's PQ needs to support the relatively nonstandard 
+\texttt{decrease\_key} operation, which can be implemented in $\bigO(\log n)$
+after a nontrivial amount of additional bookkeeping. One of our 
+contributions is a verified binary heap-based PQ that supports \texttt{decrease\_key}.
+
+Some implementations of Dijkstra \cite{blah, blah, blah} 
+get by with a simpler PQ (or even without a PQ) by leveraging the fact that
+the \texttt{dist} array already tracks the best-known cost to any vertex 
+(see line~\ref{code:update1}). It is thus possible to maintain a list of 
+examined vertices, and, when looking for the next-cheapest unexamined
+vertex, to simply scan \texttt{dist} for the cheapest vertex that has not
+been examined. This is neat, but drags down performance unacceptably.
+} % end of note
+
+With an approproate priority queue in hand, 
+the key to the verification is the pure part of the loop
 invariants on lines~\ref{code:whileinv} and~\ref{code:forinv}.  The \texttt{while} invariant $\m{dijk\_correct}(\gamma, \texttt{src}, \m{prev}, \m{dist}, \m{priq})$ has three parts:
 \[
 \begin{array}{l}
