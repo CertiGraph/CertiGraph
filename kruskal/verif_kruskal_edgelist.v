@@ -43,7 +43,7 @@ Definition mallocK_spec :=
 (*It'll be useful if we can come up with some freeN spec, then centralize these in some header*)
 
 Definition init_empty_graph_spec :=
-  DECLARE _kruskal
+  DECLARE _init_empty_graph
   WITH gv: globals, sh: wshare
   PRE []
      PROP ()
@@ -57,9 +57,33 @@ Definition init_empty_graph_spec :=
      SEP (data_at sh tint (Vint (Int.repr MAX_EDGES)) (gv _MAX_EDGES) *
           wedgearray_graph_rep sh empty_FiniteWEdgeListGraph gptr eptr).
 
+Definition kruskal_spec :=
+  DECLARE _kruskal
+  WITH gv: globals, sh: wshare, g: FiniteWEdgeListGraph, orig_gptr : pointer_val, orig_eptr : pointer_val
+  PRE [tptr t_wedgearray_graph]
+   PROP (sound_weighted_edge_graph g; numE g <= MAX_EDGES
+        )
+   PARAMS ((pointer_val_val orig_gptr))
+   GLOBALS (gv)
+   SEP (data_at sh tint (Vint (Int.repr MAX_EDGES)) (gv _MAX_EDGES);
+        wedgearray_graph_rep sh g orig_gptr orig_eptr)
+  POST [tptr t_wedgearray_graph]
+   EX msf_gptr msf_eptr: pointer_val,
+   EX (msf: FiniteWEdgeListGraph),
+   PROP (sound_weighted_edge_graph msf;
+        (numE msf) <= MAX_EDGES;
+        minimum_spanning_forest (lg_gg g) (lg_gg msf)
+                                 Z.add
+                                 0
+                                 Z.le)
+   LOCAL (temp ret_temp (pointer_val_val msf_gptr))
+   SEP (data_at sh tint (Vint (Int.repr MAX_EDGES)) (gv _MAX_EDGES);
+        wedgearray_graph_rep sh g orig_gptr orig_eptr;
+       wedgearray_graph_rep sh msf msf_gptr msf_eptr).
+
 Definition Vprog : varspecs. mk_varspecs prog. Defined.
 Definition Gprog : funspecs := ltac:(with_library prog
-  [mallocK_spec; init_empty_graph_spec]).
+  [mallocK_spec; init_empty_graph_spec; kruskal_spec]).
 
 Lemma body_init_empty_graph: semax_body Vprog Gprog f_init_empty_graph init_empty_graph_spec.
 Proof.
@@ -102,29 +126,7 @@ simpl. rewrite data_at_zero_array_eq. entailer!.
 reflexivity. apply H4. rewrite empty_WEdgeListGraph_graph_to_wedgelist. simpl. reflexivity.
 Qed.
 
-Definition kruskal_spec :=
-  DECLARE _kruskal
-  WITH gv: globals, sh: wshare, g: FiniteWEdgeListGraph, orig_gptr : pointer_val, orig_eptr : pointer_val
-  PRE [tptr t_wedgearray_graph]
-   PROP (sound_weighted_edge_graph g; numE g <= MAX_EDGES
-        )
-   PARAMS ((pointer_val_val orig_gptr))
-   GLOBALS (gv)
-   SEP (data_at sh tint (Vint (Int.repr MAX_EDGES)) (gv _MAX_EDGES);
-        wedgearray_graph_rep sh g orig_gptr orig_eptr)
-  POST [tptr t_wedgearray_graph]
-   EX msf_gptr msf_eptr: pointer_val,
-   EX (msf: FiniteWEdgeListGraph),
-   PROP (sound_weighted_edge_graph msf;
-        (numE msf) <= MAX_EDGES;
-        minimum_spanning_forest (lg_gg g) (lg_gg msf)
-                                 Z.add
-                                 0
-                                 Z.le)
-   LOCAL (temp ret_temp (pointer_val_val msf_gptr))
-   SEP (data_at sh tint (Vint (Int.repr MAX_EDGES)) (gv _MAX_EDGES);
-        wedgearray_graph_rep sh g orig_gptr orig_eptr;
-       wedgearray_graph_rep sh msf msf_gptr msf_eptr).
+
 
 (*
 Idea of proof:
