@@ -12,7 +12,7 @@ Require Import RamifyCoq.floyd_ext.share.
 Require Import RamifyCoq.sample_mark.spatial_array_graph.
 Require Import Coq.Lists.List.
 
-Local Coercion UGraph_LGraph: Graph >-> LGraph.
+Local Coercion UFGraph_LGraph: UFGraph >-> LGraph.
 Local Identity Coercion ULGraph_LGraph: LGraph >-> UnionFindGraph.LGraph.
 Local Identity Coercion LGraph_LabeledGraph: UnionFindGraph.LGraph >-> LabeledGraph.
 Local Coercion pg_lg: LabeledGraph >-> PreGraph.
@@ -52,35 +52,35 @@ Definition makeSet_spec :=
       GLOBALS ()
       SEP ()
     POST [tptr vertex_type]
-      EX g: Graph, EX rt: pointer_val, (*creates a graph where*)
+      EX g: UFGraph, EX rt: pointer_val, (*creates a graph where*)
       PROP (forall i: Z, 0 <= i < V -> vvalid g i) (*anything between 0 and V is a vertex*)
       LOCAL (temp ret_temp (pointer_val_val rt))
       SEP (whole_graph sh g rt). (*representation in heap...*)
 
 Definition find_spec :=
   DECLARE _find
-  WITH sh: wshare, g: Graph, subsets: pointer_val, i: Z
+  WITH sh: wshare, g: UFGraph, subsets: pointer_val, i: Z
     PRE [tptr vertex_type, tint]
       PROP (vvalid g i)
       PARAMS (pointer_val_val subsets; Vint (Int.repr i))
       GLOBALS ()
       SEP (whole_graph sh g subsets)
     POST [tint]
-      EX g': Graph, EX rt: Z,
+      EX g': UFGraph, EX rt: Z,
       PROP (uf_equiv g g' ; uf_root g' i rt)
       LOCAL (temp ret_temp (Vint (Int.repr rt)))
       SEP (whole_graph sh g' subsets).
 
 Definition union_spec :=
  DECLARE _Union
-  WITH sh: wshare, g: Graph, subsets: pointer_val, x: Z, y: Z
+  WITH sh: wshare, g: UFGraph, subsets: pointer_val, x: Z, y: Z
   PRE [tptr vertex_type, tint, tint]
           PROP  (vvalid g x; vvalid g y)
           PARAMS (pointer_val_val subsets; Vint (Int.repr x); Vint (Int.repr y))
           GLOBALS ()
           SEP   (whole_graph sh g subsets)
   POST [ Tvoid ]
-        EX g': Graph,
+        EX g': UFGraph,
         PROP (uf_union g x y g')
         LOCAL ()
         SEP (whole_graph sh g' subsets).
@@ -240,7 +240,7 @@ Proof.
     + rewrite app_Znth2. 2: rewrite H1; intuition. rewrite H0, H1. replace (Z.of_nat n - Z.of_nat n) with 0 by lia. rewrite Znth_0_cons. auto.
 Qed.
 
-Lemma graph_same_size: forall (g g': Graph) n n', (forall x : Z, vvalid g x <-> vvalid g' x) -> (forall v : Z, 0 <= v < Z.of_nat n' <-> vvalid (lg_gg g') v) ->
+Lemma graph_same_size: forall (g g': UFGraph) n n', (forall x : Z, vvalid g x <-> vvalid g' x) -> (forall v : Z, 0 <= v < Z.of_nat n' <-> vvalid (lg_gg g') v) ->
                                                   (forall v : Z, 0 <= v < Z.of_nat n <-> vvalid (lg_gg g) v) -> n = n'.
 Proof.
   intros. assert (forall v, 0 <= v < Z.of_nat n' <-> 0 <= v < Z.of_nat n). intros. rewrite H0. rewrite H1. symmetry. apply H. clear -H2.
@@ -258,7 +258,7 @@ Proof.
     assert (0 < j + 1) by lia. assert (j + 1 - 1 = j) by lia. rewrite !Znth_pos_cons in H1; auto. rewrite !H6 in H1. apply H1. rewrite Nat2Z.inj_succ. lia.
 Qed.
 
-Lemma upd_Znth_Graph_redirect_parent: forall (i root : Z) (g: Graph) n (Hw: weak_valid g root) (Hv: vvalid g i) (Hi: ~ reachable g root i),
+Lemma upd_Znth_Graph_redirect_parent: forall (i root : Z) (g: UFGraph) n (Hw: weak_valid g root) (Hv: vvalid g i) (Hi: ~ reachable g root i),
     0 <= i < Z.of_nat n -> 0 <= root < Z.of_nat n -> upd_Znth i (map (fun m : Z => vgamma2cdata (vgamma (lg_gg g) m)) (nat_inc_list n))
                                                               (Vint (Int.repr root), Vint (Int.repr (Z.of_nat (vlabel (lg_gg g) i)))) =
                                                      map (fun m : Z => vgamma2cdata (vgamma (lg_gg (Graph_gen_redirect_parent g i root Hw Hv Hi)) m))(nat_inc_list n).
@@ -281,7 +281,7 @@ Proof.
   - apply prop_right. rewrite H0. auto.
   - rewrite <- (map_id (nat_inc_list n)) at 1. rewrite Znth_nat_inc_list. 2: rewrite H0; auto. simpl id.
     forward_if
-      (EX g': Graph, EX rt: Z,
+      (EX g': UFGraph, EX rt: Z,
        PROP (uf_equiv g g' /\ uf_root g' i rt)
        LOCAL (temp _p (Vint (Int.repr rt)); temp _subsets (pointer_val_val subsets); temp _i (Vint (Int.repr i)))
        SEP (whole_graph sh g' subsets)).
@@ -363,7 +363,7 @@ Proof.
     assert (H_YROOT_BOUND: 0 <= y_root < Zlength (nat_inc_list n)) by (rewrite Zlength_correct, nat_inc_list_length; apply H10). forward.
     rewrite <- (map_id (nat_inc_list n)) at 1. rewrite Znth_nat_inc_list; auto. unfold vgamma2cdata at 1. unfold vgamma at 1. unfold UnionFindGraph.vgamma. simpl id.
     forward_if
-      (EX g': Graph,
+      (EX g': UFGraph,
        PROP (uf_union g x y g')
        LOCAL (temp _yRank (Vint (Int.repr (Z.of_nat (vlabel (lg_gg g2) y_root)))); temp _xRank (Vint (Int.repr (Z.of_nat (vlabel (lg_gg g2) x_root))));
               temp _yroot (Vint (Int.repr y_root)); temp _xroot (Vint (Int.repr x_root)); temp _subsets (pointer_val_val subsets); temp _x (Vint (Int.repr x));
@@ -379,7 +379,7 @@ Proof.
     + assert (weak_valid g2 x_root) by (right; rewrite <- H7; auto). assert (vvalid g2 y_root) by (rewrite <- H7; auto).
       assert (~ reachable g2 x_root y_root) by (intro; rewrite (uf_equiv_root_the_same g1 g2) in H2; auto; destruct H2; specialize (H15 _ H14); auto).
       forward_if
-        (EX g': Graph,
+        (EX g': UFGraph,
          PROP (uf_union g x y g')
          LOCAL (temp _yRank (Vint (Int.repr (Z.of_nat (vlabel (lg_gg g2) y_root)))); temp _xRank (Vint (Int.repr (Z.of_nat (vlabel (lg_gg g2) x_root))));
                 temp _yroot (Vint (Int.repr y_root)); temp _xroot (Vint (Int.repr x_root)); temp _subsets (pointer_val_val subsets); temp _x (Vint (Int.repr x));
