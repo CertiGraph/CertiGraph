@@ -171,8 +171,32 @@ Proof.
       split; trivial.
       split3; apply Int.signed_range.
   - Intros sorted.
-Abort.
+    (* a little cleanup... *)
+    rewrite app_nil_r, app_nil_l, Zlength_map, g2wedgelist_numE.
+    rewrite app_nil_l, app_nil_r.
+    rewrite empty_WEdgeListGraph_numE.
+    rewrite <- Z2Nat.inj_sub, Z.sub_0_r. 2: lia.
+    rewrite Z.mul_0_l.
+    rewrite isptr_offset_val_zero.
+    2: { destruct eptr; simpl; trivial. admit.
+         (* I need above the bar: ValidPointer eptr *)
+    }
+    rewrite data_at_zero_array_eq.
+    2: trivial.
+    2: { destruct eptr; simpl; trivial. admit.
+         (* same as above *)
+    }
+    2: rewrite empty_WEdgeListGraph_graph_to_wedgelist; trivial.
+    (* done with cleanup. *)
 
+    forward_for_simple_bound
+    (numE g)
+    (EX i : Z,
+     PROP ()
+     LOCAL (temp _graph_E (Vint (Int.repr (numE g))))
+     SEP ()).
+
+Abort.
 
 
 (*

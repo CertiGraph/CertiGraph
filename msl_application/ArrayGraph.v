@@ -30,21 +30,21 @@ Instance Z_EqDec : EqDec Z eq. Proof. hnf. intros. apply Z.eq_dec. Defined.
 
 Definition is_null_Z: DecidablePred Z := existT (fun P : Z -> Prop => forall a : Z, {P a} + {~ P a}) (fun x : Z => x < 0) (fun a : Z => Z_lt_dec a 0).
 
-Definition Graph := (@Graph Z Z _ _ is_null_Z id nat unit unit).
+Definition UFGraph := (@UFGraph Z Z _ _ is_null_Z id nat unit unit).
 Definition LGraph := (@LGraph Z Z _ _ nat unit unit).
-Definition UGraph_LGraph (G: Graph): LGraph := lg_gg G.
+Definition UFGraph_LGraph (G: UFGraph): LGraph := lg_gg G.
 
-Local Coercion UGraph_LGraph: Graph >-> LGraph.
+Local Coercion UFGraph_LGraph: UFGraph >-> LGraph.
 Local Identity Coercion ULGraph_LGraph: LGraph >-> UnionFindGraph.LGraph.
 Local Identity Coercion LGraph_LabeledGraph: UnionFindGraph.LGraph >-> LabeledGraph.
 Local Coercion pg_lg: LabeledGraph >-> PreGraph.
 
-Instance maGraph(G: Graph): MathGraph G is_null_Z := maGraph G.
-Instance finGraph (G: Graph): FiniteGraph G := finGraph G.
-Instance liGraph (G: Graph):  LstGraph G id := liGraph G.
+Instance maGraph(G: UFGraph): MathGraph G is_null_Z := maGraph G.
+Instance finGraph (G: UFGraph): FiniteGraph G := finGraph G.
+Instance liGraph (G: UFGraph):  LstGraph G id := liGraph G.
 
 Definition vgamma := (@vgamma Z Z _ _ is_null_Z id nat unit unit).
-Definition Graph_gen_redirect_parent (g: Graph) (x: Z) (pa: Z) (H: weak_valid g pa) (Hv: vvalid g x) (Hn: ~ reachable g pa x): Graph :=
+Definition Graph_gen_redirect_parent (g: UFGraph) (x: Z) (pa: Z) (H: weak_valid g pa) (Hv: vvalid g x) (Hn: ~ reachable g pa x): UFGraph :=
     Graph_gen_redirect_parent g x pa H Hv Hn.
 
 Class SpatialArrayGraphAssum (Pred : Type):=
@@ -144,7 +144,7 @@ Proof. constructor. exact (makeSet_discrete_LstGraph size). exact (makeSet_discr
 
 Definition makeSet_discrete_LabeledGraph (size: nat) : LGraph := Build_LabeledGraph _ _ _ (makeSet_discrete_PreGraph size) (fun _ => O) (fun _ => tt) tt.
 
-Definition makeSet_discrete_Graph (size: nat) : Graph := Build_GeneralGraph _ _ _ _ (makeSet_discrete_LabeledGraph size) (makeSet_discrete_sound size).
+Definition makeSet_discrete_Graph (size: nat) : UFGraph := Build_GeneralGraph _ _ _ _ (makeSet_discrete_LabeledGraph size) (makeSet_discrete_sound size).
 
 Class SpatialArrayGraph (Addr: Type) (Pred: Type) := vcell_array_at: Addr -> list (nat * Z) -> Pred.
 
@@ -181,10 +181,10 @@ Section SpaceArrayGraph.
 
   Context {SAG: SpatialArrayGraph Addr Pred}.
 
-  Definition graph_vcell_at (g: Graph) (P: Z -> Prop) (x: Addr) :=
+  Definition graph_vcell_at (g: UFGraph) (P: Z -> Prop) (x: Addr) :=
     EX l: list Z, !!(forall v, List.In v l <-> P v) && !! NoDup l && vcell_array_at x (map (fun x => vgamma (lg_gg g) x) l).
 
-  Definition full_graph_at (g: Graph) (x: Addr) :=
+  Definition full_graph_at (g: UFGraph) (x: Addr) :=
     EX n: nat, !!(forall v, 0 <= v < Z.of_nat n <-> vvalid (pg_lg (lg_gg g)) v) && !!(Z.of_nat n <= Int.max_signed / 8) && vcell_array_at x (map (fun x => vgamma (lg_gg g) x) (nat_inc_list n)).
 
 End SpaceArrayGraph.

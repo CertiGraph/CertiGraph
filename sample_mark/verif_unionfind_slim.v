@@ -11,7 +11,7 @@ Require Import RamifyCoq.msl_application.GList_UnionFind.
 Require Import RamifyCoq.floyd_ext.share.
 Require Import RamifyCoq.sample_mark.spatial_graph_glist.
 
-Local Coercion UGraph_LGraph: Graph >-> LGraph.
+Local Coercion UFGraph_LGraph: UFGraph >-> LGraph.
 Local Coercion LGraph_SGraph: LGraph >-> SGraph.
 Local Identity Coercion ULGraph_LGraph: LGraph >-> UnionFindGraph.LGraph.
 Local Identity Coercion LGraph_LabeledGraph: UnionFindGraph.LGraph >-> LabeledGraph.
@@ -21,7 +21,7 @@ Local Coercion pg_lg: LabeledGraph >-> PreGraph.
 Notation vertices_at sh P g:= (@vertices_at _ _ _ _ _ mpred (@SGP pSGG_VST nat unit (sSGG_VST sh)) (SGA_VST sh) P g).
 Notation whole_graph sh g := (vertices_at sh (vvalid g) g).
 Notation graph sh x g := (@reachable_vertices_at _ _ _ _ _ _ _ _ _ _ (@SGP pSGG_VST nat unit (sSGG_VST sh)) _ x g).
-Notation Graph := (@Graph pSGG_VST).
+Notation UFGraph := (@UFGraph pSGG_VST).
 Existing Instances maGraph finGraph liGraph RGF.
 
 Definition mallocN_spec :=
@@ -41,42 +41,42 @@ Definition mallocN_spec :=
 
 Definition find_spec :=
  DECLARE _find
-  WITH sh: wshare, g: Graph, x: pointer_val
+  WITH sh: wshare, g: UFGraph, x: pointer_val
   PRE [tptr (Tstruct _Node noattr)]
           PROP  (vvalid g x)
           PARAMS (pointer_val_val x)
           GLOBALS ()
           SEP   (whole_graph sh g)
   POST [ tptr (Tstruct _Node noattr) ]
-        EX g': Graph, EX rt : pointer_val,
+        EX g': UFGraph, EX rt : pointer_val,
         PROP (uf_equiv g g' /\ uf_root g' x rt)
         LOCAL (temp ret_temp (pointer_val_val rt))
         SEP (whole_graph sh g').
 
 Definition unionS_spec :=
  DECLARE _unionS
-  WITH sh: wshare, g: Graph, x: pointer_val, y: pointer_val
+  WITH sh: wshare, g: UFGraph, x: pointer_val, y: pointer_val
   PRE [tptr (Tstruct _Node noattr), tptr (Tstruct _Node noattr)]
           PROP  (vvalid g x; vvalid g y)
           PARAMS (pointer_val_val x; pointer_val_val y)
           GLOBALS ()
           SEP   (whole_graph sh g)
   POST [ Tvoid ]
-        EX g': Graph,
+        EX g': UFGraph,
         PROP (uf_union g x y g')
         LOCAL()
         SEP (whole_graph sh g').
 
 Definition makeSet_spec :=
   DECLARE _makeSet
-  WITH sh: wshare, g: Graph
+  WITH sh: wshare, g: UFGraph
     PRE []
       PROP ()
       PARAMS ()
       GLOBALS ()
       SEP (whole_graph sh g)
     POST [tptr (Tstruct _Node noattr)]
-      EX g': Graph, EX rt: pointer_val,
+      EX g': UFGraph, EX rt: pointer_val,
       PROP (~ vvalid g rt ; vvalid g' rt ; is_partial_graph g g')
       LOCAL (temp ret_temp (pointer_val_val rt))
       SEP (whole_graph sh g').
@@ -128,7 +128,7 @@ Proof.
   - intro. inversion H0. auto.
 Qed.
 
-Lemma graph_local_facts: forall sh x (g: Graph), vvalid g x -> whole_graph sh g |-- valid_pointer (pointer_val_val x).
+Lemma graph_local_facts: forall sh x (g: UFGraph), vvalid g x -> whole_graph sh g |-- valid_pointer (pointer_val_val x).
 Proof.
   intros. eapply derives_trans; [apply (@vertices_at_ramif_1_stable _ _ _ _ SGBA_VST _ _ (SGA_VST sh) g (vvalid g) x (vgamma g x)); auto |].
   simpl vertex_at at 1. unfold binode. entailer!.
@@ -146,7 +146,7 @@ Proof.
   assert (H_PARENT_Valid: vvalid g pa) by (eapply valid_parent; eauto).
   (* if (p != x) { *)
   forward_if
-    (EX g': Graph, EX rt : pointer_val,
+    (EX g': UFGraph, EX rt : pointer_val,
      PROP (uf_equiv g g' /\ uf_root g' x rt)
      LOCAL (temp _p (pointer_val_val rt); temp _x (pointer_val_val x))
      SEP (whole_graph sh g')).
@@ -227,7 +227,7 @@ Proof.
     unlocalize [whole_graph sh g2].
     1: rewrite H8; simpl; apply (@vertices_at_ramif_1_stable _ _ _ _ SGBA_VST _ _ (SGA_VST sh) g2 (vvalid g2) y_root (rankYRoot, paYRoot)); auto.
     forward_if
-      (EX g': Graph,
+      (EX g': UFGraph,
        PROP (uf_union g x y g')
        LOCAL (temp _xRank (Vint (Int.repr (Z.of_nat rankXRoot))); temp _yRank (Vint (Int.repr (Z.of_nat rankYRoot)));
               temp _xRoot (pointer_val_val x_root); temp _yRoot (pointer_val_val y_root);
@@ -249,7 +249,7 @@ Proof.
               vertices_at sh (vvalid g2) (Graph_gen_redirect_parent g2 y_root x_root H10 H11 H12)). {
         apply vertices_at_Same_set. unfold Ensembles.Same_set, Ensembles.Included, Ensembles.In. simpl. intuition. }
       forward_if
-      (EX g': Graph,
+      (EX g': UFGraph,
        PROP (uf_union g x y g')
        LOCAL (temp _xRank (Vint (Int.repr (Z.of_nat rankXRoot))); temp _yRank (Vint (Int.repr (Z.of_nat rankYRoot)));
               temp _xRoot (pointer_val_val x_root); temp _yRoot (pointer_val_val y_root);
