@@ -124,13 +124,12 @@ Proof.
   unfold wedgearray_graph_rep. Intros.
   forward.
   forward.
+Abort.
+
+(*
   forward_call ((wshare_share sh), 
                 pointer_val_val orig_eptr,
-                (Int.repr 0),
-                (Int.repr ((numE g) - 1)),
-                (@nil wedgerep),
-                (map wedge_to_cdata (graph_to_wedgelist g)),
-                (@nil wedgerep)).
+                (map wedge_to_cdata (graph_to_wedgelist g))).
   - rewrite Int.signed_repr.
     2: apply numE_range; trivial.
     rewrite Int.signed_repr.
@@ -192,11 +191,10 @@ Proof.
     forward_for_simple_bound
     (numE g)
     (EX i : Z,
-     PROP ()
+     PROP ((@is_partial_graph VType EType _ _ (pg_lg subsetsGraph) (pg_lg g)))
      LOCAL (temp _graph_E (Vint (Int.repr (numE g))))
      SEP ()).
-
-Abort.
+ *)
 
 
 (*

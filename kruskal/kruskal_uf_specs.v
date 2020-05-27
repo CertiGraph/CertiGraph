@@ -124,39 +124,23 @@ Definition init_empty_graph_spec :=
      SEP (data_at sh tint (Vint (Int.repr MAX_EDGES)) (gv _MAX_EDGES) *
           wedgearray_graph_rep sh empty_FiniteWEdgeListGraph gptr eptr).
 
-(*
-This is the modified sort spec from cbench. It's rather ugly imo
-
-wedgerep := reptype t_struct_edge
-Definitions like sorted and wedge_le are thrown into env_kruskal
-
-The call should look something like:
-forward_call (sh, pointer_val_val orig_eptr, 0, numE g, nil, map wedge_to_cdata ... , nil).
-
-The result PROPs (Permutation al bl; sorted wedge_le bl) have to be massaged to imply
-  the first edge (w,u,v) encountered in kruskal's loop has lower w than other (_,u,v)s after it
-*)
 Definition sort_edges_spec :=
  DECLARE _sort_edges
-  WITH sh: share, a: val, m: int, n: int, before: list wedgerep, al: list wedgerep, after: list wedgerep
-  PRE  [tptr t_struct_edge, tint, tint] 
-    PROP( readable_share sh; writable_share sh;
-          Int.min_signed <= Zlength (before++al++after) <= Int.max_signed;
-          if zlt (Int.signed m) (Int.signed n)
-            then   (Zlength before = Int.signed m 
-                     /\ Zlength after = (Zlength (before++al++after))-(Int.signed n+1)
-                     /\ Zlength al = Int.signed n+1- Int.signed m)
-            else al=nil;
-            Forall def_wedgerep al)
-    PARAMS(a; Vint m; Vint n) GLOBALS ()
-    SEP(data_at sh (tarray t_struct_edge (Zlength (before++al++after)))
-             (before ++ al ++ after) a)
+  WITH sh: share, a: val, al: list (reptype t_struct_edge)
+  PRE [tptr t_struct_edge, tint]
+	PROP( readable_share sh; writable_share sh;
+      	0 <= Zlength al <= Int.max_signed;
+      	Forall def_wedgerep al
+    	)
+	PARAMS(a; Vint (Int.repr (Zlength al))) GLOBALS ()
+	SEP(data_at sh (tarray t_struct_edge (Zlength al)) al a)
   POST [ tvoid ]
-    EX bl: list wedgerep,
-     PROP(Permutation al bl; sorted wedge_le bl) 
-     LOCAL ()
-    SEP(data_at sh (tarray t_struct_edge (Zlength (before++al++after)))
-             (before ++ bl ++ after) a).
+	EX bl: list (reptype t_struct_edge),
+ 	PROP(Permutation al bl;
+      	forall i j, 0 <= i -> i <= j -> j < Zlength bl -> wedge_le (Znth i bl) (Znth j bl)
+      	)
+ 	LOCAL ()
+	SEP(data_at sh (tarray t_struct_edge (Zlength bl)) bl a).
 
 Definition kruskal_spec :=
   DECLARE _kruskal
