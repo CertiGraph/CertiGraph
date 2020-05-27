@@ -20,9 +20,7 @@ Lemma wedge_to_cdata_wedgerep:
             Int.min_signed <= Int.signed (Int.repr (snd (snd w))) <= Int.max_signed ->
             def_wedgerep (wedge_to_cdata w).
 Proof.
-  intros. unfold wedge_to_cdata; unfold def_wedgerep; simpl.
-  exists (Int.repr (fst w)); exists (Int.repr (fst (snd w))); exists (Int.repr (snd (snd w))).
-  auto.
+  intros. unfold wedge_to_cdata; unfold def_wedgerep; simpl. lia.
 Qed.
 
 (*
