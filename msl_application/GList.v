@@ -69,14 +69,14 @@ Section GRAPH_GList.
 
   Global Existing Instances SGC_GList L_SGC_GList.
 
-  Local Coercion Graph_LGraph: Graph >-> LGraph.
+  Local Coercion UFGraph_LGraph: UFGraph >-> LGraph.
   Local Identity Coercion LGraph_LabeledGraph: LGraph >-> LabeledGraph.
   Local Coercion pg_lg: LabeledGraph >-> PreGraph.
 
-  Notation Graph := (@Graph addr (addr * unit) _ _ is_null_SGBA (fun x => (x, tt)) DV DE DG).
+  Notation UFGraph := (@UFGraph addr (addr * unit) _ _ is_null_SGBA (fun x => (x, tt)) DV DE DG).
   Notation LGraph := (@LGraph addr (addr * unit) _ _ DV DE DG).
 
-  Instance RGF (G: Graph): ReachableFiniteGraph G.
+  Instance RGF (G: UFGraph): ReachableFiniteGraph G.
   Proof.
     apply Build_ReachableFiniteGraph.
     intros.
@@ -89,7 +89,7 @@ Section GRAPH_GList.
 
   Definition make_set_pregraph (v: addr) (g: PreGraph addr (addr * unit)) := pregraph_add_edge (pregraph_add_vertex g v) (v, tt) v null.
 
-  Lemma is_partial_make_set_pregraph: forall x (g: Graph), ~ vvalid g x -> is_partial_graph g (make_set_pregraph x g).
+  Lemma is_partial_make_set_pregraph: forall x (g: UFGraph), ~ vvalid g x -> is_partial_graph g (make_set_pregraph x g).
   Proof.
     intros. hnf. simpl. unfold addValidFunc, updateEdgeFunc. split; [|split; [|split]]; intros; [left; auto..| |].
     - destruct (equiv_dec (x, tt) e); auto. hnf in e0. subst e. pose proof (@only_one_edge _ _ _ _ g _ (liGraph g) (src g (x, tt)) (x, tt) H1). simpl in H2.
@@ -186,10 +186,10 @@ Section GRAPH_GList.
   Definition make_set_sound (v: addr)  (g: PreGraph addr (addr * unit)) (Hn: v <> null) (Hi: ~ vvalid g v) (Hlmf: LiMaFin g) : LiMaFin (make_set_pregraph v g) :=
     Build_LiMaFin _ (make_set_LstGraph v g Hn Hi ma li) (make_set_MathGraph v g Hn ma) (make_set_FiniteGraph v g fin).
 
-  Definition make_set_Graph (default_dv: DV) (default_de: DE) (default_dg: DG) (v: addr) (g: Graph) (Hn: v <> null) (Hi: ~ vvalid g v) : Graph :=
+  Definition make_set_Graph (default_dv: DV) (default_de: DE) (default_dg: DG) (v: addr) (g: UFGraph) (Hn: v <> null) (Hi: ~ vvalid g v) : UFGraph :=
     Build_GeneralGraph _ _ _ _ (make_set_LabeledGraph v g default_dv default_de default_dg) (make_set_sound v g Hn Hi (sound_gg g)).
 
-  Lemma uf_under_bound_make_set_graph: forall (default_dv: DV) (default_de: DE) (default_dg: DG) (v: addr) (g: Graph) (Hn: v <> null) (Hi: ~ vvalid g v) (extract: DV -> nat),
+  Lemma uf_under_bound_make_set_graph: forall (default_dv: DV) (default_de: DE) (default_dg: DG) (v: addr) (g: UFGraph) (Hn: v <> null) (Hi: ~ vvalid g v) (extract: DV -> nat),
       extract default_dv = O -> uf_under_bound extract g -> uf_under_bound extract (make_set_Graph default_dv default_de default_dg v g Hn Hi).
   Proof.
     intros. hnf in H0 |-* . simpl. intro x; intros. unfold addValidFunc in H1. destruct (SGBA_VE x v).
@@ -250,7 +250,7 @@ Section GRAPH_GList.
   Definition single_sound (v: addr) (H: v <> null) : LiMaFin (single_uf_pregraph v) :=
     Build_LiMaFin _ (single_uf_LstGraph v H) (single_uf_MathGraph v H) (single_uf_FiniteGraph v).
 
-  Definition single_Graph (v: addr) (H: v <> null) (default_dv: DV) (default_de: DE) (default_dg: DG): Graph :=
+  Definition single_Graph (v: addr) (H: v <> null) (default_dv: DV) (default_de: DE) (default_dg: DG): UFGraph :=
     Build_GeneralGraph _ _ _ _ (single_uf_LabeledGraph v default_dv default_de default_dg) (single_sound v H).
 
 End GRAPH_GList.

@@ -54,35 +54,35 @@ Definition makeSet_spec :=
       GLOBALS ()
       SEP ()
     POST [tptr vertex_type]
-      EX g: Graph, EX rt: pointer_val, (*creates a graph where*)
+      EX g: UFGraph, EX rt: pointer_val, (*creates a graph where*)
       PROP (forall i: Z, 0 <= i < V -> vvalid g i) (*anything between 0 and V is a vertex*)
       LOCAL (temp ret_temp (pointer_val_val rt))
       SEP (whole_graph sh g rt). (*representation in heap...*)
 
 Definition find_spec :=
   DECLARE _find
-  WITH sh: wshare, g: Graph, subsets: pointer_val, i: Z
+  WITH sh: wshare, g: UFGraph, subsets: pointer_val, i: Z
     PRE [tptr vertex_type, tint]
       PROP (vvalid g i)
       PARAMS (pointer_val_val subsets; Vint (Int.repr i))
       GLOBALS ()
       SEP (whole_graph sh g subsets)
     POST [tint]
-      EX g': Graph, EX rt: Z,
+      EX g': UFGraph, EX rt: Z,
       PROP (uf_equiv g g' ; uf_root g' i rt)
       LOCAL (temp ret_temp (Vint (Int.repr rt)))
       SEP (whole_graph sh g' subsets).
 
 Definition union_spec :=
  DECLARE _Union
-  WITH sh: wshare, g: Graph, subsets: pointer_val, x: Z, y: Z
+  WITH sh: wshare, g: UFGraph, subsets: pointer_val, x: Z, y: Z
   PRE [tptr vertex_type, tint, tint]
           PROP  (vvalid g x; vvalid g y)
           PARAMS (pointer_val_val subsets; Vint (Int.repr x); Vint (Int.repr y))
           GLOBALS ()
           SEP   (whole_graph sh g subsets)
   POST [ Tvoid ]
-        EX g': Graph,
+        EX g': UFGraph,
         PROP (uf_union g x y g')
         LOCAL ()
         SEP (whole_graph sh g' subsets).
