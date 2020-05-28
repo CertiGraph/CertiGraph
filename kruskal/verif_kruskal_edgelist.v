@@ -146,13 +146,7 @@ Proof.
   forward_call ((wshare_share sh), 
                 pointer_val_val orig_eptr,
                 (map wedge_to_cdata (graph_to_wedgelist g))).
-  - rewrite Int.signed_repr.
-    2: apply numE_range; trivial.
-    rewrite Int.signed_repr.
-    2: compute; split; inversion 1.
-    apply numE_pred_range; trivial.
   - rewrite Zlength_map, g2wedgelist_numE. entailer!.
-    simpl. admit. (* dead? *)
   - rewrite Zlength_map, g2wedgelist_numE. entailer!.
   - split3; [| |split]; trivial.
     + rewrite Zlength_map, g2wedgelist_numE.
@@ -164,18 +158,12 @@ Proof.
     rewrite empty_WEdgeListGraph_numE.
     rewrite <- Z2Nat.inj_sub, Z.sub_0_r. 2: lia.
     rewrite Z.mul_0_l.
-    rewrite isptr_offset_val_zero.
-    2: { destruct eptr; simpl; trivial. admit.
-         (* I need above the bar: ValidPointer eptr *)
-    }
-    rewrite data_at_zero_array_eq.
-    2: trivial.
-    2: { destruct eptr; simpl; trivial. admit.
-         (* same as above *)
-    }
+    (*WX: isptr: this was what I did when I encountered something similar*)
+    assert_PROP(isptr (pointer_val_val eptr)) by (rewrite (data_at_isptr sh); entailer!). rename H5 into H_eptr_isptr.
+    rewrite isptr_offset_val_zero. 2: auto.
+    rewrite data_at_zero_array_eq. 2: trivial. 2: auto.
     2: rewrite empty_WEdgeListGraph_graph_to_wedgelist; trivial.
     (* done with cleanup. *)
-
 Abort.
 
 (*
