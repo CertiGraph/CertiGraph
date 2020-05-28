@@ -164,10 +164,10 @@ Proof.
     rewrite data_at_zero_array_eq. 2: trivial. 2: auto.
     2: rewrite empty_WEdgeListGraph_graph_to_wedgelist; trivial.
     (* done with cleanup. *)
-    Fail forward_for_simple_bound
+    forward_for_simple_bound
     (numE g)
     (EX i : Z,
-     PROP ((@is_partial_graph VType EType _ _ (pg_lg subsetsGraph) (pg_lg g))) 
+     PROP ()
      LOCAL (temp _graph_E (Vint (Int.repr (numE g))))
      SEP ()).
 
