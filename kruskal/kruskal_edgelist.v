@@ -250,8 +250,10 @@ Definition f_kruskal := {|
               (Scall None
                 (Evar _sort_edges (Tfunction
                                     (Tcons (tptr (Tstruct _edge noattr))
-                                      Tnil) tvoid cc_default))
-                ((Etempvar _t'16 (tptr (Tstruct _edge noattr))) :: nil)))
+                                      (Tcons tint Tnil)) tvoid cc_default))
+                ((Etempvar _t'16 (tptr (Tstruct _edge noattr))) ::
+                 (Ebinop Osub (Etempvar _graph_E tint)
+                   (Econst_int (Int.repr 1) tint) tint) :: nil)))
             (Ssequence
               (Ssequence
                 (Sset _i (Econst_int (Int.repr 0) tint))
@@ -727,9 +729,10 @@ Definition global_definitions : list (ident * globdef fundef type) :=
  (_init_empty_graph, Gfun(Internal f_init_empty_graph)) ::
  (_sort_edges,
    Gfun(External (EF_external "sort_edges"
-                   (mksignature (AST.Tint :: nil) AST.Tvoid cc_default))
-     (Tcons (tptr (Tstruct _edge noattr)) Tnil) tvoid cc_default)) ::
- (_free_graph, Gfun(Internal f_free_graph)) ::
+                   (mksignature (AST.Tint :: AST.Tint :: nil) AST.Tvoid
+                     cc_default))
+     (Tcons (tptr (Tstruct _edge noattr)) (Tcons tint Tnil)) tvoid
+     cc_default)) :: (_free_graph, Gfun(Internal f_free_graph)) ::
  (_kruskal, Gfun(Internal f_kruskal)) :: nil).
 
 Definition public_idents : list ident :=
