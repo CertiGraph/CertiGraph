@@ -152,29 +152,26 @@ Proof.
     + rewrite Zlength_map, g2wedgelist_numE.
       split; [ apply numE_pos | apply numE_range; trivial].
     + apply def_wedgerep_map_w2c.
-      (* it's not hard, but why was this a goal? *)
   - Intros sorted.
     (* a little cleanup... *)
     rewrite empty_WEdgeListGraph_numE.
     rewrite <- Z2Nat.inj_sub, Z.sub_0_r. 2: lia.
     rewrite Z.mul_0_l.
-    (*WX: isptr: this was what I did when I encountered something similar*)
-    assert_PROP(isptr (pointer_val_val eptr)) by (rewrite (data_at_isptr sh); entailer!). rename H5 into H_eptr_isptr.
+    assert_PROP (isptr (pointer_val_val eptr)) by
+        (rewrite (data_at_isptr sh); entailer!).
+    rename H5 into H_eptr_isptr.
     rewrite isptr_offset_val_zero. 2: auto.
     rewrite data_at_zero_array_eq. 2: trivial. 2: auto.
     2: rewrite empty_WEdgeListGraph_graph_to_wedgelist; trivial.
     (* done with cleanup. *)
-Abort.
-
-(*
-    forward_for_simple_bound
+    Fail forward_for_simple_bound
     (numE g)
     (EX i : Z,
-     PROP ((@is_partial_graph VType EType _ _ (pg_lg subsetsGraph) (pg_lg g)))
+     PROP ((@is_partial_graph VType EType _ _ (pg_lg subsetsGraph) (pg_lg g))) 
      LOCAL (temp _graph_E (Vint (Int.repr (numE g))))
      SEP ()).
- *)
 
+Abort.
 
 (*
 Idea of proof:
