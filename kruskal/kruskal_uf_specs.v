@@ -127,20 +127,19 @@ Definition init_empty_graph_spec :=
 Definition sort_edges_spec :=
  DECLARE _sort_edges
   WITH sh: share, a: val, al: list (reptype t_struct_edge)
-  PRE [tptr t_struct_edge, tint]
-	PROP( readable_share sh; writable_share sh;
-      	0 <= Zlength al <= Int.max_signed;
-      	Forall def_wedgerep al
-    	)
-	PARAMS(a; Vint (Int.repr (Zlength al))) GLOBALS ()
-	SEP(data_at sh (tarray t_struct_edge (Zlength al)) al a)
+  PRE [tptr t_struct_edge]
+    PROP (readable_share sh; writable_share sh;
+      	 0 <= Zlength al <= Int.max_signed;
+      	 Forall def_wedgerep al)
+    PARAMS(a)
+    GLOBALS ()
+    SEP(data_at sh (tarray t_struct_edge (Zlength al)) al a)
   POST [ tvoid ]
-	EX bl: list (reptype t_struct_edge),
- 	PROP(Permutation al bl;
-      	forall i j, 0 <= i -> i <= j -> j < Zlength bl -> wedge_le (Znth i bl) (Znth j bl)
-      	)
- 	LOCAL ()
-	SEP(data_at sh (tarray t_struct_edge (Zlength bl)) bl a).
+    EX bl: list (reptype t_struct_edge),
+    PROP (Permutation al bl;
+      	 forall i j, 0 <= i -> i <= j -> j < Zlength bl -> wedge_le (Znth i bl) (Znth j bl))
+    LOCAL ()
+    SEP(data_at sh (tarray t_struct_edge (Zlength bl)) bl a).
 
 Definition kruskal_spec :=
   DECLARE _kruskal

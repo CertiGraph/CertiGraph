@@ -68,6 +68,25 @@ Proof.
   lia.
 Qed.
 
+Lemma def_wedgerep_map_w2c:
+  forall g,
+    Forall def_wedgerep (map wedge_to_cdata (graph_to_wedgelist g)).
+Proof.
+  intros.
+  rewrite Forall_forall; intros.
+  apply list_in_map_inv in H.
+  destruct H as [? [? _]].
+  unfold wedge_to_cdata in H.
+  unfold def_wedgerep.
+  rewrite (surjective_pairing x) in *.
+  inversion H; clear H.
+  destruct x.
+  rewrite (surjective_pairing c) in *.
+  simpl fst in *; simpl snd in *.
+  inversion H2; clear H2.
+  rewrite H1, H0, H3. split3; trivial.
+Qed.  
+
 Lemma body_init_empty_graph: semax_body Vprog Gprog f_init_empty_graph init_empty_graph_spec.
 Proof.
 start_function.
@@ -124,55 +143,17 @@ Proof.
   unfold wedgearray_graph_rep. Intros.
   forward.
   forward.
-Abort.
-
-(*
   forward_call ((wshare_share sh), 
                 pointer_val_val orig_eptr,
                 (map wedge_to_cdata (graph_to_wedgelist g))).
-  - rewrite Int.signed_repr.
-    2: apply numE_range; trivial.
-    rewrite Int.signed_repr.
-    2: compute; split; inversion 1.
-    apply numE_pred_range; trivial.
-  - rewrite app_nil_r, app_nil_l, Zlength_map, g2wedgelist_numE.
-    entailer!.
-  - split3; [| |split3]; trivial.
-    + rewrite app_nil_r, app_nil_l, Zlength_map.
-      rewrite g2wedgelist_numE.
-      apply numE_range; trivial.
-    + destruct (zlt (Int.signed (Int.repr 0)) (Int.signed (Int.repr (numE g - 1)))).
-      * split3; trivial.
-        -- rewrite app_nil_r, app_nil_l, Zlength_map, g2wedgelist_numE.
-           rewrite Int.signed_repr.
-           2: apply numE_pred_range; trivial.
-           rewrite Zlength_nil. lia.
-        -- rewrite Zlength_map.
-           rewrite g2wedgelist_numE.
-           rewrite Int.signed_repr.
-           2: apply numE_pred_range; trivial.
-           rewrite Int.signed_repr.
-           2: compute; split; inversion 1.
-           lia.
-      * admit.
-        (* something is wrong... from g0 I can show that 
-           numE is 0 or 1. But that's not enough to 
-           prove the goal. 
-         *)
-    + rewrite Forall_forall. intros.
-      apply list_in_map_inv in H3.
-      destruct H3 as [? [? _]].
-      unfold wedge_to_cdata in H3.
-      unfold def_wedgerep.
-      exists (Int.repr (fst x0)),
-      (Int.repr (fst (snd x0))),
-      (Int.repr (snd (snd x0))).
-      split; trivial.
-      split3; apply Int.signed_range.
+  - rewrite Zlength_map, g2wedgelist_numE. entailer!.
+  - split3; [| |split]; trivial.
+    + rewrite Zlength_map, g2wedgelist_numE.
+      split; [ apply numE_pos | apply numE_range; trivial].
+    + apply def_wedgerep_map_w2c.
+      (* it's not hard, but why was this a goal? *)
   - Intros sorted.
     (* a little cleanup... *)
-    rewrite app_nil_r, app_nil_l, Zlength_map, g2wedgelist_numE.
-    rewrite app_nil_l, app_nil_r.
     rewrite empty_WEdgeListGraph_numE.
     rewrite <- Z2Nat.inj_sub, Z.sub_0_r. 2: lia.
     rewrite Z.mul_0_l.
@@ -188,6 +169,9 @@ Abort.
     2: rewrite empty_WEdgeListGraph_graph_to_wedgelist; trivial.
     (* done with cleanup. *)
 
+Abort.
+
+(*
     forward_for_simple_bound
     (numE g)
     (EX i : Z,
