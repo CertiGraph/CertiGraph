@@ -83,7 +83,7 @@ struct graph *kruskal(struct graph *graph) {
     //"add" all vertices
     mst->V = graph_V;
 
-    sort_edges(graph->edge_list, graph_E - 1);
+    sort_edges(graph->edge_list, graph_E); //because the new sort_spec now gives the length of the list instead of the index of the last element
     for (int i = 0; i < graph_E; ++i) {
         //extract the data
 
