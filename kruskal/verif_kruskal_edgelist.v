@@ -146,6 +146,13 @@ Proof.
   forward_call ((wshare_share sh), 
                 pointer_val_val orig_eptr,
                 (map wedge_to_cdata (graph_to_wedgelist g))).
+  - rewrite Int.signed_repr.
+    2: apply numE_range; trivial.
+    rewrite Int.signed_repr.
+    2: compute; split; inversion 1.
+    apply numE_pred_range; trivial.
+  - rewrite Zlength_map, g2wedgelist_numE. entailer!.
+    simpl. admit. (* dead? *)
   - rewrite Zlength_map, g2wedgelist_numE. entailer!.
   - split3; [| |split]; trivial.
     + rewrite Zlength_map, g2wedgelist_numE.
