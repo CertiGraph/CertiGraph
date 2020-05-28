@@ -127,11 +127,11 @@ Definition init_empty_graph_spec :=
 Definition sort_edges_spec :=
  DECLARE _sort_edges
   WITH sh: share, a: val, al: list (reptype t_struct_edge)
-  PRE [tptr t_struct_edge]
+  PRE [tptr t_struct_edge, tint]
     PROP (readable_share sh; writable_share sh;
       	 0 <= Zlength al <= Int.max_signed;
       	 Forall def_wedgerep al)
-    PARAMS(a)
+    PARAMS(a; Vint (Int.repr (Zlength al)))
     GLOBALS ()
     SEP(data_at sh (tarray t_struct_edge (Zlength al)) al a)
   POST [ tvoid ]

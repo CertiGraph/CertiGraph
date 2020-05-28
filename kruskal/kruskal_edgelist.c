@@ -44,7 +44,7 @@ void swap_edges(struct edge *a, struct edge *b) {
   b->weight = tmp.weight; b->u = tmp.u; b->v = tmp.v;
 }
 */
-extern void sort_edges(struct edge* a);
+extern void sort_edges(struct edge* a, int l);
 
 
 /*void sort_edges(struct edge* a, int m, int n) {
@@ -83,7 +83,7 @@ struct graph *kruskal(struct graph *graph) {
     //"add" all vertices
     mst->V = graph_V;
 
-    sort_edges(graph->edge_list);
+    sort_edges(graph->edge_list, graph_E - 1);
     for (int i = 0; i < graph_E; ++i) {
         //extract the data
 
