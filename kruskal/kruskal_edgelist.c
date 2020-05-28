@@ -30,6 +30,7 @@ struct graph * init_empty_graph() {
 }
 
 /*********************SORTING***********************/
+/*
 void copy_edge(struct edge *src, struct edge *dst) {
   dst->weight = src->weight;
   dst->u = src->u;
@@ -42,8 +43,11 @@ void swap_edges(struct edge *a, struct edge *b) {
   a->weight = b->weight; a->u = b->u; a->v = b->v;
   b->weight = tmp.weight; b->u = tmp.u; b->v = tmp.v;
 }
+*/
+extern void sort_edges(struct edge* a);
 
-void sort_edges(struct edge* a, int m, int n) {
+
+/*void sort_edges(struct edge* a, int m, int n) {
   int i, j;
   struct edge pivot;
 
@@ -63,6 +67,7 @@ void sort_edges(struct edge* a, int m, int n) {
     sort_edges(a, i, n);
   }
 }
+*/
 
 void free_graph(struct graph * graph) {
     free(graph->edge_list);
@@ -78,7 +83,7 @@ struct graph *kruskal(struct graph *graph) {
     //"add" all vertices
     mst->V = graph_V;
 
-    sort_edges(graph->edge_list,0,graph_E-1);
+    sort_edges(graph->edge_list);
     for (int i = 0; i < graph_E; ++i) {
         //extract the data
 
