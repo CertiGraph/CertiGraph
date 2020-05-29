@@ -195,6 +195,7 @@ Proof.
     (numE g)
     (EX i : Z,
      EX msf' : FiniteWEdgeListGraph,
+     EX subsetsGraph' : UFGraph,                 
      PROP (numV msf' = numV g; (*which combined with below should give vvalid msf' v <-> vvalid g v, see if we need it later*)
            is_partial_graph msf' g;
            uforest msf';
@@ -217,7 +218,8 @@ Proof.
           data_at sh t_wedgearray_graph (Vint (Int.repr (numV msf')), (Vint (Int.repr (numE msf')), pointer_val_val eptr)) (pointer_val_val gptr);
           data_at sh (tarray t_struct_edge (MAX_EDGES - numE msf')) (list_repeat (Z.to_nat MAX_EDGES - Z.to_nat (numE g)) (Vundef, (Vundef, Vundef))) (offset_val (numE msf' * sizeof t_struct_edge) (pointer_val_val orig_eptr));
           (*ufgraph*)
-          whole_graph sh subsetsGraph subsetsPtr
+          whole_graph sh subsetsGraph subsetsPtr;
+          whole_graph sh subsetsGraph' subsetsPtr
         ))%assert.
     + apply numE_range; trivial.
     + (******PRECON******)
@@ -278,7 +280,7 @@ Proof.
             and u's root 
     *)
    forward_call (sh,
-                 subsetsGraph,
+                 subsetsGraph_u,
                  subsetsPtr,
                  (force_signed_int
                     (snd (snd (Znth i sorted))))).
@@ -293,18 +295,8 @@ Proof.
     simpl.
     rewrite Int.repr_signed. trivial.
    **
-    simpl fst in *. simpl snd in *.
-    entailer!.  
-    (* subsetsGraph is uf_equiv to subsetsGraph_u 
-       is that enough info?
-     *)
-    admit.
+    simpl fst in *. simpl snd in *. entailer!.  
    **
-    apply H2.
-    destruct Hdef_i as [_ [_ ?]].
-    apply is_int_e in H13.
-    destruct H13 as [? [? _]].
-    rewrite H13. simpl.
     admit. (* leaving for WX *)
    **
     Intros v_root.
@@ -318,6 +310,7 @@ Proof.
       forward. entailer!. 
       admit. 
     + Intros mst.
+      Intros subsetsGraph'.
       forward_call ((pointer_val_val subsetsPtr)).
       forward.
       admit.
