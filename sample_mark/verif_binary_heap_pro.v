@@ -595,7 +595,7 @@ Proof.
   rewrite <- H3.
   unfold tarray at 2.
   remember (map (fun z : Z => Vint (Int.repr z)) lookup_contents) as lc.
-  remember (Int.signed i) as i_Z.
+  remember (fst (fst (Znth k arr_contents))) as i_Z.
   rewrite (@split3_data_at_Tarray
              _
              _
@@ -619,7 +619,7 @@ Proof.
   Fail forward.
   rewrite Heqi_Z, Heqlc.
   rewrite Znth_map by admit.
-  
+
   unfold field_address0 at 1.
   destruct (field_compatible0_dec (Tarray tint (Zlength lookup_contents) noattr)
                                   [ArraySubsc (Int.signed i)] lookup).
