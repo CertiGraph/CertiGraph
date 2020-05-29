@@ -163,7 +163,7 @@ Proof.
   forward.
   forward.
   assert (Hdef_g: Forall def_wedgerep (map wedge_to_cdata (graph_to_wedgelist g))) by (apply def_wedgerep_map_w2c).
-  (******************************SORT******************************)
+  (******************************SORT******************************) 
   forward_call ((wshare_share sh), 
                 pointer_val_val orig_eptr,
                 (map wedge_to_cdata (graph_to_wedgelist g))).
@@ -191,7 +191,7 @@ Proof.
       rewrite Zlength_map. apply g2wedgelist_numE.
     (* done with cleanup. *)
     (******************************THE BIG NASTY LOOP******************************)
-    forward_for_simple_bound
+     forward_for_simple_bound
     (numE g)
     (EX i : Z,
      EX msf' : FiniteWEdgeListGraph,
@@ -202,7 +202,8 @@ Proof.
            forall u v, connected subsetsGraph u v -> connected g u v; (*uf represents components of graph*)
            forall u v, connected subsetsGraph u v <-> connected msf' u v (*correlation between uf and msf'*))
      LOCAL (temp _graph_E (Vint (Int.repr (numE g)));
-            temp _graph__1 (pointer_val_val orig_gptr))
+            temp _graph__1 (pointer_val_val orig_gptr);
+            temp _subsets (pointer_val_val subsetsPtr))
      SEP (
           (*the irritating global haha*)
           data_at sh tint (Vint (Int.repr MAX_EDGES)) (gv _MAX_EDGES);
@@ -237,7 +238,87 @@ Proof.
         rewrite (surjective_pairing (Znth i sorted)).
         rewrite (surjective_pairing (snd (Znth i sorted))).
         apply Hdef_i.
-      * (* can move on *)
+      * (* inside the for loop *)
+ forward. forward.
+ 1: { entailer!.
+      rewrite (surjective_pairing (Znth i sorted)).
+      rewrite (surjective_pairing (snd (Znth i sorted))).
+      apply Hdef_i.
+ }
+ --
+  rewrite (surjective_pairing (Znth i sorted)).
+  rewrite (surjective_pairing (snd (Znth i sorted))).
+  forward_call (sh,
+                subsetsGraph,
+                subsetsPtr,
+                (force_signed_int
+                   (fst (snd (Znth i sorted))))).
+  ++
+   entailer!. simpl.
+   clear - Hdef_i.
+   destruct Hdef_i as [_ [? _]].
+   apply is_int_e in H.
+   destruct H as [? [? _]].
+   unfold wedgerep_inhabitant in *.
+   replace ((fst (snd (Znth i sorted)))) with (Vint x).
+   simpl.
+   rewrite Int.repr_signed. trivial.
+  ++
+   apply H2.
+   destruct Hdef_i as [_ [? _]].
+   apply is_int_e in H11.
+   destruct H11 as [? [? _]].
+   rewrite H11. simpl.
+   admit. (* leaving for WX *)
+  ++
+   Intros u_root.
+   destruct u_root as [subsetsGraph_u u_root].
+   (* i.e., the UFGraph after finding u, 
+            and u's root 
+    *)
+   forward_call (sh,
+                 subsetsGraph,
+                 subsetsPtr,
+                 (force_signed_int
+                    (snd (snd (Znth i sorted))))).
+   **
+    entailer!. simpl.
+    clear - Hdef_i.
+    destruct Hdef_i as [_ [_ ?]].
+    apply is_int_e in H.
+    destruct H as [? [? _]].
+    unfold wedgerep_inhabitant in *.
+    replace ((snd (snd (Znth i sorted)))) with (Vint x).
+    simpl.
+    rewrite Int.repr_signed. trivial.
+   **
+    simpl fst in *. simpl snd in *.
+    entailer!.
+    (* subsetsGraph is uf_equiv to subsetsGraph_u 
+       is that enough info?
+     *)
+    admit.
+   **
+    apply H2.
+    destruct Hdef_i as [_ [_ ?]].
+    apply is_int_e in H13.
+    destruct H13 as [? [? _]].
+    rewrite H13. simpl.
+    admit. (* leaving for WX *)
+   **
+    Intros v_root.
+    destruct v_root as [subsetsGraph_uv v_root].
+    simpl fst in *. simpl snd in *.
+    forward_if.
+    --- (* yes, add this edge.
+           the bulk of the proof *)
+      admit.
+    --- (* no, don't add this edge *)
+      forward. entailer!.
+      admit.
+    + Intros mst.
+      (* must add a _free spec *)
+      admit.
 Abort.
 
 (*
