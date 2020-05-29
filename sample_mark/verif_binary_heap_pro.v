@@ -8,17 +8,17 @@ Require Import RamifyCoq.sample_mark.env_binary_heap_pro.
 Set Nested Proofs Allowed.
 
 Definition exch_spec :=
-  DECLARE _exch WITH i : Z, j : Z, arr: val, arr_contents: list heap_item, arr' : val, lookup : list Z
+  DECLARE _exch WITH j : Z, k : Z, arr: val, arr_contents: list heap_item, lookup : val, lookup_contents : list Z
   PRE [tuint, tuint, tptr t_item, tptr tuint]
-    PROP (0 <= i < Zlength arr_contents; 0 <= j < Zlength arr_contents)
-    PARAMS (Vint (Int.repr i); Vint (Int.repr j); arr; arr')
+    PROP (0 <= j < Zlength arr_contents; 0 <= k < Zlength arr_contents)
+    PARAMS (Vint (Int.repr j); Vint (Int.repr k); arr; lookup)
     GLOBALS ()
-    SEP (linked_heap_array arr_contents arr lookup arr')
+    SEP (linked_heap_array arr_contents arr lookup_contents lookup)
   POST [tvoid]
-    EX lookup' : list Z,
+    EX lookup_contents' : list Z,
       PROP ()
       LOCAL ()
-      SEP (linked_heap_array (Zexchange arr_contents i j) arr lookup' arr').
+      SEP (linked_heap_array (Zexchange arr_contents j k) arr lookup_contents' lookup).
 
 Definition less_spec :=
   DECLARE _less WITH i : Z, j : Z, arr: val, arr_contents: list heap_item, arr' : val, lookup : list Z
@@ -537,50 +537,68 @@ Proof.
 Time Qed.
 
 (* I need this to make a replace work... ugly... *)
-(*
-Lemma heap_item_rep_morph: forall x y z,
-  (fst (fst (heap_item_rep x)), snd (fst (heap_item_rep x)), snd (heap_item_rep y)) = heap_item_rep (fst x, snd y).
+Lemma heap_item_rep_morph: forall x y,
+  (fst (heap_item_rep x), (fst (snd (heap_item_rep y)), snd (snd (heap_item_rep x)))) = 
+  heap_item_rep (fst (fst x), snd (fst y), snd x).
 Proof. unfold heap_item_rep. destruct x,y; reflexivity. Qed.
-*)
 
 Lemma body_exch: semax_body Vprog Gprog f_exch exch_spec.
 Proof.
   start_function.
-Admitted.
-(*
-  unfold harray.
+  unfold linked_heap_array, heap_array. Intros.
   forward. { rewrite Znth_map; trivial. entailer!. }
   forward. { rewrite Znth_map; trivial. entailer!.
     (* C-typing issue? *)
-    apply Forall_map in H3.
-    rewrite Forall_Znth in H3. specialize (H3 i). do 2 rewrite Zlength_map in H3.
-    specialize (H3 H). rewrite Znth_map in H3. 2: rewrite Zlength_map; trivial.
+    apply Forall_map in H4.
+    rewrite Forall_Znth in H4. specialize (H4 j). do 2 rewrite Zlength_map in H4.
+    specialize (H4 H). rewrite Znth_map in H4. 2: rewrite Zlength_map; trivial.
     (* Flailing around solves the goal... *)
-    simplify_value_fits in H3. destruct H3.
-    rewrite Znth_map in H4; trivial.
-    apply H4. discriminate. }
+    simplify_value_fits in H4. destruct H4.
+    rewrite Znth_map in H5; trivial.
+    apply H5. discriminate. }
+  forward. { repeat rewrite Znth_map; trivial. entailer!. }
+  forward. { repeat rewrite Znth_map; trivial. entailer!. }
   forward. { repeat rewrite Znth_map; trivial. entailer!. }
   forward.
   forward. { repeat rewrite Znth_map; trivial. entailer!.
-    clear H3.
+    clear H4.
     (* We may be in another C-typing issue... *)
-    case (eq_dec i j); intro.
-    + subst j. rewrite upd_Znth_same. trivial. rewrite Zlength_map; auto.
+    case (eq_dec j k); intro.
+    + subst k. rewrite upd_Znth_same. trivial. rewrite Zlength_map; auto.
     + rewrite upd_Znth_diff; auto. 2,3: rewrite Zlength_map; auto.
       (* So ugly... is there no easier way? *)
-      replace (let (x, _) := heap_item_rep _ in x) with (fst (heap_item_rep (Znth j arr_contents))) in H4 by trivial.
-      replace (let (_, y) := heap_item_rep _ in y) with (snd (heap_item_rep (Znth i arr_contents))) in H4 by trivial.
-      rewrite heap_item_rep_morph, upd_Znth_map in H4.
-      apply Forall_map in H4.
-      rewrite Forall_Znth in H4. specialize (H4 j).
-      do 2 rewrite Zlength_map in H4. rewrite Zlength_upd_Znth in H4. specialize (H4 H0).
-      do 2 rewrite Znth_map in H4. 2,3,4: autorewrite with sublist; trivial.
-      rewrite upd_Znth_diff in H4; auto. rewrite Znth_map; trivial.
+      replace (let (x, _) := heap_item_rep _ in x) with (fst (heap_item_rep (Znth j arr_contents))) in H5 by trivial.
+      replace (let (x, _) := let (_, y) := heap_item_rep _ in y in x) with (fst (snd (heap_item_rep (Znth k arr_contents)))) in H5 by trivial.
+      replace (let (_, y) := let (_, y) := heap_item_rep _ in y in y) with (snd (snd (heap_item_rep (Znth j arr_contents)))) in H5 by trivial.
+      rewrite heap_item_rep_morph, upd_Znth_map in H5.
+      apply Forall_map in H5.
+      rewrite Forall_Znth in H5. specialize (H5 k).
+      do 2 rewrite Zlength_map in H5. rewrite Zlength_upd_Znth in H5. specialize (H5 H0).
+      do 2 rewrite Znth_map in H5. 2,3,4: autorewrite with sublist; trivial.
+      rewrite upd_Znth_diff in H5; auto. rewrite Znth_map; trivial.
       (* Flailing around solves the goal... *)
-      simplify_value_fits in H4. destruct H4.
-      apply H4. discriminate. }
+      simplify_value_fits in H5. destruct H5 as [? [? ?]].
+      apply H6. discriminate. }
   forward.
   forward.
+  (* Some cleanup *)
+  unfold lookup_array.
+  repeat rewrite upd_Znth_same, upd_Znth_overwrite.
+  3,4: rewrite Zlength_upd_Znth. 2,3,4,5: rewrite Zlength_map; lia.
+  repeat rewrite Znth_map. 2,3: lia.
+  (* This is ugly and very confusing, if you try to "forward" now, or anywhere between the cleanup and here... *)
+  replace (let (x, _) := heap_item_rep (Znth k arr_contents) in x) with (fst (heap_item_rep (Znth k arr_contents))) by trivial.
+Admitted.
+(*
+forward.
+Check heap_item_rep.
+Compute (reptype t_item). _rep.
+forward.
+, Zlength_map; lia.
+Search upd_Znth.
+deadvars!.
+Search Znth upd_Znth.
+repeat rewrite Znth_upd_Znth.
   forward.
   (* Prove postcondition *)
   repeat rewrite upd_Znth_overwrite.
