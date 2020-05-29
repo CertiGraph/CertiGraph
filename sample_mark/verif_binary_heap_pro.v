@@ -609,7 +609,7 @@ Proof.
              (sublist i_Z (i_Z + 1) lc)
              (sublist (i_Z + 1) (Zlength lookup_contents) lc)
              _); trivial.
-  2,3,4: admit. (* not hard *)
+  2,3,4,5: admit. (* not hard *)
   
   rewrite (sublist_one i_Z (i_Z + 1)).
   2,3,4: admit. (* not hard *)
@@ -619,6 +619,9 @@ Proof.
   Fail forward.
   rewrite Heqi_Z, Heqlc.
   rewrite Znth_map by admit.
+
+  rewrite <- Heqi_Z, H3.
+  Fail forward. (* aw man *)
 
   unfold field_address0 at 1.
   destruct (field_compatible0_dec (Tarray tint (Zlength lookup_contents) noattr)
@@ -630,7 +633,9 @@ Proof.
     (* oh groan, I was really hoping it would succeed at this point.
        checking in... but hopefully this got us a bit further along?
      *)
-
+    admit.
+  - (* really shouldn't get here... *)
+    admit.
   
   
 Admitted.
