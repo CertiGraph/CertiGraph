@@ -3,7 +3,7 @@ extern void * mallocN (int n); /* Maybe there are better choices for allocators?
 
 #define ROOT_IDX       0u
 #define LEFT_CHILD(x)  (2u * x) + 1u
-#define RIGHT_CHILD(x) LEFT_CHILD(x) + 1u
+#define RIGHT_CHILD(x) 2u * (x + 1u)
 #define PARENT(x)      (x - 1u) / 2u
 
 /* I'm assuming a decent compiler will inline the next two functions; if not they can be made #define macros. */

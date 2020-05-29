@@ -149,12 +149,34 @@ Proof.
   do 2 rewrite Nat2Z.inj_add. rewrite Z2Nat.id; lia.
 Qed.
 
+Lemma Zleft_child_repr: forall i,
+  0 <= i ->
+  Int.repr (Zleft_child i) = Int.add (Int.mul (Int.repr 2) (Int.repr i)) Int.one.
+Proof.
+  intros. rewrite Zleft_child_unfold; trivial.
+  unfold Int.one.
+  rewrite mul_repr, add_repr. trivial.
+Qed.
+
 Definition Zright_child i := Z.of_nat (binary_heap_model.right_child (Z.to_nat i)).
 Lemma Zright_child_unfold: forall i,
   Zright_child i = Zleft_child i + 1.
 Proof.
   unfold Zright_child, Zleft_child, binary_heap_model.right_child. intros.
   rewrite Nat2Z.inj_add. trivial.
+Qed.
+
+Lemma Zright_child_repr: forall i,
+  0 <= i ->
+  Int.repr (Zright_child i) = Int.mul (Int.repr 2) (Int.add (Int.repr i) Int.one).
+Proof.
+  intros. rewrite Zright_child_unfold.
+  rewrite <- add_repr.
+  rewrite Zleft_child_repr; trivial.
+  rewrite Int.add_assoc.
+  change (Int.add Int.one (Int.repr 1)) with (Int.repr 2).
+  rewrite Int.mul_add_distr_r.
+  reflexivity.
 Qed.
 
 Definition Zparent (i : Z) : Z := Z.of_nat (parent (Z.to_nat i)).
@@ -170,4 +192,14 @@ Qed.
 Lemma Zparent_0:
   Zparent 0 = 0.
 Proof. reflexivity. Qed.
+
+Lemma Zparent_repr: forall i,
+  0 < i <= Int.max_unsigned ->
+  Int.repr (Zparent i) = Int.divu (Int.repr (i - 1)) (Int.repr 2).
+Proof.
+  intros. unfold Int.divu. repeat rewrite Int.unsigned_repr.
+  2,3: rep_lia. rewrite Zparent_unfold. trivial. lia.
+Qed.
+
+
 
