@@ -11,7 +11,7 @@ Require Import RamifyCoq.msl_application.GList_UnionFind.
 Require Import RamifyCoq.floyd_ext.share.
 Require Import RamifyCoq.sample_mark.spatial_graph_uf_iter.
 
-Local Coercion UGraph_LGraph: Graph >-> LGraph.
+Local Coercion UFGraph_LGraph: UFGraph >-> LGraph.
 Local Coercion LGraph_SGraph: LGraph >-> SGraph.
 Local Identity Coercion ULGraph_LGraph: LGraph >-> UnionFindGraph.LGraph.
 Local Identity Coercion LGraph_LabeledGraph: UnionFindGraph.LGraph >-> LabeledGraph.
@@ -21,19 +21,19 @@ Local Coercion pg_lg: LabeledGraph >-> PreGraph.
 Notation vertices_at sh P g:= (@vertices_at _ _ _ _ _ mpred (@SGP pSGG_VST nat unit (sSGG_VST sh)) (SGA_VST sh) P g).
 Notation whole_graph sh g := (vertices_at sh (vvalid g) g).
 Notation graph sh x g := (@reachable_vertices_at _ _ _ _ _ _ _ _ _ _ (@SGP pSGG_VST nat unit (sSGG_VST sh)) _ x g).
-Notation Graph := (@Graph pSGG_VST).
+Notation UFGraph := (@UFGraph pSGG_VST).
 Existing Instances maGraph finGraph liGraph RGF.
 
 Definition find_spec :=
  DECLARE _find
-  WITH sh: wshare, g: Graph, x: pointer_val
+  WITH sh: wshare, g: UFGraph, x: pointer_val
   PRE [tptr (Tstruct _Node noattr)]
           PROP  (vvalid g x)
           PARAMS (pointer_val_val x)
           GLOBALS ()
           SEP   (whole_graph sh g)
   POST [ tptr (Tstruct _Node noattr) ]
-        EX g': Graph, EX rt : pointer_val,
+        EX g': UFGraph, EX rt : pointer_val,
         PROP (uf_equiv g g'; uf_root g' x rt)
         LOCAL (temp ret_temp (pointer_val_val rt))
         SEP (whole_graph sh g').
@@ -58,7 +58,7 @@ Proof.
   - intro. inversion H0. auto.
 Qed.
 
-Lemma graph_local_facts: forall sh x (g: Graph), vvalid g x -> whole_graph sh g |-- valid_pointer (pointer_val_val x).
+Lemma graph_local_facts: forall sh x (g: UFGraph), vvalid g x -> whole_graph sh g |-- valid_pointer (pointer_val_val x).
 Proof.
   intros. eapply derives_trans; [apply (@vertices_at_ramif_1_stable _ _ _ _ SGBA_VST _ _ (SGA_VST sh) g (vvalid g) x (vgamma g x)); auto |].
   simpl vertex_at at 1. unfold binode. entailer!.
@@ -91,7 +91,7 @@ Proof.
     Exists (ppa, mgpa). simpl fst. simpl snd. assert (mr = vlabel g ppa) by (simpl in H3; inversion H3; auto). rewrite <- H4. entailer !.
     apply reachable_edge with p; auto. apply (vgamma_not_edge g p (vlabel g p)); auto. apply reachable_foot_valid in H1; auto.
   - destruct H1. apply false_Cne_eq in HRE. subst ppa. assert (uf_root g x p) by (split; intros; auto; apply (parent_loop g p (vlabel g p) y); auto).
-    forward_while (EX g': Graph, EX tmp: pointer_val, EX xv: pointer_val,
+    forward_while (EX g': UFGraph, EX tmp: pointer_val, EX xv: pointer_val,
                    PROP (uf_equiv g g' /\ uf_root g' xv p)
                    LOCAL (temp _p (pointer_val_val p); temp _tmp (pointer_val_val tmp); temp _x (pointer_val_val xv))
                    SEP (whole_graph sh g')).
