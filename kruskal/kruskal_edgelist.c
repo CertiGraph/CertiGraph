@@ -74,10 +74,6 @@ void free_graph(struct graph * graph) {
     free(graph);
 }
 
-void free_subset(struct subset * subset) {
-    free(subset);
-}
-
 struct graph *kruskal(struct graph *graph) {
     int graph_V = graph->V;
     int graph_E = graph->E;
@@ -109,6 +105,6 @@ struct graph *kruskal(struct graph *graph) {
         }
     }
 
-    free_subset(subsets);
+    free(subsets);
     return mst;
 }
