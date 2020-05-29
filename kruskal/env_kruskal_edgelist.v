@@ -10,8 +10,10 @@ Instance CompSpecs : compspecs. Proof. make_compspecs prog. Defined.
 Definition MAX_EDGES:= 8.
 Definition t_struct_edge := Tstruct _edge noattr.
 Definition t_wedgearray_graph := Tstruct _graph noattr.
-
 Definition wedgerep := reptype t_struct_edge.
+Instance wedgerep_inhabitant : Inhabitant wedgerep :=
+                                    (Vundef, (Vundef, Vundef)).
+
 
 (*Warning: reptype of a struct doesn’t destruct nicely*)
 Definition def_wedgerep (x: reptype t_struct_edge) :=
