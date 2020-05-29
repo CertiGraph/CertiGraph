@@ -21,46 +21,83 @@ Require Import RamifyCoq.kruskal.spatial_wedgearray_graph.
 Require Import RamifyCoq.sample_mark.spatial_array_graph.
 (*spanning tree definition*)
 Require Import RamifyCoq.kruskal.mst.
+Require Import RamifyCoq.kruskal.kruskal_uf_specs.
 (*Require Import RamifyCoq.graph.spanning_tree.*)
+
+Require Import RamifyCoq.kruskal.undirected_graph.
 
 Local Open Scope Z_scope.
 
-(*Taken from VST's queue*)
-Definition mallocK_spec :=
- DECLARE _mallocK
-  WITH sh: wshare, n: Z
-  PRE [tint]
-     PROP (4 <= n <= Int.max_unsigned)
-     PARAMS (Vint (Int.repr n))
-     GLOBALS ()
-     SEP ()
-  POST [ tptr tvoid ]
-     EX v: pointer_val,
-     PROP (malloc_compatible n (pointer_val_val v))
-     LOCAL (temp ret_temp (pointer_val_val v))
-     SEP (memory_block sh n (pointer_val_val v)).
+(*I guess we ought to throw these in a specs_kruskal.v
+Also, thinking of we can combine env and spatial*)
 
-(*It'll be useful if we can come up with some freeN spec, then centralize these in some header*)
+Lemma numE_pos: forall g, 0 <= numE g.
+Proof.
+  intros. unfold numE. apply Zlength_nonneg.
+Qed.
 
-(*overhaul this to explicitly return empty_WEdgeListGraph instead*)
-Definition init_empty_graph_spec :=
-  DECLARE _kruskal
-  WITH gv: globals, sh: wshare
-  PRE []
-     PROP ()
-     PARAMS ()
-     GLOBALS (gv)
-     SEP (data_at sh tint (Vint (Int.repr MAX_EDGES)) (gv _MAX_EDGES))
-  POST [ tptr t_wedgearray_graph ]
-     EX gptr eptr: pointer_val,
-     PROP ()
-     LOCAL (temp ret_temp (pointer_val_val gptr))
-     SEP (data_at sh tint (Vint (Int.repr MAX_EDGES)) (gv _MAX_EDGES) *
-          wedgearray_graph_rep sh empty_FiniteWEdgeListGraph gptr eptr).
- 
-Definition Vprog : varspecs. mk_varspecs prog. Defined.
-Definition Gprog : funspecs := ltac:(with_library prog
-  [mallocK_spec; init_empty_graph_spec]).
+Lemma g2wedgelist_numE:
+  forall g,
+    Zlength (graph_to_wedgelist g) = numE g.
+Proof.
+  intros. unfold numE, graph_to_wedgelist.
+  rewrite Zlength_map. trivial.
+Qed.
+
+Lemma numE_range:
+  forall g,
+    numE g <= MAX_EDGES ->
+    Int.min_signed <= numE g <= Int.max_signed.
+Proof.
+  intros.
+  pose proof (numE_pos g).
+  unfold MAX_EDGES in H.
+  assert (Int.min_signed <= 0) by now compute.
+  assert (8 <= Int.max_signed) by now compute.
+  lia.
+Qed.
+
+Lemma numE_pred_range:
+  forall g,
+    numE g <= MAX_EDGES ->
+    Int.min_signed <= numE g - 1 <= Int.max_signed.
+Proof.
+  intros.
+  pose proof (numE_pos g).
+  unfold MAX_EDGES in H.
+  assert (Int.min_signed <= -1) by now compute.
+  assert (7 <= Int.max_signed) by now compute.
+  lia.
+Qed.
+
+Lemma Permutation_Zlength:
+  forall (A : Type) (l l' : list A),
+    Permutation l l' -> Zlength l = Zlength l'.
+Proof.
+  intros.
+  rewrite Zlength_length; [| apply Zlength_nonneg].
+  rewrite Zlength_correct, Nat2Z.id.
+  apply Permutation_length; trivial.
+Qed.
+
+Lemma def_wedgerep_map_w2c:
+  forall g,
+    Forall def_wedgerep (map wedge_to_cdata (graph_to_wedgelist g)).
+Proof.
+  intros.
+  rewrite Forall_forall; intros.
+  apply list_in_map_inv in H.
+  destruct H as [? [? _]].
+  unfold wedge_to_cdata in H.
+  unfold def_wedgerep.
+  rewrite (surjective_pairing x) in *.
+  inversion H; clear H.
+  destruct x.
+  rewrite (surjective_pairing c) in *.
+  simpl fst in *; simpl snd in *.
+  inversion H2; clear H2.
+  rewrite H1, H0, H3. split3; trivial.
+Qed.
 
 Lemma body_init_empty_graph: semax_body Vprog Gprog f_init_empty_graph init_empty_graph_spec.
 Proof.
@@ -103,32 +140,186 @@ simpl. rewrite data_at_zero_array_eq. entailer!.
 reflexivity. apply H4. rewrite empty_WEdgeListGraph_graph_to_wedgelist. simpl. reflexivity.
 Qed.
 
-Definition kruskal_spec :=
-  DECLARE _kruskal
-  WITH gv: globals, sh: wshare, g: FiniteWEdgeListGraph, gptr : pointer_val, eptr : pointer_val
-  PRE [tptr t_wedgearray_graph]
-   PROP (sound_weighted_edge_graph g; numE g <= MAX_EDGES
-        )
-   PARAMS ((pointer_val_val gptr))
-   GLOBALS (gv)
-   SEP (data_at sh tint (Vint (Int.repr MAX_EDGES)) (gv _MAX_EDGES);
-        wedgearray_graph_rep sh g gptr eptr)
-  POST [tptr t_wedgearray_graph]
-   EX pointer_msf: pointer_val,
-   EX (msf: FiniteWEdgeListGraph),
-   PROP (sound_weighted_edge_graph msf;
-        (numE msf) <= MAX_EDGES;
-        minimum_spanning_forest (lg_gg g) (lg_gg msf)
-                                 Z.add
-                                 0
-                                 Z.le)
-   LOCAL (temp ret_temp (pointer_val_val pointer_msf))
-   SEP (data_at sh tint (Vint (Int.repr MAX_EDGES)) (gv _MAX_EDGES);
-        wedgearray_graph_rep sh g gptr eptr;
-       wedgearray_graph_rep sh msf pointer_msf pointer_msf).
-(* the last "pointer_msf" is clearly wrong, I'm just 
-   adding it to make the spec typecheck
- *)
+Lemma Forall_permutation: forall {A: Type} (al bl: list A) f, Forall f al -> Permutation al bl -> Forall f bl.
+Proof.
+intros. rewrite Forall_forall in *; intros.
+apply H. apply (Permutation_in (l:=bl) (l':=al) x). apply Permutation_sym. apply H0. apply H1.
+Qed.
+
+Lemma body_kruskal: semax_body Vprog Gprog f_kruskal kruskal_spec.
+Proof.
+  start_function.
+  unfold wedgearray_graph_rep. Intros.
+  forward.
+  forward.
+  forward_call (sh, (numV g)).
+  Intros subsets.
+  forward_call (gv, sh).
+  Intros mst.
+  destruct subsets as [subsetsGraph subsetsPtr].
+  destruct mst as [gptr eptr].
+  simpl fst in *. simpl snd in *. 
+  unfold wedgearray_graph_rep. Intros.
+  forward.
+  forward.
+  assert (Hdef_g: Forall def_wedgerep (map wedge_to_cdata (graph_to_wedgelist g))) by (apply def_wedgerep_map_w2c).
+  (******************************SORT******************************) 
+  forward_call ((wshare_share sh), 
+                pointer_val_val orig_eptr,
+                (map wedge_to_cdata (graph_to_wedgelist g))).
+  - rewrite Zlength_map, g2wedgelist_numE. entailer!.
+  - rewrite Zlength_map, g2wedgelist_numE. entailer!.
+  - split3; [| |split]; trivial.
+    rewrite Zlength_map, g2wedgelist_numE.
+      split; [ apply numE_pos | apply numE_range; trivial].
+  - Intros sorted.
+    (* a little cleanup... *)
+    rewrite empty_WEdgeListGraph_numE.
+    rewrite <- Z2Nat.inj_sub, Z.sub_0_r. 2: lia.
+    rewrite Z.mul_0_l.
+    assert_PROP (isptr (pointer_val_val eptr)) by
+        (rewrite (data_at_isptr sh); entailer!).
+    rename H5 into H_eptr_isptr.
+    rewrite isptr_offset_val_zero. 2: auto.
+    rewrite data_at_zero_array_eq. 2: trivial. 2: auto.
+    2: rewrite empty_WEdgeListGraph_graph_to_wedgelist; trivial.
+    assert (Hdef_sorted: Forall def_wedgerep sorted).
+      apply (Forall_permutation _ _ _ Hdef_g H3).
+    (*clear Hdef_g.*)
+    assert (HZlength_sorted: Zlength sorted = numE g).
+      rewrite <- (Permutation_Zlength _ _ _ H3).
+      rewrite Zlength_map. apply g2wedgelist_numE.
+    (* done with cleanup. *)
+    (******************************THE BIG NASTY LOOP******************************)
+     forward_for_simple_bound
+    (numE g)
+    (EX i : Z,
+     EX msf' : FiniteWEdgeListGraph,
+     PROP (numV msf' = numV g; (*which combined with below should give vvalid msf' v <-> vvalid g v, see if we need it later*)
+           is_partial_graph msf' g;
+           uforest msf';
+           True; (* something about min wt *)
+           forall u v, connected subsetsGraph u v -> connected g u v; (*uf represents components of graph*)
+           forall u v, connected subsetsGraph u v <-> connected msf' u v (*correlation between uf and msf'*))
+     LOCAL (temp _graph_E (Vint (Int.repr (numE g)));
+            temp _graph__1 (pointer_val_val orig_gptr);
+            temp _subsets (pointer_val_val subsetsPtr))
+     SEP (
+          (*the irritating global haha*)
+          data_at sh tint (Vint (Int.repr MAX_EDGES)) (gv _MAX_EDGES);
+          (*orig graph with sorted edgelist*)
+          data_at sh (tarray t_struct_edge (Zlength sorted)) sorted (pointer_val_val orig_eptr);
+          data_at sh t_wedgearray_graph (Vint (Int.repr (numV g)), (Vint (Int.repr (numE g)), pointer_val_val orig_eptr)) (pointer_val_val orig_gptr);
+          data_at sh (tarray t_struct_edge (MAX_EDGES - numE g)) (list_repeat (Z.to_nat MAX_EDGES - Z.to_nat (numE g)) (Vundef, (Vundef, Vundef))) (offset_val (numE g * sizeof t_struct_edge) (pointer_val_val orig_eptr));
+          (*msf'. fold this into wedgearray_graph_rep?*)
+          data_at sh (tarray t_struct_edge (numE msf')) (map wedge_to_cdata (graph_to_wedgelist msf')) (pointer_val_val eptr);
+          data_at sh t_wedgearray_graph (Vint (Int.repr (numV msf')), (Vint (Int.repr (numE msf')), pointer_val_val eptr)) (pointer_val_val gptr);
+          data_at sh (tarray t_struct_edge (MAX_EDGES - numE msf')) (list_repeat (Z.to_nat MAX_EDGES - Z.to_nat (numE g)) (Vundef, (Vundef, Vundef))) (offset_val (numE msf' * sizeof t_struct_edge) (pointer_val_val orig_eptr));
+          (*ufgraph*)
+          whole_graph sh subsetsGraph subsetsPtr
+        ))%assert.
+    + apply numE_range; trivial.
+    + (******PRECON******)
+      (* pure obligations *)
+      (*Exists edgeless graph with V vertices*)
+      admit.
+      (* any SEP obligatins will also appear here, 
+         as a separate goal after the entailer!. 
+         currently there are none because I just 
+         added an overapproximation of SEPs to the 
+         invariant 
+       *)
+    + (******LOOP BODY******)
+      Intros.
+      assert (Hdef_i: def_wedgerep (Znth i sorted)). {
+        rewrite Forall_forall in Hdef_sorted. apply Hdef_sorted. apply Znth_In. lia. }
+      forward. forward.
+      * entailer!.
+        rewrite (surjective_pairing (Znth i sorted)).
+        rewrite (surjective_pairing (snd (Znth i sorted))).
+        apply Hdef_i.
+      * (* inside the for loop *)
+ forward. forward.
+ 1: { entailer!.
+      rewrite (surjective_pairing (Znth i sorted)).
+      rewrite (surjective_pairing (snd (Znth i sorted))).
+      apply Hdef_i.
+ }
+ --
+  rewrite (surjective_pairing (Znth i sorted)).
+  rewrite (surjective_pairing (snd (Znth i sorted))).
+  forward_call (sh,
+                subsetsGraph,
+                subsetsPtr,
+                (force_signed_int
+                   (fst (snd (Znth i sorted))))).
+  ++
+   entailer!. simpl.
+   clear - Hdef_i.
+   destruct Hdef_i as [_ [? _]].
+   apply is_int_e in H.
+   destruct H as [? [? _]].
+   unfold wedgerep_inhabitant in *.
+   replace ((fst (snd (Znth i sorted)))) with (Vint x).
+   simpl.
+   rewrite Int.repr_signed. trivial.
+  ++
+   apply H2.
+   destruct Hdef_i as [_ [? _]].
+   apply is_int_e in H11.
+   destruct H11 as [? [? _]].
+   rewrite H11. simpl.
+   admit. (* leaving for WX *)
+  ++
+   Intros u_root.
+   destruct u_root as [subsetsGraph_u u_root].
+   (* i.e., the UFGraph after finding u, 
+            and u's root 
+    *)
+   forward_call (sh,
+                 subsetsGraph,
+                 subsetsPtr,
+                 (force_signed_int
+                    (snd (snd (Znth i sorted))))).
+   **
+    entailer!. simpl.
+    clear - Hdef_i.
+    destruct Hdef_i as [_ [_ ?]].
+    apply is_int_e in H.
+    destruct H as [? [? _]].
+    unfold wedgerep_inhabitant in *.
+    replace ((snd (snd (Znth i sorted)))) with (Vint x).
+    simpl.
+    rewrite Int.repr_signed. trivial.
+   **
+    simpl fst in *. simpl snd in *.
+    entailer!.
+    (* subsetsGraph is uf_equiv to subsetsGraph_u 
+       is that enough info?
+     *)
+    admit.
+   **
+    apply H2.
+    destruct Hdef_i as [_ [_ ?]].
+    apply is_int_e in H13.
+    destruct H13 as [? [? _]].
+    rewrite H13. simpl.
+    admit. (* leaving for WX *)
+   **
+    Intros v_root.
+    destruct v_root as [subsetsGraph_uv v_root].
+    simpl fst in *. simpl snd in *.
+    forward_if.
+    --- (* yes, add this edge.
+           the bulk of the proof *)
+      admit.
+    --- (* no, don't add this edge *)
+      forward. entailer!.
+      admit.
+    + Intros mst.
+      (* must add a _free spec *)
+      admit.
+Abort.
 
 (*
 Idea of proof:

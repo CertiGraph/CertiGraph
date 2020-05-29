@@ -190,7 +190,7 @@ Definition dijkstra_spec :=
           pointer_val_val dist;
           pointer_val_val prev)
    GLOBALS ()
-   SEP (graph_rep sh (graph_to_mat g) (pointer_val_val arr);
+   SEP (DijkGraph sh (graph_to_mat g) (pointer_val_val arr);
        data_at_ Tsh (tarray tint SIZE) (pointer_val_val dist);
        data_at_ Tsh (tarray tint SIZE) (pointer_val_val prev))
   POST [tvoid]
@@ -199,7 +199,7 @@ Definition dijkstra_spec :=
    EX popped_verts: list VType,                             
    PROP (dijkstra_correct g src popped_verts prev_contents dist_contents)
    LOCAL ()
-   SEP (graph_rep sh (graph_to_mat g) (pointer_val_val arr);
+   SEP (DijkGraph sh (graph_to_mat g) (pointer_val_val arr);
        data_at Tsh (tarray tint SIZE) (map Vint (map Int.repr prev_contents)) (pointer_val_val prev);
        data_at Tsh (tarray tint SIZE) (map Vint (map Int.repr dist_contents)) (pointer_val_val dist)).
 

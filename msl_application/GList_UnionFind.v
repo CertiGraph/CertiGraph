@@ -27,12 +27,12 @@ Section GList_UnionFind.
   Definition SGraph := (PointwiseGraph addr (addr * unit) (nat * addr) unit).
 
   Definition LGraph := (@LGraph addr (addr * unit) _ _ nat unit unit).
-  Definition Graph := (@Graph addr (addr * unit) _ _ is_null_SGBA (fun x => (x, tt)) nat unit unit).
-
-  Definition UGraph_LGraph (G: Graph): LGraph := lg_gg G.
+  Definition UFGraph := (@UFGraph addr (addr * unit) _ _ is_null_SGBA (fun x => (x, tt)) nat unit unit).
+  
+  Definition UFGraph_LGraph (G: UFGraph): LGraph := lg_gg G.
   Definition LGraph_SGraph (G: LGraph): SGraph := Graph_PointwiseGraph G.
 
-  Local Coercion UGraph_LGraph: Graph >-> LGraph.
+  Local Coercion UFGraph_LGraph: UFGraph >-> LGraph.
   Local Coercion LGraph_SGraph: LGraph >-> SGraph.
   
   Local Identity Coercion ULGraph_LGraph: LGraph >-> UnionFindGraph.LGraph.
@@ -42,16 +42,16 @@ Section GList_UnionFind.
 
   Global Existing Instance fml.
 
-  Instance maGraph(G: Graph): MathGraph G is_null_SGBA := maGraph G.
-  Instance finGraph (G: Graph): FiniteGraph G := finGraph G.
-  Instance liGraph (G: Graph):  LstGraph G (fun x => (x, tt)) := liGraph G.
+  Instance maGraph(G: UFGraph): MathGraph G is_null_SGBA := maGraph G.
+  Instance finGraph (G: UFGraph): FiniteGraph G := finGraph G.
+  Instance liGraph (G: UFGraph):  LstGraph G (fun x => (x, tt)) := liGraph G.
 
   Definition vgamma := (@vgamma addr (addr * unit) SGBA_VE SGBA_EE is_null_SGBA (fun x => (x, tt)) nat unit unit).
 
-  Definition Graph_gen_redirect_parent (g: Graph) (x: addr) (pa: addr) (H: weak_valid g pa) (Hv: vvalid g x) (Hn: ~ reachable g pa x): Graph :=
+  Definition Graph_gen_redirect_parent (g: UFGraph) (x: addr) (pa: addr) (H: weak_valid g pa) (Hv: vvalid g x) (Hn: ~ reachable g pa x): UFGraph :=
     Graph_gen_redirect_parent g x pa H Hv Hn.
 
-  Lemma graph_gen_redirect_parent_ramify: forall (g: Graph) x r pa root (H: weak_valid g root) (Hv: vvalid g x) (Hn: ~ reachable g root x),
+  Lemma graph_gen_redirect_parent_ramify: forall (g: UFGraph) x r pa root (H: weak_valid g root) (Hv: vvalid g x) (Hn: ~ reachable g root x),
       vgamma g x = (r, pa) -> root <> null -> 
       (vertices_at (vvalid g) g: pred) 
         |-- vertex_at x (r, pa) * (vertex_at x (r, root) -* vertices_at (vvalid g) (Graph_gen_redirect_parent g x root H Hv Hn)).
@@ -72,19 +72,19 @@ Section GList_UnionFind.
       destruct (equiv_dec (x, tt) (x0, tt)); auto. compute in e. exfalso. inversion e. auto.
   Qed.
 
-  Definition ggrp_rel (g : Graph) (x root : addr) (g' : Graph) : Prop :=
+  Definition ggrp_rel (g : UFGraph) (x root : addr) (g' : UFGraph) : Prop :=
     exists H1 H2 H3, g' = Graph_gen_redirect_parent g x root H1 H2 H3.
 
-  Lemma graph_gen_redirect_parent_ramify_rel: forall (g: Graph) x r pa root g',
+  Lemma graph_gen_redirect_parent_ramify_rel: forall (g: UFGraph) x r pa root g',
       ggrp_rel g x root g' ->
       vgamma g x = (r, pa) -> root <> null -> 
       (vertices_at (vvalid g) g: pred) 
         |-- vertex_at x (r, pa) * (vertex_at x (r, root) -* vertices_at (vvalid g) g').
   Proof. intros g x r pa root g' [Ha [Hb [Hc Heq]]] ? ?. subst g'. apply graph_gen_redirect_parent_ramify; auto. Qed. 
 
-  Definition Graph_vgen (G: Graph) (x: addr) (d: nat) : Graph := Graph_vgen G x d.
+  Definition Graph_vgen (G: UFGraph) (x: addr) (d: nat) : UFGraph := Graph_vgen G x d.
 
-  Lemma graph_vgen_ramify: forall (g: Graph) x r1 r2 pa,
+  Lemma graph_vgen_ramify: forall (g: UFGraph) x r1 r2 pa,
       vvalid g x -> vgamma g x = (r1, pa) -> (vertices_at (vvalid g) g: pred) |-- vertex_at x (r1, pa) * (vertex_at x (r2, pa) -* vertices_at (vvalid g) (Graph_vgen g x r2)).
   Proof.
     intros. assert (vgamma (Graph_vgen g x r2) x = (r2, pa)). {
@@ -101,7 +101,7 @@ Section GList_UnionFind.
       unfold update_vlabel. f_equal. destruct (equiv_dec x x0); auto. hnf in e. exfalso; auto.
   Qed.
 
-  Lemma uf_under_bound_redirect_parent: forall (g: Graph) root x (Hw : weak_valid g root) (Hv : vvalid g x) (Hr: ~ reachable g root x),
+  Lemma uf_under_bound_redirect_parent: forall (g: UFGraph) root x (Hw : weak_valid g root) (Hv : vvalid g x) (Hr: ~ reachable g root x),
       uf_root g x root -> uf_under_bound id g -> uf_under_bound id (Graph_gen_redirect_parent g x root Hw Hv Hr).
   Proof.
     intros. hnf in H0 |-* . simpl. unfold uf_bound, id in *. intros. destruct p as [p l]. destruct H. destruct (redirect_to_root g (liGraph g) _ _ _ _ _ Hv Hr H4 H2 H3).
@@ -113,24 +113,24 @@ Section GList_UnionFind.
       clear -H8. rewrite app_length in *. simpl in *. intuition.
   Qed.
 
-  Lemma uf_under_bound_redirect_parent_lt: forall (g: Graph) root x (Hw : weak_valid g root) (Hv : vvalid g x) (Hr: ~ reachable g root x),
+  Lemma uf_under_bound_redirect_parent_lt: forall (g: UFGraph) root x (Hw : weak_valid g root) (Hv : vvalid g x) (Hr: ~ reachable g root x),
       vlabel g x < vlabel g root -> (forall y, reachable g root y -> root = y) -> uf_under_bound id g -> uf_under_bound id (Graph_gen_redirect_parent g x root Hw Hv Hr).
   Proof.
     intros. hnf in H1 |-* . simpl. unfold uf_bound, id in *. intros. destruct p as [p l]. destruct (redirect_to_root g (liGraph g) _ _ _ _ _ Hv Hr H0 H3 H4).
     - destruct H5; apply H1; auto.
     - destruct H5 as [? [l1 [? ?]]]. subst l. clear H4. subst v. simpl. destruct H7 as [[_ ?] [? _]]. specialize (H1 _ Hv _ H5 H4). simpl in H1. rewrite app_length. simpl length.
-      clear - H H1. unfold Graph_LGraph in H. assert (vlabel (lg_gg g) x < vlabel (lg_gg g) root) by intuition. intuition.
+      clear - H H1. unfold UFGraph_LGraph in H. assert (vlabel (lg_gg g) x < vlabel (lg_gg g) root) by intuition. intuition.
   Qed.
 
-  Lemma uf_under_bound_redirect_parent_eq: forall (g: Graph) root x (Hw : weak_valid g root) (Hv : vvalid g x) (Hr: ~ reachable g root x),
+  Lemma uf_under_bound_redirect_parent_eq: forall (g: UFGraph) root x (Hw : weak_valid g root) (Hv : vvalid g x) (Hr: ~ reachable g root x),
       vlabel g x = vlabel g root -> (forall y, reachable g root y -> root = y) -> uf_under_bound id g ->
       uf_under_bound id (Graph_vgen (Graph_gen_redirect_parent g x root Hw Hv Hr) root (vlabel g root + 1)).
   Proof.
     intros. hnf in H1 |-* . simpl. unfold uf_bound, id, update_vlabel in *. intros. destruct p as [p l]. destruct (redirect_to_root g (liGraph g) _ _ _ _ _ Hv Hr H0 H3 H4).
     - destruct H5. specialize (H1 _ H2 _ H5 H6). simpl in H1 |-* . clear -H1. destruct (equiv_dec root v); [hnf in e; subst v |]; intuition.
     - destruct H5 as [? [l1 [? ?]]]. subst l. clear H4. subst v. destruct (equiv_dec root root). 2: compute in c; exfalso; apply c; auto. simpl. destruct H7 as [[_ ?] [? _]].
-      specialize (H1 _ Hv _ H5 H4). simpl in H1. rewrite app_length. simpl. clear -H H1. unfold Graph_LGraph in *. assert (vlabel (lg_gg g) x = vlabel g root) by intuition. intuition.
+      specialize (H1 _ Hv _ H5 H4). simpl in H1. rewrite app_length. simpl. clear -H H1. unfold UFGraph_LGraph in *. assert (vlabel (lg_gg g) x = vlabel g root) by intuition. intuition.
   Qed.
 
-  Definition make_set_Graph (default_dv: nat) (default_de: unit) (default_dg: unit) (v: addr) (g: Graph) (Hn: v <> null) (Hi: ~ vvalid g v) : Graph := make_set_Graph default_dv default_de default_dg v g Hn Hi.
+  Definition make_set_Graph (default_dv: nat) (default_de: unit) (default_dg: unit) (v: addr) (g: UFGraph) (Hn: v <> null) (Hi: ~ vvalid g v) : UFGraph := make_set_Graph default_dv default_de default_dg v g Hn Hi.
 End GList_UnionFind.
