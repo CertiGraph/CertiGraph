@@ -588,6 +588,51 @@ Proof.
   repeat rewrite Znth_map. 2,3: lia.
   (* This is ugly and very confusing, if you try to "forward" now, or anywhere between the cleanup and here... *)
   replace (let (x, _) := heap_item_rep (Znth k arr_contents) in x) with (fst (heap_item_rep (Znth k arr_contents))) by trivial.
+
+  (* plan: split3 in the last data_at *)
+  remember ((fst (heap_item_rep (Znth k arr_contents)))) as key2.
+  destruct key2; try inversion Heqkey2.
+  rewrite <- H3.
+  unfold tarray at 2.
+  remember (map (fun z : Z => Vint (Int.repr z)) lookup_contents) as lc.
+  remember (Int.signed i) as i_Z.
+  rewrite (@split3_data_at_Tarray
+             _
+             _
+             tint
+             (Zlength lookup_contents)
+             i_Z
+             (i_Z + 1)
+             lc
+             lc
+             (sublist 0 i_Z lc)
+             (sublist i_Z (i_Z + 1) lc)
+             (sublist (i_Z + 1) (Zlength lookup_contents) lc)
+             _); trivial.
+  2,3,4: admit. (* not hard *)
+  
+  rewrite (sublist_one i_Z (i_Z + 1)).
+  2,3,4: admit. (* not hard *)
+  
+  Intros.
+  replace (i_Z + 1 - i_Z) with 1 by lia.
+  Fail forward.
+  rewrite Heqi_Z, Heqlc.
+  rewrite Znth_map by admit.
+  
+  unfold field_address0 at 1.
+  destruct (field_compatible0_dec (Tarray tint (Zlength lookup_contents) noattr)
+                                  [ArraySubsc (Int.signed i)] lookup).
+  - assert (isptr lookup) by admit. (* can probably get it from assert_PROP *)
+    destruct lookup; try inversion H2.
+    simpl offset_val.
+    Fail forward.
+    (* oh groan, I was really hoping it would succeed at this point.
+       checking in... but hopefully this got us a bit further along?
+     *)
+
+  
+  
 Admitted.
 (*
 forward.
