@@ -190,11 +190,12 @@ Proof.
       rewrite <- (Permutation_Zlength _ _ _ H3).
       rewrite Zlength_map. apply g2wedgelist_numE.
     (* done with cleanup. *)
-    (******************************THE BIG NASTY LOOP******************************)
+    (******************************THE BIG NASTY LOOP******************************) 
      forward_for_simple_bound
     (numE g)
     (EX i : Z,
      EX msf' : FiniteWEdgeListGraph,
+     EX subsetsGraph' : UFGraph,                 
      PROP (numV msf' = numV g; (*which combined with below should give vvalid msf' v <-> vvalid g v, see if we need it later*)
            is_partial_graph msf' g;
            uforest msf';
@@ -203,7 +204,8 @@ Proof.
            forall u v, connected subsetsGraph u v <-> connected msf' u v (*correlation between uf and msf'*))
      LOCAL (temp _graph_E (Vint (Int.repr (numE g)));
             temp _graph__1 (pointer_val_val orig_gptr);
-            temp _subsets (pointer_val_val subsetsPtr))
+            temp _subsets (pointer_val_val subsetsPtr);
+            temp _mst (pointer_val_val gptr))
      SEP (
           (*the irritating global haha*)
           data_at sh tint (Vint (Int.repr MAX_EDGES)) (gv _MAX_EDGES);
@@ -216,7 +218,8 @@ Proof.
           data_at sh t_wedgearray_graph (Vint (Int.repr (numV msf')), (Vint (Int.repr (numE msf')), pointer_val_val eptr)) (pointer_val_val gptr);
           data_at sh (tarray t_struct_edge (MAX_EDGES - numE msf')) (list_repeat (Z.to_nat MAX_EDGES - Z.to_nat (numE g)) (Vundef, (Vundef, Vundef))) (offset_val (numE msf' * sizeof t_struct_edge) (pointer_val_val orig_eptr));
           (*ufgraph*)
-          whole_graph sh subsetsGraph subsetsPtr
+          whole_graph sh subsetsGraph subsetsPtr;
+          whole_graph sh subsetsGraph' subsetsPtr
         ))%assert.
     + apply numE_range; trivial.
     + (******PRECON******)
@@ -277,7 +280,7 @@ Proof.
             and u's root 
     *)
    forward_call (sh,
-                 subsetsGraph,
+                 subsetsGraph_u,
                  subsetsPtr,
                  (force_signed_int
                     (snd (snd (Znth i sorted))))).
@@ -292,18 +295,8 @@ Proof.
     simpl.
     rewrite Int.repr_signed. trivial.
    **
-    simpl fst in *. simpl snd in *.
-    entailer!.
-    (* subsetsGraph is uf_equiv to subsetsGraph_u 
-       is that enough info?
-     *)
-    admit.
+    simpl fst in *. simpl snd in *. entailer!.  
    **
-    apply H2.
-    destruct Hdef_i as [_ [_ ?]].
-    apply is_int_e in H13.
-    destruct H13 as [? [? _]].
-    rewrite H13. simpl.
     admit. (* leaving for WX *)
    **
     Intros v_root.
@@ -314,10 +307,12 @@ Proof.
            the bulk of the proof *)
       admit.
     --- (* no, don't add this edge *)
-      forward. entailer!.
-      admit.
+      forward. entailer!. 
+      admit. 
     + Intros mst.
-      (* must add a _free spec *)
+      Intros subsetsGraph'.
+      forward_call ((pointer_val_val subsetsPtr)).
+      forward.
       admit.
 Abort.
 
