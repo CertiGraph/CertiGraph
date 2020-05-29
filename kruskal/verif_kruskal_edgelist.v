@@ -24,6 +24,8 @@ Require Import RamifyCoq.kruskal.mst.
 Require Import RamifyCoq.kruskal.kruskal_uf_specs.
 (*Require Import RamifyCoq.graph.spanning_tree.*)
 
+Require Import RamifyCoq.kruskal.undirected_graph.
+
 Local Open Scope Z_scope.
 
 (*I guess we ought to throw these in a specs_kruskal.v
@@ -66,6 +68,16 @@ Proof.
   assert (Int.min_signed <= -1) by now compute.
   assert (7 <= Int.max_signed) by now compute.
   lia.
+Qed.
+
+Lemma Permutation_Zlength:
+  forall (A : Type) (l l' : list A),
+    Permutation l l' -> Zlength l = Zlength l'.
+Proof.
+  intros.
+  rewrite Zlength_length; [| apply Zlength_nonneg].
+  rewrite Zlength_correct, Nat2Z.id.
+  apply Permutation_length; trivial.
 Qed.
 
 Lemma def_wedgerep_map_w2c:
@@ -132,14 +144,15 @@ Lemma body_kruskal: semax_body Vprog Gprog f_kruskal kruskal_spec.
 Proof.
   start_function.
   unfold wedgearray_graph_rep. Intros.
-  forward. forward. 
+  forward.
+  forward.
   forward_call (sh, (numV g)).
   Intros subsets.
   forward_call (gv, sh).
   Intros mst.
   destruct subsets as [subsetsGraph subsetsPtr].
   destruct mst as [gptr eptr].
-  simpl fst in *. simpl snd in *.
+  simpl fst in *. simpl snd in *. 
   unfold wedgearray_graph_rep. Intros.
   forward.
   forward.
@@ -159,6 +172,7 @@ Proof.
     rewrite Z.mul_0_l.
     assert_PROP (isptr (pointer_val_val eptr)) by
         (rewrite (data_at_isptr sh); entailer!).
+    
     rename H5 into H_eptr_isptr.
     rewrite isptr_offset_val_zero. 2: auto.
     rewrite data_at_zero_array_eq. 2: trivial. 2: auto.
@@ -167,9 +181,56 @@ Proof.
     forward_for_simple_bound
     (numE g)
     (EX i : Z,
-     PROP ()
-     LOCAL (temp _graph_E (Vint (Int.repr (numE g))))
-     SEP ()).
+     EX msf' : FiniteWEdgeListGraph,
+     PROP (is_partial_graph msf' g;
+           uforest msf';
+           True; (* something about min wt *)
+           forall u v, connected subsetsGraph u v -> connected g u v; (*uf represents components of graph*)
+                       forall u v, connected subsetsGraph u v <-> connected msf' u v (*correlation between uf and msf'*))
+     LOCAL (temp _graph_E (Vint (Int.repr (numE g)));
+            temp _graph__1 (pointer_val_val orig_gptr))
+     SEP (data_at sh (tarray t_struct_edge (Zlength sorted)) sorted
+     (pointer_val_val orig_eptr) *
+   data_at sh tint (Vint (Int.repr MAX_EDGES)) (gv _MAX_EDGES) *
+   data_at sh t_wedgearray_graph
+     (Vint (Int.repr (numV g)), (Vint (Int.repr 0), pointer_val_val eptr))
+     (pointer_val_val gptr) *
+   data_at sh (tarray t_struct_edge MAX_EDGES)
+     (list_repeat (Z.to_nat MAX_EDGES) (Vundef, (Vundef, Vundef)))
+     (pointer_val_val eptr) * whole_graph sh subsetsGraph subsetsPtr *
+   data_at sh t_wedgearray_graph
+     (Vint (Int.repr (numV g)),
+     (Vint (Int.repr (numE g)), pointer_val_val orig_eptr))
+     (pointer_val_val orig_gptr) *
+   data_at sh (tarray t_struct_edge (MAX_EDGES - numE g))
+     (list_repeat (Z.to_nat MAX_EDGES - Z.to_nat (numE g))
+        (Vundef, (Vundef, Vundef)))
+     (offset_val (numE g * sizeof t_struct_edge) (pointer_val_val orig_eptr))))%assert.
+    + apply numE_pos.
+    + apply numE_range; trivial.
+    + Exists empty_FiniteWEdgeListGraph.
+      entailer!.
+      (* pure obligations *)
+      admit.
+      (* any SEP obligatins will also appear here, 
+         as a separate goal after the entailer!. 
+         currently there are none because I just 
+         added an overapproximation of SEPs to the 
+         invariant 
+       *)
+    + Intros. forward. forward.
+      * entailer!.
+        rewrite <- (Permutation_Zlength _ _ _ H3).
+        rewrite Zlength_map, g2wedgelist_numE; trivial.
+      * entailer!.
+        rewrite (surjective_pairing (Znth i sorted)).
+        rewrite (surjective_pairing (snd (Znth i sorted))).
+        (* Hrm now we need some statement above the bar
+           (fst (snd (Znth i sorted))) = Vint
+         *)
+        admit.
+      * (* can move on *)
+
 
 Abort.
 
