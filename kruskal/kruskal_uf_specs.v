@@ -107,6 +107,14 @@ Definition mallocK_spec :=
      LOCAL (temp ret_temp (pointer_val_val v))
      SEP (memory_block sh n (pointer_val_val v)).
 
+Definition free_subset_spec :=
+  DECLARE _free_subset
+  WITH h: val
+    PRE [tptr t_subset]
+    PROP () PARAMS (h) GLOBALS () SEP ()
+  POST [tvoid]
+    PROP () LOCAL () SEP ().
+
 (*It'll be useful if we can come up with some freeN spec, then centralize these in some header*)
 
 Definition init_empty_graph_spec :=
@@ -171,4 +179,4 @@ Definition Vprog : varspecs. mk_varspecs prog. Defined.
 Definition Gprog : funspecs :=
   ltac:(with_library prog
                      [mallocN_spec; makeSet_spec; find_spec; union_spec;
-                     mallocK_spec; init_empty_graph_spec; sort_edges_spec; kruskal_spec]).
+                     mallocK_spec; free_subset_spec; init_empty_graph_spec; sort_edges_spec; kruskal_spec]).

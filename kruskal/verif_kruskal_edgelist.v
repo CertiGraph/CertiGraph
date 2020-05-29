@@ -293,7 +293,7 @@ Proof.
     rewrite Int.repr_signed. trivial.
    **
     simpl fst in *. simpl snd in *.
-    entailer!.
+    entailer!.  
     (* subsetsGraph is uf_equiv to subsetsGraph_u 
        is that enough info?
      *)
@@ -314,10 +314,12 @@ Proof.
            the bulk of the proof *)
       admit.
     --- (* no, don't add this edge *)
-      forward. entailer!.
+      forward. entailer!. 
       admit.
     + Intros mst.
-      (* must add a _free spec *)
+      Print free_subset_spec.
+      forward_call ((pointer_val_val subsetsPtr)).
+      
       admit.
 Abort.
 
