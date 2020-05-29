@@ -14,6 +14,20 @@ Definition wedge_to_cdata (wedge : LE*EType) : reptype t_struct_edge :=
     )
   ).
 
+Lemma wedge_to_cdata_wedgerep:
+  forall w, Int.min_signed <= Int.signed (Int.repr (fst w)) <= Int.max_signed ->
+            Int.min_signed <= Int.signed (Int.repr (fst (snd w))) <= Int.max_signed ->
+            Int.min_signed <= Int.signed (Int.repr (snd (snd w))) <= Int.max_signed ->
+            def_wedgerep (wedge_to_cdata w).
+Proof.
+  intros. unfold wedge_to_cdata; unfold def_wedgerep; simpl. lia.
+Qed.
+
+(*
+Corollary map_wedge_cdata_wedgerep:
+*)
+
+
 (*I'm not sure what this is for
 Instance SWEGA_VST: SpatialWEdgeListGraphAssum mpred. Proof. refine (Build_SpatialWEdgeListGraphAssum _ _ _ _ _). Defined.
 
