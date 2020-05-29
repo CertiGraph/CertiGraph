@@ -97,7 +97,7 @@ Proof.
   simpl fst in *; simpl snd in *.
   inversion H2; clear H2.
   rewrite H1, H0, H3. split3; trivial.
-Qed.  
+Qed.
 
 Lemma body_init_empty_graph: semax_body Vprog Gprog f_init_empty_graph init_empty_graph_spec.
 Proof.
@@ -140,6 +140,12 @@ simpl. rewrite data_at_zero_array_eq. entailer!.
 reflexivity. apply H4. rewrite empty_WEdgeListGraph_graph_to_wedgelist. simpl. reflexivity.
 Qed.
 
+Lemma Forall_permutation: forall {A: Type} (al bl: list A) f, Forall f al -> Permutation al bl -> Forall f bl.
+Proof.
+intros. rewrite Forall_forall in *; intros.
+apply H. apply (Permutation_in (l:=bl) (l':=al) x). apply Permutation_sym. apply H0. apply H1.
+Qed.
+
 Lemma body_kruskal: semax_body Vprog Gprog f_kruskal kruskal_spec.
 Proof.
   start_function.
@@ -156,15 +162,16 @@ Proof.
   unfold wedgearray_graph_rep. Intros.
   forward.
   forward.
+  assert (Hdef_g: Forall def_wedgerep (map wedge_to_cdata (graph_to_wedgelist g))) by (apply def_wedgerep_map_w2c).
+  (******************************SORT******************************)
   forward_call ((wshare_share sh), 
                 pointer_val_val orig_eptr,
                 (map wedge_to_cdata (graph_to_wedgelist g))).
   - rewrite Zlength_map, g2wedgelist_numE. entailer!.
   - rewrite Zlength_map, g2wedgelist_numE. entailer!.
   - split3; [| |split]; trivial.
-    + rewrite Zlength_map, g2wedgelist_numE.
+    rewrite Zlength_map, g2wedgelist_numE.
       split; [ apply numE_pos | apply numE_range; trivial].
-    + apply def_wedgerep_map_w2c.
   - Intros sorted.
     (* a little cleanup... *)
     rewrite empty_WEdgeListGraph_numE.
@@ -172,45 +179,48 @@ Proof.
     rewrite Z.mul_0_l.
     assert_PROP (isptr (pointer_val_val eptr)) by
         (rewrite (data_at_isptr sh); entailer!).
-    
     rename H5 into H_eptr_isptr.
     rewrite isptr_offset_val_zero. 2: auto.
     rewrite data_at_zero_array_eq. 2: trivial. 2: auto.
     2: rewrite empty_WEdgeListGraph_graph_to_wedgelist; trivial.
+    assert (Hdef_sorted: Forall def_wedgerep sorted).
+      apply (Forall_permutation _ _ _ Hdef_g H3).
+    (*clear Hdef_g.*)
+    assert (HZlength_sorted: Zlength sorted = numE g).
+      rewrite <- (Permutation_Zlength _ _ _ H3).
+      rewrite Zlength_map. apply g2wedgelist_numE.
     (* done with cleanup. *)
+    (******************************THE BIG NASTY LOOP******************************)
     forward_for_simple_bound
     (numE g)
     (EX i : Z,
      EX msf' : FiniteWEdgeListGraph,
-     PROP (is_partial_graph msf' g;
+     PROP (numV msf' = numV g; (*which combined with below should give vvalid msf' v <-> vvalid g v, see if we need it later*)
+           is_partial_graph msf' g;
            uforest msf';
            True; (* something about min wt *)
            forall u v, connected subsetsGraph u v -> connected g u v; (*uf represents components of graph*)
-                       forall u v, connected subsetsGraph u v <-> connected msf' u v (*correlation between uf and msf'*))
+           forall u v, connected subsetsGraph u v <-> connected msf' u v (*correlation between uf and msf'*))
      LOCAL (temp _graph_E (Vint (Int.repr (numE g)));
             temp _graph__1 (pointer_val_val orig_gptr))
-     SEP (data_at sh (tarray t_struct_edge (Zlength sorted)) sorted
-     (pointer_val_val orig_eptr) *
-   data_at sh tint (Vint (Int.repr MAX_EDGES)) (gv _MAX_EDGES) *
-   data_at sh t_wedgearray_graph
-     (Vint (Int.repr (numV g)), (Vint (Int.repr 0), pointer_val_val eptr))
-     (pointer_val_val gptr) *
-   data_at sh (tarray t_struct_edge MAX_EDGES)
-     (list_repeat (Z.to_nat MAX_EDGES) (Vundef, (Vundef, Vundef)))
-     (pointer_val_val eptr) * whole_graph sh subsetsGraph subsetsPtr *
-   data_at sh t_wedgearray_graph
-     (Vint (Int.repr (numV g)),
-     (Vint (Int.repr (numE g)), pointer_val_val orig_eptr))
-     (pointer_val_val orig_gptr) *
-   data_at sh (tarray t_struct_edge (MAX_EDGES - numE g))
-     (list_repeat (Z.to_nat MAX_EDGES - Z.to_nat (numE g))
-        (Vundef, (Vundef, Vundef)))
-     (offset_val (numE g * sizeof t_struct_edge) (pointer_val_val orig_eptr))))%assert.
-    + apply numE_pos.
+     SEP (
+          (*the irritating global haha*)
+          data_at sh tint (Vint (Int.repr MAX_EDGES)) (gv _MAX_EDGES);
+          (*orig graph with sorted edgelist*)
+          data_at sh (tarray t_struct_edge (Zlength sorted)) sorted (pointer_val_val orig_eptr);
+          data_at sh t_wedgearray_graph (Vint (Int.repr (numV g)), (Vint (Int.repr (numE g)), pointer_val_val orig_eptr)) (pointer_val_val orig_gptr);
+          data_at sh (tarray t_struct_edge (MAX_EDGES - numE g)) (list_repeat (Z.to_nat MAX_EDGES - Z.to_nat (numE g)) (Vundef, (Vundef, Vundef))) (offset_val (numE g * sizeof t_struct_edge) (pointer_val_val orig_eptr));
+          (*msf'. fold this into wedgearray_graph_rep?*)
+          data_at sh (tarray t_struct_edge (numE msf')) (map wedge_to_cdata (graph_to_wedgelist msf')) (pointer_val_val eptr);
+          data_at sh t_wedgearray_graph (Vint (Int.repr (numV msf')), (Vint (Int.repr (numE msf')), pointer_val_val eptr)) (pointer_val_val gptr);
+          data_at sh (tarray t_struct_edge (MAX_EDGES - numE msf')) (list_repeat (Z.to_nat MAX_EDGES - Z.to_nat (numE g)) (Vundef, (Vundef, Vundef))) (offset_val (numE msf' * sizeof t_struct_edge) (pointer_val_val orig_eptr));
+          (*ufgraph*)
+          whole_graph sh subsetsGraph subsetsPtr
+        ))%assert.
     + apply numE_range; trivial.
-    + Exists empty_FiniteWEdgeListGraph.
-      entailer!.
+    + (******PRECON******)
       (* pure obligations *)
+      (*Exists edgeless graph with V vertices*)
       admit.
       (* any SEP obligatins will also appear here, 
          as a separate goal after the entailer!. 
@@ -218,20 +228,16 @@ Proof.
          added an overapproximation of SEPs to the 
          invariant 
        *)
-    + Intros. forward. forward.
-      * entailer!.
-        rewrite <- (Permutation_Zlength _ _ _ H3).
-        rewrite Zlength_map, g2wedgelist_numE; trivial.
+    + (******LOOP BODY******)
+      Intros.
+      assert (Hdef_i: def_wedgerep (Znth i sorted)). {
+        rewrite Forall_forall in Hdef_sorted. apply Hdef_sorted. apply Znth_In. lia. }
+      forward. forward.
       * entailer!.
         rewrite (surjective_pairing (Znth i sorted)).
         rewrite (surjective_pairing (snd (Znth i sorted))).
-        (* Hrm now we need some statement above the bar
-           (fst (snd (Znth i sorted))) = Vint
-         *)
-        admit.
+        apply Hdef_i.
       * (* can move on *)
-
-
 Abort.
 
 (*
