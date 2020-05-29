@@ -3,7 +3,7 @@
 static const int MAX_EDGES = 8;
 
 extern void * mallocK (int n);
-extern void free(void *p);
+extern void free (void *p);
 
 struct edge {
     int weight; //weight at top for minor convenience
@@ -74,6 +74,10 @@ void free_graph(struct graph * graph) {
     free(graph);
 }
 
+void free_subset(struct subset * subset) {
+    free(subset);
+}
+
 struct graph *kruskal(struct graph *graph) {
     int graph_V = graph->V;
     int graph_E = graph->E;
@@ -84,6 +88,7 @@ struct graph *kruskal(struct graph *graph) {
     mst->V = graph_V;
 
     sort_edges(graph->edge_list, graph_E); //because the new sort_spec now gives the length of the list instead of the index of the last element
+    
     for (int i = 0; i < graph_E; ++i) {
         //extract the data
 
@@ -104,6 +109,6 @@ struct graph *kruskal(struct graph *graph) {
         }
     }
 
-    free(subsets);
+    free_subset(subsets);
     return mst;
 }
