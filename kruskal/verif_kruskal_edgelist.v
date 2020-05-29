@@ -190,7 +190,7 @@ Proof.
       rewrite <- (Permutation_Zlength _ _ _ H3).
       rewrite Zlength_map. apply g2wedgelist_numE.
     (* done with cleanup. *)
-    (******************************THE BIG NASTY LOOP******************************)
+    (******************************THE BIG NASTY LOOP******************************) 
      forward_for_simple_bound
     (numE g)
     (EX i : Z,
@@ -203,7 +203,8 @@ Proof.
            forall u v, connected subsetsGraph u v <-> connected msf' u v (*correlation between uf and msf'*))
      LOCAL (temp _graph_E (Vint (Int.repr (numE g)));
             temp _graph__1 (pointer_val_val orig_gptr);
-            temp _subsets (pointer_val_val subsetsPtr))
+            temp _subsets (pointer_val_val subsetsPtr);
+            temp _mst (pointer_val_val gptr))
      SEP (
           (*the irritating global haha*)
           data_at sh tint (Vint (Int.repr MAX_EDGES)) (gv _MAX_EDGES);
@@ -315,11 +316,10 @@ Proof.
       admit.
     --- (* no, don't add this edge *)
       forward. entailer!. 
-      admit.
+      admit. 
     + Intros mst.
-      Print free_subset_spec.
       forward_call ((pointer_val_val subsetsPtr)).
-      
+      forward.
       admit.
 Abort.
 
