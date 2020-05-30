@@ -587,8 +587,22 @@ Proof.
   3,4: rewrite Zlength_upd_Znth. 2,3,4,5: rewrite Zlength_map; lia.
   repeat rewrite Znth_map. 2,3: lia.
   (* This is ugly and very confusing, if you try to "forward" now, or anywhere between the cleanup and here... *)
-  replace (let (x, _) := heap_item_rep (Znth k arr_contents) in x) with (fst (heap_item_rep (Znth k arr_contents))) by trivial.
-
+  rewrite (surjective_pairing (heap_item_rep (Znth j arr_contents))).
+  rewrite (surjective_pairing (heap_item_rep (Znth k arr_contents))).
+  rewrite (surjective_pairing (snd (heap_item_rep (Znth k arr_contents)))).
+  rewrite (surjective_pairing (snd (heap_item_rep (Znth j arr_contents)))).
+  rewrite (surjective_pairing (Znth k
+                     (upd_Znth j (map heap_item_rep arr_contents)
+                        (fst (heap_item_rep (Znth j arr_contents)),
+                        (fst (snd (heap_item_rep (Znth k arr_contents))),
+                         snd (snd (heap_item_rep (Znth j arr_contents)))))))).
+  rewrite (surjective_pairing (snd
+                   (Znth k
+                      (upd_Znth j (map heap_item_rep arr_contents)
+                         (fst (heap_item_rep (Znth j arr_contents)),
+                         (fst (snd (heap_item_rep (Znth k arr_contents))),
+                          snd (snd (heap_item_rep (Znth j arr_contents))))))))).
+  
   (* plan: split3 in the last data_at *)
   remember ((fst (heap_item_rep (Znth k arr_contents)))) as key2.
   destruct key2; try inversion Heqkey2.
@@ -622,8 +636,10 @@ Proof.
  
   (* and now let's give them exactly what they want *)
   (* note the tuint / tint mismatch. 
-     I chose "Tarray tint" because that's what I can prove in SEP
-   *)
+     I chose "Tarray tint" because that's closest to what I actually have in SEP:
+     (field_address0 (Tarray tint (Zlength lookup_contents) noattr)
+       [ArraySubsc i_Z] lookup)
+   *) 
   assert_PROP ((force_val (sem_add_ptr_int tuint Unsigned lookup (Vint i)) =
                 field_address (Tarray tint (Zlength lookup_contents) noattr)
                               [ArraySubsc i_Z] lookup)).
