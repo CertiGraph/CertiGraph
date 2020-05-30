@@ -616,26 +616,29 @@ Proof.
   
   Intros.
   replace (i_Z + 1 - i_Z) with 1 by lia.
-  Fail forward.
-  rewrite Heqi_Z, Heqlc.
-  rewrite Znth_map by admit.
+  (* okay. let's just hang on to this cleanup from last night. *)
 
-  rewrite <- Heqi_Z, H3.
-  Fail forward. (* aw man *)
+  Fail forward. (* fine... *)
+ 
+  (* and now let's give them exactly what they want *)
+  (* note the tuint / tint mismatch. 
+     I chose "Tarray tint" because that's what I can prove in SEP
+   *)
+  assert_PROP ((force_val (sem_add_ptr_int tuint Unsigned lookup (Vint i)) =
+                field_address (Tarray tint (Zlength lookup_contents) noattr)
+                              [ArraySubsc i_Z] lookup)).
+  { admit. }
+    
+  Fail forward. (* may be the issue at hand? *)
 
-  unfold field_address0 at 1.
-  destruct (field_compatible0_dec (Tarray tint (Zlength lookup_contents) noattr)
-                                  [ArraySubsc (Int.signed i)] lookup).
-  - assert (isptr lookup) by admit. (* can probably get it from assert_PROP *)
-    destruct lookup; try inversion H2.
-    simpl offset_val.
-    Fail forward.
-    (* oh groan, I was really hoping it would succeed at this point.
-       checking in... but hopefully this got us a bit further along?
-     *)
-    admit.
-  - (* really shouldn't get here... *)
-    admit.
+  (* so now, just for argument's sake, let's bend to their will even more... *)
+  (* the change is tint --> tuint in Tarray's argument *)
+  assert_PROP ((force_val (sem_add_ptr_int tuint Unsigned lookup (Vint i)) =
+                field_address (Tarray tuint (Zlength lookup_contents) noattr)
+                              [ArraySubsc i_Z] lookup)).
+  { admit. }
+    
+  Fail forward. (* well I sorta asked for that *)
   
   
 Admitted.
