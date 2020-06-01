@@ -17,7 +17,6 @@ Require Import RamifyCoq.kruskal.WeightedEdgeListGraph.
 Require Import RamifyCoq.kruskal.env_kruskal_edgelist.
 Require Import RamifyCoq.kruskal.spatial_wedgearray_graph.
 
-
 (* UNION FIND SPECS *)
 
 Local Open Scope Z_scope.
@@ -87,10 +86,7 @@ Definition union_spec :=
         LOCAL ()
         SEP (whole_graph sh g' subsets).
 
-
-
 (* KRUSKAL SPECS *)
-
 
 (*Taken from VST's queue*)
 Definition mallocK_spec :=
@@ -129,8 +125,11 @@ Definition init_empty_graph_spec :=
      EX gptr eptr: pointer_val,
      PROP ()
      LOCAL (temp ret_temp (pointer_val_val gptr))
-     SEP (data_at sh tint (Vint (Int.repr MAX_EDGES)) (gv _MAX_EDGES) *
-          wedgearray_graph_rep sh empty_FiniteWEdgeListGraph gptr eptr).
+     SEP ( (*explicit graph rep*)
+          data_at sh tint (Vint (Int.repr MAX_EDGES)) (gv _MAX_EDGES);
+          data_at sh (t_wedgearray_graph) (Vint (Int.repr 0), (Vint (Int.repr 0), pointer_val_val eptr)) (pointer_val_val gptr);
+          data_at sh (tarray t_struct_edge (MAX_EDGES)) (list_repeat (Z.to_nat MAX_EDGES) (Vundef, (Vundef, Vundef))) (pointer_val_val eptr)
+         ).
 
 Definition sort_edges_spec :=
  DECLARE _sort_edges
@@ -151,28 +150,45 @@ Definition sort_edges_spec :=
 
 Definition kruskal_spec :=
   DECLARE _kruskal
-  WITH gv: globals, sh: wshare, g: FiniteWEdgeListGraph, orig_gptr : pointer_val, orig_eptr : pointer_val
+  WITH gv: globals, sh: wshare, g: FiniteWEdgeListGraph, orig_gptr : pointer_val, orig_eptr : pointer_val,
+       glist: list (LE*EType)
   PRE [tptr t_wedgearray_graph]
   PROP (sound_weighted_edge_graph g;
+        forall v, 0 <= v < (numV g) <-> vvalid g v;
         numE g <= MAX_EDGES;
-        0 < numV g <= Int.max_signed / 8)
+        0 < numV g <= Int.max_signed / 8;
+        Permutation (graph_to_wedgelist g) glist
+       )
    PARAMS ((pointer_val_val orig_gptr))
    GLOBALS (gv)
    SEP (data_at sh tint (Vint (Int.repr MAX_EDGES)) (gv _MAX_EDGES);
-        wedgearray_graph_rep sh g orig_gptr orig_eptr)
+        (**original graph*)
+          data_at sh (t_wedgearray_graph) (Vint (Int.repr (numV g)), (Vint (Int.repr (numE g)), pointer_val_val orig_eptr)) (pointer_val_val orig_gptr);
+          data_at sh (tarray t_struct_edge (numE g)) (map wedge_to_cdata glist) (pointer_val_val orig_eptr);
+          data_at sh (tarray t_struct_edge (MAX_EDGES - (numE g))) (list_repeat (Z.to_nat MAX_EDGES - Z.to_nat (numE g)) (Vundef, (Vundef, Vundef))) (offset_val ((numE g) * sizeof t_struct_edge) (pointer_val_val orig_eptr))
+        )
   POST [tptr t_wedgearray_graph]
    EX msf_gptr msf_eptr: pointer_val,
-   EX (msf: FiniteWEdgeListGraph),
+   EX msf: FiniteWEdgeListGraph,
+   EX msflist: list (LE*EType),
    PROP (sound_weighted_edge_graph msf;
         (numE msf) <= MAX_EDGES;
+        Permutation msflist (graph_to_wedgelist msf);
         minimum_spanning_forest (lg_gg g) (lg_gg msf)
                                  Z.add
                                  0
                                  Z.le)
    LOCAL (temp ret_temp (pointer_val_val msf_gptr))
    SEP (data_at sh tint (Vint (Int.repr MAX_EDGES)) (gv _MAX_EDGES);
-        wedgearray_graph_rep sh g orig_gptr orig_eptr;
-       wedgearray_graph_rep sh msf msf_gptr msf_eptr).
+        (*original graph*)
+          data_at sh (t_wedgearray_graph) (Vint (Int.repr (numV g)), (Vint (Int.repr (numE g)), pointer_val_val orig_eptr)) (pointer_val_val orig_gptr);
+          data_at sh (tarray t_struct_edge (numE g)) (map wedge_to_cdata glist) (pointer_val_val orig_eptr);
+          data_at sh (tarray t_struct_edge (MAX_EDGES - (numE g))) (list_repeat (Z.to_nat MAX_EDGES - Z.to_nat (numE g)) (Vundef, (Vundef, Vundef))) (offset_val ((numE g) * sizeof t_struct_edge) (pointer_val_val orig_eptr));
+        (*mst*)
+          data_at sh (t_wedgearray_graph) (Vint (Int.repr (numV msf)), (Vint (Int.repr (numE msf)), pointer_val_val msf_eptr)) (pointer_val_val msf_gptr);
+          data_at sh (tarray t_struct_edge (numE msf)) (map wedge_to_cdata msflist) (pointer_val_val msf_eptr);
+          data_at sh (tarray t_struct_edge (MAX_EDGES - (numE msf))) (list_repeat (Z.to_nat MAX_EDGES - Z.to_nat (numE msf)) (Vundef, (Vundef, Vundef))) (offset_val ((numE msf) * sizeof t_struct_edge) (pointer_val_val msf_eptr))
+).
 
 Definition Vprog : varspecs. mk_varspecs prog. Defined.
 

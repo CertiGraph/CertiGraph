@@ -14,8 +14,6 @@ Definition wedgerep := reptype t_struct_edge.
 Instance wedgerep_inhabitant : Inhabitant wedgerep :=
                                     (Vundef, (Vundef, Vundef)).
 
-Definition t_subset := Tstruct _subset noattr.
-
 
 (*Warning: reptype of a struct doesn’t destruct nicely*)
 Definition def_wedgerep (x: reptype t_struct_edge) :=
