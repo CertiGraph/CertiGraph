@@ -195,13 +195,14 @@ Proof.
     (numE g)
     (EX i : Z,
      EX msf' : FiniteWEdgeListGraph,
-     EX subsetsGraph' : UFGraph,                 
+     EX subsetsGraph' : UFGraph,                      
      PROP (numV msf' = numV g; (*which combined with below should give vvalid msf' v <-> vvalid g v, see if we need it later*)
            is_partial_graph msf' g;
            uforest msf';
            True; (* something about min wt *)
            forall u v, connected subsetsGraph u v -> connected g u v; (*uf represents components of graph*)
-           forall u v, connected subsetsGraph u v <-> connected msf' u v (*correlation between uf and msf'*))
+           forall u v, connected subsetsGraph u v <-> connected msf' u v (*correlation between uf and msf'*);
+           uf_equiv subsetsGraph subsetsGraph')
      LOCAL (temp _graph_E (Vint (Int.repr (numE g)));
             temp _graph__1 (pointer_val_val orig_gptr);
             temp _subsets (pointer_val_val subsetsPtr);
@@ -218,9 +219,8 @@ Proof.
           data_at sh t_wedgearray_graph (Vint (Int.repr (numV msf')), (Vint (Int.repr (numE msf')), pointer_val_val eptr)) (pointer_val_val gptr);
           data_at sh (tarray t_struct_edge (MAX_EDGES - numE msf')) (list_repeat (Z.to_nat MAX_EDGES - Z.to_nat (numE g)) (Vundef, (Vundef, Vundef))) (offset_val (numE msf' * sizeof t_struct_edge) (pointer_val_val orig_eptr));
           (*ufgraph*)
-          whole_graph sh subsetsGraph subsetsPtr;
           whole_graph sh subsetsGraph' subsetsPtr
-        ))%assert.
+    ))%assert.
     + apply numE_range; trivial.
     + (******PRECON******)
       (* pure obligations *)
@@ -251,6 +251,7 @@ Proof.
  --
   rewrite (surjective_pairing (Znth i sorted)).
   rewrite (surjective_pairing (snd (Znth i sorted))).
+  
   forward_call (sh,
                 subsetsGraph,
                 subsetsPtr,
@@ -267,25 +268,38 @@ Proof.
    simpl.
    rewrite Int.repr_signed. trivial.
   ++
+   (* Hrmm I don't understand why this goal is 
+      being presented to me.
+      _find_ clobbered the old subsetsGraph and gave me
+      (what I will be calling) subsetsGraph_u.
+    *)
+    admit.
+  ++
    apply H2.
    destruct Hdef_i as [_ [? _]].
-   apply is_int_e in H11.
-   destruct H11 as [? [? _]].
-   rewrite H11. simpl.
+   apply is_int_e in H12.
+   destruct H12 as [? [? _]].
+   rewrite H12. simpl.
    admit. (* leaving for WX *)
   ++
    Intros u_root.
    destruct u_root as [subsetsGraph_u u_root].
-   (* i.e., the UFGraph after finding u, 
-            and u's root 
+   (* 1. the UFGraph after finding u
+      2. u's root 
     *)
+   simpl fst.
    forward_call (sh,
                  subsetsGraph_u,
                  subsetsPtr,
                  (force_signed_int
                     (snd (snd (Znth i sorted))))).
    **
-    entailer!. simpl.
+    entailer!.
+   ** 
+    entailer!.
+   **
+    entailer!.
+    simpl.
     clear - Hdef_i.
     destruct Hdef_i as [_ [_ ?]].
     apply is_int_e in H.
@@ -294,8 +308,6 @@ Proof.
     replace ((snd (snd (Znth i sorted)))) with (Vint x).
     simpl.
     rewrite Int.repr_signed. trivial.
-   **
-    simpl fst in *. simpl snd in *. entailer!.  
    **
     admit. (* leaving for WX *)
    **
@@ -307,8 +319,8 @@ Proof.
            the bulk of the proof *)
       admit.
     --- (* no, don't add this edge *)
-      forward. entailer!. 
-      admit. 
+      forward. entailer!.
+      admit.
     + Intros mst.
       Intros subsetsGraph'.
       forward_call ((pointer_val_val subsetsPtr)).
