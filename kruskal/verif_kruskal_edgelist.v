@@ -134,10 +134,7 @@ forward.
 forward.
 forward.
 Exists gptr eptr.
-unfold wedgearray_graph_rep.
-rewrite empty_WEdgeListGraph_numV. rewrite empty_WEdgeListGraph_numE.
-simpl. rewrite data_at_zero_array_eq. entailer!.
-reflexivity. apply H4. rewrite empty_WEdgeListGraph_graph_to_wedgelist. simpl. reflexivity.
+entailer!.
 Qed.
 
 Lemma Forall_permutation: forall {A: Type} (al bl: list A) f, Forall f al -> Permutation al bl -> Forall f bl.
@@ -149,7 +146,6 @@ Qed.
 Lemma body_kruskal: semax_body Vprog Gprog f_kruskal kruskal_spec.
 Proof.
   start_function.
-  unfold wedgearray_graph_rep. Intros.
   forward.
   forward.
   forward_call (sh, (numV g)).
@@ -159,46 +155,51 @@ Proof.
   destruct subsets as [subsetsGraph subsetsPtr].
   destruct mst as [gptr eptr].
   simpl fst in *. simpl snd in *. 
-  unfold wedgearray_graph_rep. Intros.
   forward.
   forward.
   assert (Hdef_g: Forall def_wedgerep (map wedge_to_cdata (graph_to_wedgelist g))) by (apply def_wedgerep_map_w2c).
+  assert (Hperm_glist: Permutation (map wedge_to_cdata (graph_to_wedgelist g)) (map wedge_to_cdata glist)). apply Permutation_map. auto.
+  assert (Hdef_glist: Forall def_wedgerep (map wedge_to_cdata glist)) by (apply (Forall_permutation _ _ _ Hdef_g Hperm_glist)).
+  assert (HZlength_glist: Zlength (map wedge_to_cdata glist) = numE g). {
+    rewrite <- (Permutation_Zlength (reptype t_struct_edge) (map wedge_to_cdata (graph_to_wedgelist g)) (map wedge_to_cdata glist) Hperm_glist).
+    rewrite Zlength_map. apply g2wedgelist_numE.
+  } rewrite <- HZlength_glist.
   (******************************SORT******************************) 
   forward_call ((wshare_share sh), 
                 pointer_val_val orig_eptr,
-                (map wedge_to_cdata (graph_to_wedgelist g))).
-  - rewrite Zlength_map, g2wedgelist_numE. entailer!.
-  - rewrite Zlength_map, g2wedgelist_numE. entailer!.
+                (map wedge_to_cdata glist)).
+  (*- entailer!. simpl. rewrite HZlength_glist. reflexivity.
+  - rewrite HZlength_glist. entailer!. rewrite Zlength_map, g2wedgelist_numE. entailer!.*)
   - split3; [| |split]; trivial.
-    rewrite Zlength_map, g2wedgelist_numE.
+    rewrite HZlength_glist.
       split; [ apply numE_pos | apply numE_range; trivial].
   - Intros sorted.
     (* a little cleanup... *)
-    rewrite empty_WEdgeListGraph_numE.
+    (*rewrite empty_WEdgeListGraph_numE.
     rewrite <- Z2Nat.inj_sub, Z.sub_0_r. 2: lia.
-    rewrite Z.mul_0_l.
+    rewrite Z.mul_0_l.*)
     assert_PROP (isptr (pointer_val_val eptr)) by
         (rewrite (data_at_isptr sh); entailer!).
-    rename H5 into H_eptr_isptr.
-    rewrite isptr_offset_val_zero. 2: auto.
-    rewrite data_at_zero_array_eq. 2: trivial. 2: auto.
-    2: rewrite empty_WEdgeListGraph_graph_to_wedgelist; trivial.
-    assert (Hdef_sorted: Forall def_wedgerep sorted).
-      apply (Forall_permutation _ _ _ Hdef_g H3).
+    rename H7 into H_eptr_isptr.
+    assert (Hdef_sorted: Forall def_wedgerep sorted). {
+      apply (Forall_permutation _ _ _ Hdef_glist H5).
+    }
     (*clear Hdef_g.*)
-    assert (HZlength_sorted: Zlength sorted = numE g).
-      rewrite <- (Permutation_Zlength _ _ _ H3).
-      rewrite Zlength_map. apply g2wedgelist_numE.
+    assert (HZlength_sorted: Zlength sorted = numE g). {
+      rewrite <- (Permutation_Zlength _ _ _ H5). apply HZlength_glist.
+    } rewrite HZlength_glist. rewrite HZlength_sorted.
     (* done with cleanup. *)
     (******************************THE BIG NASTY LOOP******************************) 
-     forward_for_simple_bound
+    forward_for_simple_bound
     (numE g)
     (EX i : Z,
      EX msf' : FiniteWEdgeListGraph,
+     EX msflist: list (LE*EType),
      EX subsetsGraph' : UFGraph,                      
      PROP (numV msf' = numV g; (*which combined with below should give vvalid msf' v <-> vvalid g v, see if we need it later*)
            is_partial_graph msf' g;
            uforest msf';
+           Permutation msflist (graph_to_wedgelist msf');
            True; (* something about min wt *)
            forall u v, connected subsetsGraph' u v -> connected g u v; (*uf represents components of graph*)
            forall u v, connected subsetsGraph' u v <-> connected msf' u v; (*correlation between uf and msf'*)
@@ -211,27 +212,43 @@ Proof.
           (*the irritating global haha*)
           data_at sh tint (Vint (Int.repr MAX_EDGES)) (gv _MAX_EDGES);
           (*orig graph with sorted edgelist*)
-          data_at sh (tarray t_struct_edge (Zlength sorted)) sorted (pointer_val_val orig_eptr);
+          data_at sh (tarray t_struct_edge (numE g)) sorted (pointer_val_val orig_eptr);
           data_at sh t_wedgearray_graph (Vint (Int.repr (numV g)), (Vint (Int.repr (numE g)), pointer_val_val orig_eptr)) (pointer_val_val orig_gptr);
           data_at sh (tarray t_struct_edge (MAX_EDGES - numE g)) (list_repeat (Z.to_nat MAX_EDGES - Z.to_nat (numE g)) (Vundef, (Vundef, Vundef))) (offset_val (numE g * sizeof t_struct_edge) (pointer_val_val orig_eptr));
           (*msf'. fold this into wedgearray_graph_rep?*)
-          data_at sh (tarray t_struct_edge (numE msf')) (map wedge_to_cdata (graph_to_wedgelist msf')) (pointer_val_val eptr);
+          data_at sh (tarray t_struct_edge (numE msf')) (map wedge_to_cdata msflist) (pointer_val_val eptr);
           data_at sh t_wedgearray_graph (Vint (Int.repr (numV msf')), (Vint (Int.repr (numE msf')), pointer_val_val eptr)) (pointer_val_val gptr);
-          data_at sh (tarray t_struct_edge (MAX_EDGES - numE msf')) (list_repeat (Z.to_nat MAX_EDGES - Z.to_nat (numE g)) (Vundef, (Vundef, Vundef))) (offset_val (numE msf' * sizeof t_struct_edge) (pointer_val_val orig_eptr));
+          data_at sh (tarray t_struct_edge (MAX_EDGES - numE msf')) (list_repeat (Z.to_nat MAX_EDGES - Z.to_nat (numE msf')) (Vundef, (Vundef, Vundef))) (offset_val (numE msf' * sizeof t_struct_edge) (pointer_val_val eptr));
           (*ufgraph*)
           whole_graph sh subsetsGraph' subsetsPtr
     ))%assert.
     + apply numE_range; trivial.
     + (******PRECON******)
-      (* pure obligations *)
-      (*Exists edgeless graph with V vertices*)
-      admit.
-      (* any SEP obligatins will also appear here, 
-         as a separate goal after the entailer!. 
-         currently there are none because I just 
-         added an overapproximation of SEPs to the 
-         invariant 
-       *)
+      Exists (edgeless_WEdgeGraph (numV g)).
+      (*Exists (nil (A:=LE*EType)).*) Exists (graph_to_wedgelist (edgeless_WEdgeGraph (numV g))).
+      Exists subsetsGraph.
+      rewrite edgeless_WEdgeGraph_numV by lia.
+      rewrite edgeless_WEdgeGraph_numE. rewrite Z.sub_0_r.
+      replace ((Z.to_nat MAX_EDGES - Z.to_nat 0)%nat) with (Z.to_nat MAX_EDGES) by lia.
+      rewrite data_at_zero_array_eq. 2: simpl; auto. 2: auto.
+      2: { unfold graph_to_wedgelist. rewrite edgeless_WEdgeGraph_EList. simpl; auto. }
+      entailer!. (*LAAAAAAAAG*)
+      split.
+        unfold is_partial_graph. repeat split.
+        intros. rewrite <- edgeless_WEdgeGraph_vvalid in H25. apply H0. auto.
+        intros. rewrite <- EList_evalid in H25. rewrite edgeless_WEdgeGraph_EList in H25. contradiction.
+        intros. rewrite <- EList_evalid in H25. rewrite edgeless_WEdgeGraph_EList in H25. contradiction.
+        intros. rewrite <- EList_evalid in H25. rewrite edgeless_WEdgeGraph_EList in H25. contradiction.
+      split.
+        unfold uforest. unfold acyclic_ugraph.
+        admit. (*this is where I need to question whether my definitions are good...*)
+      split.
+        admit. (*look at spec of MakeSet and see what kind of graph it is*)
+      split.
+        admit.
+      unfold uf_equiv. split.
+        intros; split; auto.
+        intros. (*apply (uf_root_unique subsetsGraph ? ?).*) admit.
     + (******LOOP BODY******)
       Intros.
       assert (Hdef_i: def_wedgerep (Znth i sorted)). {
@@ -267,13 +284,19 @@ Proof.
   simpl.
   rewrite Int.repr_signed. trivial.
  ++
-  destruct H11 as [? _].
-  rewrite <- H11.
-  apply H2.
+  destruct H14 as [? _].
+  rewrite <- H14.
+  apply H4.
   destruct Hdef_i as [_ [? _]].
-  apply is_int_e in H12.
-  destruct H12 as [? [? _]].
-  rewrite H12. simpl.
+  apply is_int_e in H15.
+  destruct H15 as [? [? _]].
+  rewrite H15. simpl.
+    (*In (Znth i sorted) sorted, which is a Permutation of map wedge_to_cdata glist
+      so In (Znth i sorted) map wedge_to_cdata glist
+      ??? thus, exists e, eevalid g e /\ (Znth i sorted) = wedge_to_cdata e <--add such a lemma to spatial
+      destruct eevalid g e -> vvalid g (fst (snd e))
+      then use the newly added H4
+    *)
   admit.  (* leaving for WX *)
  ++
   Intros u_root.
@@ -299,15 +322,21 @@ Proof.
    simpl.
    rewrite Int.repr_signed. trivial.
   **
-   simpl fst in H12.
-   destruct H12 as [? _].
-   destruct H11 as [? _].
-   rewrite <- H12, <- H11.
-   apply H2.
+   simpl fst in H15.
+   destruct H15 as [? _].
+   destruct H14 as [? _].
+   rewrite <- H15, <- H14.
+   apply H4.
    destruct Hdef_i as [_ [_ ?]].
-   apply is_int_e in H14.
-   destruct H14 as [? [? _]].
-   rewrite H14. simpl.
+   apply is_int_e in H17.
+   destruct H17 as [? [? _]].
+   rewrite H17. simpl.
+    (*In (Znth i sorted) sorted, which is a Permutation of map wedge_to_cdata glist
+      so In (Znth i sorted) map wedge_to_cdata glist
+      ??? thus, exists e, eevalid g e /\ (Znth i sorted) = wedge_to_cdata e
+      destruct eevalid g e -> vvalid g (snd (snd e))
+      then use the newly added H4
+    *)
   admit. (* leaving for WX *)
   **
    Intros v_root.
@@ -320,7 +349,7 @@ Proof.
    --- (* no, don't add this edge *)
     forward. entailer!.
     (* the variables are uncertain but here's a guess: *)
-    Exists msf' subsetsGraph_uv.
+    Exists msf' msflist subsetsGraph_uv.
     assert (uf_equiv subsetsGraph_uv subsetsGraph') by admit.
     entailer!.
 
@@ -331,23 +360,23 @@ Proof.
         connected g1 u v <->
         connected g2 u v.
     Proof.
-      (* does this look reasonable to you?? *)
+      (* does this look reasonable to you?? *) (*yep looks reasonable*)
     Admitted.
     Unset Nested Proofs Allowed.
     
     split3; intros.
     +++
-     apply H9.
-     apply (uf_equiv_connected H39); trivial.
+     apply H12.
+     apply (uf_equiv_connected H43); trivial.
     +++
-      rewrite <- H10.
+      rewrite <- H13.
       apply uf_equiv_connected; trivial.
     +++
       (* probably can make this work with u
          uf_equiv_trans
        *)
      admit.
-    + Intros mst.
+    + Intros msf. Intros msflist.
        Intros subsetsGraph'.
       forward_call ((pointer_val_val subsetsPtr)).
       forward.

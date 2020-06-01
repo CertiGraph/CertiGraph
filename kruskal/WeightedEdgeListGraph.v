@@ -103,12 +103,44 @@ Definition numE (g: FiniteWEdgeListGraph) : Z := Zlength (EList g).
 
 (* from Graph to list of edges *)
 Definition graph_to_wedgelist (g: FiniteWEdgeListGraph) : list (LE * EType) :=
-  map (fun e => (elabel g e, e)) (EList g). (*ordering?*)
+  map (fun e => (elabel g e, e)) (EList g). (*ordering unknown*)
+
+(* Moving on to Spatial Rep *)
+
+Section SpatialWEdgeListGraph.
+  
+  Class SpatialWEdgeListGraphAssum (Pred : Type):= (*what is this?*)
+    {
+    SGP_ND: NatDed Pred;
+    SGP_SL : SepLog Pred;
+    SGP_ClSL: ClassicalSep Pred;
+    SGP_CoSL: CorableSepLog Pred
+    }.
+  
+  Class SpatialWEdgeListGraph (Addr: Type) (Pred: Type) :=
+    abstract_data_at: Addr -> list (LE*EType) -> Pred.
+
+  Context {Pred: Type}.
+  Context {Addr: Type}.
+  Context {SAGP: SpatialWEdgeListGraphAssum Pred}.
+  Context {SAG: SpatialWEdgeListGraph Addr Pred}.
+  
+End SpatialWEdgeListGraph.
 
 
+Lemma if_true_bool:
+  forall (T : Type) (a : T) (b : bool) (c : T),
+    b = true -> (if b then a else c) = a.
+Proof. intros. rewrite H. trivial. Qed.
+
+Lemma if_false_bool:
+  forall (T : Type) (a : T) (b : bool) (c : T),
+    b = false -> (if b then a else c) = c.
+Proof. intros. rewrite H. trivial. Qed.
+
+
+(*******************SPECIFIC TYPES OF GRAPHS********************)
 (*Example of a WEdgeListGraph (returned by init_empty_graph*)
-(*ASDF: Change this into a FiniteWEdgeListGraph (the generalgraph as defined above)
-so we don't have to lug {FiniteGraph g} around *)
 Definition empty_WEdgeListGraph : WEdgeListGraph :=
   (empty_labeledgraph (fun e => fst e) (fun e => snd e) (tt: LV) (0: LE) (tt: LG)).
 
@@ -197,35 +229,153 @@ Proof.
 unfold graph_to_wedgelist. rewrite empty_WEdgeListGraph_EList. reflexivity.
 Qed.
 
-(* Moving on to Spatial Rep *)
+(**********Edgeless graph with V vertices*************)
+(*Built off empty WEdgelessGraph*)
+(*This is a really roundabout way...*)
+(*Skipping an arbitrary list of vertices, because we need NoDup, and our design forbids the skipping of vertices anyway *)
 
-Section SpatialWEdgeListGraph.
-  
-  Class SpatialWEdgeListGraphAssum (Pred : Type):= (*what is this?*)
-    {
-    SGP_ND: NatDed Pred;
-    SGP_SL : SepLog Pred;
-    SGP_ClSL: ClassicalSep Pred;
-    SGP_CoSL: CorableSepLog Pred
-    }.
-  
-  Class SpatialWEdgeListGraph (Addr: Type) (Pred: Type) :=
-    abstract_data_at: Addr -> list (LE*EType) -> Pred.
+Definition Zseq (z: Z) : list Z :=
+map Z.of_nat (seq 0%nat (Z.to_nat z)).
 
-  Context {Pred: Type}.
-  Context {Addr: Type}.
-  Context {SAGP: SpatialWEdgeListGraphAssum Pred}.
-  Context {SAG: SpatialWEdgeListGraph Addr Pred}.
-  
-End SpatialWEdgeListGraph.
+Lemma Zseq_NoDup:
+forall z, NoDup (Zseq z).
+Proof.
+unfold Zseq; intros. destruct z; simpl; try apply NoDup_nil.
+apply FinFun.Injective_map_NoDup.
+unfold FinFun.Injective. apply Nat2Z.inj.
+apply seq_NoDup.
+Qed.
 
+Lemma Zseq_In:
+forall z x, In x (Zseq z) <-> 0 <= x < z.
+Proof.
+intros; unfold Zseq; simpl; split; intros.
++ destruct x; destruct z; try inversion H.
+  lia.
+  apply Coqlib.list_in_map_inv in H. destruct H. destruct H. rewrite in_seq in H0. lia.
+  apply Coqlib.list_in_map_inv in H. destruct H. destruct H.
+  assert (Z.neg p < 0) by (apply Pos2Z.neg_is_neg). assert (0 <= Z.of_nat x) by (apply Nat2Z.is_nonneg). lia.
++ destruct x; destruct z; try lia.
+  apply (in_map Z.of_nat (seq 0 (Z.to_nat (Z.pos p))) 0%nat). rewrite in_seq.
+  simpl. lia. rewrite <- positive_nat_Z.
+  apply (in_map Z.of_nat (seq 0 (Z.to_nat (Z.pos p0))) (Pos.to_nat p)). rewrite in_seq. lia.
+Qed.
 
-Lemma if_true_bool:
-  forall (T : Type) (a : T) (b : bool) (c : T),
-    b = true -> (if b then a else c) = a.
-Proof. intros. rewrite H. trivial. Qed.
+Corollary Zseq_Zlength:
+forall z, 0 <= z -> Zlength (Zseq z) = z.
+Proof.
+intros. unfold Zseq. rewrite (Zlength_map nat Z Z.of_nat (seq 0 (Z.to_nat z))).
+rewrite Zlength_correct. rewrite seq_length.
+apply Z2Nat.id. lia.
+Qed.
 
-Lemma if_false_bool:
-  forall (T : Type) (a : T) (b : bool) (c : T),
-    b = false -> (if b then a else c) = c.
-Proof. intros. rewrite H. trivial. Qed.
+Definition edgeless_WEdgeLGraph (z: Z): WEdgeListGraph :=
+@Build_LabeledGraph VType EType V_EqDec E_EqDec LV LE LG
+  (@Build_PreGraph VType EType V_EqDec E_EqDec (fun v => 0 <= v < z) (fun e => False) fst snd)
+  (fun v => tt) (fun e => 0) tt.
+
+Instance Sound_edgeless_WEdgeLGraph (z: Z):
+  Fin (edgeless_WEdgeLGraph z).
+Proof.
+constructor. constructor; unfold EnumEnsembles.Enumerable.
+exists (Zseq z); split. apply Zseq_NoDup.
+unfold edgeless_WEdgeLGraph. simpl. intros. apply Zseq_In.
+exists nil. simpl. split. apply NoDup_nil. intros; split; intros; auto.
+Qed.
+
+Definition edgeless_WEdgeGraph (z: Z): FiniteWEdgeListGraph :=
+  @Build_GeneralGraph VType EType V_EqDec E_EqDec LV LE LG Fin
+    (WEdgeListGraph_LabeledGraph (edgeless_WEdgeLGraph z)) (Sound_edgeless_WEdgeLGraph z).
+
+Lemma edgeless_WEdgeGraph_vvalid:
+forall v k, 0 <= k < v <-> vvalid (edgeless_WEdgeGraph v) k.
+Proof.
+simpl. intros; split; intros; auto.
+Qed.
+
+Lemma edgeless_WEdgeGraph_Permutation:
+forall v, Permutation (VList (edgeless_WEdgeGraph v)) (Zseq v).
+Proof.
+intros. apply NoDup_Permutation. apply NoDup_VList. apply Zseq_NoDup.
+intros; rewrite Zseq_In. unfold VList; destruct finiteV; simpl.
+destruct a. rewrite H0. rewrite edgeless_WEdgeGraph_vvalid. split; auto.
+Qed.
+
+Lemma Permutation_Zlength:
+forall {A: Type} (l l': list A), Permutation l l' -> Zlength l = Zlength l'.
+Proof.
+intros. assert (length l = length l'). apply Permutation_length. apply H.
+repeat rewrite Zlength_correct. rewrite H0. auto.
+Qed.
+
+Lemma edgeless_WEdgeGraph_numV:
+forall v, 0 <= v -> numV (edgeless_WEdgeGraph v) = v.
+Proof.
+unfold numV. intros.
+assert (Zlength (VList (edgeless_WEdgeGraph v)) = Zlength (Zseq v)).
+apply Permutation_Zlength. apply edgeless_WEdgeGraph_Permutation.
+rewrite H0. rewrite Zseq_Zlength. auto. apply H.
+Qed.
+
+Lemma edgeless_WEdgeGraph_EList:
+forall v, EList (edgeless_WEdgeGraph v) = nil.
+Proof.
+  intros. unfold edgeless_WEdgeGraph, EList.
+  destruct finiteE. simpl in *.
+  destruct a.
+  destruct x; [trivial | exfalso].
+  assert (In e (e::x)) by (apply in_eq).
+  apply (H0 e). apply H1.
+Qed.
+
+Corollary edgeless_WEdgeGraph_numE:
+forall v, numE (edgeless_WEdgeGraph v) = 0.
+Proof.
+unfold numE. intros. rewrite edgeless_WEdgeGraph_EList. apply Zlength_nil.
+Qed.
+
+(***********ADDING/REMOVING A SINGLE EDGE************)
+
+(*Trivial lemmas to make life simple*)
+(*These should probably be in FiniteGraph*)
+
+(*These are specific here because it needs Z.eq_dec*)
+Lemma VList_In_dec:
+  forall (g: FiniteWEdgeListGraph) v, In v (VList g) \/ ~ In v (VList g).
+Proof.
+intros. destruct (in_dec Z.eq_dec v (VList g)); [left; auto | right; auto].
+Qed.
+
+Lemma EList_In_dec:
+  forall (g: FiniteWEdgeListGraph) e, In e (EList g) \/ ~ In e (EList g).
+Proof.
+intros. destruct (in_dec E_EqDec e (EList g)); [left; auto | right; auto].
+Qed.
+
+Corollary FiniteWEdgeListGraph_vvalid_dec:
+  forall (g: FiniteWEdgeListGraph) v, vvalid g v \/ ~ vvalid g v.
+Proof.
+  intros. destruct (VList_In_dec g v); [ left; rewrite <- VList_vvalid; apply H | right; rewrite <- VList_vvalid; apply H].
+Qed.
+
+Corollary FiniteWEdgeListGraph_evalid_dec:
+  forall (g: FiniteWEdgeListGraph) e, evalid g e \/ ~ evalid g e.
+Proof.
+  intros. destruct (EList_In_dec g e); [ left; rewrite <- EList_evalid; apply H | right; rewrite <- EList_evalid; apply H].
+Qed.
+
+(**Adding is necessary for the kruskal algorithm**)
+Definition WEdgeListGraph_add_edge (g: WEdgeListGraph) (e: EType) (w: LE):=
+  labeledgraph_add_edge g e (fst e) (snd e) w.
+
+Instance Sound_WEdgeListGraph_add_edge (g: FiniteWEdgeListGraph) (e: EType) (w: LE) :
+  vvalid g (fst e) -> vvalid g (snd e) -> ~ In e (EList g) -> Fin (WEdgeListGraph_add_edge g e w).
+Proof.
+intros. constructor. constructor; unfold EnumEnsembles.Enumerable; simpl.
+apply g.
+exists (e::(EList g)). split. apply NoDup_cons. apply H1. apply NoDup_EList.
+unfold addValidFunc.
+simpl. intros; rewrite EList_evalid. split; intros; destruct H2; auto.
+Qed.
+
+(**Removing may be needed in the proof of minimality**)
