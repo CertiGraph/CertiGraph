@@ -200,8 +200,8 @@ Proof.
            is_partial_graph msf' g;
            uforest msf';
            True; (* something about min wt *)
-           forall u v, connected subsetsGraph u v -> connected g u v; (*uf represents components of graph*)
-           forall u v, connected subsetsGraph u v <-> connected msf' u v (*correlation between uf and msf'*);
+           forall u v, connected subsetsGraph' u v -> connected g u v; (*uf represents components of graph*)
+           forall u v, connected subsetsGraph' u v <-> connected msf' u v; (*correlation between uf and msf'*)
            uf_equiv subsetsGraph subsetsGraph')
      LOCAL (temp _graph_E (Vint (Int.repr (numE g)));
             temp _graph__1 (pointer_val_val orig_gptr);
@@ -241,88 +241,87 @@ Proof.
         rewrite (surjective_pairing (Znth i sorted)).
         rewrite (surjective_pairing (snd (Znth i sorted))).
         apply Hdef_i.
-      * (* inside the for loop *)
+      * (* inside the for loop *) 
  forward. forward.
  1: { entailer!.
       rewrite (surjective_pairing (Znth i sorted)).
       rewrite (surjective_pairing (snd (Znth i sorted))).
       apply Hdef_i.
  }
- --
-  rewrite (surjective_pairing (Znth i sorted)).
-  rewrite (surjective_pairing (snd (Znth i sorted))).
-  
+ rewrite (surjective_pairing (Znth i sorted)).
+ rewrite (surjective_pairing (snd (Znth i sorted))).
+ 
+ forward_call (sh,
+               subsetsGraph',
+               subsetsPtr,
+               (force_signed_int
+                  (fst (snd (Znth i sorted))))).
+ ++
+  entailer!. simpl.
+  clear - Hdef_i.
+  destruct Hdef_i as [_ [? _]].
+  apply is_int_e in H.
+  destruct H as [? [? _]].
+  unfold wedgerep_inhabitant in *.
+  replace ((fst (snd (Znth i sorted)))) with (Vint x).
+  simpl.
+  rewrite Int.repr_signed. trivial.
+ ++
+  destruct H11 as [? _].
+  rewrite <- H11.
+  apply H2.
+  destruct Hdef_i as [_ [? _]].
+  apply is_int_e in H12.
+  destruct H12 as [? [? _]].
+  rewrite H12. simpl.
+  admit.  (* leaving for WX *)
+ ++
+  Intros u_root.
+  destruct u_root as [subsetsGraph_u u_root].
+  (* 1. the UFGraph after finding u
+     2. u's root 
+   *)
+  simpl fst.
   forward_call (sh,
-                subsetsGraph,
+                subsetsGraph_u,
                 subsetsPtr,
                 (force_signed_int
-                   (fst (snd (Znth i sorted))))).
-  ++
-   entailer!. simpl.
+                   (snd (snd (Znth i sorted))))).
+  **
+   entailer!.
+   simpl.
    clear - Hdef_i.
-   destruct Hdef_i as [_ [? _]].
+   destruct Hdef_i as [_ [_ ?]].
    apply is_int_e in H.
    destruct H as [? [? _]].
    unfold wedgerep_inhabitant in *.
-   replace ((fst (snd (Znth i sorted)))) with (Vint x).
+   replace ((snd (snd (Znth i sorted)))) with (Vint x).
    simpl.
    rewrite Int.repr_signed. trivial.
-  ++
-   (* Hrmm I don't understand why this goal is 
-      being presented to me.
-      _find_ clobbered the old subsetsGraph and gave me
-      (what I will be calling) subsetsGraph_u.
-    *)
-    admit.
-  ++
+  **
+   simpl fst in H12.
+   destruct H12 as [? _].
+   destruct H11 as [? _].
+   rewrite <- H12, <- H11.
    apply H2.
-   destruct Hdef_i as [_ [? _]].
-   apply is_int_e in H12.
-   destruct H12 as [? [? _]].
-   rewrite H12. simpl.
-   admit. (* leaving for WX *)
-  ++
-   Intros u_root.
-   destruct u_root as [subsetsGraph_u u_root].
-   (* 1. the UFGraph after finding u
-      2. u's root 
-    *)
-   simpl fst.
-   forward_call (sh,
-                 subsetsGraph_u,
-                 subsetsPtr,
-                 (force_signed_int
-                    (snd (snd (Znth i sorted))))).
-   **
-    entailer!.
-   ** 
-    entailer!.
-   **
-    entailer!.
-    simpl.
-    clear - Hdef_i.
-    destruct Hdef_i as [_ [_ ?]].
-    apply is_int_e in H.
-    destruct H as [? [? _]].
-    unfold wedgerep_inhabitant in *.
-    replace ((snd (snd (Znth i sorted)))) with (Vint x).
-    simpl.
-    rewrite Int.repr_signed. trivial.
-   **
-    admit. (* leaving for WX *)
-   **
-    Intros v_root.
-    destruct v_root as [subsetsGraph_uv v_root].
-    simpl fst in *. simpl snd in *.
-    forward_if.
-    --- (* yes, add this edge.
-           the bulk of the proof *)
-      admit.
-    --- (* no, don't add this edge *)
-      forward. entailer!.
-      admit.
+   destruct Hdef_i as [_ [_ ?]].
+   apply is_int_e in H14.
+   destruct H14 as [? [? _]].
+   rewrite H14. simpl.
+  admit. (* leaving for WX *)
+  **
+   Intros v_root.
+   destruct v_root as [subsetsGraph_uv v_root].
+   simpl fst in *. simpl snd in *.
+   forward_if.
+   --- (* yes, add this edge.
+          the bulk of the proof *)
+     admit.
+   --- (* no, don't add this edge *)
+     forward. entailer!.
+     admit.
     + Intros mst.
-      Intros subsetsGraph'.
+       Intros subsetsGraph'.
       forward_call ((pointer_val_val subsetsPtr)).
       forward.
       admit.
