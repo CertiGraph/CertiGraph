@@ -316,9 +316,36 @@ Proof.
    forward_if.
    --- (* yes, add this edge.
           the bulk of the proof *)
-     admit.
+    admit.
    --- (* no, don't add this edge *)
-     forward. entailer!.
+    forward. entailer!.
+    (* the variables are uncertain but here's a guess: *)
+    Exists msf' subsetsGraph_uv.
+    assert (uf_equiv subsetsGraph_uv subsetsGraph') by admit.
+    entailer!.
+
+    Set Nested Proofs Allowed.
+    Lemma uf_equiv_connected:
+      forall {g1 g2 u v},
+        uf_equiv g1 g2 ->
+        connected g1 u v <->
+        connected g2 u v.
+    Proof.
+      (* does this look reasonable to you?? *)
+    Admitted.
+    Unset Nested Proofs Allowed.
+    
+    split3; intros.
+    +++
+     apply H9.
+     apply (uf_equiv_connected H39); trivial.
+    +++
+      rewrite <- H10.
+      apply uf_equiv_connected; trivial.
+    +++
+      (* probably can make this work with u
+         uf_equiv_trans
+       *)
      admit.
     + Intros mst.
        Intros subsetsGraph'.
