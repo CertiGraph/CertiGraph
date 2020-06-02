@@ -239,12 +239,8 @@ Proof.
         (*this is where I need to question whether 
           my definitions are good...*)
       * admit. (*look at spec of MakeSet and see what kind of graph it is*)
-      * admit.
-      * (* apply uf_equiv_refl *)
-        (* just need to figure out how to use 
-           ufgraph lemmas correctly *)
-        admit.
-
+      * admit. 
+      * apply (uf_equiv_refl _ (liGraph subsetsGraph)).
     + (******LOOP BODY******)
       Intros.
       assert (Hdef_i: def_wedgerep (Znth i sorted)). {
@@ -279,20 +275,31 @@ Proof.
   replace ((fst (snd (Znth i sorted)))) with (Vint x).
   simpl.
   rewrite Int.repr_signed. trivial.
- ++
+ ++ 
   destruct H14 as [? _].
   rewrite <- H14.
-  apply H4.
+  (* apply H4. *)
   destruct Hdef_i as [_ [? _]].
   apply is_int_e in H15.
   destruct H15 as [? [? _]].
   rewrite H15. simpl.
-    (*In (Znth i sorted) sorted, which is a Permutation of map wedge_to_cdata glist
-      so In (Znth i sorted) map wedge_to_cdata glist
-      ??? thus, exists e, eevalid g e /\ (Znth i sorted) = wedge_to_cdata e <--add such a lemma to spatial
-      destruct eevalid g e -> vvalid g (fst (snd e))
-      then use the newly added H4
-    *)
+  (*In (Znth i sorted) sorted, 
+    which is a Permutation of map wedge_to_cdata glist
+    so 
+    In (Znth i sorted) map wedge_to_cdata glist
+   *)
+  assert (In (Znth i sorted) (map wedge_to_cdata glist)). {
+    apply Permutation_sym in H5.
+    apply (@Permutation_in _ _ _ _ H5).
+    apply Znth_In. lia.
+  }
+  (* thus, exists e, eevalid g e /\ (Znth i sorted) = wedge_to_cdata e <--add such a lemma to spatial *)
+  apply list_in_map_inv in H16.
+  destruct H16 as [e [? ?]].
+  (* is this what you wanted? *)
+
+  (*destruct eevalid g e -> vvalid g (fst (snd e))
+  then use the newly added H4 *)
   admit.  (* leaving for WX *)
  ++
   Intros u_root.
@@ -322,18 +329,27 @@ Proof.
    destruct H15 as [? _].
    destruct H14 as [? _].
    rewrite <- H15, <- H14.
-   apply H4.
    destruct Hdef_i as [_ [_ ?]].
    apply is_int_e in H17.
    destruct H17 as [? [? _]].
    rewrite H17. simpl.
-    (*In (Znth i sorted) sorted, which is a Permutation of map wedge_to_cdata glist
-      so In (Znth i sorted) map wedge_to_cdata glist
-      ??? thus, exists e, eevalid g e /\ (Znth i sorted) = wedge_to_cdata e
-      destruct eevalid g e -> vvalid g (snd (snd e))
-      then use the newly added H4
-    *)
-  admit. (* leaving for WX *)
+
+   (*In (Znth i sorted) sorted, which is a Permutation of map wedge_to_cdata glist
+      so In (Znth i sorted) map wedge_to_cdata glist   *)
+     assert (In (Znth i sorted) (map wedge_to_cdata glist)). {
+    apply Permutation_sym in H5.
+    apply (@Permutation_in _ _ _ _ H5).
+    apply Znth_In. lia.
+  }
+  (* thus, exists e, eevalid g e /\ (Znth i sorted) = wedge_to_cdata e 
+     <--add such a lemma to spatial *)
+  apply list_in_map_inv in H18.
+  destruct H18 as [e [? ?]].
+  (* is this what you wanted? *)
+
+  (*destruct e evalid g e -> vvalid g (snd (snd e))
+  then use the newly added H4 *)
+  admit.  (* leaving for WX *)
   **
    Intros v_root.
    destruct v_root as [subsetsGraph_uv v_root].
@@ -346,7 +362,11 @@ Proof.
     forward. entailer!.
     (* the variables are uncertain but here's a guess: *)
     Exists msf' msflist subsetsGraph_uv.
-    assert (uf_equiv subsetsGraph_uv subsetsGraph') by admit.
+    assert (uf_equiv subsetsGraph_uv subsetsGraph'). {
+      apply uf_equiv_sym in H17.
+      apply uf_equiv_sym in H15.
+      apply (uf_equiv_trans _ (liGraph subsetsGraph_u)); trivial.
+    }
     entailer!.
 
     Set Nested Proofs Allowed.
@@ -366,11 +386,9 @@ Proof.
     +++
       rewrite <- H13.
       apply uf_equiv_connected; trivial.
-    +++ 
-      (* probably can make this work with u
-         uf_equiv_trans
-       *) 
-     admit.
+    +++
+      apply uf_equiv_sym in H43.
+      apply (uf_equiv_trans _ (liGraph subsetsGraph')); trivial.
     + Intros msf. Intros msflist.
        Intros subsetsGraph'.
       forward_call ((pointer_val_val subsetsPtr)).
