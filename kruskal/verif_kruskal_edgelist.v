@@ -4,8 +4,8 @@ Require Import Coq.ZArith.ZArith.
 Require Import RamifyCoq.floyd_ext.share.
 Require Import RamifyCoq.lib.List_ext.
 Require Import RamifyCoq.graph.graph_model.
-(*are these needed?*)
-Require Import RamifyCoq.graph.path_lemmas. (*yes, because ufgraph relies on it*)
+(*for ufgraph *)
+Require Import RamifyCoq.graph.path_lemmas.
 Require Import RamifyCoq.graph.subgraph2.
 Require Import RamifyCoq.graph.graph_relation.
 Require Import RamifyCoq.graph.reachable_computable.
@@ -27,9 +27,6 @@ Require Import RamifyCoq.kruskal.kruskal_uf_specs.
 Require Import RamifyCoq.kruskal.undirected_graph.
 
 Local Open Scope Z_scope.
-
-(*I guess we ought to throw these in a specs_kruskal.v
-Also, thinking of we can combine env and spatial*)
 
 Lemma numE_pos: forall g, 0 <= numE g.
 Proof.
@@ -99,6 +96,12 @@ Proof.
   rewrite H1, H0, H3. split3; trivial.
 Qed.
 
+Lemma Forall_permutation: forall {A: Type} (al bl: list A) f, Forall f al -> Permutation al bl -> Forall f bl.
+Proof.
+intros. rewrite Forall_forall in *; intros.
+apply H. apply (Permutation_in (l:=bl) (l':=al) x). apply Permutation_sym. apply H0. apply H1.
+Qed.
+
 Lemma body_init_empty_graph: semax_body Vprog Gprog f_init_empty_graph init_empty_graph_spec.
 Proof.
 start_function.
@@ -137,33 +140,25 @@ Exists gptr eptr.
 entailer!.
 Qed.
 
-Lemma Forall_permutation: forall {A: Type} (al bl: list A) f, Forall f al -> Permutation al bl -> Forall f bl.
-Proof.
-intros. rewrite Forall_forall in *; intros.
-apply H. apply (Permutation_in (l:=bl) (l':=al) x). apply Permutation_sym. apply H0. apply H1.
-Qed.
-
 Lemma body_kruskal: semax_body Vprog Gprog f_kruskal kruskal_spec.
 Proof.
   start_function.
-  forward.
-  forward.
-  forward_call (sh, (numV g)).
-  Intros subsets.
-  forward_call (gv, sh).
-  Intros mst.
+  forward. forward.
+  forward_call (sh, (numV g)). Intros subsets.
+  forward_call (gv, sh). Intros mst.
   destruct subsets as [subsetsGraph subsetsPtr].
   destruct mst as [gptr eptr].
   simpl fst in *. simpl snd in *. 
-  forward.
-  forward.
+  forward. forward.
   assert (Hdef_g: Forall def_wedgerep (map wedge_to_cdata (graph_to_wedgelist g))) by (apply def_wedgerep_map_w2c).
   assert (Hperm_glist: Permutation (map wedge_to_cdata (graph_to_wedgelist g)) (map wedge_to_cdata glist)). apply Permutation_map. auto.
   assert (Hdef_glist: Forall def_wedgerep (map wedge_to_cdata glist)) by (apply (Forall_permutation _ _ _ Hdef_g Hperm_glist)).
   assert (HZlength_glist: Zlength (map wedge_to_cdata glist) = numE g). {
     rewrite <- (Permutation_Zlength (reptype t_struct_edge) (map wedge_to_cdata (graph_to_wedgelist g)) (map wedge_to_cdata glist) Hperm_glist).
     rewrite Zlength_map. apply g2wedgelist_numE.
-  } rewrite <- HZlength_glist.
+  }
+  rewrite <- HZlength_glist.
+
   (******************************SORT******************************) 
   forward_call ((wshare_share sh), 
                 pointer_val_val orig_eptr,
@@ -189,6 +184,7 @@ Proof.
       rewrite <- (Permutation_Zlength _ _ _ H5). apply HZlength_glist.
     } rewrite HZlength_glist. rewrite HZlength_sorted.
     (* done with cleanup. *)
+
     (******************************THE BIG NASTY LOOP******************************) 
     forward_for_simple_bound
     (numE g)
@@ -233,22 +229,22 @@ Proof.
       rewrite data_at_zero_array_eq. 2: simpl; auto. 2: auto.
       2: { unfold graph_to_wedgelist. rewrite edgeless_WEdgeGraph_EList. simpl; auto. }
       entailer!. (*LAAAAAAAAG*)
-      split.
-        unfold is_partial_graph. repeat split.
-        intros. rewrite <- edgeless_WEdgeGraph_vvalid in H25. apply H0. auto.
-        intros. rewrite <- EList_evalid in H25. rewrite edgeless_WEdgeGraph_EList in H25. contradiction.
-        intros. rewrite <- EList_evalid in H25. rewrite edgeless_WEdgeGraph_EList in H25. contradiction.
-        intros. rewrite <- EList_evalid in H25. rewrite edgeless_WEdgeGraph_EList in H25. contradiction.
-      split.
-        unfold uforest. unfold acyclic_ugraph.
-        admit. (*this is where I need to question whether my definitions are good...*)
-      split.
-        admit. (*look at spec of MakeSet and see what kind of graph it is*)
-      split.
+      split3; [| | split3].
+      * unfold is_partial_graph.
+        repeat split; intros.
+        1: rewrite <- edgeless_WEdgeGraph_vvalid in H25; apply H0; auto.
+        all: rewrite <- EList_evalid, edgeless_WEdgeGraph_EList in H25; contradiction.
+      * unfold uforest. unfold acyclic_ugraph.
         admit.
-      unfold uf_equiv. split.
-        intros; split; auto.
-        intros. (*apply (uf_root_unique subsetsGraph ? ?).*) admit.
+        (*this is where I need to question whether 
+          my definitions are good...*)
+      * admit. (*look at spec of MakeSet and see what kind of graph it is*)
+      * admit.
+      * (* apply uf_equiv_refl *)
+        (* just need to figure out how to use 
+           ufgraph lemmas correctly *)
+        admit.
+
     + (******LOOP BODY******)
       Intros.
       assert (Hdef_i: def_wedgerep (Znth i sorted)). {
@@ -360,7 +356,6 @@ Proof.
         connected g1 u v <->
         connected g2 u v.
     Proof.
-      (* does this look reasonable to you?? *) (*yep looks reasonable*)
     Admitted.
     Unset Nested Proofs Allowed.
     
@@ -371,10 +366,10 @@ Proof.
     +++
       rewrite <- H13.
       apply uf_equiv_connected; trivial.
-    +++
+    +++ 
       (* probably can make this work with u
          uf_equiv_trans
-       *)
+       *) 
      admit.
     + Intros msf. Intros msflist.
        Intros subsetsGraph'.
