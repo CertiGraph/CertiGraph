@@ -51,24 +51,37 @@ void sink (unsigned int k, Item arr[], unsigned int first_available, unsigned in
   }
 }
 
-void insert_nc(PQ *pq, Item *x) {
-  pq->heap_cells[pq->first_available].priority = x->priority;
-  pq->heap_cells[pq->first_available].data = x->data;
-  swim(pq->first_available, pq->heap_cells, pq->key_table);
-  pq->first_available++;
+unsigned int insert_nc(PQ *pq, int priority, void* data) {
+  unsigned int fa = pq->first_available;
+  Item* cells = pq->heap_cells;
+
+  unsigned int key = cells[fa].key;
+  cells[fa].priority = priority;
+  cells[fa].data = data;
+  
+  swim(fa, cells, pq->key_table);
+  pq->first_available = fa + 1;
+  
+  return key;
 }
 
 void remove_min_nc(PQ *pq, Item* item) {
-  pq->first_available--;
-  exch(ROOT_IDX, pq->first_available, pq->heap_cells, pq->key_table);
-  item->priority = pq->heap_cells[pq->first_available].priority;
-  item->data = pq->heap_cells[pq->first_available].data;
-  sink(ROOT_IDX, pq->heap_cells, pq->first_available, pq->key_table);
+  unsigned int fa = pq->first_available - 1;
+  Item* cells = pq->heap_cells;
+  unsigned* lookup = pq->key_table;
+  
+  exch(ROOT_IDX, fa, cells, lookup);
+  item->priority = cells[fa].priority;
+  item->data = cells[fa].data;
+  item->key = cells[fa].key;
+
+  sink(ROOT_IDX, cells, fa, lookup);
+  pq->first_available = fa;
 }  
 
-void insert(PQ *pq, Item *x) {
-  if (pq->first_available == pq->capacity) return; /* Hrm, maybe should signal error or grow heap or whatever... */
-  insert_nc(pq, x);
+unsigned int insert(PQ *pq, int priority, void* data) {
+  if (pq->first_available == pq->capacity) return 0; /* Hrm, maybe should signal error or grow heap or whatever... */
+  return insert_nc(pq, priority, data);
 }
 
 Item* remove_min(PQ *pq) {
