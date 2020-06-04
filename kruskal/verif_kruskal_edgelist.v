@@ -102,6 +102,61 @@ intros. rewrite Forall_forall in *; intros.
 apply H. apply (Permutation_in (l:=bl) (l':=al) x). apply Permutation_sym. apply H0. apply H1.
 Qed.
 
+(* Stealing from verif_binary_heap, but eventually
+        they should both use them from a central library *)
+Lemma upd_Znth_overwrite:
+  forall {A} (l : list A) i a b,
+    0 <= i < Zlength l ->
+    upd_Znth i (upd_Znth i l a) b = upd_Znth i l b.
+Proof.
+  intros.
+  rewrite upd_Znth_unfold by now rewrite upd_Znth_Zlength.
+  rewrite upd_Znth_Zlength; trivial.
+  repeat rewrite upd_Znth_unfold by trivial.
+  rewrite sublist0_app1.
+  2: rewrite Zlength_sublist; lia.
+  rewrite sublist_sublist00 by lia.
+  f_equal. f_equal.
+  rewrite app_assoc.
+  rewrite sublist_app2.
+  2: { rewrite Zlength_app, Zlength_sublist by lia.
+       unfold Zlength. simpl. lia.
+  }
+  rewrite Zlength_app, Zlength_sublist by lia.
+  unfold Zlength at 1; simpl.
+  rewrite sublist_same; trivial.
+  - lia.
+  - unfold Zlength at 2; simpl.
+    rewrite Zlength_sublist by lia. lia.
+Qed.
+
+Lemma vint_repr_force_clean:
+  forall i,
+    is_int I32 Signed i ->
+    Vint (Int.repr (force_signed_int i)) = i.
+Proof.
+  intros. 
+  apply is_int_e in H.
+  destruct H as [? [? _]].
+  unfold wedgerep_inhabitant in *.
+  rewrite H.
+  simpl.
+  rewrite Int.repr_signed. trivial.
+Qed.
+
+Lemma numE_succ_range:
+  forall g,
+    numE g <= MAX_EDGES ->
+    Int.min_signed <= numE g + 1 <= Int.max_signed.
+Proof.
+  intros.
+  pose proof (numE_pos g).
+  unfold MAX_EDGES in H.
+  assert (Int.min_signed <= 1) by now compute.
+  assert (9 <= Int.max_signed) by now compute.
+  lia.
+Qed.
+
 Lemma body_init_empty_graph: semax_body Vprog Gprog f_init_empty_graph init_empty_graph_spec.
 Proof.
 start_function.
@@ -315,14 +370,8 @@ Proof.
                   (fst (snd (Znth i sorted))))).
  ++
   entailer!. simpl.
-  clear - Hdef_i.
   destruct Hdef_i as [_ [? _]].
-  apply is_int_e in H.
-  destruct H as [? [? _]].
-  unfold wedgerep_inhabitant in *.
-  replace ((fst (snd (Znth i sorted)))) with (Vint x).
-  simpl.
-  rewrite Int.repr_signed. trivial.
+  rewrite vint_repr_force_clean; trivial.
  ++
   unfold wedge_to_cdata in Heq_i; simpl in Heq_i. rewrite Heq_i; simpl.
   destruct H14 as [? _].
@@ -345,14 +394,8 @@ Proof.
   **
    entailer!.
    simpl.
-   clear - Hdef_i.
    destruct Hdef_i as [_ [_ ?]].
-   apply is_int_e in H.
-   destruct H as [? [? _]].
-   unfold wedgerep_inhabitant in *.
-   replace ((snd (snd (Znth i sorted)))) with (Vint x).
-   simpl.
-   rewrite Int.repr_signed. trivial.
+   rewrite vint_repr_force_clean; trivial.
   **
   unfold wedge_to_cdata in Heq_i; simpl in Heq_i. rewrite Heq_i; simpl.
   destruct H15 as [? _]; rewrite <- H15.
@@ -369,7 +412,104 @@ Proof.
    forward_if.
    --- (* yes, add this edge.
           the bulk of the proof *)
-    admit.
+     forward. forward. forward.
+     1: { admit. (* something is quite wrong *) }
+     forward. forward. forward.
+     1: { admit. (* something is quite wrong *) }
+     forward. forward. forward. forward.
+     1: { entailer!.
+          rewrite (surjective_pairing (Znth i sorted)).
+          destruct Hdef_i as [? _]. trivial.
+     }
+     forward.
+     1: { admit. (* something is quite wrong *) }
+     forward. forward.
+     1: { entailer!.
+          rewrite Int.signed_repr.
+          2: { apply numE_range.
+               (* should be easy to get this via an 
+                  assert_PROP? *)
+               admit.
+          }
+          rewrite Int.signed_repr.
+          2: rep_lia.
+          apply numE_succ_range.
+          (* again, should be easy to get via assert_PROP? *)
+          admit.
+     }
+
+     (* Okie let's do some cleanup... *)
+     rewrite (surjective_pairing (Znth i sorted)).
+     rewrite (surjective_pairing (Znth (numE msf') (map wedge_to_cdata msflist))).
+     rewrite (surjective_pairing (snd (Znth (numE msf') (map wedge_to_cdata msflist)))).
+     rewrite (surjective_pairing (Znth (numE msf')
+                  (upd_Znth (numE msf') (map wedge_to_cdata msflist)
+                     (fst (Znth (numE msf') (map wedge_to_cdata msflist)),
+                     (fst (snd (Znth i sorted)),
+                     snd (snd (Znth (numE msf') (map wedge_to_cdata msflist)))))))).
+     rewrite (surjective_pairing (snd
+                  (Znth (numE msf')
+                     (upd_Znth (numE msf') (map wedge_to_cdata msflist)
+                        (fst (Znth (numE msf') (map wedge_to_cdata msflist)),
+                        (fst (snd (Znth i sorted)),
+                        snd (snd (Znth (numE msf') (map wedge_to_cdata msflist))))))))).
+     rewrite (surjective_pairing (Znth (numE msf')
+              (upd_Znth (numE msf')
+                 (upd_Znth (numE msf') (map wedge_to_cdata msflist)
+                    (fst (Znth (numE msf') (map wedge_to_cdata msflist)),
+                    (fst (snd (Znth i sorted)),
+                    snd (snd (Znth (numE msf') (map wedge_to_cdata msflist))))))
+                 (fst
+                    (Znth (numE msf')
+                       (upd_Znth (numE msf') (map wedge_to_cdata msflist)
+                          (fst (Znth (numE msf') (map wedge_to_cdata msflist)),
+                          (fst (snd (Znth i sorted)),
+                          snd (snd (Znth (numE msf') (map wedge_to_cdata msflist))))))),
+                 (fst
+                    (snd
+                       (Znth (numE msf')
+                          (upd_Znth (numE msf') (map wedge_to_cdata msflist)
+                             (fst (Znth (numE msf') (map wedge_to_cdata msflist)),
+                             (fst (snd (Znth i sorted)),
+                             snd
+                               (snd (Znth (numE msf') (map wedge_to_cdata msflist)))))))),
+                 snd (snd (Znth i sorted))))))).
+     simpl fst in *.
+     simpl snd in *.
+     repeat rewrite upd_Znth_overwrite.
+     repeat rewrite upd_Znth_same.
+     
+     6: rewrite upd_Znth_Zlength.
+     2: { rewrite Zlength_map.
+          rewrite <- g2wedgelist_numE.
+          rewrite (Permutation_Zlength _ _ _ H11).
+          (* something is quite wrong. *)
+          admit.
+     }
+     2-6: admit. (* exactly the same *)
+     
+     simpl fst in *.
+     simpl snd in *.
+     
+     forward_call (sh, subsetsGraph_uv, subsetsPtr,
+                   (force_signed_int (fst (snd (Znth i sorted)))),
+                   (force_signed_int (snd (snd (Znth i sorted))))).
+     +++
+       entailer!.
+       simpl.
+       destruct Hdef_i as [_ [? ?]].
+       repeat rewrite vint_repr_force_clean; trivial.
+     +++
+       destruct Hdef_i as [_ [? ?]].
+       apply is_int_e in H20.
+       apply is_int_e in H21.
+       destruct H20 as [? [? _]].
+       destruct H21 as [? [? _]].
+       rewrite H20, H21.
+       simpl.
+       admit. (* leaving for WX *)
+     +++
+       admit.
    --- (* no, don't add this edge *)
     forward. entailer!.
     (* the variables are uncertain but here's a guess: *)
@@ -415,6 +555,7 @@ Proof.
       admit.
 Abort.
 
+Print Assumptions body_init_empty_graph.
 (*
 Idea of proof:
 int graph_V = graph->V;
