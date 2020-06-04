@@ -199,7 +199,8 @@ Proof.
            True; (* something about min wt *)
            forall u v, connected subsetsGraph' u v -> connected g u v; (*uf represents components of graph*)
            forall u v, connected subsetsGraph' u v <-> connected msf' u v; (*correlation between uf and msf'*)
-           uf_equiv subsetsGraph subsetsGraph')
+           uf_equiv subsetsGraph subsetsGraph' (*WX: If I'm not wrong the 2nd part isn't right, we just need the vvalid?*)
+          )
      LOCAL (temp _graph_E (Vint (Int.repr (numE g)));
             temp _graph__1 (pointer_val_val orig_gptr);
             temp _subsets (pointer_val_val subsetsPtr);
@@ -234,12 +235,37 @@ Proof.
         repeat split; intros.
         1: rewrite <- edgeless_WEdgeGraph_vvalid in H25; apply H0; auto.
         all: rewrite <- EList_evalid, edgeless_WEdgeGraph_EList in H25; contradiction.
-      * unfold uforest. unfold acyclic_ugraph.
-        admit.
-        (*this is where I need to question whether 
-          my definitions are good...*)
-      * admit. (*look at spec of MakeSet and see what kind of graph it is*)
-      * admit. 
+      * (*maybe I should do this in WeightedEdgeListGraph*)
+        unfold uforest. unfold acyclic_ugraph.
+        intros. unfold simple_ucycle in H25. unfold ucycle in H25.
+        destruct H25; destruct H25.
+          destruct p. contradiction.
+          destruct p. contradiction.
+        unfold not; intros. destruct H28. unfold adjacent in H28; unfold adj_edge in H28.
+        destruct H28. destruct H28. destruct H28.
+        assert (~ evalid (edgeless_WEdgeGraph (numV g)) x). rewrite <- EList_evalid.
+          rewrite edgeless_WEdgeGraph_EList. auto.
+        contradiction.
+      * assert (subsetsGraph = makeSet_discrete_Graph (Z.to_nat (numV g))). admit.
+        intros. unfold connected in H26. unfold connected_by in H26. destruct H26 as [p H26]. unfold connected_by_path in H26.
+        destruct H26. unfold good_upath in H26. destruct H26. unfold valid_upath in H26. destruct H27.
+        destruct p eqn:Hp; simpl in H26. simpl in H27; inversion H27.
+        assert (z = u). simpl in H27; inversion H27; reflexivity. rewrite H30 in *.
+        destruct u0.
+        (*single vertex in upath
+          then u=v, trivially connected
+        *)
+        simpl in H29; inversion H29. exists p. rewrite Hp; unfold connected_by_path. simpl; split; auto.
+        split. simpl. apply H0. rewrite H25 in H26. apply makeSet_vvalid in H26. rewrite Z2Nat.id in H26 by lia. apply H26.
+        unfold upath_prop; rewrite Forall_forall. intros; auto.
+        (*case p = u::z0::u0.
+          Thus exists e,. dst subsetsGraph e = z0
+          But by makeSet_dst...
+        *)
+        destruct H26. destruct H26. unfold adj_edge in H26. destruct H26. destruct H32; rewrite H25 in H32.
+          destruct H32.
+        admit. admit. (*WX: working on this*)
+      * admit.  (*WX: working on this*)
       * apply (uf_equiv_refl _ (liGraph subsetsGraph)).
     + (******LOOP BODY******)
       Intros.
@@ -259,7 +285,29 @@ Proof.
  }
  rewrite (surjective_pairing (Znth i sorted)).
  rewrite (surjective_pairing (snd (Znth i sorted))).
- 
+
+  (*In (Znth i sorted) sorted, 
+    which is a Permutation of map wedge_to_cdata glist
+    so 
+    In (Znth i sorted) map wedge_to_cdata glist
+   *)
+  assert (HIn_i: In (Znth i sorted) (map wedge_to_cdata glist)). {
+    apply Permutation_sym in H5.
+    apply (@Permutation_in _ _ _ _ H5).
+    apply Znth_In. lia.
+  }
+  (* thus, exists e, eevalid g e /\ (Znth i sorted) = wedge_to_cdata e <--add such a lemma to spatial *)
+  apply list_in_map_inv in HIn_i.
+  destruct HIn_i as [e [Heq_i HIn_i]].
+  destruct e as [w [u v]].
+ assert (elabel g (u,v) = w /\ evalid g (u,v)). {
+    apply Permutation_sym in H3. Check Permutation_in. apply (Permutation_in (A:= prod LE EType) (l:=glist) (l':=graph_to_wedgelist g) (w,(u,v)) H3) in HIn_i.
+    unfold graph_to_wedgelist in HIn_i. apply list_in_map_inv in HIn_i. destruct HIn_i. destruct H15.
+    inversion H15. split. auto. apply EList_evalid in H16. rewrite <- H19 in H16. apply H16.
+ } destruct H15 as [Hw_i Huv_i].
+ assert (vvalid g u /\ vvalid g v). {
+  destruct H. destruct H15. unfold edge_valid in H15. apply H15 in Huv_i. auto.
+ } destruct H15 as [Hu_i Hv_i].
  forward_call (sh,
                subsetsGraph',
                subsetsPtr,
@@ -275,32 +323,13 @@ Proof.
   replace ((fst (snd (Znth i sorted)))) with (Vint x).
   simpl.
   rewrite Int.repr_signed. trivial.
- ++ 
+ ++
+  unfold wedge_to_cdata in Heq_i; simpl in Heq_i. rewrite Heq_i; simpl.
   destruct H14 as [? _].
-  rewrite <- H14.
-  (* apply H4. *)
-  destruct Hdef_i as [_ [? _]].
-  apply is_int_e in H15.
-  destruct H15 as [? [? _]].
-  rewrite H15. simpl.
-  (*In (Znth i sorted) sorted, 
-    which is a Permutation of map wedge_to_cdata glist
-    so 
-    In (Znth i sorted) map wedge_to_cdata glist
-   *)
-  assert (In (Znth i sorted) (map wedge_to_cdata glist)). {
-    apply Permutation_sym in H5.
-    apply (@Permutation_in _ _ _ _ H5).
-    apply Znth_In. lia.
-  }
-  (* thus, exists e, eevalid g e /\ (Znth i sorted) = wedge_to_cdata e <--add such a lemma to spatial *)
-  apply list_in_map_inv in H16.
-  destruct H16 as [e [? ?]].
-  (* is this what you wanted? *)
-
-  (*destruct eevalid g e -> vvalid g (fst (snd e))
-  then use the newly added H4 *)
-  admit.  (* leaving for WX *)
+  rewrite <- H14. apply H4. apply H0 in Hu_i. rewrite !Int.signed_repr. lia.
+    apply H0 in Hu_i. destruct H. apply H in Hu_i.
+    split. apply (Z.le_trans Int.min_signed 0 u). apply Z.lt_le_incl. apply Int.min_signed_neg. apply Hu_i.
+    apply Z.lt_le_incl; apply Hu_i.
  ++
   Intros u_root.
   destruct u_root as [subsetsGraph_u u_root].
@@ -325,31 +354,14 @@ Proof.
    simpl.
    rewrite Int.repr_signed. trivial.
   **
-   simpl fst in H15.
-   destruct H15 as [? _].
-   destruct H14 as [? _].
-   rewrite <- H15, <- H14.
-   destruct Hdef_i as [_ [_ ?]].
-   apply is_int_e in H17.
-   destruct H17 as [? [? _]].
-   rewrite H17. simpl.
-
-   (*In (Znth i sorted) sorted, which is a Permutation of map wedge_to_cdata glist
-      so In (Znth i sorted) map wedge_to_cdata glist   *)
-     assert (In (Znth i sorted) (map wedge_to_cdata glist)). {
-    apply Permutation_sym in H5.
-    apply (@Permutation_in _ _ _ _ H5).
-    apply Znth_In. lia.
-  }
-  (* thus, exists e, eevalid g e /\ (Znth i sorted) = wedge_to_cdata e 
-     <--add such a lemma to spatial *)
-  apply list_in_map_inv in H18.
-  destruct H18 as [e [? ?]].
-  (* is this what you wanted? *)
-
-  (*destruct e evalid g e -> vvalid g (snd (snd e))
-  then use the newly added H4 *)
-  admit.  (* leaving for WX *)
+  unfold wedge_to_cdata in Heq_i; simpl in Heq_i. rewrite Heq_i; simpl.
+  destruct H15 as [? _]; rewrite <- H15.
+  (*WX: If I'm not wrong we need to change H14, but only the first part is used here so won't affect much*)
+  destruct H14 as [? _]; rewrite <- H14.
+  apply H4. apply H0 in Hv_i. rewrite !Int.signed_repr. lia.
+    apply H0 in Hv_i. destruct H. apply H in Hv_i.
+    split. apply (Z.le_trans Int.min_signed 0 v). apply Z.lt_le_incl. apply Int.min_signed_neg. apply Hv_i.
+    apply Z.lt_le_incl; apply Hv_i.
   **
    Intros v_root.
    destruct v_root as [subsetsGraph_uv v_root].
