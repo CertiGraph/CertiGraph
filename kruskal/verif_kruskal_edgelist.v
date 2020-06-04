@@ -388,6 +388,13 @@ Proof.
         connected g1 u v <->
         connected g2 u v.
     Proof.
+     (* Hrmm I've thrashed around here
+        a fair bit but I don't quite see
+        why this needs to be true. Maybe we can do a    
+        call to discuss. Alternately we can leave this
+        alone until the loop's invariant has fully
+        settled down and we are sure we need this
+      *)
     Admitted.
     Unset Nested Proofs Allowed.
     
