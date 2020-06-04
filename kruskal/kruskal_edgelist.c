@@ -7,8 +7,8 @@ extern void free (void *p);
 
 struct edge {
     int weight; //weight at top for minor convenience
-    int u;
-    int v;
+    int src;
+    int dst;
 };
 
 //this haphazard representation means it's dangerous to modify a graph...
@@ -88,8 +88,8 @@ struct graph *kruskal(struct graph *graph) {
     for (int i = 0; i < graph_E; ++i) {
         //extract the data
 
-        int u = graph->edge_list[i].u;
-        int v = graph->edge_list[i].v;
+        int u = graph->edge_list[i].src;
+        int v = graph->edge_list[i].dst;
 
         //decide whether edge should be added using unionfind
         int ufind = find(subsets, u);
@@ -97,8 +97,8 @@ struct graph *kruskal(struct graph *graph) {
         if (ufind != vfind) {
             //add edge to MST
             //copy_edge(graph->edge_list + i, mst->edge_list + mst->E);
-            mst->edge_list[mst->E].u = u;
-            mst->edge_list[mst->E].v = v;
+            mst->edge_list[mst->E].src = u;
+            mst->edge_list[mst->E].dst = v;
             mst->edge_list[mst->E].weight = graph->edge_list[i].weight;
             mst->E += 1;
             Union(subsets, u, v);
