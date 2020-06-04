@@ -70,6 +70,7 @@ Definition ___compcert_va_composite : ident := 30%positive.
 Definition ___compcert_va_float64 : ident := 29%positive.
 Definition ___compcert_va_int32 : ident := 27%positive.
 Definition ___compcert_va_int64 : ident := 28%positive.
+Definition _dst : ident := 6%positive.
 Definition _edge : ident := 7%positive.
 Definition _edge_list : ident := 10%positive.
 Definition _empty_graph : ident := 69%positive.
@@ -82,37 +83,38 @@ Definition _graph_V : ident := 74%positive.
 Definition _graph__1 : ident := 72%positive.
 Definition _i : ident := 78%positive.
 Definition _init_empty_graph : ident := 70%positive.
-Definition _kruskal : ident := 81%positive.
-Definition _main : ident := 82%positive.
+Definition _kruskal : ident := 83%positive.
+Definition _main : ident := 84%positive.
 Definition _makeSet : ident := 65%positive.
 Definition _mallocK : ident := 67%positive.
 Definition _mst : ident := 77%positive.
 Definition _parent : ident := 1%positive.
 Definition _rank : ident := 2%positive.
 Definition _sort_edges : ident := 71%positive.
+Definition _src : ident := 5%positive.
 Definition _subset : ident := 3%positive.
 Definition _subsets : ident := 76%positive.
-Definition _u : ident := 5%positive.
-Definition _ufind : ident := 79%positive.
-Definition _v : ident := 6%positive.
-Definition _vfind : ident := 80%positive.
+Definition _u : ident := 79%positive.
+Definition _ufind : ident := 81%positive.
+Definition _v : ident := 80%positive.
+Definition _vfind : ident := 82%positive.
 Definition _weight : ident := 4%positive.
-Definition _t'1 : ident := 83%positive.
-Definition _t'10 : ident := 92%positive.
-Definition _t'11 : ident := 93%positive.
-Definition _t'12 : ident := 94%positive.
-Definition _t'13 : ident := 95%positive.
-Definition _t'14 : ident := 96%positive.
-Definition _t'15 : ident := 97%positive.
-Definition _t'16 : ident := 98%positive.
-Definition _t'2 : ident := 84%positive.
-Definition _t'3 : ident := 85%positive.
-Definition _t'4 : ident := 86%positive.
-Definition _t'5 : ident := 87%positive.
-Definition _t'6 : ident := 88%positive.
-Definition _t'7 : ident := 89%positive.
-Definition _t'8 : ident := 90%positive.
-Definition _t'9 : ident := 91%positive.
+Definition _t'1 : ident := 85%positive.
+Definition _t'10 : ident := 94%positive.
+Definition _t'11 : ident := 95%positive.
+Definition _t'12 : ident := 96%positive.
+Definition _t'13 : ident := 97%positive.
+Definition _t'14 : ident := 98%positive.
+Definition _t'15 : ident := 99%positive.
+Definition _t'16 : ident := 100%positive.
+Definition _t'2 : ident := 86%positive.
+Definition _t'3 : ident := 87%positive.
+Definition _t'4 : ident := 88%positive.
+Definition _t'5 : ident := 89%positive.
+Definition _t'6 : ident := 90%positive.
+Definition _t'7 : ident := 91%positive.
+Definition _t'8 : ident := 92%positive.
+Definition _t'9 : ident := 93%positive.
 
 Definition v_MAX_EDGES := {|
   gvar_info := tint;
@@ -277,7 +279,7 @@ Definition f_kruskal := {|
                                 (Etempvar _t'15 (tptr (Tstruct _edge noattr)))
                                 (Etempvar _i tint)
                                 (tptr (Tstruct _edge noattr)))
-                              (Tstruct _edge noattr)) _u tint)))
+                              (Tstruct _edge noattr)) _src tint)))
                       (Ssequence
                         (Ssequence
                           (Sset _t'14
@@ -293,7 +295,7 @@ Definition f_kruskal := {|
                                   (Etempvar _t'14 (tptr (Tstruct _edge noattr)))
                                   (Etempvar _i tint)
                                   (tptr (Tstruct _edge noattr)))
-                                (Tstruct _edge noattr)) _v tint)))
+                                (Tstruct _edge noattr)) _dst tint)))
                         (Ssequence
                           (Ssequence
                             (Scall (Some _t'3)
@@ -339,7 +341,7 @@ Definition f_kruskal := {|
                                             (Etempvar _t'12 (tptr (Tstruct _edge noattr)))
                                             (Etempvar _t'13 tint)
                                             (tptr (Tstruct _edge noattr)))
-                                          (Tstruct _edge noattr)) _u tint)
+                                          (Tstruct _edge noattr)) _src tint)
                                       (Etempvar _u tint))))
                                 (Ssequence
                                   (Ssequence
@@ -362,8 +364,8 @@ Definition f_kruskal := {|
                                               (Etempvar _t'10 (tptr (Tstruct _edge noattr)))
                                               (Etempvar _t'11 tint)
                                               (tptr (Tstruct _edge noattr)))
-                                            (Tstruct _edge noattr)) _v tint)
-                                        (Etempvar _v tint))))
+                                            (Tstruct _edge noattr)) _dst
+                                          tint) (Etempvar _v tint))))
                                   (Ssequence
                                     (Ssequence
                                       (Sset _t'6
@@ -451,7 +453,7 @@ Definition f_kruskal := {|
 Definition composites : list composite_definition :=
 (Composite _subset Struct ((_parent, tint) :: (_rank, tuint) :: nil) noattr ::
  Composite _edge Struct
-   ((_weight, tint) :: (_u, tint) :: (_v, tint) :: nil)
+   ((_weight, tint) :: (_src, tint) :: (_dst, tint) :: nil)
    noattr ::
  Composite _graph Struct
    ((_V, tint) :: (_E, tint) ::
