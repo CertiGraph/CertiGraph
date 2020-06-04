@@ -52,10 +52,10 @@ Definition makeSet_spec :=
       GLOBALS ()
       SEP ()
     POST [tptr vertex_type]
-      EX rt: pointer_val, (*creates a graph where*)
-      PROP (forall i: Z, 0 <= i < V -> vvalid (makeSet_discrete_Graph (Z.to_nat V)) i) (*anything between 0 and V is a vertex*)
+      EX g: UFGraph, EX rt: pointer_val, (*creates a graph where*)
+      PROP (forall i: Z, 0 <= i < V -> vvalid g i) (*anything between 0 and V is a vertex*)
       LOCAL (temp ret_temp (pointer_val_val rt))
-      SEP (whole_graph sh (makeSet_discrete_Graph (Z.to_nat V)) rt). (*representation in heap...*)
+      SEP (whole_graph sh g rt). (*representation in heap...*)
 
 Definition find_spec :=
   DECLARE _find
@@ -196,7 +196,7 @@ Proof.
       assert (0 <= i < Zlength (progressive_list (Z.to_nat i) (Z.to_nat V))) by (split; [|rewrite Zlength_correct, progressive_list_length, Z2Nat.id]; lia).
       rewrite upd_Znth_same, upd_Znth_twice; [|auto ..]. unfold progressive_array, data_at.
       rewrite upd_Znth_progressive_list. 2: rewrite Z2Nat.id; lia. entailer. Transparent Znth.
-    + forward. Exists rt. entailer!.
+    + forward. Exists (makeSet_discrete_Graph (Z.to_nat V)) rt. entailer!.
       * intros. simpl. rewrite makeSet_vvalid. rewrite Z2Nat.id; lia.
       * unfold whole_graph, full_graph_at. simpl. Exists (Z.to_nat V). apply andp_right; intros; [apply andp_right; apply prop_right|].
         -- intros. rewrite makeSet_vvalid. intuition.
