@@ -507,7 +507,13 @@ Proof.
        destruct H21 as [? [? _]].
        rewrite H20, H21.
        simpl.
-       admit. (* leaving for WX *)
+       assert (uf_equiv subsetsGraph subsetsGraph_uv). {
+         apply (uf_equiv_trans _ (liGraph subsetsGraph_u)); trivial.
+         apply (uf_equiv_trans _ (liGraph subsetsGraph')); trivial.
+       }
+       destruct H22 as [? _].
+       do 2 rewrite <- H22.
+       split; apply H4. admit. admit. (* leaving for WX *)
      +++
        admit.
    --- (* no, don't add this edge *)
