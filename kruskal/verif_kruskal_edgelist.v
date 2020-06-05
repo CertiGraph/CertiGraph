@@ -529,7 +529,10 @@ Proof.
    destruct v_root as [subsetsGraph_uv v_root].
    simpl fst in *. simpl snd in *.
    forward_if.
-   --- 
+   --- admit.
+       (* under heavy reconstruction, c/o Wei Xiang *)
+
+       (*
      (* yes, add this edge.
           the bulk of the proof *)
      (*ASDF: isolate the part of the array being updated*)
@@ -541,13 +544,15 @@ Proof.
      ). 2: { (*need an assertion somewhere that numE msf' <= i*) admit. }
      2: { unfold Vundef_cwedges. rewrite Zlength_list_repeat. lia.
           (*same thing as above, so should declare it at the start of loopbody*) admit.
-          apply numE_pos.
         } Intros.
 
     (*this part should be replaceable now*)
-     forward. forward. forward.
-     1: { admit. (* something is quite wrong *) }
-     forward. forward. forward.
+     forward. forward.
+     1: { entailer!. rewrite (surjective_pairing (Znth i sorted)).
+          destruct Hdef_i; trivial.
+     }
+     forward. forward.
+     forward. forward.
      1: { admit. (* something is quite wrong *) }
      forward. forward. forward. forward.
      1: { entailer!.
@@ -648,7 +653,7 @@ Proof.
        do 2 rewrite <- H22.
        split; apply H4. admit. admit. (* leaving for WX *)
      +++ 
-       admit.
+       admit. *)
    --- (* no, don't add this edge *)
     forward. entailer!.
     (* the variables are uncertain but here's a guess: *)
