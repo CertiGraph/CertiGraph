@@ -46,7 +46,6 @@ Proof.
     destruct to_p; try contradiction. simpl.
     destruct peq. 2: contradiction. exact I. }
   forward_if True.
-  - entailer!; unfold denote_tc_samebase; entailer!.
   - forward. entailer!.
   - destruct from_p; try contradiction. inv_int i. destruct to_p; try contradiction.
     inv_int i0. simpl in H18; unfold sem_sub_pp in H18;
