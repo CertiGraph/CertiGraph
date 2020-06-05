@@ -529,7 +529,10 @@ Proof.
    destruct v_root as [subsetsGraph_uv v_root].
    simpl fst in *. simpl snd in *.
    forward_if.
-   --- (* yes, add this edge.
+   --- admit.
+       (* 
+
+     (* yes, add this edge.
           the bulk of the proof *)
      (*ASDF: isolate the part of the array being updated*)
 
@@ -646,46 +649,179 @@ Proof.
        destruct H22 as [? _].
        do 2 rewrite <- H22.
        split; apply H4. admit. admit. (* leaving for WX *)
-     +++
-       admit.
+     +++ 
+       admit. *)
    --- (* no, don't add this edge *)
     forward. entailer!.
     (* the variables are uncertain but here's a guess: *)
     Exists msf' msflist subsetsGraph_uv.
     assert (uf_equiv subsetsGraph_uv subsetsGraph'). {
-      apply uf_equiv_sym in H17.
-      apply uf_equiv_sym in H15.
+      apply uf_equiv_sym in H18.
+      apply uf_equiv_sym in H20.
       apply (uf_equiv_trans _ (liGraph subsetsGraph_u)); trivial.
     }
     entailer!.
 
     Set Nested Proofs Allowed.
-    Lemma uf_equiv_connected:
-      forall {g1 g2 u v},
+
+    (* you could just simplify the defn of
+       connected to take valid_upath 
+     *)
+    Lemma connected_exists_path:
+      forall (g : UFGraph) u v,
+        connected g u v <->
+        exists p, 
+          valid_upath g p /\
+          hd_error p = Some u /\ last_error p = Some v.
+    Proof.
+      intros. split; intros.
+      - unfold connected, connected_by, connected_by_path in H.
+        destruct H as [p [[? ?] [? ?]]].
+        exists p; split3; trivial.
+      - unfold connected, connected_by, connected_by_path.
+        destruct H as [p [? [? ?]]].
+        exists p.
+        unfold good_upath.
+        split3; trivial.
+        split; trivial.
+        unfold upath_prop.
+        rewrite Forall_forall; intros; trivial.
+    Qed.
+    
+    Lemma connected_reachable_reachable:
+      forall (g : UFGraph) u v,
+        connected g u v <->
+        (reachable g u v \/ reachable g v u).
+    Proof.
+      intros. split; intros.
+      - unfold connected, connected_by, connected_by_path in H.
+        destruct H as [p [[? ?] [? ?]]].
+        unfold reachable, reachable_by, reachable_by_path.
+    Admitted.
+        (*left.
+        exists (u, p).
+        split.
+        + admit.
+        + unfold good_path; split.
+          2: { unfold path_prop.
+               split; trivial.
+               rewrite Forall_forall; intros.
+               split; trivial.
+          }
+          simpl.
+          induction p.
+          * admit. (* add to pre *)
+          *
+          *)
+
+    Lemma reachable_ufroot_same:
+      forall {g: UFGraph} {v1 v2 r1 r2},
+        reachable g v1 v2 ->
+        uf_root g v1 r1 ->
+        uf_root g v2 r2 ->
+        r1 = r2. 
+    Proof.
+      intros.
+      pose proof (uf_root_reachable g _ _ r2 H H1).
+      apply (uf_root_unique _ _ _ _ _ H0 H2).
+    Qed.
+    
+    Lemma connected_ufroot_same:
+      forall (g: UFGraph) v1 v2 r1 r2,
+        connected g v1 v2 ->
+        uf_root g v1 r1 ->
+        uf_root g v2 r2 ->
+        r1 = r2. 
+    Proof.
+      intros.
+      apply connected_reachable_reachable in H.
+      destruct H; [| symmetry];
+        apply (reachable_ufroot_same H); trivial.
+    Qed.
+
+
+    
+    Lemma reachable_uf_equiv_connected:
+      forall {g1 g2: UFGraph} {u v},
+        vvalid g1 u ->
+        vvalid g1 v ->
         uf_equiv g1 g2 ->
+        reachable g1 u v ->
+        connected g2 u v.
+    Proof.
+      intros.
+      destruct H1.
+      assert (EnumEnsembles.EnumCovered Z (evalid g2)) by admit.
+      assert (EnumEnsembles.EnumCovered Z (evalid g1)) by admit.
+      (* will investigate how Shengyi does these *)
+      assert (vvalid g2 u). {
+        apply H1; trivial.
+      }
+      assert (vvalid g2 v). {
+        apply H1; trivial.
+      }
+
+      pose proof (uf_root_always_exists g1 (liGraph g1) u X0 H).
+      pose proof (uf_root_always_exists g1 (liGraph g1) v X0 H0).
+      pose proof (uf_root_always_exists g2 (liGraph g2) u X H4).
+      pose proof (uf_root_always_exists g2 (liGraph g2) v X H5).
+      destruct H6 as [ur1 ?].
+      destruct H7 as [vr1 ?].
+      destruct H8 as [ur2 ?].
+      destruct H9 as [vr2 ?].
+      pose proof (H3 _ _ _ H6 H8).
+      pose proof (H3 _ _ _ H7 H9).
+      pose proof (uf_root_reachable _ _ _ _ H2 H7).
+      pose proof (uf_root_unique _ _ _ _ _ H6 H12).
+      subst ur1. subst vr1. subst vr2.
+      clear H6 H7.
+      destruct H8 as [? _].
+      destruct H9 as [? _].
+      apply reachable_implies_connected in H6.
+      apply reachable_implies_connected in H7.
+      apply connected_symm in H7.
+      apply (connected_trans _ _ _ _ H6 H7).
+    Admitted.
+
+    Lemma uf_equiv_connected:
+      forall {g1 g2: UFGraph} {u v},
+        uf_equiv g1 g2 ->
+        vvalid g1 u ->
+        vvalid g1 v ->
+        vvalid g2 u ->
+        vvalid g2 v ->
         connected g1 u v <->
         connected g2 u v.
     Proof.
-     (* Hrmm I've thrashed around here
-        a fair bit but I don't quite see
-        why this needs to be true. Maybe we can do a    
-        call to discuss. Alternately we can leave this
-        alone until the loop's invariant has fully
-        settled down and we are sure we need this
-      *)
-    Admitted.
+      intros. 
+      split; intros.
+      - apply connected_reachable_reachable in H4.
+        destruct H4.
+        + apply (reachable_uf_equiv_connected H0 H1 H H4).
+        + apply connected_symm.
+          apply (reachable_uf_equiv_connected H1 H0 H H4).
+      - apply connected_reachable_reachable in H4.
+        apply uf_equiv_sym in H.
+        destruct H4.
+        + apply (reachable_uf_equiv_connected H2 H3 H H4).
+        + apply connected_symm.
+          apply (reachable_uf_equiv_connected H3 H2 H H4).
+    Qed.        
+        
     Unset Nested Proofs Allowed.
     
-    split3; intros.
+    split3; [| |split3]; intros.
     +++
-     apply H12.
-     apply (uf_equiv_connected H43); trivial.
+     apply H13.
+     apply (uf_equiv_connected H46); trivial; admit.
+   +++
+      rewrite <- H14.
+      apply uf_equiv_connected; trivial; admit.
     +++
-      rewrite <- H13.
-      apply uf_equiv_connected; trivial.
-    +++
-      apply uf_equiv_sym in H43.
+      apply uf_equiv_sym in H46.
       apply (uf_equiv_trans _ (liGraph subsetsGraph')); trivial.
+    +++ admit.
+    +++ admit.
     + Intros msf. Intros msflist.
        Intros subsetsGraph'.
       forward_call ((pointer_val_val subsetsPtr)).
