@@ -123,6 +123,7 @@ Proof.
         rewrite upd_Znth_list_repeat_app by apply (proj1 H2). forward.
         rewrite Znth_list_repeat_app by apply (proj1 H2).
         rewrite upd_Znth_list_repeat_app by apply (proj1 H2).
+        simpl fst.
         replace (i + 1 - 1) with i by lia. rewrite <- Heqv0.
         replace (12 - i - 1) with (12 - (i + 1)) by lia.
         change (v0 :: list_repeat (Z.to_nat (12 - (i + 1))) vn)
