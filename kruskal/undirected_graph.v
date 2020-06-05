@@ -315,6 +315,21 @@ Lemma paths_can_be_simplified:
   forall g p, valid_upath g p -> exists p', simple_upath g p' /\ simplified p p'
 *)
 
+Fixpoint fits_upath g (l: list E) (p: upath) :=
+match l, p with
+| nil, nil => True
+| nil, v::nil => True
+| e::l', u::v::p' => adj_edge g e u v /\ fits_upath g l' (v::p')
+| _, _ => False
+end.
+(*
+Lemma connected_exists_fits_upath:
+forall g P p u v, connected_by_path g P p u v -> exists l, fits_upath g l p.
+Proof.
+induction p; intros. exists nil; simpl; auto.
+destruct p. exists nil; simpl; auto.
+destruct (IHp v0 v).
+*)
 (************REACHABLE -> CONNECTED************)
 
 Lemma valid_path'_cons:

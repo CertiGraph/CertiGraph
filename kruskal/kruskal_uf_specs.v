@@ -43,7 +43,7 @@ data_at sh (tarray vertex_type (Z.of_nat (length lst)))
 *)
 Definition whole_graph sh g x :=
   (@full_graph_at mpred SAGA_VST pointer_val (SAG_VST sh) g x).
-(*
+
 Definition makeSet_spec :=
   DECLARE _makeSet
   WITH sh: wshare, V: Z
@@ -57,20 +57,6 @@ Definition makeSet_spec :=
       PROP (forall i: Z, 0 <= i < V -> vvalid (makeSet_discrete_Graph (Z.to_nat V)) i) (*anything between 0 and V is a vertex*)
       LOCAL (temp ret_temp (pointer_val_val rt))
       SEP (whole_graph sh (makeSet_discrete_Graph (Z.to_nat V)) rt). (*representation in heap...*)
-*)
-Definition makeSet_spec :=
-  DECLARE _makeSet
-  WITH sh: wshare, V: Z
-    PRE [tint]
-      PROP (0 < V <= Int.max_signed / 8)
-      PARAMS (Vint (Int.repr V))
-      GLOBALS ()
-      SEP ()
-    POST [tptr vertex_type]
-      EX g: UFGraph, EX rt: pointer_val, (*creates a graph where*)
-      PROP (forall i: Z, 0 <= i < V -> vvalid g i) (*anything between 0 and V is a vertex*)
-      LOCAL (temp ret_temp (pointer_val_val rt))
-      SEP (whole_graph sh g rt). (*representation in heap...*)
 
 Definition find_spec :=
   DECLARE _find
@@ -127,6 +113,19 @@ Definition free_spec :=
 
 (*It'll be useful if we can come up with some freeN spec, then centralize these in some header*)
 
+Definition fill_edge_spec :=
+  DECLARE _fill_edge
+  WITH sh: wshare, ptr: val, w: val, u: val, v: val, rubbish: reptype t_struct_edge
+  PRE [tptr t_struct_edge, tint, tint, tint]
+    PROP (def_wedgerep (w,(u,v)))
+    PARAMS (ptr; w; u; v)
+    GLOBALS ()
+    SEP (data_at sh t_struct_edge rubbish ptr)
+  POST [ tvoid ]
+    PROP ()
+    LOCAL ()
+    SEP (data_at sh t_struct_edge (w, (u, v)) ptr).
+
 Definition init_empty_graph_spec :=
   DECLARE _init_empty_graph
   WITH gv: globals, sh: wshare
@@ -142,7 +141,7 @@ Definition init_empty_graph_spec :=
      SEP ( (*explicit graph rep*)
           data_at sh tint (Vint (Int.repr MAX_EDGES)) (gv _MAX_EDGES);
           data_at sh (t_wedgearray_graph) (Vint (Int.repr 0), (Vint (Int.repr 0), pointer_val_val eptr)) (pointer_val_val gptr);
-          data_at sh (tarray t_struct_edge (MAX_EDGES)) (list_repeat (Z.to_nat MAX_EDGES) (Vundef, (Vundef, Vundef))) (pointer_val_val eptr)
+          data_at sh (tarray t_struct_edge MAX_EDGES) (Vundef_cwedges (Z.to_nat MAX_EDGES)) (pointer_val_val eptr)
          ).
 
 Definition sort_edges_spec :=
@@ -179,7 +178,7 @@ Definition kruskal_spec :=
         (**original graph*)
           data_at sh (t_wedgearray_graph) (Vint (Int.repr (numV g)), (Vint (Int.repr (numE g)), pointer_val_val orig_eptr)) (pointer_val_val orig_gptr);
           data_at sh (tarray t_struct_edge (numE g)) (map wedge_to_cdata glist) (pointer_val_val orig_eptr);
-          data_at sh (tarray t_struct_edge (MAX_EDGES - (numE g))) (list_repeat (Z.to_nat MAX_EDGES - Z.to_nat (numE g)) (Vundef, (Vundef, Vundef))) (offset_val ((numE g) * sizeof t_struct_edge) (pointer_val_val orig_eptr))
+          data_at sh (tarray t_struct_edge (MAX_EDGES - (numE g))) (Vundef_cwedges (Z.to_nat MAX_EDGES - Z.to_nat (numE g))) (offset_val ((numE g) * sizeof t_struct_edge) (pointer_val_val orig_eptr))
         )
   POST [tptr t_wedgearray_graph]
    EX msf_gptr msf_eptr: pointer_val,
@@ -197,16 +196,9 @@ Definition kruskal_spec :=
         (*original graph*)
           data_at sh (t_wedgearray_graph) (Vint (Int.repr (numV g)), (Vint (Int.repr (numE g)), pointer_val_val orig_eptr)) (pointer_val_val orig_gptr);
           data_at sh (tarray t_struct_edge (numE g)) (map wedge_to_cdata glist) (pointer_val_val orig_eptr);
-          data_at sh (tarray t_struct_edge (MAX_EDGES - (numE g))) (list_repeat (Z.to_nat MAX_EDGES - Z.to_nat (numE g)) (Vundef, (Vundef, Vundef))) (offset_val ((numE g) * sizeof t_struct_edge) (pointer_val_val orig_eptr));
+          data_at sh (tarray t_struct_edge (MAX_EDGES - numE g)) (Vundef_cwedges (Z.to_nat (MAX_EDGES - numE g))) (offset_val ((numE g) * sizeof t_struct_edge) (pointer_val_val orig_eptr));
         (*mst*)
           data_at sh (t_wedgearray_graph) (Vint (Int.repr (numV msf)), (Vint (Int.repr (numE msf)), pointer_val_val msf_eptr)) (pointer_val_val msf_gptr);
           data_at sh (tarray t_struct_edge (numE msf)) (map wedge_to_cdata msflist) (pointer_val_val msf_eptr);
-          data_at sh (tarray t_struct_edge (MAX_EDGES - (numE msf))) (list_repeat (Z.to_nat MAX_EDGES - Z.to_nat (numE msf)) (Vundef, (Vundef, Vundef))) (offset_val ((numE msf) * sizeof t_struct_edge) (pointer_val_val msf_eptr))
+          data_at sh (tarray t_struct_edge (MAX_EDGES - numE msf)) (Vundef_cwedges (Z.to_nat (MAX_EDGES - numE msf))) (offset_val ((numE msf) * sizeof t_struct_edge) (pointer_val_val msf_eptr))
 ).
-
-Definition Vprog : varspecs. mk_varspecs prog. Defined.
-
-Definition Gprog : funspecs :=
-  ltac:(with_library prog
-                     [mallocN_spec; makeSet_spec; find_spec; union_spec;
-                     mallocK_spec; free_spec; init_empty_graph_spec; sort_edges_spec; kruskal_spec]).

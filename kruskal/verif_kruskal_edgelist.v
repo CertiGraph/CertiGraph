@@ -14,17 +14,25 @@ Require Import RamifyCoq.graph.UnionFind.
 Require Import RamifyCoq.msl_application.UnionFindGraph.
 Require Import RamifyCoq.msl_application.ArrayGraph.
 Require Import RamifyCoq.sample_mark.env_unionfind_arr.
+(*Require Import RamifyCoq.sample_mark.specs_unionfind_arr.*)
 (*edgelist*)
 Require Import RamifyCoq.kruskal.WeightedEdgeListGraph.
 Require Import RamifyCoq.kruskal.env_kruskal_edgelist.
 Require Import RamifyCoq.kruskal.spatial_wedgearray_graph.
 Require Import RamifyCoq.sample_mark.spatial_array_graph.
+Require Import RamifyCoq.kruskal.kruskal_uf_specs.
 (*spanning tree definition*)
 Require Import RamifyCoq.kruskal.mst.
-Require Import RamifyCoq.kruskal.kruskal_uf_specs.
+Require Import RamifyCoq.kruskal.undirected_graph.
 (*Require Import RamifyCoq.graph.spanning_tree.*)
 
-Require Import RamifyCoq.kruskal.undirected_graph.
+Definition Vprog : varspecs. mk_varspecs prog. Defined.
+
+Definition Gprog : funspecs :=
+  ltac:(with_library prog
+      [makeSet_spec; find_spec; union_spec;
+      mallocK_spec; free_spec; fill_edge_spec; init_empty_graph_spec; sort_edges_spec; kruskal_spec
+  ]).
 
 Local Open Scope Z_scope.
 
@@ -96,6 +104,27 @@ Proof.
   rewrite H1, H0, H3. split3; trivial.
 Qed.
 
+Lemma partial_graph_EList:
+  forall (g g': FiniteWEdgeListGraph), is_partial_graph g g' -> incl (EList g) (EList g').
+Proof.
+unfold is_partial_graph; unfold incl; intros. rewrite EList_evalid; rewrite EList_evalid in H0.
+destruct H; destruct H1. apply H1. apply H0.
+Qed.
+
+Lemma NoDup_incl_Zlength:
+  forall (A: Type) (l l' : list A),
+  NoDup l -> incl l l' -> Zlength l <= Zlength l'.
+Proof.
+intros. repeat rewrite Zlength_correct. apply Nat2Z.inj_le. apply NoDup_incl_length; auto.
+Qed.
+
+Corollary partial_graph_numE:
+  forall (g g': FiniteWEdgeListGraph), is_partial_graph g g' -> numE g <= numE g'.
+Proof.
+unfold numE; intros. apply NoDup_incl_Zlength.
+apply NoDup_EList. apply partial_graph_EList; auto.
+Qed.
+
 Lemma Forall_permutation: forall {A: Type} (al bl: list A) f, Forall f al -> Permutation al bl -> Forall f bl.
 Proof.
 intros. rewrite Forall_forall in *; intros.
@@ -157,6 +186,65 @@ Proof.
   lia.
 Qed.
 
+Lemma data_at_singleton_array_eq':
+  forall (sh : Share.t) (t : type) (v : reptype t) (p : val), 
+  data_at sh (Tarray t 1 noattr) [v] p = data_at sh t v p.
+Proof.
+intros. apply data_at_singleton_array_eq. auto.
+Qed.
+
+Lemma tarray_data_at_isolate:
+  forall (sh : Share.t) (t : type) (N n : Z)
+    (l : list (reptype t)) (p : val),
+  0 <= n < N ->
+  N = Zlength l ->
+  data_at sh (tarray t N) l p =
+  sepcon (data_at sh (tarray t n) (sublist 0 n l) p)
+   (sepcon (data_at sh t (Znth n l) (field_address0 (Tarray t (n+1) noattr) [ArraySubsc n] p))
+     (data_at sh (tarray t (N-(n+1))) (sublist (n+1) N l)
+     (field_address0 (Tarray t N noattr) [ArraySubsc (n+1)] p))
+   ).
+Proof.
+intros.
+rewrite (split2_data_at_Tarray sh t N (n+1) l l (sublist 0 (n+1) l) (sublist (n+1) N l)).
+rewrite (split2_data_at_Tarray sh t (n+1) n
+          (sublist 0 (n+1) l) (sublist 0 (n+1) l)
+          (sublist 0 n l) (sublist n (n+1) l)).
+assert (n+1-n = 1) by lia. rewrite H1.
+assert (Hdummy: sublist n (n + 1) l = [Znth n l]). apply sublist_one. lia. lia. lia.
+rewrite Hdummy. rewrite (data_at_singleton_array_eq sh t (Znth n l) [Znth n l]).
+repeat rewrite sepcon_assoc. reflexivity.
+reflexivity. lia. rewrite Zlength_sublist by lia; lia.
+rewrite (sublist_same 0 (n+1) (sublist 0 (n+1) l)). reflexivity.
+lia. rewrite Zlength_sublist by lia; lia.
+rewrite sublist_sublist00 by lia. reflexivity.
+rewrite sublist_sublist by lia. repeat rewrite Z.add_0_r. reflexivity.
+lia. lia. rewrite sublist_same by lia. reflexivity.
+reflexivity. reflexivity.
+Qed.
+
+(*this is stupid*)
+Corollary tarray_data_at_isolate2:
+  forall P (sh : Share.t) (t : type) (N n : Z)
+    (l : list (reptype t)) (p : val),
+  0 <= n < N ->
+  N = Zlength l ->
+  sepcon P (data_at sh (tarray t N) l p) =
+  sepcon P (sepcon (data_at sh (tarray t n) (sublist 0 n l) p)
+   (sepcon (data_at sh t (Znth n l) (field_address0 (Tarray t (n+1) noattr) [ArraySubsc n] p))
+     (data_at sh (tarray t (N-(n+1))) (sublist (n+1) N l)
+     (field_address0 (Tarray t N noattr) [ArraySubsc (n+1)] p)))).
+Proof.
+intros. rewrite (tarray_data_at_isolate sh t N n l p H H0).
+reflexivity.
+Qed.
+
+Lemma body_fill_edge: semax_body Vprog Gprog f_fill_edge fill_edge_spec.
+Proof.
+start_function.
+forward. forward. forward. entailer!.
+Qed.
+
 Lemma body_init_empty_graph: semax_body Vprog Gprog f_init_empty_graph init_empty_graph_spec.
 Proof.
 start_function.
@@ -182,7 +270,7 @@ assert (memory_block sh (MAX_EDGES * (sizeof t_struct_edge)) (pointer_val_val ep
     simpl. auto.
   } rewrite <- memory_block_data_at_; auto.
 } rewrite H1. clear H1.
-assert (data_at_ sh (tarray t_struct_edge MAX_EDGES) (pointer_val_val eptr) = data_at sh (tarray t_struct_edge MAX_EDGES) (list_repeat (Z.to_nat MAX_EDGES) (Vundef, (Vundef, Vundef))) (pointer_val_val eptr)). {
+assert (data_at_ sh (tarray t_struct_edge MAX_EDGES) (pointer_val_val eptr) = data_at sh (tarray t_struct_edge MAX_EDGES) (Vundef_cwedges (Z.to_nat MAX_EDGES)) (pointer_val_val eptr)). {
   unfold data_at_, field_at_, data_at. assert (default_val (nested_field_type (tarray t_struct_edge MAX_EDGES) []) = list_repeat (Z.to_nat MAX_EDGES) (Vundef, (Vundef, Vundef))) by reflexivity.
   rewrite H1. auto.
 } rewrite H1. clear H1.
@@ -199,9 +287,10 @@ Lemma body_kruskal: semax_body Vprog Gprog f_kruskal kruskal_spec.
 Proof.
   start_function.
   forward. forward.
-  forward_call (sh, (numV g)). Intros subsets.
+  (*call MakeSet*)
+  forward_call (sh, (numV g)). Intros subsetsPtr.
+  (*malloc mst*)
   forward_call (gv, sh). Intros mst.
-  destruct subsets as [subsetsGraph subsetsPtr].
   destruct mst as [gptr eptr].
   simpl fst in *. simpl snd in *. 
   forward. forward.
@@ -213,33 +302,24 @@ Proof.
     rewrite Zlength_map. apply g2wedgelist_numE.
   }
   rewrite <- HZlength_glist.
-
   (******************************SORT******************************) 
   forward_call ((wshare_share sh), 
                 pointer_val_val orig_eptr,
                 (map wedge_to_cdata glist)).
-  (*- entailer!. simpl. rewrite HZlength_glist. reflexivity.
-  - rewrite HZlength_glist. entailer!. rewrite Zlength_map, g2wedgelist_numE. entailer!.*)
   - split3; [| |split]; trivial.
     rewrite HZlength_glist.
       split; [ apply numE_pos | apply numE_range; trivial].
   - Intros sorted.
-    (* a little cleanup... *)
-    (*rewrite empty_WEdgeListGraph_numE.
-    rewrite <- Z2Nat.inj_sub, Z.sub_0_r. 2: lia.
-    rewrite Z.mul_0_l.*)
+    (* some trivial assertions about sorted for convenience *)
     assert_PROP (isptr (pointer_val_val eptr)) by
         (rewrite (data_at_isptr sh); entailer!).
     rename H7 into H_eptr_isptr.
     assert (Hdef_sorted: Forall def_wedgerep sorted). {
       apply (Forall_permutation _ _ _ Hdef_glist H5).
     }
-    (*clear Hdef_g.*)
     assert (HZlength_sorted: Zlength sorted = numE g). {
       rewrite <- (Permutation_Zlength _ _ _ H5). apply HZlength_glist.
     } rewrite HZlength_glist. rewrite HZlength_sorted.
-    (* done with cleanup. *)
-
     (******************************THE BIG NASTY LOOP******************************) 
     forward_for_simple_bound
     (numE g)
@@ -248,13 +328,19 @@ Proof.
      EX msflist: list (LE*EType),
      EX subsetsGraph' : UFGraph,                      
      PROP (numV msf' = numV g; (*which combined with below should give vvalid msf' v <-> vvalid g v, see if we need it later*)
+           numE msf' <= i;
            is_partial_graph msf' g;
            uforest msf';
            Permutation msflist (graph_to_wedgelist msf');
-           True; (* something about min wt *)
            forall u v, connected subsetsGraph' u v -> connected g u v; (*uf represents components of graph*)
            forall u v, connected subsetsGraph' u v <-> connected msf' u v; (*correlation between uf and msf'*)
-           uf_equiv subsetsGraph subsetsGraph' (*WX: If I'm not wrong the 2nd part isn't right, we just need the vvalid?*)
+           uf_equiv (makeSet_discrete_Graph (Z.to_nat (numV g))) subsetsGraph'; (*WX: If I'm not wrong the 2nd part isn't right, we just need the vvalid?*)
+           (*weight lemmas...*)
+           forall x, In x (map wedge_to_cdata msflist) -> exists j, 0 <= j < i /\ x = Znth j sorted;
+           (*2. edges before i that WEREN't added, exists a upath made of edges before j*)
+           forall j, 0 <= j < i -> ~ In (Znth j sorted) (map wedge_to_cdata msflist) ->
+            (exists p: upath, c_connected_by_path msf' (fun _ => True) p (fst (snd (Znth j sorted))) (snd (snd (Znth j sorted))) /\
+              (exists l, fits_upath msf' l p /\ forall w, In w l -> In (wedge_to_cdata (edge_to_wedge g w)) (sublist 0 j sorted)))
           )
      LOCAL (temp _graph_E (Vint (Int.repr (numE g)));
             temp _graph__1 (pointer_val_val orig_gptr);
@@ -266,11 +352,11 @@ Proof.
           (*orig graph with sorted edgelist*)
           data_at sh (tarray t_struct_edge (numE g)) sorted (pointer_val_val orig_eptr);
           data_at sh t_wedgearray_graph (Vint (Int.repr (numV g)), (Vint (Int.repr (numE g)), pointer_val_val orig_eptr)) (pointer_val_val orig_gptr);
-          data_at sh (tarray t_struct_edge (MAX_EDGES - numE g)) (list_repeat (Z.to_nat MAX_EDGES - Z.to_nat (numE g)) (Vundef, (Vundef, Vundef))) (offset_val (numE g * sizeof t_struct_edge) (pointer_val_val orig_eptr));
+          data_at sh (tarray t_struct_edge (MAX_EDGES - numE g)) (Vundef_cwedges (Z.to_nat (MAX_EDGES - numE g))) (offset_val (numE g * sizeof t_struct_edge) (pointer_val_val orig_eptr));
           (*msf'. fold this into wedgearray_graph_rep?*)
           data_at sh (tarray t_struct_edge (numE msf')) (map wedge_to_cdata msflist) (pointer_val_val eptr);
           data_at sh t_wedgearray_graph (Vint (Int.repr (numV msf')), (Vint (Int.repr (numE msf')), pointer_val_val eptr)) (pointer_val_val gptr);
-          data_at sh (tarray t_struct_edge (MAX_EDGES - numE msf')) (list_repeat (Z.to_nat MAX_EDGES - Z.to_nat (numE msf')) (Vundef, (Vundef, Vundef))) (offset_val (numE msf' * sizeof t_struct_edge) (pointer_val_val eptr));
+          data_at sh (tarray t_struct_edge (MAX_EDGES - numE msf')) (Vundef_cwedges (Z.to_nat (MAX_EDGES - numE msf'))) (offset_val (numE msf' * sizeof t_struct_edge) (pointer_val_val eptr));
           (*ufgraph*)
           whole_graph sh subsetsGraph' subsetsPtr
     ))%assert.
@@ -278,14 +364,14 @@ Proof.
     + (******PRECON******)
       Exists (edgeless_WEdgeGraph (numV g)).
       (*Exists (nil (A:=LE*EType)).*) Exists (graph_to_wedgelist (edgeless_WEdgeGraph (numV g))).
-      Exists subsetsGraph.
+      Exists (makeSet_discrete_Graph (Z.to_nat (numV g))).
       rewrite edgeless_WEdgeGraph_numV by lia.
       rewrite edgeless_WEdgeGraph_numE. rewrite Z.sub_0_r.
       replace ((Z.to_nat MAX_EDGES - Z.to_nat 0)%nat) with (Z.to_nat MAX_EDGES) by lia.
       rewrite data_at_zero_array_eq. 2: simpl; auto. 2: auto.
       2: { unfold graph_to_wedgelist. rewrite edgeless_WEdgeGraph_EList. simpl; auto. }
       entailer!. (*LAAAAAAAAG*)
-      split3; [| | split3].
+      split3; [| | split3]. 5: split. (*the last lemma got purged? probably because of 0<=j<0*)
       * unfold is_partial_graph.
         repeat split; intros.
         1: rewrite <- edgeless_WEdgeGraph_vvalid in H25; apply H0; auto.
@@ -301,27 +387,59 @@ Proof.
         assert (~ evalid (edgeless_WEdgeGraph (numV g)) x). rewrite <- EList_evalid.
           rewrite edgeless_WEdgeGraph_EList. auto.
         contradiction.
-      * assert (subsetsGraph = makeSet_discrete_Graph (Z.to_nat (numV g))). admit.
-        intros. unfold connected in H26. unfold connected_by in H26. destruct H26 as [p H26]. unfold connected_by_path in H26.
-        destruct H26. unfold good_upath in H26. destruct H26. unfold valid_upath in H26. destruct H27.
-        destruct p eqn:Hp; simpl in H26. simpl in H27; inversion H27.
-        assert (z = u). simpl in H27; inversion H27; reflexivity. rewrite H30 in *.
+      * intros. unfold connected in H25. unfold connected_by in H25. destruct H25 as [p ?]. unfold connected_by_path in H25.
+        destruct H25. unfold good_upath in H25. destruct H25. unfold valid_upath in H25. destruct H26.
+        destruct p eqn:Hp; simpl in H25. simpl in H26; inversion H26. simpl in H26; inversion H26.
+        rewrite H30 in *.
         destruct u0.
-        (*single vertex in upath
-          then u=v, trivially connected
-        *)
-        simpl in H29; inversion H29. exists p. rewrite Hp; unfold connected_by_path. simpl; split; auto.
-        split. simpl. apply H0. rewrite H25 in H26. apply makeSet_vvalid in H26. rewrite Z2Nat.id in H26 by lia. apply H26.
+        (*single vertex in upath. Thus u=v, trivially connected*)
+        simpl in H28; inversion H28. exists p. rewrite Hp; unfold connected_by_path. simpl; split; auto.
+        split. simpl. apply H0. apply makeSet_vvalid in H25. rewrite Z2Nat.id in H25 by lia. apply H25.
         unfold upath_prop; rewrite Forall_forall. intros; auto.
         (*case p = u::z0::u0.
-          Thus exists e,. dst subsetsGraph e = z0
-          But by makeSet_dst...
+          Thus exists e,. dst subsetsGraph e = z0. But by makeSet_dst...
         *)
-        destruct H26. destruct H26. unfold adj_edge in H26. destruct H26. destruct H32; rewrite H25 in H32.
-          destruct H32.
-        admit. admit. (*WX: working on this*)
-      * admit.  (*WX: working on this*)
-      * apply (uf_equiv_refl _ (liGraph subsetsGraph)).
+        destruct H25. destruct H25. unfold adj_edge in H25. destruct H25. destruct H25. destruct H32.
+        rewrite makeSet_vvalid in H33. rewrite Z2Nat.id in H33 by lia.
+        destruct H31; destruct H31;
+          rewrite H34 in H33; rewrite makeSet_dst in H34; rewrite <- H34 in H33; lia.
+      * (*WX: working on this*)
+        intros; split; intros.
+        { (*Same thing as above, show that it can't be connected*)
+          unfold connected in H25; unfold connected_by in H25; destruct H25 as [p ?]. unfold connected_by_path in H25.
+          destruct H25. unfold good_upath in H25. destruct H25. unfold valid_upath in H25. destruct H26.
+          destruct p eqn:Hp; simpl in H25. simpl in H26; inversion H26. simpl in H26; inversion H26.
+          rewrite H30 in *. destruct u0.
+          (*single vertex in upath. Thus u=v, trivially connected*)
+          simpl in H28; inversion H28. exists p. rewrite Hp; unfold connected_by_path. simpl; split; auto.
+          split. simpl. apply makeSet_vvalid in H25. rewrite Z2Nat.id in H25 by lia. apply H25.
+          unfold upath_prop; rewrite Forall_forall. intros; auto.
+          (*case p = u::z0::u0.
+            Thus exists e,. dst subsetsGraph e = z0. But by makeSet_dst...
+          *)
+          destruct H25. destruct H25. unfold adj_edge in H25. destruct H25. destruct H25. destruct H32.
+          rewrite makeSet_vvalid in H33. rewrite Z2Nat.id in H33 by lia.
+          destruct H31; destruct H31;
+            rewrite H34 in H33; rewrite makeSet_dst in H34; rewrite <- H34 in H33; lia.
+        }
+        { (*more or less same deal...*)
+          unfold connected in H25; unfold connected_by in H25; destruct H25 as [p ?]. unfold connected_by_path in H25.
+          destruct H25. unfold good_upath in H25. destruct H25. unfold valid_upath in H25. destruct H26.
+          destruct p eqn:Hp. simpl in H26; inversion H26. simpl in H26; inversion H26.
+          rewrite H30 in *. destruct u0.
+          (*single vertex in upath. Thus u=v, trivially connected*)
+          simpl in H28; inversion H28. exists p. rewrite Hp; unfold connected_by_path. simpl; split; auto.
+          split. simpl. rewrite makeSet_vvalid. rewrite Z2Nat.id by lia. apply H25.
+          unfold upath_prop; rewrite Forall_forall. intros; auto.
+          (*case p = u::z0::u0.
+            Thus exists e,. dst subsetsGraph e = z0. But by makeSet_dst...
+          *)
+          destruct H25. destruct H25. unfold adj_edge in H25. destruct H25. destruct H25.
+          rewrite <- EList_evalid in H25. rewrite edgeless_WEdgeGraph_EList in H25. contradiction.
+        }
+      * apply (uf_equiv_refl _ (liGraph (makeSet_discrete_Graph (Z.to_nat (numV g))))).
+      * intros. unfold graph_to_wedgelist in H25; rewrite edgeless_WEdgeGraph_EList in H25; simpl in H25.
+        contradiction.
     + (******LOOP BODY******)
       Intros.
       assert (Hdef_i: def_wedgerep (Znth i sorted)). {
@@ -341,28 +459,23 @@ Proof.
  rewrite (surjective_pairing (Znth i sorted)).
  rewrite (surjective_pairing (snd (Znth i sorted))).
 
-  (*In (Znth i sorted) sorted, 
-    which is a Permutation of map wedge_to_cdata glist
-    so 
-    In (Znth i sorted) map wedge_to_cdata glist
-   *)
+  (*some assertions about Znth i sorted, for convenience*)
   assert (HIn_i: In (Znth i sorted) (map wedge_to_cdata glist)). {
     apply Permutation_sym in H5.
     apply (@Permutation_in _ _ _ _ H5).
     apply Znth_In. lia.
   }
-  (* thus, exists e, eevalid g e /\ (Znth i sorted) = wedge_to_cdata e <--add such a lemma to spatial *)
   apply list_in_map_inv in HIn_i.
   destruct HIn_i as [e [Heq_i HIn_i]].
   destruct e as [w [u v]].
- assert (elabel g (u,v) = w /\ evalid g (u,v)). {
-    apply Permutation_sym in H3. Check Permutation_in. apply (Permutation_in (A:= prod LE EType) (l:=glist) (l':=graph_to_wedgelist g) (w,(u,v)) H3) in HIn_i.
-    unfold graph_to_wedgelist in HIn_i. apply list_in_map_inv in HIn_i. destruct HIn_i. destruct H15.
-    inversion H15. split. auto. apply EList_evalid in H16. rewrite <- H19 in H16. apply H16.
- } destruct H15 as [Hw_i Huv_i].
- assert (vvalid g u /\ vvalid g v). {
-  destruct H. destruct H15. unfold edge_valid in H15. apply H15 in Huv_i. auto.
- } destruct H15 as [Hu_i Hv_i].
+ assert (Htmp: elabel g (u,v) = w /\ evalid g (u,v)). {
+    apply Permutation_sym in H3. apply (Permutation_in (A:= prod LE EType) (l:=glist) (l':=graph_to_wedgelist g) (w,(u,v)) H3) in HIn_i.
+    unfold graph_to_wedgelist in HIn_i. apply list_in_map_inv in HIn_i. destruct HIn_i. destruct H18.
+    inversion H18. split. auto. apply EList_evalid in H19. rewrite <- H22 in H19. apply H19.
+ } destruct Htmp as [Hw_i Huv_i].
+ assert (Htmp: vvalid g u /\ vvalid g v). {
+  destruct H. destruct H18. unfold edge_valid in H18. apply H18 in Huv_i. auto.
+ } destruct Htmp as [Hu_i Hv_i].
  forward_call (sh,
                subsetsGraph',
                subsetsPtr,
@@ -370,12 +483,18 @@ Proof.
                   (fst (snd (Znth i sorted))))).
  ++
   entailer!. simpl.
+  clear - Hdef_i.
   destruct Hdef_i as [_ [? _]].
-  rewrite vint_repr_force_clean; trivial.
+  apply is_int_e in H.
+  destruct H as [? [? _]].
+  unfold wedgerep_inhabitant in *.
+  replace ((fst (snd (Znth i sorted)))) with (Vint x).
+  simpl.
+  rewrite Int.repr_signed. trivial.
  ++
   unfold wedge_to_cdata in Heq_i; simpl in Heq_i. rewrite Heq_i; simpl.
-  destruct H14 as [? _].
-  rewrite <- H14. apply H4. apply H0 in Hu_i. rewrite !Int.signed_repr. lia.
+  destruct H15 as [? _].
+  rewrite <- H15. apply H4. apply H0 in Hu_i. rewrite !Int.signed_repr. lia.
     apply H0 in Hu_i. destruct H. apply H in Hu_i.
     split. apply (Z.le_trans Int.min_signed 0 u). apply Z.lt_le_incl. apply Int.min_signed_neg. apply Hu_i.
     apply Z.lt_le_incl; apply Hu_i.
@@ -398,9 +517,9 @@ Proof.
    rewrite vint_repr_force_clean; trivial.
   **
   unfold wedge_to_cdata in Heq_i; simpl in Heq_i. rewrite Heq_i; simpl.
-  destruct H15 as [? _]; rewrite <- H15.
+  destruct H18 as [? _]; rewrite <- H18.
   (*WX: If I'm not wrong we need to change H14, but only the first part is used here so won't affect much*)
-  destruct H14 as [? _]; rewrite <- H14.
+  destruct H15 as [? _]; rewrite <- H15.
   apply H4. apply H0 in Hv_i. rewrite !Int.signed_repr. lia.
     apply H0 in Hv_i. destruct H. apply H in Hv_i.
     split. apply (Z.le_trans Int.min_signed 0 v). apply Z.lt_le_incl. apply Int.min_signed_neg. apply Hv_i.
@@ -412,6 +531,19 @@ Proof.
    forward_if.
    --- (* yes, add this edge.
           the bulk of the proof *)
+     (*ASDF: isolate the part of the array being updated*)
+
+     (*THIS IS GOING TO BE UGLY*)
+     rewrite (tarray_data_at_isolate sh t_struct_edge (MAX_EDGES - numE msf') 0
+              (Vundef_cwedges (Z.to_nat (MAX_EDGES - numE msf')))
+              (offset_val (numE msf' * sizeof t_struct_edge) (pointer_val_val eptr))
+     ). 2: { (*need an assertion somewhere that numE msf' <= i*) admit. }
+     2: { unfold Vundef_cwedges. rewrite Zlength_list_repeat. lia.
+          (*same thing as above, so should declare it at the start of loopbody*) admit.
+          apply numE_pos.
+        } Intros.
+
+    (*this part should be replaceable now*)
      forward. forward. forward.
      1: { admit. (* something is quite wrong *) }
      forward. forward. forward.
@@ -560,61 +692,3 @@ Proof.
       forward.
       admit.
 Abort.
-
-Print Assumptions body_init_empty_graph.
-(*
-Idea of proof:
-int graph_V = graph->V;
-int graph_E = graph->E;
-struct subset *subsets = makeSet(graph_V); (*ufgraph with V vertices all distinct*)
-struct graph *mst = init_empty_graph();
-
-mst->V = graph_V; <-- mst is now a graph with V vertices and 0 edges
-
-sort_edges(graph->edge_list,0,graph_E-1);
-
-    //invariant: is_partial_graph mst orig_graph /\ uforest mst
-    //   connected ufgraph u v <-> connected in mst (also connected ufgraph u v -> connected graph u v)
-    // showing forest is a problem... need an easy-to-work-with definition
-    // and something about minimum weight...
-    //precon: mst has no edges, is a trivial subset, trivial forest. subsets are all disjoint
-    for (int i = 0; i < graph_E; ++i) {
-
-        int u = graph->edge_list[i].u;
-        int v = graph->edge_list[i].v;
-
-        int ufind = find(subsets, u);		//returned g' is: uf_root g' i rt
-        int vfind = find(subsets, v);
-
-        //need a join postcon?
-        //ufind != vfind <-> not connected in mst
-        //not_connected -> add edge -> no cycle <-- Need a lemma in undirected_graph.v
-        //also show that edge here: minimum of all (u,v) edges
-        if (ufind != vfind) {
-            mst->edge_list[mst->E].u = u;
-            mst->edge_list[mst->E].v = v;
-            mst->edge_list[mst->E].weight = graph->edge_list[i].weight;
-            mst->E += 1;
-            Union(subsets, u, v);
-
-            //mst = mst + (u,v), thus u,v are connected
-            //ifcon (loopcon): is_partial_graph (mst + (u,v)) orig
-            //mst is still uforest (using the needed lemma above)
-            //same_subset(u,v) /\ u,v connected (*trivially <->*)
-        }
-        //need an elsecon?
-        //uf_root p u -> reachable g u p -> connected p u (reachable_implies_connected)
-        //connected p u -> connected p v -> connected u v (connected_trans)
-    }
-    //postcon
-
-    //before free, need to prove that same_subset(u,v) <-> connected orig u v
-    //from invariant, same_subset(u,v) <-> connected in mst
-    //thus, connected in mst <-> connected in orig: spanning definition
-
-    free(subsets);
-
-    //worried about proving minimum
-    return mst;
-
-*)
