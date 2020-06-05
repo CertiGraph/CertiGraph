@@ -529,9 +529,7 @@ Proof.
    destruct v_root as [subsetsGraph_uv v_root].
    simpl fst in *. simpl snd in *.
    forward_if.
-   --- admit.
-       (* 
-
+   --- 
      (* yes, add this edge.
           the bulk of the proof *)
      (*ASDF: isolate the part of the array being updated*)
@@ -650,7 +648,7 @@ Proof.
        do 2 rewrite <- H22.
        split; apply H4. admit. admit. (* leaving for WX *)
      +++ 
-       admit. *)
+       admit.
    --- (* no, don't add this edge *)
     forward. entailer!.
     (* the variables are uncertain but here's a guess: *)
