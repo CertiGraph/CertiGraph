@@ -8,7 +8,8 @@ Proof.
   forward_call (thread_info_type, gv).
   - split; [|split]; cbv; [split; intro HS; inversion HS | reflexivity..].
   - Intros t. if_tac.
-    + subst t. forward_if False; [|inversion H].
+    + subst t. forward_if False.
+      2: exfalso; apply H; trivial.
       unfold all_string_constants; Intros;
         forward_call ((gv ___stringlit_9),
                       (map init_data2byte (gvar_init v___stringlit_9)), sh);

@@ -165,12 +165,17 @@ Proof.
       * split; [|lia]; subst; apply Z.mul_nonneg_nonneg;
                                   [rep_lia | apply space_order].
     + assert (index_offset < used_offset). {
-        now destruct (zlt index_offset used_offset); [|rewrite H24 in H25; unfold typed_true in H25]. }
+        destruct (zlt index_offset used_offset); trivial.
+        rewrite force_sem_cmp_pp in H24.
+        2,3: rewrite isptr_offset_val; trivial.
+        rewrite H24 in H25; unfold typed_true in H25. easy. }
       forward. entailer!. red. rewrite <- H20 in H26.
       rewrite <- Z.mul_lt_mono_pos_l in H26 by rep_lia.
       apply pvs_lt_rev in H26. assumption.
     + assert (~ index_offset < used_offset). {
         destruct (zlt index_offset used_offset); trivial.
+        rewrite force_sem_cmp_pp in H24.
+        2,3: rewrite isptr_offset_val; trivial.
         now rewrite H24 in H25; unfold typed_false in H25. }
       forward. thaw FR. unfold thread_info_rep, heap_struct_rep.
       Exists g' t_info'. unfold forward_condition. entailer!.
