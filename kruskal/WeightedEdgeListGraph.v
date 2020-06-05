@@ -79,7 +79,6 @@ Local Identity Coercion WEdgeListGraph_LabeledGraph: WEdgeListGraph >-> LabeledG
 Instance finGraph (g: FiniteWEdgeListGraph): FiniteGraph g := @fin g (@sound_gg _ _ _ _ _ _ _ _ g).
 (* Nice. Now your definitions will be cleaner. *)
 
-
 Definition src_edge (g : WEdgeListGraph): Prop :=
   forall e, src g e = fst e.
 
@@ -101,9 +100,12 @@ Definition sound_weighted_edge_graph (g: WEdgeListGraph): Prop :=
 Definition numV (g: FiniteWEdgeListGraph) : Z := Zlength (VList g).
 Definition numE (g: FiniteWEdgeListGraph) : Z := Zlength (EList g).
 
+Definition edge_to_wedge (g: WEdgeListGraph) e : LE * EType := (elabel g e, e).
+
 (* from Graph to list of edges *)
 Definition graph_to_wedgelist (g: FiniteWEdgeListGraph) : list (LE * EType) :=
-  map (fun e => (elabel g e, e)) (EList g). (*ordering unknown*)
+  (*map (fun e => (elabel g e, e)) (EList g).*)
+  map (edge_to_wedge g) (EList g).
 
 (* Moving on to Spatial Rep *)
 
