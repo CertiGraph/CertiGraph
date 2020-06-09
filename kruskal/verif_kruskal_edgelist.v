@@ -311,8 +311,7 @@ Qed.
   
 Lemma connected_ufroot_same_iff:
   forall (g: UFGraph) u v,
-    connected g u v <->
-    ufroot_same g u v. 
+    connected g u v <-> ufroot_same g u v. 
 Admitted.
 
 Lemma uf_equiv_adjacent_connected:
@@ -365,22 +364,13 @@ Qed.
 Lemma uf_equiv_connected:
   forall (g1 g2: UFGraph) u v,
     uf_equiv g1 g2 ->
-    connected g1 u v <->
-    connected g2 u v.
+    connected g1 u v <-> connected g2 u v.
 Proof.
   intros. split; intros.
   - apply (uf_equiv_connected' g1); trivial.
   - apply uf_equiv_sym in H.
     apply (uf_equiv_connected' g2); trivial.
 Qed.
-
-
-
-Lemma uf_connected_same_root:
-  forall g u v r1 r2,
-    
-
-
 
 Lemma data_at_singleton_array_eq':
   forall (sh : Share.t) (t : type) (v : reptype t) (p : val), 
