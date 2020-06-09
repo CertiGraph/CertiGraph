@@ -488,15 +488,15 @@ Proof.
      EX msf' : FiniteWEdgeListGraph,
      EX msflist: list (LE*EType),
      EX subsetsGraph' : UFGraph,                      
-     PROP (numV msf' = numV g; (*which combined with below should give vvalid msf' v <-> vvalid g v, see if we need it later*)
+     PROP (forall v, vvalid msf' v <-> vvalid g v; (*which should give numV msf' = numV g*)
            numE msf' <= i;
            sound_weighted_edge_graph msf';
            is_partial_graph msf' g;
            uforest msf';
            Permutation msflist (graph_to_wedgelist msf');
            forall v, vvalid g v <-> vvalid subsetsGraph' v;
-           forall u v, (exists j, 0<=j<i /\ (fst (snd (Znth j msflist)) = u \/ snd (snd (Znth j msflist)) = u))
-                    -> (exists j, 0<=j<i /\ (fst (snd (Znth j msflist)) = v \/ snd (snd (Znth j msflist)) = v))
+           forall u v, (exists wedge, In wedge msflist /\ (fst (snd wedge) = u \/ snd (snd wedge) = u))
+                    -> (exists wedge, In wedge msflist /\ (fst (snd wedge) = v \/ snd (snd wedge) = v))
                     -> (connected subsetsGraph' u v <-> connected g u v);
            (*forall u v, connected subsetsGraph' u v -> connected g u v; *)
            forall u v, connected subsetsGraph' u v <-> connected msf' u v; (*correlation between uf and msf'*)
@@ -537,11 +537,9 @@ Proof.
         rewrite graph_to_wedgelist_edgeless_WEdgeGraph. rewrite app_nil_l.
       entailer!. (*LAAAAAAAAG*)
       split3; [| | split3]. 5: split.
-      * split. unfold vertex_valid; intros. apply edgeless_WEdgeGraph_vvalid in H25.
+      * apply edgeless_WEdgeGraph_sound.
           split. lia. assert ((Int.max_signed/8) < Int.max_signed). apply Z.div_lt.
           set (k:=Int.max_signed); compute in k; subst k. lia. lia. lia.
-        split. unfold edge_valid; intros. apply edgeless_WEdgeGraph_evalid in H25. contradiction.
-        unfold weight_valid; intros. apply edgeless_WEdgeGraph_evalid in H25. contradiction.
       * unfold is_partial_graph. repeat split; intros.
         1: rewrite <- edgeless_WEdgeGraph_vvalid in H25; apply H0; auto.
         all: apply edgeless_WEdgeGraph_evalid in H25; contradiction.
@@ -571,7 +569,7 @@ Proof.
         destruct H31; destruct H31;
           rewrite H34 in H33; rewrite makeSet_dst in H34; rewrite <- H34 in H33; lia.
       *)
-      * intros. destruct H25; destruct H25. lia.
+      * intros. destruct H25; destruct H25. contradiction.
       * unfold connected; unfold connected_by; unfold connected_by_path; unfold good_upath; unfold valid_upath.
         intros; split; intros.
         { (*Same thing as above, show that it can't be connected*)
@@ -603,6 +601,10 @@ Proof.
         }
     + (******LOOP BODY******)
   Intros.
+  assert (HnumV_msf': numV msf' = numV g). {
+    unfold numV. apply Permutation_Zlength. apply NoDup_Permutation.
+    apply NoDup_VList. apply NoDup_VList. intros. repeat rewrite VList_vvalid. apply H8.
+  }
   (*some assertions about Znth i sorted, for convenience*)
   assert (Hdef_i: def_wedgerep (Znth i sorted)).
     rewrite Forall_forall in Hdef_sorted. apply Hdef_sorted. apply Znth_In. lia.
@@ -752,8 +754,8 @@ Proof.
       assert (uf_root subsetsGraph' u u_root). apply (uf_equiv_root_the_same subsetsGraph' subsetsGraph_u). apply H19. apply H20.
       assert (uf_root subsetsGraph_u v v_root). apply (uf_equiv_root_the_same subsetsGraph_u subsetsGraph_uv). apply H21. apply H22.
       assert (uf_root subsetsGraph' v v_root). apply (uf_equiv_root_the_same subsetsGraph' subsetsGraph_u). apply H19. apply H28.
-      assert (u_root = x). admit.
-      assert (v_root = x). admit.
+      assert (u_root = x). apply (uf_root_unique' subsetsGraph' u u_root x). apply H27. apply H25.
+      assert (v_root = x). apply (uf_root_unique' subsetsGraph' v v_root x). apply H29. apply H26.
       rewrite H30 in H23; rewrite H31 in H23. contradiction.
     }
     (*by invariant, it means they aren't connected in msf'*)
@@ -761,10 +763,10 @@ Proof.
     (*but presence of u-v means they are connected*)
     unfold not; intros.
     assert (connected msf' u v). {
-      (*
-      exists [u;v]. split. split. simpl. split. exists (u,v). split. split. apply H26.
-      split. simpl.
-      *)
+      apply adjacent_connected. exists (u,v).
+      assert (src_edge msf'). apply H10. assert (dst_edge msf'). apply H10.
+      split. split. apply H26. split. rewrite H27; simpl. apply H8. auto. rewrite H28; simpl. apply H8. auto.
+      rewrite H27; rewrite H28; simpl. left; split; auto.
     } contradiction.
   }
   forward_call (sh, subsetsGraph_uv, subsetsPtr, u, v).
@@ -775,9 +777,10 @@ Proof.
     split; auto.
    +++
     (*ASDF*)
+    (*
     Exists (FiniteWEdgeListGraph_adde msf' (u,v) w).
     Exists (msflist+::(w,(u,v))).
-    Intros vret. Exists vret.
+    Intros vret. Exists vret.*)
     (*before we entailer, preemptively fix up some of the SEPs*)
 
     admit.
@@ -790,13 +793,13 @@ Proof.
       apply uf_equiv_sym in H21.
       apply (uf_equiv_trans _ (liGraph subsetsGraph_u)); trivial.
     }
-    entailer!. 
+    entailer!.
     split3; [| |split3]; intros.
    +++
      rewrite H14.
      destruct H24. symmetry. apply H24.
    +++
-     admit.
+      admit.
    +++
      rewrite <- H16.
      apply uf_equiv_connected; trivial.
@@ -810,6 +813,9 @@ Proof.
      subst j. (* hrmm *)
      rewrite Hu_i; rewrite Hv_i.
      unfold c_connected_by_path.
+     assert (connected msf' u v). {
+      apply connected_ufroot_same_iff.
+     }
      (*idea:
         u_root = v_root
         therefore, connected msf' u v := exists l: upath, ...
