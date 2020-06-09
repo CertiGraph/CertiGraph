@@ -264,17 +264,18 @@ Proof.
   pose proof (reachable_foot_valid _ _ _ H0).
   pose proof (reachable_head_valid _ _ _ H0).
   destruct H.
-  assert (EnumEnsembles.EnumCovered Z (evalid g2)) by admit.
-  assert (EnumEnsembles.EnumCovered Z (evalid g1)) by admit.
-  (* will investigate how Shengyi does these *)
-  
+  assert (EnumEnsembles.EnumCovered Z (evalid g2)). {
+    apply EnumEnsembles.Enumerable_is_EnumCovered, finiteE.
+  }
+  assert (EnumEnsembles.EnumCovered Z (evalid g1)). {
+    apply EnumEnsembles.Enumerable_is_EnumCovered, finiteE.
+  }
   assert (vvalid g2 u). {
     apply H; trivial.
   }
   assert (vvalid g2 v). {
     apply H; trivial.
   }
-  
   pose proof (uf_root_always_exists g1 (liGraph g1) u X0 H2).
   pose proof (uf_root_always_exists g1 (liGraph g1) v X0 H1).
   pose proof (uf_root_always_exists g2 (liGraph g2) u X H4).
@@ -295,7 +296,7 @@ Proof.
   apply reachable_implies_connected in H7.
   apply connected_symm in H7.
   apply (connected_trans _ _ _ _ H6 H7).
-Admitted.
+Qed.
 
 Lemma uf_equiv_adjacent_connected:
   forall (g1 g2 : UFGraph) u v,
