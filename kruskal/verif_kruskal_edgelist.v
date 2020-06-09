@@ -383,9 +383,13 @@ Proof.
 Qed.
 
 Lemma uf_root_unique':
-forall (g: UFGraph) x r1 r2, uf_root g x r1 -> uf_root g x r2 -> r1 = r2.
+  forall (g: UFGraph) x r1 r2,
+    uf_root g x r1 ->
+    uf_root g x r2 ->
+    r1 = r2.
 Proof.
-Admitted.
+  intros. apply (uf_root_unique _ (liGraph g) x); trivial.
+Qed.
 
 Lemma data_at_singleton_array_eq':
   forall (sh : Share.t) (t : type) (v : reptype t) (p : val), 
