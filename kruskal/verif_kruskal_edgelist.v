@@ -290,6 +290,41 @@ Definition ufroot_same g u v :=
   exists r,
     uf_root g u r /\ uf_root g v r.
 
+Lemma ufroot_same_refl:
+  forall (g : UFGraph) u,
+    vvalid g u ->
+    ufroot_same g u u.
+Proof.
+  intros.
+  assert (EnumEnsembles.EnumCovered Z (evalid g)). {
+    apply EnumEnsembles.Enumerable_is_EnumCovered, finiteE.
+  }
+  pose proof (uf_root_always_exists g (liGraph g) u X H).
+  destruct H0. exists x. split; trivial.
+Qed.
+
+Lemma ufroot_same_symm:
+  forall (g : UFGraph) u v,
+    ufroot_same g u v <-> ufroot_same g v u.
+Proof.
+  intros. unfold ufroot_same.
+  split; intros; destruct H as [r [? ?]];
+    exists r; split; trivial.
+Qed.
+
+Lemma ufroot_same_trans:
+  forall (g : UFGraph) u v w,
+    ufroot_same g u v ->
+    ufroot_same g v w ->
+    ufroot_same g u w.
+Proof.
+  intros. unfold ufroot_same in *.
+  destruct H as [? [? ?]].
+  destruct H0 as [? [? ?]].
+  pose proof (uf_root_unique _ _ _ _ _ H1 H0).
+  subst x0. exists x; split; trivial.
+Qed.
+
 Lemma reachable_ufroot_same:
   forall (g: UFGraph) u v,
     reachable g u v ->
@@ -308,11 +343,67 @@ Proof.
   pose proof (uf_root_reachable _ _ _ _ H H3).
   exists r_v. split; trivial.
 Qed.
+
+Lemma adjacent_ufroot_same:
+  forall (g : UFGraph) u v,
+    adjacent g u v ->
+    ufroot_same g u v.
+Proof.
+  intros.
+  apply adjacent_reachable in H.
+  destruct H.
+  - apply reachable_ufroot_same; trivial.
+  - apply ufroot_same_symm, reachable_ufroot_same; trivial.
+Qed.
   
+Lemma ufroot_same_connected:
+  forall (g: UFGraph) u v,
+    ufroot_same g u v ->
+    connected g u v.
+Proof.
+  intros.
+  destruct H as [r [[? _] [? _]]].
+  apply reachable_implies_connected in H.
+  apply reachable_implies_connected in H0.
+  apply connected_symm in H0.
+  apply (connected_trans _ _ _ _ H H0).
+Qed.
+
+Lemma connected_ufroot_same:
+  forall (g: UFGraph) u v,
+    connected g u v ->
+    ufroot_same g u v.
+Proof.
+  intros.
+  rewrite connected_exists_path in H.
+  destruct H as [p [? [? ?]]].
+  generalize dependent u.
+  induction p.
+  - intros. inversion H1.
+  - destruct p.
+    + intros. simpl in H1, H0.
+      inversion H1. inversion H0.
+      subst. apply ufroot_same_refl.
+      simpl in H; trivial.
+    + destruct H.
+      rewrite last_error_cons in H1.
+      2: unfold not; inversion 1.
+      specialize (IHp H0 H1).
+      intros.
+      simpl in H2. inversion H2; subst a; clear H2.
+      apply adjacent_ufroot_same in H.
+      apply (ufroot_same_trans _ _ _ _ H); trivial.
+      apply IHp. trivial.
+Qed.
+
 Lemma connected_ufroot_same_iff:
   forall (g: UFGraph) u v,
     connected g u v <-> ufroot_same g u v. 
-Admitted.
+Proof.
+  intros. split; intros.
+  apply connected_ufroot_same; trivial.
+  apply ufroot_same_connected; trivial.
+Qed.
 
 Lemma uf_equiv_adjacent_connected:
   forall (g1 g2 : UFGraph) u v,
