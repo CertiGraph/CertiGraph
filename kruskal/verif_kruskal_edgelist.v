@@ -207,19 +207,6 @@ Proof.
     rewrite Forall_forall; intros; trivial.
 Qed.
 
-(* never used *)
-Lemma reachable_ufroot_same:
-  forall {g: UFGraph} {v1 v2 r1 r2},
-    reachable g v1 v2 ->
-    uf_root g v1 r1 ->
-    uf_root g v2 r2 ->
-    r1 = r2. 
-Proof.
-  intros.
-  pose proof (uf_root_reachable g _ _ r2 H H1).
-  apply (uf_root_unique _ _ _ _ _ H0 H2).
-Qed.
-
 Lemma connected_refl:
   forall g u, vvalid g u -> connected g u u.
 Proof.
@@ -298,6 +285,36 @@ Proof.
   apply (connected_trans _ _ _ _ H6 H7).
 Qed.
 
+(* cleaner notation for uf_root being same *)
+Definition ufroot_same g u v :=
+  exists r,
+    uf_root g u r /\ uf_root g v r.
+
+Lemma reachable_ufroot_same:
+  forall (g: UFGraph) u v,
+    reachable g u v ->
+    ufroot_same g u v. 
+Proof.
+  intros.
+  assert (EnumEnsembles.EnumCovered Z (evalid g)). {
+    apply EnumEnsembles.Enumerable_is_EnumCovered, finiteE.
+  }
+  pose proof (reachable_foot_valid _ _ _ H).
+  pose proof (reachable_head_valid _ _ _ H).
+  pose proof (uf_root_always_exists g (liGraph g) u X H1).
+  pose proof (uf_root_always_exists g (liGraph g) v X H0).
+  destruct H2 as [r_u ?].
+  destruct H3 as [r_v ?].
+  pose proof (uf_root_reachable _ _ _ _ H H3).
+  exists r_v. split; trivial.
+Qed.
+  
+Lemma connected_ufroot_same_iff:
+  forall (g: UFGraph) u v,
+    connected g u v <->
+    ufroot_same g u v. 
+Admitted.
+
 Lemma uf_equiv_adjacent_connected:
   forall (g1 g2 : UFGraph) u v,
     uf_equiv g1 g2 ->
@@ -356,6 +373,14 @@ Proof.
   - apply uf_equiv_sym in H.
     apply (uf_equiv_connected' g2); trivial.
 Qed.
+
+
+
+Lemma uf_connected_same_root:
+  forall g u v r1 r2,
+    
+
+
 
 Lemma data_at_singleton_array_eq':
   forall (sh : Share.t) (t : type) (v : reptype t) (p : val), 
@@ -862,7 +887,7 @@ Proof.
      replace (fst (snd (Znth i sorted))) with (Vint x0).
 
      (* getting a bit lost, can you take a glance? *)
-     admit.     
+     admit.      
     + Intros msf. Intros msflist.
       Intros subsetsGraph'.
       forward_call ((pointer_val_val subsetsPtr)).
