@@ -79,12 +79,6 @@ Local Identity Coercion WEdgeListGraph_LabeledGraph: WEdgeListGraph >-> LabeledG
 Instance finGraph (g: FiniteWEdgeListGraph): FiniteGraph g := @fin g (@sound_gg _ _ _ _ _ _ _ _ g).
 (* Nice. Now your definitions will be cleaner. *)
 
-Definition src_edge (g : WEdgeListGraph): Prop :=
-  forall e, src g e = fst e.
-
-Definition dst_edge (g: WEdgeListGraph): Prop :=
-  forall e, dst g e = snd e.
-
 Definition vertex_valid (g: WEdgeListGraph): Prop :=
   forall v, vvalid g v -> 0 <= v < Int.max_signed.
 
@@ -95,7 +89,7 @@ Definition weight_valid (g: WEdgeListGraph): Prop :=
   forall e, evalid g e -> Int.min_signed <= elabel g e <= Int.max_signed. (*< IFTY*)
 
 Definition sound_weighted_edge_graph (g: WEdgeListGraph): Prop :=
-  vertex_valid g /\ edge_valid g /\ src_edge g /\ dst_edge g /\ weight_valid g.
+  vertex_valid g /\ edge_valid g /\ weight_valid g.
 
 Definition numV (g: FiniteWEdgeListGraph) : Z := Zlength (VList g).
 Definition numE (g: FiniteWEdgeListGraph) : Z := Zlength (EList g).
@@ -319,6 +313,12 @@ apply Permutation_Zlength. apply edgeless_WEdgeGraph_Permutation.
 rewrite H0. rewrite Zseq_Zlength. auto. apply H.
 Qed.
 
+Lemma edgeless_WEdgeGraph_evalid:
+forall v e, ~ evalid (edgeless_WEdgeGraph v) e.
+Proof.
+intros. unfold edgeless_WEdgeGraph; simpl. auto.
+Qed.
+
 Lemma edgeless_WEdgeGraph_EList:
 forall v, EList (edgeless_WEdgeGraph v) = nil.
 Proof.
@@ -334,6 +334,20 @@ Corollary edgeless_WEdgeGraph_numE:
 forall v, numE (edgeless_WEdgeGraph v) = 0.
 Proof.
 unfold numE. intros. rewrite edgeless_WEdgeGraph_EList. apply Zlength_nil.
+Qed.
+
+Lemma edgeless_WEdgeGraph_sound:
+  forall z, 0 <= z <= Int.max_signed -> sound_weighted_edge_graph (edgeless_WEdgeGraph z).
+Proof.
+intros. split. unfold vertex_valid; intros. apply edgeless_WEdgeGraph_vvalid in H0. lia.
+split. unfold edge_valid; intros. rewrite <- EList_evalid in H0. rewrite edgeless_WEdgeGraph_EList in H0. contradiction.
+unfold weight_valid; intros. rewrite <- EList_evalid in H0. rewrite edgeless_WEdgeGraph_EList in H0. contradiction.
+Qed.
+
+Corollary graph_to_wedgelist_edgeless_WEdgeGraph:
+forall v, graph_to_wedgelist (edgeless_WEdgeGraph v) = nil.
+Proof.
+unfold graph_to_wedgelist; intros. rewrite edgeless_WEdgeGraph_EList. auto.
 Qed.
 
 (***********ADDING/REMOVING A SINGLE EDGE************)
@@ -367,17 +381,86 @@ Proof.
 Qed.
 
 (**Adding is necessary for the kruskal algorithm**)
-Definition WEdgeListGraph_add_edge (g: WEdgeListGraph) (e: EType) (w: LE):=
+Definition WEdgeListGraph_adde (g: WEdgeListGraph) (e: EType) (w: LE):=
   labeledgraph_add_edge g e (fst e) (snd e) w.
 
-Instance Sound_WEdgeListGraph_add_edge (g: FiniteWEdgeListGraph) (e: EType) (w: LE) :
-  vvalid g (fst e) -> vvalid g (snd e) -> ~ In e (EList g) -> Fin (WEdgeListGraph_add_edge g e w).
+Instance Sound_WEdgeListGraph_adde (g: FiniteWEdgeListGraph) (e: EType) (w: LE) :
+  Fin (WEdgeListGraph_adde g e w).
 Proof.
-intros. constructor. constructor; unfold EnumEnsembles.Enumerable; simpl.
-apply g.
-exists (e::(EList g)). split. apply NoDup_cons. apply H1. apply NoDup_EList.
+unfold WEdgeListGraph_adde. unfold labeledgraph_add_edge.
+constructor. constructor; unfold EnumEnsembles.Enumerable; simpl.
+exists (VList g). split. apply NoDup_VList. apply VList_vvalid.
+(*edge*)
 unfold addValidFunc.
-simpl. intros; rewrite EList_evalid. split; intros; destruct H2; auto.
+destruct (in_dec E_EqDec e (EList g)).
+(*case e already inside*)
+exists (EList g). split. apply NoDup_EList. intros; split; intros. left. apply EList_evalid in H; auto.
+destruct H. apply EList_evalid; auto. rewrite H; auto.
+(*case e not inside*)
+exists (e::(EList g)). split. apply NoDup_cons. auto. apply NoDup_EList.
+intros; split; intros.
+destruct H. right; rewrite H; auto. left; rewrite <- EList_evalid; apply H.
+destruct H. rewrite <- EList_evalid in H. apply in_cons. apply H.
+rewrite H. simpl. left; auto.
 Qed.
+
+Definition FiniteWEdgeListGraph_adde (g: FiniteWEdgeListGraph) (e: EType) (w: LE): FiniteWEdgeListGraph :=
+  @Build_GeneralGraph VType EType V_EqDec E_EqDec LV LE LG Fin
+    (WEdgeListGraph_LabeledGraph (WEdgeListGraph_adde g e w))
+    (Sound_WEdgeListGraph_adde g e w).
+
+Lemma FiniteWEdgeListGraph_adde_vvalid:
+  forall (g: FiniteWEdgeListGraph)  e w v, vvalid g v <-> vvalid (FiniteWEdgeListGraph_adde g e w) v.
+Proof.
+intros. unfold FiniteWEdgeListGraph_adde. simpl. split; auto.
+Qed.
+
+Corollary FiniteWEdgeListGraph_adde_numV:
+  forall (g: FiniteWEdgeListGraph)  e w, numV (FiniteWEdgeListGraph_adde g e w) = numV g.
+Proof.
+intros. unfold FiniteWEdgeListGraph_adde. unfold numV. simpl. unfold VList.
+destruct finiteV. destruct finiteV. simpl. simpl in a.
+destruct a. destruct a0. assert (Permutation x x0). apply NoDup_Permutation; auto.
+intros. rewrite H0. rewrite H2. split; auto.
+apply Permutation_Zlength. auto.
+Qed.
+
+(*should add an EList1 where e is already in g, but it's not necessary atm*)
+Lemma FiniteWEdgeListGraph_adde_EList2:
+  forall (g: FiniteWEdgeListGraph) e w, ~ evalid g e -> Permutation (e::(EList g)) (EList (FiniteWEdgeListGraph_adde g e w)).
+Proof.
+intros.
+unfold FiniteWEdgeListGraph_adde. simpl. unfold pregraph_add_edge.
+set (l:=e::EList g). unfold EList. destruct finiteE. simpl.
+destruct a. unfold addValidFunc in H1. simpl in H1.
+apply NoDup_Permutation. unfold l. apply NoDup_cons. rewrite EList_evalid. auto. apply NoDup_EList. auto.
+intros; split; intros. apply H1. destruct H2. right; auto. left. rewrite <- EList_evalid. apply H2.
+apply H1 in H2. unfold l. destruct H2.
+right. apply EList_evalid. auto.
+left. auto.
+Qed.
+
+Corollary FiniteWEdgeListGraph_adde_EList2':
+  forall (g: FiniteWEdgeListGraph) e w, ~ evalid g e -> Permutation ((EList g)+::e) (EList (FiniteWEdgeListGraph_adde g e w)).
+Proof.
+intros. pose proof (FiniteWEdgeListGraph_adde_EList2 g e w).
+apply (Permutation_trans (l:=EList g +:: e) (l':=e::EList g)).
+apply Permutation_app_comm. auto.
+Qed.
+
+Lemma FiniteWEdgeListGraph_adde_numE:
+  forall (g: FiniteWEdgeListGraph) e w, ~ evalid g e -> numE (FiniteWEdgeListGraph_adde g e w) = numE g + 1.
+Proof.
+intros. unfold numE.
+pose proof (FiniteWEdgeListGraph_adde_EList2 g e w H).
+rewrite <- (Permutation_Zlength _ _ H0). apply Zlength_cons.
+Qed.
+
+(*
+Definition wedgelist_to_graph (z: Z) (l: list (LE*EType)):=
+@Build_LabeledGraph VType EType V_EqDec E_EqDec LV LE LG
+  (@Build_PreGraph VType EType V_EqDec E_EqDec (fun v => 0 <= v < z) (fun e => In (map snd l)) fst snd)
+  (fun v => tt) (fun e => ) tt.
+*)
 
 (**Removing may be needed in the proof of minimality**)

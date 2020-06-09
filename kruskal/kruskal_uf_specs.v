@@ -141,7 +141,7 @@ Definition init_empty_graph_spec :=
      SEP ( (*explicit graph rep*)
           data_at sh tint (Vint (Int.repr MAX_EDGES)) (gv _MAX_EDGES);
           data_at sh (t_wedgearray_graph) (Vint (Int.repr 0), (Vint (Int.repr 0), pointer_val_val eptr)) (pointer_val_val gptr);
-          data_at sh (tarray t_struct_edge MAX_EDGES) (Vundef_cwedges (Z.to_nat MAX_EDGES)) (pointer_val_val eptr)
+          data_at sh (tarray t_struct_edge MAX_EDGES) (Vundef_cwedges MAX_EDGES) (pointer_val_val eptr)
          ).
 
 Definition sort_edges_spec :=
@@ -177,28 +177,29 @@ Definition kruskal_spec :=
    SEP (data_at sh tint (Vint (Int.repr MAX_EDGES)) (gv _MAX_EDGES);
         (**original graph*)
           data_at sh (t_wedgearray_graph) (Vint (Int.repr (numV g)), (Vint (Int.repr (numE g)), pointer_val_val orig_eptr)) (pointer_val_val orig_gptr);
-          data_at sh (tarray t_struct_edge (numE g)) (map wedge_to_cdata glist) (pointer_val_val orig_eptr);
-          data_at sh (tarray t_struct_edge (MAX_EDGES - (numE g))) (Vundef_cwedges (Z.to_nat MAX_EDGES - Z.to_nat (numE g))) (offset_val ((numE g) * sizeof t_struct_edge) (pointer_val_val orig_eptr))
+          data_at sh (tarray t_struct_edge MAX_EDGES)
+            (map wedge_to_cdata glist ++ (Vundef_cwedges (MAX_EDGES - numE g))) (pointer_val_val orig_eptr)
         )
   POST [tptr t_wedgearray_graph]
    EX msf_gptr msf_eptr: pointer_val,
    EX msf: FiniteWEdgeListGraph,
    EX msflist: list (LE*EType),
-   PROP (sound_weighted_edge_graph msf;
+   EX glist': list (LE*EType),
+   PROP (
+        Permutation (graph_to_wedgelist g) glist';
+      	(*forall i j, 0 <= i -> i <= j -> j < Zlength glist' -> wedge_le (wedge_to_cdata (Znth i glist')) (wedge_to_cdata (Znth j glist'));*)
+        sound_weighted_edge_graph msf;
         (numE msf) <= MAX_EDGES;
         Permutation msflist (graph_to_wedgelist msf);
-        minimum_spanning_forest (lg_gg g) (lg_gg msf)
-                                 Z.add
-                                 0
-                                 Z.le)
+        minimum_spanning_forest (lg_gg g) (lg_gg msf) Z.add 0 Z.le)
    LOCAL (temp ret_temp (pointer_val_val msf_gptr))
    SEP (data_at sh tint (Vint (Int.repr MAX_EDGES)) (gv _MAX_EDGES);
         (*original graph*)
           data_at sh (t_wedgearray_graph) (Vint (Int.repr (numV g)), (Vint (Int.repr (numE g)), pointer_val_val orig_eptr)) (pointer_val_val orig_gptr);
-          data_at sh (tarray t_struct_edge (numE g)) (map wedge_to_cdata glist) (pointer_val_val orig_eptr);
-          data_at sh (tarray t_struct_edge (MAX_EDGES - numE g)) (Vundef_cwedges (Z.to_nat (MAX_EDGES - numE g))) (offset_val ((numE g) * sizeof t_struct_edge) (pointer_val_val orig_eptr));
+          data_at sh (tarray t_struct_edge MAX_EDGES)
+            (map wedge_to_cdata glist' ++ (Vundef_cwedges (MAX_EDGES - numE g))) (pointer_val_val orig_eptr);
         (*mst*)
           data_at sh (t_wedgearray_graph) (Vint (Int.repr (numV msf)), (Vint (Int.repr (numE msf)), pointer_val_val msf_eptr)) (pointer_val_val msf_gptr);
-          data_at sh (tarray t_struct_edge (numE msf)) (map wedge_to_cdata msflist) (pointer_val_val msf_eptr);
-          data_at sh (tarray t_struct_edge (MAX_EDGES - numE msf)) (Vundef_cwedges (Z.to_nat (MAX_EDGES - numE msf))) (offset_val ((numE msf) * sizeof t_struct_edge) (pointer_val_val msf_eptr))
-).
+          data_at sh (tarray t_struct_edge MAX_EDGES)
+            (map wedge_to_cdata msflist ++ (Vundef_cwedges (MAX_EDGES - numE msf))) (pointer_val_val msf_eptr)
+        ).
