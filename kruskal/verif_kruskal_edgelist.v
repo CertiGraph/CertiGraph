@@ -126,35 +126,6 @@ Proof.
     rewrite Forall_forall; intros; trivial.
 Qed.
 
-Definition ufroot_same g u v :=
-  exists r,
-    uf_root g u r /\ uf_root g v r.
-
-Lemma reachable_ufroot_same:
-  forall (g: UFGraph) u v,
-    reachable g u v ->
-    ufroot_same g u v. 
-Proof.
-  intros.
-  assert (EnumEnsembles.EnumCovered Z (evalid g)). {
-    apply EnumEnsembles.Enumerable_is_EnumCovered, finiteE.
-  }
-  pose proof (reachable_foot_valid _ _ _ H).
-  pose proof (reachable_head_valid _ _ _ H).
-  pose proof (uf_root_always_exists g (liGraph g) u X H1).
-  pose proof (uf_root_always_exists g (liGraph g) v X H0).
-  destruct H2 as [r_u ?].
-  destruct H3 as [r_v ?].
-  pose proof (uf_root_reachable _ _ _ _ H H3).
-  exists r_v. split; trivial.
-Qed.
-  
-Lemma connected_ufroot_same_iff:
-  forall (g: UFGraph) u v,
-    connected g u v <-> ufroot_same g u v. 
-Proof.
-Admitted.
-
 Lemma connected_refl:
   forall g u, vvalid g u -> connected g u u.
 Proof.
@@ -163,30 +134,6 @@ Proof.
   unfold good_upath; split; trivial.
   unfold upath_prop. rewrite Forall_forall.
   intros; trivial.
-Qed.
-
-Lemma adjacent_reachable:
-  forall g u v,
-    adjacent g u v ->
-    (reachable g u v \/ reachable g v u).
-Proof.
-  intros.
-  unfold adjacent, adj_edge in H.
-  destruct H as [e [? [[? ?] | [? ?]]]];
-    [left | right];
-    unfold reachable, reachable_by, reachable_by_path.
-  - exists (u, [e]); split.
-    + split; trivial.
-    + unfold good_path. split; simpl.
-      * split; trivial; lia.
-      * unfold path_prop. split; trivial.
-        rewrite Forall_forall; intros; split; trivial.
-  - exists (v, [e]); split.
-    + split; trivial.
-    + unfold good_path. split; simpl.
-      * split; trivial; lia.
-      * unfold path_prop. split; trivial.
-        rewrite Forall_forall; intros; split; trivial.
 Qed.
 
 Lemma reachable_uf_equiv_connected:
@@ -290,6 +237,30 @@ Proof.
   destruct H3 as [r_v ?].
   pose proof (uf_root_reachable _ _ _ _ H H3).
   exists r_v. split; trivial.
+Qed.
+
+Lemma adjacent_reachable:
+  forall g u v,
+    adjacent g u v ->
+    (reachable g u v \/ reachable g v u).
+Proof.
+  intros.
+  unfold adjacent, adj_edge in H.
+  destruct H as [e [? [[? ?] | [? ?]]]];
+    [left | right];
+    unfold reachable, reachable_by, reachable_by_path.
+  - exists (u, [e]); split.
+    + split; trivial.
+    + unfold good_path. split; simpl.
+      * split; trivial; lia.
+      * unfold path_prop. split; trivial.
+        rewrite Forall_forall; intros; split; trivial.
+  - exists (v, [e]); split.
+    + split; trivial.
+    + unfold good_path. split; simpl.
+      * split; trivial; lia.
+      * unfold path_prop. split; trivial.
+        rewrite Forall_forall; intros; split; trivial.
 Qed.
 
 Lemma adjacent_ufroot_same:
@@ -411,6 +382,11 @@ Proof.
     apply (uf_equiv_connected' g2); trivial.
 Qed.
 
+Lemma uf_root_unique':
+forall (g: UFGraph) x r1 r2, uf_root g x r1 -> uf_root g x r2 -> r1 = r2.
+Proof.
+Admitted.
+
 Lemma data_at_singleton_array_eq':
   forall (sh : Share.t) (t : type) (v : reptype t) (p : val), 
   data_at sh (Tarray t 1 noattr) [v] p = data_at sh t v p.
@@ -526,7 +502,9 @@ Proof.
            forall u v, connected subsetsGraph' u v <-> connected msf' u v; (*correlation between uf and msf'*)
            (*weight lemmas...*)
            forall x, In x (map wedge_to_cdata msflist) -> exists j, 0 <= j < i /\ x = Znth j sorted;
-           (*2. edges before i that WEREN't added, exists a upath made of edges before j*)
+           (*2. edges before i that WEREN't added, exists a upath made of edges before j
+                consequently these edges have leq weight than Znth j sorted
+            *)
            forall j, 0 <= j < i -> ~ In (Znth j sorted) (map wedge_to_cdata msflist) ->
             (exists p: upath, c_connected_by_path msf' (fun _ => True) p (fst (snd (Znth j sorted))) (snd (snd (Znth j sorted))) /\
               (exists l, fits_upath msf' l p /\ forall w, In w l -> In (wedge_to_cdata (edge_to_wedge g w)) (sublist 0 j sorted)))
@@ -769,13 +747,24 @@ Proof.
   assert(H_msf'_uv: ~ evalid msf' (u,v)). {
     (*we state that u and v are not connected in subsetsGraph'*)
     assert (~ connected subsetsGraph' u v). {
-      admit.
+      unfold not; intros.
+      apply connected_ufroot_same_iff in H25. destruct H25. destruct H25.
+      assert (uf_root subsetsGraph' u u_root). apply (uf_equiv_root_the_same subsetsGraph' subsetsGraph_u). apply H19. apply H20.
+      assert (uf_root subsetsGraph_u v v_root). apply (uf_equiv_root_the_same subsetsGraph_u subsetsGraph_uv). apply H21. apply H22.
+      assert (uf_root subsetsGraph' v v_root). apply (uf_equiv_root_the_same subsetsGraph' subsetsGraph_u). apply H19. apply H28.
+      assert (u_root = x). admit.
+      assert (v_root = x). admit.
+      rewrite H30 in H23; rewrite H31 in H23. contradiction.
     }
     (*by invariant, it means they aren't connected in msf'*)
     rewrite H16 in H25.
     (*but presence of u-v means they are connected*)
     unfold not; intros.
-    assert (connected msf' u v). { admit.
+    assert (connected msf' u v). {
+      (*
+      exists [u;v]. split. split. simpl. split. exists (u,v). split. split. apply H26.
+      split. simpl.
+      *)
     } contradiction.
   }
   forward_call (sh, subsetsGraph_uv, subsetsPtr, u, v).
