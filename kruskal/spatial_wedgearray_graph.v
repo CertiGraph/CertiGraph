@@ -30,6 +30,11 @@ match u, v with
 | Vint u', Vint v' => connected_by_path g P p (Int.signed u') (Int.signed v')
 | _, _ => False
 end.
+(*
+Definition (glist: list LE*EType) :=
+ data_at sh (tarray t_struct_edge (numE g)) (map wedge_to_cdata glist) (pointer_val_val orig_eptr);
+ data_at sh (tarray t_struct_edge (MAX_EDGES - (numE g))) (Vundef_cwedges (Z.to_nat MAX_EDGES - Z.to_nat (numE g))) (offset_val ((numE g) * sizeof t_struct_edge) (pointer_val_val orig_eptr))
+*)
 
 Definition cdata_to_wedge (cwedge: reptype t_struct_edge) : option (LE*EType) :=
 match cwedge with
@@ -47,5 +52,11 @@ unfold wedge_to_cdata; unfold cdata_to_wedge; intros.
 repeat rewrite Int.signed_repr by auto. destruct w; destruct p; simpl; auto.
 Qed.
 
-Definition Vundef_cwedges n: list (reptype t_struct_edge) :=
-    list_repeat n (Vundef, (Vundef, Vundef)).
+Definition Vundef_cwedges (n: Z): list (reptype t_struct_edge) :=
+    list_repeat (Z.to_nat n) (Vundef, (Vundef, Vundef)).
+
+Lemma Vundef_cwedges_Zlength:
+  forall n: Z, 0 <= n -> Zlength (Vundef_cwedges n) = n.
+Proof.
+intros. unfold Vundef_cwedges. apply Zlength_list_repeat. auto.
+Qed.
