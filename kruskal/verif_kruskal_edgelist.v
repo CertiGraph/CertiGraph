@@ -827,7 +827,6 @@ Proof.
        admit. *)
    --- (* no, don't add this edge *)
     forward. entailer!.
-    (* the variables are uncertain but here's a guess: *)
     Exists msf' msflist subsetsGraph_uv.
     assert (uf_equiv subsetsGraph_uv subsetsGraph'). {
       apply uf_equiv_sym in H18.
@@ -836,20 +835,41 @@ Proof.
     }
     entailer!. 
     split3; [| |split3]; intros.
-    +++
+   +++
      apply H13.
      apply (uf_equiv_connected' subsetsGraph_uv); trivial.
    +++
-      rewrite <- H14.
-      apply uf_equiv_connected; trivial.
-    +++
-      apply uf_equiv_sym in H46.
-      apply (uf_equiv_trans _ (liGraph subsetsGraph')); trivial.
-    +++ admit.
-    +++ admit.
+     rewrite <- H14.
+     apply uf_equiv_connected; trivial.
+   +++
+     apply uf_equiv_sym in H46.
+     apply (uf_equiv_trans _ (liGraph subsetsGraph')); trivial.
+   +++
+     destruct (H16 _ H47) as [y [? ?]].
+     exists y.
+     split; trivial; lia.
+   +++
+     destruct (Z.eq_dec j i).
+     2: apply H17; trivial; lia.
+     subst j. (* hrmm *)
+     
+     unfold c_connected_by_path.
+     apply is_int_e in H23.
+     apply is_int_e in H25.
+     destruct H23 as [? [? ?]].
+     destruct H25 as [? [? ?]].
+     replace (snd (snd (Znth i sorted))) with (Vint x).
+     replace (fst (snd (Znth i sorted))) with (Vint x0).
+
+     (* getting a bit lost, can you take a glance? *)
+     admit.     
     + Intros msf. Intros msflist.
-       Intros subsetsGraph'.
+      Intros subsetsGraph'.
       forward_call ((pointer_val_val subsetsPtr)).
       forward.
-      admit.
+
+      Exists gptr eptr msf msflist.
+      entailer!.
+      (* did I get that right? *)
+      admit. admit.
 Abort.
