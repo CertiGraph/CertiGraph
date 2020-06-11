@@ -106,6 +106,21 @@ induction l. auto.
 simpl. rewrite (last_err_appcons (rev l) a). reflexivity.
 Qed.
 
+Lemma hd_error_In:
+  forall {A:Type} (l: list A) a, hd_error l = Some a -> In a l.
+Proof.
+intros. destruct l; simpl in H; inversion H. left; auto.
+Qed.
+
+Lemma last_error_In:
+  forall {A:Type} (l: list A) a, last_error l = Some a -> In a l.
+Proof.
+induction l; intros. inversion H.
+destruct l. inversion H. left; auto.
+right. apply IHl. rewrite last_error_cons in H. apply H.
+unfold not; intros. inversion H0.
+Qed.
+
 (*A bunch of helpers for convenience in handling options*)
 Fixpoint adjacent_last g (u: option V) (v: V) :=
 match u with
@@ -196,6 +211,16 @@ induction p; intros.
 -destruct p.
   +simpl in *. auto.
   +split. apply H0. apply H.
+Qed.
+
+Lemma valid_upath_vvalid:
+  forall g p v, valid_upath g p -> In v p -> vvalid g v.
+Proof.
+induction p; intros. contradiction.
+simpl in H0. destruct H0.
+subst a. destruct p. auto. destruct H. destruct H. destruct H. destruct H.
+destruct H1; destruct H1. rewrite <- H1. apply H2. rewrite <- H3; apply H2.
+apply IHp. apply (valid_upath_tail' g p a H). auto.
 Qed.
 
 Lemma valid_upath_app:
@@ -307,6 +332,29 @@ Proof.
 intros. apply (connected_by_trans g (fun _ => True) u v w H H0).
 Qed.
 
+Lemma adjacent_connected:
+  forall g u v, adjacent g u v -> connected g u v.
+Proof.
+intros. exists (u::v::nil). split. split. simpl. split. apply H. unfold adjacent in H. destruct H. destruct H. destruct H.
+destruct H0; destruct H0. rewrite <- H2; apply H1. rewrite <- H0; apply H1.
+unfold upath_prop; rewrite Forall_forall. intros; auto.
+split; simpl; auto.
+Qed.
+
+Lemma connected_by_path_vvalid:
+forall g P p u v, connected_by_path g P p u v -> vvalid g u /\ vvalid g v.
+Proof.
+intros. destruct H. destruct H0. destruct H.
+split. apply (valid_upath_vvalid g p u). auto. apply hd_error_In; auto.
+apply (valid_upath_vvalid g p v). auto. apply last_error_In; auto.
+Qed.
+
+Corollary connected_vvalid:
+  forall g u v, connected g u v -> vvalid g u /\ vvalid g v.
+Proof.
+intros. destruct H as [p ?]. apply (connected_by_path_vvalid _ _ _ _ _ H).
+Qed.
+
 Definition connected_graph (g: Gph) := forall u v, vvalid g u -> vvalid g v -> connected g u v.
 
 Definition simple_upath g p := valid_upath g p /\ NoDup p.
@@ -315,6 +363,8 @@ Lemma paths_can_be_simplified:
   forall g p, valid_upath g p -> exists p', simple_upath g p' /\ simplified p p'
 *)
 
+(************REASONING ABOUT A SPECIFIC LIST OF EDGES************)
+
 Fixpoint fits_upath g (l: list E) (p: upath) :=
 match l, p with
 | nil, nil => True
@@ -322,14 +372,45 @@ match l, p with
 | e::l', u::v::p' => adj_edge g e u v /\ fits_upath g l' (v::p')
 | _, _ => False
 end.
-(*
-Lemma connected_exists_fits_upath:
+
+Lemma connected_exists_list_edges:
 forall g P p u v, connected_by_path g P p u v -> exists l, fits_upath g l p.
 Proof.
 induction p; intros. exists nil; simpl; auto.
 destruct p. exists nil; simpl; auto.
-destruct (IHp v0 v).
-*)
+destruct (IHp v0 v). unfold connected_by_path, good_upath in H.
+destruct H. destruct H. destruct H0.
+split. split. apply H.
+unfold upath_prop in *; rewrite Forall_forall in *. intros. apply H1. apply in_cons. apply H3.
+split. simpl; auto. rewrite <- (last_error_cons (v0::p) a). apply H2. unfold not; intros; inversion H3.
+assert (adjacent g a v0). apply H. destruct H1.
+exists (x0::x).
+split. apply H1. apply H0.
+Qed.
+
+Lemma fits_upath_cons:
+forall g p l e v v0, fits_upath g (e::l) (v::v0::p) -> fits_upath g l (v0::p).
+Proof.
+intros; destruct p; destruct l.
+simpl. auto.
+simpl in H. destruct H. contradiction.
+simpl in H. destruct H. contradiction.
+simpl in H. destruct H. destruct H0. simpl. split; auto.
+Qed.
+
+Lemma fits_upath_evalid:
+forall g p l, fits_upath g l p -> forall e, In e l -> evalid g e.
+Proof.
+induction p; destruct l; intros; try contradiction.
+destruct p eqn:Hp. unfold fits_upath in H. contradiction. rename l0 into p'.
+destruct l eqn:Hl. unfold fits_upath in H. simpl in H; destruct H.
+simpl in H0; destruct H0; try contradiction. rewrite H0 in H. destruct H. apply H.
+apply in_inv in H0. destruct H0.
+  unfold fits_upath in H. simpl in H; destruct H. rewrite H0 in H. destruct H. apply H.
+apply fits_upath_cons in H.
+apply (IHp (e1::l0)). apply H. apply H0.
+Qed.
+
 (************REACHABLE -> CONNECTED************)
 
 Lemma valid_path'_cons:
@@ -484,6 +565,38 @@ Definition tree' g u :=
 
 Definition tree g :=
   forall u, tree' g u.
+*)
+
+(**************FINITE GRAPHS************)
+(*
+Require Import RamifyCoq.graph.graph_gen.
+Require Import graph.FiniteGraph.
+Lemma empty_pregraph_vvalid:
+forall src dst v, ~ vvalid (empty_pregraph src dst) v.
+Proof. simpl; auto. Qed.
+
+Lemma empty_pregraph_evalid:
+forall src dst e, ~ evalid (empty_pregraph src dst) e.
+Proof. simpl; auto. Qed.
+
+Definition finite_empty_pregraph src dst:
+FiniteGraph (empty_pregraph src dst).
+Proof.
+constructor; unfold EnumEnsembles.Enumerable, In; exists nil; split.
+apply NoDup_nil.
+intros; split; auto.
+apply NoDup_nil.
+intros; split; auto.
+Qed.
+
+
+Definition finite_pregraph_add_edge g {fg: FiniteGraph g} e u v:
+FiniteGraph (pregraph_add_edge g e u v).
+Proof.
+destruct fg. unfold EnumEnsembles.Enumerable, In in finiteV. unfold EnumEnsembles.Enumerable, In in finiteE.
+constructor; unfold EnumEnsembles.Enumerable, In.
+destruct finiteV as [vl Hvl]. exists vl. apply Hvl.
+destruct finiteE as [el Hel]. simpl; unfold addValidFunc.
 *)
 
 End UNDIRECTED.
