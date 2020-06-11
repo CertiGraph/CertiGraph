@@ -172,11 +172,11 @@ Proof.
           rewrite Zleft_child_unfold in *; rep_lia. }
       forward. Exists (cmp (Znth (Zright_child i') arr_contents') (Znth (Zleft_child i') arr_contents')).
       unfold cmp_rel. rewrite Zright_child_unfold, Zleft_child_unfold in *.
-      rewrite Int.unsigned_repr in H7. 2,3,4: rep_lia.
+      rewrite Int.unsigned_repr in H7. 2,3,4,5: rep_lia.
       case cmp; entailer!. }
     { forward. Exists false.
       rewrite Zright_child_unfold, Zleft_child_unfold in *. rewrite Int.unsigned_repr in H7. 
-      entailer!. 1,2,3: rep_lia. }
+      entailer!. all: rep_lia. }
   Intro b.
   set (j' := if b then Zright_child i' else Zleft_child i').
   forward_if (PROP (if b then Zright_child i' <  first_available /\  cmp_rel (Znth (Zright_child i') arr_contents') (Znth (Zleft_child i') arr_contents')
@@ -212,7 +212,7 @@ Proof.
           transitivity (Znth (Zleft_child i') arr_contents'). trivial.
           destruct (cmp_linear (Znth (Zleft_child i') arr_contents') (Znth (Zright_child i') arr_contents')); auto.
           contradiction. }
-      { forward.  entailer!. unfold cmp_rel in H0. congruence. }
+      { forward.  entailer!. unfold cmp_rel, j' in H0. congruence. }
     forward_call (i', j', arr, arr_contents').
       { subst j'. rewrite Zright_child_unfold, Zleft_child_unfold in *; try lia. destruct b; lia. }
     forward.
