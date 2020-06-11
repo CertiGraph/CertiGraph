@@ -432,7 +432,7 @@ assert (memory_block sh (MAX_EDGES * (sizeof t_struct_edge)) (pointer_val_val ep
     simpl. auto.
   } rewrite <- memory_block_data_at_; auto.
 } rewrite H1. clear H1.
-assert (data_at_ sh (tarray t_struct_edge MAX_EDGES) (pointer_val_val eptr) = data_at sh (tarray t_struct_edge MAX_EDGES) (Vundef_cwedges (MAX_EDGES)) (pointer_val_val eptr)). {
+assert (data_at_ sh (tarray t_struct_edge MAX_EDGES) (pointer_val_val eptr) = data_at sh (tarray t_struct_edge MAX_EDGES) (Vundef_cwedges (Z.to_nat MAX_EDGES)) (pointer_val_val eptr)). {
   unfold data_at_, field_at_, data_at. assert (default_val (nested_field_type (tarray t_struct_edge MAX_EDGES) []) = list_repeat (Z.to_nat MAX_EDGES) (Vundef, (Vundef, Vundef))) by reflexivity.
   rewrite H1. auto.
 } rewrite H1. clear H1.
