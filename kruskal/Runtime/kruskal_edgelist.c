@@ -5,12 +5,12 @@
 //extern void free(void *p);
 #include <stdio.h>
 
-static const int SIZE = 8;  //don't want to use MAX_SIZE because mallocing that much is crazy
+static const int MAX_EDGES = 8;  //don't want to use MAX_MAX_EDGES because mallocing that much is crazy
 
 struct edge {
     int weight; //weight at top for minor convenience
-    int u;
-    int v;
+    int src;
+    int dst;
 };
 
 //this haphazard representation means it's dangerous to modify a graph...
@@ -24,18 +24,24 @@ struct graph {
 //creates a graph with zero vertices and edges
 struct graph * init_empty_graph() {
     struct graph * empty_graph = (struct graph *) malloc(sizeof(struct graph));
-    struct edge *edge_list = (struct edge *) malloc(sizeof(struct edge) * SIZE);
+    struct edge *edge_list = (struct edge *) malloc(sizeof(struct edge) * MAX_EDGES);
     empty_graph->V = 0;
     empty_graph->E = 0;
     empty_graph->edge_list = edge_list;
     return empty_graph;
 }
 
+void fill_edge(struct edge *wedge, int w, int u, int v) {
+  wedge->weight = w;
+  wedge->src = u;
+  wedge->dst = v;
+}
+
 void swap_edges(struct edge *a, struct edge *b) {
 	struct edge tmp;
-        tmp.weight = a->weight; tmp.u = a->u; tmp.v = a->v;
-	a->weight = b->weight; a->u = b->u; a->v = b->v;
-	b->weight = tmp.weight; b->u = tmp.u; b->v = tmp.v;
+        tmp.weight = a->weight; tmp.src = a->src; tmp.dst = a->dst;
+	a->weight = b->weight; a->src = b->src; a->dst = b->dst;
+	b->weight = tmp.weight; b->src = tmp.src; b->dst = tmp.dst;
 }
 
 void
@@ -45,7 +51,7 @@ sort_edges(struct edge* a, int m, int n)
   struct edge pivot;
 
   if (m < n) {
-    pivot.weight = a[n].weight; pivot.u = a[n].u; pivot.v = a[n].v;	//copy everything to avoid headaches in proof
+    pivot.weight = a[n].weight; pivot.src = a[n].src; pivot.dst = a[n].dst;	//copy everything to avoid headaches in proof
     i = m; j = n;
     while (i <= j) {
       while (a[i].weight < pivot.weight) i++;
@@ -73,24 +79,27 @@ struct graph *kruskal(struct graph *graph) {
     
     //"add" all vertices
     mst->V = graph_V;
-printf("Sorting...\n");
-    sort_edges(graph->edge_list,0,graph_E-1);
-printf("Sorted\n");
+
+    sort_edges(graph->edge_list, 0, graph_E-1); //because the new sort_spec now gives the length of the list instead of the index of the last element
+    
     for (int i = 0; i < graph_E; ++i) {
         //extract the data
 
-        int u = graph->edge_list[i].u;
-        int v = graph->edge_list[i].v;
+        int u = graph->edge_list[i].src;
+        int v = graph->edge_list[i].dst;
 
         //decide whether edge should be added using unionfind
         int ufind = find(subsets, u);
         int vfind = find(subsets, v);
         if (ufind != vfind) {
             //add edge to MST
-            mst->edge_list[mst->E].u = u;
-            mst->edge_list[mst->E].v = v;
+            int w = graph->edge_list[i].weight;
+            fill_edge(mst->edge_list + mst->E, w, u, v);
+            /*
+            mst->edge_list[mst->E].src = u;
+            mst->edge_list[mst->E].dst = v;
             mst->edge_list[mst->E].weight = graph->edge_list[i].weight;
-            //printf("Added\n");
+            */
             mst->E += 1;
             Union(subsets, u, v);
         }
@@ -116,39 +125,39 @@ struct graph * init_graph_sample() {
     struct graph * graph = (struct graph *) malloc(sizeof(struct graph));
     graph->V =6;
     graph->E = 6;
-    struct edge *edge_list = (struct edge *) malloc(sizeof(struct edge) * SIZE);
+    struct edge *edge_list = (struct edge *) malloc(sizeof(struct edge) * MAX_EDGES);
     graph->edge_list = edge_list;
 
     // add edge 4-5
-    graph->edge_list[0].u = 4;
-    graph->edge_list[0].v = 5;
+    graph->edge_list[0].src = 4;
+    graph->edge_list[0].dst = 5;
     graph->edge_list[0].weight = 1;
 
     // add edge 0-2 
-    graph->edge_list[1].u = 0; 
-    graph->edge_list[1].v = 2; 
+    graph->edge_list[1].src = 0; 
+    graph->edge_list[1].dst = 2; 
     graph->edge_list[1].weight = 6;        //needs sorting
 
     // add edge 2-3 
-    graph->edge_list[2].u = 2; 
-    graph->edge_list[2].v = 3; 
+    graph->edge_list[2].src = 2; 
+    graph->edge_list[2].dst = 3; 
     graph->edge_list[2].weight = 4;
 
     //the ordering of the next 3 edges will determine the MST returned
 
     // add edge 0-3 
-    graph->edge_list[3].u = 0; 
-    graph->edge_list[3].v = 3; 
+    graph->edge_list[3].src = 0; 
+    graph->edge_list[3].dst = 3; 
     graph->edge_list[3].weight = 5;
 
     // add edge 0-1 
-    graph->edge_list[4].u = 0; 
-    graph->edge_list[4].v = 1; 
+    graph->edge_list[4].src = 0; 
+    graph->edge_list[4].dst = 1; 
     graph->edge_list[4].weight = 5; 
     
     // add edge 1-3 
-    graph->edge_list[5].u = 1; 
-    graph->edge_list[5].v = 3; 
+    graph->edge_list[5].src = 1; 
+    graph->edge_list[5].dst = 3; 
     graph->edge_list[5].weight = 5;
 
     /* EXPECTED MST: 4-5, 2 of (0-1,0-3,1-3), 2-3
@@ -167,7 +176,7 @@ struct graph * init_graph_sample() {
 void print_graph(struct graph * graph) {
     printf("V: %d E: %d\n", graph->V, graph->E);
     for (int i = 0; i < graph->E; ++i) {
-        printf("%d-%d %d\n", graph->edge_list[i].u, graph->edge_list[i].v, graph->edge_list[i].weight);
+        printf("%d-%d %d\n", graph->edge_list[i].src, graph->edge_list[i].dst, graph->edge_list[i].weight);
     }
     printf("\n");
 }
