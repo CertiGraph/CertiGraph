@@ -26,14 +26,6 @@ Require Import RamifyCoq.kruskal.mst.
 Require Import RamifyCoq.kruskal.undirected_graph.
 (*Require Import RamifyCoq.graph.spanning_tree.*)
 
-Definition Vprog : varspecs. mk_varspecs prog. Defined.
-
-Definition Gprog : funspecs :=
-  ltac:(with_library prog
-      [makeSet_spec; find_spec; union_spec;
-      mallocK_spec; free_spec; fill_edge_spec; init_empty_graph_spec; sort_edges_spec; kruskal_spec
-  ]).
-
 Local Open Scope Z_scope.
 
 Lemma Permutation_Zlength:
