@@ -68,13 +68,15 @@ Definition ___compcert_va_int32 : ident := 25%positive.
 Definition ___compcert_va_int64 : ident := 26%positive.
 Definition _arr : ident := 64%positive.
 Definition _capacity : ident := 5%positive.
+Definition _cells : ident := 75%positive.
 Definition _data : ident := 3%positive.
 Definition _exch : ident := 68%positive.
+Definition _fa : ident := 74%positive.
 Definition _first_available : ident := 6%positive.
 Definition _heap_cells : ident := 7%positive.
-Definition _insert : ident := 78%positive.
-Definition _insert_nc : ident := 75%positive.
-Definition _item : ident := 76%positive.
+Definition _insert : ident := 79%positive.
+Definition _insert_nc : ident := 76%positive.
+Definition _item : ident := 77%positive.
 Definition _j : ident := 62%positive.
 Definition _k : ident := 63%positive.
 Definition _key : ident := 1%positive.
@@ -83,32 +85,22 @@ Definition _key2 : ident := 67%positive.
 Definition _key_table : ident := 8%positive.
 Definition _less : ident := 71%positive.
 Definition _lookup : ident := 65%positive.
-Definition _main : ident := 81%positive.
-Definition _make : ident := 80%positive.
+Definition _main : ident := 82%positive.
+Definition _make : ident := 81%positive.
 Definition _mallocN : ident := 61%positive.
 Definition _pq : ident := 69%positive.
 Definition _priority : ident := 2%positive.
-Definition _remove_min : ident := 79%positive.
-Definition _remove_min_nc : ident := 77%positive.
+Definition _remove_min : ident := 80%positive.
+Definition _remove_min_nc : ident := 78%positive.
 Definition _sink : ident := 73%positive.
 Definition _size : ident := 70%positive.
 Definition _structItem : ident := 4%positive.
 Definition _structPQ : ident := 9%positive.
 Definition _swim : ident := 72%positive.
-Definition _x : ident := 74%positive.
-Definition _t'1 : ident := 82%positive.
-Definition _t'10 : ident := 91%positive.
-Definition _t'11 : ident := 92%positive.
-Definition _t'12 : ident := 93%positive.
-Definition _t'13 : ident := 94%positive.
-Definition _t'2 : ident := 83%positive.
-Definition _t'3 : ident := 84%positive.
-Definition _t'4 : ident := 85%positive.
-Definition _t'5 : ident := 86%positive.
-Definition _t'6 : ident := 87%positive.
-Definition _t'7 : ident := 88%positive.
-Definition _t'8 : ident := 89%positive.
-Definition _t'9 : ident := 90%positive.
+Definition _t'1 : ident := 83%positive.
+Definition _t'2 : ident := 84%positive.
+Definition _t'3 : ident := 85%positive.
+Definition _t'4 : ident := 86%positive.
 
 Definition f_exch := {|
   fn_return := tvoid;
@@ -414,105 +406,75 @@ Definition f_sink := {|
 |}.
 
 Definition f_insert_nc := {|
-  fn_return := tvoid;
+  fn_return := tuint;
   fn_callconv := cc_default;
   fn_params := ((_pq, (tptr (Tstruct _structPQ noattr))) ::
-                (_x, (tptr (Tstruct _structItem noattr))) :: nil);
+                (_priority, tint) :: (_data, (tptr tvoid)) :: nil);
   fn_vars := nil;
-  fn_temps := ((_t'10, tint) :: (_t'9, tuint) ::
-               (_t'8, (tptr (Tstruct _structItem noattr))) ::
-               (_t'7, (tptr tvoid)) :: (_t'6, tuint) ::
-               (_t'5, (tptr (Tstruct _structItem noattr))) ::
-               (_t'4, (tptr tuint)) ::
-               (_t'3, (tptr (Tstruct _structItem noattr))) ::
-               (_t'2, tuint) :: (_t'1, tuint) :: nil);
+  fn_temps := ((_fa, tuint) ::
+               (_cells, (tptr (Tstruct _structItem noattr))) ::
+               (_key, tuint) :: (_t'1, (tptr tuint)) :: nil);
   fn_body :=
 (Ssequence
+  (Sset _fa
+    (Efield
+      (Ederef (Etempvar _pq (tptr (Tstruct _structPQ noattr)))
+        (Tstruct _structPQ noattr)) _first_available tuint))
   (Ssequence
-    (Sset _t'8
+    (Sset _cells
       (Efield
         (Ederef (Etempvar _pq (tptr (Tstruct _structPQ noattr)))
           (Tstruct _structPQ noattr)) _heap_cells
         (tptr (Tstruct _structItem noattr))))
     (Ssequence
-      (Sset _t'9
+      (Sset _key
         (Efield
-          (Ederef (Etempvar _pq (tptr (Tstruct _structPQ noattr)))
-            (Tstruct _structPQ noattr)) _first_available tuint))
+          (Ederef
+            (Ebinop Oadd
+              (Etempvar _cells (tptr (Tstruct _structItem noattr)))
+              (Etempvar _fa tuint) (tptr (Tstruct _structItem noattr)))
+            (Tstruct _structItem noattr)) _key tuint))
       (Ssequence
-        (Sset _t'10
-          (Efield
-            (Ederef (Etempvar _x (tptr (Tstruct _structItem noattr)))
-              (Tstruct _structItem noattr)) _priority tint))
         (Sassign
           (Efield
             (Ederef
               (Ebinop Oadd
-                (Etempvar _t'8 (tptr (Tstruct _structItem noattr)))
-                (Etempvar _t'9 tuint) (tptr (Tstruct _structItem noattr)))
+                (Etempvar _cells (tptr (Tstruct _structItem noattr)))
+                (Etempvar _fa tuint) (tptr (Tstruct _structItem noattr)))
               (Tstruct _structItem noattr)) _priority tint)
-          (Etempvar _t'10 tint)))))
-  (Ssequence
-    (Ssequence
-      (Sset _t'5
-        (Efield
-          (Ederef (Etempvar _pq (tptr (Tstruct _structPQ noattr)))
-            (Tstruct _structPQ noattr)) _heap_cells
-          (tptr (Tstruct _structItem noattr))))
-      (Ssequence
-        (Sset _t'6
-          (Efield
-            (Ederef (Etempvar _pq (tptr (Tstruct _structPQ noattr)))
-              (Tstruct _structPQ noattr)) _first_available tuint))
+          (Etempvar _priority tint))
         (Ssequence
-          (Sset _t'7
-            (Efield
-              (Ederef (Etempvar _x (tptr (Tstruct _structItem noattr)))
-                (Tstruct _structItem noattr)) _data (tptr tvoid)))
           (Sassign
             (Efield
               (Ederef
                 (Ebinop Oadd
-                  (Etempvar _t'5 (tptr (Tstruct _structItem noattr)))
-                  (Etempvar _t'6 tuint) (tptr (Tstruct _structItem noattr)))
+                  (Etempvar _cells (tptr (Tstruct _structItem noattr)))
+                  (Etempvar _fa tuint) (tptr (Tstruct _structItem noattr)))
                 (Tstruct _structItem noattr)) _data (tptr tvoid))
-            (Etempvar _t'7 (tptr tvoid))))))
-    (Ssequence
-      (Ssequence
-        (Sset _t'2
-          (Efield
-            (Ederef (Etempvar _pq (tptr (Tstruct _structPQ noattr)))
-              (Tstruct _structPQ noattr)) _first_available tuint))
-        (Ssequence
-          (Sset _t'3
-            (Efield
-              (Ederef (Etempvar _pq (tptr (Tstruct _structPQ noattr)))
-                (Tstruct _structPQ noattr)) _heap_cells
-              (tptr (Tstruct _structItem noattr))))
+            (Etempvar _data (tptr tvoid)))
           (Ssequence
-            (Sset _t'4
-              (Efield
-                (Ederef (Etempvar _pq (tptr (Tstruct _structPQ noattr)))
-                  (Tstruct _structPQ noattr)) _key_table (tptr tuint)))
-            (Scall None
-              (Evar _swim (Tfunction
-                            (Tcons tuint
-                              (Tcons (tptr (Tstruct _structItem noattr))
-                                (Tcons (tptr tuint) Tnil))) tvoid cc_default))
-              ((Etempvar _t'2 tuint) ::
-               (Etempvar _t'3 (tptr (Tstruct _structItem noattr))) ::
-               (Etempvar _t'4 (tptr tuint)) :: nil)))))
-      (Ssequence
-        (Sset _t'1
-          (Efield
-            (Ederef (Etempvar _pq (tptr (Tstruct _structPQ noattr)))
-              (Tstruct _structPQ noattr)) _first_available tuint))
-        (Sassign
-          (Efield
-            (Ederef (Etempvar _pq (tptr (Tstruct _structPQ noattr)))
-              (Tstruct _structPQ noattr)) _first_available tuint)
-          (Ebinop Oadd (Etempvar _t'1 tuint) (Econst_int (Int.repr 1) tint)
-            tuint))))))
+            (Ssequence
+              (Sset _t'1
+                (Efield
+                  (Ederef (Etempvar _pq (tptr (Tstruct _structPQ noattr)))
+                    (Tstruct _structPQ noattr)) _key_table (tptr tuint)))
+              (Scall None
+                (Evar _swim (Tfunction
+                              (Tcons tuint
+                                (Tcons (tptr (Tstruct _structItem noattr))
+                                  (Tcons (tptr tuint) Tnil))) tvoid
+                              cc_default))
+                ((Etempvar _fa tuint) ::
+                 (Etempvar _cells (tptr (Tstruct _structItem noattr))) ::
+                 (Etempvar _t'1 (tptr tuint)) :: nil)))
+            (Ssequence
+              (Sassign
+                (Efield
+                  (Ederef (Etempvar _pq (tptr (Tstruct _structPQ noattr)))
+                    (Tstruct _structPQ noattr)) _first_available tuint)
+                (Ebinop Oadd (Etempvar _fa tuint)
+                  (Econst_int (Int.repr 1) tint) tuint))
+              (Sreturn (Some (Etempvar _key tuint))))))))))
 |}.
 
 Definition f_remove_min_nc := {|
@@ -521,99 +483,63 @@ Definition f_remove_min_nc := {|
   fn_params := ((_pq, (tptr (Tstruct _structPQ noattr))) ::
                 (_item, (tptr (Tstruct _structItem noattr))) :: nil);
   fn_vars := nil;
-  fn_temps := ((_t'13, tuint) :: (_t'12, (tptr tuint)) ::
-               (_t'11, (tptr (Tstruct _structItem noattr))) ::
-               (_t'10, tuint) :: (_t'9, tint) :: (_t'8, tuint) ::
-               (_t'7, (tptr (Tstruct _structItem noattr))) ::
-               (_t'6, (tptr tvoid)) :: (_t'5, tuint) ::
-               (_t'4, (tptr (Tstruct _structItem noattr))) ::
-               (_t'3, (tptr tuint)) :: (_t'2, tuint) ::
-               (_t'1, (tptr (Tstruct _structItem noattr))) :: nil);
+  fn_temps := ((_fa, tuint) ::
+               (_cells, (tptr (Tstruct _structItem noattr))) ::
+               (_lookup, (tptr tuint)) :: (_t'4, tuint) :: (_t'3, tint) ::
+               (_t'2, (tptr tvoid)) :: (_t'1, tuint) :: nil);
   fn_body :=
 (Ssequence
   (Ssequence
-    (Sset _t'13
+    (Sset _t'4
       (Efield
         (Ederef (Etempvar _pq (tptr (Tstruct _structPQ noattr)))
           (Tstruct _structPQ noattr)) _first_available tuint))
-    (Sassign
-      (Efield
-        (Ederef (Etempvar _pq (tptr (Tstruct _structPQ noattr)))
-          (Tstruct _structPQ noattr)) _first_available tuint)
-      (Ebinop Osub (Etempvar _t'13 tuint) (Econst_int (Int.repr 1) tint)
+    (Sset _fa
+      (Ebinop Osub (Etempvar _t'4 tuint) (Econst_int (Int.repr 1) tint)
         tuint)))
   (Ssequence
+    (Sset _cells
+      (Efield
+        (Ederef (Etempvar _pq (tptr (Tstruct _structPQ noattr)))
+          (Tstruct _structPQ noattr)) _heap_cells
+        (tptr (Tstruct _structItem noattr))))
     (Ssequence
-      (Sset _t'10
+      (Sset _lookup
         (Efield
           (Ederef (Etempvar _pq (tptr (Tstruct _structPQ noattr)))
-            (Tstruct _structPQ noattr)) _first_available tuint))
+            (Tstruct _structPQ noattr)) _key_table (tptr tuint)))
       (Ssequence
-        (Sset _t'11
-          (Efield
-            (Ederef (Etempvar _pq (tptr (Tstruct _structPQ noattr)))
-              (Tstruct _structPQ noattr)) _heap_cells
-            (tptr (Tstruct _structItem noattr))))
-        (Ssequence
-          (Sset _t'12
-            (Efield
-              (Ederef (Etempvar _pq (tptr (Tstruct _structPQ noattr)))
-                (Tstruct _structPQ noattr)) _key_table (tptr tuint)))
-          (Scall None
-            (Evar _exch (Tfunction
+        (Scall None
+          (Evar _exch (Tfunction
+                        (Tcons tuint
                           (Tcons tuint
-                            (Tcons tuint
-                              (Tcons (tptr (Tstruct _structItem noattr))
-                                (Tcons (tptr tuint) Tnil)))) tvoid
-                          cc_default))
-            ((Econst_int (Int.repr 0) tuint) :: (Etempvar _t'10 tuint) ::
-             (Etempvar _t'11 (tptr (Tstruct _structItem noattr))) ::
-             (Etempvar _t'12 (tptr tuint)) :: nil)))))
-    (Ssequence
-      (Ssequence
-        (Sset _t'7
-          (Efield
-            (Ederef (Etempvar _pq (tptr (Tstruct _structPQ noattr)))
-              (Tstruct _structPQ noattr)) _heap_cells
-            (tptr (Tstruct _structItem noattr))))
+                            (Tcons (tptr (Tstruct _structItem noattr))
+                              (Tcons (tptr tuint) Tnil)))) tvoid cc_default))
+          ((Econst_int (Int.repr 0) tuint) :: (Etempvar _fa tuint) ::
+           (Etempvar _cells (tptr (Tstruct _structItem noattr))) ::
+           (Etempvar _lookup (tptr tuint)) :: nil))
         (Ssequence
-          (Sset _t'8
-            (Efield
-              (Ederef (Etempvar _pq (tptr (Tstruct _structPQ noattr)))
-                (Tstruct _structPQ noattr)) _first_available tuint))
           (Ssequence
-            (Sset _t'9
+            (Sset _t'3
               (Efield
                 (Ederef
                   (Ebinop Oadd
-                    (Etempvar _t'7 (tptr (Tstruct _structItem noattr)))
-                    (Etempvar _t'8 tuint)
-                    (tptr (Tstruct _structItem noattr)))
+                    (Etempvar _cells (tptr (Tstruct _structItem noattr)))
+                    (Etempvar _fa tuint) (tptr (Tstruct _structItem noattr)))
                   (Tstruct _structItem noattr)) _priority tint))
             (Sassign
               (Efield
                 (Ederef (Etempvar _item (tptr (Tstruct _structItem noattr)))
                   (Tstruct _structItem noattr)) _priority tint)
-              (Etempvar _t'9 tint)))))
-      (Ssequence
-        (Ssequence
-          (Sset _t'4
-            (Efield
-              (Ederef (Etempvar _pq (tptr (Tstruct _structPQ noattr)))
-                (Tstruct _structPQ noattr)) _heap_cells
-              (tptr (Tstruct _structItem noattr))))
+              (Etempvar _t'3 tint)))
           (Ssequence
-            (Sset _t'5
-              (Efield
-                (Ederef (Etempvar _pq (tptr (Tstruct _structPQ noattr)))
-                  (Tstruct _structPQ noattr)) _first_available tuint))
             (Ssequence
-              (Sset _t'6
+              (Sset _t'2
                 (Efield
                   (Ederef
                     (Ebinop Oadd
-                      (Etempvar _t'4 (tptr (Tstruct _structItem noattr)))
-                      (Etempvar _t'5 tuint)
+                      (Etempvar _cells (tptr (Tstruct _structItem noattr)))
+                      (Etempvar _fa tuint)
                       (tptr (Tstruct _structItem noattr)))
                     (Tstruct _structItem noattr)) _data (tptr tvoid)))
               (Sassign
@@ -621,65 +547,73 @@ Definition f_remove_min_nc := {|
                   (Ederef
                     (Etempvar _item (tptr (Tstruct _structItem noattr)))
                     (Tstruct _structItem noattr)) _data (tptr tvoid))
-                (Etempvar _t'6 (tptr tvoid))))))
-        (Ssequence
-          (Sset _t'1
-            (Efield
-              (Ederef (Etempvar _pq (tptr (Tstruct _structPQ noattr)))
-                (Tstruct _structPQ noattr)) _heap_cells
-              (tptr (Tstruct _structItem noattr))))
-          (Ssequence
-            (Sset _t'2
-              (Efield
-                (Ederef (Etempvar _pq (tptr (Tstruct _structPQ noattr)))
-                  (Tstruct _structPQ noattr)) _first_available tuint))
+                (Etempvar _t'2 (tptr tvoid))))
             (Ssequence
-              (Sset _t'3
-                (Efield
-                  (Ederef (Etempvar _pq (tptr (Tstruct _structPQ noattr)))
-                    (Tstruct _structPQ noattr)) _key_table (tptr tuint)))
-              (Scall None
-                (Evar _sink (Tfunction
-                              (Tcons tuint
-                                (Tcons (tptr (Tstruct _structItem noattr))
-                                  (Tcons tuint (Tcons (tptr tuint) Tnil))))
-                              tvoid cc_default))
-                ((Econst_int (Int.repr 0) tuint) ::
-                 (Etempvar _t'1 (tptr (Tstruct _structItem noattr))) ::
-                 (Etempvar _t'2 tuint) :: (Etempvar _t'3 (tptr tuint)) ::
-                 nil)))))))))
+              (Ssequence
+                (Sset _t'1
+                  (Efield
+                    (Ederef
+                      (Ebinop Oadd
+                        (Etempvar _cells (tptr (Tstruct _structItem noattr)))
+                        (Etempvar _fa tuint)
+                        (tptr (Tstruct _structItem noattr)))
+                      (Tstruct _structItem noattr)) _key tuint))
+                (Sassign
+                  (Efield
+                    (Ederef
+                      (Etempvar _item (tptr (Tstruct _structItem noattr)))
+                      (Tstruct _structItem noattr)) _key tuint)
+                  (Etempvar _t'1 tuint)))
+              (Ssequence
+                (Scall None
+                  (Evar _sink (Tfunction
+                                (Tcons tuint
+                                  (Tcons (tptr (Tstruct _structItem noattr))
+                                    (Tcons tuint (Tcons (tptr tuint) Tnil))))
+                                tvoid cc_default))
+                  ((Econst_int (Int.repr 0) tuint) ::
+                   (Etempvar _cells (tptr (Tstruct _structItem noattr))) ::
+                   (Etempvar _fa tuint) :: (Etempvar _lookup (tptr tuint)) ::
+                   nil))
+                (Sassign
+                  (Efield
+                    (Ederef (Etempvar _pq (tptr (Tstruct _structPQ noattr)))
+                      (Tstruct _structPQ noattr)) _first_available tuint)
+                  (Etempvar _fa tuint))))))))))
 |}.
 
 Definition f_insert := {|
-  fn_return := tvoid;
+  fn_return := tuint;
   fn_callconv := cc_default;
   fn_params := ((_pq, (tptr (Tstruct _structPQ noattr))) ::
-                (_x, (tptr (Tstruct _structItem noattr))) :: nil);
+                (_priority, tint) :: (_data, (tptr tvoid)) :: nil);
   fn_vars := nil;
-  fn_temps := ((_t'2, tuint) :: (_t'1, tuint) :: nil);
+  fn_temps := ((_t'1, tuint) :: (_t'3, tuint) :: (_t'2, tuint) :: nil);
   fn_body :=
 (Ssequence
   (Ssequence
-    (Sset _t'1
+    (Sset _t'2
       (Efield
         (Ederef (Etempvar _pq (tptr (Tstruct _structPQ noattr)))
           (Tstruct _structPQ noattr)) _first_available tuint))
     (Ssequence
-      (Sset _t'2
+      (Sset _t'3
         (Efield
           (Ederef (Etempvar _pq (tptr (Tstruct _structPQ noattr)))
             (Tstruct _structPQ noattr)) _capacity tuint))
-      (Sifthenelse (Ebinop Oeq (Etempvar _t'1 tuint) (Etempvar _t'2 tuint)
+      (Sifthenelse (Ebinop Oeq (Etempvar _t'2 tuint) (Etempvar _t'3 tuint)
                      tint)
-        (Sreturn None)
+        (Sreturn (Some (Econst_int (Int.repr 0) tint)))
         Sskip)))
-  (Scall None
-    (Evar _insert_nc (Tfunction
-                       (Tcons (tptr (Tstruct _structPQ noattr))
-                         (Tcons (tptr (Tstruct _structItem noattr)) Tnil))
-                       tvoid cc_default))
-    ((Etempvar _pq (tptr (Tstruct _structPQ noattr))) ::
-     (Etempvar _x (tptr (Tstruct _structItem noattr))) :: nil)))
+  (Ssequence
+    (Scall (Some _t'1)
+      (Evar _insert_nc (Tfunction
+                         (Tcons (tptr (Tstruct _structPQ noattr))
+                           (Tcons tint (Tcons (tptr tvoid) Tnil))) tuint
+                         cc_default))
+      ((Etempvar _pq (tptr (Tstruct _structPQ noattr))) ::
+       (Etempvar _priority tint) :: (Etempvar _data (tptr tvoid)) :: nil))
+    (Sreturn (Some (Etempvar _t'1 tuint)))))
 |}.
 
 Definition f_remove_min := {|
