@@ -30,11 +30,25 @@ match u, v with
 | Vint u', Vint v' => connected_by_path g P p (Int.signed u') (Int.signed v')
 | _, _ => False
 end.
-(*
-Definition (glist: list LE*EType) :=
- data_at sh (tarray t_struct_edge (numE g)) (map wedge_to_cdata glist) (pointer_val_val orig_eptr);
- data_at sh (tarray t_struct_edge (MAX_EDGES - (numE g))) (Vundef_cwedges (Z.to_nat MAX_EDGES - Z.to_nat (numE g))) (offset_val ((numE g) * sizeof t_struct_edge) (pointer_val_val orig_eptr))
-*)
+
+Lemma def_wedgerep_map_w2c:
+  forall g,
+    Forall def_wedgerep (map wedge_to_cdata (graph_to_wedgelist g)).
+Proof.
+  intros.
+  rewrite Forall_forall; intros.
+  apply list_in_map_inv in H.
+  destruct H as [? [? _]].
+  unfold wedge_to_cdata in H.
+  unfold def_wedgerep.
+  rewrite (surjective_pairing x) in *.
+  inversion H; clear H.
+  destruct x.
+  rewrite (surjective_pairing c) in *.
+  simpl fst in *; simpl snd in *.
+  inversion H2; clear H2.
+  rewrite H1, H0, H3. split3; trivial.
+Qed.
 
 Definition cdata_to_wedge (cwedge: reptype t_struct_edge) : option (LE*EType) :=
 match cwedge with
