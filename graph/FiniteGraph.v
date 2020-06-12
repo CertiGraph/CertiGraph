@@ -21,6 +21,31 @@ Class FiniteGraph (pg: PreGraph V E) :=
 Definition VList (pg: PreGraph V E) {fg: FiniteGraph pg} := proj1_sig (finiteV).
 Definition EList (pg: PreGraph V E) {fg: FiniteGraph pg} := proj1_sig (finiteE).
 
+(*trivial lemmas*)
+Lemma NoDup_VList:
+  forall (pg: PreGraph V E) {fg: FiniteGraph pg}, NoDup (VList pg).
+Proof.
+unfold VList; intros. destruct finiteV. unfold proj1_sig. apply a.
+Qed.
+
+Lemma NoDup_EList:
+  forall (pg: PreGraph V E) {fg: FiniteGraph pg}, NoDup (EList pg).
+Proof.
+unfold EList; intros. destruct finiteE. unfold proj1_sig. apply a.
+Qed.
+
+Lemma VList_vvalid:
+  forall (pg: PreGraph V E) {fg: FiniteGraph pg} v, In v (VList pg) <-> vvalid pg v.
+Proof.
+intros. unfold VList. destruct finiteV. simpl. apply a.
+Qed.
+
+Lemma EList_evalid:
+  forall (pg: PreGraph V E) {fg: FiniteGraph pg} e, In e (EList pg) <-> evalid pg e.
+Proof.
+intros. unfold EList. destruct finiteE. simpl. apply a.
+Qed.
+
 Class LocalFiniteGraph (pg: PreGraph V E) :=
 {
   local_enumerable: forall x, Enumerable E (out_edges pg x)

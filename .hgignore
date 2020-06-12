@@ -30,3 +30,4 @@ poster.run.xml
 *.vos
 .lia.cache
 \#*\#
+*.numbers

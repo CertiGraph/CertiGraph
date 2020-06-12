@@ -672,8 +672,19 @@ Definition labeledgraph_egen (g: Graph) (e: E) (d: DE) : Graph := Build_LabeledG
 
 Definition labeledgraph_ggen (g: Graph) (m: DG) : Graph := Build_LabeledGraph _ _ _ g (vlabel g) (elabel g) m.
 
+Definition labeledgraph_add_vertex (g : Graph) (v : V) (dv: DV) :=
+  Build_LabeledGraph _ _ _ (pregraph_add_vertex g v) (update_vlabel (vlabel g) v dv) (elabel g) (glabel g).
+
+Fixpoint labeledgraph_add_vertices (g: Graph) (vl: list (V*DV)) :=
+match vl with
+| nil => g
+| x::vl' => labeledgraph_add_vertex (labeledgraph_add_vertices g vl') (fst x) (snd x)
+end.
+
 Definition labeledgraph_add_edge (g : Graph) (e : E) (o t : V) (d: DE) :=
   Build_LabeledGraph _ _ _ (pregraph_add_edge g e o t) (vlabel g) (update_elabel (elabel g) e d) (glabel g).
+
+(*add_edges?*)
 
 Definition labeledgraph_gen_dst (g : Graph) (e : E) (t : V) :=
   Build_LabeledGraph _ _ _ (pregraph_gen_dst g e t) (vlabel g) (elabel g) (glabel g).

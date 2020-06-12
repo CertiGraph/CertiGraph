@@ -146,6 +146,12 @@ Definition makeSet_discrete_LabeledGraph (size: nat) : LGraph := Build_LabeledGr
 
 Definition makeSet_discrete_Graph (size: nat) : UFGraph := Build_GeneralGraph _ _ _ _ (makeSet_discrete_LabeledGraph size) (makeSet_discrete_sound size).
 
+Corollary makeSet_discrete_Graph_dst:
+  forall size e, dst (makeSet_discrete_Graph size) e = -1.
+Proof.
+apply makeSet_dst.
+Qed.
+
 Class SpatialArrayGraph (Addr: Type) (Pred: Type) := vcell_array_at: Addr -> list (nat * Z) -> Pred.
 
 Existing Instances SGP_ND SGP_SL SGP_ClSL SGP_CoSL.
