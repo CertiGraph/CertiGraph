@@ -3,12 +3,12 @@
 static const int MAX_EDGES = 8;
 
 extern void * mallocK (int n);
-extern void free(void *p);
+extern void free (void *p);
 
 struct edge {
     int weight; //weight at top for minor convenience
-    int u;
-    int v;
+    int src;
+    int dst;
 };
 
 //this haphazard representation means it's dangerous to modify a graph...
@@ -29,45 +29,14 @@ struct graph * init_empty_graph() {
     return empty_graph;
 }
 
+void fill_edge(struct edge *wedge, int w, int u, int v) {
+  wedge->weight = w;
+  wedge->src = u;
+  wedge->dst = v;
+}
+
 /*********************SORTING***********************/
-/*
-void copy_edge(struct edge *src, struct edge *dst) {
-  dst->weight = src->weight;
-  dst->u = src->u;
-  dst->v = src->v;
-}
-
-void swap_edges(struct edge *a, struct edge *b) {
-  struct edge tmp;
-  tmp.weight = a->weight; tmp.u = a->u; tmp.v = a->v;
-  a->weight = b->weight; a->u = b->u; a->v = b->v;
-  b->weight = tmp.weight; b->u = tmp.u; b->v = tmp.v;
-}
-*/
 extern void sort_edges(struct edge* a, int l);
-
-
-/*void sort_edges(struct edge* a, int m, int n) {
-  int i, j;
-  struct edge pivot;
-
-  if (m < n) {
-    copy_edge(a+n, &pivot);
-    //pivot.weight = a[n].weight; pivot.u = a[n].u; pivot.v = a[n].v;	//copy everything to avoid headaches in proof
-    i = m; j = n;
-    while (i <= j) {
-      while (a[i].weight < pivot.weight) i++;
-      while (a[j].weight > pivot.weight) j--;
-      if (i <= j) {
-        if (i<j) swap_edges(a+i,a+j);
-        i++; j--;
-      }
-    }
-    sort_edges(a, m, j);
-    sort_edges(a, i, n);
-  }
-}
-*/
 
 void free_graph(struct graph * graph) {
     free(graph->edge_list);
@@ -84,21 +53,25 @@ struct graph *kruskal(struct graph *graph) {
     mst->V = graph_V;
 
     sort_edges(graph->edge_list, graph_E); //because the new sort_spec now gives the length of the list instead of the index of the last element
+    
     for (int i = 0; i < graph_E; ++i) {
         //extract the data
 
-        int u = graph->edge_list[i].u;
-        int v = graph->edge_list[i].v;
+        int u = graph->edge_list[i].src;
+        int v = graph->edge_list[i].dst;
 
         //decide whether edge should be added using unionfind
         int ufind = find(subsets, u);
         int vfind = find(subsets, v);
         if (ufind != vfind) {
             //add edge to MST
-            //copy_edge(graph->edge_list + i, mst->edge_list + mst->E);
-            mst->edge_list[mst->E].u = u;
-            mst->edge_list[mst->E].v = v;
+            int w = graph->edge_list[i].weight;
+            fill_edge(mst->edge_list + mst->E, w, u, v);
+            /*
+            mst->edge_list[mst->E].src = u;
+            mst->edge_list[mst->E].dst = v;
             mst->edge_list[mst->E].weight = graph->edge_list[i].weight;
+            */
             mst->E += 1;
             Union(subsets, u, v);
         }
