@@ -26,14 +26,6 @@ Require Import RamifyCoq.kruskal.mst.
 Require Import RamifyCoq.kruskal.undirected_graph.
 (*Require Import RamifyCoq.graph.spanning_tree.*)
 
-Definition Vprog : varspecs. mk_varspecs prog. Defined.
-
-Definition Gprog : funspecs :=
-  ltac:(with_library prog
-      [makeSet_spec; find_spec; union_spec;
-      mallocK_spec; free_spec; fill_edge_spec; init_empty_graph_spec; sort_edges_spec; kruskal_spec
-  ]).
-
 Local Open Scope Z_scope.
 
 Lemma Permutation_Zlength:
@@ -432,7 +424,7 @@ assert (memory_block sh (MAX_EDGES * (sizeof t_struct_edge)) (pointer_val_val ep
     simpl. auto.
   } rewrite <- memory_block_data_at_; auto.
 } rewrite H1. clear H1.
-assert (data_at_ sh (tarray t_struct_edge MAX_EDGES) (pointer_val_val eptr) = data_at sh (tarray t_struct_edge MAX_EDGES) (Vundef_cwedges (Z.to_nat MAX_EDGES)) (pointer_val_val eptr)). {
+assert (data_at_ sh (tarray t_struct_edge MAX_EDGES) (pointer_val_val eptr) = data_at sh (tarray t_struct_edge MAX_EDGES) (Vundef_cwedges (MAX_EDGES)) (pointer_val_val eptr)). {
   unfold data_at_, field_at_, data_at. assert (default_val (nested_field_type (tarray t_struct_edge MAX_EDGES) []) = list_repeat (Z.to_nat MAX_EDGES) (Vundef, (Vundef, Vundef))) by reflexivity.
   rewrite H1. auto.
 } rewrite H1. clear H1.
