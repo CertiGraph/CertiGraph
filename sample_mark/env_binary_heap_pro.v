@@ -45,12 +45,11 @@ Proof.
 Qed.
 
 (* Not sure if it's a great idea to expose the capacity inside the abstraction boundary. *)
-Definition heap : Type := (nat * list heap_item * list nat)%type.
-Instance heap_inhabitant : Inhabitant heap := (O, [], []).
-Definition heap_capacity (h : heap) : Z := Z.of_nat (fst (fst h)).
-Definition heap_items (h : heap) : list heap_item := snd (fst h).
+Definition heap : Type := (nat * list heap_item)%type.
+Instance heap_inhabitant : Inhabitant heap := (O, []).
+Definition heap_capacity (h : heap) : Z := Z.of_nat (fst h).
+Definition heap_items (h : heap) : list heap_item := snd h.
 Definition heap_size (h : heap) : Z := Zlength (heap_items h).
-Definition heap_lookup_table (h : heap) : list nat := snd h.
 
 Definition heap_ordered := binary_heap_model.heapOrdered heap_item cmp_rel.
 Definition weak_heap_ordered_bottom_up (L : list heap_item) (x : Z) := 
@@ -122,14 +121,42 @@ Qed.
 
 Lemma linked_correctly'_shuffle: forall contents lookup lookup' offset,
   linked_correctly' contents lookup offset ->
-  (forall i, Znth (heap_item_key (Znth i contents)) lookup = Znth (heap_item_key (Znth i contents)) lookup') ->
+  (forall i, 0 <= i < Zlength contents -> Znth (heap_item_key (Znth i contents)) lookup = Znth (heap_item_key (Znth i contents)) lookup') ->
   linked_correctly' contents lookup' offset.
-Proof. repeat intro. rewrite <- H0. apply H. trivial. Qed.
+Proof. repeat intro. rewrite <- H0; trivial. apply H. trivial. Qed.
 
-(*
-Definition lookup_oob_equiv (contents : list heap_item) (lookup lookup' : list Z) : Prop :=
-  forall i, (~ exists j, heap_item_key (Znth j contents) <> i) -> 
-*)
+Definition lookup_oob_eq (contents : list heap_item) (lookup lookup' : list Z) : Prop :=
+  forall i, (forall j, 0 <= j < Zlength contents -> heap_item_key (Znth j contents) <> i) ->
+  Znth i lookup = Znth i lookup'.
+
+Lemma lookup_oob_eq_refl: forall contents lookup,
+  lookup_oob_eq contents lookup lookup.
+Proof. repeat intro. trivial. Qed.
+
+Lemma lookup_oob_eq_trans: forall contents lookup lookup' lookup'',
+  lookup_oob_eq contents lookup lookup' ->
+  lookup_oob_eq contents lookup' lookup'' ->
+  lookup_oob_eq contents lookup lookup''.
+Proof. repeat intro. specialize (H i H1). rewrite H. apply H0; trivial. Qed.
+
+Instance lookup_oob_po: forall c, PreOrder (lookup_oob_eq c).
+Proof. intro c. split. intro x. apply lookup_oob_eq_refl. intros x y z. apply lookup_oob_eq_trans. Qed.
+
+Lemma lookup_oob_eq_shuffle: forall contents contents' lookup lookup',
+  Permutation (map heap_item_key contents) (map heap_item_key contents') ->
+  lookup_oob_eq contents lookup lookup' ->
+  lookup_oob_eq contents' lookup lookup'.
+Proof. 
+  repeat intro. apply H0. repeat intro.
+  symmetry in H.
+  apply Permutation_Znth in H. 2: exact 0. destruct H as [? [f [? [? ?]]]].
+  do 2 rewrite Zlength_map in *. rewrite <- H in *.
+  apply (H1 (Z.of_nat (f (Z.to_nat j)))).
+  specialize (H4 (Z.to_nat j)). rep_lia.
+  specialize (H6 j H2). rewrite Znth_map in H6. 2: lia. rewrite H6 in H3.
+  rewrite Znth_map in H3. trivial.
+  specialize (H4 (Z.to_nat j)). rep_lia.
+Qed.
 
 Definition linked_heap_array (contents : list heap_item) (v1 : val) (lookup : list Z) (v2 : val) : mpred :=
   (!!(linked_correctly contents lookup) && ((heap_array contents v1) * (lookup_array lookup v2)))%logic.
