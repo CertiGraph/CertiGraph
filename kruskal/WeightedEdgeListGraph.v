@@ -684,10 +684,9 @@ Lemma adde_connected_e:
 forall (g:FiniteWEdgeListGraph) e w,
   sound_weighted_edge_graph g -> vvalid g (src g e) -> vvalid g (dst g e) ->
   connected (FiniteWEdgeListGraph_adde g e w) (src g e) (dst g e).
-Proof. Admitted.
-(* this proof causes universe inconsistency 
+Proof. 
 intros. exists ((src g e)::(dst g e)::nil). split. 2: auto.
-split. 2: rewrite Forall_forall; auto.
+split. 2: unfold upath_prop; rewrite Forall_forall; auto.
 assert (src_edge g) by apply H.
 assert (dst_edge g) by apply H.
 split. exists e. split. split. apply FiniteWEdgeListGraph_adde_evalid1.
@@ -699,7 +698,7 @@ left; rewrite H2; rewrite H3; auto.
 left; auto.
 simpl. auto.
 Qed.
-*)
+
 (*
 Lemma adde_connected_dec:
 forall (g:FiniteWEdgeListGraph) e w,
