@@ -642,14 +642,21 @@ Proof.
 intros. destruct (EList_dec g e); rewrite EList_evalid in H; auto.
 Qed.
 
-(* this proof causes universe inconsistency *)
 Lemma connected_to_self:
 forall (g: FiniteWEdgeListGraph) v, vvalid g v -> connected g v v.
-Proof. Admitted.
+Proof.
+(* this proof causes universe inconsistency *)
 (*
 intros. exists (v::nil). split. split. simpl; auto. rewrite Forall_forall. auto. simpl; auto.
 Qed.
  *)
+(* but this proof works: *)
+  intros. exists (v::nil).
+  unfold connected_by_path; Coqlib2.split3; trivial.
+  unfold good_upath; split; trivial.
+  unfold upath_prop. rewrite Forall_forall.
+  intros; trivial.
+Qed.
 
 Definition connected_dec (g:FiniteWEdgeListGraph):=
 forall u v, connected g u v \/ ~ connected g u v.
