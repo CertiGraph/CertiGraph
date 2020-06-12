@@ -1,26 +1,18 @@
-(* TODO: Perhaps make verif_unionfind_arr use
-   this file instead of its own local copy 
-   of these specs?
-*)
-
 (* UF's imports (already made minimal *)
 Require Import RamifyCoq.sample_mark.env_unionfind_arr.
-Require Import RamifyCoq.graph.graph_model.
-Require Import RamifyCoq.graph.UnionFind.
-Require Import RamifyCoq.msl_application.ArrayGraph.
-Require Import RamifyCoq.floyd_ext.share.
-Require Import RamifyCoq.sample_mark.spatial_array_graph.
+Require Export RamifyCoq.sample_mark.uf_arr_specs.
 
 (* Kruskal's imports (already made minimal *)
 Require Import RamifyCoq.kruskal.mst.
 Require Import RamifyCoq.kruskal.WeightedEdgeListGraph.
 Require Import RamifyCoq.kruskal.env_kruskal_edgelist.
 Require Import RamifyCoq.kruskal.spatial_wedgearray_graph.
+Require Import RamifyCoq.graph.graph_model.
+Require Import RamifyCoq.floyd_ext.share.
 
-(* UNION FIND SPECS *)
 
 Local Open Scope Z_scope.
-
+(*
 Definition mallocN_spec :=
  DECLARE _mallocN
   WITH sh:wshare, n: Z
@@ -85,7 +77,7 @@ Definition union_spec :=
         PROP (uf_union g x y g')
         LOCAL ()
         SEP (whole_graph sh g' subsets).
-
+*)
 (* KRUSKAL SPECS *)
 
 (*Taken from VST's queue*)
@@ -203,3 +195,11 @@ Definition kruskal_spec :=
           data_at sh (tarray t_struct_edge MAX_EDGES)
             (map wedge_to_cdata msflist ++ (Vundef_cwedges (MAX_EDGES - numE msf))) (pointer_val_val msf_eptr)
         ).
+
+Definition Vprog : varspecs. mk_varspecs prog. Defined.
+
+Definition Gprog : funspecs :=
+  ltac:(with_library prog
+      [makeSet_spec; find_spec; union_spec;
+      mallocK_spec; free_spec; fill_edge_spec; init_empty_graph_spec; sort_edges_spec; kruskal_spec
+  ]).
