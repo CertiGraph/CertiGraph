@@ -192,7 +192,7 @@ Proof.
   rewrite exchange_length. lia.
 Qed.
 
-Lemma exchange_permutation: forall A (L : list A) i j,
+Lemma exchange_Permutation: forall A (L : list A) i j,
   Permutation (exchange L i j) L.
 Proof.
   unfold exchange. intros.
@@ -695,7 +695,7 @@ Proof.
   case (nth_error L j); auto.
   case (nth_error L (parent j)); auto.
   intros. case (a0 <<=? a); auto.
-  intro. symmetry. apply exchange_permutation.
+  intro. symmetry. apply exchange_Permutation.
 Qed.
 
 Lemma swim_permutation: forall L j,
@@ -1084,11 +1084,11 @@ Proof.
   case (nth_error L (left_child j)); auto.
   case (nth_error L (right_child j)); intros.
   case (a <<=? a0). case (a1 <<=? a); auto.
-  intros. symmetry. apply exchange_permutation.
+  intros. symmetry. apply exchange_Permutation.
   case (a1 <<=? a0); auto.
-  intros. symmetry. apply exchange_permutation.
+  intros. symmetry. apply exchange_Permutation.
   case (a0 <<=? a); auto.
-  intros. symmetry. apply exchange_permutation.
+  intros. symmetry. apply exchange_Permutation.
 Qed.
 
 Lemma sink_permutation: forall L j,
