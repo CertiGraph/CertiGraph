@@ -140,6 +140,37 @@ Proof.
   intros. apply Permutation_length in H. do 2 rewrite Zlength_correct. congruence.
 Qed.
 
+Lemma Zexchange_Permutation: forall A (L : list A) i j,
+  Permutation L (Zexchange L i j).
+Proof.
+  intros. unfold Zexchange. symmetry. apply exchange_Permutation.
+Qed.
+
+Lemma Permutation_Znth {A : Type} `{iA: Inhabitant A}: forall (l l' : list A) (d : A),
+       Permutation l l' <->
+       (let n := Zlength l in
+        Zlength l' = n /\
+        (exists f : nat -> nat,
+           FinFun.bFun (Z.to_nat n) f /\
+           FinFun.bInjective (Z.to_nat n) f /\ 
+           (forall z : Z, (0 <= z < n) -> Znth z l' = Znth (Z.of_nat (f (Z.to_nat z))) l))).
+Proof.
+  intros. rewrite Permutation_nth. instantiate (1 := iA). do 2 rewrite Zlength_correct. split; intros; subst n; destruct H as [? [? [? [? ?]]]]; rename x into f.
+  * split. congruence. 
+    exists f. rewrite Nat2Z.id. split; trivial. split; trivial. intros.
+    repeat rewrite <- nth_Znth. 3: rewrite Zlength_correct; lia.
+    rewrite H2. 2: rep_lia.
+    rewrite Nat2Z.id. trivial.
+    rewrite Zlength_correct. specialize (H0 (Z.to_nat z)).  rep_lia.
+  * split. rep_lia.
+    exists f. rewrite Nat2Z.id in *. split; trivial. split; trivial. intros.
+    specialize (H2 (Z.of_nat x)).
+    do 2 rewrite <- nth_Znth in H2. repeat rewrite Nat2Z.id in *.
+    apply H2. lia.
+    1,2,3: rewrite Zlength_correct. 2,3: lia.
+    specialize (H0 x). rewrite Nat2Z.id. lia.
+Qed.
+
 Definition Zleft_child i  := Z.of_nat (binary_heap_model.left_child  (Z.to_nat i)).
 Lemma Zleft_child_unfold: forall i,
   0 <= i ->
@@ -200,6 +231,3 @@ Proof.
   intros. unfold Int.divu. repeat rewrite Int.unsigned_repr.
   2,3: rep_lia. rewrite Zparent_unfold. trivial. lia.
 Qed.
-
-
-
