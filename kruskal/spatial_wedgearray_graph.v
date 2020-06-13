@@ -25,9 +25,9 @@ Proof.
   intros. unfold wedge_to_cdata; unfold def_wedgerep; simpl. lia.
 Qed.
 
-Definition c_connected_by_path g P p u v :=
+Definition c_connected_by_path g p u v :=
 match u, v with
-| Vint u', Vint v' => connected_by_path g P p (Int.signed u') (Int.signed v')
+| Vint u', Vint v' => connected_by_path g p (Int.signed u') (Int.signed v')
 | _, _ => False
 end.
 

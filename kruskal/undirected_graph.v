@@ -3,20 +3,17 @@ Idea is with a definition of connectedness, there's no need to explicitly define
 Which sort of makes sense I guess, because every directed graph has an underlying undirected graph by just removing the direction
 And directed graphs make more sense in C compared to ugraphs (correct me if I'm wrong)
 *)
-
+Require Import Coq.Lists.List.
+Require Import Coq.Lists.ListDec.
 Require Import Coq.Logic.ProofIrrelevance.
-(*Require Import RamifyCoq.lib.Coqlib.*)
 Require Import RamifyCoq.lib.Ensembles_ext.
+(*Require Import RamifyCoq.lib.Coqlib.*)
 (*Require Import RamifyCoq.lib.EnumEnsembles.*)
 Require Import RamifyCoq.lib.List_ext.
 Require Import RamifyCoq.lib.EquivDec_ext.
 Require Import RamifyCoq.graph.graph_model.
 Require Import RamifyCoq.graph.graph_relation.
 Require Import RamifyCoq.graph.path_lemmas.
-(*
-Require Import Coq.Lists.List.
-Require Import Coq.Lists.ListDec.
-*)
 
 Section UNDIRECTED.
 
@@ -54,7 +51,7 @@ Problem is, because the graph is still fundamentally directed, there can be edge
 So maybe we just return every such edge
 But, it makes no sense having an undirected graph with more than one edge between two vertices
 *)
-Definition adj_edges g u v: Ensemble E := fun e => adj_edge g e u v.
+Definition adj_edges g u v := fun e => adj_edge g e u v.
 
 (************CUSTOM LIST OPERATIONS************)
 (*Since it makes sense for us to deal with l+::a a lot*)
@@ -265,6 +262,16 @@ simpl. destruct (last_error p); simpl in H0. apply (adjacent_requires_vvalid g v
 destruct (last_error p); simpl in *; apply H0.
 Qed.
 
+Lemma valid_upath_app_split:
+  forall g p p', valid_upath g (p++p') -> (valid_upath g p /\ valid_upath g p').
+Proof.
+induction p; intros. simpl in H. split. simpl. auto. apply H.
+destruct p. destruct p'. simpl in *. split; auto. simpl in H. destruct H. destruct H. destruct H.
+split. simpl. destruct H. destruct H1; destruct H1. rewrite <- H1. apply H2. rewrite <- H3. apply H2.
+apply H0.
+destruct H. apply IHp in H0. split. split. apply H. apply H0. apply H0.
+Qed.
+
 Lemma valid_upath_rev:
   forall g p, valid_upath g p -> valid_upath g (rev p).
 Proof.
@@ -274,51 +281,36 @@ rewrite <- rev_hd_last. destruct p. apply H.
 simpl. destruct H. apply adjacent_symm. apply H.
 Qed.
 
-Definition upath_prop (P : Ensemble V)  (p: upath) : Prop :=
-  Forall (fun v => P v) p.
+Definition connected_by_path (g: Gph) (p: upath) (n : V) :=
+  fun n' => valid_upath g p /\ hd_error p = Some n /\ last_error p = Some n'.
 
-Definition good_upath (g: Gph) (P : Ensemble V) : (upath -> Prop) := fun p => valid_upath g p /\ upath_prop P p.
+Definition connected (g: Gph) (n : V) :=
+  fun n' => exists p, connected_by_path g p n n'.
 
-Corollary good_upath_rev:
-  forall g P p, good_upath g P p -> good_upath g P (rev p).
+Lemma connected_symm:
+  forall g u v, connected g u v -> connected g v u.
 Proof.
-intros. split. apply valid_upath_rev. apply H.
-destruct H. unfold upath_prop in *; rewrite Forall_forall in *. intros. apply H0. rewrite In_rev; apply H1.
-Qed.
-
-Definition connected_by_path (g: Gph) (P : Ensemble V) (p: upath) (n : V) : Ensemble V :=
-  fun n' => good_upath g P p /\ hd_error p = Some n /\ last_error p = Some n'.
-
-Definition connected_by (g: Gph) (P : Ensemble V) (n : V) : Ensemble V :=
-  fun n' => exists p, connected_by_path g P p n n'.
-
-Definition connected (g: Gph) (n : V): Ensemble V:= connected_by g (fun _ => True) n.
-
-Lemma connected_by_symm:
-  forall g P u v, connected_by g P u v -> connected_by g P v u.
-Proof.
-unfold connected_by; unfold connected_by_path; intros.
-destruct H. rename x into p. exists (rev p). split. apply good_upath_rev. apply H.
+unfold connected; unfold connected_by_path; intros.
+destruct H. rename x into p. exists (rev p). split. apply valid_upath_rev. apply H.
 split. rewrite <- (rev_involutive p) in H. rewrite <- rev_hd_last in H. apply H.
 rewrite rev_hd_last in H. apply H.
 Qed.
 
-Corollary connected_symm:
-  forall g u v, connected g u v -> connected g v u.
+Lemma connected_refl:
+forall g v, vvalid g v -> connected g v v.
 Proof.
-  intro; apply connected_by_symm.
+intros. exists (v::nil). split. simpl; auto.
+split; simpl; auto.
 Qed.
 
-Lemma connected_by_trans:
-  forall g P u v w, connected_by g P u v -> connected_by g P v w -> connected_by g P u w.
+Lemma connected_trans:
+  forall g u v w, connected g u v -> connected g v w -> connected g u w.
 Proof.
-unfold connected_by; unfold connected_by_path; intros.
+unfold connected; unfold connected_by_path; intros.
 destruct H; rename x into p0. destruct H0; rename x into p1.
 destruct H. destruct H1. destruct H0. destruct H3.
-exists (p0++(tail p1)). split. split. apply valid_upath_app_2. apply H. apply H0.
+exists (p0++(tail p1)). split. apply valid_upath_app_2. apply H. apply H0.
 rewrite H3. rewrite H2. reflexivity.
-destruct H.  destruct H0. unfold upath_prop in *. rewrite Forall_forall in *; intros. apply in_app_or in H7.
-destruct H7. apply H5. apply H7. apply In_tail in H7. apply H6. apply H7.
 split. assert (p0 = u::(tl p0)). apply hd_error_tl_repr. split. apply H1. reflexivity.
 rewrite H5. rewrite <- app_comm_cons. simpl. reflexivity.
 destruct p1 eqn:H5. inversion H4.
@@ -326,25 +318,19 @@ destruct u0. simpl in *. rewrite <- app_nil_end. rewrite <- H4. rewrite H3. appl
 simpl. apply last_err_app. simpl in H4. simpl. apply H4.
 Qed.
 
-Corollary connected_trans:
-  forall g u v w, connected g u v -> connected g v w -> connected g u w.
-Proof.
-intros. apply (connected_by_trans g (fun _ => True) u v w H H0).
-Qed.
-
 Lemma adjacent_connected:
   forall g u v, adjacent g u v -> connected g u v.
 Proof.
-intros. exists (u::v::nil). split. split. simpl. split. apply H. unfold adjacent in H. destruct H. destruct H. destruct H.
+intros. exists (u::v::nil). split. split. auto.
+simpl. destruct H. destruct H. destruct H.
 destruct H0; destruct H0. rewrite <- H2; apply H1. rewrite <- H0; apply H1.
-unfold upath_prop; rewrite Forall_forall. intros; auto.
 split; simpl; auto.
 Qed.
 
 Lemma connected_by_path_vvalid:
-forall g P p u v, connected_by_path g P p u v -> vvalid g u /\ vvalid g v.
+forall g p u v, connected_by_path g p u v -> vvalid g u /\ vvalid g v.
 Proof.
-intros. destruct H. destruct H0. destruct H.
+intros. destruct H. destruct H0.
 split. apply (valid_upath_vvalid g p u). auto. apply hd_error_In; auto.
 apply (valid_upath_vvalid g p v). auto. apply last_error_In; auto.
 Qed.
@@ -352,16 +338,10 @@ Qed.
 Corollary connected_vvalid:
   forall g u v, connected g u v -> vvalid g u /\ vvalid g v.
 Proof.
-intros. destruct H as [p ?]. apply (connected_by_path_vvalid _ _ _ _ _ H).
+intros. destruct H as [p ?]. apply (connected_by_path_vvalid _ _ _ _ H).
 Qed.
 
 Definition connected_graph (g: Gph) := forall u v, vvalid g u -> vvalid g v -> connected g u v.
-
-Definition simple_upath g p := valid_upath g p /\ NoDup p.
-(*
-Lemma paths_can_be_simplified:
-  forall g p, valid_upath g p -> exists p', simple_upath g p' /\ simplified p p'
-*)
 
 (************REASONING ABOUT A SPECIFIC LIST OF EDGES************)
 
@@ -373,19 +353,30 @@ match l, p with
 | _, _ => False
 end.
 
-Lemma connected_exists_list_edges:
-forall g P p u v, connected_by_path g P p u v -> exists l, fits_upath g l p.
+Lemma valid_upath_exists_list_edges:
+forall g p, valid_upath g p-> exists l, fits_upath g l p.
 Proof.
 induction p; intros. exists nil; simpl; auto.
 destruct p. exists nil; simpl; auto.
-destruct (IHp v0 v). unfold connected_by_path, good_upath in H.
-destruct H. destruct H. destruct H0.
-split. split. apply H.
-unfold upath_prop in *; rewrite Forall_forall in *. intros. apply H1. apply in_cons. apply H3.
-split. simpl; auto. rewrite <- (last_error_cons (v0::p) a). apply H2. unfold not; intros; inversion H3.
-assert (adjacent g a v0). apply H. destruct H1.
-exists (x0::x).
-split. apply H1. apply H0.
+destruct H. destruct H. apply IHp in H0. destruct H0 as [l ?].
+exists (x::l). split; auto.
+Qed.
+
+Lemma valid_upath_exists_list_edges':
+forall g p, (forall v, In v p -> vvalid g v) -> (exists l, fits_upath g l p) -> valid_upath g p.
+Proof.
+induction p; intros. simpl. auto.
+destruct p. simpl. apply H. left; auto.
+destruct H0 as [l ?]. destruct l. simpl in H0; contradiction. destruct H0.
+split. exists e; apply H0. apply IHp.
+intros; apply H. right; apply H2.
+exists l. apply H1.
+Qed.
+
+Corollary connected_exists_list_edges:
+forall g p u v, connected_by_path g p u v -> exists l, fits_upath g l p.
+Proof.
+intros. destruct H. apply valid_upath_exists_list_edges. apply H.
 Qed.
 
 Lemma fits_upath_cons:
@@ -484,19 +475,13 @@ Proof.
 destruct p. apply epath_to_vpath_foot'.
 Qed.
 
-Lemma reachable_implies_connected_by:
-  forall g P u v, reachable_by g u P v -> connected_by g P u v.
+Lemma reachable_implies_connected:
+  forall g u v, reachable g u v -> connected g u v.
 Proof.
 intros. unfold reachable_by in H. destruct H. destruct H. rename x into dp.
 exists (epath_to_vpath g dp). split.
-split. apply valid_dpath_implies_valid_upath. apply H0.
-destruct H0. unfold path_prop in H1. destruct H1.
-rewrite Forall_forall in H2.
-unfold upath_prop. rewrite Forall_forall. intros.
-rewrite (in_path_eq_epath_to_vpath) in H3. unfold In_path in H3.
-destruct H3. rewrite H3. apply H1.
-destruct H3. destruct H3. specialize (H2 x0 H3). destruct H4; rewrite H4; apply H2.
-apply H0.
+apply valid_dpath_implies_valid_upath. apply H0.
+destruct H0. clear H1.
 destruct dp; destruct l. unfold path_ends in H; unfold phead in H; destruct H.
 split; simpl. rewrite H; reflexivity.
 unfold pfoot in H1. unfold pfoot' in H1. rewrite H1; reflexivity.
@@ -505,98 +490,40 @@ split. rewrite H. apply epath_to_vpath_head. rewrite <- H. apply H0.
 rewrite epath_to_vpath_foot. rewrite H1. reflexivity. apply H0.
 Qed.
 
-Corollary reachable_implies_connected:
-  forall g u v, reachable g u v -> connected g u v.
-Proof.
-intro. apply reachable_implies_connected_by.
-Qed.
-
 (************(CONNECTED) COMPONENTS************)
 
-Definition component (g: Gph) (P: Ensemble V):=
-  forall u v, P u -> P u -> connected g u v. (*Here we only care about connectedness; and are using P as a set*)
+Definition component (g: Gph) :=
+  forall u v, connected g u v. (*Here we only care about connectedness; and are using as a set*)
 
-Definition maximal_component (g: Gph) (P: Ensemble V):=
-  component g P /\ forall u v, connected g u v -> P u -> P v.
+Definition maximal_component (g: Gph):=
+  component g /\ forall u v, connected g u v.
 (*
 Lemma connected_graph_component:
-  forall g P, connected_graph g -> maximal_component g P -> Same_set P (vvalid g).
+  forall g P, connected_graph g -> maximal_component g -> Same_set P (vvalid g).
 *)
-(************UNDIRECTED CYCLES************)
 
-(*A valid upath is a ucycle if its start and end are the same*)
-(*Exclude empty paths?*)
-(*Alternative: If any element shows up twice?*)
-Definition ucycle (p: upath) := hd_error p = last_error p /\ tail p <> nil.
+(************UFOREST************)
 
-Lemma ucycle_nil :
-  forall p , p = nil -> ~ (ucycle p).
+(*Use wiki/Bender & Williamson 2010's definition. Defining a cycle is troublesome because
+1. have to deal with negations in definition of uforest
+2. we support multiple edges btwn vertices, if so are they a cycle?
+For the purposes of kruskal, we need uforest more than cycles*)
+
+Definition simple_upath g p := valid_upath g p /\ NoDup p.
+
+Lemma simple_upath_app_split:
+  forall g p p', simple_upath g (p++p') -> (simple_upath g p /\ simple_upath g p').
 Proof.
-unfold not; unfold ucycle; intros. destruct H0.
-assert (tail p = nil). rewrite H. auto. contradiction.
+intros. destruct H. split; split.
+apply (valid_upath_app_split _ _ _ H). apply (NoDup_app_l _ _ _ H0).
+apply (valid_upath_app_split _ _ _ H). apply (NoDup_app_r _ _ _ H0).
 Qed.
 
-Lemma ucycle_single:
-  forall u, ~ (ucycle (u::nil)).
-Proof.
-unfold not; unfold ucycle; intros. destruct H.
-assert (tail (u::nil) = nil). auto. contradiction.
-Qed.
-
-(*This means that all ucycles must be. If self-loop, must be u->u*)
-
-Definition simple_ucycle p := ucycle p /\ NoDup (tail p).
-
-(*which is better?*)
-
-Definition acyclic_ugraph g := forall p, simple_ucycle p -> ~ (valid_upath g p). (*so walking back and forth is an accepted "cycle", but we don't care*)
-
-Definition acyclic_ugraph2 g := forall u v w, connected g u v -> connected g v w -> ~ (adjacent g u w).
-
-(*A forest's more common definition is based on trees, but it's equivalent to an acyclic graph (requires proof)*)
-Definition uforest g := acyclic_ugraph g.
+Definition uforest g := forall u v p1 p2,
+  simple_upath g p1 -> connected_by_path g p1 u v ->
+  simple_upath g p2 -> connected_by_path g p2 u v ->
+  p1 = p2.
 
 Definition spanning_uforest g t := is_partial_graph t g /\ uforest t /\ (forall u v, connected g u v <-> connected t u v).
-
-(*Next problem: graphs can be disconnected. So, the definition of a tree is dependent on components. E.g Prim's returns a tree of the component its root is in
-
-Definition tree' g u :=
-  forall v, connected_by g P u v -> (*only one path from u to v. Use NoDup?*).
-
-Definition tree g :=
-  forall u, tree' g u.
-*)
-
-(**************FINITE GRAPHS************)
-(*
-Require Import RamifyCoq.graph.graph_gen.
-Require Import graph.FiniteGraph.
-Lemma empty_pregraph_vvalid:
-forall src dst v, ~ vvalid (empty_pregraph src dst) v.
-Proof. simpl; auto. Qed.
-
-Lemma empty_pregraph_evalid:
-forall src dst e, ~ evalid (empty_pregraph src dst) e.
-Proof. simpl; auto. Qed.
-
-Definition finite_empty_pregraph src dst:
-FiniteGraph (empty_pregraph src dst).
-Proof.
-constructor; unfold EnumEnsembles.Enumerable, In; exists nil; split.
-apply NoDup_nil.
-intros; split; auto.
-apply NoDup_nil.
-intros; split; auto.
-Qed.
-
-
-Definition finite_pregraph_add_edge g {fg: FiniteGraph g} e u v:
-FiniteGraph (pregraph_add_edge g e u v).
-Proof.
-destruct fg. unfold EnumEnsembles.Enumerable, In in finiteV. unfold EnumEnsembles.Enumerable, In in finiteE.
-constructor; unfold EnumEnsembles.Enumerable, In.
-destruct finiteV as [vl Hvl]. exists vl. apply Hvl.
-destruct finiteE as [el Hel]. simpl; unfold addValidFunc.
-*)
 
 End UNDIRECTED.
