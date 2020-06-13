@@ -11,7 +11,7 @@ Require Import RamifyCoq.msl_application.ArrayGraph.
 Require Import RamifyCoq.floyd_ext.share.
 Require Import RamifyCoq.sample_mark.spatial_array_graph.
 Require Import Coq.Lists.List.
-Require Import RamifyCoq.sample_mark.uf_specs.
+Require Import RamifyCoq.sample_mark.uf_arr_specs.
 
 Local Coercion UFGraph_LGraph: UFGraph >-> LGraph.
 Local Identity Coercion ULGraph_LGraph: LGraph >-> UnionFindGraph.LGraph.

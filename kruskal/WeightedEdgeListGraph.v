@@ -5,14 +5,15 @@ Require Import Coq.micromega.Lia.
 Require Import VST.msl.seplog.
 Require Import VST.floyd.sublist.
 Require Import compcert.lib.Integers.
+Require Import Coq.Lists.List.
 Require Import RamifyCoq.lib.Coqlib.
 Require Import RamifyCoq.lib.EquivDec_ext.
 Require Import RamifyCoq.lib.List_ext.
 Require Import RamifyCoq.graph.graph_model.
 Require Import RamifyCoq.graph.graph_gen.
+Require Import RamifyCoq.graph.graph_relation.
 (*Require Import RamifyCoq.msl_application.ArrayGraph.*) (*I probably need this to transform this graph to the ArrayGraph?*)
 Require Import RamifyCoq.graph.FiniteGraph.
-Require Import Coq.Lists.List.
 Require Import compcert.lib.Coqlib.
 Require Import RamifyCoq.kruskal.undirected_graph.
 
@@ -352,6 +353,18 @@ Proof.
 unfold graph_to_wedgelist; intros. rewrite edgeless_WEdgeGraph_EList. auto.
 Qed.
 
+Lemma uforest_edgeless_WEdgeGraph:
+forall z, uforest (edgeless_WEdgeGraph z).
+Proof.
+unfold uforest; intros. destruct H0. destruct H3.
+destruct p1. inversion H3. destruct p1.
+inversion H3. inversion H4. subst u; subst v.
+destruct H2. destruct H5. destruct p2. inversion H5.
+destruct p2. inversion H5. subst v. auto.
+destruct H2. destruct H2. destruct H2. destruct H2. simpl in H2. contradiction.
+destruct H0. destruct H0. destruct H0. destruct H0. simpl in H0. contradiction.
+Qed.
+
 (***********ADDING/REMOVING A SINGLE EDGE************)
 
 (*Trivial lemmas to make life simple*)
@@ -490,6 +503,20 @@ Proof.
 unfold FiniteWEdgeListGraph_adde; simpl; unfold addValidFunc. intros. apply H.
 Qed.
 
+Lemma FiniteWEdgeListGraph_adde_src1:
+  forall (g: FiniteWEdgeListGraph) u v w, src (FiniteWEdgeListGraph_adde g (u,v) w) (u,v) = u.
+Proof.
+unfold FiniteWEdgeListGraph_adde; simpl; unfold addValidFunc; unfold updateEdgeFunc. intros.
+unfold equiv_dec. destruct E_EqDec. auto. unfold complement, equiv in c; contradiction.
+Qed.
+
+Lemma FiniteWEdgeListGraph_adde_dst1:
+  forall (g: FiniteWEdgeListGraph) u v w, dst (FiniteWEdgeListGraph_adde g (u,v) w) (u,v) = v.
+Proof.
+unfold FiniteWEdgeListGraph_adde; simpl; unfold addValidFunc; unfold updateEdgeFunc. intros.
+unfold equiv_dec. destruct E_EqDec. auto. unfold complement, equiv in c; contradiction.
+Qed.
+
 Lemma FiniteWEdgeListGraph_adde_g2wedgelist_1:
   forall (g: FiniteWEdgeListGraph) e w, In (w, e) (graph_to_wedgelist (FiniteWEdgeListGraph_adde g e w)).
 Proof.
@@ -545,6 +572,7 @@ unfold equiv_dec. destruct (E_EqDec e e0). unfold equiv in e1; rewrite e1; auto.
 apply H.
 Qed.
 
+(*****************************CONNECTEDNESS*************************)
 
 Lemma adde_valid_upath:
 forall (g: FiniteWEdgeListGraph) e w p,
@@ -576,14 +604,14 @@ apply IHp. auto. apply H0.
 Qed.
 
 Lemma adde_connected_by_path:
-forall (g: FiniteWEdgeListGraph) e w P p u v,
+forall (g: FiniteWEdgeListGraph) e w p u v,
   sound_weighted_edge_graph g ->
-  connected_by_path g P p u v
-  -> connected_by_path (FiniteWEdgeListGraph_adde g e w) P p u v.
+  connected_by_path g p u v
+  -> connected_by_path (FiniteWEdgeListGraph_adde g e w) p u v.
 Proof.
 unfold connected_by_path; intros.
-split. split. apply adde_valid_upath. auto.
-apply H0. apply H0. apply H0.
+split. apply adde_valid_upath. auto.
+apply H0. apply H0.
 Qed.
 
 Corollary adde_connected:
@@ -595,7 +623,6 @@ Proof.
 intros. destruct H0 as [p ?]. exists p.
 apply adde_connected_by_path; auto.
 Qed.
-
 
 Lemma adde_fits_upath:
 forall (g: FiniteWEdgeListGraph) e w p l,
@@ -618,75 +645,12 @@ rewrite <- Hsrc; rewrite <- Hdst. rewrite e1. apply H0. apply H0.
 apply IHp. apply H. apply fits_upath_cons in H0. apply H0.
 Qed.
 
-Lemma VList_dec:
-forall (g: FiniteWEdgeListGraph) v, In v (VList g) \/ ~ In v (VList g).
-Proof.
-intros. destruct (in_dec V_EqDec v (VList g)); auto.
-Qed.
-
-Lemma vvalid_dec:
-forall (g: FiniteWEdgeListGraph) v, vvalid g v \/ ~ vvalid g v.
-Proof.
-intros. destruct (VList_dec g v); rewrite VList_vvalid in H; auto.
-Qed.
-
-Lemma EList_dec:
-forall (g: FiniteWEdgeListGraph) e, In e (EList g) \/ ~ In e (EList g).
-Proof.
-intros. destruct (in_dec E_EqDec e (EList g)); auto.
-Qed.
-
-Lemma evalid_dec:
-forall (g: FiniteWEdgeListGraph) e, evalid g e \/ ~ evalid g e.
-Proof.
-intros. destruct (EList_dec g e); rewrite EList_evalid in H; auto.
-Qed.
-
-Lemma connected_to_self:
-forall (g: FiniteWEdgeListGraph) v, vvalid g v -> connected g v v.
-Proof.
-(* this proof causes universe inconsistency *)
-(*
-intros. exists (v::nil). split. split. simpl; auto. rewrite Forall_forall. auto. simpl; auto.
-Qed.
- *)
-(* but this proof works: *)
-  intros. exists (v::nil).
-  unfold connected_by_path; Coqlib2.split3; trivial.
-  unfold good_upath; split; trivial.
-  unfold upath_prop. rewrite Forall_forall.
-  intros; trivial.
-Qed.
-
-Definition connected_dec (g:FiniteWEdgeListGraph):=
-forall u v, connected g u v \/ ~ connected g u v.
-
-
-Lemma edgeless_connected_dec:
-forall x, connected_dec (edgeless_WEdgeGraph x).
-Proof.
-unfold connected_dec; intros. set (g:=edgeless_WEdgeGraph x).
-destruct (vvalid_dec g u); destruct (vvalid_dec g v).
-(*both are vvalid*)
-destruct (V_EqDec u v).
-(*u=v: trivially connected*)
-unfold equiv in e; rewrite e. left; apply connected_to_self. auto.
-(*u<>v: not connected*)
-unfold complement, equiv in c. right; unfold not; intros. destruct H1 as [p ?]. destruct H1. destruct H2. destruct H1.
-destruct p. inversion H2. destruct p. inversion H2; inversion H3. rewrite H6 in H7; contradiction.
-destruct H1. destruct H1. destruct H1. destruct H1.
-pose proof (edgeless_WEdgeGraph_evalid x x0). contradiction.
-(*other cases; not connected*)
-all: right; unfold not; intros; apply connected_vvalid in H1; destruct H1; contradiction.
-Qed.
-
 Lemma adde_connected_e:
 forall (g:FiniteWEdgeListGraph) e w,
   sound_weighted_edge_graph g -> vvalid g (src g e) -> vvalid g (dst g e) ->
   connected (FiniteWEdgeListGraph_adde g e w) (src g e) (dst g e).
-Proof. 
+Proof.
 intros. exists ((src g e)::(dst g e)::nil). split. 2: auto.
-split. 2: unfold upath_prop; rewrite Forall_forall; auto.
 assert (src_edge g) by apply H.
 assert (dst_edge g) by apply H.
 split. exists e. split. split. apply FiniteWEdgeListGraph_adde_evalid1.
@@ -699,34 +663,73 @@ left; auto.
 simpl. auto.
 Qed.
 
-(*
-Lemma adde_connected_dec:
-forall (g:FiniteWEdgeListGraph) e w,
-  sound_weighted_edge_graph g -> vvalid g (src g e) -> vvalid g (dst g e) ->
-  connected_dec g ->
-  connected_dec (FiniteWEdgeListGraph_adde g e w).
+Lemma adde_fits_upath':
+forall (g: FiniteWEdgeListGraph) e w p l,
+fits_upath (FiniteWEdgeListGraph_adde g e w) l p ->
+~ In e l ->
+fits_upath g l p.
 Proof.
-unfold connected_dec; intros.
-destruct (H2 u v). left. apply adde_connected; auto.
-
-Fixpoint addedges (g:FiniteWEdgeListGraph) (l: list (LE*EType)):=
-match l with
-| nil => g
-| a::l => addedges (FiniteWEdgeListGraph_adde g (snd a) (fst a)) l
-end.
-
-Lemma FiniteGraph_built_from_edgeless:
-forall (g: FiniteWEdgeListGraph), g = addedges (edgeless_WEdgeGraph (numV g)) (graph_to_wedgelist g).
-Proof.
-intros.
+induction p; intros. destruct l; auto.
+destruct p. destruct l; auto.
+destruct l. auto.
+assert (Heq_e: e <> e0). unfold not; intros. assert (In e (e0::l)). left; rewrite H1; auto. contradiction.
+assert (HIn_e: ~ In e l). unfold not; intros. assert (In e (e0::l)). right; auto. contradiction.
+clear H0.
+destruct H. split. destruct H. destruct H. split. split.
+simpl in H. unfold addValidFunc in H. destruct H. apply H. symmetry in H. contradiction.
+simpl in H2. unfold updateEdgeFunc in H2. unfold equiv_dec in H2. destruct (E_EqDec e e0).
+unfold equiv in e1; contradiction. apply H2.
+simpl in H1. unfold updateEdgeFunc in H1. unfold equiv_dec in H1. destruct (E_EqDec e e0).
+unfold equiv in e1; contradiction. apply H1.
+apply IHp; auto.
 Qed.
-*)
 
-(*
-Definition wedgelist_to_graph (z: Z) (l: list (LE*EType)):=
-@Build_LabeledGraph VType EType V_EqDec E_EqDec LV LE LG
-  (@Build_PreGraph VType EType V_EqDec E_EqDec (fun v => 0 <= v < z) (fun e => In (map snd l)) fst snd)
-  (fun v => tt) (fun e => ) tt.
-*)
+Lemma adde_unaffected:
+forall (g: FiniteWEdgeListGraph) e w p, valid_upath (FiniteWEdgeListGraph_adde g e w) p
+  -> (exists l, fits_upath g l p /\ ~ In e l) -> valid_upath g p.
+Proof.
+intros. destruct H0 as [l ?].
+apply valid_upath_exists_list_edges'.
+intros. apply (FiniteWEdgeListGraph_adde_vvalid g e w).
+apply (valid_upath_vvalid _ _ v) in H. auto. auto.
+exists l. destruct H0; auto.
+Qed.
 
-(**Removing may be needed in the proof of minimality**)
+Lemma adde_bridge': (*anything that joins u v must contain (u,v)*)
+forall (g: FiniteWEdgeListGraph) u v w p,
+~ connected g u v ->
+connected_by_path (FiniteWEdgeListGraph_adde g (u,v) w) p u v
+-> forall l, fits_upath (FiniteWEdgeListGraph_adde g (u,v) w) l p ->
+In (u,v) l.
+Proof.
+intros. destruct (in_dec E_EqDec (u,v) l). auto.
+(*come to a contradiction that connected g u v*)
+assert (connected g u v). exists p.
+destruct H0. split. 2: auto.
+apply (adde_unaffected g (u,v) w). apply H0.
+exists l; split. apply (adde_fits_upath' g (u,v) w); auto. auto.
+contradiction.
+Qed.
+
+Lemma fits_upath_vertex_src_In:
+forall (g: FiniteWEdgeListGraph) p l e, fits_upath g l p -> In e l -> In (src g e) p.
+Proof.
+induction p; intros. destruct l; auto.
+destruct p. destruct l; simpl in H; contradiction.
+destruct l. contradiction. destruct H0.
+subst e0. destruct H. destruct H. destruct H1. left; symmetry; apply H1.
+right. left. symmetry; apply H1.
+right. apply (IHp l). apply H. auto.
+Qed.
+
+Lemma fits_upath_vertex_dst_In:
+forall (g: FiniteWEdgeListGraph) p l e, fits_upath g l p -> In e l -> In (dst g e) p.
+Proof.
+induction p; intros. destruct l; auto.
+destruct p. destruct l; simpl in H; contradiction.
+destruct l. contradiction. destruct H0.
+subst e0. destruct H. destruct H. destruct H1.
+right. left. symmetry; apply H1.
+left; symmetry; apply H1.
+right. apply (IHp l). apply H. auto.
+Qed.
