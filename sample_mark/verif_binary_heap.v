@@ -337,11 +337,9 @@ Proof.
   (* Just before the call, let's do some cleanup *)
   deadvars!.
   rewrite upd_Znth_overwrite, upd_Znth_same, map_app, upd_Znth_app2, Zlength_map.
-  unfold heap_size at 3. replace (Zlength (heap_items h) - Zlength (heap_items h)) with 0 by lia.
+  unfold heap_size at 3. rewrite Z.sub_diag.
   simpl fst. change (Vint (fst iv), Vint (snd iv)) with (heap_item_rep iv). rewrite upd_Znth_map.
-  change (Vint (fst iv), Vint (snd iv)) with (heap_item_rep iv).
-  rewrite upd_Znth_map.
-  rewrite <- map_app. change (upd_Znth 0 [h0] iv) with [iv].
+  rewrite <- map_app. rewrite upd_Znth0.
   2,3,4: autorewrite with sublist; unfold heap_size in *; lia.
   replace (Zlength (heap_items h ++ [h0])) with (Zlength (heap_items h ++ [iv])). 
   2: do 2 rewrite Zlength_app, Zlength_one; lia.
