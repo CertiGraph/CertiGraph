@@ -1209,12 +1209,11 @@ Proof.
     unfold edge_to_wedge; simpl. inversion H48. auto.
     unfold RelationClasses.complement, Equivalence.equiv in c. rewrite H49 in c; contradiction.
     +++
+    intros. destruct H19; destruct H21.
+    rewrite H14, H19, H21.
     assert (uf_union_vvalid:
-      forall g g' u v, uf_union g u v g' -> forall x, vvalid g x <-> vvalid g' x). admit.
-    intros; split; intros.
-    rewrite <- (uf_union_vvalid subsetsGraph_uv uv_union u v H25).
-    destruct H21; rewrite <- H21. destruct H19; rewrite <- H19. apply H14; auto.
-    apply H14. apply H19. apply H21. apply (uf_union_vvalid subsetsGraph_uv uv_union u v H25). auto.
+              forall g g' u v, uf_union g u v g' -> forall x, vvalid g x <-> vvalid g' x). admit.
+    apply (uf_union_vvalid _ _ u v); trivial.
     +++
     intros. rewrite (sublist_split 0 i (i+1)) in H49 by lia. apply in_app_or in H49.
     destruct H49.
