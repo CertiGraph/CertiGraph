@@ -345,14 +345,66 @@ Proof.
   intros. apply (uf_root_unique _ (liGraph g) x); trivial.
 Qed.
 
+Lemma ufroot_vvalid_rt:
+  forall g rt v,
+    uf_root g v rt ->
+    vvalid g rt.
+Proof.
+  intros. destruct H as [? _].
+  apply (reachable_foot_valid _ _ _ H).
+Qed.
+
+Lemma ufroot_vvalid_vert:
+  forall g rt v,
+    uf_root g v rt ->
+    vvalid g v.
+Proof.
+  intros. destruct H as [? _].
+  apply (reachable_head_valid _ _ _ H).
+Qed.  
+
+Lemma uf_union_unaffected:
+  forall (g1 g2 : UFGraph) a b v (S1 S2 S3 : uf_set),
+    uf_union g1 a b g2 ->
+    S1 a ->
+    S2 b ->
+    S3 v ->
+    uf_set_in g1 S1 ->
+    uf_set_in g1 S2 ->
+    ~ Ensembles.Same_set S3 S1 ->
+    ~ Ensembles.Same_set S3 S2 ->
+    uf_set_in g1 S3 ->
+    vvalid g2 v.
+Proof.
+  intros.
+  red in H.
+  specialize (H _ _ H0 H1 H3 H4).
+  destruct H as [? [? ?]].
+  specialize (H8 _ H5 H6 H7).
+  unfold uf_set_in in H8.
+  destruct H8.
+  - exfalso.
+    assert (Ensembles.Inhabited _ S3). {
+      apply (Ensembles.Inhabited_intro _ _ v); trivial.
+    }
+    apply (Constructive_sets.Inhabited_not_empty _ _ H10).
+    apply Ensembles.Extensionality_Ensembles; trivial.
+  - destruct H8 as [rt [? ?]].
+    apply (ufroot_vvalid_vert _ rt), H10; trivial.
+Qed.
+  
 Lemma uf_union_vvalid:
 forall g g' u v, uf_union g u v g' -> forall x, vvalid g x <-> vvalid g' x.
 Proof.
+  intros.
+  red in H.
 Admitted.
 
 Lemma uf_union_preserves_connected:
 forall g g' u v, uf_union g u v g' -> (forall a b, connected g a b -> connected g' a b). (*converse is not true*)
 Proof.
+  intros.
+  red in H.
 Admitted.
 
 Lemma uf_union_connected:
@@ -1211,14 +1263,17 @@ Proof.
     +++
     intros. destruct H19; destruct H21.
     rewrite H14, H19, H21.
+    remember subsetsGraph_uv as uv.
     assert (uf_union_vvalid:
-              forall g g' u v, uf_union g u v g' -> forall x, vvalid g x <-> vvalid g' x). admit.
+              forall g g' u v x, uf_union g u v g' -> vvalid g x <-> vvalid g' x). admit.
     apply (uf_union_vvalid _ _ u v); trivial.
     +++
     intros. rewrite (sublist_split 0 i (i+1)) in H49 by lia. apply in_app_or in H49.
     destruct H49.
-    (*require union_preserves_connected/ufroot*)
+    *** 
     admit.
+    (*require union_preserves_connected/ufroot*)
+    ***
     rewrite (sublist_one i (i+1) _) in H49 by lia.
     destruct H49. 2: contradiction.
     rewrite Heq_i in H49.
