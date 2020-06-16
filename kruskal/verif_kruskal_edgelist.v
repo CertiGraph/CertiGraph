@@ -439,7 +439,8 @@ Lemma uf_union_vvalid:
   forall (g1 g2: UFGraph) u v x,
     vvalid g1 u ->
     vvalid g1 v ->
-    uf_union g1 u v g2 -> vvalid g1 x <-> vvalid g2 x.
+    uf_union g1 u v g2 ->
+    vvalid g1 x <-> vvalid g2 x.
 Proof.
   intros.
   assert (Hrem := H1).
@@ -546,24 +547,49 @@ Qed.
 
 Lemma uf_union_preserves_connected:
 (*Any two vertices that was joined already, remains so after union => union doesn't split*)
-  forall (g g': UFGraph) u v a b,
-    uf_union g u v g' ->
-    ufroot_same g a b ->
-    ufroot_same g' a b.
+  forall (g1 g2: UFGraph) u v a b,
+    vvalid g1 u ->
+    vvalid g1 v ->
+    uf_union g1 u v g2 ->
+    ufroot_same g1 a b ->
+    ufroot_same g2 a b.
 Proof.
+  intros.
+  assert (Hrem := H1).
+  
+  (* cleanup and specialization *)
+  red in H1.
+  pose proof (ufroot_same_refl g1 u H).
+  pose proof (ufroot_same_refl g1 v H0).
+  assert (H5 := H3).
+  assert (H6 := H4).  
+  destruct H3 as [u_rt [? _]].
+  destruct H4 as [v_rt [? _]].
+  pose proof (ufroot_uf_set_in _ _ _ H3).
+  pose proof (ufroot_uf_set_in _ _ _ H4).
+  specialize (H1 (ufroot_same g1 u)
+                 (ufroot_same g1 v)
+                 H5 H6 H7 H8).
+  destruct H1 as [? [? ?]].
+  (* cleanup and specialization ends *)
+
 Admitted.
   
 Lemma uf_union_connected:
     (*After union(u,v), u and v are "joined"*)
-  forall (g g': UFGraph) u v,
-    uf_union g u v g' ->
-    ufroot_same g' u v.
+  forall (g1 g2: UFGraph) u v,
+    vvalid g1 u ->
+    vvalid g1 v ->
+    uf_union g1 u v g2 ->
+    ufroot_same g2 u v.
 Proof.
 Admitted.
 
 Lemma uf_union_unaffected_root:
 (*If a was disjoint from u and v, then after union(u,v) it's root remains unchanged*)
   forall (g1 g2: UFGraph) u v a a_root,
+    vvalid g1 u ->
+    vvalid g1 v ->
     uf_union g1 u v g2 ->
     ~ ufroot_same g1 a u ->
     ~ ufroot_same g1 a v ->
@@ -575,6 +601,8 @@ Admitted.
 Lemma uf_union_remains_disconnected1:
   (*If a was disjoint from u and v, then after union(u,v) it remains disjoint from u*)
   forall (g1 g2: UFGraph) u v a,
+    vvalid g1 u ->
+    vvalid g1 v ->
     uf_union g1 u v g2 ->
     ~ ufroot_same g1 a u ->
     ~ ufroot_same g1 a v ->
@@ -585,6 +613,8 @@ Admitted.
 Lemma uf_union_remains_disconnected2:
 (*If a was disjoint from u and v, then after union(u,v) it remains disjoint from v*)
   forall (g1 g2: UFGraph) u v a,
+    vvalid g1 u ->
+    vvalid g1 v ->
     uf_union g1 u v g2 ->
     ~ ufroot_same g1 a u ->
     ~ ufroot_same g1 a v ->
