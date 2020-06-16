@@ -545,17 +545,53 @@ Proof.
 Qed.
 
 Lemma uf_union_preserves_connected:
-forall g g' u v, uf_union g u v g' -> (forall a b, connected g a b -> connected g' a b). (*converse is not true*)
+(*Any two vertices that was joined already, remains so after union => union doesn't split*)
+  forall g g' u v a b,
+    uf_union g u v g' ->
+    ufroot_same g a b ->
+    ufroot_same g' a b.
 Proof.
-  intros.
-  red in H.
 Admitted.
-
+  
 Lemma uf_union_connected:
-forall g g' u v, uf_union g u v g' -> connected g' u v.
+    (*After union(u,v), u and v are "joined"*)
+  forall (g g': UFGraph) u v,
+    uf_union g u v g' ->
+    ufroot_same g' u v.
 Proof.
 Admitted.
 
+Lemma uf_union_unaffected_root:
+(*If a was disjoint from u and v, then after union(u,v) it's root remains unchanged*)
+  forall g1 g2 u v a a_root,
+    uf_union g1 u v g2 ->
+    ~ ufroot_same g1 a u ->
+    ~ ufroot_same g1 a v ->
+    uf_root g1 a a_root ->
+    uf_root g2 a a_root.
+Proof.
+Admitted.
+  
+Lemma uf_union_remains_disconnected1:
+  (*If a was disjoint from u and v, then after union(u,v) it remains disjoint from u*)
+  forall g1 g2 u v a,
+    uf_union g1 u v g2 ->
+    ~ ufroot_same g1 a u ->
+    ~ ufroot_same g1 a v ->
+    ~ ufroot_same g2 a u.
+Proof.
+Admitted.
+  
+Lemma uf_union_remains_disconnected2:
+(*If a was disjoint from u and v, then after union(u,v) it remains disjoint from v*)
+  forall g1 g2 u v a,
+    uf_union g1 u v g2 ->
+    ~ ufroot_same g1 a u ->
+    ~ ufroot_same g1 a v ->
+    ~ ufroot_same g2 a v.
+Proof.
+Admitted.
+  
 Lemma data_at_singleton_array_eq':
   forall (sh : Share.t) (t : type) (v : reptype t) (p : val), 
   data_at sh (Tarray t 1 noattr) [v] p = data_at sh t v p.
