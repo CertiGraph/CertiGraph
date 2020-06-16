@@ -546,7 +546,7 @@ Qed.
 
 Lemma uf_union_preserves_connected:
 (*Any two vertices that was joined already, remains so after union => union doesn't split*)
-  forall g g' u v a b,
+  forall (g g': UFGraph) u v a b,
     uf_union g u v g' ->
     ufroot_same g a b ->
     ufroot_same g' a b.
@@ -563,7 +563,7 @@ Admitted.
 
 Lemma uf_union_unaffected_root:
 (*If a was disjoint from u and v, then after union(u,v) it's root remains unchanged*)
-  forall g1 g2 u v a a_root,
+  forall (g1 g2: UFGraph) u v a a_root,
     uf_union g1 u v g2 ->
     ~ ufroot_same g1 a u ->
     ~ ufroot_same g1 a v ->
@@ -574,7 +574,7 @@ Admitted.
   
 Lemma uf_union_remains_disconnected1:
   (*If a was disjoint from u and v, then after union(u,v) it remains disjoint from u*)
-  forall g1 g2 u v a,
+  forall (g1 g2: UFGraph) u v a,
     uf_union g1 u v g2 ->
     ~ ufroot_same g1 a u ->
     ~ ufroot_same g1 a v ->
@@ -584,7 +584,7 @@ Admitted.
   
 Lemma uf_union_remains_disconnected2:
 (*If a was disjoint from u and v, then after union(u,v) it remains disjoint from v*)
-  forall g1 g2 u v a,
+  forall (g1 g2: UFGraph) u v a,
     uf_union g1 u v g2 ->
     ~ ufroot_same g1 a u ->
     ~ ufroot_same g1 a v ->
