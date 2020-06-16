@@ -532,13 +532,8 @@ Proof.
       apply Ensembles.Extensionality_Ensembles in H9.
       rewrite H9 in H11.
       apply Constructive_sets.Union_inv in H11.
-      destruct H11; red in H11.
-      * apply (ufroot_vvalid_vert _ u_rt).
-        destruct H11 as [? [? ?]].
-        pose proof (uf_root_unique _ (liGraph g1) _ _ _ H11 H2). subst x0; trivial.
-      * apply (ufroot_vvalid_vert _ v_rt).
-        destruct H11 as [? [? ?]].
-        pose proof (uf_root_unique _ (liGraph g1) _ _ _ H11 H3). subst x0; trivial.
+      destruct H11 as [[? [_ ?]] | [? [_ ?]]];
+        apply (ufroot_vvalid_vert _ x0); trivial.
     + destruct H9 as [? | [? [? ?]]].
       * exfalso.
         apply Ensembles.Extensionality_Ensembles in H9.
