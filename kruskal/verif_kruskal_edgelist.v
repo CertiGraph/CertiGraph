@@ -394,11 +394,9 @@ Proof.
 Qed.
   
 Lemma uf_union_vvalid:
-forall g g' u v, uf_union g u v g' -> forall x, vvalid g x <-> vvalid g' x.
+forall g g' u v x, uf_union g u v g' -> vvalid g x <-> vvalid g' x.
 Proof.
-  intros.
-  red in H.
-Admitted.
+Abort.
 
 Lemma uf_union_preserves_connected:
 forall g g' u v, uf_union g u v g' -> (forall a b, connected g a b -> connected g' a b). (*converse is not true*)
@@ -1264,9 +1262,134 @@ Proof.
     intros. destruct H19; destruct H21.
     rewrite H14, H19, H21.
     remember subsetsGraph_uv as uv.
-    assert (uf_union_vvalid:
-              forall g g' u v x, uf_union g u v g' -> vvalid g x <-> vvalid g' x). admit.
+
+    Set Nested Proofs Allowed.
+
+    Lemma ufroot_uf_set_in:
+      forall (g: UFGraph) u u_rt,
+        uf_root g u u_rt ->
+        uf_set_in g (ufroot_same g u).
+    Proof.
+      intros.
+      right. 
+      exists u_rt. split.
+      - apply connected_ufroot_same. destruct H.
+        apply reachable_implies_connected; trivial.
+      - intros. split; intros.
+        + destruct H0 as [? [? ?]].
+          replace u_rt with x0; trivial.
+          apply (uf_root_unique _ (liGraph g) u); trivial.
+        + exists u_rt; split; trivial.
+    Qed.
+
+    (* TODO: make this more general.
+       basically this is items that are in S1 or S2 *)  
+    Lemma uf_set_in_uf_ufroot_vvalid:
+      forall (g1 g2: UFGraph) S u u_rt x,
+        vvalid g1 u ->
+        uf_set_in g2 (Ensembles.Union Z (ufroot_same g1 u) S) ->
+        uf_root g1 u u_rt ->
+        uf_set_in g1 (ufroot_same g1 u) ->
+        uf_root g1 x u_rt ->
+        vvalid g2 x.
+    Proof.
+      intros.
+      pose proof (ufroot_same_refl _ _ H).
+      destruct H0 as [? | [? [? ?]]].
+      + exfalso.
+        apply Ensembles.Extensionality_Ensembles in H0.
+        apply (Constructive_sets.Noone_in_empty Z u).
+        rewrite <- H0.
+        apply Ensembles.Union_introl; trivial.
+      + apply (ufroot_vvalid_vert _ x0).
+        apply H5.
+        apply Ensembles.Union_introl.
+        exists u_rt; split; trivial.
+    Qed.
+    
+    Lemma uf_union_vvalid:
+      forall (g1 g2: UFGraph) u v x,
+        vvalid g1 u ->
+        vvalid g1 v ->
+        uf_union g1 u v g2 -> vvalid g1 x <-> vvalid g2 x.
+    Proof.
+      intros.
+      assert (Hrem := H1).
+
+      (* cleanup and specialization *)
+      red in H1.
+      pose proof (ufroot_same_refl g1 u H).
+      pose proof (ufroot_same_refl g1 v H0).
+      assert (H4 := H2).
+      assert (H5 := H3).  
+      destruct H2 as [u_rt [? _]].
+      destruct H3 as [v_rt [? _]].
+      pose proof (ufroot_uf_set_in _ _ _ H2).
+      pose proof (ufroot_uf_set_in _ _ _ H3).
+      specialize (H1 (ufroot_same g1 u)
+                     (ufroot_same g1 v)
+                     H4 H5 H6 H7).
+      destruct H1 as [? [? ?]].
+      (* cleanup and specialization ends *)
+      
+      split; intros.
+      - assert (EnumEnsembles.EnumCovered Z (evalid (UFGraph_LGraph g1))). {
+          apply EnumEnsembles.Enumerable_is_EnumCovered, finiteE.
+        }
+        pose proof (uf_root_always_exists _ (liGraph g1) x X H10).
+        clear X.
+        destruct H11 as [x_rt ?].
+
+        (* now we take cases to see whether x was
+           in connected to u, to v, or to neither
+         *)
+        destruct (Z.eq_dec x_rt u_rt). {
+          (* x was connected to u in old graph *)
+          subst x_rt.
+          apply (uf_set_in_uf_ufroot_vvalid g1 g2 _ u u_rt _ H H1); trivial.
+        }
+        destruct (Z.eq_dec x_rt v_rt). {
+          (* x was connected to v in old graph *)
+          subst x_rt.
+          pose proof (Ensembles_ext.Union_comm _ (ufroot_same g1 u) (ufroot_same g1 v)).
+          apply Ensembles.Extensionality_Ensembles in H12.
+          rewrite H12 in H1.
+          apply (uf_set_in_uf_ufroot_vvalid g1 g2 _ v v_rt _ H0 H1); trivial.
+        }
+
+        (* x was not connected to either u or v in g1 *)
+        assert (ufroot_same g1 x x). {
+          apply ufroot_same_refl; trivial.
+        }
+        apply (uf_union_unaffected g1 g2 _ _ _
+                                   _ _ _
+                                   Hrem H4 H5 H12 H6 H7).
+        + (* drag out to a lemma *)
+          intro. apply Ensembles.Extensionality_Ensembles in H13.
+          rewrite H13 in H12.
+          destruct H12 as [? [? ?]].
+          apply n.
+          pose proof (uf_root_unique _ (liGraph g1) _ _ _ H2 H12).
+          pose proof (uf_root_unique _ (liGraph g1) _ _ _ H11 H14).
+          lia.
+        + intro. apply Ensembles.Extensionality_Ensembles in H13.
+          rewrite H13 in H12.
+          destruct H12 as [? [? ?]].
+          apply n0.
+          pose proof (uf_root_unique _ (liGraph g1) _ _ _ H3 H12).
+          pose proof (uf_root_unique _ (liGraph g1) _ _ _ H11 H14).
+          lia.
+        + apply (ufroot_uf_set_in _ x x_rt); trivial.
+
+
+      - (* other direction *)
+
+        admit.
+    Admitted.
+      
     apply (uf_union_vvalid _ _ u v); trivial.
+    1: apply H21, (ufroot_vvalid_vert _ _ _ H20).
+    apply (ufroot_vvalid_vert _ _ _ H22).
     +++
     intros. rewrite (sublist_split 0 i (i+1)) in H49 by lia. apply in_app_or in H49.
     destruct H49.
