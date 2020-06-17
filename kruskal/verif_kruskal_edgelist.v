@@ -513,20 +513,19 @@ Proof.
 Qed.
 
 Lemma uf_union_affected_inhabited:
-  forall (g1 g2 : UFGraph) (a b v : Z) (S1 S2 : uf_set),
+  forall (g1 g2 : UFGraph) (a b : Z) (S1 S2 : uf_set),
     S1 a ->
     S2 b ->
-    S1 v -> (* the only addition *)
     uf_set_in g1 S1 ->
     uf_set_in g1 S2 ->
     uf_union g1 a b g2 ->
     exists rt : Z, Union Z S1 S2 rt /\ (forall x : Z, Union Z S1 S2 x <-> uf_root g2 x rt).
 Proof.
   intros.
-  apply (uf_union_affected_gen _ _ _ _ S1 S2) in H4; trivial.
-  destruct H4; trivial.
+  apply (uf_union_affected_gen _ _ _ _ S1 S2) in H3; trivial.
+  destruct H3; trivial.
   exfalso.
-  apply (inhabited_set_nonempty _ (Union Z S1 S2) v); trivial.
+  apply (inhabited_set_nonempty _ (Union Z S1 S2) a); trivial.
   apply Union_introl; trivial.
 Qed.
 
@@ -542,7 +541,7 @@ Lemma uf_union_affected_vvalid:
     vvalid g2 v.
 Proof.
   intros.
-  apply (uf_union_affected_inhabited _ _ _ _ v S1 S2) in H4; trivial.
+  apply (uf_union_affected_inhabited _ _ _ _ S1 S2) in H4; trivial.
   destruct H4 as [? [? ?]].
   apply (ufroot_vvalid_vert _ x),  H5, Union_introl; trivial.
 Qed.
@@ -674,7 +673,9 @@ Proof.
 Qed.
 
 Lemma uf_union_preserves_connected:
-(*Any two vertices that was joined already, remains so after union => union doesn't split*)
+(* Any two vertices that were connected already 
+   remain so after union. i.e., union doesn't split 
+ *)
   forall (g1 g2: UFGraph) u v a b,
     vvalid g1 u ->
     vvalid g1 v ->
@@ -700,7 +701,7 @@ Proof.
       exists u_rt; split; trivial.
     } 
     apply (uf_union_affected_inhabited
-             _ _ _ _ _ _ _ H5 H6 H10 H7 H8) in H1.
+             _ _ _ _ _ _ H5 H6 H7 H8) in H1.
     destruct H1 as [rt [? ?]].
     exists rt; split; apply H12, Union_introl; trivial.
   }
@@ -716,7 +717,7 @@ Proof.
     }
     apply uf_union_sym in H1.
     apply (uf_union_affected_inhabited
-             _ _ _ _ _ _ _ H6 H5 H10 H8 H7) in H1.
+             _ _ _ _ _ _ H6 H5 H8 H7) in H1.
     destruct H1 as [rt [? ?]].
     exists rt; split; apply H12, Union_introl; trivial.
   }
@@ -752,14 +753,33 @@ Qed.
 
   
 Lemma uf_union_connected:
-    (*After union(u,v), u and v are "joined"*)
+  (* After union(u,v), u and v are "joined" *)
   forall (g1 g2: UFGraph) u v,
     vvalid g1 u ->
     vvalid g1 v ->
     uf_union g1 u v g2 ->
     ufroot_same g2 u v.
 Proof.
-Admitted.
+  intros.
+  pose proof (uf_union_create_precons _ _ _ H H0).
+  destruct H2 as [u_rt [v_rt [? [? [? [? [? ?]]]]]]].
+  
+  (* two cases: either they were already joined or not *)
+  destruct (Z.eq_dec u_rt v_rt).
+  - (* they were already joined *)
+    subst v_rt. 
+    assert (ufroot_same g1 u v). {
+      exists u_rt; split; trivial.
+    }
+    apply (uf_union_affected_inhabited _ _ _ _ _ _ H4 H5) in H1; trivial.
+    destruct H1 as [rt [? ?]].
+    exists rt. split; apply H9, Union_introl; trivial.
+  - (* there were separate in g1 *)
+    apply (uf_union_affected_inhabited _ _ _ _ _ _ H4 H5) in H1; trivial.
+    destruct H1 as [rt [? ?]]. exists rt.
+    split; apply H8;
+      [apply Union_introl | apply Union_intror]; trivial.
+Qed.
 
 Lemma uf_union_unaffected_root:
 (*If a was disjoint from u and v, then after union(u,v) it's root remains unchanged*)
