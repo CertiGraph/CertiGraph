@@ -751,7 +751,6 @@ Proof.
   - apply (ufroot_uf_set_in _ a ab_rt); trivial.
 Qed.
 
-  
 Lemma uf_union_connected:
   (* After union(u,v), u and v are "joined" *)
   forall (g1 g2: UFGraph) u v,
@@ -782,16 +781,65 @@ Proof.
 Qed.
 
 Lemma uf_union_unaffected_root:
-(*If a was disjoint from u and v, then after union(u,v) it's root remains unchanged*)
-  forall (g1 g2: UFGraph) u v a a_root,
+  (* If a was disjoint from u and v, 
+     then after union(u,v) its root remains unchanged *)
+  forall (g1 g2: UFGraph) u v a a_rt,
     vvalid g1 u ->
     vvalid g1 v ->
     uf_union g1 u v g2 ->
     ~ ufroot_same g1 a u ->
     ~ ufroot_same g1 a v ->
-    uf_root g1 a a_root ->
-    uf_root g2 a a_root.
+    uf_root g1 a a_rt ->
+    uf_root g2 a a_rt.
 Proof.
+  intros.
+  pose proof (uf_union_create_precons _ _ _ H H0).
+  destruct H5 as [u_rt [v_rt [? [? [? [? [? ?]]]]]]].
+  
+  assert (ufroot_same g1 a a). {
+    apply ufroot_same_refl.
+    apply (ufroot_vvalid_vert _ a_rt); trivial.
+  }
+  
+  apply (uf_union_unaffected_inhabited
+           _ _ _ _ a _ _ (ufroot_same g1 a) H7 H8) in H1; trivial.
+  destruct H1 as [rt [? ?]].
+  assert (a_rt = rt). {
+    (* we know that a and rt have the same root, 
+       and that a's root is a_rt.
+       now we must show that rt is not just a vertex
+       enroute to a_rt, but is actually the root a_rt *)   
+    rewrite H12 in H11.
+    destruct H11.
+    symmetry. apply H13.
+
+    assert (reachable g1 rt a_rt). {
+      destruct H1 as [rt1 [? ?]].
+      replace a_rt with rt1.
+      destruct H14; trivial.
+      apply (uf_root_unique _ (liGraph g1) a); trivial.
+    }
+    admit.
+  (* maybe I need
+     uf_union g1 u v g2 ->
+     ~ ufroot_same g1 a u ->
+     ~ ufroot_same g1 a v ->
+     reachable g1 a a' ->
+     reachable g2 a a'.
+   *)
+  }
+  rewrite H13. apply H12; trivial.
+  - intro.
+    apply (same_set_contra _ _ _ a H12); trivial.
+    intro.
+    apply (ufroot_same_false g1 u a u_rt a_rt); trivial.
+    intro. apply H2. subst a_rt. exists u_rt; split; trivial.
+  - intro.
+    apply (same_set_contra _ _ _ a H12); trivial.
+    intro.
+    apply (ufroot_same_false g1 v a v_rt a_rt); trivial.
+    intro. apply H3. subst a_rt. exists v_rt; split; trivial.
+  - apply (ufroot_uf_set_in _ a a_rt); trivial.
 Admitted.
   
 Lemma uf_union_remains_disconnected1:
