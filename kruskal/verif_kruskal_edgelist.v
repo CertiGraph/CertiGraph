@@ -780,6 +780,19 @@ Proof.
       [apply Union_introl | apply Union_intror]; trivial.
 Qed.
 
+Lemma uf_union_unaffected_reachabilty:
+ (* If a was disjoint from u and v, 
+     then after union(u,v) a can reach its friends as before *)
+ forall (g1 g2: UFGraph) u v a a',
+    vvalid g1 u ->
+    vvalid g1 v ->
+    uf_union g1 u v g2 ->
+    ~ ufroot_same g1 a u ->
+    ~ ufroot_same g1 a v ->
+    reachable g1 a a' ->
+    reachable g2 a a'.
+Admitted.
+
 Lemma uf_union_unaffected_root:
   (* If a was disjoint from u and v, 
      then after union(u,v) its root remains unchanged *)
@@ -800,7 +813,8 @@ Proof.
     apply ufroot_same_refl.
     apply (ufroot_vvalid_vert _ a_rt); trivial.
   }
-  
+
+  assert (H1' := H1).
   apply (uf_union_unaffected_inhabited
            _ _ _ _ a _ _ (ufroot_same g1 a) H7 H8) in H1; trivial.
   destruct H1 as [rt [? ?]].
@@ -819,14 +833,11 @@ Proof.
       destruct H14; trivial.
       apply (uf_root_unique _ (liGraph g1) a); trivial.
     }
-    admit.
-  (* maybe I need
-     uf_union g1 u v g2 ->
-     ~ ufroot_same g1 a u ->
-     ~ ufroot_same g1 a v ->
-     reachable g1 a a' ->
-     reachable g2 a a'.
-   *)
+    apply (uf_union_unaffected_reachabilty g1 _ u v); trivial.
+    - intro. apply H2.
+      apply (ufroot_same_trans _ _ rt _); trivial.
+    - intro. apply H3.
+      apply (ufroot_same_trans _ _ rt _); trivial.
   }
   rewrite H13. apply H12; trivial.
   - intro.
@@ -840,7 +851,7 @@ Proof.
     apply (ufroot_same_false g1 v a v_rt a_rt); trivial.
     intro. apply H3. subst a_rt. exists v_rt; split; trivial.
   - apply (ufroot_uf_set_in _ a a_rt); trivial.
-Admitted.
+Qed.
   
 Lemma uf_union_remains_disconnected1:
   (*If a was disjoint from u and v, then after union(u,v) it remains disjoint from u*)
