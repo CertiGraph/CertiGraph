@@ -793,6 +793,52 @@ Lemma uf_union_unaffected_reachabilty:
     reachable g2 a a'.
 Admitted.
 
+
+
+Lemma uf_union_unaffected_root_backwards:
+  (* If a was disjoint from u and v,
+     its root in the image is also its root
+     in the pre-image *)   
+  forall (g1 g2: UFGraph) u v a a_rt,
+    vvalid g1 u ->
+    vvalid g1 v ->
+    uf_union g1 u v g2 ->
+    ~ ufroot_same g1 a u ->
+    ~ ufroot_same g1 a v ->
+    uf_root g2 a a_rt ->
+    uf_root g1 a a_rt.
+Proof.
+  intros.
+  pose proof (uf_union_create_precons _ _ _ H H0).
+  destruct H5 as [u_rt [v_rt [? [? [? [? [? ?]]]]]]].
+
+  assert (ufroot_same g2 a a). {
+    apply ufroot_same_refl.
+    apply (ufroot_vvalid_vert _ a_rt); trivial.
+  }
+
+  assert (uf_set_in g2 (ufroot_same g2 a)). {
+    apply (ufroot_uf_set_in _ _ a_rt); trivial.
+  }
+
+  apply (uf_union_backwards_cases
+           _ _ _ _
+           (ufroot_same g2 a) _ _ a H7 H8) in H1; trivial.
+
+  destruct H1.
+  - apply Extensionality_Ensembles in H1.
+    rewrite H1 in H11.
+    apply Constructive_sets.Union_inv in H11.
+    destruct H11; exfalso; [apply H2 | apply H3]; apply ufroot_same_symm; trivial.
+  - destruct H1 as [? | [? [? ?]]].
+    1: exfalso; apply (inhabited_set_nonempty _ _ _ H11 H1).
+    rewrite H13 in H11.
+    replace a_rt with x; trivial.
+    destruct H11.
+    apply H14.
+(* back to needing reachability... *)  
+Abort.
+
 Lemma uf_union_unaffected_root:
   (* If a was disjoint from u and v, 
      then after union(u,v) its root remains unchanged *)
@@ -818,6 +864,7 @@ Proof.
   apply (uf_union_unaffected_inhabited
            _ _ _ _ a _ _ (ufroot_same g1 a) H7 H8) in H1; trivial.
   destruct H1 as [rt [? ?]].
+  
   assert (a_rt = rt). {
     (* we know that a and rt have the same root, 
        and that a's root is a_rt.
@@ -838,7 +885,24 @@ Proof.
       apply (ufroot_same_trans _ _ rt _); trivial.
     - intro. apply H3.
       apply (ufroot_same_trans _ _ rt _); trivial.
+  }    
+(* (* this is the option using <- uf_root *)
+    assert (a_rt = rt). {
+    (* we know that a and rt have the same root, 
+       and that a's root is a_rt.
+       now we must show that rt is not just a vertex
+       enroute to a_rt, but is actually the root a_rt *)
+    assert (H13 := H11).
+    rewrite H12 in H13.
+    apply (uf_union_unaffected_root_backwards g1 _ u v) in H13; trivial.
+    destruct H13.
+    symmetry. apply H14.
+    destruct H1 as [? [? ?]].
+    replace x with a_rt in *.
+    destruct H15; trivial.
+    apply (uf_root_unique _ (liGraph g1) a); trivial.
   }
+*)
   rewrite H13. apply H12; trivial.
   - intro.
     apply (same_set_contra _ _ _ a H12); trivial.
