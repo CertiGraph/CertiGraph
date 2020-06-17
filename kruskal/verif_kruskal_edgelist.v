@@ -563,6 +563,31 @@ Proof.
   destruct H5 as [_ [_ ?]]. apply H5; trivial.
 Qed.
 
+Lemma uf_union_create_precons:
+  forall (g: UFGraph) u v,
+    vvalid g u ->
+    vvalid g v ->
+    exists u_rt v_rt,
+      uf_root g u u_rt /\
+      uf_root g v v_rt /\
+      ufroot_same g u u /\
+      ufroot_same g v v /\
+      uf_set_in g (ufroot_same g u) /\
+      uf_set_in g (ufroot_same g v).
+Proof.
+  intros.
+  pose proof (ufroot_same_refl g u H).
+  pose proof (ufroot_same_refl g v H0).
+  assert (H3 := H1).
+  assert (H4 := H2).  
+  destruct H1 as [u_rt [? _]].
+  destruct H2 as [v_rt [? _]].
+  pose proof (ufroot_uf_set_in _ _ _ H1).
+  pose proof (ufroot_uf_set_in _ _ _ H2).
+  exists u_rt, v_rt.
+  split3; [| |split3; [| |split]]; trivial.
+Qed.
+  
 Lemma uf_union_vvalid:
   forall (g1 g2: UFGraph) u v x,
     vvalid g1 u ->
@@ -571,18 +596,8 @@ Lemma uf_union_vvalid:
     vvalid g1 x <-> vvalid g2 x.
 Proof.
   intros.
-
-  (* preparing the specific case *)
-  pose proof (ufroot_same_refl g1 u H).
-  pose proof (ufroot_same_refl g1 v H0).
-  assert (H4 := H2).
-  assert (H5 := H3).  
-  destruct H2 as [u_rt [? _]].
-  destruct H3 as [v_rt [? _]].
-  pose proof (ufroot_uf_set_in _ _ _ H2).
-  pose proof (ufroot_uf_set_in _ _ _ H3).
-  (* prep ends *)
-  
+  pose proof (uf_union_create_precons _ _ _ H H0).
+  destruct H2 as [u_rt [v_rt [? [? [? [? [? ?]]]]]]].
   split; intros.
   (* -> *)
   - pose proof (vvalid_get_ufroot _ _ H8).
@@ -668,45 +683,73 @@ Lemma uf_union_preserves_connected:
     ufroot_same g2 a b.
 Proof.
   intros.
-  assert (Hrem := H1).
-  
-  (* cleanup and specialization *)
-  pose proof (ufroot_same_refl g1 u H).
-  pose proof (ufroot_same_refl g1 v H0).
-  assert (H5 := H3).
-  assert (H6 := H4).  
-  destruct H3 as [u_rt [? _]].
-  destruct H4 as [v_rt [? _]].
-  pose proof (ufroot_uf_set_in _ _ _ H3).
-  pose proof (ufroot_uf_set_in _ _ _ H4).
-  (* specialize (H1 _ _ H5 H6 H7 H8). *)
-  (* destruct H1 as [? [? ?]]. *)
-  (* cleanup and specialization ends *)
-
+  pose proof (uf_union_create_precons _ _ _ H H0).
+  destruct H3 as [u_rt [v_rt [? [? [? [? [? ?]]]]]]].
   destruct H2 as [ab_rt [? ?]].
   
-  (* now we take cases to see whether x was
+  (* now we take cases to see whether a and b were
      in connected to u, to v, or to neither
    *)
   destruct (Z.eq_dec ab_rt u_rt). {
     (* a and b were connected to u in g1 *)
     subst ab_rt.
-    (* apply (uf_set_in_uf_ufroot_vvalid g1 g2 _ u u_rt _ H H1); trivial. *)
-    admit.
+    assert (ufroot_same g1 u a). {
+      exists u_rt; split; trivial.
+    }
+    assert (ufroot_same g1 u b). {
+      exists u_rt; split; trivial.
+    } 
+    apply (uf_union_affected_inhabited
+             _ _ _ _ _ _ _ H5 H6 H10 H7 H8) in H1.
+    destruct H1 as [rt [? ?]].
+    exists rt; split; apply H12, Union_introl; trivial.
   }
-  destruct (Z.eq_dec ab_rt v_rt). {
-    (* a and b were connected to v in g1  *)
-    subst ab_rt.
-    pose proof (Ensembles_ext.Union_comm _ (ufroot_same g1 u) (ufroot_same g1 v)).
-    apply Ensembles.Extensionality_Ensembles in H10.
-    (* apply (uf_set_in_uf_ufroot_vvalid g1 g2 _ v v_rt _ H0 H1); trivial. *)
-    admit.
-  }
-  (* a and b were not connected to either u or v in g1 *)
   
-  admit.
+  destruct (Z.eq_dec ab_rt v_rt). {
+    (* a and b were connected to v in g1 *)
+    subst ab_rt.
+    assert (ufroot_same g1 v a). {
+      exists v_rt; split; trivial.
+    }
+    assert (ufroot_same g1 v b). {
+      exists v_rt; split; trivial.
+    }
+    apply uf_union_sym in H1.
+    apply (uf_union_affected_inhabited
+             _ _ _ _ _ _ _ H6 H5 H10 H8 H7) in H1.
+    destruct H1 as [rt [? ?]].
+    exists rt; split; apply H12, Union_introl; trivial.
+  }
 
-Admitted.
+  (* a and b were not connected to either u or v in g1 *)
+    
+  assert (ufroot_same g1 a a). {
+    apply ufroot_same_refl.
+    apply (ufroot_vvalid_vert _ ab_rt); trivial.
+  }
+
+  assert (ufroot_same g1 a b). {
+    exists ab_rt; split; trivial.
+  }
+
+  apply (uf_union_unaffected_inhabited
+           _ _ _ _ a _ _ (ufroot_same g1 a) H5 H6) in H1; trivial.
+
+  destruct H1 as [rt [? ?]].
+  exists rt; split; apply H12; trivial.
+  - intro.
+    apply (same_set_contra _ _ _ a H12); trivial.
+    intro.
+    apply (ufroot_same_false g1 a u ab_rt u_rt); trivial.
+    apply ufroot_same_symm; trivial.
+  - intro.
+    apply (same_set_contra _ _ _ a H12); trivial.
+    intro.
+    apply (ufroot_same_false g1 a v ab_rt v_rt); trivial.
+    apply ufroot_same_symm; trivial.
+  - apply (ufroot_uf_set_in _ a ab_rt); trivial.
+Qed.
+
   
 Lemma uf_union_connected:
     (*After union(u,v), u and v are "joined"*)
