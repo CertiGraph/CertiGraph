@@ -792,9 +792,59 @@ Proof.
       [apply Union_introl | apply Union_intror]; trivial.
 Qed.
 
+Lemma uf_union_remains_disconnected1:
+  (* If a was disjoint from u and v, 
+     then after union(u,v) it remains disjoint from u *)
+  forall (g1 g2: UFGraph) u v a,
+    vvalid g1 u ->
+    vvalid g1 v ->
+    vvalid g1 a -> (* added *)
+    uf_union g1 u v g2 ->
+    ~ ufroot_same g1 a u ->
+    ~ ufroot_same g1 a v ->
+    ~ ufroot_same g2 a u.
+Proof.
+  intros.
+  pose proof (uf_union_create_precons _ _ _ H H0).
+  destruct H5 as [u_rt [v_rt [? [? [? [? [? ?]]]]]]].
+
+  assert (ufroot_same g1 a a). {
+    apply ufroot_same_refl; trivial.
+  }
+  apply (uf_union_unaffected_inhabited
+           _ _ _ _ _ _ _ _
+           H7 H8 H11 H9 H10) in H2.
+  destruct H2 as [rt [? ?]]. intro.
+  rewrite H12 in *.
+  apply H3, (ufroot_same_uf_root_trans _ a); trivial. 
+  - intro. apply (same_set_contra _ _ _ a H12); trivial.
+    intro. apply H3. apply ufroot_same_symm; trivial.
+  - intro. apply (same_set_contra _ _ _ a H12); trivial.
+    intro. apply H4. apply ufroot_same_symm; trivial.
+  - destruct H11 as [a_rt [? _]].
+    apply (ufroot_uf_set_in _ a a_rt); trivial.
+Qed.
+
+Lemma uf_union_remains_disconnected2:
+  (* If a was disjoint from u and v, 
+     then after union(u,v) it remains disjoint from v *)
+  forall (g1 g2: UFGraph) u v a,
+    vvalid g1 u ->
+    vvalid g1 v ->
+    vvalid g1 a -> (* added *)
+    uf_union g1 u v g2 ->
+    ~ ufroot_same g1 a u ->
+    ~ ufroot_same g1 a v ->
+    ~ ufroot_same g2 a v.
+Proof.
+  intros. apply uf_union_sym in H2.
+  apply (uf_union_remains_disconnected1 g1 _ _ u); trivial. 
+Qed.
+
 Lemma uf_union_unaffected_reachabilty:
  (* If a was disjoint from u and v, 
-     then after union(u,v) a can reach its friends as before *)
+    then, after union(u,v), a can reach its friends 
+    as before *)
  forall (g1 g2: UFGraph) u v a a',
     vvalid g1 u ->
     vvalid g1 v ->
@@ -803,8 +853,24 @@ Lemma uf_union_unaffected_reachabilty:
     ~ ufroot_same g1 a v ->
     reachable g1 a a' ->
     reachable g2 a a'.
-Admitted.
+Proof.
+  intros.
+  pose proof (uf_union_create_precons _ _ _ H H0).
+  destruct H5 as [u_rt [v_rt [? [? [? [? [? ?]]]]]]].
 
+  assert (ufroot_same g1 a a). {
+    apply ufroot_same_refl.
+    apply (reachable_head_valid _ _ a'); trivial.
+  }
+  
+  apply (uf_union_unaffected_inhabited
+           _ _ _ _ a _ _ _
+           H7 H8 H11 H9 H10) in H1.
+  destruct H1 as [rt [? ?]].
+
+ (* I can prove 2,3,4, but am I any closer to being done? *)
+Abort.
+ 
 Lemma uf_union_unaffected_root_backwards:
   (* If a was disjoint from u and v,
      its root in the image is also its root
@@ -869,112 +935,27 @@ Proof.
     apply ufroot_same_refl.
     apply (ufroot_vvalid_vert _ a_rt); trivial.
   }
-
-  assert (H1' := H1).
   apply (uf_union_unaffected_inhabited
            _ _ _ _ a _ _ (ufroot_same g1 a) H7 H8) in H1; trivial.
   destruct H1 as [rt [? ?]].
-  
-  assert (a_rt = rt). {
-    (* we know that a and rt have the same root, 
-       and that a's root is a_rt.
-       now we must show that rt is not just a vertex
-       enroute to a_rt, but is actually the root a_rt *)   
-    rewrite H12 in H11.
-    destruct H11.
-    symmetry. apply H13.
+  rewrite H12 in *.
 
-    assert (reachable g1 rt a_rt). {
-      destruct H1 as [rt1 [? ?]].
-      replace a_rt with rt1.
-      destruct H14; trivial.
-      apply (uf_root_unique _ (liGraph g1) a); trivial.
-    }
-    apply (uf_union_unaffected_reachabilty g1 _ u v); trivial.
-    - intro. apply H2.
-      apply (ufroot_same_trans _ _ rt _); trivial.
-    - intro. apply H3.
-      apply (ufroot_same_trans _ _ rt _); trivial.
-  }    
-(* (* this is the option using <- uf_root *)
-    assert (a_rt = rt). {
-    (* we know that a and rt have the same root, 
-       and that a's root is a_rt.
-       now we must show that rt is not just a vertex
-       enroute to a_rt, but is actually the root a_rt *)
-    assert (H13 := H11).
-    rewrite H12 in H13.
-    apply (uf_union_unaffected_root_backwards g1 _ u v) in H13; trivial.
-    destruct H13.
-    symmetry. apply H14.
-    destruct H1 as [? [? ?]].
-    replace x with a_rt in *.
-    destruct H15; trivial.
-    apply (uf_root_unique _ (liGraph g1) a); trivial.
+  assert (a_rt = rt). {
+    (* we know that a and a_rt have the same root, rt.
+       now we must show that a_rt is not just any vertex, 
+       but is actually the root rt *)
+    admit.
   }
-*)
-  rewrite H13. apply H12; trivial.
-  - intro.
-    apply (same_set_contra _ _ _ a H12); trivial.
-    intro.
-    apply (ufroot_same_false g1 u a u_rt a_rt); trivial.
+  rewrite H13; trivial.
+  - intro. apply (same_set_contra _ _ _ a H12); trivial.
+    intro. apply (ufroot_same_false g1 u a u_rt a_rt); trivial.
     intro. apply H2. subst a_rt. exists u_rt; split; trivial.
-  - intro.
-    apply (same_set_contra _ _ _ a H12); trivial.
-    intro.
-    apply (ufroot_same_false g1 v a v_rt a_rt); trivial.
+  - intro. apply (same_set_contra _ _ _ a H12); trivial.
+    intro. apply (ufroot_same_false g1 v a v_rt a_rt); trivial.
     intro. apply H3. subst a_rt. exists v_rt; split; trivial.
   - apply (ufroot_uf_set_in _ a a_rt); trivial.
-Qed.
+Admitted.
 
-Lemma uf_union_remains_disconnected1:
-  (* If a was disjoint from u and v, 
-     then after union(u,v) it remains disjoint from u *)
-  forall (g1 g2: UFGraph) u v a,
-    vvalid g1 u ->
-    vvalid g1 v ->
-    vvalid g1 a -> (* added *)
-    uf_union g1 u v g2 ->
-    ~ ufroot_same g1 a u ->
-    ~ ufroot_same g1 a v ->
-    ~ ufroot_same g2 a u.
-Proof.
-  intros.
-  pose proof (uf_union_create_precons _ _ _ H H0).
-  destruct H5 as [u_rt [v_rt [? [? [? [? [? ?]]]]]]].
-
-  assert (ufroot_same g1 a a). {
-    apply ufroot_same_refl; trivial.
-  }
-  apply (uf_union_unaffected_inhabited
-           _ _ _ _ _ _ _ _
-           H7 H8 H11 H9 H10) in H2.
-  destruct H2 as [rt [? ?]]. intro.
-  rewrite H12 in *.
-  apply H3, (ufroot_same_uf_root_trans _ a); trivial. 
-  - intro. apply (same_set_contra _ _ _ a H12); trivial.
-    intro. apply H3. apply ufroot_same_symm; trivial.
-  - intro. apply (same_set_contra _ _ _ a H12); trivial.
-    intro. apply H4. apply ufroot_same_symm; trivial.
-  - destruct H11 as [a_rt [? _]].
-    apply (ufroot_uf_set_in _ a a_rt); trivial.
-Qed.
-
-  Lemma uf_union_remains_disconnected2:
-(*If a was disjoint from u and v, then after union(u,v) it remains disjoint from v*)
-  forall (g1 g2: UFGraph) u v a,
-    vvalid g1 u ->
-    vvalid g1 v ->
-    vvalid g1 a -> (* added *)
-    uf_union g1 u v g2 ->
-    ~ ufroot_same g1 a u ->
-    ~ ufroot_same g1 a v ->
-    ~ ufroot_same g2 a v.
-  Proof.
-    intros. apply uf_union_sym in H2.
-    apply (uf_union_remains_disconnected1 g1 _ _ u); trivial. 
-  Qed.
-  
 Lemma data_at_singleton_array_eq':
   forall (sh : Share.t) (t : type) (v : reptype t) (p : val), 
   data_at sh (Tarray t 1 noattr) [v] p = data_at sh t v p.
