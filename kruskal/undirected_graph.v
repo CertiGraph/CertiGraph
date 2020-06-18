@@ -96,6 +96,12 @@ Proof.
 intros. apply (last_err_app' l2 l1 a H).
 Qed.
 
+Lemma hd_error_app:
+  forall {A:Type} (l2 l1: list A) (a: A), hd_error l1 = Some a -> hd_error (l1++l2) = Some a.
+Proof.
+induction l1; intros. inversion H. simpl. simpl in H. auto.
+Qed.
+
 Lemma rev_hd_last:
   forall {A:Type} (l: list A), hd_error l = last_error (rev l).
 Proof.
@@ -519,11 +525,45 @@ apply (valid_upath_app_split _ _ _ H). apply (NoDup_app_l _ _ _ H0).
 apply (valid_upath_app_split _ _ _ H). apply (NoDup_app_r _ _ _ H0).
 Qed.
 
+Lemma last_err_split2:
+forall {A: Type} (l1 l2: list A) (a: A),
+last_error (l1++a::l2) = last_error (a::l2).
+induction l1; intros. rewrite app_nil_l; auto.
+replace (last_error ((a :: l1) ++ a0 :: l2)) with (last_error (l1 ++ a0 :: l2)).
+2: { simpl. destruct (l1++a0::l2) eqn:Htmp.
+  apply app_eq_nil in Htmp. destruct Htmp. inversion H0. auto. }
+apply IHl1.
+Qed.
+
+Lemma connected_by_upath_exists_simple_upath:
+  forall g p u v, connected_by_path g p u v-> exists p', connected_by_path g p' u v /\ simple_upath g p'.
+Proof.
+induction p; intros.
+destruct H. destruct H0. inversion H0.
+destruct p. destruct H. simpl in H. simpl in H0; destruct H0.
+inversion H0; inversion H1. subst u; subst v. clear H0 H1.
+exists (a::nil). split. split. simpl; auto. simpl; split; auto.
+split. simpl; auto. apply NoDup_cons. auto. apply NoDup_nil.
+destruct H. destruct H0. destruct H.
+assert (connected_by_path g (v0::p) v0 v). split. auto. split. apply hd_error_cons. rewrite last_error_cons in H1; auto. unfold not; intros. inversion H3.
+apply IHp in H3. destruct H3 as [p' ?]. destruct H3.
+destruct (in_dec EV a p').
+apply in_split in i. destruct i as [l1 [l2 ?]].
+subst p'. exists (a::l2). split.
+destruct H3. destruct H5. split. apply (valid_upath_app_split g l1 _).
+apply H3. split. simpl in H0; simpl; apply H0.
+rewrite last_err_split2 in H6. auto. apply simple_upath_app_split in H4; apply H4.
+exists (a::p'). split. destruct H3. destruct H5. split. apply valid_upath_cons. auto.
+rewrite H5. unfold adjacent_hd. apply H.
+split. simpl in H0; simpl; auto.
+rewrite last_error_cons. auto. unfold not; intros. subst p'. inversion H5.
+split. destruct H3. destruct H5. apply valid_upath_cons. auto. rewrite H5. unfold adjacent_hd. auto.
+apply NoDup_cons. auto. apply H4.
+Qed.
+
 Definition uforest g := forall u v p1 p2,
   simple_upath g p1 -> connected_by_path g p1 u v ->
   simple_upath g p2 -> connected_by_path g p2 u v ->
   p1 = p2.
-
-Definition spanning_uforest g t := is_partial_graph t g /\ uforest t /\ (forall u v, connected g u v <-> connected t u v).
 
 End UNDIRECTED.
