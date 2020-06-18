@@ -562,6 +562,18 @@ Proof.
   destruct H5 as [_ [_ ?]]. apply H5; trivial.
 Qed.
 
+Lemma ufroot_same_uf_root_trans:
+  forall (g : UFGraph) a b rt,
+    ufroot_same g a b ->
+    uf_root g a rt ->
+    uf_root g b rt.
+Proof.
+  intros.
+  destruct H as [? [? ?]].
+  replace rt with x; trivial.
+  apply (uf_root_unique _ (liGraph g) a); trivial.
+Qed.
+
 Lemma uf_union_create_precons:
   forall (g: UFGraph) u v,
     vvalid g u ->
@@ -793,8 +805,6 @@ Lemma uf_union_unaffected_reachabilty:
     reachable g2 a a'.
 Admitted.
 
-
-
 Lemma uf_union_unaffected_root_backwards:
   (* If a was disjoint from u and v,
      its root in the image is also its root
@@ -916,30 +926,54 @@ Proof.
     intro. apply H3. subst a_rt. exists v_rt; split; trivial.
   - apply (ufroot_uf_set_in _ a a_rt); trivial.
 Qed.
-  
+
 Lemma uf_union_remains_disconnected1:
-  (*If a was disjoint from u and v, then after union(u,v) it remains disjoint from u*)
+  (* If a was disjoint from u and v, 
+     then after union(u,v) it remains disjoint from u *)
   forall (g1 g2: UFGraph) u v a,
     vvalid g1 u ->
     vvalid g1 v ->
+    vvalid g1 a -> (* added *)
     uf_union g1 u v g2 ->
     ~ ufroot_same g1 a u ->
     ~ ufroot_same g1 a v ->
     ~ ufroot_same g2 a u.
 Proof.
-Admitted.
-  
-Lemma uf_union_remains_disconnected2:
+  intros.
+  pose proof (uf_union_create_precons _ _ _ H H0).
+  destruct H5 as [u_rt [v_rt [? [? [? [? [? ?]]]]]]].
+
+  assert (ufroot_same g1 a a). {
+    apply ufroot_same_refl; trivial.
+  }
+  apply (uf_union_unaffected_inhabited
+           _ _ _ _ _ _ _ _
+           H7 H8 H11 H9 H10) in H2.
+  destruct H2 as [rt [? ?]]. intro.
+  rewrite H12 in *.
+  apply H3, (ufroot_same_uf_root_trans _ a); trivial. 
+  - intro. apply (same_set_contra _ _ _ a H12); trivial.
+    intro. apply H3. apply ufroot_same_symm; trivial.
+  - intro. apply (same_set_contra _ _ _ a H12); trivial.
+    intro. apply H4. apply ufroot_same_symm; trivial.
+  - destruct H11 as [a_rt [? _]].
+    apply (ufroot_uf_set_in _ a a_rt); trivial.
+Qed.
+
+  Lemma uf_union_remains_disconnected2:
 (*If a was disjoint from u and v, then after union(u,v) it remains disjoint from v*)
   forall (g1 g2: UFGraph) u v a,
     vvalid g1 u ->
     vvalid g1 v ->
+    vvalid g1 a -> (* added *)
     uf_union g1 u v g2 ->
     ~ ufroot_same g1 a u ->
     ~ ufroot_same g1 a v ->
     ~ ufroot_same g2 a v.
-Proof.
-Admitted.
+  Proof.
+    intros. apply uf_union_sym in H2.
+    apply (uf_union_remains_disconnected1 g1 _ _ u); trivial. 
+  Qed.
   
 Lemma data_at_singleton_array_eq':
   forall (sh : Share.t) (t : type) (v : reptype t) (p : val), 
