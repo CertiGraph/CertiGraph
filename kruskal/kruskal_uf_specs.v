@@ -3,13 +3,11 @@ Require Import RamifyCoq.sample_mark.env_unionfind_arr.
 Require Export RamifyCoq.sample_mark.uf_arr_specs.
 
 (* Kruskal's imports (already made minimal *)
-Require Import RamifyCoq.kruskal.mst.
 Require Import RamifyCoq.kruskal.WeightedEdgeListGraph.
 Require Import RamifyCoq.kruskal.env_kruskal_edgelist.
 Require Import RamifyCoq.kruskal.spatial_wedgearray_graph.
 Require Import RamifyCoq.graph.graph_model.
 Require Import RamifyCoq.floyd_ext.share.
-
 
 Local Open Scope Z_scope.
 (*
@@ -94,7 +92,7 @@ Definition mallocK_spec :=
      PROP (malloc_compatible n (pointer_val_val v))
      LOCAL (temp ret_temp (pointer_val_val v))
      SEP (memory_block sh n (pointer_val_val v)).
-
+(*
 Definition free_spec :=
   DECLARE _free
   WITH h: val
@@ -102,7 +100,23 @@ Definition free_spec :=
     PROP () PARAMS (h) GLOBALS () SEP ()
   POST [tvoid]
     PROP () LOCAL () SEP ().
-
+*)
+Definition free_spec :=
+  DECLARE _free
+  WITH sh: wshare, p: pointer_val, g: ArrayGraph.UFGraph
+    PRE [tptr tvoid]
+    PROP () PARAMS ((pointer_val_val p)) GLOBALS () SEP (whole_graph sh g p)
+  POST [tvoid]
+    PROP () LOCAL () SEP ().
+(*
+Definition freeSet_spec :=
+  DECLARE _freeSet
+  WITH sh: share, p: pointer_val, g: ArrayGraph.UFGraph
+    PRE [tptr tvoid]
+    PROP () PARAMS ((pointer_val_val p)) GLOBALS () SEP (whole_graph sh g p)
+  POST [tvoid]
+    PROP () LOCAL () SEP ().
+*)
 (*It'll be useful if we can come up with some freeN spec, then centralize these in some header*)
 
 Definition fill_edge_spec :=
@@ -183,7 +197,7 @@ Definition kruskal_spec :=
         sound_weighted_edge_graph msf;
         (numE msf) <= MAX_EDGES;
         Permutation msflist (graph_to_wedgelist msf);
-        minimum_spanning_forest (lg_gg g) (lg_gg msf) Z.add 0 Z.le)
+        minimum_spanning_forest g msf)
    LOCAL (temp ret_temp (pointer_val_val msf_gptr))
    SEP (data_at sh tint (Vint (Int.repr MAX_EDGES)) (gv _MAX_EDGES);
         (*original graph*)
