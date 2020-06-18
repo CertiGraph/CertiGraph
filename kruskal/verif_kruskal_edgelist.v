@@ -363,13 +363,10 @@ Proof.
   apply (reachable_head_valid _ _ _ H).
 Qed.  
 
-(* move this up later *)
-Require Import Coq.Sets.Ensembles.
-
 Lemma inhabited_set_nonempty:
-  forall U (S: Ensemble U) v,
+  forall U (S: Ensembles.Ensemble U) v,
     S v ->
-    Same_set S (Empty_set U) ->
+    Ensembles.Same_set S (Ensembles.Empty_set U) ->
     False.
 Proof.
   intros.
@@ -413,7 +410,7 @@ Qed.
 
 Lemma same_set_contra:
   forall (U: Type) S1 S2 x,
-    @Same_set U S1 S2 ->
+    @Ensembles.Same_set U S1 S2 ->
     S1 x ->
     ~ S2 x ->
     False.
@@ -446,8 +443,8 @@ Lemma uf_union_unaffected_gen:
     S2 b ->
     uf_set_in g1 S1 ->
     uf_set_in g1 S2 ->
-    ~ Same_set S3 S1 ->
-    ~ Same_set S3 S2 ->
+    ~ Ensembles.Same_set S3 S1 ->
+    ~ Ensembles.Same_set S3 S2 ->
     uf_set_in g1 S3 ->
     uf_union g1 a b g2 ->
     uf_set_in g2 S3.
@@ -464,8 +461,8 @@ Lemma uf_union_unaffected_inhabited:
     S3 v -> (* new thing *)
     uf_set_in g1 S1 ->
     uf_set_in g1 S2 ->
-    ~ Same_set S3 S1 ->
-    ~ Same_set S3 S2 ->
+    ~ Ensembles.Same_set S3 S1 ->
+    ~ Ensembles.Same_set S3 S2 ->
     uf_set_in g1 S3 ->
     uf_union g1 a b g2 ->
     exists rt : Z, S3 rt /\ (forall x : Z, S3 x <-> uf_root g2 x rt).
@@ -506,7 +503,7 @@ Lemma uf_union_affected_gen:
     uf_set_in g1 S1 ->
     uf_set_in g1 S2 ->
     uf_union g1 a b g2 ->
-    uf_set_in g2 (Union Z S1 S2).
+    uf_set_in g2 (Ensembles.Union Z S1 S2).
 Proof.
   intros. red in H3.
   destruct (H3 _ _ H H0 H1 H2) as [? _]; trivial.
@@ -519,14 +516,14 @@ Lemma uf_union_affected_inhabited:
     uf_set_in g1 S1 ->
     uf_set_in g1 S2 ->
     uf_union g1 a b g2 ->
-    exists rt : Z, Union Z S1 S2 rt /\ (forall x : Z, Union Z S1 S2 x <-> uf_root g2 x rt).
+    exists rt : Z, Ensembles.Union Z S1 S2 rt /\ (forall x : Z, Ensembles.Union Z S1 S2 x <-> uf_root g2 x rt).
 Proof.
   intros.
   apply (uf_union_affected_gen _ _ _ _ S1 S2) in H3; trivial.
   destruct H3; trivial.
   exfalso.
-  apply (inhabited_set_nonempty _ (Union Z S1 S2) a); trivial.
-  apply Union_introl; trivial.
+  apply (inhabited_set_nonempty _ (Ensembles.Union Z S1 S2) a); trivial.
+  apply Ensembles.Union_introl; trivial.
 Qed.
 
 (* and specifically, this gives us vvalid... *)
@@ -543,7 +540,7 @@ Proof.
   intros.
   apply (uf_union_affected_inhabited _ _ _ _ S1 S2) in H4; trivial.
   destruct H4 as [? [? ?]].
-  apply (ufroot_vvalid_vert _ x),  H5, Union_introl; trivial.
+  apply (ufroot_vvalid_vert _ x),  H5, Ensembles.Union_introl; trivial.
 Qed.
 
 Lemma uf_union_backwards_cases:
@@ -555,7 +552,7 @@ Lemma uf_union_backwards_cases:
     S x ->
     uf_set_in g2 S ->
     uf_union g1 a b g2 ->
-    Same_set S (Union Z S1 S2) \/ uf_set_in g1 S.
+    Ensembles.Same_set S (Ensembles.Union Z S1 S2) \/ uf_set_in g1 S.
 Proof.
   intros.
   specialize (H5 _ _ H H0 H1 H2).
@@ -715,7 +712,7 @@ Proof.
     apply (uf_union_affected_inhabited
              _ _ _ _ _ _ H5 H6 H7 H8) in H1.
     destruct H1 as [rt [? ?]].
-    exists rt; split; apply H12, Union_introl; trivial.
+    exists rt; split; apply H12, Ensembles.Union_introl; trivial.
   }
   
   destruct (Z.eq_dec ab_rt v_rt). {
@@ -731,7 +728,7 @@ Proof.
     apply (uf_union_affected_inhabited
              _ _ _ _ _ _ H6 H5 H8 H7) in H1.
     destruct H1 as [rt [? ?]].
-    exists rt; split; apply H12, Union_introl; trivial.
+    exists rt; split; apply H12, Ensembles.Union_introl; trivial.
   }
 
   (* a and b were not connected to either u or v in g1 *)
@@ -784,12 +781,12 @@ Proof.
     }
     apply (uf_union_affected_inhabited _ _ _ _ _ _ H4 H5) in H1; trivial.
     destruct H1 as [rt [? ?]].
-    exists rt. split; apply H9, Union_introl; trivial.
+    exists rt. split; apply H9, Ensembles.Union_introl; trivial.
   - (* there were separate in g1 *)
     apply (uf_union_affected_inhabited _ _ _ _ _ _ H4 H5) in H1; trivial.
     destruct H1 as [rt [? ?]]. exists rt.
     split; apply H8;
-      [apply Union_introl | apply Union_intror]; trivial.
+      [apply Ensembles.Union_introl | apply Ensembles.Union_intror]; trivial.
 Qed.
 
 Lemma uf_union_remains_disconnected1:
@@ -902,7 +899,7 @@ Proof.
            (ufroot_same g2 a) _ _ a H7 H8) in H1; trivial.
 
   destruct H1.
-  - apply Extensionality_Ensembles in H1.
+  - apply Ensembles.Extensionality_Ensembles in H1.
     rewrite H1 in H11.
     apply Constructive_sets.Union_inv in H11.
     destruct H11; exfalso; [apply H2 | apply H3]; apply ufroot_same_symm; trivial.
@@ -955,6 +952,47 @@ Proof.
     intro. apply H3. subst a_rt. exists v_rt; split; trivial.
   - apply (ufroot_uf_set_in _ a a_rt); trivial.
 Admitted.
+
+ 
+Lemma uf_union_joins_only_uv:
+  (* If x and y were disjoint from u and v,
+     and from each other,     
+     then after union(u,v) x and y remain disjoint *)
+  forall (g1 g2: UFGraph) u v x y,
+    vvalid g1 u ->
+    vvalid g1 v ->
+    vvalid g1 x ->
+    vvalid g1 y ->
+    uf_union g1 u v g2 ->
+    ~ ufroot_same g1 x u ->
+    ~ ufroot_same g1 x v ->
+    ~ ufroot_same g1 x y ->
+    ~ ufroot_same g2 x y.
+Proof.
+  intros.
+  pose proof (uf_union_create_precons _ _ _ H H0).
+  destruct H7 as [u_rt [v_rt [? [? [? [? [? ?]]]]]]].
+  
+  assert (ufroot_same g1 x x). {
+    apply ufroot_same_refl; trivial.
+  }
+
+  apply (uf_union_unaffected_inhabited
+           _ _ _ _ _ _ _ _
+           H9 H10 H13) in H3; trivial.
+
+  destruct H3 as [rt [? ?]].
+  rewrite H14 in *.
+  intro. apply H6.
+  apply (ufroot_same_uf_root_trans _ x); trivial.
+  - intro. apply (same_set_contra _ _ _ x H14); trivial.
+    intro. apply H4. apply ufroot_same_symm; trivial.
+  - intro. apply (same_set_contra _ _ _ x H14); trivial.
+    intro. apply H5. apply ufroot_same_symm; trivial.
+  - apply vvalid_get_ufroot in H1.
+    destruct H1 as [x_rt ?].
+    apply (ufroot_uf_set_in _ x x_rt); trivial.
+Qed.
 
 Lemma data_at_singleton_array_eq':
   forall (sh : Share.t) (t : type) (v : reptype t) (p : val), 
