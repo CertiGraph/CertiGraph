@@ -15,7 +15,6 @@ Require Import RamifyCoq.graph.UnionFind.
 Require Import RamifyCoq.msl_application.UnionFindGraph.
 Require Import RamifyCoq.msl_application.ArrayGraph.
 Require Import RamifyCoq.sample_mark.env_unionfind_arr.
-(*Require Import RamifyCoq.sample_mark.specs_unionfind_arr.*)
 (*edgelist*)
 Require Import RamifyCoq.kruskal.WeightedEdgeListGraph.
 Require Import RamifyCoq.kruskal.env_kruskal_edgelist.
@@ -70,23 +69,6 @@ Lemma Forall_permutation: forall {A: Type} (al bl: list A) f, Forall f al -> Per
 Proof.
 intros. rewrite Forall_forall in *; intros.
 apply H. apply (Permutation_in (l:=bl) (l':=al) x). apply Permutation_sym. apply H0. apply H1.
-Qed.
-
-Lemma connected_exists_path:
-  forall (g : UFGraph) u v,
-    connected g u v <->
-    exists p, 
-      valid_upath g p /\
-      hd_error p = Some u /\ last_error p = Some v.
-Proof.
-  intros. split; intros.
-  - unfold connected, connected_by_path in H.
-    destruct H as [p [? [? ?]]].
-    exists p; split3; trivial.
-  - unfold connected, connected_by_path.
-    destruct H as [p [? [? ?]]].
-    exists p.
-    split3; trivial.
 Qed.
 
 Lemma reachable_uf_equiv_connected:
@@ -333,6 +315,16 @@ Proof.
   - apply (uf_equiv_connected' g1); trivial.
   - apply uf_equiv_sym in H.
     apply (uf_equiv_connected' g2); trivial.
+Qed.
+
+Lemma uf_equiv_ufroot_same:
+  forall (g1 g2: UFGraph) u v,
+    uf_equiv g1 g2 ->
+    ufroot_same g1 u v <-> ufroot_same g2 u v.
+Proof.
+(*Probably can be independent of the connectedness
+Using for now for convenience, given connected gives vvalid*)
+intros. do 2 rewrite <- connected_ufroot_same_iff. apply uf_equiv_connected. auto.
 Qed.
 
 Lemma uf_root_unique':
@@ -1227,7 +1219,6 @@ split. apply H4. apply H3. split; auto.
 exists l2. split; auto. exists l1. split; auto.
 Qed.
 
-
 (*******************************BODY OF IMPLEMENTATIONS*****************************)
 
 Lemma body_fill_edge: semax_body Vprog Gprog f_fill_edge fill_edge_spec.
@@ -1332,7 +1323,7 @@ Proof.
            Permutation msflist (graph_to_wedgelist msf');
            forall v, vvalid g v <-> vvalid subsetsGraph' v;
            forall e u v, adj_edge g e u v -> In (wedge_to_cdata (edge_to_wedge g e)) (sublist 0 i sorted) -> ufroot_same subsetsGraph' u v;
-           forall u v, connected subsetsGraph' u v <-> connected msf' u v; (*correlation between uf and msf'*)
+           forall u v, ufroot_same subsetsGraph' u v <-> connected msf' u v; (*correlation between uf and msf'*)
            (*weight lemmas...*)
            forall x, In x (map wedge_to_cdata msflist) -> exists j, 0 <= j < i /\ x = Znth j sorted;
            (*2. edges before i that WEREN't added, exists a upath made of edges before j
@@ -1378,15 +1369,15 @@ Proof.
         apply edgeless_WEdgeGraph_evalid in H25; contradiction.
         apply edgeless_WEdgeGraph_evalid in H25; contradiction.
         apply edgeless_WEdgeGraph_evalid in H25; contradiction.
-        simpl. destruct vlabel. auto.
-        apply edgeless_WEdgeGraph_evalid in H25; contradiction.
-      * (*ASDF*) apply uforest_edgeless_WEdgeGraph.
+        unfold preserve_vlabel; intros. simpl. destruct vlabel. auto.
+        unfold preserve_elabel; intros. apply edgeless_WEdgeGraph_evalid in H25; contradiction.
+      * apply uforest_edgeless_WEdgeGraph.
       * intros; split; intros. apply H0 in H25. apply makeSet_vvalid. rewrite Z2Nat.id by lia. lia.
           apply H0. apply makeSet_vvalid in H25. rewrite Z2Nat.id in H25 by lia. lia.
       * unfold connected; unfold connected_by_path.
-        intros; split; intros.
-        { (*Same thing as above, show that it can't be connected*)
-          destruct H25 as [p ?]. destruct H25. destruct H26.
+          (*will like to prove this without connectedness, but will have to create a lemma on makeSet's roots, which seems annoying*)
+          intros. rewrite <- connected_ufroot_same_iff. split; intros.
+        { destruct H25 as [p [? [? ?]]].
           destruct p eqn:Hp; simpl in H25; simpl in H26; inversion H26.
           subst z. destruct u0.
           (*single vertex in upath. Thus u=v, trivially connected*)
@@ -1400,11 +1391,12 @@ Proof.
             rewrite H32 in H31; rewrite makeSet_dst in H32; rewrite <- H32 in H31; lia.
         }
         { (*more or less same deal...*)
-          destruct H25 as [p ?]. destruct H25. destruct H26.
+          destruct H25 as [p [? [? ?]]].
           destruct p eqn:Hp; simpl in H26; inversion H26.
           subst v0. destruct u0.
           (*single vertex in upath. Thus u=v, trivially connected*)
-          simpl in H27; inversion H27. exists p. rewrite Hp. simpl; split; auto.
+          simpl in H27; inversion H27. subst u. subst p. destruct H25.
+          apply connected_refl. apply makeSet_vvalid. rewrite Z2Nat.id; lia.
           (*case p = u::z0::u0.
             then u z0 is adjacent in edgeless, contradiction...
           *)
@@ -1431,7 +1423,7 @@ Proof.
     unfold graph_to_wedgelist in HIn_i. apply list_in_map_inv in HIn_i. destruct HIn_i. destruct H19.
     inversion H19. split. auto. apply EList_evalid in H20. rewrite <- H23 in H20. apply H20.
   } destruct Htmp as [Helabel_w_i Hevalid_uv_i].
-  assert (Htmp: vvalid g u /\ vvalid g v). { apply H. auto. }
+  assert (Htmp: vvalid g u /\ vvalid g v). { apply sound_uv_vvalid; auto. }
   destruct Htmp as [Hvvalid_g_u Hvvalid_g_v].
   assert (Hvvalid_subsetsGraph'_u: vvalid subsetsGraph' u). apply H14. apply Hvvalid_g_u.
   assert (Hvvalid_subsetsGraph'_v: vvalid subsetsGraph' v). apply H14. apply Hvvalid_g_v.
@@ -1495,6 +1487,14 @@ Proof.
     apply (Z.le_trans _ (Int.max_signed/8)). lia. apply Z.lt_le_incl. apply Z.div_lt. lia. lia.
   assert (Hequiv_trans: uf_equiv subsetsGraph' subsetsGraph_uv).
     apply (uf_equiv_trans _ (liGraph subsetsGraph_u)); trivial.
+  assert (Hvvalid_subsetsGraph_uv_u: vvalid subsetsGraph_uv u). {
+    destruct Hequiv_trans as [Htmp ]; rewrite <- Htmp; apply Hvvalid_subsetsGraph'_u.
+  }
+  assert (Hvvalid_subsetsGraph_uv_v: vvalid subsetsGraph_uv v). {
+    destruct Hequiv_trans as [Htmp ]; rewrite <- Htmp; apply Hvvalid_subsetsGraph'_v.
+  }
+  (*remove subsetsGraph_u*)
+  clear H19 H20 H21. rename H22 into H19.
   forward_if.
   --- (* yes, add this edge.*)
     forward. forward. entailer!. apply Hdef_i.
@@ -1583,33 +1583,21 @@ Proof.
   forward. forward.
 
   (*before we union, show that u-v doesn't exist in msf'*)
-  assert (HsubsetsGraph'_connected_uv: ~ connected subsetsGraph' u v). {
-    unfold not; intros.
-    apply connected_ufroot_same_iff in H25. destruct H25. destruct H25.
-    assert (uf_root subsetsGraph' u u_root). apply (uf_equiv_root_the_same subsetsGraph' subsetsGraph_u). apply H19. apply H20.
-    assert (uf_root subsetsGraph_u v v_root). apply (uf_equiv_root_the_same subsetsGraph_u subsetsGraph_uv). apply H21. apply H22.
-    assert (uf_root subsetsGraph' v v_root). apply (uf_equiv_root_the_same subsetsGraph' subsetsGraph_u). apply H19. apply H28.
-    assert (u_root = x). apply (uf_root_unique' subsetsGraph' u u_root x). apply H27. apply H25.
-    assert (v_root = x). apply (uf_root_unique' subsetsGraph' v v_root x). apply H29. apply H26.
-    rewrite H30 in H23; rewrite H31 in H23. contradiction.
+  assert (HsubsetsGraph'_ufroot_uv: ~ ufroot_same subsetsGraph' u v). {
+    unfold not; intros Htmp. destruct Htmp as [x [? ?]].
+    assert (u_root = x). apply (uf_root_unique' subsetsGraph' u u_root x); auto.
+    assert (v_root = x). apply (uf_root_unique' subsetsGraph' v v_root x); auto.
+    subst u_root; subst v_root; contradiction.
   }
-  assert (Hconnected_uv: ~ connected msf' u v).
-    unfold not; intros. apply H16 in H25. contradiction.
+  assert (Hconnected_uv: ~ connected msf' u v). rewrite <- H16; auto.
   assert(H_msf'_uv: ~ evalid msf' (u,v)). {
-    rewrite H16 in HsubsetsGraph'_connected_uv.
     unfold not; intros.
     assert (connected msf' u v). {
       apply adjacent_connected. exists (u,v).
       assert (src_edge msf') by (apply H10). assert (dst_edge msf') by (apply H10).
-      split. split. apply H25. split. rewrite H26; simpl. apply H8. auto. rewrite H27; simpl. apply H8. auto.
-      rewrite H26; rewrite H27; simpl. left; split; auto.
+      split. split. apply H22. rewrite H23, H24; simpl. split; apply H8; auto.
+      rewrite H23; rewrite H24; simpl. left; auto.
     } contradiction.
-  }
-  assert (Hvvalid_subsetsGraph_uv_u: vvalid subsetsGraph_uv u). {
-    destruct Hequiv_trans as [Htmp ]; rewrite <- Htmp; apply Hvvalid_subsetsGraph'_u.
-  }
-  assert (Hvvalid_subsetsGraph_uv_v: vvalid subsetsGraph_uv v). {
-    destruct Hequiv_trans as [Htmp ]; rewrite <- Htmp; apply Hvvalid_subsetsGraph'_v.
   }
   forward_call (sh, subsetsGraph_uv, subsetsPtr, u, v).
   (*postcon*)
@@ -1625,87 +1613,88 @@ Proof.
   2: { symmetry; apply add_repr. }
   (*ok!*)
   entailer!. (*lalalalalag*)
+  clear H23 H24 H25 H26 H27 H28 H29 H30 H31 H32 H33 H34 H35 H36 H37 H38 H39 H40 H41 H42 H43 H44.
   split3. 3: split3. 5: split3. 7: split3. (*8 props... my invariant sure grew unwieldy*)
     +++
     apply FiniteWEdgeListGraph_adde_sound. auto.
       simpl; apply H8; auto. simpl; apply H8; auto. apply H. auto.
     +++
     split3. split3.
-      intros. apply H8. apply FiniteWEdgeListGraph_adde_vvalid in H48. apply H48.
-      intros. simpl in H48. unfold graph_gen.addValidFunc in H48. destruct H48. apply H11. apply H48. rewrite H48. auto.
+      intros. apply H8. apply FiniteWEdgeListGraph_adde_vvalid in H23. apply H23.
+      intros. simpl in H23. unfold graph_gen.addValidFunc in H23. destruct H23. apply H11. apply H23. rewrite H23. auto.
       split. intros. simpl. unfold graph_gen.updateEdgeFunc. unfold EquivDec.equiv_dec.
         assert (src_edge g) by (apply H). assert (src_edge msf') by (apply H10).
-        destruct E_EqDec. unfold Equivalence.equiv in e0; rewrite <- e0. rewrite H50; simpl; auto.
-        rewrite H50; rewrite H51. auto.
+        destruct E_EqDec. unfold Equivalence.equiv in e0; rewrite <- e0. rewrite H25; simpl; auto.
+        rewrite H25; rewrite H26. auto.
       intros. simpl. unfold graph_gen.updateEdgeFunc. unfold EquivDec.equiv_dec. destruct E_EqDec.
-        unfold Equivalence.equiv in e0; rewrite <- e0. assert (dst_edge g) by (apply H). rewrite H50; simpl; auto.
-        assert (dst_edge g) by (apply H). assert (dst_edge msf') by (apply H10). rewrite H50; rewrite H51. auto.
-      intros. simpl. destruct vlabel. destruct vlabel. auto.
-      intros. simpl. unfold graph_gen.update_elabel. simpl in H48. unfold graph_gen.addValidFunc in H48.
+        unfold Equivalence.equiv in e0; rewrite <- e0. assert (dst_edge g) by (apply H). rewrite H25; simpl; auto.
+        assert (dst_edge g) by (apply H). assert (dst_edge msf') by (apply H10). rewrite H25; rewrite H26. auto.
+      unfold preserve_vlabel; intros. simpl. destruct vlabel. destruct vlabel. auto.
+      unfold preserve_elabel; intros. simpl. unfold graph_gen.update_elabel. simpl in H23. unfold graph_gen.addValidFunc in H23.
         unfold EquivDec.equiv_dec. destruct E_EqDec. unfold Equivalence.equiv in e0; rewrite <- e0. auto.
-        destruct H48. apply H11. auto. unfold RelationClasses.complement, Equivalence.equiv in c. symmetry in H48. contradiction.
+        destruct H23. apply H11. auto. unfold RelationClasses.complement, Equivalence.equiv in c. symmetry in H23. contradiction.
     +++
     apply uforest_adde; auto.
     +++
     apply NoDup_Permutation. apply NoDup_app_inv.
     apply (Permutation_NoDup (l:=graph_to_wedgelist msf')). apply Permutation_sym; auto. apply NoDup_g2wedgelist.
     apply NoDup_cons. auto. apply NoDup_nil.
-    unfold not; intros. simpl in H49. destruct H49; try contradiction.
-    apply (Permutation_in (l':=graph_to_wedgelist msf')) in H48.
-    rewrite <- H49 in H48. apply g2wedgelist_evalid in H48. simpl in H48. contradiction.
+    unfold not; intros. simpl in H24. destruct H24; try contradiction.
+    apply (Permutation_in (l':=graph_to_wedgelist msf')) in H23.
+    rewrite <- H24 in H23. apply g2wedgelist_evalid in H23. simpl in H23. contradiction.
     auto. apply NoDup_g2wedgelist.
-    intros; split; intros. apply in_app_or in H48. destruct H48.
-    apply (Permutation_in (l':=graph_to_wedgelist msf')) in H48. 2: auto.
-    apply list_in_map_inv in H48. destruct H48; destruct H48. rewrite H48. apply EList_evalid in H49.
+    intros; split; intros. apply in_app_or in H23. destruct H23.
+    apply (Permutation_in (l':=graph_to_wedgelist msf')) in H23. 2: auto.
+    apply list_in_map_inv in H23. destruct H23; destruct H23. rewrite H23. apply EList_evalid in H24.
     apply FiniteWEdgeListGraph_adde_g2wedgelist_2.
-    unfold not; intros; rewrite <- H50 in H49; contradiction. apply H49.
-    simpl in H48. destruct H48. rewrite <- H48.
+    unfold not; intros; rewrite <- H25 in H24; contradiction. apply H24.
+    simpl in H23. destruct H23. rewrite <- H23.
     apply FiniteWEdgeListGraph_adde_g2wedgelist_1. contradiction.
     destruct x as [w e].
-    unfold graph_to_wedgelist in H48. apply list_in_map_inv in H48.
-    destruct H48; destruct H48.
-    apply EList_evalid in H49.
-    unfold edge_to_wedge in H48; simpl in H48. unfold graph_gen.update_elabel in H48.
-    unfold EquivDec.equiv_dec in H48. destruct (E_EqDec (u, v) x).
-    unfold Equivalence.equiv in e0. rewrite H48. rewrite e0. apply in_or_app. right. left. auto.
-    apply FiniteWEdgeListGraph_adde_evalid_or in H49. destruct H49.
+    unfold graph_to_wedgelist in H23. apply list_in_map_inv in H23.
+    destruct H23; destruct H23.
+    apply EList_evalid in H24.
+    unfold edge_to_wedge in H23; simpl in H23. unfold graph_gen.update_elabel in H23.
+    unfold EquivDec.equiv_dec in H23. destruct (E_EqDec (u, v) x).
+    unfold Equivalence.equiv in e0. rewrite H23. rewrite e0. apply in_or_app. right. left. auto.
+    apply FiniteWEdgeListGraph_adde_evalid_or in H24. destruct H24.
     apply in_or_app. left. apply (Permutation_in (l:=graph_to_wedgelist msf')).
     apply Permutation_sym; auto.
-    replace (w,e) with (edge_to_wedge msf' e). apply in_map. apply EList_evalid. inversion H48. apply H49.
-    unfold edge_to_wedge; simpl. inversion H48. auto.
-    unfold RelationClasses.complement, Equivalence.equiv in c. rewrite H49 in c; contradiction.
+    replace (w,e) with (edge_to_wedge msf' e). apply in_map. apply EList_evalid. inversion H23. apply H24.
+    unfold edge_to_wedge; simpl. inversion H23. auto.
+    unfold RelationClasses.complement, Equivalence.equiv in c. rewrite H24 in c; contradiction.
     +++
     intros. rewrite <- (uf_union_vvalid subsetsGraph_uv uv_union u v); auto.
-    destruct Hequiv_trans. rewrite <- H48. apply H14.
+    destruct Hequiv_trans. rewrite <- H23. apply H14.
     +++
-    intros. rewrite (sublist_split 0 i (i+1)) in H49 by lia. apply in_app_or in H49.
-    destruct H49.
+    intros. rewrite (sublist_split 0 i (i+1)) in H24 by lia. apply in_app_or in H24.
+    destruct H24.
     (*case of every edge that was before*)
     apply (uf_union_preserves_connected subsetsGraph_uv _ u v); auto.
-    apply connected_ufroot_same_iff. apply (uf_equiv_connected subsetsGraph' subsetsGraph_uv). auto.
-    apply connected_ufroot_same_iff. apply (H15 e); auto.
+    apply (uf_equiv_ufroot_same subsetsGraph' subsetsGraph_uv). auto.
+    apply (H15 e); auto.
     (*the newly added edge*)
-    rewrite (sublist_one i (i+1) _) in H49 by lia.
-    destruct H49. 2: contradiction.
-    rewrite Heq_i in H49.
-    destruct H48. unfold edge_to_wedge in H49.
-    inversion H49.
-    do 2 rewrite Int.Z_mod_modulus_eq in H53. do 2 rewrite Int.Z_mod_modulus_eq in H54.
+    rewrite (sublist_one i (i+1) _) in H24 by lia.
+    destruct H24. 2: contradiction.
+    rewrite Heq_i in H24.
+    destruct H23. unfold edge_to_wedge in H24.
+    inversion H24.
+    do 2 rewrite Int.Z_mod_modulus_eq in H28. do 2 rewrite Int.Z_mod_modulus_eq in H29.
     destruct H as [Hvertex_valid [Hedge_valid [Hweight_valid [Hsrc_edge Hdst_edge]]]].
-    destruct H48. destruct H48.
-    rewrite Hsrc_edge in H48, H50. rewrite Hdst_edge in H51, H50.
+    destruct H23. destruct H23.
+    rewrite Hsrc_edge in H23, H25. rewrite Hdst_edge in H26, H25.
     assert (u = fst e /\ v = snd e). {
       apply Hvertex_valid in Hvvalid_g_u.
       apply Hvertex_valid in Hvvalid_g_v.
-      apply Hvertex_valid in H48.
-      apply Hvertex_valid in H51.
+      apply Hvertex_valid in H23.
+      apply Hvertex_valid in H26.
       set (q:=Int.max_signed) in *; compute in q; subst q.
       set (q:=Int.modulus) in *; compute in q; subst q.
-      do 2 rewrite Z.mod_small in H53 by lia.
-      do 2 rewrite Z.mod_small in H54 by lia. split; auto.
+      do 2 rewrite Z.mod_small in H28 by lia.
+      do 2 rewrite Z.mod_small in H29 by lia. split; auto.
     }
-    destruct H55.
-    destruct H50; destruct H50; subst u0; subst v0; rewrite <- H55; rewrite <- H56.
+    destruct H30.
+    destruct H25; destruct H25; subst u0; subst v0; rewrite <- H30; rewrite <- H31.
     (*both cases: apply union_ufroot_same.*)
     2: apply ufroot_same_symm.
     all: apply (uf_union_connected subsetsGraph_uv); auto.
@@ -1717,70 +1706,64 @@ Proof.
       Will also need an analog of cross_bridge_implies_endpoints, and a ufroot_same_dec analog of the in_dec
     *)
     assert (Hvvalid_subsetsGraph_uv_a: vvalid subsetsGraph_uv a).
-      apply (uf_union_vvalid subsetsGraph_uv uv_union u v a); auto. apply (connected_vvalid uv_union a b H48).
+      apply (uf_union_vvalid subsetsGraph_uv uv_union u v a); auto.
+      destruct H23 as [rt [? ?]]. apply (ufroot_vvalid_vert uv_union rt a). auto.
     assert (Hvvalid_subsetsGraph_uv_b: vvalid subsetsGraph_uv b).
-      apply (uf_union_vvalid subsetsGraph_uv uv_union u v b); auto. apply (connected_vvalid uv_union a b H48).
-    destruct (connected_dec msf' a b); rename H49 into Hab. apply adde_connected; auto.
+      apply (uf_union_vvalid subsetsGraph_uv uv_union u v b); auto.
+      destruct H23 as [rt [? ?]]. apply (ufroot_vvalid_vert uv_union rt b). auto.
+    destruct (connected_dec msf' a b); rename H24 into Hab. apply adde_connected; auto.
     destruct (connected_dec msf' a u).
     (*a-u*)
-      destruct (connected_dec msf' a v). apply connected_symm in H49. apply (connected_trans msf' u a v H49) in H50. contradiction.
-      destruct (connected_dec msf' u b). apply (connected_trans msf' a u b H49) in H51. apply adde_connected. auto. auto.
+      destruct (connected_dec msf' a v). apply connected_symm in H24. apply (connected_trans msf' u a v H24) in H25. contradiction.
+      destruct (connected_dec msf' u b). apply (connected_trans msf' a u b H24) in H26. apply adde_connected. auto. auto.
       destruct (connected_dec msf' v b). apply adde_connected_through_bridge1; auto.
         apply H8; auto. apply H8; auto.
-      rewrite <- H16 in H49, H51, H52.
-      rewrite (uf_equiv_connected subsetsGraph' subsetsGraph_uv) in H49, H51, H52; auto.
-      assert (~ ufroot_same subsetsGraph_uv b u). { unfold not; intros. apply connected_ufroot_same_iff in H53.
-        apply connected_symm in H53. contradiction. }
-      apply (uf_union_remains_disconnected1 _ uv_union u v) in H53; auto.
-      2: auto. 2: { rewrite <- connected_ufroot_same_iff. unfold not; intros. apply connected_symm in H54. contradiction. }
-      rewrite <- connected_ufroot_same_iff in H53. rewrite connected_ufroot_same_iff in H49.
-      apply (uf_union_preserves_connected _ uv_union u v) in H49; auto.
-      rewrite <- connected_ufroot_same_iff in H49.
-      apply connected_symm in H48.
-      apply (connected_trans uv_union b a u) in H48; auto. contradiction.
+      rewrite <- H16 in H24, H26, H27.
+      rewrite (uf_equiv_ufroot_same subsetsGraph' subsetsGraph_uv) in H24, H26, H27; auto.
+      assert (~ ufroot_same subsetsGraph_uv b u). { unfold not; intros.
+        apply ufroot_same_symm in H28. contradiction. }
+      apply (uf_union_remains_disconnected1 _ uv_union u v) in H28; auto.
+      2: auto. 2: { unfold not; intros. apply ufroot_same_symm in H29. contradiction. }
+      apply (uf_union_preserves_connected _ uv_union u v) in H24; auto.
+      apply ufroot_same_symm in H23.
+      apply (ufroot_same_trans uv_union b a u) in H23; auto. contradiction.
     (*a not connected to u*)
     (*destruct connected msf' a v, repeat the above...*)
     destruct (connected_dec msf' a v).
       destruct (connected_dec msf' u b). apply adde_connected_through_bridge2; auto.
         apply H8; auto. apply H8; auto.
-        destruct (connected_dec msf' v b). apply (connected_trans msf' a v b H50) in H52.
+        destruct (connected_dec msf' v b). apply (connected_trans msf' a v b H25) in H27.
           apply adde_connected; auto.
-        rewrite <- H16 in H50, H51, H52.
-        rewrite (uf_equiv_connected subsetsGraph' subsetsGraph_uv) in H50, H51, H52; auto.
-        assert (~ ufroot_same subsetsGraph_uv b v). { unfold not; intros. apply connected_ufroot_same_iff in H53.
-          apply connected_symm in H53. contradiction. }
-        rewrite connected_ufroot_same_iff in H48, H50, H51, H52.
-        apply (uf_union_remains_disconnected2 _ uv_union u v) in H53; auto.
+        rewrite <- H16 in H25, H26, H27.
+        rewrite (uf_equiv_ufroot_same subsetsGraph' subsetsGraph_uv) in H25, H26, H27; auto.
+        assert (~ ufroot_same subsetsGraph_uv b v). { unfold not; intros.
+          apply ufroot_same_symm in H28. contradiction. }
+        apply (uf_union_remains_disconnected2 _ uv_union u v) in H28; auto.
           2: { rewrite ufroot_same_symm. auto. }
-        apply (uf_union_preserves_connected _ uv_union u v) in H50; auto.
-        apply ufroot_same_symm in H48.
-        apply (ufroot_same_trans uv_union b a v) in H48; auto. contradiction.
-      destruct (connected_dec msf' u b). apply H16 in H51.
-        apply (uf_equiv_connected subsetsGraph' subsetsGraph_uv) in H51; auto.
-        apply connected_ufroot_same_iff in H51.
-        apply (uf_union_preserves_connected _ uv_union u v) in H51; auto.
-        apply connected_ufroot_same_iff in H48. apply ufroot_same_symm in H51.
-        apply (ufroot_same_trans uv_union a b u H48) in H51.
+        apply (uf_union_preserves_connected _ uv_union u v) in H25; auto.
+        apply ufroot_same_symm in H23.
+        apply (ufroot_same_trans uv_union b a v) in H23; auto. contradiction.
+      destruct (connected_dec msf' u b). apply H16 in H26.
+        apply (uf_equiv_ufroot_same subsetsGraph' subsetsGraph_uv) in H26; auto.
+        apply (uf_union_preserves_connected _ uv_union u v) in H26; auto.
+        apply ufroot_same_symm in H26.
+        apply (ufroot_same_trans uv_union a b u H23) in H26.
         (*However, ~ connected msf' a u -> ... -> ~ ufroot_same uv_union, contradiction*)
         assert (~ ufroot_same uv_union a u). {
-          rewrite <- H16 in H49, H50. rewrite (uf_equiv_connected subsetsGraph' subsetsGraph_uv) in H49, H50; auto.
-          rewrite connected_ufroot_same_iff in H49, H50.
+          rewrite <- H16 in H24, H25. rewrite (uf_equiv_ufroot_same subsetsGraph' subsetsGraph_uv) in H24, H25; auto.
           apply (uf_union_remains_disconnected1 subsetsGraph_uv uv_union u v a); auto. }
         contradiction.
-        destruct (connected_dec msf' v b). apply H16 in H52. apply (uf_equiv_connected subsetsGraph' subsetsGraph_uv) in H52; auto.
-          apply connected_ufroot_same_iff in H52. apply connected_ufroot_same_iff in H48.
-          apply (uf_union_preserves_connected _ uv_union u v) in H52; auto. apply ufroot_same_symm in H52.
-          apply (ufroot_same_trans uv_union a b v H48) in H52.
+        destruct (connected_dec msf' v b). apply H16 in H27. apply (uf_equiv_ufroot_same subsetsGraph' subsetsGraph_uv) in H27; auto.
+          apply (uf_union_preserves_connected _ uv_union u v) in H27; auto. apply ufroot_same_symm in H27.
+          apply (ufroot_same_trans uv_union a b v H23) in H27.
           (*However, ~ connected msf' a u -> ... -> ~ ufroot_same uv_union, contradiction*)
           assert (~ ufroot_same uv_union a v). {
-            rewrite <- H16 in H49, H50. rewrite (uf_equiv_connected subsetsGraph' subsetsGraph_uv) in H49, H50; auto.
-            rewrite connected_ufroot_same_iff in H49, H50.
+            rewrite <- H16 in H24, H25. rewrite (uf_equiv_ufroot_same subsetsGraph' subsetsGraph_uv) in H24, H25; auto.
             apply (uf_union_remains_disconnected2 subsetsGraph_uv uv_union u v a); auto. }
           contradiction.
         (*finally, neither were connected to u or v*)
-        rewrite <- H16 in Hab, H49, H50, H51, H52.
-        rewrite (uf_equiv_connected subsetsGraph' subsetsGraph_uv) in Hab, H49, H50, H51, H52; auto.
-        rewrite connected_ufroot_same_iff in H48, Hab, H49, H50, H51, H52.
+        rewrite <- H16 in Hab, H24, H25, H26, H27.
+        rewrite (uf_equiv_ufroot_same subsetsGraph' subsetsGraph_uv) in Hab, H24, H25, H26, H27; auto.
         assert (~ ufroot_same uv_union a b). {
           apply (uf_union_joins_only_uv subsetsGraph_uv uv_union u v a b); auto.
         }
@@ -1793,40 +1776,37 @@ Proof.
         a-v,b-u: same
       No: then apply adde_unaffected.
     *)
-    destruct H48 as [p0 ?]. 
-    apply connected_by_upath_exists_simple_upath in H48. clear p0; destruct H48 as [p [H48 Hp_simpl]].
+    destruct H23 as [p0 ?]. 
+    apply connected_by_upath_exists_simple_upath in H23. clear p0; destruct H23 as [p [H23 Hp_simpl]].
     assert (exists l : list EType, fits_upath (FiniteWEdgeListGraph_adde msf' (u, v) (elabel g (u, v))) l p).
-    apply connected_exists_list_edges in H48; auto. destruct H49 as [l ?].
-    rewrite connected_ufroot_same_iff.
+    apply connected_exists_list_edges in H23; auto. destruct H24 as [l ?].
     destruct (in_dec E_EqDec (u,v) l).
     (*Yes*) assert (connected msf' a u /\ connected msf' v b \/ connected msf' a v /\ connected msf' u b).
       apply (cross_bridge_implies_endpoints msf' u v (elabel g (u,v)) p); auto.
       exists l. split; auto.
-      destruct H50; destruct H50;
-        rewrite <- H16 in H50, H51;
-        rewrite (uf_equiv_connected subsetsGraph' subsetsGraph_uv) in H50, H51; auto;
-        rewrite connected_ufroot_same_iff in H50, H51;
-        apply (uf_union_preserves_connected subsetsGraph_uv uv_union u v) in H50; auto;
-        apply (uf_union_preserves_connected subsetsGraph_uv uv_union u v) in H51; auto.
+      destruct H25; destruct H25;
+        rewrite <- H16 in H25, H26;
+        rewrite (uf_equiv_ufroot_same subsetsGraph' subsetsGraph_uv) in H25, H26; auto;
+        apply (uf_union_preserves_connected subsetsGraph_uv uv_union u v) in H25; auto;
+        apply (uf_union_preserves_connected subsetsGraph_uv uv_union u v) in H26; auto.
         assert (ufroot_same uv_union u v).
           apply (uf_union_connected subsetsGraph_uv uv_union u v); auto.
-        apply (ufroot_same_trans uv_union u v b H52) in H51.
+        apply (ufroot_same_trans uv_union u v b H27) in H26.
         apply (ufroot_same_trans uv_union a u b); auto.
         assert (ufroot_same uv_union u v).
           apply (uf_union_connected subsetsGraph_uv uv_union u v); auto.
-        apply ufroot_same_symm in H52.
-        apply (ufroot_same_trans uv_union v u b H52) in H51.
+        apply ufroot_same_symm in H27.
+        apply (ufroot_same_trans uv_union v u b H27) in H26.
         apply (ufroot_same_trans uv_union a v b); auto.
-    assert (connected msf' a b). exists p. destruct H48. split. apply (adde_unaffected msf' (u,v) (elabel g (u,v))).
-    apply H48. exists l. split. apply (adde_fits_upath' msf' (u,v) (elabel g (u,v))). auto. auto. auto.
+    assert (connected msf' a b). exists p. destruct H23. split. apply (adde_unaffected msf' (u,v) (elabel g (u,v))).
+    apply H23. exists l. split. apply (adde_fits_upath' msf' (u,v) (elabel g (u,v))). auto. auto. auto.
     auto.
-    rewrite <- H16 in H50. rewrite (uf_equiv_connected subsetsGraph' subsetsGraph_uv) in H50; auto.
-    rewrite connected_ufroot_same_iff in H50.
-    apply (uf_union_preserves_connected subsetsGraph_uv uv_union u v) in H50; auto.
+    rewrite <- H16 in H25. rewrite (uf_equiv_ufroot_same subsetsGraph' subsetsGraph_uv) in H25; auto.
+    apply (uf_union_preserves_connected subsetsGraph_uv uv_union u v) in H25; auto.
     +++
-    intros. rewrite map_app in H48. apply in_app_or in H48; destruct H48.
-    apply H17 in H48. destruct H48; destruct H48. exists x0; split; [lia | auto].
-    simpl in H48. destruct H48. exists i; split. lia. rewrite <- H48. symmetry; apply Heq_i.
+    intros. rewrite map_app in H23. apply in_app_or in H23; destruct H23.
+    apply H17 in H23. destruct H23; destruct H23. exists x0; split; [lia | auto].
+    simpl in H23. destruct H23. exists i; split. lia. rewrite <- H23. symmetry; apply Heq_i.
     contradiction.
     +++
     intros.
@@ -1835,7 +1815,7 @@ Proof.
       assert (~ In (Znth j sorted) (map wedge_to_cdata msflist)). {
         unfold not; intros. assert (In (Znth j sorted) (map wedge_to_cdata (msflist +:: (elabel g (u, v), (u, v))))).
         rewrite map_app. apply in_or_app. left. auto. contradiction. }
-      apply H18 in H51. 2: lia. destruct H51 as [p ?]; destruct H51. destruct H52 as [l ?]; destruct H52.
+      apply H18 in H26. 2: lia. destruct H26 as [p ?]; destruct H26. destruct H27 as [l ?]; destruct H27.
       exists p.
       (*replace Znth j sorted with (w',(u',v'))*)
       assert (HIn_j: In (Znth j sorted) (map wedge_to_cdata glist)). {
@@ -1846,61 +1826,54 @@ Proof.
       destruct e' as [w' [u' v']]. unfold wedge_to_cdata in Heq_j. simpl in Heq_j.
       replace (fst (snd (Znth j sorted))) with (Vint (Int.repr u')). 2: rewrite Heq_j; simpl; auto.
       replace (snd (snd (Znth j sorted))) with (Vint (Int.repr v')). 2: rewrite Heq_j; simpl; auto.
-      rewrite Heq_j in H51; simpl in H51.
+      rewrite Heq_j in H26; simpl in H26.
       (*we''ll deal with the vvalid etc when we need it...*)
-      split. unfold c_connected_by_path. unfold c_connected_by_path in H51.
-      apply adde_connected_by_path. auto. apply H51. exists l.
-      split. apply adde_fits_upath. auto. apply H52. apply H53.
+      split. unfold c_connected_by_path. unfold c_connected_by_path in H26.
+      apply adde_connected_by_path. auto. apply H26. exists l.
+      split. apply adde_fits_upath. auto. apply H27. apply H28.
     }
     (*the rest are trivial*)
-    destruct H50. subst j.
+    destruct H25. subst j.
     assert (In (Znth i sorted) (map wedge_to_cdata (msflist +:: (elabel g (u, v), (u, v))))).
       rewrite Heq_i. apply in_map. apply in_or_app. right. left; auto. contradiction.
     lia.
  --- (* no, don't add this edge *)
   forward.
   Exists msf' msflist subsetsGraph_uv.
-  assert (uf_equiv subsetsGraph_uv subsetsGraph'). {
-    apply uf_equiv_sym in H19.
-    apply uf_equiv_sym in H21.
-    apply (uf_equiv_trans _ (liGraph subsetsGraph_u)); trivial.
-  }
   entailer!.
+  clear H21 H22 H23 H24 H25 H26 H27 H28 H29 H30 H31 H32 H33 H34 H35 H36 H37 H38 H39 H40.
   split3; [| |split3].
   +++
-  intros. rewrite H14. symmetry. apply H24.
+  intros. rewrite H14. symmetry. destruct Hequiv_trans. rewrite H20. split; auto.
   +++
-  intros. rewrite (sublist_split 0 i (i+1) sorted) in H45 by lia. apply in_app_or in H45. destruct H45.
-  apply connected_ufroot_same_iff.
-  apply (uf_equiv_connected subsetsGraph' subsetsGraph_uv). apply uf_equiv_sym. apply H24.
-  apply connected_ufroot_same_iff. apply (H15 e u0 v0 H23 H45).
-  rewrite sublist_one in H45 by lia. destruct H45. 2: contradiction.
-  apply connected_ufroot_same_iff.
-  apply (uf_equiv_connected subsetsGraph_uv subsetsGraph'). auto.
-  apply connected_ufroot_same_iff.
-  rewrite Heq_i in H45.
+  intros. rewrite (sublist_split 0 i (i+1) sorted) in H21 by lia. apply in_app_or in H21. destruct H21.
+  apply (uf_equiv_ufroot_same subsetsGraph' subsetsGraph_uv); auto.
+  apply (H15 e u0 v0 H20 H21).
+  rewrite sublist_one in H21 by lia. destruct H21. 2: contradiction.
+  apply (uf_equiv_ufroot_same subsetsGraph' subsetsGraph_uv). auto.
+  rewrite Heq_i in H21.
     destruct H as [Hvertex_valid [Hedge_valid [Hweight_valid [Hsrc_edge Hdst_edge]]]].
-    destruct H23. destruct H. destruct H46.
-    rewrite Hsrc_edge in H46, H23. rewrite Hdst_edge in H47, H23.
+    destruct H20. destruct H. destruct H22.
+    rewrite (Hsrc_edge e) in H22, H20. rewrite Hdst_edge in H23, H20.
     assert (u = fst e /\ v = snd e). {
-    unfold edge_to_wedge in H45. inversion H45.
-    do 2 rewrite Int.Z_mod_modulus_eq in H50. do 2 rewrite Int.Z_mod_modulus_eq in H51.
-    apply Hvertex_valid in Hvvalid_g_u.
-    apply Hvertex_valid in Hvvalid_g_v.
-    apply Hvertex_valid in H46.
-    apply Hvertex_valid in H47.
-    set (q:=Int.max_signed) in *; compute in q; subst q.
-    set (q:=Int.modulus) in *; compute in q; subst q.
-    do 2 rewrite Z.mod_small in H50 by lia.
-    do 2 rewrite Z.mod_small in H51 by lia. split; auto.
-    } destruct H48.
-  destruct H23; destruct H23; subst u0; subst v0; rewrite <- H48; rewrite <- H49.
+      unfold edge_to_wedge in H21. inversion H21.
+      do 2 rewrite Int.Z_mod_modulus_eq in H26. do 2 rewrite Int.Z_mod_modulus_eq in H27.
+      apply Hvertex_valid in Hvvalid_g_u.
+      apply Hvertex_valid in Hvvalid_g_v.
+      apply Hvertex_valid in H22.
+      apply Hvertex_valid in H23.
+      set (q:=Int.max_signed) in *; compute in q; subst q.
+      set (q:=Int.modulus) in *; compute in q; subst q.
+      do 2 rewrite Z.mod_small in H26 by lia.
+      do 2 rewrite Z.mod_small in H27 by lia. split; auto.
+    } destruct H24.
+  destruct H20; destruct H20; subst u0; subst v0; rewrite <- H24; rewrite <- H25.
   exists v_root; split; auto. exists v_root; split; auto.
   +++ intros.
   rewrite <- H16.
-  apply uf_equiv_connected; trivial.
+  apply uf_equiv_ufroot_same. apply uf_equiv_sym. trivial.
   +++ intros.
-  destruct (H17 _ H23) as [y [? ?]].
+  destruct (H17 _ H20) as [y [? ?]].
   exists y.
   split; trivial; lia.
   +++ intros.
@@ -1909,32 +1882,31 @@ Proof.
   subst j. (* hrmm *)
   rewrite Hu_i; rewrite Hv_i.
   unfold c_connected_by_path.
-  assert (connected msf' u v). {
-   apply H16. apply connected_ufroot_same_iff. exists v_root.
-   split; auto.
-  }
-  destruct H46 as [p ?]. exists p. split.
+  assert (connected msf' u v).
+   apply H16. exists v_root. split; auto.
+  destruct H22 as [p ?]. exists p. split.
   rewrite <- H0 in Hvvalid_g_u. rewrite <- H0 in Hvvalid_g_v.
   repeat rewrite Int.signed_repr. auto.
   split. set (k:=Int.min_signed); compute in k; subst k. lia.
     apply (Z.le_trans _ (Int.max_signed/8)). lia. apply Z.lt_le_incl. apply Z.div_lt. lia. lia.
   split. set (k:=Int.min_signed); compute in k; subst k. lia.
     apply (Z.le_trans _ (Int.max_signed/8)). lia. apply Z.lt_le_incl. apply Z.div_lt. lia. lia.
-  apply connected_exists_list_edges in H46. destruct H46 as [l ?]. exists l.
+  apply connected_exists_list_edges in H22. destruct H22 as [l ?]. exists l.
   split. auto. intros. assert (In w (EList msf')). apply EList_evalid.
   apply (fits_upath_evalid msf' p l); auto.
   assert (In (wedge_to_cdata (edge_to_wedge msf' w)) (map wedge_to_cdata msflist)).
   apply in_map. apply (Permutation_in (l:=graph_to_wedgelist msf')). apply Permutation_sym; auto.
   apply in_map. auto.
   assert (edge_to_wedge msf' w = edge_to_wedge g w). unfold edge_to_wedge.
-  assert (elabel msf' w = elabel g w). apply H11. apply EList_evalid in H48; apply H48. rewrite H50; auto.
-  rewrite <- H50.
+  assert (elabel msf' w = elabel g w). apply H11. apply EList_evalid in H24; apply H24. rewrite H26; auto.
+  rewrite <- H26.
   assert (incl (map wedge_to_cdata msflist) (sublist 0 i sorted)).
-  unfold incl; intros. apply H17 in H51. destruct H51; destruct H51. rewrite H52.
+  unfold incl; intros. apply H17 in H27. destruct H27; destruct H27. rewrite H28.
   assert (Znth (x+0) sorted = Znth x (sublist 0 i sorted)).
-  symmetry. apply (Znth_sublist 0 x i sorted). lia. lia. rewrite Z.add_0_r in H53. rewrite H53.
+  symmetry. apply (Znth_sublist 0 x i sorted). lia. lia. rewrite Z.add_0_r in H29. rewrite H29.
   apply Znth_In. rewrite Zlength_sublist by lia; lia.
-  apply H51. apply H49.
+  apply H27. apply H25.
+  (*******************************AFTER LOOP****************************)
   + Intros msf. Intros msflist.
     Intros subsetsGraph'.
     replace (sublist 0 (numE g) sorted) with sorted in *. 2: {
@@ -1958,11 +1930,12 @@ Proof.
       intros. destruct H19. apply (H18 x u v H19).
     }
     assert (Hspanning: forall u v, connected g u v <-> connected msf u v). {
-      intros; split; intros. apply H15. rewrite connected_ufroot_same_iff. apply H19. auto.
+      intros; split; intros. apply H15. apply H19. auto.
       apply (is_partial_lgraph_connected msf g); auto.
     } clear H18 H19.
     forward_call (sh, subsetsPtr, subsetsGraph').
     (* In hindsight, this wouldn't be needed with better definitions. But let's just soldier on
+       Don't put this up on top, I worry about the effect of VST attempting to yank a value out
     *)
     apply (Permutation_trans Hperm_glist) in H5.
     assert (Permutation (graph_to_wedgelist g) (map cdata_to_wedge sorted)). {
@@ -1992,9 +1965,8 @@ Proof.
       rewrite H19. lia.
     }
     (*minimum spanning tree*)
-    split. split. apply H10. split; auto.
+    split. split. split3. split3. apply H10. auto. unfold spanning. auto. apply H10. apply H10.
+    intros. apply sound_strong_evalid; auto.
     (*minimum...*)
-    (* the proof I had/have in mind goes like this:
-       Let t' be another spanning tree.
-    *)
+
 Abort.

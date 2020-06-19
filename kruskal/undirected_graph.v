@@ -293,6 +293,14 @@ Definition connected_by_path (g: Gph) (p: upath) (n : V) :=
 Definition connected (g: Gph) (n : V) :=
   fun n' => exists p, connected_by_path g p n n'.
 
+Lemma connected_exists_path:
+  forall (g: Gph) u v,
+    connected g u v <->
+    exists p, 
+      valid_upath g p /\
+      hd_error p = Some u /\ last_error p = Some v.
+Proof. intros; split; intros; auto. Qed.
+
 Lemma connected_symm:
   forall g u v, connected g u v -> connected g v u.
 Proof.
@@ -565,5 +573,19 @@ Definition uforest g := forall u v p1 p2,
   simple_upath g p1 -> connected_by_path g p1 u v ->
   simple_upath g p2 -> connected_by_path g p2 u v ->
   p1 = p2.
+
+Definition spanning t g :=
+  forall u v, connected g u v <-> connected t u v.
+
+(*partial graph is insufficient, I need strong evalid*)
+Definition spanning_uforest t g := is_partial_graph t g /\ uforest t /\
+  spanning t g.
+
+Lemma spanning_uforest_preserves_vertices:
+forall g t v, spanning_uforest t g -> (vvalid g v <-> vvalid t v).
+Proof.
+intros; split; intros; pose proof (connected_refl _ v H0);
+apply H in H1; apply connected_vvalid in H1; apply H1.
+Qed.
 
 End UNDIRECTED.

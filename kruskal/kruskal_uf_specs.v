@@ -197,7 +197,8 @@ Definition kruskal_spec :=
         sound_weighted_edge_graph msf;
         (numE msf) <= MAX_EDGES;
         Permutation msflist (graph_to_wedgelist msf);
-        minimum_spanning_forest g msf)
+        minimum_spanning_forest msf g
+        )
    LOCAL (temp ret_temp (pointer_val_val msf_gptr))
    SEP (data_at sh tint (Vint (Int.repr MAX_EDGES)) (gv _MAX_EDGES);
         (*original graph*)
