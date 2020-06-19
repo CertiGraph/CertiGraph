@@ -46,24 +46,26 @@ Proof.
 intros. unfold graph_to_wedgelist in H0, H1. apply list_in_map_inv in H0. destruct H0.
 apply list_in_map_inv in H1. destruct H1. destruct H0. destruct H1. unfold edge_to_wedge in H0. unfold edge_to_wedge in H1.
 subst x. subst y.
-destruct H. destruct H0. destruct H1.
+destruct H as [? [? [? [? ?]]]].
 apply EList_evalid in H3. apply EList_evalid in H4.
 assert (Hvvalid_x0: vvalid g (fst x0) /\ vvalid g (snd x0)).
-replace x0 with (fst x0, snd x0) in H3. apply H0 in H3. apply H3. destruct x0; auto.
+replace x0 with (fst x0, snd x0) in H3. apply H0 in H3.
+rewrite H5 in H3. rewrite H6 in H3. simpl in H3. apply H3. destruct x0; auto.
 destruct Hvvalid_x0 as [Hx0_1 Hx0_2].
 assert (Hvvalid_x1: vvalid g (fst x1) /\ vvalid g (snd x1)).
-replace x1 with (fst x1, snd x1) in H4. apply H0 in H4. apply H4. destruct x1; auto.
+replace x1 with (fst x1, snd x1) in H4. apply H0 in H4.
+rewrite H5 in H4. rewrite H6 in H4. simpl in H4. apply H4. destruct x1; auto.
 destruct Hvvalid_x1 as [Hx1_1 Hx1_2].
 unfold wedge_to_cdata in H2; simpl in H2.
-apply pair_equal_spec in H2. destruct H2. apply pair_equal_spec in H6. destruct H6.
-apply Vint_injective in H2. apply Vint_injective in H6. apply Vint_injective in H7.
+apply pair_equal_spec in H2. destruct H2. apply pair_equal_spec in H7. destruct H7.
+apply Vint_injective in H2. apply Vint_injective in H7. apply Vint_injective in H8.
 apply repr_inj_signed in H2. rewrite H2.
 2: unfold repable_signed; apply H1; auto.
 2: unfold repable_signed; apply H1; auto.
 replace x0 with (fst x0, snd x0). 2: destruct x0; auto.
 replace x1 with (fst x1, snd x1). 2: destruct x1; auto.
-apply repr_inj_signed in H6. rewrite H6.
-apply repr_inj_signed in H7. rewrite H7. auto.
+apply repr_inj_signed in H7. rewrite H7.
+apply repr_inj_signed in H8. rewrite H8. auto.
 all: unfold repable_signed; set (q:=Int.min_signed); compute in q; subst q.
 apply H in Hx0_2. lia.
 apply H in Hx1_2. lia.
