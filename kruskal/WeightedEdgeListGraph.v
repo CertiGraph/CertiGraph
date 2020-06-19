@@ -85,7 +85,7 @@ Definition vertex_valid (g: WEdgeListGraph): Prop :=
   forall v, vvalid g v -> 0 <= v < Int.max_signed.
 
 Definition edge_valid (g: WEdgeListGraph): Prop :=
-  forall a b, evalid g (a,b) -> (vvalid g a /\ vvalid g b).
+  forall e, evalid g e -> (vvalid g (src g e) /\ vvalid g (dst g e)).
 
 Definition weight_valid (g: WEdgeListGraph): Prop :=
   forall e, evalid g e -> Int.min_signed <= elabel g e <= Int.max_signed. (*< IFTY*)
@@ -99,19 +99,38 @@ Definition dst_edge (g: WEdgeListGraph): Prop :=
 Definition sound_weighted_edge_graph (g: WEdgeListGraph): Prop :=
   vertex_valid g /\ edge_valid g /\ weight_valid g /\ src_edge g /\ dst_edge g.
 
+(*because it keeps appearing*)
+Lemma sound_src:
+  forall (g: WEdgeListGraph) e, sound_weighted_edge_graph g -> evalid g e -> fst e = src g e.
+Proof. intros. symmetry. apply H. (*auto.*) Qed.
+
+Lemma sound_dst:
+  forall (g: WEdgeListGraph) e, sound_weighted_edge_graph g -> evalid g e -> snd e = dst g e.
+Proof. intros. symmetry. apply H. (*auto.*) Qed.
+
+Lemma sound_strong_evalid: (*literally the definition of edge_valid*)
+  forall (g: WEdgeListGraph) e, sound_weighted_edge_graph g -> evalid g e -> strong_evalid g e.
+Proof.
+intros. split. auto. apply H. auto.
+Qed.
+
+Corollary sound_uv_vvalid:
+  forall (g: WEdgeListGraph) u v, sound_weighted_edge_graph g -> evalid g (u,v) -> vvalid g u /\ vvalid g v.
+Proof.
+intros. apply sound_strong_evalid in H0; auto. destruct H0.
+destruct H as [? [? [? [? ?]]]].
+rewrite H4, H5 in H1. auto.
+Qed.
+
 Definition numV (g: FiniteWEdgeListGraph) : Z := Zlength (VList g).
 Definition numE (g: FiniteWEdgeListGraph) : Z := Zlength (EList g).
 
 Lemma numE_pos: forall g, 0 <= numE g.
-Proof.
-  intros. unfold numE. apply Zlength_nonneg.
-Qed.
+Proof. intros. unfold numE. apply Zlength_nonneg. Qed.
 
 Definition edge_to_wedge (g: WEdgeListGraph) e : LE * EType := (elabel g e, e).
 
-(* from Graph to list of edges *)
 Definition graph_to_wedgelist (g: FiniteWEdgeListGraph) : list (LE * EType) :=
-  (*map (fun e => (elabel g e, e)) (EList g).*)
   map (edge_to_wedge g) (EList g).
 
 Lemma g2wedgelist_numE:
@@ -146,11 +165,11 @@ intros. unfold graph_to_wedgelist in H.
 apply list_in_map_inv in H. unfold edge_to_wedge in H. destruct H; destruct H.
 destruct H0 as [? [? [? [? ?]]]].
 subst w; simpl. split. apply H3. apply EList_evalid in H1; auto.
-unfold edge_valid in H2. destruct x. specialize H2 with v v0.
-apply EList_evalid in H1.
+apply EList_evalid in H1. replace (fst x) with (src g x). replace (snd x) with (dst g x).
 apply H2 in H1. destruct H1. unfold vertex_valid in H0. apply H0 in H. apply H0 in H1.
 simpl. set (i:=Int.min_signed); compute in i; subst i.
 split; lia.
+apply H5; auto. apply H4; auto.
 Qed.
 
 (*******************SPECIFIC TYPES OF GRAPHS********************)
@@ -174,7 +193,7 @@ constructor; unfold EnumEnsembles.Enumerable, In; exists nil; split; intros; sim
 apply NoDup_nil. reflexivity. apply NoDup_nil. reflexivity.
 Qed.
 
-Instance Sound_empty_WEdgeListGraph:
+Instance Fin_empty_WEdgeListGraph:
   Fin empty_WEdgeListGraph.
 Proof.
   constructor.
@@ -186,7 +205,7 @@ Qed.
  *)
 Definition empty_FiniteWEdgeListGraph : FiniteWEdgeListGraph :=
   @Build_GeneralGraph VType EType V_EqDec E_EqDec LV LE LG Fin
-                      (WEdgeListGraph_LabeledGraph empty_WEdgeListGraph) Sound_empty_WEdgeListGraph.
+                      (WEdgeListGraph_LabeledGraph empty_WEdgeListGraph) Fin_empty_WEdgeListGraph.
 
 (* and now a quick fact about the new GeneralGraph *)
 Definition empty_FiniteWEdgeListGraph_finite:
@@ -288,7 +307,7 @@ Definition edgeless_WEdgeLGraph (z: Z): WEdgeListGraph :=
   (@Build_PreGraph VType EType V_EqDec E_EqDec (fun v => 0 <= v < z) (fun e => False) fst snd)
   (fun v => tt) (fun e => 0) tt.
 
-Instance Sound_edgeless_WEdgeLGraph (z: Z):
+Instance Fin_edgeless_WEdgeLGraph (z: Z):
   Fin (edgeless_WEdgeLGraph z).
 Proof.
 constructor. constructor; unfold EnumEnsembles.Enumerable.
@@ -299,7 +318,7 @@ Qed.
 
 Definition edgeless_WEdgeGraph (z: Z): FiniteWEdgeListGraph :=
   @Build_GeneralGraph VType EType V_EqDec E_EqDec LV LE LG Fin
-    (WEdgeListGraph_LabeledGraph (edgeless_WEdgeLGraph z)) (Sound_edgeless_WEdgeLGraph z).
+    (WEdgeListGraph_LabeledGraph (edgeless_WEdgeLGraph z)) (Fin_edgeless_WEdgeLGraph z).
 
 Lemma edgeless_WEdgeGraph_vvalid:
 forall v k, 0 <= k < v <-> vvalid (edgeless_WEdgeGraph v) k.
@@ -373,10 +392,10 @@ Qed.
 Lemma uforest_edgeless_WEdgeGraph:
 forall z, uforest (edgeless_WEdgeGraph z).
 Proof.
-unfold uforest; intros. destruct H0. destruct H3.
+unfold uforest; intros. destruct H0 as [? [? ?]].
 destruct p1. inversion H3. destruct p1.
 inversion H3. inversion H4. subst u; subst v.
-destruct H2. destruct H5. destruct p2. inversion H5.
+destruct H2 as [? [? ?]]. destruct p2. inversion H5.
 destruct p2. inversion H5. subst v. auto.
 destruct H2. destruct H2. destruct H2. destruct H2. simpl in H2. contradiction.
 destruct H0. destruct H0. destruct H0. destruct H0. simpl in H0. contradiction.
@@ -416,7 +435,7 @@ Qed.
 Definition WEdgeListGraph_adde (g: WEdgeListGraph) (e: EType) (w: LE):=
   labeledgraph_add_edge g e (fst e) (snd e) w.
 
-Instance Sound_WEdgeListGraph_adde (g: FiniteWEdgeListGraph) (e: EType) (w: LE) :
+Instance Fin_WEdgeListGraph_adde (g: FiniteWEdgeListGraph) (e: EType) (w: LE) :
   Fin (WEdgeListGraph_adde g e w).
 Proof.
 unfold WEdgeListGraph_adde. unfold labeledgraph_add_edge.
@@ -439,7 +458,7 @@ Qed.
 Definition FiniteWEdgeListGraph_adde (g: FiniteWEdgeListGraph) (e: EType) (w: LE): FiniteWEdgeListGraph :=
   @Build_GeneralGraph VType EType V_EqDec E_EqDec LV LE LG Fin
     (WEdgeListGraph_LabeledGraph (WEdgeListGraph_adde g e w))
-    (Sound_WEdgeListGraph_adde g e w).
+    (Fin_WEdgeListGraph_adde g e w).
 
 Lemma FiniteWEdgeListGraph_adde_vvalid:
   forall (g: FiniteWEdgeListGraph)  e w v, vvalid g v <-> vvalid (FiniteWEdgeListGraph_adde g e w) v.
@@ -520,45 +539,70 @@ Proof.
 unfold FiniteWEdgeListGraph_adde; simpl; unfold addValidFunc. intros. apply H.
 Qed.
 
-Lemma FiniteWEdgeListGraph_adde_src1':
+Lemma FiniteWEdgeListGraph_adde_src1:
   forall (g: FiniteWEdgeListGraph) e w, src (FiniteWEdgeListGraph_adde g e w) e = fst e.
 Proof.
 unfold FiniteWEdgeListGraph_adde; simpl; unfold addValidFunc; unfold updateEdgeFunc. intros.
 unfold equiv_dec. destruct E_EqDec. auto. unfold complement, equiv in c; contradiction.
 Qed.
 
-Lemma FiniteWEdgeListGraph_adde_dst1':
+Lemma FiniteWEdgeListGraph_adde_dst1:
   forall (g: FiniteWEdgeListGraph) e w, dst (FiniteWEdgeListGraph_adde g e w) e = snd e.
 Proof.
 unfold FiniteWEdgeListGraph_adde; simpl; unfold addValidFunc; unfold updateEdgeFunc. intros.
 unfold equiv_dec. destruct E_EqDec. auto. unfold complement, equiv in c; contradiction.
 Qed.
 
-Corollary FiniteWEdgeListGraph_adde_src1:
+Corollary FiniteWEdgeListGraph_adde_src1':
   forall (g: FiniteWEdgeListGraph) u v w, src (FiniteWEdgeListGraph_adde g (u,v) w) (u,v) = u.
-Proof. intros. apply FiniteWEdgeListGraph_adde_src1'. Qed.
+Proof. intros. apply FiniteWEdgeListGraph_adde_src1. Qed.
 
-Lemma FiniteWEdgeListGraph_adde_dst1:
+Lemma FiniteWEdgeListGraph_adde_dst1':
   forall (g: FiniteWEdgeListGraph) u v w, dst (FiniteWEdgeListGraph_adde g (u,v) w) (u,v) = v.
-Proof. intros. apply FiniteWEdgeListGraph_adde_dst1'. Qed.
+Proof. intros. apply FiniteWEdgeListGraph_adde_dst1. Qed.
 
-Corollary FiniteWEdgeListGraph_adde_strong_evalid1':
+Lemma FiniteWEdgeListGraph_adde_src2:
+  forall (g: FiniteWEdgeListGraph) e w e', e <> e' -> src (FiniteWEdgeListGraph_adde g e w) e' = src g e'.
+Proof.
+unfold FiniteWEdgeListGraph_adde; simpl; unfold addValidFunc, updateEdgeFunc; intros.
+unfold equiv_dec. destruct E_EqDec. unfold equiv in e0; contradiction. auto.
+Qed.
+
+Lemma FiniteWEdgeListGraph_adde_dst2:
+  forall (g: FiniteWEdgeListGraph) e w e', e <> e' -> dst (FiniteWEdgeListGraph_adde g e w) e' = dst g e'.
+Proof.
+unfold FiniteWEdgeListGraph_adde; simpl; unfold addValidFunc, updateEdgeFunc; intros.
+unfold equiv_dec. destruct E_EqDec. unfold equiv in e0; contradiction. auto.
+Qed.
+
+Corollary FiniteWEdgeListGraph_adde_strong_evalid1:
   forall (g: FiniteWEdgeListGraph) e w,
   vvalid g (fst e) -> vvalid g (snd e) ->
   strong_evalid (FiniteWEdgeListGraph_adde g e w) e.
 Proof.
 intros. split. apply FiniteWEdgeListGraph_adde_evalid1.
 split; apply FiniteWEdgeListGraph_adde_vvalid.
-rewrite FiniteWEdgeListGraph_adde_src1'. auto.
-rewrite FiniteWEdgeListGraph_adde_dst1'. auto.
+rewrite FiniteWEdgeListGraph_adde_src1. auto.
+rewrite FiniteWEdgeListGraph_adde_dst1. auto.
 Qed.
 
-Corollary FiniteWEdgeListGraph_adde_strong_evalid1:
+Corollary FiniteWEdgeListGraph_adde_strong_evalid1':
   forall (g: FiniteWEdgeListGraph) u v w,
   vvalid g u -> vvalid g v ->
   strong_evalid (FiniteWEdgeListGraph_adde g (u,v) w) (u,v).
 Proof.
-intros. apply FiniteWEdgeListGraph_adde_strong_evalid1'; simpl; auto.
+intros. apply FiniteWEdgeListGraph_adde_strong_evalid1; simpl; auto.
+Qed.
+
+Lemma FiniteWEdgeListGraph_adde_strong_evalid2:
+  forall (g: FiniteWEdgeListGraph) e w e', e <> e' ->
+  strong_evalid g e' ->
+  strong_evalid (FiniteWEdgeListGraph_adde g e w) e'.
+Proof.
+intros. split. apply FiniteWEdgeListGraph_adde_evalid2. apply H0.
+do 2 rewrite <- FiniteWEdgeListGraph_adde_vvalid. split.
+rewrite FiniteWEdgeListGraph_adde_src2. apply H0. auto.
+rewrite FiniteWEdgeListGraph_adde_dst2. apply H0. auto.
 Qed.
 
 Lemma FiniteWEdgeListGraph_adde_g2wedgelist_1:
@@ -601,8 +645,10 @@ Proof.
 intros. split.
 unfold vertex_valid; intros. apply H. simpl in H3. apply H3.
 split. unfold edge_valid; intros. simpl in H3. destruct H3.
-simpl. apply H. apply H3.
-rewrite <- H3 in *. simpl in *. split. apply H0. apply H1.
+simpl. unfold updateEdgeFunc. unfold equiv_dec.
+destruct E_EqDec; [split; auto | apply H; apply H3].
+subst e0. simpl; unfold updateEdgeFunc.
+unfold equiv_dec. destruct E_EqDec. split; auto. unfold complement, equiv in c; contradiction.
 split. unfold weight_valid; intros. simpl in H3. unfold addValidFunc in H3.
 simpl. unfold update_elabel. unfold equiv_dec.
 destruct (E_EqDec e e0). apply H2.
@@ -610,13 +656,35 @@ destruct H3. apply H. apply H3. rewrite H3 in c. unfold complement in c.
 assert (equiv e e). apply Equivalence.equiv_reflexive_obligation_1. contradiction.
 split. unfold src_edge; simpl. unfold updateEdgeFunc. intros.
 unfold equiv_dec. destruct (E_EqDec e e0). unfold equiv in e1; rewrite e1; auto.
-apply H.
+apply H. (*unfold addValidFunc in H3. destruct H3. auto. unfold complement, equiv in c. subst e0; contradiction.*)
 unfold dst_edge; simpl. unfold updateEdgeFunc. intros.
 unfold equiv_dec. destruct (E_EqDec e e0). unfold equiv in e1; rewrite e1; auto.
-apply H.
+apply H. (*unfold addValidFunc in H3. destruct H3. auto. unfold complement, equiv in c. subst e0; contradiction.*)
 Qed.
 
 (*****************************CONNECTEDNESS*************************)
+
+Lemma adde_adj_edge:
+forall (g: FiniteWEdgeListGraph) e w e' u v,
+  sound_weighted_edge_graph g ->
+  adj_edge g e' u v -> adj_edge (FiniteWEdgeListGraph_adde g e w) e' u v.
+Proof.
+unfold adj_edge; intros. destruct (E_EqDec e e').
+(*e=e'*)
+unfold equiv in e0. subst e'. split.
+apply FiniteWEdgeListGraph_adde_strong_evalid1.
+replace (fst e) with (src g e). apply H0. apply H. (*apply H0.*)
+replace (snd e) with (dst g e). apply H0. apply H. (*apply H0.*)
+rewrite FiniteWEdgeListGraph_adde_src1.
+rewrite FiniteWEdgeListGraph_adde_dst1.
+destruct H0. destruct H0.
+rewrite (sound_src g e); auto. rewrite (sound_dst g e); auto.
+(*e<>e'*)
+unfold complement, equiv in c. destruct H0. split.
+apply FiniteWEdgeListGraph_adde_strong_evalid2; auto.
+rewrite FiniteWEdgeListGraph_adde_src2; auto.
+rewrite FiniteWEdgeListGraph_adde_dst2; auto.
+Qed.
 
 Lemma adde_valid_upath:
 forall (g: FiniteWEdgeListGraph) e w p,
@@ -625,33 +693,15 @@ forall (g: FiniteWEdgeListGraph) e w p,
 Proof.
 induction p; intros. auto.
 destruct p. auto.
-assert (Hsrc: src_edge g). apply H. unfold src_edge in Hsrc.
-assert (Hdst: dst_edge g). apply H. unfold dst_edge in Hdst.
 split. destruct H0. destruct H0. exists x.
-destruct (E_EqDec x e). unfold equiv in e0. rewrite e0.
-rewrite e0 in H0. destruct H0. destruct H0.
-split. split. apply FiniteWEdgeListGraph_adde_evalid1.
-simpl. unfold updateEdgeFunc. unfold equiv_dec. destruct E_EqDec.
-rewrite <- Hsrc. rewrite <- Hdst. apply H3.
-unfold complement, equiv in c; contradiction.
-simpl. unfold updateEdgeFunc. unfold equiv_dec; destruct E_EqDec.
-rewrite <- Hsrc. rewrite <- Hdst. apply H2.
-unfold complement, equiv in c; contradiction.
-assert (x <> e) by (unfold complement, equiv in c; auto).
-destruct H0. destruct H0. split. split.
-apply FiniteWEdgeListGraph_adde_evalid2. apply H0.
-simpl. unfold updateEdgeFunc. unfold equiv_dec. destruct E_EqDec.
-unfold equiv in e0. symmetry in e0. contradiction. apply H4.
-simpl. unfold updateEdgeFunc. unfold equiv_dec. destruct E_EqDec.
-unfold equiv in e0. symmetry in e0. contradiction. apply H3.
+apply adde_adj_edge; auto.
 apply IHp. auto. apply H0.
 Qed.
 
 Lemma adde_connected_by_path:
 forall (g: FiniteWEdgeListGraph) e w p u v,
-  sound_weighted_edge_graph g ->
-  connected_by_path g p u v
-  -> connected_by_path (FiniteWEdgeListGraph_adde g e w) p u v.
+  sound_weighted_edge_graph g -> connected_by_path g p u v ->
+  connected_by_path (FiniteWEdgeListGraph_adde g e w) p u v.
 Proof.
 unfold connected_by_path; intros.
 split. apply adde_valid_upath. auto.
@@ -661,8 +711,7 @@ Qed.
 Corollary adde_connected:
 forall (g: FiniteWEdgeListGraph) e w u v,
   sound_weighted_edge_graph g ->
-  connected g u v
-  -> connected (FiniteWEdgeListGraph_adde g e w) u v.
+  connected g u v -> connected (FiniteWEdgeListGraph_adde g e w) u v.
 Proof.
 intros. destruct H0 as [p ?]. exists p.
 apply adde_connected_by_path; auto.
@@ -675,36 +724,20 @@ fits_upath g l p -> fits_upath (FiniteWEdgeListGraph_adde g e w) l p.
 Proof.
 induction p; intros. destruct l; auto.
 destruct l. auto. destruct p. auto.
-split.
-destruct H0.
-assert (Hsrc: src_edge g). apply H. unfold src_edge in Hsrc.
-assert (Hdst: dst_edge g). apply H. unfold dst_edge in Hdst.
-simpl. unfold pregraph_add_edge, addValidFunc, updateEdgeFunc.
-split. split; simpl. left. apply H0.
-unfold equiv_dec. destruct E_EqDec. unfold equiv in e1.
-rewrite e1. rewrite <- Hsrc; rewrite <- Hdst. apply H0.
-apply H0.
-simpl. unfold equiv_dec. destruct E_EqDec. unfold equiv in e1.
-rewrite <- Hsrc; rewrite <- Hdst. rewrite e1. apply H0. apply H0.
+split. destruct H0. apply adde_adj_edge; auto.
 apply IHp. apply H. apply fits_upath_cons in H0. apply H0.
 Qed.
 
+(*Not used*)
 Lemma adde_connected_e:
 forall (g:FiniteWEdgeListGraph) e w,
-  sound_weighted_edge_graph g -> vvalid g (src g e) -> vvalid g (dst g e) ->
-  connected (FiniteWEdgeListGraph_adde g e w) (src g e) (dst g e).
+  sound_weighted_edge_graph g -> vvalid g (fst e) -> vvalid g (snd e) ->
+  connected (FiniteWEdgeListGraph_adde g e w) (fst e) (snd e).
 Proof.
-intros. exists ((src g e)::(dst g e)::nil). split. 2: auto.
-assert (src_edge g) by apply H.
-assert (dst_edge g) by apply H.
-split. exists e. split. split. apply FiniteWEdgeListGraph_adde_evalid1.
-split; simpl; unfold updateEdgeFunc; unfold equiv_dec; destruct E_EqDec.
-rewrite <- H2; auto. auto.
-rewrite <- H3; auto. auto.
-simpl; unfold updateEdgeFunc; unfold equiv_dec; destruct E_EqDec.
-left; rewrite H2; rewrite H3; auto.
-left; auto.
-simpl. auto.
+intros. exists ((fst e)::(snd e)::nil). split. 2: auto.
+split. exists e. split. apply FiniteWEdgeListGraph_adde_strong_evalid1; auto.
+rewrite FiniteWEdgeListGraph_adde_src1, FiniteWEdgeListGraph_adde_dst1. left; auto.
+simpl; auto.
 Qed.
 
 Lemma adde_fits_upath':
@@ -739,14 +772,15 @@ apply (valid_upath_vvalid _ _ v) in H. auto. auto.
 exists l. destruct H0; auto.
 Qed.
 
+Definition bridge (g: FiniteWEdgeListGraph) e u v :=
+forall p l, connected_by_path g p u v -> fits_upath g l p -> In e l.
+
+(*Not used*)
 Lemma adde_bridge': (*anything that joins u v must contain (u,v)*)
-forall (g: FiniteWEdgeListGraph) u v w p,
-~ connected g u v ->
-connected_by_path (FiniteWEdgeListGraph_adde g (u,v) w) p u v
--> forall l, fits_upath (FiniteWEdgeListGraph_adde g (u,v) w) l p ->
-In (u,v) l.
+forall (g: FiniteWEdgeListGraph) u v w,
+~ connected g u v -> bridge (FiniteWEdgeListGraph_adde g (u,v) w) (u,v) u v.
 Proof.
-intros. destruct (in_dec E_EqDec (u,v) l). auto.
+unfold bridge; intros. destruct (in_dec E_EqDec (u,v) l). auto.
 (*come to a contradiction that connected g u v*)
 assert (connected g u v). exists p.
 destruct H0. split. 2: auto.
@@ -767,7 +801,7 @@ destruct H2 as [x [? [? ?]]]. destruct H3 as [x0 [? [? ?]]].
 exists (x++x0). split.
 apply valid_upath_app; auto.
 rewrite H5; rewrite H6. unfold adjacent_err. exists (u,v). split.
-apply (FiniteWEdgeListGraph_adde_strong_evalid1 g u v w); auto.
+apply (FiniteWEdgeListGraph_adde_strong_evalid1 g (u,v) w); auto.
 left. split. rewrite FiniteWEdgeListGraph_adde_src1; auto. rewrite FiniteWEdgeListGraph_adde_dst1; auto.
 split. apply hd_error_app; auto. apply last_err_app; auto.
 Qed.
@@ -784,7 +818,7 @@ destruct H2 as [x [? [? ?]]]. destruct H3 as [x0 [? [? ?]]].
 exists (x++x0). split.
 apply valid_upath_app; auto.
 rewrite H5; rewrite H6. unfold adjacent_err. exists (u,v). split.
-apply (FiniteWEdgeListGraph_adde_strong_evalid1 g u v w); auto.
+apply (FiniteWEdgeListGraph_adde_strong_evalid1 g (u,v) w); auto.
 right. split. rewrite FiniteWEdgeListGraph_adde_src1; auto. rewrite FiniteWEdgeListGraph_adde_dst1; auto.
 split. apply hd_error_app; auto. apply last_err_app; auto.
 Qed.
@@ -811,27 +845,106 @@ right. left. symmetry; apply H1.
 left; symmetry; apply H1.
 right. apply (IHp l). apply H. auto.
 Qed.
-(*****************************SPANNING_UFOREST**********************)
+
+(*****************************REMOVE EDGES****************************)
+
+Definition WEdgeListGraph_eremove (g: WEdgeListGraph) (e: EType) :=
+  @Build_LabeledGraph VType EType V_EqDec E_EqDec LV LE LG (pregraph_remove_edge g e)
+  (vlabel g)
+  (*(fun e0 => if eq_dec e0 e then ? else elabel g e )*) (elabel g)
+  (glabel g)
+.
+
+Instance Fin_WEdgeListGraph_eremove (g: FiniteWEdgeListGraph) (e: EType) :
+  Fin (WEdgeListGraph_eremove g e).
+Proof.
+unfold WEdgeListGraph_eremove. unfold pregraph_remove_edge.
+constructor. constructor; unfold EnumEnsembles.Enumerable; simpl.
+exists (VList g). split. apply NoDup_VList. apply VList_vvalid.
+(*edge*)
+unfold removeValidFunc.
+destruct (in_dec E_EqDec e (EList g)).
+(*case e already inside*)
+exists (remove E_EqDec e (EList (g))). split.
+apply nodup_remove_nodup. apply NoDup_EList.
+intros. rewrite remove_In_iff. rewrite EList_evalid. split; auto.
+(*case e not inside*)
+exists (EList g). split. apply NoDup_EList.
+intros; split; intros. split. apply EList_evalid in H; auto.
+unfold not; intros; subst x. contradiction.
+destruct H. apply EList_evalid. auto.
+Qed.
+
+Definition FiniteWEdgeListGraph_eremove (g: FiniteWEdgeListGraph) (e: EType): FiniteWEdgeListGraph :=
+  @Build_GeneralGraph VType EType V_EqDec E_EqDec LV LE LG Fin
+    (WEdgeListGraph_LabeledGraph (WEdgeListGraph_eremove g e))
+    (Fin_WEdgeListGraph_eremove g e).
+
+Lemma eremove_vvalid:
+forall (g: FiniteWEdgeListGraph) (e: EType) v, vvalid g v <-> vvalid (FiniteWEdgeListGraph_eremove g e) v.
+Proof.
+simpl. intros; split; auto.
+Qed.
+
+(*Don't bother with defining what happens when e isn't inside*)
+Lemma eremove_evalid1:
+forall (g: FiniteWEdgeListGraph) e, ~ evalid (FiniteWEdgeListGraph_eremove g e) e.
+Proof.
+simpl. unfold removeValidFunc, not; intros. destruct H. contradiction.
+Qed.
+
+Lemma eremove_evalid2:
+forall (g: FiniteWEdgeListGraph) e e', e' <> e -> evalid g e' -> evalid (FiniteWEdgeListGraph_eremove g e) e'.
+Proof.
+simpl. intros; split; auto.
+Qed.
+
+Lemma eremove_sound:
+forall (g: FiniteWEdgeListGraph) e, sound_weighted_edge_graph g -> sound_weighted_edge_graph (FiniteWEdgeListGraph_eremove g e).
+Proof.
+intros. destruct H as [? [? [? [? ?]]]]. split. apply H.
+split. unfold edge_valid; simpl; unfold removeValidFunc.
+intros. destruct H4. apply H0; auto.
+split. unfold weight_valid; simpl; unfold removeValidFunc. intros.
+destruct H4. apply H1; auto.
+split. unfold src_edge; simpl; unfold removeValidFunc. apply H2.
+unfold dst_edge; simpl; unfold removeValidFunc. apply H3.
+Qed.
+
+(*
+Lemma eremove_adjacent: (*only if e is the only edge*)
+forall (g: FiniteWEdgeListGraph) e, ~ adjacent (FiniteWEdgeListGraph_eremove g e) (src g e) (dst g e).
+*)
+
+(*****************************PARTIAL LGRAPH AND MSF**********************)
 (*These should be abstracted, but we can deal with it after the kruskal proof is done*)
+
+Definition preserve_vlabel (g1 g2: FiniteWEdgeListGraph) :=
+  forall v, vvalid g1 v -> vlabel g1 v = vlabel g2 v.
+
+Definition preserve_elabel (g1 g2: FiniteWEdgeListGraph) :=
+  forall e, evalid g1 e -> elabel g1 e = elabel g2 e.
 
 Definition is_partial_lgraph
            (g1 g2: FiniteWEdgeListGraph) :=
   is_partial_graph g1 g2 /\
-  (forall v, vvalid g1 v -> vlabel g1 v = vlabel g2 v) /\
-  (forall e, evalid g1 e -> elabel g1 e = elabel g2 e).
+  preserve_vlabel g1 g2 /\ preserve_elabel g1 g2.
 
 Lemma is_partial_lgraph_refl: forall g,
     is_partial_lgraph g g.
-Proof. intros. split; auto. apply is_partial_graph_refl. Qed.
+Proof.
+intros. split. apply is_partial_graph_refl.
+unfold preserve_vlabel, preserve_elabel. split; auto.
+Qed.
 
 Lemma is_partial_lgraph_trans: forall g1 g2 g3,
     is_partial_lgraph g1 g2 -> is_partial_lgraph g2 g3 -> is_partial_lgraph g1 g3.
 Proof.
-  intros. split. apply (is_partial_graph_trans g1 g2 g3). apply H. apply H0. split; intros.
-  destruct H. destruct H2. rewrite H2. destruct H0. destruct H4. rewrite H4. auto.
-  apply H. auto. auto.
-  intros. destruct H. destruct H2. rewrite H3. destruct H0. destruct H4. rewrite H5. auto.
-  apply H. auto. auto.
+  intros. split. apply (is_partial_graph_trans g1 g2 g3). apply H. apply H0.
+  destruct H as [? [? ?]]. destruct H0 as [? [? ?]].
+  unfold preserve_vlabel, preserve_elabel in *. split; intros.
+  rewrite H1, H3; auto. apply H; auto.
+  rewrite H2, H4; auto. apply H; auto.
 Qed.
 
 Lemma is_partial_lgraph_adjacent:
@@ -860,47 +973,83 @@ exists p. split.
 apply (is_partial_lgraph_valid_upath g1 g2); auto. auto.
 Qed.
 
-(*
-Lemma partial_lgraph_preservation:
-forall (g t1: FiniteWEdgeListGraph), sound_weighted_edge_graph g ->
-is_partial_lgraph t1 g -> sound_weighted_edge_graph t1.
-Proof.
-intros.
-destruct H0. destruct H1. destruct H0. destruct H.
-split. admit.
-split. admit.
-split. admit.
-split. unfold src_edge; intros. destruct H4; destruct H6; destruct H7.
-unfold src_edge in H7. rewrite <- H7. apply H3. auto. assert (edge_valid t1). admit.
-apply H9 in H5. apply H5. apply H3. auto.
-unfold dst_edge in H8. rewrite <- H8. apply H4. auto. assert (edge_valid t1). admit.
-apply H9 in H5. apply H5. apply H3. auto.
+(*on the issue of partial lgraph and soundness
+Partial graph doesn't preserve that an edge is strong_evalid
+So (src t1) could warp an edge, even if it was evalid. fst is not inbuilt into my wedgegraphs, so src t1 can do anything it likes
+It'll satisfy spanning_uforest as well...
+So the question is whether I need to account for the "warped" edges <- Yes I do, because their elabels still count
+So I need either:
+-spanning_uforest to preserve that every edge is strong evalid
+-EList to return only strong_evalid values
+-sum_DE to add only edges that are strong evalid
+kruskal's returned msf preserves strong_evalid by edge_valid/sound_weighted_edge_graph
+I need to assume the same for the other uforest
+
+...Let's deal with this after we're done defining remove_edge
 *)
-Lemma partial_lgraph_map:
-forall g1 g2 l, is_partial_lgraph g1 g2 -> (forall e, In e l -> evalid g1 e) ->
-  map (elabel g1) l = map (elabel g2) l.
+
+Lemma fold_left_Zadd_diff_accum:
+forall (l: list Z) (x y: Z), x <= y -> fold_left Z.add l x <= fold_left Z.add l y.
 Proof.
 induction l; intros. simpl; auto.
-rewrite map_cons. rewrite map_cons. replace (elabel g1 a) with (elabel g2 a).
-replace (map (elabel g1) l) with (map (elabel g2) l). auto.
-symmetry. apply IHl. auto. intros. apply H0. right; apply H1.
-destruct H. destruct H1. symmetry. apply H2. apply H0. left; auto.
+apply IHl. lia.
 Qed.
 
-Lemma exists_element_list:
-forall {A B: Type} {A': Inhabitant A} {B': Inhabitant B} (P: A -> B -> Prop) (la: list A),
-(forall a, In a la -> exists b, P a b) ->
-(exists lb, Zlength lb = Zlength la /\ forall i, 0 <= i < Zlength la -> P (Znth i la) (Znth i lb)).
+Lemma fold_left_Zadd_comp:
+forall (l1 l2: list Z), Zlength l1 = Zlength l2 -> (forall i, 0<=i<Zlength l1 -> Znth i l1 <= Znth i l2)
+  -> (forall s, fold_left Z.add l1 s <= fold_left Z.add l2 s).
 Proof.
-induction la; intros. exists nil. split. auto. intros. rewrite Zlength_nil in H0; lia.
-assert (forall a : A, In a la -> exists b : B, P a b). intros. apply H. right; auto.
-apply IHla in H0. destruct H0 as [lb ?].
-assert (exists b : B, P a b). apply H. left; auto. destruct H1 as [b ?].
-exists (b::lb). split. do 2 rewrite Zlength_cons; lia.
-intros. rewrite Zlength_cons in H2.
-destruct (Z.lt_trichotomy 0 i).
-do 2 rewrite Znth_pos_cons by lia. apply H0. lia.
-destruct H3. subst i. do 2 rewrite Znth_0_cons. auto. lia.
+induction l1; intros.
+rewrite Zlength_nil in H. symmetry in H. apply Zlength_nil_inv in H. subst l2. lia.
+destruct l2. rewrite Zlength_cons in H. rewrite Zlength_nil in H. pose proof (Zlength_nonneg l1). lia.
+simpl. assert (a <= z). replace a with (Znth 0 (a::l1)). replace z with (Znth 0 (z::l2)).
+apply H0. split. lia. rewrite Zlength_cons. pose proof (Zlength_nonneg l1). lia.
+auto. auto.
+apply (Z.le_trans _ (fold_left Z.add l1 (s + z)) _).
+apply fold_left_Zadd_diff_accum. lia.
+apply IHl1. do 2 rewrite Zlength_cons in H. lia.
+intros. replace (Znth i l1) with (Znth (i+1) (a::l1)).
+ replace (Znth i l2) with (Znth (i+1) (z::l2)). apply H0. rewrite Zlength_cons. lia.
+all: rewrite (Znth_pos_cons (i+1)) by lia; rewrite Z.add_simpl_r; auto.
+Qed.
+
+Definition DEList (g: FiniteWEdgeListGraph): list LE :=
+  map (elabel g) (EList g).
+
+Definition sum_LE g : LE :=
+  fold_left Z.add (DEList g) 0.
+
+Definition labeled_spanning_uforest (t g: FiniteWEdgeListGraph) :=
+  spanning_uforest t g /\
+  preserve_vlabel t g /\ preserve_elabel t g.
+
+(*no "rubbish" edges*)
+Definition strong_labeled_spanning_uforest (t g: FiniteWEdgeListGraph) :=
+  labeled_spanning_uforest t g /\ (forall e, evalid t e -> strong_evalid t e).
+
+Definition minimum_spanning_forest (t g: FiniteWEdgeListGraph) :=
+  strong_labeled_spanning_uforest t g /\
+  forall (t': FiniteWEdgeListGraph), strong_labeled_spanning_uforest g t' ->
+    Z.le (sum_LE t) (sum_LE t').
+
+(*The following are to let us reason about lists instead of graphs*)
+Lemma sum_LE_equiv':
+  forall (g: FiniteWEdgeListGraph) (l: list EType),
+  Permutation (EList g) l -> sum_LE g = fold_left Z.add (map (elabel g) l) 0.
+Proof.
+unfold sum_LE, DEList; intros. apply fold_left_comm. intros; lia.
+apply Permutation_map. auto.
+Qed.
+
+Lemma sum_LE_equiv:
+  forall (g: FiniteWEdgeListGraph) (l: list (LE*EType)),
+  Permutation (graph_to_wedgelist g) l -> sum_LE g = fold_left Z.add (map fst l) 0.
+Proof.
+unfold sum_LE, DEList; intros. apply fold_left_comm. intros; lia.
+replace (map (elabel g) (EList g)) with (map fst (graph_to_wedgelist g)).
+apply Permutation_map. auto.
+unfold graph_to_wedgelist. unfold edge_to_wedge.
+rewrite map_map. simpl. auto.
 Qed.
 
 (*NoDup is probably unnecessary, but convenient*)
@@ -938,67 +1087,18 @@ induction l1; intros. exists nil. exists nil.
   split. apply H3. intros. destruct H4. subst a. auto. apply H3. auto.
 Qed.
 
-Lemma fold_left_Zadd_diff_accum:
-forall (l: list Z) (x y: Z), x <= y -> fold_left Z.add l x <= fold_left Z.add l y.
+Lemma exists_element_list:
+forall {A B: Type} {A': Inhabitant A} {B': Inhabitant B} (P: A -> B -> Prop) (la: list A),
+(forall a, In a la -> exists b, P a b) ->
+(exists lb, Zlength lb = Zlength la /\ forall i, 0 <= i < Zlength la -> P (Znth i la) (Znth i lb)).
 Proof.
-induction l; intros. simpl; auto.
-apply IHl. lia.
-Qed.
-
-Lemma fold_left_Zadd_comp:
-forall (l1 l2: list Z), Zlength l1 = Zlength l2 -> (forall i, 0<=i<Zlength l1 -> Znth i l1 <= Znth i l2)
-  -> (forall s, fold_left Z.add l1 s <= fold_left Z.add l2 s).
-Proof.
-induction l1; intros.
-rewrite Zlength_nil in H. symmetry in H. apply Zlength_nil_inv in H. subst l2. lia.
-destruct l2. rewrite Zlength_cons in H. rewrite Zlength_nil in H. pose proof (Zlength_nonneg l1). lia.
-simpl. assert (a <= z). replace a with (Znth 0 (a::l1)). replace z with (Znth 0 (z::l2)).
-apply H0. split. lia. rewrite Zlength_cons. pose proof (Zlength_nonneg l1). lia.
-auto. auto.
-apply (Z.le_trans _ (fold_left Z.add l1 (s + z)) _).
-apply fold_left_Zadd_diff_accum. lia.
-apply IHl1. do 2 rewrite Zlength_cons in H. lia.
-intros. replace (Znth i l1) with (Znth (i+1) (a::l1)).
- replace (Znth i l2) with (Znth (i+1) (z::l2)). apply H0. rewrite Zlength_cons. lia.
-all: rewrite (Znth_pos_cons (i+1)) by lia; rewrite Z.add_simpl_r; auto.
-Qed.
-
-Definition spanning_uforest g t := is_partial_lgraph t g /\ uforest t /\ (forall u v, connected g u v <-> connected t u v).
-
-Lemma spanning_uforest_preserves_vertices:
-forall g t v, spanning_uforest g t -> (vvalid g v <-> vvalid t v).
-Proof.
-intros; split; intros; pose proof (connected_refl _ v H0);
-apply H in H1; apply connected_vvalid in H1; apply H1.
-Qed.
-
-Definition DEList (g: FiniteWEdgeListGraph): list LE :=
-  map (elabel g) (EList g).
-
-Definition sum_LE g : LE :=
-  fold_left Z.add (DEList g) 0.
-
-Definition minimum_spanning_forest g t :=
-  spanning_uforest g t /\
-  forall t', spanning_uforest g t' ->
-    Z.le (sum_LE t) (sum_LE t').
-
-(*The following are to let us reason about lists instead of graphs*)
-Lemma sum_LE_equiv':
-  forall (g: FiniteWEdgeListGraph) (l: list EType),
-  Permutation (EList g) l -> sum_LE g = fold_left Z.add (map (elabel g) l) 0.
-Proof.
-unfold sum_LE, DEList; intros. apply fold_left_comm. intros; lia.
-apply Permutation_map. auto.
-Qed.
-
-Lemma sum_LE_equiv:
-  forall (g: FiniteWEdgeListGraph) (l: list (LE*EType)),
-  Permutation (graph_to_wedgelist g) l -> sum_LE g = fold_left Z.add (map fst l) 0.
-Proof.
-unfold sum_LE, DEList; intros. apply fold_left_comm. intros; lia.
-replace (map (elabel g) (EList g)) with (map fst (graph_to_wedgelist g)).
-apply Permutation_map. auto.
-unfold graph_to_wedgelist. unfold edge_to_wedge.
-rewrite map_map. simpl. auto.
+induction la; intros. exists nil. split. auto. intros. rewrite Zlength_nil in H0; lia.
+assert (forall a : A, In a la -> exists b : B, P a b). intros. apply H. right; auto.
+apply IHla in H0. destruct H0 as [lb ?].
+assert (exists b : B, P a b). apply H. left; auto. destruct H1 as [b ?].
+exists (b::lb). split. do 2 rewrite Zlength_cons; lia.
+intros. rewrite Zlength_cons in H2.
+destruct (Z.lt_trichotomy 0 i).
+do 2 rewrite Znth_pos_cons by lia. apply H0. lia.
+destruct H3. subst i. do 2 rewrite Znth_0_cons. auto. lia.
 Qed.
