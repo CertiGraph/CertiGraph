@@ -543,6 +543,102 @@ replace (last_error ((a :: l1) ++ a0 :: l2)) with (last_error (l1 ++ a0 :: l2)).
 apply IHl1.
 Qed.
 
+Lemma upath_simplifiable:
+  forall g p u v, connected_by_path g p u v-> exists p', connected_by_path g p' u v /\ simple_upath g p' /\ incl p' p.
+Proof.
+induction p; intros.
+destruct H. destruct H0. inversion H0.
+destruct p. destruct H. simpl in H. simpl in H0; destruct H0.
+inversion H0; inversion H1. subst u; subst v. clear H0 H1.
+exists (a::nil). split. split. simpl; auto. simpl; split; auto.
+split. split. simpl; auto. apply NoDup_cons. auto. apply NoDup_nil.
+unfold incl; intros; auto.
+destruct H. destruct H0. destruct H.
+assert (connected_by_path g (v0::p) v0 v). split. auto. split. apply hd_error_cons. rewrite last_error_cons in H1; auto. unfold not; intros. inversion H3.
+apply IHp in H3. destruct H3 as [p' ?]. destruct H3.
+destruct (in_dec EV a p').
+apply in_split in i. destruct i as [l1 [l2 ?]].
+subst p'. exists (a::l2). split.
+destruct H3. destruct H5. split. apply (valid_upath_app_split g l1 _).
+apply H3. split. simpl in H0; simpl; apply H0.
+rewrite last_err_split2 in H6. auto. destruct H4. split. apply simple_upath_app_split in H4; apply H4.
+unfold incl; intros. destruct H6. subst a0. left; auto.
+right. apply H5. apply in_or_app. right; right; apply H6.
+exists (a::p'). split. destruct H3. destruct H5. split. apply valid_upath_cons. auto.
+rewrite H5. unfold adjacent_hd. apply H.
+split. simpl in H0; simpl; auto.
+rewrite last_error_cons. auto. unfold not; intros. subst p'. inversion H5.
+split. split. destruct H3. destruct H5. apply valid_upath_cons. auto. rewrite H5. unfold adjacent_hd. auto.
+apply NoDup_cons. auto. apply H4.
+unfold incl; intros. destruct H5. subst a0. left; auto. destruct H4. right; apply H6. auto.
+Qed.
+
+Lemma fits_upath_split:
+forall g p1 p2 l, fits_upath g l (p1++p2) -> exists l1 l2 l3, fits_upath g l1 p1 /\ fits_upath g l3 p2 /\ l = (l1++l2++l3).
+Proof.
+induction p1; intros.
+rewrite app_nil_l in H. exists nil. exists nil. exists l. split. simpl; auto. split; simpl; auto.
+destruct p1. destruct l. destruct p2.
+exists nil; exists nil; exists nil. split. simpl; auto. split; simpl; auto.
+simpl in H. contradiction.
+replace ((a :: nil) ++ p2) with (a::p2) in H. 2: simpl; auto.
+destruct p2. simpl in H; contradiction.
+destruct H. exists nil. exists (e::nil). exists l. split; simpl; auto.
+destruct l. simpl in H; contradiction.
+destruct H. apply IHp1 in H0. destruct H0 as [l1 [l2 [l3 [? [? ?]]]]].
+exists (e::l1). exists l2. exists l3. split. split; auto. split. auto. simpl. rewrite H2. auto.
+Qed.
+
+Lemma upath_simplifiable_edges:
+  forall g p l u v, connected_by_path g p u v -> fits_upath g l p ->
+    exists p' l', connected_by_path g p' u v /\ simple_upath g p' /\ incl p' p
+      /\ fits_upath g l' p' /\ incl l' l.
+Proof.
+induction p; intros.
+destruct H. destruct H1. inversion H1.
+destruct p. destruct H. simpl in H. simpl in H1; destruct H1.
+inversion H1; inversion H2. subst u; subst v. clear H1 H2.
+destruct l. 2: { simpl in H0; contradiction. }
+exists (a::nil). exists nil. split. split. simpl; auto. simpl; split; auto.
+split. split. simpl; auto. apply NoDup_cons. auto. apply NoDup_nil.
+unfold incl; intros; auto.
+(*inductive step*)
+destruct l. simpl in H0; contradiction.
+destruct H as [? [? ?]]. destruct H.
+assert (connected_by_path g (v0::p) v0 v). split. auto. split. apply hd_error_cons. rewrite last_error_cons in H2; auto. unfold not; intros. inversion H4.
+destruct H0. apply (IHp l v0 v H4) in H5. destruct H5 as [p' ?]. destruct H5 as [l' [? [? [? [? ?]]]]].
+destruct (in_dec EV a p').
+(*if a is already inside p, then we take the subpath.*)
+apply in_split in i. destruct i as [p1 [p2 ?]]. subst p'.
+exists (a::p2). (*split l'*)
+apply fits_upath_split in H8. destruct H8 as [l1 [l2 [l3 [? [? ?]]]]].
+exists l3. split. split. destruct H6. apply valid_upath_app_split in H6. apply H6.
+split. simpl in H1. simpl. apply H1. destruct H5. destruct H12.
+rewrite last_err_split2 in H13. auto. split.
+apply simple_upath_app_split in H6. apply H6. split.
+unfold incl; intros. destruct H12. subst a0. left; auto.
+right. apply H7. apply in_or_app. right. right. auto.
+split. auto. unfold incl; intros. right. apply H9. subst l'. apply in_or_app. right. apply in_or_app. auto.
+(*case where a isn't inside. Then straightforward concat*)
+exists (a::p'). exists (e::l').
+split. split.
+destruct p'. simpl. apply (adjacent_requires_vvalid g a v0). auto.
+destruct H5. destruct H10. simpl in H10. inversion H10. subst v1.
+split; auto.
+split. simpl in H1. simpl. auto.
+destruct H5. destruct H10.
+rewrite last_error_cons. auto. unfold not; intros; subst p'. inversion H10.
+split. split.
+destruct p'. simpl. apply (adjacent_requires_vvalid g a v0). auto.
+destruct H5. destruct H10. simpl in H10. inversion H10. subst v1. split; auto.
+apply NoDup_cons. auto. apply H6.
+split.
+unfold incl; intros. destruct H10. subst a0. left; auto. right; apply H7. auto.
+split. destruct H5. destruct H10. destruct p'. inversion H10.
+inversion H10. subst v1. split; auto.
+unfold incl; intros. destruct H10. subst a0. left. auto. right. apply H9. auto.
+Qed.
+
 Lemma connected_by_upath_exists_simple_upath:
   forall g p u v, connected_by_path g p u v-> exists p', connected_by_path g p' u v /\ simple_upath g p'.
 Proof.
@@ -569,23 +665,67 @@ split. destruct H3. destruct H5. apply valid_upath_cons. auto. rewrite H5. unfol
 apply NoDup_cons. auto. apply H4.
 Qed.
 
-Definition uforest g := forall u v p1 p2,
+(*barebones, this has a lot of loopholes*)
+Definition uforest g :=
+  (forall u v p1 p2,
   simple_upath g p1 -> connected_by_path g p1 u v ->
   simple_upath g p2 -> connected_by_path g p2 u v ->
-  p1 = p2.
+  p1 = p2).
+
+Definition sound_uforest g :=
+  (forall e, evalid g e -> src g e <> dst g e) /\ (*No self-cycles*)
+  (forall u v e1 e2, adj_edge g e1 u v /\ adj_edge g e2 u v -> e1 = e2) /\ (*Not a multigraph, preventing internal cycles within two vertices*)
+  (forall e, evalid g e -> strong_evalid g e) /\ (*with no rubbish edges. Debatable where this should go?*)
+  uforest g. (*finally, the actual forest definition*)
+
+Lemma trivial_path1:
+forall g e, strong_evalid g e -> connected_by_path g ((src g e)::(dst g e)::nil) (src g e) (dst g e) /\
+fits_upath g (e::nil) ((src g e)::(dst g e)::nil).
+Proof.
+intros. split.
+split. simpl. split. exists e. split. auto. left; auto. apply H.
+simpl. auto.
+simpl. split; auto. split. apply H. left; auto.
+Qed.
+
+(*Annnd even with the extra restrictions I STILL can't prove this
+I'm going about this the wrong way. I need to convert p,l into a simple_upath p' l'
+THEN I can use the fact that p' must be (u::v::nil) by uforest.
+And because e::nil fits (u::v::nil), any lpath must be e::nil (prove this)
+THEN e is in l', and by above we have incl l' l, thus e is in l
+*)
+Lemma forest_edge':
+forall p l g e, sound_uforest g -> strong_evalid g e -> connected_by_path g p (src g e) (dst g e) ->
+fits_upath g l p -> In e l.
+Proof.
+intros. pose proof (upath_simplifiable_edges g p l (src g e) (dst g e) H1 H2).
+destruct H3 as [p' [l' [? [? [? [? ?]]]]]].
+pose proof (trivial_path1 g e H0). destruct H8 as [? ?].
+assert (simple_upath g ((src g e)::(dst g e)::nil)). split. apply H8. apply NoDup_cons.
+unfold not; intros; destruct H10. symmetry in H10. apply H in H10. contradiction. apply H0.
+simpl in H10; contradiction.
+apply NoDup_cons. unfold not; intros. simpl in H10; contradiction. apply NoDup_nil.
+assert (p' = (src g e :: dst g e :: nil)). destruct H as [? [? [? ?]]]. apply (H13 (src g e) (dst g e)); auto.
+subst p'. apply H7.
+destruct l'. simpl in H6; contradiction.
+destruct l'. 2: { simpl in H6. destruct H6. contradiction. }
+left. destruct H9. destruct H6.
+destruct H as [? [? ?]]. apply (H13 (src g e) (dst g e)). split; auto.
+Qed.
 
 Definition spanning t g :=
   forall u v, connected g u v <-> connected t u v.
 
-(*partial graph is insufficient, I need strong evalid*)
-Definition spanning_uforest t g := is_partial_graph t g /\ uforest t /\
-  spanning t g.
-
-Lemma spanning_uforest_preserves_vertices:
-forall g t v, spanning_uforest t g -> (vvalid g v <-> vvalid t v).
+Lemma spanning_preserves_vertices:
+forall g t v, spanning t g -> (vvalid g v <-> vvalid t v).
 Proof.
 intros; split; intros; pose proof (connected_refl _ v H0);
 apply H in H1; apply connected_vvalid in H1; apply H1.
 Qed.
+
+Definition spanning_uforest t g :=
+  is_partial_graph t g /\ (*t is a partial graph of g*)
+  sound_uforest t /\ (*it is also a forest*)
+  spanning t g. (*that is spanning...*)
 
 End UNDIRECTED.
