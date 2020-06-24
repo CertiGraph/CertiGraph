@@ -49,12 +49,10 @@ subst x. subst y.
 destruct H as [? [? [? [? ?]]]].
 apply EList_evalid in H3. apply EList_evalid in H4.
 assert (Hvvalid_x0: vvalid g (fst x0) /\ vvalid g (snd x0)).
-replace x0 with (fst x0, snd x0) in H3. apply H0 in H3.
-rewrite H5 in H3. rewrite H6 in H3. simpl in H3. apply H3. destruct x0; auto.
+rewrite <- H5; auto. rewrite <- H6; auto.
 destruct Hvvalid_x0 as [Hx0_1 Hx0_2].
 assert (Hvvalid_x1: vvalid g (fst x1) /\ vvalid g (snd x1)).
-replace x1 with (fst x1, snd x1) in H4. apply H0 in H4.
-rewrite H5 in H4. rewrite H6 in H4. simpl in H4. apply H4. destruct x1; auto.
+rewrite <- H5; auto. rewrite <- H6; auto.
 destruct Hvvalid_x1 as [Hx1_1 Hx1_2].
 unfold wedge_to_cdata in H2; simpl in H2.
 apply pair_equal_spec in H2. destruct H2. apply pair_equal_spec in H7. destruct H7.
