@@ -34,6 +34,8 @@ Definition Gprog : funspecs :=
 
 Local Open Scope Z_scope.
 
+(** General facts that this verification needed **)
+
 Lemma Permutation_Zlength:
   forall (A : Type) (l l' : list A),
     Permutation l l' -> Zlength l = Zlength l'.
@@ -51,6 +53,15 @@ Proof.
 intros. repeat rewrite Zlength_correct. apply Nat2Z.inj_le. apply NoDup_incl_length; auto.
 Qed.
 
+Lemma Forall_permutation: forall {A: Type} (al bl: list A) f, Forall f al -> Permutation al bl -> Forall f bl.
+Proof.
+intros. rewrite Forall_forall in *; intros.
+apply H. apply (Permutation_in (l:=bl) (l':=al) x). apply Permutation_sym. apply H0. apply H1.
+Qed.
+
+
+(** Lemmas about partial graph and FWELGraph *)
+
 Lemma partial_graph_EList:
   forall (g g': FiniteWEdgeListGraph), is_partial_graph g g' -> incl (EList g) (EList g').
 Proof.
@@ -65,12 +76,7 @@ unfold numE; intros. apply NoDup_incl_Zlength.
 apply NoDup_EList. apply partial_graph_EList; auto.
 Qed.
 
-Lemma Forall_permutation: forall {A: Type} (al bl: list A) f, Forall f al -> Permutation al bl -> Forall f bl.
-Proof.
-intros. rewrite Forall_forall in *; intros.
-apply H. apply (Permutation_in (l:=bl) (l':=al) x). apply Permutation_sym. apply H0. apply H1.
-Qed.
-
+(* move to a file about uf and undirected *)
 Lemma reachable_uf_equiv_connected:
   forall (g1 g2: UFGraph) u v,
     uf_equiv g1 g2 ->
@@ -115,11 +121,11 @@ Proof.
   apply (connected_trans _ _ _ _ H6 H7).
 Qed.
 
+(* move to UF lemma land*)
 (* cleaner notation for uf_root being same *)
 Definition ufroot_same (g: UFGraph) u v :=
   exists r,
     uf_root g u r /\ uf_root g v r.
-
 Lemma ufroot_same_refl:
   forall (g : UFGraph) u,
     vvalid g u ->
@@ -132,7 +138,6 @@ Proof.
   pose proof (uf_root_always_exists g (liGraph g) u X H).
   destruct H0. exists x. split; trivial.
 Qed.
-
 Lemma ufroot_same_symm:
   forall (g : UFGraph) u v,
     ufroot_same g u v <-> ufroot_same g v u.
@@ -141,7 +146,6 @@ Proof.
   split; intros; destruct H as [r [? ?]];
     exists r; split; trivial.
 Qed.
-
 Lemma ufroot_same_trans:
   forall (g : UFGraph) u v w,
     ufroot_same g u v ->
@@ -154,7 +158,6 @@ Proof.
   pose proof (uf_root_unique _ _ _ _ _ H1 H0).
   subst x0. exists x; split; trivial.
 Qed.
-
 Lemma reachable_ufroot_same:
   forall (g: UFGraph) u v,
     reachable g u v ->
@@ -174,6 +177,8 @@ Proof.
   exists r_v. split; trivial.
 Qed.
 
+
+(* move to undirected graph *)
 Lemma adjacent_reachable:
   forall (g: UFGraph) u v,
     adjacent g u v ->
@@ -197,7 +202,6 @@ Proof.
       * unfold path_prop. split; trivial.
         rewrite Forall_forall; intros; split; trivial.
 Qed.
-
 Lemma adjacent_ufroot_same:
   forall (g : UFGraph) u v,
     adjacent g u v ->
@@ -209,7 +213,6 @@ Proof.
   - apply reachable_ufroot_same; trivial.
   - apply ufroot_same_symm, reachable_ufroot_same; trivial.
 Qed.
-  
 Lemma ufroot_same_connected:
   forall (g: UFGraph) u v,
     ufroot_same g u v ->
@@ -222,7 +225,6 @@ Proof.
   apply connected_symm in H0.
   apply (connected_trans _ _ _ _ H H0).
 Qed.
-
 Lemma connected_ufroot_same:
   forall (g: UFGraph) u v,
     connected g u v ->
@@ -249,7 +251,6 @@ Proof.
       apply (ufroot_same_trans _ _ _ _ H); trivial.
       apply IHp. trivial.
 Qed.
-
 Lemma connected_ufroot_same_iff:
   forall (g: UFGraph) u v,
     connected g u v <-> ufroot_same g u v. 
@@ -259,6 +260,7 @@ Proof.
   apply ufroot_same_connected; trivial.
 Qed.
 
+(* move to a file about uf and undirected *)
 Lemma uf_equiv_adjacent_connected:
   forall (g1 g2 : UFGraph) u v,
     uf_equiv g1 g2 ->
@@ -272,7 +274,6 @@ Proof.
   - apply connected_symm.
     apply (reachable_uf_equiv_connected g1); trivial.
 Qed.
-
 Lemma uf_equiv_connected':
   forall (g1 g2: UFGraph) u v,
     uf_equiv g1 g2 ->
@@ -305,7 +306,6 @@ Proof.
       apply (uf_equiv_adjacent_connected _ g2) in H0; trivial.
       apply (connected_trans _ _ _ _ H0 H3).
 Qed.
-
 Lemma uf_equiv_connected:
   forall (g1 g2: UFGraph) u v,
     uf_equiv g1 g2 ->
@@ -316,7 +316,6 @@ Proof.
   - apply uf_equiv_sym in H.
     apply (uf_equiv_connected' g2); trivial.
 Qed.
-
 Lemma uf_equiv_ufroot_same:
   forall (g1 g2: UFGraph) u v,
     uf_equiv g1 g2 ->
@@ -327,6 +326,7 @@ Using for now for convenience, given connected gives vvalid*)
 intros. do 2 rewrite <- connected_ufroot_same_iff. apply uf_equiv_connected. auto.
 Qed.
 
+(* basic helpers *)
 Lemma uf_root_unique':
   forall (g: UFGraph) x r1 r2,
     uf_root g x r1 ->
@@ -335,7 +335,6 @@ Lemma uf_root_unique':
 Proof.
   intros. apply (uf_root_unique _ (liGraph g) x); trivial.
 Qed.
-
 Lemma ufroot_vvalid_rt:
   forall (g: UFGraph) rt v,
     uf_root g v rt ->
@@ -344,7 +343,6 @@ Proof.
   intros. destruct H as [? _].
   apply (reachable_foot_valid _ _ _ H).
 Qed.
-
 Lemma ufroot_vvalid_vert:
   forall (g: UFGraph) rt v,
     uf_root g v rt ->
@@ -353,7 +351,6 @@ Proof.
   intros. destruct H as [? _].
   apply (reachable_head_valid _ _ _ H).
 Qed.  
-
 Lemma inhabited_set_nonempty:
   forall U (S: Ensemble U) v,
     S v ->
@@ -367,7 +364,6 @@ Proof.
   apply (Constructive_sets.Inhabited_not_empty _ _ H1).
   apply Ensembles.Extensionality_Ensembles; trivial.
 Qed.
-
 Lemma ufroot_uf_set_in:
   forall (g: UFGraph) u u_rt,
     uf_root g u u_rt ->
@@ -384,7 +380,8 @@ Proof.
 Qed.
 
 (* Just a little utility to cleanly drag out 
-   a valid vertex's root *) 
+   a valid vertex's root *)
+(* move to uf *)
 Lemma vvalid_get_ufroot:
   forall (g: UFGraph) x,
     vvalid g x ->
@@ -399,6 +396,7 @@ Proof.
   exists x_rt; trivial.
 Qed.
 
+(* little helper *)
 Lemma same_set_contra:
   forall (U: Type) S1 S2 x,
     @Same_set U S1 S2 ->
@@ -411,6 +409,7 @@ Proof.
   apply H1. rewrite <- H; trivial.
 Qed.
 
+(* move to uf *)
 Lemma ufroot_same_false:
   forall (g: UFGraph) a b a_rt b_rt,
     uf_root g a a_rt ->
@@ -426,7 +425,6 @@ Proof.
   pose proof (uf_root_unique _ (liGraph g) _ _ _ H3 H0).
   lia.
 Qed.
-
 (* the vertices that were unaffected by union u v *)
 Lemma uf_union_unaffected_gen:
   forall (g1 g2 : UFGraph) a b (S1 S2 S3 : uf_set),
@@ -444,7 +442,6 @@ Proof.
   destruct H6 as [? [? ?]].
   specialize (H7 _ H3 H4 H5); trivial.
 Qed.
-
 Lemma uf_union_unaffected_inhabited:
   forall (g1 g2 : UFGraph) a b v (S1 S2 S3 : uf_set),
     S1 a ->
@@ -463,7 +460,6 @@ Proof.
   unfold uf_set_in in H7. destruct H7; trivial.
   exfalso; apply (inhabited_set_nonempty _ _ _ H1 H7).
 Qed.
-
 (* and specifically, this gives us vvalid... *)
 Lemma uf_union_unaffected_vvalid:
   forall (g1 g2 : UFGraph) a b v (S1 S2 S3 : uf_set),
@@ -483,7 +479,6 @@ Proof.
   destruct H7 as [? [? ?]].
   apply (ufroot_vvalid_vert _ x), H8; trivial.
 Qed.
-
 (* commenting on the items that _were_ in S1 *)
 (* by commutativity of Union, this comments on items
    that were in S1 or S2 *)   
@@ -499,7 +494,6 @@ Proof.
   intros. red in H3.
   destruct (H3 _ _ H H0 H1 H2) as [? _]; trivial.
 Qed.
-
 Lemma uf_union_affected_inhabited:
   forall (g1 g2 : UFGraph) (a b : Z) (S1 S2 : uf_set),
     S1 a ->
@@ -516,7 +510,6 @@ Proof.
   apply (inhabited_set_nonempty _ (Ensembles.Union Z S1 S2) a); trivial.
   apply Union_introl; trivial.
 Qed.
-
 (* and specifically, this gives us vvalid... *)
 Lemma uf_union_affected_vvalid:
   forall (g1 g2 : UFGraph) (a b v : Z) (S1 S2 : uf_set),
@@ -533,7 +526,6 @@ Proof.
   destruct H4 as [? [? ?]].
   apply (ufroot_vvalid_vert _ x),  H5, Union_introl; trivial.
 Qed.
-
 Lemma uf_union_backwards_cases:
   forall (g1 g2: UFGraph) (S1 S2 S : uf_set) a b x,
     S1 a ->
@@ -549,7 +541,6 @@ Proof.
   specialize (H5 _ _ H H0 H1 H2).
   destruct H5 as [_ [_ ?]]. apply H5; trivial.
 Qed.
-
 Lemma ufroot_same_uf_root_trans:
   forall (g : UFGraph) a b rt,
     ufroot_same g a b ->
@@ -561,7 +552,6 @@ Proof.
   replace rt with x; trivial.
   apply (uf_root_unique _ (liGraph g) a); trivial.
 Qed.
-
 Lemma uf_union_create_precons:
   forall (g: UFGraph) u v,
     vvalid g u ->
@@ -586,7 +576,6 @@ Proof.
   exists u_rt, v_rt.
   split3; [| |split3; [| |split]]; trivial.
 Qed.
-
 Lemma uf_union_vvalid:
   forall (g1 g2: UFGraph) u v x,
     vvalid g1 u ->
@@ -671,6 +660,7 @@ Proof.
         apply H12, ufroot_same_refl; trivial.  
 Qed.
 
+(* move to file about uf and undirected *)
 Lemma uf_union_preserves_connected:
 (* Any two vertices that were connected already 
    remain so after union. i.e., union doesn't split 
@@ -749,7 +739,6 @@ Proof.
     apply ufroot_same_symm; trivial.
   - apply (ufroot_uf_set_in _ a ab_rt); trivial.
 Qed.
-
 Lemma uf_union_connected:
   (* After union(u,v), u and v are "joined" *)
   forall (g1 g2: UFGraph) u v,
@@ -778,7 +767,6 @@ Proof.
     split; apply H8;
       [apply Union_introl | apply Union_intror]; trivial.
 Qed.
-
 Lemma uf_union_remains_disconnected1:
   (* If a was disjoint from u and v, 
      then after union(u,v) it remains disjoint from u *)
@@ -811,7 +799,6 @@ Proof.
   - destruct H11 as [a_rt [? _]].
     apply (ufroot_uf_set_in _ a a_rt); trivial.
 Qed.
-
 Lemma uf_union_remains_disconnected2:
 (*If a was disjoint from u and v, then after union(u,v) it remains disjoint from v*)
 forall (g1 g2: UFGraph) u v a,
