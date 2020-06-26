@@ -282,6 +282,65 @@ Section UNION_FIND_SINGLE.
     - pose proof (uf_equiv_uf_root _ _ _ H H1). destruct H0. apply (H4 x); auto.
   Qed.
 
+  (* cleaner notation for uf_root being same *)
+  Definition ufroot_same u v :=
+    exists r,
+      uf_root g u r /\ uf_root g v r.
+
+  Lemma ufroot_same_refl:
+    forall u,
+      vvalid g u ->
+      ufroot_same u u.
+  Proof.
+    intros.
+    assert (EnumCovered Edge (evalid g)). {
+      apply EnumEnsembles.Enumerable_is_EnumCovered, finiteE.
+      }
+    pose proof (uf_root_always_exists u X H). 
+    destruct H0. exists x. split; trivial.
+  Qed.
+  
+  Lemma ufroot_same_symm:
+    forall u v,
+      ufroot_same u v <-> ufroot_same v u.
+  Proof.
+    intros. unfold ufroot_same.
+    split; intros; destruct H as [r [? ?]];
+      exists r; split; trivial.
+  Qed.
+  
+  Lemma ufroot_same_trans:
+    forall u v w,
+      ufroot_same u v ->
+      ufroot_same v w ->
+      ufroot_same u w.
+  Proof.
+    intros. unfold ufroot_same in *.
+    destruct H as [? [? ?]].
+    destruct H0 as [? [? ?]].
+    pose proof (uf_root_unique _ _ _ H1 H0).
+    subst x0. exists x; split; trivial.
+  Qed.
+
+  Lemma reachable_ufroot_same:
+    forall u v,
+      reachable g u v ->
+      ufroot_same u v. 
+  Proof.
+    intros.
+    assert (EnumEnsembles.EnumCovered Edge (evalid g)). {
+      apply EnumEnsembles.Enumerable_is_EnumCovered, finiteE.
+    }
+    pose proof (reachable_foot_valid _ _ _ H).
+    pose proof (reachable_head_valid _ _ _ H).
+    pose proof (uf_root_always_exists u X H1).
+    pose proof (uf_root_always_exists v X H0).
+    destruct H2 as [r_u ?].
+    destruct H3 as [r_v ?].
+    pose proof (uf_root_reachable _ _ _ H H3).
+    exists r_v. split; trivial.
+  Qed.
+
 End UNION_FIND_SINGLE.
 
 Class FML_General (Vertex : Type) (Edge : Type) {EV : EqDec Vertex eq} {EE: EqDec Edge eq} (DV: Type) (DE: Type) (DG: Type)
