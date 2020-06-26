@@ -121,63 +121,6 @@ Proof.
   apply (connected_trans _ _ _ _ H6 H7).
 Qed.
 
-(* move to UF lemma land*)
-(* cleaner notation for uf_root being same *)
-Definition ufroot_same (g: UFGraph) u v :=
-  exists r,
-    uf_root g u r /\ uf_root g v r.
-Lemma ufroot_same_refl:
-  forall (g : UFGraph) u,
-    vvalid g u ->
-    ufroot_same g u u.
-Proof.
-  intros.
-  assert (EnumEnsembles.EnumCovered Z (evalid g)). {
-    apply EnumEnsembles.Enumerable_is_EnumCovered, finiteE.
-  }
-  pose proof (uf_root_always_exists g (liGraph g) u X H).
-  destruct H0. exists x. split; trivial.
-Qed.
-Lemma ufroot_same_symm:
-  forall (g : UFGraph) u v,
-    ufroot_same g u v <-> ufroot_same g v u.
-Proof.
-  intros. unfold ufroot_same.
-  split; intros; destruct H as [r [? ?]];
-    exists r; split; trivial.
-Qed.
-Lemma ufroot_same_trans:
-  forall (g : UFGraph) u v w,
-    ufroot_same g u v ->
-    ufroot_same g v w ->
-    ufroot_same g u w.
-Proof.
-  intros. unfold ufroot_same in *.
-  destruct H as [? [? ?]].
-  destruct H0 as [? [? ?]].
-  pose proof (uf_root_unique _ _ _ _ _ H1 H0).
-  subst x0. exists x; split; trivial.
-Qed.
-Lemma reachable_ufroot_same:
-  forall (g: UFGraph) u v,
-    reachable g u v ->
-    ufroot_same g u v. 
-Proof.
-  intros.
-  assert (EnumEnsembles.EnumCovered Z (evalid g)). {
-    apply EnumEnsembles.Enumerable_is_EnumCovered, finiteE.
-  }
-  pose proof (reachable_foot_valid _ _ _ H).
-  pose proof (reachable_head_valid _ _ _ H).
-  pose proof (uf_root_always_exists g (liGraph g) u X H1).
-  pose proof (uf_root_always_exists g (liGraph g) v X H0).
-  destruct H2 as [r_u ?].
-  destruct H3 as [r_v ?].
-  pose proof (uf_root_reachable _ _ _ _ H H3).
-  exists r_v. split; trivial.
-Qed.
-
-
 (* move to undirected graph *)
 Lemma adjacent_reachable:
   forall (g: UFGraph) u v,
@@ -210,8 +153,8 @@ Proof.
   intros.
   apply adjacent_reachable in H.
   destruct H.
-  - apply reachable_ufroot_same; trivial.
-  - apply ufroot_same_symm, reachable_ufroot_same; trivial.
+  - apply (reachable_ufroot_same _ (liGraph g)); trivial. 
+  - apply ufroot_same_symm, (reachable_ufroot_same _ (liGraph g)); trivial.
 Qed.
 Lemma ufroot_same_connected:
   forall (g: UFGraph) u v,
@@ -239,7 +182,7 @@ Proof.
   - destruct p.
     + intros. simpl in H1, H0.
       inversion H1. inversion H0.
-      subst. apply ufroot_same_refl.
+      subst. apply (ufroot_same_refl _ (liGraph g)).
       simpl in H; trivial.
     + destruct H.
       rewrite last_error_cons in H1.
@@ -248,8 +191,7 @@ Proof.
       intros.
       simpl in H2. inversion H2; subst a; clear H2.
       apply adjacent_ufroot_same in H.
-      apply (ufroot_same_trans _ _ _ _ H); trivial.
-      apply IHp. trivial.
+      apply (ufroot_same_trans _ (liGraph g) _ z); trivial.       apply IHp. trivial.
 Qed.
 Lemma connected_ufroot_same_iff:
   forall (g: UFGraph) u v,
@@ -565,8 +507,8 @@ Lemma uf_union_create_precons:
       uf_set_in g (ufroot_same g v).
 Proof.
   intros.
-  pose proof (ufroot_same_refl g u H).
-  pose proof (ufroot_same_refl g v H0).
+  pose proof (ufroot_same_refl _ (liGraph g) u H).
+  pose proof (ufroot_same_refl _ (liGraph g) v H0).
   assert (H3 := H1).
   assert (H4 := H2).  
   destruct H1 as [u_rt [? _]].
@@ -614,7 +556,7 @@ Proof.
 
     (* x was not connected to either u or v in g1 *)
     assert (ufroot_same g1 x x). {
-      apply ufroot_same_refl; trivial.
+      apply (ufroot_same_refl _ (liGraph g1)); trivial.
     }
     apply (uf_union_unaffected_vvalid g1 g2 _ _ _
                                _ _ _
@@ -640,7 +582,7 @@ Proof.
     }
 
     assert (ufroot_same g2 x x). {
-      apply ufroot_same_refl; trivial.
+      apply (ufroot_same_refl _ (liGraph g2)); trivial.
     }
     apply (uf_union_backwards_cases _ _ _ _ _ _ _ _
                                     H4 H5 H6 H7 H11) in H1; trivial.
@@ -657,7 +599,7 @@ Proof.
       * exfalso.
         apply (inhabited_set_nonempty _ _ _ H11 H1).
       * apply (ufroot_vvalid_vert _ x0).
-        apply H12, ufroot_same_refl; trivial.  
+        apply H12, (ufroot_same_refl _ (liGraph g2)); trivial.  
 Qed.
 
 (* move to file about uf and undirected *)
@@ -714,7 +656,7 @@ Proof.
   (* a and b were not connected to either u or v in g1 *)
     
   assert (ufroot_same g1 a a). {
-    apply ufroot_same_refl.
+    apply (ufroot_same_refl _ (liGraph g1)).
     apply (ufroot_vvalid_vert _ ab_rt); trivial.
   }
 
@@ -784,7 +726,7 @@ Proof.
   destruct H5 as [u_rt [v_rt [? [? [? [? [? ?]]]]]]].
 
   assert (ufroot_same g1 a a). {
-    apply ufroot_same_refl; trivial.
+    apply (ufroot_same_refl _ (liGraph g1)); trivial.
   }
   apply (uf_union_unaffected_inhabited
            _ _ _ _ _ _ _ _
@@ -834,7 +776,7 @@ Proof.
   destruct H7 as [u_rt [v_rt [? [? [? [? [? ?]]]]]]].
   
   assert (ufroot_same g1 x x). {
-    apply ufroot_same_refl; trivial.
+    apply (ufroot_same_refl _ (liGraph g1)); trivial.
   }
 
   apply (uf_union_unaffected_inhabited
