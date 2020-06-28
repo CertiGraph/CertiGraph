@@ -34,7 +34,8 @@ Definition Gprog : funspecs :=
 
 Local Open Scope Z_scope.
 
-(** General facts that this verification needed **)
+
+(*** helpers local to this verif ***)
 
 Lemma Permutation_Zlength:
   forall (A : Type) (l l' : list A),
@@ -120,89 +121,6 @@ Proof.
   apply connected_symm in H7.
   apply (connected_trans _ _ _ _ H6 H7).
 Qed.
-
-(* move to undirected graph *)
-Lemma adjacent_reachable:
-  forall (g: UFGraph) u v,
-    adjacent g u v ->
-    (reachable g u v \/ reachable g v u).
-Proof.
-  intros.
-  unfold adjacent, adj_edge in H.
-  destruct H as [e [? [[? ?] | [? ?]]]];
-    [left | right];
-    unfold reachable, reachable_by, reachable_by_path.
-  - exists (u, [e]); split.
-    + split; trivial.
-    + unfold good_path. split; simpl.
-      * split; trivial; lia.
-      * unfold path_prop. split; trivial.
-        rewrite Forall_forall; intros; split; trivial.
-  - exists (v, [e]); split.
-    + split; trivial.
-    + unfold good_path. split; simpl.
-      * split; trivial; lia.
-      * unfold path_prop. split; trivial.
-        rewrite Forall_forall; intros; split; trivial.
-Qed.
-Lemma adjacent_ufroot_same:
-  forall (g : UFGraph) u v,
-    adjacent g u v ->
-    ufroot_same g u v.
-Proof.
-  intros.
-  apply adjacent_reachable in H.
-  destruct H.
-  - apply (reachable_ufroot_same _ (liGraph g)); trivial. 
-  - apply ufroot_same_symm, (reachable_ufroot_same _ (liGraph g)); trivial.
-Qed.
-Lemma ufroot_same_connected:
-  forall (g: UFGraph) u v,
-    ufroot_same g u v ->
-    connected g u v.
-Proof.
-  intros.
-  destruct H as [r [[? _] [? _]]].
-  apply reachable_implies_connected in H.
-  apply reachable_implies_connected in H0.
-  apply connected_symm in H0.
-  apply (connected_trans _ _ _ _ H H0).
-Qed.
-Lemma connected_ufroot_same:
-  forall (g: UFGraph) u v,
-    connected g u v ->
-    ufroot_same g u v.
-Proof.
-  intros.
-  rewrite connected_exists_path in H.
-  destruct H as [p [? [? ?]]].
-  generalize dependent u.
-  induction p.
-  - intros. inversion H1.
-  - destruct p.
-    + intros. simpl in H1, H0.
-      inversion H1. inversion H0.
-      subst. apply (ufroot_same_refl _ (liGraph g)).
-      simpl in H; trivial.
-    + destruct H.
-      rewrite last_error_cons in H1.
-      2: unfold not; inversion 1.
-      specialize (IHp H0 H1).
-      intros.
-      simpl in H2. inversion H2; subst a; clear H2.
-      apply adjacent_ufroot_same in H.
-      apply (ufroot_same_trans _ (liGraph g) _ z); trivial.       apply IHp. trivial.
-Qed.
-Lemma connected_ufroot_same_iff:
-  forall (g: UFGraph) u v,
-    connected g u v <-> ufroot_same g u v. 
-Proof.
-  intros. split; intros.
-  apply connected_ufroot_same; trivial.
-  apply ufroot_same_connected; trivial.
-Qed.
-
-(* move to a file about uf and undirected *)
 Lemma uf_equiv_adjacent_connected:
   forall (g1 g2 : UFGraph) u v,
     uf_equiv g1 g2 ->
@@ -258,6 +176,62 @@ Proof.
   - apply uf_equiv_sym in H.
     apply (uf_equiv_connected' g2); trivial.
 Qed.
+Lemma adjacent_ufroot_same:
+  forall (g: UFGraph) u v,
+    adjacent g u v ->
+    ufroot_same g u v.
+Proof.
+  intros.
+  apply adjacent_reachable in H.
+  destruct H.
+  - apply (reachable_ufroot_same _ (liGraph g)); trivial. 
+  - apply ufroot_same_symm, (reachable_ufroot_same _ (liGraph g)); trivial.
+Qed.
+Lemma connected_ufroot_same:
+  forall (g: UFGraph) u v,
+    connected g u v ->
+    ufroot_same g u v.
+Proof.
+  intros.
+  rewrite connected_exists_path in H.
+  destruct H as [p [? [? ?]]].
+  generalize dependent u.
+  induction p.
+  - intros. inversion H1.
+  - destruct p.
+    + intros. simpl in H1, H0.
+      inversion H1. inversion H0.
+      subst. apply (ufroot_same_refl _ (liGraph g)).
+      simpl in H; trivial.
+    + destruct H.
+      rewrite last_error_cons in H1.
+      2: unfold not; inversion 1.
+      specialize (IHp H0 H1).
+      intros.
+      simpl in H2. inversion H2; subst a; clear H2.
+      apply adjacent_ufroot_same in H.
+      apply (ufroot_same_trans _ (liGraph g) _ z); trivial.       apply IHp. trivial.
+Qed.
+Lemma ufroot_same_connected:
+  forall (g: UFGraph) u v,
+    ufroot_same g u v ->
+    connected g u v.
+Proof.
+  intros.
+  destruct H as [r [[? _] [? _]]].
+  apply reachable_implies_connected in H.
+  apply reachable_implies_connected in H0.
+  apply connected_symm in H0.
+  apply (connected_trans _ _ _ _ H H0).
+Qed.
+Lemma connected_ufroot_same_iff:
+  forall (g: UFGraph) u v,
+    connected g u v <-> ufroot_same g u v. 
+Proof.
+  intros. split; intros.
+  apply connected_ufroot_same; trivial.
+  apply ufroot_same_connected; trivial.
+Qed.
 Lemma uf_equiv_ufroot_same:
   forall (g1 g2: UFGraph) u v,
     uf_equiv g1 g2 ->
@@ -268,7 +242,9 @@ Using for now for convenience, given connected gives vvalid*)
 intros. do 2 rewrite <- connected_ufroot_same_iff. apply uf_equiv_connected. auto.
 Qed.
 
-(* basic helpers *)
+
+(* basic UF helpers local to this verification. 
+can be inlined or moved to UF *)
 Lemma uf_root_unique':
   forall (g: UFGraph) x r1 r2,
     uf_root g x r1 ->
@@ -293,19 +269,6 @@ Proof.
   intros. destruct H as [? _].
   apply (reachable_head_valid _ _ _ H).
 Qed.  
-Lemma inhabited_set_nonempty:
-  forall U (S: Ensemble U) v,
-    S v ->
-    Same_set S (Empty_set U) ->
-    False.
-Proof.
-  intros.
-  assert (Ensembles.Inhabited _ S). {
-    apply (Ensembles.Inhabited_intro _ _ v); trivial.
-  }
-  apply (Constructive_sets.Inhabited_not_empty _ _ H1).
-  apply Ensembles.Extensionality_Ensembles; trivial.
-Qed.
 Lemma ufroot_uf_set_in:
   forall (g: UFGraph) u u_rt,
     uf_root g u u_rt ->
@@ -320,10 +283,8 @@ Proof.
       apply (uf_root_unique _ (liGraph g) u); trivial.
     + exists u_rt; split; trivial.
 Qed.
-
 (* Just a little utility to cleanly drag out 
    a valid vertex's root *)
-(* move to uf *)
 Lemma vvalid_get_ufroot:
   forall (g: UFGraph) x,
     vvalid g x ->
@@ -336,6 +297,20 @@ Proof.
   pose proof (uf_root_always_exists _ (liGraph g) x X H).
   destruct H0 as [x_rt ?].
   exists x_rt; trivial.
+Qed.
+
+Lemma inhabited_set_nonempty:
+  forall U (S: Ensemble U) v,
+    S v ->
+    Same_set S (Empty_set U) ->
+    False.
+Proof.
+  intros.
+  assert (Ensembles.Inhabited _ S). {
+    apply (Ensembles.Inhabited_intro _ _ v); trivial.
+  }
+  apply (Constructive_sets.Inhabited_not_empty _ _ H1).
+  apply Ensembles.Extensionality_Ensembles; trivial.
 Qed.
 
 (* little helper *)
@@ -1720,7 +1695,7 @@ Proof.
       2: auto. 2: { unfold not; intros. apply ufroot_same_symm in H29. contradiction. }
       apply (uf_union_preserves_connected _ uv_union u v) in H24; auto.
       apply ufroot_same_symm in H23.
-      apply (ufroot_same_trans uv_union b a u) in H23; auto. contradiction.
+      apply (ufroot_same_trans _ (liGraph uv_union) b a u) in H23; auto. contradiction.
     (*a not connected to u*)
     (*destruct connected msf' a v, repeat the above...*)
     destruct (connected_dec msf' a v).
@@ -1736,12 +1711,12 @@ Proof.
           2: { rewrite ufroot_same_symm. auto. }
         apply (uf_union_preserves_connected _ uv_union u v) in H25; auto.
         apply ufroot_same_symm in H23.
-        apply (ufroot_same_trans uv_union b a v) in H23; auto. contradiction.
+        apply (ufroot_same_trans _ (liGraph uv_union) b a v) in H23; auto. contradiction.
       destruct (connected_dec msf' u b). apply H16 in H26.
         apply (uf_equiv_ufroot_same subsetsGraph' subsetsGraph_uv) in H26; auto.
         apply (uf_union_preserves_connected _ uv_union u v) in H26; auto.
         apply ufroot_same_symm in H26.
-        apply (ufroot_same_trans uv_union a b u H23) in H26.
+        apply (ufroot_same_trans _ (liGraph uv_union) a b u H23) in H26.
         (*However, ~ connected msf' a u -> ... -> ~ ufroot_same uv_union, contradiction*)
         assert (~ ufroot_same uv_union a u). {
           rewrite <- H16 in H24, H25. rewrite (uf_equiv_ufroot_same subsetsGraph' subsetsGraph_uv) in H24, H25; auto.
@@ -1749,7 +1724,7 @@ Proof.
         contradiction.
         destruct (connected_dec msf' v b). apply H16 in H27. apply (uf_equiv_ufroot_same subsetsGraph' subsetsGraph_uv) in H27; auto.
           apply (uf_union_preserves_connected _ uv_union u v) in H27; auto. apply ufroot_same_symm in H27.
-          apply (ufroot_same_trans uv_union a b v H23) in H27.
+          apply (ufroot_same_trans _ (liGraph uv_union) a b v H23) in H27.
           (*However, ~ connected msf' a u -> ... -> ~ ufroot_same uv_union, contradiction*)
           assert (~ ufroot_same uv_union a v). {
             rewrite <- H16 in H24, H25. rewrite (uf_equiv_ufroot_same subsetsGraph' subsetsGraph_uv) in H24, H25; auto.
@@ -1785,13 +1760,13 @@ Proof.
         apply (uf_union_preserves_connected subsetsGraph_uv uv_union u v) in H26; auto.
         assert (ufroot_same uv_union u v).
           apply (uf_union_connected subsetsGraph_uv uv_union u v); auto.
-        apply (ufroot_same_trans uv_union u v b H27) in H26.
-        apply (ufroot_same_trans uv_union a u b); auto.
+        apply (ufroot_same_trans _ (liGraph uv_union) u v b H27) in H26.
+        apply (ufroot_same_trans _ (liGraph uv_union) a u b); auto.
         assert (ufroot_same uv_union u v).
           apply (uf_union_connected subsetsGraph_uv uv_union u v); auto.
         apply ufroot_same_symm in H27.
-        apply (ufroot_same_trans uv_union v u b H27) in H26.
-        apply (ufroot_same_trans uv_union a v b); auto.
+        apply (ufroot_same_trans _ (liGraph uv_union) v u b H27) in H26.
+        apply (ufroot_same_trans _ (liGraph uv_union) a v b); auto.
     assert (connected msf' a b). exists p. destruct H23. split. apply (adde_unaffected msf' (u,v) (elabel g (u,v))).
     apply H23. exists l. split. apply (adde_fits_upath' msf' (u,v) (elabel g (u,v))). auto. auto. auto.
     auto.
@@ -1910,9 +1885,9 @@ Proof.
       induction p; intros.
       + destruct H18; destruct H18; destruct H19. inversion H19.
       + destruct p. destruct H18. simpl in H18. destruct H19; inversion H19; inversion H20. subst u; subst v.
-        apply ufroot_same_refl. apply H13. auto.
+        apply (ufroot_same_refl _ (liGraph subsetsGraph')). apply H13. auto.
         destruct H18. destruct H18. destruct H19. inversion H19; subst a.
-        apply (ufroot_same_trans subsetsGraph' u v0 v).
+        apply (ufroot_same_trans _ (liGraph subsetsGraph') u v0 v).
           destruct H18. apply (H14 x). auto.
           assert (In x (EList g)). apply EList_evalid. apply H18.
           assert (In (edge_to_wedge g x) glist). apply (Permutation_in (l:=graph_to_wedgelist g) (l':=glist)).
