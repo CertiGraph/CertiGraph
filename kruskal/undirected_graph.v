@@ -728,4 +728,29 @@ Definition spanning_uforest t g :=
   sound_uforest t /\ (*it is also a forest*)
   spanning t g. (*that is spanning...*)
 
+(* move to undirected graph *)
+Lemma adjacent_reachable:
+  forall g u v,
+    adjacent g u v ->
+    (reachable g u v \/ reachable g v u).
+Proof.
+  intros.
+  unfold adjacent, adj_edge in H.
+  destruct H as [e [? [[? ?] | [? ?]]]];
+    [left | right];
+    unfold reachable, reachable_by, reachable_by_path.
+  - exists (u, (e :: nil)); split.
+    + split; trivial.
+    + unfold good_path. split; simpl.
+      * split; trivial. symmetry; trivial.
+      * unfold path_prop. split; trivial.
+        rewrite Forall_forall; intros; split; trivial.
+  - exists (v, (e :: nil)); split.
+    + split; trivial.
+    + unfold good_path. split; simpl.
+      * split; trivial. symmetry; trivial.
+      * unfold path_prop. split; trivial.
+        rewrite Forall_forall; intros; split; trivial.
+Qed.
+
 End UNDIRECTED.
