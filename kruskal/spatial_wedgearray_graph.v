@@ -25,6 +25,15 @@ Proof.
   intros. unfold wedge_to_cdata; unfold def_wedgerep; simpl. lia.
 Qed.
 
+Lemma map_local_functions_eq:
+  forall (A B: Type) (f f': A -> B) (l: list A),
+  (forall x: A, In x l -> f x = f' x) -> map f l = map f' l.
+Proof.
+induction l; intros. auto.
+simpl. rewrite (H a). rewrite IHl. auto.
+intros. apply H. right; auto. left; auto.
+Qed.
+
 Lemma list_inj_map_NoDup:
   forall (A B : Type) (f : A -> B) (l : list A),
   (forall x y : A, In x l -> In y l -> f x = f y -> x = y) -> NoDup l -> NoDup (map f l).

@@ -28,10 +28,22 @@ Proof.
 unfold VList; intros. destruct finiteV. unfold proj1_sig. apply a.
 Qed.
 
+Corollary NoDup_Perm_VList:
+  forall (pg: PreGraph V E) {fg: FiniteGraph pg} (l: list V), Permutation l (VList pg) -> NoDup l.
+Proof.
+intros. apply (Permutation_NoDup (l:=VList pg)). apply Permutation_sym; auto. apply NoDup_VList.
+Qed.
+
 Lemma NoDup_EList:
   forall (pg: PreGraph V E) {fg: FiniteGraph pg}, NoDup (EList pg).
 Proof.
 unfold EList; intros. destruct finiteE. unfold proj1_sig. apply a.
+Qed.
+
+Corollary NoDup_Perm_EList:
+  forall (pg: PreGraph V E) {fg: FiniteGraph pg} (l: list E), Permutation l (EList pg) -> NoDup l.
+Proof.
+intros. apply (Permutation_NoDup (l:=EList pg)). apply Permutation_sym; auto. apply NoDup_EList.
 Qed.
 
 Lemma VList_vvalid:
