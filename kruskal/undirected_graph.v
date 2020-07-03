@@ -28,6 +28,13 @@ Definition adj_edge (g: Gph) (e: E) (u v: V) :=
   strong_evalid g e /\ (*just evalid?*)
   ((src g e = u /\ dst g e = v) \/ (src g e = v /\ dst g e = u)).
 
+Lemma adj_edge_sym:
+forall g e u v, adj_edge g e u v -> adj_edge g e v u.
+Proof.
+intros. destruct H. split; auto.
+destruct H0. right; auto. left; auto.
+Qed.
+
 (*Consequently, we may not care about the exact nature of the edges*)
 Definition adjacent (g: Gph) (u v: V) := exists e: E,
   adj_edge g e u v.
@@ -94,6 +101,16 @@ Lemma last_err_app:
   forall {A:Type} (l1 l2: list A) (a: A), last_error l2 = Some a -> last_error (l1++l2) = Some a.
 Proof.
 intros. apply (last_err_app' l2 l1 a H).
+Qed.
+
+Lemma last_err_split2:
+forall {A: Type} (l1 l2: list A) (a: A),
+last_error (l1++a::l2) = last_error (a::l2).
+induction l1; intros. rewrite app_nil_l; auto.
+replace (last_error ((a :: l1) ++ a0 :: l2)) with (last_error (l1 ++ a0 :: l2)).
+2: { simpl. destruct (l1++a0::l2) eqn:Htmp.
+  apply app_eq_nil in Htmp. destruct Htmp. inversion H0. auto. }
+apply IHl1.
 Qed.
 
 Lemma hd_error_app:
@@ -301,15 +318,6 @@ Lemma connected_exists_path:
       hd_error p = Some u /\ last_error p = Some v.
 Proof. intros; split; intros; auto. Qed.
 
-Lemma connected_symm:
-  forall g u v, connected g u v -> connected g v u.
-Proof.
-unfold connected; unfold connected_by_path; intros.
-destruct H. rename x into p. exists (rev p). split. apply valid_upath_rev. apply H.
-split. rewrite <- (rev_involutive p) in H. rewrite <- rev_hd_last in H. apply H.
-rewrite rev_hd_last in H. apply H.
-Qed.
-
 Lemma connected_refl:
 forall g v, vvalid g v -> connected g v v.
 Proof.
@@ -317,19 +325,39 @@ intros. exists (v::nil). split. simpl; auto.
 split; simpl; auto.
 Qed.
 
-Lemma connected_trans:
-  forall g u v w, connected g u v -> connected g v w -> connected g u w.
+Lemma connected_by_path_rev:
+  forall g p u v, connected_by_path g p u v -> connected_by_path g (rev p) v u.
 Proof.
-unfold connected; unfold connected_by_path; intros.
-destruct H; rename x into p0. destruct H0; rename x into p1.
-destruct H. destruct H1. destruct H0. destruct H3.
-exists (p0++(tail p1)). split. apply valid_upath_app_2. apply H. apply H0.
-rewrite H3. rewrite H2. reflexivity.
-split. assert (p0 = u::(tl p0)). apply hd_error_tl_repr. split. apply H1. reflexivity.
+intros. split. apply valid_upath_rev. apply H.
+destruct H as [? [? ?]]. split. rewrite rev_hd_last, rev_involutive; auto.
+rewrite <- rev_hd_last; auto.
+Qed.
+
+Corollary connected_symm:
+  forall g u v, connected g u v -> connected g v u.
+Proof.
+intros. destruct H as [p ?]. exists (rev p). apply connected_by_path_rev; auto.
+Qed.
+
+Lemma connected_by_path_join:
+  forall g p1 p2 u v w, (connected_by_path g p1 u v) -> (connected_by_path g p2 v w)
+  -> connected_by_path g (p1++(tail p2)) u w.
+Proof.
+intros. destruct H as [? [? ?]]. destruct H0 as [? [? ?]].
+split. apply valid_upath_app_2. apply H. apply H0.
+rewrite H2, H3. reflexivity.
+split. assert (p1 = u::(tl p1)). apply hd_error_tl_repr. split. apply H1. reflexivity.
 rewrite H5. rewrite <- app_comm_cons. simpl. reflexivity.
-destruct p1 eqn:H5. inversion H4.
+destruct p2 eqn:H5. inversion H4.
 destruct u0. simpl in *. rewrite <- app_nil_end. rewrite <- H4. rewrite H3. apply H2.
 simpl. apply last_err_app. simpl in H4. simpl. apply H4.
+Qed.
+
+Corollary connected_trans:
+  forall g u v w, connected g u v -> connected g v w -> connected g u w.
+Proof.
+intros. destruct H as [p1 ?]. destruct H0 as [p2 ?].
+exists (p1++(tail p2)). apply (connected_by_path_join g p1 p2 u v w); auto.
 Qed.
 
 Lemma adjacent_connected:
@@ -342,7 +370,7 @@ split; simpl; auto.
 Qed.
 
 Lemma connected_by_path_vvalid:
-forall g p u v, connected_by_path g p u v -> vvalid g u /\ vvalid g v.
+  forall g p u v, connected_by_path g p u v -> vvalid g u /\ vvalid g v.
 Proof.
 intros. destruct H. destruct H0.
 split. apply (valid_upath_vvalid g p u). auto. apply hd_error_In; auto.
@@ -368,7 +396,7 @@ match l, p with
 end.
 
 Lemma valid_upath_exists_list_edges:
-forall g p, valid_upath g p-> exists l, fits_upath g l p.
+  forall g p, valid_upath g p-> exists l, fits_upath g l p.
 Proof.
 induction p; intros. exists nil; simpl; auto.
 destruct p. exists nil; simpl; auto.
@@ -377,7 +405,7 @@ exists (x::l). split; auto.
 Qed.
 
 Lemma valid_upath_exists_list_edges':
-forall g p, (forall v, In v p -> vvalid g v) -> (exists l, fits_upath g l p) -> valid_upath g p.
+  forall g p, (forall v, In v p -> vvalid g v) -> (exists l, fits_upath g l p) -> valid_upath g p.
 Proof.
 induction p; intros. simpl. auto.
 destruct p. simpl. apply H. left; auto.
@@ -388,9 +416,17 @@ exists l. apply H1.
 Qed.
 
 Corollary connected_exists_list_edges:
-forall g p u v, connected_by_path g p u v -> exists l, fits_upath g l p.
+  forall g p u v, connected_by_path g p u v -> exists l, fits_upath g l p.
 Proof.
 intros. destruct H. apply valid_upath_exists_list_edges. apply H.
+Qed.
+
+Corollary connected_exists_list_edges':
+  forall g p u v, (forall v, In v p -> vvalid g v) -> (exists l, fits_upath g l p) ->
+    hd_error p = Some u -> last_error p = Some v ->
+    connected_by_path g p u v.
+Proof.
+intros. split. apply valid_upath_exists_list_edges'; auto. split; auto.
 Qed.
 
 Lemma fits_upath_cons:
@@ -414,6 +450,151 @@ apply in_inv in H0. destruct H0.
   unfold fits_upath in H. simpl in H; destruct H. rewrite H0 in H. destruct H. apply H.
 apply fits_upath_cons in H.
 apply (IHp (e1::l0)). apply H. apply H0.
+Qed.
+
+Corollary fits_upath_evalid':
+forall g p l e, fits_upath g l p -> In e l -> evalid g e.
+Proof.
+intros. apply (fits_upath_evalid g p l) in H0; auto. Qed.
+
+Lemma fits_upath_vertex_src_In:
+forall g p l e, fits_upath g l p -> In e l -> In (src g e) p.
+Proof.
+induction p; intros. destruct l; auto.
+destruct p. destruct l; simpl in H; contradiction.
+destruct l. contradiction. destruct H0.
+subst e0. destruct H. destruct H. destruct H1. left; symmetry; apply H1.
+right. left. symmetry; apply H1.
+right. apply (IHp l). apply H. auto.
+Qed.
+
+Lemma fits_upath_vertex_dst_In:
+forall g p l e, fits_upath g l p -> In e l -> In (dst g e) p.
+Proof.
+induction p; intros. destruct l; auto.
+destruct p. destruct l; simpl in H; contradiction.
+destruct l. contradiction. destruct H0.
+subst e0. destruct H. destruct H. destruct H1.
+right. left. symmetry; apply H1.
+left; symmetry; apply H1.
+right. apply (IHp l). apply H. auto.
+Qed.
+
+Lemma fits_upath_concat:
+forall g p l e u, fits_upath g l p -> (exists v, last_error p = Some v /\ adj_edge g e u v) -> fits_upath g (l+::e) (p+::u).
+Proof.
+induction p; intros. destruct l. destruct H0 as [v [? ?]]. simpl in H0. inversion H0.
+simpl in H. contradiction.
+destruct p; destruct l. destruct H0 as [v [? ?]]. simpl in H0. inversion H0. subst a.
+simpl. split; [apply adj_edge_sym; auto | auto].
+simpl in H. contradiction.
+simpl in H. contradiction.
+destruct H0 as [v0 [? ?]]. destruct H. split. auto. apply IHp. auto.
+exists v0. split. rewrite last_error_cons in H0; auto. unfold not; intros; inversion H3. auto.
+Qed.
+
+Lemma fits_upath_split':
+forall g p l e, fits_upath g l p -> In e l ->
+  exists p1 p2 l1 l2, p = p1++p2 /\
+    ((last_error p1 = Some (src g e) /\ hd_error p2 = Some (dst g e)) \/ (last_error p1 = Some (dst g e) /\ hd_error p2 = Some (src g e)))
+    /\ fits_upath g l1 p1 /\ fits_upath g l2 p2 /\ l = l1++(e::nil)++l2.
+Proof.
+induction p; intros. destruct l. contradiction. simpl in H; contradiction.
+destruct p; destruct l. contradiction. simpl in H; contradiction. contradiction.
+destruct H. destruct H0.
+(*case e is first edge.*)
+subst e0. exists (a::nil). exists (v::p). exists nil. exists l.
+split. simpl. auto.
+split. destruct H. destruct H0; destruct H0; subst a; subst v.
+left; simpl; auto. right; simpl; auto.
+split. simpl; auto. split; auto.
+(*case e isn't*)
+pose proof (IHp l e H1 H0); clear IHp.
+destruct H2 as [p1 [p2 [l1 [l2 ?]]]]. destruct H2 as [? [? [? [? ?]]]].
+exists (a::p1). exists p2. exists (e0::l1). exists l2.
+split. simpl. rewrite <- H2. auto.
+split. destruct H3; destruct H3.
+left; split; auto. rewrite last_error_cons. apply H3. unfold not;intros. subst p1. inversion H3.
+right; split; auto. rewrite last_error_cons. apply H3. unfold not; intros. subst p1. inversion H3.
+split.
+destruct p1. destruct H3; destruct H3; inversion H3.
+assert (v = v0). inversion H2; auto. subst v0. split; auto.
+split. auto.
+simpl. simpl in H6. rewrite H6; auto.
+Qed.
+
+Lemma fits_upath_split:
+forall g p1 p2 l, fits_upath g l (p1++p2) -> exists l1 l2 l3, fits_upath g l1 p1 /\ fits_upath g l3 p2 /\ l = (l1++l2++l3).
+Proof.
+induction p1; intros.
+rewrite app_nil_l in H. exists nil. exists nil. exists l. split. simpl; auto. split; simpl; auto.
+destruct p1. destruct l. destruct p2.
+exists nil; exists nil; exists nil. split. simpl; auto. split; simpl; auto.
+simpl in H. contradiction.
+replace ((a :: nil) ++ p2) with (a::p2) in H. 2: simpl; auto.
+destruct p2. simpl in H; contradiction.
+destruct H. exists nil. exists (e::nil). exists l. split; simpl; auto.
+destruct l. simpl in H; contradiction.
+destruct H. apply IHp1 in H0. destruct H0 as [l1 [l2 [l3 [? [? ?]]]]].
+exists (e::l1). exists l2. exists l3. split. split; auto. split. auto. simpl. rewrite H2. auto.
+Qed.
+
+Lemma fits_upath_rev:
+forall g p l, fits_upath g l p -> fits_upath g (rev l) (rev p).
+Proof.
+induction p; intros. destruct l. simpl; auto. simpl in H. contradiction.
+destruct p. destruct l. simpl; auto. simpl in H; contradiction.
+destruct l. simpl in H; contradiction.
+destruct H. simpl. simpl in IHp. apply fits_upath_concat.
+apply IHp. auto.
+exists v. split. apply last_err_appcons. auto.
+Qed.
+
+Lemma fits_upath_app:
+forall g p1 p2 l1 l2 e u v, fits_upath g l1 p1 -> fits_upath g l2 p2 ->
+  last_error p1 = Some u -> hd_error p2 = Some v -> adj_edge g e u v ->
+  fits_upath g (l1++(e::nil)++l2) (p1++p2).
+Proof.
+induction p1; intros. inversion H1.
+destruct p1. destruct l1. simpl. destruct p2. inversion H2.
+simpl in H1. inversion H1. subst a. simpl in H2. inversion H2. subst v0. split; auto.
+simpl in H; contradiction.
+destruct l1. simpl in H; contradiction.
+split. apply H.
+apply (IHp1 p2 l1 l2 e u v); auto. apply H.
+Qed.
+
+Lemma fits_upath_vertex_in_path:
+forall g p e l, fits_upath g l p -> In e l -> In (src g e) p /\ In (dst g e) p.
+Proof.
+induction p; intros. destruct l; auto.
+destruct p. destruct l; [contradiction|auto]. simpl in H; contradiction.
+destruct l. simpl in H; contradiction.
+destruct H0. subst e0.
+destruct H. destruct H. destruct H1; destruct H1; subst a; subst v.
+split. left; auto. right; left; auto.
+split. right; left; auto. left; auto.
+assert (In (src g e) (v :: p) /\ In (dst g e) (v :: p)). apply (IHp e l). apply H. auto. destruct H1.
+split; right; auto.
+Qed.
+
+Lemma fits_upath_transfer':
+forall p l g1 g2, (forall v, vvalid g1 v <-> vvalid g2 v) ->
+(forall e, In e l -> evalid g2 e) -> (forall e, evalid g1 e -> evalid g2 e -> src g1 e = src g2 e) ->
+(forall e, evalid g1 e -> evalid g2 e -> dst g1 e = dst g2 e) -> (*this is not quite what I want, hm*)
+fits_upath g1 l p -> fits_upath g2 l p.
+Proof.
+induction p; intros. destruct l. auto. apply H3.
+destruct l. destruct p. simpl. auto. simpl in H3. contradiction.
+destruct p. simpl in H3. contradiction.
+destruct H3. split.
++ (*adjacent edge*)
+  destruct H3. destruct H3. destruct H6. assert (evalid g2 e). apply H0. left. auto.
+  split. split. apply H0. left; auto. split.
+  apply H in H6. rewrite H1 in H6; auto.
+  apply H in H7. rewrite H2 in H7; auto.
+  rewrite H1 in H5; auto. rewrite H2 in H5; auto.
++ apply (IHp l g1 g2); auto. intros. apply H0. right; auto.
 Qed.
 
 (************REACHABLE -> CONNECTED************)
@@ -489,6 +670,30 @@ Proof.
 destruct p. apply epath_to_vpath_foot'.
 Qed.
 
+Lemma adjacent_reachable:
+  forall g u v,
+    adjacent g u v ->
+    (reachable g u v \/ reachable g v u).
+Proof.
+  intros.
+  unfold adjacent, adj_edge in H.
+  destruct H as [e [? [[? ?] | [? ?]]]];
+    [left | right];
+    unfold reachable, reachable_by, reachable_by_path.
+  - exists (u, (e::nil)); split.
+    + split; trivial.
+    + unfold good_path. split; simpl.
+      * split; trivial; symmetry; trivial.
+      * unfold path_prop. split; trivial.
+        rewrite Forall_forall; intros; split; trivial.
+  - exists (v, e::nil); split.
+    + split; trivial.
+    + unfold good_path. split; simpl.
+      * split; trivial; symmetry; trivial.
+      * unfold path_prop. split; trivial.
+        rewrite Forall_forall; intros; split; trivial.
+Qed.
+
 Lemma reachable_implies_connected:
   forall g u v, reachable g u v -> connected g u v.
 Proof.
@@ -525,22 +730,18 @@ For the purposes of kruskal, we need uforest more than cycles*)
 
 Definition simple_upath g p := valid_upath g p /\ NoDup p.
 
+Lemma simple_upath_tail:
+  forall g a p, simple_upath g (a::p) -> simple_upath g p.
+Proof.
+intros. destruct H. split. apply (valid_upath_tail' g p a). auto. apply NoDup_cons_1 in H0. auto.
+Qed.
+
 Lemma simple_upath_app_split:
   forall g p p', simple_upath g (p++p') -> (simple_upath g p /\ simple_upath g p').
 Proof.
 intros. destruct H. split; split.
 apply (valid_upath_app_split _ _ _ H). apply (NoDup_app_l _ _ _ H0).
 apply (valid_upath_app_split _ _ _ H). apply (NoDup_app_r _ _ _ H0).
-Qed.
-
-Lemma last_err_split2:
-forall {A: Type} (l1 l2: list A) (a: A),
-last_error (l1++a::l2) = last_error (a::l2).
-induction l1; intros. rewrite app_nil_l; auto.
-replace (last_error ((a :: l1) ++ a0 :: l2)) with (last_error (l1 ++ a0 :: l2)).
-2: { simpl. destruct (l1++a0::l2) eqn:Htmp.
-  apply app_eq_nil in Htmp. destruct Htmp. inversion H0. auto. }
-apply IHl1.
 Qed.
 
 Lemma upath_simplifiable:
@@ -571,22 +772,6 @@ rewrite last_error_cons. auto. unfold not; intros. subst p'. inversion H5.
 split. split. destruct H3. destruct H5. apply valid_upath_cons. auto. rewrite H5. unfold adjacent_hd. auto.
 apply NoDup_cons. auto. apply H4.
 unfold incl; intros. destruct H5. subst a0. left; auto. destruct H4. right; apply H6. auto.
-Qed.
-
-Lemma fits_upath_split:
-forall g p1 p2 l, fits_upath g l (p1++p2) -> exists l1 l2 l3, fits_upath g l1 p1 /\ fits_upath g l3 p2 /\ l = (l1++l2++l3).
-Proof.
-induction p1; intros.
-rewrite app_nil_l in H. exists nil. exists nil. exists l. split. simpl; auto. split; simpl; auto.
-destruct p1. destruct l. destruct p2.
-exists nil; exists nil; exists nil. split. simpl; auto. split; simpl; auto.
-simpl in H. contradiction.
-replace ((a :: nil) ++ p2) with (a::p2) in H. 2: simpl; auto.
-destruct p2. simpl in H; contradiction.
-destruct H. exists nil. exists (e::nil). exists l. split; simpl; auto.
-destruct l. simpl in H; contradiction.
-destruct H. apply IHp1 in H0. destruct H0 as [l1 [l2 [l3 [? [? ?]]]]].
-exists (e::l1). exists l2. exists l3. split. split; auto. split. auto. simpl. rewrite H2. auto.
 Qed.
 
 Lemma upath_simplifiable_edges:
@@ -639,30 +824,25 @@ inversion H10. subst v1. split; auto.
 unfold incl; intros. destruct H10. subst a0. left. auto. right. apply H9. auto.
 Qed.
 
-Lemma connected_by_upath_exists_simple_upath:
+Corollary connected_by_upath_exists_simple_upath:
   forall g p u v, connected_by_path g p u v-> exists p', connected_by_path g p' u v /\ simple_upath g p'.
 Proof.
-induction p; intros.
-destruct H. destruct H0. inversion H0.
-destruct p. destruct H. simpl in H. simpl in H0; destruct H0.
-inversion H0; inversion H1. subst u; subst v. clear H0 H1.
-exists (a::nil). split. split. simpl; auto. simpl; split; auto.
-split. simpl; auto. apply NoDup_cons. auto. apply NoDup_nil.
-destruct H. destruct H0. destruct H.
-assert (connected_by_path g (v0::p) v0 v). split. auto. split. apply hd_error_cons. rewrite last_error_cons in H1; auto. unfold not; intros. inversion H3.
-apply IHp in H3. destruct H3 as [p' ?]. destruct H3.
-destruct (in_dec EV a p').
-apply in_split in i. destruct i as [l1 [l2 ?]].
-subst p'. exists (a::l2). split.
-destruct H3. destruct H5. split. apply (valid_upath_app_split g l1 _).
-apply H3. split. simpl in H0; simpl; apply H0.
-rewrite last_err_split2 in H6. auto. apply simple_upath_app_split in H4; apply H4.
-exists (a::p'). split. destruct H3. destruct H5. split. apply valid_upath_cons. auto.
-rewrite H5. unfold adjacent_hd. apply H.
-split. simpl in H0; simpl; auto.
-rewrite last_error_cons. auto. unfold not; intros. subst p'. inversion H5.
-split. destruct H3. destruct H5. apply valid_upath_cons. auto. rewrite H5. unfold adjacent_hd. auto.
-apply NoDup_cons. auto. apply H4.
+intros. pose proof (upath_simplifiable g p u v H). destruct H0 as [p' [? [? ?]]].
+exists p'. split; auto.
+Qed.
+
+Lemma simple_upath_list_edges_NoDup:
+forall g p l, simple_upath g p -> fits_upath g l p -> NoDup l.
+Proof.
+induction p; intros. destruct l. apply NoDup_nil. simpl in H0; contradiction.
+destruct p; destruct l. apply NoDup_nil. simpl in H0; contradiction.
+simpl in H0; contradiction.
+destruct H0. apply NoDup_cons.
+unfold not; intros.
+destruct H0. apply (fits_upath_vertex_in_path g (v::p) e) in H2.
+destruct H3; destruct H3; subst a; subst v; destruct H; apply NoDup_cons_2 in H3; destruct H2; contradiction.
+auto.
+apply IHp. split. apply H. destruct H. apply NoDup_cons_1 in H2. auto. auto.
 Qed.
 
 (*barebones, this has a lot of loopholes*)
@@ -713,6 +893,92 @@ left. destruct H9. destruct H6.
 destruct H as [? [? ?]]. apply (H13 (src g e) (dst g e)). split; auto.
 Qed.
 
+(*to avoid having to keep destructing to find the uforest def*)
+Lemma sound_uforest_uforest:
+forall g, sound_uforest g -> uforest g.
+Proof. intros. apply H. Qed.
+
+Lemma sound_uforest_unique_lpath:
+forall p l1 l2 g, sound_uforest g -> simple_upath g p -> fits_upath g l1 p -> fits_upath g l2 p -> l1 = l2.
+Proof.
+induction p; intros. destruct l1. destruct l2. auto. simpl in H2; contradiction. simpl in H1; contradiction.
+destruct p. destruct l1. destruct l2. auto. simpl in H2; contradiction. contradiction.
+destruct l1. contradiction. destruct l2. contradiction.
+destruct H1. destruct H2. assert (e = e0). destruct H. destruct H5. apply (H5 a v). split; auto. subst e0.
+assert (l1 = l2). apply (IHp l1 l2 g); auto. apply (simple_upath_tail g a (v::p)); auto.
+subst l1. auto.
+Qed.
+
+Definition bridge g e u v :=
+forall p l, connected_by_path g p u v -> fits_upath g l p -> In e l.
+
+Lemma forest_simple_bridge:
+forall p l g u v, sound_uforest g -> connected_by_path g p u v -> simple_upath g p -> fits_upath g l p ->
+forall e, In e l -> bridge g e u v.
+Proof.
+induction p; intros.
+destruct H0. destruct H4. inversion H4.
+destruct p; destruct l. contradiction. simpl in H2. contradiction. simpl in H2. contradiction.
+assert (a = u). destruct H0. destruct H4. inversion H4. auto. subst a.
+unfold bridge; intros.
+pose proof (upath_simplifiable_edges g p0 l0 u v H4 H5). destruct H6 as [p' [l' [? [? [? [? ?]]]]]]. apply H10.
+assert (p' = (u::v0::p)). assert (uforest g). apply H. apply (H11 u v p' (u::v0::p)); auto. subst p'.
+assert ((e0::l) = l'). apply (sound_uforest_unique_lpath (u::v0::p) (e0::l) l' g); auto. subst l'.
+apply H3. (*hm, didn't need induction*)
+Qed.
+
+Lemma bridge_splittable:
+forall p g u v e, connected_by_path g p u v -> bridge g e u v -> 
+  (exists p1 p2, p = p1++p2 /\
+    ((connected_by_path g p1 u (src g e) /\ connected_by_path g p2 (dst g e) v) \/
+      (connected_by_path g p1 u (dst g e) /\ connected_by_path g p2 (src g e) v))
+  ).
+Proof.
+induction p; intros. destruct H. destruct H1. inversion H1.
+destruct p.
+(*single vertex in path - trivial connection, no bridge exists*)
+unfold bridge in H0. assert (fits_upath g nil (a::nil)). simpl; auto. apply H0 in H1; auto. contradiction.
+(*proper version to look at. Destruct cases: Is e in between a::v0*)
+destruct H. destruct H1. simpl in H1; inversion H1. subst a. clear H1.
+destruct H. destruct H as [e' ?].
+destruct (EE e e'). unfold equiv in e0. subst e'.
+(*yes, e at the front.*)
+destruct H. destruct H3; destruct H3; rewrite H3; rewrite H4.
+exists (u::nil); exists (v0::p). split. simpl; auto.
+left. split. split. simpl. rewrite <- H3. apply H. simpl; auto.
+split. apply H1. split. simpl. auto. rewrite last_error_cons in H2; auto. unfold not; intros. inversion H5.
+exists (u::nil); exists (v0::p). split. simpl; auto.
+right. split. split. simpl. rewrite <- H4. apply H. simpl; auto.
+split. apply H1. split. simpl. auto. rewrite last_error_cons in H2; auto. unfold not; intros. inversion H5.
+(*no, then e should be further in*)
+specialize IHp with g v0 v e.
+assert (exists p1 p2 : list V,
+        v0 :: p = p1 ++ p2 /\
+        (connected_by_path g p1 v0 (src g e) /\ connected_by_path g p2 (dst g e) v \/
+         connected_by_path g p1 v0 (dst g e) /\ connected_by_path g p2 (src g e) v)).
+apply IHp. split. auto. split. simpl. auto. rewrite last_error_cons in H2; auto. unfold not; intros. inversion H3.
+(*hm, I should put this as a separate lemma?*)
+unfold bridge; intros. unfold bridge in H0.
+assert (In e (e'::l)). apply (H0 (u::p0) (e'::l)). split. apply valid_upath_cons. apply H3.
+  destruct H3. destruct H5. rewrite H5. simpl. exists e'; auto.
+  split. simpl; auto. destruct H3. destruct H5. rewrite last_error_cons. auto. unfold not; intros. rewrite H7 in H5. inversion H5.
+  destruct p0. destruct H3. destruct H5. inversion H5.
+  destruct H3. destruct H5. simpl in H5. inversion H5. subst v1.
+  split; auto.
+destruct H5. unfold complement, equiv in c. symmetry in H5; contradiction. auto.
+destruct H3 as [p1 [p2 [? ?]]].
+exists (u::p1); exists p2. split. simpl. rewrite H3. auto.
+destruct H4; destruct H4. left; split; auto.
+split. apply valid_upath_cons. rewrite H3 in H1. apply (valid_upath_app_split _ _ _ H1).
+destruct H4. destruct H6. rewrite H6. simpl. exists e'. auto.
+split. simpl; auto. destruct H4. destruct H6. rewrite last_error_cons. auto. unfold not; intros. rewrite H8 in H6; inversion H6.
+(*feels a bit finicky in that we can assume p1 <> nil. I suppose this comes from bridge*)
+right; split; auto.
+split. apply valid_upath_cons. rewrite H3 in H1. apply (valid_upath_app_split _ _ _ H1).
+destruct H4. destruct H6. rewrite H6. simpl. exists e'. auto.
+split. simpl; auto. destruct H4. destruct H6. rewrite last_error_cons. auto. unfold not; intros. rewrite H8 in H6; inversion H6.
+Qed.
+
 Definition spanning t g :=
   forall u v, connected g u v <-> connected t u v.
 
@@ -728,29 +994,79 @@ Definition spanning_uforest t g :=
   sound_uforest t /\ (*it is also a forest*)
   spanning t g. (*that is spanning...*)
 
-(* move to undirected graph *)
-Lemma adjacent_reachable:
-  forall g u v,
-    adjacent g u v ->
-    (reachable g u v \/ reachable g v u).
+Lemma NoDup_rev:
+  forall {A: Type} (l: list A), NoDup l -> NoDup (rev l).
 Proof.
-  intros.
-  unfold adjacent, adj_edge in H.
-  destruct H as [e [? [[? ?] | [? ?]]]];
-    [left | right];
-    unfold reachable, reachable_by, reachable_by_path.
-  - exists (u, (e :: nil)); split.
-    + split; trivial.
-    + unfold good_path. split; simpl.
-      * split; trivial. symmetry; trivial.
-      * unfold path_prop. split; trivial.
-        rewrite Forall_forall; intros; split; trivial.
-  - exists (v, (e :: nil)); split.
-    + split; trivial.
-    + unfold good_path. split; simpl.
-      * split; trivial. symmetry; trivial.
-      * unfold path_prop. split; trivial.
-        rewrite Forall_forall; intros; split; trivial.
+induction l; intros. simpl; auto.
+simpl. apply NoDup_app_inv. apply IHl. apply NoDup_cons_1 in H; auto.
+apply NoDup_cons. unfold not; intros; contradiction. apply NoDup_nil.
+intros. apply in_rev in H0. unfold not; intros. destruct H1.
+subst a. apply NoDup_cons_2 in H. contradiction. contradiction.
 Qed.
 
+Lemma simple_upath_rev:
+  forall g p, simple_upath g p -> simple_upath g (rev p).
+Proof.
+intros. split. apply valid_upath_rev; apply H. apply NoDup_rev; apply H.
+Qed.
+
+(*cycle definition from CLRS
+k>0 <-> p has at least two vertices
+all edges distinct <-> NoDup l
+*)
+Definition ucycle g p l :=
+match p with
+| nil => False
+| u::nil => False
+| u::v::p' => connected_by_path g p u u /\ fits_upath g l p /\ NoDup l
+end.
+
+Definition simple_ucycle g p l := NoDup (tl p) /\ ucycle g p l.
+
+Lemma sound_uforest_no_simple_ucycles:
+forall g, sound_uforest g -> (forall p l, valid_upath g p -> fits_upath g l p -> ~ simple_ucycle g p l).
+Proof.
+intros. destruct H as [Hself [Hmulti [Hstrong Hforest]]]. unfold not; intros. destruct H.
+destruct p. contradiction.
+destruct p. contradiction.
+destruct l. contradiction.
+destruct H2. destruct H2 as [_ [_ ?]]. destruct H3 as [_ ?].
+simpl in H. apply NoDup_cons_2 in H3.
+assert (v <> v0). unfold not; intros. subst v0. destruct H1. destruct H1. destruct H1.
+apply Hself in H1. destruct H5; destruct H5; rewrite H5 in H1; rewrite H7 in H1; contradiction.
+(*contradiction lies in In e l*)
+destruct H1.
+assert (simple_upath g (v::v0::nil)).
+  split. simpl; split. exists e; auto. apply (valid_upath_vvalid _ _ _ H0). right; left; auto.
+  apply NoDup_cons. unfold not; intros; destruct H6. symmetry in H6; contradiction. contradiction.
+  apply NoDup_cons. auto. apply NoDup_nil.
+assert (simple_upath g (v0::p)).
+  split. apply valid_upath_tail in H0. simpl in H0; auto. auto.
+assert ((v::v0::nil) = (rev (v0::p))). apply (Hforest v v0).
+  auto. split. apply H6. split; simpl; auto.
+  apply simple_upath_rev; auto.
+  apply connected_by_path_rev. split. apply H7. split. simpl; auto.
+  rewrite last_error_cons in H2; auto. unfold not; intros. inversion H8.
+pose proof (fits_upath_rev g (v0::p) l H5). rewrite <- H8 in H9.
+destruct (rev l) eqn:Hrevl. contradiction. destruct l0. 2: simpl in H9; destruct H9; contradiction.
+simpl in H9. destruct H9 as [? _]. assert (e = e0). apply (Hmulti v v0). split; auto. subst e0.
+apply H3. apply in_rev. rewrite Hrevl. left; auto.
+Qed.
+
+(*to be 100% close to CLRS' wording*)
+Corollary sound_uforest_no_simple_ucycles':
+forall g p l, sound_uforest g -> ~ simple_ucycle g p l.
+Proof.
+unfold not; intros. destruct H0.
+destruct p. contradiction.
+destruct p. contradiction.
+destruct H1 as [? [? ?]]. destruct l. contradiction.
+apply (sound_uforest_no_simple_ucycles g H (v::v0::p) (e::l)).
+apply H1. auto. split. auto. split. auto. split. auto. auto.
+Qed.
+
+(*The proof of the converse will be finicky, because it requires reasoning about "do this"
+But I don't think the converse is unnecessary;
+At most, we redefine uforest in the no-cycle way and show that kruskal creates a tree that satisfies previous_def, thus is a uforest
+*)
 End UNDIRECTED.

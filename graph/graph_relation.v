@@ -45,6 +45,38 @@ Section IS_PARTIAL_GRAPH.
       1: apply H1; assumption. rewrite <- H9; apply H; assumption.
   Qed.
 
+  Context {DV DE DG: Type}.
+
+Local Coercion pg_lg: LabeledGraph >-> PreGraph.
+(*Coercion lg_gg: GeneralGraph >-> LabeledGraph. *)
+
+Definition preserve_vlabel (g1 g2: LabeledGraph V E DV DE DG) :=
+  forall v, vvalid g1 v -> vlabel g1 v = vlabel g2 v.
+
+Definition preserve_elabel (g1 g2: LabeledGraph V E DV DE DG) :=
+  forall e, evalid g1 e -> elabel g1 e = elabel g2 e.
+
+Definition is_partial_lgraph (g1 g2: LabeledGraph V E DV DE DG) :=
+  is_partial_graph g1 g2 /\
+  preserve_vlabel g1 g2 /\ preserve_elabel g1 g2.
+
+Lemma is_partial_lgraph_refl: forall g,
+    is_partial_lgraph g g.
+Proof.
+intros. split. apply is_partial_graph_refl.
+unfold preserve_vlabel, preserve_elabel. split; auto.
+Qed.
+
+Lemma is_partial_lgraph_trans: forall g1 g2 g3,
+    is_partial_lgraph g1 g2 -> is_partial_lgraph g2 g3 -> is_partial_lgraph g1 g3.
+Proof.
+  intros. split. apply (is_partial_graph_trans g1 g2 g3). apply H. apply H0.
+  destruct H as [? [? ?]]. destruct H0 as [? [? ?]].
+  unfold preserve_vlabel, preserve_elabel in *. split; intros.
+  rewrite H1, H3; auto. apply H; auto.
+  rewrite H2, H4; auto. apply H; auto.
+Qed.
+
 End IS_PARTIAL_GRAPH.
 
 Section GuardedIdentical.
