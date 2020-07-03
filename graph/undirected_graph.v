@@ -390,7 +390,7 @@ Definition connected_graph (g: Gph) := forall u v, vvalid g u -> vvalid g v -> c
 Fixpoint fits_upath g (l: list E) (p: upath) :=
 match l, p with
 | nil, nil => True
-| nil, v::nil => True
+| nil, v::nil => True (*<- maybe this should be vvalid*)
 | e::l', u::v::p' => adj_edge g e u v /\ fits_upath g l' (v::p')
 | _, _ => False
 end.
@@ -439,8 +439,8 @@ simpl in H. destruct H. contradiction.
 simpl in H. destruct H. destruct H0. simpl. split; auto.
 Qed.
 
-Lemma fits_upath_evalid:
-forall g p l, fits_upath g l p -> forall e, In e l -> evalid g e.
+Lemma fits_upath_strong_evalid:
+  forall g p l e, fits_upath g l p -> In e l -> strong_evalid g e.
 Proof.
 induction p; destruct l; intros; try contradiction.
 destruct p eqn:Hp. unfold fits_upath in H. contradiction. rename l0 into p'.
@@ -452,10 +452,11 @@ apply fits_upath_cons in H.
 apply (IHp (e1::l0)). apply H. apply H0.
 Qed.
 
-Corollary fits_upath_evalid':
-forall g p l e, fits_upath g l p -> In e l -> evalid g e.
+Corollary fits_upath_evalid:
+  forall g p l e, fits_upath g l p -> In e l -> evalid g e.
 Proof.
-intros. apply (fits_upath_evalid g p l) in H0; auto. Qed.
+  intros; apply (fits_upath_strong_evalid g p l e); auto.
+Qed.
 
 Lemma fits_upath_vertex_src_In:
 forall g p l e, fits_upath g l p -> In e l -> In (src g e) p.
@@ -578,10 +579,35 @@ assert (In (src g e) (v :: p) /\ In (dst g e) (v :: p)). apply (IHp e l). apply 
 split; right; auto.
 Qed.
 
+Lemma fits_upath_transfer'':
+forall p l g1 g2, (forall v, In v p -> vvalid g2 v)
+-> (forall e, In e l -> evalid g2 e)
+-> (forall e, In e l -> src g1 e = src g2 e)
+-> (forall e, In e l -> dst g1 e = dst g2 e)
+-> fits_upath g1 l p -> fits_upath g2 l p.
+Proof.
+induction p; intros. destruct l. auto. apply H3.
+destruct l. destruct p. simpl. auto. simpl in H3. contradiction.
+destruct p. simpl in H3. contradiction.
+split.
+assert (In e (e::l)). left; auto.
++ (*adjacent edge*)
+  split. split. apply H0. left; auto.
+  split. rewrite <- H1; auto. apply H. apply (fits_upath_vertex_src_In g1 _ (e::l) e); auto.
+  rewrite <- H2; auto. apply H. apply (fits_upath_vertex_dst_In g1 _ (e::l) e); auto.
+  rewrite <- H1; auto. rewrite <- H2; auto.
+  destruct H3. destruct H3. auto.
++ apply (IHp l g1 g2). intros. apply H. right; auto.
+  intros. apply H0. right; auto.
+  intros. apply H1. right; auto.
+  intros. apply H2. right; auto.
+  apply H3.
+Qed.
+
 Lemma fits_upath_transfer':
 forall p l g1 g2, (forall v, vvalid g1 v <-> vvalid g2 v) ->
 (forall e, In e l -> evalid g2 e) -> (forall e, evalid g1 e -> evalid g2 e -> src g1 e = src g2 e) ->
-(forall e, evalid g1 e -> evalid g2 e -> dst g1 e = dst g2 e) -> (*this is not quite what I want, hm*)
+(forall e, evalid g1 e -> evalid g2 e -> dst g1 e = dst g2 e) ->
 fits_upath g1 l p -> fits_upath g2 l p.
 Proof.
 induction p; intros. destruct l. auto. apply H3.
