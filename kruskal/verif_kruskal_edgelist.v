@@ -24,7 +24,8 @@ Require Import RamifyCoq.sample_mark.spatial_array_graph.
 Require Import RamifyCoq.kruskal.kruskal_uf_specs.
 (*spanning tree definition*)
 Require Import RamifyCoq.kruskal.undirected_graph.
-
+Require Import RamifyCoq.kruskal.undirected_uf_lemmas.
+  
 Definition Vprog : varspecs. mk_varspecs prog. Defined.
 
 Definition Gprog : funspecs :=
@@ -41,168 +42,11 @@ intros. rewrite Forall_forall in *; intros.
 apply H. apply (Permutation_in (l:=bl) (l':=al) x). apply Permutation_sym. apply H0. apply H1.
 Qed.
 
-Lemma reachable_uf_equiv_connected:
-  forall (g1 g2: UFGraph) u v,
-    uf_equiv g1 g2 ->
-    reachable g1 u v ->
-    connected g2 u v.
-Proof.
-  intros.
-  pose proof (reachable_foot_valid _ _ _ H0).
-  pose proof (reachable_head_valid _ _ _ H0).
-  destruct H.
-  assert (EnumEnsembles.EnumCovered Z (evalid g2)). {
-    apply EnumEnsembles.Enumerable_is_EnumCovered, finiteE.
-  }
-  assert (EnumEnsembles.EnumCovered Z (evalid g1)). {
-    apply EnumEnsembles.Enumerable_is_EnumCovered, finiteE.
-  }
-  assert (vvalid g2 u). {
-    apply H; trivial.
-  }
-  assert (vvalid g2 v). {
-    apply H; trivial.
-  }
-  pose proof (uf_root_always_exists g1 (liGraph g1) u X0 H2).
-  pose proof (uf_root_always_exists g1 (liGraph g1) v X0 H1).
-  pose proof (uf_root_always_exists g2 (liGraph g2) u X H4).
-  pose proof (uf_root_always_exists g2 (liGraph g2) v X H5).
-  destruct H6 as [ur1 ?].
-  destruct H7 as [vr1 ?].
-  destruct H8 as [ur2 ?].
-  destruct H9 as [vr2 ?].
-  pose proof (H3 _ _ _ H6 H8).
-  pose proof (H3 _ _ _ H7 H9).
-  pose proof (uf_root_reachable _ _ _ _ H0 H7).
-  pose proof (uf_root_unique _ _ _ _ _ H6 H12).
-  subst ur1. subst vr1. subst vr2.
-  clear H6 H7.
-  destruct H8 as [? _].
-  destruct H9 as [? _].
-  apply reachable_implies_connected in H6.
-  apply reachable_implies_connected in H7.
-  apply connected_symm in H7.
-  apply (connected_trans _ _ _ _ H6 H7).
-Qed.
-
-Lemma uf_equiv_adjacent_connected:
-  forall (g1 g2 : UFGraph) u v,
-    uf_equiv g1 g2 ->
-    adjacent g1 u v ->
-    connected g2 u v.
-Proof.
-  intros.
-  apply adjacent_reachable in H0.
-  destruct H0.
-  - apply (reachable_uf_equiv_connected g1); trivial.
-  - apply connected_symm.
-    apply (reachable_uf_equiv_connected g1); trivial.
-Qed.
-
-Lemma uf_equiv_connected':
-  forall (g1 g2: UFGraph) u v,
-    uf_equiv g1 g2 ->
-    connected g1 u v ->
-    connected g2 u v.
-Proof.
-  intros.
-  rewrite connected_exists_path in H0.
-  destruct H0 as [p [? [? ?]]].
-  generalize dependent u.
-  induction p.
-  - intros. inversion H1.
-  - destruct p.
-    + intros. simpl in H1, H2.
-      inversion H1. inversion H2.
-      subst.
-      apply connected_refl; trivial.
-      simpl in H0. destruct H. apply H; trivial.
-    + destruct H0.
-      rewrite last_error_cons in H2.
-      2: unfold not; inversion 1.
-      specialize (IHp H1 H2).
-      intros.
-      simpl in H3. inversion H3; subst a; clear H3.
-      assert (connected g2 z v). {
-        apply adjacent_requires_vvalid in H0.
-        destruct H0.
-        apply IHp; trivial.
-      }
-      apply (uf_equiv_adjacent_connected _ g2) in H0; trivial.
-      apply (connected_trans _ _ _ _ H0 H3).
-Qed.
-
-Lemma uf_equiv_connected:
-  forall (g1 g2: UFGraph) u v,
-    uf_equiv g1 g2 ->
-    connected g1 u v <-> connected g2 u v.
-Proof.
-  intros. split; intros.
-  - apply (uf_equiv_connected' g1); trivial.
-  - apply uf_equiv_sym in H.
-    apply (uf_equiv_connected' g2); trivial.
-Qed.
-
-Lemma adjacent_ufroot_same:
-  forall (g: UFGraph) u v,
-    adjacent g u v ->
-    ufroot_same g u v.
-Proof.
-  intros.
-  apply adjacent_reachable in H.
-  destruct H.
-  - apply (reachable_ufroot_same _ (liGraph g)); trivial. 
-  - apply ufroot_same_symm, (reachable_ufroot_same _ (liGraph g)); trivial.
-Qed.
-
-Lemma connected_ufroot_same:
-  forall (g: UFGraph) u v,
-    connected g u v ->
-    ufroot_same g u v.
-Proof.
-  intros.
-  rewrite connected_exists_path in H.
-  destruct H as [p [? [? ?]]].
-  generalize dependent u.
-  induction p.
-  - intros. inversion H1.
-  - destruct p.
-    + intros. simpl in H1, H0.
-      inversion H1. inversion H0.
-      subst. apply (ufroot_same_refl _ (liGraph g)).
-      simpl in H; trivial.
-    + destruct H.
-      rewrite last_error_cons in H1.
-      2: unfold not; inversion 1.
-      specialize (IHp H0 H1).
-      intros.
-      simpl in H2. inversion H2; subst a; clear H2.
-      apply adjacent_ufroot_same in H.
-      apply (ufroot_same_trans _ (liGraph g) _ z); trivial.       apply IHp. trivial.
-Qed.
-
-Lemma ufroot_same_connected:
-  forall (g: UFGraph) u v,
-    ufroot_same g u v ->
-    connected g u v.
-Proof.
-  intros.
-  destruct H as [r [[? _] [? _]]].
-  apply reachable_implies_connected in H.
-  apply reachable_implies_connected in H0.
-  apply connected_symm in H0.
-  apply (connected_trans _ _ _ _ H H0).
-Qed.
-
-Lemma connected_ufroot_same_iff:
-  forall (g: UFGraph) u v,
-    connected g u v <-> ufroot_same g u v. 
-Proof.
-  intros. split; intros.
-  apply connected_ufroot_same; trivial.
-  apply ufroot_same_connected; trivial.
-Qed.
-
+(* Belongs in UF land, but is currently proved using 
+   a "connected" lemma. 
+   If I can prove this without using a connected lemma,
+   I can move this to UF land 
+*)
 Lemma uf_equiv_ufroot_same:
   forall (g1 g2: UFGraph) u v,
     uf_equiv g1 g2 ->
@@ -213,8 +57,7 @@ Using for now for convenience, given connected gives vvalid*)
 intros. do 2 rewrite <- connected_ufroot_same_iff. apply uf_equiv_connected. auto.
 Qed.
 
-(* basic UF helpers local to this verification. 
-can be inlined or moved to UF *)
+(* move to UF *)
 Lemma uf_root_unique':
   forall (g: UFGraph) x r1 r2,
     uf_root g x r1 ->
@@ -223,7 +66,6 @@ Lemma uf_root_unique':
 Proof.
   intros. apply (uf_root_unique _ (liGraph g) x); trivial.
 Qed.
-
 Lemma ufroot_vvalid_rt:
   forall (g: UFGraph) rt v,
     uf_root g v rt ->
@@ -232,7 +74,6 @@ Proof.
   intros. destruct H as [? _].
   apply (reachable_foot_valid _ _ _ H).
 Qed.
-
 Lemma ufroot_vvalid_vert:
   forall (g: UFGraph) rt v,
     uf_root g v rt ->
@@ -242,6 +83,11 @@ Proof.
   apply (reachable_head_valid _ _ _ H).
 Qed.
 
+(* Belongs in UF land, but is currently proved using 
+   a "connected" lemma. 
+   If I can prove this without using a connected lemma,
+   I can move this to UF land 
+*)
 Lemma ufroot_uf_set_in:
   forall (g: UFGraph) u u_rt,
     uf_root g u u_rt ->
@@ -258,7 +104,8 @@ Proof.
 Qed.
 
 (* Just a little utility to cleanly drag out 
-   a valid vertex's root *) 
+   a valid vertex's root *)
+(* move to UF land *)
 Lemma vvalid_get_ufroot:
   forall (g: UFGraph) x,
     vvalid g x ->
@@ -299,6 +146,7 @@ Proof.
   apply H1. rewrite <- H; trivial.
 Qed.
 
+(* move to UF *)
 Lemma ufroot_same_false:
   forall (g: UFGraph) a b a_rt b_rt,
     uf_root g a a_rt ->
@@ -314,6 +162,8 @@ Proof.
   pose proof (uf_root_unique _ (liGraph g) _ _ _ H3 H0).
   lia.
 Qed.
+
+(* then come back to these *)
 
 (* the vertices that were unaffected by union u v *)
 Lemma uf_union_unaffected_gen:
