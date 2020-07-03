@@ -62,7 +62,7 @@ KRUSKAL_FILES = \
   undirected_graph.v \
   WeightedEdgeListGraph.v \
   kruskal_edgelist.v env_kruskal_edgelist.v spatial_wedgearray_graph.v kruskal_uf_specs.v \
-  verif_kruskal_edgelist.v
+  verif_kruskal_edgelist.v undirected_uf_lemmas.v
 
 CLIGHT_FILES = sample_mark/mark_bi.v sample_mark/garbage_collector.v sample_mark/dispose_bi.v sample_mark/copy_bi.v sample_mark/summatrix.v
 
