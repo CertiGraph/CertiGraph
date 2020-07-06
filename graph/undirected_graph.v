@@ -21,10 +21,10 @@ Context {V E: Type}.
 Context {EV: EqDec V eq}.
 Context {EE: EqDec E eq}.
 
-Notation Gph := (PreGraph V E).
+Local Notation PGraph := (PreGraph V E).
 
 (*as long as there is an edge from u to v, u and v are connected, regardless of who is the src*)
-Definition adj_edge (g: Gph) (e: E) (u v: V) :=
+Definition adj_edge (g: PGraph) (e: E) (u v: V) :=
   strong_evalid g e /\ (*just evalid?*)
   ((src g e = u /\ dst g e = v) \/ (src g e = v /\ dst g e = u)).
 
@@ -36,7 +36,7 @@ destruct H0. right; auto. left; auto.
 Qed.
 
 (*Consequently, we may not care about the exact nature of the edges*)
-Definition adjacent (g: Gph) (u v: V) := exists e: E,
+Definition adjacent (g: PGraph) (u v: V) := exists e: E,
   adj_edge g e u v.
 
 Lemma adjacent_requires_vvalid:
@@ -60,86 +60,6 @@ But, it makes no sense having an undirected graph with more than one edge betwee
 *)
 Definition adj_edges g u v := fun e => adj_edge g e u v.
 
-(************CUSTOM LIST OPERATIONS************)
-(*Since it makes sense for us to deal with l+::a a lot*)
-
-(*curious this doesn't exist in the list library*)
-Fixpoint last_error {A: Type} (l : list A): option A :=
-match l with
-| nil => None
-| a::nil => Some a
-| _::l' => last_error l'
-end.
-
-Lemma last_error_cons: (*for convenience*)
-  forall {A:Type} (l: list A) (a: A), l <> nil -> last_error (a::l) = last_error l.
-Proof.
-intros. destruct l. contradiction. simpl. reflexivity.
-Qed.
-
-Lemma last_err_appcons:
-  forall {A:Type} (l: list A) (a: A), last_error (l+::a) = Some a.
-Proof.
-induction l. auto. intros. rewrite <- app_comm_cons. rewrite <- (IHl a0). simpl.
-destruct (l+::a0) eqn:H. assert (l+::a0 <> nil) by (apply app_not_nil). contradiction.
-reflexivity.
-Qed.
-
-Lemma last_err_app':
-  forall {A:Type} (l2 l1: list A) (a: A), last_error l2 = Some a -> last_error (l1++l2) = Some a.
-Proof.
-induction l2; intros. inversion H.
-destruct l2. simpl in H. inversion H. apply last_err_appcons.
-assert (last_error (a::a1::l2) = last_error (a1::l2)). simpl. reflexivity. rewrite H0 in H.
-assert (l1++a::a1::l2 = (l1+::a) ++ (a1::l2)).
-assert (a:: a1 :: l2 = (a::nil)++a1::l2) by reflexivity. rewrite H1.
-rewrite app_assoc. reflexivity. rewrite H1.
-apply (IHl2 (l1+::a)). apply H.
-Qed.
-
-Lemma last_err_app:
-  forall {A:Type} (l1 l2: list A) (a: A), last_error l2 = Some a -> last_error (l1++l2) = Some a.
-Proof.
-intros. apply (last_err_app' l2 l1 a H).
-Qed.
-
-Lemma last_err_split2:
-forall {A: Type} (l1 l2: list A) (a: A),
-last_error (l1++a::l2) = last_error (a::l2).
-induction l1; intros. rewrite app_nil_l; auto.
-replace (last_error ((a :: l1) ++ a0 :: l2)) with (last_error (l1 ++ a0 :: l2)).
-2: { simpl. destruct (l1++a0::l2) eqn:Htmp.
-  apply app_eq_nil in Htmp. destruct Htmp. inversion H0. auto. }
-apply IHl1.
-Qed.
-
-Lemma hd_error_app:
-  forall {A:Type} (l2 l1: list A) (a: A), hd_error l1 = Some a -> hd_error (l1++l2) = Some a.
-Proof.
-induction l1; intros. inversion H. simpl. simpl in H. auto.
-Qed.
-
-Lemma rev_hd_last:
-  forall {A:Type} (l: list A), hd_error l = last_error (rev l).
-Proof.
-induction l. auto.
-simpl. rewrite (last_err_appcons (rev l) a). reflexivity.
-Qed.
-
-Lemma hd_error_In:
-  forall {A:Type} (l: list A) a, hd_error l = Some a -> In a l.
-Proof.
-intros. destruct l; simpl in H; inversion H. left; auto.
-Qed.
-
-Lemma last_error_In:
-  forall {A:Type} (l: list A) a, last_error l = Some a -> In a l.
-Proof.
-induction l; intros. inversion H.
-destruct l. inversion H. left; auto.
-right. apply IHl. rewrite last_error_cons in H. apply H.
-unfold not; intros. inversion H0.
-Qed.
 
 (*A bunch of helpers for convenience in handling options*)
 Fixpoint adjacent_last g (u: option V) (v: V) :=
@@ -200,7 +120,7 @@ Definition upath := list V.
 
 (*So the difference between here and path_lemmas, is that the directed paths are guaranteed one vertex. That's why I need the last_error*)
 
-Fixpoint valid_upath (g: Gph) (p: upath) : Prop :=
+Fixpoint valid_upath (g: PGraph) (p: upath) : Prop :=
   match p with
     | nil => True
     | u :: nil => vvalid g u
@@ -304,14 +224,14 @@ rewrite <- rev_hd_last. destruct p. apply H.
 simpl. destruct H. apply adjacent_symm. apply H.
 Qed.
 
-Definition connected_by_path (g: Gph) (p: upath) (n : V) :=
+Definition connected_by_path (g: PGraph) (p: upath) (n : V) :=
   fun n' => valid_upath g p /\ hd_error p = Some n /\ last_error p = Some n'.
 
-Definition connected (g: Gph) (n : V) :=
+Definition connected (g: PGraph) (n : V) :=
   fun n' => exists p, connected_by_path g p n n'.
 
 Lemma connected_exists_path:
-  forall (g: Gph) u v,
+  forall (g: PGraph) u v,
     connected g u v <->
     exists p, 
       valid_upath g p /\
@@ -383,7 +303,7 @@ Proof.
 intros. destruct H as [p ?]. apply (connected_by_path_vvalid _ _ _ _ H).
 Qed.
 
-Definition connected_graph (g: Gph) := forall u v, vvalid g u -> vvalid g v -> connected g u v.
+Definition connected_graph (g: PGraph) := forall u v, vvalid g u -> vvalid g v -> connected g u v.
 
 (************REASONING ABOUT A SPECIFIC LIST OF EDGES************)
 
@@ -623,6 +543,17 @@ destruct H3. split.
 + apply (IHp l g1 g2); auto. intros. apply H0. right; auto.
 Qed.
 
+Lemma trivial_path1:
+  forall g e, strong_evalid g e ->
+    connected_by_path g ((src g e)::(dst g e)::nil) (src g e) (dst g e) /\
+    fits_upath g (e::nil) ((src g e)::(dst g e)::nil).
+Proof.
+intros. split.
+split. simpl. split. exists e. split. auto. left; auto. apply H.
+simpl. auto.
+simpl. split; auto. split. apply H. left; auto.
+Qed.
+
 (************REACHABLE -> CONNECTED************)
 
 Lemma valid_path'_cons:
@@ -697,8 +628,7 @@ destruct p. apply epath_to_vpath_foot'.
 Qed.
 
 Lemma adjacent_reachable:
-  forall g u v,
-    adjacent g u v ->
+  forall g u v, adjacent g u v ->
     (reachable g u v \/ reachable g v u).
 Proof.
   intros.
@@ -737,10 +667,10 @@ Qed.
 
 (************(CONNECTED) COMPONENTS************)
 
-Definition component (g: Gph) :=
+Definition component (g: PGraph) :=
   forall u v, connected g u v. (*Here we only care about connectedness; and are using as a set*)
 
-Definition maximal_component (g: Gph):=
+Definition maximal_component (g: PGraph):=
   component g /\ forall u v, connected g u v.
 (*
 Lemma connected_graph_component:
@@ -750,9 +680,9 @@ Lemma connected_graph_component:
 (************UFOREST************)
 
 (*Use wiki/Bender & Williamson 2010's definition. Defining a cycle is troublesome because
-1. have to deal with negations in definition of uforest
+1. have to deal with negations in definition of unique_simple_upath
 2. we support multiple edges btwn vertices, if so are they a cycle?
-For the purposes of kruskal, we need uforest more than cycles*)
+For the purposes of kruskal, we need unique_simple_upath more than cycles*)
 
 Definition simple_upath g p := valid_upath g p /\ NoDup p.
 
@@ -858,7 +788,7 @@ exists p'. split; auto.
 Qed.
 
 Lemma simple_upath_list_edges_NoDup:
-forall g p l, simple_upath g p -> fits_upath g l p -> NoDup l.
+  forall g p l, simple_upath g p -> fits_upath g l p -> NoDup l.
 Proof.
 induction p; intros. destruct l. apply NoDup_nil. simpl in H0; contradiction.
 destruct p; destruct l. apply NoDup_nil. simpl in H0; contradiction.
@@ -872,37 +802,28 @@ apply IHp. split. apply H. destruct H. apply NoDup_cons_1 in H2. auto. auto.
 Qed.
 
 (*barebones, this has a lot of loopholes*)
-Definition uforest g :=
+Definition unique_simple_upath g :=
   (forall u v p1 p2,
   simple_upath g p1 -> connected_by_path g p1 u v ->
   simple_upath g p2 -> connected_by_path g p2 u v ->
   p1 = p2).
 
-Definition sound_uforest g :=
+Definition uforest' g :=
   (forall e, evalid g e -> src g e <> dst g e) /\ (*No self-cycles*)
   (forall u v e1 e2, adj_edge g e1 u v /\ adj_edge g e2 u v -> e1 = e2) /\ (*Not a multigraph, preventing internal cycles within two vertices*)
   (forall e, evalid g e -> strong_evalid g e) /\ (*with no rubbish edges. Debatable where this should go?*)
-  uforest g. (*finally, the actual forest definition*)
-
-Lemma trivial_path1:
-forall g e, strong_evalid g e -> connected_by_path g ((src g e)::(dst g e)::nil) (src g e) (dst g e) /\
-fits_upath g (e::nil) ((src g e)::(dst g e)::nil).
-Proof.
-intros. split.
-split. simpl. split. exists e. split. auto. left; auto. apply H.
-simpl. auto.
-simpl. split; auto. split. apply H. left; auto.
-Qed.
+  unique_simple_upath g. (*finally, the actual forest definition*)
 
 (*Annnd even with the extra restrictions I STILL can't prove this
 I'm going about this the wrong way. I need to convert p,l into a simple_upath p' l'
-THEN I can use the fact that p' must be (u::v::nil) by uforest.
+THEN I can use the fact that p' must be (u::v::nil) by unique_simple_upath.
 And because e::nil fits (u::v::nil), any lpath must be e::nil (prove this)
 THEN e is in l', and by above we have incl l' l, thus e is in l
 *)
 Lemma forest_edge':
-forall p l g e, sound_uforest g -> strong_evalid g e -> connected_by_path g p (src g e) (dst g e) ->
-fits_upath g l p -> In e l.
+  forall p l g e, uforest' g -> strong_evalid g e ->
+    connected_by_path g p (src g e) (dst g e) -> fits_upath g l p ->
+    In e l.
 Proof.
 intros. pose proof (upath_simplifiable_edges g p l (src g e) (dst g e) H1 H2).
 destruct H3 as [p' [l' [? [? [? [? ?]]]]]].
@@ -919,13 +840,13 @@ left. destruct H9. destruct H6.
 destruct H as [? [? ?]]. apply (H13 (src g e) (dst g e)). split; auto.
 Qed.
 
-(*to avoid having to keep destructing to find the uforest def*)
-Lemma sound_uforest_uforest:
-forall g, sound_uforest g -> uforest g.
+(*to avoid having to keep destructing to find the unique_simple_upath def*)
+Lemma uforest'_unique_simple_path:
+  forall g, uforest' g -> unique_simple_upath g.
 Proof. intros. apply H. Qed.
 
-Lemma sound_uforest_unique_lpath:
-forall p l1 l2 g, sound_uforest g -> simple_upath g p -> fits_upath g l1 p -> fits_upath g l2 p -> l1 = l2.
+Lemma uforest'_unique_lpath:
+forall p l1 l2 g, uforest' g -> simple_upath g p -> fits_upath g l1 p -> fits_upath g l2 p -> l1 = l2.
 Proof.
 induction p; intros. destruct l1. destruct l2. auto. simpl in H2; contradiction. simpl in H1; contradiction.
 destruct p. destruct l1. destruct l2. auto. simpl in H2; contradiction. contradiction.
@@ -939,7 +860,7 @@ Definition bridge g e u v :=
 forall p l, connected_by_path g p u v -> fits_upath g l p -> In e l.
 
 Lemma forest_simple_bridge:
-forall p l g u v, sound_uforest g -> connected_by_path g p u v -> simple_upath g p -> fits_upath g l p ->
+forall p l g u v, uforest' g -> connected_by_path g p u v -> simple_upath g p -> fits_upath g l p ->
 forall e, In e l -> bridge g e u v.
 Proof.
 induction p; intros.
@@ -948,8 +869,8 @@ destruct p; destruct l. contradiction. simpl in H2. contradiction. simpl in H2. 
 assert (a = u). destruct H0. destruct H4. inversion H4. auto. subst a.
 unfold bridge; intros.
 pose proof (upath_simplifiable_edges g p0 l0 u v H4 H5). destruct H6 as [p' [l' [? [? [? [? ?]]]]]]. apply H10.
-assert (p' = (u::v0::p)). assert (uforest g). apply H. apply (H11 u v p' (u::v0::p)); auto. subst p'.
-assert ((e0::l) = l'). apply (sound_uforest_unique_lpath (u::v0::p) (e0::l) l' g); auto. subst l'.
+assert (p' = (u::v0::p)). assert (unique_simple_upath g). apply H. apply (H11 u v p' (u::v0::p)); auto. subst p'.
+assert ((e0::l) = l'). apply (uforest'_unique_lpath (u::v0::p) (e0::l) l' g); auto. subst l'.
 apply H3. (*hm, didn't need induction*)
 Qed.
 
@@ -1017,7 +938,7 @@ Qed.
 
 Definition spanning_uforest t g :=
   is_partial_graph t g /\ (*t is a partial graph of g*)
-  sound_uforest t /\ (*it is also a forest*)
+  uforest' t /\ (*it is also a forest*)
   spanning t g. (*that is spanning...*)
 
 Lemma NoDup_rev:
@@ -1049,8 +970,8 @@ end.
 
 Definition simple_ucycle g p l := NoDup (tl p) /\ ucycle g p l.
 
-Lemma sound_uforest_no_simple_ucycles:
-forall g, sound_uforest g -> (forall p l, valid_upath g p -> fits_upath g l p -> ~ simple_ucycle g p l).
+Lemma uforest'_no_simple_ucycles:
+forall g, uforest' g -> (forall p l, valid_upath g p -> fits_upath g l p -> ~ simple_ucycle g p l).
 Proof.
 intros. destruct H as [Hself [Hmulti [Hstrong Hforest]]]. unfold not; intros. destruct H.
 destruct p. contradiction.
@@ -1080,19 +1001,60 @@ apply H3. apply in_rev. rewrite Hrevl. left; auto.
 Qed.
 
 (*to be 100% close to CLRS' wording*)
-Corollary sound_uforest_no_simple_ucycles':
-forall g p l, sound_uforest g -> ~ simple_ucycle g p l.
+
+Definition uforest g:= forall p l, ~ simple_ucycle g p l.
+
+Corollary uforest'_uforest:
+forall g p l, uforest' g -> ~ simple_ucycle g p l.
 Proof.
-unfold not; intros. destruct H0.
+unfold uforest, not; intros. destruct H0.
 destruct p. contradiction.
 destruct p. contradiction.
 destruct H1 as [? [? ?]]. destruct l. contradiction.
-apply (sound_uforest_no_simple_ucycles g H (v::v0::p) (e::l)).
+apply (uforest'_no_simple_ucycles g H (v::v0::p) (e::l)).
 apply H1. auto. split. auto. split. auto. split. auto. auto.
 Qed.
 
+(******************LABELED GRAPHS******************)
+
+Local Coercion pg_lg: LabeledGraph >-> PreGraph.
+Local Coercion lg_gg: GeneralGraph >-> LabeledGraph. 
+
+Context {DV DE DG: Type}.
+Local Notation LGraph := (LabeledGraph V E DV DE DG).
+
+Lemma is_partial_lgraph_adjacent:
+  forall (g1 g2: LGraph) u v, is_partial_lgraph g1 g2 -> adjacent g1 u v -> adjacent g2 u v.
+Proof.
+intros. destruct H0. destruct H0. destruct H0. destruct H2.
+destruct H. destruct H4. destruct H. destruct H6. destruct H7.
+exists x. split. split. apply H6; auto.
+rewrite <- H7; auto. rewrite <- H8; auto.
+rewrite <- H7; auto. rewrite <- H8; auto.
+Qed.
+
+Lemma is_partial_lgraph_valid_upath:
+  forall (g1 g2: LGraph) p, is_partial_lgraph g1 g2 -> valid_upath g1 p -> valid_upath g2 p.
+Proof.
+intros. induction p. auto. destruct p. simpl. simpl in H0. apply H. apply H0.
+destruct H0. split. apply (is_partial_lgraph_adjacent g1 g2); auto. auto.
+Qed.
+
+Lemma is_partial_lgraph_connected:
+  forall (g1 g2: LGraph), is_partial_lgraph g1 g2 ->
+    forall u v, connected g1 u v -> connected g2 u v.
+Proof.
+intros. destruct H0 as [p ?]. destruct H0.
+exists p. split.
+apply (is_partial_lgraph_valid_upath g1 g2); auto. auto.
+Qed.
+
+Definition labeled_spanning_uforest (t g: LGraph) :=
+  spanning_uforest t g /\
+  preserve_vlabel t g /\ preserve_elabel t g.
+
 (*The proof of the converse will be finicky, because it requires reasoning about "do this"
 But I don't think the converse is unnecessary;
-At most, we redefine uforest in the no-cycle way and show that kruskal creates a tree that satisfies previous_def, thus is a uforest
+At most, we redefine unique_simple_upath in the no-cycle way and show that kruskal creates a tree that satisfies previous_def, thus is a unique_simple_upath
 *)
 End UNDIRECTED.
