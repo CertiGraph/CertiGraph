@@ -35,14 +35,21 @@ intros. destruct H. split; auto.
 destruct H0. right; auto. left; auto.
 Qed.
 
+Lemma adj_edge_vvalid:
+  forall g e u v, adj_edge g e u v -> vvalid g u /\ vvalid g v.
+Proof.
+intros. destruct H. destruct H as [? [? ?]]. destruct H0; destruct H0.
+all: subst u; subst v; split; auto.
+Qed.
+
 (*Consequently, we may not care about the exact nature of the edges*)
 Definition adjacent (g: PGraph) (u v: V) := exists e: E,
   adj_edge g e u v.
 
-Lemma adjacent_requires_vvalid:
+Corollary adjacent_requires_vvalid:
   forall g u v, adjacent g u v -> vvalid g u /\ vvalid g v.
 Proof.
-intros. destruct H. destruct H. destruct H0; destruct H0; rewrite <- H0; rewrite <- H1; split; apply H.
+intros. destruct H. apply (adj_edge_vvalid g x u v H).
 Qed.
 
 Lemma adjacent_symm:
@@ -59,7 +66,6 @@ So maybe we just return every such edge
 But, it makes no sense having an undirected graph with more than one edge between two vertices
 *)
 Definition adj_edges g u v := fun e => adj_edge g e u v.
-
 
 (*A bunch of helpers for convenience in handling options*)
 Fixpoint adjacent_last g (u: option V) (v: V) :=
@@ -310,7 +316,7 @@ Definition connected_graph (g: PGraph) := forall u v, vvalid g u -> vvalid g v -
 Fixpoint fits_upath g (l: list E) (p: upath) :=
 match l, p with
 | nil, nil => True
-| nil, v::nil => True (*<- maybe this should be vvalid*)
+| nil, v::nil => vvalid g v
 | e::l', u::v::p' => adj_edge g e u v /\ fits_upath g l' (v::p')
 | _, _ => False
 end.
@@ -325,14 +331,14 @@ exists (x::l). split; auto.
 Qed.
 
 Lemma valid_upath_exists_list_edges':
-  forall g p, (forall v, In v p -> vvalid g v) -> (exists l, fits_upath g l p) -> valid_upath g p.
+  forall g p, (exists l, fits_upath g l p) -> valid_upath g p.
 Proof.
 induction p; intros. simpl. auto.
-destruct p. simpl. apply H. left; auto.
-destruct H0 as [l ?]. destruct l. simpl in H0; contradiction. destruct H0.
-split. exists e; apply H0. apply IHp.
-intros; apply H. right; apply H2.
-exists l. apply H1.
+destruct H as [l ?].
+destruct p. simpl. destruct l; simpl in H; [auto | contradiction].
+destruct l. simpl in H; contradiction. destruct H.
+split. exists e; apply H. apply IHp.
+exists l. apply H0.
 Qed.
 
 Corollary connected_exists_list_edges:
@@ -353,8 +359,8 @@ Lemma fits_upath_cons:
 forall g p l e v v0, fits_upath g (e::l) (v::v0::p) -> fits_upath g l (v0::p).
 Proof.
 intros; destruct p; destruct l.
-simpl. auto.
-simpl in H. destruct H. contradiction.
+simpl. apply H.
+simpl in H. destruct H. auto.
 simpl in H. destruct H. contradiction.
 simpl in H. destruct H. destruct H0. simpl. split; auto.
 Qed.
@@ -407,7 +413,7 @@ Proof.
 induction p; intros. destruct l. destruct H0 as [v [? ?]]. simpl in H0. inversion H0.
 simpl in H. contradiction.
 destruct p; destruct l. destruct H0 as [v [? ?]]. simpl in H0. inversion H0. subst a.
-simpl. split; [apply adj_edge_sym; auto | auto].
+simpl. split. apply adj_edge_sym; auto. apply (adj_edge_vvalid g e u v H1).
 simpl in H. contradiction.
 simpl in H. contradiction.
 destruct H0 as [v0 [? ?]]. destruct H. split. auto. apply IHp. auto.
@@ -428,7 +434,7 @@ subst e0. exists (a::nil). exists (v::p). exists nil. exists l.
 split. simpl. auto.
 split. destruct H. destruct H0; destruct H0; subst a; subst v.
 left; simpl; auto. right; simpl; auto.
-split. simpl; auto. split; auto.
+split. simpl; apply (adj_edge_vvalid g e a v H). split; auto.
 (*case e isn't*)
 pose proof (IHp l e H1 H0); clear IHp.
 destruct H2 as [p1 [p2 [l1 [l2 ?]]]]. destruct H2 as [? [? [? [? ?]]]].
@@ -454,7 +460,7 @@ exists nil; exists nil; exists nil. split. simpl; auto. split; simpl; auto.
 simpl in H. contradiction.
 replace ((a :: nil) ++ p2) with (a::p2) in H. 2: simpl; auto.
 destruct p2. simpl in H; contradiction.
-destruct H. exists nil. exists (e::nil). exists l. split; simpl; auto.
+destruct H. exists nil. exists (e::nil). exists l. split; simpl; auto. apply (adj_edge_vvalid g e a v H).
 destruct l. simpl in H; contradiction.
 destruct H. apply IHp1 in H0. destruct H0 as [l1 [l2 [l3 [? [? ?]]]]].
 exists (e::l1). exists l2. exists l3. split. split; auto. split. auto. simpl. rewrite H2. auto.
@@ -507,7 +513,7 @@ forall p l g1 g2, (forall v, In v p -> vvalid g2 v)
 -> fits_upath g1 l p -> fits_upath g2 l p.
 Proof.
 induction p; intros. destruct l. auto. apply H3.
-destruct l. destruct p. simpl. auto. simpl in H3. contradiction.
+destruct l. destruct p. simpl. apply H; left; auto. simpl in H3. contradiction.
 destruct p. simpl in H3. contradiction.
 split.
 assert (In e (e::l)). left; auto.
@@ -531,7 +537,7 @@ forall p l g1 g2, (forall v, vvalid g1 v <-> vvalid g2 v) ->
 fits_upath g1 l p -> fits_upath g2 l p.
 Proof.
 induction p; intros. destruct l. auto. apply H3.
-destruct l. destruct p. simpl. auto. simpl in H3. contradiction.
+destruct l. destruct p. simpl. simpl in H3. apply H; auto. simpl in H3. contradiction.
 destruct p. simpl in H3. contradiction.
 destruct H3. split.
 + (*adjacent edge*)
@@ -551,7 +557,7 @@ Proof.
 intros. split.
 split. simpl. split. exists e. split. auto. left; auto. apply H.
 simpl. auto.
-simpl. split; auto. split. apply H. left; auto.
+simpl. split. split. apply H. left; auto. apply H.
 Qed.
 
 (************REACHABLE -> CONNECTED************)
@@ -884,7 +890,8 @@ Proof.
 induction p; intros. destruct H. destruct H1. inversion H1.
 destruct p.
 (*single vertex in path - trivial connection, no bridge exists*)
-unfold bridge in H0. assert (fits_upath g nil (a::nil)). simpl; auto. apply H0 in H1; auto. contradiction.
+unfold bridge in H0. assert (fits_upath g nil (a::nil)). simpl. apply (valid_upath_vvalid g (a::nil)). apply H. left; auto.
+apply H0 in H1; auto. contradiction.
 (*proper version to look at. Destruct cases: Is e in between a::v0*)
 destruct H. destruct H1. simpl in H1; inversion H1. subst a. clear H1.
 destruct H. destruct H as [e' ?].
