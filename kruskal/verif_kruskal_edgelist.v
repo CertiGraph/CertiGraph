@@ -34,12 +34,6 @@ Definition Gprog : funspecs :=
 
 Local Open Scope Z_scope.
 
-Lemma Forall_permutation: forall {A: Type} (al bl: list A) f, Forall f al -> Permutation al bl -> Forall f bl.
-Proof.
-intros. rewrite Forall_forall in *; intros.
-apply H. apply (Permutation_in (l:=bl) (l':=al) x). apply Permutation_sym. apply H0. apply H1.
-Qed.
-
 Lemma reachable_uf_equiv_connected:
   forall (g1 g2: UFGraph) u v,
     uf_equiv g1 g2 ->
@@ -852,16 +846,16 @@ assert (H_l2_weight: forall e, In e l2 -> elabel g e <= elabel g (u1,v1)). {
          fits_upath t2 l p /\ (forall e' : EType, In e' l -> elabel g e' <= elabel g (u1, v1))).
   apply H5. left; auto. destruct H10 as [p' [l' [? [? [? ?]]]]].
   rewrite <- sound_src in H10; auto. rewrite <- sound_dst in H10; auto. simpl in H10.
-  assert (l' = l2). assert (uforest t2). apply H1.
+  assert (l' = l2). assert (unique_simple_upath t2). apply H1.
   assert (p' = p2). apply (H14 u1 v1 p' p2); auto. split. apply H10. apply H11.
-  apply (sound_uforest_unique_lpath p2 l' l2 t2); auto. apply H1. rewrite <- H15; auto.
+  apply (uforest'_unique_lpath p2 l' l2 t2); auto. apply H1. rewrite <- H15; auto.
   apply H13. rewrite H14. auto.
 }
 (*now find the matching edge for a. I need ~forall -> exists...*)
 assert (exists b, In b (EList t2) /\ ~ In b (EList t1) /\ bridge t2 b u1 v1). {
   (*main thing is just show In b l2 /\ ~ In b (EList t1).
   Do the ~ forall -> exists thing on l2.
-  Then (prove and) use a lemma that every edge in a simple path of a sound_uforest is a bridge*)
+  Then (prove and) use a lemma that every edge in a simple path of a uforest' is a bridge*)
   assert (exists b : EType, In b l2 /\ ~ In b (EList t1)). apply list_not_forall_exists.
   unfold not; intros. subst l2. destruct p2. destruct H6. destruct H9. inversion H9.
   destruct p2. destruct H6. destruct H9. inversion H9. inversion H10. subst u1; subst v1.
@@ -1023,10 +1017,10 @@ auto.
     destruct (E_EqDec (u1, v1) e). unfold Equivalence.equiv in e0. subst e. rewrite <- sound_dst; auto. apply H0. auto.
     unfold RelationClasses.complement, Equivalence.equiv in c. destruct H13. destruct H13. apply H1. auto. auto. symmetry in H13; contradiction.
 } split.
-(*sound_uforest*) {
-  assert (sound_uforest (FiniteWEdgeListGraph_eremove t2 b) /\ ~ connected (FiniteWEdgeListGraph_eremove t2 b) (src t2 b) (dst t2 b)).
-  apply (eremove_sound_uforest t2 b). auto. apply H1. apply EList_evalid in H9. auto. destruct H13.
-  apply sound_uforest_adde. auto. apply eremove_sound. auto. auto.
+(*uforest'*) {
+  assert (uforest' (FiniteWEdgeListGraph_eremove t2 b) /\ ~ connected (FiniteWEdgeListGraph_eremove t2 b) (src t2 b) (dst t2 b)).
+  apply (eremove_uforest' t2 b). auto. apply H1. apply EList_evalid in H9. auto. destruct H13.
+  apply uforest'_adde. auto. apply eremove_sound. auto. auto.
   apply eremove_vvalid. apply (spanning_preserves_vertices g t2). apply H1. apply (spanning_preserves_vertices g t1). apply H0.
   apply sound_strong_evalid in Ha; auto. destruct Ha. rewrite <- sound_src in H16; auto. rewrite <- sound_dst in H16; auto. apply H16.
   apply eremove_vvalid. apply (spanning_preserves_vertices g t2). apply H1. apply (spanning_preserves_vertices g t1). apply H0.
@@ -1530,7 +1524,7 @@ Proof.
            numE msf' <= i;
            sound_weighted_edge_graph msf';
            is_partial_lgraph msf' g;
-           sound_uforest msf';
+           uforest' msf';
            Permutation msflist (graph_to_wedgelist msf');
            forall v, vvalid g v <-> vvalid subsetsGraph' v;
            forall e u v, adj_edge g e u v -> In (wedge_to_cdata (edge_to_wedge g e)) (sublist 0 i sorted) -> ufroot_same subsetsGraph' u v;
@@ -1582,7 +1576,7 @@ Proof.
         apply edgeless_WEdgeGraph_evalid in H25; contradiction.
         unfold preserve_vlabel; intros. simpl. destruct vlabel. auto.
         unfold preserve_elabel; intros. apply edgeless_WEdgeGraph_evalid in H25; contradiction.
-      * apply uforest_edgeless_WEdgeGraph.
+      * apply uforest'_edgeless_WEdgeGraph.
       * intros; split; intros. apply H0 in H25. apply makeSet_vvalid. rewrite Z2Nat.id by lia. lia.
           apply H0. apply makeSet_vvalid in H25. rewrite Z2Nat.id in H25 by lia. lia.
       * unfold connected; unfold connected_by_path.
@@ -1843,7 +1837,7 @@ Proof.
         unfold EquivDec.equiv_dec. destruct E_EqDec. unfold Equivalence.equiv in e0; rewrite <- e0. auto.
         destruct H23. apply H11. auto. unfold RelationClasses.complement, Equivalence.equiv in c. symmetry in H23. contradiction.
     +++
-    apply sound_uforest_adde; auto. apply H8; auto. apply H8; auto.
+    apply uforest'_adde; auto. apply H8; auto. apply H8; auto.
     +++
     apply NoDup_Permutation. apply NoDup_app_inv.
     apply (Permutation_NoDup (l:=graph_to_wedgelist msf')). apply Permutation_sym; auto. apply NoDup_g2wedgelist.
