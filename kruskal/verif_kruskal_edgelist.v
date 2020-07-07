@@ -55,34 +55,9 @@ intros. rewrite Forall_forall in *; intros.
 apply H. apply (Permutation_in (l:=bl) (l':=al) x). apply Permutation_sym. apply H0. apply H1.
 Qed.
 
-Lemma inhabited_set_nonempty:
-  forall U (S: Ensemble U) v,
-    S v ->
-    Same_set S (Empty_set U) ->
-    False.
-Proof.
-  intros.
-  assert (Ensembles.Inhabited _ S). {
-    apply (Ensembles.Inhabited_intro _ _ v); trivial.
-  }
-  apply (Constructive_sets.Inhabited_not_empty _ _ H1).
-  apply Ensembles.Extensionality_Ensembles; trivial.
-Qed.
+(* carefully moving these out *)
 
-Lemma same_set_contra:
-  forall (U: Type) S1 S2 x,
-    @Same_set U S1 S2 ->
-    S1 x ->
-    ~ S2 x ->
-    False.
-Proof.
-  intros. 
-  apply Ensembles.Extensionality_Ensembles in H.
-  apply H1. rewrite <- H; trivial.
-Qed.
-
-(* then come back and move these out *)
-
+(*
 (* the vertices that were unaffected by union u v *)
 Lemma uf_union_unaffected_gen:
   forall (g1 g2 : UFGraph) a b (S1 S2 S3 : uf_set),
@@ -250,7 +225,11 @@ Lemma uf_union_vvalid:
     vvalid g1 x <-> vvalid g2 x.
 Proof.
   intros.
-  pose proof (uf_union_create_precons _ _ _ H H0).
+  pose proof (uf_union_create_precons
+                _ (liGraph g1)
+                (UnionFindGraph.finGraph g1)
+                (maGraph g1)
+                _ _ H H0).
   destruct H2 as [u_rt [v_rt [? [? [? [? [? ?]]]]]]].
   split; intros.
   (* -> *)
@@ -325,7 +304,11 @@ Proof.
       * apply (ufroot_vvalid_vert _ x0).
         apply H12, (ufroot_same_refl _ (liGraph g2)); trivial. 
 Qed.
+ *)
+(* the above have been moved successfully *)
 
+(* TODO: needs a better name *)
+(* move to UF land *)
 Lemma uf_union_preserves_connected:
 (* Any two vertices that were connected already 
    remain so after union. i.e., union doesn't split 
@@ -338,7 +321,11 @@ Lemma uf_union_preserves_connected:
     ufroot_same g2 a b.
 Proof.
   intros.
-  pose proof (uf_union_create_precons _ _ _ H H0).
+  pose proof (uf_union_create_precons
+                _ (liGraph g1)
+                (UnionFindGraph.finGraph g1)
+                (maGraph g1)
+                _ _ H H0).
   destruct H3 as [u_rt [v_rt [? [? [? [? [? ?]]]]]]].
   destruct H2 as [ab_rt [? ?]].
   
@@ -405,6 +392,8 @@ Proof.
   - apply (ufroot_uf_set_in _ (liGraph g1) a ab_rt); trivial.
 Qed.
 
+(* TODO: needs a better name *)
+(* move to UF land *)
 Lemma uf_union_connected:
   (* After union(u,v), u and v are "joined" *)
   forall (g1 g2: UFGraph) u v,
@@ -414,7 +403,11 @@ Lemma uf_union_connected:
     ufroot_same g2 u v.
 Proof.
   intros.
-  pose proof (uf_union_create_precons _ _ _ H H0).
+  pose proof (uf_union_create_precons
+                _ (liGraph g1)
+                (UnionFindGraph.finGraph g1)
+                (maGraph g1)
+                _ _ H H0).
   destruct H2 as [u_rt [v_rt [? [? [? [? [? ?]]]]]]].
   
   (* two cases: either they were already joined or not *)
@@ -434,20 +427,26 @@ Proof.
       [apply Union_introl | apply Union_intror]; trivial.
 Qed.
 
+(* TODO: needs a better name *)
+(* move to UF land *)
 Lemma uf_union_remains_disconnected1:
   (* If a was disjoint from u and v, 
      then after union(u,v) it remains disjoint from u *)
   forall (g1 g2: UFGraph) u v a,
     vvalid g1 u ->
     vvalid g1 v ->
-    vvalid g1 a -> (* added *)
+    vvalid g1 a ->
     uf_union g1 u v g2 ->
     ~ ufroot_same g1 a u ->
     ~ ufroot_same g1 a v ->
     ~ ufroot_same g2 a u.
 Proof.
   intros.
-  pose proof (uf_union_create_precons _ _ _ H H0).
+  pose proof (uf_union_create_precons
+                _ (liGraph g1)
+                (UnionFindGraph.finGraph g1)
+                (maGraph g1)
+                _ _ H H0).
   destruct H5 as [u_rt [v_rt [? [? [? [? [? ?]]]]]]].
 
   assert (ufroot_same g1 a a). {
@@ -458,7 +457,7 @@ Proof.
            H7 H8 H11 H9 H10) in H2.
   destruct H2 as [rt [? ?]]. intro.
   rewrite H12 in *.
-  apply H3, (ufroot_same_uf_root_trans _ a); trivial. 
+  apply H3, (ufroot_same_uf_root_trans _ (liGraph g2) a); trivial. 
   - intro. apply (same_set_contra _ _ _ a H12); trivial.
     intro. apply H3. apply ufroot_same_symm; trivial.
   - intro. apply (same_set_contra _ _ _ a H12); trivial.
@@ -467,6 +466,8 @@ Proof.
     apply (ufroot_uf_set_in _ (liGraph g1) a a_rt); trivial.
 Qed.
 
+(* TODO: needs a better name *)
+(* move to UF land *)
 Lemma uf_union_remains_disconnected2:
 (*If a was disjoint from u and v, then after union(u,v) it remains disjoint from v*)
 forall (g1 g2: UFGraph) u v a,
@@ -498,7 +499,11 @@ Lemma uf_union_joins_only_uv:
     ~ ufroot_same g2 x y.
 Proof.
   intros.
-  pose proof (uf_union_create_precons _ _ _ H H0).
+  pose proof (uf_union_create_precons
+                _ (liGraph g1)
+                (UnionFindGraph.finGraph g1)
+                (maGraph g1)
+                _ _ H H0).
   destruct H7 as [u_rt [v_rt [? [? [? [? [? ?]]]]]]].
   
   assert (ufroot_same g1 x x). {
@@ -512,7 +517,7 @@ Proof.
   destruct H3 as [rt [? ?]].
   rewrite H14 in *.
   intro. apply H6.
-  apply (ufroot_same_uf_root_trans _ x); trivial.
+  apply (ufroot_same_uf_root_trans _ (liGraph g2) x); trivial.
   - intro. apply (same_set_contra _ _ _ x H14); trivial.
     intro. apply H4. apply ufroot_same_symm; trivial.
   - intro. apply (same_set_contra _ _ _ x H14); trivial.
@@ -1642,7 +1647,16 @@ Proof.
     unfold edge_to_wedge; simpl. inversion H23. auto.
     unfold RelationClasses.complement, Equivalence.equiv in c. rewrite H24 in c; contradiction.
     +++
-    intros. rewrite <- (uf_union_vvalid subsetsGraph_uv uv_union u v); auto.
+      intros. rewrite <- (uf_union_vvalid
+                            subsetsGraph_uv
+                            uv_union
+                            (liGraph subsetsGraph_uv)
+                            (liGraph uv_union)
+                            (UnionFindGraph.finGraph subsetsGraph_uv)
+                            (UnionFindGraph.finGraph uv_union)
+                            (maGraph subsetsGraph_uv)
+                            (maGraph uv_union)
+                            u v); auto.
     destruct Hequiv_trans. rewrite <- H23. apply H14.
     +++
     intros. rewrite (sublist_split 0 i (i+1)) in H24 by lia. apply in_app_or in H24.
@@ -1684,10 +1698,28 @@ Proof.
       Will also need an analog of cross_bridge_implies_endpoints, and a ufroot_same_dec analog of the in_dec
     *)
     assert (Hvvalid_subsetsGraph_uv_a: vvalid subsetsGraph_uv a).
-      apply (uf_union_vvalid subsetsGraph_uv uv_union u v a); auto.
+    apply (uf_union_vvalid
+             subsetsGraph_uv
+             uv_union
+             (liGraph subsetsGraph_uv)
+             (liGraph uv_union)
+             (UnionFindGraph.finGraph subsetsGraph_uv)
+             (UnionFindGraph.finGraph uv_union)
+             (maGraph subsetsGraph_uv)
+             (maGraph uv_union)
+             u v); auto.
       destruct H23 as [rt [? ?]]. apply (ufroot_vvalid_vert uv_union rt a). auto.
-    assert (Hvvalid_subsetsGraph_uv_b: vvalid subsetsGraph_uv b).
-      apply (uf_union_vvalid subsetsGraph_uv uv_union u v b); auto.
+      assert (Hvvalid_subsetsGraph_uv_b: vvalid subsetsGraph_uv b).
+      apply (uf_union_vvalid
+               subsetsGraph_uv
+               uv_union
+               (liGraph subsetsGraph_uv)
+               (liGraph uv_union)
+               (UnionFindGraph.finGraph subsetsGraph_uv)
+               (UnionFindGraph.finGraph uv_union)
+               (maGraph subsetsGraph_uv)
+               (maGraph uv_union)
+               u v); auto.
       destruct H23 as [rt [? ?]]. apply (ufroot_vvalid_vert uv_union rt b). auto.
     destruct (connected_dec msf' a b); rename H24 into Hab. apply adde_connected; auto.
     destruct (connected_dec msf' a u).
