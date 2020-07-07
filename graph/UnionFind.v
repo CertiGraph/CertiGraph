@@ -266,8 +266,43 @@ Section UNION_FIND_SINGLE.
         } apply no_loop_path in H14. inversion H14. destruct li; inversion H17.
   Qed.
 
+  Lemma ufroot_vvalid_rt:
+  forall rt v,
+    uf_root g v rt ->
+    vvalid g rt.
+  Proof.
+    intros. destruct H as [? _].
+    apply (reachable_foot_valid _ _ _ H).
+  Qed.
+  
+  Lemma ufroot_vvalid_vert:
+    forall rt v,
+      uf_root g v rt ->
+      vvalid g v.
+  Proof.
+    intros. destruct H as [? _].
+    apply (reachable_head_valid _ _ _ H).
+  Qed.
+
+  
   Context {FIN: FiniteGraph g}.
 
+  (* Just a little utility to cleanly drag out 
+     a  valid vertex's root *)
+  Lemma vvalid_get_ufroot:
+    forall x,
+      vvalid g x ->
+      exists x_rt, uf_root g x x_rt.
+  Proof.
+    intros.
+    assert (EnumCovered Edge (evalid g)). {
+      apply EnumEnsembles.Enumerable_is_EnumCovered, finiteE.
+      }
+    pose proof (uf_root_always_exists x X H).
+    destruct H0 as [x_rt ?].
+    exists x_rt; trivial.
+  Qed.
+  
   Lemma uf_equiv_uf_root: forall (g': PreGraph Vertex Edge) x root, uf_equiv g' g -> uf_root g' x root -> uf_root g x root.
   Proof.
     intros. destruct H. assert (exists r, uf_root g x r). {
@@ -281,7 +316,7 @@ Section UNION_FIND_SINGLE.
     - destruct H, H0. rewrite <- H0. apply H.
     - pose proof (uf_equiv_uf_root _ _ _ H H1). destruct H0. apply (H4 x); auto.
   Qed.
-
+  
   (* cleaner notation for uf_root being same *)
   Definition ufroot_same u v :=
     exists r,
@@ -340,7 +375,40 @@ Section UNION_FIND_SINGLE.
     pose proof (uf_root_reachable _ _ _ H H3).
     exists r_v. split; trivial.
   Qed.
-
+  
+  Lemma ufroot_same_false:
+    forall a b a_rt b_rt,
+      uf_root g a a_rt ->
+      uf_root g b b_rt ->
+      a_rt <> b_rt ->
+      ufroot_same a b ->
+      False.
+  Proof.
+    intros.
+    destruct H2 as [? [? ?]].
+    apply H1.
+    pose proof (uf_root_unique _ _ _ H2 H).
+    pose proof (uf_root_unique _ _ _ H3 H0).
+    rewrite <- H4, H5; trivial.
+  Qed.
+  
+  Lemma ufroot_uf_set_in:
+    forall u u_rt,
+      uf_root g u u_rt ->
+      uf_set_in g (ufroot_same u).
+  Proof.
+    intros. right. exists u_rt. split.
+    - exists u_rt. split; trivial.
+      destruct H; split; trivial.
+      apply reachable_refl.
+      apply (reachable_foot_valid _ _ _ H).
+    - intros. split; intros.
+      + destruct H0 as [? [? ?]].
+        replace u_rt with x0; trivial.
+        apply (uf_root_unique u); trivial.
+      + exists u_rt; split; trivial.
+  Qed.
+  
 End UNION_FIND_SINGLE.
 
 Class FML_General (Vertex : Type) (Edge : Type) {EV : EqDec Vertex eq} {EE: EqDec Edge eq} (DV: Type) (DE: Type) (DG: Type)
@@ -474,3 +542,5 @@ Section UNION_FIND_GENERAL.
   Qed.
 
 End UNION_FIND_GENERAL.
+
+
