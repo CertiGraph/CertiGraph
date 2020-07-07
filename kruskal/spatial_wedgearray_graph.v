@@ -5,7 +5,7 @@ Require Import RamifyCoq.graph.FiniteGraph.
 Require Import VST.veric.SeparationLogic.
 Require Import RamifyCoq.kruskal.env_kruskal_edgelist.
 Require Import RamifyCoq.floyd_ext.share.
-Require Import RamifyCoq.kruskal.undirected_graph.
+Require Import RamifyCoq.graph.undirected_graph.
 
 Local Open Scope logic.
 
