@@ -36,12 +36,6 @@ Definition Gprog : funspecs :=
 
 Local Open Scope Z_scope.
 
-Lemma Forall_permutation: forall {A: Type} (al bl: list A) f, Forall f al -> Permutation al bl -> Forall f bl.
-Proof.
-intros. rewrite Forall_forall in *; intros.
-apply H. apply (Permutation_in (l:=bl) (l':=al) x). apply Permutation_sym. apply H0. apply H1.
-Qed.
-
 (* Belongs in UF land, but is currently proved using 
    a "connected" lemma. 
    If I can prove this without using a connected lemma,
@@ -52,72 +46,15 @@ Lemma uf_equiv_ufroot_same:
     uf_equiv g1 g2 ->
     ufroot_same g1 u v <-> ufroot_same g2 u v.
 Proof.
-(*Probably can be independent of the connectedness
-Using for now for convenience, given connected gives vvalid*)
 intros. do 2 rewrite <- connected_ufroot_same_iff. apply uf_equiv_connected. auto.
 Qed.
 
-(* move to UF *)
-Lemma uf_root_unique':
-  forall (g: UFGraph) x r1 r2,
-    uf_root g x r1 ->
-    uf_root g x r2 ->
-    r1 = r2.
-Proof.
-  intros. apply (uf_root_unique _ (liGraph g) x); trivial.
-Qed.
-Lemma ufroot_vvalid_rt:
-  forall (g: UFGraph) rt v,
-    uf_root g v rt ->
-    vvalid g rt.
-Proof.
-  intros. destruct H as [? _].
-  apply (reachable_foot_valid _ _ _ H).
-Qed.
-Lemma ufroot_vvalid_vert:
-  forall (g: UFGraph) rt v,
-    uf_root g v rt ->
-    vvalid g v.
-Proof.
-  intros. destruct H as [? _].
-  apply (reachable_head_valid _ _ _ H).
-Qed.
+(* General helpers that were used in this verification *)
 
-(* Belongs in UF land, but is currently proved using 
-   a "connected" lemma. 
-   If I can prove this without using a connected lemma,
-   I can move this to UF land 
-*)
-Lemma ufroot_uf_set_in:
-  forall (g: UFGraph) u u_rt,
-    uf_root g u u_rt ->
-    uf_set_in g (ufroot_same g u).
+Lemma Forall_permutation: forall {A: Type} (al bl: list A) f, Forall f al -> Permutation al bl -> Forall f bl.
 Proof.
-  intros. right. exists u_rt. split.
-  - apply connected_ufroot_same. destruct H as [? _].
-    apply reachable_implies_connected; trivial.
-  - intros. split; intros.
-    + destruct H0 as [? [? ?]].
-      replace u_rt with x0; trivial.
-      apply (uf_root_unique _ (liGraph g) u); trivial.
-    + exists u_rt; split; trivial.
-Qed.
-
-(* Just a little utility to cleanly drag out 
-   a valid vertex's root *)
-(* move to UF land *)
-Lemma vvalid_get_ufroot:
-  forall (g: UFGraph) x,
-    vvalid g x ->
-    exists x_rt, uf_root g x x_rt.
-Proof.
-  intros.
-  assert (EnumEnsembles.EnumCovered Z (evalid (UFGraph_LGraph g))). {
-    apply EnumEnsembles.Enumerable_is_EnumCovered, finiteE.
-    }
-  pose proof (uf_root_always_exists _ (liGraph g) x X H).
-  destruct H0 as [x_rt ?].
-  exists x_rt; trivial.
+intros. rewrite Forall_forall in *; intros.
+apply H. apply (Permutation_in (l:=bl) (l':=al) x). apply Permutation_sym. apply H0. apply H1.
 Qed.
 
 Lemma inhabited_set_nonempty:
@@ -144,23 +81,6 @@ Proof.
   intros. 
   apply Ensembles.Extensionality_Ensembles in H.
   apply H1. rewrite <- H; trivial.
-Qed.
-
-(* move to UF *)
-Lemma ufroot_same_false:
-  forall (g: UFGraph) a b a_rt b_rt,
-    uf_root g a a_rt ->
-    uf_root g b b_rt ->
-    a_rt <> b_rt ->
-    ufroot_same g a b ->
-    False.
-Proof.
-  intros.
-  destruct H2 as [? [? ?]].
-  apply H1.
-  pose proof (uf_root_unique _ (liGraph g) _ _ _ H2 H).
-  pose proof (uf_root_unique _ (liGraph g) _ _ _ H3 H0).
-  lia.
 Qed.
 
 (* then come back to these *)
@@ -318,8 +238,8 @@ Proof.
   assert (H4 := H2).  
   destruct H1 as [u_rt [? _]].
   destruct H2 as [v_rt [? _]].
-  pose proof (ufroot_uf_set_in _ _ _ H1).
-  pose proof (ufroot_uf_set_in _ _ _ H2).
+  pose proof (ufroot_uf_set_in _ (liGraph g) _ _ H1).
+  pose proof (ufroot_uf_set_in _ (liGraph g) _ _ H2).
   exists u_rt, v_rt.
   split3; [| |split3; [| |split]]; trivial.
 Qed.
@@ -336,7 +256,7 @@ Proof.
   destruct H2 as [u_rt [v_rt [? [? [? [? [? ?]]]]]]].
   split; intros.
   (* -> *)
-  - pose proof (vvalid_get_ufroot _ _ H8).
+  - pose proof (vvalid_get_ufroot _ (liGraph g1) _ H8).
     destruct H9 as [x_rt ?].
     (* now we take cases to see whether x was
        connected to u, to v, or to neither
@@ -370,21 +290,21 @@ Proof.
     + intro.
       apply (same_set_contra _ _ _ x H11); trivial.
       intro.
-      apply (ufroot_same_false _ _ _ _ _ H9 H2 n); trivial.
+      apply (ufroot_same_false _ (liGraph g1) _ _ _ _ H9 H2 n); trivial.
       apply ufroot_same_symm; trivial.
     + intro.
       apply (same_set_contra _ _ _ x H11); trivial.
       intro.
-      apply (ufroot_same_false _ _ _ _ _ H9 H3 n0); trivial.
+      apply (ufroot_same_false _ (liGraph g1) _ _ _ _ H9 H3 n0); trivial.
       apply ufroot_same_symm; trivial.
-    + apply (ufroot_uf_set_in _ x x_rt); trivial.
+    + apply (ufroot_uf_set_in _ (liGraph g1) x x_rt); trivial.
 
   (* <- *)
-  - pose proof (vvalid_get_ufroot _ _ H8).
+  - pose proof (vvalid_get_ufroot _ (liGraph g2) _ H8).
     destruct H9 as [x_rt ?].
 
     assert (uf_set_in g2 (ufroot_same g2 x)). {
-      apply (ufroot_uf_set_in _ _ x_rt); trivial.
+      apply (ufroot_uf_set_in _ (liGraph g2) _ x_rt); trivial.
     }
 
     assert (ufroot_same g2 x x). {
@@ -477,14 +397,14 @@ Proof.
   - intro.
     apply (same_set_contra _ _ _ a H12); trivial.
     intro.
-    apply (ufroot_same_false g1 a u ab_rt u_rt); trivial.
+    apply (ufroot_same_false _ (liGraph g1) a u ab_rt u_rt); trivial.
     apply ufroot_same_symm; trivial.
   - intro.
     apply (same_set_contra _ _ _ a H12); trivial.
     intro.
-    apply (ufroot_same_false g1 a v ab_rt v_rt); trivial.
+    apply (ufroot_same_false _ (liGraph g1) a v ab_rt v_rt); trivial.
     apply ufroot_same_symm; trivial.
-  - apply (ufroot_uf_set_in _ a ab_rt); trivial.
+  - apply (ufroot_uf_set_in _ (liGraph g1) a ab_rt); trivial.
 Qed.
 
 Lemma uf_union_connected:
@@ -546,7 +466,7 @@ Proof.
   - intro. apply (same_set_contra _ _ _ a H12); trivial.
     intro. apply H4. apply ufroot_same_symm; trivial.
   - destruct H11 as [a_rt [? _]].
-    apply (ufroot_uf_set_in _ a a_rt); trivial.
+    apply (ufroot_uf_set_in _ (liGraph g1) a a_rt); trivial.
 Qed.
 
 Lemma uf_union_remains_disconnected2:
@@ -599,9 +519,9 @@ Proof.
     intro. apply H4. apply ufroot_same_symm; trivial.
   - intro. apply (same_set_contra _ _ _ x H14); trivial.
     intro. apply H5. apply ufroot_same_symm; trivial.
-  - apply vvalid_get_ufroot in H1.
+  - apply (vvalid_get_ufroot _ (liGraph g1)) in H1.
     destruct H1 as [x_rt ?].
-    apply (ufroot_uf_set_in _ x x_rt); trivial.
+    apply (ufroot_uf_set_in _ (liGraph g1) x x_rt); trivial.
 Qed.
 
 (*************************************************************)
@@ -1649,8 +1569,8 @@ Proof.
   (*before we union, show that u-v doesn't exist in msf'*)
   assert (HsubsetsGraph'_ufroot_uv: ~ ufroot_same subsetsGraph' u v). {
     unfold not; intros Htmp. destruct Htmp as [x [? ?]].
-    assert (u_root = x). apply (uf_root_unique' subsetsGraph' u u_root x); auto.
-    assert (v_root = x). apply (uf_root_unique' subsetsGraph' v v_root x); auto.
+    assert (u_root = x). apply (uf_root_unique _ (liGraph subsetsGraph') u u_root x); auto.
+    assert (v_root = x). apply (uf_root_unique _ (liGraph subsetsGraph') v v_root x); auto.
     subst u_root; subst v_root; contradiction.
   }
   assert (Hconnected_uv: ~ connected msf' u v). rewrite <- H16; auto.
