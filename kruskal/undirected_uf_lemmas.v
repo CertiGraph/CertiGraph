@@ -23,7 +23,7 @@ Require Import RamifyCoq.kruskal.spatial_wedgearray_graph.
 Require Import RamifyCoq.sample_mark.spatial_array_graph.
 Require Import RamifyCoq.kruskal.kruskal_uf_specs.
 (*spanning tree definition*)
-Require Import RamifyCoq.kruskal.undirected_graph.
+Require Import RamifyCoq.graph.undirected_graph.
 (* TODO: minimize this import list *)
 
 Lemma reachable_uf_equiv_connected:

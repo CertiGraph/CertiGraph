@@ -37,6 +37,8 @@ Proof.
   specialize (H0 a H1). inversion H0.
 Qed.
 
+(***************FORALL***************)
+
 Lemma Forall_tl: forall {A : Type} (P : A -> Prop) (x : A) (l : list A),
     Forall P (x :: l) -> Forall P l.
 Proof. intros; rewrite Forall_forall in *; intros. apply H, in_cons; auto. Qed.
@@ -66,8 +68,16 @@ Qed.
 Lemma Forall_incl: forall {A : Type} (P : A -> Prop) (l1 l2 : list A), incl l1 l2 -> Forall P l2 -> Forall P l1.
 Proof. intros; hnf in *. rewrite Forall_forall in *; intro y; intros. apply H0, H; auto. Qed.
 
+Lemma Forall_permutation: forall {A: Type} (al bl: list A) f, Forall f al -> Permutation al bl -> Forall f bl.
+Proof.
+intros. rewrite Forall_forall in *; intros.
+apply H. apply (Permutation_in (l:=bl) (l':=al) x). apply Permutation_sym. apply H0. apply H1.
+Qed.
+
 Lemma map_incl: forall {A B : Type} (f : A -> B) (l1 l2 : list A), incl l1 l2 -> incl (map f l1) (map f l2).
 Proof. intros; hnf in *; intros. rewrite in_map_iff in *. destruct H0 as [y [? ?]]. exists y; split; auto. Qed.
+
+(*****NODUP******)
 
 Lemma NoDup_cons_1 : forall (A : Type) (x : A) (l : list A), NoDup (x :: l) -> NoDup l. Proof. intros. rewrite NoDup_cons_iff in H. destruct H; auto. Qed.
 
@@ -1527,3 +1537,123 @@ Section LIST_DERIVED_MAPPING.
   Qed.
 
 End LIST_DERIVED_MAPPING.
+
+(************CUSTOM LIST OPERATIONS************)
+(*Since it makes sense for us to deal with l+::a a lot*)
+
+(*curious this doesn't exist in the list library*)
+Fixpoint last_error {A: Type} (l : list A): option A :=
+match l with
+| nil => None
+| a::nil => Some a
+| _::l' => last_error l'
+end.
+
+Lemma last_error_cons: (*for convenience*)
+  forall {A:Type} (l: list A) (a: A), l <> nil -> last_error (a::l) = last_error l.
+Proof.
+intros. destruct l. contradiction. simpl. reflexivity.
+Qed.
+
+Lemma last_err_appcons:
+  forall {A:Type} (l: list A) (a: A), last_error (l+::a) = Some a.
+Proof.
+induction l. auto. intros. rewrite <- app_comm_cons. rewrite <- (IHl a0). simpl.
+destruct (l+::a0) eqn:H. assert (l+::a0 <> nil) by (apply app_not_nil). contradiction.
+reflexivity.
+Qed.
+
+Lemma last_err_app':
+  forall {A:Type} (l2 l1: list A) (a: A), last_error l2 = Some a -> last_error (l1++l2) = Some a.
+Proof.
+induction l2; intros. inversion H.
+destruct l2. simpl in H. inversion H. apply last_err_appcons.
+assert (last_error (a::a1::l2) = last_error (a1::l2)). simpl. reflexivity. rewrite H0 in H.
+assert (l1++a::a1::l2 = (l1+::a) ++ (a1::l2)).
+assert (a:: a1 :: l2 = (a::nil)++a1::l2) by reflexivity. rewrite H1.
+rewrite app_assoc. reflexivity. rewrite H1.
+apply (IHl2 (l1+::a)). apply H.
+Qed.
+
+Lemma last_err_app:
+  forall {A:Type} (l1 l2: list A) (a: A), last_error l2 = Some a -> last_error (l1++l2) = Some a.
+Proof.
+intros. apply (last_err_app' l2 l1 a H).
+Qed.
+
+Lemma last_err_split2:
+forall {A: Type} (l1 l2: list A) (a: A),
+last_error (l1++a::l2) = last_error (a::l2).
+induction l1; intros. rewrite app_nil_l; auto.
+replace (last_error ((a :: l1) ++ a0 :: l2)) with (last_error (l1 ++ a0 :: l2)).
+2: { simpl. destruct (l1++a0::l2) eqn:Htmp.
+  apply app_eq_nil in Htmp. destruct Htmp. inversion H0. auto. }
+apply IHl1.
+Qed.
+
+Lemma hd_error_app:
+  forall {A:Type} (l2 l1: list A) (a: A), hd_error l1 = Some a -> hd_error (l1++l2) = Some a.
+Proof.
+induction l1; intros. inversion H. simpl. simpl in H. auto.
+Qed.
+
+Lemma rev_hd_last:
+  forall {A:Type} (l: list A), hd_error l = last_error (rev l).
+Proof.
+induction l. auto.
+simpl. rewrite (last_err_appcons (rev l) a). reflexivity.
+Qed.
+
+Lemma hd_error_In:
+  forall {A:Type} (l: list A) a, hd_error l = Some a -> In a l.
+Proof.
+intros. destruct l; simpl in H; inversion H. left; auto.
+Qed.
+
+Lemma last_error_In:
+  forall {A:Type} (l: list A) a, last_error l = Some a -> In a l.
+Proof.
+induction l; intros. inversion H.
+destruct l. inversion H. left; auto.
+right. apply IHl. rewrite last_error_cons in H. apply H.
+unfold not; intros. inversion H0.
+Qed.
+
+(*NoDup is probably unnecessary, but convenient*)
+Lemma list_same_diff:
+forall {A: Type} {EA: EqDec A eq} (l1 l2: list A), NoDup l1 -> NoDup l2 ->
+      exists lsame ldiff, NoDup lsame /\ NoDup ldiff /\ Permutation (lsame++ldiff) l1 /\
+      incl lsame l2 /\ (forall e, In e ldiff -> ~ In e l2).
+Proof.
+induction l1; intros.
++exists nil. exists nil. repeat split.
+  apply NoDup_nil. apply NoDup_nil. rewrite app_nil_l. apply perm_nil.
+  unfold incl; intros; contradiction. unfold not; intros; contradiction.
++
+(*By NoDup, a can't already be in l1*)
+assert (NoDup l1). apply NoDup_cons_1 in H; auto.
+apply (IHl1 l2 H1) in H0. destruct H0 as [lsame [ldiff [? [? [? [? ?]]]]]].
+destruct (in_dec EA a l2).
+(*yes, then a is in lsame*)
+exists (a::lsame). exists ldiff. repeat split.
+  simpl. apply NoDup_cons. unfold not; intros.
+  assert (In a l1). apply (Permutation_in (l:=(lsame++ldiff))); auto. apply in_or_app. left; auto.
+  apply NoDup_cons_2 in H; auto. auto.
+  auto.
+  simpl; apply perm_skip; auto.
+  unfold incl; intros. destruct H6. subst a; auto. auto.
+  auto.
+(*no, then a is in ldiff*)
+exists lsame. exists (a::ldiff). repeat split.
+  auto.
+  apply NoDup_cons. unfold not; intros. assert (In a l1).
+  apply (Permutation_in (l:=(lsame++ldiff))); auto. apply in_or_app. right; auto.
+  apply NoDup_cons_2 in H. contradiction.
+  auto.
+  apply (Permutation_trans (l:=lsame ++ a :: ldiff) (l':=a::ldiff++lsame)).
+  apply Permutation_app_comm. apply perm_skip.
+  apply (Permutation_trans (l':=lsame ++ ldiff) (l:=ldiff++lsame)).
+  apply Permutation_app_comm. apply H3.
+  auto.
+  intros. destruct H6. subst a. auto. auto.
+Qed.

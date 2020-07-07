@@ -58,6 +58,47 @@ Proof.
 intros. unfold EList. destruct finiteE. simpl. apply a.
 Qed.
 
+(*destructing In_dec (VList g) can be slow outside, so adding this here*)
+Lemma VList_In_dec:
+  forall g {fg: FiniteGraph g} v, In v (VList g) \/ ~ In v (VList g).
+Proof.
+intros. destruct (in_dec EV v (VList g)); [left; auto | right; auto].
+Qed.
+
+Lemma EList_In_dec:
+  forall g {fg: FiniteGraph g} e, In e (EList g) \/ ~ In e (EList g).
+Proof.
+intros. destruct (in_dec EE e (EList g)); [left; auto | right; auto].
+Qed.
+
+Corollary vvalid_dec:
+  forall g {fg: FiniteGraph g} v, vvalid g v \/ ~ vvalid g v.
+Proof.
+intros. destruct (VList_In_dec g v); [left; rewrite <- VList_vvalid; apply H | right; rewrite <- VList_vvalid; apply H].
+Qed.
+
+Corollary evalid_dec:
+  forall g {fg: FiniteGraph g} e, evalid g e \/ ~ evalid g e.
+Proof.
+intros. destruct (EList_In_dec g e); [left; rewrite <- EList_evalid; apply H | right; rewrite <- EList_evalid; apply H].
+Qed.
+
+Lemma strong_evalid_dec:
+  forall g {fg: FiniteGraph g} e, strong_evalid g e \/ ~ strong_evalid g e.
+Proof.
+intros. destruct (evalid_dec g e).
+destruct (vvalid_dec g (src g e)).
+destruct (vvalid_dec g (dst g e)).
+left. split. auto. split; auto.
+all: right; unfold not; intros Htmp; destruct Htmp as [? [? ?]]; contradiction.
+Qed.
+
+(*I'm hoping to use Zlength instead. But maybe we can leave numV and numE in WeightedEdgeListGraph until we need it elsewhere*)
+Definition numV' g {fg: FiniteGraph g} := length (VList g).
+Definition numE' g {fg: FiniteGraph g} := length (EList g).
+
+(**************LOCAL FINITE GRAPH**************)
+
 Class LocalFiniteGraph (pg: PreGraph V E) :=
 {
   local_enumerable: forall x, Enumerable E (out_edges pg x)
