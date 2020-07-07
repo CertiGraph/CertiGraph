@@ -22,8 +22,8 @@ Require Import RamifyCoq.kruskal.env_kruskal_edgelist.
 Require Import RamifyCoq.kruskal.spatial_wedgearray_graph.
 Require Import RamifyCoq.sample_mark.spatial_array_graph.
 Require Import RamifyCoq.kruskal.kruskal_uf_specs.
-Require Import RamifyCoq.kruskal.undirected_uf_lemmas. (* move out one level? *)
 Require Import RamifyCoq.graph.undirected_graph.
+Require Import RamifyCoq.graph.undirected_uf_lemmas. 
 
 Definition Vprog : varspecs. mk_varspecs prog. Defined.
 
