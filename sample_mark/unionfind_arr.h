@@ -11,5 +11,6 @@ int find(struct subset subsets[], int i);
 void Union(struct subset subsets[], int x, int y);
 
 struct subset* makeSet(int V);
+void freeSet(struct subset subsets[]);
 
 #endif

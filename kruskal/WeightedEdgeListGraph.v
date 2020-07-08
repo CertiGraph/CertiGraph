@@ -1480,7 +1480,7 @@ Qed.
 Definition minimum_spanning_forest (t g: FiniteWEdgeListGraph) :=
  labeled_spanning_uforest t g /\
   forall (t': FiniteWEdgeListGraph), labeled_spanning_uforest t' g ->
-    Z.le (sum_DE Z.add g 0) (sum_DE Z.add g 0).
+    Z.le (sum_DE Z.add t 0) (sum_DE Z.add t' 0).
 
 (*The following are to let us reason about lists instead of graphs*)
 Lemma sum_LE_equiv:

@@ -77,6 +77,6 @@ struct graph *kruskal(struct graph *graph) {
         }
     }
 
-    free(subsets);
+    freeSet(subsets);
     return mst;
 }
