@@ -97,6 +97,80 @@ Qed.
 Definition numV' g {fg: FiniteGraph g} := length (VList g).
 Definition numE' g {fg: FiniteGraph g} := length (EList g).
 
+(****EDGE ADD/REMOVE*****)
+Instance pregraph_add_edge_finite g {fg: FiniteGraph g} e u v:
+  FiniteGraph (pregraph_add_edge g e u v).
+Proof.
+constructor; unfold EnumEnsembles.Enumerable; simpl.
+exists (VList g). split. apply NoDup_VList. apply VList_vvalid.
+(*edge*)
+unfold addValidFunc. destruct (in_dec EE e (EList g)).
+(*case e already inside*)
+exists (EList g). split. apply NoDup_EList. intros; split; intros. left. apply EList_evalid in H; auto.
+destruct H. apply EList_evalid; auto. rewrite H; auto.
+(*case e not inside*)
+exists (e::(EList g)). split. apply NoDup_cons. auto. apply NoDup_EList.
+intros; split; intros.
+destruct H. right; rewrite H; auto. left; rewrite <- EList_evalid; apply H.
+destruct H. rewrite <- EList_evalid in H. apply in_cons. apply H.
+rewrite H. simpl. left; auto.
+Qed.
+
+Instance pregraph_remove_edge_finite g {fg: FiniteGraph g} e :
+  FiniteGraph (pregraph_remove_edge g e).
+Proof.
+unfold pregraph_remove_edge.
+constructor; unfold Enumerable; simpl.
+exists (VList g). split. apply NoDup_VList. apply VList_vvalid.
+(*edge*)
+unfold removeValidFunc.
+destruct (in_dec EE e (EList g)).
+(*case e already inside*)
+exists (remove EE e (EList (g))). split.
+apply nodup_remove_nodup. apply NoDup_EList.
+intros. rewrite remove_In_iff. rewrite EList_evalid. split; auto.
+(*case e not inside*)
+exists (EList g). split. apply NoDup_EList.
+intros; split; intros. split. apply EList_evalid in H; auto.
+unfold not; intros; subst x. contradiction.
+destruct H. apply EList_evalid. auto.
+Qed.
+
+Lemma pregraph_remove_edge_EList:
+  forall g {fg: FiniteGraph g} e l, Permutation (e::l) (EList g) ->
+    Permutation l (EList (pregraph_remove_edge g e)).
+Proof.
+intros. assert (Hel: NoDup (e::l)). apply NoDup_Perm_EList in H; auto.
+apply NoDup_Permutation.
+apply NoDup_cons_1 in Hel; auto.
+apply NoDup_EList.
+intros. rewrite EList_evalid. simpl. unfold removeValidFunc. rewrite <- EList_evalid. split; intros.
+split. apply (Permutation_in (l:=(e::l))). apply H. right; auto.
+unfold not; intros. subst e. apply NoDup_cons_2 in Hel. contradiction.
+destruct H0. apply Permutation_sym in H. apply (Permutation_in (l':=(e::l))) in H0. 2: auto.
+destruct H0. symmetry in H0; contradiction. auto.
+Qed.
+
+Lemma pregraph_remove_edge_EList':
+  forall g {fg: FiniteGraph g} e l, evalid g e -> Permutation l (EList (pregraph_remove_edge g e)) -> Permutation (e::l) (EList g).
+Proof.
+intros. assert (~ In e (EList (pregraph_remove_edge g e))).
+rewrite EList_evalid. simpl. unfold not, removeValidFunc; intros. destruct H1. contradiction.
+assert (~ In e l). unfold not; intros.
+apply (Permutation_in (l':= (EList (pregraph_remove_edge g e)))) in H2. contradiction. auto.
+apply NoDup_Permutation. apply NoDup_cons; auto. apply NoDup_Perm_EList in H0; auto.
+apply NoDup_EList.
+intros; split; intros. apply EList_evalid. destruct H3. subst x. auto.
+apply (Permutation_in (l':= (EList (pregraph_remove_edge g e)))) in H3; auto.
+rewrite EList_evalid in H3. simpl in H3. unfold removeValidFunc in H3. apply H3.
+destruct (EE x e). unfold equiv in e0. subst x. left; auto.
+unfold complement, equiv in c. right.
+assert (evalid (pregraph_remove_edge g e) x). simpl. unfold removeValidFunc. split; auto.
+apply EList_evalid in H3; auto.
+rewrite <- EList_evalid in H4.
+apply (Permutation_in (l:= (EList (pregraph_remove_edge g e)))). apply Permutation_sym; auto. apply H4.
+Qed.
+
 (**************LOCAL FINITE GRAPH**************)
 
 Class LocalFiniteGraph (pg: PreGraph V E) :=

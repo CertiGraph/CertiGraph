@@ -683,13 +683,10 @@ rewrite adde_dst1.
 destruct H0. destruct H0.
 rewrite (sound_src g e); auto. rewrite (sound_dst g e); auto.
 (*e<>e'*)
-unfold complement, equiv in c. destruct H0. split.
-apply adde_strong_evalid2; auto.
-rewrite adde_src2; auto.
-rewrite adde_dst2; auto.
+unfold complement, equiv in c. apply adde_adj_edge2; auto.
 Qed.
 
-Lemma sound_adde_adj_edge_rev:
+Lemma adde_adj_edge_rev:
 forall (g: FiniteWEdgeListGraph) e w e' u v,
   e <> e' ->
   adj_edge (FiniteWEdgeListGraph_adde g e w) e' u v -> adj_edge g e' u v .
@@ -699,6 +696,19 @@ split.
 apply adde_strong_evalid_rev in H0; auto.
 rewrite adde_src2 in H1; auto.
 rewrite adde_dst2 in H1; auto.
+Qed.
+
+Lemma adde_valid_upath':
+forall (g: FiniteWEdgeListGraph) e w p,
+  ~ evalid g e ->
+  valid_upath g p -> valid_upath (FiniteWEdgeListGraph_adde g e w) p.
+Proof.
+induction p; intros. auto.
+destruct p. auto.
+split. destruct H0. destruct H0. exists x.
+apply adde_adj_edge2; auto. unfold not; intros; subst x.
+destruct H0. destruct H0. contradiction.
+apply IHp. auto. apply H0.
 Qed.
 
 Lemma adde_valid_upath:
@@ -840,7 +850,8 @@ right. split. rewrite adde_src1; auto. rewrite adde_dst1; auto.
 split. apply hd_error_app; auto. apply last_err_app; auto.
 Qed.
 
-Lemma cross_bridge_implies_endpoints':
+(*not possible to simplify with bridge after all, because bridge is "forward" while this is "backward"*)
+Lemma cross_bridge_implies_endpoints:
 forall (g: FiniteWEdgeListGraph) u v w p l a b,
 ~ connected g u v ->
 simple_upath (FiniteWEdgeListGraph_adde g (u,v) w) p ->
@@ -903,76 +914,6 @@ destruct H0. apply NoDup_cons_1 in H4. auto.
 destruct H1. destruct H4. split. apply H0.
 split. simpl; auto. rewrite last_error_cons in H5; auto. unfold not; intros; inversion H6.
 apply H2. apply H3.
-destruct H4; destruct H4. left. split.
-apply (connected_trans g a v0 u); auto. auto.
-right. split.
-apply (connected_trans g a v0 v); auto. auto.
-Qed.
-
-(*not possible to simplify with bridge after all, because bridge is "forward" while this is "backward"*)
-Lemma cross_bridge_implies_endpoints:
-forall (g: FiniteWEdgeListGraph) u v w p a b,
-~ connected g u v ->
-simple_upath (FiniteWEdgeListGraph_adde g (u,v) w) p ->
-connected_by_path (FiniteWEdgeListGraph_adde g (u,v) w) p a b ->
-(exists l, fits_upath (FiniteWEdgeListGraph_adde g (u,v) w) l p /\ In (u,v) l) ->
-((connected g a u /\ connected g v b) \/ (connected g a v /\ connected g u b)).
-Proof.
-induction p; intros. destruct H1. destruct H3. inversion H3.
-assert (a = a0). destruct H1. destruct H3. inversion H3. auto. subst a0. (*that was weird*)
-destruct H2 as [l ?]. destruct H2. destruct l. contradiction.
-destruct p. contradiction.
-(*so we show that v0 is connected to one of them. By trans, a0 is connected to one*)
-(*case where (u,v) is first in list. Then we show a = u or a = v*)
-destruct H3. subst e.
-destruct H2. destruct H2. destruct H2.
-rewrite adde_src1 in *. rewrite adde_dst1 in *.
-destruct H5. simpl in H5, H6.
-assert (~ In (u,v) l).  unfold not; intros.
-  destruct H4; destruct H4; subst a; subst v0; destruct H0.
-  assert (In u (v::p)). replace u with (src (FiniteWEdgeListGraph_adde g (u, v) w) (u,v)).
-  apply (fits_upath_vertex_src_In _ (v::p) l (u,v)); auto.
-  rewrite adde_src1. auto. apply NoDup_cons_2 in H4. contradiction.
-  assert (In v (u::p)). replace v with (dst (FiniteWEdgeListGraph_adde g (u, v) w) (u,v)).
-  apply (fits_upath_vertex_dst_In _ (u::p) l (u,v)); auto.
-  rewrite adde_dst1. auto. apply NoDup_cons_2 in H4. contradiction.
-destruct H4; destruct H4; subst a; subst v0.
-left. split. apply connected_refl. auto. exists (v::p).
-split. apply (adde_unaffected g (u,v) w). apply H0.
-exists l. split. apply (adde_fits_upath_rev g (u,v) w). apply H3. auto. auto.
-split. simpl; auto. destruct H1. destruct H4. rewrite last_error_cons in H8; auto.
-unfold not; intros; inversion H9.
-right. split. apply connected_refl. auto. exists (u::p).
-split. apply (adde_unaffected g (u,v) w). apply H0.
-exists l. split. apply (adde_fits_upath_rev g (u,v) w). apply H3. auto. auto.
-split. simpl; auto. destruct H1. destruct H4. rewrite last_error_cons in H8; auto.
-unfold not; intros; inversion H9.
-(*Case where (u-v) is somewhere in the middle*)
-assert (Hav0: connected g a v0). {
-  apply adjacent_connected. destruct H2. destruct H2.
-  assert ((u,v) <> e). unfold not; intros. subst e.
-    rewrite adde_src1 in *; rewrite adde_dst1 in *.
-    destruct H5; destruct H5; subst a; subst v0.
-    assert (In u (v::p)). replace u with (src (FiniteWEdgeListGraph_adde g (u, v) w) (u,v)).
-    apply (fits_upath_vertex_src_In _ (v::p) l (u,v)); auto.
-    rewrite adde_src1. auto.
-    destruct H0. apply NoDup_cons_2 in H6. contradiction.
-    assert (In v (u::p)). replace v with (dst (FiniteWEdgeListGraph_adde g (u, v) w) (u,v)).
-    apply (fits_upath_vertex_dst_In _ (u::p) l (u,v)); auto.
-    rewrite adde_dst1. auto.
-    destruct H0. apply NoDup_cons_2 in H6. contradiction.
-  exists e. destruct H2. repeat rewrite <- adde_vvalid in H7.
-  rewrite adde_src2 in H5, H7; auto. rewrite adde_dst2 in H5, H7; auto.
-  apply (adde_evalid2' g (u,v) w) in H2; auto.
-  split; auto. split; auto.
-}
-(*IHp on v0*)
-assert (connected g v0 u /\ connected g v b \/ connected g v0 v /\ connected g u b).
-apply (IHp v0 b). auto. split. apply H0.
-destruct H0. apply NoDup_cons_1 in H4. auto.
-destruct H1. destruct H4. split. apply H0.
-split. simpl; auto. rewrite last_error_cons in H5; auto. unfold not; intros; inversion H6.
-exists l. split. destruct H2. auto. auto.
 destruct H4; destruct H4. left. split.
 apply (connected_trans g a v0 u); auto. auto.
 right. split.
@@ -1138,7 +1079,7 @@ destruct H5 as [l1 ?]. destruct H6 as [l2 ?].
 destruct (in_dec E_EqDec (u,v) l1); destruct (in_dec E_EqDec (u,v) l2).
 
 + assert ((connected g a u /\ connected g v b) \/ (connected g a v /\ connected g u b)).
-apply (cross_bridge_implies_endpoints g u v w p1 a b); auto. exists l1; split; auto.
+apply (cross_bridge_implies_endpoints g u v w p1 l1 a b); auto.
 destruct H7; destruct H7.
 (*case a-u and v-b*)
   apply connected_symm in H7.
@@ -1195,7 +1136,7 @@ apply adde_fits_upath_rev in H6; auto.
 destruct H4. apply adde_unaffected in H4. 2: { exists l2. split; auto. }
 assert (connected g a b). exists p2. split; auto.
 assert ((connected g a u /\ connected g v b) \/ (connected g a v /\ connected g u b)).
-apply (cross_bridge_implies_endpoints g u v w p1 a b); auto. exists l1; split; auto.
+apply (cross_bridge_implies_endpoints g u v w p1 l1 a b); auto.
 assert (connected g u v).
 destruct H9; destruct H9.
   apply (connected_trans g u a v). apply connected_symm; auto.
@@ -1209,7 +1150,7 @@ apply adde_fits_upath_rev in H5; auto.
 destruct H2. apply adde_unaffected in H2. 2: { exists l1. split; auto. }
 assert (connected g a b). exists p1. split; auto.
 assert ((connected g a u /\ connected g v b) \/ (connected g a v /\ connected g u b)).
-apply (cross_bridge_implies_endpoints g u v w p2); auto. exists l2; split; auto.
+apply (cross_bridge_implies_endpoints g u v w p2 l2); auto.
 assert (connected g u v).
 destruct H9; destruct H9.
   apply (connected_trans g u a v). apply connected_symm; auto.
@@ -1258,26 +1199,26 @@ destruct H7; destruct H8; subst e1; subst e2.
 auto.
 (*In all the (v,u) cases, (v,u) must be valid in g, thus connected g u v, contra*)
 assert (connected g u v). apply adjacent_connected. exists (v,u).
-apply (sound_adde_adj_edge_rev g (u,v) w); auto. contradiction.
+apply (adde_adj_edge_rev g (u,v) w); auto. contradiction.
 assert (connected g u v). apply adjacent_connected. exists (v,u).
-apply (sound_adde_adj_edge_rev g (u,v) w); auto. contradiction.
+apply (adde_adj_edge_rev g (u,v) w); auto. contradiction.
 assert (connected g u v). apply adjacent_connected. exists (v,u).
-apply (sound_adde_adj_edge_rev g (u,v) w); auto. contradiction.
+apply (adde_adj_edge_rev g (u,v) w); auto. contradiction.
 (*Repeat (u0,v0) - (v,u)*)
 unfold RelationClasses.complement, Equivalence.equiv in c.
 destruct (E_EqDec (u0,v0) (v,u)). unfold Equivalence.equiv in e. inversion e. subst u0; subst v0.
 destruct H7; destruct H8; subst e1; subst e2.
 assert (connected g u v). apply connected_symm. apply adjacent_connected. exists (v,u).
-apply (sound_adde_adj_edge_rev g (u,v) w); auto. contradiction.
+apply (adde_adj_edge_rev g (u,v) w); auto. contradiction.
 assert (connected g u v). apply connected_symm. apply adjacent_connected. exists (v,u).
-apply (sound_adde_adj_edge_rev g (u,v) w); auto. contradiction.
+apply (adde_adj_edge_rev g (u,v) w); auto. contradiction.
 assert (connected g u v). apply connected_symm. apply adjacent_connected. exists (v,u).
-apply (sound_adde_adj_edge_rev g (u,v) w); auto. contradiction.
+apply (adde_adj_edge_rev g (u,v) w); auto. contradiction.
 auto.
 (*So (u0,v0) is neither uv nor vu. Then it's not affected*)
 unfold RelationClasses.complement, Equivalence.equiv in c0.
-apply (sound_adde_adj_edge_rev g (u,v) w) in H5; auto.
-apply (sound_adde_adj_edge_rev g (u,v) w) in H6; auto.
+apply (adde_adj_edge_rev g (u,v) w) in H5; auto.
+apply (adde_adj_edge_rev g (u,v) w) in H6; auto.
 destruct H0. destruct H9. apply (H9 u0 v0). split; auto.
 unfold not; intros; subst e2. destruct H8; symmetry in H8. contradiction.
 inversion H8. assert ((u0, v0) = (v, u)). subst v0; subst u0. auto. contradiction.
@@ -1304,6 +1245,7 @@ Definition WEdgeListGraph_eremove (g: WEdgeListGraph) (e: EType) :=
   (glabel g)
 .
 
+(*there is a clash with pregraph_remove_edge_finite*)
 Instance Fin_WEdgeListGraph_eremove (g: FiniteWEdgeListGraph) (e: EType) :
   Fin (WEdgeListGraph_eremove g e).
 Proof.
@@ -1358,6 +1300,7 @@ split. unfold src_edge; simpl; unfold removeValidFunc. intros. apply H2. apply H
 unfold dst_edge; simpl; unfold removeValidFunc. intros. apply H3. apply H4.
 Qed.
 
+(*Still need these functions even if with the general version in FiniteGraph. The coercion doesn't play well sometimes, even after simpl*)
 Lemma eremove_EList:
   forall (g: FiniteWEdgeListGraph) e l, Permutation (e::l) (EList g) -> Permutation l (EList (FiniteWEdgeListGraph_eremove g e)).
 Proof.
@@ -1424,42 +1367,18 @@ destruct H3. split.
 + apply (IHp l g1 g2); auto. intros. apply H2. right; auto.
 Qed.
 
-Lemma valid_upath_eremove':
+Lemma valid_upath_eremove:
 forall (g: FiniteWEdgeListGraph) e p l, valid_upath g p
   -> fits_upath g l p -> ~ In e l -> valid_upath (FiniteWEdgeListGraph_eremove g e) p.
 Proof.
-intros. apply valid_upath_exists_list_edges'.
-apply (fits_upath_transfer' _ _ _ (FiniteWEdgeListGraph_eremove g e)) in H0. exists l; apply H0.
-intros. simpl. split; auto.
-intros. simpl. unfold removeValidFunc. split. apply (fits_upath_evalid g p l); auto.
-unfold not; intros. subst e0. contradiction.
-auto. auto.
-Qed.
-
-Lemma valid_upath_eremove:
-forall (g: FiniteWEdgeListGraph) e p, valid_upath g p
-  -> (exists l, fits_upath g l p /\ ~ In e l) -> valid_upath (FiniteWEdgeListGraph_eremove g e) p.
-Proof.
-intros. destruct H0 as [l [? ?]].
-apply valid_upath_exists_list_edges'.
-apply (fits_upath_transfer' _ _ _ (FiniteWEdgeListGraph_eremove g e)) in H0. exists l; apply H0.
-intros. simpl. split; auto.
-intros. simpl. unfold removeValidFunc. split. apply (fits_upath_evalid g p l); auto.
-unfold not; intros. subst e0. contradiction.
-auto. auto.
+intros. apply (remove_edge_valid_upath g e p l); auto.
 Qed.
 
 Lemma eremove_unaffected:
   forall (g: FiniteWEdgeListGraph) e p, valid_upath (FiniteWEdgeListGraph_eremove g e) p
   -> valid_upath g p.
 Proof.
-intros. pose proof (valid_upath_exists_list_edges _ p H). destruct H0 as [l ?].
-apply valid_upath_exists_list_edges'.
-apply (fits_upath_transfer' _ _ _ g) in H0. exists l; auto.
-intros. split; auto.
-intros. apply (fits_upath_evalid (FiniteWEdgeListGraph_eremove g e) p l) in H1.
-simpl in H1. unfold removeValidFunc in H1. apply H1. auto.
-auto. auto.
+intros. apply (remove_edge_unaffected g e p); auto.
 Qed.
 
 (*****************)
@@ -1507,7 +1426,7 @@ admit.
 right. unfold not; intros. destruct H3 as [p ?].
 assert (exists l, fits_upath g l p). apply (connected_exists_list_edges g p a b); auto. destruct H4 as [l' ?].
 assert (connected g' a b). exists p. split.
-apply (valid_upath_eremove' g e p l'). apply H3. auto.
+apply (remove_edge_valid_upath g e p l'). apply H3. auto.
 unfold not; intros. apply (fits_upath_strong_evalid g p l') in H5; auto.
 apply H3.
 contradiction.
@@ -1540,10 +1459,7 @@ intros. replace (Znth i l1) with (Znth (i+1) (a::l1)).
 all: rewrite (Znth_pos_cons (i+1)) by lia; rewrite Z.add_simpl_r; auto.
 Qed.
 
-Definition DEList (g: FiniteWEdgeListGraph): list LE :=
-  map (elabel g) (EList g).
-
-Definition sum_LE g : LE :=
+Definition sum_LE (g: FiniteWEdgeListGraph) : LE :=
   fold_left Z.add (DEList g) 0.
 
 Lemma spanning_uforest_sound:
@@ -1564,12 +1480,12 @@ Qed.
 Definition minimum_spanning_forest (t g: FiniteWEdgeListGraph) :=
  labeled_spanning_uforest t g /\
   forall (t': FiniteWEdgeListGraph), labeled_spanning_uforest t' g ->
-    Z.le (sum_LE t) (sum_LE t').
+    Z.le (sum_DE Z.add g 0) (sum_DE Z.add g 0).
 
 (*The following are to let us reason about lists instead of graphs*)
 Lemma sum_LE_equiv:
   forall (g: FiniteWEdgeListGraph) (l: list EType),
-  Permutation (EList g) l -> sum_LE g = fold_left Z.add (map (elabel g) l) 0.
+  Permutation (EList g) l -> sum_DE Z.add g 0 = fold_left Z.add (map (elabel g) l) 0.
 Proof.
 unfold sum_LE, DEList; intros. apply fold_left_comm. intros; lia.
 apply Permutation_map. auto.
@@ -1579,9 +1495,9 @@ Qed.
 (*I can't induct directly on a graph or its EList (have to intros the graph), so relying on these*)
 
 Lemma exists_element_list:
-forall {A B: Type} {A': Inhabitant A} {B': Inhabitant B} (P: A -> B -> Prop) (la: list A),
-(forall a, In a la -> exists b, P a b) ->
-(exists lb, Zlength lb = Zlength la /\ forall i, 0 <= i < Zlength la -> P (Znth i la) (Znth i lb)).
+  forall {A B: Type} {A': Inhabitant A} {B': Inhabitant B} (P: A -> B -> Prop) (la: list A),
+    (forall a, In a la -> exists b, P a b) ->
+    (exists lb, Zlength lb = Zlength la /\ forall i, 0 <= i < Zlength la -> P (Znth i la) (Znth i lb)).
 Proof.
 induction la; intros. exists nil. split. auto. intros. rewrite Zlength_nil in H0; lia.
 assert (forall a : A, In a la -> exists b : B, P a b). intros. apply H. right; auto.
@@ -1595,7 +1511,7 @@ destruct H3. subst i. do 2 rewrite Znth_0_cons. auto. lia.
 Qed.
 
 Lemma list_not_forall_exists:
-forall {A: Type} {A': Inhabitant A} (l: list A) (P: A -> Prop), l <> nil -> (forall a, P a \/ ~ P a) -> ~ (forall a, In a l -> P a) -> (exists a, In a l /\ ~ P a).
+  forall {A: Type} {A': Inhabitant A} (l: list A) (P: A -> Prop), l <> nil -> (forall a, P a \/ ~ P a) -> ~ (forall a, In a l -> P a) -> (exists a, In a l /\ ~ P a).
 Proof.
 induction l; intros.
 contradiction.
@@ -1613,8 +1529,8 @@ Qed.
 (******Back to forests*****)
 
 Lemma forest_bridge1:
-forall (g: FiniteWEdgeListGraph) u v, sound_weighted_edge_graph g -> uforest' g ->
-evalid g (u,v) -> bridge g (u,v) u v.
+  forall (g: FiniteWEdgeListGraph) u v, sound_weighted_edge_graph g -> uforest' g ->
+    evalid g (u,v) -> bridge g (u,v) u v.
 Proof.
 unfold bridge; intros.
 apply (forest_edge' p l g). auto. apply sound_strong_evalid; auto.
@@ -1622,7 +1538,8 @@ rewrite <- sound_src; auto. rewrite <- sound_dst; auto. auto.
 Qed.
 
 Lemma eremove_uforest':
-forall (g: FiniteWEdgeListGraph) e, sound_weighted_edge_graph g -> uforest' g -> evalid g e -> uforest' (FiniteWEdgeListGraph_eremove g e) /\ ~ connected (FiniteWEdgeListGraph_eremove g e) (src g e) (dst g e).
+  forall (g: FiniteWEdgeListGraph) e, sound_weighted_edge_graph g -> uforest' g -> evalid g e ->
+    uforest' (FiniteWEdgeListGraph_eremove g e) /\ ~ connected (FiniteWEdgeListGraph_eremove g e) (src g e) (dst g e).
 Proof.
 intros.
 destruct e as (u,v). rewrite <- sound_src; auto. rewrite <- sound_dst; auto.
