@@ -307,11 +307,10 @@ Qed.
  *)
 (* the above have been moved successfully *)
 
-(* TODO: needs a better name *)
 (* move to UF land *)
-Lemma uf_union_preserves_connected:
-(* Any two vertices that were connected already 
-   remain so after union. i.e., union doesn't split 
+Lemma uf_union_preserves_ufroot_same:
+(* Any two vertices that shared a root 
+   continue to do so after union. i.e., union doesn't split 
  *)
   forall (g1 g2: UFGraph) u v a b,
     vvalid g1 u ->
@@ -392,9 +391,8 @@ Proof.
   - apply (ufroot_uf_set_in _ (liGraph g1) a ab_rt); trivial.
 Qed.
 
-(* TODO: needs a better name *)
 (* move to UF land *)
-Lemma uf_union_connected:
+Lemma uf_union_ufroot_same:
   (* After union(u,v), u and v are "joined" *)
   forall (g1 g2: UFGraph) u v,
     vvalid g1 u ->
@@ -427,9 +425,8 @@ Proof.
       [apply Union_introl | apply Union_intror]; trivial.
 Qed.
 
-(* TODO: needs a better name *)
 (* move to UF land *)
-Lemma uf_union_remains_disconnected1:
+Lemma uf_union_remains_disjoint1:
   (* If a was disjoint from u and v, 
      then after union(u,v) it remains disjoint from u *)
   forall (g1 g2: UFGraph) u v a,
@@ -466,9 +463,8 @@ Proof.
     apply (ufroot_uf_set_in _ (liGraph g1) a a_rt); trivial.
 Qed.
 
-(* TODO: needs a better name *)
 (* move to UF land *)
-Lemma uf_union_remains_disconnected2:
+Lemma uf_union_remains_disjoint2:
 (*If a was disjoint from u and v, then after union(u,v) it remains disjoint from v*)
 forall (g1 g2: UFGraph) u v a,
   vvalid g1 u ->
@@ -480,7 +476,7 @@ forall (g1 g2: UFGraph) u v a,
   ~ ufroot_same g2 a v.
 Proof.
   intros. apply uf_union_sym in H2.
-  apply (uf_union_remains_disconnected1 g1 _ _ u); trivial. 
+  apply (uf_union_remains_disjoint1 g1 _ _ u); trivial. 
 Qed.
 
 Lemma uf_union_joins_only_uv:
@@ -1662,7 +1658,7 @@ Proof.
     intros. rewrite (sublist_split 0 i (i+1)) in H24 by lia. apply in_app_or in H24.
     destruct H24.
     (*case of every edge that was before*)
-    apply (uf_union_preserves_connected subsetsGraph_uv _ u v); auto.
+    apply (uf_union_preserves_ufroot_same subsetsGraph_uv _ u v); auto.
     apply (uf_equiv_ufroot_same subsetsGraph' subsetsGraph_uv). auto.
     apply (H15 e); auto.
     (*the newly added edge*)
@@ -1689,7 +1685,7 @@ Proof.
     destruct H25; destruct H25; subst u0; subst v0; rewrite <- H30; rewrite <- H31.
     (*both cases: apply union_ufroot_same.*)
     2: apply ufroot_same_symm.
-    all: apply (uf_union_connected subsetsGraph_uv); auto.
+    all: apply (uf_union_ufroot_same subsetsGraph_uv); auto.
     +++
     intros a b; split; intros.
     ***
@@ -1731,9 +1727,9 @@ Proof.
       rewrite (uf_equiv_ufroot_same subsetsGraph' subsetsGraph_uv) in H24, H26, H27; auto.
       assert (~ ufroot_same subsetsGraph_uv b u). { unfold not; intros.
         apply ufroot_same_symm in H28. contradiction. }
-      apply (uf_union_remains_disconnected1 _ uv_union u v) in H28; auto.
+      apply (uf_union_remains_disjoint1 _ uv_union u v) in H28; auto.
       2: auto. 2: { unfold not; intros. apply ufroot_same_symm in H29. contradiction. }
-      apply (uf_union_preserves_connected _ uv_union u v) in H24; auto.
+      apply (uf_union_preserves_ufroot_same _ uv_union u v) in H24; auto.
       apply ufroot_same_symm in H23.
       apply (ufroot_same_trans _ (liGraph uv_union) b a u) in H23; auto. contradiction.
     (*a not connected to u*)
@@ -1746,28 +1742,28 @@ Proof.
         rewrite (uf_equiv_ufroot_same subsetsGraph' subsetsGraph_uv) in H25, H26, H27; auto.
         assert (~ ufroot_same subsetsGraph_uv b v). { unfold not; intros.
           apply ufroot_same_symm in H28. contradiction. }
-        apply (uf_union_remains_disconnected2 _ uv_union u v) in H28; auto.
+        apply (uf_union_remains_disjoint2 _ uv_union u v) in H28; auto.
           2: { rewrite ufroot_same_symm. auto. }
-        apply (uf_union_preserves_connected _ uv_union u v) in H25; auto.
+        apply (uf_union_preserves_ufroot_same _ uv_union u v) in H25; auto.
         apply ufroot_same_symm in H23.
         apply (ufroot_same_trans _ (liGraph uv_union) b a v) in H23; auto. contradiction.
       destruct (connected_dec msf' u b). apply H16 in H26.
         apply (uf_equiv_ufroot_same subsetsGraph' subsetsGraph_uv) in H26; auto.
-        apply (uf_union_preserves_connected _ uv_union u v) in H26; auto.
+        apply (uf_union_preserves_ufroot_same _ uv_union u v) in H26; auto.
         apply ufroot_same_symm in H26.
         apply (ufroot_same_trans _ (liGraph uv_union) a b u H23) in H26.
         (*However, ~ connected msf' a u -> ... -> ~ ufroot_same uv_union, contradiction*)
         assert (~ ufroot_same uv_union a u). {
           rewrite <- H16 in H24, H25. rewrite (uf_equiv_ufroot_same subsetsGraph' subsetsGraph_uv) in H24, H25; auto.
-          apply (uf_union_remains_disconnected1 subsetsGraph_uv uv_union u v a); auto. }
+          apply (uf_union_remains_disjoint1 subsetsGraph_uv uv_union u v a); auto. }
         contradiction.
         destruct (connected_dec msf' v b). apply H16 in H27. apply (uf_equiv_ufroot_same subsetsGraph' subsetsGraph_uv) in H27; auto.
-          apply (uf_union_preserves_connected _ uv_union u v) in H27; auto. apply ufroot_same_symm in H27.
+          apply (uf_union_preserves_ufroot_same _ uv_union u v) in H27; auto. apply ufroot_same_symm in H27.
           apply (ufroot_same_trans _ (liGraph uv_union) a b v H23) in H27.
           (*However, ~ connected msf' a u -> ... -> ~ ufroot_same uv_union, contradiction*)
           assert (~ ufroot_same uv_union a v). {
             rewrite <- H16 in H24, H25. rewrite (uf_equiv_ufroot_same subsetsGraph' subsetsGraph_uv) in H24, H25; auto.
-            apply (uf_union_remains_disconnected2 subsetsGraph_uv uv_union u v a); auto. }
+            apply (uf_union_remains_disjoint2 subsetsGraph_uv uv_union u v a); auto. }
           contradiction.
         (*finally, neither were connected to u or v*)
         rewrite <- H16 in Hab, H24, H25, H26, H27.
@@ -1780,7 +1776,7 @@ Proof.
     (*<-----------*)
     (*assert exists list edges... destruct In (u,v) l.
       Yes: then apply connected_bridge_implies_endpoints, destruct
-        a-u,b-v: then by union_preserves_connected, and union_connected...
+        a-u,b-v: then by uf_union_preserves_ufroot_same, and union_connected...
         a-v,b-u: same
       No: then apply adde_unaffected.
     *)
@@ -1795,14 +1791,14 @@ Proof.
       destruct H25; destruct H25;
         rewrite <- H16 in H25, H26;
         rewrite (uf_equiv_ufroot_same subsetsGraph' subsetsGraph_uv) in H25, H26; auto;
-        apply (uf_union_preserves_connected subsetsGraph_uv uv_union u v) in H25; auto;
-        apply (uf_union_preserves_connected subsetsGraph_uv uv_union u v) in H26; auto.
+        apply (uf_union_preserves_ufroot_same subsetsGraph_uv uv_union u v) in H25; auto;
+        apply (uf_union_preserves_ufroot_same subsetsGraph_uv uv_union u v) in H26; auto.
         assert (ufroot_same uv_union u v).
-          apply (uf_union_connected subsetsGraph_uv uv_union u v); auto.
+          apply (uf_union_ufroot_same subsetsGraph_uv uv_union u v); auto.
         apply (ufroot_same_trans _ (liGraph uv_union) u v b H27) in H26.
         apply (ufroot_same_trans _ (liGraph uv_union) a u b); auto.
         assert (ufroot_same uv_union u v).
-          apply (uf_union_connected subsetsGraph_uv uv_union u v); auto.
+          apply (uf_union_ufroot_same subsetsGraph_uv uv_union u v); auto.
         apply ufroot_same_symm in H27.
         apply (ufroot_same_trans _ (liGraph uv_union) v u b H27) in H26.
         apply (ufroot_same_trans _ (liGraph uv_union) a v b); auto.
@@ -1810,7 +1806,7 @@ Proof.
     apply (adde_unaffected msf' (u,v) (elabel g (u,v))). apply H23. exists l. split. apply (adde_fits_upath_rev msf' (u,v) (elabel g (u,v))); auto. auto.
     auto.
     rewrite <- H16 in H25. rewrite (uf_equiv_ufroot_same subsetsGraph' subsetsGraph_uv) in H25; auto.
-    apply (uf_union_preserves_connected subsetsGraph_uv uv_union u v) in H25; auto.
+    apply (uf_union_preserves_ufroot_same subsetsGraph_uv uv_union u v) in H25; auto.
     +++
     intros. rewrite map_app in H23. apply in_app_or in H23; destruct H23.
     apply H17 in H23. destruct H23; destruct H23. exists x0; split; [lia | auto].
