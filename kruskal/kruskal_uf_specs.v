@@ -3,6 +3,7 @@ Require Import RamifyCoq.sample_mark.env_unionfind_arr.
 Require Export RamifyCoq.sample_mark.uf_arr_specs.
 
 (* Kruskal's imports (already made minimal *)
+Require Import RamifyCoq.graph.undirected_graph.
 Require Import RamifyCoq.kruskal.WeightedEdgeListGraph.
 Require Import RamifyCoq.kruskal.env_kruskal_edgelist.
 Require Import RamifyCoq.kruskal.spatial_wedgearray_graph.

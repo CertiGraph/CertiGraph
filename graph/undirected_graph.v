@@ -14,6 +14,8 @@ Require Import RamifyCoq.lib.EquivDec_ext.
 Require Import RamifyCoq.graph.graph_model.
 Require Import RamifyCoq.graph.graph_relation.
 Require Import RamifyCoq.graph.path_lemmas.
+Require Import RamifyCoq.graph.graph_gen.
+Require Import RamifyCoq.graph.FiniteGraph.
 
 Section UNDIRECTED.
 
@@ -706,36 +708,6 @@ apply (valid_upath_app_split _ _ _ H). apply (NoDup_app_l _ _ _ H0).
 apply (valid_upath_app_split _ _ _ H). apply (NoDup_app_r _ _ _ H0).
 Qed.
 
-Lemma upath_simplifiable:
-  forall g p u v, connected_by_path g p u v-> exists p', connected_by_path g p' u v /\ simple_upath g p' /\ incl p' p.
-Proof.
-induction p; intros.
-destruct H. destruct H0. inversion H0.
-destruct p. destruct H. simpl in H. simpl in H0; destruct H0.
-inversion H0; inversion H1. subst u; subst v. clear H0 H1.
-exists (a::nil). split. split. simpl; auto. simpl; split; auto.
-split. split. simpl; auto. apply NoDup_cons. auto. apply NoDup_nil.
-unfold incl; intros; auto.
-destruct H. destruct H0. destruct H.
-assert (connected_by_path g (v0::p) v0 v). split. auto. split. apply hd_error_cons. rewrite last_error_cons in H1; auto. unfold not; intros. inversion H3.
-apply IHp in H3. destruct H3 as [p' ?]. destruct H3.
-destruct (in_dec EV a p').
-apply in_split in i. destruct i as [l1 [l2 ?]].
-subst p'. exists (a::l2). split.
-destruct H3. destruct H5. split. apply (valid_upath_app_split g l1 _).
-apply H3. split. simpl in H0; simpl; apply H0.
-rewrite last_err_split2 in H6. auto. destruct H4. split. apply simple_upath_app_split in H4; apply H4.
-unfold incl; intros. destruct H6. subst a0. left; auto.
-right. apply H5. apply in_or_app. right; right; apply H6.
-exists (a::p'). split. destruct H3. destruct H5. split. apply valid_upath_cons. auto.
-rewrite H5. unfold adjacent_hd. apply H.
-split. simpl in H0; simpl; auto.
-rewrite last_error_cons. auto. unfold not; intros. subst p'. inversion H5.
-split. split. destruct H3. destruct H5. apply valid_upath_cons. auto. rewrite H5. unfold adjacent_hd. auto.
-apply NoDup_cons. auto. apply H4.
-unfold incl; intros. destruct H5. subst a0. left; auto. destruct H4. right; apply H6. auto.
-Qed.
-
 Lemma upath_simplifiable_edges:
   forall g p l u v, connected_by_path g p u v -> fits_upath g l p ->
     exists p' l', connected_by_path g p' u v /\ simple_upath g p' /\ incl p' p
@@ -789,7 +761,8 @@ Qed.
 Corollary connected_by_upath_exists_simple_upath:
   forall g p u v, connected_by_path g p u v-> exists p', connected_by_path g p' u v /\ simple_upath g p'.
 Proof.
-intros. pose proof (upath_simplifiable g p u v H). destruct H0 as [p' [? [? ?]]].
+intros. pose proof (connected_exists_list_edges g p u v H). destruct H0 as [l ?].
+pose proof (upath_simplifiable_edges g p l u v H H0). destruct H1 as [p' [? [? [? ?]]]].
 exists p'. split; auto.
 Qed.
 
@@ -807,25 +780,19 @@ auto.
 apply IHp. split. apply H. destruct H. apply NoDup_cons_1 in H2. auto. auto.
 Qed.
 
-(*barebones, this has a lot of loopholes*)
 Definition unique_simple_upath g :=
   (forall u v p1 p2,
   simple_upath g p1 -> connected_by_path g p1 u v ->
   simple_upath g p2 -> connected_by_path g p2 u v ->
   p1 = p2).
 
+(*Definition we're using*)
 Definition uforest' g :=
   (forall e, evalid g e -> src g e <> dst g e) /\ (*No self-cycles*)
   (forall u v e1 e2, adj_edge g e1 u v /\ adj_edge g e2 u v -> e1 = e2) /\ (*Not a multigraph, preventing internal cycles within two vertices*)
   (forall e, evalid g e -> strong_evalid g e) /\ (*with no rubbish edges. Debatable where this should go?*)
   unique_simple_upath g. (*finally, the actual forest definition*)
 
-(*Annnd even with the extra restrictions I STILL can't prove this
-I'm going about this the wrong way. I need to convert p,l into a simple_upath p' l'
-THEN I can use the fact that p' must be (u::v::nil) by unique_simple_upath.
-And because e::nil fits (u::v::nil), any lpath must be e::nil (prove this)
-THEN e is in l', and by above we have incl l' l, thus e is in l
-*)
 Lemma forest_edge':
   forall p l g e, uforest' g -> strong_evalid g e ->
     connected_by_path g p (src g e) (dst g e) -> fits_upath g l p ->
@@ -1064,4 +1031,48 @@ Definition labeled_spanning_uforest (t g: LGraph) :=
 But I don't think the converse is unnecessary;
 At most, we redefine unique_simple_upath in the no-cycle way and show that kruskal creates a tree that satisfies previous_def, thus is a unique_simple_upath
 *)
+
+(****************FINITE GRAPHS*****************)
+
+Definition DEList (g: LGraph) {fg: FiniteGraph g}: list DE :=
+  map (elabel g) (EList g).
+
+Definition sum_DE (DEadd: DE -> DE -> DE) (g: LGraph) {fg: FiniteGraph g} DEbase : DE :=
+  fold_left DEadd (DEList g) DEbase.
+
+(*Hm problem. kruskal operates on a FiniteWEdgeListGraph, and it can coerce t into LGraph,
+but not t' into a FiniteWEdgeListGraph, which invalidates some of the lemmas*)
+Definition minimum_spanning_forest' (DEcomp: DE -> DE -> Prop) (DEadd: DE -> DE -> DE) DEbase
+  (t g: LGraph) {ft: FiniteGraph t} {fg: FiniteGraph g}:=
+ labeled_spanning_uforest t g /\
+  forall (t': LGraph) {ft': FiniteGraph t'}, labeled_spanning_uforest t' g ->
+    DEcomp (sum_DE DEadd t DEbase) (sum_DE DEadd t' DEbase).
+
+(****************GRAPH ADD/REMOVE EDGES**************)
+
+Lemma remove_edge_valid_upath:
+forall (g: PGraph) e p l, valid_upath g p
+  -> fits_upath g l p -> ~ In e l -> valid_upath (pregraph_remove_edge g e) p.
+Proof.
+intros. apply valid_upath_exists_list_edges'.
+apply (fits_upath_transfer' _ _ _ (pregraph_remove_edge g e)) in H0. exists l; apply H0.
+intros. simpl. split; auto.
+intros. simpl. unfold removeValidFunc. split. apply (fits_upath_evalid g p l); auto.
+unfold not; intros. subst e0. contradiction.
+auto. auto.
+Qed.
+
+Lemma remove_edge_unaffected:
+  forall (g: PGraph) e p, valid_upath (pregraph_remove_edge g e) p
+  -> valid_upath g p.
+Proof.
+intros. pose proof (valid_upath_exists_list_edges _ p H). destruct H0 as [l ?].
+apply valid_upath_exists_list_edges'.
+apply (fits_upath_transfer' _ _ _ g) in H0. exists l; auto.
+intros. split; auto.
+intros. apply (fits_upath_evalid (pregraph_remove_edge g e) p l) in H1.
+simpl in H1. unfold removeValidFunc in H1. apply H1. auto.
+auto. auto.
+Qed.
+
 End UNDIRECTED.
