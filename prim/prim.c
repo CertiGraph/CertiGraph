@@ -26,24 +26,29 @@ IMPORTANT: The soundness of the graph depends on declaring evalid g (u,v) -> u <
 It's not even clear in a conventional adjacency matrix anyway, because an undirected adjmatrix is symmetrical ("nice" graphs)
 */
 void prim(int graph[SIZE][SIZE], int r, int msf[SIZE][SIZE]) {
-    int key[SIZE] = { IFTY };   //weight
-    int parent[SIZE] = { IFTY }; //NIL in textbook. However, 0 is a valid vertex, so we substitute it with an invalid value
-    int done[SIZE] = {0}; //as a marker to check if v is in pq. 1 for NOT in pq (already checked)
+    int key[SIZE];
+    initialise_list(key);
+    int parent[SIZE]; //NIL in textbook. However, 0 is a valid vertex, so we substitute it with an invalid value
+    initialise_list(parent);
+    int out[SIZE] = {0}; //as a marker to check if v is in pq. 1 for NOT in pq (already checked)
     key[r] = 0; //first in pq
-
+    
     //Q = G.V;
     int pq[SIZE];
     for (int v = 0; v < SIZE; ++v) {
-        pq.push(v, key[v]);
+        push(v, key[v], pq);
     }
     while (!pq_emp(pq)) {
         int u = popMin(pq);
-        for (int v = 0; v < u; ++v) { //hack to half the graph checks. u-u ignored because it shouldn't exist in mst. Still O(V^2)
-            if ((!done[v]) && graph[u][v] < key[v]) {
+        out[u] = 1;
+        for (int v = 0; v < SIZE; ++v) {
+            if ((!out[v]) && graph[u][v] < key[v]) {
                 parent[v] = u;
                 key[v] = graph[u][v];
+                adjustWeight(v, key[v], pq);
             }
         }
+        printf("\n");
     }
     //algorithm implicitly maintains the mst A:={(v,parent[v])}
     //but it would be weird to return a different C format and call it the same graph
@@ -52,7 +57,9 @@ void prim(int graph[SIZE][SIZE], int r, int msf[SIZE][SIZE]) {
     for (int v = 0; v < SIZE; ++v) {
         int u = parent[v];
         int w = key[v];
-        msf[u][v] = w;
-        msf[v][u] = w;
+        if (u != IFTY) {
+            msf[u][v] = w;
+            msf[v][u] = w;
+        }
     }
 }
