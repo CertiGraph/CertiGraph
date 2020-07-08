@@ -730,7 +730,6 @@ Proof.
   split; [| split; [| split; [|split; [|split]]]]; trivial.
 Qed.
 
-
 Lemma uf_union_vvalid:
   forall (g1 g2: PreGraph Vertex Edge)
          (li1 : LstGraph g1 out_edge)
@@ -739,7 +738,6 @@ Lemma uf_union_vvalid:
          (fin2: FiniteGraph g2)
          (ma1: MathGraph g1 is_null)
          (ma2: MathGraph g2 is_null)
- 
          u v x,
     vvalid g1 u ->
     vvalid g1 v ->
@@ -822,6 +820,239 @@ Proof.
       * apply (ufroot_vvalid_vert _ x0).
         apply H12, (ufroot_same_refl g2 li2); trivial. 
 Qed.
+
+Lemma uf_union_preserves_ufroot_same:
+(* Any two vertices that shared a root 
+   continue to do so after union. i.e., union doesn't split 
+ *)
+  forall (g1 g2: PreGraph Vertex Edge)
+         (li1 : LstGraph g1 out_edge)
+         (li2 : LstGraph g2 out_edge)
+         (fin1: FiniteGraph g1)
+         (fin2: FiniteGraph g2)
+         (ma1: MathGraph g1 is_null)
+         (ma2: MathGraph g2 is_null)
+         u v a b,
+    vvalid g1 u ->
+    vvalid g1 v ->
+    uf_union g1 u v g2 ->
+    ufroot_same g1 a b ->
+    ufroot_same g2 a b.
+Proof.
+  intros.
+  pose proof (uf_union_create_precons
+                _ _ _ _ _ _ H H0).
+  destruct H3 as [u_rt [v_rt [? [? [? [? [? ?]]]]]]].
+  destruct H2 as [ab_rt [? ?]].
+  
+  (* now we take cases to see whether a and b were
+     in connected to u, to v, or to neither
+   *)
+  destruct (EV ab_rt u_rt). {
+    (* a and b were connected to u in g1 *)
+    rewrite e in *.
+    assert (ufroot_same g1 u a). {
+      exists u_rt; split; trivial.
+    }
+    assert (ufroot_same g1 u b). {
+      exists u_rt; split; trivial.
+    } 
+    apply (uf_union_affected_inhabited
+             _ _ _ _ _ _ H5 H6 H7 H8) in H1.
+    destruct H1 as [rt [? ?]].
+    exists rt; split; apply H12, Union_introl; trivial.
+  }
+  
+  destruct (EV ab_rt v_rt). {
+    (* a and b were connected to v in g1 *)
+    rewrite e in *.
+    assert (ufroot_same g1 v a). {
+      exists v_rt; split; trivial.
+    }
+    assert (ufroot_same g1 v b). {
+      exists v_rt; split; trivial.
+    }
+    apply uf_union_sym in H1.
+    apply (uf_union_affected_inhabited
+             _ _ _ _ _ _ H6 H5 H8 H7) in H1.
+    destruct H1 as [rt [? ?]].
+    exists rt; split; apply H12, Union_introl; trivial.
+  }
+
+  (* a and b were not connected to either u or v in g1 *)
+    
+  assert (ufroot_same g1 a a). {
+    apply (ufroot_same_refl _ li1).
+    apply (ufroot_vvalid_vert _ ab_rt); trivial.
+  }
+
+  assert (ufroot_same g1 a b). {
+    exists ab_rt; split; trivial.
+  }
+
+  apply (uf_union_unaffected_inhabited
+           _ _ _ _ a _ _ (ufroot_same g1 a) H5 H6) in H1; trivial.
+
+  destruct H1 as [rt [? ?]].
+  exists rt; split; apply H12; trivial.
+  - intro.
+    apply (same_set_contra _ _ _ a H12); trivial.
+    intro.
+    apply (ufroot_same_false _ li1 a u ab_rt u_rt); trivial.
+    apply ufroot_same_symm; trivial.
+  - intro.
+    apply (same_set_contra _ _ _ a H12); trivial.
+    intro.
+    apply (ufroot_same_false _ li1 a v ab_rt v_rt); trivial.
+    apply ufroot_same_symm; trivial.
+  - apply (ufroot_uf_set_in _ li1 a ab_rt); trivial.
+Qed.
+
+Lemma uf_union_ufroot_same:
+  (* After union(u,v), u and v are "joined" *)
+  forall (g1 g2: PreGraph Vertex Edge)
+         (li1 : LstGraph g1 out_edge)
+         (li2 : LstGraph g2 out_edge)
+         (fin1: FiniteGraph g1)
+         (fin2: FiniteGraph g2)
+         (ma1: MathGraph g1 is_null)
+         (ma2: MathGraph g2 is_null)
+         u v,
+    vvalid g1 u ->
+    vvalid g1 v ->
+    uf_union g1 u v g2 ->
+    ufroot_same g2 u v.
+Proof.
+  intros.
+  pose proof (uf_union_create_precons
+                _ _ _ _ _ _ H H0).
+  destruct H2 as [u_rt [v_rt [? [? [? [? [? ?]]]]]]].
+  
+  (* two cases: either they were already joined or not *)
+  destruct (EV u_rt v_rt).
+  - (* they were already joined *)
+    rewrite <- e in *.  
+    assert (ufroot_same g1 u v). {
+      exists u_rt; split; trivial.
+    }
+    apply (uf_union_affected_inhabited _ _ _ _ _ _ H4 H5) in H1; trivial.
+    destruct H1 as [rt [? ?]].
+    exists rt. split; apply H9, Union_introl; trivial.
+  - (* there were separate in g1 *)
+    apply (uf_union_affected_inhabited _ _ _ _ _ _ H4 H5) in H1; trivial.
+    destruct H1 as [rt [? ?]]. exists rt.
+    split; apply H8;
+      [apply Union_introl | apply Union_intror]; trivial.
+Qed.
+
+Lemma uf_union_remains_disjoint1:
+  (* If a was disjoint from u and v, 
+     then after union(u,v) it remains disjoint from u *)
+  forall (g1 g2: PreGraph Vertex Edge)
+         (li1 : LstGraph g1 out_edge)
+         (li2 : LstGraph g2 out_edge)
+         (fin1: FiniteGraph g1)
+         (fin2: FiniteGraph g2)
+         (ma1: MathGraph g1 is_null)
+         (ma2: MathGraph g2 is_null)u v a,
+    vvalid g1 u ->
+    vvalid g1 v ->
+    vvalid g1 a ->
+    uf_union g1 u v g2 ->
+    ~ ufroot_same g1 a u ->
+    ~ ufroot_same g1 a v ->
+    ~ ufroot_same g2 a u.
+Proof.
+  intros.
+  pose proof (uf_union_create_precons
+                _ _ _ _ _ _ H H0).
+  destruct H5 as [u_rt [v_rt [? [? [? [? [? ?]]]]]]].
+
+  assert (ufroot_same g1 a a). {
+    apply (ufroot_same_refl _ li1); trivial.
+  }
+  apply (uf_union_unaffected_inhabited
+           _ _ _ _ _ _ _ _
+           H7 H8 H11 H9 H10) in H2.
+  destruct H2 as [rt [? ?]]. intro.
+  rewrite H12 in *.
+  apply H3, (ufroot_same_uf_root_trans _ li2 a); trivial. 
+  - intro. apply (same_set_contra _ _ _ a H12); trivial.
+    intro. apply H3. apply ufroot_same_symm; trivial.
+  - intro. apply (same_set_contra _ _ _ a H12); trivial.
+    intro. apply H4. apply ufroot_same_symm; trivial.
+  - destruct H11 as [a_rt [? _]].
+    apply (ufroot_uf_set_in _ li1 a a_rt); trivial.
+Qed.
+
+Lemma uf_union_remains_disjoint2:
+(*If a was disjoint from u and v, then after union(u,v) it remains disjoint from v*)
+  forall (g1 g2: PreGraph Vertex Edge)
+         (li1 : LstGraph g1 out_edge)
+         (li2 : LstGraph g2 out_edge)
+         (fin1: FiniteGraph g1)
+         (fin2: FiniteGraph g2)
+         (ma1: MathGraph g1 is_null)
+         (ma2: MathGraph g2 is_null)u v a,
+  vvalid g1 u ->
+  vvalid g1 v ->
+  vvalid g1 a -> (* added *)
+  uf_union g1 u v g2 ->
+  ~ ufroot_same g1 a u ->
+  ~ ufroot_same g1 a v ->
+  ~ ufroot_same g2 a v.
+Proof.
+  intros. apply uf_union_sym in H2.
+  apply (uf_union_remains_disjoint1 g1) with (v := u); trivial. 
+Qed.
+
+Lemma uf_union_joins_only_uv:
+  (* If x and y were disjoint from u and v,
+     and from each other,     
+     then after union(u,v) x and y remain disjoint *)
+  forall (g1 g2: PreGraph Vertex Edge)
+         (li1 : LstGraph g1 out_edge)
+         (li2 : LstGraph g2 out_edge)
+         (fin1: FiniteGraph g1)
+         (fin2: FiniteGraph g2)
+         (ma1: MathGraph g1 is_null)
+         (ma2: MathGraph g2 is_null)u v x y,
+    vvalid g1 u ->
+    vvalid g1 v ->
+    vvalid g1 x ->
+    vvalid g1 y ->
+    uf_union g1 u v g2 ->
+    ~ ufroot_same g1 x u ->
+    ~ ufroot_same g1 x v ->
+    ~ ufroot_same g1 x y ->
+    ~ ufroot_same g2 x y.
+Proof.
+  intros.
+  pose proof (uf_union_create_precons
+                _ _ _ _ _ _ H H0).
+  destruct H7 as [u_rt [v_rt [? [? [? [? [? ?]]]]]]].
+  
+  assert (ufroot_same g1 x x). {
+    apply (ufroot_same_refl _ li1); trivial.
+  }
+
+  apply (uf_union_unaffected_inhabited
+           _ _ _ _ _ _ _ _
+           H9 H10 H13) in H3; trivial.
+
+  destruct H3 as [rt [? ?]].
+  rewrite H14 in *.
+  intro. apply H6.
+  apply (ufroot_same_uf_root_trans _ li2 x); trivial.
+  - intro. apply (same_set_contra _ _ _ x H14); trivial.
+    intro. apply H4. apply ufroot_same_symm; trivial.
+  - intro. apply (same_set_contra _ _ _ x H14); trivial.
+    intro. apply H5. apply ufroot_same_symm; trivial.
+  - apply (vvalid_get_ufroot _ li1) in H1.
+    destruct H1 as [x_rt ?].
+    apply (ufroot_uf_set_in _ li1 x x_rt); trivial.
+Qed.
+
 
 End UNION_FIND_GENERAL.
 
