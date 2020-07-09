@@ -240,7 +240,7 @@ assert (fits_upath swap (rev l2a ++ (u1, v1) :: nil ++ rev l2b) (rev p2a ++ rev 
     apply (H21 u2). auto. apply last_error_In. apply H14. auto. auto.
   rewrite <- rev_hd_last. apply H14.
   rewrite rev_hd_last, rev_involutive. apply H14.
-  split. apply adde_strong_evalid1.
+  split. apply add_edge_strong_evalid.
     simpl. apply (connected_vvalid t2 u1 v1). exists p2; apply H6.
     simpl. apply (connected_vvalid t2 u1 v1). exists p2; apply H6.
     left. rewrite <- sound_src; auto. rewrite <- sound_dst; auto.
@@ -275,7 +275,7 @@ assert (fits_upath swap (l2b ++ (u1, v1) :: nil ++ l2a) (p2b ++ p2a)). {
     assert (NoDup p2). apply H7. rewrite H13 in H20. pose proof (NoDup_app_not_in VType p2a p2b H20).
     apply (H21 u2).  auto. apply hd_error_In. apply H14. auto.
   apply H14. apply H14.
-  split. apply adde_strong_evalid1.
+  split. apply add_edge_strong_evalid.
     simpl. apply (connected_vvalid t2 u1 v1). exists p2; apply H6.
     simpl. apply (connected_vvalid t2 u1 v1). exists p2; apply H6.
     right. rewrite <- sound_src; auto. rewrite <- sound_dst; auto.

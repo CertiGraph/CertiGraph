@@ -698,19 +698,6 @@ rewrite adde_src2 in H1; auto.
 rewrite adde_dst2 in H1; auto.
 Qed.
 
-Lemma adde_valid_upath':
-forall (g: FiniteWEdgeListGraph) e w p,
-  ~ evalid g e ->
-  valid_upath g p -> valid_upath (FiniteWEdgeListGraph_adde g e w) p.
-Proof.
-induction p; intros. auto.
-destruct p. auto.
-split. destruct H0. destruct H0. exists x.
-apply adde_adj_edge2; auto. unfold not; intros; subst x.
-destruct H0. destruct H0. contradiction.
-apply IHp. auto. apply H0.
-Qed.
-
 Lemma adde_valid_upath:
 forall (g: FiniteWEdgeListGraph) e w p,
   sound_weighted_edge_graph g ->
@@ -772,6 +759,7 @@ unfold equiv in e1; contradiction. apply H1.
 apply IHp; auto.
 Qed.
 
+(*only just realise that this is trivial. Maybe somewhere something could have been simplified without needing fits_upath_transfer*)
 Lemma adde_unaffected:
 forall (g: FiniteWEdgeListGraph) e w p, valid_upath (FiniteWEdgeListGraph_adde g e w) p
   -> (exists l, fits_upath g l p /\ ~ In e l) -> valid_upath g p.
@@ -780,6 +768,8 @@ intros. destruct H0 as [l ?].
 apply valid_upath_exists_list_edges'.
 exists l. destruct H0; auto.
 Qed.
+
+(**************Analogs of above done in undirected_graph**************)
 
 (*Try using this to simplify the below*)
 Lemma adde_bridge':
