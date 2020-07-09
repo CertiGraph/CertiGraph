@@ -15,10 +15,10 @@ Module Info.
   Definition normalized := true.
 End Info.
 
-Definition _E : ident := 76%positive.
-Definition _MAX_EDGES : ident := 79%positive.
-Definition _Union : ident := 67%positive.
-Definition _V : ident := 68%positive.
+Definition _E : ident := 78%positive.
+Definition _MAX_EDGES : ident := 81%positive.
+Definition _Union : ident := 68%positive.
+Definition _V : ident := 69%positive.
 Definition ___builtin_annot : ident := 12%positive.
 Definition ___builtin_annot_intval : ident := 13%positive.
 Definition ___builtin_bswap : ident := 5%positive.
@@ -70,58 +70,60 @@ Definition ___compcert_va_composite : ident := 22%positive.
 Definition ___compcert_va_float64 : ident := 21%positive.
 Definition ___compcert_va_int32 : ident := 19%positive.
 Definition ___compcert_va_int64 : ident := 20%positive.
-Definition _dst : ident := 74%positive.
-Definition _edge : ident := 75%positive.
-Definition _edge_list : ident := 77%positive.
-Definition _empty_graph : ident := 82%positive.
-Definition _fill_edge : ident := 87%positive.
-Definition _find : ident := 60%positive.
-Definition _free : ident := 81%positive.
-Definition _free_graph : ident := 90%positive.
-Definition _graph : ident := 78%positive.
-Definition _graph_E : ident := 92%positive.
-Definition _graph_V : ident := 91%positive.
-Definition _graph__1 : ident := 89%positive.
-Definition _i : ident := 57%positive.
-Definition _init_empty_graph : ident := 83%positive.
-Definition _kruskal : ident := 96%positive.
-Definition _main : ident := 71%positive.
-Definition _makeSet : ident := 70%positive.
-Definition _mallocK : ident := 80%positive.
+Definition _dst : ident := 76%positive.
+Definition _edge : ident := 77%positive.
+Definition _edge_list : ident := 79%positive.
+Definition _empty_graph : ident := 84%positive.
+Definition _fill_edge : ident := 89%positive.
+Definition _find : ident := 61%positive.
+Definition _free : ident := 83%positive.
+Definition _freeN : ident := 56%positive.
+Definition _freeSet : ident := 72%positive.
+Definition _free_graph : ident := 92%positive.
+Definition _graph : ident := 80%positive.
+Definition _graph_E : ident := 94%positive.
+Definition _graph_V : ident := 93%positive.
+Definition _graph__1 : ident := 91%positive.
+Definition _i : ident := 58%positive.
+Definition _init_empty_graph : ident := 85%positive.
+Definition _kruskal : ident := 98%positive.
+Definition _main : ident := 73%positive.
+Definition _makeSet : ident := 71%positive.
+Definition _mallocK : ident := 82%positive.
 Definition _mallocN : ident := 55%positive.
-Definition _mst : ident := 93%positive.
-Definition _p : ident := 59%positive.
-Definition _p0 : ident := 58%positive.
+Definition _mst : ident := 95%positive.
+Definition _p : ident := 60%positive.
+Definition _p0 : ident := 59%positive.
 Definition _parent : ident := 1%positive.
 Definition _rank : ident := 2%positive.
-Definition _sort_edges : ident := 88%positive.
-Definition _src : ident := 73%positive.
+Definition _sort_edges : ident := 90%positive.
+Definition _src : ident := 75%positive.
 Definition _subset : ident := 3%positive.
-Definition _subsets : ident := 56%positive.
-Definition _u : ident := 86%positive.
-Definition _ufind : ident := 94%positive.
-Definition _v : ident := 69%positive.
-Definition _vfind : ident := 95%positive.
-Definition _w : ident := 85%positive.
-Definition _wedge : ident := 84%positive.
-Definition _weight : ident := 72%positive.
-Definition _x : ident := 61%positive.
-Definition _xRank : ident := 65%positive.
-Definition _xroot : ident := 63%positive.
-Definition _y : ident := 62%positive.
-Definition _yRank : ident := 66%positive.
-Definition _yroot : ident := 64%positive.
-Definition _t'1 : ident := 97%positive.
-Definition _t'10 : ident := 106%positive.
-Definition _t'11 : ident := 107%positive.
-Definition _t'2 : ident := 98%positive.
-Definition _t'3 : ident := 99%positive.
-Definition _t'4 : ident := 100%positive.
-Definition _t'5 : ident := 101%positive.
-Definition _t'6 : ident := 102%positive.
-Definition _t'7 : ident := 103%positive.
-Definition _t'8 : ident := 104%positive.
-Definition _t'9 : ident := 105%positive.
+Definition _subsets : ident := 57%positive.
+Definition _u : ident := 88%positive.
+Definition _ufind : ident := 96%positive.
+Definition _v : ident := 70%positive.
+Definition _vfind : ident := 97%positive.
+Definition _w : ident := 87%positive.
+Definition _wedge : ident := 86%positive.
+Definition _weight : ident := 74%positive.
+Definition _x : ident := 62%positive.
+Definition _xRank : ident := 66%positive.
+Definition _xroot : ident := 64%positive.
+Definition _y : ident := 63%positive.
+Definition _yRank : ident := 67%positive.
+Definition _yroot : ident := 65%positive.
+Definition _t'1 : ident := 99%positive.
+Definition _t'10 : ident := 108%positive.
+Definition _t'11 : ident := 109%positive.
+Definition _t'2 : ident := 100%positive.
+Definition _t'3 : ident := 101%positive.
+Definition _t'4 : ident := 102%positive.
+Definition _t'5 : ident := 103%positive.
+Definition _t'6 : ident := 104%positive.
+Definition _t'7 : ident := 105%positive.
+Definition _t'8 : ident := 106%positive.
+Definition _t'9 : ident := 107%positive.
 
 Definition v_MAX_EDGES := {|
   gvar_info := tint;
@@ -426,8 +428,9 @@ Definition f_kruskal := {|
                       (Econst_int (Int.repr 1) tint) tint))))
               (Ssequence
                 (Scall None
-                  (Evar _free (Tfunction (Tcons (tptr tvoid) Tnil) tvoid
-                                cc_default))
+                  (Evar _freeSet (Tfunction
+                                   (Tcons (tptr (Tstruct _subset noattr))
+                                     Tnil) tvoid cc_default))
                   ((Etempvar _subsets (tptr (Tstruct _subset noattr))) ::
                    nil))
                 (Sreturn (Some (Etempvar _mst (tptr (Tstruct _graph noattr)))))))))))))
@@ -704,6 +707,10 @@ Definition global_definitions : list (ident * globdef fundef type) :=
    Gfun(External (EF_external "makeSet"
                    (mksignature (AST.Tint :: nil) AST.Tint cc_default))
      (Tcons tint Tnil) (tptr (Tstruct _subset noattr)) cc_default)) ::
+ (_freeSet,
+   Gfun(External (EF_external "freeSet"
+                   (mksignature (AST.Tint :: nil) AST.Tvoid cc_default))
+     (Tcons (tptr (Tstruct _subset noattr)) Tnil) tvoid cc_default)) ::
  (_MAX_EDGES, Gvar v_MAX_EDGES) ::
  (_mallocK,
    Gfun(External (EF_external "mallocK"
@@ -722,24 +729,25 @@ Definition global_definitions : list (ident * globdef fundef type) :=
 
 Definition public_idents : list ident :=
 (_kruskal :: _free_graph :: _sort_edges :: _fill_edge :: _init_empty_graph ::
- _free :: _mallocK :: _makeSet :: _Union :: _find :: ___builtin_debug ::
- ___builtin_write32_reversed :: ___builtin_write16_reversed ::
- ___builtin_read32_reversed :: ___builtin_read16_reversed ::
- ___builtin_fnmsub :: ___builtin_fnmadd :: ___builtin_fmsub ::
- ___builtin_fmadd :: ___builtin_fmin :: ___builtin_fmax ::
- ___builtin_ctzll :: ___builtin_ctzl :: ___builtin_ctz :: ___builtin_clzll ::
- ___builtin_clzl :: ___builtin_clz :: ___compcert_i64_umulh ::
- ___compcert_i64_smulh :: ___compcert_i64_sar :: ___compcert_i64_shr ::
- ___compcert_i64_shl :: ___compcert_i64_umod :: ___compcert_i64_smod ::
- ___compcert_i64_udiv :: ___compcert_i64_sdiv :: ___compcert_i64_utof ::
- ___compcert_i64_stof :: ___compcert_i64_utod :: ___compcert_i64_stod ::
- ___compcert_i64_dtou :: ___compcert_i64_dtos :: ___compcert_va_composite ::
- ___compcert_va_float64 :: ___compcert_va_int64 :: ___compcert_va_int32 ::
- ___builtin_va_end :: ___builtin_va_copy :: ___builtin_va_arg ::
- ___builtin_va_start :: ___builtin_membar :: ___builtin_annot_intval ::
- ___builtin_annot :: ___builtin_sel :: ___builtin_memcpy_aligned ::
- ___builtin_fsqrt :: ___builtin_fabs :: ___builtin_bswap16 ::
- ___builtin_bswap32 :: ___builtin_bswap :: ___builtin_bswap64 :: nil).
+ _free :: _mallocK :: _freeSet :: _makeSet :: _Union :: _find ::
+ ___builtin_debug :: ___builtin_write32_reversed ::
+ ___builtin_write16_reversed :: ___builtin_read32_reversed ::
+ ___builtin_read16_reversed :: ___builtin_fnmsub :: ___builtin_fnmadd ::
+ ___builtin_fmsub :: ___builtin_fmadd :: ___builtin_fmin ::
+ ___builtin_fmax :: ___builtin_ctzll :: ___builtin_ctzl :: ___builtin_ctz ::
+ ___builtin_clzll :: ___builtin_clzl :: ___builtin_clz ::
+ ___compcert_i64_umulh :: ___compcert_i64_smulh :: ___compcert_i64_sar ::
+ ___compcert_i64_shr :: ___compcert_i64_shl :: ___compcert_i64_umod ::
+ ___compcert_i64_smod :: ___compcert_i64_udiv :: ___compcert_i64_sdiv ::
+ ___compcert_i64_utof :: ___compcert_i64_stof :: ___compcert_i64_utod ::
+ ___compcert_i64_stod :: ___compcert_i64_dtou :: ___compcert_i64_dtos ::
+ ___compcert_va_composite :: ___compcert_va_float64 ::
+ ___compcert_va_int64 :: ___compcert_va_int32 :: ___builtin_va_end ::
+ ___builtin_va_copy :: ___builtin_va_arg :: ___builtin_va_start ::
+ ___builtin_membar :: ___builtin_annot_intval :: ___builtin_annot ::
+ ___builtin_sel :: ___builtin_memcpy_aligned :: ___builtin_fsqrt ::
+ ___builtin_fabs :: ___builtin_bswap16 :: ___builtin_bswap32 ::
+ ___builtin_bswap :: ___builtin_bswap64 :: nil).
 
 Definition prog : Clight.program := 
   mkprogram composites global_definitions public_idents _main Logic.I.

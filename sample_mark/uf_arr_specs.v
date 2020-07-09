@@ -50,6 +50,14 @@ Definition makeSet_spec :=
       LOCAL (temp ret_temp (pointer_val_val rt))
       SEP (whole_graph sh (makeSet_discrete_Graph (Z.to_nat V)) rt). (*representation in heap...*)
 
+Definition freeSet_spec :=
+  DECLARE _freeSet
+  WITH sh: share, p: pointer_val, g: ArrayGraph.UFGraph
+    PRE [tptr vertex_type]
+    PROP () PARAMS ((pointer_val_val p)) GLOBALS () SEP (whole_graph sh g p)
+  POST [tvoid]
+    PROP () LOCAL () SEP ().
+
 Definition find_spec :=
   DECLARE _find
   WITH sh: wshare, g: UFGraph, subsets: pointer_val, i: Z
