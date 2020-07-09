@@ -1,6 +1,7 @@
 #include "unionfind_arr.h"
 
 extern void * mallocN (int n);
+extern void freeN (void * ptr);
 
 // A structure to represent a subset for union-find
 /*
@@ -72,4 +73,8 @@ struct subset* makeSet(int V)
     }
 
     return subsets;
+}
+
+void freeSet(struct subset *subsets) {
+    freeN(subsets);
 }

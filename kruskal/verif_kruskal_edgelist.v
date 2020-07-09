@@ -25,14 +25,6 @@ Require Import RamifyCoq.sample_mark.spatial_array_graph.
 Require Import RamifyCoq.kruskal.kruskal_uf_specs.
 Require Import RamifyCoq.graph.undirected_uf_lemmas.
 
-Definition Vprog : varspecs. mk_varspecs prog. Defined.
-
-Definition Gprog : funspecs :=
-  ltac:(with_library prog
-      [makeSet_spec; find_spec; union_spec;
-      mallocK_spec; free_spec; fill_edge_spec; init_empty_graph_spec; sort_edges_spec; kruskal_spec
-  ]).
-
 Local Open Scope Z_scope.
 
 (* Belongs in UF land, but is currently proved using 
@@ -1566,7 +1558,7 @@ Proof.
       apply (is_partial_lgraph_connected msf g); auto.
     }
     (*everything we want from unionfind is done. We can free and clear it*)
-    clear H18 H19. forward_call (sh, subsetsPtr, subsetsGraph').
+    clear H18 H19. forward_call ((wshare_share sh), subsetsPtr, subsetsGraph').
 
     (* In hindsight, this wouldn't be needed with better definitions. But let's just soldier on
        Don't put this up on top, I worry about the effect of VST attempting to yank a value out
