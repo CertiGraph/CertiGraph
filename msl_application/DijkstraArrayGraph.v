@@ -9,7 +9,7 @@ Require Import RamifyCoq.lib.EquivDec_ext.
 Require Import RamifyCoq.lib.List_ext.
 Require Import RamifyCoq.graph.graph_model.
 Require Import RamifyCoq.graph.path_lemmas.
-Require Import RamifyCoq.msl_application.ArrayGraph.
+Require Export RamifyCoq.msl_application.ArrayGraph.
 Require Import Coq.Lists.List.
 Require Export RamifyCoq.sample_mark.dijk_pq_arr_macros.
 

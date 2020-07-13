@@ -1,19 +1,17 @@
 Require Import VST.msl.iter_sepcon.
 Require Import RamifyCoq.lib.List_ext.
-Require Import RamifyCoq.sample_mark.env_dijkstra_arr.
 Require Import RamifyCoq.graph.graph_model.
 Require Import RamifyCoq.graph.path_lemmas.
 Require Import RamifyCoq.floyd_ext.share.
-Require Import RamifyCoq.msl_application.ArrayGraph.
+
+(* maybe the above can go into env *)
+Require Import RamifyCoq.sample_mark.env_dijkstra_arr.
 Require Import RamifyCoq.msl_application.DijkstraArrayGraph.
 Require Import RamifyCoq.sample_mark.spatial_dijkstra_array_graph.
-Require Import RamifyCoq.sample_mark.verif_priorityqueue.
-Require Import Coq.Lists.List.
 Require Import RamifyCoq.sample_mark.priq_utils.
 Require Import RamifyCoq.sample_mark.dijk_pq_arr_macros.
 Require Import RamifyCoq.sample_mark.dijk_pq_arr_spec.
-Require Import VST.floyd.sublist.
-
+Require Import VST.floyd.sublist. (* this has to go last *)
 
 (* We must use the CompSpecs and Vprog that were
    centrally defined in dfijksta's environment. 
@@ -918,7 +916,7 @@ Proof.
 Qed.
 
  *)
-(* All lemmas about get_popped will probably need rethinking. *)
+(* The above can be deleted, but I'm keeping them until my new PQ comes in *)
 
 (* HIGHLY TEMPORARY *)
 (* Definition get_unpopped pq : list VType := *)
@@ -1102,18 +1100,6 @@ Proof.
       }
       (* And now we must show dijkstra_correct for the initial arrays *)
       (* First, worth noting that _nothing_ has been popped so far *)
-      (*
-      assert (get_popped (upd_Znth src (list_repeat (Z.to_nat SIZE) inf) 0) = []).
-      { apply get_popped_empty. rewrite Forall_forall; intros.
-        rewrite upd_Znth_unfold in H15. 2: lia.
-        apply in_app_or in H15.
-        destruct H15; [| apply in_inv in H15; destruct H15].
-        1,3: rewrite sublist_list_repeat in H15 by lia;
-          apply in_list_repeat in H15; lia.
-        rewrite <- H15, <- inf_eq.
-        compute; lia.
-      }
-       *)
       assert (H15: 1 = 1) by trivial.
       (* Now we get into the proof of dijkstra_correct proper.
          This is not very challenging... *)
@@ -1255,7 +1241,6 @@ Proof.
                 unfold inv_unseen in H34.
                 rewrite H8 in H37; trivial.
                 specialize (H34 H18 H37).
-                (* destruct H34. *)
                 assert (H38: 1 = 1) by trivial.
                 assert (H39: 1 = 1) by trivial.
                 split.
@@ -1813,7 +1798,6 @@ Proof.
                   destruct H41.
                   specialize (H73 _ H65).
                   destruct H67 as [? [? [? [? ?]]]].
-                  (* unfold VType in *. *)
                   destruct (zlt ((Znth mom' dist_contents)
                                  + (Znth u (Znth mom' (graph_to_mat g)))) inf).                  
                   2: {
@@ -2397,9 +2381,6 @@ Proof.
                             destruct (zlt ((Znth mom' dist_contents') + (Znth i (Znth mom' (graph_to_mat g)))) inf).
                               2: {
                                 unfold VType in *.
-                                
-                                (* rewrite careful_add_dirty; trivial. *)
-                                (* destruct H62 as [_ [_ [_ [? _]]]]. *)
                                 destruct (zlt (Znth i (Znth mom' (graph_to_mat g))) inf).
                                 - rewrite careful_add_dirty; trivial;
                                     lia.
