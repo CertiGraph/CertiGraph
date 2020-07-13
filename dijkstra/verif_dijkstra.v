@@ -1,8 +1,8 @@
-Require Import RamifyCoq.sample_mark.env_dijkstra_arr.
-Require Import RamifyCoq.msl_application.DijkstraArrayGraph.
-Require Import RamifyCoq.sample_mark.spatial_dijkstra_array_graph.
-Require Import RamifyCoq.sample_mark.dijk_pq_arr_macros.
-Require Import RamifyCoq.sample_mark.dijk_pq_arr_spec.
+Require Import RamifyCoq.dijkstra.env_dijkstra_arr.
+Require Import RamifyCoq.dijkstra.DijkstraArrayGraph.
+Require Import RamifyCoq.dijkstra.spatial_dijkstra_array_graph.
+Require Import RamifyCoq.dijkstra.dijk_pq_arr_macros.
+Require Import RamifyCoq.dijkstra.dijk_pq_arr_spec.
 
 Require Import VST.floyd.sublist. (* seems this has to be imported last *)
 

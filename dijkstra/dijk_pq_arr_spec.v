@@ -1,11 +1,11 @@
-Require Import RamifyCoq.sample_mark.env_dijkstra_arr.
+Require Import RamifyCoq.dijkstra.env_dijkstra_arr.
 Require Import RamifyCoq.graph.graph_model.
 Require Import RamifyCoq.graph.path_lemmas.
 Require Import RamifyCoq.floyd_ext.share.
-Require Import RamifyCoq.sample_mark.spatial_dijkstra_array_graph.
+Require Import RamifyCoq.dijkstra.spatial_dijkstra_array_graph.
 Require Export RamifyCoq.sample_mark.priq_utils.
 Require Import RamifyCoq.sample_mark.priorityqueue.
-Require Import RamifyCoq.sample_mark.dijkstra.
+Require Import RamifyCoq.dijkstra.dijkstra.
 
 Local Open Scope Z_scope.
 

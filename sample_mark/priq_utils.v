@@ -1,5 +1,5 @@
 Require Import VST.floyd.proofauto.
-Require Export RamifyCoq.sample_mark.dijk_pq_arr_macros.
+Require Export RamifyCoq.dijkstra.dijk_pq_arr_macros.
 
 
 (** UTILITIES TO HELP WITH VERIF OF ARRAY-BASED PQ **)

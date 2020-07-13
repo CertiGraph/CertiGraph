@@ -1,6 +1,6 @@
 Require Export VST.floyd.proofauto.
 Require Export RamifyCoq.floyd_ext.closed_lemmas.
-Require Export RamifyCoq.sample_mark.dijkstra.
+Require Export RamifyCoq.dijkstra.dijkstra.
 
 (* grabbed from verif and put here *)
 Require Export VST.msl.iter_sepcon.
