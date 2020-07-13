@@ -1,5 +1,6 @@
 Require Import VST.floyd.proofauto.
-Require Import RamifyCoq.sample_mark.pq_arr_spec.
+Require Import RamifyCoq.priq.priq_arr_specs.
+Require Import RamifyCoq.priq.priq_arr_utils.
 Require Import VST.floyd.sublist.
 
 (* We must use the CompSpecs and Vprog that were
@@ -90,7 +91,7 @@ Proof.
     (EX i : Z,
      PROP ()
      LOCAL (temp _minWeight (Vint (Int.repr (fold_right Z.min (Znth 0 priq_contents) (sublist 0 i priq_contents))));
-                        temp _minVertex (Vint (Int.repr (priq_utils.find priq_contents (fold_right Z.min (Znth 0 priq_contents) (sublist 0 i priq_contents)) 0)));
+                        temp _minVertex (Vint (Int.repr (find priq_contents (fold_right Z.min (Znth 0 priq_contents) (sublist 0 i priq_contents)) 0)));
                         temp _pq pq)
                  SEP (data_at Tsh (tarray tint SIZE) (map Vint (map Int.repr priq_contents)) pq)).
   - unfold SIZE; rep_lia.
@@ -133,7 +134,7 @@ Proof.
       rewrite sublist_same; [|lia..].
       apply min_in_list; [apply incl_refl | apply Znth_In; lia].
     + forward.
-      Exists (priq_utils.find priq_contents (fold_right Z.min (hd 0 priq_contents) (sublist 0 SIZE priq_contents)) 0).
+      Exists (find priq_contents (fold_right Z.min (hd 0 priq_contents) (sublist 0 SIZE priq_contents)) 0).
       rewrite sublist_same by lia. entailer!.
       destruct priq_contents; simpl; auto.
 Qed.

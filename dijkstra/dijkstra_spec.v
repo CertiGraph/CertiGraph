@@ -1,5 +1,5 @@
 (* A separate file with the underlying PQ spec-ed out *)
-Require Import RamifyCoq.sample_mark.pq_arr_spec.
+Require Import RamifyCoq.priq.priq_arr_specs.
 
 (* Dijkstra-specific stuff *)
 Require Import RamifyCoq.dijkstra.env_dijkstra_arr.

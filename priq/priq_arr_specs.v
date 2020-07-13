@@ -1,5 +1,5 @@
-Require Export RamifyCoq.sample_mark.priorityqueue.
-Require Export RamifyCoq.sample_mark.priq_utils.
+Require Export RamifyCoq.priq.priq_arr.
+Require Export RamifyCoq.priq.priq_arr_utils.
 Require Export VST.floyd.proofauto.
 
 (* Specs for Anshuman's simple array-based PQ *)
@@ -66,10 +66,10 @@ Definition popMin_spec :=
    SEP   (data_at Tsh (tarray tint SIZE) (map Vint (map Int.repr priq_contents)) pq)
   POST [ tint ]
    EX rt : Z,
-   PROP (rt = priq_utils.find priq_contents (fold_right Z.min (hd 0 priq_contents) priq_contents) 0)
+   PROP (rt = priq_arr_utils.find priq_contents (fold_right Z.min (hd 0 priq_contents) priq_contents) 0)
    LOCAL (temp ret_temp  (Vint (Int.repr rt)))
    SEP   (data_at Tsh (tarray tint SIZE) (upd_Znth
-                                            (priq_utils.find priq_contents (fold_right Z.min (Znth 0 priq_contents) priq_contents) 0)
+                                            (priq_arr_utils.find priq_contents (fold_right Z.min (Znth 0 priq_contents) priq_contents) 0)
                                             (map Vint (map Int.repr priq_contents)) (Vint (Int.repr (inf+1)))) pq).
 
 Definition Gprog : funspecs :=
