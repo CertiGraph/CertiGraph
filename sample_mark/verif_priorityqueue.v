@@ -1,8 +1,8 @@
 Require Import VST.floyd.proofauto.
-Require Import RamifyCoq.sample_mark.dijk_pq_arr_macros.
+Require Import RamifyCoq.dijkstra.dijk_pq_arr_macros.
 Require Import RamifyCoq.sample_mark.priorityqueue.
 Require Import RamifyCoq.sample_mark.priq_utils.
-Require Import RamifyCoq.sample_mark.dijk_pq_arr_spec.
+Require Import RamifyCoq.dijkstra.dijk_pq_arr_spec.
 Require Import VST.floyd.sublist.
 
 (* We must use the CompSpecs and Vprog that were
