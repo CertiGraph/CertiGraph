@@ -1,5 +1,4 @@
-Require Import RamifyCoq.msl_application.ArrayGraph.
-Require Import RamifyCoq.msl_application.DijkstraArrayGraph.
+Require Export RamifyCoq.msl_application.DijkstraArrayGraph.
 Require Import VST.veric.SeparationLogic.
 Require Import RamifyCoq.sample_mark.env_dijkstra_arr.
 Require Import RamifyCoq.floyd_ext.share.
