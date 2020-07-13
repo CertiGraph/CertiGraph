@@ -2,17 +2,18 @@ Require Import RamifyCoq.dijkstra.env_dijkstra_arr.
 Require Import RamifyCoq.dijkstra.DijkstraArrayGraph.
 Require Import RamifyCoq.dijkstra.spatial_dijkstra_array_graph.
 Require Import RamifyCoq.dijkstra.dijk_pq_arr_macros.
-Require Import RamifyCoq.dijkstra.dijk_pq_arr_spec.
+Require Import RamifyCoq.dijkstra.dijkstra_spec.
 
-Require Import VST.floyd.sublist. (* seems this has to be imported last *)
+Require Import VST.floyd.sublist.
+(* seems this has to be imported after the others *)
 
+Require Import RamifyCoq.sample_mark.priq_utils.
+(* remove once a better PQ is in place *)
+        
 (* We must use the CompSpecs and Vprog that were
    centrally defined in dfijksta's environment. 
    This lets us be consistent and call PQ functions in Dijkstra. 
  *)
-Local Definition CompSpecs := env_dijkstra_arr.CompSpecs.
-Local Definition Vprog := env_dijkstra_arr.Vprog.
-Local Definition Gprog := dijk_pq_arr_spec.Gprog.
 
 Local Open Scope Z_scope.
 
