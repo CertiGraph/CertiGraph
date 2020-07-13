@@ -1,17 +1,10 @@
-Require Import VST.msl.iter_sepcon.
-Require Import RamifyCoq.lib.List_ext.
-Require Import RamifyCoq.graph.graph_model.
-Require Import RamifyCoq.graph.path_lemmas.
-Require Import RamifyCoq.floyd_ext.share.
-
-(* maybe the above can go into env *)
 Require Import RamifyCoq.sample_mark.env_dijkstra_arr.
 Require Import RamifyCoq.msl_application.DijkstraArrayGraph.
 Require Import RamifyCoq.sample_mark.spatial_dijkstra_array_graph.
-Require Import RamifyCoq.sample_mark.priq_utils.
 Require Import RamifyCoq.sample_mark.dijk_pq_arr_macros.
 Require Import RamifyCoq.sample_mark.dijk_pq_arr_spec.
-Require Import VST.floyd.sublist. (* this has to go last *)
+
+Require Import VST.floyd.sublist. (* seems this has to be imported last *)
 
 (* We must use the CompSpecs and Vprog that were
    centrally defined in dfijksta's environment. 

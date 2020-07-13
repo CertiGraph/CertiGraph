@@ -2,10 +2,8 @@ Require Import RamifyCoq.sample_mark.env_dijkstra_arr.
 Require Import RamifyCoq.graph.graph_model.
 Require Import RamifyCoq.graph.path_lemmas.
 Require Import RamifyCoq.floyd_ext.share.
-Require Import RamifyCoq.msl_application.ArrayGraph.
-Require Import RamifyCoq.msl_application.DijkstraArrayGraph.
 Require Import RamifyCoq.sample_mark.spatial_dijkstra_array_graph.
-Require Import RamifyCoq.sample_mark.priq_utils.
+Require Export RamifyCoq.sample_mark.priq_utils.
 Require Import RamifyCoq.sample_mark.priorityqueue.
 Require Import RamifyCoq.sample_mark.dijkstra.
 
