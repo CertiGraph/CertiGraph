@@ -7,7 +7,7 @@ Require Import RamifyCoq.dijkstra.dijkstra_spec.
 Require Import VST.floyd.sublist.
 (* seems this has to be imported after the others *)
 
-Require Import RamifyCoq.sample_mark.priq_utils.
+Require Import RamifyCoq.priq.priq_arr_utils.
 (* remove once a better PQ is in place *)
         
 (* We must use the CompSpecs and Vprog that were
