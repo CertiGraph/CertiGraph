@@ -481,27 +481,19 @@ Qed.
 
 Lemma adde_evalid1:
   forall (g: FiniteWEdgeListGraph) e w, evalid (FiniteWEdgeListGraph_adde g e w) e.
-Proof.
-intros. unfold FiniteWEdgeListGraph_adde. simpl. unfold addValidFunc. right; auto.
-Qed.
+Proof. intros. apply add_edge_evalid. Qed.
 
 Lemma adde_evalid2:
   forall (g: FiniteWEdgeListGraph) e w e', evalid g e' -> evalid (FiniteWEdgeListGraph_adde g e w) e'.
-Proof.
-intros. unfold FiniteWEdgeListGraph_adde. simpl. unfold addValidFunc. left; auto.
-Qed.
+Proof. intros. apply add_edge_preserves_evalid; auto. Qed.
 
 Lemma adde_evalid2':
   forall (g: FiniteWEdgeListGraph) e w e', e' <> e -> evalid (FiniteWEdgeListGraph_adde g e w) e' -> evalid g e'.
-Proof.
-unfold FiniteWEdgeListGraph_adde; simpl; unfold addValidFunc. intros. destruct H0. auto. contradiction.
-Qed.
+Proof. intros. apply add_edge_preserves_evalid' in H0; auto. Qed.
 
 Lemma adde_evalid_or:
   forall (g: FiniteWEdgeListGraph) e w e', evalid (FiniteWEdgeListGraph_adde g e w) e' -> (evalid g e' \/ e' = e).
-Proof.
-unfold FiniteWEdgeListGraph_adde; simpl; unfold addValidFunc. intros. apply H.
-Qed.
+Proof. unfold FiniteWEdgeListGraph_adde; simpl; unfold addValidFunc. intros. apply H. Qed.
 
 Lemma adde_EList_rev:
   forall (g: FiniteWEdgeListGraph) e w l, ~ evalid g e ->
@@ -698,19 +690,6 @@ rewrite adde_src2 in H1; auto.
 rewrite adde_dst2 in H1; auto.
 Qed.
 
-Lemma adde_valid_upath':
-forall (g: FiniteWEdgeListGraph) e w p,
-  ~ evalid g e ->
-  valid_upath g p -> valid_upath (FiniteWEdgeListGraph_adde g e w) p.
-Proof.
-induction p; intros. auto.
-destruct p. auto.
-split. destruct H0. destruct H0. exists x.
-apply adde_adj_edge2; auto. unfold not; intros; subst x.
-destruct H0. destruct H0. contradiction.
-apply IHp. auto. apply H0.
-Qed.
-
 Lemma adde_valid_upath:
 forall (g: FiniteWEdgeListGraph) e w p,
   sound_weighted_edge_graph g ->
@@ -757,21 +736,10 @@ Lemma adde_fits_upath_rev:
 forall (g: FiniteWEdgeListGraph) e w p l,
 fits_upath (FiniteWEdgeListGraph_adde g e w) l p -> ~ In e l -> fits_upath g l p.
 Proof.
-induction p; intros. destruct l; auto.
-destruct p. destruct l; auto.
-destruct l. auto.
-assert (Heq_e: e <> e0). unfold not; intros. apply H0. left; rewrite H1; auto.
-assert (HIn_e: ~ In e l). unfold not; intros. apply H0. right; auto.
-clear H0.
-destruct H. split. destruct H. destruct H. split. split.
-apply adde_evalid_or in H. destruct H. auto. symmetry in H; contradiction.
-simpl in H2. unfold updateEdgeFunc in H2. unfold equiv_dec in H2. destruct (E_EqDec e e0).
-unfold equiv in e1; contradiction. apply H2.
-simpl in H1. unfold updateEdgeFunc in H1. unfold equiv_dec in H1. destruct (E_EqDec e e0).
-unfold equiv in e1; contradiction. apply H1.
-apply IHp; auto.
+intros. apply add_edge_fits_upath_rev in H; auto.
 Qed.
 
+(*only just realise that this is trivial. Maybe somewhere something could have been simplified without needing fits_upath_transfer*)
 Lemma adde_unaffected:
 forall (g: FiniteWEdgeListGraph) e w p, valid_upath (FiniteWEdgeListGraph_adde g e w) p
   -> (exists l, fits_upath g l p /\ ~ In e l) -> valid_upath g p.
@@ -780,6 +748,8 @@ intros. destruct H0 as [l ?].
 apply valid_upath_exists_list_edges'.
 exists l. destruct H0; auto.
 Qed.
+
+(**************Analogs of above done in undirected_graph**************)
 
 (*Try using this to simplify the below*)
 Lemma adde_bridge':

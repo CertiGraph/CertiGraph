@@ -1050,9 +1050,132 @@ Definition minimum_spanning_forest' (DEcomp: DE -> DE -> Prop) (DEadd: DE -> DE 
 
 (****************GRAPH ADD/REMOVE EDGES**************)
 
+(*Only reasoning the cases when the added edge did not already exist*)
+(*Tried to replace the adde_ versions with this in the main kruskal proof, but typing issues,
+so not very helpful after all...*)
+Lemma add_edge_adj_edge1:
+forall (g: PGraph) e s d, vvalid g s -> vvalid g d -> adj_edge (pregraph_add_edge g e s d) e s d.
+Proof.
+unfold adj_edge; intros. split. apply add_edge_strong_evalid; auto.
+rewrite add_edge_src. rewrite add_edge_dst. left; auto.
+Qed.
+
+Lemma add_edge_adj_edge2:
+forall (g: PGraph) e s t e' u v,
+  e <> e' -> (adj_edge g e' u v <-> adj_edge (pregraph_add_edge g e s t) e' u v).
+Proof.
+intros; split; intros.
++destruct H0. split.
+apply add_edge_preserves_strong_evalid; auto.
+rewrite add_edge_preserves_src; auto.
+rewrite add_edge_preserves_dst; auto.
++destruct H0. apply add_edge_preserves_strong_evalid in H0; auto.
+split. apply H0. rewrite add_edge_preserves_src, add_edge_preserves_dst in H1; auto.
+Qed.
+
+Lemma add_edge_valid_upath:
+forall (g: PGraph) e s t p,
+  ~ evalid g e -> valid_upath g p -> valid_upath (pregraph_add_edge g e s t) p.
+Proof.
+induction p; intros. auto.
+destruct p. auto.
+split. destruct H0. destruct H0. exists x.
+apply add_edge_adj_edge2; auto. unfold not; intros; subst x.
+destruct H0. destruct H0. contradiction.
+apply IHp. auto. apply H0.
+Qed.
+
+Corollary add_edge_connected_by_path:
+forall (g: PGraph) e s t p u v,
+  ~ evalid g e -> connected_by_path g p u v -> connected_by_path (pregraph_add_edge g e s t) p u v.
+Proof.
+unfold connected_by_path; intros.
+split. apply add_edge_valid_upath. auto.
+apply H0. apply H0.
+Qed.
+
+Corollary add_edge_connected:
+forall (g: PGraph) e s t u v,
+  ~ evalid g e -> connected g u v -> connected (pregraph_add_edge g e s t) u v.
+Proof.
+intros. destruct H0 as [p ?]. exists p.
+apply add_edge_connected_by_path; auto.
+Qed.
+
+Lemma add_edge_fits_upath:
+forall (g: PGraph) e s t p l,
+~ evalid g e -> fits_upath g l p -> fits_upath (pregraph_add_edge g e s t) l p.
+Proof.
+induction p; intros. destruct l; auto.
+destruct l. auto. destruct p. auto.
+split. destruct H0. destruct (EE e e0).
+unfold equiv in e1; subst e0. destruct H0. destruct H0. contradiction.
+unfold complement, equiv in c. apply add_edge_adj_edge2; auto.
+apply IHp. apply H. apply fits_upath_cons in H0. apply H0.
+Qed.
+
+Lemma add_edge_fits_upath_rev:
+forall (g: PGraph) e s d p l,
+fits_upath (pregraph_add_edge g e s d) l p -> ~ In e l -> fits_upath g l p.
+Proof.
+induction p; intros. destruct l; auto.
+destruct p. destruct l; auto.
+destruct l. auto.
+assert (Heq_e: e <> e0). unfold not; intros. apply H0. left; rewrite H1; auto.
+assert (HIn_e: ~ In e l). unfold not; intros. apply H0. right; auto.
+clear H0.
+destruct H. split. destruct H. destruct H. split. split.
+apply add_edge_preserves_evalid' in H; auto.
+rewrite add_edge_preserves_src, add_edge_preserves_dst in H2; auto. simpl in H2; auto.
+rewrite add_edge_preserves_src, add_edge_preserves_dst in H1; auto.
+apply IHp; auto.
+Qed.
+
+Corollary add_edge_unaffected:
+forall (g: PGraph) e s t p l, valid_upath (pregraph_add_edge g e s t) p
+  -> fits_upath (pregraph_add_edge g e s t) l p -> ~ In e l -> valid_upath g p.
+Proof.
+intros. apply valid_upath_exists_list_edges'.
+exists l. apply (add_edge_fits_upath_rev) in H0; auto.
+Qed.
+
+Lemma add_edge_connected_through_bridge1:
+forall (g: PGraph) e u v a b, ~ evalid g e -> connected g a u -> connected g v b
+  -> connected (pregraph_add_edge g e u v) a b.
+Proof.
+intros.
+assert (vvalid g u). apply (connected_vvalid g a u H0).
+assert (vvalid g v). apply (connected_vvalid g v b H1).
+apply (add_edge_connected g e u v) in H0; auto. apply (add_edge_connected g e u v) in H1; auto.
+destruct H0 as [x [? [? ?]]]. destruct H1 as [x0 [? [? ?]]].
+exists (x++x0). split.
+apply valid_upath_app; auto.
+rewrite H5; rewrite H6. unfold adjacent_err. exists e. split.
+apply (add_edge_strong_evalid g e u v); auto.
+left. split. rewrite add_edge_src; auto. rewrite add_edge_dst; auto.
+split. apply hd_error_app; auto. apply last_err_app; auto.
+Qed.
+
+Lemma add_edge_connected_through_bridge2:
+forall (g: PGraph) e u v a b,
+~ evalid g e -> connected g a v -> connected g u b -> connected (pregraph_add_edge g e u v) a b.
+Proof.
+intros.
+assert (vvalid g v). apply (connected_vvalid g a v H0).
+assert (vvalid g u). apply (connected_vvalid g u b H1).
+apply (add_edge_connected g e u v) in H0; auto. apply (add_edge_connected g e u v) in H1; auto.
+destruct H0 as [x [? [? ?]]]. destruct H1 as [x0 [? [? ?]]].
+exists (x++x0). split.
+apply valid_upath_app; auto.
+rewrite H5; rewrite H6. unfold adjacent_err. exists e. split.
+apply (add_edge_strong_evalid g e u v); auto.
+right. split. rewrite add_edge_src; auto. rewrite add_edge_dst; auto.
+split. apply hd_error_app; auto. apply last_err_app; auto.
+Qed.
+
 Lemma remove_edge_valid_upath:
-forall (g: PGraph) e p l, valid_upath g p
-  -> fits_upath g l p -> ~ In e l -> valid_upath (pregraph_remove_edge g e) p.
+forall (g: PGraph) e p l, valid_upath g p -> fits_upath g l p -> ~ In e l
+  -> valid_upath (pregraph_remove_edge g e) p.
 Proof.
 intros. apply valid_upath_exists_list_edges'.
 apply (fits_upath_transfer' _ _ _ (pregraph_remove_edge g e)) in H0. exists l; apply H0.
@@ -1063,8 +1186,7 @@ auto. auto.
 Qed.
 
 Lemma remove_edge_unaffected:
-  forall (g: PGraph) e p, valid_upath (pregraph_remove_edge g e) p
-  -> valid_upath g p.
+  forall (g: PGraph) e p, valid_upath (pregraph_remove_edge g e) p -> valid_upath g p.
 Proof.
 intros. pose proof (valid_upath_exists_list_edges _ p H). destruct H0 as [l ?].
 apply valid_upath_exists_list_edges'.
