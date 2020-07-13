@@ -11,6 +11,10 @@ Require Import RamifyCoq.graph.graph_model.
 Require Import RamifyCoq.graph.path_lemmas.
 Require Export RamifyCoq.msl_application.ArrayGraph.
 Require Import Coq.Lists.List.
+
+(* This file is just one line: "Require Export priq.priq_arr_utils." 
+   It can be inlined. 
+   It is currently a separate file in case we want more constants stashed away *)
 Require Export RamifyCoq.dijkstra.dijkstra_constants.
 
 Coercion pg_lg: LabeledGraph >-> PreGraph.
