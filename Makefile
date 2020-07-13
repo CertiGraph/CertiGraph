@@ -65,9 +65,10 @@ KRUSKAL_FILES = \
   verif_kruskal_edgelist.v
 
 DIJKSTRA_FILES = \
-  DijkstraArrayGraph.v DijkstraGraph.v \
-  verif_dijkstra.v env_dijkstra_arr.v spatial_dijkstra_array_graph.v \
-  dijk_pq_arr_macros.v dijkstra_spec.v dijkstra.v
+  dijkstra.v \
+  DijkstraArrayGraph.v \
+  env_dijkstra_arr.v spatial_dijkstra_array_graph.v \
+  dijkstra_constants.v dijkstra_spec.v verif_dijkstra.v
 
 PRIQ_FILES = \
   priq_arr.v priq_arr_specs.v priq_arr_utils.v verif_priq_arr.v 

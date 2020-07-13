@@ -11,7 +11,7 @@ Require Import RamifyCoq.graph.graph_model.
 Require Import RamifyCoq.graph.path_lemmas.
 Require Export RamifyCoq.msl_application.ArrayGraph.
 Require Import Coq.Lists.List.
-Require Export RamifyCoq.dijkstra.dijk_pq_arr_macros.
+Require Export RamifyCoq.dijkstra.dijkstra_constants.
 
 Coercion pg_lg: LabeledGraph >-> PreGraph.
 Coercion lg_gg: GeneralGraph >-> LabeledGraph. 
