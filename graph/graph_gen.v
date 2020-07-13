@@ -170,6 +170,54 @@ Definition pregraph_add_edge (g : Graph) (e : E) (o t : V) :=
 Definition pregraph_add_whole_edge (g: Graph) (e: E) (s t: V) : Graph :=
   Build_PreGraph _ _ (addValidFunc t (vvalid g)) (addValidFunc e (evalid g)) (updateEdgeFunc (src g) e s) (updateEdgeFunc (dst g) e t).
 
+Lemma add_edge_vvalid: forall g v e s t, vvalid g v -> vvalid (pregraph_add_edge g e s t) v. Proof. intros. simpl. auto. Qed.
+
+Lemma add_edge_evalid: forall g e s t, evalid (pregraph_add_edge g e s t) e. Proof. intros. hnf; right; auto. Qed.
+
+Lemma add_edge_preserves_evalid: forall g e s t e', evalid g e' -> evalid (pregraph_add_edge g e s t) e'. Proof. intros. hnf; left; auto. Qed.
+
+Lemma add_edge_preserves_evalid': forall g e s t e', e<>e' -> evalid (pregraph_add_edge g e s t) e' -> evalid g e'.
+Proof.
+intros. simpl in H0. unfold addValidFunc in H0. destruct H0; [auto | symmetry in H0; contradiction].
+Qed.
+
+Lemma add_edge_src: forall g e s t, src (pregraph_add_edge g e s t) e = s.
+Proof.
+intros. simpl. unfold updateEdgeFunc, equiv_dec. destruct EE. auto.
+unfold complement, equiv in c; contradiction.
+Qed.
+
+Lemma add_edge_preserves_src: forall g e s t e', e <> e' -> src (pregraph_add_edge g e s t) e' = src g e'.
+Proof.
+intros. simpl; unfold updateEdgeFunc, equiv_dec. destruct EE. unfold equiv in e0; contradiction. auto.
+Qed.
+
+Lemma add_edge_dst: forall g e s t, dst (pregraph_add_edge g e s t) e = t.
+Proof.
+intros. simpl. unfold updateEdgeFunc, equiv_dec. destruct EE. auto.
+unfold complement, equiv in c; contradiction.
+Qed.
+
+Lemma add_edge_preserves_dst: forall g e s t e', e <> e' -> dst (pregraph_add_edge g e s t) e' = dst g e'.
+Proof.
+intros. simpl; unfold updateEdgeFunc, equiv_dec. destruct EE. unfold equiv in e0; contradiction. auto.
+Qed.
+
+Lemma add_edge_strong_evalid: forall g e s t, vvalid g s -> vvalid g t -> strong_evalid (pregraph_add_edge g e s t) e.
+Proof.
+intros. split. apply add_edge_evalid. rewrite add_edge_src, add_edge_dst. simpl; split; auto.
+Qed.
+
+Lemma add_edge_preserves_strong_evalid: forall g e s t e', e <> e' -> (strong_evalid g e' <-> strong_evalid (pregraph_add_edge g e s t) e').
+Proof.
+intros; split; intros.
++destruct H0 as [? [? ?]]. split. apply add_edge_preserves_evalid; auto.
+rewrite add_edge_preserves_src, add_edge_preserves_dst; auto.
++destruct H0 as [? [? ?]]. apply add_edge_preserves_evalid' in H0; auto.
+rewrite add_edge_preserves_src in H1; auto. rewrite add_edge_preserves_dst in H2; auto. simpl in H1, H2.
+split; auto.
+Qed.
+
 Lemma addEdge_preserve_vvalid: forall g v e s t, vvalid g v -> vvalid (pregraph_add_whole_edge g e s t) v. Proof. intros. hnf; left; auto. Qed.
 
 Lemma addEdge_preserve_evalid: forall g e e' s t, evalid g e -> evalid (pregraph_add_whole_edge g e' s t) e. Proof. intros. hnf; left; auto. Qed.
@@ -194,9 +242,21 @@ Proof. intros. unfold pregraph_remove_vertex, removeValidFunc. simpl. reflexivit
 Definition pregraph_remove_edge (g: Graph) (e: E): Graph :=
   @Build_PreGraph V E EV EE (vvalid g) (removeValidFunc e (evalid g)) (src g) (dst g).
 
+(*remove_edge_vvalid is just a simpl; auto.*)
+
 Lemma remove_edge_evalid: forall g e e',
     evalid (pregraph_remove_edge g e') e <-> evalid g e /\ e <> e'.
 Proof. intros. unfold pregraph_remove_edge, removeValidFunc. simpl. reflexivity. Qed.
+
+Lemma remove_edge_preserves_strong_evalid: forall g e e',
+  (strong_evalid g e' /\ e <> e' <-> strong_evalid (pregraph_remove_edge g e) e').
+Proof.
+intros; split; intros. destruct H.
+destruct H as [? [? ?]]. split. apply remove_edge_evalid. split; auto.
+simpl. split; auto.
+destruct H as [? [? ?]]. rewrite remove_edge_evalid in H. destruct H. split. split. auto.
+simpl in H0, H1. split; auto. auto.
+Qed.
 
 Definition pregraph_gen_dst (g : Graph) (e : E) (t : V) :=
   @Build_PreGraph V E EV EE (vvalid g) (evalid g) (src g) (updateEdgeFunc (dst g) e t).

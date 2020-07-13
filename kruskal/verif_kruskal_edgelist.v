@@ -232,7 +232,7 @@ assert (fits_upath swap (rev l2a ++ (u1, v1) :: nil ++ rev l2b) (rev p2a ++ rev 
     apply (H21 u2). auto. apply last_error_In. apply H14. auto. auto.
   rewrite <- rev_hd_last. apply H14.
   rewrite rev_hd_last, rev_involutive. apply H14.
-  split. apply adde_strong_evalid1.
+  split. apply add_edge_strong_evalid.
     simpl. apply (connected_vvalid t2 u1 v1). exists p2; apply H6.
     simpl. apply (connected_vvalid t2 u1 v1). exists p2; apply H6.
     left. rewrite <- sound_src; auto. rewrite <- sound_dst; auto.
@@ -267,7 +267,7 @@ assert (fits_upath swap (l2b ++ (u1, v1) :: nil ++ l2a) (p2b ++ p2a)). {
     assert (NoDup p2). apply H7. rewrite H13 in H20. pose proof (NoDup_app_not_in VType p2a p2b H20).
     apply (H21 u2).  auto. apply hd_error_In. apply H14. auto.
   apply H14. apply H14.
-  split. apply adde_strong_evalid1.
+  split. apply add_edge_strong_evalid.
     simpl. apply (connected_vvalid t2 u1 v1). exists p2; apply H6.
     simpl. apply (connected_vvalid t2 u1 v1). exists p2; apply H6.
     right. rewrite <- sound_src; auto. rewrite <- sound_dst; auto.
@@ -1134,30 +1134,20 @@ Proof.
     unfold edge_to_wedge; simpl. inversion H23. auto.
     unfold RelationClasses.complement, Equivalence.equiv in c. rewrite H24 in c; contradiction.
     +++
-      intros. rewrite <- (uf_union_vvalid
-                            subsetsGraph_uv
-                            uv_union
-                            (liGraph subsetsGraph_uv)
-                            (liGraph uv_union)
-                            (UnionFindGraph.finGraph subsetsGraph_uv)
-                            (UnionFindGraph.finGraph uv_union)
-                            (maGraph subsetsGraph_uv)
-                            (maGraph uv_union)
-                            u v); auto.
+    intros. rewrite <- (uf_union_vvalid subsetsGraph_uv uv_union
+                        (liGraph subsetsGraph_uv) (liGraph uv_union)
+                        (UnionFindGraph.finGraph subsetsGraph_uv) (UnionFindGraph.finGraph uv_union)
+                        (maGraph subsetsGraph_uv) (maGraph uv_union)
+                        u v); auto.
     destruct Hequiv_trans. rewrite <- H23. apply H14.
     +++
     intros. rewrite (sublist_split 0 i (i+1)) in H24 by lia. apply in_app_or in H24.
     destruct H24.
     (*case of every edge that was before*)
-    apply (uf_union_preserves_ufroot_same
-             subsetsGraph_uv
-             uv_union
-             (liGraph subsetsGraph_uv)
-             (liGraph uv_union)
-             (UnionFindGraph.finGraph subsetsGraph_uv)
-             (UnionFindGraph.finGraph uv_union)
-             (maGraph subsetsGraph_uv)
-             (maGraph uv_union)
+    apply (uf_union_preserves_ufroot_same subsetsGraph_uv uv_union
+             (liGraph subsetsGraph_uv) (liGraph uv_union)
+             (UnionFindGraph.finGraph subsetsGraph_uv) (UnionFindGraph.finGraph uv_union)
+             (maGraph subsetsGraph_uv) (maGraph uv_union)
              u v); auto.
     apply (uf_equiv_ufroot_same subsetsGraph' subsetsGraph_uv). auto.
     apply (H15 e); auto.
@@ -1185,14 +1175,10 @@ Proof.
     destruct H25; destruct H25; subst u0; subst v0; rewrite <- H30; rewrite <- H31.
     (*both cases: apply union_ufroot_same.*)
     2: apply ufroot_same_symm.
-    all: apply (uf_union_ufroot_same
-                  subsetsGraph_uv uv_union
-                  (liGraph subsetsGraph_uv)
-                  (liGraph uv_union)
-                  (UnionFindGraph.finGraph subsetsGraph_uv)
-                  (UnionFindGraph.finGraph uv_union)
-                  (maGraph subsetsGraph_uv)
-                  (maGraph uv_union)); auto.
+    all: apply (uf_union_ufroot_same subsetsGraph_uv uv_union
+                  (liGraph subsetsGraph_uv) (liGraph uv_union)
+                  (UnionFindGraph.finGraph subsetsGraph_uv) (UnionFindGraph.finGraph uv_union)
+                  (maGraph subsetsGraph_uv) (maGraph uv_union)); auto.
     +++
     intros a b; split; intros.
     ***
@@ -1201,27 +1187,17 @@ Proof.
       Will also need an analog of cross_bridge_implies_endpoints, and a ufroot_same_dec analog of the in_dec
     *)
     assert (Hvvalid_subsetsGraph_uv_a: vvalid subsetsGraph_uv a).
-    apply (uf_union_vvalid
-             subsetsGraph_uv
-             uv_union
-             (liGraph subsetsGraph_uv)
-             (liGraph uv_union)
-             (UnionFindGraph.finGraph subsetsGraph_uv)
-             (UnionFindGraph.finGraph uv_union)
-             (maGraph subsetsGraph_uv)
-             (maGraph uv_union)
+    apply (uf_union_vvalid subsetsGraph_uv uv_union
+             (liGraph subsetsGraph_uv) (liGraph uv_union)
+             (UnionFindGraph.finGraph subsetsGraph_uv) (UnionFindGraph.finGraph uv_union)
+             (maGraph subsetsGraph_uv) (maGraph uv_union)
              u v); auto.
       destruct H23 as [rt [? ?]]. apply (ufroot_vvalid_vert uv_union rt a). auto.
       assert (Hvvalid_subsetsGraph_uv_b: vvalid subsetsGraph_uv b).
-      apply (uf_union_vvalid
-               subsetsGraph_uv
-               uv_union
-               (liGraph subsetsGraph_uv)
-               (liGraph uv_union)
-               (UnionFindGraph.finGraph subsetsGraph_uv)
-               (UnionFindGraph.finGraph uv_union)
-               (maGraph subsetsGraph_uv)
-               (maGraph uv_union)
+      apply (uf_union_vvalid subsetsGraph_uv uv_union
+               (liGraph subsetsGraph_uv) (liGraph uv_union)
+               (UnionFindGraph.finGraph subsetsGraph_uv) (UnionFindGraph.finGraph uv_union)
+               (maGraph subsetsGraph_uv) (maGraph uv_union)
                u v); auto.
       destruct H23 as [rt [? ?]]. apply (ufroot_vvalid_vert uv_union rt b). auto.
       destruct (connected_dec msf' a b); rename H24 into Hab. apply adde_connected; auto.
@@ -1235,24 +1211,16 @@ Proof.
       assert (~ ufroot_same subsetsGraph_uv b u). {
         unfold not; intros.
         apply ufroot_same_symm in H28. contradiction. }
-      apply (uf_union_remains_disjoint1
-               subsetsGraph_uv uv_union
-               (liGraph subsetsGraph_uv)
-               (liGraph uv_union)
-               (UnionFindGraph.finGraph subsetsGraph_uv)
-               (UnionFindGraph.finGraph uv_union)
-               (maGraph subsetsGraph_uv)
-               (maGraph uv_union)
+      apply (uf_union_remains_disjoint1 subsetsGraph_uv uv_union
+               (liGraph subsetsGraph_uv) (liGraph uv_union)
+               (UnionFindGraph.finGraph subsetsGraph_uv) (UnionFindGraph.finGraph uv_union)
+               (maGraph subsetsGraph_uv) (maGraph uv_union)
                u v) in H28; auto.
       2: auto. 2: { unfold not; intros. apply ufroot_same_symm in H29. contradiction. }
-      apply (uf_union_preserves_ufroot_same
-               subsetsGraph_uv uv_union
-               (liGraph subsetsGraph_uv)
-               (liGraph uv_union)
-               (UnionFindGraph.finGraph subsetsGraph_uv)
-               (UnionFindGraph.finGraph uv_union)
-               (maGraph subsetsGraph_uv)
-               (maGraph uv_union)
+      apply (uf_union_preserves_ufroot_same subsetsGraph_uv uv_union
+               (liGraph subsetsGraph_uv) (liGraph uv_union)
+               (UnionFindGraph.finGraph subsetsGraph_uv) (UnionFindGraph.finGraph uv_union)
+               (maGraph subsetsGraph_uv) (maGraph uv_union)
                u v) in H24; auto.
       apply ufroot_same_symm in H23.
       apply (ufroot_same_trans _ (liGraph uv_union) b a u) in H23; auto. contradiction.
@@ -1267,51 +1235,35 @@ Proof.
         assert (~ ufroot_same subsetsGraph_uv b v). {
           unfold not; intros.
           apply ufroot_same_symm in H28. contradiction. }
-        apply (uf_union_remains_disjoint2
-                 subsetsGraph_uv uv_union
-                 (liGraph subsetsGraph_uv)
-                 (liGraph uv_union)
-                 (UnionFindGraph.finGraph subsetsGraph_uv)
-                 (UnionFindGraph.finGraph uv_union)
-                 (maGraph subsetsGraph_uv)
-               (maGraph uv_union)
+        apply (uf_union_remains_disjoint2 subsetsGraph_uv uv_union
+                 (liGraph subsetsGraph_uv) (liGraph uv_union)
+                 (UnionFindGraph.finGraph subsetsGraph_uv) (UnionFindGraph.finGraph uv_union)
+                 (maGraph subsetsGraph_uv) (maGraph uv_union)
                u v) in H28; auto.
         2: { rewrite ufroot_same_symm. auto. }
-        apply (uf_union_preserves_ufroot_same
-                 subsetsGraph_uv uv_union
-                 (liGraph subsetsGraph_uv)
-                 (liGraph uv_union)
-                 (UnionFindGraph.finGraph subsetsGraph_uv)
-                 (UnionFindGraph.finGraph uv_union)
-                 (maGraph subsetsGraph_uv)
-                 (maGraph uv_union)
+        apply (uf_union_preserves_ufroot_same subsetsGraph_uv uv_union
+                 (liGraph subsetsGraph_uv) (liGraph uv_union)
+                 (UnionFindGraph.finGraph subsetsGraph_uv) (UnionFindGraph.finGraph uv_union)
+                 (maGraph subsetsGraph_uv) (maGraph uv_union)
                  u v) in H25; auto.
         apply ufroot_same_symm in H23.
         apply (ufroot_same_trans _ (liGraph uv_union) b a v) in H23; auto. contradiction.
       destruct (connected_dec msf' u b). apply H16 in H26.
         apply (uf_equiv_ufroot_same subsetsGraph' subsetsGraph_uv) in H26; auto.
-        apply (uf_union_preserves_ufroot_same
-                 subsetsGraph_uv uv_union
-                 (liGraph subsetsGraph_uv)
-                 (liGraph uv_union)
-                 (UnionFindGraph.finGraph subsetsGraph_uv)
-                 (UnionFindGraph.finGraph uv_union)
-                 (maGraph subsetsGraph_uv)
-                 (maGraph uv_union)
+        apply (uf_union_preserves_ufroot_same subsetsGraph_uv uv_union
+                 (liGraph subsetsGraph_uv) (liGraph uv_union)
+                 (UnionFindGraph.finGraph subsetsGraph_uv) (UnionFindGraph.finGraph uv_union)
+                 (maGraph subsetsGraph_uv) (maGraph uv_union)
                  u v) in H26; auto.
         apply ufroot_same_symm in H26.
         apply (ufroot_same_trans _ (liGraph uv_union) a b u H23) in H26.
         (*However, ~ connected msf' a u -> ... -> ~ ufroot_same uv_union, contradiction*)
         assert (~ ufroot_same uv_union a u). {
           rewrite <- H16 in H24, H25. rewrite (uf_equiv_ufroot_same subsetsGraph' subsetsGraph_uv) in H24, H25; auto.
-          apply (uf_union_remains_disjoint1
-                   subsetsGraph_uv uv_union
-                   (liGraph subsetsGraph_uv)
-                   (liGraph uv_union)
-                   (UnionFindGraph.finGraph subsetsGraph_uv)
-                   (UnionFindGraph.finGraph uv_union)
-                   (maGraph subsetsGraph_uv)
-                   (maGraph uv_union)
+          apply (uf_union_remains_disjoint1 subsetsGraph_uv uv_union
+                   (liGraph subsetsGraph_uv) (liGraph uv_union)
+                   (UnionFindGraph.finGraph subsetsGraph_uv) (UnionFindGraph.finGraph uv_union)
+                   (maGraph subsetsGraph_uv) (maGraph uv_union)
                    u v a); auto. }
         contradiction.
         destruct (connected_dec msf' v b). apply H16 in H27. apply (uf_equiv_ufroot_same subsetsGraph' subsetsGraph_uv) in H27; auto.
@@ -1321,35 +1273,26 @@ Proof.
                  (liGraph uv_union)
                  (UnionFindGraph.finGraph subsetsGraph_uv)
                  (UnionFindGraph.finGraph uv_union)
-                 (maGraph subsetsGraph_uv)
-                 (maGraph uv_union)
+                 (maGraph subsetsGraph_uv) (maGraph uv_union)
                  u v) in H27; auto. apply ufroot_same_symm in H27.
           apply (ufroot_same_trans _ (liGraph uv_union) a b v H23) in H27.
           (*However, ~ connected msf' a u -> ... -> ~ ufroot_same uv_union, contradiction*)
           assert (~ ufroot_same uv_union a v). {
             rewrite <- H16 in H24, H25. rewrite (uf_equiv_ufroot_same subsetsGraph' subsetsGraph_uv) in H24, H25; auto.
-            apply (uf_union_remains_disjoint2
-                     subsetsGraph_uv uv_union
-                     (liGraph subsetsGraph_uv)
-                     (liGraph uv_union)
-                     (UnionFindGraph.finGraph subsetsGraph_uv)
-                     (UnionFindGraph.finGraph uv_union)
-                     (maGraph subsetsGraph_uv)
-                     (maGraph uv_union)
+            apply (uf_union_remains_disjoint2 subsetsGraph_uv uv_union
+                     (liGraph subsetsGraph_uv) (liGraph uv_union)
+                     (UnionFindGraph.finGraph subsetsGraph_uv) (UnionFindGraph.finGraph uv_union)
+                     (maGraph subsetsGraph_uv) (maGraph uv_union)
                      u v a); auto. }
           contradiction.
         (*finally, neither were connected to u or v*)
         rewrite <- H16 in Hab, H24, H25, H26, H27.
         rewrite (uf_equiv_ufroot_same subsetsGraph' subsetsGraph_uv) in Hab, H24, H25, H26, H27; auto.
         assert (~ ufroot_same uv_union a b). {
-          apply (uf_union_joins_only_uv
-                   subsetsGraph_uv uv_union
-                   (liGraph subsetsGraph_uv)
-                   (liGraph uv_union)
-                   (UnionFindGraph.finGraph subsetsGraph_uv)
-                   (UnionFindGraph.finGraph uv_union)
-                   (maGraph subsetsGraph_uv)
-                   (maGraph uv_union)
+          apply (uf_union_joins_only_uv subsetsGraph_uv uv_union
+                   (liGraph subsetsGraph_uv) (liGraph uv_union)
+                   (UnionFindGraph.finGraph subsetsGraph_uv) (UnionFindGraph.finGraph uv_union)
+                   (maGraph subsetsGraph_uv) (maGraph uv_union)
                    u v a b); auto.
         }
         contradiction.
@@ -1372,45 +1315,29 @@ Proof.
         rewrite <- H16 in H25, H26;
         rewrite (uf_equiv_ufroot_same subsetsGraph' subsetsGraph_uv)
           in H25, H26; auto;
-          apply (uf_union_preserves_ufroot_same
-                   subsetsGraph_uv uv_union
-                   (liGraph subsetsGraph_uv)
-                   (liGraph uv_union)
-                   (UnionFindGraph.finGraph subsetsGraph_uv)
-                   (UnionFindGraph.finGraph uv_union)
-                   (maGraph subsetsGraph_uv)
-                   (maGraph uv_union)
+          apply (uf_union_preserves_ufroot_same subsetsGraph_uv uv_union
+                   (liGraph subsetsGraph_uv) (liGraph uv_union)
+                   (UnionFindGraph.finGraph subsetsGraph_uv) (UnionFindGraph.finGraph uv_union)
+                   (maGraph subsetsGraph_uv) (maGraph uv_union)
                    u v) in H25; auto;
-            apply (uf_union_preserves_ufroot_same
-                     subsetsGraph_uv uv_union
-                     (liGraph subsetsGraph_uv)
-                     (liGraph uv_union)
-                     (UnionFindGraph.finGraph subsetsGraph_uv)
-                     (UnionFindGraph.finGraph uv_union)
-                     (maGraph subsetsGraph_uv)
-                     (maGraph uv_union)
+            apply (uf_union_preserves_ufroot_same subsetsGraph_uv uv_union
+                     (liGraph subsetsGraph_uv) (liGraph uv_union)
+                     (UnionFindGraph.finGraph subsetsGraph_uv) (UnionFindGraph.finGraph uv_union)
+                     (maGraph subsetsGraph_uv) (maGraph uv_union)
                      u v) in H26; auto.
       assert (ufroot_same uv_union u v).
-      apply (uf_union_ufroot_same
-               subsetsGraph_uv uv_union
-               (liGraph subsetsGraph_uv)
-               (liGraph uv_union)
-               (UnionFindGraph.finGraph subsetsGraph_uv)
-               (UnionFindGraph.finGraph uv_union)
-               (maGraph subsetsGraph_uv)
-               (maGraph uv_union)
+      apply (uf_union_ufroot_same subsetsGraph_uv uv_union
+               (liGraph subsetsGraph_uv) (liGraph uv_union)
+               (UnionFindGraph.finGraph subsetsGraph_uv) (UnionFindGraph.finGraph uv_union)
+               (maGraph subsetsGraph_uv) (maGraph uv_union)
                u v); auto.
         apply (ufroot_same_trans _ (liGraph uv_union) u v b H27) in H26.
         apply (ufroot_same_trans _ (liGraph uv_union) a u b); auto.
         assert (ufroot_same uv_union u v).
-        apply (uf_union_ufroot_same
-                 subsetsGraph_uv uv_union
-                 (liGraph subsetsGraph_uv)
-                 (liGraph uv_union)
-                 (UnionFindGraph.finGraph subsetsGraph_uv)
-                 (UnionFindGraph.finGraph uv_union)
-                 (maGraph subsetsGraph_uv)
-                 (maGraph uv_union)
+        apply (uf_union_ufroot_same subsetsGraph_uv uv_union
+                 (liGraph subsetsGraph_uv) (liGraph uv_union)
+                 (UnionFindGraph.finGraph subsetsGraph_uv) (UnionFindGraph.finGraph uv_union)
+                 (maGraph subsetsGraph_uv) (maGraph uv_union)
                  u v); auto.
         apply ufroot_same_symm in H27.
         apply (ufroot_same_trans _ (liGraph uv_union) v u b H27) in H26.
@@ -1419,14 +1346,10 @@ Proof.
     apply (adde_unaffected msf' (u,v) (elabel g (u,v))). apply H23. exists l. split. apply (adde_fits_upath_rev msf' (u,v) (elabel g (u,v))); auto. auto.
     auto.
     rewrite <- H16 in H25. rewrite (uf_equiv_ufroot_same subsetsGraph' subsetsGraph_uv) in H25; auto.
-    apply (uf_union_preserves_ufroot_same
-             subsetsGraph_uv uv_union
-             (liGraph subsetsGraph_uv)
-             (liGraph uv_union)
-             (UnionFindGraph.finGraph subsetsGraph_uv)
-             (UnionFindGraph.finGraph uv_union)
-             (maGraph subsetsGraph_uv)
-             (maGraph uv_union)
+    apply (uf_union_preserves_ufroot_same subsetsGraph_uv uv_union
+             (liGraph subsetsGraph_uv) (liGraph uv_union)
+             (UnionFindGraph.finGraph subsetsGraph_uv) (UnionFindGraph.finGraph uv_union)
+             (maGraph subsetsGraph_uv) (maGraph uv_union)
              u v)  in H25; auto.
     +++
     intros. rewrite map_app in H23. apply in_app_or in H23; destruct H23.
