@@ -1,7 +1,6 @@
 Require Import RamifyCoq.dijkstra.env_dijkstra_arr.
 Require Import RamifyCoq.dijkstra.DijkstraArrayGraph.
 Require Import RamifyCoq.dijkstra.spatial_dijkstra_array_graph.
-Require Import RamifyCoq.dijkstra.dijk_pq_arr_macros.
 Require Import RamifyCoq.dijkstra.dijkstra_spec.
 
 Require Import VST.floyd.sublist.
@@ -9,11 +8,6 @@ Require Import VST.floyd.sublist.
 
 Require Import RamifyCoq.priq.priq_arr_utils.
 (* remove once a better PQ is in place *)
-        
-(* We must use the CompSpecs and Vprog that were
-   centrally defined in dfijksta's environment. 
-   This lets us be consistent and call PQ functions in Dijkstra. 
- *)
 
 Local Open Scope Z_scope.
 
@@ -1094,22 +1088,21 @@ Proof.
       }
       (* And now we must show dijkstra_correct for the initial arrays *)
       (* First, worth noting that _nothing_ has been popped so far *)
-      assert (H15: 1 = 1) by trivial.
       (* Now we get into the proof of dijkstra_correct proper.
          This is not very challenging... *)
       unfold dijkstra_correct, inv_popped, inv_unpopped, inv_unseen; split3; intros.
-      * inversion H17.
+      * inversion H16.
       * assert (src = dst). {
           destruct (Z.eq_dec src dst); trivial. exfalso.
           assert (0 <= dst < SIZE) by
               (rewrite <- (vvalid_range g); trivial).
-          rewrite upd_Znth_diff in H18; try lia.
-          rewrite Znth_list_repeat_inrange in H18; lia.
-          apply vvalid_range in H16; trilia. 
+          rewrite upd_Znth_diff in H17; try lia.
+          rewrite Znth_list_repeat_inrange in H17; lia.
+          apply vvalid_range in H15; trilia. 
           ulia.
         }
         subst dst. left; trivial.
-      * inversion H20. 
+      * inversion H19.
     + (* Now the body of the while loop begins. *)
       Intros prev_contents priq_contents dist_contents popped_verts.
       rename H10 into H11.
