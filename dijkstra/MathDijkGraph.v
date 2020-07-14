@@ -29,7 +29,8 @@ Local Open Scope logic.
 Local Open Scope Z_scope.
 
 (*
- Concretizing the DijkstraGraph with array-specific types.
+ Concretizing the DijkstraGraph with the types I need for
+ adjacency-matrix representation.
  |  V  |    E    |    DV   |  DE |  DG  | soundness |
  |-----|---------|---------|-----|------|-----------| 
  |  Z  |  Z * Z  | list DE |  Z  | unit |  Finite   | 
@@ -84,14 +85,14 @@ Definition dst_edge (g : DijkstraGeneralGraph): Prop :=
 
 Definition sound_dijk_graph (g : DijkstraGeneralGraph): Prop :=
   vertex_valid g /\ edge_valid g /\ src_edge g /\ dst_edge g.
-(* shouldn't this all go into soundess? *)
 
+(* shouldn't this all go into soundess? *)
 
 (* Moving on to Spatial Rep *)
 
-Section SpaceDijkstraArrayGraph.
+Section SpaceDijkGraph.
   
-  Class SpatialDijkstraArrayGraphAssum (Pred : Type):=
+  Class SpaceDijkGraphAssum (Pred : Type):=
     {
     SGP_ND: NatDed Pred;
     SGP_SL : SepLog Pred;
@@ -99,13 +100,13 @@ Section SpaceDijkstraArrayGraph.
     SGP_CoSL: CorableSepLog Pred
     }.
   
-  Class SpatialDijkstraArrayGraph (Addr: Type) (Pred: Type) :=
+  Class SpaceDijkGraph (Addr: Type) (Pred: Type) :=
     abstract_data_at: Addr -> list Z -> Pred.
-
+  
   Context {Pred: Type}.
   Context {Addr: Type}.
-  Context {SAGP: SpatialDijkstraArrayGraphAssum Pred}.
-  Context {SAG: SpatialDijkstraArrayGraph Addr Pred}.
+  Context {SAGP: SpaceDijkGraphAssum Pred}.
+  Context {SAG : SpaceDijkGraph Addr Pred}.
 
   Definition vert_rep (g : DijkstraGeneralGraph) (v : VType) : list Z :=
     map (elabel g) (map (fun x => (v,x)) (nat_inc_list (Z.to_nat SIZE))).
@@ -118,20 +119,14 @@ Section SpaceDijkstraArrayGraph.
   Definition graph_rep (g : DijkstraGeneralGraph) (a : Addr)  :=
     abstract_data_at a (concat (graph_to_mat g)).
 
-End SpaceDijkstraArrayGraph.
+  Lemma graph_to_mat_Zlength: forall g, Zlength (graph_to_mat g) = SIZE.
+  Proof.
+    intros. unfold graph_to_mat.
+    rewrite Zlength_map, nat_inc_list_Zlength, Z2Nat.id; auto. now vm_compute.
+  Qed.
+  
+End SpaceDijkGraph.
 
-Lemma graph_to_mat_Zlength: forall g, Zlength (graph_to_mat g) = SIZE.
-Proof.
-  intros. unfold graph_to_mat.
-  rewrite Zlength_map, nat_inc_list_Zlength, Z2Nat.id; auto. now vm_compute.
-Qed.
-
-Definition inrange_graph grph_contents :=
-  forall i j,
-    0 <= i < Zlength grph_contents ->
-    0 <= j < Zlength grph_contents ->
-    0 <= Znth i (Znth j grph_contents) <= Int.max_signed / SIZE \/
-    Znth i (Znth j grph_contents) = inf.
 
 Lemma elabel_Znth_graph_to_mat:
   forall g src dst,
@@ -208,8 +203,16 @@ Proof.
     rewrite H; reflexivity.
 Qed.
 
+Definition inrange_graph g :=
+  let grph_contents := (graph_to_mat g) in
+  forall i j,
+    0 <= i < Zlength grph_contents ->
+    0 <= j < Zlength grph_contents ->
+    0 <= Znth i (Znth j grph_contents) <= Int.max_signed / SIZE \/
+    Znth i (Znth j grph_contents) = inf.
+
 Lemma inrange_graph_cost_pos: forall g e,
-    sound_dijk_graph g -> inrange_graph (graph_to_mat g) ->
+    sound_dijk_graph g -> inrange_graph g ->
     evalid g e -> 0 <= elabel g e.
 Proof.
   intros. rewrite (surjective_pairing e) in *.

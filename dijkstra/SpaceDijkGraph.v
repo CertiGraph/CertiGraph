@@ -5,15 +5,15 @@ Require Import RamifyCoq.dijkstra.MathDijkGraph.
 
 Local Open Scope logic.
 
-Instance SDAGA_VST: SpatialDijkstraArrayGraphAssum mpred.
+Instance SDGA_VST: SpaceDijkGraphAssum mpred.
 Proof.
-  refine (Build_SpatialDijkstraArrayGraphAssum _ _ _ _ _).
+  refine (Build_SpaceDijkGraphAssum _ _ _ _ _).
 Defined.
 
 Definition abstract_data_at2cdata (value : Z) : reptype vertex_type :=
   Vint (Int.repr value).
 
-Instance SDAG_VST (sh: share): SpatialDijkstraArrayGraph pointer_val mpred.
+Instance SDAG_VST (sh: share): SpaceDijkGraph pointer_val mpred.
 Proof.
   exact (fun pt lst => data_at sh (tarray vertex_type (Z.of_nat (length lst)))
                                (map abstract_data_at2cdata lst) (pointer_val_val pt)).
