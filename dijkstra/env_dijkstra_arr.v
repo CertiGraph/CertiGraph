@@ -12,5 +12,5 @@ Require Export RamifyCoq.floyd_ext.share.
 Instance CompSpecs : compspecs. Proof. make_compspecs prog. Defined.
 Definition Vprog : varspecs. mk_varspecs prog. Defined.
 Global Existing Instance CompSpecs.
-
+  
 Definition vertex_type := tint.

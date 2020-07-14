@@ -3,11 +3,11 @@ Require Import RamifyCoq.priq.priq_arr_specs.
 
 (* Dijkstra-specific stuff *)
 Require Import RamifyCoq.dijkstra.env_dijkstra_arr.
+Require Import RamifyCoq.dijkstra.DijkstraArrayGraph.
 Require Import RamifyCoq.dijkstra.spatial_dijkstra_array_graph.
-Require Import RamifyCoq.dijkstra.dijkstra.
+Require Import RamifyCoq.dijkstra.path_cost.
 
 Local Open Scope Z_scope.
-
 
 (*
 Definition get_popped pq : list VType :=

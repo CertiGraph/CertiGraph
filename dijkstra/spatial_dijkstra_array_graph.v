@@ -1,11 +1,14 @@
-Require Export RamifyCoq.dijkstra.DijkstraArrayGraph.
 Require Import VST.veric.SeparationLogic.
-Require Import RamifyCoq.dijkstra.env_dijkstra_arr.
 Require Import RamifyCoq.floyd_ext.share.
+Require Import RamifyCoq.dijkstra.env_dijkstra_arr.
+Require Import RamifyCoq.dijkstra.DijkstraArrayGraph.
 
 Local Open Scope logic.
 
-Instance SDAGA_VST: SpatialDijkstraArrayGraphAssum mpred. Proof. refine (Build_SpatialDijkstraArrayGraphAssum _ _ _ _ _). Defined.
+Instance SDAGA_VST: SpatialDijkstraArrayGraphAssum mpred.
+Proof.
+  refine (Build_SpatialDijkstraArrayGraphAssum _ _ _ _ _).
+Defined.
 
 Definition abstract_data_at2cdata (value : Z) : reptype vertex_type :=
   Vint (Int.repr value).
@@ -24,17 +27,17 @@ Definition list_rep sh size l contents_mat index :=
   data_at sh (tarray tint size) (map Vint (map Int.repr mylist)) (list_address l index size).
 
 Definition DijkGraph sh contents_graph gaddr : mpred :=
-  iter_sepcon.iter_sepcon (list_rep sh SIZE gaddr contents_graph)
-                          (nat_inc_list (Z.to_nat (Zlength contents_graph))).
+  iter_sepcon (list_rep sh SIZE gaddr contents_graph)
+              (nat_inc_list (Z.to_nat (Zlength contents_graph))).
 
 Lemma graph_unfold: forall sh contents ptr i,
     0 <= i < (Zlength contents) ->
     DijkGraph sh contents ptr =
-    iter_sepcon.iter_sepcon (list_rep sh SIZE ptr contents)
-            (sublist 0 i (nat_inc_list (Z.to_nat (Zlength contents)))) *
+    iter_sepcon (list_rep sh SIZE ptr contents)
+                            (sublist 0 i (nat_inc_list (Z.to_nat (Zlength contents)))) *
     (list_rep sh SIZE ptr contents i *
-           iter_sepcon.iter_sepcon (list_rep sh SIZE ptr contents)
-             (sublist (i + 1) (Zlength contents) (nat_inc_list (Z.to_nat (Zlength contents))))).
+     iter_sepcon (list_rep sh SIZE ptr contents)
+                             (sublist (i + 1) (Zlength contents) (nat_inc_list (Z.to_nat (Zlength contents))))).
 Proof.
   intros. unfold DijkGraph.
   replace (nat_inc_list (Z.to_nat (Zlength contents))) with
@@ -48,6 +51,6 @@ Proof.
   2, 3, 4: rewrite nat_inc_list_Zlength; rewrite Z2Nat.id; lia.
   rewrite nat_inc_list_i.
   2: rewrite Z2Nat_id', Z.max_r; trivial; apply Zlength_nonneg. 
-  repeat rewrite iter_sepcon.iter_sepcon_app.
+  repeat rewrite iter_sepcon_app.
   simpl. rewrite sepcon_emp. reflexivity.
 Qed.
