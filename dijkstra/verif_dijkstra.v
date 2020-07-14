@@ -15,7 +15,7 @@ Local Open Scope Z_scope.
 (** CONSTANTS AND RANGES **)
 
 Ltac trilia := trivial; lia.
-Ltac ulia := unfold VType, LE, ElabelType in *; trilia.
+Ltac ulia := unfold VType, LE in *; trilia.
 
 Lemma inf_eq: 1879048192 = inf.
 Proof. compute; trivial. Qed.
@@ -2083,7 +2083,7 @@ Proof.
                         compute. inversion 1.
                       }
                       split; ulia.
-                    - unfold VType, LE, ElabelType in *.
+                    - unfold VType, LE in *.
                       rewrite H1.
                       rewrite <- inf_eq.
                       compute; split; inversion 1.
@@ -2109,7 +2109,7 @@ Proof.
                }
                rep_lia.
              }
-             unfold VType, LE, ElabelType in *.
+             unfold VType, LE in *.
              forward. forward. forward_if.
              ** rewrite Int.signed_repr in H46
                  by (rewrite <- inf_eq in *; rep_lia).
@@ -2133,7 +2133,7 @@ Proof.
                   - destruct H47.
                     destruct (H48 u).
                     1: apply vvalid_range; ulia.
-                    unfold VType, LE, ElabelType in *.
+                    unfold VType, LE in *.
                     rewrite careful_add_clean in H49.
                     all: ulia.
                   -  destruct H47 as [p2i [? [? ?]]].
@@ -2194,7 +2194,7 @@ Proof.
                 forward. forward. forward.
                 forward; rewrite upd_Znth_same; trivial.
                 1: entailer!.
-                unfold VType, LE, ElabelType in *.
+                unfold VType, LE in *.
                 forward_call (v_pq, i, (Znth u dist_contents' + cost), priq_contents').
 
                 1: { simpl. entailer!. } 

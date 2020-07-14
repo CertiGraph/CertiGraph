@@ -7,6 +7,7 @@ Require Export VST.msl.iter_sepcon.
 Require Export RamifyCoq.lib.List_ext.
 Require Export RamifyCoq.graph.graph_model.
 Require Export RamifyCoq.graph.path_lemmas.
+Require Export RamifyCoq.graph.AdjMatGraph.
 Require Export RamifyCoq.floyd_ext.share.
 
 Instance CompSpecs : compspecs. Proof. make_compspecs prog. Defined.
