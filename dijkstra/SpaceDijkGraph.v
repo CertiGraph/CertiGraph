@@ -7,40 +7,41 @@ Local Open Scope logic.
 
 (* Specific to Adjacency Matrix representation *)
 
-Class SpaceDijkGraph (Addr: Type) (Pred: Type) :=
-  abstract_data_at: Addr -> list Z -> Pred.
-
-Context {Pred: Type}.
-Context {Addr: Type}.
-Context {SDG : SpaceDijkGraph Addr Pred}.
-
-(* Assumption: 
-   For any vertex v,
-       (v,0), (v,1) ... (v, SIZE-1)
-   are edges.
-
-   What it does: 
-   Makes a list containing each edge's elabel.
+(* Assumption: (v,0), (v,1) ... (v, size-1) are valid edges.
+   What it does: makes a list containing each edge's elabel.
  *)
-Definition vert_to_list (g : DijkstraGeneralGraph) (v : VType) : list Z :=
-  map (elabel g) (map (fun x => (v,x)) (nat_inc_list (Z.to_nat SIZE))).
+Definition vert_to_list
+           (g: LabeledGraph VType EType LV LE LG)
+           (size : Z)
+           (v : VType) : list LE :=
+  map (elabel g) (map (fun x => (v,x)) (nat_inc_list (Z.to_nat size))).
 
 
 (* Assumptions: 
-   1. 0, 1, ... (SIZE-1) are vertices
+   1. 0, 1, ... (size-1) are valid vertices
    2. for any vertex v,
-          (v,0), (v,1) ... (v, SIZE-1)
-      are edges.
+          (v,0), (v,1) ... (v, SIZE-1) are valid edges.
 
       What it does: 
       Makes a list of lists, where each member list 
       is a vertex's edge-label-list (see helper above).
  *)
-Definition graph_to_mat (g : DijkstraGeneralGraph) : list (list Z) :=
-  map (vert_to_list g) (nat_inc_list (Z.to_nat SIZE)).
+Definition graph_to_mat_gen
+           (g: LabeledGraph VType EType LV LE LG)
+           (size : Z) : list (list LE) :=
+  map (vert_to_list g size) (nat_inc_list (Z.to_nat size)).
 
-Definition graph_to_list (g : DijkstraGeneralGraph) : list Z :=
-  (concat (graph_to_mat g)).
+Definition graph_to_list_gen
+           (g: LabeledGraph VType EType LV LE LG)
+           (size : Z) : list LE :=
+  (concat (graph_to_mat_gen g size)).
+
+Class SpaceAdjMatGraph (Addr: Type) (Pred: Type) :=
+  abstract_data_at: Addr -> list LE -> Pred.
+
+Context {Pred: Type}.
+Context {Addr: Type}.
+Context {SAMG : SpaceAdjMatGraph Addr Pred}.
 
 (* Assumptions: 
    See above
@@ -51,64 +52,57 @@ Definition graph_to_list (g : DijkstraGeneralGraph) : list Z :=
 
    This is not currently used by SpaceDijkGraph because iter_sepcon 
    is cleaner. However, just keep it around because it is a general model.
- *)
-Definition graph_rep (g : DijkstraGeneralGraph) (a : Addr)  :=
-  abstract_data_at a (graph_to_list g).
 
-                   
+   For a (better?) example of this in use for VST, see out
+   dijkstra/SpaceDijkGraph.v
+ *)
+Definition AdjMatGraph_rep
+           (g: LabeledGraph VType EType LV LE LG)
+           (size : Z) 
+           (a : Addr) : Pred :=
+  abstract_data_at a (graph_to_list_gen g size).
+
+
 (* Helpers *)
 
-Lemma graph_to_mat_Zlength: forall g, Zlength (graph_to_mat g) = SIZE.
+Lemma graph_to_mat_Zlength_gen:
+  forall g size,
+    0 <= size ->
+    Zlength (graph_to_mat_gen g size) = size.
 Proof.
-  intros. unfold graph_to_mat.
-  rewrite Zlength_map, nat_inc_list_Zlength, Z2Nat.id; auto. now vm_compute.
+  intros. unfold graph_to_mat_gen.
+  rewrite Zlength_map, nat_inc_list_Zlength, Z2Nat.id; trivial.
 Qed.
 
-Lemma elabel_Znth_graph_to_mat:
-  forall g src dst,
-    sound_dijk_graph g ->
-    evalid g (src, dst) ->
+Lemma elabel_Znth_graph_to_mat_gen:
+  forall (g: LabeledGraph VType EType LV LE LG) src dst size,
+    0 <= size ->
+    0 <= src < size ->
+    0 <= dst < size ->
     elabel g (src, dst) =
-    Znth dst (Znth src (graph_to_mat g)).
+    Znth dst (Znth src (graph_to_mat_gen g size)).
 Proof.
   intros. 
-  unfold graph_to_mat.
-  destruct H as [? [? _]].
-  red in H, H1.
-  rewrite H1 in H0; destruct H0. 
-  rewrite H in H0, H2.
+  unfold graph_to_mat_gen.
   rewrite Znth_map, nat_inc_list_i.
   unfold vert_to_list. rewrite Znth_map.
   rewrite Znth_map. rewrite nat_inc_list_i.
   reflexivity.
   3: rewrite Zlength_map.
   2, 3, 5: rewrite nat_inc_list_Zlength.
-  all: rewrite Z2Nat.id; lia.
+  all: rewrite Z2Nat.id; trivial.
 Qed.
 
-Definition inrange_graph g :=
-  let grph_contents := (graph_to_mat g) in
+Definition inrange_graph_gen g size :=
+  let grph_contents := (graph_to_mat_gen g size) in
   forall i j,
     0 <= i < Zlength grph_contents ->
     0 <= j < Zlength grph_contents ->
-    0 <= Znth i (Znth j grph_contents) <= Int.max_signed / SIZE \/
+    0 <= Znth i (Znth j grph_contents) <= Int.max_signed / size \/
     Znth i (Znth j grph_contents) = inf.
 
-Lemma inrange_graph_cost_pos: forall g e,
-    sound_dijk_graph g -> inrange_graph g ->
-    evalid g e -> 0 <= elabel g e.
-Proof.
-  intros. rewrite (surjective_pairing e) in *.
-  rewrite elabel_Znth_graph_to_mat; auto. destruct H as [? [? _]].
-  red in H, H2.
-  rewrite (surjective_pairing e) in H1.
-  rewrite H2 in H1. red in H0.
-  rewrite (graph_to_mat_Zlength g) in H0.
-  simpl in H1. destruct H1. rewrite H in H1, H3.
-  specialize (H0 _ _ H3 H1). destruct H0.
-  1: destruct H0; lia.
-  rewrite H0. compute; inversion 1.
-Qed.
+
+(* Truly spatial stuff *)
 
 Definition list_address a index size : val :=
   offset_val (index * sizeof (tarray tint size)) a.
@@ -144,4 +138,65 @@ Proof.
   2: rewrite Z2Nat_id', Z.max_r; trivial; apply Zlength_nonneg. 
   repeat rewrite iter_sepcon_app.
   simpl. rewrite sepcon_emp. reflexivity.
+Qed.
+
+
+(* sugared version so as not to break Dijk *)
+Definition graph_to_mat
+           (g: LabeledGraph VType EType LV LE LG) : list (list LE) :=
+  map (vert_to_list g SIZE) (nat_inc_list (Z.to_nat SIZE)).
+
+Definition graph_to_list
+           (g: LabeledGraph VType EType LV LE LG) : list LE :=
+  (concat (graph_to_mat g)).
+
+(* sugared version so as not to break Dijk *)
+Definition inrange_graph g :=
+  let grph_contents := (graph_to_mat g) in
+  forall i j,
+    0 <= i < Zlength grph_contents ->
+    0 <= j < Zlength grph_contents ->
+    0 <= Znth i (Znth j grph_contents) <= Int.max_signed / SIZE \/
+    Znth i (Znth j grph_contents) = inf.
+
+(* sugared version so as not to break Dijk *)
+Lemma graph_to_mat_Zlength:
+  forall g,
+    Zlength (graph_to_mat g) = SIZE.
+Proof.
+  intros. unfold graph_to_mat.
+  rewrite Zlength_map, nat_inc_list_Zlength, Z2Nat.id; trivial.
+  unfold SIZE; lia.
+Qed.
+
+(* sugared version so as not to break Dijk *)
+ Lemma elabel_Znth_graph_to_mat:
+   forall (g: DijkstraGeneralGraph) src dst,
+     sound_dijk_graph g ->
+     evalid g (src, dst) ->
+     elabel g (src, dst) =
+     Znth dst (Znth src (graph_to_mat g)).
+ Proof.
+   intros.
+   destruct H as [? [? _]].
+   red in H, H1. rewrite H1, H, H in H0. destruct H0.
+   apply elabel_Znth_graph_to_mat_gen; trivial. lia.
+ Qed.
+
+ Lemma inrange_graph_cost_pos: forall g e,
+     sound_dijk_graph g ->
+     inrange_graph g ->
+     evalid g e ->
+     0 <= elabel g e.
+Proof.
+  intros. rewrite (surjective_pairing e) in *.
+  rewrite elabel_Znth_graph_to_mat; auto. destruct H as [? [? _]].
+  red in H, H2.
+  rewrite (surjective_pairing e) in H1.
+  rewrite H2 in H1. red in H0.
+  rewrite (graph_to_mat_Zlength g) in H0.
+  simpl in H1. destruct H1. rewrite H in H1, H3.
+  specialize (H0 _ _ H3 H1). destruct H0.
+  1: destruct H0; lia.
+  rewrite H0. compute; inversion 1. 
 Qed.
