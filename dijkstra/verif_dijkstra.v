@@ -15,7 +15,7 @@ Local Open Scope Z_scope.
 (** CONSTANTS AND RANGES **)
 
 Ltac trilia := trivial; lia.
-Ltac ulia := unfold VType in *; trilia.
+Ltac ulia := unfold VType, LE, ElabelType in *; trilia.
 
 Lemma inf_eq: 1879048192 = inf.
 Proof. compute; trivial. Qed.
@@ -1538,8 +1538,7 @@ Proof.
                     go, optimally, to mom, and then take one step
                *)
               right.
-              exists (fst p2mom, snd p2mom +:: (mom, u)).
-
+              exists (fst p2mom, snd p2mom +:: (mom, u)).              
               assert (vvalid g mom). { trivial. }
               split3; trivial.
               --- destruct H42 as [? [? [? [? ?]]]].
@@ -1565,7 +1564,7 @@ Proof.
                     all: apply vvalid2_evalid; trivial.
                   +++ unfold VType in *.
                       rewrite path_cost_app_cons, elabel_Znth_graph_to_mat; trivial.
-                      1: lia.
+                      1: ulia.
                       1,3: apply vvalid2_evalid; trivial.
                       ulia.
                   +++ rewrite Forall_forall. intros.
@@ -2022,7 +2021,7 @@ Proof.
             ulia.
           }
           freeze FR := (data_at _ _ _ _) (data_at _ _ _ _) (data_at _ _ _ _).
-          rewrite (DijkGraph_unfold _ _ _ u) by lia.
+          rewrite (DijkGraph_unfold _ _ _ u) by ulia.
           Intros.
           rename H34 into H35.
           rename H33 into H34.
@@ -2031,12 +2030,7 @@ Proof.
           rename H30 into H31.
           assert (H30: 1 = 1) by trivial.
           
-          freeze FR2 :=
-            (iter_sepcon (list_rep sh SIZE (pointer_val_val arr) (graph_to_mat g))
-                         (sublist 0 u (nat_inc_list (Z.to_nat (Zlength (graph_to_mat g))))))
-              (iter_sepcon (list_rep sh SIZE (pointer_val_val arr) (graph_to_mat g))
-                           (sublist (u + 1) (Zlength (graph_to_mat g))
-                                    (nat_inc_list (Z.to_nat (Zlength (graph_to_mat g)))))).
+          freeze FR2 := (iter_sepcon _ _) (iter_sepcon _ _).
           unfold list_rep.
           assert_PROP (force_val
                          (sem_add_ptr_int tint Signed
@@ -2050,16 +2044,15 @@ Proof.
             unfold field_compatible; split3; [| | split3]; auto.
             unfold legal_nested_field; split; [auto | simpl; lia].
           }
-          forward. thaw FR2.
-          gather_SEP
-            (iter_sepcon (list_rep sh SIZE (pointer_val_val arr) (graph_to_mat g))
-                         (sublist 0 u (nat_inc_list (Z.to_nat (Zlength (graph_to_mat g))))))
-            (data_at sh (tarray tint SIZE)
-                     (map Vint (map Int.repr (Znth u (graph_to_mat g))))
-                     (list_address (pointer_val_val arr) u SIZE))
-            (iter_sepcon (list_rep sh SIZE (pointer_val_val arr) (graph_to_mat g))
-                         (sublist (u + 1) (Zlength (graph_to_mat g))
-                                  (nat_inc_list (Z.to_nat (Zlength (graph_to_mat g)))))).
+          assert (0 <= i < Zlength (map Int.repr (Znth u (graph_to_mat g)))). {
+            rewrite Zlength_map.
+            rewrite <- H21 in H19. trivial.
+          }
+          assert (0 <= i < Zlength (Znth u (graph_to_mat g))). {
+            rewrite <- H21 in H19. trivial.
+          }
+          forward. clear H37 H38. thaw FR2.
+          gather_SEP (iter_sepcon _ _) (data_at _ _ _ _) (iter_sepcon _ _).
           rewrite sepcon_assoc.
           rewrite <- DijkGraph_unfold; trivial. thaw FR.
           remember (Znth i (Znth u (graph_to_mat g))) as cost.
@@ -2089,18 +2082,16 @@ Proof.
                       assert (Int.max_signed / 8 <= Int.max_signed). {
                         compute. inversion 1.
                       }
-                      split; try lia.
-                    - unfold VType in *.
+                      split; ulia.
+                    - unfold VType, LE, ElabelType in *.
                       rewrite H1.
                       rewrite <- inf_eq.
                       compute; split; inversion 1.
                }
                rewrite Int.signed_repr in H41.
                2: rewrite <- inf_eq; compute; split; inversion 1.
-               destruct H1; unfold VType in *; lia.
+               destruct H1; unfold VType in *; try ulia.
              }
-
-             
              assert (0 <= Znth u dist_contents' <= inf). {
                assert (0 <= u < Zlength dist_contents') by lia.
                apply (Forall_Znth _ _ _ H43) in H35.
@@ -2118,7 +2109,7 @@ Proof.
                }
                rep_lia.
              }
-             unfold VType in *.
+             unfold VType, LE, ElabelType in *.
              forward. forward. forward_if.
              ** rewrite Int.signed_repr in H46
                  by (rewrite <- inf_eq in *; rep_lia).
@@ -2142,6 +2133,7 @@ Proof.
                   - destruct H47.
                     destruct (H48 u).
                     1: apply vvalid_range; ulia.
+                    unfold VType, LE, ElabelType in *.
                     rewrite careful_add_clean in H49.
                     all: ulia.
                   -  destruct H47 as [p2i [? [? ?]]].
@@ -2153,7 +2145,6 @@ Proof.
                      + destruct H51. ulia.
                      + destruct H51 as [p2u [? [? ?]]].
                        specialize (H49 (fst p2u, snd p2u +:: (u,i))).
-                       rewrite Heqcost in improvement.
                        destruct H51 as [? [? [? [? ?]]]].
                        destruct H47 as [? [? [? [? ?]]]].
                        unfold VType in *.
@@ -2166,7 +2157,7 @@ Proof.
                                  try apply vvalid_range;
                                  trivial.
                             }
-                            simpl. lia.
+                            simpl. ulia.
                        }
                        rewrite elabel_Znth_graph_to_mat in H49; trivial.
                        2: { apply vvalid2_evalid; 
@@ -2203,7 +2194,10 @@ Proof.
                 forward. forward. forward.
                 forward; rewrite upd_Znth_same; trivial.
                 1: entailer!.
+                unfold VType, LE, ElabelType in *.
                 forward_call (v_pq, i, (Znth u dist_contents' + cost), priq_contents').
+
+                1: { simpl. entailer!. } 
 
 (* Now we must show that the for loop's invariant
    holds if we take another step,
@@ -2318,12 +2312,12 @@ Proof.
                         rewrite upd_Znth_same by lia.
                         split3; [| |split3; [| |split]]; trivial.
                         *** rewrite elabel_Znth_graph_to_mat; trivial. 
-                            lia. apply vvalid2_evalid; trivial;
+                            ulia. apply vvalid2_evalid; trivial;
                                    rewrite vvalid_range; trivial.
-                        *** rewrite upd_Znth_diff; trivial; lia.
-                        *** rewrite upd_Znth_same; trivial; [|lia].
-                            rewrite upd_Znth_diff; trivial; lia.
-                        *** intros. rewrite upd_Znth_same; trivial; [|lia].
+                        *** rewrite upd_Znth_diff; trivial; ulia.
+                        *** rewrite upd_Znth_same; trivial; [|ulia].
+                            rewrite upd_Znth_diff; trivial; ulia.
+                        *** intros. rewrite upd_Znth_same; trivial; [|ulia].
                             
  (* This is another key point in the proof:
     we must show that the path via u is
@@ -2451,7 +2445,7 @@ Proof.
                                 rewrite H77.
                                 subst mom'.
                                 unfold path_globally_optimal in H64.
-                                lia.
+                                ulia.
                               }
 
 
@@ -2629,8 +2623,7 @@ Proof.
                         assert (mom' <> i). intro contra.
                         rewrite contra in H74.
                         rewrite (get_popped_meaning _ (upd_Znth i priq_contents' (Znth u dist_contents' + Znth i (Znth u (graph_to_mat g))))), upd_Znth_same in H74; trivial.
-                        unfold VType in *;
-                          lia. lia. rewrite upd_Znth_Zlength; lia.
+                        ulia. ulia. rewrite upd_Znth_Zlength; lia.
                         repeat rewrite upd_Znth_diff; trivial.
                         apply H70; trivial; try lia.
                         apply vvalid_range in H73; ulia.
@@ -2649,7 +2642,7 @@ Proof.
                     +++ intro contra. subst m.
                         rewrite (get_popped_meaning _ (upd_Znth i priq_contents' (Znth u dist_contents' + Znth i (Znth u (graph_to_mat g))))) in H64.
                         rewrite upd_Znth_same in H64.
-                         unfold VType in *; lia. lia.
+                         ulia. lia.
                          rewrite upd_Znth_Zlength; lia.
                     +++ ulia.
                     +++ ulia.
@@ -2663,7 +2656,7 @@ Proof.
                     1: { exfalso. subst m.
                          rewrite (get_popped_meaning _ (upd_Znth i priq_contents' (Znth u dist_contents' + Znth i (Znth u (graph_to_mat g))))) in H64.
                          rewrite upd_Znth_same in H64.
-                         unfold VType in *; lia. lia.
+                         ulia. lia.
                          rewrite upd_Znth_Zlength; lia.
                     }
                     rewrite upd_Znth_diff; trivial.
@@ -2781,7 +2774,7 @@ Proof.
                               apply Z.ge_le in improvement.
 
                               destruct (zlt (Znth u dist_contents' + Znth i (Znth u (graph_to_mat g))) inf).
-                              ++++ rewrite careful_add_clean; try lia; trivial.
+                              ++++ rewrite careful_add_clean; try ulia; trivial.
 
                                    
                               ++++ rewrite careful_add_dirty; trivial.
@@ -2798,7 +2791,7 @@ Proof.
                                         unfold Int.half_modulus.
                                         simpl. lia.
                                    }
-                                   lia.
+                                   ulia.
                         ----
                           destruct Hrem as [? [? [? [? ?]]]].
                           
@@ -2935,11 +2928,11 @@ Proof.
                            unfold Int.min_signed, Int.max_signed, Int.half_modulus in *.
                            simpl. simpl in H55, H54.
                            assert (2147483647 / 8 < 2147483647) by now compute.
-                           lia.
+                           ulia.
                       }
                       rewrite Int.signed_repr in H41.
                       2: rewrite <- inf_eq; rep_lia.
-                      unfold VType in *; lia.
+                      ulia.
                     }
                     unfold VType in *; rewrite H65.
                     rewrite careful_add_inf; trivial; lia.
@@ -2965,11 +2958,11 @@ Proof.
                    unfold Int.min_signed, Int.max_signed, Int.half_modulus in *.
                    simpl. simpl in H55, H56.
                    assert (2147483647 / 8 < 2147483647) by now compute.
-                   lia.
+                   ulia.
               }
               rewrite Int.signed_repr in H41.
               2: rewrite <- inf_eq; rep_lia.
-              unfold VType in *; lia.
+              ulia.
             }
             split3; [| |split]; intros.
             ** destruct (Z.eq_dec dst i).
