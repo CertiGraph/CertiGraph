@@ -29,8 +29,7 @@ Local Open Scope logic.
 Local Open Scope Z_scope.
 
 (*
- Concretizing the DijkstraGraph with the types I need for
- adjacency-matrix representation.
+ Concretizing the DijkstraGraph with the types I want.
  |  V  |    E    |    DV   |  DE |  DG  | soundness |
  |-----|---------|---------|-----|------|-----------| 
  |  Z  |  Z * Z  | list DE |  Z  | unit |  Finite   | 
@@ -86,70 +85,9 @@ Definition dst_edge (g : DijkstraGeneralGraph): Prop :=
 Definition sound_dijk_graph (g : DijkstraGeneralGraph): Prop :=
   vertex_valid g /\ edge_valid g /\ src_edge g /\ dst_edge g.
 
-(* shouldn't this all go into soundess? *)
+(* shouldn't this all go into soundness? *)
 
-(* Moving on to Spatial Rep *)
-
-Section SpaceDijkGraph.
-  
-  Class SpaceDijkGraphAssum (Pred : Type):=
-    {
-    SGP_ND: NatDed Pred;
-    SGP_SL : SepLog Pred;
-    SGP_ClSL: ClassicalSep Pred;
-    SGP_CoSL: CorableSepLog Pred
-    }.
-  
-  Class SpaceDijkGraph (Addr: Type) (Pred: Type) :=
-    abstract_data_at: Addr -> list Z -> Pred.
-  
-  Context {Pred: Type}.
-  Context {Addr: Type}.
-  Context {SAGP: SpaceDijkGraphAssum Pred}.
-  Context {SAG : SpaceDijkGraph Addr Pred}.
-
-  Definition vert_rep (g : DijkstraGeneralGraph) (v : VType) : list Z :=
-    map (elabel g) (map (fun x => (v,x)) (nat_inc_list (Z.to_nat SIZE))).
-  
-  (* from Graph to list (list Z) *)
-  Definition graph_to_mat (g : DijkstraGeneralGraph) : list (list Z) :=
-    map (vert_rep g) (nat_inc_list (Z.to_nat SIZE)).
-  
-  (* spatial representation of the DijkstraGraph *)
-  Definition graph_rep (g : DijkstraGeneralGraph) (a : Addr)  :=
-    abstract_data_at a (concat (graph_to_mat g)).
-
-  Lemma graph_to_mat_Zlength: forall g, Zlength (graph_to_mat g) = SIZE.
-  Proof.
-    intros. unfold graph_to_mat.
-    rewrite Zlength_map, nat_inc_list_Zlength, Z2Nat.id; auto. now vm_compute.
-  Qed.
-  
-End SpaceDijkGraph.
-
-
-Lemma elabel_Znth_graph_to_mat:
-  forall g src dst,
-    sound_dijk_graph g ->
-    evalid (pg_lg g) (src, dst) ->
-    elabel g (src, dst) =
-    Znth dst (Znth src (graph_to_mat g)).
-Proof.
-  intros. 
-  unfold graph_to_mat.
-  destruct H as [? [? _]].
-  red in H, H1.
-  rewrite H1 in H0; destruct H0. 
-  rewrite H in H0, H2.
-  rewrite Znth_map, nat_inc_list_i.
-  unfold vert_rep. rewrite Znth_map.
-  rewrite Znth_map. rewrite nat_inc_list_i.
-  reflexivity.
-  3: rewrite Zlength_map.
-  2, 3, 5: rewrite nat_inc_list_Zlength.
-  all: rewrite Z2Nat.id; lia.
-Qed.
-
+(* lemmas that come from soundness plugins *)
 Lemma vvalid2_evalid:
   forall g a b,
     sound_dijk_graph g ->
@@ -203,30 +141,6 @@ Proof.
     rewrite H; reflexivity.
 Qed.
 
-Definition inrange_graph g :=
-  let grph_contents := (graph_to_mat g) in
-  forall i j,
-    0 <= i < Zlength grph_contents ->
-    0 <= j < Zlength grph_contents ->
-    0 <= Znth i (Znth j grph_contents) <= Int.max_signed / SIZE \/
-    Znth i (Znth j grph_contents) = inf.
-
-Lemma inrange_graph_cost_pos: forall g e,
-    sound_dijk_graph g -> inrange_graph g ->
-    evalid g e -> 0 <= elabel g e.
-Proof.
-  intros. rewrite (surjective_pairing e) in *.
-  rewrite elabel_Znth_graph_to_mat; auto. destruct H as [? [? _]].
-  red in H, H2.
-  rewrite (surjective_pairing e) in H1.
-  rewrite H2 in H1. red in H0.
-  rewrite (graph_to_mat_Zlength g) in H0.
-  simpl in H1. destruct H1. rewrite H in H1, H3.
-  specialize (H0 _ _ H3 H1). destruct H0.
-  1: destruct H0; lia.
-  rewrite H0. compute; inversion 1.
-Qed.
-
 Lemma step_in_range: forall g x x0,
     sound_dijk_graph g ->
     valid_path g x ->
@@ -264,4 +178,3 @@ Proof.
   pose proof (valid_path_valid _ _ _ H0 H3).
   rewrite H in H4. lia.
 Qed.
-
