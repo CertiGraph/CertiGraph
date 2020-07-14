@@ -2,69 +2,11 @@ Require Import VST.veric.SeparationLogic.
 Require Import RamifyCoq.floyd_ext.share.
 Require Import RamifyCoq.dijkstra.env_dijkstra_arr.
 Require Import RamifyCoq.dijkstra.MathDijkGraph.
+Require Import RamifyCoq.graph.AdjMatGraph.
 
 Local Open Scope logic.
 
-(* Specific to Adjacency Matrix representation *)
-
-(* Assumption: (v,0), (v,1) ... (v, size-1) are valid edges.
-   What it does: makes a list containing each edge's elabel.
- *)
-Definition vert_to_list
-           (g: LabeledGraph VType EType LV LE LG)
-           (size : Z)
-           (v : VType) : list LE :=
-  map (elabel g) (map (fun x => (v,x)) (nat_inc_list (Z.to_nat size))).
-
-
-(* Assumptions: 
-   1. 0, 1, ... (size-1) are valid vertices
-   2. for any vertex v,
-          (v,0), (v,1) ... (v, SIZE-1) are valid edges.
-
-      What it does: 
-      Makes a list of lists, where each member list 
-      is a vertex's edge-label-list (see helper above).
- *)
-Definition graph_to_mat_gen
-           (g: LabeledGraph VType EType LV LE LG)
-           (size : Z) : list (list LE) :=
-  map (vert_to_list g size) (nat_inc_list (Z.to_nat size)).
-
-Definition graph_to_list_gen
-           (g: LabeledGraph VType EType LV LE LG)
-           (size : Z) : list LE :=
-  (concat (graph_to_mat_gen g size)).
-
-Class SpaceAdjMatGraph (Addr: Type) (Pred: Type) :=
-  abstract_data_at: Addr -> list LE -> Pred.
-
-Context {Pred: Type}.
-Context {Addr: Type}.
-Context {SAMG : SpaceAdjMatGraph Addr Pred}.
-
-(* Assumptions: 
-   See above
-
-   What it does: 
-   Flattens the list of lists into one list, and then uses
-    abstract_data_at to create a spatial representation.
-
-   This is not currently used by SpaceDijkGraph because iter_sepcon 
-   is cleaner. However, just keep it around because it is a general model.
-
-   For a (better?) example of this in use for VST, see out
-   dijkstra/SpaceDijkGraph.v
- *)
-Definition AdjMatGraph_rep
-           (g: LabeledGraph VType EType LV LE LG)
-           (size : Z) 
-           (a : Addr) : Pred :=
-  abstract_data_at a (graph_to_list_gen g size).
-
-
-(* Helpers *)
-
+(* Would be good to generalize these further and move them to AdjMatGraph. *)
 Lemma graph_to_mat_Zlength_gen:
   forall g size,
     0 <= size ->
@@ -100,6 +42,7 @@ Definition inrange_graph_gen g size :=
     0 <= j < Zlength grph_contents ->
     0 <= Znth i (Znth j grph_contents) <= Int.max_signed / size \/
     Znth i (Znth j grph_contents) = inf.
+
 
 
 (* Truly spatial stuff *)
@@ -175,14 +118,15 @@ Qed.
      sound_dijk_graph g ->
      evalid g (src, dst) ->
      elabel g (src, dst) =
-     Znth dst (Znth src (graph_to_mat g)).
+     Znth dst (Znth src (graph_to_mat (lg_gg g))).
  Proof.
    intros.
    destruct H as [? [? _]].
    red in H, H1. rewrite H1, H, H in H0. destruct H0.
    apply elabel_Znth_graph_to_mat_gen; trivial. lia.
  Qed.
-
+ 
+ (* sugared version so as not to break Dijk *)
  Lemma inrange_graph_cost_pos: forall g e,
      sound_dijk_graph g ->
      inrange_graph g ->

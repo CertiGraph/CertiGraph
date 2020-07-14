@@ -15,6 +15,10 @@ Require Import RamifyCoq.graph.graph_model.
 Require Import RamifyCoq.graph.path_lemmas.
 Require Import RamifyCoq.graph.FiniteGraph.
 
+(* The V, E, Label types get set here *)
+Require Import RamifyCoq.graph.AdjMatGraph.
+
+
 Require Import Coq.Classes.EquivDec.
 
 (* This file is just one line: "Require Export priq.priq_arr_utils." 
@@ -27,37 +31,6 @@ Coercion lg_gg: GeneralGraph >-> LabeledGraph.
 
 Local Open Scope logic.
 Local Open Scope Z_scope.
-
-(*
- Concretizing the DijkstraGraph with the types I want.
- |  V  |    E    |    DV   |  DE |  DG  | soundness |
- |-----|---------|---------|-----|------|-----------| 
- |  Z  |  Z * Z  | list DE |  Z  | unit |  Finite   | 
- *)
-
-Definition VType : Type := Z.
-Definition EType : Type := VType * VType.
-Definition ElabelType : Type := Z. (* labels are in Z *)
-Definition LE : Type := ElabelType.
-Definition LV: Type := list LE.
-Definition LG: Type := unit.
-
-Instance V_EqDec: EqDec VType eq.
-Proof. hnf. apply Z.eq_dec. Qed.
-
-Instance E_EqDec: EqDec EType eq.
-Proof.
-  hnf. intros [x] [y].
-  destruct (equiv_dec x y).
-  - hnf in e. destruct (Z.eq_dec v v0); subst.
-    + left; reflexivity.
-    + right. intro. apply n. inversion H. reflexivity.
-  - right; intro; apply c; inversion H; reflexivity.
-Defined.
-
-Instance Z_EqDec : EqDec Z eq. Proof. hnf. intros. apply Z.eq_dec. Defined.
-
-Definition is_null_Z: DecidablePred Z := existT (fun P : Z -> Prop => forall a : Z, {P a} + {~ P a}) (fun x : Z => x < 0) (fun a : Z => Z_lt_dec a 0).
 
 (* Here is the LabeledGraph *)
 Definition DijkstraLabeledGraph := LabeledGraph VType EType LV LE LG.

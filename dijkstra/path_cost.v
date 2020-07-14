@@ -1,6 +1,7 @@
 Require Import RamifyCoq.lib.List_ext.
 Require Import RamifyCoq.graph.graph_model.
 Require Import RamifyCoq.graph.path_lemmas.
+Require Import RamifyCoq.graph.AdjMatGraph.
 Require Import RamifyCoq.dijkstra.MathDijkGraph.
 Require Import RamifyCoq.dijkstra.SpaceDijkGraph.
 
@@ -219,7 +220,7 @@ Qed.
 
 (**** PATH COST w/ CAREFUL_ADD ****)
 
-Definition path_cost (g : DijkstraGeneralGraph) (path : @path VType EType) : ElabelType :=
+Definition path_cost (g : DijkstraGeneralGraph) (path : @path VType EType) : LE :=
   fold_left careful_add (map (elabel g) (snd path)) 0.
 
 Lemma one_step_path_Znth:
@@ -318,11 +319,11 @@ Proof.
   assert ((fold_left careful_add (map (elabel g) (snd p1)) 0) = (path_cost g p1))
     by now unfold path_cost.
   Set Printing All.
-  unfold LE, ElabelType in *.
+  unfold LE in *.
   rewrite H0. 
   unfold path_cost at 3.
   remember (map (elabel g) (snd p2)) as l2.
-  unfold LE, ElabelType in *.
+  unfold LE in *.
   rewrite <- Heql2.
   Unset Printing All.
   remember (path_cost g p1) as c1.
@@ -379,7 +380,7 @@ Proof.
   assert ((fold_left careful_add (map (elabel g) (snd p1)) 0) = (path_cost g p1))
     by now unfold path_cost.
   Set Printing All.
-  unfold LE, ElabelType in *. rewrite H4. 
+  unfold LE in *. rewrite H4. 
   Unset Printing All.
   rewrite <- (careful_add_id (path_cost g p1)).
   apply path_cost_init_inf; trivial.
