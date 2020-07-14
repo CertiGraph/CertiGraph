@@ -1,7 +1,7 @@
 Require Import VST.veric.SeparationLogic.
 Require Import RamifyCoq.floyd_ext.share.
 Require Import RamifyCoq.dijkstra.env_dijkstra_arr.
-Require Import RamifyCoq.dijkstra.DijkstraArrayGraph.
+Require Import RamifyCoq.dijkstra.MathDijkGraph.
 
 Local Open Scope logic.
 
