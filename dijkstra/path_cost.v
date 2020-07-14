@@ -257,7 +257,7 @@ Lemma path_cost_pos:
   forall g p,
     sound_dijk_graph g ->
     valid_path g p ->
-    inrange_graph (graph_to_mat g) ->
+    inrange_graph g ->
     0 <= path_cost g p.
 Proof.
   intros.
@@ -273,7 +273,7 @@ Lemma path_cost_app_cons:
   forall g path i,
     sound_dijk_graph g ->
     valid_path g path ->
-    inrange_graph (graph_to_mat g) ->
+    inrange_graph g ->
     elabel g i + path_cost g path < inf ->
     evalid g i ->
     path_cost g (fst path, snd path +:: i) =
@@ -366,7 +366,7 @@ Lemma path_cost_path_glue_ge_inf:
     sound_dijk_graph g ->
     valid_path g p1 ->
     valid_path g p2 ->
-    inrange_graph (graph_to_mat g) ->
+    inrange_graph g ->
     inf <= path_cost g p1 ->
     path_cost g (path_glue p1 p2) >= inf.
 Proof.
@@ -395,7 +395,7 @@ Lemma path_cost_path_glue_lt:
     sound_dijk_graph g ->
     valid_path g p1 ->
     valid_path g p2 ->
-    inrange_graph (graph_to_mat g) ->
+    inrange_graph g ->
     path_cost g (path_glue p1 p2) < inf ->
     path_cost g p1 < inf /\ path_cost g p2 < inf.
 Proof.

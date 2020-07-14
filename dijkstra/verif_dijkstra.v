@@ -66,7 +66,7 @@ Lemma g2m_Znth2_range:
   forall a b g,
     0 <= a < SIZE ->
     0 <= b < SIZE ->
-    inrange_graph (graph_to_mat g) ->
+    inrange_graph g ->
     0 <= Znth a (Znth b (graph_to_mat g)).
 Proof.
   intros.
@@ -926,7 +926,7 @@ Proof.
   forward_for_simple_bound
     SIZE
     (EX i : Z,
-     PROP (inrange_graph (graph_to_mat g))
+     PROP (inrange_graph g)
      LOCAL (temp _dist (pointer_val_val dist);
             temp _prev (pointer_val_val prev);
             temp _src (Vint (Int.repr src));

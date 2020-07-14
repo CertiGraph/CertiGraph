@@ -114,7 +114,7 @@ Definition dijkstra_spec :=
   PRE [tptr (tarray tint SIZE), tint, tptr tint, tptr tint]
    PROP (0 <= src < SIZE;
         Forall (fun list => Zlength list = SIZE) (graph_to_mat g);
-        inrange_graph (graph_to_mat g);
+        inrange_graph g;
         sound_dijk_graph g;
         forall i, vvalid g i ->
                   Znth i (Znth i (graph_to_mat g)) = 0)
