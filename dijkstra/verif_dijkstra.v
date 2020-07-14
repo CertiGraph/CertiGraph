@@ -2022,7 +2022,7 @@ Proof.
             ulia.
           }
           freeze FR := (data_at _ _ _ _) (data_at _ _ _ _) (data_at _ _ _ _).
-          rewrite (graph_unfold _ _ _ u) by lia.
+          rewrite (DijkGraph_unfold _ _ _ u) by lia.
           Intros.
           rename H34 into H35.
           rename H33 into H34.
@@ -2061,7 +2061,7 @@ Proof.
                          (sublist (u + 1) (Zlength (graph_to_mat g))
                                   (nat_inc_list (Z.to_nat (Zlength (graph_to_mat g)))))).
           rewrite sepcon_assoc.
-          rewrite <- graph_unfold; trivial. thaw FR.
+          rewrite <- DijkGraph_unfold; trivial. thaw FR.
           remember (Znth i (Znth u (graph_to_mat g))) as cost.
           assert_PROP (Zlength priq_contents' = SIZE). {
             entailer!. repeat rewrite Zlength_map in *. trivial. }

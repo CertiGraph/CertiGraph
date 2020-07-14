@@ -2,6 +2,7 @@ Require Import RamifyCoq.lib.List_ext.
 Require Import RamifyCoq.graph.graph_model.
 Require Import RamifyCoq.graph.path_lemmas.
 Require Import RamifyCoq.dijkstra.MathDijkGraph.
+Require Import RamifyCoq.dijkstra.SpaceDijkGraph.
 
 Local Open Scope logic.
 Local Open Scope Z_scope.
@@ -233,6 +234,7 @@ Proof.
   rewrite careful_add_comm, careful_add_id.
   rewrite elabel_Znth_graph_to_mat; trivial.
 Qed.
+
 
 Lemma acc_pos: forall (g : DijkstraGeneralGraph) l z,
     (forall e : EType, In e l -> 0 <= elabel g e) -> 0 <= z ->
