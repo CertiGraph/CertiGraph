@@ -68,7 +68,7 @@ DIJKSTRA_FILES = \
   dijkstra.v \
   DijkstraArrayGraph.v \
   env_dijkstra_arr.v spatial_dijkstra_array_graph.v \
-  dijkstra_constants.v dijkstra_spec.v verif_dijkstra.v
+  dijkstra_constants.v path_cost.v dijkstra_spec.v verif_dijkstra.v
 
 PRIQ_FILES = \
   priq_arr.v priq_arr_specs.v priq_arr_utils.v verif_priq_arr.v 

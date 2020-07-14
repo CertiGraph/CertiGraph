@@ -2,9 +2,11 @@ Require Export Coq.Lists.List.
 Require Import Coq.micromega.Lia.
 Require Export Coq.Sorting.Permutation.
 Require Import Coq.ZArith.ZArith_base.
+Require Import Coq.ZArith.Zcomplements.
 Require Import Coq.Logic.FunctionalExtensionality.
 Require Import RamifyCoq.lib.Coqlib.
 Require Import RamifyCoq.lib.EquivDec_ext.
+Require Import VST.floyd.sublist.
 
 Lemma In_tail: forall A (a : A) L, In a (tl L) -> In a L.
 Proof. induction L; simpl; auto. Qed.
@@ -1657,3 +1659,49 @@ exists lsame. exists (a::ldiff). repeat split.
   auto.
   intros. destruct H6. subst a. auto. auto.
 Qed.
+
+
+(***** NAT_INC_LIST ******)
+
+Fixpoint nat_inc_list (n: nat) : list Z :=
+  match n with
+  | O => nil
+  | S n' => nat_inc_list n' ++ (Z.of_nat n' :: nil)
+  end.
+
+Lemma nat_inc_list_in_iff: forall n v, List.In v (nat_inc_list n) <-> 0 <= v < Z.of_nat n.
+Proof.
+  induction n; intros; [simpl; lia|]. rewrite Nat2Z.inj_succ. unfold Z.succ. simpl. rewrite in_app_iff.
+  assert (0 <= v < Z.of_nat n + 1 <-> 0 <= v < Z.of_nat n \/ v = Z.of_nat n) by lia. rewrite H. clear H. rewrite IHn. simpl. intuition.
+Qed.
+
+Lemma nat_inc_list_NoDup: forall n, NoDup (nat_inc_list n).
+Proof.
+  induction n; simpl; [constructor|]. apply NoDup_app_inv; auto.
+  - constructor; auto. constructor.
+  - intros. rewrite nat_inc_list_in_iff in H. simpl. lia.
+Qed.
+
+Lemma nat_inc_list_length: forall n, length (nat_inc_list n) = n. Proof. induction n; simpl; auto. rewrite app_length. simpl. rewrite IHn. lia. Qed.
+
+Lemma nat_inc_list_Zlength:
+  forall n, Zlength (nat_inc_list n) = Z.of_nat n.
+Proof.
+  intros. now rewrite Zlength_correct, nat_inc_list_length. Qed.
+
+Lemma nat_inc_list_i: forall i n,
+    0 <= i < Z.of_nat n ->
+    Znth i (nat_inc_list n) = i.
+Proof.
+  intros. generalize dependent i. induction n.
+  1: intros; exfalso; destruct H; rewrite Nat2Z.inj_0 in H0; lia.
+  intros. simpl. rewrite Nat2Z.inj_succ in H. destruct H.
+  apply Zlt_succ_le in H0. apply Zle_lt_or_eq in H0. destruct H0.
+  - rewrite app_Znth1. apply IHn. lia.
+    now rewrite nat_inc_list_Zlength.
+  - rewrite app_Znth2 by (rewrite nat_inc_list_Zlength; lia). 
+    rewrite H0. rewrite nat_inc_list_Zlength. simpl. 
+    replace (Z.of_nat n - Z.of_nat n) with 0 by lia.
+    rewrite Znth_0_cons; trivial.
+Qed.
+
