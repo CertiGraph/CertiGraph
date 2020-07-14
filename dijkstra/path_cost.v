@@ -1,7 +1,7 @@
 Require Import RamifyCoq.lib.List_ext.
 Require Import RamifyCoq.graph.graph_model.
 Require Import RamifyCoq.graph.path_lemmas.
-Require Import RamifyCoq.dijkstra.DijkstraArrayGraph.
+Require Import RamifyCoq.dijkstra.MathDijkGraph.
 
 Local Open Scope logic.
 Local Open Scope Z_scope.
