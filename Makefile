@@ -64,6 +64,10 @@ KRUSKAL_FILES = \
   kruskal_edgelist.v env_kruskal_edgelist.v spatial_wedgearray_graph.v kruskal_uf_specs.v \
   verif_kruskal_edgelist.v
 
+PRIM_FILES = \
+  MatrixUGraph.v \
+  prim.v spatial_undirected_matrix.v
+
 CLIGHT_FILES = sample_mark/mark_bi.v sample_mark/garbage_collector.v sample_mark/dispose_bi.v sample_mark/copy_bi.v sample_mark/summatrix.v
 
 C_FILES = $(CLIGHT_FILES:%.v=%.c)
@@ -79,7 +83,8 @@ NORMAL_FILES = \
   $(LIB_FILES:%.v=lib/%.v) \
   $(HEAP_MODEL_DIRECT_FILES:%.v=heap_model_direct/%.v) \
   $(CERTIGC_FILES:%.v=CertiGC/%.v) \
-  $(KRUSKAL_FILES:%.v=kruskal/%.v)
+  $(KRUSKAL_FILES:%.v=kruskal/%.v) \
+  $(PRIM_FILES:%.v=prim/%.v)
 
 $(NORMAL_FILES:%.v=%.vo): %.vo: %.v
 	@echo COQC $*.v
