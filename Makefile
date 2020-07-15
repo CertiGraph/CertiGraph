@@ -37,7 +37,7 @@ GRAPH_FILES = \
   graph_model.v path_lemmas.v graph_gen.v graph_relation.v reachable_computable.v find_not_in.v reachable_ind.v subgraph2.v \
   spanning_tree.v dag.v marked_graph.v weak_mark_lemmas.v dual_graph.v graph_morphism.v \
   local_graph_copy.v tree_model.v list_model.v BiGraph.v MathGraph.v FiniteGraph.v GraphAsList.v LstGraph.v UnionFind.v graph_isomorphism.v\
-  undirected_graph.v undirected_uf_lemmas.v
+  undirected_graph.v undirected_uf_lemmas.v AdjMatGraph.v
 
 DATA_STRUCTURE_FILES = \
   spatial_graph_unaligned_bi_VST.v spatial_graph_dispose_bi.v
@@ -69,9 +69,10 @@ PRIM_FILES = \
   prim.v spatial_undirected_matrix.v
 
 DIJKSTRA_FILES = \
-  DijkstraArrayGraph.v DijkstraGraph.v \
-  verif_dijkstra.v env_dijkstra_arr.v spatial_dijkstra_array_graph.v \
-  dijk_pq_arr_macros.v dijkstra_spec.v dijkstra.v
+  dijkstra.v \
+  MathDijkGraph.v SpaceDijkGraph.v \
+  env_dijkstra_arr.v dijkstra_constants.v \
+  path_cost.v dijkstra_spec.v verif_dijkstra.v
 
 PRIQ_FILES = \
   priq_arr.v priq_arr_specs.v priq_arr_utils.v verif_priq_arr.v 

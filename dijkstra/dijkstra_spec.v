@@ -3,11 +3,11 @@ Require Import RamifyCoq.priq.priq_arr_specs.
 
 (* Dijkstra-specific stuff *)
 Require Import RamifyCoq.dijkstra.env_dijkstra_arr.
-Require Import RamifyCoq.dijkstra.spatial_dijkstra_array_graph.
-Require Import RamifyCoq.dijkstra.dijkstra.
+Require Import RamifyCoq.dijkstra.MathDijkGraph.
+Require Import RamifyCoq.dijkstra.SpaceDijkGraph.
+Require Import RamifyCoq.dijkstra.path_cost.
 
 Local Open Scope Z_scope.
-
 
 (*
 Definition get_popped pq : list VType :=
@@ -114,7 +114,7 @@ Definition dijkstra_spec :=
   PRE [tptr (tarray tint SIZE), tint, tptr tint, tptr tint]
    PROP (0 <= src < SIZE;
         Forall (fun list => Zlength list = SIZE) (graph_to_mat g);
-        inrange_graph (graph_to_mat g);
+        inrange_graph g;
         sound_dijk_graph g;
         forall i, vvalid g i ->
                   Znth i (Znth i (graph_to_mat g)) = 0)

@@ -1,5 +1,7 @@
 Require Import VST.floyd.proofauto.
-Require Export RamifyCoq.dijkstra.dijk_pq_arr_macros. (* ? *)
+
+Definition SIZE := 8.
+Definition inf := Int.max_signed - Int.max_signed / SIZE.
 
 
 (** UTILITIES TO HELP WITH VERIF OF ARRAY-BASED PQ **)
