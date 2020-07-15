@@ -14,12 +14,18 @@ Require Import RamifyCoq.lib.Coqlib.
   2. elabel_inrange: Z -> Pred
   3. it's "square"
   4. vert to list function
-  5. graph to mat function
-  6. proof that length of this is "size"
+
+  5. graph to mat function --> elsewhere?
+  6. proof that length of this is "size" --> elsewhere?
+
   7. graph to list function
   8. proof that length of this is "size"^2
   9. graph_rep (if you provide me with a list -> addr -> mpred function)
-*)
+ *)
+
+(* vvalid --> 0 <= v < size *)
+(* strong_evalid *)
+(* evalid --> 0 <= v < size *)
 
 Local Open Scope Z_scope.
 
