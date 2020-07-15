@@ -5,6 +5,7 @@ Require Import Coq.ZArith.ZArith.
 Require Import Coq.micromega.Lia.
 Require Import VST.msl.seplog.
 Require Import VST.msl.log_normalize.
+Require Import VST.floyd.sublist.
 Require Import compcert.lib.Integers.
 Require Import RamifyCoq.lib.Coqlib.
 Require Import RamifyCoq.lib.Ensembles_ext.
@@ -155,27 +156,6 @@ Qed.
 Class SpatialArrayGraph (Addr: Type) (Pred: Type) := vcell_array_at: Addr -> list (nat * Z) -> Pred.
 
 Existing Instances SGP_ND SGP_SL SGP_ClSL SGP_CoSL.
-
-Fixpoint nat_inc_list (n: nat) : list Z :=
-  match n with
-  | O => nil
-  | S n' => nat_inc_list n' ++ (Z.of_nat n' :: nil)
-  end.
-
-Lemma nat_inc_list_in_iff: forall n v, List.In v (nat_inc_list n) <-> 0 <= v < Z.of_nat n.
-Proof.
-  induction n; intros; [simpl; intuition|]. rewrite Nat2Z.inj_succ. unfold Z.succ. simpl. rewrite in_app_iff.
-  assert (0 <= v < Z.of_nat n + 1 <-> 0 <= v < Z.of_nat n \/ v = Z.of_nat n) by lia. rewrite H. clear H. rewrite IHn. simpl. intuition.
-Qed.
-
-Lemma nat_inc_list_NoDup: forall n, NoDup (nat_inc_list n).
-Proof.
-  induction n; simpl; [constructor|]. apply NoDup_app_inv; auto.
-  - constructor; auto. constructor.
-  - intros. rewrite nat_inc_list_in_iff in H. simpl. lia.
-Qed.
-
-Lemma nat_inc_list_length: forall n, length (nat_inc_list n) = n. Proof. induction n; simpl; auto. rewrite app_length. simpl. rewrite IHn. intuition. Qed.
 
 Section SpaceArrayGraph.
 
