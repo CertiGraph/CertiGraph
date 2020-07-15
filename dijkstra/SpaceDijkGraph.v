@@ -7,6 +7,7 @@ Require Import RamifyCoq.graph.AdjMatGraph.
 Local Open Scope logic.
 
 (* Would be good to generalize these further and move them to AdjMatGraph. *)
+
 Lemma graph_to_mat_Zlength_gen:
   forall g size,
     0 <= size ->
@@ -44,46 +45,6 @@ Definition inrange_graph_gen g size :=
     Znth i (Znth j grph_contents) = inf.
 
 
-
-(* Truly spatial stuff *)
-
-Definition list_address a index size : val :=
-  offset_val (index * sizeof (tarray tint size)) a.
-
-Definition list_rep sh size l contents_mat index :=
-  let mylist := (Znth index contents_mat) in
-  data_at sh (tarray tint size) (map Vint (map Int.repr mylist)) (list_address l index size).
-
-Definition DijkGraph sh contents_graph gaddr : mpred :=
-  iter_sepcon (list_rep sh SIZE gaddr contents_graph)
-              (nat_inc_list (Z.to_nat (Zlength contents_graph))).
-
-Lemma DijkGraph_unfold: forall sh contents ptr i,
-    0 <= i < (Zlength contents) ->
-    DijkGraph sh contents ptr =
-    iter_sepcon (list_rep sh SIZE ptr contents)
-                            (sublist 0 i (nat_inc_list (Z.to_nat (Zlength contents)))) *
-    (list_rep sh SIZE ptr contents i *
-     iter_sepcon (list_rep sh SIZE ptr contents)
-                             (sublist (i + 1) (Zlength contents) (nat_inc_list (Z.to_nat (Zlength contents))))).
-Proof.
-  intros. unfold DijkGraph.
-  replace (nat_inc_list (Z.to_nat (Zlength contents))) with
-      (sublist 0 (Zlength contents) (nat_inc_list (Z.to_nat (Zlength contents)))) at 1.
-  2: { rewrite sublist_same; trivial.
-       rewrite nat_inc_list_Zlength, Z2Nat_id', Z.max_r; trivial.
-       apply Zlength_nonneg.
-  }
-  rewrite (sublist_split 0 i (Zlength contents)),
-  (sublist_split i (i+1) (Zlength contents)), (sublist_one i); try lia.
-  2, 3, 4: rewrite nat_inc_list_Zlength; rewrite Z2Nat.id; lia.
-  rewrite nat_inc_list_i.
-  2: rewrite Z2Nat_id', Z.max_r; trivial; apply Zlength_nonneg. 
-  repeat rewrite iter_sepcon_app.
-  simpl. rewrite sepcon_emp. reflexivity.
-Qed.
-
-
 (* sugared version so as not to break Dijk *)
 Definition graph_to_mat
            (g: LabeledGraph VType EType LV LE LG) : list (list LE) :=
@@ -107,9 +68,7 @@ Lemma graph_to_mat_Zlength:
   forall g,
     Zlength (graph_to_mat g) = SIZE.
 Proof.
-  intros. unfold graph_to_mat.
-  rewrite Zlength_map, nat_inc_list_Zlength, Z2Nat.id; trivial.
-  unfold SIZE; lia.
+  intros. apply graph_to_mat_Zlength_gen. unfold SIZE; lia.
 Qed.
 
 (* sugared version so as not to break Dijk *)
@@ -126,7 +85,6 @@ Qed.
    apply elabel_Znth_graph_to_mat_gen; trivial. lia.
  Qed.
  
- (* sugared version so as not to break Dijk *)
  Lemma inrange_graph_cost_pos: forall g e,
      sound_dijk_graph g ->
      inrange_graph g ->
@@ -144,3 +102,44 @@ Proof.
   1: destruct H0; lia.
   rewrite H0. compute; inversion 1. 
 Qed.
+
+
+
+(* Truly spatial stuff *)
+
+Definition list_address a index size : val :=
+  offset_val (index * sizeof (tarray tint size)) a.
+
+Definition list_rep sh size l contents_mat index :=
+  let mylist := (Znth index contents_mat) in
+  data_at sh (tarray tint size) (map Vint (map Int.repr mylist)) (list_address l index size).
+
+Definition DijkGraph sh g gaddr : mpred :=
+  iter_sepcon (list_rep sh SIZE gaddr (graph_to_mat g))
+              (nat_inc_list (Z.to_nat SIZE)).
+
+Lemma DijkGraph_unfold: forall sh g ptr i,
+    let contents := (graph_to_mat g) in 
+    0 <= i < SIZE ->
+    DijkGraph sh g ptr =
+    iter_sepcon (list_rep sh SIZE ptr contents)
+                            (sublist 0 i (nat_inc_list (Z.to_nat SIZE))) *
+    (list_rep sh SIZE ptr contents i *
+     iter_sepcon (list_rep sh SIZE ptr contents)
+                             (sublist (i + 1) (Zlength contents) (nat_inc_list (Z.to_nat SIZE)))).
+Proof.
+  intros. unfold DijkGraph.
+  replace (nat_inc_list (Z.to_nat SIZE)) with
+      (sublist 0 SIZE (nat_inc_list (Z.to_nat SIZE))) at 1.
+  2: rewrite sublist_same; trivial.
+  rewrite (sublist_split 0 i SIZE),
+  (sublist_split i (i+1) SIZE), (sublist_one i); try lia.
+  2, 3, 4: rewrite nat_inc_list_Zlength; rewrite Z2Nat.id; lia.
+  rewrite nat_inc_list_i.
+  2: rewrite Z2Nat_id', Z.max_r; lia.
+  repeat rewrite iter_sepcon_app.
+  simpl. rewrite sepcon_emp. reflexivity.
+Qed.
+
+
+
