@@ -1,4 +1,4 @@
-#include "priorityqueue.h"
+#include "priq_arr.h"
 
 
 /* ****************************** */

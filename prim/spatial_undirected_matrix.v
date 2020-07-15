@@ -14,9 +14,6 @@ Definition vertex_type := tint.
 
 Instance CompSpecs : compspecs. Proof. make_compspecs prog. Defined.
 
-Definition SIZE := 8.
-Definition inf := Int.max_signed - Int.max_signed / SIZE.
-
 (**Abstract matrix**)
 Lemma nat_inc_list_Zlength:
   forall n, Zlength (nat_inc_list n) = Z.of_nat n.
@@ -39,8 +36,6 @@ Proof.
     rewrite Znth_0_cons; trivial.
 Qed.
 
-Definition elabel_inf (g: MatrixUGraph) (e: E) := if evalid_dec g e then elabel g e else inf.
-
 Definition eformat (e: E) := if fst e <=? snd e then e else (snd e, fst e).
 
 Lemma eformat1: forall (e: E), fst e <= snd e -> eformat e = e.
@@ -49,25 +44,42 @@ Proof. unfold eformat; intros. rewrite Zle_is_le_bool in H; rewrite H. auto. Qed
 Lemma eformat2: forall (e: E), snd e < fst e -> eformat e = (snd e, fst e).
 Proof. unfold eformat; intros. rewrite <- Z.leb_gt in H; rewrite H. auto. Qed.
 
+(*When these are unfolded in the goal and I destruct evalid_dec, I can get the hypothesis but the if... doesn't simplify
+
+Definition elabel_inf (g: MatrixUGraph) (e: E) := if evalid_dec g e then elabel g e else inf.
+
 Definition elabel_inf_symm (g: MatrixUGraph) (e: E) :=
   if evalid_dec g (eformat e) then elabel g (eformat e) else inf.
-
+*)
 Definition vert_rep_symm (g : MatrixUGraph) (v : V): list Z :=
-  map (elabel_inf_symm g) (map (fun x => (v,x)) (nat_inc_list (Z.to_nat SIZE))).
+  map (elabel g) (map (fun x => eformat (v,x)) (nat_inc_list (Z.to_nat SIZE))).
 
 (* from Graph to list (list Z) *)
 Definition graph_to_symm_mat (g : MatrixUGraph) : list (list Z) :=
   map (vert_rep_symm g) (nat_inc_list (Z.to_nat SIZE)).
 
-Lemma symmetric_mat:
-  forall (g: MatrixUGraph) i j, sound_undirected_matrix_graph g -> 0 <= i < j -> j < SIZE ->
+Lemma graph_to_mat_symmetric:
+  forall (g: MatrixUGraph) i j, 0 <= i < j -> j < SIZE ->
     (Znth i (Znth j (graph_to_symm_mat g))) = (Znth j (Znth i (graph_to_symm_mat g))).
 Proof.
 unfold graph_to_symm_mat, vert_rep_symm; intros.
 repeat rewrite Znth_map. repeat rewrite nat_inc_list_i by lia.
-unfold elabel_inf_symm. assert (eformat (j,i) = (i,j)). apply eformat2. simpl; lia.
-destruct (evalid_dec g (j,i)).
-Abort.
+rewrite eformat2; simpl. rewrite eformat1; simpl. auto.
+lia. lia.
+all: try (rewrite nat_inc_list_Zlength, Z2Nat.id; lia).
+all: rewrite Zlength_map, nat_inc_list_Zlength, Z2Nat.id; lia.
+Qed.
+
+Lemma graph_to_mat_inf:
+  forall (g: MatrixUGraph) u v, sound_undirected_matrix_graph g -> 0 <= u < v -> v < SIZE -> ~ evalid g (u,v) -> Znth v (Znth u (graph_to_symm_mat g)) = inf.
+Proof.
+unfold graph_to_symm_mat, vert_rep_symm; intros.
+repeat rewrite Znth_map. repeat rewrite nat_inc_list_i.
+rewrite eformat1. apply H; auto. simpl; lia.
+all: try (rewrite Z2Nat.id; lia).
+all: try (rewrite nat_inc_list_Zlength, Z2Nat.id; lia).
+rewrite Zlength_map, nat_inc_list_Zlength, Z2Nat.id; lia.
+Qed.
 
 (*************C related**********)
 

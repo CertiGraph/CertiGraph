@@ -1,8 +1,8 @@
 Require Import VST.floyd.proofauto.
-Require Import RamifyCoq.sample_mark.dijk_pq_arr_macros.
+Require Export RamifyCoq.dijkstra.dijk_pq_arr_macros. (* ? *)
 
 
-(** QUICK UTILITIES TO HELP WITH ARRAY-BASED PQ **)
+(** UTILITIES TO HELP WITH VERIF OF ARRAY-BASED PQ **)
 
 Definition inrange_priq priq_contents :=
   Forall (fun x => 0 <= x <= inf + 1) priq_contents.
