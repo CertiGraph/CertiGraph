@@ -22,7 +22,7 @@ MSL_EXT_FILES = \
   overlapping_direct.v precise_direct.v alg_seplog_direct.v
 
 MSL_APPLICATION_FILES = \
-  Graph.v Graph_Mark.v GraphBi.v GraphBi_Mark.v DagBi_Mark.v Graph_Copy.v GraphBi_Copy.v GList.v GList_UnionFind.v ArrayGraph.v UnionFindGraph.v DijkstraGraph.v DijkstraArrayGraph.v
+  Graph.v Graph_Mark.v GraphBi.v GraphBi_Mark.v DagBi_Mark.v Graph_Copy.v GraphBi_Copy.v GList.v GList_UnionFind.v ArrayGraph.v UnionFindGraph.v
 
 VERIC_EXT_FILES = \
   res_predicates.v seplog.v SeparationLogic.v
@@ -47,7 +47,7 @@ SAMPLE_MARK_FILES = \
   unionfind.v env_unionfind.v spatial_graph_glist.v uf_arr_specs.v verif_unionfind.v verif_unionfind_slim.v verif_unionfind_rank.v \
   unionfind_iter.v env_unionfind_iter.v verif_summatrix.v spatial_graph_uf_iter.v verif_unionfind_iter.v verif_unionfind_iter_rank.v \
   unionfind_arr.v env_unionfind_arr.v spatial_array_graph.v verif_unionfind_arr.v \
-  priq_utils.v priorityqueue.v dijkstra.v dijk_pq_arr_macros.v dijk_pq_arr_spec.v env_dijkstra_arr.v spatial_dijkstra_array_graph.v verif_priorityqueue.v verif_dijkstra.v verif_copy_bi.v binary_heap_model.v binary_heap_Zmodel.v binary_heap.v env_binary_heap.v verif_binary_heap.v binary_heap_pro.v env_binary_heap_pro.v
+  verif_copy_bi.v binary_heap_model.v binary_heap_Zmodel.v binary_heap.v env_binary_heap.v verif_binary_heap.v binary_heap_pro.v env_binary_heap_pro.v
 
 HIP_FILES = \
   hip_graphmark.v hip_graphmark_proofs.v spanningtree.v
@@ -68,6 +68,14 @@ PRIM_FILES = \
   MatrixUGraph.v \
   prim.v spatial_undirected_matrix.v
 
+DIJKSTRA_FILES = \
+  DijkstraArrayGraph.v DijkstraGraph.v \
+  verif_dijkstra.v env_dijkstra_arr.v spatial_dijkstra_array_graph.v \
+  dijk_pq_arr_macros.v dijkstra_spec.v dijkstra.v
+
+PRIQ_FILES = \
+  priq_arr.v priq_arr_specs.v priq_arr_utils.v verif_priq_arr.v 
+
 CLIGHT_FILES = sample_mark/mark_bi.v sample_mark/garbage_collector.v sample_mark/dispose_bi.v sample_mark/copy_bi.v sample_mark/summatrix.v
 
 C_FILES = $(CLIGHT_FILES:%.v=%.c)
@@ -84,6 +92,8 @@ NORMAL_FILES = \
   $(HEAP_MODEL_DIRECT_FILES:%.v=heap_model_direct/%.v) \
   $(CERTIGC_FILES:%.v=CertiGC/%.v) \
   $(KRUSKAL_FILES:%.v=kruskal/%.v) \
+  $(DIJKSTRA_FILES:%.v=dijkstra/%.v) \
+  $(PRIQ_FILES:%.v=priq/%.v) \
   $(PRIM_FILES:%.v=prim/%.v)
 
 $(NORMAL_FILES:%.v=%.vo): %.vo: %.v

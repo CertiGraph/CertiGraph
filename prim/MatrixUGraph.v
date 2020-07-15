@@ -44,6 +44,13 @@ Proof.
   - right; intro; apply c; inversion H; reflexivity.
 Defined.
 
+(*I think that, ideally these shouldn't be here
+But because I've trouble with evalid_dec (see spatial_undirected_matrix), I've trouble saying "if (u,v) isn't valid, g[u][v] = inf"
+Therefore, we coerce that elabel forces inf on in-evalid edges
+*)
+Definition SIZE := 8.
+Definition inf := Int.max_signed - Int.max_signed / SIZE.
+
 Definition vertex_valid (g: PreGraph V E): Prop :=
   forall v, vvalid g v -> 0 <= v < Int.max_signed.
 
@@ -57,6 +64,9 @@ Definition undirected_edge_valid (g: PreGraph V E): Prop :=
 Definition weight_valid (g: LabeledGraph V E DV DE DG): Prop :=
   forall e, evalid g e -> Int.min_signed <= elabel g e <= Int.max_signed. (*< IFTY*)
 
+Definition weight_invalid (g: LabeledGraph V E DV DE DG): Prop :=
+  forall e, ~ evalid g e -> elabel g e = inf.
+
 Definition src_edge (g: PreGraph V E) : Prop :=
   forall e, evalid g e -> src g e = fst e.
 
@@ -64,7 +74,7 @@ Definition dst_edge (g: PreGraph V E): Prop :=
   forall e, evalid g e -> dst g e = snd e.
 
 Definition sound_undirected_matrix_graph (g: LabeledGraph V E DV DE DG): Prop :=
-  vertex_valid g /\ edge_valid g /\ weight_valid g /\ src_edge g /\ dst_edge g /\ undirected_edge_valid g.
+  vertex_valid g /\ edge_valid g /\ weight_valid g /\ src_edge g /\ dst_edge g /\ weight_invalid g /\ undirected_edge_valid g.
 
 (*Hm, was wondering if I could incorporate "soundness" in*)
 Definition MatrixUGraph := (GeneralGraph V E DV DE DG (fun g => FiniteGraph g)).

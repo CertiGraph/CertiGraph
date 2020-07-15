@@ -2,7 +2,7 @@
 #include <limits.h>
 #include <stdio.h>
 #include <time.h>
-#include "priorityqueue.h"
+#include "../priq/priq_arr.h"
 
 #define SIZE 8  // number of vertices
 #define CONN 3  // the connectedness. 1 is 100%, higher numbers mean less connected
