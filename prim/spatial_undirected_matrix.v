@@ -4,37 +4,15 @@ Require Import RamifyCoq.floyd_ext.share.
 Require Import RamifyCoq.graph.graph_model.
 Require Import RamifyCoq.graph.FiniteGraph.
 Require Import RamifyCoq.graph.undirected_graph.
-Require Import RamifyCoq.msl_application.ArrayGraph. (*for nat_inc_list, it seems?*)
 Require Import RamifyCoq.prim.MatrixUGraph.
 Require Import RamifyCoq.prim.prim.
+Require Import RamifyCoq.lib.List_ext.
 
 Local Open Scope logic.
 
 Definition vertex_type := tint.
 
 Instance CompSpecs : compspecs. Proof. make_compspecs prog. Defined.
-
-(**Abstract matrix**)
-Lemma nat_inc_list_Zlength:
-  forall n, Zlength (nat_inc_list n) = Z.of_nat n.
-Proof.
-  intros. now rewrite Zlength_correct, nat_inc_list_length. Qed.
-
-Lemma nat_inc_list_i: forall i n,
-    0 <= i < Z.of_nat n ->
-    Znth i (nat_inc_list n) = i.
-Proof.
-  intros. generalize dependent i. induction n.
-  1: intros; exfalso; destruct H; rewrite Nat2Z.inj_0 in H0; lia.
-  intros. simpl. rewrite Nat2Z.inj_succ in H. destruct H.
-  apply Zlt_succ_le in H0. apply Zle_lt_or_eq in H0. destruct H0.
-  - rewrite app_Znth1. apply IHn. lia.
-    now rewrite nat_inc_list_Zlength.
-  - rewrite app_Znth2 by (rewrite nat_inc_list_Zlength; lia). 
-    rewrite H0. rewrite nat_inc_list_Zlength. simpl. 
-    replace (Z.of_nat n - Z.of_nat n) with 0 by lia.
-    rewrite Znth_0_cons; trivial.
-Qed.
 
 Definition eformat (e: E) := if fst e <=? snd e then e else (snd e, fst e).
 
@@ -98,10 +76,10 @@ Definition undirected_matrix sh matrix_contents gaddr : mpred :=
 Lemma graph_unfold: forall sh contents ptr i,
     0 <= i < (Zlength contents) ->
     undirected_matrix sh contents ptr =
-    iter_sepcon.iter_sepcon (list_rep sh SIZE ptr contents)
+    iter_sepcon.iter_sepcon (list_rep sh SIZE ptr contents) (*<---before*)
             (sublist 0 i (nat_inc_list (Z.to_nat (Zlength contents)))) *
-    (list_rep sh SIZE ptr contents i *
-           iter_sepcon.iter_sepcon (list_rep sh SIZE ptr contents)
+    (list_rep sh SIZE ptr contents i * (*ith array*)
+           iter_sepcon.iter_sepcon (list_rep sh SIZE ptr contents) (*after*)
              (sublist (i + 1) (Zlength contents) (nat_inc_list (Z.to_nat (Zlength contents))))).
 Proof.
   intros. unfold undirected_matrix.
