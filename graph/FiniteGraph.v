@@ -72,19 +72,21 @@ intros. destruct (in_dec EE e (EList g)); [left; auto | right; auto].
 Qed.
 
 Corollary vvalid_dec:
-  forall g {fg: FiniteGraph g} v, vvalid g v \/ ~ vvalid g v.
+  forall g {fg: FiniteGraph g} v, {vvalid g v} + {~ vvalid g v}.
 Proof.
-intros. destruct (VList_In_dec g v); [left; rewrite <- VList_vvalid; apply H | right; rewrite <- VList_vvalid; apply H].
+intros. destruct (in_dec EV v (VList g)). rewrite VList_vvalid in i; left; auto.
+rewrite VList_vvalid in n; right; auto.
 Qed.
 
 Corollary evalid_dec:
-  forall g {fg: FiniteGraph g} e, evalid g e \/ ~ evalid g e.
+  forall g {fg: FiniteGraph g} e, {evalid g e} + {~ evalid g e}.
 Proof.
-intros. destruct (EList_In_dec g e); [left; rewrite <- EList_evalid; apply H | right; rewrite <- EList_evalid; apply H].
+intros. destruct (in_dec EE e (EList g)). rewrite EList_evalid in i. left; auto.
+rewrite EList_evalid in n. right; auto.
 Qed.
 
-Lemma strong_evalid_dec:
-  forall g {fg: FiniteGraph g} e, strong_evalid g e \/ ~ strong_evalid g e.
+Corollary strong_evalid_dec:
+  forall g {fg: FiniteGraph g} e, {strong_evalid g e} + {~ strong_evalid g e}.
 Proof.
 intros. destruct (evalid_dec g e).
 destruct (vvalid_dec g (src g e)).
