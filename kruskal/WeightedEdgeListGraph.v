@@ -1360,7 +1360,6 @@ In addition, I need:
 -fits_upath_transfer' is too strong atm, it was originally focused on partial graphs.
   Write a version that only cares about vertices/edges in p/l
   Then I may be able to avoid the 10-case business...
-*)
 Lemma connected_dec_pre:
   forall l (g: FiniteWEdgeListGraph) a b, Permutation l (EList g) -> connected g a b \/ ~ connected g a b.
 Proof.
@@ -1369,7 +1368,7 @@ induction l; intros.
 destruct (V_EqDec a b).
 (*same vertex: check if vvalid*)
 unfold equiv in e. subst b.
-destruct (vvalid_dec g a). left. apply connected_refl. auto.
+destruct (vvalid_lem g a). left. apply connected_refl. auto.
 right. unfold not; intros. apply connected_vvalid in H1. destruct H1. auto.
 (*not same vertex: no edges, so can't be connected*)
 unfold complement, equiv in c.
@@ -1386,7 +1385,7 @@ assert (connected g' a b \/ ~ connected g' a b). apply IHl; auto. destruct H1.
 destruct H1 as [p ?].
 left. exists p. split. apply (eremove_unaffected g e). apply H1. apply H1.
 (*case they're not. Then, check if they're connected to the vertices of e*)
-destruct (strong_evalid_dec g e).
+destruct (strong_evalid_lem g e).
 (*case it is strong_evalid. Then get the vertices of e, split into cases
 Seems like 10cases...
 *) destruct H2. destruct H3.
@@ -1401,7 +1400,7 @@ unfold not; intros. apply (fits_upath_strong_evalid g p l') in H5; auto.
 apply H3.
 contradiction.
 Abort.
-
+*)
 (*****************)
 
 Lemma fold_left_Zadd_diff_accum:

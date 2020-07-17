@@ -64,6 +64,10 @@ KRUSKAL_FILES = \
   kruskal_edgelist.v env_kruskal_edgelist.v spatial_wedgearray_graph.v kruskal_uf_specs.v \
   verif_kruskal_edgelist.v
 
+PRIM_FILES = \
+  MatrixUGraph.v \
+  prim.v spatial_undirected_matrix.v specs_prim.v \
+
 DIJKSTRA_FILES = \
   dijkstra.v \
   MathDijkGraph.v SpaceDijkGraph.v \
@@ -72,7 +76,6 @@ DIJKSTRA_FILES = \
 
 PRIQ_FILES = \
   priq_arr.v priq_arr_specs.v priq_arr_utils.v verif_priq_arr.v 
-
 
 CLIGHT_FILES = sample_mark/mark_bi.v sample_mark/garbage_collector.v sample_mark/dispose_bi.v sample_mark/copy_bi.v sample_mark/summatrix.v
 
@@ -91,7 +94,8 @@ NORMAL_FILES = \
   $(CERTIGC_FILES:%.v=CertiGC/%.v) \
   $(KRUSKAL_FILES:%.v=kruskal/%.v) \
   $(DIJKSTRA_FILES:%.v=dijkstra/%.v) \
-  $(PRIQ_FILES:%.v=priq/%.v)
+  $(PRIQ_FILES:%.v=priq/%.v) \
+  $(PRIM_FILES:%.v=prim/%.v)
 
 $(NORMAL_FILES:%.v=%.vo): %.vo: %.v
 	@echo COQC $*.v
