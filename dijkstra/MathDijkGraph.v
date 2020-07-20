@@ -26,21 +26,18 @@ Require Import Coq.Classes.EquivDec.
    It is currently a separate file in case we want more constants stashed away *)
 Require Export RamifyCoq.dijkstra.dijkstra_constants.
 
-Coercion pg_lg: LabeledGraph >-> PreGraph.
-Coercion lg_gg: GeneralGraph >-> LabeledGraph. 
-
 Local Open Scope logic.
 Local Open Scope Z_scope.
 
 (* Here is the LabeledGraph *)
-Definition DijkstraLabeledGraph := LabeledGraph VType EType LV LE LG.
+Definition DijkstraLabeledGraph := AdjMatLG.
 
 (* The soundness condition (just one item for now) *)
 Class Fin (g: DijkstraLabeledGraph) :=
   { fin: FiniteGraph g; }.
 
 (* And the GeneralGraph that we will use *)
-Definition DijkstraGeneralGraph := (GeneralGraph VType EType LV LE LG (fun g => Fin g)).
+Definition DijkstraGeneralGraph := (GeneralGraph V E DV DE DG (fun g => Fin g)).
 
 Definition vertex_valid (g : DijkstraGeneralGraph): Prop :=
   forall v, vvalid g v <-> 0 <= v < SIZE.
