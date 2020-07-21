@@ -1,5 +1,6 @@
 Require Import VST.floyd.proofauto.
 Require Import RamifyCoq.graph.undirected_graph.
+Require Import RamifyCoq.graph.AdjMatGraph.
 Require Import RamifyCoq.prim.MatrixUGraph.
 Require Import RamifyCoq.prim.prim.
 Require Import RamifyCoq.prim.spatial_undirected_matrix.
@@ -12,7 +13,8 @@ Definition init_list_spec :=
   DECLARE _initialise_list
   WITH sh: share, arr : pointer_val, old_list: list val
   PRE [tptr tint]
-     PROP (Zlength old_list = SIZE (*<--I'm not sure if this is derivable from SEP*)
+     PROP ( writable_share sh;
+            Zlength old_list = SIZE (*<--I'm not sure if this is derivable from SEP*)
           )
      PARAMS ( pointer_val_val arr )
      GLOBALS ()
@@ -25,9 +27,10 @@ Definition init_list_spec :=
 
 Definition init_matrix_spec :=
   DECLARE _initialise_matrix
-  WITH sh: wshare, arr : pointer_val, old_contents: list (list Z)
+  WITH sh: share, arr : pointer_val, old_contents: list (list Z)
   PRE [tptr (tarray tint SIZE)]
-     PROP ( Zlength old_contents = SIZE;
+     PROP ( writable_share sh;
+            Zlength old_contents = SIZE;
             forall row, In row old_contents -> Zlength row = SIZE
           )
      PARAMS ( pointer_val_val arr )
@@ -41,16 +44,15 @@ Definition init_matrix_spec :=
 
 Definition prim_spec :=
   DECLARE _prim
-  WITH sh: wshare, g: MatrixUGraph, gptr : pointer_val, r: Z, mstptr : pointer_val
+  WITH sh: wshare, g: G, gptr : pointer_val, r: Z, mstptr : pointer_val
   PRE [tptr (tarray tint SIZE), tint, tptr (tarray tint SIZE)]
-     PROP (sound_undirected_matrix_graph g;
-            connected_graph g; (*prim's can only work on a connected graph with no disjoint components*)
+     PROP ( connected_graph g; (*prim's can only work on a connected graph with no disjoint components*)
             vvalid g r
           )
      PARAMS ( pointer_val_val gptr; (Vint (Int.repr r)); pointer_val_val mstptr)
      GLOBALS ()
      SEP (undirected_matrix sh (graph_to_symm_mat g) (pointer_val_val gptr);
-          undirected_matrix sh (graph_to_symm_mat (edgeless_graph SIZE)) (pointer_val_val mstptr)
+          undirected_matrix sh (graph_to_symm_mat (@edgeless_graph inf SIZE SIZE_rep)) (pointer_val_val mstptr)
          )
   POST [ tvoid ]
      EX mst: MatrixUGraph,

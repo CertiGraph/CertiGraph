@@ -3,6 +3,7 @@ Require Import RamifyCoq.lib.List_ext.
 Require Import RamifyCoq.floyd_ext.share.
 Require Import RamifyCoq.graph.graph_model.
 Require Import RamifyCoq.graph.undirected_graph.
+Require Import RamifyCoq.graph.AdjMatGraph.
 Require Import RamifyCoq.prim.MatrixUGraph.
 Require Import RamifyCoq.prim.prim.
 Require Import RamifyCoq.prim.spatial_undirected_matrix.
@@ -155,5 +156,5 @@ assert_PROP (isptr v_key). entailer!. destruct v_key; try contradiction. rename 
 replace (Vptr bkey ikey) with (pointer_val_val (ValidPointer bkey ikey)) by (simpl; auto). set (vkey:=ValidPointer bkey ikey) in *.
 set (k:=default_val tint); compute in k; subst k.
 
-forward_call (writable_share_top, (ValidPointer bkey ikey), (list_repeat (Z.to_nat 8) Vundef)).
+forward_call (Tsh, (ValidPointer bkey ikey), (list_repeat (Z.to_nat 8) Vundef)).
 Abort.
