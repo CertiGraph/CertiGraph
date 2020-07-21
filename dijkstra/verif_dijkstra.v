@@ -1122,6 +1122,9 @@ Proof.
           destruct priq_contents. rewrite Zlength_nil in H9.
           inversion H9. simpl. left; trivial.
         }
+Abort.
+
+(*
         apply vvalid_range in H17; trivial. 
         rewrite Znth_0_hd, <- H15.
         2: { ulia. }
@@ -3076,3 +3079,5 @@ Proof.
       forward. Exists prev_contents dist_contents popped_verts. entailer!. 
       Unshelve. trivial.
 Admitted.
+
+*)
