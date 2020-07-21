@@ -4,6 +4,7 @@ Require Import RamifyCoq.floyd_ext.share.
 Require Import RamifyCoq.graph.graph_model.
 Require Import RamifyCoq.graph.FiniteGraph.
 Require Import RamifyCoq.graph.undirected_graph.
+Require Import RamifyCoq.graph.AdjMatGraph.
 Require Import RamifyCoq.prim.MatrixUGraph.
 Require Import RamifyCoq.prim.prim.
 Require Import RamifyCoq.lib.List_ext.
@@ -13,6 +14,15 @@ Local Open Scope logic.
 Definition vertex_type := tint.
 
 Instance CompSpecs : compspecs. Proof. make_compspecs prog. Defined.
+
+Definition SIZE := 8.
+
+Lemma SIZE_rep: 0 <= SIZE < Int.max_signed.
+Proof. unfold SIZE. set (i:=Int.max_signed); compute in i; subst i. lia. Qed.
+
+Definition inf := Int.max_signed - Int.max_signed / SIZE.
+
+Definition G := @MatrixUGraph inf.
 
 Definition eformat (e: E) := if fst e <=? snd e then e else (snd e, fst e).
 
@@ -29,15 +39,15 @@ Definition elabel_inf (g: MatrixUGraph) (e: E) := if evalid_dec g e then elabel 
 Definition elabel_inf_symm (g: MatrixUGraph) (e: E) :=
   if evalid_dec g (eformat e) then elabel g (eformat e) else inf.
 *)
-Definition vert_rep_symm (g : MatrixUGraph) (v : V): list Z :=
+Definition vert_rep_symm (g : G) (v : V): list Z :=
   map (elabel g) (map (fun x => eformat (v,x)) (nat_inc_list (Z.to_nat SIZE))).
 
 (* from Graph to list (list Z) *)
-Definition graph_to_symm_mat (g : MatrixUGraph) : list (list Z) :=
+Definition graph_to_symm_mat (g : G) : list (list Z) :=
   map (vert_rep_symm g) (nat_inc_list (Z.to_nat SIZE)).
 
 Lemma graph_to_mat_symmetric:
-  forall (g: MatrixUGraph) i j, 0 <= i < j -> j < SIZE ->
+  forall (g: G) i j, 0 <= i < j -> j < SIZE ->
     (Znth i (Znth j (graph_to_symm_mat g))) = (Znth j (Znth i (graph_to_symm_mat g))).
 Proof.
 unfold graph_to_symm_mat, vert_rep_symm; intros.
@@ -49,14 +59,29 @@ all: rewrite Zlength_map, nat_inc_list_Zlength, Z2Nat.id; lia.
 Qed.
 
 Lemma graph_to_mat_inf:
-  forall (g: MatrixUGraph) u v, sound_undirected_matrix_graph g -> 0 <= u < v -> v < SIZE -> ~ evalid g (u,v) -> Znth v (Znth u (graph_to_symm_mat g)) = inf.
+  forall (g: G) u v, 0 <= u < v -> v < SIZE -> ~ evalid g (u,v) -> Znth v (Znth u (graph_to_symm_mat g)) = inf.
 Proof.
 unfold graph_to_symm_mat, vert_rep_symm; intros.
 repeat rewrite Znth_map. repeat rewrite nat_inc_list_i.
-rewrite eformat1. apply H; auto. simpl; lia.
+rewrite eformat1. apply (@edge_weight_invalid inf g (sound_MatrixUGraph g)); auto. simpl; lia.
 all: try (rewrite Z2Nat.id; lia).
 all: try (rewrite nat_inc_list_Zlength, Z2Nat.id; lia).
 rewrite Zlength_map, nat_inc_list_Zlength, Z2Nat.id; lia.
+Qed.
+
+Lemma edgeless_vert_rep:
+forall v, 0<=v<SIZE -> vert_rep_symm (@edgeless_graph inf SIZE SIZE_rep) v = list_repeat (Z.to_nat SIZE) inf.
+Proof.
+unfold vert_rep_symm; intros.
+simpl. auto. (*should try to find a better scalable way*)
+Qed.
+
+Lemma edgeless_to_symm_mat:
+graph_to_symm_mat (@edgeless_graph inf SIZE SIZE_rep) = list_repeat (Z.to_nat SIZE) (list_repeat (Z.to_nat SIZE) inf).
+Proof.
+unfold graph_to_symm_mat.
+simpl. repeat rewrite edgeless_vert_rep; simpl. auto.
+all: unfold SIZE; lia.
 Qed.
 
 (*************C related**********)
@@ -66,7 +91,7 @@ Definition list_address a index size : val :=
 
 Definition list_rep sh size l contents_mat index :=
   let mylist := (Znth index contents_mat) in
-  data_at sh (tarray tint size) (map Vint (map Int.repr mylist)) (list_address l index size).
+  data_at sh (tarray tint size) (map (fun x => Vint (Int.repr x)) mylist) (list_address l index size).
 
 Definition undirected_matrix sh matrix_contents gaddr : mpred :=
   iter_sepcon.iter_sepcon (list_rep sh SIZE gaddr matrix_contents)

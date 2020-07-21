@@ -1,5 +1,5 @@
 //well, no need for malloc and free I guess
-#include "../../sample_mark/priorityqueue.h"
+#include "../../priq/priq_arr.h"
 #include <stdio.h>
 
 #define SIZE 8  // number of vertices
@@ -32,17 +32,17 @@ void print_adj_matrix(int graph[SIZE][SIZE]) {
     }
 }
 
-void initialise_matrix(int graph[SIZE][SIZE]) {
+void initialise_matrix(int graph[SIZE][SIZE], int a) {
     for (int i = 0; i < SIZE; ++i) {
         for (int j = 0; j < SIZE; ++j) {
-            graph[i][j] = IFTY;
+            graph[i][j] = a;
         }
     }
 }
 
-void initialise_list(int list[SIZE]) {
+void initialise_list(int list[SIZE], int a) {
     for (int i = 0; i < SIZE; ++i) {
-        list[i] = IFTY;
+        list[i] = a;
     }
 }
 
@@ -56,10 +56,11 @@ It's not even clear in a conventional adjacency matrix anyway, because an undire
 */
 void prim(int graph[SIZE][SIZE], int r, int msf[SIZE][SIZE]) {
     int key[SIZE];
-    initialise_list(key);
+    initialise_list(key, IFTY);
     int parent[SIZE]; //NIL in textbook. However, 0 is a valid vertex, so we substitute it with an invalid value
-    initialise_list(parent);
-    int out[SIZE] = {0}; //as a marker to check if v is in pq. 1 for NOT in pq (already checked)
+    initialise_list(parent, IFTY);
+    int out[SIZE]; //as a marker to check if v is in pq. 1 for NOT in pq (already checked)
+    initialise_list(out, 0);
     key[r] = 0; //first in pq
     
     //Q = G.V;
