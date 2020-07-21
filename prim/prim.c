@@ -1,5 +1,5 @@
 //well, no need for malloc and free I guess
-#include "../../priq/priq_arr.h"
+#include "../priq/priq_arr.h"
 
 #define SIZE 8  // number of vertices
 #define IFTY INT_MAX - INT_MAX/SIZE

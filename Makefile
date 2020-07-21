@@ -66,8 +66,8 @@ KRUSKAL_FILES = \
 
 PRIM_FILES = \
   MatrixUGraph.v \
-  prim.v spatial_undirected_matrix.v # specs_prim.v \
-  # verif_prim.v 
+  prim.v spatial_undirected_matrix.v specs_prim.v \
+  verif_prim.v 
 
 DIJKSTRA_FILES = \
   dijkstra.v \
@@ -77,6 +77,9 @@ DIJKSTRA_FILES = \
 
 PRIQ_FILES = \
   priq_arr.v priq_arr_specs.v priq_arr_utils.v verif_priq_arr.v 
+
+# when a sequence of clightgen-ed files need to be used together, use, for example:
+# ../CompCert/clightgen -DCOMPCERT -normalize -isystem . priq/priq_arr.c prim/prim.c dijkstra/dijkstra.c
 
 CLIGHT_FILES = sample_mark/mark_bi.v sample_mark/garbage_collector.v sample_mark/dispose_bi.v sample_mark/copy_bi.v sample_mark/summatrix.v
 
