@@ -66,7 +66,7 @@ KRUSKAL_FILES = \
 
 PRIM_FILES = \
   MatrixUGraph.v \
-  prim.v spatial_undirected_matrix.v specs_prim.v \
+  prim.v spatial_undirected_matrix.v # specs_prim.v \
   # verif_prim.v 
 
 DIJKSTRA_FILES = \
