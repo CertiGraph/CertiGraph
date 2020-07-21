@@ -220,7 +220,7 @@ Qed.
 
 (**** PATH COST w/ CAREFUL_ADD ****)
 
-Definition path_cost (g : DijkstraGeneralGraph) (path : @path VType EType) : LE :=
+Definition path_cost (g : DijkstraGeneralGraph) (path : @path V E) : DE :=
   fold_left careful_add (map (elabel g) (snd path)) 0.
 
 Lemma one_step_path_Znth:
@@ -228,7 +228,7 @@ Lemma one_step_path_Znth:
     sound_dijk_graph g ->
     evalid g (a, b) ->
     path_cost g (a, (a,b)::nil) =
-    Znth b (Znth a (graph_to_mat g)).
+    Znth b (Znth a (@graph_to_mat SIZE g id)).
 Proof.
   intros.
   unfold path_cost; simpl.
@@ -238,7 +238,7 @@ Qed.
 
 
 Lemma acc_pos: forall (g : DijkstraGeneralGraph) l z,
-    (forall e : EType, In e l -> 0 <= elabel g e) -> 0 <= z ->
+    (forall e : E, In e l -> 0 <= elabel g e) -> 0 <= z ->
     0 <= fold_left careful_add (map (elabel g) l) z.
 Proof.
   intro. induction l; intros; simpl; auto. apply IHl.
@@ -318,12 +318,12 @@ Proof.
   rewrite fold_left_app.
   assert ((fold_left careful_add (map (elabel g) (snd p1)) 0) = (path_cost g p1))
     by now unfold path_cost.
-  Set Printing All.
-  unfold LE in *.
+  Set Printing All.  
+  unfold DE in *.
   rewrite H0. 
   unfold path_cost at 3.
   remember (map (elabel g) (snd p2)) as l2.
-  unfold LE in *.
+  unfold DE in *.
   rewrite <- Heql2.
   Unset Printing All.
   remember (path_cost g p1) as c1.
@@ -380,7 +380,7 @@ Proof.
   assert ((fold_left careful_add (map (elabel g) (snd p1)) 0) = (path_cost g p1))
     by now unfold path_cost.
   Set Printing All.
-  unfold LE in *. rewrite H4. 
+  unfold DE in *. rewrite H4. 
   Unset Printing All.
   rewrite <- (careful_add_id (path_cost g p1)).
   apply path_cost_init_inf; trivial.
