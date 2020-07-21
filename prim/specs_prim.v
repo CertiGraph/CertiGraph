@@ -8,6 +8,21 @@ Require Import RamifyCoq.floyd_ext.share.
 
 Local Open Scope Z_scope.
 
+Definition init_list_spec :=
+  DECLARE _initialise_list
+  WITH sh: share, arr : pointer_val, old_list: list val
+  PRE [tptr tint]
+     PROP (Zlength old_list = SIZE (*<--I'm not sure if this is derivable from SEP*)
+          )
+     PARAMS ( pointer_val_val arr )
+     GLOBALS ()
+     SEP (data_at sh (tarray tint SIZE) (old_list) (pointer_val_val arr))
+  POST [ tvoid ]
+     PROP ()
+     LOCAL ()
+     SEP (data_at sh (tarray tint SIZE) (list_repeat (Z.to_nat SIZE) (Vint (Int.repr inf))) (pointer_val_val arr)
+         ).
+
 Definition init_matrix_spec :=
   DECLARE _initialise_matrix
   WITH sh: wshare, arr : pointer_val, old_contents: list (list Z)
@@ -22,21 +37,6 @@ Definition init_matrix_spec :=
      PROP ()
      LOCAL ()
      SEP (undirected_matrix sh (list_repeat (Z.to_nat SIZE) (list_repeat (Z.to_nat SIZE) inf)) (pointer_val_val arr)
-         ).
-
-Definition init_list_spec :=
-  DECLARE _initialise_list
-  WITH sh: wshare, arr : pointer_val, old_list: list val
-  PRE [tptr tint]
-     PROP (Zlength old_list = SIZE (*<--I'm not sure if this is derivable from SEP*)
-          )
-     PARAMS ( pointer_val_val arr )
-     GLOBALS ()
-     SEP (data_at sh (tarray tint SIZE) (old_list) (pointer_val_val arr))
-  POST [ tvoid ]
-     PROP ()
-     LOCAL ()
-     SEP (data_at sh (tarray tint SIZE) (list_repeat (Z.to_nat SIZE) (Vint (Int.repr inf))) (pointer_val_val arr)
          ).
 
 Definition prim_spec :=

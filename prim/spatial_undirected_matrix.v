@@ -66,7 +66,7 @@ Definition list_address a index size : val :=
 
 Definition list_rep sh size l contents_mat index :=
   let mylist := (Znth index contents_mat) in
-  data_at sh (tarray tint size) (map Vint (map Int.repr mylist)) (list_address l index size).
+  data_at sh (tarray tint size) (map (fun x => Vint (Int.repr x)) mylist) (list_address l index size).
 
 Definition undirected_matrix sh matrix_contents gaddr : mpred :=
   iter_sepcon.iter_sepcon (list_rep sh SIZE gaddr matrix_contents)
