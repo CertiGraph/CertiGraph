@@ -113,7 +113,7 @@ rewrite Ptrofs.signed_repr. rewrite Ptrofs.signed_repr. rewrite Z.add_0_l. rewri
 admit. admit.
 (*apply isptr_field_address_lemma.*) admit.
 }
-forward.
+Fail forward.
 
 (*postcon*)
-Qed.
+Admitted.
