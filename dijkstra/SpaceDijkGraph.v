@@ -11,10 +11,10 @@ Local Open Scope logic.
 Definition inrange_graph g :=
   let grph_contents := (@graph_to_mat SIZE g id) in
   forall i j,
-    0 <= i < Zlength grph_contents ->
-    0 <= j < Zlength grph_contents ->
-    0 <= Znth i (Znth j grph_contents) <= Int.max_signed / SIZE \/
-    Znth i (Znth j grph_contents) = inf.
+    vvalid g i ->
+    vvalid g j ->
+    0 <= elabel g (j, i) <= Int.max_signed / SIZE \/
+    elabel g (j, i) = inf.
 
 (*
 (* sugared version so as not to break Dijk *)
@@ -49,17 +49,13 @@ Qed.
      0 <= elabel g e.
 Proof.
   intros. rewrite (surjective_pairing e) in *.
-  rewrite (elabel_Znth_graph_to_mat); auto.
   destruct H as [? [? _]].
-  red in H2, H. rewrite H2, H, H in H1. destruct H1.
-
+  red in H2, H. rewrite H2 in H1. destruct H1.
   red in H0.
-  rewrite (graph_to_mat_Zlength g) in H0. 2: lia.
   specialize (H0 _ _ H3 H1).
   destruct H0.
   destruct H0; trivial.
-  clear -H0.
-  unfold E in *. rewrite H0. compute; inversion 1. 
+  unfold V, E in *. rewrite H0. compute; inversion 1. 
 Qed.
 
 Definition DijkGraph sh g gaddr : mpred := @SpaceAdjMatGraph SIZE sh _ id g gaddr.
