@@ -9,15 +9,16 @@ Require Import Coq.ZArith.Znat.
 Require Import compcert.lib.Integers.
 Require Import compcert.common.Values.
 Require Import compcert.exportclight.Clightdefs.
+
 Require Import VST.veric.val_lemmas.
 Require Import VST.veric.expr.
 Require Import VST.veric.mpred.
 Require Import VST.floyd.forward.
 Require Import VST.floyd.sublist.
 Require Import VST.floyd.field_at.
+Require Import VST.floyd.coqlib3.
 Require Import VST.msl.iter_sepcon.
 Require Import VST.msl.seplog.
-Require Import VST.floyd.coqlib3.
 
 Require Import RamifyCoq.graph.graph_model.
 Require Import RamifyCoq.lib.List_ext.
@@ -83,6 +84,10 @@ Section AdjMatGraph.
 
   Class AdjMatSoundness (g: AdjMatLG) :=
     {
+    size_representable:
+      0 <= size <= Int.max_signed;
+    inf_representable:
+      0 <= inf <= Int.max_signed; 
     vert_representable:
       forall v, vvalid g v ->
                 0 <= v < size;
@@ -102,7 +107,8 @@ Section AdjMatGraph.
       forall e, evalid g e -> src g = fst;
     edge_dst_snd:
       forall e, evalid g e -> dst g = snd;
-    fin: FiniteGraph g
+    fin:
+      FiniteGraph g
     }.
 
   (* example of how to instantiate *)
@@ -135,7 +141,7 @@ Section AdjMatGraph.
     map (vert_to_list g f)
         (nat_inc_list (Z.to_nat size)).
 
-  Lemma graph_to_mat_Zlength_gen:
+  Lemma graph_to_mat_Zlength:
     forall g (f : E -> E),
       0 <= size ->
       Zlength (graph_to_mat g f) = size.
@@ -144,7 +150,7 @@ Section AdjMatGraph.
     rewrite Zlength_map, nat_inc_list_Zlength, Z2Nat.id; trivial.
   Qed.
 
-  Lemma elabel_Znth_graph_to_mat_gen:
+  Lemma elabel_Znth_graph_to_mat:
     forall (g: AdjMatLG) (f: E -> E) src dst,
       0 <= size ->
       0 <= src < size ->
@@ -163,6 +169,18 @@ Section AdjMatGraph.
     all: rewrite Z2Nat.id; trivial.
   Qed.
 
+  Definition inrange_graph_gen g (f: E -> E) :=
+    let grph_contents := (graph_to_mat g f) in
+    forall i j,
+      0 <= i < Zlength grph_contents ->
+      0 <= j < Zlength grph_contents ->
+      0 <= Znth i (Znth j grph_contents) <= Int.max_signed \/
+      Znth i (Znth j grph_contents) = inf.
+  (* grr hate this, will massage away.
+     Even if it is needed, it is a LEMMA using Soundness
+     and not a definition from axioms
+   *)
+  
   Definition graph_to_list (g: AdjMatLG) (f : E -> E) : list Z :=
     (concat (graph_to_mat g f)).
 
@@ -175,14 +193,14 @@ Section AdjMatGraph.
             (map Vint (map Int.repr mylist))
             (list_address cs l index).
 
-  Definition SpaceAdjGraph sh (cs: compspecs) (f : E -> E) g gaddr : mpred :=
+  Definition SpaceAdjMatGraph sh (cs: compspecs) (f : E -> E) g gaddr : mpred :=
     iter_sepcon (list_rep sh cs gaddr (graph_to_mat g f))
                 (nat_inc_list (Z.to_nat size)).
 
-  Lemma SpaceAdjGraph_unfold: forall sh (cs: compspecs) (f : E -> E) g ptr i,
+  Lemma SpaceAdjMatGraph_unfold: forall sh (cs: compspecs) (f : E -> E) g ptr i,
       let contents := (graph_to_mat g f) in 
       0 <= i < size ->
-      SpaceAdjGraph sh cs f g ptr =
+      SpaceAdjMatGraph sh cs f g ptr =
       sepcon (iter_sepcon (list_rep sh cs ptr contents)
                           (sublist 0 i (nat_inc_list (Z.to_nat size))))
              (sepcon
@@ -190,7 +208,7 @@ Section AdjMatGraph.
                 (iter_sepcon (list_rep sh cs ptr contents)
                              (sublist (i + 1) (Zlength contents) (nat_inc_list (Z.to_nat size))))).
   Proof.
-    intros. unfold SpaceAdjGraph.
+    intros. unfold SpaceAdjMatGraph.
     replace (nat_inc_list (Z.to_nat size)) with
         (sublist 0 size (nat_inc_list (Z.to_nat size))) at 1.
     2: rewrite sublist_same; trivial; rewrite nat_inc_list_Zlength; lia.
@@ -201,44 +219,33 @@ Section AdjMatGraph.
     2: rewrite Z2Nat_id', Z.max_r; lia.
     repeat rewrite iter_sepcon_app.
     simpl. rewrite sepcon_emp. subst contents.
-    rewrite graph_to_mat_Zlength_gen; trivial. lia.
+    rewrite graph_to_mat_Zlength; trivial. lia.
   Qed.
 
-
-  (* 
-Assumptions: 
-See above
-
-What it does: 
-Uses abstract_data_at to create a spatial representation.
-
-This is not currently used by SpaceDijkGraph because 
-iter_sepcon is cleaner. However, just keep it around 
-because it is a general model.
-
-For a (better?) example of this in use for VST, see out
-dijkstra/SpaceDijkGraph.v
-   *)
-  Class SpaceAdjMatGraph (Addr: Type) (Pred: Type) :=
-    abstract_data_at: Addr -> list Z -> Pred.
-
-  Context {Pred: Type}.
-  Context {Addr: Type}.
-  Context {SAMG : SpaceAdjMatGraph Addr Pred}.
-
-  Definition AdjMatGraph_rep
-             (g: AdjMatLG)
-             (f : E -> E)
-             (a : Addr) : Pred :=
-    abstract_data_at a (graph_to_list g f).
-
-  Definition inrange_graph_gen g (f: E -> E) :=
-    let grph_contents := (graph_to_mat g f) in
-    forall i j,
-      0 <= i < Zlength grph_contents ->
-      0 <= j < Zlength grph_contents ->
-      0 <= Znth i (Znth j grph_contents) <= Int.max_signed \/
-      Znth i (Znth j grph_contents) = inf.
-  (* grr hate this, will massage away *)
-
 End AdjMatGraph.
+
+
+(*
+  The below is not currently used by SpaceDijkGraph because 
+  iter_sepcon is cleaner. However, just keep it around 
+  because it is a general model.
+  For a (better?) example of this in use for VST, see above.
+ *)
+
+(* 
+  What it does:        
+  Uses abstract_data_at to create a spatial representation.
+ *)
+Class SpaceAdjMatGraph_abstract (Addr: Type) (Pred: Type) :=
+  abstract_data_at: Addr -> list Z -> Pred.
+
+Context {Pred: Type}.
+Context {Addr: Type}.
+Context {SAMG : SpaceAdjMatGraph_abstract Addr Pred}.
+Context {size: Z}.
+
+Definition AdjMatGraph_rep
+           (g: AdjMatLG)
+           (f : E -> E)
+           (a : Addr) : Pred :=
+  abstract_data_at a (@graph_to_list size g f).
