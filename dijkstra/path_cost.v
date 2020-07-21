@@ -236,7 +236,6 @@ Proof.
   rewrite elabel_Znth_graph_to_mat; trivial.
 Qed.
 
-
 Lemma acc_pos: forall (g : DijkstraGeneralGraph) l z,
     (forall e : E, In e l -> 0 <= elabel g e) -> 0 <= z ->
     0 <= fold_left careful_add (map (elabel g) l) z.
