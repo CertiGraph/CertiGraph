@@ -34,7 +34,7 @@ Require Import RamifyCoq.graph.FiniteGraph.
   4. etc... soundness
   5. vert to list function
   6. graph to mat function 
-  7. graph_rep (if you provide me with a list -> addr -> mpred function)
+  7. graph_rep (graph -> mpred)
   8. graph_unfold
  *)
 
@@ -67,21 +67,16 @@ Section AdjMatGraph.
 
   Definition AdjMatLG := (@LabeledGraph V E _ _ DV DE DG).
   (* This is the basic LabeledGraph for all our AdjMat representations.
-   We need some further restrictions, which we will place in the GeneralGraph's 
-   soundness condition.  
+   We need some further restrictions, which we will place 
+   in the GeneralGraph's soundness condition.  
    *)
 
-  (* the instantiator will have to supply a max number of vertices
+  (* The instantiator will have to supply a max number of vertices
    and a special "infinity" value to indicate unreachability 
    *)
   Context {size : Z}. 
   Context {inf : Z}.
-  (* I want to enforce the following proof obligations on my caller:
-1. size <= Int.max_signed
-2. inf  <= Int.max_signed
-3. evalid g e -> elabel g e <> inf
-   *)
-
+  
   Class AdjMatSoundness (g: AdjMatLG) :=
     {
     size_representable:
@@ -249,3 +244,4 @@ Definition AdjMatGraph_rep
            (f : E -> E)
            (a : Addr) : Pred :=
   abstract_data_at a (@graph_to_list size g f).
+
