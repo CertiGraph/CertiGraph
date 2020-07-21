@@ -61,21 +61,6 @@ Proof.
   apply (Forall_Znth _ _ _ H) in H0.
   simpl in H0. lia.
 Qed.
-
-Lemma g2m_Znth2_range:
-  forall a b g,
-    0 <= a < SIZE ->
-    0 <= b < SIZE ->
-    inrange_graph g ->
-    0 <= Znth a (Znth b (@graph_to_mat SIZE g id)).
-Proof.
-Admitted.
-
-(*intros. red in H1.
-  specialize (H1 _ _ H H0).
-  destruct H1; try lia.
-  rewrite H1. rewrite <- inf_eq; lia.
-Qed.*)
   
 (** MISC HELPER LEMMAS **)
 
@@ -1262,8 +1247,8 @@ Proof.
                   }
                   unfold V in *. rewrite H40.
                   rewrite careful_add_comm, careful_add_inf; trivial.
-                  apply g2m_Znth2_range; trivial.
-                  apply vvalid_range in H36; trilia.
+                  apply inrange_graph_cost_pos; trivial.
+                  apply vvalid2_evalid; trivial.
                 -- intros.
                    assert (0 <= m < SIZE). {
                      apply vvalid_range in H36; trilia.
@@ -1291,8 +1276,9 @@ Proof.
                 -- destruct H36; split; trivial. 
                    intros. destruct (Z.eq_dec m u).
                    ++ unfold V in *; rewrite e, H19, careful_add_comm, careful_add_inf; [split; trivial|].
-                      apply g2m_Znth2_range; trivial.
-                      apply vvalid_range in H15; trilia.
+                      subst m.
+                      apply inrange_graph_cost_pos; trivial.
+                      apply vvalid2_evalid; trivial.
                    ++ split.
                       ** apply H37; trivial.
                       ** intros.
@@ -1331,8 +1317,8 @@ Proof.
                    rewrite H19.
                    rewrite careful_add_comm, careful_add_inf; trivial.
                    lia.
-                   apply g2m_Znth2_range; trivial.
-                   apply vvalid_range in H15; trivial.
+                   apply inrange_graph_cost_pos; trivial.
+                   apply vvalid2_evalid; trivial.
                 -- apply H41; trivial.
                    simpl in H43; destruct H43; [lia|]; trivial.
             + unfold inv_unseen in *. intros.
@@ -1344,8 +1330,9 @@ Proof.
               specialize (H34 H35 H36).
               destruct (Z.eq_dec m u).
               1: { unfold V in *; rewrite e, H19, careful_add_comm, careful_add_inf; trivial.
-                   apply g2m_Znth2_range; trivial.
-                   apply vvalid_range in H15; trivial; lia.
+                   subst m.
+                   apply inrange_graph_cost_pos; trivial.
+                   apply vvalid2_evalid; trivial.
               }
               apply H34; trivial.
               simpl in H38; destruct H38; [lia | trivial].
@@ -1529,11 +1516,12 @@ Proof.
               remember (Znth u prev_contents) as mom.
               assert (Htemp : True) by trivial.
               destruct (popped_noninf_has_path H2 H4 Htemp H38) as [p2mom [? [? ?]]]; trivial.
-              1: { assert (0 <= Znth u (Znth mom (@graph_to_mat SIZE g id))). {
-                     apply g2m_Znth2_range; trivial. 
-                     apply vvalid_range in H37; trilia.
-                   }
-                   ulia.
+              1: { 
+                assert (0 <= elabel g (mom, u)). {
+                  apply inrange_graph_cost_pos; trivial.
+                  apply vvalid2_evalid; trivial.
+                }
+                ulia.
               }
 
               (* this the best path to u:
@@ -1544,11 +1532,8 @@ Proof.
               assert (vvalid g mom). { trivial. }
               split3; trivial.
               --- destruct H42 as [? [? [? [? ?]]]].
-                  assert (path_cost g p2mom + elabel g (mom, u) < inf).
-                  { rewrite elabel_Znth_graph_to_mat; trivial; simpl.
-                    ulia.
-                    apply vvalid2_evalid; trivial.
-                  }
+                  assert (path_cost g p2mom + elabel g (mom, u) < inf) by
+                      ulia.
                   destruct H46.
                   split3; [| | split3]; trivial.
                   +++ apply valid_path_app_cons; trivial;
@@ -1564,12 +1549,10 @@ Proof.
                     rewrite path_cost_app_cons; trivial.
                     ulia.
                     all: apply vvalid2_evalid; trivial.
-                  +++ unfold E, V in *.
-                      rewrite path_cost_app_cons; trivial.
-                      rewrite elabel_Znth_graph_to_mat; trivial; try lia.
-                      1: rewrite <- H48; destruct H41; trivial.
-                      1,3: apply vvalid2_evalid; trivial.
-                      1: unfold E in *. ulia.                      
+                  +++ unfold V, E in *.
+                      destruct H41.
+                      rewrite path_cost_app_cons; trivial; try ulia.
+                      apply vvalid2_evalid; trivial.
                   +++ rewrite Forall_forall. intros.
                       rewrite Forall_forall in H49.
                       apply in_app_or in H52.
@@ -1599,12 +1582,9 @@ Proof.
                 assert (evalid g (mom, u)) by
                     (apply vvalid2_evalid; trivial).
                 rewrite path_cost_app_cons; trivial.
-                2: rewrite elabel_Znth_graph_to_mat; simpl; trivial; ulia.
-                rewrite elabel_Znth_graph_to_mat; trivial.
-                simpl.
+                2: ulia.
                 destruct (Z_le_gt_dec
-                            (path_cost g p2mom
-                             + Znth u (Znth mom (@graph_to_mat SIZE g id)))
+                            (path_cost g p2mom + elabel g (mom, u))
                             (path_cost g p')); auto.
                 apply Z.gt_lt in g0.
                 destruct (zlt (path_cost g p') inf).
@@ -1620,9 +1600,8 @@ Proof.
                            ~ In child' popped_verts /\
                            evalid g (mom', child') /\
                            path_cost g p1 < inf /\
-                           0 <= Znth child' (Znth mom' (@graph_to_mat SIZE g id)) < inf /\
-                           path_cost g p2 + Znth child' (Znth mom' (@graph_to_mat SIZE g id)) < inf).
-                {
+                           0 <= elabel g (mom', child') < inf /\
+                           path_cost g p2 + elabel g (mom', child') < inf). {
                   
                   assert (In src popped_verts). {
                     destruct H48.
@@ -1692,7 +1671,7 @@ Proof.
                 2: {
                   unfold path_cost at 1. simpl.
                   rewrite careful_add_comm, careful_add_id.
-                  rewrite elabel_Znth_graph_to_mat; trivial; simpl; trivial; lia.
+                  lia.
                 }
                 2: {
                   apply careful_add_pos; apply path_cost_pos; trivial.
@@ -1731,19 +1710,15 @@ Proof.
                   2: apply careful_add_inf_clean; trivial;
                     apply path_cost_pos; trivial.
                   rewrite path_cost_path_glue in l; trivial.
-                  rewrite one_step_path_Znth; trivial; lia.
+                  rewrite one_step_path_Znth; trivial.
+                  ulia.
                 }
 
                 unfold path_cost at 2 in g0. simpl in g0.
                 rewrite careful_add_clean in g0; [|lia| |].
-                2: { rewrite elabel_Znth_graph_to_mat; simpl; trivial.
-                     rewrite one_step_path_Znth in H64; trivial. lia.
-                }
-                2: rewrite elabel_Znth_graph_to_mat; simpl; trivial; lia.
+                2,3: ulia.
 
-                rewrite Z.add_0_l in g0.
-                rewrite elabel_Znth_graph_to_mat in g0 by assumption.
-                rewrite Z.add_assoc in g0. 
+                rewrite Z.add_0_l, Z.add_assoc in g0. 
 
                 (* mom' is optimal, and so we know that there exists a 
                    path p2mom', the global minimum from src to mom' *)
@@ -1768,13 +1743,13 @@ Proof.
                 pose proof (H69 p1 H54 H56).  
                 
                 assert (path_cost g p2mom'
-                        + Znth child' (Znth mom' (@graph_to_mat SIZE g id))
+                        + elabel g (mom', child')
                         + path_cost g p2 <
                         path_cost g p2mom
-                        + Znth u (Znth mom (@graph_to_mat SIZE g id))). {     
+                        + elabel g (mom, u)). {  
                   apply (Z.le_lt_trans _
                                        (path_cost g p1
-                                        + Znth child' (Znth mom' (@graph_to_mat SIZE g id))
+                                        + elabel g (mom', child')
                                         + path_cost g p2) _); trivial.
                   do 2 rewrite <- Z.add_assoc.
                   apply Zplus_le_compat_r; trivial.
@@ -1789,7 +1764,8 @@ Proof.
                   specialize (H73 _ H65).
                   destruct H67 as [? [? [? [? ?]]]].
                   destruct (zlt ((Znth mom' dist_contents)
-                                 + (Znth u (Znth mom' (@graph_to_mat SIZE g id)))) inf).                  
+                                 + elabel g (mom', u))
+                                inf).                  
                   2: {
                     apply Z.lt_asymm in H71. apply H71.
                     rewrite careful_add_dirty in H73; trivial; ulia.
@@ -1798,8 +1774,7 @@ Proof.
                   rewrite careful_add_clean in H73; trivial.
                   - specialize (H73 H58). lia.
                   - rewrite H76; apply path_cost_pos; trivial.
-                  - rewrite <- elabel_Znth_graph_to_mat; trivial.
-                    apply inrange_graph_cost_pos; trivial.
+                  - lia.
                 }
                 
                 assert (vvalid g child'). {
@@ -1811,8 +1786,7 @@ Proof.
                 (* now we know that child' is not minimal, and thus... *)
                 assert (Znth u dist_contents <=
                         Znth mom' dist_contents
-                        + Znth child' (Znth mom' (@graph_to_mat SIZE g id))).
-                {
+                        + elabel g (mom', child')). { 
                   assert (0 <= child' < Zlength priq_contents). {
                     apply vvalid_range in H74; trivial; lia.
                   }
@@ -1832,7 +1806,7 @@ Proof.
                   }
 
                   assert (Znth mom' dist_contents +
-                          (Znth child' (Znth mom' (@graph_to_mat SIZE g id))) < inf). {
+                          elabel g (mom', child') < inf). {
                     ulia.
                   }
                   
@@ -1858,6 +1832,7 @@ Proof.
                       simpl in H10.
                       ulia. apply vvalid_range in H65; trivial; lia.
                     }
+                    2: ulia.
                     
                     apply Z.le_trans with (m := Znth child' dist_contents); trivial.
                     repeat rewrite <- H8; trivial.
@@ -1870,6 +1845,7 @@ Proof.
                     apply min_in_list.
                     1: apply incl_refl.
                     rewrite <- Znth_0_hd; [apply Znth_In|]; lia.
+                    
                   - destruct (H4 _ H74) as [_ [_ ?]].
                     assert (Ha: ~ In child' popped_verts). {
                       rewrite (get_popped_meaning _ priq_contents); lia.
@@ -1883,9 +1859,8 @@ Proof.
                     apply (Forall_Znth _ _ mom') in H10.
                     simpl in H10.
                       ulia. apply vvalid_range in H65; trivial; lia.
-                    unfold V in *.
-                    rewrite <- elabel_Znth_graph_to_mat; trivial.
-                    apply inrange_graph_cost_pos; trivial.
+                      unfold V in *.
+                      lia.
                 }
                 ulia.
             ** (* Here we must show that the
@@ -1963,10 +1938,9 @@ Proof.
             assert (temp: True) by trivial.
             destruct (popped_noninf_has_path H2 H4 temp H36) as [p2mom [? [? ?]]]; trivial.
             1: {
-              assert (0 <= Znth dst (Znth mom (@graph_to_mat SIZE g id))). {
-                apply g2m_Znth2_range; trivial.
-                apply vvalid_range in H15; trivial.
-                apply vvalid_range in H35; trilia. 
+              assert (0 <= elabel g (mom, dst)). {
+                apply inrange_graph_cost_pos; trivial.
+                apply vvalid2_evalid; trivial.
               }
               unfold V in *. lia.
             }
@@ -1980,7 +1954,7 @@ Proof.
             assert (mom <> u). {
               intro contra. rewrite contra in *. apply H18; trivial. 
             }
-            right. split3; [| |split3; [| |split3; [| |split]]]; trivial.
+            right. split3; [|split3; [| |split3; [| |split]]|]; trivial.
             ** simpl; right; trivial.
             ** destruct H39; trivial.
             ** intros. destruct H39.
@@ -2014,10 +1988,7 @@ Proof.
              rewrite <- inf_eq; rep_lia.
         -- (* We now begin with the for loop's body *)
           assert (0 <= u < Zlength (@graph_to_mat SIZE g id)). {
-            unfold graph_to_mat. unfold AdjMatGraph.graph_to_mat.
-            repeat rewrite Zlength_map.
-            rewrite nat_inc_list_Zlength.
-            admit.
+            rewrite graph_to_mat_Zlength; lia.
           }
           assert (Zlength (Znth u (@graph_to_mat SIZE g id)) = SIZE). {
             rewrite Forall_forall in H0. apply H0. apply Znth_In.
@@ -2060,6 +2031,11 @@ Proof.
           rewrite sepcon_assoc.
           rewrite <- (@SpaceAdjMatGraph_unfold SIZE); trivial. thaw FR.
           remember (Znth i (Znth u (@graph_to_mat SIZE g id))) as cost.
+          rewrite <- elabel_Znth_graph_to_mat in Heqcost; trivial.
+          2: { apply vvalid2_evalid; trivial;
+               apply vvalid_range; trivial.
+          }
+          
           assert_PROP (Zlength priq_contents' = SIZE). {
             entailer!. repeat rewrite Zlength_map in *. trivial. }
           assert_PROP (Zlength prev_contents' = SIZE). {
@@ -2072,10 +2048,12 @@ Proof.
           forward_if.
           ++ assert (0 <= cost <= Int.max_signed / SIZE). {
                replace 8 with SIZE in H41.
-               assert (0 <= i < Zlength (@graph_to_mat SIZE g id)) by
-                   (rewrite graph_to_mat_Zlength; admit).
-               assert (0 <= u < Zlength (@graph_to_mat SIZE g id)) by
-                   (rewrite graph_to_mat_Zlength; lia).
+               assert (vvalid g i). {
+                 apply vvalid_range; trivial.
+               }
+               assert (vvalid g u). {
+                 apply vvalid_range; trivial.
+               }
                specialize (H1 i u H42 H43).
                rewrite inf_eq2 in H41.
                rewrite Heqcost in *.
@@ -2090,6 +2068,7 @@ Proof.
                       }
                       split; try ulia; admit.
                     - unfold V, DE in *.
+                      
                       rewrite H1.
                       rewrite <- inf_eq.
                       compute; split; inversion 1.
@@ -2163,18 +2142,8 @@ Proof.
                        apply Zlt_not_le in improvement.
                        apply improvement.
                        rewrite path_cost_app_cons in H49; trivial.
-                       2: { rewrite elabel_Znth_graph_to_mat; trivial.
-                            2: { apply vvalid2_evalid; 
-                                 try apply vvalid_range;
-                                 trivial.
-                            }
-                            simpl. ulia.
-                       }
-                       rewrite elabel_Znth_graph_to_mat in H49; trivial.
-                       2: { apply vvalid2_evalid; 
-                            try apply vvalid_range;
-                            trivial.
-                       }
+                       2: ulia.
+                       
                        simpl fst in H49.
                        simpl snd in H49.
                        rewrite Heqcost.
@@ -2321,9 +2290,7 @@ Proof.
                         unfold V in *.
                         rewrite upd_Znth_same by lia.
                         split3; [| |split3; [| |split]]; trivial.
-                        *** rewrite elabel_Znth_graph_to_mat; trivial. 
-                            ulia. apply vvalid2_evalid; trivial;
-                                   rewrite vvalid_range; trivial.
+                        *** ulia.
                         *** rewrite upd_Znth_diff; trivial; ulia.
                         *** rewrite upd_Znth_same; trivial; [|ulia].
                             rewrite upd_Znth_diff; trivial; ulia.
@@ -2349,7 +2316,6 @@ Proof.
                                  assert (evalid g (mom', i)). {
                                  apply vvalid2_evalid; trivial.
                                  }
-                                 rewrite <- elabel_Znth_graph_to_mat; trivial.
                                  apply inrange_graph_cost_pos; trivial.
                             }
                             rename H66 into Hk.
@@ -2370,10 +2336,10 @@ Proof.
                             }
 
                             
-                            destruct (zlt ((Znth mom' dist_contents') + (Znth i (Znth mom' (@graph_to_mat SIZE g id)))) inf).
+                            destruct (zlt ((Znth mom' dist_contents') + elabel g (mom', i)) inf).
                               2: {
                                 unfold V in *.
-                                destruct (zlt (Znth i (Znth mom' (@graph_to_mat SIZE g id))) inf).
+                                destruct (zlt (elabel g (mom', i)) inf).
                                 - rewrite careful_add_dirty; trivial;
                                     lia.
                                 - unfold careful_add.
@@ -2401,20 +2367,18 @@ Proof.
                                      red in H2; rewrite H2; trivial.
                               }
 
-                              assert (careful_add (Znth mom' dist_contents') (Znth i (Znth mom' (@graph_to_mat SIZE g id)))
-                                      = (Znth mom' dist_contents') + (Znth i (Znth mom' (@graph_to_mat SIZE g id)))). {
+                              assert (careful_add (Znth mom' dist_contents') (elabel g (mom', i))
+                                      = (Znth mom' dist_contents') + (elabel g (mom', i))). {
                                 rewrite careful_add_clean; trivial.
                                 - unfold V in *;
                                     rewrite H73;
                                     apply path_cost_pos; trivial.
-                                - rewrite <- elabel_Znth_graph_to_mat; trivial.
-                                     apply inrange_graph_cost_pos; trivial.
-                                     all: apply vvalid2_evalid; trivial.
+                                - apply inrange_graph_cost_pos; trivial.
+                                  apply vvalid2_evalid; trivial.
                               }
                               
                               assert (vvalid g i). {
-                                destruct H2 as [? _].
-                                red in H2; rewrite H2; trivial.
+                                trivial.
                               }
 
 
@@ -2500,7 +2464,7 @@ Proof.
    So dist[i] <= dist[mom'] + (mom', i).
  *)
 
-                              assert (Znth i dist_contents' <= Znth mom' dist_contents' + Znth i (Znth mom' (@graph_to_mat SIZE g id))). {
+                              assert (Znth i dist_contents' <= Znth mom' dist_contents' + elabel g (mom', i)). {
                                 assert (i <= i < SIZE) by lia.
                                 assert (0 <= mom' < SIZE). {
                                   apply vvalid_range in H62;ulia.
@@ -2512,10 +2476,9 @@ Proof.
                                   2: lia.  
                                   simpl in H35.
                                   unfold V in *.
-                                  destruct (H1 _ _ H19 H81);
+                                  destruct (H1 _ _ H78 H62);
                                     apply Z.add_nonneg_nonneg; lia.
-                                - destruct H82 as [? [? [? [? [? [? ?]]]]]].
-                                  destruct H88.
+                                - destruct H82 as [? [[? [? [? [? [? ?]]]]] ?]].
                                   unfold V in *.
                                   rewrite <- H77.
                                   apply H89; trivial.
@@ -2554,11 +2517,11 @@ Proof.
                               rewrite H32 in H80; trivial.
                               destruct (H25 i H81 H46 H80).
                               1: subst i; exfalso; lia.
-                                destruct H82 as [_ [? [? [? [? [? ?]]]]]].
+                                destruct H82 as [? [[? [? [? [? [? ?]]]]] ?]].
                               apply Z.lt_le_incl.
                               apply Z.lt_le_trans with (m:=Znth i dist_contents').
                               1: lia.
-                              apply H87; trivial. 
+                              apply H89; trivial. 
                     +++ assert (0 <= dst < i) by lia.
 (* We will proceed using the old best-known path for dst *)
                         specialize (H24 _ H61).
@@ -2574,13 +2537,14 @@ Proof.
                         split; trivial.
 
                         assert (Ha: Znth mom dist_contents' < inf). {
-                          assert (0 <= Znth dst (Znth mom (@graph_to_mat SIZE g id))). {
-                            apply g2m_Znth2_range; trivial.
+                          
+                          assert (0 <= elabel g (mom, dst)). {
+                            apply inrange_graph_cost_pos; trivial.
+                            apply vvalid2_evalid; trivial.
+                            apply vvalid_range; trivial.
                             lia.
-                            apply vvalid_range in H64; ulia.
                           }
-                          unfold V in *.
-                          lia.
+                          ulia.
                         }
                         assert (vvalid g dst). {
                           apply vvalid_range; ulia.
@@ -2598,7 +2562,8 @@ Proof.
                         *** intros.
                             assert (mom' <> i). {
                               intro contra. rewrite contra in H74.
-                              rewrite (get_popped_meaning _ (upd_Znth i priq_contents' (Znth u dist_contents' + Znth i (Znth u (@graph_to_mat SIZE g id))))) in H74.
+                              rewrite (get_popped_meaning _ (upd_Znth i priq_contents'
+                                                                      (Znth u dist_contents' + elabel g (u, i)))) in H74.
                               rewrite upd_Znth_same in H74; trivial.
                               ulia. lia. rewrite upd_Znth_Zlength; lia.
                             }
@@ -2613,7 +2578,7 @@ Proof.
                     unfold V in *.
                     rewrite upd_Znth_diff in H62 by lia.
                     destruct (H25 _ H63 H61 H62); [left | right]; trivial.
-                    destruct H64 as [? [? [Ha [? [? [? [? ?]]]]]]].
+                    destruct H64 as [? [[? [Ha [? [? [? ?]]]]] ?]].
                     unfold V in *.
                     rewrite upd_Znth_diff by lia.
                     remember (Znth dst prev_contents') as mom. 
@@ -2625,14 +2590,16 @@ Proof.
                     assert (0 <= mom < Zlength priq_contents'). {
                       apply vvalid_range in Ha; ulia.
                     }
-
-                    split3; [| | split3; [| | split3; [| |split]]]; trivial.
+                    
+                    split3; [| split3; [| | split3; [| |split]]|]; trivial.
                     +++ repeat rewrite upd_Znth_diff; trivial; lia.
                     +++ repeat rewrite upd_Znth_diff; trivial; try lia.
                     +++ intros.
                         assert (mom' <> i). intro contra.
                         rewrite contra in H74.
-                        rewrite (get_popped_meaning _ (upd_Znth i priq_contents' (Znth u dist_contents' + Znth i (Znth u (@graph_to_mat SIZE g id))))), upd_Znth_same in H74; trivial.
+                        rewrite (get_popped_meaning _ (upd_Znth i priq_contents'
+                                                                (Znth u dist_contents' + elabel g (u, i)))),
+                        upd_Znth_same in H74; trivial.
                         ulia. ulia. rewrite upd_Znth_Zlength; lia.
                         repeat rewrite upd_Znth_diff; trivial.
                         apply H70; trivial; try lia.
@@ -2650,7 +2617,8 @@ Proof.
                     +++ apply vvalid_range in H63; ulia.
                     +++ ulia.
                     +++ intro contra. subst m.
-                        rewrite (get_popped_meaning _ (upd_Znth i priq_contents' (Znth u dist_contents' + Znth i (Znth u (@graph_to_mat SIZE g id))))) in H64.
+                        rewrite (get_popped_meaning _ (upd_Znth i priq_contents'
+                                                                (Znth u dist_contents' + elabel g (u, i)))) in H64.
                         rewrite upd_Znth_same in H64.
                          ulia. lia.
                          rewrite upd_Znth_Zlength; lia.
@@ -2664,7 +2632,8 @@ Proof.
                     assert (i <= dst < SIZE) by lia.
                     destruct (Z.eq_dec m i).
                     1: { exfalso. subst m.
-                         rewrite (get_popped_meaning _ (upd_Znth i priq_contents' (Znth u dist_contents' + Znth i (Znth u (@graph_to_mat SIZE g id))))) in H64.
+                         rewrite (get_popped_meaning _ (upd_Znth i priq_contents'
+                                                                 (Znth u dist_contents' + elabel g (u, i)))) in H64.
                          rewrite upd_Znth_same in H64.
                          ulia. lia.
                          rewrite upd_Znth_Zlength; lia.
@@ -2716,7 +2685,7 @@ Proof.
                     assert (i <= i < SIZE) by lia.
                     destruct (H25 i H60 H58 H59).
                     1: left; trivial.
-                    destruct H61 as [? [? [? [? [? [? ?]]]]]].
+                    destruct H61 as [? [[? [? [? [? [? ?]]]]] ?]].
                     unfold V in *.
                     remember (Znth i prev_contents') as mom.
                     destruct (Z.eq_dec i src); [left | right]; trivial.
@@ -2727,7 +2696,7 @@ Proof.
                     pose proof (Znth_dist_cases mom' dist_contents').
                     rename H70 into e.
                     destruct e as [e | e]; trivial.
-                    1: apply vvalid_range in H68; ulia.
+                    1: apply vvalid_range in H67; ulia.
                     1: {
                       rewrite e.
                       rewrite careful_add_comm,
@@ -2737,14 +2706,13 @@ Proof.
                         apply vvalid2_evalid; trivial.
                         apply vvalid_range; trivial.
                       }
-                      rewrite <- elabel_Znth_graph_to_mat; trivial.
                       apply inrange_graph_cost_pos; trivial.
                     }
                     assert (Hb: vvalid g mom'). {
                       apply vvalid_range; trivial.
-                      apply vvalid_range in H68; ulia.
+                      apply vvalid_range in H67; ulia.
                     }
-                    destruct (H22 _ H68 H69); [unfold V in *; ulia|].
+                    destruct (H22 _ H67 H69); [unfold V in *; ulia|].
                     
                     destruct H70 as [p2mom' [? [? ?]]].
                     assert (Hrem := H70).
@@ -2784,7 +2752,7 @@ Proof.
                               unfold path_globally_optimal in H70.
                               apply Z.ge_le in improvement.
 
-                              destruct (zlt (Znth u dist_contents' + Znth i (Znth u (@graph_to_mat SIZE g id))) inf).
+                              destruct (zlt (Znth u dist_contents' + elabel g (u, i)) inf).
                               ++++ rewrite careful_add_clean; try ulia; trivial.
 
                                    
@@ -2812,10 +2780,10 @@ Proof.
                             trivial.
                           }
 
-                          destruct (zlt (Znth mom' dist_contents' + Znth i (Znth mom' (@graph_to_mat SIZE g id))) inf).
+                          destruct (zlt (Znth mom' dist_contents' + elabel g (mom', i)) inf).
                           2: {
                             unfold V in *.
-                            destruct (zlt (Znth i (Znth mom' (@graph_to_mat SIZE g id))) inf).
+                            destruct (zlt (elabel g (mom', i)) inf).
                             - rewrite careful_add_dirty; trivial;
                                 lia.
                             - unfold careful_add.
@@ -2839,12 +2807,11 @@ Proof.
                           assert (vvalid g mom'). {
                             apply (valid_path_valid g p2mom'); trivial.
                           }
-                          assert (careful_add (Znth mom' dist_contents') (Znth i (Znth mom' (@graph_to_mat SIZE g id))) = Znth mom' dist_contents' + Znth i (Znth mom' (@graph_to_mat SIZE g id))). {
+                          assert (careful_add (Znth mom' dist_contents')
+                                              (elabel g (mom', i)) = Znth mom' dist_contents' + elabel g (mom', i)). {
                             rewrite careful_add_clean; trivial.
                             - unfold V in *; rewrite H75. apply path_cost_pos; trivial.
-                            - rewrite <- elabel_Znth_graph_to_mat; trivial.
-                              apply inrange_graph_cost_pos; trivial.
-                              all: apply vvalid2_evalid; trivial.
+                            - apply inrange_graph_cost_pos; trivial. apply vvalid2_evalid; trivial.
                           }
                            
 (*
@@ -2876,11 +2843,10 @@ Proof.
                                2: lia.  
                                simpl in H35.
                                unfold V in *.
-                               destruct (H1 _ _ H19 H86);
+                               destruct (H1 _ _ H83 H84);
                                  apply Z.add_nonneg_nonneg; lia.
-                          ++++ destruct H87 as [? [? [? [? [? [? ?]]]]]].
-                               destruct H93.
-                               specialize (H94 _ n0 H68 H69).
+                          ++++ destruct H87 as [? [[? [? [? [? [? ?]]]]]]?].
+                               specialize (H94 _ n0 H84 H69).
                                unfold V in *;
                                rewrite H85 in H94; trivial.
 
@@ -2889,7 +2855,7 @@ Proof.
 (* 2. ~ In u p': This is an easy case.
    dist[i] < path_cost p' because of Inv2.
  *)
-                      apply H67; trivial.
+                      apply H68; trivial.
                       intro. apply n0.
                       destruct H70 as [? [? [? [? ?]]]].
                       rewrite in_path_eq_epath_to_vpath; trivial.
@@ -2922,16 +2888,18 @@ Proof.
                          apply vvalid2_evalid; trivial;
                            apply vvalid_range; trivial.
                          }
-                         rewrite <- elabel_Znth_graph_to_mat; trivial.
                          apply inrange_graph_cost_pos; trivial.
                     }
 
-                    destruct (zlt (Znth i (Znth u (@graph_to_mat SIZE g id))) inf).
+                    destruct (zlt (elabel g (u, i)) inf).
                     1: apply careful_add_dirty; trivial; lia.
-                    assert (Znth i (Znth u (@graph_to_mat SIZE g id)) = inf). {
-                      assert (Int.max_signed / SIZE < inf) by (rewrite <- inf_eq; now compute). 
+                    assert ((elabel g (u, i)) = inf). {
+                      assert (Int.max_signed / SIZE < inf) by (rewrite <- inf_eq; now compute).
+                      assert (vvalid g i). {
+                        apply vvalid_range; ulia.
+                      }
                       unfold inrange_graph in H1;
-                        destruct (H1 _ _ H19 H63); trivial.
+                                             destruct (H1 _ _ H66 H60); trivial.
                       replace 8 with SIZE in H41 by lia.
                       rewrite inf_eq2 in H41.
                       rewrite Int.signed_repr in H41.
@@ -2958,9 +2926,9 @@ Proof.
             Exists prev_contents' priq_contents' dist_contents' popped_verts'.
             entailer!.
             remember (find priq_contents (fold_right Z.min (hd 0 priq_contents) priq_contents) 0) as u.
-            assert (Znth i (Znth u (@graph_to_mat SIZE g id)) = inf). {
-              assert (0 <= i < SIZE) by lia.
-              assert (0 <= u < SIZE) by lia.
+            assert (elabel g (u, i) = inf). {
+              assert (vvalid g i) by (apply vvalid_range; ulia).
+              assert (vvalid g u) by (apply vvalid_range; ulia).
               assert (Int.max_signed / SIZE < inf) by now compute. 
               unfold inrange_graph in H1;
                 destruct (H1 _ _ H15 H54); trivial.
@@ -2988,63 +2956,59 @@ Proof.
                    assert (i <= i < SIZE) by lia.
                    destruct (H25 i H57 H55 H56).
                    1: left; trivial.
-                   destruct H58 as [? [? [? [? [? [? ?]]]]]].
+                   destruct H58 as [? [[? [? [? [? [? ?]]]]]?]].
                    unfold V in *.
                    remember (Znth i prev_contents') as mom.
 
                    assert (Ha: Znth mom dist_contents' < inf). {
-                     assert (0 <= Znth i (Znth mom (@graph_to_mat SIZE g id))). {
-                       apply g2m_Znth2_range; trivial.
-                       apply vvalid_range in H60; ulia.
-                          }
-                          unfold V in *.
-                          lia.
-                        }
+                     assert (0 <= elabel g (mom, i)). {
+                       apply inrange_graph_cost_pos; trivial.
+                       apply vvalid2_evalid; trivial.
+                       apply vvalid_range; trivial.
+                     }
+                     ulia.
+                   }
                    
                    destruct (H22 _ H60 H61); [unfold V in *;lia|].
-                   destruct H65 as [p2mom [? [? ?]]].
+                   destruct H66 as [p2mom [? [? ?]]].
                    
                    right. split.
                    1: { assert (In src (popped_verts')). {
                           assert (In_path g src p2mom). {
-                         left. destruct H65 as [_ [[? _] _]].
+                         left. destruct H66 as [_ [[? _] _]].
                          destruct p2mom. 
                          now simpl in H56 |- *.
                           }
-                          specialize (H66 _ H68).
-                          destruct H66;
-                          destruct H65; trivial.
+                          specialize (H67 _ H69).
+                          destruct H67;
+                            destruct H66; trivial.
                           
                         }
                      intro contra. rewrite <- contra in H68.
-                     rewrite get_popped_meaning in H68.
+                        rewrite get_popped_meaning in H69.
                      lia. lia.
                    }
 
                    split3; [| |split3; [| |split]]; trivial.
-                   +++ destruct H64; trivial.
-                   +++
-                     intros.
-                     destruct H64.
-                     destruct (Znth_dist_cases mom' dist_contents') as [e | e]; trivial.
-                     1: apply vvalid_range in H68; ulia.
-                     1: { rewrite e.
-                          rewrite careful_add_comm, careful_add_inf.
-                            lia.
-                            assert (evalid g (mom', i)). {
-                              apply vvalid2_evalid; trivial.
-                              apply vvalid_range; trivial.
-                            }                               
-                            rewrite <- elabel_Znth_graph_to_mat; trivial.
-                            apply inrange_graph_cost_pos; trivial.
-                       }
-                       unfold V in *.
-
-                     destruct (zlt (Znth mom' dist_contents' + Znth i (Znth mom' (@graph_to_mat SIZE g id))) inf).
+                   intros.
+                   destruct H64.
+                   destruct (Znth_dist_cases mom' dist_contents') as [e | e]; trivial.
+                   1: apply vvalid_range in H69; ulia.
+                   1: { rewrite e.
+                        rewrite careful_add_comm, careful_add_inf.
+                        lia.
+                        assert (evalid g (mom', i)). {
+                          apply vvalid2_evalid; trivial.
+                          apply vvalid_range; trivial.
+                        }                               
+                        apply inrange_graph_cost_pos; trivial.
+                   }
+                   unfold V in *.
+                   
+                   destruct (zlt (Znth mom' dist_contents' + elabel g (mom', i)) inf).
                      2: {
                        unfold V in *.
-                       clear H64.
-                       destruct (zlt (Znth i (Znth mom' (@graph_to_mat SIZE g id))) inf).
+                       destruct (zlt (elabel g (mom', i)) inf).
                        - rewrite careful_add_dirty; trivial;
                            lia.
                        - unfold careful_add.
@@ -3061,25 +3025,23 @@ Proof.
                            intro.
                            apply (Forall_Znth _ _ mom') in H35.
                            simpl in H35. lia.
-                           apply vvalid_range in H68; ulia.
-                           rewrite <- elabel_Znth_graph_to_mat; trivial.
+                           apply vvalid_range in H69; ulia.
                            apply Zle_not_lt.
                            apply inrange_graph_cost_pos; trivial.
                            rewrite Z.eqb_neq. lia.
-                       }
-                       assert (vvalid g i). {
-                         destruct H2 as [? _].
-                         red in H2; rewrite H2; trivial.
-                       }
-                       
-                       assert (careful_add (Znth mom' dist_contents') (Znth i (Znth mom' (@graph_to_mat SIZE g id))) = Znth mom' dist_contents' + Znth i (Znth mom' (@graph_to_mat SIZE g id))). {
+                     }
+                     assert (vvalid g i). {
+                       destruct H2 as [? _].
+                       red in H2; rewrite H2; trivial.
+                     }
+                     
+                     assert (careful_add (Znth mom' dist_contents') (elabel g (mom', i)) = Znth mom' dist_contents' + elabel g (mom', i)). {
                          rewrite careful_add_clean; trivial.
                          - apply (Forall_Znth _ _ mom') in H35.
                            simpl in H35; ulia.
-                           apply vvalid_range in H68; ulia.
-                         - rewrite <- elabel_Znth_graph_to_mat; trivial.
-                           apply inrange_graph_cost_pos; trivial.
-                           all: apply vvalid2_evalid; trivial.
+                           apply vvalid_range in H69; ulia.
+                         - apply inrange_graph_cost_pos; trivial.
+                           apply vvalid2_evalid; trivial.
                      }
                      destruct (Z.eq_dec mom' u).
                      1: { subst mom'.
@@ -3088,7 +3050,7 @@ Proof.
                           simpl in H35; ulia.
                           lia.
                      }
-                     apply H70; trivial.
+                     apply H65; trivial.
                --- apply H24; lia.
             ** destruct (Z.eq_dec dst i).
                --- lia. 
@@ -3100,7 +3062,7 @@ Proof.
                unfold inv_unseen; intros.
                destruct (Z.eq_dec m u).
                2: apply H27; trivial.
-               subst m. rewrite H15.
+               subst m. unfold V, E in *. rewrite H15.
                rewrite careful_add_inf; trivial.
                unfold inrange_dist in H35.
                rewrite Forall_forall in H35.

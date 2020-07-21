@@ -228,12 +228,11 @@ Lemma one_step_path_Znth:
     sound_dijk_graph g ->
     evalid g (a, b) ->
     path_cost g (a, (a,b)::nil) =
-    Znth b (Znth a (@graph_to_mat SIZE g id)).
+    elabel g (a,b).
 Proof.
   intros.
   unfold path_cost; simpl.
-  rewrite careful_add_comm, careful_add_id.
-  rewrite elabel_Znth_graph_to_mat; trivial.
+  rewrite careful_add_comm, careful_add_id; trivial.
 Qed.
 
 Lemma acc_pos: forall (g : DijkstraGeneralGraph) l z,
