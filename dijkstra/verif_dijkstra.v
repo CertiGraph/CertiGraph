@@ -15,7 +15,7 @@ Local Open Scope Z_scope.
 (** CONSTANTS AND RANGES **)
 
 Ltac trilia := trivial; lia.
-Ltac ulia := unfold V, DE in *; trilia.
+Ltac ulia := unfold V, E, DE in *; trilia.
 
 Lemma inf_eq: 1879048192 = inf.
 Proof. compute; trivial. Qed.
@@ -1546,8 +1546,8 @@ Proof.
               --- destruct H42 as [? [? [? [? ?]]]].
                   assert (path_cost g p2mom + elabel g (mom, u) < inf).
                   { rewrite elabel_Znth_graph_to_mat; trivial; simpl.
-                    2: apply vvalid2_evalid; trivial.
                     ulia.
+                    apply vvalid2_evalid; trivial.
                   }
                   destruct H46.
                   split3; [| | split3]; trivial.
@@ -1564,11 +1564,12 @@ Proof.
                     rewrite path_cost_app_cons; trivial.
                     ulia.
                     all: apply vvalid2_evalid; trivial.
-                  +++ unfold V in *.
-                      rewrite path_cost_app_cons, elabel_Znth_graph_to_mat; trivial.
-                      1: ulia.
+                  +++ unfold E, V in *.
+                      rewrite path_cost_app_cons; trivial.
+                      rewrite elabel_Znth_graph_to_mat; trivial; try lia.
+                      1: rewrite <- H48; destruct H41; trivial.
                       1,3: apply vvalid2_evalid; trivial.
-                      ulia.
+                      1: unfold E in *. ulia.                      
                   +++ rewrite Forall_forall. intros.
                       rewrite Forall_forall in H49.
                       apply in_app_or in H52.
@@ -2024,7 +2025,7 @@ Proof.
           }
           freeze FR := (data_at _ _ _ _) (data_at _ _ _ _) (data_at _ _ _ _).
           unfold DijkGraph.
-          rewrite (SpaceAdjGraph_unfold _ _ id _ _ u).
+          rewrite (SpaceAdjMatGraph_unfold _ _ id _ _ u).
           2: admit.
           Intros.
           rename H34 into H35.
@@ -2057,7 +2058,7 @@ Proof.
           forward. clear H37 H38. thaw FR2.
           gather_SEP (iter_sepcon _ _) (data_at _ _ _ _) (iter_sepcon _ _).
           rewrite sepcon_assoc.
-          rewrite <- (@SpaceAdjGraph_unfold SIZE); trivial. thaw FR.
+          rewrite <- (@SpaceAdjMatGraph_unfold SIZE); trivial. thaw FR.
           remember (Znth i (Znth u (@graph_to_mat SIZE g id))) as cost.
           assert_PROP (Zlength priq_contents' = SIZE). {
             entailer!. repeat rewrite Zlength_map in *. trivial. }
@@ -2066,7 +2067,7 @@ Proof.
           assert_PROP (Zlength dist_contents' = SIZE). {
             entailer!. repeat rewrite Zlength_map in *. trivial. }
           assert (Zlength (@graph_to_mat SIZE g id) = SIZE). {
-            rewrite graph_to_mat_Zlength_gen; trivial. lia.
+            rewrite graph_to_mat_Zlength; trivial. lia.
           }            
           forward_if.
           ++ assert (0 <= cost <= Int.max_signed / SIZE). {
